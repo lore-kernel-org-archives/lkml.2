@@ -1,48 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932375Ab2ENVUE (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 May 2012 17:20:04 -0400
-Received: from cavan.codon.org.uk ([93.93.128.6]:56229 "EHLO
-	cavan.codon.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932257Ab2ENVUC (ORCPT
+	id S932400Ab2ENVVE (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 May 2012 17:21:04 -0400
+Received: from mail-lb0-f174.google.com ([209.85.217.174]:48905 "EHLO
+	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932328Ab2ENVVC convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 May 2012 17:20:02 -0400
-Date: Mon, 14 May 2012 22:19:59 +0100
-From: Matthew Garrett <mjg59@srcf.ucam.org>
-To: Mario Limonciello <mario_limonciello@dell.com>
-Cc: Kamal Mostafa <kamal@canonical.com>,
-        "platform-driver-x86@vger.kernel.org" 
-	<platform-driver-x86@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] dell-laptop: rfkill blacklist Dell XPS 13z, 15z
-Message-ID: <20120514211959.GA9394@srcf.ucam.org>
-References: <1337023652-11661-1-git-send-email-kamal@canonical.com>
- <20120514193718.GA6438@srcf.ucam.org>
- <4FB16659.6040704@dell.com>
+	Mon, 14 May 2012 17:21:02 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4FB16659.6040704@dell.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: mjg59@cavan.codon.org.uk
-X-SA-Exim-Scanned: No (on cavan.codon.org.uk); SAEximRunCond expanded to false
+In-Reply-To: <20120511225636.30496.26907.stgit@bling.home>
+References: <20120511222148.30496.68571.stgit@bling.home> <20120511225636.30496.26907.stgit@bling.home>
+From: Bjorn Helgaas <bhelgaas@google.com>
+Date: Mon, 14 May 2012 15:20:40 -0600
+Message-ID: <CAErSpo6-Oy6eTgUBNRfM3HwFSLpDXJt3K1N0DKFpyYsNiSxwRQ@mail.gmail.com>
+Subject: Re: [PATCH 10/13] pci: export pci_user functions for use by other drivers
+To: Alex Williamson <alex.williamson@redhat.com>
+Cc: benh@kernel.crashing.org, aik@ozlabs.ru, david@gibson.dropbear.id.au,
+        joerg.roedel@amd.com, dwmw2@infradead.org, chrisw@sous-sol.org,
+        agraf@suse.de, benve@cisco.com, aafabbri@cisco.com,
+        B08248@freescale.com, B07421@freescale.com, avi@redhat.com,
+        konrad.wilk@oracle.com, kvm@vger.kernel.org, qemu-devel@nongnu.org,
+        iommu@lists.linux-foundation.org, linux-pci@vger.kernel.org,
+        linux-kernel@vger.kernel.org, gregkh@linuxfoundation.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, May 14, 2012 at 03:08:57PM -0500, Mario Limonciello wrote:
-> 
-> On 05/14/2012 02:37 PM, Matthew Garrett wrote:
-> >What does "Improper BIOS interaction" mean? What's the proper BIOS interaction?
-> These platforms are not obeying the smbios interface specs for turning on and off radios.  It's not currently expected that the interaction will improve during the lifetime of these platforms.  If it does, then this can be adjusted to only apply to the BIOS versions before the fix.
+> diff --git a/include/linux/pci.h b/include/linux/pci.h
+> index dc25da3..b437225 100644
+> --- a/include/linux/pci.h
+> +++ b/include/linux/pci.h
+> @@ -770,6 +770,14 @@ static inline int pci_write_config_dword(const struct pci_dev *dev, int where,
+>        return pci_bus_write_config_dword(dev->bus, dev->devfn, where, val);
+>  }
+>
+> +/* user-space driven config access */
+> +extern int pci_user_read_config_byte(struct pci_dev *dev, int where, u8 *val);
+> +extern int pci_user_read_config_word(struct pci_dev *dev, int where, u16 *val);
+> +extern int pci_user_read_config_dword(struct pci_dev *dev, int where, u32 *val);
+> +extern int pci_user_write_config_byte(struct pci_dev *dev, int where, u8 val);
+> +extern int pci_user_write_config_word(struct pci_dev *dev, int where, u16 val);
+> +extern int pci_user_write_config_dword(struct pci_dev *dev, int where, u32 val);
 
-Ok, pretty bored of this at this point. If the bios interface is 
-unreliable then I'll just remove the rfkill support. I'm not going to 
-continue adding machines to a blacklist some time after users find 
-things are broken.
+If you repost this, can you remove the externs when you move these
+declarations?  I know the file's currently a random mix, but we might
+as well make a tiny improvement.
 
-Is this just as broken under Windows?
+Looks fine to me otherwise, and if you don't have any other reason to
+update this series, don't worry about it.
 
--- 
-Matthew Garrett | mjg59@srcf.ucam.org
+Acked-by: Bjorn Helgaas <bhelgaas@google.com>
+
+>  int __must_check pci_enable_device(struct pci_dev *dev);
+>  int __must_check pci_enable_device_io(struct pci_dev *dev);
+>  int __must_check pci_enable_device_mem(struct pci_dev *dev);
+>
