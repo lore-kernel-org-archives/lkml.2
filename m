@@ -1,89 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755425Ab2ENI5X (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 May 2012 04:57:23 -0400
-Received: from moutng.kundenserver.de ([212.227.17.10]:63395 "EHLO
+	id S1755265Ab2ENI75 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 May 2012 04:59:57 -0400
+Received: from moutng.kundenserver.de ([212.227.17.9]:59931 "EHLO
 	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754863Ab2ENI5V (ORCPT
+	with ESMTP id S1751027Ab2ENI74 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 May 2012 04:57:21 -0400
+	Mon, 14 May 2012 04:59:56 -0400
 From: Arnd Bergmann <arnd@arndb.de>
-To: Sascha Hauer <s.hauer@pengutronix.de>
-Subject: Re: Making ARM multiplatform kernels DT-only?
-Date: Mon, 14 May 2012 08:54:18 +0000
+To: Felipe Contreras <felipe.contreras@gmail.com>
+Subject: Re: Big I/O latencies, except when iotop is hooked
+Date: Mon, 14 May 2012 08:59:52 +0000
 User-Agent: KMail/1.12.2 (Linux/3.4.0-rc3; KDE/4.3.2; x86_64; ; )
-Cc: linux-arm-kernel@lists.infradead.org, Kukjin Kim <kgene.kim@samsung.com>,
-        linaro-dev@lists.linaro.org, Jason Cooper <jason@lakedaemon.net>,
-        Nicolas Pitre <nico@fluxnic.net>, Tony Lindgren <tony@atomide.com>,
-        Nicolas Ferre <nicolas.ferre@atmel.com>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Magnus Damm <magnus.damm@gmail.com>, linux-kernel@vger.kernel.org,
-        Haojian Zhuang <haojian.zhuang@gmail.com>,
-        Deepak Saxena <dsaxena@linaro.org>, Olof Johansson <olof@lixom.net>,
-        "Russell King - ARM Linux" <linux@arm.linux.org.uk>,
-        David Brown <davidb@codeaurora.org>, shawn.guo@linaro.org,
-        "Jean-Christophe PLAGNIOL-VILLARD" <plagnioj@jcrosoft.com>
-References: <201205031350.35476.arnd@arndb.de> <20120505080936.GP4141@pengutronix.de> <201205051317.40357.arnd@arndb.de>
-In-Reply-To: <201205051317.40357.arnd@arndb.de>
+Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+References: <CAMP44s2eVtquLoB6Zjbs4nGVKP6e=Dxse4uicL4s8vmrFeJdTQ@mail.gmail.com> <CAMP44s1anUhxRqvdEVYdvu9+xedoQmRiEOHii3yaJQWfM2zauA@mail.gmail.com> <201205101049.58818.arnd@arndb.de>
+In-Reply-To: <201205101049.58818.arnd@arndb.de>
 MIME-Version: 1.0
 Content-Type: Text/Plain;
-  charset="iso-8859-1"
+  charset="utf-8"
 Content-Transfer-Encoding: 7bit
-Message-Id: <201205140854.18335.arnd@arndb.de>
-X-Provags-ID: V02:K0:BPhaqZGr8olHTVIUCQvFYqeisU/1G5Ge4IfBMz6q7Ix
- ofHUps8uiXbu3qLgtt6w9XL1Be+FucWg1O+jqCbkiTjHqTC7fu
- 9iUhYNarlUq8yw8NmLA3HZsX0NnPl3SAAbsQzzpPYh9JL5i3JQ
- AWUDxoFL/8UcHCDf56HemQAGBXGebbJz/mioEfMGgXtGxLYHDn
- FE6U2LP6Br00yQAy0iR/pSWaWVxqINrSwrq+O3oB6CTRDSP/pY
- sseHLrfgrgLAHRPDlqijjxI7i/Ddwmx7P8KboJhmKdBXCLXxXk
- XA91yuDiMj1UA2Tkcv8aEbX5RQcQuvftnvGJ8AffVPtgeBiICA
- DJL43IRaD1g4yISNMeYo=
+Message-Id: <201205140859.52921.arnd@arndb.de>
+X-Provags-ID: V02:K0:nCVHGGXnoz8UIBOnNBQ96YsoNRjDrPtNzYyvvcuscOX
+ euRezi6Mu1E/vIJ1aAWyXQ5Ym/qV/TqhnRx0G6ay55E8z04XVe
+ p+6aPvr4MErCPn1wcbdaNxuJu+Tv1JdTJzd0YtvUOpq8qSkhen
+ Qg/ePlni2DDB+xN2Q853OED3Hh2Xv7Pk+nXjNgHhLCYS0QogH0
+ TLfK8X2qMT19LcJ0bfbAwsNNsYzJXqTOuaGqxChkmc7ZThg9fo
+ KTbrn1FtvgTpJvs3Xaqsnt+YOPlHvO8IcvUTsO0Ck2p79LOdFY
+ 5A0VApRU5jqKp8oMIPNIo/XMlReZGfEBsUOgvhAL77ECKaAz/u
+ kZm+fcIVRbuE0m4JwCtY=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Saturday 05 May 2012, Arnd Bergmann wrote:
+On Thursday 10 May 2012, Arnd Bergmann wrote:
+> 176 is extremely bad, yes. A good value would be between 1 and 3.
+> The algorithm is probably not 'la' but 'dl' and the page size (-b)
+> could be smaller -- you have to test by passing '--blocksize=1024' to
+> the --open-au test and see where it starts getting drastically
+> smaller (if 4KB gives you about half the throughput of 8KB,
+> 8KB is the page size). Those two can make the result better.
+> 
+> As I said, the erase block size is more likely to be 4MB, which
+> will make the flashsim result worse.
+> 
+> Does flashsim give a better number for a trace taken with iotop
+> running?
+> 
+> Can you send me or upload that iolog file?
 
-> From the statements made so far, I can see no clear policy that we can
-> apply to everyone. My take on this is that for any work I spend on
-> multiplatform kernel, I concentrate on the DT-based board files and
-> get them to work together first, but leave it up to the individual
-> subarch maintainers whether they want to add other board files into
-> the mix.
+Hi Felipe,
 
-A small update that I already posted as a comment in the lwn article
-covering this discussion:
+Any update? I'd really be interested in the trace file so that we
+can look at data of a real-world case that hurts. I've discussed
+your problem in the Linaro storage team meeting, and the question
+came up whether this only happens with encryption enabled.
 
-| Over the last week, I've actually tried out building kernels for
-| multiple platforms combined to get a better feeling for the remaining
-| problems. The result is in the testing/multiplatform branch of
-| git://git.kernel.org/pub/scm/linux/kernel/git/arm/arm-soc.git and it
-| can build arbitrary combinations of four of the five subarchitectures
-| that the Linaro organization is most interested in (imx, omap, ux500 and
-| vexpress, but not exynos for now). Most other platforms should actually
-| be simpler to convert.
-| 
-| However, this kernel is not yet going to be useful on real hardware
-| because I had to disable or add hacks for a number of features (SMP,
-| sparseirq, clocks) that are still being worked on, but as soon as one
-| oatform has all that work done, we can actually build a kernel with
-| everything enabled and run on that particular platform and see what
-| else breaks.
-|
-| Unlike I suggested earlier, this kernel at the moment actually allows
-| enabling all the board files including non-DT ones because that was
-| easier to do with the Kconfig dependencies, but I found two real technical
-| issues that would be solved by making the combined kernel DT-only:
-|
-| 1. The exynos platform defines static platform devices from files
-| shared with five other Samsung platforms that are mutually exclusive
-| because the device definitions depend on platform specific compile-time
-| constants. Using DT probing we can just drop those static platform device
-| definitions and make the conflict go away.
-|
-| 2. With sparse IRQs, a lot of the hardcoded interrupt numbers in static
-| platform device definitions are broken, while the definitions from DT
-| still work. Sparse IRQs are currently needed to build multiplatform
-| kernels and I expect that requirement to stay.
+Which kind of encryption method do you actually use? Depending
+on how the encryption is implemented, two things could possibly
+go wrong that would not happen without it:
+
+* A superblock is added to the partition that contains some metadata
+relating to the encryption, so all data is offset by a few sectors,
+turning a perfectly aligned partition into a misaligned one.
+
+* All write accesses are sent as 4kb operations to the device rather
+than getting at least flash-page-sized (e.g. 16kb) I/O most of the
+time.
 
 	Arnd
