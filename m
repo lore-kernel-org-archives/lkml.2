@@ -1,74 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932643Ab2ENWlK (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 May 2012 18:41:10 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:36128 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753112Ab2ENWlH (ORCPT
+	id S1758158Ab2ENWlg (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 May 2012 18:41:36 -0400
+Received: from e35.co.us.ibm.com ([32.97.110.153]:51194 "EHLO
+	e35.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756759Ab2ENWlf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 May 2012 18:41:07 -0400
+	Mon, 14 May 2012 18:41:35 -0400
+Date: Mon, 14 May 2012 15:41:23 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Tejun Heo <tj@kernel.org>
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] workqueue: skip nr_running sanity check in
+ worker_enter_idle() if trustee is active
+Message-ID: <20120514224123.GO2441@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <20120506153814.GA25681@linux.vnet.ibm.com>
+ <20120507194042.GG19417@google.com>
+ <20120507205516.GD21152@linux.vnet.ibm.com>
+ <20120507213449.GM19417@google.com>
+ <20120514221250.GA8414@google.com>
 MIME-Version: 1.0
-In-Reply-To: <CAMLZHHTM6fojwcPAeyL07hz9U=7uNnxnwxm4kWY_-ffOtHm=vQ@mail.gmail.com>
-References: <CAMLZHHTM6fojwcPAeyL07hz9U=7uNnxnwxm4kWY_-ffOtHm=vQ@mail.gmail.com>
-Date: Mon, 14 May 2012 16:41:07 -0600
-X-Google-Sender-Auth: dF50ufuoQ-iM_fG8OodZuKTxxHk
-Message-ID: <CAMLZHHToiBUw-pTm6R=EZ5mHK5B55Y6arqdqDn-tzLicEdwMjA@mail.gmail.com>
-Subject: Re: Hang while loading firmware when going into suspend
-From: Daniel Drake <dsd@laptop.org>
-To: "Rafael J. Wysocki" <rjw@sisk.pl>,
-        Linux PM list <linux-pm@vger.kernel.org>, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120514221250.GA8414@google.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 12051422-6148-0000-0000-000005D5A42E
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On Mon, May 14, 2012 at 03:12:50PM -0700, Tejun Heo wrote:
+> >From 544ecf310f0e7f51fa057ac2a295fc1b3b35a9d3 Mon Sep 17 00:00:00 2001
+> From: Tejun Heo <tj@kernel.org>
+> Date: Mon, 14 May 2012 15:04:50 -0700
+> 
+> worker_enter_idle() has WARN_ON_ONCE() which triggers if nr_running
+> isn't zero when every worker is idle.  This can trigger spuriously
+> while a cpu is going down due to the way trustee sets %WORKER_ROGUE
+> and zaps nr_running.
+> 
+> It first sets %WORKER_ROGUE on all workers without updating
+> nr_running, releases gcwq->lock, schedules, regrabs gcwq->lock and
+> then zaps nr_running.  If the last running worker enters idle
+> inbetween, it would see stale nr_running which hasn't been zapped yet
+> and trigger the WARN_ON_ONCE().
+> 
+> Fix it by performing the sanity check iff the trustee is idle.
+> 
+> Signed-off-by: Tejun Heo <tj@kernel.org>
+> Reported-by: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+> Cc: stable@vger.kernel.org
+> ---
+> Sorry about the delay.  After scratching my head quite a bit, I found
+> where during cpu-offlining such discrepancy may happen.  I'm fairly
+> sure this is it but I might be wrong, so please include this patch in
+> your test setup and let me know how it goes.
 
-On Thu, Apr 26, 2012 at 1:15 PM, Daniel Drake <dsd@laptop.org> wrote:
-> I can easily reproduce a hang related to loading firmware
-> (asynchronously) while going into suspend.
->
-> This is running on kernel 3.3.3.
->
-> I run:
->
-> echo mem > /sys/power/state; echo mem > /sys/power/state
->
-> i.e. I tell the system to suspend, and when I wake it up it will go
-> very quickly into suspend again.
->
-> After waking up, it will start to re-detect the libertas SDIO wifi
-> card which was completely powered down during suspend.
-> This triggers a firmware loading sequence.
-> However, the system then immediately goes into suspend, and at this
-> point the system becomes unhappy.
+Thank you -- I have applied it, and will let you know how it goes.
 
-We're still suffering from this issue.
+							Thanx, Paul
 
-As far as I can see there are 2 items in question:
+> Thank you.
+> 
+>  kernel/workqueue.c |    9 +++++++--
+>  1 files changed, 7 insertions(+), 2 deletions(-)
+> 
+> diff --git a/kernel/workqueue.c b/kernel/workqueue.c
+> index 211eadb..c36c86c 100644
+> --- a/kernel/workqueue.c
+> +++ b/kernel/workqueue.c
+> @@ -1213,8 +1213,13 @@ static void worker_enter_idle(struct worker *worker)
+>  	} else
+>  		wake_up_all(&gcwq->trustee_wait);
+> 
+> -	/* sanity check nr_running */
+> -	WARN_ON_ONCE(gcwq->nr_workers == gcwq->nr_idle &&
+> +	/*
+> +	 * Sanity check nr_running.  Because trustee releases gcwq->lock
+> +	 * between setting %WORKER_ROGUE and zapping nr_running, the
+> +	 * warning may trigger spuriously.  Check iff trustee is idle.
+> +	 */
+> +	WARN_ON_ONCE(gcwq->trustee_state == TRUSTEE_DONE &&
+> +		     gcwq->nr_workers == gcwq->nr_idle &&
+>  		     atomic_read(get_gcwq_nr_running(gcwq->cpu)));
+>  }
+> 
+> -- 
+> 1.7.7.3
+> 
 
-1. If a firmware load is in-progress as the system goes into suspend,
-the relevant userspace processes get frozen and then we have to wait
-for the timeout - the firmware loader in the kernel doesn't do
-anything special on this important event.
-
-2. There are no safety traps for if a new firmware load request
-happens while the system is being suspended with userspace processes
-already frozen. Then we have to wait for another timeout.
-
-
-Do you have any suggested approaches to solve this?
-
-I'm wondering if this is appropriate: firmware_class should add a
-pm_notifier so that it is notified when the system is going into
-suspend. It would set an internal flag noting that the system is
-suspending, and then it can call fw_load_abort() on any active
-firmware loads, making them fail immediately.
-_request_firmware() would check the internal flag when it is called,
-immediately returning failure -ENODATA (?) when the system is going
-into suspend.
-
-Does this sound reasonable or should I be looking for another approach?
-
-Thanks,
-Daniel
