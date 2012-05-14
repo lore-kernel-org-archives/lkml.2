@@ -1,120 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754316Ab2ENGhL (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 May 2012 02:37:11 -0400
-Received: from webbox1416.server-home.net ([77.236.96.61]:48476 "EHLO
-	webbox1416.server-home.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753659Ab2ENGhJ convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 May 2012 02:37:09 -0400
-From: Alexander Stein <alexander.stein@systec-electronic.com>
-To: =?ISO-8859-1?Q?Jean=2DFran=E7ois?= Dagenais 
-	<jeff.dagenais@gmail.com>
-Cc: sameo@linux.intel.com, denis@compulab.co.il, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] mfd: lpc_sch - tolerate f/w disabled WDT
-Date: Mon, 14 May 2012 08:37:06 +0200
-Message-ID: <267400469.LKDqnsFUgu@ws-stein>
-User-Agent: KMail/4.8.0 (Linux/3.2.12-gentoo; KDE/4.8.1; x86_64; ; )
-In-Reply-To: <1336763722-11535-1-git-send-email-jeff.dagenais@gmail.com>
-References: <1336763722-11535-1-git-send-email-jeff.dagenais@gmail.com>
+	id S1754353Ab2ENGqY (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 May 2012 02:46:24 -0400
+Received: from e28smtp07.in.ibm.com ([122.248.162.7]:48757 "EHLO
+	e28smtp07.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753263Ab2ENGqX (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 14 May 2012 02:46:23 -0400
+Date: Mon, 14 May 2012 14:46:15 +0800
+From: Richard Yang <weiyang@linux.vnet.ibm.com>
+To: Yinghai Lu <yinghai@kernel.org>
+Cc: Richard Yang <weiyang@linux.vnet.ibm.com>, linux-pci@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: One problem in reassign pci bus number?
+Message-ID: <20120514064615.GB26605@richard>
+Reply-To: Richard Yang <weiyang@linux.vnet.ibm.com>
+References: <20120410090306.GA7056@richard>
+ <20120422155202.GA13540@richard>
+ <4F95B17B.3030401@redhat.com>
+ <20120514015536.GA3331@richard>
+ <CAE9FiQUjxH+LWy2zbbL6TVQSMZ44i9grFBZf0ZZQFPEWRKANMw@mail.gmail.com>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8BIT
-Content-Type: text/plain; charset="iso-8859-1"
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <CAE9FiQUjxH+LWy2zbbL6TVQSMZ44i9grFBZf0ZZQFPEWRKANMw@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+x-cbid: 12051406-8878-0000-0000-000002713600
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday 11 May 2012 15:15:22, Jean-François Dagenais wrote:
-> (Observed while running on Kontron nano-TT module.)
-> 
-> Certain BIOS/boot firmware may disable the tunnelcreek watchdog. Perhaps
-> because the mainboard or module provides it's own watchdog mechanism. In these
-> cases, lpc_sch should just go on and still provide the rest of the cells
-> it declares (GPIO and SMBus). The same logic could be applied to the other
-> resources, but I'll leave it to others to decide that.
-> 
-> This change makes the probe function tolerate the I/O range being disabled,
-> but not if the base address inside the register is not configured.
-> 
-> Cc: Alexander Stein <alexander.stein@systec-electronic.com>
-> Cc: Denis Turischev <denis@compulab.co.il>
-> Signed-off-by: Jean-François Dagenais <jeff.dagenais@gmail.com>
-> ---
->  drivers/mfd/lpc_sch.c |   39 ++++++++++++++++++++-------------------
->  1 files changed, 20 insertions(+), 19 deletions(-)
-> 
-> diff --git a/drivers/mfd/lpc_sch.c b/drivers/mfd/lpc_sch.c
-> index ea1169b..6621cd3 100644
-> --- a/drivers/mfd/lpc_sch.c
-> +++ b/drivers/mfd/lpc_sch.c
-> @@ -127,26 +127,27 @@ static int __devinit lpc_sch_probe(struct pci_dev *dev,
->  
->  	if (id->device == PCI_DEVICE_ID_INTEL_ITC_LPC) {
->  		pci_read_config_dword(dev, WDTBASE, &base_addr_cfg);
-> -		if (!(base_addr_cfg & (1 << 31))) {
-> -			dev_err(&dev->dev, "Decode of the WDT I/O range disabled\n");
-> -			ret = -ENODEV;
-> -			goto out_dev;
-> +		if (base_addr_cfg & (1 << 31)) {
-> +			base_addr = (unsigned short)base_addr_cfg;
-> +			if (base_addr == 0) {
-> +				dev_err(&dev->dev,
-> +					"I/O space for WDT uninitialized\n");
-> +				ret = -ENODEV;
-> +				goto out_dev;
-> +			}
-> +
-> +			wdt_sch_resource.start = base_addr;
-> +			wdt_sch_resource.end = base_addr + WDT_IO_SIZE - 1;
-> +
-> +			for (i = 0; i < ARRAY_SIZE(tunnelcreek_cells); i++)
-> +				tunnelcreek_cells[i].id = id->device;
-> +
-> +			ret = mfd_add_devices(&dev->dev, 0, tunnelcreek_cells,
-> +				ARRAY_SIZE(tunnelcreek_cells), NULL, 0);
-> +		} else {
-> +			dev_warn(&dev->dev, "Decode of the WDT I/O range disabled, tunnelcreek watchdog timer maybe disabled by firmware or BIOS");
-> +			return 0;
+On Sun, May 13, 2012 at 10:40:41PM -0700, Yinghai Lu wrote:
+>On Sun, May 13, 2012 at 6:55 PM, Richard Yang
+><weiyang@linux.vnet.ibm.com> wrote:
+>> On Mon, Apr 23, 2012 at 03:46:03PM -0400, Don Dutile wrote:
+>>>On 04/22/2012 11:52 AM, Richard Yang wrote:
+>>>>All,
+>>>>
+>>>>I am reading the pci_scan_bridge() and not sure what will happen in
+>>>>following situation.
+>>>>
+>>>>Suppose the kernel is not passed the pci=assign-busses.
+>>>>
+>>>>Below is a picture about the pci system.
+>>>>
+>>>>                    +-------+
+>>>>                    |       | root bridge(0,255)
+>>>>                    +---+---+
+>>>>                        |          Bus 0
+>>>>       -----+-----------+------------------------------+--
+>>>>            |                                          |
+>>>>            |                                          |
+>>>>            |                                          |
+>>>>       +----+----+                               +-----+-----+
+>>>>       |         |  B1(1,15)                     |           |B2(16,28)
+>>>>       +----+----+                               +-----+-----+
+>>>>            |  Bus 1                                   |    Bus 16
+>>>>       -----+-----------------------         ----------+----------------
+>>>>                             |
+>>>>                        +----+----+
+>>>>                        |         | B3
+>>>>                        +---------+
+>>>>
+>>>>Suppose B1 and B2 works fine with the BIOS, which get the right bus
+>>>>number and range.
+>>>>
+>>>>B3 does not works fine with the BIOS, which doesn't get the bus number.
+>>>>
+>>>>So in pci_scan_bridge(), B3 will be met in the second pass and get bus
+>>>>number 16?
+>>>
+>> Yinghai,
+>>
+>> Take my original question.
+>>
+>> B3 doesn't get the bus number, which its parent doesn't have free bus
+>> number and there is no gap between B1 and B2.
+>>
+>> So in this case, the probe_resource() can't find bus number for B3.
+>> Then cause pci_bridge_probe_busn_res() return non-zero.
+>>
+>> Then B3 couldn't work fine?
+>
+>B3 is on Bus 1? B3 is the one of bridges on Bus1?
+No,  I omit other bridges on Bus#1.
+They will occupy bus number 2-15, which is calculated by BIOS and set to
+bridge's configuration space.
+>
+>if B3 is only bridge on Bus1, it probe_resource should return [2,15]
+>at first, and then scan B3.
+>
+>Yinghai
 
-Are you sure this is return is correct? I think as long as the watchdog is the last device in this probe it should be fine.
-But not if any other device is added below later.
-
->  		}
-> -		base_addr = (unsigned short)base_addr_cfg;
-> -		if (base_addr == 0) {
-> -			dev_err(&dev->dev, "I/O space for WDT uninitialized\n");
-> -			ret = -ENODEV;
-> -			goto out_dev;
-> -		}
-> -
-> -		wdt_sch_resource.start = base_addr;
-> -		wdt_sch_resource.end = base_addr + WDT_IO_SIZE - 1;
-> -
-> -		for (i = 0; i < ARRAY_SIZE(tunnelcreek_cells); i++)
-> -			tunnelcreek_cells[i].id = id->device;
-> -
-> -		ret = mfd_add_devices(&dev->dev, 0, tunnelcreek_cells,
-> -			ARRAY_SIZE(tunnelcreek_cells), NULL, 0);
->  	}
->  
->  	return ret;
-> 
-
-Despite that:
-Acked-By: Alexander Stein <alexander.stein@systec-electronic.com>
-
-Regards,
-Alexander
 -- 
-Dipl.-Inf. Alexander Stein
+Richard Yang
+Help you, Help me
 
-SYS TEC electronic GmbH
-August-Bebel-Str. 29
-D-07973 Greiz
-
-Tel: +49-3661-6279-0, Fax: +49-3661-6279-99
-eMail:    Alexander.Stein@systec-electronic.com
-Internet: http://www.systec-electronic.com
-
-Managing Director: Dipl.-Phys. Siegmar Schmidt
-Commercial registry: Amtsgericht Jena, HRB 205563
