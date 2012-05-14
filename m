@@ -1,64 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932314Ab2ENUEE (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 May 2012 16:04:04 -0400
-Received: from iolanthe.rowland.org ([192.131.102.54]:49462 "HELO
-	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S932304Ab2ENUEA (ORCPT
+	id S932281Ab2ENUHH (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 May 2012 16:07:07 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:64882 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757449Ab2ENUHE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 May 2012 16:04:00 -0400
-Date: Mon, 14 May 2012 16:03:59 -0400 (EDT)
-From: Alan Stern <stern@rowland.harvard.edu>
-X-X-Sender: stern@iolanthe.rowland.org
-To: Greg KH <gregkh@linuxfoundation.org>
-cc: Tejun Heo <tj@kernel.org>, "Eric W. Biederman" <ebiederm@xmission.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Kernel development list <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] sysfs: get rid of some lockdep false positives
-In-Reply-To: <20120514191853.GA4344@kroah.com>
-Message-ID: <Pine.LNX.4.44L0.1205141553290.1699-100000@iolanthe.rowland.org>
+	Mon, 14 May 2012 16:07:04 -0400
+Date: Mon, 14 May 2012 13:06:59 -0700
+From: Greg KH <gregkh@linuxfoundation.org>
+To: Dan Magenheimer <dan.magenheimer@oracle.com>
+Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org, ngupta@vflare.org, konrad.wilk@oracle.com,
+        sjenning@linux.vnet.ibm.com
+Subject: Re: [PATCH] ramster: switch over to zsmalloc and crypto interface
+Message-ID: <20120514200659.GA15604@kroah.com>
+References: <1336676781-8571-1-git-send-email-dan.magenheimer@oracle.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <1336676781-8571-1-git-send-email-dan.magenheimer@oracle.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 14 May 2012, Greg KH wrote:
-
-> > ---
-> > 
-> >  drivers/usb/core/sysfs.c |    6 +++---
-> >  fs/sysfs/dir.c           |   31 ++++++++++++++++++++++++++-----
-> >  include/linux/device.h   |    3 +++
-> >  include/linux/sysfs.h    |   12 ++++++++++++
-> >  4 files changed, 44 insertions(+), 8 deletions(-)
-> > 
-> > Index: usb-3.4/include/linux/sysfs.h
-> > ===================================================================
-> > --- usb-3.4.orig/include/linux/sysfs.h
-> > +++ usb-3.4/include/linux/sysfs.h
+On Thu, May 10, 2012 at 12:06:21PM -0700, Dan Magenheimer wrote:
+> RAMster does many zcache-like things.  In order to avoid major
+> merge conflicts at 3.4, ramster used lzo1x directly for compression
+> and retained a local copy of xvmalloc, while zcache moved to the
+> new zsmalloc allocator and the crypto API.
 > 
-> Just a note about this patch, from a meta-point of view (I have no
-> objection to the patch at all, I'll go apply it in a bit.)
+> This patch moves ramster forward to use zsmalloc and crypto.
 > 
-> You do use git to generate these patches, right?  Or are you using
-> something else?  The "Index:" lines seem odd, like cvs things.
+> Signed-off-by: Dan Magenheimer <dan.magenheimer@oracle.com>
 
-No, I use quilt, with QUILT_REFRESH_ARGS set to "--diffstat 
---no-timestamps -p1" in my .quiltrc file.  There's an option to 
-suppress the Index: lines but I never bothered to set it.
+I finally enabled building this one (didn't realize it required ZCACHE
+to be disabled, I can only build one or the other), and I noticed after
+this patch the following warnings in my build:
 
-> Also, I just learned about the '--3way' option to 'git am', which, when
-> I have merge problems with a patch (like, for example this one, which
-> had rejects in the device.h portion), should be able to help me out, if
-> you used git to generate the patch.
-> 
-> But, if you don't use git, no problems, I was just curious as to what
-> was creating the "Index:" lines.
+drivers/staging/ramster/zcache-main.c:950:13: warning: ‘zcache_do_remotify_ops’ defined but not used [-Wunused-function]
+drivers/staging/ramster/zcache-main.c:1039:13: warning: ‘ramster_remotify_init’ defined but not used [-Wunused-function]
+drivers/staging/ramster/zcache-main.c: In function ‘zcache_put’:
+drivers/staging/ramster/zcache-main.c:1594:4: warning: ‘page’ may be used uninitialized in this function [-Wuninitialized]
+drivers/staging/ramster/zcache-main.c:1536:8: note: ‘page’ was declared here
 
-They are added explicitly by /usr/share/quilt/scripts/patchfns -- grep
-for "Index:".  I don't know why quilt adds those lines, though.  
-Trying to resemble cvs output, maybe?
+Care to please fix them up?
 
-Alan Stern
+thanks,
 
+greg k-h
