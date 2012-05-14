@@ -1,65 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752307Ab2ENQiI (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 May 2012 12:38:08 -0400
-Received: from hqemgate03.nvidia.com ([216.228.121.140]:19474 "EHLO
-	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750904Ab2ENQiG (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 May 2012 12:38:06 -0400
-X-PGP-Universal: processed;
-	by hqnvupgp06.nvidia.com on Mon, 14 May 2012 09:38:01 -0700
-Message-ID: <4FB133E5.30301@nvidia.com>
-Date: Mon, 14 May 2012 22:03:41 +0530
-From: Laxman Dewangan <ldewangan@nvidia.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101208 Thunderbird/3.1.7
+	id S1752723Ab2ENQjT (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 May 2012 12:39:19 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:45899 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751376Ab2ENQjS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 14 May 2012 12:39:18 -0400
+Date: Mon, 14 May 2012 18:39:16 +0200
+From: Michal Hocko <mhocko@suse.cz>
+To: Hugh Dickins <hughd@google.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Konstantin Khlebnikov <khlebnikov@openvz.org>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Johannes Weiner <hannes@cmpxchg.org>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 3/3] mm/memcg: apply add/del_page to lruvec
+Message-ID: <20120514163916.GD22629@tiehlicka.suse.cz>
+References: <alpine.LSU.2.00.1205132152530.6148@eggly.anvils>
+ <alpine.LSU.2.00.1205132201210.6148@eggly.anvils>
 MIME-Version: 1.0
-To: Axel Lin <axel.lin@gmail.com>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Liam Girdwood <lrg@ti.com>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>
-Subject: Re: [PATCH] regulator: tps62360: Fix build error due to missing semicolon
-References: <1337011088.6054.0.camel@phoenix> <4FB12EA3.504@nvidia.com>
-In-Reply-To: <4FB12EA3.504@nvidia.com>
-Content-Type: text/plain; charset="UTF-8"; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <alpine.LSU.2.00.1205132201210.6148@eggly.anvils>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Monday 14 May 2012 09:41 PM, Laxman Dewangan wrote:
-> On Monday 14 May 2012 09:28 PM, Axel Lin wrote:
->> Fix below build error:
->>     CC [M]  drivers/regulator/tps62360-regulator.o
->> drivers/regulator/tps62360-regulator.c:351:1: error: expected ',' or ';' before 'extern'
->> make[2]: *** [drivers/regulator/tps62360-regulator.o] Error 1
->> make[1]: *** [drivers/regulator] Error 2
->> make: *** [drivers] Error 2
->>
->> Signed-off-by: Axel Lin<axel.lin@gmail.com>
->> ---
->>    drivers/regulator/tps62360-regulator.c |    2 +-
->>    1 files changed, 1 insertions(+), 1 deletions(-)
->>
->> diff --git a/drivers/regulator/tps62360-regulator.c b/drivers/regulator/tps62360-regulator.c
->> index 60765cc..82cd763 100644
->> --- a/drivers/regulator/tps62360-regulator.c
->> +++ b/drivers/regulator/tps62360-regulator.c
->> @@ -347,7 +347,7 @@ static const struct of_device_id tps62360_of_match[] = {
->>    	 { .compatible = "ti,tps62362", .data = (void *)TPS62362},
->>    	 { .compatible = "ti,tps62363", .data = (void *)TPS62363},
->>    	{},
->> -}
->> +};
->>    MODULE_DEVICE_TABLE(of, tps62360_of_match);
->>    #endif
->>
-> Really strange!! I am not getting this compilation error in my build.
->
-> Acked-by: Laxman Dewangan<ldewangan@nvidia.com>
->
-Got reproduced this error if I compile the driver as module.
-Now onwards, I will compile as y and m for any change.
-Sorry for inconvenience and thanks for fixing this.
+On Sun 13-05-12 22:02:28, Hugh Dickins wrote:
+> Take lruvec further: pass it instead of zone to add_page_to_lru_list()
+> and del_page_from_lru_list(); and pagevec_lru_move_fn() pass lruvec
+> down to its target functions.
+> 
+> This cleanup eliminates a swathe of cruft in memcontrol.c,
+> including mem_cgroup_lru_add_list(), mem_cgroup_lru_del_list() and
+> mem_cgroup_lru_move_lists() - which never actually touched the lists.
+
+Yes add_page_to_lru_list vs. mem_cgroup_lru_add_list and del variant
+were really confusing.
+
+> In their place, mem_cgroup_page_lruvec() to decide the lruvec,
+> previously a side-effect of add, and mem_cgroup_update_lru_size()
+> to maintain the lru_size stats.
+> 
+> Whilst these are simplifications in their own right, the goal is to
+> bring the evaluation of lruvec next to the spin_locking of the lrus,
+> in preparation for a future patch.
+> 
+> Signed-off-by: Hugh Dickins <hughd@google.com>
+
+I like the patch but if Konstantin has a split up version of the same
+thing I would rather see that version first.
+
+> ---
+> The horror, the horror: I have three lines of 81 columns:
+> I do think they look better this way than split up.
+
+Agreed.
 
 
+-- 
+Michal Hocko
+SUSE Labs
+SUSE LINUX s.r.o.
+Lihovarska 1060/12
+190 00 Praha 9    
+Czech Republic
