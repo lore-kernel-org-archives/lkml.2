@@ -1,55 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932423Ab2ENVeO (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 May 2012 17:34:14 -0400
-Received: from ausc60ps301.us.dell.com ([143.166.148.206]:61903 "EHLO
-	ausc60ps301.us.dell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932268Ab2ENVeN (ORCPT
+	id S932440Ab2ENVeZ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 May 2012 17:34:25 -0400
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:60920 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932268Ab2ENVeU convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 May 2012 17:34:13 -0400
-X-Greylist: delayed 581 seconds by postgrey-1.27 at vger.kernel.org; Mon, 14 May 2012 17:34:13 EDT
-X-Loopcount0: from 10.9.160.253
-Message-ID: <4FB1774D.4080106@dell.com>
-Date: Mon, 14 May 2012 16:21:17 -0500
-From: Mario Limonciello <mario_limonciello@dell.com>
-Organization: Dell Inc.
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:11.0) Gecko/20120410 Thunderbird/11.0.1
+	Mon, 14 May 2012 17:34:20 -0400
 MIME-Version: 1.0
-To: Matthew Garrett <mjg59@srcf.ucam.org>
-CC: Kamal Mostafa <kamal@canonical.com>,
-        "platform-driver-x86@vger.kernel.org" 
-	<platform-driver-x86@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] dell-laptop: rfkill blacklist Dell XPS 13z, 15z
-References: <1337023652-11661-1-git-send-email-kamal@canonical.com> <20120514193718.GA6438@srcf.ucam.org> <4FB16659.6040704@dell.com> <20120514211959.GA9394@srcf.ucam.org>
-In-Reply-To: <20120514211959.GA9394@srcf.ucam.org>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <20120512001818.GH14782@lizard>
+References: <20120512001506.GA8653@lizard>
+	<20120512001818.GH14782@lizard>
+Date: Mon, 14 May 2012 14:34:18 -0700
+X-Google-Sender-Auth: gQLX-V7DrLogSflOQhGwCPrRf48
+Message-ID: <CAGXu5jK961tGg01fHupR2kmCYvx1LGkPqT+uPZoC6g74ath_Mw@mail.gmail.com>
+Subject: Re: [PATCH 08/11] ramoops: Move to fs/pstore/ram.c
+From: Kees Cook <keescook@chromium.org>
+To: Anton Vorontsov <anton.vorontsov@linaro.org>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Colin Cross <ccross@android.com>, Arnd Bergmann <arnd@arndb.de>,
+        John Stultz <john.stultz@linaro.org>, arve@android.com,
+        Rebecca Schultz Zavin <rebecca@android.com>,
+        Jesper Juhl <jj@chaosbits.net>, Randy Dunlap <rdunlap@xenotime.net>,
+        Stephen Boyd <sboyd@codeaurora.org>, Thomas Meyer <thomas@m3y3r.de>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Marco Stornelli <marco.stornelli@gmail.com>,
+        WANG Cong <xiyou.wangcong@gmail.com>, linux-kernel@vger.kernel.org,
+        devel@driverdev.osuosl.org, linaro-kernel@lists.linaro.org,
+        patches@linaro.org, kernel-team@android.com
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-
-On 05/14/2012 04:19 PM, Matthew Garrett wrote:
-> On Mon, May 14, 2012 at 03:08:57PM -0500, Mario Limonciello wrote:
->> On 05/14/2012 02:37 PM, Matthew Garrett wrote:
->>> What does "Improper BIOS interaction" mean? What's the proper BIOS interaction?
->> These platforms are not obeying the smbios interface specs for turning on and off radios.  It's not currently expected that the interaction will improve during the lifetime of these platforms.  If it does, then this can be adjusted to only apply to the BIOS versions before the fix.
-> Ok, pretty bored of this at this point. If the bios interface is
-> unreliable then I'll just remove the rfkill support. I'm not going to
-> continue adding machines to a blacklist some time after users find
-> things are broken.
+On Fri, May 11, 2012 at 5:18 PM, Anton Vorontsov
+<anton.vorontsov@linaro.org> wrote:
+> Since ramoops was converted to pstore, it has nothing to do with character
+> devices nowadays. Instead, today it is just a RAM backend for pstore.
 >
-> Is this just as broken under Windows?
+> The patch just moves things around. There are a few changes were needed
+> because of the move:
 >
-The BIOS interface is reliable on business client (Latitude and Vostro) hardware.
+> 1. Kconfig and Makefiles fixups, of course.
+>
+> 2. In pstore/ram.c we have to play a bit with MODULE_PARAM_PREFIX, this
+>   is needed to keep user experience the same as with ramoops driver
+>   (i.e. so that ramoops.foo kernel command line arguments would still
+>   work).
+>
+> Signed-off-by: Anton Vorontsov <anton.vorontsov@linaro.org>
 
-The outliers of Inspiron and XPS don't seem to follow the interface as explicitly.  It is not broken on Windows.  I don't have an understanding why it's not, but conjecture that it's a different interface being used on these that I don't have information on yet.
+This consolidation seems good. I might prefer the move separated from
+the changes, just to make review easier, but I have no idea what
+that'll do to a bisect. :P
 
-You would be better to only match on Latitude and Vostro and anything else that people want to opt in via a paramater than to remove the interface entirely IMO.
+> --- /dev/null
+> +++ b/fs/pstore/ram.c
+
+"ram.ko" seems like an awfully generic modbule name. Should this be
+called pstore_ram.* instead, like was done for the header file?
+
+And unless anyone objects, I have no problem letting the built-in name
+change too.
+
+> --- /dev/null
+> +++ b/include/linux/pstore_ram.h
+> @@ -0,0 +1,17 @@
+> +#ifndef __RAMOOPS_H
+> +#define __RAMOOPS_H
+
+This define should probably change just to avoid confusion.
+
+-Kees
 
 -- 
-*Mario Limonciello*
-Linux Engineer
-*Dell*| OS Engineering
+Kees Cook
+Chrome OS Security
