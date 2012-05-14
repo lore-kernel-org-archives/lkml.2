@@ -1,77 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932396Ab2ENUOp (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 May 2012 16:14:45 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:58200 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932317Ab2ENUOn (ORCPT
+	id S932405Ab2ENUPM (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 May 2012 16:15:12 -0400
+Received: from oproxy8-pub.bluehost.com ([69.89.22.20]:59163 "HELO
+	oproxy8-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S932317Ab2ENUPJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 May 2012 16:14:43 -0400
-Date: Mon, 14 May 2012 13:14:38 -0700
-From: Tejun Heo <tj@kernel.org>
-To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Cc: "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        "cgroups@vger.kernel.org" <cgroups@vger.kernel.org>,
-        Michal Hocko <mhocko@suse.cz>, Johannes Weiner <hannes@cmpxchg.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Han Ying <yinghan@google.com>, Glauber Costa <glommer@parallels.com>,
-        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Hiroyuki Kamezawa <kamezawa.hiroyuki@gmail.com>,
-        Linux Kernel <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v3 4/6] memcg: move charges to root cgroup if
- use_hierarchy=0.
-Message-ID: <20120514201438.GI2366@google.com>
-References: <4FACDED0.3020400@jp.fujitsu.com>
- <4FACE0A2.30608@jp.fujitsu.com>
+	Mon, 14 May 2012 16:15:09 -0400
+Message-ID: <4FB167D8.9000905@xenotime.net>
+Date: Mon, 14 May 2012 13:15:20 -0700
+From: Randy Dunlap <rdunlap@xenotime.net>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.15) Gecko/20110323 Thunderbird/3.1.9
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4FACE0A2.30608@jp.fujitsu.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+CC: linux-next@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
+        Wim Van Sebroeck <wim@iguana.be>, linux-watchdog@vger.kernel.org
+Subject: [PATCH -next] wdt: fix iTCO printk format warnings
+References: <20120514200357.e7448e4ca061c8efe3d4757d@canb.auug.org.au>
+In-Reply-To: <20120514200357.e7448e4ca061c8efe3d4757d@canb.auug.org.au>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-Identified-User: {1807:box742.bluehost.com:xenotime:xenotime.net} {sentby:smtp auth 50.53.38.135 authed with rdunlap@xenotime.net}
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, May 11, 2012 at 06:49:22PM +0900, KAMEZAWA Hiroyuki wrote:
-> @@ -3351,9 +3339,8 @@ int mem_cgroup_move_hugetlb_parent(int idx, struct cgroup *cgroup,
->  	struct page_cgroup *pc;
->  	int csize,  ret = 0;
->  	struct res_counter *fail_res;
-> -	struct cgroup *pcgrp = cgroup->parent;
-> -	struct mem_cgroup *parent = mem_cgroup_from_cont(pcgrp);
->  	struct mem_cgroup *memcg  = mem_cgroup_from_cont(cgroup);
-> +	struct mem_cgroup *parent = parent_mem_cgroup(memcg);
->  	struct res_counter *counter;
->  
->  	if (!get_page_unless_zero(page))
-> @@ -3366,13 +3353,11 @@ int mem_cgroup_move_hugetlb_parent(int idx, struct cgroup *cgroup,
->  
->  	csize = PAGE_SIZE << compound_order(page);
->  	/* If parent->use_hierarchy == 0, we need to charge parent */
-> -	if (!parent->use_hierarchy) {
-> -		ret = res_counter_charge(&parent->hugepage[idx],
-> -					 csize, &fail_res);
-> -		if (ret) {
-> -			ret = -EBUSY;
-> -			goto err_out;
-> -		}
-> +	if (!parent) {
-> +		parent = root_mem_cgroup;
-> +		/* root has no limit */
-> +		res_counter_charge_nofail(&parent->hugepage[idx],
-> +				 csize, &fail_res);
->  	}
->  	counter = &memcg->hugepage[idx];
->  	res_counter_uncharge_until(counter, counter->parent, csize);
+From: Randy Dunlap <rdunlap@xenotime.net>
 
-This function can simply return 0 now, so no point in having int
-return.  Make it return void?
+Fix printk format warnings:
 
-Also, follow-up patches to cleanup -ENOMEM failure handling in the
-callers would be nice.
+drivers/watchdog/iTCO_wdt.c:577:3: warning: format '%04llx' expects type 'long long unsigned int', but argument 2 has type 'resource_size_t'
+drivers/watchdog/iTCO_wdt.c:594:3: warning: format '%04llx' expects type 'long long unsigned int', but argument 2 has type 'resource_size_t'
+drivers/watchdog/iTCO_wdt.c:600:2: warning: format '%04llx' expects type 'long long unsigned int', but argument 4 has type 'resource_size_t'
 
-Thanks.
+Signed-off-by: Randy Dunlap <rdunlap@xenotime.net>
+Cc:	Wim Van Sebroeck <wim@iguana.be>
+---
+ drivers/watchdog/iTCO_wdt.c |    6 +++---
+ 1 file changed, 3 insertions(+), 3 deletions(-)
 
--- 
-tejun
+--- linux-next-20120514.orig/drivers/watchdog/iTCO_wdt.c
++++ linux-next-20120514/drivers/watchdog/iTCO_wdt.c
+@@ -575,7 +575,7 @@ static int __devinit iTCO_wdt_probe(stru
+ 	if (!request_region(iTCO_wdt_private.smi_res->start,
+ 			resource_size(iTCO_wdt_private.smi_res), dev->name)) {
+ 		pr_err("I/O address 0x%04llx already in use, device disabled\n",
+-		       SMI_EN);
++		       (u64)SMI_EN);
+ 		ret = -EBUSY;
+ 		goto unmap_gcs;
+ 	}
+@@ -592,13 +592,13 @@ static int __devinit iTCO_wdt_probe(stru
+ 	if (!request_region(iTCO_wdt_private.tco_res->start,
+ 			resource_size(iTCO_wdt_private.tco_res), dev->name)) {
+ 		pr_err("I/O address 0x%04llx already in use, device disabled\n",
+-		       TCOBASE);
++		       (u64)TCOBASE);
+ 		ret = -EBUSY;
+ 		goto unreg_smi;
+ 	}
+ 
+ 	pr_info("Found a %s TCO device (Version=%d, TCOBASE=0x%04llx)\n",
+-		ich_info->name, ich_info->iTCO_version, TCOBASE);
++		ich_info->name, ich_info->iTCO_version, (u64)TCOBASE);
+ 
+ 	/* Clear out the (probably old) status */
+ 	outw(0x0008, TCO1_STS);	/* Clear the Time Out Status bit */
