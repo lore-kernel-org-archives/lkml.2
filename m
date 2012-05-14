@@ -1,40 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757118Ab2ENQs3 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 May 2012 12:48:29 -0400
-Received: from www.linutronix.de ([62.245.132.108]:52280 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754336Ab2ENQs1 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 May 2012 12:48:27 -0400
-From: Benedikt Spranger <b.spranger@linutronix.de>
-To: hjk@hansjkoch.de
-Cc: gregkh@linuxfoundation.org, linux-kernel@vger.kernel.org,
-        magnus.damm@gmail.com, Benedikt Spranger <b.spranger@linutronix.de>
-Subject: [PATCH] uio_pdrv_genirq: configure irq through platform resource
-Date: Mon, 14 May 2012 18:48:16 +0200
-Message-Id: <1337014097-5034-1-git-send-email-b.spranger@linutronix.de>
-X-Mailer: git-send-email 1.7.9.1
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+	id S1757019Ab2ENQtv (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 May 2012 12:49:51 -0400
+Received: from perches-mx.perches.com ([206.117.179.246]:42491 "EHLO
+	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1754894Ab2ENQtu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 14 May 2012 12:49:50 -0400
+Message-ID: <1337014188.29436.18.camel@joe2Laptop>
+Subject: Re: [PATCH] floppy: remove floppy-specific O_EXCL handling
+From: Joe Perches <joe@perches.com>
+To: Tejun Heo <tj@kernel.org>
+Cc: Jiri Kosina <jkosina@suse.cz>, Andrew Morton <akpm@linux-foundation.org>,
+        Jens Axboe <axboe@kernel.dk>, NeilBrown <neilb@suse.de>,
+        linux-kernel@vger.kernel.org
+Date: Mon, 14 May 2012 09:49:48 -0700
+In-Reply-To: <20120514162521.GA2366@google.com>
+References: <alpine.LNX.2.00.1205131059410.15448@pobox.suse.cz>
+	 <20120514162521.GA2366@google.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.2- 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The platform driver uio_pdrv_genirq use its own method to configure the
-interrupt number. Instead of using the common way via platform resource the
-interrupt number is passed through the platform_data. Parse also the interrupt
-resource to allow a platform device to pass the interrupt number via
-platform resource.
+On Mon, 2012-05-14 at 09:25 -0700, Tejun Heo wrote:
+> Hello,
+> 
+> On Sun, May 13, 2012 at 11:02:07AM +0200, Jiri Kosina wrote:
+> > Block layer now handles O_EXCL in a generic way for block devices.
+> > 
+> > The semantics is however different for floppy and all other block devices,
+> > as floppy driver contains its own O_EXCL handling.
+> > 
+> > The semantics for all-but-floppy bdevs is "there can be at most one O_EXCL 
+> > open of this file", while for floppy bdev the semantics is "if someone has 
+> > the bdev open with O_EXCL, noone else can open it".
+> > 
+> > Remove the floppy-specific handling and let the generic bdev code O_EXCL
+> > handling take over.
+> > 
+> > Signed-off-by: Jiri Kosina <jkosina@suse.cz>
+> 
+> Patch looks good to me but why do we want to change this at this
+> point?
 
-Benedikt Spranger (1):
-  uio_pdrv_genirq: get irq through platform resource if not set
-    otherwise
+Because the hobgoblins of consistency are as fun to hunt as the wumpus?
 
- drivers/uio/uio_pdrv_genirq.c |    8 ++++++++
- 1 files changed, 8 insertions(+), 0 deletions(-)
-
--- 
-1.7.9.1
 
