@@ -1,72 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753957Ab2ENBMj (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 13 May 2012 21:12:39 -0400
-Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:48798 "EHLO
-	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753227Ab2ENBMh (ORCPT
+	id S1753964Ab2ENB1T (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 13 May 2012 21:27:19 -0400
+Received: from mail-vb0-f46.google.com ([209.85.212.46]:44245 "EHLO
+	mail-vb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753377Ab2ENB1S convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 13 May 2012 21:12:37 -0400
-X-SecurityPolicyCheck: OK by SHieldMailChecker v1.7.4
-Message-ID: <4FB05B8F.8020408@jp.fujitsu.com>
-Date: Mon, 14 May 2012 10:10:39 +0900
-From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.0; rv:12.0) Gecko/20120428 Thunderbird/12.0.1
+	Sun, 13 May 2012 21:27:18 -0400
 MIME-Version: 1.0
-To: Andrew Morton <akpm@linux-foundation.org>
-CC: "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        "cgroups@vger.kernel.org" <cgroups@vger.kernel.org>,
-        Michal Hocko <mhocko@suse.cz>, Johannes Weiner <hannes@cmpxchg.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Han Ying <yinghan@google.com>, Glauber Costa <glommer@parallels.com>,
-        Tejun Heo <tj@kernel.org>,
-        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>,
-        Hiroyuki Kamezawa <kamezawa.hiroyuki@gmail.com>,
-        Linux Kernel <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 2/6] add res_counter_uncharge_until()
-References: <4FACDED0.3020400@jp.fujitsu.com> <4FACE01A.4040405@jp.fujitsu.com> <20120511141945.c487e94c.akpm@linux-foundation.org>
-In-Reply-To: <20120511141945.c487e94c.akpm@linux-foundation.org>
+In-Reply-To: <1336485424.10001.YahooMailClassic@web29019.mail.ird.yahoo.com>
+References: <1336465510.11954.1.camel@phoenix>
+	<1336485424.10001.YahooMailClassic@web29019.mail.ird.yahoo.com>
+Date: Mon, 14 May 2012 09:27:17 +0800
+Message-ID: <CAN1soZy-S7-TceZ2ubkU21=mXs1sb5SgjiuW9whPOw94oG6vZw@mail.gmail.com>
+Subject: Re: [PATCH] ARM: mach-pxa: Use REGULATOR_SUPPLY macro
+From: Haojian Zhuang <haojian.zhuang@gmail.com>
+To: Paul Parsons <lost.distance@yahoo.com>
+Cc: linux-kernel@vger.kernel.org, Axel Lin <axel.lin@gmail.com>,
+        Eric Miao <eric.y.miao@gmail.com>,
+        Philipp Zabel <philipp.zabel@gmail.com>,
+        Robert Jarzmik <robert.jarzmik@free.fr>,
+        Jonathan Cameron <jic23@cam.ac.uk>,
+        Marek Vasut <marek.vasut@gmail.com>,
+        linux-arm-kernel@lists.infradead.org
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(2012/05/12 6:19), Andrew Morton wrote:
+On Tue, May 8, 2012 at 9:57 PM, Paul Parsons <lost.distance@yahoo.com> wrote:
+> Hello Axel,
+>
+> --- On Tue, 8/5/12, Axel Lin <axel.lin@gmail.com> wrote:
+>>  arch/arm/mach-pxa/hx4700.c    |   13 ++++---------
+>
+> The hx4700 patch works for me on linux-3.4.0-rc6.
+>
+> Tested-by: Paul Parsons <lost.distance@yahoo.com>
+>
 
-> On Fri, 11 May 2012 18:47:06 +0900
-> KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com> wrote:
-> 
->> From: Frederic Weisbecker <fweisbec@gmail.com>
->>
->> At killing res_counter which is a child of other counter,
->> we need to do
->> 	res_counter_uncharge(child, xxx)
->> 	res_counter_charge(parent, xxx)
->>
->> This is not atomic and wasting cpu. This patch adds
->> res_counter_uncharge_until(). This function's uncharge propagates
->> to ancestors until specified res_counter.
->>
->> 	res_counter_uncharge_until(child, parent, xxx)
->>
->> Now, ops is atomic and efficient.
->>
->> Changelog since v2
->>  - removed unnecessary lines.
->>  - Fixed 'From' , this patch comes from his series. Please signed-off-by if good.
->>
->> Signed-off-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-> 
-> Frederic's Signed-off-by: is unavaliable?
-> 
+Applied
 
-I didn't add his Signed-off because I modified his orignal patch a little...
-I dropped res_counter_charge_until() because it's not used in this series,
-I have no justification for adding it.
-The idea of res_counter_uncharge_until() is from his patch.
-
-Thanks,
--Kame
-
-
+Regards
+Haojian
