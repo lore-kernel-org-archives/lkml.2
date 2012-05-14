@@ -1,139 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756782Ab2ENQrl (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 May 2012 12:47:41 -0400
-Received: from exprod6og111.obsmtp.com ([64.18.1.27]:49176 "EHLO
-	exprod6og111.obsmtp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752586Ab2ENQrk (ORCPT
+	id S1757088Ab2ENQrt (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 May 2012 12:47:49 -0400
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:33085 "EHLO
+	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1756954Ab2ENQrr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 May 2012 12:47:40 -0400
-X-Greylist: delayed 332 seconds by postgrey-1.27 at vger.kernel.org; Mon, 14 May 2012 12:47:39 EDT
-Subject: [PATCH] mm, x86, pat: Improve scaling of pat_pagerange_is_ram()
-From: John Dykstra <jdykstra@cray.com>
-To: <mingo@redhat.com>
-CC: <suresh.b.siddha@intel.com>, <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset="UTF-8"
-Date: Mon, 14 May 2012 11:41:53 -0500
-Message-ID: <1337013713.1604.1.camel@redwood>
+	Mon, 14 May 2012 12:47:47 -0400
+Date: Mon, 14 May 2012 17:47:46 +0100
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Laxman Dewangan <ldewangan@nvidia.com>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: Regmap cached only when write happen to register
+Message-ID: <20120514164746.GD25668@opensource.wolfsonmicro.com>
+References: <4FB135BB.2020001@nvidia.com>
 MIME-Version: 1.0
-X-Mailer: Evolution 2.32.2 
-Content-Transfer-Encoding: 7bit
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="TybLhxa8M7aNoW+V"
+Content-Disposition: inline
+In-Reply-To: <4FB135BB.2020001@nvidia.com>
+X-Cookie: Many pages make a thick book.
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Function pat_pagerange_is_ram() scales poorly to large address ranges,
-because it probes the resource tree for each page.  On a 2.6 GHz
-Opteron, this function consumes 34 ms. for a 1 GB range.  It is called
-twice during untrack_pfn_vma(), slowing process cleanup and handicapping
-the OOM killer.
 
-This replacement based on walk_system_ram_range() consumes less than 1
-ms. under the same conditions.
+--TybLhxa8M7aNoW+V
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-Signed-off-by: John Dykstra <jdykstra@cray.com> on behalf of Cray Inc. 
-Cc: Suresh Siddha <suresh.b.siddha@intel.com>
----
- arch/x86/mm/pat.c      |   55 ++++++++++++++++++++++++++++++-----------------
- include/linux/ioport.h |    2 +
- kernel/resource.c      |    2 +-
- 3 files changed, 38 insertions(+), 21 deletions(-)
+On Mon, May 14, 2012 at 10:11:31PM +0530, Laxman Dewangan wrote:
 
-diff --git a/arch/x86/mm/pat.c b/arch/x86/mm/pat.c
-index f6ff57b..c119afb 100644
---- a/arch/x86/mm/pat.c
-+++ b/arch/x86/mm/pat.c
-@@ -160,29 +160,44 @@ static unsigned long pat_x_mtrr_type(u64 start, u64 end, unsigned long req_type)
- 
- static int pat_pagerange_is_ram(resource_size_t start, resource_size_t end)
- {
--	int ram_page = 0, not_rampage = 0;
--	unsigned long page_nr;
-+	struct resource res;
-+	resource_size_t pg_end, after_ram;
-+	int ram = 0, not_ram = 0;
- 
--	for (page_nr = (start >> PAGE_SHIFT); page_nr < (end >> PAGE_SHIFT);
--	     ++page_nr) {
--		/*
--		 * For legacy reasons, physical address range in the legacy ISA
--		 * region is tracked as non-RAM. This will allow users of
--		 * /dev/mem to map portions of legacy ISA region, even when
--		 * some of those portions are listed(or not even listed) with
--		 * different e820 types(RAM/reserved/..)
--		 */
--		if (page_nr >= (ISA_END_ADDRESS >> PAGE_SHIFT) &&
--		    page_is_ram(page_nr))
--			ram_page = 1;
--		else
--			not_rampage = 1;
-+	res.start = start & PHYSICAL_PAGE_MASK;
- 
--		if (ram_page == not_rampage)
-+	/*
-+	 * For legacy reasons, physical address range in the legacy ISA
-+	 * region is tracked as non-RAM. This will allow users of
-+	 * /dev/mem to map portions of legacy ISA region, even when
-+	 * some of those portions are listed(or not even listed) with
-+	 * different e820 types(RAM/reserved/..)
-+	 */
-+	if (res.start < ISA_END_ADDRESS) {
-+		not_ram = 1;
-+		res.start = ISA_END_ADDRESS;
-+	}
-+
-+	pg_end = (end + PAGE_SIZE - 1) & PHYSICAL_PAGE_MASK;
-+	res.end = pg_end;
-+	res.flags = IORESOURCE_MEM | IORESOURCE_BUSY;
-+	after_ram = res.start;
-+	while ((res.start < res.end) &&
-+		(find_next_system_ram(&res, "System RAM") >= 0)) {
-+		if (res.start > after_ram)
-+			not_ram = 1;
-+		if (res.end > res.start)
-+			ram = 1;
-+
-+		if (ram && not_ram)
- 			return -1;
-+
-+		after_ram = res.end + 1;
-+		res.start = res.end + 1;
-+		res.end = pg_end;
- 	}
- 
--	return ram_page;
-+	return ram;
- }
- 
- /*
-diff --git a/include/linux/ioport.h b/include/linux/ioport.h
-index e885ba2..273a725 100644
---- a/include/linux/ioport.h
-+++ b/include/linux/ioport.h
-@@ -223,5 +223,7 @@ extern int
- walk_system_ram_range(unsigned long start_pfn, unsigned long nr_pages,
- 		void *arg, int (*func)(unsigned long, unsigned long, void *));
- 
-+extern int find_next_system_ram(struct resource *res, char *name);
-+
- #endif /* __ASSEMBLY__ */
- #endif	/* _LINUX_IOPORT_H */
-diff --git a/kernel/resource.c b/kernel/resource.c
-index 7e8ea66..dd8f553 100644
---- a/kernel/resource.c
-+++ b/kernel/resource.c
-@@ -283,7 +283,7 @@ EXPORT_SYMBOL(release_resource);
-  * the caller must specify res->start, res->end, res->flags and "name".
-  * If found, returns 0, res is overwritten, if not found, returns -1.
-  */
--static int find_next_system_ram(struct resource *res, char *name)
-+int find_next_system_ram(struct resource *res, char *name)
- {
- 	resource_size_t start, end;
- 	struct resource *p;
--- 
-1.7.0.4
+> When debugging  on register caching, found that register is getting
+> cached only when write happen to the register otherwise it will not
+> get cached even any number of read happen.
+> Is it by intended or there is opportunity to enhance it so that
+> during read also we can cache it.\?
 
+If you check -next you should find that the current code already caches
+any single register read.
 
+--TybLhxa8M7aNoW+V
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
 
+iQIcBAEBAgAGBQJPsTcrAAoJEBus8iNuMP3dhqwQAIKPCCtRkQhb+RvD3rxL2QAg
+EbEan8mrWKShr0OfMbm5fcPEPSYULRQp8bqILS9QTcCTm7cxGOvqzjq5gwazI5gY
+mdgJMtfFNy5K0jsfDohGPVrYJiMpbLcE5cVO9zcP2ibU8YBjxXPA3cXUfbszIbsa
+zcWTHMO3+xu3q+K+3XqKb6z55zce8WgWCPh8C9OM4StGJiO43k39G8/ObE5VKVxz
+t6RLG3LXp090NlMsNzaDej9CFwMCb2q/ky5LiZHh9ZJcnT3YgV4ZzI0uzkVBG1TI
+lEFrsln+VBGI3GFmjicfjEYUnJRsk3vzbnH0uLuMobUcVqd23x8kZPFf5CllJoXk
+fOlf2QQmY3QXG3JCxun7gdxiu8Vi6wxC5DhrcrryBMYto27pOpgc/jov/5fzo5Zy
+SpnQWP4eHcu+Z02NgykrkPR3DIX0oaE7Nm2IIKmE2oZ43AmNs74P44qJzNtnWvRC
+apuD/PpdVeY3+fgPg9XWeUwMJydLZDm8KZsdrFK+uStH/64wrRTx6HSeY+uCXMAq
+V9Kus7QKGtQE8LM6IptA//ZMU8zBYjVImzlL9/tP5eY/mJPVECvyiVLnmjqlSqET
+OSlOtM12irEeg+QoCtieyRwQdoFisXeqjspEuP4Sht6Ft9eQ4wroe6BoAQcLPAD3
+G2438h2I6KgiyhALKqYS
+=harJ
+-----END PGP SIGNATURE-----
+
+--TybLhxa8M7aNoW+V--
