@@ -1,76 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754478Ab2ENGvb (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 May 2012 02:51:31 -0400
-Received: from mga03.intel.com ([143.182.124.21]:50758 "EHLO mga03.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751771Ab2ENGv3 convert rfc822-to-8bit (ORCPT
+	id S1754535Ab2ENG5w (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 May 2012 02:57:52 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:62117 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754431Ab2ENG5u (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 May 2012 02:51:29 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
-   d="scan'208";a="99709118"
-From: "Du, ChangbinX" <changbinx.du@intel.com>
-To: "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>
-CC: "mina86@mina86.com" <mina86@mina86.com>,
-        "Fleming, Matt" <matt.fleming@intel.com>,
-        "balbi@ti.com" <balbi@ti.com>, "hpa@zytor.com" <hpa@zytor.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>
-Subject: [PATCH] testusb: add path /dev/bus/usb to default search paths for
- usbfs
-Thread-Topic: [PATCH] testusb: add path /dev/bus/usb to default search paths
- for usbfs
-Thread-Index: AQHNMZ2BooD2tGJJHE+2JranocONc5bI1+TQ
-Date: Mon, 14 May 2012 06:51:23 +0000
-Message-ID: <0C18FE92A7765D4EB9EE5D38D86A563A062C91@SHSMSX101.ccr.corp.intel.com>
-References: <1337021163-1487-1-git-send-email-changbinx.du@intel.com>
-In-Reply-To: <1337021163-1487-1-git-send-email-changbinx.du@intel.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.239.127.40]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
-MIME-Version: 1.0
+	Mon, 14 May 2012 02:57:50 -0400
+From: Grant Likely <grant.likely@secretlab.ca>
+Subject: Re: linux-next: build failure in Linus' tree
+To: Stephen Rothwell <sfr@canb.auug.org.au>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        "David S. Miller" <davem@davemloft.net>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Jean-Francois Dagenais <jeff.dagenais@gmail.com>
+In-Reply-To: <20120514105025.0ba1b124f5e9c192fc11e132@canb.auug.org.au>
+References: <20120514105025.0ba1b124f5e9c192fc11e132@canb.auug.org.au>
+Date: Mon, 14 May 2012 00:57:47 -0600
+Message-Id: <20120514065747.D73403E0532@localhost>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-As real device-nodes managed by udev whose nodes lived in /dev/bus/usb
-are mostly used today, let testusb tool use that directory as one default
-path make tool be more convenient to use.
+On Mon, 14 May 2012 10:50:25 +1000, Stephen Rothwell <sfr@canb.auug.org.au> wrote:
+> Hi Linus,
+> 
+> Building Linus' tree, today's linux-next build (x86_64 allmodconfig)
+> failed like this:
+> 
+> ERROR: "handle_edge_irq" [drivers/gpio/gpio-pch.ko] undefined!
+> ERROR: "irq_to_desc" [drivers/gpio/gpio-pch.ko] undefined!
+> 
+> This has been reported elsewhere by DaveM.
+> 
+> Caused by commit df9541a60af0 ("gpio: pch9: Use proper flow type handlers").
+> 
+> I have reverted that commit for today.
 
-Signed-off-by: Du Changbin <changbinx.du@intel.com>
+Gah, I tested that patch with CONFIG_GPIO_PCH=Y, but not as a module.
+I see three options here; revert the patch now and fix it up in v3.4,
+add exports for those two symbols, or disable building that code as a
+module (patch below).  Personally I prefer the third option for the
+immediate fix.
+
+g.
+
+>From 7fd0fcff9f0d65734415fed756271c1ae2267666 Mon Sep 17 00:00:00 2001
+From: Grant Likely <grant.likely@secretlab.ca>
+Date: Mon, 14 May 2012 00:52:49 -0600
+Subject: [PATCH] gpio/pch: Fix build failure when selected as a module
+
+x86_64 allmodconfig fails like this:
+
+ERROR: "handle_edge_irq" [drivers/gpio/gpio-pch.ko] undefined!
+ERROR: "irq_to_desc" [drivers/gpio/gpio-pch.ko] undefined!
+
+This patch fixes the issue by not allowing gpio-pch.c to be built as a
+module.  It can be reenabled when the core interrupt handling code
+exports the missing symbols, but that change needs some review first.
+
+Signed-off-by: Grant Likely <grant.likely@secretlab.ca>
+Cc: Thomas Gleixner <tglx@linutronix.de>
+Cc: "David S. Miller" <davem@davemloft.net>
+Cc: Stephen Rothwell <sfr@canb.auug.org.au>
 ---
- tools/usb/testusb.c |    6 ++++++
- 1 file changed, 6 insertions(+)
+ drivers/gpio/Kconfig |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/tools/usb/testusb.c b/tools/usb/testusb.c
-index 6e0f567..c6c839e 100644
---- a/tools/usb/testusb.c
-+++ b/tools/usb/testusb.c
-@@ -358,6 +358,7 @@ static const char *usbfs_dir_find(void)
- {
- 	static char usbfs_path_0[] = "/dev/usb/devices";
- 	static char usbfs_path_1[] = "/proc/bus/usb/devices";
-+	static char udev_usb_path[] = "/dev/bus/usb";
+diff --git a/drivers/gpio/Kconfig b/drivers/gpio/Kconfig
+index e03653d..db146d5 100644
+--- a/drivers/gpio/Kconfig
++++ b/drivers/gpio/Kconfig
+@@ -403,7 +403,7 @@ config GPIO_LANGWELL
+	  Say Y here to support Intel Langwell/Penwell GPIO.
  
- 	static char *const usbfs_paths[] = {
- 		usbfs_path_0, usbfs_path_1
-@@ -376,6 +377,11 @@ static const char *usbfs_dir_find(void)
- 		}
- 	} while (++it != end);
- 
-+	/* real device-nodes managed by udev */
-+	if (access(udev_usb_path, F_OK) == 0) {
-+		return udev_usb_path;
-+	}
-+
- 	return NULL;
- }
- 
+ config GPIO_PCH
+-	tristate "Intel EG20T PCH/LAPIS Semiconductor IOH(ML7223/ML7831) GPIO"
++	bool "Intel EG20T PCH/LAPIS Semiconductor IOH(ML7223/ML7831) GPIO"
+	depends on PCI && X86
+	select GENERIC_IRQ_CHIP
+	help
 -- 
 1.7.9.5
+
+
 
