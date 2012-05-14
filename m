@@ -1,71 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932487Ab2ENVxM (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 May 2012 17:53:12 -0400
-Received: from na3sys009aog112.obsmtp.com ([74.125.149.207]:51068 "EHLO
-	na3sys009aog112.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932199Ab2ENVxK (ORCPT
+	id S932491Ab2ENVzi (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 May 2012 17:55:38 -0400
+Received: from cavan.codon.org.uk ([93.93.128.6]:49382 "EHLO
+	cavan.codon.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757704Ab2ENVzg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 May 2012 17:53:10 -0400
-Date: Mon, 14 May 2012 14:53:04 -0700
-From: "Turquette, Mike" <mturquette@ti.com>
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>
-Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        Saravana Kannan <skannan@codeaurora.org>,
-        Sascha Hauer <s.hauer@pengutronix.de>, andrew@lunn.ch, rnayak@ti.com
-Subject: Re: [PATCH] clk: Constify struct clk_init_data
-Message-ID: <20120514215304.GB3075@gmail.com>
-References: <1337004763-21250-1-git-send-email-broonie@opensource.wolfsonmicro.com>
+	Mon, 14 May 2012 17:55:36 -0400
+Date: Mon, 14 May 2012 22:55:33 +0100
+From: Matthew Garrett <mjg59@srcf.ucam.org>
+To: Mario Limonciello <mario_limonciello@dell.com>
+Cc: Kamal Mostafa <kamal@canonical.com>,
+        "platform-driver-x86@vger.kernel.org" 
+	<platform-driver-x86@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] dell-laptop: rfkill blacklist Dell XPS 13z, 15z
+Message-ID: <20120514215533.GA10378@srcf.ucam.org>
+References: <1337023652-11661-1-git-send-email-kamal@canonical.com>
+ <20120514193718.GA6438@srcf.ucam.org>
+ <4FB16659.6040704@dell.com>
+ <20120514211959.GA9394@srcf.ucam.org>
+ <4FB1774D.4080106@dell.com>
+ <20120514212842.GA9561@srcf.ucam.org>
+ <4FB17DA8.1040808@dell.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <1337004763-21250-1-git-send-email-broonie@opensource.wolfsonmicro.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <4FB17DA8.1040808@dell.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: mjg59@cavan.codon.org.uk
+X-SA-Exim-Scanned: No (on cavan.codon.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, May 14, 2012 at 7:12 AM, Mark Brown <broonie@opensource.wolfsonmicro.com> wrote:
-> Allow drivers to declare their clk_init_data const, the framework really
-> shouldn't be modifying the data.
->
-> Signed-off-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
+On Mon, May 14, 2012 at 04:48:24PM -0500, Mario Limonciello wrote:
 
-+interested parties
+> The problems were exposed on newer XPS laptops because those platforms 
+> were not tested during platform development.  There really isn't a 
+> scalable way to represent whether a platform was or wasn't tested 
+> during development.  In a lot of situation things just work.  I would 
+> like to do the right thing for the users with what information and 
+> resources are available right now to put them in a better state.  An 
+> aggressive approach of not taking patches to cover a broken interface 
+> won't fix the problem of not testing machines already in the market, 
+> it will just put end users of the kernel module at a disadvantage.
 
-Mark, I like this change but it's reminded me of a few things I meant to
-bring up on the list in the past.  Certainly some folks will mark their
-struct clk_hw_init data as __initconst.  Currently none of the
-documentation mentions that fact and I'm a bit worried about clk code
-which assumes that hw->init will always be around and freely accesses
-it.
+That's why it's better to just remove the interface. Providing a feature 
+when we know it's broken on some unknown subset of hardware doesn't 
+benefit anyone. If even Dell don't have any idea which set of machines 
+it works on then how are we ever expected to make sure it's correct?
 
-I think that, as a rule, hw->init cannot be assumed to be valid after
-clk_register returns.  Would anyone else like to weigh in on it?  If so
-then I'll cook up a follow-up patch to reflect this in the kerneldoc.
+> 1) Don't blacklist any Latitude or Vostro.  These are tested during platform development.
+> 2) Leave those compal_laptop supported ones blacklisted.
+> 3) Blacklist 2010-2012 XPS.  These are currently not tested during platform development.
+> 4) If problems start to show up on Inspiron, blacklist them invidually.  These platforms are currently tested during platform development though, so hopefully issues don't crop up.
 
-Thanks,
-Mike
-
-> ---
->  include/linux/clk-provider.h |    2 +-
->  1 file changed, 1 insertion(+), 1 deletion(-)
->
-> diff --git a/include/linux/clk-provider.h b/include/linux/clk-provider.h
-> index c1c23b9..fc43ea6 100644
-> --- a/include/linux/clk-provider.h
-> +++ b/include/linux/clk-provider.h
-> @@ -143,7 +143,7 @@ struct clk_init_data {
->  */
->  struct clk_hw {
->        struct clk *clk;
-> -       struct clk_init_data *init;
-> +       const struct clk_init_data *init;
->  };
->
->  /*
-> --
-> 1.7.10
->
-
+Is this the set of criteria that the Windows tools use? If so, I'll 
+implement it. If not, then either provide the set of criteria that the 
+Windows tools use or I'll remove the interface.
+-- 
+Matthew Garrett | mjg59@srcf.ucam.org
