@@ -1,70 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753792Ab2ENBC7 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 13 May 2012 21:02:59 -0400
-Received: from beauty.rexursive.com ([150.101.121.179]:50328 "EHLO
-	beauty.rexursive.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753227Ab2ENBC6 (ORCPT
+	id S1753818Ab2ENBIv (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 13 May 2012 21:08:51 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:55801 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753227Ab2ENBIu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 13 May 2012 21:02:58 -0400
-Message-ID: <1336957376.4914.5.camel@shrek.rexursive.com>
-Subject: Re: [PATCH]: In kernel hibernation, suspend to both
-From: Bojan Smojver <bojan@rexursive.com>
-To: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-Cc: "Rafael J. Wysocki" <rjw@sisk.pl>,
-        Linux PM list <linux-pm@vger.kernel.org>, linux-kernel@vger.kernel.org,
-        bp@alien8.de
-Date: Mon, 14 May 2012 11:02:56 +1000
-In-Reply-To: <4FB044A6.7090108@linux.vnet.ibm.com>
-References: <1336515735.2097.23.camel@shrek.rexursive.com>
-	 <4FAA2673.50007@linux.vnet.ibm.com>
-	 <1336560579.2097.32.camel@shrek.rexursive.com>
-	 <aba7b996-df0e-420c-b2eb-d32881660fe8@email.android.com>
-	 <4FB044A6.7090108@linux.vnet.ibm.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3 (3.2.3-3.fc16) 
-Content-Transfer-Encoding: 7bit
+	Sun, 13 May 2012 21:08:50 -0400
+Date: Mon, 14 May 2012 09:09:32 +0800
+From: "majianpeng" <majianpeng@gmail.com>
+To: "Gilad Ben-Yossef" <gilad@benyossef.com>,
+        "Christoph Lameter" <cl@linux.com>
+Cc: "linux-mm" <linux-mm@kvack.org>, "Pekka Enberg" <penberg@cs.helsinki.fi>,
+        "linux-kernel" <linux-kernel@vger.kernel.org>,
+        "Andrew Morton" <akpm@linux-foundation.org>
+References: <201205111008157652383@gmail.com>,
+ <alpine.DEB.2.00.1205111113460.31049@router.home>
+Subject: Re: Re: [PATCH] slub: missing test for partial pages flush work in flush_all
+Message-ID: <201205140909294844918@gmail.com>
+X-mailer: Foxmail 6, 15, 201, 22 [cn]
 Mime-Version: 1.0
+Content-Type: text/plain;
+	charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2012-05-14 at 05:02 +0530, Srivatsa S. Bhat wrote:
-> This is the point where your patch gets scary - Suspend is not carried
-> out in its fullest sense; instead you jump directly to
-> suspend_devices_and_enter(). Luckily, most of the things that happen
-> before this are common between suspend and hibernation. However, one
-> thing that really stands out is the notifications: if you directly
-> call suspend_devices_and_enter(), we end up missing the
-> PM_SUSPEND_PREPARE notifications.
 
-I'm guessing because at the point of suspend to RAM here, we are not
-really doing the real, full suspend to RAM, things would be different.
-At this point, not the whole system is alive - most of it is frozen.
-Only devices required for image writing are alive. Or maybe I'm
-misunderstanding the hibernation process...
+On Fri, May 11, 2012 at 7:14 PM, Christoph Lameter <cl@linux.com> wrote:
+> Didn't I already ack this before?
+>
+> Acked-by: Christoph Lameter <cl@linux.com>
+>
 
-> And there is no guarantee that everybody implements the same thing for
-> both PM_SUSPEND_PREPARE and PM_HIBERNATION_PREPARE notifications. That
-> is the reason I don't think it is safe.
+>Yes, you did, but the patch description and title was lacking and
+>Majianpeng kindly fixed it, hence the re-send, I guess.
 
-OK.
+>I've added Andrew, since he took my original commit that introduces
+>the bug that this patch by Majianpeng  fixes (and also LKML).
 
-So, you would do:
+>This fix really needs to get into 3.4, otherwise we'll be breaking
+>slub. What's the best way to go about that?
 
-- prepare for hibernation (includes suspension of devices)
-- resume devices involved in image writing
-- write image
-- prepare for suspend
-- suspend to RAM
-- resume from RAM
-- post suspend from RAM
-- unwind unsuccessful hibernation
+>Thanks!
+>Gilad
 
-Isn't that going to confuse devices involved in image writing even more
-by essentially executing post-resume twice (once for suspend to RAM,
-once for hibernation)?
 
--- 
-Bojan
+Sorry for late to relay. I rewrited the comment and resend.
+I have a question to ask:because the patch fixed by others,for example Christoph Lameter, Gilad.
+Should I add sogine-off by them in the patch?
+																	Thanks all!
+
+------------------				 
+majianpeng
+2012-05-14
+
 
