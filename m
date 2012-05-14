@@ -1,95 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932745Ab2ENX43 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 May 2012 19:56:29 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:44945 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756346Ab2ENX42 (ORCPT
+	id S964774Ab2ENX6a (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 May 2012 19:58:30 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:55058 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757855Ab2ENX61 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 May 2012 19:56:28 -0400
-Message-ID: <4FB19B96.4010106@gmail.com>
-Date: Tue, 15 May 2012 07:56:06 +0800
-From: Wang Sheng-Hui <shhuiw@gmail.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.18) Gecko/20110617 Thunderbird/3.1.11
+	Mon, 14 May 2012 19:58:27 -0400
+Date: Mon, 14 May 2012 16:58:25 -0700 (PDT)
+From: David Rientjes <rientjes@google.com>
+X-X-Sender: rientjes@chino.kir.corp.google.com
+To: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
+cc: a.p.zijlstra@chello.nl, mingo@kernel.org, pjt@google.com,
+        paul@paulmenage.org, akpm@linux-foundation.org, rjw@sisk.pl,
+        nacc@us.ibm.com, paulmck@linux.vnet.ibm.com, tglx@linutronix.de,
+        seto.hidetoshi@jp.fujitsu.com, tj@kernel.org, mschmidt@redhat.com,
+        berrange@redhat.com, nikunj@linux.vnet.ibm.com,
+        vatsa@linux.vnet.ibm.com, liuj97@gmail.com,
+        linux-kernel@vger.kernel.org, linux-pm@vger.kernel.org
+Subject: Re: [PATCH v3 0/5] CPU hotplug, cpusets: Fix issues with cpusets
+ handling during suspend/resume
+In-Reply-To: <20120513231325.3566.37740.stgit@srivatsabhat>
+Message-ID: <alpine.DEB.2.00.1205141654080.25235@chino.kir.corp.google.com>
+References: <20120513231325.3566.37740.stgit@srivatsabhat>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-To: Jan Kara <jack@suse.cz>
-CC: linux-ext4@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] ext2: cleanup the comment for ext2_export_ops
-References: <4FB0B0F4.3060908@gmail.com> <20120514095525.GD5353@quack.suse.cz>
-In-Reply-To: <20120514095525.GD5353@quack.suse.cz>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2012年05月14日 17:55, Jan Kara wrote:
-> On Mon 14-05-12 15:15:00, Wang Sheng-Hui wrote:
->> ext2_export_ops gets more valued fields, not get_parent only.
->> Clean up the comment.
->   Um, I'd just remove the whole comment. It isn't particularly informative
-> anyway - NULL meaning the default behavior is very common in kernel. And we
-> really set about half of entries anyway...
+On Mon, 14 May 2012, Srivatsa S. Bhat wrote:
+
+> Currently the kernel doesn't handle cpusets properly during suspend/resume.
+> After a resume, all non-root cpusets end up having only 1 cpu (the boot cpu),
+> causing massive performance degradation of workloads. One major user of cpusets
+> is libvirt, which means that after a suspend/hibernation cycle, all VMs
+> suddenly end up running terribly slow!
 > 
-> 								Honza
+> Also, the kernel moves the tasks from one cpuset to another during CPU hotplug
+> in the suspend/resume path, leading to a task-management nightmare after
+> resume.
+> 
 
-Thanks, Honza.
+To deal with mempolicy rebinding when a cpuset changes, I made a change to 
+mempolicies to store the user nodemask passed to set_mempolicy() or 
+mbind() so the intention of the user could be preserved.  It seems like 
+you should do the same thing for cpusets to store the "intended" set of 
+cpus and respect that during cpu online?
 
-Patch regenerated. Please check it.
+> Patches 1 & 2 are cleanups that separate out hotplug handling so that we can
+> implement different logic for different hotplug events (CPU/Mem
+> online/offline). This also leads to some optimizations and more importantly
+> prepares the ground for any further work dealing with cpusets during hotplug.
+> 
+> Patch 3 is a bug fix - it ensures that the tasks attached to the root cpuset
+> see the updated cpus_allowed mask upon CPU hotplug.
+> 
+> Patches 4 and 5 implement the fix for cpusets handling during suspend/resume.
 
->>
->> Signed-off-by: Wang Sheng-Hui <shhuiw@gmail.com>
->> ---
->>  fs/ext2/super.c |    1 -
->>  1 files changed, 0 insertions(+), 1 deletions(-)
->>
->> diff --git a/fs/ext2/super.c b/fs/ext2/super.c
->> index e1025c7..640b4c6 100644
->> --- a/fs/ext2/super.c
->> +++ b/fs/ext2/super.c
->> @@ -359,7 +359,6 @@ static struct dentry *ext2_fh_to_parent(struct super_block *sb, struct fid *fid,
->>  /* Yes, most of these are left as NULL!!
->>   * A NULL value implies the default, which works with ext2-like file
->>   * systems, but can be improved upon.
->> - * Currently only get_parent is required.
->>   */
->>  static const struct export_operations ext2_export_ops = {
->>  	.fh_to_dentry = ext2_fh_to_dentry,
->> -- 
->> 1.7.1
-
->From 362925f80bdfb1c105e346f535c5e51c7359b550 Mon Sep 17 00:00:00 2001
-From: Wang Sheng-Hui <shhuiw@gmail.com>
-Date: Tue, 15 May 2012 07:53:46 +0800
-Subject: [PATCH] ext2: remove the redundant comment for ext2_export_ops
-
-Per Honza, It isn't particularly informative anyway - NULL
-meaning the default behavior is very common in kernel. And we
-really set about half of entries anyway.
-
-Remove the whole comment for ext2_export_ops.
-
-Signed-off-by: Wang Sheng-Hui <shhuiw@gmail.com>
----
- fs/ext2/super.c |    5 -----
- 1 files changed, 0 insertions(+), 5 deletions(-)
-
-diff --git a/fs/ext2/super.c b/fs/ext2/super.c
-index e1025c7..f9b0f41 100644
---- a/fs/ext2/super.c
-+++ b/fs/ext2/super.c
-@@ -356,11 +356,6 @@ static struct dentry *ext2_fh_to_parent(struct super_block *sb, struct fid *fid,
- 				    ext2_nfs_get_inode);
- }
- 
--/* Yes, most of these are left as NULL!!
-- * A NULL value implies the default, which works with ext2-like file
-- * systems, but can be improved upon.
-- * Currently only get_parent is required.
-- */
- static const struct export_operations ext2_export_ops = {
- 	.fh_to_dentry = ext2_fh_to_dentry,
- 	.fh_to_parent = ext2_fh_to_parent,
--- 
-1.7.1
-
+All of your patches are labeled to stable@vger.kernel.org, but I seriously 
+doubt any of this is stable material since it has been a long-standing 
+issue (and perhaps intentional in some cases) and your series includes 
+cleanups and optimizations that wouldn't be stable candidates, so I'd 
+suggest removing that annotation.
