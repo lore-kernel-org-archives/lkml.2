@@ -1,100 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755195Ab2ENHse (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 May 2012 03:48:34 -0400
-Received: from haggis.pcug.org.au ([203.10.76.10]:53490 "EHLO
-	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755095Ab2ENHsT (ORCPT
+	id S1755129Ab2ENHzU (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 May 2012 03:55:20 -0400
+Received: from LGEMRELSE1Q.lge.com ([156.147.1.111]:56575 "EHLO
+	LGEMRELSE1Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754845Ab2ENHzR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 May 2012 03:48:19 -0400
-Date: Mon, 14 May 2012 17:47:43 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Greg KH <greg@kroah.com>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Lukasz Majewski <l.majewski@samsung.com>,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        Marek Szyprowski <m.szyprowski@samsung.com>,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        Kukjin Kim <kgene.kim@samsung.com>
-Subject: linux-next: manual merge of the usb tree with the s5p tree
-Message-Id: <20120514174743.de608c90ed9653d827707a7b@canb.auug.org.au>
-X-Mailer: Sylpheed 3.2.0beta7 (GTK+ 2.24.10; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Mon__14_May_2012_17_47_43_+1000_du_2U_J_mdH71ssL"
+	Mon, 14 May 2012 03:55:17 -0400
+X-AuditID: 9c93016f-b7cecae000000e00-ac-4fb0ba60b0e3
+Message-ID: <4FB0BA7B.1050200@kernel.org>
+Date: Mon, 14 May 2012 16:55:39 +0900
+From: Minchan Kim <minchan@kernel.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:11.0) Gecko/20120410 Thunderbird/11.0.1
+MIME-Version: 1.0
+Newsgroups: gmane.linux.kernel.mm,gmane.linux.kernel.mmc,gmane.linux.file-systems,gmane.linux.ports.arm.omap,gmane.linux.kernel
+To: mani <manishrma@gmail.com>
+CC: linux-mmc@vger.kernel.org, linux-mm@kvack.org,
+        linux-fsdevel@vger.kernel.org, linux-omap@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCHv2 00/16] [FS, MM, block, MMC]: eMMC High Priority Interrupt
+ Feature
+References: <1336054995-22988-1-git-send-email-svenkatr@ti.com> <4FA8CF5E.1070202@kernel.org> <CANfBPZ-d-0FqY8Gruv+KDNoL3+FoQ68JEnxya5PydhY80x8yhA@mail.gmail.com> <4FA9BE10.1030007@kernel.org> <CAB+TZU-r6aYn8WRZjZ0DojxMTMoc5MSx7c93W0pAad1coscPwQ@mail.gmail.com>
+In-Reply-To: <CAB+TZU-r6aYn8WRZjZ0DojxMTMoc5MSx7c93W0pAad1coscPwQ@mail.gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Mon__14_May_2012_17_47_43_+1000_du_2U_J_mdH71ssL
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On 05/14/2012 04:43 PM, mani wrote:
 
-Hi Greg,
+> Dear Kim,
+> 
+> I have a query here ..
+> 
+> 
+>     My point is that it would be better for read to not preempt
+>     write-for-page_reclaim.
+>     And we can identify it by PG_reclaim. You can get the idea.
+> 
+> I think If there is no page available then no read will proceed.
 
-Today's linux-next merge of the usb tree got conflicts in
-arch/arm/mach-exynos/mach-nuri.c  and
-arch/arm/mach-exynos/mach-universal_c210.c between commits db6856e8d8ab
-("ARM: EXYNOS: Add DRM core support for NURI board") and 6dafa4aead1b
-("ARM: EXYNOS: Add DRM core device support for Universal C210 board")
-from the s5p tree and commit 126625e1bf32 ("usb:hsotg:samsung:cosmetic
-Move <linux/platform_data/s3c-hsotg.h> to proper place") from the usb
-tree.
+> When read request comes it reclaim the pages (starts the write if
 
-Just context changes.  I fixed it up (see below) and can carry the fix as
-necessary.
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
+> syncable pages ) and get back after reclaiming the pages.
+> Only then a read request will come to the MMC subsystem.
 
-diff --cc arch/arm/mach-exynos/mach-nuri.c
-index 17cce18,2c6d701..0000000
---- a/arch/arm/mach-exynos/mach-nuri.c
-+++ b/arch/arm/mach-exynos/mach-nuri.c
-@@@ -25,7 -25,7 +25,8 @@@
-  #include <linux/mmc/host.h>
-  #include <linux/fb.h>
-  #include <linux/pwm_backlight.h>
-+ #include <linux/platform_data/s3c-hsotg.h>
- +#include <drm/exynos_drm.h>
- =20
-  #include <video/platform_lcd.h>
-  #include <media/m5mols.h>
-diff --cc arch/arm/mach-exynos/mach-universal_c210.c
-index 00c1a7b,bc8bf3b..0000000
---- a/arch/arm/mach-exynos/mach-universal_c210.c
-+++ b/arch/arm/mach-exynos/mach-universal_c210.c
-@@@ -23,7 -23,7 +23,8 @@@
-  #include <linux/i2c-gpio.h>
-  #include <linux/i2c/mcs.h>
-  #include <linux/i2c/atmel_mxt_ts.h>
-+ #include <linux/platform_data/s3c-hsotg.h>
- +#include <drm/exynos_drm.h>
- =20
-  #include <asm/mach/arch.h>
-  #include <asm/hardware/gic.h>
+> And i think the reclaim algorithm will reclaim some substantial amount
 
---Signature=_Mon__14_May_2012_17_47_43_+1000_du_2U_J_mdH71ssL
-Content-Type: application/pgp-signature
+> of pages at a time instead of a single page.
+> So if we get few pages during the reclamation so there will be no
+> problem in halting the another write ops for proceeding the reads ?
+> 
+> Can we think of a scenario when we are reclaiming the pages and write
+> ops is going on where as a high priority read for the interrupt handler
+> is pending ?
+> 
+> Please correct me if i am wrong.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
 
-iQIcBAEBCAAGBQJPsLifAAoJEECxmPOUX5FE+M4P/RCaireMbpAGraw6ZS7wp0Da
-WxMmTvcMDIs86/PUyKT1482PpFfyqtUGIJxy0ZSyGyjAwHPO9rZmOc5KK5F9htQX
-RHVd4DIeBzpAYGDz+pdvuLiitePJc4en1ov4nVkuVV579C/r7AcRvNWlPEzZYD42
-B2tgqWlEhkQQrIrHxRrh4IDHpt4iLw0RkqDwyOC0Z7LvK2zXse3XmjTSZQKiXPTr
-iBJ+DdCpLF4wAku+CuVtaPZRHdpO7G4c8KQDybQzbXAS89YtQw4iNnm2wXVwYa89
-e/k8+5nMU4P4LWZl2olJ6FQnJJmLq1a5/BWZEvrnPZOgd5q4vD5B6pBX6ZV+xuWv
-i66qpBT324z5smSGIGJXx2b+shpZckbEz+ihdzeorhEi2b9XaZI9kvxprNsWX2ku
-jSxnBoLi+gFJdSmzm99zo7MYzQjjGe8SCWhRovsurRyg33oQWdQtV8jhV+X38K6V
-tVxq2xSHUFm2W3rvGJbGLA7H0AxaK1NSYjymyvNJVDpKdx1BSJmgafGYU6HiRYCj
-iL53ViaNjJT50VLs+FFbK5yvvKMCkeMBhQ4Oiv2bH8Vr7yah3oEgmFJxB3fPaQw/
-rvpcEN4+cNFeG6Lion6aM0NfOptpHxPqYoJCJjQhtqw01q4DO2G3jWte1mshC5L1
-NSPofC70KFQCF9gB4Z8B
-=gCei
------END PGP SIGNATURE-----
+For example, System can have lots of order-0 pages but little order-big pages.
+In this case, for getting big contiguos memory, reclaimer should write out
+dirty pages while it can handle order-0 page read request.
 
---Signature=_Mon__14_May_2012_17_47_43_+1000_du_2U_J_mdH71ssL--
+
+> 
+> Thanks & Regards
+> Manish
+
+
+
+-- 
+Kind regards,
+Minchan Kim
