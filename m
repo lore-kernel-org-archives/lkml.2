@@ -1,57 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755907Ab2ENK4L (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 May 2012 06:56:11 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:50306 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755368Ab2ENK4J (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 May 2012 06:56:09 -0400
-Date: Mon, 14 May 2012 11:56:04 +0100
-From: Mel Gorman <mgorman@suse.de>
-To: David Miller <davem@davemloft.net>
-Cc: akpm@linux-foundation.org, linux-mm@kvack.org, netdev@vger.kernel.org,
-        linux-nfs@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Trond.Myklebust@netapp.com, neilb@suse.de, hch@infradead.org,
-        a.p.zijlstra@chello.nl, michaelc@cs.wisc.edu, emunson@mgebm.net
-Subject: Re: [PATCH 01/12] netvm: Prevent a stream-specific deadlock
-Message-ID: <20120514105604.GB29102@suse.de>
-References: <1336658065-24851-1-git-send-email-mgorman@suse.de>
- <1336658065-24851-2-git-send-email-mgorman@suse.de>
- <20120511.011034.557833140906762226.davem@davemloft.net>
+	id S1755770Ab2ENK4l (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 May 2012 06:56:41 -0400
+Received: from mail-lb0-f174.google.com ([209.85.217.174]:34944 "EHLO
+	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755368Ab2ENK4j (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 14 May 2012 06:56:39 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-15
-Content-Disposition: inline
-In-Reply-To: <20120511.011034.557833140906762226.davem@davemloft.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <4FB0DF4A.5010506@jp.fujitsu.com>
+References: <4FACDED0.3020400@jp.fujitsu.com>
+	<4FACE01A.4040405@jp.fujitsu.com>
+	<20120511141945.c487e94c.akpm@linux-foundation.org>
+	<4FB05B8F.8020408@jp.fujitsu.com>
+	<CAFTL4hwGEhyxZO0sXx5gVyK_xjhMQEbHojJbHzQmVKafNyVWtw@mail.gmail.com>
+	<4FB0DF4A.5010506@jp.fujitsu.com>
+Date: Mon, 14 May 2012 12:56:38 +0200
+Message-ID: <CAFTL4hzFiFDTUAAgo=1RBLFhG5Xe8VEUESkpc-RgN7L-haMMbA@mail.gmail.com>
+Subject: Re: [PATCH 2/6] add res_counter_uncharge_until()
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        "cgroups@vger.kernel.org" <cgroups@vger.kernel.org>,
+        Michal Hocko <mhocko@suse.cz>, Johannes Weiner <hannes@cmpxchg.org>,
+        Han Ying <yinghan@google.com>, Glauber Costa <glommer@parallels.com>,
+        Tejun Heo <tj@kernel.org>,
+        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>,
+        Hiroyuki Kamezawa <kamezawa.hiroyuki@gmail.com>,
+        Linux Kernel <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, May 11, 2012 at 01:10:34AM -0400, David Miller wrote:
-> From: Mel Gorman <mgorman@suse.de>
-> Date: Thu, 10 May 2012 14:54:14 +0100
-> 
-> > It could happen that all !SOCK_MEMALLOC sockets have buffered so
-> > much data that we're over the global rmem limit. This will prevent
-> > SOCK_MEMALLOC buffers from receiving data, which will prevent userspace
-> > from running, which is needed to reduce the buffered data.
-> > 
-> > Fix this by exempting the SOCK_MEMALLOC sockets from the rmem limit.
-> > 
-> > Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
-> > Signed-off-by: Mel Gorman <mgorman@suse.de>
-> 
-> This introduces an invariant which I am not so sure is enforced.
-> 
-> With this change it is absolutely required that once a socket
-> becomes SOCK_MEMALLOC it must never _ever_ lose that attribute.
-> 
+2012/5/14 KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>:
+>> There may be some special cases with "Original-patch-from:" tags used when
+>> one heavily inspire from a patch without taking much of its original code.
+>>
+>
+>
+> Is this ok ?
 
-This is effectively true. In the NFS case, the flag is cleared on
-swapoff after all the entries have been paged in. In the NBD case,
-SOCK_MEMALLOC is left set until the socket is destroyed. I'll update the
-changelog.
+Yep, or even better since I plan to use my company's address now to
+sign my patches:
 
--- 
-Mel Gorman
-SUSE Labs
+Signed-off-by: Frederic Weisbecker <fweisbec@redhat.com>
+
+Thanks!
