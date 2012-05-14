@@ -1,145 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754508Ab2ENGsY (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 May 2012 02:48:24 -0400
-Received: from mail-we0-f174.google.com ([74.125.82.174]:53458 "EHLO
-	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753263Ab2ENGsX (ORCPT
+	id S1754478Ab2ENGvb (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 May 2012 02:51:31 -0400
+Received: from mga03.intel.com ([143.182.124.21]:50758 "EHLO mga03.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751771Ab2ENGv3 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 May 2012 02:48:23 -0400
-Date: Mon, 14 May 2012 08:48:17 +0200
-From: Ingo Molnar <mingo@kernel.org>
-To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Cc: mingo@elte.hu, linux-kernel@vger.kernel.org, rostedt@goodmis.org,
-        dipankar@in.ibm.com, pascal.chapperon@wanadoo.fr, davej@redhat.com,
-        michel@digirati.com.br, joern@purestorage.com, jengelh@medozas.de,
-        efault@gmx.de, sivanich@sgi.com, torvalds@linux-foundation.org,
-        peterz@infradead.org, laijs@cn.fujitsu.com
-Subject: Re: [GIT PULL rcu/next] RCU commits for 3.5
-Message-ID: <20120514064817.GA20903@gmail.com>
-References: <20120511184236.GA10133@linux.vnet.ibm.com>
+	Mon, 14 May 2012 02:51:29 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
+   d="scan'208";a="99709118"
+From: "Du, ChangbinX" <changbinx.du@intel.com>
+To: "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>
+CC: "mina86@mina86.com" <mina86@mina86.com>,
+        "Fleming, Matt" <matt.fleming@intel.com>,
+        "balbi@ti.com" <balbi@ti.com>, "hpa@zytor.com" <hpa@zytor.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>
+Subject: [PATCH] testusb: add path /dev/bus/usb to default search paths for
+ usbfs
+Thread-Topic: [PATCH] testusb: add path /dev/bus/usb to default search paths
+ for usbfs
+Thread-Index: AQHNMZ2BooD2tGJJHE+2JranocONc5bI1+TQ
+Date: Mon, 14 May 2012 06:51:23 +0000
+Message-ID: <0C18FE92A7765D4EB9EE5D38D86A563A062C91@SHSMSX101.ccr.corp.intel.com>
+References: <1337021163-1487-1-git-send-email-changbinx.du@intel.com>
+In-Reply-To: <1337021163-1487-1-git-send-email-changbinx.du@intel.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.239.127.40]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120511184236.GA10133@linux.vnet.ibm.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+As real device-nodes managed by udev whose nodes lived in /dev/bus/usb
+are mostly used today, let testusb tool use that directory as one default
+path make tool be more convenient to use.
 
-* Paul E. McKenney <paulmck@linux.vnet.ibm.com> wrote:
+Signed-off-by: Du Changbin <changbinx.du@intel.com>
+---
+ tools/usb/testusb.c |    6 ++++++
+ 1 file changed, 6 insertions(+)
 
-> Hello, Ingo,
-> 
-> The major features of this series are:
-> 
-> 1.	A set of improvements and fixes to the RCU_FAST_NO_HZ feature
-> 	(with more on the way for 3.6).  Posted to LKML:
-> 	https://lkml.org/lkml/2012/4/23/324 (commits 1-3 and 5), 
-> 	https://lkml.org/lkml/2012/4/16/611 (commit 4),
-> 	https://lkml.org/lkml/2012/4/30/390 (commit 6), and
-> 	https://lkml.org/lkml/2012/5/4/410 (commit 7, combined with
-> 	the other commits for the convenience of the tester).
-> 2.	Changes to make rcu_barrier() avoid disrupting execution of CPUs
-> 	that have no RCU callbacks.  Posted to LKML:
-> 	https://lkml.org/lkml/2012/4/23/322.
-> 3.	A couple of commits that improve the efficiency of the interaction
-> 	between preemptible RCU and the scheduler, these two being all
-> 	that survived an abortive attempt to allow preemptible RCU's
-> 	__rcu_read_lock() to be inlined.  The full set was posted to
-> 	LKML at https://lkml.org/lkml/2012/4/14/143, and the first and
-> 	third patches of that set remain.
-> 4.	Lai Jiangshan's algorithmic implementation of SRCU, which includes
-> 	call_srcu() and srcu_barrier().  A major feature of this new
-> 	implementation is that synchronize_srcu() no longer disturbs
-> 	the execution of other CPUs.  This work is based on earlier
-> 	implementations by Peter Zijlstra and myself.  Posted to
-> 	LKML: https://lkml.org/lkml/2012/2/22/82.
-> 5.	A number of miscellaneous bug fixes and improvements which were
-> 	posted to LKML at: https://lkml.org/lkml/2012/4/23/353 with
-> 	subsequent updates posted to LKML.
-> 
-> #1 and #2 are combined onto one topic branch due to dependencies among
-> the commits.
-> 
-> All of these have been exposed to -next testing.
-> 
-> These changes are available in the git repository at:
-> 
->   git://git.kernel.org/pub/scm/linux/kernel/git/paulmck/linux-rcu.git rcu/next
-> 
-> 								Thanx, Paul
-> 
-> -------------------->
-> Dave Jones (1):
->       rcu: List-debug variants of rcu list routines.
-> 
-> Jan Engelhardt (1):
->       rcu: Make __kfree_rcu() less dependent on compiler choices
-> 
-> Lai Jiangshan (10):
->       rcu: Remove fast check path from __synchronize_srcu()
->       rcu: Increment upper bit only for srcu_read_lock()
->       rcu: Flip ->completed only once per SRCU grace period
->       rcu: Improve SRCU's wait_idx() comments
->       rcu: Implement a variant of Peter's SRCU algorithm
->       rcu: Remove unused srcu_barrier()
->       rcu: Improve srcu_readers_active_idx()'s cache locality
->       rcu: Use single value to handle expedited SRCU grace periods
->       rcu: Implement per-domain single-threaded call_srcu() state machine
->       rcu: Add rcutorture test for call_srcu()
-> 
-> Michel Machado (1):
->       rcu: Replace list_first_entry_rcu() with list_first_or_null_rcu()
-> 
-> Paul E. McKenney (20):
->       rcu: Clarify help text for RCU_BOOST_PRIO
->       rcu: Reduce cache-miss initialization latencies for large systems
->       rcu: Document kernel command-line parameters
->       rcu: Document why rcu_blocking_is_gp() is safe
->       rcu: Add RCU_FAST_NO_HZ tracing for idle exit
->       rcu: Make RCU_FAST_NO_HZ use timer rather than hrtimer
->       rcu: Make RCU_FAST_NO_HZ account for pauses out of idle
->       rcu: Fixes to rcutorture error handling and cleanup
->       rcu: Add warning for RCU_FAST_NO_HZ timer firing
->       timer: Fix mod_timer_pinned() header comment
->       rcu: Introduce rcutorture testing for rcu_barrier()
->       rcu: Direct algorithmic SRCU implementation
->       rcu: Ensure that RCU_FAST_NO_HZ timers expire on correct CPU
->       rcu: Move PREEMPT_RCU preemption to switch_to() invocation
->       rcu: Make exit_rcu() more precise and consolidate
->       rcu: Update RCU maintainership
->       rcu: Make RCU_FAST_NO_HZ handle timer migration
->       rcu: Explicitly initialize RCU_FAST_NO_HZ per-CPU variables
->       rcu: Make rcu_barrier() less disruptive
->       Merge branches 'barrier.2012.05.09a', 'fixes.2012.04.26a', 'inline.2012.05.02b' and 'srcu.2012.05.07b' into HEAD
-> 
->  Documentation/RCU/torture.txt       |   15 +-
->  Documentation/kernel-parameters.txt |   88 ++++++-
->  MAINTAINERS                         |   14 +-
->  arch/um/drivers/mconsole_kern.c     |    1 +
->  include/linux/rculist.h             |   40 +++-
->  include/linux/rcupdate.h            |   20 ++
->  include/linux/rcutiny.h             |   11 -
->  include/linux/rcutree.h             |   19 --
->  include/linux/sched.h               |   10 +
->  include/linux/srcu.h                |   48 +++-
->  include/trace/events/rcu.h          |    2 +
->  init/Kconfig                        |   50 +++-
->  kernel/rcupdate.c                   |   28 ++
->  kernel/rcutiny_plugin.h             |   16 -
->  kernel/rcutorture.c                 |  257 +++++++++++++++-
->  kernel/rcutree.c                    |  332 ++++++++++++++++------
->  kernel/rcutree.h                    |   23 +-
->  kernel/rcutree_plugin.h             |  154 +++++++----
->  kernel/rcutree_trace.c              |    4 +-
->  kernel/sched/core.c                 |    1 +
->  kernel/srcu.c                       |  548 +++++++++++++++++++++++++++-------
->  kernel/timer.c                      |    8 +-
->  lib/list_debug.c                    |   22 ++
->  23 files changed, 1358 insertions(+), 353 deletions(-)
+diff --git a/tools/usb/testusb.c b/tools/usb/testusb.c
+index 6e0f567..c6c839e 100644
+--- a/tools/usb/testusb.c
++++ b/tools/usb/testusb.c
+@@ -358,6 +358,7 @@ static const char *usbfs_dir_find(void)
+ {
+ 	static char usbfs_path_0[] = "/dev/usb/devices";
+ 	static char usbfs_path_1[] = "/proc/bus/usb/devices";
++	static char udev_usb_path[] = "/dev/bus/usb";
+ 
+ 	static char *const usbfs_paths[] = {
+ 		usbfs_path_0, usbfs_path_1
+@@ -376,6 +377,11 @@ static const char *usbfs_dir_find(void)
+ 		}
+ 	} while (++it != end);
+ 
++	/* real device-nodes managed by udev */
++	if (access(udev_usb_path, F_OK) == 0) {
++		return udev_usb_path;
++	}
++
+ 	return NULL;
+ }
+ 
+-- 
+1.7.9.5
 
-Pulled, thanks a lot Paul!
-
-	Ingo
