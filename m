@@ -1,50 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757204Ab2ENQZ2 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 May 2012 12:25:28 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:63982 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757084Ab2ENQZ1 (ORCPT
+	id S1757220Ab2ENQ0P (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 May 2012 12:26:15 -0400
+Received: from avon.wwwdotorg.org ([70.85.31.133]:44506 "EHLO
+	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757084Ab2ENQ0N (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 May 2012 12:25:27 -0400
-Date: Mon, 14 May 2012 09:25:21 -0700
-From: Tejun Heo <tj@kernel.org>
-To: Jiri Kosina <jkosina@suse.cz>
-Cc: Andrew Morton <akpm@linux-foundation.org>, Jens Axboe <axboe@kernel.dk>,
-        NeilBrown <neilb@suse.de>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] floppy: remove floppy-specific O_EXCL handling
-Message-ID: <20120514162521.GA2366@google.com>
-References: <alpine.LNX.2.00.1205131059410.15448@pobox.suse.cz>
+	Mon, 14 May 2012 12:26:13 -0400
+Message-ID: <4FB13221.3000704@wwwdotorg.org>
+Date: Mon, 14 May 2012 10:26:09 -0600
+From: Stephen Warren <swarren@wwwdotorg.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.LNX.2.00.1205131059410.15448@pobox.suse.cz>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Peter De Schrijver <pdeschrijver@nvidia.com>
+CC: Colin Cross <ccross@android.com>, Olof Johansson <olof@lixom.net>,
+        Russell King <linux@arm.linux.org.uk>, linux-tegra@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] ARM: tegra: Fix flow controller accesses
+References: <1336991229-18859-1-git-send-email-pdeschrijver@nvidia.com>
+In-Reply-To: <1336991229-18859-1-git-send-email-pdeschrijver@nvidia.com>
+X-Enigmail-Version: 1.5pre
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
-
-On Sun, May 13, 2012 at 11:02:07AM +0200, Jiri Kosina wrote:
-> Block layer now handles O_EXCL in a generic way for block devices.
+On 05/14/2012 04:27 AM, Peter De Schrijver wrote:
+> flowctrl_write_cpu_csr uses the cpu halt offsets and vice versa. This patch
+> fixes this bug.
 > 
-> The semantics is however different for floppy and all other block devices,
-> as floppy driver contains its own O_EXCL handling.
-> 
-> The semantics for all-but-floppy bdevs is "there can be at most one O_EXCL 
-> open of this file", while for floppy bdev the semantics is "if someone has 
-> the bdev open with O_EXCL, noone else can open it".
-> 
-> Remove the floppy-specific handling and let the generic bdev code O_EXCL
-> handling take over.
-> 
-> Signed-off-by: Jiri Kosina <jkosina@suse.cz>
+> Reported-by: Dan Willemsen <dwillemsen@nvidia.com>
+> Signed-off-by: Peter De Schrijver <pdeschrijver@nvidia.com>
 
-Patch looks good to me but why do we want to change this at this
-point?
+Applied, thanks.
 
-Thanks.
+I fixed the patch description to mention when this problem was introduced.
 
--- 
-tejun
+I'll send a pull request to include this in 3.4-final in a second.
