@@ -1,63 +1,32 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754126Ab2ENCGS (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 13 May 2012 22:06:18 -0400
-Received: from slimlogic.co.uk ([89.16.172.20]:59185 "EHLO slimlogic.co.uk"
+	id S1754229Ab2ENCGU (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 13 May 2012 22:06:20 -0400
+Received: from slimlogic.co.uk ([89.16.172.20]:59187 "EHLO slimlogic.co.uk"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753963Ab2ENCGQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1754000Ab2ENCGQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Sun, 13 May 2012 22:06:16 -0400
-X-Greylist: delayed 439 seconds by postgrey-1.27 at vger.kernel.org; Sun, 13 May 2012 22:06:16 EDT
 From: Graeme Gregory <gg@slimlogic.co.uk>
 To: linux-kernel@vger.kernel.org
 Cc: sameo@linux.intel.com, lrg@ti.com, broonie@opensource.wolfsonmicro.com,
-        b-cousson@ti.com, linux-omap@vger.kernel.org,
-        Graeme Gregory <gg@slimlogic.co.uk>
-Subject: [PATCH 2/4] MFD: palmas PMIC device support Kconfig
-Date: Mon, 14 May 2012 10:58:30 +0900
-Message-Id: <1336960712-2812-3-git-send-email-gg@slimlogic.co.uk>
+        b-cousson@ti.com, linux-omap@vger.kernel.org
+Subject: [PATCH 0/4] Adding support for Palmas PMIC
+Date: Mon, 14 May 2012 10:58:28 +0900
+Message-Id: <1336960712-2812-1-git-send-email-gg@slimlogic.co.uk>
 X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1336960712-2812-1-git-send-email-gg@slimlogic.co.uk>
-References: <1336960712-2812-1-git-send-email-gg@slimlogic.co.uk>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add the new palmas MFD to Kconfig and Makefile
+This is the MFD and regulator parts for the Palmas family of chips from
+Texas Instruments.
 
-Signed-off-by: Graeme Gregory <gg@slimlogic.co.uk>
----
- drivers/mfd/Kconfig  |    8 ++++++++
- drivers/mfd/Makefile |    1 +
- 2 files changed, 9 insertions(+)
+It has been decided to use the Palmas name in the driver instead of
+the various marketing names the family will be avilable with to avoid
+confusion. The driver will in the future determine the exact product
+from the OTP information and adapt accordingly.
 
-diff --git a/drivers/mfd/Kconfig b/drivers/mfd/Kconfig
-index c618e3a..1528bdd 100644
---- a/drivers/mfd/Kconfig
-+++ b/drivers/mfd/Kconfig
-@@ -906,6 +906,14 @@ config MFD_ANATOP
- 	  MFD controller. This controller embeds regulator and
- 	  thermal devices for Freescale i.MX platforms.
- 
-+config MFD_PALMAS
-+	bool "Support for the TI Palmas series chips"
-+	select MFD_CORE
-+	depends on I2C=y
-+	help
-+	  If you say yes here you get support for the Palmas
-+	  series of PMIC chips from Texas Instruments.
-+
- endmenu
- endif
- 
-diff --git a/drivers/mfd/Makefile b/drivers/mfd/Makefile
-index acc888d..f4a342e 100644
---- a/drivers/mfd/Makefile
-+++ b/drivers/mfd/Makefile
-@@ -118,3 +118,4 @@ obj-$(CONFIG_MFD_RC5T583)	+= rc5t583.o rc5t583-irq.o
- obj-$(CONFIG_MFD_S5M_CORE)	+= s5m-core.o s5m-irq.o
- obj-$(CONFIG_MFD_ANATOP)	+= anatop-mfd.o
- obj-$(CONFIG_MFD_LM3533)	+= lm3533-core.o lm3533-ctrlbank.o
-+obj-$(CONFIG_MFD_PALMAS)	+= palmas.o palmas-irq.o
--- 
-1.7.9.5
+Currently the driver will handle the twl6035 and twl6037 varients.
+
+Graeme
 
