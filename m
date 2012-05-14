@@ -1,57 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754239Ab2END6k (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 13 May 2012 23:58:40 -0400
-Received: from smtp.syd.comcen.com.au ([203.23.236.77]:4126 "EHLO
-	smtp.syd.comcen.com.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754068Ab2END6j (ORCPT
+	id S1751522Ab2ENEBg (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 May 2012 00:01:36 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:60725 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750745Ab2ENEBf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 13 May 2012 23:58:39 -0400
-Date: Mon, 14 May 2012 13:57:31 +1000
-From: Chris Jones <chrisjones@spin.net.au>
-To: linux-kernel@vger.kernel.org
-Cc: "H. Peter Anvin" <hpa@zytor.com>
-Subject: Re: Integrating a new programming language into the kernel
-Message-ID: <20120514135731.2e989a81@linux-j2xc>
-In-Reply-To: <4FB05533.5010807@zytor.com>
-References: <20120513120009.18cb3e17@linux-j2xc>
-	<4FB05533.5010807@zytor.com>
-X-Mailer: Claws Mail 3.7.10 (GTK+ 2.24.7; x86_64-suse-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
-X-comcen-MailScanner-Information: Please contact the ISP for more information
-X-comcen-MailScanner: Found to be clean
-X-comcen-MailScanner-SpamCheck: not spam, SpamAssassin (not cached,
-	score=-2.011, required 4, AWL 0.49, BAYES_00 -2.60, RDNS_NONE 0.10)
-X-comcen-MailScanner-From: chrisjones@spin.net.au
+	Mon, 14 May 2012 00:01:35 -0400
+From: David Ahern <dsahern@gmail.com>
+To: acme@ghostprotocols.net, linux-kernel@vger.kernel.org
+Cc: David Ahern <dsahern@gmail.com>
+Subject: [PATCH] perf-record: Create events initially disabled -- again
+Date: Sun, 13 May 2012 22:01:28 -0600
+Message-Id: <1336968088-11531-1-git-send-email-dsahern@gmail.com>
+X-Mailer: git-send-email 1.7.10.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I'm curious as to why you suggest "no"?
+764e16a changed perf-record to create events disabled by default and
+enable them once perf initializations are done. This setting was dropped
+by 0f82ebc. Now perf events are once again generated during perf's
+initialization phase (e.g., generating maps).
 
-And if it were to successfully eventuate and I were to do this, it
-would only ever be a custom kernel. And that's why I'm curious as to
-why you say to not do it.
+As an example, perf opens a lot of files at startup. Unpatched:
 
+perf record -e syscalls:sys_enter_open -ga -fo /tmp/perf.data -- sleep 1
+[ perf record: Woken up 1 times to write data ]
+[ perf record: Captured and wrote 0.087 MB /tmp/perf.data (~3798 samples) ]
 
-Regards
+Using perf-script to look at the samples shows the perf command generating
+563 of the 566 total events.
 
-Chris Jones
+Patched:
 
+perf record -e syscalls:sys_enter_open -ga -fo /tmp/perf.data -- sleep 1
+[ perf record: Woken up 1 times to write data ]
+[ perf record: Captured and wrote 0.028 MB /tmp/perf.data (~1206 samples) ]
 
+Using perf-script to look at the samples does not show perf command.
 
-On Sun, 13 May 2012 17:43:31 -0700
-"H. Peter Anvin" <hpa@zytor.com> wrote:
+Signed-off-by: David Ahern <dsahern@gmail.com>
+---
+ tools/perf/util/evsel.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-> On 05/12/2012 07:00 PM, Chris Jones wrote:
-> > Is it possible to implement a new programming language into the
-> > kernel? And if so, how would I go about doing this?
-> 
-> 1. Yes.
-> 2. Don't.
-> 
-> 	-hpa
-> 
+diff --git a/tools/perf/util/evsel.c b/tools/perf/util/evsel.c
+index 21eaab2..6710cfe 100644
+--- a/tools/perf/util/evsel.c
++++ b/tools/perf/util/evsel.c
+@@ -70,6 +70,7 @@ void perf_evsel__config(struct perf_evsel *evsel, struct perf_record_opts *opts,
+ 	struct perf_event_attr *attr = &evsel->attr;
+ 	int track = !evsel->idx; /* only the first counter needs these */
+ 
++	attr->disabled = 1;
+ 	attr->sample_id_all = opts->sample_id_all_missing ? 0 : 1;
+ 	attr->inherit	    = !opts->no_inherit;
+ 	attr->read_format   = PERF_FORMAT_TOTAL_TIME_ENABLED |
+@@ -138,7 +139,6 @@ void perf_evsel__config(struct perf_evsel *evsel, struct perf_record_opts *opts,
+ 
+ 	if (perf_target__none(&opts->target) &&
+ 	    (!opts->group || evsel == first)) {
+-		attr->disabled = 1;
+ 		attr->enable_on_exec = 1;
+ 	}
+ }
+-- 
+1.7.10.1
 
