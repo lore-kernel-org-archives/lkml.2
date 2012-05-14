@@ -1,98 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756918Ab2ENPGg (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 May 2012 11:06:36 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:43091 "EHLO
+	id S1756951Ab2ENPju (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 May 2012 11:39:50 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:51278 "EHLO
 	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755780Ab2ENPGf (ORCPT
+	with ESMTP id S1756790Ab2ENPjs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 May 2012 11:06:35 -0400
-Subject: Re: [GIT PULL 0/8] Annotation weekly ponies delivery
-From: Namhyung Kim <namhyung@gmail.com>
-To: Ingo Molnar <mingo@kernel.org>
-Cc: Peter Zijlstra <peterz@infradead.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Arnaldo Carvalho de Melo <acme@infradead.org>,
-        linux-kernel@vger.kernel.org, Arjan van de Ven <arjan@infradead.org>,
-        David Ahern <dsahern@gmail.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Mike Galbraith <efault@gmx.de>, Paul Mackerras <paulus@samba.org>,
-        Stephane Eranian <eranian@google.com>, arnaldo.melo@gmail.com,
-        Arnaldo Carvalho de Melo <acme@redhat.com>
-In-Reply-To: <20120514115551.GA6479@gmail.com>
-References: <1336852387-16322-1-git-send-email-acme@infradead.org>
-	 <CA+55aFxeqrCj71fSe2r9kwzyO9q2BT9A89f7nLUgbrTG_uPP2g@mail.gmail.com>
-	 <1336994000.2443.24.camel@twins>  <20120514115551.GA6479@gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Tue, 15 May 2012 00:06:25 +0900
-Message-ID: <1337007985.1552.5.camel@leonhard>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
-Content-Transfer-Encoding: 8bit
+	Mon, 14 May 2012 11:39:48 -0400
+Date: Mon, 14 May 2012 08:39:29 -0700
+From: "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>
+To: "Du, ChangbinX" <changbinx.du@intel.com>
+Cc: Sergei Shtylyov <sshtylyov@mvista.com>,
+        "mina86@mina86.com" <mina86@mina86.com>,
+        "Fleming, Matt" <matt.fleming@intel.com>,
+        "balbi@ti.com" <balbi@ti.com>, "hpa@zytor.com" <hpa@zytor.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>
+Subject: Re: [PATCH] testusb: add path /dev/bus/usb to default search paths
+ for usbfs
+Message-ID: <20120514153929.GA1725@kroah.com>
+References: <1337021163-1487-1-git-send-email-changbinx.du@intel.com>
+ <0C18FE92A7765D4EB9EE5D38D86A563A062C91@SHSMSX101.ccr.corp.intel.com>
+ <4FB0D76B.2060603@mvista.com>
+ <0C18FE92A7765D4EB9EE5D38D86A563A062DC8@SHSMSX101.ccr.corp.intel.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <0C18FE92A7765D4EB9EE5D38D86A563A062DC8@SHSMSX101.ccr.corp.intel.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2012-05-14 (월), 13:55 +0200, Ingo Molnar:
-> * Peter Zijlstra <peterz@infradead.org> wrote:
+On Mon, May 14, 2012 at 10:49:06AM +0000, Du, ChangbinX wrote:
 > 
-> > On Sat, 2012-05-12 at 13:40 -0700, Linus Torvalds wrote:
-> > > The whole "-e cycles:pp" doesn't work any more. I don't get any nice
-> > > PEBS information, I get the totally useless irq-based profiling.
-> > > 
-> > > The difference for a "make -j" profile is quite stunning:
-> > > 
-> > > Doing "perf record -f -e cycles:pp -F 20000 make -j"
-> > > 
-> > >  - my current git:
-> > > 
-> > >     [ perf record: Woken up 47 times to write data ]
-> > >     [ perf record: Captured and wrote 11.890 MB perf.data (~519462 samples) ]
-> > > 
-> > >  - with the above tree pulled into my current git tree (but compiling
-> > > the same old tree):
-> > > 
-> > >     [ perf record: Woken up 1 times to write data ]
-> > >     [ perf record: Captured and wrote 0.031 MB perf.data (~1375 samples) ] 
-> > 
-> > The output simply suggests we're not getting enough samples 
-> > not that PEBS isn't working, in fact I can could reproduce 
-> > without using PEBS.
-> > 
-> > This bisected to the below commit, the code has since been 
-> > changed again and all that evlist stuff gives me a head-ache. 
-> > Acme, Namhyung ?
-> > 
-> > 55261f46702cec96911a81aacfb3cba13434d304 is the first bad commit
-> > commit 55261f46702cec96911a81aacfb3cba13434d304
-> > Author: Namhyung Kim <namhyung.kim@lge.com>
-> > Date:   Mon May 7 14:08:59 2012 +0900
-> > 
-> >     perf evlist: Fix creation of cpu map
+> Hello.
 > 
-> Another detail seems to be that the bug takes per-task-inherited 
-> profiling. Doing:
+> On 14-05-2012 10:51, Du, ChangbinX wrote:
 > 
->    perf record -a -e cycles:pp make -j64 bzImage
+> > As real device-nodes managed by udev whose nodes lived in /dev/bus/usb 
+> > are mostly used today, let testusb tool use that directory as one 
+> > default path make tool be more convenient to use.
 > 
-> produces the expected number of events. Without the '-a' the bug 
-> Linus found triggers.
+> > Signed-off-by: Du Changbin<changbinx.du@intel.com>
+> > ---
+> >   tools/usb/testusb.c |    6 ++++++
+> >   1 file changed, 6 insertions(+)
 > 
-> Similarly, 'perf top' does not trigger the bug - because it's 
-> using per CPU, not per task (inherited) profiling.
+> > diff --git a/tools/usb/testusb.c b/tools/usb/testusb.c index 
+> > 6e0f567..c6c839e 100644
+> > --- a/tools/usb/testusb.c
+> > +++ b/tools/usb/testusb.c
+> [...]
+> > @@ -376,6 +377,11 @@ static const char *usbfs_dir_find(void)
+> >   		}
+> >   	} while (++it != end);
+> >
+> > +	/* real device-nodes managed by udev */
+> > +	if (access(udev_usb_path, F_OK) == 0) {
+> > +		return udev_usb_path;
+> > +	}
 > 
+>     Why {} with single statement?
+> 
+> Hi, thanks for your tip. It's a code style issue. I will remove {}.
+> 
+> By the way, I don't know how I can do with this case? Resend a new
+> patch? Do I need include discussion message in new patch mail?
 
-perf_evlist__config_attrs() has this:
+Please resend a new patch with this fixed up.
 
-	if (evlist->cpus->map[0] < 0)
-		opts->no_inherit = true;
+> And how can I know my patch has be accepted? I am a newbie, could you
+> help me?
 
-meaning that per task profiling won't enable event inheritance. I don't
-know why it's needed though.
+You will get an automated email from my patch system when it is applied.
 
+thanks,
 
--- 
-Regards,
-Namhyung Kim
-
-
+greg k-h
