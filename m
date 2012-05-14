@@ -1,80 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756563Ab2ENNVA (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 May 2012 09:21:00 -0400
-Received: from mailhub.sw.ru ([195.214.232.25]:5562 "EHLO relay.sw.ru"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755924Ab2ENNU7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 May 2012 09:20:59 -0400
-Subject: [RFC PATCH 14/13] NFSd: make grace end flag per network namespace
-To: bfields@fieldses.org, Trond.Myklebust@netapp.com
-From: Stanislav Kinsbursky <skinsbursky@parallels.com>
-Cc: linux-nfs@vger.kernel.org, linux-kernel@vger.kernel.org, devel@openvz.org
-Date: Mon, 14 May 2012 17:19:34 +0400
-Message-ID: <20120514131834.2055.54788.stgit@localhost.localdomain>
-In-Reply-To: <20120505170722.11559.74503.stgit@localhost.localdomain>
-References: <20120505170722.11559.74503.stgit@localhost.localdomain>
-User-Agent: StGit/0.16
+	id S1756611Ab2ENNVd (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 May 2012 09:21:33 -0400
+Received: from mail-vb0-f46.google.com ([209.85.212.46]:36297 "EHLO
+	mail-vb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756469Ab2ENNVc (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 14 May 2012 09:21:32 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
+Date: Mon, 14 May 2012 21:21:31 +0800
+Message-ID: <CAJd=RBCQpVgNzAiFn5q1MnJAqctOrOZGK7U-GyCkHWg=TfCyCw@mail.gmail.com>
+Subject: [2/3] BFS 420: compact enqueue_task
+From: Hillf Danton <dhillf@gmail.com>
+To: LKML <linux-kernel@vger.kernel.org>, Hillf Danton <dhillf@gmail.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-NFSd's grace_ender flag is a part of grace period facility.
+A helper is added to reflect the meat of the two enqueue routines.
 
-Signed-off-by: Stanislav Kinsbursky <skinsbursky@parallels.com>
----
- fs/nfsd/netns.h     |    1 +
- fs/nfsd/nfs4state.c |    8 +++-----
- 2 files changed, 4 insertions(+), 5 deletions(-)
-
-diff --git a/fs/nfsd/netns.h b/fs/nfsd/netns.h
-index e99767d..b6deebd 100644
---- a/fs/nfsd/netns.h
-+++ b/fs/nfsd/netns.h
-@@ -36,6 +36,7 @@ struct nfsd_net {
- 	struct cache_detail *nametoid_cache;
- 
- 	struct lock_manager nfsd4_manager;
-+	bool grace_ended;
- };
- 
- extern int nfsd_net_id;
-diff --git a/fs/nfsd/nfs4state.c b/fs/nfsd/nfs4state.c
-index 2f940c1..7c88ee8 100644
---- a/fs/nfsd/nfs4state.c
-+++ b/fs/nfsd/nfs4state.c
-@@ -3188,19 +3188,17 @@ out:
- 	return status;
+--- a/kernel/sched/bfs.c	Mon May 14 20:50:38 2012
++++ b/kernel/sched/bfs.c	Mon May 14 20:53:28 2012
+@@ -698,6 +698,16 @@ static bool isoprio_suitable(void)
+ 	return !grq.iso_refractory;
  }
- 
--static bool grace_ended;
--
- static void
- nfsd4_end_grace(struct net *net)
- {
- 	struct nfsd_net *nn = net_generic(net, nfsd_net_id);
- 
- 	/* do nothing if grace period already ended */
--	if (grace_ended)
-+	if (nn->grace_ended)
- 		return;
- 
- 	dprintk("NFSD: end of grace period\n");
--	grace_ended = true;
-+	nn->grace_ended = true;
- 	nfsd4_record_grace_done(net, boot_time);
- 	locks_end_grace(&nn->nfsd4_manager);
- 	/*
-@@ -4761,7 +4759,7 @@ nfs4_state_start(void)
- 	nfsd4_client_tracking_init(net);
- 	boot_time = get_seconds();
- 	locks_start_grace(net, &nn->nfsd4_manager);
--	grace_ended = false;
-+	nn->grace_ended = false;
- 	printk(KERN_INFO "NFSD: starting %ld-second grace period\n",
- 	       nfsd4_grace);
- 	ret = set_callback_cred();
 
++static void __enqueue_task(struct task_struct *p, bool at_head)
++{
++	__set_bit(p->prio, grq.prio_bitmap);
++	if (at_head)
++		list_add(&p->run_list, grq.queue + p->prio);
++	else
++		list_add_tail(&p->run_list, grq.queue + p->prio);
++	sched_info_queued(p);
++}
++
+ /*
+  * Adding to the global runqueue. Enter with grq locked.
+  */
+@@ -711,17 +721,13 @@ static void enqueue_task(struct task_str
+ 		else
+ 			p->prio = NORMAL_PRIO;
+ 	}
+-	__set_bit(p->prio, grq.prio_bitmap);
+-	list_add_tail(&p->run_list, grq.queue + p->prio);
+-	sched_info_queued(p);
++	__enqueue_task(p, false);
+ }
+
+ /* Only idle task does this as a real time task*/
+ static inline void enqueue_task_head(struct task_struct *p)
+ {
+-	__set_bit(p->prio, grq.prio_bitmap);
+-	list_add(&p->run_list, grq.queue + p->prio);
+-	sched_info_queued(p);
++	__enqueue_task(p, true);
+ }
+
+ static inline void requeue_task(struct task_struct *p)
+--
