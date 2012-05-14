@@ -1,45 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756094Ab2ENKxy (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 May 2012 06:53:54 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:54745 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755381Ab2ENKxw (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 May 2012 06:53:52 -0400
-From: Magnus Damm <magnus.damm@gmail.com>
-To: linux-arm-kernel@lists.infradead.org
-Cc: linux@arm.linux.org.uk, arnd@arndb.de, linux-sh@vger.kernel.org,
-        lethal@linux-sh.org, linux-kernel@vger.kernel.org, rjw@sisk.pl,
-        horms@verge.net.au, olof@lixom.net,
-        Magnus Damm <magnus.damm@gmail.com>
-Date: Mon, 14 May 2012 19:54:51 +0900
-Message-Id: <20120514105451.8596.92367.sendpatchset@w520>
-In-Reply-To: <20120514105424.8596.38355.sendpatchset@w520>
-References: <20120514105424.8596.38355.sendpatchset@w520>
-Subject: [PATCH 03/03] ARM: Undelete KZM9D mach-type
+	id S1756010Ab2ENKxh (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 May 2012 06:53:37 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:50192 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755876Ab2ENKxe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 14 May 2012 06:53:34 -0400
+Date: Mon, 14 May 2012 12:53:18 +0200
+From: Jan Kara <jack@suse.cz>
+To: Marco Stornelli <marco.stornelli@gmail.com>
+Cc: Jan Kara <jack@suse.cz>,
+        "Vladimir =?utf-8?Q?'=CF=86-coder=2Fphcoder'?= Serbinenko" 
+	<phcoder@gmail.com>,
+        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Al Viro <viro@zeniv.linux.org.uk>, Josef Bacik <josef@redhat.com>
+Subject: Re: [PATCH v2] Fix AFFS race condition.
+Message-ID: <20120514105318.GH5353@quack.suse.cz>
+References: <4FAFBAC1.20603@gmail.com>
+ <20120514094543.GC5353@quack.suse.cz>
+ <CANGUGtA=XfraVL28YqAM0t3oMjfud0Fn1VtJNxwt8=reG10nGA@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <CANGUGtA=XfraVL28YqAM0t3oMjfud0Fn1VtJNxwt8=reG10nGA@mail.gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Magnus Damm <damm@opensource.se>
+On Mon 14-05-12 12:40:45, Marco Stornelli wrote:
+> 2012/5/14 Jan Kara <jack@suse.cz>:
+> > On Sun 13-05-12 15:44:33, Vladimir 'φ-coder/phcoder' Serbinenko wrote:
+> >> AFFS code preallocates several blocks as an optimisation. Unfortunately
+> >> it's not protected by lock so the same blocks may end up allocated twice.
+> >> Here is a fix.
+> >>
+> >> Signed-off-by: Vladimir Serbinenko <phcoder@gmail.com>
+> >  The patch looks good to me now. Thanks! You can add:
+> > Reviewed-by: Jan Kara <jack@suse.cz>
+> >
+> >  Al, will you merge this patch through your tree? AFFS does not seem to
+> > have a maintainer so you are a default fallback...
+> >
+> >                                                                Honza
+> >
+> 
+> I don't know the AFFS code, so only a question. Instead to use a spin
+> lock, I think we can use a simple mutex. Or is the spin lock
+> mandatory?
+  So what would be an advantage of a mutex? Spinlock *is* the simple locking
+variant...
 
-Undelete the KZM9D mach-type to allow build of board
-for EMEV2 SoC support.
-
-Signed-off-by: Magnus Damm <damm@opensource.se>
----
-
- arch/arm/tools/mach-types |    1 +
- 1 file changed, 1 insertion(+)
-
---- 0001/arch/arm/tools/mach-types
-+++ work/arch/arm/tools/mach-types	2012-05-14 19:38:03.000000000 +0900
-@@ -530,6 +530,7 @@ nokia_rm680		MACH_NOKIA_RM680	NOKIA_RM68
- msm8960_sim		MACH_MSM8960_SIM	MSM8960_SIM		3230
- msm8960_rumi3		MACH_MSM8960_RUMI3	MSM8960_RUMI3		3231
- gsia18s			MACH_GSIA18S		GSIA18S			3234
-+kzm9d			MACH_KZM9D		KZM9D			3246
- mx53_loco		MACH_MX53_LOCO		MX53_LOCO		3273
- tx53			MACH_TX53		TX53			3279
- encore			MACH_ENCORE		ENCORE			3284
+								Honza
+-- 
+Jan Kara <jack@suse.cz>
+SUSE Labs, CR
