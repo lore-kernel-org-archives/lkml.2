@@ -1,51 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932361Ab2ENUNN (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 May 2012 16:13:13 -0400
-Received: from mga01.intel.com ([192.55.52.88]:37466 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932285Ab2ENUNM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 May 2012 16:13:12 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
-   d="scan'208";a="166180851"
-Date: Mon, 14 May 2012 22:22:58 +0200
-From: Samuel Ortiz <sameo@linux.intel.com>
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>
-Subject: Re: linux-next: build failure after merge of the mfd tree
-Message-ID: <20120514202258.GC12740@sortiz-mobl>
-References: <20120514133753.77567dfa46a1e51f9d33bb47@canb.auug.org.au>
+	id S932385Ab2ENUNT (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 May 2012 16:13:19 -0400
+Received: from oproxy8-pub.bluehost.com ([69.89.22.20]:59240 "HELO
+	oproxy8-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S932372Ab2ENUNQ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 14 May 2012 16:13:16 -0400
+Message-ID: <4FB16765.3090602@xenotime.net>
+Date: Mon, 14 May 2012 13:13:25 -0700
+From: Randy Dunlap <rdunlap@xenotime.net>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.15) Gecko/20110323 Thunderbird/3.1.9
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120514133753.77567dfa46a1e51f9d33bb47@canb.auug.org.au>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+CC: linux-next@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
+        linux-wireless@vger.kernel.org,
+        Lauro Ramos Venancio <lauro.venancio@openbossa.org>,
+        Aloisio Almeida Jr <aloisio.almeida@openbossa.org>,
+        Samuel Ortiz <sameo@linux.intel.com>
+Subject: [PATCH -next] nfc: shdlc needs to select CRC_CCITT
+References: <20120514200357.e7448e4ca061c8efe3d4757d@canb.auug.org.au>
+In-Reply-To: <20120514200357.e7448e4ca061c8efe3d4757d@canb.auug.org.au>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-Identified-User: {1807:box742.bluehost.com:xenotime:xenotime.net} {sentby:smtp auth 50.53.38.135 authed with rdunlap@xenotime.net}
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Stephen,
+From: Randy Dunlap <rdunlap@xenotime.net>
 
-On Mon, May 14, 2012 at 01:37:53PM +1000, Stephen Rothwell wrote:
-> Hi Samuel,
-> 
-> After merging the mfd tree, today's linux-next build (x86_64 allmodconfig)
-> failed like this:
-> 
-> ERROR: "wm8400_block_read" [drivers/regulator/wm8400-regulator.ko] undefined!
-> ERROR: "regmap_reinit_cache" [drivers/mfd/wm8400-core.ko] undefined!
-> 
-> Caused by commit 4d240045599c ("mfd: Remove wm8400 custom cache
-> implementation").
-> 
-> I have used the mfd tree from next-20120511 for today.
-This should be fixed now, thanks to Mark patches.
+Fix build error: SHDLC uses crc_ccitt so it should select CRC_CCITT.
 
-Cheers,
-Samuel.
+ERROR: "crc_ccitt" [net/nfc/hci/hci.ko] undefined!
 
--- 
-Intel Open Source Technology Centre
-http://oss.intel.com/
+Signed-off-by: Randy Dunlap <rdunlap@xenotime.net>
+Cc:	Lauro Ramos Venancio <lauro.venancio@openbossa.org>
+Cc:	Aloisio Almeida Jr <aloisio.almeida@openbossa.org>
+Cc:	Samuel Ortiz <sameo@linux.intel.com>
+---
+ net/nfc/hci/Kconfig |    1 +
+ 1 file changed, 1 insertion(+)
+
+--- linux-next-20120514.orig/net/nfc/hci/Kconfig
++++ linux-next-20120514/net/nfc/hci/Kconfig
+@@ -11,6 +11,7 @@ config NFC_SHDLC
+ 	depends on NFC_HCI
+ 	bool "SHDLC link layer for HCI based NFC drivers"
+ 	default n
++	select CRC_CCITT
+ 	---help---
+ 	  Say yes if you use an NFC HCI driver that requires SHDLC link layer.
+ 	  If unsure, say N here.
