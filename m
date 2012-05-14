@@ -1,34 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753747Ab2ENAoH (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 13 May 2012 20:44:07 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:51489 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753031Ab2ENAoF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 13 May 2012 20:44:05 -0400
-Message-ID: <4FB05533.5010807@zytor.com>
-Date: Sun, 13 May 2012 17:43:31 -0700
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:11.0) Gecko/20120329 Thunderbird/11.0.1
-MIME-Version: 1.0
-To: Chris Jones <chrisjones@spin.net.au>
-CC: linux-kernel@vger.kernel.org
-Subject: Re: Integrating a new programming language into the kernel
-References: <20120513120009.18cb3e17@linux-j2xc>
-In-Reply-To: <20120513120009.18cb3e17@linux-j2xc>
-X-Enigmail-Version: 1.4.1
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	id S1753697Ab2ENApH (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 13 May 2012 20:45:07 -0400
+Received: from haggis.pcug.org.au ([203.10.76.10]:34772 "EHLO
+	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752799Ab2ENApF (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 13 May 2012 20:45:05 -0400
+Date: Mon, 14 May 2012 10:44:52 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: David Miller <davem@davemloft.net>, <netdev@vger.kernel.org>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Jiri Bohac <jbohac@suse.cz>
+Subject: linux-next: build warning after merge of the origin tree
+Message-Id: <20120514104452.2411b761e8f98076d1ae88ee@canb.auug.org.au>
+X-Mailer: Sylpheed 3.2.0beta7 (GTK+ 2.24.10; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Mon__14_May_2012_10_44_52_+1000_nn5NlLWeccAn5.r5"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/12/2012 07:00 PM, Chris Jones wrote:
-> Is it possible to implement a new programming language into the kernel?
-> And if so, how would I go about doing this?
+--Signature=_Mon__14_May_2012_10_44_52_+1000_nn5NlLWeccAn5.r5
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-1. Yes.
-2. Don't.
+Hi Dave,
 
-	-hpa
+Buildinf Linus' tree, today's linux-next build (powerpc ppc64_defconfig)
+produced these warnings:
 
+drivers/net/bonding/bond_main.c: In function 'bond_handle_frame':
+drivers/net/bonding/bond_main.c:1463:13: warning: assignment from incompati=
+ble pointer type [enabled by default]
+drivers/net/bonding/bond_main.c: In function 'bond_open':
+drivers/net/bonding/bond_main.c:3441:21: warning: assignment from incompati=
+ble pointer type [enabled by default]
+drivers/net/bonding/bond_main.c:3448:20: warning: assignment from incompati=
+ble pointer type [enabled by default]
+
+Introduced by commit 13a8e0c8cdb4 ("bonding: don't increase rx_dropped
+after processing LACPDUs"). recv-probe in struct bonding is a function
+returning void, but the local variable it assigned to/from has been
+changed to a function returning int ...
+
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+
+--Signature=_Mon__14_May_2012_10_44_52_+1000_nn5NlLWeccAn5.r5
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBCAAGBQJPsFWEAAoJEECxmPOUX5FEM5gP/2/TKpRgct74/l9s1WOFDD8Y
+OjBBQJRvsWzc56bhI/sJoc5MFW+yZIO/aFDGJk1b0+4dks5wnWyfgZyrns9TuDti
+ca1zWa8EJH441SMbh6HdDl4o0D0Hl+XwV0zHuyOJX6i4v3JsDmoateFXYdjDMGka
+ZHX7yxjcbH7W3PUpt/6fWb4+4QjmCAEGTUG881HxzJ7gxfdZtgMx72wWjI4GmTsi
+q3oxlajhEtiNd41viqkp+Be4UZR3W6i0SjKaBcWAOZVPS0xtlcUOKZECk44jWs+D
+I6b5DrFXTiol9b7yw2tvBjVc6l0LtnPnZFRJ9JEc62pdP7qiJLVMuAzlm/iAyn+A
+V/2T3jbmnoWOd8Xj4N9UTwSn0N4bn/gxvVKk+0xJHgIpqfHtIqoQMGtOPkW7cbXv
+f2LqtVt121+8Sk83u4qgR/JMP+jAhf41wxFLzwNy3e4NRPv5ojFu1VKmxJ2sg5ua
+OPMgIaDdwiEPqTrVZJxVPJJv36NWy/vqa3/GwsX38Af/0PKkODh6zeBfOl5b64+q
+4TmyVZ4jQF+llHrIA9vfZ9yhuxl9+GY9TpaJFh6OcFMm8SzSrM87p9YVOsvfm/4u
+JUXLs/rPxdYaJFkbdvLbRf8PU3DE4/a3lPzhbzMLymfpwDbhOT74ceewlQNRX07x
+K/KkmfJIuTe8/6ryiix5
+=lpOb
+-----END PGP SIGNATURE-----
+
+--Signature=_Mon__14_May_2012_10_44_52_+1000_nn5NlLWeccAn5.r5--
