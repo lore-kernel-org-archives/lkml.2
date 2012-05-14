@@ -1,53 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758046Ab2ENVEz (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 May 2012 17:04:55 -0400
-Received: from shards.monkeyblade.net ([198.137.202.13]:59328 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758038Ab2ENVEk (ORCPT
+	id S1757963Ab2ENVFK (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 May 2012 17:05:10 -0400
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:34001 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757910Ab2ENVFE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 May 2012 17:04:40 -0400
-Date: Mon, 14 May 2012 16:57:56 -0400 (EDT)
-Message-Id: <20120514.165756.1176186192047419316.davem@davemloft.net>
-To: tj@kernel.org
-Cc: hpa@zytor.com, alex.shi@intel.com, tglx@linutronix.de, mingo@redhat.com,
-        cl@linux-foundation.org, tony.luck@intel.com, bp@amd64.org,
-        akpm@linux-foundation.org, ebiederm@xmission.com, sfr@canb.auug.org.au,
-        luto@mit.edu, glommer@parallels.com, fernando@oss.ntt.co.jp,
-        vapier@gentoo.org, eric.dumazet@gmail.com, dzickus@redhat.com,
-        dhowells@redhat.com, cbouatmailru@gmail.com, fenghua.yu@intel.com,
-        jkosina@suse.cz, ext-phil.2.carmody@nokia.com,
-        dan.carpenter@oracle.com, len.brown@intel.com, fweisbec@gmail.com,
-        paulmck@linux.vnet.ibm.com, josh@joshtriplett.org, anton@samba.org,
-        kamezawa.hiroyu@jp.fujitsu.com, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 0/3] replace percpu_ops function with this_cpu_ops
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <20120514180128.GC2366@google.com>
-References: <20120514173421.GB2366@google.com>
-	<4FB142D1.7080403@zytor.com>
-	<20120514180128.GC2366@google.com>
-X-Mailer: Mew version 6.5 on Emacs 24.0.95 / Mule 6.0 (HANACHIRUSATO)
+	Mon, 14 May 2012 17:05:04 -0400
+Subject: Re: [PATCH -next] net/codel: Add missing #include
+ <linux/prefetch.h>
+From: Eric Dumazet <eric.dumazet@gmail.com>
+To: Geert Uytterhoeven <geert@linux-m68k.org>
+Cc: Eric Dumazet <edumazet@google.com>, Dave Taht <dave.taht@bufferbloat.net>,
+        "David S. Miller" <davem@davemloft.net>, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-next@vger.kernel.org
+In-Reply-To: <1337024825-20130-1-git-send-email-geert@linux-m68k.org>
+References: <1337024825-20130-1-git-send-email-geert@linux-m68k.org>
+Content-Type: text/plain; charset="UTF-8"
+Date: Mon, 14 May 2012 23:04:58 +0200
+Message-ID: <1337029498.8512.624.camel@edumazet-glaptop>
 Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.6 (shards.monkeyblade.net [198.137.202.13]); Mon, 14 May 2012 13:58:02 -0700 (PDT)
+X-Mailer: Evolution 2.28.3 
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Tejun Heo <tj@kernel.org>
-Date: Mon, 14 May 2012 11:01:28 -0700
-
-> On Mon, May 14, 2012 at 10:37:21AM -0700, H. Peter Anvin wrote:
->> I would be happier if we kept the patchset together.
->> 
->> So I would greatly prefer if you'd take the whole patchset with my:
->> 
->> Acked-by: H. Peter Anvin <hpa@zytor.com>
+On Mon, 2012-05-14 at 21:47 +0200, Geert Uytterhoeven wrote:
+> m68k allmodconfig:
 > 
-> Yeap, that works too.  David, can I route the network part too with
-> your ack?
+> net/sched/sch_codel.c: In function ‘dequeue’:
+> net/sched/sch_codel.c:70: error: implicit declaration of function ‘prefetch’
+> make[1]: *** [net/sched/sch_codel.o] Error 1
+> 
+> Signed-off-by: Geert Uytterhoeven <geert@linux-m68k.org>
+> ---
 
-Sure:
+I plaid guilty
 
-Acked-by: David S. Miller <davem@davemloft.net>
+Acked-by: Eric Dumazet <edumazet@google.com>
+
+Thanks
+
+
