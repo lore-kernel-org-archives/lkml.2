@@ -1,41 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757976Ab2ENUyE (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 May 2012 16:54:04 -0400
-Received: from smtp2.it.da.ut.ee ([193.40.5.67]:52684 "EHLO smtp2.it.da.ut.ee"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756038Ab2ENUyB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 May 2012 16:54:01 -0400
-Date: Mon, 14 May 2012 23:53:58 +0300 (EEST)
-From: Meelis Roos <mroos@linux.ee>
-To: Bjorn Helgaas <bhelgaas@google.com>
-cc: Myron Stowe <mstowe@redhat.com>,
-        Linux Kernel list <linux-kernel@vger.kernel.org>,
-        Jesse Barnes <jbarnes@virtuousgeek.org>, linux-pci@vger.kernel.org
-Subject: Re: x86: runtime waring in pcibios_fwaddrmap_lookup
-In-Reply-To: <20120514202147.GA20652@google.com>
-Message-ID: <alpine.SOC.1.00.1205142353430.20118@math.ut.ee>
-References: <alpine.SOC.1.00.1204122238400.16365@math.ut.ee> <CAErSpo6YnzywdjTTVdVEHj_E-B0ARBpZ+fiy29Rv==fO6m9-FA@mail.gmail.com> <1335557685.2386.62.camel@zim.stowe> <alpine.SOC.1.00.1204280819270.14507@math.ut.ee> <1335905694.2386.138.camel@zim.stowe>
- <1336430699.2427.117.camel@zim.stowe> <alpine.SOC.1.00.1205131811590.7097@math.ut.ee> <20120514202147.GA20652@google.com>
-User-Agent: Alpine 1.00 (SOC 882 2007-12-20)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	id S1757945Ab2ENUzl (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 May 2012 16:55:41 -0400
+Received: from g1t0028.austin.hp.com ([15.216.28.35]:12948 "EHLO
+	g1t0028.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756038Ab2ENUzk (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 14 May 2012 16:55:40 -0400
+Message-ID: <1337028933.3556.4.camel@lorien2>
+Subject: Re: [PATCH 0/11] Merge ramoops and persistent_ram, generic pstore
+ RAM backend
+From: Shuah Khan <shuahkhan@gmail.com>
+Reply-To: shuahkhan@gmail.com
+To: Anton Vorontsov <anton.vorontsov@linaro.org>
+Cc: shuahkhan@gmail.com, Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Kees Cook <keescook@chromium.org>, Colin Cross <ccross@android.com>,
+        devel@driverdev.osuosl.org, linaro-kernel@lists.linaro.org,
+        Arnd Bergmann <arnd@arndb.de>, patches@linaro.org,
+        Marco Stornelli <marco.stornelli@gmail.com>,
+        Stephen Boyd <sboyd@codeaurora.org>,
+        Sergiu Iordache <sergiu@chromium.org>, linux-kernel@vger.kernel.org,
+        arve@android.com, Jesper Juhl <jj@chaosbits.net>,
+        John Stultz <john.stultz@linaro.org>,
+        Rebecca Schultz Zavin <rebecca@android.com>,
+        WANG Cong <xiyou.wangcong@gmail.com>,
+        Andrew Morton <akpm@linux-foundation.org>, kernel-team@android.com,
+        Thomas Meyer <thomas@m3y3r.de>, tony.luck@intel.com
+Date: Mon, 14 May 2012 14:55:33 -0600
+In-Reply-To: <20120514204531.GA13828@lizard>
+References: <20120512001506.GA8653@lizard>
+	 <20120514155846.GA19538@kroah.com> <1337013022.2476.17.camel@lorien2>
+	 <20120514204531.GA13828@lizard>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3-0ubuntu6 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> > > > Thanks for the quick response Meelis (unlike myself; I've been consumed
-> > > > with a hard deadline task recently - sorry).
-> > 
-> > Not so quick this time - I had to replace the HDD and then recreate the 
-> > failing config. Took 2.4-rc7 as a base. This gives us another data point 
-> > - it does not warn on SMP but warns only on UP.
+On Mon, 2012-05-14 at 13:45 -0700, Anton Vorontsov wrote:
+> On Mon, May 14, 2012 at 10:30:22AM -0600, Shuah Khan wrote:
+> [...]
+> > Anton! Is it safe to assume you are planning to cover the second feature
+> > as well, in which case I can drop my plans to get this work done.
 > 
-> I think that's the critical point; thanks for mentioning it :)
+> Yep, absolutely. I'm fully committed to add runtime logging support
+> to pstore. Actually, I'll post patches pretty soon.
 > 
-> The following patch should fix it.  Can you confirm?
+> Thanks!
 
-Yes, that fixes it, thanks!
+Cool. Do you need any testing help? I have an interest in seeing this
+work on architectures and platforms I play with.
 
--- 
-Meelis Roos (mroos@linux.ee)
+-- Shuah
+
+
