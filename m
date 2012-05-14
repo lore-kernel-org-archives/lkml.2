@@ -1,96 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932582Ab2ENWWd (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 May 2012 18:22:33 -0400
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:34950 "EHLO
-	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932498Ab2ENWWc convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 May 2012 18:22:32 -0400
+	id S932596Ab2ENWYl (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 May 2012 18:24:41 -0400
+Received: from mga01.intel.com ([192.55.52.88]:46252 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932541Ab2ENWYk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 14 May 2012 18:24:40 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
+   d="scan'208";a="166238484"
+Message-Id: <dad1743e5993f19b3d7e7bd0fb35dc45b5326626.1337033510.git.tony.luck@intel.com>
+From: Tony Luck <tony.luck@intel.com>
+Date: Mon, 14 May 2012 15:07:48 -0700
+Subject: [PATCH] x86/mce: Only restart instruction after machine check recovery if it is safe
 MIME-Version: 1.0
-In-Reply-To: <20120512001857.GK14782@lizard>
-References: <20120512001506.GA8653@lizard>
-	<20120512001857.GK14782@lizard>
-Date: Mon, 14 May 2012 15:22:30 -0700
-X-Google-Sender-Auth: 2DpaR7n6mfOkplojRT4jPt9MXoM
-Message-ID: <CAGXu5j+L+sbadNVgo6cd70AdHKp+AdCmvcZBLNi0_8hHxVMKCQ@mail.gmail.com>
-Subject: Re: [PATCH 11/11] pstore/ram: Add ECC support
-From: Kees Cook <keescook@chromium.org>
-To: Anton Vorontsov <anton.vorontsov@linaro.org>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Colin Cross <ccross@android.com>, Arnd Bergmann <arnd@arndb.de>,
-        John Stultz <john.stultz@linaro.org>, arve@android.com,
-        Rebecca Schultz Zavin <rebecca@android.com>,
-        Jesper Juhl <jj@chaosbits.net>, Randy Dunlap <rdunlap@xenotime.net>,
-        Stephen Boyd <sboyd@codeaurora.org>, Thomas Meyer <thomas@m3y3r.de>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Marco Stornelli <marco.stornelli@gmail.com>,
-        WANG Cong <xiyou.wangcong@gmail.com>, linux-kernel@vger.kernel.org,
-        devel@driverdev.osuosl.org, linaro-kernel@lists.linaro.org,
-        patches@linaro.org, kernel-team@android.com
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
-X-System-Of-Record: true
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org, Borislav Petkov <bp@amd64.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, May 11, 2012 at 5:18 PM, Anton Vorontsov
-<anton.vorontsov@linaro.org> wrote:
-> This is now straightforward: just introduce a module parameter and pass
-> the needed value to persistent_ram_new().
->
-> Signed-off-by: Anton Vorontsov <anton.vorontsov@linaro.org>
+Section 15.3.1.2 of the software developer manual has this to say about the
+RIPV bit in the IA32_MCG_STATUS register:
 
-Acked-by: Kees Cook <keescook@chromium.org>
+  RIPV (restart IP valid) flag, bit 0 â€” Indicates (when set) that program
+  execution can be restarted reliably at the instruction pointed to by the
+  instruction pointer pushed on the stack when the machine-check exception
+  is generated.  When clear, the program cannot be reliably restarted at
+  the pushed instruction pointer.
 
-> ---
->  fs/pstore/ram.c |   12 +++++++++---
->  1 file changed, 9 insertions(+), 3 deletions(-)
->
-> diff --git a/fs/pstore/ram.c b/fs/pstore/ram.c
-> index cf0ad92..eeb4e32 100644
-> --- a/fs/pstore/ram.c
-> +++ b/fs/pstore/ram.c
-> @@ -61,6 +61,11 @@ module_param(dump_oops, int, 0600);
->  MODULE_PARM_DESC(dump_oops,
->                "set to 1 to dump oopses, 0 to only dump panics (default 1)");
->
-> +static int ramoops_ecc;
-> +module_param_named(ecc, ramoops_ecc, int, 0600);
-> +MODULE_PARM_DESC(ramoops_ecc,
-> +               "set to 1 to enable ECC support");
-> +
->  struct ramoops_context {
->        struct persistent_ram_zone **przs;
->        phys_addr_t phys_addr;
-> @@ -251,7 +256,7 @@ static int __init ramoops_probe(struct platform_device *pdev)
->                size_t sz = cxt->record_size;
->                phys_addr_t start = cxt->phys_addr + sz * i;
->
-> -               cxt->przs[i] = persistent_ram_new(start, sz, 0);
-> +               cxt->przs[i] = persistent_ram_new(start, sz, ramoops_ecc);
->                if (IS_ERR(cxt->przs[i])) {
->                        err = PTR_ERR(cxt->przs[i]);
->                        pr_err("failed to initialize a prz\n");
-> @@ -283,9 +288,10 @@ static int __init ramoops_probe(struct platform_device *pdev)
->        record_size = pdata->record_size;
->        dump_oops = pdata->dump_oops;
->
-> -       pr_info("attached 0x%lx@0x%llx (%ux0x%zx)\n",
-> +       pr_info("attached 0x%lx@0x%llx (%ux0x%zx), ecc: %s\n",
->                cxt->size, (unsigned long long)cxt->phys_addr,
-> -               cxt->max_count, cxt->record_size);
-> +               cxt->max_count, cxt->record_size,
-> +               ramoops_ecc ? "on" : "off");
->
->        return 0;
->
-> --
-> 1.7.9.2
+We need to save the state of this bit in do_machine_check() and use it
+in mce_notify_process() to force a signal; even if memory_failure() says
+it made a complete recovery ... e.g. replaced a clean LRU page.
 
+Acked-by: Borislav Petkov <bp@amd64.org>
+Signed-off-by: Tony Luck <tony.luck@intel.com>
+---
 
+[Linus: I found this when I started testing instruction recovery (where
+ it is common to have a clean LRU page) ... and was surprised to see my
+ code try to resume execution. Clean LRU data pages are less common (absent
+ in my tests - oops) but they do happen, and we shouldn't try to restart
+ the instruction if the processor says we shouldn't]
 
+ arch/x86/kernel/cpu/mcheck/mce.c |   14 +++++++++++---
+ 1 files changed, 11 insertions(+), 3 deletions(-)
+
+diff --git a/arch/x86/kernel/cpu/mcheck/mce.c b/arch/x86/kernel/cpu/mcheck/mce.c
+index d086a09..11c9166 100644
+--- a/arch/x86/kernel/cpu/mcheck/mce.c
++++ b/arch/x86/kernel/cpu/mcheck/mce.c
+@@ -945,9 +945,10 @@ struct mce_info {
+ 	atomic_t		inuse;
+ 	struct task_struct	*t;
+ 	__u64			paddr;
++	int			restartable;
+ } mce_info[MCE_INFO_MAX];
+ 
+-static void mce_save_info(__u64 addr)
++static void mce_save_info(__u64 addr, int c)
+ {
+ 	struct mce_info *mi;
+ 
+@@ -955,6 +956,7 @@ static void mce_save_info(__u64 addr)
+ 		if (atomic_cmpxchg(&mi->inuse, 0, 1) == 0) {
+ 			mi->t = current;
+ 			mi->paddr = addr;
++			mi->restartable = c;
+ 			return;
+ 		}
+ 	}
+@@ -1130,7 +1132,7 @@ void do_machine_check(struct pt_regs *regs, long error_code)
+ 			mce_panic("Fatal machine check on current CPU", &m, msg);
+ 		if (worst == MCE_AR_SEVERITY) {
+ 			/* schedule action before return to userland */
+-			mce_save_info(m.addr);
++			mce_save_info(m.addr, m.mcgstatus & MCG_STATUS_RIPV);
+ 			set_thread_flag(TIF_MCE_NOTIFY);
+ 		} else if (kill_it) {
+ 			force_sig(SIGBUS, current);
+@@ -1179,7 +1181,13 @@ void mce_notify_process(void)
+ 
+ 	pr_err("Uncorrected hardware memory error in user-access at %llx",
+ 		 mi->paddr);
+-	if (memory_failure(pfn, MCE_VECTOR, MF_ACTION_REQUIRED) < 0) {
++	/*
++	 * We must call memory_failure() here even if the current process is
++	 * doomed. We still need to mark the page as poisoned and alert any
++	 * other users of the page.
++	 */
++	if (memory_failure(pfn, MCE_VECTOR, MF_ACTION_REQUIRED) < 0 ||
++			   mi->restartable == 0) {
+ 		pr_err("Memory error not recovered");
+ 		force_sig(SIGBUS, current);
+ 	}
 -- 
-Kees Cook
-Chrome OS Security
+1.7.9.rc2.1.g69204
+
