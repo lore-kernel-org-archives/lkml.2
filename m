@@ -1,14 +1,15 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964803Ab2EOB1s (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 May 2012 21:27:48 -0400
-Received: from ozlabs.org ([203.10.76.45]:60050 "EHLO ozlabs.org"
+	id S932828Ab2EOB1r (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 May 2012 21:27:47 -0400
+Received: from ozlabs.org ([203.10.76.45]:49626 "EHLO ozlabs.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932708Ab2EOB1q (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S932652Ab2EOB1q (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 14 May 2012 21:27:46 -0400
 From: Rusty Russell <rusty@rustcorp.com.au>
-To: Ingo Molnar <mingo@kernel.org>
-Cc: Ingo Molnar <mingo@redhat.com>, x86@kernel.org,
+To: KOSAKI Motohiro <kosaki.motohiro@gmail.com>
+Cc: KOSAKI Motohiro <kosaki.motohiro@gmail.com>,
+        Ingo Molnar <mingo@redhat.com>, x86@kernel.org,
         LKML <linux-kernel@vger.kernel.org>, anton@samba.org,
         Arnd Bergmann <arnd@arndb.de>,
         KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
@@ -16,56 +17,78 @@ Cc: Ingo Molnar <mingo@redhat.com>, x86@kernel.org,
         Linus Torvalds <torvalds@linux-foundation.org>,
         Al Viro <viro@zeniv.linux.org.uk>
 Subject: Re: [PULL] cpumask: finally make them variable size w/ CPUMASK_OFFSTACK.
-In-Reply-To: <20120510074215.GA28395@gmail.com>
-References: <87ipg5c2bk.fsf@rustcorp.com.au> <20120509084453.GA6429@gmail.com> <87fwb8dgkn.fsf@rustcorp.com.au> <20120510074215.GA28395@gmail.com>
+In-Reply-To: <4FAB6363.4080808@gmail.com>
+References: <87ipg5c2bk.fsf@rustcorp.com.au> <4FAB1AC9.1050306@gmail.com> <871umsdbm0.fsf@rustcorp.com.au> <4FAB2B5B.4020902@gmail.com> <87vck4bppw.fsf@rustcorp.com.au> <4FAB6363.4080808@gmail.com>
 User-Agent: Notmuch/0.12 (http://notmuchmail.org) Emacs/23.3.1 (i686-pc-linux-gnu)
-Date: Mon, 14 May 2012 12:52:51 +0930
-Message-ID: <87y5ovtpis.fsf@rustcorp.com.au>
+Date: Mon, 14 May 2012 12:28:49 +0930
+Message-ID: <87zk9btqmu.fsf@rustcorp.com.au>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 10 May 2012 09:42:15 +0200, Ingo Molnar <mingo@kernel.org> wrote:
+On Thu, 10 May 2012 02:42:43 -0400, KOSAKI Motohiro <kosaki.motohiro@gmail.com> wrote:
+> (5/10/12 12:54 AM), Rusty Russell wrote:
+> > On Wed, 09 May 2012 22:43:39 -0400, KOSAKI Motohiro<kosaki.motohiro@gmail.com>  wrote:
+> >>> Or is there a reason we shouldn't even try to allocate here?
+> >>
+> >> 1) your code always use GFP_KERNEL. it is trouble maker when alloc_pages w/ GFP_ATOMIC.
+> >
+> > Oh :(
+> >
+> > How about the below instead?
 > 
-> * Rusty Russell <rusty@rustcorp.com.au> wrote:
-> 
-> > Mainly because I didn't want to disturb the archs which don't 
-> > care at all about large cpumasks.  After all, putting a struct 
-> > cpumask on the stack is pretty convenient.
-> 
-> Yes.
-> 
-> > But we could add a new arch config which removes it, and set 
-> > it from x86.
-> 
-> Could we just use a single cpumask type, cpumask_t or so, which 
-> would be the *only* generic method to use cpumasks?
-> 
-> (Current cpumask_t would move to cpumask_full_t.)
-> 
-> This would be the 'final' destiation for the cpumask code: the 
-> natural type to use in new code is cpumask_t, while in special 
-> cases we could use cpumask_full_t - but the name signals that 
-> it's a potentially large structure.
-> 
-> On architectures that don't worry about large cpumasks (yet ...) 
-> cpumask_t and cpumask_full_t maps to the same thing, so there's 
-> no difference.
-> 
-> This would make things more natural IMO.
-> 
-> There would be no 'struct cpumask'. (and 'cpumask_var_t' would 
-> disappear too due to the rename.)
-> 
-> Thoughts?
+> This code still slow than original. when calling reclaim path, new allocation is almost always
+> fail. then, your code almost always invoke all cpu batch invalidation. i.e. many ipi.
 
-I don't understand, sorry.  I think I'd need some code to understand.
+I don't know this code.  Does that happen often?  Do we really need to
+optimize the out-of-memory path?
 
-Unfortunately I was wrong about being able to remove struct cpumask's
-definition when CONFIG_CPUMASK_OFFSTACK=n: we need it for cpumask_var_t
-in that case :(
+But I should have used on_each_cpu_cond() helper which does this for us
+(except it falls back to individial IPIs) which would make this code
+neater.
+
+> >> 2) When CONFIG_CPUMASK_OFFSTACK=n and NR_CPUS is relatively large, cpumask on stack may
+> >> cause stack overflow. because of, alloc_pages() can be called from
+> >> very deep call stack.
+> >
+> > You can't have large NR_CPUS without CONFIG_CPUMASK_OFFSTACK=y,
+> > otherwise you'll get many other stack overflows, too.
+> 
+> Original code put cpumask bss instead stack then. :-)
+
+Yes, and this is what it looks like if we convert it directly, but I
+still don't want to encourage people to do this :(
 
 Cheers,
 Rusty.
+
+diff --git a/mm/page_alloc.c b/mm/page_alloc.c
+--- a/mm/page_alloc.c
++++ b/mm/page_alloc.c
+@@ -1179,7 +1179,7 @@ void drain_all_pages(void)
+ 	 * Allocate in the BSS so we wont require allocation in
+ 	 * direct reclaim path for CONFIG_CPUMASK_OFFSTACK=y
+ 	 */
+-	static cpumask_t cpus_with_pcps;
++	static DECLARE_BITMAP(cpus_with_pcps, NR_CPUS);
+ 
+ 	/*
+ 	 * We don't care about racing with CPU hotplug event
+@@ -1197,11 +1197,12 @@ void drain_all_pages(void)
+ 			}
+ 		}
+ 		if (has_pcps)
+-			cpumask_set_cpu(cpu, &cpus_with_pcps);
++			cpumask_set_cpu(cpu, to_cpumask(cpus_with_pcps));
+ 		else
+-			cpumask_clear_cpu(cpu, &cpus_with_pcps);
++			cpumask_clear_cpu(cpu, to_cpumask(cpus_with_pcps));
+ 	}
+-	on_each_cpu_mask(&cpus_with_pcps, drain_local_pages, NULL, 1);
++	on_each_cpu_mask(to_cpumask(cpus_with_pcps),
++			 drain_local_pages, NULL, 1);
+ }
+ 
+ #ifdef CONFIG_HIBERNATION
