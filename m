@@ -1,38 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754201Ab2END53 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 13 May 2012 23:57:29 -0400
-Received: from shards.monkeyblade.net ([198.137.202.13]:51820 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754059Ab2END52 (ORCPT
+	id S1754239Ab2END6k (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 13 May 2012 23:58:40 -0400
+Received: from smtp.syd.comcen.com.au ([203.23.236.77]:4126 "EHLO
+	smtp.syd.comcen.com.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754068Ab2END6j (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 13 May 2012 23:57:28 -0400
-Date: Sun, 13 May 2012 23:57:25 -0400 (EDT)
-Message-Id: <20120513.235725.1969007442842729995.davem@davemloft.net>
-To: nn6eumtr@gmail.com
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: PACKET_LOSS socket option for packet_mmap
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <4FB08123.4080901@gmail.com>
-References: <4FB08123.4080901@gmail.com>
-X-Mailer: Mew version 6.5 on Emacs 24.0.95 / Mule 6.0 (HANACHIRUSATO)
+	Sun, 13 May 2012 23:58:39 -0400
+Date: Mon, 14 May 2012 13:57:31 +1000
+From: Chris Jones <chrisjones@spin.net.au>
+To: linux-kernel@vger.kernel.org
+Cc: "H. Peter Anvin" <hpa@zytor.com>
+Subject: Re: Integrating a new programming language into the kernel
+Message-ID: <20120514135731.2e989a81@linux-j2xc>
+In-Reply-To: <4FB05533.5010807@zytor.com>
+References: <20120513120009.18cb3e17@linux-j2xc>
+	<4FB05533.5010807@zytor.com>
+X-Mailer: Claws Mail 3.7.10 (GTK+ 2.24.7; x86_64-suse-linux-gnu)
 Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.6 (shards.monkeyblade.net [198.137.202.13]); Sun, 13 May 2012 20:57:27 -0700 (PDT)
+X-comcen-MailScanner-Information: Please contact the ISP for more information
+X-comcen-MailScanner: Found to be clean
+X-comcen-MailScanner-SpamCheck: not spam, SpamAssassin (not cached,
+	score=-2.011, required 4, AWL 0.49, BAYES_00 -2.60, RDNS_NONE 0.10)
+X-comcen-MailScanner-From: chrisjones@spin.net.au
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: nn6eumtr <nn6eumtr@gmail.com>
-Date: Sun, 13 May 2012 23:50:59 -0400
+I'm curious as to why you suggest "no"?
 
-> What does the PACKET_LOSS socket option for packet_mmap do?
+And if it were to successfully eventuate and I were to do this, it
+would only ever be a custom kernel. And that's why I'm curious as to
+why you say to not do it.
+
+
+Regards
+
+Chris Jones
+
+
+
+On Sun, 13 May 2012 17:43:31 -0700
+"H. Peter Anvin" <hpa@zytor.com> wrote:
+
+> On 05/12/2012 07:00 PM, Chris Jones wrote:
+> > Is it possible to implement a new programming language into the
+> > kernel? And if so, how would I go about doing this?
 > 
-> I've seen some sample code setting the option, but couldn't find an
-> explanation of what it does.
+> 1. Yes.
+> 2. Don't.
+> 
+> 	-hpa
+> 
 
-Most networking developers do not read linux-kernel.
-
-Send your posting to netdev@vger.kernel.org and you will reach
-a more appropriate audience.
