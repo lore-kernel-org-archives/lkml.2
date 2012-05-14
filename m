@@ -1,74 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756227Ab2ENM6X (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 May 2012 08:58:23 -0400
-Received: from eu1sys200aog113.obsmtp.com ([207.126.144.135]:60129 "EHLO
-	eu1sys200aog113.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755855Ab2ENM6W (ORCPT
+	id S1756281Ab2ENM6g (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 May 2012 08:58:36 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:56066 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755855Ab2ENM6e (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 May 2012 08:58:22 -0400
-Message-ID: <4FB10156.2080900@stericsson.com>
-Date: Mon, 14 May 2012 14:57:58 +0200
-From: Ulf Hansson <ulf.hansson@stericsson.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.24) Gecko/20111108 Lightning/1.0b2 Thunderbird/3.1.16
+	Mon, 14 May 2012 08:58:34 -0400
+Date: Mon, 14 May 2012 05:58:08 -0700
+From: tip-bot for Arnaldo Carvalho de Melo <acme@redhat.com>
+Message-ID: <tip-m91tv004h2m1fkfgu6ovx3hb@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, eranian@google.com, paulus@samba.org,
+        acme@redhat.com, hpa@zytor.com, mingo@kernel.org,
+        torvalds@linux-foundation.org, peterz@infradead.org, efault@gmx.de,
+        namhyung@gmail.com, fweisbec@gmail.com, dsahern@gmail.com,
+        tglx@linutronix.de
+Reply-To: mingo@kernel.org, hpa@zytor.com, acme@redhat.com, paulus@samba.org,
+        eranian@google.com, linux-kernel@vger.kernel.org,
+        torvalds@linux-foundation.org, efault@gmx.de, peterz@infradead.org,
+        namhyung@gmail.com, fweisbec@gmail.com, dsahern@gmail.com,
+        tglx@linutronix.de
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:perf/core] perf annotate:
+  Use raw form for register indirect call instructions
+Git-Commit-ID: e8ea1561952b04276cf4c02500e363de76c142aa
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
 MIME-Version: 1.0
-To: yongd <yongd@marvell.com>
-Cc: "cjb@laptop.org" <cjb@laptop.org>,
-        "linux-mmc@vger.kernel.org" <linux-mmc@vger.kernel.org>,
-        "stefan.xk.nilsson@stericsson.com" <stefan.xk.nilsson@stericsson.com>,
-        "linus.walleij@linaro.org" <linus.walleij@linaro.org>,
-        "svenkatr@ti.com" <svenkatr@ti.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] mmc:sdio:retry CMD52/53 when error happens
-References: <1336984792-13956-1-git-send-email-yongd@marvell.com>
-In-Reply-To: <1336984792-13956-1-git-send-email-yongd@marvell.com>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Mon, 14 May 2012 05:58:15 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Yongd,
+Commit-ID:  e8ea1561952b04276cf4c02500e363de76c142aa
+Gitweb:     http://git.kernel.org/tip/e8ea1561952b04276cf4c02500e363de76c142aa
+Author:     Arnaldo Carvalho de Melo <acme@redhat.com>
+AuthorDate: Fri, 11 May 2012 12:28:55 -0300
+Committer:  Arnaldo Carvalho de Melo <acme@redhat.com>
+CommitDate: Fri, 11 May 2012 12:28:55 -0300
 
- From my perspective I don't think this patch is wanted.
+perf annotate: Use raw form for register indirect call instructions
 
-A retry mechanism is likely very much hw-SDIO device dependent. Upper 
-layers (SDIO func driver) is thus the only software that is able to 
-handle retries correctly.
+   callq  *0x10(%rax)
 
-Kind regards
-Ulf Hansson
+was being rendered in simplified mode as:
 
+   callq  *10
 
-On 05/14/2012 10:39 AM, yongd wrote:
->    Set sdio CMD52/53's retry time as MMC_CMD_RETRIES. As a result,
-> sdio might benefit from core-internal CMD retry mechanism when
-> some errors happen(CRC, etc).
->
-> Signed-off-by: yongd<yongd@marvell.com>
-> ---
->   drivers/mmc/core/sdio_ops.c |    3 ++-
->   1 file changed, 2 insertions(+), 1 deletion(-)
->
-> diff --git a/drivers/mmc/core/sdio_ops.c b/drivers/mmc/core/sdio_ops.c
-> index d29e206..884c27e 100644
-> --- a/drivers/mmc/core/sdio_ops.c
-> +++ b/drivers/mmc/core/sdio_ops.c
-> @@ -86,7 +86,7 @@ static int mmc_io_rw_direct_host(struct mmc_host *host, int write, unsigned fn,
->   	cmd.arg |= in;
->   	cmd.flags = MMC_RSP_SPI_R5 | MMC_RSP_R5 | MMC_CMD_AC;
->
-> -	err = mmc_wait_for_cmd(host,&cmd, 0);
-> +	err = mmc_wait_for_cmd(host,&cmd, MMC_CMD_RETRIES);
->   	if (err)
->   		return err;
->
-> @@ -147,6 +147,7 @@ int mmc_io_rw_extended(struct mmc_card *card, int write, unsigned fn,
->   	else
->   		cmd.arg |= 0x08000000 | blocks;		/* block mode */
->   	cmd.flags = MMC_RSP_SPI_R5 | MMC_RSP_R5 | MMC_CMD_ADTC;
-> +	cmd.retries = MMC_CMD_RETRIES;
->
->   	data.blksz = blksz;
->   	/* Code in host drivers/fwk assumes that "blocks" always is>=1 */
+I.e. hexa, but without the 0x and omitting the register. In such cases
+just use the raw form.
 
+Reported-by: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: David Ahern <dsahern@gmail.com>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Mike Galbraith <efault@gmx.de>
+Cc: Namhyung Kim <namhyung@gmail.com>
+Cc: Paul Mackerras <paulus@samba.org>
+Cc: Peter Zijlstra <peterz@infradead.org>
+Cc: Stephane Eranian <eranian@google.com>
+Link: http://lkml.kernel.org/n/tip-m91tv004h2m1fkfgu6ovx3hb@git.kernel.org
+Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
+---
+ tools/perf/util/annotate.c |    9 +++++++++
+ 1 files changed, 9 insertions(+), 0 deletions(-)
+
+diff --git a/tools/perf/util/annotate.c b/tools/perf/util/annotate.c
+index 6b4146b..9a020d1 100644
+--- a/tools/perf/util/annotate.c
++++ b/tools/perf/util/annotate.c
+@@ -56,6 +56,12 @@ static int call__parse(struct ins_operands *ops)
+ 	return ops->target.name == NULL ? -1 : 0;
+ 
+ indirect_call:
++	tok = strchr(endptr, '(');
++	if (tok != NULL) {
++		ops->target.addr = 0;
++		return 0;
++	}
++
+ 	tok = strchr(endptr, '*');
+ 	if (tok == NULL)
+ 		return -1;
+@@ -70,6 +76,9 @@ static int call__scnprintf(struct ins *ins, char *bf, size_t size,
+ 	if (ops->target.name)
+ 		return scnprintf(bf, size, "%-6.6s %s", ins->name, ops->target.name);
+ 
++	if (ops->target.addr == 0)
++		return ins__raw_scnprintf(ins, bf, size, ops);
++
+ 	return scnprintf(bf, size, "%-6.6s *%" PRIx64, ins->name, ops->target.addr);
+ }
+ 
