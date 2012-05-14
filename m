@@ -1,95 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756068Ab2ENKxq (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 May 2012 06:53:46 -0400
+	id S1756094Ab2ENKxy (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 May 2012 06:53:54 -0400
 Received: from mail-pb0-f46.google.com ([209.85.160.46]:54745 "EHLO
 	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755381Ab2ENKxn (ORCPT
+	with ESMTP id S1755381Ab2ENKxw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 May 2012 06:53:43 -0400
+	Mon, 14 May 2012 06:53:52 -0400
 From: Magnus Damm <magnus.damm@gmail.com>
 To: linux-arm-kernel@lists.infradead.org
-Cc: horms@verge.net.au, linux@arm.linux.org.uk, arnd@arndb.de,
-        linux-sh@vger.kernel.org, linux-kernel@vger.kernel.org, rjw@sisk.pl,
-        lethal@linux-sh.org, olof@lixom.net,
+Cc: linux@arm.linux.org.uk, arnd@arndb.de, linux-sh@vger.kernel.org,
+        lethal@linux-sh.org, linux-kernel@vger.kernel.org, rjw@sisk.pl,
+        horms@verge.net.au, olof@lixom.net,
         Magnus Damm <magnus.damm@gmail.com>
-Date: Mon, 14 May 2012 19:54:41 +0900
-Message-Id: <20120514105441.8596.31776.sendpatchset@w520>
+Date: Mon, 14 May 2012 19:54:51 +0900
+Message-Id: <20120514105451.8596.92367.sendpatchset@w520>
 In-Reply-To: <20120514105424.8596.38355.sendpatchset@w520>
 References: <20120514105424.8596.38355.sendpatchset@w520>
-Subject: [PATCH 02/03] mach-shmobile: Use DT_MACHINE for armadillo 800 eva
+Subject: [PATCH 03/03] ARM: Undelete KZM9D mach-type
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Magnus Damm <damm@opensource.se>
 
-Use DT_MACHINE_START() on the r8a7740 based armadillo 800 eva board.
-
-Also include a tiny DTS file to describe the board and update the
-Kconfig dependencies to select CONFIG_USE_OF.
+Undelete the KZM9D mach-type to allow build of board
+for EMEV2 SoC support.
 
 Signed-off-by: Magnus Damm <damm@opensource.se>
 ---
 
- arch/arm/boot/dts/r8a7740-armadillo800eva.dts  |   22 ++++++++++++++++++++++
- arch/arm/mach-shmobile/Kconfig                 |    1 +
- arch/arm/mach-shmobile/board-armadillo800eva.c |    8 +++++++-
- 3 files changed, 30 insertions(+), 1 deletion(-)
+ arch/arm/tools/mach-types |    1 +
+ 1 file changed, 1 insertion(+)
 
---- /dev/null
-+++ work/arch/arm/boot/dts/r8a7740-armadillo800eva.dts	2012-05-14 19:31:57.000000000 +0900
-@@ -0,0 +1,22 @@
-+/*
-+ * Device Tree Source for the armadillo 800 eva board
-+ *
-+ * Copyright (C) 2012 Renesas Solutions Corp.
-+ *
-+ * This file is licensed under the terms of the GNU General Public License
-+ * version 2.  This program is licensed "as is" without any warranty of any
-+ * kind, whether express or implied.
-+ */
-+
-+/dts-v1/;
-+/include/ "skeleton.dtsi"
-+
-+/ {
-+	model = "armadillo 800 eva";
-+	compatible = "renesas,armadillo800eva";
-+
-+	memory {
-+		device_type = "memory";
-+		reg = <0x40000000 0x20000000>;
-+	};
-+};
---- 0002/arch/arm/mach-shmobile/Kconfig
-+++ work/arch/arm/mach-shmobile/Kconfig	2012-05-14 19:32:21.000000000 +0900
-@@ -99,6 +99,7 @@ config MACH_ARMADILLO800EVA
- 	bool "Armadillo-800 EVA board"
- 	depends on ARCH_R8A7740
- 	select ARCH_REQUIRE_GPIOLIB
-+	select USE_OF
- 
- config MACH_MARZEN
- 	bool "MARZEN board"
---- 0001/arch/arm/mach-shmobile/board-armadillo800eva.c
-+++ work/arch/arm/mach-shmobile/board-armadillo800eva.c	2012-05-14 19:35:27.000000000 +0900
-@@ -768,11 +768,17 @@ static void __init eva_add_early_devices
- 	shmobile_timer.init = eva_earlytimer_init;
- }
- 
--MACHINE_START(ARMADILLO800EVA, "armadillo800eva")
-+static const char *eva_boards_compat_dt[] __initdata = {
-+	"renesas,armadillo800eva",
-+	NULL,
-+};
-+
-+DT_MACHINE_START(ARMADILLO800EVA_DT, "armadillo800eva")
- 	.map_io		= r8a7740_map_io,
- 	.init_early	= eva_add_early_devices,
- 	.init_irq	= r8a7740_init_irq,
- 	.handle_irq	= shmobile_handle_irq_intc,
- 	.init_machine	= eva_init,
- 	.timer		= &shmobile_timer,
-+	.dt_compat	= eva_boards_compat_dt,
- MACHINE_END
+--- 0001/arch/arm/tools/mach-types
++++ work/arch/arm/tools/mach-types	2012-05-14 19:38:03.000000000 +0900
+@@ -530,6 +530,7 @@ nokia_rm680		MACH_NOKIA_RM680	NOKIA_RM68
+ msm8960_sim		MACH_MSM8960_SIM	MSM8960_SIM		3230
+ msm8960_rumi3		MACH_MSM8960_RUMI3	MSM8960_RUMI3		3231
+ gsia18s			MACH_GSIA18S		GSIA18S			3234
++kzm9d			MACH_KZM9D		KZM9D			3246
+ mx53_loco		MACH_MX53_LOCO		MX53_LOCO		3273
+ tx53			MACH_TX53		TX53			3279
+ encore			MACH_ENCORE		ENCORE			3284
