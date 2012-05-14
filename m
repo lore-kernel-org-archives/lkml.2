@@ -1,58 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754587Ab2ENG7x (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 May 2012 02:59:53 -0400
-Received: from e23smtp06.au.ibm.com ([202.81.31.148]:39448 "EHLO
-	e23smtp06.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754441Ab2ENG7v (ORCPT
+	id S1754594Ab2ENHFO (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 May 2012 03:05:14 -0400
+Received: from mail-wi0-f178.google.com ([209.85.212.178]:54851 "EHLO
+	mail-wi0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754231Ab2ENHFM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 May 2012 02:59:51 -0400
-Message-ID: <4FB0AD32.6020104@linux.vnet.ibm.com>
-Date: Mon, 14 May 2012 14:58:58 +0800
-From: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
+	Mon, 14 May 2012 03:05:12 -0400
+Date: Mon, 14 May 2012 09:05:07 +0200
+From: Ingo Molnar <mingo@kernel.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Arnaldo Carvalho de Melo <acme@infradead.org>,
+        linux-kernel@vger.kernel.org, Arjan van de Ven <arjan@infradead.org>,
+        David Ahern <dsahern@gmail.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Mike Galbraith <efault@gmx.de>, Namhyung Kim <namhyung@gmail.com>,
+        Paul Mackerras <paulus@samba.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Stephane Eranian <eranian@google.com>
+Subject: Re: [GIT PULL 0/8] Annotation weekly ponies delivery
+Message-ID: <20120514070507.GB27980@gmail.com>
+References: <1336852387-16322-1-git-send-email-acme@infradead.org>
+ <CA+55aFxeqrCj71fSe2r9kwzyO9q2BT9A89f7nLUgbrTG_uPP2g@mail.gmail.com>
+ <20120512212531.GC20057@infradead.org>
+ <CA+55aFzGAokE5htNFhkoRxT5bK1_5=uofkC5xZipTtiawSh_hA@mail.gmail.com>
 MIME-Version: 1.0
-To: Avi Kivity <avi@redhat.com>
-CC: Marcelo Tosatti <mtosatti@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
-        KVM <kvm@vger.kernel.org>
-Subject: [PATCH] KVM: VMX: unlike vmcs on fail path
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
-x-cbid: 12051320-7014-0000-0000-000001250191
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CA+55aFzGAokE5htNFhkoRxT5bK1_5=uofkC5xZipTtiawSh_hA@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-fix:
 
-[ 1529.577273] Call Trace:
-[ 1529.577289]  [<ffffffffa060d58f>] kvm_arch_hardware_disable+0x13/0x30 [kvm]
-[ 1529.577302]  [<ffffffffa05fa2d4>] hardware_disable_nolock+0x35/0x39 [kvm]
-[ 1529.577311]  [<ffffffffa05fa29f>] ? cpumask_clear_cpu.constprop.31+0x13/0x13 [kvm]
-[ 1529.577315]  [<ffffffff81096ba8>] on_each_cpu+0x44/0x84
-[ 1529.577326]  [<ffffffffa05f98b5>] hardware_disable_all_nolock+0x34/0x36 [kvm]
-[ 1529.577335]  [<ffffffffa05f98e2>] hardware_disable_all+0x2b/0x39 [kvm]
-[ 1529.577349]  [<ffffffffa05fafe5>] kvm_put_kvm+0xed/0x10f [kvm]
-[ 1529.577358]  [<ffffffffa05fb3d7>] kvm_vm_release+0x22/0x28 [kvm]
+* Linus Torvalds <torvalds@linux-foundation.org> wrote:
 
-Signed-off-by: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
----
- arch/x86/kvm/vmx.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+> On Sat, May 12, 2012 at 2:25 PM, Arnaldo Carvalho de Melo
+> <acme@infradead.org> wrote:
+> >
+> > Didn't notice it, but then I'm not updating the kernel that frequently,
+> > will check on this Sandy Bridge nobo (i7-2920XM).
+> 
+> I think SNB has problems with PEBS and cycles anyway. I have a 
+> westmere machine that I use for profiling for that reason.
 
-diff --git a/arch/x86/kvm/vmx.c b/arch/x86/kvm/vmx.c
-index 2c98057..5203428 100644
---- a/arch/x86/kvm/vmx.c
-+++ b/arch/x86/kvm/vmx.c
-@@ -6354,7 +6354,7 @@ static struct kvm_vcpu *vmx_create_vcpu(struct kvm *kvm, unsigned int id)
- 	return &vmx->vcpu;
+I have a pre-westmere Nehalem that I use most for perf testing - 
+that one appears to be working well both with default cycles and 
+with cycles:pp. Will test on a Westmere.
 
- free_vmcs:
--	free_vmcs(vmx->loaded_vmcs->vmcs);
-+	free_loaded_vmcs(vmx->loaded_vmcs);
- free_msrs:
- 	kfree(vmx->guest_msrs);
- uninit_vcpu:
--- 
-1.7.7.6
+btw., Arnaldo, could we make cycles:pp the default event on perf 
+record and perf top? We have the new AMD IBS code in perf/core 
+queued up for v3.5, which is roughly equivalent to cycles:p on 
+Intel CPUs, so if we standardize on cycles:pp we'll get improved 
+skidless (and on Intel pre-SB CPUs, precise) profiling output by 
+default.
 
+While at it I'd also suggest increasing the default sampling 
+frequency, from 1000 Hz per CPU to at least 4Khz auto-freq or so 
+- this should work well all across the board I think. CPUs are 
+getting faster and command/app run times are getting shorter, 
+1Khz is a bit low IMO.
+
+Thanks,
+
+	Ingo
