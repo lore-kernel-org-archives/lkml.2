@@ -1,56 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964847Ab2EOOhL (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 May 2012 10:37:11 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:59247 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S964815Ab2EOOhH convert rfc822-to-8bit (ORCPT
+	id S964951Ab2EOOhY (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 May 2012 10:37:24 -0400
+Received: from mail-wg0-f44.google.com ([74.125.82.44]:52301 "EHLO
+	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S964815Ab2EOOhU convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 May 2012 10:37:07 -0400
-Message-ID: <1337092577.27694.45.camel@twins>
-Subject: Re: [PATCH v5 6/7] x86/tlb: optimizing flush_tlb_mm
-From: Peter Zijlstra <a.p.zijlstra@chello.nl>
-To: Alex Shi <alex.shi@intel.com>
-Cc: Nick Piggin <npiggin@gmail.com>, tglx@linutronix.de, mingo@redhat.com,
-        hpa@zytor.com, arnd@arndb.de, rostedt@goodmis.org, fweisbec@gmail.com,
-        jeremy@goop.org, riel@redhat.com, luto@mit.edu, avi@redhat.com,
-        len.brown@intel.com, dhowells@redhat.com, fenghua.yu@intel.com,
-        borislav.petkov@amd.com, yinghai@kernel.org, ak@linux.intel.com,
-        cpw@sgi.com, steiner@sgi.com, akpm@linux-foundation.org,
-        penberg@kernel.org, hughd@google.com, rientjes@google.com,
-        kosaki.motohiro@jp.fujitsu.com, n-horiguchi@ah.jp.nec.com,
-        tj@kernel.org, oleg@redhat.com, axboe@kernel.dk, jmorris@namei.org,
-        kamezawa.hiroyu@jp.fujitsu.com, viro@zeniv.linux.org.uk,
-        linux-kernel@vger.kernel.org, yongjie.ren@intel.com,
-        linux-arch@vger.kernel.org
-Date: Tue, 15 May 2012 16:36:17 +0200
-In-Reply-To: <4FB2590C.1050303@intel.com>
-References: <1337072138-8323-1-git-send-email-alex.shi@intel.com>
-	 <1337072138-8323-7-git-send-email-alex.shi@intel.com>
-	 <CAPa8GCDsSOrzQwX2qRJyocYAZdGbwjD4t4fjxmWXV6=EoXjXZw@mail.gmail.com>
-	 <4FB2590C.1050303@intel.com>
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
-X-Mailer: Evolution 3.2.2- 
-Mime-Version: 1.0
+	Tue, 15 May 2012 10:37:20 -0400
+MIME-Version: 1.0
+Reply-To: konrad@darnok.org
+In-Reply-To: <4FB1BFFC.8080405@kernel.org>
+References: <1336985134-31967-1-git-send-email-minchan@kernel.org>
+	<1336985134-31967-2-git-send-email-minchan@kernel.org>
+	<4FB119CA.2080606@linux.vnet.ibm.com>
+	<4FB1BFFC.8080405@kernel.org>
+Date: Tue, 15 May 2012 10:37:19 -0400
+X-Google-Sender-Auth: 5hDH95SwK-MUCRWoh2JKTsmaD64
+Message-ID: <CAPbh3rvOKvo5cxVR5f35xAmzJ_uoR+SO2dzoJzvLi4mMnm-DZQ@mail.gmail.com>
+Subject: Re: [PATCH 2/3] zram: remove comment in Kconfig
+From: Konrad Rzeszutek Wilk <konrad@darnok.org>
+To: Minchan Kim <minchan@kernel.org>
+Cc: Seth Jennings <sjenning@linux.vnet.ibm.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Nitin Gupta <ngupta@vflare.org>,
+        Dan Magenheimer <dan.magenheimer@oracle.com>,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2012-05-15 at 21:24 +0800, Alex Shi wrote:
+>
+> == CUT_HERE ==
+>
+> >From be81aec5a4f35139aae2bf3d18139fbc114897ca Mon Sep 17 00:00:00 2001
+> From: Minchan Kim <minchan@kernel.org>
+> Date: Tue, 15 May 2012 11:26:48 +0900
+> Subject: [PATCH] [zram,zcache] remove dependency with x86
+>
+> Exactly saying, [zram|zcache] should has a dependency with
+> zsmalloc, not x86. So replace x86 dependeny with ZSMALLOC.
+>
+> Signed-off-by: Minchan Kim <minchan@kernel.org>
 
-> Sorry. I don't understand what's the comments Peter's made days ago. I should ask for more details originally. 
-> 
-> So, Peter, the correct change should like following, am I right?
-> 
-> -#define tlb_flush(tlb) flush_tlb_mm((tlb)->mm)
-> +#define tlb_flush(tlb, start, end) __flush_tlb_range((tlb)->mm, start, end)
+Reviewed-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
 
-No.. the correct change is to do range tracking like the other archs
-that support flush_tlb_range() do.
-
-You do not modify the tlb interface.
-
-Again, see: http://marc.info/?l=linux-arch&m=129952026504268&w=2
-
-
+> ---
+>  drivers/staging/zcache/Kconfig |    3 +--
+>  drivers/staging/zram/Kconfig   |    3 +--
+>  2 files changed, 2 insertions(+), 4 deletions(-)
+>
+> diff --git a/drivers/staging/zcache/Kconfig b/drivers/staging/zcache/Kconfig
+> index 7048e01..ceb7f28 100644
+> --- a/drivers/staging/zcache/Kconfig
+> +++ b/drivers/staging/zcache/Kconfig
+> @@ -2,8 +2,7 @@ config ZCACHE
+>        bool "Dynamic compression of swap pages and clean pagecache pages"
+>        # X86 dependency is because zsmalloc uses non-portable pte/tlb
+>        # functions
+> -       depends on (CLEANCACHE || FRONTSWAP) && CRYPTO=y && X86
+> -       select ZSMALLOC
+> +       depends on (CLEANCACHE || FRONTSWAP) && CRYPTO=y && ZSMALLOC
+>        select CRYPTO_LZO
+>        default n
+>        help
+> diff --git a/drivers/staging/zram/Kconfig b/drivers/staging/zram/Kconfig
+> index 9d11a4c..e3ac62d 100644
+> --- a/drivers/staging/zram/Kconfig
+> +++ b/drivers/staging/zram/Kconfig
+> @@ -2,8 +2,7 @@ config ZRAM
+>        tristate "Compressed RAM block device support"
+>        # X86 dependency is because zsmalloc uses non-portable pte/tlb
+>        # functions
+> -       depends on BLOCK && SYSFS && X86
+> -       select ZSMALLOC
+> +       depends on BLOCK && SYSFS && ZSMALLOC
+>        select LZO_COMPRESS
+>        select LZO_DECOMPRESS
+>        default n
+> --
+> 1.7.9.5
+>
+>
+>
+> --
+> Kind regards,
+> Minchan Kim
+>
+> --
+> To unsubscribe, send a message with 'unsubscribe linux-mm' in
+> the body to majordomo@kvack.org.  For more info on Linux MM,
+> see: http://www.linux-mm.org/ .
+> Fight unfair telecom internet charges in Canada: sign http://stopthemeter.ca/
+> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
+>
