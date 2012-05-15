@@ -1,35 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S966001Ab2EORPL (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 May 2012 13:15:11 -0400
-Received: from shards.monkeyblade.net ([198.137.202.13]:40286 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S964815Ab2EORPI (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 May 2012 13:15:08 -0400
-Date: Tue, 15 May 2012 13:14:48 -0400 (EDT)
-Message-Id: <20120515.131448.1788192704023213475.davem@davemloft.net>
-To: JBeulich@suse.com
-Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] xfrm_algo: drop an unnecessary inclusion
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <4FB2618C0200007800083C99@nat28.tlf.novell.com>
-References: <4FB2618C0200007800083C99@nat28.tlf.novell.com>
-X-Mailer: Mew version 6.4 on Emacs 23.3 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
+	id S965970Ab2EORRY (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 May 2012 13:17:24 -0400
+Received: from mga03.intel.com ([143.182.124.21]:61811 "EHLO mga03.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S964815Ab2EORRW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 May 2012 13:17:22 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
+   d="scan'208";a="100394666"
+Message-ID: <4FB28FA2.8090308@linux.intel.com>
+Date: Tue, 15 May 2012 10:17:22 -0700
+From: "H. Peter Anvin" <hpa@linux.intel.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:11.0) Gecko/20120329 Thunderbird/11.0.1
+MIME-Version: 1.0
+To: Gleb Natapov <gleb@redhat.com>
+CC: Alan Cox <alan@lxorguk.ukuu.org.uk>, Hannes Reinecke <hare@suse.de>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] EDD: Check for correct EDD 3.0 length
+References: <1337079889-62380-1-git-send-email-hare@suse.de> <20120515111255.GJ32036@redhat.com> <4FB23C09.7060300@suse.de> <20120515115917.GK32036@redhat.com> <20120515150015.5bf17aea@pyramind.ukuu.org.uk> <20120515143644.GD6948@redhat.com> <20120515161439.00e2de3c@pyramind.ukuu.org.uk> <20120515154641.GI6948@redhat.com>
+In-Reply-To: <20120515154641.GI6948@redhat.com>
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.6 (shards.monkeyblade.net [198.137.202.13]); Tue, 15 May 2012 10:14:50 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: "Jan Beulich" <JBeulich@suse.com>
-Date: Tue, 15 May 2012 13:00:44 +0100
+On 05/15/2012 08:46 AM, Gleb Natapov wrote:
+> There is Phoenix spec 3.0 and there are T13 EDD3.0/4.0. They are
+> incompatible and you can't tell which one specific BIOS actually use.
+> Everything is correct till now?
 
-> For several releases, this has not been needed anymore, as no helper
-> functions declared in net/ah.h get implemented by xfrm_algo.c anymore.
-> 
-> Signed-off-by: Jan Beulich <jbeulich@suse.com>
+You can by the data length.
 
-Applied.
+But yes, there is Phoenix 3.0 (1998), T13 3.0 (2004) and T13 4.0 (2010),
+although the latter seems to be stalled in final draft; according to the
+T13 logs it went through final ballot resolution but doesn't seem to
+have actually been published, unless it got merged into another document
+(which is possible).
+
+	-hpa
