@@ -1,53 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933066Ab2EOPGD (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 May 2012 11:06:03 -0400
-Received: from fold.natur.cuni.cz ([195.113.57.32]:47828 "HELO
-	fold.natur.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S932763Ab2EOPGA (ORCPT
+	id S933083Ab2EOPGb (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 May 2012 11:06:31 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:37323 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933044Ab2EOPGa convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 May 2012 11:06:00 -0400
-Message-ID: <4FB270D2.8030705@fold.natur.cuni.cz>
-Date: Tue, 15 May 2012 17:05:54 +0200
-From: Martin Mokrejs <mmokrejs@fold.natur.cuni.cz>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:11.0) Gecko/20120319 Firefox/11.0 SeaMonkey/2.8
-MIME-Version: 1.0
-To: Jean-Louis Dupond <jean-louis@dupond.be>
-CC: Matthew Garrett <mjg59@srcf.ucam.org>,
-        Mario Limonciello <mario_limonciello@dell.com>,
-        Kamal Mostafa <kamal@canonical.com>,
-        "platform-driver-x86@vger.kernel.org" 
-	<platform-driver-x86@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] dell-laptop: rfkill blacklist Dell XPS 13z, 15z
-References: <1337023652-11661-1-git-send-email-kamal@canonical.com> <20120514193718.GA6438@srcf.ucam.org> <4FB16659.6040704@dell.com> <20120514211959.GA9394@srcf.ucam.org> <4FB1774D.4080106@dell.com> <20120514212842.GA9561@srcf.ucam.org> <4FB17DA8.1040808@dell.com> <20120514215533.GA10378@srcf.ucam.org> <4FB182BB.6090303@dupond.be>
-In-Reply-To: <4FB182BB.6090303@dupond.be>
-X-Enigmail-Version: 1.4
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+	Tue, 15 May 2012 11:06:30 -0400
+Message-ID: <1337094383.27694.62.camel@twins>
+Subject: Re: [RFC][PATCH RT] rwsem_rt: Another (more sane) approach to mulit
+ reader rt locks
+From: Peter Zijlstra <peterz@infradead.org>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: LKML <linux-kernel@vger.kernel.org>, RT <linux-rt-users@vger.kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Clark Williams <williams@redhat.com>
+Date: Tue, 15 May 2012 17:06:23 +0200
+In-Reply-To: <1337090625.14207.304.camel@gandalf.stny.rr.com>
+References: <1337090625.14207.304.camel@gandalf.stny.rr.com>
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
+X-Mailer: Evolution 3.2.2- 
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Jean-Louis Dupond wrote:
-> Hi
+On Tue, 2012-05-15 at 10:03 -0400, Steven Rostedt wrote:
 > 
-> I'm the owner of a XPS 15, which has this issue.
-> The best solution would indeed be to solve the real bug, and not work
-> around it in Linux.
-> 
-> But still, if we can fix it with rather small impact/code on linux, I
-> think we should just do it.
-> It makes linux more user friendly this way.
-> 
-> A small remark also:
-> Is it really possible to disable bluetooth without killing wifi in
-> Windows on the XPS?
+> where readers may nest (the same task may grab the same rwsem for
+> read multiple times), but only one task may hold the rwsem at any
+> given
+> time (for read or write).
 
-I rebooted into Win7. You are right, on this Dell Vostro 3550 the Fn+F2 has
-only two states: turn on both BT+WiFi or turn both off. My old ASUS laptop
-had 3 states and I could turn off independently BT while not WiFi. ;) 
-So, rfkill application on Linux behaves in the same way as the Fn+F2 in Linux
-and in Win 7.
+Humm, that sounds iffy, rwsem isn't a recursive read lock only rwlock_t
+is.
 
-Martin
+> The idea here is to have an rwsem create a rt_mutex for each CPU.
+> Actually, it creates a rwsem for each CPU that can only be acquired by
+> one task at a time. This allows for readers on separate CPUs to take
+> only the per cpu lock. When a writer needs to take a lock, it must
+> grab
+> all CPU locks before continuing. 
+
+So you've turned it into a global/local or br or whatever that thing was
+called lock.
+> 
+> Also, I don't use per_cpu sections for the locks, which means we have
+> cache line collisions, but a normal (mainline) rwsem has that as well.
+> 
+Why not?
+
+> Thoughts?
+
+Ideally someone would try and get rid of mmap_sem itself.. but that's a
+tough nut.
+
+
+
+>  void  rt_down_write(struct rw_semaphore *rwsem)
+>  {
+> -       rwsem_acquire(&rwsem->dep_map, 0, 0, _RET_IP_);
+> -       rt_mutex_lock(&rwsem->lock);
+> +       int i;
+> +       initialize_rwsem(rwsem);
+> +       for_each_possible_cpu(i) {
+> +               rwsem_acquire(&rwsem->lock[i].dep_map, 0, 0,
+> _RET_IP_);
+> +               rt_mutex_lock(&rwsem->lock[i].lock);
+> +       }
+>  }
+>  EXPORT_SYMBOL(rt_down_write);
+> 
+That'll make lockdep explode.. you'll want to make the whole set a
+single lock and not treat it as nr_cpus locks.
