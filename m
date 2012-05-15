@@ -1,28 +1,27 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965108Ab2EOCRT (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 May 2012 22:17:19 -0400
-Received: from mail1.windriver.com ([147.11.146.13]:52844 "EHLO
+	id S965143Ab2EOCwA (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 May 2012 22:52:00 -0400
+Received: from mail1.windriver.com ([147.11.146.13]:53384 "EHLO
 	mail1.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S964872Ab2EOCQL (ORCPT
+	with ESMTP id S965102Ab2EOCRS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 May 2012 22:16:11 -0400
+	Mon, 14 May 2012 22:17:18 -0400
 From: Paul Gortmaker <paul.gortmaker@windriver.com>
 To: <stable@kernel.org>, <linux-kernel@vger.kernel.org>
-Subject: [34-longterm 015/179] x86, amd: Use _safe() msr access for GartTlbWlk disable code
-Date: Mon, 14 May 2012 22:11:51 -0400
-Message-ID: <1337048075-6132-16-git-send-email-paul.gortmaker@windriver.com>
+Subject: [34-longterm 096/179] uml: fix CONFIG_STATIC_LINK=y build failure with newer glibc
+Date: Mon, 14 May 2012 22:13:12 -0400
+Message-ID: <1337048075-6132-97-git-send-email-paul.gortmaker@windriver.com>
 X-Mailer: git-send-email 1.7.9.6
 In-Reply-To: <1337048075-6132-1-git-send-email-paul.gortmaker@windriver.com>
 References: <1337048075-6132-1-git-send-email-paul.gortmaker@windriver.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: "Roedel, Joerg" <Joerg.Roedel@amd.com>
+From: Roland McGrath <roland@redhat.com>
 
                    -------------------
     This is a commit scheduled for the next v2.6.34 longterm release.
@@ -30,59 +29,78 @@ From: "Roedel, Joerg" <Joerg.Roedel@amd.com>
     If you see a problem with using this for longterm, please comment.
                    -------------------
 
-commit d47cc0db8fd6011de2248df505fc34990b7451bf upstream.
+commit aa5fb4dbfd121296ca97c68cf90043a7ea97579d upstream.
 
-The workaround for Bugzilla:
+With glibc 2.11 or later that was built with --enable-multi-arch, the UML
+link fails with undefined references to __rel_iplt_start and similar
+symbols.  In recent binutils, the default linker script defines these
+symbols (see ld --verbose).  Fix the UML linker scripts to match the new
+defaults for these sections.
 
-	https://bugzilla.kernel.org/show_bug.cgi?id=33012
-
-introduced a read and a write to the MC4 mask msr.
-
-Unfortunatly this MSR is not emulated by the KVM hypervisor
-so that the kernel will get a #GP and crashes when applying
-this workaround when running inside KVM.
-
-This issue was reported as:
-
-	https://bugzilla.kernel.org/show_bug.cgi?id=35132
-
-and is fixed with this patch. The change just let the kernel
-ignore any #GP it gets while accessing this MSR by using the
-_safe msr access methods.
-
-Reported-by: Török Edwin <edwintorok@gmail.com>
-Signed-off-by: Joerg Roedel <joerg.roedel@amd.com>
-Cc: Rafael J. Wysocki <rjw@sisk.pl>
-Cc: Maciej Rutecki <maciej.rutecki@gmail.com>
-Cc: Avi Kivity <avi@redhat.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Ingo Molnar <mingo@elte.hu>
+Signed-off-by: Roland McGrath <roland@redhat.com>
+Cc: Jeff Dike <jdike@addtoit.com>
+Cc: Al Viro <viro@zeniv.linux.org.uk>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
 ---
- arch/x86/kernel/cpu/amd.c |    9 ++++++---
- 1 file changed, 6 insertions(+), 3 deletions(-)
+ arch/um/kernel/dyn.lds.S |   14 ++++++++++++--
+ arch/um/kernel/uml.lds.S |   17 +++++++++++++++++
+ 2 files changed, 29 insertions(+), 2 deletions(-)
 
-diff --git a/arch/x86/kernel/cpu/amd.c b/arch/x86/kernel/cpu/amd.c
-index 770346d..02a5a5f 100644
---- a/arch/x86/kernel/cpu/amd.c
-+++ b/arch/x86/kernel/cpu/amd.c
-@@ -586,10 +586,13 @@ static void __cpuinit init_amd(struct cpuinfo_x86 *c)
- 		 * Fixes: https://bugzilla.kernel.org/show_bug.cgi?id=33012
- 		 */
- 		u64 mask;
-+		int err;
+diff --git a/arch/um/kernel/dyn.lds.S b/arch/um/kernel/dyn.lds.S
+index 7fcad58..3d6b43f 100644
+--- a/arch/um/kernel/dyn.lds.S
++++ b/arch/um/kernel/dyn.lds.S
+@@ -50,8 +50,18 @@ SECTIONS
+   .rela.got       : { *(.rela.got) }
+   .rel.bss        : { *(.rel.bss .rel.bss.* .rel.gnu.linkonce.b.*) }
+   .rela.bss       : { *(.rela.bss .rela.bss.* .rela.gnu.linkonce.b.*) }
+-  .rel.plt        : { *(.rel.plt) }
+-  .rela.plt       : { *(.rela.plt) }
++  .rel.plt : {
++	*(.rel.plt)
++	PROVIDE_HIDDEN(__rel_iplt_start = .);
++	*(.rel.iplt)
++	PROVIDE_HIDDEN(__rel_iplt_end = .);
++  }
++  .rela.plt : {
++	*(.rela.plt)
++	PROVIDE_HIDDEN(__rela_iplt_start = .);
++	*(.rela.iplt)
++	PROVIDE_HIDDEN(__rela_iplt_end = .);
++  }
+   .init           : {
+     KEEP (*(.init))
+   } =0x90909090
+diff --git a/arch/um/kernel/uml.lds.S b/arch/um/kernel/uml.lds.S
+index 664f942..79a077a 100644
+--- a/arch/um/kernel/uml.lds.S
++++ b/arch/um/kernel/uml.lds.S
+@@ -43,6 +43,23 @@ SECTIONS
+ 	__syscall_stub_end = .;
+   }
  
--		rdmsrl(MSR_AMD64_MCx_MASK(4), mask);
--		mask |= (1 << 10);
--		wrmsrl(MSR_AMD64_MCx_MASK(4), mask);
-+		err = rdmsrl_safe(MSR_AMD64_MCx_MASK(4), &mask);
-+		if (err == 0) {
-+			mask |= (1 << 10);
-+			checking_wrmsrl(MSR_AMD64_MCx_MASK(4), mask);
-+		}
- 	}
- }
++  /*
++   * These are needed even in a static link, even if they wind up being empty.
++   * Newer glibc needs these __rel{,a}_iplt_{start,end} symbols.
++   */
++  .rel.plt : {
++	*(.rel.plt)
++	PROVIDE_HIDDEN(__rel_iplt_start = .);
++	*(.rel.iplt)
++	PROVIDE_HIDDEN(__rel_iplt_end = .);
++  }
++  .rela.plt : {
++	*(.rela.plt)
++	PROVIDE_HIDDEN(__rela_iplt_start = .);
++	*(.rela.iplt)
++	PROVIDE_HIDDEN(__rela_iplt_end = .);
++  }
++
+   #include "asm/common.lds.S"
  
+   init.data : { INIT_DATA }
 -- 
 1.7.9.6
 
