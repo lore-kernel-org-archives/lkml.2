@@ -1,17 +1,17 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965658Ab2EOC25 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 May 2012 22:28:57 -0400
-Received: from mail1.windriver.com ([147.11.146.13]:53551 "EHLO
+	id S965501Ab2EOCSN (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 May 2012 22:18:13 -0400
+Received: from mail1.windriver.com ([147.11.146.13]:53027 "EHLO
 	mail1.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S964897Ab2EOCSO (ORCPT
+	with ESMTP id S964897Ab2EOCQc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 May 2012 22:18:14 -0400
+	Mon, 14 May 2012 22:16:32 -0400
 From: Paul Gortmaker <paul.gortmaker@windriver.com>
 To: <stable@kernel.org>, <linux-kernel@vger.kernel.org>
-Subject: [34-longterm 165/179] ALSA: snd_usb_caiaq: track submitted output urbs
-Date: Mon, 14 May 2012 22:14:21 -0400
-Message-ID: <1337048075-6132-166-git-send-email-paul.gortmaker@windriver.com>
+Subject: [34-longterm 040/179] brd: handle on-demand devices correctly
+Date: Mon, 14 May 2012 22:12:16 -0400
+Message-ID: <1337048075-6132-41-git-send-email-paul.gortmaker@windriver.com>
 X-Mailer: git-send-email 1.7.9.6
 In-Reply-To: <1337048075-6132-1-git-send-email-paul.gortmaker@windriver.com>
 References: <1337048075-6132-1-git-send-email-paul.gortmaker@windriver.com>
@@ -21,7 +21,7 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Daniel Mack <zonque@gmail.com>
+From: Namhyung Kim <namhyung@gmail.com>
 
                    -------------------
     This is a commit scheduled for the next v2.6.34 longterm release.
@@ -29,127 +29,83 @@ From: Daniel Mack <zonque@gmail.com>
     If you see a problem with using this for longterm, please comment.
                    -------------------
 
-commit da6094ea7d3c2295473d8f5134279307255d6ebf upstream.
+commit af46566885a373b0a526932484cd8fef8de7b598 upstream.
 
-The snd_usb_caiaq driver currently assumes that output urbs are serviced
-in time and doesn't track when and whether they are given back by the
-USB core. That usually works fine, but due to temporary limitations of
-the XHCI stack, we faced that urbs were submitted more than once with
-this approach.
+When finding or allocating a ram disk device, brd_probe() did not take
+partition numbers into account so that it can result to a different
+device. Consider following example (I set CONFIG_BLK_DEV_RAM_COUNT=4
+for simplicity) :
 
-As it's no good practice to fire and forget urbs anyway, this patch
-introduces a proper bit mask to track which requests have been submitted
-and given back.
+$ sudo modprobe brd max_part=15
+$ ls -l /dev/ram*
+brw-rw---- 1 root disk 1,  0 2011-05-25 15:41 /dev/ram0
+brw-rw---- 1 root disk 1, 16 2011-05-25 15:41 /dev/ram1
+brw-rw---- 1 root disk 1, 32 2011-05-25 15:41 /dev/ram2
+brw-rw---- 1 root disk 1, 48 2011-05-25 15:41 /dev/ram3
+$ sudo mknod /dev/ram4 b 1 64
+$ sudo dd if=/dev/zero of=/dev/ram4 bs=4k count=256
+256+0 records in
+256+0 records out
+1048576 bytes (1.0 MB) copied, 0.00215578 s, 486 MB/s
+namhyung@leonhard:linux$ ls -l /dev/ram*
+brw-rw---- 1 root disk 1,    0 2011-05-25 15:41 /dev/ram0
+brw-rw---- 1 root disk 1,   16 2011-05-25 15:41 /dev/ram1
+brw-rw---- 1 root disk 1,   32 2011-05-25 15:41 /dev/ram2
+brw-rw---- 1 root disk 1,   48 2011-05-25 15:41 /dev/ram3
+brw-r--r-- 1 root root 1,   64 2011-05-25 15:45 /dev/ram4
+brw-rw---- 1 root disk 1, 1024 2011-05-25 15:44 /dev/ram64
 
-That alone however doesn't make the driver work in case the host
-controller is broken and doesn't give back urbs at all, and the output
-stream will stop once all pre-allocated output urbs are consumed. But
-it does prevent crashes of the controller stack in such cases.
+After this patch, /dev/ram4 - instead of /dev/ram64 - was
+accessed correctly.
 
-See http://bugzilla.kernel.org/show_bug.cgi?id=40702 for more details.
+In addition, 'range' passed to blk_register_region() should
+include all range of dev_t that RAMDISK_MAJOR can address.
+It does not need to be limited by partition numbers unless
+'rd_nr' param was specified.
 
-Signed-off-by: Daniel Mack <zonque@gmail.com>
-Reported-and-tested-by: Matej Laitl <matej@laitl.cz>
-Cc: Sarah Sharp <sarah.a.sharp@linux.intel.com>
-Signed-off-by: Takashi Iwai <tiwai@suse.de>
+Signed-off-by: Namhyung Kim <namhyung@gmail.com>
+Cc: Laurent Vivier <Laurent.Vivier@bull.net>
+Signed-off-by: Jens Axboe <jaxboe@fusionio.com>
 Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
 ---
- sound/usb/caiaq/audio.c  |   31 +++++++++++++++++++++++++++----
- sound/usb/caiaq/device.h |    1 +
- 2 files changed, 28 insertions(+), 4 deletions(-)
+ drivers/block/brd.c |    8 ++++----
+ 1 file changed, 4 insertions(+), 4 deletions(-)
 
-diff --git a/sound/usb/caiaq/audio.c b/sound/usb/caiaq/audio.c
-index 75c8446..155d6d7 100644
---- a/sound/usb/caiaq/audio.c
-+++ b/sound/usb/caiaq/audio.c
-@@ -139,8 +139,12 @@ static void stream_stop(struct snd_usb_caiaqdev *dev)
+diff --git a/drivers/block/brd.c b/drivers/block/brd.c
+index 9668128..8358a22 100644
+--- a/drivers/block/brd.c
++++ b/drivers/block/brd.c
+@@ -498,7 +498,7 @@ static struct kobject *brd_probe(dev_t dev, int *part, void *data)
+ 	struct kobject *kobj;
  
- 	for (i = 0; i < N_URBS; i++) {
- 		usb_kill_urb(dev->data_urbs_in[i]);
--		usb_kill_urb(dev->data_urbs_out[i]);
-+
-+		if (test_bit(i, &dev->outurb_active_mask))
-+			usb_kill_urb(dev->data_urbs_out[i]);
- 	}
-+
-+	dev->outurb_active_mask = 0;
- }
+ 	mutex_lock(&brd_devices_mutex);
+-	brd = brd_init_one(dev & MINORMASK);
++	brd = brd_init_one(MINOR(dev) >> part_shift);
+ 	kobj = brd ? get_disk(brd->brd_disk) : ERR_PTR(-ENOMEM);
+ 	mutex_unlock(&brd_devices_mutex);
  
- static int snd_usb_caiaq_substream_open(struct snd_pcm_substream *substream)
-@@ -467,8 +471,8 @@ static void read_completed(struct urb *urb)
- {
- 	struct snd_usb_caiaq_cb_info *info = urb->context;
- 	struct snd_usb_caiaqdev *dev;
--	struct urb *out;
--	int frame, len, send_it = 0, outframe = 0;
-+	struct urb *out = NULL;
-+	int i, frame, len, send_it = 0, outframe = 0;
- 	size_t offset = 0;
+@@ -539,10 +539,10 @@ static int __init brd_init(void)
  
- 	if (urb->status || !info)
-@@ -479,7 +483,17 @@ static void read_completed(struct urb *urb)
- 	if (!dev->streaming)
- 		return;
- 
--	out = dev->data_urbs_out[info->index];
-+	/* find an unused output urb that is unused */
-+	for (i = 0; i < N_URBS; i++)
-+		if (test_and_set_bit(i, &dev->outurb_active_mask) == 0) {
-+			out = dev->data_urbs_out[i];
-+			break;
-+		}
-+
-+	if (!out) {
-+		log("Unable to find an output urb to use\n");
-+		goto requeue;
-+	}
- 
- 	/* read the recently received packet and send back one which has
- 	 * the same layout */
-@@ -510,8 +524,12 @@ static void read_completed(struct urb *urb)
- 		out->number_of_packets = outframe;
- 		out->transfer_flags = URB_ISO_ASAP;
- 		usb_submit_urb(out, GFP_ATOMIC);
-+	} else {
-+		struct snd_usb_caiaq_cb_info *oinfo = out->context;
-+		clear_bit(oinfo->index, &dev->outurb_active_mask);
+ 	if (rd_nr) {
+ 		nr = rd_nr;
+-		range = rd_nr;
++		range = rd_nr << part_shift;
+ 	} else {
+ 		nr = CONFIG_BLK_DEV_RAM_COUNT;
+-		range = 1UL << (MINORBITS - part_shift);
++		range = 1UL << MINORBITS;
  	}
  
-+requeue:
- 	/* re-submit inbound urb */
- 	for (frame = 0; frame < FRAMES_PER_URB; frame++) {
- 		urb->iso_frame_desc[frame].offset = BYTES_PER_FRAME * frame;
-@@ -533,6 +551,8 @@ static void write_completed(struct urb *urb)
- 		dev->output_running = 1;
- 		wake_up(&dev->prepare_wait_queue);
- 	}
-+
-+	clear_bit(info->index, &dev->outurb_active_mask);
- }
+ 	if (register_blkdev(RAMDISK_MAJOR, "ramdisk"))
+@@ -581,7 +581,7 @@ static void __exit brd_exit(void)
+ 	unsigned long range;
+ 	struct brd_device *brd, *next;
  
- static struct urb **alloc_urbs(struct snd_usb_caiaqdev *dev, int dir, int *ret)
-@@ -683,6 +703,9 @@ int snd_usb_caiaq_audio_init(struct snd_usb_caiaqdev *dev)
- 	if (!dev->data_cb_info)
- 		return -ENOMEM;
+-	range = rd_nr ? rd_nr :  1UL << (MINORBITS - part_shift);
++	range = rd_nr ? rd_nr << part_shift : 1UL << MINORBITS;
  
-+	dev->outurb_active_mask = 0;
-+	BUILD_BUG_ON(N_URBS > (sizeof(dev->outurb_active_mask) * 8));
-+
- 	for (i = 0; i < N_URBS; i++) {
- 		dev->data_cb_info[i].dev = dev;
- 		dev->data_cb_info[i].index = i;
-diff --git a/sound/usb/caiaq/device.h b/sound/usb/caiaq/device.h
-index 44e3edf..94c0c36 100644
---- a/sound/usb/caiaq/device.h
-+++ b/sound/usb/caiaq/device.h
-@@ -92,6 +92,7 @@ struct snd_usb_caiaqdev {
- 	int input_panic, output_panic, warned;
- 	char *audio_in_buf, *audio_out_buf;
- 	unsigned int samplerates, bpp;
-+	unsigned long outurb_active_mask;
- 
- 	struct snd_pcm_substream *sub_playback[MAX_STREAMS];
- 	struct snd_pcm_substream *sub_capture[MAX_STREAMS];
+ 	list_for_each_entry_safe(brd, next, &brd_devices, brd_list)
+ 		brd_del_one(brd);
 -- 
 1.7.9.6
 
