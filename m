@@ -1,17 +1,17 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965787Ab2EOCS4 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 May 2012 22:18:56 -0400
-Received: from mail1.windriver.com ([147.11.146.13]:53180 "EHLO
-	mail1.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S964919Ab2EOCQu (ORCPT
+	id S965774Ab2EOCSy (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 May 2012 22:18:54 -0400
+Received: from mail.windriver.com ([147.11.1.11]:49409 "EHLO
+	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S964918Ab2EOCQt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 May 2012 22:16:50 -0400
+	Mon, 14 May 2012 22:16:49 -0400
 From: Paul Gortmaker <paul.gortmaker@windriver.com>
 To: <stable@kernel.org>, <linux-kernel@vger.kernel.org>
-Subject: [34-longterm 062/179] oprofile, dcookies: Fix possible circular locking dependency
-Date: Mon, 14 May 2012 22:12:38 -0400
-Message-ID: <1337048075-6132-63-git-send-email-paul.gortmaker@windriver.com>
+Subject: [34-longterm 061/179] USB: xhci - fix interval calculation for FS isoc endpoints
+Date: Mon, 14 May 2012 22:12:37 -0400
+Message-ID: <1337048075-6132-62-git-send-email-paul.gortmaker@windriver.com>
 X-Mailer: git-send-email 1.7.9.6
 In-Reply-To: <1337048075-6132-1-git-send-email-paul.gortmaker@windriver.com>
 References: <1337048075-6132-1-git-send-email-paul.gortmaker@windriver.com>
@@ -21,7 +21,7 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Robert Richter <robert.richter@amd.com>
+From: Dmitry Torokhov <dtor@vmware.com>
 
                    -------------------
     This is a commit scheduled for the next v2.6.34 longterm release.
@@ -29,96 +29,58 @@ From: Robert Richter <robert.richter@amd.com>
     If you see a problem with using this for longterm, please comment.
                    -------------------
 
-commit fe47ae7f53e179d2ef6771024feb000cbb86640f upstream.
+commit cd3c18ba2fac14b34d03cae111f215009735ea06 upstream.
 
-The lockdep warning below detects a possible A->B/B->A locking
-dependency of mm->mmap_sem and dcookie_mutex. The order in
-sync_buffer() is mm->mmap_sem/dcookie_mutex, while in
-sys_lookup_dcookie() it is vice versa.
+Full-speed isoc endpoints specify interval in exponent based form in
+frames, not microframes, so we need to adjust accordingly.
 
-Fixing it in sys_lookup_dcookie() by unlocking dcookie_mutex before
-copy_to_user().
+NEC xHCI host controllers will return an error code of 0x11 if a full
+speed isochronous endpoint is added with the Interval field set to
+something less than 3 (2^3 = 8 microframes, or one frame).  It is
+impossible for a full speed device to have an interval smaller than one
+frame.
 
-oprofiled/4432 is trying to acquire lock:
- (&mm->mmap_sem){++++++}, at: [<ffffffff810b444b>] might_fault+0x53/0xa3
+This was always an issue in the xHCI driver, but commit
+dfa49c4ad120a784ef1ff0717168aa79f55a483a "USB: xhci - fix math in
+xhci_get_endpoint_interval()" removed the clamping of the minimum value
+in the Interval field, which revealed this bug.
 
-but task is already holding lock:
- (dcookie_mutex){+.+.+.}, at: [<ffffffff81124d28>] sys_lookup_dcookie+0x45/0x149
+This needs to be backported to stable kernels back to 2.6.31.
 
-which lock already depends on the new lock.
-
-the existing dependency chain (in reverse order) is:
-
--> #1 (dcookie_mutex){+.+.+.}:
-       [<ffffffff8106557f>] lock_acquire+0xf8/0x11e
-       [<ffffffff814634f0>] mutex_lock_nested+0x63/0x309
-       [<ffffffff81124e5c>] get_dcookie+0x30/0x144
-       [<ffffffffa0000fba>] sync_buffer+0x196/0x3ec [oprofile]
-       [<ffffffffa0001226>] task_exit_notify+0x16/0x1a [oprofile]
-       [<ffffffff81467b96>] notifier_call_chain+0x37/0x63
-       [<ffffffff8105803d>] __blocking_notifier_call_chain+0x50/0x67
-       [<ffffffff81058068>] blocking_notifier_call_chain+0x14/0x16
-       [<ffffffff8105a718>] profile_task_exit+0x1a/0x1c
-       [<ffffffff81039e8f>] do_exit+0x2a/0x6fc
-       [<ffffffff8103a5e4>] do_group_exit+0x83/0xae
-       [<ffffffff8103a626>] sys_exit_group+0x17/0x1b
-       [<ffffffff8146ad4b>] system_call_fastpath+0x16/0x1b
-
--> #0 (&mm->mmap_sem){++++++}:
-       [<ffffffff81064dfb>] __lock_acquire+0x1085/0x1711
-       [<ffffffff8106557f>] lock_acquire+0xf8/0x11e
-       [<ffffffff810b4478>] might_fault+0x80/0xa3
-       [<ffffffff81124de7>] sys_lookup_dcookie+0x104/0x149
-       [<ffffffff8146ad4b>] system_call_fastpath+0x16/0x1b
-
-other info that might help us debug this:
-
-1 lock held by oprofiled/4432:
- #0:  (dcookie_mutex){+.+.+.}, at: [<ffffffff81124d28>] sys_lookup_dcookie+0x45/0x149
-
-stack backtrace:
-Pid: 4432, comm: oprofiled Not tainted 2.6.39-00008-ge5a450d #9
-Call Trace:
- [<ffffffff81063193>] print_circular_bug+0xae/0xbc
- [<ffffffff81064dfb>] __lock_acquire+0x1085/0x1711
- [<ffffffff8102ef13>] ? get_parent_ip+0x11/0x42
- [<ffffffff810b444b>] ? might_fault+0x53/0xa3
- [<ffffffff8106557f>] lock_acquire+0xf8/0x11e
- [<ffffffff810b444b>] ? might_fault+0x53/0xa3
- [<ffffffff810d7d54>] ? path_put+0x22/0x27
- [<ffffffff810b4478>] might_fault+0x80/0xa3
- [<ffffffff810b444b>] ? might_fault+0x53/0xa3
- [<ffffffff81124de7>] sys_lookup_dcookie+0x104/0x149
- [<ffffffff8146ad4b>] system_call_fastpath+0x16/0x1b
-
-References: https://bugzilla.kernel.org/show_bug.cgi?id=13809
-Signed-off-by: Robert Richter <robert.richter@amd.com>
+Reported-by: Matt Evans <matt@ozlabs.org>
+Signed-off-by: Dmitry Torokhov <dtor@vmware.com>
+Signed-off-by: Sarah Sharp <sarah.a.sharp@linux.intel.com>
 Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
 ---
- fs/dcookies.c |    3 +++
- 1 file changed, 3 insertions(+)
+ drivers/usb/host/xhci-mem.c |   14 ++++++++++++--
+ 1 file changed, 12 insertions(+), 2 deletions(-)
 
-diff --git a/fs/dcookies.c b/fs/dcookies.c
-index a21cabd..dda0dc7 100644
---- a/fs/dcookies.c
-+++ b/fs/dcookies.c
-@@ -178,6 +178,8 @@ SYSCALL_DEFINE(lookup_dcookie)(u64 cookie64, char __user * buf, size_t len)
- 	/* FIXME: (deleted) ? */
- 	path = d_path(&dcs->path, kbuf, PAGE_SIZE);
- 
-+	mutex_unlock(&dcookie_mutex);
+diff --git a/drivers/usb/host/xhci-mem.c b/drivers/usb/host/xhci-mem.c
+index 05b5c34..727ac40 100644
+--- a/drivers/usb/host/xhci-mem.c
++++ b/drivers/usb/host/xhci-mem.c
+@@ -533,9 +533,19 @@ static unsigned int xhci_parse_exponent_interval(struct usb_device *udev,
+ 	interval = clamp_val(ep->desc.bInterval, 1, 16) - 1;
+ 	if (interval != ep->desc.bInterval - 1)
+ 		dev_warn(&udev->dev,
+-			 "ep %#x - rounding interval to %d microframes\n",
++			 "ep %#x - rounding interval to %d %sframes\n",
+ 			 ep->desc.bEndpointAddress,
+-			 1 << interval);
++			 1 << interval,
++			 udev->speed == USB_SPEED_FULL ? "" : "micro");
 +
- 	if (IS_ERR(path)) {
- 		err = PTR_ERR(path);
- 		goto out_free;
-@@ -194,6 +196,7 @@ SYSCALL_DEFINE(lookup_dcookie)(u64 cookie64, char __user * buf, size_t len)
++	if (udev->speed == USB_SPEED_FULL) {
++		/*
++		 * Full speed isoc endpoints specify interval in frames,
++		 * not microframes. We are using microframes everywhere,
++		 * so adjust accordingly.
++		 */
++		interval += 3;	/* 1 frame = 2^3 uframes */
++	}
  
- out_free:
- 	kfree(kbuf);
-+	return err;
- out:
- 	mutex_unlock(&dcookie_mutex);
- 	return err;
+ 	return interval;
+ }
 -- 
 1.7.9.6
 
