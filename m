@@ -1,17 +1,17 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965435Ab2EOCR7 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 May 2012 22:17:59 -0400
-Received: from mail1.windriver.com ([147.11.146.13]:53003 "EHLO
+	id S965496Ab2EOCeo (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 May 2012 22:34:44 -0400
+Received: from mail1.windriver.com ([147.11.146.13]:53525 "EHLO
 	mail1.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S964893Ab2EOCQ3 (ORCPT
+	with ESMTP id S965422Ab2EOCR6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 May 2012 22:16:29 -0400
+	Mon, 14 May 2012 22:17:58 -0400
 From: Paul Gortmaker <paul.gortmaker@windriver.com>
 To: <stable@kernel.org>, <linux-kernel@vger.kernel.org>
-Subject: [34-longterm 036/179] cpuidle: menu: fixed wrapping timers at 4.294 seconds
-Date: Mon, 14 May 2012 22:12:12 -0400
-Message-ID: <1337048075-6132-37-git-send-email-paul.gortmaker@windriver.com>
+Subject: [34-longterm 145/179] ALSA: sound/core/pcm_compat.c: adjust array index
+Date: Mon, 14 May 2012 22:14:01 -0400
+Message-ID: <1337048075-6132-146-git-send-email-paul.gortmaker@windriver.com>
 X-Mailer: git-send-email 1.7.9.6
 In-Reply-To: <1337048075-6132-1-git-send-email-paul.gortmaker@windriver.com>
 References: <1337048075-6132-1-git-send-email-paul.gortmaker@windriver.com>
@@ -21,7 +21,7 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Tero Kristo <tero.kristo@nokia.com>
+From: Julia Lawall <julia@diku.dk>
 
                    -------------------
     This is a commit scheduled for the next v2.6.34 longterm release.
@@ -29,45 +29,46 @@ From: Tero Kristo <tero.kristo@nokia.com>
     If you see a problem with using this for longterm, please comment.
                    -------------------
 
-commit 7467571f4480b273007517b26297c07154c73924 upstream.
+commit ca9380fd68514c7bc952282c1b4fc70607e9fe43 upstream.
 
-Cpuidle menu governor is using u32 as a temporary datatype for storing
-nanosecond values which wrap around at 4.294 seconds. This causes errors
-in predicted sleep times resulting in higher than should be C state
-selection and increased power consumption. This also breaks cpuidle
-state residency statistics.
+Convert array index from the loop bound to the loop index.
 
-cc: stable@kernel.org # .32.x through .39.x
-Signed-off-by: Tero Kristo <tero.kristo@nokia.com>
-Signed-off-by: Len Brown <len.brown@intel.com>
+A simplified version of the semantic patch that fixes this problem is as
+follows: (http://coccinelle.lip6.fr/)
+
+// <smpl>
+@@
+expression e1,e2,ar;
+@@
+
+for(e1 = 0; e1 < e2; e1++) { <...
+  ar[
+- e2
++ e1
+  ]
+  ...> }
+// </smpl>
+
+Signed-off-by: Julia Lawall <julia@diku.dk>
+Signed-off-by: Takashi Iwai <tiwai@suse.de>
 Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
 ---
- drivers/cpuidle/governors/menu.c |    4 +++-
- 1 file changed, 3 insertions(+), 1 deletion(-)
+ sound/core/pcm_compat.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/drivers/cpuidle/governors/menu.c b/drivers/cpuidle/governors/menu.c
-index f8e57c6..0537437 100644
---- a/drivers/cpuidle/governors/menu.c
-+++ b/drivers/cpuidle/governors/menu.c
-@@ -185,6 +185,7 @@ static int menu_select(struct cpuidle_device *dev)
- 	int latency_req = pm_qos_requirement(PM_QOS_CPU_DMA_LATENCY);
- 	int i;
- 	int multiplier;
-+	struct timespec t;
- 
- 	if (data->needs_update) {
- 		menu_update(dev);
-@@ -199,8 +200,9 @@ static int menu_select(struct cpuidle_device *dev)
- 		return 0;
- 
- 	/* determine the expected residency time, round up */
-+	t = ktime_to_timespec(tick_nohz_get_sleep_length());
- 	data->expected_us =
--	    DIV_ROUND_UP((u32)ktime_to_ns(tick_nohz_get_sleep_length()), 1000);
-+		t.tv_sec * USEC_PER_SEC + t.tv_nsec / NSEC_PER_USEC;
- 
- 
- 	data->bucket = which_bucket(data->expected_us);
+diff --git a/sound/core/pcm_compat.c b/sound/core/pcm_compat.c
+index 5fb2e28..91cdf94 100644
+--- a/sound/core/pcm_compat.c
++++ b/sound/core/pcm_compat.c
+@@ -342,7 +342,7 @@ static int snd_pcm_ioctl_xfern_compat(struct snd_pcm_substream *substream,
+ 			kfree(bufs);
+ 			return -EFAULT;
+ 		}
+-		bufs[ch] = compat_ptr(ptr);
++		bufs[i] = compat_ptr(ptr);
+ 		bufptr++;
+ 	}
+ 	if (dir == SNDRV_PCM_STREAM_PLAYBACK)
 -- 
 1.7.9.6
 
