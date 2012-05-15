@@ -1,96 +1,168 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758205Ab2EOLgF (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 May 2012 07:36:05 -0400
-Received: from mail-wg0-f44.google.com ([74.125.82.44]:36901 "EHLO
-	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757433Ab2EOLgC convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 May 2012 07:36:02 -0400
-Subject: Re: Plumbers: Tweaking scheduler policy micro-conf RFP
-Mime-Version: 1.0 (Apple Message framework v1084)
-Content-Type: text/plain; charset=us-ascii
-From: Pantelis Antoniou <pantelis.antoniou@gmail.com>
-In-Reply-To: <1337077714.27694.21.camel@twins>
-Date: Tue, 15 May 2012 14:35:53 +0300
-Cc: Vincent Guittot <vincent.guittot@linaro.org>,
-        mou Chen <hi3766691@gmail.com>, linux-kernel@vger.kernel.org,
-        Ingo Molnar <mingo@kernel.org>, torvalds@linux-foundation.org
-Content-Transfer-Encoding: 8BIT
-Message-Id: <9093E8BA-80E4-4113-B036-0259E5FB44F1@gmail.com>
-References: <CAKfTPtDSDAOAdv0GTDswZeRM7TmACrjok+5kddSaQpvy6_6xWw@mail.gmail.com> <CAKfTPtCfiY7A29+e50F+6awd8BjNJjg4=uNN4ReZfdS_4FbpkA@mail.gmail.com> <CANQmPXj_81NBBrTYCkhUO1k1i4WVu0iHwY1_10wDVOFWCSkvsw@mail.gmail.com> <CAKfTPtBhPpQyr1qugbMzq2nENh+zBT+zx_nWQpQ9NPbF=+ppcQ@mail.gmail.com> <833A8DB8-1AB4-45E4-8D44-14A0D782807D@gmail.com> <1337077714.27694.21.camel@twins>
-To: Peter Zijlstra <a.p.zijlstra@chello.nl>
-X-Mailer: Apple Mail (2.1084)
+	id S1758551Ab2EOLgp (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 May 2012 07:36:45 -0400
+Received: from mga09.intel.com ([134.134.136.24]:47851 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757814Ab2EOLgn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 May 2012 07:36:43 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.67,351,1309762800"; 
+   d="asc'?scan'208";a="144185707"
+Message-ID: <1337082012.2528.181.camel@sauron.fi.intel.com>
+Subject: Re: [PATCH V2] UBI: add ubi_lnum_purge function to clear work queue
+ for a lnum
+From: Artem Bityutskiy <dedekind1@gmail.com>
+Reply-To: dedekind1@gmail.com
+To: Joel Reardon <joel@clambassador.com>
+Cc: linux-mtd@lists.infradead.org, linux-kernel@vger.kernel.org
+Date: Tue, 15 May 2012 14:40:12 +0300
+In-Reply-To: <alpine.DEB.2.00.1205150943470.17750@eristoteles.iwoars.net>
+References: <alpine.DEB.2.00.1205150943470.17750@eristoteles.iwoars.net>
+Content-Type: multipart/signed; micalg="pgp-sha1"; protocol="application/pgp-signature";
+	boundary="=-5QkPN3sT2GSnyzhI5eAb"
+X-Mailer: Evolution 3.2.3 (3.2.3-3.fc16) 
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On May 15, 2012, at 1:28 PM, Peter Zijlstra wrote:
 
-> On Tue, 2012-05-15 at 12:17 +0300, Pantelis Antoniou wrote:
->> IMO this whole idea about 'server' or 'desktop' schedulers is bunk.
-> 
-> Yeah, its complete shite. Everybody cares about throughput, latency and
-> power. The exact balance might differ between workloads but those cannot
-> be split between desktop/server at all. Furthermore, nobody wants one at
-> all costs to the others.
+--=-5QkPN3sT2GSnyzhI5eAb
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: quoted-printable
 
-Expanding on this a little more, the balancing between the factors might
-vary according to the workload you run at the time and not on a pre-set
-scenario at the time.
+On Tue, 2012-05-15 at 09:44 +0200, Joel Reardon wrote:
+> This is the second part of a patch to allow UBI to force the erasure of
+> particular logical eraseblock numbers. In this patch, a new function,
+> ubi_lnum_purge, is added that allows the caller to synchronously erase al=
+l
+> unmapped erase blocks whose LEB number corresponds to the parameter. This
+> requires a previous patch that stores the LEB number in struct ubi_work.
+>=20
+> This was tested by disabling the call to do_work in ubi thread, which res=
+ults
+> in the work queue remaining unless explicitly called to remove. UBIFS was
+> changed to call ubifs_leb_change 50 times for three different LEBs. Then =
+the
+> new function was called to clear the queue for the three differnt LEB num=
+bers
+> one at a time. The work queue was dumped each time and the selective remo=
+val
+> of the particular LEB numbers was observed.
+>=20
+> Signed-off-by: Joel Reardon <reardonj@inf.ethz.ch>
 
-For example take a server configuration, one would expect it to be geared
-towards throughput with no regard to power or latency. This is not the
-case today. Power saving can be considerable, and low latency might be
-very desirable if you run on it stuff like a VoIP based soft PBX.
+No objections in general, and I can merge this as soon as you send the
+final version. However, for this version I have several notes.
 
-Same with a desktop, running ooffice and a browser most of the time, but
-you would expect to run a game or an audio editing/performing application.
+> +/**
+> + * ubi_lnum_purge - synchronously erase unmapped PEBs by LEB number.
+> + * @ubi_num: UBI device to erase PEBs
+> + * @lnum: the LEB number to erase old unmapped PEBs.
+> + *
+> + * This function is designed to offer a means to ensure that the content=
+s of
+> + * old, unmapped LEBs are securely erased without having to flush the en=
+tire
+> + * work queue of all erase blocks that need erasure.  Simply erasing the=
+ block
+> + * at the time of unmapped is insufficient, as the wear-levelling subsys=
+tem
+> + * may have already moved the contents. This function navigates the list=
+ of
+> + * erase blocks that need erasures, and performs an immediate and synchr=
+onous
+> + * erasure of any erase block that has held data for this particular @ln=
+um.
+> + * This may include eraseblocks that held older versions of the same @ln=
+um.
+> + * Returns zero in case of success and a negative error code in case of
+> + * failure.
+> + */
+> +int ubi_lnum_purge(int ubi_num, int lnum)
+> +{
+> +	int err;
+> +	struct ubi_device *ubi;
+> +
+> +	ubi =3D ubi_get_device(ubi_num);
+> +	if (!ubi)
+> +		return -ENODEV;
+> +
+> +	err =3D ubi_wl_flush_lnum(ubi, lnum);
+> +	ubi_put_device(ubi);
+> +	return err;
+> +}
+> +EXPORT_SYMBOL_GPL(ubi_lnum_purge);
 
-The smart-phone case is like juggling coals; you need to have the minimum
-amount of power draw, but you better offer minimum latency and high
-throughtput when pissed-off-avians is on. 
+Please, do not introduce a separate exported function for this. Instead,
+add "lnum" argument to "ubi_wl_flush". Preserve the old behavior if lnum
+is -1. Document this at the header comment. In your case you also need
+to call mtd->sync() I think.
 
-Now the question is how to fit this in a scheduler policy.
+> +	dbg_wl("flush lnum %d", lnum);
+> +	list_for_each_entry_safe(wrk, tmp, &ubi->works, list) {
+> +		if (wrk->lnum =3D=3D lnum) {
+> +			down_read(&ubi->work_sem);
+> +			spin_lock(&ubi->wl_lock);
 
-We have the 3 ones that Peter mentioned;
+But you cannot walk the ubi->works list without holding the spinlock.
+Any one may add/remove elements to/from this list concurrently.
 
-Throughput
-Latency
-Power
+Take the work_sem at the beginning. Release at the very end.
 
-I can think of two more; thermal management, and memory I/O.
+Then you can do something like this:
 
-What other can we come up with? And what are the units that we are going
-to measure them with?
+int found =3D 1;
 
-For example:
+while (found) {
+	found =3D 0;
 
-Throughput: MIPS(?), bogo-mips(?), some kind of performance counter?
+	spin_lock(&ubi->wl_lock);
+	list_for_each_entry(wrk, tmp, &ubi->works, list) {
+		if (wrk->lnum =3D=3D lnum) {
+			list_del(&wrk->list);
+			ubi->works_count -=3D 1;
+			ubi_assert(ubi->works_count >=3D 0);
+			spin_unlock(&ubi->wl_lock);
 
-Latency: usecs(?)
+			err =3D wrk->func(ubi, wrk, 0);
+			if (err)
+				return err;
 
-Power: Now that's a tricky one, we can't measure power directly, it's a
-function of the cpu load we run in a period of time, along with any
-history of the cstates & pstates of that period. How can we collect
-information about that? Also we to take into account peripheral device
-power to that; GPUs are particularly power hungry. 
+			spin_lock(&ubi->wl_lock);
+			found =3D 1;
+			break;
+	}
+	spin_unlock(&ubi->wl_lock);
+}
 
-Thermal management: How to distribute load to the processors in such
-a way that the temperature of the die doesn't increase too much that
-we have to either go to a lower OPP or shut down the core all-together.
-This is in direct conflict with throughput since we'd have better performance 
-if we could keep the same warmed-up cpu going.
+--=20
+Best Regards,
+Artem Bityutskiy
 
-Memory I/O: Some workloads are memory bandwidth hungry but do not need
-much CPU power. In the case of asymmetric cores it would make sense to move
-the memory bandwidth hog to a lower performance CPU without any impact. 
-Probably need to use some kind of performance counter for that; not going
-to be very generic.
+--=-5QkPN3sT2GSnyzhI5eAb
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: This is a digitally signed message part
+Content-Transfer-Encoding: 7bit
 
-Any more ideas?
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
 
-Regards
+iQIcBAABAgAGBQJPskCcAAoJECmIfjd9wqK0q30P/3AbwSQR8T409yRS9h6I/rGz
+2dIrP4cQLgphYS/g6f1oLni/qtuywlhG0wwhPPf3f0hHWT6Bn4H0pg67vdMKiKhU
+Lv1XaSYRmnRz3x4Wxh1vC8+qDoLMMMUAoZDULPFWmbDGa63RVy18ETwM4Qj3Ba7m
++fNrCzeAQ6rP1fkkRjFpnDLt+DtC9yx4oc4qNV1sohLKM/ZEYrlwCbIOOV9TXoHo
++taqMzqNn4NLUvqb34VNv1ZJVjTeFW3nMGKdQVDhirUFWOqIygk+9+rqr35pNtdi
+nTJxt5aoCZgB+xuHwtYz7l7PIN1hNXO5es6LBbJdEyh8UZ4vyNmmkJ1rUnF2H/RX
+fgi4AfYbkGWH3rrpyH/V4cyJs76xuFlNKXq/rYOzXXW7IOGXOLs1r5og0NmnKHXA
+/wtPympPmN5VF5KGsBMUo2AExhmhWfn82ogVf8utA9do5Gt6UZ202SEnZjkiiKfQ
+6MmOpVXSoYCHgHCnfSCjzk5z7Y9or6GFVBp1RyNeXfU7hyxGasS2f0KzNln8u7ya
+9Dr7bswHu2vVHStNOSPmQDy0fu4nropLgguNNUvyex1L2lKx4d6bTOKkmsRjSufV
+J/a+cZTYJmONBaHtIEu9f+bMJUCtY1Kg1U81TM8VCojGQlN+VtW8Zb95ytJ2vUCj
+za54gy9nY/dW2DsgU+An
+=K6GV
+-----END PGP SIGNATURE-----
 
--- Pantelis
-  
+--=-5QkPN3sT2GSnyzhI5eAb--
+
