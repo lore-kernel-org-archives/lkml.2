@@ -1,17 +1,17 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965958Ab2EODDS (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 May 2012 23:03:18 -0400
-Received: from mail1.windriver.com ([147.11.146.13]:53204 "EHLO
-	mail1.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S964936Ab2EOCQx (ORCPT
+	id S965952Ab2EODDm (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 May 2012 23:03:42 -0400
+Received: from mail.windriver.com ([147.11.1.11]:49433 "EHLO
+	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S964930Ab2EOCQw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 May 2012 22:16:53 -0400
+	Mon, 14 May 2012 22:16:52 -0400
 From: Paul Gortmaker <paul.gortmaker@windriver.com>
 To: <stable@kernel.org>, <linux-kernel@vger.kernel.org>
-Subject: [34-longterm 066/179] md/raid5: fix FUA request handling in ops_run_io()
-Date: Mon, 14 May 2012 22:12:42 -0400
-Message-ID: <1337048075-6132-67-git-send-email-paul.gortmaker@windriver.com>
+Subject: [34-longterm 065/179] md/raid5: fix raid5_set_bi_hw_segments
+Date: Mon, 14 May 2012 22:12:41 -0400
+Message-ID: <1337048075-6132-66-git-send-email-paul.gortmaker@windriver.com>
 X-Mailer: git-send-email 1.7.9.6
 In-Reply-To: <1337048075-6132-1-git-send-email-paul.gortmaker@windriver.com>
 References: <1337048075-6132-1-git-send-email-paul.gortmaker@windriver.com>
@@ -29,55 +29,36 @@ From: Namhyung Kim <namhyung@gmail.com>
     If you see a problem with using this for longterm, please comment.
                    -------------------
 
-commit b062962edb086011e94ec4d9eb3f6a6d814f2a8f upstream.
+commit 9b2dc8b665932a8e681a7ab3237f60475e75e161 upstream.
 
-Commit e9c7469bb4f5 ("md: implment REQ_FLUSH/FUA support")
-introduced R5_WantFUA flag and set rw to WRITE_FUA in that case.
-However remaining code still checks whether rw is exactly same
-as WRITE or not, so FUAed-write ends up with being treated as
-READ. Fix it.
+The @bio->bi_phys_segments consists of active stripes count in the
+lower 16 bits and processed stripes count in the upper 16 bits. So
+logical-OR operator should be bitwise one.
 
-This bug has been present since 2.6.37 and the fix is suitable for any
--stable kernel since then.  It is not clear why this has not caused
-more problems.
+This bug has been present since 2.6.27 and the fix is suitable for any
+-stable kernel since then.  Fortunately the bad code is only used on
+error paths and is relatively unlikely to be hit.
 
-Cc: Tejun Heo <tj@kernel.org>
 Signed-off-by: Namhyung Kim <namhyung@gmail.com>
 Signed-off-by: NeilBrown <neilb@suse.de>
 Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
 ---
- drivers/md/raid5.c |    6 +++---
- 1 file changed, 3 insertions(+), 3 deletions(-)
+ drivers/md/raid5.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
 diff --git a/drivers/md/raid5.c b/drivers/md/raid5.c
-index de7984d..dc3e4fc 100644
+index 6af0a6d..de7984d 100644
 --- a/drivers/md/raid5.c
 +++ b/drivers/md/raid5.c
-@@ -447,7 +447,7 @@ static void ops_run_io(struct stripe_head *sh, struct stripe_head_state *s)
- 		bi = &sh->dev[i].req;
+@@ -128,7 +128,7 @@ static inline int raid5_dec_bi_hw_segments(struct bio *bio)
  
- 		bi->bi_rw = rw;
--		if (rw == WRITE)
-+		if (rw & WRITE)
- 			bi->bi_end_io = raid5_end_write_request;
- 		else
- 			bi->bi_end_io = raid5_end_read_request;
-@@ -481,13 +481,13 @@ static void ops_run_io(struct stripe_head *sh, struct stripe_head_state *s)
- 			bi->bi_io_vec[0].bv_offset = 0;
- 			bi->bi_size = STRIPE_SIZE;
- 			bi->bi_next = NULL;
--			if (rw == WRITE &&
-+			if ((rw & WRITE) &&
- 			    test_bit(R5_ReWrite, &sh->dev[i].flags))
- 				atomic_add(STRIPE_SECTORS,
- 					&rdev->corrected_errors);
- 			generic_make_request(bi);
- 		} else {
--			if (rw == WRITE)
-+			if (rw & WRITE)
- 				set_bit(STRIPE_DEGRADED, &sh->state);
- 			pr_debug("skip op %ld on disc %d for sector %llu\n",
- 				bi->bi_rw, i, (unsigned long long)sh->sector);
+ static inline void raid5_set_bi_hw_segments(struct bio *bio, unsigned int cnt)
+ {
+-	bio->bi_phys_segments = raid5_bi_phys_segments(bio) || (cnt << 16);
++	bio->bi_phys_segments = raid5_bi_phys_segments(bio) | (cnt << 16);
+ }
+ 
+ /* Find first data disk in a raid6 stripe */
 -- 
 1.7.9.6
 
