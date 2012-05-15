@@ -1,17 +1,17 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965584Ab2EOCZx (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 May 2012 22:25:53 -0400
-Received: from mail.windriver.com ([147.11.1.11]:49874 "EHLO
-	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965550Ab2EOCSW (ORCPT
+	id S965545Ab2EOCSV (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 May 2012 22:18:21 -0400
+Received: from mail1.windriver.com ([147.11.146.13]:53051 "EHLO
+	mail1.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S964901Ab2EOCQf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 May 2012 22:18:22 -0400
+	Mon, 14 May 2012 22:16:35 -0400
 From: Paul Gortmaker <paul.gortmaker@windriver.com>
 To: <stable@kernel.org>, <linux-kernel@vger.kernel.org>
-Subject: [34-longterm 175/179] nozomi: Fix warning from the previous TIOCGCOUNT changes
-Date: Mon, 14 May 2012 22:14:31 -0400
-Message-ID: <1337048075-6132-176-git-send-email-paul.gortmaker@windriver.com>
+Subject: [34-longterm 044/179] UBIFS: fix shrinker object count reports
+Date: Mon, 14 May 2012 22:12:20 -0400
+Message-ID: <1337048075-6132-45-git-send-email-paul.gortmaker@windriver.com>
 X-Mailer: git-send-email 1.7.9.6
 In-Reply-To: <1337048075-6132-1-git-send-email-paul.gortmaker@windriver.com>
 References: <1337048075-6132-1-git-send-email-paul.gortmaker@windriver.com>
@@ -21,7 +21,7 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Alan Cox <alan@linux.intel.com>
+From: Artem Bityutskiy <Artem.Bityutskiy@nokia.com>
 
                    -------------------
     This is a commit scheduled for the next v2.6.34 longterm release.
@@ -29,29 +29,40 @@ From: Alan Cox <alan@linux.intel.com>
     If you see a problem with using this for longterm, please comment.
                    -------------------
 
-commit 68e29655cc51761d60d5f27b2738816a5b13e415 upstream.
+commit cf610bf4199770420629d3bc273494bd27ad6c1d upstream.
 
-Just remove a now unused variable
+Sometimes VM asks the shrinker to return amount of objects it can shrink,
+and we return the ubifs_clean_zn_cnt in that case. However, it is possible
+that this counter is negative for a short period of time, due to the way
+UBIFS TNC code updates it. And I can observe the following warnings sometimes:
 
-Signed-off-by: Alan Cox <alan@linux.intel.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
+shrink_slab: ubifs_shrinker+0x0/0x2b7 [ubifs] negative objects to delete nr=-8541616642706119788
+
+This patch makes sure UBIFS never returns negative count of objects.
+
+Signed-off-by: Artem Bityutskiy <Artem.Bityutskiy@nokia.com>
 Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
 ---
- drivers/char/nozomi.c |    1 -
- 1 file changed, 1 deletion(-)
+ fs/ubifs/shrinker.c |    6 +++++-
+ 1 file changed, 5 insertions(+), 1 deletion(-)
 
-diff --git a/drivers/char/nozomi.c b/drivers/char/nozomi.c
-index 0924435..7ecca24 100644
---- a/drivers/char/nozomi.c
-+++ b/drivers/char/nozomi.c
-@@ -1829,7 +1829,6 @@ static int ntty_ioctl(struct tty_struct *tty, struct file *file,
- 		      unsigned int cmd, unsigned long arg)
- {
- 	struct port *port = tty->driver_data;
--	void __user *argp = (void __user *)arg;
- 	int rval = -ENOIOCTLCMD;
+diff --git a/fs/ubifs/shrinker.c b/fs/ubifs/shrinker.c
+index 02feb59..aec6689 100644
+--- a/fs/ubifs/shrinker.c
++++ b/fs/ubifs/shrinker.c
+@@ -283,7 +283,11 @@ int ubifs_shrinker(int nr, gfp_t gfp_mask)
+ 	long clean_zn_cnt = atomic_long_read(&ubifs_clean_zn_cnt);
  
- 	DBG1("******** IOCTL, cmd: %d", cmd);
+ 	if (nr == 0)
+-		return clean_zn_cnt;
++		/*
++		 * Due to the way UBIFS updates the clean znode counter it may
++		 * temporarily be negative.
++		 */
++		return clean_zn_cnt >= 0 ? clean_zn_cnt : 1;
+ 
+ 	if (!clean_zn_cnt) {
+ 		/*
 -- 
 1.7.9.6
 
