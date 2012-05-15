@@ -1,102 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964817Ab2EOBiH (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 May 2012 21:38:07 -0400
-Received: from mail-qa0-f49.google.com ([209.85.216.49]:39532 "EHLO
-	mail-qa0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932402Ab2EOBiF (ORCPT
+	id S964827Ab2EOBk4 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 May 2012 21:40:56 -0400
+Received: from e32.co.us.ibm.com ([32.97.110.150]:34460 "EHLO
+	e32.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S964807Ab2EOBky (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 May 2012 21:38:05 -0400
-Message-ID: <4FB1B37A.5050501@gmail.com>
-Date: Mon, 14 May 2012 21:38:02 -0400
-From: KOSAKI Motohiro <kosaki.motohiro@gmail.com>
-User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.7; rv:12.0) Gecko/20120428 Thunderbird/12.0.1
+	Mon, 14 May 2012 21:40:54 -0400
+Date: Mon, 14 May 2012 18:40:42 -0700
+From: Nishanth Aravamudan <nacc@linux.vnet.ibm.com>
+To: David Rientjes <rientjes@google.com>
+Cc: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
+        a.p.zijlstra@chello.nl, mingo@kernel.org, pjt@google.com,
+        paul@paulmenage.org, akpm@linux-foundation.org, rjw@sisk.pl,
+        nacc@us.ibm.com, paulmck@linux.vnet.ibm.com, tglx@linutronix.de,
+        seto.hidetoshi@jp.fujitsu.com, tj@kernel.org, mschmidt@redhat.com,
+        berrange@redhat.com, nikunj@linux.vnet.ibm.com,
+        vatsa@linux.vnet.ibm.com, liuj97@gmail.com,
+        linux-kernel@vger.kernel.org, linux-pm@vger.kernel.org
+Subject: Re: [PATCH v3 5/5] cpusets, suspend: Save and restore cpusets during
+ suspend/resume
+Message-ID: <20120515014042.GA9774@linux.vnet.ibm.com>
+References: <20120513231325.3566.37740.stgit@srivatsabhat>
+ <20120513231710.3566.45349.stgit@srivatsabhat>
+ <alpine.DEB.2.00.1205141735050.25235@chino.kir.corp.google.com>
 MIME-Version: 1.0
-To: Rusty Russell <rusty@rustcorp.com.au>
-CC: KOSAKI Motohiro <kosaki.motohiro@gmail.com>,
-        Ingo Molnar <mingo@redhat.com>, x86@kernel.org,
-        LKML <linux-kernel@vger.kernel.org>, anton@samba.org,
-        Arnd Bergmann <arnd@arndb.de>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Mike Travis <travis@sgi.com>, Thomas Gleixner <tglx@linutronix.de>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Al Viro <viro@zeniv.linux.org.uk>
-Subject: Re: [PULL] cpumask: finally make them variable size w/ CPUMASK_OFFSTACK.
-References: <87ipg5c2bk.fsf@rustcorp.com.au> <4FAB1AC9.1050306@gmail.com> <871umsdbm0.fsf@rustcorp.com.au> <4FAB2B5B.4020902@gmail.com> <87vck4bppw.fsf@rustcorp.com.au> <4FAB6363.4080808@gmail.com> <87zk9btqmu.fsf@rustcorp.com.au>
-In-Reply-To: <87zk9btqmu.fsf@rustcorp.com.au>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <alpine.DEB.2.00.1205141735050.25235@chino.kir.corp.google.com>
+X-Operating-System: Linux 3.2.0-24-generic (x86_64)
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 12051501-3270-0000-0000-0000065747C7
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->> This code still slow than original. when calling reclaim path, new allocation is almost always
->> fail. then, your code almost always invoke all cpu batch invalidation. i.e. many ipi.
->
-> I don't know this code.  Does that happen often?Do we really need to
-> optimize the out-of-memory path?
+On 14.05.2012 [17:37:50 -0700], David Rientjes wrote:
+> On Mon, 14 May 2012, Srivatsa S. Bhat wrote:
+> 
+> > diff --git a/kernel/cpuset.c b/kernel/cpuset.c
+> > index 0723183..671bf26 100644
+> > --- a/kernel/cpuset.c
+> > +++ b/kernel/cpuset.c
+> > @@ -93,6 +93,13 @@ struct cpuset {
+> >  
+> >  	unsigned long flags;		/* "unsigned long" so bitops work */
+> >  	cpumask_var_t cpus_allowed;	/* CPUs allowed to tasks in cpuset */
+> > +
+> > +	/*
+> > +	 * used to save cpuset's cpus_allowed mask during suspend and restore
+> > +	 * it during resume.
+> > +	 */
+> > +	cpumask_var_t suspend_cpus_allowed;
+> > +
+> >  	nodemask_t mems_allowed;	/* Memory Nodes allowed to tasks */
+> >  
+> >  	struct cpuset *parent;		/* my parent */
+> 
+> I see what you're doing with this and think it will fix the problem that 
+> you're trying to address, but I think it could become much more general 
+> to just the suspend case: if an admin sets a cpuset to have cpus 4-6, for 
+> example, and cpu 5 goes offline, then I believe the cpuset should once 
+> again become 4-6 if cpu 5 comes back online.  So I think this should be 
+> implemented like mempolicies are which save the user intended nodemask 
+> that may become restricted by cpuset placement but will be rebound if the 
+> cpuset includes the intended nodes.
 
-we don't need optimize out-of-memory path. but it's not out-of-memory path. our reclaim code
-has two steps 1) purge small file cache (try_to_free_pages) 2) get new page (get_page_from_freelist).
-but if you have smp box, it's racy. To success 1) doesn't guarantee to success 2). then, drain_all_pages()
-is called frequently than you expected.
+Heh, please read the thread at
+http://marc.info/?l=linux-kernel&m=133615922717112&w=2 ... subject is
+"[PATCH v2 0/7] CPU hotplug, cpusets: Fix issues with cpusets handling
+upon CPU hotplug". That was effectively the same solution Srivatsa
+originally posted. But after lengthy discussions with PeterZ and others,
+it was decided that suspend/resume is a special case where it makes
+sense to save "policy" but that generally cpu/memory hotplug is a
+destructive operation and nothing is required to be retained (that
+certain policies are retained is unfortunately now expected, but isn't
+guaranteed for cpusets, at least).
 
+> If that's done, then it takes care of the suspend case as well and adds 
+> generic cpu hotplug support, not just for suspend/resume.
 
+Yeah ... but that's not the intent here (to add generic cpu hotplug
+support).
 
-> But I should have used on_each_cpu_cond() helper which does this for us
-> (except it falls back to individial IPIs) which would make this code
-> neater.
+Srivatsa, perhaps a reference to some summary of why it's not good to
+support the general hotplug case would have been good in 0/5?
 
-Ah, yes. that definitely makes sense.
-
-
->>>> 2) When CONFIG_CPUMASK_OFFSTACK=n and NR_CPUS is relatively large, cpumask on stack may
->>>> cause stack overflow. because of, alloc_pages() can be called from
->>>> very deep call stack.
->>>
->>> You can't have large NR_CPUS without CONFIG_CPUMASK_OFFSTACK=y,
->>> otherwise you'll get many other stack overflows, too.
->>
->> Original code put cpumask bss instead stack then. :-)
->
-> Yes, and this is what it looks like if we convert it directly, but I
-> still don't want to encourage people to do this :(
->
-> Cheers,
-> Rusty.
->
-> diff --git a/mm/page_alloc.c b/mm/page_alloc.c
-> --- a/mm/page_alloc.c
-> +++ b/mm/page_alloc.c
-> @@ -1179,7 +1179,7 @@ void drain_all_pages(void)
->   	 * Allocate in the BSS so we wont require allocation in
->   	 * direct reclaim path for CONFIG_CPUMASK_OFFSTACK=y
->   	 */
-> -	static cpumask_t cpus_with_pcps;
-> +	static DECLARE_BITMAP(cpus_with_pcps, NR_CPUS);
->
->   	/*
->   	 * We don't care about racing with CPU hotplug event
-> @@ -1197,11 +1197,12 @@ void drain_all_pages(void)
->   			}
->   		}
->   		if (has_pcps)
-> -			cpumask_set_cpu(cpu,&cpus_with_pcps);
-> +			cpumask_set_cpu(cpu, to_cpumask(cpus_with_pcps));
->   		else
-> -			cpumask_clear_cpu(cpu,&cpus_with_pcps);
-> +			cpumask_clear_cpu(cpu, to_cpumask(cpus_with_pcps));
->   	}
-> -	on_each_cpu_mask(&cpus_with_pcps, drain_local_pages, NULL, 1);
-> +	on_each_cpu_mask(to_cpumask(cpus_with_pcps),
-> +			 drain_local_pages, NULL, 1);
->   }
-
-Looks good to me. thanks.
-
-   Acked-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+Thanks,
+Nish
 
 
-
-
+-- 
+Nishanth Aravamudan <nacc@us.ibm.com>
+IBM Linux Technology Center
 
