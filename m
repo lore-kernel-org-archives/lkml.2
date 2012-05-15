@@ -1,17 +1,17 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965046Ab2EOC5K (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 May 2012 22:57:10 -0400
-Received: from mail.windriver.com ([147.11.1.11]:49551 "EHLO
-	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965001Ab2EOCRE (ORCPT
+	id S965034Ab2EOC5g (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 May 2012 22:57:36 -0400
+Received: from mail1.windriver.com ([147.11.146.13]:53291 "EHLO
+	mail1.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S964995Ab2EOCRD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 May 2012 22:17:04 -0400
+	Mon, 14 May 2012 22:17:03 -0400
 From: Paul Gortmaker <paul.gortmaker@windriver.com>
 To: <stable@kernel.org>, <linux-kernel@vger.kernel.org>
-Subject: [34-longterm 079/179] clocksource: Make watchdog robust vs. interruption
-Date: Mon, 14 May 2012 22:12:55 -0400
-Message-ID: <1337048075-6132-80-git-send-email-paul.gortmaker@windriver.com>
+Subject: [34-longterm 078/179] xen: partially revert "xen: set max_pfn_mapped to the last pfn mapped"
+Date: Mon, 14 May 2012 22:12:54 -0400
+Message-ID: <1337048075-6132-79-git-send-email-paul.gortmaker@windriver.com>
 X-Mailer: git-send-email 1.7.9.6
 In-Reply-To: <1337048075-6132-1-git-send-email-paul.gortmaker@windriver.com>
 References: <1337048075-6132-1-git-send-email-paul.gortmaker@windriver.com>
@@ -21,7 +21,7 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Thomas Gleixner <tglx@linutronix.de>
+From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
 
                    -------------------
     This is a commit scheduled for the next v2.6.34 longterm release.
@@ -29,102 +29,53 @@ From: Thomas Gleixner <tglx@linutronix.de>
     If you see a problem with using this for longterm, please comment.
                    -------------------
 
-commit b5199515c25cca622495eb9c6a8a1d275e775088 upstream.
+commit a91d92875ee94e4703fd017ccaadb48cfb344994 upstream.
 
-The clocksource watchdog code is interruptible and it has been
-observed that this can trigger false positives which disable the TSC.
+We only need to set max_pfn_mapped to the last pfn mapped on x86_64 to
+make sure that cleanup_highmap doesn't remove important mappings at
+_end.
 
-The reason is that an interrupt storm or a long running interrupt
-handler between the read of the watchdog source and the read of the
-TSC brings the two far enough apart that the delta is larger than the
-unstable treshold. Move both reads into a short interrupt disabled
-region to avoid that.
+We don't need to do this on x86_32 because cleanup_highmap is not called
+on x86_32. Besides lowering max_pfn_mapped on x86_32 has the unwanted
+side effect of limiting the amount of memory available for the 1:1
+kernel pagetable allocation.
 
-Reported-and-tested-by: Vernon Mauery <vernux@us.ibm.com>
-Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+This patch reverts the x86_32 part of the original patch.
+
+Signed-off-by: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
 Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
 ---
- include/linux/clocksource.h |    1 +
- kernel/time/clocksource.c   |   24 +++++++++++++-----------
- 2 files changed, 14 insertions(+), 11 deletions(-)
+ arch/x86/xen/mmu.c |    9 ++++++++-
+ 1 file changed, 8 insertions(+), 1 deletion(-)
 
-diff --git a/include/linux/clocksource.h b/include/linux/clocksource.h
-index 4bca8b6..f99e32b 100644
---- a/include/linux/clocksource.h
-+++ b/include/linux/clocksource.h
-@@ -192,6 +192,7 @@ struct clocksource {
- #ifdef CONFIG_CLOCKSOURCE_WATCHDOG
- 	/* Watchdog related data, used by the framework */
- 	struct list_head wd_list;
-+	cycle_t cs_last;
- 	cycle_t wd_last;
- #endif
- };
-diff --git a/kernel/time/clocksource.c b/kernel/time/clocksource.c
-index db24c5c..8569f91 100644
---- a/kernel/time/clocksource.c
-+++ b/kernel/time/clocksource.c
-@@ -184,7 +184,6 @@ static struct clocksource *watchdog;
- static struct timer_list watchdog_timer;
- static DECLARE_WORK(watchdog_work, clocksource_watchdog_work);
- static DEFINE_SPINLOCK(watchdog_lock);
--static cycle_t watchdog_last;
- static int watchdog_running;
+diff --git a/arch/x86/xen/mmu.c b/arch/x86/xen/mmu.c
+index 4916176..96cdf78 100644
+--- a/arch/x86/xen/mmu.c
++++ b/arch/x86/xen/mmu.c
+@@ -1641,6 +1641,11 @@ static __init void xen_map_identity_early(pmd_t *pmd, unsigned long max_pfn)
+ 		for (pteidx = 0; pteidx < PTRS_PER_PTE; pteidx++, pfn++) {
+ 			pte_t pte;
  
- static int clocksource_watchdog_kthread(void *data);
-@@ -253,11 +252,6 @@ static void clocksource_watchdog(unsigned long data)
- 	if (!watchdog_running)
- 		goto out;
- 
--	wdnow = watchdog->read(watchdog);
--	wd_nsec = clocksource_cyc2ns((wdnow - watchdog_last) & watchdog->mask,
--				     watchdog->mult, watchdog->shift);
--	watchdog_last = wdnow;
--
- 	list_for_each_entry(cs, &watchdog_list, wd_list) {
- 
- 		/* Clocksource already marked unstable? */
-@@ -267,19 +261,28 @@ static void clocksource_watchdog(unsigned long data)
- 			continue;
- 		}
- 
-+		local_irq_disable();
- 		csnow = cs->read(cs);
-+		wdnow = watchdog->read(watchdog);
-+		local_irq_enable();
- 
- 		/* Clocksource initialized ? */
- 		if (!(cs->flags & CLOCK_SOURCE_WATCHDOG)) {
- 			cs->flags |= CLOCK_SOURCE_WATCHDOG;
--			cs->wd_last = csnow;
-+			cs->wd_last = wdnow;
-+			cs->cs_last = csnow;
- 			continue;
- 		}
- 
--		/* Check the deviation from the watchdog clocksource. */
--		cs_nsec = clocksource_cyc2ns((csnow - cs->wd_last) &
-+		wd_nsec = clocksource_cyc2ns((wdnow - cs->wd_last) & watchdog->mask,
-+					     watchdog->mult, watchdog->shift);
++#ifdef CONFIG_X86_32
++			if (pfn > max_pfn_mapped)
++				max_pfn_mapped = pfn;
++#endif
 +
-+		cs_nsec = clocksource_cyc2ns((csnow - cs->cs_last) &
- 					     cs->mask, cs->mult, cs->shift);
--		cs->wd_last = csnow;
-+		cs->cs_last = csnow;
-+		cs->wd_last = wdnow;
-+
-+		/* Check the deviation from the watchdog clocksource. */
- 		if (abs(cs_nsec - wd_nsec) > WATCHDOG_THRESHOLD) {
- 			clocksource_unstable(cs, cs_nsec - wd_nsec);
- 			continue;
-@@ -317,7 +320,6 @@ static inline void clocksource_start_watchdog(void)
- 		return;
- 	init_timer(&watchdog_timer);
- 	watchdog_timer.function = clocksource_watchdog;
--	watchdog_last = watchdog->read(watchdog);
- 	watchdog_timer.expires = jiffies + WATCHDOG_INTERVAL;
- 	add_timer_on(&watchdog_timer, cpumask_first(cpu_online_mask));
- 	watchdog_running = 1;
+ 			if (!pte_none(pte_page[pteidx]))
+ 				continue;
+ 
+@@ -1753,7 +1758,9 @@ __init pgd_t *xen_setup_kernel_pagetable(pgd_t *pgd,
+ {
+ 	pmd_t *kernel_pmd;
+ 
+-	max_pfn_mapped = PFN_DOWN(__pa(xen_start_info->mfn_list));
++	max_pfn_mapped = PFN_DOWN(__pa(xen_start_info->pt_base) +
++				  xen_start_info->nr_pt_frames * PAGE_SIZE +
++				  512*1024);
+ 
+ 	kernel_pmd = m2v(pgd[KERNEL_PGD_BOUNDARY].pgd);
+ 	memcpy(level2_kernel_pgt, kernel_pmd, sizeof(pmd_t) * PTRS_PER_PMD);
 -- 
 1.7.9.6
 
