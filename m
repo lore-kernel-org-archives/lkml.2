@@ -1,162 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933034Ab2EOOqj (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 May 2012 10:46:39 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:53415 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933003Ab2EOOqh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 May 2012 10:46:37 -0400
-Date: Tue, 15 May 2012 16:46:35 +0200
-From: Michal Hocko <mhocko@suse.cz>
-To: Johannes Weiner <hannes@cmpxchg.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        cgroups@vger.kernel.org, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [patch 3/6] mm: memcg: print statistics directly to seq_file
-Message-ID: <20120515144635.GH11346@tiehlicka.suse.cz>
-References: <1337018451-27359-1-git-send-email-hannes@cmpxchg.org>
- <1337018451-27359-4-git-send-email-hannes@cmpxchg.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1337018451-27359-4-git-send-email-hannes@cmpxchg.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S964940Ab2EOOqp (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 May 2012 10:46:45 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:38285 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933003Ab2EOOqn (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 May 2012 10:46:43 -0400
+From: Namjae Jeon <linkinjeon@gmail.com>
+To: hirofumi@mail.parknet.co.jp
+Cc: linux-kernel@vger.kernel.org, joe@perches.com,
+        Namjae Jeon <linkinjeon@gmail.com>,
+        Amit Sahrawat <amit.sahrawat83@gmail.com>
+Subject: [PATCH 2/2] fat: use fat_msg_ratelimit in fat__get_entry.
+Date: Tue, 15 May 2012 10:46:33 -0400
+Message-Id: <1337093193-3999-1-git-send-email-linkinjeon@gmail.com>
+X-Mailer: git-send-email 1.7.5.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon 14-05-12 20:00:48, Johannes Weiner wrote:
-> Being able to use seq_printf() allows being smarter about statistics
-> name strings, which are currently listed twice, with the only
-> difference being a "total_" prefix on the hierarchical version.
-> 
-> Signed-off-by: Johannes Weiner <hannes@cmpxchg.org>
+When application tried to lookup(opendir/readdir/stat) 5000 files in plugging usb device formatted by FAT, If unplugging usb device while lookup files, so many message occured like the below log. and currently it make app slow.
+So this patch use fat_msg_ratelimit function about this message to decrease this messages.
 
-Nice
-Acked-by: Michal Hocko <mhocko@suse.cz>
+#> ./file_lookup_testcase ./files_directory/
+[   57.768000] usb 2-1.4: USB disconnect, device number 4
+[   57.812000] FAT-fs (sda1): FAT read failed (blocknr 2631)
+stat failed
+[   57.816000] FAT-fs (sda1): Directory bread(block 396816) failed
+[   57.824000] FAT-fs (sda1): Directory bread(block 396817) failed
+: No such file [   57.832000] FAT-fs (sda1): Directory bread(block 396818) failed
+or directory
+[   57.840000] FAT-fs (sda1): Directory bread(block 396819) failed
+[   57.848000] FAT-fs (sda1): Directory bread(block 396820) failed
+[   57.860000] FAT-fs (sda1): Directory bread(block 396821) failed
+[   57.876000] FAT-fs (sda1): Directory bread(block 396822) failed
+[   57.892000] FAT-fs (sda1): Directory bread(block 396823) failed
+[   57.904000] FAT-fs (sda1): Directory bread(block 406824) failed
+[   57.920000] FAT-fs (sda1): Directory bread(block 406825) failed
+[   57.932000] FAT-fs (sda1): Directory bread(block 406826) failed
+[   57.940000] FAT-fs (sda1): Directory bread(block 406827) failed
+[   57.952000] FAT-fs (sda1): Directory bread(block 406828) failed
+[   57.960000] FAT-fs (sda1): Directory bread(block 406829) failed
+[   57.964000] FAT-fs (sda1): Directory bread(block 406830) failed
+[   57.972000] FAT-fs (sda1): Directory bread(block 406831) failed
+[   57.976000] FAT-fs (sda1): Directory bread(block 417696) failed
+[   57.984000] FAT-fs (sda1): Directory bread(block 417697) failed
+[   57.988000] FAT-fs (sda1): Directory bread(block 417698) failed
+[   57.996000] FAT-fs (sda1): Directory bread(block 417699) failed
+[   58.000000] FAT-fs (sda1): Directory bread(block 417700) failed
+[   58.004000] FAT-fs (sda1): Directory bread(block 417701) failed
+[   58.012000] FAT-fs (sda1): Directory bread(block 417702) failed
+[   58.016000] FAT-fs (sda1): Directory bread(block 417703) failed
+[   58.024000] FAT-fs (sda1): FAT read failed (blocknr 2631)
+stat[   58.028000] FAT-fs (sda1): Directory bread(block 396816) failed
+[   58.036000] FAT-fs (sda1): Directory bread(block 396817) failed
+[   58.040000] FAT-fs (sda1): Directory bread(block 396818) failed
+[   58.048000] FAT-fs (sda1): Directory bread(block 396819) failed
+[   58.052000] FAT-fs (sda1): Directory bread(block 396820) failed
+[   58.060000] FAT-fs (sda1): Directory bread(block 396821) failed
 
-> ---
->  mm/memcontrol.c |   56 +++++++++++++++++++++++++++----------------------------
->  1 file changed, 28 insertions(+), 28 deletions(-)
-> 
-> diff --git a/mm/memcontrol.c b/mm/memcontrol.c
-> index f0d248b..9e8551c 100644
-> --- a/mm/memcontrol.c
-> +++ b/mm/memcontrol.c
-> @@ -4274,24 +4274,21 @@ struct mcs_total_stat {
->  	s64 stat[NR_MCS_STAT];
->  };
->  
-> -static struct {
-> -	char *local_name;
-> -	char *total_name;
-> -} memcg_stat_strings[NR_MCS_STAT] = {
-> -	{"cache", "total_cache"},
-> -	{"rss", "total_rss"},
-> -	{"mapped_file", "total_mapped_file"},
-> -	{"mlock", "total_mlock"},
-> -	{"pgpgin", "total_pgpgin"},
-> -	{"pgpgout", "total_pgpgout"},
-> -	{"swap", "total_swap"},
-> -	{"pgfault", "total_pgfault"},
-> -	{"pgmajfault", "total_pgmajfault"},
-> -	{"inactive_anon", "total_inactive_anon"},
-> -	{"active_anon", "total_active_anon"},
-> -	{"inactive_file", "total_inactive_file"},
-> -	{"active_file", "total_active_file"},
-> -	{"unevictable", "total_unevictable"}
-> +static const char *memcg_stat_strings[NR_MCS_STAT] = {
-> +	"cache",
-> +	"rss",
-> +	"mapped_file",
-> +	"mlock",
-> +	"pgpgin",
-> +	"pgpgout",
-> +	"swap",
-> +	"pgfault",
-> +	"pgmajfault",
-> +	"inactive_anon",
-> +	"active_anon",
-> +	"inactive_file",
-> +	"active_file",
-> +	"unevictable",
->  };
->  
->  
-> @@ -4392,7 +4389,7 @@ static int mem_control_numa_stat_show(struct cgroup *cont, struct cftype *cft,
->  #endif /* CONFIG_NUMA */
->  
->  static int mem_control_stat_show(struct cgroup *cont, struct cftype *cft,
-> -				 struct cgroup_map_cb *cb)
-> +				 struct seq_file *m)
->  {
->  	struct mem_cgroup *memcg = mem_cgroup_from_cont(cont);
->  	struct mcs_total_stat mystat;
-> @@ -4405,16 +4402,18 @@ static int mem_control_stat_show(struct cgroup *cont, struct cftype *cft,
->  	for (i = 0; i < NR_MCS_STAT; i++) {
->  		if (i == MCS_SWAP && !do_swap_account)
->  			continue;
-> -		cb->fill(cb, memcg_stat_strings[i].local_name, mystat.stat[i]);
-> +		seq_printf(m, "%s %llu\n", memcg_stat_strings[i],
-> +			   (unsigned long long)mystat.stat[i]);
->  	}
->  
->  	/* Hierarchical information */
->  	{
->  		unsigned long long limit, memsw_limit;
->  		memcg_get_hierarchical_limit(memcg, &limit, &memsw_limit);
-> -		cb->fill(cb, "hierarchical_memory_limit", limit);
-> +		seq_printf(m, "hierarchical_memory_limit %llu\n", limit);
->  		if (do_swap_account)
-> -			cb->fill(cb, "hierarchical_memsw_limit", memsw_limit);
-> +			seq_printf(m, "hierarchical_memsw_limit %llu\n",
-> +				   memsw_limit);
->  	}
->  
->  	memset(&mystat, 0, sizeof(mystat));
-> @@ -4422,7 +4421,8 @@ static int mem_control_stat_show(struct cgroup *cont, struct cftype *cft,
->  	for (i = 0; i < NR_MCS_STAT; i++) {
->  		if (i == MCS_SWAP && !do_swap_account)
->  			continue;
-> -		cb->fill(cb, memcg_stat_strings[i].total_name, mystat.stat[i]);
-> +		seq_printf(m, "total_%s %llu\n", memcg_stat_strings[i],
-> +			   (unsigned long long)mystat.stat[i]);
->  	}
->  
->  #ifdef CONFIG_DEBUG_VM
-> @@ -4443,10 +4443,10 @@ static int mem_control_stat_show(struct cgroup *cont, struct cftype *cft,
->  				recent_scanned[0] += rstat->recent_scanned[0];
->  				recent_scanned[1] += rstat->recent_scanned[1];
->  			}
-> -		cb->fill(cb, "recent_rotated_anon", recent_rotated[0]);
-> -		cb->fill(cb, "recent_rotated_file", recent_rotated[1]);
-> -		cb->fill(cb, "recent_scanned_anon", recent_scanned[0]);
-> -		cb->fill(cb, "recent_scanned_file", recent_scanned[1]);
-> +		seq_printf(m, "recent_rotated_anon %lu\n", recent_rotated[0]);
-> +		seq_printf(m, "recent_rotated_file %lu\n", recent_rotated[1]);
-> +		seq_printf(m, "recent_scanned_anon %lu\n", recent_scanned[0]);
-> +		seq_printf(m, "recent_scanned_file %lu\n", recent_scanned[1]);
->  	}
->  #endif
->  
-> @@ -4880,7 +4880,7 @@ static struct cftype mem_cgroup_files[] = {
->  	},
->  	{
->  		.name = "stat",
-> -		.read_map = mem_control_stat_show,
-> +		.read_seq_string = mem_control_stat_show,
->  	},
->  	{
->  		.name = "force_empty",
-> -- 
-> 1.7.10.1
-> 
+Signed-off-by: Namjae Jeon <linkinjeon@gmail.com>
+Signed-off-by: Amit Sahrawat <amit.sahrawat83@gmail.com>
+Acked-by: OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
+---
+ fs/fat/dir.c |    4 ++--
+ 1 files changed, 2 insertions(+), 2 deletions(-)
 
+diff --git a/fs/fat/dir.c b/fs/fat/dir.c
+index aca191b..6eaa28c 100644
+--- a/fs/fat/dir.c
++++ b/fs/fat/dir.c
+@@ -98,8 +98,8 @@ next:
+ 
+ 	*bh = sb_bread(sb, phys);
+ 	if (*bh == NULL) {
+-		fat_msg(sb, KERN_ERR, "Directory bread(block %llu) failed",
+-		       (llu)phys);
++		fat_msg_ratelimit(sb, KERN_ERR,
++			"Directory bread(block %llu) failed", (llu)phys);
+ 		/* skip this block */
+ 		*pos = (iblock + 1) << sb->s_blocksize_bits;
+ 		goto next;
 -- 
-Michal Hocko
-SUSE Labs
-SUSE LINUX s.r.o.
-Lihovarska 1060/12
-190 00 Praha 9    
-Czech Republic
+1.7.5.4
+
