@@ -1,38 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S966690Ab2EOUFr (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 May 2012 16:05:47 -0400
-Received: from mail-lpp01m010-f46.google.com ([209.85.215.46]:40976 "EHLO
-	mail-lpp01m010-f46.google.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S966025Ab2EOUFp (ORCPT
+	id S966704Ab2EOUIC (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 May 2012 16:08:02 -0400
+Received: from mho-01-ewr.mailhop.org ([204.13.248.71]:22552 "EHLO
+	mho-01-ewr.mailhop.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S966025Ab2EOUH7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 May 2012 16:05:45 -0400
+	Tue, 15 May 2012 16:07:59 -0400
+X-Mail-Handler: MailHop Outbound by DynDNS
+X-Originating-IP: 98.234.237.12
+X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/mailhop/outbound_abuse.html for abuse reporting information)
+X-MHO-User: U2FsdGVkX18KGRogz+D4jUtbjmraAYBf
+Date: Tue, 15 May 2012 13:07:55 -0700
+From: Tony Lindgren <tony@atomide.com>
+To: Stephen Warren <swarren@wwwdotorg.org>
+Cc: Linus Walleij <linus.walleij@linaro.org>,
+        Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
+        linux-omap@vger.kernel.org, Stephen Warren <swarren@nvidia.com>,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH] pinctrl: Add generic pinctrl-simple driver that
+ supports omap2+ padconf
+Message-ID: <20120515200754.GD17852@atomide.com>
+References: <20120504150342.GI5140@atomide.com>
+ <20120504153251.GE7788@game.jcrosoft.org>
+ <20120504163420.GA5613@atomide.com>
+ <4FA42631.6060304@wwwdotorg.org>
+ <20120504220809.GW5613@atomide.com>
+ <4FAAD141.3090306@wwwdotorg.org>
+ <20120509204925.GV5088@atomide.com>
+ <4FABF553.20601@wwwdotorg.org>
+ <CACRpkdbqjofEi-5J+GTMOXFK1VvbXqa6At1fKXCge+5_y6aaRA@mail.gmail.com>
+ <4FB1513A.4070002@wwwdotorg.org>
 MIME-Version: 1.0
-In-Reply-To: <CAErSpo48ES5iLDCh1WzmHezSEYhPjhtgD5uxoY-TCTKgUBab2g@mail.gmail.com>
-References: <20120511222148.30496.68571.stgit@bling.home> <20120511225602.30496.80438.stgit@bling.home>
- <CAErSpo58hKPFb5duOi64sWuR5AJDTVp0rRHkQLotYE3CMXRRhA@mail.gmail.com>
- <1337035766.6954.74.camel@bling.home> <CAErSpo48ES5iLDCh1WzmHezSEYhPjhtgD5uxoY-TCTKgUBab2g@mail.gmail.com>
-From: Bjorn Helgaas <bhelgaas@google.com>
-Date: Tue, 15 May 2012 14:05:23 -0600
-Message-ID: <CAErSpo4LSSfBNj7dDZ1B5aR=teNkRFHvyibRmNsSmZ03dt5xPw@mail.gmail.com>
-Subject: Re: [PATCH 05/13] pci: New pci_acs_enabled()
-To: Alex Williamson <alex.williamson@redhat.com>
-Cc: benh@kernel.crashing.org, aik@ozlabs.ru, david@gibson.dropbear.id.au,
-        joerg.roedel@amd.com, dwmw2@infradead.org, chrisw@sous-sol.org,
-        agraf@suse.de, benve@cisco.com, aafabbri@cisco.com,
-        B08248@freescale.com, B07421@freescale.com, avi@redhat.com,
-        konrad.wilk@oracle.com, kvm@vger.kernel.org, qemu-devel@nongnu.org,
-        iommu@lists.linux-foundation.org, linux-pci@vger.kernel.org,
-        linux-kernel@vger.kernel.org, gregkh@linuxfoundation.org
-Content-Type: text/plain; charset=ISO-8859-1
-X-System-Of-Record: true
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4FB1513A.4070002@wwwdotorg.org>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> I tried to work through some examples to develop some intuition about this:
+* Stephen Warren <swarren@wwwdotorg.org> [120514 11:42]:
+> On 05/12/2012 05:49 PM, Linus Walleij wrote:
+> > On Thu, May 10, 2012 at 7:05 PM, Stephen Warren <swarren@wwwdotorg.org> wrote:
+> > 
+> >> Also, were you intending pinctrl-simple to actually be the GPIO
+> >> controller itself? That'd be another case that one might consider fairly
+> >> simple, but then extends to being gpio-simple as well as pinctrl-simple...
+> > 
+> > We have some pinctrl drivers implementing gpiolib too already,
+> > and it's unavoidable I think, as some recent discussion about
+> > matcing struct gpio_chip and pinctrl GPIO ranges shows.
+> 
+> I strongly believe we should only do this when the exact same HW module
+> is both pinctrl and GPIO.
+> 
+> When there are separate HW modules, we should have separate drivers. The
+> fact that the two drivers need to co-ordinate with each-other isn't a
+> good argument to make them one driver.
+> 
+> And irrespective of how the drivers are structured, if there are two HW
+> modules, we really need two separate nodes in DT to describe them, since
+> the SW architecture (1 vs. 2 drivers) shouldn't influence the DT
+> representation unduly.
 
-Sorry, gmail inserted line breaks that ruined this picture.  Here's a
-URL for it:
+Yes.
+ 
+> > Maybe "-simple" isn't such a good name for this thing. Noone thinks
+> > any kind of pin control is simple in any sense of the word anyway :-D
+> > 
+> > Tony, would pinctrl-dt-only.c be a better name perhaps?
+> 
+> That might be OK for the filename, but it doesn't seem like a useful
+> change for the DT compatible value.
 
-http://www.asciiflow.com/#3736558963405980039
+Yeah let's see if we can come up with some better name.
+
+Regards,
+
+Tony
