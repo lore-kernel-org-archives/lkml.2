@@ -1,90 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964787Ab2EOBLW (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 May 2012 21:11:22 -0400
-Received: from wolverine01.qualcomm.com ([199.106.114.254]:18274 "EHLO
-	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932413Ab2EOBLU (ORCPT
+	id S964792Ab2EOBMj (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 May 2012 21:12:39 -0400
+Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:59079 "EHLO
+	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932700Ab2EOBMi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 May 2012 21:11:20 -0400
-X-IronPort-AV: E=McAfee;i="5400,1158,6711"; a="190923263"
-X-IronPort-AV: E=Sophos;i="4.75,589,1330934400"; 
-   d="scan'208";a="120902461"
-Message-ID: <4FB1AD38.7000503@quicinc.com>
-Date: Mon, 14 May 2012 18:11:20 -0700
-From: Stephen Boyd <sboyd@quicinc.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686 on x86_64; rv:12.0) Gecko/20120428 Thunderbird/12.0.1
+	Mon, 14 May 2012 21:12:38 -0400
+X-SecurityPolicyCheck: OK by SHieldMailChecker v1.7.4
+Message-ID: <4FB1AD0A.50901@jp.fujitsu.com>
+Date: Tue, 15 May 2012 10:10:34 +0900
+From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.0; rv:12.0) Gecko/20120428 Thunderbird/12.0.1
 MIME-Version: 1.0
 To: Tejun Heo <tj@kernel.org>
-CC: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Yinghai Lu <yinghai@kernel.org>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Subject: memblock_is_region_memory() vs. memblock_is_region_reserved()
-Content-Type: text/plain; charset="ISO-8859-1"
+CC: "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        "cgroups@vger.kernel.org" <cgroups@vger.kernel.org>,
+        Michal Hocko <mhocko@suse.cz>, Johannes Weiner <hannes@cmpxchg.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Han Ying <yinghan@google.com>, Glauber Costa <glommer@parallels.com>,
+        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Hiroyuki Kamezawa <kamezawa.hiroyuki@gmail.com>,
+        Linux Kernel <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v3 1/6] memcg: fix error code in hugetlb_force_memcg_empty()
+References: <4FACDED0.3020400@jp.fujitsu.com> <4FACDFAE.5050808@jp.fujitsu.com> <20120514181556.GE2366@google.com> <20120514183219.GG2366@google.com>
+In-Reply-To: <20120514183219.GG2366@google.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-X-Originating-IP: [172.30.48.1]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I was looking at memblock and noticed that memblock_is_region_memory()
-is implemented differently than memblock_is_region_reserved().
+(2012/05/15 3:32), Tejun Heo wrote:
 
-memblock_is_region_memory() returns true only if the region you are
-testing is fully contained within the bounds of a memory block. If the
-region is half in and half out of a memory region (i.e. overlaps memory
-and a hole) it is not memory and returns false.
+> On Mon, May 14, 2012 at 11:15:56AM -0700, Tejun Heo wrote:
+>> On Fri, May 11, 2012 at 06:45:18PM +0900, KAMEZAWA Hiroyuki wrote:
+>>> -		if (cgroup_task_count(cgroup) || !list_empty(&cgroup->children))
+>>> +		if (cgroup_task_count(cgroup)
+>>> +			|| !list_empty(&cgroup->children)) {
+>>> +			ret = -EBUSY;
+>>>  			goto out;
+>>
+>> Why break the line?  It doesn't go over 80 col.
+> 
+> Ooh, it does.  Sorry, my bad.  But still, isn't it more usual to leave
+> the operator in the preceding line and align the start of the second
+> line with the first?  ie.
+> 
+> 		if (cgroup_task_count(cgroup) ||
+> 		    !list_empty(&cgroup->children)) {
+> 
 
-memblock_is_region_reserved() is the opposite. If the region are you are
-testing is half in and half out of a reserved region (i.e. overlaps
-reserved memory) it returns true, otherwise it returns false.
 
-These functions sound like they do the same thing by testing to see if
-what you specify is either memory or reserved memory, but the semantics
-are a bit different in that the former doesn't allow overlap, and the
-latter accepts overlap. Should we rename memblock_is_region_reserved()
-to memblock_overlaps_reserved() to make it clearer what the intention
-is? Or perhaps rename memblock_is_region_memory() to
-memblock_is_region_within_memory()?
+How about this ?
+==
+From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Date: Fri, 27 Apr 2012 13:19:19 +0900
+Subject: [PATCH] memcg: fix error code in hugetlb_force_memcg_empty()
 
-If anything, perhaps this patch will help clarify things?
+Changelog:
+ - clean up.
+Reviewed-by: Aneesh Kumar K.V <aneesh.kumar@linux.vnet.ibm.com>
+Signed-off-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+---
+ mm/hugetlb.c |    5 ++++-
+ 1 files changed, 4 insertions(+), 1 deletions(-)
 
-diff --git a/mm/memblock.c b/mm/memblock.c
-index a44eab3..f097e79 100644
---- a/mm/memblock.c
-+++ b/mm/memblock.c
-@@ -855,6 +855,16 @@ int __init_memblock memblock_is_memory(phys_addr_t addr)
- 	return memblock_search(&memblock.memory, addr) != -1;
- }
+diff --git a/mm/hugetlb.c b/mm/hugetlb.c
+index 1d3c8ea9..82ec623 100644
+--- a/mm/hugetlb.c
++++ b/mm/hugetlb.c
+@@ -1922,8 +1922,11 @@ int hugetlb_force_memcg_empty(struct cgroup *cgroup)
+ 	int ret = 0, idx = 0;
  
-+/**
-+ * memblock_is_region_memory - check if a region is a subset of memory
-+ * @base: base of region to check
-+ * @size: size of region to check
-+ *
-+ * Check if the region [@base, @base+@size) is a subset of a memory block.
-+ *
-+ * RETURNS:
-+ * 0 if false, non-zero if true
-+ */
- int __init_memblock memblock_is_region_memory(phys_addr_t base, phys_addr_t size)
- {
- 	int idx = memblock_search(&memblock.memory, base);
-@@ -867,6 +877,16 @@ int __init_memblock memblock_is_region_memory(phys_addr_t base, phys_addr_t size
- 		 memblock.memory.regions[idx].size) >= end;
- }
- 
-+/**
-+ * memblock_is_region_reserved - check if a region intersects reserved memory
-+ * @base: base of region to check
-+ * @size: size of region to check
-+ *
-+ * Check if the region [@base, @base+@size) intersects a reserved memory block.
-+ *
-+ * RETURNS:
-+ * 0 if false, non-zero if true
-+ */
- int __init_memblock memblock_is_region_reserved(phys_addr_t base, phys_addr_t size)
- {
- 	memblock_cap_size(base, &size);
+ 	do {
+-		if (cgroup_task_count(cgroup) || !list_empty(&cgroup->children))
++		if (cgroup_task_count(cgroup) ||
++		    !list_empty(&cgroup->children)){
++			ret = -EBUSY;
+ 			goto out;
++		}
+ 		/*
+ 		 * If the task doing the cgroup_rmdir got a signal
+ 		 * we don't really need to loop till the hugetlb resource
+-- 
+1.7.4.1
+
+
 
