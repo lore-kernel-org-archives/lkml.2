@@ -1,46 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964790Ab2EONse (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 May 2012 09:48:34 -0400
-Received: from antcom.de ([188.40.178.216]:39171 "EHLO chuck.antcom.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758940Ab2EONsc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 May 2012 09:48:32 -0400
-Message-ID: <4FB25EAC.10205@antcom.de>
-Date: Tue, 15 May 2012 15:48:28 +0200
-From: Roland Stigge <stigge@antcom.de>
-Organization: ANTCOM IT Research & Development
-User-Agent: Mozilla/5.0 (X11; Linux i686 on x86_64; rv:8.0) Gecko/20120216 Icedove/8.0
-MIME-Version: 1.0
-To: dedekind1@gmail.com
-CC: Huang Shijie <b32955@freescale.com>, Bastian Hecht <hechtb@googlemail.com>,
-        Lars-Peter Clausen <lars@metafoo.de>, Lei Wen <leiwen@marvell.com>,
-        linux-mtd@lists.infradead.org, linux-kernel@vger.kernel.org,
-        linux-doc@vger.kernel.org, devicetree-discuss@lists.ozlabs.org,
-        dwmw2@infradead.org, kevin.wells@nxp.com, srinivas.bakki@nxp.com,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH] MTD: LPC32xx SLC NAND driver
-References: <1336829386-23301-1-git-send-email-stigge@antcom.de>  <1337068543.2528.143.camel@sauron.fi.intel.com>  <4FB2109A.2080505@freescale.com> <4FB25837.2050603@antcom.de> <1337088703.2528.208.camel@sauron.fi.intel.com>
-In-Reply-To: <1337088703.2528.208.camel@sauron.fi.intel.com>
-X-Enigmail-Version: 1.3.4
-OpenPGP: url=subkeys.pgp.net
-Content-Type: text/plain; charset=UTF-8
+	id S1758961Ab2EON5b (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 May 2012 09:57:31 -0400
+Received: from lxorguk.ukuu.org.uk ([81.2.110.251]:45072 "EHLO
+	lxorguk.ukuu.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752402Ab2EON5a (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 May 2012 09:57:30 -0400
+Date: Tue, 15 May 2012 15:00:15 +0100
+From: Alan Cox <alan@lxorguk.ukuu.org.uk>
+To: Gleb Natapov <gleb@redhat.com>
+Cc: Hannes Reinecke <hare@suse.de>, LKML <linux-kernel@vger.kernel.org>,
+        "H. Peter Anvin" <hpa@linux.intel.com>
+Subject: Re: [PATCH] EDD: Check for correct EDD 3.0 length
+Message-ID: <20120515150015.5bf17aea@pyramind.ukuu.org.uk>
+In-Reply-To: <20120515115917.GK32036@redhat.com>
+References: <1337079889-62380-1-git-send-email-hare@suse.de>
+	<20120515111255.GJ32036@redhat.com>
+	<4FB23C09.7060300@suse.de>
+	<20120515115917.GK32036@redhat.com>
+X-Mailer: Claws Mail 3.8.0 (GTK+ 2.24.8; x86_64-redhat-linux-gnu)
+Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/15/2012 03:31 PM, Artem Bityutskiy wrote:
->> As I understand loops_per_jiffy, this loop will take much longer
->> than the 100 ms you defined above?
-> 
-> Not sure about much, but longer. The idea is that this is about
-> the error path so if we report -EIO with a slight delay - no
-> problem.
+> T13 EDD4.0 actually supply enough information to link edd entry to actual
+> device (another spec does not), I do not see support for other spec to
+> be important, but you are welcome to write support for it if you need
+> it. The only way I see to check what spec edd info corresponds to is to
+> calculate checksum according to both specs and see which one succeeds.
 
-Turned out that the condition (FIFO empty) is always true for me.
-Keeping the check for safety reasons for now, doing the timeout with
-msleep()s which should be (cpu-wise) "social" enough and are
-unexpected anyway but do approximate the ms timeout more precisely.
+I also think you are confused on this: EDD 3.0 provides enough
+information to link most types of hardware to the device. It provides the
+PCI or Legacy path to the interface and the device LUN, or for 1394 etc
+the WWID which can be used to cross match. It doesn't address port
+multipliers.
 
-Roland
+EDD 1.1 provides sufficient information for old systems too via the FDPT
+as they only have to deal with MFM/IDE/ATA controllers at the legacy
+mappings and these are described by the FDPT.
+
+Prior to that it gets a bit more interesting and you have to go poking in
+BIOS magic and have the required spellbooks to hand. However right back
+to the original 386 era PCs the data is available.
+
+Alan
