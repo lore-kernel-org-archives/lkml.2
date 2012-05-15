@@ -1,50 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756758Ab2EOJdt (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 May 2012 05:33:49 -0400
-Received: from LGEMRELSE6Q.lge.com ([156.147.1.121]:59107 "EHLO
-	LGEMRELSE6Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752913Ab2EOJdr (ORCPT
+	id S1756731Ab2EOJox (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 May 2012 05:44:53 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:41480 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752272Ab2EOJou (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 May 2012 05:33:47 -0400
-X-AuditID: 9c930179-b7bb9ae000000ea5-08-4fb222f9c2f3
-From: Namhyung Kim <namhyung.kim@lge.com>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Ulrich Drepper <drepper@gmail.com>
-Subject: Re: [PATCH 12/11] parse-events: Cleanup realloc use
-References: <1335157118-14658-1-git-send-email-namhyung.kim@lge.com>
-	<1335230984-7613-1-git-send-email-namhyung.kim@lge.com>
-	<87r4ulzvmj.fsf@sejong.aot.lge.com>
-	<1337071725.14207.287.camel@gandalf.stny.rr.com>
-Date: Tue, 15 May 2012 18:32:09 +0900
-In-Reply-To: <1337071725.14207.287.camel@gandalf.stny.rr.com> (Steven
-	Rostedt's message of "Tue, 15 May 2012 04:48:45 -0400")
-Message-ID: <87ipfxzt5y.fsf@sejong.aot.lge.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.0.95 (gnu/linux)
+	Tue, 15 May 2012 05:44:50 -0400
+Message-ID: <4FB22589.9050406@gmail.com>
+Date: Tue, 15 May 2012 17:44:41 +0800
+From: Cong Wang <xiyou.wangcong@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
 MIME-Version: 1.0
-Content-Type: text/plain
-X-Brightmail-Tracker: AAAAAA==
+To: Hugh Dickins <hughd@google.com>
+CC: Andrew Morton <akpm@linux-foundation.org>,
+        Christoph Hellwig <hch@infradead.org>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Alan Cox <alan@lxorguk.ukuu.org.uk>,
+        Stephane Marchesin <marcheu@chromium.org>,
+        Andi Kleen <andi@firstfloor.org>, Dave Airlie <airlied@gmail.com>,
+        Daniel Vetter <ffwll.ch@google.com>, Rob Clark <rob.clark@linaro.org>,
+        linux-mm@kvack.org, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/10] shmem: replace page if mapping excludes its zone
+References: <alpine.LSU.2.00.1205120447380.28861@eggly.anvils> <alpine.LSU.2.00.1205120453210.28861@eggly.anvils> <4FB0C888.8070805@gmail.com> <alpine.LSU.2.00.1205141219340.1623@eggly.anvils>
+In-Reply-To: <alpine.LSU.2.00.1205141219340.1623@eggly.anvils>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
-
-On Tue, 15 May 2012 04:48:45 -0400, Steven Rostedt wrote:
-> On Tue, 2012-05-15 at 17:39 +0900, Namhyung Kim wrote:
->> Ping?
+On 05/15/2012 03:42 AM, Hugh Dickins wrote:
+> I'm not going to rush the incremental patch to fix this: need to think
+> about it quietly first.
 >
-> The 12/11 fooled me ;-)  I added 1-11 but as my email is not sorted
-> well, I stopped at 11/11 (thinking that was the last patch).
->
-
-Sorry, it should be sent separately. I'll not do it again.
-
-
-> I'll take a look at this one.
+> If you're wondering what I'm talking about (sorry, I don't have time
+> to explain more right now), take a look at comment and git history of
+> line 2956 (in 3.4-rc7) of mm/memory.c:
+> 	if (unlikely(!PageSwapCache(page) || page_private(page) != entry.val))
+> I don't suppose anyone ever actually hit the bug in the years before
+> we added that protection, but we still ought to guard against it,
+> there and here in shmem_replace_page().
 >
 
-Thanks,
-Namhyung
+Ok, I have no objections.
+
+Thanks for your patches anyway!
