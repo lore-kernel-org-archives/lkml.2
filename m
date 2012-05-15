@@ -1,53 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965302Ab2EOPcB (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 May 2012 11:32:01 -0400
-Received: from orion.tchmachines.com ([208.76.84.200]:59118 "EHLO
-	orion.tchmachines.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965257Ab2EOPb5 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 May 2012 11:31:57 -0400
-From: Vlad Zolotarov <vlad@scalemp.com>
-Organization: ScaleMP Ltd.
-To: "linux-kernel" <linux-kernel@vger.kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, ido@wizery.com,
-        "Shai Fultheim (Shai@ScaleMP.com)" <Shai@scalemp.com>
-Subject: [PATCH v2 0/2] Move x86_cpu_to_apicid to the __read_mostly section
-Date: Tue, 15 May 2012 18:31:49 +0300
-User-Agent: KMail/1.13.5 (Linux/2.6.32-41-generic; KDE/4.4.5; i686; ; )
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="us-ascii"
+	id S965350Ab2EOPcY (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 May 2012 11:32:24 -0400
+Received: from mga14.intel.com ([143.182.124.37]:37750 "EHLO mga14.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S965126Ab2EOPcU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 May 2012 11:32:20 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
+   d="scan'208";a="100343911"
+Subject: Re: [RFC PATCH 1/3] block: add a flag to identify PM request
+From: Lin Ming <ming.m.lin@intel.com>
+To: Alan Stern <stern@rowland.harvard.edu>
+Cc: Jens Axboe <axboe@kernel.dk>,
+        Kernel development list <linux-kernel@vger.kernel.org>,
+        Linux-pm mailing list <linux-pm@vger.kernel.org>,
+        SCSI development list <linux-scsi@vger.kernel.org>
+In-Reply-To: <Pine.LNX.4.44L0.1205151028020.1796-100000@iolanthe.rowland.org>
+References: <Pine.LNX.4.44L0.1205151028020.1796-100000@iolanthe.rowland.org>
+Content-Type: text/plain; charset="ISO-8859-1"
+Date: Tue, 15 May 2012 23:33:05 +0800
+Message-ID: <1337095985.3515.1.camel@chief-river-32>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
 Content-Transfer-Encoding: 7bit
-Message-Id: <201205151831.49754.vlad@scalemp.com>
-X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
-X-AntiAbuse: Primary Hostname - orion.tchmachines.com
-X-AntiAbuse: Original Domain - vger.kernel.org
-X-AntiAbuse: Originator/Caller UID/GID - [47 12] / [47 12]
-X-AntiAbuse: Sender Address Domain - scalemp.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Pls., consider applying this patch series.
+On Tue, 2012-05-15 at 10:35 -0400, Alan Stern wrote:
+> On Tue, 15 May 2012, Lin Ming wrote:
+> 
+> > Add a flag REQ_PM to identify the request is PM related.
+> > As an example, modify scsi code to use this flag.
+> 
+> There already is such a flag; you don't need to add one.  In fact, 
+> there already are _two_ such flags, and it would be best to remove one 
+> of them.  In include/linux/blkdev.h:
+> 
+> 	REQ_TYPE_PM_SUSPEND,		/* suspend request */
+> 	REQ_TYPE_PM_RESUME,		/* resume request */
+> 
+> Apparently they had been used by the old ide driver, but they don't
+> seem to be used anywhere now.
 
-It contains the following changes:
- - Adds two new macros DEFINE_EARLY_PER_CPU_READ_MOSTLY() and
-   DECLARE_EARLY_PER_CPU_READ_MOSTLY().
- - Adds "read-mostly" qualifier to the following variables in smp.h:
-  - cpu_sibling_map
-  - cpu_core_map
-  - cpu_llc_shared_map
-  - cpu_llc_id
-  - cpu_number
-  - x86_cpu_to_apicid
-  - x86_bios_cpu_apicid
-  - x86_cpu_to_logical_apicid
+IDE code still uses both types and they are used for system
+suspend/resume. See generic_ide_suspend and generic_ide_resume.
 
-As long as all the variables above are only written during the initialization,
-this change is meant to prevent the false sharing and improve the
-performance on large multiprocessor systems.
+But we need a flag to check whether it is runtime suspend/resume
+request.
 
-thanks,
-vlad
+> 
+> Aside from that, this patch seems to be going in the right direction.
+> 
+> Alan Stern
+> 
+
+
