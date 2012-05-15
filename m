@@ -1,90 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965823Ab2EOQc3 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 May 2012 12:32:29 -0400
-Received: from perches-mx.perches.com ([206.117.179.246]:46780 "EHLO
-	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S965661Ab2EOQc1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 May 2012 12:32:27 -0400
-Message-ID: <1337099546.7050.9.camel@joe2Laptop>
-Subject: Re: [PATCH] gpio: Emma Mobile GPIO driver V2
-From: Joe Perches <joe@perches.com>
-To: Magnus Damm <magnus.damm@gmail.com>
-Cc: linux-kernel@vger.kernel.org, rjw@sisk.pl, linus.walleij@stericsson.com,
-        arnd@arndb.de, linux-sh@vger.kernel.org, horms@verge.net.au,
-        grant.likely@secretlab.ca, lethal@linux-sh.org, olof@lixom.net
-Date: Tue, 15 May 2012 09:32:26 -0700
-In-Reply-To: <20120515154333.6659.66479.sendpatchset@w520>
-References: <20120515154333.6659.66479.sendpatchset@w520>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.2- 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	id S965845Ab2EOQdV (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 May 2012 12:33:21 -0400
+Received: from mail1.windriver.com ([147.11.146.13]:62803 "EHLO
+	mail1.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S965661Ab2EOQdS (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 May 2012 12:33:18 -0400
+Date: Tue, 15 May 2012 12:33:16 -0400
+From: Paul Gortmaker <paul.gortmaker@windriver.com>
+To: Jonathan Nieder <jrnieder@gmail.com>
+CC: <stable@vger.kernel.org>, <linux-kernel@vger.kernel.org>
+Subject: Re: [34-longterm 074/179] xen: Use IRQF_FORCE_RESUME
+Message-ID: <20120515163316.GC17760@windriver.com>
+References: <1337048075-6132-1-git-send-email-paul.gortmaker@windriver.com>
+ <1337048075-6132-75-git-send-email-paul.gortmaker@windriver.com>
+ <20120515050221.GA4292@burratino>
+MIME-Version: 1.0
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+In-Reply-To: <20120515050221.GA4292@burratino>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2012-05-16 at 00:43 +0900, Magnus Damm wrote:
-> This patch is V2 of the Emma Mobile GPIO driver.
+[Re: [34-longterm 074/179] xen: Use IRQF_FORCE_RESUME] On 15/05/2012 (Tue 00:02) Jonathan Nieder wrote:
 
-Just some trivial comments
+> Hi Paul,
+> 
+> Paul Gortmaker wrote:
+> 
+> > From: Thomas Gleixner <tglx@linutronix.de>
+> [...]
+> >     If you see a problem with using this for longterm, please comment.
+> [...]
+> > commit 676dc3cf5bc36a9e129a3ad8fe3bd7b2ebf20f5d upstream.
+> >
+> > Mark the IRQF_NO_SUSPEND interrupts IRQF_FORCE_RESUME and remove the extra
+> > walk through the interrupt descriptors.
+> 
+> This produces resume failures and migration failures in Xen guests[1].
+> 
+> Commit 9bab0b7fbace (genirq: Add IRQF_RESUME_EARLY and resume such
+> IRQs earlier, 2011-11-09) is needed on top to avoid regressions.
+> 
+> Hope that helps,
+> Jonathan
+> 
+> [1] http://thread.gmane.org/gmane.linux.kernel/1198673
 
-> +++ work/drivers/gpio/gpio-em.c	2012-05-16 00:07:20.000000000 +0900
-[]
+Hi Jonathan,
 
-Adding pr_fmt before any #include prefixes all pr_<level> messages.
+I'd considered this patch, but then saw Greg used it on 2.6.32
+and reverted it one release later:
 
-#define pr_fmt(fmt) KBUILD_MODNAME ": " fmt
+-------------------
+commit 758d61b4a76e6ad4224780771edbc6d3a0c29b16
+Author: Greg Kroah-Hartman <gregkh@suse.de>
+Date:   Tue Nov 8 15:40:42 2011 -0800
 
-> +#include <linux/init.h>
-> +#include <linux/platform_device.h>
-[]
-> +static int em_gio_irq_set_type(struct irq_data *d, unsigned int type)
-> +{
-[]
-> +	pr_debug("gio: sense irq = %d, mode = %d\n", offset, value);
+    Revert "genirq: Add IRQF_RESUME_EARLY and resume such IRQs earlier"
+    
+    This reverts commit 0f12a6ad9fa3a03f2bcee36c9cb704821e244c40.
+    
+    It causes too many build errors and needs to be done properly.
+    
+    Reported-by: Jiri Slaby <jslaby@suse.cz>
+    Reported-by: Christoph Biedl <linux-kernel.bfrz@manchmal.in-ulm.de>
+    Cc: Ian Campbell <ian.campbell@citrix.com>
+ [...]
+-------------
 
-	pr_debug("sense irq = %d, mode = %d\n", offset, value);
-[]
-> +static void __em_gio_set(struct gpio_chip *chip, unsigned int reg,
-> +			 unsigned shift, int value)
-> +{
-> +	/* upper 16 bits contains mask and lower 16 actual value */
-> +	em_gio_write(gpio_to_priv(chip), reg,
-> +		     (1 << (shift + 16)) | (value << shift));
-> +}
+What I didn't realize was that it got re-added as a v2 again in:
 
-comment doesn't seem to match code unless
-value is a single bit, then value should
-probably be renamed.
+-------------
+commit 5e87d8ee34e32fda720f3a4e4055f570b09230d6
+Author: Ian Campbell <ian.campbell@citrix.com>
+Date:   Wed Nov 9 08:53:09 2011 +0000
 
-> +static int em_gio_irq_domain_map(struct irq_domain *h, unsigned int virq,
-> +				 irq_hw_number_t hw)
-> +{
-> +	struct em_gio_priv *p = h->host_data;
-> +
-> +	pr_debug("gio: map hw irq = %d, virq = %d\n", (int)hw, virq);
+    genirq: Add IRQF_RESUME_EARLY and resume such IRQs earlier
+    
+[...]
 
-	pr_debug("map hw irq = %d, virq = %d\n", (int)hw, virq)
+    Back ported to 2.6.32 (which lacks syscore support) by calling the relavant
+    resume function directly from sysdev_resume).
+    
+    v2: Fixed non-x86 build errors.
+-----------
 
-> +static struct irq_domain_ops em_gio_irq_domain_ops = {
+I'll make sure the v2 ends up in the 34 queue.
 
-const?
-
-> +static int __devinit em_gio_irq_domain_init(struct em_gio_priv *p)
-[]
-> +	pr_debug("gio: hw base = %d, nr = %d, sw base = %d\n",
-> +		 pdata->gpio_base, pdata->number_of_pins, p->irq_base);
-
-etc.
-
-> +static int __devinit em_gio_probe(struct platform_device *pdev)
-[]
-> +	p = kzalloc(sizeof(*p), GFP_KERNEL);
-> +	if (!p) {
-> +		dev_err(&pdev->dev, "failed to allocate driver data\n");
-
-OOM messages aren't necessary as k.alloc failures
-produce a dump_stack.
-
+Thanks again,
+Paul.
 
