@@ -1,62 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932955Ab2EOPAV (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 May 2012 11:00:21 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:35383 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756104Ab2EOPAT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 May 2012 11:00:19 -0400
-Date: Tue, 15 May 2012 18:00:05 +0300
-From: Gleb Natapov <gleb@redhat.com>
-To: Alan Cox <alan@lxorguk.ukuu.org.uk>
-Cc: Hannes Reinecke <hare@suse.de>, LKML <linux-kernel@vger.kernel.org>,
-        "H. Peter Anvin" <hpa@linux.intel.com>
-Subject: Re: [PATCH] EDD: Check for correct EDD 3.0 length
-Message-ID: <20120515150005.GG6948@redhat.com>
-References: <20120515111255.GJ32036@redhat.com>
- <4FB23C09.7060300@suse.de>
- <20120515115917.GK32036@redhat.com>
- <20120515144945.339e742f@pyramind.ukuu.org.uk>
- <20120515141214.GB6948@redhat.com>
- <20120515151849.54a12175@pyramind.ukuu.org.uk>
- <20120515142129.GC6948@redhat.com>
- <20120515153614.4b5b4525@pyramind.ukuu.org.uk>
- <20120515144810.GE6948@redhat.com>
- <20120515155450.13040d1f@pyramind.ukuu.org.uk>
+	id S933051Ab2EOPBI (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 May 2012 11:01:08 -0400
+Received: from na3sys009aog123.obsmtp.com ([74.125.149.149]:40778 "EHLO
+	na3sys009aog123.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S932875Ab2EOPBG convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 May 2012 11:01:06 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120515155450.13040d1f@pyramind.ukuu.org.uk>
+In-Reply-To: <4FB268F9.9040508@ti.com>
+References: <1337082156-30390-1-git-send-email-tarun.kanti@ti.com> <4FB268F9.9040508@ti.com>
+From: "Shilimkar, Santosh" <santosh.shilimkar@ti.com>
+Date: Tue, 15 May 2012 20:30:44 +0530
+Message-ID: <CAMQu2gy72cbR4+xr6pYQBamNSjLdxUu4s_MkDf=pwrPnB56enA@mail.gmail.com>
+Subject: Re: [PATCH] ARM: OMAP4: PM: Keep static dep between MPUSS and ABE clockdomain
+To: "Cousson, Benoit" <b-cousson@ti.com>
+Cc: Tarun Kanti DebBarma <tarun.kanti@ti.com>, Paul Walmsley <paul@pwsan.com>,
+        linux-omap@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org, Kevin Hilman <khilman@ti.com>,
+        Tony Lindgren <tony@atomide.com>,
+        Russell King <linux@arm.linux.org.uk>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, May 15, 2012 at 03:54:50PM +0100, Alan Cox wrote:
-> > > Sample case of .. 1
-> > > 
-> > Not one. Any system with SCSI disk. Revert the patch and check on yours.
-> 
-> I don't have a SCSI disk. In fact most users don't have a SCSI disk 8)
-> 
-Most of them have SATA which is not even defined by Phoenix spec 8)
+On Tue, May 15, 2012 at 8:02 PM, Cousson, Benoit <b-cousson@ti.com> wrote:
+> + Paul
+>
+> Hi Tarun,
+>
+> On 5/15/2012 1:42 PM, Tarun Kanti DebBarma wrote:
+>> Commit 68523f4233de5f233478dde0a63047b4efb710b8 (ARM: OMAP4:
+>> Workaround the OCP synchronisation issue with 32K synctimer)
+>> does not include GP Timers in ABE domain. Since synchronization
+>> issue is applicable to all GPTIMER[1-12], we also need to set
+>> static dependency of MPUSS with abe_clkdm and l4_per_clkdm.
+>> Dependency with l4_per_clkdm timers is already set in commit
+>> 12f27826bdaf56b01cbdfc8bdeb577ebc106dee3 (ARM: OMAP4: PM: Keep
+>> static dep between MPUSS-EMIF and MPUSS-L3/L4 and DUCATI-L3).
+>> Therefore, set static dependency of MPUSS with abe_clkdm.
+>
+> It seems to me that these various static dep workaround patches are more and more confusing and should require some further investigation / explanation.
+>
+This is a new BUG which has not made it to errata list yet. It will
+make it eventually.
 
-> > > Actual systems in the field are using both 3.0 and 4.0 so we need to deal
-> > > with that as part of fixing this. That is the reality of the situation.
-> > Again let me correct myself. This is not about 3.0 versus 4.0. This is
-> > about Phoenix vs T13 spec. The code was written to support only T13.
-> 
-> Well actually the code was written to mishandle both in different ways.
-This is simply not true. The code defines device path structure
-according to T13 spec and clearly states in the header which spec it was
-written to support. May be this is not clear from the thread but the code
-still provides every other information except device path from Phoenix
-EDD. You can still see pci device from /sys/firmware/edd/int13_80.
+> If we keep doing that we will end up having every clock domains always ON each time the CPU is active. This is a very brute force approach not really acceptable for mainline and for PM point of view.
+>
+Indeed.
 
-> You propose to change it to handle one correctly and completely fail on
-> the other. That isn't what needs to happen.
-> 
-Not completely fail, only suppress information the code does not know
-how to parse!
+> Here we are forcing the ABE domain to be ON each time the MPU is ON even if we do not have any timer used inside the domain.
+>
+Actually the BUG is really related to timers running on 32KHz and only
+in that case such a WA is needed. BTW, the WA is suggested by hardware
+team.
 
---
-			Gleb.
+> It was mostly OK to do that for the wakeup domain due to the small power impact, but doing that on the L4_PER and ABE seems a little bit too much.
+>
+L4PER and ABE should not be set default....
+
+> The fix assumes as well that the MPU is the only user of that timer. What if either DSP or IPU uses it as well?
+>
+
+> Moreover the previous 68523f4233de5f2 commit did add tons of deps that does not seems to be really justified by any HW errata AFAIK.
+> That does not mean they are not needed, but I think we should either remove them or add some more explanation.
+>
+EMIF and L3 are covered as part of the errata's. Most if these static
+deps issues never worked properly and people ended up hacking
+like disable L3 when display ON etc etc.
+
+> +       /*
+> +        * The dynamic dependency between MPUSS -> MEMIF and
+> +        * MPUSS -> L4_PER/L3_* and DUCATI -> L3_* doesn't work as
+> +        * expected. The hardware recommendation is to enable static
+> +        * dependencies for these to avoid system lock ups or random crashes.
+> +        */
+> +       mpuss_clkdm = clkdm_lookup("mpuss_clkdm");
+> +       emif_clkdm = clkdm_lookup("l3_emif_clkdm");
+> +       l3_1_clkdm = clkdm_lookup("l3_1_clkdm");
+> +       l3_2_clkdm = clkdm_lookup("l3_2_clkdm");
+> +       l4_per_clkdm = clkdm_lookup("l4_per_clkdm");
+> +       ducati_clkdm = clkdm_lookup("ducati_clkdm");
+> +       if ((!mpuss_clkdm) || (!emif_clkdm) || (!l3_1_clkdm) ||
+> +               (!l3_2_clkdm) || (!ducati_clkdm) || (!l4_per_clkdm))
+> +               goto err2;
+> +
+> +       ret = clkdm_add_wkdep(mpuss_clkdm, emif_clkdm);
+>
+> AFAIK, this one is the only one covered by an errata. It might be good to add a comment to explained the issue.
+>
+> +       ret |= clkdm_add_wkdep(mpuss_clkdm, l3_1_clkdm);
+> +       ret |= clkdm_add_wkdep(mpuss_clkdm, l3_2_clkdm);
+> +       ret |= clkdm_add_wkdep(mpuss_clkdm, l4_per_clkdm);
+> +       ret |= clkdm_add_wkdep(ducati_clkdm, l3_1_clkdm);
+> +       ret |= clkdm_add_wkdep(ducati_clkdm, l3_2_clkdm);
+>
+> Do we have errata for any of these ones?
+>
+If we forget about the latest timer issues doing the round only EMIF and L3
+deps with different initiators were needed. L4PER was because of UART
+idle mode issue which I fixed recently. At least with that fix, L4PER should
+be killed. Will be good to take the latest findings on the static deps issues
+and update above list.
+
+These timer OCP sync issue has really created a big mess again...
+Timer is 3 domains. AON, ABE and L4pER and the WA suggested is
+static dep as if it is free. There is no other WA.
+
+Regards
+Santosh
