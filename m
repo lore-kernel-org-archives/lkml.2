@@ -1,64 +1,127 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758262Ab2EOAhy (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 May 2012 20:37:54 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:56049 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752796Ab2EOAhw (ORCPT
+	id S1758310Ab2EOAiB (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 May 2012 20:38:01 -0400
+Received: from mail-yw0-f46.google.com ([209.85.213.46]:52187 "EHLO
+	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758285Ab2EOAh6 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 May 2012 20:37:52 -0400
-Date: Mon, 14 May 2012 17:37:50 -0700 (PDT)
-From: David Rientjes <rientjes@google.com>
-X-X-Sender: rientjes@chino.kir.corp.google.com
-To: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-cc: a.p.zijlstra@chello.nl, mingo@kernel.org, pjt@google.com,
-        paul@paulmenage.org, akpm@linux-foundation.org, rjw@sisk.pl,
-        nacc@us.ibm.com, paulmck@linux.vnet.ibm.com, tglx@linutronix.de,
-        seto.hidetoshi@jp.fujitsu.com, tj@kernel.org, mschmidt@redhat.com,
-        berrange@redhat.com, nikunj@linux.vnet.ibm.com,
-        vatsa@linux.vnet.ibm.com, liuj97@gmail.com,
-        linux-kernel@vger.kernel.org, linux-pm@vger.kernel.org
-Subject: Re: [PATCH v3 5/5] cpusets, suspend: Save and restore cpusets during
- suspend/resume
-In-Reply-To: <20120513231710.3566.45349.stgit@srivatsabhat>
-Message-ID: <alpine.DEB.2.00.1205141735050.25235@chino.kir.corp.google.com>
-References: <20120513231325.3566.37740.stgit@srivatsabhat> <20120513231710.3566.45349.stgit@srivatsabhat>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+	Mon, 14 May 2012 20:37:58 -0400
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+In-Reply-To: <20120512001734.GD14782@lizard>
+References: <20120512001506.GA8653@lizard>
+	<20120512001734.GD14782@lizard>
+Date: Mon, 14 May 2012 17:37:56 -0700
+X-Google-Sender-Auth: xF52gNfk_QWyu4GRfPOl5Jrho6I
+Message-ID: <CAMbhsRR3gsajDCyODgf0XrtEr5Jeeo7yPXxk_R6JfVkk-kGvyQ@mail.gmail.com>
+Subject: Re: [PATCH 04/11] persistent_ram: Introduce persistent_ram_new()
+From: Colin Cross <ccross@android.com>
+To: Anton Vorontsov <anton.vorontsov@linaro.org>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Kees Cook <keescook@chromium.org>, Arnd Bergmann <arnd@arndb.de>,
+        John Stultz <john.stultz@linaro.org>, arve@android.com,
+        Rebecca Schultz Zavin <rebecca@android.com>,
+        Jesper Juhl <jj@chaosbits.net>, Randy Dunlap <rdunlap@xenotime.net>,
+        Stephen Boyd <sboyd@codeaurora.org>, Thomas Meyer <thomas@m3y3r.de>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Marco Stornelli <marco.stornelli@gmail.com>,
+        WANG Cong <xiyou.wangcong@gmail.com>, linux-kernel@vger.kernel.org,
+        devel@driverdev.osuosl.org, linaro-kernel@lists.linaro.org,
+        patches@linaro.org, kernel-team@android.com
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 14 May 2012, Srivatsa S. Bhat wrote:
-
-> diff --git a/kernel/cpuset.c b/kernel/cpuset.c
-> index 0723183..671bf26 100644
-> --- a/kernel/cpuset.c
-> +++ b/kernel/cpuset.c
-> @@ -93,6 +93,13 @@ struct cpuset {
->  
->  	unsigned long flags;		/* "unsigned long" so bitops work */
->  	cpumask_var_t cpus_allowed;	/* CPUs allowed to tasks in cpuset */
+On Fri, May 11, 2012 at 5:17 PM, Anton Vorontsov
+<anton.vorontsov@linaro.org> wrote:
+> The routine just creates a persistent ram zone at a specified address.
+>
+> For persistent_ram_init_ringbuffer() we'd need to add a
+> 'struct persistent_ram' to the global list, and associate it with a
+> device. We don't need all this complexity in pstore_ram, so we introduce
+> the simple function.
+>
+> Signed-off-by: Anton Vorontsov <anton.vorontsov@linaro.org>
+> ---
+>  drivers/staging/android/persistent_ram.c |   26 ++++++++++++++++++++++++++
+>  drivers/staging/android/persistent_ram.h |    4 ++++
+>  2 files changed, 30 insertions(+)
+>
+> diff --git a/drivers/staging/android/persistent_ram.c b/drivers/staging/android/persistent_ram.c
+> index ec23822..c0c3d32 100644
+> --- a/drivers/staging/android/persistent_ram.c
+> +++ b/drivers/staging/android/persistent_ram.c
+> @@ -412,6 +412,32 @@ static int __init persistent_ram_post_init(struct persistent_ram_zone *prz, bool
+>        return 0;
+>  }
+>
+> +struct persistent_ram_zone * __init persistent_ram_new(phys_addr_t start,
+> +                                                      size_t size,
+> +                                                      bool ecc)
+> +{
+> +       struct persistent_ram_zone *prz;
+> +       int ret = -ENOMEM;
 > +
-> +	/*
-> +	 * used to save cpuset's cpus_allowed mask during suspend and restore
-> +	 * it during resume.
-> +	 */
-> +	cpumask_var_t suspend_cpus_allowed;
+> +       prz = kzalloc(sizeof(struct persistent_ram_zone), GFP_KERNEL);
+> +       if (!prz) {
+> +               pr_err("persistent_ram: failed to allocate persistent ram zone\n");
+> +               goto err;
+> +       }
 > +
->  	nodemask_t mems_allowed;	/* Memory Nodes allowed to tasks */
->  
->  	struct cpuset *parent;		/* my parent */
+> +       ret = persistent_ram_buffer_map(start, size, prz);
+> +       if (ret)
+> +               goto err;
+> +
+> +       persistent_ram_post_init(prz, ecc);
+> +       persistent_ram_update_header_ecc(prz);
+> +
+> +       return prz;
+> +err:
+> +       kfree(prz);
+> +       return ERR_PTR(ret);
+> +}
+> +
+>  static  __init
+>  struct persistent_ram_zone *__persistent_ram_init(struct device *dev, bool ecc)
+>  {
+> diff --git a/drivers/staging/android/persistent_ram.h b/drivers/staging/android/persistent_ram.h
+> index 5635355..8154d15 100644
+> --- a/drivers/staging/android/persistent_ram.h
+> +++ b/drivers/staging/android/persistent_ram.h
+> @@ -19,6 +19,7 @@
+>  #include <linux/kernel.h>
+>  #include <linux/list.h>
+>  #include <linux/types.h>
+> +#include <linux/init.h>
+>
+>  struct persistent_ram_buffer;
+>
+> @@ -62,6 +63,9 @@ struct persistent_ram_zone {
+>
+>  int persistent_ram_early_init(struct persistent_ram *ram);
+>
+> +struct persistent_ram_zone * __init persistent_ram_new(phys_addr_t start,
+> +                                                      size_t size,
+> +                                                      bool ecc);
+>  struct persistent_ram_zone *persistent_ram_init_ringbuffer(struct device *dev,
+>                bool ecc);
+>
+> --
+> 1.7.9.2
+>
 
-I see what you're doing with this and think it will fix the problem that 
-you're trying to address, but I think it could become much more general 
-to just the suspend case: if an admin sets a cpuset to have cpus 4-6, for 
-example, and cpu 5 goes offline, then I believe the cpuset should once 
-again become 4-6 if cpu 5 comes back online.  So I think this should be 
-implemented like mempolicies are which save the user intended nodemask 
-that may become restricted by cpuset placement but will be rebound if the 
-cpuset includes the intended nodes.
-
-If that's done, then it takes care of the suspend case as well and adds 
-generic cpu hotplug support, not just for suspend/resume.
+Overall I like this series, but I'm not sure I agree with
+persistent_ram_new().  The point of persistent_ram_early_init with the
+call to memblock_reserve and the persistent_ram_descriptor list was to
+have a single pool of persistent memory that could be parcelled out to
+whatever drivers needed it, keeping the code out of the board file.
+With persistent_ram_new, the board file is now responsible for making
+sure that the memory has been reserved with memblock_reserve(), or,
+even worse, mem= from the bootloader.  Mixing the two methods together
+would be confusing.  Either persistent_ram_early_init should be
+removed completely (or replaced with something that is easier to
+register ramoops into), or ramoops should use
+persistent_ram_init_ringbuffer like ram_console does.
