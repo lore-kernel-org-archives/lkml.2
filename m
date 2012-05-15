@@ -1,63 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965673Ab2EOQIv (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 May 2012 12:08:51 -0400
-Received: from e35.co.us.ibm.com ([32.97.110.153]:48427 "EHLO
-	e35.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965624Ab2EOQIs (ORCPT
+	id S965697Ab2EOQJV (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 May 2012 12:09:21 -0400
+Received: from avon.wwwdotorg.org ([70.85.31.133]:42495 "EHLO
+	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758946Ab2EOQJT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 May 2012 12:08:48 -0400
-Message-ID: <1337098006.25191.35.camel@falcor>
-Subject: Re: [PATCH] vfs: fix IMA lockdep circular locking dependency
-From: Mimi Zohar <zohar@linux.vnet.ibm.com>
-To: James Morris <jmorris@namei.org>
-Cc: Mimi Zohar <zohar@us.ibm.com>, linux-security-module@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Al Viro <viro@ZenIV.linux.org.uk>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Date: Tue, 15 May 2012 12:06:46 -0400
-In-Reply-To: <alpine.LRH.2.02.1205160113550.939@tundra.namei.org>
-References: <1336963631-3541-1-git-send-email-zohar@us.ibm.com>
-	 <alpine.LRH.2.02.1205151028450.26396@tundra.namei.org>
-	 <1337043086.25191.3.camel@falcor>
-	 <alpine.LRH.2.02.1205160113550.939@tundra.namei.org>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3 (3.2.3-3.fc16) 
+	Tue, 15 May 2012 12:09:19 -0400
+Message-ID: <4FB27FA9.20106@wwwdotorg.org>
+Date: Tue, 15 May 2012 10:09:13 -0600
+From: Stephen Warren <swarren@wwwdotorg.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
+MIME-Version: 1.0
+To: Hiroshi Doyu <hdoyu@nvidia.com>
+CC: "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
+        "iommu@lists.linux-foundation.org" <iommu@lists.linux-foundation.org>,
+        "grant.likely@secretlab.ca" <grant.likely@secretlab.ca>,
+        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
+        "joerg.roedel@amd.com" <joerg.roedel@amd.com>,
+        "thierry.reding@avionic-design.de" <thierry.reding@avionic-design.de>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "devicetree-discuss@lists.ozlabs.org" 
+	<devicetree-discuss@lists.ozlabs.org>
+Subject: Re: [PATCH 1/2] iommu/tegra: smmu: Simplify allocation at once
+References: <1337022975-23999-1-git-send-email-hdoyu@nvidia.com><4FB19677.4040702@wwwdotorg.org> <20120515.112649.411607744957826949.hdoyu@nvidia.com>
+In-Reply-To: <20120515.112649.411607744957826949.hdoyu@nvidia.com>
+X-Enigmail-Version: 1.5pre
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 12051516-6148-0000-0000-000005DD8CDD
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2012-05-16 at 01:14 +1000, James Morris wrote:
-> On Mon, 14 May 2012, Mimi Zohar wrote:
+On 05/15/2012 02:26 AM, Hiroshi Doyu wrote:
+> Stephen Warren <swarren@wwwdotorg.org> wrote @ Tue, 15 May 2012 01:34:15 +0200:
 > 
-> > On Tue, 2012-05-15 at 10:29 +1000, James Morris wrote:
-> > > On Sun, 13 May 2012, Mimi Zohar wrote:
-> > > 
-> > > > From: Mimi Zohar <zohar@linux.vnet.ibm.com>
-> > > > 
-> > > > This patch has been updated to move the ima_file_mmap() call from
-> > > > security_file_mmap() to the new vm_mmap() function.
-> > > 
-> > > Which kernel is this for?
-> > 
-> > Commit #6be5ceb(VM: add "vm_mmap()" helper function) is in Linus' master
-> > tree, but the posted patch is against linux-security/next.
+>> On 05/14/2012 01:16 PM, Hiroshi DOYU wrote:
+>>> To simplify the code, alloc necessary data at once.
+>>>
+>>> Signed-off-by: Hiroshi DOYU <hdoyu@nvidia.com>
+>>> ---
+>>> This patch requires:
+>>>
+>>>     [PATCH 1/2] iommu/tegra: smmu: Add device tree support for SMMU
+>>>         http://marc.info/?l=linux-tegra&m=133663641107327&w=2
+>>>
+>>> Also the above patch requires:
+>>>
+>>>     [PATCH 1/1] dt: Add general DMA window parser
+>>>         http://marc.info/?l=linux-tegra&m=133671302703840&w=2
+>>
+>> I know I've been harping on about dependencies, but you typically only
+>> need to mention them if the dependencies are not already checked into
+>> the branch you expect this patch to be checked into.
+>>
+>>> -	smmu = devm_kzalloc(dev, sizeof(*smmu), GFP_KERNEL);
+>>> +	if (of_property_read_u32(dev->of_node, "nvidia,#asids", &asids))
+>>> +		return -ENODEV;
+>>
+>> I believe you need to change the asids variable from int to u32 to avoid
+>> a warning here.
 > 
-> I'm still not sure what the answer is :-)
-> 
-> Can this wait until 3.5-rc1?
+> There's no warning but it's allowed because of "-Wno-pointer-sign". It
 
-The patch is a bug fix for the mmap_sem/i_mutex locking problem that has
-existed for a quite a while.  (The previous version of the patch has
-been waiting since January to be Acked.)  The current version of the
-patch applies cleanly to both your #master and #next trees.  As it
-hasn't been in linux-next, I'll leave it to your discretion how/when to
-upstream it.
-
-thanks,
-
-Mimi
-
+That's odd. I'm sure I have seen this warning recently when calling this
+API, but you're right, I'm not able to trigger that warning right now,
+so this is fine.
