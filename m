@@ -1,50 +1,162 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932987Ab2EOOqX (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 May 2012 10:46:23 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:41098 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757448Ab2EOOqW (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 May 2012 10:46:22 -0400
-From: Namjae Jeon <linkinjeon@gmail.com>
-To: hirofumi@mail.parknet.co.jp
-Cc: linux-kernel@vger.kernel.org, joe@perches.com,
-        Namjae Jeon <linkinjeon@gmail.com>,
-        Amit Sahrawat <amit.sahrawat83@gmail.com>
-Subject: [PATCH 1/2] fat: add fat_msg_ratelimit.
-Date: Tue, 15 May 2012 10:46:02 -0400
-Message-Id: <1337093162-3963-1-git-send-email-linkinjeon@gmail.com>
-X-Mailer: git-send-email 1.7.5.4
+	id S933034Ab2EOOqj (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 May 2012 10:46:39 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:53415 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S933003Ab2EOOqh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 May 2012 10:46:37 -0400
+Date: Tue, 15 May 2012 16:46:35 +0200
+From: Michal Hocko <mhocko@suse.cz>
+To: Johannes Weiner <hannes@cmpxchg.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        cgroups@vger.kernel.org, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [patch 3/6] mm: memcg: print statistics directly to seq_file
+Message-ID: <20120515144635.GH11346@tiehlicka.suse.cz>
+References: <1337018451-27359-1-git-send-email-hannes@cmpxchg.org>
+ <1337018451-27359-4-git-send-email-hannes@cmpxchg.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1337018451-27359-4-git-send-email-hannes@cmpxchg.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I tried to add fat_msg_ratelimit to limit many message at once.
+On Mon 14-05-12 20:00:48, Johannes Weiner wrote:
+> Being able to use seq_printf() allows being smarter about statistics
+> name strings, which are currently listed twice, with the only
+> difference being a "total_" prefix on the hierarchical version.
+> 
+> Signed-off-by: Johannes Weiner <hannes@cmpxchg.org>
 
-Signed-off-by: Namjae Jeon <linkinjeon@gmail.com>
-Signed-off-by: Amit Sahrawat <amit.sahrawat83@gmail.com>
-Acked-by: OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
----
- fs/fat/fat.h |    5 +++++
- 1 files changed, 5 insertions(+), 0 deletions(-)
+Nice
+Acked-by: Michal Hocko <mhocko@suse.cz>
 
-diff --git a/fs/fat/fat.h b/fs/fat/fat.h
-index 951d12b..1708d9a 100644
---- a/fs/fat/fat.h
-+++ b/fs/fat/fat.h
-@@ -335,6 +335,11 @@ void __fat_fs_error(struct super_block *sb, int report, const char *fmt, ...);
- 	__fat_fs_error(sb, __ratelimit(&MSDOS_SB(sb)->ratelimit), fmt , ## args)
- __printf(3, 4) __cold
- void fat_msg(struct super_block *sb, const char *level, const char *fmt, ...);
-+#define fat_msg_ratelimit(sb, level, fmt, args...)	\
-+	do {	\
-+			if (__ratelimit(&MSDOS_SB(sb)->ratelimit))	\
-+				fat_msg(sb, level, fmt, ## args);	\
-+	 } while (0)
- extern int fat_clusters_flush(struct super_block *sb);
- extern int fat_chain_add(struct inode *inode, int new_dclus, int nr_cluster);
- extern void fat_time_fat2unix(struct msdos_sb_info *sbi, struct timespec *ts,
+> ---
+>  mm/memcontrol.c |   56 +++++++++++++++++++++++++++----------------------------
+>  1 file changed, 28 insertions(+), 28 deletions(-)
+> 
+> diff --git a/mm/memcontrol.c b/mm/memcontrol.c
+> index f0d248b..9e8551c 100644
+> --- a/mm/memcontrol.c
+> +++ b/mm/memcontrol.c
+> @@ -4274,24 +4274,21 @@ struct mcs_total_stat {
+>  	s64 stat[NR_MCS_STAT];
+>  };
+>  
+> -static struct {
+> -	char *local_name;
+> -	char *total_name;
+> -} memcg_stat_strings[NR_MCS_STAT] = {
+> -	{"cache", "total_cache"},
+> -	{"rss", "total_rss"},
+> -	{"mapped_file", "total_mapped_file"},
+> -	{"mlock", "total_mlock"},
+> -	{"pgpgin", "total_pgpgin"},
+> -	{"pgpgout", "total_pgpgout"},
+> -	{"swap", "total_swap"},
+> -	{"pgfault", "total_pgfault"},
+> -	{"pgmajfault", "total_pgmajfault"},
+> -	{"inactive_anon", "total_inactive_anon"},
+> -	{"active_anon", "total_active_anon"},
+> -	{"inactive_file", "total_inactive_file"},
+> -	{"active_file", "total_active_file"},
+> -	{"unevictable", "total_unevictable"}
+> +static const char *memcg_stat_strings[NR_MCS_STAT] = {
+> +	"cache",
+> +	"rss",
+> +	"mapped_file",
+> +	"mlock",
+> +	"pgpgin",
+> +	"pgpgout",
+> +	"swap",
+> +	"pgfault",
+> +	"pgmajfault",
+> +	"inactive_anon",
+> +	"active_anon",
+> +	"inactive_file",
+> +	"active_file",
+> +	"unevictable",
+>  };
+>  
+>  
+> @@ -4392,7 +4389,7 @@ static int mem_control_numa_stat_show(struct cgroup *cont, struct cftype *cft,
+>  #endif /* CONFIG_NUMA */
+>  
+>  static int mem_control_stat_show(struct cgroup *cont, struct cftype *cft,
+> -				 struct cgroup_map_cb *cb)
+> +				 struct seq_file *m)
+>  {
+>  	struct mem_cgroup *memcg = mem_cgroup_from_cont(cont);
+>  	struct mcs_total_stat mystat;
+> @@ -4405,16 +4402,18 @@ static int mem_control_stat_show(struct cgroup *cont, struct cftype *cft,
+>  	for (i = 0; i < NR_MCS_STAT; i++) {
+>  		if (i == MCS_SWAP && !do_swap_account)
+>  			continue;
+> -		cb->fill(cb, memcg_stat_strings[i].local_name, mystat.stat[i]);
+> +		seq_printf(m, "%s %llu\n", memcg_stat_strings[i],
+> +			   (unsigned long long)mystat.stat[i]);
+>  	}
+>  
+>  	/* Hierarchical information */
+>  	{
+>  		unsigned long long limit, memsw_limit;
+>  		memcg_get_hierarchical_limit(memcg, &limit, &memsw_limit);
+> -		cb->fill(cb, "hierarchical_memory_limit", limit);
+> +		seq_printf(m, "hierarchical_memory_limit %llu\n", limit);
+>  		if (do_swap_account)
+> -			cb->fill(cb, "hierarchical_memsw_limit", memsw_limit);
+> +			seq_printf(m, "hierarchical_memsw_limit %llu\n",
+> +				   memsw_limit);
+>  	}
+>  
+>  	memset(&mystat, 0, sizeof(mystat));
+> @@ -4422,7 +4421,8 @@ static int mem_control_stat_show(struct cgroup *cont, struct cftype *cft,
+>  	for (i = 0; i < NR_MCS_STAT; i++) {
+>  		if (i == MCS_SWAP && !do_swap_account)
+>  			continue;
+> -		cb->fill(cb, memcg_stat_strings[i].total_name, mystat.stat[i]);
+> +		seq_printf(m, "total_%s %llu\n", memcg_stat_strings[i],
+> +			   (unsigned long long)mystat.stat[i]);
+>  	}
+>  
+>  #ifdef CONFIG_DEBUG_VM
+> @@ -4443,10 +4443,10 @@ static int mem_control_stat_show(struct cgroup *cont, struct cftype *cft,
+>  				recent_scanned[0] += rstat->recent_scanned[0];
+>  				recent_scanned[1] += rstat->recent_scanned[1];
+>  			}
+> -		cb->fill(cb, "recent_rotated_anon", recent_rotated[0]);
+> -		cb->fill(cb, "recent_rotated_file", recent_rotated[1]);
+> -		cb->fill(cb, "recent_scanned_anon", recent_scanned[0]);
+> -		cb->fill(cb, "recent_scanned_file", recent_scanned[1]);
+> +		seq_printf(m, "recent_rotated_anon %lu\n", recent_rotated[0]);
+> +		seq_printf(m, "recent_rotated_file %lu\n", recent_rotated[1]);
+> +		seq_printf(m, "recent_scanned_anon %lu\n", recent_scanned[0]);
+> +		seq_printf(m, "recent_scanned_file %lu\n", recent_scanned[1]);
+>  	}
+>  #endif
+>  
+> @@ -4880,7 +4880,7 @@ static struct cftype mem_cgroup_files[] = {
+>  	},
+>  	{
+>  		.name = "stat",
+> -		.read_map = mem_control_stat_show,
+> +		.read_seq_string = mem_control_stat_show,
+>  	},
+>  	{
+>  		.name = "force_empty",
+> -- 
+> 1.7.10.1
+> 
+
 -- 
-1.7.5.4
-
+Michal Hocko
+SUSE Labs
+SUSE LINUX s.r.o.
+Lihovarska 1060/12
+190 00 Praha 9    
+Czech Republic
