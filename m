@@ -1,43 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S966169Ab2EOWXa (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 May 2012 18:23:30 -0400
-Received: from beauty.rexursive.com ([150.101.121.179]:51031 "EHLO
-	beauty.rexursive.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965655Ab2EOWX2 (ORCPT
+	id S966204Ab2EOWYR (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 May 2012 18:24:17 -0400
+Received: from mail160.messagelabs.com ([216.82.253.99]:24834 "EHLO
+	mail160.messagelabs.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S965655Ab2EOWYQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 May 2012 18:23:28 -0400
-Message-ID: <1337120605.2543.1.camel@shrek.rexursive.com>
-Subject: Re: [PATCH]: In kernel hibernation, suspend to both
-From: Bojan Smojver <bojan@rexursive.com>
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-Cc: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
-        Alan Stern <stern@rowland.harvard.edu>,
-        Linux PM list <linux-pm@vger.kernel.org>,
-        Kernel development list <linux-kernel@vger.kernel.org>, bp@alien8.de
-Date: Wed, 16 May 2012 08:23:25 +1000
-In-Reply-To: <201205151942.36335.rjw@sisk.pl>
-References: <Pine.LNX.4.44L0.1205132212070.5628-100000@netrider.rowland.org>
-	 <1337039996.1628.9.camel@shrek.rexursive.com>
-	 <4FB269BF.3090801@linux.vnet.ibm.com> <201205151942.36335.rjw@sisk.pl>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.4.1 (3.4.1-2.fc17) 
+	Tue, 15 May 2012 18:24:16 -0400
+X-Env-Sender: hartleys@visionengravers.com
+X-Msg-Ref: server-8.tower-160.messagelabs.com!1337120651!6537108!14
+X-Originating-IP: [216.166.12.72]
+X-StarScan-Version: 6.5.7; banners=-,-,-
+X-VirusChecked: Checked
+From: H Hartley Sweeten <hartleys@visionengravers.com>
+To: Linux Kernel <linux-kernel@vger.kernel.org>
+Subject: [PATCH] staging: comedi: refactor comedi_parport driver and use module_comedi_driver
+Date: Tue, 15 May 2012 15:23:52 -0700
+User-Agent: KMail/1.9.9
+CC: <devel@driverdev.osuosl.org>, <abbotti@mev.co.uk>,
+        <fmhess@users.sourceforge.net>, <gregkh@linuxfoundation.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset="utf-8"
 Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+Content-Disposition: inline
+Message-ID: <201205151523.53261.hartleys@visionengravers.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2012-05-15 at 19:42 +0200, Rafael J. Wysocki wrote:
-> which I suppose is what the first Bojan's patch did, right? 
+Move the module_init/module_exit routines and the associated
+struct comedi_drive to the end of the source. This is more
+typical of how other drivers are written and removes the need
+for the forward declarations.
 
-Correct. No extra notifiers were sent, so whatever hibernation code did
-was it.
+Convert the driver to use the module_comedi_driver() macro
+which makes the code smaller and a bit simpler.
 
-That patch is here:
+Signed-off-by: H Hartley Sweeten <hsweeten@visionengravers.com>
+Cc: Ian Abbott <abbotti@mev.co.uk>
+Cc: Mori Hess <fmhess@users.sourceforge.net>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
-http://marc.info/?l=linux-kernel&m=133651588229850&w=2
+---
 
--- 
-Bojan
+ drivers/staging/comedi/drivers/comedi_parport.c |   31 ++++++-----------------
+ 1 files changed, 8 insertions(+), 23 deletions(-)
 
+diff --git a/drivers/staging/comedi/drivers/comedi_parport.c b/drivers/staging/comedi/drivers/comedi_parport.c
+index 21d834d..1172114 100644
+--- a/drivers/staging/comedi/drivers/comedi_parport.c
++++ b/drivers/staging/comedi/drivers/comedi_parport.c
+@@ -91,29 +91,6 @@ pin, which can be used to wake up tasks.
+ #define PARPORT_B 1
+ #define PARPORT_C 2
+ 
+-static int parport_attach(struct comedi_device *dev,
+-			  struct comedi_devconfig *it);
+-static int parport_detach(struct comedi_device *dev);
+-static struct comedi_driver driver_parport = {
+-	.driver_name = "comedi_parport",
+-	.module = THIS_MODULE,
+-	.attach = parport_attach,
+-	.detach = parport_detach,
+-};
+-
+-static int __init driver_parport_init_module(void)
+-{
+-	return comedi_driver_register(&driver_parport);
+-}
+-
+-static void __exit driver_parport_cleanup_module(void)
+-{
+-	comedi_driver_unregister(&driver_parport);
+-}
+-
+-module_init(driver_parport_init_module);
+-module_exit(driver_parport_cleanup_module);
+-
+ struct parport_private {
+ 	unsigned int a_data;
+ 	unsigned int c_data;
+@@ -408,6 +385,14 @@ static int parport_detach(struct comedi_device *dev)
+ 	return 0;
+ }
+ 
++static struct comedi_driver parport_driver = {
++	.driver_name	= "comedi_parport",
++	.module		= THIS_MODULE,
++	.attach		= parport_attach,
++	.detach		= parport_detach,
++};
++module_comedi_driver(parport_driver);
++
+ MODULE_AUTHOR("Comedi http://www.comedi.org");
+ MODULE_DESCRIPTION("Comedi low-level driver");
+ MODULE_LICENSE("GPL");
