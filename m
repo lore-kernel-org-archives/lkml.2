@@ -1,78 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965154Ab2EOPM0 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 May 2012 11:12:26 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:64672 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756047Ab2EOPMX (ORCPT
+	id S964826Ab2EOPMg (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 May 2012 11:12:36 -0400
+Received: from mail-qa0-f46.google.com ([209.85.216.46]:38790 "EHLO
+	mail-qa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756047Ab2EOPMd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 May 2012 11:12:23 -0400
-Date: Tue, 15 May 2012 08:12:10 -0700
-From: Tejun Heo <tj@kernel.org>
-To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Cc: "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        "cgroups@vger.kernel.org" <cgroups@vger.kernel.org>,
-        Michal Hocko <mhocko@suse.cz>, Johannes Weiner <hannes@cmpxchg.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Han Ying <yinghan@google.com>, Glauber Costa <glommer@parallels.com>,
-        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Hiroyuki Kamezawa <kamezawa.hiroyuki@gmail.com>,
-        Linux Kernel <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v3 1/6] memcg: fix error code in
- hugetlb_force_memcg_empty()
-Message-ID: <20120515151210.GB6119@google.com>
-References: <4FACDED0.3020400@jp.fujitsu.com>
- <4FACDFAE.5050808@jp.fujitsu.com>
- <20120514181556.GE2366@google.com>
- <20120514183219.GG2366@google.com>
- <4FB1AD0A.50901@jp.fujitsu.com>
+	Tue, 15 May 2012 11:12:33 -0400
+From: Paul Moore <paul@paul-moore.com>
+To: Eric Paris <eparis@parisplace.org>
+Cc: paulmck@linux.vnet.ibm.com, Dave Jones <davej@redhat.com>,
+        sds@tycho.nsa.gov, Linux Kernel <linux-kernel@vger.kernel.org>
+Subject: Re: suspicious RCU usage in security/selinux/netnode.c
+Date: Tue, 15 May 2012 11:12:27 -0400
+Message-ID: <1923713.Kphzxkir2y@sifl>
+User-Agent: KMail/4.8.3 (Linux/3.3.4-gentoo; KDE/4.8.3; x86_64; ; )
+In-Reply-To: <CACLa4pt=Hh1=E9Jno_BAU-6stRL=hY3wehpWycKCYYJbJzYEGw@mail.gmail.com>
+References: <20120515044145.GA21910@redhat.com> <20120515144658.GC2461@linux.vnet.ibm.com> <CACLa4pt=Hh1=E9Jno_BAU-6stRL=hY3wehpWycKCYYJbJzYEGw@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4FB1AD0A.50901@jp.fujitsu.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, May 15, 2012 at 10:10:34AM +0900, KAMEZAWA Hiroyuki wrote:
-> (2012/05/15 3:32), Tejun Heo wrote:
+On Tuesday, May 15, 2012 10:52:07 AM Eric Paris wrote:
+> On Tue, May 15, 2012 at 10:46 AM, Paul E. McKenney
 > 
-> > On Mon, May 14, 2012 at 11:15:56AM -0700, Tejun Heo wrote:
-> >> On Fri, May 11, 2012 at 06:45:18PM +0900, KAMEZAWA Hiroyuki wrote:
-> >>> -		if (cgroup_task_count(cgroup) || !list_empty(&cgroup->children))
-> >>> +		if (cgroup_task_count(cgroup)
-> >>> +			|| !list_empty(&cgroup->children)) {
-> >>> +			ret = -EBUSY;
-> >>>  			goto out;
-> >>
-> >> Why break the line?  It doesn't go over 80 col.
+> <paulmck@linux.vnet.ibm.com> wrote:
+> > On Tue, May 15, 2012 at 10:24:23AM -0400, Eric Paris wrote:
+> >> On Tue, May 15, 2012 at 1:16 AM, Paul E. McKenney
+> >> 
+> >> <paulmck@linux.vnet.ibm.com> wrote:
+> >> > On Tue, May 15, 2012 at 12:41:45AM -0400, Dave Jones wrote:
+> >> >> I just triggered this on Linus' current tree.
+> >> > 
+> >> > This is a bare:
+> >> > 
+> >> >        rcu_dereference(sel_netnode_hash[idx].list.prev)
+> >> > 
+> >> > which needs to be in an RCU read-side critical section.  Alternatively,
+> >> > the above should instead be something like:
+> >> > 
+> >> >        rcu_dereference_check(sel_netnode_hash[idx].list.prev,
+> >> >                              lockdep_is_held(&sel_netnode_lock));
+> >> 
+> >> Right, but that 'bare' dereference comes from
+> >> list_for_each_entry_rcu(), [from sel_netnode_sid_slow()] which I don't
+> >> see how to easily annotate with the lock.  Nor do I think it's within
+> >> my brain power (or my willingness to maintain such in the future) to
+> >> want to open code that logic.
 > > 
-> > Ooh, it does.  Sorry, my bad.  But still, isn't it more usual to leave
-> > the operator in the preceding line and align the start of the second
-> > line with the first?  ie.
-> > 
-> > 		if (cgroup_task_count(cgroup) ||
-> > 		    !list_empty(&cgroup->children)) {
-> > 
+> > You lost me on this one.  The lockdep splat called out the
+> > rcu_dereference() above, not a list_for_each_entry_rcu().  Besides which,
+> > the list_for_each_entry_rcu() does not do the checking -- at the time,
+> > I was not willing to explode the API that much.
 > 
-> 
-> How about this ?
-> ==
-> From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-> Date: Fri, 27 Apr 2012 13:19:19 +0900
-> Subject: [PATCH] memcg: fix error code in hugetlb_force_memcg_empty()
-> 
-> Changelog:
->  - clean up.
-> Reviewed-by: Aneesh Kumar K.V <aneesh.kumar@linux.vnet.ibm.com>
-> Signed-off-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+> Ohhhh, ok.  I assumed we needed to annotate list_for_each_entry_rcu()
+> under the spinlock as well as the bare dereference in the insert code.
+>  Ok, should be very easy to fix, although the list running code is
+> still going to be un-annotated in any way.  Thanks
 
-Heh, it was a nitpick anyway.  Please feel free to add my reviewed-by
-for the whole series.
+Sorry, email filters went awry and I lost this thread until Eric pointed it 
+out to me ...
 
-Thank you!
+Despite a common first name, the other Paul is the RCU expert, no I 
+unfortunately.  Can someone explain the difference between 
+rcu_dereference_check() and rcu_dereference_protected()?  We use 
+rcu_dereference_protected() for a very similar reason in 
+selinux/netport.c:sel_netport_insert() and it seems like a better choice ... ?
+
+I'll throw a patch together but wanted to clear this up first.
 
 -- 
-tejun
+paul moore
+www.paul-moore.com
+
