@@ -1,56 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757416Ab2EOLLi (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 May 2012 07:11:38 -0400
-Received: from casper.infradead.org ([85.118.1.10]:47740 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757365Ab2EOLLf convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 May 2012 07:11:35 -0400
-Message-ID: <1337080288.27694.38.camel@twins>
-Subject: Re: linux-next oops in __lock_acquire for process_one_work
-From: Peter Zijlstra <peterz@infradead.org>
-To: Tejun Heo <tj@kernel.org>
-Cc: Hugh Dickins <hughd@google.com>, Ingo Molnar <mingo@kernel.org>,
-        Ingo Molnar <mingo@redhat.com>, Stephen Boyd <sboyd@codeaurora.org>,
-        Yong Zhang <yong.zhang0@gmail.com>, linux-kernel@vger.kernel.org
-Date: Tue, 15 May 2012 13:11:28 +0200
-In-Reply-To: <20120514212753.GM2366@google.com>
-References: <alpine.LSU.2.00.1205070951170.1544@eggly.anvils>
-	 <20120507175743.GC19417@google.com> <1336482202.16236.29.camel@twins>
-	 <20120508165819.GB10687@google.com>
-	 <alpine.LSU.2.00.1205081106160.4071@eggly.anvils>
-	 <1336516260.8226.61.camel@twins>
-	 <alpine.LSU.2.00.1205081553250.4497@eggly.anvils>
-	 <20120509092536.GC8585@gmail.com>
-	 <alpine.LSU.2.00.1205091219590.20881@eggly.anvils>
-	 <alpine.LSU.2.00.1205101049460.17714@eggly.anvils>
-	 <20120514212753.GM2366@google.com>
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
-X-Mailer: Evolution 3.2.2- 
-Mime-Version: 1.0
+	id S1757185Ab2EOLM7 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 May 2012 07:12:59 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:41113 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756662Ab2EOLM6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 May 2012 07:12:58 -0400
+Date: Tue, 15 May 2012 14:12:55 +0300
+From: Gleb Natapov <gleb@redhat.com>
+To: Hannes Reinecke <hare@suse.de>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        "H. Peter Anvin" <hpa@linux.intel.com>
+Subject: Re: [PATCH] EDD: Check for correct EDD 3.0 length
+Message-ID: <20120515111255.GJ32036@redhat.com>
+References: <1337079889-62380-1-git-send-email-hare@suse.de>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1337079889-62380-1-git-send-email-hare@suse.de>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2012-05-14 at 14:27 -0700, Tejun Heo wrote:
-> On Thu, May 10, 2012 at 10:52:46AM -0700, Hugh Dickins wrote:
-> > On Wed, 9 May 2012, Hugh Dickins wrote:
-> > > On Wed, 9 May 2012, Ingo Molnar wrote:
-> > > > * Hugh Dickins <hughd@google.com> wrote:
-> > > > 
-> > > > > I'll set it going when I get home later - thanks.
-> > > 
-> > > Going fine so far, but a more convincing final report tomorrow.
-> > 
-> > Yes, as expected, Peter's patch (+ ,) is good: that load ran four
-> > times longer than the longest it managed before without the patch.
-> > Just needs Peter's signoff, I think.
+Next time you resent an email say why you are doing it (wrong lkml
+address in this case).
+
+On Tue, May 15, 2012 at 01:04:49PM +0200, Hannes Reinecke wrote:
+> The device_path_info_length for EDD 3.0 is 36, not 44.
+> Cf http://mbldr.sourceforge.net/specsedd30.pdf.
 > 
-> Peter, can I take your patch with Hugh's description w/ your SOB?
+That's the wrong spec.
 
-Yes, sorry, I meant to queue it up the lockdep tree but got distracted
-by other stuff.
+> This is a regression introduced by commit
+> 0c61227094b3ddaca2f847ee287c4a2e3762b5a2
+> 
+> Signed-off-by: Hannes Reinecke <hare@suse.de>
+> Cc: Gleb Natapov <gleb@redhat.com>
+> Cc: H. Peter Anvin <hpa@linux.intel.com>
+> 
+> diff --git a/drivers/firmware/edd.c b/drivers/firmware/edd.c
+> index e229576..09a77d5 100644
+> --- a/drivers/firmware/edd.c
+> +++ b/drivers/firmware/edd.c
+> @@ -545,8 +545,8 @@ edd_has_edd30(struct edd_device *edev)
+>  	}
+>  
+>  
+> -	/* We support only T13 spec */
+> -	if (info->params.device_path_info_length != 44)
+Here is the spec that code supports is spelled out, but you just replace
+the comment with pointer to the spec that the code does not support.
 
-If you want it, feel tree to take it.
+> +	/* EDD 3.0 specifies this to be 36 */
+> +	if (info->params.device_path_info_length != 36)
+>  		return 0;
+>  
+>  	for (i = 30; i < info->params.device_path_info_length + 30; i++)
+
+--
+			Gleb.
