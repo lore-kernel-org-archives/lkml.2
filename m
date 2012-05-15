@@ -1,96 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965845Ab2EOQdV (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 May 2012 12:33:21 -0400
-Received: from mail1.windriver.com ([147.11.146.13]:62803 "EHLO
-	mail1.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965661Ab2EOQdS (ORCPT
+	id S965877Ab2EOQda (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 May 2012 12:33:30 -0400
+Received: from lxorguk.ukuu.org.uk ([81.2.110.251]:45485 "EHLO
+	lxorguk.ukuu.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S965661Ab2EOQd0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 May 2012 12:33:18 -0400
-Date: Tue, 15 May 2012 12:33:16 -0400
-From: Paul Gortmaker <paul.gortmaker@windriver.com>
-To: Jonathan Nieder <jrnieder@gmail.com>
-CC: <stable@vger.kernel.org>, <linux-kernel@vger.kernel.org>
-Subject: Re: [34-longterm 074/179] xen: Use IRQF_FORCE_RESUME
-Message-ID: <20120515163316.GC17760@windriver.com>
-References: <1337048075-6132-1-git-send-email-paul.gortmaker@windriver.com>
- <1337048075-6132-75-git-send-email-paul.gortmaker@windriver.com>
- <20120515050221.GA4292@burratino>
-MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-In-Reply-To: <20120515050221.GA4292@burratino>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Tue, 15 May 2012 12:33:26 -0400
+Date: Tue, 15 May 2012 17:36:13 +0100
+From: Alan Cox <alan@lxorguk.ukuu.org.uk>
+To: Paul Bolle <pebolle@tiscali.nl>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Alan Stern <stern@rowland.harvard.edu>,
+        "James E.J. Bottomley" <JBottomley@parallels.com>,
+        Matthew Dharm <mdharm-usb@one-eyed-alien.net>,
+        linux-scsi@vger.kernel.org, usb-storage@lists.one-eyed-alien.net,
+        linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 0/3] scsi: usb-storage: hide errors for five devices
+Message-ID: <20120515173613.3c8c2f1f@pyramind.ukuu.org.uk>
+In-Reply-To: <1337099344.13455.9.camel@x61.thuisdomein>
+References: <1336491453.1933.67.camel@x61.thuisdomein>
+	<Pine.LNX.4.44L0.1205081240450.1479-100000@iolanthe.rowland.org>
+	<20120515153539.GA25206@kroah.com>
+	<1337099344.13455.9.camel@x61.thuisdomein>
+X-Mailer: Claws Mail 3.8.0 (GTK+ 2.24.8; x86_64-redhat-linux-gnu)
+Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-[Re: [34-longterm 074/179] xen: Use IRQF_FORCE_RESUME] On 15/05/2012 (Tue 00:02) Jonathan Nieder wrote:
+On Tue, 15 May 2012 18:29:04 +0200
+Paul Bolle <pebolle@tiscali.nl> wrote:
 
-> Hi Paul,
+> On Tue, 2012-05-15 at 08:35 -0700, Greg Kroah-Hartman wrote:
+> > > > Of course, an easy way out would be to downgrade both the "Asking for
+> > > > cache data failed" and the "No Caching mode page present" errors to
+> > > > notices. But the SCSI people might disagree with that approach.
+> > > 
+> > > Well, let's see what they say.
+> > 
+> > What ever happened here, are these 3 patches acceptable, or do they need
+> > to be reworked or something else?
 > 
-> Paul Gortmaker wrote:
+> Nothing happened after Alan's message.
 > 
-> > From: Thomas Gleixner <tglx@linutronix.de>
-> [...]
-> >     If you see a problem with using this for longterm, please comment.
-> [...]
-> > commit 676dc3cf5bc36a9e129a3ad8fe3bd7b2ebf20f5d upstream.
-> >
-> > Mark the IRQF_NO_SUSPEND interrupts IRQF_FORCE_RESUME and remove the extra
-> > walk through the interrupt descriptors.
+> So, currently only the first patch was acceptable (to Alan, that is, but
+> it touched the SCSI code).
 > 
-> This produces resume failures and migration failures in Xen guests[1].
-> 
-> Commit 9bab0b7fbace (genirq: Add IRQF_RESUME_EARLY and resume such
-> IRQs earlier, 2011-11-09) is needed on top to avoid regressions.
-> 
-> Hope that helps,
-> Jonathan
-> 
-> [1] http://thread.gmane.org/gmane.linux.kernel/1198673
+> At least, I haven't seen a reply from the SCSI people. Perhaps the best
+> thing to do is to submit a series of one or two trivial patches that
+> just downgrade the errors involved to notices. That should lead to
+> feedback by the SCSI people.
 
-Hi Jonathan,
-
-I'd considered this patch, but then saw Greg used it on 2.6.32
-and reverted it one release later:
-
--------------------
-commit 758d61b4a76e6ad4224780771edbc6d3a0c29b16
-Author: Greg Kroah-Hartman <gregkh@suse.de>
-Date:   Tue Nov 8 15:40:42 2011 -0800
-
-    Revert "genirq: Add IRQF_RESUME_EARLY and resume such IRQs earlier"
-    
-    This reverts commit 0f12a6ad9fa3a03f2bcee36c9cb704821e244c40.
-    
-    It causes too many build errors and needs to be done properly.
-    
-    Reported-by: Jiri Slaby <jslaby@suse.cz>
-    Reported-by: Christoph Biedl <linux-kernel.bfrz@manchmal.in-ulm.de>
-    Cc: Ian Campbell <ian.campbell@citrix.com>
- [...]
--------------
-
-What I didn't realize was that it got re-added as a v2 again in:
-
--------------
-commit 5e87d8ee34e32fda720f3a4e4055f570b09230d6
-Author: Ian Campbell <ian.campbell@citrix.com>
-Date:   Wed Nov 9 08:53:09 2011 +0000
-
-    genirq: Add IRQF_RESUME_EARLY and resume such IRQs earlier
-    
-[...]
-
-    Back ported to 2.6.32 (which lacks syscore support) by calling the relavant
-    resume function directly from sysdev_resume).
-    
-    v2: Fixed non-x86 build errors.
------------
-
-I'll make sure the v2 ends up in the 34 queue.
-
-Thanks again,
-Paul.
-
+Possibly we should have a hostadapter flag indicating if the cache noise
+is expected nuisance or not. That way if hardcore SCSI on real cables
+wants to keeep it then it can still be shut up for USB where its the
+norm and just irrelevant noise.
