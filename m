@@ -1,17 +1,17 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965463Ab2EOCe7 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 May 2012 22:34:59 -0400
-Received: from mail.windriver.com ([147.11.1.11]:49824 "EHLO
-	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965358Ab2EOCR5 (ORCPT
+	id S965462Ab2EOCf3 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 May 2012 22:35:29 -0400
+Received: from mail1.windriver.com ([147.11.146.13]:53522 "EHLO
+	mail1.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S965256Ab2EOCR4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 May 2012 22:17:57 -0400
+	Mon, 14 May 2012 22:17:56 -0400
 From: Paul Gortmaker <paul.gortmaker@windriver.com>
 To: <stable@kernel.org>, <linux-kernel@vger.kernel.org>
-Subject: [34-longterm 144/179] proc: restrict access to /proc/PID/io
-Date: Mon, 14 May 2012 22:14:00 -0400
-Message-ID: <1337048075-6132-145-git-send-email-paul.gortmaker@windriver.com>
+Subject: [34-longterm 143/179] alpha: fix several security issues
+Date: Mon, 14 May 2012 22:13:59 -0400
+Message-ID: <1337048075-6132-144-git-send-email-paul.gortmaker@windriver.com>
 X-Mailer: git-send-email 1.7.9.6
 In-Reply-To: <1337048075-6132-1-git-send-email-paul.gortmaker@windriver.com>
 References: <1337048075-6132-1-git-send-email-paul.gortmaker@windriver.com>
@@ -21,7 +21,7 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Vasiliy Kulikov <segoon@openwall.com>
+From: Dan Rosenberg <drosenberg@vsecurity.com>
 
                    -------------------
     This is a commit scheduled for the next v2.6.34 longterm release.
@@ -29,56 +29,91 @@ From: Vasiliy Kulikov <segoon@openwall.com>
     If you see a problem with using this for longterm, please comment.
                    -------------------
 
-commit 1d1221f375c94ef961ba8574ac4f85c8870ddd51 upstream.
+commit 21c5977a836e399fc710ff2c5367845ed5c2527f upstream.
 
-/proc/PID/io may be used for gathering private information.  E.g.  for
-openssh and vsftpd daemons wchars/rchars may be used to learn the
-precise password length.  Restrict it to processes being able to ptrace
-the target process.
+Fix several security issues in Alpha-specific syscalls.  Untested, but
+mostly trivial.
 
-ptrace_may_access() is needed to prevent keeping open file descriptor of
-"io" file, executing setuid binary and gathering io information of the
-setuid'ed process.
+1. Signedness issue in osf_getdomainname allows copying out-of-bounds
+kernel memory to userland.
 
-Signed-off-by: Vasiliy Kulikov <segoon@openwall.com>
+2. Signedness issue in osf_sysinfo allows copying large amounts of
+kernel memory to userland.
+
+3. Typo (?) in osf_getsysinfo bounds minimum instead of maximum copy
+size, allowing copying large amounts of kernel memory to userland.
+
+4. Usage of user pointer in osf_wait4 while under KERNEL_DS allows
+privilege escalation via writing return value of sys_wait4 to kernel
+memory.
+
+Signed-off-by: Dan Rosenberg <drosenberg@vsecurity.com>
+Cc: Richard Henderson <rth@twiddle.net>
+Cc: Ivan Kokshaysky <ink@jurassic.park.msu.ru>
+Cc: Matt Turner <mattst88@gmail.com>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
 Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
 ---
- fs/proc/base.c |    7 +++++--
- 1 file changed, 5 insertions(+), 2 deletions(-)
+ arch/alpha/kernel/osf_sys.c |   11 +++++++----
+ 1 file changed, 7 insertions(+), 4 deletions(-)
 
-diff --git a/fs/proc/base.c b/fs/proc/base.c
-index 268f00d..08741b0 100644
---- a/fs/proc/base.c
-+++ b/fs/proc/base.c
-@@ -2518,6 +2518,9 @@ static int do_io_accounting(struct task_struct *task, char *buffer, int whole)
- 	struct task_io_accounting acct = task->ioac;
- 	unsigned long flags;
+diff --git a/arch/alpha/kernel/osf_sys.c b/arch/alpha/kernel/osf_sys.c
+index de9d397..57825bb 100644
+--- a/arch/alpha/kernel/osf_sys.c
++++ b/arch/alpha/kernel/osf_sys.c
+@@ -432,7 +432,7 @@ SYSCALL_DEFINE2(osf_getdomainname, char __user *, name, int, namelen)
+ 		return -EFAULT;
  
-+	if (!ptrace_may_access(task, PTRACE_MODE_READ))
-+		return -EACCES;
-+
- 	if (whole && lock_task_sighand(task, &flags)) {
- 		struct task_struct *t = task;
+ 	len = namelen;
+-	if (namelen > 32)
++	if (len > 32)
+ 		len = 32;
  
-@@ -2640,7 +2643,7 @@ static const struct pid_entry tgid_base_stuff[] = {
- 	REG("coredump_filter", S_IRUGO|S_IWUSR, proc_coredump_filter_operations),
- #endif
- #ifdef CONFIG_TASK_IO_ACCOUNTING
--	INF("io",	S_IRUGO, proc_tgid_io_accounting),
-+	INF("io",	S_IRUSR, proc_tgid_io_accounting),
- #endif
- };
+ 	down_read(&uts_sem);
+@@ -619,7 +619,7 @@ SYSCALL_DEFINE3(osf_sysinfo, int, command, char __user *, buf, long, count)
+ 	down_read(&uts_sem);
+ 	res = sysinfo_table[offset];
+ 	len = strlen(res)+1;
+-	if (len > count)
++	if ((unsigned long)len > (unsigned long)count)
+ 		len = count;
+ 	if (copy_to_user(buf, res, len))
+ 		err = -EFAULT;
+@@ -674,7 +674,7 @@ SYSCALL_DEFINE5(osf_getsysinfo, unsigned long, op, void __user *, buffer,
+ 		return 1;
  
-@@ -2976,7 +2979,7 @@ static const struct pid_entry tid_base_stuff[] = {
- 	REG("make-it-fail", S_IRUGO|S_IWUSR, proc_fault_inject_operations),
- #endif
- #ifdef CONFIG_TASK_IO_ACCOUNTING
--	INF("io",	S_IRUGO, proc_tid_io_accounting),
-+	INF("io",	S_IRUSR, proc_tid_io_accounting),
- #endif
- };
+ 	case GSI_GET_HWRPB:
+-		if (nbytes < sizeof(*hwrpb))
++		if (nbytes > sizeof(*hwrpb))
+ 			return -EINVAL;
+ 		if (copy_to_user(buffer, hwrpb, nbytes) != 0)
+ 			return -EFAULT;
+@@ -1036,6 +1036,7 @@ SYSCALL_DEFINE4(osf_wait4, pid_t, pid, int __user *, ustatus, int, options,
+ {
+ 	struct rusage r;
+ 	long ret, err;
++	unsigned int status = 0;
+ 	mm_segment_t old_fs;
  
+ 	if (!ur)
+@@ -1044,13 +1045,15 @@ SYSCALL_DEFINE4(osf_wait4, pid_t, pid, int __user *, ustatus, int, options,
+ 	old_fs = get_fs();
+ 		
+ 	set_fs (KERNEL_DS);
+-	ret = sys_wait4(pid, ustatus, options, (struct rusage __user *) &r);
++	ret = sys_wait4(pid, (unsigned int __user *) &status, options,
++			(struct rusage __user *) &r);
+ 	set_fs (old_fs);
+ 
+ 	if (!access_ok(VERIFY_WRITE, ur, sizeof(*ur)))
+ 		return -EFAULT;
+ 
+ 	err = 0;
++	err |= put_user(status, ustatus);
+ 	err |= __put_user(r.ru_utime.tv_sec, &ur->ru_utime.tv_sec);
+ 	err |= __put_user(r.ru_utime.tv_usec, &ur->ru_utime.tv_usec);
+ 	err |= __put_user(r.ru_stime.tv_sec, &ur->ru_stime.tv_sec);
 -- 
 1.7.9.6
 
