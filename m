@@ -1,17 +1,17 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965352Ab2EOCRs (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 May 2012 22:17:48 -0400
-Received: from mail1.windriver.com ([147.11.146.13]:52976 "EHLO
+	id S965517Ab2EOCjB (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 May 2012 22:39:01 -0400
+Received: from mail1.windriver.com ([147.11.146.13]:53502 "EHLO
 	mail1.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S964889Ab2EOCQZ (ORCPT
+	with ESMTP id S965348Ab2EOCRs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 May 2012 22:16:25 -0400
+	Mon, 14 May 2012 22:17:48 -0400
 From: Paul Gortmaker <paul.gortmaker@windriver.com>
 To: <stable@kernel.org>, <linux-kernel@vger.kernel.org>
-Subject: [34-longterm 032/179] p54usb: add zoom 4410 usbid
-Date: Mon, 14 May 2012 22:12:08 -0400
-Message-ID: <1337048075-6132-33-git-send-email-paul.gortmaker@windriver.com>
+Subject: [34-longterm 133/179] cciss: do not attempt to read from a write-only register
+Date: Mon, 14 May 2012 22:13:49 -0400
+Message-ID: <1337048075-6132-134-git-send-email-paul.gortmaker@windriver.com>
 X-Mailer: git-send-email 1.7.9.6
 In-Reply-To: <1337048075-6132-1-git-send-email-paul.gortmaker@windriver.com>
 References: <1337048075-6132-1-git-send-email-paul.gortmaker@windriver.com>
@@ -21,7 +21,7 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Christian Lamparter <chunkeey@googlemail.com>
+From: "Stephen M. Cameron" <scameron@beardog.cce.hp.com>
 
                    -------------------
     This is a commit scheduled for the next v2.6.34 longterm release.
@@ -29,28 +29,32 @@ From: Christian Lamparter <chunkeey@googlemail.com>
     If you see a problem with using this for longterm, please comment.
                    -------------------
 
-commit 9368a9a2378ab721f82f59430a135b4ce4ff5109 upstream.
+commit 07d0c38e7d84f911c72058a124c7f17b3c779a65 upstream.
 
-Reported-by: Mark Davis <marked86@gmail.com>
-Signed-off-by: Christian Lamparter <chunkeey@googlemail.com>
-Signed-off-by: John W. Linville <linville@tuxdriver.com>
+Most smartarrays will tolerate it, but some new ones don't.
+
+Signed-off-by: Stephen M. Cameron <scameron@beardog.cce.hp.com>
+
+Note: this is a regression caused by commit 1ddd5049
+Signed-off-by: Jens Axboe <jaxboe@fusionio.com>
 Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
 ---
- drivers/net/wireless/p54/p54usb.c |    1 +
- 1 file changed, 1 insertion(+)
+ drivers/block/cciss.h |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/drivers/net/wireless/p54/p54usb.c b/drivers/net/wireless/p54/p54usb.c
-index 3317906d..0f2ff34 100644
---- a/drivers/net/wireless/p54/p54usb.c
-+++ b/drivers/net/wireless/p54/p54usb.c
-@@ -82,6 +82,7 @@ static struct usb_device_id p54u_table[] __devinitdata = {
- 	{USB_DEVICE(0x06b9, 0x0121)},	/* Thomson SpeedTouch 121g */
- 	{USB_DEVICE(0x0707, 0xee13)},   /* SMC 2862W-G version 2 */
- 	{USB_DEVICE(0x083a, 0x4521)},   /* Siemens Gigaset USB Adapter 54 version 2 */
-+	{USB_DEVICE(0x083a, 0xc501)},	/* Zoom Wireless-G 4410 */
- 	{USB_DEVICE(0x083a, 0xf503)},	/* Accton FD7050E ver 1010ec  */
- 	{USB_DEVICE(0x0846, 0x4240)},	/* Netgear WG111 (v2) */
- 	{USB_DEVICE(0x0915, 0x2000)},	/* Cohiba Proto board */
+diff --git a/drivers/block/cciss.h b/drivers/block/cciss.h
+index 37a2d4f..759cbd9 100644
+--- a/drivers/block/cciss.h
++++ b/drivers/block/cciss.h
+@@ -173,7 +173,7 @@ static void SA5_submit_command( ctlr_info_t *h, CommandList_struct *c)
+ 	 printk("Sending %x - down to controller\n", c->busaddr );
+ #endif /* CCISS_DEBUG */ 
+          writel(c->busaddr, h->vaddr + SA5_REQUEST_PORT_OFFSET);
+-	readl(h->vaddr + SA5_REQUEST_PORT_OFFSET);
++	readl(h->vaddr + SA5_SCRATCHPAD_OFFSET);
+ 	 h->commands_outstanding++;
+ 	 if ( h->commands_outstanding > h->max_outstanding)
+ 		h->max_outstanding = h->commands_outstanding;
 -- 
 1.7.9.6
 
