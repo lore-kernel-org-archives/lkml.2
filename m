@@ -1,65 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932917Ab2EOOfx (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 May 2012 10:35:53 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:57771 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932899Ab2EOOfu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 May 2012 10:35:50 -0400
-Date: Tue, 15 May 2012 17:35:50 +0300
-From: "Michael S. Tsirkin" <mst@redhat.com>
-To: x86@kernel.org, kvm@vger.kernel.org
-Cc: Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
-        Avi Kivity <avi@redhat.com>, Marcelo Tosatti <mtosatti@redhat.com>,
-        gleb@redhat.com, Linus Torvalds <torvalds@linux-foundation.org>,
-        linux-kernel@vger.kernel.org
-Subject: [PATCHv3 1/8] apic: fix typo EIO_ACK -> EOI_ACK and document
-Message-ID: <37867b31b9330690af2e60a2a7c4cb4b1b070caf.1337091955.git.mst@redhat.com>
-References: <cover.1337091955.git.mst@redhat.com>
+	id S932924Ab2EOOf6 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 May 2012 10:35:58 -0400
+Received: from iolanthe.rowland.org ([192.131.102.54]:45550 "HELO
+	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S932912Ab2EOOfw (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 May 2012 10:35:52 -0400
+Date: Tue, 15 May 2012 10:35:51 -0400 (EDT)
+From: Alan Stern <stern@rowland.harvard.edu>
+X-X-Sender: stern@iolanthe.rowland.org
+To: Lin Ming <ming.m.lin@intel.com>
+cc: Jens Axboe <axboe@kernel.dk>,
+        Kernel development list <linux-kernel@vger.kernel.org>,
+        Linux-pm mailing list <linux-pm@vger.kernel.org>,
+        SCSI development list <linux-scsi@vger.kernel.org>
+Subject: Re: [RFC PATCH 1/3] block: add a flag to identify PM request
+In-Reply-To: <1337071697-30920-2-git-send-email-ming.m.lin@intel.com>
+Message-ID: <Pine.LNX.4.44L0.1205151028020.1796-100000@iolanthe.rowland.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <cover.1337091955.git.mst@redhat.com>
-X-Mutt-Fcc: =sent
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Fix typo in the macro name and document the
-reason it has this value. Update users.
+On Tue, 15 May 2012, Lin Ming wrote:
 
-Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
----
- arch/x86/include/asm/apicdef.h         |    2 +-
- arch/x86/platform/visws/visws_quirks.c |    2 +-
- 2 files changed, 2 insertions(+), 2 deletions(-)
+> Add a flag REQ_PM to identify the request is PM related.
+> As an example, modify scsi code to use this flag.
 
-diff --git a/arch/x86/include/asm/apicdef.h b/arch/x86/include/asm/apicdef.h
-index 134bba0..c46bb99 100644
---- a/arch/x86/include/asm/apicdef.h
-+++ b/arch/x86/include/asm/apicdef.h
-@@ -37,7 +37,7 @@
- #define		APIC_ARBPRI_MASK	0xFFu
- #define	APIC_PROCPRI	0xA0
- #define	APIC_EOI	0xB0
--#define		APIC_EIO_ACK		0x0
-+#define		APIC_EOI_ACK		0x0 /* Docs say 0 for future compat. */
- #define	APIC_RRR	0xC0
- #define	APIC_LDR	0xD0
- #define		APIC_LDR_MASK		(0xFFu << 24)
-diff --git a/arch/x86/platform/visws/visws_quirks.c b/arch/x86/platform/visws/visws_quirks.c
-index c7abf13..94d8a39 100644
---- a/arch/x86/platform/visws/visws_quirks.c
-+++ b/arch/x86/platform/visws/visws_quirks.c
-@@ -445,7 +445,7 @@ static void ack_cobalt_irq(struct irq_data *data)
- 
- 	spin_lock_irqsave(&cobalt_lock, flags);
- 	disable_cobalt_irq(data);
--	apic_write(APIC_EOI, APIC_EIO_ACK);
-+	apic_write(APIC_EOI, APIC_EOI_ACK);
- 	spin_unlock_irqrestore(&cobalt_lock, flags);
- }
- 
--- 
-MST
+There already is such a flag; you don't need to add one.  In fact, 
+there already are _two_ such flags, and it would be best to remove one 
+of them.  In include/linux/blkdev.h:
+
+	REQ_TYPE_PM_SUSPEND,		/* suspend request */
+	REQ_TYPE_PM_RESUME,		/* resume request */
+
+Apparently they had been used by the old ide driver, but they don't
+seem to be used anywhere now.
+
+Aside from that, this patch seems to be going in the right direction.
+
+Alan Stern
 
