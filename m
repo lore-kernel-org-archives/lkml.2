@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932293Ab2EOOgJ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 May 2012 10:36:09 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:8607 "EHLO mx1.redhat.com"
+	id S964985Ab2EOOis (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 May 2012 10:38:48 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:31370 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932943Ab2EOOgD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 May 2012 10:36:03 -0400
-Date: Tue, 15 May 2012 17:36:02 +0300
+	id S932961Ab2EOOgI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 May 2012 10:36:08 -0400
+Date: Tue, 15 May 2012 17:36:07 +0300
 From: "Michael S. Tsirkin" <mst@redhat.com>
 To: x86@kernel.org, kvm@vger.kernel.org
 Cc: Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
         Avi Kivity <avi@redhat.com>, Marcelo Tosatti <mtosatti@redhat.com>,
         gleb@redhat.com, Linus Torvalds <torvalds@linux-foundation.org>,
         linux-kernel@vger.kernel.org
-Subject: [PATCHv3 4/8] x86: eoi micro-optimization
-Message-ID: <e019d1a125316f10d3e3a4b2f6bda41473f4fb72.1337091955.git.mst@redhat.com>
+Subject: [PATCHv3 6/8] x86/bitops: note on __test_and_clear_bit atomicity
+Message-ID: <b82d1cb99227fa4393a8842e614b6014e4961e6a.1337091955.git.mst@redhat.com>
 References: <cover.1337091955.git.mst@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
@@ -25,124 +25,34 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-We know both register and value for eoi beforehand,
-so there's no need to check it and no need to do math
-to calculate the msr. Saves instructions/branches
-on each EOI when using x2apic.
-
-I'm not sure what kind of tests should one run
-to check whether this patch is good for performance.
-
-Some data below - in case it's insufficient,
-this patch can be dropped from the series for now:
-
-I looked at the objdump output to verify that the generated code
-looks right and actually is shorter.
-
-Some benchmark results below show a tiny
-but measureable improvement. The tests were run on
-an AMD box with 24 cpus.
-
-- A clean kernel build after reboot shows
-a tiny but measureable improvement in system time
-which means lower CPU overhead (though not measureable
-in total time - that is dominated by user time and fluctuates
-too much):
-linux# reboot -f
-...
-linux# make clean
-linux# time make -j 64 LOCALVERSION= 2>&1 > /dev/null
-
-Before:
-
-real    2m52.244s
-user    35m53.833s
-sys     6m7.194s
-
-After:
-
-real    2m52.827s
-user    35m48.916s
-sys     6m2.305s
-
-- perf micro-benchmarks seem to consistently show
-  a tiny improvement in total time as well but it's below
-  the confidence level of 3 std deviations:
-
-...
-       0.414666797 seconds time elapsed ( +-  1.29% )
-
-Performance counter stats for 'perf bench sched messaging' (100 runs):
-
-       0.395370891 seconds time elapsed ( +-  1.04% )
-
-       0.307019664 seconds time elapsed ( +-  0.10% )
-
-       0.304738024 seconds time elapsed ( +-  0.08% )
+__test_and_clear_bit is actually atomic with respect
+to the local CPU. Add a note saying that KVM on x86
+relies on this behaviour so people don't accidentaly break it.
+Also warn not to rely on this in portable code.
 
 Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
 ---
- arch/x86/include/asm/apic.h           |    5 +++++
- arch/x86/kernel/apic/x2apic_cluster.c |    2 +-
- arch/x86/kernel/apic/x2apic_phys.c    |    2 +-
- arch/x86/kernel/apic/x2apic_uv_x.c    |    2 +-
- 4 files changed, 8 insertions(+), 3 deletions(-)
+ arch/x86/include/asm/bitops.h |    7 +++++++
+ 1 files changed, 7 insertions(+), 0 deletions(-)
 
-diff --git a/arch/x86/include/asm/apic.h b/arch/x86/include/asm/apic.h
-index 74efb8d..5eb6d56 100644
---- a/arch/x86/include/asm/apic.h
-+++ b/arch/x86/include/asm/apic.h
-@@ -138,6 +138,11 @@ static inline void native_apic_msr_write(u32 reg, u32 v)
- 	wrmsr(APIC_BASE_MSR + (reg >> 4), v, 0);
- }
- 
-+static inline void native_apic_msr_eoi_write(u32 reg, u32 v)
-+{
-+	wrmsr(APIC_BASE_MSR + (APIC_EOI >> 4), APIC_EOI_ACK, 0);
-+}
-+
- static inline u32 native_apic_msr_read(u32 reg)
+diff --git a/arch/x86/include/asm/bitops.h b/arch/x86/include/asm/bitops.h
+index c9c70ea..86f3a1e 100644
+--- a/arch/x86/include/asm/bitops.h
++++ b/arch/x86/include/asm/bitops.h
+@@ -264,6 +264,13 @@ static inline int test_and_clear_bit(int nr, volatile unsigned long *addr)
+  * This operation is non-atomic and can be reordered.
+  * If two examples of this operation race, one can appear to succeed
+  * but actually fail.  You must protect multiple accesses with a lock.
++ *
++ * Note: the operation is performed atomically with respect to
++ * the local CPU, but not other CPUs. Portable code should not
++ * rely on this behaviour.
++ * KVM relies on this behaviour on x86 for modifying memory that is also
++ * accessed from a hypervisor on the same CPU if running in a VM: don't change
++ * this without also updating arch/x86/kernel/kvm.c
+  */
+ static inline int __test_and_clear_bit(int nr, volatile unsigned long *addr)
  {
- 	u64 msr;
-diff --git a/arch/x86/kernel/apic/x2apic_cluster.c b/arch/x86/kernel/apic/x2apic_cluster.c
-index a5baa78..ff35cff 100644
---- a/arch/x86/kernel/apic/x2apic_cluster.c
-+++ b/arch/x86/kernel/apic/x2apic_cluster.c
-@@ -260,7 +260,7 @@ static struct apic apic_x2apic_cluster = {
- 
- 	.read				= native_apic_msr_read,
- 	.write				= native_apic_msr_write,
--	.eoi_write			= native_apic_msr_write,
-+	.eoi_write			= native_apic_msr_eoi_write,
- 	.icr_read			= native_x2apic_icr_read,
- 	.icr_write			= native_x2apic_icr_write,
- 	.wait_icr_idle			= native_x2apic_wait_icr_idle,
-diff --git a/arch/x86/kernel/apic/x2apic_phys.c b/arch/x86/kernel/apic/x2apic_phys.c
-index 8340356..c17e982 100644
---- a/arch/x86/kernel/apic/x2apic_phys.c
-+++ b/arch/x86/kernel/apic/x2apic_phys.c
-@@ -172,7 +172,7 @@ static struct apic apic_x2apic_phys = {
- 
- 	.read				= native_apic_msr_read,
- 	.write				= native_apic_msr_write,
--	.eoi_write			= native_apic_msr_write,
-+	.eoi_write			= native_apic_msr_eoi_write,
- 	.icr_read			= native_x2apic_icr_read,
- 	.icr_write			= native_x2apic_icr_write,
- 	.wait_icr_idle			= native_x2apic_wait_icr_idle,
-diff --git a/arch/x86/kernel/apic/x2apic_uv_x.c b/arch/x86/kernel/apic/x2apic_uv_x.c
-index 5b0e3d0..c6d03f7 100644
---- a/arch/x86/kernel/apic/x2apic_uv_x.c
-+++ b/arch/x86/kernel/apic/x2apic_uv_x.c
-@@ -404,7 +404,7 @@ static struct apic __refdata apic_x2apic_uv_x = {
- 
- 	.read				= native_apic_msr_read,
- 	.write				= native_apic_msr_write,
--	.eoi_write			= native_apic_msr_write,
-+	.eoi_write			= native_apic_msr_eoi_write,
- 	.icr_read			= native_x2apic_icr_read,
- 	.icr_write			= native_x2apic_icr_write,
- 	.wait_icr_idle			= native_x2apic_wait_icr_idle,
 -- 
 MST
 
