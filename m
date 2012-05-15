@@ -1,17 +1,17 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965712Ab2EOCSq (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 May 2012 22:18:46 -0400
-Received: from mail.windriver.com ([147.11.1.11]:49381 "EHLO
+	id S965700Ab2EOCSp (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 May 2012 22:18:45 -0400
+Received: from mail.windriver.com ([147.11.1.11]:49368 "EHLO
 	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S964914Ab2EOCQq (ORCPT
+	with ESMTP id S964912Ab2EOCQp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 May 2012 22:16:46 -0400
+	Mon, 14 May 2012 22:16:45 -0400
 From: Paul Gortmaker <paul.gortmaker@windriver.com>
 To: <stable@kernel.org>, <linux-kernel@vger.kernel.org>
-Subject: [34-longterm 057/179] x86/amd-iommu: Fix 3 possible endless loops
-Date: Mon, 14 May 2012 22:12:33 -0400
-Message-ID: <1337048075-6132-58-git-send-email-paul.gortmaker@windriver.com>
+Subject: [34-longterm 055/179] fat: Fix corrupt inode flags when remove ATTR_SYS flag
+Date: Mon, 14 May 2012 22:12:31 -0400
+Message-ID: <1337048075-6132-56-git-send-email-paul.gortmaker@windriver.com>
 X-Mailer: git-send-email 1.7.9.6
 In-Reply-To: <1337048075-6132-1-git-send-email-paul.gortmaker@windriver.com>
 References: <1337048075-6132-1-git-send-email-paul.gortmaker@windriver.com>
@@ -21,7 +21,7 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Joerg Roedel <joerg.roedel@amd.com>
+From: OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
 
                    -------------------
     This is a commit scheduled for the next v2.6.34 longterm release.
@@ -29,52 +29,30 @@ From: Joerg Roedel <joerg.roedel@amd.com>
     If you see a problem with using this for longterm, please comment.
                    -------------------
 
-commit 0de66d5b35ee148455e268b2782873204ffdef4b upstream.
+commit 1adffbae22332bb558c2a29de19d9aca391869f6 upstream.
 
-The driver contains several loops counting on an u16 value
-where the exit-condition is checked against variables that
-can have values up to 0xffff. In this case the loops will
-never exit. This patch fixed 3 such loops.
+We are clearly missing '~' in fat_ioctl_set_attributes().
 
-Signed-off-by: Joerg Roedel <joerg.roedel@amd.com>
+Reported-by: Dmitry Dmitriev <dimondmm@yandex.ru>
+Signed-off-by: OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
 Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
 ---
- arch/x86/kernel/amd_iommu_init.c |    8 ++++----
- 1 file changed, 4 insertions(+), 4 deletions(-)
+ fs/fat/file.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/arch/x86/kernel/amd_iommu_init.c b/arch/x86/kernel/amd_iommu_init.c
-index fa749f7..82571af 100644
---- a/arch/x86/kernel/amd_iommu_init.c
-+++ b/arch/x86/kernel/amd_iommu_init.c
-@@ -649,8 +649,8 @@ static void __init init_iommu_from_acpi(struct amd_iommu *iommu,
- {
- 	u8 *p = (u8 *)h;
- 	u8 *end = p, flags = 0;
--	u16 dev_i, devid = 0, devid_start = 0, devid_to = 0;
--	u32 ext_flags = 0;
-+	u16 devid = 0, devid_start = 0, devid_to = 0;
-+	u32 dev_i, ext_flags = 0;
- 	bool alias = false;
- 	struct ivhd_entry *e;
+diff --git a/fs/fat/file.c b/fs/fat/file.c
+index e8c159d..279937b 100644
+--- a/fs/fat/file.c
++++ b/fs/fat/file.c
+@@ -101,7 +101,7 @@ static int fat_ioctl_set_attributes(struct file *file, u32 __user *user_attr)
+ 		if (attr & ATTR_SYS)
+ 			inode->i_flags |= S_IMMUTABLE;
+ 		else
+-			inode->i_flags &= S_IMMUTABLE;
++			inode->i_flags &= ~S_IMMUTABLE;
+ 	}
  
-@@ -805,7 +805,7 @@ static void __init init_iommu_from_acpi(struct amd_iommu *iommu,
- /* Initializes the device->iommu mapping for the driver */
- static int __init init_iommu_devices(struct amd_iommu *iommu)
- {
--	u16 i;
-+	u32 i;
- 
- 	for (i = iommu->first_device; i <= iommu->last_device; ++i)
- 		set_iommu_for_device(iommu, i);
-@@ -1094,7 +1094,7 @@ static int __init init_memory_definitions(struct acpi_table_header *table)
-  */
- static void init_device_table(void)
- {
--	u16 devid;
-+	u32 devid;
- 
- 	for (devid = 0; devid <= amd_iommu_last_bdf; ++devid) {
- 		set_dev_entry_bit(devid, DEV_ENTRY_VALID);
+ 	fat_save_attrs(inode, attr);
 -- 
 1.7.9.6
 
