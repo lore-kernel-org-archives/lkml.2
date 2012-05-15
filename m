@@ -1,70 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758887Ab2EON1P (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 May 2012 09:27:15 -0400
-Received: from mail-lpp01m010-f46.google.com ([209.85.215.46]:38768 "EHLO
-	mail-lpp01m010-f46.google.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752409Ab2EON1M convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 May 2012 09:27:12 -0400
-MIME-Version: 1.0
-In-Reply-To: <1337087170.27020.166.camel@laptop>
-References: <1337072138-8323-1-git-send-email-alex.shi@intel.com>
-	<1337072138-8323-7-git-send-email-alex.shi@intel.com>
-	<CAPa8GCDsSOrzQwX2qRJyocYAZdGbwjD4t4fjxmWXV6=EoXjXZw@mail.gmail.com>
-	<CAPa8GCADw7cn+cGukfy6=gEJAqV2Ef3=YFcPriuPmhpE-xvX7A@mail.gmail.com>
-	<CAJRGBZy0S_fg3GY4S5CG-2SWv5AG1jMrcMMqCiTg=7xyD1mrzQ@mail.gmail.com>
-	<1337087170.27020.166.camel@laptop>
-Date: Tue, 15 May 2012 21:27:10 +0800
-Message-ID: <CAJRGBZyJy416yeyTgrcBR6b-7Y+cBXiz91f_gscRSado1wQVhg@mail.gmail.com>
-Subject: Re: [PATCH v5 6/7] x86/tlb: optimizing flush_tlb_mm
-From: Luming Yu <luming.yu@gmail.com>
-To: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Nick Piggin <npiggin@gmail.com>, Alex Shi <alex.shi@intel.com>,
-        tglx@linutronix.de, mingo@redhat.com, hpa@zytor.com, arnd@arndb.de,
-        rostedt@goodmis.org, fweisbec@gmail.com, jeremy@goop.org,
-        riel@redhat.com, luto@mit.edu, avi@redhat.com, len.brown@intel.com,
-        dhowells@redhat.com, fenghua.yu@intel.com, borislav.petkov@amd.com,
-        yinghai@kernel.org, ak@linux.intel.com, cpw@sgi.com, steiner@sgi.com,
-        akpm@linux-foundation.org, penberg@kernel.org, hughd@google.com,
-        rientjes@google.com, kosaki.motohiro@jp.fujitsu.com,
-        n-horiguchi@ah.jp.nec.com, tj@kernel.org, oleg@redhat.com,
-        axboe@kernel.dk, jmorris@namei.org, kamezawa.hiroyu@jp.fujitsu.com,
-        viro@zeniv.linux.org.uk, linux-kernel@vger.kernel.org,
-        yongjie.ren@intel.com, linux-arch@vger.kernel.org, jcm@jonmasters.org
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+	id S1758883Ab2EON2T (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 May 2012 09:28:19 -0400
+Received: from mga11.intel.com ([192.55.52.93]:8028 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752409Ab2EON2R (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 May 2012 09:28:17 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
+   d="asc'?scan'208";a="166562183"
+Message-ID: <1337088703.2528.208.camel@sauron.fi.intel.com>
+Subject: Re: [PATCH] MTD: LPC32xx SLC NAND driver
+From: Artem Bityutskiy <dedekind1@gmail.com>
+Reply-To: dedekind1@gmail.com
+To: Roland Stigge <stigge@antcom.de>
+Cc: Huang Shijie <b32955@freescale.com>, Bastian Hecht <hechtb@googlemail.com>,
+        Lars-Peter Clausen <lars@metafoo.de>, Lei Wen <leiwen@marvell.com>,
+        linux-mtd@lists.infradead.org, linux-kernel@vger.kernel.org,
+        linux-doc@vger.kernel.org, devicetree-discuss@lists.ozlabs.org,
+        dwmw2@infradead.org, kevin.wells@nxp.com, srinivas.bakki@nxp.com,
+        linux-arm-kernel@lists.infradead.org
+Date: Tue, 15 May 2012 16:31:43 +0300
+In-Reply-To: <4FB25837.2050603@antcom.de>
+References: <1336829386-23301-1-git-send-email-stigge@antcom.de>
+	 <1337068543.2528.143.camel@sauron.fi.intel.com>
+	 <4FB2109A.2080505@freescale.com> <4FB25837.2050603@antcom.de>
+Content-Type: multipart/signed; micalg="pgp-sha1"; protocol="application/pgp-signature";
+	boundary="=-1nvlbCi5fHtBZBbOcXOt"
+X-Mailer: Evolution 3.2.3 (3.2.3-3.fc16) 
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, May 15, 2012 at 9:06 PM, Peter Zijlstra <a.p.zijlstra@chello.nl> wrote:
-> On Tue, 2012-05-15 at 20:58 +0800, Luming Yu wrote:
->>
->>
->> Both __native_flush_tlb() and __native_flush_tlb_single(...)
->> introduced roughly 1 ns  latency to tsc sampling executed in
 
-Fix typo, I just observed 1us with current tool, I would check if I
-can push the accuracy to nanoseconds level.
+--=-1nvlbCi5fHtBZBbOcXOt
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: quoted-printable
 
->> stop_machine_context in two logical CPUs
->
-> But you have to weight that against the cost of re-population, and
+On Tue, 2012-05-15 at 15:20 +0200, Roland Stigge wrote:
+> >> while ((readl(...))&&  timeout-->  0)
+> >>     cpu_relax();
+>=20
+> As I understand loops_per_jiffy, this loop will take much longer than
+> the 100 ms you defined above?
 
-Right, it's hard to detect, but I will try if I can get measurement
-done in a simple test tool to help people measure
-this kind of stuff in few minutes.
+Not sure about much, but longer. The idea is that this is about the
+error path so if we report -EIO with a slight delay - no problem.
 
-> that's the difficult bit, since we have no clue how many tlb entries are
-> in use by the current cr3.
->
-> It might be possible for intel to give us this information, I've asked
-> for something similar for cachelines.
+--=20
+Best Regards,
+Artem Bityutskiy
 
-This is the official document
-http://www.intel.com/content/dam/doc/manual/64-ia-32-architectures-optimization-manual.pdf
+--=-1nvlbCi5fHtBZBbOcXOt
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: This is a digitally signed message part
+Content-Transfer-Encoding: 7bit
 
-Let me know if it can answer your question.
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
 
->
+iQIcBAABAgAGBQJPslq/AAoJECmIfjd9wqK0jhMP/RCFaFYJfic5PE4Ovi1LyDfH
+6FVingHAa0fiByhax5GSYvzH367D6cyFmPe0aBTNRsmxeCgJwH/q4pZ/4KWYQufv
+v6mPhHEA9RjSMfZBzujYHEFpxGbLXmlyE5RW+eHmmO1jKOi+kkbI0D49I4qtTnaK
+HccwgskpWqUz5sHW3Fm7rOIRggZ/7yxStlM7HRbsN6z9xYmlCZW3yX9ZDGgH0w0k
+/zBLywZZCrlhJEH7QM0TkYM/frMx/TAOu2wSwgb1FtF64tNpTMLLcZmexQ+UkkQO
+C7hna2j65kr5LVQjSnFAEFvWp09bkfkSV4alMiyIn7E0Ck8dOaTROn49lmBy+U47
+dqfQJtZE6e3hm+ciM5dBSW3OAd1tPANjg5hVyTPN+HYqY1+veOnGL0uC5+UuM8Tr
+Lw93OPi8Ie6/KrWZ0eBnYU7pIVd8PZ/KcfZ6RUlO8qnd3EhpWTZ7Ow5ww+Y/EFWw
+dM81Fo8C18mHfZBVIepilnu3jcwCEZjztNcGE6TBXlWlSmPH2vPY+X+fLinkBcDq
+WlJon//YYEhiYDDWYvME2t3ilUaPLxU1wgKeBnQv7uMG7Df7GEr/VS3yx762RP41
+haU7xuHYx7+3EqXX0pPEygS6uW6paZcrmB0RBlPcQFndMpW+FV+fJyefiCDCYnyw
+05q5VQFAMGuxFh0mdrAC
+=sZe1
+-----END PGP SIGNATURE-----
+
+--=-1nvlbCi5fHtBZBbOcXOt--
+
