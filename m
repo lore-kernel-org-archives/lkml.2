@@ -1,46 +1,37 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932662Ab2EOMrQ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 May 2012 08:47:16 -0400
-Received: from cavan.codon.org.uk ([93.93.128.6]:47804 "EHLO
-	cavan.codon.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932092Ab2EOMrO (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 May 2012 08:47:14 -0400
-Date: Tue, 15 May 2012 13:47:07 +0100
-From: Matthew Garrett <mjg59@srcf.ucam.org>
-To: Jan Beulich <JBeulich@suse.com>
-Cc: mingo@elte.hu, tglx@linutronix.de, hpa@zytor.com,
-        matt.fleming@linux.intel.com, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] x86-64: use EFI to deal with platform wall clock
-Message-ID: <20120515124707.GB25248@srcf.ucam.org>
-References: <4FB265AB0200007800083CC5@nat28.tlf.novell.com>
+	id S932669Ab2EOMtN (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 May 2012 08:49:13 -0400
+Received: from ra.se.axis.com ([195.60.68.13]:37168 "EHLO ra.se.axis.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932629Ab2EOMtM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 May 2012 08:49:12 -0400
+Date: Tue, 15 May 2012 14:49:09 +0200
+From: Jesper Nilsson <jesper.nilsson@axis.com>
+To: Thomas Gleixner <tglx@linutronix.de>
+Cc: LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [patch 07/18] cris: Use common threadinfo allocator
+Message-ID: <20120515124908.GG19174@axis.com>
+References: <20120505150007.543515803@linutronix.de> <20120505150141.681236240@linutronix.de>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <4FB265AB0200007800083CC5@nat28.tlf.novell.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: mjg59@cavan.codon.org.uk
-X-SA-Exim-Scanned: No (on cavan.codon.org.uk); SAEximRunCond expanded to false
+In-Reply-To: <20120505150141.681236240@linutronix.de>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, May 15, 2012 at 01:18:19PM +0100, Jan Beulich wrote:
+On Sat, May 05, 2012 at 05:05:43PM +0200, Thomas Gleixner wrote:
+> There is no functional difference. __get_free_pages() ends up calling
+> alloc_pages_node().
+> 
+> This also allocates only one page which matches THREAD_SIZE instead of
+> an extra page for nothing.
+> 
+> Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+Acked-by: Jesper Nilsson <jesper.nilsson@axis.com>
 
-> Simply removing the #ifdef around the respective code isn't enough,
-> however: The runtime code must not only be forced to be executable, it
-> also must have a proper virtual address set (which on at least the
-> system I'm testing on isn't the case for all necessary regions, or at
-> least not as early as they're now being required).
-
-I don't understand this. The get_time pointer won't be updated to the 
-virtual function until the end of efi_enter_virtual_mode, at which point 
-all runtime regions should have a virtual address mapped. We also call 
-runtime_code_page_mkexec() immediately after updating that pointer, 
-although maybe the order should be swapped. So I think the bug you're 
-fixing is not the bug you think you're fixing...
-
+/^JN - Jesper Nilsson
 -- 
-Matthew Garrett | mjg59@srcf.ucam.org
+               Jesper Nilsson -- jesper.nilsson@axis.com
