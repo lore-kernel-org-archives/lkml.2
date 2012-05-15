@@ -1,48 +1,148 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964977Ab2EOOhv (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 May 2012 10:37:51 -0400
-Received: from iolanthe.rowland.org ([192.131.102.54]:45558 "HELO
-	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1758244Ab2EOOhr (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 May 2012 10:37:47 -0400
-Date: Tue, 15 May 2012 10:37:46 -0400 (EDT)
-From: Alan Stern <stern@rowland.harvard.edu>
-X-X-Sender: stern@iolanthe.rowland.org
-To: Lin Ming <ming.m.lin@intel.com>
-cc: Jens Axboe <axboe@kernel.dk>, <linux-kernel@vger.kernel.org>,
-        <linux-pm@vger.kernel.org>, <linux-scsi@vger.kernel.org>
-Subject: Re: [RFC PATCH 2/3] block: add queue runtime pm callback
-In-Reply-To: <1337071697-30920-3-git-send-email-ming.m.lin@intel.com>
-Message-ID: <Pine.LNX.4.44L0.1205151036510.1796-100000@iolanthe.rowland.org>
+	id S932293Ab2EOOgJ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 May 2012 10:36:09 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:8607 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932943Ab2EOOgD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 May 2012 10:36:03 -0400
+Date: Tue, 15 May 2012 17:36:02 +0300
+From: "Michael S. Tsirkin" <mst@redhat.com>
+To: x86@kernel.org, kvm@vger.kernel.org
+Cc: Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
+        Avi Kivity <avi@redhat.com>, Marcelo Tosatti <mtosatti@redhat.com>,
+        gleb@redhat.com, Linus Torvalds <torvalds@linux-foundation.org>,
+        linux-kernel@vger.kernel.org
+Subject: [PATCHv3 4/8] x86: eoi micro-optimization
+Message-ID: <e019d1a125316f10d3e3a4b2f6bda41473f4fb72.1337091955.git.mst@redhat.com>
+References: <cover.1337091955.git.mst@redhat.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <cover.1337091955.git.mst@redhat.com>
+X-Mutt-Fcc: =sent
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 15 May 2012, Lin Ming wrote:
+We know both register and value for eoi beforehand,
+so there's no need to check it and no need to do math
+to calculate the msr. Saves instructions/branches
+on each EOI when using x2apic.
 
-> Add ->runtime_pm callback and ->pm_status to request queue.
-> As an example, implement a simple queue runtime_pm callback
-> in sd driver.
+I'm not sure what kind of tests should one run
+to check whether this patch is good for performance.
 
-> +static int sd_runtime_pm_fn(struct request_queue *q, pm_message_t mesg)
-> +{
-> +	struct scsi_device *sdp = q->queuedata;
-> +
-> +	if (mesg.event == PM_EVENT_SUSPEND) {
-> +		q->pm_status = RPM_SUSPENDING;
-> +		pm_runtime_put(&sdp->sdev_gendev);
-> +	}
-> +	else if (mesg.event == PM_EVENT_RESUME) {
-> +		q->pm_status = RPM_RESUMING;
-> +		pm_runtime_get(&sdp->sdev_gendev);
-> +	}
+Some data below - in case it's insufficient,
+this patch can be dropped from the series for now:
 
-Don't use pm_message_t arguments for runtime PM.  Implement separate 
-routines for suspend and resume.
+I looked at the objdump output to verify that the generated code
+looks right and actually is shorter.
 
-Alan Stern
+Some benchmark results below show a tiny
+but measureable improvement. The tests were run on
+an AMD box with 24 cpus.
+
+- A clean kernel build after reboot shows
+a tiny but measureable improvement in system time
+which means lower CPU overhead (though not measureable
+in total time - that is dominated by user time and fluctuates
+too much):
+linux# reboot -f
+...
+linux# make clean
+linux# time make -j 64 LOCALVERSION= 2>&1 > /dev/null
+
+Before:
+
+real    2m52.244s
+user    35m53.833s
+sys     6m7.194s
+
+After:
+
+real    2m52.827s
+user    35m48.916s
+sys     6m2.305s
+
+- perf micro-benchmarks seem to consistently show
+  a tiny improvement in total time as well but it's below
+  the confidence level of 3 std deviations:
+
+...
+       0.414666797 seconds time elapsed ( +-  1.29% )
+
+Performance counter stats for 'perf bench sched messaging' (100 runs):
+
+       0.395370891 seconds time elapsed ( +-  1.04% )
+
+       0.307019664 seconds time elapsed ( +-  0.10% )
+
+       0.304738024 seconds time elapsed ( +-  0.08% )
+
+Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
+---
+ arch/x86/include/asm/apic.h           |    5 +++++
+ arch/x86/kernel/apic/x2apic_cluster.c |    2 +-
+ arch/x86/kernel/apic/x2apic_phys.c    |    2 +-
+ arch/x86/kernel/apic/x2apic_uv_x.c    |    2 +-
+ 4 files changed, 8 insertions(+), 3 deletions(-)
+
+diff --git a/arch/x86/include/asm/apic.h b/arch/x86/include/asm/apic.h
+index 74efb8d..5eb6d56 100644
+--- a/arch/x86/include/asm/apic.h
++++ b/arch/x86/include/asm/apic.h
+@@ -138,6 +138,11 @@ static inline void native_apic_msr_write(u32 reg, u32 v)
+ 	wrmsr(APIC_BASE_MSR + (reg >> 4), v, 0);
+ }
+ 
++static inline void native_apic_msr_eoi_write(u32 reg, u32 v)
++{
++	wrmsr(APIC_BASE_MSR + (APIC_EOI >> 4), APIC_EOI_ACK, 0);
++}
++
+ static inline u32 native_apic_msr_read(u32 reg)
+ {
+ 	u64 msr;
+diff --git a/arch/x86/kernel/apic/x2apic_cluster.c b/arch/x86/kernel/apic/x2apic_cluster.c
+index a5baa78..ff35cff 100644
+--- a/arch/x86/kernel/apic/x2apic_cluster.c
++++ b/arch/x86/kernel/apic/x2apic_cluster.c
+@@ -260,7 +260,7 @@ static struct apic apic_x2apic_cluster = {
+ 
+ 	.read				= native_apic_msr_read,
+ 	.write				= native_apic_msr_write,
+-	.eoi_write			= native_apic_msr_write,
++	.eoi_write			= native_apic_msr_eoi_write,
+ 	.icr_read			= native_x2apic_icr_read,
+ 	.icr_write			= native_x2apic_icr_write,
+ 	.wait_icr_idle			= native_x2apic_wait_icr_idle,
+diff --git a/arch/x86/kernel/apic/x2apic_phys.c b/arch/x86/kernel/apic/x2apic_phys.c
+index 8340356..c17e982 100644
+--- a/arch/x86/kernel/apic/x2apic_phys.c
++++ b/arch/x86/kernel/apic/x2apic_phys.c
+@@ -172,7 +172,7 @@ static struct apic apic_x2apic_phys = {
+ 
+ 	.read				= native_apic_msr_read,
+ 	.write				= native_apic_msr_write,
+-	.eoi_write			= native_apic_msr_write,
++	.eoi_write			= native_apic_msr_eoi_write,
+ 	.icr_read			= native_x2apic_icr_read,
+ 	.icr_write			= native_x2apic_icr_write,
+ 	.wait_icr_idle			= native_x2apic_wait_icr_idle,
+diff --git a/arch/x86/kernel/apic/x2apic_uv_x.c b/arch/x86/kernel/apic/x2apic_uv_x.c
+index 5b0e3d0..c6d03f7 100644
+--- a/arch/x86/kernel/apic/x2apic_uv_x.c
++++ b/arch/x86/kernel/apic/x2apic_uv_x.c
+@@ -404,7 +404,7 @@ static struct apic __refdata apic_x2apic_uv_x = {
+ 
+ 	.read				= native_apic_msr_read,
+ 	.write				= native_apic_msr_write,
+-	.eoi_write			= native_apic_msr_write,
++	.eoi_write			= native_apic_msr_eoi_write,
+ 	.icr_read			= native_x2apic_icr_read,
+ 	.icr_write			= native_x2apic_icr_write,
+ 	.wait_icr_idle			= native_x2apic_wait_icr_idle,
+-- 
+MST
 
