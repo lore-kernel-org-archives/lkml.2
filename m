@@ -1,128 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932212Ab2EOJL0 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 May 2012 05:11:26 -0400
-Received: from li42-95.members.linode.com ([209.123.162.95]:56568 "EHLO
-	li42-95.members.linode.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753110Ab2EOJLZ (ORCPT
+	id S932253Ab2EOJLw (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 May 2012 05:11:52 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:55236 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753110Ab2EOJLv convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 May 2012 05:11:25 -0400
-X-Greylist: delayed 516 seconds by postgrey-1.27 at vger.kernel.org; Tue, 15 May 2012 05:11:25 EDT
-From: Pantelis Antoniou <panto@antoniou-consulting.com>
-To: Russ.Dill@ti.com, linux-kernel@vger.kernel.org
-Cc: Pantelis Antoniou <panto@antoniou-consulting.com>
-Subject: [PATCH] [g_mass_storage] Fix unmount problem with OS-X
-Date: Wed, 16 May 2012 08:54:49 +0000
-Message-Id: <1337158489-27142-1-git-send-email-panto@antoniou-consulting.com>
-X-Mailer: git-send-email 1.7.1
+	Tue, 15 May 2012 05:11:51 -0400
+Message-ID: <1337073074.27694.6.camel@twins>
+Subject: Re: [PATCH v5 6/7] x86/tlb: optimizing flush_tlb_mm
+From: Peter Zijlstra <a.p.zijlstra@chello.nl>
+To: Alex Shi <alex.shi@intel.com>
+Cc: tglx@linutronix.de, mingo@redhat.com, hpa@zytor.com, arnd@arndb.de,
+        rostedt@goodmis.org, fweisbec@gmail.com, jeremy@goop.org,
+        riel@redhat.com, luto@mit.edu, avi@redhat.com, len.brown@intel.com,
+        dhowells@redhat.com, fenghua.yu@intel.com, borislav.petkov@amd.com,
+        yinghai@kernel.org, ak@linux.intel.com, cpw@sgi.com, steiner@sgi.com,
+        akpm@linux-foundation.org, penberg@kernel.org, hughd@google.com,
+        rientjes@google.com, kosaki.motohiro@jp.fujitsu.com,
+        n-horiguchi@ah.jp.nec.com, tj@kernel.org, oleg@redhat.com,
+        axboe@kernel.dk, jmorris@namei.org, kamezawa.hiroyu@jp.fujitsu.com,
+        viro@zeniv.linux.org.uk, linux-kernel@vger.kernel.org,
+        yongjie.ren@intel.com
+Date: Tue, 15 May 2012 11:11:14 +0200
+In-Reply-To: <1337072138-8323-7-git-send-email-alex.shi@intel.com>
+References: <1337072138-8323-1-git-send-email-alex.shi@intel.com>
+	 <1337072138-8323-7-git-send-email-alex.shi@intel.com>
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
+X-Mailer: Evolution 3.2.2- 
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-OS-X uses a sequence on unmounting that makes us close the backing
-file. Apparently there's no way to open it again, which makes it
-impossible to remount without rmmod'ing g_mass_storage.
+On Tue, 2012-05-15 at 16:55 +0800, Alex Shi wrote:
+> Not every flush_tlb_mm execution moment is really need to evacuate all
+> TLB entries, like in munmap, just few 'invlpg' is better for whole
+> process performance, since it leaves most of TLB entries for later
+> accessing.
+> 
+> This patch is changing flush_tlb_mm(mm) to flush_tlb_mm(mm, start,
+> end)
+> in cases. 
 
-Fix this by adding a media_ejected flag to each lun, and keeping
-track of it properly.
+Ok, so you're not getting it.
 
-Any other method (i.e. preventing unmount, and not keeping track
-of the eject status) failed due to OS-X sending start stop commands
-after the unmount and checking again.
----
- drivers/usb/gadget/f_mass_storage.c |   21 ++++++++++++++-------
- drivers/usb/gadget/storage_common.c |   11 +++++++++++
- 2 files changed, 25 insertions(+), 7 deletions(-)
-
-diff --git a/drivers/usb/gadget/f_mass_storage.c b/drivers/usb/gadget/f_mass_storage.c
-index cb8c162..b865d20 100644
---- a/drivers/usb/gadget/f_mass_storage.c
-+++ b/drivers/usb/gadget/f_mass_storage.c
-@@ -1445,6 +1445,9 @@ static int do_start_stop(struct fsg_common *common)
- 			curlun->sense_data = SS_MEDIUM_NOT_PRESENT;
- 			return -EINVAL;
- 		}
-+
-+		/* if the host is trying again, the media are mounted */
-+		fsg_lun_set_ejected(curlun, 0);
- 		return 0;
- 	}
- 
-@@ -1468,11 +1471,15 @@ static int do_start_stop(struct fsg_common *common)
- 			return 0;
- 	}
- 
--	up_read(&common->filesem);
--	down_write(&common->filesem);
--	fsg_lun_close(curlun);
--	up_write(&common->filesem);
--	down_read(&common->filesem);
-+	/*
-+	 * Do not close the LUNs, just made them invisible.
-+	 * When the next exception comes we make them visible
-+	 * again. This fixes the bug where MacOSX unmounts
-+	 * and then it's impossible to mount again, since
-+	 * fsg_lun_open is never called again.
-+	 */
-+
-+	fsg_lun_set_ejected(curlun, 1);
- 
- 	return common->ops && common->ops->post_eject
- 		? min(0, common->ops->post_eject(common, curlun,
-@@ -1531,7 +1538,6 @@ static int do_mode_select(struct fsg_common *common, struct fsg_buffhd *bh)
- 	return -EINVAL;
- }
- 
--
- /*-------------------------------------------------------------------------*/
- 
- static int halt_bulk_in_endpoint(struct fsg_dev *fsg)
-@@ -1917,7 +1923,7 @@ static int check_command(struct fsg_common *common, int cmnd_size,
- 
- 	/* If the medium isn't mounted and the command needs to access
- 	 * it, return an error. */
--	if (curlun && !fsg_lun_is_open(curlun) && needs_medium) {
-+	if (curlun && !fsg_lun_is_open_and_mounted(curlun) && needs_medium) {
- 		curlun->sense_data = SS_MEDIUM_NOT_PRESENT;
- 		return -EINVAL;
- 	}
-@@ -2533,6 +2539,7 @@ static void handle_exception(struct fsg_common *common)
- 			curlun->unit_attention_data = SS_NO_SENSE;
- 			curlun->sense_data_info = 0;
- 			curlun->info_valid = 0;
-+			curlun->media_ejected = 0;
- 		}
- 		common->state = FSG_STATE_IDLE;
- 	}
-diff --git a/drivers/usb/gadget/storage_common.c b/drivers/usb/gadget/storage_common.c
-index 8081ca3..723c6aa 100644
---- a/drivers/usb/gadget/storage_common.c
-+++ b/drivers/usb/gadget/storage_common.c
-@@ -199,6 +199,7 @@ struct fsg_lun {
- 	unsigned int	registered:1;
- 	unsigned int	info_valid:1;
- 	unsigned int	nofua:1;
-+	unsigned int	media_ejected:1;
- 
- 	u32		sense_data;
- 	u32		sense_data_info;
-@@ -211,6 +212,16 @@ struct fsg_lun {
- 
- #define fsg_lun_is_open(curlun)	((curlun)->filp != NULL)
- 
-+#define fsg_lun_is_ejected(curlun) ((curlun)->media_ejected)
-+
-+#define fsg_lun_set_ejected(curlun, v) ((curlun)->media_ejected = !!(v))
-+
-+#define fsg_lun_is_open_and_mounted(curlun) \
-+	({ \
-+		const struct fsg_lun *_curlun = (curlun); \
-+		fsg_lun_is_open(_curlun) && !fsg_lun_is_ejected(_curlun); \
-+	 })
-+
- static struct fsg_lun *fsg_lun_from_dev(struct device *dev)
- {
- 	return container_of(dev, struct fsg_lun, dev);
--- 
-1.7.1
-
+NACKED-BY: Peter Zijlstra <a.p.zijlstra@chello.nl>
