@@ -1,61 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965075Ab2EOPPU (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 May 2012 11:15:20 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:65492 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965021Ab2EOPPO (ORCPT
+	id S965077Ab2EOPSU (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 May 2012 11:18:20 -0400
+Received: from mail-wg0-f44.google.com ([74.125.82.44]:44384 "EHLO
+	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S964830Ab2EOPSS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 May 2012 11:15:14 -0400
-Date: Tue, 15 May 2012 08:15:09 -0700
-From: Tejun Heo <tj@kernel.org>
-To: Stephen Boyd <sboyd@quicinc.com>
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Yinghai Lu <yinghai@kernel.org>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Subject: Re: memblock_is_region_memory() vs. memblock_is_region_reserved()
-Message-ID: <20120515151509.GC6119@google.com>
-References: <4FB1AD38.7000503@quicinc.com>
+	Tue, 15 May 2012 11:18:18 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4FB1AD38.7000503@quicinc.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Reply-To: konrad@darnok.org
+In-Reply-To: <4FB06604.5060608@kernel.org>
+References: <1336027242-372-4-git-send-email-minchan@kernel.org>
+	<4FA28EFD.5070002@vflare.org>
+	<4FA33E89.6080206@kernel.org>
+	<alpine.LFD.2.02.1205071038090.2851@tux.localdomain>
+	<4FA7C2BC.2090400@vflare.org>
+	<4FA87837.3050208@kernel.org>
+	<731b6638-8c8c-4381-a00f-4ecd5a0e91ae@default>
+	<4FA9C127.5020908@kernel.org>
+	<d8fb8c73-0fd4-47c6-a9bb-ba3573569d63@default>
+	<4FAC5C87.3060504@kernel.org>
+	<20120511190643.GB3785@phenom.dumpdata.com>
+	<4FB06604.5060608@kernel.org>
+Date: Tue, 15 May 2012 11:18:17 -0400
+X-Google-Sender-Auth: E7HXADhOEv6i43CPO2Rf-PrEr0k
+Message-ID: <CAPbh3ruaPQ+6s9t4KULYr2TdTUhUQNfQhFUt=C2jpvAvh+QTsQ@mail.gmail.com>
+Subject: Re: [PATCH 4/4] zsmalloc: zsmalloc: align cache line size
+From: Konrad Rzeszutek Wilk <konrad@darnok.org>
+To: Minchan Kim <minchan@kernel.org>
+Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, May 14, 2012 at 06:11:20PM -0700, Stephen Boyd wrote:
-> I was looking at memblock and noticed that memblock_is_region_memory()
-> is implemented differently than memblock_is_region_reserved().
-> 
-> memblock_is_region_memory() returns true only if the region you are
-> testing is fully contained within the bounds of a memory block. If the
-> region is half in and half out of a memory region (i.e. overlaps memory
-> and a hole) it is not memory and returns false.
-> 
-> memblock_is_region_reserved() is the opposite. If the region are you are
-> testing is half in and half out of a reserved region (i.e. overlaps
-> reserved memory) it returns true, otherwise it returns false.
-> 
-> These functions sound like they do the same thing by testing to see if
-> what you specify is either memory or reserved memory, but the semantics
-> are a bit different in that the former doesn't allow overlap, and the
-> latter accepts overlap. Should we rename memblock_is_region_reserved()
-> to memblock_overlaps_reserved() to make it clearer what the intention
-> is? Or perhaps rename memblock_is_region_memory() to
-> memblock_is_region_within_memory()?
+>>> I think it's not urgent than zs_handle mess.
+>>
+>> I am having a hard time parsing that. Are you saying that
+>> this is not as important as the zs_handle fixup? I think
+>> that is what you meant, but what to make sure.
+>
+>
+> Yes. I think zs_hande fixup is top priority for me than any other stuff I pointed out.
 
-The difference is there because for a memory region to be available,
-all of it should be while a memory region partially reserved should
-still be treated as reserved.
-
-> If anything, perhaps this patch will help clarify things?
-
-Yeah, looks good to me.  Can you please add patch description,
-sign-off and send it to Ingo?
-
-Thanks.
-
--- 
-tejun
+What else is should we put on the TODO?
