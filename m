@@ -1,56 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933015Ab2EOOg3 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 May 2012 10:36:29 -0400
-Received: from e23smtp09.au.ibm.com ([202.81.31.142]:33213 "EHLO
-	e23smtp09.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932997Ab2EOOgZ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 May 2012 10:36:25 -0400
-Message-ID: <4FB269BF.3090801@linux.vnet.ibm.com>
-Date: Tue, 15 May 2012 20:05:43 +0530
-From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120424 Thunderbird/12.0
+	id S964811Ab2EOOg5 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 May 2012 10:36:57 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:27708 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932846Ab2EOOgz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 May 2012 10:36:55 -0400
+Date: Tue, 15 May 2012 17:36:44 +0300
+From: Gleb Natapov <gleb@redhat.com>
+To: Alan Cox <alan@lxorguk.ukuu.org.uk>
+Cc: Hannes Reinecke <hare@suse.de>, LKML <linux-kernel@vger.kernel.org>,
+        "H. Peter Anvin" <hpa@linux.intel.com>
+Subject: Re: [PATCH] EDD: Check for correct EDD 3.0 length
+Message-ID: <20120515143644.GD6948@redhat.com>
+References: <1337079889-62380-1-git-send-email-hare@suse.de>
+ <20120515111255.GJ32036@redhat.com>
+ <4FB23C09.7060300@suse.de>
+ <20120515115917.GK32036@redhat.com>
+ <20120515150015.5bf17aea@pyramind.ukuu.org.uk>
 MIME-Version: 1.0
-To: Bojan Smojver <bojan@rexursive.com>
-CC: Alan Stern <stern@rowland.harvard.edu>, "Rafael J. Wysocki" <rjw@sisk.pl>,
-        Linux PM list <linux-pm@vger.kernel.org>,
-        Kernel development list <linux-kernel@vger.kernel.org>, bp@alien8.de
-Subject: Re: [PATCH]: In kernel hibernation, suspend to both
-References: <Pine.LNX.4.44L0.1205132212070.5628-100000@netrider.rowland.org> <1336963067.2154.2.camel@shrek.rexursive.com> <1336963613.2154.4.camel@shrek.rexursive.com> <1336964335.2154.5.camel@shrek.rexursive.com> <1336981522.1678.0.camel@shrek.rexursive.com> <1336993890.1662.1.camel@shrek.rexursive.com> <1336996035.1628.2.camel@shrek.rexursive.com> <1337039996.1628.9.camel@shrek.rexursive.com>
-In-Reply-To: <1337039996.1628.9.camel@shrek.rexursive.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-x-cbid: 12051505-3568-0000-0000-000001C583DB
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120515150015.5bf17aea@pyramind.ukuu.org.uk>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/15/2012 05:29 AM, Bojan Smojver wrote:
-
-> On Mon, 2012-05-14 at 21:47 +1000, Bojan Smojver wrote:
->> No. That hangs my box.
->>
->> This triggers a bug in workqueues code (essentially the same as the
->> previous patch, except for sys_sync() not being done):
+On Tue, May 15, 2012 at 03:00:15PM +0100, Alan Cox wrote:
+> > T13 EDD4.0 actually supply enough information to link edd entry to actual
+> > device (another spec does not), I do not see support for other spec to
+> > be important, but you are welcome to write support for it if you need
+> > it. The only way I see to check what spec edd info corresponds to is to
+> > calculate checksum according to both specs and see which one succeeds.
 > 
-> Alan/Srivatsa,
+> I also think you are confused on this: EDD 3.0 provides enough
+> information to link most types of hardware to the device. It provides the
+> PCI or Legacy path to the interface and the device LUN, or for 1394 etc
+> the WWID which can be used to cross match. It doesn't address port
+> multipliers.
 > 
-> Coming back to the explanation of how this whole thing works, it would
-> seem that at the point of image writing all devices are fully functional
-> (not just some, as I mistakenly believed). However, the processes are
-> supposed to be already frozen, right? Calling suspend_prepare(), which
-> will essentially try to freeze the processes and kernel threads, seems
-> like the wrong thing to do.
+It is easy to be confused since there are two EDD 3 specs. First is from
+Phoenix BIOS (linked at the first mail of the thread) and it does not have
+enough info even for ATA. You can't tell primary ATA controller from secondary.
+SCSI specify only LUN, not SCSI ID and so on. Second is from T3
+(http://www.t13.org/documents/UploadedDocuments/docs2004/d1572r3-EDD3.pdf)
+and fixes all that but specify length of device path to be 44 bytes.
+
+So let me correct myself. The code works for EDD3 spec from T13 and that
+is what it claims in the file header.
+
+> EDD 1.1 provides sufficient information for old systems too via the FDPT
+> as they only have to deal with MFM/IDE/ATA controllers at the legacy
+> mappings and these are described by the FDPT.
 > 
-> Did you guys mean that we should be calling
-> pm_notifier_call_chain(PM_SUSPEND_PREPARE) only here?
+> Prior to that it gets a bit more interesting and you have to go poking in
+> BIOS magic and have the required spellbooks to hand. However right back
+> to the original 386 era PCs the data is available.
 > 
+> Alan
 
-
-Exactly! And also arrange for the corresponding PM_POST_SUSPEND notification
-to happen at the end of suspend-to-ram stage...
-
-Regards,
-Srivatsa S. Bhat
-
+--
+			Gleb.
