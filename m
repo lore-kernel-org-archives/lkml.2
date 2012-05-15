@@ -1,17 +1,17 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965501Ab2EOCSN (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 May 2012 22:18:13 -0400
-Received: from mail1.windriver.com ([147.11.146.13]:53027 "EHLO
-	mail1.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S964897Ab2EOCQc (ORCPT
+	id S965527Ab2EOC3P (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 May 2012 22:29:15 -0400
+Received: from mail.windriver.com ([147.11.1.11]:49866 "EHLO
+	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S965500Ab2EOCSN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 May 2012 22:16:32 -0400
+	Mon, 14 May 2012 22:18:13 -0400
 From: Paul Gortmaker <paul.gortmaker@windriver.com>
 To: <stable@kernel.org>, <linux-kernel@vger.kernel.org>
-Subject: [34-longterm 040/179] brd: handle on-demand devices correctly
-Date: Mon, 14 May 2012 22:12:16 -0400
-Message-ID: <1337048075-6132-41-git-send-email-paul.gortmaker@windriver.com>
+Subject: [34-longterm 164/179] perf tools: do not look at ./config for configuration
+Date: Mon, 14 May 2012 22:14:20 -0400
+Message-ID: <1337048075-6132-165-git-send-email-paul.gortmaker@windriver.com>
 X-Mailer: git-send-email 1.7.9.6
 In-Reply-To: <1337048075-6132-1-git-send-email-paul.gortmaker@windriver.com>
 References: <1337048075-6132-1-git-send-email-paul.gortmaker@windriver.com>
@@ -21,7 +21,7 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Namhyung Kim <namhyung@gmail.com>
+From: Jonathan Nieder <jrnieder@gmail.com>
 
                    -------------------
     This is a commit scheduled for the next v2.6.34 longterm release.
@@ -29,83 +29,60 @@ From: Namhyung Kim <namhyung@gmail.com>
     If you see a problem with using this for longterm, please comment.
                    -------------------
 
-commit af46566885a373b0a526932484cd8fef8de7b598 upstream.
+commit aba8d056078e47350d85b06a9cabd5afcc4b72ea upstream.
 
-When finding or allocating a ram disk device, brd_probe() did not take
-partition numbers into account so that it can result to a different
-device. Consider following example (I set CONFIG_BLK_DEV_RAM_COUNT=4
-for simplicity) :
+In addition to /etc/perfconfig and $HOME/.perfconfig, perf looks for
+configuration in the file ./config, imitating git which looks at
+$GIT_DIR/config.  If ./config is not a perf configuration file, it
+fails, or worse, treats it as a configuration file and changes behavior
+in some unexpected way.
 
-$ sudo modprobe brd max_part=15
-$ ls -l /dev/ram*
-brw-rw---- 1 root disk 1,  0 2011-05-25 15:41 /dev/ram0
-brw-rw---- 1 root disk 1, 16 2011-05-25 15:41 /dev/ram1
-brw-rw---- 1 root disk 1, 32 2011-05-25 15:41 /dev/ram2
-brw-rw---- 1 root disk 1, 48 2011-05-25 15:41 /dev/ram3
-$ sudo mknod /dev/ram4 b 1 64
-$ sudo dd if=/dev/zero of=/dev/ram4 bs=4k count=256
-256+0 records in
-256+0 records out
-1048576 bytes (1.0 MB) copied, 0.00215578 s, 486 MB/s
-namhyung@leonhard:linux$ ls -l /dev/ram*
-brw-rw---- 1 root disk 1,    0 2011-05-25 15:41 /dev/ram0
-brw-rw---- 1 root disk 1,   16 2011-05-25 15:41 /dev/ram1
-brw-rw---- 1 root disk 1,   32 2011-05-25 15:41 /dev/ram2
-brw-rw---- 1 root disk 1,   48 2011-05-25 15:41 /dev/ram3
-brw-r--r-- 1 root root 1,   64 2011-05-25 15:45 /dev/ram4
-brw-rw---- 1 root disk 1, 1024 2011-05-25 15:44 /dev/ram64
+"config" is not an unusual name for a file to be lying around and perf
+does not have a private directory dedicated for its own use, so let's
+just stop looking for configuration in the cwd.  Callers needing
+context-sensitive configuration can use the PERF_CONFIG environment
+variable.
 
-After this patch, /dev/ram4 - instead of /dev/ram64 - was
-accessed correctly.
-
-In addition, 'range' passed to blk_register_region() should
-include all range of dev_t that RAMDISK_MAJOR can address.
-It does not need to be limited by partition numbers unless
-'rd_nr' param was specified.
-
-Signed-off-by: Namhyung Kim <namhyung@gmail.com>
-Cc: Laurent Vivier <Laurent.Vivier@bull.net>
-Signed-off-by: Jens Axboe <jaxboe@fusionio.com>
+Requested-by: Christian Ohm <chr.ohm@gmx.net>
+Cc: 632923@bugs.debian.org
+Cc: Ben Hutchings <ben@decadent.org.uk>
+Cc: Christian Ohm <chr.ohm@gmx.net>
+Cc: Ingo Molnar <mingo@elte.hu>
+Cc: Paul Mackerras <paulus@samba.org>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Link: http://lkml.kernel.org/r/20110805165838.GA7237@elie.gateway.2wire.net
+Signed-off-by: Jonathan Nieder <jrnieder@gmail.com>
+Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
 ---
- drivers/block/brd.c |    8 ++++----
- 1 file changed, 4 insertions(+), 4 deletions(-)
+ tools/perf/util/config.c |    7 -------
+ 1 file changed, 7 deletions(-)
 
-diff --git a/drivers/block/brd.c b/drivers/block/brd.c
-index 9668128..8358a22 100644
---- a/drivers/block/brd.c
-+++ b/drivers/block/brd.c
-@@ -498,7 +498,7 @@ static struct kobject *brd_probe(dev_t dev, int *part, void *data)
- 	struct kobject *kobj;
+diff --git a/tools/perf/util/config.c b/tools/perf/util/config.c
+index 8784649..1720d01 100644
+--- a/tools/perf/util/config.c
++++ b/tools/perf/util/config.c
+@@ -416,7 +416,6 @@ int perf_config_global(void)
+ int perf_config(config_fn_t fn, void *data)
+ {
+ 	int ret = 0, found = 0;
+-	char *repo_config = NULL;
+ 	const char *home = NULL;
  
- 	mutex_lock(&brd_devices_mutex);
--	brd = brd_init_one(dev & MINORMASK);
-+	brd = brd_init_one(MINOR(dev) >> part_shift);
- 	kobj = brd ? get_disk(brd->brd_disk) : ERR_PTR(-ENOMEM);
- 	mutex_unlock(&brd_devices_mutex);
- 
-@@ -539,10 +539,10 @@ static int __init brd_init(void)
- 
- 	if (rd_nr) {
- 		nr = rd_nr;
--		range = rd_nr;
-+		range = rd_nr << part_shift;
- 	} else {
- 		nr = CONFIG_BLK_DEV_RAM_COUNT;
--		range = 1UL << (MINORBITS - part_shift);
-+		range = 1UL << MINORBITS;
+ 	/* Setting $PERF_CONFIG makes perf read _only_ the given config file. */
+@@ -438,12 +437,6 @@ int perf_config(config_fn_t fn, void *data)
+ 		free(user_config);
  	}
  
- 	if (register_blkdev(RAMDISK_MAJOR, "ramdisk"))
-@@ -581,7 +581,7 @@ static void __exit brd_exit(void)
- 	unsigned long range;
- 	struct brd_device *brd, *next;
- 
--	range = rd_nr ? rd_nr :  1UL << (MINORBITS - part_shift);
-+	range = rd_nr ? rd_nr << part_shift : 1UL << MINORBITS;
- 
- 	list_for_each_entry_safe(brd, next, &brd_devices, brd_list)
- 		brd_del_one(brd);
+-	repo_config = perf_pathdup("config");
+-	if (!access(repo_config, R_OK)) {
+-		ret += perf_config_from_file(fn, repo_config, data);
+-		found += 1;
+-	}
+-	free(repo_config);
+ 	if (found == 0)
+ 		return -1;
+ 	return ret;
 -- 
 1.7.9.6
 
