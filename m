@@ -1,102 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932837Ab2EOOeu (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 May 2012 10:34:50 -0400
-Received: from caramon.arm.linux.org.uk ([78.32.30.218]:43728 "EHLO
-	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757166Ab2EOOet (ORCPT
+	id S932883Ab2EOOf0 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 May 2012 10:35:26 -0400
+Received: from lxorguk.ukuu.org.uk ([81.2.110.251]:45149 "EHLO
+	lxorguk.ukuu.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932174Ab2EOOfZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 May 2012 10:34:49 -0400
-Date: Tue, 15 May 2012 15:34:28 +0100
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: Roland Stigge <stigge@antcom.de>
-Cc: linux-mtd@lists.infradead.org, linux-kernel@vger.kernel.org,
-        linux-doc@vger.kernel.org, devicetree-discuss@lists.ozlabs.org,
-        dwmw2@infradead.org, kevin.wells@nxp.com, srinivas.bakki@nxp.com,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH] MTD: LPC32xx MLC NAND driver
-Message-ID: <20120515143428.GC13860@n2100.arm.linux.org.uk>
-References: <1337091832-10138-1-git-send-email-stigge@antcom.de>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1337091832-10138-1-git-send-email-stigge@antcom.de>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+	Tue, 15 May 2012 10:35:25 -0400
+Date: Tue, 15 May 2012 15:38:18 +0100
+From: Alan Cox <alan@lxorguk.ukuu.org.uk>
+To: "Andre Hedrick (anhedric)" <anhedric@cisco.com>
+Cc: <linux-kernel@vger.kernel.org>
+Subject: Re: CFA 4.0 patch
+Message-ID: <20120515153818.3e70d845@pyramind.ukuu.org.uk>
+In-Reply-To: <4E75C4FECC27A44E9F7E0737D71946900F686C61@xmb-sjc-21e.amer.cisco.com>
+References: <4E75C4FECC27A44E9F7E0737D71946900F686C61@xmb-sjc-21e.amer.cisco.com>
+X-Mailer: Claws Mail 3.8.0 (GTK+ 2.24.8; x86_64-redhat-linux-gnu)
+Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, May 15, 2012 at 04:23:52PM +0200, Roland Stigge wrote:
-> +static int lpc32xx_xmit_dma(struct mtd_info *mtd, dma_addr_t dma,
-> +			    void *mem, int len, enum dma_transfer_direction dir)
-> +{
-> +	struct nand_chip *chip = mtd->priv;
-> +	struct lpc32xx_nand_host *host = chip->priv;
-> +	struct dma_async_tx_descriptor *desc;
-> +	int flags = DMA_CTRL_ACK | DMA_PREP_INTERRUPT;
-> +	int res;
-> +	dma_cookie_t cookie;
-> +
-> +	host->dma_slave_config.direction = dir;
-> +	host->dma_slave_config.src_addr = dma;
-> +	host->dma_slave_config.dst_addr = dma;
-> +	if (dmaengine_slave_config(host->dma_chan, &host->dma_slave_config)) {
-> +		dev_err(mtd->dev.parent, "Failed to setup DMA slave\n");
-> +		return -ENXIO;
-> +	}
+> 044Ah: This is the alternate value of Word 0 turns on ATA device and
+> turns off Removable Media and Removable Device while 	preserving all
+> Retired bits in the word.
+> 
+> 0040h: This is the alternate value of Word 0 turns on ATA device and
+> turns off Removable Media and Removable Device while 	zeroing all
+> Retired bits in the word
+> 
+> Cheers,
+> Andre
+> --------------------
+> The Linux X-ATA/SATA guy
+      ^former ;)
 
-Can you explain why you need to issue this call for every transfer?
 
-The 'direction' argument should be ignored by all modern DMA engine
-drivers (we've decided previously to get rid of it).  As far as I can
-see, the device address nor any of the other parameters ever change
-between transfers.
+> --- linux-2.6.32.orig/include/linux/ata.h	Mon May 14 15:48:24 2012
+> +++ linux-2.6.32/include/linux/ata.h	Mon May 14 15:51:42 2012
+> @@ -819,6 +819,10 @@
+>  {
+>  	if (id[ATA_ID_CONFIG] == 0x848A)	/* Traditional CF */
+>  		return 1;
+> +	if (id[ATA_ID_CONFIG] == 0x044A)	/* Alternative CF w/
+> removable turned off, preserving retired bits */
+> +		return 1;
+> +	if (id[ATA_ID_CONFIG] == 0x0040)	/* Alternative CF w/
+> removable turned off, zeroing retired bits*/
+> +		return 1;
 
-> +
-> +	sg_init_one(&host->sgl, mem, len);
-> +
-> +	res = dma_map_sg(host->dma_chan->device->dev, &host->sgl, 1, dir);
+Do you have test case hardware for this that fails the other checks. I've
+never ever come across any. I don't believe it exists at this point.
 
-Also note that dma transfer directions and dma data directions are
-different things.  You shouldn't mix the two.
+Also 2.6.32 is some years ago 8)
 
-> +	if (res != 1) {
-> +		dev_err(mtd->dev.parent, "Failed to map sg list\n");
-> +		return -ENXIO;
-> +	}
-> +	desc = dmaengine_prep_slave_sg(host->dma_chan, &host->sgl, 1, dir,
-> +				       flags);
-> +	if (!desc) {
-> +		dev_err(mtd->dev.parent, "Failed to prepare slave sg\n");
-> +		goto out1;
-> +	}
-> +
-> +	init_completion(&host->comp_dma);
-> +	desc->callback = lpc32xx_dma_complete_func;
-> +	desc->callback_param = &host->comp_dma;
-> +
-> +	cookie = dmaengine_submit(desc);
-> +	if (dma_submit_error(cookie)) {
-> +		dev_err(mtd->dev.parent, "Failed to dmaengine_submit()\n");
-> +		goto out1;
-> +	}
-> +	dma_async_issue_pending(host->dma_chan);
-> +
-> +	wait_for_completion_timeout(&host->comp_dma, msecs_to_jiffies(1000));
-> +
-> +	dma_sync_sg_for_cpu(host->dma_chan->device->dev, &host->sgl, 1, dir);
-
-Why sync?  What's wrong with dma_unmap()?  Have you tested this with
-DMA API debugging enabled?
-
-> +	if (dma_set_mask(host->dma_chan->device->dev, 0xFFFFFFFF)) {
-> +		dev_err(mtd->dev.parent, "Failed to set dma mask\n");
-> +		goto out1;
-> +	}
-
-No.  You shouldn't do this to a device that you're not in charge of.  If
-that's important for the DMA engine device, then the DMA engine device
-driver should have already done that.
-
-Otherwise, you'll be potentially modifying the DMA mask for a device
-_you_ don't own, and which is potentially already in use.
+Alan
