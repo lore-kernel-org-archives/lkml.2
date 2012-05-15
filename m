@@ -1,153 +1,214 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933232Ab2EOQZj (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 May 2012 12:25:39 -0400
-Received: from devils.ext.ti.com ([198.47.26.153]:46800 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933069Ab2EOQZg (ORCPT
+	id S933239Ab2EOQ0Z (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 May 2012 12:26:25 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:9333 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933102Ab2EOQ0X (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 May 2012 12:25:36 -0400
-Message-ID: <4FB28372.3010604@ti.com>
-Date: Tue, 15 May 2012 18:25:22 +0200
-From: "Cousson, Benoit" <b-cousson@ti.com>
-Organization: Texas Instruments
-User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:11.0) Gecko/20120327 Thunderbird/11.0.1
-MIME-Version: 1.0
-To: "Shilimkar, Santosh" <santosh.shilimkar@ti.com>
-CC: Tarun Kanti DebBarma <tarun.kanti@ti.com>, Paul Walmsley <paul@pwsan.com>,
-        <linux-omap@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
-        <linux-kernel@vger.kernel.org>, Kevin Hilman <khilman@ti.com>,
-        Tony Lindgren <tony@atomide.com>,
-        Russell King <linux@arm.linux.org.uk>
-Subject: Re: [PATCH] ARM: OMAP4: PM: Keep static dep between MPUSS and ABE
- clockdomain
-References: <1337082156-30390-1-git-send-email-tarun.kanti@ti.com> <4FB268F9.9040508@ti.com> <CAMQu2gy72cbR4+xr6pYQBamNSjLdxUu4s_MkDf=pwrPnB56enA@mail.gmail.com>
-In-Reply-To: <CAMQu2gy72cbR4+xr6pYQBamNSjLdxUu4s_MkDf=pwrPnB56enA@mail.gmail.com>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
+	Tue, 15 May 2012 12:26:23 -0400
+X-Authority-Analysis: v=2.0 cv=OMylLFmB c=1 sm=0 a=ZycB6UtQUfgMyuk2+PxD7w==:17 a=XQbtiDEiEegA:10 a=huzqtivG31QA:10 a=5SG0PmZfjMsA:10 a=AJWcLwqtiKGz1wIxxmYA:9 a=PUjeQqilurYA:10 a=mxPFySlORhQNwflBtCUA:9 a=1GGQG-N9BVCwGqgkc-wA:7 a=ZycB6UtQUfgMyuk2+PxD7w==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 74.67.80.29
+Message-ID: <1337099180.14207.321.camel@gandalf.stny.rr.com>
+Subject: Re: [RFC][PATCH RT] rwsem_rt: Another (more sane) approach to mulit
+ reader rt locks
+From: Steven Rostedt <rostedt@goodmis.org>
+To: LKML <linux-kernel@vger.kernel.org>
+Cc: RT <linux-rt-users@vger.kernel.org>, Thomas Gleixner <tglx@linutronix.de>,
+        Clark Williams <williams@redhat.com>,
+        Peter Zijlstra <peterz@infradead.org>
+Date: Tue, 15 May 2012 12:26:20 -0400
+In-Reply-To: <1337090625.14207.304.camel@gandalf.stny.rr.com>
+References: <1337090625.14207.304.camel@gandalf.stny.rr.com>
+Content-Type: multipart/mixed; boundary="=-vSY4GtLXS2ilbwo+h0lb"
+X-Mailer: Evolution 3.2.2-1 
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 5/15/2012 5:00 PM, Shilimkar, Santosh wrote:
-> On Tue, May 15, 2012 at 8:02 PM, Cousson, Benoit<b-cousson@ti.com>  wrote:
->> + Paul
->>
->> Hi Tarun,
->>
->> On 5/15/2012 1:42 PM, Tarun Kanti DebBarma wrote:
->>> Commit 68523f4233de5f233478dde0a63047b4efb710b8 (ARM: OMAP4:
->>> Workaround the OCP synchronisation issue with 32K synctimer)
->>> does not include GP Timers in ABE domain. Since synchronization
->>> issue is applicable to all GPTIMER[1-12], we also need to set
->>> static dependency of MPUSS with abe_clkdm and l4_per_clkdm.
->>> Dependency with l4_per_clkdm timers is already set in commit
->>> 12f27826bdaf56b01cbdfc8bdeb577ebc106dee3 (ARM: OMAP4: PM: Keep
->>> static dep between MPUSS-EMIF and MPUSS-L3/L4 and DUCATI-L3).
->>> Therefore, set static dependency of MPUSS with abe_clkdm.
->>
->> It seems to me that these various static dep workaround patches are more and more confusing and should require some further investigation / explanation.
->>
-> This is a new BUG which has not made it to errata list yet. It will
-> make it eventually.
->
->> If we keep doing that we will end up having every clock domains always ON each time the CPU is active. This is a very brute force approach not really acceptable for mainline and for PM point of view.
->>
-> Indeed.
->
->> Here we are forcing the ABE domain to be ON each time the MPU is ON even if we do not have any timer used inside the domain.
->>
-> Actually the BUG is really related to timers running on 32KHz and only
-> in that case such a WA is needed. BTW, the WA is suggested by hardware
-> team.
 
-That does not mean we have to implement it that way, or there is no 
-other WA. HW team tends to stop investigating as soon as one WA is found.
+--=-vSY4GtLXS2ilbwo+h0lb
+Content-Type: text/plain; charset="ISO-8859-15"
+Content-Transfer-Encoding: 7bit
 
->> It was mostly OK to do that for the wakeup domain due to the small power impact, but doing that on the L4_PER and ABE seems a little bit too much.
->>
-> L4PER and ABE should not be set default....
+On Tue, 2012-05-15 at 10:03 -0400, Steven Rostedt wrote:
 
-Indeed.
+> I'll see if I can get some numbers to see how this fixes the issues with
+> multi threads on big boxes.
+> 
 
->> The fix assumes as well that the MPU is the only user of that timer. What if either DSP or IPU uses it as well?
->>
->
->> Moreover the previous 68523f4233de5f2 commit did add tons of deps that does not seems to be really justified by any HW errata AFAIK.
->> That does not mean they are not needed, but I think we should either remove them or add some more explanation.
->>
-> EMIF and L3 are covered as part of the errata's. Most if these static
-> deps issues never worked properly and people ended up hacking
-> like disable L3 when display ON etc etc.
+I couldn't get access to the big box, so I wrote my own test. The
+attached program is what I used. It creates 400 threads and allocates a
+memory range (with mmap) of 10 gigs. Then it runs all 400 threads, where
+each is fighting to read this new memory. Causing lots of page faults.
 
-Yeah, that's why we have to be more explicit because some of them were 
-already investigated further since last year, and as you said some are 
-already deprecated.
+I tested on a 4 CPU box with 3.4.0-rc7-rt6:
 
->> +       /*
->> +        * The dynamic dependency between MPUSS ->  MEMIF and
->> +        * MPUSS ->  L4_PER/L3_* and DUCATI ->  L3_* doesn't work as
->> +        * expected. The hardware recommendation is to enable static
->> +        * dependencies for these to avoid system lock ups or random crashes.
->> +        */
->> +       mpuss_clkdm = clkdm_lookup("mpuss_clkdm");
->> +       emif_clkdm = clkdm_lookup("l3_emif_clkdm");
->> +       l3_1_clkdm = clkdm_lookup("l3_1_clkdm");
->> +       l3_2_clkdm = clkdm_lookup("l3_2_clkdm");
->> +       l4_per_clkdm = clkdm_lookup("l4_per_clkdm");
->> +       ducati_clkdm = clkdm_lookup("ducati_clkdm");
->> +       if ((!mpuss_clkdm) || (!emif_clkdm) || (!l3_1_clkdm) ||
->> +               (!l3_2_clkdm) || (!ducati_clkdm) || (!l4_per_clkdm))
->> +               goto err2;
->> +
->> +       ret = clkdm_add_wkdep(mpuss_clkdm, emif_clkdm);
->>
->> AFAIK, this one is the only one covered by an errata. It might be good to add a comment to explained the issue.
->>
->> +       ret |= clkdm_add_wkdep(mpuss_clkdm, l3_1_clkdm);
->> +       ret |= clkdm_add_wkdep(mpuss_clkdm, l3_2_clkdm);
->> +       ret |= clkdm_add_wkdep(mpuss_clkdm, l4_per_clkdm);
->> +       ret |= clkdm_add_wkdep(ducati_clkdm, l3_1_clkdm);
->> +       ret |= clkdm_add_wkdep(ducati_clkdm, l3_2_clkdm);
->>
->> Do we have errata for any of these ones?
->>
-> If we forget about the latest timer issues doing the round only EMIF and L3
-> deps with different initiators were needed.
+Without the patch:
 
-Is there an errata for these ones?
+map=10737418240
+time = 11302617 usecs
+map=10737418240
+time = 11229341 usecs
+map=10737418240
+time = 11171463 usecs
+map=10737418240
+time = 11435549 usecs
+map=10737418240
+time = 11299086 usecs
 
-> L4PER was because of UART
-> idle mode issue which I fixed recently. At least with that fix, L4PER should
-> be killed. Will be good to take the latest findings on the static deps issues
-> and update above list.
 
-Yes, that was my point. We have to reduce that list if possible and 
-potentially add some details to understand why these deps are needed.
+With the patch:
 
-> These timer OCP sync issue has really created a big mess again...
-> Timer is 3 domains. AON, ABE and L4pER and the WA suggested is
-> static dep as if it is free. There is no other WA.
+map=10737418240
+time = 6493796 usecs
+map=10737418240
+time = 6726186 usecs
+map=10737418240
+time = 3978194 usecs
+map=10737418240
+time = 6796688 usecs
 
-There is always other WA. Playing with global clock domain settings to 
-prevent clock transition at IP level is always the easy but worst WA.
 
-A much better approach is to play with IP local idle management. At 
-least that will ensure that the WA is applied only if the module is in 
-use. Another one will be to read until the timer has changed its value. 
-OK, that one will generate a huge delay that might be un-acceptable for 
-a timer using a 32k clock, but might be doable for a one at sys_clk, 
-assuming this bug does exist in that case.
+So it went from roughly 11 secs to 6 secs (even had one 4sec run). This
+shows that it sped up the fault access by almost half.
 
-My point is that we have to refine the way we are applying this WA if it 
-is really needed for all the cases. Enabling at boot time only is 
-clearly not a good approach.
 
-In any case, this WA should be module centric. If we change the clock 
-domain partitioning for OMAP5, we will have to change again that fix 
-since we are hard coding the clock domain in that code.
-This is the timers IP that does have this issue, so it should be handled 
-at that level.
+-- Steve
 
-Regards,
-Benoit
+
+--=-vSY4GtLXS2ilbwo+h0lb
+Content-Disposition: attachment; filename="faultme.c"
+Content-Type: text/x-csrc; name="faultme.c"; charset="ISO-8859-15"
+Content-Transfer-Encoding: 7bit
+
+/*
+ * Copyright 2012, Steven Rostedt
+ */
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <unistd.h>
+#include <stdarg.h>
+#include <sched.h>
+#include <pthread.h>
+#include <signal.h>
+#include <time.h>
+#include <sys/time.h>
+#include <sys/mman.h>
+
+#define THREADS 400
+//#define MEM (4096ULL*400)
+#define MEM (10ULL*4096*1024*1024/4)
+
+#define nano2sec(nan) (nan / 1000000000ULL)
+#define nano2ms(nan) (nan / 1000000ULL)
+#define nano2usec(nan) (nan / 1000ULL)
+#define usec2nano(sec) (sec * 1000ULL)
+#define ms2nano(ms) (ms * 1000000ULL)
+#define sec2nano(sec) (sec * 1000000000ULL)
+#define sec2usec(sec) (sec * 1000000ULL)
+
+static char *data;
+
+static pthread_barrier_t start_barrier;
+static pthread_barrier_t stop_barrier;
+
+static void perr(char *fmt, ...)
+{
+	char buffer[BUFSIZ];
+	va_list ap;
+
+	va_start(ap, fmt);
+	vsnprintf(buffer, BUFSIZ, fmt, ap);
+	va_end(ap);
+
+	perror(buffer);
+	fflush(stderr);
+	exit(-1);
+}
+
+void *func(void *dat)
+{
+	unsigned long id = (unsigned long)dat;
+	static char x;
+	unsigned long i;
+
+	pthread_barrier_wait(&start_barrier);
+
+	for (i = id * 4096; i < MEM; i += 4096 * THREADS) {
+		x = data[i];
+	}
+
+	pthread_barrier_wait(&stop_barrier);
+
+	return NULL;
+}
+
+static unsigned long long get_time(void)
+{
+	struct timeval tv;
+	unsigned long long time;
+
+	gettimeofday(&tv, NULL);
+
+	time = sec2usec(tv.tv_sec);
+	time += tv.tv_usec;
+
+	return time;
+}
+
+void run_test(int threads)
+{
+	pthread_t t[threads];
+	unsigned long long start, end;
+	unsigned long i;
+
+	for (i=0; i < threads; i++) {
+		if (pthread_create(&t[i], NULL, func, (void *)i)) {
+			perror("pthread_creat");
+			exit(-1);
+		}
+	}
+
+	start = get_time();
+	pthread_barrier_wait(&start_barrier);
+	pthread_barrier_wait(&stop_barrier);
+	end = get_time();
+
+	printf("time = %lld usecs\n", end - start);
+
+	 for (i=0; i < threads; i++) {
+		 pthread_join(t[i], NULL);
+	 }
+}
+
+int main (int argc, char **argv)
+{
+	int threads = THREADS;
+	int ret;
+
+	ret = pthread_barrier_init(&start_barrier, NULL, threads + 1);
+	if (ret < 0)
+		perr("pthread_barrier_init");
+
+	ret = pthread_barrier_init(&stop_barrier, NULL, threads + 1);
+	if (ret < 0)
+		perr("pthread_barrier_init");
+
+	printf("map=%lld\n", MEM);
+	data = mmap(NULL, MEM, PROT_READ, MAP_ANONYMOUS | MAP_PRIVATE, -1, 0);
+	if (data == MAP_FAILED)
+		perr("mmap");
+
+	run_test(threads);
+	
+	exit(0);
+	
+	return 0;
+}
+
+--=-vSY4GtLXS2ilbwo+h0lb--
+
