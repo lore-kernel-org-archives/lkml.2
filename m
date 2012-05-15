@@ -1,72 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932120Ab2EOLr5 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 May 2012 07:47:57 -0400
-Received: from static.78-46-68-141.clients.your-server.de ([78.46.68.141]:51014
-	"HELO eristoteles.iwoars.net" rhost-flags-OK-FAIL-OK-FAIL)
-	by vger.kernel.org with SMTP id S1758536Ab2EOLrz (ORCPT
+	id S1758697Ab2EOLwo (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 May 2012 07:52:44 -0400
+Received: from lon1-post-3.mail.demon.net ([195.173.77.150]:32809 "EHLO
+	lon1-post-3.mail.demon.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1757851Ab2EOLwn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 May 2012 07:47:55 -0400
-Date: Tue, 15 May 2012 13:47:53 +0200 (CEST)
-From: Joel Reardon <joel@clambassador.com>
-X-X-Sender: joel@eristoteles.iwoars.net
-To: Artem Bityutskiy <dedekind1@gmail.com>
-cc: linux-mtd@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2] UBI: add lnum to struct ubi_work
-In-Reply-To: <1337081204.2528.171.camel@sauron.fi.intel.com>
-Message-ID: <alpine.DEB.2.00.1205151339020.18866@eristoteles.iwoars.net>
-References: <alpine.DEB.2.00.1205142046080.12448@eristoteles.iwoars.net>  <1337080498.2528.161.camel@sauron.fi.intel.com> <1337081204.2528.171.camel@sauron.fi.intel.com>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	Tue, 15 May 2012 07:52:43 -0400
+Message-ID: <1337082726.1898.14.camel@castor.rsk>
+Subject: [PATCH] perf: reorder perf_event_context to remove 8 bytes of
+ padding on 64 bit builds
+From: Richard Kennedy <richard@rsk.demon.co.uk>
+To: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: lkml <linux-kernel@vger.kernel.org>
+Date: Tue, 15 May 2012 12:52:06 +0100
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3 (3.2.3-3.fc16) 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-For vol_id, its straightforward everywhere except: ubi_wl_init_scan()
+Reorder structure perf_event_context to remove 8 bytes of padding on 64
+bit builds, which also shrinks structure perf_cpu_context by 8 bytes.
+Reducing its size to 256 bytes so allowing it to fit into one fewer
+cache lines.
+    
+Signed-off-by: Richard Kennedy <richard@rsk.demon.co.uk>
 
-where scheduling erase on the:
+----
+patch against v3.4-rc7
+compiled and tested on x86_64
 
-struct ubi_scan_leb *seb
+I have given this patch some light testing and perf still seems to work
+OK.
 
-appears to lack access to the volume id.  Should we add vol_id to
-ubi_scan_leb, and in ubi_scan() run:
+perf_pin_task_context() increments both the pin_count and the refcount
+so it seems a sensible place to put pin_count so there isn't any padding
+after refcount. Obviously we can reorder this structure in other ways if
+you prefer.
 
-        ubi_rb_for_each_entry(rb1, sv, &si->volumes, rb) {
-                ubi_rb_for_each_entry(rb2, seb, &sv->root, u.rb)
-			seb->vol_id = sv->vol_id;
+regards
+Richard
 
-Or is there a simpler way?
 
-Cheers,
-Joel Reardon
+diff --git a/include/linux/perf_event.h b/include/linux/perf_event.h
+index ddbb6a9..964c0cf 100644
+--- a/include/linux/perf_event.h
++++ b/include/linux/perf_event.h
+@@ -1027,6 +1027,7 @@ struct perf_event_context {
+ 	int				nr_freq;
+ 	int				rotate_disable;
+ 	atomic_t			refcount;
++	int				pin_count;
+ 	struct task_struct		*task;
+ 
+ 	/*
+@@ -1036,13 +1037,12 @@ struct perf_event_context {
+ 	u64				timestamp;
+ 
+ 	/*
+-	 * These fields let us detect when two contexts have both
+-	 * been cloned (inherited) from a common ancestor.
++	 * These fields (with pin_count) let us detect when two contexts
++	 * have both been cloned (inherited) from a common ancestor.
+ 	 */
+ 	struct perf_event_context	*parent_ctx;
+ 	u64				parent_gen;
+ 	u64				generation;
+-	int				pin_count;
+ 	int				nr_cgroups;	 /* cgroup evts */
+ 	int				nr_branch_stack; /* branch_stack evt */
+ 	struct rcu_head			rcu_head;
 
-On Tue, 15 May 2012, Artem Bityutskiy wrote:
 
-> On Tue, 2012-05-15 at 14:14 +0300, Artem Bityutskiy wrote:
-> > On Mon, 2012-05-14 at 20:47 +0200, Joel Reardon wrote:
-> > > @@ -1086,13 +1090,14 @@ out_ro:
-> > >   * @ubi: UBI device description object
-> > >   * @pnum: physical eraseblock to return
-> > >   * @torture: if this physical eraseblock has to be tortured
-> > > + * @lnum: the last used logical eraseblock number for the PEB
-> > >   *
-> > >   * This function is called to return physical eraseblock @pnum to the pool of
-> > >   * free physical eraseblocks. The @torture flag has to be set if an I/O error
-> > >   * occurred to this @pnum and it has to be tested. This function returns zero
-> > >   * in case of success, and a negative error code in case of failure.
-> > >   */
-> > > -int ubi_wl_put_peb(struct ubi_device *ubi, int pnum, int torture)
-> > > +int ubi_wl_put_peb(struct ubi_device *ubi, int pnum, int torture, int lnum)
-> >
-> > Joel, am sorry for nitpicking again, but could you please put the "lnum"
-> > argument between "ubi" and "lnum" instead? Just feels more natural.
-> > Otherwise the patch is OK. Thanks!
->
-> Err, but you also need volume ID, because there may be several volumes
-> with the same lnum.
->
-> --
-> Best Regards,
-> Artem Bityutskiy
->
