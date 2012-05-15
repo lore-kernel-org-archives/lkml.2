@@ -1,78 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964826Ab2EOPMg (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 May 2012 11:12:36 -0400
-Received: from mail-qa0-f46.google.com ([209.85.216.46]:38790 "EHLO
-	mail-qa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756047Ab2EOPMd (ORCPT
+	id S965107Ab2EOPNI (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 May 2012 11:13:08 -0400
+Received: from smtp3.mundo-r.com ([212.51.32.191]:56542 "EHLO
+	smtp4.mundo-r.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1758137Ab2EOPND (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 May 2012 11:12:33 -0400
-From: Paul Moore <paul@paul-moore.com>
-To: Eric Paris <eparis@parisplace.org>
-Cc: paulmck@linux.vnet.ibm.com, Dave Jones <davej@redhat.com>,
-        sds@tycho.nsa.gov, Linux Kernel <linux-kernel@vger.kernel.org>
-Subject: Re: suspicious RCU usage in security/selinux/netnode.c
-Date: Tue, 15 May 2012 11:12:27 -0400
-Message-ID: <1923713.Kphzxkir2y@sifl>
-User-Agent: KMail/4.8.3 (Linux/3.3.4-gentoo; KDE/4.8.3; x86_64; ; )
-In-Reply-To: <CACLa4pt=Hh1=E9Jno_BAU-6stRL=hY3wehpWycKCYYJbJzYEGw@mail.gmail.com>
-References: <20120515044145.GA21910@redhat.com> <20120515144658.GC2461@linux.vnet.ibm.com> <CACLa4pt=Hh1=E9Jno_BAU-6stRL=hY3wehpWycKCYYJbJzYEGw@mail.gmail.com>
-MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
+	Tue, 15 May 2012 11:13:03 -0400
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: AicMAPJxsk9bdWOb/2dsb2JhbABEhXulVogogQeCFgEFI1YQC0ICAlcGMYd0qAqTBJAEgRgEn1WGaIJr
+X-IronPort-AV: E=Sophos;i="4.75,595,1330902000"; 
+   d="asc'?scan'208";a="515157258"
+Message-ID: <1337094784.3472.69.camel@fourier.local.igalia.com>
+Subject: Re: [PATCH 2/5] Staging: ipack: add proper device model into
+ ipack_bus_register.
+From: Samuel Iglesias =?ISO-8859-1?Q?Gons=E1lvez?= 
+	<siglesias@igalia.com>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
+Date: Tue, 15 May 2012 17:13:04 +0200
+In-Reply-To: <1337091098.3472.58.camel@fourier.local.igalia.com>
+References: <1336992089-2733-1-git-send-email-siglesias@igalia.com>
+	 <1336992089-2733-3-git-send-email-siglesias@igalia.com>
+	 <20120514204654.GA8723@kroah.com>
+	 <1337091098.3472.58.camel@fourier.local.igalia.com>
+Content-Type: multipart/signed; micalg="pgp-sha1"; protocol="application/pgp-signature";
+	boundary="=-ZYbl6npoH9XcUG9BcQeJ"
+X-Mailer: Evolution 3.2.2-1 
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday, May 15, 2012 10:52:07 AM Eric Paris wrote:
-> On Tue, May 15, 2012 at 10:46 AM, Paul E. McKenney
-> 
-> <paulmck@linux.vnet.ibm.com> wrote:
-> > On Tue, May 15, 2012 at 10:24:23AM -0400, Eric Paris wrote:
-> >> On Tue, May 15, 2012 at 1:16 AM, Paul E. McKenney
-> >> 
-> >> <paulmck@linux.vnet.ibm.com> wrote:
-> >> > On Tue, May 15, 2012 at 12:41:45AM -0400, Dave Jones wrote:
-> >> >> I just triggered this on Linus' current tree.
-> >> > 
-> >> > This is a bare:
-> >> > 
-> >> >        rcu_dereference(sel_netnode_hash[idx].list.prev)
-> >> > 
-> >> > which needs to be in an RCU read-side critical section.  Alternatively,
-> >> > the above should instead be something like:
-> >> > 
-> >> >        rcu_dereference_check(sel_netnode_hash[idx].list.prev,
-> >> >                              lockdep_is_held(&sel_netnode_lock));
-> >> 
-> >> Right, but that 'bare' dereference comes from
-> >> list_for_each_entry_rcu(), [from sel_netnode_sid_slow()] which I don't
-> >> see how to easily annotate with the lock.  Nor do I think it's within
-> >> my brain power (or my willingness to maintain such in the future) to
-> >> want to open code that logic.
-> > 
-> > You lost me on this one.  The lockdep splat called out the
-> > rcu_dereference() above, not a list_for_each_entry_rcu().  Besides which,
-> > the list_for_each_entry_rcu() does not do the checking -- at the time,
-> > I was not willing to explode the API that much.
-> 
-> Ohhhh, ok.  I assumed we needed to annotate list_for_each_entry_rcu()
-> under the spinlock as well as the bare dereference in the insert code.
->  Ok, should be very easy to fix, although the list running code is
-> still going to be un-annotated in any way.  Thanks
 
-Sorry, email filters went awry and I lost this thread until Eric pointed it 
-out to me ...
+--=-ZYbl6npoH9XcUG9BcQeJ
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: quoted-printable
 
-Despite a common first name, the other Paul is the RCU expert, no I 
-unfortunately.  Can someone explain the difference between 
-rcu_dereference_check() and rcu_dereference_protected()?  We use 
-rcu_dereference_protected() for a very similar reason in 
-selinux/netport.c:sel_netport_insert() and it seems like a better choice ... ?
+On Tue, 2012-05-15 at 16:11 +0200, Samuel Iglesias Gons=C3=A1lvez wrote:
+[snip]
+>=20
+> A third option is use bus devices like VME bridges in the vme bus
+> driver, i.e, they are not devices, just an abstraction that provides
+> some functionality to the mezzanine devices.
+>=20
+> I prefer the first option because it reuses the code of the probe/match
+> functions inside the ipack bus driver and it shows the hierarchy through
+> sysfs as everything is a registered device.
+>=20
+> What do you think?
 
-I'll throw a patch together but wanted to clear this up first.
+Thinking again about it, I think I don't win anything interesting
+registering a new device in case of an ipack bus device.
 
--- 
-paul moore
-www.paul-moore.com
+It is just needed to establish the parent of the ipack device to the
+"real" device of the bus (i.e, the PCI, USB device...), like the
+aforementioned VME bridge in the drivers/staging/vme driver.
+
+So, I will rewrite the patch keeping it simple: maintaining the change
+in ipack_device_release function and ipack_device_register with some
+little modifications. This is actually the important stuff.
+
+And delaying the change in ipack_bus_register to whenever it is really
+necessary, if it is.
+
+Sorry for the inconveniences,
+
+Sam
+
+--=-ZYbl6npoH9XcUG9BcQeJ
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: This is a digitally signed message part
+Content-Transfer-Encoding: 7bit
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iEYEABECAAYFAk+ycoAACgkQWrfbyfmd9eIxygCfSeMJhI/4BNmo+XBYuSekI9dB
+2rgAnRHV6IJ2HLedaEK1aQfmGRMyCrVb
+=W0La
+-----END PGP SIGNATURE-----
+
+--=-ZYbl6npoH9XcUG9BcQeJ--
 
