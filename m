@@ -1,66 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756787Ab2EOO5x (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 May 2012 10:57:53 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:53367 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751107Ab2EOO5w convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 May 2012 10:57:52 -0400
-Message-ID: <1337093840.27694.56.camel@twins>
-Subject: Re: [PATCH v5 6/7] x86/tlb: optimizing flush_tlb_mm
-From: Peter Zijlstra <peterz@infradead.org>
-To: Alex Shi <alex.shi@intel.com>
-Cc: Nick Piggin <npiggin@gmail.com>, tglx@linutronix.de, mingo@redhat.com,
-        hpa@zytor.com, arnd@arndb.de, rostedt@goodmis.org, fweisbec@gmail.com,
-        jeremy@goop.org, riel@redhat.com, luto@mit.edu, avi@redhat.com,
-        len.brown@intel.com, dhowells@redhat.com, fenghua.yu@intel.com,
-        borislav.petkov@amd.com, yinghai@kernel.org, ak@linux.intel.com,
-        cpw@sgi.com, steiner@sgi.com, akpm@linux-foundation.org,
-        penberg@kernel.org, hughd@google.com, rientjes@google.com,
-        kosaki.motohiro@jp.fujitsu.com, n-horiguchi@ah.jp.nec.com,
-        tj@kernel.org, oleg@redhat.com, axboe@kernel.dk, jmorris@namei.org,
-        kamezawa.hiroyu@jp.fujitsu.com, viro@zeniv.linux.org.uk,
-        linux-kernel@vger.kernel.org, yongjie.ren@intel.com,
-        linux-arch@vger.kernel.org
-Date: Tue, 15 May 2012 16:57:20 +0200
-In-Reply-To: <1337092577.27694.45.camel@twins>
-References: <1337072138-8323-1-git-send-email-alex.shi@intel.com>
-	 <1337072138-8323-7-git-send-email-alex.shi@intel.com>
-	 <CAPa8GCDsSOrzQwX2qRJyocYAZdGbwjD4t4fjxmWXV6=EoXjXZw@mail.gmail.com>
-	 <4FB2590C.1050303@intel.com> <1337092577.27694.45.camel@twins>
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
-X-Mailer: Evolution 3.2.2- 
-Mime-Version: 1.0
+	id S964945Ab2EOO6J (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 May 2012 10:58:09 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:54192 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756045Ab2EOO6G (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 May 2012 10:58:06 -0400
+Date: Tue, 15 May 2012 16:58:05 +0200
+From: Michal Hocko <mhocko@suse.cz>
+To: Johannes Weiner <hannes@cmpxchg.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        cgroups@vger.kernel.org, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [patch 4/6] mm: memcg: keep ratelimit counter separate from
+ event counters
+Message-ID: <20120515145805.GI11346@tiehlicka.suse.cz>
+References: <1337018451-27359-1-git-send-email-hannes@cmpxchg.org>
+ <1337018451-27359-5-git-send-email-hannes@cmpxchg.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1337018451-27359-5-git-send-email-hannes@cmpxchg.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2012-05-15 at 16:36 +0200, Peter Zijlstra wrote:
-> On Tue, 2012-05-15 at 21:24 +0800, Alex Shi wrote:
-> 
-> > Sorry. I don't understand what's the comments Peter's made days ago. I should ask for more details originally. 
-> > 
-> > So, Peter, the correct change should like following, am I right?
-> > 
-> > -#define tlb_flush(tlb) flush_tlb_mm((tlb)->mm)
-> > +#define tlb_flush(tlb, start, end) __flush_tlb_range((tlb)->mm, start, end)
-> 
-> No.. the correct change is to do range tracking like the other archs
-> that support flush_tlb_range() do.
-> 
-> You do not modify the tlb interface.
-> 
-> Again, see: http://marc.info/?l=linux-arch&m=129952026504268&w=2
+On Mon 14-05-12 20:00:49, Johannes Weiner wrote:
+> All events except the ratelimit counter are statistics exported to
+> userspace.  Keep this internal value out of the event count array.
 
-Just to be _very_ clear, you do not modify:
+OK, makes sense. I was just thinking that events_internal array (with a
+single MEM_CGROUP_EVENTS_COUNT) would be more consistent. Probably too
+much churn for a single event though.
 
- mm/memory.c                     |    9 ++--
- kernel/fork.c                   |    2 +-   
- fs/proc/task_mmu.c              |    2 +-
+> 
+> Signed-off-by: Johannes Weiner <hannes@cmpxchg.org>
 
-As it stands your patch breaks compilation on a whole bunch of
-architectures.
+Acked-by: Michal Hocko <mhocko@suse.cz>
 
-If you touch the TLB interface, you get to touch _ALL_ architectures.
+> ---
+>  mm/memcontrol.c |    6 +++---
+>  1 file changed, 3 insertions(+), 3 deletions(-)
+> 
+> diff --git a/mm/memcontrol.c b/mm/memcontrol.c
+> index 9e8551c..546e7db 100644
+> --- a/mm/memcontrol.c
+> +++ b/mm/memcontrol.c
+> @@ -105,7 +105,6 @@ enum mem_cgroup_stat_index {
+>  enum mem_cgroup_events_index {
+>  	MEM_CGROUP_EVENTS_PGPGIN,	/* # of pages paged in */
+>  	MEM_CGROUP_EVENTS_PGPGOUT,	/* # of pages paged out */
+> -	MEM_CGROUP_EVENTS_COUNT,	/* # of pages paged in/out */
+>  	MEM_CGROUP_EVENTS_PGFAULT,	/* # of page-faults */
+>  	MEM_CGROUP_EVENTS_PGMAJFAULT,	/* # of major page-faults */
+>  	MEM_CGROUP_EVENTS_NSTATS,
+> @@ -129,6 +128,7 @@ enum mem_cgroup_events_target {
+>  struct mem_cgroup_stat_cpu {
+>  	long count[MEM_CGROUP_STAT_NSTATS];
+>  	unsigned long events[MEM_CGROUP_EVENTS_NSTATS];
+> +	unsigned long nr_page_events;
+>  	unsigned long targets[MEM_CGROUP_NTARGETS];
+>  };
+>  
+> @@ -736,7 +736,7 @@ static void mem_cgroup_charge_statistics(struct mem_cgroup *memcg,
+>  		nr_pages = -nr_pages; /* for event */
+>  	}
+>  
+> -	__this_cpu_add(memcg->stat->events[MEM_CGROUP_EVENTS_COUNT], nr_pages);
+> +	__this_cpu_add(memcg->stat->nr_page_events, nr_pages);
+>  
+>  	preempt_enable();
+>  }
+> @@ -797,7 +797,7 @@ static bool mem_cgroup_event_ratelimit(struct mem_cgroup *memcg,
+>  {
+>  	unsigned long val, next;
+>  
+> -	val = __this_cpu_read(memcg->stat->events[MEM_CGROUP_EVENTS_COUNT]);
+> +	val = __this_cpu_read(memcg->stat->nr_page_events);
+>  	next = __this_cpu_read(memcg->stat->targets[target]);
+>  	/* from time_after() in jiffies.h */
+>  	if ((long)next - (long)val < 0) {
+> -- 
+> 1.7.10.1
+> 
+
+-- 
+Michal Hocko
+SUSE Labs
+SUSE LINUX s.r.o.
+Lihovarska 1060/12
+190 00 Praha 9    
+Czech Republic
