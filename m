@@ -1,17 +1,17 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965826Ab2EOCTA (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 May 2012 22:19:00 -0400
-Received: from mail1.windriver.com ([147.11.146.13]:53354 "EHLO
+	id S965812Ab2EOCS6 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 May 2012 22:18:58 -0400
+Received: from mail1.windriver.com ([147.11.146.13]:53304 "EHLO
 	mail1.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965069Ab2EOCRN (ORCPT
+	with ESMTP id S965011Ab2EOCRF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 May 2012 22:17:13 -0400
+	Mon, 14 May 2012 22:17:05 -0400
 From: Paul Gortmaker <paul.gortmaker@windriver.com>
 To: <stable@kernel.org>, <linux-kernel@vger.kernel.org>
-Subject: [34-longterm 090/179] i2c-taos-evm: Fix log messages
-Date: Mon, 14 May 2012 22:13:06 -0400
-Message-ID: <1337048075-6132-91-git-send-email-paul.gortmaker@windriver.com>
+Subject: [34-longterm 080/179] TTY: ldisc, do not close until there are readers
+Date: Mon, 14 May 2012 22:12:56 -0400
+Message-ID: <1337048075-6132-81-git-send-email-paul.gortmaker@windriver.com>
 X-Mailer: git-send-email 1.7.9.6
 In-Reply-To: <1337048075-6132-1-git-send-email-paul.gortmaker@windriver.com>
 References: <1337048075-6132-1-git-send-email-paul.gortmaker@windriver.com>
@@ -21,7 +21,7 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Jean Delvare <khali@linux-fr.org>
+From: Jiri Slaby <jslaby@suse.cz>
 
                    -------------------
     This is a commit scheduled for the next v2.6.34 longterm release.
@@ -29,58 +29,102 @@ From: Jean Delvare <khali@linux-fr.org>
     If you see a problem with using this for longterm, please comment.
                    -------------------
 
-commit 9b640f2e154268cb516efcaf9c434f2e73c6783e upstream.
+commit 92f6fa09bd453ffe3351fa1f1377a1b7cfa911e6 upstream.
 
-* Print all error and information messages even when debugging is
-  disabled.
-* Don't use adapter device to log messages before it is ready.
+We restored tty_ldisc_wait_idle in 100eeae2c5c (TTY: restore
+tty_ldisc_wait_idle). We used it in the ldisc changing path to fix the
+case where there are tasks in n_tty_read waiting for data and somebody
+tries to change ldisc.
 
-Signed-off-by: Jean Delvare <khali@linux-fr.org>
+Similar to the case above, there may be also tasks waiting in
+n_tty_read while hangup is performed. As 65b770468e98 (tty-ldisc: turn
+ldisc user count into a proper refcount) removed the wait-until-idle
+from all paths, hangup path won't wait for them to disappear either
+now. So add it back even to the hangup path.
+
+There is a difference, we need uninterruptible sleep as there is
+obviously HUP signal pending. So tty_ldisc_wait_idle now sleeps
+without possibility to be interrupted. This is what original
+tty_ldisc_wait_idle did. After the wait idle reintroduction
+(100eeae2c5c), we have had interruptible sleeps for the ldisc changing
+path. But as there is a 5s timeout anyway, we don't allow it to be
+interrupted from now on. It's not worth the added complexity of
+deciding what kind of sleep we want.
+
+Before 65b770468e98 tty_ldisc_release was called also from
+tty_ldisc_release. It is called from tty_release, so I don't think we
+need to restore that one.
+
+This is nicely reproducible after constifying the timing when
+drivers/tty/n_tty.c is patched as follows ("TTY: ntty, add one more
+sanity check" patch is needed to actually see it explode):
+%% -1548,6 +1549,7 @@ static int n_tty_open(struct tty_struct *tty)
+
+        /* These are ugly. Currently a malloc failure here can panic */
+        if (!tty->read_buf) {
++               msleep(100);
+                tty->read_buf = kzalloc(N_TTY_BUF_SIZE, GFP_KERNEL);
+                if (!tty->read_buf)
+                        return -ENOMEM;
+%% -1785,6 +1788,7 @@ do_it_again:
+                                break;
+                        }
+                        timeout = schedule_timeout(timeout);
++                       msleep(20);
+                        continue;
+                }
+                __set_current_state(TASK_RUNNING);
+===== With a process: =====
+    while (1) {
+        int fd = open(argv[1], O_RDWR);
+        read(fd, buf, sizeof(buf));
+        close(fd);
+    }
+===== and its child: =====
+        setsid();
+        while (1) {
+                int fd = open(tty, O_RDWR|O_NOCTTY);
+                ioctl(fd, TIOCSCTTY, 1);
+                vhangup();
+                close(fd);
+                usleep(100 * (10 + random() % 1000));
+        }
+===== EOF =====
+
+References: https://bugzilla.novell.com/show_bug.cgi?id=693374
+References: https://bugzilla.novell.com/show_bug.cgi?id=694509
+Signed-off-by: Jiri Slaby <jslaby@suse.cz>
+Cc: Alan Cox <alan@lxorguk.ukuu.org.uk>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
+[PG: account for char --> tty file rename post 2.6.34]
 Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
 ---
- drivers/i2c/busses/i2c-taos-evm.c |    8 ++++----
- 1 file changed, 4 insertions(+), 4 deletions(-)
+ drivers/char/tty_ldisc.c |    4 +++-
+ 1 file changed, 3 insertions(+), 1 deletion(-)
 
-diff --git a/drivers/i2c/busses/i2c-taos-evm.c b/drivers/i2c/busses/i2c-taos-evm.c
-index dd39c1e..26c352a 100644
---- a/drivers/i2c/busses/i2c-taos-evm.c
-+++ b/drivers/i2c/busses/i2c-taos-evm.c
-@@ -234,7 +234,7 @@ static int taos_connect(struct serio *serio, struct serio_driver *drv)
+diff --git a/drivers/char/tty_ldisc.c b/drivers/char/tty_ldisc.c
+index 236628f..48de74a 100644
+--- a/drivers/char/tty_ldisc.c
++++ b/drivers/char/tty_ldisc.c
+@@ -543,7 +543,7 @@ static int tty_ldisc_halt(struct tty_struct *tty)
+ static int tty_ldisc_wait_idle(struct tty_struct *tty)
+ {
+ 	int ret;
+-	ret = wait_event_interruptible_timeout(tty_ldisc_idle,
++	ret = wait_event_timeout(tty_ldisc_idle,
+ 			atomic_read(&tty->ldisc->users) == 1, 5 * HZ);
+ 	if (ret < 0)
+ 		return ret;
+@@ -750,6 +750,8 @@ static int tty_ldisc_reinit(struct tty_struct *tty, int ldisc)
+ 	if (IS_ERR(ld))
+ 		return -1;
  
- 	if (taos->state != TAOS_STATE_IDLE) {
- 		err = -ENODEV;
--		dev_dbg(&serio->dev, "TAOS EVM reset failed (state=%d, "
-+		dev_err(&serio->dev, "TAOS EVM reset failed (state=%d, "
- 			"pos=%d)\n", taos->state, taos->pos);
- 		goto exit_close;
- 	}
-@@ -255,7 +255,7 @@ static int taos_connect(struct serio *serio, struct serio_driver *drv)
- 					 msecs_to_jiffies(250));
- 	if (taos->state != TAOS_STATE_IDLE) {
- 		err = -ENODEV;
--		dev_err(&adapter->dev, "Echo off failed "
-+		dev_err(&serio->dev, "TAOS EVM echo off failed "
- 			"(state=%d)\n", taos->state);
- 		goto exit_close;
- 	}
-@@ -263,7 +263,7 @@ static int taos_connect(struct serio *serio, struct serio_driver *drv)
- 	err = i2c_add_adapter(adapter);
- 	if (err)
- 		goto exit_close;
--	dev_dbg(&serio->dev, "Connected to TAOS EVM\n");
-+	dev_info(&serio->dev, "Connected to TAOS EVM\n");
- 
- 	taos->client = taos_instantiate_device(adapter);
- 	return 0;
-@@ -288,7 +288,7 @@ static void taos_disconnect(struct serio *serio)
- 	serio_set_drvdata(serio, NULL);
- 	kfree(taos);
- 
--	dev_dbg(&serio->dev, "Disconnected from TAOS EVM\n");
-+	dev_info(&serio->dev, "Disconnected from TAOS EVM\n");
- }
- 
- static struct serio_device_id taos_serio_ids[] = {
++	WARN_ON_ONCE(tty_ldisc_wait_idle(tty));
++
+ 	tty_ldisc_close(tty, tty->ldisc);
+ 	tty_ldisc_put(tty->ldisc);
+ 	tty->ldisc = NULL;
 -- 
 1.7.9.6
 
