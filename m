@@ -1,57 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758876Ab2EONZJ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 May 2012 09:25:09 -0400
-Received: from mail-vb0-f46.google.com ([209.85.212.46]:40925 "EHLO
-	mail-vb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758859Ab2EONZE (ORCPT
+	id S1758867Ab2EON0l (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 May 2012 09:26:41 -0400
+Received: from cavan.codon.org.uk ([93.93.128.6]:40517 "EHLO
+	cavan.codon.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750886Ab2EON0k (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 May 2012 09:25:04 -0400
+	Tue, 15 May 2012 09:26:40 -0400
+Date: Tue, 15 May 2012 14:26:31 +0100
+From: Matthew Garrett <mjg59@srcf.ucam.org>
+To: Jan Beulich <JBeulich@suse.com>
+Cc: dannf@dannf.org, mingo@elte.hu, tglx@linutronix.de,
+        matt.fleming@linux.intel.com, linux-kernel@vger.kernel.org,
+        hpa@zytor.com
+Subject: Re: [PATCH, resend] x86: enable rtc-efi
+Message-ID: <20120515132631.GA26298@srcf.ucam.org>
+References: <4FB263560200007800083CB0@nat28.tlf.novell.com>
+ <20120515123811.GA25248@srcf.ucam.org>
+ <4FB271860200007800083D21@nat28.tlf.novell.com>
+ <20120515131637.GA26038@srcf.ucam.org>
+ <4FB274CD0200007800083D41@nat28.tlf.novell.com>
 MIME-Version: 1.0
-Date: Tue, 15 May 2012 21:25:03 +0800
-Message-ID: <CAJd=RBAEavw-LE94_j9-9uz2c+SRjgzoRuHVAxyjGa7ac3j9+g@mail.gmail.com>
-Subject: BFS 420: nuke the sticky bits
-From: Hillf Danton <dhillf@gmail.com>
-To: LKML <linux-kernel@vger.kernel.org>, Hillf Danton <dhillf@gmail.com>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4FB274CD0200007800083D41@nat28.tlf.novell.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: mjg59@cavan.codon.org.uk
+X-SA-Exim-Scanned: No (on cavan.codon.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Right task could be selected without maitaining the sticky stuff but based on
-CPU cache locality.
+On Tue, May 15, 2012 at 02:22:53PM +0100, Jan Beulich wrote:
 
---- a/kernel/sched/bfs.c	Mon May 14 20:50:38 2012
-+++ b/kernel/sched/bfs.c	Tue May 15 21:12:54 2012
-@@ -1095,6 +1095,7 @@ resched_closest_idle(struct rq *rq, int
- static inline void
- swap_sticky(struct rq *rq, int cpu, struct task_struct *p)
- {
-+	return;
- 	if (rq->sticky_task) {
- 		if (rq->sticky_task == p) {
- 			p->sticky = true;
-@@ -3065,18 +3066,11 @@ task_struct *earliest_deadline_task(stru
- 				continue;
+> I don't think so - the two drivers could end up manipulating the
+> same piece of hardware, without synchronization. rtc-cmos
+> really should bail when loaded on an EFI-enabled system.
 
- 			/*
--			 * Soft affinity happens here by not scheduling a task
--			 * with its sticky flag set that ran on a different CPU
--			 * last when the CPU is scaling, or by greatly biasing
--			 * against its deadline when not, based on cpu cache
--			 * locality.
-+			 * Soft affinity happens here by biasing against
-+			 * deadline when the CPU is scaling, based on CPU
-+			 * cache locality.
- 			 */
--			if (task_sticky(p) && task_rq(p) != rq) {
--				if (scaling_rq(rq))
--					continue;
--				dl = p->deadline << locality_diff(p, rq);
--			} else
--				dl = p->deadline;
-+			dl = p->deadline << (locality_diff(p, rq) + !!scaling_rq(rq));
+That's why we're taking the rtc lock.
 
- 			if (deadline_before(dl, earliest_deadline)) {
- 				earliest_deadline = dl;
---
+-- 
+Matthew Garrett | mjg59@srcf.ucam.org
