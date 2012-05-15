@@ -1,63 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758600Ab2EOP3z (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 May 2012 11:29:55 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:48549 "EHLO mx1.redhat.com"
+	id S1758664Ab2EOPaI (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 May 2012 11:30:08 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:57091 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757928Ab2EOP3y (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 May 2012 11:29:54 -0400
-Date: Tue, 15 May 2012 18:29:42 +0300
-From: Gleb Natapov <gleb@redhat.com>
-To: Alan Cox <alan@lxorguk.ukuu.org.uk>
-Cc: Hannes Reinecke <hare@suse.de>, LKML <linux-kernel@vger.kernel.org>,
-        "H. Peter Anvin" <hpa@linux.intel.com>
-Subject: Re: [PATCH] EDD: Check for correct EDD 3.0 length
-Message-ID: <20120515152942.GH6948@redhat.com>
-References: <1337079889-62380-1-git-send-email-hare@suse.de>
- <20120515111255.GJ32036@redhat.com>
- <4FB23C09.7060300@suse.de>
- <20120515115917.GK32036@redhat.com>
- <20120515150015.5bf17aea@pyramind.ukuu.org.uk>
- <20120515143644.GD6948@redhat.com>
- <20120515155206.520e46b6@pyramind.ukuu.org.uk>
- <20120515145316.GF6948@redhat.com>
- <20120515162226.1b9a7496@pyramind.ukuu.org.uk>
+	id S965126Ab2EOPaF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 May 2012 11:30:05 -0400
+Date: Tue, 15 May 2012 11:29:52 -0400
+From: Dave Jones <davej@redhat.com>
+To: Tejun Heo <tj@kernel.org>
+Cc: Peter Zijlstra <peterz@infradead.org>, Hugh Dickins <hughd@google.com>,
+        Ingo Molnar <mingo@kernel.org>, Ingo Molnar <mingo@redhat.com>,
+        Stephen Boyd <sboyd@codeaurora.org>,
+        Yong Zhang <yong.zhang0@gmail.com>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] lockdep: fix oops in processing workqueue
+Message-ID: <20120515152952.GA27838@redhat.com>
+Mail-Followup-To: Dave Jones <davej@redhat.com>, Tejun Heo <tj@kernel.org>,
+	Peter Zijlstra <peterz@infradead.org>,
+	Hugh Dickins <hughd@google.com>, Ingo Molnar <mingo@kernel.org>,
+	Ingo Molnar <mingo@redhat.com>, Stephen Boyd <sboyd@codeaurora.org>,
+	Yong Zhang <yong.zhang0@gmail.com>, linux-kernel@vger.kernel.org
+References: <20120508165819.GB10687@google.com>
+ <alpine.LSU.2.00.1205081106160.4071@eggly.anvils>
+ <1336516260.8226.61.camel@twins>
+ <alpine.LSU.2.00.1205081553250.4497@eggly.anvils>
+ <20120509092536.GC8585@gmail.com>
+ <alpine.LSU.2.00.1205091219590.20881@eggly.anvils>
+ <alpine.LSU.2.00.1205101049460.17714@eggly.anvils>
+ <20120514212753.GM2366@google.com>
+ <1337080288.27694.38.camel@twins>
+ <20120515151048.GA6119@google.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20120515162226.1b9a7496@pyramind.ukuu.org.uk>
+In-Reply-To: <20120515151048.GA6119@google.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, May 15, 2012 at 04:22:26PM +0100, Alan Cox wrote:
-> On Tue, 15 May 2012 17:53:16 +0300
-> Gleb Natapov <gleb@redhat.com> wrote:
-> 
-> > On Tue, May 15, 2012 at 03:52:06PM +0100, Alan Cox wrote:
-> > > > It is easy to be confused since there are two EDD 3 specs. First is from
-> > > > Phoenix BIOS (linked at the first mail of the thread) and it does not have
-> > > > enough info even for ATA. You can't tell primary ATA controller from secondary.
-> > > 
-> > > Yes you can - it's defined by the PCI specification for compatibility
-> > How? ATA device path has only Master/Slave. Interface path has only
-> > bus/slot/function. So given all that in int13_80 how do I know if this
-> > is primary or secondary controller?
-> 
-> For compatibility mode by the I/O port address.
-> 
-Hmm, will work if standard I/O addresses are used for master/slave, but
-I do not see this information be exposed via /sys by EDD. So how can I
-do it from OS installer with current kernel or kernel with reverted
-patch?
+On Tue, May 15, 2012 at 08:10:48AM -0700, Tejun Heo wrote:
+ > >From 4d82a1debbffec129cc387aafa8f40b7bbab3297 Mon Sep 17 00:00:00 2001
+ > From: Peter Zijlstra <peterz@infradead.org>
+ > Date: Tue, 15 May 2012 08:06:19 -0700
+ > 
+ > Under memory load, on x86_64, with lockdep enabled, the workqueue's
+ > process_one_work() has been seen to oops in __lock_acquire(), barfing
+ > on a 0xffffffff00000000 pointer in the lockdep_map's class_cache[].
 
-> For native mode most controllers pretend to be two devfns for exactly
-> this reason, and report one on each. Some non-MMIO devices don't and you
-> can tell them apart by looking at the addresses given in DPTE as well.
-> 
-> Simples.. 
-> 
-> Alan
+can you elaborate what 'memory load' means here ?
+I'm curious if I can add something to my fuzzing tool to shake out bugs like this.
 
---
-			Gleb.
+	Dave
+
