@@ -1,76 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965341Ab2EOPfu (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 May 2012 11:35:50 -0400
-Received: from mail-wi0-f170.google.com ([209.85.212.170]:46478 "EHLO
-	mail-wi0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965277Ab2EOPfr (ORCPT
+	id S965372Ab2EOPgL (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 May 2012 11:36:11 -0400
+Received: from casper.infradead.org ([85.118.1.10]:53718 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932272Ab2EOPgJ convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 May 2012 11:35:47 -0400
-Date: Tue, 15 May 2012 08:35:39 -0700
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: Alan Stern <stern@rowland.harvard.edu>
-Cc: Paul Bolle <pebolle@tiscali.nl>,
-        "James E.J. Bottomley" <JBottomley@parallels.com>,
-        Matthew Dharm <mdharm-usb@one-eyed-alien.net>,
-        linux-scsi@vger.kernel.org, usb-storage@lists.one-eyed-alien.net,
-        linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 0/3] scsi: usb-storage: hide errors for five devices
-Message-ID: <20120515153539.GA25206@kroah.com>
-References: <1336491453.1933.67.camel@x61.thuisdomein>
- <Pine.LNX.4.44L0.1205081240450.1479-100000@iolanthe.rowland.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <Pine.LNX.4.44L0.1205081240450.1479-100000@iolanthe.rowland.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Tue, 15 May 2012 11:36:09 -0400
+Message-ID: <1337096141.27694.82.camel@twins>
+Subject: Re: Plumbers: Tweaking scheduler policy micro-conf RFP
+From: Peter Zijlstra <peterz@infradead.org>
+To: Vincent Guittot <vincent.guittot@linaro.org>
+Cc: paulmck@linux.vnet.ibm.com, smuckle@quicinc.com, khilman@ti.com,
+        Robin.Randhawa@arm.com, suresh.b.siddha@intel.com,
+        thebigcorporation@gmail.com, venki@google.com,
+        panto@antoniou-consulting.com, mingo@elte.hu, paul.brett@intel.com,
+        pdeschrijver@nvidia.com, pjt@google.com, efault@gmx.de,
+        fweisbec@gmail.com, geoff@infradead.org, rostedt@goodmis.org,
+        tglx@linutronix.de, amit.kucheria@linaro.org,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        linaro-sched-sig@lists.linaro.org,
+        Morten Rasmussen <Morten.Rasmussen@arm.com>,
+        Juri Lelli <juri.lelli@gmail.com>
+Date: Tue, 15 May 2012 17:35:41 +0200
+In-Reply-To: <CAKfTPtDrZ-tfC81jnxwpB+DCtmxhU+VfoYbtSBr8MkFt+P8JcA@mail.gmail.com>
+References: <CAKfTPtDSDAOAdv0GTDswZeRM7TmACrjok+5kddSaQpvy6_6xWw@mail.gmail.com>
+	 <CAKfTPtCfiY7A29+e50F+6awd8BjNJjg4=uNN4ReZfdS_4FbpkA@mail.gmail.com>
+	 <1337084609.27020.156.camel@laptop>
+	 <CAKfTPtDz1-fR2i5x7AVd8sGZhX2VNtz2rnQC3ePrcHO9MWK3FQ@mail.gmail.com>
+	 <1337086834.27020.162.camel@laptop>
+	 <CAKfTPtDrZ-tfC81jnxwpB+DCtmxhU+VfoYbtSBr8MkFt+P8JcA@mail.gmail.com>
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
+X-Mailer: Evolution 3.2.2- 
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, May 08, 2012 at 01:03:17PM -0400, Alan Stern wrote:
-> On Tue, 8 May 2012, Paul Bolle wrote:
+On Tue, 2012-05-15 at 17:05 +0200, Vincent Guittot wrote:
+> On 15 May 2012 15:00, Peter Zijlstra <peterz@infradead.org> wrote:
+> > On Tue, 2012-05-15 at 14:57 +0200, Vincent Guittot wrote:
+> >>
+> >> Not sure that nobody cares but it's much more that scheduler,
+> >> load_balance and sched_mc are sensible enough that it's difficult to
+> >> ensure that a modification will not break everything for someone
+> >> else.
+> >
+> > Thing is, its already broken, there's nothing else to break :-)
+> >
 > 
-> > On Tue, 2012-05-08 at 10:02 -0400, Alan Stern wrote:
-> > > On Tue, 8 May 2012, Paul Bolle wrote: 
-> > > > 1) These patches try to hide those errors by:
-> > > > - downgrading one error to a notice; and
-> > > 
-> > > That's a reasonable thing to do, IMO.
-> > > 
-> > > > - setting the NO_WP_DETECT quirk for these five devices.
-> > > 
-> > > But that isn't.  These quirks are intended for devices that crash when
-> > > they receive the command in question.
-> > 
-> > Yes, these USB memory sticks don't crash. (They actually seem to work
-> > just fine, something that I perhaps should have emphasized in the commit
-> > descriptions.)
-> > 
-> > > They aren't meant to suppress sending commands to devices that can
-> > > properly reject them.
-> > 
-> > Even the sticks that hit "bad_sense" (in sd_read_cache_type(), which I
-> > forgot to mention in the comment descriptions)? Is that not as severe as
-> > it suggests?
-> 
-> It means that the device either doesn't support the MODE SENSE command
-> or it returned useless data.  As a result, we will assume it has a
-> write-through cache when it might not.
-> 
-> For memory sticks this doesn't matter.  For other devices it might be 
-> more important (although anything with a working cache should not hit 
-> this error case).
-> 
-> > Of course, an easy way out would be to downgrade both the "Asking for
-> > cache data failed" and the "No Caching mode page present" errors to
-> > notices. But the SCSI people might disagree with that approach.
-> 
-> Well, let's see what they say.
+> sched_mc is the only power-aware knob in the current scheduler. It's
+> far from being perfect but it seems to work on some ARM platform at
+> least. You mentioned at the scheduler mini-summit that we need a
+> cleaner replacement and everybody has agreed on that point. Is anybody
+> working on it yet ? 
 
-What ever happened here, are these 3 patches acceptable, or do they need
-to be reworked or something else?
+Apparently not.. 
 
-thanks,
+> and can we discuss at Plumber's what this replacement would look like ?
 
-greg k-h
+one knob: sched_balance_policy with tri-state {performance, power, auto}
+
+Where auto should likely look at things like are we on battery and
+co-ordinate with cpufreq muck or whatever.
+
+Per domain knobs are insane, large multi-state knobs are insane, the
+existing scheme is therefore insane^2. Can you find a sysad who'd like
+to explore 3^3=27 states for optimal power/perf for his workload on a
+simple 2 socket hyper-threaded machine and 3^4=81 state space for 8
+sockets etc..?
+
+As to the exact policy, I think the current 2 (load-balance + wakeup) is
+the sensible one..
+
+Also, I still have this pending email from you asking about the topology
+setup stuff I really need to reply to.. but people keep sending me bugs
+reports :/
+
+But really short, look at kernel/sched/core.c:default_topology[]
+
+I'd like to get rid of sd_init_* into a single function like
+sd_numa_init(), this would mean all archs would need to do is provide a
+simple list of ever increasing masks that match their topology.
+
+To aid this we can add some SDTL_flags, initially I was thinking of:
+
+ SDTL_SHARE_CORE	-- aka SMT
+ SDTL_SHARE_CACHE	-- LLC cache domain (typically multi-core)
+ SDTL_SHARE_MEMORY	-- NUMA-node (typically socket)
+
+The 'performance' policy is typically to spread over shared resources so
+as to minimize contention on these.
+
+If you want to add some power we need some extra flags, maybe something
+like:
+
+ SDTL_SHARE_POWERLINE	-- power domain (typically socket)
+
+so you know where the boundaries are where you can turn stuff off so you
+know what/where to pack bits.
+
+Possibly we also add something like:
+
+ SDTL_PERF_SPREAD	-- spread on performance mode
+ SDTL_POWER_PACK	-- pack on power mode
+
+To over-ride the defaults. But ideally I'd leave those until after we've
+got the basics working and there is a clear need for them (with a
+spread/pack default for perf/power aware).
