@@ -1,89 +1,125 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758036Ab2EOIMi (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 May 2012 04:12:38 -0400
-Received: from mga14.intel.com ([143.182.124.37]:58715 "EHLO mga14.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757658Ab2EOIMf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 May 2012 04:12:35 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
-   d="scan'208";a="143270326"
-Date: Tue, 15 May 2012 16:12:49 +0800
-From: Yuanhan Liu <yuanhan.liu@linux.intel.com>
-To: NeilBrown <neilb@suse.de>
-Cc: linux-raid@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] md: remove redudent code
-Message-ID: <20120515081249.GG10252@yliu-dev.sh.intel.com>
-References: <1337068825-11995-1-git-send-email-yuanhan.liu@linux.intel.com>
- <20120515180349.0f0d275e@notabene.brown>
+	id S1758068Ab2EOINJ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 May 2012 04:13:09 -0400
+Received: from hqemgate03.nvidia.com ([216.228.121.140]:16167 "EHLO
+	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757579Ab2EOINE (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 May 2012 04:13:04 -0400
+X-PGP-Universal: processed;
+	by hqnvupgp07.nvidia.com on Tue, 15 May 2012 01:12:01 -0700
+From: Hiroshi DOYU <hdoyu@nvidia.com>
+To: <hdoyu@nvidia.com>, <iommu@lists.linux-foundation.org>
+CC: <linux-tegra@vger.kernel.org>, Grant Likely <grant.likely@secretlab.ca>,
+        Rob Herring <rob.herring@calxeda.com>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Joerg Roedel <joerg.roedel@amd.com>,
+        Thierry Reding <thierry.reding@avionic-design.de>,
+        <linux-kernel@vger.kernel.org>, <devicetree-discuss@lists.ozlabs.org>
+Subject: [v2 1/2] iommu/tegra: smmu: Simplify allocation at once
+Date: Tue, 15 May 2012 11:12:48 +0300
+Message-ID: <1337069574-2022-1-git-send-email-hdoyu@nvidia.com>
+X-Mailer: git-send-email 1.7.5.4
+In-Reply-To: <4FB19677.4040702@wwwdotorg.org>
+References: <4FB19677.4040702@wwwdotorg.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120515180349.0f0d275e@notabene.brown>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, May 15, 2012 at 06:03:49PM +1000, NeilBrown wrote:
-> On Tue, 15 May 2012 16:00:25 +0800 Yuanhan Liu <yuanhan.liu@linux.intel.com>
-> wrote:
-> 
-> > The code does nothing but repating assigning sb->sb_csum with original
-> > value.
-> 
-> This code sets the sb_csum to 0 while the csum is calculated.
-> 
-> Without this, calculating the csum, setting it, then calculating again would
-> produce a different result.
-> 
-> So the code is correct as is.
+To simplify the code, alloc necessary data at once.
 
-Aha, got it. And sorry for the wrong patch.
+Signed-off-by: Hiroshi DOYU <hdoyu@nvidia.com>
+Acked-by: Stephen Warren <swarren@wwwdotorg.org>
+---
+This patch requires:
 
-Thanks,
-Yuanhan Liu
+    [PATCH 1/1] dt: Add general DMA window parser
+        http://marc.info/?l=linux-tegra&m=133671302703840&w=2
+---
+ drivers/iommu/tegra-smmu.c |   32 +++++++++++---------------------
+ 1 files changed, 11 insertions(+), 21 deletions(-)
 
-> 
-> Thanks,
-> NeilBrown
-> 
-> 
-> > 
-> > Signed-off-by: Yuanhan Liu <yuanhan.liu@linux.intel.com>
-> > ---
-> >  drivers/md/md.c |    4 ----
-> >  1 files changed, 0 insertions(+), 4 deletions(-)
-> > 
-> > diff --git a/drivers/md/md.c b/drivers/md/md.c
-> > index 0bd44e3..f2d799a 100644
-> > --- a/drivers/md/md.c
-> > +++ b/drivers/md/md.c
-> > @@ -1439,15 +1439,12 @@ super_90_rdev_size_change(struct md_rdev *rdev, sector_t num_sectors)
-> >  
-> >  static __le32 calc_sb_1_csum(struct mdp_superblock_1 * sb)
-> >  {
-> > -	__le32 disk_csum;
-> >  	u32 csum;
-> >  	unsigned long long newcsum;
-> >  	int size = 256 + le32_to_cpu(sb->max_dev)*2;
-> >  	__le32 *isuper = (__le32*)sb;
-> >  	int i;
-> >  
-> > -	disk_csum = sb->sb_csum;
-> > -	sb->sb_csum = 0;
-> >  	newcsum = 0;
-> >  	for (i=0; size>=4; size -= 4 )
-> >  		newcsum += le32_to_cpu(*isuper++);
-> > @@ -1456,7 +1453,6 @@ static __le32 calc_sb_1_csum(struct mdp_superblock_1 * sb)
-> >  		newcsum += le16_to_cpu(*(__le16*) isuper);
-> >  
-> >  	csum = (newcsum & 0xffffffff) + (newcsum >> 32);
-> > -	sb->sb_csum = disk_csum;
-> >  	return cpu_to_le32(csum);
-> >  }
-> >  
-> 
-
+diff --git a/drivers/iommu/tegra-smmu.c b/drivers/iommu/tegra-smmu.c
+index dbaba77..5eb32b3 100644
+--- a/drivers/iommu/tegra-smmu.c
++++ b/drivers/iommu/tegra-smmu.c
+@@ -241,8 +241,6 @@ struct smmu_device {
+ 	spinlock_t	lock;
+ 	char		*name;
+ 	struct device	*dev;
+-	int		num_as;
+-	struct smmu_as	*as;		/* Run-time allocated array */
+ 	struct page *avp_vector_page;	/* dummy page shared by all AS's */
+ 
+ 	/*
+@@ -254,6 +252,9 @@ struct smmu_device {
+ 	unsigned long asid_security;
+ 
+ 	struct device_node *ahb;
++
++	int		num_as;
++	struct smmu_as	as[0];		/* Run-time allocated array */
+ };
+ 
+ static struct smmu_device *smmu_handle; /* unique for a system */
+@@ -900,17 +901,21 @@ static int tegra_smmu_probe(struct platform_device *pdev)
+ {
+ 	struct smmu_device *smmu;
+ 	struct device *dev = &pdev->dev;
+-	int i, asids, err = 0;
++	int i, err = 0;
++	u32 asids;
+ 	dma_addr_t base;
+-	size_t size;
+-	const void *prop;
++	size_t bytes, size;
+ 
+ 	if (smmu_handle)
+ 		return -EIO;
+ 
+ 	BUILD_BUG_ON(PAGE_SHIFT != SMMU_PAGE_SHIFT);
+ 
+-	smmu = devm_kzalloc(dev, sizeof(*smmu), GFP_KERNEL);
++	if (of_property_read_u32(dev->of_node, "nvidia,#asids", &asids))
++		return -ENODEV;
++
++	bytes = sizeof(*smmu) + asids * sizeof(*smmu->as);
++	smmu = devm_kzalloc(dev, bytes, GFP_KERNEL);
+ 	if (!smmu) {
+ 		dev_err(dev, "failed to allocate smmu_device\n");
+ 		return -ENOMEM;
+@@ -939,13 +944,6 @@ static int tegra_smmu_probe(struct platform_device *pdev)
+ 	if (!size)
+ 		return -EINVAL;
+ 
+-	prop = of_get_property(dev->of_node, "nvidia,#asids", NULL);
+-	if (!prop)
+-		return -ENODEV;
+-	asids = be32_to_cpup(prop);
+-	if (!asids)
+-		return -ENODEV;
+-
+ 	smmu->ahb = of_parse_phandle(dev->of_node, "nvidia,ahb", 0);
+ 	if (!smmu->ahb)
+ 		return -ENODEV;
+@@ -960,14 +958,6 @@ static int tegra_smmu_probe(struct platform_device *pdev)
+ 	smmu->translation_enable_2 = ~0;
+ 	smmu->asid_security = 0;
+ 
+-	smmu->as = devm_kzalloc(dev,
+-			sizeof(smmu->as[0]) * smmu->num_as, GFP_KERNEL);
+-	if (!smmu->as) {
+-		dev_err(dev, "failed to allocate smmu_as\n");
+-		err = -ENOMEM;
+-		goto fail;
+-	}
+-
+ 	for (i = 0; i < smmu->num_as; i++) {
+ 		struct smmu_as *as = &smmu->as[i];
+ 
+-- 
+1.7.5.4
 
