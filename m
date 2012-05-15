@@ -1,100 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S966802Ab2EOXzp (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 May 2012 19:55:45 -0400
-Received: from mail131.messagelabs.com ([216.82.242.99]:35398 "EHLO
-	mail131.messagelabs.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933214Ab2EOXzo (ORCPT
+	id S967090Ab2EOX4c (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 May 2012 19:56:32 -0400
+Received: from mail.openrapids.net ([64.15.138.104]:49460 "EHLO
+	blackscsi.openrapids.net" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S967056Ab2EOX4F (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 May 2012 19:55:44 -0400
-X-Env-Sender: hartleys@visionengravers.com
-X-Msg-Ref: server-8.tower-131.messagelabs.com!1337126141!4940649!2
-X-Originating-IP: [216.166.12.69]
-X-StarScan-Version: 6.5.10; banners=-,-,-
-X-VirusChecked: Checked
-From: H Hartley Sweeten <hartleys@visionengravers.com>
-To: Linux Kernel <linux-kernel@vger.kernel.org>
-Subject: [PATCH] staging: comedi: refactor ii_pci20kc driver and use module_comedi_driver
-Date: Tue, 15 May 2012 16:55:37 -0700
-User-Agent: KMail/1.9.9
-CC: <devel@driverdev.osuosl.org>, <abbotti@mev.co.uk>,
-        <fmhess@users.sourceforge.net>, <gregkh@linuxfoundation.org>
+	Tue, 15 May 2012 19:56:05 -0400
+X-Greylist: delayed 456 seconds by postgrey-1.27 at vger.kernel.org; Tue, 15 May 2012 19:56:05 EDT
+Date: Tue, 15 May 2012 19:48:26 -0400
+From: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
+To: tiwg@multicore-association.org, lttng-dev@lists.lttng.org,
+        linux-kernel@vger.kernel.org
+Cc: Dominique Toupin <dominique.toupin@ericsson.com>
+Subject: [CFP] Tracing Micro-conference at LPC2012 (August 28-30, San Diego)
+Message-ID: <20120515234826.GA10967@Krystal>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Message-ID: <201205151655.37740.hartleys@visionengravers.com>
+X-Editor: vi
+X-Info: http://www.efficios.com
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Move the module_init/module_exit routines and the associated
-struct comedi_drive to the end of the source. This is more
-typical of how other drivers are written and removes the need
-for the forward declarations.
+Hi,
 
-Convert the driver to use the module_comedi_driver() macro
-which makes the code smaller and a bit simpler.
+We are organizing a tracing micro-conference taking place in San Diego,
+within Linux Plumbers Conference 2012. The micro-conference is planned
+to be held somewhere between August 28 and 30, in San Diego, CA.
 
-Signed-off-by: H Hartley Sweeten <hsweeten@visionengravers.com>
-Cc: Ian Abbott <abbotti@mev.co.uk>
-Cc: Mori Hess <fmhess@users.sourceforge.net>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+If you are interested to present, please don't hesitate to get in touch
+with us quickly (ideally within this week, or next week), since
+deadlines are approaching.
 
----
+Our intent is to gather people involved in development and users of
+tracing tools and trace analysis tools to allow discussing the latest
+developments, allow users to express their needs, and generally ensure
+that developers and end users understand each other.
 
-More refactoring needs to be done to remove the remaining
-forward declarations. Doing that is this patch makes it
-difficult to review.
+We are welcoming presentations from both end users and developers, on
+topics covering, but not limited to:
 
- drivers/staging/comedi/drivers/ii_pci20kc.c |   30 ++++++--------------------
- 1 files changed, 7 insertions(+), 23 deletions(-)
+- Trace collection and extraction,
+- Trace filtering,
+- Trace aggregation,
+- Trace formats,
+- Tracing multi-core systems,
+- Trace abstraction,
+- Trace modeling,
+- Automated trace analysis (e.g. dependency analysis),
+- Tracing large clusters and distributed systems,
+- Hardware-level tracing (e.g. DSP, GPU, bare-metal),
+- Trace visualisation,
+- Interaction between debugging and tracing,
+- Tracing remote control,
+- Analysis of large trace datasets.
 
-diff --git a/drivers/staging/comedi/drivers/ii_pci20kc.c b/drivers/staging/comedi/drivers/ii_pci20kc.c
-index e4711ef..6b1b5c88 100644
---- a/drivers/staging/comedi/drivers/ii_pci20kc.c
-+++ b/drivers/staging/comedi/drivers/ii_pci20kc.c
-@@ -159,17 +159,6 @@ struct pci20xxx_private {
- #define devpriv ((struct pci20xxx_private *)dev->private)
- #define CHAN (CR_CHAN(it->chanlist[0]))
- 
--static int pci20xxx_attach(struct comedi_device *dev,
--			   struct comedi_devconfig *it);
--static int pci20xxx_detach(struct comedi_device *dev);
--
--static struct comedi_driver driver_pci20xxx = {
--	.driver_name = "ii_pci20kc",
--	.module = THIS_MODULE,
--	.attach = pci20xxx_attach,
--	.detach = pci20xxx_detach,
--};
--
- static int pci20006_init(struct comedi_device *dev, struct comedi_subdevice *s,
- 			 int opt0, int opt1);
- static int pci20341_init(struct comedi_device *dev, struct comedi_subdevice *s,
-@@ -666,18 +655,13 @@ static unsigned int pci20xxx_di(struct comedi_device *dev,
- }
- #endif
- 
--static int __init driver_pci20xxx_init_module(void)
--{
--	return comedi_driver_register(&driver_pci20xxx);
--}
--
--static void __exit driver_pci20xxx_cleanup_module(void)
--{
--	comedi_driver_unregister(&driver_pci20xxx);
--}
--
--module_init(driver_pci20xxx_init_module);
--module_exit(driver_pci20xxx_cleanup_module);
-+static struct comedi_driver pci20xxx_driver = {
-+	.driver_name	= "ii_pci20kc",
-+	.module		= THIS_MODULE,
-+	.attach		= pci20xxx_attach,
-+	.detach		= pci20xxx_detach,
-+};
-+module_comedi_driver(pci20xxx_driver);
- 
- MODULE_AUTHOR("Comedi http://www.comedi.org");
- MODULE_DESCRIPTION("Comedi low-level driver");
+It can cover both recently available technologies and ongoing work.
+
+If you are interested to present, please get in touch with Dominique
+Toupin or myself. The micro-conference wiki can be accessed at:
+http://wiki.linuxplumbersconf.org/2012:tracing
+
+Feedback is welcome!
+
+Thank you,
+
+Dominique Toupin & Mathieu Desnoyers
+
+-- 
+Mathieu Desnoyers
+Operating System Efficiency R&D Consultant
+EfficiOS Inc.
+http://www.efficios.com
