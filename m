@@ -1,36 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932833Ab2EOSCr (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 May 2012 14:02:47 -0400
-Received: from a.ns.miles-group.at ([95.130.255.143]:47834 "EHLO radon.swed.at"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932207Ab2EOSCq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 May 2012 14:02:46 -0400
-Message-ID: <4FB29A2B.1000902@nod.at>
-Date: Tue, 15 May 2012 20:02:19 +0200
-From: Richard Weinberger <richard@nod.at>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120421 Thunderbird/12.0
-MIME-Version: 1.0
-To: Richard Weinberger <richard@nod.at>
-CC: linux-mtd@lists.infradead.org, Heinz.Egger@linutronix.de,
-        tglx@linutronix.de, tim.bird@am.sony.com, linux-kernel@vger.kernel.org,
-        dedekind1@gmail.com
-Subject: Re: [RFC v4] UBI: Fastmap support (aka checkpointing)
-References: <1337101871-31181-1-git-send-email-richard@nod.at>
-In-Reply-To: <1337101871-31181-1-git-send-email-richard@nod.at>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+	id S932934Ab2EOSEB (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 May 2012 14:04:01 -0400
+Received: from he.sipsolutions.net ([78.46.109.217]:58243 "EHLO
+	sipsolutions.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756911Ab2EOSD7 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 May 2012 14:03:59 -0400
+Message-ID: <1337105028.15553.3.camel@jlt3.sipsolutions.net>
+Subject: Re: [RFC net-next 0/2] net: Use net_<level>_ratelimit
+From: Johannes Berg <johannes@sipsolutions.net>
+To: Joe Perches <joe@perches.com>
+Cc: David Miller <davem@davemloft.net>, netdev@vger.kernel.org,
+        linux-decnet-user@lists.sourceforge.net,
+        netfilter-devel@vger.kernel.org, netfilter@vger.kernel.org,
+        coreteam@netfilter.org, linux-wireless@vger.kernel.org,
+        dev@openvswitch.org, linux-sctp@vger.kernel.org,
+        linux-nfs@vger.kernel.org, linux-kernel@vger.kernel.org
+Date: Tue, 15 May 2012 20:03:48 +0200
+In-Reply-To: <1337104765.7050.24.camel@joe2Laptop> (sfid-20120515_195955_463081_DA730895)
+References: <cover.1336981915.git.joe@perches.com>
+	 <20120515.134531.530903973750646107.davem@davemloft.net>
+	 <1337104765.7050.24.camel@joe2Laptop>
+	 (sfid-20120515_195955_463081_DA730895)
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.2-1 
 Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am 15.05.2012 19:11, schrieb Richard Weinberger:
-> TODO:
->          - Artem is fully happy with the current on-flash layout,
->            maybe I can merge the erase counters into the EBA table
+On Tue, 2012-05-15 at 10:59 -0700, Joe Perches wrote:
+> On Tue, 2012-05-15 at 13:45 -0400, David Miller wrote:
+> > From: Joe Perches <joe@perches.com>
+> > Date: Mon, 14 May 2012 00:56:24 -0700
+> > 
+> > > net_ratelimit() like __ratelimit() is too easy to misuse.
+> > > 
+> > > Add simplifying macros similar to pr_<level>_ratelimited
+> > > that combines the test of net_ratelimit and logging.
+> > > 
+> > > Joe Perches (2):
+> > >   net: Add net_ratelimited_function and net_<level>_ratelimited macros
+> > >   net: Convert net_ratelimit uses to net_<level>_ratelimited
+> > 
+> > These look fine to me so I've applied them to net-next and am
+> > sanity checking the build right now.
+> 
+> OK, but fyi, there's a possible issue with !CONFIG_DEBUG
+> builds because these patches converted some uses of
+> 	if (net_ratelimit())
+> 		printk(KERN_DEBUG ...
+> to
+> 	net_dbg_ratelimited()
+> 
+> These messages are no longer emitted when DEBUG isn't defined
+> and not using dynamic_debug.  I'm not sure that's a real
+> problem, but it's a difference.
+> 
+> I could produce a net_printk_ratelimited that would keep
+> the original behavior if necessary.
+> 
+> 	net_printk_ratelimited(KERN_DEBUG etc...)
 
-Whoops!
-Artem is *not* fully happy...
+Oops. Yes, please do that, mac80211 doesn't have DEBUG yet
 
-Sorry,
-//richard
+johannes
+
