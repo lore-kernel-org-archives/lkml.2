@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S966331Ab2EOSdA (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 May 2012 14:33:00 -0400
-Received: from stats.peacock.arvixe.com ([174.122.104.67]:36964 "EHLO
+	id S966318Ab2EOSdb (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 May 2012 14:33:31 -0400
+Received: from stats.peacock.arvixe.com ([174.122.104.67]:55116 "EHLO
 	peacock.arvixe.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S966318Ab2EOSc6 (ORCPT
+	with ESMTP id S966047Ab2EOScx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 May 2012 14:32:58 -0400
+	Tue, 15 May 2012 14:32:53 -0400
 From: Przemo Firszt <przemo@firszt.eu>
 To: pinglinux@gmail.com, jkosina@suse.cz
 Cc: linuxwacom-devel@lists.sourceforge.net, linux-input@vger.kernel.org,
         linux-kernel@vger.kernel.org, Przemo Firszt <przemo@firszt.eu>
-Subject: [PATCH 3/3] HID: wacom: Unify speed setting
-Date: Tue, 15 May 2012 19:32:28 +0100
-Message-Id: <1337106748-28437-4-git-send-email-przemo@firszt.eu>
+Subject: [PATCH 3/3] HID: wacom: unify speed setting
+Date: Tue, 15 May 2012 19:32:27 +0100
+Message-Id: <1337106748-28437-3-git-send-email-przemo@firszt.eu>
 X-Mailer: git-send-email 1.7.10.1
 In-Reply-To: <1337106748-28437-1-git-send-email-przemo@firszt.eu>
 References: <1337106748-28437-1-git-send-email-przemo@firszt.eu>
