@@ -1,77 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758605Ab2EOLnA (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 May 2012 07:43:00 -0400
-Received: from bear.ext.ti.com ([192.94.94.41]:36624 "EHLO bear.ext.ti.com"
+	id S1758646Ab2EOLoe (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 May 2012 07:44:34 -0400
+Received: from mga11.intel.com ([192.55.52.93]:13863 "EHLO mga11.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757589Ab2EOLm7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 May 2012 07:42:59 -0400
-From: Tarun Kanti DebBarma <tarun.kanti@ti.com>
-To: <linux-omap@vger.kernel.org>
-CC: <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
-        Tarun Kanti DebBarma <tarun.kanti@ti.com>,
-        Kevin Hilman <khilman@ti.com>, Tony Lindgren <tony@atomide.com>,
-        Russell King <linux@arm.linux.org.uk>
-Subject: [PATCH] ARM: OMAP4: PM: Keep static dep between MPUSS and ABE clockdomain
-Date: Tue, 15 May 2012 17:12:36 +0530
-Message-ID: <1337082156-30390-1-git-send-email-tarun.kanti@ti.com>
-X-Mailer: git-send-email 1.7.0.4
-MIME-Version: 1.0
-Content-Type: text/plain
+	id S1757451Ab2EOLoc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 May 2012 07:44:32 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
+   d="asc'?scan'208";a="166514736"
+Message-ID: <1337082481.2528.186.camel@sauron.fi.intel.com>
+Subject: Re: [PATCH v2] UBI: add lnum to struct ubi_work
+From: Artem Bityutskiy <dedekind1@gmail.com>
+Reply-To: dedekind1@gmail.com
+To: Joel Reardon <joel@clambassador.com>
+Cc: linux-mtd@lists.infradead.org, linux-kernel@vger.kernel.org
+Date: Tue, 15 May 2012 14:48:01 +0300
+In-Reply-To: <alpine.DEB.2.00.1205142046080.12448@eristoteles.iwoars.net>
+References: <alpine.DEB.2.00.1205142046080.12448@eristoteles.iwoars.net>
+Content-Type: multipart/signed; micalg="pgp-sha1"; protocol="application/pgp-signature";
+	boundary="=-hGuWCr+NyIv9tv5mSl83"
+X-Mailer: Evolution 3.2.3 (3.2.3-3.fc16) 
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit 68523f4233de5f233478dde0a63047b4efb710b8 (ARM: OMAP4:
-Workaround the OCP synchronisation issue with 32K synctimer)
-does not include GP Timers in ABE domain. Since synchronization
-issue is applicable to all GPTIMER[1-12], we also need to set
-static dependency of MPUSS with abe_clkdm and l4_per_clkdm.
-Dependency with l4_per_clkdm timers is already set in commit
-12f27826bdaf56b01cbdfc8bdeb577ebc106dee3 (ARM: OMAP4: PM: Keep
-static dep between MPUSS-EMIF and MPUSS-L3/L4 and DUCATI-L3).
-Therefore, set static dependency of MPUSS with abe_clkdm.
 
-Cc: Kevin Hilman <khilman@ti.com>
-Cc: Tony Lindgren <tony@atomide.com>
-Cc: Russell King <linux@arm.linux.org.uk>
-Signed-off-by: Tarun Kanti DebBarma <tarun.kanti@ti.com>
----
- arch/arm/mach-omap2/pm44xx.c |    6 +++++-
- 1 files changed, 5 insertions(+), 1 deletions(-)
+--=-hGuWCr+NyIv9tv5mSl83
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: quoted-printable
 
-diff --git a/arch/arm/mach-omap2/pm44xx.c b/arch/arm/mach-omap2/pm44xx.c
-index 8856253..f788e98 100644
---- a/arch/arm/mach-omap2/pm44xx.c
-+++ b/arch/arm/mach-omap2/pm44xx.c
-@@ -146,6 +146,7 @@ static int __init omap4_pm_init(void)
- 	int ret;
- 	struct clockdomain *emif_clkdm, *mpuss_clkdm, *l3_1_clkdm, *l4wkup;
- 	struct clockdomain *ducati_clkdm, *l3_2_clkdm, *l4_per_clkdm;
-+	struct clockdomain *abe_clkdm;
- 
- 	if (!cpu_is_omap44xx())
- 		return -ENODEV;
-@@ -180,8 +181,10 @@ static int __init omap4_pm_init(void)
- 	l4_per_clkdm = clkdm_lookup("l4_per_clkdm");
- 	l4wkup = clkdm_lookup("l4_wkup_clkdm");
- 	ducati_clkdm = clkdm_lookup("ducati_clkdm");
-+	abe_clkdm = clkdm_lookup("abe_clkdm");
- 	if ((!mpuss_clkdm) || (!emif_clkdm) || (!l3_1_clkdm) || (!l4wkup) ||
--		(!l3_2_clkdm) || (!ducati_clkdm) || (!l4_per_clkdm))
-+		(!l3_2_clkdm) || (!ducati_clkdm) || (!l4_per_clkdm) ||
-+		(!abe_clkdm))
- 		goto err2;
- 
- 	ret = clkdm_add_wkdep(mpuss_clkdm, emif_clkdm);
-@@ -191,6 +194,7 @@ static int __init omap4_pm_init(void)
- 	ret |= clkdm_add_wkdep(mpuss_clkdm, l4wkup);
- 	ret |= clkdm_add_wkdep(ducati_clkdm, l3_1_clkdm);
- 	ret |= clkdm_add_wkdep(ducati_clkdm, l3_2_clkdm);
-+	ret |= clkdm_add_wkdep(mpuss_clkdm, abe_clkdm);
- 	if (ret) {
- 		pr_err("Failed to add MPUSS -> L3/EMIF/L4PER, DUCATI -> L3 "
- 				"wakeup dependency\n");
--- 
-1.7.0.4
+On Mon, 2012-05-14 at 20:47 +0200, Joel Reardon wrote:
+> This is part of a multipart patch to allow UBI to force the erasure of
+> particular logical eraseblock numbers. In this patch, the logical erase b=
+lock
+> number is added to ubi_work data structure, and it is also passed as a
+> parameter to schedule erase to set it appropriately. Whenever ubi_wl_put_=
+peb
+> is called, the lnum is also passed to be forwarded to schedule erase. Lat=
+er,
+> a new ubi_sync_lnum will be added to execute immediately all work related=
+ to
+> that lnum.
+
+Hmm, I've just checked your patch with Aiaiai and it complains about
+your changes - and the complaints are correct - you introduce a bug.
+
+--- before_patching.log
++++ after_patching.log
+@@ @@
++drivers/mtd/ubi/wl.c:1023 erase_worker() error: dereferencing freed memory=
+ 'wl_wrk' [smatch]
++drivers/mtd/ubi/wl.c:1023:35-41: ERROR: reference preceded by free on line=
+ 1016 [coccinelle]
+
+--=20
+Best Regards,
+Artem Bityutskiy
+
+--=-hGuWCr+NyIv9tv5mSl83
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: This is a digitally signed message part
+Content-Transfer-Encoding: 7bit
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAABAgAGBQJPskJxAAoJECmIfjd9wqK0nbgQALNc7iOZ91BwMzMRMj9ygmFI
+/g89oodxCUf+Xc0V57KOy+ZZqiRkC0MRLpLzWf9cr5uUJC9Czk2c+/A4syq9Kv0H
+MdT9IEyZwhqDrApqhEUDftrzqxNvGtTNA8+jnAnP+62RZA1tij891Y49SUGXvxah
+WAblbiIapcmDTjP+F8gYBNL4YDZOCb5YHOmC2vUZOxCtAqUuaB8w4gtKOmys/CDv
+qZfV/a4kvlfwrY/4Evhb2mXXZ6TDawlY0bDdlaZWJLXM1z59UrKlE4UJ2GcWG6SB
+3ajmnRM4cfzrWqGCHGtRt2WfzZc5slcluEf28l46wqvCqLuTzUPcTwSzT/xwaAI5
+hgaSKS5kV5MO++jr0zvSMLmHUKF9jxecBkM39icNQwRuG+xKCq05YfVrbQgfU1/H
+ou/CIX4OziBeE6cofFzpciL0J7bGPAcxirAsREzp+S85DmNGT+OVnsfXbXf9Tk1w
+Bu0fAOvguhcX5MFcEPphebsn0TGT4mIfVeGvR3tkq3/nUplFJgvksaOdfFbbmFQd
+9qrkJgpg6x/32FjYIdrYsGntqEWH/kkliIHF9cUKNK74x6VEjoIyL1pKYR0WGmr/
+XFU/bVueffCuCbk2qofBD5y6jNXXA7yn3WeKMvYqmBacYEHEMR6wR1hnPpU/ODGh
+vDtNg2qjFlbKDQ1DH0lN
+=mY1p
+-----END PGP SIGNATURE-----
+
+--=-hGuWCr+NyIv9tv5mSl83--
 
