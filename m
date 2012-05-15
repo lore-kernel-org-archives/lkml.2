@@ -1,39 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S966665Ab2EOUAc (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 May 2012 16:00:32 -0400
-Received: from 124-248-200-93.sunnyvision.com ([124.248.200.93]:60746 "EHLO
-	teamb04.edmhongkong.com" rhost-flags-OK-FAIL-OK-FAIL)
-	by vger.kernel.org with ESMTP id S966093Ab2EOUA2 (ORCPT
+	id S966683Ab2EOUAq (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 May 2012 16:00:46 -0400
+Received: from mail-lpp01m010-f46.google.com ([209.85.215.46]:48195 "EHLO
+	mail-lpp01m010-f46.google.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S966182Ab2EOUAa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 May 2012 16:00:28 -0400
-X-Greylist: delayed 1492 seconds by postgrey-1.27 at vger.kernel.org; Tue, 15 May 2012 16:00:27 EDT
-X-DKIM: OpenDKIM Filter v2.4.1 teamb04.edmhongkong.com 5EF5E52784
-X-DKIM: OpenDKIM Filter v2.4.1 teamb01.edmhongkong.com 76AF44FAF4
-Message-ID: <5IJSOI4yoNXcOYV@ara.seed.net.tw>
-From: boris@dedicatedserver.com.hk
-Subject: Streaming Service
-X-Mailer: NA5j9usigZNoSA8vMETdN2I
-Content-Type: text/plain;
-X-Priority: 3
-X-MSMail-Priority: Normal
-Date: Wed, 16 May 2012 03:35:20 +0800 (HKT)
-To: unlisted-recipients:; (no To-header on input)
+	Tue, 15 May 2012 16:00:30 -0400
+Date: Tue, 15 May 2012 22:00:27 +0200
+From: Johan Hovold <jhovold@gmail.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Johan Hovold <jhovold@gmail.com>, Jonathan Cameron <jic23@cam.ac.uk>,
+        Rob Landley <rob@landley.net>, Richard Purdie <rpurdie@rpsys.net>,
+        Samuel Ortiz <sameo@linux.intel.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Florian Tobias Schandinat <FlorianSchandinat@gmx.de>,
+        Arnd Bergmann <arnd@arndb.de>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-iio@vger.kernel.org, devel@driverdev.osuosl.org
+Subject: Re: [PATCH v3] iio: add LM3533 ambient-light-sensor driver
+Message-ID: <20120515200027.GA9132@localhost>
+References: <1336040799-18433-3-git-send-email-jhovold@gmail.com>
+ <1337100396-29024-1-git-send-email-jhovold@gmail.com>
+ <20120515122705.42461e7e.akpm@linux-foundation.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120515122705.42461e7e.akpm@linux-foundation.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from Quoted-Printable to 8bit by nfs id q4FK0l8n014013
 
-Our Streaming Server is powerful and optimized server for live and on-demand audio/ video streaming content delivery. 
-Our Streaming Server features with high performance streaming throughput, network & storage I/O and optimized configurations for its high scalability and reliability.
-Our server supports latest Windows Media Technologies such as Fast Streaming, Fast Cache, Fast Start, Wireless Streaming as well as feature-rich add-on modules such as sophisticated content management, monitoring, logging reports, billing, authentications, load-balancing & clustering for all needs. 
+On Tue, May 15, 2012 at 12:27:05PM -0700, Andrew Morton wrote:
+> On Tue, 15 May 2012 18:46:36 +0200
+> Johan Hovold <jhovold@gmail.com> wrote:
+> 
+> > Add sub-driver for the ambient-light-sensor interface on National
+> > Semiconductor / TI LM3533 lighting power chips.
+> > 
+> > The sensor interface can be used to control the LEDs and backlights of
+> > the chip through defining five light zones and three sets of
+> > corresponding brightness target levels.
+> > 
+> > The driver provides raw and mean adc readings along with the current
+> > light zone through sysfs. A threshold event can be generated on zone
+> > changes.
+> >
+> > ...
+> >
+> >  drivers/staging/iio/light/Kconfig                  |   16 +
+> >  drivers/staging/iio/light/Makefile                 |    1 +
+> >  drivers/staging/iio/light/lm3533-als.c             |  726 ++++++++++++++++++++
+> 
+> Why is this aimed at drivers/staging/, rather than directly into
+> drivers/iio/?
 
-Pls send us email for further information.Thanks,
+I understood it as it was only iio core which was moving out of staging
+in 3.5, but I see now that some drivers have been added directly to
+driver/iio. My mistake.
 
-Boris 
-boris@dedicatedserver.com.hk
+I'll make sure to move it to drivers/iio/light.
 
-If you do not wish to further receive this event message, email "borislamsv2@gmail.com" to unsubscribe this message or remove your email from the list.
-
-
+Thanks for pointing it out,
+Johan
