@@ -1,81 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S966704Ab2EOUIC (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 May 2012 16:08:02 -0400
-Received: from mho-01-ewr.mailhop.org ([204.13.248.71]:22552 "EHLO
-	mho-01-ewr.mailhop.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S966025Ab2EOUH7 (ORCPT
+	id S966715Ab2EOUJE (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 May 2012 16:09:04 -0400
+Received: from wolverine01.qualcomm.com ([199.106.114.254]:14670 "EHLO
+	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S966025Ab2EOUJB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 May 2012 16:07:59 -0400
-X-Mail-Handler: MailHop Outbound by DynDNS
-X-Originating-IP: 98.234.237.12
-X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/mailhop/outbound_abuse.html for abuse reporting information)
-X-MHO-User: U2FsdGVkX18KGRogz+D4jUtbjmraAYBf
-Date: Tue, 15 May 2012 13:07:55 -0700
-From: Tony Lindgren <tony@atomide.com>
-To: Stephen Warren <swarren@wwwdotorg.org>
-Cc: Linus Walleij <linus.walleij@linaro.org>,
-        Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
-        linux-omap@vger.kernel.org, Stephen Warren <swarren@nvidia.com>,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH] pinctrl: Add generic pinctrl-simple driver that
- supports omap2+ padconf
-Message-ID: <20120515200754.GD17852@atomide.com>
-References: <20120504150342.GI5140@atomide.com>
- <20120504153251.GE7788@game.jcrosoft.org>
- <20120504163420.GA5613@atomide.com>
- <4FA42631.6060304@wwwdotorg.org>
- <20120504220809.GW5613@atomide.com>
- <4FAAD141.3090306@wwwdotorg.org>
- <20120509204925.GV5088@atomide.com>
- <4FABF553.20601@wwwdotorg.org>
- <CACRpkdbqjofEi-5J+GTMOXFK1VvbXqa6At1fKXCge+5_y6aaRA@mail.gmail.com>
- <4FB1513A.4070002@wwwdotorg.org>
+	Tue, 15 May 2012 16:09:01 -0400
+X-IronPort-AV: E=McAfee;i="5400,1158,6712"; a="191231278"
+Message-ID: <4FB2B7DC.4070706@codeaurora.org>
+Date: Tue, 15 May 2012 13:09:00 -0700
+From: Saravana Kannan <skannan@codeaurora.org>
+User-Agent: Mozilla/5.0 (X11; Linux i686 on x86_64; rv:12.0) Gecko/20120428 Thunderbird/12.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4FB1513A.4070002@wwwdotorg.org>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Sascha Hauer <s.hauer@pengutronix.de>
+CC: Mike Turquette <mturquette@linaro.org>,
+        Arnd Bergman <arnd.bergmann@linaro.org>,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        linux-arm-msm@vger.kernel.org, Andrew Lunn <andrew@lunn.ch>,
+        Rob Herring <rob.herring@calxeda.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        Jeremy Kerr <jeremy.kerr@canonical.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Paul Walmsley <paul@pwsan.com>,
+        Shawn Guo <shawn.guo@freescale.com>, Jamie Iles <jamie@jamieiles.com>,
+        Richard Zhao <richard.zhao@linaro.org>,
+        Magnus Damm <magnus.damm@gmail.com>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Linus Walleij <linus.walleij@stericsson.com>,
+        Stephen Boyd <sboyd@codeaurora.org>,
+        Amit Kucheria <amit.kucheria@linaro.org>,
+        Deepak Saxena <dsaxena@linaro.org>,
+        Grant Likely <grant.likely@secretlab.ca>
+Subject: Re: [PATCH] clk: Fix race conditions between clk_set_parent() and
+ clk_enable()
+References: <1336798797-8724-1-git-send-email-skannan@codeaurora.org> <20120515194245.GO30400@pengutronix.de> <4FB2B3AA.3010903@codeaurora.org> <20120515200040.GP30400@pengutronix.de>
+In-Reply-To: <20120515200040.GP30400@pengutronix.de>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Stephen Warren <swarren@wwwdotorg.org> [120514 11:42]:
-> On 05/12/2012 05:49 PM, Linus Walleij wrote:
-> > On Thu, May 10, 2012 at 7:05 PM, Stephen Warren <swarren@wwwdotorg.org> wrote:
-> > 
-> >> Also, were you intending pinctrl-simple to actually be the GPIO
-> >> controller itself? That'd be another case that one might consider fairly
-> >> simple, but then extends to being gpio-simple as well as pinctrl-simple...
-> > 
-> > We have some pinctrl drivers implementing gpiolib too already,
-> > and it's unavoidable I think, as some recent discussion about
-> > matcing struct gpio_chip and pinctrl GPIO ranges shows.
-> 
-> I strongly believe we should only do this when the exact same HW module
-> is both pinctrl and GPIO.
-> 
-> When there are separate HW modules, we should have separate drivers. The
-> fact that the two drivers need to co-ordinate with each-other isn't a
-> good argument to make them one driver.
-> 
-> And irrespective of how the drivers are structured, if there are two HW
-> modules, we really need two separate nodes in DT to describe them, since
-> the SW architecture (1 vs. 2 drivers) shouldn't influence the DT
-> representation unduly.
+On 05/15/2012 01:00 PM, Sascha Hauer wrote:
+> On Tue, May 15, 2012 at 12:51:06PM -0700, Saravana Kannan wrote:
+>>>>   	ret = clk->ops->set_parent(clk->hw, i);
+>>>
+>>> You call ->set_parent while holding a spinlock. This won't work with i2c
+>>> clocks.
+>>
+>> I did account for that. I explained it in the commit text. Please
+>> let me know if any part of that is not clear or is not correct.
+>>
+>
+> I missed this part in the commit log. I have no idea whether we can live
+> with this limitation though.
+>
+> Sascha
+>
 
-Yes.
- 
-> > Maybe "-simple" isn't such a good name for this thing. Noone thinks
-> > any kind of pin control is simple in any sense of the word anyway :-D
-> > 
-> > Tony, would pinctrl-dt-only.c be a better name perhaps?
-> 
-> That might be OK for the filename, but it doesn't seem like a useful
-> change for the DT compatible value.
+It's not really an artificial limitation of the patch. This has to be 
+enforced if the clock is to be managed correctly while allowing 
+.set_parent to NOT be atomic.
 
-Yeah let's see if we can come up with some better name.
+There is no way to guarantee that the enable/disable is properly 
+propagated to the parent clock if we can't guarantee mutual exclusion 
+between changing parents and calling enable/disable.
 
-Regards,
+Since we can't do mutual exclusion be using spinlock (since .set_parent 
+is NOT atomic for these clocks), then only other way of ensuring mutual 
+exclusion is to force an unprepare and then mutually exclude a prepare 
+while changing the parent. This by association (can't enable unprepared 
+clock) mutually excludes the changing of parent and calling enable/disable.
 
-Tony
+Thanks,
+Saravana
+
+-- 
+Sent by an employee of the Qualcomm Innovation Center, Inc.
+The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
