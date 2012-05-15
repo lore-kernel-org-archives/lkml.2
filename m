@@ -1,133 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965432Ab2EOCqX (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 May 2012 22:46:23 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:21952 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S965207Ab2EOCqS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 May 2012 22:46:18 -0400
-Message-ID: <4FB1C365.3090006@redhat.com>
-Date: Mon, 14 May 2012 22:45:57 -0400
-From: Doug Ledford <dledford@redhat.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:12.0) Gecko/20120428 Thunderbird/12.0.1
+	id S965211Ab2EOCRb (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 May 2012 22:17:31 -0400
+Received: from mail.windriver.com ([147.11.1.11]:49084 "EHLO
+	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S964879Ab2EOCQR (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 14 May 2012 22:16:17 -0400
+From: Paul Gortmaker <paul.gortmaker@windriver.com>
+To: <stable@kernel.org>, <linux-kernel@vger.kernel.org>
+Subject: [34-longterm 022/179] mm/page_alloc.c: prevent unending loop in __alloc_pages_slowpath()
+Date: Mon, 14 May 2012 22:11:58 -0400
+Message-ID: <1337048075-6132-23-git-send-email-paul.gortmaker@windriver.com>
+X-Mailer: git-send-email 1.7.9.6
+In-Reply-To: <1337048075-6132-1-git-send-email-paul.gortmaker@windriver.com>
+References: <1337048075-6132-1-git-send-email-paul.gortmaker@windriver.com>
 MIME-Version: 1.0
-To: Andrew Morton <akpm@linux-foundation.org>
-CC: Sasha Levin <levinsasha928@gmail.com>, kosaki.motohiro@jp.fujitsu.com,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] ipc/mqueue: use correct gfp flags in msg_insert
-References: <1337029525-8760-1-git-send-email-levinsasha928@gmail.com> <20120514165401.e4efc2fd.akpm@linux-foundation.org>
-In-Reply-To: <20120514165401.e4efc2fd.akpm@linux-foundation.org>
-X-Enigmail-Version: 1.4.1
-OpenPGP: id=0E572FDD
-Content-Type: multipart/signed; micalg=pgp-sha1;
- protocol="application/pgp-signature";
- boundary="------------enigEF169F383E691F8C0AED1D2F"
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is an OpenPGP/MIME signed message (RFC 2440 and 3156)
---------------enigEF169F383E691F8C0AED1D2F
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: quoted-printable
+From: Andrew Barry <abarry@cray.com>
 
-On 5/14/2012 7:54 PM, Andrew Morton wrote:
-> On Mon, 14 May 2012 23:05:25 +0200
-> Sasha Levin <levinsasha928@gmail.com> wrote:
->=20
->> msg_insert() tries to allocate using GFP_KERNEL, while in both cases w=
-hen it's called,
->> it's coming from an atomic context. Introduced by 7dd7edf ("ipc/mqueue=
-: improve
->> performance of send/recv").
->>
->> Use GFP_ATOMIC instead.
->>
->> Also, fix up coding style in the kzalloc while we're there.
->>
->> Signed-off-by: Sasha Levin <levinsasha928@gmail.com>
->> ---
->>  ipc/mqueue.c |    2 +-
->>  1 files changed, 1 insertions(+), 1 deletions(-)
->>
->> diff --git a/ipc/mqueue.c b/ipc/mqueue.c
->> index 30f6f8f..9ec6896 100644
->> --- a/ipc/mqueue.c
->> +++ b/ipc/mqueue.c
->> @@ -133,7 +133,7 @@ static int msg_insert(struct msg_msg *msg, struct =
-mqueue_inode_info *info)
->>  		else
->>  			p =3D &(*p)->rb_right;
->>  	}
->> -	leaf =3D kzalloc(sizeof(struct posix_msg_tree_node), GFP_KERNEL);
->> +	leaf =3D kzalloc(sizeof(*leaf), GFP_ATOMIC);
->>  	if (!leaf)
->>  		return -ENOMEM;
->>  	rb_init_node(&leaf->rb_node);
->=20
-> hm, that should have spewed warnings everywhere the first time anyone
-> tested it.  Doug, is a re-read of Documentation/SubmitChecklist needed?=
+                   -------------------
+    This is a commit scheduled for the next v2.6.34 longterm release.
+    http://git.kernel.org/?p=linux/kernel/git/paulg/longterm-queue-2.6.34.git
+    If you see a problem with using this for longterm, please comment.
+                   -------------------
 
+commit cfa54a0fcfc1017c6f122b6f21aaba36daa07f71 upstream.
 
-Re-read?  I never it read it a first time, so hard for me to re-read it.
- But thanks for pointing it out.  Now I've read it.
+I believe I found a problem in __alloc_pages_slowpath, which allows a
+process to get stuck endlessly looping, even when lots of memory is
+available.
 
-> Switching to GFP_ATOMIC is a bit regrettable.  Can we avoid this by
-> speculatively allocating the memory before taking the lock, then free
-> it again if we ended up not using it?
+Running an I/O and memory intensive stress-test I see a 0-order page
+allocation with __GFP_IO and __GFP_WAIT, running on a system with very
+little free memory.  Right about the same time that the stress-test gets
+killed by the OOM-killer, the utility trying to allocate memory gets stuck
+in __alloc_pages_slowpath even though most of the systems memory was freed
+by the oom-kill of the stress-test.
 
-Not really, we take the lock in a different function than this and would
-have to pass around a node struct and then free it if we didn't use it.
- I mean, it could be done, but it would fugly the calls around this up.
- The msg_insert() routine is called in two places.  In one place, the
-lock is taken right there so you could allocate before and then call.
-In the other, it is another function called with the lock held so now
-you would have to pass the possible mem allocation around two functions.
- Doable, but ugly.  On the other hand, this is a small struct that
-should be coming off one of the small size kmem cache pools (4 pointers
-total, a long, and an int, so kmalloc-32 or kmalloc-64 depending on
-arch).  That doesn't seem like a likely candidate to fail if there is
-memory pressure, especially considering that immediately prior to taking
-the lock we call kmalloc with GFP_KERNEL (as part of load_msg()) and so
-we should either not be under serious memory pressure or we would have
-slept waiting for it to ease up.
+The utility ends up looping from the rebalance label down through the
+wait_iff_congested continiously.  Because order=0,
+__alloc_pages_direct_compact skips the call to get_page_from_freelist.
+Because all of the reclaimable memory on the system has already been
+reclaimed, __alloc_pages_direct_reclaim skips the call to
+get_page_from_freelist.  Since there is no __GFP_FS flag, the block with
+__alloc_pages_may_oom is skipped.  The loop hits the wait_iff_congested,
+then jumps back to rebalance without ever trying to
+get_page_from_freelist.  This loop repeats infinitely.
 
-I think I can imagine a better way to do this though as part of the
-whole request to cache at least one rbnode entry so we get the 0 message
-performance of the queue back.  I'll send that patch through once I've
-verified it does what I think it will.
+The test case is pretty pathological.  Running a mix of I/O stress-tests
+that do a lot of fork() and consume all of the system memory, I can pretty
+reliably hit this on 600 nodes, in about 12 hours.  32GB/node.
 
---=20
-Doug Ledford <dledford@redhat.com>
-              GPG KeyID: 0E572FDD
-	      http://people.redhat.com/dledford
+Signed-off-by: Andrew Barry <abarry@cray.com>
+Signed-off-by: Minchan Kim <minchan.kim@gmail.com>
+Reviewed-by: Rik van Riel<riel@redhat.com>
+Acked-by: Mel Gorman <mgorman@suse.de>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
+---
+ mm/page_alloc.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-Infiniband specific RPMs available at
-	      http://people.redhat.com/dledford/Infiniband
+diff --git a/mm/page_alloc.c b/mm/page_alloc.c
+index 9826a8d..1418be7 100644
+--- a/mm/page_alloc.c
++++ b/mm/page_alloc.c
+@@ -1863,6 +1863,7 @@ restart:
+ 	 */
+ 	alloc_flags = gfp_to_alloc_flags(gfp_mask);
+ 
++rebalance:
+ 	/* This is the last chance, in general, before the goto nopage. */
+ 	page = get_page_from_freelist(gfp_mask, nodemask, order, zonelist,
+ 			high_zoneidx, alloc_flags & ~ALLOC_NO_WATERMARKS,
+@@ -1870,7 +1871,6 @@ restart:
+ 	if (page)
+ 		goto got_pg;
+ 
+-rebalance:
+ 	/* Allocate without watermarks if the context allows */
+ 	if (alloc_flags & ALLOC_NO_WATERMARKS) {
+ 		page = __alloc_pages_high_priority(gfp_mask, order,
+-- 
+1.7.9.6
 
-
---------------enigEF169F383E691F8C0AED1D2F
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: OpenPGP digital signature
-Content-Disposition: attachment; filename="signature.asc"
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.17 (MingW32)
-Comment: Using GnuPG with Mozilla - http://enigmail.mozdev.org/
-
-iQIcBAEBAgAGBQJPscNtAAoJELgmozMOVy/dwOkP+we3bttdGfdYlPoRDhDKcnVE
-UT43fCRJAa20MBkK2zOzIZuaAMkZ7Chd+PA3qUlj2S8Zq6rbKDfTctxsLwTLUtHq
-+NIz2usANcQaTWKUR90EEYjlbFUjZmqd4dYnABTZbGPIlb3u1wG4SQ3izVuUmybK
-CgC1IhPt/w6znlLWth/U5lJ/w9IJdJ9sEbzTkXsF3iYrnYLzMaSOoxEK+QF2wAgq
-RhV67Nln6zjSTpKELWZ2o8uDp4A0uB4Hi0+/r21Jlm9UXte+HtONaCAxud367Pyb
-kVnqXSes+Ib2nHrUWh5g/cwDENOz+Lha4/X3v2S5LlHQWTvwfUv+EGNDAnX9lO/w
-dOnp3YSX7jIsxIUl54eRsqAZ9c+uY13FBo2zO/1/VeV7HijcNd7FiKYtwk7d5elr
-hD5H6OB3pbx3f6YbWDMal5pY/mfsZit9d+jGi3SztPIyOlWHx0BDMVre0pSYhL2B
-sOgXlyYYw8EAR5+3DKkjoAuyK2zIglm9lO1PaIrnMbjgoJAQNimwLKWb6LkznrCN
-5HriOu7M7JAxoKZGGz9wmSLFkPgMp8MQsXQgBhvz0JFTquqD6ewRvHYEKkWfhloN
-elCXae4aW3AtLpkLXDPjn/ACHlGaND8SbSoGUWyG0qmKmzUQT3FhFygGT2F0trV1
-AAImE5dWDyQJjnb/Nm8r
-=QAbI
------END PGP SIGNATURE-----
-
---------------enigEF169F383E691F8C0AED1D2F--
