@@ -1,67 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932576Ab2EOMSb (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 May 2012 08:18:31 -0400
-Received: from mail9.hitachi.co.jp ([133.145.228.44]:34230 "EHLO
-	mail9.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932428Ab2EOMSa (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 May 2012 08:18:30 -0400
-X-AuditID: b753bd60-a1c87ba000000655-6d-4fb24993bc36
-X-AuditID: b753bd60-a1c87ba000000655-6d-4fb24993bc36
-Message-ID: <4FB24991.1040500@hitachi.com>
-Date: Tue, 15 May 2012 21:18:25 +0900
-From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Organization: Hitachi, Ltd., Japan
-User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:12.0) Gecko/20120428 Thunderbird/12.0.1
-MIME-Version: 1.0
-To: Namhyung Kim <namhyung.kim@lge.com>
-Cc: Cong Wang <xiyou.wangcong@gmail.com>, linux-kernel@vger.kernel.org,
-        Hyeoncheol Lee <cheol.lee@lge.com>, yrl.pp-manager.tt@hitachi.com
-Subject: Re: [QUESTION] Kprobes as a module?
-References: <87zk99zwb8.fsf@sejong.aot.lge.com> <4FB2146E.20101@gmail.com> <87vcjxzvtn.fsf@sejong.aot.lge.com>
-In-Reply-To: <87vcjxzvtn.fsf@sejong.aot.lge.com>
-Content-Type: text/plain; charset=ISO-2022-JP
-Content-Transfer-Encoding: 7bit
-X-Brightmail-Tracker: AAAAAA==
+	id S932589Ab2EOMTU (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 May 2012 08:19:20 -0400
+Received: from mga11.intel.com ([192.55.52.93]:48033 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932428Ab2EOMTT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 May 2012 08:19:19 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
+   d="asc'?scan'208";a="166530980"
+Message-ID: <1337084568.2528.194.camel@sauron.fi.intel.com>
+Subject: Re: determining if a block erasure failed
+From: Artem Bityutskiy <dedekind1@gmail.com>
+Reply-To: dedekind1@gmail.com
+To: Joel Reardon <joel@clambassador.com>
+Cc: linux-mtd@lists.infradead.org, linux-kernel@vger.kernel.org
+Date: Tue, 15 May 2012 15:22:48 +0300
+In-Reply-To: <alpine.DEB.2.00.1205151349580.18866@eristoteles.iwoars.net>
+References: <alpine.DEB.2.00.1205150944550.17750@eristoteles.iwoars.net>
+	 <1337082053.2528.182.camel@sauron.fi.intel.com>
+	 <alpine.DEB.2.00.1205151349580.18866@eristoteles.iwoars.net>
+Content-Type: multipart/signed; micalg="pgp-sha1"; protocol="application/pgp-signature";
+	boundary="=-O8mTrPFGE77gIpHIDcQg"
+X-Mailer: Evolution 3.2.3 (3.2.3-3.fc16) 
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
 
-No, actually you can't make it as a module.　There are
-two major reasons.
- - ftrace depends on the kprobes now.
- - int3 handling routine is deeply depends on
-   the architecture. This includes text modifying code.
+--=-O8mTrPFGE77gIpHIDcQg
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: quoted-printable
 
-Thus, if you separate the kprobes into module, that means
-you need to expose more ugly interface of self modifying
-for kernel modules.
+On Tue, 2012-05-15 at 13:56 +0200, Joel Reardon wrote:
+> Ah yes, if wl_wrk is freed in schedule_erase, theres no way to pass it
+> back that way.
+>=20
+> The reason is that, if erasing a block of keys fails, then those keys may
+> remain on the flash device for eternity. While a rare occurance, it may b=
+e
+> nice to have ubifs perform GC on all main LEBs storing the data nodes tha=
+t
+> can no longer be deleted through key erasure / reencrypt the valid data
+> nodes.
 
-(2012/05/15 17:34), Namhyung Kim wrote:
-> Hi,
-> 
-> On Tue, 15 May 2012 16:31:42 +0800, Cong Wang wrote:
->> On 05/15/2012 04:24 PM, Namhyung Kim wrote:
->>> Hi,
->>>
->>> Probably a dumb question :).
->>> What prevents the kprobes from being built as a module? We want to use
->>> the kprobes on our systems, but some guys worried about potential
->>> security problems. So it'd be great if we can enable/load kprobes as
->>> needed and then disable/unload after using it. Is it a possible senario?
+Erasure is asynchronous and I do not see an good way to implement your
+idea. Do you have a good plan?
 
-BTW, I'm not sure what the potential security problems on that?
-kprobes itself can be used only from kernel modules(except ftrace).
-If someone compromises kernel with kernel module, he doesn't need
-kprobes at all. They just can do anything they want. :)
+--=20
+Best Regards,
+Artem Bityutskiy
 
-Thank you,
+--=-O8mTrPFGE77gIpHIDcQg
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: This is a digitally signed message part
+Content-Transfer-Encoding: 7bit
 
--- 
-Masami HIRAMATSU
-Software Platform Research Dept. Linux Technology Center
-Hitachi, Ltd., Yokohama Research Laboratory
-E-mail: masami.hiramatsu.pt@hitachi.com
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAABAgAGBQJPskqYAAoJECmIfjd9wqK0hK4QAIlHuTQKVnK7m5I+QYqbq8oz
+RNvookf93HBHeQBPkQM4rEcdRs/0ev9eFARW5U0AJNjETHB5yitDtQlmIwhBoyZC
+RjhNJudL7jXV9RIZGdZrlVe7AjKejJ0rQO1OWG2kYy0Tc5yZC2aGLDjkWK8J6Kbj
+sQQB3xO0fTtQPu6WLdAqGi9xqi21nJ087EoQKoELRgOLxuCkQmNytidOgPSdnIUt
+33rVl2bhGj3y0tLQJ7azOaQPtOmpbrEvUnCJVlW4bB2qPhWfLmTzaRyhT3sfpTfj
+DshX42wC029WOYTAbkZyglLSLJrtDzv3Ph5GCGlEha3ush5DCFRuJhJAqzUTnvwI
+N5PaMawY2qxeKFAVtR7KwuSI/VhbsRyw5KmwVBZuCTcC0FJrMVBsk0ch7z0puz/w
+0xVeAcelYZt/xIGnNGyX8bsY3UQC29IflysdxdmT/lqh9wjuLnNpxoSDHl2fiTMu
+p31mDqCQkx747j0oA70u8pwd4YvurCjorlZmeWxWFhnTiGVk5t3eXlRAKQYZHH8i
+1e7HeZTyWuMEZ45db3uBHZdngQ4flO4zs1QfHnmJglqNIxRO2Xot36W+3z72c/IK
++9pCi8ueKa98mUOwkiVNE/BzRDlpz0FwSLfXhZat7qw+SCM2xP6fNgmSIzxdrF/l
+HlQXSM5RFtpKzWHttsbP
+=+F5v
+-----END PGP SIGNATURE-----
+
+--=-O8mTrPFGE77gIpHIDcQg--
+
