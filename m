@@ -1,17 +1,17 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965846Ab2EOCxR (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 May 2012 22:53:17 -0400
-Received: from mail1.windriver.com ([147.11.146.13]:53365 "EHLO
+	id S965081Ab2EOCRO (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 May 2012 22:17:14 -0400
+Received: from mail1.windriver.com ([147.11.146.13]:52856 "EHLO
 	mail1.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965083Ab2EOCRP (ORCPT
+	with ESMTP id S964874Ab2EOCQN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 May 2012 22:17:15 -0400
+	Mon, 14 May 2012 22:16:13 -0400
 From: Paul Gortmaker <paul.gortmaker@windriver.com>
 To: <stable@kernel.org>, <linux-kernel@vger.kernel.org>
-Subject: [34-longterm 092/179] SUNRPC: Ensure the RPC client only quits on fatal signals
-Date: Mon, 14 May 2012 22:13:08 -0400
-Message-ID: <1337048075-6132-93-git-send-email-paul.gortmaker@windriver.com>
+Subject: [34-longterm 017/179] staging: usbip: fix wrong endian conversion
+Date: Mon, 14 May 2012 22:11:53 -0400
+Message-ID: <1337048075-6132-18-git-send-email-paul.gortmaker@windriver.com>
 X-Mailer: git-send-email 1.7.9.6
 In-Reply-To: <1337048075-6132-1-git-send-email-paul.gortmaker@windriver.com>
 References: <1337048075-6132-1-git-send-email-paul.gortmaker@windriver.com>
@@ -21,7 +21,7 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Trond Myklebust <Trond.Myklebust@netapp.com>
+From: David Chang <dchang@novell.com>
 
                    -------------------
     This is a commit scheduled for the next v2.6.34 longterm release.
@@ -29,51 +29,32 @@ From: Trond Myklebust <Trond.Myklebust@netapp.com>
     If you see a problem with using this for longterm, please comment.
                    -------------------
 
-commit 5afa9133cfe67f1bfead6049a9640c9262a7101c upstream.
+commit cacd18a8476ce145ca5dcd46dc5b75585fd1289c upstream.
 
-Fix a couple of instances where we were exiting the RPC client on
-arbitrary signals. We should only do so on fatal signals.
+Fix number_of_packets wrong endian conversion in function
+correct_endian_ret_submit()
 
-Signed-off-by: Trond Myklebust <Trond.Myklebust@netapp.com>
+Signed-off-by: David Chang <dchang@novell.com>
+Acked-by: Arjan Mels <arjan.mels@gmx.net>
+Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
 ---
- net/sunrpc/auth_gss/auth_gss.c |    4 ++--
- net/sunrpc/clnt.c              |    2 +-
- 2 files changed, 3 insertions(+), 3 deletions(-)
+ drivers/staging/usbip/usbip_common.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/net/sunrpc/auth_gss/auth_gss.c b/net/sunrpc/auth_gss/auth_gss.c
-index c369ea6..891b59e 100644
---- a/net/sunrpc/auth_gss/auth_gss.c
-+++ b/net/sunrpc/auth_gss/auth_gss.c
-@@ -554,13 +554,13 @@ retry:
+diff --git a/drivers/staging/usbip/usbip_common.c b/drivers/staging/usbip/usbip_common.c
+index 707b57d..c172ae9 100644
+--- a/drivers/staging/usbip/usbip_common.c
++++ b/drivers/staging/usbip/usbip_common.c
+@@ -689,7 +689,7 @@ static void correct_endian_ret_submit(struct usbip_header_ret_submit *pdu,
+ 		be32_to_cpus(&pdu->status);
+ 		be32_to_cpus(&pdu->actual_length);
+ 		be32_to_cpus(&pdu->start_frame);
+-		cpu_to_be32s(&pdu->number_of_packets);
++		be32_to_cpus(&pdu->number_of_packets);
+ 		be32_to_cpus(&pdu->error_count);
  	}
- 	inode = &gss_msg->inode->vfs_inode;
- 	for (;;) {
--		prepare_to_wait(&gss_msg->waitqueue, &wait, TASK_INTERRUPTIBLE);
-+		prepare_to_wait(&gss_msg->waitqueue, &wait, TASK_KILLABLE);
- 		spin_lock(&inode->i_lock);
- 		if (gss_msg->ctx != NULL || gss_msg->msg.errno < 0) {
- 			break;
- 		}
- 		spin_unlock(&inode->i_lock);
--		if (signalled()) {
-+		if (fatal_signal_pending(current)) {
- 			err = -ERESTARTSYS;
- 			goto out_intr;
- 		}
-diff --git a/net/sunrpc/clnt.c b/net/sunrpc/clnt.c
-index 19c9983..0ad7828 100644
---- a/net/sunrpc/clnt.c
-+++ b/net/sunrpc/clnt.c
-@@ -939,7 +939,7 @@ call_allocate(struct rpc_task *task)
- 
- 	dprintk("RPC: %5u rpc_buffer allocation failed\n", task->tk_pid);
- 
--	if (RPC_IS_ASYNC(task) || !signalled()) {
-+	if (RPC_IS_ASYNC(task) || !fatal_signal_pending(current)) {
- 		task->tk_action = call_allocate;
- 		rpc_delay(task, HZ>>4);
- 		return;
+ }
 -- 
 1.7.9.6
 
