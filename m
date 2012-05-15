@@ -1,57 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S966569Ab2EOT1J (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 May 2012 15:27:09 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:35100 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S966529Ab2EOT1H (ORCPT
+	id S966572Ab2EOT3G (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 May 2012 15:29:06 -0400
+Received: from nm20.bullet.mail.sp2.yahoo.com ([98.139.91.90]:34083 "HELO
+	nm20.bullet.mail.sp2.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S966525Ab2EOT3E (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 May 2012 15:27:07 -0400
-Date: Tue, 15 May 2012 12:27:05 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Johan Hovold <jhovold@gmail.com>
-Cc: Jonathan Cameron <jic23@cam.ac.uk>, Rob Landley <rob@landley.net>,
-        Richard Purdie <rpurdie@rpsys.net>,
-        Samuel Ortiz <sameo@linux.intel.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Florian Tobias Schandinat <FlorianSchandinat@gmx.de>,
-        Arnd Bergmann <arnd@arndb.de>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-iio@vger.kernel.org, devel@driverdev.osuosl.org
-Subject: Re: [PATCH v3] iio: add LM3533 ambient-light-sensor driver
-Message-Id: <20120515122705.42461e7e.akpm@linux-foundation.org>
-In-Reply-To: <1337100396-29024-1-git-send-email-jhovold@gmail.com>
-References: <1336040799-18433-3-git-send-email-jhovold@gmail.com>
-	<1337100396-29024-1-git-send-email-jhovold@gmail.com>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Tue, 15 May 2012 15:29:04 -0400
+X-Yahoo-Newman-Id: 267412.10870.bm@smtp216.mail.gq1.yahoo.com
+X-Yahoo-Newman-Property: ymail-3
+X-YMail-OSG: KSCiXGQVM1kpWycndoJax52S96vgw6VXKHzSLox8vO8v4au
+ lbKs7v0Ys.Dn5r9f8pGxD8VGVida2SQOdS4DNyfhvZgg3vUBRB4daCLWIG2H
+ xhvJ2x6RVkyc4e6zcBLJXEhEJ8a8tAxy8ao2tndXtqAn67OEC3ZSoaKVEu0d
+ 54GuQZlJHZNYjePEdeRf9DzVCggxqMtLw.fRUW9j5ttLhEkyQ_W1cwKEeL2F
+ dyFKd5TvqZeUhUYu_4Y0OJZhsVKgtRd.THuVHLGxlOVWyhxzHu58MccR8is2
+ tzi5HBv4ga5Wd2ag7JEmFpvmCX2cNTN47qu0_zn.VvjaKhP0NJVvU3eUwvp.
+ rIwYNfO8gaZaeVuiyIB86nL6R1BS2i0vjYi4L.UvzAP7VDjghnuKW1aKocIQ
+ Jd9fidbntEOyYT9lc3clc87GD4uBw3IBF5NRdf3rkwAa0TYcqqdyWEcgyn1V
+ L88zkXhN8ENkZRrJVZuzvfqAc4cc1qj4Pe1btx2BJN1kYuGvBivKFonFAhA-
+ -
+X-Yahoo-SMTP: dNW5aIGswBCf1iV6QK8RWrBgWyjShXs-
+From: Jeffrin Jose <ahiliation@yahoo.co.in>
+To: mdharm-usb@one-eyed-alien.net, gregkh@linuxfoundation.org
+Cc: linux-kernel@vger.kernel.org, ahiliation@yahoo.co.in
+Subject: [PATCH 1/3] drivers:Fixed C99 comment issue.
+Date: Wed, 16 May 2012 01:02:15 +0530
+Message-Id: <1337110335-9783-1-git-send-email-ahiliation@yahoo.co.in>
+X-Mailer: git-send-email 1.7.10
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 15 May 2012 18:46:36 +0200
-Johan Hovold <jhovold@gmail.com> wrote:
+Fixed C99 comment issue in drivers/usb/storage/usb.c
+found using checkpatch.pl tool.
+Signed-off-by: Jeffrin Jose <ahiliation@yahoo.co.in>
+---
+ drivers/usb/storage/usb.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-> Add sub-driver for the ambient-light-sensor interface on National
-> Semiconductor / TI LM3533 lighting power chips.
-> 
-> The sensor interface can be used to control the LEDs and backlights of
-> the chip through defining five light zones and three sets of
-> corresponding brightness target levels.
-> 
-> The driver provides raw and mean adc readings along with the current
-> light zone through sysfs. A threshold event can be generated on zone
-> changes.
->
-> ...
->
->  drivers/staging/iio/light/Kconfig                  |   16 +
->  drivers/staging/iio/light/Makefile                 |    1 +
->  drivers/staging/iio/light/lm3533-als.c             |  726 ++++++++++++++++++++
-
-Why is this aimed at drivers/staging/, rather than directly into
-drivers/iio/?
+diff --git a/drivers/usb/storage/usb.c b/drivers/usb/storage/usb.c
+index 2653e73..7ad1a8b 100644
+--- a/drivers/usb/storage/usb.c
++++ b/drivers/usb/storage/usb.c
+@@ -261,7 +261,7 @@ EXPORT_SYMBOL_GPL(usb_stor_post_reset);
+ void fill_inquiry_response(struct us_data *us, unsigned char *data,
+ 		unsigned int data_len)
+ {
+-	if (data_len<36) // You lose.
++	if (data_len<36) /* You lose. */
+ 		return;
+ 
+ 	memset(data+8, ' ', 28);
+-- 
+1.7.10
 
