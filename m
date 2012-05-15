@@ -1,86 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S966005Ab2EOSFA (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 May 2012 14:05:00 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:46591 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932519Ab2EOSE5 (ORCPT
+	id S932968Ab2EOSKT (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 May 2012 14:10:19 -0400
+Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:53622 "EHLO
+	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932750Ab2EOSKQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 May 2012 14:04:57 -0400
-Date: Tue, 15 May 2012 11:04:54 -0700 (PDT)
-From: David Rientjes <rientjes@google.com>
-X-X-Sender: rientjes@chino.kir.corp.google.com
-To: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-cc: a.p.zijlstra@chello.nl, mingo@kernel.org, pjt@google.com,
-        paul@paulmenage.org, akpm@linux-foundation.org, rjw@sisk.pl,
-        nacc@us.ibm.com, paulmck@linux.vnet.ibm.com, tglx@linutronix.de,
-        seto.hidetoshi@jp.fujitsu.com, tj@kernel.org, mschmidt@redhat.com,
-        berrange@redhat.com, nikunj@linux.vnet.ibm.com,
-        vatsa@linux.vnet.ibm.com, liuj97@gmail.com,
-        linux-kernel@vger.kernel.org, linux-pm@vger.kernel.org
-Subject: Re: [PATCH v3 1/5] cpusets, hotplug: Implement cpuset tree traversal
- in a helper function
-In-Reply-To: <4FB248DB.90000@linux.vnet.ibm.com>
-Message-ID: <alpine.DEB.2.00.1205151101240.24304@chino.kir.corp.google.com>
-References: <20120513231325.3566.37740.stgit@srivatsabhat> <20120513231449.3566.70799.stgit@srivatsabhat> <alpine.DEB.2.00.1205141700480.25235@chino.kir.corp.google.com> <4FB248DB.90000@linux.vnet.ibm.com>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+	Tue, 15 May 2012 14:10:16 -0400
+Date: Tue, 15 May 2012 20:10:04 +0200
+From: Pavel Machek <pavel@ucw.cz>
+To: lenb@kernel.org, linux-acpi@vger.kernel.org,
+        kernel list <linux-kernel@vger.kernel.org>,
+        ibm-acpi-devel@lists.sourceforge.net,
+        platform-driver-x86@vger.kernel.org
+Subject: thinkpad x60: critical thermal shutdown does not work (and ethernet
+ overheats)
+Message-ID: <20120515181004.GA2499@elf.ucw.cz>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+X-Warning: Reading this can be dangerous to your mental health.
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 15 May 2012, Srivatsa S. Bhat wrote:
+Hi!
 
-> >> diff --git a/kernel/cpuset.c b/kernel/cpuset.c
-> >> index 14f7070..23e5da6 100644
-> >> --- a/kernel/cpuset.c
-> >> +++ b/kernel/cpuset.c
-> >> @@ -2000,6 +2000,23 @@ static void remove_tasks_in_empty_cpuset(struct cpuset *cs)
-> >>  	move_member_tasks_to_cpuset(cs, parent);
-> >>  }
-> >>  
-> >> +static struct cpuset *traverse_cpusets(struct list_head *queue)
-> > 
-> > I suggest a different name for this, traverse_cpusets() doesn't imply that 
-> > it will be returning struct cpuset *.
-> 
-> 
-> OK, I guess something like cpuset_next() or next_cpuset() should be fine?
-> 
+I have rather old thinkpad x60 here. Long time ago, I noticed that on
+high continuous ethernet load, it shuts itself down in regular
+way. I traced it down to overheat, followed by ACPI signaling system
+to go down.
 
-The generic cgroup code seems to prefer cgroup_iter_next(), so 
-cpuset_next() sounds appropriate.
+This no longer works in recent kernels. (3.4-rc7 tested, but probably
+it does not work correctly in 3.2 either). Now machine just hangs when
+it should start /sbin/poweroff. If I then turn it on, it hangs during
+ACPI init. I have to let it cool down, then it can boot.
 
-> >> +{
-> >> +	struct cpuset *cp;
-> >> +	struct cpuset *child;	/* scans child cpusets of cp */
-> >> +	struct cgroup *cont;
-> >> +
-> >> +	cp = list_first_entry(queue, struct cpuset, stack_list);
-> >> +	list_del(queue->next);
-> >> +	list_for_each_entry(cont, &cp->css.cgroup->children, sibling) {
-> >> +		child = cgroup_cs(cont);
-> >> +		list_add_tail(&child->stack_list, queue);
-> >> +	}
-> >> +
-> >> +	return cp;
-> > 
-> > Eek, what happens if queue is empty?  It can't happen with only this 
-> > patch applied, but since you're doing this to be used in other places then 
-> > you'd need to check for list_empty().
-> > 
-> 
-> 
-> Actually, I didn't intend this to be used in other places because their
-> traversals are a little bit different anyway.. But yes, having a check for
-> list_empty() would be good. I'll add it and change the loop to something like:
-> 
-> while (cpuset_next(&queue) {
-> 	...
-> }
-> 
-> Thanks for pointing this out!
-> 
+Now:
 
-Sounds good if cpuset_next() returns NULL for list_empty().
+a) Any ideas how to solve the overheating problem? Is it hw or sw? Are
+there workarounds... like should I go to 10mbit? (It overheats even
+under 2MB/sec continuous load...). Is it common thinkpad fault?
+
+b) Why did it stop shutting down correctly? Can you reproduce it by
+overheating machine artifically?
+
+Ideas?
+									Pavel
+
+-- 
+(english) http://www.livejournal.com/~pavelmachek
+(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
