@@ -1,70 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965761Ab2EOCSx (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 May 2012 22:18:53 -0400
-Received: from mail1.windriver.com ([147.11.146.13]:53168 "EHLO
-	mail1.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S964917Ab2EOCQs (ORCPT
+	id S965793Ab2EOCVF (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 May 2012 22:21:05 -0400
+Received: from LGEMRELSE7Q.lge.com ([156.147.1.151]:58524 "EHLO
+	LGEMRELSE7Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S965430Ab2EOCVB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 May 2012 22:16:48 -0400
-From: Paul Gortmaker <paul.gortmaker@windriver.com>
-To: <stable@kernel.org>, <linux-kernel@vger.kernel.org>
-Subject: [34-longterm 060/179] USB: serial: add another 4N-GALAXY.DE PID to ftdi_sio driver
-Date: Mon, 14 May 2012 22:12:36 -0400
-Message-ID: <1337048075-6132-61-git-send-email-paul.gortmaker@windriver.com>
-X-Mailer: git-send-email 1.7.9.6
-In-Reply-To: <1337048075-6132-1-git-send-email-paul.gortmaker@windriver.com>
-References: <1337048075-6132-1-git-send-email-paul.gortmaker@windriver.com>
+	Mon, 14 May 2012 22:21:01 -0400
+X-AuditID: 9c930197-b7be2ae000000ebb-26-4fb1bd8adda1
+Message-ID: <4FB1BDAB.7090609@kernel.org>
+Date: Tue, 15 May 2012 11:21:31 +0900
+From: Minchan Kim <minchan@kernel.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:11.0) Gecko/20120410 Thunderbird/11.0.1
 MIME-Version: 1.0
-Content-Type: text/plain
+Newsgroups: gmane.linux.kernel.mm,gmane.linux.kernel
+To: Nitin Gupta <ngupta@vflare.org>
+CC: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 3/4] zsmalloc use zs_handle instead of void *
+References: <4FAB21E7.7020703@kernel.org> <20120510140215.GC26152@phenom.dumpdata.com> <4FABD503.4030808@vflare.org> <4FABDA9F.1000105@linux.vnet.ibm.com> <20120510151941.GA18302@kroah.com> <4FABECF5.8040602@vflare.org> <20120510164418.GC13964@kroah.com> <4FABF9D4.8080303@vflare.org> <20120510173322.GA30481@phenom.dumpdata.com> <4FAC4E3B.3030909@kernel.org> <20120511192831.GC3785@phenom.dumpdata.com> <4FB06B91.1080008@kernel.org> <CAPkvG_dTA7HwzVBo70bZuqkX+ZfjJpS+p4L9L+jF4Uz1ooEx0Q@mail.gmail.com>
+In-Reply-To: <CAPkvG_dTA7HwzVBo70bZuqkX+ZfjJpS+p4L9L+jF4Uz1ooEx0Q@mail.gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Steffen Sledz <sledz@dresearch-fe.de>
+On 05/15/2012 10:57 AM, Nitin Gupta wrote:
 
-                   -------------------
-    This is a commit scheduled for the next v2.6.34 longterm release.
-    http://git.kernel.org/?p=linux/kernel/git/paulg/longterm-queue-2.6.34.git
-    If you see a problem with using this for longterm, please comment.
-                   -------------------
+<SNIP>
 
-commit a26d31cef06f43a76327c21235e75450869df2b8 upstream.
+>>>
+>>>>
+>>>>
+>>>>>> Its true that making it a real struct would prevent accidental casts
+>>>>>> to void * but due to the above problem, I think we have to stick
+>>>>>> with unsigned long.
+>>>
+>>> So the problem you are seeing is that you don't want 'struct zs_handle'
+>>> be present in the drivers/staging/zsmalloc/zsmalloc.h header file?
+>>> It looks like the proper place.
+>>
+>>
+>> No. What I want is to remove coupling zsallocator's handle with zram/zcache.
+>> They shouldn't know internal of handle and assume it's a pointer.
+>>
+>> If Nitin confirm zs_handle's format can never change in future, I prefer "unsigned long" Nitin suggested than (void *).
+>> It can prevent confusion that normal allocator's return value is pointer for address so the problem is easy.
+>> But I am not sure he can make sure it.
+>>
+> 
+> zs_handle will always be an unsigned long so its better to just use
+> the same as return type.
 
-E.g. newer CAN 2.0 A/B <=> USB 2.0 converters report idProduct=f3c2.
 
-Signed-off-by: Steffen Sledz <sledz@dresearch-fe.de>
-Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
-Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
----
- drivers/usb/serial/ftdi_sio.c     |    1 +
- drivers/usb/serial/ftdi_sio_ids.h |    1 +
- 2 files changed, 2 insertions(+)
+Okay. it makes problem very easy.
 
-diff --git a/drivers/usb/serial/ftdi_sio.c b/drivers/usb/serial/ftdi_sio.c
-index eac7330..c7e4fb8 100644
---- a/drivers/usb/serial/ftdi_sio.c
-+++ b/drivers/usb/serial/ftdi_sio.c
-@@ -651,6 +651,7 @@ static struct usb_device_id id_table_combined [] = {
- 	{ USB_DEVICE(FTDI_VID, EVER_ECO_PRO_CDS) },
- 	{ USB_DEVICE(FTDI_VID, FTDI_4N_GALAXY_DE_1_PID) },
- 	{ USB_DEVICE(FTDI_VID, FTDI_4N_GALAXY_DE_2_PID) },
-+	{ USB_DEVICE(FTDI_VID, FTDI_4N_GALAXY_DE_3_PID) },
- 	{ USB_DEVICE(FTDI_VID, XSENS_CONVERTER_0_PID) },
- 	{ USB_DEVICE(FTDI_VID, XSENS_CONVERTER_1_PID) },
- 	{ USB_DEVICE(FTDI_VID, XSENS_CONVERTER_2_PID) },
-diff --git a/drivers/usb/serial/ftdi_sio_ids.h b/drivers/usb/serial/ftdi_sio_ids.h
-index a644665..a73443f 100644
---- a/drivers/usb/serial/ftdi_sio_ids.h
-+++ b/drivers/usb/serial/ftdi_sio_ids.h
-@@ -351,6 +351,7 @@
-  */
- #define FTDI_4N_GALAXY_DE_1_PID	0xF3C0
- #define FTDI_4N_GALAXY_DE_2_PID	0xF3C1
-+#define FTDI_4N_GALAXY_DE_3_PID	0xF3C2
- 
- /*
-  * Linx Technologies product ids
+> 
+> Another alternative is to return 'struct zs_handle *' which can be
+> used as a 'void *' by zcache and as unsigned long by zsmalloc.
+> However, I see no good reason for preferring this over simple unsigned
+> long as the return type.
+
+
+Agreed.
+
 -- 
-1.7.9.6
-
+Kind regards,
+Minchan Kim
