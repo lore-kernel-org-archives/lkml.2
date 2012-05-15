@@ -1,60 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932883Ab2EOOf0 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 May 2012 10:35:26 -0400
-Received: from lxorguk.ukuu.org.uk ([81.2.110.251]:45149 "EHLO
-	lxorguk.ukuu.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932174Ab2EOOfZ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 May 2012 10:35:25 -0400
-Date: Tue, 15 May 2012 15:38:18 +0100
-From: Alan Cox <alan@lxorguk.ukuu.org.uk>
-To: "Andre Hedrick (anhedric)" <anhedric@cisco.com>
-Cc: <linux-kernel@vger.kernel.org>
-Subject: Re: CFA 4.0 patch
-Message-ID: <20120515153818.3e70d845@pyramind.ukuu.org.uk>
-In-Reply-To: <4E75C4FECC27A44E9F7E0737D71946900F686C61@xmb-sjc-21e.amer.cisco.com>
-References: <4E75C4FECC27A44E9F7E0737D71946900F686C61@xmb-sjc-21e.amer.cisco.com>
-X-Mailer: Claws Mail 3.8.0 (GTK+ 2.24.8; x86_64-redhat-linux-gnu)
-Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S932917Ab2EOOfx (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 May 2012 10:35:53 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:57771 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932899Ab2EOOfu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 May 2012 10:35:50 -0400
+Date: Tue, 15 May 2012 17:35:50 +0300
+From: "Michael S. Tsirkin" <mst@redhat.com>
+To: x86@kernel.org, kvm@vger.kernel.org
+Cc: Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
+        Avi Kivity <avi@redhat.com>, Marcelo Tosatti <mtosatti@redhat.com>,
+        gleb@redhat.com, Linus Torvalds <torvalds@linux-foundation.org>,
+        linux-kernel@vger.kernel.org
+Subject: [PATCHv3 1/8] apic: fix typo EIO_ACK -> EOI_ACK and document
+Message-ID: <37867b31b9330690af2e60a2a7c4cb4b1b070caf.1337091955.git.mst@redhat.com>
+References: <cover.1337091955.git.mst@redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <cover.1337091955.git.mst@redhat.com>
+X-Mutt-Fcc: =sent
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> 044Ah: This is the alternate value of Word 0 turns on ATA device and
-> turns off Removable Media and Removable Device while 	preserving all
-> Retired bits in the word.
-> 
-> 0040h: This is the alternate value of Word 0 turns on ATA device and
-> turns off Removable Media and Removable Device while 	zeroing all
-> Retired bits in the word
-> 
-> Cheers,
-> Andre
-> --------------------
-> The Linux X-ATA/SATA guy
-      ^former ;)
+Fix typo in the macro name and document the
+reason it has this value. Update users.
 
+Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
+---
+ arch/x86/include/asm/apicdef.h         |    2 +-
+ arch/x86/platform/visws/visws_quirks.c |    2 +-
+ 2 files changed, 2 insertions(+), 2 deletions(-)
 
-> --- linux-2.6.32.orig/include/linux/ata.h	Mon May 14 15:48:24 2012
-> +++ linux-2.6.32/include/linux/ata.h	Mon May 14 15:51:42 2012
-> @@ -819,6 +819,10 @@
->  {
->  	if (id[ATA_ID_CONFIG] == 0x848A)	/* Traditional CF */
->  		return 1;
-> +	if (id[ATA_ID_CONFIG] == 0x044A)	/* Alternative CF w/
-> removable turned off, preserving retired bits */
-> +		return 1;
-> +	if (id[ATA_ID_CONFIG] == 0x0040)	/* Alternative CF w/
-> removable turned off, zeroing retired bits*/
-> +		return 1;
+diff --git a/arch/x86/include/asm/apicdef.h b/arch/x86/include/asm/apicdef.h
+index 134bba0..c46bb99 100644
+--- a/arch/x86/include/asm/apicdef.h
++++ b/arch/x86/include/asm/apicdef.h
+@@ -37,7 +37,7 @@
+ #define		APIC_ARBPRI_MASK	0xFFu
+ #define	APIC_PROCPRI	0xA0
+ #define	APIC_EOI	0xB0
+-#define		APIC_EIO_ACK		0x0
++#define		APIC_EOI_ACK		0x0 /* Docs say 0 for future compat. */
+ #define	APIC_RRR	0xC0
+ #define	APIC_LDR	0xD0
+ #define		APIC_LDR_MASK		(0xFFu << 24)
+diff --git a/arch/x86/platform/visws/visws_quirks.c b/arch/x86/platform/visws/visws_quirks.c
+index c7abf13..94d8a39 100644
+--- a/arch/x86/platform/visws/visws_quirks.c
++++ b/arch/x86/platform/visws/visws_quirks.c
+@@ -445,7 +445,7 @@ static void ack_cobalt_irq(struct irq_data *data)
+ 
+ 	spin_lock_irqsave(&cobalt_lock, flags);
+ 	disable_cobalt_irq(data);
+-	apic_write(APIC_EOI, APIC_EIO_ACK);
++	apic_write(APIC_EOI, APIC_EOI_ACK);
+ 	spin_unlock_irqrestore(&cobalt_lock, flags);
+ }
+ 
+-- 
+MST
 
-Do you have test case hardware for this that fails the other checks. I've
-never ever come across any. I don't believe it exists at this point.
-
-Also 2.6.32 is some years ago 8)
-
-Alan
