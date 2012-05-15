@@ -1,107 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758483Ab2EOIvX (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 May 2012 04:51:23 -0400
-Received: from mail-ob0-f174.google.com ([209.85.214.174]:39874 "EHLO
-	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758434Ab2EOIvR (ORCPT
+	id S1758398Ab2EOIxg (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 May 2012 04:53:36 -0400
+Received: from mail-lb0-f174.google.com ([209.85.217.174]:51715 "EHLO
+	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758195Ab2EOIxe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 May 2012 04:51:17 -0400
+	Tue, 15 May 2012 04:53:34 -0400
+Message-ID: <4FB21988.40503@openvz.org>
+Date: Tue, 15 May 2012 12:53:28 +0400
+From: Konstantin Khlebnikov <khlebnikov@openvz.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.2) Gecko/20120217 Firefox/10.0.2 Iceape/2.7.2
 MIME-Version: 1.0
-In-Reply-To: <alpine.LSU.2.00.1205120502370.28861@eggly.anvils>
-References: <alpine.LSU.2.00.1205120447380.28861@eggly.anvils>
-	<alpine.LSU.2.00.1205120502370.28861@eggly.anvils>
-Date: Tue, 15 May 2012 18:51:16 +1000
-Message-ID: <CAPa8GCDk89o5H9mA40fRv_Us35vQXMPYFDT_r=affo90TnGm6g@mail.gmail.com>
-Subject: Re: [PATCH 3/10] tmpfs: optimize clearing when writing
-From: Nick Piggin <npiggin@gmail.com>
 To: Hugh Dickins <hughd@google.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Christoph Hellwig <hch@infradead.org>, linux-mm@kvack.org,
-        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
+CC: Andrew Morton <akpm@linux-foundation.org>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Johannes Weiner <hannes@cmpxchg.org>, Michal Hocko <mhocko@suse.cz>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 3/3] mm/memcg: apply add/del_page to lruvec
+References: <alpine.LSU.2.00.1205132152530.6148@eggly.anvils> <alpine.LSU.2.00.1205132201210.6148@eggly.anvils> <4FB0E985.9000107@openvz.org> <alpine.LSU.2.00.1205141252060.1693@eggly.anvils>
+In-Reply-To: <alpine.LSU.2.00.1205141252060.1693@eggly.anvils>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by nfs id q4F8pUPT009941
 
-On 12 May 2012 22:04, Hugh Dickins <hughd@google.com> wrote:
-> Nick proposed years ago that tmpfs should avoid clearing its pages where
-> write will overwrite them with new data, as ramfs has long done.  But I
-> messed it up and just got bad data.  Tried again recently, it works fine.
+Hugh Dickins wrote:
+> On Mon, 14 May 2012, Konstantin Khlebnikov wrote:
+>> Hugh Dickins wrote:
+>>> Take lruvec further: pass it instead of zone to add_page_to_lru_list()
+>>> and del_page_from_lru_list(); and pagevec_lru_move_fn() pass lruvec
+>>> down to its target functions.
+>>>
+>>> This cleanup eliminates a swathe of cruft in memcontrol.c,
+>>> including mem_cgroup_lru_add_list(), mem_cgroup_lru_del_list() and
+>>> mem_cgroup_lru_move_lists() - which never actually touched the lists.
+>>>
+>>> In their place, mem_cgroup_page_lruvec() to decide the lruvec,
+>>> previously a side-effect of add, and mem_cgroup_update_lru_size()
+>>> to maintain the lru_size stats.
+>>>
+>>> Whilst these are simplifications in their own right, the goal is to
+>>> bring the evaluation of lruvec next to the spin_locking of the lrus,
+>>> in preparation for a future patch.
+>>>
+>>> Signed-off-by: Hugh Dickins<hughd@google.com>
+>>> ---
+>>> The horror, the horror: I have three lines of 81 columns:
+>>> I do think they look better this way than split up.
+>>
+>> This too huge and hard to review. =(
 >
-> Here's time output for writing 4GiB 16 times on this Core i5 laptop:
+> Hah, we have very different preferences: whereas I found your
+> split into twelve a hindrance to review rather than a help.
 >
-> before: real    0m21.169s user  0m0.028s sys    0m21.057s
->        real    0m21.382s user  0m0.016s sys    0m21.289s
->        real    0m21.311s user  0m0.020s sys    0m21.217s
+>> I have the similar thing splitted into several patches.
 >
-> after:  real    0m18.273s user  0m0.032s sys    0m18.165s
->        real    0m18.354s user  0m0.020s sys    0m18.265s
->        real    0m18.440s user  0m0.032s sys    0m18.337s
->
-> ramfs:  real    0m16.860s user  0m0.028s sys    0m16.765s
->        real    0m17.382s user  0m0.040s sys    0m17.273s
->        real    0m17.133s user  0m0.044s sys    0m17.021s
+> I had been hoping to get this stage, where I think we're still in
+> agreement (except perhaps on the ordering of function arguments!),
+> into 3.5 as a basis for later discussion.
 
-Cool, thanks Hugh! Very big speedup.
+Yeah, my version differs mostly in function's names and ordering of arguments.
+I use 'long' for last argument in mem_cgroup_update_lru_size(),
+and call it once in isolate_lru_pages(), rather than for each isolated page.
+You have single mem_cgroup_page_lruvec() variant, and this is biggest difference
+between our versions. So, Ok, nothing important at this stage.
 
+Acked-by: Konstantin Khlebnikov <khlebnikov@openvz.org>
 
 >
-> Yes, I have done perf reports, but they need more explanation than they
-> deserve: in summary, clear_page vanishes, its cache loading shifts into
-> copy_user_generic_unrolled; shmem_getpage_gfp goes down, and surprisingly
-> mark_page_accessed goes way up - I think because they are respectively
-> where the cache gets to be reloaded after being purged by clear or copy.
+> But I won't have time to split it into bite-sized pieces for
+> linux-next now before 3.4 goes out, so it sounds like we'll have
+> to drop it this time around.  Oh well.
 >
-> Suggested-by: Nick Piggin <npiggin@gmail.com>
-> Signed-off-by: Hugh Dickins <hughd@google.com>
-> ---
->  mm/shmem.c |   20 +++++++++++++++++---
->  1 file changed, 17 insertions(+), 3 deletions(-)
+> Thanks (you and Kame and Michal) for the very quick review of
+> the other, even more trivial, patches.
 >
-> --- 3045N.orig/mm/shmem.c       2012-05-05 10:46:05.732062006 -0700
-> +++ 3045N/mm/shmem.c    2012-05-05 10:46:12.316062172 -0700
-> @@ -1095,9 +1095,14 @@ repeat:
->                shmem_recalc_inode(inode);
->                spin_unlock(&info->lock);
+>>
+>> Also I want to replace page_cgroup->mem_cgroup pointer with
+>> page_cgroup->lruvec
+>> and rework "surreptitious switching any uncharged page to root"
+>> In my set I have mem_cgroup_page_lruvec() without side-effects and
+>> mem_cgroup_page_lruvec_putback() with can switch page's lruvec, but it not
+>> always moves pages to root: in
+>> putback_inactive_pages()/move_active_pages_to_lru()
+>> we have better candidate for lruvec switching.
 >
-> -               clear_highpage(page);
-> -               flush_dcache_page(page);
-> -               SetPageUptodate(page);
-> +               /*
-> +                * Let SGP_WRITE caller clear ends if write does not fill page
-> +                */
-> +               if (sgp != SGP_WRITE) {
-> +                       clear_highpage(page);
-> +                       flush_dcache_page(page);
-> +                       SetPageUptodate(page);
-> +               }
->                if (sgp == SGP_DIRTY)
->                        set_page_dirty(page);
->        }
-> @@ -1307,6 +1312,14 @@ shmem_write_end(struct file *file, struc
->        if (pos + copied > inode->i_size)
->                i_size_write(inode, pos + copied);
+> But those sound like later developments on top of this to me.
 >
-> +       if (!PageUptodate(page)) {
-> +               if (copied < PAGE_CACHE_SIZE) {
-> +                       unsigned from = pos & (PAGE_CACHE_SIZE - 1);
-> +                       zero_user_segments(page, 0, from,
-> +                                       from + copied, PAGE_CACHE_SIZE);
-> +               }
-> +               SetPageUptodate(page);
-> +       }
->        set_page_dirty(page);
->        unlock_page(page);
->        page_cache_release(page);
-> @@ -1768,6 +1781,7 @@ static int shmem_symlink(struct inode *d
->                kaddr = kmap_atomic(page);
->                memcpy(kaddr, symname, len);
->                kunmap_atomic(kaddr);
-> +               SetPageUptodate(page);
->                set_page_dirty(page);
->                unlock_page(page);
->                page_cache_release(page);
-���{.n�+�������+%�����ݶ��w��{.n�+����{��G�����{ay�ʇڙ�,j��f���h��������z_�(�階�ݢj"���m������G������?����&���~��iO��z��v�^�m����������?�I�
+> Hugh
+
