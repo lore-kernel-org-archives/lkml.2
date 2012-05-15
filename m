@@ -1,95 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964945Ab2EOO6J (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 May 2012 10:58:09 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:54192 "EHLO mx2.suse.de"
+	id S932955Ab2EOPAV (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 May 2012 11:00:21 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:35383 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756045Ab2EOO6G (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 May 2012 10:58:06 -0400
-Date: Tue, 15 May 2012 16:58:05 +0200
-From: Michal Hocko <mhocko@suse.cz>
-To: Johannes Weiner <hannes@cmpxchg.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        cgroups@vger.kernel.org, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [patch 4/6] mm: memcg: keep ratelimit counter separate from
- event counters
-Message-ID: <20120515145805.GI11346@tiehlicka.suse.cz>
-References: <1337018451-27359-1-git-send-email-hannes@cmpxchg.org>
- <1337018451-27359-5-git-send-email-hannes@cmpxchg.org>
+	id S1756104Ab2EOPAT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 May 2012 11:00:19 -0400
+Date: Tue, 15 May 2012 18:00:05 +0300
+From: Gleb Natapov <gleb@redhat.com>
+To: Alan Cox <alan@lxorguk.ukuu.org.uk>
+Cc: Hannes Reinecke <hare@suse.de>, LKML <linux-kernel@vger.kernel.org>,
+        "H. Peter Anvin" <hpa@linux.intel.com>
+Subject: Re: [PATCH] EDD: Check for correct EDD 3.0 length
+Message-ID: <20120515150005.GG6948@redhat.com>
+References: <20120515111255.GJ32036@redhat.com>
+ <4FB23C09.7060300@suse.de>
+ <20120515115917.GK32036@redhat.com>
+ <20120515144945.339e742f@pyramind.ukuu.org.uk>
+ <20120515141214.GB6948@redhat.com>
+ <20120515151849.54a12175@pyramind.ukuu.org.uk>
+ <20120515142129.GC6948@redhat.com>
+ <20120515153614.4b5b4525@pyramind.ukuu.org.uk>
+ <20120515144810.GE6948@redhat.com>
+ <20120515155450.13040d1f@pyramind.ukuu.org.uk>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1337018451-27359-5-git-send-email-hannes@cmpxchg.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20120515155450.13040d1f@pyramind.ukuu.org.uk>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon 14-05-12 20:00:49, Johannes Weiner wrote:
-> All events except the ratelimit counter are statistics exported to
-> userspace.  Keep this internal value out of the event count array.
-
-OK, makes sense. I was just thinking that events_internal array (with a
-single MEM_CGROUP_EVENTS_COUNT) would be more consistent. Probably too
-much churn for a single event though.
-
+On Tue, May 15, 2012 at 03:54:50PM +0100, Alan Cox wrote:
+> > > Sample case of .. 1
+> > > 
+> > Not one. Any system with SCSI disk. Revert the patch and check on yours.
 > 
-> Signed-off-by: Johannes Weiner <hannes@cmpxchg.org>
-
-Acked-by: Michal Hocko <mhocko@suse.cz>
-
-> ---
->  mm/memcontrol.c |    6 +++---
->  1 file changed, 3 insertions(+), 3 deletions(-)
+> I don't have a SCSI disk. In fact most users don't have a SCSI disk 8)
 > 
-> diff --git a/mm/memcontrol.c b/mm/memcontrol.c
-> index 9e8551c..546e7db 100644
-> --- a/mm/memcontrol.c
-> +++ b/mm/memcontrol.c
-> @@ -105,7 +105,6 @@ enum mem_cgroup_stat_index {
->  enum mem_cgroup_events_index {
->  	MEM_CGROUP_EVENTS_PGPGIN,	/* # of pages paged in */
->  	MEM_CGROUP_EVENTS_PGPGOUT,	/* # of pages paged out */
-> -	MEM_CGROUP_EVENTS_COUNT,	/* # of pages paged in/out */
->  	MEM_CGROUP_EVENTS_PGFAULT,	/* # of page-faults */
->  	MEM_CGROUP_EVENTS_PGMAJFAULT,	/* # of major page-faults */
->  	MEM_CGROUP_EVENTS_NSTATS,
-> @@ -129,6 +128,7 @@ enum mem_cgroup_events_target {
->  struct mem_cgroup_stat_cpu {
->  	long count[MEM_CGROUP_STAT_NSTATS];
->  	unsigned long events[MEM_CGROUP_EVENTS_NSTATS];
-> +	unsigned long nr_page_events;
->  	unsigned long targets[MEM_CGROUP_NTARGETS];
->  };
->  
-> @@ -736,7 +736,7 @@ static void mem_cgroup_charge_statistics(struct mem_cgroup *memcg,
->  		nr_pages = -nr_pages; /* for event */
->  	}
->  
-> -	__this_cpu_add(memcg->stat->events[MEM_CGROUP_EVENTS_COUNT], nr_pages);
-> +	__this_cpu_add(memcg->stat->nr_page_events, nr_pages);
->  
->  	preempt_enable();
->  }
-> @@ -797,7 +797,7 @@ static bool mem_cgroup_event_ratelimit(struct mem_cgroup *memcg,
->  {
->  	unsigned long val, next;
->  
-> -	val = __this_cpu_read(memcg->stat->events[MEM_CGROUP_EVENTS_COUNT]);
-> +	val = __this_cpu_read(memcg->stat->nr_page_events);
->  	next = __this_cpu_read(memcg->stat->targets[target]);
->  	/* from time_after() in jiffies.h */
->  	if ((long)next - (long)val < 0) {
-> -- 
-> 1.7.10.1
-> 
+Most of them have SATA which is not even defined by Phoenix spec 8)
 
--- 
-Michal Hocko
-SUSE Labs
-SUSE LINUX s.r.o.
-Lihovarska 1060/12
-190 00 Praha 9    
-Czech Republic
+> > > Actual systems in the field are using both 3.0 and 4.0 so we need to deal
+> > > with that as part of fixing this. That is the reality of the situation.
+> > Again let me correct myself. This is not about 3.0 versus 4.0. This is
+> > about Phoenix vs T13 spec. The code was written to support only T13.
+> 
+> Well actually the code was written to mishandle both in different ways.
+This is simply not true. The code defines device path structure
+according to T13 spec and clearly states in the header which spec it was
+written to support. May be this is not clear from the thread but the code
+still provides every other information except device path from Phoenix
+EDD. You can still see pci device from /sys/firmware/edd/int13_80.
+
+> You propose to change it to handle one correctly and completely fail on
+> the other. That isn't what needs to happen.
+> 
+Not completely fail, only suppress information the code does not know
+how to parse!
+
+--
+			Gleb.
