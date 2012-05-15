@@ -1,49 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932253Ab2EOJLw (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 May 2012 05:11:52 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:55236 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753110Ab2EOJLv convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 May 2012 05:11:51 -0400
-Message-ID: <1337073074.27694.6.camel@twins>
-Subject: Re: [PATCH v5 6/7] x86/tlb: optimizing flush_tlb_mm
-From: Peter Zijlstra <a.p.zijlstra@chello.nl>
-To: Alex Shi <alex.shi@intel.com>
-Cc: tglx@linutronix.de, mingo@redhat.com, hpa@zytor.com, arnd@arndb.de,
-        rostedt@goodmis.org, fweisbec@gmail.com, jeremy@goop.org,
-        riel@redhat.com, luto@mit.edu, avi@redhat.com, len.brown@intel.com,
-        dhowells@redhat.com, fenghua.yu@intel.com, borislav.petkov@amd.com,
-        yinghai@kernel.org, ak@linux.intel.com, cpw@sgi.com, steiner@sgi.com,
-        akpm@linux-foundation.org, penberg@kernel.org, hughd@google.com,
-        rientjes@google.com, kosaki.motohiro@jp.fujitsu.com,
-        n-horiguchi@ah.jp.nec.com, tj@kernel.org, oleg@redhat.com,
-        axboe@kernel.dk, jmorris@namei.org, kamezawa.hiroyu@jp.fujitsu.com,
-        viro@zeniv.linux.org.uk, linux-kernel@vger.kernel.org,
-        yongjie.ren@intel.com
-Date: Tue, 15 May 2012 11:11:14 +0200
-In-Reply-To: <1337072138-8323-7-git-send-email-alex.shi@intel.com>
-References: <1337072138-8323-1-git-send-email-alex.shi@intel.com>
-	 <1337072138-8323-7-git-send-email-alex.shi@intel.com>
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
-X-Mailer: Evolution 3.2.2- 
-Mime-Version: 1.0
+	id S932290Ab2EOJOK (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 May 2012 05:14:10 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:56780 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932120Ab2EOJOI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 May 2012 05:14:08 -0400
+Date: Tue, 15 May 2012 10:14:02 +0100
+From: Mel Gorman <mgorman@suse.de>
+To: David Miller <davem@davemloft.net>
+Cc: akpm@linux-foundation.org, linux-mm@kvack.org, netdev@vger.kernel.org,
+        linux-nfs@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Trond.Myklebust@netapp.com, neilb@suse.de, hch@infradead.org,
+        a.p.zijlstra@chello.nl, michaelc@cs.wisc.edu, emunson@mgebm.net
+Subject: Re: [PATCH 01/12] netvm: Prevent a stream-specific deadlock
+Message-ID: <20120515091402.GG29102@suse.de>
+References: <1336658065-24851-2-git-send-email-mgorman@suse.de>
+ <20120511.011034.557833140906762226.davem@davemloft.net>
+ <20120514105604.GB29102@suse.de>
+ <20120514.162634.1094732813264319951.davem@davemloft.net>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-15
+Content-Disposition: inline
+In-Reply-To: <20120514.162634.1094732813264319951.davem@davemloft.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2012-05-15 at 16:55 +0800, Alex Shi wrote:
-> Not every flush_tlb_mm execution moment is really need to evacuate all
-> TLB entries, like in munmap, just few 'invlpg' is better for whole
-> process performance, since it leaves most of TLB entries for later
-> accessing.
+On Mon, May 14, 2012 at 04:26:34PM -0400, David Miller wrote:
+> From: Mel Gorman <mgorman@suse.de>
+> Date: Mon, 14 May 2012 11:56:04 +0100
 > 
-> This patch is changing flush_tlb_mm(mm) to flush_tlb_mm(mm, start,
-> end)
-> in cases. 
+> > On Fri, May 11, 2012 at 01:10:34AM -0400, David Miller wrote:
+> >> From: Mel Gorman <mgorman@suse.de>
+> >> Date: Thu, 10 May 2012 14:54:14 +0100
+> >> 
+> >> > It could happen that all !SOCK_MEMALLOC sockets have buffered so
+> >> > much data that we're over the global rmem limit. This will prevent
+> >> > SOCK_MEMALLOC buffers from receiving data, which will prevent userspace
+> >> > from running, which is needed to reduce the buffered data.
+> >> > 
+> >> > Fix this by exempting the SOCK_MEMALLOC sockets from the rmem limit.
+> >> > 
+> >> > Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
+> >> > Signed-off-by: Mel Gorman <mgorman@suse.de>
+> >> 
+> >> This introduces an invariant which I am not so sure is enforced.
+> >> 
+> >> With this change it is absolutely required that once a socket
+> >> becomes SOCK_MEMALLOC it must never _ever_ lose that attribute.
+> >> 
+> > 
+> > This is effectively true. In the NFS case, the flag is cleared on
+> > swapoff after all the entries have been paged in. In the NBD case,
+> > SOCK_MEMALLOC is left set until the socket is destroyed. I'll update the
+> > changelog.
+> 
+> Bugs happen, you need to find a way to assert that nobody every does
+> this.  Because if a bug is introduced which makes this happen, it will
+> otherwise be very difficult to debug.
 
-Ok, so you're not getting it.
+Ok, fair point. I looked at how we could ensure it could never happen but
+that would require failing sk_clear_memalloc() and it's less clear how
+that should be properly recovered from. Instead, it can be detected that
+there are rmem tokens allocations, warn about it and fix it up albeit it
+in a fairly heavy-handed fashion. How about this on top of the existing
+patch?
 
-NACKED-BY: Peter Zijlstra <a.p.zijlstra@chello.nl>
+---8<---
+diff --git a/net/core/sock.c b/net/core/sock.c
+index 22ff2ea..e3dea27 100644
+--- a/net/core/sock.c
++++ b/net/core/sock.c
+@@ -289,6 +289,18 @@ void sk_clear_memalloc(struct sock *sk)
+ 	sock_reset_flag(sk, SOCK_MEMALLOC);
+ 	sk->sk_allocation &= ~__GFP_MEMALLOC;
+ 	static_key_slow_dec(&memalloc_socks);
++
++	/*
++	 * SOCK_MEMALLOC is allowed to ignore rmem limits to ensure forward
++	 * progress of swapping. However, if SOCK_MEMALLOC is cleared while
++	 * it has rmem allocations there is a risk that the user of the
++	 * socket cannot make forward progress due to exceeding the rmem
++	 * limits. By rights, sk_clear_memalloc() should only be called
++	 * on sockets being torn down but warn and reset the accounting if
++	 * that assumption breaks.
++	 */
++	if (WARN_ON(sk->sk_forward_alloc))
++		sk_mem_reclaim(sk);
+ }
+ EXPORT_SYMBOL_GPL(sk_clear_memalloc);
+ 
