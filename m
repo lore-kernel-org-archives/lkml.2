@@ -1,205 +1,189 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965721Ab2EOQOg (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 May 2012 12:14:36 -0400
-Received: from mail-vb0-f46.google.com ([209.85.212.46]:44323 "EHLO
-	mail-vb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965660Ab2EOQOd convert rfc822-to-8bit (ORCPT
+	id S965737Ab2EOQTM (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 May 2012 12:19:12 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:45772 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S965660Ab2EOQTJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 May 2012 12:14:33 -0400
+	Tue, 15 May 2012 12:19:09 -0400
+Date: Tue, 15 May 2012 09:19:04 -0700
+From: Tejun Heo <tj@kernel.org>
+To: Kent Overstreet <koverstreet@google.com>
+Cc: linux-bcache@vger.kernel.org, linux-kernel@vger.kernel.org,
+        dm-devel@redhat.com, agk@redhat.com
+Subject: Re: [Bcache v13 01/16] Only clone bio vecs that are in use
+Message-ID: <20120515161904.GA17216@google.com>
+References: <cover.1336619038.git.koverstreet@google.com>
+ <cb817596299fecd01ea36e4a80203f23165bda75.1336619038.git.koverstreet@google.com>
 MIME-Version: 1.0
-In-Reply-To: <201205121318.54115.arnd@arndb.de>
-References: <20120511094103.16423.51840.sendpatchset@w520>
-	<CACRpkdaVsBswz8uO_nTjbfbzt+T+YcxunpvoDvOn4+=DTwjG3A@mail.gmail.com>
-	<CANqRtoRx0VDmrPz=foD03z+ZYdb605Km8SEDKQQwCzbrZ54m3Q@mail.gmail.com>
-	<201205121318.54115.arnd@arndb.de>
-Date: Wed, 16 May 2012 01:14:32 +0900
-Message-ID: <CANqRtoQa8Ewd74d+t0iXPXkmUDan6OjcD5VPwCFpQKcg8KvXbg@mail.gmail.com>
-Subject: Re: [PATCH] gpio: Emma Mobile GPIO driver
-From: Magnus Damm <magnus.damm@gmail.com>
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: Linus Walleij <linus.walleij@linaro.org>, linux-kernel@vger.kernel.org,
-        rjw@sisk.pl, linus.walleij@stericsson.com, linux-sh@vger.kernel.org,
-        horms@verge.net.au, grant.likely@secretlab.ca, lethal@linux-sh.org,
-        olof@lixom.net
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <cb817596299fecd01ea36e4a80203f23165bda75.1336619038.git.koverstreet@google.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, May 12, 2012 at 10:18 PM, Arnd Bergmann <arnd@arndb.de> wrote:
-> On Friday 11 May 2012, Magnus Damm wrote:
->> On Fri, May 11, 2012 at 10:10 PM, Linus Walleij
->> <linus.walleij@linaro.org> wrote:
->> > On Fri, May 11, 2012 at 11:41 AM, Magnus Damm <magnus.damm@gmail.com> wrote:
->> >
->> >> +config GPIO_EM
->> >> +       tristate "Emma Mobile GPIO"
->> >> +       depends on ARM
->> >
->> > ARM really? Why should all ARM systems have the option of configuring in an Emma
->> > controller?
->>
->> Well, first of all, the Emma Mobile line of SoCs are ARM based. You
->> may think of MIPS based Emma devices. I don' t know so much about
->> them, but if you happen to know where I can find docs then I'd be very
->> interested in looking at them to see if I can share any of my recently
->> developed drivers.
->>
->> Not sure if your point is that this has nothing to do with the CPU
->> core itself - at least I usually prefer to omit CPU dependencies for
->> I/O devices and have as few dependencies as possible to get as much as
->> compile time testing done. In this particular case I've added ARM as
->> dependency because I was asked so for the UART driver 8250_em. Either
->> way is fine with me, so it's up to you GPIO maintainers to decide what
->> you want. As long as I can enable it on the ARM based SoC family I'm
->> happy. =)
->
-> My preference is generally to define the dependencies rather broadly
-> so you can build each driver on as many platforms as possible, and
-> just leave them out of defconfig. This seems to be the common way to
-> do things. Limiting by architecture makes some sense if you don't
-> want to expose the driver to all architectures that might not be
-> able to build it (e.g. s390 would not be able to build this one).
+Hello, Kent.
 
-I believe that is rather close to what i prefer too. I kept the ARM dependency.
+On Wed, May 09, 2012 at 11:08:13PM -0400, Kent Overstreet wrote:
+> Bcache creates large bios internally, and then splits them according to
+> the requirements of the underlying device. If the underlying device then
+> needs to clone the bio, the clone will fail if the original bio had more
+> than 256 segments - even if bi_vcnt - bi_idx was smaller.
 
->> >> +static inline unsigned long em_gio_read(struct em_gio_priv *p, int offs)
->> >> +{
->> >> +       if (offs < GIO_IDT0)
->> >> +               return ioread32(p->base0 + offs);
->> >> +       else
->> >> +               return ioread32(p->base1 + (offs - GIO_IDT0));
->> >> +}
->> >> +
->> >> +static inline void em_gio_write(struct em_gio_priv *p, int offs,
->> >> +                               unsigned long value)
->> >> +{
->> >> +       if (offs < GIO_IDT0)
->> >> +               iowrite32(value, p->base0 + offs);
->> >> +       else
->> >> +               iowrite32(value, p->base1 + (offs - GIO_IDT0));
->> >> +}
->> >
->> > Isn't ioread()/iowrite() some ISA I/O-space operations? What's wrong with
->> > readl_[relaxed] and writel_[relaxed]()?
->>
->> Nothing wrong with readl/writel, I've just have a habit of using the
->> ioread/iowrite ones. I find the code that allows platforms to select
->> PORT or IOMEM in lib/iomap.c rather neat.
->
-> For reference: The ioread family is defined to be a superset of the
-> readl family and the inl family and to be compatible with the calling
-> convention of readl, so it's correct to use it here, but it may be
-> slower on architectures that require the lib/iomap.c wrappers. ARM
-> does not use those wrappers on modern systems because the PIO space
-> is memory mapped.
->
-> For performance sensitive drivers that do not use DMA, it makes
-> sense to use the readl_relaxed() family instead, because those
-> omit the expensive barriers that protect us from overlapping with
-> DMA.
->
-> The main advantage of using readl/writel is that it's more common
-> on ARM so reviewers don't have to wonder why this driver does things
-> differently. Any driver shared with powerpc, mips or sh would likely
-> use a different style. E.g. on powerpc, using readl/writel is considered
-> wrong because it's only well-defined for PCI there.
+I think this is a useful change outside the context of bcache.  How
+about generalizing the description a bit and send it to Jens w/ block:
+tag?
 
-Thanks for zooming out a bit and sharing your knowledge. As you know,
-the code is not shared with any other architecture at this point, but
-I decided to keep on using ioread/iowrite in V2 after all. I may
-optimize the GPIO bits later if I need to hook up some big banging SPI
-or I2C, but for now I think this is fine.
+> @@ -1078,28 +1078,22 @@ static struct bio *split_bvec(struct bio *bio, sector_t sector,
+>   * Creates a bio that consists of range of complete bvecs.
+>   */
+>  static struct bio *clone_bio(struct bio *bio, sector_t sector,
+> -			     unsigned short idx, unsigned short bv_count,
+> +			     unsigned short bv_count,
+>  			     unsigned int len, struct bio_set *bs)
+>  {
+>  	struct bio *clone;
+>  
+> -	clone = bio_alloc_bioset(GFP_NOIO, bio->bi_max_vecs, bs);
+> -	__bio_clone(clone, bio);
+> -	clone->bi_destructor = dm_bio_destructor;
+> +	clone = bio_clone_bioset(bio, GFP_NOIO, bs);
+>  	clone->bi_sector = sector;
+> -	clone->bi_idx = idx;
+> -	clone->bi_vcnt = idx + bv_count;
+> +	clone->bi_vcnt = bv_count;
+>  	clone->bi_size = to_bytes(len);
+>  	clone->bi_flags &= ~(1 << BIO_SEG_VALID);
+> -
+> -	if (bio_integrity(bio)) {
+> -		bio_integrity_clone(clone, bio, GFP_NOIO, bs);
+> -
+> +#if 0
+> +	if (bio_integrity(bio))
+>  		if (idx != bio->bi_idx || clone->bi_size < bio->bi_size)
+>  			bio_integrity_trim(clone,
+>  					   bio_sector_offset(bio, idx, 0), len);
+> -	}
+> -
+> +#endif
+>  	return clone;
+>  }
 
->> >> +static struct em_gio_priv *irq_to_priv(unsigned int irq)
->> >> +{
->> >> +       struct irq_chip *chip = irq_get_chip(irq);
->> >> +       return container_of(chip, struct em_gio_priv, irq_chip);
->> >> +}
->> >
->> > Should this be inline maybe?
->>
->> I have not checked if they actually turn out inline with my ARM
->> compiler, but gcc for SH was always rather good at deciding when to
->> inline by itself. Its a bit like likely()/unlikely() in my mind, it
->> may be good to give hints for the compiler but in the majority of the
->> cases the compiler will be fine by itself. I guess this particular
->> function may end up as just a few instructions.
->
-> Right.
->
->> >> +static irqreturn_t em_gio_irq_handler(int irq, void *dev_id)
->> >> +{
->> >> +       struct em_gio_priv *p = dev_id;
->> >> +       unsigned long tmp, status;
->> >> +       unsigned int offset;
->> >> +
->> >> +       status = tmp = em_gio_read(p, GIO_MST);
->> >> +       if (!status)
->> >> +               return IRQ_NONE;
->> >> +
->> >> +       while (status) {
->> >> +               offset = __ffs(status);
->> >> +               generic_handle_irq(p->irq_base + offset);
->> >
->> > Pleas use irqdomain to translate the IRQ numbers.
->>
->> Is this mandatory for regular platform devices not using DT?
->>
->> I don't object to your idea, but I was planning on adding that in my
->> DT feature patch.
->
-> There is little value in delaying this if you already know how
-> to do it. irq domains are useful for other reasons as well, e.g.
-> for allowing to build with sparse IRQ, which is needed when we get
-> to multiplatform kernels.
+Hmmm... I wish these changes are done in separate steps.  ie.
 
-Hm, I thought I had sparse irq enabled already even though I'm not
-using irq domains. I suppose the static range used with the legacy irq
-domain is somewhat limited compared to the linear one if it gets
-allocated dynamically, so I agree that static ranges (with or without
-irq domains) certainly limit the usefulness of spare irqs.
+1. Add void *bi_destructor_data to bio so that BIO_HAS_POOL trickery,
+   which BTW is broken - this patch doesn't build, isn't necessary and
+   destructors can be consolidated - bio_alloc_bioset() can set
+   bi_destructor() and bi_destructor_data automatically so that only
+   the ones which want to override the default allocation need to
+   bother.
 
-I agree that there is little value delaying it, so i cooked up some
-basic legacy irq domain support in V2.
+2. Introduce bio_clone_bioset() without the allocation change and
+   convert md (and whoever applicable).
 
->> >> +static struct em_gio_priv *gpio_to_priv(struct gpio_chip *chip)
->> >> +{
->> >> +       return container_of(chip, struct em_gio_priv, gpio_chip);
->> >> +}
->> >
->> > inline?
->>
->> Sure, if you think that is absolutely necessary. May I ask, is it
->> important for you, or is it ok if I skip and keep this driver in line
->> with my other ones? =)
->
-> I don't think it makes any difference in practice, other for people
-> reading the code. Adding the 'inline' tells the reader that this is
-> meant to be a trivial function that doesn't add much object code,
-> and that the author was aware of that. I don't think it matters much
-> either way.
+3. Change the behavior such that only bio_segments() is copied.
 
-I agree. In V2 for readability I decided to add inline to the
-functions getting private data using container_of().
+> diff --git a/drivers/md/md.c b/drivers/md/md.c
+> index ce88755..961c995 100644
+> --- a/drivers/md/md.c
+> +++ b/drivers/md/md.c
+> @@ -194,7 +194,8 @@ struct bio *bio_clone_mddev(struct bio *bio, gfp_t gfp_mask,
+>  	if (!mddev || !mddev->bio_set)
+>  		return bio_clone(bio, gfp_mask);
+>  
+> -	b = bio_alloc_bioset(gfp_mask, bio->bi_max_vecs,
+> +	b = bio_alloc_bioset(gfp_mask,
+> +			     bio_segments(bio),
+>  			     mddev->bio_set);
 
->> > Isn't there a new nice inline that will both request and
->> > remap a piece of memory?
->>
->> If so then that would be excellent. Especially together with
->> ioread/iowrite so the code can work both for IOMEM and PORT
->> transparently.
->
-> We have a bunch of helpers, but I think none that does
-> everything yet. io_iomap() locates and remaps the resource.
-> devm_request_and_ioremap() does the request and the map, but
-> doesn't pull it out of the device.
+Line broken unnecessarily?
 
-Let me know if you see any reason for not doing that. I'd be happy to
-try to cook something up and convert my drivers one by one.
+> @@ -53,6 +53,7 @@ static struct biovec_slab bvec_slabs[BIOVEC_NR_POOLS] __read_mostly = {
+>   * IO code that does not need private memory pools.
+>   */
+>  struct bio_set *fs_bio_set;
+> +EXPORT_SYMBOL(fs_bio_set);
 
-Thank you!
+Is making bio_clone() an inline function really worth it?
 
-/ magnus
+> @@ -341,8 +337,10 @@ struct bio *bio_alloc(gfp_t gfp_mask, unsigned int nr_iovecs)
+>  {
+>  	struct bio *bio = bio_alloc_bioset(gfp_mask, nr_iovecs, fs_bio_set);
+>  
+> -	if (bio)
+> -		bio->bi_destructor = bio_fs_destructor;
+> +	if (bio) {
+> +		bio->bi_flags |= 1 << BIO_HAS_POOL;
+> +		bio->bi_destructor = (void *) fs_bio_set;
+> +	}
+
+Wrote above but it looks like the patch is missing some part of
+BIO_HAS_POOL handling.  Doesn't build.  Also, it's a pretty ugly hack.
+
+>  /**
+> - * 	__bio_clone	-	clone a bio
+> - * 	@bio: destination bio
+> - * 	@bio_src: bio to clone
+> + *	__bio_clone	-	clone a bio
+> + *	@bio: destination bio
+> + *	@bio_src: bio to clone
+>   *
+>   *	Clone a &bio. Caller will own the returned bio, but not
+>   *	the actual data it points to. Reference count of returned
+> - * 	bio will be one.
+> + *	bio will be one.
+
+Whilespace cleanup?  I'm okay with doing these as part of larger
+changes but would appreciate if these were noted in the commit message
+in the form of "while at it, blah blah...".
+
+>   */
+>  void __bio_clone(struct bio *bio, struct bio *bio_src)
+>  {
+> -	memcpy(bio->bi_io_vec, bio_src->bi_io_vec,
+> -		bio_src->bi_max_vecs * sizeof(struct bio_vec));
+> +	memcpy(bio->bi_io_vec,
+> +	       bio_iovec(bio_src),
+> +	       bio_segments(bio_src) * sizeof(struct bio_vec));
+
+Unnecessary line break?
+
+> -struct bio *bio_clone(struct bio *bio, gfp_t gfp_mask)
+> +struct bio *bio_clone_bioset(struct bio *bio, gfp_t gfp_mask,
+> +			     struct bio_set *bs)
+>  {
+> -	struct bio *b = bio_alloc_bioset(gfp_mask, bio->bi_max_vecs, fs_bio_set);
+> -
+> +	struct bio *b = bio_alloc_bioset(gfp_mask, bio_segments(bio), bs);
+
+Blank line between var decls and body please.
+
+>  	if (!b)
+>  		return NULL;
+>  
+> -	b->bi_destructor = bio_fs_destructor;
+>  	__bio_clone(b, bio);
+> +	b->bi_flags	|= 1 << BIO_HAS_POOL;
+
+No indenting of assignments please.  There are some exceptions when
+there are a lot of assignments and not aligning makes it very
+difficult to read but I don't think that applies here.
+
+> +	b->bi_destructor = (void *) bs;
+>  
+>  	if (bio_integrity(bio)) {
+>  		int ret;
+>  
+> -		ret = bio_integrity_clone(b, bio, gfp_mask, fs_bio_set);
+> +		ret = bio_integrity_clone(b, bio, gfp_mask, bs);
+
+You'll probably need to update bio_integrity about the same way.  It
+does about the same thing as bio alloc path.
+
+Thanks.
+
+-- 
+tejun
