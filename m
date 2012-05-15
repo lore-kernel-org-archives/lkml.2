@@ -1,52 +1,36 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965971Ab2EOSBP (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 May 2012 14:01:15 -0400
-Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:51997 "EHLO
-	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932207Ab2EOSBK (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 May 2012 14:01:10 -0400
-Date: Tue, 15 May 2012 20:01:06 +0200
-From: Pavel Machek <pavel@ucw.cz>
-To: Oliver Neukum <oneukum@suse.de>
-Cc: "Rafael J. Wysocki" <rjw@sisk.pl>,
-        kernel list <linux-kernel@vger.kernel.org>,
-        linux-bluetooth@vger.kernel.org, marcel@holtmann.org,
-        gustavo@padovan.org, johan.hedberg@gmail.com
-Subject: Re: 3.4.0-rc7 regression: bluetooth vs. s2ram
-Message-ID: <20120515180105.GA1923@elf.ucw.cz>
-References: <20120515131453.GA1936@elf.ucw.cz>
- <201205151529.01603.oneukum@suse.de>
+	id S932833Ab2EOSCr (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 May 2012 14:02:47 -0400
+Received: from a.ns.miles-group.at ([95.130.255.143]:47834 "EHLO radon.swed.at"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932207Ab2EOSCq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 May 2012 14:02:46 -0400
+Message-ID: <4FB29A2B.1000902@nod.at>
+Date: Tue, 15 May 2012 20:02:19 +0200
+From: Richard Weinberger <richard@nod.at>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120421 Thunderbird/12.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <201205151529.01603.oneukum@suse.de>
-X-Warning: Reading this can be dangerous to your mental health.
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Richard Weinberger <richard@nod.at>
+CC: linux-mtd@lists.infradead.org, Heinz.Egger@linutronix.de,
+        tglx@linutronix.de, tim.bird@am.sony.com, linux-kernel@vger.kernel.org,
+        dedekind1@gmail.com
+Subject: Re: [RFC v4] UBI: Fastmap support (aka checkpointing)
+References: <1337101871-31181-1-git-send-email-richard@nod.at>
+In-Reply-To: <1337101871-31181-1-git-send-email-richard@nod.at>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue 2012-05-15 15:29:01, Oliver Neukum wrote:
-> Am Dienstag, 15. Mai 2012, 15:14:57 schrieb Pavel Machek:
-> > If I suspend without bnep0 active, resume works. 
-> > 
-> > (This has worked before, but "before" may mean 3.2 in this case).
-> > 
-> > Can someone test/reproduce this? Ideas?
-> > 
-> > PS: Under normal suspend/resume, I see these warnings in the
-> > log. Maybe relevant?
-> 
-> Most likely. Something has introduced a bug that crashes if the controller
-> over which a bnep is run is getting away. Does it survive a surprise removal
-> of the BT device while bnep is up?
+Am 15.05.2012 19:11, schrieb Richard Weinberger:
+> TODO:
+>          - Artem is fully happy with the current on-flash layout,
+>            maybe I can merge the erase counters into the EBA table
 
-No, it does not. If I turn off hardware radio kill switch, machine
-dies in the same way. So not just sleep related...
-									Pavel
+Whoops!
+Artem is *not* fully happy...
 
--- 
-(english) http://www.livejournal.com/~pavelmachek
-(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
+Sorry,
+//richard
