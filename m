@@ -1,80 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753036Ab2EOFQf (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 May 2012 01:16:35 -0400
-Received: from e35.co.us.ibm.com ([32.97.110.153]:37370 "EHLO
-	e35.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751349Ab2EOFQe (ORCPT
+	id S1752577Ab2EOF1E (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 May 2012 01:27:04 -0400
+Received: from mtv-iport-2.cisco.com ([173.36.130.13]:22978 "EHLO
+	mtv-iport-2.cisco.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750803Ab2EOF1D convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 May 2012 01:16:34 -0400
-Date: Mon, 14 May 2012 22:16:07 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Dave Jones <davej@redhat.com>, sds@tycho.nsa.gov,
-        Linux Kernel <linux-kernel@vger.kernel.org>
-Cc: paul@paul-moore.com
-Subject: Re: suspicious RCU usage in security/selinux/netnode.c
-Message-ID: <20120515051607.GH2412@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <20120515044145.GA21910@redhat.com>
+	Tue, 15 May 2012 01:27:03 -0400
+X-Greylist: delayed 568 seconds by postgrey-1.27 at vger.kernel.org; Tue, 15 May 2012 01:27:03 EDT
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: Av8EAMrlsU+rRDoI/2dsb2JhbAA6CrAng1SBB4IXAQQSAR0KUQEqBhgHVwEEGxqHawGZX4EooAmLEg8SgjmCQ2MEiGSbcIFpgwmBNw
+X-IronPort-AV: E=Sophos;i="4.75,591,1330905600"; 
+   d="scan'208";a="44820232"
+X-MimeOLE: Produced By Microsoft Exchange V6.5
+Content-class: urn:content-classes:message
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120515044145.GA21910@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 12051505-6148-0000-0000-000005D73804
+Content-Type: text/plain;
+	charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
+Subject: CFA 4.0 patch
+Date: Mon, 14 May 2012 22:17:33 -0700
+Message-ID: <4E75C4FECC27A44E9F7E0737D71946900F686C61@xmb-sjc-21e.amer.cisco.com>
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+Thread-Topic: CFA 4.0 patch
+Thread-Index: Ac0yVjghRQI/rP3bSCOVdgaBzmSzXwAAAr5gAADruFA=
+From: "Andre Hedrick (anhedric)" <anhedric@cisco.com>
+To: <linux-kernel@vger.kernel.org>
+X-OriginalArrivalTime: 15 May 2012 05:17:34.0017 (UTC) FILETIME=[08D40310:01CD325A]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, May 15, 2012 at 12:41:45AM -0400, Dave Jones wrote:
-> I just triggered this on Linus' current tree.
+This is a missing part of the CFA 4.0 and above support.
 
-This is a bare:
+6.2.1.6.1 Word 0: General Configuration
+	This field indicates the general characteristics of the device.
+When Word 0 of the Identify drive information is 848Ah then the device
+is a CompactFlash Storage Card and complies with the CFA specification
+and CFA command set. It is recommended that PC Card modes of operation
+report only the 848Ah value as they are always intended as removable
+devices.
 
-	rcu_dereference(sel_netnode_hash[idx].list.prev)
+Bits 15-0: CF Standard Configuration Value
+Word 0 is 848Ah. This is the recommended value of Word 0.
+	Some operating systems require Bit 6 of Word 0 to be set to 1
+(Non-removable device) to use the card as the root storage device. The
+Card must be the root storage device when a host completely replaces
+conventional disk storage with a CompactFlash Card in True IDE mode. To
+support this requirement and provide capability for any future removable
+media Cards, alternate handling of Word 0 is permitted.
 
-which needs to be in an RCU read-side critical section.  Alternatively,
-the above should instead be something like:
+Bits 15-0: CF Preferred Alternate Configuration Values
 
-	rcu_dereference_check(sel_netnode_hash[idx].list.prev,
-			      lockdep_is_held(&sel_netnode_lock));
+044Ah: This is the alternate value of Word 0 turns on ATA device and
+turns off Removable Media and Removable Device while 	preserving all
+Retired bits in the word.
 
-This second approach assumes that all modifications to the hash table
-are protected by sel_netnode_lock.  Paul Moore, thoughts?
+0040h: This is the alternate value of Word 0 turns on ATA device and
+turns off Removable Media and Removable Device while 	zeroing all
+Retired bits in the word
 
-							Thanx, Paul
+Cheers,
+Andre
+--------------------
+The Linux X-ATA/SATA guy
 
-> 	Dave
-> 
->  ===============================
->  [ INFO: suspicious RCU usage. ]
->  3.4.0-rc7+ #93 Not tainted
->  -------------------------------
->  security/selinux/netnode.c:178 suspicious rcu_dereference_check() usage!
-> 
->  other info that might help us debug this:
-> 
-> 
->  rcu_scheduler_active = 1, debug_locks = 0
->  1 lock held by trinity/25132:
->   #0:  (sel_netnode_lock){+.....}, at: [<ffffffff812db738>] sel_netnode_sid+0x148/0x3c0
-> 
->  stack backtrace:
->  Pid: 25132, comm: trinity Not tainted 3.4.0-rc7+ #93
->  Call Trace:
->   [<ffffffff810cc7cd>] lockdep_rcu_suspicious+0xfd/0x130
->   [<ffffffff812db981>] sel_netnode_sid+0x391/0x3c0
->   [<ffffffff812db5f0>] ? sel_netnode_find+0x1a0/0x1a0
->   [<ffffffff812d4a84>] selinux_socket_bind+0x104/0x350
->   [<ffffffff810a6648>] ? sched_clock_cpu+0xb8/0x130
->   [<ffffffff816a47b9>] ? sub_preempt_count+0xa9/0xe0
->   [<ffffffff812cb3e6>] security_socket_bind+0x16/0x20
->   [<ffffffff815468aa>] sys_bind+0x7a/0x100
->   [<ffffffff816a8795>] ? sysret_check+0x22/0x5d
->   [<ffffffff810d149d>] ? trace_hardirqs_on_caller+0x10d/0x1a0
->   [<ffffffff810fc18c>] ? __audit_syscall_entry+0xcc/0x310
->   [<ffffffff8133839e>] ? trace_hardirqs_on_thunk+0x3a/0x3f
->   [<ffffffff816a8769>] system_call_fastpath+0x16/0x1b
-> 
 
+--- linux-2.6.32.orig/include/linux/ata.h	Mon May 14 15:48:24 2012
++++ linux-2.6.32/include/linux/ata.h	Mon May 14 15:51:42 2012
+@@ -819,6 +819,10 @@
+ {
+ 	if (id[ATA_ID_CONFIG] == 0x848A)	/* Traditional CF */
+ 		return 1;
++	if (id[ATA_ID_CONFIG] == 0x044A)	/* Alternative CF w/
+removable turned off, preserving retired bits */
++		return 1;
++	if (id[ATA_ID_CONFIG] == 0x0040)	/* Alternative CF w/
+removable turned off, zeroing retired bits*/
++		return 1;
+ 	/*
+ 	 * CF specs don't require specific value in the word 0 anymore
+and yet
+ 	 * they forbid to report the ATA version in the word 80 and
+require the
