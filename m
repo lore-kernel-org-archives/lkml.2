@@ -1,169 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758934Ab2EONnh (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 May 2012 09:43:37 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:36918 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758853Ab2EONng (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 May 2012 09:43:36 -0400
-Message-ID: <1337089409.6238.4.camel@phoenix>
-Subject: [PATCH RFT 3/3] regulator: max8660: Convert to set_voltage_sel and
- regulator_map_voltage_linear
-From: Axel Lin <axel.lin@gmail.com>
-To: linux-kernel@vger.kernel.org
-Cc: Wolfram Sang <w.sang@pengutronix.de>, Liam Girdwood <lrg@ti.com>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>
-Date: Tue, 15 May 2012 21:43:29 +0800
-In-Reply-To: <1337089278.6238.1.camel@phoenix>
-References: <1337089278.6238.1.camel@phoenix>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.2- 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	id S1758943Ab2EONpP (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 May 2012 09:45:15 -0400
+Received: from imr3.ericy.com ([198.24.6.13]:42989 "EHLO imr3.ericy.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1758824Ab2EONpN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 May 2012 09:45:13 -0400
+Date: Tue, 15 May 2012 06:42:57 -0700
+From: Guenter Roeck <guenter.roeck@ericsson.com>
+To: "R, Durgadoss" <durgadoss.r@intel.com>
+CC: "Tc, Jenny" <jenny.tc@intel.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "lm-sensors@lm-sensors.org" <lm-sensors@lm-sensors.org>
+Subject: Re: [lm-sensors] [PATCH] hwmon: Generic ADC support for hwmon
+Message-ID: <20120515134257.GA21933@ericsson.com>
+References: <1337092008-31263-1-git-send-email-jenny.tc@intel.com>
+ <20120515121339.GA21600@ericsson.com>
+ <4D68720C2E767A4AA6A8796D42C8EB59124E22@BGSMSX101.gar.corp.intel.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+In-Reply-To: <4D68720C2E767A4AA6A8796D42C8EB59124E22@BGSMSX101.gar.corp.intel.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Axel Lin <axel.lin@gmail.com>
----
- drivers/regulator/max8660.c |   71 +++++++++----------------------------------
- 1 files changed, 15 insertions(+), 56 deletions(-)
+On Tue, May 15, 2012 at 08:42:57AM -0400, R, Durgadoss wrote:
+> Hi Guenter,
+> 
+> Thanks for a quick reply.
+> 
+> > On Tue, May 15, 2012 at 10:26:48AM -0400, Jenny TC wrote:
+> > > Currently drivers are using custom APIs to communicate with ADC driver.
+> > > So it make sense to have generic APIs to commnicate with ADC drivers.
+> > > This patch introduces generic APIs to communicate with ADC drivers.
+> > >
+> > > Signed-off-by: Jenny TC <jenny.tc@intel.com>
+> > 
+> > Hi Jenny,
+> > 
+> > Do you have a practical use case ?
+> 
+> We have some platform specific component drivers, thermal drivers,
+> battery drivers using this General purpose ADC in the platform.
+> That's why we thought of doing something like this.
+> 
+> > 
+> > Also, shouldn't those generic ADCs rather be supported through the IO
+> > subsystem ?
+> > After all, hwmon is all about hardware monitoring, not to provide generic ADC
+> > access.
+> 
+> In this case, can we try this in iio or mfd subsystem ?
+> Kindly advise.
+> 
+I meant iio (more specifically staging/iio/adc).
 
-diff --git a/drivers/regulator/max8660.c b/drivers/regulator/max8660.c
-index 93bcfc8..8d53174 100644
---- a/drivers/regulator/max8660.c
-+++ b/drivers/regulator/max8660.c
-@@ -135,27 +135,13 @@ static int max8660_dcdc_get_voltage_sel(struct regulator_dev *rdev)
- 	return selector;
- }
- 
--static int max8660_dcdc_set(struct regulator_dev *rdev, int min_uV, int max_uV,
--			    unsigned int *s)
-+static int max8660_dcdc_set_voltage_sel(struct regulator_dev *rdev,
-+					unsigned int selector)
- {
- 	struct max8660 *max8660 = rdev_get_drvdata(rdev);
--	u8 reg, selector, bits;
-+	u8 reg, bits;
- 	int ret;
- 
--	if (min_uV < MAX8660_DCDC_MIN_UV || min_uV > MAX8660_DCDC_MAX_UV)
--		return -EINVAL;
--	if (max_uV < MAX8660_DCDC_MIN_UV || max_uV > MAX8660_DCDC_MAX_UV)
--		return -EINVAL;
--
--	selector = DIV_ROUND_UP(min_uV - MAX8660_DCDC_MIN_UV,
--				MAX8660_DCDC_STEP);
--
--	ret = regulator_list_voltage_linear(rdev, selector);
--	if (ret < 0 || ret > max_uV)
--		return -EINVAL;
--
--	*s = selector;
--
- 	reg = (rdev_get_id(rdev) == MAX8660_V3) ? MAX8660_ADTV2 : MAX8660_SDTV2;
- 	ret = max8660_write(max8660, reg, 0, selector);
- 	if (ret)
-@@ -169,7 +155,8 @@ static int max8660_dcdc_set(struct regulator_dev *rdev, int min_uV, int max_uV,
- static struct regulator_ops max8660_dcdc_ops = {
- 	.is_enabled = max8660_dcdc_is_enabled,
- 	.list_voltage = regulator_list_voltage_linear,
--	.set_voltage = max8660_dcdc_set,
-+	.map_voltage = regulator_map_voltage_linear,
-+	.set_voltage_sel = max8660_dcdc_set_voltage_sel,
- 	.get_voltage_sel = max8660_dcdc_get_voltage_sel,
- };
- 
-@@ -186,27 +173,12 @@ static int max8660_ldo5_get_voltage_sel(struct regulator_dev *rdev)
- 	return selector;
- }
- 
--static int max8660_ldo5_set(struct regulator_dev *rdev, int min_uV, int max_uV,
--			    unsigned int *s)
-+static int max8660_ldo5_set_voltage_sel(struct regulator_dev *rdev,
-+					unsigned int selector)
- {
- 	struct max8660 *max8660 = rdev_get_drvdata(rdev);
--	u8 selector;
- 	int ret;
- 
--	if (min_uV < MAX8660_LDO5_MIN_UV || min_uV > MAX8660_LDO5_MAX_UV)
--		return -EINVAL;
--	if (max_uV < MAX8660_LDO5_MIN_UV || max_uV > MAX8660_LDO5_MAX_UV)
--		return -EINVAL;
--
--	selector = DIV_ROUND_UP(min_uV - MAX8660_LDO5_MIN_UV,
--				MAX8660_LDO5_STEP);
--
--	ret = regulator_list_voltage_linear(rdev, selector);
--	if (ret < 0 || ret > max_uV)
--		return -EINVAL;
--
--	*s = selector;
--
- 	ret = max8660_write(max8660, MAX8660_MDTV2, 0, selector);
- 	if (ret)
- 		return ret;
-@@ -217,7 +189,8 @@ static int max8660_ldo5_set(struct regulator_dev *rdev, int min_uV, int max_uV,
- 
- static struct regulator_ops max8660_ldo5_ops = {
- 	.list_voltage = regulator_list_voltage_linear,
--	.set_voltage = max8660_ldo5_set,
-+	.map_voltage = regulator_map_voltage_linear,
-+	.set_voltage_sel = max8660_ldo5_set_voltage_sel,
- 	.get_voltage_sel = max8660_ldo5_get_voltage_sel,
- };
- 
-@@ -257,31 +230,16 @@ static int max8660_ldo67_get_voltage_sel(struct regulator_dev *rdev)
- 	return selector;
- }
- 
--static int max8660_ldo67_set(struct regulator_dev *rdev, int min_uV,
--			     int max_uV, unsigned int *s)
-+static int max8660_ldo67_set_voltage_sel(struct regulator_dev *rdev,
-+					 unsigned int selector)
- {
- 	struct max8660 *max8660 = rdev_get_drvdata(rdev);
--	u8 selector;
--	int ret;
--
--	if (min_uV < MAX8660_LDO67_MIN_UV || min_uV > MAX8660_LDO67_MAX_UV)
--		return -EINVAL;
--	if (max_uV < MAX8660_LDO67_MIN_UV || max_uV > MAX8660_LDO67_MAX_UV)
--		return -EINVAL;
--
--	selector = DIV_ROUND_UP(min_uV - MAX8660_LDO67_MIN_UV,
--				MAX8660_LDO67_STEP);
--
--	ret = regulator_list_voltage_linear(rdev, selector);
--	if (ret < 0 || ret > max_uV)
--		return -EINVAL;
--
--	*s = selector;
- 
- 	if (rdev_get_id(rdev) == MAX8660_V6)
- 		return max8660_write(max8660, MAX8660_L12VCR, 0xf0, selector);
- 	else
--		return max8660_write(max8660, MAX8660_L12VCR, 0x0f, selector << 4);
-+		return max8660_write(max8660, MAX8660_L12VCR, 0x0f,
-+				     selector << 4);
- }
- 
- static struct regulator_ops max8660_ldo67_ops = {
-@@ -289,8 +247,9 @@ static struct regulator_ops max8660_ldo67_ops = {
- 	.enable = max8660_ldo67_enable,
- 	.disable = max8660_ldo67_disable,
- 	.list_voltage = regulator_list_voltage_linear,
-+	.map_voltage = regulator_map_voltage_linear,
- 	.get_voltage_sel = max8660_ldo67_get_voltage_sel,
--	.set_voltage = max8660_ldo67_set,
-+	.set_voltage_sel = max8660_ldo67_set_voltage_sel,
- };
- 
- static const struct regulator_desc max8660_reg[] = {
--- 
-1.7.5.4
+I suspect it might make more sense to have a hwmon client, in parallel to the other
+users/clients (battery control, thermal etc), if the values reported by the ADC reflect
+information relevant for hardware monitoring.
 
-
-
+Thanks,
+Guenter
