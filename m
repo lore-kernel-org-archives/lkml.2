@@ -1,54 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964814Ab2EOBqk (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 May 2012 21:46:40 -0400
-Received: from mail-vb0-f46.google.com ([209.85.212.46]:41512 "EHLO
-	mail-vb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750877Ab2EOBqi (ORCPT
+	id S1758344Ab2EOBur (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 May 2012 21:50:47 -0400
+Received: from mga03.intel.com ([143.182.124.21]:35837 "EHLO mga03.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756604Ab2EOBup convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 May 2012 21:46:38 -0400
-Date: Mon, 14 May 2012 22:46:33 -0300
-From: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-To: David Ahern <dsahern@gmail.com>
-Cc: Namhyung Kim <namhyung.kim@lge.com>, linux-kernel@vger.kernel.org,
-        Lucas Meneghel Rodrigues <lmr@redhat.com>
-Subject: Re: [PATCH] perf-record: Create events initially disabled -- again
-Message-ID: <20120515014633.GD4254@infradead.org>
-References: <1336968088-11531-1-git-send-email-dsahern@gmail.com>
- <87sjf31a8c.fsf@sejong.aot.lge.com>
- <4FB1041C.1050903@gmail.com>
- <87k40e1cco.fsf@sejong.aot.lge.com>
- <4FB1B486.4020509@gmail.com>
+	Mon, 14 May 2012 21:50:45 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
+   d="scan'208";a="100096989"
+From: "Du, ChangbinX" <changbinx.du@intel.com>
+To: "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>
+CC: Sergei Shtylyov <sshtylyov@mvista.com>,
+        "mina86@mina86.com" <mina86@mina86.com>,
+        "Fleming, Matt" <matt.fleming@intel.com>,
+        "balbi@ti.com" <balbi@ti.com>, "hpa@zytor.com" <hpa@zytor.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>
+Subject: [PATCH v2] testusb: add path /dev/bus/usb to default search paths
+ for usbfs
+Thread-Topic: [PATCH v2] testusb: add path /dev/bus/usb to default search
+ paths for usbfs
+Thread-Index: AQHNMjz0W+qe/qlrtESQ3Q+zSFZS5g==
+Date: Tue, 15 May 2012 01:49:25 +0000
+Message-ID: <0C18FE92A7765D4EB9EE5D38D86A563A062E6C@SHSMSX101.ccr.corp.intel.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.239.127.40]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4FB1B486.4020509@gmail.com>
-X-Url: http://acmel.wordpress.com
-User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Em Mon, May 14, 2012 at 07:42:30PM -0600, David Ahern escreveu:
-> On 5/14/12 7:07 PM, Namhyung Kim wrote:
-> >>Something else is wrong then. I tested that command (saw your patch in
-> >>the history) and it worked for me. Also, this code path does not
-> >>affect perf-stat -- it touches perf-record and perf-test only.
+As real device-nodes managed by udev whose nodes lived in /dev/bus/usb
+are mostly used today, let testusb tool use that directory as one default
+path make tool be more convenient to use.
 
-> >Ah, right. But still wouldn't it be better changing the conditional
-> >rather than disabling it unconditionally?
+Signed-off-by: Du Changbin <changbinx.du@intel.com>
+---
+ tools/usb/testusb.c |    5 +++++
+ 1 file changed, 5 insertions(+)
 
-> I think it would be best to disable all events initially and then
-> enable them when ready. It works for perf-record and perf-test just
-> fine and limits the samples to what you care about.
+diff --git a/tools/usb/testusb.c b/tools/usb/testusb.c
+index 6e0f567..82d7c59 100644
+--- a/tools/usb/testusb.c
++++ b/tools/usb/testusb.c
+@@ -358,6 +358,7 @@ static const char *usbfs_dir_find(void)
+ {
+ 	static char usbfs_path_0[] = "/dev/usb/devices";
+ 	static char usbfs_path_1[] = "/proc/bus/usb/devices";
++	static char udev_usb_path[] = "/dev/bus/usb";
+ 
+ 	static char *const usbfs_paths[] = {
+ 		usbfs_path_0, usbfs_path_1
+@@ -376,6 +377,10 @@ static const char *usbfs_dir_find(void)
+ 		}
+ 	} while (++it != end);
+ 
++	/* real device-nodes managed by udev */
++	if (access(udev_usb_path, F_OK) == 0)
++		return udev_usb_path;
++
+ 	return NULL;
+ }
+ 
+-- 
+1.7.9.5
 
-And we need to have all this logic in a central place, the "open" method
-of perf_evlist :-)
-
-The perf_target abstraction is the way to get there, but in the process
-I think we really need to have each new method with a 'perf test' entry
-and in addition to that an 'autotest'* entry to test the perf builtins.
-
-- Arnaldo
-
-* http://autotest.github.com/
