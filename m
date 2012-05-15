@@ -1,183 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965627Ab2EOWKn (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 May 2012 18:10:43 -0400
-Received: from mail160.messagelabs.com ([216.82.253.99]:13032 "EHLO
-	mail160.messagelabs.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932881Ab2EOWKl (ORCPT
+	id S965805Ab2EOWMa (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 May 2012 18:12:30 -0400
+Received: from joshcartwright.net ([69.164.192.171]:33669 "EHLO
+	li107-171.members.linode.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S964948Ab2EOWM3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 May 2012 18:10:41 -0400
-X-Env-Sender: hartleys@visionengravers.com
-X-Msg-Ref: server-4.tower-160.messagelabs.com!1337119840!5613301!1
-X-Originating-IP: [216.166.12.180]
-X-StarScan-Version: 6.5.7; banners=-,-,-
-X-VirusChecked: Checked
-From: H Hartley Sweeten <hartleys@visionengravers.com>
-To: Linux Kernel <linux-kernel@vger.kernel.org>
-Subject: [PATCH] staging: comedi: refactor cb_pcimdda driver and use module_comedi_pci_driver
-Date: Tue, 15 May 2012 15:10:25 -0700
-User-Agent: KMail/1.9.9
-CC: <devel@driverdev.osuosl.org>, <abbotti@mev.co.uk>,
-        <fmhess@users.sourceforge.net>, <gregkh@linuxfoundation.org>
+	Tue, 15 May 2012 18:12:29 -0400
+X-Greylist: delayed 2167 seconds by postgrey-1.27 at vger.kernel.org; Tue, 15 May 2012 18:12:28 EDT
+Date: Tue, 15 May 2012 17:36:19 -0400
+From: Josh Cartwright <joshc@linux.com>
+To: Yong Zhang <yong.zhang0@gmail.com>
+Cc: linux-kernel@vger.kernel.org, linux-rt-users@vger.kernel.org,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Thomas Gleixner <tglx@linutronix.de>
+Subject: Re: [PATCH -rt] mm: protect activate_mm() by
+ preempt_[disable|enable]_rt()
+Message-ID: <20120515213619.GA8880@joshcartwright.net>
+References: <1337061236-1766-1-git-send-email-yong.zhang0@gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Message-ID: <201205151510.26320.hartleys@visionengravers.com>
+In-Reply-To: <1337061236-1766-1-git-send-email-yong.zhang0@gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Move the module_init/module_exit routines and the associated
-struct comedi_drive and struct pci_driver to the end of the
-source. This is more typical of how other drivers are written
-and removes the need for the forward declarations.
+On Tue, May 15, 2012 at 01:53:56PM +0800, Yong Zhang wrote:
+> From: Yong Zhang <yong.zhang@windriver.com>
+>
+> Otherwise there will be warning on ARM like below:
+>
+> WARNING: at build/linux/kernel/smp.c:459 smp_call_function_many+0x98/0x264()
+> Modules linked in:
+> [<c0013bb4>] (unwind_backtrace+0x0/0xe4) from [<c001be94>] (warn_slowpath_common+0x4c/0x64)
+> [<c001be94>] (warn_slowpath_common+0x4c/0x64) from [<c001bec4>] (warn_slowpath_null+0x18/0x1c)
+> [<c001bec4>] (warn_slowpath_null+0x18/0x1c) from [<c0053ff8>](smp_call_function_many+0x98/0x264)
+> [<c0053ff8>] (smp_call_function_many+0x98/0x264) from [<c0054364>] (smp_call_function+0x44/0x6c)
+> [<c0054364>] (smp_call_function+0x44/0x6c) from [<c0017d50>] (__new_context+0xbc/0x124)
+> [<c0017d50>] (__new_context+0xbc/0x124) from [<c009e49c>] (flush_old_exec+0x460/0x5e4)
+> [<c009e49c>] (flush_old_exec+0x460/0x5e4) from [<c00d61ac>] (load_elf_binary+0x2e0/0x11ac)
+> [<c00d61ac>] (load_elf_binary+0x2e0/0x11ac) from [<c009d060>] (search_binary_handler+0x94/0x2a4)
+> [<c009d060>] (search_binary_handler+0x94/0x2a4) from [<c009e8fc>] (do_execve+0x254/0x364)
+> [<c009e8fc>] (do_execve+0x254/0x364) from [<c0010e84>] (sys_execve+0x34/0x54)
+> [<c0010e84>] (sys_execve+0x34/0x54) from [<c000da00>] (ret_fast_syscall+0x0/0x30)
+> ---[ end trace 0000000000000002 ]---
+>
+> The reason is that ARM need irq enabled when doing activate_mm().
+> According to mm-protect-activate-switch-mm.patch, actually
+> preempt_[disable|enable]_rt() is sufficient.
 
-Convert the driver to use the module_comedi_pci_driver() macro
-which makes the code smaller and a bit simpler.
+Frank Rowand posted a very similar fix in December of last year that
+we've been carrying to fix the same issue:
 
-Signed-off-by: H Hartley Sweeten <hsweeten@visionengravers.com>
-Cc: Ian Abbott <abbotti@mev.co.uk>
-Cc: Mori Hess <fmhess@users.sourceforge.net>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+   http://permalink.gmane.org/gmane.linux.kernel/1229806
 
----
+It looks like there was some deliberation as to whether or not it should
+be pulled into stable-rt.  Perhaps its time to revisit this discussion?
 
-The attach/detach functions still need refactored to remove the
-remaining forward declarations. Doing that is this patch makes it
-difficult to review.
-
- drivers/staging/comedi/drivers/cb_pcimdda.c |  109 +++++++++-----------------
- 1 files changed, 38 insertions(+), 71 deletions(-)
-
-diff --git a/drivers/staging/comedi/drivers/cb_pcimdda.c b/drivers/staging/comedi/drivers/cb_pcimdda.c
-index 8d1081e..857d0c3 100644
---- a/drivers/staging/comedi/drivers/cb_pcimdda.c
-+++ b/drivers/staging/comedi/drivers/cb_pcimdda.c
-@@ -140,17 +140,6 @@ static const struct board_struct boards[] = {
- #define REG_SZ (thisboard->reg_sz)
- #define REGS_BADRINDEX (thisboard->regs_badrindex)
- 
--/* This is used by modprobe to translate PCI IDs to drivers.  Should
-- * only be used for PCI and ISA-PnP devices */
--/* Please add your PCI vendor ID to comedidev.h, and it will be forwarded
-- * upstream. */
--static DEFINE_PCI_DEVICE_TABLE(pci_table) = {
--	{ PCI_DEVICE(PCI_VENDOR_ID_COMPUTERBOARDS, PCI_ID_PCIM_DDA06_16) },
--	{0}
--};
--
--MODULE_DEVICE_TABLE(pci, pci_table);
--
- /*
-  * this structure is for data unique to this hardware driver.  If
-  * several hardware drivers keep similar information in this structure,
-@@ -177,66 +166,6 @@ struct board_private_struct {
-  */
- #define devpriv ((struct board_private_struct *)dev->private)
- 
--/*
-- * The struct comedi_driver structure tells the Comedi core module
-- * which functions to call to configure/deconfigure (attach/detach)
-- * the board, and also about the kernel module that contains
-- * the device code.
-- */
--static int attach(struct comedi_device *dev, struct comedi_devconfig *it);
--static int detach(struct comedi_device *dev);
--static struct comedi_driver cb_pcimdda_driver = {
--	.driver_name = "cb_pcimdda",
--	.module = THIS_MODULE,
--	.attach = attach,
--	.detach = detach,
--};
--
--MODULE_AUTHOR("Calin A. Culianu <calin@rtlab.org>");
--MODULE_DESCRIPTION("Comedi low-level driver for the Computerboards PCIM-DDA "
--		   "series.  Currently only supports PCIM-DDA06-16 (which "
--		   "also happens to be the only board in this series. :) ) ");
--MODULE_LICENSE("GPL");
--static int __devinit cb_pcimdda_driver_pci_probe(struct pci_dev *dev,
--						 const struct pci_device_id
--						 *ent)
--{
--	return comedi_pci_auto_config(dev, &cb_pcimdda_driver);
--}
--
--static void __devexit cb_pcimdda_driver_pci_remove(struct pci_dev *dev)
--{
--	comedi_pci_auto_unconfig(dev);
--}
--
--static struct pci_driver cb_pcimdda_driver_pci_driver = {
--	.id_table = pci_table,
--	.probe = &cb_pcimdda_driver_pci_probe,
--	.remove = __devexit_p(&cb_pcimdda_driver_pci_remove)
--};
--
--static int __init cb_pcimdda_driver_init_module(void)
--{
--	int retval;
--
--	retval = comedi_driver_register(&cb_pcimdda_driver);
--	if (retval < 0)
--		return retval;
--
--	cb_pcimdda_driver_pci_driver.name =
--	    (char *)cb_pcimdda_driver.driver_name;
--	return pci_register_driver(&cb_pcimdda_driver_pci_driver);
--}
--
--static void __exit cb_pcimdda_driver_cleanup_module(void)
--{
--	pci_unregister_driver(&cb_pcimdda_driver_pci_driver);
--	comedi_driver_unregister(&cb_pcimdda_driver);
--}
--
--module_init(cb_pcimdda_driver_init_module);
--module_exit(cb_pcimdda_driver_cleanup_module);
--
- static int ao_winsn(struct comedi_device *dev, struct comedi_subdevice *s,
- 		    struct comedi_insn *insn, unsigned int *data);
- static int ao_rinsn(struct comedi_device *dev, struct comedi_subdevice *s,
-@@ -515,3 +444,41 @@ static int probe(struct comedi_device *dev, const struct comedi_devconfig *it)
- 	       "card found at the requested position\n");
- 	return -ENODEV;
- }
-+
-+static struct comedi_driver cb_pcimdda_driver = {
-+	.driver_name	= "cb_pcimdda",
-+	.module		= THIS_MODULE,
-+	.attach		= attach,
-+	.detach		= detach,
-+};
-+
-+static int __devinit cb_pcimdda_pci_probe(struct pci_dev *dev,
-+					  const struct pci_device_id *ent)
-+{
-+	return comedi_pci_auto_config(dev, &cb_pcimdda_driver);
-+}
-+
-+static void __devexit cb_pcimdda_pci_remove(struct pci_dev *dev)
-+{
-+	comedi_pci_auto_unconfig(dev);
-+}
-+
-+static DEFINE_PCI_DEVICE_TABLE(cb_pcimdda_pci_table) = {
-+	{ PCI_DEVICE(PCI_VENDOR_ID_COMPUTERBOARDS, PCI_ID_PCIM_DDA06_16) },
-+	{ 0 }
-+};
-+MODULE_DEVICE_TABLE(pci, cb_pcimdda_pci_table);
-+
-+static struct pci_driver cb_pcimdda_driver_pci_driver = {
-+	.name		= "cb_pcimdda",
-+	.id_table	= cb_pcimdda_pci_table,
-+	.probe		= cb_pcimdda_pci_probe,
-+	.remove		= __devexit_p(cb_pcimdda_pci_remove),
-+};
-+module_comedi_pci_driver(cb_pcimdda_driver, cb_pcimdda_driver_pci_driver);
-+
-+MODULE_AUTHOR("Calin A. Culianu <calin@rtlab.org>");
-+MODULE_DESCRIPTION("Comedi low-level driver for the Computerboards PCIM-DDA "
-+		   "series.  Currently only supports PCIM-DDA06-16 (which "
-+		   "also happens to be the only board in this series. :) ) ");
-+MODULE_LICENSE("GPL");
+-- 
+                                             joshc
