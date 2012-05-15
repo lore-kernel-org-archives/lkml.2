@@ -1,215 +1,363 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757148Ab2EOOCT (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 May 2012 10:02:19 -0400
-Received: from tx2ehsobe003.messaging.microsoft.com ([65.55.88.13]:23654 "EHLO
-	tx2outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753705Ab2EOOCR (ORCPT
+	id S1757462Ab2EOODt (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 May 2012 10:03:49 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:26535 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753705Ab2EOODr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 May 2012 10:02:17 -0400
-X-SpamScore: -3
-X-BigFish: VS-3(zzea8Nzz1202h1082kzz8275dhz2dh2a8h668h839hd24he5bh)
-X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
-From: Dong Aisheng <b29396@freescale.com>
-To: <linux-kernel@vger.kernel.org>
-CC: <linux-arm-kernel@lists.infradead.org>, <linus.walleij@stericsson.com>,
-        <swarren@wwwdotorg.org>, <shawn.guo@freescale.com>,
-        <b29396@freescale.com>
-Subject: [PATCH RFC 1/1] pinctrl: improve gpio support for dt
-Date: Tue, 15 May 2012 22:07:19 +0800
-Message-ID: <1337090839-21224-1-git-send-email-b29396@freescale.com>
-X-Mailer: git-send-email 1.7.0.4
-MIME-Version: 1.0
-Content-Type: text/plain
-X-OriginatorOrg: freescale.com
+	Tue, 15 May 2012 10:03:47 -0400
+X-Authority-Analysis: v=2.0 cv=OMylLFmB c=1 sm=0 a=ZycB6UtQUfgMyuk2+PxD7w==:17 a=XQbtiDEiEegA:10 a=5jdMkCm7lUEA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=meVymXHHAAAA:8 a=SpDfwWfMeJeNvvMP5nEA:9 a=nRRxmxZCcI2phbT_aGcA:7 a=PUjeQqilurYA:10 a=jeBq3FmKZ4MA:10 a=ZycB6UtQUfgMyuk2+PxD7w==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 74.67.80.29
+Message-ID: <1337090625.14207.304.camel@gandalf.stny.rr.com>
+Subject: [RFC][PATCH RT] rwsem_rt: Another (more sane) approach to mulit
+ reader rt locks
+From: Steven Rostedt <rostedt@goodmis.org>
+To: LKML <linux-kernel@vger.kernel.org>, RT <linux-rt-users@vger.kernel.org>
+Cc: Thomas Gleixner <tglx@linutronix.de>, Clark Williams <williams@redhat.com>,
+        Peter Zijlstra <peterz@infradead.org>
+Date: Tue, 15 May 2012 10:03:45 -0400
+Content-Type: text/plain; charset="ISO-8859-15"
+X-Mailer: Evolution 3.2.2-1 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Dong Aisheng <dong.aisheng@linaro.org>
+The RT patch has been having lots of trouble lately with large machines
+and applications running lots of threads. This usually boils down to a
+bottle neck of a single lock: the mm->mmap_sem.
 
-For dt, the gpio base may be dynamically allocated, thus the original
-implementation of gpio support based on static gpio number and pin id
-map may not be easy to use for dt.
+The mmap_sem is a rwsem, which can sleep, but it also can be taken with
+a read/write lock, where a read lock can be taken by several tasks at
+the same time and the write lock can be only taken by a single task.
 
-One solution is a) use alias id for gpio node and refer to it in gpio
-range, then we can get the fixed the gpio devices for this range and
-b) get gpio chip from node which is specified in gpio range structure,
-then get the dynamically allocated gpio chip base and c) using the chip
-gpio base and offset to map to a physical pin id for dt.
+But due to priority inheritance, having multiple readers makes the code
+much more complex, thus the -rt patch converts all rwsems into a single
+mutex, where readers may nest (the same task may grab the same rwsem for
+read multiple times), but only one task may hold the rwsem at any given
+time (for read or write).
 
-To implement that, we need add two members in pinctrl_gpio_range structure,
-'np' the gpio node for this range and 'off' the offset in this gpio range
-of the gpio chip.
+When we have lots of threads, the rwsem may be taken often, either for
+memory allocation or filling in page faults. This becomes a bottle neck
+for threads as only one thread at a time may grab the mmap_sem (which is
+shared by all threads of a process).
 
-For devicetree, user can use this two member instead of range->base
-to create the map, the core will dynamically set the correct range->base
-based on the gpio base plus gpio offset.
+Previous attempts of adding multiple readers became too complex and was
+error prone. This approach takes on a much more simpler technique, one
+that is actually used by per cpu locks.
 
-For example:
-static struct pinctrl_gpio_range imx28_gpio_ranges[] = {
-	{ .name = "gpio", .id = 0, .pin_base = 0,   .npins = 8,	 .np = np_gpio0	.off = 0,},
-	{ .name = "gpio", .id = 0, .pin_base = 16,  .npins = 13, .np = np_gpio0 .off = 16,},
-	{ .name = "gpio", .id = 1, .pin_base = 32,  .npins = 32, .np = np_gpio1 .off = 16},
-...
+The idea here is to have an rwsem create a rt_mutex for each CPU.
+Actually, it creates a rwsem for each CPU that can only be acquired by
+one task at a time. This allows for readers on separate CPUs to take
+only the per cpu lock. When a writer needs to take a lock, it must grab
+all CPU locks before continuing.
 
-Signed-off-by: Dong Aisheng <dong.aisheng@linaro.org>
----
-This is a proposal to start the discussion on whether we can find some common way
-to ease adding pinctrl gpio support for dt.
-Comments are wellcome.
----
- drivers/pinctrl/core.c          |   11 ++++++++-
- drivers/pinctrl/devicetree.c    |   47 +++++++++++++++++++++++++++++++++++++++
- drivers/pinctrl/devicetree.h    |    7 +++++
- include/linux/pinctrl/pinctrl.h |    7 +++++-
- 4 files changed, 70 insertions(+), 2 deletions(-)
+This approach does nothing special with the rt_mutex or priority
+inheritance code. That stays the same, and works normally (thus less
+error prone). The trick here is that when a reader takes a rwsem for
+read, it must disable migration, that way it can unlock the rwsem
+without needing any special searches (which lock did it take?).
 
-diff --git a/drivers/pinctrl/core.c b/drivers/pinctrl/core.c
-index c3b331b..8b882ad 100644
---- a/drivers/pinctrl/core.c
-+++ b/drivers/pinctrl/core.c
-@@ -323,12 +323,21 @@ static int pinctrl_get_device_gpio_range(unsigned gpio,
-  * This adds a range of GPIOs to be handled by a certain pin controller. Call
-  * this to register handled ranges after registering your pin controller.
-  */
--void pinctrl_add_gpio_range(struct pinctrl_dev *pctldev,
-+int pinctrl_add_gpio_range(struct pinctrl_dev *pctldev,
- 			    struct pinctrl_gpio_range *range)
- {
-+	int ret;
-+
-+	/* first recalculate the gpio base for dt if need */
-+	ret = pinctrl_recalculate_gpio_base(pctldev, range);
-+	if (ret)
-+		return ret;
-+
- 	mutex_lock(&pinctrl_mutex);
- 	list_add_tail(&range->node, &pctldev->gpio_ranges);
- 	mutex_unlock(&pinctrl_mutex);
-+
-+	return 0;
- }
- EXPORT_SYMBOL_GPL(pinctrl_add_gpio_range);
+I've tested this a bit, and so far it works well. I haven't found a nice
+way to initialize the locks, so I'm using the silly initialize_rwsem()
+at all places that acquire the lock. But we can work on this later.
+
+Also, I don't use per_cpu sections for the locks, which means we have
+cache line collisions, but a normal (mainline) rwsem has that as well.
+
+These are all room for improvement (and why this is just an RFC patch).
+
+I'll see if I can get some numbers to see how this fixes the issues with
+multi threads on big boxes.
+
+Thoughts?
+
+-- Steve
+
+Not-yet-signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+
+diff --git a/include/linux/rwsem_rt.h b/include/linux/rwsem_rt.h
+index 802c690..cd0c812 100644
+--- a/include/linux/rwsem_rt.h
++++ b/include/linux/rwsem_rt.h
+@@ -18,7 +18,7 @@
  
-diff --git a/drivers/pinctrl/devicetree.c b/drivers/pinctrl/devicetree.c
-index fcb1de4..00015c7 100644
---- a/drivers/pinctrl/devicetree.c
-+++ b/drivers/pinctrl/devicetree.c
-@@ -18,6 +18,7 @@
+ #include <linux/rtmutex.h>
  
- #include <linux/device.h>
- #include <linux/of.h>
-+#include <linux/of_gpio.h>
- #include <linux/pinctrl/pinctrl.h>
- #include <linux/slab.h>
- 
-@@ -247,3 +248,49 @@ err:
- 	pinctrl_dt_free_maps(p);
- 	return ret;
- }
-+
-+int pinctrl_recalculate_gpio_base(struct pinctrl_dev *pctldev,
-+				struct pinctrl_gpio_range *range)
-+{
-+	struct device_node *np,
-+	int ret = 0;
-+
-+	if (!range->np || range->off < 0) {
-+		dev_err(&pdev->dev, "no gpio node or invalid offset");
-+		return -EINVAL;
-+	}
-+
-+	np = range->np;
-+	of_node_get(np);
-+
-+	id = of_alias_get_id(np, "gpio");
-+	if (id < 0) {
-+		dev_err(&pdev->dev,
-+			"can not find alias id for node %s\n", np->name);
-+		ret = id;
-+		goto out;
-+	}
-+
-+	if (range->id != id) {
-+		dev_err(&pdev->dev,
-+			"the range id(%d) does not match gpio(%s) alias id(%d)\n",
-+			range->id, np->name, id);
-+		ret = -EINVAL;
-+		goto out;
-+	}
-+
-+	range->gc = of_node_to_gpiochip(np);
-+	if (!range->gc) {
-+		dev_err(pctldev->dev,
-+			"can not find gpio chip of node(%s)\n",
-+			np->name);
-+		ret = -ENODEV;
-+		goto out;
-+	}
-+	range->base = range->gc->base + range->off;
-+
-+out:
-+	of_node_put(np);
-+
-+	return ret;
-+}
-diff --git a/drivers/pinctrl/devicetree.h b/drivers/pinctrl/devicetree.h
-index 760bc49..d97ad43 100644
---- a/drivers/pinctrl/devicetree.h
-+++ b/drivers/pinctrl/devicetree.h
-@@ -21,6 +21,8 @@
- void pinctrl_dt_free_maps(struct pinctrl *p);
- int pinctrl_dt_to_map(struct pinctrl *p);
- 
-+int pinctrl_recalculate_gpio_base(struct pinctrl_dev *pctldev,
-+				struct pinctrl_gpio_range *range);
- #else
- 
- static inline int pinctrl_dt_to_map(struct pinctrl *p)
-@@ -32,4 +34,9 @@ static inline void pinctrl_dt_free_maps(struct pinctrl *p)
- {
- }
- 
-+static inline int pinctrl_recalculate_gpio_base(struct pinctrl_dev *pctldev,
-+				struct pinctrl_gpio_range *range)
-+{
-+	return 0;
-+}
+-struct rw_semaphore {
++struct __rw_semaphore {
+ 	struct rt_mutex		lock;
+ 	int			read_depth;
+ #ifdef CONFIG_DEBUG_LOCK_ALLOC
+@@ -26,22 +26,40 @@ struct rw_semaphore {
  #endif
-diff --git a/include/linux/pinctrl/pinctrl.h b/include/linux/pinctrl/pinctrl.h
-index 3b894a6..29b01b5 100644
---- a/include/linux/pinctrl/pinctrl.h
-+++ b/include/linux/pinctrl/pinctrl.h
-@@ -52,6 +52,9 @@ struct pinctrl_pin_desc {
-  * @pin_base: base pin number of the GPIO range
-  * @npins: number of pins in the GPIO range, including the base number
-  * @gc: an optional pointer to a gpio_chip
-+ * @np: the gpio device node for this range, used to find the gpio chip for dt.
-+ * @off: offset in the gpio range of the gpio_chip. Used for dynamically binding
-+ *  the gpio base from devicetree. Then @base is set as gc->base + off.
-  */
- struct pinctrl_gpio_range {
- 	struct list_head node;
-@@ -61,6 +64,8 @@ struct pinctrl_gpio_range {
- 	unsigned int pin_base;
- 	unsigned int npins;
- 	struct gpio_chip *gc;
-+	struct device_node *np;
-+	unsigned int off;
  };
  
- /**
-@@ -129,7 +134,7 @@ extern struct pinctrl_dev *pinctrl_register(struct pinctrl_desc *pctldesc,
- 				struct device *dev, void *driver_data);
- extern void pinctrl_unregister(struct pinctrl_dev *pctldev);
- extern bool pin_is_valid(struct pinctrl_dev *pctldev, int pin);
--extern void pinctrl_add_gpio_range(struct pinctrl_dev *pctldev,
-+extern int pinctrl_add_gpio_range(struct pinctrl_dev *pctldev,
- 				struct pinctrl_gpio_range *range);
- extern void pinctrl_remove_gpio_range(struct pinctrl_dev *pctldev,
- 				struct pinctrl_gpio_range *range);
--- 
-1.7.0.4
++struct rw_semaphore {
++	int			initialized;
++	struct __rw_semaphore	lock[NR_CPUS];
++#ifdef CONFIG_DEBUG_LOCK_ALLOC
++	const char		*name;
++	struct lock_class_key	__key[NR_CPUS];
++#endif
++};
++
++#ifdef CONFIG_DEBUG_LOCK_ALLOC
++#define __RWSEM_INITIALIZER(_name) \
++	{ .name = _name }
++#else
+ #define __RWSEM_INITIALIZER(name) \
+-	{ .lock = __RT_MUTEX_INITIALIZER(name.lock), \
+-	  RW_DEP_MAP_INIT(name) }
++	{  }
++
++#endif
+ 
+ #define DECLARE_RWSEM(lockname) \
+ 	struct rw_semaphore lockname = __RWSEM_INITIALIZER(lockname)
+ 
+-extern void  __rt_rwsem_init(struct rw_semaphore *rwsem, char *name,
++extern void  __rt_rwsem_init(struct __rw_semaphore *rwsem, char *name,
+ 				     struct lock_class_key *key);
+ 
+-# define rt_init_rwsem(sem)				\
+-do {							\
+-	static struct lock_class_key __key;		\
+-							\
+-	rt_mutex_init(&(sem)->lock);			\
+-	__rt_rwsem_init((sem), #sem, &__key);		\
++# define rt_init_rwsem(sem)						\
++do {									\
++	static struct lock_class_key __key[NR_CPUS];			\
++	int ____i;							\
++									\
++	for (____i = 0; ____i < NR_CPUS; ____i++) {			\
++		rt_mutex_init(&((sem)->lock[____i]).lock);		\
++		__rt_rwsem_init(&((sem)->lock[____i]), #sem, &__key[____i]); \
++	}								\
++	(sem)->initialized = 1;						\
+ } while (0)
+ 
+ extern void  rt_down_write(struct rw_semaphore *rwsem);
+@@ -55,7 +73,11 @@ extern void  rt_up_write(struct rw_semaphore *rwsem);
+ extern void  rt_downgrade_write(struct rw_semaphore *rwsem);
+ 
+ #define init_rwsem(sem)		rt_init_rwsem(sem)
+-#define rwsem_is_locked(s)	rt_mutex_is_locked(&(s)->lock)
++/*
++ * Use raw_smp_processor_id(), as readlocks use migrate disable,
++ * and write locks lock all of them (we don't care which one we test.
++ */
++#define rwsem_is_locked(s)	rt_mutex_is_locked(&(s)->lock[raw_smp_processor_id()].lock)
+ 
+ static inline void down_read(struct rw_semaphore *sem)
+ {
+diff --git a/kernel/rt.c b/kernel/rt.c
+index 092d6b3..f8dab27 100644
+--- a/kernel/rt.c
++++ b/kernel/rt.c
+@@ -306,18 +306,52 @@ EXPORT_SYMBOL(__rt_rwlock_init);
+  * rw_semaphores
+  */
+ 
++static void __initialize_rwsem(struct rw_semaphore *rwsem)
++{
++	int i;
++
++	/* TODO add spinlock here? */
++	rwsem->initialized = 1;
++
++	for (i = 0; i < NR_CPUS; i++) {
++		rt_mutex_init(&rwsem->lock[i].lock);
++		__rt_rwsem_init(&rwsem->lock[i],
++#ifdef CONFIG_DEBUG_LOCK_ALLOC
++				rwsem->name, &rwsem->key[i]
++#else
++				"", 0
++#endif
++			);
++	}
++}
++
++#define initialize_rwsem(rwsem)				\
++	do {						\
++		if (unlikely(!rwsem->initialized))	\
++			__initialize_rwsem(rwsem);	\
++	} while (0)
++
+ void  rt_up_write(struct rw_semaphore *rwsem)
+ {
+-	rwsem_release(&rwsem->dep_map, 1, _RET_IP_);
+-	rt_mutex_unlock(&rwsem->lock);
++	int i;
++
++	for_each_possible_cpu(i) {
++		rwsem_release(&rwsem->lock[i].dep_map, 1, _RET_IP_);
++		rt_mutex_unlock(&rwsem->lock[i].lock);
++	}
+ }
+ EXPORT_SYMBOL(rt_up_write);
+ 
+ void  rt_up_read(struct rw_semaphore *rwsem)
+ {
+-	rwsem_release(&rwsem->dep_map, 1, _RET_IP_);
+-	if (--rwsem->read_depth == 0)
+-		rt_mutex_unlock(&rwsem->lock);
++	int cpu;
++
++	cpu = smp_processor_id();
++	rwsem_release(&rwsem->lock[cpu].dep_map, 1, _RET_IP_);
++	if (--rwsem->lock[cpu].read_depth == 0) {
++		rt_mutex_unlock(&rwsem->lock[cpu].lock);
++		migrate_enable();
++	}
+ }
+ EXPORT_SYMBOL(rt_up_read);
+ 
+@@ -327,67 +361,112 @@ EXPORT_SYMBOL(rt_up_read);
+  */
+ void  rt_downgrade_write(struct rw_semaphore *rwsem)
+ {
+-	BUG_ON(rt_mutex_owner(&rwsem->lock) != current);
+-	rwsem->read_depth = 1;
++	int cpu;
++	int i;
++
++	migrate_disable();
++	cpu = smp_processor_id();
++	for_each_possible_cpu(i) {
++		if (cpu == i) {
++			BUG_ON(rt_mutex_owner(&rwsem->lock[i].lock) != current);
++			rwsem->lock[i].read_depth = 1;
++		} else {
++			rwsem_release(&rwsem->lock[i].dep_map, 1, _RET_IP_);
++			rt_mutex_unlock(&rwsem->lock[i].lock);
++		}
++	}
+ }
+ EXPORT_SYMBOL(rt_downgrade_write);
+ 
+ int  rt_down_write_trylock(struct rw_semaphore *rwsem)
+ {
+-	int ret = rt_mutex_trylock(&rwsem->lock);
++	int ret;
++	int i;
+ 
+-	if (ret)
+-		rwsem_acquire(&rwsem->dep_map, 0, 1, _RET_IP_);
+-	return ret;
++	initialize_rwsem(rwsem);
++
++	for_each_possible_cpu(i) {
++		ret = rt_mutex_trylock(&rwsem->lock[i].lock);
++		if (ret)
++			rwsem_acquire(&rwsem->lock[i].dep_map, 0, 1, _RET_IP_);
++		else
++			goto release;
++	}
++	return 1;
++ release:
++	while (--i >= 0) {
++		rwsem_release(&rwsem->lock[i].dep_map, 1, _RET_IP_);
++		rt_mutex_unlock(&rwsem->lock[i].lock);
++	}
++	return 0;
+ }
+ EXPORT_SYMBOL(rt_down_write_trylock);
+ 
+ void  rt_down_write(struct rw_semaphore *rwsem)
+ {
+-	rwsem_acquire(&rwsem->dep_map, 0, 0, _RET_IP_);
+-	rt_mutex_lock(&rwsem->lock);
++	int i;
++	initialize_rwsem(rwsem);
++	for_each_possible_cpu(i) {
++		rwsem_acquire(&rwsem->lock[i].dep_map, 0, 0, _RET_IP_);
++		rt_mutex_lock(&rwsem->lock[i].lock);
++	}
+ }
+ EXPORT_SYMBOL(rt_down_write);
+ 
+ void  rt_down_write_nested(struct rw_semaphore *rwsem, int subclass)
+ {
+-	rwsem_acquire(&rwsem->dep_map, subclass, 0, _RET_IP_);
+-	rt_mutex_lock(&rwsem->lock);
++	int i;
++
++	initialize_rwsem(rwsem);
++	for_each_possible_cpu(i) {
++		rwsem_acquire(&rwsem->lock[i].dep_map, subclass, 0, _RET_IP_);
++		rt_mutex_lock(&rwsem->lock[i].lock);
++	}
+ }
+ EXPORT_SYMBOL(rt_down_write_nested);
+ 
+ int  rt_down_read_trylock(struct rw_semaphore *rwsem)
+ {
+-	struct rt_mutex *lock = &rwsem->lock;
++	struct rt_mutex *lock;
+ 	int ret = 1;
++	int cpu;
+ 
++	initialize_rwsem(rwsem);
++	migrate_disable();
++	cpu = smp_processor_id();
++	lock = &rwsem->lock[cpu].lock;
+ 	/*
+ 	 * recursive read locks succeed when current owns the rwsem,
+ 	 * but not when read_depth == 0 which means that the rwsem is
+ 	 * write locked.
+ 	 */
+ 	if (rt_mutex_owner(lock) != current)
+-		ret = rt_mutex_trylock(&rwsem->lock);
+-	else if (!rwsem->read_depth)
++		ret = rt_mutex_trylock(lock);
++	else if (!rwsem->lock[cpu].read_depth)
+ 		ret = 0;
+ 
+ 	if (ret) {
+-		rwsem->read_depth++;
+-		rwsem_acquire(&rwsem->dep_map, 0, 1, _RET_IP_);
+-	}
++		rwsem->lock[cpu].read_depth++;
++		rwsem_acquire(&rwsem->lock[cpu].dep_map, 0, 1, _RET_IP_);
++	} else
++		migrate_enable();
+ 	return ret;
+ }
+ EXPORT_SYMBOL(rt_down_read_trylock);
+ 
+ static void __rt_down_read(struct rw_semaphore *rwsem, int subclass)
+ {
+-	struct rt_mutex *lock = &rwsem->lock;
++	struct rt_mutex *lock;
++	int cpu;
+ 
+-	rwsem_acquire_read(&rwsem->dep_map, subclass, 0, _RET_IP_);
++	migrate_disable();
++	cpu = smp_processor_id();
++	lock = &rwsem->lock[cpu].lock;
++	rwsem_acquire_read(&rwsem->lock[cpu].dep_map, subclass, 0, _RET_IP_);
+ 
+ 	if (rt_mutex_owner(lock) != current)
+-		rt_mutex_lock(&rwsem->lock);
+-	rwsem->read_depth++;
++		rt_mutex_lock(lock);
++	rwsem->lock[cpu].read_depth++;
+ }
+ 
+ void  rt_down_read(struct rw_semaphore *rwsem)
+@@ -402,7 +481,7 @@ void  rt_down_read_nested(struct rw_semaphore *rwsem, int subclass)
+ }
+ EXPORT_SYMBOL(rt_down_read_nested);
+ 
+-void  __rt_rwsem_init(struct rw_semaphore *rwsem, char *name,
++void  __rt_rwsem_init(struct __rw_semaphore *rwsem, char *name,
+ 			      struct lock_class_key *key)
+ {
+ #ifdef CONFIG_DEBUG_LOCK_ALLOC
 
 
