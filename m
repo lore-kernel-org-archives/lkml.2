@@ -1,17 +1,17 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965074Ab2EOC42 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 May 2012 22:56:28 -0400
-Received: from mail1.windriver.com ([147.11.146.13]:53316 "EHLO
-	mail1.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965022Ab2EOCRH (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S965024Ab2EOCRH (ORCPT <rfc822;w@1wt.eu>);
 	Mon, 14 May 2012 22:17:07 -0400
+Received: from mail.windriver.com ([147.11.1.11]:48991 "EHLO
+	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S964867Ab2EOCQH (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 14 May 2012 22:16:07 -0400
 From: Paul Gortmaker <paul.gortmaker@windriver.com>
 To: <stable@kernel.org>, <linux-kernel@vger.kernel.org>
-Subject: [34-longterm 082/179] PM: Free memory bitmaps if opening /dev/snapshot fails
-Date: Mon, 14 May 2012 22:12:58 -0400
-Message-ID: <1337048075-6132-83-git-send-email-paul.gortmaker@windriver.com>
+Subject: [34-longterm 010/179] ext3: Fix fs corruption when make_indexed_dir() fails
+Date: Mon, 14 May 2012 22:11:46 -0400
+Message-ID: <1337048075-6132-11-git-send-email-paul.gortmaker@windriver.com>
 X-Mailer: git-send-email 1.7.9.6
 In-Reply-To: <1337048075-6132-1-git-send-email-paul.gortmaker@windriver.com>
 References: <1337048075-6132-1-git-send-email-paul.gortmaker@windriver.com>
@@ -21,7 +21,7 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Michal Kubecek <mkubecek@suse.cz>
+From: Jan Kara <jack@suse.cz>
 
                    -------------------
     This is a commit scheduled for the next v2.6.34 longterm release.
@@ -29,39 +29,56 @@ From: Michal Kubecek <mkubecek@suse.cz>
     If you see a problem with using this for longterm, please comment.
                    -------------------
 
-commit 8440f4b19494467883f8541b7aa28c7bbf6ac92b upstream.
+commit 86c4f6d85595cd7da635dc6985d27bfa43b1ae10 upstream.
 
-When opening /dev/snapshot device, snapshot_open() creates memory
-bitmaps which are freed in snapshot_release(). But if any of the
-callbacks called by pm_notifier_call_chain() returns NOTIFY_BAD, open()
-fails, snapshot_release() is never called and bitmaps are not freed.
-Next attempt to open /dev/snapshot then triggers BUG_ON() check in
-create_basic_memory_bitmaps(). This happens e.g. when vmwatchdog module
-is active on s390x.
+When make_indexed_dir() fails (e.g. because of ENOSPC) after it has allocated
+block for index tree root, we did not properly mark all changed buffers dirty.
+This lead to only some of these buffers being written out and thus effectively
+corrupting the directory.
 
-Signed-off-by: Michal Kubecek <mkubecek@suse.cz>
-Signed-off-by: Rafael J. Wysocki <rjw@sisk.pl>
+Fix the issue by marking all changed data dirty even in the error failure case.
+
+Signed-off-by: Jan Kara <jack@suse.cz>
 Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
 ---
- kernel/power/user.c |    4 +++-
- 1 file changed, 3 insertions(+), 1 deletion(-)
+ fs/ext3/namei.c |   15 ++++++++++++---
+ 1 file changed, 12 insertions(+), 3 deletions(-)
 
-diff --git a/kernel/power/user.c b/kernel/power/user.c
-index 16a7d95..37b32d5 100644
---- a/kernel/power/user.c
-+++ b/kernel/power/user.c
-@@ -113,8 +113,10 @@ static int snapshot_open(struct inode *inode, struct file *filp)
- 		if (error)
- 			pm_notifier_call_chain(PM_POST_RESTORE);
- 	}
--	if (error)
-+	if (error) {
-+		free_basic_memory_bitmaps();
- 		atomic_inc(&snapshot_device_available);
+diff --git a/fs/ext3/namei.c b/fs/ext3/namei.c
+index 827b573..a97b96a 100644
+--- a/fs/ext3/namei.c
++++ b/fs/ext3/namei.c
+@@ -1425,10 +1425,19 @@ static int make_indexed_dir(handle_t *handle, struct dentry *dentry,
+ 	frame->at = entries;
+ 	frame->bh = bh;
+ 	bh = bh2;
++	/*
++	 * Mark buffers dirty here so that if do_split() fails we write a
++	 * consistent set of buffers to disk.
++	 */
++	ext3_journal_dirty_metadata(handle, frame->bh);
++	ext3_journal_dirty_metadata(handle, bh);
+ 	de = do_split(handle,dir, &bh, frame, &hinfo, &retval);
+-	dx_release (frames);
+-	if (!(de))
++	if (!de) {
++		ext3_mark_inode_dirty(handle, dir);
++		dx_release(frames);
+ 		return retval;
 +	}
- 	data->frozen = 0;
- 	data->ready = 0;
- 	data->platform_support = 0;
++	dx_release(frames);
+ 
+ 	return add_dirent_to_buf(handle, dentry, inode, de, bh);
+ }
+@@ -2214,7 +2223,7 @@ retry:
+ 			drop_nlink(inode);
+ 			unlock_new_inode(inode);
+ 			ext3_mark_inode_dirty(handle, inode);
+-			iput (inode);
++			iput(inode);
+ 			goto out_stop;
+ 		}
+ 	} else {
 -- 
 1.7.9.6
 
