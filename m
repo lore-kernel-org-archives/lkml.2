@@ -1,68 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933307Ab2EOSO5 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 May 2012 14:14:57 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:50090 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932887Ab2EOSOy (ORCPT
+	id S966089Ab2EOSPe (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 May 2012 14:15:34 -0400
+Received: from wolverine01.qualcomm.com ([199.106.114.254]:63710 "EHLO
+	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S964860Ab2EOSPc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 May 2012 14:14:54 -0400
-Date: Tue, 15 May 2012 19:14:51 +0100
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Graeme Gregory <gg@slimlogic.co.uk>
-Cc: linux-kernel@vger.kernel.org, sameo@linux.intel.com, lrg@ti.com,
-        b-cousson@ti.com, linux-omap@vger.kernel.org
-Subject: Re: [PATCHv2 1/4] MFD: palmas PMIC device support
-Message-ID: <20120515181448.GD19592@opensource.wolfsonmicro.com>
-References: <1337064539-3014-1-git-send-email-gg@slimlogic.co.uk>
- <1337064539-3014-2-git-send-email-gg@slimlogic.co.uk>
+	Tue, 15 May 2012 14:15:32 -0400
+X-IronPort-AV: E=McAfee;i="5400,1158,6712"; a="191182879"
+Message-ID: <4FB29D43.2040300@codeaurora.org>
+Date: Tue, 15 May 2012 11:15:31 -0700
+From: Saravana Kannan <skannan@codeaurora.org>
+User-Agent: Mozilla/5.0 (X11; Linux i686 on x86_64; rv:12.0) Gecko/20120428 Thunderbird/12.0.1
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="LTeJQqWS0MN7I/qa"
-Content-Disposition: inline
-In-Reply-To: <1337064539-3014-2-git-send-email-gg@slimlogic.co.uk>
-X-Cookie: You look tired.
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Sascha Hauer <s.hauer@pengutronix.de>
+CC: "Turquette, Mike" <mturquette@ti.com>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        andrew@lunn.ch, rnayak@ti.com
+Subject: Re: [PATCH] clk: Constify struct clk_init_data
+References: <1337004763-21250-1-git-send-email-broonie@opensource.wolfsonmicro.com> <20120514215304.GB3075@gmail.com> <4FB1AF14.3050507@codeaurora.org> <20120515070058.GK30400@pengutronix.de> <4FB2875C.6030402@codeaurora.org>
+In-Reply-To: <4FB2875C.6030402@codeaurora.org>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 05/15/2012 09:42 AM, Saravana Kannan wrote:
+> On 05/15/2012 12:00 AM, Sascha Hauer wrote:
+>> On Mon, May 14, 2012 at 06:19:16PM -0700, Saravana Kannan wrote:
+>>> On 05/14/2012 02:53 PM, Turquette, Mike wrote:
+>>>> On Mon, May 14, 2012 at 7:12 AM, Mark
+>>>> Brown<broonie@opensource.wolfsonmicro.com> wrote:
+>>>>> Allow drivers to declare their clk_init_data const, the framework
+>>>>> really
+>>>>> shouldn't be modifying the data.
+>>>>>
+>>>>> Signed-off-by: Mark Brown<broonie@opensource.wolfsonmicro.com>
+>>>>
+>>>> +interested parties
+>>>>
+>>>>>
+>>>>> diff --git a/include/linux/clk-provider.h
+>>>>> b/include/linux/clk-provider.h
+>>>>> index c1c23b9..fc43ea6 100644
+>>>>> --- a/include/linux/clk-provider.h
+>>>>> +++ b/include/linux/clk-provider.h
+>>>>> @@ -143,7 +143,7 @@ struct clk_init_data {
+>>>>> */
+>>>>> struct clk_hw {
+>>>>> struct clk *clk;
+>>>>> - struct clk_init_data *init;
+>>>>> + const struct clk_init_data *init;
+>>>
+>>> Oh, wait. This won't work for the case where the clock registration
+>>> is completely dynamic. Say, created from device tree or thru some
+>>> PCI/USB device probe, etc. That's why I didn't add it before.
+>>
+>> Why not? In this case clk_init_data is also only used in clk_register.
+>> Given that Mark has posted the patch I assume it actually works.
+>>
+>> Sascha
+>>
+>
+> It's used in __clk_register() though. Which I added as a "as close as
+> clk_register() but allows static init" function.
+>
 
---LTeJQqWS0MN7I/qa
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+Sorry about my rushed responses earlier. I don't think the const will 
+work even when purely using clk_register().
 
-On Tue, May 15, 2012 at 03:48:56PM +0900, Graeme Gregory wrote:
-> Palmas is a PMIC from Texas Instruments and this is the MFD part of the
-> driver for this chip. The PMIC has SMPS and LDO regulators, a general
-> purpose ADC, GPIO, USB OTG mode detection, watchdog and RTC features.
+Say I use device tree (you can extend this to HW probing/detection) to 
+know that there is a fixed factor clock. Now, if I want to dynamically 
+create and register it, I will have to allocate struct clk_fixed_factor 
+and struct clk_init_data. Then populate the fields of those structs and 
+finally point clk_fixed_factor.hw.init to the allocated clk_init_data. 
+Then call clk_register on clk_fixed_factor.hw. I'm not sure the 
+assigning of the init field above will be possible if we mark it as const.
 
-Reviwed-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
+Really though, not marking it as const shouldn't really have a huge 
+impact. What matters is that the common clock framework shouldn't try to 
+use it after clk_register() and we can do that by following what Russell 
+suggested (set hw.init to NULL at the end of clk_register).
 
-however this depends on some new regmap-irq changes that Graeme posted a
-couple of days ago and are only on regmap at the minute - Samuel, if
-you're OK with this I guess the easiest thing is if I apply there?
+Does that make sense?
 
---LTeJQqWS0MN7I/qa
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+Thanks,
+Saravana
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBAgAGBQJPsp0PAAoJEBus8iNuMP3ddhoP/jC0tmBKEOwe7h//sNZ8Cju4
-rglDhAacjSckTKtB/f56IINQUg1hvPCwZ2Z9iXI08xoaXUcXVArTLQa3FUyJ35cK
-UX4+528Gj2/QDEtutMx0/i/tNmBt7fa21wqix8tqaKX6GoE5/X0UYxmmmNoI6iZ3
-vCGiubtjTV48NMcDKiIoVL+ll8apQ6EjLyig91/X7nLiqrkSobHz5Qh9Z4hLam1x
-upasGL8UBSdREaiTSERwsE5Q2Ow90OZv8vfdZEAI2WC7k64njvSLYDfJUGnYrsWd
-XnSPoTT8GVZTrB6YqssPUBmE+QSrW9j4HD+s+n9Cp0n7k+Pdro44O9Zdws9Kq3nR
-3F7IMTcxX1ZmiEI/doEUmRmbGmrwNRhMT33HEG2LD40gJl1J9wvrODLaVAbE33pz
-vIz5wOoXeNOL66PcEiG7uLXpFCxkPumbWu5m1VO5qZjLKcieQB2F1unJd8WE30aG
-6SQgptkF7vuTjlk2gH4P9JW1aIP+Hu/aI4Ip3YtduufImGIpc88g+6z5U5yAeVy+
-0dc8sfelmqublfxS0rB89c7fs6KLSGN0Wx5U4RjmjdQB9pcIyhECfHbT7nC1kBgu
-Mf32EdQlZIs4xWOC7P5RvBjQbnmRHJ0IOPHhR40cMypodFOepnXXuJ30+/kjIToY
-KQhD6gcS5gJ4ngPkVG1T
-=FSWM
------END PGP SIGNATURE-----
-
---LTeJQqWS0MN7I/qa--
+-- 
+Sent by an employee of the Qualcomm Innovation Center, Inc.
+The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
