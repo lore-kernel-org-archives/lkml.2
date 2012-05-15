@@ -1,47 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758792Ab2EOMeA (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 May 2012 08:34:00 -0400
-Received: from mail-yx0-f174.google.com ([209.85.213.174]:47857 "EHLO
-	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758666Ab2EOMd7 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 May 2012 08:33:59 -0400
+	id S1758814Ab2EOMei (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 May 2012 08:34:38 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:44386 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1758666Ab2EOMeg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 May 2012 08:34:36 -0400
+Date: Tue, 15 May 2012 14:34:34 +0200
+From: Michal Hocko <mhocko@suse.cz>
+To: Hugh Dickins <hughd@google.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Konstantin Khlebnikov <khlebnikov@openvz.org>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Johannes Weiner <hannes@cmpxchg.org>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 3/3] mm/memcg: apply add/del_page to lruvec
+Message-ID: <20120515123434.GB11346@tiehlicka.suse.cz>
+References: <alpine.LSU.2.00.1205132152530.6148@eggly.anvils>
+ <alpine.LSU.2.00.1205132201210.6148@eggly.anvils>
+ <20120514163916.GD22629@tiehlicka.suse.cz>
 MIME-Version: 1.0
-In-Reply-To: <20120515112732.GB10347@shlinux2.ap.freescale.net>
-References: <1337010369-28687-1-git-send-email-b29396@freescale.com>
-	<CACRpkdbW8eeq0gFTjPRpKesmV4K5zqRHuW6C-UywBn8AtqOLCg@mail.gmail.com>
-	<20120515112732.GB10347@shlinux2.ap.freescale.net>
-Date: Tue, 15 May 2012 14:33:58 +0200
-Message-ID: <CACRpkdaKAF8bznd-sBdcGfdJW_cHSUGFZhnVk4qJ_0LJ8GoUuQ@mail.gmail.com>
-Subject: Re: [PATCH 1/2] pinctrl: pinctrl-imx: add imx53 pinctrl driver
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Dong Aisheng <aisheng.dong@freescale.com>
-Cc: Dong Aisheng-B29396 <B29396@freescale.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linus.walleij@stericsson.com" <linus.walleij@stericsson.com>,
-        "swarren@wwwdotorg.org" <swarren@wwwdotorg.org>,
-        "s.hauer@pengutronix.de" <s.hauer@pengutronix.de>,
-        Guo Shawn-R65073 <r65073@freescale.com>,
-        "kernel@pengutronix.de" <kernel@pengutronix.de>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120514163916.GD22629@tiehlicka.suse.cz>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, May 15, 2012 at 1:27 PM, Dong Aisheng
-<aisheng.dong@freescale.com> wrote:
-> On Tue, May 15, 2012 at 07:10:58PM +0800, Linus Walleij wrote:
->> Dong, will you merge the i.MX stuff through pinctrl or through
->> ARM SoC?
->
-> This patch has no dependency on any arm soc stuffs.
-> I think it's ok to go through pinctrl.
+On Mon 14-05-12 18:39:16, Michal Hocko wrote:
+> On Sun 13-05-12 22:02:28, Hugh Dickins wrote:
+> > Take lruvec further: pass it instead of zone to add_page_to_lru_list()
+> > and del_page_from_lru_list(); and pagevec_lru_move_fn() pass lruvec
+> > down to its target functions.
+> > 
+> > This cleanup eliminates a swathe of cruft in memcontrol.c,
+> > including mem_cgroup_lru_add_list(), mem_cgroup_lru_del_list() and
+> > mem_cgroup_lru_move_lists() - which never actually touched the lists.
+> 
+> Yes add_page_to_lru_list vs. mem_cgroup_lru_add_list and del variant
+> were really confusing.
+> 
+> > In their place, mem_cgroup_page_lruvec() to decide the lruvec,
+> > previously a side-effect of add, and mem_cgroup_update_lru_size()
+> > to maintain the lru_size stats.
+> > 
+> > Whilst these are simplifications in their own right, the goal is to
+> > bring the evaluation of lruvec next to the spin_locking of the lrus,
+> > in preparation for a future patch.
+> > 
+> > Signed-off-by: Hugh Dickins <hughd@google.com>
+> 
+> I like the patch but if Konstantin has a split up version of the same
+> thing I would rather see that version first.
 
-OK I'll be merging them, I was just thinking if you planned to also
-make machine changes in this kernel cycle.
+OK, I got confused and thought that Konstantin already posted his
+versions of the same thing and wanted to have a look at it. This doesn't
+seem to be the case and this changes are good enough for 3.5.
 
-Yours,
-Linus Walleij
+Acked-by: Michal Hocko <mhocko@suse.cz>
+
+Thanks and sorry for the confusion
+-- 
+Michal Hocko
+SUSE Labs
+SUSE LINUX s.r.o.
+Lihovarska 1060/12
+190 00 Praha 9    
+Czech Republic
