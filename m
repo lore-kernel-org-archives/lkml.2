@@ -1,55 +1,37 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932940Ab2EOOgC (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 May 2012 10:36:02 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:1062 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932912Ab2EOOf6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 May 2012 10:35:58 -0400
-Date: Tue, 15 May 2012 17:35:54 +0300
-From: "Michael S. Tsirkin" <mst@redhat.com>
-To: x86@kernel.org, kvm@vger.kernel.org
-Cc: Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
-        Avi Kivity <avi@redhat.com>, Marcelo Tosatti <mtosatti@redhat.com>,
-        gleb@redhat.com, Linus Torvalds <torvalds@linux-foundation.org>,
-        linux-kernel@vger.kernel.org
-Subject: [PATCHv3 2/8] apic: use symbolic APIC_EOI_ACK
-Message-ID: <ecbe4c79d69c172378e47e5a587ff5cd10293c9f.1337091955.git.mst@redhat.com>
-References: <cover.1337091955.git.mst@redhat.com>
+	id S932970Ab2EOOji (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 May 2012 10:39:38 -0400
+Received: from iolanthe.rowland.org ([192.131.102.54]:45564 "HELO
+	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S932864Ab2EOOjf (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 May 2012 10:39:35 -0400
+Date: Tue, 15 May 2012 10:39:34 -0400 (EDT)
+From: Alan Stern <stern@rowland.harvard.edu>
+X-X-Sender: stern@iolanthe.rowland.org
+To: Lin Ming <ming.m.lin@intel.com>
+cc: Jens Axboe <axboe@kernel.dk>, <linux-kernel@vger.kernel.org>,
+        <linux-pm@vger.kernel.org>, <linux-scsi@vger.kernel.org>
+Subject: Re: [RFC PATCH 3/3] block: add queue idle timer
+In-Reply-To: <1337071697-30920-4-git-send-email-ming.m.lin@intel.com>
+Message-ID: <Pine.LNX.4.44L0.1205151037500.1796-100000@iolanthe.rowland.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <cover.1337091955.git.mst@redhat.com>
-X-Mutt-Fcc: =sent
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Use the symbol instead of hard-coded numbers,
-now that the reason for the value is documented
-where the constant is defined we don't need to
-duplicate this explanation in code.
+On Tue, 15 May 2012, Lin Ming wrote:
 
-Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
----
- arch/x86/include/asm/apic.h |    4 +---
- 1 files changed, 1 insertions(+), 3 deletions(-)
+> Add an idle timer that is set to some suitable timeout and would be
+> added when the queue first goes empty. If nothing has happened during
+> the timeout interval, then the queue is suspended.
 
-diff --git a/arch/x86/include/asm/apic.h b/arch/x86/include/asm/apic.h
-index d854101..a09e9ab 100644
---- a/arch/x86/include/asm/apic.h
-+++ b/arch/x86/include/asm/apic.h
-@@ -463,9 +463,7 @@ static inline void ack_APIC_irq(void)
- 	 * ack_APIC_irq() actually gets compiled as a single instruction
- 	 * ... yummie.
- 	 */
--
--	/* Docs say use 0 for future compatibility */
--	apic_write(APIC_EOI, 0);
-+	apic_write(APIC_EOI, APIC_EOI_ACK);
- }
- 
- static inline unsigned default_get_apic_id(unsigned long x)
--- 
-MST
+You don't need to create an idle timer for runtime PM support; the 
+runtime PM framework already has such a timer.  Read 
+Documentation/power/runtime_pm.txt, especially the parts describing 
+pm_runtime_autosuspend() and related functions.
+
+Alan Stern
 
