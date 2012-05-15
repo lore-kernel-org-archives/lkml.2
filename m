@@ -1,52 +1,39 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755809Ab2EOGiy (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 May 2012 02:38:54 -0400
-Received: from ch1ehsobe002.messaging.microsoft.com ([216.32.181.182]:21178
-	"EHLO ch1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753710Ab2EOGix (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 May 2012 02:38:53 -0400
-X-SpamScore: -3
-X-BigFish: VS-3(zz98dKzz1202hzzz2dh2a8h668h839h944hd25h)
-X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
-Date: Tue, 15 May 2012 14:44:03 +0800
-From: Dong Aisheng <aisheng.dong@freescale.com>
-To: Dong Aisheng-B29396 <B29396@freescale.com>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linus.walleij@stericsson.com" <linus.walleij@stericsson.com>,
-        "swarren@wwwdotorg.org" <swarren@wwwdotorg.org>,
-        "s.hauer@pengutronix.de" <s.hauer@pengutronix.de>,
-        Guo Shawn-R65073 <r65073@freescale.com>,
-        "kernel@pengutronix.de" <kernel@pengutronix.de>
-Subject: Re: [PATCH 1/2] pinctrl: pinctrl-imx: add imx53 pinctrl driver
-Message-ID: <20120515064401.GA10347@shlinux2.ap.freescale.net>
-References: <1337010369-28687-1-git-send-email-b29396@freescale.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-In-Reply-To: <1337010369-28687-1-git-send-email-b29396@freescale.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-OriginatorOrg: freescale.com
+	id S1756279Ab2EOGtL (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 May 2012 02:49:11 -0400
+Received: from slimlogic.co.uk ([89.16.172.20]:39767 "EHLO slimlogic.co.uk"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755881Ab2EOGtK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 May 2012 02:49:10 -0400
+From: Graeme Gregory <gg@slimlogic.co.uk>
+To: linux-kernel@vger.kernel.org
+Cc: sameo@linux.intel.com, lrg@ti.com, broonie@opensource.wolfsonmicro.com,
+        b-cousson@ti.com, linux-omap@vger.kernel.org
+Subject: [PATCHv2 0/4] Adding support for Palmas PMIC
+Date: Tue, 15 May 2012 15:48:55 +0900
+Message-Id: <1337064539-3014-1-git-send-email-gg@slimlogic.co.uk>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, May 14, 2012 at 11:46:08PM +0800, Dong Aisheng-B29396 wrote:
-> +See below for available PIN_FUNC_ID for imx53:
-> +MX53_PAD_GPIO_19__KPP_COL_5				1
-To align with mx6, the id base in the binding doc should start from 0.
-Will update the doc in v2.
+This is the MFD and regulator parts for the Palmas family of chips from
+Texas Instruments.
 
-> +MX53_PAD_GPIO_19__GPIO4_5				2
-> +MX53_PAD_GPIO_19__CCM_CLKO				3
-> +MX53_PAD_GPIO_19__SPDIF_OUT1				4
-> +MX53_PAD_GPIO_19__RTC_CE_RTC_EXT_TRIG2			5
-> +MX53_PAD_GPIO_19__ECSPI1_RDY				6
-...
+It has been decided to use the Palmas name in the driver instead of
+the various marketing names the family will be avilable with to avoid
+confusion. The driver will in the future determine the exact product
+from the OTP information and adapt accordingly.
 
-Regards
-Dong Aisheng
+Currently the driver will handle the twl6035 and twl6037 varients.
+
+Changes since v1
+
+Attended to review items from Mark Brown
+Converted to use regmap_irq_chip
+Converted to using some regulator_xxx_regmap functions in pmic driver
+Removed some excess stuff from header file.
+
+Graeme
 
