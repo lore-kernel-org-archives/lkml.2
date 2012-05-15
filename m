@@ -1,92 +1,205 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965684Ab2EOQL1 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 May 2012 12:11:27 -0400
-Received: from mail131.messagelabs.com ([216.82.242.99]:13265 "EHLO
-	mail131.messagelabs.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965264Ab2EOQL0 (ORCPT
+	id S965721Ab2EOQOg (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 May 2012 12:14:36 -0400
+Received: from mail-vb0-f46.google.com ([209.85.212.46]:44323 "EHLO
+	mail-vb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S965660Ab2EOQOd convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 May 2012 12:11:26 -0400
-X-Env-Sender: hartleys@visionengravers.com
-X-Msg-Ref: server-6.tower-131.messagelabs.com!1337098269!12666993!33
-X-Originating-IP: [216.166.12.97]
-X-StarScan-Version: 6.5.10; banners=-,-,-
-X-VirusChecked: Checked
-From: H Hartley Sweeten <hartleys@visionengravers.com>
-To: Ian Abbott <abbotti@mev.co.uk>
-CC: Ian Abbott <ian.abbott@mev.co.uk>,
-        Linux Kernel <linux-kernel@vger.kernel.org>,
-        "devel@driverdev.osuosl.org" <devel@driverdev.osuosl.org>,
-        "fmhess@users.sourceforge.net" <fmhess@users.sourceforge.net>,
-        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>
-Date: Tue, 15 May 2012 11:11:17 -0500
-Subject: RE: [PATCH] staging: comedi: refactor ni_pcimio driver and use
- module_comedi_pci_driver
-Thread-Topic: [PATCH] staging: comedi: refactor ni_pcimio driver and use
- module_comedi_pci_driver
-Thread-Index: Ac0ysxd/DnnmsaesRHOle38IjugIcwAAG1gg
-Message-ID: <ADE657CA350FB648AAC2C43247A983F0020698AE0956@AUSP01VMBX24.collaborationhost.net>
-References: <201205111651.56541.hartleys@visionengravers.com>
- <4FB23DF8.8090508@mev.co.uk>
- <ADE657CA350FB648AAC2C43247A983F0020698AE0932@AUSP01VMBX24.collaborationhost.net>
- <4FB27C50.2000609@mev.co.uk>
-In-Reply-To: <4FB27C50.2000609@mev.co.uk>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="utf-8"
+	Tue, 15 May 2012 12:14:33 -0400
 MIME-Version: 1.0
+In-Reply-To: <201205121318.54115.arnd@arndb.de>
+References: <20120511094103.16423.51840.sendpatchset@w520>
+	<CACRpkdaVsBswz8uO_nTjbfbzt+T+YcxunpvoDvOn4+=DTwjG3A@mail.gmail.com>
+	<CANqRtoRx0VDmrPz=foD03z+ZYdb605Km8SEDKQQwCzbrZ54m3Q@mail.gmail.com>
+	<201205121318.54115.arnd@arndb.de>
+Date: Wed, 16 May 2012 01:14:32 +0900
+Message-ID: <CANqRtoQa8Ewd74d+t0iXPXkmUDan6OjcD5VPwCFpQKcg8KvXbg@mail.gmail.com>
+Subject: Re: [PATCH] gpio: Emma Mobile GPIO driver
+From: Magnus Damm <magnus.damm@gmail.com>
+To: Arnd Bergmann <arnd@arndb.de>
+Cc: Linus Walleij <linus.walleij@linaro.org>, linux-kernel@vger.kernel.org,
+        rjw@sisk.pl, linus.walleij@stericsson.com, linux-sh@vger.kernel.org,
+        horms@verge.net.au, grant.likely@secretlab.ca, lethal@linux-sh.org,
+        olof@lixom.net
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by nfs id q4FGBXij012582
 
-On Tuesday, May 15, 2012 8:55 AM, Ian Abbott wrote:
-> On 2012-05-15 16:41, H Hartley Sweeten wrote:
->> On Tuesday, May 15, 2012 4:29 AM, Ian Abbott wrote:
->>> On 2012-05-12 00:51, H Hartley Sweeten wrote:
->>>> +static struct comedi_driver ni_pcimio_driver = {
->>>> +	.driver_name	= "ni_pcimio",
->>>
->>> The original used the DRV_NAME macro expanding to "ni_pcimio" here...
->>>
->>>> +static struct pci_driver ni_pcimio_pci_driver = {
->>>> +	.name		= "ni_pcimio",
->>>
->>> ... which could also be used here.
->>>
->>>   (I realize this is a bit late as the patch is already committed!)
+On Sat, May 12, 2012 at 10:18 PM, Arnd Bergmann <arnd@arndb.de> wrote:
+> On Friday 11 May 2012, Magnus Damm wrote:
+>> On Fri, May 11, 2012 at 10:10 PM, Linus Walleij
+>> <linus.walleij@linaro.org> wrote:
+>> > On Fri, May 11, 2012 at 11:41 AM, Magnus Damm <magnus.damm@gmail.com> wrote:
+>> >
+>> >> +config GPIO_EM
+>> >> +       tristate "Emma Mobile GPIO"
+>> >> +       depends on ARM
+>> >
+>> > ARM really? Why should all ARM systems have the option of configuring in an Emma
+>> > controller?
 >>
->> I noticed that. A couple of the comedi drivers do this but it's not consistent.
+>> Well, first of all, the Emma Mobile line of SoCs are ARM based. You
+>> may think of MIPS based Emma devices. I don' t know so much about
+>> them, but if you happen to know where I can find docs then I'd be very
+>> interested in looking at them to see if I can share any of my recently
+>> developed drivers.
 >>
->> Personally I don't care for the use of the DRV_NAME (or DRIVER_NAME
->> or whatever someone wants to call it) usage. It doesn't same any code
->> space and always makes me have to do a second search to see what the
->> "name" actually is.
->>
->> Regardsless, if you prefer this in the drivers please let me know. It
->> would be nice to have them somewhat consistent before the comedi
->> support leaves staging.
+>> Not sure if your point is that this has nothing to do with the CPU
+>> core itself - at least I usually prefer to omit CPU dependencies for
+>> I/O devices and have as few dependencies as possible to get as much as
+>> compile time testing done. In this particular case I've added ARM as
+>> dependency because I was asked so for the UART driver 8250_em. Either
+>> way is fine with me, so it's up to you GPIO maintainers to decide what
+>> you want. As long as I can enable it on the ARM based SoC family I'm
+>> happy. =)
 >
-> It doesn't really matter as long as it's consistent within the driver. 
-> I tend to use macros for literals used several times as it often allows 
-> mistakes to be caught at compile-time.
+> My preference is generally to define the dependencies rather broadly
+> so you can build each driver on as many platforms as possible, and
+> just leave them out of defconfig. This seems to be the common way to
+> do things. Limiting by architecture makes some sense if you don't
+> want to expose the driver to all architectures that might not be
+> able to build it (e.g. s390 would not be able to build this one).
+
+I believe that is rather close to what i prefer too. I kept the ARM dependency.
+
+>> >> +static inline unsigned long em_gio_read(struct em_gio_priv *p, int offs)
+>> >> +{
+>> >> +       if (offs < GIO_IDT0)
+>> >> +               return ioread32(p->base0 + offs);
+>> >> +       else
+>> >> +               return ioread32(p->base1 + (offs - GIO_IDT0));
+>> >> +}
+>> >> +
+>> >> +static inline void em_gio_write(struct em_gio_priv *p, int offs,
+>> >> +                               unsigned long value)
+>> >> +{
+>> >> +       if (offs < GIO_IDT0)
+>> >> +               iowrite32(value, p->base0 + offs);
+>> >> +       else
+>> >> +               iowrite32(value, p->base1 + (offs - GIO_IDT0));
+>> >> +}
+>> >
+>> > Isn't ioread()/iowrite() some ISA I/O-space operations? What's wrong with
+>> > readl_[relaxed] and writel_[relaxed]()?
+>>
+>> Nothing wrong with readl/writel, I've just have a habit of using the
+>> ioread/iowrite ones. I find the code that allows platforms to select
+>> PORT or IOMEM in lib/iomap.c rather neat.
 >
-> I think DRV_NAME is still used in the request_irq() call though.
+> For reference: The ioread family is defined to be a superset of the
+> readl family and the inl family and to be compatible with the calling
+> convention of readl, so it's correct to use it here, but it may be
+> slower on architectures that require the lib/iomap.c wrappers. ARM
+> does not use those wrappers on modern systems because the PIO space
+> is memory mapped.
+>
+> For performance sensitive drivers that do not use DMA, it makes
+> sense to use the readl_relaxed() family instead, because those
+> omit the expensive barriers that protect us from overlapping with
+> DMA.
+>
+> The main advantage of using readl/writel is that it's more common
+> on ARM so reviewers don't have to wonder why this driver does things
+> differently. Any driver shared with powerpc, mips or sh would likely
+> use a different style. E.g. on powerpc, using readl/writel is considered
+> wrong because it's only well-defined for PCI there.
 
-Yah, I missed that one.
+Thanks for zooming out a bit and sharing your knowledge. As you know,
+the code is not shared with any other architecture at this point, but
+I decided to keep on using ioread/iowrite in V2 after all. I may
+optimize the GPIO bits later if I need to hook up some big banging SPI
+or I2C, but for now I think this is fine.
 
-I was going to clean up all the request_irq()'s so that dev->driver->driver_name
-is used for all "name" parameters. This fixes a number of drivers that directly
-reference the static comedi_driver variable. And it removes all the static "names".
+>> >> +static struct em_gio_priv *irq_to_priv(unsigned int irq)
+>> >> +{
+>> >> +       struct irq_chip *chip = irq_get_chip(irq);
+>> >> +       return container_of(chip, struct em_gio_priv, irq_chip);
+>> >> +}
+>> >
+>> > Should this be inline maybe?
+>>
+>> I have not checked if they actually turn out inline with my ARM
+>> compiler, but gcc for SH was always rather good at deciding when to
+>> inline by itself. Its a bit like likely()/unlikely() in my mind, it
+>> may be good to give hints for the compiler but in the majority of the
+>> cases the compiler will be fine by itself. I guess this particular
+>> function may end up as just a few instructions.
+>
+> Right.
+>
+>> >> +static irqreturn_t em_gio_irq_handler(int irq, void *dev_id)
+>> >> +{
+>> >> +       struct em_gio_priv *p = dev_id;
+>> >> +       unsigned long tmp, status;
+>> >> +       unsigned int offset;
+>> >> +
+>> >> +       status = tmp = em_gio_read(p, GIO_MST);
+>> >> +       if (!status)
+>> >> +               return IRQ_NONE;
+>> >> +
+>> >> +       while (status) {
+>> >> +               offset = __ffs(status);
+>> >> +               generic_handle_irq(p->irq_base + offset);
+>> >
+>> > Pleas use irqdomain to translate the IRQ numbers.
+>>
+>> Is this mandatory for regular platform devices not using DT?
+>>
+>> I don't object to your idea, but I was planning on adding that in my
+>> DT feature patch.
+>
+> There is little value in delaying this if you already know how
+> to do it. irq domains are useful for other reasons as well, e.g.
+> for allowing to build with sparse IRQ, which is needed when we get
+> to multiplatform kernels.
 
-When I do this I will also drop all the DRV_NAME macros that are no longer used.
+Hm, I thought I had sparse irq enabled already even though I'm not
+using irq domains. I suppose the static range used with the legacy irq
+domain is somewhat limited compared to the linear one if it gets
+allocated dynamically, so I agree that static ranges (with or without
+irq domains) certainly limit the usefulness of spare irqs.
 
-Regards,
-Hartley
+I agree that there is little value delaying it, so i cooked up some
+basic legacy irq domain support in V2.
 
+>> >> +static struct em_gio_priv *gpio_to_priv(struct gpio_chip *chip)
+>> >> +{
+>> >> +       return container_of(chip, struct em_gio_priv, gpio_chip);
+>> >> +}
+>> >
+>> > inline?
+>>
+>> Sure, if you think that is absolutely necessary. May I ask, is it
+>> important for you, or is it ok if I skip and keep this driver in line
+>> with my other ones? =)
+>
+> I don't think it makes any difference in practice, other for people
+> reading the code. Adding the 'inline' tells the reader that this is
+> meant to be a trivial function that doesn't add much object code,
+> and that the author was aware of that. I don't think it matters much
+> either way.
 
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éÝ¶¥Šwÿº{.nÇ+‰·¥Š{±þG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŽŠÝ¢j"ú¶m§ÿÿ¾«þG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+I agree. In V2 for readability I decided to add inline to the
+functions getting private data using container_of().
+
+>> > Isn't there a new nice inline that will both request and
+>> > remap a piece of memory?
+>>
+>> If so then that would be excellent. Especially together with
+>> ioread/iowrite so the code can work both for IOMEM and PORT
+>> transparently.
+>
+> We have a bunch of helpers, but I think none that does
+> everything yet. io_iomap() locates and remaps the resource.
+> devm_request_and_ioremap() does the request and the map, but
+> doesn't pull it out of the device.
+
+Let me know if you see any reason for not doing that. I'd be happy to
+try to cook something up and convert my drivers one by one.
+
+Thank you!
+
+/ magnus
