@@ -1,56 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S966290Ab2EOSc3 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 May 2012 14:32:29 -0400
-Received: from shards.monkeyblade.net ([198.137.202.13]:41074 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S966047Ab2EOSc1 (ORCPT
+	id S966303Ab2EOScv (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 May 2012 14:32:51 -0400
+Received: from stats.peacock.arvixe.com ([174.122.104.67]:33783 "EHLO
+	peacock.arvixe.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S966047Ab2EOScs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 May 2012 14:32:27 -0400
-Date: Tue, 15 May 2012 14:30:09 -0400 (EDT)
-Message-Id: <20120515.143009.2103212327515966852.davem@davemloft.net>
-To: johannes@sipsolutions.net
-Cc: joe@perches.com, netdev@vger.kernel.org,
-        linux-decnet-user@lists.sourceforge.net,
-        netfilter-devel@vger.kernel.org, netfilter@vger.kernel.org,
-        coreteam@netfilter.org, linux-wireless@vger.kernel.org,
-        dev@openvswitch.org, linux-sctp@vger.kernel.org,
-        linux-nfs@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [RFC net-next 0/2] net: Use net_<level>_ratelimit
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <1337106548.15553.8.camel@jlt3.sipsolutions.net>
-References: <1337106094.15553.5.camel@jlt3.sipsolutions.net>
-	<20120515.142405.633851408201128056.davem@davemloft.net>
-	<1337106548.15553.8.camel@jlt3.sipsolutions.net>
-X-Mailer: Mew version 6.4 on Emacs 23.3 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.6 (shards.monkeyblade.net [198.137.202.13]); Tue, 15 May 2012 11:30:12 -0700 (PDT)
+	Tue, 15 May 2012 14:32:48 -0400
+From: Przemo Firszt <przemo@firszt.eu>
+To: pinglinux@gmail.com, jkosina@suse.cz
+Cc: linuxwacom-devel@lists.sourceforge.net, linux-input@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Przemo Firszt <przemo@firszt.eu>
+Subject: [PATCH 1/3] HID: wacom: Move Graphire raport header check.
+Date: Tue, 15 May 2012 19:32:25 +0100
+Message-Id: <1337106748-28437-1-git-send-email-przemo@firszt.eu>
+X-Mailer: git-send-email 1.7.10.1
+X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
+X-AntiAbuse: Primary Hostname - peacock.arvixe.com
+X-AntiAbuse: Original Domain - vger.kernel.org
+X-AntiAbuse: Originator/Caller UID/GID - [47 12] / [47 12]
+X-AntiAbuse: Sender Address Domain - firszt.eu
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Johannes Berg <johannes@sipsolutions.net>
-Date: Tue, 15 May 2012 20:29:08 +0200
+That check is valid only for Wacom Graphire, as the device raports always
+start with 0x03. Intuos4 WL high-speed raports begin with 0x04, so
+the check would be filtering out valid reports.
 
-> On Tue, 2012-05-15 at 14:24 -0400, David Miller wrote:
-> 
->> > But don't you have to do something in the sources to actually get
->> > dynamic_debug enabled? I'm concerned this will make mac80211 debugging
->> > inconsistent - the normal bits are just printk() still, and the
->> > rate-limited bits need some special enabling? That seems odd.
->> 
->> You can turn them all off or on with a simple flip of a boolean switch
->> at run-time.  Or, alternatively, you can turn them on or off in a
->> finer grained manner with other run-time facilities.
->> 
->> There should be a transition away from explicit KERN_DEBUG.
-> 
-> I support that, but I think it's confusing to have things mixed. Also,
-> we seem to have printk_ratelimit(), so I'd prefer to have that used in
-> mac80211 instead until everything there moves over to newer facilities.
+Signed-off-by: Przemo Firszt <przemo@firszt.eu>
+---
+ drivers/hid/hid-wacom.c |   12 +++++++-----
+ 1 file changed, 7 insertions(+), 5 deletions(-)
 
-No, you don't want that, it's different from the networking ratelimit
-mechanism.  Joe explained this, and I just explaing it to you once
-again in another reply.
+diff --git a/drivers/hid/hid-wacom.c b/drivers/hid/hid-wacom.c
+index 29372ed..4fc4eeb 100644
+--- a/drivers/hid/hid-wacom.c
++++ b/drivers/hid/hid-wacom.c
+@@ -578,13 +578,15 @@ static int wacom_raw_event(struct hid_device *hdev, struct hid_report *report,
+ 	hidinput = list_entry(hdev->inputs.next, struct hid_input, list);
+ 	input = hidinput->input;
+ 
+-	/* Check if this is a tablet report */
+-	if (data[0] != 0x03)
+-		return 0;
+-
+ 	switch (hdev->product) {
+ 	case USB_DEVICE_ID_WACOM_GRAPHIRE_BLUETOOTH:
+-		return wacom_gr_parse_report(hdev, wdata, input, data);
++		if (data[0] == 0x03) {
++			return wacom_gr_parse_report(hdev, wdata, input, data);
++		} else {
++			hid_err(hdev, "Unknown report: %d,%d size:%d\n",
++					data[0], data[1], size);
++			return 0;
++		}
+ 		break;
+ 	case USB_DEVICE_ID_WACOM_INTUOS4_BLUETOOTH:
+ 		i = 1;
+-- 
+1.7.10.1
+
