@@ -1,74 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757058Ab2EOOOw (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 May 2012 10:14:52 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:51412 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754626Ab2EOOOu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 May 2012 10:14:50 -0400
-Date: Tue, 15 May 2012 16:14:48 +0200
-From: Michal Hocko <mhocko@suse.cz>
-To: Johannes Weiner <hannes@cmpxchg.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        cgroups@vger.kernel.org, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [patch 1/6] mm: memcg: remove obsolete statistics array boundary
- enum item
-Message-ID: <20120515141447.GE11346@tiehlicka.suse.cz>
-References: <1337018451-27359-1-git-send-email-hannes@cmpxchg.org>
- <1337018451-27359-2-git-send-email-hannes@cmpxchg.org>
+	id S1757080Ab2EOOPv (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 May 2012 10:15:51 -0400
+Received: from smtp-out-008.synserver.de ([212.40.185.8]:1074 "EHLO
+	smtp-out-006.synserver.de" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1753018Ab2EOOPu (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 May 2012 10:15:50 -0400
+X-SynServer-TrustedSrc: 1
+X-SynServer-AuthUser: lars@metafoo.de
+X-SynServer-PPID: 30374
+Message-ID: <4FB265C1.7060306@metafoo.de>
+Date: Tue, 15 May 2012 16:18:41 +0200
+From: Lars-Peter Clausen <lars@metafoo.de>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.3) Gecko/20120329 Icedove/10.0.3
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1337018451-27359-2-git-send-email-hannes@cmpxchg.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Guenter Roeck <guenter.roeck@ericsson.com>
+CC: "R, Durgadoss" <durgadoss.r@intel.com>, "Tc, Jenny" <jenny.tc@intel.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "lm-sensors@lm-sensors.org" <lm-sensors@lm-sensors.org>,
+        Jonathan Cameron <jic23@kernel.org>
+Subject: Re: [lm-sensors] [PATCH] hwmon: Generic ADC support for hwmon
+References: <1337092008-31263-1-git-send-email-jenny.tc@intel.com> <20120515121339.GA21600@ericsson.com> <4D68720C2E767A4AA6A8796D42C8EB59124E22@BGSMSX101.gar.corp.intel.com> <20120515134257.GA21933@ericsson.com>
+In-Reply-To: <20120515134257.GA21933@ericsson.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon 14-05-12 20:00:46, Johannes Weiner wrote:
-> MEM_CGROUP_STAT_DATA is a leftover from when item counters were living
-> in the same array as ever-increasing event counters.  It's no longer
-> needed, use MEM_CGROUP_STAT_NSTATS to iterate over the stat array.
+On 05/15/2012 03:42 PM, Guenter Roeck wrote:
+> On Tue, May 15, 2012 at 08:42:57AM -0400, R, Durgadoss wrote:
+>> Hi Guenter,
+>>
+>> Thanks for a quick reply.
+>>
+>>> On Tue, May 15, 2012 at 10:26:48AM -0400, Jenny TC wrote:
+>>>> Currently drivers are using custom APIs to communicate with ADC driver.
+>>>> So it make sense to have generic APIs to commnicate with ADC drivers.
+>>>> This patch introduces generic APIs to communicate with ADC drivers.
+>>>>
+>>>> Signed-off-by: Jenny TC <jenny.tc@intel.com>
+>>>
+>>> Hi Jenny,
+>>>
+>>> Do you have a practical use case ?
+>>
+>> We have some platform specific component drivers, thermal drivers,
+>> battery drivers using this General purpose ADC in the platform.
+>> That's why we thought of doing something like this.
+>>
+>>>
+>>> Also, shouldn't those generic ADCs rather be supported through the IO
+>>> subsystem ?
+>>> After all, hwmon is all about hardware monitoring, not to provide generic ADC
+>>> access.
+>>
+>> In this case, can we try this in iio or mfd subsystem ?
+>> Kindly advise.
+>>
+> I meant iio (more specifically staging/iio/adc).
 > 
-> Signed-off-by: Johannes Weiner <hannes@cmpxchg.org>
-
-Acked-by: Michal Hocko <mhocko@suse.cz>
-
-> ---
->  mm/memcontrol.c |    3 +--
->  1 file changed, 1 insertion(+), 2 deletions(-)
-> 
-> diff --git a/mm/memcontrol.c b/mm/memcontrol.c
-> index 9520ee9..aef89c1 100644
-> --- a/mm/memcontrol.c
-> +++ b/mm/memcontrol.c
-> @@ -99,7 +99,6 @@ enum mem_cgroup_stat_index {
->  	MEM_CGROUP_STAT_FILE_MAPPED,  /* # of pages charged as file rss */
->  	MEM_CGROUP_STAT_MLOCK, /* # of pages charged as mlock()ed */
->  	MEM_CGROUP_STAT_SWAPOUT, /* # of pages, swapped out */
-> -	MEM_CGROUP_STAT_DATA, /* end of data requires synchronization */
->  	MEM_CGROUP_STAT_NSTATS,
->  };
->  
-> @@ -2158,7 +2157,7 @@ static void mem_cgroup_drain_pcp_counter(struct mem_cgroup *memcg, int cpu)
->  	int i;
->  
->  	spin_lock(&memcg->pcp_counter_lock);
-> -	for (i = 0; i < MEM_CGROUP_STAT_DATA; i++) {
-> +	for (i = 0; i < MEM_CGROUP_STAT_NSTATS; i++) {
->  		long x = per_cpu(memcg->stat->count[i], cpu);
->  
->  		per_cpu(memcg->stat->count[i], cpu) = 0;
-> -- 
-> 1.7.10.1
+> I suspect it might make more sense to have a hwmon client, in parallel to the other
+> users/clients (battery control, thermal etc), if the values reported by the ADC reflect
+> information relevant for hardware monitoring.
 > 
 
--- 
-Michal Hocko
-SUSE Labs
-SUSE LINUX s.r.o.
-Lihovarska 1060/12
-190 00 Praha 9    
-Czech Republic
+So there is already an experimental IIO to hwmon bridge in
+drivers/staging/iio/, which you can use to expose a IIO ADC driver as an
+hwmon device.
+
+Add Jonathan to Cc.
+
+- Lars
