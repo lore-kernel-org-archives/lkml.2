@@ -1,17 +1,17 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965765Ab2EOCnr (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 May 2012 22:43:47 -0400
-Received: from mail1.windriver.com ([147.11.146.13]:53468 "EHLO
-	mail1.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965250Ab2EOCRh (ORCPT
+	id S965297Ab2EOCoJ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 May 2012 22:44:09 -0400
+Received: from mail.windriver.com ([147.11.1.11]:49749 "EHLO
+	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S965241Ab2EOCRg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 May 2012 22:17:37 -0400
+	Mon, 14 May 2012 22:17:36 -0400
 From: Paul Gortmaker <paul.gortmaker@windriver.com>
 To: <stable@kernel.org>, <linux-kernel@vger.kernel.org>
-Subject: [34-longterm 119/179] USB: pl2303.h: checkpatch cleanups
-Date: Mon, 14 May 2012 22:13:35 -0400
-Message-ID: <1337048075-6132-120-git-send-email-paul.gortmaker@windriver.com>
+Subject: [34-longterm 118/179] x86: Make Dell Latitude E5420 use reboot=pci
+Date: Mon, 14 May 2012 22:13:34 -0400
+Message-ID: <1337048075-6132-119-git-send-email-paul.gortmaker@windriver.com>
 X-Mailer: git-send-email 1.7.9.6
 In-Reply-To: <1337048075-6132-1-git-send-email-paul.gortmaker@windriver.com>
 References: <1337048075-6132-1-git-send-email-paul.gortmaker@windriver.com>
@@ -21,7 +21,7 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Greg Kroah-Hartman <gregkh@suse.de>
+From: Daniel J Blueman <daniel.blueman@gmail.com>
 
                    -------------------
     This is a commit scheduled for the next v2.6.34 longterm release.
@@ -29,37 +29,43 @@ From: Greg Kroah-Hartman <gregkh@suse.de>
     If you see a problem with using this for longterm, please comment.
                    -------------------
 
-commit 5d78fcb0caf219e2e6c8e486d7e31fec1333ac06 upstream.
+commit b7798d28ec15d20fd34b70fa57eb13f0cf6d1ecd upstream.
 
-Minor whitespace cleanups to make checkpatch happy.
+Rebooting on the Dell E5420 often hangs with the keyboard or ACPI
+methods, but is reliable via the PCI method.
 
-Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
+[ hpa: this was deferred because we believed for a long time that the
+  recent reshuffling of the boot priorities in commit
+  660e34cebf0a11d54f2d5dd8838607452355f321 fixed this platform.
+  Unfortunately that turned out to be incorrect. ]
+
+Signed-off-by: Daniel J Blueman <daniel.blueman@gmail.com>
+Link: http://lkml.kernel.org/r/1305248699-2347-1-git-send-email-daniel.blueman@gmail.com
+Signed-off-by: H. Peter Anvin <hpa@zytor.com>
 Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
 ---
- drivers/usb/serial/pl2303.h |    6 +++---
- 1 file changed, 3 insertions(+), 3 deletions(-)
+ arch/x86/kernel/reboot.c |    8 ++++++++
+ 1 file changed, 8 insertions(+)
 
-diff --git a/drivers/usb/serial/pl2303.h b/drivers/usb/serial/pl2303.h
-index d67b480..1b025f7 100644
---- a/drivers/usb/serial/pl2303.h
-+++ b/drivers/usb/serial/pl2303.h
-@@ -5,7 +5,7 @@
-  *	it under the terms of the GNU General Public License as published by
-  *	the Free Software Foundation; either version 2 of the License, or
-  *	(at your option) any later version.
-- * 
-+ *
-  */
+diff --git a/arch/x86/kernel/reboot.c b/arch/x86/kernel/reboot.c
+index ff8cc40..7a5cb07 100644
+--- a/arch/x86/kernel/reboot.c
++++ b/arch/x86/kernel/reboot.c
+@@ -469,6 +469,14 @@ static struct dmi_system_id __initdata pci_reboot_dmi_table[] = {
+ 			DMI_MATCH(DMI_PRODUCT_NAME, "iMac9,1"),
+ 		},
+ 	},
++	{	/* Handle problems with rebooting on the Latitude E5420. */
++		.callback = set_pci_reboot,
++		.ident = "Dell Latitude E5420",
++		.matches = {
++			DMI_MATCH(DMI_SYS_VENDOR, "Dell Inc."),
++			DMI_MATCH(DMI_PRODUCT_NAME, "Latitude E5420"),
++		},
++	},
+ 	{ }
+ };
  
- #define BENQ_VENDOR_ID			0x04a5
-@@ -142,5 +142,5 @@
- #define SANWA_PRODUCT_ID	0x0001
- 
- /* ADLINK ND-6530 RS232,RS485 and RS422 adapter */
--#define ADLINK_VENDOR_ID        0x0b63
--#define ADLINK_ND6530_PRODUCT_ID       0x6530
-+#define ADLINK_VENDOR_ID		0x0b63
-+#define ADLINK_ND6530_PRODUCT_ID	0x6530
 -- 
 1.7.9.6
 
