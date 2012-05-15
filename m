@@ -1,61 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757185Ab2EOLM7 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 May 2012 07:12:59 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:41113 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756662Ab2EOLM6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 May 2012 07:12:58 -0400
-Date: Tue, 15 May 2012 14:12:55 +0300
-From: Gleb Natapov <gleb@redhat.com>
-To: Hannes Reinecke <hare@suse.de>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        "H. Peter Anvin" <hpa@linux.intel.com>
-Subject: Re: [PATCH] EDD: Check for correct EDD 3.0 length
-Message-ID: <20120515111255.GJ32036@redhat.com>
-References: <1337079889-62380-1-git-send-email-hare@suse.de>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1337079889-62380-1-git-send-email-hare@suse.de>
+	id S1757365Ab2EOLQu (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 May 2012 07:16:50 -0400
+Received: from casper.infradead.org ([85.118.1.10]:47878 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756893Ab2EOLQt convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 May 2012 07:16:49 -0400
+Message-ID: <1337080582.27694.40.camel@twins>
+Subject: Re: [PATCH v4 3/7] x86/flush_tlb: try flush_tlb_single one by one
+ in flush_tlb_range
+From: Peter Zijlstra <a.p.zijlstra@chello.nl>
+To: Borislav Petkov <bp@amd64.org>
+Cc: Alex Shi <alex.shi@intel.com>, rob@landley.net, tglx@linutronix.de,
+        mingo@redhat.com, hpa@zytor.com, arnd@arndb.de, rostedt@goodmis.org,
+        fweisbec@gmail.com, jeremy@goop.org, gregkh@linuxfoundation.org,
+        riel@redhat.com, luto@mit.edu, avi@redhat.com, len.brown@intel.com,
+        dhowells@redhat.com, fenghua.yu@intel.com, ak@linux.intel.com,
+        cpw@sgi.com, steiner@sgi.com, akpm@linux-foundation.org,
+        penberg@kernel.org, hughd@google.com, rientjes@google.com,
+        kosaki.motohiro@jp.fujitsu.com, n-horiguchi@ah.jp.nec.com,
+        paul.gortmaker@windriver.com, trenn@suse.de, tj@kernel.org,
+        oleg@redhat.com, axboe@kernel.dk, kamezawa.hiroyu@jp.fujitsu.com,
+        viro@zeniv.linux.org.uk, linux-kernel@vger.kernel.org
+Date: Tue, 15 May 2012 13:16:22 +0200
+In-Reply-To: <20120515103307.GB27153@aftab.osrc.amd.com>
+References: <1336626013-28413-1-git-send-email-alex.shi@intel.com>
+	 <1336626013-28413-4-git-send-email-alex.shi@intel.com>
+	 <20120510084213.GD30055@aftab.osrc.amd.com> <4FAB84B6.7060706@intel.com>
+	 <4FAE18D0.6050001@intel.com> <20120513111328.GD28863@aftab.osrc.amd.com>
+	 <4FB1AC03.2070407@intel.com> <20120515103307.GB27153@aftab.osrc.amd.com>
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
+X-Mailer: Evolution 3.2.2- 
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Next time you resent an email say why you are doing it (wrong lkml
-address in this case).
-
-On Tue, May 15, 2012 at 01:04:49PM +0200, Hannes Reinecke wrote:
-> The device_path_info_length for EDD 3.0 is 36, not 44.
-> Cf http://mbldr.sourceforge.net/specsedd30.pdf.
+On Tue, 2012-05-15 at 12:33 +0200, Borislav Petkov wrote:
+> On Tue, May 15, 2012 at 09:06:11AM +0800, Alex Shi wrote:
+> > Thanks for your input. but actually, total 3 labels doesn't looks
+> > good. Maybe the following lines can meet your expectation.
 > 
-That's the wrong spec.
+> Yeah, a bit better.
 
-> This is a regression introduced by commit
-> 0c61227094b3ddaca2f847ee287c4a2e3762b5a2
-> 
-> Signed-off-by: Hannes Reinecke <hare@suse.de>
-> Cc: Gleb Natapov <gleb@redhat.com>
-> Cc: H. Peter Anvin <hpa@linux.intel.com>
-> 
-> diff --git a/drivers/firmware/edd.c b/drivers/firmware/edd.c
-> index e229576..09a77d5 100644
-> --- a/drivers/firmware/edd.c
-> +++ b/drivers/firmware/edd.c
-> @@ -545,8 +545,8 @@ edd_has_edd30(struct edd_device *edev)
->  	}
->  
->  
-> -	/* We support only T13 spec */
-> -	if (info->params.device_path_info_length != 44)
-Here is the spec that code supports is spelled out, but you just replace
-the comment with pointer to the spec that the code does not support.
-
-> +	/* EDD 3.0 specifies this to be 36 */
-> +	if (info->params.device_path_info_length != 36)
->  		return 0;
->  
->  	for (i = 30; i < info->params.device_path_info_length + 30; i++)
-
---
-			Gleb.
+Wouldn't all this become much prettier if you rip out that multi-vector
+stuff?
