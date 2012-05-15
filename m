@@ -1,47 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932820Ab2EONAl (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 May 2012 09:00:41 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:44398 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932154Ab2EONAk (ORCPT
+	id S932840Ab2EONAq (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 May 2012 09:00:46 -0400
+Received: from db3ehsobe006.messaging.microsoft.com ([213.199.154.144]:29568
+	"EHLO db3outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S932824Ab2EONAn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 May 2012 09:00:40 -0400
-Subject: Re: Plumbers: Tweaking scheduler policy micro-conf RFP
-From: Peter Zijlstra <peterz@infradead.org>
-To: Vincent Guittot <vincent.guittot@linaro.org>
-Cc: paulmck@linux.vnet.ibm.com, smuckle@quicinc.com, khilman@ti.com,
-        Robin.Randhawa@arm.com, suresh.b.siddha@intel.com,
-        thebigcorporation@gmail.com, venki@google.com,
-        panto@antoniou-consulting.com, mingo@elte.hu, paul.brett@intel.com,
-        pdeschrijver@nvidia.com, pjt@google.com, efault@gmx.de,
-        fweisbec@gmail.com, geoff@infradead.org, rostedt@goodmis.org,
-        tglx@linutronix.de, amit.kucheria@linaro.org,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        linaro-sched-sig@lists.linaro.org,
-        Morten Rasmussen <Morten.Rasmussen@arm.com>,
-        Juri Lelli <juri.lelli@gmail.com>
-In-Reply-To: <CAKfTPtDz1-fR2i5x7AVd8sGZhX2VNtz2rnQC3ePrcHO9MWK3FQ@mail.gmail.com>
-References: <CAKfTPtDSDAOAdv0GTDswZeRM7TmACrjok+5kddSaQpvy6_6xWw@mail.gmail.com>
-	 <CAKfTPtCfiY7A29+e50F+6awd8BjNJjg4=uNN4ReZfdS_4FbpkA@mail.gmail.com>
-	 <1337084609.27020.156.camel@laptop>
-	 <CAKfTPtDz1-fR2i5x7AVd8sGZhX2VNtz2rnQC3ePrcHO9MWK3FQ@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Tue, 15 May 2012 15:00:34 +0200
-Message-ID: <1337086834.27020.162.camel@laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.2 
-Content-Transfer-Encoding: 7bit
+	Tue, 15 May 2012 09:00:43 -0400
+X-SpamScore: -10
+X-BigFish: VS-10(zz9371I1432N98dKzz1202hzz8275bhz2dh2a8h668h839h944hd25h)
+X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
+Date: Tue, 15 May 2012 21:05:43 +0800
+From: Dong Aisheng <aisheng.dong@freescale.com>
+To: Linus Walleij <linus.walleij@linaro.org>
+CC: Dong Aisheng-B29396 <B29396@freescale.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linus.walleij@stericsson.com" <linus.walleij@stericsson.com>,
+        "swarren@wwwdotorg.org" <swarren@wwwdotorg.org>,
+        "s.hauer@pengutronix.de" <s.hauer@pengutronix.de>,
+        Guo Shawn-R65073 <r65073@freescale.com>,
+        "kernel@pengutronix.de" <kernel@pengutronix.de>
+Subject: Re: [PATCH 1/2] pinctrl: pinctrl-imx: add imx53 pinctrl driver
+Message-ID: <20120515130542.GD10347@shlinux2.ap.freescale.net>
+References: <1337010369-28687-1-git-send-email-b29396@freescale.com>
+ <CACRpkdbW8eeq0gFTjPRpKesmV4K5zqRHuW6C-UywBn8AtqOLCg@mail.gmail.com>
+ <20120515112732.GB10347@shlinux2.ap.freescale.net>
+ <CACRpkdaKAF8bznd-sBdcGfdJW_cHSUGFZhnVk4qJ_0LJ8GoUuQ@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+In-Reply-To: <CACRpkdaKAF8bznd-sBdcGfdJW_cHSUGFZhnVk4qJ_0LJ8GoUuQ@mail.gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-OriginatorOrg: freescale.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2012-05-15 at 14:57 +0200, Vincent Guittot wrote:
+On Tue, May 15, 2012 at 08:33:58PM +0800, Linus Walleij wrote:
+> On Tue, May 15, 2012 at 1:27 PM, Dong Aisheng
+> <aisheng.dong@freescale.com> wrote:
+> > On Tue, May 15, 2012 at 07:10:58PM +0800, Linus Walleij wrote:
+> >> Dong, will you merge the i.MX stuff through pinctrl or through
+> >> ARM SoC?
+> >
+> > This patch has no dependency on any arm soc stuffs.
+> > I think it's ok to go through pinctrl.
 > 
-> Not sure that nobody cares but it's much more that scheduler,
-> load_balance and sched_mc are sensible enough that it's difficult to
-> ensure that a modification will not break everything for someone
-> else. 
+> OK I'll be merging them, I was just thinking if you planned to also
+> make machine changes in this kernel cycle.
+> 
+I did not plan it before, i checked with Shawn and he was also ok to
+go through pinctrl tree.
 
-Thing is, its already broken, there's nothing else to break :-)
+Thanks
+
+Regards
+Dong Aisheng
 
