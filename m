@@ -1,17 +1,17 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965797Ab2EOCuO (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 May 2012 22:50:14 -0400
-Received: from mail.windriver.com ([147.11.1.11]:49672 "EHLO
-	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965136Ab2EOCRW (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S965137Ab2EOCRW (ORCPT <rfc822;w@1wt.eu>);
 	Mon, 14 May 2012 22:17:22 -0400
+Received: from mail.windriver.com ([147.11.1.11]:49057 "EHLO
+	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S964875Ab2EOCQO (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 14 May 2012 22:16:14 -0400
 From: Paul Gortmaker <paul.gortmaker@windriver.com>
 To: <stable@kernel.org>, <linux-kernel@vger.kernel.org>
-Subject: [34-longterm 101/179] af_packet: prevent information leak
-Date: Mon, 14 May 2012 22:13:17 -0400
-Message-ID: <1337048075-6132-102-git-send-email-paul.gortmaker@windriver.com>
+Subject: [34-longterm 018/179] seqlock: Don't smp_rmb in seqlock reader spin loop
+Date: Mon, 14 May 2012 22:11:54 -0400
+Message-ID: <1337048075-6132-19-git-send-email-paul.gortmaker@windriver.com>
 X-Mailer: git-send-email 1.7.9.6
 In-Reply-To: <1337048075-6132-1-git-send-email-paul.gortmaker@windriver.com>
 References: <1337048075-6132-1-git-send-email-paul.gortmaker@windriver.com>
@@ -21,7 +21,7 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Eric Dumazet <eric.dumazet@gmail.com>
+From: Milton Miller <miltonm@bga.com>
 
                    -------------------
     This is a commit scheduled for the next v2.6.34 longterm release.
@@ -29,62 +29,76 @@ From: Eric Dumazet <eric.dumazet@gmail.com>
     If you see a problem with using this for longterm, please comment.
                    -------------------
 
-commit 13fcb7bd322164c67926ffe272846d4860196dc6 upstream.
+commit 5db1256a5131d3b133946fa02ac9770a784e6eb2 upstream.
 
-In 2.6.27, commit 393e52e33c6c2 (packet: deliver VLAN TCI to userspace)
-added a small information leak.
+Move the smp_rmb after cpu_relax loop in read_seqlock and add
+ACCESS_ONCE to make sure the test and return are consistent.
 
-Add padding field and make sure its zeroed before copy to user.
+A multi-threaded core in the lab didn't like the update
+from 2.6.35 to 2.6.36, to the point it would hang during
+boot when multiple threads were active.  Bisection showed
+af5ab277ded04bd9bc6b048c5a2f0e7d70ef0867 (clockevents:
+Remove the per cpu tick skew) as the culprit and it is
+supported with stack traces showing xtime_lock waits including
+tick_do_update_jiffies64 and/or update_vsyscall.
 
-Signed-off-by: Eric Dumazet <eric.dumazet@gmail.com>
-CC: Patrick McHardy <kaber@trash.net>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+Experimentation showed the combination of cpu_relax and smp_rmb
+was significantly slowing the progress of other threads sharing
+the core, and this patch is effective in avoiding the hang.
+
+A theory is the rmb is affecting the whole core while the
+cpu_relax is causing a resource rebalance flush, together they
+cause an interfernce cadance that is unbroken when the seqlock
+reader has interrupts disabled.
+
+At first I was confused why the refactor in
+3c22cd5709e8143444a6d08682a87f4c57902df3 (kernel: optimise
+seqlock) didn't affect this patch application, but after some
+study that affected seqcount not seqlock. The new seqcount was
+not factored back into the seqlock.  I defer that the future.
+
+While the removal of the timer interrupt offset created
+contention for the xtime lock while a cpu does the
+additonal work to update the system clock, the seqlock
+implementation with the tight rmb spin loop goes back much
+further, and is just waiting for the right trigger.
+
+Cc: <stable@vger.kernel.org>
+Signed-off-by: Milton Miller <miltonm@bga.com>
+Cc: <linuxppc-dev@lists.ozlabs.org>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Andi Kleen <andi@firstfloor.org>
+Cc: Nick Piggin <npiggin@kernel.dk>
+Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Cc: Anton Blanchard <anton@samba.org>
+Cc: Paul McKenney <paulmck@linux.vnet.ibm.com>
+Acked-by: Eric Dumazet <eric.dumazet@gmail.com>
+Link: http://lkml.kernel.org/r/%3Cseqlock-rmb%40mdm.bga.com%3E
+Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
 Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
 ---
- include/linux/if_packet.h |    2 ++
- net/packet/af_packet.c    |    2 ++
- 2 files changed, 4 insertions(+)
+ include/linux/seqlock.h |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
-diff --git a/include/linux/if_packet.h b/include/linux/if_packet.h
-index aa57a5f..9b8dc3a 100644
---- a/include/linux/if_packet.h
-+++ b/include/linux/if_packet.h
-@@ -60,6 +60,7 @@ struct tpacket_auxdata {
- 	__u16		tp_mac;
- 	__u16		tp_net;
- 	__u16		tp_vlan_tci;
-+	__u16		tp_padding;
- };
+diff --git a/include/linux/seqlock.h b/include/linux/seqlock.h
+index 632205c..4c3257d 100644
+--- a/include/linux/seqlock.h
++++ b/include/linux/seqlock.h
+@@ -88,12 +88,12 @@ static __always_inline unsigned read_seqbegin(const seqlock_t *sl)
+ 	unsigned ret;
  
- /* Rx ring - header status */
-@@ -98,6 +99,7 @@ struct tpacket2_hdr {
- 	__u32		tp_sec;
- 	__u32		tp_nsec;
- 	__u16		tp_vlan_tci;
-+	__u16		tp_padding;
- };
- 
- #define TPACKET2_HDRLEN		(TPACKET_ALIGN(sizeof(struct tpacket2_hdr)) + sizeof(struct sockaddr_ll))
-diff --git a/net/packet/af_packet.c b/net/packet/af_packet.c
-index b1bc2d2..4096a66 100644
---- a/net/packet/af_packet.c
-+++ b/net/packet/af_packet.c
-@@ -751,6 +751,7 @@ static int tpacket_rcv(struct sk_buff *skb, struct net_device *dev,
- 		h.h2->tp_sec = ts.tv_sec;
- 		h.h2->tp_nsec = ts.tv_nsec;
- 		h.h2->tp_vlan_tci = vlan_tx_tag_get(skb);
-+		h.h2->tp_padding = 0;
- 		hdrlen = sizeof(*h.h2);
- 		break;
- 	default:
-@@ -1617,6 +1618,7 @@ static int packet_recvmsg(struct kiocb *iocb, struct socket *sock,
- 		aux.tp_net = skb_network_offset(skb);
- 		aux.tp_vlan_tci = vlan_tx_tag_get(skb);
- 
-+		aux.tp_padding = 0;
- 		put_cmsg(msg, SOL_PACKET, PACKET_AUXDATA, sizeof(aux), &aux);
+ repeat:
+-	ret = sl->sequence;
+-	smp_rmb();
++	ret = ACCESS_ONCE(sl->sequence);
+ 	if (unlikely(ret & 1)) {
+ 		cpu_relax();
+ 		goto repeat;
  	}
++	smp_rmb();
  
+ 	return ret;
+ }
 -- 
 1.7.9.6
 
