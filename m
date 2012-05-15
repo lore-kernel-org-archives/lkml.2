@@ -1,65 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753157Ab2EOKIe (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 May 2012 06:08:34 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:34352 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750745Ab2EOKId (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 May 2012 06:08:33 -0400
-Date: Tue, 15 May 2012 11:08:29 +0100
-From: Mel Gorman <mgorman@suse.de>
-To: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: David Miller <davem@davemloft.net>, akpm@linux-foundation.org,
-        linux-mm@kvack.org, netdev@vger.kernel.org, linux-nfs@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Trond.Myklebust@netapp.com,
-        neilb@suse.de, hch@infradead.org, michaelc@cs.wisc.edu,
-        emunson@mgebm.net
-Subject: Re: [PATCH 01/12] netvm: Prevent a stream-specific deadlock
-Message-ID: <20120515100829.GH29102@suse.de>
-References: <1336658065-24851-2-git-send-email-mgorman@suse.de>
- <20120511.011034.557833140906762226.davem@davemloft.net>
- <20120514105604.GB29102@suse.de>
- <20120514.162634.1094732813264319951.davem@davemloft.net>
- <20120515091402.GG29102@suse.de>
- <1337075234.27694.9.camel@twins>
+	id S1753783Ab2EOKKY (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 May 2012 06:10:24 -0400
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:41218 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751394Ab2EOKKX (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 May 2012 06:10:23 -0400
+Message-ID: <4FB22B88.80106@gmail.com>
+Date: Tue, 15 May 2012 12:10:16 +0200
+From: Juri Lelli <juri.lelli@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-15
-Content-Disposition: inline
-In-Reply-To: <1337075234.27694.9.camel@twins>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Peter Zijlstra <peterz@infradead.org>
+CC: tglx@linutronix.de, mingo@redhat.com, rostedt@goodmis.org,
+        cfriesen@nortel.com, oleg@redhat.com, fweisbec@gmail.com,
+        darren@dvhart.com, johan.eker@ericsson.com, p.faure@akatech.ch,
+        linux-kernel@vger.kernel.org, claudio@evidence.eu.com,
+        michael@amarulasolutions.com, fchecconi@gmail.com,
+        tommaso.cucinotta@sssup.it, nicola.manica@disi.unitn.it,
+        luca.abeni@unitn.it, dhaval.giani@gmail.com, hgu1972@gmail.com,
+        paulmck@linux.vnet.ibm.com, raistlin@linux.it, insop.song@ericsson.com,
+        liming.wang@windriver.com
+Subject: Re: [PATCH 05/16] sched: SCHED_DEADLINE policy implementation.
+References: <1333696481-3433-1-git-send-email-juri.lelli@gmail.com>   <1333696481-3433-6-git-send-email-juri.lelli@gmail.com>  <1335191701.28150.155.camel@twins> <4F9577CF.2020400@gmail.com> <1335195826.28150.177.camel@twins>
+In-Reply-To: <1335195826.28150.177.camel@twins>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, May 15, 2012 at 11:47:14AM +0200, Peter Zijlstra wrote:
-> On Tue, 2012-05-15 at 10:14 +0100, Mel Gorman wrote:
-> > @@ -289,6 +289,18 @@ void sk_clear_memalloc(struct sock *sk)
-> >         sock_reset_flag(sk, SOCK_MEMALLOC);
-> >         sk->sk_allocation &= ~__GFP_MEMALLOC;
-> >         static_key_slow_dec(&memalloc_socks);
-> > +
-> > +       /*
-> > +        * SOCK_MEMALLOC is allowed to ignore rmem limits to ensure forward
-> > +        * progress of swapping. However, if SOCK_MEMALLOC is cleared while
-> > +        * it has rmem allocations there is a risk that the user of the
-> > +        * socket cannot make forward progress due to exceeding the rmem
-> > +        * limits. By rights, sk_clear_memalloc() should only be called
-> > +        * on sockets being torn down but warn and reset the accounting if
-> > +        * that assumption breaks.
-> > +        */
-> > +       if (WARN_ON(sk->sk_forward_alloc))
-> 
-> WARN_ON_ONCE() perhaps?
-> 
+On 04/23/2012 05:43 PM, Peter Zijlstra wrote:
+> On Mon, 2012-04-23 at 17:39 +0200, Juri Lelli wrote:
+>> On 04/23/2012 04:35 PM, Peter Zijlstra wrote:
+>>> On Fri, 2012-04-06 at 09:14 +0200, Juri Lelli wrote:
+>>>> +static void init_dl_task_timer(struct sched_dl_entity *dl_se)
+>>>> +{
+>>>> +       struct hrtimer *timer =&dl_se->dl_timer;
+>>>> +
+>>>> +       if (hrtimer_active(timer)) {
+>>>> +               hrtimer_try_to_cancel(timer);
+>>>> +               return;
+>>>> +       }
+>>>
+>>> Same question I guess, how can it be active here? Also, just letting it
+>>> run doesn't seem like the best way out..
+>>>
+>>
+>> Probably s/hrtimer_try_to_cancel/hrtimer_cancel is better.
+>
+> Yeah, not sure you can do hrtimer_cancel() there though, you're holding
+> ->pi_lock and rq->lock and have IRQs disabled. That sounds like asking
+> for trouble.
+>
+> Anyway, if it can't happen, we don't have to fix it.. so lets answer
+> that first ;-)
 
-I do not expect SOCK_MEMALLOC to be cleared frequently at all with the
-possible exception of swapon/swapoff stress tests. If the flag is being
-cleared regularly with rmem tokens then that is interesting in itself
-but a WARN_ON_ONCE would miss it.
+Even if I dropped the bits for allowing !root users, this critical point
+still remains.
+What if I leave this like it is and instead I do the following?
 
-> > +               sk_mem_reclaim(sk);
-> >  } 
+@@ -488,9 +488,10 @@ static enum hrtimer_restart dl_task_timer(struct hrtimer *timer)
+         /*
+          * We need to take care of a possible races here. In fact, the
+          * task might have changed its scheduling policy to something
+-        * different from SCHED_DEADLINE (through sched_setscheduler()).
++        * different from SCHED_DEADLINE or changed its reservation
++        * parameters (through sched_{setscheduler(),setscheduler2()}).
+          */
+-       if (!dl_task(p))
++       if (!dl_task(p) || dl_se->dl_new)
+                 goto unlock;
+  
+         dl_se->dl_throttled = 0;
 
--- 
-Mel Gorman
-SUSE Labs
+The idea is that hrtimer_try_to_cancel should fail only if the callback routine
+is running. If, meanwhile, I set up new parameters, I can try to recognize this
+situation through dl_new (set to 1 during __setparam_dl).
+
+BTW, I'd have a new version ready (also rebased on the current tip/master). It
+address all the comments excluding your gcc work-around, math128 and
+nr_cpus_allowed shift (patches are ready but those changes not yet mainline,
+right?). Anyway, do you think would be fine to post it?
+
+Thanks and Regards,
+
+- Juri
