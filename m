@@ -1,36 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754652Ab2EOKU2 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 May 2012 06:20:28 -0400
-Received: from casper.infradead.org ([85.118.1.10]:47112 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751894Ab2EOKU1 convert rfc822-to-8bit (ORCPT
+	id S1755666Ab2EOKVJ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 May 2012 06:21:09 -0400
+Received: from smtp.eu.citrix.com ([62.200.22.115]:2556 "EHLO
+	SMTP.EU.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753100Ab2EOKVH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 May 2012 06:20:27 -0400
-Message-ID: <1337077224.27694.16.camel@twins>
-Subject: Re: =?UTF-8?Q?=5BFEEDBACK-=E2=80=8BCOLLECTING=E2=80=8B=5DHow?= do
- you feel after patching the Rotary =?UTF-8?Q?Interactiv=E2=80=8Biry?= Favor
- Scheduler?
-From: Peter Zijlstra <peterz@infradead.org>
-To: mou Chen <hi3766691@gmail.com>
-Cc: linux-kernel@vger.kernel.org,
-        richard -rw- weinberger <richard.weinberger@gmail.com>,
-        Ingo Molnar <mingo@kernel.org>, Juri Lelli <juri.lelli@gmail.com>
-Date: Tue, 15 May 2012 12:20:24 +0200
-In-Reply-To: <CANQmPXjnb_0ydD6zrZY-h+xeveQjOSkUqE_xafJ3SNGGE+zHCA@mail.gmail.com>
-References: <CANQmPXjnb_0ydD6zrZY-h+xeveQjOSkUqE_xafJ3SNGGE+zHCA@mail.gmail.com>
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
-X-Mailer: Evolution 3.2.2- 
-Mime-Version: 1.0
+	Tue, 15 May 2012 06:21:07 -0400
+X-IronPort-AV: E=Sophos;i="4.75,593,1330905600"; 
+   d="scan'208";a="12478371"
+Date: Tue, 15 May 2012 11:20:23 +0100
+From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+X-X-Sender: sstabellini@kaball-desktop
+To: Dan Carpenter <dan.carpenter@oracle.com>
+CC: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Stefano Stabellini <Stefano.Stabellini@eu.citrix.com>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Alan Cox <alan@linux.intel.com>,
+        "linuxppc-dev@lists.ozlabs.org" <linuxppc-dev@lists.ozlabs.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "kernel-janitors@vger.kernel.org" <kernel-janitors@vger.kernel.org>
+Subject: Re: [patch] hvc_xen: NULL dereference on allocation failure
+In-Reply-To: <20120515084746.GC30265@elgon.mountain>
+Message-ID: <alpine.DEB.2.00.1205151119260.26786@kaball-desktop>
+References: <20120515084746.GC30265@elgon.mountain>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+MIME-Version: 1.0
+Content-Type: text/plain; charset="US-ASCII"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2012-05-15 at 16:48 +0800, mou Chen wrote:
-> Hi everyone.
-> I want some comments of RIFS. Please feel free to give me feedback and
-> having feedback from users can help me to improve it. :-)
+On Tue, 15 May 2012, Dan Carpenter wrote:
+> If kzalloc() returns a NULL here, we pass a NULL to
+> xencons_disconnect_backend() which will cause an Oops.
+> 
+> Also I removed the __GFP_ZERO while I was at it since kzalloc() implies
+> __GFP_ZERO.
+> 
+> Signed-off-by: Dan Carpenter <dan.carpenter@oracle.com>
 
-You really have to be kidding, right? You send a tarball with a freaking
-mess inside and you think I've got the time to unravel that shit?
+Acked-by: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+ 
