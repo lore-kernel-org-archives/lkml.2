@@ -1,51 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758961Ab2EON5b (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 May 2012 09:57:31 -0400
-Received: from lxorguk.ukuu.org.uk ([81.2.110.251]:45072 "EHLO
-	lxorguk.ukuu.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752402Ab2EON5a (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 May 2012 09:57:30 -0400
-Date: Tue, 15 May 2012 15:00:15 +0100
-From: Alan Cox <alan@lxorguk.ukuu.org.uk>
-To: Gleb Natapov <gleb@redhat.com>
-Cc: Hannes Reinecke <hare@suse.de>, LKML <linux-kernel@vger.kernel.org>,
-        "H. Peter Anvin" <hpa@linux.intel.com>
-Subject: Re: [PATCH] EDD: Check for correct EDD 3.0 length
-Message-ID: <20120515150015.5bf17aea@pyramind.ukuu.org.uk>
-In-Reply-To: <20120515115917.GK32036@redhat.com>
-References: <1337079889-62380-1-git-send-email-hare@suse.de>
-	<20120515111255.GJ32036@redhat.com>
-	<4FB23C09.7060300@suse.de>
-	<20120515115917.GK32036@redhat.com>
-X-Mailer: Claws Mail 3.8.0 (GTK+ 2.24.8; x86_64-redhat-linux-gnu)
-Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	id S1754833Ab2EON6Y (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 May 2012 09:58:24 -0400
+Received: from mga02.intel.com ([134.134.136.20]:23764 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752032Ab2EON6X (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 May 2012 09:58:23 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.67,352,1309762800"; 
+   d="scan'208";a="140866821"
+Message-ID: <4FB260F1.5040800@intel.com>
+Date: Tue, 15 May 2012 21:58:09 +0800
+From: Alex Shi <alex.shi@intel.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:9.0) Gecko/20111229 Thunderbird/9.0
+MIME-Version: 1.0
+To: Peter Zijlstra <a.p.zijlstra@chello.nl>
+CC: Borislav Petkov <bp@amd64.org>, rob@landley.net, tglx@linutronix.de,
+        mingo@redhat.com, hpa@zytor.com, arnd@arndb.de, rostedt@goodmis.org,
+        fweisbec@gmail.com, jeremy@goop.org, gregkh@linuxfoundation.org,
+        riel@redhat.com, luto@mit.edu, avi@redhat.com, len.brown@intel.com,
+        dhowells@redhat.com, fenghua.yu@intel.com, ak@linux.intel.com,
+        cpw@sgi.com, steiner@sgi.com, akpm@linux-foundation.org,
+        penberg@kernel.org, hughd@google.com, rientjes@google.com,
+        kosaki.motohiro@jp.fujitsu.com, n-horiguchi@ah.jp.nec.com,
+        paul.gortmaker@windriver.com, trenn@suse.de, tj@kernel.org,
+        oleg@redhat.com, axboe@kernel.dk, kamezawa.hiroyu@jp.fujitsu.com,
+        viro@zeniv.linux.org.uk, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v4 3/7] x86/flush_tlb: try flush_tlb_single one by one
+ in flush_tlb_range
+References: <1336626013-28413-1-git-send-email-alex.shi@intel.com>  <1336626013-28413-4-git-send-email-alex.shi@intel.com>  <20120510084213.GD30055@aftab.osrc.amd.com> <4FAB84B6.7060706@intel.com>  <4FAE18D0.6050001@intel.com> <20120513111328.GD28863@aftab.osrc.amd.com>  <4FB1AC03.2070407@intel.com> <20120515103307.GB27153@aftab.osrc.amd.com>  <1337080582.27694.40.camel@twins>  <20120515115638.GE27153@aftab.osrc.amd.com> <1337083243.27020.153.camel@laptop>
+In-Reply-To: <1337083243.27020.153.camel@laptop>
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> T13 EDD4.0 actually supply enough information to link edd entry to actual
-> device (another spec does not), I do not see support for other spec to
-> be important, but you are welcome to write support for it if you need
-> it. The only way I see to check what spec edd info corresponds to is to
-> calculate checksum according to both specs and see which one succeeds.
+On 05/15/2012 08:00 PM, Peter Zijlstra wrote:
 
-I also think you are confused on this: EDD 3.0 provides enough
-information to link most types of hardware to the device. It provides the
-PCI or Legacy path to the interface and the device LUN, or for 1394 etc
-the WWID which can be used to cross match. It doesn't address port
-multipliers.
+> On Tue, 2012-05-15 at 13:56 +0200, Borislav Petkov wrote:
+>> On Tue, May 15, 2012 at 01:16:22PM +0200, Peter Zijlstra wrote:
+>>> Wouldn't all this become much prettier if you rip out that
+>>> multi-vector stuff?
+>>
+>> multi-vector stuff? Please elaborate.
+> 
+> The INVALIDATE_TLB_VECTOR muck:
+> 
+>                 apic->send_IPI_mask(to_cpumask(f->flush_cpumask),
+>                               INVALIDATE_TLB_VECTOR_START + sender);
+> 
+> and simply use:
+> 
+>  smp_call_function()
+> 
 
-EDD 1.1 provides sufficient information for old systems too via the FDPT
-as they only have to deal with MFM/IDE/ATA controllers at the legacy
-mappings and these are described by the FDPT.
 
-Prior to that it gets a bit more interesting and you have to go poking in
-BIOS magic and have the required spellbooks to hand. However right back
-to the original 386 era PCs the data is available.
-
-Alan
+I am trying this following the patchset.
+but that should another work thread.
