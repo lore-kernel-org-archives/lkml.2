@@ -1,40 +1,172 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758951Ab2EONrA (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 May 2012 09:47:00 -0400
-Received: from lxorguk.ukuu.org.uk ([81.2.110.251]:45054 "EHLO
-	lxorguk.ukuu.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758824Ab2EONq7 (ORCPT
+	id S1758988Ab2EONrQ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 May 2012 09:47:16 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:45550 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758966Ab2EONrM convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 May 2012 09:46:59 -0400
-Date: Tue, 15 May 2012 14:49:45 +0100
-From: Alan Cox <alan@lxorguk.ukuu.org.uk>
-To: Gleb Natapov <gleb@redhat.com>
-Cc: Hannes Reinecke <hare@suse.de>, LKML <linux-kernel@vger.kernel.org>,
-        "H. Peter Anvin" <hpa@linux.intel.com>
-Subject: Re: [PATCH] EDD: Check for correct EDD 3.0 length
-Message-ID: <20120515144945.339e742f@pyramind.ukuu.org.uk>
-In-Reply-To: <20120515115917.GK32036@redhat.com>
-References: <1337079889-62380-1-git-send-email-hare@suse.de>
-	<20120515111255.GJ32036@redhat.com>
-	<4FB23C09.7060300@suse.de>
-	<20120515115917.GK32036@redhat.com>
-X-Mailer: Claws Mail 3.8.0 (GTK+ 2.24.8; x86_64-redhat-linux-gnu)
-Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Tue, 15 May 2012 09:47:12 -0400
+MIME-Version: 1.0
+In-Reply-To: <20120509184709.GC32037@sirena.org.uk>
+References: <1336580695-1184-1-git-send-email-yadi.brar@samsung.com>
+	<1336580695-1184-3-git-send-email-yadi.brar@samsung.com>
+	<20120509184709.GC32037@sirena.org.uk>
+Date: Tue, 15 May 2012 19:17:11 +0530
+Message-ID: <CAKew6eVZuOUH8RHQbffCGX7i=6dM-qOJXojoKrOsM3V5ugEjHA@mail.gmail.com>
+Subject: Re: [PATCH 2/2] regulator: Add support for MAX77686.
+From: Yadwinder Singh Brar <yadi.brar01@gmail.com>
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>
+Cc: Yadwinder Singh <yadi.brar@samsung.com>, linux-samsung-soc@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> I do not see support for other spec to be important, but you are welcome
-> to write support for it if you need it. The only way I see to check what
-> spec edd info corresponds to is to calculate checksum according to both
-> specs and see which one succeeds.
+Hi Mark,
 
-No it doesn't work like that. This is a regression for existing working
-systems. It needs to be reverted or fixed. If it was a new feature you'd
-have a point - but it isn't. You've broken stuff, undo the breakage.
+On Thu, May 10, 2012 at 12:17 AM, Mark Brown
+<broonie@opensource.wolfsonmicro.com> wrote:
+> On Wed, May 09, 2012 at 09:54:55PM +0530, Yadwinder Singh wrote:
+>
+>> +/* Voltage maps in mV */
+>> +static const struct voltage_map_desc ldo_voltage_map_desc = {
+>> +     .min = 800,     .max = 3950,    .step = 50,     .n_bits = 6,
+>> +};                           /* LDO3 ~ 5, 9 ~ 14, 16 ~ 26 */
+>
+> Hrm, funnily enough I was just thinking about factoring this stuff out
+> into the core after a conversation with Graeme Gregory the other week.
+> Let's do that...
+>
+>> +     [MAX77686_EN32KHZ_AP] = NULL,
+>> +     [MAX77686_EN32KHZ_CP] = NULL,
+>
+> Now that the generic clock API is in mainline these should be moved over
+> to use it.
+>
+>> +static int max77686_get_voltage_unit(int rid)
+>> +{
+>> +     int unit = 0;
+>> +
+>> +     switch (rid) {
+>> +     case MAX77686_BUCK2...MAX77686_BUCK4:
+>> +             unit = 1;       /* BUCK2,3,4 is uV */
+>> +             break;
+>> +     default:
+>> +             unit = 1000;
+>
+> Why not just list everything in uV?
+>
+>> +static int max77686_get_voltage(struct regulator_dev *rdev)
+>> +{
+>
+> Implement get_voltage_sel().
+>
+>> +static inline int max77686_get_voltage_proper_val(const struct voltage_map_desc
+>> +                                               *desc, int min_vol,
+>> +                                               int max_vol)
+>> +{
+>> +     int i = 0;
+>> +
+>> +     if (desc == NULL)
+>> +             return -EINVAL;
+>> +
+>> +     if (max_vol < desc->min || min_vol > desc->max)
+>> +             return -EINVAL;
+>> +
+>> +     while (desc->min + desc->step * i < min_vol &&
+>> +            desc->min + desc->step * i < desc->max)
+>> +             i++;
+>
+> Why are you iterating here?  Calculate!  Though like I say let's factor
+> this out anyway.
+>
+>> +     if (rid == MAX77686_BUCK2 || rid == MAX77686_BUCK3 ||
+>> +         rid == MAX77686_BUCK4) {
+>> +             /* If the voltage is increasing */
+>> +             if (org < i)
+>> +                     udelay(DIV_ROUND_UP(desc->step * (i - org),
+>> +                                         ramp[max77686->ramp_delay]));
+>> +     }
+>
+> Don't do this, implement set_voltage_time_sel().
+>
+>> +     .enable = max77686_reg_enable,
+>> +     .disable = max77686_reg_disable,
+>> +     .set_suspend_enable = max77686_reg_enable,
+>> +     .set_suspend_disable = max77686_reg_disable,
+>
+> You've got the same ops for suspend and non-suspend cases here, this is
+> clearly buggy.
+>
+>> +/* count the number of regulators to be supported in pmic */
+>> +     pdata->num_regulators = 0;
+>
+> Coding style.
+>
+>> +     if (iodev->dev->of_node) {
+>> +             ret = max77686_pmic_dt_parse_pdata(iodev, pdata);
+>> +             if (ret)
+>> +                     return ret;
+>
+> This ought to use of_regulator_match().
+>
 
-Alan
+While using it I am seeing that though it reduces few lines of code in
+our driver , it adds a huge array(of_regulator_match[])in which we
+have to populate the strings(name) which we already have in
+regulator_desc[ ], Isn't it overhead ?
+
+>> +     }
+>> +
+>> +     if (!pdata) {
+>> +             dev_err(&pdev->dev, "platform data not found\n");
+>> +             return -ENODEV;
+>> +     }
+>
+> This should be totally fine.
+>
+>> +     max77686 = kzalloc(sizeof(struct max77686_data), GFP_KERNEL);
+>> +     if (!max77686)
+>> +             return -ENOMEM;
+>
+> devm_kzalloc().
+>
+>> +     if (pdata->ramp_delay) {
+>> +             max77686->ramp_delay = pdata->ramp_delay;
+>> +             max77686_update_reg(i2c, MAX77686_REG_BUCK2CTRL1,
+>> +                     RAMP_VALUE, RAMP_MASK);
+>
+> This appears not to actually use the value passed in as platform_data.
+>
+>> +
+>> +     for (i = 0; i < pdata->num_regulators; i++) {
+>> +             const struct voltage_map_desc *desc;
+>> +             int id = pdata->regulators[i].id;
+>> +
+>> +             desc = reg_voltage_map[id];
+>> +             if (desc)
+>> +                     regulators[id].n_voltages =
+>> +                         (desc->max - desc->min) / desc->step + 1;
+>> +
+>> +             rdev[i] = regulator_register(&regulators[id], max77686->dev,
+>> +                                          pdata->regulators[i].initdata,
+>> +                                          max77686, NULL);
+>
+> No, you should unconditionally register all regulators the device
+> physically has.  This is useful for debug and simplifies the code.
+>
+
+If we have to use only 2 or 3 regulators on our board out off 36 or
+lets take a case if our chip supports 50/100 regulators, I think i
+will a overhead to register all unused regulators as well as
+populating all the regulators in DT or platform data.
+
+Regards,
+Yadwinder.
+> _______________________________________________
+> linux-arm-kernel mailing list
+> linux-arm-kernel@lists.infradead.org
+> http://lists.infradead.org/mailman/listinfo/linux-arm-kernel
