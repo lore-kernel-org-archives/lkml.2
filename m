@@ -1,345 +1,132 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S966939Ab2EOXCs (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 May 2012 19:02:48 -0400
-Received: from mail209.messagelabs.com ([216.82.255.3]:23611 "EHLO
-	mail209.messagelabs.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S966501Ab2EOXCq (ORCPT
+	id S966606Ab2EOXDf (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 May 2012 19:03:35 -0400
+Received: from mail-we0-f174.google.com ([74.125.82.174]:53299 "EHLO
+	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S966054Ab2EOXDd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 May 2012 19:02:46 -0400
-X-Env-Sender: hartleys@visionengravers.com
-X-Msg-Ref: server-12.tower-209.messagelabs.com!1337122964!5705883!4
-X-Originating-IP: [216.166.12.99]
-X-StarScan-Version: 6.5.7; banners=-,-,-
-X-VirusChecked: Checked
-From: H Hartley Sweeten <hartleys@visionengravers.com>
-To: Linux Kernel <linux-kernel@vger.kernel.org>
-Subject: [PATCH] staging: comedi: refactor das16m1 driver and use module_comedi_driver
-Date: Tue, 15 May 2012 16:02:34 -0700
-User-Agent: KMail/1.9.9
-CC: <devel@driverdev.osuosl.org>, <abbotti@mev.co.uk>,
-        <fmhess@users.sourceforge.net>, <gregkh@linuxfoundation.org>
+	Tue, 15 May 2012 19:03:33 -0400
+Message-ID: <4FB2E0BB.8080906@gmail.com>
+Date: Wed, 16 May 2012 01:03:23 +0200
+From: =?UTF-8?B?VmxhZGltaXIgJ8+GLWNvZGVyL3BoY29kZXInIFNlcmJpbmVua28=?= 
+	<phcoder@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.4) Gecko/20120510 Icedove/10.0.4
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
-Content-Disposition: inline
-Message-ID: <201205151602.34491.hartleys@visionengravers.com>
+To: Dave Kleikamp <shaggy@kernel.org>, jfs-discussion@lists.sourceforge.net,
+        linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org
+Subject: [PATCH 3/8] Support non-BMP characters in JFS.
+X-Enigmail-Version: 1.4.1
+Content-Type: multipart/signed; micalg=pgp-sha512;
+ protocol="application/pgp-signature";
+ boundary="------------enig54C64D9018E1F85D1ED902AC"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Move the module_init/module_exit routines and the associated
-struct comedi_drive to the end of the source. This is more
-typical of how other drivers are written and removes the need
-for the forward declarations.
+This is an OpenPGP/MIME signed message (RFC 2440 and 3156)
+--------------enig54C64D9018E1F85D1ED902AC
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: quoted-printable
 
-Refactor some of the other functions to remove the remaining
-forward declarations.
 
-Convert the driver to use the module_comedi_driver() macro
-which makes the code smaller and a bit simpler.
-
-Signed-off-by: H Hartley Sweeten <hsweeten@visionengravers.com>
-Cc: Ian Abbott <abbotti@mev.co.uk>
-Cc: Mori Hess <fmhess@users.sourceforge.net>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
+Signed-off-by: Vladimir Serbinenko <phcoder@gmail.com>
 ---
+ fs/jfs/jfs_unicode.c |   30 ++++++++++++++++++++++++------
+ 1 file changed, 24 insertions(+), 6 deletions(-)
 
- drivers/staging/comedi/drivers/das16m1.c |  210 ++++++++++++------------------
- 1 files changed, 84 insertions(+), 126 deletions(-)
+diff --git a/fs/jfs/jfs_unicode.c b/fs/jfs/jfs_unicode.c
+index 2d70cf1..70f667a 100644
+--- a/fs/jfs/jfs_unicode.c
++++ b/fs/jfs/jfs_unicode.c
+@@ -34,14 +34,23 @@ int jfs_strfromUCS_le(char *to, const __le16 * from,
+ {
+ 	int i;
+ 	int outlen =3D 0;
++	int step;
+ 	static int warn_again =3D 5;	/* Only warn up to 5 times total */
+ 	int warn =3D !!warn_again;	/* once per string */
+=20
+ 	if (codepage) {
+-		for (i =3D 0; (i < len) && from[i]; i++) {
++		for (i =3D 0; (i < len) && from[i]; ) {
+ 			int charlen;
++			unicode_t uni;
++			step =3D utf16s_to_unicode(from + i, len - i,
++						 UTF16_LITTLE_ENDIAN,
++						 &uni);
++			if (!step)
++				break;
++			i +=3D step;
++
+ 			charlen =3D
+-			    codepage->uni2char(le16_to_cpu(from[i]),
++			    codepage->uni2char(uni,
+ 					       &to[outlen],
+ 					       NLS_MAX_CHARSET_SIZE);
+ 			if (charlen > 0)
+@@ -86,18 +95,26 @@ static int jfs_strtoUCS(wchar_t * to, const unsigned =
+char *from, int len,
+ 	int i;
+=20
+ 	if (codepage) {
+-		for (i =3D 0; len && *from; i++, from +=3D charlen, len -=3D charlen)
++		for (i =3D 0; len && *from; from +=3D charlen, len -=3D charlen)
+ 		{
+ 			unicode_t uni;
++			int step;
+ 			charlen =3D codepage->char2uni(from, len, &uni);
+-			to[i] =3D uni;
+-			if (charlen < 1 || uni > 0xffff) {
++			if (charlen < 1) {
+ 				jfs_err("jfs_strtoUCS: char2uni returned %d.",
+ 					charlen);
+ 				jfs_err("charset =3D %s, char =3D 0x%x",
+ 					codepage->charset, *from);
+ 				return charlen;
+ 			}
++			step =3D unicode_to_utf16s(uni, UTF16_HOST_ENDIAN,
++					       to + i, MAX_UTF16_PER_UNICODE);
++			if (step < 0) {
++				jfs_err("jfs_strtoUCS: unicode_to_utf16s returned %d.",
++					step);
++				return step;
++			}
++			i +=3D step;
+ 		}
+ 	} else {
+ 		for (i =3D 0; (i < len) && from[i]; i++)
+@@ -123,7 +140,8 @@ int get_UCSname(struct component_name * uniName, stru=
+ct dentry *dentry)
+ 		return -ENAMETOOLONG;
+=20
+ 	uniName->name =3D
+-	    kmalloc((length + 1) * sizeof(wchar_t), GFP_NOFS);
++	    kmalloc((length * MAX_UTF16_PER_UNICODE + 1) * sizeof(wchar_t),
++		    GFP_NOFS);
+=20
+ 	if (uniName->name =3D=3D NULL)
+ 		return -ENOMEM;
+--=20
+1.7.10
 
-diff --git a/drivers/staging/comedi/drivers/das16m1.c b/drivers/staging/comedi/drivers/das16m1.c
-index 5376e71..b22382e 100644
---- a/drivers/staging/comedi/drivers/das16m1.c
-+++ b/drivers/staging/comedi/drivers/das16m1.c
-@@ -132,57 +132,11 @@ static const struct comedi_lrange range_das16m1 = { 9,
- 	 }
- };
- 
--static int das16m1_do_wbits(struct comedi_device *dev,
--			    struct comedi_subdevice *s,
--			    struct comedi_insn *insn, unsigned int *data);
--static int das16m1_di_rbits(struct comedi_device *dev,
--			    struct comedi_subdevice *s,
--			    struct comedi_insn *insn, unsigned int *data);
--static int das16m1_ai_rinsn(struct comedi_device *dev,
--			    struct comedi_subdevice *s,
--			    struct comedi_insn *insn, unsigned int *data);
--
--static int das16m1_cmd_test(struct comedi_device *dev,
--			    struct comedi_subdevice *s, struct comedi_cmd *cmd);
--static int das16m1_cmd_exec(struct comedi_device *dev,
--			    struct comedi_subdevice *s);
--static int das16m1_cancel(struct comedi_device *dev,
--			  struct comedi_subdevice *s);
--
--static int das16m1_poll(struct comedi_device *dev, struct comedi_subdevice *s);
--static irqreturn_t das16m1_interrupt(int irq, void *d);
--static void das16m1_handler(struct comedi_device *dev, unsigned int status);
--
--static unsigned int das16m1_set_pacer(struct comedi_device *dev,
--				      unsigned int ns, int round_flag);
--
--static int das16m1_irq_bits(unsigned int irq);
--
- struct das16m1_board {
- 	const char *name;
- 	unsigned int ai_speed;
- };
- 
--static const struct das16m1_board das16m1_boards[] = {
--	{
--	 .name = "cio-das16/m1",	/*  CIO-DAS16_M1.pdf */
--	 .ai_speed = 1000,	/*  1MHz max speed */
--	 },
--};
--
--static int das16m1_attach(struct comedi_device *dev,
--			  struct comedi_devconfig *it);
--static int das16m1_detach(struct comedi_device *dev);
--static struct comedi_driver driver_das16m1 = {
--	.driver_name = "das16m1",
--	.module = THIS_MODULE,
--	.attach = das16m1_attach,
--	.detach = das16m1_detach,
--	.board_name = &das16m1_boards[0].name,
--	.num_names = ARRAY_SIZE(das16m1_boards),
--	.offset = sizeof(das16m1_boards[0]),
--};
--
- struct das16m1_private_struct {
- 	unsigned int control_state;
- 	volatile unsigned int adc_count;	/*  number of samples completed */
-@@ -198,22 +152,17 @@ struct das16m1_private_struct {
- #define devpriv ((struct das16m1_private_struct *)(dev->private))
- #define thisboard ((const struct das16m1_board *)(dev->board_ptr))
- 
--static int __init driver_das16m1_init_module(void)
-+static inline short munge_sample(short data)
- {
--	return comedi_driver_register(&driver_das16m1);
-+	return (data >> 4) & 0xfff;
- }
- 
--static void __exit driver_das16m1_cleanup_module(void)
-+static void munge_sample_array(short *array, unsigned int num_elements)
- {
--	comedi_driver_unregister(&driver_das16m1);
--}
--
--module_init(driver_das16m1_init_module);
--module_exit(driver_das16m1_cleanup_module);
-+	unsigned int i;
- 
--static inline short munge_sample(short data)
--{
--	return (data >> 4) & 0xfff;
-+	for (i = 0; i < num_elements; i++)
-+		array[i] = munge_sample(array[i]);
- }
- 
- static int das16m1_cmd_test(struct comedi_device *dev,
-@@ -340,6 +289,25 @@ static int das16m1_cmd_test(struct comedi_device *dev,
- 	return 0;
- }
- 
-+/* This function takes a time in nanoseconds and sets the     *
-+ * 2 pacer clocks to the closest frequency possible. It also  *
-+ * returns the actual sampling period.                        */
-+static unsigned int das16m1_set_pacer(struct comedi_device *dev,
-+				      unsigned int ns, int rounding_flags)
-+{
-+	i8253_cascade_ns_to_timer_2div(DAS16M1_XTAL, &(devpriv->divisor1),
-+				       &(devpriv->divisor2), &ns,
-+				       rounding_flags & TRIG_ROUND_MASK);
-+
-+	/* Write the values of ctr1 and ctr2 into counters 1 and 2 */
-+	i8254_load(dev->iobase + DAS16M1_8254_SECOND, 0, 1, devpriv->divisor1,
-+		   2);
-+	i8254_load(dev->iobase + DAS16M1_8254_SECOND, 0, 2, devpriv->divisor2,
-+		   2);
-+
-+	return ns;
-+}
-+
- static int das16m1_cmd_exec(struct comedi_device *dev,
- 			    struct comedi_subdevice *s)
- {
-@@ -484,57 +452,6 @@ static int das16m1_do_wbits(struct comedi_device *dev,
- 	return 2;
- }
- 
--static int das16m1_poll(struct comedi_device *dev, struct comedi_subdevice *s)
--{
--	unsigned long flags;
--	unsigned int status;
--
--	/*  prevent race with interrupt handler */
--	spin_lock_irqsave(&dev->spinlock, flags);
--	status = inb(dev->iobase + DAS16M1_CS);
--	das16m1_handler(dev, status);
--	spin_unlock_irqrestore(&dev->spinlock, flags);
--
--	return s->async->buf_write_count - s->async->buf_read_count;
--}
--
--static irqreturn_t das16m1_interrupt(int irq, void *d)
--{
--	int status;
--	struct comedi_device *dev = d;
--
--	if (dev->attached == 0) {
--		comedi_error(dev, "premature interrupt");
--		return IRQ_HANDLED;
--	}
--	/*  prevent race with comedi_poll() */
--	spin_lock(&dev->spinlock);
--
--	status = inb(dev->iobase + DAS16M1_CS);
--
--	if ((status & (IRQDATA | OVRUN)) == 0) {
--		comedi_error(dev, "spurious interrupt");
--		spin_unlock(&dev->spinlock);
--		return IRQ_NONE;
--	}
--
--	das16m1_handler(dev, status);
--
--	/* clear interrupt */
--	outb(0, dev->iobase + DAS16M1_CLEAR_INTR);
--
--	spin_unlock(&dev->spinlock);
--	return IRQ_HANDLED;
--}
--
--static void munge_sample_array(short *array, unsigned int num_elements)
--{
--	unsigned int i;
--
--	for (i = 0; i < num_elements; i++)
--		array[i] = munge_sample(array[i]);
--}
--
- static void das16m1_handler(struct comedi_device *dev, unsigned int status)
- {
- 	struct comedi_subdevice *s;
-@@ -596,23 +513,47 @@ static void das16m1_handler(struct comedi_device *dev, unsigned int status)
- 
- }
- 
--/* This function takes a time in nanoseconds and sets the     *
-- * 2 pacer clocks to the closest frequency possible. It also  *
-- * returns the actual sampling period.                        */
--static unsigned int das16m1_set_pacer(struct comedi_device *dev,
--				      unsigned int ns, int rounding_flags)
-+static int das16m1_poll(struct comedi_device *dev, struct comedi_subdevice *s)
- {
--	i8253_cascade_ns_to_timer_2div(DAS16M1_XTAL, &(devpriv->divisor1),
--				       &(devpriv->divisor2), &ns,
--				       rounding_flags & TRIG_ROUND_MASK);
-+	unsigned long flags;
-+	unsigned int status;
- 
--	/* Write the values of ctr1 and ctr2 into counters 1 and 2 */
--	i8254_load(dev->iobase + DAS16M1_8254_SECOND, 0, 1, devpriv->divisor1,
--		   2);
--	i8254_load(dev->iobase + DAS16M1_8254_SECOND, 0, 2, devpriv->divisor2,
--		   2);
-+	/*  prevent race with interrupt handler */
-+	spin_lock_irqsave(&dev->spinlock, flags);
-+	status = inb(dev->iobase + DAS16M1_CS);
-+	das16m1_handler(dev, status);
-+	spin_unlock_irqrestore(&dev->spinlock, flags);
- 
--	return ns;
-+	return s->async->buf_write_count - s->async->buf_read_count;
-+}
-+
-+static irqreturn_t das16m1_interrupt(int irq, void *d)
-+{
-+	int status;
-+	struct comedi_device *dev = d;
-+
-+	if (dev->attached == 0) {
-+		comedi_error(dev, "premature interrupt");
-+		return IRQ_HANDLED;
-+	}
-+	/*  prevent race with comedi_poll() */
-+	spin_lock(&dev->spinlock);
-+
-+	status = inb(dev->iobase + DAS16M1_CS);
-+
-+	if ((status & (IRQDATA | OVRUN)) == 0) {
-+		comedi_error(dev, "spurious interrupt");
-+		spin_unlock(&dev->spinlock);
-+		return IRQ_NONE;
-+	}
-+
-+	das16m1_handler(dev, status);
-+
-+	/* clear interrupt */
-+	outb(0, dev->iobase + DAS16M1_CLEAR_INTR);
-+
-+	spin_unlock(&dev->spinlock);
-+	return IRQ_HANDLED;
- }
- 
- static int das16m1_irq_bits(unsigned int irq)
-@@ -656,7 +597,6 @@ static int das16m1_irq_bits(unsigned int irq)
-  *   0  I/O base
-  *   1  IRQ
-  */
--
- static int das16m1_attach(struct comedi_device *dev,
- 			  struct comedi_devconfig *it)
- {
-@@ -673,12 +613,12 @@ static int das16m1_attach(struct comedi_device *dev,
- 
- 	dev->board_name = thisboard->name;
- 
--	if (!request_region(iobase, DAS16M1_SIZE, driver_das16m1.driver_name)) {
-+	if (!request_region(iobase, DAS16M1_SIZE, dev->driver->driver_name)) {
- 		comedi_error(dev, "I/O port conflict\n");
- 		return -EIO;
- 	}
- 	if (!request_region(iobase + DAS16M1_82C55, DAS16M1_SIZE2,
--			    driver_das16m1.driver_name)) {
-+			    dev->driver->driver_name)) {
- 		release_region(iobase, DAS16M1_SIZE);
- 		comedi_error(dev, "I/O port conflict\n");
- 		return -EIO;
-@@ -690,7 +630,7 @@ static int das16m1_attach(struct comedi_device *dev,
- 	/*  make sure it is valid */
- 	if (das16m1_irq_bits(irq) >= 0) {
- 		ret = request_irq(irq, das16m1_interrupt, 0,
--				  driver_das16m1.driver_name, dev);
-+				  dev->driver->driver_name, dev);
- 		if (ret < 0)
- 			return ret;
- 		dev->irq = irq;
-@@ -782,6 +722,24 @@ static int das16m1_detach(struct comedi_device *dev)
- 	return 0;
- }
- 
-+static const struct das16m1_board das16m1_boards[] = {
-+	{
-+		.name		= "cio-das16/m1",	/*  CIO-DAS16_M1.pdf */
-+		.ai_speed	= 1000,			/*  1MHz max speed */
-+	},
-+};
-+
-+static struct comedi_driver das16m1_driver = {
-+	.driver_name	= "das16m1",
-+	.module		= THIS_MODULE,
-+	.attach		= das16m1_attach,
-+	.detach		= das16m1_detach,
-+	.board_name	= &das16m1_boards[0].name,
-+	.num_names	= ARRAY_SIZE(das16m1_boards),
-+	.offset		= sizeof(das16m1_boards[0]),
-+};
-+module_comedi_driver(das16m1_driver);
-+
- MODULE_AUTHOR("Comedi http://www.comedi.org");
- MODULE_DESCRIPTION("Comedi low-level driver");
- MODULE_LICENSE("GPL");
+--=20
+Regards
+Vladimir '=CF=86-coder/phcoder' Serbinenko
+
+
+--------------enig54C64D9018E1F85D1ED902AC
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: OpenPGP digital signature
+Content-Disposition: attachment; filename="signature.asc"
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+Comment: Using GnuPG with Mozilla - http://enigmail.mozdev.org/
+
+iF4EAREKAAYFAk+y4LsACgkQNak7dOguQgmSfwEAreUUGN341JngZzIvcskaVHF4
+//VaHbjBsHJnCcF1++4A/jtVzDKM7QtBgZGqR1ZxDNOn3UhgGHSwo/Q/QPtYOSdw
+=c4RP
+-----END PGP SIGNATURE-----
+
+--------------enig54C64D9018E1F85D1ED902AC--
