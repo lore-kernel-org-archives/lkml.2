@@ -1,17 +1,17 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965253Ab2EOCRh (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 May 2012 22:17:37 -0400
-Received: from mail.windriver.com ([147.11.1.11]:49116 "EHLO
-	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S964883Ab2EOCQU (ORCPT
+	id S965765Ab2EOCnr (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 May 2012 22:43:47 -0400
+Received: from mail1.windriver.com ([147.11.146.13]:53468 "EHLO
+	mail1.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S965250Ab2EOCRh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 May 2012 22:16:20 -0400
+	Mon, 14 May 2012 22:17:37 -0400
 From: Paul Gortmaker <paul.gortmaker@windriver.com>
 To: <stable@kernel.org>, <linux-kernel@vger.kernel.org>
-Subject: [34-longterm 026/179] USB: moto_modem: Add USB identifier for the Motorola VE240.
-Date: Mon, 14 May 2012 22:12:02 -0400
-Message-ID: <1337048075-6132-27-git-send-email-paul.gortmaker@windriver.com>
+Subject: [34-longterm 119/179] USB: pl2303.h: checkpatch cleanups
+Date: Mon, 14 May 2012 22:13:35 -0400
+Message-ID: <1337048075-6132-120-git-send-email-paul.gortmaker@windriver.com>
 X-Mailer: git-send-email 1.7.9.6
 In-Reply-To: <1337048075-6132-1-git-send-email-paul.gortmaker@windriver.com>
 References: <1337048075-6132-1-git-send-email-paul.gortmaker@windriver.com>
@@ -21,7 +21,7 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Elizabeth Jennifer Myers <elizabeth@sporksirc.net>
+From: Greg Kroah-Hartman <gregkh@suse.de>
 
                    -------------------
     This is a commit scheduled for the next v2.6.34 longterm release.
@@ -29,30 +29,37 @@ From: Elizabeth Jennifer Myers <elizabeth@sporksirc.net>
     If you see a problem with using this for longterm, please comment.
                    -------------------
 
-commit 3938a0b32dc12229e76735679b37095bc2bc1578 upstream.
+commit 5d78fcb0caf219e2e6c8e486d7e31fec1333ac06 upstream.
 
-Tested on my phone, the ttyUSB device is created and is fully
-functional.
+Minor whitespace cleanups to make checkpatch happy.
 
-Signed-off-by: Elizabeth Jennifer Myers <elizabeth@sporksirc.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
 ---
- drivers/usb/serial/moto_modem.c |    1 +
- 1 file changed, 1 insertion(+)
+ drivers/usb/serial/pl2303.h |    6 +++---
+ 1 file changed, 3 insertions(+), 3 deletions(-)
 
-diff --git a/drivers/usb/serial/moto_modem.c b/drivers/usb/serial/moto_modem.c
-index cf17183..0147042 100644
---- a/drivers/usb/serial/moto_modem.c
-+++ b/drivers/usb/serial/moto_modem.c
-@@ -25,6 +25,7 @@ static const struct usb_device_id id_table[] = {
- 	{ USB_DEVICE(0x05c6, 0x3197) },	/* unknown Motorola phone */
- 	{ USB_DEVICE(0x0c44, 0x0022) },	/* unknown Mororola phone */
- 	{ USB_DEVICE(0x22b8, 0x2a64) },	/* Motorola KRZR K1m */
-+	{ USB_DEVICE(0x22b8, 0x2c84) }, /* Motorola VE240 phone */
- 	{ USB_DEVICE(0x22b8, 0x2c64) }, /* Motorola V950 phone */
- 	{ },
- };
+diff --git a/drivers/usb/serial/pl2303.h b/drivers/usb/serial/pl2303.h
+index d67b480..1b025f7 100644
+--- a/drivers/usb/serial/pl2303.h
++++ b/drivers/usb/serial/pl2303.h
+@@ -5,7 +5,7 @@
+  *	it under the terms of the GNU General Public License as published by
+  *	the Free Software Foundation; either version 2 of the License, or
+  *	(at your option) any later version.
+- * 
++ *
+  */
+ 
+ #define BENQ_VENDOR_ID			0x04a5
+@@ -142,5 +142,5 @@
+ #define SANWA_PRODUCT_ID	0x0001
+ 
+ /* ADLINK ND-6530 RS232,RS485 and RS422 adapter */
+-#define ADLINK_VENDOR_ID        0x0b63
+-#define ADLINK_ND6530_PRODUCT_ID       0x6530
++#define ADLINK_VENDOR_ID		0x0b63
++#define ADLINK_ND6530_PRODUCT_ID	0x6530
 -- 
 1.7.9.6
 
