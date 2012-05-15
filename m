@@ -1,17 +1,17 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965878Ab2EOC6m (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 May 2012 22:58:42 -0400
-Received: from mail1.windriver.com ([147.11.146.13]:53261 "EHLO
-	mail1.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S964981Ab2EOCRA (ORCPT
+	id S965887Ab2EOC64 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 May 2012 22:58:56 -0400
+Received: from mail.windriver.com ([147.11.1.11]:49499 "EHLO
+	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S964974Ab2EOCQ7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 May 2012 22:17:00 -0400
+	Mon, 14 May 2012 22:16:59 -0400
 From: Paul Gortmaker <paul.gortmaker@windriver.com>
 To: <stable@kernel.org>, <linux-kernel@vger.kernel.org>
-Subject: [34-longterm 074/179] xen: Use IRQF_FORCE_RESUME
-Date: Mon, 14 May 2012 22:12:50 -0400
-Message-ID: <1337048075-6132-75-git-send-email-paul.gortmaker@windriver.com>
+Subject: [34-longterm 073/179] genirq: Add IRQF_FORCE_RESUME
+Date: Mon, 14 May 2012 22:12:49 -0400
+Message-ID: <1337048075-6132-74-git-send-email-paul.gortmaker@windriver.com>
 X-Mailer: git-send-email 1.7.9.6
 In-Reply-To: <1337048075-6132-1-git-send-email-paul.gortmaker@windriver.com>
 References: <1337048075-6132-1-git-send-email-paul.gortmaker@windriver.com>
@@ -29,62 +29,78 @@ From: Thomas Gleixner <tglx@linutronix.de>
     If you see a problem with using this for longterm, please comment.
                    -------------------
 
-commit 676dc3cf5bc36a9e129a3ad8fe3bd7b2ebf20f5d upstream.
+commit dc5f219e88294b93009eef946251251ffffb6d60 upstream.
 
-Mark the IRQF_NO_SUSPEND interrupts IRQF_FORCE_RESUME and remove the extra
-walk through the interrupt descriptors.
+Xen needs to reenable interrupts which are marked IRQF_NO_SUSPEND in the
+resume path. Add a flag to force the reenabling in the resume code.
 
+Tested-and-acked-by: Ian Campbell <Ian.Campbell@eu.citrix.com>
 Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
-Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
 Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
 ---
- drivers/xen/events.c |   19 +------------------
- 1 file changed, 1 insertion(+), 18 deletions(-)
+ include/linux/interrupt.h |    3 ++-
+ kernel/irq/manage.c       |   11 ++++++++++-
+ kernel/irq/pm.c           |    3 ---
+ 3 files changed, 12 insertions(+), 5 deletions(-)
 
-diff --git a/drivers/xen/events.c b/drivers/xen/events.c
-index 9c66deb..9b471cc 100644
---- a/drivers/xen/events.c
-+++ b/drivers/xen/events.c
-@@ -537,7 +537,7 @@ int bind_ipi_to_irqhandler(enum ipi_vector ipi,
- 	if (irq < 0)
- 		return irq;
+diff --git a/include/linux/interrupt.h b/include/linux/interrupt.h
+index 01db7a1..953ff1c 100644
+--- a/include/linux/interrupt.h
++++ b/include/linux/interrupt.h
+@@ -53,7 +53,7 @@
+  *                Used by threaded interrupts which need to keep the
+  *                irq line disabled until the threaded handler has been run.
+  * IRQF_NO_SUSPEND - Do not disable this IRQ during suspend
+- *
++ * IRQF_FORCE_RESUME - Force enable it on resume even if IRQF_NO_SUSPEND is set
+  */
+ #define IRQF_DISABLED		0x00000020
+ #define IRQF_SAMPLE_RANDOM	0x00000040
+@@ -65,6 +65,7 @@
+ #define IRQF_IRQPOLL		0x00001000
+ #define IRQF_ONESHOT		0x00002000
+ #define IRQF_NO_SUSPEND		0x00004000
++#define IRQF_FORCE_RESUME	0x00008000
  
--	irqflags |= IRQF_NO_SUSPEND;
-+	irqflags |= IRQF_NO_SUSPEND | IRQF_FORCE_RESUME;
- 	retval = request_irq(irq, handler, irqflags, devname, dev_id);
- 	if (retval != 0) {
- 		unbind_from_irq(irq);
-@@ -896,7 +896,6 @@ void xen_poll_irq(int irq)
- void xen_irq_resume(void)
+ #define IRQF_TIMER		(__IRQF_TIMER | IRQF_NO_SUSPEND)
+ 
+diff --git a/kernel/irq/manage.c b/kernel/irq/manage.c
+index 8305828..46f10b1 100644
+--- a/kernel/irq/manage.c
++++ b/kernel/irq/manage.c
+@@ -265,8 +265,17 @@ EXPORT_SYMBOL(disable_irq);
+ 
+ void __enable_irq(struct irq_desc *desc, unsigned int irq, bool resume)
  {
- 	unsigned int cpu, irq, evtchn;
--	struct irq_desc *desc;
+-	if (resume)
++	if (resume) {
++		if (!(desc->status & IRQ_SUSPENDED)) {
++			if (!desc->action)
++				return;
++			if (!(desc->action->flags & IRQF_FORCE_RESUME))
++				return;
++			/* Pretend that it got disabled ! */
++			desc->depth++;
++		}
+ 		desc->status &= ~IRQ_SUSPENDED;
++	}
  
- 	init_evtchn_cpu_bindings();
+ 	switch (desc->depth) {
+ 	case 0:
+diff --git a/kernel/irq/pm.c b/kernel/irq/pm.c
+index 0d4005d8..d6bfb89 100644
+--- a/kernel/irq/pm.c
++++ b/kernel/irq/pm.c
+@@ -53,9 +53,6 @@ void resume_device_irqs(void)
+ 	for_each_irq_desc(irq, desc) {
+ 		unsigned long flags;
  
-@@ -916,22 +915,6 @@ void xen_irq_resume(void)
- 		restore_cpu_ipis(cpu);
- 	}
- 
--	/*
--	 * Unmask any IRQF_NO_SUSPEND IRQs which are enabled. These
--	 * are not handled by the IRQ core.
--	 */
--	for_each_irq_desc(irq, desc) {
--		if (!desc->action || !(desc->action->flags & IRQF_NO_SUSPEND))
--			continue;
--		if (desc->status & IRQ_DISABLED)
+-		if (!(desc->status & IRQ_SUSPENDED))
 -			continue;
 -
--		evtchn = evtchn_from_irq(irq);
--		if (evtchn == -1)
--			continue;
--
--		unmask_evtchn(evtchn);
--	}
- }
- 
- static struct irq_chip xen_dynamic_chip __read_mostly = {
+ 		raw_spin_lock_irqsave(&desc->lock, flags);
+ 		__enable_irq(desc, irq, true);
+ 		raw_spin_unlock_irqrestore(&desc->lock, flags);
 -- 
 1.7.9.6
 
