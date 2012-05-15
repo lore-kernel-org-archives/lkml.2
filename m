@@ -1,79 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964797Ab2EOOdZ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 May 2012 10:33:25 -0400
-Received: from lxorguk.ukuu.org.uk ([81.2.110.251]:45145 "EHLO
-	lxorguk.ukuu.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757282Ab2EOOdY (ORCPT
+	id S932837Ab2EOOeu (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 May 2012 10:34:50 -0400
+Received: from caramon.arm.linux.org.uk ([78.32.30.218]:43728 "EHLO
+	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757166Ab2EOOet (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 May 2012 10:33:24 -0400
-Date: Tue, 15 May 2012 15:36:14 +0100
-From: Alan Cox <alan@lxorguk.ukuu.org.uk>
-To: Gleb Natapov <gleb@redhat.com>
-Cc: Hannes Reinecke <hare@suse.de>, LKML <linux-kernel@vger.kernel.org>,
-        "H. Peter Anvin" <hpa@linux.intel.com>
-Subject: Re: [PATCH] EDD: Check for correct EDD 3.0 length
-Message-ID: <20120515153614.4b5b4525@pyramind.ukuu.org.uk>
-In-Reply-To: <20120515142129.GC6948@redhat.com>
-References: <1337079889-62380-1-git-send-email-hare@suse.de>
-	<20120515111255.GJ32036@redhat.com>
-	<4FB23C09.7060300@suse.de>
-	<20120515115917.GK32036@redhat.com>
-	<20120515144945.339e742f@pyramind.ukuu.org.uk>
-	<20120515141214.GB6948@redhat.com>
-	<20120515151849.54a12175@pyramind.ukuu.org.uk>
-	<20120515142129.GC6948@redhat.com>
-X-Mailer: Claws Mail 3.8.0 (GTK+ 2.24.8; x86_64-redhat-linux-gnu)
-Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Tue, 15 May 2012 10:34:49 -0400
+Date: Tue, 15 May 2012 15:34:28 +0100
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: Roland Stigge <stigge@antcom.de>
+Cc: linux-mtd@lists.infradead.org, linux-kernel@vger.kernel.org,
+        linux-doc@vger.kernel.org, devicetree-discuss@lists.ozlabs.org,
+        dwmw2@infradead.org, kevin.wells@nxp.com, srinivas.bakki@nxp.com,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH] MTD: LPC32xx MLC NAND driver
+Message-ID: <20120515143428.GC13860@n2100.arm.linux.org.uk>
+References: <1337091832-10138-1-git-send-email-stigge@antcom.de>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1337091832-10138-1-git-send-email-stigge@antcom.de>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 15 May 2012 17:21:29 +0300
-Gleb Natapov <gleb@redhat.com> wrote:
+On Tue, May 15, 2012 at 04:23:52PM +0200, Roland Stigge wrote:
+> +static int lpc32xx_xmit_dma(struct mtd_info *mtd, dma_addr_t dma,
+> +			    void *mem, int len, enum dma_transfer_direction dir)
+> +{
+> +	struct nand_chip *chip = mtd->priv;
+> +	struct lpc32xx_nand_host *host = chip->priv;
+> +	struct dma_async_tx_descriptor *desc;
+> +	int flags = DMA_CTRL_ACK | DMA_PREP_INTERRUPT;
+> +	int res;
+> +	dma_cookie_t cookie;
+> +
+> +	host->dma_slave_config.direction = dir;
+> +	host->dma_slave_config.src_addr = dma;
+> +	host->dma_slave_config.dst_addr = dma;
+> +	if (dmaengine_slave_config(host->dma_chan, &host->dma_slave_config)) {
+> +		dev_err(mtd->dev.parent, "Failed to setup DMA slave\n");
+> +		return -ENXIO;
+> +	}
 
-> On Tue, May 15, 2012 at 03:18:49PM +0100, Alan Cox wrote:
-> > On Tue, 15 May 2012 17:12:14 +0300
-> > Gleb Natapov <gleb@redhat.com> wrote:
-> > 
-> > > On Tue, May 15, 2012 at 02:49:45PM +0100, Alan Cox wrote:
-> > > > > I do not see support for other spec to be important, but you are welcome
-> > > > > to write support for it if you need it. The only way I see to check what
-> > > > > spec edd info corresponds to is to calculate checksum according to both
-> > > > > specs and see which one succeeds.
-> > > > 
-> > > > No it doesn't work like that. This is a regression for existing working
-> > > > systems. It needs to be reverted or fixed. If it was a new feature you'd
-> > > > have a point - but it isn't. You've broken stuff, undo the breakage.
-> > > > 
-> > > Code never supported anything but EDD4.0 spec. I checked history git.
-> > > Code erroneously tried to interpret EDD3.0 info according to EDD4.0 spec
-> > > providing garbage as a result.
-> > 
-> > Providing some valid data and info, which has now disappeared.
-> > 
-> False. See my other mail:
-> 
-> # cat /sys/firmware/edd/int13_dev80/interface
-> SCSI            id: 0  lun: 1224979098644774912
-> 
-> This is what I got on my system. How is it useful?
+Can you explain why you need to issue this call for every transfer?
 
-Sample case of .. 1
+The 'direction' argument should be ignored by all modern DMA engine
+drivers (we've decided previously to get rid of it).  As far as I can
+see, the device address nor any of the other parameters ever change
+between transfers.
 
-Have you checked how the various distribution grub installers and the
-like respond to the various changes or having bits of their edd data
-vanish mysteriously ?
+> +
+> +	sg_init_one(&host->sgl, mem, len);
+> +
+> +	res = dma_map_sg(host->dma_chan->device->dev, &host->sgl, 1, dir);
 
-It's been this way for a long time, there is no rush to fix it. So we
-should fix it properly not break stuff.
+Also note that dma transfer directions and dma data directions are
+different things.  You shouldn't mix the two.
 
-Actual systems in the field are using both 3.0 and 4.0 so we need to deal
-with that as part of fixing this. That is the reality of the situation.
+> +	if (res != 1) {
+> +		dev_err(mtd->dev.parent, "Failed to map sg list\n");
+> +		return -ENXIO;
+> +	}
+> +	desc = dmaengine_prep_slave_sg(host->dma_chan, &host->sgl, 1, dir,
+> +				       flags);
+> +	if (!desc) {
+> +		dev_err(mtd->dev.parent, "Failed to prepare slave sg\n");
+> +		goto out1;
+> +	}
+> +
+> +	init_completion(&host->comp_dma);
+> +	desc->callback = lpc32xx_dma_complete_func;
+> +	desc->callback_param = &host->comp_dma;
+> +
+> +	cookie = dmaengine_submit(desc);
+> +	if (dma_submit_error(cookie)) {
+> +		dev_err(mtd->dev.parent, "Failed to dmaengine_submit()\n");
+> +		goto out1;
+> +	}
+> +	dma_async_issue_pending(host->dma_chan);
+> +
+> +	wait_for_completion_timeout(&host->comp_dma, msecs_to_jiffies(1000));
+> +
+> +	dma_sync_sg_for_cpu(host->dma_chan->device->dev, &host->sgl, 1, dir);
 
-1.1 I suspect we can not care about.
+Why sync?  What's wrong with dma_unmap()?  Have you tested this with
+DMA API debugging enabled?
 
-Alan
+> +	if (dma_set_mask(host->dma_chan->device->dev, 0xFFFFFFFF)) {
+> +		dev_err(mtd->dev.parent, "Failed to set dma mask\n");
+> +		goto out1;
+> +	}
+
+No.  You shouldn't do this to a device that you're not in charge of.  If
+that's important for the DMA engine device, then the DMA engine device
+driver should have already done that.
+
+Otherwise, you'll be potentially modifying the DMA mask for a device
+_you_ don't own, and which is potentially already in use.
