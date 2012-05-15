@@ -1,17 +1,17 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965147Ab2EOCzF (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 May 2012 22:55:05 -0400
-Received: from mail1.windriver.com ([147.11.146.13]:53336 "EHLO
+	id S965039Ab2EOCRJ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 May 2012 22:17:09 -0400
+Received: from mail1.windriver.com ([147.11.146.13]:52818 "EHLO
 	mail1.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S964851Ab2EOCRK (ORCPT
+	with ESMTP id S964868Ab2EOCQI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 May 2012 22:17:10 -0400
+	Mon, 14 May 2012 22:16:08 -0400
 From: Paul Gortmaker <paul.gortmaker@windriver.com>
 To: <stable@kernel.org>, <linux-kernel@vger.kernel.org>
-Subject: [34-longterm 086/179] watchdog: mtx1-wdt: request gpio before using it
-Date: Mon, 14 May 2012 22:13:02 -0400
-Message-ID: <1337048075-6132-87-git-send-email-paul.gortmaker@windriver.com>
+Subject: [34-longterm 011/179] jbd: Fix forever sleeping process in do_get_write_access()
+Date: Mon, 14 May 2012 22:11:47 -0400
+Message-ID: <1337048075-6132-12-git-send-email-paul.gortmaker@windriver.com>
 X-Mailer: git-send-email 1.7.9.6
 In-Reply-To: <1337048075-6132-1-git-send-email-paul.gortmaker@windriver.com>
 References: <1337048075-6132-1-git-send-email-paul.gortmaker@windriver.com>
@@ -21,7 +21,7 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Florian Fainelli <florian@openwrt.org>
+From: Jan Kara <jack@suse.cz>
 
                    -------------------
     This is a commit scheduled for the next v2.6.34 longterm release.
@@ -29,50 +29,43 @@ From: Florian Fainelli <florian@openwrt.org>
     If you see a problem with using this for longterm, please comment.
                    -------------------
 
-commit 9b19d40aa3ebaf1078779da10555da2ab8512422 upstream.
+commit 2842bb20eed2e25cde5114298edc62c8883a1d9a upstream.
 
-Otherwise, the gpiolib autorequest feature will produce a WARN_ON():
+In do_get_write_access() we wait on BH_Unshadow bit for buffer to get
+from shadow state. The waking code in journal_commit_transaction() has
+a bug because it does not issue a memory barrier after the buffer is moved
+from the shadow state and before wake_up_bit() is called. Thus a waitqueue
+check can happen before the buffer is actually moved from the shadow state
+and waiting process may never be woken. Fix the problem by issuing proper
+barrier.
 
-WARNING: at drivers/gpio/gpiolib.c:101 0x8020ec6c()
-autorequest GPIO-215
-[...]
-
-Signed-off-by: Florian Fainelli <florian@openwrt.org>
-Signed-off-by: Wim Van Sebroeck <wim@iguana.be>
-[PG: use combo gpio_request+gpio_direction_output vs. gpio_request_one
- to avoid build failure, as per v2.6.32.47 commit 35b6863ce555c ]
+Reported-by: Tao Ma <boyu.mt@taobao.com>
+Signed-off-by: Jan Kara <jack@suse.cz>
 Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
 ---
- drivers/watchdog/mtx-1_wdt.c |    9 +++++++++
- 1 file changed, 9 insertions(+)
+ fs/jbd/commit.c |    9 +++++++--
+ 1 file changed, 7 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/watchdog/mtx-1_wdt.c b/drivers/watchdog/mtx-1_wdt.c
-index 08e8a6a..c9dbe11 100644
---- a/drivers/watchdog/mtx-1_wdt.c
-+++ b/drivers/watchdog/mtx-1_wdt.c
-@@ -211,6 +211,13 @@ static int __devinit mtx1_wdt_probe(struct platform_device *pdev)
- 	int ret;
- 
- 	mtx1_wdt_device.gpio = pdev->resource[0].start;
-+	ret = gpio_request(mtx1_wdt_device.gpio, "mtx1-wdt");
-+	if (ret < 0) {
-+		dev_err(&pdev->dev, "failed to request gpio");
-+		return ret;
-+	}
-+
-+	gpio_direction_output(mtx1_wdt_device.gpio, 1);
- 
- 	spin_lock_init(&mtx1_wdt_device.lock);
- 	init_completion(&mtx1_wdt_device.stop);
-@@ -236,6 +243,8 @@ static int __devexit mtx1_wdt_remove(struct platform_device *pdev)
- 		mtx1_wdt_device.queue = 0;
- 		wait_for_completion(&mtx1_wdt_device.stop);
- 	}
-+
-+	gpio_free(mtx1_wdt_device.gpio);
- 	misc_deregister(&mtx1_wdt_misc);
- 	return 0;
- }
+diff --git a/fs/jbd/commit.c b/fs/jbd/commit.c
+index ecb44c9..1df9270 100644
+--- a/fs/jbd/commit.c
++++ b/fs/jbd/commit.c
+@@ -745,8 +745,13 @@ wait_for_iobuf:
+                    required. */
+ 		JBUFFER_TRACE(jh, "file as BJ_Forget");
+ 		journal_file_buffer(jh, commit_transaction, BJ_Forget);
+-		/* Wake up any transactions which were waiting for this
+-		   IO to complete */
++		/*
++		 * Wake up any transactions which were waiting for this
++		 * IO to complete. The barrier must be here so that changes
++		 * by journal_file_buffer() take effect before wake_up_bit()
++		 * does the waitqueue check.
++		 */
++		smp_mb();
+ 		wake_up_bit(&bh->b_state, BH_Unshadow);
+ 		JBUFFER_TRACE(jh, "brelse shadowed buffer");
+ 		__brelse(bh);
 -- 
 1.7.9.6
 
