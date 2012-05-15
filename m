@@ -1,83 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S966071Ab2EORZN (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 May 2012 13:25:13 -0400
-Received: from mail-lpp01m010-f46.google.com ([209.85.215.46]:42819 "EHLO
-	mail-lpp01m010-f46.google.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S965223Ab2EORZJ (ORCPT
+	id S966076Ab2EORZg (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 May 2012 13:25:36 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:7668 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S965223Ab2EORZd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 May 2012 13:25:09 -0400
-From: Johan Hovold <jhovold@gmail.com>
-To: Samuel Ortiz <sameo@linux.intel.com>
-Cc: linux-kernel@vger.kernel.org, Johan Hovold <jhovold@gmail.com>
-Subject: [PATCH] mfd: lm3533: convert to use devres
-Date: Tue, 15 May 2012 19:24:53 +0200
-Message-Id: <1337102693-30911-1-git-send-email-jhovold@gmail.com>
-X-Mailer: git-send-email 1.7.8.6
+	Tue, 15 May 2012 13:25:33 -0400
+X-Authority-Analysis: v=2.0 cv=D8PF24tj c=1 sm=0 a=ZycB6UtQUfgMyuk2+PxD7w==:17 a=XQbtiDEiEegA:10 a=huzqtivG31QA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=bv-0vv9eQq1Ylfa92FUA:9 a=cXnLtWmV1uU6JnLr-hEA:7 a=PUjeQqilurYA:10 a=ZycB6UtQUfgMyuk2+PxD7w==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 74.67.80.29
+Message-ID: <1337102732.14207.336.camel@gandalf.stny.rr.com>
+Subject: Re: [RFC][PATCH RT] rwsem_rt: Another (more sane) approach to mulit
+ reader rt locks
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: LKML <linux-kernel@vger.kernel.org>, RT <linux-rt-users@vger.kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Clark Williams <williams@redhat.com>
+Date: Tue, 15 May 2012 13:25:32 -0400
+In-Reply-To: <1337096542.14207.315.camel@gandalf.stny.rr.com>
+References: <1337090625.14207.304.camel@gandalf.stny.rr.com>
+	 <1337094383.27694.62.camel@twins>
+	 <1337096542.14207.315.camel@gandalf.stny.rr.com>
+Content-Type: text/plain; charset="ISO-8859-15"
+X-Mailer: Evolution 3.2.2-1 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Use devres to manage core driver data and regmap.
+On Tue, 2012-05-15 at 11:42 -0400, Steven Rostedt wrote:
+> On Tue, 2012-05-15 at 17:06 +0200, Peter Zijlstra wrote:
+> > On Tue, 2012-05-15 at 10:03 -0400, Steven Rostedt wrote:
+> > > 
+> > > where readers may nest (the same task may grab the same rwsem for
+> > > read multiple times), but only one task may hold the rwsem at any
+> > > given
+> > > time (for read or write).
+> > 
+> > Humm, that sounds iffy, rwsem isn't a recursive read lock only rwlock_t
+> > is.
+> 
+> In that case, current -rt is broken. As it has it being a recursive lock
+> (without my patch).
+> 
 
-Signed-off-by: Johan Hovold <jhovold@gmail.com>
----
- drivers/mfd/lm3533-core.c |   22 +++++-----------------
- 1 files changed, 5 insertions(+), 17 deletions(-)
+Why wouldn't it be recursive. If two different tasks are allowed to grab
+a read lock at the same time, why can't the same task grab a read lock
+twice? As long as it releases it the same amount of times.
 
-diff --git a/drivers/mfd/lm3533-core.c b/drivers/mfd/lm3533-core.c
-index 5770bea..104faba 100644
---- a/drivers/mfd/lm3533-core.c
-+++ b/drivers/mfd/lm3533-core.c
-@@ -603,33 +603,24 @@ static int __devinit lm3533_i2c_probe(struct i2c_client *i2c,
- 
- 	dev_dbg(&i2c->dev, "%s\n", __func__);
- 
--	lm3533 = kzalloc(sizeof(*lm3533), GFP_KERNEL);
-+	lm3533 = devm_kzalloc(&i2c->dev, sizeof(*lm3533), GFP_KERNEL);
- 	if (!lm3533)
- 		return -ENOMEM;
- 
- 	i2c_set_clientdata(i2c, lm3533);
- 
--	lm3533->regmap = regmap_init_i2c(i2c, &regmap_config);
--	if (IS_ERR(lm3533->regmap)) {
--		ret = PTR_ERR(lm3533->regmap);
--		goto err_regmap;
--	}
-+	lm3533->regmap = devm_regmap_init_i2c(i2c, &regmap_config);
-+	if (IS_ERR(lm3533->regmap))
-+		return PTR_ERR(lm3533->regmap);
- 
- 	lm3533->dev = &i2c->dev;
- 	lm3533->irq = i2c->irq;
- 
- 	ret = lm3533_device_init(lm3533);
- 	if (ret)
--		goto err_dev;
-+		return ret;
- 
- 	return 0;
--
--err_dev:
--	regmap_exit(lm3533->regmap);
--err_regmap:
--	kfree(lm3533);
--
--	return ret;
- }
- 
- static int __devexit lm3533_i2c_remove(struct i2c_client *i2c)
-@@ -639,9 +630,6 @@ static int __devexit lm3533_i2c_remove(struct i2c_client *i2c)
- 	dev_dbg(&i2c->dev, "%s\n", __func__);
- 
- 	lm3533_device_exit(lm3533);
--	regmap_exit(lm3533->regmap);
--
--	kfree(lm3533);
- 
- 	return 0;
- }
--- 
-1.7.8.5
+Now you can't grab a read lock if you have the write lock.
+
+-- Steve
+
 
