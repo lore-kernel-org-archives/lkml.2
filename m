@@ -1,78 +1,149 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758378Ab2EOPBr (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 May 2012 11:01:47 -0400
-Received: from mga02.intel.com ([134.134.136.20]:13015 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756104Ab2EOPBp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 May 2012 11:01:45 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.67,351,1309762800"; 
-   d="scan'208";a="144258708"
-Message-ID: <4FB26FBC.7040209@intel.com>
-Date: Tue, 15 May 2012 23:01:16 +0800
-From: Alex Shi <alex.shi@intel.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:9.0) Gecko/20111229 Thunderbird/9.0
+	id S933054Ab2EOPE2 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 May 2012 11:04:28 -0400
+Received: from mail-wi0-f178.google.com ([209.85.212.178]:49707 "EHLO
+	mail-wi0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752928Ab2EOPE0 convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 May 2012 11:04:26 -0400
 MIME-Version: 1.0
-To: Peter Zijlstra <peterz@infradead.org>
-CC: Nick Piggin <npiggin@gmail.com>, tglx@linutronix.de, mingo@redhat.com,
-        hpa@zytor.com, arnd@arndb.de, rostedt@goodmis.org, fweisbec@gmail.com,
-        jeremy@goop.org, riel@redhat.com, luto@mit.edu, avi@redhat.com,
-        len.brown@intel.com, dhowells@redhat.com, fenghua.yu@intel.com,
-        borislav.petkov@amd.com, yinghai@kernel.org, ak@linux.intel.com,
-        cpw@sgi.com, steiner@sgi.com, akpm@linux-foundation.org,
-        penberg@kernel.org, hughd@google.com, rientjes@google.com,
-        kosaki.motohiro@jp.fujitsu.com, n-horiguchi@ah.jp.nec.com,
-        tj@kernel.org, oleg@redhat.com, axboe@kernel.dk, jmorris@namei.org,
-        kamezawa.hiroyu@jp.fujitsu.com, viro@zeniv.linux.org.uk,
-        linux-kernel@vger.kernel.org, yongjie.ren@intel.com,
-        linux-arch@vger.kernel.org
-Subject: Re: [PATCH v5 6/7] x86/tlb: optimizing flush_tlb_mm
-References: <1337072138-8323-1-git-send-email-alex.shi@intel.com>  <1337072138-8323-7-git-send-email-alex.shi@intel.com>  <CAPa8GCDsSOrzQwX2qRJyocYAZdGbwjD4t4fjxmWXV6=EoXjXZw@mail.gmail.com>  <4FB2590C.1050303@intel.com> <1337092577.27694.45.camel@twins> <1337093840.27694.56.camel@twins>
-In-Reply-To: <1337093840.27694.56.camel@twins>
+Reply-To: konrad@darnok.org
+In-Reply-To: <4FB06B91.1080008@kernel.org>
+References: <4FAB21E7.7020703@kernel.org>
+	<20120510140215.GC26152@phenom.dumpdata.com>
+	<4FABD503.4030808@vflare.org>
+	<4FABDA9F.1000105@linux.vnet.ibm.com>
+	<20120510151941.GA18302@kroah.com>
+	<4FABECF5.8040602@vflare.org>
+	<20120510164418.GC13964@kroah.com>
+	<4FABF9D4.8080303@vflare.org>
+	<20120510173322.GA30481@phenom.dumpdata.com>
+	<4FAC4E3B.3030909@kernel.org>
+	<20120511192831.GC3785@phenom.dumpdata.com>
+	<4FB06B91.1080008@kernel.org>
+Date: Tue, 15 May 2012 11:04:22 -0400
+X-Google-Sender-Auth: bDNnemqdOZlYD39Y6EBQLf1loJg
+Message-ID: <CAPbh3ruv9xCV_XpR4ZsZpSGQ8=mibg=a39zvADYETb-tg0kBsA@mail.gmail.com>
+Subject: Re: [PATCH 3/4] zsmalloc use zs_handle instead of void *
+From: Konrad Rzeszutek Wilk <konrad@darnok.org>
+To: Minchan Kim <minchan@kernel.org>
+Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/15/2012 10:57 PM, Peter Zijlstra wrote:
-
-> On Tue, 2012-05-15 at 16:36 +0200, Peter Zijlstra wrote:
->> On Tue, 2012-05-15 at 21:24 +0800, Alex Shi wrote:
 >>
->>> Sorry. I don't understand what's the comments Peter's made days ago. I should ask for more details originally. 
->>>
->>> So, Peter, the correct change should like following, am I right?
->>>
->>> -#define tlb_flush(tlb) flush_tlb_mm((tlb)->mm)
->>> +#define tlb_flush(tlb, start, end) __flush_tlb_range((tlb)->mm, start, end)
+>> The fix is of course to return a pointer (which your function
+>> declared), and instead do this:
 >>
->> No.. the correct change is to do range tracking like the other archs
->> that support flush_tlb_range() do.
+>> {
+>>       struct zs_handle *handle;
 >>
->> You do not modify the tlb interface.
+>>       handle = zs_malloc(pool, size);
+>
+>
+> It's not a good idea.
+> For it, zs_malloc needs memory space to keep zs_handle internally.
+> Why should zsallocator do it? Just for zcache?
+
+How different is from now? The zs_malloc keeps the handle internally
+as well - it just that is is a void * pointer. Internally, the
+ownership and the responsibility to free it lays with zsmalloc.
+
+> It's not good abstraction.
+
+If we want good abstraction, then I don't think 'unsigned long' is
+either? I mean it will do for the conversion from 'void *'. Perhaps I
+am being a bit optimistic here - and I am trying to jam in this
+'struct zs_handle' in all cases but in reality it needs a more
+iterative process. So first do 'void *' -> 'unsigned long', and then
+later on if we can come up with something more nicely that abstracts
+- then use that?
+.. snip ..
+>>> Why should zsmalloc support such interface?
 >>
->> Again, see: http://marc.info/?l=linux-arch&m=129952026504268&w=2
+>> Why not? It is better than a 'void *' or a typedef.
+>>
+>> It is modeled after a pte_t.
+>
+>
+> It's not same with pte_t.
+> We normally don't use pte_val to (void*) for unique index of slot.
+
+Right, but I thought we want to get rid of all of the '(void *)'
+usages and instead
+pass some opaque pointer.
+
+> The problem is that zcache assume handle of zsmalloc is a sizeof(void*)'s
+> unique value but zcache never assume it's a sizeof(void*).
+
+Huh? I am parsing your sentence as: "zcache assumes .. sizeof(void *),
+but zcache never assumes its .. sizeof(void *)"?
+
+Zcache has to assume it is a pointer. And providing a 'struct
+zs_handle *' would fit the bill?
+>>
+>>
+>>> It's a zcache problem so it's desriable to solve it in zcache internal.
+>>
+>> Not really. We shouldn't really pass any 'void *' pointers around.
+>>
+>>> And in future, if we can add/remove zs_handle's fields, we can't make
+>>> sure such API.
+>>
+>> Meaning ... what exactly do you mean? That the size of the structure
+>> will change and we won't return the right value? Why not?
+>> If you use the 'zs_handle_to_ptr' won't that work? Especially if you
+>> add new values to the end of the struct it won't cause issues.
+>
+>
+> I mean we might change zs_handle to following as, in future.
+> (It's insane but who know it?)
+
+OK, so BUILD_BUG(sizeof(struct zs_handle *) != sizeof(void *))
+with a big fat comment saying that one needs to go over the other users
+of zcache/zram/zsmalloc to double check?
+
+But why would it matter? The zs_handle would be returned as a pointer
+- so the size is the same to the caller.
+
+>
+> struct zs_handle {
+>        int upper;
+>        int middle;
+>        int lower;
+> };
+>
+> How could you handle this for zs_handle_to_ptr?
+
+Gosh, um, I couldn't :-) Well, maybe with something that does
+ return "upper | middle | lower", but yeah that is not the goal.
 
 
-this code is for multiple architecture, but x86 still need implement
-'flush tlb range' with 'invlpg'.
+>>>>> Its true that making it a real struct would prevent accidental casts
+>>>>> to void * but due to the above problem, I think we have to stick
+>>>>> with unsigned long.
+>>
+>> So the problem you are seeing is that you don't want 'struct zs_handle'
+>> be present in the drivers/staging/zsmalloc/zsmalloc.h header file?
+>> It looks like the proper place.
+>
+>
+> No. What I want is to remove coupling zsallocator's handle with zram/zcache.
+> They shouldn't know internal of handle and assume it's a pointer.
 
-> 
-> Just to be _very_ clear, you do not modify:
-> 
->  mm/memory.c                     |    9 ++--
->  kernel/fork.c                   |    2 +-   
->  fs/proc/task_mmu.c              |    2 +-
-> 
+I concur. And hence I was thinking that the 'struct zs_handle *'
+pointer would work.
 
+>
+> If Nitin confirm zs_handle's format can never change in future, I prefer "unsigned long" Nitin suggested than (void *).
+> It can prevent confusion that normal allocator's return value is pointer for address so the problem is easy.
+> But I am not sure he can make sure it.
 
-Thanks a lot. I see.
-
-> As it stands your patch breaks compilation on a whole bunch of
-> architectures.
-> 
-> If you touch the TLB interface, you get to touch _ALL_ architectures.
-
-
+Well, everything changes over time  so putting a stick in the ground
+and saying 'this must
+be this way' is not really the best way.
