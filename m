@@ -1,70 +1,200 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S966719Ab2EOUMo (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 May 2012 16:12:44 -0400
-Received: from e31.co.us.ibm.com ([32.97.110.149]:43757 "EHLO
-	e31.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933225Ab2EOUMl (ORCPT
+	id S966732Ab2EOUNL (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 May 2012 16:13:11 -0400
+Received: from mail131.messagelabs.com ([216.82.242.99]:15574 "EHLO
+	mail131.messagelabs.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932843Ab2EOUNJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 May 2012 16:12:41 -0400
-Message-ID: <1337112446.20904.50.camel@falcor>
-Subject: Re: [PATCH] vfs: fix IMA lockdep circular locking dependency
-From: Mimi Zohar <zohar@linux.vnet.ibm.com>
-To: Eric Paris <eparis@parisplace.org>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Mimi Zohar <zohar@us.ibm.com>, linux-security-module@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Al Viro <viro@zeniv.linux.org.uk>
-Date: Tue, 15 May 2012 16:07:26 -0400
-In-Reply-To: <CACLa4pujEBAS349Pr-EcBmzQgTHWthhCMV0Yqq0BG-F_gDjz4Q@mail.gmail.com>
-References: <1336963631-3541-1-git-send-email-zohar@us.ibm.com>
-	 <CA+55aFzrJNd5J7i3Rp7-ctc=bDn5GTWu=H1xyCgGZ-rzu74Gbw@mail.gmail.com>
-	 <CA+55aFyPPZ0wayqPMCZtfP1w9nN-GnKJxYc9i_XM_Qk8d-zJzg@mail.gmail.com>
-	 <CACLa4pujEBAS349Pr-EcBmzQgTHWthhCMV0Yqq0BG-F_gDjz4Q@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3 (3.2.3-3.fc16) 
+	Tue, 15 May 2012 16:13:09 -0400
+X-Env-Sender: hartleys@visionengravers.com
+X-Msg-Ref: server-3.tower-131.messagelabs.com!1337112763!20593556!29
+X-Originating-IP: [216.166.12.31]
+X-StarScan-Version: 6.5.10; banners=-,-,-
+X-VirusChecked: Checked
+From: H Hartley Sweeten <hartleys@visionengravers.com>
+To: Linux Kernel <linux-kernel@vger.kernel.org>
+Subject: [PATCH] staging: comedi: refactor adv_pci1710 driver and use module_comedi_pci_driver
+Date: Tue, 15 May 2012 13:12:53 -0700
+User-Agent: KMail/1.9.9
+CC: <devel@driverdev.osuosl.org>, <abbotti@mev.co.uk>,
+        <fmhess@users.sourceforge.net>, <gregkh@linuxfoundation.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset="utf-8"
 Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 12051520-7282-0000-0000-0000090E5F98
+Content-Disposition: inline
+Message-ID: <201205151312.53467.hartleys@visionengravers.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2012-05-15 at 15:42 -0400, Eric Paris wrote:
-> On Tue, May 15, 2012 at 2:41 PM, Linus Torvalds
-> <torvalds@linux-foundation.org> wrote:
-> > On Tue, May 15, 2012 at 10:19 AM, Linus Torvalds
-> > <torvalds@linux-foundation.org> wrote:
-> >>
-> >>  - move the whole call to security_file_mmap() to outside the
-> >> mmap_sem, and test the *suggested* address (which is not the same as
-> >> the final address)
-> >
-> > Actually, I think I have a simpler approach.
-> >
-> > We already actually have two *different* security_file_mmap() calls:
-> > it's just that currently the difference is shown by the last argument
-> > to the function ("addr_only").
-> 
-> I'm the one who introduced that bit of horrific.  I originally did it
-> the way you describe and someone (it was a long time ago, and I think
-> it was Ted Tso, but I am probably very very wrong on that) ask me to
-> tack it on the end like this.  I'd be very happy with the split you
-> describe.
-> 
-> I'd rather not, however, move the address call site like you described
-> above, as I don't want to allow NULL + ~MAP_FIXED to be tested until
-> it has been resolved to a real address.  I don't want someone to find
-> a way to get the kernel to choose 4096 and avoid the check....
+Move the module_init/module_exit routines and the associated
+struct comedi_drive and struct pci_driver to the end of the
+source. This is more typical of how other drivers are written and
+removes the need for the forward declarations.
 
-If the security_file_mmap() moves to before taking the mmap_sem and the
-new security_mmap_addr() hook would be at the current
-security_file_mmap() location, I don't see the problem.  The addr test
-would remain in the same place.
+Convert the driver to use the module_comedi_pci_driver() macro
+which makes the code smaller and a bit simpler.
 
-> Mimi, would you like to do this (slightly) larger change?  Should I?
+Signed-off-by: H Hartley Sweeten <hsweeten@visionengravers.com>
+Cc: Ian Abbott <abbotti@mev.co.uk>
+Cc: Mori Hess <fmhess@users.sourceforge.net>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
-np, I'll make the changes.
+---
 
-Mimi
+ drivers/staging/comedi/drivers/adv_pci1710.c |   95 ++++++++------------------
+ 1 files changed, 29 insertions(+), 66 deletions(-)
 
+diff --git a/drivers/staging/comedi/drivers/adv_pci1710.c b/drivers/staging/comedi/drivers/adv_pci1710.c
+index 6279e88..ff61dff 100644
+--- a/drivers/staging/comedi/drivers/adv_pci1710.c
++++ b/drivers/staging/comedi/drivers/adv_pci1710.c
+@@ -191,10 +191,6 @@ static const struct comedi_lrange range_pci171x_da = { 2, {
+ 							   }
+ };
+ 
+-static int pci1710_attach(struct comedi_device *dev,
+-			  struct comedi_devconfig *it);
+-static int pci1710_detach(struct comedi_device *dev);
+-
+ struct boardtype {
+ 	const char *name;	/*  board name */
+ 	int device_id;
+@@ -216,17 +212,6 @@ struct boardtype {
+ 	unsigned int fifo_half_size;	/*  size of FIFO/2 */
+ };
+ 
+-static DEFINE_PCI_DEVICE_TABLE(pci1710_pci_table) = {
+-	{ PCI_DEVICE(PCI_VENDOR_ID_ADVANTECH, 0x1710) },
+-	{ PCI_DEVICE(PCI_VENDOR_ID_ADVANTECH, 0x1711) },
+-	{ PCI_DEVICE(PCI_VENDOR_ID_ADVANTECH, 0x1713) },
+-	{ PCI_DEVICE(PCI_VENDOR_ID_ADVANTECH, 0x1720) },
+-	{ PCI_DEVICE(PCI_VENDOR_ID_ADVANTECH, 0x1731) },
+-	{ 0 }
+-};
+-
+-MODULE_DEVICE_TABLE(pci, pci1710_pci_table);
+-
+ static const struct boardtype boardtypes[] = {
+ 	{"pci1710", 0x1710,
+ 	 IORANGE_171x, 1, TYPE_PCI171X,
+@@ -264,16 +249,6 @@ static const struct boardtype boardtypes[] = {
+ 	{.name = DRV_NAME},
+ };
+ 
+-static struct comedi_driver driver_pci1710 = {
+-	.driver_name = DRV_NAME,
+-	.module = THIS_MODULE,
+-	.attach = pci1710_attach,
+-	.detach = pci1710_detach,
+-	.num_names = ARRAY_SIZE(boardtypes),
+-	.board_name = &boardtypes[0].name,
+-	.offset = sizeof(struct boardtype),
+-};
+-
+ struct pci1710_private {
+ 	struct pci_dev *pcidev;	/*  ptr to PCI device */
+ 	char valid;		/*  card is usable */
+@@ -1360,9 +1335,6 @@ static int pci1710_reset(struct comedi_device *dev)
+ 	DPRINTK("adv_pci1710 EDBG: END: pci1710_reset(...)\n");
+ }
+ 
+-/*
+-==============================================================================
+-*/
+ static int pci1710_attach(struct comedi_device *dev,
+ 			  struct comedi_devconfig *it)
+ {
+@@ -1579,12 +1551,8 @@ static int pci1710_attach(struct comedi_device *dev,
+ 	return 0;
+ }
+ 
+-/*
+-==============================================================================
+-*/
+ static int pci1710_detach(struct comedi_device *dev)
+ {
+-
+ 	if (dev->private) {
+ 		if (devpriv->valid)
+ 			pci1710_reset(dev);
+@@ -1601,49 +1569,44 @@ static int pci1710_detach(struct comedi_device *dev)
+ 	return 0;
+ }
+ 
+-/*
+-==============================================================================
+-*/
+-static int __devinit driver_pci1710_pci_probe(struct pci_dev *dev,
+-					      const struct pci_device_id *ent)
++static struct comedi_driver adv_pci1710_driver = {
++	.driver_name	= "adv_pci1710",
++	.module		= THIS_MODULE,
++	.attach		= pci1710_attach,
++	.detach		= pci1710_detach,
++	.num_names	= ARRAY_SIZE(boardtypes),
++	.board_name	= &boardtypes[0].name,
++	.offset		= sizeof(struct boardtype),
++};
++
++static int __devinit adv_pci1710_pci_probe(struct pci_dev *dev,
++					   const struct pci_device_id *ent)
+ {
+-	return comedi_pci_auto_config(dev, &driver_pci1710);
++	return comedi_pci_auto_config(dev, &adv_pci1710_driver);
+ }
+ 
+-static void __devexit driver_pci1710_pci_remove(struct pci_dev *dev)
++static void __devexit adv_pci1710_pci_remove(struct pci_dev *dev)
+ {
+ 	comedi_pci_auto_unconfig(dev);
+ }
+ 
+-static struct pci_driver driver_pci1710_pci_driver = {
+-	.id_table = pci1710_pci_table,
+-	.probe = &driver_pci1710_pci_probe,
+-	.remove = __devexit_p(&driver_pci1710_pci_remove)
++static DEFINE_PCI_DEVICE_TABLE(adv_pci1710_pci_table) = {
++	{ PCI_DEVICE(PCI_VENDOR_ID_ADVANTECH, 0x1710) },
++	{ PCI_DEVICE(PCI_VENDOR_ID_ADVANTECH, 0x1711) },
++	{ PCI_DEVICE(PCI_VENDOR_ID_ADVANTECH, 0x1713) },
++	{ PCI_DEVICE(PCI_VENDOR_ID_ADVANTECH, 0x1720) },
++	{ PCI_DEVICE(PCI_VENDOR_ID_ADVANTECH, 0x1731) },
++	{ 0 }
+ };
++MODULE_DEVICE_TABLE(pci, adv_pci1710_pci_table);
+ 
+-static int __init driver_pci1710_init_module(void)
+-{
+-	int retval;
+-
+-	retval = comedi_driver_register(&driver_pci1710);
+-	if (retval < 0)
+-		return retval;
+-
+-	driver_pci1710_pci_driver.name = (char *)driver_pci1710.driver_name;
+-	return pci_register_driver(&driver_pci1710_pci_driver);
+-}
+-
+-static void __exit driver_pci1710_cleanup_module(void)
+-{
+-	pci_unregister_driver(&driver_pci1710_pci_driver);
+-	comedi_driver_unregister(&driver_pci1710);
+-}
+-
+-module_init(driver_pci1710_init_module);
+-module_exit(driver_pci1710_cleanup_module);
+-/*
+-==============================================================================
+-*/
++static struct pci_driver adv_pci1710_pci_driver = {
++	.name		= "adv_pci1710",
++	.id_table	= adv_pci1710_pci_table,
++	.probe		= adv_pci1710_pci_probe,
++	.remove		= __devexit_p(adv_pci1710_pci_remove),
++};
++module_comedi_pci_driver(adv_pci1710_driver, adv_pci1710_pci_driver);
+ 
+ MODULE_AUTHOR("Comedi http://www.comedi.org");
+ MODULE_DESCRIPTION("Comedi low-level driver");
