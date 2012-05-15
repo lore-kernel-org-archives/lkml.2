@@ -1,17 +1,17 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965587Ab2EOCS3 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 May 2012 22:18:29 -0400
-Received: from mail1.windriver.com ([147.11.146.13]:53075 "EHLO
+	id S965598Ab2EOCYP (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 May 2012 22:24:15 -0400
+Received: from mail1.windriver.com ([147.11.146.13]:53558 "EHLO
 	mail1.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S964903Ab2EOCQh (ORCPT
+	with ESMTP id S964902Ab2EOCS1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 May 2012 22:16:37 -0400
+	Mon, 14 May 2012 22:18:27 -0400
 From: Paul Gortmaker <paul.gortmaker@windriver.com>
 To: <stable@kernel.org>, <linux-kernel@vger.kernel.org>
-Subject: [34-longterm 046/179] nbd: limit module parameters to a sane value
-Date: Mon, 14 May 2012 22:12:22 -0400
-Message-ID: <1337048075-6132-47-git-send-email-paul.gortmaker@windriver.com>
+Subject: [34-longterm 177/179] score: fix off-by-one index into syscall table
+Date: Mon, 14 May 2012 22:14:33 -0400
+Message-ID: <1337048075-6132-178-git-send-email-paul.gortmaker@windriver.com>
 X-Mailer: git-send-email 1.7.9.6
 In-Reply-To: <1337048075-6132-1-git-send-email-paul.gortmaker@windriver.com>
 References: <1337048075-6132-1-git-send-email-paul.gortmaker@windriver.com>
@@ -21,7 +21,7 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Namhyung Kim <namhyung@gmail.com>
+From: Dan Rosenberg <drosenberg@vsecurity.com>
 
                    -------------------
     This is a commit scheduled for the next v2.6.34 longterm release.
@@ -29,88 +29,45 @@ From: Namhyung Kim <namhyung@gmail.com>
     If you see a problem with using this for longterm, please comment.
                    -------------------
 
-commit 3b2710824e00d238554c13b5add347e6c701ab1a upstream.
+commit c25a785d6647984505fa165b5cd84cfc9a95970b upstream.
 
-The 'max_part' parameter controls the number of maximum partition
-a nbd device can have. However if a user specifies very large
-value it would exceed the limitation of device minor number and
-can cause a kernel oops (or, at least, produce invalid device
-nodes in some cases).
+If the provided system call number is equal to __NR_syscalls, the
+current check will pass and a function pointer just after the system
+call table may be called, since sys_call_table is an array with total
+size __NR_syscalls.
 
-In addition, specifying large 'nbds_max' value causes same
-problem for the same reason.
+Whether or not this is a security bug depends on what the compiler puts
+immediately after the system call table.  It's likely that this won't do
+anything bad because there is an additional NULL check on the syscall
+entry, but if there happens to be a non-NULL value immediately after the
+system call table, this may result in local privilege escalation.
 
-On my desktop, following command results to the kernel bug:
-
-$ sudo modprobe nbd max_part=100000
- kernel BUG at /media/Linux_Data/project/linux/fs/sysfs/group.c:65!
- invalid opcode: 0000 [#1] SMP
- last sysfs file: /sys/devices/virtual/block/nbd4/range
- CPU 1
- Modules linked in: nbd(+) bridge stp llc kvm_intel kvm asus_atk0110 sg sr_mod cdrom
-
- Pid: 2522, comm: modprobe Tainted: G        W   2.6.39-leonard+ #159 System manufacturer System Product Name/P5G41TD-M PRO
- RIP: 0010:[<ffffffff8115aa08>]  [<ffffffff8115aa08>] internal_create_group+0x2f/0x166
- RSP: 0018:ffff8801009f1de8  EFLAGS: 00010246
- RAX: 00000000ffffffef RBX: ffff880103920478 RCX: 00000000000a7bd3
- RDX: ffffffff81a2dbe0 RSI: 0000000000000000 RDI: ffff880103920478
- RBP: ffff8801009f1e38 R08: ffff880103920468 R09: ffff880103920478
- R10: ffff8801009f1de8 R11: ffff88011eccbb68 R12: ffffffff81a2dbe0
- R13: ffff880103920468 R14: 0000000000000000 R15: ffff880103920400
- FS:  00007f3c49de9700(0000) GS:ffff88011f800000(0000) knlGS:0000000000000000
- CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
- CR2: 00007f3b7fe7c000 CR3: 00000000cd58d000 CR4: 00000000000406e0
- DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
- DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
- Process modprobe (pid: 2522, threadinfo ffff8801009f0000, task ffff8801009a93a0)
- Stack:
-  ffff8801009f1e58 ffffffff812e8f6e ffff8801009f1e58 ffffffff812e7a80
-  ffff880000000010 ffff880103920400 ffff8801002fd0c0 ffff880103920468
-  0000000000000011 ffff880103920400 ffff8801009f1e48 ffffffff8115ab6a
- Call Trace:
-  [<ffffffff812e8f6e>] ? device_add+0x4f1/0x5e4
-  [<ffffffff812e7a80>] ? dev_set_name+0x41/0x43
-  [<ffffffff8115ab6a>] sysfs_create_group+0x13/0x15
-  [<ffffffff810b857e>] blk_trace_init_sysfs+0x14/0x16
-  [<ffffffff811ee58b>] blk_register_queue+0x4c/0xfd
-  [<ffffffff811f3bdf>] add_disk+0xe4/0x29c
-  [<ffffffffa007e2ab>] nbd_init+0x2ab/0x30d [nbd]
-  [<ffffffffa007e000>] ? 0xffffffffa007dfff
-  [<ffffffff8100020f>] do_one_initcall+0x7f/0x13e
-  [<ffffffff8107ab0a>] sys_init_module+0xa1/0x1e3
-  [<ffffffff814f3542>] system_call_fastpath+0x16/0x1b
- Code: 41 57 41 56 41 55 41 54 53 48 83 ec 28 0f 1f 44 00 00 48 89 fb 41 89 f6 49 89 d4 48 85 ff 74 0b 85 f6 75 0b 48 83
-  7f 30 00 75 14 <0f> 0b eb fe b9 ea ff ff ff 48 83 7f 30 00 0f 84 09 01 00 00 49
- RIP  [<ffffffff8115aa08>] internal_create_group+0x2f/0x166
-  RSP <ffff8801009f1de8>
- ---[ end trace 753285ffbf72c57c ]---
-
-Signed-off-by: Namhyung Kim <namhyung@gmail.com>
-Cc: Laurent Vivier <Laurent.Vivier@bull.net>
-Cc: Paul Clements <Paul.Clements@steeleye.com>
-Signed-off-by: Jens Axboe <jaxboe@fusionio.com>
+Signed-off-by: Dan Rosenberg <drosenberg@vsecurity.com>
+Cc: <stable@vger.kernel.org>
+Cc: Chen Liqin <liqin.chen@sunplusct.com>
+Cc: Lennox Wu <lennox.wu@gmail.com>
+Cc: Eugene Teo <eugeneteo@kernel.sg>
+Cc: Arnd Bergmann <arnd@arndb.de>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
 ---
- drivers/block/nbd.c |    6 ++++++
- 1 file changed, 6 insertions(+)
+ arch/score/kernel/entry.S |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/drivers/block/nbd.c b/drivers/block/nbd.c
-index 218d091..14046ff 100644
---- a/drivers/block/nbd.c
-+++ b/drivers/block/nbd.c
-@@ -755,6 +755,12 @@ static int __init nbd_init(void)
- 	if (max_part > 0)
- 		part_shift = fls(max_part);
+diff --git a/arch/score/kernel/entry.S b/arch/score/kernel/entry.S
+index 577abba..83bb960 100644
+--- a/arch/score/kernel/entry.S
++++ b/arch/score/kernel/entry.S
+@@ -408,7 +408,7 @@ ENTRY(handle_sys)
+ 	sw	r9, [r0, PT_EPC]
  
-+	if ((1UL << part_shift) > DISK_MAX_PARTS)
-+		return -EINVAL;
-+
-+	if (nbds_max > 1UL << (MINORBITS - part_shift))
-+		return -EINVAL;
-+
- 	for (i = 0; i < nbds_max; i++) {
- 		struct gendisk *disk = alloc_disk(1 << part_shift);
- 		if (!disk)
+ 	cmpi.c	r27, __NR_syscalls 	# check syscall number
+-	bgtu	illegal_syscall
++	bgeu	illegal_syscall
+ 
+ 	slli	r8, r27, 2		# get syscall routine
+ 	la	r11, sys_call_table
 -- 
 1.7.9.6
 
