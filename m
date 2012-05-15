@@ -1,105 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S966634Ab2EOTvL (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 May 2012 15:51:11 -0400
-Received: from wolverine01.qualcomm.com ([199.106.114.254]:49078 "EHLO
-	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965947Ab2EOTvH (ORCPT
+	id S966629Ab2EOTwU (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 May 2012 15:52:20 -0400
+Received: from lennier.cc.vt.edu ([198.82.162.213]:40981 "EHLO
+	lennier.cc.vt.edu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S965947Ab2EOTwT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 May 2012 15:51:07 -0400
-X-IronPort-AV: E=McAfee;i="5400,1158,6712"; a="191223252"
-Message-ID: <4FB2B3AA.3010903@codeaurora.org>
-Date: Tue, 15 May 2012 12:51:06 -0700
-From: Saravana Kannan <skannan@codeaurora.org>
-User-Agent: Mozilla/5.0 (X11; Linux i686 on x86_64; rv:12.0) Gecko/20120428 Thunderbird/12.0.1
-MIME-Version: 1.0
-To: Sascha Hauer <s.hauer@pengutronix.de>
-CC: Mike Turquette <mturquette@linaro.org>,
-        Arnd Bergman <arnd.bergmann@linaro.org>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        linux-arm-msm@vger.kernel.org, Andrew Lunn <andrew@lunn.ch>,
-        Rob Herring <rob.herring@calxeda.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        Jeremy Kerr <jeremy.kerr@canonical.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Paul Walmsley <paul@pwsan.com>,
-        Shawn Guo <shawn.guo@freescale.com>, Jamie Iles <jamie@jamieiles.com>,
-        Richard Zhao <richard.zhao@linaro.org>,
-        Magnus Damm <magnus.damm@gmail.com>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Linus Walleij <linus.walleij@stericsson.com>,
-        Stephen Boyd <sboyd@codeaurora.org>,
-        Amit Kucheria <amit.kucheria@linaro.org>,
-        Deepak Saxena <dsaxena@linaro.org>,
-        Grant Likely <grant.likely@secretlab.ca>
-Subject: Re: [PATCH] clk: Fix race conditions between clk_set_parent() and
- clk_enable()
-References: <1336798797-8724-1-git-send-email-skannan@codeaurora.org> <20120515194245.GO30400@pengutronix.de>
-In-Reply-To: <20120515194245.GO30400@pengutronix.de>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+	Tue, 15 May 2012 15:52:19 -0400
+X-Mailer: exmh version 2.8.0 04/21/2012 with nmh-1.4-dev
+To: Namhyung Kim <namhyung.kim@lge.com>
+Cc: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        linux-kernel@vger.kernel.org, Hyeoncheol Lee <cheol.lee@lge.com>
+Subject: Re: [QUESTION] Kprobes as a module?
+In-Reply-To: Your message of "Tue, 15 May 2012 17:24:11 +0900."
+             <87zk99zwb8.fsf@sejong.aot.lge.com>
+From: valdis.kletnieks@vt.edu
+References: <87zk99zwb8.fsf@sejong.aot.lge.com>
+Mime-Version: 1.0
+Content-Type: multipart/signed; boundary="==_Exmh_1337111535_2773P";
+	 micalg=pgp-sha1; protocol="application/pgp-signature"
 Content-Transfer-Encoding: 7bit
+Date: Tue, 15 May 2012 15:52:15 -0400
+Message-ID: <52488.1337111535@turing-police.cc.vt.edu>
+X-Mirapoint-Received-SPF: 209.85.161.180 mail-gg0-f180.google.com valdis@vt.edu 4 softfail
+X-Junkmail-Status: score=10/50, host=vivi.cc.vt.edu
+X-Junkmail-Signature-Raw: score=unknown,
+	refid=str=0001.0A020206.4FB2B3F2.003D,ss=1,re=0.000,fgs=0,
+	ip=0.0.0.0,
+	so=2011-07-25 19:15:43,
+	dmn=2011-05-27 18:58:46,
+	mode=single engine
+X-Junkmail-IWF: false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/15/2012 12:42 PM, Sascha Hauer wrote:
-> Hi Saravana,
->
-> On Fri, May 11, 2012 at 09:59:56PM -0700, Saravana Kannan wrote:
->> Without this patch, the following race conditions are possible.
->>
->> Race condition 1:
->> * clk-A has two parents - clk-X and clk-Y.
->> * All three are disabled and clk-X is current parent.
->> * Thread A: clk_set_parent(clk-A, clk-Y).
->> * Thread A:<snip execution flow>
->> * Thread A: Grabs enable lock.
->> * Thread A: Sees enable count of clk-A is 0, so doesn't enable clk-Y.
->> * Thread A: Releases enable lock.
->> * Thread B: Calls clk_enable(clk-A), which in turn enables clk-X.
->> * Thread A: Switches clk-A's parent to clk-Y in hardware.
->>
->> clk-A is now enabled in software, but not clocking in hardware.
->>
->> Race condition 2:
->> * clk-A has two parents - clk-X and clk-Y.
->> * All three are disabled and clk-X is current parent.
->> * Thread A: clk_set_parent(clk-A, clk-Y).
->> * Thread A:<snip execution flow>
->> * Thread A: Switches parent in hardware to clk-Y.
->> * Thread A: Grabs enable lock.
->> * Thread A: Sees enable count of clk-A is 0, so doesn't disable clk-X.
->> * Thread A: Releases enable lock.
->> * Thread B: Calls clk_enable(clk-A)
->> * Thread B: Software state still says parent is clk-X.
->> * Thread B: So, enables clk-X and then itself.
->> * Thread A: Updates parent in software state to clk-Y.
->
-> Had a look at this and I can follow your reasoning and you patch seems
-> to fix this. However, there is a problem,
->
->>
->>   	/* migrate prepare and enable */
->> @@ -1092,23 +1098,23 @@ static int __clk_set_parent(struct clk *clk, struct clk *parent)
->>
->>   	/* FIXME replace with clk_is_enabled(clk) someday */
->>   	spin_lock_irqsave(&enable_lock, flags);
->> +
->>   	if (clk->enable_count)
->>   		__clk_enable(parent);
->> -	spin_unlock_irqrestore(&enable_lock, flags);
->>
->>   	/* change clock input source */
->>   	ret = clk->ops->set_parent(clk->hw, i);
->
-> You call ->set_parent while holding a spinlock. This won't work with i2c
-> clocks.
+--==_Exmh_1337111535_2773P
+Content-Type: text/plain; charset=us-ascii
 
-I did account for that. I explained it in the commit text. Please let me 
-know if any part of that is not clear or is not correct.
+On Tue, 15 May 2012 17:24:11 +0900, Namhyung Kim said:
+> Probably a dumb question :).
+> What prevents the kprobes from being built as a module? We want to use
+> the kprobes on our systems, but some guys worried about potential
+> security problems. So it'd be great if we can enable/load kprobes as
+> needed and then disable/unload after using it. Is it a possible senario?
 
-Thanks,
-Saravana
+Any troublemaker who has the ability to set a kprobe would probably also
+have theability to just re-load the module before setting the kprobe (unless
+you go to a *lot* of trouble to compartmentalize the root user).
 
--- 
-Sent by an employee of the Qualcomm Innovation Center, Inc.
-The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
+So it's not clear there's a security benefit from making it a module.  If anything,
+it makes it *worse* because you can then surprise a sysadmin who *thought*
+they were running a KPROBES=n kernel by loading a module and turning it on...
+
+--==_Exmh_1337111535_2773P
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+Comment: Exmh version 2.5 07/13/2001
+
+iQIVAwUBT7Kz7wdmEQWDXROgAQIitQ/+PEDRX4o5Cq02pgg63CDyzMei7oDwoan8
+KJfKya/t9K9pHSGYyXemZuae9t6hOutUcHVuriHyBDhz8VF3cV9wlm9I6EutzN8N
+fuHEKv5byyJf9goAMmTmgtSNV5uvINPDx4ZY1skz+ICWG9en/Fys5AS4smQPufTa
+9shcGw+BB2GFxf4wp8vXdNcKxyA9lkYePrLO2F4PgEE3m0JqmEN9MYqVoBcwqZQB
+oCpUF9kfa4evdMWB3x+8NyNq9Xpnc3FKLsHipot8HMWaJ6BYHqNISg1TjZLPDboR
+3g/HL5XgWreOPSd//XPFTcZ5kuLss0w/gnRbXVL2pmQjssloM/+7io5oyxG7/ZTj
+mOy2vKptvYMJCUABde9F724zezFlQMxa1VrTBapJlf9IEwh3UMeBMq0RuQSybu2M
+qcqQu11PFrcN6i0ctvFU3V3pUDD9+YbR1RQPpKYjiOQHhwkgBP1tZBLBVcOU/PEy
+cfhBF0eR75oH/1t+BkvWs8oakzsoa+msDVpKIrGwMUa4qZUSNAmbQBpjuRH1g4PM
+ONTG2qQes3P4ymLoeQ9H5KweJNe/tnyqu5RiHwS2Qg2UwqLVXHFke7VsEJYE/7Gq
+0sSvOuPuG0fXvbsEDSLMCMZ9j6egsWKdHZt4c1R+DDyf5T8wcCXA8VI4A5CRsGgq
+X9CKCozU1OE=
+=mcZ/
+-----END PGP SIGNATURE-----
+
+--==_Exmh_1337111535_2773P--
+
