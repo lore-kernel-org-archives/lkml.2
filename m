@@ -1,112 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S966609Ab2EOTm6 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 May 2012 15:42:58 -0400
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:58086 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S966435Ab2EOTm4 (ORCPT
+	id S966328Ab2EOTrS (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 May 2012 15:47:18 -0400
+Received: from mail-we0-f174.google.com ([74.125.82.174]:34123 "EHLO
+	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S965990Ab2EOTrR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 May 2012 15:42:56 -0400
-Date: Tue, 15 May 2012 21:42:45 +0200
-From: Sascha Hauer <s.hauer@pengutronix.de>
-To: Saravana Kannan <skannan@codeaurora.org>
-Cc: Mike Turquette <mturquette@linaro.org>,
-        Arnd Bergman <arnd.bergmann@linaro.org>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        linux-arm-msm@vger.kernel.org, Andrew Lunn <andrew@lunn.ch>,
-        Rob Herring <rob.herring@calxeda.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        Jeremy Kerr <jeremy.kerr@canonical.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Paul Walmsley <paul@pwsan.com>,
-        Shawn Guo <shawn.guo@freescale.com>, Jamie Iles <jamie@jamieiles.com>,
-        Richard Zhao <richard.zhao@linaro.org>,
-        Magnus Damm <magnus.damm@gmail.com>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Linus Walleij <linus.walleij@stericsson.com>,
-        Stephen Boyd <sboyd@codeaurora.org>,
-        Amit Kucheria <amit.kucheria@linaro.org>,
-        Deepak Saxena <dsaxena@linaro.org>,
-        Grant Likely <grant.likely@secretlab.ca>
-Subject: Re: [PATCH] clk: Fix race conditions between clk_set_parent() and
- clk_enable()
-Message-ID: <20120515194245.GO30400@pengutronix.de>
-References: <1336798797-8724-1-git-send-email-skannan@codeaurora.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1336798797-8724-1-git-send-email-skannan@codeaurora.org>
-X-Sent-From: Pengutronix Hildesheim
-X-URL: http://www.pengutronix.de/
-X-IRC: #ptxdist @freenode
-X-Accept-Language: de,en
-X-Accept-Content-Type: text/plain
-X-Uptime: 21:36:53 up 185 days,  3:23, 40 users,  load average: 0.09, 0.04,
- 0.06
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 2001:6f8:1178:2:21e:67ff:fe11:9c5c
-X-SA-Exim-Mail-From: sha@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
+	Tue, 15 May 2012 15:47:17 -0400
+Date: Tue, 15 May 2012 22:46:45 +0300
+From: Shmulik Ladkani <shmulik.ladkani@gmail.com>
+To: Richard Weinberger <richard@nod.at>
+Cc: linux-mtd@lists.infradead.org, Heinz.Egger@linutronix.de,
+        tglx@linutronix.de, tim.bird@am.sony.com, linux-kernel@vger.kernel.org,
+        dedekind1@gmail.com
+Subject: Re: [RFC v4] UBI: Fastmap support (aka checkpointing)
+Message-ID: <20120515224645.3af023c3@halley>
+In-Reply-To: <1337101871-31181-1-git-send-email-richard@nod.at>
+References: <1337101871-31181-1-git-send-email-richard@nod.at>
+X-Mailer: Claws Mail 3.7.9 (GTK+ 2.24.6; i686-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Saravana,
+Hi Richard,
 
-On Fri, May 11, 2012 at 09:59:56PM -0700, Saravana Kannan wrote:
-> Without this patch, the following race conditions are possible.
-> 
-> Race condition 1:
-> * clk-A has two parents - clk-X and clk-Y.
-> * All three are disabled and clk-X is current parent.
-> * Thread A: clk_set_parent(clk-A, clk-Y).
-> * Thread A: <snip execution flow>
-> * Thread A: Grabs enable lock.
-> * Thread A: Sees enable count of clk-A is 0, so doesn't enable clk-Y.
-> * Thread A: Releases enable lock.
-> * Thread B: Calls clk_enable(clk-A), which in turn enables clk-X.
-> * Thread A: Switches clk-A's parent to clk-Y in hardware.
-> 
-> clk-A is now enabled in software, but not clocking in hardware.
-> 
-> Race condition 2:
-> * clk-A has two parents - clk-X and clk-Y.
-> * All three are disabled and clk-X is current parent.
-> * Thread A: clk_set_parent(clk-A, clk-Y).
-> * Thread A: <snip execution flow>
-> * Thread A: Switches parent in hardware to clk-Y.
-> * Thread A: Grabs enable lock.
-> * Thread A: Sees enable count of clk-A is 0, so doesn't disable clk-X.
-> * Thread A: Releases enable lock.
-> * Thread B: Calls clk_enable(clk-A)
-> * Thread B: Software state still says parent is clk-X.
-> * Thread B: So, enables clk-X and then itself.
-> * Thread A: Updates parent in software state to clk-Y.
+Thanks for this important work.
 
-Had a look at this and I can follow your reasoning and you patch seems
-to fix this. However, there is a problem,
+On Tue, 15 May 2012 19:11:04 +0200 Richard Weinberger <richard@nod.at> wrote:
+> TODO:
+>         - Artem is fully happy with the current on-flash layout,
+>           maybe I can merge the erase counters into the EBA table
+>         - Get a full review :)
 
->  
->  	/* migrate prepare and enable */
-> @@ -1092,23 +1098,23 @@ static int __clk_set_parent(struct clk *clk, struct clk *parent)
->  
->  	/* FIXME replace with clk_is_enabled(clk) someday */
->  	spin_lock_irqsave(&enable_lock, flags);
-> +
->  	if (clk->enable_count)
->  		__clk_enable(parent);
-> -	spin_unlock_irqrestore(&enable_lock, flags);
->  
->  	/* change clock input source */
->  	ret = clk->ops->set_parent(clk->hw, i);
+I'd be glad to take a deep look of the code.
 
-You call ->set_parent while holding a spinlock. This won't work with i2c
-clocks.
+Hopefully I'll get into it in the following days.
 
-Sascha
-
--- 
-Pengutronix e.K.                           |                             |
-Industrial Linux Solutions                 | http://www.pengutronix.de/  |
-Peiner Str. 6-8, 31137 Hildesheim, Germany | Phone: +49-5121-206917-0    |
-Amtsgericht Hildesheim, HRA 2686           | Fax:   +49-5121-206917-5555 |
+Regards,
+Shmulik
