@@ -1,24 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756439Ab2EOKuF (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 May 2012 06:50:05 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:55609 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752682Ab2EOKuD convert rfc822-to-8bit (ORCPT
+	id S1756730Ab2EOKwE (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 May 2012 06:52:04 -0400
+Received: from casper.infradead.org ([85.118.1.10]:47513 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752536Ab2EOKwC convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 May 2012 06:50:03 -0400
-Message-ID: <1337078996.27694.26.camel@twins>
-Subject: Re: Perf events warning..
-From: Peter Zijlstra <a.p.zijlstra@chello.nl>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Ingo Molnar <mingo@redhat.com>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+	Tue, 15 May 2012 06:52:02 -0400
+Message-ID: <1337079117.27694.28.camel@twins>
+Subject: Re: [34-longterm 167/179] futex: Fix regression with read only
+ mappings
+From: Peter Zijlstra <peterz@infradead.org>
+To: Hugh Dickins <hughd@google.com>
+Cc: Paul Gortmaker <paul.gortmaker@windriver.com>, stable@kernel.org,
         linux-kernel@vger.kernel.org
-Date: Tue, 15 May 2012 12:49:56 +0200
-In-Reply-To: <CA+55aFxHw_SOX7fvcwskwP0qvLwyeXxTFjk589pnQtmYevhvpw@mail.gmail.com>
-References: <CA+55aFzNQqa9nuhZUog-+B0SfU6ip_QSt73R=2Du=M2ua1cFBA@mail.gmail.com>
-	 <1337034048.27020.137.camel@laptop>
-	 <CA+55aFxHw_SOX7fvcwskwP0qvLwyeXxTFjk589pnQtmYevhvpw@mail.gmail.com>
+Date: Tue, 15 May 2012 12:51:57 +0200
+In-Reply-To: <alpine.LSU.2.00.1205142126180.2196@eggly.anvils>
+References: <1337048075-6132-1-git-send-email-paul.gortmaker@windriver.com>
+	 <1337048075-6132-168-git-send-email-paul.gortmaker@windriver.com>
+	 <alpine.LSU.2.00.1205142126180.2196@eggly.anvils>
 Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7BIT
 X-Mailer: Evolution 3.2.2- 
@@ -27,23 +27,15 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2012-05-14 at 15:25 -0700, Linus Torvalds wrote:
-> On Mon, May 14, 2012 at 3:20 PM, Peter Zijlstra <a.p.zijlstra@chello.nl> wrote:
-> >
-> > So far I can't make any of the things I came up stick. You ran something
-> > simple like: 'perf record -e cycles:pp -F 20000 make test' ? Or did you
-> > do something more interesting?
-> 
-> It was not much more complex than that.
-> 
-> It did use "make -j64 test" to make the load a *bit* more interesting
-> (and go noticeably faster), but other than that you got it.
+On Mon, 2012-05-14 at 21:38 -0700, Hugh Dickins wrote:
+> I don't know: I'm not NAKking it, I'm just waving a reddish flag,
+> and hoping that Peter will remember more, and have something more
+> constructive to say, than I can think of at this moment. 
 
-OK, that limits the scope of crazy scenarios I have to consider, still
-no immediate clue though..
+Ha! you're very optimistic :-)
 
-I think I've found a possible race, but I can't make it work with that
-workload. I've also let your workload run for 2+ hours in trying to
-reproduce, but no luck, it must be a very narrow window indeed.
+going by git log kernel/futex.c on a recent kernel the proposed patch
+should indeed be followed by your patch, but I can't seem to find more
+relevant patches.
 
-I'll keep prodding at it..
+
