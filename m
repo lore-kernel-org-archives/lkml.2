@@ -1,218 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758734Ab2EOUYN (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 May 2012 16:24:13 -0400
-Received: from mail127.messagelabs.com ([216.82.250.115]:38770 "EHLO
-	mail127.messagelabs.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S966087Ab2EOUYL (ORCPT
+	id S966520Ab2EOU0f (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 May 2012 16:26:35 -0400
+Received: from lennier.cc.vt.edu ([198.82.162.213]:51542 "EHLO
+	lennier.cc.vt.edu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758169Ab2EOU0d (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 May 2012 16:24:11 -0400
-X-Env-Sender: hartleys@visionengravers.com
-X-Msg-Ref: server-10.tower-127.messagelabs.com!1337113447!5607207!8
-X-Originating-IP: [216.166.12.97]
-X-StarScan-Version: 6.5.7; banners=-,-,-
-X-VirusChecked: Checked
-From: H Hartley Sweeten <hartleys@visionengravers.com>
-To: Linux Kernel <linux-kernel@vger.kernel.org>
-Subject: [PATCH] staging: comedi: refactor adv_pci1_dio driver and use module_comedi_pci_driver
-Date: Tue, 15 May 2012 13:23:58 -0700
-User-Agent: KMail/1.9.9
-CC: <devel@driverdev.osuosl.org>, <abbotti@mev.co.uk>,
-        <fmhess@users.sourceforge.net>, <gregkh@linuxfoundation.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
+	Tue, 15 May 2012 16:26:33 -0400
+X-Mailer: exmh version 2.8.0 04/21/2012 with nmh-1.4-dev
+To: Pantelis Antoniou <pantelis.antoniou@gmail.com>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Vincent Guittot <vincent.guittot@linaro.org>,
+        mou Chen <hi3766691@gmail.com>, linux-kernel@vger.kernel.org,
+        Ingo Molnar <mingo@kernel.org>, torvalds@linux-foundation.org
+Subject: Re: Plumbers: Tweaking scheduler policy micro-conf RFP
+In-Reply-To: Your message of "Tue, 15 May 2012 14:35:53 +0300."
+             <9093E8BA-80E4-4113-B036-0259E5FB44F1@gmail.com>
+From: valdis.kletnieks@vt.edu
+References: <CAKfTPtDSDAOAdv0GTDswZeRM7TmACrjok+5kddSaQpvy6_6xWw@mail.gmail.com> <CAKfTPtCfiY7A29+e50F+6awd8BjNJjg4=uNN4ReZfdS_4FbpkA@mail.gmail.com> <CANQmPXj_81NBBrTYCkhUO1k1i4WVu0iHwY1_10wDVOFWCSkvsw@mail.gmail.com> <CAKfTPtBhPpQyr1qugbMzq2nENh+zBT+zx_nWQpQ9NPbF=+ppcQ@mail.gmail.com> <833A8DB8-1AB4-45E4-8D44-14A0D782807D@gmail.com> <1337077714.27694.21.camel@twins>
+            <9093E8BA-80E4-4113-B036-0259E5FB44F1@gmail.com>
+Mime-Version: 1.0
+Content-Type: multipart/signed; boundary="==_Exmh_1337113581_2773P";
+	 micalg=pgp-sha1; protocol="application/pgp-signature"
 Content-Transfer-Encoding: 7bit
-Content-Disposition: inline
-Message-ID: <201205151323.58471.hartleys@visionengravers.com>
+Date: Tue, 15 May 2012 16:26:22 -0400
+Message-ID: <54348.1337113582@turing-police.cc.vt.edu>
+X-Mirapoint-Received-SPF: 209.85.161.180 mail-gg0-f180.google.com valdis@vt.edu 4 softfail
+X-Junkmail-Status: score=10/50, host=vivi.cc.vt.edu
+X-Junkmail-Signature-Raw: score=unknown,
+	refid=str=0001.0A020201.4FB2BBF9.001D,ss=1,re=0.000,fgs=0,
+	ip=0.0.0.0,
+	so=2011-07-25 19:15:43,
+	dmn=2011-05-27 18:58:46,
+	mode=single engine
+X-Junkmail-IWF: false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Move the module_init/module_exit routines and the associated
-struct comedi_drive and struct pci_driver to the end of the
-source. This is more typical of how other drivers are written and
-removes the need for the forward declarations.
+--==_Exmh_1337113581_2773P
+Content-Type: text/plain; charset=us-ascii
 
-Convert the driver to use the module_comedi_pci_driver() macro
-which makes the code smaller and a bit simpler.
+On Tue, 15 May 2012 14:35:53 +0300, Pantelis Antoniou said:
 
-Signed-off-by: H Hartley Sweeten <hsweeten@visionengravers.com>
-Cc: Ian Abbott <abbotti@mev.co.uk>
-Cc: Mori Hess <fmhess@users.sourceforge.net>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+> Thermal management: How to distribute load to the processors in such
+> a way that the temperature of the die doesn't increase too much that
+> we have to either go to a lower OPP or shut down the core all-together.
+> This is in direct conflict with throughput since we'd have better performance
+> if we could keep the same warmed-up cpu going.
 
----
+It's not just "temperature of the die".  When you have multiple aisles of 42U
+racks full of servers, you often hit "must keep average total BTU load per
+server below X" constraints.  There's plenty of colo's that are only using 40%
+of their floor space due to cooling constraints (you may be able to get the
+power company to pull another megawatt of copper into the building, but then
+you need to find someplace to put another megawatt worth of cooling).
 
- drivers/staging/comedi/drivers/adv_pci_dio.c |  108 +++++++++-----------------
- 1 files changed, 36 insertions(+), 72 deletions(-)
 
-diff --git a/drivers/staging/comedi/drivers/adv_pci_dio.c b/drivers/staging/comedi/drivers/adv_pci_dio.c
-index 7d920fe..9d3868e 100644
---- a/drivers/staging/comedi/drivers/adv_pci_dio.c
-+++ b/drivers/staging/comedi/drivers/adv_pci_dio.c
-@@ -237,10 +237,6 @@ enum hw_io_access {
- 
- #define OMBCMD_RETRY	0x03	/* 3 times try request before error */
- 
--static int pci_dio_attach(struct comedi_device *dev,
--			  struct comedi_devconfig *it);
--static int pci_dio_detach(struct comedi_device *dev);
--
- struct diosubd_data {
- 	int chans;		/*  num of chans */
- 	int addr;		/*  PCI address ofset */
-@@ -263,26 +259,6 @@ struct dio_boardtype {
- 	enum hw_io_access io_access;
- };
- 
--static DEFINE_PCI_DEVICE_TABLE(pci_dio_pci_table) = {
--	{ PCI_DEVICE(PCI_VENDOR_ID_ADVANTECH, 0x1730) },
--	{ PCI_DEVICE(PCI_VENDOR_ID_ADVANTECH, 0x1733) },
--	{ PCI_DEVICE(PCI_VENDOR_ID_ADVANTECH, 0x1734) },
--	{ PCI_DEVICE(PCI_VENDOR_ID_ADVANTECH, 0x1735) },
--	{ PCI_DEVICE(PCI_VENDOR_ID_ADVANTECH, 0x1736) },
--	{ PCI_DEVICE(PCI_VENDOR_ID_ADVANTECH, 0x1739) },
--	{ PCI_DEVICE(PCI_VENDOR_ID_ADVANTECH, 0x1750) },
--	{ PCI_DEVICE(PCI_VENDOR_ID_ADVANTECH, 0x1751) },
--	{ PCI_DEVICE(PCI_VENDOR_ID_ADVANTECH, 0x1752) },
--	{ PCI_DEVICE(PCI_VENDOR_ID_ADVANTECH, 0x1753) },
--	{ PCI_DEVICE(PCI_VENDOR_ID_ADVANTECH, 0x1754) },
--	{ PCI_DEVICE(PCI_VENDOR_ID_ADVANTECH, 0x1756) },
--	{ PCI_DEVICE(PCI_VENDOR_ID_ADVANTECH, 0x1760) },
--	{ PCI_DEVICE(PCI_VENDOR_ID_ADVANTECH, 0x1762) },
--	{ 0 }
--};
--
--MODULE_DEVICE_TABLE(pci, pci_dio_pci_table);
--
- static const struct dio_boardtype boardtypes[] = {
- 	{"pci1730", PCI_VENDOR_ID_ADVANTECH, 0x1730, PCIDIO_MAINREG,
- 	 TYPE_PCI1730,
-@@ -406,13 +382,6 @@ static const struct dio_boardtype boardtypes[] = {
- 	 IO_16b}
- };
- 
--static struct comedi_driver driver_pci_dio = {
--	.driver_name = "adv_pci_dio",
--	.module = THIS_MODULE,
--	.attach = pci_dio_attach,
--	.detach = pci_dio_detach
--};
--
- struct pci_dio_private {
- 	struct pci_dio_private *prev;	/*  previous private struct */
- 	struct pci_dio_private *next;	/*  next private struct */
-@@ -1114,9 +1083,6 @@ static int CheckAndAllocCard(struct comedi_device *dev,
- 	return 1;
- }
- 
--/*
--==============================================================================
--*/
- static int pci_dio_attach(struct comedi_device *dev,
- 			  struct comedi_devconfig *it)
- {
-@@ -1160,7 +1126,7 @@ static int pci_dio_attach(struct comedi_device *dev,
- 		return -EIO;
- 	}
- 
--	if (comedi_pci_enable(pcidev, driver_pci_dio.driver_name)) {
-+	if (comedi_pci_enable(pcidev, dev->driver->driver_name)) {
- 		dev_err(dev->hw_dev, "Error: Can't enable PCI device and request regions!\n");
- 		return -EIO;
- 	}
-@@ -1244,9 +1210,6 @@ static int pci_dio_attach(struct comedi_device *dev,
- 	return 0;
- }
- 
--/*
--==============================================================================
--*/
- static int pci_dio_detach(struct comedi_device *dev)
- {
- 	int i, j;
-@@ -1311,49 +1274,50 @@ static int pci_dio_detach(struct comedi_device *dev)
- 	return 0;
- }
- 
--/*
--==============================================================================
--*/
--static int __devinit driver_pci_dio_pci_probe(struct pci_dev *dev,
--					      const struct pci_device_id *ent)
-+static struct comedi_driver adv_pci_dio_driver = {
-+	.driver_name	= "adv_pci_dio",
-+	.module		= THIS_MODULE,
-+	.attach		= pci_dio_attach,
-+	.detach		= pci_dio_detach
-+};
-+
-+static int __devinit adv_pci_dio_pci_probe(struct pci_dev *dev,
-+					   const struct pci_device_id *ent)
- {
--	return comedi_pci_auto_config(dev, &driver_pci_dio);
-+	return comedi_pci_auto_config(dev, &adv_pci_dio_driver);
- }
- 
--static void __devexit driver_pci_dio_pci_remove(struct pci_dev *dev)
-+static void __devexit adv_pci_dio_pci_remove(struct pci_dev *dev)
- {
- 	comedi_pci_auto_unconfig(dev);
- }
- 
--static struct pci_driver driver_pci_dio_pci_driver = {
--	.id_table = pci_dio_pci_table,
--	.probe = &driver_pci_dio_pci_probe,
--	.remove = __devexit_p(&driver_pci_dio_pci_remove)
-+static DEFINE_PCI_DEVICE_TABLE(adv_pci_dio_pci_table) = {
-+	{ PCI_DEVICE(PCI_VENDOR_ID_ADVANTECH, 0x1730) },
-+	{ PCI_DEVICE(PCI_VENDOR_ID_ADVANTECH, 0x1733) },
-+	{ PCI_DEVICE(PCI_VENDOR_ID_ADVANTECH, 0x1734) },
-+	{ PCI_DEVICE(PCI_VENDOR_ID_ADVANTECH, 0x1735) },
-+	{ PCI_DEVICE(PCI_VENDOR_ID_ADVANTECH, 0x1736) },
-+	{ PCI_DEVICE(PCI_VENDOR_ID_ADVANTECH, 0x1739) },
-+	{ PCI_DEVICE(PCI_VENDOR_ID_ADVANTECH, 0x1750) },
-+	{ PCI_DEVICE(PCI_VENDOR_ID_ADVANTECH, 0x1751) },
-+	{ PCI_DEVICE(PCI_VENDOR_ID_ADVANTECH, 0x1752) },
-+	{ PCI_DEVICE(PCI_VENDOR_ID_ADVANTECH, 0x1753) },
-+	{ PCI_DEVICE(PCI_VENDOR_ID_ADVANTECH, 0x1754) },
-+	{ PCI_DEVICE(PCI_VENDOR_ID_ADVANTECH, 0x1756) },
-+	{ PCI_DEVICE(PCI_VENDOR_ID_ADVANTECH, 0x1760) },
-+	{ PCI_DEVICE(PCI_VENDOR_ID_ADVANTECH, 0x1762) },
-+	{ 0 }
- };
-+MODULE_DEVICE_TABLE(pci, adv_pci_dio_pci_table);
- 
--static int __init driver_pci_dio_init_module(void)
--{
--	int retval;
--
--	retval = comedi_driver_register(&driver_pci_dio);
--	if (retval < 0)
--		return retval;
--
--	driver_pci_dio_pci_driver.name = (char *)driver_pci_dio.driver_name;
--	return pci_register_driver(&driver_pci_dio_pci_driver);
--}
--
--static void __exit driver_pci_dio_cleanup_module(void)
--{
--	pci_unregister_driver(&driver_pci_dio_pci_driver);
--	comedi_driver_unregister(&driver_pci_dio);
--}
--
--module_init(driver_pci_dio_init_module);
--module_exit(driver_pci_dio_cleanup_module);
--/*
--==============================================================================
--*/
-+static struct pci_driver adv_pci_dio_pci_driver = {
-+	.name		= "adv_pci_dio",
-+	.id_table	= adv_pci_dio_pci_table,
-+	.probe		= adv_pci_dio_pci_probe,
-+	.remove		= __devexit_p(adv_pci_dio_pci_remove),
-+};
-+module_comedi_pci_driver(adv_pci_dio_driver, adv_pci_dio_pci_driver);
- 
- MODULE_AUTHOR("Comedi http://www.comedi.org");
- MODULE_DESCRIPTION("Comedi low-level driver");
+--==_Exmh_1337113581_2773P
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+Comment: Exmh version 2.5 07/13/2001
+
+iQIVAwUBT7K77QdmEQWDXROgAQLyow/8DjWVxCbuPMUeX4hu2yn7ZqfmF7bTBdH7
+v96Xg2Oieg773RDKf4Si6IGtX3xKSkkauNaVDzoG1xCYb138OyN1zwNb2uFmlh6f
+JYBBwWsNrhidIzIN5SHz7tB4E/rxeGLdUkPBy7VMokYAJRFQHw4m2h4OVpENRtXO
+qpv5ObnI5B6N6IWYihRtoGFDTfBhYDV4ef2ofChy8BIBu3Yh4O65T/geJfmdHrSj
+sMxe81KnYI/ibSq5T+4+llq34HJ1ugMMZAS3TJpjth8Wm/zYpnJm+TK8OnmH3IBP
+o92wWF5tQ+hMRqYuEgFQujbCnf79k5ix37cWx7s7cJh08Lpxjl2d4EfmwDMzm6Dg
+p2xNUS0haHMPMeI2AbKI12D5qeolaGMKMXp/Yb5lwtO2RV+Q6eu1HTM0epj6x8Gj
+i2ejMYbiaIWU/HsHPqWP5TXOAs1HfNcBrTU6p8dVNRTLVrlARDRXUbdRxny8GPqz
+fEGBg8SmzPpzfQrsTL+fYXWsPFGCtNT1/7gcAnA2sQmcHUmazNj3VDhNhE2uSTb/
+R1RASDu+gMROMM3eqd45KrPXqwFLDqmaLK/Qb+pRAEts54vaeR+1yLPCPqgl8Yvq
+MRBDn0CiiBC4MtpKCQpy4lz+P0weRG3V4VXA3zDYwx1i5NtvRFrfoIazYjD4Q9Ss
+l9Qt19hmWUI=
+=/CsH
+-----END PGP SIGNATURE-----
+
+--==_Exmh_1337113581_2773P--
+
