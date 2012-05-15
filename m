@@ -1,54 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756748Ab2EONG0 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 May 2012 09:06:26 -0400
-Received: from casper.infradead.org ([85.118.1.10]:49890 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751892Ab2EONGY (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 May 2012 09:06:24 -0400
-Subject: Re: [PATCH v5 6/7] x86/tlb: optimizing flush_tlb_mm
-From: Peter Zijlstra <a.p.zijlstra@chello.nl>
-To: Luming Yu <luming.yu@gmail.com>
-Cc: Nick Piggin <npiggin@gmail.com>, Alex Shi <alex.shi@intel.com>,
-        tglx@linutronix.de, mingo@redhat.com, hpa@zytor.com, arnd@arndb.de,
-        rostedt@goodmis.org, fweisbec@gmail.com, jeremy@goop.org,
-        riel@redhat.com, luto@mit.edu, avi@redhat.com, len.brown@intel.com,
-        dhowells@redhat.com, fenghua.yu@intel.com, borislav.petkov@amd.com,
-        yinghai@kernel.org, ak@linux.intel.com, cpw@sgi.com, steiner@sgi.com,
-        akpm@linux-foundation.org, penberg@kernel.org, hughd@google.com,
-        rientjes@google.com, kosaki.motohiro@jp.fujitsu.com,
-        n-horiguchi@ah.jp.nec.com, tj@kernel.org, oleg@redhat.com,
-        axboe@kernel.dk, jmorris@namei.org, kamezawa.hiroyu@jp.fujitsu.com,
-        viro@zeniv.linux.org.uk, linux-kernel@vger.kernel.org,
-        yongjie.ren@intel.com, linux-arch@vger.kernel.org, jcm@jonmasters.org
-In-Reply-To: <CAJRGBZy0S_fg3GY4S5CG-2SWv5AG1jMrcMMqCiTg=7xyD1mrzQ@mail.gmail.com>
-References: <1337072138-8323-1-git-send-email-alex.shi@intel.com>
-	 <1337072138-8323-7-git-send-email-alex.shi@intel.com>
-	 <CAPa8GCDsSOrzQwX2qRJyocYAZdGbwjD4t4fjxmWXV6=EoXjXZw@mail.gmail.com>
-	 <CAPa8GCADw7cn+cGukfy6=gEJAqV2Ef3=YFcPriuPmhpE-xvX7A@mail.gmail.com>
-	 <CAJRGBZy0S_fg3GY4S5CG-2SWv5AG1jMrcMMqCiTg=7xyD1mrzQ@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Tue, 15 May 2012 15:06:10 +0200
-Message-ID: <1337087170.27020.166.camel@laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.2 
-Content-Transfer-Encoding: 7bit
+	id S1758064Ab2EONHy (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 May 2012 09:07:54 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:46054 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753409Ab2EONHx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 May 2012 09:07:53 -0400
+Date: Tue, 15 May 2012 14:07:48 +0100
+From: Mel Gorman <mgorman@suse.de>
+To: David Miller <davem@davemloft.net>
+Cc: akpm@linux-foundation.org, linux-mm@kvack.org, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org, neilb@suse.de, a.p.zijlstra@chello.nl,
+        michaelc@cs.wisc.edu, emunson@mgebm.net
+Subject: Re: [PATCH 05/17] mm: allow PF_MEMALLOC from softirq context
+Message-ID: <20120515130748.GI29102@suse.de>
+References: <1336657510-24378-1-git-send-email-mgorman@suse.de>
+ <1336657510-24378-6-git-send-email-mgorman@suse.de>
+ <20120511.003951.1470088131186301605.davem@davemloft.net>
+ <20120514100229.GA29102@suse.de>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-15
+Content-Disposition: inline
+In-Reply-To: <20120514100229.GA29102@suse.de>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2012-05-15 at 20:58 +0800, Luming Yu wrote:
+On Mon, May 14, 2012 at 11:02:29AM +0100, Mel Gorman wrote:
+> Softirqs can run on multiple CPUs sure but the same task should not be
+> 	executing the same softirq code. Interrupts are disabled and the
+> 	executing process cannot sleep in softirq context so the task flags
+> 	cannot "leak" nor can they be concurrently modified.
 > 
-> 
-> Both __native_flush_tlb() and __native_flush_tlb_single(...)
-> introduced roughly 1 ns  latency to tsc sampling executed in
-> stop_machine_context in two logical CPUs 
 
-But you have to weight that against the cost of re-population, and
-that's the difficult bit, since we have no clue how many tlb entries are
-in use by the current cr3.
+This comment about hardirq is obviously wrong as __do_softirq() enables
+interrupts and can be preempted by a hardirq. I've updated the changelog
+now to include the following;
 
-It might be possible for intel to give us this information, I've asked
-for something similar for cachelines.
+Softirqs can run on multiple CPUs sure but the same task should not be
+        executing the same softirq code. Neither should the softirq
+        handler be preempted by any other softirq handler so the flags
+        should not leak to an unrelated softirq.
 
+Softirqs re-enable hardware interrupts in __do_softirq() so can be
+        preempted by hardware interrupts so PF_MEMALLOC is inherited
+        by the hard IRQ. However, this is similar to a process in
+        reclaim being preempted by a hardirq. While PF_MEMALLOC is
+        set, gfp_to_alloc_flags() distinguishes between hard and
+        soft irqs and avoids giving a hardirq the ALLOC_NO_WATERMARKS
+        flag.
+
+If the softirq is deferred to ksoftirq then its flags may be used
+        instead of a normal tasks but as the softirq cannot be preempted,
+        the PF_MEMALLOC flag does not leak to other code by accident.
+
+-- 
+Mel Gorman
+SUSE Labs
