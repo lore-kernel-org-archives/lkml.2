@@ -1,50 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965013Ab2EOPPJ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 May 2012 11:15:09 -0400
-Received: from wolverine02.qualcomm.com ([199.106.114.251]:9112 "EHLO
-	wolverine02.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757218Ab2EOPPH (ORCPT
+	id S965075Ab2EOPPU (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 May 2012 11:15:20 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:65492 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S965021Ab2EOPPO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 May 2012 11:15:07 -0400
-X-IronPort-AV: E=McAfee;i="5400,1158,6711"; a="188826934"
-Date: Tue, 15 May 2012 08:15:04 -0700
-From: David Brown <davidb@codeaurora.org>
-To: Shantanu Gupta <shans95g@gmail.com>
-Cc: Daniel Walker <dwalker@fifo99.com>, Olof Johansson <olof@lixom.net>,
-        Bryan Huntsman <bryanh@codeaurora.org>,
-        Russell King <linux@arm.linux.org.uk>, linux-kernel@vger.kernel.org,
-        linux-arm-msm@vger.kernel.org, linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH v2] arm: msm: fix up very basic HTC Sapphire support
-Message-ID: <20120515151504.GA2227@codeaurora.org>
-References: <q7bdy899mt3um93hikst04au.1336884464056@email.android.com>
- <20120513055612.GA7129@codeaurora.org>
- <CAPDArRKgZKR2kdbt-ySx7GrXopNnN+j4hKr1rrDPgxkZ8S2YjQ@mail.gmail.com>
+	Tue, 15 May 2012 11:15:14 -0400
+Date: Tue, 15 May 2012 08:15:09 -0700
+From: Tejun Heo <tj@kernel.org>
+To: Stephen Boyd <sboyd@quicinc.com>
+Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Yinghai Lu <yinghai@kernel.org>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Subject: Re: memblock_is_region_memory() vs. memblock_is_region_reserved()
+Message-ID: <20120515151509.GC6119@google.com>
+References: <4FB1AD38.7000503@quicinc.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <CAPDArRKgZKR2kdbt-ySx7GrXopNnN+j4hKr1rrDPgxkZ8S2YjQ@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <4FB1AD38.7000503@quicinc.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, May 15, 2012 at 03:49:00PM +0530, Shantanu Gupta wrote:
+On Mon, May 14, 2012 at 06:11:20PM -0700, Stephen Boyd wrote:
+> I was looking at memblock and noticed that memblock_is_region_memory()
+> is implemented differently than memblock_is_region_reserved().
+> 
+> memblock_is_region_memory() returns true only if the region you are
+> testing is fully contained within the bounds of a memory block. If the
+> region is half in and half out of a memory region (i.e. overlaps memory
+> and a hole) it is not memory and returns false.
+> 
+> memblock_is_region_reserved() is the opposite. If the region are you are
+> testing is half in and half out of a reserved region (i.e. overlaps
+> reserved memory) it returns true, otherwise it returns false.
+> 
+> These functions sound like they do the same thing by testing to see if
+> what you specify is either memory or reserved memory, but the semantics
+> are a bit different in that the former doesn't allow overlap, and the
+> latter accepts overlap. Should we rename memblock_is_region_reserved()
+> to memblock_overlaps_reserved() to make it clearer what the intention
+> is? Or perhaps rename memblock_is_region_memory() to
+> memblock_is_region_within_memory()?
 
-> Sorry for thread jacking, but do you still have an actively supported
-> 8x50 board ? ( ie. mahimahi)
+The difference is there because for a memory region to be available,
+all of it should be while a memory region partially reserved should
+still be treated as reserved.
 
-I still have a working 8x50 dev board (SURF), but I don't use it very
-much, but I do test it occasionally.  None of my 8x50 phone-type
-devices work any more.  It doesn't look like the mahimahi code has
-ever been compiled, though.
+> If anything, perhaps this patch will help clarify things?
 
-If no one objects, I'll just send out a patch to remove the
-board-mahimahi.c file, since nothing references it, and it doesn't
-have very useful support, anyway.
+Yeah, looks good to me.  Can you please add patch description,
+sign-off and send it to Ingo?
 
-David
+Thanks.
 
 -- 
-Sent by an employee of the Qualcomm Innovation Center, Inc.
-The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
+tejun
