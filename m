@@ -1,101 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758285Ab2EOIlv (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 May 2012 04:41:51 -0400
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:62927 "EHLO
-	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753210Ab2EOIlr (ORCPT
+	id S1758236Ab2EOImm (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 May 2012 04:42:42 -0400
+Received: from LGEMRELSE7Q.lge.com ([156.147.1.151]:64758 "EHLO
+	LGEMRELSE7Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757915Ab2EOImk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 May 2012 04:41:47 -0400
-Message-ID: <4FB216C7.6020604@gmail.com>
-Date: Tue, 15 May 2012 10:41:43 +0200
-From: Juri Lelli <juri.lelli@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
+	Tue, 15 May 2012 04:42:40 -0400
+X-AuditID: 9c930197-b7be2ae000000ebb-92-4fb216fdff6f
+From: Namhyung Kim <namhyung.kim@lge.com>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>, Ingo Molnar <mingo@redhat.com>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] tracing: Check return value of tracing_dentry_percpu()
+References: <1335143517-2285-1-git-send-email-namhyung.kim@lge.com>
+Date: Tue, 15 May 2012 17:41:01 +0900
+In-Reply-To: <1335143517-2285-1-git-send-email-namhyung.kim@lge.com> (Namhyung
+	Kim's message of "Mon, 23 Apr 2012 10:11:57 +0900")
+Message-ID: <87mx59zvj6.fsf@sejong.aot.lge.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.0.95 (gnu/linux)
 MIME-Version: 1.0
-To: Vincent Guittot <vincent.guittot@linaro.org>
-CC: Steven Rostedt <rostedt@goodmis.org>, paulmck@linux.vnet.ibm.com,
-        smuckle@quicinc.com, khilman@ti.com, Robin.Randhawa@arm.com,
-        suresh.b.siddha@intel.com, thebigcorporation@gmail.com,
-        venki@google.com, peterz@infradead.org, panto@antoniou-consulting.com,
-        mingo@elte.hu, paul.brett@intel.com, pdeschrijver@nvidia.com,
-        pjt@google.com, efault@gmx.de, fweisbec@gmail.com, geoff@infradead.org,
-        tglx@linutronix.de, amit.kucheria@linaro.org,
-        linux-kernel@vger.kernel.org, linaro-sched-sig@lists.linaro.org
-Subject: Re: Plumbers: Tweaking scheduler policy micro-conf RFP
-References: <CAKfTPtDSDAOAdv0GTDswZeRM7TmACrjok+5kddSaQpvy6_6xWw@mail.gmail.com> <1336753616.14207.258.camel@gandalf.stny.rr.com> <CAKfTPtA8EJeYVfpYTF7sh44ANOCUzE_eLkmYgE+bg25Vsgoj1Q@mail.gmail.com>
-In-Reply-To: <CAKfTPtA8EJeYVfpYTF7sh44ANOCUzE_eLkmYgE+bg25Vsgoj1Q@mail.gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/11/2012 06:38 PM, Vincent Guittot wrote:
-> On 11 May 2012 18:26, Steven Rostedt<rostedt@goodmis.org>  wrote:
->> Not really specific to HW, but Juri Lelli has been working on a deadline
->> scheduler. Perhaps his work may be of interest.
+Hi, Steve.
+
+Can you have a look at this?
+
+Thanks,
+Namhyung
+
+On Mon, 23 Apr 2012 10:11:57 +0900, Namhyung Kim wrote:
+> If tracing_dentry_percpu() failed, tracing_init_debugfs_percpu()
+> will try to create each cpu directories on debugfs' root directory
+> as d_percpu is NULL.
 >
-> Yes for sure, if Juri is agree to present his work
+> Signed-off-by: Namhyung Kim <namhyung.kim@lge.com>
+> ---
+>  kernel/trace/trace.c |    3 +++
+>  1 file changed, 3 insertions(+)
 >
-
-Sure! It will be really interesting for me.
-I'm setting up the proposal. I'll send it today.
-
-Thanks and Regards,
-
-- Juri
-  
-> Vincent
->>
->> -- Steve
->>
->>
->> On Fri, 2012-05-11 at 18:16 +0200, Vincent Guittot wrote:
->>> This is a request-for-participation in a micro conference during the
->>> next Linux Plumber Conference (29-31st Aug).
->>> It'll require critical mass measured in talk submissions in the
->>> general area of scheduler and task management.
->>>
->>> If you're working on improving the the scheduler policy used to place
->>> a task on a CPU to suit your HW, we are inviting your participation
->>> and request you to submit a proposal to present your problem (e.g.
->>> power-efficiency) or a solution to solve said problem that should be
->>> considered by upstream developers.
->>>
->>> We've interacted with the people in To: list before in our quest to
->>> better understand how the scheduler works and we're hoping you all
->>> will consider participating in the micro-conf to help guide what kinds
->>> of ideas are likely to make it upstream.
->>>
->>> If you have ongoing work or ideas in the the following areas we're
->>> especially interested in hearing from you:
->>>   1. Consolidation of statistics with other frameworks (cpuidle,
->>> cpufreq, scheduler all seem to track their own statistics related to
->>> load, idleness, etc. Can this be converted to a library that is
->>> useable by all?)
->>>   2. Replacement for task consolidation on fewer CPUs aka. replacement
->>> for sched_mc
->>>   3. Improvement in the placement of activity beside tasks: timer,
->>> workqueue, IO, interruption
->>>   4. Instrumentation to calculate the compute capacity available on
->>> active cores and its utilization by a given workload
->>>
->>> We are thinking of organising the micro-conf as a Q&  A session where
->>> a participant would state a problem and then there would be
->>> brainstorming on if this is indeed a problem and is so, how to achieve
->>> a solution. In other words, 20-30 minute slots of each Q&  A
->>>
->>> 1. Problem statements with specific examples on why changing the
->>> default scheduler policy is desired
->>> 2. For each problem, if it is deemed not possible to accomplish easily
->>> today, brainstorming on what an acceptable solution would look like
->>> (frameworks to build upon, interfaces to use, related work in the
->>> area, key people to involve, etc.)
->>>
->>> Please email us if you will be attending the conference and interested
->>> in talking about this problem space.
->>>
->>> Regards,
->>> Amit&  Vincent
->>
->>
+> diff --git a/kernel/trace/trace.c b/kernel/trace/trace.c
+> index ed7b5d1e12f4..54df9a672fd9 100644
+> --- a/kernel/trace/trace.c
+> +++ b/kernel/trace/trace.c
+> @@ -4367,6 +4367,9 @@ static void tracing_init_debugfs_percpu(long cpu)
+>  	struct dentry *d_cpu;
+>  	char cpu_dir[30]; /* 30 characters should be more than enough */
+>  
+> +	if (!d_percpu)
+> +		return;
+> +
+>  	snprintf(cpu_dir, 30, "cpu%ld", cpu);
+>  	d_cpu = debugfs_create_dir(cpu_dir, d_percpu);
+>  	if (!d_cpu) {
