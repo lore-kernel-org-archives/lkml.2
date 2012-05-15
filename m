@@ -1,48 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965188Ab2EOPXP (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 May 2012 11:23:15 -0400
-Received: from tundra.namei.org ([65.99.196.166]:32798 "EHLO tundra.namei.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S964963Ab2EOPXN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 May 2012 11:23:13 -0400
-Date: Wed, 16 May 2012 01:14:27 +1000 (EST)
-From: James Morris <jmorris@namei.org>
-To: Mimi Zohar <zohar@linux.vnet.ibm.com>
-cc: Mimi Zohar <zohar@us.ibm.com>, linux-security-module@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Al Viro <viro@ZenIV.linux.org.uk>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: Re: [PATCH] vfs: fix IMA lockdep circular locking dependency
-In-Reply-To: <1337043086.25191.3.camel@falcor>
-Message-ID: <alpine.LRH.2.02.1205160113550.939@tundra.namei.org>
-References: <1336963631-3541-1-git-send-email-zohar@us.ibm.com>  <alpine.LRH.2.02.1205151028450.26396@tundra.namei.org> <1337043086.25191.3.camel@falcor>
-User-Agent: Alpine 2.02 (LRH 1266 2009-07-14)
+	id S1758459Ab2EOPZ2 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 May 2012 11:25:28 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:44671 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753207Ab2EOPZ0 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 May 2012 11:25:26 -0400
+Message-ID: <4FB2755F.9020606@gmail.com>
+Date: Tue, 15 May 2012 09:25:19 -0600
+From: David Ahern <dsahern@gmail.com>
+User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.7; rv:12.0) Gecko/20120428 Thunderbird/12.0.1
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+To: Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+CC: Linus Torvalds <torvalds@linux-foundation.org>,
+        Ingo Molnar <mingo@redhat.com>, linux-kernel@vger.kernel.org
+Subject: Re: Perf events warning..
+References: <CA+55aFzNQqa9nuhZUog-+B0SfU6ip_QSt73R=2Du=M2ua1cFBA@mail.gmail.com>  <1337034048.27020.137.camel@laptop>  <CA+55aFxHw_SOX7fvcwskwP0qvLwyeXxTFjk589pnQtmYevhvpw@mail.gmail.com> <1337078996.27694.26.camel@twins>
+In-Reply-To: <1337078996.27694.26.camel@twins>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 14 May 2012, Mimi Zohar wrote:
+On 5/15/12 4:49 AM, Peter Zijlstra wrote:
+> On Mon, 2012-05-14 at 15:25 -0700, Linus Torvalds wrote:
+>> On Mon, May 14, 2012 at 3:20 PM, Peter Zijlstra<a.p.zijlstra@chello.nl>  wrote:
+>>>
+>>> So far I can't make any of the things I came up stick. You ran something
+>>> simple like: 'perf record -e cycles:pp -F 20000 make test' ? Or did you
+>>> do something more interesting?
+>>
+>> It was not much more complex than that.
+>>
+>> It did use "make -j64 test" to make the load a *bit* more interesting
+>> (and go noticeably faster), but other than that you got it.
+>
+> OK, that limits the scope of crazy scenarios I have to consider, still
+> no immediate clue though..
+>
+> I think I've found a possible race, but I can't make it work with that
+> workload. I've also let your workload run for 2+ hours in trying to
+> reproduce, but no luck, it must be a very narrow window indeed.
+>
+> I'll keep prodding at it..
 
-> On Tue, 2012-05-15 at 10:29 +1000, James Morris wrote:
-> > On Sun, 13 May 2012, Mimi Zohar wrote:
-> > 
-> > > From: Mimi Zohar <zohar@linux.vnet.ibm.com>
-> > > 
-> > > This patch has been updated to move the ima_file_mmap() call from
-> > > security_file_mmap() to the new vm_mmap() function.
-> > 
-> > Which kernel is this for?
-> 
-> Commit #6be5ceb(VM: add "vm_mmap()" helper function) is in Linus' master
-> tree, but the posted patch is against linux-security/next.
+Perhaps it is specific to processor generation? Yesterday I noted that 
+perf-stat -g trips a WARNING only on Nehalem. Westmere works fine - 
+perf-stat -g generates output and no warning is triggered. Arnaldo is 
+using Sandy Bridge - though it's not clear if his success (3.4.0-rc3 on 
+server named sandy) or fail (3.4.0-rc4-uprobes on felicio) was on a SNB.
 
-I'm still not sure what the answer is :-)
-
-Can this wait until 3.5-rc1?
-
-
--- 
-James Morris
-<jmorris@namei.org>
+David
