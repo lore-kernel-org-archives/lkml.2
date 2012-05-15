@@ -1,68 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964973Ab2EOOr2 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 May 2012 10:47:28 -0400
-Received: from e35.co.us.ibm.com ([32.97.110.153]:34097 "EHLO
-	e35.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S964782Ab2EOOr0 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 May 2012 10:47:26 -0400
-Date: Tue, 15 May 2012 07:46:58 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Eric Paris <eparis@parisplace.org>
-Cc: Dave Jones <davej@redhat.com>, sds@tycho.nsa.gov,
-        Linux Kernel <linux-kernel@vger.kernel.org>, paul@paul-moore.com
-Subject: Re: suspicious RCU usage in security/selinux/netnode.c
-Message-ID: <20120515144658.GC2461@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <20120515044145.GA21910@redhat.com>
- <20120515051607.GH2412@linux.vnet.ibm.com>
- <CACLa4psGwEC96GfonAJ+-v0ocdvb_ZBxB6v=zAXbnbqFmuCNuA@mail.gmail.com>
+	id S1758352Ab2EOOsX (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 May 2012 10:48:23 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:42418 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757448Ab2EOOsV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 May 2012 10:48:21 -0400
+Date: Tue, 15 May 2012 17:48:10 +0300
+From: Gleb Natapov <gleb@redhat.com>
+To: Alan Cox <alan@lxorguk.ukuu.org.uk>
+Cc: Hannes Reinecke <hare@suse.de>, LKML <linux-kernel@vger.kernel.org>,
+        "H. Peter Anvin" <hpa@linux.intel.com>
+Subject: Re: [PATCH] EDD: Check for correct EDD 3.0 length
+Message-ID: <20120515144810.GE6948@redhat.com>
+References: <1337079889-62380-1-git-send-email-hare@suse.de>
+ <20120515111255.GJ32036@redhat.com>
+ <4FB23C09.7060300@suse.de>
+ <20120515115917.GK32036@redhat.com>
+ <20120515144945.339e742f@pyramind.ukuu.org.uk>
+ <20120515141214.GB6948@redhat.com>
+ <20120515151849.54a12175@pyramind.ukuu.org.uk>
+ <20120515142129.GC6948@redhat.com>
+ <20120515153614.4b5b4525@pyramind.ukuu.org.uk>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <CACLa4psGwEC96GfonAJ+-v0ocdvb_ZBxB6v=zAXbnbqFmuCNuA@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 12051514-6148-0000-0000-000005DC40AA
+In-Reply-To: <20120515153614.4b5b4525@pyramind.ukuu.org.uk>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, May 15, 2012 at 10:24:23AM -0400, Eric Paris wrote:
-> On Tue, May 15, 2012 at 1:16 AM, Paul E. McKenney
-> <paulmck@linux.vnet.ibm.com> wrote:
-> > On Tue, May 15, 2012 at 12:41:45AM -0400, Dave Jones wrote:
-> >> I just triggered this on Linus' current tree.
-> >
-> > This is a bare:
-> >
-> >        rcu_dereference(sel_netnode_hash[idx].list.prev)
-> >
-> > which needs to be in an RCU read-side critical section.  Alternatively,
-> > the above should instead be something like:
-> >
-> >        rcu_dereference_check(sel_netnode_hash[idx].list.prev,
-> >                              lockdep_is_held(&sel_netnode_lock));
+On Tue, May 15, 2012 at 03:36:14PM +0100, Alan Cox wrote:
+> On Tue, 15 May 2012 17:21:29 +0300
+> Gleb Natapov <gleb@redhat.com> wrote:
 > 
-> Right, but that 'bare' dereference comes from
-> list_for_each_entry_rcu(), [from sel_netnode_sid_slow()] which I don't
-> see how to easily annotate with the lock.  Nor do I think it's within
-> my brain power (or my willingness to maintain such in the future) to
-> want to open code that logic.
+> > On Tue, May 15, 2012 at 03:18:49PM +0100, Alan Cox wrote:
+> > > On Tue, 15 May 2012 17:12:14 +0300
+> > > Gleb Natapov <gleb@redhat.com> wrote:
+> > > 
+> > > > On Tue, May 15, 2012 at 02:49:45PM +0100, Alan Cox wrote:
+> > > > > > I do not see support for other spec to be important, but you are welcome
+> > > > > > to write support for it if you need it. The only way I see to check what
+> > > > > > spec edd info corresponds to is to calculate checksum according to both
+> > > > > > specs and see which one succeeds.
+> > > > > 
+> > > > > No it doesn't work like that. This is a regression for existing working
+> > > > > systems. It needs to be reverted or fixed. If it was a new feature you'd
+> > > > > have a point - but it isn't. You've broken stuff, undo the breakage.
+> > > > > 
+> > > > Code never supported anything but EDD4.0 spec. I checked history git.
+> > > > Code erroneously tried to interpret EDD3.0 info according to EDD4.0 spec
+> > > > providing garbage as a result.
+> > > 
+> > > Providing some valid data and info, which has now disappeared.
+> > > 
+> > False. See my other mail:
+> > 
+> > # cat /sys/firmware/edd/int13_dev80/interface
+> > SCSI            id: 0  lun: 1224979098644774912
+> > 
+> > This is what I got on my system. How is it useful?
+> 
+> Sample case of .. 1
+> 
+Not one. Any system with SCSI disk. Revert the patch and check on yours.
 
-You lost me on this one.  The lockdep splat called out the
-rcu_dereference() above, not a list_for_each_entry_rcu().  Besides which,
-the list_for_each_entry_rcu() does not do the checking -- at the time,
-I was not willing to explode the API that much.
+> Have you checked how the various distribution grub installers and the
+> like respond to the various changes or having bits of their edd data
+> vanish mysteriously ?
+> 
+That's how I entered this mess in the first place. Fedora/RHEL installer
+didn't check edd info at all (no wonder, it was useless). It used mbr
+signature to match HDD to int13. For vitalization this approach does not
+work since usually disk images are unformatted, so I wanted to use EDD
+info. That is when I found this bug and that phoenix EDD3 does not
+provide enough info to match even basic things like ATA or SCSI.
 
-> Should we just take the rcu_read_lock() where we take the spinlock?
-> Is that a perf hit and figuring out how to do the annotation correctly
-> is the better idea?
+> It's been this way for a long time, there is no rush to fix it. So we
+> should fix it properly not break stuff.
+> 
+> Actual systems in the field are using both 3.0 and 4.0 so we need to deal
+> with that as part of fixing this. That is the reality of the situation.
+Again let me correct myself. This is not about 3.0 versus 4.0. This is
+about Phoenix vs T13 spec. The code was written to support only T13.
 
-If the spinlock is protecting the data, then just add the spinlock
-to the rcu_dereference_check() as shown above.
+> 
+> 1.1 I suspect we can not care about.
+> 
+> Alan
 
-							Thanx, Paul
-
+--
+			Gleb.
