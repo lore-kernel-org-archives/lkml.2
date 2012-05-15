@@ -1,17 +1,17 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965838Ab2EOCTB (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 May 2012 22:19:01 -0400
-Received: from mail.windriver.com ([147.11.1.11]:49688 "EHLO
-	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965164Ab2EOCRY (ORCPT
+	id S965826Ab2EOCTA (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 May 2012 22:19:00 -0400
+Received: from mail1.windriver.com ([147.11.146.13]:53354 "EHLO
+	mail1.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S965069Ab2EOCRN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 May 2012 22:17:24 -0400
+	Mon, 14 May 2012 22:17:13 -0400
 From: Paul Gortmaker <paul.gortmaker@windriver.com>
 To: <stable@kernel.org>, <linux-kernel@vger.kernel.org>
-Subject: [34-longterm 104/179] udp/recvmsg: Clear MSG_TRUNC flag when starting over for a new packet
-Date: Mon, 14 May 2012 22:13:20 -0400
-Message-ID: <1337048075-6132-105-git-send-email-paul.gortmaker@windriver.com>
+Subject: [34-longterm 090/179] i2c-taos-evm: Fix log messages
+Date: Mon, 14 May 2012 22:13:06 -0400
+Message-ID: <1337048075-6132-91-git-send-email-paul.gortmaker@windriver.com>
 X-Mailer: git-send-email 1.7.9.6
 In-Reply-To: <1337048075-6132-1-git-send-email-paul.gortmaker@windriver.com>
 References: <1337048075-6132-1-git-send-email-paul.gortmaker@windriver.com>
@@ -21,7 +21,7 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Xufeng Zhang <xufeng.zhang@windriver.com>
+From: Jean Delvare <khali@linux-fr.org>
 
                    -------------------
     This is a commit scheduled for the next v2.6.34 longterm release.
@@ -29,56 +29,58 @@ From: Xufeng Zhang <xufeng.zhang@windriver.com>
     If you see a problem with using this for longterm, please comment.
                    -------------------
 
-commit 9cfaa8def1c795a512bc04f2aec333b03724ca2e upstream.
+commit 9b640f2e154268cb516efcaf9c434f2e73c6783e upstream.
 
-Consider this scenario: When the size of the first received udp packet
-is bigger than the receive buffer, MSG_TRUNC bit is set in msg->msg_flags.
-However, if checksum error happens and this is a blocking socket, it will
-goto try_again loop to receive the next packet.  But if the size of the
-next udp packet is smaller than receive buffer, MSG_TRUNC flag should not
-be set, but because MSG_TRUNC bit is not cleared in msg->msg_flags before
-receive the next packet, MSG_TRUNC is still set, which is wrong.
+* Print all error and information messages even when debugging is
+  disabled.
+* Don't use adapter device to log messages before it is ready.
 
-Fix this problem by clearing MSG_TRUNC flag when starting over for a
-new packet.
-
-Signed-off-by: Xufeng Zhang <xufeng.zhang@windriver.com>
-Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+Signed-off-by: Jean Delvare <khali@linux-fr.org>
 Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
 ---
- net/ipv4/udp.c |    3 +++
- net/ipv6/udp.c |    3 +++
- 2 files changed, 6 insertions(+)
+ drivers/i2c/busses/i2c-taos-evm.c |    8 ++++----
+ 1 file changed, 4 insertions(+), 4 deletions(-)
 
-diff --git a/net/ipv4/udp.c b/net/ipv4/udp.c
-index ff6a18e..7932dc6 100644
---- a/net/ipv4/udp.c
-+++ b/net/ipv4/udp.c
-@@ -1203,6 +1203,9 @@ csum_copy_err:
+diff --git a/drivers/i2c/busses/i2c-taos-evm.c b/drivers/i2c/busses/i2c-taos-evm.c
+index dd39c1e..26c352a 100644
+--- a/drivers/i2c/busses/i2c-taos-evm.c
++++ b/drivers/i2c/busses/i2c-taos-evm.c
+@@ -234,7 +234,7 @@ static int taos_connect(struct serio *serio, struct serio_driver *drv)
  
- 	if (noblock)
- 		return -EAGAIN;
-+
-+	/* starting over for a new packet */
-+	msg->msg_flags &= ~MSG_TRUNC;
- 	goto try_again;
+ 	if (taos->state != TAOS_STATE_IDLE) {
+ 		err = -ENODEV;
+-		dev_dbg(&serio->dev, "TAOS EVM reset failed (state=%d, "
++		dev_err(&serio->dev, "TAOS EVM reset failed (state=%d, "
+ 			"pos=%d)\n", taos->state, taos->pos);
+ 		goto exit_close;
+ 	}
+@@ -255,7 +255,7 @@ static int taos_connect(struct serio *serio, struct serio_driver *drv)
+ 					 msecs_to_jiffies(250));
+ 	if (taos->state != TAOS_STATE_IDLE) {
+ 		err = -ENODEV;
+-		dev_err(&adapter->dev, "Echo off failed "
++		dev_err(&serio->dev, "TAOS EVM echo off failed "
+ 			"(state=%d)\n", taos->state);
+ 		goto exit_close;
+ 	}
+@@ -263,7 +263,7 @@ static int taos_connect(struct serio *serio, struct serio_driver *drv)
+ 	err = i2c_add_adapter(adapter);
+ 	if (err)
+ 		goto exit_close;
+-	dev_dbg(&serio->dev, "Connected to TAOS EVM\n");
++	dev_info(&serio->dev, "Connected to TAOS EVM\n");
+ 
+ 	taos->client = taos_instantiate_device(adapter);
+ 	return 0;
+@@ -288,7 +288,7 @@ static void taos_disconnect(struct serio *serio)
+ 	serio_set_drvdata(serio, NULL);
+ 	kfree(taos);
+ 
+-	dev_dbg(&serio->dev, "Disconnected from TAOS EVM\n");
++	dev_info(&serio->dev, "Disconnected from TAOS EVM\n");
  }
  
-diff --git a/net/ipv6/udp.c b/net/ipv6/udp.c
-index a0a6a08..a1d3d32 100644
---- a/net/ipv6/udp.c
-+++ b/net/ipv6/udp.c
-@@ -443,6 +443,9 @@ csum_copy_err:
- 
- 	if (noblock)
- 		return -EAGAIN;
-+
-+	/* starting over for a new packet */
-+	msg->msg_flags &= ~MSG_TRUNC;
- 	goto try_again;
- }
- 
+ static struct serio_device_id taos_serio_ids[] = {
 -- 
 1.7.9.6
 
