@@ -1,94 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758333Ab2EOAyE (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 May 2012 20:54:04 -0400
-Received: from e34.co.us.ibm.com ([32.97.110.152]:57357 "EHLO
-	e34.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758264Ab2EOAyC (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 May 2012 20:54:02 -0400
-Date: Mon, 14 May 2012 17:53:03 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Vincent Guittot <vincent.guittot@linaro.org>
-Cc: smuckle@quicinc.com, khilman@ti.com, Robin.Randhawa@arm.com,
-        suresh.b.siddha@intel.com, thebigcorporation@gmail.com,
-        venki@google.com, peterz@infradead.org, panto@antoniou-consulting.com,
-        mingo@elte.hu, paul.brett@intel.com, pdeschrijver@nvidia.com,
-        pjt@google.com, efault@gmx.de, fweisbec@gmail.com, geoff@infradead.org,
-        rostedt@goodmis.org, tglx@linutronix.de, amit.kucheria@linaro.org,
-        linux-kernel@vger.kernel.org, linaro-sched-sig@lists.linaro.org
-Subject: Re: Plumbers: Tweaking scheduler policy micro-conf RFP
-Message-ID: <20120515005303.GA9729@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <CAKfTPtDSDAOAdv0GTDswZeRM7TmACrjok+5kddSaQpvy6_6xWw@mail.gmail.com>
+	id S932706Ab2EOBHo (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 May 2012 21:07:44 -0400
+Received: from mga09.intel.com ([134.134.136.24]:28814 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757560Ab2EOBHn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 14 May 2012 21:07:43 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.67,352,1309762800"; 
+   d="scan'208";a="140645745"
+Message-ID: <4FB1AC03.2070407@intel.com>
+Date: Tue, 15 May 2012 09:06:11 +0800
+From: Alex Shi <alex.shi@intel.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:9.0) Gecko/20111229 Thunderbird/9.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAKfTPtDSDAOAdv0GTDswZeRM7TmACrjok+5kddSaQpvy6_6xWw@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 12051500-1780-0000-0000-000005944998
-X-IBM-ISS-SpamDetectors: 
-X-IBM-ISS-DetailInfo: BY=3.00000275; HX=3.00000188; KW=3.00000007;
- PH=3.00000001; SC=3.00000002; SDB=6.00139233; UDB=6.00032302; UTC=2012-05-15
- 00:53:56
+To: Borislav Petkov <bp@amd64.org>
+CC: rob@landley.net, tglx@linutronix.de, mingo@redhat.com, hpa@zytor.com,
+        arnd@arndb.de, rostedt@goodmis.org, fweisbec@gmail.com,
+        jeremy@goop.org, gregkh@linuxfoundation.org, borislav.petkov@amd.com,
+        riel@redhat.com, luto@mit.edu, avi@redhat.com, len.brown@intel.com,
+        dhowells@redhat.com, fenghua.yu@intel.com, ak@linux.intel.com,
+        cpw@sgi.com, steiner@sgi.com, akpm@linux-foundation.org,
+        penberg@kernel.org, hughd@google.com, rientjes@google.com,
+        kosaki.motohiro@jp.fujitsu.com, n-horiguchi@ah.jp.nec.com,
+        paul.gortmaker@windriver.com, trenn@suse.de, tj@kernel.org,
+        oleg@redhat.com, axboe@kernel.dk, a.p.zijlstra@chello.nl,
+        kamezawa.hiroyu@jp.fujitsu.com, viro@zeniv.linux.org.uk,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v4 3/7] x86/flush_tlb: try flush_tlb_single one by one
+ in flush_tlb_range
+References: <1336626013-28413-1-git-send-email-alex.shi@intel.com> <1336626013-28413-4-git-send-email-alex.shi@intel.com> <20120510084213.GD30055@aftab.osrc.amd.com> <4FAB84B6.7060706@intel.com> <4FAE18D0.6050001@intel.com> <20120513111328.GD28863@aftab.osrc.amd.com>
+In-Reply-To: <20120513111328.GD28863@aftab.osrc.amd.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, May 11, 2012 at 06:16:21PM +0200, Vincent Guittot wrote:
-> This is a request-for-participation in a micro conference during the
-> next Linux Plumber Conference (29-31st Aug).
-> It'll require critical mass measured in talk submissions in the
-> general area of scheduler and task management.
 
-Hello, Vincent,
+> --
+> 
+> Oh well, enough games :-).
+> 
 
-I still cannot claim any particular scheduler expertise, but would be
-happy to act as moderator, if you would like.
 
-							Thanx, Paul
 
-> If you're working on improving the the scheduler policy used to place
-> a task on a CPU to suit your HW, we are inviting your participation
-> and request you to submit a proposal to present your problem (e.g.
-> power-efficiency) or a solution to solve said problem that should be
-> considered by upstream developers.
-> 
-> We've interacted with the people in To: list before in our quest to
-> better understand how the scheduler works and we're hoping you all
-> will consider participating in the micro-conf to help guide what kinds
-> of ideas are likely to make it upstream.
-> 
-> If you have ongoing work or ideas in the the following areas we're
-> especially interested in hearing from you:
->  1. Consolidation of statistics with other frameworks (cpuidle,
-> cpufreq, scheduler all seem to track their own statistics related to
-> load, idleness, etc. Can this be converted to a library that is
-> useable by all?)
->  2. Replacement for task consolidation on fewer CPUs aka. replacement
-> for sched_mc
->  3. Improvement in the placement of activity beside tasks: timer,
-> workqueue, IO, interruption
->  4. Instrumentation to calculate the compute capacity available on
-> active cores and its utilization by a given workload
-> 
-> We are thinking of organising the micro-conf as a Q & A session where
-> a participant would state a problem and then there would be
-> brainstorming on if this is indeed a problem and is so, how to achieve
-> a solution. In other words, 20-30 minute slots of each Q & A
-> 
-> 1. Problem statements with specific examples on why changing the
-> default scheduler policy is desired
-> 2. For each problem, if it is deemed not possible to accomplish easily
-> today, brainstorming on what an acceptable solution would look like
-> (frameworks to build upon, interfaces to use, related work in the
-> area, key people to involve, etc.)
-> 
-> Please email us if you will be attending the conference and interested
-> in talking about this problem space.
-> 
-> Regards,
-> Amit & Vincent
-> 
+
+Thanks for your input. but actually, total 3 labels doesn't looks good.
+Maybe the following lines can meet your expectation.
+
+---
+void __flush_tlb_range(struct mm_struct *mm, unsigned long start,
+				unsigned long end, unsigned long vmflag)
+{
+	unsigned long addr;
+	unsigned act_entries, tlb_entries = 0;
+
+	preempt_disable();
+	if (current->active_mm != mm)
+		goto flush_all;
+
+	if (!current->mm) {
+		leave_mm(smp_processor_id());
+		goto flush_all;
+	}
+
+	if (end == TLB_FLUSH_ALL ||
+			tlb_flushall_shift == (u16)TLB_FLUSH_ALL) {
+		local_flush_tlb();
+		goto flush_all;
+	}
+
+	if (vmflag & VM_EXEC)
+		tlb_entries = tlb_lli_4k[ENTRIES];
+	else
+		tlb_entries = tlb_lld_4k[ENTRIES];
+	act_entries = mm->total_vm > tlb_entries ? tlb_entries : mm->total_vm;
+
+	if ((end - start) >> PAGE_SHIFT > act_entries >> tlb_flushall_shift)
+		local_flush_tlb();
+	else {
+		if (has_large_page(mm, start, end)) {
+			local_flush_tlb();
+			goto flush_all;
+		}
+		for (addr = start; addr <= end;	addr += PAGE_SIZE)
+			__flush_tlb_single(addr);
+
+		if (cpumask_any_but(mm_cpumask(mm),
+				smp_processor_id()) < nr_cpu_ids)
+			flush_tlb_others(mm_cpumask(mm), mm, start, end);
+		preempt_enable();
+		return;
+	}
+
+flush_all:
+	if (cpumask_any_but(mm_cpumask(mm), smp_processor_id()) < nr_cpu_ids)
+		flush_tlb_others(mm_cpumask(mm), mm, 0UL, TLB_FLUSH_ALL);
+	preempt_enable();
+}
+
 
