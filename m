@@ -1,17 +1,17 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965532Ab2EOCST (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 May 2012 22:18:19 -0400
-Received: from mail1.windriver.com ([147.11.146.13]:53039 "EHLO
+	id S965540Ab2EOC1E (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 May 2012 22:27:04 -0400
+Received: from mail1.windriver.com ([147.11.146.13]:53555 "EHLO
 	mail1.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S964899Ab2EOCQd (ORCPT
+	with ESMTP id S965525Ab2EOCST (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 May 2012 22:16:33 -0400
+	Mon, 14 May 2012 22:18:19 -0400
 From: Paul Gortmaker <paul.gortmaker@windriver.com>
 To: <stable@kernel.org>, <linux-kernel@vger.kernel.org>
-Subject: [34-longterm 042/179] PCI: Add quirk for setting valid class for TI816X Endpoint
-Date: Mon, 14 May 2012 22:12:18 -0400
-Message-ID: <1337048075-6132-43-git-send-email-paul.gortmaker@windriver.com>
+Subject: [34-longterm 171/179] fuse: check size of FUSE_NOTIFY_INVAL_ENTRY message
+Date: Mon, 14 May 2012 22:14:27 -0400
+Message-ID: <1337048075-6132-172-git-send-email-paul.gortmaker@windriver.com>
 X-Mailer: git-send-email 1.7.9.6
 In-Reply-To: <1337048075-6132-1-git-send-email-paul.gortmaker@windriver.com>
 References: <1337048075-6132-1-git-send-email-paul.gortmaker@windriver.com>
@@ -21,7 +21,7 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Hemant Pedanekar <hemantp@ti.com>
+From: Miklos Szeredi <mszeredi@suse.cz>
 
                    -------------------
     This is a commit scheduled for the next v2.6.34 longterm release.
@@ -29,49 +29,34 @@ From: Hemant Pedanekar <hemantp@ti.com>
     If you see a problem with using this for longterm, please comment.
                    -------------------
 
-commit 63c4408074cbcc070ac17fc10e524800eb9bd0b0 upstream.
+commit c2183d1e9b3f313dd8ba2b1b0197c8d9fb86a7ae upstream.
 
-TI816X (common name for DM816x/C6A816x/AM389x family) devices configured
-to boot as PCIe Endpoint have class code = 0. This makes kernel PCI bus
-code to skip allocating BARs to these devices resulting into following
-type of error when trying to enable them:
+FUSE_NOTIFY_INVAL_ENTRY didn't check the length of the write so the
+message processing could overrun and result in a "kernel BUG at
+fs/fuse/dev.c:629!"
 
-"Device 0000:01:00.0 not available because of resource collisions"
-
-The device cannot be operated because of the above issue.
-
-This patch adds a ID specific (TI VENDOR ID and 816X DEVICE ID based)
-'early' fixup quirk to replace class code with
-PCI_CLASS_MULTIMEDIA_VIDEO as class.
-
-Signed-off-by: Hemant Pedanekar <hemantp@ti.com>
-Signed-off-by: Jesse Barnes <jbarnes@virtuousgeek.org>
+Reported-by: Han-Wen Nienhuys <hanwenn@gmail.com>
+Signed-off-by: Miklos Szeredi <mszeredi@suse.cz>
 Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
 ---
- drivers/pci/quirks.c |   10 ++++++++++
- 1 file changed, 10 insertions(+)
+ fs/fuse/dev.c |    4 ++++
+ 1 file changed, 4 insertions(+)
 
-diff --git a/drivers/pci/quirks.c b/drivers/pci/quirks.c
-index 46aca60..6938fdc 100644
---- a/drivers/pci/quirks.c
-+++ b/drivers/pci/quirks.c
-@@ -2682,6 +2682,16 @@ DECLARE_PCI_FIXUP_EARLY(PCI_VENDOR_ID_INTEL, 0x342e, vtd_mask_spec_errors);
- DECLARE_PCI_FIXUP_EARLY(PCI_VENDOR_ID_INTEL, 0x3c28, vtd_mask_spec_errors);
- #endif
+diff --git a/fs/fuse/dev.c b/fs/fuse/dev.c
+index c235afc..9897fe3 100644
+--- a/fs/fuse/dev.c
++++ b/fs/fuse/dev.c
+@@ -901,6 +901,10 @@ static int fuse_notify_inval_entry(struct fuse_conn *fc, unsigned int size,
+ 	if (outarg.namelen > FUSE_NAME_MAX)
+ 		goto err;
  
-+static void __devinit fixup_ti816x_class(struct pci_dev* dev)
-+{
-+	/* TI 816x devices do not have class code set when in PCIe boot mode */
-+	if (dev->class == PCI_CLASS_NOT_DEFINED) {
-+		dev_info(&dev->dev, "Setting PCI class for 816x PCIe device\n");
-+		dev->class = PCI_CLASS_MULTIMEDIA_VIDEO;
-+	}
-+}
-+DECLARE_PCI_FIXUP_EARLY(PCI_VENDOR_ID_TI, 0xb800, fixup_ti816x_class);
++	err = -EINVAL;
++	if (size != sizeof(outarg) + outarg.namelen + 1)
++		goto err;
 +
- static void pci_do_fixups(struct pci_dev *dev, struct pci_fixup *f,
- 			  struct pci_fixup *end)
- {
+ 	name.name = buf;
+ 	name.len = outarg.namelen;
+ 	err = fuse_copy_one(cs, buf, outarg.namelen + 1);
 -- 
 1.7.9.6
 
