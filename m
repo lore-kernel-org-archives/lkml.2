@@ -1,77 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965033Ab2EOSLx (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 May 2012 14:11:53 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:50074 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932628Ab2EOSLv (ORCPT
+	id S966034Ab2EOSNr (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 May 2012 14:13:47 -0400
+Received: from mail-qa0-f46.google.com ([209.85.216.46]:48892 "EHLO
+	mail-qa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S964784Ab2EOSNq convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 May 2012 14:11:51 -0400
-Date: Tue, 15 May 2012 19:11:32 +0100
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Graeme Gregory <gg@slimlogic.co.uk>
-Cc: linux-kernel@vger.kernel.org, sameo@linux.intel.com, lrg@ti.com,
-        b-cousson@ti.com, linux-omap@vger.kernel.org
-Subject: Re: [PATCH 3/4] REGULATOR: regulator driver for Palmas series chips
-Message-ID: <20120515181101.GC19592@opensource.wolfsonmicro.com>
-References: <1336960712-2812-1-git-send-email-gg@slimlogic.co.uk>
- <1336960712-2812-4-git-send-email-gg@slimlogic.co.uk>
- <20120514085223.GH31985@opensource.wolfsonmicro.com>
- <4FB1F3DD.3060005@slimlogic.co.uk>
+	Tue, 15 May 2012 14:13:46 -0400
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="rQ2U398070+RC21q"
-Content-Disposition: inline
-In-Reply-To: <4FB1F3DD.3060005@slimlogic.co.uk>
-X-Cookie: You look tired.
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20120515163016.GA4062@dirshya.in.ibm.com>
+References: <CAKfTPtDSDAOAdv0GTDswZeRM7TmACrjok+5kddSaQpvy6_6xWw@mail.gmail.com>
+	<CAKfTPtCfiY7A29+e50F+6awd8BjNJjg4=uNN4ReZfdS_4FbpkA@mail.gmail.com>
+	<1337084609.27020.156.camel@laptop>
+	<CAKfTPtDz1-fR2i5x7AVd8sGZhX2VNtz2rnQC3ePrcHO9MWK3FQ@mail.gmail.com>
+	<1337086834.27020.162.camel@laptop>
+	<CAKfTPtDrZ-tfC81jnxwpB+DCtmxhU+VfoYbtSBr8MkFt+P8JcA@mail.gmail.com>
+	<20120515163016.GA4062@dirshya.in.ibm.com>
+Date: Tue, 15 May 2012 20:13:45 +0200
+Message-ID: <CAKfTPtA=qTVo618uerSDNbGQfM4xXZkWujefR0pi3panr0df4A@mail.gmail.com>
+Subject: Re: Plumbers: Tweaking scheduler policy micro-conf RFP
+From: Vincent Guittot <vincent.guittot@linaro.org>
+To: svaidy@linux.vnet.ibm.com
+Cc: Peter Zijlstra <peterz@infradead.org>, paulmck@linux.vnet.ibm.com,
+        smuckle@quicinc.com, khilman@ti.com, Robin.Randhawa@arm.com,
+        suresh.b.siddha@intel.com, thebigcorporation@gmail.com,
+        venki@google.com, panto@antoniou-consulting.com, mingo@elte.hu,
+        paul.brett@intel.com, pdeschrijver@nvidia.com, pjt@google.com,
+        efault@gmx.de, fweisbec@gmail.com, geoff@infradead.org,
+        rostedt@goodmis.org, tglx@linutronix.de, amit.kucheria@linaro.org,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        linaro-sched-sig@lists.linaro.org,
+        Morten Rasmussen <Morten.Rasmussen@arm.com>,
+        Juri Lelli <juri.lelli@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 15 May 2012 18:30, Vaidyanathan Srinivasan <svaidy@linux.vnet.ibm.com> wrote:
+> * Vincent Guittot <vincent.guittot@linaro.org> [2012-05-15 17:05:47]:
+>
+>> On 15 May 2012 15:00, Peter Zijlstra <peterz@infradead.org> wrote:
+>> > On Tue, 2012-05-15 at 14:57 +0200, Vincent Guittot wrote:
+>> >>
+>> >> Not sure that nobody cares but it's much more that scheduler,
+>> >> load_balance and sched_mc are sensible enough that it's difficult to
+>> >> ensure that a modification will not break everything for someone
+>> >> else.
+>> >
+>> > Thing is, its already broken, there's nothing else to break :-)
+>> >
+>>
+>> sched_mc is the only power-aware knob in the current scheduler. It's
+>> far from being perfect but it seems to work on some ARM platform at
+>> least. You mentioned at the scheduler mini-summit that we need a
+>> cleaner replacement and everybody has agreed on that point. Is anybody
+>> working on it yet ? and can we discuss at Plumber's what this
+>> replacement would look like ?
+>
+> Hi Vincent,
+>
+> In the earlier discussion we listed down the cleanup requirements.
+> I made a cleanup patch that unifies the sysfs interface as a first
+> step.
+>
+> [RFC PATCH v1 0/2] sched: unified sched_powersavings tunables
+> http://thread.gmane.org/gmane.linux.kernel/1239750
+>
+> I need to make this scheme generically work on different topology,
+> which is the real problem that we need to solve.
 
---rQ2U398070+RC21q
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+Hi Vaidy
 
-On Tue, May 15, 2012 at 03:12:45PM +0900, Graeme Gregory wrote:
-> On 14/05/12 17:52, Mark Brown wrote:
-> > On Mon, May 14, 2012 at 10:58:31AM +0900, Graeme Gregory wrote:
+Your cleanup patch should not impact current ARM platform. IIUC, you
+have merged sched_mc and sched_smt interface and there is no ARM
+platform with SMT yet
 
-> >> +
-> >> +	palmas_ldo_write(pmic->palmas, palmas_regs_info[id].ctrl_addr, reg);
-
-> > Could use the core regmap stuff for the LDOs too.
-
-> Enable/Disable now use regmap but is_enabled cant as it reads from a
-> different bitmask.
-
-Yeah, I did notice that and actually meant to go back and say that
-really your current is_enabled() ought to be get_status().  The former
-is supposed to return what the driver request to the hardware is, the
-latter is supposed to return what the physical status is.  Not super
-critical though.
-
---rQ2U398070+RC21q
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBAgAGBQJPspwuAAoJEBus8iNuMP3dRi0P/2yFZpgseHLMtBXv0iQXSWZj
-VogO3t+xgzi/DVmj2P/BgHDRx1OVno3XjDvMGkpnRathw6pRs2MdORgCcCMhvchZ
-1ohpkUFiHFHowqR/LtNtgizRuDPvzC6vMmCAgrT4qrou1p/1+q3tKcspO/pcaOa2
-U5SkSHPZ2zSuXrXrKeWpO3nf70w5+LmblA1W4H+OgYBBq6lFysz9a1RmsD+O4fR9
-AzM7XztqkFOAMqFKgMNOFFFIr/83MSY4b3HPYNL6sDx5kGkSI7bB1rvPJtBMXcUe
-HMLNK184YfJKUIzio3jdAiRYQAal7G/dgA2oMVFgBlqWa4JL2OuoZ0EJmQQuE7Ft
-b4mIzMUD+IYJtUm2211mB15vrvBp8yGqVRP/Mf2MPrpFDMzpPM1VFRpnN7qsWpA1
-29/emLejR0+plIUUGkZEV+94mEdEaoC73wNjCGMi7A17ajyY2GHWscqsG/spRNMN
-oaU33frLuEhke6bW/8Bog5SBzuNRr+UP8sKB0tpOPF/RHrG8fO2fcPj8jMLepRnl
-SbisP8FJWo+9TWHAe/8+k7UUdGAZhBLA9kqBDZs6ZsssIz+V5DET8005c9y+++zz
-6dacY2XXk8M6bI1/flAeUQmcp5iQwkZn0NKU0DlRFXsCSd68vjGWg0FPltPCKP/k
-R9O3npDLK3kDirEwxoQk
-=f086
------END PGP SIGNATURE-----
-
---rQ2U398070+RC21q--
+Regards,
+Vincent
+>
+> --Vaidy
+>
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
