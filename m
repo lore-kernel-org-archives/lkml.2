@@ -1,48 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933372Ab2EOUpd (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 May 2012 16:45:33 -0400
-Received: from imr-ma05.mx.aol.com ([64.12.100.31]:33933 "EHLO
-	imr-ma05.mx.aol.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933165Ab2EOUpb (ORCPT
+	id S966763Ab2EOUrD (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 May 2012 16:47:03 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:57294 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933350Ab2EOUrB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 May 2012 16:45:31 -0400
-Message-Id: <201205152043.q4FKhkHs017843@imr-ma05.mx.aol.com>
-Reply-To: <femi-ajayi360@live.com>
-From: "dominick" <ABEHRENS49@AOL.COM>
-Subject: WAIT YOUR URGENT REPLY
-Date: Tue, 15 May 2012 21:43:40 +0100
-MIME-Version: 1.0
-Content-Type: text/plain;
-	charset="Windows-1251"
-Content-Transfer-Encoding: 7bit
-X-Priority: 3
-X-MSMail-Priority: Normal
-X-Mailer: Microsoft Outlook Express 6.00.2600.0000
-X-MimeOLE: Produced By Microsoft MimeOLE V6.00.2600.0000
-X-Antivirus: avast! (VPS 120515-0, 05/15/2012), Outbound message
-X-Antivirus-Status: Clean
-x-aol-global-disposition: G
-X-AOL-SCOLL-SCORE: 0:2:287167296:93952408  
-X-AOL-SCOLL-URL_COUNT: 0  
-x-aol-sid: 3039ac1d29034fb2bfef4af6
-X-AOL-IP: 41.71.188.45
-To: unlisted-recipients:; (no To-header on input)
+	Tue, 15 May 2012 16:47:01 -0400
+From: David Daney <ddaney.cavm@gmail.com>
+To: "David S. Miller" <davem@davemloft.net>, netdev@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org,
+        Paul Gortmaker <paul.gortmaker@windriver.com>,
+        David Daney <david.daney@cavium.com>
+Subject: [PATCH] netdev/phy: Make get_phy_id() static and quit EXPORTing it.
+Date: Tue, 15 May 2012 13:46:52 -0700
+Message-Id: <1337114812-3912-1-git-send-email-ddaney.cavm@gmail.com>
+X-Mailer: git-send-email 1.7.2.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+From: David Daney <david.daney@cavium.com>
 
-Am really sorry i wrote so late about my inquiry i actually traveled to china to meet with some suppliers and i just came back into town few days ago. I was able to meet with some companies and also got to see what they have for me but i was surprised because the prices are much.
+This function is only referenced from within phy_device.c, so there is
+no reason to export it.  In fact, we can make it static.
 
+Signed-off-by: David Daney <david.daney@cavium.com>
+---
+ drivers/net/phy/phy_device.c |    3 +--
+ include/linux/phy.h          |    1 -
+ 2 files changed, 1 insertions(+), 3 deletions(-)
 
-We saw a similar product on Alibaba Shopping/Business page so please confirm to us if you/your company can make provision of the exact product as shown on Alibaba Shopping/Business page which you can view by clicking the link below and login with you email address together with your password to download the attachment page to view the product. 
+diff --git a/drivers/net/phy/phy_device.c b/drivers/net/phy/phy_device.c
+index e8c42d6..de86a55 100644
+--- a/drivers/net/phy/phy_device.c
++++ b/drivers/net/phy/phy_device.c
+@@ -207,7 +207,7 @@ static struct phy_device* phy_device_create(struct mii_bus *bus,
+  * Description: Reads the ID registers of the PHY at @addr on the
+  *   @bus, stores it in @phy_id and returns zero on success.
+  */
+-int get_phy_id(struct mii_bus *bus, int addr, u32 *phy_id)
++static int get_phy_id(struct mii_bus *bus, int addr, u32 *phy_id)
+ {
+ 	int phy_reg;
+ 
+@@ -230,7 +230,6 @@ int get_phy_id(struct mii_bus *bus, int addr, u32 *phy_id)
+ 
+ 	return 0;
+ }
+-EXPORT_SYMBOL(get_phy_id);
+ 
+ /**
+  * get_phy_device - reads the specified PHY device and returns its @phy_device struct
+diff --git a/include/linux/phy.h b/include/linux/phy.h
+index 6fe0a37..9039009 100644
+--- a/include/linux/phy.h
++++ b/include/linux/phy.h
+@@ -477,7 +477,6 @@ static inline int phy_write(struct phy_device *phydev, u32 regnum, u16 val)
+ 	return mdiobus_write(phydev->bus, phydev->addr, regnum, val);
+ }
+ 
+-int get_phy_id(struct mii_bus *bus, int addr, u32 *phy_id);
+ struct phy_device* get_phy_device(struct mii_bus *bus, int addr);
+ int phy_device_register(struct phy_device *phy);
+ int phy_init_hw(struct phy_device *phydev);
+-- 
+1.7.2.3
 
-Bellow is the link.
-
-
-
-http://dolbyltd.ucoz.com/plasltd.html
-
-
-We will await your response with details, date of delivery and send quotation for large qty urgently prize and quantity that can be made available.
