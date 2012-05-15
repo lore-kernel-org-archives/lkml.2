@@ -1,41 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756730Ab2EOKwE (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 May 2012 06:52:04 -0400
-Received: from casper.infradead.org ([85.118.1.10]:47513 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752536Ab2EOKwC convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 May 2012 06:52:02 -0400
-Message-ID: <1337079117.27694.28.camel@twins>
-Subject: Re: [34-longterm 167/179] futex: Fix regression with read only
- mappings
-From: Peter Zijlstra <peterz@infradead.org>
-To: Hugh Dickins <hughd@google.com>
-Cc: Paul Gortmaker <paul.gortmaker@windriver.com>, stable@kernel.org,
+	id S1756830Ab2EOLDV (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 May 2012 07:03:21 -0400
+Received: from zene.cmpxchg.org ([85.214.230.12]:59622 "EHLO zene.cmpxchg.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755575Ab2EOLDT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 May 2012 07:03:19 -0400
+Date: Tue, 15 May 2012 13:03:02 +0200
+From: Johannes Weiner <hannes@cmpxchg.org>
+To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>, Michal Hocko <mhocko@suse.cz>,
+        cgroups@vger.kernel.org, linux-mm@kvack.org,
         linux-kernel@vger.kernel.org
-Date: Tue, 15 May 2012 12:51:57 +0200
-In-Reply-To: <alpine.LSU.2.00.1205142126180.2196@eggly.anvils>
-References: <1337048075-6132-1-git-send-email-paul.gortmaker@windriver.com>
-	 <1337048075-6132-168-git-send-email-paul.gortmaker@windriver.com>
-	 <alpine.LSU.2.00.1205142126180.2196@eggly.anvils>
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
-X-Mailer: Evolution 3.2.2- 
-Mime-Version: 1.0
+Subject: Re: [patch 0/6] mm: memcg: statistics implementation cleanups
+Message-ID: <20120515110302.GH1406@cmpxchg.org>
+References: <1337018451-27359-1-git-send-email-hannes@cmpxchg.org>
+ <4FB1A115.2080303@jp.fujitsu.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4FB1A115.2080303@jp.fujitsu.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2012-05-14 at 21:38 -0700, Hugh Dickins wrote:
-> I don't know: I'm not NAKking it, I'm just waving a reddish flag,
-> and hoping that Peter will remember more, and have something more
-> constructive to say, than I can think of at this moment. 
+On Tue, May 15, 2012 at 09:19:33AM +0900, KAMEZAWA Hiroyuki wrote:
+> (2012/05/15 3:00), Johannes Weiner wrote:
+> 
+> > Before piling more things (reclaim stats) on top of the current mess,
+> > I thought it'd be better to clean up a bit.
+> > 
+> > The biggest change is printing statistics directly from live counters,
+> > it has always been annoying to declare a new counter in two separate
+> > enums and corresponding name string arrays.  After this series we are
+> > down to one of each.
+> > 
+> >  mm/memcontrol.c |  223 +++++++++++++++++------------------------------
+> >  1 file changed, 82 insertions(+), 141 deletions(-)
+> 
+> to all 1-6. Thank you.
+> 
+> Acked-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
 
-Ha! you're very optimistic :-)
+Thanks!
 
-going by git log kernel/futex.c on a recent kernel the proposed patch
-should indeed be followed by your patch, but I can't seem to find more
-relevant patches.
+> One excuse for my old implementation of mem_cgroup_get_total_stat(),
+> which is fixed in patch 6, is that I thought it's better to touch all counters
+> in a cachineline at once and avoiding long distance for-each loop.
+> 
+> What number of performance difference with some big hierarchy(100+children) tree ?
+> (But I agree your code is cleaner. I'm just curious.)
 
+I set up a parental group with hierarchy enabled, then created 512
+children and did a 4-job kernel bench in one of them.  Every 0.1
+seconds, I read the stats of the parent, which requires reading each
+stat/event/lru item from 512 groups before moving to the next one:
 
+                        512stats-vanilla        512stats-patched
+Walltime (s)            62.61 (  +0.00%)        62.88 (  +0.43%)
+Walltime (stddev)        0.17 (  +0.00%)         0.14 (  -3.17%)
+
+That should be acceptable, I think.
