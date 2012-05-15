@@ -1,51 +1,148 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758376Ab2EOIse (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 May 2012 04:48:34 -0400
-Received: from acsinet15.oracle.com ([141.146.126.227]:31582 "EHLO
-	acsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758227Ab2EOIsI (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 May 2012 04:48:08 -0400
-Date: Tue, 15 May 2012 11:47:47 +0300
-From: Dan Carpenter <dan.carpenter@oracle.com>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Alan Cox <alan@linux.intel.com>, linuxppc-dev@lists.ozlabs.org,
-        linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org
-Subject: [patch] hvc_xen: NULL dereference on allocation failure
-Message-ID: <20120515084746.GC30265@elgon.mountain>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: acsinet22.oracle.com [141.146.126.238]
+	id S932149Ab2EOItZ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 May 2012 04:49:25 -0400
+Received: from mga02.intel.com ([134.134.136.20]:23506 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1758355Ab2EOIsd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 May 2012 04:48:33 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.67,352,1309762800"; 
+   d="scan'208";a="140769310"
+From: Lin Ming <ming.m.lin@intel.com>
+To: Jens Axboe <axboe@kernel.dk>, Alan Stern <stern@rowland.harvard.edu>
+Cc: linux-kernel@vger.kernel.org, linux-pm@vger.kernel.org,
+        linux-scsi@vger.kernel.org
+Subject: [RFC PATCH 3/3] block: add queue idle timer
+Date: Tue, 15 May 2012 16:48:17 +0800
+Message-Id: <1337071697-30920-4-git-send-email-ming.m.lin@intel.com>
+X-Mailer: git-send-email 1.7.2.5
+In-Reply-To: <1337071697-30920-1-git-send-email-ming.m.lin@intel.com>
+References: <1337071697-30920-1-git-send-email-ming.m.lin@intel.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-If kzalloc() returns a NULL here, we pass a NULL to
-xencons_disconnect_backend() which will cause an Oops.
+Add an idle timer that is set to some suitable timeout and would be
+added when the queue first goes empty. If nothing has happened during
+the timeout interval, then the queue is suspended.
 
-Also I removed the __GFP_ZERO while I was at it since kzalloc() implies
-__GFP_ZERO.
+Queueing a new request could check the state and resume queue if it is
+supended.
 
-Signed-off-by: Dan Carpenter <dan.carpenter@oracle.com>
+Signed-off-by: Lin Ming <ming.m.lin@intel.com>
+---
+ block/blk-core.c       |   25 +++++++++++++++++++++++++
+ block/elevator.c       |   10 ++++++++++
+ include/linux/blkdev.h |    3 +++
+ 3 files changed, 38 insertions(+), 0 deletions(-)
 
-diff --git a/drivers/tty/hvc/hvc_xen.c b/drivers/tty/hvc/hvc_xen.c
-index 83d5c88..d3d91da 100644
---- a/drivers/tty/hvc/hvc_xen.c
-+++ b/drivers/tty/hvc/hvc_xen.c
-@@ -430,9 +430,9 @@ static int __devinit xencons_probe(struct xenbus_device *dev,
- 	if (devid == 0)
- 		return -ENODEV;
+diff --git a/block/blk-core.c b/block/blk-core.c
+index 1f61b74..01b4e14 100644
+--- a/block/blk-core.c
++++ b/block/blk-core.c
+@@ -473,6 +473,17 @@ struct request_queue *blk_alloc_queue(gfp_t gfp_mask)
+ }
+ EXPORT_SYMBOL(blk_alloc_queue);
  
--	info = kzalloc(sizeof(struct xencons_info), GFP_KERNEL | __GFP_ZERO);
-+	info = kzalloc(sizeof(struct xencons_info), GFP_KERNEL);
- 	if (!info)
--		goto error_nomem;
-+		return -ENOMEM;
- 	dev_set_drvdata(&dev->dev, info);
- 	info->xbdev = dev;
- 	info->vtermno = xenbus_devid_to_vtermno(devid);
++static void blk_rq_idle_timer(unsigned long data)
++{
++	struct request_queue *q = (struct request_queue *) data;
++	unsigned long flags;
++
++	spin_lock_irqsave(q->queue_lock, flags);
++	if (!q->nr_pending && q->runtime_pm)
++		q->runtime_pm(q, PMSG_SUSPEND);
++	spin_unlock_irqrestore(q->queue_lock, flags);
++}
++
+ struct request_queue *blk_alloc_queue_node(gfp_t gfp_mask, int node_id)
+ {
+ 	struct request_queue *q;
+@@ -504,6 +515,7 @@ struct request_queue *blk_alloc_queue_node(gfp_t gfp_mask, int node_id)
+ 	setup_timer(&q->backing_dev_info.laptop_mode_wb_timer,
+ 		    laptop_mode_timer_fn, (unsigned long) q);
+ 	setup_timer(&q->timeout, blk_rq_timed_out_timer, (unsigned long) q);
++	setup_timer(&q->idle, blk_rq_idle_timer, (unsigned long) q);
+ 	INIT_LIST_HEAD(&q->timeout_list);
+ 	INIT_LIST_HEAD(&q->icq_list);
+ 	INIT_LIST_HEAD(&q->flush_queue[0]);
+@@ -1129,6 +1141,13 @@ void __blk_put_request(struct request_queue *q, struct request *req)
+ 	if (unlikely(--req->ref_count))
+ 		return;
+ 
++	/* PM request is not accounted */
++	if (!(req->cmd_flags & REQ_PM)) {
++		if (!(--q->nr_pending))
++			/* Hard code to 20secs, will move to sysfs */
++			mod_timer(&q->idle, jiffies + 20*HZ);
++	}
++
+ 	elv_completed_request(q, req);
+ 
+ 	/* this is a bio leak */
+@@ -1917,6 +1936,12 @@ struct request *blk_peek_request(struct request_queue *q)
+ 	int ret;
+ 
+ 	while ((rq = __elv_next_request(q)) != NULL) {
++		/* Only PM request is allowed to go if the queue is suspended */
++		if (q->pm_status != RPM_ACTIVE && !(rq->cmd_flags & REQ_PM)) {
++			rq = NULL;
++			break;
++		}
++
+ 		if (!(rq->cmd_flags & REQ_STARTED)) {
+ 			/*
+ 			 * This is the first time the device driver
+diff --git a/block/elevator.c b/block/elevator.c
+index f016855..7e68994 100644
+--- a/block/elevator.c
++++ b/block/elevator.c
+@@ -546,6 +546,9 @@ void elv_requeue_request(struct request_queue *q, struct request *rq)
+ 
+ 	rq->cmd_flags &= ~REQ_STARTED;
+ 
++	/* __elv_add_request will increment the count */
++	if (!(rq->cmd_flags & REQ_PM))
++		q->nr_pending--;
+ 	__elv_add_request(q, rq, ELEVATOR_INSERT_REQUEUE);
+ }
+ 
+@@ -587,6 +590,13 @@ void __elv_add_request(struct request_queue *q, struct request *rq, int where)
+ {
+ 	trace_block_rq_insert(q, rq);
+ 
++	if (!(rq->cmd_flags & REQ_PM)) {
++		if (!(q->pm_status != RPM_ACTIVE) &&
++				q->nr_pending++ == 0 && q->runtime_pm)
++			/* async resume */
++			q->runtime_pm(q, PMSG_RESUME);
++	}
++
+ 	rq->q = q;
+ 
+ 	if (rq->cmd_flags & REQ_SOFTBARRIER) {
+diff --git a/include/linux/blkdev.h b/include/linux/blkdev.h
+index b5b212c..f6bc96b 100644
+--- a/include/linux/blkdev.h
++++ b/include/linux/blkdev.h
+@@ -347,6 +347,7 @@ struct request_queue {
+ 	unsigned int		nr_congestion_on;
+ 	unsigned int		nr_congestion_off;
+ 	unsigned int		nr_batching;
++	unsigned int		nr_pending;
+ 
+ 	int			pm_status;
+ 
+@@ -365,6 +366,8 @@ struct request_queue {
+ 	struct timer_list	timeout;
+ 	struct list_head	timeout_list;
+ 
++	struct timer_list	idle;
++
+ 	struct list_head	icq_list;
+ 
+ 	struct queue_limits	limits;
+-- 
+1.7.2.5
+
