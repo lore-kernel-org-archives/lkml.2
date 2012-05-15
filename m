@@ -1,126 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965694Ab2EOCa4 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 May 2012 22:30:56 -0400
-Received: from LGEMRELSE6Q.lge.com ([156.147.1.121]:56205 "EHLO
-	LGEMRELSE6Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965117Ab2EOCax (ORCPT
+	id S965671Ab2EOCbR (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 May 2012 22:31:17 -0400
+Received: from mail1.windriver.com ([147.11.146.13]:53545 "EHLO
+	mail1.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S965475Ab2EOCSJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 May 2012 22:30:53 -0400
-X-AuditID: 9c930179-b7bb9ae000000ea5-e0-4fb1bfda3a54
-Message-ID: <4FB1BFFC.8080405@kernel.org>
-Date: Tue, 15 May 2012 11:31:24 +0900
-From: Minchan Kim <minchan@kernel.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:11.0) Gecko/20120410 Thunderbird/11.0.1
+	Mon, 14 May 2012 22:18:09 -0400
+From: Paul Gortmaker <paul.gortmaker@windriver.com>
+To: <stable@kernel.org>, <linux-kernel@vger.kernel.org>
+Subject: [34-longterm 159/179] USB: Serial: Added device ID for Qualcomm Modem in Sagemcom's HiLo3G
+Date: Mon, 14 May 2012 22:14:15 -0400
+Message-ID: <1337048075-6132-160-git-send-email-paul.gortmaker@windriver.com>
+X-Mailer: git-send-email 1.7.9.6
+In-Reply-To: <1337048075-6132-1-git-send-email-paul.gortmaker@windriver.com>
+References: <1337048075-6132-1-git-send-email-paul.gortmaker@windriver.com>
 MIME-Version: 1.0
-Newsgroups: gmane.linux.kernel.mm,gmane.linux.kernel
-To: Seth Jennings <sjenning@linux.vnet.ibm.com>
-CC: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Nitin Gupta <ngupta@vflare.org>,
-        Dan Magenheimer <dan.magenheimer@oracle.com>,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org
-Subject: Re: [PATCH 2/3] zram: remove comment in Kconfig
-References: <1336985134-31967-1-git-send-email-minchan@kernel.org> <1336985134-31967-2-git-send-email-minchan@kernel.org> <4FB119CA.2080606@linux.vnet.ibm.com>
-In-Reply-To: <4FB119CA.2080606@linux.vnet.ibm.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Brightmail-Tracker: AAAAAA==
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/14/2012 11:42 PM, Seth Jennings wrote:
+From: Vijay Chavan <vijaychavan007@gmail.com>
 
-> On 05/14/2012 03:45 AM, Minchan Kim wrote:
-> 
->> Exactly speaking, zram should has dependency with
->> zsmalloc, not x86. So x86 dependeny check is redundant.
->>
->> Signed-off-by: Minchan Kim <minchan@kernel.org>
->> ---
->>  drivers/staging/zram/Kconfig |    4 +---
->>  1 file changed, 1 insertion(+), 3 deletions(-)
->>
->> diff --git a/drivers/staging/zram/Kconfig b/drivers/staging/zram/Kconfig
->> index 9d11a4c..ee23a86 100644
->> --- a/drivers/staging/zram/Kconfig
->> +++ b/drivers/staging/zram/Kconfig
->> @@ -1,8 +1,6 @@
->>  config ZRAM
->>  	tristate "Compressed RAM block device support"
->> -	# X86 dependency is because zsmalloc uses non-portable pte/tlb
->> -	# functions
->> -	depends on BLOCK && SYSFS && X86
->> +	depends on BLOCK && SYSFS
-> 
-> 
-> Two comments here:
-> 
-> 1) zram should really depend on ZSMALLOC instead of selecting it
-> because, as the patch has it, zram could be selected on an arch that
-> zsmalloc doesn't support.
+                   -------------------
+    This is a commit scheduled for the next v2.6.34 longterm release.
+    http://git.kernel.org/?p=linux/kernel/git/paulg/longterm-queue-2.6.34.git
+    If you see a problem with using this for longterm, please comment.
+                   -------------------
 
+commit e468561739fffb972d486b98f66c723936335136 upstream.
 
-Argh, Totally my mistake. my patch didn't match with my comment, either. :(
+A new device ID pair is added for Qualcomm Modem present in Sagemcom's HiLo3G module.
 
-> 
-> 2) This change would need to be done in zcache as well.
-
-
-I see.
-Seth, Thanks.
-
-send v2.
-
-== CUT_HERE ==
-
->From be81aec5a4f35139aae2bf3d18139fbc114897ca Mon Sep 17 00:00:00 2001
-From: Minchan Kim <minchan@kernel.org>
-Date: Tue, 15 May 2012 11:26:48 +0900
-Subject: [PATCH] [zram,zcache] remove dependency with x86 
-
-Exactly saying, [zram|zcache] should has a dependency with
-zsmalloc, not x86. So replace x86 dependeny with ZSMALLOC.
-
-Signed-off-by: Minchan Kim <minchan@kernel.org>
+Signed-off-by: Vijay Chavan <VijayChavan007@gmail.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
+Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
 ---
- drivers/staging/zcache/Kconfig |    3 +-- 
- drivers/staging/zram/Kconfig   |    3 +-- 
- 2 files changed, 2 insertions(+), 4 deletions(-)
+ drivers/usb/serial/qcserial.c |    1 +
+ 1 file changed, 1 insertion(+)
 
-diff --git a/drivers/staging/zcache/Kconfig b/drivers/staging/zcache/Kconfig
-index 7048e01..ceb7f28 100644
---- a/drivers/staging/zcache/Kconfig
-+++ b/drivers/staging/zcache/Kconfig
-@@ -2,8 +2,7 @@ config ZCACHE
-        bool "Dynamic compression of swap pages and clean pagecache pages"
-        # X86 dependency is because zsmalloc uses non-portable pte/tlb
-        # functions
--       depends on (CLEANCACHE || FRONTSWAP) && CRYPTO=y && X86
--       select ZSMALLOC
-+       depends on (CLEANCACHE || FRONTSWAP) && CRYPTO=y && ZSMALLOC
-        select CRYPTO_LZO
-        default n
-        help
-diff --git a/drivers/staging/zram/Kconfig b/drivers/staging/zram/Kconfig
-index 9d11a4c..e3ac62d 100644
---- a/drivers/staging/zram/Kconfig
-+++ b/drivers/staging/zram/Kconfig
-@@ -2,8 +2,7 @@ config ZRAM
-        tristate "Compressed RAM block device support"
-        # X86 dependency is because zsmalloc uses non-portable pte/tlb
-        # functions
--       depends on BLOCK && SYSFS && X86
--       select ZSMALLOC
-+       depends on BLOCK && SYSFS && ZSMALLOC
-        select LZO_COMPRESS
-        select LZO_DECOMPRESS
-        default n
+diff --git a/drivers/usb/serial/qcserial.c b/drivers/usb/serial/qcserial.c
+index 53a2d5a..225fc88 100644
+--- a/drivers/usb/serial/qcserial.c
++++ b/drivers/usb/serial/qcserial.c
+@@ -43,6 +43,7 @@ static const struct usb_device_id id_table[] = {
+ 	{USB_DEVICE(0x05c6, 0x9203)},	/* Generic Gobi Modem device */
+ 	{USB_DEVICE(0x05c6, 0x9222)},	/* Generic Gobi Modem device */
+ 	{USB_DEVICE(0x05c6, 0x9008)},	/* Generic Gobi QDL device */
++	{USB_DEVICE(0x05c6, 0x9009)},	/* Generic Gobi Modem device */
+ 	{USB_DEVICE(0x05c6, 0x9201)},	/* Generic Gobi QDL device */
+ 	{USB_DEVICE(0x05c6, 0x9221)},	/* Generic Gobi QDL device */
+ 	{USB_DEVICE(0x05c6, 0x9231)},	/* Generic Gobi QDL device */
 -- 
-1.7.9.5
+1.7.9.6
 
-
-
--- 
-Kind regards,
-Minchan Kim
