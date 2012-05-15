@@ -1,17 +1,17 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965378Ab2EOCRw (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 May 2012 22:17:52 -0400
-Received: from mail1.windriver.com ([147.11.146.13]:52964 "EHLO
-	mail1.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S964887Ab2EOCQY (ORCPT
+	id S965419Ab2EOCR5 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 May 2012 22:17:57 -0400
+Received: from mail.windriver.com ([147.11.1.11]:49195 "EHLO
+	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S964892Ab2EOCQ2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 May 2012 22:16:24 -0400
+	Mon, 14 May 2012 22:16:28 -0400
 From: Paul Gortmaker <paul.gortmaker@windriver.com>
 To: <stable@kernel.org>, <linux-kernel@vger.kernel.org>
-Subject: [34-longterm 030/179] usb: gadget: rndis: don't test against req->length
-Date: Mon, 14 May 2012 22:12:06 -0400
-Message-ID: <1337048075-6132-31-git-send-email-paul.gortmaker@windriver.com>
+Subject: [34-longterm 035/179] i8k: Avoid lahf in 64-bit code
+Date: Mon, 14 May 2012 22:12:11 -0400
+Message-ID: <1337048075-6132-36-git-send-email-paul.gortmaker@windriver.com>
 X-Mailer: git-send-email 1.7.9.6
 In-Reply-To: <1337048075-6132-1-git-send-email-paul.gortmaker@windriver.com>
 References: <1337048075-6132-1-git-send-email-paul.gortmaker@windriver.com>
@@ -21,7 +21,7 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Felipe Balbi <balbi@ti.com>
+From: Luca Tettamanti <kronos.it@gmail.com>
 
                    -------------------
     This is a commit scheduled for the next v2.6.34 longterm release.
@@ -29,39 +29,39 @@ From: Felipe Balbi <balbi@ti.com>
     If you see a problem with using this for longterm, please comment.
                    -------------------
 
-commit 472b91274a6c6857877b5caddb875dcb5ecdfcb8 upstream.
+commit bc1f419c76a2d6450413ce4349f4e4a07be011d5 upstream.
 
-composite.c always sets req->length to zero
-and expects function driver's setup handlers
-to return the amount of bytes to be used
-on req->length. If we test against req->length
-w_length will always be greater than req->length
-thus making us always stall that particular
-SEND_ENCAPSULATED_COMMAND request.
+i8k uses lahf to read the flag register in 64-bit code; early x86-64
+CPUs, however, lack this instruction and we get an invalid opcode
+exception at runtime.
+Use pushf to load the flag register into the stack instead.
 
-Tested against a Windows XP SP3.
-
-Signed-off-by: Felipe Balbi <balbi@ti.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
+Signed-off-by: Luca Tettamanti <kronos.it@gmail.com>
+Reported-by: Jeff Rickman <jrickman@myamigos.us>
+Tested-by: Jeff Rickman <jrickman@myamigos.us>
+Tested-by: Harry G McGavran Jr <w5pny@arrl.net>
+Cc: Massimo Dal Zotto <dz@debian.org>
+Signed-off-by: Jean Delvare <khali@linux-fr.org>
 Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
 ---
- drivers/usb/gadget/f_rndis.c |    3 +--
- 1 file changed, 1 insertion(+), 2 deletions(-)
+ drivers/char/i8k.c |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/usb/gadget/f_rndis.c b/drivers/usb/gadget/f_rndis.c
-index 56b0221..d1eb94a 100644
---- a/drivers/usb/gadget/f_rndis.c
-+++ b/drivers/usb/gadget/f_rndis.c
-@@ -420,8 +420,7 @@ rndis_setup(struct usb_function *f, const struct usb_ctrlrequest *ctrl)
- 	 */
- 	case ((USB_DIR_OUT | USB_TYPE_CLASS | USB_RECIP_INTERFACE) << 8)
- 			| USB_CDC_SEND_ENCAPSULATED_COMMAND:
--		if (w_length > req->length || w_value
--				|| w_index != rndis->ctrl_id)
-+		if (w_value || w_index != rndis->ctrl_id)
- 			goto invalid;
- 		/* read the request; process it later */
- 		value = w_length;
+diff --git a/drivers/char/i8k.c b/drivers/char/i8k.c
+index 4365717..1e116ac 100644
+--- a/drivers/char/i8k.c
++++ b/drivers/char/i8k.c
+@@ -138,8 +138,8 @@ static int i8k_smm(struct smm_regs *regs)
+ 		"movl %%edi,20(%%rax)\n\t"
+ 		"popq %%rdx\n\t"
+ 		"movl %%edx,0(%%rax)\n\t"
+-		"lahf\n\t"
+-		"shrl $8,%%eax\n\t"
++		"pushfq\n\t"
++		"popq %%rax\n\t"
+ 		"andl $1,%%eax\n"
+ 		:"=a"(rc)
+ 		:    "a"(regs)
 -- 
 1.7.9.6
 
