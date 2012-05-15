@@ -1,54 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756915Ab2EOJrd (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 May 2012 05:47:33 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:46693 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755934Ab2EOJrc convert rfc822-to-8bit (ORCPT
+	id S1756974Ab2EOJxD (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 May 2012 05:53:03 -0400
+Received: from mail-ob0-f174.google.com ([209.85.214.174]:38994 "EHLO
+	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753253Ab2EOJw7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 May 2012 05:47:32 -0400
-Message-ID: <1337075234.27694.9.camel@twins>
-Subject: Re: [PATCH 01/12] netvm: Prevent a stream-specific deadlock
-From: Peter Zijlstra <a.p.zijlstra@chello.nl>
-To: Mel Gorman <mgorman@suse.de>
-Cc: David Miller <davem@davemloft.net>, akpm@linux-foundation.org,
-        linux-mm@kvack.org, netdev@vger.kernel.org, linux-nfs@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Trond.Myklebust@netapp.com,
-        neilb@suse.de, hch@infradead.org, michaelc@cs.wisc.edu,
-        emunson@mgebm.net
-Date: Tue, 15 May 2012 11:47:14 +0200
-In-Reply-To: <20120515091402.GG29102@suse.de>
-References: <1336658065-24851-2-git-send-email-mgorman@suse.de>
-	 <20120511.011034.557833140906762226.davem@davemloft.net>
-	 <20120514105604.GB29102@suse.de>
-	 <20120514.162634.1094732813264319951.davem@davemloft.net>
-	 <20120515091402.GG29102@suse.de>
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
-X-Mailer: Evolution 3.2.2- 
-Mime-Version: 1.0
+	Tue, 15 May 2012 05:52:59 -0400
+MIME-Version: 1.0
+In-Reply-To: <1337073529.27694.8.camel@twins>
+References: <1337072138-8323-1-git-send-email-alex.shi@intel.com>
+	<1337072138-8323-7-git-send-email-alex.shi@intel.com>
+	<CAPa8GCDsSOrzQwX2qRJyocYAZdGbwjD4t4fjxmWXV6=EoXjXZw@mail.gmail.com>
+	<1337073529.27694.8.camel@twins>
+Date: Tue, 15 May 2012 19:52:58 +1000
+Message-ID: <CAPa8GCBaQhksvVT9DAgwzPPkCMrhcYnSdCtUHEe=cQS8_Cm7DQ@mail.gmail.com>
+Subject: Re: [PATCH v5 6/7] x86/tlb: optimizing flush_tlb_mm
+From: Nick Piggin <npiggin@gmail.com>
+To: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Alex Shi <alex.shi@intel.com>, tglx@linutronix.de, mingo@redhat.com,
+        hpa@zytor.com, arnd@arndb.de, rostedt@goodmis.org, fweisbec@gmail.com,
+        jeremy@goop.org, riel@redhat.com, luto@mit.edu, avi@redhat.com,
+        len.brown@intel.com, dhowells@redhat.com, fenghua.yu@intel.com,
+        borislav.petkov@amd.com, yinghai@kernel.org, ak@linux.intel.com,
+        cpw@sgi.com, steiner@sgi.com, akpm@linux-foundation.org,
+        penberg@kernel.org, hughd@google.com, rientjes@google.com,
+        kosaki.motohiro@jp.fujitsu.com, n-horiguchi@ah.jp.nec.com,
+        tj@kernel.org, oleg@redhat.com, axboe@kernel.dk, jmorris@namei.org,
+        kamezawa.hiroyu@jp.fujitsu.com, viro@zeniv.linux.org.uk,
+        linux-kernel@vger.kernel.org, yongjie.ren@intel.com,
+        linux-arch@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2012-05-15 at 10:14 +0100, Mel Gorman wrote:
-> @@ -289,6 +289,18 @@ void sk_clear_memalloc(struct sock *sk)
->         sock_reset_flag(sk, SOCK_MEMALLOC);
->         sk->sk_allocation &= ~__GFP_MEMALLOC;
->         static_key_slow_dec(&memalloc_socks);
-> +
-> +       /*
-> +        * SOCK_MEMALLOC is allowed to ignore rmem limits to ensure forward
-> +        * progress of swapping. However, if SOCK_MEMALLOC is cleared while
-> +        * it has rmem allocations there is a risk that the user of the
-> +        * socket cannot make forward progress due to exceeding the rmem
-> +        * limits. By rights, sk_clear_memalloc() should only be called
-> +        * on sockets being torn down but warn and reset the accounting if
-> +        * that assumption breaks.
-> +        */
-> +       if (WARN_ON(sk->sk_forward_alloc))
+On 15 May 2012 19:18, Peter Zijlstra <a.p.zijlstra@chello.nl> wrote:
+> On Tue, 2012-05-15 at 19:15 +1000, Nick Piggin wrote:
+>> So this should go to linux-arch...
+>>
+>> On 15 May 2012 18:55, Alex Shi <alex.shi@intel.com> wrote:
+>> > Not every flush_tlb_mm execution moment is really need to evacuate all
+>> > TLB entries, like in munmap, just few 'invlpg' is better for whole
+>> > process performance, since it leaves most of TLB entries for later
+>> > accessing.
+>> >
+>> > This patch is changing flush_tlb_mm(mm) to flush_tlb_mm(mm, start, end)
+>> > in cases.
+>>
+>> What happened with Peter's comment about using flush_tlb_range for this?
+>>
+>> flush_tlb_mm() API should just stay unchanged AFAIKS.
+>>
+>> Then you need to work out the best way to give range info to the tlb/mmu gather
+>> API. Possibly passing in the rage for that guy is OK, which x86 can
+>> then implement
+>> as flush range.
+>
+> Right, most archs that have tlb_flush_range() do range tracking in
+> mmu_gather. Our TLB ops fully support that, there's absolutely no need
+> to go change the interface for thos.
 
-WARN_ON_ONCE() perhaps?
+It could be warranted to change tlb_flush_mmu to a range API to
+avoid doing the per-entry tracking which those architectures do?
 
-> +               sk_mem_reclaim(sk);
->  } 
+The callers have range available easily, so ignoring those could be
+noop for generic helpers.
