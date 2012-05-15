@@ -1,17 +1,17 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965617Ab2EOCYu (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 May 2012 22:24:50 -0400
-Received: from mail.windriver.com ([147.11.1.11]:49876 "EHLO
+	id S965561Ab2EOCSX (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 May 2012 22:18:23 -0400
+Received: from mail.windriver.com ([147.11.1.11]:49256 "EHLO
 	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965564Ab2EOCSZ (ORCPT
+	with ESMTP id S964900Ab2EOCQe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 May 2012 22:18:25 -0400
+	Mon, 14 May 2012 22:16:34 -0400
 From: Paul Gortmaker <paul.gortmaker@windriver.com>
 To: <stable@kernel.org>, <linux-kernel@vger.kernel.org>
-Subject: [34-longterm 178/179] x86/PCI: use host bridge _CRS info on MSI MS-7253
-Date: Mon, 14 May 2012 22:14:34 -0400
-Message-ID: <1337048075-6132-179-git-send-email-paul.gortmaker@windriver.com>
+Subject: [34-longterm 043/179] xen mmu: fix a race window causing leave_mm BUG()
+Date: Mon, 14 May 2012 22:12:19 -0400
+Message-ID: <1337048075-6132-44-git-send-email-paul.gortmaker@windriver.com>
 X-Mailer: git-send-email 1.7.9.6
 In-Reply-To: <1337048075-6132-1-git-send-email-paul.gortmaker@windriver.com>
 References: <1337048075-6132-1-git-send-email-paul.gortmaker@windriver.com>
@@ -21,7 +21,7 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Jonathan Nieder <jrnieder@gmail.com>
+From: "Tian, Kevin" <kevin.tian@intel.com>
 
                    -------------------
     This is a commit scheduled for the next v2.6.34 longterm release.
@@ -29,60 +29,102 @@ From: Jonathan Nieder <jrnieder@gmail.com>
     If you see a problem with using this for longterm, please comment.
                    -------------------
 
-commit 8411371709610c826bf65684f886bfdfb5780ca1 upstream.
+commit 7899891c7d161752f29abcc9bc0a9c6c3a3af26c upstream.
 
-In the spirit of commit 29cf7a30f8a0 ("x86/PCI: use host bridge _CRS
-info on ASUS M2V-MX SE"), this DMI quirk turns on "pci_use_crs" by
-default on a board that needs it.
+There's a race window in xen_drop_mm_ref, where remote cpu may exit
+dirty bitmap between the check on this cpu and the point where remote
+cpu handles drop request. So in drop_other_mm_ref we need check
+whether TLB state is still lazy before calling into leave_mm. This
+bug is rarely observed in earlier kernel, but exaggerated by the
+commit 831d52bc153971b70e64eccfbed2b232394f22f8
+("x86, mm: avoid possible bogus tlb entries by clearing prev mm_cpumask after switching mm")
+which clears bitmap after changing the TLB state. the call trace is as below:
 
-This fixes boot failures and oopses introduced in 3e3da00c01d0
-("x86/pci: AMD one chain system to use pci read out res").  The quirk
-is quite targetted (to a specific board and BIOS version) for two
-reasons:
+---------------------------------
+kernel BUG at arch/x86/mm/tlb.c:61!
+invalid opcode: 0000 [#1] SMP
+last sysfs file: /sys/devices/system/xen_memory/xen_memory0/info/current_kb
+CPU 1
+Modules linked in: 8021q garp xen_netback xen_blkback blktap blkback_pagemap nbd bridge stp llc autofs4 ipmi_devintf ipmi_si ipmi_msghandler lockd sunrpc bonding ipv6 xenfs dm_multipath video output sbs sbshc parport_pc lp parport ses enclosure snd_seq_dummy snd_seq_oss snd_seq_midi_event snd_seq snd_seq_device serio_raw bnx2 snd_pcm_oss snd_mixer_oss snd_pcm snd_timer iTCO_wdt snd soundcore snd_page_alloc i2c_i801 iTCO_vendor_support i2c_core pcs pkr pata_acpi ata_generic ata_piix shpchp mptsas mptscsih mptbase [last unloaded: freq_table]
+Pid: 25581, comm: khelper Not tainted 2.6.32.36fixxen #1 Tecal RH2285
+RIP: e030:[<ffffffff8103a3cb>]  [<ffffffff8103a3cb>] leave_mm+0x15/0x46
+RSP: e02b:ffff88002805be48  EFLAGS: 00010046
+RAX: 0000000000000000 RBX: 0000000000000001 RCX: ffff88015f8e2da0
+RDX: ffff88002805be78 RSI: 0000000000000000 RDI: 0000000000000001
+RBP: ffff88002805be48 R08: ffff88009d662000 R09: dead000000200200
+R10: dead000000100100 R11: ffffffff814472b2 R12: ffff88009bfc1880
+R13: ffff880028063020 R14: 00000000000004f6 R15: 0000000000000000
+FS:  00007f62362d66e0(0000) GS:ffff880028058000(0000) knlGS:0000000000000000
+CS:  e033 DS: 0000 ES: 0000 CR0: 000000008005003b
+CR2: 0000003aabc11909 CR3: 000000009b8ca000 CR4: 0000000000002660
+DR0: 0000000000000000 DR1: 0000000000000000 DR2: 00000000000000 00
+DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
+Process khelper (pid: 25581, threadinfo ffff88007691e000, task ffff88009b92db40)
+Stack:
+ ffff88002805be68 ffffffff8100e4ae 0000000000000001 ffff88009d733b88
+<0> ffff88002805be98 ffffffff81087224 ffff88002805be78 ffff88002805be78
+<0> ffff88015f808360 00000000000004f6 ffff88002805bea8 ffffffff81010108
+Call Trace:
+ <IRQ>
+ [<ffffffff8100e4ae>] drop_other_mm_ref+0x2a/0x53
+ [<ffffffff81087224>] generic_smp_call_function_single_interrupt+0xd8/0xfc
+ [<ffffffff81010108>] xen_call_function_single_interrupt+0x13/0x28
+ [<ffffffff810a936a>] handle_IRQ_event+0x66/0x120
+ [<ffffffff810aac5b>] handle_percpu_irq+0x41/0x6e
+ [<ffffffff8128c1c0>] __xen_evtchn_do_upcall+0x1ab/0x27d
+ [<ffffffff8128dd11>] xen_evtchn_do_upcall+0x33/0x46
+ [<ffffffff81013efe>] xen_do_hyper visor_callback+0x1e/0x30
+ <EOI>
+ [<ffffffff814472b2>] ? _spin_unlock_irqrestore+0x15/0x17
+ [<ffffffff8100f8cf>] ? xen_restore_fl_direct_end+0x0/0x1
+ [<ffffffff81113f71>] ? flush_old_exec+0x3ac/0x500
+ [<ffffffff81150dc5>] ? load_elf_binary+0x0/0x17ef
+ [<ffffffff81150dc5>] ? load_elf_binary+0x0/0x17ef
+ [<ffffffff8115115d>] ? load_elf_binary+0x398/0x17ef
+ [<ffffffff81042fcf>] ? need_resched+0x23/0x2d
+ [<ffffffff811f4648>] ? process_measurement+0xc0/0xd7
+ [<ffffffff81150dc5>] ? load_elf_binary+0x0/0x17ef
+ [<ffffffff81113094>] ? search_binary_handler+0xc8/0x255
+ [<ffffffff81114362>] ? do_execve+0x1c3/0x29e
+ [<ffffffff8101155d>] ? sys_execve+0x43/0x5d
+ [<ffffffff8106fc45>] ? __call_usermodehelper+0x0/0x6f
+ [<ffffffff81013e28>] ? kernel_execve+0x68/0xd0
+ [<ffffffff 8106fc45>] ? __call_usermodehelper+0x0/0x6f
+ [<ffffffff8100f8cf>] ? xen_restore_fl_direct_end+0x0/0x1
+ [<ffffffff8106fb64>] ? ____call_usermodehelper+0x113/0x11e
+ [<ffffffff81013daa>] ? child_rip+0xa/0x20
+ [<ffffffff8106fc45>] ? __call_usermodehelper+0x0/0x6f
+ [<ffffffff81012f91>] ? int_ret_from_sys_call+0x7/0x1b
+ [<ffffffff8101371d>] ? retint_restore_args+0x5/0x6
+ [<ffffffff81013da0>] ? child_rip+0x0/0x20
+Code: 41 5e 41 5f c9 c3 55 48 89 e5 0f 1f 44 00 00 e8 17 ff ff ff c9 c3 55 48 89 e5 0f 1f 44 00 00 65 8b 04 25 c8 55 01 00 ff c8 75 04 <0f> 0b eb fe 65 48 8b 34 25 c0 55 01 00 48 81 c6 b8 02 00 00 e8
+RIP  [<ffffffff8103a3cb>] leave_mm+0x15/0x46
+ RSP <ffff88002805be48>
+---[ end trace ce9cee6832a9c503 ]---
 
- (1) to emphasize that this method of tackling the problem one quirk
-     at a time is a little insane
+Tested-by: Maoxiaoyun<tinnycloud@hotmail.com>
+Signed-off-by: Kevin Tian <kevin.tian@intel.com>
+[v1: Fleshed out the git description a bit]
+Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
 
- (2) to give BIOS vendors an opportunity to use simpler tables and
-     allow us to return to generic behavior (whatever that happens to
-     be) with a later BIOS update
-
-In other words, I am not at all happy with having quirks like this.
-But it is even worse for the kernel not to work out of the box on
-these machines, so...
-
-Reference: https://bugzilla.kernel.org/show_bug.cgi?id=42619
-Reported-by: Svante Signell <svante.signell@telia.com>
-Signed-off-by: Jonathan Nieder <jrnieder@gmail.com>
-Signed-off-by: Bjorn Helgaas <bhelgaas@google.com>
-Signed-off-by: Jesse Barnes <jbarnes@virtuousgeek.org>
 Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
 ---
- arch/x86/pci/acpi.c |   11 +++++++++++
- 1 file changed, 11 insertions(+)
+ arch/x86/xen/mmu.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/arch/x86/pci/acpi.c b/arch/x86/pci/acpi.c
-index 7743fb1..9b55642 100644
---- a/arch/x86/pci/acpi.c
-+++ b/arch/x86/pci/acpi.c
-@@ -43,6 +43,17 @@ static const struct dmi_system_id pci_use_crs_table[] __initconst = {
- 			DMI_MATCH(DMI_PRODUCT_NAME, "ALiveSATA2-GLAN"),
-                 },
-         },
-+	/* https://bugzilla.kernel.org/show_bug.cgi?id=42619 */
-+	{
-+		.callback = set_use_crs,
-+		.ident = "MSI MS-7253",
-+		.matches = {
-+			DMI_MATCH(DMI_BOARD_VENDOR, "MICRO-STAR INTERNATIONAL CO., LTD"),
-+			DMI_MATCH(DMI_BOARD_NAME, "MS-7253"),
-+			DMI_MATCH(DMI_BIOS_VENDOR, "Phoenix Technologies, LTD"),
-+			DMI_MATCH(DMI_BIOS_VERSION, "V1.6"),
-+		},
-+	},
- 	{}
- };
+diff --git a/arch/x86/xen/mmu.c b/arch/x86/xen/mmu.c
+index 6adff93..4916176 100644
+--- a/arch/x86/xen/mmu.c
++++ b/arch/x86/xen/mmu.c
+@@ -1142,7 +1142,7 @@ static void drop_other_mm_ref(void *info)
  
+ 	active_mm = percpu_read(cpu_tlbstate.active_mm);
+ 
+-	if (active_mm == mm)
++	if (active_mm == mm && percpu_read(cpu_tlbstate.state) != TLBSTATE_OK)
+ 		leave_mm(smp_processor_id());
+ 
+ 	/* If this cpu still has a stale cr3 reference, then make sure
 -- 
 1.7.9.6
 
