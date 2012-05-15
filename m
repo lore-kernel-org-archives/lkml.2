@@ -1,46 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932911Ab2EOOmK (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 May 2012 10:42:10 -0400
-Received: from lxorguk.ukuu.org.uk ([81.2.110.251]:45172 "EHLO
-	lxorguk.ukuu.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756328Ab2EOOmG (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 May 2012 10:42:06 -0400
-Date: Tue, 15 May 2012 15:44:55 +0100
-From: Alan Cox <alan@lxorguk.ukuu.org.uk>
-To: Paul Gortmaker <paul.gortmaker@windriver.com>
-Cc: <stable@kernel.org>, <linux-kernel@vger.kernel.org>
-Subject: Re: [34-longterm 179/179] x86/PCI: do not tie MSI MS-7253 use_crs
- quirk to BIOS version
-Message-ID: <20120515154455.39cfbad2@pyramind.ukuu.org.uk>
-In-Reply-To: <1337048075-6132-180-git-send-email-paul.gortmaker@windriver.com>
-References: <1337048075-6132-1-git-send-email-paul.gortmaker@windriver.com>
-	<1337048075-6132-180-git-send-email-paul.gortmaker@windriver.com>
-X-Mailer: Claws Mail 3.8.0 (GTK+ 2.24.8; x86_64-redhat-linux-gnu)
-Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S932947Ab2EOOnK (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 May 2012 10:43:10 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:53264 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932143Ab2EOOnI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 May 2012 10:43:08 -0400
+Date: Tue, 15 May 2012 16:43:05 +0200
+From: Michal Hocko <mhocko@suse.cz>
+To: Johannes Weiner <hannes@cmpxchg.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        cgroups@vger.kernel.org, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [patch 2/6] mm: memcg: convert numa stat to read_seq_string
+ interface
+Message-ID: <20120515144305.GG11346@tiehlicka.suse.cz>
+References: <1337018451-27359-1-git-send-email-hannes@cmpxchg.org>
+ <1337018451-27359-3-git-send-email-hannes@cmpxchg.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1337018451-27359-3-git-send-email-hannes@cmpxchg.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-O> MS-7253, for which we already have a quirk, but the short-sighted
-> author tied the quirk to a single BIOS version, making it not kick in
+On Mon 14-05-12 20:00:47, Johannes Weiner wrote:
+> Instead of using the raw seq_file file interface, switch over to the
+> read_seq_string cftype callback and let cgroup core code set up the
+> seq_file.
+> 
+> Signed-off-by: Johannes Weiner <hannes@cmpxchg.org>
 
-It's our usual policy to tie to particular BIOS versions because these
-things are often BIOS specific and come and go with updates.
+Acked-by: Michal Hocko <mhocko@suse.cz>
 
-So I think short-sighted is unfair - appropriately conserative is closer.
+> ---
+>  mm/memcontrol.c |   23 +++--------------------
+>  1 file changed, 3 insertions(+), 20 deletions(-)
+> 
+> diff --git a/mm/memcontrol.c b/mm/memcontrol.c
+> index aef89c1..f0d248b 100644
+> --- a/mm/memcontrol.c
+> +++ b/mm/memcontrol.c
+> @@ -4345,12 +4345,12 @@ mem_cgroup_get_total_stat(struct mem_cgroup *memcg, struct mcs_total_stat *s)
+>  }
+>  
+>  #ifdef CONFIG_NUMA
+> -static int mem_control_numa_stat_show(struct seq_file *m, void *arg)
+> +static int mem_control_numa_stat_show(struct cgroup *cont, struct cftype *cft,
+> +				      struct seq_file *m)
+>  {
+>  	int nid;
+>  	unsigned long total_nr, file_nr, anon_nr, unevictable_nr;
+>  	unsigned long node_nr;
+> -	struct cgroup *cont = m->private;
+>  	struct mem_cgroup *memcg = mem_cgroup_from_cont(cont);
+>  
+>  	total_nr = mem_cgroup_nr_lru_pages(memcg, LRU_ALL);
+> @@ -4825,22 +4825,6 @@ static int mem_cgroup_oom_control_write(struct cgroup *cgrp,
+>  	return 0;
+>  }
+>  
+> -#ifdef CONFIG_NUMA
+> -static const struct file_operations mem_control_numa_stat_file_operations = {
+> -	.read = seq_read,
+> -	.llseek = seq_lseek,
+> -	.release = single_release,
+> -};
+> -
+> -static int mem_control_numa_stat_open(struct inode *unused, struct file *file)
+> -{
+> -	struct cgroup *cont = file->f_dentry->d_parent->d_fsdata;
+> -
+> -	file->f_op = &mem_control_numa_stat_file_operations;
+> -	return single_open(file, mem_control_numa_stat_show, cont);
+> -}
+> -#endif /* CONFIG_NUMA */
+> -
+>  #ifdef CONFIG_CGROUP_MEM_RES_CTLR_KMEM
+>  static int memcg_init_kmem(struct mem_cgroup *memcg, struct cgroup_subsys *ss)
+>  {
+> @@ -4928,8 +4912,7 @@ static struct cftype mem_cgroup_files[] = {
+>  #ifdef CONFIG_NUMA
+>  	{
+>  		.name = "numa_stat",
+> -		.open = mem_control_numa_stat_open,
+> -		.mode = S_IRUGO,
+> +		.read_seq_string = mem_control_numa_stat_show,
+>  	},
+>  #endif
+>  #ifdef CONFIG_CGROUP_MEM_RES_CTLR_SWAP
+> -- 
+> 1.7.10.1
+> 
 
-> on Carlos's machine with BIOS V1.2.  If a later BIOS update makes it
-> no longer necessary to look at the _CRS info it will still be
-> harmless, so let's stop trying to guess which versions have and don't
-> have accurate _CRS tables.
-
-Have you verified there are no BIOSes > v1.6 and that none of them have
-release notes or testing showing fixes related to this ? Adding 1.2 is
-fine but you are just asking for a regression on 1.7+ or similar.
-
-Alan
+-- 
+Michal Hocko
+SUSE Labs
+SUSE LINUX s.r.o.
+Lihovarska 1060/12
+190 00 Praha 9    
+Czech Republic
