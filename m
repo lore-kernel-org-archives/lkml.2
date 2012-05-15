@@ -1,42 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S966405Ab2EOSxc (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 May 2012 14:53:32 -0400
-Received: from shards.monkeyblade.net ([198.137.202.13]:41262 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932419Ab2EOSx3 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 May 2012 14:53:29 -0400
-Date: Tue, 15 May 2012 14:51:07 -0400 (EDT)
-Message-Id: <20120515.145107.834395619191754306.davem@davemloft.net>
-To: johannes@sipsolutions.net
-Cc: joe@perches.com, netdev@vger.kernel.org,
-        linux-decnet-user@lists.sourceforge.net,
-        netfilter-devel@vger.kernel.org, netfilter@vger.kernel.org,
-        coreteam@netfilter.org, linux-wireless@vger.kernel.org,
-        dev@openvswitch.org, linux-sctp@vger.kernel.org,
-        linux-nfs@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [RFC net-next 0/2] net: Use net_<level>_ratelimit
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <1337107245.15553.14.camel@jlt3.sipsolutions.net>
-References: <1337106430.15553.6.camel@jlt3.sipsolutions.net>
-	<20120515.142922.1434224550630736456.davem@davemloft.net>
-	<1337107245.15553.14.camel@jlt3.sipsolutions.net>
-X-Mailer: Mew version 6.4 on Emacs 23.3 / Mule 6.0 (HANACHIRUSATO)
+	id S966410Ab2EOSzn (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 May 2012 14:55:43 -0400
+Received: from 1wt.eu ([62.212.114.60]:2092 "EHLO 1wt.eu"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S966209Ab2EOSzm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 May 2012 14:55:42 -0400
+Date: Tue, 15 May 2012 20:55:13 +0200
+From: Willy Tarreau <w@1wt.eu>
+To: Paul Gortmaker <paul.gortmaker@windriver.com>
+Cc: Peter Zijlstra <peterz@infradead.org>, Hugh Dickins <hughd@google.com>,
+        stable@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [34-longterm 167/179] futex: Fix regression with read only mappings
+Message-ID: <20120515185513.GA13685@1wt.eu>
+References: <1337048075-6132-1-git-send-email-paul.gortmaker@windriver.com> <1337048075-6132-168-git-send-email-paul.gortmaker@windriver.com> <alpine.LSU.2.00.1205142126180.2196@eggly.anvils> <1337079117.27694.28.camel@twins> <20120515160250.GA17760@windriver.com>
 Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.6 (shards.monkeyblade.net [198.137.202.13]); Tue, 15 May 2012 11:51:10 -0700 (PDT)
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120515160250.GA17760@windriver.com>
+User-Agent: Mutt/1.4.2.3i
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Johannes Berg <johannes@sipsolutions.net>
-Date: Tue, 15 May 2012 20:40:45 +0200
+On Tue, May 15, 2012 at 12:02:50PM -0400, Paul Gortmaker wrote:
+> [Re: [34-longterm 167/179] futex: Fix regression with read only mappings] On 15/05/2012 (Tue 12:51) Peter Zijlstra wrote:
+> 
+> > On Mon, 2012-05-14 at 21:38 -0700, Hugh Dickins wrote:
+> > > I don't know: I'm not NAKking it, I'm just waving a reddish flag,
+> > > and hoping that Peter will remember more, and have something more
+> > > constructive to say, than I can think of at this moment. 
+> > 
+> > Ha! you're very optimistic :-)
+> > 
+> > going by git log kernel/futex.c on a recent kernel the proposed patch
+> > should indeed be followed by your patch, but I can't seem to find more
+> > relevant patches.
+> 
+> Thanks a lot guys.  That is a dependency I'd never have come up with.
+> 
+> Willy -- this is probably of interest to you as well.   Hugh says that
+> commit e6780f7243 ("futex: Fix uninterruptible loop due to gate_area")
+> should be used if 9ea71503a8 ("futex: Fix regression with read only
+> mappings") is used.  The v2.6.32.46 added 9ea71503a8 (as d64ec7bb),
+> but I don't see a cherry pick of e6780f7243 in any v2.6.32.x yet.
+> 
+> Greg already applied it to 3.0.16 and 3.1.8 and it appeared in v3.2
+> by default, so no other active stable releases need to worry.
+> 
+> I had to change page_mapping --> page, since the 2.6.34 baseline does
+> not have a5b338f2b0b1ff73 ("thp: update futex compound knowledge")
+> [added to v2.6.38] which introduces the shadow variable page_mapping.
 
-> In the mac80211 case, messages are warnings/hints to the user, we just
-> don't want them to flood the logs too much. I'd rather have that kind of
-> change (limit cookie per callsite) in the rate limiting semantics than
-> the change in the when it gets printed at all.
+Thank you very much Paul, I'm queuing it then. I hope to have some time for
+a new -32 review soon, probably next week-end.
 
-Then they aren't KERN_DEBUG, they are KERN_INFO or KERN_WARN.
+Cheers,
+Willy
+
