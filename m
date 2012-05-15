@@ -1,358 +1,141 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932532Ab2EOMQE (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 May 2012 08:16:04 -0400
-Received: from imr3.ericy.com ([198.24.6.13]:47491 "EHLO imr3.ericy.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932428Ab2EOMQC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 May 2012 08:16:02 -0400
-Date: Tue, 15 May 2012 05:13:39 -0700
-From: Guenter Roeck <guenter.roeck@ericsson.com>
-To: Jenny TC <jenny.tc@intel.com>
-CC: "khali@linux-fr.org" <khali@linux-fr.org>,
-        "lm-sensors@lm-sensors.org" <lm-sensors@lm-sensors.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] hwmon: Generic ADC support for hwmon
-Message-ID: <20120515121339.GA21600@ericsson.com>
-References: <1337092008-31263-1-git-send-email-jenny.tc@intel.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
+	id S932549Ab2EOMRx (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 May 2012 08:17:53 -0400
+Received: from nat28.tlf.novell.com ([130.57.49.28]:44940 "EHLO
+	nat28.tlf.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932428Ab2EOMRw convert rfc822-to-8bit (ORCPT
+	<rfc822;groupwise-linux-kernel@vger.kernel.org:5:1>);
+	Tue, 15 May 2012 08:17:52 -0400
+Message-Id: <4FB265AB0200007800083CC5@nat28.tlf.novell.com>
+X-Mailer: Novell GroupWise Internet Agent 12.0.0 
+Date: Tue, 15 May 2012 13:18:19 +0100
+From: "Jan Beulich" <JBeulich@suse.com>
+To: <mingo@elte.hu>, <tglx@linutronix.de>, <hpa@zytor.com>
+Cc: <matt.fleming@linux.intel.com>, <mjg@redhat.com>,
+        <linux-kernel@vger.kernel.org>
+Subject: [PATCH] x86-64: use EFI to deal with platform wall clock
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 8BIT
 Content-Disposition: inline
-In-Reply-To: <1337092008-31263-1-git-send-email-jenny.tc@intel.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, May 15, 2012 at 10:26:48AM -0400, Jenny TC wrote:
-> Currently drivers are using custom APIs to communicate with ADC driver.
-> So it make sense to have generic APIs to commnicate with ADC drivers.
-> This patch introduces generic APIs to communicate with ADC drivers.
-> 
-> Signed-off-by: Jenny TC <jenny.tc@intel.com>
+Other than ix86, x86-64 on EFI so far didn't set the {g,s}et_wallclock
+accessors to the EFI routines, thus incorrectly using raw RTC accesses
+instead.
 
-Hi Jenny,
+Simply removing the #ifdef around the respective code isn't enough,
+however: The runtime code must not only be forced to be executable, it
+also must have a proper virtual address set (which on at least the
+system I'm testing on isn't the case for all necessary regions, or at
+least not as early as they're now being required).
 
-Do you have a practical use case ?
+The earlier calling of efi_set_executable() in turn require the CPA
+code to cope, i.e. during early boot it must be avoided to call
+cpa_flush_array(), as the first thing this function does is a
+BUG_ON(irqs_disabled()).
 
-Also, shouldn't those generic ADCs rather be supported through the IO subsystem ?
-After all, hwmon is all about hardware monitoring, not to provide generic ADC access.
+Also make the two EFI functions in question here static - they're not
+being referenced elsewhere.
 
-Thanks,
-Guenter
+Signed-off-by: Jan Beulich <jbeulich@suse.com>
+Cc: Matt Fleming <matt.fleming@intel.com>
+Cc: Matthew Garrett <mjg@redhat.com>
 
-> ---
->  drivers/hwmon/Kconfig     |    9 ++
->  drivers/hwmon/Makefile    |    1 +
->  drivers/hwmon/hwmon-adc.c |  212 +++++++++++++++++++++++++++++++++++++++++++++
->  include/linux/hwmon-adc.h |   47 ++++++++++
->  4 files changed, 269 insertions(+), 0 deletions(-)
->  create mode 100644 drivers/hwmon/hwmon-adc.c
->  create mode 100644 include/linux/hwmon-adc.h
-> 
-> diff --git a/drivers/hwmon/Kconfig b/drivers/hwmon/Kconfig
-> index 8deedc1..203ed9d 100644
-> --- a/drivers/hwmon/Kconfig
-> +++ b/drivers/hwmon/Kconfig
-> @@ -37,6 +37,15 @@ config HWMON_DEBUG_CHIP
->  	  a problem with I2C support and want to see more of what is going
->  	  on.
->  
-> +config HWMON_ADC
-> +	bool "Hardware Monitoring Generic ADC support"
-> +	default n
-> +	help
-> +	  Say Y here if you want the generic ADC support for Hardware Monitoring
-> +	  Subsystem. Select this to enable the generic ADC driver APIs.
-> +	  This enables a set of APIs to register an ADC device with hwmon
-> +	  subsystem along with generic APIs to communicate with ADC driver
-> +
->  comment "Native drivers"
->  
->  config SENSORS_ABITUGURU
-> diff --git a/drivers/hwmon/Makefile b/drivers/hwmon/Makefile
-> index 6d3f11f..d91450f 100644
-> --- a/drivers/hwmon/Makefile
-> +++ b/drivers/hwmon/Makefile
-> @@ -4,6 +4,7 @@
->  
->  obj-$(CONFIG_HWMON)		+= hwmon.o
->  obj-$(CONFIG_HWMON_VID)		+= hwmon-vid.o
-> +obj-$(CONFIG_HWMON_ADC)		+= hwmon-adc.o
->  
->  # APCI drivers
->  obj-$(CONFIG_SENSORS_ACPI_POWER) += acpi_power_meter.o
-> diff --git a/drivers/hwmon/hwmon-adc.c b/drivers/hwmon/hwmon-adc.c
-> new file mode 100644
-> index 0000000..53c910e
-> --- /dev/null
-> +++ b/drivers/hwmon/hwmon-adc.c
-> @@ -0,0 +1,212 @@
-> +/*
-> + *  hwmon-adc.c - Generic adc support for hardware monitoring  subsystem.
-> + *
-> + *  Copyright (C) 2012 Intel Corp
-> + *
-> + *  ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-> + *
-> + *  This program is free software; you can redistribute it and/or modify
-> + *  it under the terms of the GNU General Public License as published by
-> + *  the Free Software Foundation; version 2 of the License.
-> + *
-> + *  This program is distributed in the hope that it will be useful, but
-> + *  WITHOUT ANY WARRANTY; without even the implied warranty of
-> + *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-> + *  General Public License for more details.
-> + *
-> + *  You should have received a copy of the GNU General Public License along
-> + *  with this program; if not, write to the Free Software Foundation, Inc.,
-> + *  59 Temple Place, Suite 330, Boston, MA 02111-1307 USA.
-> + *
-> + * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-> + * Author : Jenny TC <jenny.tc@intel.com>
-> + */
-> +
-> +#include <linux/module.h>
-> +#include <linux/kernel.h>
-> +#include <linux/device.h>
-> +#include <linux/hwmon.h>
-> +#include <linux/hwmon-adc.h>
-> +
-> +LIST_HEAD(adc_lst);
-> +DEFINE_MUTEX(list_lock);
-> +
-> +struct hwmon_adc {
-> +	struct device *hwdev;
-> +	struct hwmon_adc_ops *adc_ops;
-> +	struct list_head list;
-> +};
-> +
-> +/**
-> + * hwmon_adc_device_register - register adc device w/ hwmon
-> + * @dev: the device to register
-> + *
-> + * hwmon_adc_device_unregister() must be called when the device is no
-> + * longer needed.
-> + *
-> + * Returns the pointer to the new device.
-> + */
-> +struct device *hwmon_adc_device_register(struct device *dev,
-> +					 struct hwmon_adc_ops *adc_ops)
-> +{
-> +	struct hwmon_adc *adc_node;
-> +	struct device *hwdev;
-> +
-> +	hwdev = hwmon_device_register(dev);
-> +	if (IS_ERR(hwdev))
-> +		return hwdev;
-> +
-> +	adc_node = kzalloc(sizeof(struct hwmon_adc), GFP_ATOMIC);
-> +	adc_node->hwdev = hwdev;
-> +	adc_node->adc_ops = adc_ops;
-> +	mutex_lock(&list_lock);
-> +	list_add(&adc_node->list, &adc_lst);
-> +	mutex_unlock(&list_lock);
-> +
-> +	return hwdev;
-> +}
-> +EXPORT_SYMBOL(hwmon_adc_device_register);
-> +
-> +/**
-> + * hwmon_adc_device_unregister - removes the previously registered hwmon class device
-> + *
-> + * @dev: the class device to destroy
-> + */
-> +void hwmon_adc_device_unregister(struct device *hwdev)
-> +{
-> +
-> +	struct list_head *p, *n;
-> +	struct hwmon_adc *tmp;
-> +
-> +	mutex_lock(&list_lock);
-> +	list_for_each_safe(p, n, &adc_lst) {
-> +		tmp = list_entry(p, struct hwmon_adc, list);
-> +		if (tmp->hwdev == hwdev) {
-> +			hwmon_device_unregister(hwdev);
-> +			list_del(&tmp->list);
-> +			kfree(tmp);
-> +			break;
-> +		}
-> +	}
-> +	mutex_unlock(&list_lock);
-> +}
-> +EXPORT_SYMBOL(hwmon_adc_device_unregister);
-> +
-> +static struct hwmon_adc_ops *__get_ops_byname(char *name)
-> +{
-> +	struct list_head *l;
-> +	struct hwmon_adc *tmp;
-> +	struct hwmon_adc_ops *ops = NULL;
-> +
-> +	mutex_lock(&list_lock);
-> +	list_for_each(l, &adc_lst) {
-> +		tmp = list_entry(l, struct hwmon_adc, list);
-> +		if (!strcmp(dev_driver_string(tmp->hwdev->parent), name)) {
-> +			ops =  tmp->adc_ops;
-> +			break;
-> +		}
-> +	}
-> +	mutex_unlock(&list_lock);
-> +	return ops;
-> +}
-> +
-> +/**
-> + * hwmon_adc_read_adc_channel - read an ADC channel
-> + * @adc_name : adc device name
-> + * @channel  : channel to read
-> + * @adc_val  : pointer to store adc value
-> + *
-> + * Returns the return value from read_adc callback function on success
-> + * else return -ENODEV
-> + */
-> +int hwmon_adc_read_channel(char *adc_name, int channel, unsigned int *adc_val)
-> +{
-> +	struct hwmon_adc_ops *adc_ops;
-> +
-> +	adc_ops = __get_ops_byname(adc_name);
-> +
-> +	if (adc_ops && adc_ops->read_adc)
-> +		return adc_ops->read_adc(channel, adc_val);
-> +
-> +	return -ENODEV;
-> +}
-> +EXPORT_SYMBOL(hwmon_adc_read_channel);
-> +
-> +/**
-> + * hwmon_adc_read_adc_channel - read multiple ADC channels
-> + * @adc_name : adc device name
-> + * @channel  : channels to read
-> + * @adc_val  : pointer to store adc values
-> + * @count    : number of channels to read
-> + *
-> + * Returns the return value from read_adc_multi callback function on success
-> + * else return -ENODEV
-> + */
-> +int hwmon_adc_read_channel_multi(char *adc_name, int *channel,
-> +		unsigned int *adc_val, int count)
-> +{
-> +	struct hwmon_adc_ops *adc_ops;
-> +
-> +	adc_ops = __get_ops_byname(adc_name);
-> +
-> +	if (adc_ops && adc_ops->read_adc_multi)
-> +		return adc_ops->read_adc_multi(channel, adc_val, count);
-> +
-> +	return -ENODEV;
-> +}
-> +EXPORT_SYMBOL(hwmon_adc_read_channel_multi);
-> +
-> +/**
-> + * hwmon_adc_convert_channel - convert raw ADC value
-> + * to voltage/current/temperature etc.
-> + *
-> + * @adc_name : adc device name
-> + * @channel  : channel to convert
-> + * @adc_val  : adc value to convert
-> + * @cvtd_val : pointer to store converted value
-> + *
-> + * Returns the return value from convert_adcval callback function on success
-> + * else return -ENODEV
-> + */
-> +int hwmon_adc_convert_adcval(char *adc_name, int channel, unsigned int adc_val,
-> +		      int *cvtd_val)
-> +{
-> +	struct hwmon_adc_ops *adc_ops;
-> +
-> +	adc_ops = __get_ops_byname(adc_name);
-> +
-> +	if (adc_ops && adc_ops->convert_adcval)
-> +		return adc_ops->convert_adcval(channel, adc_val, cvtd_val);
-> +
-> +	return -ENODEV;
-> +
-> +}
-> +EXPORT_SYMBOL(hwmon_adc_convert_adcval);
-> +
-> +/**
-> + * hwmon_adc_convert_channel - convert raw ADC value
-> + * to voltage/current/temperature etc.
-> + *
-> + * @adc_name : adc device name
-> + * @channel  : channels to convert
-> + * @adc_val  : adc values to convert
-> + * @cvtd_val : pointer to store converted values
-> + * @count    : number of channels to convert
-> + *
-> + * Returns the return value from convert_adcval_multi callback function on
-> + * success else return -ENODEV
-> + */
-> +int hwmon_adc_convert_adcval_multi(char *adc_name, int *channel,
-> +		unsigned int *adc_val, int *cvtd_val, int count)
-> +{
-> +
-> +	struct hwmon_adc_ops *adc_ops;
-> +
-> +	adc_ops = __get_ops_byname(adc_name);
-> +
-> +	if (adc_ops && adc_ops->convert_adcval_multi)
-> +		return adc_ops->convert_adcval_multi(channel, adc_val, cvtd_val,
-> +						     count);
-> +	return -ENODEV;
-> +}
-> +EXPORT_SYMBOL(hwmon_adc_convert_adcval_multi);
-> diff --git a/include/linux/hwmon-adc.h b/include/linux/hwmon-adc.h
-> new file mode 100644
-> index 0000000..c4e9fc0
-> --- /dev/null
-> +++ b/include/linux/hwmon-adc.h
-> @@ -0,0 +1,47 @@
-> +/*
-> + *  hwmon-adc.h - Header file for hardware monitoring generic adc support.
-> + *
-> + *  This file declares helper functions for generic adc support for hardware
-> + *  monitoring subsystem.
-> + *
-> + *  Copyright (C) 2012 Intel Corp
-> + *
-> + *  ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-> + *
-> + *  This program is free software; you can redistribute it and/or modify
-> + *  it under the terms of the GNU General Public License as published by
-> + *  the Free Software Foundation; version 2 of the License.
-> + *
-> + *  This program is distributed in the hope that it will be useful, but
-> + *  WITHOUT ANY WARRANTY; without even the implied warranty of
-> + *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-> + *  General Public License for more details.
-> + *
-> + *  You should have received a copy of the GNU General Public License along
-> + *  with this program; if not, write to the Free Software Foundation, Inc.,
-> + *  59 Temple Place, Suite 330, Boston, MA 02111-1307 USA.
-> + *
-> + * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-> + * Author : Jenny TC <jenny.tc@intel.com>
-> + */
-> +#ifndef _LINUX_HWMON_ADC_H
-> +#define _LINUX_HWMON_ADC_H
-> +struct hwmon_adc_ops {
-> +	int (*read_adc) (int channel, unsigned int *adc_val);
-> +	int (*read_adc_multi) (int *channel, unsigned int *adc_val, int count);
-> +	int (*convert_adcval) (int channel, unsigned int adc_val,
-> +					int *cvtd_val);
-> +	int (*convert_adcval_multi) (int *channel, unsigned int *adc_val,
-> +			int *cvtd_val, int count);
-> +};
-> +struct device *hwmon_adc_device_register(struct device *dev,
-> +		struct hwmon_adc_ops *adc_ops);
-> +void hwmon_adc_device_unregister(struct device *dev);
-> +int hwmon_adc_read_channel(char *adc_name, int channel, unsigned int *adc_val);
-> +int hwmon_adc_read_channel_multi(char *adc_name, int *channel,
-> +			unsigned int *adc_val, int count);
-> +int hwmon_adc_convert_adcval(char *adc_name, int channel, unsigned int adc_val,
-> +			int *cvtd_val);
-> +int hwmon_adc_convert_adcval_multi(char *adc_name, int *channel,
-> +			unsigned int *adc_val, int *cvtd_val, int count);
-> +#endif
-> -- 
-> 1.7.1
-> 
+---
+ arch/x86/mm/pageattr.c         |   10 ++++++----
+ arch/x86/platform/efi/efi.c    |    6 ++----
+ arch/x86/platform/efi/efi_64.c |   10 +++++++++-
+ include/linux/efi.h            |    2 --
+ 4 files changed, 17 insertions(+), 11 deletions(-)
+
+--- 3.4-rc7/arch/x86/mm/pageattr.c
++++ 3.4-rc7-x86_64-EFI-time/arch/x86/mm/pageattr.c
+@@ -919,11 +919,13 @@ static int change_page_attr_set_clr(unsi
+ 
+ 	/*
+ 	 * On success we use clflush, when the CPU supports it to
+-	 * avoid the wbindv. If the CPU does not support it and in the
+-	 * error case we fall back to cpa_flush_all (which uses
+-	 * wbindv):
++	 * avoid the wbindv. If the CPU does not support it, in the
++	 * error case, and during early boot (for EFI) we fall back
++	 * to cpa_flush_all (which uses wbinvd):
+ 	 */
+-	if (!ret && cpu_has_clflush) {
++	if (early_boot_irqs_disabled)
++		__cpa_flush_all((void *)(long)cache);
++	else if (!ret && cpu_has_clflush) {
+ 		if (cpa.flags & (CPA_PAGES_ARRAY | CPA_ARRAY)) {
+ 			cpa_flush_array(addr, numpages, cache,
+ 					cpa.flags, pages);
+--- 3.4-rc7/arch/x86/platform/efi/efi.c
++++ 3.4-rc7-x86_64-EFI-time/arch/x86/platform/efi/efi.c
+@@ -249,7 +249,7 @@ static efi_status_t __init phys_efi_get_
+ 	return status;
+ }
+ 
+-int efi_set_rtc_mmss(unsigned long nowtime)
++static int efi_set_rtc_mmss(unsigned long nowtime)
+ {
+ 	int real_seconds, real_minutes;
+ 	efi_status_t 	status;
+@@ -278,7 +278,7 @@ int efi_set_rtc_mmss(unsigned long nowti
+ 	return 0;
+ }
+ 
+-unsigned long efi_get_time(void)
++static unsigned long efi_get_time(void)
+ {
+ 	efi_status_t status;
+ 	efi_time_t eft;
+@@ -720,12 +720,10 @@ void __init efi_init(void)
+ 		efi_enabled = 0;
+ 		return;
+ 	}
+-#ifdef CONFIG_X86_32
+ 	if (efi_native) {
+ 		x86_platform.get_wallclock = efi_get_time;
+ 		x86_platform.set_wallclock = efi_set_rtc_mmss;
+ 	}
+-#endif
+ 
+ #if EFI_DEBUG
+ 	print_efi_memmap();
+--- 3.4-rc7/arch/x86/platform/efi/efi_64.c
++++ 3.4-rc7-x86_64-EFI-time/arch/x86/platform/efi/efi_64.c
+@@ -53,8 +53,16 @@ static void __init early_code_mapping_se
+ 	for (p = memmap.map; p < memmap.map_end; p += memmap.desc_size) {
+ 		md = p;
+ 		if (md->type == EFI_RUNTIME_SERVICES_CODE ||
+-		    md->type == EFI_BOOT_SERVICES_CODE)
++		    md->type == EFI_BOOT_SERVICES_CODE) {
++			if (!md->virt_addr) {
++				/*
++				 * We have to hope that the mappings set up so
++				 * far cover all that's needed for the call.
++				 */
++				md->virt_addr = (u64)__va(md->phys_addr);
++			}
+ 			efi_set_executable(md, executable);
++		}
+ 	}
+ }
+ 
+--- 3.4-rc7/include/linux/efi.h
++++ 3.4-rc7-x86_64-EFI-time/include/linux/efi.h
+@@ -503,8 +503,6 @@ extern u64 efi_mem_attribute (unsigned l
+ extern int __init efi_uart_console_only (void);
+ extern void efi_initialize_iomem_resources(struct resource *code_resource,
+ 		struct resource *data_resource, struct resource *bss_resource);
+-extern unsigned long efi_get_time(void);
+-extern int efi_set_rtc_mmss(unsigned long nowtime);
+ extern void efi_reserve_boot_services(void);
+ extern struct efi_memory_map memmap;
+ 
+
+
+
