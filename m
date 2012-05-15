@@ -1,85 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757338Ab2EOLLc (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 May 2012 07:11:32 -0400
-Received: from mga02.intel.com ([134.134.136.20]:52913 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756662Ab2EOLLa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 May 2012 07:11:30 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.67,352,1309762800"; 
-   d="asc'?scan'208";a="140813935"
-Message-ID: <1337080498.2528.161.camel@sauron.fi.intel.com>
-Subject: Re: [PATCH v2] UBI: add lnum to struct ubi_work
-From: Artem Bityutskiy <dedekind1@gmail.com>
-Reply-To: dedekind1@gmail.com
-To: Joel Reardon <joel@clambassador.com>
-Cc: linux-mtd@lists.infradead.org, linux-kernel@vger.kernel.org
-Date: Tue, 15 May 2012 14:14:58 +0300
-In-Reply-To: <alpine.DEB.2.00.1205142046080.12448@eristoteles.iwoars.net>
-References: <alpine.DEB.2.00.1205142046080.12448@eristoteles.iwoars.net>
-Content-Type: multipart/signed; micalg="pgp-sha1"; protocol="application/pgp-signature";
-	boundary="=-tC0oWOnLN8uLQcGQ3Xce"
-X-Mailer: Evolution 3.2.3 (3.2.3-3.fc16) 
+	id S1757416Ab2EOLLi (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 May 2012 07:11:38 -0400
+Received: from casper.infradead.org ([85.118.1.10]:47740 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757365Ab2EOLLf convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 May 2012 07:11:35 -0400
+Message-ID: <1337080288.27694.38.camel@twins>
+Subject: Re: linux-next oops in __lock_acquire for process_one_work
+From: Peter Zijlstra <peterz@infradead.org>
+To: Tejun Heo <tj@kernel.org>
+Cc: Hugh Dickins <hughd@google.com>, Ingo Molnar <mingo@kernel.org>,
+        Ingo Molnar <mingo@redhat.com>, Stephen Boyd <sboyd@codeaurora.org>,
+        Yong Zhang <yong.zhang0@gmail.com>, linux-kernel@vger.kernel.org
+Date: Tue, 15 May 2012 13:11:28 +0200
+In-Reply-To: <20120514212753.GM2366@google.com>
+References: <alpine.LSU.2.00.1205070951170.1544@eggly.anvils>
+	 <20120507175743.GC19417@google.com> <1336482202.16236.29.camel@twins>
+	 <20120508165819.GB10687@google.com>
+	 <alpine.LSU.2.00.1205081106160.4071@eggly.anvils>
+	 <1336516260.8226.61.camel@twins>
+	 <alpine.LSU.2.00.1205081553250.4497@eggly.anvils>
+	 <20120509092536.GC8585@gmail.com>
+	 <alpine.LSU.2.00.1205091219590.20881@eggly.anvils>
+	 <alpine.LSU.2.00.1205101049460.17714@eggly.anvils>
+	 <20120514212753.GM2366@google.com>
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
+X-Mailer: Evolution 3.2.2- 
 Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Mon, 2012-05-14 at 14:27 -0700, Tejun Heo wrote:
+> On Thu, May 10, 2012 at 10:52:46AM -0700, Hugh Dickins wrote:
+> > On Wed, 9 May 2012, Hugh Dickins wrote:
+> > > On Wed, 9 May 2012, Ingo Molnar wrote:
+> > > > * Hugh Dickins <hughd@google.com> wrote:
+> > > > 
+> > > > > I'll set it going when I get home later - thanks.
+> > > 
+> > > Going fine so far, but a more convincing final report tomorrow.
+> > 
+> > Yes, as expected, Peter's patch (+ ,) is good: that load ran four
+> > times longer than the longest it managed before without the patch.
+> > Just needs Peter's signoff, I think.
+> 
+> Peter, can I take your patch with Hugh's description w/ your SOB?
 
---=-tC0oWOnLN8uLQcGQ3Xce
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: quoted-printable
+Yes, sorry, I meant to queue it up the lockdep tree but got distracted
+by other stuff.
 
-On Mon, 2012-05-14 at 20:47 +0200, Joel Reardon wrote:
-> @@ -1086,13 +1090,14 @@ out_ro:
->   * @ubi: UBI device description object
->   * @pnum: physical eraseblock to return
->   * @torture: if this physical eraseblock has to be tortured
-> + * @lnum: the last used logical eraseblock number for the PEB
->   *
->   * This function is called to return physical eraseblock @pnum to the po=
-ol of
->   * free physical eraseblocks. The @torture flag has to be set if an I/O =
-error
->   * occurred to this @pnum and it has to be tested. This function returns=
- zero
->   * in case of success, and a negative error code in case of failure.
->   */
-> -int ubi_wl_put_peb(struct ubi_device *ubi, int pnum, int torture)
-> +int ubi_wl_put_peb(struct ubi_device *ubi, int pnum, int torture, int ln=
-um)
-
-Joel, am sorry for nitpicking again, but could you please put the "lnum"
-argument between "ubi" and "lnum" instead? Just feels more natural.
-Otherwise the patch is OK. Thanks!
-
---=20
-Best Regards,
-Artem Bityutskiy
-
---=-tC0oWOnLN8uLQcGQ3Xce
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: This is a digitally signed message part
-Content-Transfer-Encoding: 7bit
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAABAgAGBQJPsjqyAAoJECmIfjd9wqK0ij8QAMLIBEQzONNLDgMDCFeqUhnz
-/J2hdxKvxwIl1uMNJg5+ODdKEBQLz7uoh86GIi6USCNxau7GtW3QS4KkAzsJGB3x
-0NVghTyUw1CfvrTGwllM90KqU1vbKTbwY3inAuoVebdZTG0RtJmRhtkmkFgO15E0
-AVwnnVFtz4Icn+0CTNzYFQ5mN5e3f3NNb3SwXHg8jUuAEh1EB4E6SqRXpoyOyhlj
-Xi/mulT+0x2yRI2WSKujrqCYcqO64BPiEI1jO+BPwWLvignhAy+A7LqFwXR8S7bN
-+Fg1qNgtlWv/AjxDsg5jcGByWk8sNpgWNKG/15m/Bz1Y5mCF9n8oFLjzf8ud41sO
-azOq7zsIpG2f1cARbF6xpTDGQEITciL0eF7y2vH5DppriurIZGgqenzW2x1hPG2A
-8kQtElveYZt3KEx68toQ0+wfbQ0rjQ9I7xtBO+g+J1bkaQttpBYUEVV/+fqoxnyi
-p3k/BD4WwTofKUkxTBj4KypduoUGJ4BmjU2L0Da2q8jDqRsaQYZdf1R9sapVhi1f
-ecFaouyk7KHSVKgrrNPlhLcBCknXGVUjdzOuqWdNsl3awsBefDwqSsW0hZyPFEhB
-jFZ7PD5ekkEujoauTsvPOaATPNxgUNOH0mgjhOKlZniLIpd+EGZ2xj968mARwvza
-0JaTnzcTpKeuTzmD70sh
-=tGX5
------END PGP SIGNATURE-----
-
---=-tC0oWOnLN8uLQcGQ3Xce--
-
+If you want it, feel tree to take it.
