@@ -1,45 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932615Ab2EOMl2 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 May 2012 08:41:28 -0400
-Received: from arkanian.console-pimps.org ([212.110.184.194]:56237 "EHLO
-	arkanian.console-pimps.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932092Ab2EOMl1 (ORCPT
+	id S932625Ab2EOMnJ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 May 2012 08:43:09 -0400
+Received: from mga14.intel.com ([143.182.124.37]:28448 "EHLO mga14.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932092Ab2EOMnH convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 May 2012 08:41:27 -0400
-Subject: Re: [PATCH, resend] x86: enable rtc-efi
-From: Matt Fleming <matt@console-pimps.org>
-To: Matthew Garrett <mjg59@srcf.ucam.org>
-Cc: Jan Beulich <JBeulich@suse.com>, mingo@elte.hu, tglx@linutronix.de,
-        hpa@zytor.com, dannf@dannf.org, linux-kernel@vger.kernel.org
-In-Reply-To: <20120515123811.GA25248@srcf.ucam.org>
-References: <4FB263560200007800083CB0@nat28.tlf.novell.com>
-	 <20120515123811.GA25248@srcf.ucam.org>
-Content-Type: text/plain; charset="UTF-8"
-Date: Tue, 15 May 2012 13:41:17 +0100
-Message-ID: <1337085677.27692.19.camel@mfleming-mobl1.ger.corp.intel.com>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.3 (2.32.3-1.fc14) 
-Content-Transfer-Encoding: 7bit
+	Tue, 15 May 2012 08:43:07 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
+   d="scan'208";a="143371783"
+From: "R, Durgadoss" <durgadoss.r@intel.com>
+To: Guenter Roeck <guenter.roeck@ericsson.com>,
+        "Tc, Jenny" <jenny.tc@intel.com>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "lm-sensors@lm-sensors.org" <lm-sensors@lm-sensors.org>
+Subject: RE: [lm-sensors] [PATCH] hwmon: Generic ADC support for hwmon
+Thread-Topic: [lm-sensors] [PATCH] hwmon: Generic ADC support for hwmon
+Thread-Index: AQHNMnjkS+3fNf6b0kSkKWKbLTmvzJbKZy2AgABjb3A=
+Date: Tue, 15 May 2012 12:42:57 +0000
+Message-ID: <4D68720C2E767A4AA6A8796D42C8EB59124E22@BGSMSX101.gar.corp.intel.com>
+References: <1337092008-31263-1-git-send-email-jenny.tc@intel.com>
+ <20120515121339.GA21600@ericsson.com>
+In-Reply-To: <20120515121339.GA21600@ericsson.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.223.10.10]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2012-05-15 at 13:38 +0100, Matthew Garrett wrote:
-> On Tue, May 15, 2012 at 01:08:22PM +0100, Jan Beulich wrote:
-> > Besides a Kconfig change this just requires creating a corresponding
-> > platform device.
+Hi Guenter,
+
+Thanks for a quick reply.
+
+> On Tue, May 15, 2012 at 10:26:48AM -0400, Jenny TC wrote:
+> > Currently drivers are using custom APIs to communicate with ADC driver.
+> > So it make sense to have generic APIs to commnicate with ADC drivers.
+> > This patch introduces generic APIs to communicate with ADC drivers.
+> >
+> > Signed-off-by: Jenny TC <jenny.tc@intel.com>
 > 
-> I don't think this is a good idea yet - we completely fail to perform 
-> timezone handling with the EFI clock, which violates platform 
-> expectations. We should fix that up first.
+> Hi Jenny,
+> 
+> Do you have a practical use case ?
 
-Last time I spoke to Thomas about this, the impression I got was that
-the kernel didn't need to worry about handling the timezone for this
-case.
+We have some platform specific component drivers, thermal drivers,
+battery drivers using this General purpose ADC in the platform.
+That's why we thought of doing something like this.
 
-Unless I'm missing something?
+> 
+> Also, shouldn't those generic ADCs rather be supported through the IO
+> subsystem ?
+> After all, hwmon is all about hardware monitoring, not to provide generic ADC
+> access.
 
--- 
-Matt Fleming, Intel Open Source Technology Center
+In this case, can we try this in iio or mfd subsystem ?
+Kindly advise.
 
+Thanks,
+Durga
