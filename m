@@ -1,49 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933281Ab2EOQwL (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 May 2012 12:52:11 -0400
-Received: from perches-mx.perches.com ([206.117.179.246]:55550 "EHLO
-	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S964815Ab2EOQwJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 May 2012 12:52:09 -0400
-Message-ID: <1337100727.7050.17.camel@joe2Laptop>
-Subject: Re: [PATCH] x86: Fix boot on Twinhead H12Y
-From: Joe Perches <joe@perches.com>
-To: Alan Cox <alan@lxorguk.ukuu.org.uk>
-Cc: mingo@elte.hu, linux-kernel@vger.kernel.org
-Date: Tue, 15 May 2012 09:52:07 -0700
-In-Reply-To: <20120515174347.5109.94551.stgit@bluebook>
-References: <20120515174347.5109.94551.stgit@bluebook>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.2- 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	id S933300Ab2EORCx (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 May 2012 13:02:53 -0400
+Received: from e8.ny.us.ibm.com ([32.97.182.138]:54428 "EHLO e8.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S933284Ab2EORCu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 May 2012 13:02:50 -0400
+Date: Tue, 15 May 2012 10:01:41 -0700
+From: Nishanth Aravamudan <nacc@linux.vnet.ibm.com>
+To: santil@linux.vnet.ibm.com
+Cc: anton@samba.org, benh@kernel.crashing.org, paulus@samba.org,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: ibmveth bug?
+Message-ID: <20120515170141.GA14272@linux.vnet.ibm.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 12051517-9360-0000-0000-0000065C96CE
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2012-05-15 at 18:44 +0100, Alan Cox wrote:
-> Despite lots of investigation into why this is needed we don't know or have
-> an elegant cure. The only answer found on this laptop is to mark a problem
-> region as used so that Linux doesn't put anything there.
+Hi Santiago,
 
-trivia:
+Are you still working on ibmveth?
 
-> diff --git a/arch/x86/pci/fixup.c b/arch/x86/pci/fixup.c
-[]
-> @@ -519,3 +519,22 @@ static void sb600_disable_hpet_bar(struct pci_dev *dev)
-[]
-> +static void __devinit twinhead_reserve_killing_zone(struct pci_dev *dev)
-> +{
-> +        if (dev->subsystem_vendor == 0x14FF && dev->subsystem_device ==
-> +                                        0xA003) {
+I've found a very sporadic bug with ibmveth in some testing. PAPR
+requires that:
 
-Doesn't this look ugly to you?
-Doesn't 
+"Validate the Buffer Descriptor of the receive queue buffer (I/O
+addresses for entire buffer length starting at the spec- ified I/O
+address are translated by the RTCE table, length is a multiple of 16
+bytes, and alignment is on a 16 byte boundary) else H_Parameter."
 
-	if (dev->subsystem_vendor == 0x14FF &&
-	    dev->subsystem_device == 0xA003) {
+but from what I can tell ibmveth.c is not enforcing this last condition:
 
-at least read more easily?
+	adapter->rx_queue.queue_addr =
+		kmalloc(adapter->rx_queue.queue_len, GFP_KERNEL);
 
+	...
+
+	adapter->rx_queue.queue_dma = dma_map_single(dev,
+		adapter->rx_queue.queue_addr, adapter->rx_queue.queue_len,
+		DMA_BIDIRECTIONAL);
+
+	...
+
+	rxq_desc.fields.address = adapter->rx_queue.queue_dma;
+
+	...
+	
+
+	lpar_rc = ibmveth_register_logical_lan(adapter, rxq_desc,
+		mac_address);
+	netdev_err(netdev, "buffer TCE:0x%llx filter TCE:0x%llx rxq "
+	 	"desc:0x%llx MAC:0x%llx\n", adapter->buffer_list_dma,
+	 	adapter->filter_list_dma, rxq_desc.desc, mac_address);
+
+And I got on one install attempt:
+
+[ 39.978430] ibmveth 30000004: eth0: h_register_logical_lan failed with -4
+[ 39.978449] ibmveth 30000004: eth0: buffer TCE:0x1000 filter TCE:0x10000 rxq desc:0x80006010000200a8 MAC:0x56754de8e904
+
+rxq desc, as you can see is not 16byte aligned. kmalloc() only
+guarantees 8-byte alignment (as does gcc, I think). Initially, I thought
+we could just overallocate the queue_addr and ALIGN() down, but then we
+would need to save the original kmalloc pointer in a new struct member
+per rx_queue.
+
+So a couple of questions:
+
+1) Is my analysis accurate? :)
+
+2) How gross would it be to save an extra pointer for every rx_queue?
+
+3) Based upon 2), is it better to just go ahead and create our own
+kmem_cache (which gets an alignment specified)?
+
+For 3), I started coding this, but couldn't find a clean place to
+allocate the kmem_cache itself, as the size of each object depends on
+the run-time characteristics (afaict), but needs to be specified at
+cache creation time. Any insight you could provide would be great!
+
+Thanks,
+Nish
+ 
+-- 
+Nishanth Aravamudan <nacc@us.ibm.com>
+IBM Linux Technology Center
 
