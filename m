@@ -1,40 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932879Ab2EOOox (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 May 2012 10:44:53 -0400
-Received: from lxorguk.ukuu.org.uk ([81.2.110.251]:45179 "EHLO
-	lxorguk.ukuu.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757406Ab2EOOow (ORCPT
+	id S932971Ab2EOOpD (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 May 2012 10:45:03 -0400
+Received: from mail-yw0-f46.google.com ([209.85.213.46]:36449 "EHLO
+	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932906Ab2EOOo6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 May 2012 10:44:52 -0400
-Date: Tue, 15 May 2012 15:47:43 +0100
-From: Alan Cox <alan@lxorguk.ukuu.org.uk>
-To: Alan Cox <alan@lxorguk.ukuu.org.uk>
-Cc: Paul Gortmaker <paul.gortmaker@windriver.com>, <stable@kernel.org>,
-        <linux-kernel@vger.kernel.org>
-Subject: Re: [34-longterm 179/179] x86/PCI: do not tie MSI MS-7253 use_crs
- quirk to BIOS version
-Message-ID: <20120515154743.04879bde@pyramind.ukuu.org.uk>
-In-Reply-To: <20120515154455.39cfbad2@pyramind.ukuu.org.uk>
-References: <1337048075-6132-1-git-send-email-paul.gortmaker@windriver.com>
-	<1337048075-6132-180-git-send-email-paul.gortmaker@windriver.com>
-	<20120515154455.39cfbad2@pyramind.ukuu.org.uk>
-X-Mailer: Claws Mail 3.8.0 (GTK+ 2.24.8; x86_64-redhat-linux-gnu)
-Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
+	Tue, 15 May 2012 10:44:58 -0400
+Subject: Re: [GIT PULL 0/8] Annotation weekly ponies delivery
+From: Namhyung Kim <namhyung@gmail.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Ingo Molnar <mingo@kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Arnaldo Carvalho de Melo <acme@infradead.org>,
+        linux-kernel@vger.kernel.org, Arjan van de Ven <arjan@infradead.org>,
+        David Ahern <dsahern@gmail.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Mike Galbraith <efault@gmx.de>, Paul Mackerras <paulus@samba.org>,
+        Stephane Eranian <eranian@google.com>, arnaldo.melo@gmail.com,
+        Arnaldo Carvalho de Melo <acme@redhat.com>
+In-Reply-To: <1337077973.27694.24.camel@twins>
+References: <1336852387-16322-1-git-send-email-acme@infradead.org>
+	 <CA+55aFxeqrCj71fSe2r9kwzyO9q2BT9A89f7nLUgbrTG_uPP2g@mail.gmail.com>
+	 <1336994000.2443.24.camel@twins>  <20120514115551.GA6479@gmail.com>
+	 <1337007985.1552.5.camel@leonhard>  <1337077973.27694.24.camel@twins>
+Content-Type: text/plain; charset="UTF-8"
+Date: Tue, 15 May 2012 23:44:40 +0900
+Message-ID: <1337093080.1493.22.camel@leonhard>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+X-Mailer: Evolution 2.28.3 
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 15 May 2012 15:44:55 +0100
-Alan Cox <alan@lxorguk.ukuu.org.uk> wrote:
-
-> O> MS-7253, for which we already have a quirk, but the short-sighted
-> > author tied the quirk to a single BIOS version, making it not kick in
+2012-05-15 (화), 12:32 +0200, Peter Zijlstra:
+> On Tue, 2012-05-15 at 00:06 +0900, Namhyung Kim wrote:
 > 
-> It's our usual policy to tie to particular BIOS versions because these
-> things are often BIOS specific and come and go with updates.
+> > perf_evlist__config_attrs() has this:
+> > 
+> > 	if (evlist->cpus->map[0] < 0)
+> > 		opts->no_inherit = true;
+> > 
+> > meaning that per task profiling won't enable event inheritance. I don't
+> > know why it's needed though.
+> 
+> Because you cannot have inherited per-task counters. It only works for
+> per-task-per-cpu counters. Otherwise you'll have a scalability
+> nightmare.
+> 
 
-Doh ignore that, the point is valid but not in a -longterm context
+Got it. So it means that we do need to create an event for each cpu
+in order to profile a task (and its children), right? (Originally, I
+thought it's a bug :-p)
+
+If so, yes, the commit 55261f46702c ("perf evlist: Fix creation of
+cpu map") should be reverted like below (note that target->cpu_list
+check no longer needed since perf_target__validate() will handle
+those cases). If it looks ok to you guys, I'll send a formal patch
+with name changes (to avoid the double negation suggested by Ingo):
+
+
+diff --git a/tools/perf/util/evlist.c b/tools/perf/util/evlist.c
+index 1201daf71719..f6979ba391d1 100644
+--- a/tools/perf/util/evlist.c
++++ b/tools/perf/util/evlist.c
+@@ -609,10 +609,10 @@ int perf_evlist__create_maps(struct perf_evlist 
+ 	if (evlist->threads == NULL)
+ 		return -1;
+ 
+-	if (!perf_target__no_cpu(target))
+-		evlist->cpus = cpu_map__new(target->cpu_list);
+-	else
++	if (!perf_target__no_task(target))
+ 		evlist->cpus = cpu_map__dummy_new();
++	else
++		evlist->cpus = cpu_map__new(target->cpu_list);
+ 
+ 	if (evlist->cpus == NULL)
+ 		goto out_delete_threads;
+
+
+
+-- 
+Regards,
+Namhyung Kim
+
+
