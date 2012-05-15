@@ -1,63 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933023Ab2EOOwN (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 May 2012 10:52:13 -0400
-Received: from mail-qc0-f174.google.com ([209.85.216.174]:39500 "EHLO
-	mail-qc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932906Ab2EOOwI convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 May 2012 10:52:08 -0400
+	id S1758391Ab2EOOx3 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 May 2012 10:53:29 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:42150 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752612Ab2EOOx1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 May 2012 10:53:27 -0400
+Date: Tue, 15 May 2012 17:53:16 +0300
+From: Gleb Natapov <gleb@redhat.com>
+To: Alan Cox <alan@lxorguk.ukuu.org.uk>
+Cc: Hannes Reinecke <hare@suse.de>, LKML <linux-kernel@vger.kernel.org>,
+        "H. Peter Anvin" <hpa@linux.intel.com>
+Subject: Re: [PATCH] EDD: Check for correct EDD 3.0 length
+Message-ID: <20120515145316.GF6948@redhat.com>
+References: <1337079889-62380-1-git-send-email-hare@suse.de>
+ <20120515111255.GJ32036@redhat.com>
+ <4FB23C09.7060300@suse.de>
+ <20120515115917.GK32036@redhat.com>
+ <20120515150015.5bf17aea@pyramind.ukuu.org.uk>
+ <20120515143644.GD6948@redhat.com>
+ <20120515155206.520e46b6@pyramind.ukuu.org.uk>
 MIME-Version: 1.0
-In-Reply-To: <20120515144658.GC2461@linux.vnet.ibm.com>
-References: <20120515044145.GA21910@redhat.com>
-	<20120515051607.GH2412@linux.vnet.ibm.com>
-	<CACLa4psGwEC96GfonAJ+-v0ocdvb_ZBxB6v=zAXbnbqFmuCNuA@mail.gmail.com>
-	<20120515144658.GC2461@linux.vnet.ibm.com>
-Date: Tue, 15 May 2012 10:52:07 -0400
-Message-ID: <CACLa4pt=Hh1=E9Jno_BAU-6stRL=hY3wehpWycKCYYJbJzYEGw@mail.gmail.com>
-Subject: Re: suspicious RCU usage in security/selinux/netnode.c
-From: Eric Paris <eparis@parisplace.org>
-To: paulmck@linux.vnet.ibm.com
-Cc: Dave Jones <davej@redhat.com>, sds@tycho.nsa.gov,
-        Linux Kernel <linux-kernel@vger.kernel.org>, paul@paul-moore.com
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120515155206.520e46b6@pyramind.ukuu.org.uk>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, May 15, 2012 at 10:46 AM, Paul E. McKenney
-<paulmck@linux.vnet.ibm.com> wrote:
-> On Tue, May 15, 2012 at 10:24:23AM -0400, Eric Paris wrote:
->> On Tue, May 15, 2012 at 1:16 AM, Paul E. McKenney
->> <paulmck@linux.vnet.ibm.com> wrote:
->> > On Tue, May 15, 2012 at 12:41:45AM -0400, Dave Jones wrote:
->> >> I just triggered this on Linus' current tree.
->> >
->> > This is a bare:
->> >
->> >        rcu_dereference(sel_netnode_hash[idx].list.prev)
->> >
->> > which needs to be in an RCU read-side critical section.  Alternatively,
->> > the above should instead be something like:
->> >
->> >        rcu_dereference_check(sel_netnode_hash[idx].list.prev,
->> >                              lockdep_is_held(&sel_netnode_lock));
->>
->> Right, but that 'bare' dereference comes from
->> list_for_each_entry_rcu(), [from sel_netnode_sid_slow()] which I don't
->> see how to easily annotate with the lock.  Nor do I think it's within
->> my brain power (or my willingness to maintain such in the future) to
->> want to open code that logic.
->
-> You lost me on this one.  The lockdep splat called out the
-> rcu_dereference() above, not a list_for_each_entry_rcu().  Besides which,
-> the list_for_each_entry_rcu() does not do the checking -- at the time,
-> I was not willing to explode the API that much.
+On Tue, May 15, 2012 at 03:52:06PM +0100, Alan Cox wrote:
+> > It is easy to be confused since there are two EDD 3 specs. First is from
+> > Phoenix BIOS (linked at the first mail of the thread) and it does not have
+> > enough info even for ATA. You can't tell primary ATA controller from secondary.
+> 
+> Yes you can - it's defined by the PCI specification for compatibility
+How? ATA device path has only Master/Slave. Interface path has only
+bus/slot/function. So given all that in int13_80 how do I know if this
+is primary or secondary controller?
 
-Ohhhh, ok.  I assumed we needed to annotate list_for_each_entry_rcu()
-under the spinlock as well as the bare dereference in the insert code.
- Ok, should be very easy to fix, although the list running code is
-still going to be un-annotated in any way.  Thanks
+T13 added has Channel number in Interface path.
 
--Eric
+> mappings on hardware of that era. Once you move to newer systems with ATA
+> native PCI controllers then you need the 3.0 spec not the Phoenix spec.
+> 
+> Alan
+
+--
+			Gleb.
