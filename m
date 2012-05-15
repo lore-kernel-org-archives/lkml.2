@@ -1,54 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758420Ab2EOPFu (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 May 2012 11:05:50 -0400
-Received: from mail-qc0-f174.google.com ([209.85.216.174]:40160 "EHLO
-	mail-qc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752928Ab2EOPFs (ORCPT
+	id S933066Ab2EOPGD (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 May 2012 11:06:03 -0400
+Received: from fold.natur.cuni.cz ([195.113.57.32]:47828 "HELO
+	fold.natur.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S932763Ab2EOPGA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 May 2012 11:05:48 -0400
+	Tue, 15 May 2012 11:06:00 -0400
+Message-ID: <4FB270D2.8030705@fold.natur.cuni.cz>
+Date: Tue, 15 May 2012 17:05:54 +0200
+From: Martin Mokrejs <mmokrejs@fold.natur.cuni.cz>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:11.0) Gecko/20120319 Firefox/11.0 SeaMonkey/2.8
 MIME-Version: 1.0
-In-Reply-To: <1337086834.27020.162.camel@laptop>
-References: <CAKfTPtDSDAOAdv0GTDswZeRM7TmACrjok+5kddSaQpvy6_6xWw@mail.gmail.com>
-	<CAKfTPtCfiY7A29+e50F+6awd8BjNJjg4=uNN4ReZfdS_4FbpkA@mail.gmail.com>
-	<1337084609.27020.156.camel@laptop>
-	<CAKfTPtDz1-fR2i5x7AVd8sGZhX2VNtz2rnQC3ePrcHO9MWK3FQ@mail.gmail.com>
-	<1337086834.27020.162.camel@laptop>
-Date: Tue, 15 May 2012 17:05:47 +0200
-Message-ID: <CAKfTPtDrZ-tfC81jnxwpB+DCtmxhU+VfoYbtSBr8MkFt+P8JcA@mail.gmail.com>
-Subject: Re: Plumbers: Tweaking scheduler policy micro-conf RFP
-From: Vincent Guittot <vincent.guittot@linaro.org>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: paulmck@linux.vnet.ibm.com, smuckle@quicinc.com, khilman@ti.com,
-        Robin.Randhawa@arm.com, suresh.b.siddha@intel.com,
-        thebigcorporation@gmail.com, venki@google.com,
-        panto@antoniou-consulting.com, mingo@elte.hu, paul.brett@intel.com,
-        pdeschrijver@nvidia.com, pjt@google.com, efault@gmx.de,
-        fweisbec@gmail.com, geoff@infradead.org, rostedt@goodmis.org,
-        tglx@linutronix.de, amit.kucheria@linaro.org,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        linaro-sched-sig@lists.linaro.org,
-        Morten Rasmussen <Morten.Rasmussen@arm.com>,
-        Juri Lelli <juri.lelli@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
+To: Jean-Louis Dupond <jean-louis@dupond.be>
+CC: Matthew Garrett <mjg59@srcf.ucam.org>,
+        Mario Limonciello <mario_limonciello@dell.com>,
+        Kamal Mostafa <kamal@canonical.com>,
+        "platform-driver-x86@vger.kernel.org" 
+	<platform-driver-x86@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] dell-laptop: rfkill blacklist Dell XPS 13z, 15z
+References: <1337023652-11661-1-git-send-email-kamal@canonical.com> <20120514193718.GA6438@srcf.ucam.org> <4FB16659.6040704@dell.com> <20120514211959.GA9394@srcf.ucam.org> <4FB1774D.4080106@dell.com> <20120514212842.GA9561@srcf.ucam.org> <4FB17DA8.1040808@dell.com> <20120514215533.GA10378@srcf.ucam.org> <4FB182BB.6090303@dupond.be>
+In-Reply-To: <4FB182BB.6090303@dupond.be>
+X-Enigmail-Version: 1.4
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 15 May 2012 15:00, Peter Zijlstra <peterz@infradead.org> wrote:
-> On Tue, 2012-05-15 at 14:57 +0200, Vincent Guittot wrote:
->>
->> Not sure that nobody cares but it's much more that scheduler,
->> load_balance and sched_mc are sensible enough that it's difficult to
->> ensure that a modification will not break everything for someone
->> else.
->
-> Thing is, its already broken, there's nothing else to break :-)
->
+Jean-Louis Dupond wrote:
+> Hi
+> 
+> I'm the owner of a XPS 15, which has this issue.
+> The best solution would indeed be to solve the real bug, and not work
+> around it in Linux.
+> 
+> But still, if we can fix it with rather small impact/code on linux, I
+> think we should just do it.
+> It makes linux more user friendly this way.
+> 
+> A small remark also:
+> Is it really possible to disable bluetooth without killing wifi in
+> Windows on the XPS?
 
-sched_mc is the only power-aware knob in the current scheduler. It's
-far from being perfect but it seems to work on some ARM platform at
-least. You mentioned at the scheduler mini-summit that we need a
-cleaner replacement and everybody has agreed on that point. Is anybody
-working on it yet ? and can we discuss at Plumber's what this
-replacement would look like ?
+I rebooted into Win7. You are right, on this Dell Vostro 3550 the Fn+F2 has
+only two states: turn on both BT+WiFi or turn both off. My old ASUS laptop
+had 3 states and I could turn off independently BT while not WiFi. ;) 
+So, rfkill application on Linux behaves in the same way as the Fn+F2 in Linux
+and in Win 7.
+
+Martin
