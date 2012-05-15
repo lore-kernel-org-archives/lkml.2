@@ -1,17 +1,17 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965774Ab2EOCSy (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 May 2012 22:18:54 -0400
-Received: from mail.windriver.com ([147.11.1.11]:49409 "EHLO
-	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S964918Ab2EOCQt (ORCPT
+	id S965761Ab2EOCSx (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 May 2012 22:18:53 -0400
+Received: from mail1.windriver.com ([147.11.146.13]:53168 "EHLO
+	mail1.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S964917Ab2EOCQs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 May 2012 22:16:49 -0400
+	Mon, 14 May 2012 22:16:48 -0400
 From: Paul Gortmaker <paul.gortmaker@windriver.com>
 To: <stable@kernel.org>, <linux-kernel@vger.kernel.org>
-Subject: [34-longterm 061/179] USB: xhci - fix interval calculation for FS isoc endpoints
-Date: Mon, 14 May 2012 22:12:37 -0400
-Message-ID: <1337048075-6132-62-git-send-email-paul.gortmaker@windriver.com>
+Subject: [34-longterm 060/179] USB: serial: add another 4N-GALAXY.DE PID to ftdi_sio driver
+Date: Mon, 14 May 2012 22:12:36 -0400
+Message-ID: <1337048075-6132-61-git-send-email-paul.gortmaker@windriver.com>
 X-Mailer: git-send-email 1.7.9.6
 In-Reply-To: <1337048075-6132-1-git-send-email-paul.gortmaker@windriver.com>
 References: <1337048075-6132-1-git-send-email-paul.gortmaker@windriver.com>
@@ -21,7 +21,7 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Dmitry Torokhov <dtor@vmware.com>
+From: Steffen Sledz <sledz@dresearch-fe.de>
 
                    -------------------
     This is a commit scheduled for the next v2.6.34 longterm release.
@@ -29,58 +29,42 @@ From: Dmitry Torokhov <dtor@vmware.com>
     If you see a problem with using this for longterm, please comment.
                    -------------------
 
-commit cd3c18ba2fac14b34d03cae111f215009735ea06 upstream.
+commit a26d31cef06f43a76327c21235e75450869df2b8 upstream.
 
-Full-speed isoc endpoints specify interval in exponent based form in
-frames, not microframes, so we need to adjust accordingly.
+E.g. newer CAN 2.0 A/B <=> USB 2.0 converters report idProduct=f3c2.
 
-NEC xHCI host controllers will return an error code of 0x11 if a full
-speed isochronous endpoint is added with the Interval field set to
-something less than 3 (2^3 = 8 microframes, or one frame).  It is
-impossible for a full speed device to have an interval smaller than one
-frame.
-
-This was always an issue in the xHCI driver, but commit
-dfa49c4ad120a784ef1ff0717168aa79f55a483a "USB: xhci - fix math in
-xhci_get_endpoint_interval()" removed the clamping of the minimum value
-in the Interval field, which revealed this bug.
-
-This needs to be backported to stable kernels back to 2.6.31.
-
-Reported-by: Matt Evans <matt@ozlabs.org>
-Signed-off-by: Dmitry Torokhov <dtor@vmware.com>
-Signed-off-by: Sarah Sharp <sarah.a.sharp@linux.intel.com>
+Signed-off-by: Steffen Sledz <sledz@dresearch-fe.de>
+Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
 ---
- drivers/usb/host/xhci-mem.c |   14 ++++++++++++--
- 1 file changed, 12 insertions(+), 2 deletions(-)
+ drivers/usb/serial/ftdi_sio.c     |    1 +
+ drivers/usb/serial/ftdi_sio_ids.h |    1 +
+ 2 files changed, 2 insertions(+)
 
-diff --git a/drivers/usb/host/xhci-mem.c b/drivers/usb/host/xhci-mem.c
-index 05b5c34..727ac40 100644
---- a/drivers/usb/host/xhci-mem.c
-+++ b/drivers/usb/host/xhci-mem.c
-@@ -533,9 +533,19 @@ static unsigned int xhci_parse_exponent_interval(struct usb_device *udev,
- 	interval = clamp_val(ep->desc.bInterval, 1, 16) - 1;
- 	if (interval != ep->desc.bInterval - 1)
- 		dev_warn(&udev->dev,
--			 "ep %#x - rounding interval to %d microframes\n",
-+			 "ep %#x - rounding interval to %d %sframes\n",
- 			 ep->desc.bEndpointAddress,
--			 1 << interval);
-+			 1 << interval,
-+			 udev->speed == USB_SPEED_FULL ? "" : "micro");
-+
-+	if (udev->speed == USB_SPEED_FULL) {
-+		/*
-+		 * Full speed isoc endpoints specify interval in frames,
-+		 * not microframes. We are using microframes everywhere,
-+		 * so adjust accordingly.
-+		 */
-+		interval += 3;	/* 1 frame = 2^3 uframes */
-+	}
+diff --git a/drivers/usb/serial/ftdi_sio.c b/drivers/usb/serial/ftdi_sio.c
+index eac7330..c7e4fb8 100644
+--- a/drivers/usb/serial/ftdi_sio.c
++++ b/drivers/usb/serial/ftdi_sio.c
+@@ -651,6 +651,7 @@ static struct usb_device_id id_table_combined [] = {
+ 	{ USB_DEVICE(FTDI_VID, EVER_ECO_PRO_CDS) },
+ 	{ USB_DEVICE(FTDI_VID, FTDI_4N_GALAXY_DE_1_PID) },
+ 	{ USB_DEVICE(FTDI_VID, FTDI_4N_GALAXY_DE_2_PID) },
++	{ USB_DEVICE(FTDI_VID, FTDI_4N_GALAXY_DE_3_PID) },
+ 	{ USB_DEVICE(FTDI_VID, XSENS_CONVERTER_0_PID) },
+ 	{ USB_DEVICE(FTDI_VID, XSENS_CONVERTER_1_PID) },
+ 	{ USB_DEVICE(FTDI_VID, XSENS_CONVERTER_2_PID) },
+diff --git a/drivers/usb/serial/ftdi_sio_ids.h b/drivers/usb/serial/ftdi_sio_ids.h
+index a644665..a73443f 100644
+--- a/drivers/usb/serial/ftdi_sio_ids.h
++++ b/drivers/usb/serial/ftdi_sio_ids.h
+@@ -351,6 +351,7 @@
+  */
+ #define FTDI_4N_GALAXY_DE_1_PID	0xF3C0
+ #define FTDI_4N_GALAXY_DE_2_PID	0xF3C1
++#define FTDI_4N_GALAXY_DE_3_PID	0xF3C2
  
- 	return interval;
- }
+ /*
+  * Linx Technologies product ids
 -- 
 1.7.9.6
 
