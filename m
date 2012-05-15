@@ -1,86 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932224Ab2EOL6N (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 May 2012 07:58:13 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:35130 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757851Ab2EOL6L (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 May 2012 07:58:11 -0400
-Subject: Re: Plumbers: Tweaking scheduler policy micro-conf RFP
-From: Peter Zijlstra <a.p.zijlstra@chello.nl>
-To: Pantelis Antoniou <pantelis.antoniou@gmail.com>
-Cc: Vincent Guittot <vincent.guittot@linaro.org>,
-        mou Chen <hi3766691@gmail.com>, linux-kernel@vger.kernel.org,
-        Ingo Molnar <mingo@kernel.org>, torvalds@linux-foundation.org
-In-Reply-To: <9093E8BA-80E4-4113-B036-0259E5FB44F1@gmail.com>
-References: <CAKfTPtDSDAOAdv0GTDswZeRM7TmACrjok+5kddSaQpvy6_6xWw@mail.gmail.com>
-	 <CAKfTPtCfiY7A29+e50F+6awd8BjNJjg4=uNN4ReZfdS_4FbpkA@mail.gmail.com>
-	 <CANQmPXj_81NBBrTYCkhUO1k1i4WVu0iHwY1_10wDVOFWCSkvsw@mail.gmail.com>
-	 <CAKfTPtBhPpQyr1qugbMzq2nENh+zBT+zx_nWQpQ9NPbF=+ppcQ@mail.gmail.com>
-	 <833A8DB8-1AB4-45E4-8D44-14A0D782807D@gmail.com>
-	 <1337077714.27694.21.camel@twins>
-	 <9093E8BA-80E4-4113-B036-0259E5FB44F1@gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Tue, 15 May 2012 13:58:02 +0200
-Message-ID: <1337083082.27020.151.camel@laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.2 
-Content-Transfer-Encoding: 7bit
+	id S932347Ab2EOL7V (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 May 2012 07:59:21 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:17967 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932068Ab2EOL7T (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 May 2012 07:59:19 -0400
+Date: Tue, 15 May 2012 14:59:17 +0300
+From: Gleb Natapov <gleb@redhat.com>
+To: Hannes Reinecke <hare@suse.de>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        "H. Peter Anvin" <hpa@linux.intel.com>
+Subject: Re: [PATCH] EDD: Check for correct EDD 3.0 length
+Message-ID: <20120515115917.GK32036@redhat.com>
+References: <1337079889-62380-1-git-send-email-hare@suse.de>
+ <20120515111255.GJ32036@redhat.com>
+ <4FB23C09.7060300@suse.de>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4FB23C09.7060300@suse.de>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2012-05-15 at 14:35 +0300, Pantelis Antoniou wrote:
+On Tue, May 15, 2012 at 01:20:41PM +0200, Hannes Reinecke wrote:
+> On 05/15/2012 01:12 PM, Gleb Natapov wrote:
+> > Next time you resent an email say why you are doing it (wrong lkml
+> > address in this case).
+> > 
+> > On Tue, May 15, 2012 at 01:04:49PM +0200, Hannes Reinecke wrote:
+> >> The device_path_info_length for EDD 3.0 is 36, not 44.
+> >> Cf http://mbldr.sourceforge.net/specsedd30.pdf.
+> >>
+> > That's the wrong spec.
+> > 
+> Ah-ha.
+> Why?
+www.t13.org/documents/UploadedDocuments/docs2008/e08134r0-BIOS_Enhanced_Disk_Drive_Services_4.0.doc
+
 > 
-> Throughput: MIPS(?), bogo-mips(?), some kind of performance counter?
+> >> This is a regression introduced by commit
+> >> 0c61227094b3ddaca2f847ee287c4a2e3762b5a2
+> >>
+> >> Signed-off-by: Hannes Reinecke <hare@suse.de>
+> >> Cc: Gleb Natapov <gleb@redhat.com>
+> >> Cc: H. Peter Anvin <hpa@linux.intel.com>
+> >>
+> >> diff --git a/drivers/firmware/edd.c b/drivers/firmware/edd.c
+> >> index e229576..09a77d5 100644
+> >> --- a/drivers/firmware/edd.c
+> >> +++ b/drivers/firmware/edd.c
+> >> @@ -545,8 +545,8 @@ edd_has_edd30(struct edd_device *edev)
+> >>  	}
+> >>  
+> >>  
+> >> -	/* We support only T13 spec */
+> >> -	if (info->params.device_path_info_length != 44)
+> > Here is the spec that code supports is spelled out, but you just replace
+> > the comment with pointer to the spec that the code does not support.
+> > 
+> Hmm? How so?
+> 
+> I have this EDD info:
+> 
+> # hexdump -C raw_data
+> 00000000  1e 00 03 00 14 04 00 00  ff 00 00 00 3f 00 00 00
+> |............?...|
+> 00000010  00 00 00 01 00 00 00 00  00 02 ff ff ff ff dd be
+> |................|
+> 00000020  24 00 00 00 50 43 49 00  46 49 42 52 45 00 00 00
+> |$...PCI.FIBRE...|
+> 00000030  07 00 00 00 00 00 00 00  50 01 43 80 01 3c 94 48
+> |........P.C..<.H|
+> 00000040  01 c8 00 00 00 00 00 00  00 00                    |..........|
+> 
+> which used to be perfectly valid, contains an 'interface_type'
+> string, and a device path. All perfectly okay.
+> And, as mentioned, used to be displayed ok prior to the mentioned
+> commit.
+> 
+It is valid according to one spec but invalid according to another.
 
-Throughput is too generic a term to put a unit on. For some people its
-tnx/s for others its frames/s neither are much (if at all) related to
-MIPS (database tnx require lots of IO, video encoding likes FPU/SIMMD
-stuff etc..).
+> So why do you claim we can't display it anymore?
+> 
+Before commit 0c61227094b3ddaca2f847ee287c4a2e3762b5a2 the code didn't
+calculate checksum correctly. The check always succeed, so when bios
+provided information according to T13 EDD4.0 spec interface_type contained
+garbage. After the commit checksum is calculated correctly, but according
+to T13 EDD4.0 spec, so for BIOSes that supply info according to another
+spec check fails. Since T13 EDD4.0 spec support modern interfaces (RAID,
+SATA, SAS) which another spec omits, and for interfaces they both support
+T13 EDD4.0 actually supply enough information to link edd entry to actual
+device (another spec does not), I do not see support for other spec to
+be important, but you are welcome to write support for it if you need
+it. The only way I see to check what spec edd info corresponds to is to
+calculate checksum according to both specs and see which one succeeds.
 
-> Latency: usecs(?)
-
-nsec (chips are really really fast and only getting faster), but nsecs
-of what :-) That is, which latency are we going to measure.
-
-> Power: Now that's a tricky one, we can't measure power directly, it's a
-> function of the cpu load we run in a period of time, along with any
-> history of the cstates & pstates of that period. How can we collect
-> information about that? Also we to take into account peripheral device
-> power to that; GPUs are particularly power hungry. 
-
-Intel provides some measure of CPU power drain on recent chips (iirc),
-but yeah that doesn't include GPUs and other peripherals iirc.
-
-> Thermal management: How to distribute load to the processors in such
-> a way that the temperature of the die doesn't increase too much that
-> we have to either go to a lower OPP or shut down the core all-together.
-> This is in direct conflict with throughput since we'd have better performance 
-> if we could keep the same warmed-up cpu going.
-
-Core-hopping.. yay! We have the whole sensors framework that provides an
-interface to such hardware, the question is, do chips have enough
-sensors spread on them to be useful?
-
-> Memory I/O: Some workloads are memory bandwidth hungry but do not need
-> much CPU power. In the case of asymmetric cores it would make sense to move
-> the memory bandwidth hog to a lower performance CPU without any impact. 
-> Probably need to use some kind of performance counter for that; not going
-> to be very generic. 
-
-You're assuming the slower cores have the same memory bandwidth, isn't
-that a dangerous assumption?
-
-Anyway, so the 'problem' with using PMCs from within the scheduler is
-that, 1) they're ass backwards slow on some chips (x86 anyone?) 2) some
-userspace gets 'upset' if they can't get at all of them.
-
-So it has to be optional at best, and I hate knobs :-) Also, the more
-information you're going to feed this load-balancer thing, the harder
-all that becomes, you don't want to do the full nm! m-dimensional bin
-fit.. :-)
-
-
-
+--
+			Gleb.
