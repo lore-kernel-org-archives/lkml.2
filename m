@@ -1,58 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758753Ab2EOMA4 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 May 2012 08:00:56 -0400
-Received: from casper.infradead.org ([85.118.1.10]:48737 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757851Ab2EOMAy (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 May 2012 08:00:54 -0400
-Subject: Re: [PATCH v4 3/7] x86/flush_tlb: try flush_tlb_single one by one
- in flush_tlb_range
-From: Peter Zijlstra <a.p.zijlstra@chello.nl>
-To: Borislav Petkov <bp@amd64.org>
-Cc: Alex Shi <alex.shi@intel.com>, rob@landley.net, tglx@linutronix.de,
-        mingo@redhat.com, hpa@zytor.com, arnd@arndb.de, rostedt@goodmis.org,
-        fweisbec@gmail.com, jeremy@goop.org, gregkh@linuxfoundation.org,
-        riel@redhat.com, luto@mit.edu, avi@redhat.com, len.brown@intel.com,
-        dhowells@redhat.com, fenghua.yu@intel.com, ak@linux.intel.com,
-        cpw@sgi.com, steiner@sgi.com, akpm@linux-foundation.org,
-        penberg@kernel.org, hughd@google.com, rientjes@google.com,
-        kosaki.motohiro@jp.fujitsu.com, n-horiguchi@ah.jp.nec.com,
-        paul.gortmaker@windriver.com, trenn@suse.de, tj@kernel.org,
-        oleg@redhat.com, axboe@kernel.dk, kamezawa.hiroyu@jp.fujitsu.com,
-        viro@zeniv.linux.org.uk, linux-kernel@vger.kernel.org
-In-Reply-To: <20120515115638.GE27153@aftab.osrc.amd.com>
-References: <1336626013-28413-1-git-send-email-alex.shi@intel.com>
-	 <1336626013-28413-4-git-send-email-alex.shi@intel.com>
-	 <20120510084213.GD30055@aftab.osrc.amd.com> <4FAB84B6.7060706@intel.com>
-	 <4FAE18D0.6050001@intel.com> <20120513111328.GD28863@aftab.osrc.amd.com>
-	 <4FB1AC03.2070407@intel.com> <20120515103307.GB27153@aftab.osrc.amd.com>
-	 <1337080582.27694.40.camel@twins>
-	 <20120515115638.GE27153@aftab.osrc.amd.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Tue, 15 May 2012 14:00:43 +0200
-Message-ID: <1337083243.27020.153.camel@laptop>
+	id S932294Ab2EOMEk (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 May 2012 08:04:40 -0400
+Received: from nat28.tlf.novell.com ([130.57.49.28]:46326 "EHLO
+	nat28.tlf.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932074Ab2EOMEj convert rfc822-to-8bit (ORCPT
+	<rfc822;groupwise-linux-kernel@vger.kernel.org:3:1>);
+	Tue, 15 May 2012 08:04:39 -0400
+Message-Id: <4FB262940200007800083CAC@nat28.tlf.novell.com>
+X-Mailer: Novell GroupWise Internet Agent 12.0.0 
+Date: Tue, 15 May 2012 13:05:08 +0100
+From: "Jan Beulich" <JBeulich@suse.com>
+To: <Matt_Domsch@Dell.com>, <matt.fleming@linux.intel.com>
+Cc: <linux-kernel@vger.kernel.org>
+Subject: [PATCH, resend] efivars: remove stray exports
 Mime-Version: 1.0
-X-Mailer: Evolution 2.32.2 
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 8BIT
+Content-Disposition: inline
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2012-05-15 at 13:56 +0200, Borislav Petkov wrote:
-> On Tue, May 15, 2012 at 01:16:22PM +0200, Peter Zijlstra wrote:
-> > Wouldn't all this become much prettier if you rip out that
-> > multi-vector stuff?
-> 
-> multi-vector stuff? Please elaborate.
+There's no in-tree consumer, and the way they are currently prototyped
+it doesn't look like they're really usable from anywhere but the base
+EFI implementation.
 
-The INVALIDATE_TLB_VECTOR muck:
+Signed-off-by: Jan Beulich <jbeulich@suse.com>
 
-                apic->send_IPI_mask(to_cpumask(f->flush_cpumask),
-                              INVALIDATE_TLB_VECTOR_START + sender);
+---
+ drivers/firmware/efivars.c |   13 ++++++-------
+ include/linux/efi.h        |    5 -----
+ 2 files changed, 6 insertions(+), 12 deletions(-)
 
-and simply use:
+--- 3.4-rc7/drivers/firmware/efivars.c
++++ 3.4-rc7-efivars/drivers/firmware/efivars.c
+@@ -1039,7 +1039,7 @@ efivar_create_sysfs_entry(struct efivars
+ 	return 0;
+ }
+ 
+-static int
++static int __init
+ create_efivars_bin_attributes(struct efivars *efivars)
+ {
+ 	struct bin_attribute *attr;
+@@ -1098,7 +1098,7 @@ out_free:
+ 	return error;
+ }
+ 
+-void unregister_efivars(struct efivars *efivars)
++static void unregister_efivars(struct efivars *efivars)
+ {
+ 	struct efivar_entry *entry, *n;
+ 
+@@ -1116,11 +1116,11 @@ void unregister_efivars(struct efivars *
+ 	kfree(efivars->del_var);
+ 	kset_unregister(efivars->kset);
+ }
+-EXPORT_SYMBOL_GPL(unregister_efivars);
+ 
+-int register_efivars(struct efivars *efivars,
+-		     const struct efivar_operations *ops,
+-		     struct kobject *parent_kobj)
++static int __init
++register_efivars(struct efivars *efivars,
++		 const struct efivar_operations *ops,
++		 struct kobject *parent_kobj)
+ {
+ 	efi_status_t status = EFI_NOT_FOUND;
+ 	efi_guid_t vendor_guid;
+@@ -1192,7 +1192,6 @@ out:
+ 
+ 	return error;
+ }
+-EXPORT_SYMBOL_GPL(register_efivars);
+ 
+ static struct efivars __efivars;
+ static struct efivar_operations ops;
+--- 3.4-rc7/include/linux/efi.h
++++ 3.4-rc7-efivars/include/linux/efi.h
+@@ -655,11 +655,6 @@ struct efivars {
+ 	struct pstore_info efi_pstore_info;
+ };
+ 
+-int register_efivars(struct efivars *efivars,
+-		     const struct efivar_operations *ops,
+-		     struct kobject *parent_kobj);
+-void unregister_efivars(struct efivars *efivars);
+-
+ #endif /* CONFIG_EFI_VARS */
+ 
+ #endif /* _LINUX_EFI_H */
 
- smp_call_function()
+
 
