@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965759Ab2EOQYJ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 May 2012 12:24:09 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:34866 "EHLO
+	id S933206Ab2EOQZc (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 May 2012 12:25:32 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:34035 "EHLO
 	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965642Ab2EOQYF (ORCPT
+	with ESMTP id S933069Ab2EOQZb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 May 2012 12:24:05 -0400
-Date: Tue, 15 May 2012 09:24:00 -0700
-From: Tejun Heo <tejun@google.com>
+	Tue, 15 May 2012 12:25:31 -0400
+Date: Tue, 15 May 2012 09:25:25 -0700
+From: Tejun Heo <tj@kernel.org>
 To: Kent Overstreet <koverstreet@google.com>
 Cc: linux-bcache@vger.kernel.org, linux-kernel@vger.kernel.org,
         dm-devel@redhat.com, agk@redhat.com
 Subject: Re: [Bcache v13 02/16] Bio pool freeing
-Message-ID: <20120515162400.GB17216@google.com>
+Message-ID: <20120515162525.GC17216@google.com>
 References: <cover.1336619038.git.koverstreet@google.com>
  <ba8ce9fcca87f192ff5f5d3a436eb8f4d0bcb006.1336619038.git.koverstreet@google.com>
 MIME-Version: 1.0
@@ -34,6 +34,14 @@ On Wed, May 09, 2012 at 11:08:34PM -0400, Kent Overstreet wrote:
 > 
 > Signed-off-by: Kent Overstreet <koverstreet@google.com>
 > ---
+>  fs/bio.c                  |    9 +++++++--
+>  include/linux/blk_types.h |    2 ++
+>  2 files changed, 9 insertions(+), 2 deletions(-)
+> 
+> diff --git a/fs/bio.c b/fs/bio.c
+> index a965b89..6a967fc 100644
+> --- a/fs/bio.c
+> +++ b/fs/bio.c
 > @@ -417,7 +418,11 @@ void bio_put(struct bio *bio)
 >  	 */
 >  	if (atomic_dec_and_test(&bio->bi_cnt)) {
