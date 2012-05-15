@@ -1,42 +1,39 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758578Ab2EOP2a (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 May 2012 11:28:30 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:51205 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757928Ab2EOP23 convert rfc822-to-8bit (ORCPT
+	id S965229Ab2EOP2g (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 May 2012 11:28:36 -0400
+Received: from lxorguk.ukuu.org.uk ([81.2.110.251]:45337 "EHLO
+	lxorguk.ukuu.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S964818Ab2EOP2e (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 May 2012 11:28:29 -0400
-Message-ID: <1337095700.27694.76.camel@twins>
-Subject: Re: Perf events warning..
-From: Peter Zijlstra <a.p.zijlstra@chello.nl>
-To: David Ahern <dsahern@gmail.com>
-Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Ingo Molnar <mingo@redhat.com>, linux-kernel@vger.kernel.org
-Date: Tue, 15 May 2012 17:28:20 +0200
-In-Reply-To: <4FB2755F.9020606@gmail.com>
-References: <CA+55aFzNQqa9nuhZUog-+B0SfU6ip_QSt73R=2Du=M2ua1cFBA@mail.gmail.com>
-	  <1337034048.27020.137.camel@laptop>
-	  <CA+55aFxHw_SOX7fvcwskwP0qvLwyeXxTFjk589pnQtmYevhvpw@mail.gmail.com>
-	 <1337078996.27694.26.camel@twins> <4FB2755F.9020606@gmail.com>
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
-X-Mailer: Evolution 3.2.2- 
+	Tue, 15 May 2012 11:28:34 -0400
+Date: Tue, 15 May 2012 16:31:20 +0100
+From: Alan Cox <alan@lxorguk.ukuu.org.uk>
+To: Alan Cox <alan@lxorguk.ukuu.org.uk>
+Cc: Gleb Natapov <gleb@redhat.com>, Hannes Reinecke <hare@suse.de>,
+        LKML <linux-kernel@vger.kernel.org>,
+        "H. Peter Anvin" <hpa@linux.intel.com>
+Subject: Re: [PATCH] EDD: Check for correct EDD 3.0 length
+Message-ID: <20120515163120.4716050a@pyramind.ukuu.org.uk>
+In-Reply-To: <20120515161439.00e2de3c@pyramind.ukuu.org.uk>
+References: <1337079889-62380-1-git-send-email-hare@suse.de>
+	<20120515111255.GJ32036@redhat.com>
+	<4FB23C09.7060300@suse.de>
+	<20120515115917.GK32036@redhat.com>
+	<20120515150015.5bf17aea@pyramind.ukuu.org.uk>
+	<20120515143644.GD6948@redhat.com>
+	<20120515161439.00e2de3c@pyramind.ukuu.org.uk>
+X-Mailer: Claws Mail 3.8.0 (GTK+ 2.24.8; x86_64-redhat-linux-gnu)
+Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
 Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2012-05-15 at 09:25 -0600, David Ahern wrote:
-> 
-> Perhaps it is specific to processor generation? 
+> The T13 draft D3186 was published in 2000 and leads on to the EDD 4.0
+> proposal of 2008 which generally is what people consider EDD 3.0
 
-Your error is distinctly different from Linus' in that it came from
-within the arch code, Linus' was core code.
+Typo - I mean 4.0 of course
 
-Furthermore the error you send had:
-
- [   31.528799] Hardware name: Bochs
-
-Which is some virt crap.. so I wouldn't trust the 'hardware' anyway.
