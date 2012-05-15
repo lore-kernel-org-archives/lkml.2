@@ -1,17 +1,17 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965800Ab2EOCS5 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 May 2012 22:18:57 -0400
-Received: from mail1.windriver.com ([147.11.146.13]:53216 "EHLO
+	id S965787Ab2EOCS4 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 May 2012 22:18:56 -0400
+Received: from mail1.windriver.com ([147.11.146.13]:53180 "EHLO
 	mail1.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S964947Ab2EOCQz (ORCPT
+	with ESMTP id S964919Ab2EOCQu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 May 2012 22:16:55 -0400
+	Mon, 14 May 2012 22:16:50 -0400
 From: Paul Gortmaker <paul.gortmaker@windriver.com>
 To: <stable@kernel.org>, <linux-kernel@vger.kernel.org>
-Subject: [34-longterm 068/179] xfs: properly account for reclaimed inodes
-Date: Mon, 14 May 2012 22:12:44 -0400
-Message-ID: <1337048075-6132-69-git-send-email-paul.gortmaker@windriver.com>
+Subject: [34-longterm 062/179] oprofile, dcookies: Fix possible circular locking dependency
+Date: Mon, 14 May 2012 22:12:38 -0400
+Message-ID: <1337048075-6132-63-git-send-email-paul.gortmaker@windriver.com>
 X-Mailer: git-send-email 1.7.9.6
 In-Reply-To: <1337048075-6132-1-git-send-email-paul.gortmaker@windriver.com>
 References: <1337048075-6132-1-git-send-email-paul.gortmaker@windriver.com>
@@ -21,7 +21,7 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Johannes Weiner <hannes@cmpxchg.org>
+From: Robert Richter <robert.richter@amd.com>
 
                    -------------------
     This is a commit scheduled for the next v2.6.34 longterm release.
@@ -29,101 +29,96 @@ From: Johannes Weiner <hannes@cmpxchg.org>
     If you see a problem with using this for longterm, please comment.
                    -------------------
 
-commit 081003fff467ea0e727f66d5d435b4f473a789b3 upstream.
+commit fe47ae7f53e179d2ef6771024feb000cbb86640f upstream.
 
-When marking an inode reclaimable, a per-AG counter is increased, the
-inode is tagged reclaimable in its per-AG tree, and, when this is the
-first reclaimable inode in the AG, the AG entry in the per-mount tree
-is also tagged.
+The lockdep warning below detects a possible A->B/B->A locking
+dependency of mm->mmap_sem and dcookie_mutex. The order in
+sync_buffer() is mm->mmap_sem/dcookie_mutex, while in
+sys_lookup_dcookie() it is vice versa.
 
-When an inode is finally reclaimed, however, it is only deleted from
-the per-AG tree.  Neither the counter is decreased, nor is the parent
-tree's AG entry untagged properly.
+Fixing it in sys_lookup_dcookie() by unlocking dcookie_mutex before
+copy_to_user().
 
-Since the tags in the per-mount tree are not cleared, the inode
-shrinker iterates over all AGs that have had reclaimable inodes at one
-point in time.
+oprofiled/4432 is trying to acquire lock:
+ (&mm->mmap_sem){++++++}, at: [<ffffffff810b444b>] might_fault+0x53/0xa3
 
-The counters on the other hand signal an increasing amount of slab
-objects to reclaim.  Since "70e60ce xfs: convert inode shrinker to
-per-filesystem context" this is not a real issue anymore because the
-shrinker bails out after one iteration.
+but task is already holding lock:
+ (dcookie_mutex){+.+.+.}, at: [<ffffffff81124d28>] sys_lookup_dcookie+0x45/0x149
 
-But the problem was observable on a machine running v2.6.34, where the
-reclaimable work increased and each process going into direct reclaim
-eventually got stuck on the xfs inode shrinking path, trying to scan
-several million objects.
+which lock already depends on the new lock.
 
-Fix this by properly unwinding the reclaimable-state tracking of an
-inode when it is reclaimed.
+the existing dependency chain (in reverse order) is:
 
-[PG: upstream has xfs_reclaim_inode in fs/xfs/linux-2.6/xfs_sync.c
- but in 34 baseline, it is xfs_ireclaim in fs/xfs/xfs_iget.c so
- drop the STATIC and add a prototype for it. ]
+-> #1 (dcookie_mutex){+.+.+.}:
+       [<ffffffff8106557f>] lock_acquire+0xf8/0x11e
+       [<ffffffff814634f0>] mutex_lock_nested+0x63/0x309
+       [<ffffffff81124e5c>] get_dcookie+0x30/0x144
+       [<ffffffffa0000fba>] sync_buffer+0x196/0x3ec [oprofile]
+       [<ffffffffa0001226>] task_exit_notify+0x16/0x1a [oprofile]
+       [<ffffffff81467b96>] notifier_call_chain+0x37/0x63
+       [<ffffffff8105803d>] __blocking_notifier_call_chain+0x50/0x67
+       [<ffffffff81058068>] blocking_notifier_call_chain+0x14/0x16
+       [<ffffffff8105a718>] profile_task_exit+0x1a/0x1c
+       [<ffffffff81039e8f>] do_exit+0x2a/0x6fc
+       [<ffffffff8103a5e4>] do_group_exit+0x83/0xae
+       [<ffffffff8103a626>] sys_exit_group+0x17/0x1b
+       [<ffffffff8146ad4b>] system_call_fastpath+0x16/0x1b
 
-Signed-off-by: Johannes Weiner <hannes@cmpxchg.org>
-Reviewed-by: Dave Chinner <dchinner@redhat.com>
-Signed-off-by: Alex Elder <aelder@sgi.com>
+-> #0 (&mm->mmap_sem){++++++}:
+       [<ffffffff81064dfb>] __lock_acquire+0x1085/0x1711
+       [<ffffffff8106557f>] lock_acquire+0xf8/0x11e
+       [<ffffffff810b4478>] might_fault+0x80/0xa3
+       [<ffffffff81124de7>] sys_lookup_dcookie+0x104/0x149
+       [<ffffffff8146ad4b>] system_call_fastpath+0x16/0x1b
+
+other info that might help us debug this:
+
+1 lock held by oprofiled/4432:
+ #0:  (dcookie_mutex){+.+.+.}, at: [<ffffffff81124d28>] sys_lookup_dcookie+0x45/0x149
+
+stack backtrace:
+Pid: 4432, comm: oprofiled Not tainted 2.6.39-00008-ge5a450d #9
+Call Trace:
+ [<ffffffff81063193>] print_circular_bug+0xae/0xbc
+ [<ffffffff81064dfb>] __lock_acquire+0x1085/0x1711
+ [<ffffffff8102ef13>] ? get_parent_ip+0x11/0x42
+ [<ffffffff810b444b>] ? might_fault+0x53/0xa3
+ [<ffffffff8106557f>] lock_acquire+0xf8/0x11e
+ [<ffffffff810b444b>] ? might_fault+0x53/0xa3
+ [<ffffffff810d7d54>] ? path_put+0x22/0x27
+ [<ffffffff810b4478>] might_fault+0x80/0xa3
+ [<ffffffff810b444b>] ? might_fault+0x53/0xa3
+ [<ffffffff81124de7>] sys_lookup_dcookie+0x104/0x149
+ [<ffffffff8146ad4b>] system_call_fastpath+0x16/0x1b
+
+References: https://bugzilla.kernel.org/show_bug.cgi?id=13809
+Signed-off-by: Robert Richter <robert.richter@amd.com>
 Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
 ---
- fs/xfs/linux-2.6/xfs_sync.c |   10 +++++++++-
- fs/xfs/linux-2.6/xfs_sync.h |    2 ++
- fs/xfs/xfs_iget.c           |    1 +
- 3 files changed, 12 insertions(+), 1 deletion(-)
+ fs/dcookies.c |    3 +++
+ 1 file changed, 3 insertions(+)
 
-diff --git a/fs/xfs/linux-2.6/xfs_sync.c b/fs/xfs/linux-2.6/xfs_sync.c
-index a427c63..c5a69a4 100644
---- a/fs/xfs/linux-2.6/xfs_sync.c
-+++ b/fs/xfs/linux-2.6/xfs_sync.c
-@@ -707,6 +707,14 @@ xfs_inode_set_reclaim_tag(
- }
+diff --git a/fs/dcookies.c b/fs/dcookies.c
+index a21cabd..dda0dc7 100644
+--- a/fs/dcookies.c
++++ b/fs/dcookies.c
+@@ -178,6 +178,8 @@ SYSCALL_DEFINE(lookup_dcookie)(u64 cookie64, char __user * buf, size_t len)
+ 	/* FIXME: (deleted) ? */
+ 	path = d_path(&dcs->path, kbuf, PAGE_SIZE);
  
- void
-+__xfs_inode_clear_reclaim(
-+	xfs_perag_t	*pag,
-+	xfs_inode_t	*ip)
-+{
-+	pag->pag_ici_reclaimable--;
-+}
++	mutex_unlock(&dcookie_mutex);
 +
-+void
- __xfs_inode_clear_reclaim_tag(
- 	xfs_mount_t	*mp,
- 	xfs_perag_t	*pag,
-@@ -714,7 +722,7 @@ __xfs_inode_clear_reclaim_tag(
- {
- 	radix_tree_tag_clear(&pag->pag_ici_root,
- 			XFS_INO_TO_AGINO(mp, ip->i_ino), XFS_ICI_RECLAIM_TAG);
--	pag->pag_ici_reclaimable--;
-+	__xfs_inode_clear_reclaim(pag, ip);
- }
+ 	if (IS_ERR(path)) {
+ 		err = PTR_ERR(path);
+ 		goto out_free;
+@@ -194,6 +196,7 @@ SYSCALL_DEFINE(lookup_dcookie)(u64 cookie64, char __user * buf, size_t len)
  
- /*
-diff --git a/fs/xfs/linux-2.6/xfs_sync.h b/fs/xfs/linux-2.6/xfs_sync.h
-index cdcbaac..bf82419 100644
---- a/fs/xfs/linux-2.6/xfs_sync.h
-+++ b/fs/xfs/linux-2.6/xfs_sync.h
-@@ -49,6 +49,8 @@ void xfs_inode_set_reclaim_tag(struct xfs_inode *ip);
- void __xfs_inode_set_reclaim_tag(struct xfs_perag *pag, struct xfs_inode *ip);
- void __xfs_inode_clear_reclaim_tag(struct xfs_mount *mp, struct xfs_perag *pag,
- 				struct xfs_inode *ip);
-+void __xfs_inode_clear_reclaim(struct xfs_perag *pag, struct xfs_inode *ip);
-+
- 
- int xfs_sync_inode_valid(struct xfs_inode *ip, struct xfs_perag *pag);
- int xfs_inode_ag_iterator(struct xfs_mount *mp,
-diff --git a/fs/xfs/xfs_iget.c b/fs/xfs/xfs_iget.c
-index 5ac3be0..14364c4 100644
---- a/fs/xfs/xfs_iget.c
-+++ b/fs/xfs/xfs_iget.c
-@@ -495,6 +495,7 @@ xfs_ireclaim(
- 	write_lock(&pag->pag_ici_lock);
- 	if (!radix_tree_delete(&pag->pag_ici_root, agino))
- 		ASSERT(0);
-+	__xfs_inode_clear_reclaim(pag, ip);
- 	write_unlock(&pag->pag_ici_lock);
- 	xfs_perag_put(pag);
- 
+ out_free:
+ 	kfree(kbuf);
++	return err;
+ out:
+ 	mutex_unlock(&dcookie_mutex);
+ 	return err;
 -- 
 1.7.9.6
 
