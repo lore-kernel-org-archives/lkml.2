@@ -1,17 +1,17 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965239Ab2EOCRf (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 May 2012 22:17:35 -0400
-Received: from mail1.windriver.com ([147.11.146.13]:52920 "EHLO
+	id S965378Ab2EOCRw (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 May 2012 22:17:52 -0400
+Received: from mail1.windriver.com ([147.11.146.13]:52964 "EHLO
 	mail1.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S964882Ab2EOCQT (ORCPT
+	with ESMTP id S964887Ab2EOCQY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 May 2012 22:16:19 -0400
+	Mon, 14 May 2012 22:16:24 -0400
 From: Paul Gortmaker <paul.gortmaker@windriver.com>
 To: <stable@kernel.org>, <linux-kernel@vger.kernel.org>
-Subject: [34-longterm 025/179] USB: CP210x Add 4 Device IDs for AC-Services Devices
-Date: Mon, 14 May 2012 22:12:01 -0400
-Message-ID: <1337048075-6132-26-git-send-email-paul.gortmaker@windriver.com>
+Subject: [34-longterm 030/179] usb: gadget: rndis: don't test against req->length
+Date: Mon, 14 May 2012 22:12:06 -0400
+Message-ID: <1337048075-6132-31-git-send-email-paul.gortmaker@windriver.com>
 X-Mailer: git-send-email 1.7.9.6
 In-Reply-To: <1337048075-6132-1-git-send-email-paul.gortmaker@windriver.com>
 References: <1337048075-6132-1-git-send-email-paul.gortmaker@windriver.com>
@@ -21,7 +21,7 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Craig Shelley <craig@microtron.org.uk>
+From: Felipe Balbi <balbi@ti.com>
 
                    -------------------
     This is a commit scheduled for the next v2.6.34 longterm release.
@@ -29,33 +29,39 @@ From: Craig Shelley <craig@microtron.org.uk>
     If you see a problem with using this for longterm, please comment.
                    -------------------
 
-commit 4eff0b40a7174896b860312910e0db51f2dcc567 upstream.
+commit 472b91274a6c6857877b5caddb875dcb5ecdfcb8 upstream.
 
-This patch adds 4 device IDs for CP2102 based devices manufactured by
-AC-Services. See http://www.ac-services.eu for further info.
+composite.c always sets req->length to zero
+and expects function driver's setup handlers
+to return the amount of bytes to be used
+on req->length. If we test against req->length
+w_length will always be greater than req->length
+thus making us always stall that particular
+SEND_ENCAPSULATED_COMMAND request.
 
-Signed-off-by: Craig Shelley <craig@microtron.org.uk>
+Tested against a Windows XP SP3.
+
+Signed-off-by: Felipe Balbi <balbi@ti.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
 ---
- drivers/usb/serial/cp210x.c |    4 ++++
- 1 file changed, 4 insertions(+)
+ drivers/usb/gadget/f_rndis.c |    3 +--
+ 1 file changed, 1 insertion(+), 2 deletions(-)
 
-diff --git a/drivers/usb/serial/cp210x.c b/drivers/usb/serial/cp210x.c
-index b2d428f..d53918b 100644
---- a/drivers/usb/serial/cp210x.c
-+++ b/drivers/usb/serial/cp210x.c
-@@ -114,6 +114,10 @@ static const struct usb_device_id id_table[] = {
- 	{ USB_DEVICE(0x10C4, 0x8418) }, /* IRZ Automation Teleport SG-10 GSM/GPRS Modem */
- 	{ USB_DEVICE(0x10C4, 0x846E) }, /* BEI USB Sensor Interface (VCP) */
- 	{ USB_DEVICE(0x10C4, 0x8477) }, /* Balluff RFID */
-+	{ USB_DEVICE(0x10C4, 0x85EA) }, /* AC-Services IBUS-IF */
-+	{ USB_DEVICE(0x10C4, 0x85EB) }, /* AC-Services CIS-IBUS */
-+	{ USB_DEVICE(0x10C4, 0x8664) }, /* AC-Services CAN-IF */
-+	{ USB_DEVICE(0x10C4, 0x8665) }, /* AC-Services OBD-IF */
- 	{ USB_DEVICE(0x10C4, 0xEA60) }, /* Silicon Labs factory default */
- 	{ USB_DEVICE(0x10C4, 0xEA61) }, /* Silicon Labs factory default */
- 	{ USB_DEVICE(0x10C4, 0xEA71) }, /* Infinity GPS-MIC-1 Radio Monophone */
+diff --git a/drivers/usb/gadget/f_rndis.c b/drivers/usb/gadget/f_rndis.c
+index 56b0221..d1eb94a 100644
+--- a/drivers/usb/gadget/f_rndis.c
++++ b/drivers/usb/gadget/f_rndis.c
+@@ -420,8 +420,7 @@ rndis_setup(struct usb_function *f, const struct usb_ctrlrequest *ctrl)
+ 	 */
+ 	case ((USB_DIR_OUT | USB_TYPE_CLASS | USB_RECIP_INTERFACE) << 8)
+ 			| USB_CDC_SEND_ENCAPSULATED_COMMAND:
+-		if (w_length > req->length || w_value
+-				|| w_index != rndis->ctrl_id)
++		if (w_value || w_index != rndis->ctrl_id)
+ 			goto invalid;
+ 		/* read the request; process it later */
+ 		value = w_length;
 -- 
 1.7.9.6
 
