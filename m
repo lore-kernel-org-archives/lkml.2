@@ -1,133 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756971Ab2EOHAg (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 May 2012 03:00:36 -0400
-Received: from mga09.intel.com ([134.134.136.24]:1227 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756527Ab2EOHAQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 May 2012 03:00:16 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.67,352,1309762800"; 
-   d="scan'208";a="140728177"
-From: Huang Ying <ying.huang@intel.com>
-To: Bjorn Helgaas <bhelgaas@google.com>
-Cc: ming.m.lin@intel.com, linux-kernel@vger.kernel.org,
-        linux-pm@vger.kernel.org, "Rafael J. Wysocki" <rjw@sisk.pl>,
-        Huang Ying <ying.huang@intel.com>, Zheng Yan <zheng.z.yan@intel.com>
-Subject: [PATCH -v3 1/2] PCIe: Add runtime PM support to PCIe port
-Date: Tue, 15 May 2012 15:00:10 +0800
-Message-Id: <1337065211-19525-2-git-send-email-ying.huang@intel.com>
-X-Mailer: git-send-email 1.7.10
-In-Reply-To: <1337065211-19525-1-git-send-email-ying.huang@intel.com>
-References: <1337065211-19525-1-git-send-email-ying.huang@intel.com>
+	id S1756958Ab2EOHBI (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 May 2012 03:01:08 -0400
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:36546 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755900Ab2EOHBF (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 May 2012 03:01:05 -0400
+Date: Tue, 15 May 2012 09:00:58 +0200
+From: Sascha Hauer <s.hauer@pengutronix.de>
+To: Saravana Kannan <skannan@codeaurora.org>
+Cc: "Turquette, Mike" <mturquette@ti.com>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        andrew@lunn.ch, rnayak@ti.com
+Subject: Re: [PATCH] clk: Constify struct clk_init_data
+Message-ID: <20120515070058.GK30400@pengutronix.de>
+References: <1337004763-21250-1-git-send-email-broonie@opensource.wolfsonmicro.com>
+ <20120514215304.GB3075@gmail.com>
+ <4FB1AF14.3050507@codeaurora.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4FB1AF14.3050507@codeaurora.org>
+X-Sent-From: Pengutronix Hildesheim
+X-URL: http://www.pengutronix.de/
+X-IRC: #ptxdist @freenode
+X-Accept-Language: de,en
+X-Accept-Content-Type: text/plain
+X-Uptime: 08:59:30 up 184 days, 14:46, 26 users,  load average: 0.00, 0.01,
+ 0.05
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: 2001:6f8:1178:2:21e:67ff:fe11:9c5c
+X-SA-Exim-Mail-From: sha@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: "Yan, Zheng" <zheng.z.yan@intel.com>
+On Mon, May 14, 2012 at 06:19:16PM -0700, Saravana Kannan wrote:
+> On 05/14/2012 02:53 PM, Turquette, Mike wrote:
+> >On Mon, May 14, 2012 at 7:12 AM, Mark Brown<broonie@opensource.wolfsonmicro.com>  wrote:
+> >>Allow drivers to declare their clk_init_data const, the framework really
+> >>shouldn't be modifying the data.
+> >>
+> >>Signed-off-by: Mark Brown<broonie@opensource.wolfsonmicro.com>
+> >
+> >+interested parties
+> >
+> >>
+> >>diff --git a/include/linux/clk-provider.h b/include/linux/clk-provider.h
+> >>index c1c23b9..fc43ea6 100644
+> >>--- a/include/linux/clk-provider.h
+> >>+++ b/include/linux/clk-provider.h
+> >>@@ -143,7 +143,7 @@ struct clk_init_data {
+> >>  */
+> >>  struct clk_hw {
+> >>        struct clk *clk;
+> >>-       struct clk_init_data *init;
+> >>+       const struct clk_init_data *init;
+> 
+> Oh, wait. This won't work for the case where the clock registration
+> is completely dynamic. Say, created from device tree or thru some
+> PCI/USB device probe, etc. That's why I didn't add it before.
 
-This patch adds runtime PM support to PCIe port.  This is needed by
-PCIe D3cold support, where PCIe device without ACPI node may be
-powered on/off by PCIe port.
+Why not? In this case clk_init_data is also only used in clk_register.
+Given that Mark has posted the patch I assume it actually works.
 
-Because runtime suspend is broken for some chipsets, a black list is
-used to disable runtime PM support for these chipsets.
+Sascha
 
-Signed-off-by: Zheng Yan <zheng.z.yan@intel.com>
----
- drivers/pci/pci.c              |   10 ++++++++++
- drivers/pci/pcie/portdrv_pci.c |   30 ++++++++++++++++++++++++++++++
- 2 files changed, 40 insertions(+)
-
---- a/drivers/pci/pci.c
-+++ b/drivers/pci/pci.c
-@@ -1517,6 +1517,16 @@ static void pci_pme_list_scan(struct wor
- 	if (!list_empty(&pci_pme_list)) {
- 		list_for_each_entry_safe(pme_dev, n, &pci_pme_list, list) {
- 			if (pme_dev->dev->pme_poll) {
-+				struct pci_dev *bridge;
-+
-+				bridge = pme_dev->dev->bus->self;
-+				/*
-+				 * If bridge is in low power state, the
-+				 * configuration space of subordinate devices
-+				 * may be not accessible
-+				 */
-+				if (bridge && bridge->current_state != PCI_D0)
-+					continue;
- 				pci_pme_wakeup(pme_dev->dev, NULL);
- 			} else {
- 				list_del(&pme_dev->list);
---- a/drivers/pci/pcie/portdrv_pci.c
-+++ b/drivers/pci/pcie/portdrv_pci.c
-@@ -11,6 +11,7 @@
- #include <linux/kernel.h>
- #include <linux/errno.h>
- #include <linux/pm.h>
-+#include <linux/pm_runtime.h>
- #include <linux/init.h>
- #include <linux/pcieport_if.h>
- #include <linux/aer.h>
-@@ -99,6 +100,21 @@ static int pcie_port_resume_noirq(struct
- 	return 0;
- }
- 
-+#ifdef CONFIG_PM_RUNTIME
-+static int pcie_port_runtime_suspend(struct device *dev)
-+{
-+	return 0;
-+}
-+
-+static int pcie_port_runtime_resume(struct device *dev)
-+{
-+	return 0;
-+}
-+#else
-+#define pcie_port_runtime_suspend	NULL
-+#define pcie_port_runtime_resume	NULL
-+#endif
-+
- static const struct dev_pm_ops pcie_portdrv_pm_ops = {
- 	.suspend	= pcie_port_device_suspend,
- 	.resume		= pcie_port_device_resume,
-@@ -107,6 +123,8 @@ static const struct dev_pm_ops pcie_port
- 	.poweroff	= pcie_port_device_suspend,
- 	.restore	= pcie_port_device_resume,
- 	.resume_noirq	= pcie_port_resume_noirq,
-+	.runtime_suspend = pcie_port_runtime_suspend,
-+	.runtime_resume = pcie_port_runtime_resume,
- };
- 
- #define PCIE_PORTDRV_PM_OPS	(&pcie_portdrv_pm_ops)
-@@ -117,6 +135,14 @@ static const struct dev_pm_ops pcie_port
- #endif /* !PM */
- 
- /*
-+ * PCIe port runtime suspend is broken for some chipsets, so use a
-+ * black list to disable runtime PM for these chipsets.
-+ */
-+static const struct pci_device_id port_runtime_pm_black_list[] = {
-+	{ /* end: all zeroes */ }
-+};
-+
-+/*
-  * pcie_portdrv_probe - Probe PCI-Express port devices
-  * @dev: PCI-Express port device being probed
-  *
-@@ -144,12 +170,16 @@ static int __devinit pcie_portdrv_probe(
- 		return status;
- 
- 	pci_save_state(dev);
-+	if (!pci_match_id(port_runtime_pm_black_list, dev))
-+		pm_runtime_put_noidle(&dev->dev);
- 
- 	return 0;
- }
- 
- static void pcie_portdrv_remove(struct pci_dev *dev)
- {
-+	if (!pci_match_id(port_runtime_pm_black_list, dev))
-+		pm_runtime_get_noresume(&dev->dev);
- 	pcie_port_device_remove(dev);
- 	pci_disable_device(dev);
- }
+-- 
+Pengutronix e.K.                           |                             |
+Industrial Linux Solutions                 | http://www.pengutronix.de/  |
+Peiner Str. 6-8, 31137 Hildesheim, Germany | Phone: +49-5121-206917-0    |
+Amtsgericht Hildesheim, HRA 2686           | Fax:   +49-5121-206917-5555 |
