@@ -1,157 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758447Ab2EOIuB (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 May 2012 04:50:01 -0400
-Received: from mga02.intel.com ([134.134.136.20]:10827 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758197Ab2EOIsb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 May 2012 04:48:31 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.67,352,1309762800"; 
-   d="scan'208";a="140769297"
-From: Lin Ming <ming.m.lin@intel.com>
-To: Jens Axboe <axboe@kernel.dk>, Alan Stern <stern@rowland.harvard.edu>
-Cc: linux-kernel@vger.kernel.org, linux-pm@vger.kernel.org,
-        linux-scsi@vger.kernel.org
-Subject: [RFC PATCH 2/3] block: add queue runtime pm callback
-Date: Tue, 15 May 2012 16:48:16 +0800
-Message-Id: <1337071697-30920-3-git-send-email-ming.m.lin@intel.com>
-X-Mailer: git-send-email 1.7.2.5
-In-Reply-To: <1337071697-30920-1-git-send-email-ming.m.lin@intel.com>
-References: <1337071697-30920-1-git-send-email-ming.m.lin@intel.com>
+	id S1758483Ab2EOIvX (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 May 2012 04:51:23 -0400
+Received: from mail-ob0-f174.google.com ([209.85.214.174]:39874 "EHLO
+	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758434Ab2EOIvR (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 May 2012 04:51:17 -0400
+MIME-Version: 1.0
+In-Reply-To: <alpine.LSU.2.00.1205120502370.28861@eggly.anvils>
+References: <alpine.LSU.2.00.1205120447380.28861@eggly.anvils>
+	<alpine.LSU.2.00.1205120502370.28861@eggly.anvils>
+Date: Tue, 15 May 2012 18:51:16 +1000
+Message-ID: <CAPa8GCDk89o5H9mA40fRv_Us35vQXMPYFDT_r=affo90TnGm6g@mail.gmail.com>
+Subject: Re: [PATCH 3/10] tmpfs: optimize clearing when writing
+From: Nick Piggin <npiggin@gmail.com>
+To: Hugh Dickins <hughd@google.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Christoph Hellwig <hch@infradead.org>, linux-mm@kvack.org,
+        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by nfs id q4F8pUPT009941
 
-Add ->runtime_pm callback and ->pm_status to request queue.
-As an example, implement a simple queue runtime_pm callback
-in sd driver.
+On 12 May 2012 22:04, Hugh Dickins <hughd@google.com> wrote:
+> Nick proposed years ago that tmpfs should avoid clearing its pages where
+> write will overwrite them with new data, as ramfs has long done.  But I
+> messed it up and just got bad data.  Tried again recently, it works fine.
+>
+> Here's time output for writing 4GiB 16 times on this Core i5 laptop:
+>
+> before: real    0m21.169s user  0m0.028s sys    0m21.057s
+>        real    0m21.382s user  0m0.016s sys    0m21.289s
+>        real    0m21.311s user  0m0.020s sys    0m21.217s
+>
+> after:  real    0m18.273s user  0m0.032s sys    0m18.165s
+>        real    0m18.354s user  0m0.020s sys    0m18.265s
+>        real    0m18.440s user  0m0.032s sys    0m18.337s
+>
+> ramfs:  real    0m16.860s user  0m0.028s sys    0m16.765s
+>        real    0m17.382s user  0m0.040s sys    0m17.273s
+>        real    0m17.133s user  0m0.044s sys    0m17.021s
 
-Signed-off-by: Lin Ming <ming.m.lin@intel.com>
----
- block/blk-settings.c   |    6 ++++++
- drivers/scsi/sd.c      |   32 ++++++++++++++++++++++++++++++++
- include/linux/blkdev.h |    5 +++++
- 3 files changed, 43 insertions(+), 0 deletions(-)
+Cool, thanks Hugh! Very big speedup.
 
-diff --git a/block/blk-settings.c b/block/blk-settings.c
-index d3234fc..51be5f9 100644
---- a/block/blk-settings.c
-+++ b/block/blk-settings.c
-@@ -99,6 +99,12 @@ void blk_queue_lld_busy(struct request_queue *q, lld_busy_fn *fn)
- }
- EXPORT_SYMBOL_GPL(blk_queue_lld_busy);
- 
-+void blk_queue_runtime_pm(struct request_queue *q, runtime_pm_fn *fn)
-+{
-+	q->runtime_pm = fn;
-+}
-+EXPORT_SYMBOL_GPL(blk_queue_runtime_pm);
-+
- /**
-  * blk_set_default_limits - reset limits to default values
-  * @lim:  the queue_limits structure to reset
-diff --git a/drivers/scsi/sd.c b/drivers/scsi/sd.c
-index e34bc07..a4f049a 100644
---- a/drivers/scsi/sd.c
-+++ b/drivers/scsi/sd.c
-@@ -938,6 +938,22 @@ static int sd_prep_fn(struct request_queue *q, struct request *rq)
- 	return scsi_prep_return(q, rq, ret);
- }
- 
-+static int sd_runtime_pm_fn(struct request_queue *q, pm_message_t mesg)
-+{
-+	struct scsi_device *sdp = q->queuedata;
-+
-+	if (mesg.event == PM_EVENT_SUSPEND) {
-+		q->pm_status = RPM_SUSPENDING;
-+		pm_runtime_put(&sdp->sdev_gendev);
-+	}
-+	else if (mesg.event == PM_EVENT_RESUME) {
-+		q->pm_status = RPM_RESUMING;
-+		pm_runtime_get(&sdp->sdev_gendev);
-+	}
-+
-+	return 0;
-+}
-+
- /**
-  *	sd_open - open a scsi disk device
-  *	@inode: only i_rdev member may be used
-@@ -2616,6 +2632,7 @@ static void sd_probe_async(void *data, async_cookie_t cookie)
- 
- 	blk_queue_prep_rq(sdp->request_queue, sd_prep_fn);
- 	blk_queue_unprep_rq(sdp->request_queue, sd_unprep_fn);
-+	blk_queue_runtime_pm(sdp->request_queue, sd_runtime_pm_fn);
- 
- 	gd->driverfs_dev = &sdp->sdev_gendev;
- 	gd->flags = GENHD_FL_EXT_DEVT;
-@@ -2872,6 +2889,13 @@ static int sd_suspend(struct device *dev, pm_message_t mesg)
- 	if ((mesg.event & PM_EVENT_SLEEP) && sdkp->device->manage_start_stop) {
- 		sd_printk(KERN_NOTICE, sdkp, "Stopping disk\n");
- 		ret = sd_start_stop_device(sdkp, 0);
-+		if (!ret) {
-+			struct request_queue *q = sdkp->disk->queue;
-+
-+			spin_lock_irq(q->queue_lock);
-+			q->pm_status = RPM_SUSPENDED;
-+			spin_unlock_irq(q->queue_lock);
-+		}
- 	}
- 
- done:
-@@ -2889,6 +2913,14 @@ static int sd_resume(struct device *dev)
- 
- 	sd_printk(KERN_NOTICE, sdkp, "Starting disk\n");
- 	ret = sd_start_stop_device(sdkp, 1);
-+	if (!ret) {
-+		struct request_queue *q = sdkp->disk->queue;
-+
-+		spin_lock_irq(q->queue_lock);
-+		q->pm_status = RPM_ACTIVE;
-+		__blk_run_queue(sdkp->disk->queue);
-+		spin_unlock_irq(q->queue_lock);
-+	}
- 
- done:
- 	scsi_disk_put(sdkp);
-diff --git a/include/linux/blkdev.h b/include/linux/blkdev.h
-index 2aa2466..b5b212c 100644
---- a/include/linux/blkdev.h
-+++ b/include/linux/blkdev.h
-@@ -216,6 +216,7 @@ typedef void (softirq_done_fn)(struct request *);
- typedef int (dma_drain_needed_fn)(struct request *);
- typedef int (lld_busy_fn) (struct request_queue *q);
- typedef int (bsg_job_fn) (struct bsg_job *);
-+typedef int (runtime_pm_fn) (struct request_queue *q, pm_message_t mesg);
- 
- enum blk_eh_timer_return {
- 	BLK_EH_NOT_HANDLED,
-@@ -289,6 +290,7 @@ struct request_queue {
- 	rq_timed_out_fn		*rq_timed_out_fn;
- 	dma_drain_needed_fn	*dma_drain_needed;
- 	lld_busy_fn		*lld_busy_fn;
-+	runtime_pm_fn		*runtime_pm;
- 
- 	/*
- 	 * Dispatch queue sorting
-@@ -346,6 +348,8 @@ struct request_queue {
- 	unsigned int		nr_congestion_off;
- 	unsigned int		nr_batching;
- 
-+	int			pm_status;
-+
- 	unsigned int		dma_drain_size;
- 	void			*dma_drain_buffer;
- 	unsigned int		dma_pad_mask;
-@@ -855,6 +859,7 @@ extern void blk_queue_segment_boundary(struct request_queue *, unsigned long);
- extern void blk_queue_prep_rq(struct request_queue *, prep_rq_fn *pfn);
- extern void blk_queue_unprep_rq(struct request_queue *, unprep_rq_fn *ufn);
- extern void blk_queue_merge_bvec(struct request_queue *, merge_bvec_fn *);
-+extern void blk_queue_runtime_pm(struct request_queue *q, runtime_pm_fn *);
- extern void blk_queue_dma_alignment(struct request_queue *, int);
- extern void blk_queue_update_dma_alignment(struct request_queue *, int);
- extern void blk_queue_softirq_done(struct request_queue *, softirq_done_fn *);
--- 
-1.7.2.5
 
+>
+> Yes, I have done perf reports, but they need more explanation than they
+> deserve: in summary, clear_page vanishes, its cache loading shifts into
+> copy_user_generic_unrolled; shmem_getpage_gfp goes down, and surprisingly
+> mark_page_accessed goes way up - I think because they are respectively
+> where the cache gets to be reloaded after being purged by clear or copy.
+>
+> Suggested-by: Nick Piggin <npiggin@gmail.com>
+> Signed-off-by: Hugh Dickins <hughd@google.com>
+> ---
+>  mm/shmem.c |   20 +++++++++++++++++---
+>  1 file changed, 17 insertions(+), 3 deletions(-)
+>
+> --- 3045N.orig/mm/shmem.c       2012-05-05 10:46:05.732062006 -0700
+> +++ 3045N/mm/shmem.c    2012-05-05 10:46:12.316062172 -0700
+> @@ -1095,9 +1095,14 @@ repeat:
+>                shmem_recalc_inode(inode);
+>                spin_unlock(&info->lock);
+>
+> -               clear_highpage(page);
+> -               flush_dcache_page(page);
+> -               SetPageUptodate(page);
+> +               /*
+> +                * Let SGP_WRITE caller clear ends if write does not fill page
+> +                */
+> +               if (sgp != SGP_WRITE) {
+> +                       clear_highpage(page);
+> +                       flush_dcache_page(page);
+> +                       SetPageUptodate(page);
+> +               }
+>                if (sgp == SGP_DIRTY)
+>                        set_page_dirty(page);
+>        }
+> @@ -1307,6 +1312,14 @@ shmem_write_end(struct file *file, struc
+>        if (pos + copied > inode->i_size)
+>                i_size_write(inode, pos + copied);
+>
+> +       if (!PageUptodate(page)) {
+> +               if (copied < PAGE_CACHE_SIZE) {
+> +                       unsigned from = pos & (PAGE_CACHE_SIZE - 1);
+> +                       zero_user_segments(page, 0, from,
+> +                                       from + copied, PAGE_CACHE_SIZE);
+> +               }
+> +               SetPageUptodate(page);
+> +       }
+>        set_page_dirty(page);
+>        unlock_page(page);
+>        page_cache_release(page);
+> @@ -1768,6 +1781,7 @@ static int shmem_symlink(struct inode *d
+>                kaddr = kmap_atomic(page);
+>                memcpy(kaddr, symname, len);
+>                kunmap_atomic(kaddr);
+> +               SetPageUptodate(page);
+>                set_page_dirty(page);
+>                unlock_page(page);
+>                page_cache_release(page);
+���{.n�+�������+%�����ݶ��w��{.n�+����{��G�����{ay�ʇڙ�,j��f���h��������z_�(�階�ݢj"���m������G������?����&���~��iO��z��v�^�m����������?�I�
