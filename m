@@ -1,70 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S966794Ab2EOUus (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 May 2012 16:50:48 -0400
-Received: from smarthost01.digicable.hu ([94.21.128.6]:52524 "EHLO
-	smarthost01.digicable.hu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932618Ab2EOUuq (ORCPT
+	id S966797Ab2EOUxt (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 May 2012 16:53:49 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:59802 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S966555Ab2EOUxr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 May 2012 16:50:46 -0400
-X-Greylist: delayed 2356 seconds by postgrey-1.27 at vger.kernel.org; Tue, 15 May 2012 16:50:46 EDT
-Message-ID: <4FB2B858.6000001@freemail.hu>
-Date: Tue, 15 May 2012 22:11:04 +0200
-From: =?UTF-8?B?TsOpbWV0aCBNw6FydG9u?= <nm127@freemail.hu>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; hu-HU; rv:1.8.1.21) Gecko/20090402 SeaMonkey/1.1.16
+	Tue, 15 May 2012 16:53:47 -0400
+Date: Tue, 15 May 2012 13:53:30 -0700 (PDT)
+From: Hugh Dickins <hughd@google.com>
+X-X-Sender: hugh@eggly.anvils
+To: Konstantin Khlebnikov <khlebnikov@openvz.org>
+cc: Andrew Morton <akpm@linux-foundation.org>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Johannes Weiner <hannes@cmpxchg.org>, Michal Hocko <mhocko@suse.cz>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 3/3] mm/memcg: apply add/del_page to lruvec
+In-Reply-To: <4FB21988.40503@openvz.org>
+Message-ID: <alpine.LSU.2.00.1205151337230.1416@eggly.anvils>
+References: <alpine.LSU.2.00.1205132152530.6148@eggly.anvils> <alpine.LSU.2.00.1205132201210.6148@eggly.anvils> <4FB0E985.9000107@openvz.org> <alpine.LSU.2.00.1205141252060.1693@eggly.anvils> <4FB21988.40503@openvz.org>
+User-Agent: Alpine 2.00 (LSU 1167 2008-08-23)
 MIME-Version: 1.0
-To: Jozsef Marton <jmarton@users.sourceforge.net>
-CC: Mauro Carvalho Chehab <mchehab@infradead.org>,
-        Rob Landley <rob@landley.net>, Jean-Francois Moine <moinejf@free.fr>,
-        linux-media@vger.kernel.org, linux-doc@vger.kernel.org,
-        linux-kernel@vger.kernel.org, torvalds@linux-foundation.org
-Subject: Re: [PATCH] media: add support to gspca/pac7302.c for 093a:2627 (Genius
- FaceCam 300)
-References: <4FB27ED0.40906@users.sourceforge.net>
-In-Reply-To: <4FB27ED0.40906@users.sourceforge.net>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
-X-Original: 84.236.6.106
-X-Original: 92.249.128.189
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Tue, 15 May 2012, Konstantin Khlebnikov wrote:
+> Hugh Dickins wrote:
+> > 
+> > I had been hoping to get this stage, where I think we're still in
+> > agreement (except perhaps on the ordering of function arguments!),
+> > into 3.5 as a basis for later discussion.
+> 
+> Yeah, my version differs mostly in function's names and ordering of
+> arguments.
+> I use 'long' for last argument in mem_cgroup_update_lru_size(),
+> and call it once in isolate_lru_pages(), rather than for each isolated page.
 
-Acked-by: Márton Németh <nm127@freemail.hu>
+That sounds very sensible, now that lumpy isn't switching lruvecs:
+can be done alongside the similarly deferred __mod_zone_page_state()s.
 
-Jozsef Marton wrote:
-> From: Jozsef Marton <jmarton@users.sourceforge.net>
+> You have single mem_cgroup_page_lruvec() variant, and this is biggest
+> difference
+> between our versions. So, Ok, nothing important at this stage.
 > 
-> gspca_pac7302 module supports the webcam with usb id: 093a:2627.
-> It is a Genius FaceCam 300.
-> The module does not need any changes but listing the usb id along with a vertical flip flag.
-> The included patch adds this to the module source.
-> 
-> Signed-off-by: Jozsef Marton <jmarton@users.sourceforge.net>
-> ---
-> diff -uprN -X dontdiff linux-3.4-rc7-vanilla/Documentation/video4linux/gspca.txt linux-3.4-rc7/Documentation/video4linux/gspca.txt
-> --- linux-3.4-rc7-vanilla/Documentation/video4linux/gspca.txt	2012-05-13 03:37:47.000000000 +0200
-> +++ linux-3.4-rc7/Documentation/video4linux/gspca.txt	2012-05-15 16:56:55.603514846 +0200
-> @@ -276,6 +276,7 @@ pac7302		093a:2622	Genius Eye 312
->  pac7302		093a:2624	PAC7302
->  pac7302		093a:2625	Genius iSlim 310
->  pac7302		093a:2626	Labtec 2200
-> +pac7302		093a:2627	Genius FaceCam 300
->  pac7302		093a:2628	Genius iLook 300
->  pac7302		093a:2629	Genious iSlim 300
->  pac7302		093a:262a	Webcam 300k
-> diff -uprN -X dontdiff linux-3.4-rc7-vanilla/drivers/media/video/gspca/pac7302.c linux-3.4-rc7/drivers/media/video/gspca/pac7302.c
-> --- linux-3.4-rc7-vanilla/drivers/media/video/gspca/pac7302.c	2012-05-13 03:37:47.000000000 +0200
-> +++ linux-3.4-rc7/drivers/media/video/gspca/pac7302.c	2012-05-15 15:15:03.355624405 +0200
-> @@ -940,6 +940,7 @@ static const struct usb_device_id device
->  	{USB_DEVICE(0x093a, 0x2624), .driver_info = FL_VFLIP},
->  	{USB_DEVICE(0x093a, 0x2625)},
->  	{USB_DEVICE(0x093a, 0x2626)},
-> +	{USB_DEVICE(0x093a, 0x2627), .driver_info = FL_VFLIP},
->  	{USB_DEVICE(0x093a, 0x2628)},
->  	{USB_DEVICE(0x093a, 0x2629), .driver_info = FL_VFLIP},
->  	{USB_DEVICE(0x093a, 0x262a)},
-> 
-> 
+> Acked-by: Konstantin Khlebnikov <khlebnikov@openvz.org>
 
+Thanks a lot, I appreciate you going back to delve in, despite being
+put off by appearances earlier.  Yes, I'm only dealing with the trivial
+passing down of lruvec instead of zone here, where I felt we'd be sure
+to more or less agree.  It seemed the right follow-on to your lruvec
+work in vmscan.c, giving us both a good base in 3.5-rc1 on which to
+try out our more interesting bits.
+
+Hugh
