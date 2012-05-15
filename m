@@ -1,62 +1,146 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964938Ab2EODWh (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 May 2012 23:22:37 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:9470 "EHLO mx1.redhat.com"
+	id S964987Ab2EODXS (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 May 2012 23:23:18 -0400
+Received: from mga14.intel.com ([143.182.124.37]:22640 "EHLO mga14.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S964929Ab2EODWf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 May 2012 23:22:35 -0400
-Message-ID: <1337052146.1860.11.camel@freedom>
-Subject: Re: [PATCH] perf-record: Create events initially disabled -- again
-From: Lucas Meneghel Rodrigues <lmr@redhat.com>
-To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-Cc: David Ahern <dsahern@gmail.com>, Namhyung Kim <namhyung.kim@lge.com>,
-        linux-kernel@vger.kernel.org
-Date: Tue, 15 May 2012 00:22:26 -0300
-In-Reply-To: <20120515014633.GD4254@infradead.org>
-References: <1336968088-11531-1-git-send-email-dsahern@gmail.com>
-	 <87sjf31a8c.fsf@sejong.aot.lge.com> <4FB1041C.1050903@gmail.com>
-	 <87k40e1cco.fsf@sejong.aot.lge.com> <4FB1B486.4020509@gmail.com>
-	 <20120515014633.GD4254@infradead.org>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	id S964929Ab2EODXQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 14 May 2012 23:23:16 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
+   d="scan'208";a="100122607"
+From: Huang Ying <ying.huang@intel.com>
+To: Len Brown <lenb@kernel.org>
+Cc: linux-kernel@vger.kernel.org, "Rafael J. Wysocki" <rjw@sisk.pl>,
+        ying.huang@intel.com, linux-acpi@vger.kernel.org
+Subject: [PATCH 1/5] ACPI, PM, Specify lowest allowed state for device sleep state
+Date: Tue, 15 May 2012 11:23:11 +0800
+Message-Id: <1337052191-19411-1-git-send-email-ying.huang@intel.com>
+X-Mailer: git-send-email 1.7.10
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2012-05-14 at 22:46 -0300, Arnaldo Carvalho de Melo wrote:
-> Em Mon, May 14, 2012 at 07:42:30PM -0600, David Ahern escreveu:
-> > On 5/14/12 7:07 PM, Namhyung Kim wrote:
-> > >>Something else is wrong then. I tested that command (saw your patch in
-> > >>the history) and it worked for me. Also, this code path does not
-> > >>affect perf-stat -- it touches perf-record and perf-test only.
-> 
-> > >Ah, right. But still wouldn't it be better changing the conditional
-> > >rather than disabling it unconditionally?
-> 
-> > I think it would be best to disable all events initially and then
-> > enable them when ready. It works for perf-record and perf-test just
-> > fine and limits the samples to what you care about.
-> 
-> And we need to have all this logic in a central place, the "open" method
-> of perf_evlist :-)
-> 
-> The perf_target abstraction is the way to get there, but in the process
-> I think we really need to have each new method with a 'perf test' entry
-> and in addition to that an 'autotest'* entry to test the perf builtins.
-> 
-> - Arnaldo
+Lower device sleep state can save more power, but has more exit
+latency too.  Sometimes, to satisfy some power QoS and other
+requirement, we need to constrain the lowest device sleep state.
 
-Right now we have perf as a profiler inside autotest, which means one
-can run autotest tests and have perf to profile the system while the
-test is being run, so thank you guys for it :)
+In this patch, a parameter to specify lowest allowed state for
+acpi_pm_device_sleep_state is added.  So that the caller can enforce
+the constraint via the parameter.
 
-That said, I'm happy to help developing a test module for perf, be it
-just a wrapper to an existing testsuite, or starting a new test module
-from scratch. Let us know what you have in mind.
+This is needed by PCIe D3cold support, where the lowest power state
+allowed may be D3_HOT instead of default D3_COLD.
 
-> 
-> * http://autotest.github.com/
+Signed-off-by: Huang Ying <ying.huang@intel.com>
+---
+ drivers/acpi/sleep.c       |   24 +++++++++++++++++++-----
+ drivers/pci/pci-acpi.c     |    3 ++-
+ drivers/pnp/pnpacpi/core.c |    4 ++--
+ include/acpi/acpi_bus.h    |    6 +++---
+ 4 files changed, 26 insertions(+), 11 deletions(-)
 
-
+--- a/drivers/acpi/sleep.c
++++ b/drivers/acpi/sleep.c
+@@ -677,8 +677,9 @@ int acpi_suspend(u32 acpi_state)
+  *	@dev: device to examine; its driver model wakeup flags control
+  *		whether it should be able to wake up the system
+  *	@d_min_p: used to store the upper limit of allowed states range
+- *	Return value: preferred power state of the device on success, -ENODEV on
+- *		failure (ie. if there's no 'struct acpi_device' for @dev)
++ *	@d_max_in: specify the lowest allowed states
++ *	Return value: preferred power state of the device on success, -ENODEV
++ *	(ie. if there's no 'struct acpi_device' for @dev) or -EINVAL on failure
+  *
+  *	Find the lowest power (highest number) ACPI device power state that
+  *	device @dev can be in while the system is in the sleep state represented
+@@ -693,13 +694,15 @@ int acpi_suspend(u32 acpi_state)
+  *	via @wake.
+  */
+ 
+-int acpi_pm_device_sleep_state(struct device *dev, int *d_min_p)
++int acpi_pm_device_sleep_state(struct device *dev, int *d_min_p, int d_max_in)
+ {
+ 	acpi_handle handle = DEVICE_ACPI_HANDLE(dev);
+ 	struct acpi_device *adev;
+ 	char acpi_method[] = "_SxD";
+ 	unsigned long long d_min, d_max;
+ 
++	if (d_max_in < ACPI_STATE_D0 || d_max_in > ACPI_STATE_D3)
++		return -EINVAL;
+ 	if (!handle || ACPI_FAILURE(acpi_bus_get_device(handle, &adev))) {
+ 		printk(KERN_DEBUG "ACPI handle has no context!\n");
+ 		return -ENODEV;
+@@ -707,8 +710,10 @@ int acpi_pm_device_sleep_state(struct de
+ 
+ 	acpi_method[2] = '0' + acpi_target_sleep_state;
+ 	/*
+-	 * If the sleep state is S0, we will return D3, but if the device has
+-	 * _S0W, we will use the value from _S0W
++	 * If the sleep state is S0, the lowest limit from ACPI is D3,
++	 * but if the device has _S0W, we will use the value from _S0W
++	 * as the lowest limit from ACPI.  Finally, we will constrain
++	 * the lowest limit with the specified one.
+ 	 */
+ 	d_min = ACPI_STATE_D0;
+ 	d_max = ACPI_STATE_D3;
+@@ -754,6 +759,15 @@ int acpi_pm_device_sleep_state(struct de
+ 
+ 	if (d_min_p)
+ 		*d_min_p = d_min;
++	if (d_max_in < d_min)
++		return -EINVAL;
++	/* constrain d_max with specified lowest limit (max number) */
++	if (d_max > d_max_in) {
++		for (d_max = d_max_in; d_max > d_min; d_max--) {
++			if (adev->power.states[d_max].flags.valid)
++				break;
++		}
++	}
+ 	return d_max;
+ }
+ #endif /* CONFIG_PM */
+--- a/drivers/pci/pci-acpi.c
++++ b/drivers/pci/pci-acpi.c
+@@ -189,7 +189,8 @@ static pci_power_t acpi_pci_choose_state
+ {
+ 	int acpi_state;
+ 
+-	acpi_state = acpi_pm_device_sleep_state(&pdev->dev, NULL);
++	acpi_state = acpi_pm_device_sleep_state(&pdev->dev, NULL,
++						ACPI_STATE_D3);
+ 	if (acpi_state < 0)
+ 		return PCI_POWER_ERROR;
+ 
+--- a/drivers/pnp/pnpacpi/core.c
++++ b/drivers/pnp/pnpacpi/core.c
+@@ -170,8 +170,8 @@ static int pnpacpi_suspend(struct pnp_de
+ 	}
+ 
+ 	if (acpi_bus_power_manageable(handle)) {
+-		int power_state = acpi_pm_device_sleep_state(&dev->dev, NULL);
+-
++		int power_state = acpi_pm_device_sleep_state(&dev->dev, NULL,
++							     ACPI_STATE_D3);
+ 		if (power_state < 0)
+ 			power_state = (state.event == PM_EVENT_ON) ?
+ 					ACPI_STATE_D0 : ACPI_STATE_D3;
+--- a/include/acpi/acpi_bus.h
++++ b/include/acpi/acpi_bus.h
+@@ -383,13 +383,13 @@ int acpi_enable_wakeup_device_power(stru
+ int acpi_disable_wakeup_device_power(struct acpi_device *dev);
+ 
+ #ifdef CONFIG_PM
+-int acpi_pm_device_sleep_state(struct device *, int *);
++int acpi_pm_device_sleep_state(struct device *, int *, int);
+ #else
+-static inline int acpi_pm_device_sleep_state(struct device *d, int *p)
++static inline int acpi_pm_device_sleep_state(struct device *d, int *p, int m)
+ {
+ 	if (p)
+ 		*p = ACPI_STATE_D0;
+-	return ACPI_STATE_D3;
++	return (m >= ACPI_STATE_D0 && <= ACPI_STATE_D3) ? m : ACPI_STATE_D0;
+ }
+ #endif
+ 
