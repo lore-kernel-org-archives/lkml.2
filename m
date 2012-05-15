@@ -1,17 +1,17 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965676Ab2EOCSn (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 May 2012 22:18:43 -0400
-Received: from mail.windriver.com ([147.11.1.11]:49346 "EHLO
-	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S964910Ab2EOCQn (ORCPT
+	id S965663Ab2EOCSk (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 May 2012 22:18:40 -0400
+Received: from mail1.windriver.com ([147.11.146.13]:53116 "EHLO
+	mail1.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S964909Ab2EOCQm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 May 2012 22:16:43 -0400
+	Mon, 14 May 2012 22:16:42 -0400
 From: Paul Gortmaker <paul.gortmaker@windriver.com>
 To: <stable@kernel.org>, <linux-kernel@vger.kernel.org>
-Subject: [34-longterm 053/179] drm/i915: Add a no lvds quirk for the Asus EeeBox PC EB1007
-Date: Mon, 14 May 2012 22:12:29 -0400
-Message-ID: <1337048075-6132-54-git-send-email-paul.gortmaker@windriver.com>
+Subject: [34-longterm 052/179] lockdep: Fix lock_is_held() on recursion
+Date: Mon, 14 May 2012 22:12:28 -0400
+Message-ID: <1337048075-6132-53-git-send-email-paul.gortmaker@windriver.com>
 X-Mailer: git-send-email 1.7.9.6
 In-Reply-To: <1337048075-6132-1-git-send-email-paul.gortmaker@windriver.com>
 References: <1337048075-6132-1-git-send-email-paul.gortmaker@windriver.com>
@@ -21,7 +21,7 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Hans de Goede <hdegoede@redhat.com>
+From: Peter Zijlstra <a.p.zijlstra@chello.nl>
 
                    -------------------
     This is a commit scheduled for the next v2.6.34 longterm release.
@@ -29,40 +29,40 @@ From: Hans de Goede <hdegoede@redhat.com>
     If you see a problem with using this for longterm, please comment.
                    -------------------
 
-commit 6a574b5b9b186e28abd3e571dfd1700c5220b510 upstream.
+commit f2513cde93f0957d5dc6c09bc24b0cccd27d8e1d upstream.
 
-I found this while figuring out why gnome-shell would not run on my
-Asus EeeBox PC EB1007. As a standalone "pc" this device cleary does not have
-an internal panel, yet it claims it does. Add a quirk to fix this.
+The main lock_is_held() user is lockdep_assert_held(), avoid false
+assertions in lockdep_off() sections by unconditionally reporting the
+lock is taken.
 
-Signed-off-by: Hans de Goede <hdegoede@redhat.com>
-Reviewed-by: Keith Packard <keithp@keithp.com>
-cc: stable@kernel.org
-Signed-off-by: Keith Packard <keithp@keithp.com>
+[ the reason this is important is a lockdep_assert_held() in ttwu()
+  which triggers a warning under lockdep_off() as in printk() which
+  can trigger another wakeup and lock up due to spinlock
+  recursion, as reported and heroically debugged by Arne Jansen ]
+
+Reported-and-tested-by: Arne Jansen <lists@die-jansens.de>
+Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>
+Link: http://lkml.kernel.org/r/1307398759.2497.966.camel@laptop
+Signed-off-by: Ingo Molnar <mingo@elte.hu>
 Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
 ---
- drivers/gpu/drm/i915/intel_lvds.c |    8 ++++++++
- 1 file changed, 8 insertions(+)
+ kernel/lockdep.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/drivers/gpu/drm/i915/intel_lvds.c b/drivers/gpu/drm/i915/intel_lvds.c
-index 4072b0d..1183b42 100644
---- a/drivers/gpu/drm/i915/intel_lvds.c
-+++ b/drivers/gpu/drm/i915/intel_lvds.c
-@@ -876,6 +876,14 @@ static const struct dmi_system_id intel_no_lvds[] = {
- 			DMI_MATCH(DMI_PRODUCT_NAME, "U800"),
- 		},
- 	},
-+	{
-+		.callback = intel_no_lvds_dmi_callback,
-+		.ident = "Asus EeeBox PC EB1007",
-+		.matches = {
-+			DMI_MATCH(DMI_SYS_VENDOR, "ASUSTeK Computer INC."),
-+			DMI_MATCH(DMI_PRODUCT_NAME, "EB1007"),
-+		},
-+	},
+diff --git a/kernel/lockdep.c b/kernel/lockdep.c
+index 2594e1c..1571452 100644
+--- a/kernel/lockdep.c
++++ b/kernel/lockdep.c
+@@ -3240,7 +3240,7 @@ int lock_is_held(struct lockdep_map *lock)
+ 	int ret = 0;
  
- 	{ }	/* terminating entry */
- };
+ 	if (unlikely(current->lockdep_recursion))
+-		return ret;
++		return 1; /* avoid false negative lockdep_assert_held() */
+ 
+ 	raw_local_irq_save(flags);
+ 	check_flags(flags);
 -- 
 1.7.9.6
 
