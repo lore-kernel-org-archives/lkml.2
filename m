@@ -1,17 +1,17 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964993Ab2EOCRC (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 May 2012 22:17:02 -0400
-Received: from mail1.windriver.com ([147.11.146.13]:52805 "EHLO
-	mail1.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S964866Ab2EOCQG (ORCPT
+	id S965057Ab2EOC6V (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 May 2012 22:58:21 -0400
+Received: from mail.windriver.com ([147.11.1.11]:49518 "EHLO
+	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S964989Ab2EOCRC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 May 2012 22:16:06 -0400
+	Mon, 14 May 2012 22:17:02 -0400
 From: Paul Gortmaker <paul.gortmaker@windriver.com>
 To: <stable@kernel.org>, <linux-kernel@vger.kernel.org>
-Subject: [34-longterm 009/179] x86, 64-bit: Fix copy_[to/from]_user() checks for the userspace address limit
-Date: Mon, 14 May 2012 22:11:45 -0400
-Message-ID: <1337048075-6132-10-git-send-email-paul.gortmaker@windriver.com>
+Subject: [34-longterm 075/179] time: Compensate for rounding on odd-frequency clocksources
+Date: Mon, 14 May 2012 22:12:51 -0400
+Message-ID: <1337048075-6132-76-git-send-email-paul.gortmaker@windriver.com>
 X-Mailer: git-send-email 1.7.9.6
 In-Reply-To: <1337048075-6132-1-git-send-email-paul.gortmaker@windriver.com>
 References: <1337048075-6132-1-git-send-email-paul.gortmaker@windriver.com>
@@ -21,7 +21,7 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Jiri Olsa <jolsa@redhat.com>
+From: Kasper Pedersen <kkp2010@kasperkp.dk>
 
                    -------------------
     This is a commit scheduled for the next v2.6.34 longterm release.
@@ -29,119 +29,83 @@ From: Jiri Olsa <jolsa@redhat.com>
     If you see a problem with using this for longterm, please comment.
                    -------------------
 
-commit 26afb7c661080ae3f1f13ddf7f0c58c4f931c22b upstream.
+commit a386b5af8edda1c742ce9f77891e112eefffc005 upstream.
 
-As reported in BZ #30352:
+When the clocksource is not a multiple of HZ, the clock will be off.  For
+acpi_pm, HZ=1000 the error is 127.111 ppm:
 
-  https://bugzilla.kernel.org/show_bug.cgi?id=30352
+The rounding of cycle_interval ends up generating a false error term in
+ntp_error accumulation since xtime_interval is not exactly 1/HZ.  So, we
+subtract out the error caused by the rounding.
 
-there's a kernel bug related to reading the last allowed page on x86_64.
+This has been visible since 2.6.32-rc2
+	commit a092ff0f90cae22b2ac8028ecd2c6f6c1a9e4601
+	time: Implement logarithmic time accumulation
+That commit raised NTP_INTERVAL_FREQ and exposed the rounding error.
 
-The _copy_to_user() and _copy_from_user() functions use the following
-check for address limit:
+testing tool: http://n1.taur.dk/permanent/testpmt.c
+Also tested with ntpd and a frequency counter.
 
-  if (buf + size >= limit)
-	fail();
-
-while it should be more permissive:
-
-  if (buf + size > limit)
-	fail();
-
-That's because the size represents the number of bytes being
-read/write from/to buf address AND including the buf address.
-So the copy function will actually never touch the limit
-address even if "buf + size == limit".
-
-Following program fails to use the last page as buffer
-due to the wrong limit check:
-
- #include <sys/mman.h>
- #include <sys/socket.h>
- #include <assert.h>
-
- #define PAGE_SIZE       (4096)
- #define LAST_PAGE       ((void*)(0x7fffffffe000))
-
- int main()
- {
-        int fds[2], err;
-        void * ptr = mmap(LAST_PAGE, PAGE_SIZE, PROT_READ | PROT_WRITE,
-                          MAP_ANONYMOUS | MAP_PRIVATE | MAP_FIXED, -1, 0);
-        assert(ptr == LAST_PAGE);
-        err = socketpair(AF_LOCAL, SOCK_STREAM, 0, fds);
-        assert(err == 0);
-        err = send(fds[0], ptr, PAGE_SIZE, 0);
-        perror("send");
-        assert(err == PAGE_SIZE);
-        err = recv(fds[1], ptr, PAGE_SIZE, MSG_WAITALL);
-        perror("recv");
-        assert(err == PAGE_SIZE);
-        return 0;
- }
-
-The other place checking the addr limit is the access_ok() function,
-which is working properly. There's just a misleading comment
-for the __range_not_ok() macro - which this patch fixes as well.
-
-The last page of the user-space address range is a guard page and
-Brian Gerst observed that the guard page itself due to an erratum on K8 cpus
-(#121 Sequential Execution Across Non-Canonical Boundary Causes Processor
-Hang).
-
-However, the test code is using the last valid page before the guard page.
-The bug is that the last byte before the guard page can't be read
-because of the off-by-one error. The guard page is left in place.
-
-This bug would normally not show up because the last page is
-part of the process stack and never accessed via syscalls.
-
-Signed-off-by: Jiri Olsa <jolsa@redhat.com>
-Acked-by: Brian Gerst <brgerst@gmail.com>
-Acked-by: Linus Torvalds <torvalds@linux-foundation.org>
-Link: http://lkml.kernel.org/r/1305210630-7136-1-git-send-email-jolsa@redhat.com
-Signed-off-by: Ingo Molnar <mingo@elte.hu>
+Signed-off-by: Kasper Pedersen <kkp2010@kasperkp.dk>
+Acked-by: john stultz <johnstul@us.ibm.com>
+Cc: John Kacur <jkacur@redhat.com>
+Cc: Clark Williams <williams@redhat.com>
+Cc: Martin Schwidefsky <schwidefsky@de.ibm.com>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
 Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
 ---
- arch/x86/include/asm/uaccess.h |    2 +-
- arch/x86/lib/copy_user_64.S    |    4 ++--
- 2 files changed, 3 insertions(+), 3 deletions(-)
+ kernel/time/timekeeping.c |    9 +++++++--
+ 1 file changed, 7 insertions(+), 2 deletions(-)
 
-diff --git a/arch/x86/include/asm/uaccess.h b/arch/x86/include/asm/uaccess.h
-index abd3e0e..99f0ad7 100644
---- a/arch/x86/include/asm/uaccess.h
-+++ b/arch/x86/include/asm/uaccess.h
-@@ -42,7 +42,7 @@
-  * Returns 0 if the range is valid, nonzero otherwise.
-  *
-  * This is equivalent to the following test:
-- * (u33)addr + (u33)size >= (u33)current->addr_limit.seg (u65 for x86_64)
-+ * (u33)addr + (u33)size > (u33)current->addr_limit.seg (u65 for x86_64)
-  *
-  * This needs 33-bit (65-bit for x86_64) arithmetic. We have a carry...
-  */
-diff --git a/arch/x86/lib/copy_user_64.S b/arch/x86/lib/copy_user_64.S
-index 71100c9..a4899ae 100644
---- a/arch/x86/lib/copy_user_64.S
-+++ b/arch/x86/lib/copy_user_64.S
-@@ -72,7 +72,7 @@ ENTRY(_copy_to_user)
- 	addq %rdx,%rcx
- 	jc bad_to_user
- 	cmpq TI_addr_limit(%rax),%rcx
--	jae bad_to_user
-+	ja bad_to_user
- 	ALTERNATIVE_JUMP X86_FEATURE_REP_GOOD,copy_user_generic_unrolled,copy_user_generic_string
- 	CFI_ENDPROC
- ENDPROC(_copy_to_user)
-@@ -85,7 +85,7 @@ ENTRY(_copy_from_user)
- 	addq %rdx,%rcx
- 	jc bad_from_user
- 	cmpq TI_addr_limit(%rax),%rcx
--	jae bad_from_user
-+	ja bad_from_user
- 	ALTERNATIVE_JUMP X86_FEATURE_REP_GOOD,copy_user_generic_unrolled,copy_user_generic_string
- 	CFI_ENDPROC
- ENDPROC(_copy_from_user)
+diff --git a/kernel/time/timekeeping.c b/kernel/time/timekeeping.c
+index 39f6177..268020d 100644
+--- a/kernel/time/timekeeping.c
++++ b/kernel/time/timekeeping.c
+@@ -32,6 +32,8 @@ struct timekeeper {
+ 	cycle_t cycle_interval;
+ 	/* Number of clock shifted nano seconds in one NTP interval. */
+ 	u64	xtime_interval;
++	/* shifted nano seconds left over when rounding cycle_interval */
++	s64	xtime_remainder;
+ 	/* Raw nano seconds accumulated per NTP interval. */
+ 	u32	raw_interval;
+ 
+@@ -62,7 +64,7 @@ struct timekeeper timekeeper;
+ static void timekeeper_setup_internals(struct clocksource *clock)
+ {
+ 	cycle_t interval;
+-	u64 tmp;
++	u64 tmp, ntpinterval;
+ 
+ 	timekeeper.clock = clock;
+ 	clock->cycle_last = clock->read(clock);
+@@ -70,6 +72,7 @@ static void timekeeper_setup_internals(struct clocksource *clock)
+ 	/* Do the ns -> cycle conversion first, using original mult */
+ 	tmp = NTP_INTERVAL_LENGTH;
+ 	tmp <<= clock->shift;
++	ntpinterval = tmp;
+ 	tmp += clock->mult/2;
+ 	do_div(tmp, clock->mult);
+ 	if (tmp == 0)
+@@ -80,6 +83,7 @@ static void timekeeper_setup_internals(struct clocksource *clock)
+ 
+ 	/* Go back from cycles -> shifted ns */
+ 	timekeeper.xtime_interval = (u64) interval * clock->mult;
++	timekeeper.xtime_remainder = ntpinterval - timekeeper.xtime_interval;
+ 	timekeeper.raw_interval =
+ 		((u64) interval * clock->mult) >> clock->shift;
+ 
+@@ -772,7 +776,8 @@ static cycle_t logarithmic_accumulation(cycle_t offset, int shift)
+ 
+ 	/* Accumulate error between NTP and clock interval */
+ 	timekeeper.ntp_error += tick_length << shift;
+-	timekeeper.ntp_error -= timekeeper.xtime_interval <<
++	timekeeper.ntp_error -=
++	    (timekeeper.xtime_interval + timekeeper.xtime_remainder) <<
+ 				(timekeeper.ntp_error_shift + shift);
+ 
+ 	return offset;
 -- 
 1.7.9.6
 
