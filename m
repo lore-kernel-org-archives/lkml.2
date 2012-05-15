@@ -1,38 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965140Ab2EOPMH (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 May 2012 11:12:07 -0400
-Received: from mail-we0-f174.google.com ([74.125.82.174]:36145 "EHLO
-	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S964815Ab2EOPME (ORCPT
+	id S965154Ab2EOPM0 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 May 2012 11:12:26 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:64672 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756047Ab2EOPMX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 May 2012 11:12:04 -0400
+	Tue, 15 May 2012 11:12:23 -0400
+Date: Tue, 15 May 2012 08:12:10 -0700
+From: Tejun Heo <tj@kernel.org>
+To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Cc: "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        "cgroups@vger.kernel.org" <cgroups@vger.kernel.org>,
+        Michal Hocko <mhocko@suse.cz>, Johannes Weiner <hannes@cmpxchg.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Han Ying <yinghan@google.com>, Glauber Costa <glommer@parallels.com>,
+        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Hiroyuki Kamezawa <kamezawa.hiroyuki@gmail.com>,
+        Linux Kernel <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v3 1/6] memcg: fix error code in
+ hugetlb_force_memcg_empty()
+Message-ID: <20120515151210.GB6119@google.com>
+References: <4FACDED0.3020400@jp.fujitsu.com>
+ <4FACDFAE.5050808@jp.fujitsu.com>
+ <20120514181556.GE2366@google.com>
+ <20120514183219.GG2366@google.com>
+ <4FB1AD0A.50901@jp.fujitsu.com>
 MIME-Version: 1.0
-In-Reply-To: <alpine.LRH.2.00.1205150937130.11339@twin.jikos.cz>
-References: <CA+55aFwB-3rsrVo1vur6drZMvhSWNHAJZfEYC=WXfpwwvLfxFQ@mail.gmail.com>
- <4FB17876.5060604@suse.cz> <alpine.LRH.2.00.1205150937130.11339@twin.jikos.cz>
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Tue, 15 May 2012 08:11:41 -0700
-X-Google-Sender-Auth: IML2bTbVVphmWEZ7-0ahZJcyBf8
-Message-ID: <CA+55aFzOuLnUonBpLSP+K8b6JxGwFu1PhgDp7Ph1V8HmcWykuA@mail.gmail.com>
-Subject: Re: stale object files (was Re: Linux-3.4-rc7)
-To: Jiri Kosina <jkosina@suse.cz>
-Cc: Michal Marek <mmarek@suse.cz>,
-        =?ISO-8859-2?Q?Pawe=B3_Sikora?= <pluto@pld-linux.org>,
-        Sam Ravnborg <sam@ravnborg.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4FB1AD0A.50901@jp.fujitsu.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, May 15, 2012 at 12:38 AM, Jiri Kosina <jkosina@suse.cz> wrote:
->
-> Seems like my build fix for this from [1] hasn't been picked up by anyone.
-> Is this going to be fixed in a different way (like disallowing gpio-pch to
-> be built as module), or ... ?
+On Tue, May 15, 2012 at 10:10:34AM +0900, KAMEZAWA Hiroyuki wrote:
+> (2012/05/15 3:32), Tejun Heo wrote:
+> 
+> > On Mon, May 14, 2012 at 11:15:56AM -0700, Tejun Heo wrote:
+> >> On Fri, May 11, 2012 at 06:45:18PM +0900, KAMEZAWA Hiroyuki wrote:
+> >>> -		if (cgroup_task_count(cgroup) || !list_empty(&cgroup->children))
+> >>> +		if (cgroup_task_count(cgroup)
+> >>> +			|| !list_empty(&cgroup->children)) {
+> >>> +			ret = -EBUSY;
+> >>>  			goto out;
+> >>
+> >> Why break the line?  It doesn't go over 80 col.
+> > 
+> > Ooh, it does.  Sorry, my bad.  But still, isn't it more usual to leave
+> > the operator in the preceding line and align the start of the second
+> > line with the first?  ie.
+> > 
+> > 		if (cgroup_task_count(cgroup) ||
+> > 		    !list_empty(&cgroup->children)) {
+> > 
+> 
+> 
+> How about this ?
+> ==
+> From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+> Date: Fri, 27 Apr 2012 13:19:19 +0900
+> Subject: [PATCH] memcg: fix error code in hugetlb_force_memcg_empty()
+> 
+> Changelog:
+>  - clean up.
+> Reviewed-by: Aneesh Kumar K.V <aneesh.kumar@linux.vnet.ibm.com>
+> Signed-off-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
 
-Thomas said he'd take it, but it's been too long, so I'll just apply
-it directly instead.
+Heh, it was a nitpick anyway.  Please feel free to add my reviewed-by
+for the whole series.
 
-                   Linus
+Thank you!
+
+-- 
+tejun
