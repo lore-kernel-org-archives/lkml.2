@@ -1,74 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S966064Ab2EORaz (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 May 2012 13:30:55 -0400
-Received: from e31.co.us.ibm.com ([32.97.110.149]:58092 "EHLO
-	e31.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965223Ab2EORay (ORCPT
+	id S966085Ab2EORbp (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 May 2012 13:31:45 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:36422 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758281Ab2EORbn convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 May 2012 13:30:54 -0400
-Subject: Re: [V2 PATCH 2/9] macvtap: zerocopy: fix truesize underestimation
-From: Shirley Ma <mashirle@us.ibm.com>
-To: Jason Wang <jasowang@redhat.com>
-Cc: eric.dumazet@gmail.com, mst@redhat.com, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, ebiederm@xmission.com,
-        davem@davemloft.net
-In-Reply-To: <20120502034144.11782.88947.stgit@amd-6168-8-1.englab.nay.redhat.com>
-References: <20120502033901.11782.13157.stgit@amd-6168-8-1.englab.nay.redhat.com>
-	 <20120502034144.11782.88947.stgit@amd-6168-8-1.englab.nay.redhat.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Tue, 15 May 2012 10:26:49 -0700
-Message-ID: <1337102809.8220.10.camel@oc3660625478.ibm.com>
+	Tue, 15 May 2012 13:31:43 -0400
+Message-ID: <1337103096.27694.94.camel@twins>
+Subject: Re: [RFC][PATCH RT] rwsem_rt: Another (more sane) approach to mulit
+ reader rt locks
+From: Peter Zijlstra <peterz@infradead.org>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: LKML <linux-kernel@vger.kernel.org>, RT <linux-rt-users@vger.kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Clark Williams <williams@redhat.com>
+Date: Tue, 15 May 2012 19:31:36 +0200
+In-Reply-To: <1337102732.14207.336.camel@gandalf.stny.rr.com>
+References: <1337090625.14207.304.camel@gandalf.stny.rr.com>
+	 <1337094383.27694.62.camel@twins>
+	 <1337096542.14207.315.camel@gandalf.stny.rr.com>
+	 <1337102732.14207.336.camel@gandalf.stny.rr.com>
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
+X-Mailer: Evolution 3.2.2- 
 Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 (2.28.3-24.el6) 
-Content-Transfer-Encoding: 7bit
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 12051517-7282-0000-0000-0000090D2107
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2012-05-02 at 11:41 +0800, Jason Wang wrote:
-> As the skb fragment were pinned/built from user pages, we should
-> account the page instead of length for truesize.
-> 
-> Signed-off-by: Jason Wang <jasowang@redhat.com>
-> ---
->  drivers/net/macvtap.c |    6 ++++--
->  1 files changed, 4 insertions(+), 2 deletions(-)
-> 
-> diff --git a/drivers/net/macvtap.c b/drivers/net/macvtap.c
-> index bd4a70d..7cb2684 100644
-> --- a/drivers/net/macvtap.c
-> +++ b/drivers/net/macvtap.c
-> @@ -519,6 +519,7 @@ static int zerocopy_sg_from_iovec(struct sk_buff
-> *skb, const struct iovec *from,
->                 struct page *page[MAX_SKB_FRAGS];
->                 int num_pages;
->                 unsigned long base;
-> +               unsigned long truesize;
-> 
->                 len = from->iov_len - offset;
->                 if (!len) {
-> @@ -533,10 +534,11 @@ static int zerocopy_sg_from_iovec(struct sk_buff
-> *skb, const struct iovec *from,
->                     (num_pages > MAX_SKB_FRAGS -
-> skb_shinfo(skb)->nr_frags))
->                         /* put_page is in skb free */
->                         return -EFAULT;
-> +               truesize = size * PAGE_SIZE;
+On Tue, 2012-05-15 at 13:25 -0400, Steven Rostedt wrote:
+> On Tue, 2012-05-15 at 11:42 -0400, Steven Rostedt wrote:
+> > On Tue, 2012-05-15 at 17:06 +0200, Peter Zijlstra wrote:
+> > > On Tue, 2012-05-15 at 10:03 -0400, Steven Rostedt wrote:
+> > > > 
+> > > > where readers may nest (the same task may grab the same rwsem for
+> > > > read multiple times), but only one task may hold the rwsem at any
+> > > > given
+> > > > time (for read or write).
+> > > 
+> > > Humm, that sounds iffy, rwsem isn't a recursive read lock only rwlock_t
+> > > is.
+> > 
+> > In that case, current -rt is broken. As it has it being a recursive lock
+> > (without my patch).
 
-Here should be truesize = size * PAGE_SIZE - offset, right?
+Nah not broken, just pointless. A recursive lock that's not used
+recursively is fine.
 
->                 skb->data_len += len;
->                 skb->len += len;
-> -               skb->truesize += len;
-> -               atomic_add(len, &skb->sk->sk_wmem_alloc);
-> +               skb->truesize += truesize;
-> +               atomic_add(truesize, &skb->sk->sk_wmem_alloc);
->                 while (len) {
->                         int off = base & ~PAGE_MASK;
->                         int size = min_t(int, len, PAGE_SIZE - off);
 > 
+> Why wouldn't it be recursive. If two different tasks are allowed to grab
+> a read lock at the same time, why can't the same task grab a read lock
+> twice? As long as it releases it the same amount of times.
 > 
+> Now you can't grab a read lock if you have the write lock.
 
+rwsem is fifo-fair, if a writer comes in between the second read
+acquisition (even by the same task) would block and you'd be a deadlock
+since the write won't succeed since you're still holding a reader.
