@@ -1,54 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757747Ab2EORqP (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 May 2012 13:46:15 -0400
-Received: from mail-lpp01m010-f46.google.com ([209.85.215.46]:51189 "EHLO
-	mail-lpp01m010-f46.google.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751705Ab2EORqN (ORCPT
+	id S1758558Ab2EORqo (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 May 2012 13:46:44 -0400
+Received: from out1-smtp.messagingengine.com ([66.111.4.25]:51146 "EHLO
+	out1-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755640Ab2EORql (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 May 2012 13:46:13 -0400
-From: Johan Hovold <jhovold@gmail.com>
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Samuel Ortiz <sameo@linux.intel.com>
-Cc: patches@opensource.wolfsonmicro.com, linux-kernel@vger.kernel.org,
-        Johan Hovold <jhovold@gmail.com>
-Subject: [PATCH] mfd: Fix double free in wm8350 error path
-Date: Tue, 15 May 2012 19:45:40 +0200
-Message-Id: <1337103940-31899-1-git-send-email-jhovold@gmail.com>
-X-Mailer: git-send-email 1.7.8.6
+	Tue, 15 May 2012 13:46:41 -0400
+X-Sasl-enc: 4F6ttcSX/oZBRt5gsJeiXlZ9enHCejAHG5wBMdJqknKr 1337104000
+Date: Tue, 15 May 2012 10:46:39 -0700
+From: Greg KH <greg@kroah.com>
+To: Matthew Wilcox <willy@linux.intel.com>
+Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: NVM Mapping API
+Message-ID: <20120515174639.GA31752@kroah.com>
+References: <20120515133450.GD22985@linux.intel.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120515133450.GD22985@linux.intel.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Fix double free in probe error path introduced by the recent conversion
-of wm8350 to use regmap.
+On Tue, May 15, 2012 at 09:34:51AM -0400, Matthew Wilcox wrote:
+> 
+> There are a number of interesting non-volatile memory (NVM) technologies
+> being developed.  Some of them promise DRAM-comparable latencies and
+> bandwidths.  At Intel, we've been thinking about various ways to present
+> those to software.  This is a first draft of an API that supports the
+> operations we see as necessary.  Patches can follow easily enough once
+> we've settled on an API.
+> 
+> We think the appropriate way to present directly addressable NVM to
+> in-kernel users is through a filesystem.  Different technologies may want
+> to use different filesystems, or maybe some forms of directly addressable
+> NVM will want to use the same filesystem as each other.
+> 
+> For mapping regions of NVM into the kernel address space, we think we need
+> map, unmap, protect and sync operations; see kerneldoc for them below.
+> We also think we need read and write operations (to copy to/from DRAM).
+> The kernel_read() function already exists, and I don't think it would
+> be unreasonable to add its kernel_write() counterpart.
+> 
+> We aren't yet proposing a mechanism for carving up the NVM into regions.
+> vfs_truncate() seems like a reasonable API for resizing an NVM region.
+> filp_open() also seems reasonable for turning a name into a file pointer.
+> 
+> What we'd really like is for people to think about how they might use
+> fast NVM inside the kernel.  There's likely to be a lot of it (at least in
+> servers); all the technologies are promising cheaper per-bit prices than
+> DRAM, so it's likely to be sold in larger capacities than DRAM is today.
+> 
+> Caching is one obvious use (be it FS-Cache, Bcache, Flashcache or
+> something else), but I bet there are more radical things we can do
+> with it.  What if we stored the inode cache in it?  Would booting with
+> a hot inode cache improve boot times?  How about storing the tree of
+> 'struct devices' in it so we don't have to rescan the busses at startup?
 
-Signed-off-by: Johan Hovold <jhovold@gmail.com>
----
- drivers/mfd/wm8350-i2c.c |   10 +---------
- 1 files changed, 1 insertions(+), 9 deletions(-)
+Rescanning the busses at startup are required anyway, as devices can be
+added and removed when the power is off, and I would be amazed if that
+is actually taking any measurable time.  Do you have any numbers for
+this for different busses?
 
-diff --git a/drivers/mfd/wm8350-i2c.c b/drivers/mfd/wm8350-i2c.c
-index 271589f..a68aceb 100644
---- a/drivers/mfd/wm8350-i2c.c
-+++ b/drivers/mfd/wm8350-i2c.c
-@@ -49,15 +49,7 @@ static int wm8350_i2c_probe(struct i2c_client *i2c,
- 	i2c_set_clientdata(i2c, wm8350);
- 	wm8350->dev = &i2c->dev;
- 
--	ret = wm8350_device_init(wm8350, i2c->irq, i2c->dev.platform_data);
--	if (ret < 0)
--		goto err;
--
--	return ret;
--
--err:
--	regmap_exit(wm8350->regmap);
--	return ret;
-+	return wm8350_device_init(wm8350, i2c->irq, i2c->dev.platform_data);
- }
- 
- static int wm8350_i2c_remove(struct i2c_client *i2c)
--- 
-1.7.8.5
+What about pramfs for the nvram?  I have a recent copy of the patches,
+and I think they are clean enough for acceptance, there was no
+complaints the last time it was suggested.  Can you use that for this
+type of hardware?
 
+thanks,
+
+greg k-h
