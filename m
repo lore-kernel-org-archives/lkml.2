@@ -1,61 +1,196 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965877Ab2EOQda (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 May 2012 12:33:30 -0400
-Received: from lxorguk.ukuu.org.uk ([81.2.110.251]:45485 "EHLO
-	lxorguk.ukuu.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965661Ab2EOQd0 (ORCPT
+	id S965889Ab2EOQe3 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 May 2012 12:34:29 -0400
+Received: from mail-vb0-f46.google.com ([209.85.212.46]:64134 "EHLO
+	mail-vb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S965792Ab2EOQe1 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 May 2012 12:33:26 -0400
-Date: Tue, 15 May 2012 17:36:13 +0100
-From: Alan Cox <alan@lxorguk.ukuu.org.uk>
-To: Paul Bolle <pebolle@tiscali.nl>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Alan Stern <stern@rowland.harvard.edu>,
-        "James E.J. Bottomley" <JBottomley@parallels.com>,
-        Matthew Dharm <mdharm-usb@one-eyed-alien.net>,
-        linux-scsi@vger.kernel.org, usb-storage@lists.one-eyed-alien.net,
-        linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 0/3] scsi: usb-storage: hide errors for five devices
-Message-ID: <20120515173613.3c8c2f1f@pyramind.ukuu.org.uk>
-In-Reply-To: <1337099344.13455.9.camel@x61.thuisdomein>
-References: <1336491453.1933.67.camel@x61.thuisdomein>
-	<Pine.LNX.4.44L0.1205081240450.1479-100000@iolanthe.rowland.org>
-	<20120515153539.GA25206@kroah.com>
-	<1337099344.13455.9.camel@x61.thuisdomein>
-X-Mailer: Claws Mail 3.8.0 (GTK+ 2.24.8; x86_64-redhat-linux-gnu)
-Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Tue, 15 May 2012 12:34:27 -0400
+MIME-Version: 1.0
+In-Reply-To: <201205150832.10069.arnd@arndb.de>
+References: <20120514105424.8596.38355.sendpatchset@w520>
+	<201205142107.51335.arnd@arndb.de>
+	<CANqRtoSts80a-Pgas23Um8FFtnSeeu2oZKNehdfymLWoTOSspA@mail.gmail.com>
+	<201205150832.10069.arnd@arndb.de>
+Date: Wed, 16 May 2012 01:34:25 +0900
+Message-ID: <CANqRtoTnLGj2YmOFRSMn09LXsk_wmwWgZg6VQxh55EtKOEEbWQ@mail.gmail.com>
+Subject: Re: [PATCH 03/03] ARM: Undelete KZM9D mach-type
+From: Magnus Damm <magnus.damm@gmail.com>
+To: Arnd Bergmann <arnd@arndb.de>
+Cc: Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        linux-arm-kernel@lists.infradead.org, linux-sh@vger.kernel.org,
+        lethal@linux-sh.org, linux-kernel@vger.kernel.org, rjw@sisk.pl,
+        horms@verge.net.au, olof@lixom.net,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Rob Herring <rob.herring@calxeda.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 15 May 2012 18:29:04 +0200
-Paul Bolle <pebolle@tiscali.nl> wrote:
+On Tue, May 15, 2012 at 5:32 PM, Arnd Bergmann <arnd@arndb.de> wrote:
+> On Monday 14 May 2012, Magnus Damm wrote:
+>> On Tue, May 15, 2012 at 6:07 AM, Arnd Bergmann <arnd@arndb.de> wrote:
+>> > On Monday 14 May 2012, Magnus Damm wrote:
+>> >> On Mon, May 14, 2012 at 9:30 PM, Russell King - ARM Linux
+>> >> <linux@arm.linux.org.uk> wrote:
+>> >> > On Mon, May 14, 2012 at 07:54:51PM +0900, Magnus Damm wrote:
+>> >> >> From: Magnus Damm <damm@opensource.se>
+>> >> >>
+>> >> >> Undelete the KZM9D mach-type to allow build of board
+>> >> >> for EMEV2 SoC support.
+>> >> >
+>> >> > If you've converted to use DT for KZM9D, do you still need this?
+>> >>
+>> >> Good question. I guess it depends on how we want to make use of DT on
+>> >> that piece of hardware. I do intend to convert the KZM9D board (not to
+>> >> be mistaken for KZM9G!) to DT (and drop the generic EMEV2 SoC DT
+>> >> unless someone really wants it at this timing), but I'm still not sure
+>> >> if the SMP code in V2 is the way we want to do it. I suspect that
+>> >> there is no way to support SMP without static entity mappings, so
+>> >> perhaps I should rework that part and redo a V3? Or perhaps I should
+>> >> interpret the EMEV2 silence as a good thing. =)
+>> >
+>> > I don't understand why you want to have a KZM9D board file at all,
+>> > since it from looking at it, I can find nothing that is truely
+>> > board specific and doesn't already have bindings. This is different
+>> > from the other boards that you just converted to DT_MACHINE_START
+>> > but still left using individual board files because some bindings
+>> > are missing.
+>> >
+>> > The only board specific device you add for KZM9D is smsc911x, and
+>> > that has bindings, all the other devices can just be hardcoded
+>> > for the soc because they are always the same, until we have bindings
+>> > for all of them. Am I missing something?
+>>
+>> Right, I understand your observation. Let me try to explain the reason
+>> behind the board code - please excuse me not doing that in the first
+>> place already.
+>>
+>> So yes, in the EMEV2 case the serial port and timers have DT bindings.
+>> Same for the already existing bindings for the SMSC chip. And I'm
+>> working on a EMEV2 GPIO V2 and DT for that GPIO driver. So those are
+>> moving along nicely.
+>>
+>> Hardware that doesn't have any DT bindings at this point are: pinmux,
+>> clocks and SMP.
+>>
+>> Perhaps my view of DT support is somewhat odd, but I'm rather hesitant
+>> to commit to DT for a SoC when I don't use DT for _all_ the hardware
+>> blocks. As you can see in the EMEV2 SoC DT V2 patch I have
+>> intentionally left out the clock setup dependency and there board code
+>> is in the sad state that it assumes that the boot loader has done all
+>> the work already. There is no SMP bindings in place either. So with
+>> the clock portion missing the kernel is not really that useful as-is,
+>> but I prefer that over locking ourselves into something we don't know
+>> fully yet. On a SoC level that is.
+>>
+>> The reason why I don't want to tie in the clock and the pinmux in a
+>> static fashion on a SoC and release DT support is that I don't know to
+>> migrate from that state to all-DT and still remain backwards
+>> compatible. I'd be very happy to hear suggestions how to do that. If
+>> this is possible without causing too much pain for the user then I
+>> will of course go that way.
+>
+> This is different from what most other maintainers are doing: Generally
+> the migration to DT is done in small changes over multiple releases,
+> adding stuff to the dts file when it gets removed from the static
+> initialization. This is necessary in particular because there are no
+> bindings for DMA controllers yet, and until recently we had no
+> general bindings  for pinctrl and clock at all, so nobody could
+> put those into the device tree.
 
-> On Tue, 2012-05-15 at 08:35 -0700, Greg Kroah-Hartman wrote:
-> > > > Of course, an easy way out would be to downgrade both the "Asking for
-> > > > cache data failed" and the "No Caching mode page present" errors to
-> > > > notices. But the SCSI people might disagree with that approach.
-> > > 
-> > > Well, let's see what they say.
-> > 
-> > What ever happened here, are these 3 patches acceptable, or do they need
-> > to be reworked or something else?
-> 
-> Nothing happened after Alan's message.
-> 
-> So, currently only the first patch was acceptable (to Alan, that is, but
-> it touched the SCSI code).
-> 
-> At least, I haven't seen a reply from the SCSI people. Perhaps the best
-> thing to do is to submit a series of one or two trivial patches that
-> just downgrade the errors involved to notices. That should lead to
-> feedback by the SCSI people.
+I understand. I guess in the EMEV2 case we can simply just add the
+drivers with DT support upstream. We have the luxury of no DMA code
+upstream for EMEV2 so I hope we can get it right directly. Perhaps I'm
+aiming too high. =)
 
-Possibly we should have a hostadapter flag indicating if the cache noise
-is expected nuisance or not. That way if hardcore SCSI on real cables
-wants to keeep it then it can still be shut up for USB where its the
-norm and just irrelevant noise.
+> We still see the DT bindings as work in progress at this moment,
+> at least on most platforms, so we don't yet expect them to be final.
+> Once we get to that point, the plan is that the DT maintainers
+> make a separate package with dts files outside of the kernel and
+> try much harder to keep that stable across kernel versions.
+
+I see. I am a bit concerned with customers using DT in platform with
+long support cycles like for automotive purpose for instance. As you
+can tell by me being cautious when introducing DT support I'd really
+like to avoid getting DT support code for the kernel written out of
+tree and shipped to customers. Perhaps there is not so much I can do
+about that regardless, but if possible I'd like to make it possible
+for the "out of tree people" to still do their own thing, but with
+platform devices instead of DT because we don't have the same binary
+compatibility issue there.
+
+>> I am very comfortable doing things on a board level, like in the KZM9G
+>> / Armadillo EVA 800 cases. Perhaps I can adjust the EMEV2 KZM9D board
+>> to follow that style? As for EMEV2 SoC DT, I prefer either keeping the
+>> EMEV2 SoC DT V2 as-is with no clock, pinmux and SMP, or ditching the
+>> EMEV2 SoC DT portion all together and go KZM9D DT board only.
+>>
+>> What is your preference?
+>
+> I'll leave that up to you. Please make KZM9D use DT_MACHINE_START,
+> and do what fits your needs best for the generic EMEV2 machine
+> description. One possible alternative that I can see here is to
+> move the KZM9D support into the main EMEV2 file but keep the
+> specific "compatible" property for that, to ensure that we don't
+> get other boards to rely on generic EMEV2 implementation specifics
+> that you don't want to expose in DT yet.
+
+Ok. I will convert the code to use DT_MACHINE_START. Thanks!
+
+So do you have any preference how to deal with SMP and the iotable?
+Are you ok with the ioremap vs iotable code as-is in V2? I assume so!
+
+>> >> Unfortunately the KZM9D board only takes uImages, but good news is
+>> >> that it actually feeds us the correct mach-type. This seems to be a
+>> >> pretty common thing around here these days. I'm trying to get people
+>> >> to actually store the DTB in the boot loader and pass it along, but
+>> >> that seems rather far away at this point.
+>> >
+>> > The preferred way would be to store the dtb on the same medium that
+>> > contains the kernel, so you can update them together if necessary,
+>> > even though we try to keep dtb files compatible across kernel versions.
+>> > I would not want to rely on a hardcoded dtb file in the boot loader.
+>>
+>> Right, I agree. Relying on a fixed DTB in an unreliable boot loader is
+>> the last thing I want to do.
+>>
+>> So if your boot loader can't pass DTB to the kernel, and you want to
+>> have a single kernel supporting multiple boards, then do you see
+>> anything wrong with based on mach-type do a run time decision (in
+>> arch/arm/boot/compressed/) to override the ATAG from the boot loader
+>> with a compiled-in per-board DTB?
+>
+> I know that we have discussed this in the past, but I don't remember
+> the outcome of the discussion, maybe someone else can help out here
+> (Grant?)
+
+Thanks, any pointers would be greatly appreciated.
+
+> It's definitely technically possible to do it, but it could either be
+> that nobody has bothered to do the implementation, or that we had good
+> reasons against it and decided not to allow this.
+
+Yeah, it seems like a rather small piece of code that would help our
+situation quite a bit. So I imagine that others may be in a similar
+position which makes mei wonder why it hasn't been done already.
+
+>> The alternative is to have a raw zImage and a set of DTB files and
+>> force the user to manually append the DTB to the zImage depending on
+>> board type. Seems a bit too manual process for my liking, so as you
+>> probably are tired of hearing now - I prefer extending the boot code
+>> to switch on something we already have - the mach-type - and then
+>> based on that feed one of the compiled-in DTBs to the kernel.
+>>
+>> I'll try to cook something up unless there are any objections.
+>
+> Please hold on until we find someone who remembers what we discussed.
+
+Sure, will do.
+
+Thanks,
+
+/ magnus
