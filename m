@@ -1,17 +1,17 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965024Ab2EOCRH (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 May 2012 22:17:07 -0400
-Received: from mail.windriver.com ([147.11.1.11]:48991 "EHLO
+	id S965133Ab2EOC4r (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 May 2012 22:56:47 -0400
+Received: from mail.windriver.com ([147.11.1.11]:49565 "EHLO
 	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S964867Ab2EOCQH (ORCPT
+	with ESMTP id S965014Ab2EOCRG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 May 2012 22:16:07 -0400
+	Mon, 14 May 2012 22:17:06 -0400
 From: Paul Gortmaker <paul.gortmaker@windriver.com>
 To: <stable@kernel.org>, <linux-kernel@vger.kernel.org>
-Subject: [34-longterm 010/179] ext3: Fix fs corruption when make_indexed_dir() fails
-Date: Mon, 14 May 2012 22:11:46 -0400
-Message-ID: <1337048075-6132-11-git-send-email-paul.gortmaker@windriver.com>
+Subject: [34-longterm 081/179] xhci: Reject double add of active endpoints.
+Date: Mon, 14 May 2012 22:12:57 -0400
+Message-ID: <1337048075-6132-82-git-send-email-paul.gortmaker@windriver.com>
 X-Mailer: git-send-email 1.7.9.6
 In-Reply-To: <1337048075-6132-1-git-send-email-paul.gortmaker@windriver.com>
 References: <1337048075-6132-1-git-send-email-paul.gortmaker@windriver.com>
@@ -21,7 +21,7 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Jan Kara <jack@suse.cz>
+From: Sarah Sharp <sarah.a.sharp@linux.intel.com>
 
                    -------------------
     This is a commit scheduled for the next v2.6.34 longterm release.
@@ -29,56 +29,83 @@ From: Jan Kara <jack@suse.cz>
     If you see a problem with using this for longterm, please comment.
                    -------------------
 
-commit 86c4f6d85595cd7da635dc6985d27bfa43b1ae10 upstream.
+commit fa75ac379e63c2864e9049b5e8615e40f65c1e70 upstream.
 
-When make_indexed_dir() fails (e.g. because of ENOSPC) after it has allocated
-block for index tree root, we did not properly mark all changed buffers dirty.
-This lead to only some of these buffers being written out and thus effectively
-corrupting the directory.
+While trying to switch a UAS device from the BOT configuration to the UAS
+configuration via the bConfigurationValue file, Tanya ran into an issue in
+the USB core.  usb_disable_device() sets entries in udev->ep_out and
+udev->ep_out to NULL, but doesn't call into the xHCI bandwidth management
+functions to remove the BOT configuration endpoints from the xHCI host's
+internal structures.
 
-Fix the issue by marking all changed data dirty even in the error failure case.
+The USB core would then attempt to add endpoints for the UAS
+configuration, and some of the endpoints had the same address as endpoints
+in the BOT configuration.  The xHCI driver blindly added the endpoints
+again, but the xHCI host controller rejected the Configure Endpoint
+command because active endpoints were added without being dropped.
 
-Signed-off-by: Jan Kara <jack@suse.cz>
+Make the xHCI driver reject calls to xhci_add_endpoint() that attempt to
+add active endpoints without first calling xhci_drop_endpoint().
+
+This should be backported to kernels as old as 2.6.31.
+
+Signed-off-by: Sarah Sharp <sarah.a.sharp@linux.intel.com>
+Reported-by: Tanya Brokhman <tlinder@codeaurora.org>
 Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
 ---
- fs/ext3/namei.c |   15 ++++++++++++---
- 1 file changed, 12 insertions(+), 3 deletions(-)
+ drivers/usb/host/xhci.c |   22 ++++++++++++++++++----
+ 1 file changed, 18 insertions(+), 4 deletions(-)
 
-diff --git a/fs/ext3/namei.c b/fs/ext3/namei.c
-index 827b573..a97b96a 100644
---- a/fs/ext3/namei.c
-+++ b/fs/ext3/namei.c
-@@ -1425,10 +1425,19 @@ static int make_indexed_dir(handle_t *handle, struct dentry *dentry,
- 	frame->at = entries;
- 	frame->bh = bh;
- 	bh = bh2;
-+	/*
-+	 * Mark buffers dirty here so that if do_split() fails we write a
-+	 * consistent set of buffers to disk.
-+	 */
-+	ext3_journal_dirty_metadata(handle, frame->bh);
-+	ext3_journal_dirty_metadata(handle, bh);
- 	de = do_split(handle,dir, &bh, frame, &hinfo, &retval);
--	dx_release (frames);
--	if (!(de))
-+	if (!de) {
-+		ext3_mark_inode_dirty(handle, dir);
-+		dx_release(frames);
- 		return retval;
-+	}
-+	dx_release(frames);
+diff --git a/drivers/usb/host/xhci.c b/drivers/usb/host/xhci.c
+index 5a752d6..0a5901f 100644
+--- a/drivers/usb/host/xhci.c
++++ b/drivers/usb/host/xhci.c
+@@ -996,6 +996,7 @@ int xhci_add_endpoint(struct usb_hcd *hcd, struct usb_device *udev,
+ 	u32 added_ctxs;
+ 	unsigned int last_ctx;
+ 	u32 new_add_flags, new_drop_flags, new_slot_info;
++	struct xhci_virt_device *virt_dev;
+ 	int ret = 0;
  
- 	return add_dirent_to_buf(handle, dentry, inode, de, bh);
- }
-@@ -2214,7 +2223,7 @@ retry:
- 			drop_nlink(inode);
- 			unlock_new_inode(inode);
- 			ext3_mark_inode_dirty(handle, inode);
--			iput (inode);
-+			iput(inode);
- 			goto out_stop;
- 		}
- 	} else {
+ 	ret = xhci_check_args(hcd, udev, ep, 1, __func__);
+@@ -1024,11 +1025,25 @@ int xhci_add_endpoint(struct usb_hcd *hcd, struct usb_device *udev,
+ 		return -EINVAL;
+ 	}
+ 
+-	in_ctx = xhci->devs[udev->slot_id]->in_ctx;
+-	out_ctx = xhci->devs[udev->slot_id]->out_ctx;
++	virt_dev = xhci->devs[udev->slot_id];
++	in_ctx = virt_dev->in_ctx;
++	out_ctx = virt_dev->out_ctx;
+ 	ctrl_ctx = xhci_get_input_control_ctx(xhci, in_ctx);
+ 	ep_index = xhci_get_endpoint_index(&ep->desc);
+ 	ep_ctx = xhci_get_ep_ctx(xhci, out_ctx, ep_index);
++
++	/* If this endpoint is already in use, and the upper layers are trying
++	 * to add it again without dropping it, reject the addition.
++	 */
++	if (virt_dev->eps[ep_index].ring &&
++			!(le32_to_cpu(ctrl_ctx->drop_flags) &
++				xhci_get_endpoint_flag(&ep->desc))) {
++		xhci_warn(xhci, "Trying to add endpoint 0x%x "
++				"without dropping it.\n",
++				(unsigned int) ep->desc.bEndpointAddress);
++		return -EINVAL;
++	}
++
+ 	/* If the HCD has already noted the endpoint is enabled,
+ 	 * ignore this request.
+ 	 */
+@@ -1043,8 +1058,7 @@ int xhci_add_endpoint(struct usb_hcd *hcd, struct usb_device *udev,
+ 	 * process context, not interrupt context (or so documenation
+ 	 * for usb_set_interface() and usb_set_configuration() claim).
+ 	 */
+-	if (xhci_endpoint_init(xhci, xhci->devs[udev->slot_id],
+-				udev, ep, GFP_NOIO) < 0) {
++	if (xhci_endpoint_init(xhci, virt_dev, udev, ep, GFP_NOIO) < 0) {
+ 		dev_dbg(&udev->dev, "%s - could not initialize ep %#x\n",
+ 				__func__, ep->desc.bEndpointAddress);
+ 		return -ENOMEM;
 -- 
 1.7.9.6
 
