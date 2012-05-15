@@ -1,52 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932228Ab2EOOY2 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 May 2012 10:24:28 -0400
-Received: from mail-qa0-f46.google.com ([209.85.216.46]:63238 "EHLO
-	mail-qa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757166Ab2EOOYY convert rfc822-to-8bit (ORCPT
+	id S932333Ab2EOO0q (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 May 2012 10:26:46 -0400
+Received: from iolanthe.rowland.org ([192.131.102.54]:45535 "HELO
+	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1757431Ab2EOO0p (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 May 2012 10:24:24 -0400
+	Tue, 15 May 2012 10:26:45 -0400
+Date: Tue, 15 May 2012 10:26:43 -0400 (EDT)
+From: Alan Stern <stern@rowland.harvard.edu>
+X-X-Sender: stern@iolanthe.rowland.org
+To: Bojan Smojver <bojan@rexursive.com>
+cc: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>,
+        Linux PM list <linux-pm@vger.kernel.org>,
+        Kernel development list <linux-kernel@vger.kernel.org>, <bp@alien8.de>
+Subject: Re: [PATCH]: In kernel hibernation, suspend to both
+In-Reply-To: <1337039996.1628.9.camel@shrek.rexursive.com>
+Message-ID: <Pine.LNX.4.44L0.1205151026210.1796-100000@iolanthe.rowland.org>
 MIME-Version: 1.0
-In-Reply-To: <20120515051607.GH2412@linux.vnet.ibm.com>
-References: <20120515044145.GA21910@redhat.com>
-	<20120515051607.GH2412@linux.vnet.ibm.com>
-Date: Tue, 15 May 2012 10:24:23 -0400
-Message-ID: <CACLa4psGwEC96GfonAJ+-v0ocdvb_ZBxB6v=zAXbnbqFmuCNuA@mail.gmail.com>
-Subject: Re: suspicious RCU usage in security/selinux/netnode.c
-From: Eric Paris <eparis@parisplace.org>
-To: paulmck@linux.vnet.ibm.com
-Cc: Dave Jones <davej@redhat.com>, sds@tycho.nsa.gov,
-        Linux Kernel <linux-kernel@vger.kernel.org>, paul@paul-moore.com
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, May 15, 2012 at 1:16 AM, Paul E. McKenney
-<paulmck@linux.vnet.ibm.com> wrote:
-> On Tue, May 15, 2012 at 12:41:45AM -0400, Dave Jones wrote:
->> I just triggered this on Linus' current tree.
->
-> This is a bare:
->
->        rcu_dereference(sel_netnode_hash[idx].list.prev)
->
-> which needs to be in an RCU read-side critical section.  Alternatively,
-> the above should instead be something like:
->
->        rcu_dereference_check(sel_netnode_hash[idx].list.prev,
->                              lockdep_is_held(&sel_netnode_lock));
+On Tue, 15 May 2012, Bojan Smojver wrote:
 
-Right, but that 'bare' dereference comes from
-list_for_each_entry_rcu(), [from sel_netnode_sid_slow()] which I don't
-see how to easily annotate with the lock.  Nor do I think it's within
-my brain power (or my willingness to maintain such in the future) to
-want to open code that logic.
+> Alan/Srivatsa,
+> 
+> Coming back to the explanation of how this whole thing works, it would
+> seem that at the point of image writing all devices are fully functional
+> (not just some, as I mistakenly believed). However, the processes are
+> supposed to be already frozen, right? Calling suspend_prepare(), which
+> will essentially try to freeze the processes and kernel threads, seems
+> like the wrong thing to do.
+> 
+> Did you guys mean that we should be calling
+> pm_notifier_call_chain(PM_SUSPEND_PREPARE) only here?
 
-Should we just take the rcu_read_lock() where we take the spinlock?
-Is that a perf hit and figuring out how to do the annotation correctly
-is the better idea?
+It looks like you've got this all figured out now.
 
--Eric
+Alan Stern
+
