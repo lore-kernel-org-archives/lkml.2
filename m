@@ -1,104 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757138Ab2EOKAT (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 May 2012 06:00:19 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:58892 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756864Ab2EOKAR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 May 2012 06:00:17 -0400
-Date: Tue, 15 May 2012 11:59:56 +0200
-From: Jan Kara <jack@suse.cz>
-To: Wang Sheng-Hui <shhuiw@gmail.com>
-Cc: Jan Kara <jack@suse.cz>, linux-ext4@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] ext2: cleanup the comment for ext2_export_ops
-Message-ID: <20120515095956.GA22359@quack.suse.cz>
-References: <4FB0B0F4.3060908@gmail.com>
- <20120514095525.GD5353@quack.suse.cz>
- <4FB19B96.4010106@gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <4FB19B96.4010106@gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1757352Ab2EOKAu (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 May 2012 06:00:50 -0400
+Received: from casper.infradead.org ([85.118.1.10]:45818 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757259Ab2EOKAs convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 May 2012 06:00:48 -0400
+Message-ID: <1337076027.27694.13.camel@twins>
+Subject: Re: [PATCH v5 6/7] x86/tlb: optimizing flush_tlb_mm
+From: Peter Zijlstra <a.p.zijlstra@chello.nl>
+To: Nick Piggin <npiggin@gmail.com>
+Cc: Alex Shi <alex.shi@intel.com>, tglx@linutronix.de, mingo@redhat.com,
+        hpa@zytor.com, arnd@arndb.de, rostedt@goodmis.org, fweisbec@gmail.com,
+        jeremy@goop.org, riel@redhat.com, luto@mit.edu, avi@redhat.com,
+        len.brown@intel.com, dhowells@redhat.com, fenghua.yu@intel.com,
+        borislav.petkov@amd.com, yinghai@kernel.org, ak@linux.intel.com,
+        cpw@sgi.com, steiner@sgi.com, akpm@linux-foundation.org,
+        penberg@kernel.org, hughd@google.com, rientjes@google.com,
+        kosaki.motohiro@jp.fujitsu.com, n-horiguchi@ah.jp.nec.com,
+        tj@kernel.org, oleg@redhat.com, axboe@kernel.dk, jmorris@namei.org,
+        kamezawa.hiroyu@jp.fujitsu.com, viro@zeniv.linux.org.uk,
+        linux-kernel@vger.kernel.org, yongjie.ren@intel.com,
+        linux-arch@vger.kernel.org
+Date: Tue, 15 May 2012 12:00:27 +0200
+In-Reply-To: <CAPa8GCBaQhksvVT9DAgwzPPkCMrhcYnSdCtUHEe=cQS8_Cm7DQ@mail.gmail.com>
+References: <1337072138-8323-1-git-send-email-alex.shi@intel.com>
+	 <1337072138-8323-7-git-send-email-alex.shi@intel.com>
+	 <CAPa8GCDsSOrzQwX2qRJyocYAZdGbwjD4t4fjxmWXV6=EoXjXZw@mail.gmail.com>
+	 <1337073529.27694.8.camel@twins>
+	 <CAPa8GCBaQhksvVT9DAgwzPPkCMrhcYnSdCtUHEe=cQS8_Cm7DQ@mail.gmail.com>
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
+X-Mailer: Evolution 3.2.2- 
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue 15-05-12 07:56:06, Wang Sheng-Hui wrote:
-> On 2012年05月14日 17:55, Jan Kara wrote:
-> > On Mon 14-05-12 15:15:00, Wang Sheng-Hui wrote:
-> >> ext2_export_ops gets more valued fields, not get_parent only.
-> >> Clean up the comment.
-> >   Um, I'd just remove the whole comment. It isn't particularly informative
-> > anyway - NULL meaning the default behavior is very common in kernel. And we
-> > really set about half of entries anyway...
-> > 
-> > 								Honza
+On Tue, 2012-05-15 at 19:52 +1000, Nick Piggin wrote:
 > 
-> Thanks, Honza.
-> 
-> Patch regenerated. Please check it.
-  OK, thanks for the patch.
+> It could be warranted to change tlb_flush_mmu to a range API to
+> avoid doing the per-entry tracking which those architectures do? 
 
-								Honza
+The per-entry could result in a much smaller range, there's no point in
+flushing tlbs for unpopulated pages.
 
-> >> Signed-off-by: Wang Sheng-Hui <shhuiw@gmail.com>
-> >> ---
-> >>  fs/ext2/super.c |    1 -
-> >>  1 files changed, 0 insertions(+), 1 deletions(-)
-> >>
-> >> diff --git a/fs/ext2/super.c b/fs/ext2/super.c
-> >> index e1025c7..640b4c6 100644
-> >> --- a/fs/ext2/super.c
-> >> +++ b/fs/ext2/super.c
-> >> @@ -359,7 +359,6 @@ static struct dentry *ext2_fh_to_parent(struct super_block *sb, struct fid *fid,
-> >>  /* Yes, most of these are left as NULL!!
-> >>   * A NULL value implies the default, which works with ext2-like file
-> >>   * systems, but can be improved upon.
-> >> - * Currently only get_parent is required.
-> >>   */
-> >>  static const struct export_operations ext2_export_ops = {
-> >>  	.fh_to_dentry = ext2_fh_to_dentry,
-> >> -- 
-> >> 1.7.1
-> 
-> From 362925f80bdfb1c105e346f535c5e51c7359b550 Mon Sep 17 00:00:00 2001
-> From: Wang Sheng-Hui <shhuiw@gmail.com>
-> Date: Tue, 15 May 2012 07:53:46 +0800
-> Subject: [PATCH] ext2: remove the redundant comment for ext2_export_ops
-> 
-> Per Honza, It isn't particularly informative anyway - NULL
-> meaning the default behavior is very common in kernel. And we
-> really set about half of entries anyway.
-> 
-> Remove the whole comment for ext2_export_ops.
-> 
-> Signed-off-by: Wang Sheng-Hui <shhuiw@gmail.com>
-> ---
->  fs/ext2/super.c |    5 -----
->  1 files changed, 0 insertions(+), 5 deletions(-)
-> 
-> diff --git a/fs/ext2/super.c b/fs/ext2/super.c
-> index e1025c7..f9b0f41 100644
-> --- a/fs/ext2/super.c
-> +++ b/fs/ext2/super.c
-> @@ -356,11 +356,6 @@ static struct dentry *ext2_fh_to_parent(struct super_block *sb, struct fid *fid,
->  				    ext2_nfs_get_inode);
->  }
->  
-> -/* Yes, most of these are left as NULL!!
-> - * A NULL value implies the default, which works with ext2-like file
-> - * systems, but can be improved upon.
-> - * Currently only get_parent is required.
-> - */
->  static const struct export_operations ext2_export_ops = {
->  	.fh_to_dentry = ext2_fh_to_dentry,
->  	.fh_to_parent = ext2_fh_to_parent,
-> -- 
-> 1.7.1
-> 
--- 
-Jan Kara <jack@suse.cz>
-SUSE Labs, CR
+Anyway, I don't think even think we'd need to change the API for that,
+you could track the entire range through tlb_start_vma() if you wanted
+(although nobody does that IIRC).
