@@ -1,69 +1,119 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755041Ab2EOKNV (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 May 2012 06:13:21 -0400
-Received: from casper.infradead.org ([85.118.1.10]:46096 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752032Ab2EOKNT convert rfc822-to-8bit (ORCPT
+	id S1754468Ab2EOKTY (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 May 2012 06:19:24 -0400
+Received: from mail-yx0-f174.google.com ([209.85.213.174]:52024 "EHLO
+	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751894Ab2EOKTW convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 May 2012 06:13:19 -0400
-Message-ID: <1337076781.27694.15.camel@twins>
-Subject: Re: [PATCH v5 6/7] x86/tlb: optimizing flush_tlb_mm
-From: Peter Zijlstra <a.p.zijlstra@chello.nl>
-To: Nick Piggin <npiggin@gmail.com>
-Cc: Alex Shi <alex.shi@intel.com>, tglx@linutronix.de, mingo@redhat.com,
-        hpa@zytor.com, arnd@arndb.de, rostedt@goodmis.org, fweisbec@gmail.com,
-        jeremy@goop.org, riel@redhat.com, luto@mit.edu, avi@redhat.com,
-        len.brown@intel.com, dhowells@redhat.com, fenghua.yu@intel.com,
-        borislav.petkov@amd.com, yinghai@kernel.org, ak@linux.intel.com,
-        cpw@sgi.com, steiner@sgi.com, akpm@linux-foundation.org,
-        penberg@kernel.org, hughd@google.com, rientjes@google.com,
-        kosaki.motohiro@jp.fujitsu.com, n-horiguchi@ah.jp.nec.com,
-        tj@kernel.org, oleg@redhat.com, axboe@kernel.dk, jmorris@namei.org,
-        kamezawa.hiroyu@jp.fujitsu.com, viro@zeniv.linux.org.uk,
-        linux-kernel@vger.kernel.org, yongjie.ren@intel.com,
-        linux-arch@vger.kernel.org
-Date: Tue, 15 May 2012 12:13:01 +0200
-In-Reply-To: <CAPa8GCDgg9EUKvDHXtybBKtBhbRK-NAALR5f7+UU=S6XvPL_cw@mail.gmail.com>
-References: <1337072138-8323-1-git-send-email-alex.shi@intel.com>
-	 <1337072138-8323-7-git-send-email-alex.shi@intel.com>
-	 <CAPa8GCDsSOrzQwX2qRJyocYAZdGbwjD4t4fjxmWXV6=EoXjXZw@mail.gmail.com>
-	 <1337073529.27694.8.camel@twins>
-	 <CAPa8GCBaQhksvVT9DAgwzPPkCMrhcYnSdCtUHEe=cQS8_Cm7DQ@mail.gmail.com>
-	 <1337076027.27694.13.camel@twins>
-	 <CAPa8GCDgg9EUKvDHXtybBKtBhbRK-NAALR5f7+UU=S6XvPL_cw@mail.gmail.com>
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
-X-Mailer: Evolution 3.2.2- 
-Mime-Version: 1.0
+	Tue, 15 May 2012 06:19:22 -0400
+MIME-Version: 1.0
+In-Reply-To: <20120513055612.GA7129@codeaurora.org>
+References: <q7bdy899mt3um93hikst04au.1336884464056@email.android.com> <20120513055612.GA7129@codeaurora.org>
+From: Shantanu Gupta <shans95g@gmail.com>
+Date: Tue, 15 May 2012 15:49:00 +0530
+Message-ID: <CAPDArRKgZKR2kdbt-ySx7GrXopNnN+j4hKr1rrDPgxkZ8S2YjQ@mail.gmail.com>
+Subject: Re: [PATCH v2] arm: msm: fix up very basic HTC Sapphire support
+To: David Brown <davidb@codeaurora.org>
+Cc: Daniel Walker <dwalker@fifo99.com>, Olof Johansson <olof@lixom.net>,
+        Bryan Huntsman <bryanh@codeaurora.org>,
+        Russell King <linux@arm.linux.org.uk>, linux-kernel@vger.kernel.org,
+        linux-arm-msm@vger.kernel.org, linux-arm-kernel@lists.infradead.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2012-05-15 at 20:06 +1000, Nick Piggin wrote:
-> On 15 May 2012 20:00, Peter Zijlstra <a.p.zijlstra@chello.nl> wrote:
-> > On Tue, 2012-05-15 at 19:52 +1000, Nick Piggin wrote:
-> >>
-> >> It could be warranted to change tlb_flush_mmu to a range API to
-> >> avoid doing the per-entry tracking which those architectures do?
-> >
-> > The per-entry could result in a much smaller range, there's no point in
-> > flushing tlbs for unpopulated pages.
-> 
-> Well common case for small ranges hopefully would be quite dense
-> I think. It could be not worth the extra work (although maybe it would
-> be).
-> 
-> >
-> > Anyway, I don't think even think we'd need to change the API for that,
-> > you could track the entire range through tlb_start_vma() if you wanted
-> > (although nobody does that IIRC).
-> 
-> I'm not sure if you can do that very well, because the tlb might have to
-> be flushed part way through a vma when we fill up the gather, so you
-> don't want to flush the full range each time.
+Sorry for thread jacking, but do you still have an actively supported
+8x50 board ? ( ie. mahimahi)
 
-
-Fair enough. But that's still an entirely unrelated optimization and
-should go with proper benchmarking and preferably across all archs that
-have flush_tlb_range() :-)
+>> >> On Fri, May 11, 2012 at 5:15 PM, David Brown <davidb@codeaurora.org> wrote:
+>> >> > From: Daniel Walker <dwalker@fifo99.com>
+>> >> >
+>> >> > Adds sapphire into the make file, and fixes all the code problems that
+>> >> > prevented it from building (including adding board-sapphire.h)
+>> >> >
+>> >> > [davidb@codeaurora.org: Move MACH_TROUT selection back under
+>> >> > ARCH_MSM7X00A]
+>> >> >
+>> >> > Signed-off-by: Daniel Walker <dwalker@fifo99.com>
+>> >> > Signed-off-by: David Brown <davidb@codeaurora.org>
+>> >> > ---
+>> >> > v2 - Moved MACH_TROUT selection back under the ARCH config target
+>> >> >
+>> >> >  arch/arm/mach-msm/Kconfig          |    9 +-
+>> >> >  arch/arm/mach-msm/Makefile         |    1 +
+>> >> >  arch/arm/mach-msm/board-sapphire.c |   18 +--
+>> >> >  arch/arm/mach-msm/board-sapphire.h |  224 ++++++++++++++++++++++++++++++++++++
+>> >> >  4 files changed, 234 insertions(+), 18 deletions(-)
+>> >> >  create mode 100644 arch/arm/mach-msm/board-sapphire.h
+>> >> >
+>> >> > diff --git a/arch/arm/mach-msm/Kconfig b/arch/arm/mach-msm/Kconfig
+>> >> > index 1cd40ad..70eae63 100644
+>> >> > --- a/arch/arm/mach-msm/Kconfig
+>> >> > +++ b/arch/arm/mach-msm/Kconfig
+>> >> > @@ -6,7 +6,7 @@ choice
+>> >> >
+>> >> >  config ARCH_MSM7X00A
+>> >> >        bool "MSM7x00A / MSM7x01A"
+>> >> > -       select MACH_TROUT if !MACH_HALIBUT
+>> >> > +       select MACH_TROUT if (!MACH_HALIBUT && !MACH_SAPPHIRE)
+>> >>
+>> >> Better, thanks!
+>> >>
+>> >>
+>> >> > diff --git a/arch/arm/mach-msm/Makefile b/arch/arm/mach-msm/Makefile
+>> >> > index 4ad3969..aff4e5c 100644
+>> >> > --- a/arch/arm/mach-msm/Makefile
+>> >> > +++ b/arch/arm/mach-msm/Makefile
+>> >> > @@ -20,6 +20,7 @@ CFLAGS_scm.o :=$(call as-instr,.arch_extension sec,-DREQUIRES_SEC=1)
+>> >> >  obj-$(CONFIG_HOTPLUG_CPU) += hotplug.o
+>> >> >  obj-$(CONFIG_SMP) += headsmp.o platsmp.o
+>> >> >
+>> >> > +obj-$(CONFIG_MACH_SAPPHIRE) += board-sapphire.o devices-msm7x00.o
+>> >> >  obj-$(CONFIG_MACH_TROUT) += board-trout.o board-trout-gpio.o board-trout-mmc.o devices-msm7x00.o
+>> >> >  obj-$(CONFIG_MACH_TROUT) += board-trout.o board-trout-gpio.o board-trout-mmc.o board-trout-panel.o devices-msm7x00.o
+>> >> >  obj-$(CONFIG_MACH_HALIBUT) += board-halibut.o devices-msm7x00.o
+>> >>
+>> >> Unrelated to this change per se, but it seems like devices-msm7x00.o
+>> >> should be on an obj-$(CONFIG_ARCH_MSM7X00A) statement instead of
+>> >> duplicated for all boards.
+>> >>
+>> >> Also, the trout line is mostly duplicated, only delta is panel. Looks
+>> >> broken. Both of these things is material for a separate patch though.
+>> >>
+>> >> > diff --git a/arch/arm/mach-msm/board-sapphire.h b/arch/arm/mach-msm/board-sapphire.h
+>> >> > new file mode 100644
+>> >> > index 0000000..70f925e
+>> >> > --- /dev/null
+>> >> > +++ b/arch/arm/mach-msm/board-sapphire.h
+>> >> > @@ -0,0 +1,224 @@
+>> >> [..]
+>> >> > +void config_sapphire_camera_on_gpios(void);
+>> >> > +void config_sapphire_camera_off_gpios(void);
+>> >> > +int sapphire_get_smi_size(void);
+>> >> > +unsigned int sapphire_get_hwid(void);
+>> >> > +unsigned int sapphire_get_skuid(void);
+>> >> > +unsigned int is_12pin_camera(void);
+>> >> > +int sapphire_is_5M_camera(void);
+>> >> > +int sapphire_gpio_write(struct gpio_chip *chip, unsigned n, unsigned on);
+>> >>
+>> >> Many (all?) of these functions are not to be found in the code. Please
+>> >> don't add prototypes for code that isn't there.
+>> >>
+>> >>
+>> >> -Olof
+>> >
+>> >--
+>> >Sent by an employee of the Qualcomm Innovation Center, Inc.
+>> >The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
+>> >
+>
+> --
+> Sent by an employee of the Qualcomm Innovation Center, Inc.
+> The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-arm-msm" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
