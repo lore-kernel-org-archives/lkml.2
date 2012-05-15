@@ -1,55 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965384Ab2EOPjC (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 May 2012 11:39:02 -0400
-Received: from lxorguk.ukuu.org.uk ([81.2.110.251]:45378 "EHLO
-	lxorguk.ukuu.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965021Ab2EOPjA (ORCPT
+	id S965416Ab2EOPjZ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 May 2012 11:39:25 -0400
+Received: from e36.co.us.ibm.com ([32.97.110.154]:52401 "EHLO
+	e36.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S965021Ab2EOPjX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 May 2012 11:39:00 -0400
-Date: Tue, 15 May 2012 16:41:43 +0100
-From: Alan Cox <alan@lxorguk.ukuu.org.uk>
-To: Gleb Natapov <gleb@redhat.com>
-Cc: Hannes Reinecke <hare@suse.de>, LKML <linux-kernel@vger.kernel.org>,
-        "H. Peter Anvin" <hpa@linux.intel.com>
-Subject: Re: [PATCH] EDD: Check for correct EDD 3.0 length
-Message-ID: <20120515164143.3e8a8d04@pyramind.ukuu.org.uk>
-In-Reply-To: <20120515152942.GH6948@redhat.com>
-References: <1337079889-62380-1-git-send-email-hare@suse.de>
-	<20120515111255.GJ32036@redhat.com>
-	<4FB23C09.7060300@suse.de>
-	<20120515115917.GK32036@redhat.com>
-	<20120515150015.5bf17aea@pyramind.ukuu.org.uk>
-	<20120515143644.GD6948@redhat.com>
-	<20120515155206.520e46b6@pyramind.ukuu.org.uk>
-	<20120515145316.GF6948@redhat.com>
-	<20120515162226.1b9a7496@pyramind.ukuu.org.uk>
-	<20120515152942.GH6948@redhat.com>
-X-Mailer: Claws Mail 3.8.0 (GTK+ 2.24.8; x86_64-redhat-linux-gnu)
-Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Tue, 15 May 2012 11:39:23 -0400
+Date: Tue, 15 May 2012 08:37:57 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Paul Moore <paul@paul-moore.com>
+Cc: Eric Paris <eparis@parisplace.org>, Dave Jones <davej@redhat.com>,
+        sds@tycho.nsa.gov, Linux Kernel <linux-kernel@vger.kernel.org>
+Subject: Re: suspicious RCU usage in security/selinux/netnode.c
+Message-ID: <20120515153757.GF2461@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <20120515044145.GA21910@redhat.com>
+ <20120515144658.GC2461@linux.vnet.ibm.com>
+ <CACLa4pt=Hh1=E9Jno_BAU-6stRL=hY3wehpWycKCYYJbJzYEGw@mail.gmail.com>
+ <1923713.Kphzxkir2y@sifl>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1923713.Kphzxkir2y@sifl>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 12051515-7606-0000-0000-0000005D1EBE
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> Hmm, will work if standard I/O addresses are used for master/slave, but
-> I do not see this information be exposed via /sys by EDD. So how can I
-> do it from OS installer with current kernel or kernel with reverted
-> patch?
+On Tue, May 15, 2012 at 11:12:27AM -0400, Paul Moore wrote:
+> On Tuesday, May 15, 2012 10:52:07 AM Eric Paris wrote:
+> > On Tue, May 15, 2012 at 10:46 AM, Paul E. McKenney
+> > 
+> > <paulmck@linux.vnet.ibm.com> wrote:
+> > > On Tue, May 15, 2012 at 10:24:23AM -0400, Eric Paris wrote:
+> > >> On Tue, May 15, 2012 at 1:16 AM, Paul E. McKenney
+> > >> 
+> > >> <paulmck@linux.vnet.ibm.com> wrote:
+> > >> > On Tue, May 15, 2012 at 12:41:45AM -0400, Dave Jones wrote:
+> > >> >> I just triggered this on Linus' current tree.
+> > >> > 
+> > >> > This is a bare:
+> > >> > 
+> > >> >        rcu_dereference(sel_netnode_hash[idx].list.prev)
+> > >> > 
+> > >> > which needs to be in an RCU read-side critical section.  Alternatively,
+> > >> > the above should instead be something like:
+> > >> > 
+> > >> >        rcu_dereference_check(sel_netnode_hash[idx].list.prev,
+> > >> >                              lockdep_is_held(&sel_netnode_lock));
+> > >> 
+> > >> Right, but that 'bare' dereference comes from
+> > >> list_for_each_entry_rcu(), [from sel_netnode_sid_slow()] which I don't
+> > >> see how to easily annotate with the lock.  Nor do I think it's within
+> > >> my brain power (or my willingness to maintain such in the future) to
+> > >> want to open code that logic.
+> > > 
+> > > You lost me on this one.  The lockdep splat called out the
+> > > rcu_dereference() above, not a list_for_each_entry_rcu().  Besides which,
+> > > the list_for_each_entry_rcu() does not do the checking -- at the time,
+> > > I was not willing to explode the API that much.
+> > 
+> > Ohhhh, ok.  I assumed we needed to annotate list_for_each_entry_rcu()
+> > under the spinlock as well as the bare dereference in the insert code.
+> >  Ok, should be very easy to fix, although the list running code is
+> > still going to be un-annotated in any way.  Thanks
+> 
+> Sorry, email filters went awry and I lost this thread until Eric pointed it 
+> out to me ...
+> 
+> Despite a common first name, the other Paul is the RCU expert, no I 
+> unfortunately.  Can someone explain the difference between 
+> rcu_dereference_check() and rcu_dereference_protected()?  We use 
+> rcu_dereference_protected() for a very similar reason in 
+> selinux/netport.c:sel_netport_insert() and it seems like a better choice ... ?
 
-I don't think we provide the needed info for this (or EDD 2.1 which I've
-just discovered actually shipped in some plug in boards). Not sure 2.1 is
-around online anywhere.
+Here you go:
 
-Thats a separate problem though.
+o	rcu_dereference_check() is for code shared between readers and
+	writers, so that it might be protected by either rcu_read_lock()
+	or some lock.
 
-My big concern is that we are sure it disappearing won't break anything.
-It's been noticed at SuSE so it's obviously not entiely invisible.
+o	rcu_dereference_protected() is for code that is only used by
+	updaters and never by readers.  So rcu_dereference_protected()
+	is (slightly) lighter weight than rcu_dereference_check()
+	because it does not need to protect against concurrent
+	updates.
 
-I'd love to see EDD 1.1 and 2.1 support in the kernel as I could then
-merge pata_hdd which drives original MFM/RLL drives. However I don't
-believe its worth the effort unlike doing 3.0 right.
+							Thanx, Paul
 
-Alan
+> I'll throw a patch together but wanted to clear this up first.
+> 
+> -- 
+> paul moore
+> www.paul-moore.com
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
+> 
+
