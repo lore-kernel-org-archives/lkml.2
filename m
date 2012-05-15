@@ -1,90 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S966016Ab2EORUK (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 May 2012 13:20:10 -0400
-Received: from mail-wi0-f172.google.com ([209.85.212.172]:59069 "EHLO
+	id S966043Ab2EORYj (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 May 2012 13:24:39 -0400
+Received: from mail-wi0-f172.google.com ([209.85.212.172]:42401 "EHLO
 	mail-wi0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965929Ab2EORUH (ORCPT
+	with ESMTP id S966024Ab2EORYh convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 May 2012 13:20:07 -0400
+	Tue, 15 May 2012 13:24:37 -0400
 MIME-Version: 1.0
-In-Reply-To: <1336963631-3541-1-git-send-email-zohar@us.ibm.com>
-References: <1336963631-3541-1-git-send-email-zohar@us.ibm.com>
+In-Reply-To: <BLU0-SMTP4CED805E93EF3D8DA2198971A0@phx.gbl>
+References: <CA+55aFzsygnrJwLUPV8Vg4RPmwxXLuY-uo70fBLEZR8+barT5A@mail.gmail.com>
+ <4FB011E7.1000604@linux.vnet.ibm.com> <BLU0-SMTP22F4864AE1F54838C150D797150@phx.gbl>
+ <4FB0197F.6010000@linux.vnet.ibm.com> <BLU0-SMTP85D30AAA2BF2CF07B1039897150@phx.gbl>
+ <BLU0-SMTP4CED805E93EF3D8DA2198971A0@phx.gbl>
 From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Tue, 15 May 2012 10:19:46 -0700
-X-Google-Sender-Auth: XoMqDKeSP01MX_KYptSMzstsiFc
-Message-ID: <CA+55aFzrJNd5J7i3Rp7-ctc=bDn5GTWu=H1xyCgGZ-rzu74Gbw@mail.gmail.com>
-Subject: Re: [PATCH] vfs: fix IMA lockdep circular locking dependency
-To: Mimi Zohar <zohar@us.ibm.com>
-Cc: linux-security-module@vger.kernel.org,
-        Mimi Zohar <zohar@linux.vnet.ibm.com>, linux-kernel@vger.kernel.org,
-        Al Viro <viro@zeniv.linux.org.uk>
+Date: Tue, 15 May 2012 10:24:16 -0700
+X-Google-Sender-Auth: PfUVvNrjMIEzqLOeWoR1uGRxdCE
+Message-ID: <CA+55aFy1TGH07Ng-nbmWs2N8=kfFMCMosF1TsevLcHhCpWL-LQ@mail.gmail.com>
+Subject: Re: Linux 3.4-rc7
+To: John David Anglin <dave.anglin@bell.net>
+Cc: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
+        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
+        Ingo Molnar <mingo@kernel.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Mikulas Patocka <mpatocka@redhat.com>, stepanm@codeaurora.org,
+        Thomas Gleixner <tglx@linutronix.de>,
+        James.Bottomley@hansenpartnership.com, deller@gmx.de,
+        dhowells@redhat.com, yasutake.koichi@jp.panasonic.com,
+        eike-kernel@sf-tec.de, linux-parisc@vger.kernel.org,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
 Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, May 13, 2012 at 7:47 PM, Mimi Zohar <zohar@us.ibm.com> wrote:
-> From: Mimi Zohar <zohar@linux.vnet.ibm.com>
+On Sun, May 13, 2012 at 5:42 PM, John David Anglin <dave.anglin@bell.net> wrote:
 >
-> This patch has been updated to move the ima_file_mmap() call from
-> security_file_mmap() to the new vm_mmap() function.
+> I successfully booted 3.4-rc7 with this change on rp3440 (4 cpu smp).  My
+> build also
+> included cache and other fixes that are being discussed on the parisc list.
 
-Ugh. I really have to admit to hating this.
+Can somebody send the final patches with proper subject lines etc,
+instead of hiding them in unrelated threads? I hate picking up patches
+that I don't personally know from the middle of some random thread.
 
-Quite frankly, I'd much rather apply a patch that moved the call to
-security_file_mmap() entirely outside the mmap_sem instead.
-
-You did basically that, but you only moved the ima_file_mmap()
-portion. Why not move it *all*?
-
-Sure, that changes semantics. But does the "security_ops->file_mmap()"
-function really need mmap_sem protection?
-
-As far as I can tell, the *only* thing that the security layer tends
-to care about is that address (ie the whole "dac_mmap_min_addr"
-thing), or the file.
-
-And the *file* doesn't need or want any mmap_sem protection.
-
-The actual final address does "need" the mmap_sem, but in fact none of
-the security models really care, except for the obvious NULL mapping
-thing. And that can only happen with MAP_FIXED *or* when a person
-gives an explicit suggested address.
-
-So I would suggest:
-
- - never test the  default mmap address case (ie the case of a NULL
-'addr' without PROT_FIXED set).
-
- - move the whole call to security_file_mmap() to outside the
-mmap_sem, and test the *suggested* address (which is not the same as
-the final address)
-
-Yes, this makes the assumption that arch_get_unmapped_area() will not
-return a bad address. We'd have to think about that. I already found
-one possible worry, where the default arch_get_unmapped_area() does
-this:
-
-        if (addr) {
-                addr = PAGE_ALIGN(addr);
-
-and maybe we need to make sure that that PAGE_ALIGN() does not
-overflow into 0. Things like that (probably right thing to do: make
-sure that 'addr' is already aligned when checking security), but the
-point being that it looks like a *really* bad idea to require us
-holding the mmap_sem() for this silly security check, when we could
-just do it up-front because nobody really cares.
-
-Ok?
-
-I would also actually suggest that we move the "cap_file_mmap()" call
-from the security model ->file_mmap() function into
-"security_file_mmap()", so that all the security models don't even
-have to remember to do that. Because a security model that *doesn't*
-do the dac_mmap_min_addr comparison really is broken (we used to have
-that bug in SELinux).
-
-What do you think?
-
-                    Linus
+                      Linus
