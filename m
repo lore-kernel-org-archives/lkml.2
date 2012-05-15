@@ -1,26 +1,31 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754340Ab2EOK2l (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 May 2012 06:28:41 -0400
-Received: from casper.infradead.org ([85.118.1.10]:47242 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751925Ab2EOK2k convert rfc822-to-8bit (ORCPT
+	id S1755179Ab2EOKdF (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 May 2012 06:33:05 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:49583 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751705Ab2EOKdE convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 May 2012 06:28:40 -0400
-Message-ID: <1337077714.27694.21.camel@twins>
-Subject: Re: Plumbers: Tweaking scheduler policy micro-conf RFP
-From: Peter Zijlstra <a.p.zijlstra@chello.nl>
-To: Pantelis Antoniou <pantelis.antoniou@gmail.com>
-Cc: Vincent Guittot <vincent.guittot@linaro.org>,
-        mou Chen <hi3766691@gmail.com>, linux-kernel@vger.kernel.org,
-        Ingo Molnar <mingo@kernel.org>, torvalds@linux-foundation.org
-Date: Tue, 15 May 2012 12:28:34 +0200
-In-Reply-To: <833A8DB8-1AB4-45E4-8D44-14A0D782807D@gmail.com>
-References: <CAKfTPtDSDAOAdv0GTDswZeRM7TmACrjok+5kddSaQpvy6_6xWw@mail.gmail.com>
-	 <CAKfTPtCfiY7A29+e50F+6awd8BjNJjg4=uNN4ReZfdS_4FbpkA@mail.gmail.com>
-	 <CANQmPXj_81NBBrTYCkhUO1k1i4WVu0iHwY1_10wDVOFWCSkvsw@mail.gmail.com>
-	 <CAKfTPtBhPpQyr1qugbMzq2nENh+zBT+zx_nWQpQ9NPbF=+ppcQ@mail.gmail.com>
-	 <833A8DB8-1AB4-45E4-8D44-14A0D782807D@gmail.com>
+	Tue, 15 May 2012 06:33:04 -0400
+Message-ID: <1337077973.27694.24.camel@twins>
+Subject: Re: [GIT PULL 0/8] Annotation weekly ponies delivery
+From: Peter Zijlstra <peterz@infradead.org>
+To: Namhyung Kim <namhyung@gmail.com>
+Cc: Ingo Molnar <mingo@kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Arnaldo Carvalho de Melo <acme@infradead.org>,
+        linux-kernel@vger.kernel.org, Arjan van de Ven <arjan@infradead.org>,
+        David Ahern <dsahern@gmail.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Mike Galbraith <efault@gmx.de>, Paul Mackerras <paulus@samba.org>,
+        Stephane Eranian <eranian@google.com>, arnaldo.melo@gmail.com,
+        Arnaldo Carvalho de Melo <acme@redhat.com>
+Date: Tue, 15 May 2012 12:32:53 +0200
+In-Reply-To: <1337007985.1552.5.camel@leonhard>
+References: <1336852387-16322-1-git-send-email-acme@infradead.org>
+	 <CA+55aFxeqrCj71fSe2r9kwzyO9q2BT9A89f7nLUgbrTG_uPP2g@mail.gmail.com>
+	 <1336994000.2443.24.camel@twins>  <20120514115551.GA6479@gmail.com>
+	 <1337007985.1552.5.camel@leonhard>
 Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7BIT
 X-Mailer: Evolution 3.2.2- 
@@ -29,10 +34,18 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2012-05-15 at 12:17 +0300, Pantelis Antoniou wrote:
-> IMO this whole idea about 'server' or 'desktop' schedulers is bunk.
+On Tue, 2012-05-15 at 00:06 +0900, Namhyung Kim wrote:
 
-Yeah, its complete shite. Everybody cares about throughput, latency and
-power. The exact balance might differ between workloads but those cannot
-be split between desktop/server at all. Furthermore, nobody wants one at
-all costs to the others.
+> perf_evlist__config_attrs() has this:
+> 
+> 	if (evlist->cpus->map[0] < 0)
+> 		opts->no_inherit = true;
+> 
+> meaning that per task profiling won't enable event inheritance. I don't
+> know why it's needed though.
+
+Because you cannot have inherited per-task counters. It only works for
+per-task-per-cpu counters. Otherwise you'll have a scalability
+nightmare.
+
+
