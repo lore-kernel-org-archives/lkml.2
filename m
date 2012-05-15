@@ -1,73 +1,135 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933129Ab2EOP6K (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 May 2012 11:58:10 -0400
-Received: from mga03.intel.com ([143.182.124.21]:6614 "EHLO mga03.intel.com"
+	id S933184Ab2EOP6i (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 May 2012 11:58:38 -0400
+Received: from bear.ext.ti.com ([192.94.94.41]:53165 "EHLO bear.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754402Ab2EOP6I (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 May 2012 11:58:08 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
-   d="scan'208";a="143455629"
-Subject: Re: [RFC PATCH 1/3] block: add a flag to identify PM request
-From: Lin Ming <ming.m.lin@intel.com>
-To: Alan Cox <alan@lxorguk.ukuu.org.uk>
-Cc: Alan Stern <stern@rowland.harvard.edu>, Jens Axboe <axboe@kernel.dk>,
-        Kernel development list <linux-kernel@vger.kernel.org>,
-        Linux-pm mailing list <linux-pm@vger.kernel.org>,
-        SCSI development list <linux-scsi@vger.kernel.org>
-In-Reply-To: <20120515163734.332f3e08@pyramind.ukuu.org.uk>
-References: <Pine.LNX.4.44L0.1205151028020.1796-100000@iolanthe.rowland.org>
-	 <1337095985.3515.1.camel@chief-river-32>
-	 <20120515163734.332f3e08@pyramind.ukuu.org.uk>
+	id S933149Ab2EOP6g (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 May 2012 11:58:36 -0400
+Message-ID: <4FB27D2A.5070309@ti.com>
+Date: Tue, 15 May 2012 08:58:34 -0700
+From: Russ Dill <Russ.Dill@ti.com>
+Organization: Texas Instruments
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120509 Thunderbird/13.0
+MIME-Version: 1.0
+To: Pantelis Antoniou <panto@antoniou-consulting.com>
+CC: <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] [g_mass_storage] Fix unmount problem with OS-X
+References: <1337158489-27142-1-git-send-email-panto@antoniou-consulting.com>
+In-Reply-To: <1337158489-27142-1-git-send-email-panto@antoniou-consulting.com>
 Content-Type: text/plain; charset="ISO-8859-1"
-Date: Tue, 15 May 2012 23:58:53 +0800
-Message-ID: <1337097533.3515.17.camel@chief-river-32>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2012-05-15 at 16:37 +0100, Alan Cox wrote:
-> On Tue, 15 May 2012 23:33:05 +0800
-> Lin Ming <ming.m.lin@intel.com> wrote:
-> 
-> > On Tue, 2012-05-15 at 10:35 -0400, Alan Stern wrote:
-> > > On Tue, 15 May 2012, Lin Ming wrote:
-> > > 
-> > > > Add a flag REQ_PM to identify the request is PM related.
-> > > > As an example, modify scsi code to use this flag.
-> > > 
-> > > There already is such a flag; you don't need to add one.  In fact, 
-> > > there already are _two_ such flags, and it would be best to remove one 
-> > > of them.  In include/linux/blkdev.h:
-> > > 
-> > > 	REQ_TYPE_PM_SUSPEND,		/* suspend request */
-> > > 	REQ_TYPE_PM_RESUME,		/* resume request */
-> > > 
-> > > Apparently they had been used by the old ide driver, but they don't
-> > > seem to be used anywhere now.
-> > 
-> > IDE code still uses both types and they are used for system
-> > suspend/resume. See generic_ide_suspend and generic_ide_resume.
-> 
-> drivers/ide is obsolete code though so we shouldn't be forcing its needs
-> on the future
+On 05/16/2012 01:54 AM, Pantelis Antoniou wrote:
+> OS-X uses a sequence on unmounting that makes us close the backing
+> file. Apparently there's no way to open it again, which makes it
+> impossible to remount without rmmod'ing g_mass_storage.
+>
+> Fix this by adding a media_ejected flag to each lun, and keeping
+> track of it properly.
+>
+> Any other method (i.e. preventing unmount, and not keeping track
+> of the eject status) failed due to OS-X sending start stop commands
+> after the unmount and checking again.
+> ---
+>  drivers/usb/gadget/f_mass_storage.c |   21 ++++++++++++++-------
+>  drivers/usb/gadget/storage_common.c |   11 +++++++++++
+>  2 files changed, 25 insertions(+), 7 deletions(-)
+>
+> diff --git a/drivers/usb/gadget/f_mass_storage.c b/drivers/usb/gadget/f_mass_storage.c
+> index cb8c162..b865d20 100644
+> --- a/drivers/usb/gadget/f_mass_storage.c
+> +++ b/drivers/usb/gadget/f_mass_storage.c
+> @@ -1445,6 +1445,9 @@ static int do_start_stop(struct fsg_common *common)
+>  			curlun->sense_data = SS_MEDIUM_NOT_PRESENT;
+>  			return -EINVAL;
+>  		}
+> +
+> +		/* if the host is trying again, the media are mounted */
+> +		fsg_lun_set_ejected(curlun, 0);
+>  		return 0;
+>  	}
+>  
+> @@ -1468,11 +1471,15 @@ static int do_start_stop(struct fsg_common *common)
+>  			return 0;
+>  	}
+>  
+> -	up_read(&common->filesem);
+> -	down_write(&common->filesem);
+> -	fsg_lun_close(curlun);
+> -	up_write(&common->filesem);
+> -	down_read(&common->filesem);
+> +	/*
+> +	 * Do not close the LUNs, just made them invisible.
+> +	 * When the next exception comes we make them visible
+> +	 * again. This fixes the bug where MacOSX unmounts
+> +	 * and then it's impossible to mount again, since
+> +	 * fsg_lun_open is never called again.
+> +	 */
+> +
+> +	fsg_lun_set_ejected(curlun, 1);
+>  
+>  	return common->ops && common->ops->post_eject
+>  		? min(0, common->ops->post_eject(common, curlun,
+> @@ -1531,7 +1538,6 @@ static int do_mode_select(struct fsg_common *common, struct fsg_buffhd *bh)
+>  	return -EINVAL;
+>  }
+>  
+> -
+>  /*-------------------------------------------------------------------------*/
+>  
+>  static int halt_bulk_in_endpoint(struct fsg_dev *fsg)
+> @@ -1917,7 +1923,7 @@ static int check_command(struct fsg_common *common, int cmnd_size,
+>  
+>  	/* If the medium isn't mounted and the command needs to access
+>  	 * it, return an error. */
+> -	if (curlun && !fsg_lun_is_open(curlun) && needs_medium) {
+> +	if (curlun && !fsg_lun_is_open_and_mounted(curlun) && needs_medium) {
+>  		curlun->sense_data = SS_MEDIUM_NOT_PRESENT;
+>  		return -EINVAL;
+>  	}
+> @@ -2533,6 +2539,7 @@ static void handle_exception(struct fsg_common *common)
+>  			curlun->unit_attention_data = SS_NO_SENSE;
+>  			curlun->sense_data_info = 0;
+>  			curlun->info_valid = 0;
+> +			curlun->media_ejected = 0;
+>  		}
+>  		common->state = FSG_STATE_IDLE;
+>  	}
+> diff --git a/drivers/usb/gadget/storage_common.c b/drivers/usb/gadget/storage_common.c
+> index 8081ca3..723c6aa 100644
+> --- a/drivers/usb/gadget/storage_common.c
+> +++ b/drivers/usb/gadget/storage_common.c
+> @@ -199,6 +199,7 @@ struct fsg_lun {
+>  	unsigned int	registered:1;
+>  	unsigned int	info_valid:1;
+>  	unsigned int	nofua:1;
+> +	unsigned int	media_ejected:1;
+>  
+>  	u32		sense_data;
+>  	u32		sense_data_info;
+> @@ -211,6 +212,16 @@ struct fsg_lun {
+>  
+>  #define fsg_lun_is_open(curlun)	((curlun)->filp != NULL)
+>  
+> +#define fsg_lun_is_ejected(curlun) ((curlun)->media_ejected)
+> +
+> +#define fsg_lun_set_ejected(curlun, v) ((curlun)->media_ejected = !!(v))
+> +
+> +#define fsg_lun_is_open_and_mounted(curlun) \
+> +	({ \
+> +		const struct fsg_lun *_curlun = (curlun); \
+> +		fsg_lun_is_open(_curlun) && !fsg_lun_is_ejected(_curlun); \
+> +	 })
+> +
+>  static struct fsg_lun *fsg_lun_from_dev(struct device *dev)
+>  {
+>  	return container_of(dev, struct fsg_lun, dev);
 
-Do you mean we don't care about breaking ide code?
 
-struct request {
-        ....
-        unsigned int cmd_flags;
-        enum rq_cmd_type_bits cmd_type;
+Acked-by: Russ.Dill@ti.com
 
-Another reason I didn't reuse REQ_TYPE_PM_SUSPEND/REQ_TYPE_PM_RESUME is
-because all scsi requests set the cmd_type to REQ_TYPE_BLOCK_PC.
-
-So I think we should add a new cmd_flags(REQ_PM) to tell if it's a
-runtime pm request.
-
-Thanks.
 
