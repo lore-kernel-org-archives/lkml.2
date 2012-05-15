@@ -1,47 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932770Ab2EOANU (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 May 2012 20:13:20 -0400
-Received: from na3sys009aog131.obsmtp.com ([74.125.149.247]:33239 "HELO
-	na3sys009aog131.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S932710Ab2EOANT (ORCPT
+	id S932777Ab2EOAV0 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 May 2012 20:21:26 -0400
+Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:53502 "EHLO
+	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757855Ab2EOAVZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 May 2012 20:13:19 -0400
+	Mon, 14 May 2012 20:21:25 -0400
+X-SecurityPolicyCheck: OK by SHieldMailChecker v1.7.4
+Message-ID: <4FB1A115.2080303@jp.fujitsu.com>
+Date: Tue, 15 May 2012 09:19:33 +0900
+From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.0; rv:12.0) Gecko/20120428 Thunderbird/12.0.1
 MIME-Version: 1.0
-In-Reply-To: <1337034892.8512.652.camel@edumazet-glaptop>
-References: <1337034597-1826-1-git-send-email-pshelar@nicira.com>
-	<1337034892.8512.652.camel@edumazet-glaptop>
-Date: Mon, 14 May 2012 17:13:17 -0700
-Message-ID: <CALnjE+qGpJCf6FOb37DjJfh5qHfJuF7DBmbqDNYR7KJ3Ux41Uw@mail.gmail.com>
-Subject: Re: [PATCH v2] mm: Fix slab->page _count corruption.
-From: Pravin Shelar <pshelar@nicira.com>
-To: Eric Dumazet <eric.dumazet@gmail.com>
-Cc: cl@linux.com, penberg@kernel.org, mpm@selenic.com,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org, jesse@nicira.com,
-        abhide@nicira.com
-Content-Type: text/plain; charset=ISO-8859-1
+To: Johannes Weiner <hannes@cmpxchg.org>
+CC: Andrew Morton <akpm@linux-foundation.org>, Michal Hocko <mhocko@suse.cz>,
+        cgroups@vger.kernel.org, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [patch 0/6] mm: memcg: statistics implementation cleanups
+References: <1337018451-27359-1-git-send-email-hannes@cmpxchg.org>
+In-Reply-To: <1337018451-27359-1-git-send-email-hannes@cmpxchg.org>
+Content-Type: text/plain; charset=ISO-2022-JP
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, May 14, 2012 at 3:34 PM, Eric Dumazet <eric.dumazet@gmail.com> wrote:
-> On Mon, 2012-05-14 at 15:29 -0700, Pravin B Shelar wrote:
->> On arches that do not support this_cpu_cmpxchg_double slab_lock is used
->> to do atomic cmpxchg() on double word which contains page->_count.
->> page count can be changed from get_page() or put_page() without taking
->> slab_lock. That corrupts page counter.
->>
->> Following patch fixes it by moving page->_count out of cmpxchg_double
->> data. So that slub does no change it while updating slub meta-data in
->> struct page.
->
-> I say again : Page is owned by slub, so get_page() or put_page() is not
-> allowed ?
->
-This is already done in multiple subsystem in Linux kernel. e.g.
-ocfs, xfs, etc.
-So object from slab can be passed to IO using DMA. I don't think this
-rule you referring to is enforced anywhere.
+(2012/05/15 3:00), Johannes Weiner wrote:
+
+> Before piling more things (reclaim stats) on top of the current mess,
+> I thought it'd be better to clean up a bit.
+> 
+> The biggest change is printing statistics directly from live counters,
+> it has always been annoying to declare a new counter in two separate
+> enums and corresponding name string arrays.  After this series we are
+> down to one of each.
+> 
+>  mm/memcontrol.c |  223 +++++++++++++++++------------------------------
+>  1 file changed, 82 insertions(+), 141 deletions(-)
+> 
+
+
+to all 1-6. Thank you.
+
+Acked-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+
+One excuse for my old implementation of mem_cgroup_get_total_stat(),
+which is fixed in patch 6, is that I thought it's better to touch all counters
+in a cachineline at once and avoiding long distance for-each loop.
+
+What number of performance difference with some big hierarchy(100+children) tree ?
+(But I agree your code is cleaner. I'm just curious.)
 
 Thanks,
-Pravin.
+-Kame
+
