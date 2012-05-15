@@ -1,57 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932858Ab2EORtK (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 May 2012 13:49:10 -0400
-Received: from e4.ny.us.ibm.com ([32.97.182.144]:43700 "EHLO e4.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757065Ab2EORtI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 May 2012 13:49:08 -0400
-Subject: Re: [V2 PATCH 4/9] macvtap: zerocopy: set SKBTX_DEV_ZEROCOPY only
- when skb is built successfully
-From: Shirley Ma <mashirle@us.ibm.com>
-To: Jason Wang <jasowang@redhat.com>
-Cc: eric.dumazet@gmail.com, mst@redhat.com, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, ebiederm@xmission.com,
-        davem@davemloft.net
-In-Reply-To: <20120502034206.11782.91643.stgit@amd-6168-8-1.englab.nay.redhat.com>
-References: <20120502033901.11782.13157.stgit@amd-6168-8-1.englab.nay.redhat.com>
-	 <20120502034206.11782.91643.stgit@amd-6168-8-1.englab.nay.redhat.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Tue, 15 May 2012 10:44:03 -0700
-Message-ID: <1337103843.8220.22.camel@oc3660625478.ibm.com>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 (2.28.3-24.el6) 
-Content-Transfer-Encoding: 7bit
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 12051517-3534-0000-0000-0000086642DA
+	id S932657Ab2EOR4O (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 May 2012 13:56:14 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:62444 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932207Ab2EOR4M (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 May 2012 13:56:12 -0400
+From: Grant Likely <grant.likely@secretlab.ca>
+Subject: Re: [PATCH 03/03] ARM: Undelete KZM9D mach-type
+To: Arnd Bergmann <arnd@arndb.de>, Magnus Damm <magnus.damm@gmail.com>
+Cc: Russell King - ARM Linux <linux@arm.linux.org.uk>, horms@verge.net.au,
+        linux-sh@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Rob Herring <rob.herring@calxeda.com>, rjw@sisk.pl,
+        lethal@linux-sh.org, olof@lixom.net,
+        linux-arm-kernel@lists.infradead.org
+In-Reply-To: <201205150832.10069.arnd@arndb.de>
+References: <20120514105424.8596.38355.sendpatchset@w520> <201205142107.51335.arnd@arndb.de> <CANqRtoSts80a-Pgas23Um8FFtnSeeu2oZKNehdfymLWoTOSspA@mail.gmail.com> <201205150832.10069.arnd@arndb.de>
+Date: Tue, 15 May 2012 11:56:08 -0600
+Message-Id: <20120515175609.04A4D3E080A@localhost>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2012-05-02 at 11:42 +0800, Jason Wang wrote:
-> Current the SKBTX_DEV_ZEROCOPY is set unconditionally after
-> zerocopy_sg_from_iovec(), this would lead NULL pointer when macvtap
-> fails to build zerocopy skb because destructor_arg was not
-> initialized. Solve this by set this flag after the skb were built
-> successfully.
+On Tue, 15 May 2012 08:32:09 +0000, Arnd Bergmann <arnd@arndb.de> wrote:
+> On Monday 14 May 2012, Magnus Damm wrote:
+> > Right, I agree. Relying on a fixed DTB in an unreliable boot loader is
+> > the last thing I want to do.
+> > 
+> > So if your boot loader can't pass DTB to the kernel, and you want to
+> > have a single kernel supporting multiple boards, then do you see
+> > anything wrong with based on mach-type do a run time decision (in
+> > arch/arm/boot/compressed/) to override the ATAG from the boot loader
+> > with a compiled-in per-board DTB?
+> 
+> I know that we have discussed this in the past, but I don't remember
+> the outcome of the discussion, maybe someone else can help out here
+> (Grant?)
+> 
+> It's definitely technically possible to do it, but it could either be
+> that nobody has bothered to do the implementation, or that we had good
+> reasons against it and decided not to allow this.
 
-I thought this flag was needed for zerocopy skb free even in err case.
-I've checked it back again, it's OK to move the flag after the skb
-successfully built. Or we can fix it by modify skb free with
-destructor_arg NULL check as below:
-...
-skb_release_data() {
-...
-                if (skb_shinfo(skb)->tx_flags & SKBTX_DEV_ZEROCOPY) {
-                        struct ubuf_info *uarg;
+Tony and I talked about this quite a bit during the last Connect.  The
+plan is to extend the existing bootwrapper ATAGs to DT code to allow
+appending multiple .dtbs to the zImage and selecting the correct one
+based on the machine number.  It shouldn't be very complicated, but I
+haven't had time to implement it.
 
-                        uarg = skb_shinfo(skb)->destructor_arg;
-                        if (uarg && uarg->callback)
-                                uarg->callback(uarg);
-                }
-
-...
-}
-Thanks
-Shirley
+g.
 
