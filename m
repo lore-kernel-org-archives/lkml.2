@@ -1,17 +1,17 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965887Ab2EOC64 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 May 2012 22:58:56 -0400
-Received: from mail.windriver.com ([147.11.1.11]:49499 "EHLO
-	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S964974Ab2EOCQ7 (ORCPT
+	id S965012Ab2EOC7U (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 May 2012 22:59:20 -0400
+Received: from mail1.windriver.com ([147.11.146.13]:53247 "EHLO
+	mail1.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S964850Ab2EOCQ6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 May 2012 22:16:59 -0400
+	Mon, 14 May 2012 22:16:58 -0400
 From: Paul Gortmaker <paul.gortmaker@windriver.com>
 To: <stable@kernel.org>, <linux-kernel@vger.kernel.org>
-Subject: [34-longterm 073/179] genirq: Add IRQF_FORCE_RESUME
-Date: Mon, 14 May 2012 22:12:49 -0400
-Message-ID: <1337048075-6132-74-git-send-email-paul.gortmaker@windriver.com>
+Subject: [34-longterm 072/179] xen: events: do not unmask event channels on resume
+Date: Mon, 14 May 2012 22:12:48 -0400
+Message-ID: <1337048075-6132-73-git-send-email-paul.gortmaker@windriver.com>
 X-Mailer: git-send-email 1.7.9.6
 In-Reply-To: <1337048075-6132-1-git-send-email-paul.gortmaker@windriver.com>
 References: <1337048075-6132-1-git-send-email-paul.gortmaker@windriver.com>
@@ -21,7 +21,7 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Thomas Gleixner <tglx@linutronix.de>
+From: Ian Campbell <ian.campbell@citrix.com>
 
                    -------------------
     This is a commit scheduled for the next v2.6.34 longterm release.
@@ -29,78 +29,122 @@ From: Thomas Gleixner <tglx@linutronix.de>
     If you see a problem with using this for longterm, please comment.
                    -------------------
 
-commit dc5f219e88294b93009eef946251251ffffb6d60 upstream.
+commit 6903591f314b8947d0e362bda7715e90eb9df75e upstream.
 
-Xen needs to reenable interrupts which are marked IRQF_NO_SUSPEND in the
-resume path. Add a flag to force the reenabling in the resume code.
+The IRQ core code will take care of disabling and reenabling
+interrupts over suspend resume automatically, therefore we do not need
+to do this in the Xen event channel code.
 
-Tested-and-acked-by: Ian Campbell <Ian.Campbell@eu.citrix.com>
-Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+The only exception is those event channels marked IRQF_NO_SUSPEND
+which the IRQ core ignores. We must unmask these ourselves, taking
+care to obey the current IRQ_DISABLED status. Failure check for
+IRQ_DISABLED leads to enabling polled only event channels, such as
+that associated with the pv spinlocks, which must never be enabled:
+
+[   21.970432] ------------[ cut here ]------------
+[   21.970432] kernel BUG at arch/x86/xen/spinlock.c:343!
+[   21.970432] invalid opcode: 0000 [#1] SMP
+[   21.970432] last sysfs file: /sys/devices/virtual/net/lo/operstate
+[   21.970432] Modules linked in:
+[   21.970432]
+[   21.970432] Pid: 0, comm: swapper Not tainted (2.6.32.24-x86_32p-xen-01034-g787c727 #34)
+[   21.970432] EIP: 0061:[<c102e209>] EFLAGS: 00010046 CPU: 3
+[   21.970432] EIP is at dummy_handler+0x3/0x7
+[   21.970432] EAX: 0000021c EBX: dfc16880 ECX: 0000001a EDX: 00000000
+[   21.970432] ESI: dfc02c00 EDI: 00000001 EBP: dfc47e10 ESP: dfc47e10
+[   21.970432]  DS: 007b ES: 007b FS: 00d8 GS: 0000 SS: 0069
+[   21.970432] Process swapper (pid: 0, ti=dfc46000 task=dfc39440 task.ti=dfc46000)
+[   21.970432] Stack:
+[   21.970432]  dfc47e30 c10a39f0 0000021c 00000000 00000000 dfc16880 0000021c 00000001
+[   21.970432] <0> dfc47e40 c10a4f08 0000021c 00000000 dfc47e78 c12240a7 c1839284 c1839284
+[   21.970432] <0> 00000200 00000000 00000000 f5720000 c1f3d028 c1f3d02c 00000180 dfc47e90
+[   21.970432] Call Trace:
+[   21.970432]  [<c10a39f0>] ? handle_IRQ_event+0x5f/0x122
+[   21.970432]  [<c10a4f08>] ? handle_percpu_irq+0x2f/0x55
+[   21.970432]  [<c12240a7>] ? __xen_evtchn_do_upcall+0xdb/0x15f
+[   21.970432]  [<c122481e>] ? xen_evtchn_do_upcall+0x20/0x30
+[   21.970432]  [<c1030d47>] ? xen_do_upcall+0x7/0xc
+[   21.970432]  [<c102007b>] ? apic_reg_read+0xd3/0x22d
+[   21.970432]  [<c1002227>] ? hypercall_page+0x227/0x1005
+[   21.970432]  [<c102d30b>] ? xen_force_evtchn_callback+0xf/0x14
+[   21.970432]  [<c102da7c>] ? check_events+0x8/0xc
+[   21.970432]  [<c102da3b>] ? xen_irq_enable_direct_end+0x0/0x1
+[   21.970432]  [<c105e485>] ? finish_task_switch+0x62/0xba
+[   21.970432]  [<c14e3f84>] ? schedule+0x808/0x89d
+[   21.970432]  [<c1084dc5>] ? hrtimer_start_expires+0x1a/0x22
+[   21.970432]  [<c1085154>] ? tick_nohz_restart_sched_tick+0x15a/0x162
+[   21.970432]  [<c102f43a>] ? cpu_idle+0x6d/0x6f
+[   21.970432]  [<c14db29e>] ? cpu_bringup_and_idle+0xd/0xf
+[   21.970432] Code: 5d 0f 95 c0 0f b6 c0 c3 55 66 83 78 02 00 89 e5 5d 0f 95 \
+c0 0f b6 c0 c3 55 b2 01 86 10 31 c0 84 d2 89 e5 0f 94 c0 5d c3 55 89 e5 <0f> 0b \
+eb fe 55 80 3d 4c ce 84 c1 00 89 e5 57 56 89 c6 53 74 15
+[   21.970432] EIP: [<c102e209>] dummy_handler+0x3/0x7 SS:ESP 0069:dfc47e10
+[   21.970432] ---[ end trace c0b71f7e12cf3011 ]---
+
+Signed-off-by: Ian Campbell <ian.campbell@citrix.com>
+Signed-off-by: Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>
 Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
 ---
- include/linux/interrupt.h |    3 ++-
- kernel/irq/manage.c       |   11 ++++++++++-
- kernel/irq/pm.c           |    3 ---
- 3 files changed, 12 insertions(+), 5 deletions(-)
+ drivers/xen/events.c |   25 ++++++++++++++++++-------
+ 1 file changed, 18 insertions(+), 7 deletions(-)
 
-diff --git a/include/linux/interrupt.h b/include/linux/interrupt.h
-index 01db7a1..953ff1c 100644
---- a/include/linux/interrupt.h
-+++ b/include/linux/interrupt.h
-@@ -53,7 +53,7 @@
-  *                Used by threaded interrupts which need to keep the
-  *                irq line disabled until the threaded handler has been run.
-  * IRQF_NO_SUSPEND - Do not disable this IRQ during suspend
-- *
-+ * IRQF_FORCE_RESUME - Force enable it on resume even if IRQF_NO_SUSPEND is set
-  */
- #define IRQF_DISABLED		0x00000020
- #define IRQF_SAMPLE_RANDOM	0x00000040
-@@ -65,6 +65,7 @@
- #define IRQF_IRQPOLL		0x00001000
- #define IRQF_ONESHOT		0x00002000
- #define IRQF_NO_SUSPEND		0x00004000
-+#define IRQF_FORCE_RESUME	0x00008000
- 
- #define IRQF_TIMER		(__IRQF_TIMER | IRQF_NO_SUSPEND)
- 
-diff --git a/kernel/irq/manage.c b/kernel/irq/manage.c
-index 8305828..46f10b1 100644
---- a/kernel/irq/manage.c
-+++ b/kernel/irq/manage.c
-@@ -265,8 +265,17 @@ EXPORT_SYMBOL(disable_irq);
- 
- void __enable_irq(struct irq_desc *desc, unsigned int irq, bool resume)
- {
--	if (resume)
-+	if (resume) {
-+		if (!(desc->status & IRQ_SUSPENDED)) {
-+			if (!desc->action)
-+				return;
-+			if (!(desc->action->flags & IRQF_FORCE_RESUME))
-+				return;
-+			/* Pretend that it got disabled ! */
-+			desc->depth++;
-+		}
- 		desc->status &= ~IRQ_SUSPENDED;
-+	}
- 
- 	switch (desc->depth) {
- 	case 0:
-diff --git a/kernel/irq/pm.c b/kernel/irq/pm.c
-index 0d4005d8..d6bfb89 100644
---- a/kernel/irq/pm.c
-+++ b/kernel/irq/pm.c
-@@ -53,9 +53,6 @@ void resume_device_irqs(void)
- 	for_each_irq_desc(irq, desc) {
- 		unsigned long flags;
- 
--		if (!(desc->status & IRQ_SUSPENDED))
--			continue;
+diff --git a/drivers/xen/events.c b/drivers/xen/events.c
+index 0769108..9c66deb 100644
+--- a/drivers/xen/events.c
++++ b/drivers/xen/events.c
+@@ -819,9 +819,6 @@ static void restore_cpu_virqs(unsigned int cpu)
+ 		evtchn_to_irq[evtchn] = irq;
+ 		irq_info[irq] = mk_virq_info(evtchn, virq);
+ 		bind_evtchn_to_cpu(evtchn, cpu);
 -
- 		raw_spin_lock_irqsave(&desc->lock, flags);
- 		__enable_irq(desc, irq, true);
- 		raw_spin_unlock_irqrestore(&desc->lock, flags);
+-		/* Ready for use. */
+-		unmask_evtchn(evtchn);
+ 	}
+ }
+ 
+@@ -847,10 +844,6 @@ static void restore_cpu_ipis(unsigned int cpu)
+ 		evtchn_to_irq[evtchn] = irq;
+ 		irq_info[irq] = mk_ipi_info(evtchn, ipi);
+ 		bind_evtchn_to_cpu(evtchn, cpu);
+-
+-		/* Ready for use. */
+-		unmask_evtchn(evtchn);
+-
+ 	}
+ }
+ 
+@@ -903,6 +896,7 @@ void xen_poll_irq(int irq)
+ void xen_irq_resume(void)
+ {
+ 	unsigned int cpu, irq, evtchn;
++	struct irq_desc *desc;
+ 
+ 	init_evtchn_cpu_bindings();
+ 
+@@ -921,6 +915,23 @@ void xen_irq_resume(void)
+ 		restore_cpu_virqs(cpu);
+ 		restore_cpu_ipis(cpu);
+ 	}
++
++	/*
++	 * Unmask any IRQF_NO_SUSPEND IRQs which are enabled. These
++	 * are not handled by the IRQ core.
++	 */
++	for_each_irq_desc(irq, desc) {
++		if (!desc->action || !(desc->action->flags & IRQF_NO_SUSPEND))
++			continue;
++		if (desc->status & IRQ_DISABLED)
++			continue;
++
++		evtchn = evtchn_from_irq(irq);
++		if (evtchn == -1)
++			continue;
++
++		unmask_evtchn(evtchn);
++	}
+ }
+ 
+ static struct irq_chip xen_dynamic_chip __read_mostly = {
 -- 
 1.7.9.6
 
