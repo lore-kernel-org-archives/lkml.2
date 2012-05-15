@@ -1,99 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932100Ab2EOIL2 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 May 2012 04:11:28 -0400
-Received: from am1ehsobe003.messaging.microsoft.com ([213.199.154.206]:22080
-	"EHLO am1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754419Ab2EOILY convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 May 2012 04:11:24 -0400
-X-SpamScore: -10
-X-BigFish: VS-10(zzc89bh936eK1102I1432N98dKzz1202h1082kzzz2dh2a8h668h839h93fhd25he5bh)
-X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
-Message-ID: <4FB2109A.2080505@freescale.com>
-Date: Tue, 15 May 2012 16:15:22 +0800
-From: Huang Shijie <b32955@freescale.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.24) Gecko/20111108 Fedora/3.1.16-1.fc14 Thunderbird/3.1.16
+	id S1758036Ab2EOIMi (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 May 2012 04:12:38 -0400
+Received: from mga14.intel.com ([143.182.124.37]:58715 "EHLO mga14.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757658Ab2EOIMf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 May 2012 04:12:35 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
+   d="scan'208";a="143270326"
+Date: Tue, 15 May 2012 16:12:49 +0800
+From: Yuanhan Liu <yuanhan.liu@linux.intel.com>
+To: NeilBrown <neilb@suse.de>
+Cc: linux-raid@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] md: remove redudent code
+Message-ID: <20120515081249.GG10252@yliu-dev.sh.intel.com>
+References: <1337068825-11995-1-git-send-email-yuanhan.liu@linux.intel.com>
+ <20120515180349.0f0d275e@notabene.brown>
 MIME-Version: 1.0
-To: <dedekind1@gmail.com>
-CC: Roland Stigge <stigge@antcom.de>, Bastian Hecht <hechtb@googlemail.com>,
-        Lars-Peter Clausen <lars@metafoo.de>, Lei Wen <leiwen@marvell.com>,
-        <linux-mtd@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
-        <linux-doc@vger.kernel.org>, <devicetree-discuss@lists.ozlabs.org>,
-        <dwmw2@infradead.org>, <kevin.wells@nxp.com>, <srinivas.bakki@nxp.com>,
-        <linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH] MTD: LPC32xx SLC NAND driver
-References: <1336829386-23301-1-git-send-email-stigge@antcom.de> <1337068543.2528.143.camel@sauron.fi.intel.com>
-In-Reply-To: <1337068543.2528.143.camel@sauron.fi.intel.com>
-Content-Type: text/plain; charset="UTF-8"; format=flowed
-Content-Transfer-Encoding: 8BIT
-X-OriginatorOrg: freescale.com
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120515180349.0f0d275e@notabene.brown>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-于 2012年05月15日 15:55, Artem Bityutskiy 写道:
-> I am CCing few other guys who take care of several drivers which use
-> similar way of busy-waiting - probably you could change it?
->
-> Bastian: drivers/mtd/nand/sh_flctl.c
-> Lars-Peter: drivers/mtd/nand/jz4740_nand.c
-> Huang: drivers/mtd/nand/gpmi-nand/gpmi-lib.c
-> Lei Wen: drivers/mtd/nand/pxa3xx_nand.c
->
-> On Sat, 2012-05-12 at 15:29 +0200, Roland Stigge wrote:
->> +       /*
->> +        * The DMA is finished, but the NAND controller may still have
->> +        * buffered data. Wait until all the data is sent.
-When all the data is sent, is there an interrupt for this?
+On Tue, May 15, 2012 at 06:03:49PM +1000, NeilBrown wrote:
+> On Tue, 15 May 2012 16:00:25 +0800 Yuanhan Liu <yuanhan.liu@linux.intel.com>
+> wrote:
+> 
+> > The code does nothing but repating assigning sb->sb_csum with original
+> > value.
+> 
+> This code sets the sb_csum to 0 while the csum is calculated.
+> 
+> Without this, calculating the csum, setting it, then calculating again would
+> produce a different result.
+> 
+> So the code is correct as is.
 
+Aha, got it. And sorry for the wrong patch.
 
-Best Regards
-Huang Shijie
+Thanks,
+Yuanhan Liu
 
->> +        */
->> +       timeout = LPC32XX_DMA_SIMPLE_TIMEOUT;
->> +       while ((readl(SLC_STAT(host->io_base))&  SLCSTAT_DMA_FIFO)
->> +&&  (timeout>  0))
->> +               timeout--;
->> +       if (!timeout) {
->> +               dev_err(mtd->dev.parent, "FIFO held data too long\n");
->> +               status = -EIO;
->> +       }
-> I know the MTD tree is full of this, but this is bad, I think. The
-> timeout should be time-backed, not CPU-cycles-backed.
->
-> I do not know the best way to do this, hopefully someone in the arm list
-> could suggest, but the following pattern is at least better:
->
->
-> /* Chip reaction time timeout in milliseconds */
-> #define LPC32XX_DMA_TIMEOUT 100
->
-> timeout = loops_per_jiffy * msecs_to_jiffies(LPC32XX_DMA_TIMEOUT);
->
-> while ((readl(...))&&  timeout-->  0)
-> 	cpu_relax();
->
-> if (!timeout)
-> 	error;
->
->
-> So basically I turned your hard-coded iterations count into a time-based
-> timeout. I also used cpu_relax() which is commonly used in tight-loops
-> like this. Here is a piece of documentation about cpu_relax():
->
-> "
-> The right way to perform a busy wait is:
->
->      while (my_variable != what_i_want)
->          cpu_relax();
->
-> The cpu_relax() call can lower CPU power consumption or yield to a
-> hyperthreaded twin processor; it also happens to serve as a compiler
-> barrier, so, once again, volatile is unnecessary.  Of course, busy-
-> waiting is generally an anti-social act to begin with.
-> "
->
+> 
+> Thanks,
+> NeilBrown
+> 
+> 
+> > 
+> > Signed-off-by: Yuanhan Liu <yuanhan.liu@linux.intel.com>
+> > ---
+> >  drivers/md/md.c |    4 ----
+> >  1 files changed, 0 insertions(+), 4 deletions(-)
+> > 
+> > diff --git a/drivers/md/md.c b/drivers/md/md.c
+> > index 0bd44e3..f2d799a 100644
+> > --- a/drivers/md/md.c
+> > +++ b/drivers/md/md.c
+> > @@ -1439,15 +1439,12 @@ super_90_rdev_size_change(struct md_rdev *rdev, sector_t num_sectors)
+> >  
+> >  static __le32 calc_sb_1_csum(struct mdp_superblock_1 * sb)
+> >  {
+> > -	__le32 disk_csum;
+> >  	u32 csum;
+> >  	unsigned long long newcsum;
+> >  	int size = 256 + le32_to_cpu(sb->max_dev)*2;
+> >  	__le32 *isuper = (__le32*)sb;
+> >  	int i;
+> >  
+> > -	disk_csum = sb->sb_csum;
+> > -	sb->sb_csum = 0;
+> >  	newcsum = 0;
+> >  	for (i=0; size>=4; size -= 4 )
+> >  		newcsum += le32_to_cpu(*isuper++);
+> > @@ -1456,7 +1453,6 @@ static __le32 calc_sb_1_csum(struct mdp_superblock_1 * sb)
+> >  		newcsum += le16_to_cpu(*(__le16*) isuper);
+> >  
+> >  	csum = (newcsum & 0xffffffff) + (newcsum >> 32);
+> > -	sb->sb_csum = disk_csum;
+> >  	return cpu_to_le32(csum);
+> >  }
+> >  
+> 
 
 
