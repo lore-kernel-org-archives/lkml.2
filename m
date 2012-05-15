@@ -1,194 +1,139 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758982Ab2EOQDo (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 May 2012 12:03:44 -0400
-Received: from mail-vb0-f46.google.com ([209.85.212.46]:54566 "EHLO
-	mail-vb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751107Ab2EOQDl convert rfc822-to-8bit (ORCPT
+	id S933177Ab2EOQDv (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 May 2012 12:03:51 -0400
+Received: from mail1.windriver.com ([147.11.146.13]:62392 "EHLO
+	mail1.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932124Ab2EOQDs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 May 2012 12:03:41 -0400
+	Tue, 15 May 2012 12:03:48 -0400
+Date: Tue, 15 May 2012 12:02:50 -0400
+From: Paul Gortmaker <paul.gortmaker@windriver.com>
+To: Peter Zijlstra <peterz@infradead.org>, Hugh Dickins <hughd@google.com>,
+        Willy Tarreau <w@1wt.eu>
+CC: <stable@vger.kernel.org>, <linux-kernel@vger.kernel.org>
+Subject: Re: [34-longterm 167/179] futex: Fix regression with read only
+ mappings
+Message-ID: <20120515160250.GA17760@windriver.com>
+References: <1337048075-6132-1-git-send-email-paul.gortmaker@windriver.com>
+ <1337048075-6132-168-git-send-email-paul.gortmaker@windriver.com>
+ <alpine.LSU.2.00.1205142126180.2196@eggly.anvils>
+ <1337079117.27694.28.camel@twins>
 MIME-Version: 1.0
-In-Reply-To: <CACRpkdYm0Ywv1XyTha8ks-PF2hme9C4dXKLGCq+i+1Pk9N9qJw@mail.gmail.com>
-References: <20120511094103.16423.51840.sendpatchset@w520>
-	<CACRpkdaVsBswz8uO_nTjbfbzt+T+YcxunpvoDvOn4+=DTwjG3A@mail.gmail.com>
-	<CANqRtoRx0VDmrPz=foD03z+ZYdb605Km8SEDKQQwCzbrZ54m3Q@mail.gmail.com>
-	<CACRpkdYm0Ywv1XyTha8ks-PF2hme9C4dXKLGCq+i+1Pk9N9qJw@mail.gmail.com>
-Date: Wed, 16 May 2012 01:03:40 +0900
-Message-ID: <CANqRtoTtwNPuE2S02ayNn6Jq4BJJ7x8op_4An-wkSwMn9qmW9w@mail.gmail.com>
-Subject: Re: [PATCH] gpio: Emma Mobile GPIO driver
-From: Magnus Damm <magnus.damm@gmail.com>
-To: Linus Walleij <linus.walleij@linaro.org>
-Cc: linux-kernel@vger.kernel.org, rjw@sisk.pl, linus.walleij@stericsson.com,
-        arnd@arndb.de, linux-sh@vger.kernel.org, horms@verge.net.au,
-        grant.likely@secretlab.ca, lethal@linux-sh.org, olof@lixom.net
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+In-Reply-To: <1337079117.27694.28.camel@twins>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hej Linus,
+[Re: [34-longterm 167/179] futex: Fix regression with read only mappings] On 15/05/2012 (Tue 12:51) Peter Zijlstra wrote:
 
-I just posted a V2 but here's my reply to your comments.
+> On Mon, 2012-05-14 at 21:38 -0700, Hugh Dickins wrote:
+> > I don't know: I'm not NAKking it, I'm just waving a reddish flag,
+> > and hoping that Peter will remember more, and have something more
+> > constructive to say, than I can think of at this moment. 
+> 
+> Ha! you're very optimistic :-)
+> 
+> going by git log kernel/futex.c on a recent kernel the proposed patch
+> should indeed be followed by your patch, but I can't seem to find more
+> relevant patches.
 
-On Sat, May 12, 2012 at 7:12 AM, Linus Walleij <linus.walleij@linaro.org> wrote:
-> On Fri, May 11, 2012 at 5:45 PM, Magnus Damm <magnus.damm@gmail.com> wrote:
->
->>>> +config GPIO_EM
->>>> +       tristate "Emma Mobile GPIO"
->>>> +       depends on ARM
->>>
->>> ARM really? Why should all ARM systems have the option of configuring in an Emma
->>> controller?
->>
-> (...)
->> Not sure if your point is that this has nothing to do with the CPU
->> core itself
->
-> Nah I was more after a more strict dependency, like in this example
-> from pinctrl:
->
-> config PINCTRL_SIRF
->        bool "CSR SiRFprimaII pin controller driver"
->        depends on ARCH_PRIMA2
->        select PINMUX
->
-> So if this controller is only in one arch then put that as depends...
+Thanks a lot guys.  That is a dependency I'd never have come up with.
 
-Right, I understand what you mean. I did however keep it as-is to get
-as much compile testing done as possible.
+Willy -- this is probably of interest to you as well.   Hugh says that
+commit e6780f7243 ("futex: Fix uninterruptible loop due to gate_area")
+should be used if 9ea71503a8 ("futex: Fix regression with read only
+mappings") is used.  The v2.6.32.46 added 9ea71503a8 (as d64ec7bb),
+but I don't see a cherry pick of e6780f7243 in any v2.6.32.x yet.
 
->>>> +static irqreturn_t em_gio_irq_handler(int irq, void *dev_id)
->>>> +{
->>>> +       struct em_gio_priv *p = dev_id;
->>>> +       unsigned long tmp, status;
->>>> +       unsigned int offset;
->>>> +
->>>> +       status = tmp = em_gio_read(p, GIO_MST);
->>>> +       if (!status)
->>>> +               return IRQ_NONE;
->>>> +
->>>> +       while (status) {
->>>> +               offset = __ffs(status);
->>>> +               generic_handle_irq(p->irq_base + offset);
->>>
->>> Pleas use irqdomain to translate the IRQ numbers.
->>
->> Is this mandatory for regular platform devices not using DT?
->
-> Irqdomain has nothing to do with DT ...
+Greg already applied it to 3.0.16 and 3.1.8 and it appeared in v3.2
+by default, so no other active stable releases need to worry.
 
-Really? In my mind irqdomain is a requirement for DT IRQ support. Of
-course, it is also much more than that. But my impression is that the
-real benefit comes when the ->xlat() callback is involved, and I don't
-know of any way of using that without DT.
+I had to change page_mapping --> page, since the 2.6.34 baseline does
+not have a5b338f2b0b1ff73 ("thp: update futex compound knowledge")
+[added to v2.6.38] which introduces the shadow variable page_mapping.
 
-> It's just a very nice way to do translation of a range of local
-> numbers onto the bigger IRQ numberspace, we've been discussing
-> what to do with IRQ numbers and after some dealing with
-> irqdomain I think it's really nice for this.
->
-> It does the same as offsetting like above, but in a more
-> abstract way.
+Paul.
+---
 
-Right! Thanks for pushing me in that direction, I believe the code
-indeed became much cleaner.
+>From f8fe91498b2a35fc6abc02bb213ca297bfcd2b2a Mon Sep 17 00:00:00 2001
+From: Hugh Dickins <hughd@google.com>
+Date: Sat, 31 Dec 2011 11:44:01 -0800
+Subject: [PATCH] futex: Fix uninterruptible loop due to gate_area
 
->> I don't object to your idea, but I was planning on adding that in my
->> DT feature patch.
->
-> Why not do it now and be done with it :-)
+commit e6780f7243eddb133cc20ec37fa69317c218b709 upstream.
 
-Never do today what you can do tomorrow. It's an old Swedish motto.
-You should know. =)
+It was found (by Sasha) that if you use a futex located in the gate
+area we get stuck in an uninterruptible infinite loop, much like the
+ZERO_PAGE issue.
 
->>>> +               status &= ~(1 << offset);
->>>> +       }
->>>
->>> We've recently patched a log of IRQ handlers to re-read the IRQ
->>> status register on each iteration. I suspect that is needed here
->>> as well.
->>
->> Doesn't that depend on how the hardware works? OTOH, it may be a safe
->> way to implement correct code for all kinds of controllers, not sure.
->
-> Not really, the issue is how the IRQ framework works really.
-> Check out this pointer from Russell:
-> http://lists.arm.linux.org.uk/lurker/message/20120402.214614.e7740b12.en.html
-> and the rest of that thread.
+While looking at this problem, PeterZ realized you'll get into similar
+trouble when hitting any install_special_pages() mapping.  And are there
+still drivers setting up their own special mmaps without page->mapping,
+and without special VM or pte flags to make get_user_pages fail?
 
-Thanks for the pointer!
+In most cases, if page->mapping is NULL, we do not need to retry at all:
+Linus points out that even /proc/sys/vm/drop_caches poses no problem,
+because it ends up using remove_mapping(), which takes care not to
+interfere when the page reference count is raised.
 
->> I guess it can be done like that, but wouldn't that lead to potential
->> starvation of IRQs with bits that happen to be processed first in the
->> word?
->
-> Yes, but the alternative seems to be to miss IRQs which is probably
-> worse.
+But there is still one case which does need a retry: if memory pressure
+called shmem_writepage in between get_user_pages_fast dropping page
+table lock and our acquiring page lock, then the page gets switched from
+filecache to swapcache (and ->mapping set to NULL) whatever the refcount.
+Fault it back in to get the page->mapping needed for key->shared.inode.
 
-Indeed!
+Reported-by: Sasha Levin <levinsasha928@gmail.com>
+Signed-off-by: Hugh Dickins <hughd@google.com>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+[PG: 2.6.34 variable is page, not page_head, since it doesn't have a5b338f2]
+Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
 
->>> inline?
->>
->> Sure, if you think that is absolutely necessary. May I ask, is it
->> important for you, or is it ok if I skip and keep this driver in line
->> with my other ones? =)
->
-> Forget it... no big deal.
+diff --git a/kernel/futex.c b/kernel/futex.c
+index 98a354d..8b467b4 100644
+--- a/kernel/futex.c
++++ b/kernel/futex.c
+@@ -264,17 +264,29 @@ again:
+ 
+ 	page = compound_head(page);
+ 	lock_page(page);
++
++	/*
++	 * If page->mapping is NULL, then it cannot be a PageAnon
++	 * page; but it might be the ZERO_PAGE or in the gate area or
++	 * in a special mapping (all cases which we are happy to fail);
++	 * or it may have been a good file page when get_user_pages_fast
++	 * found it, but truncated or holepunched or subjected to
++	 * invalidate_complete_page2 before we got the page lock (also
++	 * cases which we are happy to fail).  And we hold a reference,
++	 * so refcount care in invalidate_complete_page's remove_mapping
++	 * prevents drop_caches from setting mapping to NULL beneath us.
++	 *
++	 * The case we do have to guard against is when memory pressure made
++	 * shmem_writepage move it from filecache to swapcache beneath us:
++	 * an unlikely race, but we do need to retry for page->mapping.
++	 */
+ 	if (!page->mapping) {
++		int shmem_swizzled = PageSwapCache(page);
+ 		unlock_page(page);
+ 		put_page(page);
+-		/*
+-		* ZERO_PAGE pages don't have a mapping. Avoid a busy loop
+-		* trying to find one. RW mapping would have COW'd (and thus
+-		* have a mapping) so this page is RO and won't ever change.
+-		*/
+-		if ((page == ZERO_PAGE(address)))
+-			return -EFAULT;
+-		goto again;
++		if (shmem_swizzled)
++			goto again;
++		return -EFAULT;
+ 	}
+ 
+ 	/*
+-- 
+1.7.9.6
 
-I actually made those functions inline after all. Not sure exactly why
-though. =)
-
->>>> +       p = kzalloc(sizeof(*p), GFP_KERNEL);
->>>
->>> Use devm_kzalloc() and friends?
->>
->> I tend to prefer not to. This because I need to perform proper error
->> handling anyway.
->>
->>> Which makes the error path all much simpler.
->>
->> Maybe so, perhaps I should look into that anyway though.
->
-> OK no big deal for me, just seen it a bit lately, it's getting
-> popular.
-
-Right, it sure has. I still find it kind of awkward to use though so I
-skipped it in V2.
-
->>> Isn't there a new nice inline that will both request and
->>> remap a piece of memory?
->>
->> If so then that would be excellent. Especially together with
->> ioread/iowrite so the code can work both for IOMEM and PORT
->> transparently.
->
-> Speaking about the garbage-collecting devm_* stuff, there
-> is:
-> devm_ioremap()
->
-> Which will auto-release the mapping when the device goes away.
-> (Makes exit() really thin.)
-
-Yeah, that's certainly a step in the right direction. I really wish I
-had some spare time to hack on helper functions for filling the space
-between struct device and ioremap/request_irq.
-
->> Do you have any good suggestion what to use to unregister my irqchip?
->> I believe this version of the driver isn't doing that properly.
->
-> Is this code going to be used as module? Else one way to
-> avoid it to to not have an exit() function like drivers/gpio/gpio-pl061.c
->
-> Most people seem to avoid that so you really got me on this
-> one, I really have no good example of how to do that...
-
-After looking at the linear irq domain code it seems that the
-->unmap() callback can be used somehow. Legacy irq domains do not
-allow deregister. However, in both cases there is no code to remove
-the irq domain from the list. That would also be good to hack on. Need
-more time!
-
-Thanks a lot for your help!
-
-/ magnus
