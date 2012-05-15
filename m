@@ -1,73 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965445Ab2EOPlj (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 May 2012 11:41:39 -0400
-Received: from mail132.messagelabs.com ([216.82.242.115]:60848 "EHLO
-	mail132.messagelabs.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965299Ab2EOPlg (ORCPT
+	id S965466Ab2EOPm0 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 May 2012 11:42:26 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:26523 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S965236Ab2EOPmY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 May 2012 11:41:36 -0400
-X-Env-Sender: hartleys@visionengravers.com
-X-Msg-Ref: server-12.tower-132.messagelabs.com!1337096465!11670687!42
-X-Originating-IP: [216.166.12.99]
-X-StarScan-Version: 6.5.10; banners=-,-,-
-X-VirusChecked: Checked
-From: H Hartley Sweeten <hartleys@visionengravers.com>
-To: Ian Abbott <abbotti@mev.co.uk>
-CC: Linux Kernel <linux-kernel@vger.kernel.org>,
-        "devel@driverdev.osuosl.org" <devel@driverdev.osuosl.org>,
-        Ian Abbott <ian.abbott@mev.co.uk>,
-        "fmhess@users.sourceforge.net" <fmhess@users.sourceforge.net>,
-        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>
-Date: Tue, 15 May 2012 10:41:23 -0500
-Subject: RE: [PATCH] staging: comedi: refactor ni_pcimio driver and use
- module_comedi_pci_driver
-Thread-Topic: [PATCH] staging: comedi: refactor ni_pcimio driver and use
- module_comedi_pci_driver
-Thread-Index: Ac0yje7eHE8lBCr2TZqSVupaqJXjcgAIqgtg
-Message-ID: <ADE657CA350FB648AAC2C43247A983F0020698AE0932@AUSP01VMBX24.collaborationhost.net>
-References: <201205111651.56541.hartleys@visionengravers.com>
- <4FB23DF8.8090508@mev.co.uk>
-In-Reply-To: <4FB23DF8.8090508@mev.co.uk>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="utf-8"
-MIME-Version: 1.0
+	Tue, 15 May 2012 11:42:24 -0400
+X-Authority-Analysis: v=2.0 cv=ae7jbGUt c=1 sm=0 a=ZycB6UtQUfgMyuk2+PxD7w==:17 a=XQbtiDEiEegA:10 a=huzqtivG31QA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=P2G5D2vVsr-7TERAHF0A:9 a=2ZYvGRFtgxHbHymKmREA:7 a=PUjeQqilurYA:10 a=ZycB6UtQUfgMyuk2+PxD7w==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 74.67.80.29
+Message-ID: <1337096542.14207.315.camel@gandalf.stny.rr.com>
+Subject: Re: [RFC][PATCH RT] rwsem_rt: Another (more sane) approach to mulit
+ reader rt locks
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: LKML <linux-kernel@vger.kernel.org>, RT <linux-rt-users@vger.kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Clark Williams <williams@redhat.com>
+Date: Tue, 15 May 2012 11:42:22 -0400
+In-Reply-To: <1337094383.27694.62.camel@twins>
+References: <1337090625.14207.304.camel@gandalf.stny.rr.com>
+	 <1337094383.27694.62.camel@twins>
+Content-Type: text/plain; charset="ISO-8859-15"
+X-Mailer: Evolution 3.2.2-1 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by nfs id q4FFfv3O012317
 
-On Tuesday, May 15, 2012 4:29 AM, Ian Abbott wrote:
-> On 2012-05-12 00:51, H Hartley Sweeten wrote:
->> +static struct comedi_driver ni_pcimio_driver = {
->> +	.driver_name	= "ni_pcimio",
->
-> The original used the DRV_NAME macro expanding to "ni_pcimio" here...
->
->> +static struct pci_driver ni_pcimio_pci_driver = {
->> +	.name		= "ni_pcimio",
->
-> ... which could also be used here.
->
->  (I realize this is a bit late as the patch is already committed!)
+On Tue, 2012-05-15 at 17:06 +0200, Peter Zijlstra wrote:
+> On Tue, 2012-05-15 at 10:03 -0400, Steven Rostedt wrote:
+> > 
+> > where readers may nest (the same task may grab the same rwsem for
+> > read multiple times), but only one task may hold the rwsem at any
+> > given
+> > time (for read or write).
+> 
+> Humm, that sounds iffy, rwsem isn't a recursive read lock only rwlock_t
+> is.
 
-I noticed that. A couple of the comedi drivers do this but it's not consistent.
+In that case, current -rt is broken. As it has it being a recursive lock
+(without my patch).
 
-Personally I don't care for the use of the DRV_NAME (or DRIVER_NAME
-or whatever someone wants to call it) usage. It doesn't same any code
-space and always makes me have to do a second search to see what the
-"name" actually is.
+> 
+> > The idea here is to have an rwsem create a rt_mutex for each CPU.
+> > Actually, it creates a rwsem for each CPU that can only be acquired by
+> > one task at a time. This allows for readers on separate CPUs to take
+> > only the per cpu lock. When a writer needs to take a lock, it must
+> > grab
+> > all CPU locks before continuing. 
+> 
+> So you've turned it into a global/local or br or whatever that thing was
+> called lock.
 
-Regardsless, if you prefer this in the drivers please let me know. It
-would be nice to have them somewhat consistent before the comedi
-support leaves staging.
+Yeah, basically I'm doing what that silly thing did.
 
-Regards,
-Hartley
+> > 
+> > Also, I don't use per_cpu sections for the locks, which means we have
+> > cache line collisions, but a normal (mainline) rwsem has that as well.
+> > 
+> Why not?
 
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éÝ¶¥Šwÿº{.nÇ+‰·¥Š{±þG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŽŠÝ¢j"ú¶m§ÿÿ¾«þG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+Because it was hard to figure out how to do it transparently from the
+rest of the kernel (with non-rt being unaffected). For now I wanted a
+proof of concept. If we can figure out how to make this real per cpu,
+I'm all for it. In fact, I'm wondering if that wouldn't make normal
+rwsems even faster in mainline (no cacheline bouncing from readers).
+
+I'll have to look at the br_lock thingy again and see how they did it. I
+couldn't remember what lock did that, thanks for the reminder ;-)
+
+
+> 
+> > Thoughts?
+> 
+> Ideally someone would try and get rid of mmap_sem itself.. but that's a
+> tough nut.
+
+Yeah, that would be the best scenario, but we are getting complaints
+about today's -rt. :-/
+
+> 
+> 
+> 
+> >  void  rt_down_write(struct rw_semaphore *rwsem)
+> >  {
+> > -       rwsem_acquire(&rwsem->dep_map, 0, 0, _RET_IP_);
+> > -       rt_mutex_lock(&rwsem->lock);
+> > +       int i;
+> > +       initialize_rwsem(rwsem);
+> > +       for_each_possible_cpu(i) {
+> > +               rwsem_acquire(&rwsem->lock[i].dep_map, 0, 0,
+> > _RET_IP_);
+> > +               rt_mutex_lock(&rwsem->lock[i].lock);
+> > +       }
+> >  }
+> >  EXPORT_SYMBOL(rt_down_write);
+> > 
+> That'll make lockdep explode.. you'll want to make the whole set a
+> single lock and not treat it as nr_cpus locks.
+
+Yeah, I thought about making it a single entity, but I was thinking the
+write lock would complain or something. But looking back, I think we can
+do this. Also note, I wrote this at 4am this morning as I had insomnia
+and couldn't sleep. I thought of this then and decided to write it out.
+
+Thus this is a I-can't-sleep-let-me-write-a-patch-to-piss-off-tglx
+patch.
+
+-- Steve
+
+
