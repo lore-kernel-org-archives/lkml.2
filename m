@@ -1,47 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933117Ab2EOPwC (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 May 2012 11:52:02 -0400
-Received: from mail-vb0-f46.google.com ([209.85.212.46]:46111 "EHLO
-	mail-vb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933076Ab2EOPvx (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 May 2012 11:51:53 -0400
-Date: Tue, 15 May 2012 12:51:46 -0300
-From: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-To: Dmitry Antipov <dmitry.antipov@linaro.org>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Mackerras <paulus@samba.org>,
-        Ingo Molnar <mingo@redhat.com>,
-        Amit Kucheria <amit.kucheria@linaro.org>, linaro-dev@lists.linaro.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: Perf record format portability
-Message-ID: <20120515155146.GB7864@infradead.org>
-References: <4FB275EB.5050904@linaro.org>
+	id S965580Ab2EOPxP (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 May 2012 11:53:15 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:22774 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1758544Ab2EOPxN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 May 2012 11:53:13 -0400
+Date: Tue, 15 May 2012 18:53:03 +0300
+From: Gleb Natapov <gleb@redhat.com>
+To: Alan Cox <alan@lxorguk.ukuu.org.uk>
+Cc: Hannes Reinecke <hare@suse.de>, LKML <linux-kernel@vger.kernel.org>,
+        "H. Peter Anvin" <hpa@linux.intel.com>
+Subject: Re: [PATCH] EDD: Check for correct EDD 3.0 length
+Message-ID: <20120515155303.GJ6948@redhat.com>
+References: <20120515111255.GJ32036@redhat.com>
+ <4FB23C09.7060300@suse.de>
+ <20120515115917.GK32036@redhat.com>
+ <20120515150015.5bf17aea@pyramind.ukuu.org.uk>
+ <20120515143644.GD6948@redhat.com>
+ <20120515155206.520e46b6@pyramind.ukuu.org.uk>
+ <20120515145316.GF6948@redhat.com>
+ <20120515162226.1b9a7496@pyramind.ukuu.org.uk>
+ <20120515152942.GH6948@redhat.com>
+ <20120515164143.3e8a8d04@pyramind.ukuu.org.uk>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <4FB275EB.5050904@linaro.org>
-X-Url: http://acmel.wordpress.com
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20120515164143.3e8a8d04@pyramind.ukuu.org.uk>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Em Tue, May 15, 2012 at 07:27:39PM +0400, Dmitry Antipov escreveu:
-> Hello,
+On Tue, May 15, 2012 at 04:41:43PM +0100, Alan Cox wrote:
+> > Hmm, will work if standard I/O addresses are used for master/slave, but
+> > I do not see this information be exposed via /sys by EDD. So how can I
+> > do it from OS installer with current kernel or kernel with reverted
+> > patch?
 > 
-> are there any thoughts on how much of the perf.data is portable and how much it should be?
-> I'm interesting in recording scheduler activity on one machine and then replaying on
-> another. As I can see, replaying x86 perf.data on ARM doesn't work. At least, should it
-> work with a small subset of recorded events (for example, sched:sched_switch,
-> sched:sched_process_exit, sched:sched_process_fork, sched:sched_wakeup
-> and sched:sched_migrate_task) on the same architecture?
+> I don't think we provide the needed info for this (or EDD 2.1 which I've
+> just discovered actually shipped in some plug in boards). Not sure 2.1 is
+> around online anywhere.
+> 
+> Thats a separate problem though.
+> 
+It is not. You are saying that the code we have now supported Phoenix
+spec and now it is not. This is not the case though.
 
-Endianness issues? ARM EB? There are some patches by Jiri Olsa that may
-help you if that is the case.
+> My big concern is that we are sure it disappearing won't break anything.
+> It's been noticed at SuSE so it's obviously not entiely invisible.
+So lets ask Hannes what problem he tries to fix by the patch.
 
-It should be portable, are you using 'perf archive' too?
+> 
+> I'd love to see EDD 1.1 and 2.1 support in the kernel as I could then
+> merge pata_hdd which drives original MFM/RLL drives. However I don't
+> believe its worth the effort unlike doing 3.0 right.
+> 
+It is OK to add Phoenix support to the code. To do that code needs to
+figure what spec BIOS uses and parse the data differently, not just blindly
+misinterpret binary buffer.
 
-What exactly is the error experienced?
-
-- Arnaldo
+--
+			Gleb.
