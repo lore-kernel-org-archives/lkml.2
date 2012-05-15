@@ -1,51 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758090Ab2EOOEH (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 May 2012 10:04:07 -0400
-Received: from smtp104.prem.mail.ac4.yahoo.com ([76.13.13.43]:32148 "HELO
-	smtp104.prem.mail.ac4.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1755969Ab2EOOEF (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 May 2012 10:04:05 -0400
-X-Yahoo-Newman-Property: ymail-3
-X-YMail-OSG: bdIJqRQVM1kRp9BYEfZKXzGIBIZvxJkDiyBbySku09ZE6T2
- OW6bC3Qe.MCd2dq7G9T3Iw2a8nCpOdaOJDOLq7hU1lxUwk1_RLTzWJqbG3Oq
- JJfS7r5tt0zwbsbdCJOPWNEddkeCFLE7lgtYLfKsfBKOSUvcL53rMoLMTxdJ
- IKm_5TiWy5RLKWOmAXlAInqCBj8DGyrMf3BXBQvJBZ96IgKQOk3pVNgyXC9d
- NvsLhPQJB1Zu7c2Xp7piwmbPfb4rkW.LpRKjbJ7IlW9RNH_7QgBeeASZQ1yu
- kaEq9M0fFs9ymxsh5SiMZhqVIrz7MyivGgSEapIonM2Dta3q7Nn_Vu7SrdDJ
- BSbAfUOcL8RPrW3AkipMGxK0YvDb3RNYJ1NtpZ6am8JHqavVGW4EKYuwX4IX
- zLWnTU8srbC870oWAD_gsNAcB5szs1dp2TG7c
-X-Yahoo-SMTP: _Dag8S.swBC1p4FJKLCXbs8NQzyse1SYSgnAbY0-
-Date: Tue, 15 May 2012 09:04:01 -0500 (CDT)
-From: Christoph Lameter <cl@linux.com>
-X-X-Sender: cl@router.home
-To: Eric Dumazet <eric.dumazet@gmail.com>
-cc: Pravin B Shelar <pshelar@nicira.com>, penberg@kernel.org, mpm@selenic.com,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org, jesse@nicira.com,
-        abhide@nicira.com
-Subject: Re: [PATCH v2] mm: Fix slab->page _count corruption.
-In-Reply-To: <1337034892.8512.652.camel@edumazet-glaptop>
-Message-ID: <alpine.DEB.2.00.1205150903320.6488@router.home>
-References: <1337034597-1826-1-git-send-email-pshelar@nicira.com> <1337034892.8512.652.camel@edumazet-glaptop>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+	id S1758230Ab2EOOEv (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 May 2012 10:04:51 -0400
+Received: from mga14.intel.com ([143.182.124.37]:4020 "EHLO mga14.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752954Ab2EOOEt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 May 2012 10:04:49 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
+   d="scan'208";a="100308260"
+Message-ID: <4FB26271.3000708@intel.com>
+Date: Tue, 15 May 2012 22:04:33 +0800
+From: Alex Shi <alex.shi@intel.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:9.0) Gecko/20111229 Thunderbird/9.0
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+To: Peter Zijlstra <a.p.zijlstra@chello.nl>
+CC: Nick Piggin <npiggin@gmail.com>, tglx@linutronix.de, mingo@redhat.com,
+        hpa@zytor.com, arnd@arndb.de, rostedt@goodmis.org, fweisbec@gmail.com,
+        jeremy@goop.org, riel@redhat.com, luto@mit.edu, avi@redhat.com,
+        len.brown@intel.com, dhowells@redhat.com, fenghua.yu@intel.com,
+        borislav.petkov@amd.com, yinghai@kernel.org, ak@linux.intel.com,
+        cpw@sgi.com, steiner@sgi.com, akpm@linux-foundation.org,
+        penberg@kernel.org, hughd@google.com, rientjes@google.com,
+        kosaki.motohiro@jp.fujitsu.com, n-horiguchi@ah.jp.nec.com,
+        tj@kernel.org, oleg@redhat.com, axboe@kernel.dk, jmorris@namei.org,
+        kamezawa.hiroyu@jp.fujitsu.com, viro@zeniv.linux.org.uk,
+        linux-kernel@vger.kernel.org, yongjie.ren@intel.com,
+        linux-arch@vger.kernel.org
+Subject: Re: [PATCH v5 6/7] x86/tlb: optimizing flush_tlb_mm
+References: <1337072138-8323-1-git-send-email-alex.shi@intel.com>  <1337072138-8323-7-git-send-email-alex.shi@intel.com>  <CAPa8GCDsSOrzQwX2qRJyocYAZdGbwjD4t4fjxmWXV6=EoXjXZw@mail.gmail.com> <1337073529.27694.8.camel@twins>
+In-Reply-To: <1337073529.27694.8.camel@twins>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 15 May 2012, Eric Dumazet wrote:
+On 05/15/2012 05:18 PM, Peter Zijlstra wrote:
 
-> > Following patch fixes it by moving page->_count out of cmpxchg_double
-> > data. So that slub does no change it while updating slub meta-data in
-> > struct page.
->
-> I say again : Page is owned by slub, so get_page() or put_page() is not
-> allowed ?
+> On Tue, 2012-05-15 at 19:15 +1000, Nick Piggin wrote:
+>> So this should go to linux-arch...
+>>
+>> On 15 May 2012 18:55, Alex Shi <alex.shi@intel.com> wrote:
+>>> Not every flush_tlb_mm execution moment is really need to evacuate all
+>>> TLB entries, like in munmap, just few 'invlpg' is better for whole
+>>> process performance, since it leaves most of TLB entries for later
+>>> accessing.
+>>>
+>>> This patch is changing flush_tlb_mm(mm) to flush_tlb_mm(mm, start, end)
+>>> in cases.
+>>
+>> What happened with Peter's comment about using flush_tlb_range for this?
+>>
+>> flush_tlb_mm() API should just stay unchanged AFAIKS.
+>>
+>> Then you need to work out the best way to give range info to the tlb/mmu gather
+>> API. Possibly passing in the rage for that guy is OK, which x86 can
+>> then implement
+>> as flush range.
+> 
+> Right, most archs that have tlb_flush_range() do range tracking in
+> mmu_gather. Our TLB ops fully support that, there's absolutely no need
+> to go change the interface for thos.
 
-It is allowed since slab memory can be used for DMA.
 
-> How is put_page() going to work with order-1 or order-2 allocations ?
 
-It is always incrementing the page count of the head page.
+Ok. this should be your wanted, 
+-#define tlb_flush(tlb) flush_tlb_mm((tlb)->mm)
++#define tlb_flush(tlb, start, end) __flush_tlb_range((tlb)->mm, start, end)
+
+If no objection, I will modify the patch accordingly. 
