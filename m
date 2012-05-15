@@ -1,105 +1,157 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S967017Ab2EOXIC (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 May 2012 19:08:02 -0400
-Received: from mail-we0-f174.google.com ([74.125.82.174]:63949 "EHLO
-	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S966054Ab2EOXIA (ORCPT
+	id S967029Ab2EOXIY (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 May 2012 19:08:24 -0400
+Received: from mail127.messagelabs.com ([216.82.250.115]:28512 "EHLO
+	mail127.messagelabs.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S967008Ab2EOXIW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 May 2012 19:08:00 -0400
-Message-ID: <4FB2E1C7.1070700@gmail.com>
-Date: Wed, 16 May 2012 01:07:51 +0200
-From: =?UTF-8?B?VmxhZGltaXIgJ8+GLWNvZGVyL3BoY29kZXInIFNlcmJpbmVua28=?= 
-	<phcoder@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.4) Gecko/20120510 Icedove/10.0.4
+	Tue, 15 May 2012 19:08:22 -0400
+X-Env-Sender: hartleys@visionengravers.com
+X-Msg-Ref: server-16.tower-127.messagelabs.com!1337123285!5620491!18
+X-Originating-IP: [216.166.12.32]
+X-StarScan-Version: 6.5.7; banners=-,-,-
+X-VirusChecked: Checked
+From: H Hartley Sweeten <hartleys@visionengravers.com>
+To: Linux Kernel <linux-kernel@vger.kernel.org>
+Subject: [PATCH] staging: comedi: refactor das6402 driver and use module_comedi_driver
+Date: Tue, 15 May 2012 16:08:04 -0700
+User-Agent: KMail/1.9.9
+CC: <devel@driverdev.osuosl.org>, <abbotti@mev.co.uk>,
+        <fmhess@users.sourceforge.net>, <gregkh@linuxfoundation.org>
 MIME-Version: 1.0
-To: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH 5/8] Support non-BMP characters on Joliet.
-X-Enigmail-Version: 1.4.1
-Content-Type: multipart/signed; micalg=pgp-sha512;
- protocol="application/pgp-signature";
- boundary="------------enig33216AEBACD8761FBCC8E666"
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
+Content-Disposition: inline
+Message-ID: <201205151608.04642.hartleys@visionengravers.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is an OpenPGP/MIME signed message (RFC 2440 and 3156)
---------------enig33216AEBACD8761FBCC8E666
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: quoted-printable
+Move the module_init/module_exit routines and the associated
+struct comedi_drive to the end of the source. This is more
+typical of how other drivers are written and removes the need
+for the forward declarations.
 
+Convert the driver to use the module_comedi_driver() macro
+which makes the code smaller and a bit simpler.
 
-Signed-off-by: Vladimir Serbinenko <phcoder@gmail.com>
+Signed-off-by: H Hartley Sweeten <hsweeten@visionengravers.com>
+Cc: Ian Abbott <abbotti@mev.co.uk>
+Cc: Mori Hess <fmhess@users.sourceforge.net>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+
 ---
- fs/isofs/joliet.c |   23 ++++++++++++++++++-----
- 1 file changed, 18 insertions(+), 5 deletions(-)
 
-diff --git a/fs/isofs/joliet.c b/fs/isofs/joliet.c
-index a048de8..d85e842 100644
---- a/fs/isofs/joliet.c
-+++ b/fs/isofs/joliet.c
-@@ -16,22 +16,35 @@
- static int
- uni16_to_x8(unsigned char *ascii, __be16 *uni, int len, struct nls_table=
- *nls)
+ drivers/staging/comedi/drivers/das6402.c |   70 +++++++++++-------------------
+ 1 files changed, 26 insertions(+), 44 deletions(-)
+
+diff --git a/drivers/staging/comedi/drivers/das6402.c b/drivers/staging/comedi/drivers/das6402.c
+index f256841..889527d 100644
+--- a/drivers/staging/comedi/drivers/das6402.c
++++ b/drivers/staging/comedi/drivers/das6402.c
+@@ -99,29 +99,6 @@ This driver has suffered bitrot.
+ #define	C2 0x80
+ #define	RWLH 0x30
+ 
+-static int das6402_attach(struct comedi_device *dev,
+-			  struct comedi_devconfig *it);
+-static int das6402_detach(struct comedi_device *dev);
+-static struct comedi_driver driver_das6402 = {
+-	.driver_name = "das6402",
+-	.module = THIS_MODULE,
+-	.attach = das6402_attach,
+-	.detach = das6402_detach,
+-};
+-
+-static int __init driver_das6402_init_module(void)
+-{
+-	return comedi_driver_register(&driver_das6402);
+-}
+-
+-static void __exit driver_das6402_cleanup_module(void)
+-{
+-	comedi_driver_unregister(&driver_das6402);
+-}
+-
+-module_init(driver_das6402_init_module);
+-module_exit(driver_das6402_cleanup_module);
+-
+ struct das6402_private {
+ 	int ai_bytes_to_read;
+ 
+@@ -130,7 +107,14 @@ struct das6402_private {
+ #define devpriv ((struct das6402_private *)dev->private)
+ 
+ static void das6402_ai_fifo_dregs(struct comedi_device *dev,
+-				  struct comedi_subdevice *s);
++				  struct comedi_subdevice *s)
++{
++	while (1) {
++		if (!(inb(dev->iobase + 8) & 0x01))
++			return;
++		comedi_buf_put(s->async, inw(dev->iobase));
++	}
++}
+ 
+ static void das6402_setcounter(struct comedi_device *dev)
  {
--	__be16 *ip, ch;
-+	__be16 *ip, ch[2];
- 	unsigned char *op;
-=20
- 	ip =3D uni;
- 	op =3D ascii;
-=20
--	while ((ch =3D get_unaligned(ip)) && len) {
-+	ch[1] =3D get_unaligned(ip);
+@@ -209,16 +193,6 @@ static void das6402_ai_fifo_read(struct comedi_device *dev, short *data, int n)
+ }
+ #endif
+ 
+-static void das6402_ai_fifo_dregs(struct comedi_device *dev,
+-				  struct comedi_subdevice *s)
+-{
+-	while (1) {
+-		if (!(inb(dev->iobase + 8) & 0x01))
+-			return;
+-		comedi_buf_put(s->async, inw(dev->iobase));
+-	}
+-}
+-
+ static int das6402_ai_cancel(struct comedi_device *dev,
+ 			     struct comedi_subdevice *s)
+ {
+@@ -300,16 +274,6 @@ static int board_init(struct comedi_device *dev)
+ 	return 0;
+ }
+ 
+-static int das6402_detach(struct comedi_device *dev)
+-{
+-	if (dev->irq)
+-		free_irq(dev->irq, dev);
+-	if (dev->iobase)
+-		release_region(dev->iobase, DAS6402_SIZE);
+-
+-	return 0;
+-}
+-
+ static int das6402_attach(struct comedi_device *dev,
+ 			  struct comedi_devconfig *it)
+ {
+@@ -363,6 +327,24 @@ static int das6402_attach(struct comedi_device *dev,
+ 	return 0;
+ }
+ 
++static int das6402_detach(struct comedi_device *dev)
++{
++	if (dev->irq)
++		free_irq(dev->irq, dev);
++	if (dev->iobase)
++		release_region(dev->iobase, DAS6402_SIZE);
 +
-+	while (len) {
- 		int llen;
--		llen =3D nls->uni2char(be16_to_cpu(ch), op, NLS_MAX_CHARSET_SIZE);
-+		int s;
-+		unicode_t uni;
-+		ch[0] =3D ch[1];
-+		if (len > 1)
-+			ch[1] =3D get_unaligned(ip + 1);
-+		s =3D utf16s_to_unicode(ch, len > 1 ? 2 : 1, UTF16_BIG_ENDIAN,
-+				      &uni);
-+		if (s <=3D 0) {
-+			llen =3D -1;
-+			s =3D 1;
-+		} else
-+			llen =3D nls->uni2char(uni, op, NLS_MAX_CHARSET_SIZE);
- 		if (llen > 0)
- 			op +=3D llen;
- 		else
- 			*op++ =3D '?';
--		ip++;
-+		ip +=3D s;
-=20
--		len--;
-+		len -=3D s;
- 	}
- 	*op =3D 0;
- 	return (op - ascii);
---=20
-1.7.10
-
---=20
-Regards
-Vladimir '=CF=86-coder/phcoder' Serbinenko
-
-
---------------enig33216AEBACD8761FBCC8E666
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: OpenPGP digital signature
-Content-Disposition: attachment; filename="signature.asc"
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-Comment: Using GnuPG with Mozilla - http://enigmail.mozdev.org/
-
-iF4EAREKAAYFAk+y4ccACgkQNak7dOguQgmVBAD+In9Tg1IaXDjSjz1DXSl76oRj
-LLMPaRpIKuTzQsvzLsYBAI4iLpkrLxeHBtghyNZ2WU2SIgqy9U9X0GfOLxqu49zC
-=W/or
------END PGP SIGNATURE-----
-
---------------enig33216AEBACD8761FBCC8E666--
++	return 0;
++}
++
++static struct comedi_driver das6402_driver = {
++	.driver_name	= "das6402",
++	.module		= THIS_MODULE,
++	.attach		= das6402_attach,
++	.detach		= das6402_detach,
++};
++module_comedi_driver(das6402_driver)
++
+ MODULE_AUTHOR("Comedi http://www.comedi.org");
+ MODULE_DESCRIPTION("Comedi low-level driver");
+ MODULE_LICENSE("GPL");
