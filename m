@@ -1,111 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965372Ab2EOPgL (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 May 2012 11:36:11 -0400
-Received: from casper.infradead.org ([85.118.1.10]:53718 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932272Ab2EOPgJ convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 May 2012 11:36:09 -0400
-Message-ID: <1337096141.27694.82.camel@twins>
-Subject: Re: Plumbers: Tweaking scheduler policy micro-conf RFP
-From: Peter Zijlstra <peterz@infradead.org>
-To: Vincent Guittot <vincent.guittot@linaro.org>
-Cc: paulmck@linux.vnet.ibm.com, smuckle@quicinc.com, khilman@ti.com,
-        Robin.Randhawa@arm.com, suresh.b.siddha@intel.com,
-        thebigcorporation@gmail.com, venki@google.com,
-        panto@antoniou-consulting.com, mingo@elte.hu, paul.brett@intel.com,
-        pdeschrijver@nvidia.com, pjt@google.com, efault@gmx.de,
-        fweisbec@gmail.com, geoff@infradead.org, rostedt@goodmis.org,
-        tglx@linutronix.de, amit.kucheria@linaro.org,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        linaro-sched-sig@lists.linaro.org,
-        Morten Rasmussen <Morten.Rasmussen@arm.com>,
-        Juri Lelli <juri.lelli@gmail.com>
-Date: Tue, 15 May 2012 17:35:41 +0200
-In-Reply-To: <CAKfTPtDrZ-tfC81jnxwpB+DCtmxhU+VfoYbtSBr8MkFt+P8JcA@mail.gmail.com>
-References: <CAKfTPtDSDAOAdv0GTDswZeRM7TmACrjok+5kddSaQpvy6_6xWw@mail.gmail.com>
-	 <CAKfTPtCfiY7A29+e50F+6awd8BjNJjg4=uNN4ReZfdS_4FbpkA@mail.gmail.com>
-	 <1337084609.27020.156.camel@laptop>
-	 <CAKfTPtDz1-fR2i5x7AVd8sGZhX2VNtz2rnQC3ePrcHO9MWK3FQ@mail.gmail.com>
-	 <1337086834.27020.162.camel@laptop>
-	 <CAKfTPtDrZ-tfC81jnxwpB+DCtmxhU+VfoYbtSBr8MkFt+P8JcA@mail.gmail.com>
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
-X-Mailer: Evolution 3.2.2- 
+	id S965401Ab2EOPga (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 May 2012 11:36:30 -0400
+Received: from mga01.intel.com ([192.55.52.88]:3815 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S965242Ab2EOPg0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 May 2012 11:36:26 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
+   d="scan'208";a="166616313"
+Subject: Re: [RFC PATCH 2/3] block: add queue runtime pm callback
+From: Lin Ming <ming.m.lin@intel.com>
+To: Alan Stern <stern@rowland.harvard.edu>
+Cc: Jens Axboe <axboe@kernel.dk>, linux-kernel@vger.kernel.org,
+        linux-pm@vger.kernel.org, linux-scsi@vger.kernel.org
+In-Reply-To: <Pine.LNX.4.44L0.1205151036510.1796-100000@iolanthe.rowland.org>
+References: <Pine.LNX.4.44L0.1205151036510.1796-100000@iolanthe.rowland.org>
+Content-Type: text/plain; charset="ISO-8859-1"
+Date: Tue, 15 May 2012 23:36:28 +0800
+Message-ID: <1337096188.3515.3.camel@chief-river-32>
 Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2012-05-15 at 17:05 +0200, Vincent Guittot wrote:
-> On 15 May 2012 15:00, Peter Zijlstra <peterz@infradead.org> wrote:
-> > On Tue, 2012-05-15 at 14:57 +0200, Vincent Guittot wrote:
-> >>
-> >> Not sure that nobody cares but it's much more that scheduler,
-> >> load_balance and sched_mc are sensible enough that it's difficult to
-> >> ensure that a modification will not break everything for someone
-> >> else.
-> >
-> > Thing is, its already broken, there's nothing else to break :-)
-> >
+On Tue, 2012-05-15 at 10:37 -0400, Alan Stern wrote:
+> On Tue, 15 May 2012, Lin Ming wrote:
 > 
-> sched_mc is the only power-aware knob in the current scheduler. It's
-> far from being perfect but it seems to work on some ARM platform at
-> least. You mentioned at the scheduler mini-summit that we need a
-> cleaner replacement and everybody has agreed on that point. Is anybody
-> working on it yet ? 
+> > Add ->runtime_pm callback and ->pm_status to request queue.
+> > As an example, implement a simple queue runtime_pm callback
+> > in sd driver.
+> 
+> > +static int sd_runtime_pm_fn(struct request_queue *q, pm_message_t mesg)
+> > +{
+> > +	struct scsi_device *sdp = q->queuedata;
+> > +
+> > +	if (mesg.event == PM_EVENT_SUSPEND) {
+> > +		q->pm_status = RPM_SUSPENDING;
+> > +		pm_runtime_put(&sdp->sdev_gendev);
+> > +	}
+> > +	else if (mesg.event == PM_EVENT_RESUME) {
+> > +		q->pm_status = RPM_RESUMING;
+> > +		pm_runtime_get(&sdp->sdev_gendev);
+> > +	}
+> 
+> Don't use pm_message_t arguments for runtime PM.  Implement separate 
+> routines for suspend and resume.
 
-Apparently not.. 
+OK, I'll add 2 callbacks to request_queue.
 
-> and can we discuss at Plumber's what this replacement would look like ?
+runtime_pm_fn runtime_suspend;
+runtime_pm_fn runtime_resume;
 
-one knob: sched_balance_policy with tri-state {performance, power, auto}
+> 
+> Alan Stern
+> 
 
-Where auto should likely look at things like are we on battery and
-co-ordinate with cpufreq muck or whatever.
 
-Per domain knobs are insane, large multi-state knobs are insane, the
-existing scheme is therefore insane^2. Can you find a sysad who'd like
-to explore 3^3=27 states for optimal power/perf for his workload on a
-simple 2 socket hyper-threaded machine and 3^4=81 state space for 8
-sockets etc..?
-
-As to the exact policy, I think the current 2 (load-balance + wakeup) is
-the sensible one..
-
-Also, I still have this pending email from you asking about the topology
-setup stuff I really need to reply to.. but people keep sending me bugs
-reports :/
-
-But really short, look at kernel/sched/core.c:default_topology[]
-
-I'd like to get rid of sd_init_* into a single function like
-sd_numa_init(), this would mean all archs would need to do is provide a
-simple list of ever increasing masks that match their topology.
-
-To aid this we can add some SDTL_flags, initially I was thinking of:
-
- SDTL_SHARE_CORE	-- aka SMT
- SDTL_SHARE_CACHE	-- LLC cache domain (typically multi-core)
- SDTL_SHARE_MEMORY	-- NUMA-node (typically socket)
-
-The 'performance' policy is typically to spread over shared resources so
-as to minimize contention on these.
-
-If you want to add some power we need some extra flags, maybe something
-like:
-
- SDTL_SHARE_POWERLINE	-- power domain (typically socket)
-
-so you know where the boundaries are where you can turn stuff off so you
-know what/where to pack bits.
-
-Possibly we also add something like:
-
- SDTL_PERF_SPREAD	-- spread on performance mode
- SDTL_POWER_PACK	-- pack on power mode
-
-To over-ride the defaults. But ideally I'd leave those until after we've
-got the basics working and there is a clear need for them (with a
-spread/pack default for perf/power aware).
