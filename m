@@ -1,33 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758657Ab2EOLqu (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 May 2012 07:46:50 -0400
-Received: from mail.com.if.ua ([194.126.180.11]:50502 "EHLO mail.com.if.ua"
+	id S1758672Ab2EOLr2 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 May 2012 07:47:28 -0400
+Received: from zene.cmpxchg.org ([85.214.230.12]:59661 "EHLO zene.cmpxchg.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758033Ab2EOLqt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 May 2012 07:46:49 -0400
-X-Greylist: delayed 605 seconds by postgrey-1.27 at vger.kernel.org; Tue, 15 May 2012 07:46:49 EDT
-X-DomainKeys: Sendmail DomainKeys Filter v1.0.2 mail.com.if.ua 688C1246F22
-DomainKey-Signature: a=rsa-sha1; s=mail; d=com.if.ua; c=simple; q=dns;
-	h=dkim-signature:date:from:organization:x-priority:message-id:to:
-	subject:mime-version:content-type:content-transfer-encoding;
-	b=ahQh4At5kRNKnOnXpehKrG82VPMjH0/xrpM8/n6yEa9J8X+bQn1BbsT7GxOaSsDuD
-	uQp/8nXfxe5Ytj/wRXlcLa+n2e/se+DfTSBLq+WY/eKDFJktgEFjTg3JduYDGhESEoV
-	kw0ID7czixEz+m6ZdK6bY1ZL8iiioWVQppqPsMQ=
-Date: Tue, 15 May 2012 11:36:31 +0700
-From: =?windows-1251?Q?=DF=F0=EE=F1=EB=E0=E2=EE=F7=EA=E0_=D3=EB=FC=FF=ED=E8=ED=E0?= 
-	<dimidrol@com.if.ua>
-Organization: twgyuvnatok
-X-Priority: 3 (Normal)
-Message-ID: <738600914.20120515113631@com.if.ua>
-To: linux-kernel@vger.kernel.org
-Subject: =?windows-1251?Q?=EA=F0=E0=F1=E0=E2=F7=E8=EA.=21=21=29_?=
+	id S1758518Ab2EOLr1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 May 2012 07:47:27 -0400
+Date: Tue, 15 May 2012 13:47:16 +0200
+From: Johannes Weiner <hannes@cmpxchg.org>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Gavin Shan <shangw@linux.vnet.ibm.com>, David Miller <davem@davemloft.net>,
+        Yinghai Lu <yinghai@kernel.org>, Tejun Heo <tj@kernel.org>,
+        linux-mm@kvack.org, linux-kernel@vger.kernel.org
+Subject: Re: [patch 10/10] mm: remove sparsemem allocation details from the
+ bootmem allocator
+Message-ID: <20120515114716.GI1406@cmpxchg.org>
+References: <1336390672-14421-1-git-send-email-hannes@cmpxchg.org>
+ <1336390672-14421-11-git-send-email-hannes@cmpxchg.org>
+ <20120510144439.eba9c486.akpm@linux-foundation.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=windows-1251
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120510144439.eba9c486.akpm@linux-foundation.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Хай милок мой..! 
-если свободен и не против зазнакомиться БeллaГopбaчёвa-jdntrnx.smtp.ru зовут меня там.... 
+On Thu, May 10, 2012 at 02:44:39PM -0700, Andrew Morton wrote:
+> On Mon,  7 May 2012 13:37:52 +0200
+> Johannes Weiner <hannes@cmpxchg.org> wrote:
+> 
+> > alloc_bootmem_section() derives allocation area constraints from the
+> > specified sparsemem section.  This is a bit specific for a generic
+> > memory allocator like bootmem, though, so move it over to sparsemem.
+> > 
+> > As __alloc_bootmem_node_nopanic() already retries failed allocations
+> > with relaxed area constraints, the fallback code in sparsemem.c can be
+> > removed and the code becomes a bit more compact overall.
+> > 
+> > ...
+> >
+> > @@ -332,9 +334,9 @@ static void __init check_usemap_section_nr(int nid, unsigned long *usemap)
+> >  #else
+> >  static unsigned long * __init
+> >  sparse_early_usemaps_alloc_pgdat_section(struct pglist_data *pgdat,
+> > -					 unsigned long count)
+> > +					 unsigned long size)
+> >  {
+> > -	return NULL;
+> > +	return alloc_bootmem_node_nopanic(pgdat, size)
+> 
+> You've been bad.   Your penance is to runtime test this code with
+> CONFIG_MEMORY_HOTREMOVE=n!
+
+I did now.
+
+See, but I DID test the =y case, missed an obvious bug and even
+considered the particular node-section dependency warnings to be
+expected in the setup configuration.  Testing is no way around being a
+cretin :(
+
+So here is another fix:
+
+---
+From: Johannes Weiner <hannes@cmpxchg.org>
+Subject: [patch] mm: remove sparsemem allocation details from the bootmem
+ allocator fix
+
+Don't confuse an address with a pfn.
+
+Signed-off-by: Johannes Weiner <hannes@cmpxchg.org>
+---
+ mm/sparse.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/mm/sparse.c b/mm/sparse.c
+index 2192b67..66d1845 100644
+--- a/mm/sparse.c
++++ b/mm/sparse.c
+@@ -288,7 +288,7 @@ sparse_early_usemaps_alloc_pgdat_section(struct pglist_data *pgdat,
+ 	 * this problem.
+ 	 */
+ 	goal = __pa(pgdat) & PAGE_SECTION_MASK;
+-	host_pgdat = NODE_DATA(early_pfn_to_nid(goal));
++	host_pgdat = NODE_DATA(early_pfn_to_nid(goal >> PAGE_SHIFT));
+ 	printk("allocating usemap for node %d on node %d (goal=%lu)\n",
+ 	       pgdat->node_id, host_pgdat->node_id, goal);
+ 	return __alloc_bootmem_node_nopanic(host_pgdat, size,
+-- 
+1.7.10.1
+
