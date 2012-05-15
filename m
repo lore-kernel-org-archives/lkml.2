@@ -1,79 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S966359Ab2EOSky (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 May 2012 14:40:54 -0400
-Received: from he.sipsolutions.net ([78.46.109.217]:48334 "EHLO
-	sipsolutions.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932419Ab2EOSkw (ORCPT
+	id S966385Ab2EOSlb (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 May 2012 14:41:31 -0400
+Received: from mail-wg0-f44.google.com ([74.125.82.44]:49233 "EHLO
+	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S966258Ab2EOSlZ convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 May 2012 14:40:52 -0400
-Message-ID: <1337107245.15553.14.camel@jlt3.sipsolutions.net>
-Subject: Re: [RFC net-next 0/2] net: Use net_<level>_ratelimit
-From: Johannes Berg <johannes@sipsolutions.net>
-To: David Miller <davem@davemloft.net>
-Cc: joe@perches.com, netdev@vger.kernel.org,
-        linux-decnet-user@lists.sourceforge.net,
-        netfilter-devel@vger.kernel.org, netfilter@vger.kernel.org,
-        coreteam@netfilter.org, linux-wireless@vger.kernel.org,
-        dev@openvswitch.org, linux-sctp@vger.kernel.org,
-        linux-nfs@vger.kernel.org, linux-kernel@vger.kernel.org
-Date: Tue, 15 May 2012 20:40:45 +0200
-In-Reply-To: <20120515.142922.1434224550630736456.davem@davemloft.net>
-References: <20120515.134531.530903973750646107.davem@davemloft.net>
-	 <1337104765.7050.24.camel@joe2Laptop>
-	 <1337106430.15553.6.camel@jlt3.sipsolutions.net>
-	 <20120515.142922.1434224550630736456.davem@davemloft.net>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.2-1 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	Tue, 15 May 2012 14:41:25 -0400
+MIME-Version: 1.0
+In-Reply-To: <CA+55aFzrJNd5J7i3Rp7-ctc=bDn5GTWu=H1xyCgGZ-rzu74Gbw@mail.gmail.com>
+References: <1336963631-3541-1-git-send-email-zohar@us.ibm.com> <CA+55aFzrJNd5J7i3Rp7-ctc=bDn5GTWu=H1xyCgGZ-rzu74Gbw@mail.gmail.com>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Tue, 15 May 2012 11:41:03 -0700
+X-Google-Sender-Auth: b89zzU781_eDNNSt5QX87-9xfy0
+Message-ID: <CA+55aFyPPZ0wayqPMCZtfP1w9nN-GnKJxYc9i_XM_Qk8d-zJzg@mail.gmail.com>
+Subject: Re: [PATCH] vfs: fix IMA lockdep circular locking dependency
+To: Mimi Zohar <zohar@us.ibm.com>
+Cc: linux-security-module@vger.kernel.org,
+        Mimi Zohar <zohar@linux.vnet.ibm.com>, linux-kernel@vger.kernel.org,
+        Al Viro <viro@zeniv.linux.org.uk>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2012-05-15 at 14:29 -0400, David Miller wrote:
-> From: Johannes Berg <johannes@sipsolutions.net>
-> Date: Tue, 15 May 2012 20:27:10 +0200
-> 
-> > On Tue, 2012-05-15 at 10:59 -0700, Joe Perches wrote:
-> > 
-> >> OK, but fyi, there's a possible issue with !CONFIG_DEBUG
-> >> builds because these patches converted some uses of
-> >> 	if (net_ratelimit())
-> >> 		printk(KERN_DEBUG ...
-> >> to
-> >> 	net_dbg_ratelimited()
-> >> 
-> >> These messages are no longer emitted when DEBUG isn't defined
-> >> and not using dynamic_debug.  I'm not sure that's a real
-> >> problem, but it's a difference.
-> >> 
-> >> I could produce a net_printk_ratelimited that would keep
-> >> the original behavior if necessary.
-> >> 
-> >> 	net_printk_ratelimited(KERN_DEBUG etc...)
-> > 
-> > Btw, what would the difference be to just plain printk_ratelimited()?
-> 
-> printk_ratelimited() drops a local ratelimit cookie into each call-site,
-> whereas we have a global one for the networking which these new interfaces
-> use.
-> 
-> Joe explained this completely in his 0/2 patch posting.
+On Tue, May 15, 2012 at 10:19 AM, Linus Torvalds
+<torvalds@linux-foundation.org> wrote:
+>
+>  - move the whole call to security_file_mmap() to outside the
+> mmap_sem, and test the *suggested* address (which is not the same as
+> the final address)
 
-I don't see that explicitly mentioned, but it doesn't matter much
-anyway.
+Actually, I think I have a simpler approach.
 
-In the mac80211 case, messages are warnings/hints to the user, we just
-don't want them to flood the logs too much. I'd rather have that kind of
-change (limit cookie per callsite) in the rate limiting semantics than
-the change in the when it gets printed at all.
+We already actually have two *different* security_file_mmap() calls:
+it's just that currently the difference is shown by the last argument
+to the function ("addr_only").
 
-I simply feel that obscuring the debugging even further wouldn't be a
-good thing to do right now. I'd rather have somebody convert all of it
-to the new debugging infrastructure but that seems a lot more effort
-than changing these back to something that isn't impacted by dynamic
-printk.
+Which is totally static by call-site.
 
-johannes
+And the ones that have addr_only set are all inside the mmap_sem region.
 
+So here's my new suggestion, which avoids the semantic changes: let's
+just split that "security_file_mmap()" call into two. One that checks
+the file, and one that checks the address.
+
+And we'll continue to check the address within the mmap_sem region,
+but nobody will care, because that one doesn't need any other locking.
+
+So we'll just split the file check - along with the ima_file_mmap() -
+into the "security_mmap_file()" function (no "addr_only" argument),
+and move that outside the lock.
+
+And then the address-only check (let's call it "security_mmap_addr()")
+we leave at the place we *currently* do our security_file_mmap()
+check, along with (obviously) the calls that currently have
+"addr_only=1" and only give the address anyway).
+
+That cleans up the whole nasty piece of crap calling convention too,
+getting rid of idiotic unreadable code like
+
+    ret = security_file_mmap(NULL, 0, 0, 0, new_addr, 1);
+
+and replacing it with
+
+    ret = security_mmap_addr(new_addr);
+
+which actually shows what it is doing.
+
+Hmm? That looks like a fairly mechanical conversion, and we could
+start with Mimi's patch that already splits it up that way (except it
+calls "security_mmap_file()" ima_file_mmap() and doesn't call  the LSM
+function pointer there)
+
+                   Linus
