@@ -1,76 +1,136 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757901Ab2EOL2o (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 May 2012 07:28:44 -0400
+	id S1758058Ab2EOL2s (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 May 2012 07:28:48 -0400
 Received: from mail-wi0-f178.google.com ([209.85.212.178]:35870 "EHLO
 	mail-wi0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757675Ab2EOL2m (ORCPT
+	with ESMTP id S1757948Ab2EOL2q (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 May 2012 07:28:42 -0400
+	Tue, 15 May 2012 07:28:46 -0400
 From: Stephane Eranian <eranian@google.com>
 To: linux-kernel@vger.kernel.org
 Cc: peterz@infradead.org, mingo@elte.hu, acme@redhat.com, dsahern@gmail.com
-Subject: [PATCH v2 0/5] perf tools: add meta-data header support in pipe mode
-Date: Tue, 15 May 2012 13:28:10 +0200
-Message-Id: <1337081295-10303-1-git-send-email-eranian@google.com>
+Subject: [PATCH v2 2/5] perf tools: fix piped mode read code
+Date: Tue, 15 May 2012 13:28:12 +0200
+Message-Id: <1337081295-10303-3-git-send-email-eranian@google.com>
 X-Mailer: git-send-email 1.7.4.1
+In-Reply-To: <1337081295-10303-1-git-send-email-eranian@google.com>
+References: <1337081295-10303-1-git-send-email-eranian@google.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch series adds meta-data support to perf record/report in pipe
-mode:
-	perf record -o - foo | perf inject -b | perf report -i -
+In __perf_session__process_pipe_events(), there was a risk
+we would read more than what a union perf_event struct can
+hold. this could happen in case, perf is reading a file which
+contains new record types it does not know about and which are
+larger than anything it knows about.
 
-We had meta-data (information about host configuration, perf tool version,...)
-in regular (file) mode but it was lacking in pipe mode. This patch series fixes
-this.
+In general, perf is supposed to skip records it does not
+understand, but in pipe mode, those have to be read and ignored.
+The fixed size header contains the size of the record, but that
+size may be larger than union perf_event, yet it was used as
+the backing to the read in:
 
-In pipe mode, there is no meta-data header structures at the beginning of the
-streamed data given we cannot seek in a pipe. Instead, we need to create pseudo
-record types for each of the possible features, e.g., hostname, cpuid, event_desc,
-and so on. Those pseudo records are guaranteed to be before any actual sample
-records, therefore perf report/annotate are guaranteed to get the information
-they need before processing the first sample.
+  union perf_event event;
+  void *p;
 
-The series also fixes perf inject to actually inject build-ids and buildid-list
-to work better with pipe mode, i.e., print the build-ids.
+  size = event->header.size;
 
-With this series:
+  p = &event;
+  p += sizeof(struct perf_event_header);
+  if (size - sizeof(struct perf_event_header)) {
+    err = readn(self->fd, p, size - sizeof(struct perf_event_header));
 
- $ perf record -o - noploop 2 | perf inject -b | perf report -i -
-      # ========
-      # captured on: Fri Jan 20 18:13:55 2012
-      # ========
-      #
-      # hostname : quad
-      # os release : 3.2.0-rc7-tip
-      # perf version : 3.2.0
-      # arch : x86_64
-      # nrcpus online : 4
-      # nrcpus avail : 4
-      # cpudesc : Intel(R) Core(TM)2 Quad CPU Q6600 @ 2.40GHz
-      # cpuid : GenuineIntel,6,15,11
-      # total memory : 8092884 kB
-      ...
-      # HEADER_CPU_TOPOLOGY info available, use -I to display
-      noploop for 2 seconds
-      [ perf record: Woken up 1 times to write data ]
-      [ perf record: Captured and wrote 0.084 MB - (~3677 samples) ]
-        99.80%  noploop  noploop            [.] noploop
-         0.19%  noploop  [kernel.kallsyms]  [k] radix_tree_gang_lookup
-
-V2 is just a rebase to 3.4.0-rc7.
+We fix this by allocating a buffer based on the size reported in
+the header. We reuse the buffer as much as we can. We realloc in
+case it becomes too small. In the  common case, the performance
+impact is negligible.
 
 Signed-off-by: Stephane Eranian <eranian@google.com>
+---
+ tools/perf/util/session.c |   34 ++++++++++++++++++++++++++--------
+ 1 files changed, 26 insertions(+), 8 deletions(-)
 
-Stephane Eranian (6):
-  perf inject: fix broken perf inject -b
-  perf tools: fix piped mode read code
-  perf tools: rename HEADER_TRACE_INFO to HEADER_TRACING_DATA
-  perf record: add meta-data support for pipe-mode
-  perf: make perf buildid-list work better with pipe mode
-
+diff --git a/tools/perf/util/session.c b/tools/perf/util/session.c
+index 4dcc8f3..af6a5f0 100644
+--- a/tools/perf/util/session.c
++++ b/tools/perf/util/session.c
+@@ -1064,8 +1064,9 @@ volatile int session_done;
+ static int __perf_session__process_pipe_events(struct perf_session *self,
+ 					       struct perf_tool *tool)
+ {
+-	union perf_event event;
+-	uint32_t size;
++	union perf_event *event;
++	uint32_t size, cur_size = 0;
++	void *buf = NULL;
+ 	int skip = 0;
+ 	u64 head;
+ 	int err;
+@@ -1074,8 +1075,14 @@ static int __perf_session__process_pipe_events(struct perf_session *self,
+ 	perf_tool__fill_defaults(tool);
+ 
+ 	head = 0;
++	cur_size = sizeof(union perf_event);
++
++	buf = malloc(cur_size);
++	if (!buf)
++		return -errno;
+ more:
+-	err = readn(self->fd, &event, sizeof(struct perf_event_header));
++	event = buf;
++	err = readn(self->fd, event, sizeof(struct perf_event_header));
+ 	if (err <= 0) {
+ 		if (err == 0)
+ 			goto done;
+@@ -1085,13 +1092,23 @@ static int __perf_session__process_pipe_events(struct perf_session *self,
+ 	}
+ 
+ 	if (self->header.needs_swap)
+-		perf_event_header__bswap(&event.header);
++		perf_event_header__bswap(&event->header);
+ 
+-	size = event.header.size;
++	size = event->header.size;
+ 	if (size == 0)
+ 		size = 8;
+ 
+-	p = &event;
++	if (size > cur_size) {
++		void *new = realloc(buf, size);
++		if (!new) {
++			pr_err("failed to allocate memory to read event\n");
++			goto out_err;
++		}
++		buf = new;
++		cur_size = size;
++		event = buf;
++	}
++	p = event;
+ 	p += sizeof(struct perf_event_header);
+ 
+ 	if (size - sizeof(struct perf_event_header)) {
+@@ -1107,9 +1124,9 @@ static int __perf_session__process_pipe_events(struct perf_session *self,
+ 		}
+ 	}
+ 
+-	if ((skip = perf_session__process_event(self, &event, tool, head)) < 0) {
++	if ((skip = perf_session__process_event(self, event, tool, head)) < 0) {
+ 		pr_err("%#" PRIx64 " [%#x]: failed to process type: %d\n",
+-		       head, event.header.size, event.header.type);
++		       head, event->header.size, event->header.type);
+ 		err = -EINVAL;
+ 		goto out_err;
+ 	}
+@@ -1124,6 +1141,7 @@ static int __perf_session__process_pipe_events(struct perf_session *self,
+ done:
+ 	err = 0;
+ out_err:
++	free(buf);
+ 	perf_session__warn_about_errors(self, tool);
+ 	perf_session_free_sample_buffers(self);
+ 	return err;
 -- 
 1.7.4.1
 
