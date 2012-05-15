@@ -1,69 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S966551Ab2EOTTU (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 May 2012 15:19:20 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:25436 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S966416Ab2EOTTS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 May 2012 15:19:18 -0400
-From: Jeff Moyer <jmoyer@redhat.com>
-To: Lin Ming <ming.m.lin@intel.com>
-Cc: Jens Axboe <axboe@kernel.dk>, Alan Stern <stern@rowland.harvard.edu>,
-        linux-kernel@vger.kernel.org, linux-pm@vger.kernel.org,
-        linux-scsi@vger.kernel.org
-Subject: Re: [RFC PATCH 3/3] block: add queue idle timer
-References: <1337071697-30920-1-git-send-email-ming.m.lin@intel.com>
-	<1337071697-30920-4-git-send-email-ming.m.lin@intel.com>
-X-PGP-KeyID: 1F78E1B4
-X-PGP-CertKey: F6FE 280D 8293 F72C 65FD  5A58 1FF8 A7CA 1F78 E1B4
-X-PCLoadLetter: What the f**k does that mean?
-Date: Tue, 15 May 2012 15:19:11 -0400
-In-Reply-To: <1337071697-30920-4-git-send-email-ming.m.lin@intel.com> (Lin
-	Ming's message of "Tue, 15 May 2012 16:48:17 +0800")
-Message-ID: <x49mx59b6c0.fsf@segfault.boston.devel.redhat.com>
-User-Agent: Gnus/5.110011 (No Gnus v0.11) Emacs/23.1 (gnu/linux)
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+	id S966560Ab2EOTWT (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 May 2012 15:22:19 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:2383 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S966529Ab2EOTWR (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 May 2012 15:22:17 -0400
+X-Authority-Analysis: v=2.0 cv=cssZYiEi c=1 sm=0 a=ZycB6UtQUfgMyuk2+PxD7w==:17 a=XQbtiDEiEegA:10 a=Ocl9IesFS4YA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=Q-fNiiVtAAAA:8 a=1mFdLfmRpSGx8jM4uTQA:9 a=t6bQRiCvFBUxeS6X6ZkA:7 a=PUjeQqilurYA:10 a=lcTMV_K9oDIA:10 a=ZycB6UtQUfgMyuk2+PxD7w==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 74.67.80.29
+Message-ID: <1337109734.14207.348.camel@gandalf.stny.rr.com>
+Subject: Re: [PATCH] compile fix for brcm80211 on v3.2.17
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Clark Williams <williams@redhat.com>
+Cc: Ben Hutchings <ben@decadent.org.uk>, LKML <linux-kernel@vger.kernel.org>,
+        RT <linux-rt-users@vger.kernel.org>,
+        Arend van Spriel <arend@broadcom.com>,
+        Pieter-Paul Giesberts <pieterpg@broadcom.com>,
+        BrettRudley <brudley@broadcom.com>,
+        "John W. Linville" <linville@tuxdriver.com>,
+        Roland Vossen <rvossen@broadcom.com>
+Date: Tue, 15 May 2012 15:22:14 -0400
+In-Reply-To: <20120515140413.04c19fad@redhat.com>
+References: <20120515140413.04c19fad@redhat.com>
+Content-Type: text/plain; charset="ISO-8859-15"
+X-Mailer: Evolution 3.2.2-1 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Lin Ming <ming.m.lin@intel.com> writes:
-
-> Add an idle timer that is set to some suitable timeout and would be
-> added when the queue first goes empty. If nothing has happened during
-> the timeout interval, then the queue is suspended.
->
-> Queueing a new request could check the state and resume queue if it is
-> supended.
->
-
-[snip]
-
-> @@ -1129,6 +1141,13 @@ void __blk_put_request(struct request_queue *q, struct request *req)
->  	if (unlikely(--req->ref_count))
->  		return;
+On Tue, 2012-05-15 at 14:04 -0500, Clark Williams wrote:
+> Ben,
+> 
+> Found this while building v3.2.17-rt28:
+> 
+> diff --git a/drivers/net/wireless/brcm80211/brcmsmac/main.c b/drivers/net/wireless/brcm80211/brcmsmac/main.c
+> index f98becc..833cbef 100644
+> --- a/drivers/net/wireless/brcm80211/brcmsmac/main.c
+> +++ b/drivers/net/wireless/brcm80211/brcmsmac/main.c
+> @@ -7879,7 +7879,7 @@ brcms_c_recvctl(struct brcms_c_info *wlc, struct d11rxhdr *rxh,
+>         if (wlc->hw->suspended_fifos) {
+>                 hdr = (struct ieee80211_hdr *)p->data;
+>                 if (ieee80211_is_beacon(hdr->frame_control))
+> -                       brcms_b_mute(wlc->hw, false);
+> +                       brcms_b_mute(wlc->hw, false, 0);
+>         }
 >  
-> +	/* PM request is not accounted */
-> +	if (!(req->cmd_flags & REQ_PM)) {
-> +		if (!(--q->nr_pending))
-> +			/* Hard code to 20secs, will move to sysfs */
-> +			mod_timer(&q->idle, jiffies + 20*HZ);
-> +	}
-> +
+>         memcpy(IEEE80211_SKB_RXCB(p), &rx_status, sizeof(rx_status));
+> 
+> Not sure if that's completely correct but I found another call site for
+> brcms_b_mute() that also passed 0 flags. 
 
-I'm pretty sure Jens wanted to avoid doing a mod_timer, here, given that
-the queue can transition between empty and non-empty fairly rapidly for
-dependent I/O.
+The bug was caused by this patch:
 
-> @@ -587,6 +590,13 @@ void __elv_add_request(struct request_queue *q, struct request *rq, int where)
->  {
->  	trace_block_rq_insert(q, rq);
->  
-> +	if (!(rq->cmd_flags & REQ_PM)) {
-> +		if (!(q->pm_status != RPM_ACTIVE) &&
+commit d609909f0d6c69937057237b3eff577311d08d07
+Author: Arend van Spriel <arend@broadcom.com>
+brcm80211: smac: resume transmit fifo upon receiving frames
 
-Uhh, re-read that line.  Not not equal?
+(mainline: badc4f07622f0f7093a201638f45e85765f1b5e4)
 
-Cheers,
-Jeff
+Because it was added to mainline after this patch:
+
+commit c6c44893c864429a7c6a4f7942dfb3ee182b4ad1
+Author: Roland Vossen <rvossen@broadcom.com>
+brcm80211: smac: fixed inconsistency in transmit mute
+
+Which converted brcms_b_mute() from 3 arguments to 2.
+
+-- Steve
+
+
+
