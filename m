@@ -1,48 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753176Ab2EOFNg (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 May 2012 01:13:36 -0400
-Received: from na3sys009aog104.obsmtp.com ([74.125.149.73]:49568 "EHLO
-	na3sys009aog104.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752577Ab2EOFNe (ORCPT
+	id S1753036Ab2EOFQf (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 May 2012 01:16:35 -0400
+Received: from e35.co.us.ibm.com ([32.97.110.153]:37370 "EHLO
+	e35.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751349Ab2EOFQe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 May 2012 01:13:34 -0400
-Message-ID: <4FB1E5F6.7070401@ti.com>
-Date: Tue, 15 May 2012 10:43:26 +0530
-From: Rajendra Nayak <rnayak@ti.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.20) Gecko/20110805 Thunderbird/3.1.12
+	Tue, 15 May 2012 01:16:34 -0400
+Date: Mon, 14 May 2012 22:16:07 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Dave Jones <davej@redhat.com>, sds@tycho.nsa.gov,
+        Linux Kernel <linux-kernel@vger.kernel.org>
+Cc: paul@paul-moore.com
+Subject: Re: suspicious RCU usage in security/selinux/netnode.c
+Message-ID: <20120515051607.GH2412@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <20120515044145.GA21910@redhat.com>
 MIME-Version: 1.0
-To: Saravana Kannan <skannan@codeaurora.org>
-CC: "Turquette, Mike" <mturquette@ti.com>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        Sascha Hauer <s.hauer@pengutronix.de>, andrew@lunn.ch,
-        "linux-arm-msm@vger.kernel.org" <linux-arm-msm@vger.kernel.org>
-Subject: Re: [PATCH] clk: Constify struct clk_init_data
-References: <1337004763-21250-1-git-send-email-broonie@opensource.wolfsonmicro.com> <20120514215304.GB3075@gmail.com> <4FB1AC79.7000901@codeaurora.org>
-In-Reply-To: <4FB1AC79.7000901@codeaurora.org>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120515044145.GA21910@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 12051505-6148-0000-0000-000005D73804
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Saravana,
+On Tue, May 15, 2012 at 12:41:45AM -0400, Dave Jones wrote:
+> I just triggered this on Linus' current tree.
 
-On Tuesday 15 May 2012 06:38 AM, Saravana Kannan wrote:
-> Btw, I didn't follow up on the other thread we were having, but can you
-> remind me again what was the reason that you thought that only
-> __clk_init() would work for your static init code and __clk_register()
-> won't work?
+This is a bare:
 
-One of the main reason has been the platform implementation we have to
-handle some complex mux/divider combo clocks in OMAP2/3 which rely on
-'struct clk' pointers. Maybe we can do away with the existing
-implementation and redo it so we don't have any such limitation, but the
-quantum of change moving to common clk has been so much that we are
-trying to minimize on the platform code changes for now. So while
-we move to common clk it would still be useful to have __clk_init()
-around for a while till we figure out how to get rid of it for OMAP.
+	rcu_dereference(sel_netnode_hash[idx].list.prev)
 
-regards,
-Rajendra
+which needs to be in an RCU read-side critical section.  Alternatively,
+the above should instead be something like:
+
+	rcu_dereference_check(sel_netnode_hash[idx].list.prev,
+			      lockdep_is_held(&sel_netnode_lock));
+
+This second approach assumes that all modifications to the hash table
+are protected by sel_netnode_lock.  Paul Moore, thoughts?
+
+							Thanx, Paul
+
+> 	Dave
+> 
+>  ===============================
+>  [ INFO: suspicious RCU usage. ]
+>  3.4.0-rc7+ #93 Not tainted
+>  -------------------------------
+>  security/selinux/netnode.c:178 suspicious rcu_dereference_check() usage!
+> 
+>  other info that might help us debug this:
+> 
+> 
+>  rcu_scheduler_active = 1, debug_locks = 0
+>  1 lock held by trinity/25132:
+>   #0:  (sel_netnode_lock){+.....}, at: [<ffffffff812db738>] sel_netnode_sid+0x148/0x3c0
+> 
+>  stack backtrace:
+>  Pid: 25132, comm: trinity Not tainted 3.4.0-rc7+ #93
+>  Call Trace:
+>   [<ffffffff810cc7cd>] lockdep_rcu_suspicious+0xfd/0x130
+>   [<ffffffff812db981>] sel_netnode_sid+0x391/0x3c0
+>   [<ffffffff812db5f0>] ? sel_netnode_find+0x1a0/0x1a0
+>   [<ffffffff812d4a84>] selinux_socket_bind+0x104/0x350
+>   [<ffffffff810a6648>] ? sched_clock_cpu+0xb8/0x130
+>   [<ffffffff816a47b9>] ? sub_preempt_count+0xa9/0xe0
+>   [<ffffffff812cb3e6>] security_socket_bind+0x16/0x20
+>   [<ffffffff815468aa>] sys_bind+0x7a/0x100
+>   [<ffffffff816a8795>] ? sysret_check+0x22/0x5d
+>   [<ffffffff810d149d>] ? trace_hardirqs_on_caller+0x10d/0x1a0
+>   [<ffffffff810fc18c>] ? __audit_syscall_entry+0xcc/0x310
+>   [<ffffffff8133839e>] ? trace_hardirqs_on_thunk+0x3a/0x3f
+>   [<ffffffff816a8769>] system_call_fastpath+0x16/0x1b
+> 
+
