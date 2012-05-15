@@ -1,46 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932598Ab2EONQG (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 May 2012 09:16:06 -0400
-Received: from mail-gg0-f174.google.com ([209.85.161.174]:63943 "EHLO
-	mail-gg0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758090Ab2EONQF (ORCPT
+	id S932814Ab2EONQq (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 May 2012 09:16:46 -0400
+Received: from cavan.codon.org.uk ([93.93.128.6]:51687 "EHLO
+	cavan.codon.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932282Ab2EONQp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 May 2012 09:16:05 -0400
+	Tue, 15 May 2012 09:16:45 -0400
+Date: Tue, 15 May 2012 14:16:37 +0100
+From: Matthew Garrett <mjg59@srcf.ucam.org>
+To: Jan Beulich <JBeulich@suse.com>
+Cc: dannf@dannf.org, mingo@elte.hu, tglx@linutronix.de,
+        matt.fleming@linux.intel.com, linux-kernel@vger.kernel.org,
+        hpa@zytor.com
+Subject: Re: [PATCH, resend] x86: enable rtc-efi
+Message-ID: <20120515131637.GA26038@srcf.ucam.org>
+References: <4FB263560200007800083CB0@nat28.tlf.novell.com>
+ <20120515123811.GA25248@srcf.ucam.org>
+ <4FB271860200007800083D21@nat28.tlf.novell.com>
 MIME-Version: 1.0
-In-Reply-To: <201205151246.45384.arnd@arndb.de>
-References: <1336470214-23407-1-git-send-email-linus.walleij@stericsson.com>
-	<201205151124.13047.arnd@arndb.de>
-	<CACRpkdZrs=rgfadRCcMYxhwqib96vkRdHCoC-27dyAjEu5Y5Ew@mail.gmail.com>
-	<201205151246.45384.arnd@arndb.de>
-Date: Tue, 15 May 2012 15:16:03 +0200
-Message-ID: <CACRpkdbjCBi2tkPE-yV7NdHOsMZ_XHuHr3nDUnRekxDDoqRRfw@mail.gmail.com>
-Subject: Re: [PATCH 00/12] pinctrl for Ux500 and Nomadik family
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: linux-arm-kernel@lists.infradead.org,
-        Linus Walleij <linus.walleij@stericsson.com>,
-        linux-kernel@vger.kernel.org, Stephen Warren <swarren@nvidia.com>,
-        Haojian Zhuang <haojian.zhuang@marvell.com>,
-        Thomas Abraham <thomas.abraham@linaro.org>,
-        Rajendra Nayak <rajendra.nayak@linaro.org>,
-        Dong Aisheng <dong.aisheng@linaro.org>,
-        Shawn Guo <shawn.guo@freescale.com>, Olof Johansson <olof@lixom.net>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4FB271860200007800083D21@nat28.tlf.novell.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: mjg59@cavan.codon.org.uk
+X-SA-Exim-Scanned: No (on cavan.codon.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, May 15, 2012 at 2:46 PM, Arnd Bergmann <arnd@arndb.de> wrote:
+On Tue, May 15, 2012 at 02:08:54PM +0100, Jan Beulich wrote:
 
-> One option would be that you just try to be very early with sending your
-> branch and arm-soc goes directly after that, another option would be that
-> we send a pull request for your tree along with the stuff that depends on
-> it, with your permission.
+> So how is this driver okay on ia64 then? It's my understanding
+> that either it's entirely broken, or should be used universally.
+> That's the more that accessing the RTC directly isn't really being
+> permitted by the EFI spec (i.e. using this driver really is a
+> requirement, not an option).
 
-Either way is fine with me, I was planning to send a pull request as soon
-as the merge window opens anyway. If you need it, I can lock down the
-pinctrl tree and prepare the pull tag.
+ia64 is basically never dual booted. If there's an RTC in the ACPI 
+tables then it's completely valid to use the legacy RTC.
 
-Yours,
-Linus Walleij
+-- 
+Matthew Garrett | mjg59@srcf.ucam.org
