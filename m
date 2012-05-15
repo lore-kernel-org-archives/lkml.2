@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932869Ab2EONmT (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 May 2012 09:42:19 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:52295 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932729Ab2EONmS (ORCPT
+	id S1758934Ab2EONnh (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 May 2012 09:43:37 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:36918 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758853Ab2EONng (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 May 2012 09:42:18 -0400
-Message-ID: <1337089332.6238.2.camel@phoenix>
-Subject: [PATCH RFT 2/3] regulator: max8660: Convert to get_voltage_sel
+	Tue, 15 May 2012 09:43:36 -0400
+Message-ID: <1337089409.6238.4.camel@phoenix>
+Subject: [PATCH RFT 3/3] regulator: max8660: Convert to set_voltage_sel and
+ regulator_map_voltage_linear
 From: Axel Lin <axel.lin@gmail.com>
 To: linux-kernel@vger.kernel.org
 Cc: Wolfram Sang <w.sang@pengutronix.de>, Liam Girdwood <lrg@ti.com>,
         Mark Brown <broonie@opensource.wolfsonmicro.com>
-Date: Tue, 15 May 2012 21:42:12 +0800
+Date: Tue, 15 May 2012 21:43:29 +0800
 In-Reply-To: <1337089278.6238.1.camel@phoenix>
 References: <1337089278.6238.1.camel@phoenix>
 Content-Type: text/plain; charset="UTF-8"
@@ -26,89 +27,141 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 Signed-off-by: Axel Lin <axel.lin@gmail.com>
 ---
- drivers/regulator/max8660.c |   23 ++++++++++++-----------
- 1 files changed, 12 insertions(+), 11 deletions(-)
+ drivers/regulator/max8660.c |   71 +++++++++----------------------------------
+ 1 files changed, 15 insertions(+), 56 deletions(-)
 
 diff --git a/drivers/regulator/max8660.c b/drivers/regulator/max8660.c
-index 67ec6ad..93bcfc8 100644
+index 93bcfc8..8d53174 100644
 --- a/drivers/regulator/max8660.c
 +++ b/drivers/regulator/max8660.c
-@@ -126,12 +126,13 @@ static int max8660_dcdc_disable(struct regulator_dev *rdev)
- 	return max8660_write(max8660, MAX8660_OVER1, mask, 0);
+@@ -135,27 +135,13 @@ static int max8660_dcdc_get_voltage_sel(struct regulator_dev *rdev)
+ 	return selector;
  }
  
--static int max8660_dcdc_get(struct regulator_dev *rdev)
-+static int max8660_dcdc_get_voltage_sel(struct regulator_dev *rdev)
+-static int max8660_dcdc_set(struct regulator_dev *rdev, int min_uV, int max_uV,
+-			    unsigned int *s)
++static int max8660_dcdc_set_voltage_sel(struct regulator_dev *rdev,
++					unsigned int selector)
  {
  	struct max8660 *max8660 = rdev_get_drvdata(rdev);
-+
- 	u8 reg = (rdev_get_id(rdev) == MAX8660_V3) ? MAX8660_ADTV2 : MAX8660_SDTV2;
- 	u8 selector = max8660->shadow_regs[reg];
--	return MAX8660_DCDC_MIN_UV + selector * MAX8660_DCDC_STEP;
-+	return selector;
- }
+-	u8 reg, selector, bits;
++	u8 reg, bits;
+ 	int ret;
  
- static int max8660_dcdc_set(struct regulator_dev *rdev, int min_uV, int max_uV,
-@@ -169,7 +170,7 @@ static struct regulator_ops max8660_dcdc_ops = {
+-	if (min_uV < MAX8660_DCDC_MIN_UV || min_uV > MAX8660_DCDC_MAX_UV)
+-		return -EINVAL;
+-	if (max_uV < MAX8660_DCDC_MIN_UV || max_uV > MAX8660_DCDC_MAX_UV)
+-		return -EINVAL;
+-
+-	selector = DIV_ROUND_UP(min_uV - MAX8660_DCDC_MIN_UV,
+-				MAX8660_DCDC_STEP);
+-
+-	ret = regulator_list_voltage_linear(rdev, selector);
+-	if (ret < 0 || ret > max_uV)
+-		return -EINVAL;
+-
+-	*s = selector;
+-
+ 	reg = (rdev_get_id(rdev) == MAX8660_V3) ? MAX8660_ADTV2 : MAX8660_SDTV2;
+ 	ret = max8660_write(max8660, reg, 0, selector);
+ 	if (ret)
+@@ -169,7 +155,8 @@ static int max8660_dcdc_set(struct regulator_dev *rdev, int min_uV, int max_uV,
+ static struct regulator_ops max8660_dcdc_ops = {
  	.is_enabled = max8660_dcdc_is_enabled,
  	.list_voltage = regulator_list_voltage_linear,
- 	.set_voltage = max8660_dcdc_set,
--	.get_voltage = max8660_dcdc_get,
-+	.get_voltage_sel = max8660_dcdc_get_voltage_sel,
+-	.set_voltage = max8660_dcdc_set,
++	.map_voltage = regulator_map_voltage_linear,
++	.set_voltage_sel = max8660_dcdc_set_voltage_sel,
+ 	.get_voltage_sel = max8660_dcdc_get_voltage_sel,
  };
  
- 
-@@ -177,12 +178,12 @@ static struct regulator_ops max8660_dcdc_ops = {
-  * LDO5 functions
-  */
- 
--static int max8660_ldo5_get(struct regulator_dev *rdev)
-+static int max8660_ldo5_get_voltage_sel(struct regulator_dev *rdev)
- {
- 	struct max8660 *max8660 = rdev_get_drvdata(rdev);
--	u8 selector = max8660->shadow_regs[MAX8660_MDTV2];
- 
--	return MAX8660_LDO5_MIN_UV + selector * MAX8660_LDO5_STEP;
-+	u8 selector = max8660->shadow_regs[MAX8660_MDTV2];
-+	return selector;
+@@ -186,27 +173,12 @@ static int max8660_ldo5_get_voltage_sel(struct regulator_dev *rdev)
+ 	return selector;
  }
  
- static int max8660_ldo5_set(struct regulator_dev *rdev, int min_uV, int max_uV,
-@@ -217,7 +218,7 @@ static int max8660_ldo5_set(struct regulator_dev *rdev, int min_uV, int max_uV,
+-static int max8660_ldo5_set(struct regulator_dev *rdev, int min_uV, int max_uV,
+-			    unsigned int *s)
++static int max8660_ldo5_set_voltage_sel(struct regulator_dev *rdev,
++					unsigned int selector)
+ {
+ 	struct max8660 *max8660 = rdev_get_drvdata(rdev);
+-	u8 selector;
+ 	int ret;
+ 
+-	if (min_uV < MAX8660_LDO5_MIN_UV || min_uV > MAX8660_LDO5_MAX_UV)
+-		return -EINVAL;
+-	if (max_uV < MAX8660_LDO5_MIN_UV || max_uV > MAX8660_LDO5_MAX_UV)
+-		return -EINVAL;
+-
+-	selector = DIV_ROUND_UP(min_uV - MAX8660_LDO5_MIN_UV,
+-				MAX8660_LDO5_STEP);
+-
+-	ret = regulator_list_voltage_linear(rdev, selector);
+-	if (ret < 0 || ret > max_uV)
+-		return -EINVAL;
+-
+-	*s = selector;
+-
+ 	ret = max8660_write(max8660, MAX8660_MDTV2, 0, selector);
+ 	if (ret)
+ 		return ret;
+@@ -217,7 +189,8 @@ static int max8660_ldo5_set(struct regulator_dev *rdev, int min_uV, int max_uV,
+ 
  static struct regulator_ops max8660_ldo5_ops = {
  	.list_voltage = regulator_list_voltage_linear,
- 	.set_voltage = max8660_ldo5_set,
--	.get_voltage = max8660_ldo5_get,
-+	.get_voltage_sel = max8660_ldo5_get_voltage_sel,
+-	.set_voltage = max8660_ldo5_set,
++	.map_voltage = regulator_map_voltage_linear,
++	.set_voltage_sel = max8660_ldo5_set_voltage_sel,
+ 	.get_voltage_sel = max8660_ldo5_get_voltage_sel,
  };
  
- 
-@@ -247,13 +248,13 @@ static int max8660_ldo67_disable(struct regulator_dev *rdev)
- 	return max8660_write(max8660, MAX8660_OVER2, mask, 0);
+@@ -257,31 +230,16 @@ static int max8660_ldo67_get_voltage_sel(struct regulator_dev *rdev)
+ 	return selector;
  }
  
--static int max8660_ldo67_get(struct regulator_dev *rdev)
-+static int max8660_ldo67_get_voltage_sel(struct regulator_dev *rdev)
+-static int max8660_ldo67_set(struct regulator_dev *rdev, int min_uV,
+-			     int max_uV, unsigned int *s)
++static int max8660_ldo67_set_voltage_sel(struct regulator_dev *rdev,
++					 unsigned int selector)
  {
  	struct max8660 *max8660 = rdev_get_drvdata(rdev);
-+
- 	u8 shift = (rdev_get_id(rdev) == MAX8660_V6) ? 0 : 4;
- 	u8 selector = (max8660->shadow_regs[MAX8660_L12VCR] >> shift) & 0xf;
+-	u8 selector;
+-	int ret;
 -
--	return MAX8660_LDO67_MIN_UV + selector * MAX8660_LDO67_STEP;
-+	return selector;
+-	if (min_uV < MAX8660_LDO67_MIN_UV || min_uV > MAX8660_LDO67_MAX_UV)
+-		return -EINVAL;
+-	if (max_uV < MAX8660_LDO67_MIN_UV || max_uV > MAX8660_LDO67_MAX_UV)
+-		return -EINVAL;
+-
+-	selector = DIV_ROUND_UP(min_uV - MAX8660_LDO67_MIN_UV,
+-				MAX8660_LDO67_STEP);
+-
+-	ret = regulator_list_voltage_linear(rdev, selector);
+-	if (ret < 0 || ret > max_uV)
+-		return -EINVAL;
+-
+-	*s = selector;
+ 
+ 	if (rdev_get_id(rdev) == MAX8660_V6)
+ 		return max8660_write(max8660, MAX8660_L12VCR, 0xf0, selector);
+ 	else
+-		return max8660_write(max8660, MAX8660_L12VCR, 0x0f, selector << 4);
++		return max8660_write(max8660, MAX8660_L12VCR, 0x0f,
++				     selector << 4);
  }
  
- static int max8660_ldo67_set(struct regulator_dev *rdev, int min_uV,
-@@ -288,7 +289,7 @@ static struct regulator_ops max8660_ldo67_ops = {
+ static struct regulator_ops max8660_ldo67_ops = {
+@@ -289,8 +247,9 @@ static struct regulator_ops max8660_ldo67_ops = {
  	.enable = max8660_ldo67_enable,
  	.disable = max8660_ldo67_disable,
  	.list_voltage = regulator_list_voltage_linear,
--	.get_voltage = max8660_ldo67_get,
-+	.get_voltage_sel = max8660_ldo67_get_voltage_sel,
- 	.set_voltage = max8660_ldo67_set,
++	.map_voltage = regulator_map_voltage_linear,
+ 	.get_voltage_sel = max8660_ldo67_get_voltage_sel,
+-	.set_voltage = max8660_ldo67_set,
++	.set_voltage_sel = max8660_ldo67_set_voltage_sel,
  };
  
+ static const struct regulator_desc max8660_reg[] = {
 -- 
 1.7.5.4
 
