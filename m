@@ -1,17 +1,17 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965812Ab2EOCS6 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 May 2012 22:18:58 -0400
-Received: from mail1.windriver.com ([147.11.146.13]:53304 "EHLO
+	id S965800Ab2EOCS5 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 May 2012 22:18:57 -0400
+Received: from mail1.windriver.com ([147.11.146.13]:53216 "EHLO
 	mail1.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965011Ab2EOCRF (ORCPT
+	with ESMTP id S964947Ab2EOCQz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 May 2012 22:17:05 -0400
+	Mon, 14 May 2012 22:16:55 -0400
 From: Paul Gortmaker <paul.gortmaker@windriver.com>
 To: <stable@kernel.org>, <linux-kernel@vger.kernel.org>
-Subject: [34-longterm 080/179] TTY: ldisc, do not close until there are readers
-Date: Mon, 14 May 2012 22:12:56 -0400
-Message-ID: <1337048075-6132-81-git-send-email-paul.gortmaker@windriver.com>
+Subject: [34-longterm 068/179] xfs: properly account for reclaimed inodes
+Date: Mon, 14 May 2012 22:12:44 -0400
+Message-ID: <1337048075-6132-69-git-send-email-paul.gortmaker@windriver.com>
 X-Mailer: git-send-email 1.7.9.6
 In-Reply-To: <1337048075-6132-1-git-send-email-paul.gortmaker@windriver.com>
 References: <1337048075-6132-1-git-send-email-paul.gortmaker@windriver.com>
@@ -21,7 +21,7 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Jiri Slaby <jslaby@suse.cz>
+From: Johannes Weiner <hannes@cmpxchg.org>
 
                    -------------------
     This is a commit scheduled for the next v2.6.34 longterm release.
@@ -29,102 +29,101 @@ From: Jiri Slaby <jslaby@suse.cz>
     If you see a problem with using this for longterm, please comment.
                    -------------------
 
-commit 92f6fa09bd453ffe3351fa1f1377a1b7cfa911e6 upstream.
+commit 081003fff467ea0e727f66d5d435b4f473a789b3 upstream.
 
-We restored tty_ldisc_wait_idle in 100eeae2c5c (TTY: restore
-tty_ldisc_wait_idle). We used it in the ldisc changing path to fix the
-case where there are tasks in n_tty_read waiting for data and somebody
-tries to change ldisc.
+When marking an inode reclaimable, a per-AG counter is increased, the
+inode is tagged reclaimable in its per-AG tree, and, when this is the
+first reclaimable inode in the AG, the AG entry in the per-mount tree
+is also tagged.
 
-Similar to the case above, there may be also tasks waiting in
-n_tty_read while hangup is performed. As 65b770468e98 (tty-ldisc: turn
-ldisc user count into a proper refcount) removed the wait-until-idle
-from all paths, hangup path won't wait for them to disappear either
-now. So add it back even to the hangup path.
+When an inode is finally reclaimed, however, it is only deleted from
+the per-AG tree.  Neither the counter is decreased, nor is the parent
+tree's AG entry untagged properly.
 
-There is a difference, we need uninterruptible sleep as there is
-obviously HUP signal pending. So tty_ldisc_wait_idle now sleeps
-without possibility to be interrupted. This is what original
-tty_ldisc_wait_idle did. After the wait idle reintroduction
-(100eeae2c5c), we have had interruptible sleeps for the ldisc changing
-path. But as there is a 5s timeout anyway, we don't allow it to be
-interrupted from now on. It's not worth the added complexity of
-deciding what kind of sleep we want.
+Since the tags in the per-mount tree are not cleared, the inode
+shrinker iterates over all AGs that have had reclaimable inodes at one
+point in time.
 
-Before 65b770468e98 tty_ldisc_release was called also from
-tty_ldisc_release. It is called from tty_release, so I don't think we
-need to restore that one.
+The counters on the other hand signal an increasing amount of slab
+objects to reclaim.  Since "70e60ce xfs: convert inode shrinker to
+per-filesystem context" this is not a real issue anymore because the
+shrinker bails out after one iteration.
 
-This is nicely reproducible after constifying the timing when
-drivers/tty/n_tty.c is patched as follows ("TTY: ntty, add one more
-sanity check" patch is needed to actually see it explode):
-%% -1548,6 +1549,7 @@ static int n_tty_open(struct tty_struct *tty)
+But the problem was observable on a machine running v2.6.34, where the
+reclaimable work increased and each process going into direct reclaim
+eventually got stuck on the xfs inode shrinking path, trying to scan
+several million objects.
 
-        /* These are ugly. Currently a malloc failure here can panic */
-        if (!tty->read_buf) {
-+               msleep(100);
-                tty->read_buf = kzalloc(N_TTY_BUF_SIZE, GFP_KERNEL);
-                if (!tty->read_buf)
-                        return -ENOMEM;
-%% -1785,6 +1788,7 @@ do_it_again:
-                                break;
-                        }
-                        timeout = schedule_timeout(timeout);
-+                       msleep(20);
-                        continue;
-                }
-                __set_current_state(TASK_RUNNING);
-===== With a process: =====
-    while (1) {
-        int fd = open(argv[1], O_RDWR);
-        read(fd, buf, sizeof(buf));
-        close(fd);
-    }
-===== and its child: =====
-        setsid();
-        while (1) {
-                int fd = open(tty, O_RDWR|O_NOCTTY);
-                ioctl(fd, TIOCSCTTY, 1);
-                vhangup();
-                close(fd);
-                usleep(100 * (10 + random() % 1000));
-        }
-===== EOF =====
+Fix this by properly unwinding the reclaimable-state tracking of an
+inode when it is reclaimed.
 
-References: https://bugzilla.novell.com/show_bug.cgi?id=693374
-References: https://bugzilla.novell.com/show_bug.cgi?id=694509
-Signed-off-by: Jiri Slaby <jslaby@suse.cz>
-Cc: Alan Cox <alan@lxorguk.ukuu.org.uk>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>
-Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
-[PG: account for char --> tty file rename post 2.6.34]
+[PG: upstream has xfs_reclaim_inode in fs/xfs/linux-2.6/xfs_sync.c
+ but in 34 baseline, it is xfs_ireclaim in fs/xfs/xfs_iget.c so
+ drop the STATIC and add a prototype for it. ]
+
+Signed-off-by: Johannes Weiner <hannes@cmpxchg.org>
+Reviewed-by: Dave Chinner <dchinner@redhat.com>
+Signed-off-by: Alex Elder <aelder@sgi.com>
 Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
 ---
- drivers/char/tty_ldisc.c |    4 +++-
- 1 file changed, 3 insertions(+), 1 deletion(-)
+ fs/xfs/linux-2.6/xfs_sync.c |   10 +++++++++-
+ fs/xfs/linux-2.6/xfs_sync.h |    2 ++
+ fs/xfs/xfs_iget.c           |    1 +
+ 3 files changed, 12 insertions(+), 1 deletion(-)
 
-diff --git a/drivers/char/tty_ldisc.c b/drivers/char/tty_ldisc.c
-index 236628f..48de74a 100644
---- a/drivers/char/tty_ldisc.c
-+++ b/drivers/char/tty_ldisc.c
-@@ -543,7 +543,7 @@ static int tty_ldisc_halt(struct tty_struct *tty)
- static int tty_ldisc_wait_idle(struct tty_struct *tty)
- {
- 	int ret;
--	ret = wait_event_interruptible_timeout(tty_ldisc_idle,
-+	ret = wait_event_timeout(tty_ldisc_idle,
- 			atomic_read(&tty->ldisc->users) == 1, 5 * HZ);
- 	if (ret < 0)
- 		return ret;
-@@ -750,6 +750,8 @@ static int tty_ldisc_reinit(struct tty_struct *tty, int ldisc)
- 	if (IS_ERR(ld))
- 		return -1;
+diff --git a/fs/xfs/linux-2.6/xfs_sync.c b/fs/xfs/linux-2.6/xfs_sync.c
+index a427c63..c5a69a4 100644
+--- a/fs/xfs/linux-2.6/xfs_sync.c
++++ b/fs/xfs/linux-2.6/xfs_sync.c
+@@ -707,6 +707,14 @@ xfs_inode_set_reclaim_tag(
+ }
  
-+	WARN_ON_ONCE(tty_ldisc_wait_idle(tty));
+ void
++__xfs_inode_clear_reclaim(
++	xfs_perag_t	*pag,
++	xfs_inode_t	*ip)
++{
++	pag->pag_ici_reclaimable--;
++}
 +
- 	tty_ldisc_close(tty, tty->ldisc);
- 	tty_ldisc_put(tty->ldisc);
- 	tty->ldisc = NULL;
++void
+ __xfs_inode_clear_reclaim_tag(
+ 	xfs_mount_t	*mp,
+ 	xfs_perag_t	*pag,
+@@ -714,7 +722,7 @@ __xfs_inode_clear_reclaim_tag(
+ {
+ 	radix_tree_tag_clear(&pag->pag_ici_root,
+ 			XFS_INO_TO_AGINO(mp, ip->i_ino), XFS_ICI_RECLAIM_TAG);
+-	pag->pag_ici_reclaimable--;
++	__xfs_inode_clear_reclaim(pag, ip);
+ }
+ 
+ /*
+diff --git a/fs/xfs/linux-2.6/xfs_sync.h b/fs/xfs/linux-2.6/xfs_sync.h
+index cdcbaac..bf82419 100644
+--- a/fs/xfs/linux-2.6/xfs_sync.h
++++ b/fs/xfs/linux-2.6/xfs_sync.h
+@@ -49,6 +49,8 @@ void xfs_inode_set_reclaim_tag(struct xfs_inode *ip);
+ void __xfs_inode_set_reclaim_tag(struct xfs_perag *pag, struct xfs_inode *ip);
+ void __xfs_inode_clear_reclaim_tag(struct xfs_mount *mp, struct xfs_perag *pag,
+ 				struct xfs_inode *ip);
++void __xfs_inode_clear_reclaim(struct xfs_perag *pag, struct xfs_inode *ip);
++
+ 
+ int xfs_sync_inode_valid(struct xfs_inode *ip, struct xfs_perag *pag);
+ int xfs_inode_ag_iterator(struct xfs_mount *mp,
+diff --git a/fs/xfs/xfs_iget.c b/fs/xfs/xfs_iget.c
+index 5ac3be0..14364c4 100644
+--- a/fs/xfs/xfs_iget.c
++++ b/fs/xfs/xfs_iget.c
+@@ -495,6 +495,7 @@ xfs_ireclaim(
+ 	write_lock(&pag->pag_ici_lock);
+ 	if (!radix_tree_delete(&pag->pag_ici_root, agino))
+ 		ASSERT(0);
++	__xfs_inode_clear_reclaim(pag, ip);
+ 	write_unlock(&pag->pag_ici_lock);
+ 	xfs_perag_put(pag);
+ 
 -- 
 1.7.9.6
 
