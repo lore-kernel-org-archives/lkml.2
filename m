@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932977Ab2EOOgL (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 May 2012 10:36:11 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:16346 "EHLO mx1.redhat.com"
+	id S932991Ab2EOOgT (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 May 2012 10:36:19 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:37960 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932912Ab2EOOgD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 May 2012 10:36:03 -0400
-Date: Tue, 15 May 2012 17:35:58 +0300
+	id S932846Ab2EOOgN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 May 2012 10:36:13 -0400
+Date: Tue, 15 May 2012 17:36:12 +0300
 From: "Michael S. Tsirkin" <mst@redhat.com>
 To: x86@kernel.org, kvm@vger.kernel.org
 Cc: Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
         Avi Kivity <avi@redhat.com>, Marcelo Tosatti <mtosatti@redhat.com>,
         gleb@redhat.com, Linus Torvalds <torvalds@linux-foundation.org>,
         linux-kernel@vger.kernel.org
-Subject: [PATCHv3 3/8] x86: add apic->eoi_write callback
-Message-ID: <0df425d746c49ac2ecc405174df87752869629d2.1337091955.git.mst@redhat.com>
+Subject: [PATCHv3 5/8] kvm_para: guest side for eoi avoidance
+Message-ID: <958125d740a3d3a28003228307c993d9759b5ddb.1337091955.git.mst@redhat.com>
 References: <cover.1337091955.git.mst@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
@@ -25,222 +25,240 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add eoi_write callback so that kvm can override
-eoi accesses without touching the rest of the apic.
-As a side-effect, this will enable a micro-optimization
-for apics using msr.
+The idea is simple: there's a bit, per APIC, in guest memory,
+that tells the guest that it does not need EOI.
+Guest tests it using a single est and clear operation - this is
+necessary so that host can detect interrupt nesting - and if set, it can
+skip the EOI MSR.
+
+I run a simple microbenchmark to show exit reduction
+(note: for testing, need to apply patch 7 from the series + a qemu patch
+ I posted separately, on host):
+
+Before:
+
+Performance counter stats for 'sleep 1s':
+
+            47,357 kvm:kvm_entry                                                [99.98%]
+                 0 kvm:kvm_hypercall                                            [99.98%]
+                 0 kvm:kvm_hv_hypercall                                         [99.98%]
+             5,001 kvm:kvm_pio                                                  [99.98%]
+                 0 kvm:kvm_cpuid                                                [99.98%]
+            22,124 kvm:kvm_apic                                                 [99.98%]
+            49,849 kvm:kvm_exit                                                 [99.98%]
+            21,115 kvm:kvm_inj_virq                                             [99.98%]
+                 0 kvm:kvm_inj_exception                                        [99.98%]
+                 0 kvm:kvm_page_fault                                           [99.98%]
+            22,937 kvm:kvm_msr                                                  [99.98%]
+                 0 kvm:kvm_cr                                                   [99.98%]
+                 0 kvm:kvm_pic_set_irq                                          [99.98%]
+                 0 kvm:kvm_apic_ipi                                             [99.98%]
+            22,207 kvm:kvm_apic_accept_irq                                      [99.98%]
+            22,421 kvm:kvm_eoi                                                  [99.98%]
+                 0 kvm:kvm_pv_eoi                                               [99.99%]
+                 0 kvm:kvm_nested_vmrun                                         [99.99%]
+                 0 kvm:kvm_nested_intercepts                                    [99.99%]
+                 0 kvm:kvm_nested_vmexit                                        [99.99%]
+                 0 kvm:kvm_nested_vmexit_inject                                    [99.99%]
+                 0 kvm:kvm_nested_intr_vmexit                                    [99.99%]
+                 0 kvm:kvm_invlpga                                              [99.99%]
+                 0 kvm:kvm_skinit                                               [99.99%]
+                57 kvm:kvm_emulate_insn                                         [99.99%]
+                 0 kvm:vcpu_match_mmio                                          [99.99%]
+                 0 kvm:kvm_userspace_exit                                       [99.99%]
+                 2 kvm:kvm_set_irq                                              [99.99%]
+                 2 kvm:kvm_ioapic_set_irq                                       [99.99%]
+            23,609 kvm:kvm_msi_set_irq                                          [99.99%]
+                 1 kvm:kvm_ack_irq                                              [99.99%]
+               131 kvm:kvm_mmio                                                 [99.99%]
+               226 kvm:kvm_fpu                                                  [100.00%]
+                 0 kvm:kvm_age_page                                             [100.00%]
+                 0 kvm:kvm_try_async_get_page                                    [100.00%]
+                 0 kvm:kvm_async_pf_doublefault                                    [100.00%]
+                 0 kvm:kvm_async_pf_not_present                                    [100.00%]
+                 0 kvm:kvm_async_pf_ready                                       [100.00%]
+                 0 kvm:kvm_async_pf_completed
+
+       1.002100578 seconds time elapsed
+
+After:
+
+ Performance counter stats for 'sleep 1s':
+
+            28,354 kvm:kvm_entry                                                [99.98%]
+                 0 kvm:kvm_hypercall                                            [99.98%]
+                 0 kvm:kvm_hv_hypercall                                         [99.98%]
+             1,347 kvm:kvm_pio                                                  [99.98%]
+                 0 kvm:kvm_cpuid                                                [99.98%]
+             1,931 kvm:kvm_apic                                                 [99.98%]
+            29,595 kvm:kvm_exit                                                 [99.98%]
+            24,884 kvm:kvm_inj_virq                                             [99.98%]
+                 0 kvm:kvm_inj_exception                                        [99.98%]
+                 0 kvm:kvm_page_fault                                           [99.98%]
+             1,986 kvm:kvm_msr                                                  [99.98%]
+                 0 kvm:kvm_cr                                                   [99.98%]
+                 0 kvm:kvm_pic_set_irq                                          [99.98%]
+                 0 kvm:kvm_apic_ipi                                             [99.99%]
+            25,953 kvm:kvm_apic_accept_irq                                      [99.99%]
+            26,132 kvm:kvm_eoi                                                  [99.99%]
+            26,593 kvm:kvm_pv_eoi                                               [99.99%]
+                 0 kvm:kvm_nested_vmrun                                         [99.99%]
+                 0 kvm:kvm_nested_intercepts                                    [99.99%]
+                 0 kvm:kvm_nested_vmexit                                        [99.99%]
+                 0 kvm:kvm_nested_vmexit_inject                                    [99.99%]
+                 0 kvm:kvm_nested_intr_vmexit                                    [99.99%]
+                 0 kvm:kvm_invlpga                                              [99.99%]
+                 0 kvm:kvm_skinit                                               [99.99%]
+               284 kvm:kvm_emulate_insn                                         [99.99%]
+                68 kvm:vcpu_match_mmio                                          [99.99%]
+                68 kvm:kvm_userspace_exit                                       [99.99%]
+                 2 kvm:kvm_set_irq                                              [99.99%]
+                 2 kvm:kvm_ioapic_set_irq                                       [99.99%]
+            28,288 kvm:kvm_msi_set_irq                                          [99.99%]
+                 1 kvm:kvm_ack_irq                                              [99.99%]
+               131 kvm:kvm_mmio                                                 [100.00%]
+               588 kvm:kvm_fpu                                                  [100.00%]
+                 0 kvm:kvm_age_page                                             [100.00%]
+                 0 kvm:kvm_try_async_get_page                                    [100.00%]
+                 0 kvm:kvm_async_pf_doublefault                                    [100.00%]
+                 0 kvm:kvm_async_pf_not_present                                    [100.00%]
+                 0 kvm:kvm_async_pf_ready                                       [100.00%]
+                 0 kvm:kvm_async_pf_completed
+
+       1.002039622 seconds time elapsed
+
+We see that # of exits is almost halved.
 
 Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
 ---
- arch/x86/include/asm/apic.h           |   15 ++++++++++++++-
- arch/x86/kernel/apic/apic_flat_64.c   |    2 ++
- arch/x86/kernel/apic/apic_noop.c      |    1 +
- arch/x86/kernel/apic/apic_numachip.c  |    1 +
- arch/x86/kernel/apic/bigsmp_32.c      |    1 +
- arch/x86/kernel/apic/es7000_32.c      |    2 ++
- arch/x86/kernel/apic/numaq_32.c       |    1 +
- arch/x86/kernel/apic/probe_32.c       |    1 +
- arch/x86/kernel/apic/summit_32.c      |    1 +
- arch/x86/kernel/apic/x2apic_cluster.c |    1 +
- arch/x86/kernel/apic/x2apic_phys.c    |    1 +
- arch/x86/kernel/apic/x2apic_uv_x.c    |    1 +
- 12 files changed, 27 insertions(+), 1 deletions(-)
+ arch/x86/include/asm/bitops.h |    6 +++-
+ arch/x86/kernel/kvm.c         |   50 ++++++++++++++++++++++++++++++++++++++--
+ 2 files changed, 51 insertions(+), 5 deletions(-)
 
-diff --git a/arch/x86/include/asm/apic.h b/arch/x86/include/asm/apic.h
-index a09e9ab..74efb8d 100644
---- a/arch/x86/include/asm/apic.h
-+++ b/arch/x86/include/asm/apic.h
-@@ -351,6 +351,13 @@ struct apic {
- 	/* apic ops */
- 	u32 (*read)(u32 reg);
- 	void (*write)(u32 reg, u32 v);
-+        /*
-+	 * eoi_write has the same signature as write.
-+	 * Drivers can support both eoi_write and write by passing the same
-+	 * callback value. Kernel can override eoi_write and fall back
-+	 * on write for EOI.
-+	 */
-+	void (*eoi_write)(u32 reg, u32 v);
- 	u64 (*icr_read)(void);
- 	void (*icr_write)(u32 low, u32 high);
- 	void (*wait_icr_idle)(void);
-@@ -426,6 +433,11 @@ static inline void apic_write(u32 reg, u32 val)
- 	apic->write(reg, val);
+diff --git a/arch/x86/include/asm/bitops.h b/arch/x86/include/asm/bitops.h
+index b97596e..c9c70ea 100644
+--- a/arch/x86/include/asm/bitops.h
++++ b/arch/x86/include/asm/bitops.h
+@@ -26,11 +26,13 @@
+ #if __GNUC__ < 4 || (__GNUC__ == 4 && __GNUC_MINOR__ < 1)
+ /* Technically wrong, but this avoids compilation errors on some gcc
+    versions. */
+-#define BITOP_ADDR(x) "=m" (*(volatile long *) (x))
++#define BITOP_ADDR_CONSTRAINT "=m"
+ #else
+-#define BITOP_ADDR(x) "+m" (*(volatile long *) (x))
++#define BITOP_ADDR_CONSTRAINT "+m"
+ #endif
+ 
++#define BITOP_ADDR(x) BITOP_ADDR_CONSTRAINT (*(volatile long *) (x))
++
+ #define ADDR				BITOP_ADDR(addr)
+ 
+ /*
+diff --git a/arch/x86/kernel/kvm.c b/arch/x86/kernel/kvm.c
+index e554e5a..31f85cb 100644
+--- a/arch/x86/kernel/kvm.c
++++ b/arch/x86/kernel/kvm.c
+@@ -39,6 +39,8 @@
+ #include <asm/desc.h>
+ #include <asm/tlbflush.h>
+ #include <asm/idle.h>
++#include <asm/apic.h>
++#include <asm/apicdef.h>
+ 
+ static int kvmapf = 1;
+ 
+@@ -283,6 +285,23 @@ static void kvm_register_steal_time(void)
+ 		cpu, __pa(st));
  }
  
-+static inline void apic_eoi(void)
++/* size alignment is implied but just to make it explicit. */
++static DEFINE_PER_CPU(unsigned long, kvm_apic_eoi) __aligned(2) = 0;
++
++static void kvm_guest_apic_eoi_write(u32 reg, u32 val)
 +{
-+	apic->eoi_write(APIC_EOI, APIC_EOI_ACK);
++	/**
++	 * This relies on __test_and_clear_bit to modify the memory
++	 * in a way that is atomic with respect to the local CPU.
++	 * The hypervisor only accesses this memory from the local CPU so
++	 * there's no need for lock or memory barriers.
++	 * An optimization barrier is implied in apic write.
++	 */
++	if (__test_and_clear_bit(0, &__get_cpu_var(kvm_apic_eoi)))
++		return;
++	apic->write(APIC_EOI, APIC_EOI_ACK);
 +}
 +
- static inline u64 apic_icr_read(void)
+ void __cpuinit kvm_guest_cpu_init(void)
  {
- 	return apic->icr_read();
-@@ -450,6 +462,7 @@ static inline u32 safe_apic_wait_icr_idle(void)
+ 	if (!kvm_para_available())
+@@ -300,11 +319,17 @@ void __cpuinit kvm_guest_cpu_init(void)
+ 		       smp_processor_id());
+ 	}
  
- static inline u32 apic_read(u32 reg) { return 0; }
- static inline void apic_write(u32 reg, u32 val) { }
-+static inline void apic_eoi(void) { }
- static inline u64 apic_icr_read(void) { return 0; }
- static inline void apic_icr_write(u32 low, u32 high) { }
- static inline void apic_wait_icr_idle(void) { }
-@@ -463,7 +476,7 @@ static inline void ack_APIC_irq(void)
- 	 * ack_APIC_irq() actually gets compiled as a single instruction
- 	 * ... yummie.
- 	 */
--	apic_write(APIC_EOI, APIC_EOI_ACK);
-+	apic_eoi();
++	if (kvm_para_has_feature(KVM_FEATURE_EOI)) {
++		__get_cpu_var(kvm_apic_eoi) = 0;
++		wrmsrl(MSR_KVM_EOI_EN, __pa(&__get_cpu_var(kvm_apic_eoi)) |
++		       KVM_MSR_ENABLED);
++	}
++
+ 	if (has_steal_clock)
+ 		kvm_register_steal_time();
  }
  
- static inline unsigned default_get_apic_id(unsigned long x)
-diff --git a/arch/x86/kernel/apic/apic_flat_64.c b/arch/x86/kernel/apic/apic_flat_64.c
-index 359b689..0e881c4 100644
---- a/arch/x86/kernel/apic/apic_flat_64.c
-+++ b/arch/x86/kernel/apic/apic_flat_64.c
-@@ -227,6 +227,7 @@ static struct apic apic_flat =  {
+-static void kvm_pv_disable_apf(void *unused)
++static void kvm_pv_disable_apf(void)
+ {
+ 	if (!__get_cpu_var(apf_reason).enabled)
+ 		return;
+@@ -316,11 +341,18 @@ static void kvm_pv_disable_apf(void *unused)
+ 	       smp_processor_id());
+ }
  
- 	.read				= native_apic_mem_read,
- 	.write				= native_apic_mem_write,
-+	.eoi_write			= native_apic_mem_write,
- 	.icr_read			= native_apic_icr_read,
- 	.icr_write			= native_apic_icr_write,
- 	.wait_icr_idle			= native_apic_wait_icr_idle,
-@@ -386,6 +387,7 @@ static struct apic apic_physflat =  {
++static void kvm_pv_guest_cpu_reboot(void *unused)
++{
++	if (kvm_para_has_feature(KVM_FEATURE_EOI))
++		wrmsrl(MSR_KVM_EOI_EN, 0);
++	kvm_pv_disable_apf();
++}
++
+ static int kvm_pv_reboot_notify(struct notifier_block *nb,
+ 				unsigned long code, void *unused)
+ {
+ 	if (code == SYS_RESTART)
+-		on_each_cpu(kvm_pv_disable_apf, NULL, 1);
++		on_each_cpu(kvm_pv_guest_cpu_reboot, NULL, 1);
+ 	return NOTIFY_DONE;
+ }
  
- 	.read				= native_apic_mem_read,
- 	.write				= native_apic_mem_write,
-+	.eoi_write			= native_apic_mem_write,
- 	.icr_read			= native_apic_icr_read,
- 	.icr_write			= native_apic_icr_write,
- 	.wait_icr_idle			= native_apic_wait_icr_idle,
-diff --git a/arch/x86/kernel/apic/apic_noop.c b/arch/x86/kernel/apic/apic_noop.c
-index 634ae6c..a6e4c6e 100644
---- a/arch/x86/kernel/apic/apic_noop.c
-+++ b/arch/x86/kernel/apic/apic_noop.c
-@@ -181,6 +181,7 @@ struct apic apic_noop = {
+@@ -371,7 +403,9 @@ static void __cpuinit kvm_guest_cpu_online(void *dummy)
+ static void kvm_guest_cpu_offline(void *dummy)
+ {
+ 	kvm_disable_steal_time();
+-	kvm_pv_disable_apf(NULL);
++	if (kvm_para_has_feature(KVM_FEATURE_EOI))
++		wrmsrl(MSR_KVM_EOI_EN, 0);
++	kvm_pv_disable_apf();
+ 	apf_task_wake_all();
+ }
  
- 	.read				= noop_apic_read,
- 	.write				= noop_apic_write,
-+	.eoi_write			= noop_apic_write,
- 	.icr_read			= noop_apic_icr_read,
- 	.icr_write			= noop_apic_icr_write,
- 	.wait_icr_idle			= noop_apic_wait_icr_idle,
-diff --git a/arch/x86/kernel/apic/apic_numachip.c b/arch/x86/kernel/apic/apic_numachip.c
-index 23e7542..6ec6d5d 100644
---- a/arch/x86/kernel/apic/apic_numachip.c
-+++ b/arch/x86/kernel/apic/apic_numachip.c
-@@ -295,6 +295,7 @@ static struct apic apic_numachip __refconst = {
+@@ -424,6 +458,16 @@ void __init kvm_guest_init(void)
+ 		pv_time_ops.steal_clock = kvm_steal_clock;
+ 	}
  
- 	.read				= native_apic_mem_read,
- 	.write				= native_apic_mem_write,
-+	.eoi_write			= native_apic_mem_write,
- 	.icr_read			= native_apic_icr_read,
- 	.icr_write			= native_apic_icr_write,
- 	.wait_icr_idle			= native_apic_wait_icr_idle,
-diff --git a/arch/x86/kernel/apic/bigsmp_32.c b/arch/x86/kernel/apic/bigsmp_32.c
-index 0cdec70..31fbdbf 100644
---- a/arch/x86/kernel/apic/bigsmp_32.c
-+++ b/arch/x86/kernel/apic/bigsmp_32.c
-@@ -248,6 +248,7 @@ static struct apic apic_bigsmp = {
- 
- 	.read				= native_apic_mem_read,
- 	.write				= native_apic_mem_write,
-+	.eoi_write			= native_apic_mem_write,
- 	.icr_read			= native_apic_icr_read,
- 	.icr_write			= native_apic_icr_write,
- 	.wait_icr_idle			= native_apic_wait_icr_idle,
-diff --git a/arch/x86/kernel/apic/es7000_32.c b/arch/x86/kernel/apic/es7000_32.c
-index e42d1d3b9..db4ab1b 100644
---- a/arch/x86/kernel/apic/es7000_32.c
-+++ b/arch/x86/kernel/apic/es7000_32.c
-@@ -678,6 +678,7 @@ static struct apic __refdata apic_es7000_cluster = {
- 
- 	.read				= native_apic_mem_read,
- 	.write				= native_apic_mem_write,
-+	.eoi_write			= native_apic_mem_write,
- 	.icr_read			= native_apic_icr_read,
- 	.icr_write			= native_apic_icr_write,
- 	.wait_icr_idle			= native_apic_wait_icr_idle,
-@@ -742,6 +743,7 @@ static struct apic __refdata apic_es7000 = {
- 
- 	.read				= native_apic_mem_read,
- 	.write				= native_apic_mem_write,
-+	.eoi_write			= native_apic_mem_write,
- 	.icr_read			= native_apic_icr_read,
- 	.icr_write			= native_apic_icr_write,
- 	.wait_icr_idle			= native_apic_wait_icr_idle,
-diff --git a/arch/x86/kernel/apic/numaq_32.c b/arch/x86/kernel/apic/numaq_32.c
-index 00d2422..f00a68c 100644
---- a/arch/x86/kernel/apic/numaq_32.c
-+++ b/arch/x86/kernel/apic/numaq_32.c
-@@ -530,6 +530,7 @@ static struct apic __refdata apic_numaq = {
- 
- 	.read				= native_apic_mem_read,
- 	.write				= native_apic_mem_write,
-+	.eoi_write			= native_apic_mem_write,
- 	.icr_read			= native_apic_icr_read,
- 	.icr_write			= native_apic_icr_write,
- 	.wait_icr_idle			= native_apic_wait_icr_idle,
-diff --git a/arch/x86/kernel/apic/probe_32.c b/arch/x86/kernel/apic/probe_32.c
-index ff2c1b9..1b291da 100644
---- a/arch/x86/kernel/apic/probe_32.c
-+++ b/arch/x86/kernel/apic/probe_32.c
-@@ -142,6 +142,7 @@ static struct apic apic_default = {
- 
- 	.read				= native_apic_mem_read,
- 	.write				= native_apic_mem_write,
-+	.eoi_write			= native_apic_mem_write,
- 	.icr_read			= native_apic_icr_read,
- 	.icr_write			= native_apic_icr_write,
- 	.wait_icr_idle			= native_apic_wait_icr_idle,
-diff --git a/arch/x86/kernel/apic/summit_32.c b/arch/x86/kernel/apic/summit_32.c
-index fea000b..659897c 100644
---- a/arch/x86/kernel/apic/summit_32.c
-+++ b/arch/x86/kernel/apic/summit_32.c
-@@ -546,6 +546,7 @@ static struct apic apic_summit = {
- 
- 	.read				= native_apic_mem_read,
- 	.write				= native_apic_mem_write,
-+	.eoi_write			= native_apic_mem_write,
- 	.icr_read			= native_apic_icr_read,
- 	.icr_write			= native_apic_icr_write,
- 	.wait_icr_idle			= native_apic_wait_icr_idle,
-diff --git a/arch/x86/kernel/apic/x2apic_cluster.c b/arch/x86/kernel/apic/x2apic_cluster.c
-index 48f3103..a5baa78 100644
---- a/arch/x86/kernel/apic/x2apic_cluster.c
-+++ b/arch/x86/kernel/apic/x2apic_cluster.c
-@@ -260,6 +260,7 @@ static struct apic apic_x2apic_cluster = {
- 
- 	.read				= native_apic_msr_read,
- 	.write				= native_apic_msr_write,
-+	.eoi_write			= native_apic_msr_write,
- 	.icr_read			= native_x2apic_icr_read,
- 	.icr_write			= native_x2apic_icr_write,
- 	.wait_icr_idle			= native_x2apic_wait_icr_idle,
-diff --git a/arch/x86/kernel/apic/x2apic_phys.c b/arch/x86/kernel/apic/x2apic_phys.c
-index 991e315..8340356 100644
---- a/arch/x86/kernel/apic/x2apic_phys.c
-+++ b/arch/x86/kernel/apic/x2apic_phys.c
-@@ -172,6 +172,7 @@ static struct apic apic_x2apic_phys = {
- 
- 	.read				= native_apic_msr_read,
- 	.write				= native_apic_msr_write,
-+	.eoi_write			= native_apic_msr_write,
- 	.icr_read			= native_x2apic_icr_read,
- 	.icr_write			= native_x2apic_icr_write,
- 	.wait_icr_idle			= native_x2apic_wait_icr_idle,
-diff --git a/arch/x86/kernel/apic/x2apic_uv_x.c b/arch/x86/kernel/apic/x2apic_uv_x.c
-index 87bfa69..5b0e3d0 100644
---- a/arch/x86/kernel/apic/x2apic_uv_x.c
-+++ b/arch/x86/kernel/apic/x2apic_uv_x.c
-@@ -404,6 +404,7 @@ static struct apic __refdata apic_x2apic_uv_x = {
- 
- 	.read				= native_apic_msr_read,
- 	.write				= native_apic_msr_write,
-+	.eoi_write			= native_apic_msr_write,
- 	.icr_read			= native_x2apic_icr_read,
- 	.icr_write			= native_x2apic_icr_write,
- 	.wait_icr_idle			= native_x2apic_wait_icr_idle,
++	if (kvm_para_has_feature(KVM_FEATURE_EOI)) {
++		struct apic **drv;
++
++		for (drv = __apicdrivers; drv < __apicdrivers_end; drv++) {
++			/* Should happen once for each apic */
++			WARN_ON((*drv)->eoi_write == kvm_guest_apic_eoi_write);
++			(*drv)->eoi_write = kvm_guest_apic_eoi_write;
++		}
++	}
++
+ #ifdef CONFIG_SMP
+ 	smp_ops.smp_prepare_boot_cpu = kvm_smp_prepare_boot_cpu;
+ 	register_cpu_notifier(&kvm_cpu_notifier);
 -- 
 MST
 
