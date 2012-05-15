@@ -1,46 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965599Ab2EOP4h (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 May 2012 11:56:37 -0400
-Received: from antcom.de ([188.40.178.216]:57302 "EHLO chuck.antcom.de"
+	id S933129Ab2EOP6K (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 May 2012 11:58:10 -0400
+Received: from mga03.intel.com ([143.182.124.21]:6614 "EHLO mga03.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754402Ab2EOP4g (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 May 2012 11:56:36 -0400
-Message-ID: <4FB27CB0.8000308@antcom.de>
-Date: Tue, 15 May 2012 17:56:32 +0200
-From: Roland Stigge <stigge@antcom.de>
-Organization: ANTCOM IT Research & Development
-User-Agent: Mozilla/5.0 (X11; Linux i686 on x86_64; rv:8.0) Gecko/20120216 Icedove/8.0
-MIME-Version: 1.0
-To: Russell King - ARM Linux <linux@arm.linux.org.uk>
-CC: linux-mtd@lists.infradead.org, linux-kernel@vger.kernel.org,
-        linux-doc@vger.kernel.org, devicetree-discuss@lists.ozlabs.org,
-        dwmw2@infradead.org, kevin.wells@nxp.com, srinivas.bakki@nxp.com,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH] MTD: LPC32xx MLC NAND driver
-References: <1337091832-10138-1-git-send-email-stigge@antcom.de> <20120515143428.GC13860@n2100.arm.linux.org.uk> <4FB27B24.3030604@antcom.de>
-In-Reply-To: <4FB27B24.3030604@antcom.de>
-X-Enigmail-Version: 1.3.4
-OpenPGP: url=subkeys.pgp.net
-Content-Type: text/plain; charset=UTF-8
+	id S1754402Ab2EOP6I (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 May 2012 11:58:08 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
+   d="scan'208";a="143455629"
+Subject: Re: [RFC PATCH 1/3] block: add a flag to identify PM request
+From: Lin Ming <ming.m.lin@intel.com>
+To: Alan Cox <alan@lxorguk.ukuu.org.uk>
+Cc: Alan Stern <stern@rowland.harvard.edu>, Jens Axboe <axboe@kernel.dk>,
+        Kernel development list <linux-kernel@vger.kernel.org>,
+        Linux-pm mailing list <linux-pm@vger.kernel.org>,
+        SCSI development list <linux-scsi@vger.kernel.org>
+In-Reply-To: <20120515163734.332f3e08@pyramind.ukuu.org.uk>
+References: <Pine.LNX.4.44L0.1205151028020.1796-100000@iolanthe.rowland.org>
+	 <1337095985.3515.1.camel@chief-river-32>
+	 <20120515163734.332f3e08@pyramind.ukuu.org.uk>
+Content-Type: text/plain; charset="ISO-8859-1"
+Date: Tue, 15 May 2012 23:58:53 +0800
+Message-ID: <1337097533.3515.17.camel@chief-river-32>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/15/2012 05:49 PM, Roland Stigge wrote:
->>> +
->>> +	sg_init_one(&host->sgl, mem, len);
->>> +
->>> +	res = dma_map_sg(host->dma_chan->device->dev, &host->sgl, 1, dir);
->>
->> Also note that dma transfer directions and dma data directions are
->> different things.  You shouldn't mix the two.
+On Tue, 2012-05-15 at 16:37 +0100, Alan Cox wrote:
+> On Tue, 15 May 2012 23:33:05 +0800
+> Lin Ming <ming.m.lin@intel.com> wrote:
+> 
+> > On Tue, 2012-05-15 at 10:35 -0400, Alan Stern wrote:
+> > > On Tue, 15 May 2012, Lin Ming wrote:
+> > > 
+> > > > Add a flag REQ_PM to identify the request is PM related.
+> > > > As an example, modify scsi code to use this flag.
+> > > 
+> > > There already is such a flag; you don't need to add one.  In fact, 
+> > > there already are _two_ such flags, and it would be best to remove one 
+> > > of them.  In include/linux/blkdev.h:
+> > > 
+> > > 	REQ_TYPE_PM_SUSPEND,		/* suspend request */
+> > > 	REQ_TYPE_PM_RESUME,		/* resume request */
+> > > 
+> > > Apparently they had been used by the old ide driver, but they don't
+> > > seem to be used anywhere now.
+> > 
+> > IDE code still uses both types and they are used for system
+> > suspend/resume. See generic_ide_suspend and generic_ide_resume.
+> 
+> drivers/ide is obsolete code though so we shouldn't be forcing its needs
+> on the future
 
-Can I safely use DMA_BIDIRECTIONAL here (practically, it works - just
-tested), because the caller asks for read _or_ write? Or do I need to
-formally convert enum dma_transfer_direction to enum dma_data_direction?
+Do you mean we don't care about breaking ide code?
 
-Thanks in advance,
+struct request {
+        ....
+        unsigned int cmd_flags;
+        enum rq_cmd_type_bits cmd_type;
 
-Roland
+Another reason I didn't reuse REQ_TYPE_PM_SUSPEND/REQ_TYPE_PM_RESUME is
+because all scsi requests set the cmd_type to REQ_TYPE_BLOCK_PC.
+
+So I think we should add a new cmd_flags(REQ_PM) to tell if it's a
+runtime pm request.
+
+Thanks.
+
