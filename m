@@ -1,403 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965544Ab2EOPni (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 May 2012 11:43:38 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:57841 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S965299Ab2EOPnZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 May 2012 11:43:25 -0400
-From: Jan Kara <jack@suse.cz>
-To: Wu Fengguang <fengguang.wu@intel.com>
-Cc: LKML <linux-kernel@vger.kernel.org>, linux-mm@kvack.org,
-        Peter Zijlstra <peterz@infradead.org>, Jan Kara <jack@suse.cz>
-Subject: [PATCH 1/2] lib: Proportions with flexible period
-Date: Tue, 15 May 2012 17:43:02 +0200
-Message-Id: <1337096583-6049-2-git-send-email-jack@suse.cz>
-X-Mailer: git-send-email 1.7.1
-In-Reply-To: <1337096583-6049-1-git-send-email-jack@suse.cz>
-References: <1337096583-6049-1-git-send-email-jack@suse.cz>
+	id S965529Ab2EOPpl (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 May 2012 11:45:41 -0400
+Received: from casper.infradead.org ([85.118.1.10]:53985 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S965368Ab2EOPpj convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 May 2012 11:45:39 -0400
+Message-ID: <1337096717.27694.86.camel@twins>
+Subject: Re: Plumbers: Tweaking scheduler policy micro-conf RFP
+From: Peter Zijlstra <peterz@infradead.org>
+To: Vincent Guittot <vincent.guittot@linaro.org>
+Cc: paulmck@linux.vnet.ibm.com, smuckle@quicinc.com, khilman@ti.com,
+        Robin.Randhawa@arm.com, suresh.b.siddha@intel.com,
+        thebigcorporation@gmail.com, venki@google.com,
+        panto@antoniou-consulting.com, mingo@elte.hu, paul.brett@intel.com,
+        pdeschrijver@nvidia.com, pjt@google.com, efault@gmx.de,
+        fweisbec@gmail.com, geoff@infradead.org, rostedt@goodmis.org,
+        tglx@linutronix.de, amit.kucheria@linaro.org,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        linaro-sched-sig@lists.linaro.org,
+        Morten Rasmussen <Morten.Rasmussen@arm.com>,
+        Juri Lelli <juri.lelli@gmail.com>
+Date: Tue, 15 May 2012 17:45:17 +0200
+In-Reply-To: <1337096141.27694.82.camel@twins>
+References: <CAKfTPtDSDAOAdv0GTDswZeRM7TmACrjok+5kddSaQpvy6_6xWw@mail.gmail.com>
+	 <CAKfTPtCfiY7A29+e50F+6awd8BjNJjg4=uNN4ReZfdS_4FbpkA@mail.gmail.com>
+	 <1337084609.27020.156.camel@laptop>
+	 <CAKfTPtDz1-fR2i5x7AVd8sGZhX2VNtz2rnQC3ePrcHO9MWK3FQ@mail.gmail.com>
+	 <1337086834.27020.162.camel@laptop>
+	 <CAKfTPtDrZ-tfC81jnxwpB+DCtmxhU+VfoYbtSBr8MkFt+P8JcA@mail.gmail.com>
+	 <1337096141.27694.82.camel@twins>
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
+X-Mailer: Evolution 3.2.2- 
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Implement code computing proportions of events of different type (like code in
-lib/proportions.c) but allowing periods to have different lengths. This allows
-us to have aging periods of fixed wallclock time which gives better proportion
-estimates given the hugely varying throughput of different devices - previous
-measuring of aging period by number of events has the problem that a reasonable
-period length for a system with low-end USB stick is not a reasonable period
-length for a system with high-end storage array resulting either in too slow
-proportion updates or too fluctuating proportion updates.
+On Tue, 2012-05-15 at 17:35 +0200, Peter Zijlstra wrote:
+> To aid this we can add some SDTL_flags, initially I was thinking of:
+> 
+>  SDTL_SHARE_CORE        -- aka SMT
+>  SDTL_SHARE_CACHE       -- LLC cache domain (typically multi-core)
+>  SDTL_SHARE_MEMORY      -- NUMA-node (typically socket)
+> 
+> The 'performance' policy is typically to spread over shared resources so
+> as to minimize contention on these.
+> 
+> If you want to add some power we need some extra flags, maybe something
+> like:
+> 
+>  SDTL_SHARE_POWERLINE   -- power domain (typically socket)
+> 
+> so you know where the boundaries are where you can turn stuff off so you
+> know what/where to pack bits. 
 
-Signed-off-by: Jan Kara <jack@suse.cz>
----
- include/linux/flex_proportions.h |   91 ++++++++++++++
- lib/Makefile                     |    2 +-
- lib/flex_proportions.c           |  244 ++++++++++++++++++++++++++++++++++++++
- 3 files changed, 336 insertions(+), 1 deletions(-)
- create mode 100644 include/linux/flex_proportions.h
- create mode 100644 lib/flex_proportions.c
+Similarly if someone fancies doing the core-hopping muck and can get the
+sensor data etc..
 
-diff --git a/include/linux/flex_proportions.h b/include/linux/flex_proportions.h
-new file mode 100644
-index 0000000..59ab923
---- /dev/null
-+++ b/include/linux/flex_proportions.h
-@@ -0,0 +1,91 @@
-+/*
-+ * Floating proportions with flexible aging period
-+ *
-+ *  Copyright (C) 2011, SUSE, Jan Kara <jack@suse.cz>
-+ */
-+
-+#ifndef _LINUX_FLEX_PROPORTIONS_H
-+#define _LINUX_FLEX_PROPORTIONS_H
-+
-+#include <linux/percpu_counter.h>
-+#include <linux/spinlock.h>
-+#include <linux/seqlock.h>
-+
-+/*
-+ * ---- Global proportion definitions ----
-+ */
-+struct fprop_global {
-+	/* Number of events in the current period */
-+	struct percpu_counter events;
-+	/* Current period */
-+	unsigned int period;
-+	/* Synchronization with period transitions */
-+	seqcount_t sequence;
-+};
-+
-+int fprop_global_init(struct fprop_global *p);
-+void fprop_global_destroy(struct fprop_global *p);
-+bool fprop_new_period(struct fprop_global *p);
-+
-+/*
-+ *  ---- SINGLE ----
-+ */
-+struct fprop_local_single {
-+	/* the local events counter */
-+	unsigned long events;
-+	/* Period in which we last updated events */
-+	unsigned int period;
-+	raw_spinlock_t lock;	/* Protect period and numerator */
-+};
-+
-+#define INIT_FPROP_LOCAL_SINGLE(name)			\
-+{	.lock = __RAW_SPIN_LOCK_UNLOCKED(name.lock),	\
-+}
-+
-+int fprop_local_init_single(struct fprop_local_single *pl);
-+void __fprop_inc_single(struct fprop_global *p, struct fprop_local_single *pl);
-+void fprop_fraction_single(struct fprop_global *p,
-+	struct fprop_local_single *pl, unsigned long *numerator,
-+	unsigned long *denominator);
-+
-+static inline
-+void fprop_inc_single(struct fprop_global *p, struct fprop_local_single *pl)
-+{
-+	unsigned long flags;
-+
-+	local_irq_save(flags);
-+	__fprop_inc_single(p, pl);
-+	local_irq_restore(flags);
-+}
-+
-+/*
-+ * ---- PERCPU ----
-+ */
-+struct fprop_local_percpu {
-+	/* the local events counter */
-+	struct percpu_counter events;
-+	/* Period in which we last updated events */
-+	unsigned int period;
-+	raw_spinlock_t lock;	/* Protect period and numerator */
-+};
-+
-+int fprop_local_init_percpu(struct fprop_local_percpu *pl);
-+void fprop_local_destroy_percpu(struct fprop_local_percpu *pl);
-+void __fprop_inc_percpu(struct fprop_global *p, struct fprop_local_percpu *pl);
-+void __fprop_inc_percpu_max(struct fprop_global *p, struct fprop_local_percpu *pl,
-+			    int max_frac);
-+void fprop_fraction_percpu(struct fprop_global *p,
-+	struct fprop_local_percpu *pl, unsigned long *numerator,
-+	unsigned long *denominator);
-+
-+static inline
-+void fprop_inc_percpu(struct fprop_global *p, struct fprop_local_percpu *pl)
-+{
-+	unsigned long flags;
-+
-+	local_irq_save(flags);
-+	__fprop_inc_percpu(p, pl);
-+	local_irq_restore(flags);
-+}
-+
-+#endif
-diff --git a/lib/Makefile b/lib/Makefile
-index 18515f0..e144536 100644
---- a/lib/Makefile
-+++ b/lib/Makefile
-@@ -11,7 +11,7 @@ lib-y := ctype.o string.o vsprintf.o cmdline.o \
- 	 rbtree.o radix-tree.o dump_stack.o timerqueue.o\
- 	 idr.o int_sqrt.o extable.o prio_tree.o \
- 	 sha1.o md5.o irq_regs.o reciprocal_div.o argv_split.o \
--	 proportions.o prio_heap.o ratelimit.o show_mem.o \
-+	 proportions.o flex_proportions.o prio_heap.o ratelimit.o show_mem.o \
- 	 is_single_threaded.o plist.o decompress.o
- 
- lib-$(CONFIG_MMU) += ioremap.o
-diff --git a/lib/flex_proportions.c b/lib/flex_proportions.c
-new file mode 100644
-index 0000000..b4fd603
---- /dev/null
-+++ b/lib/flex_proportions.c
-@@ -0,0 +1,244 @@
-+/*
-+ *  Floating proportions with flexible aging period
-+ *
-+ *   Copyright (C) 2011, SUSE, Jan Kara <jack@suse.cz>
-+ *
-+ * The goal of this code is: Given different types of event, measure proportion
-+ * of each type of event over time. The proportions are measured with
-+ * exponentially decaying history to give smooth transitions. A formula
-+ * expressing proportion of event of type 'j' is:
-+ *
-+ *   p_{j} = (\Sum_{i>=0} x_{i,j}/2^{i+1})/(\Sum_{i>=0} x_i/2^{i+1})
-+ *
-+ * Where x_{i,j} is j's number of events in i-th last time period and x_i is
-+ * total number of events in i-th last time period.
-+ *
-+ * Note that p_{j}'s are normalised, i.e.
-+ *
-+ *   \Sum_{j} p_{j} = 1,
-+ *
-+ * This formula can be straightforwardly computed by maintaing denominator
-+ * (let's call it 'd') and for each event type its numerator (let's call it
-+ * 'n_j'). When an event of type 'j' happens, we simply need to do:
-+ *   n_j++; d++;
-+ *
-+ * When a new period is declared, we could do:
-+ *   d /= 2
-+ *   for each j
-+ *     n_j /= 2
-+ *
-+ * To avoid iteration over all event types, we instead shift numerator of event
-+ * j lazily when someone asks for a proportion of event j or when event j
-+ * occurs. This can bit trivially implemented by remembering last period in
-+ * which something happened with proportion of type j.
-+ */
-+#include <linux/flex_proportions.h>
-+
-+int fprop_global_init(struct fprop_global *p)
-+{
-+	int err;
-+
-+	p->period = 0;
-+	/* Use 1 to avoid dealing with periods with 0 events... */
-+	err = percpu_counter_init(&p->events, 1);
-+	if (err)
-+		return err;
-+	seqcount_init(&p->sequence);
-+	return 0;
-+}
-+
-+void fprop_global_destroy(struct fprop_global *p)
-+{
-+	percpu_counter_destroy(&p->events);
-+}
-+
-+/*
-+ * Declare new period. It is upto the caller to make sure two period
-+ * transitions cannot happen in parallel.
-+ *
-+ * The function returns true if the proportions are still defined and false
-+ * if aging zeroed out all events. This can be used to detect whether declaring
-+ * further periods has any effect.
-+ */
-+bool fprop_new_period(struct fprop_global *p)
-+{
-+	u64 events = percpu_counter_sum(&p->events);
-+
-+	/*
-+	 * Don't do anything if there are no events.
-+	 */
-+	if (events <= 1)
-+		return false;
-+	write_seqcount_begin(&p->sequence);
-+	 /* We use addition to avoid losing events happening between sum and set. */
-+	percpu_counter_add(&p->events, -(events >> 1));
-+	p->period++;
-+	write_seqcount_end(&p->sequence);
-+
-+	return true;
-+}
-+
-+/*
-+ * ---- SINGLE ----
-+ */
-+
-+int fprop_local_init_single(struct fprop_local_single *pl)
-+{
-+	pl->events = 0;
-+	pl->period = 0;
-+	raw_spin_lock_init(&pl->lock);
-+	return 0;
-+}
-+
-+void fprop_local_destroy_single(struct fprop_local_single *pl)
-+{
-+}
-+
-+static void fprop_reflect_period_single(struct fprop_global *p,
-+					struct fprop_local_single *pl)
-+{
-+	unsigned int period = p->period;
-+	unsigned long flags;
-+
-+	/* Fast path - period didn't change */
-+	if (pl->period == period)
-+		return;
-+	raw_spin_lock_irqsave(&pl->lock, flags);
-+	/* Someone updated pl->period while we were spinning? */
-+	if (pl->period >= period) {
-+		raw_spin_unlock_irqrestore(&pl->lock, flags);
-+		return;
-+	}
-+	/* Aging zeroed our fraction? */
-+	if (period - pl->period < BITS_PER_LONG)
-+		pl->events >>= period - pl->period;
-+	else
-+		pl->events = 0;
-+	pl->period = period;
-+	raw_spin_unlock_irqrestore(&pl->lock, flags);
-+}
-+
-+/* Event of type pl happened */
-+void __fprop_inc_single(struct fprop_global *p, struct fprop_local_single *pl)
-+{
-+	fprop_reflect_period_single(p, pl);
-+	pl->events++;
-+	percpu_counter_add(&p->events, 1);
-+}
-+
-+/* Return fraction of events of type pl */
-+void fprop_fraction_single(struct fprop_global *p,
-+			   struct fprop_local_single *pl,
-+			   unsigned long *numerator, unsigned long *denominator)
-+{
-+	unsigned int seq;
-+	s64 den;
-+
-+	do {
-+		seq = read_seqcount_begin(&p->sequence);
-+		fprop_reflect_period_single(p, pl);
-+		*numerator = pl->events;
-+		den = percpu_counter_read(&p->events);
-+		if (den <= 0)
-+			den = percpu_counter_sum(&p->events);
-+		*denominator = den;
-+	} while (read_seqcount_retry(&p->sequence, seq));
-+}
-+
-+/*
-+ * ---- PERCPU ----
-+ */
-+#define PROP_BATCH (8*(1+ilog2(nr_cpu_ids)))
-+
-+int fprop_local_init_percpu(struct fprop_local_percpu *pl)
-+{
-+	int err;
-+
-+	err = percpu_counter_init(&pl->events, 0);
-+	if (err)
-+		return err;
-+	pl->period = 0;
-+	raw_spin_lock_init(&pl->lock);
-+	return 0;
-+}
-+
-+void fprop_local_destroy_percpu(struct fprop_local_percpu *pl)
-+{
-+	percpu_counter_destroy(&pl->events);
-+}
-+
-+static void fprop_reflect_period_percpu(struct fprop_global *p,
-+					struct fprop_local_percpu *pl)
-+{
-+	unsigned int period = p->period;
-+	unsigned long flags;
-+
-+	/* Fast path - period didn't change */
-+	if (pl->period == period)
-+		return;
-+	raw_spin_lock_irqsave(&pl->lock, flags);
-+	/* Someone updated pl->period while we were spinning? */
-+	if (pl->period >= period) {
-+		raw_spin_unlock_irqrestore(&pl->lock, flags);
-+		return;
-+	}
-+	/* Aging zeroed our fraction? */
-+	if (period - pl->period < BITS_PER_LONG) {
-+		s64 val = percpu_counter_read(&pl->events);
-+
-+		if (val < (nr_cpu_ids * PROP_BATCH))
-+			val = percpu_counter_sum(&pl->events);
-+
-+		__percpu_counter_add(&pl->events,
-+			-val + (val >> (period-pl->period)), PROP_BATCH);
-+	} else
-+		percpu_counter_set(&pl->events, 0);
-+	pl->period = period;
-+	raw_spin_unlock_irqrestore(&pl->lock, flags);
-+}
-+
-+/* Event of type pl happened */
-+void __fprop_inc_percpu(struct fprop_global *p, struct fprop_local_percpu *pl)
-+{
-+	fprop_reflect_period_percpu(p, pl);
-+	__percpu_counter_add(&pl->events, 1, PROP_BATCH);
-+	percpu_counter_add(&p->events, 1);
-+}
-+
-+void fprop_fraction_percpu(struct fprop_global *p,
-+			   struct fprop_local_percpu *pl,
-+			   unsigned long *numerator, unsigned long *denominator)
-+{
-+	unsigned int seq;
-+	s64 den;
-+
-+	do {
-+		seq = read_seqcount_begin(&p->sequence);
-+		fprop_reflect_period_percpu(p, pl);
-+		*numerator = percpu_counter_read_positive(&pl->events);
-+		den = percpu_counter_read(&p->events);
-+		if (den <= 0)
-+			den = percpu_counter_sum(&p->events);
-+		*denominator = den;
-+	} while (read_seqcount_retry(&p->sequence, seq));
-+}
-+
-+/*
-+ * Like __fprop_inc_percpu() except that event is counted only if the given
-+ * type has fraction smaller than @max_frac/100
-+ */
-+void __fprop_inc_percpu_max(struct fprop_global *p,
-+			    struct fprop_local_percpu *pl, int max_frac)
-+{
-+	if (unlikely(max_frac < 100)) {
-+		unsigned long numerator, denominator;
-+
-+		fprop_fraction_percpu(p, pl, &numerator, &denominator);
-+		if (numerator > ((long long)denominator) * max_frac / 100)
-+			return;
-+	} else
-+		fprop_reflect_period_percpu(p, pl);
-+	__percpu_counter_add(&pl->events, 1, PROP_BATCH);
-+	percpu_counter_add(&p->events, 1);
-+}
-+
--- 
-1.7.1
+SDTL_SHARE_TEMPERATURE could indicate cpumask that shares a temperature
+sensor and needs hopping when the temperature rises to some threshold.
 
+Assumes here is that all these mask are strongly hierarchical and don't
+have weird overlaps (I'd like to meet the hardware architect who puts
+SMT threads in different memory domains).
