@@ -1,58 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755734Ab2EOKdZ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 May 2012 06:33:25 -0400
-Received: from s15943758.onlinehome-server.info ([217.160.130.188]:50145 "EHLO
-	mail.x86-64.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752884Ab2EOKdY (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 May 2012 06:33:24 -0400
-Date: Tue, 15 May 2012 12:33:07 +0200
-From: Borislav Petkov <bp@amd64.org>
-To: Alex Shi <alex.shi@intel.com>
-Cc: Borislav Petkov <bp@amd64.org>, rob@landley.net, tglx@linutronix.de,
-        mingo@redhat.com, hpa@zytor.com, arnd@arndb.de, rostedt@goodmis.org,
-        fweisbec@gmail.com, jeremy@goop.org, gregkh@linuxfoundation.org,
-        riel@redhat.com, luto@mit.edu, avi@redhat.com, len.brown@intel.com,
-        dhowells@redhat.com, fenghua.yu@intel.com, ak@linux.intel.com,
-        cpw@sgi.com, steiner@sgi.com, akpm@linux-foundation.org,
-        penberg@kernel.org, hughd@google.com, rientjes@google.com,
-        kosaki.motohiro@jp.fujitsu.com, n-horiguchi@ah.jp.nec.com,
-        paul.gortmaker@windriver.com, trenn@suse.de, tj@kernel.org,
-        oleg@redhat.com, axboe@kernel.dk, a.p.zijlstra@chello.nl,
-        kamezawa.hiroyu@jp.fujitsu.com, viro@zeniv.linux.org.uk,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v4 3/7] x86/flush_tlb: try flush_tlb_single one by one in
- flush_tlb_range
-Message-ID: <20120515103307.GB27153@aftab.osrc.amd.com>
-References: <1336626013-28413-1-git-send-email-alex.shi@intel.com>
- <1336626013-28413-4-git-send-email-alex.shi@intel.com>
- <20120510084213.GD30055@aftab.osrc.amd.com>
- <4FAB84B6.7060706@intel.com>
- <4FAE18D0.6050001@intel.com>
- <20120513111328.GD28863@aftab.osrc.amd.com>
- <4FB1AC03.2070407@intel.com>
+	id S1755815Ab2EOKo3 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 May 2012 06:44:29 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:20285 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752536Ab2EOKo2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 May 2012 06:44:28 -0400
+Message-ID: <4FB23381.5020007@redhat.com>
+Date: Tue, 15 May 2012 07:44:17 -0300
+From: Mauro Carvalho Chehab <mchehab@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4FB1AC03.2070407@intel.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: mathieu.poirier@linaro.org
+CC: mchehab@infradead.org, linux-media@vger.kernel.org,
+        linux-kernel@vger.kernel.org, arnd@arndb.de
+Subject: Re: [PATCH 2/6] v4l/dvb: fix Kconfig dependencies on VIDEO_CAPTURE_DRIVERS
+References: <1336083747-3142-1-git-send-email-mathieu.poirier@linaro.org> <1336083747-3142-3-git-send-email-mathieu.poirier@linaro.org>
+In-Reply-To: <1336083747-3142-3-git-send-email-mathieu.poirier@linaro.org>
+X-Enigmail-Version: 1.4.1
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, May 15, 2012 at 09:06:11AM +0800, Alex Shi wrote:
-> Thanks for your input. but actually, total 3 labels doesn't looks
-> good. Maybe the following lines can meet your expectation.
+Em 03-05-2012 19:22, mathieu.poirier@linaro.org escreveu:
+> From: Arnd Bergmann <arnd@arndb.de>
+> 
+> Kconfig warns about unsatisfied dependencies of symbols that
+> are directly selected.
+> 
+> Many capture drivers depend on DVB capture drivers, which
+> are hidden behind the CONFIG_DVB_CAPTURE_DRIVERS setting.
+> 
+> The solution here is to enable DVB_CAPTURE_DRIVERS unconditionally
+> when both DVB and VIDEO_CAPTURE_DRIVERS are enabled.
+> 
+> Signed-off-by: Arnd Bergmann <arnd@arndb.de>
+> Signed-off-by: Mathieu Poirier <mathieu.poirier@linaro.org>
+> ---
+>  drivers/media/dvb/Kconfig |    2 +-
+>  1 files changed, 1 insertions(+), 1 deletions(-)
+> 
+> diff --git a/drivers/media/dvb/Kconfig b/drivers/media/dvb/Kconfig
+> index f6e40b3..c617996 100644
+> --- a/drivers/media/dvb/Kconfig
+> +++ b/drivers/media/dvb/Kconfig
+> @@ -29,7 +29,7 @@ config DVB_DYNAMIC_MINORS
+>  	  If you are unsure about this, say N here.
+>  
+>  menuconfig DVB_CAPTURE_DRIVERS
+> -	bool "DVB/ATSC adapters"
+> +	bool "DVB/ATSC adapters" if !VIDEO_CAPTURE_DRIVERS
+>  	depends on DVB_CORE
+>  	default y
+>  	---help---
 
-Yeah, a bit better.
+No, this is not right. Users can select either DVB or V4L2 (or hybrid) 
+devices independently.
 
--- 
-Regards/Gruss,
-Boris.
+If now a warning is happening, is because something changed Kconfig
+behavior on some non-expected way.
 
-Advanced Micro Devices GmbH
-Einsteinring 24, 85609 Dornach
-GM: Alberto Bozzo
-Reg: Dornach, Landkreis Muenchen
-HRB Nr. 43632 WEEE Registernr: 129 19551
+Nack.
+
+Regards,
+Mauro
