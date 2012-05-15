@@ -1,110 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757614Ab2EOHwy (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 May 2012 03:52:54 -0400
-Received: from mailout3.samsung.com ([203.254.224.33]:54693 "EHLO
-	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756824Ab2EOHww (ORCPT
+	id S1757676Ab2EOHxl (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 May 2012 03:53:41 -0400
+Received: from static.78-46-68-141.clients.your-server.de ([78.46.68.141]:57400
+	"HELO eristoteles.iwoars.net" rhost-flags-OK-FAIL-OK-FAIL)
+	by vger.kernel.org with SMTP id S1757111Ab2EOHxk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 May 2012 03:52:52 -0400
-X-AuditID: cbfee61a-b7bbeae000003a71-d8-4fb20b52b197
-From: Jingoo Han <jg1.han@samsung.com>
-To: "'Andrew Morton'" <akpm@linux-foundation.org>,
-        "'LKML'" <linux-kernel@vger.kernel.org>
-Cc: "'Richard Purdie'" <rpurdie@rpsys.net>,
-        "'Matthew Garrett'" <mjg@redhat.com>,
-        "'Jingoo Han'" <jg1.han@samsung.com>
-Subject: [PATCH 2/7] backlight: apple_bl: use pr_debug/err instead of printk
-Date: Tue, 15 May 2012 16:52:50 +0900
-Message-id: <000d01cd326f$b9d5d610$2d818230$%han@samsung.com>
-MIME-version: 1.0
-Content-type: text/plain; charset=us-ascii
-Content-transfer-encoding: 7bit
-X-Mailer: Microsoft Office Outlook 12.0
-Thread-index: Ac0yb7mubNkZQlGmREy4Dd8ONcl1+w==
-Content-language: ko
-X-Brightmail-Tracker: AAAAAA==
-X-TM-AS-MML: No
+	Tue, 15 May 2012 03:53:40 -0400
+Date: Tue, 15 May 2012 09:53:38 +0200 (CEST)
+From: Joel Reardon <joel@clambassador.com>
+X-X-Sender: joel@eristoteles.iwoars.net
+To: Artem Bityutskiy <dedekind1@gmail.com>
+cc: linux-mtd@lists.infradead.org, linux-kernel@vger.kernel.org
+Subject: determining if a block erasure failed
+Message-ID: <alpine.DEB.2.00.1205150944550.17750@eristoteles.iwoars.net>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch uses pr_debug/err instead of printk to allow dynamic debugging.
-It also fixes checkpatch warnings as below:
+I want the caller of erase_worker() to be aware if the erase block became
+bad. Here is the relevant code at the end of erase_worker():
 
-WARNING: Prefer pr_debug(... to printk(KERN_DEBUG, ...
-WARNING: Prefer pr_err(... to printk(KERN_ERR, ...
+/* at this time, the erase has failed. err == -EIO */
+        ubi_msg("mark PEB %d as bad", pnum);
+        err = ubi_io_mark_bad(ubi, pnum);
+        if (err)
+                goto out_ro;
 
-Cc: Matthew Garrett <mjg@redhat.com>
-Cc: Richard Purdie <rpurdie@rpsys.net>
-Signed-off-by: Jingoo Han <jg1.han@samsung.com>
----
- drivers/video/backlight/apple_bl.c |   16 ++++++----------
- 1 files changed, 6 insertions(+), 10 deletions(-)
+/* does other stuff, not touching err */
 
-diff --git a/drivers/video/backlight/apple_bl.c b/drivers/video/backlight/apple_bl.c
-index ef5ca0d..9236e95 100644
---- a/drivers/video/backlight/apple_bl.c
-+++ b/drivers/video/backlight/apple_bl.c
-@@ -61,8 +61,7 @@ static int intel_chipset_send_intensity(struct backlight_device *bd)
- 	int intensity = bd->props.brightness;
- 
- 	if (debug)
--		printk(KERN_DEBUG DRIVER "setting brightness to %d\n",
--		       intensity);
-+		pr_debug("setting brightness to %d\n", intensity);
- 
- 	intel_chipset_set_brightness(intensity);
- 	return 0;
-@@ -77,8 +76,7 @@ static int intel_chipset_get_intensity(struct backlight_device *bd)
- 	intensity = inb(0xb3) >> 4;
- 
- 	if (debug)
--		printk(KERN_DEBUG DRIVER "read brightness of %d\n",
--		       intensity);
-+		pr_debug("read brightness of %d\n", intensity);
- 
- 	return intensity;
- }
-@@ -108,8 +106,7 @@ static int nvidia_chipset_send_intensity(struct backlight_device *bd)
- 	int intensity = bd->props.brightness;
- 
- 	if (debug)
--		printk(KERN_DEBUG DRIVER "setting brightness to %d\n",
--		       intensity);
-+		pr_debug("setting brightness to %d\n", intensity);
- 
- 	nvidia_chipset_set_brightness(intensity);
- 	return 0;
-@@ -124,8 +121,7 @@ static int nvidia_chipset_get_intensity(struct backlight_device *bd)
- 	intensity = inb(0x52f) >> 4;
- 
- 	if (debug)
--		printk(KERN_DEBUG DRIVER "read brightness of %d\n",
--		       intensity);
-+		pr_debug("read brightness of %d\n", intensity);
- 
- 	return intensity;
- }
-@@ -150,7 +146,7 @@ static int __devinit apple_bl_add(struct acpi_device *dev)
- 	host = pci_get_bus_and_slot(0, 0);
- 
- 	if (!host) {
--		printk(KERN_ERR DRIVER "unable to find PCI host\n");
-+		pr_err("unable to find PCI host\n");
- 		return -ENODEV;
- 	}
- 
-@@ -162,7 +158,7 @@ static int __devinit apple_bl_add(struct acpi_device *dev)
- 	pci_dev_put(host);
- 
- 	if (!hw_data) {
--		printk(KERN_ERR DRIVER "unknown hardware\n");
-+		pr_err("unknown hardware\n");
- 		return -ENODEV;
- 	}
- 
--- 
-1.7.1
+/* err == 0 here, because of above goto */
+        return err;
 
+out_ro:
+        ubi_ro_mode(ubi);
+        return err;
+
+
+So, if this function should return zero when the erase block fails, then I
+will add a "result" field to ubi_work that will store the result of the
+work function. But I figured I'd check first if the return err that always
+returns 0 is not an oversight and this function should return -EIO if it
+fails.
+
+cheers,
+Joel Reardon
 
