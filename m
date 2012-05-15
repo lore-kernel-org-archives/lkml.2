@@ -1,17 +1,17 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965892Ab2EOC5l (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 May 2012 22:57:41 -0400
-Received: from mail1.windriver.com ([147.11.146.13]:53279 "EHLO
-	mail1.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S964990Ab2EOCRC (ORCPT
+	id S965880Ab2EOC5j (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 May 2012 22:57:39 -0400
+Received: from mail.windriver.com ([147.11.1.11]:49539 "EHLO
+	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S964866Ab2EOCRD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 May 2012 22:17:02 -0400
+	Mon, 14 May 2012 22:17:03 -0400
 From: Paul Gortmaker <paul.gortmaker@windriver.com>
 To: <stable@kernel.org>, <linux-kernel@vger.kernel.org>
-Subject: [34-longterm 076/179] ksm: fix NULL pointer dereference in scan_get_next_rmap_item()
-Date: Mon, 14 May 2012 22:12:52 -0400
-Message-ID: <1337048075-6132-77-git-send-email-paul.gortmaker@windriver.com>
+Subject: [34-longterm 077/179] migrate: don't account swapcache as shmem
+Date: Mon, 14 May 2012 22:12:53 -0400
+Message-ID: <1337048075-6132-78-git-send-email-paul.gortmaker@windriver.com>
 X-Mailer: git-send-email 1.7.9.6
 In-Reply-To: <1337048075-6132-1-git-send-email-paul.gortmaker@windriver.com>
 References: <1337048075-6132-1-git-send-email-paul.gortmaker@windriver.com>
@@ -21,7 +21,7 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Hugh Dickins <hughd@google.com>
+From: Andrea Arcangeli <aarcange@redhat.com>
 
                    -------------------
     This is a commit scheduled for the next v2.6.34 longterm release.
@@ -29,84 +29,36 @@ From: Hugh Dickins <hughd@google.com>
     If you see a problem with using this for longterm, please comment.
                    -------------------
 
-commit 2b472611a32a72f4a118c069c2d62a1a3f087afd upstream.
+commit 99a15e21d96f6857dafab1e5167e5e8183215c9c upstream.
 
-Andrea Righi reported a case where an exiting task can race against
-ksmd::scan_get_next_rmap_item (http://lkml.org/lkml/2011/6/1/742) easily
-triggering a NULL pointer dereference in ksmd.
+swapcache will reach the below code path in migrate_page_move_mapping,
+and swapcache is accounted as NR_FILE_PAGES but it's not accounted as
+NR_SHMEM.
 
-ksm_scan.mm_slot == &ksm_mm_head with only one registered mm
+Hugh pointed out we must use PageSwapCache instead of comparing
+mapping to &swapper_space, to avoid build failure with CONFIG_SWAP=n.
 
-CPU 1 (__ksm_exit)		CPU 2 (scan_get_next_rmap_item)
- 				list_empty() is false
-lock				slot == &ksm_mm_head
-list_del(slot->mm_list)
-(list now empty)
-unlock
-				lock
-				slot = list_entry(slot->mm_list.next)
-				(list is empty, so slot is still ksm_mm_head)
-				unlock
-				slot->mm == NULL ... Oops
-
-Close this race by revalidating that the new slot is not simply the list
-head again.
-
-Andrea's test case:
-
-#include <stdio.h>
-#include <stdlib.h>
-#include <unistd.h>
-#include <sys/mman.h>
-
-#define BUFSIZE getpagesize()
-
-int main(int argc, char **argv)
-{
-	void *ptr;
-
-	if (posix_memalign(&ptr, getpagesize(), BUFSIZE) < 0) {
-		perror("posix_memalign");
-		exit(1);
-	}
-	if (madvise(ptr, BUFSIZE, MADV_MERGEABLE) < 0) {
-		perror("madvise");
-		exit(1);
-	}
-	*(char *)NULL = 0;
-
-	return 0;
-}
-
-Reported-by: Andrea Righi <andrea@betterlinux.com>
-Tested-by: Andrea Righi <andrea@betterlinux.com>
-Cc: Andrea Arcangeli <aarcange@redhat.com>
-Signed-off-by: Hugh Dickins <hughd@google.com>
-Signed-off-by: Chris Wright <chrisw@sous-sol.org>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Andrea Arcangeli <aarcange@redhat.com>
+Acked-by: Hugh Dickins <hughd@google.com>
 Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
 ---
- mm/ksm.c |    6 ++++++
- 1 file changed, 6 insertions(+)
+ mm/migrate.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/mm/ksm.c b/mm/ksm.c
-index 956880f..5e8e222 100644
---- a/mm/ksm.c
-+++ b/mm/ksm.c
-@@ -1270,6 +1270,12 @@ static struct rmap_item *scan_get_next_rmap_item(struct page **page)
- 		slot = list_entry(slot->mm_list.next, struct mm_slot, mm_list);
- 		ksm_scan.mm_slot = slot;
- 		spin_unlock(&ksm_mmlist_lock);
-+		/*
-+		 * Although we tested list_empty() above, a racing __ksm_exit
-+		 * of the last mm on the list may have removed it since then.
-+		 */
-+		if (slot == &ksm_mm_head)
-+			return NULL;
- next_mm:
- 		ksm_scan.address = 0;
- 		ksm_scan.rmap_list = &slot->rmap_list;
+diff --git a/mm/migrate.c b/mm/migrate.c
+index d3f3f7f..c8e7195 100644
+--- a/mm/migrate.c
++++ b/mm/migrate.c
+@@ -262,7 +262,7 @@ static int migrate_page_move_mapping(struct address_space *mapping,
+ 	 */
+ 	__dec_zone_page_state(page, NR_FILE_PAGES);
+ 	__inc_zone_page_state(newpage, NR_FILE_PAGES);
+-	if (PageSwapBacked(page)) {
++	if (!PageSwapCache(page) && PageSwapBacked(page)) {
+ 		__dec_zone_page_state(page, NR_SHMEM);
+ 		__inc_zone_page_state(newpage, NR_SHMEM);
+ 	}
 -- 
 1.7.9.6
 
