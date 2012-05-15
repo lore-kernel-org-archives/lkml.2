@@ -1,17 +1,17 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965527Ab2EOC3P (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 May 2012 22:29:15 -0400
-Received: from mail.windriver.com ([147.11.1.11]:49866 "EHLO
+	id S965679Ab2EOC3j (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 May 2012 22:29:39 -0400
+Received: from mail.windriver.com ([147.11.1.11]:49862 "EHLO
 	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965500Ab2EOCSN (ORCPT
+	with ESMTP id S964895Ab2EOCSM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 May 2012 22:18:13 -0400
+	Mon, 14 May 2012 22:18:12 -0400
 From: Paul Gortmaker <paul.gortmaker@windriver.com>
 To: <stable@kernel.org>, <linux-kernel@vger.kernel.org>
-Subject: [34-longterm 164/179] perf tools: do not look at ./config for configuration
-Date: Mon, 14 May 2012 22:14:20 -0400
-Message-ID: <1337048075-6132-165-git-send-email-paul.gortmaker@windriver.com>
+Subject: [34-longterm 162/179] ALSA: snd-usb-caiaq: Correct offset fields of outbound iso_frame_desc
+Date: Mon, 14 May 2012 22:14:18 -0400
+Message-ID: <1337048075-6132-163-git-send-email-paul.gortmaker@windriver.com>
 X-Mailer: git-send-email 1.7.9.6
 In-Reply-To: <1337048075-6132-1-git-send-email-paul.gortmaker@windriver.com>
 References: <1337048075-6132-1-git-send-email-paul.gortmaker@windriver.com>
@@ -21,7 +21,7 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Jonathan Nieder <jrnieder@gmail.com>
+From: Daniel Mack <zonque@gmail.com>
 
                    -------------------
     This is a commit scheduled for the next v2.6.34 longterm release.
@@ -29,60 +29,53 @@ From: Jonathan Nieder <jrnieder@gmail.com>
     If you see a problem with using this for longterm, please comment.
                    -------------------
 
-commit aba8d056078e47350d85b06a9cabd5afcc4b72ea upstream.
+commit 15439bde3af7ff88459ea2b5520b77312e958df2 upstream.
 
-In addition to /etc/perfconfig and $HOME/.perfconfig, perf looks for
-configuration in the file ./config, imitating git which looks at
-$GIT_DIR/config.  If ./config is not a perf configuration file, it
-fails, or worse, treats it as a configuration file and changes behavior
-in some unexpected way.
+This fixes faulty outbount packets in case the inbound packets
+received from the hardware are fragmented and contain bogus input
+iso frames. The bug has been there for ages, but for some strange
+reasons, it was only triggered by newer machines in 64bit mode.
 
-"config" is not an unusual name for a file to be lying around and perf
-does not have a private directory dedicated for its own use, so let's
-just stop looking for configuration in the cwd.  Callers needing
-context-sensitive configuration can use the PERF_CONFIG environment
-variable.
-
-Requested-by: Christian Ohm <chr.ohm@gmx.net>
-Cc: 632923@bugs.debian.org
-Cc: Ben Hutchings <ben@decadent.org.uk>
-Cc: Christian Ohm <chr.ohm@gmx.net>
-Cc: Ingo Molnar <mingo@elte.hu>
-Cc: Paul Mackerras <paulus@samba.org>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Link: http://lkml.kernel.org/r/20110805165838.GA7237@elie.gateway.2wire.net
-Signed-off-by: Jonathan Nieder <jrnieder@gmail.com>
-Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
+Signed-off-by: Daniel Mack <zonque@gmail.com>
+Reported-and-tested-by: William Light <wrl@illest.net>
+Reported-by: Pedro Ribeiro <pedrib@gmail.com>
+Signed-off-by: Takashi Iwai <tiwai@suse.de>
 Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
 ---
- tools/perf/util/config.c |    7 -------
- 1 file changed, 7 deletions(-)
+ sound/usb/caiaq/audio.c |    6 ++++--
+ 1 file changed, 4 insertions(+), 2 deletions(-)
 
-diff --git a/tools/perf/util/config.c b/tools/perf/util/config.c
-index 8784649..1720d01 100644
---- a/tools/perf/util/config.c
-+++ b/tools/perf/util/config.c
-@@ -416,7 +416,6 @@ int perf_config_global(void)
- int perf_config(config_fn_t fn, void *data)
- {
- 	int ret = 0, found = 0;
--	char *repo_config = NULL;
- 	const char *home = NULL;
+diff --git a/sound/usb/caiaq/audio.c b/sound/usb/caiaq/audio.c
+index a184e91..75c8446 100644
+--- a/sound/usb/caiaq/audio.c
++++ b/sound/usb/caiaq/audio.c
+@@ -469,6 +469,7 @@ static void read_completed(struct urb *urb)
+ 	struct snd_usb_caiaqdev *dev;
+ 	struct urb *out;
+ 	int frame, len, send_it = 0, outframe = 0;
++	size_t offset = 0;
  
- 	/* Setting $PERF_CONFIG makes perf read _only_ the given config file. */
-@@ -438,12 +437,6 @@ int perf_config(config_fn_t fn, void *data)
- 		free(user_config);
+ 	if (urb->status || !info)
+ 		return;
+@@ -489,7 +490,8 @@ static void read_completed(struct urb *urb)
+ 		len = urb->iso_frame_desc[outframe].actual_length;
+ 		out->iso_frame_desc[outframe].length = len;
+ 		out->iso_frame_desc[outframe].actual_length = 0;
+-		out->iso_frame_desc[outframe].offset = BYTES_PER_FRAME * frame;
++		out->iso_frame_desc[outframe].offset = offset;
++		offset += len;
+ 
+ 		if (len > 0) {
+ 			spin_lock(&dev->spinlock);
+@@ -505,7 +507,7 @@ static void read_completed(struct urb *urb)
  	}
  
--	repo_config = perf_pathdup("config");
--	if (!access(repo_config, R_OK)) {
--		ret += perf_config_from_file(fn, repo_config, data);
--		found += 1;
--	}
--	free(repo_config);
- 	if (found == 0)
- 		return -1;
- 	return ret;
+ 	if (send_it) {
+-		out->number_of_packets = FRAMES_PER_URB;
++		out->number_of_packets = outframe;
+ 		out->transfer_flags = URB_ISO_ASAP;
+ 		usb_submit_urb(out, GFP_ATOMIC);
+ 	}
 -- 
 1.7.9.6
 
