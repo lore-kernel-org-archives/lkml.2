@@ -1,28 +1,27 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965267Ab2EOCRj (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 May 2012 22:17:39 -0400
-Received: from mail1.windriver.com ([147.11.146.13]:52937 "EHLO
+	id S965748Ab2EOCmz (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 May 2012 22:42:55 -0400
+Received: from mail1.windriver.com ([147.11.146.13]:53473 "EHLO
 	mail1.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S964884Ab2EOCQV (ORCPT
+	with ESMTP id S965262Ab2EOCRi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 May 2012 22:16:21 -0400
+	Mon, 14 May 2012 22:17:38 -0400
 From: Paul Gortmaker <paul.gortmaker@windriver.com>
 To: <stable@kernel.org>, <linux-kernel@vger.kernel.org>
-Subject: [34-longterm 027/179] USB: serial: ftdi_sio: adding support for TavIR STK500
-Date: Mon, 14 May 2012 22:12:03 -0400
-Message-ID: <1337048075-6132-28-git-send-email-paul.gortmaker@windriver.com>
+Subject: [34-longterm 121/179] staging: comedi: fix infoleak to userspace
+Date: Mon, 14 May 2012 22:13:37 -0400
+Message-ID: <1337048075-6132-122-git-send-email-paul.gortmaker@windriver.com>
 X-Mailer: git-send-email 1.7.9.6
 In-Reply-To: <1337048075-6132-1-git-send-email-paul.gortmaker@windriver.com>
 References: <1337048075-6132-1-git-send-email-paul.gortmaker@windriver.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Benedek László <benedekl@gmail.com>
+From: Vasiliy Kulikov <segoon@openwall.com>
 
                    -------------------
     This is a commit scheduled for the next v2.6.34 longterm release.
@@ -30,47 +29,34 @@ From: Benedek László <benedekl@gmail.com>
     If you see a problem with using this for longterm, please comment.
                    -------------------
 
-commit 37909fe588c9e09ab57cd267e98678a17ceda64a upstream.
+commit 819cbb120eaec7e014e5abd029260db1ca8c5735 upstream.
 
-Adding support for the TavIR STK500 (id 0403:FA33)
-Atmel AVR programmer device based on FTDI FT232RL.
+driver_name and board_name are pointers to strings, not buffers of size
+COMEDI_NAMELEN.  Copying COMEDI_NAMELEN bytes of a string containing
+less than COMEDI_NAMELEN-1 bytes would leak some unrelated bytes.
 
-Signed-off-by: Benedek László <benedekl@gmail.com>
+Signed-off-by: Vasiliy Kulikov <segoon@openwall.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
 ---
- drivers/usb/serial/ftdi_sio.c     |    1 +
- drivers/usb/serial/ftdi_sio_ids.h |    5 +++++
- 2 files changed, 6 insertions(+)
+ drivers/staging/comedi/comedi_fops.c |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/usb/serial/ftdi_sio.c b/drivers/usb/serial/ftdi_sio.c
-index 7d0107a..eac7330 100644
---- a/drivers/usb/serial/ftdi_sio.c
-+++ b/drivers/usb/serial/ftdi_sio.c
-@@ -570,6 +570,7 @@ static struct usb_device_id id_table_combined [] = {
- 	{ USB_DEVICE(FTDI_VID, FTDI_IBS_APP70_PID) },
- 	{ USB_DEVICE(FTDI_VID, FTDI_IBS_PEDO_PID) },
- 	{ USB_DEVICE(FTDI_VID, FTDI_IBS_PROD_PID) },
-+	{ USB_DEVICE(FTDI_VID, FTDI_TAVIR_STK500_PID) },
- 	/*
- 	 * ELV devices:
- 	 */
-diff --git a/drivers/usb/serial/ftdi_sio_ids.h b/drivers/usb/serial/ftdi_sio_ids.h
-index aaeb159..a644665 100644
---- a/drivers/usb/serial/ftdi_sio_ids.h
-+++ b/drivers/usb/serial/ftdi_sio_ids.h
-@@ -491,6 +491,11 @@
- /* www.canusb.com Lawicel CANUSB device (FTDI_VID) */
- #define FTDI_CANUSB_PID 0xFFA8 /* Product Id */
+diff --git a/drivers/staging/comedi/comedi_fops.c b/drivers/staging/comedi/comedi_fops.c
+index aca9674..ac6527c 100644
+--- a/drivers/staging/comedi/comedi_fops.c
++++ b/drivers/staging/comedi/comedi_fops.c
+@@ -362,8 +362,8 @@ static int do_devinfo_ioctl(struct comedi_device *dev,
+ 	/* fill devinfo structure */
+ 	devinfo.version_code = COMEDI_VERSION_CODE;
+ 	devinfo.n_subdevs = dev->n_subdevices;
+-	memcpy(devinfo.driver_name, dev->driver->driver_name, COMEDI_NAMELEN);
+-	memcpy(devinfo.board_name, dev->board_name, COMEDI_NAMELEN);
++	strlcpy(devinfo.driver_name, dev->driver->driver_name, COMEDI_NAMELEN);
++	strlcpy(devinfo.board_name, dev->board_name, COMEDI_NAMELEN);
  
-+/*
-+ * TavIR AVR product ids (FTDI_VID)
-+ */
-+#define FTDI_TAVIR_STK500_PID	0xFA33	/* STK500 AVR programmer */
-+
- 
- 
- /********************************/
+ 	if (read_subdev)
+ 		devinfo.read_subdevice = read_subdev - dev->subdevices;
 -- 
 1.7.9.6
 
