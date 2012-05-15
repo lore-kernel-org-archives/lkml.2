@@ -1,106 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932976Ab2EOVjD (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 May 2012 17:39:03 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:36676 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757133Ab2EOVjB (ORCPT
+	id S933082Ab2EOVmz (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 May 2012 17:42:55 -0400
+Received: from e23smtp09.au.ibm.com ([202.81.31.142]:56515 "EHLO
+	e23smtp09.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932895Ab2EOVmw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 May 2012 17:39:01 -0400
-Date: Tue, 15 May 2012 14:38:59 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Doug Ledford <dledford@redhat.com>
-Cc: Sasha Levin <levinsasha928@gmail.com>, kosaki.motohiro@jp.fujitsu.com,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] ipc/mqueue: use correct gfp flags in msg_insert
-Message-Id: <20120515143859.c3cad9b7.akpm@linux-foundation.org>
-In-Reply-To: <4FB1C365.3090006@redhat.com>
-References: <1337029525-8760-1-git-send-email-levinsasha928@gmail.com>
-	<20120514165401.e4efc2fd.akpm@linux-foundation.org>
-	<4FB1C365.3090006@redhat.com>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	Tue, 15 May 2012 17:42:52 -0400
+Message-ID: <4FB2CDAD.4020306@linux.vnet.ibm.com>
+Date: Wed, 16 May 2012 03:12:05 +0530
+From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120424 Thunderbird/12.0
+MIME-Version: 1.0
+To: David Rientjes <rientjes@google.com>
+CC: Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Nishanth Aravamudan <nacc@linux.vnet.ibm.com>, mingo@kernel.org,
+        pjt@google.com, paul@paulmenage.org, akpm@linux-foundation.org,
+        rjw@sisk.pl, nacc@us.ibm.com, paulmck@linux.vnet.ibm.com,
+        tglx@linutronix.de, seto.hidetoshi@jp.fujitsu.com, tj@kernel.org,
+        mschmidt@redhat.com, berrange@redhat.com, nikunj@linux.vnet.ibm.com,
+        vatsa@linux.vnet.ibm.com, liuj97@gmail.com,
+        linux-kernel@vger.kernel.org, linux-pm@vger.kernel.org
+Subject: Re: [PATCH v3 5/5] cpusets, suspend: Save and restore cpusets during
+ suspend/resume
+References: <20120513231325.3566.37740.stgit@srivatsabhat> <20120513231710.3566.45349.stgit@srivatsabhat> <alpine.DEB.2.00.1205141735050.25235@chino.kir.corp.google.com> <20120515014042.GA9774@linux.vnet.ibm.com> <alpine.DEB.2.00.1205142055160.10906@chino.kir.corp.google.com> <20120515044539.GA25256@linux.vnet.ibm.com> <alpine.DEB.2.00.1205151106490.24304@chino.kir.corp.google.com> <1337112653.27694.110.camel@twins> <alpine.DEB.2.00.1205151346570.1656@chino.kir.corp.google.com> <1337116107.27694.114.camel@twins> <alpine.DEB.2.00.1205151414210.1656@chino.kir.corp.google.com>
+In-Reply-To: <alpine.DEB.2.00.1205151414210.1656@chino.kir.corp.google.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
+x-cbid: 12051512-3568-0000-0000-000001C5DF6D
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 14 May 2012 22:45:57 -0400
-Doug Ledford <dledford@redhat.com> wrote:
+On 05/16/2012 02:54 AM, David Rientjes wrote:
 
-> On 5/14/2012 7:54 PM, Andrew Morton wrote:
-> > On Mon, 14 May 2012 23:05:25 +0200
-> > Sasha Levin <levinsasha928@gmail.com> wrote:
-> > 
-> >> msg_insert() tries to allocate using GFP_KERNEL, while in both cases when it's called,
-> >> it's coming from an atomic context. Introduced by 7dd7edf ("ipc/mqueue: improve
-> >> performance of send/recv").
-> >>
-> >> Use GFP_ATOMIC instead.
-> >>
-> >> Also, fix up coding style in the kzalloc while we're there.
-> >>
-> >> Signed-off-by: Sasha Levin <levinsasha928@gmail.com>
-> >> ---
-> >>  ipc/mqueue.c |    2 +-
-> >>  1 files changed, 1 insertions(+), 1 deletions(-)
-> >>
-> >> diff --git a/ipc/mqueue.c b/ipc/mqueue.c
-> >> index 30f6f8f..9ec6896 100644
-> >> --- a/ipc/mqueue.c
-> >> +++ b/ipc/mqueue.c
-> >> @@ -133,7 +133,7 @@ static int msg_insert(struct msg_msg *msg, struct mqueue_inode_info *info)
-> >>  		else
-> >>  			p = &(*p)->rb_right;
-> >>  	}
-> >> -	leaf = kzalloc(sizeof(struct posix_msg_tree_node), GFP_KERNEL);
-> >> +	leaf = kzalloc(sizeof(*leaf), GFP_ATOMIC);
-> >>  	if (!leaf)
-> >>  		return -ENOMEM;
-> >>  	rb_init_node(&leaf->rb_node);
-> > 
-> > hm, that should have spewed warnings everywhere the first time anyone
-> > tested it.  Doug, is a re-read of Documentation/SubmitChecklist needed?
+> On Tue, 15 May 2012, Peter Zijlstra wrote:
 > 
-> Re-read?  I never it read it a first time, so hard for me to re-read it.
->  But thanks for pointing it out.  Now I've read it.
-
-I was being nice ;)
-
-> > Switching to GFP_ATOMIC is a bit regrettable.  Can we avoid this by
-> > speculatively allocating the memory before taking the lock, then free
-> > it again if we ended up not using it?
+>>> Why can't we leave cpuset.cpus unaltered for all cpusets during suspend?  
+>>
+>> We can, that's what Srivatsa is going to make. The only thing I object
+>> to is the !suspend hotplug case.
+>>
 > 
-> Not really, we take the lock in a different function than this and would
-> have to pass around a node struct and then free it if we didn't use it.
->  I mean, it could be done, but it would fugly the calls around this up.
->  The msg_insert() routine is called in two places.  In one place, the
-> lock is taken right there so you could allocate before and then call.
-> In the other, it is another function called with the lock held so now
-> you would have to pass the possible mem allocation around two functions.
->  Doable, but ugly.
+> Srivatsa is going to do that in another patchset in addition to this one?
 
-Well, it's not *too* bad: just pass a void** around, zero it if it got
-used, then unconditionally free it.  Nice and easy.
 
-But in a contest between source-level beauty and runtime robustness,
-robustness surely wins?
+Nope. This v3 itself is the full implementation.
 
->  On the other hand, this is a small struct that
-> should be coming off one of the small size kmem cache pools (4 pointers
-> total, a long, and an int, so kmalloc-32 or kmalloc-64 depending on
-> arch).  That doesn't seem like a likely candidate to fail if there is
-> memory pressure, especially considering that immediately prior to taking
-> the lock we call kmalloc with GFP_KERNEL (as part of load_msg()) and so
-> we should either not be under serious memory pressure or we would have
-> slept waiting for it to ease up.
+> We shouldn't need to store any old cpumask at all, just allow cpuset.cpus 
+> to be a superset of online cpus during s/r and don't touch cpusets at all 
+> since the cpus, as you said, are guaranteed to come back.
+> 
 
-True.  But weaselly!
 
-> I think I can imagine a better way to do this though as part of the
-> whole request to cache at least one rbnode entry so we get the 0 message
-> performance of the queue back.  I'll send that patch through once I've
-> verified it does what I think it will.
+Oh, I am really sorry to say this, but this method has got 'history' ;-)
+(Argh, I really should have put pointers to v1 and v2 in patch 0/5...)
 
-That sounds good.
+What you are suggesting was precisely the v1 of this patchset, which went
+upstream as commit 8f2f748b06562 (CPU hotplug, cpusets, suspend: Don't touch
+cpusets during suspend/resume).
+
+It got reverted due to a nasty suspend hang in some corner case, where the
+sched domains not being up-to-date got the scheduler confused.
+Here is the thread with that discussion:
+http://thread.gmane.org/gmane.linux.kernel/1262802/focus=1286289
+
+As Peter suggested, I'll try to fix the issues at the 2 places that I found
+where the scheduler gets confused despite the cpu_active mask being up-to-date.
+
+But, I really want to avoid that scheduler fix and this cpuset fix from
+being tied together, for the fear that until we root-cause and fix all
+scheduler bugs related to cpu_active mask, we can never get cpusets fixed
+once and for all for suspend/resume. So, this patchset does an explicit
+save and restore to be sure, and so that we don't depend on some other/unknown
+factors to make this work reliably.
+
+Regards,
+Srivatsa S. Bhat
+
