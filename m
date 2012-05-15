@@ -1,17 +1,17 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965828Ab2EOCwl (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 May 2012 22:52:41 -0400
-Received: from mail1.windriver.com ([147.11.146.13]:53376 "EHLO
-	mail1.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965091Ab2EOCRQ (ORCPT
+	id S965099Ab2EOCw4 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 May 2012 22:52:56 -0400
+Received: from mail.windriver.com ([147.11.1.11]:49629 "EHLO
+	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S965085Ab2EOCRQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 14 May 2012 22:17:16 -0400
 From: Paul Gortmaker <paul.gortmaker@windriver.com>
 To: <stable@kernel.org>, <linux-kernel@vger.kernel.org>
-Subject: [34-longterm 094/179] USB: don't let errors prevent system sleep
-Date: Mon, 14 May 2012 22:13:10 -0400
-Message-ID: <1337048075-6132-95-git-send-email-paul.gortmaker@windriver.com>
+Subject: [34-longterm 093/179] 6pack,mkiss: fix lock inconsistency
+Date: Mon, 14 May 2012 22:13:09 -0400
+Message-ID: <1337048075-6132-94-git-send-email-paul.gortmaker@windriver.com>
 X-Mailer: git-send-email 1.7.9.6
 In-Reply-To: <1337048075-6132-1-git-send-email-paul.gortmaker@windriver.com>
 References: <1337048075-6132-1-git-send-email-paul.gortmaker@windriver.com>
@@ -21,7 +21,7 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Alan Stern <stern@rowland.harvard.edu>
+From: Arnd Bergmann <arnd@arndb.de>
 
                    -------------------
     This is a commit scheduled for the next v2.6.34 longterm release.
@@ -29,57 +29,69 @@ From: Alan Stern <stern@rowland.harvard.edu>
     If you see a problem with using this for longterm, please comment.
                    -------------------
 
-commit 0af212ba8f123c2eba151af7726c34a50b127962 upstream.
+commit 6e4e2f811bade330126d4029c88c831784a7efd9 upstream.
 
-This patch (as1464) implements the recommended policy that most errors
-during suspend or hibernation should not prevent the system from going
-to sleep.  In particular, failure to suspend a USB driver or a USB
-device should not prevent the sleep from succeeding:
+Lockdep found a locking inconsistency in the mkiss_close function:
 
-Failure to suspend a device won't matter, because the device will
-automatically go into suspend mode when the USB bus stops carrying
-packets.  (This might be less true for USB-3.0 devices, but let's not
-worry about them now.)
+> kernel: [ INFO: inconsistent lock state ]
+> kernel: 2.6.39.1 #3
+> kernel: ---------------------------------
+> kernel: inconsistent {IN-SOFTIRQ-R} -> {SOFTIRQ-ON-W} usage.
+> kernel: ax25ipd/2813 [HC0[0]:SC0[0]:HE1:SE1] takes:
+> kernel: (disc_data_lock){+++?.-}, at: [<ffffffffa018552b>] mkiss_close+0x1b/0x90 [mkiss]
+> kernel: {IN-SOFTIRQ-R} state was registered at:
 
-Failure of a driver to suspend might lead to trouble later on when the
-system wakes up, but it isn't sufficient reason to prevent the system
-from going to sleep.
+The message hints that disc_data_lock is aquired with softirqs disabled,
+but does not itself disable softirqs, which can in rare circumstances
+lead to a deadlock.
+The same problem is present in the 6pack driver, this patch fixes both
+by using write_lock_bh instead of write_lock.
 
-Signed-off-by: Alan Stern <stern@rowland.harvard.edu>
-Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
+Reported-by: Bernard F6BVP <f6bvp@free.fr>
+Tested-by: Bernard F6BVP <f6bvp@free.fr>
+Signed-off-by: Arnd Bergmann <arnd@arndb.de>
+Acked-by: Ralf Baechle<ralf@linux-mips.org>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
 ---
- drivers/usb/core/driver.c |   11 ++++++++++-
- 1 file changed, 10 insertions(+), 1 deletion(-)
+ drivers/net/hamradio/6pack.c |    4 ++--
+ drivers/net/hamradio/mkiss.c |    4 ++--
+ 2 files changed, 4 insertions(+), 4 deletions(-)
 
-diff --git a/drivers/usb/core/driver.c b/drivers/usb/core/driver.c
-index 212b5e82..f045f19 100644
---- a/drivers/usb/core/driver.c
-+++ b/drivers/usb/core/driver.c
-@@ -1183,13 +1183,22 @@ static int usb_suspend_both(struct usb_device *udev, pm_message_t msg)
- 		for (i = n - 1; i >= 0; --i) {
- 			intf = udev->actconfig->interface[i];
- 			status = usb_suspend_interface(udev, intf, msg);
-+
-+			/* Ignore errors during system sleep transitions */
-+			if (!(msg.event & PM_EVENT_AUTO))
-+				status = 0;
- 			if (status != 0)
- 				break;
- 		}
- 	}
--	if (status == 0)
-+	if (status == 0) {
- 		status = usb_suspend_device(udev, msg);
+diff --git a/drivers/net/hamradio/6pack.c b/drivers/net/hamradio/6pack.c
+index 4b52c76..26843e2 100644
+--- a/drivers/net/hamradio/6pack.c
++++ b/drivers/net/hamradio/6pack.c
+@@ -692,10 +692,10 @@ static void sixpack_close(struct tty_struct *tty)
+ {
+ 	struct sixpack *sp;
  
-+		/* Again, ignore errors during system sleep transitions */
-+		if (!(msg.event & PM_EVENT_AUTO))
-+			status = 0;
-+	}
-+
- 	/* If the suspend failed, resume interfaces that did get suspended */
- 	if (status != 0) {
- 		msg.event ^= (PM_EVENT_SUSPEND | PM_EVENT_RESUME);
+-	write_lock(&disc_data_lock);
++	write_lock_bh(&disc_data_lock);
+ 	sp = tty->disc_data;
+ 	tty->disc_data = NULL;
+-	write_unlock(&disc_data_lock);
++	write_unlock_bh(&disc_data_lock);
+ 	if (!sp)
+ 		return;
+ 
+diff --git a/drivers/net/hamradio/mkiss.c b/drivers/net/hamradio/mkiss.c
+index 66e88bd..bb94407 100644
+--- a/drivers/net/hamradio/mkiss.c
++++ b/drivers/net/hamradio/mkiss.c
+@@ -813,10 +813,10 @@ static void mkiss_close(struct tty_struct *tty)
+ {
+ 	struct mkiss *ax;
+ 
+-	write_lock(&disc_data_lock);
++	write_lock_bh(&disc_data_lock);
+ 	ax = tty->disc_data;
+ 	tty->disc_data = NULL;
+-	write_unlock(&disc_data_lock);
++	write_unlock_bh(&disc_data_lock);
+ 
+ 	if (!ax)
+ 		return;
 -- 
 1.7.9.6
 
