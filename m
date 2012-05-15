@@ -1,94 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932828Ab2EOB1r (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 May 2012 21:27:47 -0400
-Received: from ozlabs.org ([203.10.76.45]:49626 "EHLO ozlabs.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932652Ab2EOB1q (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 May 2012 21:27:46 -0400
-From: Rusty Russell <rusty@rustcorp.com.au>
-To: KOSAKI Motohiro <kosaki.motohiro@gmail.com>
-Cc: KOSAKI Motohiro <kosaki.motohiro@gmail.com>,
-        Ingo Molnar <mingo@redhat.com>, x86@kernel.org,
-        LKML <linux-kernel@vger.kernel.org>, anton@samba.org,
-        Arnd Bergmann <arnd@arndb.de>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Mike Travis <travis@sgi.com>, Thomas Gleixner <tglx@linutronix.de>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Al Viro <viro@zeniv.linux.org.uk>
-Subject: Re: [PULL] cpumask: finally make them variable size w/ CPUMASK_OFFSTACK.
-In-Reply-To: <4FAB6363.4080808@gmail.com>
-References: <87ipg5c2bk.fsf@rustcorp.com.au> <4FAB1AC9.1050306@gmail.com> <871umsdbm0.fsf@rustcorp.com.au> <4FAB2B5B.4020902@gmail.com> <87vck4bppw.fsf@rustcorp.com.au> <4FAB6363.4080808@gmail.com>
-User-Agent: Notmuch/0.12 (http://notmuchmail.org) Emacs/23.3.1 (i686-pc-linux-gnu)
-Date: Mon, 14 May 2012 12:28:49 +0930
-Message-ID: <87zk9btqmu.fsf@rustcorp.com.au>
+	id S964809Ab2EOBgJ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 May 2012 21:36:09 -0400
+Received: from cn.fujitsu.com ([222.73.24.84]:41599 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S932811Ab2EOBgF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 14 May 2012 21:36:05 -0400
+X-IronPort-AV: E=Sophos;i="4.75,590,1330876800"; 
+   d="scan'208";a="4953313"
+Message-ID: <4FB1B3DB.3050808@cn.fujitsu.com>
+Date: Tue, 15 May 2012 09:39:39 +0800
+From: Liu Bo <liubo2009@cn.fujitsu.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1b3pre) Gecko/20090513 Fedora/3.0-2.3.beta2.fc11 Thunderbird/3.0b2
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+To: Arnd Hannemann <arnd@arndnet.de>
+CC: linux-btrfs@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: 3.4.0-rc6: WARNING: at fs/btrfs/super.c:219 __btrfs_abort_transaction+0xae/0xc0
+ [btrfs]()
+References: <4FB10636.2010003@arndnet.de>
+In-Reply-To: <4FB10636.2010003@arndnet.de>
+X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2012/05/15 09:34:54,
+	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2012/05/15 09:34:55,
+	Serialize complete at 2012/05/15 09:34:55
+Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=ISO-8859-15
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 10 May 2012 02:42:43 -0400, KOSAKI Motohiro <kosaki.motohiro@gmail.com> wrote:
-> (5/10/12 12:54 AM), Rusty Russell wrote:
-> > On Wed, 09 May 2012 22:43:39 -0400, KOSAKI Motohiro<kosaki.motohiro@gmail.com>  wrote:
-> >>> Or is there a reason we shouldn't even try to allocate here?
-> >>
-> >> 1) your code always use GFP_KERNEL. it is trouble maker when alloc_pages w/ GFP_ATOMIC.
-> >
-> > Oh :(
-> >
-> > How about the below instead?
+On 05/14/2012 09:18 PM, Arnd Hannemann wrote:
+
+> Hi,
 > 
-> This code still slow than original. when calling reclaim path, new allocation is almost always
-> fail. then, your code almost always invoke all cpu batch invalidation. i.e. many ipi.
-
-I don't know this code.  Does that happen often?  Do we really need to
-optimize the out-of-memory path?
-
-But I should have used on_each_cpu_cond() helper which does this for us
-(except it falls back to individial IPIs) which would make this code
-neater.
-
-> >> 2) When CONFIG_CPUMASK_OFFSTACK=n and NR_CPUS is relatively large, cpumask on stack may
-> >> cause stack overflow. because of, alloc_pages() can be called from
-> >> very deep call stack.
-> >
-> > You can't have large NR_CPUS without CONFIG_CPUMASK_OFFSTACK=y,
-> > otherwise you'll get many other stack overflows, too.
+> I just got the following warning on a compressed btrfs filesystem, while writing on it
+> until no remaining space was available.
+> Looks like a bit verbose "disk full" message, is it expected behavior?
 > 
-> Original code put cpumask bss instead stack then. :-)
 
-Yes, and this is what it looks like if we convert it directly, but I
-still don't want to encourage people to do this :(
 
-Cheers,
-Rusty.
+Hi Arnd,
 
-diff --git a/mm/page_alloc.c b/mm/page_alloc.c
---- a/mm/page_alloc.c
-+++ b/mm/page_alloc.c
-@@ -1179,7 +1179,7 @@ void drain_all_pages(void)
- 	 * Allocate in the BSS so we wont require allocation in
- 	 * direct reclaim path for CONFIG_CPUMASK_OFFSTACK=y
- 	 */
--	static cpumask_t cpus_with_pcps;
-+	static DECLARE_BITMAP(cpus_with_pcps, NR_CPUS);
- 
- 	/*
- 	 * We don't care about racing with CPU hotplug event
-@@ -1197,11 +1197,12 @@ void drain_all_pages(void)
- 			}
- 		}
- 		if (has_pcps)
--			cpumask_set_cpu(cpu, &cpus_with_pcps);
-+			cpumask_set_cpu(cpu, to_cpumask(cpus_with_pcps));
- 		else
--			cpumask_clear_cpu(cpu, &cpus_with_pcps);
-+			cpumask_clear_cpu(cpu, to_cpumask(cpus_with_pcps));
- 	}
--	on_each_cpu_mask(&cpus_with_pcps, drain_local_pages, NULL, 1);
-+	on_each_cpu_mask(to_cpumask(cpus_with_pcps),
-+			 drain_local_pages, NULL, 1);
- }
- 
- #ifdef CONFIG_HIBERNATION
+Can you add another mount option "enospc_debug", like mount xx xxx -o compress,enospc_debug?
+
+Plz show us what you get, there might be a space leak.
+
+thanks,
+liubo
+
+
+> [22403.015529] ------------[ cut here ]------------
+> [22403.015572] WARNING: at /home/arnd/Projekte/kernel/linux-2.6/fs/btrfs/super.c:219 __btrfs_abort_transaction+0xae/0xc0 [btrfs]()
+> [22403.015577] Hardware name: 4384GEG
+> [22403.015579] btrfs: Transaction aborted
+> [22403.015581] Modules linked in: dm_crypt ip6table_filter ip6_tables ebtable_nat ebtables ipt_MASQUERADE iptable_nat nf_nat nf_conntrack_ipv4 nf_defrag_ipv4 xt_state nf_conntrack ipt_REJECT xt_CHECKSUM iptable_mangle xt_tcpudp iptable_filter ip_tables x_tables joydev bridge stp llc kvm_intel kvm bnep rfcomm bluetooth binfmt_misc arc4 snd_hda_codec_hdmi snd_hda_codec_conexant coretemp snd_hda_intel thinkpad_acpi microcode snd_hda_codec snd_hwdep snd_pcm qcserial usb_wwan psmouse usbserial snd_seq_midi serio_raw snd_rawmidi iwlwifi snd_seq_midi_event snd_seq intel_ips mac80211 snd_timer snd_seq_device cfg80211 snd snd_page_alloc mei(C) soundcore tpm_tis nvram btrfs zlib_deflate libcrc32c mxm_wmi ghash_clmulni_intel aesni_intel cryptd aes_x86_64 i915 drm_kms_helper sdhci_pci sdhci drm firewire_ohci i2c_algo_bit firewire_core crc_itu_t ahci libahci wmi video e1000e
+> [22403.015668] Pid: 24802, comm: btrfs-delalloc- Tainted: G         C   3.4.0-rc6aha+ #8
+> [22403.015671] Call Trace:
+> [22403.015683]  [<ffffffff8104e35f>] warn_slowpath_common+0x7f/0xc0
+> [22403.015689]  [<ffffffff8104e456>] warn_slowpath_fmt+0x46/0x50
+> [22403.015711]  [<ffffffffa01c63fd>] ? btrfs_reserve_extent+0xed/0x250 [btrfs]
+> [22403.015728]  [<ffffffffa01b1bde>] __btrfs_abort_transaction+0xae/0xc0 [btrfs]
+> [22403.015754]  [<ffffffffa01dea12>] submit_compressed_extents+0x212/0x480 [btrfs]
+> [22403.015781]  [<ffffffffa01ded04>] async_cow_submit+0x84/0x90 [btrfs]
+> [22403.015807]  [<ffffffffa0206988>] run_ordered_completions+0x78/0xf0 [btrfs]
+> [22403.015833]  [<ffffffffa0207395>] worker_loop+0x185/0x5d0 [btrfs]
+> [22403.015840]  [<ffffffff810792c8>] ? __wake_up_common+0x58/0x90
+> [22403.015867]  [<ffffffffa0207210>] ? btrfs_queue_worker+0x310/0x310 [btrfs]
+> [22403.015873]  [<ffffffff81070b83>] kthread+0x93/0xa0
+> [22403.015880]  [<ffffffff81628224>] kernel_thread_helper+0x4/0x10
+> [22403.015886]  [<ffffffff81070af0>] ? kthread_freezable_should_stop+0x70/0x70
+> [22403.015891]  [<ffffffff81628220>] ? gs_change+0x13/0x13
+> [22403.015895] ---[ end trace 768f569fb0306239 ]---
+> [22403.015898] BTRFS warning (device dm-6): Aborting unused transaction.
+> [22403.064892] BTRFS warning (device dm-6): Aborting unused transaction.
+> [22403.094675] BTRFS warning (device dm-6): Aborting unused transaction.
+> [22403.512902] BTRFS warning (device dm-6): Aborting unused transaction.
+> [22403.703871] BTRFS warning (device dm-6): Aborting unused transaction.
+> [22403.709637] BTRFS warning (device dm-6): Aborting unused transaction.
+> [22403.721362] BTRFS warning (device dm-6): Aborting unused transaction.
+> [22403.736999] BTRFS warning (device dm-6): Aborting unused transaction.
+> [22403.794067] BTRFS warning (device dm-6): Aborting unused transaction.
+> [22403.799009] BTRFS warning (device dm-6): Aborting unused transaction.
+> [22404.035483] BTRFS warning (device dm-6): Aborting unused transaction.
+> [22404.108751] BTRFS warning (device dm-6): Aborting unused transaction.
+> 
+> Best regards
+> Arnd
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-btrfs" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> 
+
+
