@@ -1,78 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S966538Ab2EOTSZ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 May 2012 15:18:25 -0400
-Received: from e23smtp03.au.ibm.com ([202.81.31.145]:46899 "EHLO
-	e23smtp03.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S966435Ab2EOTSY (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 May 2012 15:18:24 -0400
-Message-ID: <4FB2ABD0.4000104@linux.vnet.ibm.com>
-Date: Wed, 16 May 2012 00:47:36 +0530
-From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120424 Thunderbird/12.0
+	id S966551Ab2EOTTU (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 May 2012 15:19:20 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:25436 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S966416Ab2EOTTS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 May 2012 15:19:18 -0400
+From: Jeff Moyer <jmoyer@redhat.com>
+To: Lin Ming <ming.m.lin@intel.com>
+Cc: Jens Axboe <axboe@kernel.dk>, Alan Stern <stern@rowland.harvard.edu>,
+        linux-kernel@vger.kernel.org, linux-pm@vger.kernel.org,
+        linux-scsi@vger.kernel.org
+Subject: Re: [RFC PATCH 3/3] block: add queue idle timer
+References: <1337071697-30920-1-git-send-email-ming.m.lin@intel.com>
+	<1337071697-30920-4-git-send-email-ming.m.lin@intel.com>
+X-PGP-KeyID: 1F78E1B4
+X-PGP-CertKey: F6FE 280D 8293 F72C 65FD  5A58 1FF8 A7CA 1F78 E1B4
+X-PCLoadLetter: What the f**k does that mean?
+Date: Tue, 15 May 2012 15:19:11 -0400
+In-Reply-To: <1337071697-30920-4-git-send-email-ming.m.lin@intel.com> (Lin
+	Ming's message of "Tue, 15 May 2012 16:48:17 +0800")
+Message-ID: <x49mx59b6c0.fsf@segfault.boston.devel.redhat.com>
+User-Agent: Gnus/5.110011 (No Gnus v0.11) Emacs/23.1 (gnu/linux)
 MIME-Version: 1.0
-To: David Rientjes <rientjes@google.com>
-CC: a.p.zijlstra@chello.nl, mingo@kernel.org, pjt@google.com,
-        paul@paulmenage.org, akpm@linux-foundation.org, rjw@sisk.pl,
-        nacc@us.ibm.com, paulmck@linux.vnet.ibm.com, tglx@linutronix.de,
-        seto.hidetoshi@jp.fujitsu.com, tj@kernel.org, mschmidt@redhat.com,
-        berrange@redhat.com, nikunj@linux.vnet.ibm.com,
-        vatsa@linux.vnet.ibm.com, liuj97@gmail.com,
-        linux-kernel@vger.kernel.org, linux-pm@vger.kernel.org
-Subject: Re: [PATCH v3 4/5] cpusets: Add provisions for distinguishing CPU
- Hotplug in suspend/resume path
-References: <20120513231325.3566.37740.stgit@srivatsabhat> <20120513231638.3566.30867.stgit@srivatsabhat> <alpine.DEB.2.00.1205141732570.25235@chino.kir.corp.google.com> <4FB24C36.7000702@linux.vnet.ibm.com> <alpine.DEB.2.00.1205151133450.24304@chino.kir.corp.google.com>
-In-Reply-To: <alpine.DEB.2.00.1205151133450.24304@chino.kir.corp.google.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-x-cbid: 12051509-6102-0000-0000-0000017DC04C
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/16/2012 12:04 AM, David Rientjes wrote:
+Lin Ming <ming.m.lin@intel.com> writes:
 
-> On Tue, 15 May 2012, Srivatsa S. Bhat wrote:
-> 
->>>> Cpusets needs to distinguish between a regular CPU Hotplug operation and a
->>>> CPU Hotplug operation carried out as part of the suspend/resume sequence.
->>>> So add provisions to facilitate that, so that the two operations can be
->>>> handled differently.
->>>>
->>>
->>> There's no functional change with this patch and it's unclear from this 
->>> changelog why we need to distinguish between the two, so perhaps fold this 
->>> into patch 5 or explain how this will be helpful in this changelog?  
->>> Otherwise it doesn't seem justifiable to add 30 more lines of code.
->>
->>
->> Well, as 0/5 explains, this whole patchset is a suspend/resume-only fix.
->> So we need special-case handling for suspend/resume in cpusets. So the
->> additional code is justified, IMHO. It prepares the ground for patch 5.
->>
-> 
-> Your change, once merged, will not carry patch 0/5 here, so it would be 
-> helpful to understand why we need to distinguish between the two as a 
-> stand-alone patch in your changelog.
-> 
+> Add an idle timer that is set to some suitable timeout and would be
+> added when the queue first goes empty. If nothing has happened during
+> the timeout interval, then the queue is suspended.
+>
+> Queueing a new request could check the state and resume queue if it is
+> supended.
+>
 
+[snip]
 
-Sorry, I didn't quite get your point. Do you just want me to update this
-changelog or do you still want me to squash this patch with patch 5?
+> @@ -1129,6 +1141,13 @@ void __blk_put_request(struct request_queue *q, struct request *req)
+>  	if (unlikely(--req->ref_count))
+>  		return;
+>  
+> +	/* PM request is not accounted */
+> +	if (!(req->cmd_flags & REQ_PM)) {
+> +		if (!(--q->nr_pending))
+> +			/* Hard code to 20secs, will move to sysfs */
+> +			mod_timer(&q->idle, jiffies + 20*HZ);
+> +	}
+> +
 
-If its the former, ok, I can try (though, I really don't know what else
-to add.. it already says that we need to have special case handling of
-cpusets for suspend/resume.. and also says that this patch adds the
-necessary provisions.. which implies I am going to use these provisions
-next (in patch 5)..) Or, are you asking me to explain *why* we need to
-have special case handling for suspend/resume? If that is the case, I
-could probably move some bits from the changelog of patch 5 to this patch.
+I'm pretty sure Jens wanted to avoid doing a mod_timer, here, given that
+the queue can transition between empty and non-empty fairly rapidly for
+dependent I/O.
 
-However, if its the latter (ie., you want me to still squash it with
-patch 5), I am not quite convinced about it.. I still think doing that
-will clutter patch 5 unnecessarily.
+> @@ -587,6 +590,13 @@ void __elv_add_request(struct request_queue *q, struct request *rq, int where)
+>  {
+>  	trace_block_rq_insert(q, rq);
+>  
+> +	if (!(rq->cmd_flags & REQ_PM)) {
+> +		if (!(q->pm_status != RPM_ACTIVE) &&
 
-Regards,
-Srivatsa S. Bhat
+Uhh, re-read that line.  Not not equal?
 
+Cheers,
+Jeff
