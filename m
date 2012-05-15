@@ -1,17 +1,17 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964933Ab2EOCQx (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 May 2012 22:16:53 -0400
-Received: from mail1.windriver.com ([147.11.146.13]:52746 "EHLO
+	id S965958Ab2EODDS (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 May 2012 23:03:18 -0400
+Received: from mail1.windriver.com ([147.11.146.13]:53204 "EHLO
 	mail1.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S964798Ab2EOCP7 (ORCPT
+	with ESMTP id S964936Ab2EOCQx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 May 2012 22:15:59 -0400
+	Mon, 14 May 2012 22:16:53 -0400
 From: Paul Gortmaker <paul.gortmaker@windriver.com>
 To: <stable@kernel.org>, <linux-kernel@vger.kernel.org>
-Subject: [34-longterm 001/179] ftrace: Only update the function code on write to filter files
-Date: Mon, 14 May 2012 22:11:37 -0400
-Message-ID: <1337048075-6132-2-git-send-email-paul.gortmaker@windriver.com>
+Subject: [34-longterm 066/179] md/raid5: fix FUA request handling in ops_run_io()
+Date: Mon, 14 May 2012 22:12:42 -0400
+Message-ID: <1337048075-6132-67-git-send-email-paul.gortmaker@windriver.com>
 X-Mailer: git-send-email 1.7.9.6
 In-Reply-To: <1337048075-6132-1-git-send-email-paul.gortmaker@windriver.com>
 References: <1337048075-6132-1-git-send-email-paul.gortmaker@windriver.com>
@@ -21,7 +21,7 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Steven Rostedt <srostedt@redhat.com>
+From: Namhyung Kim <namhyung@gmail.com>
 
                    -------------------
     This is a commit scheduled for the next v2.6.34 longterm release.
@@ -29,44 +29,55 @@ From: Steven Rostedt <srostedt@redhat.com>
     If you see a problem with using this for longterm, please comment.
                    -------------------
 
-commit 058e297d34a404caaa5ed277de15698d8dc43000 upstream.
+commit b062962edb086011e94ec4d9eb3f6a6d814f2a8f upstream.
 
-If function tracing is enabled, a read of the filter files will
-cause the call to stop_machine to update the function trace sites.
-It should only call stop_machine on write.
+Commit e9c7469bb4f5 ("md: implment REQ_FLUSH/FUA support")
+introduced R5_WantFUA flag and set rw to WRITE_FUA in that case.
+However remaining code still checks whether rw is exactly same
+as WRITE or not, so FUAed-write ends up with being treated as
+READ. Fix it.
 
-Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+This bug has been present since 2.6.37 and the fix is suitable for any
+-stable kernel since then.  It is not clear why this has not caused
+more problems.
+
+Cc: Tejun Heo <tj@kernel.org>
+Signed-off-by: Namhyung Kim <namhyung@gmail.com>
+Signed-off-by: NeilBrown <neilb@suse.de>
 Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
 ---
- kernel/trace/ftrace.c |   12 +++++++-----
- 1 file changed, 7 insertions(+), 5 deletions(-)
+ drivers/md/raid5.c |    6 +++---
+ 1 file changed, 3 insertions(+), 3 deletions(-)
 
-diff --git a/kernel/trace/ftrace.c b/kernel/trace/ftrace.c
-index e28af02..7dd746c 100644
---- a/kernel/trace/ftrace.c
-+++ b/kernel/trace/ftrace.c
-@@ -2355,14 +2355,16 @@ ftrace_regex_release(struct inode *inode, struct file *file, int enable)
- 		ftrace_match_records(parser->buffer, parser->idx, enable);
- 	}
+diff --git a/drivers/md/raid5.c b/drivers/md/raid5.c
+index de7984d..dc3e4fc 100644
+--- a/drivers/md/raid5.c
++++ b/drivers/md/raid5.c
+@@ -447,7 +447,7 @@ static void ops_run_io(struct stripe_head *sh, struct stripe_head_state *s)
+ 		bi = &sh->dev[i].req;
  
--	mutex_lock(&ftrace_lock);
--	if (ftrace_start_up && ftrace_enabled)
--		ftrace_run_update_code(FTRACE_ENABLE_CALLS);
--	mutex_unlock(&ftrace_lock);
--
- 	trace_parser_put(parser);
- 	kfree(iter);
- 
-+	if (file->f_mode & FMODE_WRITE) {
-+		mutex_lock(&ftrace_lock);
-+		if (ftrace_start_up && ftrace_enabled)
-+			ftrace_run_update_code(FTRACE_ENABLE_CALLS);
-+		mutex_unlock(&ftrace_lock);
-+	}
-+
- 	mutex_unlock(&ftrace_regex_lock);
- 	return 0;
- }
+ 		bi->bi_rw = rw;
+-		if (rw == WRITE)
++		if (rw & WRITE)
+ 			bi->bi_end_io = raid5_end_write_request;
+ 		else
+ 			bi->bi_end_io = raid5_end_read_request;
+@@ -481,13 +481,13 @@ static void ops_run_io(struct stripe_head *sh, struct stripe_head_state *s)
+ 			bi->bi_io_vec[0].bv_offset = 0;
+ 			bi->bi_size = STRIPE_SIZE;
+ 			bi->bi_next = NULL;
+-			if (rw == WRITE &&
++			if ((rw & WRITE) &&
+ 			    test_bit(R5_ReWrite, &sh->dev[i].flags))
+ 				atomic_add(STRIPE_SECTORS,
+ 					&rdev->corrected_errors);
+ 			generic_make_request(bi);
+ 		} else {
+-			if (rw == WRITE)
++			if (rw & WRITE)
+ 				set_bit(STRIPE_DEGRADED, &sh->state);
+ 			pr_debug("skip op %ld on disc %d for sector %llu\n",
+ 				bi->bi_rw, i, (unsigned long long)sh->sector);
 -- 
 1.7.9.6
 
