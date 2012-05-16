@@ -1,92 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030211Ab2EPKYq (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 May 2012 06:24:46 -0400
-Received: from skyrme.org ([193.175.80.135]:36908 "EHLO skyrme.org"
+	id S1030215Ab2EPKkL (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 May 2012 06:40:11 -0400
+Received: from mga03.intel.com ([143.182.124.21]:37401 "EHLO mga03.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S966982Ab2EPKXd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 May 2012 06:23:33 -0400
-Date: 16 May 2012 09:41:16 +0000
-Message-Id: <1337161280-28953-2-git-send-email-oskar@scara.com>
-From: "Oskar Schirmer" <oskar@scara.com>
-To: linux-kernel@vger.kernel.org
-Cc: trivial@kernel.org, hannes@cmpxchg.org, shess@hessware.de,
-        "Oskar Schirmer" <oskar@scara.com>, "Chris Zankel" <chris@zankel.net>
-Subject: [PATCH 1/5] xtensa: Change mail addresses of Hannes Weiner and Oskar
-X-Mailer: git-send-email 1.6.0.3
-In-Reply-To: <1337161280-28953-1-git-send-email-oskar@scara.com>
-References: <1337161280-28953-1-git-send-email-oskar@scara.com>
+	id S966898Ab2EPKkJ convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 16 May 2012 06:40:09 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
+   d="scan'208";a="100709453"
+From: "Hao, Xudong" <xudong.hao@intel.com>
+To: Avi Kivity <avi@redhat.com>, Xudong Hao <xudong.hao@linux.intel.com>
+CC: "kvm@vger.kernel.org" <kvm@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "Shan, Haitao" <haitao.shan@intel.com>,
+        "Zhang, Xiantao" <xiantao.zhang@intel.com>
+Subject: RE: [PATCH 2/4] Add parameter to control A/D bits support
+Thread-Topic: [PATCH 2/4] Add parameter to control A/D bits support
+Thread-Index: AQHNMv/kbF/dGzD/4Ea4LhMhAXQigZbLnLsAgACdQ/A=
+Date: Wed, 16 May 2012 10:40:04 +0000
+Message-ID: <403610A45A2B5242BD291EDAE8B37D300FDC52D9@SHSMSX102.ccr.corp.intel.com>
+References: <20120516010818.GC14256@hp-xd.sh.intel.com>
+ <4FB3702A.3040900@redhat.com>
+In-Reply-To: <4FB3702A.3040900@redhat.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.239.127.40]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-These old mail addresses dont exist any more.
-This changes all occurences to the authors' current addresses.
+> -----Original Message-----
+> From: Avi Kivity [mailto:avi@redhat.com]
+> Sent: Wednesday, May 16, 2012 5:15 PM
+> To: Xudong Hao
+> Cc: kvm@vger.kernel.org; linux-kernel@vger.kernel.org; Shan, Haitao; Zhang,
+> Xiantao; Hao, Xudong
+> Subject: Re: [PATCH 2/4] Add parameter to control A/D bits support
+> 
+> On 05/16/2012 04:08 AM, Xudong Hao wrote:
+> > Add kernel parameter to control A/D bits support, it's on by default.
+> >
+> > Signed-off-by: Haitao Shan <haitao.shan@intel.com>
+> > Signed-off-by: Xudong Hao <xudong.hao@intel.com>
+> >
+> > ---
+> >  arch/x86/kvm/vmx.c |   12 ++++++++++++
+> >  1 files changed, 12 insertions(+), 0 deletions(-)
+> >
+> > diff --git a/arch/x86/kvm/vmx.c b/arch/x86/kvm/vmx.c
+> > index d2bd719..811a61e 100644
+> > --- a/arch/x86/kvm/vmx.c
+> > +++ b/arch/x86/kvm/vmx.c
+> > @@ -64,6 +64,9 @@ static bool __read_mostly enable_unrestricted_guest =
+> 1;
+> >  module_param_named(unrestricted_guest,
+> >             enable_unrestricted_guest, bool, S_IRUGO);
+> >
+> > +static int __read_mostly enable_ept_ad_bits = 1;
+> > +module_param_named(ept_ad_bits, enable_ept_ad_bits, bool, S_IRUGO);
+> 
+> Please use bool.  And call the external name 'eptad', for easier use.
+> 
 
-Signed-off-by: Oskar Schirmer <oskar@scara.com>
-Cc: Hannes Weiner <hannes@cmpxchg.org>
-Cc: Chris Zankel <chris@zankel.net>
----
- arch/xtensa/variants/s6000/dmac.c                 |    2 +-
- arch/xtensa/variants/s6000/gpio.c                 |    4 ++--
- arch/xtensa/variants/s6000/include/variant/dmac.h |    2 +-
- arch/xtensa/variants/s6000/irq.c                  |    4 ++--
- 4 files changed, 6 insertions(+), 6 deletions(-)
+OK, will modify them in patch v2.
 
-diff --git a/arch/xtensa/variants/s6000/dmac.c b/arch/xtensa/variants/s6000/dmac.c
-index dc7f7c5..340f5bb 100644
---- a/arch/xtensa/variants/s6000/dmac.c
-+++ b/arch/xtensa/variants/s6000/dmac.c
-@@ -1,5 +1,5 @@
- /*
-- * Authors:	Oskar Schirmer <os@emlix.com>
-+ * Authors:	Oskar Schirmer <oskar@scara.com>
-  *		Daniel Gloeckner <dg@emlix.com>
-  * (c) 2008 emlix GmbH http://www.emlix.com
-  *
-diff --git a/arch/xtensa/variants/s6000/gpio.c b/arch/xtensa/variants/s6000/gpio.c
-index 7af0757..b89541b 100644
---- a/arch/xtensa/variants/s6000/gpio.c
-+++ b/arch/xtensa/variants/s6000/gpio.c
-@@ -2,8 +2,8 @@
-  * s6000 gpio driver
-  *
-  * Copyright (c) 2009 emlix GmbH
-- * Authors:	Oskar Schirmer <os@emlix.com>
-- *		Johannes Weiner <jw@emlix.com>
-+ * Authors:	Oskar Schirmer <oskar@scara.com>
-+ *		Johannes Weiner <hannes@cmpxchg.org>
-  *		Daniel Gloeckner <dg@emlix.com>
-  */
- #include <linux/bitops.h>
-diff --git a/arch/xtensa/variants/s6000/include/variant/dmac.h b/arch/xtensa/variants/s6000/include/variant/dmac.h
-index e81735b..3f88d9f 100644
---- a/arch/xtensa/variants/s6000/include/variant/dmac.h
-+++ b/arch/xtensa/variants/s6000/include/variant/dmac.h
-@@ -8,7 +8,7 @@
-  * Copyright (C) 2006 Tensilica Inc.
-  * Copyright (C) 2008 Emlix GmbH <info@emlix.com>
-  * Authors:	Fabian Godehardt <fg@emlix.com>
-- *		Oskar Schirmer <os@emlix.com>
-+ *		Oskar Schirmer <oskar@scara.com>
-  *		Daniel Gloeckner <dg@emlix.com>
-  */
- 
-diff --git a/arch/xtensa/variants/s6000/irq.c b/arch/xtensa/variants/s6000/irq.c
-index 6651e32..81a241e 100644
---- a/arch/xtensa/variants/s6000/irq.c
-+++ b/arch/xtensa/variants/s6000/irq.c
-@@ -2,8 +2,8 @@
-  * s6000 irq crossbar
-  *
-  * Copyright (c) 2009 emlix GmbH
-- * Authors:	Johannes Weiner <jw@emlix.com>
-- *		Oskar Schirmer <os@emlix.com>
-+ * Authors:	Johannes Weiner <hannes@cmpxchg.org>
-+ *		Oskar Schirmer <oskar@scara.com>
-  */
- #include <linux/io.h>
- #include <asm/irq.h>
--- 
-1.7.5.4
+Thanks,
+-Xudong
+
+> 
+> --
+> error compiling committee.c: too many arguments to function
 
