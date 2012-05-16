@@ -1,58 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S966933Ab2EPKPm (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 May 2012 06:15:42 -0400
-Received: from mail-vb0-f46.google.com ([209.85.212.46]:48701 "EHLO
-	mail-vb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S966231Ab2EPKPk (ORCPT
+	id S966972Ab2EPKQU (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 May 2012 06:16:20 -0400
+Received: from rcsinet15.oracle.com ([148.87.113.117]:29428 "EHLO
+	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S966231Ab2EPKQT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 May 2012 06:15:40 -0400
+	Wed, 16 May 2012 06:16:19 -0400
+Date: Wed, 16 May 2012 13:19:57 +0300
+From: Dan Carpenter <dan.carpenter@oracle.com>
+To: edwin_rong <edwin_rong@realsil.com.cn>
+Cc: Greg KH <gregkh@linuxfoundation.org>,
+        "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] staging: update TODO files for rts5139 & rts_pstor
+Message-ID: <20120516101957.GJ16999@mwanda>
+References: <1337049392-8544-1-git-send-email-edwin_rong@realsil.com.cn>
+ <20120515153931.GA25240@kroah.com>
+ <4FB30DE9.8040406@realsil.com.cn>
+ <20120516072028.GK16984@mwanda>
+ <4FB36E89.80404@realsil.com.cn>
 MIME-Version: 1.0
-In-Reply-To: <CACRpkdb9LbjvobsJf61VA1Nt8-UCwDZzmjqC8JuN8WPdvhq+iQ@mail.gmail.com>
-References: <20120515154333.6659.66479.sendpatchset@w520>
-	<CACRpkdb9LbjvobsJf61VA1Nt8-UCwDZzmjqC8JuN8WPdvhq+iQ@mail.gmail.com>
-Date: Wed, 16 May 2012 19:15:39 +0900
-Message-ID: <CANqRtoTCo_Vwe8OMS2ovHNimoe_4ZnCEHk5TQ4YPq8oPJXMObg@mail.gmail.com>
-Subject: Re: [PATCH] gpio: Emma Mobile GPIO driver V2
-From: Magnus Damm <magnus.damm@gmail.com>
-To: Linus Walleij <linus.walleij@linaro.org>
-Cc: linux-kernel@vger.kernel.org, rjw@sisk.pl, linus.walleij@stericsson.com,
-        arnd@arndb.de, linux-sh@vger.kernel.org, horms@verge.net.au,
-        grant.likely@secretlab.ca, lethal@linux-sh.org, olof@lixom.net
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4FB36E89.80404@realsil.com.cn>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: acsinet21.oracle.com [141.146.126.237]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, May 16, 2012 at 4:11 PM, Linus Walleij <linus.walleij@linaro.org> wrote:
-> On Tue, May 15, 2012 at 5:43 PM, Magnus Damm <magnus.damm@gmail.com> wrote:
->
->> From: Magnus Damm <damm@opensource.se>
->>
->> This patch is V2 of the Emma Mobile GPIO driver. This
->> driver is designed to be reusable between multiple SoCs
->> that share the same basic building block, but so far it
->> has only been used on Emma Mobile EV2.
->>
->> Each driver instance handles 32 GPIOs with individually
->> maskable IRQs. The driver operates on two I/O memory
->> ranges and the 32 GPIOs are hooked up to two interrupts.
->>
->> In the case of Emma Mobile EV2 this GPIO building block
->> is used as main external interrupt controller hooking up
->> 159 GPIOS as 159 interrupts via 5 driver instances and
->> 10 interrupts to the GIC and the Cortex-A9 Dual.
->>
->> Signed-off-by: Magnus Damm <damm@opensource.se>
->
-> V2 is fair enough for me, so feel free to add:
-> Acked-by: Linus Walleij <linus.walleij@linaro.org>
+On Wed, May 16, 2012 at 05:08:25PM +0800, edwin_rong wrote:
+> On 05/16/2012 03:20 PM, Dan Carpenter wrote:
+> > When is the new driver going to be released?  How can we tell if
+> > it's better than the cleaned up staging driver without seeing it?
+> >
+> > regards,
+> > dan carpenter
+> Hi Dan carpenter,
+> 
+> > When is the new driver going to be released?
+> 
+> I'm afraid it will take a long time before we release it to kernel. You
+> know that Realtek now has several series of card reader on the market, and
+> we have to integrated these ICs into the new driver, and make sure it
+> works well, in addition, now we're working on another new card reader IC.
+> Once everything is done, the driver will be released.
+> 
+> >  How can we tell if it's better than the cleaned up staging driver without seeing it?
+> Yes, quite right. Seeing is believing.
+> 
 
-Thank you! Do you guys have any preferences how to merge this?
+This seems like we're going down the broadcom model where we have
+the b34_legacy, b43, brcm drivers.  We've got three drivers for
+broadcom cards and there is some overlap on which hardware they
+support.  The first two were developed by the community and the brcm
+driver was developed by Broadcom and it's the only one they support.
+It was a frustrating experience.  We came very close to dropping the
+brcm drivers.
 
-Can I include it together with the EMEV2 SoC bits perhaps? That may be
-easy so we can keep track of the platform data header file dependency.
+The thing about the brcm drivers was that the Broadcom devs did all
+their development in the open.  We knew they had worked hard and
+were responsive to bug reports and code criticism.
 
-Cheers,
+The kernel history is full of people working hard for years on code
+and then having it rejected and not merged.  When it comes to
+drivers we often think we'll write a new driver and drop the old one
+but it doesn't always happen.  We still have OSS sound drivers from
+90s.
 
-/ magnus
+It's best to put up a git tree with the new driver as soon as
+possible.  I would try get stuff merged into the kernel as soon as
+possible.
+
+regards,
+dan carpenter
+
