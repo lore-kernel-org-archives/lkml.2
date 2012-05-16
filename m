@@ -1,68 +1,129 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757074Ab2EPVKC (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 May 2012 17:10:02 -0400
-Received: from casper.infradead.org ([85.118.1.10]:53762 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753938Ab2EPVKA convert rfc822-to-8bit (ORCPT
+	id S1757664Ab2EPVVA (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 May 2012 17:21:00 -0400
+Received: from mail-qa0-f49.google.com ([209.85.216.49]:57671 "EHLO
+	mail-qa0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755162Ab2EPVU7 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 May 2012 17:10:00 -0400
-Message-ID: <1337202569.4281.13.camel@twins>
-Subject: Re: [PATCH v5 6/7] x86/tlb: optimizing flush_tlb_mm
-From: Peter Zijlstra <peterz@infradead.org>
-To: Alex Shi <alex.shi@intel.com>
-Cc: Nick Piggin <npiggin@gmail.com>, tglx@linutronix.de, mingo@redhat.com,
-        hpa@zytor.com, arnd@arndb.de, rostedt@goodmis.org, fweisbec@gmail.com,
-        jeremy@goop.org, riel@redhat.com, luto@mit.edu, avi@redhat.com,
-        len.brown@intel.com, dhowells@redhat.com, fenghua.yu@intel.com,
-        borislav.petkov@amd.com, yinghai@kernel.org, ak@linux.intel.com,
-        cpw@sgi.com, steiner@sgi.com, akpm@linux-foundation.org,
-        penberg@kernel.org, hughd@google.com, rientjes@google.com,
-        kosaki.motohiro@jp.fujitsu.com, n-horiguchi@ah.jp.nec.com,
-        tj@kernel.org, oleg@redhat.com, axboe@kernel.dk, jmorris@namei.org,
-        kamezawa.hiroyu@jp.fujitsu.com, viro@zeniv.linux.org.uk,
-        linux-kernel@vger.kernel.org, yongjie.ren@intel.com,
-        linux-arch@vger.kernel.org
-Date: Wed, 16 May 2012 23:09:29 +0200
-In-Reply-To: <4FB3ACD2.5010900@intel.com>
-References: <1337072138-8323-1-git-send-email-alex.shi@intel.com>
-	   <1337072138-8323-7-git-send-email-alex.shi@intel.com>
-	   <CAPa8GCDsSOrzQwX2qRJyocYAZdGbwjD4t4fjxmWXV6=EoXjXZw@mail.gmail.com>
-	   <4FB2590C.1050303@intel.com> <1337092577.27694.45.camel@twins>
-	  <1337093840.27694.56.camel@twins> <4FB34D49.1060809@intel.com>
-	 <1337155239.27694.131.camel@twins> <4FB3ACD2.5010900@intel.com>
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
-X-Mailer: Evolution 3.2.2- 
-Mime-Version: 1.0
+	Wed, 16 May 2012 17:20:59 -0400
+MIME-Version: 1.0
+In-Reply-To: <1337096141.27694.82.camel@twins>
+References: <CAKfTPtDSDAOAdv0GTDswZeRM7TmACrjok+5kddSaQpvy6_6xWw@mail.gmail.com>
+	<CAKfTPtCfiY7A29+e50F+6awd8BjNJjg4=uNN4ReZfdS_4FbpkA@mail.gmail.com>
+	<1337084609.27020.156.camel@laptop>
+	<CAKfTPtDz1-fR2i5x7AVd8sGZhX2VNtz2rnQC3ePrcHO9MWK3FQ@mail.gmail.com>
+	<1337086834.27020.162.camel@laptop>
+	<CAKfTPtDrZ-tfC81jnxwpB+DCtmxhU+VfoYbtSBr8MkFt+P8JcA@mail.gmail.com>
+	<1337096141.27694.82.camel@twins>
+Date: Wed, 16 May 2012 23:20:57 +0200
+Message-ID: <CAKfTPtAxG9JQEV-Y5b6=J50w66mS8_C6jjnD7T47tdQp1XBKKQ@mail.gmail.com>
+Subject: Re: Plumbers: Tweaking scheduler policy micro-conf RFP
+From: Vincent Guittot <vincent.guittot@linaro.org>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: paulmck@linux.vnet.ibm.com, smuckle@quicinc.com, khilman@ti.com,
+        Robin.Randhawa@arm.com, suresh.b.siddha@intel.com,
+        thebigcorporation@gmail.com, venki@google.com,
+        panto@antoniou-consulting.com, mingo@elte.hu, paul.brett@intel.com,
+        pdeschrijver@nvidia.com, pjt@google.com, efault@gmx.de,
+        fweisbec@gmail.com, geoff@infradead.org, rostedt@goodmis.org,
+        tglx@linutronix.de, amit.kucheria@linaro.org,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        linaro-sched-sig@lists.linaro.org,
+        Morten Rasmussen <Morten.Rasmussen@arm.com>,
+        Juri Lelli <juri.lelli@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2012-05-16 at 21:34 +0800, Alex Shi wrote:
-> 
-> So, if the minimum change of tlb->start/end can be protected by
-> HAVE_GENERIC_MMU_GATHER, it is safe and harmless, am I right?
-> 
-safe yes, but not entirely harmless. A quick look seems to suggest you
-fail for VM_HUGETLB. If your mmu_gather spans a vma with VM_HUGETLB
-you'll do a regular range flush not a full mm flush like the other paths
-do.
+On 15 May 2012 17:35, Peter Zijlstra <peterz@infradead.org> wrote:
+> On Tue, 2012-05-15 at 17:05 +0200, Vincent Guittot wrote:
+>> On 15 May 2012 15:00, Peter Zijlstra <peterz@infradead.org> wrote:
+>> > On Tue, 2012-05-15 at 14:57 +0200, Vincent Guittot wrote:
+>> >>
+>> >> Not sure that nobody cares but it's much more that scheduler,
+>> >> load_balance and sched_mc are sensible enough that it's difficult to
+>> >> ensure that a modification will not break everything for someone
+>> >> else.
+>> >
+>> > Thing is, its already broken, there's nothing else to break :-)
+>> >
+>>
+>> sched_mc is the only power-aware knob in the current scheduler. It's
+>> far from being perfect but it seems to work on some ARM platform at
+>> least. You mentioned at the scheduler mini-summit that we need a
+>> cleaner replacement and everybody has agreed on that point. Is anybody
+>> working on it yet ?
+>
+> Apparently not..
+>
+>> and can we discuss at Plumber's what this replacement would look like ?
+>
+> one knob: sched_balance_policy with tri-state {performance, power, auto}
+>
+> Where auto should likely look at things like are we on battery and
+> co-ordinate with cpufreq muck or whatever.
 
-Anyway, I did a quick refresh of my series on a recent -tip tree:
+IIUC performance and power will be platform and architecture agnostic
+and will only rely on a "simple" cpu topology description and auto
+mode would exchange information with framework like cpufreq which can
+provide some platform specific information like a clock rate
+dependency.
 
- git://git.kernel.org/pub/scm/linux/kernel/git/peterz/mmu.git tlb-unify
+>
+> Per domain knobs are insane, large multi-state knobs are insane, the
+> existing scheme is therefore insane^2. Can you find a sysad who'd like
+> to explore 3^3=27 states for optimal power/perf for his workload on a
+> simple 2 socket hyper-threaded machine and 3^4=81 state space for 8
+> sockets etc..?
+>
+> As to the exact policy, I think the current 2 (load-balance + wakeup) is
+> the sensible one..
+>
+> Also, I still have this pending email from you asking about the topology
+> setup stuff I really need to reply to.. but people keep sending me bugs
+> reports :/
+>
 
-With that all you need is to "select HAVE_MMU_GATHER_RANGE" for x86 and
-implement a useful flush_tlb_range().
+I'm interested to get feedback when you will have time
 
-In particular, see:
-http://git.kernel.org/?p=linux/kernel/git/peterz/mmu.git;a=commitdiff;h=05e53144177e6242fda404045f50f48114bcf185;hp=2cd7dc710652127522392f4b7ecb5fa6e954941e
+> But really short, look at kernel/sched/core.c:default_topology[]
+>
+> I'd like to get rid of sd_init_* into a single function like
+> sd_numa_init(), this would mean all archs would need to do is provide a
+> simple list of ever increasing masks that match their topology.
+>
+> To aid this we can add some SDTL_flags, initially I was thinking of:
+>
+>  SDTL_SHARE_CORE        -- aka SMT
+>  SDTL_SHARE_CACHE       -- LLC cache domain (typically multi-core)
+>  SDTL_SHARE_MEMORY      -- NUMA-node (typically socket)
+>
+> The 'performance' policy is typically to spread over shared resources so
+> as to minimize contention on these.
+>
+> If you want to add some power we need some extra flags, maybe something
+> like:
+>
+>  SDTL_SHARE_POWERLINE   -- power domain (typically socket)
+>
+> so you know where the boundaries are where you can turn stuff off so you
+> know what/where to pack bits.
 
-I've slightly changed the code to address an open issue with the
-vm_flags tracking. We now force flush the mmu_gather whenever VM_HUGETLB
-flips because most (all?) archs that look at that flag expect pure huge
-pages and not a mixture.
+I'm not sure to see how this flag will be used compared to the others.
+The first 3 SDTL_SHARE_XXX about topology are exclusive and described
+different level of CPU but the SDTL_SHARE_POWERLINE could be used at
+each level to describe is CPU in the sched_domain are sharing or not
+the power domain
 
-I've seem to have misplaced my cross-compiler set, so I've only compiled
-x86-64 for now.
+>
+> Possibly we also add something like:
+>
+>  SDTL_PERF_SPREAD       -- spread on performance mode
+>  SDTL_POWER_PACK        -- pack on power mode
+>
+> To over-ride the defaults. But ideally I'd leave those until after we've
+> got the basics working and there is a clear need for them (with a
+> spread/pack default for perf/power aware).
