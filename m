@@ -1,106 +1,125 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030238Ab2EPLFs (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 May 2012 07:05:48 -0400
-Received: from mga11.intel.com ([192.55.52.93]:10115 "EHLO mga11.intel.com"
+	id S967421Ab2EPLFz (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 May 2012 07:05:55 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:17426 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S966952Ab2EPLFr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 May 2012 07:05:47 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
-   d="asc'?scan'208";a="153575320"
-Message-ID: <1337166556.24809.42.camel@sauron.fi.intel.com>
-Subject: Re: [RFC v4] UBI: Fastmap support (aka checkpointing)
-From: Artem Bityutskiy <dedekind1@gmail.com>
-Reply-To: dedekind1@gmail.com
-To: Richard Weinberger <richard@nod.at>
-Cc: linux-mtd@lists.infradead.org, tglx@linutronix.de,
-        linux-kernel@vger.kernel.org, Heinz.Egger@linutronix.de,
-        tim.bird@am.sony.com
-Date: Wed, 16 May 2012 14:09:16 +0300
-In-Reply-To: <4FB38683.7030306@nod.at>
-References: <1337101871-31181-1-git-send-email-richard@nod.at>
-	 <1337161096.24809.36.camel@sauron.fi.intel.com> <4FB38683.7030306@nod.at>
-Content-Type: multipart/signed; micalg="pgp-sha1"; protocol="application/pgp-signature";
-	boundary="=-9i3NT4KyHxumJmGx0nlo"
-X-Mailer: Evolution 3.2.3 (3.2.3-3.fc16) 
+	id S966952Ab2EPLFu convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 16 May 2012 07:05:50 -0400
+Date: Wed, 16 May 2012 07:05:16 -0400
+From: Jeff Layton <jlayton@redhat.com>
+To: Gilad Ben-Yossef <gilad@benyossef.com>
+Cc: Christoph Lameter <cl@linux.com>, majianpeng <majianpeng@gmail.com>,
+        linux-mm <linux-mm@kvack.org>, Pekka Enberg <penberg@cs.helsinki.fi>,
+        linux-kernel@vger.kernel.org,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [PATCH] slub: missing test for partial pages flush work in
+ flush_all
+Message-ID: <20120516070516.406b2492@tlielax.poochiereds.net>
+In-Reply-To: <CAOtvUMeVc+L4gHkvYVZ+T=K7T7r7EVfsyXdNCFF1NArA9uXyAg@mail.gmail.com>
+References: <201205111008157652383@gmail.com>
+	<alpine.DEB.2.00.1205111113460.31049@router.home>
+	<CAOtvUMeVc+L4gHkvYVZ+T=K7T7r7EVfsyXdNCFF1NArA9uXyAg@mail.gmail.com>
 Mime-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Sun, 13 May 2012 09:53:15 +0300
+Gilad Ben-Yossef <gilad@benyossef.com> wrote:
 
---=-9i3NT4KyHxumJmGx0nlo
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: quoted-printable
-
-On Wed, 2012-05-16 at 12:50 +0200, Richard Weinberger wrote:
-> On 16.05.2012 11:38, Artem Bityutskiy wrote:
->   >> This case can happen if the complete fastmap fits into one PEB, the=
-=20
-> fastmap
-> >> super block is the first PEB on the MTD partition and the fastmap pool=
- is empty.
-> >> On the other side, in the worst case fastmap has to scan UBI_FM_MAX_ST=
-ART +
-> >> UBI_FM_MAX_BLOCKS + UBI_FM_MAX_POOL_SIZE PEBs.
+> On Fri, May 11, 2012 at 7:14 PM, Christoph Lameter <cl@linux.com> wrote:
+> > Didn't I already ack this before?
 > >
-> > When N ->  inf, UBI_FM_MAX_BLOCKS ->  inf as well. Each PEB requires
-> > little space in the fastmap table.
->=20
-> No, UBI_FM_MAX_BLOCKS does *not* depend on the MTD partition size.
-> When N -> inf, UBI_FM_MAX_BLOCKS is still a constant.
-> --> O(1)
-
-This cannot be true, you cannot fit information about infinite amount of
-erase counters to a constant number of PEBs.
-
->=20
-> > O(N) would be: N ->  inf, UBI_FM_MAX_BLOCKS ->  C, where C is a constan=
-t.
+> > Acked-by: Christoph Lameter <cl@linux.com>
 > >
-> > Or did I completely forgot math basics?
+> 
+> Yes, you did, but the patch description and title was lacking and
+> Majianpeng kindly fixed it, hence the re-send, I guess.
+> 
+> I've added Andrew, since he took my original commit that introduces
+> the bug that this patch by Majianpeng  fixes (and also LKML).
+> 
+> This fix really needs to get into 3.4, otherwise we'll be breaking
+> slub. What's the best way to go about that?
+> 
+> Thanks!
+> Gilad
+> 
+> > On Fri, 11 May 2012, majianpeng wrote:
 > >
-> >> With the current default settings this would be 192 PEBs.
-> >> So, attaching via fastmap has a complexity of O(1).
-> >
-> > No :-) Again, for each PEB you have a little data structure in a fastma=
-p
-> > which you have to (a) store, (b) read, and (c) process when attaching
-> > the device. The more PEBs you have, the more you do.
->=20
-> The maximum size of a fastmap is limited to UBI_FM_MAX_BLOCKS.
-> As I said, in worst case we'd have to scan 192 PEBs, which is a constant.
+> >> Subject: [PATCH] slub: missing test for partial pages flush work in flush_all
+> >>
+> >> Find some kernel message like:
+> >> SLUB raid5-md127: kmem_cache_destroy called for cache that still has objects.
+> >> Pid: 6143, comm: mdadm Tainted: G           O 3.4.0-rc6+        #75
+> >> Call Trace:
+> >> [<ffffffff811227f8>] kmem_cache_destroy+0x328/0x400
+> >> [<ffffffffa005ff1d>] free_conf+0x2d/0xf0 [raid456]
+> >> [<ffffffffa0060791>] stop+0x41/0x60 [raid456]
+> >> [<ffffffffa000276a>] md_stop+0x1a/0x60 [md_mod]
+> >> [<ffffffffa000c974>] do_md_stop+0x74/0x470 [md_mod]
+> >> [<ffffffffa000d0ff>] md_ioctl+0xff/0x11f0 [md_mod]
+> >> [<ffffffff8127c958>] blkdev_ioctl+0xd8/0x7a0
+> >> [<ffffffff8115ef6b>] block_ioctl+0x3b/0x40
+> >> [<ffffffff8113b9c6>] do_vfs_ioctl+0x96/0x560
+> >> [<ffffffff8113bf21>] sys_ioctl+0x91/0xa0
+> >> [<ffffffff816e9d22>] system_call_fastpath+0x16/0x1b
+> >>
+> >> Then using kmemleak can found those messages:
+> >> unreferenced object 0xffff8800b6db7380 (size 112):
+> >>   comm "mdadm", pid 5783, jiffies 4294810749 (age 90.589s)
+> >>   hex dump (first 32 bytes):
+> >>     01 01 db b6 ad 4e ad de ff ff ff ff ff ff ff ff  .....N..........
+> >>     ff ff ff ff ff ff ff ff 98 40 4a 82 ff ff ff ff  .........@J.....
+> >>   backtrace:
+> >>     [<ffffffff816b52c1>] kmemleak_alloc+0x21/0x50
+> >>     [<ffffffff8111a11b>] kmem_cache_alloc+0xeb/0x1b0
+> >>     [<ffffffff8111c431>] kmem_cache_open+0x2f1/0x430
+> >>     [<ffffffff8111c6c8>] kmem_cache_create+0x158/0x320
+> >>     [<ffffffffa008f979>] setup_conf+0x649/0x770 [raid456]
+> >>     [<ffffffffa009044b>] run+0x68b/0x840 [raid456]
+> >>     [<ffffffffa000bde9>] md_run+0x529/0x940 [md_mod]
+> >>     [<ffffffffa000c218>] do_md_run+0x18/0xc0 [md_mod]
+> >>     [<ffffffffa000dba8>] md_ioctl+0xba8/0x11f0 [md_mod]
+> >>     [<ffffffff81272b28>] blkdev_ioctl+0xd8/0x7a0
+> >>     [<ffffffff81155bfb>] block_ioctl+0x3b/0x40
+> >>     [<ffffffff811326d6>] do_vfs_ioctl+0x96/0x560
+> >>     [<ffffffff81132c31>] sys_ioctl+0x91/0xa0
+> >>     [<ffffffff816dd3a2>] system_call_fastpath+0x16/0x1b
+> >>     [<ffffffffffffffff>] 0xffffffffffffffff
+> >>
+> >> This bug introduced by Commit a8364d5555b2030d093cde0f0795.The
+> >> commit did not include checks for per cpu partial pages being present on a
+> >> cpu.
+> >>
+> >> Signed-off-by: majianpeng <majianpeng@gmail.com>
+> >> ---
+> >>  mm/slub.c |    2 +-
+> >>  1 files changed, 1 insertions(+), 1 deletions(-)
+> >>
+> >> diff --git a/mm/slub.c b/mm/slub.c
+> >> index ffe13fd..6fce08f 100644
+> >> --- a/mm/slub.c
+> >> +++ b/mm/slub.c
+> >> @@ -2040,7 +2040,7 @@ static bool has_cpu_slab(int cpu, void *info)
+> >>       struct kmem_cache *s = info;
+> >>       struct kmem_cache_cpu *c = per_cpu_ptr(s->cpu_slab, cpu);
+> >>
+> >> -     return !!(c->page);
+> >> +     return c->page || c->partial;
+> >>  }
+> >>
+> >>  static void flush_all(struct kmem_cache *s)
+> >>
+> 
+> 
+> 
 
-In this case you cannot use O notation at all because it is just used
-when talking about asymptotic things.
+FWIW, this patch fixed a similar warning that I was seeing on module
+unload with cifs.ko. I agree it would be good to get it in for 3.4...
 
---=20
-Best Regards,
-Artem Bityutskiy
-
---=-9i3NT4KyHxumJmGx0nlo
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: This is a digitally signed message part
-Content-Transfer-Encoding: 7bit
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAABAgAGBQJPs4rdAAoJECmIfjd9wqK0iFYQAJ600nJvYyBW714i6ncLgl8H
-R1PGB0DlAcEo59b9xF1UzQqfejCfcA8xMRrh6ttMOxJ6zbGR12N8O5ia3Zw/WlxL
-/81kam7dCWfVGPUQ7wUHUApb4VVXXU4HtULvgvSaekqLEh2Fp1SUDJmhKwGz3zmS
-NIXXOr0K1iRDY30VfPsvOfE+Jh/osf2zfwoHruOmJ1UvEkixQdb2MuGSf2Qoidyf
-Dok9LNGfSkaxiV/ADwE7v7jJ01jqwI69ACKL9fkQNnfusIGip8uPaDAAt4NqjOOD
-hrxeIrISs9yO8JRHeYINPt6tuNFw0HE9LOOVP5aUjO9JI4Yng46qQ+mkS1VmbhJS
-wVnvS/tvhsldcjLQ5doj2o+WXKxZPAhCBwDrGO82lVuWWqKpeAVsZgAzrjYBcQoh
-T4bqjmSQiImDwof+XNwIyuatxfDZo54Yqraer6pykL6UbhbNaF3lR6XjmwHIKWuh
-xZVTjNOD8Hk8SWY/VEVvW5vu3K796ddozSDJxJu+GpbMKyVsAtOFif5zCIbxKSvK
-cuafZZNntkzsFTTtubR6NmagY1J810unZhSSjlCebbYvsElYIxMtznJZlSCeHA0d
-gfjsw3FdDSyzDk46Bn+AQFluG0eSmj7VuT/gcO7leWPcQ9VywToNSL7BVbbI8wT8
-GGMPImsmxMOXLtIZATl6
-=I78F
------END PGP SIGNATURE-----
-
---=-9i3NT4KyHxumJmGx0nlo--
-
+Tested-by: Jeff Layton <jlayton@redhat.com>
