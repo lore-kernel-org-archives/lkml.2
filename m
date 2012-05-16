@@ -1,82 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759213Ab2EPReM (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 May 2012 13:34:12 -0400
-Received: from e4.ny.us.ibm.com ([32.97.182.144]:43987 "EHLO e4.ny.us.ibm.com"
+	id S1759332Ab2EPRea (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 May 2012 13:34:30 -0400
+Received: from mga14.intel.com ([143.182.124.37]:8137 "EHLO mga14.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753231Ab2EPReK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 May 2012 13:34:10 -0400
-Subject: Re: [V2 PATCH 9/9] vhost: zerocopy: poll vq in zerocopy callback
-From: Shirley Ma <mashirle@us.ibm.com>
-To: "Michael S. Tsirkin" <mst@redhat.com>
-Cc: Jason Wang <jasowang@redhat.com>, eric.dumazet@gmail.com,
-        netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        ebiederm@xmission.com, davem@davemloft.net
-In-Reply-To: <20120516151444.GC9934@redhat.com>
-References: <20120502033901.11782.13157.stgit@amd-6168-8-1.englab.nay.redhat.com>
-	 <20120502034254.11782.27314.stgit@amd-6168-8-1.englab.nay.redhat.com>
-	 <1337100630.8220.4.camel@oc3660625478.ibm.com> <4FB317C8.90002@redhat.com>
-	 <1337181027.10741.13.camel@oc3660625478.ibm.com>
-	 <20120516151444.GC9934@redhat.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Wed, 16 May 2012 10:32:05 -0700
-Message-ID: <1337189525.10741.24.camel@oc3660625478.ibm.com>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 (2.28.3-24.el6) 
-Content-Transfer-Encoding: 7bit
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 12051617-3534-0000-0000-00000870B3C6
+	id S1759267Ab2EPRe1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 16 May 2012 13:34:27 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
+   d="scan'208";a="100852011"
+Date: Wed, 16 May 2012 13:35:23 -0400
+From: Matthew Wilcox <willy@linux.intel.com>
+To: James Bottomley <James.Bottomley@HansenPartnership.com>
+Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: NVM Mapping API
+Message-ID: <20120516173523.GK22985@linux.intel.com>
+References: <20120515133450.GD22985@linux.intel.com>
+ <1337161920.2985.32.camel@dabdike.int.hansenpartnership.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1337161920.2985.32.camel@dabdike.int.hansenpartnership.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2012-05-16 at 18:14 +0300, Michael S. Tsirkin wrote:
-> On Wed, May 16, 2012 at 08:10:27AM -0700, Shirley Ma wrote:
-> > On Wed, 2012-05-16 at 10:58 +0800, Jason Wang wrote:
-> > > >>   drivers/vhost/vhost.c |    1 +
-> > > >>   1 files changed, 1 insertions(+), 0 deletions(-)
-> > > >>
-> > > >> diff --git a/drivers/vhost/vhost.c b/drivers/vhost/vhost.c
-> > > >> index 947f00d..7b75fdf 100644
-> > > >> --- a/drivers/vhost/vhost.c
-> > > >> +++ b/drivers/vhost/vhost.c
-> > > >> @@ -1604,6 +1604,7 @@ void vhost_zerocopy_callback(void *arg)
-> > > >>          struct vhost_ubuf_ref *ubufs = ubuf->arg;
-> > > >>          struct vhost_virtqueue *vq = ubufs->vq;
-> > > >>
-> > > >> +       vhost_poll_queue(&vq->poll);
-> > > >>          /* set len = 1 to mark this desc buffers done DMA */
-> > > >>          vq->heads[ubuf->desc].len = VHOST_DMA_DONE_LEN;
-> > > >>          kref_put(&ubufs->kref, vhost_zerocopy_done_signal);
-> > > > Doing so, we might have redundant vhost_poll_queue(). Do you
-> know in
-> > > > which scenario there might be missing of adding and signaling
-> during
-> > > > zerocopy?
-> > > 
-> > > Yes, as we only do signaling and adding during tx work, if there's
-> no
-> > > tx 
-> > > work when the skb were sent, we may lose the opportunity to let
-> guest 
-> > > know about the completion. It's easy to be reproduced with netperf
-> > > test. 
-> > 
-> > The reason which host signals guest is to free guest tx buffers, if
-> > there is no tx work, then it's not necessary to signal the guest
-> unless
-> > guest runs out of memory. The pending buffers will be released
-> > virtio_net device gone.
-> > 
-> > What's the behavior of netperf test when you hit this situation?
-> > 
-> > Thanks
-> > Shirley
+On Wed, May 16, 2012 at 10:52:00AM +0100, James Bottomley wrote:
+> On Tue, 2012-05-15 at 09:34 -0400, Matthew Wilcox wrote:
+> > There are a number of interesting non-volatile memory (NVM) technologies
+> > being developed.  Some of them promise DRAM-comparable latencies and
+> > bandwidths.  At Intel, we've been thinking about various ways to present
+> > those to software.  This is a first draft of an API that supports the
+> > operations we see as necessary.  Patches can follow easily enough once
+> > we've settled on an API.
 > 
-> IIRC guest networking seems to be lost. 
+> If we start from first principles, does this mean it's usable as DRAM?
+> Meaning do we even need a non-memory API for it?  The only difference
+> would be that some pieces of our RAM become non-volatile.
 
-It seems vhost_enable_notify is missing in somewhere else?
+I'm not talking about a specific piece of technology, I'm assuming that
+one of the competing storage technologies will eventually make it to
+widespread production usage.  Let's assume what we have is DRAM with a
+giant battery on it.
 
-Thanks
-Shirley
+So, while we can use it just as DRAM, we're not taking advantage of the
+persistent aspect of it if we don't have an API that lets us find the
+data we wrote before the last reboot.  And that sounds like a filesystem
+to me.
 
+> Or is there some impediment (like durability, or degradation on rewrite)
+> which makes this unsuitable as a complete DRAM replacement?
+
+The idea behind using a different filesystem for different NVM types is
+that we can hide those kinds of impediments in the filesystem.  By the
+way, did you know DRAM degrades on every write?  I think it's on the
+order of 10^20 writes (and CPU caches hide many writes to heavily-used
+cache lines), so it's a long way away from MLC or even SLC rates, but
+it does exist.
+
+> Alternatively, if it's not really DRAM, I think the UNIX file
+> abstraction makes sense (it's a piece of memory presented as something
+> like a filehandle with open, close, seek, read, write and mmap), but
+> it's less clear that it should be an actual file system.  The reason is
+> that to present a VFS interface, you have to already have fixed the
+> format of the actual filesystem on the memory because we can't nest
+> filesystems (well, not without doing artificial loopbacks).  Again, this
+> might make sense if there's some architectural reason why the flash
+> region has to have a specific layout, but your post doesn't shed any
+> light on this.
+
+We can certainly present a block interface to allow using unmodified
+standard filesystems on top of chunks of this NVM.  That's probably not
+the optimum way for a filesystem to use it though; there's really no
+point in constructing a bio to carry data down to a layer that's simply
+going to do a memcpy().
