@@ -1,122 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932295Ab2EPS3w (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 May 2012 14:29:52 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:65130 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1760076Ab2EPS3u (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 May 2012 14:29:50 -0400
-Date: Wed, 16 May 2012 21:29:49 +0300
-From: "Michael S. Tsirkin" <mst@redhat.com>
-To: Gleb Natapov <gleb@redhat.com>
-Cc: Marcelo Tosatti <mtosatti@redhat.com>, x86@kernel.org, kvm@vger.kernel.org,
-        Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
-        Avi Kivity <avi@redhat.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCHv4 3/5] kvm: host side for eoi optimization
-Message-ID: <20120516182948.GF10769@redhat.com>
-References: <cover.1337168687.git.mst@redhat.com>
- <42ba7beaa25855997e02fea91a11c9224c51720e.1337168687.git.mst@redhat.com>
- <20120516154940.GA20549@amt.cnet>
- <20120516162247.GA10676@redhat.com>
- <20120516172058.GA22861@amt.cnet>
- <20120516175856.GD10769@redhat.com>
- <20120516181500.GA23791@amt.cnet>
- <20120516182520.GH28798@redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120516182520.GH28798@redhat.com>
+	id S1760215Ab2EPSag (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 May 2012 14:30:36 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:39170 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1760076Ab2EPSaf convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 16 May 2012 14:30:35 -0400
+Message-ID: <1337193010.27694.146.camel@twins>
+Subject: Re: Plumbers: Tweaking scheduler policy micro-conf RFP
+From: Peter Zijlstra <peterz@infradead.org>
+To: Vincent Guittot <vincent.guittot@linaro.org>
+Cc: paulmck@linux.vnet.ibm.com, smuckle@quicinc.com, khilman@ti.com,
+        Robin.Randhawa@arm.com, suresh.b.siddha@intel.com,
+        thebigcorporation@gmail.com, venki@google.com,
+        panto@antoniou-consulting.com, mingo@elte.hu, paul.brett@intel.com,
+        pdeschrijver@nvidia.com, pjt@google.com, efault@gmx.de,
+        fweisbec@gmail.com, geoff@infradead.org, rostedt@goodmis.org,
+        tglx@linutronix.de, amit.kucheria@linaro.org,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        linaro-sched-sig@lists.linaro.org,
+        Morten Rasmussen <Morten.Rasmussen@arm.com>,
+        Juri Lelli <juri.lelli@gmail.com>
+Date: Wed, 16 May 2012 20:30:10 +0200
+In-Reply-To: <1337096141.27694.82.camel@twins>
+References: <CAKfTPtDSDAOAdv0GTDswZeRM7TmACrjok+5kddSaQpvy6_6xWw@mail.gmail.com>
+	 <CAKfTPtCfiY7A29+e50F+6awd8BjNJjg4=uNN4ReZfdS_4FbpkA@mail.gmail.com>
+	 <1337084609.27020.156.camel@laptop>
+	 <CAKfTPtDz1-fR2i5x7AVd8sGZhX2VNtz2rnQC3ePrcHO9MWK3FQ@mail.gmail.com>
+	 <1337086834.27020.162.camel@laptop>
+	 <CAKfTPtDrZ-tfC81jnxwpB+DCtmxhU+VfoYbtSBr8MkFt+P8JcA@mail.gmail.com>
+	 <1337096141.27694.82.camel@twins>
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
+X-Mailer: Evolution 3.2.2- 
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, May 16, 2012 at 09:25:20PM +0300, Gleb Natapov wrote:
-> On Wed, May 16, 2012 at 03:15:00PM -0300, Marcelo Tosatti wrote:
-> > On Wed, May 16, 2012 at 08:58:57PM +0300, Michael S. Tsirkin wrote:
-> > > On Wed, May 16, 2012 at 02:20:58PM -0300, Marcelo Tosatti wrote:
-> > > > On Wed, May 16, 2012 at 07:22:47PM +0300, Michael S. Tsirkin wrote:
-> > > > > On Wed, May 16, 2012 at 12:49:40PM -0300, Marcelo Tosatti wrote:
-> > > > > > > @@ -1245,9 +1306,20 @@ int kvm_get_apic_interrupt(struct kvm_vcpu *vcpu)
-> > > > > > >  	int vector = kvm_apic_has_interrupt(vcpu);
-> > > > > > >  	struct kvm_lapic *apic = vcpu->arch.apic;
-> > > > > > >  
-> > > > > > > -	if (vector == -1)
-> > > > > > > +	/* Detect interrupt nesting and disable EOI optimization */
-> > > > > > > +	if (pv_eoi_enabled(vcpu) && vector == -2)
-> > > > > > > +		pv_eoi_clr_pending(vcpu);
-> > > > > > > +
-> > > > > > > +	if (vector < 0)
-> > > > > > 
-> > > > > > With interrupt window exiting, the guest will exit:
-> > > > > > 
-> > > > > > - as soon as it sets RFLAGS.IF=1 and there is any 
-> > > > > > interrupt pending in IRR.
-> > > > > > - any new interrupt is set in IRR will kick vcpu
-> > > > > > out of guest mode and recalculate interrupt-window-exiting.
-> > > > > > 
-> > > > > > Doesnt this make this bit unnecessary ?
-> > > > > 
-> > > > > Looks like we could cut it out.  But I'm not sure how architectural it is
-> > > > > that we exit on interrupt window.
-> > > > > I guess there are reasons to exit on interrupt window but
-> > > > > isn't it better to make the feature independent of it?
-> > > > 
-> > > > Hum... not sure. Is it helpful for the Hyper-V interface?
-> > > > 
-> > > > > This almost never happens in my testing anyway, so
-> > > > > however we handle it is unlikely to affect performance.
-> > > > 
-> > > > It decreases the amount of state that must be maintained.
-> > > > 
-> > > > BTW there is a bug covered by interrupt window exiting:
-> > > > 
-> > > > vcpu0                               host
-> > > > - irr 5 set
-> > > > - isr 5 set, irr 5 cleared
-> > > > - eoi_skip bit not set, 
-> > > > no other bit set in irr.
-> > > > - enter guest
-> > > > 
-> > > >                                     irr 4 set
-> > > >                                     kick vcpu0 out of guest mode
-> > > > 
-> > > > - eoi pending bit not set
-> > > >   (previous interrupt injection 
-> > > >    still pending)
-> > > > - skip eoi
-> > > > 
-> > > > If it were not for interrupt window exiting, this would 
-> > > > inject vector 4 on an unrelated exit who knows how long 
-> > > > in the future.
-> > > > 
-> > > > Also note optimization depends on the fact that the host 
-> > > > kicks vcpu out unconditionally (so it is dependent on 
-> > > > certain kvm implementation details).
-> > > > 
-> > > 
-> > > Look we can summarize as follows: irq windows exit is
-> > > required both before and after this patch.
-> > > But it does not make the check above redundant.
-> > 
-> > Right, it is not redundant.
-> > 
-> > The above is still a bug: a case where eoi pending bit is not updated
-> > properly.
-> When IRR is set while eoi_skip is enabled, eoi_skip should be cleared.
-> Michael does your patch do that?
+On Tue, 2012-05-15 at 17:35 +0200, Peter Zijlstra wrote:
+> But really short, look at kernel/sched/core.c:default_topology[]
 
-I think this does it:
-        /* Detect interrupt nesting and disable EOI optimization */
-        if (pv_eoi_enabled(vcpu) && vector == -2)
-                pv_eoi_clr_pending(vcpu);
+The reason I want to push this into the arch is that the current one
+size fits all topology really doesn't fit.
 
--2 is returned when irr is set.
+On x86 there's stuff like the Intel Core2 Quad which is two dual-core
+dies glued together resulting in a socket with 2 cache domains. And the
+current topology simply cannot represent this.
+
+There's the s390 'book' domain, which is now littering generic code.
+
+And AMD Magny-Cours which has two nodes on a socket.
 
 
-> > 
-> > How come is this compatible with hyper-v again? Enlight me.
-> 
-> --
-> 			Gleb.
+But I want to very much limit the arch interface so that we don't get
+the current mess of arch maintainers having to guess at things like
+SD_INIT_BOOK and what all these various random numbers in there mean.
