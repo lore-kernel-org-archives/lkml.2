@@ -1,111 +1,196 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S966275Ab2EPClQ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 May 2012 22:41:16 -0400
-Received: from mail-gg0-f174.google.com ([209.85.161.174]:41217 "EHLO
-	mail-gg0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932531Ab2EPClO (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 May 2012 22:41:14 -0400
-From: Robert Lee <rob.lee@linaro.org>
-To: kernel@pengutronix.de
-Cc: shawn.guo@linaro.org, u.kleine-koenig@pengutronix.de,
-        richard.zhao@freescale.com, amit.kucheria@linaro.org,
-        daniel.lezcano@linaro.org, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org, linaro-dev@lists.linaro.org,
-        patches@linaro.org, jj@chaosbits.net
-Subject: [PATCH v4 6/7] ARM: imx: Add imx5 cpuidle
-Date: Tue, 15 May 2012 21:33:35 -0500
-Message-Id: <1337135616-8988-7-git-send-email-rob.lee@linaro.org>
-X-Mailer: git-send-email 1.7.10
-In-Reply-To: <1337135616-8988-1-git-send-email-rob.lee@linaro.org>
-References: <1337135616-8988-1-git-send-email-rob.lee@linaro.org>
+	id S966348Ab2EPCpn (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 May 2012 22:45:43 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:23389 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S964948Ab2EPCpl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 May 2012 22:45:41 -0400
+Date: Tue, 15 May 2012 22:51:24 -0300
+From: Marcelo Tosatti <mtosatti@redhat.com>
+To: "Michael S. Tsirkin" <mst@redhat.com>
+Cc: x86@kernel.org, kvm@vger.kernel.org, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, Avi Kivity <avi@redhat.com>,
+        gleb@redhat.com, Linus Torvalds <torvalds@linux-foundation.org>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCHv3 5/8] kvm_para: guest side for eoi avoidance
+Message-ID: <20120516015124.GA8846@amt.cnet>
+References: <cover.1337091955.git.mst@redhat.com>
+ <958125d740a3d3a28003228307c993d9759b5ddb.1337091955.git.mst@redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <958125d740a3d3a28003228307c993d9759b5ddb.1337091955.git.mst@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add cpuidle driver for imx5 platform.
+On Tue, May 15, 2012 at 05:36:12PM +0300, Michael S. Tsirkin wrote:
+> The idea is simple: there's a bit, per APIC, in guest memory,
+> that tells the guest that it does not need EOI.
+> Guest tests it using a single est and clear operation - this is
+> necessary so that host can detect interrupt nesting - and if set, it can
+> skip the EOI MSR.
+> 
+> I run a simple microbenchmark to show exit reduction
+> (note: for testing, need to apply patch 7 from the series + a qemu patch
+>  I posted separately, on host):
+> 
+> Before:
+> 
+> Performance counter stats for 'sleep 1s':
+> 
+>             47,357 kvm:kvm_entry                                                [99.98%]
+>                  0 kvm:kvm_hypercall                                            [99.98%]
+>                  0 kvm:kvm_hv_hypercall                                         [99.98%]
+>              5,001 kvm:kvm_pio                                                  [99.98%]
+>                  0 kvm:kvm_cpuid                                                [99.98%]
+>             22,124 kvm:kvm_apic                                                 [99.98%]
+>             49,849 kvm:kvm_exit                                                 [99.98%]
+>             21,115 kvm:kvm_inj_virq                                             [99.98%]
+>                  0 kvm:kvm_inj_exception                                        [99.98%]
+>                  0 kvm:kvm_page_fault                                           [99.98%]
+>             22,937 kvm:kvm_msr                                                  [99.98%]
+>                  0 kvm:kvm_cr                                                   [99.98%]
+>                  0 kvm:kvm_pic_set_irq                                          [99.98%]
+>                  0 kvm:kvm_apic_ipi                                             [99.98%]
+>             22,207 kvm:kvm_apic_accept_irq                                      [99.98%]
+>             22,421 kvm:kvm_eoi                                                  [99.98%]
+>                  0 kvm:kvm_pv_eoi                                               [99.99%]
+>                  0 kvm:kvm_nested_vmrun                                         [99.99%]
+>                  0 kvm:kvm_nested_intercepts                                    [99.99%]
+>                  0 kvm:kvm_nested_vmexit                                        [99.99%]
+>                  0 kvm:kvm_nested_vmexit_inject                                    [99.99%]
+>                  0 kvm:kvm_nested_intr_vmexit                                    [99.99%]
+>                  0 kvm:kvm_invlpga                                              [99.99%]
+>                  0 kvm:kvm_skinit                                               [99.99%]
+>                 57 kvm:kvm_emulate_insn                                         [99.99%]
+>                  0 kvm:vcpu_match_mmio                                          [99.99%]
+>                  0 kvm:kvm_userspace_exit                                       [99.99%]
+>                  2 kvm:kvm_set_irq                                              [99.99%]
+>                  2 kvm:kvm_ioapic_set_irq                                       [99.99%]
+>             23,609 kvm:kvm_msi_set_irq                                          [99.99%]
+>                  1 kvm:kvm_ack_irq                                              [99.99%]
+>                131 kvm:kvm_mmio                                                 [99.99%]
+>                226 kvm:kvm_fpu                                                  [100.00%]
+>                  0 kvm:kvm_age_page                                             [100.00%]
+>                  0 kvm:kvm_try_async_get_page                                    [100.00%]
+>                  0 kvm:kvm_async_pf_doublefault                                    [100.00%]
+>                  0 kvm:kvm_async_pf_not_present                                    [100.00%]
+>                  0 kvm:kvm_async_pf_ready                                       [100.00%]
+>                  0 kvm:kvm_async_pf_completed
+> 
+>        1.002100578 seconds time elapsed
+> 
+> After:
+> 
+>  Performance counter stats for 'sleep 1s':
+> 
+>             28,354 kvm:kvm_entry                                                [99.98%]
+>                  0 kvm:kvm_hypercall                                            [99.98%]
+>                  0 kvm:kvm_hv_hypercall                                         [99.98%]
+>              1,347 kvm:kvm_pio                                                  [99.98%]
+>                  0 kvm:kvm_cpuid                                                [99.98%]
+>              1,931 kvm:kvm_apic                                                 [99.98%]
+>             29,595 kvm:kvm_exit                                                 [99.98%]
+>             24,884 kvm:kvm_inj_virq                                             [99.98%]
+>                  0 kvm:kvm_inj_exception                                        [99.98%]
+>                  0 kvm:kvm_page_fault                                           [99.98%]
+>              1,986 kvm:kvm_msr                                                  [99.98%]
+>                  0 kvm:kvm_cr                                                   [99.98%]
+>                  0 kvm:kvm_pic_set_irq                                          [99.98%]
+>                  0 kvm:kvm_apic_ipi                                             [99.99%]
+>             25,953 kvm:kvm_apic_accept_irq                                      [99.99%]
+>             26,132 kvm:kvm_eoi                                                  [99.99%]
+>             26,593 kvm:kvm_pv_eoi                                               [99.99%]
+>                  0 kvm:kvm_nested_vmrun                                         [99.99%]
+>                  0 kvm:kvm_nested_intercepts                                    [99.99%]
+>                  0 kvm:kvm_nested_vmexit                                        [99.99%]
+>                  0 kvm:kvm_nested_vmexit_inject                                    [99.99%]
+>                  0 kvm:kvm_nested_intr_vmexit                                    [99.99%]
+>                  0 kvm:kvm_invlpga                                              [99.99%]
+>                  0 kvm:kvm_skinit                                               [99.99%]
+>                284 kvm:kvm_emulate_insn                                         [99.99%]
+>                 68 kvm:vcpu_match_mmio                                          [99.99%]
+>                 68 kvm:kvm_userspace_exit                                       [99.99%]
+>                  2 kvm:kvm_set_irq                                              [99.99%]
+>                  2 kvm:kvm_ioapic_set_irq                                       [99.99%]
+>             28,288 kvm:kvm_msi_set_irq                                          [99.99%]
+>                  1 kvm:kvm_ack_irq                                              [99.99%]
+>                131 kvm:kvm_mmio                                                 [100.00%]
+>                588 kvm:kvm_fpu                                                  [100.00%]
+>                  0 kvm:kvm_age_page                                             [100.00%]
+>                  0 kvm:kvm_try_async_get_page                                    [100.00%]
+>                  0 kvm:kvm_async_pf_doublefault                                    [100.00%]
+>                  0 kvm:kvm_async_pf_not_present                                    [100.00%]
+>                  0 kvm:kvm_async_pf_ready                                       [100.00%]
+>                  0 kvm:kvm_async_pf_completed
+> 
+>        1.002039622 seconds time elapsed
+> 
+> We see that # of exits is almost halved.
+> 
+> Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
+> ---
+>  arch/x86/include/asm/bitops.h |    6 +++-
+>  arch/x86/kernel/kvm.c         |   50 ++++++++++++++++++++++++++++++++++++++--
+>  2 files changed, 51 insertions(+), 5 deletions(-)
+> 
+> diff --git a/arch/x86/include/asm/bitops.h b/arch/x86/include/asm/bitops.h
+> index b97596e..c9c70ea 100644
+> --- a/arch/x86/include/asm/bitops.h
+> +++ b/arch/x86/include/asm/bitops.h
+> @@ -26,11 +26,13 @@
+>  #if __GNUC__ < 4 || (__GNUC__ == 4 && __GNUC_MINOR__ < 1)
+>  /* Technically wrong, but this avoids compilation errors on some gcc
+>     versions. */
+> -#define BITOP_ADDR(x) "=m" (*(volatile long *) (x))
+> +#define BITOP_ADDR_CONSTRAINT "=m"
+>  #else
+> -#define BITOP_ADDR(x) "+m" (*(volatile long *) (x))
+> +#define BITOP_ADDR_CONSTRAINT "+m"
+>  #endif
+>  
+> +#define BITOP_ADDR(x) BITOP_ADDR_CONSTRAINT (*(volatile long *) (x))
+> +
+>  #define ADDR				BITOP_ADDR(addr)
+>  
+>  /*
+> diff --git a/arch/x86/kernel/kvm.c b/arch/x86/kernel/kvm.c
+> index e554e5a..31f85cb 100644
+> --- a/arch/x86/kernel/kvm.c
+> +++ b/arch/x86/kernel/kvm.c
+> @@ -39,6 +39,8 @@
+>  #include <asm/desc.h>
+>  #include <asm/tlbflush.h>
+>  #include <asm/idle.h>
+> +#include <asm/apic.h>
+> +#include <asm/apicdef.h>
+>  
+>  static int kvmapf = 1;
+>  
+> @@ -283,6 +285,23 @@ static void kvm_register_steal_time(void)
+>  		cpu, __pa(st));
+>  }
+>  
+> +/* size alignment is implied but just to make it explicit. */
+> +static DEFINE_PER_CPU(unsigned long, kvm_apic_eoi) __aligned(2) = 0;
 
-Signed-off-by: Robert Lee <rob.lee@linaro.org>
----
- arch/arm/mach-imx/pm-imx5.c |   44 ++++++++++++++++++++++++++++++++++++++++---
- 1 file changed, 41 insertions(+), 3 deletions(-)
+DECLARE_PER_CPU_ALIGNED, can be heavily accessed.
 
-diff --git a/arch/arm/mach-imx/pm-imx5.c b/arch/arm/mach-imx/pm-imx5.c
-index 6e62d79..966c71b 100644
---- a/arch/arm/mach-imx/pm-imx5.c
-+++ b/arch/arm/mach-imx/pm-imx5.c
-@@ -12,10 +12,12 @@
- #include <linux/clk.h>
- #include <linux/io.h>
- #include <linux/err.h>
-+#include <linux/export.h>
- #include <asm/cacheflush.h>
- #include <asm/system_misc.h>
- #include <asm/tlbflush.h>
- #include <mach/common.h>
-+#include <mach/cpuidle.h>
- #include <mach/hardware.h>
- #include "crm-regs-imx5.h"
- 
-@@ -134,12 +136,48 @@ static const struct platform_suspend_ops mx5_suspend_ops = {
- 	.enter = mx5_suspend_enter,
- };
- 
--static void imx5_pm_idle(void)
-+static inline int imx5_cpu_do_idle(void)
- {
--	if (likely(!tzic_enable_wake()))
-+	int ret = tzic_enable_wake();
-+
-+	if (likely(!ret))
- 		cpu_do_idle();
-+
-+	return ret;
- }
- 
-+static void imx5_pm_idle(void)
-+{
-+	imx5_cpu_do_idle();
-+}
-+
-+static int imx5_cpuidle_enter(struct cpuidle_device *dev,
-+				struct cpuidle_driver *drv, int idx)
-+{
-+	int ret;
-+
-+	ret = imx5_cpu_do_idle();
-+	if (ret < 0)
-+		return ret;
-+
-+	return idx;
-+}
-+
-+static struct cpuidle_driver imx5_cpuidle_driver = {
-+	.name			= "imx5_cpuidle",
-+	.owner			= THIS_MODULE,
-+	.en_core_tk_irqen	= 1,
-+	.states[0]	= {
-+		.enter			= imx5_cpuidle_enter,
-+		.exit_latency		= 2,
-+		.target_residency	= 1,
-+		.flags			= CPUIDLE_FLAG_TIME_VALID,
-+		.name			= "IMX5 SRPG",
-+		.desc			= "CPU state retained,powered off",
-+	},
-+	.state_count		= 1,
-+};
-+
- int __init imx5_pm_init(void)
- {
- 	int ret;
-@@ -160,5 +198,5 @@ int __init imx5_pm_init(void)
- 	/* Set the registers to the default cpu idle state. */
- 	mx5_cpu_lp_set(IMX5_DEFAULT_CPU_IDLE_STATE);
- 
--	return 0;
-+	return imx_cpuidle_init(&imx5_cpuidle_driver);
- }
--- 
-1.7.10
+> +static void kvm_guest_apic_eoi_write(u32 reg, u32 val)
+> +{
+> +	/**
+> +	 * This relies on __test_and_clear_bit to modify the memory
+> +	 * in a way that is atomic with respect to the local CPU.
+> +	 * The hypervisor only accesses this memory from the local CPU so
+> +	 * there's no need for lock or memory barriers.
+> +	 * An optimization barrier is implied in apic write.
+> +	 */
+> +	if (__test_and_clear_bit(0, &__get_cpu_var(kvm_apic_eoi)))
+> +		return;
+
+Name and #define for the bit, please.
+
 
