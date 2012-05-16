@@ -1,125 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S967421Ab2EPLFz (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 May 2012 07:05:55 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:17426 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S966952Ab2EPLFu convert rfc822-to-8bit (ORCPT
+	id S967432Ab2EPLGW (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 May 2012 07:06:22 -0400
+Received: from mail-wi0-f172.google.com ([209.85.212.172]:52502 "EHLO
+	mail-wi0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S966952Ab2EPLGT convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 May 2012 07:05:50 -0400
-Date: Wed, 16 May 2012 07:05:16 -0400
-From: Jeff Layton <jlayton@redhat.com>
-To: Gilad Ben-Yossef <gilad@benyossef.com>
-Cc: Christoph Lameter <cl@linux.com>, majianpeng <majianpeng@gmail.com>,
-        linux-mm <linux-mm@kvack.org>, Pekka Enberg <penberg@cs.helsinki.fi>,
-        linux-kernel@vger.kernel.org,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [PATCH] slub: missing test for partial pages flush work in
- flush_all
-Message-ID: <20120516070516.406b2492@tlielax.poochiereds.net>
-In-Reply-To: <CAOtvUMeVc+L4gHkvYVZ+T=K7T7r7EVfsyXdNCFF1NArA9uXyAg@mail.gmail.com>
-References: <201205111008157652383@gmail.com>
-	<alpine.DEB.2.00.1205111113460.31049@router.home>
-	<CAOtvUMeVc+L4gHkvYVZ+T=K7T7r7EVfsyXdNCFF1NArA9uXyAg@mail.gmail.com>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
+	Wed, 16 May 2012 07:06:19 -0400
+MIME-Version: 1.0
+Reply-To: konrad@darnok.org
+In-Reply-To: <4FB3048C.20008@kernel.org>
+References: <4FAB21E7.7020703@kernel.org>
+	<20120510140215.GC26152@phenom.dumpdata.com>
+	<4FABD503.4030808@vflare.org>
+	<4FABDA9F.1000105@linux.vnet.ibm.com>
+	<20120510151941.GA18302@kroah.com>
+	<4FABECF5.8040602@vflare.org>
+	<20120510164418.GC13964@kroah.com>
+	<4FABF9D4.8080303@vflare.org>
+	<20120510173322.GA30481@phenom.dumpdata.com>
+	<4FAC4E3B.3030909@kernel.org>
+	<20120511192831.GC3785@phenom.dumpdata.com>
+	<4FB06B91.1080008@kernel.org>
+	<CAPbh3ruv9xCV_XpR4ZsZpSGQ8=mibg=a39zvADYETb-tg0kBsA@mail.gmail.com>
+	<4FB3048C.20008@kernel.org>
+Date: Wed, 16 May 2012 07:06:18 -0400
+X-Google-Sender-Auth: nnsBm4F9mX8OeP0-9j_tTwy3Fr0
+Message-ID: <CAPbh3ruFRLzGn88G1=BajKS1VAw7hQDPNMH9yUO5JB0UDVF5Mg@mail.gmail.com>
+Subject: Re: [PATCH 3/4] zsmalloc use zs_handle instead of void *
+From: Konrad Rzeszutek Wilk <konrad@darnok.org>
+To: Minchan Kim <minchan@kernel.org>
+Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 13 May 2012 09:53:15 +0300
-Gilad Ben-Yossef <gilad@benyossef.com> wrote:
+>>> It's not good abstraction.
+>>
+>> If we want good abstraction, then I don't think 'unsigned long' is
+>> either? I mean it will do for the conversion from 'void *'. Perhaps I
+>> am being a bit optimistic here - and I am trying to jam in this
+>> 'struct zs_handle' in all cases but in reality it needs a more
+>> iterative process. So first do 'void *' -> 'unsigned long', and then
+>> later on if we can come up with something more nicely that abstracts
+>> - then use that?
 
-> On Fri, May 11, 2012 at 7:14 PM, Christoph Lameter <cl@linux.com> wrote:
-> > Didn't I already ack this before?
-> >
-> > Acked-by: Christoph Lameter <cl@linux.com>
-> >
-> 
-> Yes, you did, but the patch description and title was lacking and
-> Majianpeng kindly fixed it, hence the re-send, I guess.
-> 
-> I've added Andrew, since he took my original commit that introduces
-> the bug that this patch by Majianpeng  fixes (and also LKML).
-> 
-> This fix really needs to get into 3.4, otherwise we'll be breaking
-> slub. What's the best way to go about that?
-> 
-> Thanks!
-> Gilad
-> 
-> > On Fri, 11 May 2012, majianpeng wrote:
-> >
-> >> Subject: [PATCH] slub: missing test for partial pages flush work in flush_all
-> >>
-> >> Find some kernel message like:
-> >> SLUB raid5-md127: kmem_cache_destroy called for cache that still has objects.
-> >> Pid: 6143, comm: mdadm Tainted: G           O 3.4.0-rc6+        #75
-> >> Call Trace:
-> >> [<ffffffff811227f8>] kmem_cache_destroy+0x328/0x400
-> >> [<ffffffffa005ff1d>] free_conf+0x2d/0xf0 [raid456]
-> >> [<ffffffffa0060791>] stop+0x41/0x60 [raid456]
-> >> [<ffffffffa000276a>] md_stop+0x1a/0x60 [md_mod]
-> >> [<ffffffffa000c974>] do_md_stop+0x74/0x470 [md_mod]
-> >> [<ffffffffa000d0ff>] md_ioctl+0xff/0x11f0 [md_mod]
-> >> [<ffffffff8127c958>] blkdev_ioctl+0xd8/0x7a0
-> >> [<ffffffff8115ef6b>] block_ioctl+0x3b/0x40
-> >> [<ffffffff8113b9c6>] do_vfs_ioctl+0x96/0x560
-> >> [<ffffffff8113bf21>] sys_ioctl+0x91/0xa0
-> >> [<ffffffff816e9d22>] system_call_fastpath+0x16/0x1b
-> >>
-> >> Then using kmemleak can found those messages:
-> >> unreferenced object 0xffff8800b6db7380 (size 112):
-> >>   comm "mdadm", pid 5783, jiffies 4294810749 (age 90.589s)
-> >>   hex dump (first 32 bytes):
-> >>     01 01 db b6 ad 4e ad de ff ff ff ff ff ff ff ff  .....N..........
-> >>     ff ff ff ff ff ff ff ff 98 40 4a 82 ff ff ff ff  .........@J.....
-> >>   backtrace:
-> >>     [<ffffffff816b52c1>] kmemleak_alloc+0x21/0x50
-> >>     [<ffffffff8111a11b>] kmem_cache_alloc+0xeb/0x1b0
-> >>     [<ffffffff8111c431>] kmem_cache_open+0x2f1/0x430
-> >>     [<ffffffff8111c6c8>] kmem_cache_create+0x158/0x320
-> >>     [<ffffffffa008f979>] setup_conf+0x649/0x770 [raid456]
-> >>     [<ffffffffa009044b>] run+0x68b/0x840 [raid456]
-> >>     [<ffffffffa000bde9>] md_run+0x529/0x940 [md_mod]
-> >>     [<ffffffffa000c218>] do_md_run+0x18/0xc0 [md_mod]
-> >>     [<ffffffffa000dba8>] md_ioctl+0xba8/0x11f0 [md_mod]
-> >>     [<ffffffff81272b28>] blkdev_ioctl+0xd8/0x7a0
-> >>     [<ffffffff81155bfb>] block_ioctl+0x3b/0x40
-> >>     [<ffffffff811326d6>] do_vfs_ioctl+0x96/0x560
-> >>     [<ffffffff81132c31>] sys_ioctl+0x91/0xa0
-> >>     [<ffffffff816dd3a2>] system_call_fastpath+0x16/0x1b
-> >>     [<ffffffffffffffff>] 0xffffffffffffffff
-> >>
-> >> This bug introduced by Commit a8364d5555b2030d093cde0f0795.The
-> >> commit did not include checks for per cpu partial pages being present on a
-> >> cpu.
-> >>
-> >> Signed-off-by: majianpeng <majianpeng@gmail.com>
-> >> ---
-> >>  mm/slub.c |    2 +-
-> >>  1 files changed, 1 insertions(+), 1 deletions(-)
-> >>
-> >> diff --git a/mm/slub.c b/mm/slub.c
-> >> index ffe13fd..6fce08f 100644
-> >> --- a/mm/slub.c
-> >> +++ b/mm/slub.c
-> >> @@ -2040,7 +2040,7 @@ static bool has_cpu_slab(int cpu, void *info)
-> >>       struct kmem_cache *s = info;
-> >>       struct kmem_cache_cpu *c = per_cpu_ptr(s->cpu_slab, cpu);
-> >>
-> >> -     return !!(c->page);
-> >> +     return c->page || c->partial;
-> >>  }
-> >>
-> >>  static void flush_all(struct kmem_cache *s)
-> >>
-> 
-> 
-> 
+..snip..
+>>> No. What I want is to remove coupling zsallocator's handle with zram/zcache.
+>>> They shouldn't know internal of handle and assume it's a pointer.
+>>
+>> I concur. And hence I was thinking that the 'struct zs_handle *'
+>> pointer would work.
+>
+>
+> Do you really hate "unsigned long" as handle?
+..snip,,
+>> Well, everything changes over time �so putting a stick in the ground
+>> and saying 'this must
+>> be this way' is not really the best way.
+>
+>
+> Hmm, agree on your above statement but I can't imagine better idea.
+>
 
-FWIW, this patch fixed a similar warning that I was seeing on module
-unload with cifs.ko. I agree it would be good to get it in for 3.4...
-
-Tested-by: Jeff Layton <jlayton@redhat.com>
+OK. Lets go with unsigned long. I can prep a patch next week when I am
+back from vacation unless somebody beats me to it.
