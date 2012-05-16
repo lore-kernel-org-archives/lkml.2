@@ -1,163 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S967205Ab2EPNRR (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 May 2012 09:17:17 -0400
-Received: from s15943758.onlinehome-server.info ([217.160.130.188]:57380 "EHLO
-	mail.x86-64.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S964810Ab2EPNRO (ORCPT
+	id S967245Ab2EPNR6 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 May 2012 09:17:58 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:58015 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758381Ab2EPNR4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 May 2012 09:17:14 -0400
-Date: Wed, 16 May 2012 15:16:56 +0200
-From: Borislav Petkov <bp@amd64.org>
-To: Mauro Carvalho Chehab <mchehab@redhat.com>
-Cc: Borislav Petkov <bp@amd64.org>, "Luck, Tony" <tony.luck@intel.com>,
-        Linux Edac Mailing List <linux-edac@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Doug Thompson <norsk5@yahoo.com>, Steven Rostedt <rostedt@goodmis.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Ingo Molnar <mingo@redhat.com>
-Subject: Re: [PATCH v22] edac, ras/hw_event.h: use events to handle hw issues
-Message-ID: <20120516131656.GA2202@aftab.osrc.amd.com>
-References: <20120511102527.GI8913@aftab.osrc.amd.com>
- <4FAD081C.5000704@redhat.com>
- <20120511172430.GB17299@aftab.osrc.amd.com>
- <4FAD5CAD.90508@redhat.com>
- <20120514133404.GE4231@aftab.osrc.amd.com>
- <4FB1163D.3010302@redhat.com>
- <20120515150957.GC27806@aftab.osrc.amd.com>
- <4FB27EDC.8040001@redhat.com>
- <20120515163855.GE27806@aftab.osrc.amd.com>
- <4FB38DDF.7030009@redhat.com>
+	Wed, 16 May 2012 09:17:56 -0400
+Date: Wed, 16 May 2012 06:17:51 -0700
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: Anton Vorontsov <anton.vorontsov@linaro.org>
+Cc: Kees Cook <keescook@chromium.org>, Colin Cross <ccross@android.com>,
+        devel@driverdev.osuosl.org, linaro-kernel@lists.linaro.org,
+        Arnd Bergmann <arnd@arndb.de>, patches@linaro.org,
+        Marco Stornelli <marco.stornelli@gmail.com>,
+        Stephen Boyd <sboyd@codeaurora.org>, linux-kernel@vger.kernel.org,
+        arve@android.com, Jesper Juhl <jj@chaosbits.net>,
+        John Stultz <john.stultz@linaro.org>, Shuah Khan <shuahkhan@gmail.com>,
+        Rebecca Schultz Zavin <rebecca@android.com>,
+        WANG Cong <xiyou.wangcong@gmail.com>,
+        Andrew Morton <akpm@linux-foundation.org>, kernel-team@android.com,
+        Thomas Meyer <thomas@m3y3r.de>
+Subject: Re: [PATCH 2/6] ramoops: Move to fs/pstore/ram.c
+Message-ID: <20120516131751.GA23849@kroah.com>
+References: <20120516124109.GA14658@lizard>
+ <20120516124308.GB18345@lizard>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <4FB38DDF.7030009@redhat.com>
+In-Reply-To: <20120516124308.GB18345@lizard>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, May 16, 2012 at 08:22:07AM -0300, Mauro Carvalho Chehab wrote:
-> >> If you take a look at the trace printk:
-> >>
-> >> + TP_printk("%s error:%s on memory stick \"%s\" (mc:%d %s %s %s)",
-> >> +           (__entry->err_type == HW_EVENT_ERR_CORRECTED) ? "Corrected" :
-> >> +                 ((__entry->err_type == HW_EVENT_ERR_FATAL) ?
-> >> +                 "Fatal" : "Uncorrected"),
-> >> +           __get_str(msg),
-> >> +           __get_str(label),
-> >> +           __entry->mc_index,
-> >> +           __get_str(location),
-> >> +           __get_str(detail),
-> >> +           __get_str(driver_detail))
-> >>
-> >> There are not extra spaces there. The first extra space is probably because
-> >> there is an extra space at the label string. This should be easy to fix.
-> >>
-> >> The other extra space at the end is because amd64 currently doesn't provide
-> >> driver_detail information.
-> > 
-> > Remind me again why do we need two strings: detail and driver_detail?
-> > 
-> > Because they could very well be lumped together with a single "%s"
-> > format - "(mc:%d %s)" - and be printed.
+On Wed, May 16, 2012 at 05:43:08AM -0700, Anton Vorontsov wrote:
+> Since ramoops was converted to pstore, it has nothing to do with character
+> devices nowadays. Instead, today it is just a RAM backend for pstore.
 > 
-> As already explained, after merging two different fields, they can't be easily
-> unmerged.
+> The patch just moves things around. There are a few changes were needed
+> because of the move:
 > 
-> The main reason for moving from printk to tracepoint is to allow userspace
-> programs to get data in binary format, avoiding them to parse a printk message.
+> 1. Kconfig and Makefiles fixups, of course.
 > 
-> So, it is more important to provide the right information at the trace fields
-> than the niceness of the printk data.
-
-This doesn't answer my question. My question was: "why can't 'detail'
-and 'driver_detail' be a single parameter, i.e. 'detail' and this way
-solve both pretty printing and getting binary data problems?
-
-> > And detail will always contain something which is not the empty string,
-> > so problem solved.
-> > 
-> >>> Also, according to the output above "amd64_edac" is supposed to be
-> >>> [error msg] which is strange.
-> >>>
-> >>> I believe this comes from this call in f1x_map_sysaddr_to_csrow():
-> >>>
-> >>> 	        edac_mc_handle_error(HW_EVENT_ERR_CORRECTED, mci,
-> >>>                              page, offset, syndrome,
-> >>>                              csrow, chan, -1,
-> >>>                              EDAC_MOD_STR, "", NULL);
-> >>>
-> >>> I guess you want to do the following instead:
-> >>>
-> >>>        mcegen.py-2868  [007] .N..   178.261607: mc_event: amd64_edac: corrected error on memory stick "unknown memory" (mc:0 csrow:3 channel:1  page:0x5bac7 offset:0x388 grain:0 syndrome:0x34ed)
-> >>>
-> >>> maybe concatenate EDAC_MOD_STR with the proper string it reports, i.e.
-> >>> corrected/uncorrected error?
-> >>
-> >> The issue here is because amd64_edac (just like a few other drivers) use
-> >> its driver name (EDAC_MOD_STR) as the error message, instead of using 
-> >> something meaningful, like "read error" or "ECC error".
-> > 
-> > No, the issue is here that edac_mc_handle_ce() used to say "CE..."
-> > and edac_mc_handle_ue() used to say "UE.. " and yours don't say that
-> > anymore. In other words, you need to add the "CE/UE" thing to the string
-> > based on the HW_EVENT_ERR_* flag or something to that effect.
+> 2. In pstore/ram.c we have to play a bit with MODULE_PARAM_PREFIX, this
+>    is needed to keep user experience the same as with ramoops driver
+>    (i.e. so that ramoops.foo kernel command line arguments would still
+>    work).
 > 
-> 
-> Huh? 
-> 
-> >>>        mcegen.py-2868  [007] .N..   178.261607: mc_event: Corrected error:amd64_edac on memory stick "unknown memory" (mc:0 csrow:3 channel:1  page:0x5bac7 offset:0x388 grain:0 syndrome:0x34ed )
-> 
-> CE/UE is there. The only change is that, instead of using acronyms, it is now
-> saying "Corrected error"/"Uncorrected error", as the idea is to provide something
-> that the user will better understand.
+> Signed-off-by: Anton Vorontsov <anton.vorontsov@linaro.org>
+> Acked-by: Marco Stornelli <marco.stornelli@gmail.com>
+> Acked-by: Kees Cook <keescook@chromium.org>
+> ---
+>  Documentation/ramoops.txt  |    2 +-
+>  drivers/char/Kconfig       |    9 --
+>  drivers/char/Makefile      |    1 -
+>  drivers/char/ramoops.c     |  362 --------------------------------------------
+>  fs/pstore/Kconfig          |   14 ++
+>  fs/pstore/Makefile         |    3 +
+>  fs/pstore/ram.c            |  362 ++++++++++++++++++++++++++++++++++++++++++++
+>  include/linux/pstore_ram.h |   17 +++
+>  include/linux/ramoops.h    |   17 ---
+>  9 files changed, 397 insertions(+), 390 deletions(-)
+>  delete mode 100644 drivers/char/ramoops.c
+>  create mode 100644 fs/pstore/ram.c
+>  create mode 100644 include/linux/pstore_ram.h
+>  delete mode 100644 include/linux/ramoops.h
 
-Ok, so let's change the string output from the above version to:
+This patch fails to apply to my staging-next tree due to problems with
+drivers/char/Kconfig and drivers/char/ramoops.c.  What tree are you
+making this patch against?
 
- "mcegen.py-2868  [007] .N..   178.261607: mc_event: amd64_edac: Corrected error on memory stick "unknown memory" (mc:0 csrow:3 channel:1  page:0x5bac7 offset:0x388 grain:0 syndrome:0x34ed)"
+> --- a/drivers/char/Kconfig
+> +++ b/drivers/char/Kconfig
+> @@ -585,15 +585,6 @@ config DEVPORT
+>  
+>  source "drivers/s390/char/Kconfig"
+>  
+> -config RAMOOPS
+> -	tristate "Log panic/oops to a RAM buffer"
+> -	depends on HAS_IOMEM
+> -	depends on PSTORE
 
-I.e., "mc_event" [DRIVER] [ERROR TYPE] [DETAIL].
+This "depends on PSTORE" line is not in my staging-next tree, where did
+it come from?
 
-> >>>>     Of course, any userspace tools meant to handle errors should not parse
-> >>>>     the above data. They should, instead, use the binary fields provided by
-> >>>>     the tracepoint, mapping them directly into their MIBs.
-> >>>
-> >>> What is a MIB?
-> >>
-> >> Management Information Base. This is how anyone that works with Element
-> >> Management calls the model of information that represents each management
-> >> property. It is generally written using ITU-T ASN.1 syntax. Almost all
-> >> management software use that.
-> >>
-> >> [1] http://en.wikipedia.org/wiki/Management_information_base
-> > 
-> > That looks like an ACPI or some other idiotic spec speak, pls remove it.
-> 
-> No, MIB is not an idiotic speak. It is a widely-used term, older than TCP/IP, 
-> and defined by ITU-T (M.3000 series) and by ISO.
-> 
-> It is used by everybody that knows a little bit about error management,
-> as all management systems and protocols (like SNMP) are based on MIB
-> concepts. This concept is also used by other international forums, like
-> IETF, to define the Information Model to be used to manage the machine
-> and/or network resources. For example, the TCP/IP stack management base
-> is defined at IETF RFC1213.
+I'm guessing that because of this, is why the other conflict happens,
+right?
 
-More idiotic drivel.
+Any ideas on what I can do to resolve it?  As you are moving a file, I
+want to make sure I move the correct version of it :)
 
-Oh, well, you won't let go of this crap, so at least add the wikipedia
-URL to the "MIB" reference so that mere mortals like me who don't know
-jack of error management can understand what you're talking about.
+thanks,
 
-Thanks.
-
--- 
-Regards/Gruss,
-Boris.
-
-Advanced Micro Devices GmbH
-Einsteinring 24, 85609 Dornach
-GM: Alberto Bozzo
-Reg: Dornach, Landkreis Muenchen
-HRB Nr. 43632 WEEE Registernr: 129 19551
+greg k-h
