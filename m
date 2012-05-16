@@ -1,102 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965774Ab2EPUGg (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 May 2012 16:06:36 -0400
-Received: from fieldses.org ([174.143.236.118]:52434 "EHLO fieldses.org"
+	id S1760623Ab2EPUHV (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 May 2012 16:07:21 -0400
+Received: from mga02.intel.com ([134.134.136.20]:52253 "EHLO mga02.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S965355Ab2EPUGd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 May 2012 16:06:33 -0400
-Date: Wed, 16 May 2012 16:06:30 -0400
-From: "J. Bruce Fields" <bfields@fieldses.org>
-To: Stanislav Kinsbursky <skinsbursky@parallels.com>
-Cc: Trond.Myklebust@netapp.com, linux-nfs@vger.kernel.org,
-        linux-kernel@vger.kernel.org, devel@openvz.org
-Subject: Re: [PATCH RFC 00/13] Lockd: grace period containerization
-Message-ID: <20120516200630.GB20487@fieldses.org>
-References: <20120505170722.11559.74503.stgit@localhost.localdomain>
+	id S1760596Ab2EPUHT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 16 May 2012 16:07:19 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.67,351,1309762800"; 
+   d="scan'208";a="144848838"
+Message-ID: <4FB408F2.8060002@linux.intel.com>
+Date: Wed, 16 May 2012 13:07:14 -0700
+From: Arjan van de Ven <arjan@linux.intel.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:12.0) Gecko/20120428 Thunderbird/12.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120505170722.11559.74503.stgit@localhost.localdomain>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Linus Torvalds <torvalds@linux-foundation.org>
+CC: Steven Rostedt <rostedt@goodmis.org>, LKML <linux-kernel@vger.kernel.org>,
+        Ingo Molnar <mingo@elte.hu>, Frederic Weisbecker <fweisbec@gmail.com>,
+        David Sharp <dhsharp@google.com>,
+        Vaibhav Nagarnaik <vnagarnaik@google.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [RFC][PATCH] tracing: Remove useless 4 bytes of padding from
+ every event
+References: <1337175871.6724.46.camel@gandalf.stny.rr.com> <CA+55aFzVngkixn-t0mK8QqgnPhCzN2AsUtzfZ3BkLiJAcjNOzQ@mail.gmail.com> <1337198404.6724.81.camel@gandalf.stny.rr.com> <CA+55aFyKiNBRv=z8JjPTu=yFFvyWHhkGDxjWLm=R4HpwXzEw4g@mail.gmail.com>
+In-Reply-To: <CA+55aFyKiNBRv=z8JjPTu=yFFvyWHhkGDxjWLm=R4HpwXzEw4g@mail.gmail.com>
+X-Enigmail-Version: 1.4.1
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, May 05, 2012 at 09:21:30PM +0400, Stanislav Kinsbursky wrote:
-> This patch set is marked with RFC, because I'm still not quite sure, that this
-> implementation will satisfy other interested people.
-> So, would be appreciated for any comments.
+On 5/16/2012 1:04 PM, Linus Torvalds wrote:
+> On Wed, May 16, 2012 at 1:00 PM, Steven Rostedt <rostedt@goodmis.org> wrote:
+>>
+>> Seriously though. What's your take on changing the kernel that will
+>> break an older distro. Obviously, this change is too early to apply. But
+>> because an old distro has one app that will break if we make a change in
+>> the kernel, is that enough to keep that change out?
 > 
-> This patch set makes grace period and hosts reclaiming network namespace
-> aware.
+> I suspect that powertop is enough of a developer thing that if that's
+> the only thing that breaks, we don't have to worry too much.
 > 
-> Main ideas:
-> 1)  moving of 
-> 
-> 	unsigned long next_gc;
-> 	unsigned long nrhosts;
-> 
-> 	struct delayed_work grace_period_end;
-> 	struct lock_manager lockd_manager;
-> 	struct list_head grace_list;
-> 
-> to per-net Lockd data.
-> 
-> 2) moving of 
-> 
-> 	struct lock_manager nfsd4_manager;
-> 
-> to per-net NFSd data.
-> 
-> 3) shutdown + gc of NLM hosts done now network namespace aware.
+> I don't want to break *everybody*, so new distro's should be
+> up-to-date. But breaking something like a F14-15 timeframe distro or
+> something staid like a SLES (or "Debian Stale" or whatever they call
+> that thing that only takes crazy-old binaries)? It's fine. We don't
+> want to *rush* into it, but no, if those distros are basically not
+> updating, we can't care about them forever for something like
+> powertop.
 
-That all sounds reasonable to me.
+agreed.
 
-> 4) restart_grace() now works only for init_net.
+I would say something like "6 months" (e.g. 3.6); anybody who's likely
+to update anything will have done the powertop upgrade from his distro
+by then, and anybody who isn't isn't going to update the kernel either.
 
-Eventually we might just remove that.  I doubt it's used anywhere.
 
---b.
-
-> 
-> The following series implements...
-> 
-> ---
-> 
-> Stanislav Kinsbursky (13):
->       LockD: mark host per network namespace on garbage collect
->       LockD: make garbage collector network namespace aware.
->       LockD: manage garbage collection timeout per networks namespace
->       LockD: manage used host count per networks namespace
->       Lockd: host complaining function introduced
->       Lockd: add more debug to host shutdown functions
->       LockD: manage grace period per network namespace
->       LockD: make lockd manager allocated per network namespace
->       NFSd: make nfsd4_manager allocated per network namespace context.
->       SUNRPC: service request network namespace helper introduced
->       LockD: manage grace list per network namespace
->       LockD: pass actual network namespace to grace period management functions
->       Lockd: move grace period management from lockd() to per-net functions
-> 
-> 
->  fs/lockd/grace.c            |   16 +++++--
->  fs/lockd/host.c             |   92 +++++++++++++++++++++++++++++--------------
->  fs/lockd/netns.h            |    7 +++
->  fs/lockd/svc.c              |   43 ++++++++++++--------
->  fs/lockd/svc4proc.c         |   13 +++---
->  fs/lockd/svclock.c          |   16 ++++---
->  fs/lockd/svcproc.c          |   15 ++++---
->  fs/lockd/svcsubs.c          |   19 ++++++---
->  fs/nfs/callback_xdr.c       |    4 +-
->  fs/nfsd/export.c            |    4 +-
->  fs/nfsd/netns.h             |    2 +
->  fs/nfsd/nfs4idmap.c         |    4 +-
->  fs/nfsd/nfs4proc.c          |   18 +++++---
->  fs/nfsd/nfs4state.c         |   60 ++++++++++++++++------------
->  fs/nfsd/state.h             |    3 +
->  include/linux/fs.h          |    5 +-
->  include/linux/lockd/lockd.h |    6 +--
->  include/linux/sunrpc/svc.h  |    2 +
->  18 files changed, 204 insertions(+), 125 deletions(-)
-> 
