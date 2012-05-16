@@ -1,69 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932694Ab2EPXBe (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 May 2012 19:01:34 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:53903 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760744Ab2EPXBc (ORCPT
+	id S933074Ab2EPXO2 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 May 2012 19:14:28 -0400
+Received: from haggis.pcug.org.au ([203.10.76.10]:33387 "EHLO
+	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1760767Ab2EPXO0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 May 2012 19:01:32 -0400
-Date: Wed, 16 May 2012 16:01:31 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Johannes Weiner <hannes@cmpxchg.org>
-Cc: Michal Hocko <mhocko@suse.cz>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        cgroups@vger.kernel.org, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [patch 6/6] mm: memcg: print statistics from live counters
-Message-Id: <20120516160131.fecb5ddf.akpm@linux-foundation.org>
-In-Reply-To: <1337018451-27359-7-git-send-email-hannes@cmpxchg.org>
-References: <1337018451-27359-1-git-send-email-hannes@cmpxchg.org>
-	<1337018451-27359-7-git-send-email-hannes@cmpxchg.org>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
+	Wed, 16 May 2012 19:14:26 -0400
+Date: Thu, 17 May 2012 09:14:17 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Chris Metcalf <cmetcalf@tilera.com>
+Cc: linux-next@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>
+Subject: linux-next: bad commit in the tile tree
+Message-Id: <20120517091417.62c65eea7002be18d8af2f34@canb.auug.org.au>
+X-Mailer: Sylpheed 3.2.0beta7 (GTK+ 2.24.10; i486-pc-linux-gnu)
 Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Thu__17_May_2012_09_14_17_+1000_du55SB5k=kvMb.iK"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 14 May 2012 20:00:51 +0200
-Johannes Weiner <hannes@cmpxchg.org> wrote:
+--Signature=_Thu__17_May_2012_09_14_17_+1000_du55SB5k=kvMb.iK
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-> Directly print statistics and event counters instead of going through
-> an intermediate accumulation stage into a separate array, which used
-> to require defining statistic items in more than one place.
-> 
-> ...
->
-> -static const char *memcg_stat_strings[NR_MCS_STAT] = {
-> -	"cache",
-> -	"rss",
-> -	"mapped_file",
+Hi Chris,
 
-Bah humbug, who went and called this mapped_file?
+The top commit on the tile tree has a bad description ("usb hackery" does
+not tell us anything), sprinkles stuff (mainly printk()s) all over the
+generic usb code and is not signed off by anyone ...
 
-This stat is derived from MEM_CGROUP_STAT_FILE_MAPPED.  But if we
-rename MEM_CGROUP_STAT_FILE_MAPPED to MEM_CGROUP_STAT_MAPPED_FILE then
-we also need to rename the non-memcg NR_FILE_MAPPED.  And we can't
-change the text to "file_mapped" because it's ABI.
+I assume it is a debugging patch (or similar) and should *not* be in
+linux-next.
 
-> -	"mlock",
-> -	"swap",
+I will use the version of the tile tree from next-20120516 for today
+(unless you update your tree very soon).
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
 
-And "swap" is derived from MEM_CGROUP_STAT_SWAPOUT.  We could rename
-that to MEM_CGROUP_STAT_SWAP without trouble.
+--Signature=_Thu__17_May_2012_09_14_17_+1000_du55SB5k=kvMb.iK
+Content-Type: application/pgp-signature
 
-But both are poor names.  There are two concepts here: a) swapout
-events (ie: swap writeout initiation) and b) swapspace usage.  Type a)
-only ever counts up, whereas type b) counts up and down.
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
 
-MEM_CGROUP_STAT_SWAPOUT is actually of type b), but "swapout" is a
-misleading term, because it refers to type a) events.
+iQIcBAEBCAAGBQJPtDTJAAoJEECxmPOUX5FEUkUP/38qlyadDdLcYXxNMFqFBFCP
+Hc1aFR443RTXz7peMvGF85n6RLfHpwA6gSVQM5QW5hz87Dq4HotiB7o6b7kD2mVv
+TSiFsEoo86wesOlv/DevW+s0/ThUIDOSztY4efpCb06ce5hkSndABqjzTnrTC3ws
+w2gB9g2MDNEz/10Gy5jQC9vseoDRlfPjeZXo4xl+rxYzt5Ts7CkdhqcZCdG6FODV
+ZuDpm03KCAIp7+FvUcoHtxmGfD1rtXV6Rs/KKHmsrm9dTQ1hpFa2DLf9t6gkXcMm
+LZAH6hV+U+JZ7hQcPTKpB4eKYcZLP5TYUryU00nk25q8lc/z6yVa1fnrNomnFZuu
+uzPf9Dq2cEhLvt+djJ1Tu3wNREqosrlnRWcYcGuKSxYCOk0wzCcolhcuUOAzw92U
+GeDsuIHvLCa1JFBDbN0YbNQBYdF6HrOKDxz7haVWi9RnMSpr9PpNvtQmmTY1bEes
+DMmfO640M8nhSlsIXZfp6jjqk0Ae/ffnt7YZTCOMPqmE8+K5Gm8JL2eAiMDHuncq
+TxHPWM+dZsRxRvYwa6QvqluCiUbrXkc0vgYqyi+6V6hwS5Mc7cHVad8CFfsOoGS/
+HEx9cE3ZXWAejAMjuLtY0apm2JvVDb6+nbscc4sgV+Gwz4r83tnZISFUHQ6Jz68z
+FbxrWpYbf63IanU6U8Wy
+=HXMw
+-----END PGP SIGNATURE-----
 
-And the human-displayed "swap" is useless because it can refer to
-either type a) or type b) events.  These should be called "swapped" and
-MEM_CGROUP_STAT_SWAPPED.  But we can't change the userspace interface.
-
-argh, I hate you all!
-
+--Signature=_Thu__17_May_2012_09_14_17_+1000_du55SB5k=kvMb.iK--
