@@ -1,65 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S967152Ab2EPNGc (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 May 2012 09:06:32 -0400
-Received: from moutng.kundenserver.de ([212.227.126.171]:51972 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932958Ab2EPNG3 (ORCPT
+	id S966599Ab2EPNHO (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 May 2012 09:07:14 -0400
+Received: from cavan.codon.org.uk ([93.93.128.6]:37457 "EHLO
+	cavan.codon.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932658Ab2EPNHL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 May 2012 09:06:29 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: Greg KH <greg@kroah.com>
-Subject: Re: linux-next: manual merge of the arm-soc tree with the staging tree
-Date: Wed, 16 May 2012 13:03:34 +0000
-User-Agent: KMail/1.12.2 (Linux/3.4.0-rc3; KDE/4.3.2; x86_64; ; )
-Cc: Stephen Rothwell <sfr@canb.auug.org.au>, Olof Johansson <olof@lixom.net>,
-        linux-arm-kernel@lists.infradead.org, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org,
-        Maxime Ripard <maxime.ripard@free-electrons.com>,
-        "Jean-Christophe PLAGNIOL-VILLARD" <plagnioj@jcrosoft.com>
-References: <20120516185812.ce1ab57c3ec72445135a35fc@canb.auug.org.au> <201205161054.15610.arnd@arndb.de> <20120516124851.GA32064@kroah.com>
-In-Reply-To: <20120516124851.GA32064@kroah.com>
+	Wed, 16 May 2012 09:07:11 -0400
+Date: Wed, 16 May 2012 14:07:00 +0100
+From: Matthew Garrett <mjg59@srcf.ucam.org>
+To: Jan Beulich <JBeulich@suse.com>
+Cc: mingo@elte.hu, tglx@linutronix.de, matt.fleming@linux.intel.com,
+        linux-kernel@vger.kernel.org, hpa@zytor.com
+Subject: Re: [PATCH] x86-64: use EFI to deal with platform wall clock
+Message-ID: <20120516130700.GA21499@srcf.ucam.org>
+References: <4FB265AB0200007800083CC5@nat28.tlf.novell.com>
+ <20120515124707.GB25248@srcf.ucam.org>
+ <4FB273EB0200007800083D32@nat28.tlf.novell.com>
+ <20120515132006.GA26196@srcf.ucam.org>
+ <4FB3B734020000780008415D@nat28.tlf.novell.com>
+ <20120516123912.GA20990@srcf.ucam.org>
+ <4FB3C0ED020000780008418E@nat28.tlf.novell.com>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201205161303.35080.arnd@arndb.de>
-X-Provags-ID: V02:K0:xoxFDlnDsemApxS7VJLlvfGLzqH78oBT3CVRXmg8og3
- dQh295gZTHVZPDyTfHFPZwzSTzJGRYQW3UGZRc2ZZVNjRZNzlW
- xUezm9s67HP6YKKZNzU1cgo99gprNG7dv+PI4XT57eexsZGA3h
- 7Ou0eqXk8cy3FuYYlhiPX2gDKVfcSW1zTm+o0k+8DTQwdMasMJ
- xPjF26jMDPktgZomsJ3ICCCmLSk58VO66v+RNr1lb76vbUIAG/
- gCQs6EKRvaOguT4iEOpmERYTKmTBHxFRA5D0QXOAjLNyyu6lLY
- t7wmq/NItXYEPJGXJcjfv1eo9XgCKH3f2BveUiRO0MPQFjFov7
- Yzm0JDVWbzcDV3kQYJzI=
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4FB3C0ED020000780008418E@nat28.tlf.novell.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: mjg59@cavan.codon.org.uk
+X-SA-Exim-Scanned: No (on cavan.codon.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday 16 May 2012, Greg KH wrote:
-> On Wed, May 16, 2012 at 10:54:15AM +0000, Arnd Bergmann wrote:
-> > On Wednesday 16 May 2012, Stephen Rothwell wrote:
-> > > Today's linux-next merge of the arm-soc tree got a conflict in
-> > > arch/arm/boot/dts/at91sam9g20.dtsi between commit 7cb2e629a240 ("ARM:
-> > > AT91: Add ADC driver to the at91sam9g20 dtsi") from the staging tree and
-> > > commit 5b6089cb6f28 ("ARM: at91: add at91sam9260 DT support") from the
-> > > arm-soc tree.
-> > > 
-> > > So, I didn't know what to do with this, so I used the arm-soc version of
-> > > this file (effectively throwing away the staging tree change).  Hints,
-> > > anyone?
-> > 
-> > I suspect the addition of the adc node should just go into the
-> > at91sam9260.dtsi file.
+On Wed, May 16, 2012 at 01:59:57PM +0100, Jan Beulich wrote:
+> >>> On 16.05.12 at 14:39, Matthew Garrett <mjg59@srcf.ucam.org> wrote:
+> > Could you elaborate on that a little?
 > 
-> So does that mean that the staging tree version is correct?  Or that
-> someone needs to send me a fixup patch here?
+> There are systems where RAM on individual nodes is always
+> starting at e.g. a 1Tb boundary. Obviously there can (at
+> least theoretically) be anything in between, and hence
+> assuming that __va() is usable here is simply wrong, as likely
+> no mapping was created at all for the hole space (or if there
+> is one, it would conflict with the one to be established here
+> in the EfiMemoryMappedIO case).
 
-The staging tree version adds contents to at91sam9g20.dtsi, and the context
-gets moved to at91sam9260.dtsi in arm-soc. If we want to resolve it now,
-I think the best way is to add the change to at91sam9260.dtsi in arm-soc
-and let you drop that part in staging. There are no hard dependencies
-since this is new code and it the driver is still correct without the
-change, it simply won't find the device.
+Ok, that does sound like it needs fixing.
 
-	Arnd
+> > Platforms don't correctly deal with the case where you make physical 
+> > calls after ExitBootServices(). We tried running in physical mode. It 
+> > simply doesn't work.
+> 
+> Interesting, especially as we're using physical mode exclusively so
+> far in Xen. That's a platform issue though, and working around
+> it by (silently!) sacrificing other functionality is questionable imo.
+> It should at best be an option (default off), so that on systems
+> where physical mode works, kexec can work too.
+
+There was a patchset posted that provided that option. We experimented 
+with it in RHEL for a while and found that physical mode simply isn't 
+reliable - no other OS uses it, so it's entirely untested on most 
+platforms.
+
+-- 
+Matthew Garrett | mjg59@srcf.ucam.org
