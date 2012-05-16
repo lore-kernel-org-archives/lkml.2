@@ -1,93 +1,219 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933473Ab2EPM7c (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 May 2012 08:59:32 -0400
-Received: from nat28.tlf.novell.com ([130.57.49.28]:41439 "EHLO
-	nat28.tlf.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933417Ab2EPM7a convert rfc822-to-8bit (ORCPT
-	<rfc822;groupwise-linux-kernel@vger.kernel.org:5:1>);
-	Wed, 16 May 2012 08:59:30 -0400
-Message-Id: <4FB3C0ED020000780008418E@nat28.tlf.novell.com>
-X-Mailer: Novell GroupWise Internet Agent 12.0.0 
-Date: Wed, 16 May 2012 13:59:57 +0100
-From: "Jan Beulich" <JBeulich@suse.com>
-To: "Matthew Garrett" <mjg59@srcf.ucam.org>
-Cc: <mingo@elte.hu>, <tglx@linutronix.de>, <matt.fleming@linux.intel.com>,
-        <linux-kernel@vger.kernel.org>, <hpa@zytor.com>
-Subject: Re: [PATCH] x86-64: use EFI to deal with platform wall clock
-References: <4FB265AB0200007800083CC5@nat28.tlf.novell.com>
- <20120515124707.GB25248@srcf.ucam.org>
- <4FB273EB0200007800083D32@nat28.tlf.novell.com>
- <20120515132006.GA26196@srcf.ucam.org>
- <4FB3B734020000780008415D@nat28.tlf.novell.com>
- <20120516123912.GA20990@srcf.ucam.org>
-In-Reply-To: <20120516123912.GA20990@srcf.ucam.org>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 8BIT
-Content-Disposition: inline
+	id S966255Ab2EPNC3 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 May 2012 09:02:29 -0400
+Received: from mga11.intel.com ([192.55.52.93]:40313 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1759961Ab2EPNC1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 16 May 2012 09:02:27 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
+   d="scan'208";a="153608640"
+From: Feng Tang <feng.tang@intel.com>
+To: acme@redhat.com, mingo@elte.hu, a.p.zijlstra@chello.nl,
+        robert.richter@amd.com, ak@linux.intel.com,
+        linux-kernel@vger.kernel.org
+Cc: Feng Tang <feng.tang@intel.com>
+Subject: [PATCH 2/3] perf script: Replace "struct thread" with "struct addr_location" as a parameter for "process_event()"
+Date: Wed, 16 May 2012 20:59:14 +0800
+Message-Id: <1337173155-25780-2-git-send-email-feng.tang@intel.com>
+X-Mailer: git-send-email 1.7.1
+In-Reply-To: <1337173155-25780-1-git-send-email-feng.tang@intel.com>
+References: <1337173155-25780-1-git-send-email-feng.tang@intel.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->>> On 16.05.12 at 14:39, Matthew Garrett <mjg59@srcf.ucam.org> wrote:
-> On Wed, May 16, 2012 at 01:18:28PM +0100, Jan Beulich wrote:
-> 
->> Okay, looks like calling efi_ioremap() at this point is possible.
->> But why is efi_enter_virtual_mode() being called as late as is
->> the case currently for x86 anyway?
-> 
-> Assuming that things are as they are for a good reason is not 
-> necessarily true in the EFI code...
+Both perl and python script start processing events other than trace
+points, and it's useful to pass the resolved symbol and the dso info
+to the event handler in script for better analysis and statistics.
 
-Okay...
+Struct thread is already a member of struct addr_location, using
+addr_location will keep the thread info, while providing additional
+symbol and dso info if exist, so that the script itself doesn't need
+to bother to do the symbol resolving and dso searching work.
 
->> And then again the current logic in efi_enter_virtual_mode()
->> looks flawed (it assumes two contiguous pieces of direct
->> mappings, and while on systems with dis-contiguous physical
->> memory this currently appears to be true, it's not correct - the
->> holes could have MMIO assignments in them - and hence
->> shouldn't be relied upon), and I wouldn't want to copy this
->> elsewhere.
-> 
-> Could you elaborate on that a little?
+Signed-off-by: Feng Tang <feng.tang@intel.com>
+---
+ tools/perf/builtin-script.c                        |    5 +++--
+ .../perf/util/scripting-engines/trace-event-perl.c |   11 ++++++-----
+ .../util/scripting-engines/trace-event-python.c    |   16 ++++++++--------
+ tools/perf/util/trace-event-scripting.c            |    2 +-
+ tools/perf/util/trace-event.h                      |    4 +++-
+ 5 files changed, 21 insertions(+), 17 deletions(-)
 
-There are systems where RAM on individual nodes is always
-starting at e.g. a 1Tb boundary. Obviously there can (at
-least theoretically) be anything in between, and hence
-assuming that __va() is usable here is simply wrong, as likely
-no mapping was created at all for the hole space (or if there
-is one, it would conflict with the one to be established here
-in the EfiMemoryMappedIO case).
-
->> Plus the use of set_virtual_address_map is bogus in the first
->> place, as it makes it impossible for a kexec-ed kernel to also
->> use EFI services (as it would have to call the function a
->> second and possibly third time, yet it is not permitted to be
->> called more than once). Imo all calls have to happen in
->> physical mode.
-> 
-> Platforms don't correctly deal with the case where you make physical 
-> calls after ExitBootServices(). We tried running in physical mode. It 
-> simply doesn't work.
-
-Interesting, especially as we're using physical mode exclusively so
-far in Xen. That's a platform issue though, and working around
-it by (silently!) sacrificing other functionality is questionable imo.
-It should at best be an option (default off), so that on systems
-where physical mode works, kexec can work too.
-
->> So I'm afraid if the patch as I provided it isn't acceptable, and
->> if the call to efi_enter_virtual_mode() can't be moved ahead
->> of the one to timekeeping_init(), this winds down to the whole
->> logic needing a re-write.
-> 
-> I have zero objection to this being cleaned up, but I don't know of any 
-> obvious reason why we can't do enter_virtual_mode() earlier.
-
-I shall give that a try then. It would imply that we don't need
-phys_efi_get_time() then anymore. I don't have a 32-bit EFI box
-though to test that things don't break there...
-
-Jan
+diff --git a/tools/perf/builtin-script.c b/tools/perf/builtin-script.c
+index d4ce733..417fe7d 100644
+--- a/tools/perf/builtin-script.c
++++ b/tools/perf/builtin-script.c
+@@ -405,9 +405,10 @@ static void process_event(union perf_event *event __unused,
+ 			  struct perf_sample *sample,
+ 			  struct perf_evsel *evsel,
+ 			  struct machine *machine,
+-			  struct thread *thread)
++			  struct addr_location *al __unused)
+ {
+ 	struct perf_event_attr *attr = &evsel->attr;
++	struct thread *thread = al->thread;
+ 
+ 	if (output[attr->type].fields == 0)
+ 		return;
+@@ -520,7 +521,7 @@ static int process_sample_event(struct perf_tool *tool __used,
+ 	if (cpu_list && !test_bit(sample->cpu, cpu_bitmap))
+ 		return 0;
+ 
+-	scripting_ops->process_event(event, sample, evsel, machine, thread);
++	scripting_ops->process_event(event, sample, evsel, machine, &al);
+ 
+ 	evsel->hists.stats.total_period += sample->period;
+ 	return 0;
+diff --git a/tools/perf/util/scripting-engines/trace-event-perl.c b/tools/perf/util/scripting-engines/trace-event-perl.c
+index e30749e..8f5eacc 100644
+--- a/tools/perf/util/scripting-engines/trace-event-perl.c
++++ b/tools/perf/util/scripting-engines/trace-event-perl.c
+@@ -252,7 +252,7 @@ static void perl_process_tracepoint(union perf_event *pevent __unused,
+ 				    struct perf_sample *sample,
+ 				    struct perf_evsel *evsel,
+ 				    struct machine *machine __unused,
+-				    struct thread *thread)
++				    struct addr_location *al __unused)
+ {
+ 	struct format_field *field;
+ 	static char handler[256];
+@@ -264,6 +264,7 @@ static void perl_process_tracepoint(union perf_event *pevent __unused,
+ 	int cpu = sample->cpu;
+ 	void *data = sample->raw_data;
+ 	unsigned long long nsecs = sample->time;
++	struct thread *thread = al->thread;
+ 	char *comm = thread->comm;
+ 
+ 	dSP;
+@@ -342,7 +343,7 @@ static void perl_process_event_generic(union perf_event *pevent __unused,
+ 				       struct perf_sample *sample,
+ 				       struct perf_evsel *evsel __unused,
+ 				       struct machine *machine __unused,
+-				       struct thread *thread __unused)
++				       struct addr_location *al __unused)
+ {
+ 	dSP;
+ 
+@@ -368,10 +369,10 @@ static void perl_process_event(union perf_event *pevent,
+ 			       struct perf_sample *sample,
+ 			       struct perf_evsel *evsel,
+ 			       struct machine *machine,
+-			       struct thread *thread)
++			       struct addr_location *al)
+ {
+-	perl_process_tracepoint(pevent, sample, evsel, machine, thread);
+-	perl_process_event_generic(pevent, sample, evsel, machine, thread);
++	perl_process_tracepoint(pevent, sample, evsel, machine, al);
++	perl_process_event_generic(pevent, sample, evsel, machine, al);
+ }
+ 
+ static void run_start_sub(void)
+diff --git a/tools/perf/util/scripting-engines/trace-event-python.c b/tools/perf/util/scripting-engines/trace-event-python.c
+index aaf2679..a202881 100644
+--- a/tools/perf/util/scripting-engines/trace-event-python.c
++++ b/tools/perf/util/scripting-engines/trace-event-python.c
+@@ -210,7 +210,7 @@ static void python_process_tracepoint(union perf_event *pevent __unused,
+ 				 struct perf_sample *sample,
+ 				 struct perf_evsel *evsel __unused,
+ 				 struct machine *machine __unused,
+-				 struct thread *thread)
++				 struct addr_location *al)
+ {
+ 	PyObject *handler, *retval, *context, *t, *obj, *dict = NULL;
+ 	static char handler_name[256];
+@@ -224,6 +224,7 @@ static void python_process_tracepoint(union perf_event *pevent __unused,
+ 	int cpu = sample->cpu;
+ 	void *data = sample->raw_data;
+ 	unsigned long long nsecs = sample->time;
++	struct thread *thread = al->thread;
+ 	char *comm = thread->comm;
+ 
+ 	t = PyTuple_New(MAX_FIELDS);
+@@ -327,9 +328,9 @@ static void python_process_tracepoint(union perf_event *pevent __unused,
+ 
+ static void python_process_general_event(union perf_event *pevent __unused,
+ 				 struct perf_sample *sample,
+-				 struct perf_evsel *evsel __unused,
++				 struct perf_evsel *evsel,
+ 				 struct machine *machine __unused,
+-				 struct thread *thread __unused)
++				 struct addr_location *al)
+ {
+ 	PyObject *handler, *retval, *t;
+ 	static char handler_name[64];
+@@ -341,14 +342,13 @@ static void python_process_general_event(union perf_event *pevent __unused,
+ 		Py_FatalError("couldn't create Python tuple");
+ 
+ 	sprintf(handler_name, "process_general_event");
+-
+ 	handler = PyDict_GetItemString(main_dict, handler_name);
+ 	if (handler && !PyCallable_Check(handler)) {
+ 		handler = NULL;
+ 		goto exit;
+ 	}
+ 
+-	/* Pass 3 parameters: event_attr, perf_sample, raw data */
++	/* Pass 3 parameters: event_attr, perf_sample, raw data, thread name */
+ 	PyTuple_SetItem(t, n++, PyString_FromStringAndSize(
+ 			(const char *)&evsel->attr, sizeof(evsel->attr)));
+ 	PyTuple_SetItem(t, n++, PyString_FromStringAndSize(
+@@ -370,15 +370,15 @@ static void python_process_event(union perf_event *pevent,
+ 				 struct perf_sample *sample,
+ 				 struct perf_evsel *evsel,
+ 				 struct machine *machine,
+-				 struct thread *thread)
++				 struct addr_location *al)
+ {
+ 	switch (evsel->attr.type) {
+ 	case PERF_TYPE_TRACEPOINT:
+-		python_process_tracepoint(pevent, sample, evsel, machine, thread);
++		python_process_tracepoint(pevent, sample, evsel, machine, al);
+ 		break;
+ 	/* Reserve for future process_hw/sw/raw APIs */
+ 	default:
+-		python_process_general_event(pevent, sample, evsel, machine, thread);
++		python_process_general_event(pevent, sample, evsel, machine, al);
+ 	}
+ }
+ 
+diff --git a/tools/perf/util/trace-event-scripting.c b/tools/perf/util/trace-event-scripting.c
+index 18ae6c1..b26459e 100644
+--- a/tools/perf/util/trace-event-scripting.c
++++ b/tools/perf/util/trace-event-scripting.c
+@@ -39,7 +39,7 @@ static void process_event_unsupported(union perf_event *event __unused,
+ 				      struct perf_sample *sample __unused,
+ 				      struct perf_evsel *evsel __unused,
+ 				      struct machine *machine __unused,
+-				      struct thread *thread __unused)
++				      struct addr_location *al __unused)
+ {
+ }
+ 
+diff --git a/tools/perf/util/trace-event.h b/tools/perf/util/trace-event.h
+index 58ae14c..dc20ca0 100644
+--- a/tools/perf/util/trace-event.h
++++ b/tools/perf/util/trace-event.h
+@@ -289,6 +289,8 @@ enum trace_flag_type {
+ 	TRACE_FLAG_SOFTIRQ		= 0x10,
+ };
+ 
++struct addr_location;
++
+ struct scripting_ops {
+ 	const char *name;
+ 	int (*start_script) (const char *script, int argc, const char **argv);
+@@ -297,7 +299,7 @@ struct scripting_ops {
+ 			       struct perf_sample *sample,
+ 			       struct perf_evsel *evsel,
+ 			       struct machine *machine,
+-			       struct thread *thread);
++			       struct addr_location *al);
+ 	int (*generate_script) (const char *outfile);
+ };
+ 
+-- 
+1.7.1
 
