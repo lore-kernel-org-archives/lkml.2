@@ -1,56 +1,117 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759530Ab2EPHad (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 May 2012 03:30:33 -0400
-Received: from mail-qa0-f49.google.com ([209.85.216.49]:57244 "EHLO
-	mail-qa0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759223Ab2EPHab convert rfc822-to-8bit (ORCPT
+	id S1759560Ab2EPHb3 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 May 2012 03:31:29 -0400
+Received: from ch1ehsobe003.messaging.microsoft.com ([216.32.181.183]:45588
+	"EHLO ch1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1759538Ab2EPHb1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 May 2012 03:30:31 -0400
+	Wed, 16 May 2012 03:31:27 -0400
+X-SpamScore: 7
+X-BigFish: VPS7(z5c5ozzz1202hzz8275bhz2dh2a8h668h839hd24he5bh)
+X-Forefront-Antispam-Report: CIP:137.71.25.57;KIP:(null);UIP:(null);IPV:NLI;H:nwd2mta2.analog.com;RD:nwd2mail11.analog.com;EFVD:NLI
+From: <sonic.zhang@analog.com>
+To: Ben Dooks <ben-linux@fluff.org>, Wolfram Sang <w.sang@pengutronix.de>
+CC: <linux-i2c@vger.kernel.org>, LKML <linux-kernel@vger.kernel.org>,
+        <uclinux-dist-devel@blackfin.uclinux.org>,
+        Sonic Zhang <sonic.zhang@analog.com>
+Subject: [PATCH 2/8] i2c: i2c-bfin-twi: Stop receiving operation immediately in last rx interrupt.
+Date: Wed, 16 May 2012 15:20:20 +0800
+Message-ID: <1337152826-9850-2-git-send-email-sonic.zhang@analog.com>
+X-Mailer: git-send-email 1.7.0.4
+In-Reply-To: <1337152826-9850-1-git-send-email-sonic.zhang@analog.com>
+References: <1337152826-9850-1-git-send-email-sonic.zhang@analog.com>
 MIME-Version: 1.0
-In-Reply-To: <CAJOA=zNVQUDbHQCgnQ56S50fva2eKUXAH9aVkTbtyvQW+fq9SA@mail.gmail.com>
-References: <1336798797-8724-1-git-send-email-skannan@codeaurora.org>
-	<CAJOA=zNVQUDbHQCgnQ56S50fva2eKUXAH9aVkTbtyvQW+fq9SA@mail.gmail.com>
-Date: Wed, 16 May 2012 09:30:30 +0200
-Message-ID: <CACRpkda94B1JDC0T8eafBkHDg8JFy19OAH3NgGZRBLA28i9iRQ@mail.gmail.com>
-Subject: Re: [PATCH] clk: Fix race conditions between clk_set_parent() and clk_enable()
-From: Linus Walleij <linus.walleij@linaro.org>
-To: "Turquette, Mike" <mturquette@ti.com>
-Cc: Saravana Kannan <skannan@codeaurora.org>,
-        Arnd Bergman <arnd.bergmann@linaro.org>,
-        linux-arm-kernel@lists.infradead.org, Andrew Lunn <andrew@lunn.ch>,
-        Paul Walmsley <paul@pwsan.com>, Russell King <linux@arm.linux.org.uk>,
-        Linus Walleij <linus.walleij@stericsson.com>,
-        Stephen Boyd <sboyd@codeaurora.org>, linux-arm-msm@vger.kernel.org,
-        Sascha Hauer <s.hauer@pengutronix.de>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Magnus Damm <magnus.damm@gmail.com>, linux-kernel@vger.kernel.org,
-        Rob Herring <rob.herring@calxeda.com>,
-        Richard Zhao <richard.zhao@linaro.org>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Deepak Saxena <dsaxena@linaro.org>,
-        Amit Kucheria <amit.kucheria@linaro.org>,
-        Jamie Iles <jamie@jamieiles.com>,
-        Jeremy Kerr <jeremy.kerr@canonical.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Shawn Guo <shawn.guo@freescale.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain
+X-OriginatorOrg: analog.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, May 16, 2012 at 8:00 AM, Turquette, Mike <mturquette@ti.com> wrote:
+From: Sonic Zhang <sonic.zhang@analog.com>
 
-> The above hunk is a good change since it fixes a bug where we
-> prepare/enable the parent clocks around the .set_parent callback, even
-> when CLK_SET_PARENT_GATE is set.  It should be a separate patch.
+Also wake up waiting process when transfer completes.
 
-This makes me think that maybe some of these clk fixes really
-need to add Cc: stable@kernel.org so they get into 3.4 as well.
+Signed-off-by: Sonic Zhang <sonic.zhang@analog.com>
 
-Not that there are plenty of in-kernel users, but since people may
-be basing development off the 3.4 tree, it would be good to have
-fixes propagate there.
+git-svn-id: svn://localhost/svn/linux-kernel/trunk@9105 526b6c2d-f592-4532-a319-5dd88ccb003d
+---
+ drivers/i2c/busses/i2c-bfin-twi.c |   43 ++++++++++++++++++++----------------
+ 1 files changed, 24 insertions(+), 19 deletions(-)
 
-Linus Walleij
+diff --git a/drivers/i2c/busses/i2c-bfin-twi.c b/drivers/i2c/busses/i2c-bfin-twi.c
+index e6dd3c9..376e331 100644
+--- a/drivers/i2c/busses/i2c-bfin-twi.c
++++ b/drivers/i2c/busses/i2c-bfin-twi.c
+@@ -130,21 +130,25 @@ static void bfin_twi_handle_interrupt(struct bfin_twi_iface *iface,
+ 			}
+ 			iface->transPtr++;
+ 			iface->readNum--;
+-		} else if (iface->manual_stop) {
+-			/* Avoid possible bus stall -
+-			 * Flush FIFO before issuing the STOP condition
+-			 */
+-			read_RCV_DATA16(iface);
+-			write_MASTER_CTL(iface,
+-				read_MASTER_CTL(iface) | STOP);
+-		} else if (iface->cur_mode == TWI_I2C_MODE_REPEAT &&
+-		           iface->cur_msg + 1 < iface->msg_num) {
+-			if (iface->pmsg[iface->cur_msg + 1].flags & I2C_M_RD)
+-				write_MASTER_CTL(iface,
+-					read_MASTER_CTL(iface) | RSTART | MDIR);
+-			else
++		}
++
++		if (iface->readNum == 0) {
++			if (iface->manual_stop) {
++				/* Avoid possible bus stall -
++				 * Flush FIFO before issuing the STOP condition
++				 */
++				read_RCV_DATA16(iface);
+ 				write_MASTER_CTL(iface,
+-					(read_MASTER_CTL(iface) | RSTART) & ~MDIR);
++					read_MASTER_CTL(iface) | STOP);
++			} else if (iface->cur_mode == TWI_I2C_MODE_REPEAT &&
++					iface->cur_msg + 1 < iface->msg_num) {
++				if (iface->pmsg[iface->cur_msg + 1].flags & I2C_M_RD)
++					write_MASTER_CTL(iface,
++						read_MASTER_CTL(iface) | RSTART | MDIR);
++				else
++					write_MASTER_CTL(iface,
++						(read_MASTER_CTL(iface) | RSTART) & ~MDIR);
++			}
+ 		}
+ 	}
+ 	if (twi_int_status & MERR) {
+@@ -245,12 +249,13 @@ static void bfin_twi_handle_interrupt(struct bfin_twi_iface *iface,
+ 				}
+ 			}
+ 
+-			if (iface->pmsg[iface->cur_msg].len <= 255)
+-					write_MASTER_CTL(iface,
++			if (iface->pmsg[iface->cur_msg].len <= 255) {
++				write_MASTER_CTL(iface,
+ 					(read_MASTER_CTL(iface) &
+ 					(~(0xff << 6))) |
+-				(iface->pmsg[iface->cur_msg].len << 6));
+-			else {
++					(iface->pmsg[iface->cur_msg].len << 6));
++				iface->manual_stop = 0;
++			} else {
+ 				write_MASTER_CTL(iface,
+ 					(read_MASTER_CTL(iface) |
+ 					(0xff << 6)));
+@@ -264,8 +269,8 @@ static void bfin_twi_handle_interrupt(struct bfin_twi_iface *iface,
+ 			write_INT_MASK(iface, 0);
+ 			write_MASTER_CTL(iface, 0);
+ 		}
++		complete(&iface->complete);
+ 	}
+-	complete(&iface->complete);
+ }
+ 
+ /* Interrupt handler */
+-- 
+1.7.0.4
+
+
