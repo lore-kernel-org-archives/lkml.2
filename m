@@ -1,58 +1,156 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760410Ab2EPTF1 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 May 2012 15:05:27 -0400
-Received: from nm24.bullet.mail.bf1.yahoo.com ([98.139.212.183]:38125 "HELO
-	nm24.bullet.mail.bf1.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1760169Ab2EPTF0 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 May 2012 15:05:26 -0400
-X-Greylist: delayed 335 seconds by postgrey-1.27 at vger.kernel.org; Wed, 16 May 2012 15:05:25 EDT
-X-Yahoo-Newman-Id: 919662.66384.bm@smtp105.mail.bf1.yahoo.com
-X-Yahoo-Newman-Property: ymail-3
-X-YMail-OSG: uhehhbwVM1nN4n0T3IzNHi0SQyJOAGQJQnhPiaM03ZISK4Z
- P5WlbNRJWcxyFqOYRw25nr6lI5AUrcms5.EmiRmwtW1yfvRDuryl2C01L29L
- 0jVKweIRXmWDu1LNSON5q0sWx3ZE.ZQmOjEmD9XiZlo2xGXhxBv7Sb6Kig8s
- jfhl7py0Jga5EoM9l2qJS_P0TLpIbmGU3ixJOUJeU06NHNH5t6uYCRh.jQ2N
- uAHTkZyXOKPBW7WUzhTHuK8xSOXXh_BVzr3zGOYEvW2Dx.bZSRWeG.uxbyaX
- kceGQEaWMwDyfoXO.z.ydS60_FLodfTmKrWCAw62Yko0zSlzWCS5cHERngU9
- Oh9hkevRkUzXMqSpiH5y.7dItRCD6CVIw4o7U9F5SOmwSwGAaG3ZsRi9qocL
- 5dzGETKc0Faku.3gYENf3b8LZjGEXRkdNqew_yv0sKL2OE6u7EqNrd6jXVer
- ODNiwJJDO3x5d4FpOeUDNG7XzkijBxe2wfS6BcEFF5prhAbzkh7QMVHk.975
- gqk8l
-X-Yahoo-SMTP: dNW5aIGswBCf1iV6QK8RWrBgWyjShXs-
-From: Jeffrin Jose <ahiliation@yahoo.co.in>
-To: mdharm-usb@one-eyed-alien.net, gregkh@linuxfoundation.org
-Cc: linux-kernel@vger.kernel.org, ahiliation@yahoo.co.in
-Subject: [PATCH 1/3]USB: storage :fixed C99 comment issue.
-Date: Thu, 17 May 2012 00:33:07 +0530
-Message-Id: <1337194987-3730-1-git-send-email-ahiliation@yahoo.co.in>
-X-Mailer: git-send-email 1.7.10
+	id S1760435Ab2EPTIC (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 May 2012 15:08:02 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:4130 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755502Ab2EPTH7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 16 May 2012 15:07:59 -0400
+Date: Wed, 16 May 2012 22:07:58 +0300
+From: "Michael S. Tsirkin" <mst@redhat.com>
+To: Gleb Natapov <gleb@redhat.com>
+Cc: Marcelo Tosatti <mtosatti@redhat.com>, x86@kernel.org, kvm@vger.kernel.org,
+        Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
+        Avi Kivity <avi@redhat.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCHv4 3/5] kvm: host side for eoi optimization
+Message-ID: <20120516190757.GA12113@redhat.com>
+References: <cover.1337168687.git.mst@redhat.com>
+ <42ba7beaa25855997e02fea91a11c9224c51720e.1337168687.git.mst@redhat.com>
+ <20120516154940.GA20549@amt.cnet>
+ <20120516162247.GA10676@redhat.com>
+ <20120516172058.GA22861@amt.cnet>
+ <20120516175856.GD10769@redhat.com>
+ <20120516181500.GA23791@amt.cnet>
+ <20120516182520.GH28798@redhat.com>
+ <20120516182948.GF10769@redhat.com>
+ <20120516183822.GI28798@redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120516183822.GI28798@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Fixed C99 comment issue in drivers/usb/storage/usb.c
-found using checkpatch.pl tool.
+On Wed, May 16, 2012 at 09:38:22PM +0300, Gleb Natapov wrote:
+> On Wed, May 16, 2012 at 09:29:49PM +0300, Michael S. Tsirkin wrote:
+> > On Wed, May 16, 2012 at 09:25:20PM +0300, Gleb Natapov wrote:
+> > > On Wed, May 16, 2012 at 03:15:00PM -0300, Marcelo Tosatti wrote:
+> > > > On Wed, May 16, 2012 at 08:58:57PM +0300, Michael S. Tsirkin wrote:
+> > > > > On Wed, May 16, 2012 at 02:20:58PM -0300, Marcelo Tosatti wrote:
+> > > > > > On Wed, May 16, 2012 at 07:22:47PM +0300, Michael S. Tsirkin wrote:
+> > > > > > > On Wed, May 16, 2012 at 12:49:40PM -0300, Marcelo Tosatti wrote:
+> > > > > > > > > @@ -1245,9 +1306,20 @@ int kvm_get_apic_interrupt(struct kvm_vcpu *vcpu)
+> > > > > > > > >  	int vector = kvm_apic_has_interrupt(vcpu);
+> > > > > > > > >  	struct kvm_lapic *apic = vcpu->arch.apic;
+> > > > > > > > >  
+> > > > > > > > > -	if (vector == -1)
+> > > > > > > > > +	/* Detect interrupt nesting and disable EOI optimization */
+> > > > > > > > > +	if (pv_eoi_enabled(vcpu) && vector == -2)
+> > > > > > > > > +		pv_eoi_clr_pending(vcpu);
+> > > > > > > > > +
+> > > > > > > > > +	if (vector < 0)
+> > > > > > > > 
+> > > > > > > > With interrupt window exiting, the guest will exit:
+> > > > > > > > 
+> > > > > > > > - as soon as it sets RFLAGS.IF=1 and there is any 
+> > > > > > > > interrupt pending in IRR.
+> > > > > > > > - any new interrupt is set in IRR will kick vcpu
+> > > > > > > > out of guest mode and recalculate interrupt-window-exiting.
+> > > > > > > > 
+> > > > > > > > Doesnt this make this bit unnecessary ?
+> > > > > > > 
+> > > > > > > Looks like we could cut it out.  But I'm not sure how architectural it is
+> > > > > > > that we exit on interrupt window.
+> > > > > > > I guess there are reasons to exit on interrupt window but
+> > > > > > > isn't it better to make the feature independent of it?
+> > > > > > 
+> > > > > > Hum... not sure. Is it helpful for the Hyper-V interface?
+> > > > > > 
+> > > > > > > This almost never happens in my testing anyway, so
+> > > > > > > however we handle it is unlikely to affect performance.
+> > > > > > 
+> > > > > > It decreases the amount of state that must be maintained.
+> > > > > > 
+> > > > > > BTW there is a bug covered by interrupt window exiting:
+> > > > > > 
+> > > > > > vcpu0                               host
+> > > > > > - irr 5 set
+> > > > > > - isr 5 set, irr 5 cleared
+> > > > > > - eoi_skip bit not set, 
+> > > > > > no other bit set in irr.
+> > > > > > - enter guest
+> > > > > > 
+> > > > > >                                     irr 4 set
+> > > > > >                                     kick vcpu0 out of guest mode
+> > > > > > 
+> > > > > > - eoi pending bit not set
+> > > > > >   (previous interrupt injection 
+> > > > > >    still pending)
+> > > > > > - skip eoi
+> > > > > > 
+> > > > > > If it were not for interrupt window exiting, this would 
+> > > > > > inject vector 4 on an unrelated exit who knows how long 
+> > > > > > in the future.
+> > > > > > 
+> > > > > > Also note optimization depends on the fact that the host 
+> > > > > > kicks vcpu out unconditionally (so it is dependent on 
+> > > > > > certain kvm implementation details).
+> > > > > > 
+> > > > > 
+> > > > > Look we can summarize as follows: irq windows exit is
+> > > > > required both before and after this patch.
+> > > > > But it does not make the check above redundant.
+> > > > 
+> > > > Right, it is not redundant.
+> > > > 
+> > > > The above is still a bug: a case where eoi pending bit is not updated
+> > > > properly.
+> > > When IRR is set while eoi_skip is enabled, eoi_skip should be cleared.
+> > > Michael does your patch do that?
+> > 
+> > I think this does it:
+> >         /* Detect interrupt nesting and disable EOI optimization */
+> >         if (pv_eoi_enabled(vcpu) && vector == -2)
+> >                 pv_eoi_clr_pending(vcpu);
+> > 
+> > -2 is returned when irr is set.
+> > 
+> This code is reached from kvm_cpu_get_interrupt(), but this function will
+> not be called in above scenario.
 
-Signed-off-by: Jeffrin Jose <ahiliation@yahoo.co.in>
----
- drivers/usb/storage/usb.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+I think I see. So this shall fix it also makes code cleaner
+(no -2 hack). Right? kvm_apic_has_interrupt is called correct?
 
-diff --git a/drivers/usb/storage/usb.c b/drivers/usb/storage/usb.c
-index 2653e73..7ad1a8b 100644
---- a/drivers/usb/storage/usb.c
-+++ b/drivers/usb/storage/usb.c
-@@ -261,7 +261,7 @@ EXPORT_SYMBOL_GPL(usb_stor_post_reset);
- void fill_inquiry_response(struct us_data *us, unsigned char *data,
- 		unsigned int data_len)
- {
--	if (data_len<36) // You lose.
-+	if (data_len<36) /* You lose. */
- 		return;
+diff --git a/arch/x86/kvm/lapic.c b/arch/x86/kvm/lapic.c
+index b4f7013..5a38e34 100644
+--- a/arch/x86/kvm/lapic.c
++++ b/arch/x86/kvm/lapic.c
+@@ -1273,8 +1273,12 @@ int kvm_apic_has_interrupt(struct kvm_vcpu *vcpu)
+ 	highest_irr = apic_find_highest_irr(apic);
+ 	if (highest_irr == -1)
+ 		return -1;
+-	if (((highest_irr & 0xF0) <= apic_get_reg(apic, APIC_PROCPRI)))
+-		return -2;
++	/* Detect interrupt nesting and disable EOI optimization */
++	if ((highest_irr & 0xF0) <= apic_get_reg(apic, APIC_PROCPRI)) {
++		if (pv_eoi_enabled(vcpu))
++			pv_eoi_clr_pending(vcpu);
++		return -1;
++	}
+ 	return highest_irr;
+ }
  
- 	memset(data+8, ' ', 28);
--- 
-1.7.10
-
+@@ -1306,10 +1310,6 @@ int kvm_get_apic_interrupt(struct kvm_vcpu *vcpu)
+ 	int vector = kvm_apic_has_interrupt(vcpu);
+ 	struct kvm_lapic *apic = vcpu->arch.apic;
+ 
+-	/* Detect interrupt nesting and disable EOI optimization */
+-	if (pv_eoi_enabled(vcpu) && vector == -2)
+-		pv_eoi_clr_pending(vcpu);
+-
+ 	if (vector < 0)
+ 		return -1;
+ 
