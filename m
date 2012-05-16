@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933443Ab2EPM6I (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 May 2012 08:58:08 -0400
+	id S1760020Ab2EPM6T (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 May 2012 08:58:19 -0400
 Received: from mail-pb0-f46.google.com ([209.85.160.46]:46187 "EHLO
 	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932111Ab2EPM6E (ORCPT
+	with ESMTP id S933442Ab2EPM6O (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 May 2012 08:58:04 -0400
-Date: Wed, 16 May 2012 05:56:34 -0700
+	Wed, 16 May 2012 08:58:14 -0400
+Date: Wed, 16 May 2012 05:56:44 -0700
 From: Anton Vorontsov <anton.vorontsov@linaro.org>
 To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
         Kees Cook <keescook@chromium.org>, Colin Cross <ccross@android.com>,
@@ -22,8 +22,8 @@ Cc: Arnd Bergmann <arnd@arndb.de>, John Stultz <john.stultz@linaro.org>,
         WANG Cong <xiyou.wangcong@gmail.com>, linux-kernel@vger.kernel.org,
         devel@driverdev.osuosl.org, linaro-kernel@lists.linaro.org,
         patches@linaro.org, kernel-team@android.com
-Subject: [PATCH 2/6] pstore/ram: Add console messages handling
-Message-ID: <20120516125634.GB20475@lizard>
+Subject: [PATCH 3/6] pstore/ram_core: Silence some printks
+Message-ID: <20120516125644.GC20475@lizard>
 References: <20120516125330.GA15460@lizard>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=utf-8
@@ -34,103 +34,35 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is all straightforward: we just use the last region for
-console logging. If there's just one region, we fall-back to
-the old behaviour: just a oops/dumps logging.
+Since we use multiple regions, the messages are somewhat annoying.
+We do print total mapped memory already, so no need to print the
+information for each region in the library routines.
 
 Signed-off-by: Anton Vorontsov <anton.vorontsov@linaro.org>
 ---
- fs/pstore/ram.c |   39 ++++++++++++++++++++++++++++++---------
- 1 file changed, 30 insertions(+), 9 deletions(-)
+ fs/pstore/ram_core.c |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
-diff --git a/fs/pstore/ram.c b/fs/pstore/ram.c
-index 9123cce..54213eb 100644
---- a/fs/pstore/ram.c
-+++ b/fs/pstore/ram.c
-@@ -63,6 +63,7 @@ MODULE_PARM_DESC(ramoops_ecc,
- 
- struct ramoops_context {
- 	struct persistent_ram_zone **przs;
-+	struct persistent_ram_zone *cprz;
- 	phys_addr_t phys_addr;
- 	unsigned long size;
- 	size_t record_size;
-@@ -70,6 +71,7 @@ struct ramoops_context {
- 	bool ecc;
- 	unsigned int count;
- 	unsigned int max_count;
-+	unsigned int max_dump_count;
- 	unsigned int read_count;
- 	struct pstore_info pstore;
- };
-@@ -92,16 +94,20 @@ static ssize_t ramoops_pstore_read(u64 *id, enum pstore_type_id *type,
- {
- 	ssize_t size;
- 	struct ramoops_context *cxt = psi->data;
--	struct persistent_ram_zone *prz;
--
--	if (cxt->read_count >= cxt->max_count)
--		return -EINVAL;
-+	struct persistent_ram_zone *prz = cxt->przs[cxt->read_count];
- 
- 	*id = cxt->read_count++;
--	prz = cxt->przs[*id];
- 
--	/* Only supports dmesg output so far. */
--	*type = PSTORE_TYPE_DMESG;
-+	if (*id < cxt->max_dump_count && persistent_ram_old_size(prz)) {
-+		*type = PSTORE_TYPE_DMESG;
-+	} else if (*id < cxt->max_count) {
-+		*type = PSTORE_TYPE_CONSOLE;
-+		prz = cxt->cprz;
-+		cxt->read_count = cxt->max_count;
-+	} else {
-+		return 0;
-+	}
-+
- 	/* TODO(kees): Bogus time for the moment. */
- 	time->tv_sec = 0;
- 	time->tv_nsec = 0;
-@@ -142,7 +148,12 @@ static int ramoops_pstore_write(enum pstore_type_id type,
- 	struct persistent_ram_zone *prz = cxt->przs[cxt->count];
- 	size_t hlen;
- 
--	/* Currently ramoops is designed to only store dmesg dumps. */
-+	if (type == PSTORE_TYPE_CONSOLE) {
-+		if (!cxt->cprz)
-+			return -ENOMEM;
-+		persistent_ram_write(cxt->cprz, cxt->pstore.buf, size);
-+	}
-+
- 	if (type != PSTORE_TYPE_DMESG)
- 		return -EINVAL;
- 
-@@ -170,7 +181,7 @@ static int ramoops_pstore_write(enum pstore_type_id type,
- 		size = prz->buffer_size - hlen;
- 	persistent_ram_write(prz, cxt->pstore.buf, size);
- 
--	cxt->count = (cxt->count + 1) % cxt->max_count;
-+	cxt->count = (cxt->count + 1) % cxt->max_dump_count;
- 
- 	return 0;
- }
-@@ -264,6 +275,16 @@ static int __init ramoops_probe(struct platform_device *pdev)
+diff --git a/fs/pstore/ram_core.c b/fs/pstore/ram_core.c
+index 31f8d18..e0d8429 100644
+--- a/fs/pstore/ram_core.c
++++ b/fs/pstore/ram_core.c
+@@ -401,13 +401,13 @@ static int __init persistent_ram_post_init(struct persistent_ram_zone *prz, bool
+ 				" size %zu, start %zu\n",
+ 			       buffer_size(prz), buffer_start(prz));
+ 		else {
+-			pr_info("persistent_ram: found existing buffer,"
++			pr_debug("persistent_ram: found existing buffer,"
+ 				" size %zu, start %zu\n",
+ 			       buffer_size(prz), buffer_start(prz));
+ 			persistent_ram_save_old(prz);
  		}
+ 	} else {
+-		pr_info("persistent_ram: no valid data in buffer"
++		pr_debug("persistent_ram: no valid data in buffer"
+ 			" (sig = 0x%08x)\n", prz->buffer->sig);
  	}
  
-+	/*
-+	 * The last zone is for TYPE_CONSOLE, unless we have only
-+	 * one, in which case we use it for oops/panic logging.
-+	 */
-+	cxt->max_dump_count = cxt->max_count;
-+	if (cxt->max_count > 1) {
-+		cxt->max_dump_count--;
-+		cxt->cprz = cxt->przs[cxt->max_count - 1];
-+	}
-+
- 	cxt->pstore.data = cxt;
- 	cxt->pstore.bufsize = cxt->przs[0]->buffer_size;
- 	cxt->pstore.buf = kmalloc(cxt->pstore.bufsize, GFP_KERNEL);
 -- 
 1.7.9.2
 
