@@ -1,315 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S967136Ab2EPAWL (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 May 2012 20:22:11 -0400
-Received: from mail131.messagelabs.com ([216.82.242.99]:61408 "EHLO
-	mail131.messagelabs.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S966737Ab2EPAWJ (ORCPT
+	id S967127Ab2EPAYG (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 May 2012 20:24:06 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:57276 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S966737Ab2EPAYE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 May 2012 20:22:09 -0400
-X-Env-Sender: hartleys@visionengravers.com
-X-Msg-Ref: server-6.tower-131.messagelabs.com!1337127727!12714038!1
-X-Originating-IP: [216.166.12.97]
-X-StarScan-Version: 6.5.10; banners=-,-,-
-X-VirusChecked: Checked
-From: H Hartley Sweeten <hartleys@visionengravers.com>
-To: Linux Kernel <linux-kernel@vger.kernel.org>
-Subject: [PATCH] staging: comedi: refactor ni_at_ao driver and use module_comedi_driver
-Date: Tue, 15 May 2012 17:22:02 -0700
-User-Agent: KMail/1.9.9
-CC: <devel@driverdev.osuosl.org>, <abbotti@mev.co.uk>,
-        <fmhess@users.sourceforge.net>, <gregkh@linuxfoundation.org>
+	Tue, 15 May 2012 20:24:04 -0400
+Date: Tue, 15 May 2012 17:22:33 -0700
+From: Anton Vorontsov <anton.vorontsov@linaro.org>
+To: Colin Cross <ccross@android.com>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Kees Cook <keescook@chromium.org>, Arnd Bergmann <arnd@arndb.de>,
+        John Stultz <john.stultz@linaro.org>, arve@android.com,
+        Rebecca Schultz Zavin <rebecca@android.com>,
+        Jesper Juhl <jj@chaosbits.net>, Randy Dunlap <rdunlap@xenotime.net>,
+        Stephen Boyd <sboyd@codeaurora.org>, Thomas Meyer <thomas@m3y3r.de>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Marco Stornelli <marco.stornelli@gmail.com>,
+        WANG Cong <xiyou.wangcong@gmail.com>, linux-kernel@vger.kernel.org,
+        devel@driverdev.osuosl.org, linaro-kernel@lists.linaro.org,
+        patches@linaro.org, kernel-team@android.com
+Subject: Re: [PATCH 04/11] persistent_ram: Introduce persistent_ram_new()
+Message-ID: <20120516002232.GA18883@lizard>
+References: <20120512001506.GA8653@lizard>
+ <20120512001734.GD14782@lizard>
+ <CAMbhsRR3gsajDCyODgf0XrtEr5Jeeo7yPXxk_R6JfVkk-kGvyQ@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-Message-ID: <201205151722.02647.hartleys@visionengravers.com>
+In-Reply-To: <CAMbhsRR3gsajDCyODgf0XrtEr5Jeeo7yPXxk_R6JfVkk-kGvyQ@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Move the module_init/module_exit routines and the associated
-struct comedi_drive to the end of the source. This is more
-typical of how other drivers are written and removes the need
-for the forward declarations.
+Hello Colin,
 
-Convert the driver to use the module_comedi_driver() macro
-which makes the code smaller and a bit simpler.
+On Mon, May 14, 2012 at 05:37:56PM -0700, Colin Cross wrote:
+[...]
+> even worse, mem= from the bootloader.  Mixing the two methods together
+> would be confusing.
 
-Signed-off-by: H Hartley Sweeten <hsweeten@visionengravers.com>
-Cc: Ian Abbott <abbotti@mev.co.uk>
-Cc: Mori Hess <fmhess@users.sourceforge.net>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Yes, mixing is discouraged. The mem= hack is mostly useful for
+developers, for hacking random kernels. Even on x86 it is
+useful, when you want to grab an oops, but you don't have say
+netconsole, or HW really screwed up and you don't have any
+means to get the oops log, ramoops may become quite useful.
 
----
+But in the Android phone scenario, if you want to have this
+feature into production kernels, platforms should register
+the ramoops platform driver, as they were doing before.
 
- drivers/staging/comedi/drivers/ni_at_ao.c |  242 ++++++++++++----------------
- 1 files changed, 104 insertions(+), 138 deletions(-)
+> Either persistent_ram_early_init should be
+> removed completely (or replaced with something that is easier to
+> register ramoops into), or ramoops should use
+> persistent_ram_init_ringbuffer like ram_console does.
 
-diff --git a/drivers/staging/comedi/drivers/ni_at_ao.c b/drivers/staging/comedi/drivers/ni_at_ao.c
-index 138dcc2..d7963ba 100644
---- a/drivers/staging/comedi/drivers/ni_at_ao.c
-+++ b/drivers/staging/comedi/drivers/ni_at_ao.c
-@@ -157,17 +157,6 @@ struct atao_board {
- 	int n_ao_chans;
- };
- 
--static const struct atao_board atao_boards[] = {
--	{
--	 .name = "ai-ao-6",
--	 .n_ao_chans = 6,
--	 },
--	{
--	 .name = "ai-ao-10",
--	 .n_ao_chans = 10,
--	 },
--};
--
- #define thisboard ((struct atao_board *)dev->board_ptr)
- 
- struct atao_private {
-@@ -182,133 +171,6 @@ struct atao_private {
- 
- #define devpriv ((struct atao_private *)dev->private)
- 
--static int atao_attach(struct comedi_device *dev, struct comedi_devconfig *it);
--static int atao_detach(struct comedi_device *dev);
--static struct comedi_driver driver_atao = {
--	.driver_name = "ni_at_ao",
--	.module = THIS_MODULE,
--	.attach = atao_attach,
--	.detach = atao_detach,
--	.board_name = &atao_boards[0].name,
--	.offset = sizeof(struct atao_board),
--	.num_names = ARRAY_SIZE(atao_boards),
--};
--
--static int __init driver_atao_init_module(void)
--{
--	return comedi_driver_register(&driver_atao);
--}
--
--static void __exit driver_atao_cleanup_module(void)
--{
--	comedi_driver_unregister(&driver_atao);
--}
--
--module_init(driver_atao_init_module);
--module_exit(driver_atao_cleanup_module);
--
--static void atao_reset(struct comedi_device *dev);
--
--static int atao_ao_winsn(struct comedi_device *dev, struct comedi_subdevice *s,
--			 struct comedi_insn *insn, unsigned int *data);
--static int atao_ao_rinsn(struct comedi_device *dev, struct comedi_subdevice *s,
--			 struct comedi_insn *insn, unsigned int *data);
--static int atao_dio_insn_bits(struct comedi_device *dev,
--			      struct comedi_subdevice *s,
--			      struct comedi_insn *insn, unsigned int *data);
--static int atao_dio_insn_config(struct comedi_device *dev,
--				struct comedi_subdevice *s,
--				struct comedi_insn *insn, unsigned int *data);
--static int atao_calib_insn_read(struct comedi_device *dev,
--				struct comedi_subdevice *s,
--				struct comedi_insn *insn, unsigned int *data);
--static int atao_calib_insn_write(struct comedi_device *dev,
--				 struct comedi_subdevice *s,
--				 struct comedi_insn *insn, unsigned int *data);
--
--static int atao_attach(struct comedi_device *dev, struct comedi_devconfig *it)
--{
--	struct comedi_subdevice *s;
--	unsigned long iobase;
--	int ao_unipolar;
--
--	iobase = it->options[0];
--	if (iobase == 0)
--		iobase = 0x1c0;
--	ao_unipolar = it->options[3];
--
--	printk(KERN_INFO "comedi%d: ni_at_ao: 0x%04lx", dev->minor, iobase);
--
--	if (!request_region(iobase, ATAO_SIZE, "ni_at_ao")) {
--		printk(" I/O port conflict\n");
--		return -EIO;
--	}
--	dev->iobase = iobase;
--
--	/* dev->board_ptr = atao_probe(dev); */
--
--	dev->board_name = thisboard->name;
--
--	if (alloc_private(dev, sizeof(struct atao_private)) < 0)
--		return -ENOMEM;
--
--	if (alloc_subdevices(dev, 4) < 0)
--		return -ENOMEM;
--
--	s = dev->subdevices + 0;
--	/* analog output subdevice */
--	s->type = COMEDI_SUBD_AO;
--	s->subdev_flags = SDF_WRITABLE;
--	s->n_chan = thisboard->n_ao_chans;
--	s->maxdata = (1 << 12) - 1;
--	if (ao_unipolar)
--		s->range_table = &range_unipolar10;
--	else
--		s->range_table = &range_bipolar10;
--	s->insn_write = &atao_ao_winsn;
--	s->insn_read = &atao_ao_rinsn;
--
--	s = dev->subdevices + 1;
--	/* digital i/o subdevice */
--	s->type = COMEDI_SUBD_DIO;
--	s->subdev_flags = SDF_READABLE | SDF_WRITABLE;
--	s->n_chan = 8;
--	s->maxdata = 1;
--	s->range_table = &range_digital;
--	s->insn_bits = atao_dio_insn_bits;
--	s->insn_config = atao_dio_insn_config;
--
--	s = dev->subdevices + 2;
--	/* caldac subdevice */
--	s->type = COMEDI_SUBD_CALIB;
--	s->subdev_flags = SDF_WRITABLE | SDF_INTERNAL;
--	s->n_chan = 21;
--	s->maxdata = 0xff;
--	s->insn_read = atao_calib_insn_read;
--	s->insn_write = atao_calib_insn_write;
--
--	s = dev->subdevices + 3;
--	/* eeprom subdevice */
--	/* s->type=COMEDI_SUBD_EEPROM; */
--	s->type = COMEDI_SUBD_UNUSED;
--
--	atao_reset(dev);
--
--	printk(KERN_INFO "\n");
--
--	return 0;
--}
--
--static int atao_detach(struct comedi_device *dev)
--{
--	printk(KERN_INFO "comedi%d: atao: remove\n", dev->minor);
--
--	if (dev->iobase)
--		release_region(dev->iobase, ATAO_SIZE);
--
--	return 0;
--}
--
- static void atao_reset(struct comedi_device *dev)
- {
- 	/* This is the reset sequence described in the manual */
-@@ -471,6 +333,110 @@ static int atao_calib_insn_write(struct comedi_device *dev,
- 	return insn->n;
- }
- 
-+static int atao_attach(struct comedi_device *dev, struct comedi_devconfig *it)
-+{
-+	struct comedi_subdevice *s;
-+	unsigned long iobase;
-+	int ao_unipolar;
-+
-+	iobase = it->options[0];
-+	if (iobase == 0)
-+		iobase = 0x1c0;
-+	ao_unipolar = it->options[3];
-+
-+	printk(KERN_INFO "comedi%d: ni_at_ao: 0x%04lx", dev->minor, iobase);
-+
-+	if (!request_region(iobase, ATAO_SIZE, "ni_at_ao")) {
-+		printk(" I/O port conflict\n");
-+		return -EIO;
-+	}
-+	dev->iobase = iobase;
-+
-+	/* dev->board_ptr = atao_probe(dev); */
-+
-+	dev->board_name = thisboard->name;
-+
-+	if (alloc_private(dev, sizeof(struct atao_private)) < 0)
-+		return -ENOMEM;
-+
-+	if (alloc_subdevices(dev, 4) < 0)
-+		return -ENOMEM;
-+
-+	s = dev->subdevices + 0;
-+	/* analog output subdevice */
-+	s->type = COMEDI_SUBD_AO;
-+	s->subdev_flags = SDF_WRITABLE;
-+	s->n_chan = thisboard->n_ao_chans;
-+	s->maxdata = (1 << 12) - 1;
-+	if (ao_unipolar)
-+		s->range_table = &range_unipolar10;
-+	else
-+		s->range_table = &range_bipolar10;
-+	s->insn_write = &atao_ao_winsn;
-+	s->insn_read = &atao_ao_rinsn;
-+
-+	s = dev->subdevices + 1;
-+	/* digital i/o subdevice */
-+	s->type = COMEDI_SUBD_DIO;
-+	s->subdev_flags = SDF_READABLE | SDF_WRITABLE;
-+	s->n_chan = 8;
-+	s->maxdata = 1;
-+	s->range_table = &range_digital;
-+	s->insn_bits = atao_dio_insn_bits;
-+	s->insn_config = atao_dio_insn_config;
-+
-+	s = dev->subdevices + 2;
-+	/* caldac subdevice */
-+	s->type = COMEDI_SUBD_CALIB;
-+	s->subdev_flags = SDF_WRITABLE | SDF_INTERNAL;
-+	s->n_chan = 21;
-+	s->maxdata = 0xff;
-+	s->insn_read = atao_calib_insn_read;
-+	s->insn_write = atao_calib_insn_write;
-+
-+	s = dev->subdevices + 3;
-+	/* eeprom subdevice */
-+	/* s->type=COMEDI_SUBD_EEPROM; */
-+	s->type = COMEDI_SUBD_UNUSED;
-+
-+	atao_reset(dev);
-+
-+	printk(KERN_INFO "\n");
-+
-+	return 0;
-+}
-+
-+static int atao_detach(struct comedi_device *dev)
-+{
-+	printk(KERN_INFO "comedi%d: atao: remove\n", dev->minor);
-+
-+	if (dev->iobase)
-+		release_region(dev->iobase, ATAO_SIZE);
-+
-+	return 0;
-+}
-+
-+static const struct atao_board atao_boards[] = {
-+	{
-+		.name		= "ai-ao-6",
-+		.n_ao_chans	= 6,
-+	}, {
-+		.name		= "ai-ao-10",
-+		.n_ao_chans	= 10,
-+	},
-+};
-+
-+static struct comedi_driver ni_at_ao_driver = {
-+	.driver_name	= "ni_at_ao",
-+	.module		= THIS_MODULE,
-+	.attach		= atao_attach,
-+	.detach		= atao_detach,
-+	.board_name	= &atao_boards[0].name,
-+	.offset		= sizeof(struct atao_board),
-+	.num_names	= ARRAY_SIZE(atao_boards),
-+};
-+module_comedi_driver(ni_at_ao_driver);
-+
- MODULE_AUTHOR("Comedi http://www.comedi.org");
- MODULE_DESCRIPTION("Comedi low-level driver");
- MODULE_LICENSE("GPL");
+Yep, this was indeed my original idea: persistent_ram_early_init
+should go.
+
+Boards (or generic arch/ or arch/mach-* code that knows memory
+layout) will have to just do two things:
+
+1. Wisely and early call memblock_reserve().
+2. Register a ramoops platform device pointing to the reserved
+   memory.
+
+This is actually exactly the same as you were doing with
+ram_console:
+
+1. Platform were adding an entry to the global list of persistent
+   ram zones, and then were calling persistent_ram_early_init()
+   somewhere in the arch/ code (at least that's how I understood
+   the idea of the code, as there are currently no in-tree users).
+2. Then platforms were registering a ram_console platform device,
+   and the driver would find out the needed zone by matching on
+   the device name.
+
+Thinking about it, the whole thing was actually abusing
+the device-driver model a little bit. So things are just easier
+now.
+
+Thanks!
+
+-- 
+Anton Vorontsov
+Email: cbouatmailru@gmail.com
