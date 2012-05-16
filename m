@@ -1,54 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754637Ab2EPPRM (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 May 2012 11:17:12 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:40504 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754498Ab2EPPRK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 May 2012 11:17:10 -0400
-Date: Wed, 16 May 2012 17:16:55 +0200
-From: Jiri Olsa <jolsa@redhat.com>
-To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-Cc: Dmitry Antipov <dmitry.antipov@linaro.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@redhat.com>,
-        Amit Kucheria <amit.kucheria@linaro.org>, linaro-dev@lists.linaro.org,
-        linux-kernel@vger.kernel.org, Steven Rostedt <rostedt@goodmis.org>
-Subject: Re: Perf record format portability
-Message-ID: <20120516151655.GE1820@m.brq.redhat.com>
-References: <4FB275EB.5050904@linaro.org>
- <20120515155146.GB7864@infradead.org>
- <4FB38677.8070601@linaro.org>
- <20120516145927.GC7864@infradead.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120516145927.GC7864@infradead.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1754776Ab2EPPRW (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 May 2012 11:17:22 -0400
+Received: from g6t0184.atlanta.hp.com ([15.193.32.61]:27033 "EHLO
+	g6t0184.atlanta.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754396Ab2EPPRS (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 16 May 2012 11:17:18 -0400
+Message-ID: <1337181431.2424.12.camel@lorien2>
+Subject: Re: [PATCH 08/11] ramoops: Move to fs/pstore/ram.c
+From: Shuah Khan <shuahkhan@gmail.com>
+Reply-To: shuahkhan@gmail.com
+To: Anton Vorontsov <anton.vorontsov@linaro.org>
+Cc: shuahkhan@gmail.com, Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Kees Cook <keescook@chromium.org>, Colin Cross <ccross@android.com>,
+        Arnd Bergmann <arnd@arndb.de>, John Stultz <john.stultz@linaro.org>,
+        arve@android.com, Rebecca Schultz Zavin <rebecca@android.com>,
+        Jesper Juhl <jj@chaosbits.net>, Randy Dunlap <rdunlap@xenotime.net>,
+        Stephen Boyd <sboyd@codeaurora.org>, Thomas Meyer <thomas@m3y3r.de>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Marco Stornelli <marco.stornelli@gmail.com>,
+        WANG Cong <xiyou.wangcong@gmail.com>, linux-kernel@vger.kernel.org,
+        devel@driverdev.osuosl.org, linaro-kernel@lists.linaro.org,
+        patches@linaro.org, kernel-team@android.com
+Date: Wed, 16 May 2012 09:17:11 -0600
+In-Reply-To: <20120516073052.GC18058@lizard>
+References: <20120512001506.GA8653@lizard> <20120512001818.GH14782@lizard>
+	 <1337094779.2602.9.camel@lorien2> <20120516073052.GC18058@lizard>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3-0ubuntu6 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, May 16, 2012 at 11:59:27AM -0300, Arnaldo Carvalho de Melo wrote:
-> Adding Jiri and Steven to the CC list.
+On Wed, 2012-05-16 at 00:30 -0700, Anton Vorontsov wrote:
+> Hi Shuah,
 > 
-> Em Wed, May 16, 2012 at 02:50:31PM +0400, Dmitry Antipov escreveu:
-> > On 05/15/2012 07:51 PM, Arnaldo Carvalho de Melo wrote:
-> > >Em Tue, May 15, 2012 at 07:27:39PM +0400, Dmitry Antipov escreveu:
-> > >>are there any thoughts on how much of the perf.data is portable and how much it should be?
-> > >>I'm interesting in recording scheduler activity on one machine and then replaying on
-> > >>another. As I can see, replaying x86 perf.data on ARM doesn't work. At least, should it
-> > >>work with a small subset of recorded events (for example, sched:sched_switch,
-> > >>sched:sched_process_exit, sched:sched_process_fork, sched:sched_wakeup
-> > >>and sched:sched_migrate_task) on the same architecture?
-> > >
-> > >Endianness issues? ARM EB? There are some patches by Jiri Olsa that may
-> > >help you if that is the case.
+> On Tue, May 15, 2012 at 09:12:59AM -0600, Shuah Khan wrote:
+> > On Fri, 2012-05-11 at 17:18 -0700, Anton Vorontsov wrote:
+> > > Since ramoops was converted to pstore, it has nothing to do with character
+> > > devices nowadays. Instead, today it is just a RAM backend for pstore.
+> > > 
+> > > The patch just moves things around. There are a few changes were needed
+> > > because of the move:
+> > > 
+> > > 1. Kconfig and Makefiles fixups, of course.
+> > > 
+> > > 2. In pstore/ram.c we have to play a bit with MODULE_PARAM_PREFIX, this
+> > >    is needed to keep user experience the same as with ramoops driver
+> > >    (i.e. so that ramoops.foo kernel command line arguments would still
+> > >    work).
+> > 
+> > Anton,
+> > 
+> > Could you please enhance Kconfig as well as ram.c with information with
+> > the new functionality it supports.
+> 
+> Sure, will do.
+> 
+> > Also ram.c in my opinion doesn't
+> > really reflect the feature it currently supports and its future plans.
+> > ramoops doesn't either. ramdesg or ramkmsg probably are better suited.
+> 
+> No, I actually think we shouldn't mention neither dmesg nor kmsg in
+> the name of the module. We might support MCE messages, tracing
+> messages and so on, and this all will be handled by ram.c.
 
-latest version sent today, there's description of tests I did:
-http://marc.info/?l=linux-kernel&m=133715172512742&w=2
+Good point.
+> 
+> So, ram.c is a generic backend for pstore.
+> 
+> > Also leaving the ABI that ramoops specific might lead confusion in the
+> > long run. It might make sense to update the ABI to reflect its new
+> > features, if it doesn't impact existing ramoops users.
+> 
+> We can do this, I can prepare a separate patch to change the ABI, but
+> so far I tend to not break any ABIs. We can always do it later -- it is
+> easy. :-D
 
-Each time I run new sort of test, another endianity issue is hit.
-so, tracepoints.. I'll check ;)
+Yes it can be done later.
+> 
+> > Would you be interested in adding a doc file for usage describing how
+> > users can configure the driver - the details I would like to see are how
+> > to pick a ram address especially when mem_address and mem_size are
+> > passed in as module parameters.
+> 
+> We actually have Documentation/ramoops.txt already, but I'll add
+> a documentation for the new ecc option.
+> 
+> Thanks!
 
-jirka
+Thanks for doing this. One thing that would be helpful for users is some
+kind of guidance/tips on how to pick ram range for module parameter
+passing, which is missing from the current ramoops.txt
+
+Thanks,
+-- Shuah
+
+
