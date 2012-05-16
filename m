@@ -1,151 +1,126 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755917Ab2EPPr2 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 May 2012 11:47:28 -0400
-Received: from s15943758.onlinehome-server.info ([217.160.130.188]:58116 "EHLO
-	mail.x86-64.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755828Ab2EPPrZ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 May 2012 11:47:25 -0400
-Date: Wed, 16 May 2012 17:47:08 +0200
-From: Borislav Petkov <bp@amd64.org>
-To: Mauro Carvalho Chehab <mchehab@redhat.com>
-Cc: "Luck, Tony" <tony.luck@intel.com>,
-        Linux Edac Mailing List <linux-edac@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Doug Thompson <norsk5@yahoo.com>, Steven Rostedt <rostedt@goodmis.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Ingo Molnar <mingo@redhat.com>
-Subject: Re: [PATCH v22] edac, ras/hw_event.h: use events to handle hw issues
-Message-ID: <20120516154708.GC2202@aftab.osrc.amd.com>
-References: <20120511172430.GB17299@aftab.osrc.amd.com>
- <4FAD5CAD.90508@redhat.com>
- <20120514133404.GE4231@aftab.osrc.amd.com>
- <4FB1163D.3010302@redhat.com>
- <20120515150957.GC27806@aftab.osrc.amd.com>
- <4FB27EDC.8040001@redhat.com>
- <20120515163855.GE27806@aftab.osrc.amd.com>
- <4FB38DDF.7030009@redhat.com>
- <20120516131656.GA2202@aftab.osrc.amd.com>
- <4FB3C4D3.7000802@redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <4FB3C4D3.7000802@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1755871Ab2EPPsn (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 May 2012 11:48:43 -0400
+Received: from e8.ny.us.ibm.com ([32.97.182.138]:48505 "EHLO e8.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750983Ab2EPPsk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 16 May 2012 11:48:40 -0400
+Message-ID: <1337183225.3522.14.camel@falcor>
+Subject: Re: [PATCH] vfs: fix IMA lockdep circular locking dependency
+From: Mimi Zohar <zohar@linux.vnet.ibm.com>
+To: Eric Paris <eparis@parisplace.org>
+Cc: James Morris <jmorris@namei.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Al Viro <viro@zeniv.linux.org.uk>, Mimi Zohar <zohar@us.ibm.com>,
+        linux-security-module@vger.kernel.org, linux-kernel@vger.kernel.org
+Date: Wed, 16 May 2012 11:47:05 -0400
+In-Reply-To: <CACLa4psYWecSy9sRuV2Nf9BPU0xspjJF-ZD63biqv6erUYKyGQ@mail.gmail.com>
+References: <1336963631-3541-1-git-send-email-zohar@us.ibm.com>
+	 <CA+55aFzrJNd5J7i3Rp7-ctc=bDn5GTWu=H1xyCgGZ-rzu74Gbw@mail.gmail.com>
+	 <CA+55aFyPPZ0wayqPMCZtfP1w9nN-GnKJxYc9i_XM_Qk8d-zJzg@mail.gmail.com>
+	 <CACLa4pujEBAS349Pr-EcBmzQgTHWthhCMV0Yqq0BG-F_gDjz4Q@mail.gmail.com>
+	 <1337112446.20904.50.camel@falcor>
+	 <CA+55aFxRRuWGD-4LYzO-T8eg22goKpej5AV36ALL8GaLP56oRA@mail.gmail.com>
+	 <CA+55aFzOtY7tBw4YNH+QX+6L4opMsJ=sN4DfJURMv_yBTWqL1w@mail.gmail.com>
+	 <20120516004251.GO22082@ZenIV.linux.org.uk>
+	 <CA+55aFy0wJdq+-OAkUBsrkQogF5-N0P4DBQ+6-LXjBGscRQFNw@mail.gmail.com>
+	 <CA+55aFy1qQkGXAr=0Zqk=qJeGTpfMOVC2=rdRWzQ1qsUZ5P0_g@mail.gmail.com>
+	 <alpine.LRH.2.02.1205162135320.10697@tundra.namei.org>
+	 <1337175731.2492.4.camel@localhost>	<1337176336.3522.5.camel@falcor>
+	 <CACLa4psYWecSy9sRuV2Nf9BPU0xspjJF-ZD63biqv6erUYKyGQ@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3 (3.2.3-3.fc16) 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 12051615-9360-0000-0000-00000665EAEB
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, May 16, 2012 at 12:16:35PM -0300, Mauro Carvalho Chehab wrote:
-> > This doesn't answer my question. My question was: "why can't 'detail'
-> > and 'driver_detail' be a single parameter, i.e. 'detail' and this way
-> > solve both pretty printing and getting binary data problems?
-> 
-> This is the 24th version of this very same patch...
-
-This would have been the case if you'd split your patches and sent them
-in 10-15 patches sets like normal people, _after_ gathering all review feedback.
-
-But, you wanted to fix EDAC and the whole world while at it and besides,
-your patches caused boot errors here and there.
-
-Then, you went and rebased the whole patchset after me reviewing one or
-two and incremented for that rebase the version number.
-
-So v24 means nothing to me - you might just as well use it for your
-internal tracking.
-
-> In summary: all edac messages provide "detail" as this contains the
-> error location in terms of channel/slot. So, any MIB for EDAC could
-> handle those parameters properly. With regards to driver_detail, this
-> have per-driver details. So, per-driver MIB is required for them, if
-> some userspace program wants to properly store that information.
->
-> Merging those two separate fields together only makes harder for
-> userspace to store the error detail information on their MIB.
-
-There's that MIB crap again.
-
-And it doesn't make it harder for anything because in userspace you can
-do everything with those strings, cut them, replace them, whatever your
-heart desires, even store the correct error detail information "on their
-MIB." Basically, you have one string in userspace and you can massage
-the hell out of it and even fit it to the MIB or whatever...
-
-[ … ]
-
-> >>>>>        mcegen.py-2868  [007] .N..   178.261607: mc_event: Corrected error:amd64_edac on memory stick "unknown memory" (mc:0 csrow:3 channel:1  page:0x5bac7 offset:0x388 grain:0 syndrome:0x34ed )
+On Wed, 2012-05-16 at 10:06 -0400, Eric Paris wrote:
+> On Wed, May 16, 2012 at 9:52 AM, Mimi Zohar <zohar@linux.vnet.ibm.com> wrote:
+> > On Wed, 2012-05-16 at 09:42 -0400, Eric Paris wrote:
+> >> On Wed, 2012-05-16 at 21:37 +1000, James Morris wrote:
+> >> > On Tue, 15 May 2012, Linus Torvalds wrote:
+> >> >
+> >> > > Hmm?
+> >> >
+> >> > diff --git a/security/capability.c b/security/capability.c
+> >> > index 5bb21b1c448c..9a19c6a54e12 100644
+> >> > --- a/security/capability.c
+> >> > +++ b/security/capability.c
+> >> > @@ -949,7 +949,6 @@ void __init security_fixup_ops(struct
+> >> > security_operations *ops)
+> >> >         set_to_cap_if_null(ops, file_alloc_security);
+> >> >         set_to_cap_if_null(ops, file_free_security);
+> >> >         set_to_cap_if_null(ops, file_ioctl);
+> >> > -       set_to_cap_if_null(ops, file_mmap);
+> >> >         set_to_cap_if_null(ops, file_mprotect);
+> >> >         set_to_cap_if_null(ops, file_lock);
+> >> >         set_to_cap_if_null(ops, file_fcntl);
+> >> >
+> >> >
+> >> > Do we need to add addr_map to the fixup ops?
 > >>
-> >> CE/UE is there. The only change is that, instead of using acronyms, it is now
-> >> saying "Corrected error"/"Uncorrected error", as the idea is to provide something
-> >> that the user will better understand.
-> > 
-> > Ok, so let's change the string output from the above version to:
-> > 
-> >  "mcegen.py-2868  [007] .N..   178.261607: mc_event: amd64_edac: Corrected error on memory stick "unknown memory" (mc:0 csrow:3 channel:1  page:0x5bac7 offset:0x388 grain:0 syndrome:0x34ed)"
-> > 
-> > I.e., "mc_event" [DRIVER] [ERROR TYPE] [DETAIL].
+> >> No.  His patch works just fine without it.  If you look he uses:
+> >>
+> >> +     if (security_ops->mmap_file) {
+> >>
+> >> Which means since we didn't set an explicit .mmap_file, even with no
+> >> other LSM loaded we would be fine.
+> >>
+> >> At the moment I'd rather stick with our usual notation of forcing
+> >> capabilities to define every option even if all it does it return 0.  If
+> >> Linus thinks it's a good idea to do
+> >> if (security_ops->function)
+> >>       security_ops->funtion(args);
+> >> In the security server we should do that cleanup separately...
+> >>
+> >> -Eric
+> >
+> > James was pointing out that security_fixup_ops was not set for
+> > mmap_addr, not mmap_file(), which should be initialized by
+> > security_fixup_ops().
 > 
-> As I've explained, there is a consistency issue with the [ERROR MSG]. On the ones
-> that properly implement it, [ERROR MSG] is "read error", "spare copy", "bus error", ...
+> But it would be flat wrong to put it there.  True historically we did
+> things differently, but this patch is right given Linus is doing it a
+> different way.
 > 
-> If you think we need to add an extra field for the driver name, then let's add a
-> "driver_name" field there, but a driver's name shouldn't be merged with an
-> error type message, as it is abusing the syntax, and the syntax of each field
-> should be clear enough to allow it to be stored on a MIB.
+> Had Linus done what you two are suggesting:
+> +int security_mmap_addr(unsigned long addr)
+> +{
+> +       if (security_ops->mmap_addr) {       <--- This would call cap_mmap_addr
+> +               int ret = security_ops->mmap_addr(addr);
+> +               if (ret)
+> +                       return ret;
+> +       }
+> +       return cap_mmap_addr(addr);          <--- This would also call
+> cap_mmap_addr
+> +}
 > 
-> In any case, those drivers that fill the error msg with something else should
-> be changes to write there something like "ECC error" instead of "amd64_edac:".
+> See the problem?
 > 
-> Btw, I'm almost convinced that we should break the "detail" into its components,
-> e. g., instead of one string, it should be:
-> 	int layer0, layer1, layer2;		/* Location */
-> 	unsigned long memory_address; 		/* or maybe page/offset */
-> 	u32 grain;
-> 	unsigned syndrome;
+> Like I said, we can do a full cleanup removing all of the useless
+> capabilities functions and turning them into an inline branch instead
+> of unconditional jump and return 0.  We could possibly even move all
+> of the cap stacking into this layer instead of pushing it into the LSM
+> layer.  But you shouldn't really do #2 without #1.  (Notice here Linus
+> is doing both of those things, but only with this one hook)
 > 
-> That would be better from MIB point of view.
+> -Eric
 
-Dude, enough with this MIB crap already!
+Sigh, I was actually thinking back to when LSM was not enabled, and the
+default to enable caps was via the security_fixup_ops().  The default
+today, without LSM enabled, is to call the cap functions directly from
+the security stub functions, like how Linus included the call to
+cap_mmap_addr():
 
-Simply move the EDAC_MOD_STR thing earlier in the tracepoint so that you
-can get:
+static inline int security_mmap_addr(unsigned long addr)
+{
+        return cap_mmap_addr(addr);
+}
 
-"mc_event:" EDAC_MOD_STR [ERROR_TYPE] [DETAIL]
+Mimi
 
-EDAC_MOD_STR is _always_ the driver name:
-
-0 amd64_edac.h      148 #define EDAC_MOD_STR   "amd64_edac"
-1 amd76x_edac.c      23 #define EDAC_MOD_STR "amd76x_edac"
-2 amd8111_edac.c     37 #define AMD8111_EDAC_MOD_STR "amd8111_edac"
-3 amd8131_edac.c     37 #define AMD8131_EDAC_MOD_STR "amd8131_edac"
-4 cpc925_edac.c      34 #define CPC925_EDAC_MOD_STR "cpc925_edac"
-5 e752x_edac.c       28 #define EDAC_MOD_STR "e752x_edac"
-6 e7xxx_edac.c       33 #define EDAC_MOD_STR "e7xxx_edac"
-7 i3000_edac.c       21 #define EDAC_MOD_STR  "i3000_edac"
-8 i3200_edac.c       22 #define EDAC_MOD_STR        "i3200_edac"
-9 i5000_edac.c       31 #define EDAC_MOD_STR      "i5000_edac"
-a i5400_edac.c       38 #define EDAC_MOD_STR      "i5400_edac"
-b i7300_edac.c       36 #define EDAC_MOD_STR      "i7300_edac"
-c i7core_edac.c      65 #define EDAC_MOD_STR      "i7core_edac"
-d i82443bxgx_edac.c  36 #define EDAC_MOD_STR    "i82443bxgx_edac"
-e i82860_edac.c      20 #define EDAC_MOD_STR "i82860_edac"
-f i82875p_edac.c     24 #define EDAC_MOD_STR  "i82875p_edac"
-g i82975x_edac.c     20 #define EDAC_MOD_STR  "i82975x_edac"
-h mpc85xx_edac.h     15 #define EDAC_MOD_STR "MPC85xx_edac"
-i mv64x60_edac.h     16 #define EDAC_MOD_STR "MV64x60_edac"
-j r82600_edac.c      26 #define EDAC_MOD_STR "r82600_edac"
-k sb_edac.c          38 #define EDAC_MOD_STR      "sbridge_edac"
-l x38_edac.c         21 #define EDAC_MOD_STR  "x38_edac"
-
--- 
-Regards/Gruss,
-Boris.
-
-Advanced Micro Devices GmbH
-Einsteinring 24, 85609 Dornach
-GM: Alberto Bozzo
-Reg: Dornach, Landkreis Muenchen
-HRB Nr. 43632 WEEE Registernr: 129 19551
