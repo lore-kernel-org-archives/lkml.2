@@ -1,81 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S966565Ab2EPJbG (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 May 2012 05:31:06 -0400
-Received: from haggis.pcug.org.au ([203.10.76.10]:49902 "EHLO
-	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752879Ab2EPJbD (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 May 2012 05:31:03 -0400
-Date: Wed, 16 May 2012 19:30:52 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Oleg Nesterov <oleg@redhat.com>,
-        "Eric W. Biederman" <ebiederm@xmission.com>
-Subject: linux-next: manual merge of the akpm with the  tree
-Message-Id: <20120516193052.4af4ee85feb4a36b936b74df@canb.auug.org.au>
-X-Mailer: Sylpheed 3.2.0beta7 (GTK+ 2.24.10; i486-pc-linux-gnu)
+	id S966628Ab2EPJes (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 May 2012 05:34:48 -0400
+Received: from mga11.intel.com ([192.55.52.93]:1392 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S966066Ab2EPJeq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 16 May 2012 05:34:46 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
+   d="asc'?scan'208";a="166999176"
+Message-ID: <1337161096.24809.36.camel@sauron.fi.intel.com>
+Subject: Re: [RFC v4] UBI: Fastmap support (aka checkpointing)
+From: Artem Bityutskiy <dedekind1@gmail.com>
+Reply-To: dedekind1@gmail.com
+To: Richard Weinberger <richard@nod.at>
+Cc: linux-mtd@lists.infradead.org, tglx@linutronix.de,
+        linux-kernel@vger.kernel.org, Heinz.Egger@linutronix.de,
+        tim.bird@am.sony.com
+Date: Wed, 16 May 2012 12:38:16 +0300
+In-Reply-To: <1337101871-31181-1-git-send-email-richard@nod.at>
+References: <1337101871-31181-1-git-send-email-richard@nod.at>
+Content-Type: multipart/signed; micalg="pgp-sha1"; protocol="application/pgp-signature";
+	boundary="=-uepf/RHG9PYSFfmK9qxE"
+X-Mailer: Evolution 3.2.3 (3.2.3-3.fc16) 
 Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Wed__16_May_2012_19_30_52_+1000_FikpuOwyLkKE.G8+"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Wed__16_May_2012_19_30_52_+1000_FikpuOwyLkKE.G8+
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
+
+--=-uepf/RHG9PYSFfmK9qxE
+Content-Type: text/plain; charset="UTF-8"
 Content-Transfer-Encoding: quoted-printable
 
-Hi Andrew,
+On Tue, 2012-05-15 at 19:11 +0200, Richard Weinberger wrote:
+> We observe that attaching by scanning depends on the total size N of the =
+UBI
+> device.It has a complexity of O(N).
+> Whereas attaching by fastmap has a nearly constant attaching time.
+> In the best case fastmap has to scan only one PEB.
 
-Today's linux-next merge of the akpm tree got a conflict in kernel/exit.c
-between commit a29c33f4e506 ("userns: Convert setting and getting uid and
-gid system calls to use kuid and kgid") from the uerns tree and commit
-"cred: remove task_is_dead() from __task_cred() validation" from the akpm
-tree.
+The improvement is impressive, but again it is not O(1), strictly
+speaking. It is still O(N).
 
-I fixed it up (I think - see below) and can carry the fix as necessary.
+> This case can happen if the complete fastmap fits into one PEB, the fastm=
+ap
+> super block is the first PEB on the MTD partition and the fastmap pool is=
+ empty.
+> On the other side, in the worst case fastmap has to scan UBI_FM_MAX_START=
+ +
+> UBI_FM_MAX_BLOCKS + UBI_FM_MAX_POOL_SIZE PEBs.
+
+When N -> inf, UBI_FM_MAX_BLOCKS -> inf as well. Each PEB requires
+little space in the fastmap table.
+
+O(N) would be: N -> inf, UBI_FM_MAX_BLOCKS -> C, where C is a constant.
+
+Or did I completely forgot math basics?
+
+> With the current default settings this would be 192 PEBs.
+> So, attaching via fastmap has a complexity of O(1).
+
+No :-) Again, for each PEB you have a little data structure in a fastmap
+which you have to (a) store, (b) read, and (c) process when attaching
+the device. The more PEBs you have, the more you do.
+
+It is OK, and it is a great improvement anyway!
+
 --=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
+Best Regards,
+Artem Bityutskiy
 
-diff --cc kernel/exit.c
-index 112f703,7c293e6..0000000
---- a/kernel/exit.c
-+++ b/kernel/exit.c
-@@@ -1218,7 -1218,7 +1218,7 @@@ static int wait_task_zombie(struct wait
-  	unsigned long state;
-  	int retval, status, traced;
-  	pid_t pid =3D task_pid_vnr(p);
-- 	uid_t uid =3D from_kuid_munged(current_user_ns(), __task_cred(p)->uid);
- -	uid_t uid =3D task_uid(p);
-++	uid_t uid =3D from_kuid_munged(current_user_ns(), task_uid(p));
-  	struct siginfo __user *infop;
- =20
-  	if (!likely(wo->wo_flags & WEXITED))
-
---Signature=_Wed__16_May_2012_19_30_52_+1000_FikpuOwyLkKE.G8+
-Content-Type: application/pgp-signature
+--=-uepf/RHG9PYSFfmK9qxE
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: This is a digitally signed message part
+Content-Transfer-Encoding: 7bit
 
 -----BEGIN PGP SIGNATURE-----
 Version: GnuPG v1.4.12 (GNU/Linux)
 
-iQIcBAEBCAAGBQJPs3PMAAoJEECxmPOUX5FEC8MP/31oSugRyO2T6Irp6NlIXgDo
-6+mULukdnjP0uhemWpOcq+O2kycWPBMcTOLbf/T0TaiOS41dsMsgfDyQc1CNF/6n
-p8bvIuc48TAreE0AODNBLjalWbcKI1KkFmHxPkdOuGt2Bcgqog474MVbG6IrHpQe
-Mqyny8egxZYxc+JUACbMV8GNLAN8e8XGUL5QzAFFcu1GNhlAJvPK4h1hliBf+61U
-nCxtzeX2x8XN6hsWy0NFJ3hzPaYiOGJUGjmk0LOmy5eXhQwDb/MBD6sID7IFYWkq
-uS+4QjBPJRlyOYea1cOFD2cLpEtoprw4smGPY+XgbF5Za5fxz8SgQiTWuRjyYQHX
-7yP0BOhfh8rDwfYWWdlogWX5Wa4fUlZCPz8km9xSHDf22ZoH2SUmZpVDrefLx10u
-NpeIxXURka3eqBvdY6Gt5LOWRkMxRn1qGVEBlD8925lieqe2wSpZGeOaoeVpNKQR
-snC/wWCA/qrVzRTJys5hAsWlpB25HXwTx3sGYwCR1miHJTrDHmYSTH+mr7k0C26c
-bqGjulFxpbilRrHEjB/kpIGNpcUFvJGDVg80MOUnH9WmlEXBJuJrHnDpS3g8Mh2i
-uK7rQ+8xPBtxFF4gcF341WaEd3LjDjca5eXa+NCqdBYCXem+nU73eYvlk47hXYhL
-J46oY8TgDagbwgTv7hLV
-=F3r1
+iQIcBAABAgAGBQJPs3WIAAoJECmIfjd9wqK0Mu4QAKAkGwuQmCRX1AVfWfrnRQ2g
+PpRhwbIIZn8Vh7hyqkGSWeKgOTjSc2rclFcrXDik35uqKvZKgHh18ank8ert+2fT
+I1IkrnqFFJZdVTaFctvfhE+5qQYUM6ABlYYZXJMtzwxsWlTX7tT5RkS1waR7h/WB
+WSCLaF2QfG3dtzZh4+2+sIzXugYGuPVCGkj216tX1ETGey6WJ7JDkIFXHx6XRwVl
+tV7S0HtKsdrliS+eqlzpNbdr3g3YtsMEgR/qaKX0G5lNsP1TPq35rMOzqN5c6yzp
+L6Ld4uL7Tw6O80plwfLA0y05ytbEU/kMtJbALoXyplK+DRN8BRxL/PthtQbV3Vs+
+EoFJ9aSwwHAzPALKUhd2m6txjS50Fm4UhguuiYC/JXqBAlVMoiNEAl/I9picmN3A
+RpgVmgqwDqvvmUaBt4eRNEe7uI3hu7tVqijkFLunKNTdQB1STGU7WttyiZRdheDL
+7/9rn4GXhPoh6wZT5EGfohhjNoPYA+el5pSehVtoX1jrugmtTUcDcto7zrhOF9nt
+fiLp9IJAFwHokZYd3ZO2Y+PbLVItDGYMpYX+sz8zgJX9VIBiJWVTriG7QCFych4/
+t5UaDyHbidN9SsjzTUdE1lDNGpSqxs8mB05ekHKurP0DzdLgZamVdhuKP+2SwGFP
+m2HGlypI7oHb3JBv8w1k
+=eSks
 -----END PGP SIGNATURE-----
 
---Signature=_Wed__16_May_2012_19_30_52_+1000_FikpuOwyLkKE.G8+--
+--=-uepf/RHG9PYSFfmK9qxE--
+
