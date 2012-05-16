@@ -1,88 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759721Ab2EPH5x (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 May 2012 03:57:53 -0400
-Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:40053 "EHLO
-	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759668Ab2EPH5v (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 May 2012 03:57:51 -0400
-X-SecurityPolicyCheck: OK by SHieldMailChecker v1.7.4
-Message-ID: <4FB35D85.5070304@jp.fujitsu.com>
-Date: Wed, 16 May 2012 16:55:49 +0900
-From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.0; rv:12.0) Gecko/20120428 Thunderbird/12.0.1
+	id S1759698Ab2EPH65 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 May 2012 03:58:57 -0400
+Received: from cn.fujitsu.com ([222.73.24.84]:13668 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1756431Ab2EPH6z (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 16 May 2012 03:58:55 -0400
+X-IronPort-AV: E=Sophos;i="4.75,602,1330876800"; 
+   d="scan'208";a="4967728"
+Message-ID: <4FB35DEF.2040008@cn.fujitsu.com>
+Date: Wed, 16 May 2012 15:57:35 +0800
+From: zhangyanfei <zhangyanfei@cn.fujitsu.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100413 Fedora/3.0.4-2.fc13 Thunderbird/3.0.4
 MIME-Version: 1.0
-To: Glauber Costa <glommer@parallels.com>
-CC: linux-kernel@vger.kernel.org, cgroups@vger.kernel.org, linux-mm@kvack.org,
-        Tejun Heo <tj@kernel.org>, Li Zefan <lizefan@huawei.com>,
-        Greg Thelen <gthelen@google.com>,
-        Suleiman Souhlal <suleiman@google.com>, Michal Hocko <mhocko@suse.cz>,
-        Johannes Weiner <hannes@cmpxchg.org>, devel@openvz.org,
-        Christoph Lameter <cl@linux.com>,
-        Pekka Enberg <penberg@cs.helsinki.fi>
-Subject: Re: [PATCH v2 19/29] skip memcg kmem allocations in specified code
- regions
-References: <1336758272-24284-1-git-send-email-glommer@parallels.com> <1336758272-24284-20-git-send-email-glommer@parallels.com> <4FB1C398.1010000@jp.fujitsu.com> <4FB346E3.5060507@parallels.com>
-In-Reply-To: <4FB346E3.5060507@parallels.com>
-Content-Type: text/plain; charset=ISO-2022-JP
+To: Avi Kivity <avi@redhat.com>, mtosatti@redhat.com
+CC: ebiederm@xmission.com, luto@mit.edu, Joerg Roedel <joerg.roedel@amd.com>,
+        dzickus@redhat.com, paul.gortmaker@windriver.com,
+        ludwig.nussel@suse.de, linux-kernel@vger.kernel.org,
+        kvm@vger.kernel.org, kexec@lists.infradead.org,
+        Greg KH <gregkh@linuxfoundation.org>
+Subject: [PATCH v2 5/5] Documentation: Add ABI entry for sysfs file vmcsinfo
+ and vmcsinfo_maxsize
+References: <4FB35C48.30708@cn.fujitsu.com>
+In-Reply-To: <4FB35C48.30708@cn.fujitsu.com>
+X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2012/05/16 15:57:38,
+	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2012/05/16 15:57:43,
+	Serialize complete at 2012/05/16 15:57:43
 Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=GB2312
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(2012/05/16 15:19), Glauber Costa wrote:
+We create two new sysfs files, vmcsinfo and vmcsinfo_maxsize. And
+here we add an Documentation/ABI entry for them.
 
-> On 05/15/2012 06:46 AM, KAMEZAWA Hiroyuki wrote:
->> (2012/05/12 2:44), Glauber Costa wrote:
->>
->>> This patch creates a mechanism that skip memcg allocations during
->>> certain pieces of our core code. It basically works in the same way
->>> as preempt_disable()/preempt_enable(): By marking a region under
->>> which all allocations will be accounted to the root memcg.
->>>
->>> We need this to prevent races in early cache creation, when we
->>> allocate data using caches that are not necessarily created already.
->>>
->>> Signed-off-by: Glauber Costa<glommer@parallels.com>
->>> CC: Christoph Lameter<cl@linux.com>
->>> CC: Pekka Enberg<penberg@cs.helsinki.fi>
->>> CC: Michal Hocko<mhocko@suse.cz>
->>> CC: Kamezawa Hiroyuki<kamezawa.hiroyu@jp.fujitsu.com>
->>> CC: Johannes Weiner<hannes@cmpxchg.org>
->>> CC: Suleiman Souhlal<suleiman@google.com>
->>
->>
->> The concept seems okay to me but...
->>
->>> ---
->>>   include/linux/sched.h |    1 +
->>>   mm/memcontrol.c       |   25 +++++++++++++++++++++++++
->>>   2 files changed, 26 insertions(+), 0 deletions(-)
->>>
->>> diff --git a/include/linux/sched.h b/include/linux/sched.h
->>> index 81a173c..0501114 100644
->>> --- a/include/linux/sched.h
->>> +++ b/include/linux/sched.h
->>> @@ -1613,6 +1613,7 @@ struct task_struct {
->>>   		unsigned long nr_pages;	/* uncharged usage */
->>>   		unsigned long memsw_nr_pages; /* uncharged mem+swap usage */
->>>   	} memcg_batch;
->>> +	atomic_t memcg_kmem_skip_account;
->>
->>
->> If only 'current' thread touch this, you don't need to make this atomic counter.
->> you can use 'long'.
->>
-> You're absolutely right, Kame, thanks.
-> I first used atomic_t because I had it tested against current->mm->owner.
-> 
-> Do you, btw, agree to use current instead of owner here?
-> You can find the rationale in earlier mails between me and Suleiman.
+Signed-off-by: zhangyanfei <zhangyanfei@cn.fujitsu.com>
+---
+ Documentation/ABI/testing/sysfs-kernel-vmcsinfo |   16 ++++++++++++++++
+ 1 files changed, 16 insertions(+), 0 deletions(-)
+ create mode 100644 Documentation/ABI/testing/sysfs-kernel-vmcsinfo
 
-I agree to use current. This information depends on the context of callers.
-
-Thanks,
--Kame
-
-
+diff --git a/Documentation/ABI/testing/sysfs-kernel-vmcsinfo b/Documentation/ABI/testing/sysfs-kernel-vmcsinfo
+new file mode 100644
+index 0000000..adbf866
+--- /dev/null
++++ b/Documentation/ABI/testing/sysfs-kernel-vmcsinfo
+@@ -0,0 +1,16 @@
++What:		/sys/kernel/vmcsinfo
++Date:		April 2012
++KernelVersion:	3.4.0
++Contact:	Zhang Yanfei <zhangyanfei@cn.fujitsu.com>
++Description
++		Shows physical address of VMCSINFO. VMCSINFO contains
++		the VMCS revision identifier and encoded offsets of fields
++		in VMCS data on Intel processors equipped with the VT
++		extensions.
++
++What:		/sys/kernel/vmcsinfo_maxsize
++Date:		April 2012
++KernelVersion:	3.4.0
++Contact:	Zhang Yanfei <zhangyanfei@cn.fujitsu.com>
++Description
++		Shows max size of VMCSINFO.
+-- 
+1.7.1
