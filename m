@@ -1,76 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759449Ab2EPHAg (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 May 2012 03:00:36 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:60654 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759444Ab2EPG7f (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1759440Ab2EPG7f (ORCPT <rfc822;w@1wt.eu>);
 	Wed, 16 May 2012 02:59:35 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:52825 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1759129Ab2EPG7b (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 16 May 2012 02:59:31 -0400
 From: Jiri Olsa <jolsa@redhat.com>
 To: acme@redhat.com, a.p.zijlstra@chello.nl, mingo@elte.hu, paulus@samba.org,
         cjashfor@linux.vnet.ibm.com, fweisbec@gmail.com
 Cc: linux-kernel@vger.kernel.org, dsahern@gmail.com,
         Jiri Olsa <jolsa@redhat.com>
-Subject: [PATCH 7/7] perf, tool: Fix callchain ip printf
-Date: Wed, 16 May 2012 08:59:08 +0200
-Message-Id: <1337151548-2396-8-git-send-email-jolsa@redhat.com>
+Subject: [PATCH 3/7] perf, tool: Add union u64_swap type for swapping u64 data
+Date: Wed, 16 May 2012 08:59:04 +0200
+Message-Id: <1337151548-2396-4-git-send-email-jolsa@redhat.com>
 In-Reply-To: <1337151548-2396-1-git-send-email-jolsa@redhat.com>
 References: <1337151548-2396-1-git-send-email-jolsa@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The callchain address is stored as u64. Current code uses following
-format string to display callchain address:
-  "%p\n", (void *)(long)chain->ip
+The following union:
+  union {
+        u64 val64;
+        u32 val32[2];
+  } u;
 
-This way we loose upper 32 bits if we report 64 bit addresses in
-32 bit environment. Fixing this to always display whole 64 bits.
+is used on more than single places in perf code and will be used
+more in upcomming patches.
 
-Note, running following to test perf endianity handling:
-test 1)
-  - origin system:
-    # perf record -a -- sleep 10 (any perf record will do)
-    # perf report > report.origin
-    # perf archive perf.data
-
-  - copy the perf.data, report.origin and perf.data.tar.bz2
-    to a target system and run:
-    # tar xjvf perf.data.tar.bz2 -C ~/.debug
-    # perf report > report.target
-    # diff -u report.origin report.target
-
-  - the diff should produce no output
-    (besides some white space stuff and possibly different
-     date/TZ output)
-
-test 2)
-  - origin system:
-    # perf record -ag -fo /tmp/perf.data -- sleep 1
-  - mount origin system root to the target system on /mnt/origin
-  - target system:
-    # perf script --symfs /mnt/origin -I -i /mnt/origin/tmp/perf.data \
-     --kallsyms /mnt/origin/proc/kallsyms
-  - complete perf.data header is displayed
+Adding union u64_swap to have it defined globaly so we dont need
+to redefine it all the time.
 
 Signed-off-by: Jiri Olsa <jolsa@redhat.com>
 ---
- tools/perf/util/hist.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+ tools/perf/util/evsel.c |   10 ++--------
+ tools/perf/util/types.h |    5 +++++
+ 2 files changed, 7 insertions(+), 8 deletions(-)
 
-diff --git a/tools/perf/util/hist.c b/tools/perf/util/hist.c
-index 9f6d630..1293b5e 100644
---- a/tools/perf/util/hist.c
-+++ b/tools/perf/util/hist.c
-@@ -599,7 +599,7 @@ static size_t ipchain__fprintf_graph(FILE *fp, struct callchain_list *chain,
- 	if (chain->ms.sym)
- 		ret += fprintf(fp, "%s\n", chain->ms.sym->name);
- 	else
--		ret += fprintf(fp, "%p\n", (void *)(long)chain->ip);
-+		ret += fprintf(fp, "0x%0" PRIx64 "\n", chain->ip);
+diff --git a/tools/perf/util/evsel.c b/tools/perf/util/evsel.c
+index 21eaab2..4e1b44e 100644
+--- a/tools/perf/util/evsel.c
++++ b/tools/perf/util/evsel.c
+@@ -462,10 +462,7 @@ int perf_event__parse_sample(const union perf_event *event, u64 type,
+ 	 * used for cross-endian analysis. See git commit 65014ab3
+ 	 * for why this goofiness is needed.
+ 	 */
+-	union {
+-		u64 val64;
+-		u32 val32[2];
+-	} u;
++	union u64_swap u;
  
- 	return ret;
- }
+ 	memset(data, 0, sizeof(*data));
+ 	data->cpu = data->pid = data->tid = -1;
+@@ -608,10 +605,7 @@ int perf_event__synthesize_sample(union perf_event *event, u64 type,
+ 	 * used for cross-endian analysis. See git commit 65014ab3
+ 	 * for why this goofiness is needed.
+ 	 */
+-	union {
+-		u64 val64;
+-		u32 val32[2];
+-	} u;
++	union u64_swap u;
+ 
+ 	array = event->sample.array;
+ 
+diff --git a/tools/perf/util/types.h b/tools/perf/util/types.h
+index 5f3689a..c51fa6b 100644
+--- a/tools/perf/util/types.h
++++ b/tools/perf/util/types.h
+@@ -16,4 +16,9 @@ typedef signed short	   s16;
+ typedef unsigned char	   u8;
+ typedef signed char	   s8;
+ 
++union u64_swap {
++	u64 val64;
++	u32 val32[2];
++};
++
+ #endif /* __PERF_TYPES_H */
 -- 
 1.7.7.6
 
