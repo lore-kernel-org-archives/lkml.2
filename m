@@ -1,85 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759594Ab2EPHbd (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 May 2012 03:31:33 -0400
-Received: from db3ehsobe006.messaging.microsoft.com ([213.199.154.144]:36961
-	"EHLO db3outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1759223Ab2EPHb1 (ORCPT
+	id S933036Ab2EPHcN (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 May 2012 03:32:13 -0400
+Received: from natasha.panasas.com ([67.152.220.90]:38970 "EHLO
+	natasha.panasas.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932713Ab2EPHcC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 May 2012 03:31:27 -0400
-X-SpamScore: 0
-X-BigFish: VPS0(zzzz1202hzz8275bhz2dh2a8h668h839hd24he5bh)
-X-Forefront-Antispam-Report: CIP:137.71.25.57;KIP:(null);UIP:(null);IPV:NLI;H:nwd2mta2.analog.com;RD:nwd2mail11.analog.com;EFVD:NLI
-From: <sonic.zhang@analog.com>
-To: Ben Dooks <ben-linux@fluff.org>, Wolfram Sang <w.sang@pengutronix.de>
-CC: <linux-i2c@vger.kernel.org>, LKML <linux-kernel@vger.kernel.org>,
-        <uclinux-dist-devel@blackfin.uclinux.org>,
-        Sonic Zhang <sonic.zhang@analog.com>
-Subject: [PATCH 7/8] i2c: i2c-bfin-twi: Move TWI peripheral pin request array to platform data.
-Date: Wed, 16 May 2012 15:20:25 +0800
-Message-ID: <1337152826-9850-7-git-send-email-sonic.zhang@analog.com>
-X-Mailer: git-send-email 1.7.0.4
-In-Reply-To: <1337152826-9850-1-git-send-email-sonic.zhang@analog.com>
-References: <1337152826-9850-1-git-send-email-sonic.zhang@analog.com>
+	Wed, 16 May 2012 03:32:02 -0400
+Message-ID: <4FB35665.5090908@panasas.com>
+Date: Wed, 16 May 2012 10:25:25 +0300
+From: Boaz Harrosh <bharrosh@panasas.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:8.0) Gecko/20111113 Thunderbird/8.0
 MIME-Version: 1.0
-Content-Type: text/plain
-X-OriginatorOrg: analog.com
+To: NeilBrown <neilb@suse.de>, Jan Kara <jack@suse.cz>
+CC: Ludwig Nussel <ludwig.nussel@suse.de>, <linux-kernel@vger.kernel.org>,
+        <linux-fsdevel@vger.kernel.org>, Rob Landley <rob@landley.net>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Andreas Dilger <adilger.kernel@dilger.ca>,
+        "Theodore Ts'o" <tytso@mit.edu>,
+        EXT2 FILE SYSTEM <linux-ext4@vger.kernel.org>,
+        DOCUMENTATION <linux-doc@vger.kernel.org>
+Subject: Re: [PATCH RESEND] implement uid and gid mount options for ext2,
+ ext3 and ext4
+References: <1336660924-9598-1-git-send-email-ludwig.nussel@suse.de> <20120511034945.GA15892@mobil.systemanalysen.net> <4FAD30D7.3070208@panasas.com> <20120515091542.51f3dd78@notabene.brown>
+In-Reply-To: <20120515091542.51f3dd78@notabene.brown>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Sonic Zhang <sonic.zhang@analog.com>
+On 05/15/2012 02:15 AM, NeilBrown wrote:
 
-Signed-off-by: Sonic Zhang <sonic.zhang@analog.com>
----
- drivers/i2c/busses/i2c-bfin-twi.c |   12 ++++--------
- 1 files changed, 4 insertions(+), 8 deletions(-)
+> On Fri, 11 May 2012 18:31:35 +0300 Boaz Harrosh <bharrosh@panasas.com> wrote:
+> 
+>> On 05/11/2012 06:49 AM, Roland Eggner wrote:
+>>
 
-diff --git a/drivers/i2c/busses/i2c-bfin-twi.c b/drivers/i2c/busses/i2c-bfin-twi.c
-index d7e8fba..b2ca317 100644
---- a/drivers/i2c/busses/i2c-bfin-twi.c
-+++ b/drivers/i2c/busses/i2c-bfin-twi.c
-@@ -78,11 +78,6 @@ DEFINE_TWI_REG(XMT_DATA16, 0x84)
- DEFINE_TWI_REG(RCV_DATA8, 0x88)
- DEFINE_TWI_REG(RCV_DATA16, 0x8C)
- 
--static const u16 pin_req[2][3] = {
--	{P_TWI0_SCL, P_TWI0_SDA, 0},
--	{P_TWI1_SCL, P_TWI1_SDA, 0},
--};
--
- static void bfin_twi_handle_interrupt(struct bfin_twi_iface *iface,
- 					unsigned short twi_int_status)
- {
-@@ -719,7 +714,8 @@ static int i2c_bfin_twi_probe(struct platform_device *pdev)
- 	p_adap->timeout = 5 * HZ;
- 	p_adap->retries = 3;
- 
--	rc = peripheral_request_list(pin_req[pdev->id], "i2c-bfin-twi");
-+	rc = peripheral_request_list((unsigned short *)pdev->dev.platform_data,
-+					"i2c-bfin-twi");
- 	if (rc) {
- 		dev_err(&pdev->dev, "Can't setup pin mux!\n");
- 		goto out_error_pin_mux;
-@@ -766,7 +762,7 @@ out_error_add_adapter:
- 	free_irq(iface->irq, iface);
- out_error_req_irq:
- out_error_no_irq:
--	peripheral_free_list(pin_req[pdev->id]);
-+	peripheral_free_list((unsigned short *)pdev->dev.platform_data);
- out_error_pin_mux:
- 	iounmap(iface->regs_base);
- out_error_ioremap:
-@@ -784,7 +780,7 @@ static int i2c_bfin_twi_remove(struct platform_device *pdev)
- 
- 	i2c_del_adapter(&(iface->adap));
- 	free_irq(iface->irq, iface);
--	peripheral_free_list(pin_req[pdev->id]);
-+	peripheral_free_list((unsigned short *)pdev->dev.platform_data);
- 	iounmap(iface->regs_base);
- 	kfree(iface);
- 
--- 
-1.7.0.4
 
+Neil && Jan.
+
+As I  said in my last mail:
+	"Shared files" problem is not solved by mount options.
+
+For me this is just a UNIX new-be 101 problem. You need to
+share files with friends you make the mistake once. Then
+you learn and you go on. It's a none problem.
+
+Your removable media thing is just your "shared folder"
+on a UNIX system. Deal with it. Da
+
+Or go degrade your FS to vfat security. You are reluctant
+to chmod all files to be world/group writeable but you
+are doing just that with your mount option. Perhaps
+when the chmod -R will scroll through you'd realize
+that the passwords file you should remove. The POSIX
+permissions are just for that purpose. "I set access
+control at creation. Else slave to change them". The
+mount option they specifically left out, not because
+they were not clever, but because you don't want it.
+
+BTW NTFS is like UNIX. If written in the right user-private
+permissions you can't read them. Even admin. You can only chown
+them.
+
+BTW Neil with Kerberos auth in an NFS/CIFS shared device
+like you mentioned, then a uid/gid is already associated
+with the access automatically. It's a perfect IDEA for
+these device makers. They need develop nothing only set it
+up with the same NFS / SAMBA implementations they already
+use.
+
+And one last thing Neil. Yes an rm is a perfect rope
+for an admin to hang itself, but it is not aimed at
+auto-mounter scripts
+
+I can't believe I got dragged into this again.
+
+:-(
+Boaz
 
