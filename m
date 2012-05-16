@@ -1,91 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754487Ab2EPF7r (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 May 2012 01:59:47 -0400
-Received: from LGEMRELSE1Q.lge.com ([156.147.1.111]:50440 "EHLO
-	LGEMRELSE1Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750858Ab2EPF7q (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 May 2012 01:59:46 -0400
-X-AuditID: 9c93016f-b7cecae000000e00-5f-4fb3424bc146
-From: Namhyung Kim <namhyung.kim@lge.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Ingo Molnar <mingo@kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Arnaldo Carvalho de Melo <acme@infradead.org>,
-        linux-kernel@vger.kernel.org, Arjan van de Ven <arjan@infradead.org>,
-        David Ahern <dsahern@gmail.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Mike Galbraith <efault@gmx.de>, Paul Mackerras <paulus@samba.org>,
-        Stephane Eranian <eranian@google.com>, arnaldo.melo@gmail.com,
-        Arnaldo Carvalho de Melo <acme@redhat.com>
-Subject: Re: [GIT PULL 0/8] Annotation weekly ponies delivery
-References: <1336852387-16322-1-git-send-email-acme@infradead.org>
-	<CA+55aFxeqrCj71fSe2r9kwzyO9q2BT9A89f7nLUgbrTG_uPP2g@mail.gmail.com>
-	<1336994000.2443.24.camel@twins> <20120514115551.GA6479@gmail.com>
-	<1337007985.1552.5.camel@leonhard> <1337077973.27694.24.camel@twins>
-	<1337093080.1493.22.camel@leonhard> <1337101633.27694.92.camel@twins>
-Date: Wed, 16 May 2012 14:57:49 +0900
-In-Reply-To: <1337101633.27694.92.camel@twins> (Peter Zijlstra's message of
-	"Tue, 15 May 2012 19:07:13 +0200")
-Message-ID: <87liksd5wi.fsf@sejong.aot.lge.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.0.95 (gnu/linux)
+	id S1755182Ab2EPGBP (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 May 2012 02:01:15 -0400
+Received: from na3sys009aog136.obsmtp.com ([74.125.149.85]:50006 "EHLO
+	na3sys009aog136.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752607Ab2EPGBN convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 16 May 2012 02:01:13 -0400
 MIME-Version: 1.0
-Content-Type: text/plain
-X-Brightmail-Tracker: AAAAAA==
+In-Reply-To: <1336798797-8724-1-git-send-email-skannan@codeaurora.org>
+References: <1336798797-8724-1-git-send-email-skannan@codeaurora.org>
+From: "Turquette, Mike" <mturquette@ti.com>
+Date: Tue, 15 May 2012 23:00:50 -0700
+Message-ID: <CAJOA=zNVQUDbHQCgnQ56S50fva2eKUXAH9aVkTbtyvQW+fq9SA@mail.gmail.com>
+Subject: Re: [PATCH] clk: Fix race conditions between clk_set_parent() and clk_enable()
+To: Saravana Kannan <skannan@codeaurora.org>
+Cc: Arnd Bergman <arnd.bergmann@linaro.org>,
+        linux-arm-kernel@lists.infradead.org, Andrew Lunn <andrew@lunn.ch>,
+        Paul Walmsley <paul@pwsan.com>, Russell King <linux@arm.linux.org.uk>,
+        Linus Walleij <linus.walleij@stericsson.com>,
+        Stephen Boyd <sboyd@codeaurora.org>, linux-arm-msm@vger.kernel.org,
+        Sascha Hauer <s.hauer@pengutronix.de>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Magnus Damm <magnus.damm@gmail.com>, linux-kernel@vger.kernel.org,
+        Rob Herring <rob.herring@calxeda.com>,
+        Richard Zhao <richard.zhao@linaro.org>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Deepak Saxena <dsaxena@linaro.org>,
+        Amit Kucheria <amit.kucheria@linaro.org>,
+        Jamie Iles <jamie@jamieiles.com>,
+        Jeremy Kerr <jeremy.kerr@canonical.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Shawn Guo <shawn.guo@freescale.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
-
-On Tue, 15 May 2012 19:07:13 +0200, Peter Zijlstra wrote:
-> This does indeed make it work again:
+On Fri, May 11, 2012 at 9:59 PM, Saravana Kannan <skannan@codeaurora.org> wrote:
+> Since clocks with CLK_SET_PARENT_GATE flag only allow clk_set_parent() on
+> unprepared clocks and calling clk_enable() on an unprepared clock would be
+> violating the clock API usage model, allow set_parent() ops to be sleepable
+> for clocks which have the CLK_SET_PARENT_GATE flag. Putting it another way,
+> if a clock's parent can't be switched without sleeping, then by definition
+> the parent can't be switched while it's prepared (CLK_SET_PARENT_GATE).
 >
-> pre patch:
+...
+> diff --git a/drivers/clk/clk.c b/drivers/clk/clk.c
+> index e5d5dc1..09b9112 100644
+> --- a/drivers/clk/clk.c
+> +++ b/drivers/clk/clk.c
+> @@ -1059,7 +1059,7 @@ static int __clk_set_parent(struct clk *clk, struct clk *parent)
+>  {
+>        struct clk *old_parent;
+>        unsigned long flags;
+> -       int ret = -EINVAL;
+> +       int ret;
+>        u8 i;
 >
-> [ perf record: Woken up 1 times to write data ]
-> [ perf record: Captured and wrote 0.005 MB perf.data (~212 samples) ]
+>        old_parent = clk->parent;
+> @@ -1083,7 +1083,13 @@ static int __clk_set_parent(struct clk *clk, struct clk *parent)
+>        if (i == clk->num_parents) {
+>                pr_debug("%s: clock %s is not a possible parent of clock %s\n",
+>                                __func__, parent->name, clk->name);
+> -               goto out;
+> +               return -EINVAL;
+> +       }
+> +
+> +       if (clk->flags & CLK_SET_PARENT_GATE) {
+> +               ret = clk->ops->set_parent(clk->hw, i);
+> +               clk->parent = parent;
+> +               return ret;
+>        }
 >
-> post patch:
->
-> [ perf record: Woken up 209 times to write data ]
-> [ perf record: Captured and wrote 54.931 MB perf.data (~2399974 samples) ]
->
-> So please do send as a proper patch, and you can add:
->
-> Acked-and-tested-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
+>        /* migrate prepare and enable */
 
-Hmm.. but it seems this breaks my 'perf stat -g' - it doesn't
-respond any more (even for ^C):
+The above hunk is a good change since it fixes a bug where we
+prepare/enable the parent clocks around the .set_parent callback, even
+when CLK_SET_PARENT_GATE is set.  It should be a separate patch.
 
-  namhyung@sejong:perf$ ./perf stat -g sleep 1
-  ^C^C^C^C^\Quit (core dumped)
-
-  namhyung@sejong:perf$ gdb ./perf core.11964
-  [SNIP]
-  Core was generated by `./perf stat -g sleep 1'.
-  Program terminated with signal 3, Quit.
-  #0  0x0000003fd800e090 in __read_nocancel () from /lib64/libpthread.so.0
-  [SNIP]
-  (gdb) bt
-  #0  0x0000003fd800e090 in __read_nocancel () from /lib64/libpthread.so.0
-  #1  0x000000000047fa00 in read (__nbytes=24, __buf=0x7fffc5e1d0b0, __fd=0) at /usr/include/bits/unistd.h:45
-  #2  readn (fd=0, buf=<optimized out>, buf@entry=0x7fffc5e1d0b0, n=n@entry=24) at util/util.c:140
-  #3  0x000000000043e4bb in __perf_evsel__read (evsel=evsel@entry=0xc7e700, ncpus=<optimized out>, nthreads=1, scale=true)
-      at util/evsel.c:267
-  #4  0x0000000000422777 in read_counter_aggr (counter=0xc7e700) at builtin-stat.c:360
-  #5  run_perf_stat (argv=0x7fffc5e1d510, argc=2) at builtin-stat.c:528
-  #6  cmd_stat (argc=2, argv=0x7fffc5e1d510, prefix=<optimized out>) at builtin-stat.c:1251
-  #7  0x0000000000414723 in run_builtin (p=p@entry=0x77e1d8, argc=argc@entry=4, argv=argv@entry=0x7fffc5e1d510) at perf.c:273
-  #8  0x0000000000413f3b in handle_internal_command (argv=0x7fffc5e1d510, argc=4) at perf.c:345
-  #9  run_argv (argv=0x7fffc5e1d300, argcp=0x7fffc5e1d30c) at perf.c:389
-  #10 main (argc=4, argv=0x7fffc5e1d510) at perf.c:487
-
-
-In fact, my perf stat -g was already broken - it cannot count at
-all on my SNB box. I'll investigate it more.
-
-Any thoughts?
-
-Namhyung
+Thanks,
+Mike
