@@ -1,81 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932832Ab2EPCQ1 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 May 2012 22:16:27 -0400
-Received: from rtits2.realtek.com ([60.250.210.242]:54725 "EHLO
-	rtits2.realtek.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758348Ab2EPCQ0 (ORCPT
+	id S932885Ab2EPCSo (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 May 2012 22:18:44 -0400
+Received: from zeniv.linux.org.uk ([195.92.253.2]:49320 "EHLO
+	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758810Ab2EPCSm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 May 2012 22:16:26 -0400
-X-SpamFilter-By: BOX Solutions SpamTrap 5.19 with qID q4G2G9YP009285, This message is released by code: ctaloc0852
-Message-ID: <4FB30DE9.8040406@realsil.com.cn>
-Date: Wed, 16 May 2012 10:16:09 +0800
-From: edwin_rong <edwin_rong@realsil.com.cn>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
+	Tue, 15 May 2012 22:18:42 -0400
+Date: Wed, 16 May 2012 03:18:28 +0100
+From: Al Viro <viro@ZenIV.linux.org.uk>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Mimi Zohar <zohar@linux.vnet.ibm.com>, Eric Paris <eparis@parisplace.org>,
+        Mimi Zohar <zohar@us.ibm.com>, linux-security-module@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] vfs: fix IMA lockdep circular locking dependency
+Message-ID: <20120516021828.GP22082@ZenIV.linux.org.uk>
+References: <1336963631-3541-1-git-send-email-zohar@us.ibm.com>
+ <CA+55aFzrJNd5J7i3Rp7-ctc=bDn5GTWu=H1xyCgGZ-rzu74Gbw@mail.gmail.com>
+ <CA+55aFyPPZ0wayqPMCZtfP1w9nN-GnKJxYc9i_XM_Qk8d-zJzg@mail.gmail.com>
+ <CACLa4pujEBAS349Pr-EcBmzQgTHWthhCMV0Yqq0BG-F_gDjz4Q@mail.gmail.com>
+ <1337112446.20904.50.camel@falcor>
+ <CA+55aFxRRuWGD-4LYzO-T8eg22goKpej5AV36ALL8GaLP56oRA@mail.gmail.com>
+ <CA+55aFzOtY7tBw4YNH+QX+6L4opMsJ=sN4DfJURMv_yBTWqL1w@mail.gmail.com>
+ <20120516004251.GO22082@ZenIV.linux.org.uk>
+ <CA+55aFy0wJdq+-OAkUBsrkQogF5-N0P4DBQ+6-LXjBGscRQFNw@mail.gmail.com>
 MIME-Version: 1.0
-To: Greg KH <gregkh@linuxfoundation.org>
-CC: "gregkh@suse.de" <gregkh@suse.de>,
-        "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] staging: update TODO files for rts5139 & rts_pstor
-References: <1337049392-8544-1-git-send-email-edwin_rong@realsil.com.cn> <20120515153931.GA25240@kroah.com>
-In-Reply-To: <20120515153931.GA25240@kroah.com>
-Content-Type: text/plain; charset="GB2312"
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CA+55aFy0wJdq+-OAkUBsrkQogF5-N0P4DBQ+6-LXjBGscRQFNw@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/15/2012 11:39 PM, Greg KH wrote:
-> On Tue, May 15, 2012 at 10:36:32AM +0800, edwin_rong@realsil.com.cn wrote:
->> From: edwin_rong <edwin_rong@realsil.com.cn>
->>
->> Recently we find that many warm-hearted people are helping improving the
->> coding style and something else of driver rts5139 & rts_pstor, which will
->> be replaced with one new refactored uniform Realtek cardreader driver in
->> the future, update the TODO file to inform people not to do modifications
->> to both of the drivers any more to avoid wasting their time and energy.
-> Is there anything that you can point people to today for this "new
-> driver"?  Given that there is no other driver at this point in time, I
-> don't blame people for fixing up this one to work properly.  So until we
-> see a new driver, I don't feel comfortable asking people to stop working
-> here, do you?
->
-> thanks,
->
-> greg k-h
-Hi Greg,
+On Tue, May 15, 2012 at 05:45:44PM -0700, Linus Torvalds wrote:
+> On Tue, May 15, 2012 at 5:42 PM, Al Viro <viro@zeniv.linux.org.uk> wrote:
+> >
+> > Er... ?Looks like you forgot to actually put the patch in there ;-)
+> 
+> Oops. Err.. I meant to do that. Right. To check that you're awake.
 
-No, it's not polite to stop people helping you do some fixing work. I
-totally agree your point, but my original purpose is to avoid people
-wasting their time and energy :-)
+Frankly, I would split it in two - one introducing security_mmap_addr()
+and converting the callers, and another doing the rest of it.
 
-About the "new driver", we make significant modifications and re-design
-it with Object-Oriented theory, which is adopted in kernel everywhere.
-We divide the driver into several portions: . "card component", which is
-used to implement all kinds of card protocols in h/w-independent way;
-."card manager component" which manipulate all the cardreader supported
-cards; ."card reader component" which is responsible for concrete
-operations of IC; ."scsi component", whose work is to accept SCSI
-commands from SCSI subsystem and forward them to "card component" for
-further process, and ."transport component" which hidden the specfic
-physical interface from the compoents mentioned above.
+Said that, I'm not sure I like the resulting picture.
 
-As you have seen that there's 2 drivers "rts5139" and "rts_pstor" under
-staging folder in Linux kernel code, the former drives USB-based card
-reader, while the later supports PCIe-based card reader and both of them
-are driver-based driver, which implement SD/MS/xD card protocol,
-respectively, to support these series of cards. In fact, It doesn't need
-to do so, since they are standard protocols, if we implement them in a
-hardware-independent way, it can be reused, which decreases code redundance.
+1) caller in __bprm_mm_init() is simply ridiculous - note that
+arguments are bleeding *constants*, so it might very well have
+been a BUG_ON().  If it fails, you'll have every execve() fail.
 
-Also, we have to consider expansion issue of the driver, since our
-company will design out new card reader ICs. Actually, the "new driver"
-could, to some degree, be treated as an subsystem which supports all
-Realtek cardreader ICs.
+2) get_unmapped_area() probably ought to grow such a caller and
+I really suspect that it would've killed quite a few of them.
 
+3) expand_downwards() seems to be missing the basic sanity checks on the
+validity of VMA range (arch_mmap_check(), that is).  itanic opencodes
+the equivalent before calling expand_stack(); arm and mn10300 do not
+bother, which might or might not be legitimate - depends on whether
+one can get a fault in the first page *and* reach the check_stack:
+in e.g. arm __do_page_fault().  Which just might be possible, if attacker
+maps something just above said first page with MAP_GROWSDOWN and
+tries to write at very small address - IIRC, the first page on arm
+contains the stuff that shouldn't be world-writable...  s390 doesn't
+care and I'm not sure about sparc32/sparc64 - it looks like that shouldn't
+be possible to hit, but...
 
-Thanks & BRs
-Edwin
-
-
+4) i810_dma.c ought to be switched to vm_mmap() - as discussed in that
+thread back then, magical mystery wank with ->f_op reassignments does
+not rely on ->mmap_sem for protection and thus can be taken out of
+under ->mmap_sem.
