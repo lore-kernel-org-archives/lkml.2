@@ -1,102 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030258Ab2EPLND (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 May 2012 07:13:03 -0400
-Received: from na3sys009aog112.obsmtp.com ([74.125.149.207]:46246 "EHLO
-	na3sys009aog112.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S967293Ab2EPLML (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 May 2012 07:12:11 -0400
-From: Peter Ujfalusi <peter.ujfalusi@ti.com>
-To: Samuel Ortiz <sameo@linux.intel.com>
-Cc: Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Liam Girdwood <lrg@ti.com>, Benoit Cousson <b-cousson@ti.com>,
-        linux-kernel@vger.kernel.org, devicetree-discuss@lists.ozlabs.org,
-        peter.ujfalusi@ti.com, Misael Lopez Cruz <misael.lopez@ti.com>,
-        Dmitry Torokhov <dtor@mail.ru>
-Subject: [PATCH v3 2/4] MFD: twl6040: Allocate IRQ numbers dynamically
-Date: Wed, 16 May 2012 14:11:56 +0300
-Message-Id: <1337166718-8458-3-git-send-email-peter.ujfalusi@ti.com>
-X-Mailer: git-send-email 1.7.8.6
-In-Reply-To: <1337166718-8458-1-git-send-email-peter.ujfalusi@ti.com>
-References: <1337166718-8458-1-git-send-email-peter.ujfalusi@ti.com>
+	id S1030251Ab2EPLOf (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 May 2012 07:14:35 -0400
+Received: from mga14.intel.com ([143.182.124.37]:56018 "EHLO mga14.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S967393Ab2EPLOe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 16 May 2012 07:14:34 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
+   d="asc'?scan'208";a="143852777"
+Message-ID: <1337167083.24809.49.camel@sauron.fi.intel.com>
+Subject: Re: [RFC v4] UBI: Fastmap support (aka checkpointing)
+From: Artem Bityutskiy <dedekind1@gmail.com>
+Reply-To: dedekind1@gmail.com
+To: Richard Weinberger <richard@nod.at>
+Cc: linux-mtd@lists.infradead.org, tglx@linutronix.de,
+        linux-kernel@vger.kernel.org, Heinz.Egger@linutronix.de,
+        tim.bird@am.sony.com
+Date: Wed, 16 May 2012 14:18:03 +0300
+In-Reply-To: <1337166556.24809.42.camel@sauron.fi.intel.com>
+References: <1337101871-31181-1-git-send-email-richard@nod.at>
+	 <1337161096.24809.36.camel@sauron.fi.intel.com> <4FB38683.7030306@nod.at>
+	 <1337166556.24809.42.camel@sauron.fi.intel.com>
+Content-Type: multipart/signed; micalg="pgp-sha1"; protocol="application/pgp-signature";
+	boundary="=-so6oLBU5GUuWpVSbH6JA"
+X-Mailer: Evolution 3.2.3 (3.2.3-3.fc16) 
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Use irq_alloc_descs() to get the IRQ number range dynamically instead of
-the hardwired use if pdata->irq_base.
-The twl6040 only provides interrupts for it's internal components which
-means that it is not working as an IRQ expander type of device.
-The client drivers will receive their interrupt numbers as resource which
-is configured based on the received IRQ range we got from irq_alloc_descs()
 
-Signed-off-by: Peter Ujfalusi <peter.ujfalusi@ti.com>
----
- drivers/mfd/twl6040-core.c |    3 +--
- drivers/mfd/twl6040-irq.c  |   13 +++++++++++--
- 2 files changed, 12 insertions(+), 4 deletions(-)
+--=-so6oLBU5GUuWpVSbH6JA
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: quoted-printable
 
-diff --git a/drivers/mfd/twl6040-core.c b/drivers/mfd/twl6040-core.c
-index 7a92d95..c50fba7 100644
---- a/drivers/mfd/twl6040-core.c
-+++ b/drivers/mfd/twl6040-core.c
-@@ -515,7 +515,7 @@ static int __devinit twl6040_probe(struct i2c_client *client,
- 	}
- 
- 	/* In order to operate correctly we need valid interrupt config */
--	if (!client->irq || !pdata->irq_base) {
-+	if (!client->irq) {
- 		dev_err(&client->dev, "Invalid IRQ configuration\n");
- 		return -EINVAL;
- 	}
-@@ -552,7 +552,6 @@ static int __devinit twl6040_probe(struct i2c_client *client,
- 
- 	twl6040->dev = &client->dev;
- 	twl6040->irq = client->irq;
--	twl6040->irq_base = pdata->irq_base;
- 
- 	mutex_init(&twl6040->mutex);
- 	mutex_init(&twl6040->io_mutex);
-diff --git a/drivers/mfd/twl6040-irq.c b/drivers/mfd/twl6040-irq.c
-index 008022c..914978e 100644
---- a/drivers/mfd/twl6040-irq.c
-+++ b/drivers/mfd/twl6040-irq.c
-@@ -23,6 +23,7 @@
- 
- #include <linux/kernel.h>
- #include <linux/module.h>
-+#include <linux/err.h>
- #include <linux/irq.h>
- #include <linux/interrupt.h>
- #include <linux/mfd/core.h>
-@@ -138,7 +139,7 @@ static irqreturn_t twl6040_irq_thread(int irq, void *data)
- 
- int twl6040_irq_init(struct twl6040 *twl6040)
- {
--	int i, nr_irqs, ret;
-+	int i, nr_irqs, irq_base, ret;
- 	u8 val;
- 
- 	mutex_init(&twl6040->irq_mutex);
-@@ -149,8 +150,16 @@ int twl6040_irq_init(struct twl6040 *twl6040)
- 	twl6040_reg_write(twl6040, TWL6040_REG_INTMR, TWL6040_ALLINT_MSK);
- 
- 	nr_irqs = ARRAY_SIZE(twl6040_irqs);
-+
-+	irq_base = irq_alloc_descs(-1, 0, nr_irqs, 0);
-+	if (IS_ERR_VALUE(irq_base)) {
-+		dev_err(twl6040->dev, "Fail to allocate IRQ descs\n");
-+		return irq_base;
-+	}
-+	twl6040->irq_base = irq_base;
-+
- 	/* Register them with genirq */
--	for (i = twl6040->irq_base; i < twl6040->irq_base + nr_irqs; i++) {
-+	for (i = irq_base; i < irq_base + nr_irqs; i++) {
- 		irq_set_chip_data(i, twl6040);
- 		irq_set_chip_and_handler(i, &twl6040_irq_chip,
- 					 handle_level_irq);
--- 
-1.7.8.6
+On Wed, 2012-05-16 at 14:09 +0300, Artem Bityutskiy wrote:
+> > The maximum size of a fastmap is limited to UBI_FM_MAX_BLOCKS.
+> > As I said, in worst case we'd have to scan 192 PEBs, which is a constan=
+t.
+>=20
+> In this case you cannot use O notation at all because it is just used
+> when talking about asymptotic things.
+
+OK, we are talking about different things. It is fine that you need to
+scan 192 eraseblocks, this is kind of your journal. And this part may be
+O(1). But there is another part as well.
+
+But as I already explained, you have a _table_ on the flash, and this
+table stores Erase Counter and LEB number for (roughly) each PEB. The
+more PEBs, the large is the table, linerarly.
+
+As I explained, you have to _read_ and _interpret_ each record in this
+table when attaching. And the more of these records you have, the longer
+it takes to attach. And this is where you have your O(N).
+
+So basically fastmap makes UBI's linerar dependency multiplier a lot
+smaller, so it is still a great improvement.
+
+--=20
+Best Regards,
+Artem Bityutskiy
+
+--=-so6oLBU5GUuWpVSbH6JA
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: This is a digitally signed message part
+Content-Transfer-Encoding: 7bit
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAABAgAGBQJPs4zrAAoJECmIfjd9wqK0qx4QALLl/Wl5DnVxMoSwzhrfYSco
+2XVQfbu1ziMui3lq1+5iNYmed8YUosS+CcGYDx+VCl/CfF3LR7zB4zO6ThfI5eKI
+N4Zy6uTHlkGFEENt3uagpOOOG7SL1c6S7W24QCGqAkXuX5gA8T8ZRLezt+DnAmUp
+WRu0rXSOo1DZKgotxdHDD4edgzg0g0zrStTwC5+HwxuSHc7pdN1tUTWci9NXEPds
+H1azJPgoIK+r1tan3VVkFuXBmCKcbHRAQAHGvtpPbvxdppRp/wrL9MCuFB/D0Jtw
+ek8Wp/MTtNehBR70CGrv627stiO1ok39eur1qZpT+d53AK2m7aKu6nfrOE9DJV89
+ZXR0iuJlnqQ1h9EMWZTy4kATgZf5rowbDauulV6S7mCpc9pMC9tJVdCAPnvQc/w3
+JL30exoaWqQIDVf2jGC3zlv9teTQmE1jJzj4ytj322vy/JBP8uT85AviaChj2srx
+nmdd9/MyHHp8RIUDS+NzNTtOf3T/KImL//qMkbKwRPruCwETKdi+F8BqFcabjnuM
+7MMGnoYNaSbO8R9YpY9WzdIAA2JsqWL1+GhiHrPdzebi+QTvMrRWgfC9dFPZY7TC
+edeKwYNZa0M6us7PyDPrz1+C9QM9rrb7Pzh4MpQgY5shlGFCKQfVmWeF891Q19Fs
+1Cj0nBZPbXUpqb6+LTz4
+=GePC
+-----END PGP SIGNATURE-----
+
+--=-so6oLBU5GUuWpVSbH6JA--
 
