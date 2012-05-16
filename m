@@ -1,92 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759888Ab2EPIrT (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 May 2012 04:47:19 -0400
-Received: from mail-gg0-f174.google.com ([209.85.161.174]:49900 "EHLO
-	mail-gg0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759761Ab2EPIrO convert rfc822-to-8bit (ORCPT
+	id S1759766Ab2EPIr1 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 May 2012 04:47:27 -0400
+Received: from am1ehsobe002.messaging.microsoft.com ([213.199.154.205]:18504
+	"EHLO am1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1759842Ab2EPIrS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 May 2012 04:47:14 -0400
+	Wed, 16 May 2012 04:47:18 -0400
+X-SpamScore: 0
+X-BigFish: VPS0(zzzz1202hzz8275bhz2dh2a8h668h839hd24he5bh)
+X-Forefront-Antispam-Report: CIP:137.71.25.55;KIP:(null);UIP:(null);IPV:NLI;H:nwd2mta1.analog.com;RD:nwd2mail10.analog.com;EFVD:NLI
+From: <sonic.zhang@analog.com>
+To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+CC: <linux-input@vger.kernel.org>, LKML <linux-kernel@vger.kernel.org>,
+        <uclinux-dist-devel@blackfin.uclinux.org>,
+        Sonic Zhang <sonic.zhang@analog.com>
+Subject: [PATCH] input: rotary: Init wake according to platform pm_wakeup flag.
+Date: Wed, 16 May 2012 16:36:23 +0800
+Message-ID: <1337157383-13631-1-git-send-email-sonic.zhang@analog.com>
+X-Mailer: git-send-email 1.7.0.4
 MIME-Version: 1.0
-In-Reply-To: <1337157034-22773-1-git-send-email-geert@linux-m68k.org>
-References: <1337157034-22773-1-git-send-email-geert@linux-m68k.org>
-Date: Wed, 16 May 2012 10:47:13 +0200
-X-Google-Sender-Auth: Jcv9hxKdZn6dOC56sFi_AHoCJqQ
-Message-ID: <CAMuHMdUtL4_mv-e-EQAZmNcb9dAT=PXB59i7Vuj2vf8NnaBFzQ@mail.gmail.com>
-Subject: Re: Build regressions/improvements in v3.4-rc7
-From: Geert Uytterhoeven <geert@linux-m68k.org>
-To: linux-kernel@vger.kernel.org
-Cc: Linuxppc-dev <linuxppc-dev@ozlabs.org>,
-        Parisc List <linux-parisc@vger.kernel.org>,
-        "the arch/x86 maintainers" <x86@kernel.org>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain
+X-OriginatorOrg: analog.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, May 16, 2012 at 10:30 AM, Geert Uytterhoeven
-<geert@linux-m68k.org> wrote:
-> JFYI, when comparing v3.4-rc7 to v3.4-rc6[3], the summaries are:
->  - build errors: +15/-14
+From: Sonic Zhang <sonic.zhang@analog.com>
 
-15 regressions:
-  + arch/powerpc/platforms/512x/mpc512x_shared.c: error: 'enum
-fsl_diu_monitor_port' declared inside parameter list [-Werror]:  =>
-70:9, 84:9, 88:36
-  + arch/powerpc/platforms/512x/mpc512x_shared.c: error: 'return' with
-a value, in function returning void [-Werror]:  => 189:2
-  + arch/powerpc/platforms/512x/mpc512x_shared.c: error: function
-declaration isn't a prototype [-Werror=strict-prototypes]:  => 69:5,
-88:6, 83:6, 187:1
-  + arch/powerpc/platforms/512x/mpc512x_shared.c: error: its scope is
-only this definition or declaration, which is probably not what you
-want [-Werror]:  => 70:9
-  + drivers/virt/fsl_hypervisor.c: error: 'MSR_GS' undeclared (first
-use in this function):  => 799:80
+Rotary can't be used as a wakeup source in all Blackfin processors.
 
-powerpc randconfig
+Signed-off-by: Sonic Zhang <sonic.zhang@analog.com>
+---
+ drivers/input/misc/bfin_rotary.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-  + arch/x86/include/asm/uaccess_32.h: error: call to
-'copy_from_user_overflow' declared with attribute error:
-copy_from_user() buffer size is not provably correct:  => 211:26
+diff --git a/drivers/input/misc/bfin_rotary.c b/drivers/input/misc/bfin_rotary.c
+index 1c4146f..bb1971c 100644
+--- a/drivers/input/misc/bfin_rotary.c
++++ b/drivers/input/misc/bfin_rotary.c
+@@ -182,7 +182,7 @@ static int __devinit bfin_rotary_probe(struct platform_device *pdev)
+ 	bfin_write_CNT_CONFIG(bfin_read_CNT_CONFIG() | CNTE);
+ 
+ 	platform_set_drvdata(pdev, rotary);
+-	device_init_wakeup(&pdev->dev, 1);
++	device_init_wakeup(&pdev->dev, pdata->pm_wakeup);
+ 
+ 	return 0;
+ 
+-- 
+1.7.0.4
 
-error in i386-randconfig, warning in i386-defconfig
 
-  + drivers/ptp/ptp_pch.c: error: implicit declaration of function
-'kfree' [-Werror=implicit-function-declaration]:  => 576:2
-  + drivers/ptp/ptp_pch.c: error: implicit declaration of function
-'kzalloc' [-Werror=implicit-function-declaration]:  => 587:2
-
-Patch send.
-
-  + error: "handle_edge_irq" [drivers/gpio/gpio-pch.ko] undefined!:  => N/A
-  + error: "irq_to_desc" [drivers/gpio/gpio-pch.ko] undefined!:  => N/A
-
-Fixed in the mean time, I guess.
-
-  + error: No rule to make target include/config/auto.conf:  => N/A
-
-x86_64-randconfig
-
-  + lib/mpi/generic_mpih-mul1.c: error: inconsistent operand
-constraints in an 'asm':  => 50:70
-  + lib/mpi/generic_mpih-mul2.c: error: inconsistent operand
-constraints in an 'asm':  => 49:70
-  + lib/mpi/generic_mpih-mul3.c: error: inconsistent operand
-constraints in an 'asm':  => 49:70
-  + lib/mpi/mpih-div.c: error: inconsistent operand constraints in an
-'asm':  => 135:122, 135:371, 97:122, 106:121, 106:370, 97:371
-
-parisc-allmodconfig
-
-Gr{oetje,eeting}s,
-
-                        Geert
-
---
-Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
-
-In personal conversations with technical people, I call myself a hacker. But
-when I'm talking to journalists I just say "programmer" or something like that.
-                                -- Linus Torvalds
