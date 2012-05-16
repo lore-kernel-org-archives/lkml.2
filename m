@@ -1,61 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760740Ab2EPWyT (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 May 2012 18:54:19 -0400
-Received: from mail-gg0-f174.google.com ([209.85.161.174]:62861 "EHLO
-	mail-gg0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760689Ab2EPWyR (ORCPT
+	id S932694Ab2EPXBe (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 May 2012 19:01:34 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:53903 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1760744Ab2EPXBc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 May 2012 18:54:17 -0400
-MIME-Version: 1.0
-X-Originating-IP: [172.22.162.26]
-In-Reply-To: <201205170037.34305.rjw@sisk.pl>
-References: <20120515154333.6659.66479.sendpatchset@w520>
-	<201205162205.09082.rjw@sisk.pl>
-	<CAOesGMjgBWxjAvMpcxWsJf7n3q90sGhccUSgfGxJQA+tfDZBHw@mail.gmail.com>
-	<201205170037.34305.rjw@sisk.pl>
-Date: Wed, 16 May 2012 15:54:16 -0700
-Message-ID: <CAOesGMi8LPO=AFSshC8UyCmBB3hG38YKHWnHmcNCnLvgR2xcTw@mail.gmail.com>
-Subject: Re: [PATCH] gpio: Emma Mobile GPIO driver V2
-From: Olof Johansson <olof@lixom.net>
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-Cc: Linus Walleij <linus.walleij@linaro.org>,
-        Magnus Damm <magnus.damm@gmail.com>, linux-kernel@vger.kernel.org,
-        linus.walleij@stericsson.com, arnd@arndb.de, linux-sh@vger.kernel.org,
-        horms@verge.net.au, grant.likely@secretlab.ca, lethal@linux-sh.org
-Content-Type: text/plain; charset=ISO-8859-1
+	Wed, 16 May 2012 19:01:32 -0400
+Date: Wed, 16 May 2012 16:01:31 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Johannes Weiner <hannes@cmpxchg.org>
+Cc: Michal Hocko <mhocko@suse.cz>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        cgroups@vger.kernel.org, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [patch 6/6] mm: memcg: print statistics from live counters
+Message-Id: <20120516160131.fecb5ddf.akpm@linux-foundation.org>
+In-Reply-To: <1337018451-27359-7-git-send-email-hannes@cmpxchg.org>
+References: <1337018451-27359-1-git-send-email-hannes@cmpxchg.org>
+	<1337018451-27359-7-git-send-email-hannes@cmpxchg.org>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, May 16, 2012 at 3:37 PM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
-> On Thursday, May 17, 2012, Olof Johansson wrote:
->> On Wed, May 16, 2012 at 1:05 PM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
->> > On Wednesday, May 16, 2012, Linus Walleij wrote:
->> >> On Wed, May 16, 2012 at 12:15 PM, Magnus Damm <magnus.damm@gmail.com> wrote:
->> >>
->> >> > Do you guys have any preferences how to merge this?
->> >> >
->> >> > Can I include it together with the EMEV2 SoC bits perhaps? That may be
->> >> > easy so we can keep track of the platform data header file dependency.
->> >>
->> >> For ux500 I made a special "gpio and pins" branch and sent through ARM SoC.
->> >
->> > The problem is we have a patch depending on the $subject one in the EMEV2
->> > series and it would be better to keep them both together if that's not
->> > a big deal.
->>
->> Dependencies are fine, as long as they are not circular. You can
->> either pull in the gpio/pins branch into the EMEV2 branch, or base it
->> on it.
+On Mon, 14 May 2012 20:00:51 +0200
+Johannes Weiner <hannes@cmpxchg.org> wrote:
+
+> Directly print statistics and event counters instead of going through
+> an intermediate accumulation stage into a separate array, which used
+> to require defining statistic items in more than one place.
+> 
+> ...
 >
-> I guess I'll try to merge the gpio/pins into the EMEV2 branch.
+> -static const char *memcg_stat_strings[NR_MCS_STAT] = {
+> -	"cache",
+> -	"rss",
+> -	"mapped_file",
 
-By the way, I should have mentioned that if the dependencies are only
-for building and not for context when applying patches, then it's
-sufficient to let us know in the pull request so we merge the branches
-in the right order when sending to Linus (so we maintain
-bisectability).
+Bah humbug, who went and called this mapped_file?
 
+This stat is derived from MEM_CGROUP_STAT_FILE_MAPPED.  But if we
+rename MEM_CGROUP_STAT_FILE_MAPPED to MEM_CGROUP_STAT_MAPPED_FILE then
+we also need to rename the non-memcg NR_FILE_MAPPED.  And we can't
+change the text to "file_mapped" because it's ABI.
 
--Olof
+> -	"mlock",
+> -	"swap",
+
+And "swap" is derived from MEM_CGROUP_STAT_SWAPOUT.  We could rename
+that to MEM_CGROUP_STAT_SWAP without trouble.
+
+But both are poor names.  There are two concepts here: a) swapout
+events (ie: swap writeout initiation) and b) swapspace usage.  Type a)
+only ever counts up, whereas type b) counts up and down.
+
+MEM_CGROUP_STAT_SWAPOUT is actually of type b), but "swapout" is a
+misleading term, because it refers to type a) events.
+
+And the human-displayed "swap" is useless because it can refer to
+either type a) or type b) events.  These should be called "swapped" and
+MEM_CGROUP_STAT_SWAPPED.  But we can't change the userspace interface.
+
+argh, I hate you all!
+
