@@ -1,129 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758769Ab2EPB7K (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 May 2012 21:59:10 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:47764 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757140Ab2EPB7I (ORCPT
+	id S1758827Ab2EPCFG (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 May 2012 22:05:06 -0400
+Received: from LGEMRELSE6Q.lge.com ([156.147.1.121]:51787 "EHLO
+	LGEMRELSE6Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757223Ab2EPCFD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 May 2012 21:59:08 -0400
-Message-ID: <4FB309E3.10901@gmail.com>
-Date: Tue, 15 May 2012 19:58:59 -0600
-From: David Ahern <dsahern@gmail.com>
-User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.7; rv:12.0) Gecko/20120428 Thunderbird/12.0.1
-MIME-Version: 1.0
-To: Stephane Eranian <eranian@google.com>
-CC: linux-kernel@vger.kernel.org, peterz@infradead.org, mingo@elte.hu,
-        acme@redhat.com
-Subject: Re: [PATCH v2 1/5] perf inject: fix broken perf inject -b
-References: <1337081295-10303-1-git-send-email-eranian@google.com> <1337081295-10303-2-git-send-email-eranian@google.com>
-In-Reply-To: <1337081295-10303-2-git-send-email-eranian@google.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+	Tue, 15 May 2012 22:05:03 -0400
+X-AuditID: 9c930179-b7bb9ae000000ea5-19-4fb30b48d808
+From: Minchan Kim <minchan@kernel.org>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: Nitin Gupta <ngupta@vflare.org>,
+        Seth Jennings <sjenning@linux.vnet.ibm.com>,
+        Dan Magenheimer <dan.magenheimer@oracle.com>,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        Minchan Kim <minchan@kernel.org>, Thomas Gleixner <tglx@linutronix.de>,
+        Ingo Molnar <mingo@redhat.com>, Tejun Heo <tj@kernel.org>,
+        David Howells <dhowells@redhat.com>, x86@kernel.org
+Subject: [PATCH v2 3/3] x86: Support local_flush_tlb_kernel_range
+Date: Wed, 16 May 2012 11:05:19 +0900
+Message-Id: <1337133919-4182-3-git-send-email-minchan@kernel.org>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1337133919-4182-1-git-send-email-minchan@kernel.org>
+References: <1337133919-4182-1-git-send-email-minchan@kernel.org>
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 5/15/12 5:28 AM, Stephane Eranian wrote:
-> perf inject -b was broken. It would not inject any build_id
-> into the stream. Furthermore, it would strip samples from the
-> stream.
->
-> The reason was a missing initialization of the event attribute
-> structure. The perf_tool.tool.attr() callback was pointing to
-> a simple repipe. But there was no initialization of the internal
-> data structures to keep track of events and event ids. That later
-> caused event id lookups to fail, and sample would get removed.
->
-> The patch simply adds back the call to perf_event__process_attr()
-> to initialize the evlist structure and now build_ids are again
-> injected.
->
-> Signed-off-by: Stephane Eranian<eranian@google.com>
-> ---
->   tools/perf/builtin-inject.c |    5 +++++
->   1 files changed, 5 insertions(+), 0 deletions(-)
->
-> diff --git a/tools/perf/builtin-inject.c b/tools/perf/builtin-inject.c
-> index 09c1061..3beab48 100644
-> --- a/tools/perf/builtin-inject.c
-> +++ b/tools/perf/builtin-inject.c
-> @@ -60,6 +60,11 @@ static int perf_event__repipe_tracing_data_synth(union perf_event *event,
->   static int perf_event__repipe_attr(union perf_event *event,
->   				   struct perf_evlist **pevlist __used)
+The zsmalloc [un]maps non-physical contiguos pages to contiguous
+virual address frequently so it needs frequent tlb-flush.
+Now x86 doesn't support common utility function for flushing just
+a few tlb entries so zsmalloc have been used set_pte and __flush_tlb_one
+which are x86 specific functions. It means zsmalloc have a dependency
+with x86.
 
-The _used can be dropped now that pevlist is used.
+This patch adds new function, local_flush_tlb_kernel_range which
+are good candidate for being common utility function because other
+architecture(ex, MIPS, sh, unicore32, arm, score) already have
+supportd it.
 
->   {
-> +	int ret;
-> +	ret = perf_event__process_attr(event, pevlist);
-> +	if (ret)
-> +		return ret;
-> +
->   	return perf_event__repipe_synth(NULL, event, NULL);
->   }
->
+Cc: Thomas Gleixner <tglx@linutronix.de>
+Cc: Ingo Molnar <mingo@redhat.com>
+Cc: Tejun Heo <tj@kernel.org>
+Cc: David Howells <dhowells@redhat.com>
+Cc: x86@kernel.org
+Signed-off-by: Minchan Kim <minchan@kernel.org>
+---
+ arch/x86/include/asm/tlbflush.h  |   12 ++++++++++++
+ drivers/staging/zsmalloc/Kconfig |    2 +-
+ 2 files changed, 13 insertions(+), 1 deletion(-)
 
-The change seems right, but I could not recreate the dropped events. In 
-both cases running:
+diff --git a/arch/x86/include/asm/tlbflush.h b/arch/x86/include/asm/tlbflush.h
+index 4ece077..6e1253a 100644
+--- a/arch/x86/include/asm/tlbflush.h
++++ b/arch/x86/include/asm/tlbflush.h
+@@ -172,4 +172,16 @@ static inline void flush_tlb_kernel_range(unsigned long start,
+ 	flush_tlb_all();
+ }
+ 
++static inline void local_flush_tlb_kernel_range(unsigned long start,
++		unsigned long end)
++{
++	if (cpu_has_invlpg) {
++		while (start < end) {
++			__flush_tlb_single(start);
++			start += PAGE_SIZE;
++		}
++	} else
++		local_flush_tlb();
++}
++
+ #endif /* _ASM_X86_TLBFLUSH_H */
+diff --git a/drivers/staging/zsmalloc/Kconfig b/drivers/staging/zsmalloc/Kconfig
+index def2483..29819b8 100644
+--- a/drivers/staging/zsmalloc/Kconfig
++++ b/drivers/staging/zsmalloc/Kconfig
+@@ -3,7 +3,7 @@ config ZSMALLOC
+ 	# arch dependency is because of the use of local_unmap_kernel_range
+ 	# in zsmalloc-main.c.
+ 	# TODO: implement local_unmap_kernel_range in all architecture.
+-	depends on (ARM || MIPS || SUPERH)
++	depends on (ARM || MIPS || SUPERH || X86)
+ 	default n
+ 	help
+ 	  zsmalloc is a slab-based memory allocator designed to store
+-- 
+1.7.9.5
 
-perf record -o - -m 256 /tmp/a.sh | perf inject -b | perf report -i - -D
-
-where /tmp/a.sh is:
-
-#!/bin/sh
-cd /opt/sw/ahern/kernels/kernel.git
-make O=/tmp/kbuild -j 32 >/dev/null 2>&1
-
-just to give it some "real work."
-
-With your patch:
-            TOTAL events:     284211
-             MMAP events:      69236
-             COMM events:      10863
-             EXIT events:      22858
-         THROTTLE events:         11
-       UNTHROTTLE events:         11
-             FORK events:      11428
-           SAMPLE events:     169779
-             ATTR events:          1
-       EVENT_TYPE events:          1
-         BUILD_ID events:         23
-cycles stats:
-            TOTAL events:     284186
-             MMAP events:      69236
-             COMM events:      10863
-             EXIT events:      22858
-         THROTTLE events:         11
-       UNTHROTTLE events:         11
-             FORK events:      11428
-           SAMPLE events:     169779
-
-
-Current acme/core:
-            TOTAL events:     288990
-             MMAP events:      69236
-             COMM events:      10863
-             EXIT events:      22858
-         THROTTLE events:         20
-       UNTHROTTLE events:         20
-             FORK events:      11428
-           SAMPLE events:     174538
-             ATTR events:          1
-       EVENT_TYPE events:          1
-         BUILD_ID events:         25
-cycles stats:
-            TOTAL events:     288963
-             MMAP events:      69236
-             COMM events:      10863
-             EXIT events:      22858
-         THROTTLE events:         20
-       UNTHROTTLE events:         20
-             FORK events:      11428
-           SAMPLE events:     174538
-
-
-David
-
-[1] Both tests have Namhyung's patch:
-https://lkml.org/lkml/2012/5/15/280
