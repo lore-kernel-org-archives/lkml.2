@@ -1,58 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759425Ab2EPVxJ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 May 2012 17:53:09 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:53551 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757615Ab2EPVxH (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 May 2012 17:53:07 -0400
-Date: Wed, 16 May 2012 14:53:03 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: solmac john <johnsolmac@gmail.com>
-Cc: Dave Chinner <david@fromorbit.com>, linux-mm <linux-mm@kvack.org>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        Kernelnewbies@kernelnewbies.org, linux-kernel@vger.kernel.org,
-        Konstantin Khlebnikov <khlebnikov@openvz.org>
-Subject: Re: [bug] shrink_slab shrinkersize handling
-Message-Id: <20120516145303.8a9cb329.akpm@linux-foundation.org>
-In-Reply-To: <CAD5x=MPcwXyy0eOdqPxc_8K_i3enoU3ZbtwLS71SHR58FCT6rg@mail.gmail.com>
-References: <CAD5x=MPcwXyy0eOdqPxc_8K_i3enoU3ZbtwLS71SHR58FCT6rg@mail.gmail.com>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
+	id S1759779Ab2EPV6w (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 May 2012 17:58:52 -0400
+Received: from kanga.kvack.org ([205.233.56.17]:48092 "EHLO kanga.kvack.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756371Ab2EPV6u (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 16 May 2012 17:58:50 -0400
+Date: Wed, 16 May 2012 17:58:49 -0400
+From: Benjamin LaHaise <bcrl@kvack.org>
+To: Vyacheslav Dubeyko <slava@dubeyko.com>
+Cc: Matthew Wilcox <willy@linux.intel.com>, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: NVM Mapping API
+Message-ID: <20120516215849.GC32221@kvack.org>
+References: <20120515133450.GD22985@linux.intel.com> <1337149453.1961.24.camel@slavad-ubuntu-11>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1337149453.1961.24.camel@slavad-ubuntu-11>
+User-Agent: Mutt/1.4.2.2i
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 16 May 2012 14:33:18 +0530
-solmac john <johnsolmac@gmail.com> wrote:
-
-> Hi All,
+On Wed, May 16, 2012 at 10:24:13AM +0400, Vyacheslav Dubeyko wrote:
+> Could you please share vision of these NVM technologies in more details?
+> What capacity in bytes of of one NVM unit do we can expect? What about
+> bad blocks and any other reliability issues of such NVM technologies?
 > 
-> During mm performance testing sometimes I observed below kernel messages
-> 
-> [   80.776000] shrink_slab: ashmem_shrink+0x0/0x114 negative objects to
-> delete nr=-2133936901
-> [   80.784000] shrink_slab: ashmem_shrink+0x0/0x114 negative objects to
-> delete nr=-2139256767
-> [   80.796000] shrink_slab: ashmem_shrink+0x0/0x114 negative objects to
-> delete nr=-2079333971
-> [   80.804000] shrink_slab: ashmem_shrink+0x0/0x114 negative objects to
-> delete nr=-2096156269
-> [   80.812000] shrink_slab: ashmem_shrink+0x0/0x114 negative objects to
-> delete nr=-20658392
-> 
-> ...
->
-> I found one patch  http://lkml.org/lkml/2011/8/22/80    for this fix
-> Please let me know reason why I am getting above error and above is really
-> fix for this problem.  ?
+> I think that some more deep understanding of this can give possibility
+> to imagine more deeply possible niche of such NVM units in future memory
+> subsystem architecture.
 
-Yes, that patch should fix it.
+Try having a look at the various articles on ReRAM, PRAM, FeRAM, MRAM...  
+There are a number of technologies being actively developed.  For some 
+quick info, Samsung has presented data on an 8Gbit 20nm device (see 
+http://www.eetimes.com/electronics-news/4230958/ISSCC--Samsung-preps-8-Gbit-phase-change-memory ).  
+It's hard to predict who will be first to market with a real production 
+volume product, though.
 
-Aside: I spent some time trying to work out the reason why local
-variable `max_pass' in shrink_slab() is called `max_pass' and failed.
+The big question I have is what the actual interface for these types of 
+memory will be.  If they're like actual RAM and can be mmap()ed into user 
+space, it will be preferable to avoid as much of the overhead of the existing 
+block infrastructure that most current day filesystems are built on top of.  
+If the devices have only modest endurance limits, we may need to stick the 
+kernel in the middle to prevent malicious code from wearing out a user's 
+memory cells.
 
+		-ben
 
