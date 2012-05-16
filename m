@@ -1,77 +1,178 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965249Ab2EPINO (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 May 2012 04:13:14 -0400
-Received: from mailout1.samsung.com ([203.254.224.24]:57672 "EHLO
-	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759755Ab2EPING (ORCPT
+	id S965418Ab2EPIUh (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 May 2012 04:20:37 -0400
+Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:46884 "EHLO
+	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759760Ab2EPIUc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 May 2012 04:13:06 -0400
-X-AuditID: cbfee61a-b7bbeae000003a71-38-4fb3619128ef
-From: Jingoo Han <jg1.han@samsung.com>
-To: "'Andrew Morton'" <akpm@linux-foundation.org>,
-        "'LKML'" <linux-kernel@vger.kernel.org>
-Cc: "'Richard Purdie'" <rpurdie@rpsys.net>,
-        "'Marcin Juszkiewicz'" <openembedded@haerwu.biz>,
-        "'Jingoo Han'" <jg1.han@samsung.com>
-Subject: [PATCH v3 7/7] backlight: progear: use pr_err instead of printk
-Date: Wed, 16 May 2012 17:13:05 +0900
-Message-id: <003a01cd333b$b85f6900$291e3b00$%han@samsung.com>
-MIME-version: 1.0
-Content-type: text/plain; charset=US-ASCII
-Content-transfer-encoding: 7bit
-X-Mailer: Microsoft Office Outlook 12.0
-Thread-index: Ac0zO7hNtoeGbI5PQ5mMuJOPIpeRcQ==
-Content-language: ko
-X-Brightmail-Tracker: AAAAAA==
-X-TM-AS-MML: No
+	Wed, 16 May 2012 04:20:32 -0400
+X-SecurityPolicyCheck: OK by SHieldMailChecker v1.7.4
+Message-ID: <4FB362D4.8000800@jp.fujitsu.com>
+Date: Wed, 16 May 2012 17:18:28 +0900
+From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.0; rv:12.0) Gecko/20120428 Thunderbird/12.0.1
+MIME-Version: 1.0
+To: Glauber Costa <glommer@parallels.com>
+CC: linux-kernel@vger.kernel.org, cgroups@vger.kernel.org, linux-mm@kvack.org,
+        Tejun Heo <tj@kernel.org>, Li Zefan <lizefan@huawei.com>,
+        Greg Thelen <gthelen@google.com>,
+        Suleiman Souhlal <suleiman@google.com>, Michal Hocko <mhocko@suse.cz>,
+        Johannes Weiner <hannes@cmpxchg.org>, devel@openvz.org,
+        Christoph Lameter <cl@linux.com>,
+        Pekka Enberg <penberg@cs.helsinki.fi>
+Subject: Re: [PATCH v2 18/29] memcg: kmem controller charge/uncharge infrastructure
+References: <1336758272-24284-1-git-send-email-glommer@parallels.com> <1336758272-24284-19-git-send-email-glommer@parallels.com> <4FB1C61F.9020102@jp.fujitsu.com> <4FB34C3D.4030401@parallels.com>
+In-Reply-To: <4FB34C3D.4030401@parallels.com>
+Content-Type: text/plain; charset=ISO-2022-JP
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch uses pr_err instead of printk to allow dynamic debugging.
-The pr_fmt prefix for pr_ macros is used. It also fixes checkpatch
-warnings as below:
+(2012/05/16 15:42), Glauber Costa wrote:
 
-WARNING: printk() should include KERN_ facility level
+> On 05/15/2012 06:57 AM, KAMEZAWA Hiroyuki wrote:
+>>> +#ifdef CONFIG_CGROUP_MEM_RES_CTLR_KMEM
+>>>>  +int memcg_charge_kmem(struct mem_cgroup *memcg, gfp_t gfp, s64 delta)
+>>>>  +{
+>>>>  +	struct res_counter *fail_res;
+>>>>  +	struct mem_cgroup *_memcg;
+>>>>  +	int may_oom, ret;
+>>>>  +	bool nofail = false;
+>>>>  +
+>>>>  +	may_oom = (gfp&  __GFP_WAIT)&&  (gfp&  __GFP_FS)&&
+>>>>  +	    !(gfp&  __GFP_NORETRY);
+>>>>  +
+>>>>  +	ret = 0;
+>>>>  +
+>>>>  +	if (!memcg)
+>>>>  +		return ret;
+>>>>  +
+>>>>  +	_memcg = memcg;
+>>>>  +	ret = __mem_cgroup_try_charge(NULL, gfp, delta / PAGE_SIZE,
+>>>>  +	&_memcg, may_oom);
+>>>>  +
+>>>>  +	if ((ret == -EINTR) || (ret&&  (gfp&  __GFP_NOFAIL)))  {
+>>>>  +		nofail = true;
+>>>>  +		/*
+>>>>  +		 * __mem_cgroup_try_charge() chose to bypass to root due
+>>>>  +		 * to OOM kill or fatal signal.
+>>>>  +		 * Since our only options are to either fail the
+>>>>  +		 * allocation or charge it to this cgroup, force the
+>>>>  +		 * change, going above the limit if needed.
+>>>>  +		 */
+>>>>  +		res_counter_charge_nofail(&memcg->res, delta,&fail_res);
+>>>>  +		if (do_swap_account)
+>>>>  +			res_counter_charge_nofail(&memcg->memsw, delta,
+>>>>  +						&fail_res);
+>>>>  +	} else if (ret == -ENOMEM)
+>>>>  +		return ret;
+>>>>  +
+>>>>  +	if (nofail)
+>>>>  +		res_counter_charge_nofail(&memcg->kmem, delta,&fail_res);
+>>>>  +	else
+>>>>  +		ret = res_counter_charge(&memcg->kmem, delta,&fail_res);
+>>
+>> Ouch, you allow usage>  limit ? It's BUG.
+>>
+>> IMHO, if GFP_NOFAIL, memcg accounting should be skipped. Please
+>>
+>> if (gfp_mask&  __GFP_NOFAIL)
+>> 	return 0;
+>>
+>> Or avoid calling memcg_charge_kmem() you can do that as you do in patch 19/29,
+>> I guess you can use a trick like
+>>
+>> == in 19/29
+>> +	if (!current->mm || atomic_read(&current->memcg_kmem_skip_account))
+>> +		return cachep;
+>> +
+>>   gfp |=  cachep->allocflags;
+>> ==
+>>
+>> == change like this
+>>   gfp |= cachep->allocflags;
+>>
+>>   if (!current->mm || current->memcg_kmem_skip_account || gfp&  __GFP_NOFAIL))
+>> ==
+>>
+>> Is this difficult ?
+>>
+>> Thanks,
+>> -Kame
+> 
+> Well, we disagree with that.
+> I actually voiced this earlier to Suleiman in the thread, but it is good
+> that you brought this up again - this is quite important.
+> 
+> I will repeat my rationale here, and if you still are not convinced,
+> tell me and I will be happy to switch over.
+> 
+> I believe that the whole reasoning behind this, is to have allocations
+> failing if we go over limit. If the allocation won't fail anyway, it
+> doesn't really matter who we charge this to.
+> 
+> However, if the allocation still came from a particular memcg, those
+> nofail allocation may prevent it to use more memory when a normal
+> allocation takes place.
+> 
+> Consider this:
+> 
+> limit = 4M
+> usage = 4M - 4k
+> 
+> If at this point the memcg hits a NOFAIL allocation worth 2 pages, by
+> the method I am using, the memcg will be at 4M + 4k after the
+> allocation. Charging it to the root memcg will leave it at 4M - 4k.
+> 
+> This means that to be able to allocate a page again, you need to free
+> two other pages, be it the 2 pages used by the GFP allocation or any
+> other. In other words: the memcg that originated the charge is held
+> accountable for it. If he says it can't fail for whatever reason, fine,
+> we respect that,  but we punish it later for other allocations.
+> 
 
-Cc: Marcin Juszkiewicz <openembedded@haerwu.biz>
-Cc: Richard Purdie <rpurdie@rpsys.net>
-Signed-off-by: Jingoo Han <jg1.han@samsung.com>
----
- drivers/video/backlight/progear_bl.c |    6 ++++--
- 1 files changed, 4 insertions(+), 2 deletions(-)
+I personally think 'we punish it later' is bad thing at resource accounting.
+We have 'hard limit'. It's not soft limit.
 
-diff --git a/drivers/video/backlight/progear_bl.c b/drivers/video/backlight/progear_bl.c
-index 6af183d..69b35f0 100644
---- a/drivers/video/backlight/progear_bl.c
-+++ b/drivers/video/backlight/progear_bl.c
-@@ -15,6 +15,8 @@
-  *
-  */
- 
-+#define pr_fmt(fmt) KBUILD_MODNAME ": " fmt
-+
- #include <linux/module.h>
- #include <linux/kernel.h>
- #include <linux/init.h>
-@@ -68,13 +70,13 @@ static int progearbl_probe(struct platform_device *pdev)
- 
- 	pmu_dev = pci_get_device(PCI_VENDOR_ID_AL, PCI_DEVICE_ID_AL_M7101, NULL);
- 	if (!pmu_dev) {
--		printk("ALI M7101 PMU not found.\n");
-+		pr_err("ALI M7101 PMU not found.\n");
- 		return -ENODEV;
- 	}
- 
- 	sb_dev = pci_get_device(PCI_VENDOR_ID_AL, PCI_DEVICE_ID_AL_M1533, NULL);
- 	if (!sb_dev) {
--		printk("ALI 1533 SB not found.\n");
-+		pr_err("ALI 1533 SB not found.\n");
- 		ret = -ENODEV;
- 		goto put_pmu;
- 	}
--- 
-1.7.1
+> Without that GFP_NOFAIL becomes just a nice way for people to bypass
+> those controls altogether, since after a ton of GFP_NOFAIL allocations,
+> normal allocations will still succeed.
+> 
+
+Allowing people to bypass is not bad because they're kernel.
+
+But, IIUC, from gfp.h
+==
+ * __GFP_NOFAIL: The VM implementation _must_ retry infinitely: the caller
+ * cannot handle allocation failures.  This modifier is deprecated and no new
+ * users should be added.
+==
+
+GFP_NOFAIL will go away and no new user is recommended.
+
+So, please skip GFP_NOFAIL accounting and avoid to write
+"usage may go over limit if you're unfortune, sorry" into memcg documentation.
+
+
+> The change you propose is totally doable. I just don't believe it should
+> be done.
+> 
+> But let me know where you stand.
+> 
+
+My stand point is keeping "usage <= limit" is the spec. and
+important in enterprise system. So, please avoid usage > limit.
+
+Thanks,
+-Kame
+
+
+
+
+
+
+
 
 
