@@ -1,45 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S967387Ab2EPFCu (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 May 2012 01:02:50 -0400
-Received: from smtp.snhosting.dk ([87.238.248.203]:15925 "EHLO
-	smtp.domainteam.dk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S967306Ab2EPFCr (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 May 2012 01:02:47 -0400
-Date: Wed, 16 May 2012 07:02:45 +0200
-From: Sam Ravnborg <sam@ravnborg.org>
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-Cc: David Miller <davem@davemloft.net>, netdev@vger.kernel.org,
-        linux-next@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: linux-next: manual merge of the net-next tree with the
-	sparc-next tree
-Message-ID: <20120516050245.GA407@merkur.ravnborg.org>
-References: <20120516143944.57a648287aa5cd1a5930254e@canb.auug.org.au>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120516143944.57a648287aa5cd1a5930254e@canb.auug.org.au>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+	id S967298Ab2EPFAY (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 May 2012 01:00:24 -0400
+Received: from mga14.intel.com ([143.182.124.37]:40526 "EHLO mga14.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S967282Ab2EPFAV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 16 May 2012 01:00:21 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
+   d="scan'208";a="100617120"
+From: "Yan, Zheng" <zheng.z.yan@intel.com>
+To: a.p.zijlstra@chello.nl, mingo@elte.hu, andi@firstfloor.org,
+        eranian@google.com, jolsa@redhat.com, ming.m.lin@intel.com,
+        gregkh@linuxfoundation.org
+Cc: linux-kernel@vger.kernel.org
+Subject: [PATCH 02/10] perf: Avoid race between cpu hotplug and installing event
+Date: Wed, 16 May 2012 12:59:55 +0800
+Message-Id: <1337144403-30841-3-git-send-email-zheng.z.yan@intel.com>
+X-Mailer: git-send-email 1.7.7.6
+In-Reply-To: <1337144403-30841-1-git-send-email-zheng.z.yan@intel.com>
+References: <1337144403-30841-1-git-send-email-zheng.z.yan@intel.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, May 16, 2012 at 02:39:44PM +1000, Stephen Rothwell wrote:
-> Hi all,
-> 
-> Today's linux-next merge of the net-next tree got a conflict in
-> arch/sparc/Makefile between commit e1d7de8377e6 ("sparc: introduce
-> arch/sparc/Kbuild") from the sparc-next tree and commit 2809a2087cc4
-> ("net: filter: Just In Time compiler for sparc") from the net-next tree.
-> 
-> I suspect that the core-y net bit below should be changed to be a obj-y
-> bit of arch/sparc/Kbuild ...
+From: "Yan, Zheng" <zheng.z.yan@intel.com>
 
-Correct - like this:
+perf_event_open requires the cpu on which to install event is online,
+but the cpu can go offline after perf_event_open checks that. Add
+get_online_cpus()/put_online_cpus() pair to avoid the race.
 
-arch/sparc/Kbuild:
+Signed-off-by: Zheng Yan <zheng.z.yan@intel.com>
+---
+ kernel/events/core.c |    5 +++++
+ 1 files changed, 5 insertions(+), 0 deletions(-)
 
-obj-y += net/
+diff --git a/kernel/events/core.c b/kernel/events/core.c
+index 91a4459..9fdf394 100644
+--- a/kernel/events/core.c
++++ b/kernel/events/core.c
+@@ -6255,6 +6255,8 @@ SYSCALL_DEFINE5(perf_event_open,
+ 		}
+ 	}
+ 
++	get_online_cpus();
++
+ 	event = perf_event_alloc(&attr, cpu, task, group_leader, NULL,
+ 				 NULL, NULL);
+ 	if (IS_ERR(event)) {
+@@ -6394,6 +6396,8 @@ SYSCALL_DEFINE5(perf_event_open,
+ 	perf_unpin_context(ctx);
+ 	mutex_unlock(&ctx->mutex);
+ 
++	put_online_cpus();
++
+ 	event->owner = current;
+ 
+ 	mutex_lock(&current->perf_event_mutex);
+@@ -6422,6 +6426,7 @@ SYSCALL_DEFINE5(perf_event_open,
+ err_alloc:
+ 	free_event(event);
+ err_task:
++	put_online_cpus();
+ 	if (task)
+ 		put_task_struct(task);
+ err_group_fd:
+-- 
+1.7.7.6
 
-	Sam
