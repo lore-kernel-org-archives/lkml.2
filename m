@@ -1,48 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760284Ab2EPSk0 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 May 2012 14:40:26 -0400
-Received: from na3sys009aog135.obsmtp.com ([74.125.149.84]:54684 "HELO
-	na3sys009aog135.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1754240Ab2EPSkX (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 May 2012 14:40:23 -0400
+	id S1760306Ab2EPSlB (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 May 2012 14:41:01 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:22040 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754240Ab2EPSk7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 16 May 2012 14:40:59 -0400
+Date: Wed, 16 May 2012 20:39:20 +0200
+From: Oleg Nesterov <oleg@redhat.com>
+To: "Eric W. Biederman" <ebiederm@xmission.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Pavel Emelyanov <xemul@parallels.com>,
+        Cyrill Gorcunov <gorcunov@openvz.org>,
+        Louis Rilling <louis.rilling@kerlabs.com>,
+        Mike Galbraith <efault@gmx.de>
+Subject: Re: [PATCH 2/3] pidns: Guarantee that the pidns init will be the
+	last pidns process reaped.
+Message-ID: <20120516183920.GA19975@redhat.com>
+References: <1335604790.5995.22.camel@marge.simpson.net> <20120428142605.GA20248@redhat.com> <m14ns355ru.fsf@fess.ebiederm.org> <20120429165846.GA19054@redhat.com> <1335754867.17899.4.camel@marge.simpson.net> <m1zk9rmyh4.fsf@fess.ebiederm.org> <20120501134214.f6b44f4a.akpm@linux-foundation.org> <87havs7rvv.fsf_-_@xmission.com> <8762c87rrd.fsf_-_@xmission.com>
 MIME-Version: 1.0
-In-Reply-To: <alpine.DEB.2.00.1205141352440.26304@router.home>
-References: <1337020877-20087-1-git-send-email-pshelar@nicira.com>
-	<alpine.DEB.2.00.1205141352440.26304@router.home>
-Date: Wed, 16 May 2012 11:40:21 -0700
-Message-ID: <CALnjE+r2OQ5YmpCjDS09uQ5B2jMEWCF3V7NbZ0Q6jGwVhoZS9Q@mail.gmail.com>
-Subject: Re: [PATCH 1/2] mm: Fix slab->page flags corruption.
-From: Pravin Shelar <pshelar@nicira.com>
-To: andrea@qumranet.com, aarcange@redhat.com
-Cc: penberg@kernel.org, mpm@selenic.com, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org, jesse@nicira.com, abhide@nicira.com,
-        Christoph Lameter <cl@linux.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <8762c87rrd.fsf_-_@xmission.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, May 14, 2012 at 11:53 AM, Christoph Lameter <cl@linux.com> wrote:
-> On Mon, 14 May 2012, Pravin B Shelar wrote:
+Eric, sorry for the huge delay, I was on vacation when you sent this patch...
+
+On 05/06, Eric W. Biederman wrote:
 >
->> Transparent huge pages can change page->flags (PG_compound_lock)
->> without taking Slab lock. Since THP can not break slab pages we can
->> safely access compound page without taking compound lock.
->>
->> Specificly this patch fixes race between compound_unlock and slab
->> functions which does page-flags update. This can occur when
->> get_page/put_page is called on page from slab object.
+> @@ -798,6 +815,12 @@ static void forget_original_parent(struct task_struct *father)
+>  	exit_ptrace(father);
+>  	reaper = find_new_reaper(father);
 >
-> You need to also get this revbiewed by the THP folks like Andrea &
-> friends.
+> +	/* Return immediately if we aren't going to reparent anything */
+> +	if (unlikely(reaper == father)) {
+> +		write_unlock_irq(&tasklist_lock);
+> +		return;
+> +	}
 
-Hi Andrea,
+I was confused by the comment. Afaics, it is not that "we aren't
+going to reparent", we need this change because we can't "reparent"
+to the same thread, list_for_each_entry_safe() below can never stop.
+But this is off-topic...
 
-Can you comment on this patch.
+Hmm. I don't think the patch is 100% correct. Afaics, this needs more
+delay_pidns_leader() checks.
 
-Thanks.
+For example. Suppose we have a CLONE_NEWPID zombie I, it has an
+EXIT_DEAD child D so delay_pidns_leader(I) == T.
 
->
-> Reviewed-by: Christoph Lameter <cl@linux.com>
+Now suppose that I->real_parent exits, lets denote this task as P.
+
+Suppose that P->real_parent ignores SIGCHLD.
+
+In this case P will do release_task(I) prematurely. And worse, when
+D finally does realease_task(D) it will do realease_task(I) again.
+
+Oleg.
+
