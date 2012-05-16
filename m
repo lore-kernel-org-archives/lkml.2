@@ -1,164 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759995Ab2EPM36 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 May 2012 08:29:58 -0400
-Received: from saturn.retrosnub.co.uk ([178.18.118.26]:51075 "EHLO
-	saturn.retrosnub.co.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759968Ab2EPM35 (ORCPT
+	id S1760005Ab2EPMjb (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 May 2012 08:39:31 -0400
+Received: from cavan.codon.org.uk ([93.93.128.6]:34726 "EHLO
+	cavan.codon.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754835Ab2EPMja (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 May 2012 08:29:57 -0400
-Message-ID: <4FB39DBF.3010307@kernel.org>
-Date: Wed, 16 May 2012 13:29:51 +0100
-From: Jonathan Cameron <jic23@kernel.org>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:12.0) Gecko/20120428 Thunderbird/12.0.1
+	Wed, 16 May 2012 08:39:30 -0400
+Date: Wed, 16 May 2012 13:39:12 +0100
+From: Matthew Garrett <mjg59@srcf.ucam.org>
+To: Jan Beulich <JBeulich@suse.com>
+Cc: mingo@elte.hu, tglx@linutronix.de, matt.fleming@linux.intel.com,
+        linux-kernel@vger.kernel.org, hpa@zytor.com
+Subject: Re: [PATCH] x86-64: use EFI to deal with platform wall clock
+Message-ID: <20120516123912.GA20990@srcf.ucam.org>
+References: <4FB265AB0200007800083CC5@nat28.tlf.novell.com>
+ <20120515124707.GB25248@srcf.ucam.org>
+ <4FB273EB0200007800083D32@nat28.tlf.novell.com>
+ <20120515132006.GA26196@srcf.ucam.org>
+ <4FB3B734020000780008415D@nat28.tlf.novell.com>
 MIME-Version: 1.0
-To: Jon Brenner <jbrenner@taosinc.com>
-CC: Jonathan Cameron <jic23@cam.ac.uk>, linux-iio <linux-iio@vger.kernel.org>,
-        Linux Kernel <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH V1] IIO channel type and modifiers for CCT and RGBC data
-References: <1337115529.2399.3.camel@jonz-ub2>
-In-Reply-To: <1337115529.2399.3.camel@jonz-ub2>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4FB3B734020000780008415D@nat28.tlf.novell.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: mjg59@cavan.codon.org.uk
+X-SA-Exim-Scanned: No (on cavan.codon.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 5/15/2012 9:58 PM, Jon Brenner wrote:
-> Add iio channel type and modifiers for Correlated Color Temperature (CCT)
-> and RGBC (red/green/blue/clear) data.
-> Add CCT and RGBC descriptions in documentation.
->
-Core changes are fine. Few trivial bits in the docs.
-> Signed-off-by: Jon Brenner<jbrenner@taosinc.com>
-> ---
->   drivers/iio/industrialio-core.c                    |    5 ++
->   .../staging/iio/Documentation/sysfs-bus-iio-light  |   50 ++++++++++++++++++++
->   include/linux/iio/types.h                          |    5 ++
->   3 files changed, 60 insertions(+), 0 deletions(-)
->
-> diff --git a/drivers/iio/industrialio-core.c b/drivers/iio/industrialio-core.c
-> index 1ddd886..34d8cc9 100644
-> --- a/drivers/iio/industrialio-core.c
-> +++ b/drivers/iio/industrialio-core.c
-> @@ -64,6 +64,7 @@ static const char * const iio_chan_type_name_spec[] = {
->   	[IIO_TIMESTAMP] = "timestamp",
->   	[IIO_CAPACITANCE] = "capacitance",
->   	[IIO_ALTVOLTAGE] = "altvoltage",
-> +	[IIO_CCT] = "cct",
->   };
->
->   static const char * const iio_modifier_names[] = {
-> @@ -72,6 +73,10 @@ static const char * const iio_modifier_names[] = {
->   	[IIO_MOD_Z] = "z",
->   	[IIO_MOD_LIGHT_BOTH] = "both",
->   	[IIO_MOD_LIGHT_IR] = "ir",
-> +	[IIO_MOD_LIGHT_CLEAR] = "clear",
-> +	[IIO_MOD_LIGHT_RED] = "red",
-> +	[IIO_MOD_LIGHT_GREEN] = "green",
-> +	[IIO_MOD_LIGHT_BLUE] = "blue",
->   };
->
->   /* relies on pairs of these shared then separate */
-> diff --git a/drivers/staging/iio/Documentation/sysfs-bus-iio-light b/drivers/staging/iio/Documentation/sysfs-bus-iio-light
-> index 715c74d..f9a4145 100644
-> --- a/drivers/staging/iio/Documentation/sysfs-bus-iio-light
-> +++ b/drivers/staging/iio/Documentation/sysfs-bus-iio-light
-> @@ -34,6 +34,15 @@ Description:
->   		it comes back in SI units, it should also include _input else it
->   		should include _raw to signify it is not in SI units.
->
-> +What:		/sys/bus/iio/devices/device[n]/in_cct0[_input|_raw]
-> +KernelVersion:	3.4.0
-> +Contact:	linux-iio@vger.kernel.org
-> +Description:
-> +		This should return the correlated color temperature from the
-> +		light sensor. If it comes back in SI units, it should also
-> +		include _input else it should include _raw to signify it is not
-> +		in SI units.
-> +
->   What:		/sys/.../device[n]/proximity_on_chip_ambient_infrared_supression
->   KernelVersion:	2.6.37
->   Contact:	linux-iio@vger.kernel.org
-> @@ -82,3 +91,44 @@ Contact:	linux-iio@vger.kernel.org
->   Description:
->   		This property gets/sets the table of coefficients
->   		used in calculating illuminance in lux.
-> +
-> +What:		/sys/bus/iio/devices/device[n]/in_intensity_clear[_input|_raw]
-> +KernelVersion:	3.4.0
-> +Contact:	linux-iio@vger.kernel.org
-> +Description:
-> +		This property is supported by sensors that have a RGBC
-> +		sensing mode. This value should be the output from a reading
-> +		and if expressed in SI units, should include _input. If this
-> +		value is not in SI units (e.g. irradiance, uW/mm), then it should
-> +		include _raw.
-It's not an example so loose the e.g. (it's the only choice). Also units 
-should be W/m^2. We let in a few micro units before because they match 
-with hwmon, but lets just put this in the correct units from the start...
+On Wed, May 16, 2012 at 01:18:28PM +0100, Jan Beulich wrote:
 
-Almost certainly makes sense to have one help entry for the next three.
-Just igve it multiple What: lines
-> +
-> +What:		/sys/bus/iio/devices/device[n]/in_intensity_red[_input|_raw]
-> +KernelVersion:	3.4.0
-> +Contact:	linux-iio@vger.kernel.org
-> +Description:
-> +		This property is supported by sensors that have a RGBC
-> +		sensing mode. This value should be the output from a reading
-> +		and if expressed in SI units, should include _input. If this
-> +		value is not in SI units (e.g. irradiance, uW/mm), then it should
-> +		include _raw.
-> +
-> +What:		/sys/bus/iio/devices/device[n]/in_intensity_green[_input|_raw]
-> +KernelVersion:	3.4.0
-> +Contact:	linux-iio@vger.kernel.org
-> +Description:
-> +		This property is supported by sensors that have a RGBC
-> +		sensing mode. This value should be the output from a reading
-> +		and if expressed in SI units, should include _input. If this
-> +		value is not in SI units (e.g. irradiance, uW/mm), then it should
-> +		include _raw.
-> +
-> +What:		/sys/bus/iio/devices/device[n]/in_intensity_blue[_input|_raw]
-> +KernelVersion:	3.4.0
-> +Contact:	linux-iio@vger.kernel.org
-> +Description:
-> +		This property is supported by sensors that have a RGBC
-> +		sensing mode. This value should be the output from a reading
-> +		and if expressed in SI units, should include _input. If this
-> +		value is not in SI units (e.g. irradiance, uW/mm), then it should
-> +		include _raw.
-> +
-> diff --git a/include/linux/iio/types.h b/include/linux/iio/types.h
-> index 1b073b1..a7de5d9 100644
-> --- a/include/linux/iio/types.h
-> +++ b/include/linux/iio/types.h
-> @@ -28,6 +28,7 @@ enum iio_chan_type {
->   	IIO_TIMESTAMP,
->   	IIO_CAPACITANCE,
->   	IIO_ALTVOLTAGE,
-> +	IIO_CCT,
->   };
->
->   enum iio_modifier {
-> @@ -45,6 +46,10 @@ enum iio_modifier {
->   	IIO_MOD_X_OR_Y_OR_Z,
->   	IIO_MOD_LIGHT_BOTH,
->   	IIO_MOD_LIGHT_IR,
-> +	IIO_MOD_LIGHT_CLEAR,
-> +	IIO_MOD_LIGHT_RED,
-> +	IIO_MOD_LIGHT_GREEN,
-> +	IIO_MOD_LIGHT_BLUE,
->   };
->
->   #define IIO_VAL_INT 1
-> --
-> 1.7.4.1
->
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-iio" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Okay, looks like calling efi_ioremap() at this point is possible.
+> But why is efi_enter_virtual_mode() being called as late as is
+> the case currently for x86 anyway?
 
+Assuming that things are as they are for a good reason is not 
+necessarily true in the EFI code...
+
+> And then again the current logic in efi_enter_virtual_mode()
+> looks flawed (it assumes two contiguous pieces of direct
+> mappings, and while on systems with dis-contiguous physical
+> memory this currently appears to be true, it's not correct - the
+> holes could have MMIO assignments in them - and hence
+> shouldn't be relied upon), and I wouldn't want to copy this
+> elsewhere.
+
+Could you elaborate on that a little?
+
+> Plus the use of set_virtual_address_map is bogus in the first
+> place, as it makes it impossible for a kexec-ed kernel to also
+> use EFI services (as it would have to call the function a
+> second and possibly third time, yet it is not permitted to be
+> called more than once). Imo all calls have to happen in
+> physical mode.
+
+Platforms don't correctly deal with the case where you make physical 
+calls after ExitBootServices(). We tried running in physical mode. It 
+simply doesn't work.
+
+> So I'm afraid if the patch as I provided it isn't acceptable, and
+> if the call to efi_enter_virtual_mode() can't be moved ahead
+> of the one to timekeeping_init(), this winds down to the whole
+> logic needing a re-write.
+
+I have zero objection to this being cleaned up, but I don't know of any 
+obvious reason why we can't do enter_virtual_mode() earlier.
+
+-- 
+Matthew Garrett | mjg59@srcf.ucam.org
