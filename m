@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965100Ab2EPCd5 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 May 2012 22:33:57 -0400
-Received: from mail-gg0-f174.google.com ([209.85.161.174]:47039 "EHLO
-	mail-gg0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758969Ab2EPCds (ORCPT
+	id S965662Ab2EPCeQ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 May 2012 22:34:16 -0400
+Received: from mail-yx0-f174.google.com ([209.85.213.174]:52765 "EHLO
+	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759033Ab2EPCd4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 May 2012 22:33:48 -0400
+	Tue, 15 May 2012 22:33:56 -0400
 From: Robert Lee <rob.lee@linaro.org>
 To: kernel@pengutronix.de
 Cc: shawn.guo@linaro.org, u.kleine-koenig@pengutronix.de,
@@ -14,9 +14,9 @@ Cc: shawn.guo@linaro.org, u.kleine-koenig@pengutronix.de,
         daniel.lezcano@linaro.org, linux-arm-kernel@lists.infradead.org,
         linux-kernel@vger.kernel.org, linaro-dev@lists.linaro.org,
         patches@linaro.org, jj@chaosbits.net
-Subject: [PATCH v4 3/7] ARM: imx: clean and consolidate imx5 suspend and idle code
-Date: Tue, 15 May 2012 21:33:32 -0500
-Message-Id: <1337135616-8988-4-git-send-email-rob.lee@linaro.org>
+Subject: [PATCH v4 7/7] ARM: imx: Add imx6q cpuidle driver
+Date: Tue, 15 May 2012 21:33:36 -0500
+Message-Id: <1337135616-8988-8-git-send-email-rob.lee@linaro.org>
 X-Mailer: git-send-email 1.7.10
 In-Reply-To: <1337135616-8988-1-git-send-email-rob.lee@linaro.org>
 References: <1337135616-8988-1-git-send-email-rob.lee@linaro.org>
@@ -24,224 +24,75 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The imx5 idle code that existed in mm-imx5.c is moved to pm-imx5.c.
-The imx5_pm_init call is now exported and called during the
-MACHINE_START late_init in supported imx5 platforms.
-
-Remove various enabling/disabling of the gpc_dvfs clock and
-enable it once during initialization.  This is a very low
-power clock that must be enabled during low power operations.
-
-There are only two "suspend_state_t" imx5 low power modes ever
-used.  STOP_POWER_OFF for suspend to mem and
-WAIT_UNCLOCKED_POWER_OFF for idle and suspend to standby.  The
-latter mode only requires 500 nanoseconds of extra hardware
-exit time beyond a basic WFI operation (WAIT_CLOCKED mode) so
-no other idle mode is necessary.  Given this information, it
-is more efficient to keep the registers in the often used
-WAIT_UNCLOCKED_POWER_OFF state and only to and from the
-STOP_POWER_OFF register state as needed when suspend to
-mem is required.
+Add basic imx6q cpuidle driver.  For now, only basic WFI state is
+supported.  Deeper idle states will be added in the future.
 
 Signed-off-by: Robert Lee <rob.lee@linaro.org>
 ---
- arch/arm/mach-imx/mm-imx5.c             |   20 +---------
- arch/arm/mach-imx/pm-imx5.c             |   63 ++++++++++++++++++-------------
- arch/arm/plat-mxc/include/mach/common.h |    3 +-
- 3 files changed, 40 insertions(+), 46 deletions(-)
+ arch/arm/mach-imx/mach-imx6q.c |   19 +++++++++++++++++++
+ 1 file changed, 19 insertions(+)
 
-diff --git a/arch/arm/mach-imx/mm-imx5.c b/arch/arm/mach-imx/mm-imx5.c
-index d6b7e9f..bb38747 100644
---- a/arch/arm/mach-imx/mm-imx5.c
-+++ b/arch/arm/mach-imx/mm-imx5.c
-@@ -15,7 +15,6 @@
+diff --git a/arch/arm/mach-imx/mach-imx6q.c b/arch/arm/mach-imx/mach-imx6q.c
+index da6c1d9..4fc1fe7 100644
+--- a/arch/arm/mach-imx/mach-imx6q.c
++++ b/arch/arm/mach-imx/mach-imx6q.c
+@@ -10,7 +10,9 @@
+  * http://www.gnu.org/copyleft/gpl.html
+  */
+ 
++#include <linux/cpuidle.h>
+ #include <linux/delay.h>
++#include <linux/export.h>
  #include <linux/init.h>
- #include <linux/clk.h>
- 
--#include <asm/system_misc.h>
- #include <asm/mach/map.h>
- 
- #include <mach/hardware.h>
-@@ -23,23 +22,6 @@
- #include <mach/devices-common.h>
- #include <mach/iomux-v3.h>
- 
--static struct clk *gpc_dvfs_clk;
--
--static void imx5_idle(void)
--{
--	/* gpc clock is needed for SRPG */
--	if (gpc_dvfs_clk == NULL) {
--		gpc_dvfs_clk = clk_get(NULL, "gpc_dvfs");
--		if (IS_ERR(gpc_dvfs_clk))
--			return;
--	}
--	clk_enable(gpc_dvfs_clk);
--	mx5_cpu_lp_set(WAIT_UNCLOCKED_POWER_OFF);
--	if (!tzic_enable_wake())
--		cpu_do_idle();
--	clk_disable(gpc_dvfs_clk);
--}
--
- /*
-  * Define the MX50 memory map.
-  */
-@@ -103,7 +85,6 @@ void __init imx51_init_early(void)
- 	mxc_set_cpu_type(MXC_CPU_MX51);
- 	mxc_iomux_v3_init(MX51_IO_ADDRESS(MX51_IOMUXC_BASE_ADDR));
- 	mxc_arch_reset_init(MX51_IO_ADDRESS(MX51_WDOG1_BASE_ADDR));
--	arm_pm_idle = imx5_idle;
- }
- 
- void __init imx53_init_early(void)
-@@ -238,4 +219,5 @@ void __init imx53_soc_init(void)
- void __init imx51_init_late(void)
- {
- 	mx51_neon_fixup();
-+	imx5_pm_init();
- }
-diff --git a/arch/arm/mach-imx/pm-imx5.c b/arch/arm/mach-imx/pm-imx5.c
-index e26a9cb..6e62d79 100644
---- a/arch/arm/mach-imx/pm-imx5.c
-+++ b/arch/arm/mach-imx/pm-imx5.c
-@@ -13,18 +13,27 @@
  #include <linux/io.h>
- #include <linux/err.h>
- #include <asm/cacheflush.h>
-+#include <asm/system_misc.h>
- #include <asm/tlbflush.h>
+ #include <linux/irq.h>
+@@ -21,6 +23,7 @@
+ #include <linux/of_platform.h>
+ #include <linux/phy.h>
+ #include <linux/micrel_phy.h>
++#include <asm/cpuidle.h>
+ #include <asm/smp_twd.h>
+ #include <asm/hardware/cache-l2x0.h>
+ #include <asm/hardware/gic.h>
+@@ -28,8 +31,10 @@
+ #include <asm/mach/time.h>
+ #include <asm/system_misc.h>
  #include <mach/common.h>
++#include <mach/cpuidle.h>
  #include <mach/hardware.h>
- #include "crm-regs-imx5.h"
  
--static struct clk *gpc_dvfs_clk;
-+/*
-+ * The WAIT_UNCLOCKED_POWER_OFF state only requires <= 500ns to exit.
-+ * This is also the lowest power state possible without affecting
-+ * non-cpu parts of the system.  For these reasons, imx5 should default
-+ * to always using this state for cpu idling.  The PM_SUSPEND_STANDBY also
-+ * uses this state and needs to take no action when registers remain confgiured
-+ * for this state.
-+ */
-+#define IMX5_DEFAULT_CPU_IDLE_STATE WAIT_UNCLOCKED_POWER_OFF
- 
- /*
-  * set cpu low power mode before WFI instruction. This function is called
-  * mx5 because it can be used for mx50, mx51, and mx53.
-  */
--void mx5_cpu_lp_set(enum mxc_cpu_pwr_mode mode)
-+static void mx5_cpu_lp_set(enum mxc_cpu_pwr_mode mode)
++
+ void imx6q_restart(char mode, const char *cmd)
  {
- 	u32 plat_lpc, arm_srpgcr, ccm_clpcr;
- 	u32 empgc0, empgc1;
-@@ -87,11 +96,6 @@ void mx5_cpu_lp_set(enum mxc_cpu_pwr_mode mode)
- 	}
+ 	struct device_node *np;
+@@ -86,6 +91,19 @@ static void __init imx6q_init_machine(void)
+ 	imx6q_pm_init();
  }
  
--static int mx5_suspend_prepare(void)
--{
--	return clk_prepare_enable(gpc_dvfs_clk);
--}
--
- static int mx5_suspend_enter(suspend_state_t state)
- {
- 	switch (state) {
-@@ -99,7 +103,7 @@ static int mx5_suspend_enter(suspend_state_t state)
- 		mx5_cpu_lp_set(STOP_POWER_OFF);
- 		break;
- 	case PM_SUSPEND_STANDBY:
--		mx5_cpu_lp_set(WAIT_UNCLOCKED_POWER_OFF);
-+		/* DEFAULT_IDLE_STATE already configured */
- 		break;
- 	default:
- 		return -EINVAL;
-@@ -114,12 +118,10 @@ static int mx5_suspend_enter(suspend_state_t state)
- 		__raw_writel(0, MXC_SRPG_EMPGC1_SRPGCR);
- 	}
- 	cpu_do_idle();
--	return 0;
--}
- 
--static void mx5_suspend_finish(void)
--{
--	clk_disable_unprepare(gpc_dvfs_clk);
-+	/* return registers to default idle state */
-+	mx5_cpu_lp_set(IMX5_DEFAULT_CPU_IDLE_STATE);
-+	return 0;
- }
- 
- static int mx5_pm_valid(suspend_state_t state)
-@@ -129,25 +131,34 @@ static int mx5_pm_valid(suspend_state_t state)
- 
- static const struct platform_suspend_ops mx5_suspend_ops = {
- 	.valid = mx5_pm_valid,
--	.prepare = mx5_suspend_prepare,
- 	.enter = mx5_suspend_enter,
--	.finish = mx5_suspend_finish,
- };
- 
--static int __init mx5_pm_init(void)
-+static void imx5_pm_idle(void)
++static struct cpuidle_driver imx6q_cpuidle_driver = {
++	.name			= "imx6q_cpuidle",
++	.owner			= THIS_MODULE,
++	.en_core_tk_irqen	= 1,
++	.states[0]		= ARM_CPUIDLE_WFI_STATE,
++	.state_count		= 1,
++};
++
++static void __init imx6q_init_late(void)
 +{
-+	if (likely(!tzic_enable_wake()))
-+		cpu_do_idle();
++	imx_cpuidle_init(&imx6q_cpuidle_driver);
 +}
 +
-+int __init imx5_pm_init(void)
+ static void __init imx6q_map_io(void)
  {
--	if (!cpu_is_mx51() && !cpu_is_mx53())
--		return 0;
-+	int ret;
-+	struct clk *gpc_dvfs_clk = clk_get(NULL, "gpc_dvfs");
-+
-+	if (IS_ERR(gpc_dvfs_clk))
-+		return (int)gpc_dvfs_clk;
-+
-+	ret = clk_enable(gpc_dvfs_clk);
-+	if (ret)
-+		return ret;
-+
-+	if (cpu_is_mx51())
-+		suspend_set_ops(&mx5_suspend_ops);
- 
--	if (gpc_dvfs_clk == NULL)
--		gpc_dvfs_clk = clk_get(NULL, "gpc_dvfs");
-+	arm_pm_idle = imx5_pm_idle;
- 
--	if (!IS_ERR(gpc_dvfs_clk)) {
--		if (cpu_is_mx51())
--			suspend_set_ops(&mx5_suspend_ops);
--	} else
--		return -EPERM;
-+	/* Set the registers to the default cpu idle state. */
-+	mx5_cpu_lp_set(IMX5_DEFAULT_CPU_IDLE_STATE);
- 
- 	return 0;
- }
--device_initcall(mx5_pm_init);
-diff --git a/arch/arm/plat-mxc/include/mach/common.h b/arch/arm/plat-mxc/include/mach/common.h
-index cf663d8..5660e1e 100644
---- a/arch/arm/plat-mxc/include/mach/common.h
-+++ b/arch/arm/plat-mxc/include/mach/common.h
-@@ -95,7 +95,6 @@ enum mx3_cpu_pwr_mode {
- };
- 
- extern void mx3_cpu_lp_set(enum mx3_cpu_pwr_mode mode);
--extern void mx5_cpu_lp_set(enum mxc_cpu_pwr_mode mode);
- extern void imx_print_silicon_rev(const char *cpu, int srev);
- 
- void avic_handle_irq(struct pt_regs *);
-@@ -146,8 +145,10 @@ extern void imx6q_clock_map_io(void);
- 
- #ifdef CONFIG_PM
- extern void imx6q_pm_init(void);
-+extern int imx5_pm_init(void);
- #else
- static inline void imx6q_pm_init(void) {}
-+static inline int imx5_pm_init(void) { return -ENODEV; }
- #endif
- 
- #ifdef CONFIG_NEON
+ 	imx_lluart_map_io();
+@@ -142,6 +160,7 @@ DT_MACHINE_START(IMX6Q, "Freescale i.MX6 Quad (Device Tree)")
+ 	.handle_irq	= imx6q_handle_irq,
+ 	.timer		= &imx6q_timer,
+ 	.init_machine	= imx6q_init_machine,
++	.init_late      = imx6q_init_late,
+ 	.dt_compat	= imx6q_dt_compat,
+ 	.restart	= imx6q_restart,
+ MACHINE_END
 -- 
 1.7.10
 
