@@ -1,83 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759352Ab2EPRlU (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 May 2012 13:41:20 -0400
-Received: from relay01ant.iops.be ([212.53.4.34]:46325 "EHLO
-	relay01ant.iops.be" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754127Ab2EPRlS (ORCPT
+	id S1759393Ab2EPRrs (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 May 2012 13:47:48 -0400
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:39158 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759250Ab2EPRrq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 May 2012 13:41:18 -0400
-Message-ID: <4FB3E6B8.7050909@acm.org>
-Date: Wed, 16 May 2012 17:41:12 +0000
-From: Bart Van Assche <bvanassche@acm.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120421 Thunderbird/12.0
+	Wed, 16 May 2012 13:47:46 -0400
+Date: Wed, 16 May 2012 19:47:40 +0200
+From: Sascha Hauer <s.hauer@pengutronix.de>
+To: Robert Lee <rob.lee@linaro.org>
+Cc: kernel@pengutronix.de, shawn.guo@linaro.org,
+        u.kleine-koenig@pengutronix.de, richard.zhao@freescale.com,
+        amit.kucheria@linaro.org, daniel.lezcano@linaro.org,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        linaro-dev@lists.linaro.org, patches@linaro.org, jj@chaosbits.net
+Subject: Re: [PATCH v4 4/7] ARM: imx: Enable imx53 low power idle
+Message-ID: <20120516174740.GW30400@pengutronix.de>
+References: <1337135616-8988-1-git-send-email-rob.lee@linaro.org>
+ <1337135616-8988-5-git-send-email-rob.lee@linaro.org>
 MIME-Version: 1.0
-To: Tim Chen <tim.c.chen@linux.intel.com>
-CC: linux-fsdevel <linux-fsdevel@vger.kernel.org>, linux-scsi@vger.kernel.org,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Matthew Wilcox <willy@linux.intel.com>,
-        Andi Kleen <ak@linux.intel.com>
-Subject: Re: SCSI RAM driver ported to 3.3 kernel for file system and I/O
- testing
-References: <1337188023.3796.130.camel@schen9-DESK>
-In-Reply-To: <1337188023.3796.130.camel@schen9-DESK>
-X-Enigmail-Version: 1.5pre
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1337135616-8988-5-git-send-email-rob.lee@linaro.org>
+X-Sent-From: Pengutronix Hildesheim
+X-URL: http://www.pengutronix.de/
+X-IRC: #ptxdist @freenode
+X-Accept-Language: de,en
+X-Accept-Content-Type: text/plain
+X-Uptime: 19:41:01 up 186 days,  1:28, 31 users,  load average: 0.00, 0.25,
+ 0.85
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: 2001:6f8:1178:2:21e:67ff:fe11:9c5c
+X-SA-Exim-Mail-From: sha@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/16/12 17:07, Tim Chen wrote:
+On Tue, May 15, 2012 at 09:33:33PM -0500, Robert Lee wrote:
+> Add various functionality needed to enable a imx53 low power idle
+> state.  This includes adding the imx53 gpc_dvfs clock and making a
+> common imx5_late_init function and initializing all imx53
+>  MACHINE_STATE late_init calls to imx5_late_init.
+> 
+> Signed-off-by: Robert Lee <rob.lee@linaro.org>
+> ---
+>  arch/arm/mach-imx/clock-mx51-mx53.c     |    1 +
+>  arch/arm/mach-imx/imx53-dt.c            |    1 +
+>  arch/arm/mach-imx/mach-mx53_ard.c       |    1 +
+>  arch/arm/mach-imx/mach-mx53_evk.c       |    1 +
+>  arch/arm/mach-imx/mach-mx53_loco.c      |    1 +
+>  arch/arm/mach-imx/mach-mx53_smd.c       |    1 +
+>  arch/arm/mach-imx/mm-imx5.c             |    7 ++++++-
+>  arch/arm/plat-mxc/include/mach/common.h |    1 +
+>  8 files changed, 13 insertions(+), 1 deletion(-)
+> 
+> diff --git a/arch/arm/mach-imx/clock-mx51-mx53.c b/arch/arm/mach-imx/clock-mx51-mx53.c
+> index 0847050..decedc6 100644
+> --- a/arch/arm/mach-imx/clock-mx51-mx53.c
+> +++ b/arch/arm/mach-imx/clock-mx51-mx53.c
+> @@ -1529,6 +1529,7 @@ static struct clk_lookup mx53_lookups[] = {
+>  	_REGISTER_CLOCK("imx-ssi.1", NULL, ssi2_clk)
+>  	_REGISTER_CLOCK("imx-ssi.2", NULL, ssi3_clk)
+>  	_REGISTER_CLOCK("imx-keypad", NULL, dummy_clk)
+> +	_REGISTER_CLOCK(NULL, "gpc_dvfs", gpc_dvfs_clk)
 
-> +/*
-> + * SCSI requires quantities to be written MSB.  They're frequently misaligned,
-> + * so don't mess about with cpu_to_beN, just access it byte-wise
-> + */
-> +static void scsi_ram_put_u32(unsigned char *addr, unsigned int data)
+This has to be rebased against the common clock patches.
+
+>  	.timer = &mx53_smd_timer,
+>  	.init_machine = mx53_smd_board_init,
+> +	.init_late	= imx5_init_late,
+>  	.restart	= mxc_restart,
+>  MACHINE_END
+> diff --git a/arch/arm/mach-imx/mm-imx5.c b/arch/arm/mach-imx/mm-imx5.c
+> index bb38747..7740739 100644
+> --- a/arch/arm/mach-imx/mm-imx5.c
+> +++ b/arch/arm/mach-imx/mm-imx5.c
+> @@ -216,8 +216,13 @@ void __init imx53_soc_init(void)
+>  					ARRAY_SIZE(imx53_audmux_res));
+>  }
+>  
+> +void __init imx5_init_late(void)
 > +{
-> +	addr[0] = data >> 24;
-> +	addr[1] = data >> 16;
-> +	addr[2] = data >> 8;
-> +	addr[3] = data;
+> +	imx5_pm_init();
 > +}
 > +
-> +static unsigned int scsi_ram_get_u16(unsigned char *addr)
-> +{
-> +	unsigned int data;
-> +	data = addr[0] << 8;
-> +	data |= addr[1];
-> +
-> +	return data;
-> +}
-> +
-> +static unsigned int scsi_ram_get_u24(unsigned char *addr)
-> +{
-> +	unsigned int data;
-> +	data = addr[0] << 16;
-> +	data |= addr[1] << 8;
-> +	data |= addr[2];
-> +
-> +	return data;
-> +}
-> +
-> +static unsigned int scsi_ram_get_u32(unsigned char *addr)
-> +{
-> +	unsigned int data;
-> +	data = addr[0] << 24;
-> +	data |= addr[1] << 16;
-> +	data |= addr[2] << 8;
-> +	data |= addr[3];
-> +
-> +	return data;
-> +}
+>  void __init imx51_init_late(void)
+>  {
+>  	mx51_neon_fixup();
+> -	imx5_pm_init();
+> +	imx5_init_late();
+>  }
 
+Where would you add i.MX53 specific code above? Hint: imx5_init_late is
+the wrong function name.
 
-Please drop these functions and use get/put_unaligned_be*() instead.
-Maybe it's a good idea to add get/put_unaligned_be24() helper functions
-in the appropriate <linux/unaligned/...> header file - there is more
-SCSI code that stores and retrieves 24-bit numbers.
+Sascha
 
-Thanks,
-
-Bart.
+-- 
+Pengutronix e.K.                           |                             |
+Industrial Linux Solutions                 | http://www.pengutronix.de/  |
+Peiner Str. 6-8, 31137 Hildesheim, Germany | Phone: +49-5121-206917-0    |
+Amtsgericht Hildesheim, HRA 2686           | Fax:   +49-5121-206917-5555 |
