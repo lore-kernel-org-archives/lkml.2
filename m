@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760130Ab2EPSZY (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 May 2012 14:25:24 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:5604 "EHLO mx1.redhat.com"
+	id S1760164Ab2EPS2J (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 May 2012 14:28:09 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:28431 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754161Ab2EPSZX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 May 2012 14:25:23 -0400
-Date: Wed, 16 May 2012 21:25:20 +0300
-From: Gleb Natapov <gleb@redhat.com>
+	id S1754161Ab2EPS2I (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 16 May 2012 14:28:08 -0400
+Date: Wed, 16 May 2012 21:28:06 +0300
+From: "Michael S. Tsirkin" <mst@redhat.com>
 To: Marcelo Tosatti <mtosatti@redhat.com>
-Cc: "Michael S. Tsirkin" <mst@redhat.com>, x86@kernel.org, kvm@vger.kernel.org,
-        Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
-        Avi Kivity <avi@redhat.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
+Cc: x86@kernel.org, kvm@vger.kernel.org, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, Avi Kivity <avi@redhat.com>,
+        gleb@redhat.com, Linus Torvalds <torvalds@linux-foundation.org>,
         linux-kernel@vger.kernel.org
 Subject: Re: [PATCHv4 3/5] kvm: host side for eoi optimization
-Message-ID: <20120516182520.GH28798@redhat.com>
+Message-ID: <20120516182805.GE10769@redhat.com>
 References: <cover.1337168687.git.mst@redhat.com>
  <42ba7beaa25855997e02fea91a11c9224c51720e.1337168687.git.mst@redhat.com>
  <20120516154940.GA20549@amt.cnet>
@@ -102,11 +101,11 @@ On Wed, May 16, 2012 at 03:15:00PM -0300, Marcelo Tosatti wrote:
 > 
 > The above is still a bug: a case where eoi pending bit is not updated
 > properly.
-When IRR is set while eoi_skip is enabled, eoi_skip should be cleared.
-Michael does your patch do that?
-
 > 
 > How come is this compatible with hyper-v again? Enlight me.
 
---
-			Gleb.
+Set kvm
+to point pv_eoi msr data to va and it will just work.
+
+-- 
+MST
