@@ -1,47 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932934Ab2EPTf5 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 May 2012 15:35:57 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:52166 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932760Ab2EPTf4 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 May 2012 15:35:56 -0400
-Date: Wed, 16 May 2012 12:35:46 -0700
-From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-To: Peter Ujfalusi <peter.ujfalusi@ti.com>
-Cc: Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Liam Girdwood <lrg@ti.com>, Benoit Cousson <b-cousson@ti.com>,
-        linux-kernel@vger.kernel.org, devicetree-discuss@lists.ozlabs.org
-Subject: Re: [PATCH] Input: twl6040-vibra: Update for device tree support
-Message-ID: <20120516193546.GA15920@core.coreip.homeip.net>
-References: <1337167186-8535-1-git-send-email-peter.ujfalusi@ti.com>
+	id S933015Ab2EPTgP (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 May 2012 15:36:15 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:22314 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755770Ab2EPTgN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 16 May 2012 15:36:13 -0400
+Date: Wed, 16 May 2012 21:34:50 +0200
+From: Oleg Nesterov <oleg@redhat.com>
+To: "Eric W. Biederman" <ebiederm@xmission.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Pavel Emelyanov <xemul@parallels.com>,
+        Cyrill Gorcunov <gorcunov@openvz.org>,
+        Louis Rilling <louis.rilling@kerlabs.com>,
+        Mike Galbraith <efault@gmx.de>
+Subject: Re: [PATCH 2/3] pidns: Guarantee that the pidns init will be the
+	last pidns process reaped.
+Message-ID: <20120516193450.GA22859@redhat.com>
+References: <1335604790.5995.22.camel@marge.simpson.net> <20120428142605.GA20248@redhat.com> <m14ns355ru.fsf@fess.ebiederm.org> <20120429165846.GA19054@redhat.com> <1335754867.17899.4.camel@marge.simpson.net> <m1zk9rmyh4.fsf@fess.ebiederm.org> <20120501134214.f6b44f4a.akpm@linux-foundation.org> <87havs7rvv.fsf_-_@xmission.com> <8762c87rrd.fsf_-_@xmission.com> <20120516183920.GA19975@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1337167186-8535-1-git-send-email-peter.ujfalusi@ti.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20120516183920.GA19975@redhat.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Peter,
+On 05/16, Oleg Nesterov wrote:
+>
+> Hmm. I don't think the patch is 100% correct. Afaics, this needs more
+> delay_pidns_leader() checks.
 
-On Wed, May 16, 2012 at 02:19:46PM +0300, Peter Ujfalusi wrote:
-> The twl6040 DT support implementation has been changed from the originally
-> planned.
-> None of the child devices going to have compatible_of property which means
-> that the child devices of twl6040 will be created as traditional MFD devices.
-> The mfd core driver will decide (based on the DT blob) to create a device
-> for the twl6040-vibra or not. If the DT blob has 'vibra' section the device
-> will be created without pdata.
-> In this case the vibra driver will reach up to the parent node to get the
-> needed properties.
+Anyway, if we rely on ->children, can't we make a simpler fix?
 
-So in this case why don't you have parent parse all DT data and
-construct instance of pdata for vibra driver to consume?
+Something like below. It can be simplified even more, just to explain
+the idea. Perhaps we don't even need the new PF_ flag and we can
+re-use ->wait_chldexit.
 
-Thanks.
+Oleg.
 
--- 
-Dmitry
+--- x/kernel/pid_namespace.c
++++ x/kernel/pid_namespace.c
+@@ -184,6 +184,22 @@ void zap_pid_ns_processes(struct pid_nam
+ 		rc = sys_wait4(-1, NULL, __WALL, NULL);
+ 	} while (rc != -ECHILD);
+ 
++	current->flags |= PF_DEAD_INIT;
++	for (;;) {
++		bool need_wait;
++
++		__set_current_state(TASK_UNINTERRUPTIBLE);
++		read_lock(&tasklist_lock);
++		need_wait = !list_empty(current->children);
++		read_unlock(&tasklist_lock);
++
++		if (!need_wait)
++			break;
++		schedule();
++	}
++	__set_current_state(TASK_RUNNING);
++	current->flags &= ~PF_DEAD_INIT;
++
+ 	if (pid_ns->reboot)
+ 		current->signal->group_exit_code = pid_ns->reboot;
+ 
+--- x/kernel/exit.c
++++ x/kernel/exit.c
+@@ -71,6 +71,11 @@ static void __unhash_process(struct task
+ 
+ 		list_del_rcu(&p->tasks);
+ 		list_del_init(&p->sibling);
++
++		if (unlikely(p->real_parent->flags & PF_DEAD_INIT)
++			if (list_empty(&p->real_parent->children))
++				wake_up_process(p->real_parent);
++
+ 		__this_cpu_dec(process_counts);
+ 	}
+ 	list_del_rcu(&p->thread_group);
+
