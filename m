@@ -1,64 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758901Ab2EPRNP (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 May 2012 13:13:15 -0400
-Received: from e8.ny.us.ibm.com ([32.97.182.138]:60012 "EHLO e8.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758514Ab2EPRNM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 May 2012 13:13:12 -0400
-Message-ID: <4FB3DFDB.80605@linux.vnet.ibm.com>
-Date: Wed, 16 May 2012 12:11:55 -0500
-From: Seth Jennings <sjenning@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
-MIME-Version: 1.0
-To: Minchan Kim <minchan@kernel.org>
-CC: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Nitin Gupta <ngupta@vflare.org>,
-        Dan Magenheimer <dan.magenheimer@oracle.com>,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org
-Subject: Re: [PATCH v2 2/3] remove dependency with x86
-References: <1337133919-4182-1-git-send-email-minchan@kernel.org> <1337133919-4182-2-git-send-email-minchan@kernel.org>
-In-Reply-To: <1337133919-4182-2-git-send-email-minchan@kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1759051Ab2EPRSa (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 May 2012 13:18:30 -0400
+Received: from perches-mx.perches.com ([206.117.179.246]:49374 "EHLO
+	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1751743Ab2EPRS2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 16 May 2012 13:18:28 -0400
+Message-ID: <1337188707.6903.4.camel@joe2Laptop>
+Subject: Re: SCSI RAM driver ported to 3.3 kernel for file system and I/O
+ testing
+From: Joe Perches <joe@perches.com>
+To: Tim Chen <tim.c.chen@linux.intel.com>
+Cc: linux-fsdevel <linux-fsdevel@vger.kernel.org>, linux-scsi@vger.kernel.org,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Matthew Wilcox <willy@linux.intel.com>,
+        Andi Kleen <ak@linux.intel.com>
+Date: Wed, 16 May 2012 10:18:27 -0700
+In-Reply-To: <1337188023.3796.130.camel@schen9-DESK>
+References: <1337188023.3796.130.camel@schen9-DESK>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.2- 
 Content-Transfer-Encoding: 7bit
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 12051617-9360-0000-0000-0000066727E3
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/15/2012 09:05 PM, Minchan Kim wrote:
+On Wed, 2012-05-16 at 10:07 -0700, Tim Chen wrote:
+> I've ported Matthew's scsi RAM driver (originally posted in
+> http://marc.info/?l=linux-scsi&m=120331663227540&w=2) to the 3.3 kernel.
 
-> Exactly saying, [zram|zcache] should has a dependency with
-> zsmalloc, not x86. So replace x86 dependeny with ZSMALLOC.
-> 
-> Reviewed-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-> Signed-off-by: Minchan Kim <minchan@kernel.org>
-> ---
->  drivers/staging/zcache/Kconfig |    3 +--
->  drivers/staging/zram/Kconfig   |    3 +--
->  2 files changed, 2 insertions(+), 4 deletions(-)
-> 
-> diff --git a/drivers/staging/zcache/Kconfig b/drivers/staging/zcache/Kconfig
-> index 7048e01..ceb7f28 100644
-> --- a/drivers/staging/zcache/Kconfig
-> +++ b/drivers/staging/zcache/Kconfig
-> @@ -2,8 +2,7 @@ config ZCACHE
->  	bool "Dynamic compression of swap pages and clean pagecache pages"
->  	# X86 dependency is because zsmalloc uses non-portable pte/tlb
->  	# functions
-> -	depends on (CLEANCACHE || FRONTSWAP) && CRYPTO=y && X86
-> -	select ZSMALLOC
-> +	depends on (CLEANCACHE || FRONTSWAP) && CRYPTO=y && ZSMALLOC
+just trivia:
 
+> diff --git a/drivers/scsi/scsi_ram.c b/drivers/scsi/scsi_ram.c
+[]
+> +static void scsi_ram_too_big(struct scsi_cmnd *cmnd, unsigned int start,
+> +				unsigned int len)
+> +{
+> +	printk(KERN_WARNING, "Request exceeded device capacity! %u %u\n", start, len);
 
-Sorry Minchan, I should have said this the first time around.  I ran
-into this issue before with CRYTPO vs CRYPTO=y.  ZCACHE is a bool where
-ZSMALLOC is a tristate.  It is not sufficient for ZSMALLOC to be set; it
-_must_ be builtin, otherwise you get linker errors.
+Probably ignored a warning here. No comma after KERN_WARNING.
 
-The dependency should be ZSMALLOC=y.
+I'd add #define pr_fmt(fmt) KBUILD_MODNAME ": " fmt before
+any include and use pr_<level> instead.
 
-Thanks,
-Seth
+[]
+
+> +static int scsi_ram_queuecommand(struct Scsi_Host *shost, struct scsi_cmnd *cmnd)
+> +{
+> +	struct scsi_ram_cmnd *ram_cmnd = (void *)&cmnd->SCp;
+> +	struct scsi_ram_device *ram_device = scsi_ram_devices[cmnd->device->id];
+> +	unsigned long flags;
+> +
+> +	pr_debug("%s: Queueing command\n", DRV_NAME);
+
+No need for DRV_NAME when using pr_fmt
+
+[]
+
+> +static int scsi_ram_slave_alloc(struct scsi_device *sdev)
+> +{
+> +	struct scsi_ram_device *ram_device;
+> +
+> +	pr_debug("%s: slave_alloc %d:%d\n", DRV_NAME, sdev->id, sdev->lun);
+
+here too, etc...
+
 
