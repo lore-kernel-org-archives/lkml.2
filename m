@@ -1,50 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933428Ab2EPNkN (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 May 2012 09:40:13 -0400
-Received: from mga14.intel.com ([143.182.124.37]:9963 "EHLO mga14.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932296Ab2EPNkI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 May 2012 09:40:08 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
-   d="scan'208";a="100755388"
-Message-ID: <4FB3AE32.8060006@intel.com>
-Date: Wed, 16 May 2012 21:40:02 +0800
-From: Alex Shi <alex.shi@intel.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:9.0) Gecko/20111229 Thunderbird/9.0
-MIME-Version: 1.0
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-CC: Tejun Heo <tj@kernel.org>, Rusty Russell <rusty@rustcorp.com.au>,
-        Christoph Lameter <cl@linux-foundation.org>,
-        Ingo Molnar <mingo@elte.hu>, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org,
-        Suresh Siddha <suresh.b.siddha@intel.com>,
-        Thomas Gleixner <tglx@linutronix.de>, "H. Peter Anvin" <hpa@zytor.com>,
-        Peter Zijlstra <peterz@infradead.org>
-Subject: Re: linux-next: manual merge of the percpu tree with the tip tree
-References: <20120516173616.ed5b60cf4b16e34a57206559@canb.auug.org.au>
-In-Reply-To: <20120516173616.ed5b60cf4b16e34a57206559@canb.auug.org.au>
-Content-Type: text/plain; charset=ISO-8859-1
+	id S933413Ab2EPNmU (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 May 2012 09:42:20 -0400
+Received: from mail-qc0-f174.google.com ([209.85.216.174]:34290 "EHLO
+	mail-qc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932403Ab2EPNmS (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 16 May 2012 09:42:18 -0400
+Message-ID: <1337175731.2492.4.camel@localhost>
+Subject: Re: [PATCH] vfs: fix IMA lockdep circular locking dependency
+From: Eric Paris <eparis@parisplace.org>
+To: James Morris <jmorris@namei.org>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Al Viro <viro@zeniv.linux.org.uk>,
+        Mimi Zohar <zohar@linux.vnet.ibm.com>, Mimi Zohar <zohar@us.ibm.com>,
+        linux-security-module@vger.kernel.org, linux-kernel@vger.kernel.org
+Date: Wed, 16 May 2012 09:42:11 -0400
+In-Reply-To: <alpine.LRH.2.02.1205162135320.10697@tundra.namei.org>
+References: <1336963631-3541-1-git-send-email-zohar@us.ibm.com>
+	 <CA+55aFzrJNd5J7i3Rp7-ctc=bDn5GTWu=H1xyCgGZ-rzu74Gbw@mail.gmail.com>
+	 <CA+55aFyPPZ0wayqPMCZtfP1w9nN-GnKJxYc9i_XM_Qk8d-zJzg@mail.gmail.com>
+	 <CACLa4pujEBAS349Pr-EcBmzQgTHWthhCMV0Yqq0BG-F_gDjz4Q@mail.gmail.com>
+	 <1337112446.20904.50.camel@falcor>
+	 <CA+55aFxRRuWGD-4LYzO-T8eg22goKpej5AV36ALL8GaLP56oRA@mail.gmail.com>
+	 <CA+55aFzOtY7tBw4YNH+QX+6L4opMsJ=sN4DfJURMv_yBTWqL1w@mail.gmail.com>
+	 <20120516004251.GO22082@ZenIV.linux.org.uk>
+	 <CA+55aFy0wJdq+-OAkUBsrkQogF5-N0P4DBQ+6-LXjBGscRQFNw@mail.gmail.com>
+	 <CA+55aFy1qQkGXAr=0Zqk=qJeGTpfMOVC2=rdRWzQ1qsUZ5P0_g@mail.gmail.com>
+	 <alpine.LRH.2.02.1205162135320.10697@tundra.namei.org>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.4.1 (3.4.1-2.fc17) 
 Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/16/2012 03:36 PM, Stephen Rothwell wrote:
-
-> Hi all,
+On Wed, 2012-05-16 at 21:37 +1000, James Morris wrote:
+> On Tue, 15 May 2012, Linus Torvalds wrote:
 > 
-> Today's linux-next merge of the percpu tree got a conflict in
-> arch/x86/mm/tlb.c between commit a6fca40f1d7f ("x86, tlb: Switch cr3 in
-> leave_mm() only when needed") from the tip tree and commit c6ae41e7d469
-> ("x86: replace percpu_xxx funcs with this_cpu_xxx") from the percpu tree.
+> > Hmm?
 > 
-> I fixed it up (see below) and can carry the fix as necessary.
+> diff --git a/security/capability.c b/security/capability.c
+> index 5bb21b1c448c..9a19c6a54e12 100644
+> --- a/security/capability.c
+> +++ b/security/capability.c
+> @@ -949,7 +949,6 @@ void __init security_fixup_ops(struct 
+> security_operations *ops)
+>         set_to_cap_if_null(ops, file_alloc_security);
+>         set_to_cap_if_null(ops, file_free_security);
+>         set_to_cap_if_null(ops, file_ioctl);
+> -       set_to_cap_if_null(ops, file_mmap);
+>         set_to_cap_if_null(ops, file_mprotect);
+>         set_to_cap_if_null(ops, file_lock);
+>         set_to_cap_if_null(ops, file_fcntl);
+> 
+> 
+> Do we need to add addr_map to the fixup ops?
 
+No.  His patch works just fine without it.  If you look he uses:
 
-Thanks a lot!
++	if (security_ops->mmap_file) {
 
-My auto-scripts just watching upstream kernel, so missing this...
+Which means since we didn't set an explicit .mmap_file, even with no
+other LSM loaded we would be fine.
 
-but happy to know the pain of code clean up is closing soon. ;)
+At the moment I'd rather stick with our usual notation of forcing
+capabilities to define every option even if all it does it return 0.  If
+Linus thinks it's a good idea to do
+if (security_ops->function)
+	security_ops->funtion(args);
+In the security server we should do that cleanup separately...
+
+-Eric
+
