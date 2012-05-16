@@ -1,62 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754277Ab2EPPLs (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 May 2012 11:11:48 -0400
-Received: from moutng.kundenserver.de ([212.227.126.171]:49201 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754052Ab2EPPLr (ORCPT
+	id S1755900Ab2EPPOZ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 May 2012 11:14:25 -0400
+Received: from mail-wi0-f172.google.com ([209.85.212.172]:36173 "EHLO
+	mail-wi0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755734Ab2EPPOV convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 May 2012 11:11:47 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: "Greg Kroah-Hartman" <gregkh@linuxfoundation.org>
-Subject: Re: [PATCH] driver: char: bfin_crc: CRC hardware accelerator driver for BF60x family processors.
-Date: Wed, 16 May 2012 15:11:26 +0000
-User-Agent: KMail/1.12.2 (Linux/3.4.0-rc3; KDE/4.3.2; x86_64; ; )
-Cc: sonic.zhang@analog.com, LKML <linux-kernel@vger.kernel.org>,
-        uclinux-dist-devel@blackfin.uclinux.org
-References: <1337156767-13232-1-git-send-email-sonic.zhang@analog.com> <201205161339.41736.arnd@arndb.de> <20120516145333.GB1139@kroah.com>
-In-Reply-To: <20120516145333.GB1139@kroah.com>
+	Wed, 16 May 2012 11:14:21 -0400
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201205161511.27232.arnd@arndb.de>
-X-Provags-ID: V02:K0:kHuaQ6N/H4EKv5ToTjRoItnHxSlCBppxXFlOcO8eRMU
- hJyy+bFwRmJXNAwauMYtxrLDR8aI+KVJS8TFyrG/iDgCyR+3jc
- HP83VrtRElF57U6lfH6l3hNwL7h1WCm2YAftLvWwmmXnVKBx6P
- +Oh2m4TQgIVwjl9SgNKz6diyz1Q/BNc4pHAahBDu2qSM071WvF
- mOYBOqyYiO+tP5ZLrrUlyqRDgjqEfbH/idwdWodc9bFAB2x+6c
- vLg6nEeDkZz1vFOEiRf+tBbmPtYhbDcjktUYlyPyOkaQKSYn+o
- Y74H24Wxa/Vt7R48qIwQrVG/JxloxD5Vi77S5Vw5i9G2kRIgyx
- 3+iXko2lhwGQb6Y4bq10=
+In-Reply-To: <CACLa4pspOFx638fn6aDHpESVZrKmWCnrO999qoO+Mna4ccF_7g@mail.gmail.com>
+References: <1336963631-3541-1-git-send-email-zohar@us.ibm.com>
+ <CA+55aFzrJNd5J7i3Rp7-ctc=bDn5GTWu=H1xyCgGZ-rzu74Gbw@mail.gmail.com>
+ <CA+55aFyPPZ0wayqPMCZtfP1w9nN-GnKJxYc9i_XM_Qk8d-zJzg@mail.gmail.com>
+ <CACLa4pujEBAS349Pr-EcBmzQgTHWthhCMV0Yqq0BG-F_gDjz4Q@mail.gmail.com>
+ <1337112446.20904.50.camel@falcor> <CA+55aFxRRuWGD-4LYzO-T8eg22goKpej5AV36ALL8GaLP56oRA@mail.gmail.com>
+ <CA+55aFzOtY7tBw4YNH+QX+6L4opMsJ=sN4DfJURMv_yBTWqL1w@mail.gmail.com> <CACLa4pspOFx638fn6aDHpESVZrKmWCnrO999qoO+Mna4ccF_7g@mail.gmail.com>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Wed, 16 May 2012 08:13:59 -0700
+X-Google-Sender-Auth: BN3XFSaDOPhaGzdp7g3suFcfUaA
+Message-ID: <CA+55aFwNqGN7PYsFudUKdTZikUn=Sr1tHCim3jySUfPnM4neag@mail.gmail.com>
+Subject: Re: [PATCH] vfs: fix IMA lockdep circular locking dependency
+To: Eric Paris <eparis@parisplace.org>
+Cc: Mimi Zohar <zohar@linux.vnet.ibm.com>, Mimi Zohar <zohar@us.ibm.com>,
+        linux-security-module@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Al Viro <viro@zeniv.linux.org.uk>, Stephen Smalley <sds@tycho.nsa.gov>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday 16 May 2012, Greg Kroah-Hartman wrote:
-> > Do we have a userspace crypto API these days? The last I remember every
-> > attempt to add one so far was abandoned before it got merged. There is
-> > drivers/s390/crypto/zcrypt*, which has a nonportable API, and 
-> > then there is the in-kernel crypto layer in drivers/crypto that has
-> > no user interface at all.
-> 
-> What is CONFIG_CRYPTO_USER for then, with the matching,
-> crypto/crypto_user.c file?
+On Wed, May 16, 2012 at 7:13 AM, Eric Paris <eparis@parisplace.org> wrote:
+>
+> So we would have no checks for anonymous mappings?  We actually do
+> have some controls around them today
+>
+> http://www.akkadia.org/drepper/selinux-mem.html
+>
+> It's mostly around W+X memory.  (or was W now X memory)
 
-Ah, I completely missed that going in and looked in the wrong place
-when trying to find it now (/drivers/crypto, not /crypto). I'm glad
-that part is resolved.
+Ahh, ok. So I guess that won't work.
 
-> > I agree that having another private driver for bfin_crc is not a good
-> > idea, but I also don't have a better one.
-> > 
-> > About the driver itself, the submission seems incomplete (missing at
-> > least the bfin_crc.h file) and the driver has a number of shortcomings
-> > that we should discuss in case we decide to merge it.
-> 
-> I suggest at least tieing into the in-kernel crypto api first, and then
-> worrying about the userspace side of things, right?
+That said, I think do_brk() can already today be used to avoid those
+checks, since it does a mmap with VM_DATA_DEFAULT_FLAGS, which
+includes exec if the current personality includes READ_IMPLIES_EXEC -
+which is trivial yo do.
 
-Absolutely.
+I wonder if the rwx checks could be split up too - the access
+protection from the *file* is really a separate issue from the access
+protection of the *mapping*, if you see what I mean.. Then we could do
+it at do_brk() time too.
 
-	Arnd
+                      Linus
+
+>
+> Admittedly with the growing prevalence of JiT stuff we are using those
+> protections less and less and less....
+>
+> Not certain how happy some will be to see them completely disappear....
