@@ -1,85 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759929Ab2EPJtK (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 May 2012 05:49:10 -0400
-Received: from mail-vb0-f46.google.com ([209.85.212.46]:59088 "EHLO
-	mail-vb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752879Ab2EPJtG convert rfc822-to-8bit (ORCPT
+	id S966753Ab2EPJwG (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 May 2012 05:52:06 -0400
+Received: from bedivere.hansenpartnership.com ([66.63.167.143]:57002 "EHLO
+	bedivere.hansenpartnership.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752879Ab2EPJwE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 May 2012 05:49:06 -0400
-MIME-Version: 1.0
-In-Reply-To: <20120516065625.GM7988@linux-sh.org>
-References: <20120516064449.32286.77941.sendpatchset@w520>
-	<20120516064458.32286.37948.sendpatchset@w520>
-	<20120516065625.GM7988@linux-sh.org>
-Date: Wed, 16 May 2012 18:49:05 +0900
-Message-ID: <CANqRtoSYQozRE5uayBz4YYt7G4=ma72YVQjMJBKYSvkwENf8cg@mail.gmail.com>
-Subject: Re: [PATCH 01/08] mach-shmobile: Emma Mobile EV2 SoC base support V3
-From: Magnus Damm <magnus.damm@gmail.com>
-To: Paul Mundt <lethal@linux-sh.org>
-Cc: linux-arm-kernel@lists.infradead.org, linux@arm.linux.org.uk,
-        arnd@arndb.de, linux-sh@vger.kernel.org, linux-kernel@vger.kernel.org,
-        rjw@sisk.pl, horms@verge.net.au, olof@lixom.net
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	Wed, 16 May 2012 05:52:04 -0400
+Message-ID: <1337161920.2985.32.camel@dabdike.int.hansenpartnership.com>
+Subject: Re: NVM Mapping API
+From: James Bottomley <James.Bottomley@HansenPartnership.com>
+To: Matthew Wilcox <willy@linux.intel.com>
+Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org
+Date: Wed, 16 May 2012 10:52:00 +0100
+In-Reply-To: <20120515133450.GD22985@linux.intel.com>
+References: <20120515133450.GD22985@linux.intel.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, May 16, 2012 at 3:56 PM, Paul Mundt <lethal@linux-sh.org> wrote:
-> On Wed, May 16, 2012 at 03:44:58PM +0900, Magnus Damm wrote:
->> +static int emev2_gclk_enable(struct clk *clk)
->> +{
->> +     iowrite32(ioread32(clk->mapped_reg) | (1 << clk->enable_bit),
->> +               clk->mapped_reg);
->> +     return 0;
->> +}
->> +
->> +static void emev2_gclk_disable(struct clk *clk)
->> +{
->> +     iowrite32(ioread32(clk->mapped_reg) & ~(1 << clk->enable_bit),
->> +               clk->mapped_reg);
->> +}
->> +
->> +static struct sh_clk_ops emev2_gclk_clk_ops = {
->> +     .enable         = emev2_gclk_enable,
->> +     .disable        = emev2_gclk_disable,
->> +     .recalc         = followparent_recalc,
->> +};
->> +
->> +static int __init emev2_gclk_register(struct clk *clks, int nr)
->> +{
->> +     struct clk *clkp;
->> +     int ret = 0;
->> +     int k;
->> +
->> +     for (k = 0; !ret && (k < nr); k++) {
->> +             clkp = clks + k;
->> +             clkp->ops = &emev2_gclk_clk_ops;
->> +             ret |= clk_register(clkp);
->> +     }
->> +
->> +     return ret;
->> +}
->> +
-> This all looks like a pointless abstraction. This is basically a verbatim
-> copy of the sh_clk_mstp32 routines.
+On Tue, 2012-05-15 at 09:34 -0400, Matthew Wilcox wrote:
+> There are a number of interesting non-volatile memory (NVM) technologies
+> being developed.  Some of them promise DRAM-comparable latencies and
+> bandwidths.  At Intel, we've been thinking about various ways to present
+> those to software.  This is a first draft of an API that supports the
+> operations we see as necessary.  Patches can follow easily enough once
+> we've settled on an API.
 
-At a first glance maybe, but the operation is inverted compared to MSTP32.
+If we start from first principles, does this mean it's usable as DRAM?
+Meaning do we even need a non-memory API for it?  The only difference
+would be that some pieces of our RAM become non-volatile.
 
-So, at disable time gclk clears the bit. MSTP32 sets the bit.
+Or is there some impediment (like durability, or degradation on rewrite)
+which makes this unsuitable as a complete DRAM replacement?
 
-> I suppose this is a case where you want to use the mstp32 routines but
-> don't specifically have div4/div6 clocks to manage so you aren't setting
-> SH_CLK_CPG. Perhaps we should just move the sh_clk_mstp32 stuff out so
-> it's provided regardless of the CPG setting and rename it to drop the
-> mstp32 connotations. It's really only the div4/div6 stuff that has any
-> CPG-specific behaviour at this point anyways.
+> We think the appropriate way to present directly addressable NVM to
+> in-kernel users is through a filesystem.  Different technologies may want
+> to use different filesystems, or maybe some forms of directly addressable
+> NVM will want to use the same filesystem as each other.
 
-Perhaps we could base this code on MSTP32 and CPG, but I believe it is
-better just to move to common clocks directly. So in this case for
-gclk we can instead use code in drivers/clk/clk-gate.c.
+If it's actually DRAM, I'd present it as DRAM and figure out how to
+label the non volatile property instead.
 
-Cheers,
+Alternatively, if it's not really DRAM, I think the UNIX file
+abstraction makes sense (it's a piece of memory presented as something
+like a filehandle with open, close, seek, read, write and mmap), but
+it's less clear that it should be an actual file system.  The reason is
+that to present a VFS interface, you have to already have fixed the
+format of the actual filesystem on the memory because we can't nest
+filesystems (well, not without doing artificial loopbacks).  Again, this
+might make sense if there's some architectural reason why the flash
+region has to have a specific layout, but your post doesn't shed any
+light on this.
 
-/ magnus
+James
+
+
