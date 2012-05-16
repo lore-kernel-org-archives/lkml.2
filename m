@@ -1,137 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S967148Ab2EPNGB (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 May 2012 09:06:01 -0400
-Received: from nat28.tlf.novell.com ([130.57.49.28]:49214 "EHLO
-	nat28.tlf.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965982Ab2EPNF6 convert rfc822-to-8bit (ORCPT
-	<rfc822;groupwise-linux-kernel@vger.kernel.org:3:1>);
-	Wed, 16 May 2012 09:05:58 -0400
-Message-Id: <4FB3C27202000078000841A0@nat28.tlf.novell.com>
-X-Mailer: Novell GroupWise Internet Agent 12.0.0 
-Date: Wed, 16 May 2012 14:06:26 +0100
-From: "Jan Beulich" <JBeulich@suse.com>
-To: <mingo@elte.hu>, <tglx@linutronix.de>, <hpa@zytor.com>
-Cc: <linux-kernel@vger.kernel.org>
-Subject: [PATCH] x86-64: fix accounting in
- kernel_physical_mapping_init()
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 8BIT
-Content-Disposition: inline
+	id S967152Ab2EPNGc (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 May 2012 09:06:32 -0400
+Received: from moutng.kundenserver.de ([212.227.126.171]:51972 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932958Ab2EPNG3 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 16 May 2012 09:06:29 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Greg KH <greg@kroah.com>
+Subject: Re: linux-next: manual merge of the arm-soc tree with the staging tree
+Date: Wed, 16 May 2012 13:03:34 +0000
+User-Agent: KMail/1.12.2 (Linux/3.4.0-rc3; KDE/4.3.2; x86_64; ; )
+Cc: Stephen Rothwell <sfr@canb.auug.org.au>, Olof Johansson <olof@lixom.net>,
+        linux-arm-kernel@lists.infradead.org, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org,
+        Maxime Ripard <maxime.ripard@free-electrons.com>,
+        "Jean-Christophe PLAGNIOL-VILLARD" <plagnioj@jcrosoft.com>
+References: <20120516185812.ce1ab57c3ec72445135a35fc@canb.auug.org.au> <201205161054.15610.arnd@arndb.de> <20120516124851.GA32064@kroah.com>
+In-Reply-To: <20120516124851.GA32064@kroah.com>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201205161303.35080.arnd@arndb.de>
+X-Provags-ID: V02:K0:xoxFDlnDsemApxS7VJLlvfGLzqH78oBT3CVRXmg8og3
+ dQh295gZTHVZPDyTfHFPZwzSTzJGRYQW3UGZRc2ZZVNjRZNzlW
+ xUezm9s67HP6YKKZNzU1cgo99gprNG7dv+PI4XT57eexsZGA3h
+ 7Ou0eqXk8cy3FuYYlhiPX2gDKVfcSW1zTm+o0k+8DTQwdMasMJ
+ xPjF26jMDPktgZomsJ3ICCCmLSk58VO66v+RNr1lb76vbUIAG/
+ gCQs6EKRvaOguT4iEOpmERYTKmTBHxFRA5D0QXOAjLNyyu6lLY
+ t7wmq/NItXYEPJGXJcjfv1eo9XgCKH3f2BveUiRO0MPQFjFov7
+ Yzm0JDVWbzcDV3kQYJzI=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When finding a present and acceptable 2M/1G mapping, the number of
-pages mapped this way shouldn't be incremented (as it was already
-incremented when the earlier part of the mapping was established).
-Instead, last_map_addr needs to be updated in this case.
+On Wednesday 16 May 2012, Greg KH wrote:
+> On Wed, May 16, 2012 at 10:54:15AM +0000, Arnd Bergmann wrote:
+> > On Wednesday 16 May 2012, Stephen Rothwell wrote:
+> > > Today's linux-next merge of the arm-soc tree got a conflict in
+> > > arch/arm/boot/dts/at91sam9g20.dtsi between commit 7cb2e629a240 ("ARM:
+> > > AT91: Add ADC driver to the at91sam9g20 dtsi") from the staging tree and
+> > > commit 5b6089cb6f28 ("ARM: at91: add at91sam9260 DT support") from the
+> > > arm-soc tree.
+> > > 
+> > > So, I didn't know what to do with this, so I used the arm-soc version of
+> > > this file (effectively throwing away the staging tree change).  Hints,
+> > > anyone?
+> > 
+> > I suspect the addition of the adc node should just go into the
+> > at91sam9260.dtsi file.
+> 
+> So does that mean that the staging tree version is correct?  Or that
+> someone needs to send me a fixup patch here?
 
-Further, address increments were wrong in one place each in both
-phys_pmd_init() and phys_pud_init() (lacking the aligning down to the
-respective page boundary).
+The staging tree version adds contents to at91sam9g20.dtsi, and the context
+gets moved to at91sam9260.dtsi in arm-soc. If we want to resolve it now,
+I think the best way is to add the change to at91sam9260.dtsi in arm-soc
+and let you drop that part in staging. There are no hard dependencies
+since this is new code and it the driver is still correct without the
+change, it simply won't find the device.
 
-As we're now doing the same calculation several times, fold it into
-a single instance using a local variable (matching how
-kernel_physical_mapping_init() itself does it at the PGD level).
-
-Observed during code inspection, not because of an actual problem.
-
-Signed-off-by: Jan Beulich <jbeulich@suse.com>
-
----
- arch/x86/mm/init_64.c |   23 +++++++++++++----------
- 1 file changed, 13 insertions(+), 10 deletions(-)
-
---- 3.4-rc7/arch/x86/mm/init_64.c
-+++ 3.4-rc7-x86_64-mm-init-accounting/arch/x86/mm/init_64.c
-@@ -407,12 +407,12 @@ static unsigned long __meminit
- phys_pmd_init(pmd_t *pmd_page, unsigned long address, unsigned long end,
- 	      unsigned long page_size_mask, pgprot_t prot)
- {
--	unsigned long pages = 0;
-+	unsigned long pages = 0, next;
- 	unsigned long last_map_addr = end;
- 
- 	int i = pmd_index(address);
- 
--	for (; i < PTRS_PER_PMD; i++, address += PMD_SIZE) {
-+	for (; i < PTRS_PER_PMD; i++, address = next) {
- 		unsigned long pte_phys;
- 		pmd_t *pmd = pmd_page + pmd_index(address);
- 		pte_t *pte;
-@@ -426,6 +426,8 @@ phys_pmd_init(pmd_t *pmd_page, unsigned
- 			break;
- 		}
- 
-+		next = (address & PMD_MASK) + PMD_SIZE;
-+
- 		if (pmd_val(*pmd)) {
- 			if (!pmd_large(*pmd)) {
- 				spin_lock(&init_mm.page_table_lock);
-@@ -449,7 +451,7 @@ phys_pmd_init(pmd_t *pmd_page, unsigned
- 			 * attributes.
- 			 */
- 			if (page_size_mask & (1 << PG_LEVEL_2M)) {
--				pages++;
-+				last_map_addr = next;
- 				continue;
- 			}
- 			new_prot = pte_pgprot(pte_clrhuge(*(pte_t *)pmd));
-@@ -462,7 +464,7 @@ phys_pmd_init(pmd_t *pmd_page, unsigned
- 				pfn_pte(address >> PAGE_SHIFT,
- 					__pgprot(pgprot_val(prot) | _PAGE_PSE)));
- 			spin_unlock(&init_mm.page_table_lock);
--			last_map_addr = (address & PMD_MASK) + PMD_SIZE;
-+			last_map_addr = next;
- 			continue;
- 		}
- 
-@@ -482,11 +484,11 @@ static unsigned long __meminit
- phys_pud_init(pud_t *pud_page, unsigned long addr, unsigned long end,
- 			 unsigned long page_size_mask)
- {
--	unsigned long pages = 0;
-+	unsigned long pages = 0, next;
- 	unsigned long last_map_addr = end;
- 	int i = pud_index(addr);
- 
--	for (; i < PTRS_PER_PUD; i++, addr = (addr & PUD_MASK) + PUD_SIZE) {
-+	for (; i < PTRS_PER_PUD; i++, addr = next) {
- 		unsigned long pmd_phys;
- 		pud_t *pud = pud_page + pud_index(addr);
- 		pmd_t *pmd;
-@@ -495,8 +497,9 @@ phys_pud_init(pud_t *pud_page, unsigned
- 		if (addr >= end)
- 			break;
- 
--		if (!after_bootmem &&
--				!e820_any_mapped(addr, addr+PUD_SIZE, 0)) {
-+		next = (addr & PUD_MASK) + PUD_SIZE;
-+
-+		if (!after_bootmem && !e820_any_mapped(addr, next, 0)) {
- 			set_pud(pud, __pud(0));
- 			continue;
- 		}
-@@ -523,7 +526,7 @@ phys_pud_init(pud_t *pud_page, unsigned
- 			 * attributes.
- 			 */
- 			if (page_size_mask & (1 << PG_LEVEL_1G)) {
--				pages++;
-+				last_map_addr = next;
- 				continue;
- 			}
- 			prot = pte_pgprot(pte_clrhuge(*(pte_t *)pud));
-@@ -535,7 +538,7 @@ phys_pud_init(pud_t *pud_page, unsigned
- 			set_pte((pte_t *)pud,
- 				pfn_pte(addr >> PAGE_SHIFT, PAGE_KERNEL_LARGE));
- 			spin_unlock(&init_mm.page_table_lock);
--			last_map_addr = (addr & PUD_MASK) + PUD_SIZE;
-+			last_map_addr = next;
- 			continue;
- 		}
- 
-
-
-
+	Arnd
