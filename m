@@ -1,99 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755323Ab2EPGAo (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 May 2012 02:00:44 -0400
-Received: from na3sys009aog101.obsmtp.com ([74.125.149.67]:37415 "EHLO
-	na3sys009aog101.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754747Ab2EPGAI convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 May 2012 02:00:08 -0400
+	id S1754487Ab2EPF7r (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 May 2012 01:59:47 -0400
+Received: from LGEMRELSE1Q.lge.com ([156.147.1.111]:50440 "EHLO
+	LGEMRELSE1Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750858Ab2EPF7q (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 16 May 2012 01:59:46 -0400
+X-AuditID: 9c93016f-b7cecae000000e00-5f-4fb3424bc146
+From: Namhyung Kim <namhyung.kim@lge.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Ingo Molnar <mingo@kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Arnaldo Carvalho de Melo <acme@infradead.org>,
+        linux-kernel@vger.kernel.org, Arjan van de Ven <arjan@infradead.org>,
+        David Ahern <dsahern@gmail.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Mike Galbraith <efault@gmx.de>, Paul Mackerras <paulus@samba.org>,
+        Stephane Eranian <eranian@google.com>, arnaldo.melo@gmail.com,
+        Arnaldo Carvalho de Melo <acme@redhat.com>
+Subject: Re: [GIT PULL 0/8] Annotation weekly ponies delivery
+References: <1336852387-16322-1-git-send-email-acme@infradead.org>
+	<CA+55aFxeqrCj71fSe2r9kwzyO9q2BT9A89f7nLUgbrTG_uPP2g@mail.gmail.com>
+	<1336994000.2443.24.camel@twins> <20120514115551.GA6479@gmail.com>
+	<1337007985.1552.5.camel@leonhard> <1337077973.27694.24.camel@twins>
+	<1337093080.1493.22.camel@leonhard> <1337101633.27694.92.camel@twins>
+Date: Wed, 16 May 2012 14:57:49 +0900
+In-Reply-To: <1337101633.27694.92.camel@twins> (Peter Zijlstra's message of
+	"Tue, 15 May 2012 19:07:13 +0200")
+Message-ID: <87liksd5wi.fsf@sejong.aot.lge.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.0.95 (gnu/linux)
 MIME-Version: 1.0
-In-Reply-To: <4FB2B7DC.4070706@codeaurora.org>
-References: <1336798797-8724-1-git-send-email-skannan@codeaurora.org>
- <20120515194245.GO30400@pengutronix.de> <4FB2B3AA.3010903@codeaurora.org>
- <20120515200040.GP30400@pengutronix.de> <4FB2B7DC.4070706@codeaurora.org>
-From: "Turquette, Mike" <mturquette@ti.com>
-Date: Tue, 15 May 2012 22:59:45 -0700
-Message-ID: <CAJOA=zOjj8AY1Uk7X=1GCGHt-6OUndtwR-e36vdrRmFjhJDynA@mail.gmail.com>
-Subject: Re: [PATCH] clk: Fix race conditions between clk_set_parent() and clk_enable()
-To: Saravana Kannan <skannan@codeaurora.org>
-Cc: Sascha Hauer <s.hauer@pengutronix.de>, Andrew Lunn <andrew@lunn.ch>,
-        Paul Walmsley <paul@pwsan.com>,
-        Linus Walleij <linus.walleij@stericsson.com>,
-        Stephen Boyd <sboyd@codeaurora.org>, linux-arm-msm@vger.kernel.org,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Magnus Damm <magnus.damm@gmail.com>, linux-kernel@vger.kernel.org,
-        Rob Herring <rob.herring@calxeda.com>,
-        Richard Zhao <richard.zhao@linaro.org>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Deepak Saxena <dsaxena@linaro.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Shawn Guo <shawn.guo@freescale.com>,
-        Amit Kucheria <amit.kucheria@linaro.org>,
-        Jamie Iles <jamie@jamieiles.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        Arnd Bergman <arnd.bergmann@linaro.org>,
-        Jeremy Kerr <jeremy.kerr@canonical.com>,
-        linux-arm-kernel@lists.infradead.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, May 15, 2012 at 1:09 PM, Saravana Kannan <skannan@codeaurora.org> wrote:
-> On 05/15/2012 01:00 PM, Sascha Hauer wrote:
->>
->> On Tue, May 15, 2012 at 12:51:06PM -0700, Saravana Kannan wrote:
->>>>>
->>>>>        ret = clk->ops->set_parent(clk->hw, i);
->>>>
->>>>
->>>> You call ->set_parent while holding a spinlock. This won't work with i2c
->>>> clocks.
->>>
->>>
->>> I did account for that. I explained it in the commit text. Please
->>> let me know if any part of that is not clear or is not correct.
->>>
->>
->> I missed this part in the commit log. I have no idea whether we can live
->> with this limitation though.
->>
->> Sascha
->>
+Hi,
+
+On Tue, 15 May 2012 19:07:13 +0200, Peter Zijlstra wrote:
+> This does indeed make it work again:
 >
-> It's not really an artificial limitation of the patch. This has to be
-> enforced if the clock is to be managed correctly while allowing .set_parent
-> to NOT be atomic.
+> pre patch:
 >
-> There is no way to guarantee that the enable/disable is properly propagated
-> to the parent clock if we can't guarantee mutual exclusion between changing
-> parents and calling enable/disable.
+> [ perf record: Woken up 1 times to write data ]
+> [ perf record: Captured and wrote 0.005 MB perf.data (~212 samples) ]
 >
+> post patch:
+>
+> [ perf record: Woken up 209 times to write data ]
+> [ perf record: Captured and wrote 54.931 MB perf.data (~2399974 samples) ]
+>
+> So please do send as a proper patch, and you can add:
+>
+> Acked-and-tested-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
 
-We know for sure that __clk_enable was propagated since it won't
-return until it is done.  The bigger issue here is the inherent
-prepare_lock/enable_lock raciness, which this patch does not solve.
-Your approach above is like putting a band-aid gunshot wound :-)
+Hmm.. but it seems this breaks my 'perf stat -g' - it doesn't
+respond any more (even for ^C):
 
-This change essentially forces clocks with sleeping .set_parent
-callbacks to be gated during clk_set_parent or else cause a big WARN
-and dump_stack.  What is really needed is a way to synchronize all of
-the clock operations and drop these race conditions.  Until that
-problem is solved OR until it is proven impossible to fix with the
-API's given to us I won't be taking this patch.  It is invalid for the
-set of clocks that don't set the CLK_SET_PARENT_GATE flag AND have
-.set_parent callbacks which might sleep.
+  namhyung@sejong:perf$ ./perf stat -g sleep 1
+  ^C^C^C^C^\Quit (core dumped)
 
-> Since we can't do mutual exclusion be using spinlock (since .set_parent is
-> NOT atomic for these clocks), then only other way of ensuring mutual
-> exclusion is to force an unprepare and then mutually exclude a prepare while
-> changing the parent. This by association (can't enable unprepared clock)
-> mutually excludes the changing of parent and calling enable/disable.
+  namhyung@sejong:perf$ gdb ./perf core.11964
+  [SNIP]
+  Core was generated by `./perf stat -g sleep 1'.
+  Program terminated with signal 3, Quit.
+  #0  0x0000003fd800e090 in __read_nocancel () from /lib64/libpthread.so.0
+  [SNIP]
+  (gdb) bt
+  #0  0x0000003fd800e090 in __read_nocancel () from /lib64/libpthread.so.0
+  #1  0x000000000047fa00 in read (__nbytes=24, __buf=0x7fffc5e1d0b0, __fd=0) at /usr/include/bits/unistd.h:45
+  #2  readn (fd=0, buf=<optimized out>, buf@entry=0x7fffc5e1d0b0, n=n@entry=24) at util/util.c:140
+  #3  0x000000000043e4bb in __perf_evsel__read (evsel=evsel@entry=0xc7e700, ncpus=<optimized out>, nthreads=1, scale=true)
+      at util/evsel.c:267
+  #4  0x0000000000422777 in read_counter_aggr (counter=0xc7e700) at builtin-stat.c:360
+  #5  run_perf_stat (argv=0x7fffc5e1d510, argc=2) at builtin-stat.c:528
+  #6  cmd_stat (argc=2, argv=0x7fffc5e1d510, prefix=<optimized out>) at builtin-stat.c:1251
+  #7  0x0000000000414723 in run_builtin (p=p@entry=0x77e1d8, argc=argc@entry=4, argv=argv@entry=0x7fffc5e1d510) at perf.c:273
+  #8  0x0000000000413f3b in handle_internal_command (argv=0x7fffc5e1d510, argc=4) at perf.c:345
+  #9  run_argv (argv=0x7fffc5e1d300, argcp=0x7fffc5e1d30c) at perf.c:389
+  #10 main (argc=4, argv=0x7fffc5e1d510) at perf.c:487
 
-Right, but this is a workaround to a larger endemic problem.  I
-completely get what you're trying to do but this fix isn't enough.
 
-Thanks,
-Mike
+In fact, my perf stat -g was already broken - it cannot count at
+all on my SNB box. I'll investigate it more.
+
+Any thoughts?
+
+Namhyung
