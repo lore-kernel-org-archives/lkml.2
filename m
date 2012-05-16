@@ -1,53 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S966700Ab2EPJhM (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 May 2012 05:37:12 -0400
-Received: from mail-yx0-f174.google.com ([209.85.213.174]:61871 "EHLO
-	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S966601Ab2EPJhK (ORCPT
+	id S966736Ab2EPJhX (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 May 2012 05:37:23 -0400
+Received: from haggis.pcug.org.au ([203.10.76.10]:50708 "EHLO
+	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S966601Ab2EPJhT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 May 2012 05:37:10 -0400
-MIME-Version: 1.0
-X-Originating-IP: [46.116.86.177]
-From: Ohad Ben-Cohen <ohad@wizery.com>
-Date: Wed, 16 May 2012 12:36:49 +0300
-Message-ID: <CAK=Wgbaie_Z21md-tVHJoiA57coRu7SGSmL=GCjfh8g-No6Jhg@mail.gmail.com>
-Subject: [GIT PULL] remoteproc for 3.4
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: linux-arm <linux-arm-kernel@lists.infradead.org>,
-        linux-kernel@vger.kernel.org, linux-omap@vger.kernel.org,
-        "C.A, Subramaniam" <subramaniam.ca@ti.com>
-Content-Type: text/plain; charset=ISO-8859-1
+	Wed, 16 May 2012 05:37:19 -0400
+Date: Wed, 16 May 2012 19:37:12 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        "Eric W. Biederman" <ebiederm@xmission.com>
+Subject: linux-next: manual merge of the akpm tree with the userns tree
+Message-Id: <20120516193712.32157bcdc435465c27183baf@canb.auug.org.au>
+X-Mailer: Sylpheed 3.2.0beta7 (GTK+ 2.24.10; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Wed__16_May_2012_19_37_12_+1000_xVn57OXaeSin6n3W"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus,
+--Signature=_Wed__16_May_2012_19_37_12_+1000_xVn57OXaeSin6n3W
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Please pull a tiny but quite important remoteproc fix for 3.4.
+Hi Andrew,
 
-The following changes since commit d48b97b403d23f6df0b990cee652bdf9a52337a3:
+Today's linux-next merge of the akpm tree got a conflict in
+kernel/signal.c between commit 54ba47edac90 ("userns: signal remove
+unnecessary map_cred_ns") from the userns tree and commit "pidns: use
+task_active_pid_ns in do_notify_parent" from the akpm tree.
 
-  Linux 3.4-rc6 (2012-05-06 15:07:32 -0700)
+Just context changes.  I fixed it up (see below) and can carry the fix as
+necessary.
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
 
-are available in the git repository at:
+diff --cc kernel/signal.c
+index c5100ad,d9bcff9..0000000
+--- a/kernel/signal.c
++++ b/kernel/signal.c
+@@@ -1668,9 -1677,9 +1667,9 @@@ bool do_notify_parent(struct task_struc
+  	 * correct to rely on this
+  	 */
+  	rcu_read_lock();
+- 	info.si_pid =3D task_pid_nr_ns(tsk, tsk->parent->nsproxy->pid_ns);
++ 	info.si_pid =3D task_pid_nr_ns(tsk, task_active_pid_ns(tsk->parent));
+ -	info.si_uid =3D map_cred_ns(__task_cred(tsk),
+ -			task_cred_xxx(tsk->parent, user_ns));
+ +	info.si_uid =3D from_kuid_munged(task_cred_xxx(tsk->parent, user_ns),
+ +				       task_uid(tsk));
+  	rcu_read_unlock();
+ =20
+  	info.si_utime =3D cputime_to_clock_t(tsk->utime + tsk->signal->utime);
 
-  git://git.kernel.org/pub/scm/linux/kernel/git/ohad/remoteproc.git
-tags/rproc-for-linus
+--Signature=_Wed__16_May_2012_19_37_12_+1000_xVn57OXaeSin6n3W
+Content-Type: application/pgp-signature
 
-for you to fetch changes up to 6fd98c124c66b0b0001bc4217392d891b1ad4a02:
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
 
-  remoteproc: fix off-by-one bug in __rproc_free_vrings (2012-05-13
-23:15:42 +0300)
+iQIcBAEBCAAGBQJPs3VIAAoJEECxmPOUX5FEkOwP/3PCGNlx71D6SBIPCtfPp6DU
+FeZshHXt57T3XF3WBZ/c1sMN5qDhoaRvGXkpgiQf/diQLzLfuqhQQd7V8Kbhc4jo
+6BNo1ThuzaZHXR3+wDC+rgT+1mVklMCechFVAnprHXFbJdqkrNC/xWLg30IZNZ23
+CrXkBndXDumAj6ksBzld9N/AWrnGxFez0qFX9zLZ3UKQpWul93KAs13W0rV/rw9W
+5AnTFKjNRqZjkIXsjzonF5sB3KWgU8btX2KJaEMvlYlNU66thWA2KtKXyQxtc0EM
+tmNeWSyg07ti2kuv6w50o5scinG1CWBkN/C8Nx4ANsmhph269IuAYcsvu3mliGc7
+HlaQR3YcfOi9Hv9/U4FN9Kda7R5REK6RHmQK9pu0C9ShxASuOMniQ7LPTtJJ2Xn2
+7Ybm8FtuDiEtoNGm6Zc0h4LDbnAOImwWG3ostjeGWr+/pFMyNryKtOO6pwHzB3e4
+GtfntT2dKrbo6mZQoMnk0njx73WEK81Aoh95y92yuvjs22+Wrb2rwXeUR/x5Nu7U
+Xh+RXBMMcafaQPOBz7g0rCNqp0VVHCG+BOag7lymoQp/p80ukFrsrxDCud1gWRYz
+1Bf6lJ7msCsfUPmkxwzwduKuIMYY9s38lV1RUIlJip3oH2DarMxTmBKtnJjSoByD
+LpLzXB6r0YMJAS6kWXSB
+=zLVH
+-----END PGP SIGNATURE-----
 
-----------------------------------------------------------------
-Fix a nasty off-by-one remoteproc bug which leaks memory when
-a remote processor is shut down and, on certain circumstances,
-can indirectly prevent it from being reloaded.
-
-----------------------------------------------------------------
-Subramaniam Chanderashekarapuram (1):
-      remoteproc: fix off-by-one bug in __rproc_free_vrings
-
- drivers/remoteproc/remoteproc_core.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+--Signature=_Wed__16_May_2012_19_37_12_+1000_xVn57OXaeSin6n3W--
