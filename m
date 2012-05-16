@@ -1,53 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030359Ab2EPLvI (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 May 2012 07:51:08 -0400
-Received: from a.ns.miles-group.at ([95.130.255.143]:47834 "EHLO radon.swed.at"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S967450Ab2EPLvG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 May 2012 07:51:06 -0400
-Message-ID: <4FB394A6.5080402@nod.at>
-Date: Wed, 16 May 2012 13:51:02 +0200
-From: Richard Weinberger <richard@nod.at>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:12.0) Gecko/20120421 Thunderbird/12.0
+	id S1030363Ab2EPLw2 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 May 2012 07:52:28 -0400
+Received: from mail-gg0-f174.google.com ([209.85.161.174]:34079 "EHLO
+	mail-gg0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S967466Ab2EPLw0 convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 16 May 2012 07:52:26 -0400
 MIME-Version: 1.0
-To: dedekind1@gmail.com
-CC: Shmulik Ladkani <shmulik.ladkani@gmail.com>, linux-mtd@lists.infradead.org,
-        Heinz.Egger@linutronix.de, tglx@linutronix.de, tim.bird@am.sony.com,
+In-Reply-To: <1337168453.4107.44.camel@deadeye>
+References: <1337157810-13494-1-git-send-email-geert@linux-m68k.org>
+	<1337168453.4107.44.camel@deadeye>
+Date: Wed, 16 May 2012 13:52:25 +0200
+X-Google-Sender-Auth: bISjB5WMukSftyfTKxxAsbMIpsA
+Message-ID: <CAMuHMdUa5JbopxqvoZ6rRivM4Go+cY7ZpijtB+FACuo+-TiZwA@mail.gmail.com>
+Subject: Re: [PATCH] ptp_pch: Add missing #include <linux/slab.h>
+From: Geert Uytterhoeven <geert@linux-m68k.org>
+To: Ben Hutchings <ben@decadent.org.uk>
+Cc: Takahiro Shimizu <tshimizu818@gmail.com>,
+        "David S. Miller" <davem@davemloft.net>,
+        Richard Cochran <richardcochran@gmail.com>, netdev@vger.kernel.org,
         linux-kernel@vger.kernel.org
-Subject: Re: Fastmap - please, review and test
-References: <1337101871-31181-1-git-send-email-richard@nod.at>  <20120515224645.3af023c3@halley> <1337151273.24809.2.camel@sauron.fi.intel.com>
-In-Reply-To: <1337151273.24809.2.camel@sauron.fi.intel.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 16.05.2012 08:54, Artem Bityutskiy wrote:
-> On Tue, 2012-05-15 at 22:46 +0300, Shmulik Ladkani wrote:
->> On Tue, 15 May 2012 19:11:04 +0200 Richard Weinberger<richard@nod.at>  wrote:
->>> TODO:
->>>          - Artem is fully happy with the current on-flash layout,
->>>            maybe I can merge the erase counters into the EBA table
->>>          - Get a full review :)
->>
->> I'd be glad to take a deep look of the code.
->>
->> Hopefully I'll get into it in the following days.
+On Wed, May 16, 2012 at 1:40 PM, Ben Hutchings <ben@decadent.org.uk> wrote:
+> On Wed, 2012-05-16 at 10:43 +0200, Geert Uytterhoeven wrote:
+>> drivers/ptp/ptp_pch.c: In function 'pch_eth_enable_set':
+>> drivers/ptp/ptp_pch.c:152:2: error: implicit declaration of function 'ioread32' [-Werror=implicit-function-declaration]
+>> drivers/ptp/ptp_pch.c:153:2: error: implicit declaration of function 'iowrite32' [-Werror=implicit-function-declaration]
 >
-> Thanks Shmulik - I appreciate any help as much as Richard. I am busy and
-> my job now has nothing to do with MTD/UBI/UBIFS, and I have limited time
-> for review.
->
-> There were many people who wanted faster UBI, and I'd ask them to
-> participate now - review, test, etc.
->
+> <linux/io.h> might be more useful.
 
-Before you shoot me, an hour ago I found an issue with static volumes 
-that are not LEB aligned.
-Looks like I'm calculating the volume length wrong.
-I'll send as soon as possible a fix!
+Bummer, I copied the wrong error from the log ;-(
+I resent the correct version.
 
-Thanks,
-//richard
+But indeed, <linux/io.h> is also missing. But that error was not a regression
+in 3.4-rc7 ;-)
+
+Gr{oetje,eeting}s,
+
+                        Geert
+
+--
+Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
+
+In personal conversations with technical people, I call myself a hacker. But
+when I'm talking to journalists I just say "programmer" or something like that.
+                                -- Linus Torvalds
