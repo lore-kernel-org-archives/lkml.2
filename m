@@ -1,96 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753993Ab2EPPCE (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 May 2012 11:02:04 -0400
-Received: from mail-we0-f174.google.com ([74.125.82.174]:53293 "EHLO
-	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753220Ab2EPPCB (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 May 2012 11:02:01 -0400
+	id S1754030Ab2EPPDr (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 May 2012 11:03:47 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:1025 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752356Ab2EPPDp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 16 May 2012 11:03:45 -0400
+Date: Wed, 16 May 2012 12:03:25 -0300
+From: Arnaldo Carvalho de Melo <acme@redhat.com>
+To: David Ahern <dsahern@gmail.com>
+Cc: Namhyung Kim <namhyung.kim@lge.com>, Stephane Eranian <eranian@google.com>,
+        linux-kernel@vger.kernel.org, peterz@infradead.org, mingo@elte.hu
+Subject: Re: [PATCH v2 0/5] perf tools: add meta-data header support in pipe
+ mode
+Message-ID: <20120516150325.GA24946@infradead.org>
+References: <1337081295-10303-1-git-send-email-eranian@google.com>
+ <87ehqkewom.fsf@sejong.aot.lge.com>
+ <4FB30B52.7080104@gmail.com>
+ <87txzgdfeo.fsf@sejong.aot.lge.com>
+ <4FB3130D.7040308@gmail.com>
 MIME-Version: 1.0
-In-Reply-To: <alpine.LNX.2.00.1205161640520.8796@pobox.suse.cz>
-References: <CAFU-uVs_Gwacxj74cyekY2gv+zAq+Spba7nfPLdTc_dR3y8CYw@mail.gmail.com>
- <20120516143830.GA483@kroah.com> <alpine.LNX.2.00.1205161640520.8796@pobox.suse.cz>
-From: Philipp Riemer <ruderphilipp@gmail.com>
-Date: Wed, 16 May 2012 17:01:39 +0200
-Message-ID: <CAFU-uVt94sgzq7DgsgKL2OJ0e7DazvNpFunx7BNEz88LHJOg+g@mail.gmail.com>
-Subject: Re: [GIT PULL] new mailmap file for the linux kernel git repository
-To: Jiri Kosina <jkosina@suse.cz>, Greg KH <gregkh@linuxfoundation.org>
-Cc: Paul Mundt <lethal@linux-sh.org>,
-        =?ISO-8859-1?Q?Michael_B=FCsch?= <m@bues.ch>,
-        Kuninori Morimoto <kuninori.morimoto.gx@renesas.com>,
-        =?ISO-8859-1?Q?Uwe_Kleine=2DK=F6nig?= 
-	<u.kleine-koenig@pengutronix.de>,
-        LKML <linux-kernel@vger.kernel.org>, Wang Chen <ellre923@gmail.com>,
-        Jonathan Corbet <corbet@lwn.net>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4FB3130D.7040308@gmail.com>
+X-Url: http://acmel.wordpress.com
+User-Agent: Mutt/1.5.20 (2009-12-10)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2012/5/16 Jiri Kosina <jkosina@suse.cz>:
-> On Wed, 16 May 2012, Greg KH wrote:
->
->> > In my work I considered the following aspects:
->> > * Typos in names
->> > * Typos in mails
->> > * Mapping of ambiguous mail adresses (e.g. {aa@bb.cc, aa@home.bb.cc,
->> > aa@laptop.bb.cc,...} becomes {aa@bb.cc})
->> > * Mapping of names to entries with only email information
->> > * Harmonization of position and style of last name (no more all-caps
->> > names like "First LAST" or those of "Last, First")
->> > * No initials in names if not necessary
->> > * Conversion of email addresses to lower case
->> >
->> > Why did I do this? One reason for that is a missing configuration of
->> > Git -- leading to a combination of the name of user (login) and
->> > computer (e.g. "me@mybox.local"). Of course this is not a real mail
->> > address and most users realize and fix this fact pretty fast.
->> > Nevertheless there is at least one commit with wrong data in the
->> > codebase. Another reason is spelling. When skimming through the vast
->> > list of author names and email addresses one can find many
->> > typographical errors such as ".con" instead of ".com" or missing
->> > letters. Over time also these get fixed -- but the wrong data is
->> > visible.
->> >
->> > I am pretty confident that I coalesced the data of most of the
->> > ambiguous users. But despite having spent so many hours in finding and
->> > matching these entries, this work (that I did primarily for my thesis)
->> > might be helpful for other researchers as well, such as e.g. Wang Chen
->> > as the maintainer of the Linux Kernel Patch Statistic
->> > <http://www.remword.com/kps_result/> or Greg, Jonthan, etc. as the
->> > authors of "Who writes Linux"
->> > <http://go.linuxfoundation.org/who-writes-linux-2012>...
->> >
->> > Hence, please integrate this file into the official Linux Kernel repository.
->>
->> You forgot a signed-off-by: line which is required for a patch to be
->> accepted :(
->
-> While Greg is at this, the changelogs also really don't really follow the
-> kernel changelog standards (line wrapping, etc.).
->
-> --
-> Jiri Kosina
-> SUSE Labs
+Em Tue, May 15, 2012 at 08:38:05PM -0600, David Ahern escreveu:
+> See tools/perf/util/header.{ch}
+> Runtime example:
+> 
+> perf script -i /tmp/perf.data -I
+> 
+> # ========
+> # captured on: Tue May 15 20:22:15 2012
+> # ========
+> #
+> # hostname : nxos-vdc-dev3
+> # os release : 3.4.0-rc7+
+> # perf version : 3.4.rc4.137.g978da3.dirty
+> # arch : x86_64
+> # nrcpus online : 16
+> # nrcpus avail : 16
+> # cpudesc : Intel(R) Xeon(R) CPU E5540 @ 2.53GHz
+> # cpuid : GenuineIntel,6,26,5
+> # total memory : 24680324 kB
+> # cmdline : /tmp/pbuild/perf record -fo /tmp/perf.data -- /tmp/noploop
+> 
+> ...
+> 
+> 'perf report --stdio' also shows it. It gets lost in the TUI.
 
-Thank you both for your fast feedback. I really appreciate it.
+Yeah, we need to add a splash screen with this info when the TUI starts
+and also ad a hotkey to show it at anytime.
 
-Since this is my first contribution to the Linux Kernel I am not
-pretty sure what I have to do. Is there anywhere a guideline how I get
-a "signed-off"? I sent the mail to the addresses I found via
-`scripts/get_maintainer.pl -f .mailmap` since I expected those people
-to be somehow interested in this file. What other steps can I take?
-
-I don't understand the point regarding the changelog standards -- what
-do you mean with that? I changed the .mailmap file and oriented myself
-on what was already there... How can I improve the file to fit to the
-Linux standards? Some hints?
-
-While I did this mainly for my thesis, I thought that my work might be
-useful for others as well... so if you can give me some hints, I will
-glad spending some more time and correct the file so that it fits to
-the guidelines.
-
-Regards,
-Philipp
+- Arnaldo
