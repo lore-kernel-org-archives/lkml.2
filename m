@@ -1,84 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760281Ab2EPSgf (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 May 2012 14:36:35 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:53033 "EHLO mx1.redhat.com"
+	id S1760295Ab2EPSgj (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 May 2012 14:36:39 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:2985 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754131Ab2EPSgc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 May 2012 14:36:32 -0400
-Date: Wed, 16 May 2012 21:36:30 +0300
-From: "Michael S. Tsirkin" <mst@redhat.com>
-To: Shirley Ma <mashirle@us.ibm.com>
-Cc: Jason Wang <jasowang@redhat.com>, eric.dumazet@gmail.com,
-        netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        ebiederm@xmission.com, davem@davemloft.net
-Subject: Re: [V2 PATCH 9/9] vhost: zerocopy: poll vq in zerocopy callback
-Message-ID: <20120516183629.GJ10769@redhat.com>
-References: <20120502033901.11782.13157.stgit@amd-6168-8-1.englab.nay.redhat.com>
- <20120502034254.11782.27314.stgit@amd-6168-8-1.englab.nay.redhat.com>
- <1337100630.8220.4.camel@oc3660625478.ibm.com>
- <4FB317C8.90002@redhat.com>
- <1337181027.10741.13.camel@oc3660625478.ibm.com>
- <20120516151444.GC9934@redhat.com>
- <1337189525.10741.24.camel@oc3660625478.ibm.com>
+	id S1754131Ab2EPSgh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 16 May 2012 14:36:37 -0400
+Date: Wed, 16 May 2012 19:48:25 +0200
+From: Jiri Olsa <jolsa@redhat.com>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        Dmitry Antipov <dmitry.antipov@linaro.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@redhat.com>,
+        Amit Kucheria <amit.kucheria@linaro.org>, linaro-dev@lists.linaro.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: Perf record format portability
+Message-ID: <20120516174825.GA11516@m.brq.redhat.com>
+References: <4FB275EB.5050904@linaro.org>
+ <20120515155146.GB7864@infradead.org>
+ <4FB38677.8070601@linaro.org>
+ <20120516145927.GC7864@infradead.org>
+ <1337187503.6724.50.camel@gandalf.stny.rr.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1337189525.10741.24.camel@oc3660625478.ibm.com>
+In-Reply-To: <1337187503.6724.50.camel@gandalf.stny.rr.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, May 16, 2012 at 10:32:05AM -0700, Shirley Ma wrote:
-> On Wed, 2012-05-16 at 18:14 +0300, Michael S. Tsirkin wrote:
-> > On Wed, May 16, 2012 at 08:10:27AM -0700, Shirley Ma wrote:
-> > > On Wed, 2012-05-16 at 10:58 +0800, Jason Wang wrote:
-> > > > >>   drivers/vhost/vhost.c |    1 +
-> > > > >>   1 files changed, 1 insertions(+), 0 deletions(-)
-> > > > >>
-> > > > >> diff --git a/drivers/vhost/vhost.c b/drivers/vhost/vhost.c
-> > > > >> index 947f00d..7b75fdf 100644
-> > > > >> --- a/drivers/vhost/vhost.c
-> > > > >> +++ b/drivers/vhost/vhost.c
-> > > > >> @@ -1604,6 +1604,7 @@ void vhost_zerocopy_callback(void *arg)
-> > > > >>          struct vhost_ubuf_ref *ubufs = ubuf->arg;
-> > > > >>          struct vhost_virtqueue *vq = ubufs->vq;
-> > > > >>
-> > > > >> +       vhost_poll_queue(&vq->poll);
-> > > > >>          /* set len = 1 to mark this desc buffers done DMA */
-> > > > >>          vq->heads[ubuf->desc].len = VHOST_DMA_DONE_LEN;
-> > > > >>          kref_put(&ubufs->kref, vhost_zerocopy_done_signal);
-> > > > > Doing so, we might have redundant vhost_poll_queue(). Do you
-> > know in
-> > > > > which scenario there might be missing of adding and signaling
-> > during
-> > > > > zerocopy?
-> > > > 
-> > > > Yes, as we only do signaling and adding during tx work, if there's
-> > no
-> > > > tx 
-> > > > work when the skb were sent, we may lose the opportunity to let
-> > guest 
-> > > > know about the completion. It's easy to be reproduced with netperf
-> > > > test. 
-> > > 
-> > > The reason which host signals guest is to free guest tx buffers, if
-> > > there is no tx work, then it's not necessary to signal the guest
-> > unless
-> > > guest runs out of memory. The pending buffers will be released
-> > > virtio_net device gone.
-> > > 
-> > > What's the behavior of netperf test when you hit this situation?
-> > > 
-> > > Thanks
-> > > Shirley
+On Wed, May 16, 2012 at 12:58:23PM -0400, Steven Rostedt wrote:
+> On Wed, 2012-05-16 at 11:59 -0300, Arnaldo Carvalho de Melo wrote:
+> 
+> > Steve,
 > > 
-> > IIRC guest networking seems to be lost. 
+> > 	Was the kernel trace events infrastructure designed with that in
+> > mind? I.e. cross analysis? I must be missing something here, still
+> > ENOCOFFEE :-\
 > 
-> It seems vhost_enable_notify is missing in somewhere else?
-> 
-> Thanks
-> Shirley
+> Yes, the libparsevents library was design for this from day one. That's
+> why trace-cmd data file can be run on an ARM and read on x86, or PPC, or
+> whatever. I did all my development testing against 32bit, 64bit and big
+> and little endian. This was the case from the beginning.
 
-Donnu. I see virtio sending packets but they do not get
-to tun on host. debugging.
+for ppc64(record) vs x86_64(report) I got following report on latest tip:
+
+[jolsa@dhcp-26-214 test]$ ../perf report > report.target
+Endianness of raw data not corrected!
+Warning:
+718 samples with id not present in the header
+Warning:
+The perf.data file has no samples!
+
+for following record:
+perf record -a -e sched:sched_switch -e sched:sched_process_exit -e sched:sched_process_fork -e sched:sched_wakeup -- sleep 10
+[ perf record: Woken up 1 times to write data ]
+[ perf record: Captured and wrote 0.178 MB perf.data (~7781 samples) ]
+
+I haven't tried trace-cmd, but I guess let's wait for libparsevents
+perf integration then.. ;)
+
+jirka
