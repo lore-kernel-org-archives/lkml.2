@@ -1,95 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933371Ab2EPMsQ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 May 2012 08:48:16 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:4950 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932973Ab2EPMsO (ORCPT
+	id S965872Ab2EPMs5 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 May 2012 08:48:57 -0400
+Received: from out1-smtp.messagingengine.com ([66.111.4.25]:55909 "EHLO
+	out1-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S933389Ab2EPMsy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 May 2012 08:48:14 -0400
-X-Authority-Analysis: v=2.0 cv=ae7jbGUt c=1 sm=0 a=ZycB6UtQUfgMyuk2+PxD7w==:17 a=XQbtiDEiEegA:10 a=g_LhDMiRcOYA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=MXh8i3YQ1hvvQgUc4BgA:9 a=PUjeQqilurYA:10 a=ZycB6UtQUfgMyuk2+PxD7w==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 74.67.80.29
-Message-ID: <1337172492.6724.36.camel@gandalf.stny.rr.com>
-Subject: Re: [PATCH v22] edac, ras/hw_event.h: use events to handle hw issues
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Borislav Petkov <bp@amd64.org>
-Cc: Mauro Carvalho Chehab <mchehab@redhat.com>,
-        "Luck, Tony" <tony.luck@intel.com>,
-        Linux Edac Mailing List <linux-edac@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Doug Thompson <norsk5@yahoo.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Ingo Molnar <mingo@redhat.com>
-Date: Wed, 16 May 2012 08:48:12 -0400
-In-Reply-To: <20120515163855.GE27806@aftab.osrc.amd.com>
-References: <3908561D78D1C84285E8C5FCA982C28F192EC247@ORSMSX104.amr.corp.intel.com>
-	 <4FAC6FF8.3050608@redhat.com> <20120511102527.GI8913@aftab.osrc.amd.com>
-	 <4FAD081C.5000704@redhat.com> <20120511172430.GB17299@aftab.osrc.amd.com>
-	 <4FAD5CAD.90508@redhat.com> <20120514133404.GE4231@aftab.osrc.amd.com>
-	 <4FB1163D.3010302@redhat.com> <20120515150957.GC27806@aftab.osrc.amd.com>
-	 <4FB27EDC.8040001@redhat.com> <20120515163855.GE27806@aftab.osrc.amd.com>
-Content-Type: text/plain; charset="ISO-8859-15"
-X-Mailer: Evolution 3.2.2-1 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	Wed, 16 May 2012 08:48:54 -0400
+X-Sasl-enc: Jwy6bEYqzCP+Lubb3E5emJjNadp5WgSkhsM0MKlGQDqe 1337172533
+Date: Wed, 16 May 2012 05:48:51 -0700
+From: Greg KH <greg@kroah.com>
+To: Arnd Bergmann <arnd@arndb.de>
+Cc: Stephen Rothwell <sfr@canb.auug.org.au>, Olof Johansson <olof@lixom.net>,
+        linux-arm-kernel@lists.infradead.org, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org,
+        Maxime Ripard <maxime.ripard@free-electrons.com>,
+        Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
+Subject: Re: linux-next: manual merge of the arm-soc tree with the staging
+ tree
+Message-ID: <20120516124851.GA32064@kroah.com>
+References: <20120516185812.ce1ab57c3ec72445135a35fc@canb.auug.org.au>
+ <201205161054.15610.arnd@arndb.de>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <201205161054.15610.arnd@arndb.de>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2012-05-15 at 18:38 +0200, Borislav Petkov wrote:
-> On Tue, May 15, 2012 at 01:05:48PM -0300, Mauro Carvalho Chehab wrote:
-> > > Here's what an error looks like on my system here:
-> > > 
-> > >        mcegen.py-2868  [007] .N..   178.261607: mc_event: Corrected error:amd64_edac on memory stick "unknown memory" (mc:0 csrow:3 channel:1  page:0x5bac7 offset:0x388 grain:0 syndrome:0x34ed )
-> > > 
-> > > There's still this trailing " " at the end of the error line which
-> > > shouldn't be there and also two spaces between "channel" and "page".
+On Wed, May 16, 2012 at 10:54:15AM +0000, Arnd Bergmann wrote:
+> On Wednesday 16 May 2012, Stephen Rothwell wrote:
+> > Today's linux-next merge of the arm-soc tree got a conflict in
+> > arch/arm/boot/dts/at91sam9g20.dtsi between commit 7cb2e629a240 ("ARM:
+> > AT91: Add ADC driver to the at91sam9g20 dtsi") from the staging tree and
+> > commit 5b6089cb6f28 ("ARM: at91: add at91sam9260 DT support") from the
+> > arm-soc tree.
 > > 
-> > If you take a look at the trace printk:
-> > 
-> > + TP_printk("%s error:%s on memory stick \"%s\" (mc:%d %s %s %s)",
-> > +           (__entry->err_type == HW_EVENT_ERR_CORRECTED) ? "Corrected" :
-> > +                 ((__entry->err_type == HW_EVENT_ERR_FATAL) ?
-> > +
-> > +           __get_str(msg),
-> > +           __get_str(label),
-> > +           __entry->mc_index,
-> > +           __get_str(location),
-> > +           __get_str(detail),
-> > +           __get_str(driver_detail))
-> > 
-> > There are not extra spaces there. The first extra space is probably because
-> > there is an extra space at the label string. This should be easy to fix.
-> > 
-> > The other extra space at the end is because amd64 currently doesn't provide
-> > driver_detail information.
+> > So, I didn't know what to do with this, so I used the arm-soc version of
+> > this file (effectively throwing away the staging tree change).  Hints,
+> > anyone?
 > 
-> Remind me again why do we need two strings: detail and driver_detail?
-> 
-> Because they could very well be lumped together with a single "%s"
-> format - "(mc:%d %s)" - and be printed.
-> 
-> And detail will always contain something which is not the empty string,
-> so problem solved.
+> I suspect the addition of the adc node should just go into the
+> at91sam9260.dtsi file.
 
-Here's another trick if you want to get rid of the space and keep both
-fields:
+So does that mean that the staging tree version is correct?  Or that
+someone needs to send me a fixup patch here?
 
-TP_printk("%s error:%s on memory stick \"%s\" (mc:%d %s %s%s%s)",
-           (__entry->err_type == HW_EVENT_ERR_CORRECTED) ? "Corrected" :
-                 ((__entry->err_type == HW_EVENT_ERR_FATAL) ?
-                 "Fatal" : "Uncorrected"),
+confused,
 
-           __get_str(msg),
-           __get_str(label),
-           __entry->mc_index,
-           __get_str(location),
-           __get_str(detail),
-	   strlen(__get_str(detail)) &&
-	    strlen(__get_str(driver_detail) ? " ": "",
-           __get_str(driver_detail))
-
--- Steve
-
-
+greg k-h
