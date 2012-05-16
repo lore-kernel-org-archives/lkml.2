@@ -1,67 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752877Ab2EPEqu (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 May 2012 00:46:50 -0400
-Received: from smtp.snhosting.dk ([87.238.248.203]:64600 "EHLO
-	smtp.domainteam.dk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750879Ab2EPEqs (ORCPT
+	id S1752982Ab2EPEu6 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 May 2012 00:50:58 -0400
+Received: from mail-ob0-f174.google.com ([209.85.214.174]:46440 "EHLO
+	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751104Ab2EPEu5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 May 2012 00:46:48 -0400
-Date: Wed, 16 May 2012 06:46:46 +0200
-From: Sam Ravnborg <sam@ravnborg.org>
-To: David Miller <davem@davemloft.net>
-Cc: sfr@canb.auug.org.au, mmarek@suse.cz, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: linux-next: manual merge of the kbuild tree with the
-	sparc-next tree
-Message-ID: <20120516044646.GA340@merkur.ravnborg.org>
-References: <20120516134430.14f8e43c6f75604410dae815@canb.auug.org.au> <20120515.235747.716576574995746023.davem@davemloft.net>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120515.235747.716576574995746023.davem@davemloft.net>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+	Wed, 16 May 2012 00:50:57 -0400
+Message-ID: <1337143847.3876.1.camel@phoenix>
+Subject: [PATCH] regulator: max8952: Use devm_kzalloc
+From: Axel Lin <axel.lin@gmail.com>
+To: linux-kernel <linux-kernel@vger.kernel.org>
+Cc: Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Kyungmin Park <kyungmin.park@samsung.com>, Liam Girdwood <lrg@ti.com>,
+        MyungJoo Ham <myungjoo.ham@samsung.com>
+Date: Wed, 16 May 2012 12:50:47 +0800
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.2- 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, May 15, 2012 at 11:57:47PM -0400, David Miller wrote:
-> From: Stephen Rothwell <sfr@canb.auug.org.au>
-> Date: Wed, 16 May 2012 13:44:30 +1000
-> 
-> > Today's linux-next merge of the kbuild tree got a conflict in
-> > arch/sparc/boot/Makefile between commit 51f19cfa76d7 ("sparc32: drop
-> > build time btfixup patching") from the sparc-next tree and commit
-> > 95698570510b ("kbuild: refactor final link of sparc32") from the kbuild
-> > tree.
-> > 
-> > I have no idea, so I used the version from the sparc-next tree.
-> > 
-> > Sam, can you have a look and work this out, please?
-> 
-> As Sam states in:
-> 
-> http://patchwork.ozlabs.org/patch/159094/
-> 
-> 	This patch will conflict badly with a patch in kbuild-next.
-> 
-> 	The fix is simple - drop all changes from kbuild-next.
-> 
-> :-)
-The above comment is true for both arch/sparc/Makefile and
-arch/sparc/bot/Makefile.
+Signed-off-by: Axel Lin <axel.lin@gmail.com>
+---
+ drivers/regulator/max8952.c |   11 +++--------
+ 1 files changed, 3 insertions(+), 8 deletions(-)
 
-sparc-next will also conflict with net-next.
+diff --git a/drivers/regulator/max8952.c b/drivers/regulator/max8952.c
+index 62ae140..910c9b2 100644
+--- a/drivers/regulator/max8952.c
++++ b/drivers/regulator/max8952.c
+@@ -181,7 +181,8 @@ static int __devinit max8952_pmic_probe(struct i2c_client *client,
+ 	if (!i2c_check_functionality(adapter, I2C_FUNC_SMBUS_BYTE))
+ 		return -EIO;
+ 
+-	max8952 = kzalloc(sizeof(struct max8952_data), GFP_KERNEL);
++	max8952 = devm_kzalloc(&client->dev, sizeof(struct max8952_data),
++			       GFP_KERNEL);
+ 	if (!max8952)
+ 		return -ENOMEM;
+ 
+@@ -198,7 +199,7 @@ static int __devinit max8952_pmic_probe(struct i2c_client *client,
+ 	if (IS_ERR(max8952->rdev)) {
+ 		ret = PTR_ERR(max8952->rdev);
+ 		dev_err(max8952->dev, "regulator init failed (%d)\n", ret);
+-		goto err_reg;
++		return ret;
+ 	}
+ 
+ 	max8952->en = !!(pdata->reg_data.constraints.boot_on);
+@@ -295,10 +296,6 @@ static int __devinit max8952_pmic_probe(struct i2c_client *client,
+ 	i2c_set_clientdata(client, max8952);
+ 
+ 	return 0;
+-
+-err_reg:
+-	kfree(max8952);
+-	return ret;
+ }
+ 
+ static int __devexit max8952_pmic_remove(struct i2c_client *client)
+@@ -312,8 +309,6 @@ static int __devexit max8952_pmic_remove(struct i2c_client *client)
+ 	gpio_free(pdata->gpio_vid0);
+ 	gpio_free(pdata->gpio_vid1);
+ 	gpio_free(pdata->gpio_en);
+-
+-	kfree(max8952);
+ 	return 0;
+ }
+ 
+-- 
+1.7.5.4
 
-net-next add the following line to arch/sparc/Makefile:
-+core-y                 += arch/sparc/net/
 
-The fix is to add this line to the newly introduced
-arch/sparc/Kbuild file like this:
 
-obj-y += net/
-
-Sorry for these conflicts but we have been busy in sparc land
-this round.
-
-	Sam
