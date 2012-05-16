@@ -1,81 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S966237Ab2EPIvT (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 May 2012 04:51:19 -0400
-Received: from haggis.pcug.org.au ([203.10.76.10]:37375 "EHLO
-	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933188Ab2EPIu6 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 May 2012 04:50:58 -0400
-Date: Wed, 16 May 2012 18:50:45 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Olof Johansson <olof@lixom.net>, Arnd Bergmann <arnd@arndb.de>,
-        <linux-arm-kernel@lists.infradead.org>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Haojian Zhuang <haojian.zhuang@gmail.com>,
-        Russell King <rmk@arm.linux.org.uk>
-Subject: linux-next: manual merge of the arm-soc tree with the arm tree
-Message-Id: <20120516185045.2f9e9274f373d584fd499eb2@canb.auug.org.au>
-X-Mailer: Sylpheed 3.2.0beta7 (GTK+ 2.24.10; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Wed__16_May_2012_18_50_45_+1000_vNz9c6Paf6MEKGuK"
+	id S966353Ab2EPIzP (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 May 2012 04:55:15 -0400
+Received: from mga14.intel.com ([143.182.124.37]:3503 "EHLO mga14.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S965328Ab2EPIzM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 16 May 2012 04:55:12 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
+   d="scan'208";a="143810582"
+Message-ID: <4FB36B12.9000705@intel.com>
+Date: Wed, 16 May 2012 16:53:38 +0800
+From: Alex Shi <alex.shi@intel.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:9.0) Gecko/20111229 Thunderbird/9.0
+MIME-Version: 1.0
+To: Peter Zijlstra <peterz@infradead.org>
+CC: Nick Piggin <npiggin@gmail.com>, tglx@linutronix.de, mingo@redhat.com,
+        hpa@zytor.com, arnd@arndb.de, rostedt@goodmis.org, fweisbec@gmail.com,
+        jeremy@goop.org, riel@redhat.com, luto@mit.edu, avi@redhat.com,
+        len.brown@intel.com, dhowells@redhat.com, fenghua.yu@intel.com,
+        borislav.petkov@amd.com, yinghai@kernel.org, ak@linux.intel.com,
+        cpw@sgi.com, steiner@sgi.com, akpm@linux-foundation.org,
+        penberg@kernel.org, hughd@google.com, rientjes@google.com,
+        kosaki.motohiro@jp.fujitsu.com, n-horiguchi@ah.jp.nec.com,
+        tj@kernel.org, oleg@redhat.com, axboe@kernel.dk, jmorris@namei.org,
+        kamezawa.hiroyu@jp.fujitsu.com, viro@zeniv.linux.org.uk,
+        linux-kernel@vger.kernel.org, yongjie.ren@intel.com,
+        linux-arch@vger.kernel.org
+Subject: Re: [PATCH v5 6/7] x86/tlb: optimizing flush_tlb_mm
+References: <1337072138-8323-1-git-send-email-alex.shi@intel.com>  <1337072138-8323-7-git-send-email-alex.shi@intel.com>  <CAPa8GCDsSOrzQwX2qRJyocYAZdGbwjD4t4fjxmWXV6=EoXjXZw@mail.gmail.com>  <4FB2590C.1050303@intel.com> <1337092577.27694.45.camel@twins>  <1337093840.27694.56.camel@twins> <4FB34D49.1060809@intel.com>  <1337155239.27694.131.camel@twins> <1337155464.27694.132.camel@twins>
+In-Reply-To: <1337155464.27694.132.camel@twins>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Wed__16_May_2012_18_50_45_+1000_vNz9c6Paf6MEKGuK
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On 05/16/2012 04:04 PM, Peter Zijlstra wrote:
 
-Hi all,
+> On Wed, 2012-05-16 at 10:00 +0200, Peter Zijlstra wrote:
+>> On Wed, 2012-05-16 at 14:46 +0800, Alex Shi wrote:
+>>> diff --git a/include/asm-generic/tlb.h b/include/asm-generic/tlb.h
+>>> index 75e888b..ed6642a 100644
+>>> --- a/include/asm-generic/tlb.h
+>>> +++ b/include/asm-generic/tlb.h
+>>> @@ -86,6 +86,8 @@ struct mmu_gather {
+>>>  #ifdef CONFIG_HAVE_RCU_TABLE_FREE
+>>>         struct mmu_table_batch  *batch;
+>>>  #endif
+>>> +       unsigned long           start;
+>>> +       unsigned long           end;
+>>>         unsigned int            need_flush : 1, /* Did free PTEs */
+>>>                                 fast_mode  : 1; /* No batching   */
+>>>  
+>>> diff --git a/mm/memory.c b/mm/memory.c
+>>> index 6105f47..b176172 100644
+>>> --- a/mm/memory.c
+>>> +++ b/mm/memory.c
+>>> @@ -206,6 +206,8 @@ void tlb_gather_mmu(struct mmu_gather *tlb, struct mm_struct *mm, bool fullmm)
+>>>         tlb->mm = mm;
+>>>  
+>>>         tlb->fullmm     = fullmm;
+>>> +       tlb->start      = -1UL;
+>>> +       tlb->end        = 0;
+>>>         tlb->need_flush = 0;
+>>>         tlb->fast_mode  = (num_possible_cpus() == 1);
+>>>         tlb->local.next = NULL;
+> 
+> Also, you just broke compilation on a bunch of archs.. again.
 
-Today's linux-next merge of the arm-soc tree got a conflict in
-arch/arm/Kconfig between commit 98fab064d321 ("ARM: Remove unnecessary
-selection of TICK_ONESHOT") from the arm tree and commit c24b31147a06
-("ARM: mmp: support DT in irq") from the arm-soc tree.
 
-Just context changes.  I fixed it up (see below) and can carry the fix as
-necessary.
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
+Sorry. Do you mean not every archs use 'include/asm-generic/tlb.h', so
+the assignment of tlb->start in tlb_gather_mmu make trouble?
 
-diff --cc arch/arm/Kconfig
-index b1a717c,852b12b..0000000
---- a/arch/arm/Kconfig
-+++ b/arch/arm/Kconfig
-@@@ -627,6 -616,8 +611,7 @@@ config ARCH_MM
-  	select CLKDEV_LOOKUP
-  	select GENERIC_CLOCKEVENTS
-  	select GPIO_PXA
-+ 	select IRQ_DOMAIN
- -	select TICK_ONESHOT
-  	select PLAT_PXA
-  	select SPARSE_IRQ
-  	select GENERIC_ALLOCATOR
 
---Signature=_Wed__16_May_2012_18_50_45_+1000_vNz9c6Paf6MEKGuK
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBCAAGBQJPs2plAAoJEECxmPOUX5FENNEP+gNvkkL/StcBzc+izleVFKEv
-7a1PpNKUPGKklZdrpDZM43E6OPTubXoCI1zNgJvT/PS81rR8nbRPNYbqSOqiva9U
-fcZkFfkqJ+/xevN91lOjFiRy2rtYG5bY5LIZlLyJYsvQGLAer0rqTviGJSWANeoy
-gG74fDcyAQ3sDWWgiUIsyM4jsXZP0cukQLv6SMKHP7md7B5twTTOKbd12qkEKKTn
-7mr6EgzZroeFI4jOWy4KbCsAKR4EIZy+L2a0iVo+fr1sJkN094jdfD6UclnzJUMd
-Y+jWb+zz1MAQOaz4o0qGQ6sBj6WE45UqIFIDpMWXutOMKOlv9YCojjfd8eWNisbZ
-l+T6R7sgKaapayyQL71L6/BkTQtklgnlImpwcmsnab50bIkp3xdaoFqiBHU6sEPC
-kWZ+ZIFg7WIjq4J5b9O63B4PmdVWWCnYwMczZrWgzWrNhp1NubWnJ29kQ7xcMsEj
-LciAguqdObIwiiuMX4Q7JZPjKdInl4CY3ysIIXj48XiBF7WbNPXhc1ORPA6p++fs
-FgRNfrAMbjWH+vFrvHF2U9v3t7kLafB+Cuzwa8/I9TGGgl94lxhrTtwsfSHFh5Kh
-+U0ckKOhlqtvPzsmtx4Mh0tdTOQFx6tNeRqoR9G2UPOCsqaCKAPTh1fenMBAjs9j
-Yo5U1oYUjeFXJ4h6aOND
-=bT3W
------END PGP SIGNATURE-----
-
---Signature=_Wed__16_May_2012_18_50_45_+1000_vNz9c6Paf6MEKGuK--
