@@ -1,64 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760006Ab2EPN4I (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 May 2012 09:56:08 -0400
-Received: from eusmtp01.atmel.com ([212.144.249.242]:56266 "EHLO
-	eusmtp01.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758047Ab2EPN4H (ORCPT
+	id S967548Ab2EPN4x (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 May 2012 09:56:53 -0400
+Received: from mail-ob0-f174.google.com ([209.85.214.174]:51281 "EHLO
+	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S967483Ab2EPN4v convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 May 2012 09:56:07 -0400
-Message-ID: <4FB3B1F3.6080102@atmel.com>
-Date: Wed, 16 May 2012 15:56:03 +0200
-From: Nicolas Ferre <nicolas.ferre@atmel.com>
-Organization: atmel
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
+	Wed, 16 May 2012 09:56:51 -0400
 MIME-Version: 1.0
-To: Arnd Bergmann <arnd@arndb.de>
-CC: Stephen Rothwell <sfr@canb.auug.org.au>, Greg KH <greg@kroah.com>,
-        <linux-kernel@vger.kernel.org>, <linux-next@vger.kernel.org>,
-        Olof Johansson <olof@lixom.net>,
-        Maxime Ripard <maxime.ripard@free-electrons.com>,
-        Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
-        <linux-arm-kernel@lists.infradead.org>
-Subject: Re: linux-next: manual merge of the arm-soc tree with the staging
- tree
-References: <20120516185812.ce1ab57c3ec72445135a35fc@canb.auug.org.au> <201205161054.15610.arnd@arndb.de>
-In-Reply-To: <201205161054.15610.arnd@arndb.de>
-X-Enigmail-Version: 1.5pre
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.159.245.112]
+In-Reply-To: <alpine.LFD.2.02.1205160935340.1763@tux.localdomain>
+References: <1337108498-4104-1-git-send-email-js1304@gmail.com>
+	<alpine.DEB.2.00.1205151527150.11923@router.home>
+	<alpine.LFD.2.02.1205160935340.1763@tux.localdomain>
+Date: Wed, 16 May 2012 22:56:50 +0900
+Message-ID: <CAAmzW4PWQiKbs+mdnwG18R=iWHLT=4Bwn8iA110PJaKuvG_AQQ@mail.gmail.com>
+Subject: Re: [PATCH] slub: fix a memory leak in get_partial_node()
+From: JoonSoo Kim <js1304@gmail.com>
+To: Pekka Enberg <penberg@kernel.org>
+Cc: Christoph Lameter <cl@linux.com>, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org, Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        stable@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/16/2012 12:54 PM, Arnd Bergmann :
-> On Wednesday 16 May 2012, Stephen Rothwell wrote:
->> Today's linux-next merge of the arm-soc tree got a conflict in
->> arch/arm/boot/dts/at91sam9g20.dtsi between commit 7cb2e629a240 ("ARM:
->> AT91: Add ADC driver to the at91sam9g20 dtsi") from the staging tree and
->> commit 5b6089cb6f28 ("ARM: at91: add at91sam9260 DT support") from the
->> arm-soc tree.
+2012/5/16 Pekka Enberg <penberg@kernel.org>:
+> <On Tue, 15 May 2012, Christoph Lameter wrote:
+>
+>> On Wed, 16 May 2012, Joonsoo Kim wrote:
 >>
->> So, I didn't know what to do with this, so I used the arm-soc version of
->> this file (effectively throwing away the staging tree change).  Hints,
->> anyone?
-> 
-> I suspect the addition of the adc node should just go into the
-> at91sam9260.dtsi file.
+>> > In the case which is below,
+>> >
+>> > 1. acquire slab for cpu partial list
+>> > 2. free object to it by remote cpu
+>> > 3. page->freelist = t
+>> >
+>> > then memory leak is occurred.
+>>
+>> Hmmm... Ok so we cannot assign page->freelist in get_partial_node() for
+>> the cpu partial slabs. It must be done in the cmpxchg transition.
+>>
+>> Acked-by: Christoph Lameter <cl@linux.com>
+>
+> Joonsoo, can you please fix up the stable submission format, add
+> Christoph's ACK and resend?
+>
+>                        Pekka
 
-Well, not so sure...
+Thanks for comment.
+I'm a kernel newbie,
+so could you please tell me how to fix up the stable submission format?
+I'm eager to fix it up, but I don't know how to.
 
-Hi all,
+I read stable_kernel_rules.txt, this article tells me I must note
+upstream commit ID.
+Above patch is not included in upstream currently, so I can't find
+upstream commit ID.
+Is 'Acked-by from MAINTAINER' sufficient for submitting to stable-kernel?
+Is below format right for stable submission format?
 
-I am on the subject till this morning to figure out if the parameters
-are SoC dependent. It seems that the ADC is the same between those two
-platforms but the technology is different: I have to figure out the
-details internally.
 
-I will give you a patch on top of arm-soc soon. It will replace the one
-in staging-next: does it sound good to you?
+To: Linus Torvalds <torvalds@linux-foundation.org>, Greg Kroah-Hartman
+<gregkh@linuxfoundation.org>, Pekka Enberg <penberg@kernel.org>
 
-Bye,
--- 
-Nicolas Ferre
+CC: Christoph Lameter <cl@linux.com>, linux-kernel@vger.kernel.org,
+linux-mm@kvack.org
+
+[ Upstream commit xxxxxxxxxxxxxxxxxxx ]
+
+Comment is here
+
+Acked-by:
+Signed-off-by:
