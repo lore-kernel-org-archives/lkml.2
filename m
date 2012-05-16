@@ -1,93 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755617Ab2EPPlM (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 May 2012 11:41:12 -0400
-Received: from mga02.intel.com ([134.134.136.20]:51845 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755330Ab2EPPlJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 May 2012 11:41:09 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.67,352,1309762800"; 
-   d="scan'208";a="141323025"
-Subject: Re: [RFC PATCH 3/3] block: add queue idle timer
-From: Lin Ming <ming.m.lin@intel.com>
-To: Jens Axboe <axboe@kernel.dk>
-Cc: Jeff Moyer <jmoyer@redhat.com>, Alan Stern <stern@rowland.harvard.edu>,
-        linux-kernel@vger.kernel.org, linux-pm@vger.kernel.org,
-        linux-scsi@vger.kernel.org
-In-Reply-To: <4FB3B14E.2040306@kernel.dk>
-References: <1337071697-30920-1-git-send-email-ming.m.lin@intel.com>
-	 <1337071697-30920-4-git-send-email-ming.m.lin@intel.com>
-	 <x49mx59b6c0.fsf@segfault.boston.devel.redhat.com>
-	 <1337131643.22243.2.camel@minggr>
-	 <x49r4uke0p1.fsf@segfault.boston.devel.redhat.com>
-	 <4FB3B14E.2040306@kernel.dk>
-Content-Type: text/plain; charset="ISO-8859-1"
-Date: Wed, 16 May 2012 23:40:20 +0800
-Message-ID: <1337182820.4047.18.camel@hp6530s>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
+	id S1755654Ab2EPPn0 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 May 2012 11:43:26 -0400
+Received: from perches-mx.perches.com ([206.117.179.246]:54253 "EHLO
+	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1750983Ab2EPPnY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 16 May 2012 11:43:24 -0400
+Message-ID: <1337183004.4818.2.camel@joe2Laptop>
+Subject: Re: [PATCH 0/3] net: mac80211: Neaten debugging
+From: Joe Perches <joe@perches.com>
+To: Johannes Berg <johannes@sipsolutions.net>
+Cc: David Miller <davem@davemloft.net>, linville@tuxdriver.com,
+        linux-wireless@vger.kernel.org, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Date: Wed, 16 May 2012 08:43:24 -0700
+In-Reply-To: <1337182220.18519.5.camel@jlt3.sipsolutions.net>
+References: <1337106548.15553.8.camel@jlt3.sipsolutions.net>
+	 <cover.1337116578.git.joe@perches.com>
+	 <20120516.012319.1903390658912592000.davem@davemloft.net>
+	 <1337155171.4367.2.camel@jlt3.sipsolutions.net>
+	 <1337181771.4818.0.camel@joe2Laptop>
+	 <1337182220.18519.5.camel@jlt3.sipsolutions.net>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.2- 
 Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2012-05-16 at 15:53 +0200, Jens Axboe wrote:
-> On 05/16/2012 03:04 PM, Jeff Moyer wrote:
-> > Lin Ming <ming.m.lin@intel.com> writes:
+On Wed, 2012-05-16 at 17:30 +0200, Johannes Berg wrote:
+> On Wed, 2012-05-16 at 08:22 -0700, Joe Perches wrote:
+> > On Wed, 2012-05-16 at 09:59 +0200, Johannes Berg wrote:
+> > > I wonder if it makes sense to leave these under
+> > > #ifdef though? Why #ifdef something if it's going to be invisible most
+> > > of the time anyway?
 > > 
-> >> On Tue, 2012-05-15 at 15:19 -0400, Jeff Moyer wrote:
-> >>> Lin Ming <ming.m.lin@intel.com> writes:
-> >>>
-> >>>> Add an idle timer that is set to some suitable timeout and would be
-> >>>> added when the queue first goes empty. If nothing has happened during
-> >>>> the timeout interval, then the queue is suspended.
-> >>>>
-> >>>> Queueing a new request could check the state and resume queue if it is
-> >>>> supended.
-> >>>>
-> >>>
-> >>> [snip]
-> >>>
-> >>>> @@ -1129,6 +1141,13 @@ void __blk_put_request(struct request_queue *q, struct request *req)
-> >>>>  	if (unlikely(--req->ref_count))
-> >>>>  		return;
-> >>>>  
-> >>>> +	/* PM request is not accounted */
-> >>>> +	if (!(req->cmd_flags & REQ_PM)) {
-> >>>> +		if (!(--q->nr_pending))
-> >>>> +			/* Hard code to 20secs, will move to sysfs */
-> >>>> +			mod_timer(&q->idle, jiffies + 20*HZ);
-> >>>> +	}
-> >>>> +
-> >>>
-> >>> I'm pretty sure Jens wanted to avoid doing a mod_timer, here, given that
-> >>> the queue can transition between empty and non-empty fairly rapidly for
-> >>> dependent I/O.
-> >>
-> >> I'll remove this idle timer and use runtime pm core's timer.
-> > 
-> > This issues isn't which timer to use, it's when to modify it.  Since the
-> > queue can cycle between empty and non-empty very quickly, you should try
-> > to avoid calling mod_timer for every non-empty to empty transition.
-> > Jens had described one way to do this in the thread you referenced in
-> > your 0/3 email.
+> > I don't understand your point.
+> > #ifdef removal is a good thing.
 > 
-> That's exactly right, thanks Jeff.
-> 
-> Lin, you should have more slack timer handling. Look at the blk-timeout
-> handling of request timeouts for inspiration, and/or the thread that
-> Jeff also references. Doing a timer add/del for each request put is a no
-> go.
+> Yeah, but you left a lot of them under ifdef, and I'm wondering why you
+> didn't remove them, or if you should, or ...
 
-You mentioned how to detect queue idle in the referenced thread:
-	
-===
-So we could probably add an idle timer that is set to some suitable
-timeout for this and would be added when the queue first goes empty. If
-new requests come in, just let it simmer and defer checking the state to
-when it actually fires.
-===
+Those mostly use other different
+#ifdef CONFIG_SOME_OTHER_CONTROL elements.
 
-What do you mean of "the queue first goes empty"?
+There are I think 3 that I left because they do
+not use printk/pr_level but use wiphy_<level> or
+netdev_<level>.
 
