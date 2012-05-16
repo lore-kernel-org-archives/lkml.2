@@ -1,83 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S966736Ab2EPJhX (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 May 2012 05:37:23 -0400
-Received: from haggis.pcug.org.au ([203.10.76.10]:50708 "EHLO
-	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S966601Ab2EPJhT (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 May 2012 05:37:19 -0400
-Date: Wed, 16 May 2012 19:37:12 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        "Eric W. Biederman" <ebiederm@xmission.com>
-Subject: linux-next: manual merge of the akpm tree with the userns tree
-Message-Id: <20120516193712.32157bcdc435465c27183baf@canb.auug.org.au>
-X-Mailer: Sylpheed 3.2.0beta7 (GTK+ 2.24.10; i486-pc-linux-gnu)
+	id S966726Ab2EPJic (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 May 2012 05:38:32 -0400
+Received: from mga14.intel.com ([143.182.124.37]:22452 "EHLO mga14.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S966479Ab2EPJia (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 16 May 2012 05:38:30 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
+   d="asc'?scan'208";a="143826122"
+Message-ID: <1337161320.24809.39.camel@sauron.fi.intel.com>
+Subject: Re: [RFC v4] UBI: Fastmap support (aka checkpointing)
+From: Artem Bityutskiy <dedekind1@gmail.com>
+Reply-To: dedekind1@gmail.com
+To: Richard Weinberger <richard@nod.at>
+Cc: linux-mtd@lists.infradead.org, tglx@linutronix.de,
+        linux-kernel@vger.kernel.org, Heinz.Egger@linutronix.de,
+        tim.bird@am.sony.com
+Date: Wed, 16 May 2012 12:42:00 +0300
+In-Reply-To: <1337161096.24809.36.camel@sauron.fi.intel.com>
+References: <1337101871-31181-1-git-send-email-richard@nod.at>
+	 <1337161096.24809.36.camel@sauron.fi.intel.com>
+Content-Type: multipart/signed; micalg="pgp-sha1"; protocol="application/pgp-signature";
+	boundary="=-r6FXQVVBnlQbJbgmVF+3"
+X-Mailer: Evolution 3.2.3 (3.2.3-3.fc16) 
 Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Wed__16_May_2012_19_37_12_+1000_xVn57OXaeSin6n3W"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Wed__16_May_2012_19_37_12_+1000_xVn57OXaeSin6n3W
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
+
+--=-r6FXQVVBnlQbJbgmVF+3
+Content-Type: text/plain; charset="UTF-8"
 Content-Transfer-Encoding: quoted-printable
 
-Hi Andrew,
+On Wed, 2012-05-16 at 12:38 +0300, Artem Bityutskiy wrote:
+> O(N) would be: N -> inf, UBI_FM_MAX_BLOCKS -> C, where C is a constant.
 
-Today's linux-next merge of the akpm tree got a conflict in
-kernel/signal.c between commit 54ba47edac90 ("userns: signal remove
-unnecessary map_cred_ns") from the userns tree and commit "pidns: use
-task_active_pid_ns in do_notify_parent" from the akpm tree.
+O(1) of course, sorry.
 
-Just context changes.  I fixed it up (see below) and can carry the fix as
-necessary.
 --=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
+Best Regards,
+Artem Bityutskiy
 
-diff --cc kernel/signal.c
-index c5100ad,d9bcff9..0000000
---- a/kernel/signal.c
-+++ b/kernel/signal.c
-@@@ -1668,9 -1677,9 +1667,9 @@@ bool do_notify_parent(struct task_struc
-  	 * correct to rely on this
-  	 */
-  	rcu_read_lock();
-- 	info.si_pid =3D task_pid_nr_ns(tsk, tsk->parent->nsproxy->pid_ns);
-+ 	info.si_pid =3D task_pid_nr_ns(tsk, task_active_pid_ns(tsk->parent));
- -	info.si_uid =3D map_cred_ns(__task_cred(tsk),
- -			task_cred_xxx(tsk->parent, user_ns));
- +	info.si_uid =3D from_kuid_munged(task_cred_xxx(tsk->parent, user_ns),
- +				       task_uid(tsk));
-  	rcu_read_unlock();
- =20
-  	info.si_utime =3D cputime_to_clock_t(tsk->utime + tsk->signal->utime);
-
---Signature=_Wed__16_May_2012_19_37_12_+1000_xVn57OXaeSin6n3W
-Content-Type: application/pgp-signature
+--=-r6FXQVVBnlQbJbgmVF+3
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: This is a digitally signed message part
+Content-Transfer-Encoding: 7bit
 
 -----BEGIN PGP SIGNATURE-----
 Version: GnuPG v1.4.12 (GNU/Linux)
 
-iQIcBAEBCAAGBQJPs3VIAAoJEECxmPOUX5FEkOwP/3PCGNlx71D6SBIPCtfPp6DU
-FeZshHXt57T3XF3WBZ/c1sMN5qDhoaRvGXkpgiQf/diQLzLfuqhQQd7V8Kbhc4jo
-6BNo1ThuzaZHXR3+wDC+rgT+1mVklMCechFVAnprHXFbJdqkrNC/xWLg30IZNZ23
-CrXkBndXDumAj6ksBzld9N/AWrnGxFez0qFX9zLZ3UKQpWul93KAs13W0rV/rw9W
-5AnTFKjNRqZjkIXsjzonF5sB3KWgU8btX2KJaEMvlYlNU66thWA2KtKXyQxtc0EM
-tmNeWSyg07ti2kuv6w50o5scinG1CWBkN/C8Nx4ANsmhph269IuAYcsvu3mliGc7
-HlaQR3YcfOi9Hv9/U4FN9Kda7R5REK6RHmQK9pu0C9ShxASuOMniQ7LPTtJJ2Xn2
-7Ybm8FtuDiEtoNGm6Zc0h4LDbnAOImwWG3ostjeGWr+/pFMyNryKtOO6pwHzB3e4
-GtfntT2dKrbo6mZQoMnk0njx73WEK81Aoh95y92yuvjs22+Wrb2rwXeUR/x5Nu7U
-Xh+RXBMMcafaQPOBz7g0rCNqp0VVHCG+BOag7lymoQp/p80ukFrsrxDCud1gWRYz
-1Bf6lJ7msCsfUPmkxwzwduKuIMYY9s38lV1RUIlJip3oH2DarMxTmBKtnJjSoByD
-LpLzXB6r0YMJAS6kWXSB
-=zLVH
+iQIcBAABAgAGBQJPs3ZoAAoJECmIfjd9wqK0e0YQAIF05aS8jKIA3quc4mbYnX+G
+bViuhs6QFkjZQCv7uwXozkpwdihwqitZdCfzBVFQBB8O8CiQKbCwPWj7Kjbu47M3
+tvC93pmNsN31zptJt32lrac1Qr6bq7H9TPK6QVpvWvY02oG8tjCSTDI2g0cprvqJ
+idD2xWK9Aj+qfwY7WjBYd6KhvsoBKB+VyAWZnlvw7x4w5B+QpHczcMpoH0yYxd11
+n+zCMnQQsT84rUnpys2Y7SByxzzI7xzE59FxcAVMju8+rb8zwmdiGgLK7OunUV1C
+8oS713Hjjhz9kF4hq3GzeClhQNMCoJlZbtYeL0DjUHmoj9NogkYu5ttbrjUCAJHn
+8qox4Vk0V7adr7qhShJa7MwKtKgYJIk/teQHL8QYoF5PpSvJqeq9mcvarhvVdzkg
+lZEmbmQeOFYNwBCzNyX+V7eu00UzUU9wnsQgWajqVMKTKUx0+wgOGWtwgQKgFsKN
+Bq6VtcDkEfJI7p7WfEBNr85/F1YZfqfgxqZA/k1kMoVcV0MMQAdcoaAQkWLryPWD
+g24+4LauFH5tVBhaSZIpvC75uR8cVLWBygXxEXnDF46Qo6Jg8jk2/3uBwj9G6d15
+aFQVmDgb004usN6lNY06Hu5PV8YdJAuUOGyIclcleIDSii16ZEDH0n6+TVhZK7CG
+feqskD64sY7KROdaGrvj
+=aLRG
 -----END PGP SIGNATURE-----
 
---Signature=_Wed__16_May_2012_19_37_12_+1000_xVn57OXaeSin6n3W--
+--=-r6FXQVVBnlQbJbgmVF+3--
+
