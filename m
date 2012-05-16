@@ -1,61 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760567Ab2EPTlL (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 May 2012 15:41:11 -0400
-Received: from casper.infradead.org ([85.118.1.10]:52182 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756036Ab2EPTlI convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 May 2012 15:41:08 -0400
-Message-ID: <1337197242.4281.6.camel@twins>
-Subject: Re: Plumbers: Tweaking scheduler policy micro-conf RFP
-From: Peter Zijlstra <peterz@infradead.org>
-To: svaidy@linux.vnet.ibm.com
-Cc: Vincent Guittot <vincent.guittot@linaro.org>, paulmck@linux.vnet.ibm.com,
-        smuckle@quicinc.com, khilman@ti.com, Robin.Randhawa@arm.com,
-        suresh.b.siddha@intel.com, thebigcorporation@gmail.com,
-        venki@google.com, panto@antoniou-consulting.com, mingo@elte.hu,
-        paul.brett@intel.com, pdeschrijver@nvidia.com, pjt@google.com,
-        efault@gmx.de, fweisbec@gmail.com, geoff@infradead.org,
-        rostedt@goodmis.org, tglx@linutronix.de, amit.kucheria@linaro.org,
+	id S965067Ab2EPTmj (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 May 2012 15:42:39 -0400
+Received: from mga11.intel.com ([192.55.52.93]:38413 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S964799Ab2EPTmh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 16 May 2012 15:42:37 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
+   d="scan'208";a="167254650"
+Date: Wed, 16 May 2012 15:43:32 -0400
+From: Matthew Wilcox <willy@linux.intel.com>
+To: chetan loke <loke.chetan@gmail.com>
+Cc: Tim Chen <tim.c.chen@linux.intel.com>,
+        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
+        linux-scsi@vger.kernel.org,
         linux-kernel <linux-kernel@vger.kernel.org>,
-        linaro-sched-sig@lists.linaro.org,
-        Morten Rasmussen <Morten.Rasmussen@arm.com>,
-        Juri Lelli <juri.lelli@gmail.com>
-Date: Wed, 16 May 2012 21:40:42 +0200
-In-Reply-To: <20120516184956.GA23058@dirshya.in.ibm.com>
-References: <CAKfTPtDSDAOAdv0GTDswZeRM7TmACrjok+5kddSaQpvy6_6xWw@mail.gmail.com>
-	 <CAKfTPtCfiY7A29+e50F+6awd8BjNJjg4=uNN4ReZfdS_4FbpkA@mail.gmail.com>
-	 <1337084609.27020.156.camel@laptop>
-	 <CAKfTPtDz1-fR2i5x7AVd8sGZhX2VNtz2rnQC3ePrcHO9MWK3FQ@mail.gmail.com>
-	 <1337086834.27020.162.camel@laptop>
-	 <CAKfTPtDrZ-tfC81jnxwpB+DCtmxhU+VfoYbtSBr8MkFt+P8JcA@mail.gmail.com>
-	 <1337096141.27694.82.camel@twins>
-	 <20120516184956.GA23058@dirshya.in.ibm.com>
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
-X-Mailer: Evolution 3.2.2- 
-Mime-Version: 1.0
+        Andi Kleen <ak@linux.intel.com>
+Subject: Re: SCSI RAM driver ported to 3.3 kernel for file system and I/O
+ testing
+Message-ID: <20120516194332.GN22985@linux.intel.com>
+References: <1337188023.3796.130.camel@schen9-DESK>
+ <CAAsGZS6KJ6jN+0B2Q06gXivaWfMVKX9t-yCYNwZDZ_jzUopviw@mail.gmail.com>
+ <20120516193506.GM22985@linux.intel.com>
+ <CAAsGZS5wivyHUGNtHuTNCQQnnqZ=qt-7uSZjbE-7_KC+L-Yoaw@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <CAAsGZS5wivyHUGNtHuTNCQQnnqZ=qt-7uSZjbE-7_KC+L-Yoaw@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2012-05-17 at 00:19 +0530, Vaidyanathan Srinivasan wrote:
-
-> Let me take a case of two-socket,quad-core,HT x86 (Nehalem):
+On Wed, May 16, 2012 at 03:37:56PM -0400, chetan loke wrote:
+> On Wed, May 16, 2012 at 3:35 PM, Matthew Wilcox <willy@linux.intel.com> wrote:
+> > On Wed, May 16, 2012 at 03:31:55PM -0400, chetan loke wrote:
+> >> > +               if (list_empty(&ram_device->commands))
+> >> > +                       wake_up_process(ram_device->thread);
+> >>
+> >> Didn't look in detail but if the queue is empty then why would you
+> >> want to wake up the kthread? What if you just wake_up after
+> >> list_add_tail below?
+> >
+> > If the list is non-empty, then the kthread has already been woken up
+> > and doesn't need to be woken again.
 > 
-> SDTL_SHARE_POWERLINE should be passed along with a cpumask that
-> represents sd_init_CPU or cpu_cpu_mask today.  So the number of
-> domains we build per-cpu will depend on the topology and the
-> sched_powersavings settings. 
+> Sorry, not able to follow. wait_even_interruptible will put kthread to
+> sleep. So how will it be already awake?
 
-No, the topology should at all time be independent of powersavings,
-current x86's topology depending on that is one of the biggest warts
-ever. Also sched_powersavings, doesn't actually exist anymore.
+Consider the following:
 
-The NHM-EP from your example should do just two levels since mc and cpu
-are identical, I guess we could add a pass that merges identical masks
-so you can still specify 3 levels if you want.
+CPU 0			CPU 1
+->queuecommand
+lock
+wakes kthread
+queues command 1
+unlock
 
-The NUMA stuff is done automatically based on SLIT, so you don't need to
-go above the socket level.
+->queuecommand
+lock
+			kthread wakes
+			lock
+queues command 2
+unlock
+			dequeues command 1
+			dequeues command 2
+			unlock
+
+
+See?  No need to wake the kthread *if there's already something on the
+queue*, because you know it was already woken by whoever put the first
+command on the queue.
