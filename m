@@ -1,64 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760306Ab2EPSlB (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 May 2012 14:41:01 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:22040 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754240Ab2EPSk7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 May 2012 14:40:59 -0400
-Date: Wed, 16 May 2012 20:39:20 +0200
-From: Oleg Nesterov <oleg@redhat.com>
-To: "Eric W. Biederman" <ebiederm@xmission.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Pavel Emelyanov <xemul@parallels.com>,
-        Cyrill Gorcunov <gorcunov@openvz.org>,
-        Louis Rilling <louis.rilling@kerlabs.com>,
-        Mike Galbraith <efault@gmx.de>
-Subject: Re: [PATCH 2/3] pidns: Guarantee that the pidns init will be the
-	last pidns process reaped.
-Message-ID: <20120516183920.GA19975@redhat.com>
-References: <1335604790.5995.22.camel@marge.simpson.net> <20120428142605.GA20248@redhat.com> <m14ns355ru.fsf@fess.ebiederm.org> <20120429165846.GA19054@redhat.com> <1335754867.17899.4.camel@marge.simpson.net> <m1zk9rmyh4.fsf@fess.ebiederm.org> <20120501134214.f6b44f4a.akpm@linux-foundation.org> <87havs7rvv.fsf_-_@xmission.com> <8762c87rrd.fsf_-_@xmission.com>
+	id S1760396Ab2EPSuV (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 May 2012 14:50:21 -0400
+Received: from e28smtp08.in.ibm.com ([122.248.162.8]:52951 "EHLO
+	e28smtp08.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1760335Ab2EPSuT (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 16 May 2012 14:50:19 -0400
+Date: Thu, 17 May 2012 00:19:56 +0530
+From: Vaidyanathan Srinivasan <svaidy@linux.vnet.ibm.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Vincent Guittot <vincent.guittot@linaro.org>, paulmck@linux.vnet.ibm.com,
+        smuckle@quicinc.com, khilman@ti.com, Robin.Randhawa@arm.com,
+        suresh.b.siddha@intel.com, thebigcorporation@gmail.com,
+        venki@google.com, panto@antoniou-consulting.com, mingo@elte.hu,
+        paul.brett@intel.com, pdeschrijver@nvidia.com, pjt@google.com,
+        efault@gmx.de, fweisbec@gmail.com, geoff@infradead.org,
+        rostedt@goodmis.org, tglx@linutronix.de, amit.kucheria@linaro.org,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        linaro-sched-sig@lists.linaro.org,
+        Morten Rasmussen <Morten.Rasmussen@arm.com>,
+        Juri Lelli <juri.lelli@gmail.com>
+Subject: Re: Plumbers: Tweaking scheduler policy micro-conf RFP
+Message-ID: <20120516184956.GA23058@dirshya.in.ibm.com>
+Reply-To: svaidy@linux.vnet.ibm.com
+References: <CAKfTPtDSDAOAdv0GTDswZeRM7TmACrjok+5kddSaQpvy6_6xWw@mail.gmail.com>
+ <CAKfTPtCfiY7A29+e50F+6awd8BjNJjg4=uNN4ReZfdS_4FbpkA@mail.gmail.com>
+ <1337084609.27020.156.camel@laptop>
+ <CAKfTPtDz1-fR2i5x7AVd8sGZhX2VNtz2rnQC3ePrcHO9MWK3FQ@mail.gmail.com>
+ <1337086834.27020.162.camel@laptop>
+ <CAKfTPtDrZ-tfC81jnxwpB+DCtmxhU+VfoYbtSBr8MkFt+P8JcA@mail.gmail.com>
+ <1337096141.27694.82.camel@twins>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=iso-8859-1
 Content-Disposition: inline
-In-Reply-To: <8762c87rrd.fsf_-_@xmission.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <1337096141.27694.82.camel@twins>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+x-cbid: 12051618-2000-0000-0000-00000785C21D
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Eric, sorry for the huge delay, I was on vacation when you sent this patch...
+* Peter Zijlstra <peterz@infradead.org> [2012-05-15 17:35:41]:
 
-On 05/06, Eric W. Biederman wrote:
->
-> @@ -798,6 +815,12 @@ static void forget_original_parent(struct task_struct *father)
->  	exit_ptrace(father);
->  	reaper = find_new_reaper(father);
->
-> +	/* Return immediately if we aren't going to reparent anything */
-> +	if (unlikely(reaper == father)) {
-> +		write_unlock_irq(&tasklist_lock);
-> +		return;
-> +	}
+> On Tue, 2012-05-15 at 17:05 +0200, Vincent Guittot wrote:
+> > On 15 May 2012 15:00, Peter Zijlstra <peterz@infradead.org> wrote:
+> > > On Tue, 2012-05-15 at 14:57 +0200, Vincent Guittot wrote:
+ 
+[snip]
 
-I was confused by the comment. Afaics, it is not that "we aren't
-going to reparent", we need this change because we can't "reparent"
-to the same thread, list_for_each_entry_safe() below can never stop.
-But this is off-topic...
+> But really short, look at kernel/sched/core.c:default_topology[]
+> 
+> I'd like to get rid of sd_init_* into a single function like
+> sd_numa_init(), this would mean all archs would need to do is provide a
+> simple list of ever increasing masks that match their topology.
 
-Hmm. I don't think the patch is 100% correct. Afaics, this needs more
-delay_pidns_leader() checks.
+You are suggesting that the archs will provide sched/core a list of
+masks equivalent to the number of sched domain levels that we need to
+build.  The SDTL_SHARE_XXX flag will also be passed per mask in order
+to decide the SD flags for that domain.
 
-For example. Suppose we have a CLONE_NEWPID zombie I, it has an
-EXIT_DEAD child D so delay_pidns_leader(I) == T.
+> To aid this we can add some SDTL_flags, initially I was thinking of:
+> 
+>  SDTL_SHARE_CORE	-- aka SMT
+>  SDTL_SHARE_CACHE	-- LLC cache domain (typically multi-core)
+>  SDTL_SHARE_MEMORY	-- NUMA-node (typically socket)
+> 
+> The 'performance' policy is typically to spread over shared resources so
+> as to minimize contention on these.
+> 
+> If you want to add some power we need some extra flags, maybe something
+> like:
+> 
+>  SDTL_SHARE_POWERLINE	-- power domain (typically socket)
 
-Now suppose that I->real_parent exits, lets denote this task as P.
+Let me take a case of two-socket,quad-core,HT x86 (Nehalem):
 
-Suppose that P->real_parent ignores SIGCHLD.
+SDTL_SHARE_POWERLINE should be passed along with a cpumask that
+represents sd_init_CPU or cpu_cpu_mask today.  So the number of
+domains we build per-cpu will depend on the topology and the
+sched_powersavings settings. 
 
-In this case P will do release_task(I) prematurely. And worse, when
-D finally does realease_task(D) it will do realease_task(I) again.
-
-Oleg.
+--Vaidy
 
