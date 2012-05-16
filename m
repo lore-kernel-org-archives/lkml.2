@@ -1,38 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754826Ab2EPPZa (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 May 2012 11:25:30 -0400
-Received: from mail-wg0-f44.google.com ([74.125.82.44]:59049 "EHLO
-	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753950Ab2EPPZ3 (ORCPT
+	id S1755084Ab2EPP01 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 May 2012 11:26:27 -0400
+Received: from mail-yw0-f46.google.com ([209.85.213.46]:63142 "EHLO
+	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753950Ab2EPP0Z (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 May 2012 11:25:29 -0400
+	Wed, 16 May 2012 11:26:25 -0400
+Date: Wed, 16 May 2012 12:26:19 -0300
+From: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+To: Namhyung Kim <namhyung.kim@lge.com>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Mackerras <paulus@samba.org>,
+        Ingo Molnar <mingo@redhat.com>, Namhyung Kim <namhyung@gmail.com>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 2/3] Revert 'perf evlist: Fix creation of cpu map'
+Message-ID: <20120516152619.GD7864@infradead.org>
+References: <1337161549-9870-1-git-send-email-namhyung.kim@lge.com>
+ <1337161549-9870-2-git-send-email-namhyung.kim@lge.com>
 MIME-Version: 1.0
-In-Reply-To: <alpine.LNX.2.00.1205160932280.8796@pobox.suse.cz>
-References: <alpine.LNX.2.00.1205160932280.8796@pobox.suse.cz>
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Wed, 16 May 2012 08:25:06 -0700
-X-Google-Sender-Auth: ZCM74LKEtsnA4yJIds9um1ntU5U
-Message-ID: <CA+55aFwP=-tgNfQSkV2HMdYXdaWZzSTLzvyLJ8cBEosh_zGwMw@mail.gmail.com>
-Subject: Re: [PATCH] floppy: convert to delayed work and single-thread wq
-To: Jiri Kosina <jkosina@suse.cz>
-Cc: Andrew Morton <akpm@linux-foundation.org>, Jens Axboe <axboe@kernel.dk>,
-        Stephen Hemminger <shemminger@vyatta.com>, Tejun Heo <tj@kernel.org>,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1337161549-9870-2-git-send-email-namhyung.kim@lge.com>
+X-Url: http://acmel.wordpress.com
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, May 16, 2012 at 12:36 AM, Jiri Kosina <jkosina@suse.cz> wrote:
->
-> This patch converts all the timers and bottom halfs to be processed in a
-> single workqueue. This aproach has been already discussed back in 2010 and
-> Acked by Linus [1], but it then never made it to the tree.
+Em Wed, May 16, 2012 at 06:45:48PM +0900, Namhyung Kim escreveu:
+> The commit 55261f46702c ("perf evlist: Fix creation of cpu
+> map") changed to create a per-task event when no cpu target
+> is specified. However it caused a problem since perf-task do
+> not allow event inheritance due to scalability issues so
+> that the result will contain samples only from parent, not
+> from its children.
+> 
+> So we should use perf-task-per-cpu events anyway to get the
+> right result. Revert it.
+> 
+> Reported-by: Linus Torvalds <torvalds@linux-foundation.org>
+> Analysed-by: Ingo Molnar <mingo@kernel.org>
+> Acked-and-tested-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
 
-Nobody ever actually reported testing it on real hardware, and I
-didn't want to take it untested.
+I'm applying it, but while trying to figure out if the logic was right I
+tried:
 
-Since you have tested this, I will have *zero* problems with taking it for 3.5.
+perf top -C 0 -u acme
 
-                     Linus
+To check what is that this user is doing on that CPU, and its not
+possible :-\
+
+UID switch overriding CPU!
+
+- Arnaldo
