@@ -1,53 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759596Ab2EPR5R (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 May 2012 13:57:17 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:54211 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752823Ab2EPR5Q (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 May 2012 13:57:16 -0400
-Message-ID: <4FB3E9FE.5020902@zytor.com>
-Date: Wed, 16 May 2012 10:55:10 -0700
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:11.0) Gecko/20120329 Thunderbird/11.0.1
+	id S1759644Ab2EPR6k (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 May 2012 13:58:40 -0400
+Received: from out1-smtp.messagingengine.com ([66.111.4.25]:49586 "EHLO
+	out1-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752823Ab2EPR6j (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 16 May 2012 13:58:39 -0400
+X-Sasl-enc: RF583eF8ptWmmGyM+5HF/d2s9riqdhLqJlaokd4kgy1T 1337191117
+Date: Wed, 16 May 2012 10:58:36 -0700
+From: Greg KH <greg@kroah.com>
+To: Philipp Riemer <ruderphilipp@gmail.com>
+Cc: Josh Boyer <jwboyer@gmail.com>, Joe Perches <joe@perches.com>,
+        Paul Mundt <lethal@linux-sh.org>,
+        Michael =?iso-8859-1?Q?B=FCsch?= <m@bues.ch>,
+        Kuninori Morimoto <kuninori.morimoto.gx@renesas.com>,
+        Jiri Kosina <jkosina@suse.cz>,
+        Uwe =?iso-8859-1?Q?Kleine-K=F6nig?= 
+	<u.kleine-koenig@pengutronix.de>,
+        LKML <linux-kernel@vger.kernel.org>, Wang Chen <ellre923@gmail.com>,
+        Jonathan Corbet <corbet@lwn.net>
+Subject: Re: [GIT PULL] new mailmap file for the linux kernel git repository
+Message-ID: <20120516175836.GB3094@kroah.com>
+References: <CAFU-uVs_Gwacxj74cyekY2gv+zAq+Spba7nfPLdTc_dR3y8CYw@mail.gmail.com>
+ <1337184643.4818.8.camel@joe2Laptop>
+ <CAFU-uVv3Nx7hK73RvXtRUD43EoCyY_ER+oe5RScPc32VuuDpPA@mail.gmail.com>
+ <CA+5PVA56PO6v6pdCb5sd83XeC9a17oKNAb1MCru3vb39us2t0A@mail.gmail.com>
+ <CAFU-uVueBEOzC065jynvLqFU3S76yVqFB20B0q75sbRVSFsSgw@mail.gmail.com>
 MIME-Version: 1.0
-To: Alex Shi <alex.shi@intel.com>
-CC: tglx@linutronix.de, mingo@redhat.com, arnd@arndb.de, rostedt@goodmis.org,
-        fweisbec@gmail.com, jeremy@goop.org, riel@redhat.com, luto@mit.edu,
-        avi@redhat.com, len.brown@intel.com, dhowells@redhat.com,
-        fenghua.yu@intel.com, borislav.petkov@amd.com, yinghai@kernel.org,
-        ak@linux.intel.com, cpw@sgi.com, steiner@sgi.com,
-        akpm@linux-foundation.org, penberg@kernel.org, hughd@google.com,
-        rientjes@google.com, kosaki.motohiro@jp.fujitsu.com,
-        n-horiguchi@ah.jp.nec.com, tj@kernel.org, oleg@redhat.com,
-        axboe@kernel.dk, jmorris@namei.org, a.p.zijlstra@chello.nl,
-        kamezawa.hiroyu@jp.fujitsu.com, viro@zeniv.linux.org.uk,
-        linux-kernel@vger.kernel.org, yongjie.ren@intel.com
-Subject: Re: [PATCH v5 5/7] x86/tlb: add tlb_flushall_shift for specific CPU
-References: <1337072138-8323-1-git-send-email-alex.shi@intel.com> <1337072138-8323-6-git-send-email-alex.shi@intel.com> <4FB34DFB.2040902@intel.com>
-In-Reply-To: <4FB34DFB.2040902@intel.com>
-X-Enigmail-Version: 1.4
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAFU-uVueBEOzC065jynvLqFU3S76yVqFB20B0q75sbRVSFsSgw@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/15/2012 11:49 PM, Alex Shi wrote:
-> +	if (!cpu_has_invlpg || vma->vm_flags & VM_HUGETLB
-> +			|| tlb_flushall_shift == (u16)TLB_FLUSH_ALL) {
+On Wed, May 16, 2012 at 07:01:54PM +0200, Philipp Riemer wrote:
+> I thought about the fact that over time people move companies. In my
+> case, I try to do some kind of time series analysis and thus it might
+> be interesting to see who was employed but now works as a freelancer
+> etc. Here, the opinion of other people who analyze the kernel such as
+> Wang Chen, Greg KH, or Jonathan Corbet might be interesting...
 
-I asked for you to fold the cpu_has_invlpg test into tlb_flushall_shift.
- Also, (u16)TLB_FLUSH_ALL really is hit up with the ugly stick... why on
-earth is this u16?  It's a bit shift, so it can't be bigger than 6 bits
-anyway... and if you want to be able to use -1 as a sentinel you might
-as well make it a signed value and use < 0 or == -1 as the test.
+The mailmap file does not show this type of thing very well at all, and
+I wouldn't recommend trying to keep it up to date this way.  I say this
+as someone who tries to keep track of who is working for whom.  This
+information changes over time, and as others have pointed out, some
+people use multiple email addresses to categorize their submittions
+(work vs. hobby) for legal and personal reasons.
 
-Am I missing something really fundamental here?
+Our database has been made public at times, so you should be using that
+instead of trying to update the mailmap file.
 
-	-hpa
+So while it might be nice to update it, why do you want to do so?  We
+have updated and cleaned-up log files publicly if you want to use those
+for research (they are in my github archive).  Modifying things here
+probably would not be a good idea.
 
--- 
-H. Peter Anvin, Intel Open Source Technology Center
-I work for Intel.  I don't speak on their behalf.
+sorry,
 
+greg k-h
