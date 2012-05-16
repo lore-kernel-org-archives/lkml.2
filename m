@@ -1,78 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757541Ab2EPVFd (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 May 2012 17:05:33 -0400
-Received: from s15943758.onlinehome-server.info ([217.160.130.188]:59692 "EHLO
-	mail.x86-64.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753938Ab2EPVFb (ORCPT
+	id S1757074Ab2EPVKC (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 May 2012 17:10:02 -0400
+Received: from casper.infradead.org ([85.118.1.10]:53762 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753938Ab2EPVKA convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 May 2012 17:05:31 -0400
-Date: Wed, 16 May 2012 23:05:14 +0200
-From: Borislav Petkov <bp@amd64.org>
-To: "Luck, Tony" <tony.luck@intel.com>
-Cc: Borislav Petkov <bp@amd64.org>, Mauro Carvalho Chehab <mchehab@redhat.com>,
-        Linux Edac Mailing List <linux-edac@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Doug Thompson <norsk5@yahoo.com>, Steven Rostedt <rostedt@goodmis.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Ingo Molnar <mingo@redhat.com>
-Subject: Re: [PATCH v22] edac, ras/hw_event.h: use events to handle hw issues
-Message-ID: <20120516210514.GA5801@aftab.osrc.amd.com>
-References: <20120515150957.GC27806@aftab.osrc.amd.com>
- <4FB27EDC.8040001@redhat.com>
- <20120515163855.GE27806@aftab.osrc.amd.com>
- <4FB38DDF.7030009@redhat.com>
- <20120516131656.GA2202@aftab.osrc.amd.com>
- <4FB3C4D3.7000802@redhat.com>
- <20120516154708.GC2202@aftab.osrc.amd.com>
- <4FB3DB45.4060101@redhat.com>
- <20120516195951.GA5326@aftab.osrc.amd.com>
- <3908561D78D1C84285E8C5FCA982C28F192EFA27@ORSMSX104.amr.corp.intel.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <3908561D78D1C84285E8C5FCA982C28F192EFA27@ORSMSX104.amr.corp.intel.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Wed, 16 May 2012 17:10:00 -0400
+Message-ID: <1337202569.4281.13.camel@twins>
+Subject: Re: [PATCH v5 6/7] x86/tlb: optimizing flush_tlb_mm
+From: Peter Zijlstra <peterz@infradead.org>
+To: Alex Shi <alex.shi@intel.com>
+Cc: Nick Piggin <npiggin@gmail.com>, tglx@linutronix.de, mingo@redhat.com,
+        hpa@zytor.com, arnd@arndb.de, rostedt@goodmis.org, fweisbec@gmail.com,
+        jeremy@goop.org, riel@redhat.com, luto@mit.edu, avi@redhat.com,
+        len.brown@intel.com, dhowells@redhat.com, fenghua.yu@intel.com,
+        borislav.petkov@amd.com, yinghai@kernel.org, ak@linux.intel.com,
+        cpw@sgi.com, steiner@sgi.com, akpm@linux-foundation.org,
+        penberg@kernel.org, hughd@google.com, rientjes@google.com,
+        kosaki.motohiro@jp.fujitsu.com, n-horiguchi@ah.jp.nec.com,
+        tj@kernel.org, oleg@redhat.com, axboe@kernel.dk, jmorris@namei.org,
+        kamezawa.hiroyu@jp.fujitsu.com, viro@zeniv.linux.org.uk,
+        linux-kernel@vger.kernel.org, yongjie.ren@intel.com,
+        linux-arch@vger.kernel.org
+Date: Wed, 16 May 2012 23:09:29 +0200
+In-Reply-To: <4FB3ACD2.5010900@intel.com>
+References: <1337072138-8323-1-git-send-email-alex.shi@intel.com>
+	   <1337072138-8323-7-git-send-email-alex.shi@intel.com>
+	   <CAPa8GCDsSOrzQwX2qRJyocYAZdGbwjD4t4fjxmWXV6=EoXjXZw@mail.gmail.com>
+	   <4FB2590C.1050303@intel.com> <1337092577.27694.45.camel@twins>
+	  <1337093840.27694.56.camel@twins> <4FB34D49.1060809@intel.com>
+	 <1337155239.27694.131.camel@twins> <4FB3ACD2.5010900@intel.com>
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
+X-Mailer: Evolution 3.2.2- 
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, May 16, 2012 at 08:27:24PM +0000, Luck, Tony wrote:
-> > No, userspace will be doing parsing because it is the only sensible
-> > thing to do. The kernel's job is to carry out enough information for
-> > the user to handle the error in a way which is just enough. No more, no
-> > less. It is in no f*cking way expected to make it pretty and in suitable
-> > portions so that userspace can consume it.
+On Wed, 2012-05-16 at 21:34 +0800, Alex Shi wrote:
 > 
-> My requirement on prettiness was just that the information useful
-> to a normal system owner come first. Enough to know how serious the
-> problem is, and which component is affected. The fine details must
-> be in the "( ... )" part - and will generally only be of interest
-> to very sophisticated users.
+> So, if the minimum change of tlb->start/end can be protected by
+> HAVE_GENERIC_MMU_GATHER, it is safe and harmless, am I right?
 > 
-> We've reached that goal.
-> 
-> Looking at the next part ... which is how to write useful analysis
-> tools that study these logs. We have some common elements in trace
-> records - but a there is (deliberately) plenty of scope for drivers
-> to add their own customizations. If these bits are going to be
-> used by the user mode tools - then they will have per-driver
-> parsing code that will be tightly linked to the version of the driver.
+safe yes, but not entirely harmless. A quick look seems to suggest you
+fail for VM_HUGETLB. If your mmu_gather spans a vma with VM_HUGETLB
+you'll do a regular range flush not a full mm flush like the other paths
+do.
 
-This is exactly what I'm trying to explain - the kernel carries out the
-information, userspace parses it the way it sees fit.
+Anyway, I did a quick refresh of my series on a recent -tip tree:
 
-> Are we happy with this? Once the patch goes it, we have created an
-> ABI which will be hard to change.
+ git://git.kernel.org/pub/scm/linux/kernel/git/peterz/mmu.git tlb-unify
 
-Yes, very true.
+With that all you need is to "select HAVE_MMU_GATHER_RANGE" for x86 and
+implement a useful flush_tlb_range().
 
--- 
-Regards/Gruss,
-Boris.
+In particular, see:
+http://git.kernel.org/?p=linux/kernel/git/peterz/mmu.git;a=commitdiff;h=05e53144177e6242fda404045f50f48114bcf185;hp=2cd7dc710652127522392f4b7ecb5fa6e954941e
 
-Advanced Micro Devices GmbH
-Einsteinring 24, 85609 Dornach
-GM: Alberto Bozzo
-Reg: Dornach, Landkreis Muenchen
-HRB Nr. 43632 WEEE Registernr: 129 19551
+I've slightly changed the code to address an open issue with the
+vm_flags tracking. We now force flush the mmu_gather whenever VM_HUGETLB
+flips because most (all?) archs that look at that flag expect pure huge
+pages and not a mixture.
+
+I've seem to have misplaced my cross-compiler set, so I've only compiled
+x86-64 for now.
