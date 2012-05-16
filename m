@@ -1,105 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759708Ab2EPH51 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 May 2012 03:57:27 -0400
-Received: from cn.fujitsu.com ([222.73.24.84]:43333 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1759690Ab2EPH5Z (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 May 2012 03:57:25 -0400
-X-IronPort-AV: E=Sophos;i="4.75,602,1330876800"; 
-   d="scan'208";a="4967703"
-Message-ID: <4FB35D98.8080500@cn.fujitsu.com>
-Date: Wed, 16 May 2012 15:56:08 +0800
-From: zhangyanfei <zhangyanfei@cn.fujitsu.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100413 Fedora/3.0.4-2.fc13 Thunderbird/3.0.4
+	id S1759721Ab2EPH5x (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 May 2012 03:57:53 -0400
+Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:40053 "EHLO
+	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759668Ab2EPH5v (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 16 May 2012 03:57:51 -0400
+X-SecurityPolicyCheck: OK by SHieldMailChecker v1.7.4
+Message-ID: <4FB35D85.5070304@jp.fujitsu.com>
+Date: Wed, 16 May 2012 16:55:49 +0900
+From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.0; rv:12.0) Gecko/20120428 Thunderbird/12.0.1
 MIME-Version: 1.0
-To: Avi Kivity <avi@redhat.com>, mtosatti@redhat.com
-CC: ebiederm@xmission.com, luto@mit.edu, Joerg Roedel <joerg.roedel@amd.com>,
-        dzickus@redhat.com, paul.gortmaker@windriver.com,
-        ludwig.nussel@suse.de, linux-kernel@vger.kernel.org,
-        kvm@vger.kernel.org, kexec@lists.infradead.org,
-        Greg KH <gregkh@linuxfoundation.org>
-Subject: [PATCH v2 4/5] ksysfs: Export VMCSINFO via sysfs
-References: <4FB35C48.30708@cn.fujitsu.com>
-In-Reply-To: <4FB35C48.30708@cn.fujitsu.com>
-X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2012/05/16 15:56:10,
-	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2012/05/16 15:56:13,
-	Serialize complete at 2012/05/16 15:56:13
+To: Glauber Costa <glommer@parallels.com>
+CC: linux-kernel@vger.kernel.org, cgroups@vger.kernel.org, linux-mm@kvack.org,
+        Tejun Heo <tj@kernel.org>, Li Zefan <lizefan@huawei.com>,
+        Greg Thelen <gthelen@google.com>,
+        Suleiman Souhlal <suleiman@google.com>, Michal Hocko <mhocko@suse.cz>,
+        Johannes Weiner <hannes@cmpxchg.org>, devel@openvz.org,
+        Christoph Lameter <cl@linux.com>,
+        Pekka Enberg <penberg@cs.helsinki.fi>
+Subject: Re: [PATCH v2 19/29] skip memcg kmem allocations in specified code
+ regions
+References: <1336758272-24284-1-git-send-email-glommer@parallels.com> <1336758272-24284-20-git-send-email-glommer@parallels.com> <4FB1C398.1010000@jp.fujitsu.com> <4FB346E3.5060507@parallels.com>
+In-Reply-To: <4FB346E3.5060507@parallels.com>
+Content-Type: text/plain; charset=ISO-2022-JP
 Content-Transfer-Encoding: 7bit
-Content-Type: text/plain; charset=GB2312
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch creates two sysfs files to export where VMCSINFO is
-allocated and what maximum size of VMCSINFO is, as below:
-        $ cat /sys/kernel/vmcsinfo
-        1cb88a0
-        $ cat /sys/kernel/vmcsinfo_maxsize
-        1000
-/sys/kernel/vmcsinfo shows the physical address of VMCSINFO,
-while /sys/kernel/vmcsinfo_maxsize shows the max size of VMCSINFO.
+(2012/05/16 15:19), Glauber Costa wrote:
 
-Signed-off-by: zhangyanfei <zhangyanfei@cn.fujitsu.com>
----
- kernel/ksysfs.c |   29 +++++++++++++++++++++++++++++
- 1 files changed, 29 insertions(+), 0 deletions(-)
+> On 05/15/2012 06:46 AM, KAMEZAWA Hiroyuki wrote:
+>> (2012/05/12 2:44), Glauber Costa wrote:
+>>
+>>> This patch creates a mechanism that skip memcg allocations during
+>>> certain pieces of our core code. It basically works in the same way
+>>> as preempt_disable()/preempt_enable(): By marking a region under
+>>> which all allocations will be accounted to the root memcg.
+>>>
+>>> We need this to prevent races in early cache creation, when we
+>>> allocate data using caches that are not necessarily created already.
+>>>
+>>> Signed-off-by: Glauber Costa<glommer@parallels.com>
+>>> CC: Christoph Lameter<cl@linux.com>
+>>> CC: Pekka Enberg<penberg@cs.helsinki.fi>
+>>> CC: Michal Hocko<mhocko@suse.cz>
+>>> CC: Kamezawa Hiroyuki<kamezawa.hiroyu@jp.fujitsu.com>
+>>> CC: Johannes Weiner<hannes@cmpxchg.org>
+>>> CC: Suleiman Souhlal<suleiman@google.com>
+>>
+>>
+>> The concept seems okay to me but...
+>>
+>>> ---
+>>>   include/linux/sched.h |    1 +
+>>>   mm/memcontrol.c       |   25 +++++++++++++++++++++++++
+>>>   2 files changed, 26 insertions(+), 0 deletions(-)
+>>>
+>>> diff --git a/include/linux/sched.h b/include/linux/sched.h
+>>> index 81a173c..0501114 100644
+>>> --- a/include/linux/sched.h
+>>> +++ b/include/linux/sched.h
+>>> @@ -1613,6 +1613,7 @@ struct task_struct {
+>>>   		unsigned long nr_pages;	/* uncharged usage */
+>>>   		unsigned long memsw_nr_pages; /* uncharged mem+swap usage */
+>>>   	} memcg_batch;
+>>> +	atomic_t memcg_kmem_skip_account;
+>>
+>>
+>> If only 'current' thread touch this, you don't need to make this atomic counter.
+>> you can use 'long'.
+>>
+> You're absolutely right, Kame, thanks.
+> I first used atomic_t because I had it tested against current->mm->owner.
+> 
+> Do you, btw, agree to use current instead of owner here?
+> You can find the rationale in earlier mails between me and Suleiman.
 
-diff --git a/kernel/ksysfs.c b/kernel/ksysfs.c
-index 4e316e1..8a27ece 100644
---- a/kernel/ksysfs.c
-+++ b/kernel/ksysfs.c
-@@ -18,6 +18,8 @@
- #include <linux/stat.h>
- #include <linux/sched.h>
- #include <linux/capability.h>
-+#include <asm/vmcsinfo.h>
-+#include <asm/virtext.h>
- 
- #define KERNEL_ATTR_RO(_name) \
- static struct kobj_attribute _name##_attr = __ATTR_RO(_name)
-@@ -133,6 +135,29 @@ KERNEL_ATTR_RO(vmcoreinfo);
- 
- #endif /* CONFIG_KEXEC */
- 
-+#ifdef CONFIG_X86
-+static ssize_t vmcsinfo_show(struct kobject *kobj,
-+			     struct kobj_attribute *attr, char *buf)
-+{
-+	if (cpu_has_vmx())
-+		return sprintf(buf, "%lx\n",
-+			       paddr_vmcsinfo_note());
-+	return 0;
-+}
-+KERNEL_ATTR_RO(vmcsinfo);
-+
-+static ssize_t vmcsinfo_maxsize_show(struct kobject *kobj,
-+				     struct kobj_attribute *attr, char *buf)
-+{
-+	if (cpu_has_vmx())
-+		return sprintf(buf, "%x\n",
-+			       (unsigned int)vmcsinfo_max_size);
-+	return 0;
-+}
-+KERNEL_ATTR_RO(vmcsinfo_maxsize);
-+
-+#endif /* CONFIG_X86 */
-+
- /* whether file capabilities are enabled */
- static ssize_t fscaps_show(struct kobject *kobj,
- 				  struct kobj_attribute *attr, char *buf)
-@@ -182,6 +207,10 @@ static struct attribute * kernel_attrs[] = {
- 	&kexec_crash_size_attr.attr,
- 	&vmcoreinfo_attr.attr,
- #endif
-+#ifdef CONFIG_X86
-+	&vmcsinfo_attr.attr,
-+	&vmcsinfo_maxsize_attr.attr,
-+#endif
- 	NULL
- };
- 
--- 
-1.7.1
+I agree to use current. This information depends on the context of callers.
+
+Thanks,
+-Kame
+
+
