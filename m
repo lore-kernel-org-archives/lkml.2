@@ -1,59 +1,128 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757123Ab2EPQ3w (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 May 2012 12:29:52 -0400
-Received: from g4t0016.houston.hp.com ([15.201.24.19]:32671 "EHLO
-	g4t0016.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751754Ab2EPQ3u (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 May 2012 12:29:50 -0400
-Message-ID: <1337185786.2424.31.camel@lorien2>
-Subject: Re: [PATCH 4/6] staging: android: persistent_ram: Move to
- fs/pstore/ram_core.c
-From: Shuah Khan <shuahkhan@gmail.com>
-Reply-To: shuahkhan@gmail.com
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: shuahkhan@gmail.com, Anton Vorontsov <anton.vorontsov@linaro.org>,
-        Kees Cook <keescook@chromium.org>, Colin Cross <ccross@android.com>,
-        devel@driverdev.osuosl.org, linaro-kernel@lists.linaro.org,
-        Arnd Bergmann <arnd@arndb.de>, patches@linaro.org,
-        Marco Stornelli <marco.stornelli@gmail.com>,
-        Stephen Boyd <sboyd@codeaurora.org>, linux-kernel@vger.kernel.org,
-        arve@android.com, Jesper Juhl <jj@chaosbits.net>,
-        John Stultz <john.stultz@linaro.org>,
-        Rebecca Schultz Zavin <rebecca@android.com>,
-        WANG Cong <xiyou.wangcong@gmail.com>,
-        Andrew Morton <akpm@linux-foundation.org>, kernel-team@android.com,
-        Thomas Meyer <thomas@m3y3r.de>
-Date: Wed, 16 May 2012 10:29:46 -0600
-In-Reply-To: <20120516150550.GA22945@kroah.com>
-References: <20120516124109.GA14658@lizard> <20120516124338.GD18345@lizard>
-	 <20120516150550.GA22945@kroah.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3-0ubuntu6 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	id S1757259Ab2EPQeg (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 May 2012 12:34:36 -0400
+Received: from fieldses.org ([174.143.236.118]:47811 "EHLO fieldses.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756931Ab2EPQef (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 16 May 2012 12:34:35 -0400
+Date: Wed, 16 May 2012 12:34:32 -0400
+From: "J. Bruce Fields" <bfields@fieldses.org>
+To: Stanislav Kinsbursky <skinsbursky@parallels.com>
+Cc: Trond.Myklebust@netapp.com, linux-nfs@vger.kernel.org,
+        linux-kernel@vger.kernel.org, devel@openvz.org
+Subject: Re: [RFC PATCH] SUNRPC: protect service sockets lists during
+ per-net shutdown
+Message-ID: <20120516163432.GD17471@fieldses.org>
+References: <20120509143518.GB24233@fieldses.org>
+ <20120511114126.8399.2554.stgit@localhost.localdomain>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120511114126.8399.2554.stgit@localhost.localdomain>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2012-05-16 at 08:05 -0700, Greg Kroah-Hartman wrote:
+On Fri, May 11, 2012 at 03:41:56PM +0400, Stanislav Kinsbursky wrote:
+> Service sv_tempsocks and sv_permsocks lists are accessible by tasks with
+> different network namespaces, and thus per-net service destruction must be
+> protected.
+> These lists are protected by service sv_lock. So lets wrap list munipulations
+> with this lock and move tranports destruction outside wrapped area to prevent
+> deadlocks.
+
+The comment I originally quoted is still wrong now:
+
+	/*
+	 * The set of xprts (contained in the sv_tempsocks and
+	 * sv_permsocks lists) is now constant, since it is modified
+	 * only by accepting new sockets (done by service threads in
+	 * svc_recv) or aging old ones (done by sv_temptimer), or
+	 * configuration changes (excluded by whatever locking the
+	 * caller is using--nfsd_mutex in the case of nfsd).  So it's
+	 * safe to traverse those lists and shut everything down:
+	 */
+
+And I think that's still a problem.
+
+A server thread could be running svc_recv(), handling a new connection
+on a listening socket in the network namespace that we're shutting down.
+
+And then I'm not sure exactly what happens, but it doesn't look right.
+At best we end up adding a connection from the new network namespace
+after we thought we'd got rid of them all.  More likely we crash
+somewhere.
+
+--b.
+
 
 > 
-> After applying this patch, and building things, I get the following
-> errors:
-
-Greg,
-
-> What went wrong?
+> Signed-off-by: Stanislav Kinsbursky <skinsbursky@parallels.com>
+> ---
+>  net/sunrpc/svc_xprt.c |   29 +++++++++++++++++++++++++----
+>  1 files changed, 25 insertions(+), 4 deletions(-)
 > 
-> I've now applied the first 3 patches in this series to my tree, plus the
-> 2 others from the linux-next tree, so care to just fix up these last
-> three and resend them?
-
-Picking [PATCH 5/6] staging/android: Remove ram_console driver should
-fix this problem. This patches removes ram_console.c from the staging
-area.
-
--- Shuah
-
+> diff --git a/net/sunrpc/svc_xprt.c b/net/sunrpc/svc_xprt.c
+> index 8195c6a..233f993 100644
+> --- a/net/sunrpc/svc_xprt.c
+> +++ b/net/sunrpc/svc_xprt.c
+> @@ -954,7 +954,8 @@ static void svc_clear_pools(struct svc_serv *serv, struct net *net)
+>  	}
+>  }
+>  
+> -static void svc_clear_list(struct list_head *xprt_list, struct net *net)
+> +static void svc_clear_list(struct list_head *xprt_list, struct net *net,
+> +			   struct list_head *kill_list)
+>  {
+>  	struct svc_xprt *xprt;
+>  	struct svc_xprt *tmp;
+> @@ -962,7 +963,8 @@ static void svc_clear_list(struct list_head *xprt_list, struct net *net)
+>  	list_for_each_entry_safe(xprt, tmp, xprt_list, xpt_list) {
+>  		if (xprt->xpt_net != net)
+>  			continue;
+> -		svc_delete_xprt(xprt);
+> +		list_move(&xprt->xpt_list, kill_list);
+> +		set_bit(XPT_DETACHED, &xprt->xpt_flags);
+>  	}
+>  	list_for_each_entry(xprt, xprt_list, xpt_list)
+>  		BUG_ON(xprt->xpt_net == net);
+> @@ -970,6 +972,15 @@ static void svc_clear_list(struct list_head *xprt_list, struct net *net)
+>  
+>  void svc_close_net(struct svc_serv *serv, struct net *net)
+>  {
+> +	struct svc_xprt *xprt;
+> +	LIST_HEAD(kill_list);
+> +
+> +	/*
+> +	 * Protect the lists, since they can be by tasks with different network
+> +	 * namespace contexts.
+> +	 */
+> +	spin_lock(&serv->sv_lock);
+> +
+>  	svc_close_list(&serv->sv_tempsocks, net);
+>  	svc_close_list(&serv->sv_permsocks, net);
+>  
+> @@ -979,8 +990,18 @@ void svc_close_net(struct svc_serv *serv, struct net *net)
+>  	 * svc_enqueue will not add new entries without taking the
+>  	 * sp_lock and checking XPT_BUSY.
+>  	 */
+> -	svc_clear_list(&serv->sv_tempsocks, net);
+> -	svc_clear_list(&serv->sv_permsocks, net);
+> +	svc_clear_list(&serv->sv_tempsocks, net, &kill_list);
+> +	svc_clear_list(&serv->sv_permsocks, net, &kill_list);
+> +
+> +	spin_unlock(&serv->sv_lock);
+> +
+> +	/*
+> +	 * Destroy collected transports.
+> +	 * Note: tranports has been marked as XPT_DETACHED on svc_clear_list(),
+> +	 * so no need to protect againt list_del() in svc_delete_xprt().
+> +	 */
+> +	list_for_each_entry(xprt, &kill_list, xpt_list)
+> +		svc_delete_xprt(xprt);
+>  }
+>  
+>  /*
+> 
