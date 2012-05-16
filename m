@@ -1,79 +1,145 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758029Ab2EPGOM (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 May 2012 02:14:12 -0400
-Received: from mx2.parallels.com ([64.131.90.16]:38227 "EHLO mx2.parallels.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751145Ab2EPGOK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 May 2012 02:14:10 -0400
-Message-ID: <4FB34534.3070306@parallels.com>
-Date: Wed, 16 May 2012 10:12:04 +0400
-From: Glauber Costa <glommer@parallels.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.1) Gecko/20120216 Thunderbird/10.0.1
+	id S1758112Ab2EPGPu (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 May 2012 02:15:50 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:40532 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751335Ab2EPGPs (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 16 May 2012 02:15:48 -0400
+Date: Tue, 15 May 2012 23:14:17 -0700
+From: Anton Vorontsov <anton.vorontsov@linaro.org>
+To: Kees Cook <keescook@chromium.org>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Colin Cross <ccross@android.com>, Arnd Bergmann <arnd@arndb.de>,
+        John Stultz <john.stultz@linaro.org>, arve@android.com,
+        Rebecca Schultz Zavin <rebecca@android.com>,
+        Jesper Juhl <jj@chaosbits.net>, Randy Dunlap <rdunlap@xenotime.net>,
+        Stephen Boyd <sboyd@codeaurora.org>, Thomas Meyer <thomas@m3y3r.de>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Marco Stornelli <marco.stornelli@gmail.com>,
+        WANG Cong <xiyou.wangcong@gmail.com>, linux-kernel@vger.kernel.org,
+        devel@driverdev.osuosl.org, linaro-kernel@lists.linaro.org,
+        patches@linaro.org, kernel-team@android.com
+Subject: Re: [PATCH 10/11] pstore/ram: Switch to persistent_ram routines
+Message-ID: <20120516061416.GB18058@lizard>
+References: <20120512001506.GA8653@lizard>
+ <20120512001840.GJ14782@lizard>
+ <CAGXu5j+BPHPCnJ+ont8CGuUjjEYB_d6K-YtVJgNA7uwkpbfDoQ@mail.gmail.com>
 MIME-Version: 1.0
-To: David Rientjes <rientjes@google.com>
-CC: <linux-kernel@vger.kernel.org>, <cgroups@vger.kernel.org>,
-        <linux-mm@kvack.org>, <kamezawa.hiroyu@jp.fujitsu.com>,
-        Tejun Heo <tj@kernel.org>, Li Zefan <lizefan@huawei.com>,
-        Greg Thelen <gthelen@google.com>,
-        Suleiman Souhlal <suleiman@google.com>, Michal Hocko <mhocko@suse.cz>,
-        Johannes Weiner <hannes@cmpxchg.org>, <devel@openvz.org>,
-        Christoph Lameter <cl@linux.com>,
-        Pekka Enberg <penberg@cs.helsinki.fi>
-Subject: Re: [PATCH v2 01/29] slab: dup name string
-References: <1336758272-24284-1-git-send-email-glommer@parallels.com> <1336758272-24284-2-git-send-email-glommer@parallels.com> <alpine.DEB.2.00.1205151502000.18595@chino.kir.corp.google.com>
-In-Reply-To: <alpine.DEB.2.00.1205151502000.18595@chino.kir.corp.google.com>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <CAGXu5j+BPHPCnJ+ont8CGuUjjEYB_d6K-YtVJgNA7uwkpbfDoQ@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/16/2012 02:04 AM, David Rientjes wrote:
-> On Fri, 11 May 2012, Glauber Costa wrote:
->
->> diff --git a/mm/slab.c b/mm/slab.c
->> index e901a36..91b9c13 100644
->> --- a/mm/slab.c
->> +++ b/mm/slab.c
->> @@ -2118,6 +2118,7 @@ static void __kmem_cache_destroy(struct kmem_cache *cachep)
->>   			kfree(l3);
->>   		}
->>   	}
->> +	kfree(cachep->name);
->>   	kmem_cache_free(&cache_cache, cachep);
->>   }
->>
->> @@ -2526,7 +2527,7 @@ kmem_cache_create (const char *name, size_t size, size_t align,
->>   		BUG_ON(ZERO_OR_NULL_PTR(cachep->slabp_cache));
->>   	}
->>   	cachep->ctor = ctor;
->> -	cachep->name = name;
->> +	cachep->name = kstrdup(name, GFP_KERNEL);
->>
->>   	if (setup_cpu_cache(cachep, gfp)) {
->>   		__kmem_cache_destroy(cachep);
->
-> Couple problems:
->
->   - allocating memory for a string of an unknown, unchecked size, and
->
->   - could potentially return NULL which I suspect will cause problems
->     later.
+Hello Kees,
 
-Well, this is what slub does.
+On Mon, May 14, 2012 at 03:21:17PM -0700, Kees Cook wrote:
+[...]
+> > -       buf = cxt->virt_addr + (id * cxt->record_size);
+> > -       memset(buf, '\0', cxt->record_size);
+> > +       persistent_ram_free_old(cxt->przs[id]);
+> 
+> Hm, I don't think persistent_ram_free_old() is what's wanted here.
+> That appears to entirely release the region? I want to make sure the
+> memory is cleared first. And will this area come back on a write, or
+> does it stay released?
 
-I sent already two patches for it: One removing this from the slub, one 
-adding this to the slab.
+It just releases ECC-restored memory region (a copy). The original
+(persistent) region is still fully reusable after that call.
 
-Right now I am comfortable with this one, because it makes it slightly 
-easier in the latest patches of my series.
+(It is a pity that pstore internals can't use the restored copy
+directly, as pstore expects that it will release the region itself
+after pstore_mkfile(), so we somewhat duplicate the memory during
+psi->read(). We'd better fix it some day, but it's a minor issue
+so far.)
 
-But note the word: slightest.
+> >
+> >        return 0;
+> >  }
+> > @@ -200,6 +203,7 @@ static int __init ramoops_probe(struct platform_device *pdev)
+> >        struct ramoops_platform_data *pdata = pdev->dev.platform_data;
+> >        struct ramoops_context *cxt = &oops_cxt;
+> >        int err = -EINVAL;
+> > +       int i;
+> >
+> >        /* Only a single ramoops area allowed at a time, so fail extra
+> >         * probes.
+> > @@ -237,32 +241,37 @@ static int __init ramoops_probe(struct platform_device *pdev)
+> >        cxt->record_size = pdata->record_size;
+> >        cxt->dump_oops = pdata->dump_oops;
+> >
+> > +       cxt->przs = kzalloc(sizeof(*cxt->przs) * cxt->max_count, GFP_KERNEL);
+> > +       if (!cxt->przs) {
+> > +               pr_err("failed to initialize a prz array\n");
+> > +               goto fail_przs;
+> 
+> This should be fail_out.
 
-I am comfortable with any, provided slub and slab start behaving the same.
+Thanks, will fix all of these error handling negligences.
 
-So whatever you guys decide between yourselves is fine, provided there 
-is a decision.
+> > +       }
+> > +
+> > +       for (i = 0; i < cxt->max_count; i++) {
+> > +               size_t sz = cxt->record_size;
+> > +               phys_addr_t start = cxt->phys_addr + sz * i;
+> > +
+> > +               cxt->przs[i] = persistent_ram_new(start, sz, 0);
+> 
+> persistent_ram_new() is marked as __init, so this is unsafe to call if
+> built as a module. I think persistent_ram_new() will need to lose the
+> __init marking, or I'm misunderstanding something.
 
-Thanks for your review, David!
+Um. ramoops' probe routine is also __init. persistent_ram_new is a
+part of ramoops module, so their __init functions will be discarded
+at the same time.
+
+ram_console can't be a module, so it is also fine.
+
+So I think it's all fine.
+
+> > +               if (IS_ERR(cxt->przs[i])) {
+> > +                       err = PTR_ERR(cxt->przs[i]);
+> > +                       pr_err("failed to initialize a prz\n");
+> 
+> Since neither persistent_ram_new() nor persistent_ram_buffer_map()
+> report the location of the failure, I'd like to keep the error report
+> (removed below "pr_err("request mem region (0x%lx@0x%llx)
+> failed\n",...") for failures, so there is something actionable in
+> dmesg when the platform data is mismatched for the hardware.
+
+Sure thing, will do. I'll also start using dev_err() for new
+code, that way it's more clearer which module reported the error.
+
+[...]
+> >        cxt->pstore.data = cxt;
+> > -       cxt->pstore.bufsize = cxt->record_size;
+> > -       cxt->pstore.buf = kmalloc(cxt->pstore.bufsize, GFP_KERNEL);
+> >        spin_lock_init(&cxt->pstore.buf_lock);
+> > +       cxt->pstore.bufsize = cxt->przs[0]->buffer_size;
+> > +       cxt->pstore.buf = kmalloc(cxt->pstore.bufsize, GFP_KERNEL);
+> 
+> I don't see a reason to re-order these (nothing can use buf yet
+> because we haven't registered it with pstore yet).
+
+Yeah, this is a left over. Thank for catching.
+
+[...]
+> > +fail_przs:
+> > +       for (i = 0; cxt->przs[i]; i++)
+> > +               persistent_ram_free(cxt->przs[i]);
+> 
+> This can lead to a BUG, since persistent_ram_free() doesn't handle
+> NULL arguments.
+
+The for loop has 'cxt->przs[i]' condition. :-)
+
+Thanks for the review!
+
+-- 
+Anton Vorontsov
+Email: cbouatmailru@gmail.com
