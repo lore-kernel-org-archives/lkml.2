@@ -1,60 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755900Ab2EPPOZ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 May 2012 11:14:25 -0400
+	id S1754206Ab2EPPOf (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 May 2012 11:14:35 -0400
 Received: from mail-wi0-f172.google.com ([209.85.212.172]:36173 "EHLO
 	mail-wi0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755734Ab2EPPOV convert rfc822-to-8bit (ORCPT
+	with ESMTP id S1755960Ab2EPPOc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 May 2012 11:14:21 -0400
+	Wed, 16 May 2012 11:14:32 -0400
+Message-ID: <4FB3C44F.6080409@gmail.com>
+Date: Wed, 16 May 2012 17:14:23 +0200
+From: =?UTF-8?B?VmxhZGltaXIgJ8+GLWNvZGVyL3BoY29kZXInIFNlcmJpbmVua28=?= 
+	<phcoder@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.4) Gecko/20120510 Icedove/10.0.4
 MIME-Version: 1.0
-In-Reply-To: <CACLa4pspOFx638fn6aDHpESVZrKmWCnrO999qoO+Mna4ccF_7g@mail.gmail.com>
-References: <1336963631-3541-1-git-send-email-zohar@us.ibm.com>
- <CA+55aFzrJNd5J7i3Rp7-ctc=bDn5GTWu=H1xyCgGZ-rzu74Gbw@mail.gmail.com>
- <CA+55aFyPPZ0wayqPMCZtfP1w9nN-GnKJxYc9i_XM_Qk8d-zJzg@mail.gmail.com>
- <CACLa4pujEBAS349Pr-EcBmzQgTHWthhCMV0Yqq0BG-F_gDjz4Q@mail.gmail.com>
- <1337112446.20904.50.camel@falcor> <CA+55aFxRRuWGD-4LYzO-T8eg22goKpej5AV36ALL8GaLP56oRA@mail.gmail.com>
- <CA+55aFzOtY7tBw4YNH+QX+6L4opMsJ=sN4DfJURMv_yBTWqL1w@mail.gmail.com> <CACLa4pspOFx638fn6aDHpESVZrKmWCnrO999qoO+Mna4ccF_7g@mail.gmail.com>
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Wed, 16 May 2012 08:13:59 -0700
-X-Google-Sender-Auth: BN3XFSaDOPhaGzdp7g3suFcfUaA
-Message-ID: <CA+55aFwNqGN7PYsFudUKdTZikUn=Sr1tHCim3jySUfPnM4neag@mail.gmail.com>
-Subject: Re: [PATCH] vfs: fix IMA lockdep circular locking dependency
-To: Eric Paris <eparis@parisplace.org>
-Cc: Mimi Zohar <zohar@linux.vnet.ibm.com>, Mimi Zohar <zohar@us.ibm.com>,
-        linux-security-module@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Al Viro <viro@zeniv.linux.org.uk>, Stephen Smalley <sds@tycho.nsa.gov>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+To: Jan Kara <jack@suse.cz>
+CC: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org
+Subject: Re: [PATCH 6/8] Support non-BMP characters in UDF
+References: <4FB2E25E.900@gmail.com> <20120516143448.GD27661@quack.suse.cz>
+In-Reply-To: <20120516143448.GD27661@quack.suse.cz>
+X-Enigmail-Version: 1.4.1
+Content-Type: multipart/signed; micalg=pgp-sha512;
+ protocol="application/pgp-signature";
+ boundary="------------enigC7DADA256DDDADA4D90BF5CE"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, May 16, 2012 at 7:13 AM, Eric Paris <eparis@parisplace.org> wrote:
->
-> So we would have no checks for anonymous mappings?  We actually do
-> have some controls around them today
->
-> http://www.akkadia.org/drepper/selinux-mem.html
->
-> It's mostly around W+X memory.  (or was W now X memory)
+This is an OpenPGP/MIME signed message (RFC 2440 and 3156)
+--------------enigC7DADA256DDDADA4D90BF5CE
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: quoted-printable
 
-Ahh, ok. So I guess that won't work.
+On 16.05.2012 16:34, Jan Kara wrote:
 
-That said, I think do_brk() can already today be used to avoid those
-checks, since it does a mmap with VM_DATA_DEFAULT_FLAGS, which
-includes exec if the current personality includes READ_IMPLIES_EXEC -
-which is trivial yo do.
+> On Wed 16-05-12 01:10:22, Vladimir '=CF=86-coder/phcoder' Serbinenko wr=
+ote:
+>> I also have a counterpart for mkudffs/udf-tools but sourceforge homepa=
+ge
+>> seems to be abandoned does anybody know if there is a new homepage for=
 
-I wonder if the rwx checks could be split up too - the access
-protection from the *file* is really a separate issue from the access
-protection of the *mapping*, if you see what I mean.. Then we could do
-it at do_brk() time too.
+>> mkudffs?
+>   Thanks for the patch!
 
-                      Linus
+You're welcome. Thanks for reviewing.
 
->
-> Admittedly with the growing prevalence of JiT stuff we are using those
-> protections less and less and less....
->
-> Not certain how happy some will be to see them completely disappear....
+ It looks OK but shouldn't we rather use the helper
+> functions you introduced in the NLS code? It look wrong to replicate
+> decoding of UTF16 here.
+>=20
+
+The helper functions are limited to buffers aligned on 16-bit boundary
+which is not the case of this buffer. I see following solutions:
+0) Homegrown like in previous patch
+1) Add a new "endianness" UTF16_LITTLE_ENDIAN_UNALIGNED
+2) Split code for "compressed" vs "uncompressed" and copy the string to
+a temporary buffer in "uncompressed" branch.
+3) Like 2 but make buffer sliding and contain only 2 elements.
+
+I think 1 or 3 would be the most reasonable. Which solution do you prefer=
+?
+
+--=20
+Regards
+Vladimir '=CF=86-coder/phcoder' Serbinenko
+
+
+--------------enigC7DADA256DDDADA4D90BF5CE
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: OpenPGP digital signature
+Content-Disposition: attachment; filename="signature.asc"
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+Comment: Using GnuPG with Mozilla - http://enigmail.mozdev.org/
+
+iF4EAREKAAYFAk+zxE8ACgkQNak7dOguQgm9AwD+PGqXGYMaJz/cKGkXXAb9APaV
+EcUMpVq7kBqPrJ4HgXMBAJQGv6t3UxdADMpTVjzEWuNB58kWnvGOUpke/LWFqHmp
+=SbQk
+-----END PGP SIGNATURE-----
+
+--------------enigC7DADA256DDDADA4D90BF5CE--
