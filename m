@@ -1,75 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759295Ab2EPVp0 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 May 2012 17:45:26 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:56094 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754397Ab2EPVpY (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 May 2012 17:45:24 -0400
-Date: Wed, 16 May 2012 14:45:12 -0700
-From: tip-bot for Peter Jones <pjones@redhat.com>
-Message-ID: <tip-ab7b64e9ee1e930ffe9d7f5b5eebe618a3b3a03b@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, pjones@redhat.com, hpa@zytor.com,
-        mingo@kernel.org, tglx@linutronix.de, hpa@linux.intel.com
-Reply-To: mingo@kernel.org, hpa@zytor.com, pjones@redhat.com,
-        linux-kernel@vger.kernel.org, tglx@linutronix.de, hpa@linux.intel.com
-In-Reply-To: <1337190206-12121-1-git-send-email-pjones@redhat.com>
-References: <1337190206-12121-1-git-send-email-pjones@redhat.com>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:x86/cleanups] x86: Don't continue booting if we can'
- t load the specified initrd
-Git-Commit-ID: ab7b64e9ee1e930ffe9d7f5b5eebe618a3b3a03b
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
-  to get blacklisted from these emails
+	id S1759463Ab2EPVp6 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 May 2012 17:45:58 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:12053 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756371Ab2EPVpz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 16 May 2012 17:45:55 -0400
+Date: Thu, 17 May 2012 00:15:55 +0300
+From: "Michael S. Tsirkin" <mst@redhat.com>
+To: "Michael S. Tsirkin" <mst@redhat.com>
+Cc: Jason Wang <jasowang@redhat.com>, eric.dumazet@gmail.com,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        ebiederm@xmission.com, davem@davemloft.net
+Subject: [PATCHv2-RFC 1/6] skbuff: add an api to orphan frags
+Message-ID: <11324c9708a8ca6b4f76b7092ab730b83c65575c.1337202879.git.mst@redhat.com>
+References: <cover.1337202879.git.mst@redhat.com>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Wed, 16 May 2012 14:45:18 -0700 (PDT)
+In-Reply-To: <cover.1337202879.git.mst@redhat.com>
+X-Mutt-Fcc: =sent
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  ab7b64e9ee1e930ffe9d7f5b5eebe618a3b3a03b
-Gitweb:     http://git.kernel.org/tip/ab7b64e9ee1e930ffe9d7f5b5eebe618a3b3a03b
-Author:     Peter Jones <pjones@redhat.com>
-AuthorDate: Wed, 16 May 2012 13:43:26 -0400
-Committer:  H. Peter Anvin <hpa@linux.intel.com>
-CommitDate: Wed, 16 May 2012 13:59:52 -0700
+Many places do
+       if ((skb_shinfo(skb)->tx_flags & SKBTX_DEV_ZEROCOPY))
+		skb_copy_ubufs(skb, gfp_mask);
+to copy and invoke frag destructors if necessary.
+Add an inline helper for this.
 
-x86: Don't continue booting if we can't load the specified initrd
-
-If we've determined we can't do what the user asked, trying to do
-something else isn't going to make the user's life better.
-
-Without this the screen scrolls a bit and then you get a panic
-anyway, and it's nice not to have so much scroll after the real
-problem in bug reports.
-
-Link: http://lkml.kernel.org/r/1337190206-12121-1-git-send-email-pjones@redhat.com
-Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
+Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
 ---
- arch/x86/kernel/setup.c |    7 +++----
- 1 files changed, 3 insertions(+), 4 deletions(-)
+ include/linux/skbuff.h |   16 ++++++++++++++++
+ 1 files changed, 16 insertions(+), 0 deletions(-)
 
-diff --git a/arch/x86/kernel/setup.c b/arch/x86/kernel/setup.c
-index 1a29015..37ef116 100644
---- a/arch/x86/kernel/setup.c
-+++ b/arch/x86/kernel/setup.c
-@@ -393,10 +393,9 @@ static void __init reserve_initrd(void)
- 	initrd_start = 0;
+diff --git a/include/linux/skbuff.h b/include/linux/skbuff.h
+index bb47314..2c5c69d 100644
+--- a/include/linux/skbuff.h
++++ b/include/linux/skbuff.h
+@@ -1665,6 +1665,22 @@ static inline void skb_orphan(struct sk_buff *skb)
+ }
  
- 	if (ramdisk_size >= (end_of_lowmem>>1)) {
--		memblock_free(ramdisk_image, ramdisk_end - ramdisk_image);
--		printk(KERN_ERR "initrd too large to handle, "
--		       "disabling initrd\n");
--		return;
-+		panic("initrd too large to handle, "
-+		       "disabling initrd (%lld needed, %lld available)\n",
-+		       ramdisk_size, end_of_lowmem>>1);
- 	}
- 
- 	printk(KERN_INFO "RAMDISK: %08llx - %08llx\n", ramdisk_image,
+ /**
++ *	skb_orphan_frags - orphan the frags contained in a buffer
++ *	@skb: buffer to orphan frags from
++ *	@gfp_mask: allocation mask for replacement pages
++ *
++ *	For each frag in the SKB which needs a destructor (i.e. has an
++ *	owner) create a copy of that frag and release the original
++ *	page by calling the destructor.
++ */
++static inline int skb_orphan_frags(struct sk_buff *skb, gfp_t gfp_mask)
++{
++	if (likely(!(skb_shinfo(skb)->tx_flags & SKBTX_DEV_ZEROCOPY)))
++		return 0;
++	return skb_copy_ubufs(skb, gfp_mask);
++}
++
++/**
+  *	__skb_queue_purge - empty a list
+  *	@list: list to empty
+  *
+-- 
+MST
+
