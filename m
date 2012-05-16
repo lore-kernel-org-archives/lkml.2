@@ -1,55 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933083Ab2EPTge (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 May 2012 15:36:34 -0400
-Received: from mga02.intel.com ([134.134.136.20]:64566 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1760543Ab2EPTgb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 May 2012 15:36:31 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.67,351,1309762800"; 
-   d="scan'208";a="144838873"
-Message-ID: <4FB401B2.1010906@linux.intel.com>
-Date: Wed, 16 May 2012 12:36:18 -0700
-From: Arjan van de Ven <arjan@linux.intel.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:12.0) Gecko/20120428 Thunderbird/12.0.1
-MIME-Version: 1.0
-To: Linus Torvalds <torvalds@linux-foundation.org>
-CC: Steven Rostedt <rostedt@goodmis.org>, LKML <linux-kernel@vger.kernel.org>,
-        Ingo Molnar <mingo@elte.hu>, Frederic Weisbecker <fweisbec@gmail.com>,
-        David Sharp <dsharp@google.com>,
-        Vaibhav Nagarnaik <vnagarnaik@google.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [RFC][PATCH] tracing: Remove useless 4 bytes of padding from
- every event
-References: <1337175871.6724.46.camel@gandalf.stny.rr.com> <CA+55aFzVngkixn-t0mK8QqgnPhCzN2AsUtzfZ3BkLiJAcjNOzQ@mail.gmail.com>
-In-Reply-To: <CA+55aFzVngkixn-t0mK8QqgnPhCzN2AsUtzfZ3BkLiJAcjNOzQ@mail.gmail.com>
-X-Enigmail-Version: 1.4.1
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	id S964933Ab2EPThH (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 May 2012 15:37:07 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:54899 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S964775Ab2EPThB (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 16 May 2012 15:37:01 -0400
+From: Benjamin Poirier <bpoirier@suse.de>
+To: netdev@vger.kernel.org
+Cc: "David S. Miller" <davem@davemloft.net>,
+        Alexey Kuznetsov <kuznet@ms2.inr.ac.ru>,
+        James Morris <jmorris@namei.org>,
+        Hideaki YOSHIFUJI <yoshfuji@linux-ipv6.org>,
+        Patrick McHardy <kaber@trash.net>, linux-kernel@vger.kernel.org,
+        Steffen Klassert <steffen.klassert@secunet.com>
+Subject: [PATCH v3] xfrm: take iphdr size into account for esp payload size calculation
+Date: Wed, 16 May 2012 15:35:25 -0400
+Message-Id: <1337196925-4919-1-git-send-email-bpoirier@suse.de>
+X-Mailer: git-send-email 1.7.7
+In-Reply-To: <20120514.183952.1459413342269893446.davem@davemloft.net>
+References: <20120514.183952.1459413342269893446.davem@davemloft.net>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 5/16/2012 12:33 PM, Linus Torvalds wrote:
-> On Wed, May 16, 2012 at 6:44 AM, Steven Rostedt <rostedt@goodmis.org> wrote:
->>
->> But this change will break PowerTop v1. Thus my question is, how long do
->> we need to keep this wasted space in the ring buffers to satisfy an out
->> of date tool?
-> 
-> The wasted space seems of limited importance.
-> 
-> More important is to check which distros have the new powertop.
-> 
-> F16 and F17 seem to have powertop-1.98, which I assume is the new
-> world order already. But maybe I assume incorrectly.
+Corrects the function that determines the esp payload size.
+The calculations done in esp4_get_mtu lead to overlength frames in transport
+mode for certain mtu values and suboptimal frames for others.
 
-this is the one that will break
+According to what is done, mainly in esp_output(), net_header_len aka
+sizeof(struct iphdr) must be taken into account before doing the alignment
+calculation.
 
-> 
-> F14 (which I personally still use, since it doesn't have gnome3) is 1.13.
+Signed-off-by: Benjamin Poirier <bpoirier@suse.de>
 
-this one is fine, it does not use perf events at all.
+---
+Changes since v2:
+* rename l3_adj to net_adj
+* fix indentation
+
+Changes since v1:
+* introduce l3_adj to preserve the same returned value as before for tunnel
+  mode
+
+For example, with md5 AH and 3des ESP (transport mode):
+mtu = 1499 leads to FRAGFAILS
+mtu = 1500 the addition of padding in the esp header could be avoided
+
+Tested with
+* transport mode E
+* transport mode EA
+* transport mode E + ah
+* tunnel mode E
+
+Not tested with BEET, but it should be the same as transport mode
+	draft-nikander-esp-beet-mode-03.txt Section 5.2:
+	"The wire packet format is identical to the ESP transport mode"
+---
+ net/ipv4/esp4.c |   24 +++++++++---------------
+ 1 files changed, 9 insertions(+), 15 deletions(-)
+
+diff --git a/net/ipv4/esp4.c b/net/ipv4/esp4.c
+index 89a47b3..cb982a6 100644
+--- a/net/ipv4/esp4.c
++++ b/net/ipv4/esp4.c
+@@ -459,28 +459,22 @@ static u32 esp4_get_mtu(struct xfrm_state *x, int mtu)
+ 	struct esp_data *esp = x->data;
+ 	u32 blksize = ALIGN(crypto_aead_blocksize(esp->aead), 4);
+ 	u32 align = max_t(u32, blksize, esp->padlen);
+-	u32 rem;
+-
+-	mtu -= x->props.header_len + crypto_aead_authsize(esp->aead);
+-	rem = mtu & (align - 1);
+-	mtu &= ~(align - 1);
++	unsigned int net_adj;
+ 
+ 	switch (x->props.mode) {
+-	case XFRM_MODE_TUNNEL:
+-		break;
+-	default:
+ 	case XFRM_MODE_TRANSPORT:
+-		/* The worst case */
+-		mtu -= blksize - 4;
+-		mtu += min_t(u32, blksize - 4, rem);
+-		break;
+ 	case XFRM_MODE_BEET:
+-		/* The worst case. */
+-		mtu += min_t(u32, IPV4_BEET_PHMAXLEN, rem);
++		net_adj = sizeof(struct iphdr);
+ 		break;
++	case XFRM_MODE_TUNNEL:
++		net_adj = 0;
++		break;
++	default:
++		BUG();
+ 	}
+ 
+-	return mtu - 2;
++	return ((mtu - x->props.header_len - crypto_aead_authsize(esp->aead) -
++		 net_adj) & ~(align - 1)) + (net_adj - 2);
+ }
+ 
+ static void esp4_err(struct sk_buff *skb, u32 info)
+-- 
+1.7.7
 
