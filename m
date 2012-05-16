@@ -1,37 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755962Ab2EPPOb (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 May 2012 11:14:31 -0400
-Received: from perches-mx.perches.com ([206.117.179.246]:35688 "EHLO
-	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1754599Ab2EPPOZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 May 2012 11:14:25 -0400
-Message-ID: <1337181264.26509.12.camel@joe2Laptop>
-Subject: Re: [PATCH v3 3/7] backlight: cr_bllcd: use pr_err/info instead of
- printk
-From: Joe Perches <joe@perches.com>
-To: Jingoo Han <jg1.han@samsung.com>
-Cc: "'Andrew Morton'" <akpm@linux-foundation.org>,
-        "'LKML'" <linux-kernel@vger.kernel.org>,
-        "'Richard Purdie'" <rpurdie@rpsys.net>
-Date: Wed, 16 May 2012 08:14:24 -0700
-In-Reply-To: <003601cd333b$43094360$c91bca20$%han@samsung.com>
-References: <003601cd333b$43094360$c91bca20$%han@samsung.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.2- 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	id S1754981Ab2EPPOn (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 May 2012 11:14:43 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:35727 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755913Ab2EPPOe (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 16 May 2012 11:14:34 -0400
+From: Joonsoo Kim <js1304@gmail.com>
+To: Pekka Enberg <penberg@kernel.org>
+Cc: Christoph Lameter <cl@linux-foundation.org>, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org, Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Joonsoo Kim <js1304@gmail.com>, <stable@vger.kernel.org>
+Subject: [PATCH RESEND] slub: fix a memory leak in get_partial_node()
+Date: Thu, 17 May 2012 00:13:02 +0900
+Message-Id: <1337181182-23054-1-git-send-email-js1304@gmail.com>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <alpine.LFD.2.02.1205160935340.1763@tux.localdomain>
+References: <alpine.LFD.2.02.1205160935340.1763@tux.localdomain>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2012-05-16 at 17:09 +0900, Jingoo Han wrote:
-> This patch uses pr_err/info instead of printk to allow dynamic debugging.
+In the case which is below,
 
-Hi again.
+1. acquire slab for cpu partial list
+2. free object to it by remote cpu
+3. page->freelist = t
 
-pr_debug, dev_dbg and netdev_dbg are the only things
-that can use dynamic debugging.
+then memory leak is occurred.
 
-All the other levels are just normal logging mechanisms.
+Change acquire_slab() not to zap freelist when it works for cpu partial list.
+I think it is a sufficient solution for fixing a memory leak.
+
+Below is output of 'slabinfo -r kmalloc-256'
+when './perf stat -r 30 hackbench 50 process 4000 > /dev/null' is done.
+
+***Vanilla***
+Sizes (bytes)     Slabs              Debug                Memory
+------------------------------------------------------------------------
+Object :     256  Total  :     468   Sanity Checks : Off  Total: 3833856
+SlabObj:     256  Full   :     111   Redzoning     : Off  Used : 2004992
+SlabSiz:    8192  Partial:     302   Poisoning     : Off  Loss : 1828864
+Loss   :       0  CpuSlab:      55   Tracking      : Off  Lalig:       0
+Align  :       8  Objects:      32   Tracing       : Off  Lpadd:       0
+
+***Patched***
+Sizes (bytes)     Slabs              Debug                Memory
+------------------------------------------------------------------------
+Object :     256  Total  :     300   Sanity Checks : Off  Total: 2457600
+SlabObj:     256  Full   :     204   Redzoning     : Off  Used : 2348800
+SlabSiz:    8192  Partial:      33   Poisoning     : Off  Loss :  108800
+Loss   :       0  CpuSlab:      63   Tracking      : Off  Lalig:       0
+Align  :       8  Objects:      32   Tracing       : Off  Lpadd:       0
+
+Total and loss number is the impact of this patch.
+
+Cc: <stable@vger.kernel.org>
+Acked-by: Christoph Lameter <cl@linux.com>
+Signed-off-by: Joonsoo Kim <js1304@gmail.com>
+
+diff --git a/mm/slub.c b/mm/slub.c
+index ffe13fd..a7a766a 100644
+--- a/mm/slub.c
++++ b/mm/slub.c
+@@ -1514,15 +1514,19 @@ static inline void *acquire_slab(struct kmem_cache *s,
+ 		freelist = page->freelist;
+ 		counters = page->counters;
+ 		new.counters = counters;
+-		if (mode)
++		if (mode) {
+ 			new.inuse = page->objects;
++			new.freelist = NULL;
++		} else {
++			new.freelist = freelist;
++		}
+ 
+ 		VM_BUG_ON(new.frozen);
+ 		new.frozen = 1;
+ 
+ 	} while (!__cmpxchg_double_slab(s, page,
+ 			freelist, counters,
+-			NULL, new.counters,
++			new.freelist, new.counters,
+ 			"lock and freeze"));
+ 
+ 	remove_partial(n, page);
+@@ -1564,7 +1568,6 @@ static void *get_partial_node(struct kmem_cache *s,
+ 			object = t;
+ 			available =  page->objects - page->inuse;
+ 		} else {
+-			page->freelist = t;
+ 			available = put_cpu_partial(s, page, 0);
+ 			stat(s, CPU_PARTIAL_NODE);
+ 		}
+-- 
+1.7.9.5
 
