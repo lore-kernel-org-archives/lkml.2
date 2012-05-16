@@ -1,62 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S966753Ab2EPJwG (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 May 2012 05:52:06 -0400
-Received: from bedivere.hansenpartnership.com ([66.63.167.143]:57002 "EHLO
-	bedivere.hansenpartnership.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752879Ab2EPJwE (ORCPT
+	id S966793Ab2EPJzX (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 May 2012 05:55:23 -0400
+Received: from haggis.pcug.org.au ([203.10.76.10]:41261 "EHLO
+	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759894Ab2EPJzV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 May 2012 05:52:04 -0400
-Message-ID: <1337161920.2985.32.camel@dabdike.int.hansenpartnership.com>
-Subject: Re: NVM Mapping API
-From: James Bottomley <James.Bottomley@HansenPartnership.com>
-To: Matthew Wilcox <willy@linux.intel.com>
-Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org
-Date: Wed, 16 May 2012 10:52:00 +0100
-In-Reply-To: <20120515133450.GD22985@linux.intel.com>
-References: <20120515133450.GD22985@linux.intel.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3 
-Content-Transfer-Encoding: 7bit
+	Wed, 16 May 2012 05:55:21 -0400
+Date: Wed, 16 May 2012 19:55:13 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: "Eric W. Biederman" <ebiederm@xmission.com>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: linux-next: build warning after merge of the final tree (userns
+ tree related)
+Message-Id: <20120516195513.29d921bc25f308f92f0d6471@canb.auug.org.au>
+X-Mailer: Sylpheed 3.2.0beta7 (GTK+ 2.24.10; i486-pc-linux-gnu)
 Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Wed__16_May_2012_19_55_13_+1000_lD7z/pgwfSqa/hed"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2012-05-15 at 09:34 -0400, Matthew Wilcox wrote:
-> There are a number of interesting non-volatile memory (NVM) technologies
-> being developed.  Some of them promise DRAM-comparable latencies and
-> bandwidths.  At Intel, we've been thinking about various ways to present
-> those to software.  This is a first draft of an API that supports the
-> operations we see as necessary.  Patches can follow easily enough once
-> we've settled on an API.
+--Signature=_Wed__16_May_2012_19_55_13_+1000_lD7z/pgwfSqa/hed
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-If we start from first principles, does this mean it's usable as DRAM?
-Meaning do we even need a non-memory API for it?  The only difference
-would be that some pieces of our RAM become non-volatile.
+Hi Eric,
 
-Or is there some impediment (like durability, or degradation on rewrite)
-which makes this unsuitable as a complete DRAM replacement?
+After merging the final tree, today's linux-next build (powerpc
+ppc44x_defconfig) produced this warning:
 
-> We think the appropriate way to present directly addressable NVM to
-> in-kernel users is through a filesystem.  Different technologies may want
-> to use different filesystems, or maybe some forms of directly addressable
-> NVM will want to use the same filesystem as each other.
+kernel/user.c:30:4: warning: this decimal constant is unsigned only in ISO =
+C90 [enabled by default]
+kernel/user.c:38:4: warning: this decimal constant is unsigned only in ISO =
+C90 [enabled by default]
 
-If it's actually DRAM, I'd present it as DRAM and figure out how to
-label the non volatile property instead.
+Introduced by commit 22d917d80e84 ("userns: Rework the user_namespace
+adding uid/gid mapping support").
 
-Alternatively, if it's not really DRAM, I think the UNIX file
-abstraction makes sense (it's a piece of memory presented as something
-like a filehandle with open, close, seek, read, write and mmap), but
-it's less clear that it should be an actual file system.  The reason is
-that to present a VFS interface, you have to already have fixed the
-format of the actual filesystem on the memory because we can't nest
-filesystems (well, not without doing artificial loopbacks).  Again, this
-might make sense if there's some architectural reason why the flash
-region has to have a specific layout, but your post doesn't shed any
-light on this.
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
 
-James
+--Signature=_Wed__16_May_2012_19_55_13_+1000_lD7z/pgwfSqa/hed
+Content-Type: application/pgp-signature
 
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
 
+iQIcBAEBCAAGBQJPs3mBAAoJEECxmPOUX5FEgncP/0sNLgeOzy9XqaBi2EAOQ8QO
+MwqmWDyawXTJxM4S4bO6+phZf2Yd8WKDTBueeaxPHM4oVWD7RI4Ox4hjxy1a2WAU
++Nt+EPVQf+99pQE2vcsqZ91XiRL9aVyW1jeQ+znBPFvdGBeb+PYsKFqoI6x4Jnng
+X9btN8m3BsSPhpYxn85hEADyl6Dar66hu0da00y72BfG8H1XOKhHWO6T5X0Al1Zs
+AvvxTf59AQVOeDW+ObBHgYsEijojDLHLLw/lL7yS/p8W0aUagg8ophtvdzn/kaQj
+E4pO6WKhTvqov5ogpDTMoLENcr08lASVTNgEoyGh/g5Fpe0cxwuJVSEOS6rhVWez
+sBreVw8vi56dLiMsszkga7K/dGnf9UCSvC71o/C+ZQPmIQ+zGFnrLqWBnyTeIXWv
+C9C/4mi1NIMhRNsMtgIfR44TeoXM1zzdDDOpMDXq1afvUbOkD7lTE20HJYF38wtd
+RHI1yFZL+pb7rAfurnTqiyCAQjljx5C+jvy9p1JH1F0w/LC5/ooTEjmO5SBaKw1U
+jt9S6zZw7y9zNsY/Co6jva0NjILW9GCAmBUe75qz1DilCdKfHsWDERPt6fuD/aEN
+rYNutxjen3bJsf4wxnFpRr87//8Ow7bAXtA07oiFtWxV2PD/DPyoSVK7zh2fG9Pj
+u9Ij6kJAc5nChwOGamHc
+=NegO
+-----END PGP SIGNATURE-----
+
+--Signature=_Wed__16_May_2012_19_55_13_+1000_lD7z/pgwfSqa/hed--
