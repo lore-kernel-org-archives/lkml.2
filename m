@@ -1,65 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753272Ab2EPEwM (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 May 2012 00:52:12 -0400
-Received: from smtp.snhosting.dk ([87.238.248.203]:63296 "EHLO
-	smtp.domainteam.dk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752393Ab2EPEwJ (ORCPT
+	id S1753642Ab2EPE5A (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 May 2012 00:57:00 -0400
+Received: from mailout1.samsung.com ([203.254.224.24]:15058 "EHLO
+	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752393Ab2EPE47 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 May 2012 00:52:09 -0400
-Date: Wed, 16 May 2012 06:52:08 +0200
-From: Sam Ravnborg <sam@ravnborg.org>
-To: Michal Marek <mmarek@suse.cz>
-Cc: linux-kbuild <linux-kbuild@vger.kernel.org>,
-        lkml <linux-kernel@vger.kernel.org>,
-        "David S. Miller" <davem@davemloft.net>,
-        Arnaud Lacombe <lacombar@gmail.com>,
-        Nick Bowler <nbowler@elliptictech.com>,
-        Richard Weinberger <richard@nod.at>
-Subject: Re: [PATCH 0/8] kbuild: use script for final link, move
-	definitions out of top-level Makefile
-Message-ID: <20120516045208.GB340@merkur.ravnborg.org>
-References: <20120505080640.GA13773@merkur.ravnborg.org> <4FA57F52.5070808@suse.cz>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4FA57F52.5070808@suse.cz>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+	Wed, 16 May 2012 00:56:59 -0400
+X-AuditID: cbfee60f-b7b27ae000005bf7-bb-4fb3339650a5
+Date: Wed, 16 May 2012 04:56:54 +0000 (GMT)
+From: MyungJoo Ham <myungjoo.ham@samsung.com>
+Subject: Re: [PATCH] regulator: max8952: Use devm_kzalloc
+To: Axel Lin <axel.lin@gmail.com>, linux-kernel <linux-kernel@vger.kernel.org>
+Cc: Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        =?euc-kr?Q?=B9=DA=B0=E6=B9=CE?= <kyungmin.park@samsung.com>,
+        Liam Girdwood <lrg@ti.com>
+Reply-to: myungjoo.ham@samsung.com
+MIME-version: 1.0
+X-MTR: 20120516045554805@myungjoo.ham
+Msgkey: 20120516045554805@myungjoo.ham
+X-EPLocale: ko_KR.euc-kr
+X-Priority: 3
+X-EPWebmail-Msg-Type: personal
+X-EPWebmail-Reply-Demand: 0
+X-EPApproval-Locale: 
+X-EPHeader: ML
+X-EPTrCode: 
+X-EPTrName: 
+X-MLAttribute: 
+X-RootMTR: 20120516045554805@myungjoo.ham
+X-ParentMTR: 
+X-ArchiveUser: 
+Content-type: text/plain; charset=euc-kr
+MIME-version: 1.0
+Message-id: <6909161.246911337144213547.JavaMail.weblogic@epml02>
+X-Brightmail-Tracker: AAAAAA==
+X-TM-AS-MML: No
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by nfs id q4G4v6W0008340
 
-On Sat, May 05, 2012 at 09:28:18PM +0200, Michal Marek wrote:
-> Dne 5.5.2012 10:06, Sam Ravnborg napsal(a):
-> > Hi Michal, all.
-> > 
-> > o Move the link of vmlinux from top-level Makefile to a script.
-> >   This increased the readability a lot.
-> >   They have had a few rounds of reviews and are ready.
-> > 
-> > o Move a lot of definitions from top-level Makefile to
-> >   two new files located in scripts/
-> > 
-> > o Fix so we do not call CC too often when using W=...
-> > 
-> > o Fix so KCFLAGS (and friends) are added last to the
-> >   command lines.
-> > 
-> > Patches 1-4 are ready to be applied.
-> > Patches 5-8 are new and may raise a few comments.
-> 
-> I merged 1-4 now, I'll look at the rest later.
+> Signed-off-by: Axel Lin <axel.lin@gmail.com>
 
-Hi Michal.
+Acked-by: MyungJoo Ham <myungjoo.ham@samsung.com>
 
-We are too close to the merge window to
-apply patch 5-8.
-
-I plan to resubmit them around -rc2 time,
-then we should have time for review
-and test.
-
-Any comments until then are of course welcome,
-but I expect you to wait until next submission.
-
-	Sam
+> ---
+>  drivers/regulator/max8952.c |   11 +++--------
+>  1 files changed, 3 insertions(+), 8 deletions(-)
+>
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
