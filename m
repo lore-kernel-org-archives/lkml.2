@@ -1,43 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760112Ab2EPSTx (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 May 2012 14:19:53 -0400
-Received: from smtp108.prem.mail.ac4.yahoo.com ([76.13.13.47]:45250 "HELO
-	smtp108.prem.mail.ac4.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1759774Ab2EPSTv (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 May 2012 14:19:51 -0400
-X-Yahoo-Newman-Property: ymail-3
-X-YMail-OSG: KamoQ2IVM1np5rTORs3l3BJYSmTgbL.Jf1mUpjqufjFG4TI
- tn1w4w2_AsI4gbCdCA0Km_vsvNlGPg5.i1w7DY2lZGcqVqAkC5yLL0nznlDE
- 7IOgVYKk3zU8Yo7N_W9_mC3XHjdISZRfRCtPbqNRxmY3hinHrsaVEtUqgZbq
- XbwsBMTDS0VtYuyvrTqpSM.rbeWLJsBQMmPunE4CLhZjpbrp2ITm_uRgNDVN
- JwFGT1F4yZf6l3KtyYN3xUu1L7lmTMyAV6_PqT_HiIKutAJDD7dEbp9XkxZH
- HseCjn.oHKhRjpha2d8hX1oe3RqYBQ_lO.6_xvoXPHq10ewGqbw2Ww1vEADV
- at4hmGMO13Wl3j22IHjcmhzkINGHWsJhk.J05kxDUUKQwiPHICEfAmrA9pVq
- Crq4Li0jxzCs6gSyTczd.YEPwkFsqYGC.z2yC8ZaF
-X-Yahoo-SMTP: _Dag8S.swBC1p4FJKLCXbs8NQzyse1SYSgnAbY0-
-Date: Wed, 16 May 2012 12:51:30 -0500 (CDT)
-From: Christoph Lameter <cl@linux.com>
-X-X-Sender: cl@router.home
-To: Pravin Shelar <pshelar@nicira.com>
-cc: penberg@kernel.org, mpm@selenic.com, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org, jesse@nicira.com, abhide@nicira.com
-Subject: Re: [PATCH v2] mm: Fix slab->page _count corruption.
-In-Reply-To: <CALnjE+pbsS3W8G7yN82fdnchmXDxGkTo+Gy2b4kj6DkuQ=Z+wQ@mail.gmail.com>
-Message-ID: <alpine.DEB.2.00.1205161251001.25603@router.home>
-References: <1337034597-1826-1-git-send-email-pshelar@nicira.com> <CALnjE+pbsS3W8G7yN82fdnchmXDxGkTo+Gy2b4kj6DkuQ=Z+wQ@mail.gmail.com>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+	id S1760130Ab2EPSZY (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 May 2012 14:25:24 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:5604 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754161Ab2EPSZX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 16 May 2012 14:25:23 -0400
+Date: Wed, 16 May 2012 21:25:20 +0300
+From: Gleb Natapov <gleb@redhat.com>
+To: Marcelo Tosatti <mtosatti@redhat.com>
+Cc: "Michael S. Tsirkin" <mst@redhat.com>, x86@kernel.org, kvm@vger.kernel.org,
+        Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
+        Avi Kivity <avi@redhat.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCHv4 3/5] kvm: host side for eoi optimization
+Message-ID: <20120516182520.GH28798@redhat.com>
+References: <cover.1337168687.git.mst@redhat.com>
+ <42ba7beaa25855997e02fea91a11c9224c51720e.1337168687.git.mst@redhat.com>
+ <20120516154940.GA20549@amt.cnet>
+ <20120516162247.GA10676@redhat.com>
+ <20120516172058.GA22861@amt.cnet>
+ <20120516175856.GD10769@redhat.com>
+ <20120516181500.GA23791@amt.cnet>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120516181500.GA23791@amt.cnet>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 16 May 2012, Pravin Shelar wrote:
+On Wed, May 16, 2012 at 03:15:00PM -0300, Marcelo Tosatti wrote:
+> On Wed, May 16, 2012 at 08:58:57PM +0300, Michael S. Tsirkin wrote:
+> > On Wed, May 16, 2012 at 02:20:58PM -0300, Marcelo Tosatti wrote:
+> > > On Wed, May 16, 2012 at 07:22:47PM +0300, Michael S. Tsirkin wrote:
+> > > > On Wed, May 16, 2012 at 12:49:40PM -0300, Marcelo Tosatti wrote:
+> > > > > > @@ -1245,9 +1306,20 @@ int kvm_get_apic_interrupt(struct kvm_vcpu *vcpu)
+> > > > > >  	int vector = kvm_apic_has_interrupt(vcpu);
+> > > > > >  	struct kvm_lapic *apic = vcpu->arch.apic;
+> > > > > >  
+> > > > > > -	if (vector == -1)
+> > > > > > +	/* Detect interrupt nesting and disable EOI optimization */
+> > > > > > +	if (pv_eoi_enabled(vcpu) && vector == -2)
+> > > > > > +		pv_eoi_clr_pending(vcpu);
+> > > > > > +
+> > > > > > +	if (vector < 0)
+> > > > > 
+> > > > > With interrupt window exiting, the guest will exit:
+> > > > > 
+> > > > > - as soon as it sets RFLAGS.IF=1 and there is any 
+> > > > > interrupt pending in IRR.
+> > > > > - any new interrupt is set in IRR will kick vcpu
+> > > > > out of guest mode and recalculate interrupt-window-exiting.
+> > > > > 
+> > > > > Doesnt this make this bit unnecessary ?
+> > > > 
+> > > > Looks like we could cut it out.  But I'm not sure how architectural it is
+> > > > that we exit on interrupt window.
+> > > > I guess there are reasons to exit on interrupt window but
+> > > > isn't it better to make the feature independent of it?
+> > > 
+> > > Hum... not sure. Is it helpful for the Hyper-V interface?
+> > > 
+> > > > This almost never happens in my testing anyway, so
+> > > > however we handle it is unlikely to affect performance.
+> > > 
+> > > It decreases the amount of state that must be maintained.
+> > > 
+> > > BTW there is a bug covered by interrupt window exiting:
+> > > 
+> > > vcpu0                               host
+> > > - irr 5 set
+> > > - isr 5 set, irr 5 cleared
+> > > - eoi_skip bit not set, 
+> > > no other bit set in irr.
+> > > - enter guest
+> > > 
+> > >                                     irr 4 set
+> > >                                     kick vcpu0 out of guest mode
+> > > 
+> > > - eoi pending bit not set
+> > >   (previous interrupt injection 
+> > >    still pending)
+> > > - skip eoi
+> > > 
+> > > If it were not for interrupt window exiting, this would 
+> > > inject vector 4 on an unrelated exit who knows how long 
+> > > in the future.
+> > > 
+> > > Also note optimization depends on the fact that the host 
+> > > kicks vcpu out unconditionally (so it is dependent on 
+> > > certain kvm implementation details).
+> > > 
+> > 
+> > Look we can summarize as follows: irq windows exit is
+> > required both before and after this patch.
+> > But it does not make the check above redundant.
+> 
+> Right, it is not redundant.
+> 
+> The above is still a bug: a case where eoi pending bit is not updated
+> properly.
+When IRR is set while eoi_skip is enabled, eoi_skip should be cleared.
+Michael does your patch do that?
 
-> Can you comment on this patch. I have changed it according to your comments.
+> 
+> How come is this compatible with hyper-v again? Enlight me.
 
-Looks fine to me.
-
-Acked-by: Christoph Lameter <cl@linux.com>
+--
+			Gleb.
