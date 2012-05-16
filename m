@@ -1,181 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933465Ab2EPM65 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 May 2012 08:58:57 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:53623 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933417Ab2EPM6y (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 May 2012 08:58:54 -0400
-Date: Wed, 16 May 2012 05:57:24 -0700
-From: Anton Vorontsov <anton.vorontsov@linaro.org>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Kees Cook <keescook@chromium.org>, Colin Cross <ccross@android.com>,
-        Tony Luck <tony.luck@intel.com>
-Cc: Arnd Bergmann <arnd@arndb.de>, John Stultz <john.stultz@linaro.org>,
-        Shuah Khan <shuahkhan@gmail.com>, arve@android.com,
-        Rebecca Schultz Zavin <rebecca@android.com>,
-        Jesper Juhl <jj@chaosbits.net>, Randy Dunlap <rdunlap@xenotime.net>,
-        Stephen Boyd <sboyd@codeaurora.org>, Thomas Meyer <thomas@m3y3r.de>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Marco Stornelli <marco.stornelli@gmail.com>,
-        WANG Cong <xiyou.wangcong@gmail.com>, linux-kernel@vger.kernel.org,
-        devel@driverdev.osuosl.org, linaro-kernel@lists.linaro.org,
-        patches@linaro.org, kernel-team@android.com
-Subject: [PATCH 6/6] pstore/ram_core: Remove now unused code
-Message-ID: <20120516125723.GF20475@lizard>
-References: <20120516125330.GA15460@lizard>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+	id S933473Ab2EPM7c (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 May 2012 08:59:32 -0400
+Received: from nat28.tlf.novell.com ([130.57.49.28]:41439 "EHLO
+	nat28.tlf.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933417Ab2EPM7a convert rfc822-to-8bit (ORCPT
+	<rfc822;groupwise-linux-kernel@vger.kernel.org:5:1>);
+	Wed, 16 May 2012 08:59:30 -0400
+Message-Id: <4FB3C0ED020000780008418E@nat28.tlf.novell.com>
+X-Mailer: Novell GroupWise Internet Agent 12.0.0 
+Date: Wed, 16 May 2012 13:59:57 +0100
+From: "Jan Beulich" <JBeulich@suse.com>
+To: "Matthew Garrett" <mjg59@srcf.ucam.org>
+Cc: <mingo@elte.hu>, <tglx@linutronix.de>, <matt.fleming@linux.intel.com>,
+        <linux-kernel@vger.kernel.org>, <hpa@zytor.com>
+Subject: Re: [PATCH] x86-64: use EFI to deal with platform wall clock
+References: <4FB265AB0200007800083CC5@nat28.tlf.novell.com>
+ <20120515124707.GB25248@srcf.ucam.org>
+ <4FB273EB0200007800083D32@nat28.tlf.novell.com>
+ <20120515132006.GA26196@srcf.ucam.org>
+ <4FB3B734020000780008415D@nat28.tlf.novell.com>
+ <20120516123912.GA20990@srcf.ucam.org>
+In-Reply-To: <20120516123912.GA20990@srcf.ucam.org>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 8BIT
 Content-Disposition: inline
-In-Reply-To: <20120516125330.GA15460@lizard>
-User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The code tried to maintain the global list of persistent ram zones,
-which isn't a great idea overall, plus since Android's ram_console
-is no longer there, we can remove some unused functions.
+>>> On 16.05.12 at 14:39, Matthew Garrett <mjg59@srcf.ucam.org> wrote:
+> On Wed, May 16, 2012 at 01:18:28PM +0100, Jan Beulich wrote:
+> 
+>> Okay, looks like calling efi_ioremap() at this point is possible.
+>> But why is efi_enter_virtual_mode() being called as late as is
+>> the case currently for x86 anyway?
+> 
+> Assuming that things are as they are for a good reason is not 
+> necessarily true in the EFI code...
 
-Signed-off-by: Anton Vorontsov <anton.vorontsov@linaro.org>
----
- fs/pstore/ram_core.c       |   77 --------------------------------------------
- include/linux/pstore_ram.h |   19 -----------
- 2 files changed, 96 deletions(-)
+Okay...
 
-diff --git a/fs/pstore/ram_core.c b/fs/pstore/ram_core.c
-index e0d8429..b216381 100644
---- a/fs/pstore/ram_core.c
-+++ b/fs/pstore/ram_core.c
-@@ -35,8 +35,6 @@ struct persistent_ram_buffer {
- 
- #define PERSISTENT_RAM_SIG (0x43474244) /* DBGC */
- 
--static __initdata LIST_HEAD(persistent_ram_list);
--
- static inline size_t buffer_size(struct persistent_ram_zone *prz)
- {
- 	return atomic_read(&prz->buffer->size);
-@@ -455,78 +453,3 @@ err:
- 	kfree(prz);
- 	return ERR_PTR(ret);
- }
--
--#ifndef MODULE
--static int __init persistent_ram_buffer_init(const char *name,
--		struct persistent_ram_zone *prz)
--{
--	int i;
--	struct persistent_ram *ram;
--	struct persistent_ram_descriptor *desc;
--	phys_addr_t start;
--
--	list_for_each_entry(ram, &persistent_ram_list, node) {
--		start = ram->start;
--		for (i = 0; i < ram->num_descs; i++) {
--			desc = &ram->descs[i];
--			if (!strcmp(desc->name, name))
--				return persistent_ram_buffer_map(start,
--						desc->size, prz);
--			start += desc->size;
--		}
--	}
--
--	return -EINVAL;
--}
--
--static  __init
--struct persistent_ram_zone *__persistent_ram_init(struct device *dev, bool ecc)
--{
--	struct persistent_ram_zone *prz;
--	int ret = -ENOMEM;
--
--	prz = kzalloc(sizeof(struct persistent_ram_zone), GFP_KERNEL);
--	if (!prz) {
--		pr_err("persistent_ram: failed to allocate persistent ram zone\n");
--		goto err;
--	}
--
--	ret = persistent_ram_buffer_init(dev_name(dev), prz);
--	if (ret) {
--		pr_err("persistent_ram: failed to initialize buffer\n");
--		goto err;
--	}
--
--	persistent_ram_post_init(prz, ecc);
--
--	return prz;
--err:
--	kfree(prz);
--	return ERR_PTR(ret);
--}
--
--struct persistent_ram_zone * __init
--persistent_ram_init_ringbuffer(struct device *dev, bool ecc)
--{
--	return __persistent_ram_init(dev, ecc);
--}
--
--int __init persistent_ram_early_init(struct persistent_ram *ram)
--{
--	int ret;
--
--	ret = memblock_reserve(ram->start, ram->size);
--	if (ret) {
--		pr_err("Failed to reserve persistent memory from %08lx-%08lx\n",
--			(long)ram->start, (long)(ram->start + ram->size - 1));
--		return ret;
--	}
--
--	list_add_tail(&ram->node, &persistent_ram_list);
--
--	pr_info("Initialized persistent memory from %08lx-%08lx\n",
--		(long)ram->start, (long)(ram->start + ram->size - 1));
--
--	return 0;
--}
--#endif
-diff --git a/include/linux/pstore_ram.h b/include/linux/pstore_ram.h
-index 7ed7fd4..d1d7d51 100644
---- a/include/linux/pstore_ram.h
-+++ b/include/linux/pstore_ram.h
-@@ -25,21 +25,6 @@
- 
- struct persistent_ram_buffer;
- 
--struct persistent_ram_descriptor {
--	const char	*name;
--	phys_addr_t	size;
--};
--
--struct persistent_ram {
--	phys_addr_t	start;
--	phys_addr_t	size;
--
--	int					num_descs;
--	struct persistent_ram_descriptor	*descs;
--
--	struct list_head node;
--};
--
- struct persistent_ram_zone {
- 	phys_addr_t paddr;
- 	size_t size;
-@@ -63,14 +48,10 @@ struct persistent_ram_zone {
- 	size_t old_log_size;
- };
- 
--int persistent_ram_early_init(struct persistent_ram *ram);
--
- struct persistent_ram_zone * __init persistent_ram_new(phys_addr_t start,
- 						       size_t size,
- 						       bool ecc);
- void persistent_ram_free(struct persistent_ram_zone *prz);
--struct persistent_ram_zone *persistent_ram_init_ringbuffer(struct device *dev,
--		bool ecc);
- 
- int persistent_ram_write(struct persistent_ram_zone *prz, const void *s,
- 	unsigned int count);
--- 
-1.7.9.2
+>> And then again the current logic in efi_enter_virtual_mode()
+>> looks flawed (it assumes two contiguous pieces of direct
+>> mappings, and while on systems with dis-contiguous physical
+>> memory this currently appears to be true, it's not correct - the
+>> holes could have MMIO assignments in them - and hence
+>> shouldn't be relied upon), and I wouldn't want to copy this
+>> elsewhere.
+> 
+> Could you elaborate on that a little?
+
+There are systems where RAM on individual nodes is always
+starting at e.g. a 1Tb boundary. Obviously there can (at
+least theoretically) be anything in between, and hence
+assuming that __va() is usable here is simply wrong, as likely
+no mapping was created at all for the hole space (or if there
+is one, it would conflict with the one to be established here
+in the EfiMemoryMappedIO case).
+
+>> Plus the use of set_virtual_address_map is bogus in the first
+>> place, as it makes it impossible for a kexec-ed kernel to also
+>> use EFI services (as it would have to call the function a
+>> second and possibly third time, yet it is not permitted to be
+>> called more than once). Imo all calls have to happen in
+>> physical mode.
+> 
+> Platforms don't correctly deal with the case where you make physical 
+> calls after ExitBootServices(). We tried running in physical mode. It 
+> simply doesn't work.
+
+Interesting, especially as we're using physical mode exclusively so
+far in Xen. That's a platform issue though, and working around
+it by (silently!) sacrificing other functionality is questionable imo.
+It should at best be an option (default off), so that on systems
+where physical mode works, kexec can work too.
+
+>> So I'm afraid if the patch as I provided it isn't acceptable, and
+>> if the call to efi_enter_virtual_mode() can't be moved ahead
+>> of the one to timekeeping_init(), this winds down to the whole
+>> logic needing a re-write.
+> 
+> I have zero objection to this being cleaned up, but I don't know of any 
+> obvious reason why we can't do enter_virtual_mode() earlier.
+
+I shall give that a try then. It would imply that we don't need
+phys_efi_get_time() then anymore. I don't have a 32-bit EFI box
+though to test that things don't break there...
+
+Jan
+
