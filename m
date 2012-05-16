@@ -1,59 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933114Ab2EPF3U (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 May 2012 01:29:20 -0400
-Received: from perches-mx.perches.com ([206.117.179.246]:56458 "EHLO
-	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1752252Ab2EPF3T (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 May 2012 01:29:19 -0400
-Message-ID: <1337146157.26509.9.camel@joe2Laptop>
-Subject: Re: [PATCH v2 1/7] backlight: use pr_warn instead of printk
-From: Joe Perches <joe@perches.com>
-To: Jingoo Han <jg1.han@samsung.com>
-Cc: "'Andrew Morton'" <akpm@linux-foundation.org>,
-        "'LKML'" <linux-kernel@vger.kernel.org>,
-        "'Richard Purdie'" <rpurdie@rpsys.net>
-Date: Tue, 15 May 2012 22:29:17 -0700
-In-Reply-To: <001f01cd3321$ff4260d0$fdc72270$%han@samsung.com>
-References: <001f01cd3321$ff4260d0$fdc72270$%han@samsung.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.2- 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	id S1755097Ab2EPFkg (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 May 2012 01:40:36 -0400
+Received: from na3sys009aog126.obsmtp.com ([74.125.149.155]:50132 "EHLO
+	na3sys009aog126.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754255Ab2EPFke (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 16 May 2012 01:40:34 -0400
+MIME-Version: 1.0
+In-Reply-To: <20120516002500.GD29393@b20223-02.ap.freescale.net>
+References: <1336798797-8724-1-git-send-email-skannan@codeaurora.org>
+ <1337114622-11292-1-git-send-email-skannan@codeaurora.org> <20120516002500.GD29393@b20223-02.ap.freescale.net>
+From: "Turquette, Mike" <mturquette@ti.com>
+Date: Tue, 15 May 2012 22:40:11 -0700
+Message-ID: <CAJOA=zP4kS1CPry5nWo-mTba+9dAdK_a+rUrNCkQrzgixa3kRg@mail.gmail.com>
+Subject: Re: [PATCH] clk: Fix CLK_SET_RATE_GATE flag validation in clk_set_rate().
+To: Richard Zhao <richard.zhao@freescale.com>
+Cc: Saravana Kannan <skannan@codeaurora.org>, Andrew Lunn <andrew@lunn.ch>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Jamie Iles <jamie@jamieiles.com>,
+        Jeremy Kerr <jeremy.kerr@canonical.com>,
+        Magnus Damm <magnus.damm@gmail.com>,
+        Deepak Saxena <dsaxena@linaro.org>,
+        Shawn Guo <shawn.guo@freescale.com>,
+        Arnd Bergman <arnd.bergmann@linaro.org>, linux-arm-msm@vger.kernel.org,
+        Sascha Hauer <s.hauer@pengutronix.de>,
+        Rob Herring <rob.herring@calxeda.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Richard Zhao <richard.zhao@linaro.org>,
+        linux-arm-kernel@lists.infradead.org, Paul Walmsley <paul@pwsan.com>,
+        Linus Walleij <linus.walleij@stericsson.com>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Stephen Boyd <sboyd@codeaurora.org>, linux-kernel@vger.kernel.org,
+        Amit Kucheria <amit.kucheria@linaro.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2012-05-16 at 14:08 +0900, Jingoo Han wrote:
-> This patch uses pr_warn instead of printk to allow dynamic debugging.
+On Tue, May 15, 2012 at 5:25 PM, Richard Zhao
+<richard.zhao@freescale.com> wrote:
+> On Tue, May 15, 2012 at 01:43:42PM -0700, Saravana Kannan wrote:
+>> The clk_set_rate() code shouldn't check the clock's enable count when
+>> validating CLK_SET_RATE_GATE flag since the enable count could change after
+>> the validation. Similar to clk_set_parent(), it should instead check the
+>> prepare count. The prepare count should go to zero only when the end user
+>> expects the clock to not be enabled in the future. Since the code already
+>> grabs the prepare count before validation, it's not possible for prepare
+>> count to change after validation and by association not possible for a well
+>> behaving end user to enable the clock while the set rate is in progress.
+>>
+>> Signed-off-by: Saravana Kannan <skannan@codeaurora.org>
+> Reviewed-by: Richard Zhao <richard.zhao@freescale.com>
 
-A slight mistake in the commit message.
-pr_debug not pr_warn.
+Looks good to me.  I'll take into clk-next for one final pull request
+to arm-soc.
 
-> diff --git a/drivers/video/backlight/backlight.c b/drivers/video/backlight/backlight.c
-> index bf5b1ec..f7ce212 100644
-> --- a/drivers/video/backlight/backlight.c
-> +++ b/drivers/video/backlight/backlight.c
-> @@ -5,6 +5,8 @@
->   *
->   */
->  
-> +#define pr_fmt(fmt) "backlight: " fmt
-
-I'd prefer:
-
-#define pr_fmt(fmt) KBUILD_MODNAME ": " fmt
-
-> diff --git a/drivers/video/backlight/lcd.c b/drivers/video/backlight/lcd.c
-> index 1c298d5..e61db49 100644
-> --- a/drivers/video/backlight/lcd.c
-> +++ b/drivers/video/backlight/lcd.c
-> @@ -5,6 +5,8 @@
->   *
->   */
->  
-> +#define pr_fmt(fmt) "lcd: " fmt
-
-KBUILD_MODNAME here too
-
-
+Thanks,
+Mike
