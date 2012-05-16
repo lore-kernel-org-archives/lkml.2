@@ -1,57 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932622Ab2EPBtu (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 May 2012 21:49:50 -0400
-Received: from perches-mx.perches.com ([206.117.179.246]:38243 "EHLO
-	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1752128Ab2EPBtt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 May 2012 21:49:49 -0400
-Message-ID: <1337132987.7050.29.camel@joe2Laptop>
-Subject: Re: [PATCH net-next 2/2] net: ipv4 and ipv6: Convert
- printk(KERN_DEBUG to pr_debug
-From: Joe Perches <joe@perches.com>
-To: Stephen Hemminger <shemminger@vyatta.com>
-Cc: "David S. Miller" <davem@davemloft.net>,
-        Alexey Kuznetsov <kuznet@ms2.inr.ac.ru>,
-        James Morris <jmorris@namei.org>,
-        Hideaki YOSHIFUJI <yoshfuji@linux-ipv6.org>,
-        Patrick McHardy <kaber@trash.net>, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Date: Tue, 15 May 2012 18:49:47 -0700
-In-Reply-To: <20120515183536.2cac1e29@nehalam.linuxnetplumber.net>
-References: <cover.1337126962.git.joe@perches.com>
-	 <1fd8285e798ec9b3817c790a67b2bb655ffc931b.1337126963.git.joe@perches.com>
-	 <20120515183536.2cac1e29@nehalam.linuxnetplumber.net>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.2- 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	id S1757753Ab2EPBuE (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 May 2012 21:50:04 -0400
+Received: from LGEMRELSE7Q.lge.com ([156.147.1.151]:64562 "EHLO
+	LGEMRELSE7Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932658Ab2EPBuB (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 May 2012 21:50:01 -0400
+X-AuditID: 9c930197-b7be2ae000000ebb-5a-4fb307c481a5
+From: Namhyung Kim <namhyung.kim@lge.com>
+To: valdis.kletnieks@vt.edu
+Cc: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        linux-kernel@vger.kernel.org, Hyeoncheol Lee <cheol.lee@lge.com>
+Subject: Re: [QUESTION] Kprobes as a module?
+References: <87zk99zwb8.fsf@sejong.aot.lge.com>
+	<52488.1337111535@turing-police.cc.vt.edu>
+Date: Wed, 16 May 2012 10:48:06 +0900
+In-Reply-To: <52488.1337111535@turing-police.cc.vt.edu> (valdis kletnieks's
+	message of "Tue, 15 May 2012 15:52:15 -0400")
+Message-ID: <871umkew15.fsf@sejong.aot.lge.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.0.95 (gnu/linux)
+MIME-Version: 1.0
+Content-Type: text/plain
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2012-05-15 at 18:35 -0700, Stephen Hemminger wrote:
-> On Tue, 15 May 2012 17:11:54 -0700
-> Joe Perches <joe@perches.com> wrote:
-> 
-> > Use the current debugging style and enable dynamic_debug.
-> > 
-> > Signed-off-by: Joe Perches <joe@perches.com>
-> 
-> This changes the action of the system. By default:
->   printk(KERN_DEBUG "foo\n");
-> is enabled all the time and prints to log with debug level.
-> 
-> But your version
->   pr_debug("foo\n");
-> defaults to being dropped until the system is built with dynamic
-> debug, and that particular debug instance is enabled.
-> 
-> Since these are all useful, but low priority messages, not I
-> don't think disabling them by default is such a great idea now.
+Hi,
 
-Just had that discussion with David Miller.
+On Tue, 15 May 2012 15:52:15 -0400, valdis kletnieks wrote:
+> On Tue, 15 May 2012 17:24:11 +0900, Namhyung Kim said:
+>> Probably a dumb question :).
+>> What prevents the kprobes from being built as a module? We want to use
+>> the kprobes on our systems, but some guys worried about potential
+>> security problems. So it'd be great if we can enable/load kprobes as
+>> needed and then disable/unload after using it. Is it a possible senario?
+>
+> Any troublemaker who has the ability to set a kprobe would probably also
+> have theability to just re-load the module before setting the kprobe (unless
+> you go to a *lot* of trouble to compartmentalize the root user).
+>
+> So it's not clear there's a security benefit from making it a module.  If anything,
+> it makes it *worse* because you can then surprise a sysadmin who *thought*
+> they were running a KPROBES=n kernel by loading a module and turning it on...
 
-http://marc.info/?l=linux-sctp&m=133710673230503&w=2
+Right, thanks for your comment.
 
-
+Namhyung
