@@ -1,114 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965717Ab2EPIVX (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 May 2012 04:21:23 -0400
-Received: from LGEMRELSE6Q.lge.com ([156.147.1.121]:59056 "EHLO
-	LGEMRELSE6Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759841Ab2EPIVT (ORCPT
+	id S933237Ab2EPIVn (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 May 2012 04:21:43 -0400
+Received: from e28smtp04.in.ibm.com ([122.248.162.4]:48388 "EHLO
+	e28smtp04.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932600Ab2EPIVi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 May 2012 04:21:19 -0400
-X-AuditID: 9c930179-b7bb9ae000000ea5-b4-4fb36373788e
-From: Namhyung Kim <namhyung.kim@lge.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Ingo Molnar <mingo@kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Arnaldo Carvalho de Melo <acme@infradead.org>,
-        linux-kernel@vger.kernel.org, Arjan van de Ven <arjan@infradead.org>,
-        David Ahern <dsahern@gmail.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Mike Galbraith <efault@gmx.de>, Paul Mackerras <paulus@samba.org>,
-        Stephane Eranian <eranian@google.com>, arnaldo.melo@gmail.com,
-        Arnaldo Carvalho de Melo <acme@redhat.com>
-Subject: Re: [GIT PULL 0/8] Annotation weekly ponies delivery
-References: <1336852387-16322-1-git-send-email-acme@infradead.org>
-	<CA+55aFxeqrCj71fSe2r9kwzyO9q2BT9A89f7nLUgbrTG_uPP2g@mail.gmail.com>
-	<1336994000.2443.24.camel@twins> <20120514115551.GA6479@gmail.com>
-	<1337007985.1552.5.camel@leonhard> <1337077973.27694.24.camel@twins>
-	<1337093080.1493.22.camel@leonhard> <1337101633.27694.92.camel@twins>
-	<87liksd5wi.fsf@sejong.aot.lge.com>
-Date: Wed, 16 May 2012 17:19:16 +0900
-In-Reply-To: <87liksd5wi.fsf@sejong.aot.lge.com> (Namhyung Kim's message of
-	"Wed, 16 May 2012 14:57:49 +0900")
-Message-ID: <87397035dn.fsf@sejong.aot.lge.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.0.95 (gnu/linux)
+	Wed, 16 May 2012 04:21:38 -0400
+Message-ID: <4FB36365.4000802@linux.vnet.ibm.com>
+Date: Wed, 16 May 2012 13:50:53 +0530
+From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120424 Thunderbird/12.0
 MIME-Version: 1.0
-Content-Type: text/plain
-X-Brightmail-Tracker: AAAAAA==
+To: David Rientjes <rientjes@google.com>
+CC: Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Nishanth Aravamudan <nacc@linux.vnet.ibm.com>, mingo@kernel.org,
+        pjt@google.com, paul@paulmenage.org, akpm@linux-foundation.org,
+        rjw@sisk.pl, nacc@us.ibm.com, paulmck@linux.vnet.ibm.com,
+        tglx@linutronix.de, seto.hidetoshi@jp.fujitsu.com, tj@kernel.org,
+        mschmidt@redhat.com, berrange@redhat.com, nikunj@linux.vnet.ibm.com,
+        vatsa@linux.vnet.ibm.com, liuj97@gmail.com,
+        linux-kernel@vger.kernel.org, linux-pm@vger.kernel.org
+Subject: Re: [PATCH v3 5/5] cpusets, suspend: Save and restore cpusets during
+ suspend/resume
+References: <20120513231325.3566.37740.stgit@srivatsabhat> <20120513231710.3566.45349.stgit@srivatsabhat> <alpine.DEB.2.00.1205141735050.25235@chino.kir.corp.google.com> <20120515014042.GA9774@linux.vnet.ibm.com> <alpine.DEB.2.00.1205142055160.10906@chino.kir.corp.google.com> <20120515044539.GA25256@linux.vnet.ibm.com> <alpine.DEB.2.00.1205151106490.24304@chino.kir.corp.google.com> <1337112653.27694.110.camel@twins> <alpine.DEB.2.00.1205151346570.1656@chino.kir.corp.google.com> <1337116107.27694.114.camel@twins> <alpine.DEB.2.00.1205151414210.1656@chino.kir.corp.google.com> <4FB2CDAD.4020306@linux.vnet.ibm.com> <alpine.DEB.2.00.1205151444260.1656@chino.kir.corp.google.com> <4FB2D5CB.6090209@linux.vnet.ibm.com> <alpine.DEB.2.00.1205151527220.25449@chino.kir.corp.google.com>
+In-Reply-To: <alpine.DEB.2.00.1205151527220.25449@chino.kir.corp.google.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+x-cbid: 12051608-5564-0000-0000-000002BD7E0A
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On 05/16/2012 04:02 AM, David Rientjes wrote:
 
-On Wed, 16 May 2012 14:57:49 +0900, Namhyung Kim wrote:
-> Hmm.. but it seems this breaks my 'perf stat -g' - it doesn't
-> respond any more (even for ^C):
->
-
-I've found that it's a problem of whole perf stat, not only for -g
-option. It's because the perf stat should use per-task events for some
-reason as it's not use mmap on the events.
-
-The commit 77a6f014e9ae ("perf stat: Use perf_evlist__create_maps")
-introduced the issue and it seems following patch works well for me:
-
----[ cut here ]---
-
-diff --git a/tools/perf/builtin-record.c b/tools/perf/builtin-record.c
-index d19058a7b84c..185e59a4715d 100644
---- a/tools/perf/builtin-record.c
-+++ b/tools/perf/builtin-record.c
-@@ -754,6 +754,9 @@ static struct perf_record record = {
- 		.user_freq	     = UINT_MAX,
- 		.user_interval	     = ULLONG_MAX,
- 		.freq		     = 1000,
-+		.target		     = {
-+			.need_mmap   = true,
-+		},
- 	},
- 	.write_mode = WRITE_FORCE,
- 	.file_new   = true,
-diff --git a/tools/perf/builtin-top.c b/tools/perf/builtin-top.c
-index 553560a8b1be..ebcd15883ab8 100644
---- a/tools/perf/builtin-top.c
-+++ b/tools/perf/builtin-top.c
-@@ -1162,6 +1162,9 @@ int cmd_top(int argc, const char **argv, const char *prefix __used)
- 		.freq		     = 1000, /* 1 KHz */
- 		.mmap_pages	     = 128,
- 		.sym_pcnt_filter     = 5,
-+		.target		     = {
-+			.need_mmap   = true,
-+		},
- 	};
- 	char callchain_default_opt[] = "fractal,0.5,callee";
- 	const struct option options[] = {
-diff --git a/tools/perf/util/evlist.c b/tools/perf/util/evlist.c
-index 87889f325678..ba43c3a4046c 100644
---- a/tools/perf/util/evlist.c
-+++ b/tools/perf/util/evlist.c
-@@ -611,6 +611,8 @@ int perf_evlist__create_maps(struct perf_evlist *evlist,
- 
- 	if (perf_target__has_task(target))
- 		evlist->cpus = cpu_map__dummy_new();
-+	else if (!perf_target__has_cpu(target) && !target->need_mmap)
-+		evlist->cpus = cpu_map__dummy_new();
- 	else
- 		evlist->cpus = cpu_map__new(target->cpu_list);
- 
-diff --git a/tools/perf/util/target.h b/tools/perf/util/target.h
-index c43f632955fa..ffa247d3ede3 100644
---- a/tools/perf/util/target.h
-+++ b/tools/perf/util/target.h
-@@ -11,6 +11,7 @@ struct perf_target {
- 	const char   *uid_str;
- 	uid_t	     uid;
- 	bool	     system_wide;
-+	bool	     need_mmap;
- };
- 
- enum perf_target_errno {
+> On Wed, 16 May 2012, Srivatsa S. Bhat wrote:
+> 
+>>>  I know root is special 
+>>> cased all over the cpuset code, but I think the real fix here is to figure 
+>>> out why it can't be left as a superset and then we end up doing nothing 
+>>> for s/r.
+>>>
+>>> I don't have a preference for cpu hotplug and whether cpuset.cpus = 1-3 
+>>> remains 1-3 when cpu 2 is offlined or not, I think it could be argued both 
+>>> ways, but I disagree with saving the cpumask, removing all suspended cpus, 
+>>> and then reinstating it for no reason.
+>>>
+>>
+>> I think there is a valid reason behind doing that.
+>>
+>> Cpusets translates to sched domains in scheduler terms. So whenever you update
+>> cpusets, the sched domains are updated. IOW, if you don't touch cpusets during
+>> hotplug (suspend/resume case), you allow them to have offline cpus, meaning,
+>> you allow sched domains to have offline cpus. Hence sched domains are rendered
+>> stale.
+>>
+> 
+> It's not possible to update the sched domains for s/r to be a subset of 
+> cpuset.cpus?
 
 
--- 
-Thanks,
-Namhyung
+Subset? See below..
+
+(Btw, the above statement reminds me of a different idea I had long back
+which I will write about in a separate mail.)
+
+>  It would be the same situation for a thread using 
+> sched_setaffinity() while bound to a cpuset with a superset of allowed 
+> nodes. 
+
+
+First of all, sched domains are built by looking at the cpusets' ->cpus_allowed
+mask, not individual task's ->cpus_allowed mask. So we would gain nothing by
+altering individual task's ->cpus_allowed mask, like what sched_setaffinity()
+does.
+
+On top of that, the "subset" argument wouldn't hold good in the s/r case.
+sched_setaffinity() tries its best to keep the ->cpus_allowed mask of a task
+as a subset of the ->cpus_allowed mask of the cpuset it belongs to.
+But with s/r, that's not the case - it can very well become a disjoint set.
+Consider a cpuset having cpuset.cpus = 1. What happens during suspend/resume
+then? Going by your suggestion, the tasks in that cpuset will have
+->cpus_allowed = 0,2-3 or some other combination not having cpu 1 when cpu 1
+gets offlined. And it will keep getting changed into other things depending
+on which phase of suspend/resume we are in.
+
+IOW, ->cpus_allowed of the cpuset and ->cpus_allowed of the tasks belonging
+to the cpuset can go totally out-of-sync, with no relationship like
+subset/superset being preserved between them. Which is not the case with
+sched_setaffinity(), where we always try to maintain a superset-subset
+relationship between the two.
+
+And in any case, altering individual task's ->cpus_allowed wouldn't buy us
+anything, as I mentioned above.
+
+> If you do that, there's no reason to alter cpuset.cpus at all and 
+
+> you don't need to carry another cpumask around for each cpuset.
+> 
+
+
+Regards,
+Srivatsa S. Bhat
+
