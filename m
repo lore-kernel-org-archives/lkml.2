@@ -1,77 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759870Ab2EPIjS (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 May 2012 04:39:18 -0400
-Received: from na3sys009aog107.obsmtp.com ([74.125.149.197]:42500 "EHLO
-	na3sys009aog107.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1759308Ab2EPIjO (ORCPT
+	id S966139Ab2EPInI (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 May 2012 04:43:08 -0400
+Received: from e28smtp04.in.ibm.com ([122.248.162.4]:50519 "EHLO
+	e28smtp04.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759845Ab2EPIm6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 May 2012 04:39:14 -0400
-Date: Wed, 16 May 2012 11:37:23 +0300
-From: Felipe Balbi <balbi@ti.com>
-To: Nicolas Ferre <nicolas.ferre@atmel.com>
-Cc: linux-usb@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org, plagnioj@jcrosoft.com,
-        gregkh@linuxfoundation.org, idos@codeaurora.org, balbi@ti.com
-Subject: Re: [PATCH] usb: gadget: at91_udc: fix endpoint descriptor
- dereference
-Message-ID: <20120516083722.GH17359@arwen.pp.htv.fi>
-Reply-To: balbi@ti.com
-References: <1337156587-7379-1-git-send-email-nicolas.ferre@atmel.com>
+	Wed, 16 May 2012 04:42:58 -0400
+Message-ID: <4FB36867.7030500@linux.vnet.ibm.com>
+Date: Wed, 16 May 2012 14:12:15 +0530
+From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120424 Thunderbird/12.0
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="nOM8ykUjac0mNN89"
-Content-Disposition: inline
-In-Reply-To: <1337156587-7379-1-git-send-email-nicolas.ferre@atmel.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: David Rientjes <rientjes@google.com>
+CC: Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Nishanth Aravamudan <nacc@linux.vnet.ibm.com>, mingo@kernel.org,
+        pjt@google.com, paul@paulmenage.org, akpm@linux-foundation.org,
+        rjw@sisk.pl, nacc@us.ibm.com, paulmck@linux.vnet.ibm.com,
+        tglx@linutronix.de, seto.hidetoshi@jp.fujitsu.com, tj@kernel.org,
+        mschmidt@redhat.com, berrange@redhat.com, nikunj@linux.vnet.ibm.com,
+        vatsa@linux.vnet.ibm.com, liuj97@gmail.com,
+        linux-kernel@vger.kernel.org, linux-pm@vger.kernel.org
+Subject: Re: [PATCH v3 5/5] cpusets, suspend: Save and restore cpusets during
+ suspend/resume
+References: <20120513231325.3566.37740.stgit@srivatsabhat> <20120513231710.3566.45349.stgit@srivatsabhat> <alpine.DEB.2.00.1205141735050.25235@chino.kir.corp.google.com> <20120515014042.GA9774@linux.vnet.ibm.com> <alpine.DEB.2.00.1205142055160.10906@chino.kir.corp.google.com> <20120515044539.GA25256@linux.vnet.ibm.com> <alpine.DEB.2.00.1205151106490.24304@chino.kir.corp.google.com> <1337112653.27694.110.camel@twins> <alpine.DEB.2.00.1205151346570.1656@chino.kir.corp.google.com> <1337116107.27694.114.camel@twins> <alpine.DEB.2.00.1205151414210.1656@chino.kir.corp.google.com> <4FB2CDAD.4020306@linux.vnet.ibm.com> <alpine.DEB.2.00.1205151444260.1656@chino.kir.corp.google.com> <4FB2D5CB.6090209@linux.vnet.ibm.com> <alpine.DEB.2.00.1205151527220.25449@chino.kir.corp.google.com> <4FB36365.4000802@linux.vnet.ibm.com>
+In-Reply-To: <4FB36365.4000802@linux.vnet.ibm.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+x-cbid: 12051608-5564-0000-0000-000002BD9164
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 05/16/2012 01:50 PM, Srivatsa S. Bhat wrote:
 
---nOM8ykUjac0mNN89
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+> On 05/16/2012 04:02 AM, David Rientjes wrote:
+> 
+>> On Wed, 16 May 2012, Srivatsa S. Bhat wrote:
+>>
+>>>>  I know root is special 
+>>>> cased all over the cpuset code, but I think the real fix here is to figure 
+>>>> out why it can't be left as a superset and then we end up doing nothing 
+>>>> for s/r.
+>>>>
+>>>> I don't have a preference for cpu hotplug and whether cpuset.cpus = 1-3 
+>>>> remains 1-3 when cpu 2 is offlined or not, I think it could be argued both 
+>>>> ways, but I disagree with saving the cpumask, removing all suspended cpus, 
+>>>> and then reinstating it for no reason.
+>>>>
+>>>
+>>> I think there is a valid reason behind doing that.
+>>>
+>>> Cpusets translates to sched domains in scheduler terms. So whenever you update
+>>> cpusets, the sched domains are updated. IOW, if you don't touch cpusets during
+>>> hotplug (suspend/resume case), you allow them to have offline cpus, meaning,
+>>> you allow sched domains to have offline cpus. Hence sched domains are rendered
+>>> stale.
+>>>
+>>
+>> It's not possible to update the sched domains for s/r to be a subset of 
+>> cpuset.cpus?
+> 
+> 
+> (Btw, the above statement reminds me of a different idea I had long back
+> which I will write about in a separate mail.)
+> 
 
-On Wed, May 16, 2012 at 10:23:07AM +0200, Nicolas Ferre wrote:
-> The patch 5a6506f (Update at91_udc to use usb_endpoint_descriptor inside =
-the
-> struct usb_ep) removes the desc field of struct at91_ep. This convertion =
-had
-> not been completed which leads to a compilation error.
->=20
-> Signed-off-by: Nicolas Ferre <nicolas.ferre@atmel.com>
-> Cc: Felipe Balbi <balbi@ti.com>
 
-Acked-by: Felipe Balbi <balbi@ti.com>
+You suggested keeping sched domains updated during s/r without altering cpuset.cpus.
+That is a very good point!
 
-Greg this should be applied to avoid compile breakages on your usb-next
-branch. Sorry for that.
+Because, we will then be distinguishing between 2 things:
+sched domains can be "stale" because of 2 distinct reasons, one of which is troublesome
+but the other is harmless:
 
---=20
-balbi
+1. offline cpus are included in some sched domains, and some offline cpus have
+   a non-NULL sched domain pointer. This is the problematic situation.
 
---nOM8ykUjac0mNN89
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+2. sched domains don't reflect the cpuset configurations set up in cpuset.cpus of
+   different cpusets. This is not really harmful, because if this happens only during
+   s/r, the userspace wouldn't really notice it, as long as we reinstate the
+   cpuset<->sched domain dependency properly at the end of resume.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
+So you are suggesting implementing point #2, where we keep the sched domains updated
+(partially, at least in a way that is not harmful), so that we avoid the problem in
+#1.
 
-iQIcBAEBAgAGBQJPs2dCAAoJEIaOsuA1yqREt40P/2EGtE1yCSXJA3ZdOyjnWN+N
-wqItrm9f+h+Ny71gnmWWKfVi9DQQvPboEjXJoYo6TL7hT6zqbTej/vcU7zN8Pzxp
-PW+aghH+hGdsRbn1izq4AV9nmG4VnG5MmkIVNvFr6s9OFRkKrDzAT56M3pf0b0lj
-9+QgRoNErtMkDqoBlDjS0OazS+c4vkONu/YYBK2nYx9NNW2B1+kCPMlIuzak1P07
-rVKhQjia98h+YizBQOprZhbQp5FeMeYPsyhET5lpIgAPTZFn54Etdm46wb4Rrxsy
-FhV4beTW7sgYyFDq/DeJmr1BbFop6s6QjjEbPS8Lz3Egi8vKwpFuhJI1QCLXcP5+
-oqcj2F+YPtwQPstVQkVghZUnDpA8erA7zAv+7uaJQ/cRVHZep4A2SRM1d7OLVdr2
-bhpI47OrhyycdwGCPgZh3Oc/noy0o67ydKUY85TirQa7VYpxFcLFMQ7OTPsn44ZK
-J+Mi9c9T6BOUHGB2T2brDET7aNqYRH9D20n7t1JdTsfLRcgHwNJe1FJ2MQ3seWwT
-CXiz0JJGrqY+HUuSs7/icwToMhvTe3OwWNOwMcCV6JzJeEljHGzwuZNkq0ff7Dc6
-Hl+GwQFBf1hjy6yIwHFNr/jiVYg7xFS/K7LLZkttTTJYGBzNTPQsVOcKn0UVZBuQ
-QGUDHSnTlIM8lhMQDBbY
-=NPX1
------END PGP SIGNATURE-----
+I had written a patch for this long ago:
+http://thread.gmane.org/gmane.linux.kernel/1250097/focus=1254715
 
---nOM8ykUjac0mNN89--
+The idea there was to create a single sched domain at the beginning of suspend,
+temporarily ignoring cpuset configurations, and reinstating the proper sched domain
+tree taking cpusets into consideration, at the end of resume. That way we need not
+touch cpusets during s/r, we need not explicitly save/restore cpusets, and we still
+manage to keep the scheduler sane and happy. And the frozen userspace cannot observe
+the temporary mismatch between cpusets<->sched domains. So no problems there too.
+
+IMHO, the only reason we didn't finalize on that patch earlier was because the version
+in commit 8f2f748b06562 looked much simpler (and at that point, we had no clue that
+the latter would lead to suspend hangs).
+
+So, now, we can either go with the design in this v3 (explicit save/restore) or the
+one in the link shown above (temporary cpuset<->sched domain mismatch during s/r).
+
+Not sure what Peter has to say about the latter though... He might have reservations
+about it, I don't know ;-)
+ 
+Regards,
+Srivatsa S. Bhat
+
