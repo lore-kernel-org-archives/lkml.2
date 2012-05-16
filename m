@@ -1,41 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S967464Ab2EPL36 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 May 2012 07:29:58 -0400
-Received: from lxorguk.ukuu.org.uk ([81.2.110.251]:46793 "EHLO
-	lxorguk.ukuu.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1030195Ab2EPL3z (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 May 2012 07:29:55 -0400
-Date: Wed, 16 May 2012 12:32:46 +0100
-From: Alan Cox <alan@lxorguk.ukuu.org.uk>
-To: "Andre Hedrick (anhedric)" <anhedric@cisco.com>
-Cc: <linux-kernel@vger.kernel.org>
-Subject: Re: CFA 4.0 patch
-Message-ID: <20120516123246.325c9ba9@pyramind.ukuu.org.uk>
-In-Reply-To: <4E75C4FECC27A44E9F7E0737D71946900F686DB5@xmb-sjc-21e.amer.cisco.com>
-References: <4E75C4FECC27A44E9F7E0737D71946900F686C61@xmb-sjc-21e.amer.cisco.com>
-	<20120515153818.3e70d845@pyramind.ukuu.org.uk>
-	<4E75C4FECC27A44E9F7E0737D71946900F686DB5@xmb-sjc-21e.amer.cisco.com>
-X-Mailer: Claws Mail 3.8.0 (GTK+ 2.24.8; x86_64-redhat-linux-gnu)
-Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1030285Ab2EPLiO (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 May 2012 07:38:14 -0400
+Received: from tundra.namei.org ([65.99.196.166]:35122 "EHLO tundra.namei.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S967442Ab2EPLiM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 16 May 2012 07:38:12 -0400
+Date: Wed, 16 May 2012 21:37:48 +1000 (EST)
+From: James Morris <jmorris@namei.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+cc: Al Viro <viro@zeniv.linux.org.uk>, Mimi Zohar <zohar@linux.vnet.ibm.com>,
+        Eric Paris <eparis@parisplace.org>, Mimi Zohar <zohar@us.ibm.com>,
+        linux-security-module@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] vfs: fix IMA lockdep circular locking dependency
+In-Reply-To: <CA+55aFy1qQkGXAr=0Zqk=qJeGTpfMOVC2=rdRWzQ1qsUZ5P0_g@mail.gmail.com>
+Message-ID: <alpine.LRH.2.02.1205162135320.10697@tundra.namei.org>
+References: <1336963631-3541-1-git-send-email-zohar@us.ibm.com> <CA+55aFzrJNd5J7i3Rp7-ctc=bDn5GTWu=H1xyCgGZ-rzu74Gbw@mail.gmail.com> <CA+55aFyPPZ0wayqPMCZtfP1w9nN-GnKJxYc9i_XM_Qk8d-zJzg@mail.gmail.com> <CACLa4pujEBAS349Pr-EcBmzQgTHWthhCMV0Yqq0BG-F_gDjz4Q@mail.gmail.com>
+ <1337112446.20904.50.camel@falcor> <CA+55aFxRRuWGD-4LYzO-T8eg22goKpej5AV36ALL8GaLP56oRA@mail.gmail.com> <CA+55aFzOtY7tBw4YNH+QX+6L4opMsJ=sN4DfJURMv_yBTWqL1w@mail.gmail.com> <20120516004251.GO22082@ZenIV.linux.org.uk> <CA+55aFy0wJdq+-OAkUBsrkQogF5-N0P4DBQ+6-LXjBGscRQFNw@mail.gmail.com>
+ <CA+55aFy1qQkGXAr=0Zqk=qJeGTpfMOVC2=rdRWzQ1qsUZ5P0_g@mail.gmail.com>
+User-Agent: Alpine 2.02 (LRH 1266 2009-07-14)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 15 May 2012 11:35:57 -0700
-"Andre Hedrick (anhedric)" <anhedric@cisco.com> wrote:
+On Tue, 15 May 2012, Linus Torvalds wrote:
 
-> Hi Alan,
-> 
-> You betcha, otherwise I would not have a case.
-> 
-> STEC configed to MWDMA4 (Max reported as UDMA/66)
+> Hmm?
 
-Both of these however should have the identify data indicating CF ? Do
-they also have word 83 not reporting them as CFA ?
+diff --git a/security/capability.c b/security/capability.c
+index 5bb21b1c448c..9a19c6a54e12 100644
+--- a/security/capability.c
++++ b/security/capability.c
+@@ -949,7 +949,6 @@ void __init security_fixup_ops(struct 
+security_operations *ops)
+        set_to_cap_if_null(ops, file_alloc_security);
+        set_to_cap_if_null(ops, file_free_security);
+        set_to_cap_if_null(ops, file_ioctl);
+-       set_to_cap_if_null(ops, file_mmap);
+        set_to_cap_if_null(ops, file_mprotect);
+        set_to_cap_if_null(ops, file_lock);
+        set_to_cap_if_null(ops, file_fcntl);
 
 
+Do we need to add addr_map to the fixup ops?
+
+
+
+
+-- 
+James Morris
+<jmorris@namei.org>
