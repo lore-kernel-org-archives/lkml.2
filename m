@@ -1,61 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754401Ab2EPQww (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 May 2012 12:52:52 -0400
-Received: from perches-mx.perches.com ([206.117.179.246]:49125 "EHLO
-	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1750895Ab2EPQwv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 May 2012 12:52:51 -0400
-Message-ID: <1337187169.6487.1.camel@joe2Laptop>
-Subject: Re: [GIT PULL] new mailmap file for the linux kernel git repository
-From: Joe Perches <joe@perches.com>
-To: Philipp Riemer <ruderphilipp@gmail.com>
-Cc: Paul Mundt <lethal@linux-sh.org>,
-        Michael =?ISO-8859-1?Q?B=FCsch?= <m@bues.ch>,
-        Kuninori Morimoto <kuninori.morimoto.gx@renesas.com>,
-        Jiri Kosina <jkosina@suse.cz>,
-        Uwe =?ISO-8859-1?Q?Kleine-K=F6nig?= 
-	<u.kleine-koenig@pengutronix.de>,
-        LKML <linux-kernel@vger.kernel.org>, Wang Chen <ellre923@gmail.com>,
-        Greg KH <greg@kroah.com>, Jonathan Corbet <corbet@lwn.net>
-Date: Wed, 16 May 2012 09:52:49 -0700
-In-Reply-To: <CAFU-uVv3Nx7hK73RvXtRUD43EoCyY_ER+oe5RScPc32VuuDpPA@mail.gmail.com>
-References: <CAFU-uVs_Gwacxj74cyekY2gv+zAq+Spba7nfPLdTc_dR3y8CYw@mail.gmail.com>
-	 <1337184643.4818.8.camel@joe2Laptop>
-	 <CAFU-uVv3Nx7hK73RvXtRUD43EoCyY_ER+oe5RScPc32VuuDpPA@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.2- 
+	id S1755066Ab2EPQ6e (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 May 2012 12:58:34 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:9535 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751884Ab2EPQ6d (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 16 May 2012 12:58:33 -0400
+X-Authority-Analysis: v=2.0 cv=ae7jbGUt c=1 sm=0 a=ZycB6UtQUfgMyuk2+PxD7w==:17 a=XQbtiDEiEegA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=ylC6d8igtuBafk5u--MA:9 a=PUjeQqilurYA:10 a=ZycB6UtQUfgMyuk2+PxD7w==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 74.67.80.29
+Message-ID: <1337187503.6724.50.camel@gandalf.stny.rr.com>
+Subject: Re: Perf record format portability
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+Cc: Dmitry Antipov <dmitry.antipov@linaro.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@redhat.com>,
+        Amit Kucheria <amit.kucheria@linaro.org>, linaro-dev@lists.linaro.org,
+        linux-kernel@vger.kernel.org, Jiri Olsa <jolsa@redhat.com>
+Date: Wed, 16 May 2012 12:58:23 -0400
+In-Reply-To: <20120516145927.GC7864@infradead.org>
+References: <4FB275EB.5050904@linaro.org>
+	 <20120515155146.GB7864@infradead.org> <4FB38677.8070601@linaro.org>
+	 <20120516145927.GC7864@infradead.org>
+Content-Type: text/plain; charset="ISO-8859-15"
+X-Mailer: Evolution 3.2.2-1 
 Content-Transfer-Encoding: 7bit
 Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2012-05-16 at 18:46 +0200, Philipp Riemer wrote:
-> 2012/5/16 Joe Perches <joe@perches.com>:
-> > > Why add these entries at all again?
-> Due to the research for my thesis, I tried to find out how many
-> developers are contributing to the Linux Kernel. First I thought that
-> this would be easy since there was already a mailmap file that
-> contained information about ambiguous email addresses. But I
-> discovered pretty fast that there were more names with typos etc. so
-> that I started to add those to the file as well.
+On Wed, 2012-05-16 at 11:59 -0300, Arnaldo Carvalho de Melo wrote:
+
+> Steve,
 > 
-> > For instance, my name is listed once in your patch.
-> > and I don't see a reason it should be entered at all.
-> Your name appears in the list because I did a search and you are
-> listed with three "different" entries:
-> * Joe Perches <joe@perches.com>
-> * joe@perches.com <joe@perches.com>
-> * Joe Perches <joe@perches.ccom>
+> 	Was the kernel trace events infrastructure designed with that in
+> mind? I.e. cross analysis? I must be missing something here, still
+> ENOCOFFEE :-\
+
+Yes, the libparsevents library was design for this from day one. That's
+why trace-cmd data file can be run on an ARM and read on x86, or PPC, or
+whatever. I did all my development testing against 32bit, 64bit and big
+and little endian. This was the case from the beginning.
+
+-- Steve
+
 > 
-> Actually, I just realized that I even forgot to add the entry for the
-> ".ccom" and will add it before re-submitting.
+> 	When doing cross arch event analisys I tested:
+> 
+>         PERF_TYPE_HARDWARE                      = 0,
+>         PERF_TYPE_SOFTWARE                      = 1,
+>         PERF_TYPE_HW_CACHE                      = 3,
+> 
+> Not:
+> 
+>         PERF_TYPE_TRACEPOINT                    = 2,
+>         PERF_TYPE_RAW                           = 4,
+>         PERF_TYPE_BREAKPOINT                    = 5,
+> 
+> - Arnaldo
 
-OK then.
-
-When you do resubmit, please use an email client
-that doesn't wrap long lines.
-
-cheers, Joe
 
