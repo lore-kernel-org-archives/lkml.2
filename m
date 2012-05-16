@@ -1,148 +1,189 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754955Ab2EPUk4 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 May 2012 16:40:56 -0400
-Received: from mail.work-microwave.de ([62.245.205.51]:49248 "EHLO
+	id S1755792Ab2EPUlK (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 May 2012 16:41:10 -0400
+Received: from mail.work-microwave.de ([62.245.205.51]:55394 "EHLO
 	work-microwave.de" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751754Ab2EPUky (ORCPT
+	with ESMTP id S1755195Ab2EPUk7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 May 2012 16:40:54 -0400
+	Wed, 16 May 2012 16:40:59 -0400
 From: Roland Stigge <stigge@antcom.de>
 To: glikely@secretlab.ca, arm@kernel.org, linux-kernel@vger.kernel.org,
         linux-arm-kernel@lists.infradead.org, linus.walleij@stericsson.com,
         kevin.wells@nxp.com, srinivas.bakki@nxp.com,
         devicetree-discuss@lists.ozlabs.org, rob.herring@calxeda.com
 Cc: Roland Stigge <stigge@antcom.de>
-Subject: [PATCH RESEND v9 1/2] gpio: Adjust of_xlate API to support multiple GPIO chips
-Date: Wed, 16 May 2012 22:40:31 +0200
-Message-Id: <1337200832-26630-1-git-send-email-stigge@antcom.de>
+Subject: [PATCH RESEND v9 2/2] gpio: Device tree support for LPC32xx
+Date: Wed, 16 May 2012 22:40:32 +0200
+Message-Id: <1337200832-26630-2-git-send-email-stigge@antcom.de>
 X-Mailer: git-send-email 1.7.9
+In-Reply-To: <1337200832-26630-1-git-send-email-stigge@antcom.de>
+References: <1337200832-26630-1-git-send-email-stigge@antcom.de>
 X-FEAS-SYSTEM-WL: rst@work-microwave.de, 192.168.11.78
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch changes the of_xlate API to make it possible to manipulate the
-actual used gc. This way, multiple GPIO banks can be supported with the same DT
-registered GPIO controller.
+This patch adds device tree support for gpio-lpc32xx.c.
 
-The issue was discussed upon the integration of LPC32xx's DT support for its
-GPIO (see separate patch).
+To register the various GPIO banks as (struct) gpio_chips via the same DT
+gpio-controller, we utilize the adjusted of_xlate API to manipulate the
+actually used struct gpio_chip.
 
 Signed-off-by: Roland Stigge <stigge@antcom.de>
+Reviewed-by: Arnd Bergmann <arnd@arndb.de>
 
 ---
 Applies to v3.4-rc7
 
 Changes since last version:
-* Added this patch to the series
+* Use new of_xlate API: Register all GPIO banks at once via the
+  same GPIO controller DT entry by manipulating the actually used struct
+  gpio_chip.
+* Updated devicetree binding documentation
 
-Thanks to Grant Likely for reviewing and advice!
+Thanks to Jean-Christophe PLAGNIOL-VILLARD, Grant Likely, Arnd Bergmann, Jon
+Smirl, Mark Brown for reviewing!
 
- drivers/gpio/gpio-samsung.c |   10 +++++-----
- drivers/of/gpio.c           |   14 ++++++++------
- include/asm-generic/gpio.h  |    2 +-
- include/linux/of_gpio.h     |    2 +-
- 4 files changed, 15 insertions(+), 13 deletions(-)
+You can also pull from:
+  git://git.antcom.de/linux-2.6.git dt/gpio
+  http://git.antcom.de/linux-2.6.git dt/gpio
+  http://git.antcom.de/?p=linux-2.6.git;a=shortlog;h=refs/heads/dt/gpio
 
---- linux-2.6.orig/drivers/gpio/gpio-samsung.c
-+++ linux-2.6/drivers/gpio/gpio-samsung.c
-@@ -2657,21 +2657,21 @@ static struct samsung_gpio_chip exynos5_
+ Documentation/devicetree/bindings/gpio/gpio_lpc32xx.txt |   43 ++++++++++++
+ arch/arm/mach-lpc32xx/include/mach/gpio.h               |    9 ++
+ drivers/gpio/gpio-lpc32xx.c                             |   55 +++++++++++++++-
+ 3 files changed, 105 insertions(+), 2 deletions(-)
+
+--- /dev/null
++++ linux-2.6/Documentation/devicetree/bindings/gpio/gpio_lpc32xx.txt
+@@ -0,0 +1,43 @@
++NXP LPC32xx SoC GPIO controller
++
++Required properties:
++- compatible: must be "nxp,lpc3220-gpio"
++- reg: Physical base address and length of the controller's registers.
++- gpio-controller: Marks the device node as a GPIO controller.
++- #gpio-cells: Should be 3:
++   1) bank:
++      0: GPIO P0
++      1: GPIO P1
++      2: GPIO P2
++      3: GPIO P3
++      4: GPI P3
++      5: GPO P3
++   2) pin number
++   3) optional parameters:
++      - bit 0 specifies polarity (0 for normal, 1 for inverted)
++- reg: Index of the GPIO group
++
++Example:
++
++	gpio: gpio@40028000 {
++		compatible = "nxp,lpc3220-gpio";
++		reg = <0x40028000 0x1000>;
++		gpio-controller;
++		#gpio-cells = <3>; /* bank, pin, flags */
++	};
++
++	leds {
++		compatible = "gpio-leds";
++
++		led0 {
++			gpios = <&gpio 5 1 1>; /* GPO_P3 1, active low */
++			linux,default-trigger = "heartbeat";
++			default-state = "off";
++		};
++
++		led1 {
++			gpios = <&gpio 5 14 1>; /* GPO_P3 14, active low */
++			linux,default-trigger = "timer";
++			default-state = "off";
++		};
++	};
+--- linux-2.6.orig/arch/arm/mach-lpc32xx/include/mach/gpio.h
++++ linux-2.6/arch/arm/mach-lpc32xx/include/mach/gpio.h
+@@ -1 +1,8 @@
+-/* empty */
++#ifndef __MACH_GPIO_H
++#define __MACH_GPIO_H
++
++#include "gpio-lpc32xx.h"
++
++#define ARCH_NR_GPIOS (LPC32XX_GPO_P3_GRP + LPC32XX_GPO_P3_MAX)
++
++#endif /* __MACH_GPIO_H */
+--- linux-2.6.orig/drivers/gpio/gpio-lpc32xx.c
++++ linux-2.6/drivers/gpio/gpio-lpc32xx.c
+@@ -21,6 +21,9 @@
+ #include <linux/io.h>
+ #include <linux/errno.h>
+ #include <linux/gpio.h>
++#include <linux/of_gpio.h>
++#include <linux/platform_device.h>
++#include <linux/module.h>
  
- 
- #if defined(CONFIG_ARCH_EXYNOS) && defined(CONFIG_OF)
--static int exynos_gpio_xlate(struct gpio_chip *gc,
-+static int exynos_gpio_xlate(struct gpio_chip **gc,
- 			const struct of_phandle_args *gpiospec, u32 *flags)
- {
- 	unsigned int pin;
- 
--	if (WARN_ON(gc->of_gpio_n_cells < 4))
-+	if (WARN_ON((*gc)->of_gpio_n_cells < 4))
- 		return -EINVAL;
- 
--	if (WARN_ON(gpiospec->args_count < gc->of_gpio_n_cells))
-+	if (WARN_ON(gpiospec->args_count < (*gc)->of_gpio_n_cells))
- 		return -EINVAL;
- 
--	if (gpiospec->args[0] > gc->ngpio)
-+	if (gpiospec->args[0] > (*gc)->ngpio)
- 		return -EINVAL;
- 
--	pin = gc->base + gpiospec->args[0];
-+	pin = (*gc)->base + gpiospec->args[0];
- 
- 	if (s3c_gpio_cfgpin(pin, S3C_GPIO_SFN(gpiospec->args[1])))
- 		pr_warn("gpio_xlate: failed to set pin function\n");
---- linux-2.6.orig/drivers/of/gpio.c
-+++ linux-2.6/drivers/of/gpio.c
-@@ -64,7 +64,7 @@ int of_get_named_gpio_flags(struct devic
- 	if (flags)
- 		*flags = 0;
- 
--	ret = gc->of_xlate(gc, &gpiospec, flags);
-+	ret = gc->of_xlate(&gc, &gpiospec, flags);
- 	if (ret < 0)
- 		goto err1;
- 
-@@ -114,7 +114,9 @@ EXPORT_SYMBOL(of_gpio_named_count);
- 
- /**
-  * of_gpio_simple_xlate - translate gpio_spec to the GPIO number and flags
-- * @gc:		pointer to the gpio_chip structure
-+ * @gc:		pointer to pointer to the gpio_chip structure: the xlate
-+ *              function can alter *gc itself to make GPIO distribution to
-+ *              multiple gpio_chips possible
-  * @np:		device node of the GPIO chip
-  * @gpio_spec:	gpio specifier as found in the device tree
-  * @flags:	a flags pointer to fill in
-@@ -123,7 +125,7 @@ EXPORT_SYMBOL(of_gpio_named_count);
-  * gpio chips. This function performs only one sanity check: whether gpio
-  * is less than ngpios (that is specified in the gpio_chip).
-  */
--int of_gpio_simple_xlate(struct gpio_chip *gc,
-+int of_gpio_simple_xlate(struct gpio_chip **gc,
- 			 const struct of_phandle_args *gpiospec, u32 *flags)
- {
- 	/*
-@@ -132,15 +134,15 @@ int of_gpio_simple_xlate(struct gpio_chi
- 	 * number and the flags from a single gpio cell -- this is possible,
- 	 * but not recommended).
- 	 */
--	if (gc->of_gpio_n_cells < 2) {
-+	if ((*gc)->of_gpio_n_cells < 2) {
- 		WARN_ON(1);
- 		return -EINVAL;
- 	}
- 
--	if (WARN_ON(gpiospec->args_count < gc->of_gpio_n_cells))
-+	if (WARN_ON(gpiospec->args_count < (*gc)->of_gpio_n_cells))
- 		return -EINVAL;
- 
--	if (gpiospec->args[0] >= gc->ngpio)
-+	if (gpiospec->args[0] >= (*gc)->ngpio)
- 		return -EINVAL;
- 
- 	if (flags)
---- linux-2.6.orig/include/asm-generic/gpio.h
-+++ linux-2.6/include/asm-generic/gpio.h
-@@ -129,7 +129,7 @@ struct gpio_chip {
- 	 */
- 	struct device_node *of_node;
- 	int of_gpio_n_cells;
--	int (*of_xlate)(struct gpio_chip *gc,
-+	int (*of_xlate)(struct gpio_chip **gc,
- 		        const struct of_phandle_args *gpiospec, u32 *flags);
- #endif
+ #include <mach/hardware.h>
+ #include <mach/platform.h>
+@@ -454,10 +457,60 @@ static struct lpc32xx_gpio_chip lpc32xx_
+ 	},
  };
---- linux-2.6.orig/include/linux/of_gpio.h
-+++ linux-2.6/include/linux/of_gpio.h
-@@ -59,7 +59,7 @@ extern int of_mm_gpiochip_add(struct dev
- extern void of_gpiochip_add(struct gpio_chip *gc);
- extern void of_gpiochip_remove(struct gpio_chip *gc);
- extern struct gpio_chip *of_node_to_gpiochip(struct device_node *np);
--extern int of_gpio_simple_xlate(struct gpio_chip *gc,
-+extern int of_gpio_simple_xlate(struct gpio_chip **gc,
- 				const struct of_phandle_args *gpiospec,
- 				u32 *flags);
  
++/* Empty now, can be removed later when mach-lpc32xx is finally switched over
++ * to DT support
++ */
+ void __init lpc32xx_gpio_init(void)
+ {
++}
++
++static int lpc32xx_of_xlate(struct gpio_chip **gc,
++			    const struct of_phandle_args *gpiospec, u32 *flags)
++{
++	u32 bank;
++	if (WARN_ON(gpiospec->args_count < 3))
++		return -EINVAL;
++
++	bank = gpiospec->args[0];
++	if (WARN_ON(bank > 5))
++		return -EINVAL;
++
++	*gc = &lpc32xx_gpiochip[bank].chip;
++	if (flags)
++		*flags = gpiospec->args[2];
++	return gpiospec->args[1];
++}
++
++static int __devinit lpc32xx_gpio_probe(struct platform_device *pdev)
++{
+ 	int i;
+ 
+-	for (i = 0; i < ARRAY_SIZE(lpc32xx_gpiochip); i++)
++	for (i = 0; i < ARRAY_SIZE(lpc32xx_gpiochip); i++) {
++		if (pdev->dev.of_node) {
++			lpc32xx_gpiochip[i].chip.of_xlate = lpc32xx_of_xlate;
++			lpc32xx_gpiochip[i].chip.of_gpio_n_cells = 3;
++			lpc32xx_gpiochip[i].chip.of_node = pdev->dev.of_node;
++		}
+ 		gpiochip_add(&lpc32xx_gpiochip[i].chip);
++	}
++
++	return 0;
+ }
++
++#ifdef CONFIG_OF
++static struct of_device_id lpc32xx_gpio_of_match[] __devinitdata = {
++	{ .compatible = "nxp,lpc3220-gpio", },
++	{ },
++};
++#endif
++
++static struct platform_driver lpc32xx_gpio_driver = {
++	.driver		= {
++		.name	= "lpc32xx-gpio",
++		.owner	= THIS_MODULE,
++		.of_match_table = of_match_ptr(lpc32xx_gpio_of_match),
++	},
++	.probe		= lpc32xx_gpio_probe,
++};
++
++module_platform_driver(lpc32xx_gpio_driver);
