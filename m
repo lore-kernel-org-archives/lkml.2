@@ -1,99 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754981Ab2EPPOn (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 May 2012 11:14:43 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:35727 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755913Ab2EPPOe (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 May 2012 11:14:34 -0400
-From: Joonsoo Kim <js1304@gmail.com>
-To: Pekka Enberg <penberg@kernel.org>
-Cc: Christoph Lameter <cl@linux-foundation.org>, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org, Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Joonsoo Kim <js1304@gmail.com>, <stable@vger.kernel.org>
-Subject: [PATCH RESEND] slub: fix a memory leak in get_partial_node()
-Date: Thu, 17 May 2012 00:13:02 +0900
-Message-Id: <1337181182-23054-1-git-send-email-js1304@gmail.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <alpine.LFD.2.02.1205160935340.1763@tux.localdomain>
-References: <alpine.LFD.2.02.1205160935340.1763@tux.localdomain>
+	id S1755446Ab2EPPO7 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 May 2012 11:14:59 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:15924 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755310Ab2EPPO4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 16 May 2012 11:14:56 -0400
+Date: Wed, 16 May 2012 18:14:44 +0300
+From: "Michael S. Tsirkin" <mst@redhat.com>
+To: Shirley Ma <mashirle@us.ibm.com>
+Cc: Jason Wang <jasowang@redhat.com>, eric.dumazet@gmail.com,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        ebiederm@xmission.com, davem@davemloft.net
+Subject: Re: [V2 PATCH 9/9] vhost: zerocopy: poll vq in zerocopy callback
+Message-ID: <20120516151444.GC9934@redhat.com>
+References: <20120502033901.11782.13157.stgit@amd-6168-8-1.englab.nay.redhat.com>
+ <20120502034254.11782.27314.stgit@amd-6168-8-1.englab.nay.redhat.com>
+ <1337100630.8220.4.camel@oc3660625478.ibm.com>
+ <4FB317C8.90002@redhat.com>
+ <1337181027.10741.13.camel@oc3660625478.ibm.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1337181027.10741.13.camel@oc3660625478.ibm.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-In the case which is below,
+On Wed, May 16, 2012 at 08:10:27AM -0700, Shirley Ma wrote:
+> On Wed, 2012-05-16 at 10:58 +0800, Jason Wang wrote:
+> > >>   drivers/vhost/vhost.c |    1 +
+> > >>   1 files changed, 1 insertions(+), 0 deletions(-)
+> > >>
+> > >> diff --git a/drivers/vhost/vhost.c b/drivers/vhost/vhost.c
+> > >> index 947f00d..7b75fdf 100644
+> > >> --- a/drivers/vhost/vhost.c
+> > >> +++ b/drivers/vhost/vhost.c
+> > >> @@ -1604,6 +1604,7 @@ void vhost_zerocopy_callback(void *arg)
+> > >>          struct vhost_ubuf_ref *ubufs = ubuf->arg;
+> > >>          struct vhost_virtqueue *vq = ubufs->vq;
+> > >>
+> > >> +       vhost_poll_queue(&vq->poll);
+> > >>          /* set len = 1 to mark this desc buffers done DMA */
+> > >>          vq->heads[ubuf->desc].len = VHOST_DMA_DONE_LEN;
+> > >>          kref_put(&ubufs->kref, vhost_zerocopy_done_signal);
+> > > Doing so, we might have redundant vhost_poll_queue(). Do you know in
+> > > which scenario there might be missing of adding and signaling during
+> > > zerocopy?
+> > 
+> > Yes, as we only do signaling and adding during tx work, if there's no
+> > tx 
+> > work when the skb were sent, we may lose the opportunity to let guest 
+> > know about the completion. It's easy to be reproduced with netperf
+> > test. 
+> 
+> The reason which host signals guest is to free guest tx buffers, if
+> there is no tx work, then it's not necessary to signal the guest unless
+> guest runs out of memory. The pending buffers will be released
+> virtio_net device gone.
+> 
+> What's the behavior of netperf test when you hit this situation?
+> 
+> Thanks
+> Shirley
 
-1. acquire slab for cpu partial list
-2. free object to it by remote cpu
-3. page->freelist = t
+IIRC guest networking seems to be lost.
 
-then memory leak is occurred.
 
-Change acquire_slab() not to zap freelist when it works for cpu partial list.
-I think it is a sufficient solution for fixing a memory leak.
-
-Below is output of 'slabinfo -r kmalloc-256'
-when './perf stat -r 30 hackbench 50 process 4000 > /dev/null' is done.
-
-***Vanilla***
-Sizes (bytes)     Slabs              Debug                Memory
-------------------------------------------------------------------------
-Object :     256  Total  :     468   Sanity Checks : Off  Total: 3833856
-SlabObj:     256  Full   :     111   Redzoning     : Off  Used : 2004992
-SlabSiz:    8192  Partial:     302   Poisoning     : Off  Loss : 1828864
-Loss   :       0  CpuSlab:      55   Tracking      : Off  Lalig:       0
-Align  :       8  Objects:      32   Tracing       : Off  Lpadd:       0
-
-***Patched***
-Sizes (bytes)     Slabs              Debug                Memory
-------------------------------------------------------------------------
-Object :     256  Total  :     300   Sanity Checks : Off  Total: 2457600
-SlabObj:     256  Full   :     204   Redzoning     : Off  Used : 2348800
-SlabSiz:    8192  Partial:      33   Poisoning     : Off  Loss :  108800
-Loss   :       0  CpuSlab:      63   Tracking      : Off  Lalig:       0
-Align  :       8  Objects:      32   Tracing       : Off  Lpadd:       0
-
-Total and loss number is the impact of this patch.
-
-Cc: <stable@vger.kernel.org>
-Acked-by: Christoph Lameter <cl@linux.com>
-Signed-off-by: Joonsoo Kim <js1304@gmail.com>
-
-diff --git a/mm/slub.c b/mm/slub.c
-index ffe13fd..a7a766a 100644
---- a/mm/slub.c
-+++ b/mm/slub.c
-@@ -1514,15 +1514,19 @@ static inline void *acquire_slab(struct kmem_cache *s,
- 		freelist = page->freelist;
- 		counters = page->counters;
- 		new.counters = counters;
--		if (mode)
-+		if (mode) {
- 			new.inuse = page->objects;
-+			new.freelist = NULL;
-+		} else {
-+			new.freelist = freelist;
-+		}
- 
- 		VM_BUG_ON(new.frozen);
- 		new.frozen = 1;
- 
- 	} while (!__cmpxchg_double_slab(s, page,
- 			freelist, counters,
--			NULL, new.counters,
-+			new.freelist, new.counters,
- 			"lock and freeze"));
- 
- 	remove_partial(n, page);
-@@ -1564,7 +1568,6 @@ static void *get_partial_node(struct kmem_cache *s,
- 			object = t;
- 			available =  page->objects - page->inuse;
- 		} else {
--			page->freelist = t;
- 			available = put_cpu_partial(s, page, 0);
- 			stat(s, CPU_PARTIAL_NODE);
- 		}
 -- 
-1.7.9.5
-
+MST
