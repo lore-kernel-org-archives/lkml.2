@@ -1,401 +1,326 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932716Ab2EPTYl (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 May 2012 15:24:41 -0400
-Received: from mail-yx0-f174.google.com ([209.85.213.174]:51127 "EHLO
-	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755670Ab2EPTYj (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 May 2012 15:24:39 -0400
-Date: Wed, 16 May 2012 16:24:31 -0300
-From: Gustavo Padovan <gustavo@padovan.org>
-To: "John W. Linville" <linville@tuxdriver.com>
-Cc: linux-wireless@vger.kernel.org, linux-bluetooth@vger.kernel.org,
+	id S1760499Ab2EPT3R (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 May 2012 15:29:17 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:59976 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753032Ab2EPT3P (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 16 May 2012 15:29:15 -0400
+From: Doug Ledford <dledford@redhat.com>
+To: akpm@linux-foundation.org, manfred@colorfullife.com,
+        levinsasha928@gmail.com, npiggin@gmail.com,
         linux-kernel@vger.kernel.org
-Subject: Re: pull request: bluetooth-next 2012-05-16
-Message-ID: <20120516192431.GE1414@joana>
-Mail-Followup-To: Gustavo Padovan <gustavo@padovan.org>,
-	"John W. Linville" <linville@tuxdriver.com>,
-	linux-wireless@vger.kernel.org, linux-bluetooth@vger.kernel.org,
-	linux-kernel@vger.kernel.org
-References: <20120516155340.GC1414@joana>
- <20120516180924.GA28167@tuxdriver.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120516180924.GA28167@tuxdriver.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Cc: Doug Ledford <dledford@redhat.com>
+Subject: [Patch] ipc/mqueue: add rbtree node caching support
+Date: Wed, 16 May 2012 15:28:56 -0400
+Message-Id: <34c33c51dbd2ab946a19563b790b5e1be8f751d2.1337196473.git.dledford@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* John W. Linville <linville@tuxdriver.com> [2012-05-16 14:09:24 -0400]:
+When I wrote the first patch that added the rbtree support for message
+queue insertion, it sped up the case where the queue was very full
+drastically from the original code.  It, however, slowed down the
+case where the queue was empty (not drastically though).
 
-> On Wed, May 16, 2012 at 12:53:40PM -0300, Gustavo Padovan wrote:
-> > Hi John,
-> > 
-> > A big pull request for inclusion in 3.5. In this set there is some changes
-> > regarding periodic scan and LE, endian fixes, L2CAP ERTM improvements. There
-> > is also fixes, clean ups and small improvements all over the tree.
-> > I also included the patches rejected in the bluetooth pull request.
-> > 
-> > I checked the whole diff of this pull request for offending coding style
-> > changes and couldn't spot anything wrong.
-> > 
-> > I merged wireless/master into this.
-> > 
-> > Please pull, or let me know of any problems!
-> > 
-> > 	Gustavo
-> > 
-> > ---
-> > 
-> > The following changes since commit 341352d13dae752610342923c53ebe461624ee2c:
-> > 
-> >   iwlwifi: fix-up some merge damage from commit 0d6c4a2 (2012-05-08 22:18:09 -0400)
-> > 
-> > are available in the git repository at:
-> > 
-> >   git://git.kernel.org/pub/scm/linux/kernel/git/bluetooth/bluetooth-next for-upstream
-> > 
-> > for you to fetch changes up to cde5b476786450fb058a23502372d63c3e8629d0:
-> > 
-> >   Bluetooth: Report proper error number in disconnection (2012-05-16 18:44:35 +0300)
-> > 
-> > ----------------------------------------------------------------
-> > Amitkumar Karwar (2):
-> >       Bluetooth: btmrvl: configure default host sleep parameters
-> >       Bluetooth: btmrvl: add support for SDIO suspend/resume callbacks
-> > 
-> > Andre Guedes (21):
-> >       Bluetooth: Check FINDING state in interleaved discovery
-> >       Bluetooth: Add hci_cancel_le_scan() to hci_core
-> >       Bluetooth: LE support for MGMT stop discovery
-> >       Bluetooth: Replace EPERM by EALREADY in hci_cancel_inquiry
-> >       Bluetooth: Refactor stop_discovery
-> >       Bluetooth: Add Periodic Inquiry command complete handler
-> >       Bluetooth: Add HCI_PERIODIC_INQ to dev_flags
-> >       Bluetooth: Check HCI_PERIODIC_INQ in start_discovery
-> >       Bluetooth: Ignore inquiry results from periodic inquiry
-> >       Bluetooth: Add Periodic Inquiry command complete handler
-> >       Bluetooth: Add HCI_PERIODIC_INQ to dev_flags
-> >       Bluetooth: Remove MGMT_ADDR_INVALID macro
-> >       Bluetooth: Remove useless code in hci_connect
-> >       Bluetooth: Move address type macros to bluetooth.h
-> >       Bluetooth: Rename link_to_mgmt to link_to_bdaddr
-> >       Bluetooth: Add address type to struct sockaddr_l2
-> >       Bluetooth: Rename mgmt_to_le to bdaddr_to_le
-> >       Bluetooth: Move bdaddr_to_le to hci_core
-> >       Bluetooth: Add dst_type parameter to hci_connect
-> >       Bluetooth: Use address type info from user-space
-> >       Bluetooth: Remove advertising cache
-> > 
-> > Andrei Emeltchenko (24):
-> >       Bluetooth: trivial: Correct endian conversion
-> >       Bluetooth: Correct type for hdev lmp_subver
-> >       Bluetooth: Correct type for ediv to __le16
-> >       Bluetooth: Fix extra conversion to __le32
-> >       Bluetooth: Correct chan->psm endian conversions
-> >       Bluetooth: Correct ediv in SMP
-> >       Bluetooth: Correct length calc in L2CAP conf rsp
-> >       Bluetooth: Correct CID endian notation
-> >       Bluetooth: Convert error codes to le16
-> >       Bluetooth: trivial: Fix endian conversion mode
-> >       Bluetooth: trivial: Correct types
-> >       Bluetooth: Fix type in cpu_to_le conversion
-> >       Bluetooth: Fix opcode access in hci_complete
-> >       Bluetooth: trivial: Remove sparse warnings
-> >       Bluetooth: Silence sparse warning
-> >       Bluetooth: Comments and style fixes
-> >       Bluetooth: Remove unneeded timer clear
-> >       Bluetooth: Make L2CAP chan_add functions static
-> >       Bluetooth: Remove unneeded zero initialization
-> >       Bluetooth: Add Read Local AMP Info to init
-> >       Bluetooth: Adds set_default function in L2CAP setup
-> >       Bluetooth: Fix debug printing unallocated name
-> >       Bluetooth: trivial: Remove empty line
-> >       Bluetooth: Remove unneeded calculation and magic number
-> > 
-> > Cristian Chilipirea (1):
-> >       Bluetooth: Fixed checkpatch warnings
-> > 
-> > David Herrmann (5):
-> >       Bluetooth: Remove redundant hdev->parent field
-> >       Bluetooth: vhci: Ignore return code of nonseekable_open()
-> >       Bluetooth: Move hci_alloc/free_dev close to hci_register/unregister_dev
-> >       Bluetooth: Move device initialization to hci_alloc_dev()
-> >       Bluetooth: Remove unneeded initialization in hci_alloc_dev()
-> > 
-> > Eldad Zack (1):
-> >       Bluetooth: bnep: use constant for ethertype
-> > 
-> > Gustavo Padovan (13):
-> >       Bluetooth: Remove sk parameter from l2cap_chan_create()
-> >       Bluetooth: Remove err parameter from alloc_skb()
-> >       Bluetooth: remove unneeded declaration of sco_conn_del()
-> >       Bluetooth: Remove unneeded elements from size calculation
-> >       Bluetooth: Remove hlen variable
-> >       Bluetooth: notify userspace of security level change
-> >       Bluetooth: Fix wrong set of skb fragments
-> >       Bluetooth: Fix packet size provided to the controller
-> >       Bluetooth: Fix skb length calculation
-> >       Bluetooth: improve readability of l2cap_seq_list code
-> >       Bluetooth: report the right security level in getsockopt
-> >       Bluetooth: Create flags for bt_sk()
-> >       Bluetooth: Report proper error number in disconnection
-> > 
-> > Hemant Gupta (5):
-> >       Bluetooth: Send correct address type for LTK
-> >       Bluetooth: Fix clearing discovery type when stopping discovery
-> >       Bluetooth: mgmt: Fix missing connect failed event for LE
-> >       Bluetooth: mgmt: Fix address type while loading Long Term Key
-> >       Bluetooth: Don't distribute keys in case of Encryption Failure
-> > 
-> > Ido Yariv (1):
-> >       Bluetooth: Search global l2cap channels by src/dst addresses
-> > 
-> > Jesper Juhl (1):
-> >       Bluetooth: btmrvl_sdio: remove pointless conditional before release_firmware()
-> > 
-> > Johan Hedberg (2):
-> >       Bluetooth: mgmt: Fix device_connected sending order
-> >       Bluetooth: Fix Inquiry with RSSI event mask
-> > 
-> > Larry Finger (1):
-> >       rtlwifi: fix for race condition when firmware is cached
-> 
-> ????
-> 
-> What did you do here?  I thought that maybe you had pulled from the
-> wireless tree, but the commit ID is different.
+This patch caches the last freed rbtree node struct so we can quickly
+reuse it when we get a new message.  This is the common path for any
+queue that very frequently goes from 0 to 1 then back to 0 messages
+in queue.
 
-I did pull from there, actually bluetooth tree, but they have the same head
-now. Something went wrong in the process of re-doing the tree. Sorry for waste
-you time here, John.
+Andrew Morton didn't like that we were doing a GFP_ATOMIC allocation
+in msg_insert, so this patch attempts to speculatively allocate a
+new node struct outside of the spin lock when we know we need it, but
+will still fall back to a GFP_ATOMIC allocation if it has to.
 
-I did a correct merge now, the hashs are the same in bluetooth-next:
+Once I added the caching, the necessary various ret = ; spin_unlock
+gyrations in mq_timedsend were getting pretty ugly, so this also slightly
+refactors that function to streamline the flow of the code and the
+function exit.
 
-671267b Bluetooth: mgmt: Fix device_connected sending order
-a7d7723 Bluetooth: notify userspace of security level change
-574e02a rtlwifi: fix for race condition when firmware is cached
+Finally, while working on getting performance back I made sure that all
+of the node structs were always fully initialized when they were first
+used, rendering the use of kzalloc unnecessary and a waste of CPU cycles.
 
-and in wireless:
+The net result of all of this is:
 
-671267b Bluetooth: mgmt: Fix device_connected sending order
-a7d7723 Bluetooth: notify userspace of security level change
-574e02a rtlwifi: fix for race condition when firmware is cached
+1) We will avoid a GFP_ATOMIC allocation when possible, but fall back on
+it when necessary.
+2) We will speculatively allocate a node struct using GFP_KERNEL if our
+cache is empty (and save the struct to our cache if it's still empty after
+we have obtained the spin lock).
+3) The performance of the common queue empty case has significantly
+improved and is now much more in line with the older performance for
+this case.
 
-	Gustavo
+The performance changes are:
 
+            Old mqueue      new mqueue      new mqueue + caching
+queue empty
+send/recv   305/288ns       349/318ns       310/322ns
+
+I don't think we'll ever be able to get the recv performance back, but
+that's because the old recv performance was a direct result and consequence
+of the old methods abysmal send performance.  The recv path simply must
+do more so that the send path does not incur such a penalty under higher
+queue depths.
+
+As it turns out, the new caching code also sped up the various queue full
+cases relative to my last patch.  That could be because of the difference
+between the syscall path in 3.3.4-rc5 and 3.3.4-rc6, or because of the
+change in code flow in the mq_timedsend routine.  Regardless, I'll take
+it.  It wasn't huge, and I *would* say it was within the margin for error,
+but after many repeated runs what I'm seeing is that the old numbers
+trend slightly higher (about 10 to 20ns depending on which test is the
+one running).
+
+Signed-off-by: Doug Ledford <dledford@redhat.com>
 ---
+ ipc/mqueue.c |  107 ++++++++++++++++++++++++++++++++++++++++++++--------------
+ 1 files changed, 81 insertions(+), 26 deletions(-)
 
-The following changes since commit 341352d13dae752610342923c53ebe461624ee2c:
-
-  iwlwifi: fix-up some merge damage from commit 0d6c4a2 (2012-05-08 22:18:09 -0400)
-
-are available in the git repository at:
-
-  git://git.kernel.org/pub/scm/linux/kernel/git/bluetooth/bluetooth-next for-upstream
-
-for you to fetch changes up to 48af33a8ff98515915fb40021de91066f2a45d49:
-
-  Bluetooth: Use hci_conn data to handle failed LE Connection Complete (2012-05-16 16:14:47 -0300)
-
-----------------------------------------------------------------
-Amitkumar Karwar (2):
-      Bluetooth: btmrvl: configure default host sleep parameters
-      Bluetooth: btmrvl: add support for SDIO suspend/resume callbacks
-
-Andre Guedes (21):
-      Bluetooth: Check FINDING state in interleaved discovery
-      Bluetooth: Add hci_cancel_le_scan() to hci_core
-      Bluetooth: LE support for MGMT stop discovery
-      Bluetooth: Replace EPERM by EALREADY in hci_cancel_inquiry
-      Bluetooth: Refactor stop_discovery
-      Bluetooth: Add Periodic Inquiry command complete handler
-      Bluetooth: Add HCI_PERIODIC_INQ to dev_flags
-      Bluetooth: Check HCI_PERIODIC_INQ in start_discovery
-      Bluetooth: Ignore inquiry results from periodic inquiry
-      Bluetooth: Add Periodic Inquiry command complete handler
-      Bluetooth: Add HCI_PERIODIC_INQ to dev_flags
-      Bluetooth: Remove MGMT_ADDR_INVALID macro
-      Bluetooth: Remove useless code in hci_connect
-      Bluetooth: Move address type macros to bluetooth.h
-      Bluetooth: Rename link_to_mgmt to link_to_bdaddr
-      Bluetooth: Add address type to struct sockaddr_l2
-      Bluetooth: Rename mgmt_to_le to bdaddr_to_le
-      Bluetooth: Move bdaddr_to_le to hci_core
-      Bluetooth: Add dst_type parameter to hci_connect
-      Bluetooth: Use address type info from user-space
-      Bluetooth: Remove advertising cache
-
-Andrei Emeltchenko (24):
-      Bluetooth: trivial: Correct endian conversion
-      Bluetooth: Correct type for hdev lmp_subver
-      Bluetooth: Correct type for ediv to __le16
-      Bluetooth: Fix extra conversion to __le32
-      Bluetooth: Correct chan->psm endian conversions
-      Bluetooth: Correct ediv in SMP
-      Bluetooth: Correct length calc in L2CAP conf rsp
-      Bluetooth: Correct CID endian notation
-      Bluetooth: Convert error codes to le16
-      Bluetooth: trivial: Fix endian conversion mode
-      Bluetooth: trivial: Correct types
-      Bluetooth: Fix type in cpu_to_le conversion
-      Bluetooth: Fix opcode access in hci_complete
-      Bluetooth: trivial: Remove sparse warnings
-      Bluetooth: Silence sparse warning
-      Bluetooth: Comments and style fixes
-      Bluetooth: Remove unneeded timer clear
-      Bluetooth: Make L2CAP chan_add functions static
-      Bluetooth: Remove unneeded zero initialization
-      Bluetooth: Add Read Local AMP Info to init
-      Bluetooth: Adds set_default function in L2CAP setup
-      Bluetooth: Fix debug printing unallocated name
-      Bluetooth: trivial: Remove empty line
-      Bluetooth: Remove unneeded calculation and magic number
-
-Andrzej Kaczmarek (1):
-      Bluetooth: Use hci_conn data to handle failed LE Connection Complete
-
-Cristian Chilipirea (1):
-      Bluetooth: Fixed checkpatch warnings
-
-David Herrmann (5):
-      Bluetooth: Remove redundant hdev->parent field
-      Bluetooth: vhci: Ignore return code of nonseekable_open()
-      Bluetooth: Move hci_alloc/free_dev close to hci_register/unregister_dev
-      Bluetooth: Move device initialization to hci_alloc_dev()
-      Bluetooth: Remove unneeded initialization in hci_alloc_dev()
-
-Eldad Zack (1):
-      Bluetooth: bnep: use constant for ethertype
-
-Gustavo Padovan (14):
-      Bluetooth: Remove sk parameter from l2cap_chan_create()
-      Bluetooth: Remove err parameter from alloc_skb()
-      Bluetooth: remove unneeded declaration of sco_conn_del()
-      Bluetooth: Remove unneeded elements from size calculation
-      Bluetooth: Remove hlen variable
-      Bluetooth: notify userspace of security level change
-      Merge git://git.kernel.org/.../bluetooth/bluetooth
-      Bluetooth: Fix wrong set of skb fragments
-      Bluetooth: Fix packet size provided to the controller
-      Bluetooth: Fix skb length calculation
-      Bluetooth: improve readability of l2cap_seq_list code
-      Bluetooth: report the right security level in getsockopt
-      Bluetooth: Create flags for bt_sk()
-      Bluetooth: Report proper error number in disconnection
-
-Hemant Gupta (5):
-      Bluetooth: Send correct address type for LTK
-      Bluetooth: Fix clearing discovery type when stopping discovery
-      Bluetooth: mgmt: Fix missing connect failed event for LE
-      Bluetooth: mgmt: Fix address type while loading Long Term Key
-      Bluetooth: Don't distribute keys in case of Encryption Failure
-
-Ido Yariv (1):
-      Bluetooth: Search global l2cap channels by src/dst addresses
-
-Jesper Juhl (1):
-      Bluetooth: btmrvl_sdio: remove pointless conditional before release_firmware()
-
-Johan Hedberg (2):
-      Bluetooth: mgmt: Fix device_connected sending order
-      Bluetooth: Fix Inquiry with RSSI event mask
-
-Larry Finger (1):
-      rtlwifi: fix for race condition when firmware is cached
-
-Lukasz Rymanowski (1):
-      Bluetooth: Remove not needed status parameter
-
-Marcel Holtmann (11):
-      Bluetooth: Add TX power tag to EIR data
-      Bluetooth: Handle EIR tags for Device ID
-      Bluetooth: Add management command for setting Device ID
-      Bluetooth: Fix broken usage of put_unaligned_le16
-      Bluetooth: Fix broken usage of get_unaligned_le16
-      Bluetooth: Update management interface revision
-      Bluetooth: Split error handling for L2CAP listen sockets
-      Bluetooth: Split error handling for SCO listen sockets
-      Bluetooth: Don't check source address in SCO bind function
-      Bluetooth: Restrict to one SCO listening socket
-      Bluetooth: Enable Low Energy support by default
-
-Mat Martineau (17):
-      Bluetooth: Add definitions and struct members for new ERTM state machine
-      Bluetooth: Add a structure to carry ERTM data in skb control blocks
-      Bluetooth: Add the l2cap_seq_list structure for tracking frames
-      Bluetooth: Functions for handling ERTM control fields
-      Bluetooth: Improve ERTM sequence number offset calculation
-      Bluetooth: Remove duplicate structure members from bt_skb_cb
-      Bluetooth: Move recently-added ERTM header packing functions
-      Bluetooth: Initialize new l2cap_chan structure members
-      Bluetooth: Remove unused function
-      Bluetooth: Make better use of l2cap_chan reference counting
-      Bluetooth: Add Code Aurora Forum copyright
-      Bluetooth: Refactor L2CAP ERTM and streaming transmit segmentation
-      Bluetooth: Update tx_send_head when sending ERTM data
-      Bluetooth: Initialize the transmit queue for L2CAP streaming mode
-      Bluetooth: Fix a redundant and problematic incoming MTU check
-      Bluetooth: Restore locking semantics when looking up L2CAP channels
-      Bluetooth: Lock the L2CAP channel when sending
-
-Michael Gruetzner (1):
-      Bluetooth: Add support for Foxconn/Hon Hai AR5BBU22 0489:E03C
-
-Mikel Astiz (3):
-      Bluetooth: Use unsigned int instead of signed int
-      Bluetooth: Remove unnecessary check
-      Bluetooth: btusb: Dynamic alternate setting
-
-Syam Sidhardhan (5):
-      Bluetooth: mgmt: Remove unwanted goto statements
-      Bluetooth: remove header declared but not defined
-      Bluetooth: Remove strtoba header declared but not defined
-      Bluetooth: Remove unused hci_le_ltk_reply()
-      Bluetooth: Remove unused hci_le_ltk_neg_reply()
-
-Szymon Janc (2):
-      Bluetooth: mgmt: Fix some code style and indentation issues
-      Bluetooth: mgmt: Don't allow to set invalid value to DeviceID source
-
-Ulisses Furquim (1):
-      Bluetooth: Fix registering hci with duplicate name
-
-Vinicius Costa Gomes (1):
-      Bluetooth: Add support for reusing the same hci_conn for LE links
-
-Vishal Agarwal (1):
-      Bluetooth: Fix EIR data generation for mgmt_device_found
-
- drivers/bluetooth/ath3k.c          |    6 +
- drivers/bluetooth/btmrvl_drv.h     |    3 +
- drivers/bluetooth/btmrvl_main.c    |   56 +--
- drivers/bluetooth/btmrvl_sdio.c    |  112 +++++-
- drivers/bluetooth/btusb.c          |   16 +-
- drivers/bluetooth/hci_ldisc.c      |    2 +-
- drivers/bluetooth/hci_vhci.c       |    3 +-
- drivers/net/wireless/rtlwifi/pci.c |   16 +-
- drivers/net/wireless/rtlwifi/usb.c |   10 +-
- include/net/bluetooth/bluetooth.h  |   31 +-
- include/net/bluetooth/hci.h        |    8 +-
- include/net/bluetooth/hci_core.h   |   67 ++--
- include/net/bluetooth/l2cap.h      |   93 ++++-
- include/net/bluetooth/mgmt.h       |    9 +
- include/net/bluetooth/smp.h        |    2 +-
- net/bluetooth/af_bluetooth.c       |    8 +-
- net/bluetooth/bnep/core.c          |    2 +-
- net/bluetooth/hci_conn.c           |   56 +--
- net/bluetooth/hci_core.c           |  275 ++++++--------
- net/bluetooth/hci_event.c          |  106 ++++--
- net/bluetooth/hci_sysfs.c          |    5 +-
- net/bluetooth/l2cap_core.c         |  765 +++++++++++++++++++++++++++-----------
- net/bluetooth/l2cap_sock.c         |   84 +++--
- net/bluetooth/mgmt.c               |  286 ++++++++------
- net/bluetooth/rfcomm/sock.c        |   14 +-
- net/bluetooth/sco.c                |   75 ++--
- net/bluetooth/smp.c                |    2 +-
- 27 files changed, 1362 insertions(+), 750 deletions(-)
+diff --git a/ipc/mqueue.c b/ipc/mqueue.c
+index 994c5e1..76d43fb 100644
+--- a/ipc/mqueue.c
++++ b/ipc/mqueue.c
+@@ -68,6 +68,7 @@ struct mqueue_inode_info {
+ 	wait_queue_head_t wait_q;
+ 
+ 	struct rb_root msg_tree;
++	struct posix_msg_tree_node *node_cache;
+ 	struct mq_attr attr;
+ 
+ 	struct sigevent notify;
+@@ -115,7 +116,8 @@ static struct ipc_namespace *get_ns_from_inode(struct inode *inode)
+ }
+ 
+ /* Auxiliary functions to manipulate messages' list */
+-static int msg_insert(struct msg_msg *msg, struct mqueue_inode_info *info)
++static int msg_insert(struct msg_msg *msg, struct mqueue_inode_info *info,
++		      struct posix_msg_tree_node **new_leaf)
+ {
+ 	struct rb_node **p, *parent = NULL;
+ 	struct posix_msg_tree_node *leaf;
+@@ -132,15 +134,24 @@ static int msg_insert(struct msg_msg *msg, struct mqueue_inode_info *info)
+ 		else
+ 			p = &(*p)->rb_right;
+ 	}
+-	leaf = kzalloc(sizeof(*leaf), GFP_ATOMIC);
++	if (info->node_cache) {
++		leaf = info->node_cache;
++	} else if (new_leaf) {
++		leaf = *new_leaf;
++		*new_leaf = NULL;
++	} else
++		leaf = kmalloc(sizeof(*leaf), GFP_ATOMIC);
+ 	if (!leaf)
+ 		return -ENOMEM;
+-	rb_init_node(&leaf->rb_node);
+-	INIT_LIST_HEAD(&leaf->msg_list);
++	if (!info->node_cache) {
++		rb_init_node(&leaf->rb_node);
++		INIT_LIST_HEAD(&leaf->msg_list);
++		info->qsize += sizeof(*leaf);
++	} else
++		info->node_cache = NULL;
+ 	leaf->priority = msg->m_type;
+ 	rb_link_node(&leaf->rb_node, parent, p);
+ 	rb_insert_color(&leaf->rb_node, &info->msg_tree);
+-	info->qsize += sizeof(struct posix_msg_tree_node);
+ insert_msg:
+ 	info->attr.mq_curmsgs++;
+ 	info->qsize += msg->m_ts;
+@@ -180,8 +191,11 @@ try_again:
+ 			     "empty leaf node but we haven't implemented "
+ 			     "lazy leaf delete!\n");
+ 		rb_erase(&leaf->rb_node, &info->msg_tree);
+-		info->qsize -= sizeof(struct posix_msg_tree_node);
+-		kfree(leaf);
++		if (info->node_cache) {
++			info->qsize -= sizeof(*leaf);
++			kfree(leaf);
++		} else
++			info->node_cache = leaf;
+ 		goto try_again;
+ 	} else {
+ 		msg = list_first_entry(&leaf->msg_list,
+@@ -189,8 +203,11 @@ try_again:
+ 		list_del(&msg->m_list);
+ 		if (list_empty(&leaf->msg_list)) {
+ 			rb_erase(&leaf->rb_node, &info->msg_tree);
+-			info->qsize -= sizeof(struct posix_msg_tree_node);
+-			kfree(leaf);
++			if (info->node_cache) {
++				info->qsize -= sizeof(*leaf);
++				kfree(leaf);
++			} else
++				info->node_cache = leaf;
+ 		}
+ 	}
+ 	info->attr.mq_curmsgs--;
+@@ -232,6 +249,7 @@ static struct inode *mqueue_get_inode(struct super_block *sb,
+ 		info->qsize = 0;
+ 		info->user = NULL;	/* set when all is ok */
+ 		info->msg_tree = RB_ROOT;
++		info->node_cache = NULL;
+ 		memset(&info->attr, 0, sizeof(info->attr));
+ 		info->attr.mq_maxmsg = min(ipc_ns->mq_msg_max,
+ 					   ipc_ns->mq_msg_default);
+@@ -364,6 +382,7 @@ static void mqueue_evict_inode(struct inode *inode)
+ 	spin_lock(&info->lock);
+ 	while ((msg = msg_get(info)) != NULL)
+ 		free_msg(msg);
++	kfree(info->node_cache);
+ 	spin_unlock(&info->lock);
+ 
+ 	/* Total amount of bytes accounted for the mqueue */
+@@ -928,7 +947,8 @@ static inline void pipelined_send(struct mqueue_inode_info *info,
+ 
+ /* pipelined_receive() - if there is task waiting in sys_mq_timedsend()
+  * gets its message and put to the queue (we have one free place for sure). */
+-static inline void pipelined_receive(struct mqueue_inode_info *info)
++static inline void pipelined_receive(struct mqueue_inode_info *info,
++				     struct posix_msg_tree_node **new_leaf)
+ {
+ 	struct ext_wait_queue *sender = wq_get_first_waiter(info, SEND);
+ 
+@@ -937,7 +957,7 @@ static inline void pipelined_receive(struct mqueue_inode_info *info)
+ 		wake_up_interruptible(&info->wait_q);
+ 		return;
+ 	}
+-	if (msg_insert(sender->msg, info))
++	if (msg_insert(sender->msg, info, new_leaf))
+ 		return;
+ 	list_del(&sender->list);
+ 	sender->state = STATE_PENDING;
+@@ -958,7 +978,8 @@ SYSCALL_DEFINE5(mq_timedsend, mqd_t, mqdes, const char __user *, u_msg_ptr,
+ 	struct mqueue_inode_info *info;
+ 	ktime_t expires, *timeout = NULL;
+ 	struct timespec ts;
+-	int ret;
++	struct posix_msg_tree_node *new_leaf = NULL;
++	int ret = 0;
+ 
+ 	if (u_abs_timeout) {
+ 		int res = prepare_timeout(u_abs_timeout, &expires, &ts);
+@@ -1006,39 +1027,55 @@ SYSCALL_DEFINE5(mq_timedsend, mqd_t, mqdes, const char __user *, u_msg_ptr,
+ 	msg_ptr->m_ts = msg_len;
+ 	msg_ptr->m_type = msg_prio;
+ 
++	/* msg_insert really wants us to have a valid, spare node struct so
++	 * it doesn't have to kmalloc a GFP_ATOMIC allocation, but it will
++	 * fall back to that if necessary. */
++	if (!info->node_cache)
++		new_leaf = kmalloc(sizeof(*new_leaf), GFP_KERNEL);
++
+ 	spin_lock(&info->lock);
+ 
++	if (!info->node_cache && new_leaf) {
++		/* Save our speculative allocation into the cache */
++		rb_init_node(&new_leaf->rb_node);
++		INIT_LIST_HEAD(&new_leaf->msg_list);
++		info->node_cache = new_leaf;
++		info->qsize += sizeof(*new_leaf);
++		new_leaf = NULL;
++	}
++
+ 	if (info->attr.mq_curmsgs == info->attr.mq_maxmsg) {
+-		if (filp->f_flags & O_NONBLOCK) {
+-			spin_unlock(&info->lock);
++		if (filp->f_flags & O_NONBLOCK)
+ 			ret = -EAGAIN;
+-		} else {
++		else {
+ 			wait.task = current;
+ 			wait.msg = (void *) msg_ptr;
+ 			wait.state = STATE_NONE;
+ 			ret = wq_sleep(info, SEND, timeout, &wait);
++			/* wq_sleep must be called with info->lock held, and
++			 * returns with the lock released */
++			goto out_free;
+ 		}
+-		if (ret < 0)
+-			free_msg(msg_ptr);
+ 	} else {
+ 		receiver = wq_get_first_waiter(info, RECV);
+ 		if (receiver) {
+ 			pipelined_send(info, msg_ptr, receiver);
+ 		} else {
+ 			/* adds message to the queue */
+-			if (msg_insert(msg_ptr, info)) {
+-				free_msg(msg_ptr);
+-				ret = -ENOMEM;
+-				spin_unlock(&info->lock);
+-				goto out_fput;
+-			}
++			ret = msg_insert(msg_ptr, info, &new_leaf);
++			if (ret)
++				goto out_unlock;
+ 			__do_notify(info);
+ 		}
+ 		inode->i_atime = inode->i_mtime = inode->i_ctime =
+ 				CURRENT_TIME;
+-		spin_unlock(&info->lock);
+-		ret = 0;
+ 	}
++out_unlock:
++	spin_unlock(&info->lock);
++out_free:
++	kfree(new_leaf);
++	if (ret)
++		free_msg(msg_ptr);
+ out_fput:
+ 	fput(filp);
+ out:
+@@ -1057,6 +1094,7 @@ SYSCALL_DEFINE5(mq_timedreceive, mqd_t, mqdes, char __user *, u_msg_ptr,
+ 	struct ext_wait_queue wait;
+ 	ktime_t expires, *timeout = NULL;
+ 	struct timespec ts;
++	struct posix_msg_tree_node *new_leaf = NULL;
+ 
+ 	if (u_abs_timeout) {
+ 		int res = prepare_timeout(u_abs_timeout, &expires, &ts);
+@@ -1092,7 +1130,23 @@ SYSCALL_DEFINE5(mq_timedreceive, mqd_t, mqdes, char __user *, u_msg_ptr,
+ 		goto out_fput;
+ 	}
+ 
++	/* msg_insert really wants us to have a valid, spare node struct so
++	 * it doesn't have to kmalloc a GFP_ATOMIC allocation, but it will
++	 * fall back to that if necessary. */
++	if (!info->node_cache)
++		new_leaf = kmalloc(sizeof(*new_leaf), GFP_KERNEL);
++
+ 	spin_lock(&info->lock);
++
++	if (!info->node_cache && new_leaf) {
++		/* Save our speculative allocation into the cache */
++		rb_init_node(&new_leaf->rb_node);
++		INIT_LIST_HEAD(&new_leaf->msg_list);
++		info->node_cache = new_leaf;
++		info->qsize += sizeof(*new_leaf);
++		new_leaf = NULL;
++	}
++
+ 	if (info->attr.mq_curmsgs == 0) {
+ 		if (filp->f_flags & O_NONBLOCK) {
+ 			spin_unlock(&info->lock);
+@@ -1110,7 +1164,7 @@ SYSCALL_DEFINE5(mq_timedreceive, mqd_t, mqdes, char __user *, u_msg_ptr,
+ 				CURRENT_TIME;
+ 
+ 		/* There is now free space in queue. */
+-		pipelined_receive(info);
++		pipelined_receive(info, &new_leaf);
+ 		spin_unlock(&info->lock);
+ 		ret = 0;
+ 	}
+@@ -1123,6 +1177,7 @@ SYSCALL_DEFINE5(mq_timedreceive, mqd_t, mqdes, char __user *, u_msg_ptr,
+ 		}
+ 		free_msg(msg_ptr);
+ 	}
++	kfree(new_leaf);
+ out_fput:
+ 	fput(filp);
+ out:
+-- 
+1.7.7.6
 
