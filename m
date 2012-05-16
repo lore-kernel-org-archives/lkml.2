@@ -1,25 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S966497Ab2EPC7I (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 May 2012 22:59:08 -0400
-Received: from mga03.intel.com ([143.182.124.21]:21596 "EHLO mga03.intel.com"
+	id S966578Ab2EPDCK (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 May 2012 23:02:10 -0400
+Received: from mga14.intel.com ([143.182.124.37]:60018 "EHLO mga14.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759068Ab2EPC7A (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 May 2012 22:59:00 -0400
+	id S966317Ab2EPDCI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 May 2012 23:02:08 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
-   d="scan'208";a="143701747"
-Message-ID: <1337137137.6493.0.camel@yhuang-dev>
-Subject: Re: [PATCH 1/5] ACPI, PM, Specify lowest allowed state for device
- sleep state
+   d="scan'208";a="143702707"
+Message-ID: <1337137312.6493.3.camel@yhuang-dev>
+Subject: Re: [PATCH -v3 1/2] PCIe: Add runtime PM support to PCIe port
 From: Huang Ying <ying.huang@intel.com>
 To: "Rafael J. Wysocki" <rjw@sisk.pl>
-Cc: Len Brown <lenb@kernel.org>, linux-kernel@vger.kernel.org,
-        linux-acpi@vger.kernel.org
-Date: Wed, 16 May 2012 10:58:57 +0800
-In-Reply-To: <201205152048.08196.rjw@sisk.pl>
-References: <1337052191-19411-1-git-send-email-ying.huang@intel.com>
-	 <201205152048.08196.rjw@sisk.pl>
+Cc: Bjorn Helgaas <bhelgaas@google.com>, ming.m.lin@intel.com,
+        linux-kernel@vger.kernel.org, linux-pm@vger.kernel.org,
+        Zheng Yan <zheng.z.yan@intel.com>
+Date: Wed, 16 May 2012 11:01:52 +0800
+In-Reply-To: <201205152053.44885.rjw@sisk.pl>
+References: <1337065211-19525-1-git-send-email-ying.huang@intel.com>
+	 <1337065211-19525-2-git-send-email-ying.huang@intel.com>
+	 <201205152053.44885.rjw@sisk.pl>
 Content-Type: text/plain; charset="UTF-8"
 X-Mailer: Evolution 3.2.2-1+b1 
 Content-Transfer-Encoding: 7bit
@@ -28,84 +29,72 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2012-05-15 at 20:48 +0200, Rafael J. Wysocki wrote:
+On Tue, 2012-05-15 at 20:53 +0200, Rafael J. Wysocki wrote:
 > On Tuesday, May 15, 2012, Huang Ying wrote:
-> > Lower device sleep state can save more power, but has more exit
-> > latency too.  Sometimes, to satisfy some power QoS and other
-> > requirement, we need to constrain the lowest device sleep state.
+> > From: "Yan, Zheng" <zheng.z.yan@intel.com>
 > > 
-> > In this patch, a parameter to specify lowest allowed state for
-> > acpi_pm_device_sleep_state is added.  So that the caller can enforce
-> > the constraint via the parameter.
+> > This patch adds runtime PM support to PCIe port.  This is needed by
+> > PCIe D3cold support, where PCIe device without ACPI node may be
+> > powered on/off by PCIe port.
 > > 
-> > This is needed by PCIe D3cold support, where the lowest power state
-> > allowed may be D3_HOT instead of default D3_COLD.
+> > Because runtime suspend is broken for some chipsets, a black list is
+> > used to disable runtime PM support for these chipsets.
 > > 
-> > Signed-off-by: Huang Ying <ying.huang@intel.com>
+> > Signed-off-by: Zheng Yan <zheng.z.yan@intel.com>
 > > ---
-> >  drivers/acpi/sleep.c       |   24 +++++++++++++++++++-----
-> >  drivers/pci/pci-acpi.c     |    3 ++-
-> >  drivers/pnp/pnpacpi/core.c |    4 ++--
-> >  include/acpi/acpi_bus.h    |    6 +++---
-> >  4 files changed, 26 insertions(+), 11 deletions(-)
+> >  drivers/pci/pci.c              |   10 ++++++++++
+> >  drivers/pci/pcie/portdrv_pci.c |   30 ++++++++++++++++++++++++++++++
+> >  2 files changed, 40 insertions(+)
 > > 
-> > --- a/drivers/acpi/sleep.c
-> > +++ b/drivers/acpi/sleep.c
-> > @@ -677,8 +677,9 @@ int acpi_suspend(u32 acpi_state)
-> >   *	@dev: device to examine; its driver model wakeup flags control
-> >   *		whether it should be able to wake up the system
-> >   *	@d_min_p: used to store the upper limit of allowed states range
-> > - *	Return value: preferred power state of the device on success, -ENODEV on
-> > - *		failure (ie. if there's no 'struct acpi_device' for @dev)
-> > + *	@d_max_in: specify the lowest allowed states
-> > + *	Return value: preferred power state of the device on success, -ENODEV
-> > + *	(ie. if there's no 'struct acpi_device' for @dev) or -EINVAL on failure
-> >   *
-> >   *	Find the lowest power (highest number) ACPI device power state that
-> >   *	device @dev can be in while the system is in the sleep state represented
-> > @@ -693,13 +694,15 @@ int acpi_suspend(u32 acpi_state)
-> >   *	via @wake.
-> >   */
+> > --- a/drivers/pci/pci.c
+> > +++ b/drivers/pci/pci.c
+> > @@ -1517,6 +1517,16 @@ static void pci_pme_list_scan(struct wor
+> >  	if (!list_empty(&pci_pme_list)) {
+> >  		list_for_each_entry_safe(pme_dev, n, &pci_pme_list, list) {
+> >  			if (pme_dev->dev->pme_poll) {
+> > +				struct pci_dev *bridge;
+> > +
+> > +				bridge = pme_dev->dev->bus->self;
+> > +				/*
+> > +				 * If bridge is in low power state, the
+> > +				 * configuration space of subordinate devices
+> > +				 * may be not accessible
+> > +				 */
+> > +				if (bridge && bridge->current_state != PCI_D0)
+> > +					continue;
+> >  				pci_pme_wakeup(pme_dev->dev, NULL);
+> >  			} else {
+> >  				list_del(&pme_dev->list);
+> > --- a/drivers/pci/pcie/portdrv_pci.c
+> > +++ b/drivers/pci/pcie/portdrv_pci.c
+> > @@ -11,6 +11,7 @@
+> >  #include <linux/kernel.h>
+> >  #include <linux/errno.h>
+> >  #include <linux/pm.h>
+> > +#include <linux/pm_runtime.h>
+> >  #include <linux/init.h>
+> >  #include <linux/pcieport_if.h>
+> >  #include <linux/aer.h>
+> > @@ -99,6 +100,21 @@ static int pcie_port_resume_noirq(struct
+> >  	return 0;
+> >  }
 > >  
-> > -int acpi_pm_device_sleep_state(struct device *dev, int *d_min_p)
-> > +int acpi_pm_device_sleep_state(struct device *dev, int *d_min_p, int d_max_in)
-> >  {
-> >  	acpi_handle handle = DEVICE_ACPI_HANDLE(dev);
-> >  	struct acpi_device *adev;
-> >  	char acpi_method[] = "_SxD";
-> >  	unsigned long long d_min, d_max;
-> >  
-> > +	if (d_max_in < ACPI_STATE_D0 || d_max_in > ACPI_STATE_D3)
-> > +		return -EINVAL;
-> >  	if (!handle || ACPI_FAILURE(acpi_bus_get_device(handle, &adev))) {
-> >  		printk(KERN_DEBUG "ACPI handle has no context!\n");
-> >  		return -ENODEV;
-> > @@ -707,8 +710,10 @@ int acpi_pm_device_sleep_state(struct de
-> >  
-> >  	acpi_method[2] = '0' + acpi_target_sleep_state;
-> >  	/*
-> > -	 * If the sleep state is S0, we will return D3, but if the device has
-> > -	 * _S0W, we will use the value from _S0W
-> > +	 * If the sleep state is S0, the lowest limit from ACPI is D3,
-> > +	 * but if the device has _S0W, we will use the value from _S0W
-> > +	 * as the lowest limit from ACPI.  Finally, we will constrain
-> > +	 * the lowest limit with the specified one.
-> >  	 */
-> >  	d_min = ACPI_STATE_D0;
-> >  	d_max = ACPI_STATE_D3;
-> > @@ -754,6 +759,15 @@ int acpi_pm_device_sleep_state(struct de
-> >  
-> >  	if (d_min_p)
-> >  		*d_min_p = d_min;
-> > +	if (d_max_in < d_min)
-> > +		return -EINVAL;
+> > +#ifdef CONFIG_PM_RUNTIME
+> > +static int pcie_port_runtime_suspend(struct device *dev)
+> > +{
+> > +	return 0;
+> > +}
+> > +
+> > +static int pcie_port_runtime_resume(struct device *dev)
+> > +{
+> > +	return 0;
+> > +}
 > 
-> This check should go before the modification of the variable pointed to by
-> d_min_p, so that we don't change things in case the error code is returned.
-> 
-> Apart from this, the patch looks good to me.
+> Do we need those empty definitions?  If so, it might be just one
+> function.
 
-Sure.  Will change this.
+Yes.  The empty definition is necessary.  I will use just one function
+here.
 
 Best Regards,
 Huang Ying
