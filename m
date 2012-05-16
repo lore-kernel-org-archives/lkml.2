@@ -1,95 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S967236Ab2EPBJB (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 May 2012 21:09:01 -0400
-Received: from mga11.intel.com ([192.55.52.93]:10076 "EHLO mga11.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S964932Ab2EPBI7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 May 2012 21:08:59 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
-   d="scan'208";a="153422720"
-Date: Wed, 16 May 2012 09:12:30 +0800
-From: Xudong Hao <xudong.hao@linux.intel.com>
-To: avi@redhat.com
-Cc: kvm@vger.kernel.org, linux-kernel@vger.kernel.org, haitao.shan@intel.com,
-        xiantao.zhang@intel.com, xudong.hao@intel.com
-Subject: [PATCH 4/4] Enabling Access bit when doing memory swapping
-Message-ID: <20120516011230.GE14256@hp-xd.sh.intel.com>
+	id S967246Ab2EPBJW (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 May 2012 21:09:22 -0400
+Received: from wolverine02.qualcomm.com ([199.106.114.251]:57029 "EHLO
+	wolverine02.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S964932Ab2EPBJU (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 May 2012 21:09:20 -0400
+X-IronPort-AV: E=McAfee;i="5400,1158,6712"; a="189023064"
+Date: Tue, 15 May 2012 18:09:19 -0700
+From: David Brown <davidb@codeaurora.org>
+To: Grant Likely <grant.likely@secretlab.ca>
+Cc: Linus Walleij <linus.walleij@stericsson.com>, linux-kernel@vger.kernel.org,
+        Julia Lawall <julia.lawall@lip6.fr>,
+        Linus Walleij <linus.walleij@linaro.org>
+Subject: Re: [PATCH] gpio/msm-v1: re-read IRQ flags on each iteration
+Message-ID: <20120516010919.GA1295@codeaurora.org>
+References: <1336738032-14940-1-git-send-email-linus.walleij@stericsson.com>
+ <20120511174112.D9EEE3E0791@localhost>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-User-Agent: Mutt/1.5.19 (2009-01-05)
+In-Reply-To: <20120511174112.D9EEE3E0791@localhost>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Enabling Access bit when doing memory swapping.
+On Fri, May 11, 2012 at 11:41:12AM -0600, Grant Likely wrote:
+> On Fri, 11 May 2012 14:07:12 +0200, Linus Walleij <linus.walleij@stericsson.com> wrote:
+> > From: Linus Walleij <linus.walleij@linaro.org>
+> > 
+> > We have recently found a number or erroneous IRQ handlers in
+> > the kernel where the flag iterator loop miss IRQs that get
+> > raised when the loop is executing. This was spotted in the
+> > MSM v1 GPIO driver by Julia Lawall using this cocinelle
+> > snippet:
+> > 
+> > @@
+> > expression pending,gedr,e1;
+> > statement S;
+> > @@
+> > 
+> > *pending = readl(gedr);
+> > ... when != pending = e1
+> > while (pending) S
+> > 
+> > Reported-by: Julia Lawall <julia.lawall@lip6.fr>
+> > Signed-off-by: Linus Walleij <linus.walleij@linaro.org>
+> 
+> Thanks Linus,
+> 
+> I'll need an ack from an msm developer before applying this.
 
-Signed-off-by: Haitao Shan <haitao.shan@intel.com>
-Signed-off-by: Xudong Hao <xudong.hao@intel.com>
----
- arch/x86/kvm/mmu.c |   13 +++++++------
- arch/x86/kvm/vmx.c |    6 ++++--
- 2 files changed, 11 insertions(+), 8 deletions(-)
+I though I saw Jeff Ohlstein reply, but I'm not finding that message.
+I believe this patch is actually incorrect.  The register needs to
+only be read once, and the bits walked through.  If another interrupt
+comes in during the loop, the interrupt will remain asserted, and we
+will re-enter the irq handler.  I suppose it could be wrapped in yet
+another loop, but I'm not sure it is worth it.
 
-diff --git a/arch/x86/kvm/mmu.c b/arch/x86/kvm/mmu.c
-index ff053ca..5f55f98 100644
---- a/arch/x86/kvm/mmu.c
-+++ b/arch/x86/kvm/mmu.c
-@@ -1166,7 +1166,8 @@ static int kvm_age_rmapp(struct kvm *kvm, unsigned long *rmapp,
-    int young = 0;
+I'm pretty sure the code works as it is, since it is the same as the
+code in the Android kernel.
 
-    /*
--    * Emulate the accessed bit for EPT, by checking if this page has
-+    * In case of absence of EPT Access and Dirty Bits supports,
-+    * emulate the accessed bit for EPT, by checking if this page has
-     * an EPT mapping, and clearing it if it does. On the next access,
-     * a new EPT mapping will be established.
-     * This has some overhead, but not as much as the cost of swapping
-@@ -1179,11 +1180,11 @@ static int kvm_age_rmapp(struct kvm *kvm, unsigned long *rmapp,
-    while (spte) {
-        int _young;
-        u64 _spte = *spte;
--       BUG_ON(!(_spte & PT_PRESENT_MASK));
--       _young = _spte & PT_ACCESSED_MASK;
-+       BUG_ON(!is_shadow_present_pte(_spte));
-+       _young = _spte & shadow_accessed_mask;
-        if (_young) {
-            young = 1;
--           clear_bit(PT_ACCESSED_SHIFT, (unsigned long *)spte);
-+           *spte &= ~shadow_accessed_mask;
-        }
-        spte = rmap_next(rmapp, spte);
-    }
-@@ -1207,8 +1208,8 @@ static int kvm_test_age_rmapp(struct kvm *kvm, unsigned long *rmapp,
-    spte = rmap_next(rmapp, NULL);
-    while (spte) {
-        u64 _spte = *spte;
--       BUG_ON(!(_spte & PT_PRESENT_MASK));
--       young = _spte & PT_ACCESSED_MASK;
-+       BUG_ON(!is_shadow_present_pte(_spte));
-+       young = _spte & shadow_accessed_mask;
-        if (young) {
-            young = 1;
-            break;
-diff --git a/arch/x86/kvm/vmx.c b/arch/x86/kvm/vmx.c
-index 89151a9..a3ef549 100644
---- a/arch/x86/kvm/vmx.c
-+++ b/arch/x86/kvm/vmx.c
-@@ -7242,8 +7242,10 @@ static int __init vmx_init(void)
-    vmx_disable_intercept_for_msr(MSR_IA32_SYSENTER_EIP, false);
+David
 
-    if (enable_ept) {
--       kvm_mmu_set_mask_ptes(0ull, 0ull, 0ull, 0ull,
--               VMX_EPT_EXECUTABLE_MASK);
-+       kvm_mmu_set_mask_ptes(0ull,
-+           (enable_ept_ad_bits) ? VMX_EPT_ACCESS_BIT : 0ull,
-+           (enable_ept_ad_bits) ? VMX_EPT_DIRTY_BIT : 0ull,
-+           0ull, VMX_EPT_EXECUTABLE_MASK);
-        ept_set_mmio_spte_mask();
-        kvm_enable_tdp();
-    } else
---
-1.7.1
-
+-- 
+Sent by an employee of the Qualcomm Innovation Center, Inc.
+The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
