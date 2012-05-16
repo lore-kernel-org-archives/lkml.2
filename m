@@ -1,54 +1,203 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759991Ab2EPMt2 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 May 2012 08:49:28 -0400
-Received: from out1-smtp.messagingengine.com ([66.111.4.25]:44543 "EHLO
-	out1-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751090Ab2EPMt0 (ORCPT
+	id S965409Ab2EPMwg (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 May 2012 08:52:36 -0400
+Received: from static.78-46-68-141.clients.your-server.de ([78.46.68.141]:39849
+	"HELO eristoteles.iwoars.net" rhost-flags-OK-FAIL-OK-FAIL)
+	by vger.kernel.org with SMTP id S1755846Ab2EPMwf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 May 2012 08:49:26 -0400
-X-Sasl-enc: VfwA2x3PQ8zVXVGfRvj/OE0BWUzCI+eDMz6CwTDAgA7A 1337172565
-Date: Wed, 16 May 2012 05:49:24 -0700
-From: Greg KH <greg@kroah.com>
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Dan Magenheimer <dan.magenheimer@oracle.com>
-Subject: Re: linux-next: build failure after merge of the final tree (staging
- tree related)
-Message-ID: <20120516124924.GB32064@kroah.com>
-References: <20120516200659.000314e53de07a7a7fda46b8@canb.auug.org.au>
+	Wed, 16 May 2012 08:52:35 -0400
+Date: Wed, 16 May 2012 14:52:32 +0200 (CEST)
+From: Joel Reardon <joel@clambassador.com>
+X-X-Sender: joel@eristoteles.iwoars.net
+To: Artem Bityutskiy <dedekind1@gmail.com>
+cc: linux-mtd@lists.infradead.org, linux-kernel@vger.kernel.org
+Subject: [PATCH v2] UBIFS: read crypto_lookup from datanodes to znodes
+In-Reply-To: <1337087022.2528.204.camel@sauron.fi.intel.com>
+Message-ID: <alpine.DEB.2.00.1205161451250.27131@eristoteles.iwoars.net>
+References: <alpine.DEB.2.00.1205151101100.17750@eristoteles.iwoars.net> <1337087022.2528.204.camel@sauron.fi.intel.com>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120516200659.000314e53de07a7a7fda46b8@canb.auug.org.au>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, May 16, 2012 at 08:06:59PM +1000, Stephen Rothwell wrote:
-> Hi Greg,
-> 
-> After merging the final tree, today's linux-next build (powerpc
-> allyesconfig) failed like this:
-> 
-> drivers/staging/zsmalloc/zsmalloc-main.c: In function 'zs_map_object':
-> drivers/staging/zsmalloc/zsmalloc-main.c:704:3: error: implicit declaration of function 'set_pte' [-Werror=implicit-function-declaration]
-> drivers/staging/zsmalloc/zsmalloc-main.c: In function 'zs_unmap_object':
-> drivers/staging/zsmalloc/zsmalloc-main.c:738:3: error: implicit declaration of function '__flush_tlb_one' [-Werror=implicit-function-declaration]
-> 
-> Presumably caused by commit 49b81a3c7415 ("ramster: switch over to
-> zsmalloc and crypto interface") which now has CONFIG_RAMSTER selecting
-> CONFIG_ZSMALLOC explicitly which in turn ignores the dependency of
-> CONFIG_ZSMALLOC on X86 ...
-> 
-> I have reverted that commit for today.
+Crypto_lookup values are now read from the data node header whenever a
+data node is read from flash and cached in the TNC. The value will be zero
+until it is read from flash. (If it is needed before it happens to be
+loaded, i.e., to delete a node, then it will be forced read.)
 
-Ick, sorry about that.
+It was tested by setting cryptolookup values for new datanodes by their
+lnum and offset on flash. This was later asserted in the TNC that they
+were either zero, or always equal. On mounting, the TNC crypto lookup
+values were confirmed to be zero and later, after reading the
+corresponding files, confirmed they were loaded and corresponded to the
+location on flash.
 
-Dan, care to send me a follow-on patch, or do you just want me to revert
-this patch from my tree for now?
+Signed-off-by: Joel Reardon <reardonj@inf.ethz.ch>
+---
+ fs/ubifs/gc.c          |    7 ++++++-
+ fs/ubifs/journal.c     |    8 +++++---
+ fs/ubifs/tnc.c         |   39 +++++++++++++++++++++++++++++++++++++++
+ fs/ubifs/ubifs-media.h |    3 ++-
+ 4 files changed, 52 insertions(+), 5 deletions(-)
 
-thanks,
+diff --git a/fs/ubifs/gc.c b/fs/ubifs/gc.c
+index f146447..98e6683 100644
+--- a/fs/ubifs/gc.c
++++ b/fs/ubifs/gc.c
+@@ -322,15 +322,20 @@ static int move_node(struct ubifs_info *c, struct ubifs_scan_leb *sleb,
+ 		     struct ubifs_scan_node *snod, struct ubifs_wbuf *wbuf)
+ {
+ 	int err, new_lnum = wbuf->lnum, new_offs = wbuf->offs + wbuf->used;
++	long long crypto_lookup = 0;
 
-greg k-h
+ 	cond_resched();
+ 	err = ubifs_wbuf_write_nolock(wbuf, snod->node, snod->len);
+ 	if (err)
+ 		return err;
+
++	if (key_type(c, &snod->key) == UBIFS_DATA_KEY) {
++		struct ubifs_data_node *dn = snod->node;
++		crypto_lookup = le64_to_cpu(dn->crypto_lookup);
++	}
+ 	err = ubifs_tnc_replace(c, &snod->key, sleb->lnum,
+ 				snod->offs, new_lnum, new_offs,
+-				snod->len, 0);
++				snod->len, crypto_lookup);
+ 	list_del(&snod->list);
+ 	kfree(snod);
+ 	return err;
+diff --git a/fs/ubifs/journal.c b/fs/ubifs/journal.c
+index 2072b9a..5f39f75 100644
+--- a/fs/ubifs/journal.c
++++ b/fs/ubifs/journal.c
+@@ -89,7 +89,6 @@ static inline void zero_dent_node_unused(struct ubifs_dent_node *dent)
+  */
+ static inline void zero_data_node_unused(struct ubifs_data_node *data)
+ {
+-	data->padding0 = 0;
+ 	memset(data->padding1, 0, 2);
+ }
+
+@@ -735,6 +734,7 @@ int ubifs_jnl_write_data(struct ubifs_info *c, const struct inode *inode,
+
+ 	dlen = UBIFS_DATA_NODE_SZ + out_len;
+ 	data->compr_type = cpu_to_le16(compr_type);
++	data->crypto_lookup = cpu_to_le64(0);
+
+ 	/* Make reservation before allocating sequence numbers */
+ 	err = make_reservation(c, DATAHD, dlen);
+@@ -747,7 +747,8 @@ int ubifs_jnl_write_data(struct ubifs_info *c, const struct inode *inode,
+ 	ubifs_wbuf_add_ino_nolock(&c->jheads[DATAHD].wbuf, key_inum(c, key));
+ 	release_head(c, DATAHD);
+
+-	err = ubifs_tnc_add(c, key, lnum, offs, dlen, 0);
++	err = ubifs_tnc_add(c, key, lnum, offs, dlen,
++			    le64_to_cpu(data->crypto_lookup));
+ 	if (err)
+ 		goto out_ro;
+
+@@ -1226,7 +1227,8 @@ int ubifs_jnl_truncate(struct ubifs_info *c, const struct inode *inode,
+
+ 	if (dlen) {
+ 		sz = offs + UBIFS_INO_NODE_SZ + UBIFS_TRUN_NODE_SZ;
+-		err = ubifs_tnc_add(c, &key, lnum, sz, dlen, 0);
++		err = ubifs_tnc_add(c, &key, lnum, sz, dlen,
++				    le64_to_cpu(dn->crypto_lookup));
+ 		if (err)
+ 			goto out_ro;
+ 	}
+diff --git a/fs/ubifs/tnc.c b/fs/ubifs/tnc.c
+index b222a72..006caa7 100644
+--- a/fs/ubifs/tnc.c
++++ b/fs/ubifs/tnc.c
+@@ -1431,6 +1431,34 @@ static int maybe_leb_gced(struct ubifs_info *c, int lnum, int gc_seq1)
+ }
+
+ /**
++ * tnc_set_crypto_lookup - set the crypto_lookup field in a zbranch.
++ * @c: UBIFS file-system description object
++ * @zbr: the crypto_lookup field is set in this zbranch
++ * @node: a pointer to a node containing the zbranch.
++ *
++ * Crypto_lookup values are stored on flash memory inside the data node.
++ * When the system is running, they are also stored in memory inside the
++ * zbranch to avoid requiring reading the old data node simply to retrieve the
++ * crypto_lookup when performing a truncation / overwrite / delete operation.
++ * This function is called whenever a node is read from flash memory. If @node
++ * is a data node (therefore containing a @crypto_lookup field), then:
++ * if @zbr has an unset @crypto_lookup, set it to the value from @node
++ * if @zbr has already a @crypto_lookup, assert they are the same.
++ */
++static void tnc_set_crypto_lookup(struct ubifs_info *c,
++				  struct ubifs_zbranch *zbr, void *node)
++{
++	if (key_type(c, &(zbr->key)) == UBIFS_DATA_KEY) {
++		struct ubifs_data_node *dn = node;
++		long long crypto_lookup = le64_to_cpu(dn->crypto_lookup);
++		if (zbr->crypto_lookup != 0)
++			ubifs_assert(zbr->crypto_lookup == crypto_lookup);
++		else
++			zbr->crypto_lookup = crypto_lookup;
++	}
++}
++
++/**
+  * ubifs_tnc_locate - look up a file-system node and return it and its location.
+  * @c: UBIFS file-system description object
+  * @key: node key to lookup
+@@ -1485,6 +1513,11 @@ again:
+ 	if (ubifs_get_wbuf(c, zbr.lnum)) {
+ 		/* We do not GC journal heads */
+ 		err = ubifs_tnc_read_node(c, &zbr, node);
++		if (!err) {
++			mutex_lock(&c->tnc_mutex);
++			tnc_set_crypto_lookup(c, &(znode->zbranch[n]), node);
++			mutex_unlock(&c->tnc_mutex);
++		}
+ 		return err;
+ 	}
+
+@@ -1497,9 +1530,15 @@ again:
+ 		safely = 1;
+ 		goto again;
+ 	}
++
++	mutex_lock(&c->tnc_mutex);
++	tnc_set_crypto_lookup(c, &(znode->zbranch[n]), node);
++	mutex_unlock(&c->tnc_mutex);
+ 	return 0;
+
+ out:
++	if (!err)
++		tnc_set_crypto_lookup(c, zt, node);
+ 	mutex_unlock(&c->tnc_mutex);
+ 	return err;
+ }
+diff --git a/fs/ubifs/ubifs-media.h b/fs/ubifs/ubifs-media.h
+index 9ecbd37..e03adcf 100644
+--- a/fs/ubifs/ubifs-media.h
++++ b/fs/ubifs/ubifs-media.h
+@@ -539,6 +539,7 @@ struct ubifs_dent_node {
+  * struct ubifs_data_node - data node.
+  * @ch: common header
+  * @key: node key
++ * @crypto_lookup: the node's cryptographic key's position in the KSA
+  * @size: uncompressed data size in bytes
+  * @compr_type: compression type (%UBIFS_COMPR_NONE, %UBIFS_COMPR_LZO, etc)
+  * @padding: reserved for future, zeroes
+@@ -550,7 +551,7 @@ struct ubifs_dent_node {
+ struct ubifs_data_node {
+ 	struct ubifs_ch ch;
+ 	__u8 key[UBIFS_KEY_LEN];
+-	__le64 padding0; /* Watch 'zero_data_node_unused()' if changing! */
++	__le64 crypto_lookup;
+ 	__le32 size;
+ 	__le16 compr_type;
+ 	__u8 padding1[2]; /* Watch 'zero_data_node_unused()' if changing! */
+-- 
+1.7.5.4
+
+
