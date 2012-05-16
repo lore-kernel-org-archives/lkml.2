@@ -1,125 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755791Ab2EPPq1 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 May 2012 11:46:27 -0400
-Received: from 90-46-11-204.rar.beartech.net ([204.11.46.90]:27084 "EHLO
-	exchsrvr.taosinc.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1755757Ab2EPPqZ convert rfc822-to-8bit (ORCPT
+	id S1755613Ab2EPPrV (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 May 2012 11:47:21 -0400
+Received: from mail-vb0-f46.google.com ([209.85.212.46]:43149 "EHLO
+	mail-vb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755336Ab2EPPrT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 May 2012 11:46:25 -0400
-Subject: [PATCH V2] IIO channel type and modifiers for CCT and RGBC data
-From: Jon Brenner <jbrenner@taosinc.com>
-To: Jonathan Cameron <jic23@cam.ac.uk>
-Cc: linux-iio <linux-iio@vger.kernel.org>,
-        Linux Kernel <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-Date: Wed, 16 May 2012 10:46:42 -0500
-Message-ID: <1337183202.6344.1.camel@jonz-ub2>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.2 
+	Wed, 16 May 2012 11:47:19 -0400
+MIME-Version: 1.0
+In-Reply-To: <201205161209.03985.arnd@arndb.de>
+References: <20120515154333.6659.66479.sendpatchset@w520>
+	<20120516072927.GN7988@linux-sh.org>
+	<CANqRtoSSEb9jwEmvbhBuyHp-9BfUSRabQzqjrrVGTFDP-AHutQ@mail.gmail.com>
+	<201205161209.03985.arnd@arndb.de>
+Date: Thu, 17 May 2012 00:47:17 +0900
+Message-ID: <CANqRtoT5g7zttqp6Nw58O=Xvo+hPKsBhZGXW_UGutKVh2-SD9w@mail.gmail.com>
+Subject: Re: [PATCH] gpio: Emma Mobile GPIO driver V2
+From: Magnus Damm <magnus.damm@gmail.com>
+To: Arnd Bergmann <arnd@arndb.de>
+Cc: Paul Mundt <lethal@linux-sh.org>, linux-kernel@vger.kernel.org,
+        rjw@sisk.pl, linus.walleij@stericsson.com, linux-sh@vger.kernel.org,
+        horms@verge.net.au, grant.likely@secretlab.ca, olof@lixom.net
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add iio channel type and modifiers for Correlated Color Temperature (CCT)
-and RGBC (red/green/blue/clear) data.
-Add CCT and RGBC descriptions to documentation.
+On Wed, May 16, 2012 at 9:09 PM, Arnd Bergmann <arnd@arndb.de> wrote:
+> On Wednesday 16 May 2012, Magnus Damm wrote:
+>> > irq_domain_add_legacy() exists for existing static ranges, which there is
+>> > really no reason to be adding in new board/platform support. You don't
+>> > have to worry about virq overlap since irq_create_mapping() already wraps
+>> > on top of irq_alloc_desc_xxx() for lookup.
+>>
+>> So I intentionally made use of the legacy domain in the non-DT case.
+>> This because I want to let the SoC code set the static IRQ ranges via
+>> platform data.
+>
+> I think it's generally better to use just one code path for both cases,
+> if you need both DT and non-DT support, which means you would always
+> use irq_domain_add_legacy. Once you have the final patch to convert it
+> to DT, you can remove the legacy domain and just convert it to linear.
 
-Changes:
-Revised/condensed RGBC descriptions.
+Sure, I don't mind that at all - it will make the DT bits even easier.
 
-Signed-off-by: Jon Brenner <jbrenner@taosinc.com>
----
- drivers/iio/industrialio-core.c                    |    5 ++++
- .../staging/iio/Documentation/sysfs-bus-iio-light  |   23 ++++++++++++++++++++
- include/linux/iio/types.h                          |    5 ++++
- 3 files changed, 33 insertions(+), 0 deletions(-)
+Thanks,
 
-diff --git a/drivers/iio/industrialio-core.c b/drivers/iio/industrialio-core.c
-index 1ddd886..34d8cc9 100644
---- a/drivers/iio/industrialio-core.c
-+++ b/drivers/iio/industrialio-core.c
-@@ -64,6 +64,7 @@ static const char * const iio_chan_type_name_spec[] = {
- 	[IIO_TIMESTAMP] = "timestamp",
- 	[IIO_CAPACITANCE] = "capacitance",
- 	[IIO_ALTVOLTAGE] = "altvoltage",
-+	[IIO_CCT] = "cct",
- };
-
- static const char * const iio_modifier_names[] = {
-@@ -72,6 +73,10 @@ static const char * const iio_modifier_names[] = {
- 	[IIO_MOD_Z] = "z",
- 	[IIO_MOD_LIGHT_BOTH] = "both",
- 	[IIO_MOD_LIGHT_IR] = "ir",
-+	[IIO_MOD_LIGHT_CLEAR] = "clear",
-+	[IIO_MOD_LIGHT_RED] = "red",
-+	[IIO_MOD_LIGHT_GREEN] = "green",
-+	[IIO_MOD_LIGHT_BLUE] = "blue",
- };
-
- /* relies on pairs of these shared then separate */
-diff --git a/drivers/staging/iio/Documentation/sysfs-bus-iio-light b/drivers/staging/iio/Documentation/sysfs-bus-iio-light
-index 715c74d..83a2876 100644
---- a/drivers/staging/iio/Documentation/sysfs-bus-iio-light
-+++ b/drivers/staging/iio/Documentation/sysfs-bus-iio-light
-@@ -34,6 +34,15 @@ Description:
- 		it comes back in SI units, it should also include _input else it
- 		should include _raw to signify it is not in SI units.
-
-+What:		/sys/bus/iio/devices/device[n]/in_cct0[_input|_raw]
-+KernelVersion:	3.4.0
-+Contact:	linux-iio@vger.kernel.org
-+Description:
-+		This should return the correlated color temperature from the
-+		light sensor. If it comes back in SI units, it should also
-+		include _input else it should include _raw to signify it is not
-+		in SI units.
-+
- What:		/sys/.../device[n]/proximity_on_chip_ambient_infrared_supression
- KernelVersion:	2.6.37
- Contact:	linux-iio@vger.kernel.org
-@@ -82,3 +91,17 @@ Contact:	linux-iio@vger.kernel.org
- Description:
- 		This property gets/sets the table of coefficients
- 		used in calculating illuminance in lux.
-+
-+What:		/sys/bus/iio/devices/device[n]/in_intensity_clear[_input|_raw]
-+What:		/sys/bus/iio/devices/device[n]/in_intensity_red[_input|_raw]
-+What:		/sys/bus/iio/devices/device[n]/in_intensity_green[_input|_raw]
-+What:		/sys/bus/iio/devices/device[n]/in_intensity_blue[_input|_raw]
-+KernelVersion:	3.4.0
-+Contact:	linux-iio@vger.kernel.org
-+Description:
-+		This property is supported by sensors that have a RGBC
-+		sensing mode. This value should be the output from a reading
-+		and if expressed in SI units, should include _input. If this
-+		value is not in SI units (irradiance, uW/mm), then it should
-+		include _raw.
-+
-diff --git a/include/linux/iio/types.h b/include/linux/iio/types.h
-index 1b073b1..a7de5d9 100644
---- a/include/linux/iio/types.h
-+++ b/include/linux/iio/types.h
-@@ -28,6 +28,7 @@ enum iio_chan_type {
- 	IIO_TIMESTAMP,
- 	IIO_CAPACITANCE,
- 	IIO_ALTVOLTAGE,
-+	IIO_CCT,
- };
-
- enum iio_modifier {
-@@ -45,6 +46,10 @@ enum iio_modifier {
- 	IIO_MOD_X_OR_Y_OR_Z,
- 	IIO_MOD_LIGHT_BOTH,
- 	IIO_MOD_LIGHT_IR,
-+	IIO_MOD_LIGHT_CLEAR,
-+	IIO_MOD_LIGHT_RED,
-+	IIO_MOD_LIGHT_GREEN,
-+	IIO_MOD_LIGHT_BLUE,
- };
-
- #define IIO_VAL_INT 1
---
-1.7.4.1
-
+/ magnus
