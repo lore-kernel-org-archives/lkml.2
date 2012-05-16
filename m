@@ -1,92 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754092Ab2EPPF4 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 May 2012 11:05:56 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:59799 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753231Ab2EPPFz (ORCPT
+	id S1754110Ab2EPPIT (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 May 2012 11:08:19 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:51992 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753957Ab2EPPIR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 May 2012 11:05:55 -0400
-Date: Wed, 16 May 2012 08:05:50 -0700
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: Anton Vorontsov <anton.vorontsov@linaro.org>
-Cc: Kees Cook <keescook@chromium.org>, Colin Cross <ccross@android.com>,
-        devel@driverdev.osuosl.org, linaro-kernel@lists.linaro.org,
-        Arnd Bergmann <arnd@arndb.de>, patches@linaro.org,
-        Marco Stornelli <marco.stornelli@gmail.com>,
-        Stephen Boyd <sboyd@codeaurora.org>, linux-kernel@vger.kernel.org,
-        arve@android.com, Jesper Juhl <jj@chaosbits.net>,
-        John Stultz <john.stultz@linaro.org>, Shuah Khan <shuahkhan@gmail.com>,
-        Rebecca Schultz Zavin <rebecca@android.com>,
-        WANG Cong <xiyou.wangcong@gmail.com>,
-        Andrew Morton <akpm@linux-foundation.org>, kernel-team@android.com,
-        Thomas Meyer <thomas@m3y3r.de>
-Subject: Re: [PATCH 4/6] staging: android: persistent_ram: Move to
- fs/pstore/ram_core.c
-Message-ID: <20120516150550.GA22945@kroah.com>
-References: <20120516124109.GA14658@lizard>
- <20120516124338.GD18345@lizard>
+	Wed, 16 May 2012 11:08:17 -0400
+Date: Wed, 16 May 2012 08:08:13 -0700
+From: Greg KH <gregkh@linuxfoundation.org>
+To: Philipp Riemer <ruderphilipp@gmail.com>
+Cc: Jiri Kosina <jkosina@suse.cz>, Paul Mundt <lethal@linux-sh.org>,
+        Michael =?iso-8859-1?Q?B=FCsch?= <m@bues.ch>,
+        Kuninori Morimoto <kuninori.morimoto.gx@renesas.com>,
+        Uwe =?iso-8859-1?Q?Kleine-K=F6nig?= 
+	<u.kleine-koenig@pengutronix.de>,
+        LKML <linux-kernel@vger.kernel.org>, Wang Chen <ellre923@gmail.com>,
+        Jonathan Corbet <corbet@lwn.net>
+Subject: Re: [GIT PULL] new mailmap file for the linux kernel git repository
+Message-ID: <20120516150813.GA3293@kroah.com>
+References: <CAFU-uVs_Gwacxj74cyekY2gv+zAq+Spba7nfPLdTc_dR3y8CYw@mail.gmail.com>
+ <20120516143830.GA483@kroah.com>
+ <alpine.LNX.2.00.1205161640520.8796@pobox.suse.cz>
+ <CAFU-uVt94sgzq7DgsgKL2OJ0e7DazvNpFunx7BNEz88LHJOg+g@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20120516124338.GD18345@lizard>
+In-Reply-To: <CAFU-uVt94sgzq7DgsgKL2OJ0e7DazvNpFunx7BNEz88LHJOg+g@mail.gmail.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, May 16, 2012 at 05:43:38AM -0700, Anton Vorontsov wrote:
-> This is a first step for adding ECC support for pstore RAM backend: we
-> will use the persistent_ram routines, kindly provided by Google.
+On Wed, May 16, 2012 at 05:01:39PM +0200, Philipp Riemer wrote:
+> 2012/5/16 Jiri Kosina <jkosina@suse.cz>:
+> > On Wed, 16 May 2012, Greg KH wrote:
+> >
+> >> > In my work I considered the following aspects:
+> >> > * Typos in names
+> >> > * Typos in mails
+> >> > * Mapping of ambiguous mail adresses (e.g. {aa@bb.cc, aa@home.bb.cc,
+> >> > aa@laptop.bb.cc,...} becomes {aa@bb.cc})
+> >> > * Mapping of names to entries with only email information
+> >> > * Harmonization of position and style of last name (no more all-caps
+> >> > names like "First LAST" or those of "Last, First")
+> >> > * No initials in names if not necessary
+> >> > * Conversion of email addresses to lower case
+> >> >
+> >> > Why did I do this? One reason for that is a missing configuration of
+> >> > Git -- leading to a combination of the name of user (login) and
+> >> > computer (e.g. "me@mybox.local"). Of course this is not a real mail
+> >> > address and most users realize and fix this fact pretty fast.
+> >> > Nevertheless there is at least one commit with wrong data in the
+> >> > codebase. Another reason is spelling. When skimming through the vast
+> >> > list of author names and email addresses one can find many
+> >> > typographical errors such as ".con" instead of ".com" or missing
+> >> > letters. Over time also these get fixed -- but the wrong data is
+> >> > visible.
+> >> >
+> >> > I am pretty confident that I coalesced the data of most of the
+> >> > ambiguous users. But despite having spent so many hours in finding and
+> >> > matching these entries, this work (that I did primarily for my thesis)
+> >> > might be helpful for other researchers as well, such as e.g. Wang Chen
+> >> > as the maintainer of the Linux Kernel Patch Statistic
+> >> > <http://www.remword.com/kps_result/> or Greg, Jonthan, etc. as the
+> >> > authors of "Who writes Linux"
+> >> > <http://go.linuxfoundation.org/who-writes-linux-2012>...
+> >> >
+> >> > Hence, please integrate this file into the official Linux Kernel repository.
+> >>
+> >> You forgot a signed-off-by: line which is required for a patch to be
+> >> accepted :(
+> >
+> > While Greg is at this, the changelogs also really don't really follow the
+> > kernel changelog standards (line wrapping, etc.).
+> >
+> > --
+> > Jiri Kosina
+> > SUSE Labs
 > 
-> Basically, persistent_ram is a set of helper routines to deal with the
-> [optionally] ECC-protected persistent ram regions.
+> Thank you both for your fast feedback. I really appreciate it.
 > 
-> A bit of Makefile, Kconfig and header files adjustments were needed
-> because of the move.
-> 
-> Signed-off-by: Anton Vorontsov <anton.vorontsov@linaro.org>
-> Acked-by: Kees Cook <keescook@chromium.org>
-> ---
->  drivers/staging/android/Kconfig          |   10 +-
->  drivers/staging/android/Makefile         |    1 -
->  drivers/staging/android/persistent_ram.c |  532 ------------------------------
->  drivers/staging/android/persistent_ram.h |   82 -----
->  drivers/staging/android/ram_console.c    |    2 +-
->  fs/pstore/Kconfig                        |    7 +-
->  fs/pstore/Makefile                       |    2 +-
->  fs/pstore/ram_core.c                     |  532 ++++++++++++++++++++++++++++++
->  include/linux/pstore_ram.h               |   80 +++++
->  9 files changed, 620 insertions(+), 628 deletions(-)
->  delete mode 100644 drivers/staging/android/persistent_ram.c
->  delete mode 100644 drivers/staging/android/persistent_ram.h
->  create mode 100644 fs/pstore/ram_core.c
+> Since this is my first contribution to the Linux Kernel I am not
+> pretty sure what I have to do. Is there anywhere a guideline how I get
+> a "signed-off"? I sent the mail to the addresses I found via
+> `scripts/get_maintainer.pl -f .mailmap` since I expected those people
+> to be somehow interested in this file. What other steps can I take?
 
-After applying this patch, and building things, I get the following
-errors:
+Please read the file, Documentation/SubmittingPatches for what the line,
+"Signed-off-by:" means and what you are agreeing to there, as well as
+how to properly submit a patch for inclusion in the kernel.
 
-drivers/built-in.o: In function `ram_console_write':
-ram_console.c:(.text+0x1690b9): undefined reference to `persistent_ram_write'
-drivers/built-in.o: In function `ram_console_read_old':
-ram_console.c:(.text+0x1690f7): undefined reference to `persistent_ram_old_size'
-ram_console.c:(.text+0x169103): undefined reference to `persistent_ram_old'
-ram_console.c:(.text+0x169136): undefined reference to `persistent_ram_ecc_string'
-ram_console.c:(.text+0x169177): undefined reference to `persistent_ram_ecc_string'
-drivers/built-in.o: In function `ram_console_probe':
-ram_console.c:(.init.text+0xc9ea): undefined reference to `persistent_ram_init_ringbuffer'
-drivers/built-in.o: In function `ram_console_late_init':
-ram_console.c:(.init.text+0xca6c): undefined reference to `persistent_ram_old_size'
-ram_console.c:(.init.text+0xcaa2): undefined reference to `persistent_ram_free_old'
-ram_console.c:(.init.text+0xcab4): undefined reference to `persistent_ram_old_size'
-ram_console.c:(.init.text+0xcac3): undefined reference to `persistent_ram_ecc_string'
-make: *** [.tmp_vmlinux1] Error 1
+> I don't understand the point regarding the changelog standards -- what
+> do you mean with that? I changed the .mailmap file and oriented myself
+> on what was already there... How can I improve the file to fit to the
+> Linux standards? Some hints?
 
-What went wrong?
+Read the above file :)
 
-I've now applied the first 3 patches in this series to my tree, plus the
-2 others from the linux-next tree, so care to just fix up these last
-three and resend them?
-
-thanks,
+Hope this helps,
 
 greg k-h
