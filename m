@@ -1,28 +1,31 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759466Ab2EPG7i (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 May 2012 02:59:38 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:51375 "EHLO mx1.redhat.com"
+	id S1759449Ab2EPHAg (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 May 2012 03:00:36 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:60654 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759456Ab2EPG7h (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 May 2012 02:59:37 -0400
+	id S1759444Ab2EPG7f (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 16 May 2012 02:59:35 -0400
 From: Jiri Olsa <jolsa@redhat.com>
 To: acme@redhat.com, a.p.zijlstra@chello.nl, mingo@elte.hu, paulus@samba.org,
         cjashfor@linux.vnet.ibm.com, fweisbec@gmail.com
 Cc: linux-kernel@vger.kernel.org, dsahern@gmail.com,
         Jiri Olsa <jolsa@redhat.com>
-Subject: [PATCH 5/7] perf, tool: Fix 32 bit values endianity swap for sample_id_all header
-Date: Wed, 16 May 2012 08:59:06 +0200
-Message-Id: <1337151548-2396-6-git-send-email-jolsa@redhat.com>
+Subject: [PATCH 7/7] perf, tool: Fix callchain ip printf
+Date: Wed, 16 May 2012 08:59:08 +0200
+Message-Id: <1337151548-2396-8-git-send-email-jolsa@redhat.com>
 In-Reply-To: <1337151548-2396-1-git-send-email-jolsa@redhat.com>
 References: <1337151548-2396-1-git-send-email-jolsa@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-We swap the sample_id_all header by u64 pointers. Some members
-of the header happen to be 32 bit values. We need to handle them
-separatelly.
+The callchain address is stored as u64. Current code uses following
+format string to display callchain address:
+  "%p\n", (void *)(long)chain->ip
+
+This way we loose upper 32 bits if we report 64 bit addresses in
+32 bit environment. Fixing this to always display whole 64 bits.
 
 Note, running following to test perf endianity handling:
 test 1)
@@ -52,70 +55,22 @@ test 2)
 
 Signed-off-by: Jiri Olsa <jolsa@redhat.com>
 ---
- tools/perf/util/evsel.c |   29 ++++++++++++++++++++++-------
- 1 files changed, 22 insertions(+), 7 deletions(-)
+ tools/perf/util/hist.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-diff --git a/tools/perf/util/evsel.c b/tools/perf/util/evsel.c
-index 4e1b44e..f78467d 100644
---- a/tools/perf/util/evsel.c
-+++ b/tools/perf/util/evsel.c
-@@ -404,16 +404,24 @@ int perf_evsel__open_per_thread(struct perf_evsel *evsel,
+diff --git a/tools/perf/util/hist.c b/tools/perf/util/hist.c
+index 9f6d630..1293b5e 100644
+--- a/tools/perf/util/hist.c
++++ b/tools/perf/util/hist.c
+@@ -599,7 +599,7 @@ static size_t ipchain__fprintf_graph(FILE *fp, struct callchain_list *chain,
+ 	if (chain->ms.sym)
+ 		ret += fprintf(fp, "%s\n", chain->ms.sym->name);
+ 	else
+-		ret += fprintf(fp, "%p\n", (void *)(long)chain->ip);
++		ret += fprintf(fp, "0x%0" PRIx64 "\n", chain->ip);
+ 
+ 	return ret;
  }
- 
- static int perf_event__parse_id_sample(const union perf_event *event, u64 type,
--				       struct perf_sample *sample)
-+				       struct perf_sample *sample,
-+				       bool swapped)
- {
- 	const u64 *array = event->sample.array;
-+	union u64_swap u;
- 
- 	array += ((event->header.size -
- 		   sizeof(event->header)) / sizeof(u64)) - 1;
- 
- 	if (type & PERF_SAMPLE_CPU) {
--		u32 *p = (u32 *)array;
--		sample->cpu = *p;
-+		u.val64 = *array;
-+		if (swapped) {
-+			/* undo swap of u64, then swap on individual u32s */
-+			u.val64 = bswap_64(u.val64);
-+			u.val32[0] = bswap_32(u.val32[0]);
-+		}
-+
-+		sample->cpu = u.val32[0];
- 		array--;
- 	}
- 
-@@ -433,9 +441,16 @@ static int perf_event__parse_id_sample(const union perf_event *event, u64 type,
- 	}
- 
- 	if (type & PERF_SAMPLE_TID) {
--		u32 *p = (u32 *)array;
--		sample->pid = p[0];
--		sample->tid = p[1];
-+		u.val64 = *array;
-+		if (swapped) {
-+			/* undo swap of u64, then swap on individual u32s */
-+			u.val64 = bswap_64(u.val64);
-+			u.val32[0] = bswap_32(u.val32[0]);
-+			u.val32[1] = bswap_32(u.val32[1]);
-+		}
-+
-+		sample->pid = u.val32[0];
-+		sample->tid = u.val32[1];
- 	}
- 
- 	return 0;
-@@ -472,7 +487,7 @@ int perf_event__parse_sample(const union perf_event *event, u64 type,
- 	if (event->header.type != PERF_RECORD_SAMPLE) {
- 		if (!sample_id_all)
- 			return 0;
--		return perf_event__parse_id_sample(event, type, data);
-+		return perf_event__parse_id_sample(event, type, data, swapped);
- 	}
- 
- 	array = event->sample.array;
 -- 
 1.7.7.6
 
