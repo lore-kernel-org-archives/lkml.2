@@ -1,111 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760164Ab2EPS2J (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 May 2012 14:28:09 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:28431 "EHLO mx1.redhat.com"
+	id S1760177Ab2EPS2S (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 May 2012 14:28:18 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:5307 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754161Ab2EPS2I (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 May 2012 14:28:08 -0400
-Date: Wed, 16 May 2012 21:28:06 +0300
-From: "Michael S. Tsirkin" <mst@redhat.com>
-To: Marcelo Tosatti <mtosatti@redhat.com>
-Cc: x86@kernel.org, kvm@vger.kernel.org, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, Avi Kivity <avi@redhat.com>,
-        gleb@redhat.com, Linus Torvalds <torvalds@linux-foundation.org>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCHv4 3/5] kvm: host side for eoi optimization
-Message-ID: <20120516182805.GE10769@redhat.com>
-References: <cover.1337168687.git.mst@redhat.com>
- <42ba7beaa25855997e02fea91a11c9224c51720e.1337168687.git.mst@redhat.com>
- <20120516154940.GA20549@amt.cnet>
- <20120516162247.GA10676@redhat.com>
- <20120516172058.GA22861@amt.cnet>
- <20120516175856.GD10769@redhat.com>
- <20120516181500.GA23791@amt.cnet>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120516181500.GA23791@amt.cnet>
+	id S1754161Ab2EPS2O (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 16 May 2012 14:28:14 -0400
+From: Peter Jones <pjones@redhat.com>
+To: hpa@zytor.com
+Cc: linux-kernel@vger.kernel.org, x86@kernel.org,
+        Peter Jones <pjones@redhat.com>
+Subject: [PATCH] Don't continue booting if we can't load the specified initrd.
+Date: Wed, 16 May 2012 13:43:26 -0400
+Message-Id: <1337190206-12121-1-git-send-email-pjones@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, May 16, 2012 at 03:15:00PM -0300, Marcelo Tosatti wrote:
-> On Wed, May 16, 2012 at 08:58:57PM +0300, Michael S. Tsirkin wrote:
-> > On Wed, May 16, 2012 at 02:20:58PM -0300, Marcelo Tosatti wrote:
-> > > On Wed, May 16, 2012 at 07:22:47PM +0300, Michael S. Tsirkin wrote:
-> > > > On Wed, May 16, 2012 at 12:49:40PM -0300, Marcelo Tosatti wrote:
-> > > > > > @@ -1245,9 +1306,20 @@ int kvm_get_apic_interrupt(struct kvm_vcpu *vcpu)
-> > > > > >  	int vector = kvm_apic_has_interrupt(vcpu);
-> > > > > >  	struct kvm_lapic *apic = vcpu->arch.apic;
-> > > > > >  
-> > > > > > -	if (vector == -1)
-> > > > > > +	/* Detect interrupt nesting and disable EOI optimization */
-> > > > > > +	if (pv_eoi_enabled(vcpu) && vector == -2)
-> > > > > > +		pv_eoi_clr_pending(vcpu);
-> > > > > > +
-> > > > > > +	if (vector < 0)
-> > > > > 
-> > > > > With interrupt window exiting, the guest will exit:
-> > > > > 
-> > > > > - as soon as it sets RFLAGS.IF=1 and there is any 
-> > > > > interrupt pending in IRR.
-> > > > > - any new interrupt is set in IRR will kick vcpu
-> > > > > out of guest mode and recalculate interrupt-window-exiting.
-> > > > > 
-> > > > > Doesnt this make this bit unnecessary ?
-> > > > 
-> > > > Looks like we could cut it out.  But I'm not sure how architectural it is
-> > > > that we exit on interrupt window.
-> > > > I guess there are reasons to exit on interrupt window but
-> > > > isn't it better to make the feature independent of it?
-> > > 
-> > > Hum... not sure. Is it helpful for the Hyper-V interface?
-> > > 
-> > > > This almost never happens in my testing anyway, so
-> > > > however we handle it is unlikely to affect performance.
-> > > 
-> > > It decreases the amount of state that must be maintained.
-> > > 
-> > > BTW there is a bug covered by interrupt window exiting:
-> > > 
-> > > vcpu0                               host
-> > > - irr 5 set
-> > > - isr 5 set, irr 5 cleared
-> > > - eoi_skip bit not set, 
-> > > no other bit set in irr.
-> > > - enter guest
-> > > 
-> > >                                     irr 4 set
-> > >                                     kick vcpu0 out of guest mode
-> > > 
-> > > - eoi pending bit not set
-> > >   (previous interrupt injection 
-> > >    still pending)
-> > > - skip eoi
-> > > 
-> > > If it were not for interrupt window exiting, this would 
-> > > inject vector 4 on an unrelated exit who knows how long 
-> > > in the future.
-> > > 
-> > > Also note optimization depends on the fact that the host 
-> > > kicks vcpu out unconditionally (so it is dependent on 
-> > > certain kvm implementation details).
-> > > 
-> > 
-> > Look we can summarize as follows: irq windows exit is
-> > required both before and after this patch.
-> > But it does not make the check above redundant.
-> 
-> Right, it is not redundant.
-> 
-> The above is still a bug: a case where eoi pending bit is not updated
-> properly.
-> 
-> How come is this compatible with hyper-v again? Enlight me.
+If we've determined we can't do what the user asked, trying to do
+something else isn't going to make the user's life better.
 
-Set kvm
-to point pv_eoi msr data to va and it will just work.
+Without this the screen scrolls a bit and then you get a panic
+anyway, and it's nice not to have so much scroll after the real
+problem in bug reports.
+---
+ arch/x86/kernel/setup.c |    7 +++----
+ 1 file changed, 3 insertions(+), 4 deletions(-)
 
+diff --git a/arch/x86/kernel/setup.c b/arch/x86/kernel/setup.c
+index 1a29015..37ef116 100644
+--- a/arch/x86/kernel/setup.c
++++ b/arch/x86/kernel/setup.c
+@@ -393,10 +393,9 @@ static void __init reserve_initrd(void)
+ 	initrd_start = 0;
+ 
+ 	if (ramdisk_size >= (end_of_lowmem>>1)) {
+-		memblock_free(ramdisk_image, ramdisk_end - ramdisk_image);
+-		printk(KERN_ERR "initrd too large to handle, "
+-		       "disabling initrd\n");
+-		return;
++		panic("initrd too large to handle, "
++		       "disabling initrd (%lld needed, %lld available)\n",
++		       ramdisk_size, end_of_lowmem>>1);
+ 	}
+ 
+ 	printk(KERN_INFO "RAMDISK: %08llx - %08llx\n", ramdisk_image,
 -- 
-MST
+1.7.10.1
+
