@@ -1,69 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759051Ab2EPRSa (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 May 2012 13:18:30 -0400
-Received: from perches-mx.perches.com ([206.117.179.246]:49374 "EHLO
-	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1751743Ab2EPRS2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 May 2012 13:18:28 -0400
-Message-ID: <1337188707.6903.4.camel@joe2Laptop>
-Subject: Re: SCSI RAM driver ported to 3.3 kernel for file system and I/O
- testing
-From: Joe Perches <joe@perches.com>
-To: Tim Chen <tim.c.chen@linux.intel.com>
-Cc: linux-fsdevel <linux-fsdevel@vger.kernel.org>, linux-scsi@vger.kernel.org,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Matthew Wilcox <willy@linux.intel.com>,
-        Andi Kleen <ak@linux.intel.com>
-Date: Wed, 16 May 2012 10:18:27 -0700
-In-Reply-To: <1337188023.3796.130.camel@schen9-DESK>
-References: <1337188023.3796.130.camel@schen9-DESK>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.2- 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	id S1759110Ab2EPRUE (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 May 2012 13:20:04 -0400
+Received: from mail-wi0-f172.google.com ([209.85.212.172]:54854 "EHLO
+	mail-wi0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751754Ab2EPRUB (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 16 May 2012 13:20:01 -0400
+Date: Wed, 16 May 2012 19:19:49 +0200
+From: Richard Cochran <richardcochran@gmail.com>
+To: Geert Uytterhoeven <geert@linux-m68k.org>
+Cc: Takahiro Shimizu <tshimizu818@gmail.com>,
+        "David S. Miller" <davem@davemloft.net>, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] ptp_pch: Add missing #include <linux/slab.h>
+Message-ID: <20120516171949.GB3587@netboy.at.omicron.at>
+References: <1337169017-15835-1-git-send-email-geert@linux-m68k.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1337169017-15835-1-git-send-email-geert@linux-m68k.org>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2012-05-16 at 10:07 -0700, Tim Chen wrote:
-> I've ported Matthew's scsi RAM driver (originally posted in
-> http://marc.info/?l=linux-scsi&m=120331663227540&w=2) to the 3.3 kernel.
+On Wed, May 16, 2012 at 01:50:17PM +0200, Geert Uytterhoeven wrote:
+> drivers/ptp/ptp_pch.c: In function 'pch_remove':
+> drivers/ptp/ptp_pch.c:576:2: error: implicit declaration of function 'kfree' [-Werror=implicit-function-declaration]
+> drivers/ptp/ptp_pch.c: In function 'pch_probe':
+> drivers/ptp/ptp_pch.c:587:2: error: implicit declaration of function 'kzalloc' [-Werror=implicit-function-declaration]
+> 
+> Signed-off-by: Geert Uytterhoeven <geert@linux-m68k.org>
 
-just trivia:
+Acked-by: Richard Cochran <richardcochran@gmail.com>
 
-> diff --git a/drivers/scsi/scsi_ram.c b/drivers/scsi/scsi_ram.c
-[]
-> +static void scsi_ram_too_big(struct scsi_cmnd *cmnd, unsigned int start,
-> +				unsigned int len)
-> +{
-> +	printk(KERN_WARNING, "Request exceeded device capacity! %u %u\n", start, len);
+Thanks,
+Richard
 
-Probably ignored a warning here. No comma after KERN_WARNING.
-
-I'd add #define pr_fmt(fmt) KBUILD_MODNAME ": " fmt before
-any include and use pr_<level> instead.
-
-[]
-
-> +static int scsi_ram_queuecommand(struct Scsi_Host *shost, struct scsi_cmnd *cmnd)
-> +{
-> +	struct scsi_ram_cmnd *ram_cmnd = (void *)&cmnd->SCp;
-> +	struct scsi_ram_device *ram_device = scsi_ram_devices[cmnd->device->id];
-> +	unsigned long flags;
-> +
-> +	pr_debug("%s: Queueing command\n", DRV_NAME);
-
-No need for DRV_NAME when using pr_fmt
-
-[]
-
-> +static int scsi_ram_slave_alloc(struct scsi_device *sdev)
-> +{
-> +	struct scsi_ram_device *ram_device;
-> +
-> +	pr_debug("%s: slave_alloc %d:%d\n", DRV_NAME, sdev->id, sdev->lun);
-
-here too, etc...
-
-
+> ---
+> Not even compile-tested, as it fails on parisc only.
+> http://kisskb.ellerman.id.au/kisskb/buildresult/6312813/
+> 
+>  drivers/ptp/ptp_pch.c |    1 +
+>  1 files changed, 1 insertions(+), 0 deletions(-)
+> 
+> diff --git a/drivers/ptp/ptp_pch.c b/drivers/ptp/ptp_pch.c
+> index 375eb04..6fff680 100644
+> --- a/drivers/ptp/ptp_pch.c
+> +++ b/drivers/ptp/ptp_pch.c
+> @@ -30,6 +30,7 @@
+>  #include <linux/module.h>
+>  #include <linux/pci.h>
+>  #include <linux/ptp_clock_kernel.h>
+> +#include <linux/slab.h>
+>  
+>  #define STATION_ADDR_LEN	20
+>  #define PCI_DEVICE_ID_PCH_1588	0x8819
+> -- 
+> 1.7.0.4
+> 
