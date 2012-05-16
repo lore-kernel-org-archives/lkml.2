@@ -1,70 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759962Ab2EPMMn (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 May 2012 08:12:43 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:60817 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754626Ab2EPMMm (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 May 2012 08:12:42 -0400
-Date: Wed, 16 May 2012 05:12:37 -0700
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: sonic.zhang@analog.com
-Cc: Arnd Bergmann <arnd@arndb.de>, LKML <linux-kernel@vger.kernel.org>,
-        uclinux-dist-devel@blackfin.uclinux.org
-Subject: Re: [PATCH] driver: char: bfin_crc: CRC hardware accelerator driver
- for BF60x family processors.
-Message-ID: <20120516121237.GC31261@kroah.com>
-References: <1337156767-13232-1-git-send-email-sonic.zhang@analog.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+	id S1759949Ab2EPMSA (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 May 2012 08:18:00 -0400
+Received: from nat28.tlf.novell.com ([130.57.49.28]:39936 "EHLO
+	nat28.tlf.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751117Ab2EPMR7 convert rfc822-to-8bit (ORCPT
+	<rfc822;groupwise-linux-kernel@vger.kernel.org:5:1>);
+	Wed, 16 May 2012 08:17:59 -0400
+Message-Id: <4FB3B734020000780008415D@nat28.tlf.novell.com>
+X-Mailer: Novell GroupWise Internet Agent 12.0.0 
+Date: Wed, 16 May 2012 13:18:28 +0100
+From: "Jan Beulich" <JBeulich@suse.com>
+To: "Matthew Garrett" <mjg59@srcf.ucam.org>
+Cc: <mingo@elte.hu>, <tglx@linutronix.de>, <matt.fleming@linux.intel.com>,
+        <linux-kernel@vger.kernel.org>, <hpa@zytor.com>
+Subject: Re: [PATCH] x86-64: use EFI to deal with platform wall clock
+References: <4FB265AB0200007800083CC5@nat28.tlf.novell.com>
+ <20120515124707.GB25248@srcf.ucam.org>
+ <4FB273EB0200007800083D32@nat28.tlf.novell.com>
+ <20120515132006.GA26196@srcf.ucam.org>
+In-Reply-To: <20120515132006.GA26196@srcf.ucam.org>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 8BIT
 Content-Disposition: inline
-In-Reply-To: <1337156767-13232-1-git-send-email-sonic.zhang@analog.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, May 16, 2012 at 04:26:07PM +0800, sonic.zhang@analog.com wrote:
-> From: Sonic Zhang <sonic.zhang@analog.com>
+>>> On 15.05.12 at 15:20, Matthew Garrett <mjg59@srcf.ucam.org> wrote:
+> On Tue, May 15, 2012 at 02:19:07PM +0100, Jan Beulich wrote:
 > 
-> The CRC peripheral is a hardware block used to compute the CRC of the block
-> of data. This is based on a CRC32 engine which computes the CRC value of 32b
-> data words presented to it. For data words of < 32b in size, it is the
-> responsibility of the application to pack the data into 32b data units.
+>> I would have expected that things work that way, but they
+>> don't. In particular is the function in efi_64.c that's being
+>> modified here called from efi_call_phys_{pro,epi}log(), and at
+>> that point we can't expect virtual addresses to be uniformly
+>> set yet. So it's a physical call that requires the fixup done
+>> here, as efi_set_executable() simply expects ->virt_addr to
+>> be valid. I suspect that no physical calls other than
+>> phys_efi_set_virtual_address_map() were being done so far
+>> at all on 64-bit, hiding the problem.
 > 
-> This driver defines data strcture crc_info and 4 IOCTL interfaces for applciations.
-> 1) CRC Memory Scan
-> 2) CRC Memory Transfer
-> 3) CRC Data Verify
-> 4) CRC Data Fill
-> 
-> Signed-off-by: Sonic Zhang <sonic.zhang@analog.com>
-> ---
->  drivers/char/Kconfig    |    8 +
->  drivers/char/Makefile   |    1 +
->  drivers/char/bfin_crc.c |  537 +++++++++++++++++++++++++++++++++++++++++++++++
->  3 files changed, 546 insertions(+), 0 deletions(-)
->  create mode 100644 drivers/char/bfin_crc.c
+> In that case we need to split the mapping code into two chunks and 
+> configure the memory map earlier. You can't depend on __va() doing 
+> anything useful on runtime addresses.
 
-Why is this a char driver, and not a crypto driver, using the existing
-crypto userspace api for things like this?
+Okay, looks like calling efi_ioremap() at this point is possible.
+But why is efi_enter_virtual_mode() being called as late as is
+the case currently for x86 anyway?
 
-> diff --git a/drivers/char/bfin_crc.c b/drivers/char/bfin_crc.c
-> new file mode 100644
-> index 0000000..3f7d1d8
-> --- /dev/null
-> +++ b/drivers/char/bfin_crc.c
-> @@ -0,0 +1,537 @@
-> +/*
-> + * Blackfin On-Chip hardware CRC Driver
-> + *
-> + * Copyright 2011 Analog Devices Inc.
-> + *
-> + * Licensed under the GPL-2 or later.
+And then again the current logic in efi_enter_virtual_mode()
+looks flawed (it assumes two contiguous pieces of direct
+mappings, and while on systems with dis-contiguous physical
+memory this currently appears to be true, it's not correct - the
+holes could have MMIO assignments in them - and hence
+shouldn't be relied upon), and I wouldn't want to copy this
+elsewhere.
 
-Do you really mean "or later"?  It's fine if you do, just checking.
+Similarly for efi_ioremap() itself - it neither honors the
+cacheability requested by the firmware (calling
+set_memory_uc() subsequently isn't sufficient, as the already
+established mappings may be used in prefetches already),
+nor does its self-recursion look very reliable (why would
+init_memory_mapping() do any better on a second call,
+and the code doesn't deal with last_map_pfn pointing below
+or precisely at phys_addr at all).
 
-thanks,
+Plus the use of set_virtual_address_map is bogus in the first
+place, as it makes it impossible for a kexec-ed kernel to also
+use EFI services (as it would have to call the function a
+second and possibly third time, yet it is not permitted to be
+called more than once). Imo all calls have to happen in
+physical mode.
 
-greg k-h
+So I'm afraid if the patch as I provided it isn't acceptable, and
+if the call to efi_enter_virtual_mode() can't be moved ahead
+of the one to timekeeping_init(), this winds down to the whole
+logic needing a re-write.
+
+Jan
+
