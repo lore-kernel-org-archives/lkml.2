@@ -1,73 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759469Ab2EPRvN (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 May 2012 13:51:13 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:45842 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752607Ab2EPRvM (ORCPT
+	id S1759572Ab2EPRx3 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 May 2012 13:53:29 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:53839 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758978Ab2EPRx1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 May 2012 13:51:12 -0400
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Uwe Kleine-Koenig <u.kleine-koenig@pengutronix.de>,
-        Samuel Ortiz <sameo@linux.intel.com>
-Cc: linux-kernel@vger.kernel.org,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>
-Subject: [PATCH] mfd: mc13xxx: Core should not be user visible
-Date: Wed, 16 May 2012 18:51:08 +0100
-Message-Id: <1337190669-29328-1-git-send-email-broonie@opensource.wolfsonmicro.com>
-X-Mailer: git-send-email 1.7.10
+	Wed, 16 May 2012 13:53:27 -0400
+Date: Wed, 16 May 2012 10:53:22 -0700
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: Shuah Khan <shuahkhan@gmail.com>
+Cc: devel@driverdev.osuosl.org, linaro-kernel@lists.linaro.org,
+        Kees Cook <keescook@chromium.org>, Arnd Bergmann <arnd@arndb.de>,
+        patches@linaro.org, Marco Stornelli <marco.stornelli@gmail.com>,
+        Stephen Boyd <sboyd@codeaurora.org>, linux-kernel@vger.kernel.org,
+        Anton Vorontsov <anton.vorontsov@linaro.org>, arve@android.com,
+        Jesper Juhl <jj@chaosbits.net>, John Stultz <john.stultz@linaro.org>,
+        Colin Cross <ccross@android.com>,
+        Rebecca Schultz Zavin <rebecca@android.com>,
+        WANG Cong <xiyou.wangcong@gmail.com>,
+        Andrew Morton <akpm@linux-foundation.org>, kernel-team@android.com,
+        Thomas Meyer <thomas@m3y3r.de>
+Subject: Re: [PATCH 4/6] staging: android: persistent_ram: Move to
+ fs/pstore/ram_core.c
+Message-ID: <20120516175322.GA3094@kroah.com>
+References: <20120516124109.GA14658@lizard>
+ <20120516124338.GD18345@lizard>
+ <20120516150550.GA22945@kroah.com>
+ <1337185786.2424.31.camel@lorien2>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1337185786.2424.31.camel@lorien2>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Since the core is not usable without one of the bus modules it should not
-be presented in the UI but should instead be selected by the bus modules.
+On Wed, May 16, 2012 at 10:29:46AM -0600, Shuah Khan wrote:
+> On Wed, 2012-05-16 at 08:05 -0700, Greg Kroah-Hartman wrote:
+> 
+> > 
+> > After applying this patch, and building things, I get the following
+> > errors:
+> 
+> Greg,
+> 
+> > What went wrong?
+> > 
+> > I've now applied the first 3 patches in this series to my tree, plus the
+> > 2 others from the linux-next tree, so care to just fix up these last
+> > three and resend them?
+> 
+> Picking [PATCH 5/6] staging/android: Remove ram_console driver should
+> fix this problem. This patches removes ram_console.c from the staging
+> area.
 
-Signed-off-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
----
- drivers/mfd/Kconfig |    8 +++-----
- 1 file changed, 3 insertions(+), 5 deletions(-)
+That's nice, but you CAN NOT BREAK THE BUILD at any step of a patch
+series progress.
 
-diff --git a/drivers/mfd/Kconfig b/drivers/mfd/Kconfig
-index ffb7c05..8bc76aa 100644
---- a/drivers/mfd/Kconfig
-+++ b/drivers/mfd/Kconfig
-@@ -614,7 +614,7 @@ config MFD_MC13783
- 	tristate
- 
- config MFD_MC13XXX
--	tristate "Support Freescale MC13783 and MC13892"
-+	tristate
- 	depends on SPI_MASTER || I2C
- 	select MFD_CORE
- 	select MFD_MC13783
-@@ -624,12 +624,11 @@ config MFD_MC13XXX
- 	  additional drivers must be enabled in order to use the
- 	  functionality of the device.
- 
--if MFD_MC13XXX
--
- config MFD_MC13XXX_SPI
- 	tristate "MC13xxx SPI interface" if SPI_MASTER
- 	default SPI_MASTER
- 	select REGMAP_SPI
-+	select MFD_MC13XXX
- 	help
- 	  Select this if your MC13xxx is connected via an SPI bus.
- 
-@@ -637,11 +636,10 @@ config MFD_MC13XXX_I2C
- 	tristate "MC13xxx I2C interface" if I2C
- 	default I2C
- 	select REGMAP_I2C
-+	select MFD_MC13XXX
- 	help
- 	  Select this if your MC13xxx is connected via an I2C bus.
- 
--endif
--
- config ABX500_CORE
- 	bool "ST-Ericsson ABX500 Mixed Signal Circuit register functions"
- 	default y if ARCH_U300 || ARCH_U8500
--- 
-1.7.10
+So please rework this to prevent this from happening, as it is, I can
+not accept these.
 
+greg k-h
