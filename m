@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759637Ab2EPHlw (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 May 2012 03:41:52 -0400
-Received: from mailout4.samsung.com ([203.254.224.34]:16092 "EHLO
-	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759534Ab2EPHlt (ORCPT
+	id S1759655Ab2EPHmA (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 May 2012 03:42:00 -0400
+Received: from mailout1.samsung.com ([203.254.224.24]:39541 "EHLO
+	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759515Ab2EPHl6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 May 2012 03:41:49 -0400
-X-AuditID: cbfee61b-b7b94ae000002e44-45-4fb35a3beb6d
+	Wed, 16 May 2012 03:41:58 -0400
+X-AuditID: cbfee61a-b7bbeae000003a71-c4-4fb35a457206
 From: Chanwoo Choi <cw00.choi@samsung.com>
 To: gregkh@linuxfoundation.org, broonie@opensource.wolfsonmicro.com,
         thomas.abraham@linaro.org
 Cc: grant.likely@secretlab.ca, sameo@linux.intel.com, myungjoo.ham@samsung.com,
         kyungmin.park@samsung.com, linux-kernel@vger.kernel.org,
         Chanwoo Choi <cw00.choi@samsung.com>
-Subject: [PATCH v3 0/2] mfd: MAX8997: Support irq domain for Maxim MAX8997
-Date: Wed, 16 May 2012 16:41:35 +0900
-Message-id: <1337154095-22001-1-git-send-email-cw00.choi@samsung.com>
+Subject: [PATCH v3 2/2] Extcon: MAX8997: Add support irq domain for MAX8997 muic
+Date: Wed, 16 May 2012 16:41:47 +0900
+Message-id: <1337154107-22070-1-git-send-email-cw00.choi@samsung.com>
 X-Mailer: git-send-email 1.7.0.4
 X-Brightmail-Tracker: AAAAAA==
 X-TM-AS-MML: No
@@ -24,62 +24,110 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patchset add support irq domain for Maxim MAX8997 interrupts.
+This patch add support irq domain for Maxim MAX8997 muic
+instead of irq_base in platform data and max8997 driver
+private data are instead. It is tested on TRATS board.
 
-The first patch is based on patch written by Thomas Abraham and fix
-two bug which set max8997->irq_domain instead of NULL pointer and
-correct wrong parameter by Chanwoo Choi.
-- https://lkml.org/lkml/2012/4/18/145
-The second patch use irq domain for MAX8997 muic interrupt instead
-of irq_base in platform data of MAX8997 driver.
+Signed-off-by: Chanwoo Choi <cw00.choi@samsung.com>
+Signed-off-by: Myungjoo Ham <myungjoo.ham@samsung.com>
+Signed-off-by: Kyungmin Park <kyungmin.park@samsung.com>
+---
+ drivers/extcon/Kconfig          |    2 +-
+ drivers/extcon/extcon-max8997.c |   27 +++++++++++++++++----------
+ 2 files changed, 18 insertions(+), 11 deletions(-)
 
-I do explain the history of this patchset. The below patch was written
-by Thomas Abraham and it was applied on regulator.git repository.
-- http://git.kernel.org/?p=linux/kernel/git/broonie/regulator.git;a=commit;h=98d8618af37728f6e18e84110ddb99987b47dd12
-But, this patch had occurred build break, it was reported by Stephen
-Rothwell when build max8997-muic driver(drivers/misc/max8997-muic.c) and
-then this patch was reverted by Mark Brown. You can check reverted patch
-on below patch.
-- http://git.kernel.org/?p=linux/kernel/git/broonie/regulator.git;a=commit;h=82b719b11fd750188c125078ad6a6c0d23219dfb
-
-Then, I post this patchset which is based on patch written by Thomas Abraham
-to add support irq domain for Max MAX8997 interrupts with bug fix. Also, I had
-to modify max8997-muic driver to avoid build break.
-
-But,I posted following patchset related to extcon-max8997 driver. The below
-patchset support Extcon framework in extcon-max8997 driver to control
-external connector instead of max8997-muic driver. So, first patch add
-MAX8997 extcon driver(drivers/extcon/extcon-max8997.c) and last patch remove
-old MAX8997 muic driver(drivers/misc/max8997-muic.c).
-- https://lkml.org/lkml/2012/5/8/98
-The patchset which add extcon-max8997 driver was applied in below
-git repository of Greg Kroah-Hartman.
-- http://git.kernel.org/?p=linux/kernel/git/gregkh/driver-core.git;a=shortlog;h=refs/heads/driver-core-next
-
-So, I think that this patchset should be applied on the git reposity
-of Greg to remove possible conflict issue when merged because old max8997-muic
-driver(drivers/misc/max8997-muic.c) is existed on regulator.git of Mark
-Brown.
-
-v2
-- Fix typo when free_irq() in max8997_muic_probe()
-
-v3
-- Fix build break when extcon-max8997 is built as module
-
-Chanwoo Choi (1):
-  Extcon: MAX8997: Add support irq domain for MAX8997 muic
-
-Thomas Abraham (1):
-  mfd: add irq domain support for max8997 interrupts
-
- arch/arm/mach-exynos/mach-nuri.c    |    4 --
- arch/arm/mach-exynos/mach-origen.c  |    1 -
- drivers/extcon/Kconfig              |    2 +-
- drivers/extcon/extcon-max8997.c     |   27 +++++++++------
- drivers/mfd/max8997-irq.c           |   62 +++++++++++++++++++++--------------
- drivers/mfd/max8997.c               |    1 -
- include/linux/mfd/max8997-private.h |    4 ++-
- include/linux/mfd/max8997.h         |    1 -
- 8 files changed, 58 insertions(+), 44 deletions(-)
+diff --git a/drivers/extcon/Kconfig b/drivers/extcon/Kconfig
+index a5cd4e2..258889d 100644
+--- a/drivers/extcon/Kconfig
++++ b/drivers/extcon/Kconfig
+@@ -34,7 +34,7 @@ config EXTCON_GPIO
+ 
+ config EXTCON_MAX8997
+ 	tristate "MAX8997 EXTCON Support"
+-	depends on MFD_MAX8997
++	depends on MFD_MAX8997 && IRQ_DOMAIN
+ 	help
+ 	  If you say yes here you get support for the MUIC device of
+ 	  Maxim MAX8997 PMIC. The MAX8997 MUIC is a USB port accessory
+diff --git a/drivers/extcon/extcon-max8997.c b/drivers/extcon/extcon-max8997.c
+index ab25c54..47546e3 100644
+--- a/drivers/extcon/extcon-max8997.c
++++ b/drivers/extcon/extcon-max8997.c
+@@ -31,6 +31,7 @@
+ #include <linux/mfd/max8997.h>
+ #include <linux/mfd/max8997-private.h>
+ #include <linux/extcon.h>
++#include <linux/irqdomain.h>
+ 
+ #define	DEV_NAME			"max8997-muic"
+ 
+@@ -82,6 +83,7 @@
+ struct max8997_muic_irq {
+ 	unsigned int irq;
+ 	const char *name;
++	unsigned int virq;
+ };
+ 
+ static struct max8997_muic_irq muic_irqs[] = {
+@@ -348,12 +350,10 @@ static void max8997_muic_irq_work(struct work_struct *work)
+ {
+ 	struct max8997_muic_info *info = container_of(work,
+ 			struct max8997_muic_info, irq_work);
+-	struct max8997_dev *max8997 = i2c_get_clientdata(info->muic);
+ 	u8 status[2];
+ 	u8 adc, chg_type;
+-
+-	int irq_type = info->irq - max8997->irq_base;
+-	int ret;
++	int irq_type = 0;
++	int i, ret;
+ 
+ 	mutex_lock(&info->mutex);
+ 
+@@ -368,6 +368,10 @@ static void max8997_muic_irq_work(struct work_struct *work)
+ 	dev_dbg(info->dev, "%s: STATUS1:0x%x, 2:0x%x\n", __func__,
+ 			status[0], status[1]);
+ 
++	for (i = 0 ; i < ARRAY_SIZE(muic_irqs) ; i++)
++		if (info->irq == muic_irqs[i].virq)
++			irq_type = muic_irqs[i].irq;
++
+ 	switch (irq_type) {
+ 	case MAX8997_MUICIRQ_ADC:
+ 		adc = status[0] & STATUS1_ADC_MASK;
+@@ -453,11 +457,15 @@ static int __devinit max8997_muic_probe(struct platform_device *pdev)
+ 
+ 	for (i = 0; i < ARRAY_SIZE(muic_irqs); i++) {
+ 		struct max8997_muic_irq *muic_irq = &muic_irqs[i];
++		int virq = 0;
++
++		virq = irq_create_mapping(max8997->irq_domain, muic_irq->irq);
++		if (!virq)
++			goto err_irq;
++		muic_irq->virq = virq;
+ 
+-		ret = request_threaded_irq(pdata->irq_base + muic_irq->irq,
+-				NULL, max8997_muic_irq_handler,
+-				0, muic_irq->name,
+-				info);
++		ret = request_threaded_irq(virq, NULL,max8997_muic_irq_handler,
++				0, muic_irq->name, info);
+ 		if (ret) {
+ 			dev_err(&pdev->dev,
+ 				"failed: irq request (IRQ: %d,"
+@@ -512,11 +520,10 @@ err_kfree:
+ static int __devexit max8997_muic_remove(struct platform_device *pdev)
+ {
+ 	struct max8997_muic_info *info = platform_get_drvdata(pdev);
+-	struct max8997_dev *max8997 = i2c_get_clientdata(info->muic);
+ 	int i;
+ 
+ 	for (i = 0; i < ARRAY_SIZE(muic_irqs); i++)
+-		free_irq(max8997->irq_base + muic_irqs[i].irq, info);
++		free_irq(muic_irqs[i].virq, info);
+ 	cancel_work_sync(&info->irq_work);
+ 
+ 	extcon_dev_unregister(info->edev);
+-- 
+1.7.0.4
 
