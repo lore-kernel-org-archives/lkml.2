@@ -1,70 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S967432Ab2EPLGW (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 May 2012 07:06:22 -0400
-Received: from mail-wi0-f172.google.com ([209.85.212.172]:52502 "EHLO
-	mail-wi0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S966952Ab2EPLGT convert rfc822-to-8bit (ORCPT
+	id S967427Ab2EPLMK (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 May 2012 07:12:10 -0400
+Received: from na3sys009aog121.obsmtp.com ([74.125.149.145]:51131 "EHLO
+	na3sys009aog121.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S967293Ab2EPLMI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 May 2012 07:06:19 -0400
-MIME-Version: 1.0
-Reply-To: konrad@darnok.org
-In-Reply-To: <4FB3048C.20008@kernel.org>
-References: <4FAB21E7.7020703@kernel.org>
-	<20120510140215.GC26152@phenom.dumpdata.com>
-	<4FABD503.4030808@vflare.org>
-	<4FABDA9F.1000105@linux.vnet.ibm.com>
-	<20120510151941.GA18302@kroah.com>
-	<4FABECF5.8040602@vflare.org>
-	<20120510164418.GC13964@kroah.com>
-	<4FABF9D4.8080303@vflare.org>
-	<20120510173322.GA30481@phenom.dumpdata.com>
-	<4FAC4E3B.3030909@kernel.org>
-	<20120511192831.GC3785@phenom.dumpdata.com>
-	<4FB06B91.1080008@kernel.org>
-	<CAPbh3ruv9xCV_XpR4ZsZpSGQ8=mibg=a39zvADYETb-tg0kBsA@mail.gmail.com>
-	<4FB3048C.20008@kernel.org>
-Date: Wed, 16 May 2012 07:06:18 -0400
-X-Google-Sender-Auth: nnsBm4F9mX8OeP0-9j_tTwy3Fr0
-Message-ID: <CAPbh3ruFRLzGn88G1=BajKS1VAw7hQDPNMH9yUO5JB0UDVF5Mg@mail.gmail.com>
-Subject: Re: [PATCH 3/4] zsmalloc use zs_handle instead of void *
-From: Konrad Rzeszutek Wilk <konrad@darnok.org>
-To: Minchan Kim <minchan@kernel.org>
-Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	Wed, 16 May 2012 07:12:08 -0400
+From: Peter Ujfalusi <peter.ujfalusi@ti.com>
+To: Samuel Ortiz <sameo@linux.intel.com>
+Cc: Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Liam Girdwood <lrg@ti.com>, Benoit Cousson <b-cousson@ti.com>,
+        linux-kernel@vger.kernel.org, devicetree-discuss@lists.ozlabs.org,
+        peter.ujfalusi@ti.com, Misael Lopez Cruz <misael.lopez@ti.com>,
+        Dmitry Torokhov <dtor@mail.ru>
+Subject: [PATCH v3 0/4] MFD: twl6040: Device tree support
+Date: Wed, 16 May 2012 14:11:54 +0300
+Message-Id: <1337166718-8458-1-git-send-email-peter.ujfalusi@ti.com>
+X-Mailer: git-send-email 1.7.8.6
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->>> It's not good abstraction.
->>
->> If we want good abstraction, then I don't think 'unsigned long' is
->> either? I mean it will do for the conversion from 'void *'. Perhaps I
->> am being a bit optimistic here - and I am trying to jam in this
->> 'struct zs_handle' in all cases but in reality it needs a more
->> iterative process. So first do 'void *' -> 'unsigned long', and then
->> later on if we can come up with something more nicely that abstracts
->> - then use that?
+Hello,
 
-..snip..
->>> No. What I want is to remove coupling zsallocator's handle with zram/zcache.
->>> They shouldn't know internal of handle and assume it's a pointer.
->>
->> I concur. And hence I was thinking that the 'struct zs_handle *'
->> pointer would work.
->
->
-> Do you really hate "unsigned long" as handle?
-..snip,,
->> Well, everything changes over time  so putting a stick in the ground
->> and saying 'this must
->> be this way' is not really the best way.
->
->
-> Hmm, agree on your above statement but I can't imagine better idea.
->
+Changes since v2:
+- Child devices are no longer described in dts, they are created with
+  mfd_add_devices()
+- ASoC codec device is created unconditionally (main function of twl6040)
 
-OK. Lets go with unsigned long. I can prep a patch next week when I am
-back from vacation unless somebody beats me to it.
+Changes since v1:
+- Commit message for patch 2 (Allocate IRQ numbers dynamically) has been updated
+  to describe that the twl6040 can not be used as IRQ extender type of device.
+
+Commit message from v1:
+
+The following series adds device tree support for the twl6040 MFD core driver.
+Support for the child drivers (vibra, ASoC codec) will be submitted via the
+corresponding subsystem since there is no compile time dependency between them.
+
+The first patch is a minor clean up patch to remove wrapped lines in the
+twl6040-irq.c. The resulting code is more natural to read to me.
+
+The series depends on the regulator support patch for the twl6040:
+http://marc.info/?l=linux-kernel&m=133596703610515&w=2
+
+Regards,
+Peter
+---
+Peter Ujfalusi (4):
+  MFD: twl6040: Code cleanup in interrupt initialization part
+  MFD: twl6040: Allocate IRQ numbers dynamically
+  MFD: twl6040: Register the child for the ASoC codec unconditionally
+  MFD: twl6040: Add support for Device Tree
+
+ Documentation/devicetree/bindings/mfd/twl6040.txt |   62 ++++++++++++++++++
+ drivers/mfd/twl6040-core.c                        |   69 ++++++++++++---------
+ drivers/mfd/twl6040-irq.c                         |   32 +++++++---
+ 3 files changed, 124 insertions(+), 39 deletions(-)
+ create mode 100644 Documentation/devicetree/bindings/mfd/twl6040.txt
+
+-- 
+1.7.8.6
+
