@@ -1,119 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753929Ab2EPO7f (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 May 2012 10:59:35 -0400
-Received: from mail-gg0-f174.google.com ([209.85.161.174]:52606 "EHLO
-	mail-gg0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753220Ab2EPO7e (ORCPT
+	id S1753993Ab2EPPCE (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 May 2012 11:02:04 -0400
+Received: from mail-we0-f174.google.com ([74.125.82.174]:53293 "EHLO
+	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753220Ab2EPPCB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 May 2012 10:59:34 -0400
-Date: Wed, 16 May 2012 11:59:27 -0300
-From: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-To: Dmitry Antipov <dmitry.antipov@linaro.org>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Mackerras <paulus@samba.org>,
-        Ingo Molnar <mingo@redhat.com>,
-        Amit Kucheria <amit.kucheria@linaro.org>, linaro-dev@lists.linaro.org,
-        linux-kernel@vger.kernel.org, Jiri Olsa <jolsa@redhat.com>,
-        Steven Rostedt <rostedt@goodmis.org>
-Subject: Re: Perf record format portability
-Message-ID: <20120516145927.GC7864@infradead.org>
-References: <4FB275EB.5050904@linaro.org>
- <20120515155146.GB7864@infradead.org>
- <4FB38677.8070601@linaro.org>
+	Wed, 16 May 2012 11:02:01 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4FB38677.8070601@linaro.org>
-X-Url: http://acmel.wordpress.com
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <alpine.LNX.2.00.1205161640520.8796@pobox.suse.cz>
+References: <CAFU-uVs_Gwacxj74cyekY2gv+zAq+Spba7nfPLdTc_dR3y8CYw@mail.gmail.com>
+ <20120516143830.GA483@kroah.com> <alpine.LNX.2.00.1205161640520.8796@pobox.suse.cz>
+From: Philipp Riemer <ruderphilipp@gmail.com>
+Date: Wed, 16 May 2012 17:01:39 +0200
+Message-ID: <CAFU-uVt94sgzq7DgsgKL2OJ0e7DazvNpFunx7BNEz88LHJOg+g@mail.gmail.com>
+Subject: Re: [GIT PULL] new mailmap file for the linux kernel git repository
+To: Jiri Kosina <jkosina@suse.cz>, Greg KH <gregkh@linuxfoundation.org>
+Cc: Paul Mundt <lethal@linux-sh.org>,
+        =?ISO-8859-1?Q?Michael_B=FCsch?= <m@bues.ch>,
+        Kuninori Morimoto <kuninori.morimoto.gx@renesas.com>,
+        =?ISO-8859-1?Q?Uwe_Kleine=2DK=F6nig?= 
+	<u.kleine-koenig@pengutronix.de>,
+        LKML <linux-kernel@vger.kernel.org>, Wang Chen <ellre923@gmail.com>,
+        Jonathan Corbet <corbet@lwn.net>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Adding Jiri and Steven to the CC list.
+2012/5/16 Jiri Kosina <jkosina@suse.cz>:
+> On Wed, 16 May 2012, Greg KH wrote:
+>
+>> > In my work I considered the following aspects:
+>> > * Typos in names
+>> > * Typos in mails
+>> > * Mapping of ambiguous mail adresses (e.g. {aa@bb.cc, aa@home.bb.cc,
+>> > aa@laptop.bb.cc,...} becomes {aa@bb.cc})
+>> > * Mapping of names to entries with only email information
+>> > * Harmonization of position and style of last name (no more all-caps
+>> > names like "First LAST" or those of "Last, First")
+>> > * No initials in names if not necessary
+>> > * Conversion of email addresses to lower case
+>> >
+>> > Why did I do this? One reason for that is a missing configuration of
+>> > Git -- leading to a combination of the name of user (login) and
+>> > computer (e.g. "me@mybox.local"). Of course this is not a real mail
+>> > address and most users realize and fix this fact pretty fast.
+>> > Nevertheless there is at least one commit with wrong data in the
+>> > codebase. Another reason is spelling. When skimming through the vast
+>> > list of author names and email addresses one can find many
+>> > typographical errors such as ".con" instead of ".com" or missing
+>> > letters. Over time also these get fixed -- but the wrong data is
+>> > visible.
+>> >
+>> > I am pretty confident that I coalesced the data of most of the
+>> > ambiguous users. But despite having spent so many hours in finding and
+>> > matching these entries, this work (that I did primarily for my thesis)
+>> > might be helpful for other researchers as well, such as e.g. Wang Chen
+>> > as the maintainer of the Linux Kernel Patch Statistic
+>> > <http://www.remword.com/kps_result/> or Greg, Jonthan, etc. as the
+>> > authors of "Who writes Linux"
+>> > <http://go.linuxfoundation.org/who-writes-linux-2012>...
+>> >
+>> > Hence, please integrate this file into the official Linux Kernel repository.
+>>
+>> You forgot a signed-off-by: line which is required for a patch to be
+>> accepted :(
+>
+> While Greg is at this, the changelogs also really don't really follow the
+> kernel changelog standards (line wrapping, etc.).
+>
+> --
+> Jiri Kosina
+> SUSE Labs
 
-Em Wed, May 16, 2012 at 02:50:31PM +0400, Dmitry Antipov escreveu:
-> On 05/15/2012 07:51 PM, Arnaldo Carvalho de Melo wrote:
-> >Em Tue, May 15, 2012 at 07:27:39PM +0400, Dmitry Antipov escreveu:
-> >>are there any thoughts on how much of the perf.data is portable and how much it should be?
-> >>I'm interesting in recording scheduler activity on one machine and then replaying on
-> >>another. As I can see, replaying x86 perf.data on ARM doesn't work. At least, should it
-> >>work with a small subset of recorded events (for example, sched:sched_switch,
-> >>sched:sched_process_exit, sched:sched_process_fork, sched:sched_wakeup
-> >>and sched:sched_migrate_task) on the same architecture?
-> >
-> >Endianness issues? ARM EB? There are some patches by Jiri Olsa that may
-> >help you if that is the case.
-> 
-> Thanks, will look at.
-> 
-> >It should be portable, are you using 'perf archive' too?
-> 
-> It doesn't work with cryptic messages like:
-> 
-> tar: .build-id/17/d6ca02b2c31df54bf62a4142c47e3c99a9eedf: Cannot stat: No such file or directory
+Thank you both for your fast feedback. I really appreciate it.
 
-It is a shell script, basically, after yum collect your events with
-something like:
+Since this is my first contribution to the Linux Kernel I am not
+pretty sure what I have to do. Is there anywhere a guideline how I get
+a "signed-off"? I sent the mail to the addresses I found via
+`scripts/get_maintainer.pl -f .mailmap` since I expected those people
+to be somehow interested in this file. What other steps can I take?
 
-[acme@sandy ~]$ perf record -F 10000 sleep 1
-[ perf record: Woken up 1 times to write data ]
-[ perf record: Captured and wrote 0.021 MB perf.data (~917 samples) ]
+I don't understand the point regarding the changelog standards -- what
+do you mean with that? I changed the .mailmap file and oriented myself
+on what was already there... How can I improve the file to fit to the
+Linux standards? Some hints?
 
-The resulting perf.data file will have samples taken on these DSOs,
-with those respective hashes identifying each one:
+While I did this mainly for my thesis, I thought that my work might be
+useful for others as well... so if you can give me some hints, I will
+glad spending some more time and correct the file so that it fits to
+the guidelines.
 
-[acme@sandy ~]$ perf buildid-list
-4390a3d2dc84c37a8923ba4c910d6766abc42cbf [kernel.kallsyms]
-ceb82e745b0ab8bb7ea28c068327be1fb068c923 /lib64/ld-2.12.so
-e731c64000993d1fd1b443e6d5d6972d149440e8 /lib64/libc-2.12.so
-[acme@sandy ~]$
-
-In your case we can see that it is looking for build id
-17d6ca02b2c31df54bf62a4142c47e3c99a9eedf on the build id cache.
-
-Probably you either are running 'perf archive' on a different machine
-than the one where you ran 'perf record' or using a different user on
-the same machine, or, unlikely, perhaps you removed ~/.debug/ after
-'record'.
-
-The 'perf archive' tool was done quickly just as a proof of concept,
-admitedly it needs to be improved to help diagnosing these problems.
-
-> creating empty archive.
-> 
-> >What exactly is the error experienced?
-> 
-> Now I'm facing the simple problem with event IDs, which may be different from machine to
-> machine. For example, /sys/kernel/debug/tracing/events/sched/sched_switch/id is 55 on my ARM
-> board and 279 on my PC host, so 'perf report' displays all event names like "unknown:unknown",
-> even with --kallsyms=XXX where XXX is 'cat /proc/kallsyms > XXX' from PC host.
-
-With build-ids and 'perf archive' you shouldn't need specifying
-kallsyms, it has a build-id and will be collected (record + archive) an
-then transfered and expanded on the analysis machine (scp + tar xvf).
-
-The tracing part even stashes a copy of kallsyms in perf.data (not
-needed, but there for historical reasons). The problem is in translating
-the perf_event_attr.config to the same name and format as in the machine
-where you collected the events.`
-
-Steve,
-
-	Was the kernel trace events infrastructure designed with that in
-mind? I.e. cross analysis? I must be missing something here, still
-ENOCOFFEE :-\
-
-	When doing cross arch event analisys I tested:
-
-        PERF_TYPE_HARDWARE                      = 0,
-        PERF_TYPE_SOFTWARE                      = 1,
-        PERF_TYPE_HW_CACHE                      = 3,
-
-Not:
-
-        PERF_TYPE_TRACEPOINT                    = 2,
-        PERF_TYPE_RAW                           = 4,
-        PERF_TYPE_BREAKPOINT                    = 5,
-
-- Arnaldo
+Regards,
+Philipp
