@@ -1,77 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S967090Ab2EOX4c (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 May 2012 19:56:32 -0400
-Received: from mail.openrapids.net ([64.15.138.104]:49460 "EHLO
-	blackscsi.openrapids.net" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S967056Ab2EOX4F (ORCPT
+	id S967077Ab2EPADX (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 May 2012 20:03:23 -0400
+Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:58726 "EHLO
+	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S966737Ab2EPADV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 May 2012 19:56:05 -0400
-X-Greylist: delayed 456 seconds by postgrey-1.27 at vger.kernel.org; Tue, 15 May 2012 19:56:05 EDT
-Date: Tue, 15 May 2012 19:48:26 -0400
-From: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
-To: tiwg@multicore-association.org, lttng-dev@lists.lttng.org,
-        linux-kernel@vger.kernel.org
-Cc: Dominique Toupin <dominique.toupin@ericsson.com>
-Subject: [CFP] Tracing Micro-conference at LPC2012 (August 28-30, San Diego)
-Message-ID: <20120515234826.GA10967@Krystal>
+	Tue, 15 May 2012 20:03:21 -0400
+X-SecurityPolicyCheck: OK by SHieldMailChecker v1.7.4
+Message-ID: <4FB2EE59.8070505@jp.fujitsu.com>
+Date: Wed, 16 May 2012 09:01:29 +0900
+From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.0; rv:12.0) Gecko/20120428 Thunderbird/12.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-X-Editor: vi
-X-Info: http://www.efficios.com
-User-Agent: Mutt/1.5.18 (2008-05-17)
+To: Johannes Weiner <hannes@cmpxchg.org>
+CC: Andrew Morton <akpm@linux-foundation.org>, Michal Hocko <mhocko@suse.cz>,
+        cgroups@vger.kernel.org, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [patch 0/6] mm: memcg: statistics implementation cleanups
+References: <1337018451-27359-1-git-send-email-hannes@cmpxchg.org> <4FB1A115.2080303@jp.fujitsu.com> <20120515110302.GH1406@cmpxchg.org>
+In-Reply-To: <20120515110302.GH1406@cmpxchg.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+(2012/05/15 20:03), Johannes Weiner wrote:
 
-We are organizing a tracing micro-conference taking place in San Diego,
-within Linux Plumbers Conference 2012. The micro-conference is planned
-to be held somewhere between August 28 and 30, in San Diego, CA.
+> On Tue, May 15, 2012 at 09:19:33AM +0900, KAMEZAWA Hiroyuki wrote:
+>> (2012/05/15 3:00), Johannes Weiner wrote:
+>>
+>>> Before piling more things (reclaim stats) on top of the current mess,
+>>> I thought it'd be better to clean up a bit.
+>>>
+>>> The biggest change is printing statistics directly from live counters,
+>>> it has always been annoying to declare a new counter in two separate
+>>> enums and corresponding name string arrays.  After this series we are
+>>> down to one of each.
+>>>
+>>>  mm/memcontrol.c |  223 +++++++++++++++++------------------------------
+>>>  1 file changed, 82 insertions(+), 141 deletions(-)
+>>
+>> to all 1-6. Thank you.
+>>
+>> Acked-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+> 
+> Thanks!
+> 
+>> One excuse for my old implementation of mem_cgroup_get_total_stat(),
+>> which is fixed in patch 6, is that I thought it's better to touch all counters
+>> in a cachineline at once and avoiding long distance for-each loop.
+>>
+>> What number of performance difference with some big hierarchy(100+children) tree ?
+>> (But I agree your code is cleaner. I'm just curious.)
+> 
+> I set up a parental group with hierarchy enabled, then created 512
+> children and did a 4-job kernel bench in one of them.  Every 0.1
+> seconds, I read the stats of the parent, which requires reading each
+> stat/event/lru item from 512 groups before moving to the next one:
+> 
+>                         512stats-vanilla        512stats-patched
+> Walltime (s)            62.61 (  +0.00%)        62.88 (  +0.43%)
+> Walltime (stddev)        0.17 (  +0.00%)         0.14 (  -3.17%)
+> 
+> That should be acceptable, I think.
+> 
+> 
 
-If you are interested to present, please don't hesitate to get in touch
-with us quickly (ideally within this week, or next week), since
-deadlines are approaching.
 
-Our intent is to gather people involved in development and users of
-tracing tools and trace analysis tools to allow discussing the latest
-developments, allow users to express their needs, and generally ensure
-that developers and end users understand each other.
+Yes, thank you. 
+Thanks,
+-Kame
 
-We are welcoming presentations from both end users and developers, on
-topics covering, but not limited to:
-
-- Trace collection and extraction,
-- Trace filtering,
-- Trace aggregation,
-- Trace formats,
-- Tracing multi-core systems,
-- Trace abstraction,
-- Trace modeling,
-- Automated trace analysis (e.g. dependency analysis),
-- Tracing large clusters and distributed systems,
-- Hardware-level tracing (e.g. DSP, GPU, bare-metal),
-- Trace visualisation,
-- Interaction between debugging and tracing,
-- Tracing remote control,
-- Analysis of large trace datasets.
-
-It can cover both recently available technologies and ongoing work.
-
-If you are interested to present, please get in touch with Dominique
-Toupin or myself. The micro-conference wiki can be accessed at:
-http://wiki.linuxplumbersconf.org/2012:tracing
-
-Feedback is welcome!
-
-Thank you,
-
-Dominique Toupin & Mathieu Desnoyers
-
--- 
-Mathieu Desnoyers
-Operating System Efficiency R&D Consultant
-EfficiOS Inc.
-http://www.efficios.com
