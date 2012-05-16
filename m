@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S967097Ab2EPDEZ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 May 2012 23:04:25 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:1025 "EHLO mx1.redhat.com"
+	id S966644Ab2EPDSE (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 May 2012 23:18:04 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:51472 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S966399Ab2EPDEX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 May 2012 23:04:23 -0400
-Message-ID: <4FB3192E.4030803@redhat.com>
-Date: Wed, 16 May 2012 11:04:14 +0800
+	id S1758845Ab2EPDSC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 May 2012 23:18:02 -0400
+Message-ID: <4FB31C5F.1000000@redhat.com>
+Date: Wed, 16 May 2012 11:17:51 +0800
 From: Jason Wang <jasowang@redhat.com>
 User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
 MIME-Version: 1.0
@@ -15,59 +15,41 @@ To: Shirley Ma <mashirle@us.ibm.com>
 CC: eric.dumazet@gmail.com, mst@redhat.com, netdev@vger.kernel.org,
         linux-kernel@vger.kernel.org, ebiederm@xmission.com,
         davem@davemloft.net
-Subject: Re: [V2 PATCH 2/9] macvtap: zerocopy: fix truesize underestimation
-References: <20120502033901.11782.13157.stgit@amd-6168-8-1.englab.nay.redhat.com>  <20120502034144.11782.88947.stgit@amd-6168-8-1.englab.nay.redhat.com> <1337102809.8220.10.camel@oc3660625478.ibm.com>
-In-Reply-To: <1337102809.8220.10.camel@oc3660625478.ibm.com>
+Subject: Re: [V2 PATCH 4/9] macvtap: zerocopy: set SKBTX_DEV_ZEROCOPY only
+ when skb is built successfully
+References: <20120502033901.11782.13157.stgit@amd-6168-8-1.englab.nay.redhat.com>  <20120502034206.11782.91643.stgit@amd-6168-8-1.englab.nay.redhat.com> <1337103843.8220.22.camel@oc3660625478.ibm.com>
+In-Reply-To: <1337103843.8220.22.camel@oc3660625478.ibm.com>
 Content-Type: text/plain; charset=UTF-8; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/16/2012 01:26 AM, Shirley Ma wrote:
-> On Wed, 2012-05-02 at 11:41 +0800, Jason Wang wrote:
->> As the skb fragment were pinned/built from user pages, we should
->> account the page instead of length for truesize.
->>
->> Signed-off-by: Jason Wang<jasowang@redhat.com>
->> ---
->>   drivers/net/macvtap.c |    6 ++++--
->>   1 files changed, 4 insertions(+), 2 deletions(-)
->>
->> diff --git a/drivers/net/macvtap.c b/drivers/net/macvtap.c
->> index bd4a70d..7cb2684 100644
->> --- a/drivers/net/macvtap.c
->> +++ b/drivers/net/macvtap.c
->> @@ -519,6 +519,7 @@ static int zerocopy_sg_from_iovec(struct sk_buff
->> *skb, const struct iovec *from,
->>                  struct page *page[MAX_SKB_FRAGS];
->>                  int num_pages;
->>                  unsigned long base;
->> +               unsigned long truesize;
->>
->>                  len = from->iov_len - offset;
->>                  if (!len) {
->> @@ -533,10 +534,11 @@ static int zerocopy_sg_from_iovec(struct sk_buff
->> *skb, const struct iovec *from,
->>                      (num_pages>  MAX_SKB_FRAGS -
->> skb_shinfo(skb)->nr_frags))
->>                          /* put_page is in skb free */
->>                          return -EFAULT;
->> +               truesize = size * PAGE_SIZE;
-> Here should be truesize = size * PAGE_SIZE - offset, right?
+On 05/16/2012 01:44 AM, Shirley Ma wrote:
+> On Wed, 2012-05-02 at 11:42 +0800, Jason Wang wrote:
+>> Current the SKBTX_DEV_ZEROCOPY is set unconditionally after
+>> zerocopy_sg_from_iovec(), this would lead NULL pointer when macvtap
+>> fails to build zerocopy skb because destructor_arg was not
+>> initialized. Solve this by set this flag after the skb were built
+>> successfully.
+> I thought this flag was needed for zerocopy skb free even in err case.
+> I've checked it back again, it's OK to move the flag after the skb
+> successfully built. Or we can fix it by modify skb free with
+> destructor_arg NULL check as below:
+> ...
+> skb_release_data() {
+> ...
+>                  if (skb_shinfo(skb)->tx_flags&  SKBTX_DEV_ZEROCOPY) {
+>                          struct ubuf_info *uarg;
 >
-
-We get the whole user page, so need to account them all. Also this is 
-aligned with skb_copy_ubufs().
->>                  skb->data_len += len;
->>                  skb->len += len;
->> -               skb->truesize += len;
->> -               atomic_add(len,&skb->sk->sk_wmem_alloc);
->> +               skb->truesize += truesize;
->> +               atomic_add(truesize,&skb->sk->sk_wmem_alloc);
->>                  while (len) {
->>                          int off = base&  ~PAGE_MASK;
->>                          int size = min_t(int, len, PAGE_SIZE - off);
->>
->>
-
+>                          uarg = skb_shinfo(skb)->destructor_arg;
+>                          if (uarg&&  uarg->callback)
+>                                  uarg->callback(uarg);
+>                  }
+>
+> ...
+> }
+> Thanks
+> Shirley
+>
+Yes, both are ok. Since the code were merged, let's just use current method.
