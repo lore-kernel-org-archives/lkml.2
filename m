@@ -1,74 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759520Ab2EPH3w (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 May 2012 03:29:52 -0400
-Received: from linux-sh.org ([111.68.239.195]:35333 "EHLO linux-sh.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759223Ab2EPH3v (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 May 2012 03:29:51 -0400
-Date: Wed, 16 May 2012 16:29:28 +0900
-From: Paul Mundt <lethal@linux-sh.org>
-To: Magnus Damm <magnus.damm@gmail.com>
-Cc: linux-kernel@vger.kernel.org, rjw@sisk.pl, linus.walleij@stericsson.com,
-        arnd@arndb.de, linux-sh@vger.kernel.org, horms@verge.net.au,
-        grant.likely@secretlab.ca, olof@lixom.net
-Subject: Re: [PATCH] gpio: Emma Mobile GPIO driver V2
-Message-ID: <20120516072927.GN7988@linux-sh.org>
-References: <20120515154333.6659.66479.sendpatchset@w520>
+	id S1759530Ab2EPHad (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 May 2012 03:30:33 -0400
+Received: from mail-qa0-f49.google.com ([209.85.216.49]:57244 "EHLO
+	mail-qa0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759223Ab2EPHab convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 16 May 2012 03:30:31 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120515154333.6659.66479.sendpatchset@w520>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <CAJOA=zNVQUDbHQCgnQ56S50fva2eKUXAH9aVkTbtyvQW+fq9SA@mail.gmail.com>
+References: <1336798797-8724-1-git-send-email-skannan@codeaurora.org>
+	<CAJOA=zNVQUDbHQCgnQ56S50fva2eKUXAH9aVkTbtyvQW+fq9SA@mail.gmail.com>
+Date: Wed, 16 May 2012 09:30:30 +0200
+Message-ID: <CACRpkda94B1JDC0T8eafBkHDg8JFy19OAH3NgGZRBLA28i9iRQ@mail.gmail.com>
+Subject: Re: [PATCH] clk: Fix race conditions between clk_set_parent() and clk_enable()
+From: Linus Walleij <linus.walleij@linaro.org>
+To: "Turquette, Mike" <mturquette@ti.com>
+Cc: Saravana Kannan <skannan@codeaurora.org>,
+        Arnd Bergman <arnd.bergmann@linaro.org>,
+        linux-arm-kernel@lists.infradead.org, Andrew Lunn <andrew@lunn.ch>,
+        Paul Walmsley <paul@pwsan.com>, Russell King <linux@arm.linux.org.uk>,
+        Linus Walleij <linus.walleij@stericsson.com>,
+        Stephen Boyd <sboyd@codeaurora.org>, linux-arm-msm@vger.kernel.org,
+        Sascha Hauer <s.hauer@pengutronix.de>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Magnus Damm <magnus.damm@gmail.com>, linux-kernel@vger.kernel.org,
+        Rob Herring <rob.herring@calxeda.com>,
+        Richard Zhao <richard.zhao@linaro.org>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Deepak Saxena <dsaxena@linaro.org>,
+        Amit Kucheria <amit.kucheria@linaro.org>,
+        Jamie Iles <jamie@jamieiles.com>,
+        Jeremy Kerr <jeremy.kerr@canonical.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Shawn Guo <shawn.guo@freescale.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, May 16, 2012 at 12:43:33AM +0900, Magnus Damm wrote:
-> +static int __devinit em_gio_irq_domain_init(struct em_gio_priv *p)
-> +{
-> +	struct platform_device *pdev = p->pdev;
-> +	struct gpio_em_config *pdata = pdev->dev.platform_data;
-> +
-> +	p->irq_base = irq_alloc_descs(pdata->irq_base, 0,
-> +				      pdata->number_of_pins, numa_node_id());
-> +	if (IS_ERR_VALUE(p->irq_base)) {
-> +		dev_err(&pdev->dev, "cannot get irq_desc\n");
-> +		return -ENXIO;
-> +	}
-> +	pr_debug("gio: hw base = %d, nr = %d, sw base = %d\n",
-> +		 pdata->gpio_base, pdata->number_of_pins, p->irq_base);
-> +
-> +	p->irq_domain = irq_domain_add_legacy(pdev->dev.of_node,
-> +					      pdata->number_of_pins,
-> +					      p->irq_base, 0,
-> +					      &em_gio_irq_domain_ops, p);
-> +	if (!p->irq_domain) {
-> +		irq_free_descs(p->irq_base, pdata->number_of_pins);
-> +		return -ENXIO;
-> +	}
-> +
-> +	return 0;
-> +}
-> +
-There's no reason to use a legacy domain here, this is a pretty
-straightforward candidate for a linear map. You can use ->to_irq() for
-the irq_create_mapping() invocation and then later look up the IRQ with
-irq_linear_revmap().
+On Wed, May 16, 2012 at 8:00 AM, Turquette, Mike <mturquette@ti.com> wrote:
 
-irq_domain_add_legacy() exists for existing static ranges, which there is
-really no reason to be adding in new board/platform support. You don't
-have to worry about virq overlap since irq_create_mapping() already wraps
-on top of irq_alloc_desc_xxx() for lookup.
+> The above hunk is a good change since it fixes a bug where we
+> prepare/enable the parent clocks around the .set_parent callback, even
+> when CLK_SET_PARENT_GATE is set.  It should be a separate patch.
 
-> +static void __devexit em_gio_irq_domain_cleanup(struct em_gio_priv *p)
-> +{
-> +	struct gpio_em_config *pdata = p->pdev->dev.platform_data;
-> +
-> +	irq_free_descs(p->irq_base, pdata->number_of_pins);
-> +	/* FIXME: irq domain wants to be freed! */
-> +}
-> +
-After which point you can iterate and dispose of the virq mappings with
-irq_dispose_mapping(). The lack of irq domain teardown functionality does
-need to be addressed though.
+This makes me think that maybe some of these clk fixes really
+need to add Cc: stable@kernel.org so they get into 3.4 as well.
+
+Not that there are plenty of in-kernel users, but since people may
+be basing development off the 3.4 tree, it would be good to have
+fixes propagate there.
+
+Linus Walleij
