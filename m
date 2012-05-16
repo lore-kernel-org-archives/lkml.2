@@ -1,203 +1,33 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965409Ab2EPMwg (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 May 2012 08:52:36 -0400
-Received: from static.78-46-68-141.clients.your-server.de ([78.46.68.141]:39849
-	"HELO eristoteles.iwoars.net" rhost-flags-OK-FAIL-OK-FAIL)
-	by vger.kernel.org with SMTP id S1755846Ab2EPMwf (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 May 2012 08:52:35 -0400
-Date: Wed, 16 May 2012 14:52:32 +0200 (CEST)
-From: Joel Reardon <joel@clambassador.com>
-X-X-Sender: joel@eristoteles.iwoars.net
-To: Artem Bityutskiy <dedekind1@gmail.com>
-cc: linux-mtd@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: [PATCH v2] UBIFS: read crypto_lookup from datanodes to znodes
-In-Reply-To: <1337087022.2528.204.camel@sauron.fi.intel.com>
-Message-ID: <alpine.DEB.2.00.1205161451250.27131@eristoteles.iwoars.net>
-References: <alpine.DEB.2.00.1205151101100.17750@eristoteles.iwoars.net> <1337087022.2528.204.camel@sauron.fi.intel.com>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+	id S933406Ab2EPMyk (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 May 2012 08:54:40 -0400
+Received: from firewall-minec.minec.gov.mz ([212.96.25.157]:49499 "EHLO
+	localhost" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S932111Ab2EPMyj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 16 May 2012 08:54:39 -0400
+X-Greylist: delayed 11976 seconds by postgrey-1.27 at vger.kernel.org; Wed, 16 May 2012 08:54:38 EDT
+Date: Wed, 16 May 2012 08:05:17 +0200 (CAT)
+From: Esperanca Elidia dos Santos Cuna <datinhusss@gmail.com>
+Reply-To: ivoryassociates06@gmail.com
+Message-ID: <1070311527.7992.1337148317852.JavaMail.root@mail.minec.gov.mz>
+Subject: RE: investment Funding
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [175.144.130.111]
+X-Mailer: Zimbra 6.0.16_GA_2998 (ZimbraWebClient - FF3.0 (Win)/6.0.16_GA_2998)
+To: undisclosed-recipients:;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Crypto_lookup values are now read from the data node header whenever a
-data node is read from flash and cached in the TNC. The value will be zero
-until it is read from flash. (If it is needed before it happens to be
-loaded, i.e., to delete a node, then it will be forced read.)
+Salaam,
 
-It was tested by setting cryptolookup values for new datanodes by their
-lnum and offset on flash. This was later asserted in the TNC that they
-were either zero, or always equal. On mounting, the TNC crypto lookup
-values were confirmed to be zero and later, after reading the
-corresponding files, confirmed they were loaded and corresponded to the
-location on flash.
+We are a UAE based investment company, working on expanding our international portfolio globally and financing projects.
 
-Signed-off-by: Joel Reardon <reardonj@inf.ethz.ch>
----
- fs/ubifs/gc.c          |    7 ++++++-
- fs/ubifs/journal.c     |    8 +++++---
- fs/ubifs/tnc.c         |   39 +++++++++++++++++++++++++++++++++++++++
- fs/ubifs/ubifs-media.h |    3 ++-
- 4 files changed, 52 insertions(+), 5 deletions(-)
+We would be happy to receive your response if you have any viable project we can finance and partner together by making financial investment in form of debt financing/Loan, after which we can negotiate the funding modalities and duration of  investment and amount to invest.
 
-diff --git a/fs/ubifs/gc.c b/fs/ubifs/gc.c
-index f146447..98e6683 100644
---- a/fs/ubifs/gc.c
-+++ b/fs/ubifs/gc.c
-@@ -322,15 +322,20 @@ static int move_node(struct ubifs_info *c, struct ubifs_scan_leb *sleb,
- 		     struct ubifs_scan_node *snod, struct ubifs_wbuf *wbuf)
- {
- 	int err, new_lnum = wbuf->lnum, new_offs = wbuf->offs + wbuf->used;
-+	long long crypto_lookup = 0;
-
- 	cond_resched();
- 	err = ubifs_wbuf_write_nolock(wbuf, snod->node, snod->len);
- 	if (err)
- 		return err;
-
-+	if (key_type(c, &snod->key) == UBIFS_DATA_KEY) {
-+		struct ubifs_data_node *dn = snod->node;
-+		crypto_lookup = le64_to_cpu(dn->crypto_lookup);
-+	}
- 	err = ubifs_tnc_replace(c, &snod->key, sleb->lnum,
- 				snod->offs, new_lnum, new_offs,
--				snod->len, 0);
-+				snod->len, crypto_lookup);
- 	list_del(&snod->list);
- 	kfree(snod);
- 	return err;
-diff --git a/fs/ubifs/journal.c b/fs/ubifs/journal.c
-index 2072b9a..5f39f75 100644
---- a/fs/ubifs/journal.c
-+++ b/fs/ubifs/journal.c
-@@ -89,7 +89,6 @@ static inline void zero_dent_node_unused(struct ubifs_dent_node *dent)
-  */
- static inline void zero_data_node_unused(struct ubifs_data_node *data)
- {
--	data->padding0 = 0;
- 	memset(data->padding1, 0, 2);
- }
-
-@@ -735,6 +734,7 @@ int ubifs_jnl_write_data(struct ubifs_info *c, const struct inode *inode,
-
- 	dlen = UBIFS_DATA_NODE_SZ + out_len;
- 	data->compr_type = cpu_to_le16(compr_type);
-+	data->crypto_lookup = cpu_to_le64(0);
-
- 	/* Make reservation before allocating sequence numbers */
- 	err = make_reservation(c, DATAHD, dlen);
-@@ -747,7 +747,8 @@ int ubifs_jnl_write_data(struct ubifs_info *c, const struct inode *inode,
- 	ubifs_wbuf_add_ino_nolock(&c->jheads[DATAHD].wbuf, key_inum(c, key));
- 	release_head(c, DATAHD);
-
--	err = ubifs_tnc_add(c, key, lnum, offs, dlen, 0);
-+	err = ubifs_tnc_add(c, key, lnum, offs, dlen,
-+			    le64_to_cpu(data->crypto_lookup));
- 	if (err)
- 		goto out_ro;
-
-@@ -1226,7 +1227,8 @@ int ubifs_jnl_truncate(struct ubifs_info *c, const struct inode *inode,
-
- 	if (dlen) {
- 		sz = offs + UBIFS_INO_NODE_SZ + UBIFS_TRUN_NODE_SZ;
--		err = ubifs_tnc_add(c, &key, lnum, sz, dlen, 0);
-+		err = ubifs_tnc_add(c, &key, lnum, sz, dlen,
-+				    le64_to_cpu(dn->crypto_lookup));
- 		if (err)
- 			goto out_ro;
- 	}
-diff --git a/fs/ubifs/tnc.c b/fs/ubifs/tnc.c
-index b222a72..006caa7 100644
---- a/fs/ubifs/tnc.c
-+++ b/fs/ubifs/tnc.c
-@@ -1431,6 +1431,34 @@ static int maybe_leb_gced(struct ubifs_info *c, int lnum, int gc_seq1)
- }
-
- /**
-+ * tnc_set_crypto_lookup - set the crypto_lookup field in a zbranch.
-+ * @c: UBIFS file-system description object
-+ * @zbr: the crypto_lookup field is set in this zbranch
-+ * @node: a pointer to a node containing the zbranch.
-+ *
-+ * Crypto_lookup values are stored on flash memory inside the data node.
-+ * When the system is running, they are also stored in memory inside the
-+ * zbranch to avoid requiring reading the old data node simply to retrieve the
-+ * crypto_lookup when performing a truncation / overwrite / delete operation.
-+ * This function is called whenever a node is read from flash memory. If @node
-+ * is a data node (therefore containing a @crypto_lookup field), then:
-+ * if @zbr has an unset @crypto_lookup, set it to the value from @node
-+ * if @zbr has already a @crypto_lookup, assert they are the same.
-+ */
-+static void tnc_set_crypto_lookup(struct ubifs_info *c,
-+				  struct ubifs_zbranch *zbr, void *node)
-+{
-+	if (key_type(c, &(zbr->key)) == UBIFS_DATA_KEY) {
-+		struct ubifs_data_node *dn = node;
-+		long long crypto_lookup = le64_to_cpu(dn->crypto_lookup);
-+		if (zbr->crypto_lookup != 0)
-+			ubifs_assert(zbr->crypto_lookup == crypto_lookup);
-+		else
-+			zbr->crypto_lookup = crypto_lookup;
-+	}
-+}
-+
-+/**
-  * ubifs_tnc_locate - look up a file-system node and return it and its location.
-  * @c: UBIFS file-system description object
-  * @key: node key to lookup
-@@ -1485,6 +1513,11 @@ again:
- 	if (ubifs_get_wbuf(c, zbr.lnum)) {
- 		/* We do not GC journal heads */
- 		err = ubifs_tnc_read_node(c, &zbr, node);
-+		if (!err) {
-+			mutex_lock(&c->tnc_mutex);
-+			tnc_set_crypto_lookup(c, &(znode->zbranch[n]), node);
-+			mutex_unlock(&c->tnc_mutex);
-+		}
- 		return err;
- 	}
-
-@@ -1497,9 +1530,15 @@ again:
- 		safely = 1;
- 		goto again;
- 	}
-+
-+	mutex_lock(&c->tnc_mutex);
-+	tnc_set_crypto_lookup(c, &(znode->zbranch[n]), node);
-+	mutex_unlock(&c->tnc_mutex);
- 	return 0;
-
- out:
-+	if (!err)
-+		tnc_set_crypto_lookup(c, zt, node);
- 	mutex_unlock(&c->tnc_mutex);
- 	return err;
- }
-diff --git a/fs/ubifs/ubifs-media.h b/fs/ubifs/ubifs-media.h
-index 9ecbd37..e03adcf 100644
---- a/fs/ubifs/ubifs-media.h
-+++ b/fs/ubifs/ubifs-media.h
-@@ -539,6 +539,7 @@ struct ubifs_dent_node {
-  * struct ubifs_data_node - data node.
-  * @ch: common header
-  * @key: node key
-+ * @crypto_lookup: the node's cryptographic key's position in the KSA
-  * @size: uncompressed data size in bytes
-  * @compr_type: compression type (%UBIFS_COMPR_NONE, %UBIFS_COMPR_LZO, etc)
-  * @padding: reserved for future, zeroes
-@@ -550,7 +551,7 @@ struct ubifs_dent_node {
- struct ubifs_data_node {
- 	struct ubifs_ch ch;
- 	__u8 key[UBIFS_KEY_LEN];
--	__le64 padding0; /* Watch 'zero_data_node_unused()' if changing! */
-+	__le64 crypto_lookup;
- 	__le32 size;
- 	__le16 compr_type;
- 	__u8 padding1[2]; /* Watch 'zero_data_node_unused()' if changing! */
--- 
-1.7.5.4
-
-
+Please reply with this email address: ivoryassociates006@gmail.com
+Sincerely
+Khalifah
