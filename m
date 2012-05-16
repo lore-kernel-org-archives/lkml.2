@@ -1,97 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760033Ab2EPSB5 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 May 2012 14:01:57 -0400
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:43613 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759746Ab2EPSB4 (ORCPT
+	id S1760050Ab2EPSDc (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 May 2012 14:03:32 -0400
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:43380 "EHLO
+	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1757840Ab2EPSDb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 May 2012 14:01:56 -0400
-Date: Wed, 16 May 2012 20:01:54 +0200
-From: Uwe =?iso-8859-1?Q?Kleine-K=F6nig?= 
+	Wed, 16 May 2012 14:03:31 -0400
+Date: Wed, 16 May 2012 19:03:28 +0100
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Uwe =?iso-8859-1?Q?Kleine-K=F6nig?= 
 	<u.kleine-koenig@pengutronix.de>
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>
 Cc: Samuel Ortiz <sameo@linux.intel.com>, linux-kernel@vger.kernel.org
 Subject: Re: [PATCH] mfd: mc13xxx: Core should not be user visible
-Message-ID: <20120516180154.GL22395@pengutronix.de>
+Message-ID: <20120516180327.GF26337@opensource.wolfsonmicro.com>
 References: <1337190669-29328-1-git-send-email-broonie@opensource.wolfsonmicro.com>
+ <20120516180154.GL22395@pengutronix.de>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="IDYEmSnFhs3mNXr+"
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <1337190669-29328-1-git-send-email-broonie@opensource.wolfsonmicro.com>
+In-Reply-To: <20120516180154.GL22395@pengutronix.de>
+X-Cookie: Condense soup, not books!
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 2001:6f8:1178:2:21e:67ff:fe11:9c5c
-X-SA-Exim-Mail-From: ukl@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
 
-On Wed, May 16, 2012 at 06:51:08PM +0100, Mark Brown wrote:
-> Since the core is not usable without one of the bus modules it should not
-> be presented in the UI but should instead be selected by the bus modules.
-> 
-> Signed-off-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
-> ---
->  drivers/mfd/Kconfig |    8 +++-----
->  1 file changed, 3 insertions(+), 5 deletions(-)
-> 
-> diff --git a/drivers/mfd/Kconfig b/drivers/mfd/Kconfig
-> index ffb7c05..8bc76aa 100644
-> --- a/drivers/mfd/Kconfig
-> +++ b/drivers/mfd/Kconfig
-> @@ -614,7 +614,7 @@ config MFD_MC13783
->  	tristate
->  
->  config MFD_MC13XXX
-> -	tristate "Support Freescale MC13783 and MC13892"
-> +	tristate
->  	depends on SPI_MASTER || I2C
->  	select MFD_CORE
->  	select MFD_MC13783
-> @@ -624,12 +624,11 @@ config MFD_MC13XXX
->  	  additional drivers must be enabled in order to use the
->  	  functionality of the device.
->  
-> -if MFD_MC13XXX
-> -
->  config MFD_MC13XXX_SPI
->  	tristate "MC13xxx SPI interface" if SPI_MASTER
->  	default SPI_MASTER
->  	select REGMAP_SPI
-> +	select MFD_MC13XXX
->  	help
->  	  Select this if your MC13xxx is connected via an SPI bus.
->  
-> @@ -637,11 +636,10 @@ config MFD_MC13XXX_I2C
->  	tristate "MC13xxx I2C interface" if I2C
->  	default I2C
->  	select REGMAP_I2C
-> +	select MFD_MC13XXX
->  	help
->  	  Select this if your MC13xxx is connected via an I2C bus.
->  
-> -endif
-> -
-If you change the logic in this way please change
+--IDYEmSnFhs3mNXr+
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-	tristate "MC13xxx SPI interface" if SPI_MASTER
-	default SPI_MASTER
+On Wed, May 16, 2012 at 08:01:54PM +0200, Uwe Kleine-K=F6nig wrote:
 
-to
+> If you change the logic in this way please change
 
-	tristate "Freescale MC13783 and MC13892 SPI interface"
-	depends on SPI_MASTER
+> 	tristate "MC13xxx SPI interface" if SPI_MASTER
+> 	default SPI_MASTER
 
-and similar to the i2c part. IIRC only MC13892 supports i2c.
+> to
 
-Best regards
-Uwe
+> 	tristate "Freescale MC13783 and MC13892 SPI interface"
+> 	depends on SPI_MASTER
 
--- 
-Pengutronix e.K.                           | Uwe Kleine-König            |
-Industrial Linux Solutions                 | http://www.pengutronix.de/  |
+> and similar to the i2c part. IIRC only MC13892 supports i2c.
+
+I don't care that much about randconfigs; I just thought it was quicker
+to post a patch than describe the fix.
+
+--IDYEmSnFhs3mNXr+
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBAgAGBQJPs+vlAAoJEBus8iNuMP3dYj0QAINTEITZkwaFq1tRgniTQ/yK
+DEPVkIu4h5e5EAoPUXI6tA5eDNXPkSzHWhlP9j/EeZsLldJDyEiUvjVAiSQfuqnj
+HOjQWxWNhh5aVKsrPvi/DGmLiDntgDfDTbJNzFy/Dn40qwdA/kWt6tSzE/u4pODy
+reU8TgsIPUuB2Pl/nC0GoXJi9u0GRBHmM1bQ9fgmjEliaS2swwS7wR/Oj4vjHikD
+ucrotL02Xp70kW8wddzSpLAqFCBVoT1Mk49+uhkF8jNicGB8vfVcJ4vICQf2Jglf
+yWFq5VrJWpKFFhs+//HtDZyowbMmCadQJJRnWMEuhjrkBRgN9iQ+kI7ysgYLllxW
+TkWByw96Kdn/OGb7aQpkTTstTnb+VbUBKIr7NeIjNvggbK23qFqPRAx0Gf9vCqSG
+jnzu1X1SPe+NNhmwLg5TtSzTtDdyeyaC7dbQBcrqKGi/0tx1sx+MBEfg4FaVv/qq
+j9uu6QMeMACQzEq2osyAHcLVY6O1LJWD86zl3qQcgTHp7FfAsn3BYy4cLC/FPMGk
+kWQ47nWSqyIYkEy1LbAiFT3Hf8AzxA95bwOJFwWKm+hSLjR+mEToSJhOAVVBGl9r
+/XIjxEX9a/xR/11NTLIX8lv7QJESeIikNit4Cmoi+WCxNvI5uZMGLBih23bZTIX4
+lWCA6RBkWpAK5V5Iiggm
+=3RMB
+-----END PGP SIGNATURE-----
+
+--IDYEmSnFhs3mNXr+--
