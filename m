@@ -1,76 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933413Ab2EPNmU (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 May 2012 09:42:20 -0400
-Received: from mail-qc0-f174.google.com ([209.85.216.174]:34290 "EHLO
-	mail-qc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932403Ab2EPNmS (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 May 2012 09:42:18 -0400
-Message-ID: <1337175731.2492.4.camel@localhost>
-Subject: Re: [PATCH] vfs: fix IMA lockdep circular locking dependency
-From: Eric Paris <eparis@parisplace.org>
-To: James Morris <jmorris@namei.org>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Al Viro <viro@zeniv.linux.org.uk>,
-        Mimi Zohar <zohar@linux.vnet.ibm.com>, Mimi Zohar <zohar@us.ibm.com>,
-        linux-security-module@vger.kernel.org, linux-kernel@vger.kernel.org
-Date: Wed, 16 May 2012 09:42:11 -0400
-In-Reply-To: <alpine.LRH.2.02.1205162135320.10697@tundra.namei.org>
-References: <1336963631-3541-1-git-send-email-zohar@us.ibm.com>
-	 <CA+55aFzrJNd5J7i3Rp7-ctc=bDn5GTWu=H1xyCgGZ-rzu74Gbw@mail.gmail.com>
-	 <CA+55aFyPPZ0wayqPMCZtfP1w9nN-GnKJxYc9i_XM_Qk8d-zJzg@mail.gmail.com>
-	 <CACLa4pujEBAS349Pr-EcBmzQgTHWthhCMV0Yqq0BG-F_gDjz4Q@mail.gmail.com>
-	 <1337112446.20904.50.camel@falcor>
-	 <CA+55aFxRRuWGD-4LYzO-T8eg22goKpej5AV36ALL8GaLP56oRA@mail.gmail.com>
-	 <CA+55aFzOtY7tBw4YNH+QX+6L4opMsJ=sN4DfJURMv_yBTWqL1w@mail.gmail.com>
-	 <20120516004251.GO22082@ZenIV.linux.org.uk>
-	 <CA+55aFy0wJdq+-OAkUBsrkQogF5-N0P4DBQ+6-LXjBGscRQFNw@mail.gmail.com>
-	 <CA+55aFy1qQkGXAr=0Zqk=qJeGTpfMOVC2=rdRWzQ1qsUZ5P0_g@mail.gmail.com>
-	 <alpine.LRH.2.02.1205162135320.10697@tundra.namei.org>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.4.1 (3.4.1-2.fc17) 
+	id S967494Ab2EPNno (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 May 2012 09:43:44 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:36041 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932296Ab2EPNnn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 16 May 2012 09:43:43 -0400
+Message-ID: <4FB3AF06.4070307@redhat.com>
+Date: Wed, 16 May 2012 16:43:34 +0300
+From: Avi Kivity <avi@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
+MIME-Version: 1.0
+To: Takuya Yoshikawa <takuya.yoshikawa@gmail.com>
+CC: Xudong Hao <xudong.hao@linux.intel.com>, kvm@vger.kernel.org,
+        linux-kernel@vger.kernel.org, haitao.shan@intel.com,
+        xiantao.zhang@intel.com, xudong.hao@intel.com
+Subject: Re: [PATCH 0/4] KVM: Enable EPT access bit feature
+References: <20120516010439.GA14256@hp-xd.sh.intel.com> <4FB371B1.7000407@redhat.com> <20120516223519.4f7d6fdc864a552ce67161e9@gmail.com>
+In-Reply-To: <20120516223519.4f7d6fdc864a552ce67161e9@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2012-05-16 at 21:37 +1000, James Morris wrote:
-> On Tue, 15 May 2012, Linus Torvalds wrote:
-> 
-> > Hmm?
-> 
-> diff --git a/security/capability.c b/security/capability.c
-> index 5bb21b1c448c..9a19c6a54e12 100644
-> --- a/security/capability.c
-> +++ b/security/capability.c
-> @@ -949,7 +949,6 @@ void __init security_fixup_ops(struct 
-> security_operations *ops)
->         set_to_cap_if_null(ops, file_alloc_security);
->         set_to_cap_if_null(ops, file_free_security);
->         set_to_cap_if_null(ops, file_ioctl);
-> -       set_to_cap_if_null(ops, file_mmap);
->         set_to_cap_if_null(ops, file_mprotect);
->         set_to_cap_if_null(ops, file_lock);
->         set_to_cap_if_null(ops, file_fcntl);
-> 
-> 
-> Do we need to add addr_map to the fixup ops?
+On 05/16/2012 04:35 PM, Takuya Yoshikawa wrote:
+> On Wed, 16 May 2012 12:21:53 +0300
+> Avi Kivity <avi@redhat.com> wrote:
+>
+> > On 05/16/2012 04:04 AM, Xudong Hao wrote:
+> > > EPT A/D bits enable VMMs to efficiently implement memory management and page classification algorithms to optimize VM memory operations such as de-fragmentation, paging, live-migration, and check-pointing.
+> > >
+> > > The series of patches enable the EPT access bit in KVM.
+> > >
+> > > PATCH 1: Add EPT A/D bits definition.
+> > > PATCH 2: Add kernel parameter to control EPT A/D bits support, the feature is on by default.
+> > > PATCH 3: Enable EPT A/D bits if supported by turning on relevant bit in EPTP.
+> > > PATCH 4: Enabling Access bit when doing memory swapping.
+> > >
+> > 
+> > Minor comment on patch 2, but otherwise looks good.
+>
+> Except for being white space damaged and based on old kvm.git?
 
-No.  His patch works just fine without it.  If you look he uses:
+Ugh, I didn't notice that.  Xudong, please rebase on kvm.git 'next', and
+repost using git send-email.
 
-+	if (security_ops->mmap_file) {
+> BTW, we can use this for dirty logging as you suggested.
+>
+> Although we need to traverse each spte from rmap 
 
-Which means since we didn't set an explicit .mmap_file, even with no
-other LSM loaded we would be fine.
+That should be cheap.  Also, we might be able to cheat for direct-mapped
+pages: if all pages in a 2M area are mapped just once, in a
+direct-mapped page, we can skip rmap and iterate over the page
+directly.  We can store this hint in lpage_info.
 
-At the moment I'd rather stick with our usual notation of forcing
-capabilities to define every option even if all it does it return 0.  If
-Linus thinks it's a good idea to do
-if (security_ops->function)
-	security_ops->funtion(args);
-In the security server we should do that cleanup separately...
+There's a chance that this optimization will gain nothing since the
+processor may be able to unroll the loop and hide the rmap costs for the
+next spte behind the atomic access cost for the current spte.
 
--Eric
+> and sync with dirty
+> bitmap, I think it will work well by using with range based GET_DIRTY_LOG
+> to restrict the cost for one call.
+
+I'm in favour of that as well (even more, since the install base will be
+dominated by non-AD-capable hosts for some time).
+
+-- 
+error compiling committee.c: too many arguments to function
 
