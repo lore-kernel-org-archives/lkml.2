@@ -1,41 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759212Ab2EPGhl (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 May 2012 02:37:41 -0400
-Received: from mail-yw0-f46.google.com ([209.85.213.46]:58053 "EHLO
-	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759126Ab2EPGhk (ORCPT
+	id S1759171Ab2EPGnv (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 May 2012 02:43:51 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:46935 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758171Ab2EPGnt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 May 2012 02:37:40 -0400
-MIME-Version: 1.0
-In-Reply-To: <alpine.DEB.2.00.1205142327580.19403@chino.kir.corp.google.com>
-References: <1336663979-2611-1-git-send-email-js1304@gmail.com>
-	<alpine.DEB.2.00.1205142327580.19403@chino.kir.corp.google.com>
-Date: Wed, 16 May 2012 09:37:38 +0300
-X-Google-Sender-Auth: yfYsFb9biZ0B5-UyUXGLod2VgJQ
-Message-ID: <CAOJsxLFao1nP92mUH7M6UsQu16UqzP_Vi3WasSkQw8Q8tFBDjg@mail.gmail.com>
-Subject: Re: [PATCH] slub: fix a possible memory leak
-From: Pekka Enberg <penberg@kernel.org>
-To: David Rientjes <rientjes@google.com>
-Cc: Joonsoo Kim <js1304@gmail.com>,
-        Christoph Lameter <cl@linux-foundation.org>,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org
-Content-Type: text/plain; charset=ISO-8859-1
+	Wed, 16 May 2012 02:43:49 -0400
+From: Magnus Damm <magnus.damm@gmail.com>
+To: linux-arm-kernel@lists.infradead.org
+Cc: horms@verge.net.au, linux@arm.linux.org.uk, arnd@arndb.de,
+        linux-sh@vger.kernel.org, linux-kernel@vger.kernel.org, rjw@sisk.pl,
+        lethal@linux-sh.org, olof@lixom.net,
+        Magnus Damm <magnus.damm@gmail.com>
+Date: Wed, 16 May 2012 15:44:49 +0900
+Message-Id: <20120516064449.32286.77941.sendpatchset@w520>
+Subject: [PATCH 00/08] mach-shmobile: Emma Mobile EV2 support V3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, May 15, 2012 at 9:28 AM, David Rientjes <rientjes@google.com> wrote:
-> On Fri, 11 May 2012, Joonsoo Kim wrote:
->
->> Memory allocated by kstrdup should be freed,
->> when kmalloc(kmem_size, GFP_KERNEL) is failed.
->>
->> Signed-off-by: Joonsoo Kim <js1304@gmail.com>
->
-> Acked-by: David Rientjes <rientjes@google.com>
->
-> kmem_cache_create() in slub would significantly be improved with a rewrite
-> to have a clear error path and use of return values of functions it calls.
+mach-shmobile: Emma Mobile EV2 support V3
 
-Applied, thanks!
+[PATCH 01/08] mach-shmobile: Emma Mobile EV2 SoC base support V3
+[PATCH 02/08] ARM: Undelete KZM9D mach-type V3
+[PATCH 03/08] mach-shmobile: KZM9D board support V3
+[PATCH 04/08] mach-shmobile: Emma Mobile EV2 SMP support V3
+[PATCH 05/08] mach-shmobile: Emma Mobile EV2 GPIO support V3
+[PATCH 06/08] mach-shmobile: KZM9D board Ethernet support V3
+[PATCH 07/08] mach-shmobile: Emma Mobile EV2 DT support V3
+[PATCH 08/08] mach-shmobile: Use DT_MACHINE for KZM9D V3
+
+This series are the third iteration of Emma Mobile EV2 support
+for mach-shmobile. Yet another dual core Cortex-A9 SoC.
+
+At this point serial, timer and gpio are supported as platform
+devices. Serial and timer also come with DT bindings.
+
+Basic SMP support is in place, but CPU hotplug and TWD needs
+more work.
+
+Clocks are enabled in the case of the KZM9D board support
+via platform devices. In the DT case there are no clocks
+enabled. So anyone playing around with DT will have to accept
+the fact that it is very limited at tis point. All features with
+upstream support can however be enabled via regular platform devices.
+
+Many thanks to Arnd for his endless reviews and helpful
+suggestions and a lot of patience!
+
+To build this you also need whatever included in linux-next
+as of 20120514 plus the following patches:
+
+[PATCH 01/03] clockevents: Make clockevents_config() a global symbol
+[PATCH 02/03] clocksource: em_sti: Emma Mobile STI driver V2
+[PATCH 03/03] clocksource: em_sti: Add DT support
+[PATCH] gpio: Emma Mobile GPIO driver V2
+
+The only update since V2 of this series is DT related bits
+in [7/8] and [8/8] plus the mach-type change in [2/8].
+
+In case the GPIO driver does not get merged it should be possible
+to omit [5/8] and [6/8] and still have a working but limited system.
+
+Signed-off-by: Magnus Damm <damm@opensource.se>
+---
+
+ Applies to linux-next 20120514
+
+ arch/arm/boot/dts/emev2-kzm9d.dts           |   26 +
+ arch/arm/boot/dts/emev2.dtsi                |   63 +++
+ arch/arm/mach-shmobile/Kconfig              |   11 
+ arch/arm/mach-shmobile/Makefile             |    3 
+ arch/arm/mach-shmobile/board-kzm9d.c        |   89 +++++
+ arch/arm/mach-shmobile/clock-emev2.c        |  249 ++++++++++++++
+ arch/arm/mach-shmobile/include/mach/emev2.h |   19 +
+ arch/arm/mach-shmobile/platsmp.c            |   20 +
+ arch/arm/mach-shmobile/setup-emev2.c        |  454 ++++++++++++++++++++++++++-
+ arch/arm/mach-shmobile/smp-emev2.c          |   97 +++++
+ arch/arm/tools/mach-types                   |    1 
+ 11 files changed, 1028 insertions(+), 4 deletions(-)
