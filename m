@@ -1,57 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755213Ab2EPP1U (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 May 2012 11:27:20 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:11222 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754118Ab2EPP1T (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 May 2012 11:27:19 -0400
-Date: Wed, 16 May 2012 12:22:20 -0300
-From: Marcelo Tosatti <mtosatti@redhat.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: linux-kernel <linux-kernel@vger.kernel.org>, kvm <kvm@vger.kernel.org>,
-        Avi Kivity <avi@redhat.com>, Alexander Graf <agraf@suse.de>
-Subject: [GIT PULL] KVM fixes for 3.4-rc7
-Message-ID: <20120516152220.GA19763@amt.cnet>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1755172Ab2EPP2g (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 May 2012 11:28:36 -0400
+Received: from g5t0006.atlanta.hp.com ([15.192.0.43]:1039 "EHLO
+	g5t0006.atlanta.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753950Ab2EPP2e (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 16 May 2012 11:28:34 -0400
+Message-ID: <1337182110.2424.15.camel@lorien2>
+Subject: Re: [PATCH 4/6] pstore/ram: Add some more documentation and examples
+From: Shuah Khan <shuahkhan@gmail.com>
+Reply-To: shuahkhan@gmail.com
+To: Anton Vorontsov <anton.vorontsov@linaro.org>
+Cc: shuahkhan@gmail.com, Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Kees Cook <keescook@chromium.org>, Colin Cross <ccross@android.com>,
+        Tony Luck <tony.luck@intel.com>, Arnd Bergmann <arnd@arndb.de>,
+        John Stultz <john.stultz@linaro.org>, arve@android.com,
+        Rebecca Schultz Zavin <rebecca@android.com>,
+        Jesper Juhl <jj@chaosbits.net>, Randy Dunlap <rdunlap@xenotime.net>,
+        Stephen Boyd <sboyd@codeaurora.org>, Thomas Meyer <thomas@m3y3r.de>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Marco Stornelli <marco.stornelli@gmail.com>,
+        WANG Cong <xiyou.wangcong@gmail.com>, linux-kernel@vger.kernel.org,
+        devel@driverdev.osuosl.org, linaro-kernel@lists.linaro.org,
+        patches@linaro.org, kernel-team@android.com
+Date: Wed, 16 May 2012 09:28:30 -0600
+In-Reply-To: <20120516125658.GD20475@lizard>
+References: <20120516125330.GA15460@lizard> <20120516125658.GD20475@lizard>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3-0ubuntu6 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hi Anton,
 
-Linus, please pull from:
+Ignore my previous email. I am still getting caught up with your
+patches.
 
-  git://git.kernel.org/pub/scm/virt/kvm/kvm.git master
+On Wed, 2012-05-16 at 05:56 -0700, Anton Vorontsov wrote:
+> Suggested-by: Shuah Khan <shuahkhan@gmail.com>
+> Signed-off-by: Anton Vorontsov <anton.vorontsov@linaro.org>
+> ---
+>  Documentation/ramoops.txt |   15 +++++++++++++++
+>  1 file changed, 15 insertions(+)
+> 
+> diff --git a/Documentation/ramoops.txt b/Documentation/ramoops.txt
+> index 4ba7db2..138823b 100644
+> --- a/Documentation/ramoops.txt
+> +++ b/Documentation/ramoops.txt
+> @@ -40,6 +40,12 @@ corrupt, but usually it is restorable.
+>  Setting the ramoops parameters can be done in 2 different manners:
+>   1. Use the module parameters (which have the names of the variables described
+>   as before).
+> + For quick debugging, you can also reserve parts of memory during boot
+> + and then use the reserved memory for ramoops. For example, assuming a machine
+> + with > 128 MB of memory, the following kernel command line will tell the
+> + kernel to use only the first 128 MB of memory, and place ECC-protected ramoops
+> + region at 128 MB boundary:
+> + "mem=128M ramoops.mem_address=0x8000000 ramoops.ecc=1"
+>   2. Use a platform device and set the platform data. The parameters can then
+>   be set through that platform data. An example of doing that is:
 
-To receive urgent KVM PPC updates, quoting Alexander Graf:
+Thanks much. This is great information to have. Exactly the detail I was
+asking for.
 
-There are a few bugs in 3.4 that really should be fixed before people can
-be all happy and fuzzy about KVM on PowerPC. These fixes are:
+>  
+> @@ -70,6 +76,15 @@ if (ret) {
+>  	return ret;
+>  }
+>  
+> +You can specify either RAM memory or peripheral devices' memory. However, when
+> +specifying RAM, be sure to reserve the memory by issuing memblock_reserve()
+> +very early in the architecture code, just before platform device registration,
+> +e.g.:
+> +
+> +#include <linux/memblock.h>
+> +
+> +memblock_reserve(ramoops_data.mem_address, ramoops_data.mem_size);
 
-  * fix POWER7 bare metal with PR=y
-  * fix deadlock on HV=y book3s_64 mode in low memory cases
-  * fix invalid MMU scope of PR=y mode on book3s_64, possibly
-    leading to memory corruption
+Same here. :)
 
-
-Alexander Graf (3):
-      KVM: PPC: Book3S: PR: Handle EMUL_ASSIST
-      KVM: PPC: Fix PR KVM on POWER7 bare metal
-      KVM: PPC: Book3S: PR: Fix hsrr code
-
-Benjamin Herrenschmidt (1):
-      powerpc/kvm: Fix VSID usage in 64-bit "PR" KVM
-
-Paul Mackerras (1):
-      KVM: PPC: Book3S HV: Fix bug leading to deadlock in guest HPT updates
-
- arch/powerpc/include/asm/kvm_book3s.h |    7 +++--
- arch/powerpc/kvm/book3s_64_mmu_host.c |   13 +++++----
- arch/powerpc/kvm/book3s_hv_rm_mmu.c   |    1 +
- arch/powerpc/kvm/book3s_segment.S     |   42 ++++++++++++++++++++++-----------
- 4 files changed, 40 insertions(+), 23 deletions(-)
+-- Shuah
+> +
+>  3. Dump format
+>  
+>  The data dump begins with a header, currently defined as "====" followed by a
 
 
