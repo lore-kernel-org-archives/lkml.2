@@ -1,85 +1,214 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759185Ab2EPN15 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 May 2012 09:27:57 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:26880 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751753Ab2EPN1x (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 May 2012 09:27:53 -0400
-X-Authority-Analysis: v=2.0 cv=D8PF24tj c=1 sm=0 a=ZycB6UtQUfgMyuk2+PxD7w==:17 a=XQbtiDEiEegA:10 a=g_LhDMiRcOYA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=8pif782wAAAA:8 a=Dyvoxc0TmwaqMlCFGBIA:9 a=pMqmfDVYBsvYamM696wA:7 a=PUjeQqilurYA:10 a=ZycB6UtQUfgMyuk2+PxD7w==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 74.67.80.29
-Message-ID: <1337174871.6724.40.camel@gandalf.stny.rr.com>
-Subject: Re: [PATCH v22] edac, ras/hw_event.h: use events to handle hw issues
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Borislav Petkov <bp@amd64.org>
-Cc: Mauro Carvalho Chehab <mchehab@redhat.com>,
-        "Luck, Tony" <tony.luck@intel.com>,
-        Linux Edac Mailing List <linux-edac@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Doug Thompson <norsk5@yahoo.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Ingo Molnar <mingo@redhat.com>
-Date: Wed, 16 May 2012 09:27:51 -0400
-In-Reply-To: <20120516131656.GA2202@aftab.osrc.amd.com>
-References: <20120511102527.GI8913@aftab.osrc.amd.com>
-	 <4FAD081C.5000704@redhat.com> <20120511172430.GB17299@aftab.osrc.amd.com>
-	 <4FAD5CAD.90508@redhat.com> <20120514133404.GE4231@aftab.osrc.amd.com>
-	 <4FB1163D.3010302@redhat.com> <20120515150957.GC27806@aftab.osrc.amd.com>
-	 <4FB27EDC.8040001@redhat.com> <20120515163855.GE27806@aftab.osrc.amd.com>
-	 <4FB38DDF.7030009@redhat.com> <20120516131656.GA2202@aftab.osrc.amd.com>
-Content-Type: text/plain; charset="ISO-8859-15"
-X-Mailer: Evolution 3.2.2-1 
+	id S967501Ab2EPNaX (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 May 2012 09:30:23 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:31742 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S967054Ab2EPNaS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 16 May 2012 09:30:18 -0400
+Message-ID: <4FB3ABCF.4030708@redhat.com>
+Date: Wed, 16 May 2012 09:29:51 -0400
+From: Don Dutile <ddutile@redhat.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.24) Gecko/20111104 Red Hat/3.1.16-2.el6_1 Thunderbird/3.1.16
+MIME-Version: 1.0
+To: Alex Williamson <alex.williamson@redhat.com>
+CC: Bjorn Helgaas <bhelgaas@google.com>, kvm@vger.kernel.org,
+        B07421@freescale.com, aik@ozlabs.ru, benh@kernel.crashing.org,
+        linux-pci@vger.kernel.org, agraf@suse.de, qemu-devel@nongnu.org,
+        chrisw@sous-sol.org, B08248@freescale.com,
+        iommu@lists.linux-foundation.org, gregkh@linuxfoundation.org,
+        avi@redhat.com, benve@cisco.com, dwmw2@infradead.org,
+        linux-kernel@vger.kernel.org, david@gibson.dropbear.id.au
+Subject: Re: [PATCH 05/13] pci: New pci_acs_enabled()
+References: <20120511222148.30496.68571.stgit@bling.home>	<20120511225602.30496.80438.stgit@bling.home>	<CAErSpo58hKPFb5duOi64sWuR5AJDTVp0rRHkQLotYE3CMXRRhA@mail.gmail.com>	<1337035766.6954.74.camel@bling.home>	<CAErSpo48ES5iLDCh1WzmHezSEYhPjhtgD5uxoY-TCTKgUBab2g@mail.gmail.com> <1337116157.6954.212.camel@bling.home>
+In-Reply-To: <1337116157.6954.212.camel@bling.home>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2012-05-16 at 15:16 +0200, Borislav Petkov wrote:
+On 05/15/2012 05:09 PM, Alex Williamson wrote:
+> On Tue, 2012-05-15 at 13:56 -0600, Bjorn Helgaas wrote:
+>> On Mon, May 14, 2012 at 4:49 PM, Alex Williamson
+>> <alex.williamson@redhat.com>  wrote:
+>>> On Mon, 2012-05-14 at 16:02 -0600, Bjorn Helgaas wrote:
+>>>> On Fri, May 11, 2012 at 4:56 PM, Alex Williamson
+>>>> <alex.williamson@redhat.com>  wrote:
+>>>>> In a PCIe environment, transactions aren't always required to
+>>>>> reach the root bus before being re-routed.  Peer-to-peer DMA
+>>>>> may actually not be seen by the IOMMU in these cases.  For
+>>>>> IOMMU groups, we want to provide IOMMU drivers a way to detect
+>>>>> these restrictions.  Provided with a PCI device, pci_acs_enabled
+>>>>> returns the furthest downstream device with a complete PCI ACS
+>>>>> chain.  This information can then be used in grouping to create
+>>>>> fully isolated groups.  ACS chain logic extracted from libvirt.
+>>>>
+>>>> The name "pci_acs_enabled()" sounds like it returns a boolean, but it doesn't.
+>>>
+>>> Right, maybe this should be:
+>>>
+>>> struct pci_dev *pci_find_upstream_acs(struct pci_dev *pdev);
+>>>
++1; there is a global in the PCI code, pci_acs_enable,
+and a function pci_enable_acs(), which the above name certainly
+confuses.  I recommend  pci_find_top_acs_bridge()
+would be most descriptive.
 
-> > >>>>     Of course, any userspace tools meant to handle errors should not parse
-> > >>>>     the above data. They should, instead, use the binary fields provided by
-> > >>>>     the tracepoint, mapping them directly into their MIBs.
-> > >>>
-> > >>> What is a MIB?
-> > >>
-> > >> Management Information Base. This is how anyone that works with Element
-> > >> Management calls the model of information that represents each management
-> > >> property. It is generally written using ITU-T ASN.1 syntax. Almost all
-> > >> management software use that.
-> > >>
-> > >> [1] http://en.wikipedia.org/wiki/Management_information_base
-> > > 
-> > > That looks like an ACPI or some other idiotic spec speak, pls remove it.
-> > 
-> > No, MIB is not an idiotic speak. It is a widely-used term, older than TCP/IP, 
-> > and defined by ITU-T (M.3000 series) and by ISO.
-> > 
-> > It is used by everybody that knows a little bit about error management,
-> > as all management systems and protocols (like SNMP) are based on MIB
-> > concepts. This concept is also used by other international forums, like
-> > IETF, to define the Information Model to be used to manage the machine
-> > and/or network resources. For example, the TCP/IP stack management base
-> > is defined at IETF RFC1213.
-> 
-> More idiotic drivel.
-> 
-> Oh, well, you won't let go of this crap, so at least add the wikipedia
-> URL to the "MIB" reference so that mere mortals like me who don't know
-> jack of error management can understand what you're talking about.
+>>>> I'm not sure what "a complete PCI ACS chain" means.
+>>>>
+>>>> The function starts from "dev" and searches *upstream*, so I'm
+>>>> guessing it returns the root of a subtree that must be contained in a
+>>>> group.
+>>>
+>>> Any intermediate switch between an endpoint and the root bus can
+>>> redirect a dma access without iommu translation,
+>>
+>> Is this "redirection" just the normal PCI bridge forwarding that
+>> allows peer-to-peer transactions, i.e., the rule (from P2P bridge
+>> spec, rev 1.2, sec 4.1) that the bridge apertures define address
+>> ranges that are forwarded from primary to secondary interface, and the
+>> inverse ranges are forwarded from secondary to primary?  For example,
+>> here:
+>>
+>>                     ^
+>>                     |
+>>            +--------+-------+
+>>            |                |
+>>     +------+-----+    +-----++-----+
+>>     | Downstream |    | Downstream |
+>>     |    Port    |    |    Port    |
+>>     |   06:05.0  |    |   06:06.0  |
+>>     +------+-----+    +------+-----+
+>>            |                 |
+>>       +----v----+       +----v----+
+>>       | Endpoint|       | Endpoint|
+>>       | 07:00.0 |       | 08:00.0 |
+>>       +---------+       +---------+
+>>
+>> that rule is all that's needed for a transaction from 07:00.0 to be
+>> forwarded from upstream to the internal switch bus 06, then claimed by
+>> 06:06.0 and forwarded downstream to 08:00.0.  This is plain old PCI,
+>> nothing specific to PCIe.
+>
+> Right, I think the main PCI difference is the point-to-point nature of
+> PCIe vs legacy PCI bus.  On a legacy PCI bus there's no way to prevent
+> devices talking to each other, but on PCIe the transaction makes a
+> U-turn at some point and heads out another downstream port.  ACS allows
+> us to prevent that from happening.
+>
+detail: PCIe up/downstream routing is really done by an internal switch;
+         ACS forces the legacy, PCI base-limit address routing and *forces*
+         the switch to always route the transaction from a downstream port
+         to the upstream port.
 
-I should change goodmis to goodmib. That sounds better. For those that
-don't know, goodmis comes from a project I started a long time ago. 
+>> I don't understand ACS very well, but it looks like it basically
+>> provides ways to prevent that peer-to-peer forwarding, so transactions
+>> would be sent upstream toward the root (and specifically, the IOMMU)
+>> instead of being directly claimed by 06:06.0.
+>
+> Yep, that's my meager understanding as well.
+>
++1
 
- Good Object Oriented Database Management Information System
+>>> so we're looking for
+>>> the furthest upstream device for which acs is enabled all the way up to
+>>> the root bus.
+>>
+>> Correct me if this is wrong: To force device A's DMAs to be processed
+>> by an IOMMU, ACS must be enabled on the root port and every downstream
+>> port along the path to A.
+>
+> Yes, modulo this comment in libvirt source:
+>
+>      /* if we have no parent, and this is the root bus, ACS doesn't come
+>       * into play since devices on the root bus can't P2P without going
+>       * through the root IOMMU.
+>       */
+>
+Correct. PCIe spec says roots must support ACS. I believe all the
+root bridges that have an IOMMU have ACS wired in/on.
 
-Which was inspired by a database I wrote at a company I worked for in
-the 90's. Called "Object Based Information v1" or OBI-1.
+> So we assume that a redirect at the point of the iommu will factor in
+> iommu translation.
+>
+>> If so, I think you're trying to find out the closest upstream device X
+>> such that everything leading to X has ACS enabled.  Every device below
+>> X can DMA freely to other devices below X, so they would all have to
+>> be in the same isolated group.
+>
+> Yes
+>
+>> I tried to work through some examples to develop some intuition about this:
+>
+> (inserting fixed url)
+>> http://www.asciiflow.com/#3736558963405980039
+>
+>> pci_acs_enabled(00:00.0) = 00:00.0 (on root bus (but doesn't it matter
+>> if 00:00.0 is PCIe or if RP has ACS?))
+>
+> Hmm, the latter is the assumption above.  For the former, I think
+> libvirt was probably assuming that PCI devices must have a PCIe device
+> upstream from them because x86 doesn't have assignment friendly IOMMUs
+> except on PCIe.  I'll need to work on making that more generic.
+>
+>> pci_acs_enabled(00:01.0) = 00:01.0 (on root bus)
+>> pci_acs_enabled(01:00.0) = 01:00.0 (acs_dev = 00:01.0, 01:00.0 is not
+>> PCIe; seems wrong)
+>
+> Oops, I'm calling pci_find_upstream_pcie_bridge() first on any of my
+> input devices, so this was passing for me.  I'll need to incorporate
+> that generically.
+>
+>> pci_acs_enabled(00:02.0) = 00:02.0 (on root bus; seems wrong if RP
+>> doesn't have ACS)
+>
+> Yeah, let me validate the libvirt assumption.  I see ACS on my root
+> port, so maybe they're just assuming it's always enabled or that the
+> precedence favors IOMMU translation.  I'm also starting to think that we
+> might want "from" and "to" struct pci_dev parameters to make it more
+> flexible where the iommu lives in the system.
+>
+see comment above wrt root ports that have IOMMUs in them.
 
-:-)
+>> pci_acs_enabled(02:00.0) = 00:02.0 (acs_dev = 00:02.0, 02:00.0 has no ACS cap)
+>> pci_acs_enabled(03:00.0) = 00:02.0 (acs_dev = 00:02.0)
+>> pci_acs_enabled(02:01.0) = 02:01.0 (acs_dev = 00:02.0, 02:01.0 has ACS enabled)
+>> pci_acs_enabled(04:00.0) = 04:00.0 (acs_dev = 02:01.0, 04:00.0 is not
+>> a bridge; seems wrong if 04:00 is a multi-function device)
+>
+> AIUI, ACS is not an endpoint property, so this is what should happen.  I
+> don't think multifunction plays a role other than how much do we trust
+> the implementation to not allow back channels between functions (the
+> answer should probably be not at all).
+>
+correct. ACS is a *bridge* property.
+The unknown wrt multifunction devices is that such devices *could* be implemented
+by a hidden (not responding to PCI cfg accesses from downstream port) PCI bridge
+btwn the functions within a device.
+Such a bridge could allow peer-to-peer xactions and there is no way for OS's to
+force ACS.  So, one has to ask the hw vendors if such a hidden device exists
+in the implementation, and whether peer-to-peer is enabled/allowed -- a hidden PCI
+bridge/PCIe-switch could just be hardwired to push all IO to upstream port,
+and allow parent bridge re-route it back down if peer-to-peer is desired.
+Debate exists whether multifunction devices are 'secure' b/c of this unknown.
+Maybe a PCIe (min., SRIOV) spec change is needed in this area to
+determine this status about a device (via pci cfg/cap space).
 
--- Steve
-
+>> pci_acs_enabled(02:02.0) = 02:02.0 (acs_dev = 00:02.0, 02:02.0 has ACS enabled)
+>> pci_acs_enabled(05:00.0) = 05:00.0 (acs_dev = 02:02.0, 05:00.0 is not a bridge)
+>>
+>> But it didn't really help.  I still can't develop a mental picture of
+>> what this function does.
+>
+> It helped me :)  These are good examples, I'll work on fixing it for
+> them.  Thanks,
+>
+> Alex
+>
+>
+> _______________________________________________
+> iommu mailing list
+> iommu@lists.linux-foundation.org
+> https://lists.linuxfoundation.org/mailman/listinfo/iommu
 
