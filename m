@@ -1,67 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757897Ab2EPL5Q (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 May 2012 07:57:16 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:4296 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754068Ab2EPL5O (ORCPT
+	id S1759921Ab2EPMGv (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 May 2012 08:06:51 -0400
+Received: from out1-smtp.messagingengine.com ([66.111.4.25]:54986 "EHLO
+	out1-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1756377Ab2EPMGt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 May 2012 07:57:14 -0400
-X-Authority-Analysis: v=2.0 cv=OMylLFmB c=1 sm=0 a=ZycB6UtQUfgMyuk2+PxD7w==:17 a=XQbtiDEiEegA:10 a=jKu8JnxlA44A:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=gjdCREqasA1MwOVGck8A:9 a=PUjeQqilurYA:10 a=ZycB6UtQUfgMyuk2+PxD7w==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 74.67.80.29
-Message-ID: <1337169432.6724.30.camel@gandalf.stny.rr.com>
-Subject: Re: [WARNING] at kernel/irq/manage.c:421 __enable_irq
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Thomas Gleixner <tglx@linutronix.de>
-Cc: LKML <linux-kernel@vger.kernel.org>, David Miller <davem@davemloft.net>
-Date: Wed, 16 May 2012 07:57:12 -0400
-In-Reply-To: <alpine.LFD.2.02.1205161001500.3231@ionos>
-References: <1337131823.6724.11.camel@gandalf.stny.rr.com>
-	 <alpine.LFD.2.02.1205161001500.3231@ionos>
-Content-Type: text/plain; charset="ISO-8859-15"
-X-Mailer: Evolution 3.2.2-1 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	Wed, 16 May 2012 08:06:49 -0400
+X-Sasl-enc: zEfG9nfmDuCMZLQ01LWPi84sHHfiIeB0M+P6IfHHyDEL 1337170008
+Date: Wed, 16 May 2012 05:06:44 -0700
+From: Greg KH <greg@kroah.com>
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Marek Szyprowski <m.szyprowski@samsung.com>,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        Kukjin Kim <kgene.kim@samsung.com>,
+        Lukasz Majewski <l.majewski@samsung.com>
+Subject: Re: linux-next: manual merge of the usb tree with the s5p tree
+Message-ID: <20120516120644.GA31261@kroah.com>
+References: <20120516180303.3c3cff646c1a70a8ddf32e2a@canb.auug.org.au>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120516180303.3c3cff646c1a70a8ddf32e2a@canb.auug.org.au>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2012-05-16 at 13:27 +0200, Thomas Gleixner wrote:
-> On Tue, 15 May 2012, Steven Rostedt wrote:
-> > The code in ide_probe_port() does the following:
+On Wed, May 16, 2012 at 06:03:03PM +1000, Stephen Rothwell wrote:
+> Hi Greg,
 > 
-> Right, you just forgot to show the most interesting gem of that code:
+> Today's linux-next merge of the usb tree got a conflict in
+> arch/arm/mach-exynos/mach-universal_c210.c between commit 6dafa4aead1b
+> ("ARM: EXYNOS: Add DRM core device support for Universal C210 board")
+> from the s5p tree and commit 126625e1bf32 ("usb:hsotg:samsung:cosmetic
+> Move <linux/platform_data/s3c-hsotg.h> to proper place") from the usb
+> tree.
 > 
-> 	/*
-> 	 * We must always disable IRQ, as probe_for_drive will assert IRQ, but
-> 	 * we'll install our IRQ driver much later...
-> 	 */
+> Just context changes.  I fixed it up (see below) and can carry the fix as
+> necessary.
 
-Heh, I would have kept that, but I was more interested in cut and
-pasting code than comments. I'll make sure to keep comments in emails
-too.
+Looks good to me, thanks.
 
-
-> >         if (irqd)
-> >                 enable_irq(irqd);
-> 
-> So this code is wrong and unsafe in various aspects. I wonder why it
-> didn't blow up before. Maybe init ordering changed ....
-> 
-
-Or it always did. This is on my main box that I reboot once every 100
-days or so. I'm not usually present when the machine comes online, nor
-do I search dmesg for warnings. Although, yesterday I did. This could
-have been complaining from day one.
-
-
-> I have an idea how to fix that proper. Will send out patches later.
-
-I'll test them, but it's a bit of a pain, as it would require me
-shutting down evolution, xchat, firefox, chrome and all my emacs
-windows :-)  This is why I don't reboot this box often.
-
--- Steve
-
-
+greg k-h
