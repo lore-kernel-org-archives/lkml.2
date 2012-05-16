@@ -1,62 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759901Ab2EPIse (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 May 2012 04:48:34 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:36254 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1759514Ab2EPIsc (ORCPT
+	id S966210Ab2EPIsz (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 May 2012 04:48:55 -0400
+Received: from mga03.intel.com ([143.182.124.21]:48705 "EHLO mga03.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1759851Ab2EPIsq convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 May 2012 04:48:32 -0400
-Date: Wed, 16 May 2012 09:48:29 +0100
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Axel Lin <axel.lin@gmail.com>
-Cc: linux-kernel <linux-kernel@vger.kernel.org>,
-        Kyungmin Park <kyungmin.park@samsung.com>, Liam Girdwood <lrg@ti.com>,
-        MyungJoo Ham <myungjoo.ham@samsung.com>
-Subject: Re: [PATCH] regulator: max8952: Use devm_kzalloc
-Message-ID: <20120516084829.GD6801@opensource.wolfsonmicro.com>
-References: <1337143847.3876.1.camel@phoenix>
+	Wed, 16 May 2012 04:48:46 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
+   d="scan'208";a="143807945"
+From: "Tc, Jenny" <jenny.tc@intel.com>
+To: Jonathan Cameron <jic23@cam.ac.uk>, Lars-Peter Clausen <lars@metafoo.de>
+CC: Guenter Roeck <guenter.roeck@ericsson.com>,
+        "R, Durgadoss" <durgadoss.r@intel.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "lm-sensors@lm-sensors.org" <lm-sensors@lm-sensors.org>,
+        Jonathan Cameron <jic23@kernel.org>
+Subject: RE: [lm-sensors] [PATCH] hwmon: Generic ADC support for hwmon
+Thread-Topic: [lm-sensors] [PATCH] hwmon: Generic ADC support for hwmon
+Thread-Index: AQHNMniUFMqInze6PESnCGitrabUzZbKZy2AgAAIMICAABDDgIAACfyAgAADd4CAAY39MA==
+Date: Wed, 16 May 2012 08:48:38 +0000
+Message-ID: <20ADAB092842284E95860F279283C56422DFB0@BGSMSX101.gar.corp.intel.com>
+References: <1337092008-31263-1-git-send-email-jenny.tc@intel.com>
+ <20120515121339.GA21600@ericsson.com>
+ <4D68720C2E767A4AA6A8796D42C8EB59124E22@BGSMSX101.gar.corp.intel.com>
+ <20120515134257.GA21933@ericsson.com> <4FB265C1.7060306@metafoo.de>
+ <4FB268A9.5040007@cam.ac.uk>
+In-Reply-To: <4FB268A9.5040007@cam.ac.uk>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.223.10.10]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="d01dLTUuW90fS44H"
-Content-Disposition: inline
-In-Reply-To: <1337143847.3876.1.camel@phoenix>
-X-Cookie: Advancement in position.
-User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
---d01dLTUuW90fS44H
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+> On 5/15/2012 3:18 PM, Lars-Peter Clausen wrote:
+> > On 05/15/2012 03:42 PM, Guenter Roeck wrote:
+> >> On Tue, May 15, 2012 at 08:42:57AM -0400, R, Durgadoss wrote:
+> >>> Hi Guenter,
+> >>>
+> >>> Thanks for a quick reply.
+> >>>
+> >>>> On Tue, May 15, 2012 at 10:26:48AM -0400, Jenny TC wrote:
+> >>>>> Currently drivers are using custom APIs to communicate with ADC
+> driver.
+> >>>>> So it make sense to have generic APIs to commnicate with ADC
+> drivers.
+> >>>>> This patch introduces generic APIs to communicate with ADC drivers.
+> >>>>>
+> >>>>> Signed-off-by: Jenny TC<jenny.tc@intel.com>
+> >>>>
+> >>>> Hi Jenny,
+> >>>>
+> >>>> Do you have a practical use case ?
+> >>>
+> >>> We have some platform specific component drivers, thermal drivers,
+> >>> battery drivers using this General purpose ADC in the platform.
+> >>> That's why we thought of doing something like this.
+> >>>
+> >>>>
+> >>>> Also, shouldn't those generic ADCs rather be supported through the
+> >>>> IO subsystem ?
+> >>>> After all, hwmon is all about hardware monitoring, not to provide
+> >>>> generic ADC access.
+> >>>
+> >>> In this case, can we try this in iio or mfd subsystem ?
+> >>> Kindly advise.
+> >>>
+> >> I meant iio (more specifically staging/iio/adc).
+> >>
+> >> I suspect it might make more sense to have a hwmon client, in
+> >> parallel to the other users/clients (battery control, thermal etc),
+> >> if the values reported by the ADC reflect information relevant for
+> hardware monitoring.
+> >>
+> >
+> > So there is already an experimental IIO to hwmon bridge in
+> > drivers/staging/iio/, which you can use to expose a IIO ADC driver as
+> > an hwmon device.
+> Thanks Lars-Peter.  That bridge is currently limited to voltage reading but
+> that's more because my test part didn't do anything else.
+> Trivial to add other bits and bobs as needed.  In the short term, the interrupt
+> driven side of things is still under review (so you are limited to polling devices
+> - though this is typically fine for hwmon etc).  I'll be submitting a patch to
+> move the existing hwmon bridge driver into drivers/hwmon in the next cycle
+> (after the IIO core is out of staging).
+> 
+> Longer term plans involve reducing the connection between the IIO
+> userspace front end and the backend to give cleaner support when people
+> don't want generic userspace interfaces.  This means making absolutely
+> everything under the sun available through generic in kernel interfaces which
+> will be 'interesting' for some more interesting devices...
+> 
+> Jonathan
 
-On Wed, May 16, 2012 at 12:50:47PM +0800, Axel Lin wrote:
-> Signed-off-by: Axel Lin <axel.lin@gmail.com>
+Hi Jonathan,
+Thanks for your reply.
+I was looking for generic ADC APIs. At present does the IIO subsystem support any kind of generic ADC APIS which can be used by drivers to read ADC samples?
 
-Applied, thanks.
+-jtc
 
---d01dLTUuW90fS44H
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBAgAGBQJPs2nWAAoJEBus8iNuMP3dqBEQAIEVDqsnHxicA5uCvI3yH05E
-dtGL+VLqOdEDOJhlQpNSZ031TSyQBiVsaqUZDOF3xVDJYHt7aEq/GhbVzpdOhrrl
-DhRxu7LXPOHssAMH68BcAgF36864HOzri9RFWOeGUSltoNeD04uwPTh7RZLntz07
-mZcW5GWz3UzIO/3sUqtnRHvhXbCuXQFJn+XrkBbecf+Pkiai0f6kiqUXdVfnJiEN
-Mmd1nqGOwvbwvvCz/sOlyXBeGNmXrDVIhs2c0qKQwWh48aRpikZ+1AkRjzuBecU+
-D0q7q7nz+KseWbOsjETosjZQk/Vdg+7aFg+fT0vEwtHUM941gsEXOt5hJUzmHB2K
-Bx0LVBEMfFj9a0ufjdhPtO4GyNtf7Jq/fkMHbhDfJnBKzTdN/5TSwr5x3cGcsVSm
-tiNkcrtIh9s+YCTRbsplYFJAuXBcrpsFpjeewrgjJaWEX0V+UnPVyZY3Fi3ciJ5K
-J1RyMtHFk33SU1RM1cmc6DDJ4iNG3tI2qupKRlCPMsX+cM/sYVjgudDFo5L2tFBm
-jBMQ+hglKt0GGjlqsZ3/btVCFPr0UEl4BQqo1FFoDWEx04rVXAHT8PL57VvyDwrA
-5v/HL6cLZpAx/WdZKaEvL8CwvUBVFh27vkfvd0Y3GsChtuCIjVTN97pHw8QrJ7Ju
-flIvZfAClBq2Rr7jqTHP
-=sAsd
------END PGP SIGNATURE-----
-
---d01dLTUuW90fS44H--
