@@ -1,65 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755066Ab2EPQ6e (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 May 2012 12:58:34 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:9535 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751884Ab2EPQ6d (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 May 2012 12:58:33 -0400
-X-Authority-Analysis: v=2.0 cv=ae7jbGUt c=1 sm=0 a=ZycB6UtQUfgMyuk2+PxD7w==:17 a=XQbtiDEiEegA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=ylC6d8igtuBafk5u--MA:9 a=PUjeQqilurYA:10 a=ZycB6UtQUfgMyuk2+PxD7w==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 74.67.80.29
-Message-ID: <1337187503.6724.50.camel@gandalf.stny.rr.com>
-Subject: Re: Perf record format portability
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-Cc: Dmitry Antipov <dmitry.antipov@linaro.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@redhat.com>,
-        Amit Kucheria <amit.kucheria@linaro.org>, linaro-dev@lists.linaro.org,
-        linux-kernel@vger.kernel.org, Jiri Olsa <jolsa@redhat.com>
-Date: Wed, 16 May 2012 12:58:23 -0400
-In-Reply-To: <20120516145927.GC7864@infradead.org>
-References: <4FB275EB.5050904@linaro.org>
-	 <20120515155146.GB7864@infradead.org> <4FB38677.8070601@linaro.org>
-	 <20120516145927.GC7864@infradead.org>
-Content-Type: text/plain; charset="ISO-8859-15"
-X-Mailer: Evolution 3.2.2-1 
-Content-Transfer-Encoding: 7bit
+	id S1757064Ab2EPRB2 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 May 2012 13:01:28 -0400
+Received: from mail.vyatta.com ([76.74.103.46]:34919 "EHLO mail.vyatta.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752607Ab2EPRB1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 16 May 2012 13:01:27 -0400
+Date: Wed, 16 May 2012 10:01:21 -0700
+From: Stephen Hemminger <shemminger@vyatta.com>
+To: "Andrew Stiegmann (stieg)" <astiegmann@vmware.com>
+Cc: linux-kernel@vger.kernel.org, acking@vmware.com, dtor@vmware.com,
+        gregkh@linuxfoundation.org, virtualization@lists.linux-foundation.org,
+        dsouders@vmware.com, akpm@linux-foundation.org, cschamp@vmware.com
+Subject: Re: [vmw_vmci RFC 01/11] Apply VMCI context code
+Message-ID: <20120516100121.3be6d0ca@nehalam.linuxnetplumber.net>
+In-Reply-To: <1337094428-20453-2-git-send-email-astiegmann@vmware.com>
+References: <1337094428-20453-1-git-send-email-astiegmann@vmware.com>
+	<1337094428-20453-2-git-send-email-astiegmann@vmware.com>
+Organization: Vyatta
+X-Mailer: Claws Mail 3.8.0 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
 Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2012-05-16 at 11:59 -0300, Arnaldo Carvalho de Melo wrote:
+On Tue, 15 May 2012 08:06:58 -0700
+"Andrew Stiegmann (stieg)" <astiegmann@vmware.com> wrote:
 
-> Steve,
+> Context code maintains state for vmci and allows the driver
+> to communicate with multiple VMs.
 > 
-> 	Was the kernel trace events infrastructure designed with that in
-> mind? I.e. cross analysis? I must be missing something here, still
-> ENOCOFFEE :-\
+> Signed-off-by: Andrew Stiegmann (stieg) <astiegmann@vmware.com>
 
-Yes, the libparsevents library was design for this from day one. That's
-why trace-cmd data file can be run on an ARM and read on x86, or PPC, or
-whatever. I did all my development testing against 32bit, 64bit and big
-and little endian. This was the case from the beginning.
+Running checkpatch reveals the usual noise, and the following that
+should be addressed.
 
--- Steve
+ERROR: do not use C99 // comments
+#272: FILE: drivers/misc/vmw_vmci/vmci_context.c:183:
++static bool ctx_exists_locked(uint32_t cid)	// IN
 
-> 
-> 	When doing cross arch event analisys I tested:
-> 
->         PERF_TYPE_HARDWARE                      = 0,
->         PERF_TYPE_SOFTWARE                      = 1,
->         PERF_TYPE_HW_CACHE                      = 3,
-> 
-> Not:
-> 
->         PERF_TYPE_TRACEPOINT                    = 2,
->         PERF_TYPE_RAW                           = 4,
->         PERF_TYPE_BREAKPOINT                    = 5,
-> 
-> - Arnaldo
+ERROR: "foo * bar" should be "foo *bar"
+#304: FILE: drivers/misc/vmw_vmci/vmci_context.c:215:
++		      uid_t * user, struct vmci_ctx **outContext)
 
-
+I don't mind the C99 style comments, but the // IN convention
+is pretty useless and should be removed.
