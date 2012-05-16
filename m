@@ -1,85 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S966179Ab2EPM5K (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 May 2012 08:57:10 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:37824 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750838Ab2EPM5H (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 May 2012 08:57:07 -0400
-Message-ID: <4FB3A416.9010703@gmail.com>
-Date: Wed, 16 May 2012 20:56:54 +0800
-From: "nai.xia" <nai.xia@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
+	id S967467Ab2EPM5m (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 May 2012 08:57:42 -0400
+Received: from mga14.intel.com ([143.182.124.37]:54500 "EHLO mga14.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S966072Ab2EPM5k (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 16 May 2012 08:57:40 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
+   d="scan'208";a="100742142"
+Message-ID: <4FB3A435.9040809@intel.com>
+Date: Wed, 16 May 2012 20:57:25 +0800
+From: Alex Shi <alex.shi@intel.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:9.0) Gecko/20111229 Thunderbird/9.0
 MIME-Version: 1.0
-To: Johannes Weiner <hannes@cmpxchg.org>
-CC: linux-mm@kvack.org, Rik van Riel <riel@redhat.com>,
-        Andrea Arcangeli <aarcange@redhat.com>,
-        Peter Zijlstra <peterz@infradead.org>, Mel Gorman <mgorman@suse.de>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Minchan Kim <minchan.kim@gmail.com>, Hugh Dickins <hughd@google.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [patch 0/5] refault distance-based file cache sizing
-References: <1335861713-4573-1-git-send-email-hannes@cmpxchg.org> <4FB33A4E.1010208@gmail.com> <20120516065132.GC1769@cmpxchg.org>
-In-Reply-To: <20120516065132.GC1769@cmpxchg.org>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+To: Peter Zijlstra <peterz@infradead.org>
+CC: Alex Shi <lkml.alex@gmail.com>, Nick Piggin <npiggin@gmail.com>,
+        tglx@linutronix.de, mingo@redhat.com, hpa@zytor.com, arnd@arndb.de,
+        rostedt@goodmis.org, fweisbec@gmail.com, jeremy@goop.org,
+        riel@redhat.com, luto@mit.edu, avi@redhat.com, len.brown@intel.com,
+        dhowells@redhat.com, fenghua.yu@intel.com, borislav.petkov@amd.com,
+        yinghai@kernel.org, ak@linux.intel.com, cpw@sgi.com, steiner@sgi.com,
+        akpm@linux-foundation.org, penberg@kernel.org, hughd@google.com,
+        rientjes@google.com, kosaki.motohiro@jp.fujitsu.com,
+        n-horiguchi@ah.jp.nec.com, tj@kernel.org, oleg@redhat.com,
+        axboe@kernel.dk, jmorris@namei.org, kamezawa.hiroyu@jp.fujitsu.com,
+        viro@zeniv.linux.org.uk, linux-kernel@vger.kernel.org,
+        yongjie.ren@intel.com, linux-arch@vger.kernel.org
+Subject: Re: [PATCH v5 6/7] x86/tlb: optimizing flush_tlb_mm
+References: <1337072138-8323-1-git-send-email-alex.shi@intel.com>  <1337072138-8323-7-git-send-email-alex.shi@intel.com>  <CAPa8GCDsSOrzQwX2qRJyocYAZdGbwjD4t4fjxmWXV6=EoXjXZw@mail.gmail.com>  <4FB2590C.1050303@intel.com> <1337092577.27694.45.camel@twins>  <1337093840.27694.56.camel@twins> <4FB34D49.1060809@intel.com>  <1337155239.27694.131.camel@twins> <1337155464.27694.132.camel@twins>  <4FB36B12.9000705@intel.com> <1337158712.27694.134.camel@twins>  <CAGjg+kGErUbt5JS7SLCGtUO_JKk0LtkpyM4JgFUsxHME53k=hQ@mail.gmail.com> <1337166253.27694.136.camel@twins>
+In-Reply-To: <1337166253.27694.136.camel@twins>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On 05/16/2012 07:04 PM, Peter Zijlstra wrote:
 
-On 2012/05/16 14:51, Johannes Weiner wrote:
-> Hi Nai,
->
-> On Wed, May 16, 2012 at 01:25:34PM +0800, nai.xia wrote:
->> Hi Johannes,
->>
->> Just out of curiosity(since I didn't study deep into the
->> reclaiming algorithms), I can recall from here that around 2005,
->> there was an(or some?) implementation of the "Clock-pro" algorithm
->> which also have the idea of "reuse distance", but it seems that algo
->> did not work well enough to get merged? Does this patch series finally
->> solve the problem(s) with "Clock-pro" or totally doesn't have to worry
->> about the similar problems?
->
-> As far as I understood, clock-pro set out to solve more problems than
-> my patch set and it failed to satisfy everybody.
->
-> The main error case was that it could not partially cache data of a
-> set that was bigger than memory.  Instead, looping over the file
-> repeatedly always has to read every single page because the most
-> recent page allocations would push out the pages needed in the nearest
-> future.  I never promised to solve this problem in the first place.
-> But giving more memory to the big looping load is not useful in our
-> current situation, and at least my code protects smaller sets of
-> active cache from these loops.  So it's not optimal, but it sucks only
-> half as much :)
-
-Yep, I see ;)
-
->
-> There may have been improvements from clock-pro, but it's hard to get
-> code merged that does not behave as expected in theory with nobody
-> understanding what's going on.
->
-> My code is fairly simple, works for the tests I've done and the
-> behaviour observed so far is understood (at least by me).
-
-OK, I assume that you do aware that the system you constructed with
-this simple and understandable idea looks like a so called "feedback
-system"? Or in other words, I think theoretically the refault-distance
-of a page before and after your algorithm is applied is not the same.
-And this changed refault-distance pattern is then feed as input into
-your algorithm. A feedback system may be hard(and may be simple) to
-analyze but may also work well magically.
-
-Well, again I confess I've not done enough course in this area. Just hope
-that my words can help you think more comprehensively. :)
+> On Wed, 2012-05-16 at 18:58 +0800, Alex Shi wrote:
+>> If someone can unify the common fields of mmu_gather, and
+>> left private field for specific arch. it will be great and much
+>> helpful. 
+> 
+> I've send you a link to a patch-set that does exactly that twice now.
+> 
+>   http://marc.info/?l=linux-mm&m=129952019004146&w=2
 
 
-Thanks,
-
-Nai
+Thanks for resend. Actually, I had read many times above patch, but it's
+still hard to catch some lines, maybe due to it can not apply on current
+mm/memory.c that is due to your bit newer code 9547d01b on 2011-05-24.
+or maybe I am too stupid. :)
