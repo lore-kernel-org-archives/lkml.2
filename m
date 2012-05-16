@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S967355Ab2EPFAn (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 May 2012 01:00:43 -0400
-Received: from mga14.intel.com ([143.182.124.37]:54288 "EHLO mga14.intel.com"
+	id S967326Ab2EPFAd (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 May 2012 01:00:33 -0400
+Received: from mga14.intel.com ([143.182.124.37]:30670 "EHLO mga14.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S967338Ab2EPFAi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 May 2012 01:00:38 -0400
+	id S966399Ab2EPFA3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 16 May 2012 01:00:29 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
-   d="scan'208";a="100617344"
+   d="scan'208";a="100617295"
 From: "Yan, Zheng" <zheng.z.yan@intel.com>
 To: a.p.zijlstra@chello.nl, mingo@elte.hu, andi@firstfloor.org,
         eranian@google.com, jolsa@redhat.com, ming.m.lin@intel.com,
         gregkh@linuxfoundation.org
 Cc: linux-kernel@vger.kernel.org
-Subject: [PATCH 10/10] perf tool: Add pmu event alias support
-Date: Wed, 16 May 2012 13:00:03 +0800
-Message-Id: <1337144403-30841-11-git-send-email-zheng.z.yan@intel.com>
+Subject: [PATCH 06/10] perf: Add Nehalem and Sandy Bridge uncore support
+Date: Wed, 16 May 2012 12:59:59 +0800
+Message-Id: <1337144403-30841-7-git-send-email-zheng.z.yan@intel.com>
 X-Mailer: git-send-email 1.7.7.6
 In-Reply-To: <1337144403-30841-1-git-send-email-zheng.z.yan@intel.com>
 References: <1337144403-30841-1-git-send-email-zheng.z.yan@intel.com>
@@ -26,320 +26,287 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: "Yan, Zheng" <zheng.z.yan@intel.com>
 
-The definition of pmu event alias is located at:
-  ${sysfs_mount}/bus/event_source/devices/${pmu}/events/
-
-Each file in the 'events' directory defines a event alias. Its contents
-is like:
-  config=1,config1=2
-
-Using pmu event alias, event could be now specified like:
-  uncore/CLOCKTICKS/
+Add Intel Nehalem and Sandy Bridge uncore pmu support.
 
 Signed-off-by: Zheng Yan <zheng.z.yan@intel.com>
 ---
- tools/perf/util/parse-events.c |   27 +++++++
- tools/perf/util/parse-events.h |    1 +
- tools/perf/util/parse-events.y |    2 +-
- tools/perf/util/pmu.c          |  153 ++++++++++++++++++++++++++++++++++++++++
- tools/perf/util/pmu.h          |   11 +++-
- 5 files changed, 192 insertions(+), 2 deletions(-)
+ arch/x86/kernel/cpu/perf_event_intel_uncore.c |  194 +++++++++++++++++++++++++
+ arch/x86/kernel/cpu/perf_event_intel_uncore.h |   50 +++++++
+ 2 files changed, 244 insertions(+), 0 deletions(-)
 
-diff --git a/tools/perf/util/parse-events.c b/tools/perf/util/parse-events.c
-index c587ae8..b90d671 100644
---- a/tools/perf/util/parse-events.c
-+++ b/tools/perf/util/parse-events.c
-@@ -656,12 +656,20 @@ int parse_events_add_pmu(struct list_head *list, int *idx,
- 	struct perf_event_attr attr;
- 	struct perf_pmu *pmu;
+diff --git a/arch/x86/kernel/cpu/perf_event_intel_uncore.c b/arch/x86/kernel/cpu/perf_event_intel_uncore.c
+index e33ea16..84f9ae6 100644
+--- a/arch/x86/kernel/cpu/perf_event_intel_uncore.c
++++ b/arch/x86/kernel/cpu/perf_event_intel_uncore.c
+@@ -10,6 +10,192 @@ static cpumask_t uncore_cpu_mask;
+ static struct event_constraint constraint_fixed =
+ 	EVENT_CONSTRAINT((u64)-1, 1 << UNCORE_PMC_IDX_FIXED, (u64)-1);
  
-+	/* called by parse_event_config? */
-+	if (!strcmp(name, "__config")) {
-+		list_splice_init(head_config, list);
-+		return 0;
++DEFINE_UNCORE_FORMAT_ATTR(event, event, "config:0-7");
++DEFINE_UNCORE_FORMAT_ATTR(umask, umask, "config:8-15");
++DEFINE_UNCORE_FORMAT_ATTR(edge, edge, "config:18");
++DEFINE_UNCORE_FORMAT_ATTR(inv, inv, "config:23");
++DEFINE_UNCORE_FORMAT_ATTR(cmask5, cmask, "config:24-28");
++DEFINE_UNCORE_FORMAT_ATTR(cmask8, cmask, "config:24-31");
++
++/* Sandy Bridge uncore support */
++static void snb_uncore_msr_enable_event(struct intel_uncore_box *box,
++					struct perf_event *event)
++{
++	struct hw_perf_event *hwc = &event->hw;
++
++	if (hwc->idx < UNCORE_PMC_IDX_FIXED)
++		wrmsrl(hwc->config_base, hwc->config | SNB_UNC_CTL_EN);
++	else
++		wrmsrl(hwc->config_base, SNB_UNC_CTL_EN);
++}
++
++static void snb_uncore_msr_disable_event(struct intel_uncore_box *box,
++					struct perf_event *event)
++{
++	wrmsrl(event->hw.config_base, 0);
++}
++
++static u64 snb_uncore_msr_read_counter(struct intel_uncore_box *box,
++					struct perf_event *event)
++{
++	u64 count;
++	rdmsrl(event->hw.event_base, count);
++	return count;
++}
++
++static void snb_uncore_msr_init_box(struct intel_uncore_box *box)
++{
++	if (box->pmu->pmu_idx == 0) {
++		wrmsrl(SNB_UNC_PERF_GLOBAL_CTL,
++			SNB_UNC_GLOBAL_CTL_EN | SNB_UNC_GLOBAL_CTL_CORE_ALL);
 +	}
-+
- 	pmu = perf_pmu__find(name);
- 	if (!pmu)
- 		return -EINVAL;
- 
- 	memset(&attr, 0, sizeof(attr));
- 
-+	if (perf_pmu__check_alias(pmu, head_config))
-+		return -EINVAL;
- 	/*
- 	 * Configure hardcoded terms first, no need to check
- 	 * return value when called with fail == 0 ;)
-@@ -771,6 +779,25 @@ static int __parse_events(const char *str, int *idx, struct list_head *list)
- 	return ret;
- }
- 
-+/*
-+ * parse event config string, return a list of event terms.
-+ */
-+int parse_event_config(struct list_head *terms, const char *str)
-+{
-+	char *buf;
-+	int ret;
-+
-+	buf = malloc(strlen(str) + 10);
-+	if (!buf)
-+		return -ENOMEM;
-+
-+	sprintf(buf, "__config/%s/", str);
-+	ret = __parse_events(buf, NULL, terms);
-+
-+	free(buf);
-+	return ret;
 +}
 +
- int parse_events(struct perf_evlist *evlist, const char *str, int unset __used)
- {
- 	LIST_HEAD(list);
-diff --git a/tools/perf/util/parse-events.h b/tools/perf/util/parse-events.h
-index 6a98b8d..67f7948 100644
---- a/tools/perf/util/parse-events.h
-+++ b/tools/perf/util/parse-events.h
-@@ -32,6 +32,7 @@ extern int parse_events_option(const struct option *opt, const char *str,
- extern int parse_events(struct perf_evlist *evlist, const char *str,
- 			int unset);
- extern int parse_filter(const struct option *opt, const char *str, int unset);
-+extern int parse_event_config(struct list_head *terms, const char *str);
- 
- #define EVENTS_HELP_MAX (128*1024)
- 
-diff --git a/tools/perf/util/parse-events.y b/tools/perf/util/parse-events.y
-index 52082a7..8a26f3d 100644
---- a/tools/perf/util/parse-events.y
-+++ b/tools/perf/util/parse-events.y
-@@ -197,7 +197,7 @@ PE_NAME
- {
- 	struct parse_events__term *term;
- 
--	ABORT_ON(parse_events__new_term(&term, PARSE_EVENTS__TERM_TYPE_NUM,
-+	ABORT_ON(parse_events__new_term(&term, PARSE_EVENTS__TERM_TYPE_STR,
- 		 $1, NULL, 1));
- 	$$ = term;
- }
-diff --git a/tools/perf/util/pmu.c b/tools/perf/util/pmu.c
-index cb08a11..f74a1dc 100644
---- a/tools/perf/util/pmu.c
-+++ b/tools/perf/util/pmu.c
-@@ -80,6 +80,131 @@ static int pmu_format(char *name, struct list_head *format)
- 	return 0;
- }
- 
-+static int perf_pmu__new_alias(struct list_head *list, char *name, FILE *file)
-+{
-+	struct perf_pmu__alias *alias;
-+	char buf[256];
-+	int ret;
-+
-+	ret = fread(buf, 1, sizeof(buf), file);
-+	if (ret == 0)
-+		return -EINVAL;
-+	buf[ret] = 0;
-+
-+	alias = malloc(sizeof(*alias));
-+	if (!alias)
-+		return -ENOMEM;
-+
-+	INIT_LIST_HEAD(&alias->terms);
-+	ret = parse_event_config(&alias->terms, buf);
-+	if (ret) {
-+		free(alias);
-+		return ret;
-+	}
-+
-+	alias->name = strdup(name);
-+	list_add_tail(&alias->list, list);
-+	return 0;
-+}
-+
-+/*
-+ * Process all the sysfs attributes located under the directory
-+ * specified in 'dir' parameter.
-+ */
-+static int pmu_aliases_parse(char *dir, struct list_head *head)
-+{
-+	struct dirent *evt_ent;
-+	DIR *event_dir;
-+	int ret = 0;
-+
-+	event_dir = opendir(dir);
-+	if (!event_dir)
-+		return -EINVAL;
-+
-+	while (!ret && (evt_ent = readdir(event_dir))) {
-+		char path[PATH_MAX];
-+		char *name = evt_ent->d_name;
-+		FILE *file;
-+
-+		if (!strcmp(name, ".") || !strcmp(name, ".."))
-+			continue;
-+
-+		snprintf(path, PATH_MAX, "%s/%s", dir, name);
-+
-+		ret = -EINVAL;
-+		file = fopen(path, "r");
-+		if (!file)
-+			break;
-+		ret = perf_pmu__new_alias(head, name, file);
-+		fclose(file);
-+	}
-+
-+	closedir(event_dir);
-+	return ret;
-+}
-+
-+/*
-+ * Reading the pmu event aliases definition, which should be located at:
-+ * /sys/bus/event_source/devices/<dev>/events as sysfs group attributes.
-+ */
-+static int pmu_aliases(char *name, struct list_head *head)
-+{
-+	struct stat st;
-+	char path[PATH_MAX];
-+	const char *sysfs;
-+
-+	sysfs = sysfs_find_mountpoint();
-+	if (!sysfs)
-+		return -1;
-+
-+	snprintf(path, PATH_MAX,
-+		 "%s/bus/event_source/devices/%s/events", sysfs, name);
-+
-+	if (stat(path, &st) < 0)
-+		return -1;
-+
-+	if (pmu_aliases_parse(path, head))
-+		return -1;
-+
-+	return 0;
-+}
-+
-+static struct perf_pmu__alias *pmu_find_alias(struct list_head *aliases,
-+					struct parse_events__term *term)
-+{
-+	struct perf_pmu__alias *alias;
-+
-+	if (term->type != PARSE_EVENTS__TERM_TYPE_STR || term->val.str)
-+		return NULL;
-+
-+	list_for_each_entry(alias, aliases, list) {
-+		if (!strcmp(alias->name, term->config))
-+			return alias;
-+	}
-+
-+	return NULL;
-+}
-+
-+static int pmu_alias_terms(struct perf_pmu__alias *alias,
-+			   struct list_head *terms)
-+{
-+	struct parse_events__term *term, *clone;
-+	LIST_HEAD(list);
-+	int ret;
-+
-+	list_for_each_entry(term, &alias->terms, list) {
-+		ret = parse_events__new_term(&clone, term->type, term->config,
-+						term->val.str, term->val.num);
-+		if (ret) {
-+			parse_events__free_terms(&list);
-+			return ret;
-+		}
-+		list_add_tail(&clone->list, &list);
-+	}
-+	list_splice(&list, terms);
-+	return 0;
-+}
-+
- /*
-  * Reading/parsing the default pmu type value, which should be
-  * located at:
-@@ -118,6 +243,7 @@ static struct perf_pmu *pmu_lookup(char *name)
- {
- 	struct perf_pmu *pmu;
- 	LIST_HEAD(format);
-+	LIST_HEAD(aliases);
- 	__u32 type;
- 
- 	/*
-@@ -135,8 +261,12 @@ static struct perf_pmu *pmu_lookup(char *name)
- 	if (!pmu)
- 		return NULL;
- 
-+	pmu_aliases(name, &aliases);
-+
- 	INIT_LIST_HEAD(&pmu->format);
-+	INIT_LIST_HEAD(&pmu->aliases);
- 	list_splice(&format, &pmu->format);
-+	list_splice(&aliases, &pmu->aliases);
- 	pmu->name = strdup(name);
- 	pmu->type = type;
- 	return pmu;
-@@ -274,6 +404,29 @@ int perf_pmu__config(struct perf_pmu *pmu, struct perf_event_attr *attr,
- 	return pmu_config(&pmu->format, attr, head_terms);
- }
- 
-+/*
-+ * Find alias in the terms list and replace it with the terms
-+ * defined for the alias
-+ */
-+int perf_pmu__check_alias(struct perf_pmu *pmu, struct list_head *head_terms)
-+{
-+	struct parse_events__term *term, *h;
-+	struct perf_pmu__alias *alias;
-+	int ret;
-+
-+	list_for_each_entry_safe(term, h, head_terms, list) {
-+		alias = pmu_find_alias(&pmu->aliases, term);
-+		if (!alias)
-+			continue;
-+		ret = pmu_alias_terms(alias, &term->list);
-+		if (ret)
-+			return ret;
-+		list_del(&term->list);
-+		free(term);
-+	}
-+	return 0;
-+}
-+
- int perf_pmu__new_format(struct list_head *list, char *name,
- 			 int config, unsigned long *bits)
- {
-diff --git a/tools/perf/util/pmu.h b/tools/perf/util/pmu.h
-index 68c0db9..535f2c5 100644
---- a/tools/perf/util/pmu.h
-+++ b/tools/perf/util/pmu.h
-@@ -19,17 +19,26 @@ struct perf_pmu__format {
- 	struct list_head list;
- };
- 
-+struct perf_pmu__alias {
-+	char *name;
-+	struct list_head terms;
-+	struct list_head list;
++static struct attribute *snb_uncore_formats_attr[] = {
++	&format_attr_event.attr,
++	&format_attr_umask.attr,
++	&format_attr_edge.attr,
++	&format_attr_inv.attr,
++	&format_attr_cmask5.attr,
++	NULL,
 +};
 +
- struct perf_pmu {
- 	char *name;
- 	__u32 type;
- 	struct list_head format;
-+	struct list_head aliases;
- 	struct list_head list;
- };
++static struct attribute_group snb_uncore_format_group = {
++	.name = "format",
++	.attrs = snb_uncore_formats_attr,
++};
++
++static struct intel_uncore_ops snb_uncore_msr_ops = {
++	.init_box	= snb_uncore_msr_init_box,
++	.disable_event	= snb_uncore_msr_disable_event,
++	.enable_event	= snb_uncore_msr_enable_event,
++	.read_counter	= snb_uncore_msr_read_counter,
++};
++
++static struct event_constraint snb_uncore_cbo_constraints[] = {
++	UNCORE_EVENT_CONSTRAINT(0x80, 0x1),
++	UNCORE_EVENT_CONSTRAINT(0x83, 0x1),
++	EVENT_CONSTRAINT_END
++};
++
++static struct intel_uncore_type snb_uncore_cbo = {
++	.name		= "C-Box",
++	.num_counters   = 2,
++	.num_boxes	= 4,
++	.perf_ctr_bits	= 44,
++	.fixed_ctr_bits	= 48,
++	.perf_ctr	= SNB_UNC_CBO_0_PER_CTR0,
++	.event_ctl	= SNB_UNC_CBO_0_PERFEVTSEL0,
++	.fixed_ctr	= SNB_UNC_FIXED_CTR,
++	.fixed_ctl	= SNB_UNC_FIXED_CTR_CTRL,
++	.single_fixed	= 1,
++	.event_mask	= SNB_UNC_RAW_EVENT_MASK,
++	.msr_offset	= SNB_UNC_CBO_MSR_OFFSET,
++	.constraints	= snb_uncore_cbo_constraints,
++	.ops		= &snb_uncore_msr_ops,
++	.format_group	= &snb_uncore_format_group,
++};
++
++static struct intel_uncore_type *snb_msr_uncores[] = {
++	&snb_uncore_cbo,
++	NULL,
++};
++/* end of Sandy Bridge uncore support */
++
++/* Nehalem uncore support */
++static void nhm_uncore_msr_disable_box(struct intel_uncore_box *box)
++{
++	wrmsrl(NHM_UNC_PERF_GLOBAL_CTL, 0);
++}
++
++static void nhm_uncore_msr_enable_box(struct intel_uncore_box *box)
++{
++	wrmsrl(NHM_UNC_PERF_GLOBAL_CTL,
++		NHM_UNC_GLOBAL_CTL_EN_PC_ALL | NHM_UNC_GLOBAL_CTL_EN_FC);
++}
++
++static void nhm_uncore_msr_enable_event(struct intel_uncore_box *box,
++					struct perf_event *event)
++{
++	struct hw_perf_event *hwc = &event->hw;
++
++	if (hwc->idx < UNCORE_PMC_IDX_FIXED)
++		wrmsrl(hwc->config_base, hwc->config | SNB_UNC_CTL_EN);
++	else
++		wrmsrl(hwc->config_base, NHM_UNC_FIXED_CTR_CTL_EN);
++}
++
++static struct attribute *nhm_uncore_formats_attr[] = {
++	&format_attr_event.attr,
++	&format_attr_umask.attr,
++	&format_attr_edge.attr,
++	&format_attr_inv.attr,
++	&format_attr_cmask8.attr,
++	NULL,
++};
++
++static struct attribute_group nhm_uncore_format_group = {
++	.name = "format",
++	.attrs = nhm_uncore_formats_attr,
++};
++
++static struct uncore_event_desc nhm_uncore_events[] = {
++	INTEL_UNCORE_EVENT_DESC(CLOCKTICKS, "config=0xffff"),
++	/* full cache line writes to DRAM */
++	INTEL_UNCORE_EVENT_DESC(QMC_WRITES_FULL_ANY, "event=0x2f,umask=0xf"),
++	/* Quickpath Memory Controller normal priority read requests */
++	INTEL_UNCORE_EVENT_DESC(QMC_NORMAL_READS_ANY, "event=0x2c,umask=0xf"),
++	/* Quickpath Home Logic read requests from the IOH */
++	INTEL_UNCORE_EVENT_DESC(QHL_REQUEST_IOH_READS,
++				"event=0x20,umask=0x1"),
++	/* Quickpath Home Logic write requests from the IOH */
++	INTEL_UNCORE_EVENT_DESC(QHL_REQUEST_IOH_WRITES,
++				"event=0x20,umask=0x2"),
++	/* Quickpath Home Logic read requests from a remote socket */
++	INTEL_UNCORE_EVENT_DESC(QHL_REQUEST_REMOTE_READS,
++				"event=0x20,umask=0x4"),
++	/* Quickpath Home Logic write requests from a remote socket */
++	INTEL_UNCORE_EVENT_DESC(QHL_REQUEST_REMOTE_WRITES,
++				"event=0x20,umask=0x8"),
++	/* Quickpath Home Logic read requests from the local socket */
++	INTEL_UNCORE_EVENT_DESC(QHL_REQUEST_LOCAL_READS,
++				"event=0x20,umask=0x10"),
++	/* Quickpath Home Logic write requests from the local socket */
++	INTEL_UNCORE_EVENT_DESC(QHL_REQUEST_LOCAL_WRITES,
++				"event=0x20,umask=0x20"),
++	{ /* end: all zeroes */ },
++};
++
++static struct intel_uncore_ops nhm_uncore_msr_ops = {
++	.disable_box	= nhm_uncore_msr_disable_box,
++	.enable_box	= nhm_uncore_msr_enable_box,
++	.disable_event	= snb_uncore_msr_disable_event,
++	.enable_event	= nhm_uncore_msr_enable_event,
++	.read_counter	= snb_uncore_msr_read_counter,
++};
++
++static struct intel_uncore_type nhm_uncore = {
++	.name		= "",
++	.num_counters   = 8,
++	.num_boxes	= 1,
++	.perf_ctr_bits	= 48,
++	.fixed_ctr_bits	= 48,
++	.event_ctl	= NHM_UNC_PERFEVTSEL0,
++	.perf_ctr	= NHM_UNC_UNCORE_PMC0,
++	.fixed_ctr	= NHM_UNC_FIXED_CTR,
++	.fixed_ctl	= NHM_UNC_FIXED_CTR_CTRL,
++	.event_mask	= NHM_UNC_RAW_EVENT_MASK,
++	.event_descs	= nhm_uncore_events,
++	.ops		= &nhm_uncore_msr_ops,
++	.format_group	= &nhm_uncore_format_group,
++};
++
++static struct intel_uncore_type *nhm_msr_uncores[] = {
++	&nhm_uncore,
++	NULL,
++};
++/* end of Nehalem uncore support */
++
+ static void uncore_assign_hw_event(struct intel_uncore_box *box,
+ 				struct perf_event *event, int idx)
+ {
+@@ -806,6 +992,14 @@ static int __init uncore_cpu_init(void)
+ 	int ret, cpu;
  
- struct perf_pmu *perf_pmu__find(char *name);
- int perf_pmu__config(struct perf_pmu *pmu, struct perf_event_attr *attr,
- 		     struct list_head *head_terms);
--
-+int perf_pmu__check_alias(struct perf_pmu *pmu, struct list_head *head_terms);
-+struct list_head *perf_pmu__alias(struct perf_pmu *pmu,
-+				struct list_head *head_terms);
- int perf_pmu_wrap(void);
- void perf_pmu_error(struct list_head *list, char *name, char const *msg);
+ 	switch (boot_cpu_data.x86_model) {
++	case 26: /* Nehalem */
++	case 30:
++	case 37: /* Westmere */
++		msr_uncores = nhm_msr_uncores;
++		break;
++	case 42: /* Sandy Bridge */
++		msr_uncores = snb_msr_uncores;
++		break;
+ 	default:
+ 		return 0;
+ 	}
+diff --git a/arch/x86/kernel/cpu/perf_event_intel_uncore.h b/arch/x86/kernel/cpu/perf_event_intel_uncore.h
+index 49a6bfb..eeb5ca5 100644
+--- a/arch/x86/kernel/cpu/perf_event_intel_uncore.h
++++ b/arch/x86/kernel/cpu/perf_event_intel_uncore.h
+@@ -15,6 +15,56 @@
  
+ #define UNCORE_EVENT_CONSTRAINT(c, n) EVENT_CONSTRAINT(c, n, 0xff)
+ 
++/* SNB event control */
++#define SNB_UNC_CTL_EV_SEL_MASK			0x000000ff
++#define SNB_UNC_CTL_UMASK_MASK			0x0000ff00
++#define SNB_UNC_CTL_EDGE_DET			(1 << 18)
++#define SNB_UNC_CTL_EN				(1 << 22)
++#define SNB_UNC_CTL_INVERT			(1 << 23)
++#define SNB_UNC_CTL_CMASK_MASK			0x1f000000
++#define NHM_UNC_CTL_CMASK_MASK			0xff000000
++#define NHM_UNC_FIXED_CTR_CTL_EN		(1 << 0)
++
++#define SNB_UNC_RAW_EVENT_MASK			(SNB_UNC_CTL_EV_SEL_MASK | \
++						 SNB_UNC_CTL_UMASK_MASK | \
++						 SNB_UNC_CTL_EDGE_DET | \
++						 SNB_UNC_CTL_INVERT | \
++						 SNB_UNC_CTL_CMASK_MASK)
++
++#define NHM_UNC_RAW_EVENT_MASK			(SNB_UNC_CTL_EV_SEL_MASK | \
++						 SNB_UNC_CTL_UMASK_MASK | \
++						 SNB_UNC_CTL_EDGE_DET | \
++						 SNB_UNC_CTL_INVERT | \
++						 NHM_UNC_CTL_CMASK_MASK)
++
++/* SNB global control register */
++#define SNB_UNC_PERF_GLOBAL_CTL                 0x391
++#define SNB_UNC_FIXED_CTR_CTRL                  0x394
++#define SNB_UNC_FIXED_CTR                       0x395
++
++/* SNB uncore global control */
++#define SNB_UNC_GLOBAL_CTL_CORE_ALL             ((1 << 4) - 1)
++#define SNB_UNC_GLOBAL_CTL_EN                   (1 << 29)
++
++/* SNB Cbo register */
++#define SNB_UNC_CBO_0_PERFEVTSEL0               0x700
++#define SNB_UNC_CBO_0_PER_CTR0                  0x706
++#define SNB_UNC_CBO_MSR_OFFSET                  0x10
++
++/* NHM global control register */
++#define NHM_UNC_PERF_GLOBAL_CTL                 0x391
++#define NHM_UNC_FIXED_CTR                       0x394
++#define NHM_UNC_FIXED_CTR_CTRL                  0x395
++
++/* NHM uncore global control */
++#define NHM_UNC_GLOBAL_CTL_EN_PC_ALL            ((1ULL << 8) - 1)
++#define NHM_UNC_GLOBAL_CTL_EN_FC                (1ULL << 32)
++
++/* NHM uncore register */
++#define NHM_UNC_PERFEVTSEL0                     0x3c0
++#define NHM_UNC_UNCORE_PMC0                     0x3b0
++
++
+ struct intel_uncore_ops;
+ struct intel_uncore_pmu;
+ struct intel_uncore_box;
 -- 
 1.7.7.6
 
