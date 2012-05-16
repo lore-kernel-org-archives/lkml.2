@@ -1,106 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S967118Ab2EPNIH (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 May 2012 09:08:07 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:36535 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932658Ab2EPNIF (ORCPT
+	id S967131Ab2EPNK0 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 May 2012 09:10:26 -0400
+Received: from out1-smtp.messagingengine.com ([66.111.4.25]:51921 "EHLO
+	out1-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S932658Ab2EPNKY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 May 2012 09:08:05 -0400
-Date: Wed, 16 May 2012 14:08:01 +0100
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Yadwinder Singh Brar <yadi.brar01@gmail.com>
-Cc: Yadwinder Singh <yadi.brar@samsung.com>, linux-samsung-soc@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH 2/2] regulator: Add support for MAX77686.
-Message-ID: <20120516130800.GC26337@opensource.wolfsonmicro.com>
-References: <1336580695-1184-1-git-send-email-yadi.brar@samsung.com>
- <1336580695-1184-3-git-send-email-yadi.brar@samsung.com>
- <20120509184709.GC32037@sirena.org.uk>
- <CAKew6eVZuOUH8RHQbffCGX7i=6dM-qOJXojoKrOsM3V5ugEjHA@mail.gmail.com>
+	Wed, 16 May 2012 09:10:24 -0400
+X-Sasl-enc: yJK4j8I6P8rR6iiMfr6QO4Bzpxu23WqFYG2PTpH3inGK 1337173822
+Date: Wed, 16 May 2012 06:10:21 -0700
+From: Greg KH <greg@kroah.com>
+To: Arnd Bergmann <arnd@arndb.de>
+Cc: Stephen Rothwell <sfr@canb.auug.org.au>, Olof Johansson <olof@lixom.net>,
+        linux-arm-kernel@lists.infradead.org, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org,
+        Maxime Ripard <maxime.ripard@free-electrons.com>,
+        Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
+Subject: Re: linux-next: manual merge of the arm-soc tree with the staging
+ tree
+Message-ID: <20120516131021.GA32351@kroah.com>
+References: <20120516185812.ce1ab57c3ec72445135a35fc@canb.auug.org.au>
+ <201205161054.15610.arnd@arndb.de>
+ <20120516124851.GA32064@kroah.com>
+ <201205161303.35080.arnd@arndb.de>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="JgQwtEuHJzHdouWu"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <CAKew6eVZuOUH8RHQbffCGX7i=6dM-qOJXojoKrOsM3V5ugEjHA@mail.gmail.com>
-X-Cookie: Condense soup, not books!
+In-Reply-To: <201205161303.35080.arnd@arndb.de>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Wed, May 16, 2012 at 01:03:34PM +0000, Arnd Bergmann wrote:
+> On Wednesday 16 May 2012, Greg KH wrote:
+> > On Wed, May 16, 2012 at 10:54:15AM +0000, Arnd Bergmann wrote:
+> > > On Wednesday 16 May 2012, Stephen Rothwell wrote:
+> > > > Today's linux-next merge of the arm-soc tree got a conflict in
+> > > > arch/arm/boot/dts/at91sam9g20.dtsi between commit 7cb2e629a240 ("ARM:
+> > > > AT91: Add ADC driver to the at91sam9g20 dtsi") from the staging tree and
+> > > > commit 5b6089cb6f28 ("ARM: at91: add at91sam9260 DT support") from the
+> > > > arm-soc tree.
+> > > > 
+> > > > So, I didn't know what to do with this, so I used the arm-soc version of
+> > > > this file (effectively throwing away the staging tree change).  Hints,
+> > > > anyone?
+> > > 
+> > > I suspect the addition of the adc node should just go into the
+> > > at91sam9260.dtsi file.
+> > 
+> > So does that mean that the staging tree version is correct?  Or that
+> > someone needs to send me a fixup patch here?
+> 
+> The staging tree version adds contents to at91sam9g20.dtsi, and the context
+> gets moved to at91sam9260.dtsi in arm-soc. If we want to resolve it now,
+> I think the best way is to add the change to at91sam9260.dtsi in arm-soc
+> and let you drop that part in staging. There are no hard dependencies
+> since this is new code and it the driver is still correct without the
+> change, it simply won't find the device.
 
---JgQwtEuHJzHdouWu
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Ok, so if we leave it as-is for now, we can resolve it after 3.5-rc1 is
+out and we see what branch ended up "winning"?  :)
 
-On Tue, May 15, 2012 at 07:17:11PM +0530, Yadwinder Singh Brar wrote:
-> On Thu, May 10, 2012 at 12:17 AM, Mark Brown
-> > On Wed, May 09, 2012 at 09:54:55PM +0530, Yadwinder Singh wrote:
-
-> >> + =A0 =A0 if (iodev->dev->of_node) {
-> >> + =A0 =A0 =A0 =A0 =A0 =A0 ret =3D max77686_pmic_dt_parse_pdata(iodev, =
-pdata);
-> >> + =A0 =A0 =A0 =A0 =A0 =A0 if (ret)
-> >> + =A0 =A0 =A0 =A0 =A0 =A0 =A0 =A0 =A0 =A0 return ret;
-
-> > This ought to use of_regulator_match().
-
-> While using it I am seeing that though it reduces few lines of code in
-> our driver , it adds a huge array(of_regulator_match[])in which we
-> have to populate the strings(name) which we already have in
-> regulator_desc[ ], Isn't it overhead ?
-
-Well, I think half the problem here is that you're only instantiating
-things you find in the device tree.  If you were unconditionally
-instantiating all the regulators then suddenly this becomes a lot
-neater.
-
-> >> + =A0 =A0 =A0 =A0 =A0 =A0 rdev[i] =3D regulator_register(&regulators[i=
-d], max77686->dev,
-> >> + =A0 =A0 =A0 =A0 =A0 =A0 =A0 =A0 =A0 =A0 =A0 =A0 =A0 =A0 =A0 =A0 =A0 =
-=A0 =A0 =A0 =A0pdata->regulators[i].initdata,
-> >> + =A0 =A0 =A0 =A0 =A0 =A0 =A0 =A0 =A0 =A0 =A0 =A0 =A0 =A0 =A0 =A0 =A0 =
-=A0 =A0 =A0 =A0max77686, NULL);
-
-> > No, you should unconditionally register all regulators the device
-> > physically has. =A0This is useful for debug and simplifies the code.
-
-> If we have to use only 2 or 3 regulators on our board out off 36 or
-> lets take a case if our chip supports 50/100 regulators, I think i
-> will a overhead to register all unused regulators as well as
-> populating all the regulators in DT or platform data.
-
-This isn't really a terribly realistic situation - if there are were
-that many unused regulators the part selection is clearly not
-appropriate to the system and most hardware engineers just wouldn't do
-it.
-
-Having information about all the regulators also allows us to do things
-like power off any unused regulators which were left on after boot (eg,
-due to bootloader or the PMIC defaults).
-
---JgQwtEuHJzHdouWu
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBAgAGBQJPs6aoAAoJEBus8iNuMP3dAcAP/A5sos9nrV0wWChFeJwxE6a6
-2EYqgs3/QWzWIyijWja2zJHfeBbG0rDEJEw4Tkq4zsOEfHwvkJ4orlUFz1415zsG
-nVWQtTwod5Q5cAQqGUCSNOGYLx5eerloCLGi7oYp48gcmZ9FwkVfImRauAbs5GAa
-VvjFd2Awwx3QBooBlgKdHR9MmY5zPhZIMw0fLlUm3vQpFgTumyXyGSRc+JtBt2M0
-MvjkJ291/M4BiCdWVanmNQqGDl/dYR5fqIGzY4c4Z34BfhP73BisKdFN//s5qUPi
-M/fY8misCoDmn5umVUDXB/qaLB5VzUTBHVojqDIHrffjhXsNtsARrA7TMVla0iUX
-pOIXU1Wgjop9oml76y3sh8MRqOm+G0lfJBYcA+z4xFvrxlXACTvsjg/c3HPHqyAG
-GwsBzHPpz88BKwwR2rQMOpiONARTPor8jMuG6hzfTWjhk0FRuEvY3SkQsdeh2um2
-v+z/5wEh7XFlG02HBMz5mqPBKFys5Z4R3HX8WuNVnV5BXucgZmoHlP00wL1DAtZY
-Vdfo12WdE0ztrxaWhjtziCwQVliQUdmc1DDovZf1SCVUb4TsxrbbBsOQdNOgeA/z
-AP4TSaCMPsMwTb7ymltOfcYHV8VZ0rH2lyitkjRMv17fYNjQ8km3MwMaIs9gW0SQ
-JAYV1kj2O0ahw4xi9oCZ
-=tfPH
------END PGP SIGNATURE-----
-
---JgQwtEuHJzHdouWu--
+greg k-h
