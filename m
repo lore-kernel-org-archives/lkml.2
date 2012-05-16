@@ -1,199 +1,170 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030276Ab2EPLTz (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 May 2012 07:19:55 -0400
-Received: from na3sys009aog131.obsmtp.com ([74.125.149.247]:56258 "EHLO
-	na3sys009aog131.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1030240Ab2EPLTy (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 May 2012 07:19:54 -0400
-From: Peter Ujfalusi <peter.ujfalusi@ti.com>
-To: Dmitry Torokhov <dtor@mail.ru>
-Cc: Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Liam Girdwood <lrg@ti.com>, Benoit Cousson <b-cousson@ti.com>,
-        linux-kernel@vger.kernel.org, devicetree-discuss@lists.ozlabs.org,
-        peter.ujfalusi@ti.com
-Subject: [PATCH] Input: twl6040-vibra: Update for device tree support
-Date: Wed, 16 May 2012 14:19:46 +0300
-Message-Id: <1337167186-8535-1-git-send-email-peter.ujfalusi@ti.com>
-X-Mailer: git-send-email 1.7.8.6
+	id S967439Ab2EPLW1 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 May 2012 07:22:27 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:43544 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S966952Ab2EPLWZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 16 May 2012 07:22:25 -0400
+Message-ID: <4FB38DDF.7030009@redhat.com>
+Date: Wed, 16 May 2012 08:22:07 -0300
+From: Mauro Carvalho Chehab <mchehab@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
+MIME-Version: 1.0
+To: Borislav Petkov <bp@amd64.org>
+CC: "Luck, Tony" <tony.luck@intel.com>,
+        Linux Edac Mailing List <linux-edac@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Doug Thompson <norsk5@yahoo.com>, Steven Rostedt <rostedt@goodmis.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Ingo Molnar <mingo@redhat.com>
+Subject: Re: [PATCH v22] edac, ras/hw_event.h: use events to handle hw issues
+References: <3908561D78D1C84285E8C5FCA982C28F192EC247@ORSMSX104.amr.corp.intel.com> <4FAC6FF8.3050608@redhat.com> <20120511102527.GI8913@aftab.osrc.amd.com> <4FAD081C.5000704@redhat.com> <20120511172430.GB17299@aftab.osrc.amd.com> <4FAD5CAD.90508@redhat.com> <20120514133404.GE4231@aftab.osrc.amd.com> <4FB1163D.3010302@redhat.com> <20120515150957.GC27806@aftab.osrc.amd.com> <4FB27EDC.8040001@redhat.com> <20120515163855.GE27806@aftab.osrc.amd.com>
+In-Reply-To: <20120515163855.GE27806@aftab.osrc.amd.com>
+X-Enigmail-Version: 1.4.1
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The twl6040 DT support implementation has been changed from the originally
-planned.
-None of the child devices going to have compatible_of property which means
-that the child devices of twl6040 will be created as traditional MFD devices.
-The mfd core driver will decide (based on the DT blob) to create a device
-for the twl6040-vibra or not. If the DT blob has 'vibra' section the device
-will be created without pdata.
-In this case the vibra driver will reach up to the parent node to get the
-needed properties.
-With DT booted kernel we no longer be able to link the regulators to the vibra
-driver, they can be only linked to the MFD device (probed via DT). From the
-vibra driver we ned to use pdev->dev.parent to get the regulators.
+Em 15-05-2012 13:38, Borislav Petkov escreveu:
+> On Tue, May 15, 2012 at 01:05:48PM -0300, Mauro Carvalho Chehab wrote:
+>>> Here's what an error looks like on my system here:
+>>>
+>>>        mcegen.py-2868  [007] .N..   178.261607: mc_event: Corrected error:amd64_edac on memory stick "unknown memory" (mc:0 csrow:3 channel:1  page:0x5bac7 offset:0x388 grain:0 syndrome:0x34ed )
+>>>
+>>> There's still this trailing " " at the end of the error line which
+>>> shouldn't be there and also two spaces between "channel" and "page".
+>>
+>> If you take a look at the trace printk:
+>>
+>> + TP_printk("%s error:%s on memory stick \"%s\" (mc:%d %s %s %s)",
+>> +           (__entry->err_type == HW_EVENT_ERR_CORRECTED) ? "Corrected" :
+>> +                 ((__entry->err_type == HW_EVENT_ERR_FATAL) ?
+>> +                 "Fatal" : "Uncorrected"),
+>> +           __get_str(msg),
+>> +           __get_str(label),
+>> +           __entry->mc_index,
+>> +           __get_str(location),
+>> +           __get_str(detail),
+>> +           __get_str(driver_detail))
+>>
+>> There are not extra spaces there. The first extra space is probably because
+>> there is an extra space at the label string. This should be easy to fix.
+>>
+>> The other extra space at the end is because amd64 currently doesn't provide
+>> driver_detail information.
+> 
+> Remind me again why do we need two strings: detail and driver_detail?
+> 
+> Because they could very well be lumped together with a single "%s"
+> format - "(mc:%d %s)" - and be printed.
 
-Signed-off-by: Peter Ujfalusi <peter.ujfalusi@ti.com>
----
-Hi Dmitry,
+As already explained, after merging two different fields, they can't be easily
+unmerged.
 
-There were a long discussion regarding of the originally planned DT support for
-the twl6040 (MFD) chip over alsa-devel:
-http://mailman.alsa-project.org/pipermail/alsa-devel/2012-May/051730.html
+The main reason for moving from printk to tracepoint is to allow userspace
+programs to get data in binary format, avoiding them to parse a printk message.
 
-As a consequence I needed to change how this MFD device will be represented in
-DT.
-We will no longer load the child devices via DT, but use mfd_add_devices() will
-create the child devices needed.
-If we boot with DT the vibra will not have pdata and it will use the parent
-device's node to get the needed parameters.
+So, it is more important to provide the right information at the trace fields
+than the niceness of the printk data.
 
-This patch is based on:
-git://git.kernel.org/pub/scm/linux/kernel/git/dtor/input.git:next branch
+> 
+> And detail will always contain something which is not the empty string,
+> so problem solved.
+> 
+>>> Also, according to the output above "amd64_edac" is supposed to be
+>>> [error msg] which is strange.
+>>>
+>>> I believe this comes from this call in f1x_map_sysaddr_to_csrow():
+>>>
+>>> 	        edac_mc_handle_error(HW_EVENT_ERR_CORRECTED, mci,
+>>>                              page, offset, syndrome,
+>>>                              csrow, chan, -1,
+>>>                              EDAC_MOD_STR, "", NULL);
+>>>
+>>> I guess you want to do the following instead:
+>>>
+>>>        mcegen.py-2868  [007] .N..   178.261607: mc_event: amd64_edac: corrected error on memory stick "unknown memory" (mc:0 csrow:3 channel:1  page:0x5bac7 offset:0x388 grain:0 syndrome:0x34ed)
+>>>
+>>> maybe concatenate EDAC_MOD_STR with the proper string it reports, i.e.
+>>> corrected/uncorrected error?
+>>
+>> The issue here is because amd64_edac (just like a few other drivers) use
+>> its driver name (EDAC_MOD_STR) as the error message, instead of using 
+>> something meaningful, like "read error" or "ECC error".
+> 
+> No, the issue is here that edac_mc_handle_ce() used to say "CE..."
+> and edac_mc_handle_ue() used to say "UE.. " and yours don't say that
+> anymore. In other words, you need to add the "CE/UE" thing to the string
+> based on the HW_EVENT_ERR_* flag or something to that effect.
 
-The DT support for the twl6040 (v3) has been sent and I'm waiting for a review:
-http://marc.info/?l=linux-kernel&m=133716693518701&w=2
 
-Best Regards,
-Peter
+Huh? 
 
- .../devicetree/bindings/input/twl6040-vibra.txt    |   37 -----------------
- drivers/input/misc/twl6040-vibra.c                 |   42 ++++++++++++--------
- 2 files changed, 25 insertions(+), 54 deletions(-)
- delete mode 100644 Documentation/devicetree/bindings/input/twl6040-vibra.txt
+>>>        mcegen.py-2868  [007] .N..   178.261607: mc_event: Corrected error:amd64_edac on memory stick "unknown memory" (mc:0 csrow:3 channel:1  page:0x5bac7 offset:0x388 grain:0 syndrome:0x34ed )
 
-diff --git a/Documentation/devicetree/bindings/input/twl6040-vibra.txt b/Documentation/devicetree/bindings/input/twl6040-vibra.txt
-deleted file mode 100644
-index 5b1918b..0000000
---- a/Documentation/devicetree/bindings/input/twl6040-vibra.txt
-+++ /dev/null
-@@ -1,37 +0,0 @@
--Vibra driver for the twl6040 family
--
--The vibra driver is a child of the twl6040 MFD dirver.
--Documentation/devicetree/bindings/mfd/twl6040.txt
--
--Required properties:
--- compatible : Must be "ti,twl6040-vibra";
--- interrupts: 4, Vibra overcurrent interrupt
--- vddvibl-supply: Regulator supplying the left vibra motor
--- vddvibr-supply: Regulator supplying the right vibra motor
--- vibldrv_res: Board specific left driver resistance
--- vibrdrv_res: Board specific right driver resistance
--- viblmotor_res: Board specific left motor resistance
--- vibrmotor_res: Board specific right motor resistance
--
--Optional properties:
--- vddvibl_uV: If the vddvibl default voltage need to be changed
--- vddvibr_uV: If the vddvibr default voltage need to be changed
--
--Example:
--/*
-- * 8-channel high quality low-power audio codec
-- * http://www.ti.com/lit/ds/symlink/twl6040.pdf
-- */
--twl6040: twl6040@4b {
--	...
--	twl6040_vibra: twl6040@1 {
--		compatible = "ti,twl6040-vibra";
--		interrupts = <4>;
--		vddvibl-supply = <&vbat>;
--		vddvibr-supply = <&vbat>;
--		vibldrv_res = <8>;
--		vibrdrv_res = <3>;
--		viblmotor_res = <10>;
--		vibrmotor_res = <10>;
--	};
--};
-diff --git a/drivers/input/misc/twl6040-vibra.c b/drivers/input/misc/twl6040-vibra.c
-index c34f6c0..4d36666 100644
---- a/drivers/input/misc/twl6040-vibra.c
-+++ b/drivers/input/misc/twl6040-vibra.c
-@@ -259,13 +259,15 @@ static SIMPLE_DEV_PM_OPS(twl6040_vibra_pm_ops, twl6040_vibra_suspend, NULL);
- static int __devinit twl6040_vibra_probe(struct platform_device *pdev)
- {
- 	struct twl6040_vibra_data *pdata = pdev->dev.platform_data;
--	struct device_node *node = pdev->dev.of_node;
-+	struct device *twl6040_core_dev = pdev->dev.parent;
-+	struct device_node *twl6040_core_node = of_find_node_by_name(
-+					twl6040_core_dev->of_node, "vibra");
- 	struct vibra_info *info;
- 	int vddvibl_uV = 0;
- 	int vddvibr_uV = 0;
- 	int ret;
- 
--	if (!pdata && !node) {
-+	if (!pdata && !twl6040_core_node) {
- 		dev_err(&pdev->dev, "platform_data not available\n");
- 		return -EINVAL;
- 	}
-@@ -287,14 +289,18 @@ static int __devinit twl6040_vibra_probe(struct platform_device *pdev)
- 		vddvibl_uV = pdata->vddvibl_uV;
- 		vddvibr_uV = pdata->vddvibr_uV;
- 	} else {
--		of_property_read_u32(node, "vibldrv_res", &info->vibldrv_res);
--		of_property_read_u32(node, "vibrdrv_res", &info->vibrdrv_res);
--		of_property_read_u32(node, "viblmotor_res",
-+		of_property_read_u32(twl6040_core_node, "ti,vibldrv-res",
-+				     &info->vibldrv_res);
-+		of_property_read_u32(twl6040_core_node, "ti,vibrdrv-res",
-+				     &info->vibrdrv_res);
-+		of_property_read_u32(twl6040_core_node, "ti,viblmotor-res",
- 				     &info->viblmotor_res);
--		of_property_read_u32(node, "vibrmotor_res",
-+		of_property_read_u32(twl6040_core_node, "ti,vibrmotor-res",
- 				     &info->vibrmotor_res);
--		of_property_read_u32(node, "vddvibl_uV", &vddvibl_uV);
--		of_property_read_u32(node, "vddvibr_uV", &vddvibr_uV);
-+		of_property_read_u32(twl6040_core_node, "ti,vddvibl-uV",
-+				     &vddvibl_uV);
-+		of_property_read_u32(twl6040_core_node, "ti,vddvibr-uV",
-+				     &vddvibr_uV);
- 	}
- 
- 	if ((!info->vibldrv_res && !info->viblmotor_res) ||
-@@ -351,8 +357,17 @@ static int __devinit twl6040_vibra_probe(struct platform_device *pdev)
- 
- 	info->supplies[0].supply = "vddvibl";
- 	info->supplies[1].supply = "vddvibr";
--	ret = regulator_bulk_get(info->dev, ARRAY_SIZE(info->supplies),
--				 info->supplies);
-+	/*
-+	 * When booted with Device tree the regulators are attached to the
-+	 * parent device (twl6040 MFD core)
-+	 */
-+	if (pdata)
-+		ret = regulator_bulk_get(info->dev, ARRAY_SIZE(info->supplies),
-+					info->supplies);
-+	else
-+		ret = regulator_bulk_get(twl6040_core_dev,
-+					 ARRAY_SIZE(info->supplies),
-+					 info->supplies);
- 	if (ret) {
- 		dev_err(info->dev, "couldn't get regulators %d\n", ret);
- 		goto err_regulator;
-@@ -418,12 +433,6 @@ static int __devexit twl6040_vibra_remove(struct platform_device *pdev)
- 	return 0;
- }
- 
--static const struct of_device_id twl6040_vibra_of_match[] = {
--	{.compatible = "ti,twl6040-vibra", },
--	{ },
--};
--MODULE_DEVICE_TABLE(of, twl6040_vibra_of_match);
--
- static struct platform_driver twl6040_vibra_driver = {
- 	.probe		= twl6040_vibra_probe,
- 	.remove		= __devexit_p(twl6040_vibra_remove),
-@@ -431,7 +440,6 @@ static struct platform_driver twl6040_vibra_driver = {
- 		.name	= "twl6040-vibra",
- 		.owner	= THIS_MODULE,
- 		.pm	= &twl6040_vibra_pm_ops,
--		.of_match_table = twl6040_vibra_of_match,
- 	},
- };
- module_platform_driver(twl6040_vibra_driver);
--- 
-1.7.8.6
+CE/UE is there. The only change is that, instead of using acronyms, it is now
+saying "Corrected error"/"Uncorrected error", as the idea is to provide something
+that the user will better understand.
 
+> [ … ]
+> 
+>>>>     Of course, any userspace tools meant to handle errors should not parse
+>>>>     the above data. They should, instead, use the binary fields provided by
+>>>>     the tracepoint, mapping them directly into their MIBs.
+>>>
+>>> What is a MIB?
+>>
+>> Management Information Base. This is how anyone that works with Element
+>> Management calls the model of information that represents each management
+>> property. It is generally written using ITU-T ASN.1 syntax. Almost all
+>> management software use that.
+>>
+>> [1] http://en.wikipedia.org/wiki/Management_information_base
+> 
+> That looks like an ACPI or some other idiotic spec speak, pls remove it.
+
+No, MIB is not an idiotic speak. It is a widely-used term, older than TCP/IP, 
+and defined by ITU-T (M.3000 series) and by ISO.
+
+It is used by everybody that knows a little bit about error management,
+as all management systems and protocols (like SNMP) are based on MIB
+concepts. This concept is also used by other international forums, like
+IETF, to define the Information Model to be used to manage the machine
+and/or network resources. For example, the TCP/IP stack management base
+is defined at IETF RFC1213.
+
+> 
+> [ … ]
+> 
+>>>> + * edac_mc_handle_error - reports a memory event to userspace
+>>>> + *
+>>>> + * @type:		severity of the error (CE/UE/Fatal)
+>>>> + * @mci:		a struct mem_ctl_info pointer
+>>>> + * @page_frame_number:	mem page where the error occurred
+>>>> + * @offset_in_page:	offset of the error inside the page
+>>>> + * @syndrome:		ECC syndrome
+>>>> + * @layer0:		Memory layer0 position
+>>>> + * @layer1:		Memory layer2 position
+>>>> + * @layer2:		Memory layer3 position
+>>>> + * @msg:		Message meaningful to the end users that
+>>>> + *			explains the event
+>>>> + * @other_detail:	Technical details about the event that
+>>>> + *			may help hardware manufacturers and
+>>>> + *			EDAC developers to analyse the event
+>>>
+>>> 					analyze it.
+>>
+>> Analyse is the same as analyze [2].
+> 
+> I know that. What I meant is
+> 
+> s/EDAC developers to analyse the event/EDAC developers to analyse it/
+> 
+
+Ah, OK, I'll fix that.
+
+Regards,
+Mauro
