@@ -1,87 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760262Ab2EPSgb (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 May 2012 14:36:31 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:39950 "EHLO mx1.redhat.com"
+	id S1760281Ab2EPSgf (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 May 2012 14:36:35 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:53033 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754131Ab2EPSga (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 May 2012 14:36:30 -0400
-Date: Wed, 16 May 2012 20:53:00 +0300
+	id S1754131Ab2EPSgc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 16 May 2012 14:36:32 -0400
+Date: Wed, 16 May 2012 21:36:30 +0300
 From: "Michael S. Tsirkin" <mst@redhat.com>
-To: Marcelo Tosatti <mtosatti@redhat.com>
-Cc: Gleb Natapov <gleb@redhat.com>, x86@kernel.org, kvm@vger.kernel.org,
-        Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
-        Avi Kivity <avi@redhat.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCHv4 3/5] kvm: host side for eoi optimization
-Message-ID: <20120516175300.GC10769@redhat.com>
-References: <cover.1337168687.git.mst@redhat.com>
- <42ba7beaa25855997e02fea91a11c9224c51720e.1337168687.git.mst@redhat.com>
- <20120516154940.GA20549@amt.cnet>
- <20120516162247.GA10676@redhat.com>
- <20120516163205.GB28798@redhat.com>
- <20120516165048.GA10769@redhat.com>
- <20120516170427.GA22784@amt.cnet>
- <20120516172155.GE28798@redhat.com>
- <20120516172345.GA23032@amt.cnet>
+To: Shirley Ma <mashirle@us.ibm.com>
+Cc: Jason Wang <jasowang@redhat.com>, eric.dumazet@gmail.com,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        ebiederm@xmission.com, davem@davemloft.net
+Subject: Re: [V2 PATCH 9/9] vhost: zerocopy: poll vq in zerocopy callback
+Message-ID: <20120516183629.GJ10769@redhat.com>
+References: <20120502033901.11782.13157.stgit@amd-6168-8-1.englab.nay.redhat.com>
+ <20120502034254.11782.27314.stgit@amd-6168-8-1.englab.nay.redhat.com>
+ <1337100630.8220.4.camel@oc3660625478.ibm.com>
+ <4FB317C8.90002@redhat.com>
+ <1337181027.10741.13.camel@oc3660625478.ibm.com>
+ <20120516151444.GC9934@redhat.com>
+ <1337189525.10741.24.camel@oc3660625478.ibm.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20120516172345.GA23032@amt.cnet>
+In-Reply-To: <1337189525.10741.24.camel@oc3660625478.ibm.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, May 16, 2012 at 02:23:45PM -0300, Marcelo Tosatti wrote:
-> On Wed, May 16, 2012 at 08:21:55PM +0300, Gleb Natapov wrote:
-> > On Wed, May 16, 2012 at 02:04:27PM -0300, Marcelo Tosatti wrote:
-> > > On Wed, May 16, 2012 at 07:50:48PM +0300, Michael S. Tsirkin wrote:
-> > > > On Wed, May 16, 2012 at 07:32:06PM +0300, Gleb Natapov wrote:
-> > > > > On Wed, May 16, 2012 at 07:22:47PM +0300, Michael S. Tsirkin wrote:
-> > > > > > On Wed, May 16, 2012 at 12:49:40PM -0300, Marcelo Tosatti wrote:
-> > > > > > > > @@ -1245,9 +1306,20 @@ int kvm_get_apic_interrupt(struct kvm_vcpu *vcpu)
-> > > > > > > >  	int vector = kvm_apic_has_interrupt(vcpu);
-> > > > > > > >  	struct kvm_lapic *apic = vcpu->arch.apic;
-> > > > > > > >  
-> > > > > > > > -	if (vector == -1)
-> > > > > > > > +	/* Detect interrupt nesting and disable EOI optimization */
-> > > > > > > > +	if (pv_eoi_enabled(vcpu) && vector == -2)
-> > > > > > > > +		pv_eoi_clr_pending(vcpu);
-> > > > > > > > +
-> > > > > > > > +	if (vector < 0)
-> > > > > > > 
-> > > > > > > With interrupt window exiting, the guest will exit:
-> > > > > > > 
-> > > > > > > - as soon as it sets RFLAGS.IF=1 and there is any 
-> > > > > > > interrupt pending in IRR.
-> > > > > > > - any new interrupt is set in IRR will kick vcpu
-> > > > > > > out of guest mode and recalculate interrupt-window-exiting.
-> > > > > > > 
-> > > > > > > Doesnt this make this bit unnecessary ?
-> > > > > > 
-> > > > > > Looks like we could cut it out.  But I'm not sure how architectural it is
-> > > > > > that we exit on interrupt window.
-> > > > > We request exit on interrupt window only if there is pending irq that
-> > > > > can be delivered on a guest entry.
+On Wed, May 16, 2012 at 10:32:05AM -0700, Shirley Ma wrote:
+> On Wed, 2012-05-16 at 18:14 +0300, Michael S. Tsirkin wrote:
+> > On Wed, May 16, 2012 at 08:10:27AM -0700, Shirley Ma wrote:
+> > > On Wed, 2012-05-16 at 10:58 +0800, Jason Wang wrote:
+> > > > >>   drivers/vhost/vhost.c |    1 +
+> > > > >>   1 files changed, 1 insertions(+), 0 deletions(-)
+> > > > >>
+> > > > >> diff --git a/drivers/vhost/vhost.c b/drivers/vhost/vhost.c
+> > > > >> index 947f00d..7b75fdf 100644
+> > > > >> --- a/drivers/vhost/vhost.c
+> > > > >> +++ b/drivers/vhost/vhost.c
+> > > > >> @@ -1604,6 +1604,7 @@ void vhost_zerocopy_callback(void *arg)
+> > > > >>          struct vhost_ubuf_ref *ubufs = ubuf->arg;
+> > > > >>          struct vhost_virtqueue *vq = ubufs->vq;
+> > > > >>
+> > > > >> +       vhost_poll_queue(&vq->poll);
+> > > > >>          /* set len = 1 to mark this desc buffers done DMA */
+> > > > >>          vq->heads[ubuf->desc].len = VHOST_DMA_DONE_LEN;
+> > > > >>          kref_put(&ubufs->kref, vhost_zerocopy_done_signal);
+> > > > > Doing so, we might have redundant vhost_poll_queue(). Do you
+> > know in
+> > > > > which scenario there might be missing of adding and signaling
+> > during
+> > > > > zerocopy?
 > > > > 
-> > > > Aha. If so what Marcelo proposed won't work I think: if we inject A then B
-> > > > which is lower priority, we need an exit on EOI, we can't inject
-> > > > immediately.
+> > > > Yes, as we only do signaling and adding during tx work, if there's
+> > no
+> > > > tx 
+> > > > work when the skb were sent, we may lose the opportunity to let
+> > guest 
+> > > > know about the completion. It's easy to be reproduced with netperf
+> > > > test. 
 > > > 
-> > > Please describe the scenario clearly, i can't see the problem.
+> > > The reason which host signals guest is to free guest tx buffers, if
+> > > there is no tx work, then it's not necessary to signal the guest
+> > unless
+> > > guest runs out of memory. The pending buffers will be released
+> > > virtio_net device gone.
+> > > 
+> > > What's the behavior of netperf test when you hit this situation?
+> > > 
+> > > Thanks
+> > > Shirley
 > > 
-> > During vcpu entry there are two IRRs set 100 and 200. 200 is injected,
-> > but irq window is not requested because 100 can't be injected, During
-> > EOI exit 100 is injected.
+> > IIRC guest networking seems to be lost. 
 > 
-> interrupt window exiting is always requested if IRR is pending. Except 
-> if NMI window is requested (which has higher priority).
+> It seems vhost_enable_notify is missing in somewhere else?
 > 
-> What am i missing here?
+> Thanks
+> Shirley
 
-That if EOI was not yet signalled by guest when we inject
-the low priority irq, then windows exiting is not
-enough we need an exit on EOI.
-
-
+Donnu. I see virtio sending packets but they do not get
+to tun on host. debugging.
