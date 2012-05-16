@@ -1,142 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933171Ab2EPXmD (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 May 2012 19:42:03 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:51596 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760765Ab2EPXli (ORCPT
+	id S933266Ab2EPXmd (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 May 2012 19:42:33 -0400
+Received: from mail.linux-iscsi.org ([67.23.28.174]:48043 "EHLO
+	linux-iscsi.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1760774Ab2EPXlw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 May 2012 19:41:38 -0400
-Date: Wed, 16 May 2012 16:41:28 -0700
-From: Greg KH <gregkh@linuxfoundation.org>
-To: Alan Cox <alan@lxorguk.ukuu.org.uk>
-Cc: Preston Fick <pffick@gmail.com>, linux-usb@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-serial@vger.kernel.org,
-        preston.fick@silabs.com,
-        "linux-arm-kernel@lists.arm.linux.org.uk" 
-	<linux-arm-kernel@lists.arm.linux.org.uk>
-Subject: Re: [PATCH] usb: cp210x: Added support for GPIO (CP2103/4/5)
-Message-ID: <20120516234128.GB2641@kroah.com>
-References: <1335817637-2862-1-git-send-email-preston.fick@silabs.com>
- <20120503213456.77c55c51@pyramind.ukuu.org.uk>
- <20120505003208.GA30718@kroah.com>
- <20120516163347.1721406e@pyramind.ukuu.org.uk>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120516163347.1721406e@pyramind.ukuu.org.uk>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Wed, 16 May 2012 19:41:52 -0400
+Subject: Re: [PATCH] target: Handle ATA_PASS_THROUGH_16 passthrough
+From: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
+To: mc@linux.vnet.ibm.com
+Cc: target-devel@vger.kernel.org, linux-scsi@vger.kernel.org,
+        linux-kernel@vger.kernel.org,
+        Stefan Hajnoczi <stefanha@linux.vnet.ibm.com>,
+        James Bottomley <jbottomley@parallels.com>
+In-Reply-To: <1337146409.18429.11.camel@mengcong>
+References: <1337146409.18429.11.camel@mengcong>
+Content-Type: text/plain; charset="UTF-8"
+Date: Wed, 16 May 2012 16:41:49 -0700
+Message-ID: <1337211709.32217.100.camel@haakon2.linux-iscsi.org>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, May 16, 2012 at 04:33:47PM +0100, Alan Cox wrote:
-> So the patch looks like this, which seems nice and compact (UNTESTED)
+On Wed, 2012-05-16 at 13:33 +0800, mengcong wrote:
+> The cdrecord uses ATA_PASS_THROUGH_16 command while burning CDs
+> with a SATA CD-ROM. This patch adds support to it so that PSCSI 
+> CD-ROM passthrough works with the cdrecord.
 > 
-> commit 4164f9b7074e682fe71dad3b57e78521ef9df492
-> Author: Alan Cox <alan@linux.intel.com>
-> Date:   Wed May 16 15:13:02 2012 +0100
+> Signed-off-by: Cong Meng <mc@linux.vnet.ibm.com>
+> ---
+>  drivers/target/target_core_transport.c |   30 ++++++++++++++++++++++++++++++
+>  include/scsi/scsi.h                    |    1 +
+>  2 files changed, 31 insertions(+), 0 deletions(-)
 > 
->     tty: Add a gpio helper set
->     
->     Various tty devices have additional control lines which are sometimes used
->     as GPIO pins and sometimes also tied with the serial port to implement
->     protocols such as ISO7816.
->     
->     This code provides a kernel interface for querying the GPIO range of a tty,
->     and to describe the mapping between GPIO pins and control lines. The latter
->     will be needed for some upcoming line discipline support.
->     
->     [Proposal do not merge yet]
->     
->     Not-Signed-off-by: Alan Cox <alan@linux.intel.com>
+> diff --git a/drivers/target/target_core_transport.c b/drivers/target/target_core_transport.c
+> index 2d75c29..41439b3 100644
+> --- a/drivers/target/target_core_transport.c
+> +++ b/drivers/target/target_core_transport.c
+> @@ -2926,6 +2926,36 @@ static int transport_generic_cmd_sequencer(
+>  		size = (cdb[7] << 8) | cdb[8];
+>  		cmd->se_cmd_flags |= SCF_SCSI_CONTROL_SG_IO_CDB;
+>  		break;
+> +	case ATA_PASS_THROUGH_16:
+> +		// T_LENGTH
+> +		switch (cdb[2] & 0x3) {
+> +		case 0x0:
+> +			sectors = 0;
+> +			break;
+> +		case 0x1:
+> +			sectors = (((cdb[1] & 0x1) ? cdb[3] : 0) << 8) | cdb[4];
+> +			break;
+> +		case 0x2:
+> +			sectors = (((cdb[1] & 0x1) ? cdb[5] : 0) << 8) | cdb[6];
+> +			break;
+> +		case 0x3:
+> +			pr_err("T_LENGTH=0x3 not supported\n");
+> +			goto out_invalid_cdb_field;
+> +			break;
+> +		}
+> +		
+> +		// BYTE_BLOCK
+> +		if (cdb[2] & 0x4) {
+> +			// BLOCK
+> +			// T_TYPE: 512 or sector
+> +			size = sectors * ((cdb[2] & 0x10) ? 
+> +				dev->se_sub_dev->se_dev_attrib.block_size : 512);
+> +		} else {
+> +			// BYTE
+> +			size = sectors;
+> +		}
+> +		cmd->se_cmd_flags |= SCF_SCSI_CONTROL_SG_IO_CDB;
 
-Wow, that looks really nice and tiny, if that's all that is needed in
-the core, that's great.
+Mmmm, I think using SCF_SCSI_CONTROL_SG_IO_CDB here for all ATA
+passthrough cases should be OK with pSCSI, but you'll want to fail this
+type of cdb when if (!passthrough) for non pSCSI type devices to be safe
+with virtual backends..
 
-> diff --git a/drivers/tty/tty_ioctl.c b/drivers/tty/tty_ioctl.c
-> index a1b9a2f..60550e7 100644
-> --- a/drivers/tty/tty_ioctl.c
-> +++ b/drivers/tty/tty_ioctl.c
-> @@ -1071,6 +1071,39 @@ int tty_mode_ioctl(struct tty_struct *tty, struct file *file,
->  	case TCSETXF:
->  		return set_termiox(real_tty, p, TERMIOS_FLUSH);
->  #endif		
-> +#ifdef TCGGPIO
-> +	case TCGGPIO: {
-> +		struct tcgpio gpio;
-> +
-> +		if (tty->gpio == NULL)
-> +			return -EOPNOTSUPP;
-> +		mutex_lock(&real_tty->termios_mutex);
-> +		memset(&gpio, 0, sizeof(gpio));
-> +		gpio.base = tty->gpio->base;
-> +		gpio.num = tty->gpio->num;
-> +		memcpy(gpio.map, tty->gpio->map, sizeof(gpio.map));
-> +		mutex_unlock(&real_tty->termios_mutex);
-> +		if (copy_to_user(p, &gpio, sizeof(gpio)))
-> +			return -EFAULT;
-> +		return 0;
-> +	}
-> +	case TCSGPIO:
-> +        {
-> +		struct tcgpio gpio;
-> +
-> +		if (tty->gpio == NULL)
-> +			return -EOPNOTSUPP;
-> +		if (copy_from_user(&gpio, p, sizeof(gpio)))
-> +			return -EFAULT;
-> +		mutex_lock(&real_tty->termios_mutex);
-> +		memcpy(tty->gpio->map, gpio.map, sizeof(tty->gpio->map));
-> +		/* An ldisc can see this by watching the ioctl go through
-> +		but we may want to add a hook */
-> +		mutex_unlock(&real_tty->termios_mutex);
-> +                return 0;
+Also just an FYI, checkpatch.pl will complain here using '//' style
+comments, so you'll want to always use '/* ... */' style comments when
+submitting a target patch.
 
-So how would the lower tty driver get the ioctl to know to now set these
-values to the hardware?  I think we at least need a hook for that,
-right?  Or would that go through the ldisc?
+So please go ahead and fix up these two bits + use ATA_16 following
+jejb's comment, and I'm fine with including your v2 into the for-3.5
+target queue..
 
+Thanks!
 
-> +        }
-> +                
-> +#endif
->  	case TIOCGSOFTCAR:
->  		copy_termios(real_tty, &kterm);
->  		ret = put_user((kterm.c_cflag & CLOCAL) ? 1 : 0,
-> diff --git a/include/asm-generic/ioctls.h b/include/asm-generic/ioctls.h
-> index 199975f..fee17d3 100644
-> --- a/include/asm-generic/ioctls.h
-> +++ b/include/asm-generic/ioctls.h
-> @@ -74,6 +74,8 @@
->  #define TCSETXW		0x5435
->  #define TIOCSIG		_IOW('T', 0x36, int)  /* pty: generate signal */
->  #define TIOCVHANGUP	0x5437
-> +#define TCGGPIO		_IOR('T', 0x38, struct tcgpio)
-> +#define TCSGPIO		_IOW('T', 0x39, struct tcgpio)
->  
->  #define FIONCLEX	0x5450
->  #define FIOCLEX		0x5451
-> diff --git a/include/asm-generic/termios.h b/include/asm-generic/termios.h
-> index d0922ad..3adda38 100644
-> --- a/include/asm-generic/termios.h
-> +++ b/include/asm-generic/termios.h
-> @@ -18,6 +18,18 @@ struct winsize {
->  	unsigned short ws_ypixel;
->  };
->  
-> +
-> +/* GPIO handling */
-> +#define NR_TTY_GPIOMAP	8
-> +struct tcgpio			/* User copied version */
-> +{
-> +	u32 base;
-> +	u16 num;
-> +	u16 reserved;
-> +	u32 map[NR_TTY_GPIOMAP];
-> +	u32 reserved2[6];
-> +};
+--nab
 
-__u32 and friends instead?
-
-greg k-h
