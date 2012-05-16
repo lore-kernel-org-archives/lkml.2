@@ -1,347 +1,521 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S967344Ab2EPFBP (ORCPT <rfc822;w@1wt.eu>);
+	id S967371Ab2EPFBU (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 May 2012 01:01:20 -0400
+Received: from na3sys009aog130.obsmtp.com ([74.125.149.143]:59516 "EHLO
+	na3sys009aog130.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S967338Ab2EPFBP convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 16 May 2012 01:01:15 -0400
-Received: from mga14.intel.com ([143.182.124.37]:54288 "EHLO mga14.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S967328Ab2EPFAf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 May 2012 01:00:35 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
-   d="scan'208";a="100617339"
-From: "Yan, Zheng" <zheng.z.yan@intel.com>
-To: a.p.zijlstra@chello.nl, mingo@elte.hu, andi@firstfloor.org,
-        eranian@google.com, jolsa@redhat.com, ming.m.lin@intel.com,
-        gregkh@linuxfoundation.org
-Cc: linux-kernel@vger.kernel.org
-Subject: [PATCH 09/10] perf tool: Make the event parser reentrantable
-Date: Wed, 16 May 2012 13:00:02 +0800
-Message-Id: <1337144403-30841-10-git-send-email-zheng.z.yan@intel.com>
-X-Mailer: git-send-email 1.7.7.6
-In-Reply-To: <1337144403-30841-1-git-send-email-zheng.z.yan@intel.com>
-References: <1337144403-30841-1-git-send-email-zheng.z.yan@intel.com>
+MIME-Version: 1.0
+In-Reply-To: <1337004985-22549-1-git-send-email-broonie@opensource.wolfsonmicro.com>
+References: <1337004985-22549-1-git-send-email-broonie@opensource.wolfsonmicro.com>
+From: "Turquette, Mike" <mturquette@ti.com>
+Date: Tue, 15 May 2012 22:00:51 -0700
+Message-ID: <CAJOA=zMRRJB5HZhQPNBbAc0+U=Rgs9v0feDqK-6VRUzGnUEbyA@mail.gmail.com>
+Subject: Re: [PATCH] clk: wm831x: Add initial WM831x clock driver
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>
+Cc: linux-kernel@vger.kernel.org, patches@opensource.wolfsonmicro.com,
+        linux-arm-kernel@lists.infradead.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: "Yan, Zheng" <zheng.z.yan@intel.com>
+On Mon, May 14, 2012 at 7:16 AM, Mark Brown
+<broonie@opensource.wolfsonmicro.com> wrote:
+> The WM831x and WM832x series of PMICs contain a flexible clocking
+> subsystem intended to provide always on and system core clocks.  It
+> features:
+>
+> - A 32.768kHz crystal oscillator which can optionally be used to pass
+>  through an externally generated clock.
+> - A FLL which can be clocked from either the 32.768kHz oscillator or
+>  the CLKIN pin.
+> - A CLKOUT pin which can bring out either the oscillator or the FLL
+>  output.
+> - The 32.768kHz clock can also optionally be brought out on the GPIO
+>  pins of the device.
+>
+> This driver fully supports the 32.768kHz oscillator and CLKOUT.  The FLL
+> is supported only in AUTO mode, the full flexibility of the FLL cannot
+> currently be used.
+>
+> Due to a lack of access to systems where the core SoC has been converted
+> to use the generic clock API this driver has been compile tested only.
+>
+> Signed-off-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
 
-Signed-off-by: Zheng Yan <zheng.z.yan@intel.com>
----
- tools/perf/Makefile            |    7 ++-
- tools/perf/util/parse-events.c |   32 ++++++++++----
- tools/perf/util/parse-events.h |    2 +-
- tools/perf/util/parse-events.l |   92 ++++++++++++++++++++-------------------
- tools/perf/util/parse-events.y |    9 +++-
- 5 files changed, 83 insertions(+), 59 deletions(-)
+Mark,
 
-diff --git a/tools/perf/Makefile b/tools/perf/Makefile
-index 398094c..ab27fb2 100644
---- a/tools/perf/Makefile
-+++ b/tools/perf/Makefile
-@@ -733,14 +733,17 @@ $(OUTPUT)perf.o perf.spec \
- .SUFFIXES:
- .SUFFIXES: .o .c .S .s
- 
-+# Remove -Wextra to suppress 'unused parameter' warning
-+ALL_CFLAGS_NO_WEXTRA = $(shell echo $(ALL_CFLAGS) | sed "s/-Wextra //g")
-+
- # These two need to be here so that when O= is not used they take precedence
- # over the general rule for .o
- 
- $(OUTPUT)util/%-flex.o: $(OUTPUT)util/%-flex.c $(OUTPUT)PERF-CFLAGS
--	$(QUIET_CC)$(CC) -o $@ -c $(ALL_CFLAGS) -Iutil/ -w $<
-+	$(QUIET_CC)$(CC) -o $@ -c $(ALL_CFLAGS_NO_WEXTRA) -Iutil/ -w $<
- 
- $(OUTPUT)util/%-bison.o: $(OUTPUT)util/%-bison.c $(OUTPUT)PERF-CFLAGS
--	$(QUIET_CC)$(CC) -o $@ -c $(ALL_CFLAGS) -DYYENABLE_NLS=0 -DYYLTYPE_IS_TRIVIAL=0 -Iutil/ -w $<
-+	$(QUIET_CC)$(CC) -o $@ -c $(ALL_CFLAGS_NO_WEXTRA) -DYYENABLE_NLS=0 -DYYLTYPE_IS_TRIVIAL=0 -Iutil/ -w $<
- 
- $(OUTPUT)%.o: %.c $(OUTPUT)PERF-CFLAGS
- 	$(QUIET_CC)$(CC) -o $@ -c $(ALL_CFLAGS) $<
-diff --git a/tools/perf/util/parse-events.c b/tools/perf/util/parse-events.c
-index 5b3a0ef..c587ae8 100644
---- a/tools/perf/util/parse-events.c
-+++ b/tools/perf/util/parse-events.c
-@@ -11,6 +11,7 @@
- #include "cache.h"
- #include "header.h"
- #include "debugfs.h"
-+#include "parse-events-bison.h"
- #include "parse-events-flex.h"
- #include "pmu.h"
- 
-@@ -24,7 +25,8 @@ struct event_symbol {
- };
- 
- int parse_events_parse(struct list_head *list, struct list_head *list_tmp,
--		       int *idx);
-+		       int *idx, void *scanner);
-+static int __parse_events(const char *str, int *idx, struct list_head *list);
- 
- #define CHW(x) .type = PERF_TYPE_HARDWARE, .config = PERF_COUNT_HW_##x
- #define CSW(x) .type = PERF_TYPE_SOFTWARE, .config = PERF_COUNT_SW_##x
-@@ -747,20 +749,34 @@ int parse_events_modifier(struct list_head *list, char *str)
- 	return 0;
- }
- 
--int parse_events(struct perf_evlist *evlist, const char *str, int unset __used)
-+static int __parse_events(const char *str, int *idx, struct list_head *list)
- {
--	LIST_HEAD(list);
- 	LIST_HEAD(list_tmp);
- 	YY_BUFFER_STATE buffer;
--	int ret, idx = evlist->nr_entries;
-+	void *scanner;
-+	int ret;
-+
-+	ret = parse_events_lex_init(&scanner);
-+	if (ret)
-+		return ret;
-+
-+	buffer = parse_events__scan_string(str, scanner);
- 
--	buffer = parse_events__scan_string(str);
-+	ret = parse_events_parse(list, &list_tmp, idx, scanner);
- 
--	ret = parse_events_parse(&list, &list_tmp, &idx);
-+	parse_events__flush_buffer(buffer, scanner);
-+	parse_events__delete_buffer(buffer, scanner);
-+	parse_events_lex_destroy(scanner);
- 
--	parse_events__flush_buffer(buffer);
--	parse_events__delete_buffer(buffer);
-+	return ret;
-+}
-+
-+int parse_events(struct perf_evlist *evlist, const char *str, int unset __used)
-+{
-+	LIST_HEAD(list);
-+	int ret, idx = evlist->nr_entries;
- 
-+	ret =  __parse_events(str, &idx, &list);
- 	if (!ret) {
- 		int entries = idx - evlist->nr_entries;
- 		perf_evlist__splice_list_tail(evlist, &list, entries);
-diff --git a/tools/perf/util/parse-events.h b/tools/perf/util/parse-events.h
-index 5cb0028..6a98b8d 100644
---- a/tools/perf/util/parse-events.h
-+++ b/tools/perf/util/parse-events.h
-@@ -82,7 +82,7 @@ void parse_events_update_lists(struct list_head *list_event,
- 			       struct list_head *list_all);
- void parse_events_error(struct list_head *list_all,
- 			struct list_head *list_event,
--			int *idx, char const *msg);
-+			int *idx, void *scanner, char const *msg);
- 
- void print_events(const char *event_glob);
- void print_events_type(u8 type);
-diff --git a/tools/perf/util/parse-events.l b/tools/perf/util/parse-events.l
-index 1fcf1bb..eec423c 100644
---- a/tools/perf/util/parse-events.l
-+++ b/tools/perf/util/parse-events.l
-@@ -1,4 +1,6 @@
- 
-+%option reentrant
-+%option bison-bridge
- %option prefix="parse_events_"
- 
- %{
-@@ -7,7 +9,7 @@
- #include "parse-events-bison.h"
- #include "parse-events.h"
- 
--static int __value(char *str, int base, int token)
-+static int __value(YYSTYPE *yylval, char *str, int base, int token)
- {
- 	long num;
- 
-@@ -16,35 +18,35 @@ static int __value(char *str, int base, int token)
- 	if (errno)
- 		return PE_ERROR;
- 
--	parse_events_lval.num = num;
-+	yylval->num = num;
- 	return token;
- }
- 
--static int value(int base)
-+static int value(YYSTYPE *yylval, char *text, int base)
- {
--	return __value(parse_events_text, base, PE_VALUE);
-+	return __value(yylval, text, base, PE_VALUE);
- }
- 
--static int raw(void)
-+static int raw(YYSTYPE *yylval, char *text)
- {
--	return __value(parse_events_text + 1, 16, PE_RAW);
-+	return __value(yylval, text + 1, 16, PE_RAW);
- }
- 
--static int str(int token)
-+static int str(YYSTYPE *yylval, char *text, int token)
- {
--	parse_events_lval.str = strdup(parse_events_text);
-+	yylval->str = strdup(text);
- 	return token;
- }
- 
--static int sym(int type, int config)
-+static int sym(YYSTYPE *yylval, int type, int config)
- {
--	parse_events_lval.num = (type << 16) + config;
-+	yylval->num = (type << 16) + config;
- 	return PE_VALUE_SYM;
- }
- 
--static int term(int type)
-+static int term(YYSTYPE *yylval, int type)
- {
--	parse_events_lval.num = type;
-+	yylval->num = type;
- 	return PE_TERM;
- }
- 
-@@ -58,25 +60,25 @@ modifier_event	[ukhpGH]{1,8}
- modifier_bp	[rwx]
- 
- %%
--cpu-cycles|cycles				{ return sym(PERF_TYPE_HARDWARE, PERF_COUNT_HW_CPU_CYCLES); }
--stalled-cycles-frontend|idle-cycles-frontend	{ return sym(PERF_TYPE_HARDWARE, PERF_COUNT_HW_STALLED_CYCLES_FRONTEND); }
--stalled-cycles-backend|idle-cycles-backend	{ return sym(PERF_TYPE_HARDWARE, PERF_COUNT_HW_STALLED_CYCLES_BACKEND); }
--instructions					{ return sym(PERF_TYPE_HARDWARE, PERF_COUNT_HW_INSTRUCTIONS); }
--cache-references				{ return sym(PERF_TYPE_HARDWARE, PERF_COUNT_HW_CACHE_REFERENCES); }
--cache-misses					{ return sym(PERF_TYPE_HARDWARE, PERF_COUNT_HW_CACHE_MISSES); }
--branch-instructions|branches			{ return sym(PERF_TYPE_HARDWARE, PERF_COUNT_HW_BRANCH_INSTRUCTIONS); }
--branch-misses					{ return sym(PERF_TYPE_HARDWARE, PERF_COUNT_HW_BRANCH_MISSES); }
--bus-cycles					{ return sym(PERF_TYPE_HARDWARE, PERF_COUNT_HW_BUS_CYCLES); }
--ref-cycles					{ return sym(PERF_TYPE_HARDWARE, PERF_COUNT_HW_REF_CPU_CYCLES); }
--cpu-clock					{ return sym(PERF_TYPE_SOFTWARE, PERF_COUNT_SW_CPU_CLOCK); }
--task-clock					{ return sym(PERF_TYPE_SOFTWARE, PERF_COUNT_SW_TASK_CLOCK); }
--page-faults|faults				{ return sym(PERF_TYPE_SOFTWARE, PERF_COUNT_SW_PAGE_FAULTS); }
--minor-faults					{ return sym(PERF_TYPE_SOFTWARE, PERF_COUNT_SW_PAGE_FAULTS_MIN); }
--major-faults					{ return sym(PERF_TYPE_SOFTWARE, PERF_COUNT_SW_PAGE_FAULTS_MAJ); }
--context-switches|cs				{ return sym(PERF_TYPE_SOFTWARE, PERF_COUNT_SW_CONTEXT_SWITCHES); }
--cpu-migrations|migrations			{ return sym(PERF_TYPE_SOFTWARE, PERF_COUNT_SW_CPU_MIGRATIONS); }
--alignment-faults				{ return sym(PERF_TYPE_SOFTWARE, PERF_COUNT_SW_ALIGNMENT_FAULTS); }
--emulation-faults				{ return sym(PERF_TYPE_SOFTWARE, PERF_COUNT_SW_EMULATION_FAULTS); }
-+cpu-cycles|cycles				{ return sym(yylval, PERF_TYPE_HARDWARE, PERF_COUNT_HW_CPU_CYCLES); }
-+stalled-cycles-frontend|idle-cycles-frontend	{ return sym(yylval, PERF_TYPE_HARDWARE, PERF_COUNT_HW_STALLED_CYCLES_FRONTEND); }
-+stalled-cycles-backend|idle-cycles-backend	{ return sym(yylval, PERF_TYPE_HARDWARE, PERF_COUNT_HW_STALLED_CYCLES_BACKEND); }
-+instructions					{ return sym(yylval, PERF_TYPE_HARDWARE, PERF_COUNT_HW_INSTRUCTIONS); }
-+cache-references				{ return sym(yylval, PERF_TYPE_HARDWARE, PERF_COUNT_HW_CACHE_REFERENCES); }
-+cache-misses					{ return sym(yylval, PERF_TYPE_HARDWARE, PERF_COUNT_HW_CACHE_MISSES); }
-+branch-instructions|branches			{ return sym(yylval, PERF_TYPE_HARDWARE, PERF_COUNT_HW_BRANCH_INSTRUCTIONS); }
-+branch-misses					{ return sym(yylval, PERF_TYPE_HARDWARE, PERF_COUNT_HW_BRANCH_MISSES); }
-+bus-cycles					{ return sym(yylval, PERF_TYPE_HARDWARE, PERF_COUNT_HW_BUS_CYCLES); }
-+ref-cycles					{ return sym(yylval, PERF_TYPE_HARDWARE, PERF_COUNT_HW_REF_CPU_CYCLES); }
-+cpu-clock					{ return sym(yylval, PERF_TYPE_SOFTWARE, PERF_COUNT_SW_CPU_CLOCK); }
-+task-clock					{ return sym(yylval, PERF_TYPE_SOFTWARE, PERF_COUNT_SW_TASK_CLOCK); }
-+page-faults|faults				{ return sym(yylval, PERF_TYPE_SOFTWARE, PERF_COUNT_SW_PAGE_FAULTS); }
-+minor-faults					{ return sym(yylval, PERF_TYPE_SOFTWARE, PERF_COUNT_SW_PAGE_FAULTS_MIN); }
-+major-faults					{ return sym(yylval, PERF_TYPE_SOFTWARE, PERF_COUNT_SW_PAGE_FAULTS_MAJ); }
-+context-switches|cs				{ return sym(yylval, PERF_TYPE_SOFTWARE, PERF_COUNT_SW_CONTEXT_SWITCHES); }
-+cpu-migrations|migrations			{ return sym(yylval, PERF_TYPE_SOFTWARE, PERF_COUNT_SW_CPU_MIGRATIONS); }
-+alignment-faults				{ return sym(yylval, PERF_TYPE_SOFTWARE, PERF_COUNT_SW_ALIGNMENT_FAULTS); }
-+emulation-faults				{ return sym(yylval, PERF_TYPE_SOFTWARE, PERF_COUNT_SW_EMULATION_FAULTS); }
- 
- L1-dcache|l1-d|l1d|L1-data		|
- L1-icache|l1-i|l1i|L1-instruction	|
-@@ -84,14 +86,14 @@ LLC|L2					|
- dTLB|d-tlb|Data-TLB			|
- iTLB|i-tlb|Instruction-TLB		|
- branch|branches|bpu|btb|bpc		|
--node					{ return str(PE_NAME_CACHE_TYPE); }
-+node					{ return str(yylval, yytext, PE_NAME_CACHE_TYPE); }
- 
- load|loads|read				|
- store|stores|write			|
- prefetch|prefetches			|
- speculative-read|speculative-load	|
- refs|Reference|ops|access		|
--misses|miss				{ return str(PE_NAME_CACHE_OP_RESULT); }
-+misses|miss				{ return str(yylval, yytext, PE_NAME_CACHE_OP_RESULT); }
- 
- 	/*
- 	 * These are event config hardcoded term names to be specified
-@@ -99,20 +101,20 @@ misses|miss				{ return str(PE_NAME_CACHE_OP_RESULT); }
- 	 * so we can put them here directly. In case the we have a conflict
- 	 * in future, this needs to go into '//' condition block.
- 	 */
--config			{ return term(PARSE_EVENTS__TERM_TYPE_CONFIG); }
--config1			{ return term(PARSE_EVENTS__TERM_TYPE_CONFIG1); }
--config2			{ return term(PARSE_EVENTS__TERM_TYPE_CONFIG2); }
--period			{ return term(PARSE_EVENTS__TERM_TYPE_SAMPLE_PERIOD); }
--branch_type		{ return term(PARSE_EVENTS__TERM_TYPE_BRANCH_SAMPLE_TYPE); }
-+config			{ return term(yylval, PARSE_EVENTS__TERM_TYPE_CONFIG); }
-+config1			{ return term(yylval, PARSE_EVENTS__TERM_TYPE_CONFIG1); }
-+config2			{ return term(yylval, PARSE_EVENTS__TERM_TYPE_CONFIG2); }
-+period			{ return term(yylval, PARSE_EVENTS__TERM_TYPE_SAMPLE_PERIOD); }
-+branch_type		{ return term(yylval, PARSE_EVENTS__TERM_TYPE_BRANCH_SAMPLE_TYPE); }
- 
- mem:			{ return PE_PREFIX_MEM; }
--r{num_raw_hex}		{ return raw(); }
--{num_dec}		{ return value(10); }
--{num_hex}		{ return value(16); }
-+r{num_raw_hex}		{ return raw(yylval, yytext); }
-+{num_dec}		{ return value(yylval, yytext, 10); }
-+{num_hex}		{ return value(yylval, yytext, 16); }
- 
--{modifier_event}	{ return str(PE_MODIFIER_EVENT); }
--{modifier_bp}		{ return str(PE_MODIFIER_BP); }
--{name}			{ return str(PE_NAME); }
-+{modifier_event}	{ return str(yylval, yytext, PE_MODIFIER_EVENT); }
-+{modifier_bp}		{ return str(yylval, yytext, PE_MODIFIER_BP); }
-+{name}			{ return str(yylval, yytext, PE_NAME); }
- "/"			{ return '/'; }
- -			{ return '-'; }
- ,			{ return ','; }
-@@ -121,7 +123,7 @@ r{num_raw_hex}		{ return raw(); }
- 
- %%
- 
--int parse_events_wrap(void)
-+int parse_events_wrap(void *scanner __used)
- {
- 	return 1;
- }
-diff --git a/tools/perf/util/parse-events.y b/tools/perf/util/parse-events.y
-index d9637da..52082a7 100644
---- a/tools/perf/util/parse-events.y
-+++ b/tools/perf/util/parse-events.y
-@@ -1,8 +1,10 @@
--
-+%pure-parser
- %name-prefix "parse_events_"
- %parse-param {struct list_head *list_all}
- %parse-param {struct list_head *list_event}
- %parse-param {int *idx}
-+%parse-param {void *scanner}
-+%lex-param {void* scanner}
- 
- %{
- 
-@@ -13,8 +15,9 @@
- #include "types.h"
- #include "util.h"
- #include "parse-events.h"
-+#include "parse-events-bison.h"
- 
--extern int parse_events_lex (void);
-+extern int parse_events_lex (YYSTYPE* lvalp, void* scanner);
- 
- #define ABORT_ON(val) \
- do { \
-@@ -223,7 +226,7 @@ sep_slash_dc: '/' | ':' |
- 
- void parse_events_error(struct list_head *list_all __used,
- 			struct list_head *list_event __used,
--			int *idx __used,
-+			int *idx __used, void *scanner __used,
- 			char const *msg __used)
- {
- }
--- 
-1.7.7.6
+Do you plan to rebase against my clk-next branch?  I've pushed your
+clk_unregister patch there.
 
+Regards,
+Mike
+
+> ---
+>  MAINTAINERS              |    1 +
+>  drivers/clk/Kconfig      |    7 +
+>  drivers/clk/Makefile     |    3 +
+>  drivers/clk/clk-wm831x.c |  408 ++++++++++++++++++++++++++++++++++++++++++++++
+>  4 files changed, 419 insertions(+)
+>  create mode 100644 drivers/clk/clk-wm831x.c
+>
+> diff --git a/MAINTAINERS b/MAINTAINERS
+> index 577950a..0a1f261 100644
+> --- a/MAINTAINERS
+> +++ b/MAINTAINERS
+> @@ -7567,6 +7567,7 @@ W:        http://opensource.wolfsonmicro.com/content/linux-drivers-wolfson-devices
+>  S:     Supported
+>  F:     Documentation/hwmon/wm83??
+>  F:     arch/arm/mach-s3c64xx/mach-crag6410*
+> +F:     drivers/clk/clk-wm83*.c
+>  F:     drivers/leds/leds-wm83*.c
+>  F:     drivers/hwmon/wm83??-hwmon.c
+>  F:     drivers/input/misc/wm831x-on.c
+> diff --git a/drivers/clk/Kconfig b/drivers/clk/Kconfig
+> index 6835e6a..7f0b5ca 100644
+> --- a/drivers/clk/Kconfig
+> +++ b/drivers/clk/Kconfig
+> @@ -33,4 +33,11 @@ config COMMON_CLK_DEBUG
+>          clk_flags, clk_prepare_count, clk_enable_count &
+>          clk_notifier_count.
+>
+> +config COMMON_CLK_WM831X
+> +       tristate "Clock driver for WM831x/2x PMICs"
+> +       depends on MFD_WM831X
+> +       ---help---
+> +          Supports the clocking subsystem of the WM831x/2x series of
+> +         PMICs from Wolfson Microlectronics.
+> +
+>  endmenu
+> diff --git a/drivers/clk/Makefile b/drivers/clk/Makefile
+> index b9a5158..b679f11 100644
+> --- a/drivers/clk/Makefile
+> +++ b/drivers/clk/Makefile
+> @@ -5,3 +5,6 @@ obj-$(CONFIG_COMMON_CLK)        += clk.o clk-fixed-rate.o clk-gate.o \
+>  # SoCs specific
+>  obj-$(CONFIG_ARCH_MXS)         += mxs/
+>  obj-$(CONFIG_PLAT_SPEAR)       += spear/
+> +
+> +# Chip specific
+> +obj-$(CONFIG_COMMON_CLK_WM831X) += clk-wm831x.o
+> diff --git a/drivers/clk/clk-wm831x.c b/drivers/clk/clk-wm831x.c
+> new file mode 100644
+> index 0000000..1a9fd43
+> --- /dev/null
+> +++ b/drivers/clk/clk-wm831x.c
+> @@ -0,0 +1,408 @@
+> +/*
+> + * WM831x clock control
+> + *
+> + * Copyright 2011-2 Wolfson Microelectronics PLC.
+> + *
+> + * Author: Mark Brown <broonie@opensource.wolfsonmicro.com>
+> + *
+> + *  This program is free software; you can redistribute  it and/or modify it
+> + *  under  the terms of  the GNU General  Public License as published by the
+> + *  Free Software Foundation;  either version 2 of the  License, or (at your
+> + *  option) any later version.
+> + *
+> + */
+> +
+> +#include <linux/clk.h>
+> +#include <linux/clk-provider.h>
+> +#include <linux/delay.h>
+> +#include <linux/module.h>
+> +#include <linux/slab.h>
+> +#include <linux/platform_device.h>
+> +#include <linux/mfd/wm831x/core.h>
+> +
+> +struct wm831x_clk {
+> +       struct wm831x *wm831x;
+> +       struct clk_hw xtal_hw;
+> +       struct clk_hw fll_hw;
+> +       struct clk_hw clkout_hw;
+> +       bool xtal_ena;
+> +};
+> +
+> +static int wm831x_xtal_is_enabled(struct clk_hw *hw)
+> +{
+> +       struct wm831x_clk *clkdata = container_of(hw, struct wm831x_clk,
+> +                                                 xtal_hw);
+> +
+> +       return clkdata->xtal_ena;
+> +}
+> +
+> +static unsigned long wm831x_xtal_recalc_rate(struct clk_hw *hw,
+> +                                            unsigned long parent_rate)
+> +{
+> +       struct wm831x_clk *clkdata = container_of(hw, struct wm831x_clk,
+> +                                                 xtal_hw);
+> +
+> +       if (clkdata->xtal_ena)
+> +               return 32768;
+> +       else
+> +               return 0;
+> +}
+> +
+> +static const struct clk_ops wm831x_xtal_ops = {
+> +       .is_enabled = wm831x_xtal_is_enabled,
+> +       .recalc_rate = wm831x_xtal_recalc_rate,
+> +};
+> +
+> +static struct clk_init_data wm831x_xtal_init = {
+> +       .name = "xtal",
+> +       .ops = &wm831x_xtal_ops,
+> +       .flags = CLK_IS_ROOT,
+> +};
+> +
+> +static const unsigned long wm831x_fll_auto_rates[] = {
+> +        2048000,
+> +       11289600,
+> +       12000000,
+> +       12288000,
+> +       19200000,
+> +       22579600,
+> +       24000000,
+> +       24576000,
+> +};
+> +
+> +static int wm831x_fll_is_enabled(struct clk_hw *hw)
+> +{
+> +       struct wm831x_clk *clkdata = container_of(hw, struct wm831x_clk,
+> +                                                 fll_hw);
+> +       struct wm831x *wm831x = clkdata->wm831x;
+> +       int ret;
+> +
+> +       ret = wm831x_reg_read(wm831x, WM831X_FLL_CONTROL_1);
+> +       if (ret < 0) {
+> +               dev_err(wm831x->dev, "Unable to read FLL_CONTROL_1: %d\n",
+> +                       ret);
+> +               return true;
+> +       }
+> +
+> +       return (ret & WM831X_FLL_ENA) != 0;
+> +}
+> +
+> +static int wm831x_fll_prepare(struct clk_hw *hw)
+> +{
+> +       struct wm831x_clk *clkdata = container_of(hw, struct wm831x_clk,
+> +                                                 fll_hw);
+> +       struct wm831x *wm831x = clkdata->wm831x;
+> +       int ret;
+> +
+> +       ret = wm831x_set_bits(wm831x, WM831X_FLL_CONTROL_2,
+> +                             WM831X_FLL_ENA, WM831X_FLL_ENA);
+> +       if (ret != 0)
+> +               dev_crit(wm831x->dev, "Failed to enable FLL: %d\n", ret);
+> +
+> +       usleep_range(2000, 2000);
+> +
+> +       return ret;
+> +}
+> +
+> +static void wm831x_fll_unprepare(struct clk_hw *hw)
+> +{
+> +       struct wm831x_clk *clkdata = container_of(hw, struct wm831x_clk,
+> +                                                 fll_hw);
+> +       struct wm831x *wm831x = clkdata->wm831x;
+> +       int ret;
+> +
+> +       ret = wm831x_set_bits(wm831x, WM831X_FLL_CONTROL_2, WM831X_FLL_ENA, 0);
+> +       if (ret != 0)
+> +               dev_crit(wm831x->dev, "Failed to disaable FLL: %d\n", ret);
+> +}
+> +
+> +static unsigned long wm831x_fll_recalc_rate(struct clk_hw *hw,
+> +                                           unsigned long parent_rate)
+> +{
+> +       struct wm831x_clk *clkdata = container_of(hw, struct wm831x_clk,
+> +                                                 fll_hw);
+> +       struct wm831x *wm831x = clkdata->wm831x;
+> +       int ret;
+> +
+> +       ret = wm831x_reg_read(wm831x, WM831X_CLOCK_CONTROL_2);
+> +       if (ret < 0) {
+> +               dev_err(wm831x->dev, "Unable to read CLOCK_CONTROL_2: %d\n",
+> +                       ret);
+> +               return 0;
+> +       }
+> +
+> +       if (ret & WM831X_FLL_AUTO)
+> +               return wm831x_fll_auto_rates[ret & WM831X_FLL_AUTO_FREQ_MASK];
+> +
+> +       dev_err(wm831x->dev, "FLL only supported in AUTO mode\n");
+> +
+> +       return 0;
+> +}
+> +
+> +static long wm831x_fll_round_rate(struct clk_hw *hw, unsigned long rate,
+> +                                 unsigned long *unused)
+> +{
+> +       int best = 0;
+> +       int i;
+> +
+> +       for (i = 0; i < ARRAY_SIZE(wm831x_fll_auto_rates); i++)
+> +               if (abs(wm831x_fll_auto_rates[i] - rate) <
+> +                   abs(wm831x_fll_auto_rates[best] - rate))
+> +                       best = i;
+> +
+> +       return wm831x_fll_auto_rates[best];
+> +}
+> +
+> +static int wm831x_fll_set_rate(struct clk_hw *hw, unsigned long rate,
+> +                              unsigned long parent_rate)
+> +{
+> +       struct wm831x_clk *clkdata = container_of(hw, struct wm831x_clk,
+> +                                                 fll_hw);
+> +       struct wm831x *wm831x = clkdata->wm831x;
+> +       int i;
+> +
+> +       for (i = 0; i < ARRAY_SIZE(wm831x_fll_auto_rates); i++)
+> +               if (wm831x_fll_auto_rates[i] == rate)
+> +                       break;
+> +       if (i == ARRAY_SIZE(wm831x_fll_auto_rates))
+> +               return -EINVAL;
+> +
+> +       if (wm831x_fll_is_enabled(hw))
+> +               return -EPERM;
+> +
+> +       return wm831x_set_bits(wm831x, WM831X_CLOCK_CONTROL_2,
+> +                              WM831X_FLL_AUTO_FREQ_MASK, i);
+> +}
+> +
+> +static const char *wm831x_fll_parents[] = {
+> +       "xtal",
+> +       "clkin",
+> +};
+> +
+> +static u8 wm831x_fll_get_parent(struct clk_hw *hw)
+> +{
+> +       struct wm831x_clk *clkdata = container_of(hw, struct wm831x_clk,
+> +                                                 fll_hw);
+> +       struct wm831x *wm831x = clkdata->wm831x;
+> +       int ret;
+> +
+> +       /* AUTO mode is always clocked from the crystal */
+> +       ret = wm831x_reg_read(wm831x, WM831X_CLOCK_CONTROL_2);
+> +       if (ret < 0) {
+> +               dev_err(wm831x->dev, "Unable to read CLOCK_CONTROL_2: %d\n",
+> +                       ret);
+> +               return 0;
+> +       }
+> +
+> +       if (ret & WM831X_FLL_AUTO)
+> +               return 0;
+> +
+> +       ret = wm831x_reg_read(wm831x, WM831X_FLL_CONTROL_5);
+> +       if (ret < 0) {
+> +               dev_err(wm831x->dev, "Unable to read FLL_CONTROL_5: %d\n",
+> +                       ret);
+> +               return 0;
+> +       }
+> +
+> +       switch (ret & WM831X_FLL_CLK_SRC_MASK) {
+> +       case 0:
+> +               return 0;
+> +       case 1:
+> +               return 1;
+> +       default:
+> +               dev_err(wm831x->dev, "Unsupported FLL clock source %d\n",
+> +                       ret & WM831X_FLL_CLK_SRC_MASK);
+> +               return 0;
+> +       }
+> +}
+> +
+> +static const struct clk_ops wm831x_fll_ops = {
+> +       .is_enabled = wm831x_fll_is_enabled,
+> +       .prepare = wm831x_fll_prepare,
+> +       .unprepare = wm831x_fll_unprepare,
+> +       .round_rate = wm831x_fll_round_rate,
+> +       .recalc_rate = wm831x_fll_recalc_rate,
+> +       .set_rate = wm831x_fll_set_rate,
+> +       .get_parent = wm831x_fll_get_parent,
+> +};
+> +
+> +static struct clk_init_data wm831x_fll_init = {
+> +       .name = "fll",
+> +       .ops = &wm831x_fll_ops,
+> +       .parent_names = wm831x_fll_parents,
+> +       .num_parents = ARRAY_SIZE(wm831x_fll_parents),
+> +       .flags = CLK_SET_RATE_GATE,
+> +};
+> +
+> +static int wm831x_clkout_is_enabled(struct clk_hw *hw)
+> +{
+> +       struct wm831x_clk *clkdata = container_of(hw, struct wm831x_clk,
+> +                                                 clkout_hw);
+> +       struct wm831x *wm831x = clkdata->wm831x;
+> +       int ret;
+> +
+> +       ret = wm831x_reg_read(wm831x, WM831X_CLOCK_CONTROL_1);
+> +       if (ret < 0) {
+> +               dev_err(wm831x->dev, "Unable to read CLOCK_CONTROL_1: %d\n",
+> +                       ret);
+> +               return true;
+> +       }
+> +
+> +       return (ret & WM831X_CLKOUT_ENA) != 0;
+> +}
+> +
+> +static int wm831x_clkout_prepare(struct clk_hw *hw)
+> +{
+> +       struct wm831x_clk *clkdata = container_of(hw, struct wm831x_clk,
+> +                                                 clkout_hw);
+> +       struct wm831x *wm831x = clkdata->wm831x;
+> +       int ret;
+> +
+> +       ret = wm831x_reg_unlock(wm831x);
+> +       if (ret != 0) {
+> +               dev_crit(wm831x->dev, "Failed to lock registers: %d\n", ret);
+> +               return ret;
+> +       }
+> +
+> +       ret = wm831x_set_bits(wm831x, WM831X_CLOCK_CONTROL_1,
+> +                             WM831X_CLKOUT_ENA, WM831X_CLKOUT_ENA);
+> +       if (ret != 0)
+> +               dev_crit(wm831x->dev, "Failed to enable CLKOUT: %d\n", ret);
+> +
+> +       wm831x_reg_lock(wm831x);
+> +
+> +       return ret;
+> +}
+> +
+> +static void wm831x_clkout_unprepare(struct clk_hw *hw)
+> +{
+> +       struct wm831x_clk *clkdata = container_of(hw, struct wm831x_clk,
+> +                                                 clkout_hw);
+> +       struct wm831x *wm831x = clkdata->wm831x;
+> +       int ret;
+> +
+> +       ret = wm831x_reg_unlock(wm831x);
+> +       if (ret != 0) {
+> +               dev_crit(wm831x->dev, "Failed to lock registers: %d\n", ret);
+> +               return;
+> +       }
+> +
+> +       ret = wm831x_set_bits(wm831x, WM831X_CLOCK_CONTROL_1,
+> +                             WM831X_CLKOUT_ENA, 0);
+> +       if (ret != 0)
+> +               dev_crit(wm831x->dev, "Failed to disable CLKOUT: %d\n", ret);
+> +
+> +       wm831x_reg_lock(wm831x);
+> +}
+> +
+> +static const char *wm831x_clkout_parents[] = {
+> +       "xtal",
+> +       "fll",
+> +};
+> +
+> +static u8 wm831x_clkout_get_parent(struct clk_hw *hw)
+> +{
+> +       struct wm831x_clk *clkdata = container_of(hw, struct wm831x_clk,
+> +                                                 clkout_hw);
+> +       struct wm831x *wm831x = clkdata->wm831x;
+> +       int ret;
+> +
+> +       ret = wm831x_reg_read(wm831x, WM831X_CLOCK_CONTROL_1);
+> +       if (ret < 0) {
+> +               dev_err(wm831x->dev, "Unable to read CLOCK_CONTROL_1: %d\n",
+> +                       ret);
+> +               return 0;
+> +       }
+> +
+> +       if (ret & WM831X_CLKOUT_SRC)
+> +               return 0;
+> +       else
+> +               return 1;
+> +}
+> +
+> +static int wm831x_clkout_set_parent(struct clk_hw *hw, u8 parent)
+> +{
+> +       struct wm831x_clk *clkdata = container_of(hw, struct wm831x_clk,
+> +                                                 clkout_hw);
+> +       struct wm831x *wm831x = clkdata->wm831x;
+> +
+> +       return wm831x_set_bits(wm831x, WM831X_CLOCK_CONTROL_1,
+> +                              WM831X_CLKOUT_SRC,
+> +                              parent << WM831X_CLKOUT_SRC_SHIFT);
+> +}
+> +
+> +static const struct clk_ops wm831x_clkout_ops = {
+> +       .is_enabled = wm831x_clkout_is_enabled,
+> +       .prepare = wm831x_clkout_prepare,
+> +       .unprepare = wm831x_clkout_unprepare,
+> +       .get_parent = wm831x_clkout_get_parent,
+> +       .set_parent = wm831x_clkout_set_parent,
+> +};
+> +
+> +static struct clk_init_data wm831x_clkout_init = {
+> +       .name = "clkout",
+> +       .ops = &wm831x_clkout_ops,
+> +       .parent_names = wm831x_clkout_parents,
+> +       .num_parents = ARRAY_SIZE(wm831x_clkout_parents),
+> +       .flags = CLK_SET_RATE_PARENT,
+> +};
+> +
+> +static __devinit int wm831x_clk_probe(struct platform_device *pdev)
+> +{
+> +       struct wm831x *wm831x = dev_get_drvdata(pdev->dev.parent);
+> +       struct wm831x_clk *clkdata;
+> +       int ret;
+> +
+> +       clkdata = devm_kzalloc(&pdev->dev, sizeof(*clkdata), GFP_KERNEL);
+> +       if (!clkdata)
+> +               return -ENOMEM;
+> +
+> +       /* XTAL_ENA can only be set via OTP/InstantConfig so just read once */
+> +       ret = wm831x_reg_read(wm831x, WM831X_CLOCK_CONTROL_2);
+> +       if (ret < 0) {
+> +               dev_err(wm831x->dev, "Unable to read CLOCK_CONTROL_2: %d\n",
+> +                       ret);
+> +               return ret;
+> +       }
+> +       clkdata->xtal_ena = ret & WM831X_XTAL_ENA;
+> +
+> +       clkdata->xtal_hw.init = &wm831x_xtal_init;
+> +       if (!clk_register(&pdev->dev, &clkdata->xtal_hw))
+> +               return -EINVAL;
+> +
+> +       clkdata->fll_hw.init = &wm831x_fll_init;
+> +       if (!clk_register(&pdev->dev,&clkdata->fll_hw)) {
+> +               ret = -EINVAL;
+> +               goto err_xtal;
+> +       }
+> +
+> +       clkdata->clkout_hw.init = &wm831x_clkout_init;
+> +       if (!clk_register(&pdev->dev, &clkdata->clkout_hw)) {
+> +               ret = -EINVAL;
+> +               goto err_fll;
+> +       }
+> +
+> +       dev_set_drvdata(&pdev->dev, clkdata);
+> +
+> +       return 0;
+> +
+> +err_fll:
+> +err_xtal:
+> +       return ret;
+> +}
+> +
+> +static struct platform_driver wm831x_clk_driver = {
+> +       .probe = wm831x_clk_probe,
+> +       .driver         = {
+> +               .name   = "wm831x-clk",
+> +               .owner  = THIS_MODULE,
+> +       },
+> +};
+> +
+> +module_platform_driver(wm831x_clk_driver);
+> +
+> +/* Module information */
+> +MODULE_AUTHOR("Mark Brown <broonie@opensource.wolfsonmicro.com>");
+> +MODULE_DESCRIPTION("WM831x clock driver");
+> +MODULE_LICENSE("GPL");
+> +MODULE_ALIAS("platform:wm831x-clk");
+> --
+> 1.7.10
+>
