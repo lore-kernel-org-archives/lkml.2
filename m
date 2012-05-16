@@ -1,234 +1,247 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760688Ab2EPWJ7 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 May 2012 18:09:59 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:61031 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759795Ab2EPWIr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 May 2012 18:08:47 -0400
-Date: Thu, 17 May 2012 00:16:21 +0300
-From: "Michael S. Tsirkin" <mst@redhat.com>
-To: "Michael S. Tsirkin" <mst@redhat.com>
-Cc: Jason Wang <jasowang@redhat.com>, eric.dumazet@gmail.com,
-        netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        ebiederm@xmission.com, davem@davemloft.net
-Subject: [PATCHv2-RFC 6/6] tun: experimental zero copy tx support
-Message-ID: <3374cde17280031d7e7832918a35a7d6901e9071.1337202879.git.mst@redhat.com>
-References: <cover.1337202879.git.mst@redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <cover.1337202879.git.mst@redhat.com>
-X-Mutt-Fcc: =sent
+	id S1759743Ab2EPWMY (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 May 2012 18:12:24 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:53601 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759520Ab2EPWMW (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 16 May 2012 18:12:22 -0400
+Date: Wed, 16 May 2012 15:12:19 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Doug Ledford <dledford@redhat.com>
+Cc: manfred@colorfullife.com, levinsasha928@gmail.com, npiggin@gmail.com,
+        linux-kernel@vger.kernel.org
+Subject: Re: [Patch] ipc/mqueue: add rbtree node caching support
+Message-Id: <20120516151219.e4d55c81.akpm@linux-foundation.org>
+In-Reply-To: <34c33c51dbd2ab946a19563b790b5e1be8f751d2.1337196473.git.dledford@redhat.com>
+References: <34c33c51dbd2ab946a19563b790b5e1be8f751d2.1337196473.git.dledford@redhat.com>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Let vhost-net utilize zero copy tx when used with tun.
+On Wed, 16 May 2012 15:28:56 -0400
+Doug Ledford <dledford@redhat.com> wrote:
 
-Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
----
- drivers/net/tun.c |  132 +++++++++++++++++++++++++++++++++++++++++++++++++++--
- 1 files changed, 127 insertions(+), 5 deletions(-)
+> When I wrote the first patch that added the rbtree support for message
+> queue insertion, it sped up the case where the queue was very full
+> drastically from the original code.  It, however, slowed down the
+> case where the queue was empty (not drastically though).
+> 
+> This patch caches the last freed rbtree node struct so we can quickly
+> reuse it when we get a new message.  This is the common path for any
+> queue that very frequently goes from 0 to 1 then back to 0 messages
+> in queue.
+> 
+> Andrew Morton didn't like that we were doing a GFP_ATOMIC allocation
+> in msg_insert, so this patch attempts to speculatively allocate a
+> new node struct outside of the spin lock when we know we need it, but
+> will still fall back to a GFP_ATOMIC allocation if it has to.
+> 
+> Once I added the caching, the necessary various ret = ; spin_unlock
+> gyrations in mq_timedsend were getting pretty ugly, so this also slightly
+> refactors that function to streamline the flow of the code and the
+> function exit.
+> 
+> Finally, while working on getting performance back I made sure that all
+> of the node structs were always fully initialized when they were first
+> used, rendering the use of kzalloc unnecessary and a waste of CPU cycles.
+> 
+> The net result of all of this is:
+> 
+> 1) We will avoid a GFP_ATOMIC allocation when possible, but fall back on
+> it when necessary.
+> 2) We will speculatively allocate a node struct using GFP_KERNEL if our
+> cache is empty (and save the struct to our cache if it's still empty after
+> we have obtained the spin lock).
+> 3) The performance of the common queue empty case has significantly
+> improved and is now much more in line with the older performance for
+> this case.
+> 
+> The performance changes are:
+> 
+>             Old mqueue      new mqueue      new mqueue + caching
+> queue empty
+> send/recv   305/288ns       349/318ns       310/322ns
+> 
+> I don't think we'll ever be able to get the recv performance back, but
+> that's because the old recv performance was a direct result and consequence
+> of the old methods abysmal send performance.  The recv path simply must
+> do more so that the send path does not incur such a penalty under higher
+> queue depths.
+> 
+> As it turns out, the new caching code also sped up the various queue full
+> cases relative to my last patch.  That could be because of the difference
+> between the syscall path in 3.3.4-rc5 and 3.3.4-rc6, or because of the
+> change in code flow in the mq_timedsend routine.  Regardless, I'll take
+> it.  It wasn't huge, and I *would* say it was within the margin for error,
+> but after many repeated runs what I'm seeing is that the old numbers
+> trend slightly higher (about 10 to 20ns depending on which test is the
+> one running).
+> 
 
-diff --git a/drivers/net/tun.c b/drivers/net/tun.c
-index fe5cd2f3..c4459e0 100644
---- a/drivers/net/tun.c
-+++ b/drivers/net/tun.c
-@@ -100,6 +100,8 @@ do {								\
- } while (0)
- #endif
- 
-+#define GOODCOPY_LEN 128
-+
- #define FLT_EXACT_COUNT 8
- struct tap_filter {
- 	unsigned int    count;    /* Number of addrs. Zero means disabled */
-@@ -602,8 +604,86 @@ static struct sk_buff *tun_alloc_skb(struct tun_struct *tun,
- 	return skb;
- }
- 
-+/* set skb frags from iovec, this can move to core network code for reuse */
-+static int zerocopy_sg_from_iovec(struct sk_buff *skb, const struct iovec *from,
-+				  int offset, size_t count)
-+{
-+	int len = iov_length(from, count) - offset;
-+	int copy = skb_headlen(skb);
-+	int size, offset1 = 0;
-+	int i = 0;
-+
-+	/* Skip over from offset */
-+	while (count && (offset >= from->iov_len)) {
-+		offset -= from->iov_len;
-+		++from;
-+		--count;
+LGTM.  Here be some coding-style fixes:
+
+--- a/ipc/mqueue.c~ipc-mqueue-add-rbtree-node-caching-support-fix
++++ a/ipc/mqueue.c
+@@ -141,16 +141,18 @@ static int msg_insert(struct msg_msg *ms
+ 	} else if (new_leaf) {
+ 		leaf = *new_leaf;
+ 		*new_leaf = NULL;
+-	} else
++	} else {
+ 		leaf = kmalloc(sizeof(*leaf), GFP_ATOMIC);
 +	}
-+
-+	/* copy up to skb headlen */
-+	while (count && (copy > 0)) {
-+		size = min_t(unsigned int, copy, from->iov_len - offset);
-+		if (copy_from_user(skb->data + offset1, from->iov_base + offset,
-+				   size))
-+			return -EFAULT;
-+		if (copy > size) {
-+			++from;
-+			--count;
-+			offset = 0;
-+		} else
-+			offset += size;
-+		copy -= size;
-+		offset1 += size;
+ 	if (!leaf)
+ 		return -ENOMEM;
+ 	if (!info->node_cache) {
+ 		rb_init_node(&leaf->rb_node);
+ 		INIT_LIST_HEAD(&leaf->msg_list);
+ 		info->qsize += sizeof(*leaf);
+-	} else
++	} else {
+ 		info->node_cache = NULL;
 +	}
-+
-+	if (len == offset1)
-+		return 0;
-+
-+	while (count--) {
-+		struct page *page[MAX_SKB_FRAGS];
-+		int num_pages;
-+		unsigned long base;
-+		unsigned long truesize;
-+
-+		len = from->iov_len - offset;
-+		if (!len) {
-+			offset = 0;
-+			++from;
-+			continue;
+ 	leaf->priority = msg->m_type;
+ 	rb_link_node(&leaf->rb_node, parent, p);
+ 	rb_insert_color(&leaf->rb_node, &info->msg_tree);
+@@ -196,8 +198,9 @@ try_again:
+ 		if (info->node_cache) {
+ 			info->qsize -= sizeof(*leaf);
+ 			kfree(leaf);
+-		} else
++		} else {
+ 			info->node_cache = leaf;
 +		}
-+		base = (unsigned long)from->iov_base + offset;
-+		size = ((base & ~PAGE_MASK) + len + ~PAGE_MASK) >> PAGE_SHIFT;
-+		if (i + size > MAX_SKB_FRAGS)
-+			return -EMSGSIZE;
-+		num_pages = get_user_pages_fast(base, size, 0, &page[i]);
-+		if (num_pages != size) {
-+			for (i = 0; i < num_pages; i++)
-+				put_page(page[i]);
-+			return -EFAULT;
-+		}
-+		truesize = size * PAGE_SIZE;
-+		skb->data_len += len;
-+		skb->len += len;
-+		skb->truesize += truesize;
-+		atomic_add(truesize, &skb->sk->sk_wmem_alloc);
-+		while (len) {
-+			int off = base & ~PAGE_MASK;
-+			int size = min_t(int, len, PAGE_SIZE - off);
-+			__skb_fill_page_desc(skb, i, page[i], off, size);
-+			skb_shinfo(skb)->nr_frags++;
-+			/* increase sk_wmem_alloc */
-+			base += size;
-+			len -= size;
-+			i++;
-+		}
-+		offset = 0;
-+		++from;
-+	}
-+	return 0;
-+}
-+
- /* Get packet from user space buffer */
--static ssize_t tun_get_user(struct tun_struct *tun,
-+static ssize_t tun_get_user(struct tun_struct *tun, void *msg_control,
- 			    const struct iovec *iv, size_t count,
- 			    int noblock)
- {
-@@ -612,6 +692,9 @@ static ssize_t tun_get_user(struct tun_struct *tun,
- 	size_t len = count, align = NET_SKB_PAD;
- 	struct virtio_net_hdr gso = { 0 };
- 	int offset = 0;
-+	int copylen;
-+	bool zerocopy = false;
-+	int err;
+ 		goto try_again;
+ 	} else {
+ 		msg = list_first_entry(&leaf->msg_list,
+@@ -208,8 +211,9 @@ try_again:
+ 			if (info->node_cache) {
+ 				info->qsize -= sizeof(*leaf);
+ 				kfree(leaf);
+-			} else
++			} else {
+ 				info->node_cache = leaf;
++			}
+ 		}
+ 	}
+ 	info->attr.mq_curmsgs--;
+@@ -1033,9 +1037,11 @@ SYSCALL_DEFINE5(mq_timedsend, mqd_t, mqd
+ 	msg_ptr->m_ts = msg_len;
+ 	msg_ptr->m_type = msg_prio;
  
- 	if (!(tun->flags & TUN_NO_PI)) {
- 		if ((len -= sizeof(pi)) > count)
-@@ -645,14 +728,46 @@ static ssize_t tun_get_user(struct tun_struct *tun,
- 			return -EINVAL;
+-	/* msg_insert really wants us to have a valid, spare node struct so
+-	 * it doesn't have to kmalloc a GFP_ATOMIC allocation, but it will
+-	 * fall back to that if necessary. */
++	/*
++	 * msg_insert really wants us to have a valid, spare node struct so it
++	 * doesn't have to kmalloc a GFP_ATOMIC allocation, but it will fall
++	 * back to that if necessary.
++	 */
+ 	if (!info->node_cache)
+ 		new_leaf = kmalloc(sizeof(*new_leaf), GFP_KERNEL);
+ 
+@@ -1058,8 +1064,10 @@ SYSCALL_DEFINE5(mq_timedsend, mqd_t, mqd
+ 			wait.msg = (void *) msg_ptr;
+ 			wait.state = STATE_NONE;
+ 			ret = wq_sleep(info, SEND, timeout, &wait);
+-			/* wq_sleep must be called with info->lock held, and
+-			 * returns with the lock released */
++			/*
++			 * wq_sleep must be called with info->lock held, and
++			 * returns with the lock released
++			 */
+ 			goto out_free;
+ 		}
+ 	} else {
+@@ -1136,9 +1144,11 @@ SYSCALL_DEFINE5(mq_timedreceive, mqd_t, 
+ 		goto out_fput;
  	}
  
--	skb = tun_alloc_skb(tun, align, len, gso.hdr_len, noblock);
-+	if (msg_control)
-+		zerocopy = true;
-+
-+	if (zerocopy) {
-+		/* Userspace may produce vectors with count greater than
-+		 * MAX_SKB_FRAGS, so we need to linearize parts of the skb
-+		 * to let the rest of data to be fit in the frags.
-+		 */
-+		if (count > MAX_SKB_FRAGS) {
-+			copylen = iov_length(iv, count - MAX_SKB_FRAGS);
-+			if (copylen < offset)
-+				copylen = 0;
-+			else
-+				copylen -= offset;
-+		} else
-+				copylen = 0;
-+		/* There are 256 bytes to be copied in skb, so there is enough
-+		 * room for skb expand head in case it is used.
-+		 * The rest of the buffer is mapped from userspace.
-+		 */
-+		if (copylen < gso.hdr_len)
-+			copylen = gso.hdr_len;
-+		if (!copylen)
-+			copylen = GOODCOPY_LEN;
-+	} else
-+		copylen = len;
-+
-+	skb = tun_alloc_skb(tun, align, copylen, gso.hdr_len, noblock);
- 	if (IS_ERR(skb)) {
- 		if (PTR_ERR(skb) != -EAGAIN)
- 			tun->dev->stats.rx_dropped++;
- 		return PTR_ERR(skb);
- 	}
+-	/* msg_insert really wants us to have a valid, spare node struct so
+-	 * it doesn't have to kmalloc a GFP_ATOMIC allocation, but it will
+-	 * fall back to that if necessary. */
++	/*
++	 * msg_insert really wants us to have a valid, spare node struct so it
++	 * doesn't have to kmalloc a GFP_ATOMIC allocation, but it will fall
++	 * back to that if necessary.
++	 */
+ 	if (!info->node_cache)
+ 		new_leaf = kmalloc(sizeof(*new_leaf), GFP_KERNEL);
  
--	if (skb_copy_datagram_from_iovec(skb, 0, iv, offset, len)) {
-+	if (zerocopy)
-+		err = zerocopy_sg_from_iovec(skb, iv, offset, count);
-+	else
-+		err = skb_copy_datagram_from_iovec(skb, 0, iv, offset, len);
-+
-+	if (err) {
- 		tun->dev->stats.rx_dropped++;
- 		kfree_skb(skb);
- 		return -EFAULT;
-@@ -726,6 +841,12 @@ static ssize_t tun_get_user(struct tun_struct *tun,
- 		skb_shinfo(skb)->gso_segs = 0;
- 	}
+
+
+> @@ -132,15 +134,24 @@ static int msg_insert(struct msg_msg *msg, struct mqueue_inode_info *info)
+>  		else
+>  			p = &(*p)->rb_right;
+>  	}
+> -	leaf = kzalloc(sizeof(*leaf), GFP_ATOMIC);
+> +	if (info->node_cache) {
+> +		leaf = info->node_cache;
+> +	} else if (new_leaf) {
+> +		leaf = *new_leaf;
+> +		*new_leaf = NULL;
+> +	} else
+> +		leaf = kmalloc(sizeof(*leaf), GFP_ATOMIC);
+>  	if (!leaf)
+>  		return -ENOMEM;
+> -	rb_init_node(&leaf->rb_node);
+> -	INIT_LIST_HEAD(&leaf->msg_list);
+> +	if (!info->node_cache) {
+> +		rb_init_node(&leaf->rb_node);
+> +		INIT_LIST_HEAD(&leaf->msg_list);
+> +		info->qsize += sizeof(*leaf);
+> +	} else
+> +		info->node_cache = NULL;
+
+So you have
+
+: 	if (info->node_cache) {
+: 		leaf = info->node_cache;
+: 	} else if (new_leaf) {
+: 		leaf = *new_leaf;
+: 		*new_leaf = NULL;
+: 	} else {
+: 		leaf = kmalloc(sizeof(*leaf), GFP_ATOMIC);
+: 	}
+: 	if (!leaf)
+: 		return -ENOMEM;
+: 	if (!info->node_cache) {
+: 		rb_init_node(&leaf->rb_node);
+: 		INIT_LIST_HEAD(&leaf->msg_list);
+: 		info->qsize += sizeof(*leaf);
+: 	} else {
+: 		info->node_cache = NULL;
+:	}
  
-+	/* copy skb_ubuf_info for callback when skb has no error */
-+	if (zerocopy) {
-+		skb_shinfo(skb)->destructor_arg = msg_control;
-+		skb_shinfo(skb)->tx_flags |= SKBTX_DEV_ZEROCOPY;
-+	}
-+
- 	netif_rx_ni(skb);
- 
- 	tun->dev->stats.rx_packets++;
-@@ -746,7 +867,7 @@ static ssize_t tun_chr_aio_write(struct kiocb *iocb, const struct iovec *iv,
- 
- 	tun_debug(KERN_INFO, tun, "tun_chr_write %ld\n", count);
- 
--	result = tun_get_user(tun, iv, iov_length(iv, count),
-+	result = tun_get_user(tun, NULL, iv, iov_length(iv, count),
- 			      file->f_flags & O_NONBLOCK);
- 
- 	tun_put(tun);
-@@ -960,7 +1081,7 @@ static int tun_sendmsg(struct kiocb *iocb, struct socket *sock,
- 		       struct msghdr *m, size_t total_len)
- {
- 	struct tun_struct *tun = container_of(sock, struct tun_struct, socket);
--	return tun_get_user(tun, m->msg_iov, total_len,
-+	return tun_get_user(tun, m->msg_control, m->msg_iov, total_len,
- 			    m->msg_flags & MSG_DONTWAIT);
- }
- 
-@@ -1130,6 +1251,7 @@ static int tun_set_iff(struct net *net, struct file *file, struct ifreq *ifr)
- 		sock_init_data(&tun->socket, sk);
- 		sk->sk_write_space = tun_sock_write_space;
- 		sk->sk_sndbuf = INT_MAX;
-+		sock_set_flag(sk, SOCK_ZEROCOPY);
- 
- 		tun_sk(sk)->tun = tun;
- 
--- 
-MST
+But I think it's a bit simpler to do
+
+: 	if (info->node_cache) {
+: 		leaf = info->node_cache;
+: 		info->node_cache = NULL;
+: 	} else {
+: 		if (new_leaf) {
+: 			leaf = *new_leaf;
+: 			*new_leaf = NULL;
+: 		} else {
+: 			leaf = kmalloc(sizeof(*leaf), GFP_ATOMIC);
+: 			if (!leaf)
+: 				return -ENOMEM;
+: 		}
+: 		rb_init_node(&leaf->rb_node);
+: 		INIT_LIST_HEAD(&leaf->msg_list);
+: 		info->qsize += sizeof(*leaf);
+: 	}
+
+and my version generates 25 bytes less text.
+
+But why did we need to initialise *leaf's fields if the caller passed
+us something in *new_leaf?  sys_mq_timedsend() already initialised the
+fields for us?
+
+
