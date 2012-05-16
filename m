@@ -1,103 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759745Ab2EPIBO (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 May 2012 04:01:14 -0400
-Received: from casper.infradead.org ([85.118.1.10]:39646 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753677Ab2EPIBM convert rfc822-to-8bit (ORCPT
+	id S1759790Ab2EPIBn (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 May 2012 04:01:43 -0400
+Received: from ch1ehsobe004.messaging.microsoft.com ([216.32.181.184]:16720
+	"EHLO ch1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1758255Ab2EPIBh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 May 2012 04:01:12 -0400
-Message-ID: <1337155239.27694.131.camel@twins>
-Subject: Re: [PATCH v5 6/7] x86/tlb: optimizing flush_tlb_mm
-From: Peter Zijlstra <peterz@infradead.org>
-To: Alex Shi <alex.shi@intel.com>
-Cc: Nick Piggin <npiggin@gmail.com>, tglx@linutronix.de, mingo@redhat.com,
-        hpa@zytor.com, arnd@arndb.de, rostedt@goodmis.org, fweisbec@gmail.com,
-        jeremy@goop.org, riel@redhat.com, luto@mit.edu, avi@redhat.com,
-        len.brown@intel.com, dhowells@redhat.com, fenghua.yu@intel.com,
-        borislav.petkov@amd.com, yinghai@kernel.org, ak@linux.intel.com,
-        cpw@sgi.com, steiner@sgi.com, akpm@linux-foundation.org,
-        penberg@kernel.org, hughd@google.com, rientjes@google.com,
-        kosaki.motohiro@jp.fujitsu.com, n-horiguchi@ah.jp.nec.com,
-        tj@kernel.org, oleg@redhat.com, axboe@kernel.dk, jmorris@namei.org,
-        kamezawa.hiroyu@jp.fujitsu.com, viro@zeniv.linux.org.uk,
-        linux-kernel@vger.kernel.org, yongjie.ren@intel.com,
-        linux-arch@vger.kernel.org
-Date: Wed, 16 May 2012 10:00:39 +0200
-In-Reply-To: <4FB34D49.1060809@intel.com>
-References: <1337072138-8323-1-git-send-email-alex.shi@intel.com>
-	  <1337072138-8323-7-git-send-email-alex.shi@intel.com>
-	  <CAPa8GCDsSOrzQwX2qRJyocYAZdGbwjD4t4fjxmWXV6=EoXjXZw@mail.gmail.com>
-	  <4FB2590C.1050303@intel.com> <1337092577.27694.45.camel@twins>
-	 <1337093840.27694.56.camel@twins> <4FB34D49.1060809@intel.com>
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
-X-Mailer: Evolution 3.2.2- 
-Mime-Version: 1.0
+	Wed, 16 May 2012 04:01:37 -0400
+X-SpamScore: 0
+X-BigFish: VPS0(zzzz1202hzz8275bhz2dh2a8h668h839hd24he5bh)
+X-Forefront-Antispam-Report: CIP:137.71.25.55;KIP:(null);UIP:(null);IPV:NLI;H:nwd2mta1.analog.com;RD:nwd2mail10.analog.com;EFVD:NLI
+From: <sonic.zhang@analog.com>
+To: Chris Ball <cjb@laptop.org>, <linux-mmc@vger.kernel.org>
+CC: LKML <linux-kernel@vger.kernel.org>,
+        <uclinux-dist-devel@blackfin.uclinux.org>,
+        Sonic Zhang <sonic.zhang@analog.com>, Bob Liu <lliubbo@gmail.com>
+Subject: [PATCH 4/5] mmc: bfin_sdh: Remove redundent suspend and resume setting.
+Date: Wed, 16 May 2012 15:50:36 +0800
+Message-ID: <1337154637-11724-4-git-send-email-sonic.zhang@analog.com>
+X-Mailer: git-send-email 1.7.0.4
+In-Reply-To: <1337154637-11724-1-git-send-email-sonic.zhang@analog.com>
+References: <1337154637-11724-1-git-send-email-sonic.zhang@analog.com>
+MIME-Version: 1.0
+Content-Type: text/plain
+X-OriginatorOrg: analog.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2012-05-16 at 14:46 +0800, Alex Shi wrote:
-> diff --git a/include/asm-generic/tlb.h b/include/asm-generic/tlb.h
-> index 75e888b..ed6642a 100644
-> --- a/include/asm-generic/tlb.h
-> +++ b/include/asm-generic/tlb.h
-> @@ -86,6 +86,8 @@ struct mmu_gather {
->  #ifdef CONFIG_HAVE_RCU_TABLE_FREE
->         struct mmu_table_batch  *batch;
->  #endif
-> +       unsigned long           start;
-> +       unsigned long           end;
->         unsigned int            need_flush : 1, /* Did free PTEs */
->                                 fast_mode  : 1; /* No batching   */
->  
-> diff --git a/mm/memory.c b/mm/memory.c
-> index 6105f47..b176172 100644
-> --- a/mm/memory.c
-> +++ b/mm/memory.c
-> @@ -206,6 +206,8 @@ void tlb_gather_mmu(struct mmu_gather *tlb, struct mm_struct *mm, bool fullmm)
->         tlb->mm = mm;
->  
->         tlb->fullmm     = fullmm;
-> +       tlb->start      = -1UL;
-> +       tlb->end        = 0;
->         tlb->need_flush = 0;
->         tlb->fast_mode  = (num_possible_cpus() == 1);
->         tlb->local.next = NULL;
-> @@ -248,6 +250,8 @@ void tlb_finish_mmu(struct mmu_gather *tlb, unsigned long start, unsigned long e
->  {
->         struct mmu_gather_batch *batch, *next;
->  
-> +       tlb->start = start;
-> +       tlb->end   = end;
->         tlb_flush_mmu(tlb);
->  
->         /* keep the page table cache within bounds */
-> @@ -1204,6 +1208,8 @@ again:
->          */
->         if (force_flush) {
->                 force_flush = 0;
-> +               tlb->start = addr;
-> +               tlb->end = end;
->                 tlb_flush_mmu(tlb);
->                 if (addr != end)
->                         goto again; 
+From: Sonic Zhang <sonic.zhang@analog.com>
+
+mmc core suspend and resume functions had already called sdh_set_ios with proper flags.
+
+Signed-off-by: Sonic Zhang <sonic.zhang@analog.com>
+Signed-off-by: Bob Liu <lliubbo@gmail.com>
+---
+ drivers/mmc/host/bfin_sdh.c |   15 ---------------
+ 1 files changed, 0 insertions(+), 15 deletions(-)
+
+diff --git a/drivers/mmc/host/bfin_sdh.c b/drivers/mmc/host/bfin_sdh.c
+index 22e347b..b31e1ab 100644
+--- a/drivers/mmc/host/bfin_sdh.c
++++ b/drivers/mmc/host/bfin_sdh.c
+@@ -604,11 +604,6 @@ static int sdh_suspend(struct platform_device *dev, pm_message_t state)
+ 	if (mmc)
+ 		ret = mmc_suspend_host(mmc);
+ 
+-#ifndef RSI_BLKSZ
+-	bfin_write_SDH_PWR_CTL(bfin_read_SDH_PWR_CTL() & ~PWR_ON);
+-#else
+-	bfin_write_SDH_CFG(bfin_read_SDH_CFG() & ~PWR_ON);
+-#endif
+ 	peripheral_free_list(drv_data->pin_req);
+ 
+ 	return ret;
+@@ -630,16 +625,6 @@ static int sdh_resume(struct platform_device *dev)
+ 	/* Secure Digital Host shares DMA with Nand controller */
+ 	bfin_write_DMAC1_PERIMUX(bfin_read_DMAC1_PERIMUX() | 0x1);
+ #endif
+-#ifndef RSI_BLKSZ
+-	bfin_write_SDH_PWR_CTL(bfin_read_SDH_PWR_CTL() | PWR_ON);
+-	bfin_write_SDH_CFG(bfin_read_SDH_CFG() | CLKS_EN);
+-#else
+-	bfin_write_SDH_CFG(bfin_read_SDH_CFG() | CLKS_EN | PWR_ON);
+-#endif
+-	SSYNC();
+-
+-	bfin_write_SDH_CFG((bfin_read_SDH_CFG() & 0x1F) | (PUP_SDDAT | PUP_SDDAT3));
+-	SSYNC();
+ 
+ 	if (mmc)
+ 		ret = mmc_resume_host(mmc);
+-- 
+1.7.0.4
 
 
-ARGH.. no. What bit about you don't need to modify the generic code
-don't you get?
-
-Both ARM and IA64 (and possible others) already do range tracking, you
-don't need to modify mm/memory.c _AT_ALL_.
-
-Also, if you modify include/asm-generic/tlb.h to include the ranges it
-would be very nice to make that optional, most archs using it won't use
-this.
-
-Now IF you're going to change the tlb interface like this, you're going
-to get to do it for all architectures, along with a sane benchmark to
-show its beneficial to track ranges like this.
-
-But as it stands, people are still questioning the validity of your
-mprotect micro-bench, so no, you don't get to change the tlb interface.
