@@ -1,39 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755292Ab2EPP2k (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 May 2012 11:28:40 -0400
-Received: from mail-gg0-f174.google.com ([209.85.161.174]:43291 "EHLO
-	mail-gg0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755228Ab2EPP2h (ORCPT
+	id S1755267Ab2EPPa1 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 May 2012 11:30:27 -0400
+Received: from he.sipsolutions.net ([78.46.109.217]:33006 "EHLO
+	sipsolutions.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754328Ab2EPPaZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 May 2012 11:28:37 -0400
-Date: Wed, 16 May 2012 12:28:31 -0300
-From: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-To: Namhyung Kim <namhyung.kim@lge.com>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Mackerras <paulus@samba.org>,
-        Ingo Molnar <mingo@redhat.com>, Namhyung Kim <namhyung@gmail.com>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 3/3] perf target: Add need_mmap field
-Message-ID: <20120516152831.GE7864@infradead.org>
-References: <1337161549-9870-1-git-send-email-namhyung.kim@lge.com>
- <1337161549-9870-3-git-send-email-namhyung.kim@lge.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1337161549-9870-3-git-send-email-namhyung.kim@lge.com>
-X-Url: http://acmel.wordpress.com
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Wed, 16 May 2012 11:30:25 -0400
+Message-ID: <1337182220.18519.5.camel@jlt3.sipsolutions.net>
+Subject: Re: [PATCH 0/3] net: mac80211: Neaten debugging
+From: Johannes Berg <johannes@sipsolutions.net>
+To: Joe Perches <joe@perches.com>
+Cc: David Miller <davem@davemloft.net>, linville@tuxdriver.com,
+        linux-wireless@vger.kernel.org, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Date: Wed, 16 May 2012 17:30:20 +0200
+In-Reply-To: <1337181771.4818.0.camel@joe2Laptop>
+References: <1337106548.15553.8.camel@jlt3.sipsolutions.net>
+	 <cover.1337116578.git.joe@perches.com>
+	 <20120516.012319.1903390658912592000.davem@davemloft.net>
+	 <1337155171.4367.2.camel@jlt3.sipsolutions.net>
+	 <1337181771.4818.0.camel@joe2Laptop>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.2-1+b1 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Em Wed, May 16, 2012 at 06:45:49PM +0900, Namhyung Kim escreveu:
-> If perf doesn't mmap on event (like perf stat), it
-> should not create per-task-per-cpu events. So just
-> use a dummy cpu map to create a per-task event for
-> this case.
+On Wed, 2012-05-16 at 08:22 -0700, Joe Perches wrote:
+> On Wed, 2012-05-16 at 09:59 +0200, Johannes Berg wrote:
+> > I wonder if it makes sense to leave these under
+> > #ifdef though? Why #ifdef something if it's going to be invisible most
+> > of the time anyway?
+> 
+> I don't understand your point.
+> #ifdef removal is a good thing.
 
-Humm, perhaps target.no_mmap is better? I.e. just perf-stat would set
-it.
+Yeah, but you left a lot of them under ifdef, and I'm wondering why you
+didn't remove them, or if you should, or ...
 
-- Arnaldo
+johannes
+
