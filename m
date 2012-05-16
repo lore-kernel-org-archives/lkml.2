@@ -1,50 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759378Ab2EPVp4 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 May 2012 17:45:56 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:14564 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756020Ab2EPVpz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 May 2012 17:45:55 -0400
-Date: Thu, 17 May 2012 00:16:10 +0300
-From: "Michael S. Tsirkin" <mst@redhat.com>
-To: "Michael S. Tsirkin" <mst@redhat.com>
-Cc: Jason Wang <jasowang@redhat.com>, eric.dumazet@gmail.com,
-        netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        ebiederm@xmission.com, davem@davemloft.net
-Subject: [PATCHv2-RFC 4/6] tun: orphan frags on xmit
-Message-ID: <75cd3b261c994d98e99c8671f3265f42eff4a974.1337202879.git.mst@redhat.com>
-References: <cover.1337202879.git.mst@redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <cover.1337202879.git.mst@redhat.com>
-X-Mutt-Fcc: =sent
+	id S1759425Ab2EPVxJ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 May 2012 17:53:09 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:53551 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757615Ab2EPVxH (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 16 May 2012 17:53:07 -0400
+Date: Wed, 16 May 2012 14:53:03 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: solmac john <johnsolmac@gmail.com>
+Cc: Dave Chinner <david@fromorbit.com>, linux-mm <linux-mm@kvack.org>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        Kernelnewbies@kernelnewbies.org, linux-kernel@vger.kernel.org,
+        Konstantin Khlebnikov <khlebnikov@openvz.org>
+Subject: Re: [bug] shrink_slab shrinkersize handling
+Message-Id: <20120516145303.8a9cb329.akpm@linux-foundation.org>
+In-Reply-To: <CAD5x=MPcwXyy0eOdqPxc_8K_i3enoU3ZbtwLS71SHR58FCT6rg@mail.gmail.com>
+References: <CAD5x=MPcwXyy0eOdqPxc_8K_i3enoU3ZbtwLS71SHR58FCT6rg@mail.gmail.com>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-tun xmit is actually receive of the internal tun
-socket. Orphan the frags same as we do for normal rx path.
+On Wed, 16 May 2012 14:33:18 +0530
+solmac john <johnsolmac@gmail.com> wrote:
 
-Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
----
- drivers/net/tun.c |    2 ++
- 1 files changed, 2 insertions(+), 0 deletions(-)
+> Hi All,
+> 
+> During mm performance testing sometimes I observed below kernel messages
+> 
+> [   80.776000] shrink_slab: ashmem_shrink+0x0/0x114 negative objects to
+> delete nr=-2133936901
+> [   80.784000] shrink_slab: ashmem_shrink+0x0/0x114 negative objects to
+> delete nr=-2139256767
+> [   80.796000] shrink_slab: ashmem_shrink+0x0/0x114 negative objects to
+> delete nr=-2079333971
+> [   80.804000] shrink_slab: ashmem_shrink+0x0/0x114 negative objects to
+> delete nr=-2096156269
+> [   80.812000] shrink_slab: ashmem_shrink+0x0/0x114 negative objects to
+> delete nr=-20658392
+> 
+> ...
+>
+> I found one patch  http://lkml.org/lkml/2011/8/22/80    for this fix
+> Please let me know reason why I am getting above error and above is really
+> fix for this problem.  ?
 
-diff --git a/drivers/net/tun.c b/drivers/net/tun.c
-index 987aeef..fe5cd2f3 100644
---- a/drivers/net/tun.c
-+++ b/drivers/net/tun.c
-@@ -414,6 +414,8 @@ static netdev_tx_t tun_net_xmit(struct sk_buff *skb, struct net_device *dev)
- 
- 	/* Orphan the skb - required as we might hang on to it
- 	 * for indefinite time. */
-+	if (unlikely(skb_orphan_frags(skb, GFP_ATOMIC)))
-+		goto drop;
- 	skb_orphan(skb);
- 
- 	/* Enqueue packet */
--- 
-MST
+Yes, that patch should fix it.
+
+Aside: I spent some time trying to work out the reason why local
+variable `max_pass' in shrink_slab() is called `max_pass' and failed.
+
 
