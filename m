@@ -1,65 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933017Ab2EPCYt (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 May 2012 22:24:49 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:53748 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932808Ab2EPCYr (ORCPT
+	id S1758893Ab2EPC3h (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 May 2012 22:29:37 -0400
+Received: from mail-wg0-f44.google.com ([74.125.82.44]:42299 "EHLO
+	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757497Ab2EPC3g (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 May 2012 22:24:47 -0400
-Message-ID: <4FB30FEA.2080105@gmail.com>
-Date: Tue, 15 May 2012 20:24:42 -0600
-From: David Ahern <dsahern@gmail.com>
-User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.7; rv:12.0) Gecko/20120428 Thunderbird/12.0.1
+	Tue, 15 May 2012 22:29:36 -0400
+From: Marek Vasut <marek.vasut@gmail.com>
+To: Axel Lin <axel.lin@gmail.com>
+Subject: Re: [PATCH RFT 3/3] regulator: isl6271a: Convert to set_voltage_sel and regulator_map_voltage_linear
+Date: Wed, 16 May 2012 04:29:31 +0200
+User-Agent: KMail/1.13.7 (Linux/3.2.0-1-amd64; KDE/4.7.4; x86_64; ; )
+Cc: linux-kernel@vger.kernel.org, Liam Girdwood <lrg@ti.com>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>
+References: <1337134167.5940.2.camel@phoenix> <1337134273.5940.4.camel@phoenix>
+In-Reply-To: <1337134273.5940.4.camel@phoenix>
 MIME-Version: 1.0
-To: Stephane Eranian <eranian@google.com>
-CC: linux-kernel@vger.kernel.org, peterz@infradead.org, mingo@elte.hu,
-        acme@redhat.com
-Subject: Re: [PATCH v2 2/5] perf tools: fix piped mode read code
-References: <1337081295-10303-1-git-send-email-eranian@google.com> <1337081295-10303-3-git-send-email-eranian@google.com>
-In-Reply-To: <1337081295-10303-3-git-send-email-eranian@google.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Type: Text/Plain;
+  charset="us-ascii"
 Content-Transfer-Encoding: 7bit
+Message-Id: <201205160429.31382.marek.vasut@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 5/15/12 5:28 AM, Stephane Eranian wrote:
-> In __perf_session__process_pipe_events(), there was a risk
-> we would read more than what a union perf_event struct can
-> hold. this could happen in case, perf is reading a file which
-> contains new record types it does not know about and which are
-> larger than anything it knows about.
->
-> In general, perf is supposed to skip records it does not
-> understand, but in pipe mode, those have to be read and ignored.
-> The fixed size header contains the size of the record, but that
-> size may be larger than union perf_event, yet it was used as
-> the backing to the read in:
->
->    union perf_event event;
->    void *p;
->
->    size = event->header.size;
->
->    p =&event;
->    p += sizeof(struct perf_event_header);
->    if (size - sizeof(struct perf_event_header)) {
->      err = readn(self->fd, p, size - sizeof(struct perf_event_header));
->
-> We fix this by allocating a buffer based on the size reported in
-> the header. We reuse the buffer as much as we can. We realloc in
-> case it becomes too small. In the  common case, the performance
-> impact is negligible.
->
-> Signed-off-by: Stephane Eranian<eranian@google.com>
+Dear Axel Lin,
+
+> Signed-off-by: Axel Lin <axel.lin@gmail.com>
 > ---
->   tools/perf/util/session.c |   34 ++++++++++++++++++++++++++--------
->   1 files changed, 26 insertions(+), 8 deletions(-)
->
+>  drivers/regulator/isl6271a-regulator.c |   21 ++++++---------------
+>  1 files changed, 6 insertions(+), 15 deletions(-)
+> 
+> diff --git a/drivers/regulator/isl6271a-regulator.c
+> b/drivers/regulator/isl6271a-regulator.c index 00cb288..56d273f 100644
+> --- a/drivers/regulator/isl6271a-regulator.c
+> +++ b/drivers/regulator/isl6271a-regulator.c
+> @@ -50,25 +50,15 @@ static int isl6271a_get_voltage_sel(struct
+> regulator_dev *dev) return idx;
+>  }
+> 
+> -static int isl6271a_set_voltage(struct regulator_dev *dev,
+> -				int minuV, int maxuV,
+> -				unsigned *selector)
+> +static int isl6271a_set_voltage_sel(struct regulator_dev *dev,
+> +				    unsigned selector)
+>  {
+>  	struct isl_pmic *pmic = rdev_get_drvdata(dev);
+> -	int err, data;
+> -
+> -	if (minuV < ISL6271A_VOLTAGE_MIN || minuV > ISL6271A_VOLTAGE_MAX)
+> -		return -EINVAL;
+> -	if (maxuV < ISL6271A_VOLTAGE_MIN || maxuV > ISL6271A_VOLTAGE_MAX)
+> -		return -EINVAL;
+> -
+> -	data = DIV_ROUND_UP(minuV - ISL6271A_VOLTAGE_MIN,
+> -			    ISL6271A_VOLTAGE_STEP);
+> -	*selector = data;
+> +	int err;
+> 
+>  	mutex_lock(&pmic->mtx);
+> 
+> -	err = i2c_smbus_write_byte(pmic->client, data);
+> +	err = i2c_smbus_write_byte(pmic->client, selector);
+>  	if (err < 0)
+>  		dev_err(&pmic->client->dev, "Error setting voltage\n");
+> 
+> @@ -78,8 +68,9 @@ static int isl6271a_set_voltage(struct regulator_dev
+> *dev,
+> 
+>  static struct regulator_ops isl_core_ops = {
+>  	.get_voltage_sel = isl6271a_get_voltage_sel,
+> -	.set_voltage	= isl6271a_set_voltage,
+> +	.set_voltage_sel = isl6271a_set_voltage_sel,
+>  	.list_voltage	= regulator_list_voltage_linear,
+> +	.map_voltage	= regulator_map_voltage_linear,
+>  };
+> 
+>  static int isl6271a_get_fixed_voltage(struct regulator_dev *dev)
 
-I don't have a file/perf with different sized events, but the change 
-makes sense.
+Hm well, I hope this won't break the driver. I can't test it any soon.
 
-Reviewed-and-tested-by: David Ahern <dsahern@gmail.com>
-
+Best regards,
+Marek Vasut
