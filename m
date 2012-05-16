@@ -1,62 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S967242Ab2EPBMl (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 May 2012 21:12:41 -0400
-Received: from out03.mta.xmission.com ([166.70.13.233]:60773 "EHLO
-	out03.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S966274Ab2EPBMk (ORCPT
+	id S933327Ab2EPBSo (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 May 2012 21:18:44 -0400
+Received: from e28smtp07.in.ibm.com ([122.248.162.7]:48566 "EHLO
+	e28smtp07.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932938Ab2EPBSl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 May 2012 21:12:40 -0400
-From: ebiederm@xmission.com (Eric W. Biederman)
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org
-References: <20120514191337.e06ca84184b73b20b5c52689@canb.auug.org.au>
-Date: Tue, 15 May 2012 18:12:19 -0700
-In-Reply-To: <20120514191337.e06ca84184b73b20b5c52689@canb.auug.org.au>
-	(Stephen Rothwell's message of "Mon, 14 May 2012 19:13:37 +1000")
-Message-ID: <87fwb12aks.fsf@xmission.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.3 (gnu/linux)
+	Tue, 15 May 2012 21:18:41 -0400
+Date: Wed, 16 May 2012 09:18:34 +0800
+From: Richard Yang <weiyang@linux.vnet.ibm.com>
+To: Yinghai Lu <yinghai@kernel.org>
+Cc: Richard Yang <weiyang@linux.vnet.ibm.com>, linux-pci@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: One problem in reassign pci bus number?
+Message-ID: <20120516011833.GA6599@richard>
+Reply-To: Richard Yang <weiyang@linux.vnet.ibm.com>
+References: <20120410090306.GA7056@richard>
+ <20120422155202.GA13540@richard>
+ <4F95B17B.3030401@redhat.com>
+ <20120514015536.GA3331@richard>
+ <CAE9FiQUjxH+LWy2zbbL6TVQSMZ44i9grFBZf0ZZQFPEWRKANMw@mail.gmail.com>
+ <20120514064615.GB26605@richard>
+ <CAE9FiQUuHFoEXMz_Va+FOGnqEbi9=cnnoSB+h7Ug2e4Y2sFTGQ@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-X-XM-SPF: eid=;;;mid=;;;hst=in01.mta.xmission.com;;;ip=70.65.242.55;;;frm=ebiederm@xmission.com;;;spf=neutral
-X-XM-AID: U2FsdGVkX19yMqO6h2JNeEcXifUJOgagrlg8umFWRIs=
-X-SA-Exim-Connect-IP: 70.65.242.55
-X-SA-Exim-Mail-From: ebiederm@xmission.com
-X-Spam-Report: * -1.0 ALL_TRUSTED Passed through trusted hosts only via SMTP
-	*  0.1 XMSubLong Long Subject
-	*  0.0 T_TM2_M_HEADER_IN_MSG BODY: T_TM2_M_HEADER_IN_MSG
-	* -3.0 BAYES_00 BODY: Bayes spam probability is 0 to 1%
-	*      [score: 0.0008]
-	* -0.0 DCC_CHECK_NEGATIVE Not listed in DCC
-	*      [sa01 1397; Body=1 Fuz1=1 Fuz2=1]
-X-Spam-DCC: XMission; sa01 1397; Body=1 Fuz1=1 Fuz2=1 
-X-Spam-Combo: ;Stephen Rothwell <sfr@canb.auug.org.au>
-X-Spam-Relay-Country: 
-Subject: Re: linux-next: build failure after merge of the userns tree
-X-Spam-Flag: No
-X-SA-Exim-Version: 4.2.1 (built Fri, 06 Aug 2010 16:31:04 -0600)
-X-SA-Exim-Scanned: Yes (on in01.mta.xmission.com)
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <CAE9FiQUuHFoEXMz_Va+FOGnqEbi9=cnnoSB+h7Ug2e4Y2sFTGQ@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+x-cbid: 12051601-8878-0000-0000-000002777294
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Stephen Rothwell <sfr@canb.auug.org.au> writes:
-
-> Hi Eric,
+On Tue, May 15, 2012 at 10:32:46AM -0700, Yinghai Lu wrote:
+>On Sun, May 13, 2012 at 11:46 PM, Richard Yang
+><weiyang@linux.vnet.ibm.com> wrote:
+>> On Sun, May 13, 2012 at 10:40:41PM -0700, Yinghai Lu wrote:
+>>>On Sun, May 13, 2012 at 6:55 PM, Richard Yang
+>>><weiyang@linux.vnet.ibm.com> wrote:
+>>>> On Mon, Apr 23, 2012 at 03:46:03PM -0400, Don Dutile wrote:
+>>>>>On 04/22/2012 11:52 AM, Richard Yang wrote:
+>>>>>>All,
+>>>>>>
+>>>>>>I am reading the pci_scan_bridge() and not sure what will happen in
+>>>>>>following situation.
+>>>>>>
+>>>>>>Suppose the kernel is not passed the pci=assign-busses.
+>>>>>>
+>>>>>>Below is a picture about the pci system.
+>>>>>>
+>>>>>>                    +-------+
+>>>>>>                    |       | root bridge(0,255)
+>>>>>>                    +---+---+
+>>>>>>                        |          Bus 0
+>>>>>>       -----+-----------+------------------------------+--
+>>>>>>            |                                          |
+>>>>>>            |                                          |
+>>>>>>            |                                          |
+>>>>>>       +----+----+                               +-----+-----+
+>>>>>>       |         |  B1(1,15)                     |           |B2(16,28)
+>>>>>>       +----+----+                               +-----+-----+
+>>>>>>            |  Bus 1                                   |    Bus 16
+>>>>>>       -----+-----------------------         ----------+----------------
+>>>>>>                             |
+>>>>>>                        +----+----+
+>>>>>>                        |         | B3
+>>>>>>                        +---------+
+>>>>>>
+>>>>>>Suppose B1 and B2 works fine with the BIOS, which get the right bus
+>>>>>>number and range.
+>>>>>>
+>>>>>>B3 does not works fine with the BIOS, which doesn't get the bus number.
+>>>>>>
+>>>> Take my original question.
+>>>>
+>>>> B3 doesn't get the bus number, which its parent doesn't have free bus
+>>>> number and there is no gap between B1 and B2.
+>>>>
+>>>> So in this case, the probe_resource() can't find bus number for B3.
+>>>> Then cause pci_bridge_probe_busn_res() return non-zero.
+>>>>
+>>>> Then B3 couldn't work fine?
+>>>
+>>>B3 is on Bus 1? B3 is the one of bridges on Bus1?
+>> No,  I omit other bridges on Bus#1.
+>> They will occupy bus number 2-15, which is calculated by BIOS and set to
+>> bridge's configuration space.
 >
-> After merging the userns tree, today's linux-next build (powerpc
-> ppc64_defconfig) failed like this:
+>with that new condition, probe_resource will return zero.
 >
-> fs/stat.c: In function 'cp_new_stat64':
-> fs/stat.c:354:61: error: expected ';' before ')' token
-> fs/stat.c:354:61: error: expected statement before ')' token
-> fs/stat.c:355:61: error: expected ';' before ')' token
-> fs/stat.c:355:61: error: expected statement before ')' token
+>for those kind of case:
+>1. use echo 1 > /sys .../remove to remove devices under Bridge2.
+>2. use setpci to change bus register of bridge2 to move high to make
+>more space for bridge 1.
+>3. rescan bridge 1 and bridge 2.
+So these steps is done after boot up and user find B3 doesn't work?
 >
-> I have dropped the userns tree for today.
+>Yinghai
 
-*puts paper bag on head*
+-- 
+Richard Yang
+Help you, Help me
 
-Thanks, and fixed.
-
-Eric
