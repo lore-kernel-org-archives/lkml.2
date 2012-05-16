@@ -1,47 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758832Ab2EPBgB (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 May 2012 21:36:01 -0400
-Received: from LGEMRELSE7Q.lge.com ([156.147.1.151]:46362 "EHLO
-	LGEMRELSE7Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758795Ab2EPBf5 (ORCPT
+	id S964962Ab2EPBiP (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 May 2012 21:38:15 -0400
+Received: from mail-vb0-f46.google.com ([209.85.212.46]:36572 "EHLO
+	mail-vb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755611Ab2EPBiN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 May 2012 21:35:57 -0400
-X-AuditID: 9c930197-b7be2ae000000ebb-20-4fb304779815
-From: Namhyung Kim <namhyung.kim@lge.com>
-To: Stephane Eranian <eranian@google.com>
-Cc: linux-kernel@vger.kernel.org, peterz@infradead.org, mingo@elte.hu,
-        acme@redhat.com, dsahern@gmail.com
-Subject: Re: [PATCH v2 0/5] perf tools: add meta-data header support in pipe mode
-References: <1337081295-10303-1-git-send-email-eranian@google.com>
-Date: Wed, 16 May 2012 10:34:01 +0900
-In-Reply-To: <1337081295-10303-1-git-send-email-eranian@google.com> (Stephane
-	Eranian's message of "Tue, 15 May 2012 13:28:10 +0200")
-Message-ID: <87ehqkewom.fsf@sejong.aot.lge.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.0.95 (gnu/linux)
+	Tue, 15 May 2012 21:38:13 -0400
+Date: Wed, 16 May 2012 09:38:02 +0800
+From: Yong Zhang <yong.zhang0@gmail.com>
+To: Josh Cartwright <joshc@linux.com>
+Cc: linux-kernel@vger.kernel.org, linux-rt-users@vger.kernel.org,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Thomas Gleixner <tglx@linutronix.de>
+Subject: Re: [PATCH -rt] mm: protect activate_mm() by
+ preempt_[disable|enable]_rt()
+Message-ID: <20120516013802.GA8829@zhy>
+Reply-To: Yong Zhang <yong.zhang0@gmail.com>
+References: <1337061236-1766-1-git-send-email-yong.zhang0@gmail.com>
+ <20120515213619.GA8880@joshcartwright.net>
 MIME-Version: 1.0
-Content-Type: text/plain
-X-Brightmail-Tracker: AAAAAA==
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <20120515213619.GA8880@joshcartwright.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi, Stephane
+On Tue, May 15, 2012 at 05:36:19PM -0400, Josh Cartwright wrote:
+> Frank Rowand posted a very similar fix in December of last year that
+> we've been carrying to fix the same issue:
+> 
+>    http://permalink.gmane.org/gmane.linux.kernel/1229806
+> 
+> It looks like there was some deliberation as to whether or not it should
+> be pulled into stable-rt.  Perhaps its time to revisit this discussion?
 
-On Tue, 15 May 2012 13:28:10 +0200, Stephane Eranian wrote:
-> This patch series adds meta-data support to perf record/report in pipe
-> mode:
-> 	perf record -o - foo | perf inject -b | perf report -i -
->
-> We had meta-data (information about host configuration, perf tool version,...)
-> in regular (file) mode but it was lacking in pipe mode. This patch series fixes
-> this.
->
+Yeah, thanks for pointing it out, I didn't know there is discussion about
+it.
 
-In addition to this change, I think it'd be great if we keep this
-meta-data somewhere for later use - I guess perf report and
-annotate on TUI, at least, will need it too. Just a suggestion :).
-
-Thanks,
-Namhyung
-
+Thanks again,
+Yong
