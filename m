@@ -1,65 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S966816Ab2EPJsb (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 May 2012 05:48:31 -0400
-Received: from LGEMRELSE6Q.lge.com ([156.147.1.121]:51193 "EHLO
-	LGEMRELSE6Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758371Ab2EPJrn (ORCPT
+	id S1759929Ab2EPJtK (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 May 2012 05:49:10 -0400
+Received: from mail-vb0-f46.google.com ([209.85.212.46]:59088 "EHLO
+	mail-vb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752879Ab2EPJtG convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 May 2012 05:47:43 -0400
-X-AuditID: 9c930179-b7bb9ae000000ea5-4d-4fb377bbad27
-From: Namhyung Kim <namhyung.kim@lge.com>
-To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Mackerras <paulus@samba.org>,
-        Ingo Molnar <mingo@redhat.com>, Namhyung Kim <namhyung@gmail.com>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: [PATCH 2/3] Revert 'perf evlist: Fix creation of cpu map'
-Date: Wed, 16 May 2012 18:45:48 +0900
-Message-Id: <1337161549-9870-2-git-send-email-namhyung.kim@lge.com>
-X-Mailer: git-send-email 1.7.10.1
-In-Reply-To: <1337161549-9870-1-git-send-email-namhyung.kim@lge.com>
-References: <1337161549-9870-1-git-send-email-namhyung.kim@lge.com>
-X-Brightmail-Tracker: AAAAAA==
+	Wed, 16 May 2012 05:49:06 -0400
+MIME-Version: 1.0
+In-Reply-To: <20120516065625.GM7988@linux-sh.org>
+References: <20120516064449.32286.77941.sendpatchset@w520>
+	<20120516064458.32286.37948.sendpatchset@w520>
+	<20120516065625.GM7988@linux-sh.org>
+Date: Wed, 16 May 2012 18:49:05 +0900
+Message-ID: <CANqRtoSYQozRE5uayBz4YYt7G4=ma72YVQjMJBKYSvkwENf8cg@mail.gmail.com>
+Subject: Re: [PATCH 01/08] mach-shmobile: Emma Mobile EV2 SoC base support V3
+From: Magnus Damm <magnus.damm@gmail.com>
+To: Paul Mundt <lethal@linux-sh.org>
+Cc: linux-arm-kernel@lists.infradead.org, linux@arm.linux.org.uk,
+        arnd@arndb.de, linux-sh@vger.kernel.org, linux-kernel@vger.kernel.org,
+        rjw@sisk.pl, horms@verge.net.au, olof@lixom.net
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The commit 55261f46702c ("perf evlist: Fix creation of cpu
-map") changed to create a per-task event when no cpu target
-is specified. However it caused a problem since perf-task do
-not allow event inheritance due to scalability issues so
-that the result will contain samples only from parent, not
-from its children.
+On Wed, May 16, 2012 at 3:56 PM, Paul Mundt <lethal@linux-sh.org> wrote:
+> On Wed, May 16, 2012 at 03:44:58PM +0900, Magnus Damm wrote:
+>> +static int emev2_gclk_enable(struct clk *clk)
+>> +{
+>> +     iowrite32(ioread32(clk->mapped_reg) | (1 << clk->enable_bit),
+>> +               clk->mapped_reg);
+>> +     return 0;
+>> +}
+>> +
+>> +static void emev2_gclk_disable(struct clk *clk)
+>> +{
+>> +     iowrite32(ioread32(clk->mapped_reg) & ~(1 << clk->enable_bit),
+>> +               clk->mapped_reg);
+>> +}
+>> +
+>> +static struct sh_clk_ops emev2_gclk_clk_ops = {
+>> +     .enable         = emev2_gclk_enable,
+>> +     .disable        = emev2_gclk_disable,
+>> +     .recalc         = followparent_recalc,
+>> +};
+>> +
+>> +static int __init emev2_gclk_register(struct clk *clks, int nr)
+>> +{
+>> +     struct clk *clkp;
+>> +     int ret = 0;
+>> +     int k;
+>> +
+>> +     for (k = 0; !ret && (k < nr); k++) {
+>> +             clkp = clks + k;
+>> +             clkp->ops = &emev2_gclk_clk_ops;
+>> +             ret |= clk_register(clkp);
+>> +     }
+>> +
+>> +     return ret;
+>> +}
+>> +
+> This all looks like a pointless abstraction. This is basically a verbatim
+> copy of the sh_clk_mstp32 routines.
 
-So we should use perf-task-per-cpu events anyway to get the
-right result. Revert it.
+At a first glance maybe, but the operation is inverted compared to MSTP32.
 
-Reported-by: Linus Torvalds <torvalds@linux-foundation.org>
-Analysed-by: Ingo Molnar <mingo@kernel.org>
-Acked-and-tested-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Signed-off-by: Namhyung Kim <namhyung.kim@lge.com>
----
- tools/perf/util/evlist.c |    6 +++---
- 1 file changed, 3 insertions(+), 3 deletions(-)
+So, at disable time gclk clears the bit. MSTP32 sets the bit.
 
-diff --git a/tools/perf/util/evlist.c b/tools/perf/util/evlist.c
-index 80bef281eee0..87889f325678 100644
---- a/tools/perf/util/evlist.c
-+++ b/tools/perf/util/evlist.c
-@@ -609,10 +609,10 @@ int perf_evlist__create_maps(struct perf_evlist *evlist,
- 	if (evlist->threads == NULL)
- 		return -1;
- 
--	if (perf_target__has_cpu(target))
--		evlist->cpus = cpu_map__new(target->cpu_list);
--	else
-+	if (perf_target__has_task(target))
- 		evlist->cpus = cpu_map__dummy_new();
-+	else
-+		evlist->cpus = cpu_map__new(target->cpu_list);
- 
- 	if (evlist->cpus == NULL)
- 		goto out_delete_threads;
--- 
-1.7.10.1
+> I suppose this is a case where you want to use the mstp32 routines but
+> don't specifically have div4/div6 clocks to manage so you aren't setting
+> SH_CLK_CPG. Perhaps we should just move the sh_clk_mstp32 stuff out so
+> it's provided regardless of the CPG setting and rename it to drop the
+> mstp32 connotations. It's really only the div4/div6 stuff that has any
+> CPG-specific behaviour at this point anyways.
 
+Perhaps we could base this code on MSTP32 and CPG, but I believe it is
+better just to move to common clocks directly. So in this case for
+gclk we can instead use code in drivers/clk/clk-gate.c.
+
+Cheers,
+
+/ magnus
