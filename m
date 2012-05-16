@@ -1,59 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756277Ab2EPP44 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 May 2012 11:56:56 -0400
-Received: from he.sipsolutions.net ([78.46.109.217]:40747 "EHLO
-	sipsolutions.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755922Ab2EPP4y (ORCPT
+	id S1756369Ab2EPP7i (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 May 2012 11:59:38 -0400
+Received: from iolanthe.rowland.org ([192.131.102.54]:54035 "HELO
+	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1756068Ab2EPP7f (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 May 2012 11:56:54 -0400
-Message-ID: <1337183801.18519.7.camel@jlt3.sipsolutions.net>
-Subject: Re: [PATCH 0/3] net: mac80211: Neaten debugging
-From: Johannes Berg <johannes@sipsolutions.net>
-To: Joe Perches <joe@perches.com>
-Cc: David Miller <davem@davemloft.net>, linville@tuxdriver.com,
-        linux-wireless@vger.kernel.org, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Date: Wed, 16 May 2012 17:56:41 +0200
-In-Reply-To: <1337183004.4818.2.camel@joe2Laptop>
-References: <1337106548.15553.8.camel@jlt3.sipsolutions.net>
-	 <cover.1337116578.git.joe@perches.com>
-	 <20120516.012319.1903390658912592000.davem@davemloft.net>
-	 <1337155171.4367.2.camel@jlt3.sipsolutions.net>
-	 <1337181771.4818.0.camel@joe2Laptop>
-	 <1337182220.18519.5.camel@jlt3.sipsolutions.net>
-	 <1337183004.4818.2.camel@joe2Laptop>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.2-1+b1 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	Wed, 16 May 2012 11:59:35 -0400
+Date: Wed, 16 May 2012 11:59:34 -0400 (EDT)
+From: Alan Stern <stern@rowland.harvard.edu>
+X-X-Sender: stern@iolanthe.rowland.org
+To: Lin Ming <ming.m.lin@intel.com>
+cc: Jens Axboe <axboe@kernel.dk>, Jeff Moyer <jmoyer@redhat.com>,
+        <linux-kernel@vger.kernel.org>, <linux-pm@vger.kernel.org>,
+        <linux-scsi@vger.kernel.org>
+Subject: Re: [RFC PATCH 3/3] block: add queue idle timer
+In-Reply-To: <1337182820.4047.18.camel@hp6530s>
+Message-ID: <Pine.LNX.4.44L0.1205161156480.1852-100000@iolanthe.rowland.org>
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2012-05-16 at 08:43 -0700, Joe Perches wrote:
-> On Wed, 2012-05-16 at 17:30 +0200, Johannes Berg wrote:
-> > On Wed, 2012-05-16 at 08:22 -0700, Joe Perches wrote:
-> > > On Wed, 2012-05-16 at 09:59 +0200, Johannes Berg wrote:
-> > > > I wonder if it makes sense to leave these under
-> > > > #ifdef though? Why #ifdef something if it's going to be invisible most
-> > > > of the time anyway?
-> > > 
-> > > I don't understand your point.
-> > > #ifdef removal is a good thing.
-> > 
-> > Yeah, but you left a lot of them under ifdef, and I'm wondering why you
-> > didn't remove them, or if you should, or ...
-> 
-> Those mostly use other different
-> #ifdef CONFIG_SOME_OTHER_CONTROL elements.
-> 
-> There are I think 3 that I left because they do
-> not use printk/pr_level but use wiphy_<level> or
-> netdev_<level>.
+On Wed, 16 May 2012, Lin Ming wrote:
 
-Hmm, ok. I guess I need to just look at them and decide what should be
-what. Thanks for the preparation work though :)
+> > Lin, you should have more slack timer handling. Look at the blk-timeout
+> > handling of request timeouts for inspiration, and/or the thread that
+> > Jeff also references. Doing a timer add/del for each request put is a no
+> > go.
+> 
+> You mentioned how to detect queue idle in the referenced thread:
+> 	
+> ===
+> So we could probably add an idle timer that is set to some suitable
+> timeout for this and would be added when the queue first goes empty. If
+> new requests come in, just let it simmer and defer checking the state to
+> when it actually fires.
 
-johannes
+That is basically how the runtime PM timer works, if you use it as I 
+described earlier.
+
+> ===
+> 
+> What do you mean of "the queue first goes empty"?
+
+When the queue is first created, the timer is started.
+
+Whenever the timer expires, the code checks to see if any requests have 
+been processed since the previous expiration.  If they have, the timer 
+is restarted.  If they haven't, you suspend the device.
+
+Alan Stern
 
