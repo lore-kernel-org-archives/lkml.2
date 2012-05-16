@@ -1,50 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757753Ab2EPBuE (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 May 2012 21:50:04 -0400
-Received: from LGEMRELSE7Q.lge.com ([156.147.1.151]:64562 "EHLO
-	LGEMRELSE7Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932658Ab2EPBuB (ORCPT
+	id S1758106Ab2EPBxu (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 May 2012 21:53:50 -0400
+Received: from va3ehsobe003.messaging.microsoft.com ([216.32.180.13]:55017
+	"EHLO va3outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752128Ab2EPBxt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 May 2012 21:50:01 -0400
-X-AuditID: 9c930197-b7be2ae000000ebb-5a-4fb307c481a5
-From: Namhyung Kim <namhyung.kim@lge.com>
-To: valdis.kletnieks@vt.edu
-Cc: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        linux-kernel@vger.kernel.org, Hyeoncheol Lee <cheol.lee@lge.com>
-Subject: Re: [QUESTION] Kprobes as a module?
-References: <87zk99zwb8.fsf@sejong.aot.lge.com>
-	<52488.1337111535@turing-police.cc.vt.edu>
-Date: Wed, 16 May 2012 10:48:06 +0900
-In-Reply-To: <52488.1337111535@turing-police.cc.vt.edu> (valdis kletnieks's
-	message of "Tue, 15 May 2012 15:52:15 -0400")
-Message-ID: <871umkew15.fsf@sejong.aot.lge.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.0.95 (gnu/linux)
+	Tue, 15 May 2012 21:53:49 -0400
+X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
+X-SpamScore: -10
+X-BigFish: VS-10(zz9371I1432N98dKzz1202hzz8275bhz2dh2a8h668h839h944hd25h)
+Date: Wed, 16 May 2012 10:13:02 +0800
+From: Shawn Guo <shawn.guo@freescale.com>
+To: Linus Walleij <linus.walleij@linaro.org>
+CC: Dong Aisheng <aisheng.dong@freescale.com>,
+        Dong Aisheng-B29396 <B29396@freescale.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linus.walleij@stericsson.com" <linus.walleij@stericsson.com>,
+        "swarren@wwwdotorg.org" <swarren@wwwdotorg.org>,
+        "s.hauer@pengutronix.de" <s.hauer@pengutronix.de>,
+        Guo Shawn-R65073 <r65073@freescale.com>,
+        "kernel@pengutronix.de" <kernel@pengutronix.de>
+Subject: Re: [PATCH 1/2] pinctrl: pinctrl-imx: add imx53 pinctrl driver
+Message-ID: <20120516021301.GA21517@S2100-06.ap.freescale.net>
+References: <1337010369-28687-1-git-send-email-b29396@freescale.com>
+ <CACRpkdbW8eeq0gFTjPRpKesmV4K5zqRHuW6C-UywBn8AtqOLCg@mail.gmail.com>
+ <20120515112732.GB10347@shlinux2.ap.freescale.net>
+ <CACRpkdaKAF8bznd-sBdcGfdJW_cHSUGFZhnVk4qJ_0LJ8GoUuQ@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain
-X-Brightmail-Tracker: AAAAAA==
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+In-Reply-To: <CACRpkdaKAF8bznd-sBdcGfdJW_cHSUGFZhnVk4qJ_0LJ8GoUuQ@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-OriginatorOrg: freescale.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On Tue, May 15, 2012 at 02:33:58PM +0200, Linus Walleij wrote:
+> On Tue, May 15, 2012 at 1:27 PM, Dong Aisheng
+> <aisheng.dong@freescale.com> wrote:
+> > On Tue, May 15, 2012 at 07:10:58PM +0800, Linus Walleij wrote:
+> >> Dong, will you merge the i.MX stuff through pinctrl or through
+> >> ARM SoC?
+> >
+> > This patch has no dependency on any arm soc stuffs.
+> > I think it's ok to go through pinctrl.
+> 
+> OK I'll be merging them, I was just thinking if you planned to also
+> make machine changes in this kernel cycle.
+> 
+With the patches going in via pinctrl tree, we can start making machine
+changes from next cycle.
 
-On Tue, 15 May 2012 15:52:15 -0400, valdis kletnieks wrote:
-> On Tue, 15 May 2012 17:24:11 +0900, Namhyung Kim said:
->> Probably a dumb question :).
->> What prevents the kprobes from being built as a module? We want to use
->> the kprobes on our systems, but some guys worried about potential
->> security problems. So it'd be great if we can enable/load kprobes as
->> needed and then disable/unload after using it. Is it a possible senario?
->
-> Any troublemaker who has the ability to set a kprobe would probably also
-> have theability to just re-load the module before setting the kprobe (unless
-> you go to a *lot* of trouble to compartmentalize the root user).
->
-> So it's not clear there's a security benefit from making it a module.  If anything,
-> it makes it *worse* because you can then surprise a sysadmin who *thought*
-> they were running a KPROBES=n kernel by loading a module and turning it on...
+-- 
+Regards,
+Shawn
 
-Right, thanks for your comment.
-
-Namhyung
