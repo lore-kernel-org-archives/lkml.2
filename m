@@ -1,82 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933036Ab2EPHcN (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 May 2012 03:32:13 -0400
-Received: from natasha.panasas.com ([67.152.220.90]:38970 "EHLO
-	natasha.panasas.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932713Ab2EPHcC (ORCPT
+	id S1759617Ab2EPHca (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 May 2012 03:32:30 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:61649 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759223Ab2EPHcW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 May 2012 03:32:02 -0400
-Message-ID: <4FB35665.5090908@panasas.com>
-Date: Wed, 16 May 2012 10:25:25 +0300
-From: Boaz Harrosh <bharrosh@panasas.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:8.0) Gecko/20111113 Thunderbird/8.0
-MIME-Version: 1.0
-To: NeilBrown <neilb@suse.de>, Jan Kara <jack@suse.cz>
-CC: Ludwig Nussel <ludwig.nussel@suse.de>, <linux-kernel@vger.kernel.org>,
-        <linux-fsdevel@vger.kernel.org>, Rob Landley <rob@landley.net>,
+	Wed, 16 May 2012 03:32:22 -0400
+Date: Wed, 16 May 2012 00:30:52 -0700
+From: Anton Vorontsov <anton.vorontsov@linaro.org>
+To: Shuah Khan <shuahkhan@gmail.com>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Kees Cook <keescook@chromium.org>, Colin Cross <ccross@android.com>,
+        Arnd Bergmann <arnd@arndb.de>, John Stultz <john.stultz@linaro.org>,
+        arve@android.com, Rebecca Schultz Zavin <rebecca@android.com>,
+        Jesper Juhl <jj@chaosbits.net>, Randy Dunlap <rdunlap@xenotime.net>,
+        Stephen Boyd <sboyd@codeaurora.org>, Thomas Meyer <thomas@m3y3r.de>,
         Andrew Morton <akpm@linux-foundation.org>,
-        Andreas Dilger <adilger.kernel@dilger.ca>,
-        "Theodore Ts'o" <tytso@mit.edu>,
-        EXT2 FILE SYSTEM <linux-ext4@vger.kernel.org>,
-        DOCUMENTATION <linux-doc@vger.kernel.org>
-Subject: Re: [PATCH RESEND] implement uid and gid mount options for ext2,
- ext3 and ext4
-References: <1336660924-9598-1-git-send-email-ludwig.nussel@suse.de> <20120511034945.GA15892@mobil.systemanalysen.net> <4FAD30D7.3070208@panasas.com> <20120515091542.51f3dd78@notabene.brown>
-In-Reply-To: <20120515091542.51f3dd78@notabene.brown>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 7bit
+        Marco Stornelli <marco.stornelli@gmail.com>,
+        WANG Cong <xiyou.wangcong@gmail.com>, linux-kernel@vger.kernel.org,
+        devel@driverdev.osuosl.org, linaro-kernel@lists.linaro.org,
+        patches@linaro.org, kernel-team@android.com
+Subject: Re: [PATCH 08/11] ramoops: Move to fs/pstore/ram.c
+Message-ID: <20120516073052.GC18058@lizard>
+References: <20120512001506.GA8653@lizard>
+ <20120512001818.GH14782@lizard>
+ <1337094779.2602.9.camel@lorien2>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <1337094779.2602.9.camel@lorien2>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/15/2012 02:15 AM, NeilBrown wrote:
+Hi Shuah,
 
-> On Fri, 11 May 2012 18:31:35 +0300 Boaz Harrosh <bharrosh@panasas.com> wrote:
+On Tue, May 15, 2012 at 09:12:59AM -0600, Shuah Khan wrote:
+> On Fri, 2012-05-11 at 17:18 -0700, Anton Vorontsov wrote:
+> > Since ramoops was converted to pstore, it has nothing to do with character
+> > devices nowadays. Instead, today it is just a RAM backend for pstore.
+> > 
+> > The patch just moves things around. There are a few changes were needed
+> > because of the move:
+> > 
+> > 1. Kconfig and Makefiles fixups, of course.
+> > 
+> > 2. In pstore/ram.c we have to play a bit with MODULE_PARAM_PREFIX, this
+> >    is needed to keep user experience the same as with ramoops driver
+> >    (i.e. so that ramoops.foo kernel command line arguments would still
+> >    work).
 > 
->> On 05/11/2012 06:49 AM, Roland Eggner wrote:
->>
+> Anton,
+> 
+> Could you please enhance Kconfig as well as ram.c with information with
+> the new functionality it supports.
 
+Sure, will do.
 
-Neil && Jan.
+> Also ram.c in my opinion doesn't
+> really reflect the feature it currently supports and its future plans.
+> ramoops doesn't either. ramdesg or ramkmsg probably are better suited.
 
-As I  said in my last mail:
-	"Shared files" problem is not solved by mount options.
+No, I actually think we shouldn't mention neither dmesg nor kmsg in
+the name of the module. We might support MCE messages, tracing
+messages and so on, and this all will be handled by ram.c.
 
-For me this is just a UNIX new-be 101 problem. You need to
-share files with friends you make the mistake once. Then
-you learn and you go on. It's a none problem.
+So, ram.c is a generic backend for pstore.
 
-Your removable media thing is just your "shared folder"
-on a UNIX system. Deal with it. Da
+> Also leaving the ABI that ramoops specific might lead confusion in the
+> long run. It might make sense to update the ABI to reflect its new
+> features, if it doesn't impact existing ramoops users.
 
-Or go degrade your FS to vfat security. You are reluctant
-to chmod all files to be world/group writeable but you
-are doing just that with your mount option. Perhaps
-when the chmod -R will scroll through you'd realize
-that the passwords file you should remove. The POSIX
-permissions are just for that purpose. "I set access
-control at creation. Else slave to change them". The
-mount option they specifically left out, not because
-they were not clever, but because you don't want it.
+We can do this, I can prepare a separate patch to change the ABI, but
+so far I tend to not break any ABIs. We can always do it later -- it is
+easy. :-D
 
-BTW NTFS is like UNIX. If written in the right user-private
-permissions you can't read them. Even admin. You can only chown
-them.
+> Would you be interested in adding a doc file for usage describing how
+> users can configure the driver - the details I would like to see are how
+> to pick a ram address especially when mem_address and mem_size are
+> passed in as module parameters.
 
-BTW Neil with Kerberos auth in an NFS/CIFS shared device
-like you mentioned, then a uid/gid is already associated
-with the access automatically. It's a perfect IDEA for
-these device makers. They need develop nothing only set it
-up with the same NFS / SAMBA implementations they already
-use.
+We actually have Documentation/ramoops.txt already, but I'll add
+a documentation for the new ecc option.
 
-And one last thing Neil. Yes an rm is a perfect rope
-for an admin to hang itself, but it is not aimed at
-auto-mounter scripts
+Thanks!
 
-I can't believe I got dragged into this again.
-
-:-(
-Boaz
-
+-- 
+Anton Vorontsov
+Email: cbouatmailru@gmail.com
