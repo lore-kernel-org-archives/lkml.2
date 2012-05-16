@@ -1,147 +1,148 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756918Ab2EPQEG (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 May 2012 12:04:06 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:43290 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755381Ab2EPQEA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 May 2012 12:04:00 -0400
-Date: Wed, 16 May 2012 19:03:58 +0300
-From: "Michael S. Tsirkin" <mst@redhat.com>
-To: x86@kernel.org, kvm@vger.kernel.org
-Cc: Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
-        Avi Kivity <avi@redhat.com>, Marcelo Tosatti <mtosatti@redhat.com>,
-        gleb@redhat.com, Linus Torvalds <torvalds@linux-foundation.org>,
-        linux-kernel@vger.kernel.org
-Subject: [PATCHv5 4/4] x86: eoi micro-optimization
-Message-ID: <e019d1a125316f10d3e3a4b2f6bda41473f4fb72.1337184153.git.mst@redhat.com>
-References: <cover.1337184153.git.mst@redhat.com>
+	id S1756593Ab2EPQHQ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 May 2012 12:07:16 -0400
+Received: from ppsw-50.csi.cam.ac.uk ([131.111.8.150]:34975 "EHLO
+	ppsw-50.csi.cam.ac.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755688Ab2EPQHO convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 16 May 2012 12:07:14 -0400
+X-Cam-AntiVirus: no malware found
+X-Cam-SpamDetails: not scanned
+X-Cam-ScannerInfo: http://www.cam.ac.uk/cs/email/scanner/
+References: <1337183202.6344.1.camel@jonz-ub2>
+User-Agent: K-9 Mail for Android
+In-Reply-To: <1337183202.6344.1.camel@jonz-ub2>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <cover.1337184153.git.mst@redhat.com>
-X-Mutt-Fcc: =sent
+Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain;
+ charset=UTF-8
+Subject: Re: [PATCH V2] IIO channel type and modifiers for CCT and RGBC data
+From: Jonathan Cameron <jic23@cam.ac.uk>
+Date: Wed, 16 May 2012 17:06:59 +0100
+To: Jon Brenner <jbrenner@taosinc.com>
+CC: linux-iio <linux-iio@vger.kernel.org>,
+        Linux Kernel <linux-kernel@vger.kernel.org>
+Message-ID: <dc25012a-f53d-472d-8df5-77f8f6a9855d@email.android.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-We know both register and value for eoi beforehand,
-so there's no need to check it and no need to do math
-to calculate the msr. Saves instructions/branches
-on each EOI when using x2apic.
 
-I'm not sure what kind of tests should one run
-to check whether this patch is good for performance.
 
-Some data below - in case it's insufficient,
-this patch can be dropped from the series for now:
+Jon Brenner <jbrenner@taosinc.com> wrote:
 
-I looked at the objdump output to verify that the generated code
-looks right and actually is shorter.
+>Add iio channel type and modifiers for Correlated Color Temperature
+>(CCT)
+>and RGBC (red/green/blue/clear) data.
+>Add CCT and RGBC descriptions to documentation.
+>
+>Changes:
+>Revised/condensed RGBC descriptions.
+>
+>Signed-off-by: Jon Brenner <jbrenner@taosinc.com>
+Acked-by: Jonathan Cameron <jic23@kernel.org>
+>---
+> drivers/iio/industrialio-core.c                    |    5 ++++
+>.../staging/iio/Documentation/sysfs-bus-iio-light  |   23
+>++++++++++++++++++++
+> include/linux/iio/types.h                          |    5 ++++
+> 3 files changed, 33 insertions(+), 0 deletions(-)
+>
+>diff --git a/drivers/iio/industrialio-core.c
+>b/drivers/iio/industrialio-core.c
+>index 1ddd886..34d8cc9 100644
+>--- a/drivers/iio/industrialio-core.c
+>+++ b/drivers/iio/industrialio-core.c
+>@@ -64,6 +64,7 @@ static const char * const iio_chan_type_name_spec[] =
+>{
+> 	[IIO_TIMESTAMP] = "timestamp",
+> 	[IIO_CAPACITANCE] = "capacitance",
+> 	[IIO_ALTVOLTAGE] = "altvoltage",
+>+	[IIO_CCT] = "cct",
+> };
+>
+> static const char * const iio_modifier_names[] = {
+>@@ -72,6 +73,10 @@ static const char * const iio_modifier_names[] = {
+> 	[IIO_MOD_Z] = "z",
+> 	[IIO_MOD_LIGHT_BOTH] = "both",
+> 	[IIO_MOD_LIGHT_IR] = "ir",
+>+	[IIO_MOD_LIGHT_CLEAR] = "clear",
+>+	[IIO_MOD_LIGHT_RED] = "red",
+>+	[IIO_MOD_LIGHT_GREEN] = "green",
+>+	[IIO_MOD_LIGHT_BLUE] = "blue",
+> };
+>
+> /* relies on pairs of these shared then separate */
+>diff --git a/drivers/staging/iio/Documentation/sysfs-bus-iio-light
+>b/drivers/staging/iio/Documentation/sysfs-bus-iio-light
+>index 715c74d..83a2876 100644
+>--- a/drivers/staging/iio/Documentation/sysfs-bus-iio-light
+>+++ b/drivers/staging/iio/Documentation/sysfs-bus-iio-light
+>@@ -34,6 +34,15 @@ Description:
+> 		it comes back in SI units, it should also include _input else it
+> 		should include _raw to signify it is not in SI units.
+>
+>+What:		/sys/bus/iio/devices/device[n]/in_cct0[_input|_raw]
+>+KernelVersion:	3.4.0
+>+Contact:	linux-iio@vger.kernel.org
+>+Description:
+>+		This should return the correlated color temperature from the
+>+		light sensor. If it comes back in SI units, it should also
+>+		include _input else it should include _raw to signify it is not
+>+		in SI units.
+>+
+>What:		/sys/.../device[n]/proximity_on_chip_ambient_infrared_supression
+> KernelVersion:	2.6.37
+> Contact:	linux-iio@vger.kernel.org
+>@@ -82,3 +91,17 @@ Contact:	linux-iio@vger.kernel.org
+> Description:
+> 		This property gets/sets the table of coefficients
+> 		used in calculating illuminance in lux.
+>+
+>+What:		/sys/bus/iio/devices/device[n]/in_intensity_clear[_input|_raw]
+>+What:		/sys/bus/iio/devices/device[n]/in_intensity_red[_input|_raw]
+>+What:		/sys/bus/iio/devices/device[n]/in_intensity_green[_input|_raw]
+>+What:		/sys/bus/iio/devices/device[n]/in_intensity_blue[_input|_raw]
+>+KernelVersion:	3.4.0
+>+Contact:	linux-iio@vger.kernel.org
+>+Description:
+>+		This property is supported by sensors that have a RGBC
+>+		sensing mode. This value should be the output from a reading
+>+		and if expressed in SI units, should include _input. If this
+>+		value is not in SI units (irradiance, uW/mm), then it should
+>+		include _raw.
+>+
+>diff --git a/include/linux/iio/types.h b/include/linux/iio/types.h
+>index 1b073b1..a7de5d9 100644
+>--- a/include/linux/iio/types.h
+>+++ b/include/linux/iio/types.h
+>@@ -28,6 +28,7 @@ enum iio_chan_type {
+> 	IIO_TIMESTAMP,
+> 	IIO_CAPACITANCE,
+> 	IIO_ALTVOLTAGE,
+>+	IIO_CCT,
+> };
+>
+> enum iio_modifier {
+>@@ -45,6 +46,10 @@ enum iio_modifier {
+> 	IIO_MOD_X_OR_Y_OR_Z,
+> 	IIO_MOD_LIGHT_BOTH,
+> 	IIO_MOD_LIGHT_IR,
+>+	IIO_MOD_LIGHT_CLEAR,
+>+	IIO_MOD_LIGHT_RED,
+>+	IIO_MOD_LIGHT_GREEN,
+>+	IIO_MOD_LIGHT_BLUE,
+> };
+>
+> #define IIO_VAL_INT 1
+>--
+>1.7.4.1
+>
+>--
+>To unsubscribe from this list: send the line "unsubscribe linux-iio" in
+>the body of a message to majordomo@vger.kernel.org
+>More majordomo info at  http://vger.kernel.org/majordomo-info.html
 
-Some benchmark results below show a tiny
-but measureable improvement. The tests were run on
-an AMD box with 24 cpus.
-
-- A clean kernel build after reboot shows
-a tiny but measureable improvement in system time
-which means lower CPU overhead (though not measureable
-in total time - that is dominated by user time and fluctuates
-too much):
-linux# reboot -f
-...
-linux# make clean
-linux# time make -j 64 LOCALVERSION= 2>&1 > /dev/null
-
-Before:
-
-real    2m52.244s
-user    35m53.833s
-sys     6m7.194s
-
-After:
-
-real    2m52.827s
-user    35m48.916s
-sys     6m2.305s
-
-- perf micro-benchmarks seem to consistently show
-  a tiny improvement in total time as well but it's below
-  the confidence level of 3 std deviations:
-
-...
-       0.414666797 seconds time elapsed ( +-  1.29% )
-
-Performance counter stats for 'perf bench sched messaging' (100 runs):
-
-       0.395370891 seconds time elapsed ( +-  1.04% )
-
-       0.307019664 seconds time elapsed ( +-  0.10% )
-
-       0.304738024 seconds time elapsed ( +-  0.08% )
-
-Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
----
- arch/x86/include/asm/apic.h           |    5 +++++
- arch/x86/kernel/apic/x2apic_cluster.c |    2 +-
- arch/x86/kernel/apic/x2apic_phys.c    |    2 +-
- arch/x86/kernel/apic/x2apic_uv_x.c    |    2 +-
- 4 files changed, 8 insertions(+), 3 deletions(-)
-
-diff --git a/arch/x86/include/asm/apic.h b/arch/x86/include/asm/apic.h
-index 74efb8d..5eb6d56 100644
---- a/arch/x86/include/asm/apic.h
-+++ b/arch/x86/include/asm/apic.h
-@@ -138,6 +138,11 @@ static inline void native_apic_msr_write(u32 reg, u32 v)
- 	wrmsr(APIC_BASE_MSR + (reg >> 4), v, 0);
- }
- 
-+static inline void native_apic_msr_eoi_write(u32 reg, u32 v)
-+{
-+	wrmsr(APIC_BASE_MSR + (APIC_EOI >> 4), APIC_EOI_ACK, 0);
-+}
-+
- static inline u32 native_apic_msr_read(u32 reg)
- {
- 	u64 msr;
-diff --git a/arch/x86/kernel/apic/x2apic_cluster.c b/arch/x86/kernel/apic/x2apic_cluster.c
-index a5baa78..ff35cff 100644
---- a/arch/x86/kernel/apic/x2apic_cluster.c
-+++ b/arch/x86/kernel/apic/x2apic_cluster.c
-@@ -260,7 +260,7 @@ static struct apic apic_x2apic_cluster = {
- 
- 	.read				= native_apic_msr_read,
- 	.write				= native_apic_msr_write,
--	.eoi_write			= native_apic_msr_write,
-+	.eoi_write			= native_apic_msr_eoi_write,
- 	.icr_read			= native_x2apic_icr_read,
- 	.icr_write			= native_x2apic_icr_write,
- 	.wait_icr_idle			= native_x2apic_wait_icr_idle,
-diff --git a/arch/x86/kernel/apic/x2apic_phys.c b/arch/x86/kernel/apic/x2apic_phys.c
-index 8340356..c17e982 100644
---- a/arch/x86/kernel/apic/x2apic_phys.c
-+++ b/arch/x86/kernel/apic/x2apic_phys.c
-@@ -172,7 +172,7 @@ static struct apic apic_x2apic_phys = {
- 
- 	.read				= native_apic_msr_read,
- 	.write				= native_apic_msr_write,
--	.eoi_write			= native_apic_msr_write,
-+	.eoi_write			= native_apic_msr_eoi_write,
- 	.icr_read			= native_x2apic_icr_read,
- 	.icr_write			= native_x2apic_icr_write,
- 	.wait_icr_idle			= native_x2apic_wait_icr_idle,
-diff --git a/arch/x86/kernel/apic/x2apic_uv_x.c b/arch/x86/kernel/apic/x2apic_uv_x.c
-index 5b0e3d0..c6d03f7 100644
---- a/arch/x86/kernel/apic/x2apic_uv_x.c
-+++ b/arch/x86/kernel/apic/x2apic_uv_x.c
-@@ -404,7 +404,7 @@ static struct apic __refdata apic_x2apic_uv_x = {
- 
- 	.read				= native_apic_msr_read,
- 	.write				= native_apic_msr_write,
--	.eoi_write			= native_apic_msr_write,
-+	.eoi_write			= native_apic_msr_eoi_write,
- 	.icr_read			= native_x2apic_icr_read,
- 	.icr_write			= native_x2apic_icr_write,
- 	.wait_icr_idle			= native_x2apic_wait_icr_idle,
 -- 
-MST
+Sent from my Android phone with K-9 Mail. Please excuse my brevity.
