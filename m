@@ -1,92 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760253Ab2EPSbT (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 May 2012 14:31:19 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:43036 "EHLO mx1.redhat.com"
+	id S1760225Ab2EPScL (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 May 2012 14:32:11 -0400
+Received: from mga01.intel.com ([192.55.52.88]:3898 "EHLO mga01.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1760053Ab2EPSbR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 May 2012 14:31:17 -0400
-Date: Wed, 16 May 2012 14:20:58 -0300
-From: Marcelo Tosatti <mtosatti@redhat.com>
-To: "Michael S. Tsirkin" <mst@redhat.com>
-Cc: x86@kernel.org, kvm@vger.kernel.org, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, Avi Kivity <avi@redhat.com>,
-        gleb@redhat.com, Linus Torvalds <torvalds@linux-foundation.org>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCHv4 3/5] kvm: host side for eoi optimization
-Message-ID: <20120516172058.GA22861@amt.cnet>
-References: <cover.1337168687.git.mst@redhat.com>
- <42ba7beaa25855997e02fea91a11c9224c51720e.1337168687.git.mst@redhat.com>
- <20120516154940.GA20549@amt.cnet>
- <20120516162247.GA10676@redhat.com>
+	id S1754131Ab2EPScI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 16 May 2012 14:32:08 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
+   d="scan'208";a="153730480"
+Date: Wed, 16 May 2012 14:33:04 -0400
+From: Matthew Wilcox <willy@linux.intel.com>
+To: Boaz Harrosh <bharrosh@panasas.com>
+Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: NVM Mapping API
+Message-ID: <20120516183303.GL22985@linux.intel.com>
+References: <20120515133450.GD22985@linux.intel.com>
+ <4FB3A5C5.60808@panasas.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20120516162247.GA10676@redhat.com>
+In-Reply-To: <4FB3A5C5.60808@panasas.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, May 16, 2012 at 07:22:47PM +0300, Michael S. Tsirkin wrote:
-> On Wed, May 16, 2012 at 12:49:40PM -0300, Marcelo Tosatti wrote:
-> > > @@ -1245,9 +1306,20 @@ int kvm_get_apic_interrupt(struct kvm_vcpu *vcpu)
-> > >  	int vector = kvm_apic_has_interrupt(vcpu);
-> > >  	struct kvm_lapic *apic = vcpu->arch.apic;
-> > >  
-> > > -	if (vector == -1)
-> > > +	/* Detect interrupt nesting and disable EOI optimization */
-> > > +	if (pv_eoi_enabled(vcpu) && vector == -2)
-> > > +		pv_eoi_clr_pending(vcpu);
-> > > +
-> > > +	if (vector < 0)
-> > 
-> > With interrupt window exiting, the guest will exit:
-> > 
-> > - as soon as it sets RFLAGS.IF=1 and there is any 
-> > interrupt pending in IRR.
-> > - any new interrupt is set in IRR will kick vcpu
-> > out of guest mode and recalculate interrupt-window-exiting.
-> > 
-> > Doesnt this make this bit unnecessary ?
+On Wed, May 16, 2012 at 04:04:05PM +0300, Boaz Harrosh wrote:
+> No for fast boots, just use it as an hibernation space. The rest is
+> already implemented. If you also want protection from crashes and
+> HW failures. Or power fail with no UPS, you can have a system checkpoint
+> every once in a while that saves an hibernation and continues. If you
+> always want a very fast boot to a clean system. checkpoint at entry state
+> and always resume from that hibernation.
+
+Yes, checkpointing to it is definitely a good idea.  I was thinking
+more along the lines of suspend rather than hibernate.  We trash a lot
+of clean pages as part of the hibernation process, when it'd be better
+to copy them to NVM and restore them.
+
+> Other uses:
 > 
-> Looks like we could cut it out.  But I'm not sure how architectural it is
-> that we exit on interrupt window.
-> I guess there are reasons to exit on interrupt window but
-> isn't it better to make the feature independent of it?
+> * Journals, Journals, Journals. of other FSs. So one file system has
+>   it's jurnal as a file in proposed above NVMFS.
+>   Create an easy API for Kernel subsystems for allocating them.
 
-Hum... not sure. Is it helpful for the Hyper-V interface?
+That's a great idea.  I could see us having a specific journal API.
 
-> This almost never happens in my testing anyway, so
-> however we handle it is unlikely to affect performance.
+> * Execute in place.
+>   Perhaps the elf loader can sense that the executable is on an NVMFS
+>   and execute it in place instead of copy to DRAM. Or that happens
+>   automatically with your below nvm_map()
 
-It decreases the amount of state that must be maintained.
+If there's an executable on the NVMFS, it's going to get mapped into
+userspace, so as long as the NVMFS implements the ->mmap method, that will
+get called.  It'll be up to the individual NVMFS whether it uses the page
+cache to buffer a read-only mmap or whether it points directly to the NVM.
 
-BTW there is a bug covered by interrupt window exiting:
+> > void *nvm_map(struct file *nvm_filp, off_t start, size_t length,
+> > 							pgprot_t protection);
+> 
+> The returned void * here is that a cooked up TLB that points
+> to real memory bus cycles HW. So is there a real physical
+> memory region this sits in? What is the difference from
+> say a PCIE DRAM card with battery.
 
-vcpu0                               host
-- irr 5 set
-- isr 5 set, irr 5 cleared
-- eoi_skip bit not set, 
-no other bit set in irr.
-- enter guest
+The concept we're currently playing with would have the NVM appear as
+part of the CPU address space, yes.
 
-                                    irr 4 set
-                                    kick vcpu0 out of guest mode
+> Could I just use some kind of RAM-FS with this?
 
-- eoi pending bit not set
-  (previous interrupt injection 
-   still pending)
-- skip eoi
+For prototyping, sure.
 
-If it were not for interrupt window exiting, this would 
-inject vector 4 on an unrelated exit who knows how long 
-in the future.
+> > /**
+> >  * @nvm_filp: The kernel file pointer
+> >  * @addr: The first byte to sync
+> >  * @length: The number of bytes to sync
+> >  * @returns Zero on success, -errno on failure
+> >  *
+> >  * Flushes changes made to the in-core copy of a mapped file back to NVM.
+> >  */
+> > int nvm_sync(struct file *nvm_filp, void *addr, size_t length);
+> 
+> This I do not understand. Is that an on card memory cache flush, or is it
+> a system memory DMAed to NVM?
 
-Also note optimization depends on the fact that the host 
-kicks vcpu out unconditionally (so it is dependent on 
-certain kvm implementation details).
+Up to the implementation; if it works out best to have a CPU with
+write-through caches pointing directly to the address space of the NVM,
+then it can be a no-op.  If the CPU is using a writeback cache for the
+NVM, then it'll flush the CPU cache.  If the nvmfs has staged the writes
+in DRAM, this will copy from DRAM to NVM.  If the NVM card needs some
+magic to flush an internal buffer, that will happen here.
 
-
-
-
+Just as with mmaping a file in userspace today, there's no guarantee that
+a store gets to stable storage until after a sync.
