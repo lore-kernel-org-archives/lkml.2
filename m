@@ -1,51 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965190Ab2EPHuB (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 May 2012 03:50:01 -0400
-Received: from mail-qc0-f174.google.com ([209.85.216.174]:43341 "EHLO
-	mail-qc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932713Ab2EPHuA (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 May 2012 03:50:00 -0400
-MIME-Version: 1.0
-In-Reply-To: <20120516074530.GE10347@shlinux2.ap.freescale.net>
-References: <1337068143-15579-1-git-send-email-b29396@freescale.com>
-	<20120516074530.GE10347@shlinux2.ap.freescale.net>
-Date: Wed, 16 May 2012 09:49:59 +0200
-Message-ID: <CACRpkdY4b9AX5ZcqwuEoquFTGNbLGH=R=vZ5js63r2g4V63EEg@mail.gmail.com>
-Subject: Re: [PATCH 1/2] pinctrl: pinctrl-imx: add imx53 pinctrl driver
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Dong Aisheng <aisheng.dong@freescale.com>
-Cc: Dong Aisheng-B29396 <B29396@freescale.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "devicetree-discuss@lists.ozlabs.org" 
-	<devicetree-discuss@lists.ozlabs.org>,
-        "linus.walleij@stericsson.com" <linus.walleij@stericsson.com>,
-        "swarren@wwwdotorg.org" <swarren@wwwdotorg.org>,
-        "s.hauer@pengutronix.de" <s.hauer@pengutronix.de>,
-        Guo Shawn-R65073 <r65073@freescale.com>,
-        "kernel@pengutronix.de" <kernel@pengutronix.de>
-Content-Type: text/plain; charset=ISO-8859-1
+	id S933211Ab2EPHvw (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 May 2012 03:51:52 -0400
+Received: from nat28.tlf.novell.com ([130.57.49.28]:34860 "EHLO
+	nat28.tlf.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932713Ab2EPHvv convert rfc822-to-8bit (ORCPT
+	<rfc822;groupwise-linux-kernel@vger.kernel.org:4:1>);
+	Wed, 16 May 2012 03:51:51 -0400
+Message-Id: <4FB378D10200007800084003@nat28.tlf.novell.com>
+X-Mailer: Novell GroupWise Internet Agent 12.0.0 
+Date: Wed, 16 May 2012 08:52:17 +0100
+From: "Jan Beulich" <JBeulich@suse.com>
+To: "Matt Domsch" <Matt_Domsch@dell.com>, "Mike Waychison" <mikew@google.com>
+Cc: "matt.fleming@linux.intel.com" <matt.fleming@linux.intel.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH, resend] efivars: remove stray exports
+References: <4FB262940200007800083CAC@nat28.tlf.novell.com>
+ <20120515125542.GA14357@emperor.us.dell.com>
+ <CAGTjWtB-aD+yajy6UaQ=zh2RNydCmdPF6GMr6_24xkVmAsFzwA@mail.gmail.com>
+ <CAGTjWtCZqfaxQDB6pCp_twh5fJFJ86Ez3mbxQ8avCzoiywK5mA@mail.gmail.com>
+In-Reply-To: <CAGTjWtCZqfaxQDB6pCp_twh5fJFJ86Ez3mbxQ8avCzoiywK5mA@mail.gmail.com>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 8BIT
+Content-Disposition: inline
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, May 16, 2012 at 9:45 AM, Dong Aisheng
-<aisheng.dong@freescale.com> wrote:
-> Hi Linus,
->
-> On Tue, May 15, 2012 at 03:49:02PM +0800, Dong Aisheng-B29396 wrote:
->> From: Dong Aisheng <dong.aisheng@linaro.org>
+>>> On 15.05.12 at 19:02, Mike Waychison <mikew@google.com> wrote:
+> On Tue, May 15, 2012 at 10:01 AM, Mike Waychison <mikew@google.com> wrote:
+>> On Tue, May 15, 2012 at 5:55 AM, Matt Domsch <Matt_Domsch@dell.com> wrote:
+>>> On Tue, May 15, 2012 at 07:05:08AM -0500, Jan Beulich wrote:
+>>>> There's no in-tree consumer, and the way they are currently prototyped
+>>>> it doesn't look like they're really usable from anywhere but the base
+>>>> EFI implementation.
+>>>
+>>> Seems reasonable, copying Mike who created the code paths being
+>>> modified here.
 >>
->> Signed-off-by: Dong Aisheng <dong.aisheng@linaro.org>
->> ---
->> ChangeLog v1->v2:
->> * change PIN_FUNC_ID base in binding doc to 0 from 1.
-> I just checked your tree and it seems you merged the v1 series.
-> Can you merge this v2 instead?
+>> I'm using these in drivers/google/firmware/gsmi.c
+>>
+> 
+> drivers/firmware/google/gsmi.c even (sorry, just starting my day...)
 
-Aha sorry. Fixing it up now... check in some 30 mins or so.
+Oh - should have re-checked before re-sending (this must have
+appeared after the original posting).
 
-Linus Walleij
+Jan
+
