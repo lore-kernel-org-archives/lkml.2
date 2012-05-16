@@ -1,68 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757114Ab2EPL4g (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 May 2012 07:56:36 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:56459 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751752Ab2EPL4e convert rfc822-to-8bit (ORCPT
+	id S1757897Ab2EPL5Q (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 May 2012 07:57:16 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:4296 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754068Ab2EPL5O (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 May 2012 07:56:34 -0400
-MIME-Version: 1.0
-In-Reply-To: <1337155302-26244-1-git-send-email-jgq516@gmail.com>
-References: <1337155302-26244-1-git-send-email-jgq516@gmail.com>
-Date: Wed, 16 May 2012 19:56:33 +0800
-Message-ID: <CACVXFVNzmq74BKYZN1SpXYULneV2ASmniMhs4LhevPm-XgSJpg@mail.gmail.com>
-Subject: Re: [PATCH 1/1] smsc95xx: add FLAG_POINTTOPOINT flag for driver_info
-From: Ming Lei <tom.leiming@gmail.com>
-To: jgq516@gmail.com
-Cc: steve.glendinning@smsc.com, gregkh@linuxfoundation.org,
-        netdev@vger.kernel.org, linux-usb@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	Wed, 16 May 2012 07:57:14 -0400
+X-Authority-Analysis: v=2.0 cv=OMylLFmB c=1 sm=0 a=ZycB6UtQUfgMyuk2+PxD7w==:17 a=XQbtiDEiEegA:10 a=jKu8JnxlA44A:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=gjdCREqasA1MwOVGck8A:9 a=PUjeQqilurYA:10 a=ZycB6UtQUfgMyuk2+PxD7w==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 74.67.80.29
+Message-ID: <1337169432.6724.30.camel@gandalf.stny.rr.com>
+Subject: Re: [WARNING] at kernel/irq/manage.c:421 __enable_irq
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Thomas Gleixner <tglx@linutronix.de>
+Cc: LKML <linux-kernel@vger.kernel.org>, David Miller <davem@davemloft.net>
+Date: Wed, 16 May 2012 07:57:12 -0400
+In-Reply-To: <alpine.LFD.2.02.1205161001500.3231@ionos>
+References: <1337131823.6724.11.camel@gandalf.stny.rr.com>
+	 <alpine.LFD.2.02.1205161001500.3231@ionos>
+Content-Type: text/plain; charset="ISO-8859-15"
+X-Mailer: Evolution 3.2.2-1 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, May 16, 2012 at 4:01 PM,  <jgq516@gmail.com> wrote:
-> From: Xiao Jiang <jgq516@gmail.com>
->
-> commit c26134 introduced FLAG_POINTTOPOINT flag for USB ethernet devices
-> which possibly use "usb%d" names, add this flag to make sure pandaboard
-> can mount nfs with smsc95xx NIC.
+On Wed, 2012-05-16 at 13:27 +0200, Thomas Gleixner wrote:
+> On Tue, 15 May 2012, Steven Rostedt wrote:
+> > The code in ide_probe_port() does the following:
+> 
+> Right, you just forgot to show the most interesting gem of that code:
+> 
+> 	/*
+> 	 * We must always disable IRQ, as probe_for_drive will assert IRQ, but
+> 	 * we'll install our IRQ driver much later...
+> 	 */
 
-Without the flag, I also can mount nfs successfully on my Pandaboard...
-
->
-> Signed-off-by: Xiao Jiang <jgq516@gmail.com>
-> ---
->  drivers/net/usb/smsc95xx.c |    3 ++-
->  1 files changed, 2 insertions(+), 1 deletions(-)
->
-> diff --git a/drivers/net/usb/smsc95xx.c b/drivers/net/usb/smsc95xx.c
-> index 94ae669..e158288 100644
-> --- a/drivers/net/usb/smsc95xx.c
-> +++ b/drivers/net/usb/smsc95xx.c
-> @@ -1192,7 +1192,8 @@ static const struct driver_info smsc95xx_info = {
->        .rx_fixup       = smsc95xx_rx_fixup,
->        .tx_fixup       = smsc95xx_tx_fixup,
->        .status         = smsc95xx_status,
-> -       .flags          = FLAG_ETHER | FLAG_SEND_ZLP | FLAG_LINK_INTR,
-> +       .flags          = FLAG_ETHER | FLAG_POINTTOPOINT | FLAG_SEND_ZLP |
-> +                         FLAG_LINK_INTR,
->  };
->
->  static const struct usb_device_id products[] = {
-> --
-> 1.7.3
->
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+Heh, I would have kept that, but I was more interested in cut and
+pasting code than comments. I'll make sure to keep comments in emails
+too.
 
 
-Thanks,
--- 
-Ming Lei
+> >         if (irqd)
+> >                 enable_irq(irqd);
+> 
+> So this code is wrong and unsafe in various aspects. I wonder why it
+> didn't blow up before. Maybe init ordering changed ....
+> 
+
+Or it always did. This is on my main box that I reboot once every 100
+days or so. I'm not usually present when the machine comes online, nor
+do I search dmesg for warnings. Although, yesterday I did. This could
+have been complaining from day one.
+
+
+> I have an idea how to fix that proper. Will send out patches later.
+
+I'll test them, but it's a bit of a pain, as it would require me
+shutting down evolution, xchat, firefox, chrome and all my emacs
+windows :-)  This is why I don't reboot this box often.
+
+-- Steve
+
+
