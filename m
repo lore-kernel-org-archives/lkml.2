@@ -1,63 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759644Ab2EPR6k (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 May 2012 13:58:40 -0400
-Received: from out1-smtp.messagingengine.com ([66.111.4.25]:49586 "EHLO
-	out1-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752823Ab2EPR6j (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 May 2012 13:58:39 -0400
-X-Sasl-enc: RF583eF8ptWmmGyM+5HF/d2s9riqdhLqJlaokd4kgy1T 1337191117
-Date: Wed, 16 May 2012 10:58:36 -0700
-From: Greg KH <greg@kroah.com>
-To: Philipp Riemer <ruderphilipp@gmail.com>
-Cc: Josh Boyer <jwboyer@gmail.com>, Joe Perches <joe@perches.com>,
-        Paul Mundt <lethal@linux-sh.org>,
-        Michael =?iso-8859-1?Q?B=FCsch?= <m@bues.ch>,
-        Kuninori Morimoto <kuninori.morimoto.gx@renesas.com>,
-        Jiri Kosina <jkosina@suse.cz>,
-        Uwe =?iso-8859-1?Q?Kleine-K=F6nig?= 
-	<u.kleine-koenig@pengutronix.de>,
-        LKML <linux-kernel@vger.kernel.org>, Wang Chen <ellre923@gmail.com>,
-        Jonathan Corbet <corbet@lwn.net>
-Subject: Re: [GIT PULL] new mailmap file for the linux kernel git repository
-Message-ID: <20120516175836.GB3094@kroah.com>
-References: <CAFU-uVs_Gwacxj74cyekY2gv+zAq+Spba7nfPLdTc_dR3y8CYw@mail.gmail.com>
- <1337184643.4818.8.camel@joe2Laptop>
- <CAFU-uVv3Nx7hK73RvXtRUD43EoCyY_ER+oe5RScPc32VuuDpPA@mail.gmail.com>
- <CA+5PVA56PO6v6pdCb5sd83XeC9a17oKNAb1MCru3vb39us2t0A@mail.gmail.com>
- <CAFU-uVueBEOzC065jynvLqFU3S76yVqFB20B0q75sbRVSFsSgw@mail.gmail.com>
+	id S1760028Ab2EPR7B (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 May 2012 13:59:01 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:12453 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1759774Ab2EPR67 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 16 May 2012 13:58:59 -0400
+Date: Wed, 16 May 2012 20:58:57 +0300
+From: "Michael S. Tsirkin" <mst@redhat.com>
+To: Marcelo Tosatti <mtosatti@redhat.com>
+Cc: x86@kernel.org, kvm@vger.kernel.org, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, Avi Kivity <avi@redhat.com>,
+        gleb@redhat.com, Linus Torvalds <torvalds@linux-foundation.org>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCHv4 3/5] kvm: host side for eoi optimization
+Message-ID: <20120516175856.GD10769@redhat.com>
+References: <cover.1337168687.git.mst@redhat.com>
+ <42ba7beaa25855997e02fea91a11c9224c51720e.1337168687.git.mst@redhat.com>
+ <20120516154940.GA20549@amt.cnet>
+ <20120516162247.GA10676@redhat.com>
+ <20120516172058.GA22861@amt.cnet>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <CAFU-uVueBEOzC065jynvLqFU3S76yVqFB20B0q75sbRVSFsSgw@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20120516172058.GA22861@amt.cnet>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, May 16, 2012 at 07:01:54PM +0200, Philipp Riemer wrote:
-> I thought about the fact that over time people move companies. In my
-> case, I try to do some kind of time series analysis and thus it might
-> be interesting to see who was employed but now works as a freelancer
-> etc. Here, the opinion of other people who analyze the kernel such as
-> Wang Chen, Greg KH, or Jonathan Corbet might be interesting...
+On Wed, May 16, 2012 at 02:20:58PM -0300, Marcelo Tosatti wrote:
+> On Wed, May 16, 2012 at 07:22:47PM +0300, Michael S. Tsirkin wrote:
+> > On Wed, May 16, 2012 at 12:49:40PM -0300, Marcelo Tosatti wrote:
+> > > > @@ -1245,9 +1306,20 @@ int kvm_get_apic_interrupt(struct kvm_vcpu *vcpu)
+> > > >  	int vector = kvm_apic_has_interrupt(vcpu);
+> > > >  	struct kvm_lapic *apic = vcpu->arch.apic;
+> > > >  
+> > > > -	if (vector == -1)
+> > > > +	/* Detect interrupt nesting and disable EOI optimization */
+> > > > +	if (pv_eoi_enabled(vcpu) && vector == -2)
+> > > > +		pv_eoi_clr_pending(vcpu);
+> > > > +
+> > > > +	if (vector < 0)
+> > > 
+> > > With interrupt window exiting, the guest will exit:
+> > > 
+> > > - as soon as it sets RFLAGS.IF=1 and there is any 
+> > > interrupt pending in IRR.
+> > > - any new interrupt is set in IRR will kick vcpu
+> > > out of guest mode and recalculate interrupt-window-exiting.
+> > > 
+> > > Doesnt this make this bit unnecessary ?
+> > 
+> > Looks like we could cut it out.  But I'm not sure how architectural it is
+> > that we exit on interrupt window.
+> > I guess there are reasons to exit on interrupt window but
+> > isn't it better to make the feature independent of it?
+> 
+> Hum... not sure. Is it helpful for the Hyper-V interface?
+> 
+> > This almost never happens in my testing anyway, so
+> > however we handle it is unlikely to affect performance.
+> 
+> It decreases the amount of state that must be maintained.
+> 
+> BTW there is a bug covered by interrupt window exiting:
+> 
+> vcpu0                               host
+> - irr 5 set
+> - isr 5 set, irr 5 cleared
+> - eoi_skip bit not set, 
+> no other bit set in irr.
+> - enter guest
+> 
+>                                     irr 4 set
+>                                     kick vcpu0 out of guest mode
+> 
+> - eoi pending bit not set
+>   (previous interrupt injection 
+>    still pending)
+> - skip eoi
+> 
+> If it were not for interrupt window exiting, this would 
+> inject vector 4 on an unrelated exit who knows how long 
+> in the future.
+> 
+> Also note optimization depends on the fact that the host 
+> kicks vcpu out unconditionally (so it is dependent on 
+> certain kvm implementation details).
+> 
+> 
+> 
 
-The mailmap file does not show this type of thing very well at all, and
-I wouldn't recommend trying to keep it up to date this way.  I say this
-as someone who tries to keep track of who is working for whom.  This
-information changes over time, and as others have pointed out, some
-people use multiple email addresses to categorize their submittions
-(work vs. hobby) for legal and personal reasons.
 
-Our database has been made public at times, so you should be using that
-instead of trying to update the mailmap file.
 
-So while it might be nice to update it, why do you want to do so?  We
-have updated and cleaned-up log files publicly if you want to use those
-for research (they are in my github archive).  Modifying things here
-probably would not be a good idea.
-
-sorry,
-
-greg k-h
+Look we can summarize as follows: irq windows exit is
+required both before and after this patch.
+But it does not make the check above redundant.
