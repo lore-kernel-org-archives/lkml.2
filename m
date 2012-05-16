@@ -1,87 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759676Ab2EPR4M (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 May 2012 13:56:12 -0400
-Received: from mail-gg0-f174.google.com ([209.85.161.174]:52218 "EHLO
-	mail-gg0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754628Ab2EPR4K convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 May 2012 13:56:10 -0400
+	id S1759596Ab2EPR5R (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 May 2012 13:57:17 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:54211 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752823Ab2EPR5Q (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 16 May 2012 13:57:16 -0400
+Message-ID: <4FB3E9FE.5020902@zytor.com>
+Date: Wed, 16 May 2012 10:55:10 -0700
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:11.0) Gecko/20120329 Thunderbird/11.0.1
 MIME-Version: 1.0
-In-Reply-To: <20120516125658.GD20475@lizard>
-References: <20120516125330.GA15460@lizard>
-	<20120516125658.GD20475@lizard>
-Date: Wed, 16 May 2012 10:56:09 -0700
-X-Google-Sender-Auth: CumIYMcxQ2FQZA_U43YCM7WtTIk
-Message-ID: <CAMbhsRRmcaS7W-eY2eiiBa6xeAeeG+t5Bj4yVmKqkiFbs1bV3Q@mail.gmail.com>
-Subject: Re: [PATCH 4/6] pstore/ram: Add some more documentation and examples
-From: Colin Cross <ccross@android.com>
-To: Anton Vorontsov <anton.vorontsov@linaro.org>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Kees Cook <keescook@chromium.org>, Tony Luck <tony.luck@intel.com>,
-        Arnd Bergmann <arnd@arndb.de>, John Stultz <john.stultz@linaro.org>,
-        Shuah Khan <shuahkhan@gmail.com>, arve@android.com,
-        Rebecca Schultz Zavin <rebecca@android.com>,
-        Jesper Juhl <jj@chaosbits.net>, Randy Dunlap <rdunlap@xenotime.net>,
-        Stephen Boyd <sboyd@codeaurora.org>, Thomas Meyer <thomas@m3y3r.de>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Marco Stornelli <marco.stornelli@gmail.com>,
-        WANG Cong <xiyou.wangcong@gmail.com>, linux-kernel@vger.kernel.org,
-        devel@driverdev.osuosl.org, linaro-kernel@lists.linaro.org,
-        patches@linaro.org, kernel-team@android.com
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
-X-System-Of-Record: true
+To: Alex Shi <alex.shi@intel.com>
+CC: tglx@linutronix.de, mingo@redhat.com, arnd@arndb.de, rostedt@goodmis.org,
+        fweisbec@gmail.com, jeremy@goop.org, riel@redhat.com, luto@mit.edu,
+        avi@redhat.com, len.brown@intel.com, dhowells@redhat.com,
+        fenghua.yu@intel.com, borislav.petkov@amd.com, yinghai@kernel.org,
+        ak@linux.intel.com, cpw@sgi.com, steiner@sgi.com,
+        akpm@linux-foundation.org, penberg@kernel.org, hughd@google.com,
+        rientjes@google.com, kosaki.motohiro@jp.fujitsu.com,
+        n-horiguchi@ah.jp.nec.com, tj@kernel.org, oleg@redhat.com,
+        axboe@kernel.dk, jmorris@namei.org, a.p.zijlstra@chello.nl,
+        kamezawa.hiroyu@jp.fujitsu.com, viro@zeniv.linux.org.uk,
+        linux-kernel@vger.kernel.org, yongjie.ren@intel.com
+Subject: Re: [PATCH v5 5/7] x86/tlb: add tlb_flushall_shift for specific CPU
+References: <1337072138-8323-1-git-send-email-alex.shi@intel.com> <1337072138-8323-6-git-send-email-alex.shi@intel.com> <4FB34DFB.2040902@intel.com>
+In-Reply-To: <4FB34DFB.2040902@intel.com>
+X-Enigmail-Version: 1.4
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, May 16, 2012 at 5:56 AM, Anton Vorontsov
-<anton.vorontsov@linaro.org> wrote:
-> Suggested-by: Shuah Khan <shuahkhan@gmail.com>
-> Signed-off-by: Anton Vorontsov <anton.vorontsov@linaro.org>
-> ---
->  Documentation/ramoops.txt |   15 +++++++++++++++
->  1 file changed, 15 insertions(+)
->
-> diff --git a/Documentation/ramoops.txt b/Documentation/ramoops.txt
-> index 4ba7db2..138823b 100644
-> --- a/Documentation/ramoops.txt
-> +++ b/Documentation/ramoops.txt
-> @@ -40,6 +40,12 @@ corrupt, but usually it is restorable.
->  Setting the ramoops parameters can be done in 2 different manners:
->  1. Use the module parameters (which have the names of the variables described
->  as before).
-> + For quick debugging, you can also reserve parts of memory during boot
-> + and then use the reserved memory for ramoops. For example, assuming a machine
-> + with > 128 MB of memory, the following kernel command line will tell the
-> + kernel to use only the first 128 MB of memory, and place ECC-protected ramoops
-> + region at 128 MB boundary:
-> + "mem=128M ramoops.mem_address=0x8000000 ramoops.ecc=1"
->  2. Use a platform device and set the platform data. The parameters can then
->  be set through that platform data. An example of doing that is:
->
-> @@ -70,6 +76,15 @@ if (ret) {
->        return ret;
->  }
->
-> +You can specify either RAM memory or peripheral devices' memory. However, when
-> +specifying RAM, be sure to reserve the memory by issuing memblock_reserve()
-> +very early in the architecture code, just before platform device registration,
+On 05/15/2012 11:49 PM, Alex Shi wrote:
+> +	if (!cpu_has_invlpg || vma->vm_flags & VM_HUGETLB
+> +			|| tlb_flushall_shift == (u16)TLB_FLUSH_ALL) {
 
-Just before platform device registration is way too late.  ARM
-provides a machine reserve callback to allow board files to call
-memblock_reserve inside arm_memblock_init() and before mm_init().
+I asked for you to fold the cpu_has_invlpg test into tlb_flushall_shift.
+ Also, (u16)TLB_FLUSH_ALL really is hit up with the ugly stick... why on
+earth is this u16?  It's a bit shift, so it can't be bigger than 6 bits
+anyway... and if you want to be able to use -1 as a sentinel you might
+as well make it a signed value and use < 0 or == -1 as the test.
 
-> +e.g.:
-> +
-> +#include <linux/memblock.h>
-> +
-> +memblock_reserve(ramoops_data.mem_address, ramoops_data.mem_size);
-> +
->  3. Dump format
->
->  The data dump begins with a header, currently defined as "====" followed by a
-> --
-> 1.7.9.2
->
+Am I missing something really fundamental here?
+
+	-hpa
+
+-- 
+H. Peter Anvin, Intel Open Source Technology Center
+I work for Intel.  I don't speak on their behalf.
+
