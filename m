@@ -1,94 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933266Ab2EPXmd (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 May 2012 19:42:33 -0400
-Received: from mail.linux-iscsi.org ([67.23.28.174]:48043 "EHLO
-	linux-iscsi.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760774Ab2EPXlw (ORCPT
+	id S933214Ab2EPXqb (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 May 2012 19:46:31 -0400
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:46149 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1760721Ab2EPXqa convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 May 2012 19:41:52 -0400
-Subject: Re: [PATCH] target: Handle ATA_PASS_THROUGH_16 passthrough
-From: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
-To: mc@linux.vnet.ibm.com
-Cc: target-devel@vger.kernel.org, linux-scsi@vger.kernel.org,
-        linux-kernel@vger.kernel.org,
-        Stefan Hajnoczi <stefanha@linux.vnet.ibm.com>,
-        James Bottomley <jbottomley@parallels.com>
-In-Reply-To: <1337146409.18429.11.camel@mengcong>
-References: <1337146409.18429.11.camel@mengcong>
-Content-Type: text/plain; charset="UTF-8"
-Date: Wed, 16 May 2012 16:41:49 -0700
-Message-ID: <1337211709.32217.100.camel@haakon2.linux-iscsi.org>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
-Content-Transfer-Encoding: 7bit
+	Wed, 16 May 2012 19:46:30 -0400
+MIME-Version: 1.0
+In-Reply-To: <20120516124338.GD18345@lizard>
+References: <20120516124109.GA14658@lizard>
+	<20120516124338.GD18345@lizard>
+Date: Wed, 16 May 2012 16:46:29 -0700
+Message-ID: <CAMP5XgerV-WYCSTcW12Sog1axb-+szbOPL+SyE2OvfHu+U5xhw@mail.gmail.com>
+Subject: Re: [PATCH 4/6] persistent_ram: Move to fs/pstore/ram_core.c
+From: =?ISO-8859-1?Q?Arve_Hj=F8nnev=E5g?= <arve@android.com>
+To: Anton Vorontsov <anton.vorontsov@linaro.org>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Kees Cook <keescook@chromium.org>, Colin Cross <ccross@android.com>,
+        Arnd Bergmann <arnd@arndb.de>, John Stultz <john.stultz@linaro.org>,
+        Shuah Khan <shuahkhan@gmail.com>,
+        Rebecca Schultz Zavin <rebecca@android.com>,
+        Jesper Juhl <jj@chaosbits.net>, Randy Dunlap <rdunlap@xenotime.net>,
+        Stephen Boyd <sboyd@codeaurora.org>, Thomas Meyer <thomas@m3y3r.de>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Marco Stornelli <marco.stornelli@gmail.com>,
+        WANG Cong <xiyou.wangcong@gmail.com>, linux-kernel@vger.kernel.org,
+        devel@driverdev.osuosl.org, linaro-kernel@lists.linaro.org,
+        patches@linaro.org, kernel-team@android.com
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2012-05-16 at 13:33 +0800, mengcong wrote:
-> The cdrecord uses ATA_PASS_THROUGH_16 command while burning CDs
-> with a SATA CD-ROM. This patch adds support to it so that PSCSI 
-> CD-ROM passthrough works with the cdrecord.
-> 
-> Signed-off-by: Cong Meng <mc@linux.vnet.ibm.com>
-> ---
->  drivers/target/target_core_transport.c |   30 ++++++++++++++++++++++++++++++
->  include/scsi/scsi.h                    |    1 +
->  2 files changed, 31 insertions(+), 0 deletions(-)
-> 
-> diff --git a/drivers/target/target_core_transport.c b/drivers/target/target_core_transport.c
-> index 2d75c29..41439b3 100644
-> --- a/drivers/target/target_core_transport.c
-> +++ b/drivers/target/target_core_transport.c
-> @@ -2926,6 +2926,36 @@ static int transport_generic_cmd_sequencer(
->  		size = (cdb[7] << 8) | cdb[8];
->  		cmd->se_cmd_flags |= SCF_SCSI_CONTROL_SG_IO_CDB;
->  		break;
-> +	case ATA_PASS_THROUGH_16:
-> +		// T_LENGTH
-> +		switch (cdb[2] & 0x3) {
-> +		case 0x0:
-> +			sectors = 0;
-> +			break;
-> +		case 0x1:
-> +			sectors = (((cdb[1] & 0x1) ? cdb[3] : 0) << 8) | cdb[4];
-> +			break;
-> +		case 0x2:
-> +			sectors = (((cdb[1] & 0x1) ? cdb[5] : 0) << 8) | cdb[6];
-> +			break;
-> +		case 0x3:
-> +			pr_err("T_LENGTH=0x3 not supported\n");
-> +			goto out_invalid_cdb_field;
-> +			break;
-> +		}
-> +		
-> +		// BYTE_BLOCK
-> +		if (cdb[2] & 0x4) {
-> +			// BLOCK
-> +			// T_TYPE: 512 or sector
-> +			size = sectors * ((cdb[2] & 0x10) ? 
-> +				dev->se_sub_dev->se_dev_attrib.block_size : 512);
-> +		} else {
-> +			// BYTE
-> +			size = sectors;
-> +		}
-> +		cmd->se_cmd_flags |= SCF_SCSI_CONTROL_SG_IO_CDB;
+On Wed, May 16, 2012 at 5:43 AM, Anton Vorontsov
+<anton.vorontsov@linaro.org> wrote:
+> This is a first step for adding ECC support for pstore RAM backend: we
+> will use the persistent_ram routines, kindly provided by Google.
+>
+> Basically, persistent_ram is a set of helper routines to deal with the
+> [optionally] ECC-protected persistent ram regions.
+>
+...
+> +static int persistent_ram_init_ecc(struct persistent_ram_zone *prz,
+> +       size_t buffer_size)
+> +{
+> +       int numerr;
+> +       struct persistent_ram_buffer *buffer = prz->buffer;
+> +       int ecc_blocks;
+> +
+> +       if (!prz->ecc)
+> +               return 0;
+> +
+> +       prz->ecc_block_size = 128;
+> +       prz->ecc_size = 16;
 
-Mmmm, I think using SCF_SCSI_CONTROL_SG_IO_CDB here for all ATA
-passthrough cases should be OK with pSCSI, but you'll want to fail this
-type of cdb when if (!passthrough) for non pSCSI type devices to be safe
-with virtual backends..
+I realize you are just moving code here, but 16 ecc bytes for per 128
+bytes of data can only correct 8 bad bytes, which is not always
+sufficient. At some point this will need to be made configurable
+again.
 
-Also just an FYI, checkpatch.pl will complain here using '//' style
-comments, so you'll want to always use '/* ... */' style comments when
-submitting a target patch.
-
-So please go ahead and fix up these two bits + use ATA_16 following
-jejb's comment, and I'm fine with including your v2 into the for-3.5
-target queue..
-
-Thanks!
-
---nab
-
+-- 
+Arve Hjønnevåg
