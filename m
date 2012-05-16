@@ -1,216 +1,199 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030269Ab2EPLS5 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 May 2012 07:18:57 -0400
-Received: from na3sys009aog125.obsmtp.com ([74.125.149.153]:37529 "EHLO
-	na3sys009aog125.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1030229Ab2EPLS4 (ORCPT
+	id S1030276Ab2EPLTz (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 May 2012 07:19:55 -0400
+Received: from na3sys009aog131.obsmtp.com ([74.125.149.247]:56258 "EHLO
+	na3sys009aog131.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1030240Ab2EPLTy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 May 2012 07:18:56 -0400
+	Wed, 16 May 2012 07:19:54 -0400
 From: Peter Ujfalusi <peter.ujfalusi@ti.com>
-To: Samuel Ortiz <sameo@linux.intel.com>
+To: Dmitry Torokhov <dtor@mail.ru>
 Cc: Mark Brown <broonie@opensource.wolfsonmicro.com>,
         Liam Girdwood <lrg@ti.com>, Benoit Cousson <b-cousson@ti.com>,
         linux-kernel@vger.kernel.org, devicetree-discuss@lists.ozlabs.org,
-        peter.ujfalusi@ti.com, Misael Lopez Cruz <misael.lopez@ti.com>,
-        Dmitry Torokhov <dtor@mail.ru>
-Subject: [PATCH v3 4/4] MFD: twl6040: Add support for Device Tree
-Date: Wed, 16 May 2012 14:11:58 +0300
-Message-Id: <1337166718-8458-5-git-send-email-peter.ujfalusi@ti.com>
+        peter.ujfalusi@ti.com
+Subject: [PATCH] Input: twl6040-vibra: Update for device tree support
+Date: Wed, 16 May 2012 14:19:46 +0300
+Message-Id: <1337167186-8535-1-git-send-email-peter.ujfalusi@ti.com>
 X-Mailer: git-send-email 1.7.8.6
-In-Reply-To: <1337166718-8458-1-git-send-email-peter.ujfalusi@ti.com>
-References: <1337166718-8458-1-git-send-email-peter.ujfalusi@ti.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Device tree based probing support for the core twl6040 driver. Child
-devices will be created as MFD devices:
-- ASoC codec is always created
-- Vibra child is only created if the vibra section present in the DT blob.
+The twl6040 DT support implementation has been changed from the originally
+planned.
+None of the child devices going to have compatible_of property which means
+that the child devices of twl6040 will be created as traditional MFD devices.
+The mfd core driver will decide (based on the DT blob) to create a device
+for the twl6040-vibra or not. If the DT blob has 'vibra' section the device
+will be created without pdata.
+In this case the vibra driver will reach up to the parent node to get the
+needed properties.
+With DT booted kernel we no longer be able to link the regulators to the vibra
+driver, they can be only linked to the MFD device (probed via DT). From the
+vibra driver we ned to use pdev->dev.parent to get the regulators.
 
 Signed-off-by: Peter Ujfalusi <peter.ujfalusi@ti.com>
 ---
- Documentation/devicetree/bindings/mfd/twl6040.txt |   62 +++++++++++++++++++++
- drivers/mfd/twl6040-core.c                        |   27 ++++++---
- drivers/mfd/twl6040-irq.c                         |    6 ++
- 3 files changed, 87 insertions(+), 8 deletions(-)
- create mode 100644 Documentation/devicetree/bindings/mfd/twl6040.txt
+Hi Dmitry,
 
-diff --git a/Documentation/devicetree/bindings/mfd/twl6040.txt b/Documentation/devicetree/bindings/mfd/twl6040.txt
-new file mode 100644
-index 0000000..bc67c6f
---- /dev/null
-+++ b/Documentation/devicetree/bindings/mfd/twl6040.txt
-@@ -0,0 +1,62 @@
-+Texas Instruments TWL6040 family
-+
-+The TWL6040s are 8-channel high quality low-power audio codecs providing audio
-+and vibra functionality on OMAP4+ platforms.
-+They are connected ot the host processor via i2c for commands, McPDM for audio
-+data and commands.
-+
-+Required properties:
-+- compatible : Must be "ti,twl6040";
-+- reg: must be 0x4b for i2c address
-+- interrupts: twl6040 has one interrupt line connecteded to the main SoC
-+- interrupt-parent: The parent interrupt controller
-+- twl6040,audpwron-gpio: Power on GPIO line for the twl6040
-+
-+- vio-supply: Regulator for the twl6040 VIO supply
-+- v2v1-supply: Regulator for the twl6040 V2V1 supply
-+
-+Optional properties, nodes:
-+- enable-active-high: To power on the twl6040 during boot.
-+
-+Vibra functionality
-+Required properties:
-+- vddvibl-supply: Regulator for the left vibra motor
-+- vddvibr-supply: Regulator for the right vibra motor
-+- vibra { }: Configuration section for vibra parameters containing the following
-+	     properties:
-+- ti,vibldrv-res: Resistance parameter for left driver
-+- ti,vibrdrv-res: Resistance parameter for right driver
-+- ti,viblmotor-res: Resistance parameter for left motor
-+- ti,viblmotor-res: Resistance parameter for right motor
-+
-+Optional properties within vibra { } section:
-+- vddvibl_uV: If the vddvibl default voltage need to be changed
-+- vddvibr_uV: If the vddvibr default voltage need to be changed
-+
-+Example:
-+&i2c1 {
-+	twl6040: twl@4b {
-+		compatible = "ti,twl6040";
-+		reg = <0x4b>;
-+
-+		interrupts = <0 119 4>;
-+		interrupt-parent = <&gic>;
-+		twl6040,audpwron-gpio = <&gpio4 31 0>;
-+
-+		vio-supply = <&v1v8>;
-+		v2v1-supply = <&v2v1>;
-+		enable-active-high;
-+
-+		/* regulators for vibra motor */
-+		vddvibl-supply = <&vbat>;
-+		vddvibr-supply = <&vbat>;
-+
-+		vibra {
-+			/* Vibra driver, motor resistance parameters */
-+			ti,vibldrv-res = <8>;
-+			ti,vibrdrv-res = <3>;
-+			ti,viblmotor-res = <10>;
-+			ti,vibrmotor-res = <10>;
-+		};
-+	};
-+};
-diff --git a/drivers/mfd/twl6040-core.c b/drivers/mfd/twl6040-core.c
-index 9765dc2..450a28f 100644
---- a/drivers/mfd/twl6040-core.c
-+++ b/drivers/mfd/twl6040-core.c
-@@ -29,6 +29,10 @@
- #include <linux/kernel.h>
- #include <linux/err.h>
- #include <linux/platform_device.h>
-+#include <linux/of.h>
-+#include <linux/of_irq.h>
-+#include <linux/of_gpio.h>
-+#include <linux/of_platform.h>
- #include <linux/gpio.h>
- #include <linux/delay.h>
- #include <linux/i2c.h>
-@@ -505,11 +509,12 @@ static int __devinit twl6040_probe(struct i2c_client *client,
- 				     const struct i2c_device_id *id)
+There were a long discussion regarding of the originally planned DT support for
+the twl6040 (MFD) chip over alsa-devel:
+http://mailman.alsa-project.org/pipermail/alsa-devel/2012-May/051730.html
+
+As a consequence I needed to change how this MFD device will be represented in
+DT.
+We will no longer load the child devices via DT, but use mfd_add_devices() will
+create the child devices needed.
+If we boot with DT the vibra will not have pdata and it will use the parent
+device's node to get the needed parameters.
+
+This patch is based on:
+git://git.kernel.org/pub/scm/linux/kernel/git/dtor/input.git:next branch
+
+The DT support for the twl6040 (v3) has been sent and I'm waiting for a review:
+http://marc.info/?l=linux-kernel&m=133716693518701&w=2
+
+Best Regards,
+Peter
+
+ .../devicetree/bindings/input/twl6040-vibra.txt    |   37 -----------------
+ drivers/input/misc/twl6040-vibra.c                 |   42 ++++++++++++--------
+ 2 files changed, 25 insertions(+), 54 deletions(-)
+ delete mode 100644 Documentation/devicetree/bindings/input/twl6040-vibra.txt
+
+diff --git a/Documentation/devicetree/bindings/input/twl6040-vibra.txt b/Documentation/devicetree/bindings/input/twl6040-vibra.txt
+deleted file mode 100644
+index 5b1918b..0000000
+--- a/Documentation/devicetree/bindings/input/twl6040-vibra.txt
++++ /dev/null
+@@ -1,37 +0,0 @@
+-Vibra driver for the twl6040 family
+-
+-The vibra driver is a child of the twl6040 MFD dirver.
+-Documentation/devicetree/bindings/mfd/twl6040.txt
+-
+-Required properties:
+-- compatible : Must be "ti,twl6040-vibra";
+-- interrupts: 4, Vibra overcurrent interrupt
+-- vddvibl-supply: Regulator supplying the left vibra motor
+-- vddvibr-supply: Regulator supplying the right vibra motor
+-- vibldrv_res: Board specific left driver resistance
+-- vibrdrv_res: Board specific right driver resistance
+-- viblmotor_res: Board specific left motor resistance
+-- vibrmotor_res: Board specific right motor resistance
+-
+-Optional properties:
+-- vddvibl_uV: If the vddvibl default voltage need to be changed
+-- vddvibr_uV: If the vddvibr default voltage need to be changed
+-
+-Example:
+-/*
+- * 8-channel high quality low-power audio codec
+- * http://www.ti.com/lit/ds/symlink/twl6040.pdf
+- */
+-twl6040: twl6040@4b {
+-	...
+-	twl6040_vibra: twl6040@1 {
+-		compatible = "ti,twl6040-vibra";
+-		interrupts = <4>;
+-		vddvibl-supply = <&vbat>;
+-		vddvibr-supply = <&vbat>;
+-		vibldrv_res = <8>;
+-		vibrdrv_res = <3>;
+-		viblmotor_res = <10>;
+-		vibrmotor_res = <10>;
+-	};
+-};
+diff --git a/drivers/input/misc/twl6040-vibra.c b/drivers/input/misc/twl6040-vibra.c
+index c34f6c0..4d36666 100644
+--- a/drivers/input/misc/twl6040-vibra.c
++++ b/drivers/input/misc/twl6040-vibra.c
+@@ -259,13 +259,15 @@ static SIMPLE_DEV_PM_OPS(twl6040_vibra_pm_ops, twl6040_vibra_suspend, NULL);
+ static int __devinit twl6040_vibra_probe(struct platform_device *pdev)
  {
- 	struct twl6040_platform_data *pdata = client->dev.platform_data;
-+	struct device_node *node = client->dev.of_node;
- 	struct twl6040 *twl6040;
- 	struct mfd_cell *cell = NULL;
- 	int irq, ret, children = 0;
+ 	struct twl6040_vibra_data *pdata = pdev->dev.platform_data;
+-	struct device_node *node = pdev->dev.of_node;
++	struct device *twl6040_core_dev = pdev->dev.parent;
++	struct device_node *twl6040_core_node = of_find_node_by_name(
++					twl6040_core_dev->of_node, "vibra");
+ 	struct vibra_info *info;
+ 	int vddvibl_uV = 0;
+ 	int vddvibr_uV = 0;
+ 	int ret;
  
--	if (!pdata) {
-+	if (!pdata && !node) {
- 		dev_err(&client->dev, "Platform data is missing\n");
+-	if (!pdata && !node) {
++	if (!pdata && !twl6040_core_node) {
+ 		dev_err(&pdev->dev, "platform_data not available\n");
  		return -EINVAL;
  	}
-@@ -560,9 +565,13 @@ static int __devinit twl6040_probe(struct i2c_client *client,
- 	twl6040->rev = twl6040_reg_read(twl6040, TWL6040_REG_ASICREV);
- 
- 	/* ERRATA: Automatic power-up is not possible in ES1.0 */
--	if (twl6040_get_revid(twl6040) > TWL6040_REV_ES1_0)
--		twl6040->audpwron = pdata->audpwron_gpio;
--	else
-+	if (twl6040_get_revid(twl6040) > TWL6040_REV_ES1_0) {
-+		if (pdata)
-+			twl6040->audpwron = pdata->audpwron_gpio;
-+		else
-+			twl6040->audpwron = of_get_named_gpio(node,
-+						"ti,audpwron-gpio", 0);
-+	} else
- 		twl6040->audpwron = -EINVAL;
- 
- 	if (gpio_is_valid(twl6040->audpwron)) {
-@@ -602,13 +611,13 @@ static int __devinit twl6040_probe(struct i2c_client *client,
- 	twl6040_codec_rsrc[0].end = irq;
- 	cell->resources = twl6040_codec_rsrc;
- 	cell->num_resources = ARRAY_SIZE(twl6040_codec_rsrc);
--	if (pdata->codec) {
-+	if (pdata && pdata->codec) {
- 		cell->platform_data = pdata->codec;
- 		cell->pdata_size = sizeof(*pdata->codec);
- 	}
- 	children++;
- 
--	if (pdata->vibra) {
-+	if ((pdata && pdata->vibra) || of_find_node_by_name(node, "vibra")) {
- 		irq = twl6040->irq_base + TWL6040_IRQ_VIB;
- 
- 		cell = &twl6040->cells[children];
-@@ -618,8 +627,10 @@ static int __devinit twl6040_probe(struct i2c_client *client,
- 		cell->resources = twl6040_vibra_rsrc;
- 		cell->num_resources = ARRAY_SIZE(twl6040_vibra_rsrc);
- 
--		cell->platform_data = pdata->vibra;
--		cell->pdata_size = sizeof(*pdata->vibra);
-+		if (pdata && pdata->vibra) {
-+			cell->platform_data = pdata->vibra;
-+			cell->pdata_size = sizeof(*pdata->vibra);
-+		}
- 		children++;
+@@ -287,14 +289,18 @@ static int __devinit twl6040_vibra_probe(struct platform_device *pdev)
+ 		vddvibl_uV = pdata->vddvibl_uV;
+ 		vddvibr_uV = pdata->vddvibr_uV;
+ 	} else {
+-		of_property_read_u32(node, "vibldrv_res", &info->vibldrv_res);
+-		of_property_read_u32(node, "vibrdrv_res", &info->vibrdrv_res);
+-		of_property_read_u32(node, "viblmotor_res",
++		of_property_read_u32(twl6040_core_node, "ti,vibldrv-res",
++				     &info->vibldrv_res);
++		of_property_read_u32(twl6040_core_node, "ti,vibrdrv-res",
++				     &info->vibrdrv_res);
++		of_property_read_u32(twl6040_core_node, "ti,viblmotor-res",
+ 				     &info->viblmotor_res);
+-		of_property_read_u32(node, "vibrmotor_res",
++		of_property_read_u32(twl6040_core_node, "ti,vibrmotor-res",
+ 				     &info->vibrmotor_res);
+-		of_property_read_u32(node, "vddvibl_uV", &vddvibl_uV);
+-		of_property_read_u32(node, "vddvibr_uV", &vddvibr_uV);
++		of_property_read_u32(twl6040_core_node, "ti,vddvibl-uV",
++				     &vddvibl_uV);
++		of_property_read_u32(twl6040_core_node, "ti,vddvibr-uV",
++				     &vddvibr_uV);
  	}
  
-diff --git a/drivers/mfd/twl6040-irq.c b/drivers/mfd/twl6040-irq.c
-index 914978e..4b42543 100644
---- a/drivers/mfd/twl6040-irq.c
-+++ b/drivers/mfd/twl6040-irq.c
-@@ -25,6 +25,8 @@
- #include <linux/module.h>
- #include <linux/err.h>
- #include <linux/irq.h>
-+#include <linux/of.h>
-+#include <linux/irqdomain.h>
- #include <linux/interrupt.h>
- #include <linux/mfd/core.h>
- #include <linux/mfd/twl6040.h>
-@@ -139,6 +141,7 @@ static irqreturn_t twl6040_irq_thread(int irq, void *data)
+ 	if ((!info->vibldrv_res && !info->viblmotor_res) ||
+@@ -351,8 +357,17 @@ static int __devinit twl6040_vibra_probe(struct platform_device *pdev)
  
- int twl6040_irq_init(struct twl6040 *twl6040)
- {
-+	struct device_node *node = twl6040->dev->of_node;
- 	int i, nr_irqs, irq_base, ret;
- 	u8 val;
+ 	info->supplies[0].supply = "vddvibl";
+ 	info->supplies[1].supply = "vddvibr";
+-	ret = regulator_bulk_get(info->dev, ARRAY_SIZE(info->supplies),
+-				 info->supplies);
++	/*
++	 * When booted with Device tree the regulators are attached to the
++	 * parent device (twl6040 MFD core)
++	 */
++	if (pdata)
++		ret = regulator_bulk_get(info->dev, ARRAY_SIZE(info->supplies),
++					info->supplies);
++	else
++		ret = regulator_bulk_get(twl6040_core_dev,
++					 ARRAY_SIZE(info->supplies),
++					 info->supplies);
+ 	if (ret) {
+ 		dev_err(info->dev, "couldn't get regulators %d\n", ret);
+ 		goto err_regulator;
+@@ -418,12 +433,6 @@ static int __devexit twl6040_vibra_remove(struct platform_device *pdev)
+ 	return 0;
+ }
  
-@@ -158,6 +161,9 @@ int twl6040_irq_init(struct twl6040 *twl6040)
- 	}
- 	twl6040->irq_base = irq_base;
- 
-+	irq_domain_add_legacy(node, ARRAY_SIZE(twl6040_irqs), irq_base, 0,
-+			      &irq_domain_simple_ops, NULL);
-+
- 	/* Register them with genirq */
- 	for (i = irq_base; i < irq_base + nr_irqs; i++) {
- 		irq_set_chip_data(i, twl6040);
+-static const struct of_device_id twl6040_vibra_of_match[] = {
+-	{.compatible = "ti,twl6040-vibra", },
+-	{ },
+-};
+-MODULE_DEVICE_TABLE(of, twl6040_vibra_of_match);
+-
+ static struct platform_driver twl6040_vibra_driver = {
+ 	.probe		= twl6040_vibra_probe,
+ 	.remove		= __devexit_p(twl6040_vibra_remove),
+@@ -431,7 +440,6 @@ static struct platform_driver twl6040_vibra_driver = {
+ 		.name	= "twl6040-vibra",
+ 		.owner	= THIS_MODULE,
+ 		.pm	= &twl6040_vibra_pm_ops,
+-		.of_match_table = twl6040_vibra_of_match,
+ 	},
+ };
+ module_platform_driver(twl6040_vibra_driver);
 -- 
 1.7.8.6
 
