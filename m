@@ -1,89 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759208Ab2EPGeQ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 May 2012 02:34:16 -0400
-Received: from ch1ehsobe004.messaging.microsoft.com ([216.32.181.184]:28847
-	"EHLO ch1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1759116Ab2EPGd0 (ORCPT
+	id S1759164Ab2EPGfH (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 May 2012 02:35:07 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:46827 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758564Ab2EPGfD convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 May 2012 02:33:26 -0400
-X-SpamScore: 1
-X-BigFish: VS1(zzzz1202hzz8275bhz2ei87h2a8h668h839hd24he5bhe96h)
-X-Forefront-Antispam-Report: CIP:137.71.25.57;KIP:(null);UIP:(null);IPV:NLI;H:nwd2mta2.analog.com;RD:nwd2mail11.analog.com;EFVD:NLI
-X-FB-DOMAIN-IP-MATCH: fail
-From: Sonic Zhang <sonic.adi@gmail.com>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        <linux-serial@vger.kernel.org>
-CC: LKML <linux-kernel@vger.kernel.org>,
-        <uclinux-dist-devel@blackfin.uclinux.org>,
-        Sonic Zhang <sonic.zhang@analog.com>
-Subject: [PATCH 4/4] serial: bfin_uart: Make MMR access compatible with 32 bits bf609 style controller.
-Date: Wed, 16 May 2012 14:22:26 +0800
-Message-ID: <1337149346-5277-4-git-send-email-sonic.adi@gmail.com>
-X-Mailer: git-send-email 1.7.0.4
-In-Reply-To: <1337149346-5277-1-git-send-email-sonic.adi@gmail.com>
-References: <1337149346-5277-1-git-send-email-sonic.adi@gmail.com>
+	Wed, 16 May 2012 02:35:03 -0400
 MIME-Version: 1.0
-Content-Type: text/plain
+X-Originating-IP: [173.13.129.225]
+In-Reply-To: <1336635764-30597-2-git-send-email-hdoyu@nvidia.com>
+References: <1336635764-30597-1-git-send-email-hdoyu@nvidia.com>
+	<1336635764-30597-2-git-send-email-hdoyu@nvidia.com>
+Date: Tue, 15 May 2012 23:35:02 -0700
+Message-ID: <CAOesGMiPvw72006zpSGLBNi-C12MTc_w2QmOPg6YTfXMW+ZSkQ@mail.gmail.com>
+Subject: Re: [PATCH 2/4] ARM: dt: tegra20.dtsi: Add Memory Controller(MC) nodes
+From: Olof Johansson <olof@lixom.net>
+To: Hiroshi DOYU <hdoyu@nvidia.com>
+Cc: linux-tegra@vger.kernel.org, Russell King <linux@arm.linux.org.uk>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Simon Glass <sjg@chromium.org>, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Sonic Zhang <sonic.zhang@analog.com>
+Hi,
 
-Simplify serial data width calculation and adapt to bf609 LCR bit mask.
+Tiny drive-by nit pick.
 
-Signed-off-by: Sonic Zhang <sonic.zhang@analog.com>
----
- drivers/tty/serial/bfin_uart.c |   20 ++++----------------
- 1 files changed, 4 insertions(+), 16 deletions(-)
+On Thu, May 10, 2012 at 12:42 AM, Hiroshi DOYU <hdoyu@nvidia.com> wrote:
+> Add Tegra MC(Memory Controller) nodes for tegra20.dtsi.
+>
+> Signed-off-by: Hiroshi DOYU <hdoyu@nvidia.com>
+> ---
+>  arch/arm/boot/dts/tegra20.dtsi |    7 +++++++
+>  1 files changed, 7 insertions(+), 0 deletions(-)
+>
+> diff --git a/arch/arm/boot/dts/tegra20.dtsi b/arch/arm/boot/dts/tegra20.dtsi
+> index 24129fb..548b42e 100644
+> --- a/arch/arm/boot/dts/tegra20.dtsi
+> +++ b/arch/arm/boot/dts/tegra20.dtsi
+> @@ -211,5 +211,12 @@
+>                compatible = "nvidia,tegra20-ahb";
+>                reg = <0x6000c004 0x10c>; /* AHB Arbitration + Gizmo Controller */
+>        };
+> +
+> +       mc {
 
-diff --git a/drivers/tty/serial/bfin_uart.c b/drivers/tty/serial/bfin_uart.c
-index 7924ba6..bd97db2 100644
---- a/drivers/tty/serial/bfin_uart.c
-+++ b/drivers/tty/serial/bfin_uart.c
-@@ -594,7 +594,7 @@ static unsigned int bfin_serial_tx_empty(struct uart_port *port)
- static void bfin_serial_break_ctl(struct uart_port *port, int break_state)
- {
- 	struct bfin_serial_port *uart = (struct bfin_serial_port *)port;
--	u16 lcr = UART_GET_LCR(uart);
-+	u32 lcr = UART_GET_LCR(uart);
- 	if (break_state)
- 		lcr |= SB;
- 	else
-@@ -1068,7 +1068,7 @@ bfin_serial_console_get_options(struct bfin_serial_port *uart, int *baud,
- 	status = UART_GET_IER(uart) & (ERBFI | ETBEI);
- 	if (status == (ERBFI | ETBEI)) {
- 		/* ok, the port was enabled */
--		u16 lcr, clk;
-+		u32 lcr, clk;
- 
- 		lcr = UART_GET_LCR(uart);
- 
-@@ -1079,20 +1079,8 @@ bfin_serial_console_get_options(struct bfin_serial_port *uart, int *baud,
- 			else
- 				*parity = 'o';
- 		}
--		switch (lcr & 0x03) {
--		case 0:
--			*bits = 5;
--			break;
--		case 1:
--			*bits = 6;
--			break;
--		case 2:
--			*bits = 7;
--			break;
--		case 3:
--			*bits = 8;
--			break;
--		}
-+		*bits = ((lcr & WLS_MASK) >> WLS_OFFSET) + 5;
-+
- 		/* Set DLAB in LCR to Access CLK */
- 		UART_SET_DLAB(uart);
- 
--- 
-1.7.0.4
+It's common to use a more plain english name here, so
+"memory-controller" would be a good name.
 
 
+
+-Olof
