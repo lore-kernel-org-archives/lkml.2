@@ -1,26 +1,17 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759798Ab2EPWZV (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 May 2012 18:25:21 -0400
-Received: from mail-yx0-f174.google.com ([209.85.213.174]:61227 "EHLO
-	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757406Ab2EPWZT convert rfc822-to-8bit (ORCPT
+	id S1760666Ab2EPW3z (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 May 2012 18:29:55 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:36615 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753758Ab2EPW3x (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 May 2012 18:25:19 -0400
-MIME-Version: 1.0
-In-Reply-To: <20120516221143.GA20576@lizard>
-References: <20120516125330.GA15460@lizard>
-	<20120516125658.GD20475@lizard>
-	<CAMbhsRRmcaS7W-eY2eiiBa6xeAeeG+t5Bj4yVmKqkiFbs1bV3Q@mail.gmail.com>
-	<20120516221143.GA20576@lizard>
-Date: Wed, 16 May 2012 15:25:17 -0700
-X-Google-Sender-Auth: r_wa7l3tKmEmc_BuQOemyU4HxA4
-Message-ID: <CAMbhsRS-ZnkRw1Qaf4=ocd4EFTj2+wEkcFwGn7VbKfv7MV63dQ@mail.gmail.com>
-Subject: Re: [PATCH 4/6] pstore/ram: Add some more documentation and examples
-From: Colin Cross <ccross@android.com>
-To: Anton Vorontsov <cbouatmailru@gmail.com>
+	Wed, 16 May 2012 18:29:53 -0400
+Date: Wed, 16 May 2012 15:28:23 -0700
+From: Anton Vorontsov <cbouatmailru@gmail.com>
+To: Kees Cook <keescook@chromium.org>
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Kees Cook <keescook@chromium.org>, Tony Luck <tony.luck@intel.com>,
+        Colin Cross <ccross@android.com>, Tony Luck <tony.luck@intel.com>,
         Arnd Bergmann <arnd@arndb.de>, John Stultz <john.stultz@linaro.org>,
         Shuah Khan <shuahkhan@gmail.com>, arve@android.com,
         Rebecca Schultz Zavin <rebecca@android.com>,
@@ -31,31 +22,62 @@ Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
         WANG Cong <xiyou.wangcong@gmail.com>, linux-kernel@vger.kernel.org,
         devel@driverdev.osuosl.org, linaro-kernel@lists.linaro.org,
         patches@linaro.org, kernel-team@android.com
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
-X-System-Of-Record: true
+Subject: Re: [PATCH 2/6] pstore/ram: Add console messages handling
+Message-ID: <20120516222823.GA22797@lizard>
+References: <20120516125330.GA15460@lizard>
+ <20120516125634.GB20475@lizard>
+ <CAGXu5jKiq-OhCMjf+PkEgyYi3wC3bTR=0nL-FacXDBnOpFZJ5A@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <CAGXu5jKiq-OhCMjf+PkEgyYi3wC3bTR=0nL-FacXDBnOpFZJ5A@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, May 16, 2012 at 3:11 PM, Anton Vorontsov <cbouatmailru@gmail.com> wrote:
-> On Wed, May 16, 2012 at 10:56:09AM -0700, Colin Cross wrote:
-> [...]
->> > +You can specify either RAM memory or peripheral devices' memory. However, when
->> > +specifying RAM, be sure to reserve the memory by issuing memblock_reserve()
->> > +very early in the architecture code, just before platform device registration,
->>
->> Just before platform device registration is way too late. �ARM
->> provides a machine reserve callback to allow board files to call
->> memblock_reserve inside arm_memblock_init() and before mm_init().
->
-> Yeah, and I guess that 'too late' is also true for all architectures,
-> the platform_device_register and friends are most probably unusable
-> before mm_init, and after that it's always too late.
->
-> So the word 'just' is misleading indeed, I'll remove it.
+On Wed, May 16, 2012 at 09:45:35AM -0700, Kees Cook wrote:
+> On Wed, May 16, 2012 at 5:56 AM, Anton Vorontsov
+> <anton.vorontsov@linaro.org> wrote:
+> > This is all straightforward: we just use the last region for
+> > console logging. If there's just one region, we fall-back to
+> > the old behaviour: just a oops/dumps logging.
+> >
+> > Signed-off-by: Anton Vorontsov <anton.vorontsov@linaro.org>
+> > ---
+> >  fs/pstore/ram.c |   39 ++++++++++++++++++++++++++++++---------
+> >  1 file changed, 30 insertions(+), 9 deletions(-)
+> >
+> > diff --git a/fs/pstore/ram.c b/fs/pstore/ram.c
+> > index 9123cce..54213eb 100644
+> > --- a/fs/pstore/ram.c
+> > +++ b/fs/pstore/ram.c
+> > [...]
+> > @@ -142,7 +148,12 @@ static int ramoops_pstore_write(enum pstore_type_id type,
+> >        struct persistent_ram_zone *prz = cxt->przs[cxt->count];
+> >        size_t hlen;
+> >
+> > -       /* Currently ramoops is designed to only store dmesg dumps. */
+> > +       if (type == PSTORE_TYPE_CONSOLE) {
+> > +               if (!cxt->cprz)
+> > +                       return -ENOMEM;
+> > +               persistent_ram_write(cxt->cprz, cxt->pstore.buf, size);
+> > +       }
+> > +
+> >        if (type != PSTORE_TYPE_DMESG)
+> >                return -EINVAL;
+> 
+> Doesn't this mean that type == PSTORE_TYPE_CONSOLE will write to the
+> ram, but then fail with -EINVAL?
 
-I think any reference to the time when platform devices are registered
-is misleading.  There is a very specific point during arch init where
-memblock_reserve is valid, and it is nowhere near platform device
-registration.
+Right you are, there should be 'return 0' for TYPE_CONSOLE. It is
+harmless tho (and unnoticeable, since we can't check return value of
+the ->write() calback and print error, since this would recurse),
+but I'll surely amend that.
+
+Thanks!
+
+-- 
+Anton Vorontsov
+Email: cbouatmailru@gmail.com
