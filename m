@@ -1,71 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965207Ab2EPTiL (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 May 2012 15:38:11 -0400
-Received: from mail-yx0-f174.google.com ([209.85.213.174]:35404 "EHLO
-	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S964799Ab2EPTiH (ORCPT
+	id S1760543Ab2EPTjR (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 May 2012 15:39:17 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:29764 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756043Ab2EPTjP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 May 2012 15:38:07 -0400
-Date: Wed, 16 May 2012 16:38:00 -0300
-From: Gustavo Padovan <gustavo@padovan.org>
-To: "John W. Linville" <linville@tuxdriver.com>,
-        linux-wireless@vger.kernel.org, linux-bluetooth@vger.kernel.org,
+	Wed, 16 May 2012 15:39:15 -0400
+X-Authority-Analysis: v=2.0 cv=cssZYiEi c=1 sm=0 a=ZycB6UtQUfgMyuk2+PxD7w==:17 a=XQbtiDEiEegA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=yiqiDAmUTpBPOHv5gO0A:9 a=PUjeQqilurYA:10 a=ZycB6UtQUfgMyuk2+PxD7w==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 74.67.80.29
+Message-ID: <1337197154.6724.68.camel@gandalf.stny.rr.com>
+Subject: Re: Perf record format portability
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Jiri Olsa <jolsa@redhat.com>
+Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        Dmitry Antipov <dmitry.antipov@linaro.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@redhat.com>,
+        Amit Kucheria <amit.kucheria@linaro.org>, linaro-dev@lists.linaro.org,
         linux-kernel@vger.kernel.org
-Subject: Re: pull request: bluetooth-next 2012-05-16
-Message-ID: <20120516193800.GG1414@joana>
-Mail-Followup-To: Gustavo Padovan <gustavo@padovan.org>,
-	"John W. Linville" <linville@tuxdriver.com>,
-	linux-wireless@vger.kernel.org, linux-bluetooth@vger.kernel.org,
-	linux-kernel@vger.kernel.org
-References: <20120516155340.GC1414@joana>
- <20120516180924.GA28167@tuxdriver.com>
- <20120516192431.GE1414@joana>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120516192431.GE1414@joana>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Date: Wed, 16 May 2012 15:39:14 -0400
+In-Reply-To: <1337196743.6724.66.camel@gandalf.stny.rr.com>
+References: <4FB275EB.5050904@linaro.org>
+	 <20120515155146.GB7864@infradead.org> <4FB38677.8070601@linaro.org>
+	 <20120516145927.GC7864@infradead.org>
+	 <1337187503.6724.50.camel@gandalf.stny.rr.com>
+	 <20120516174825.GA11516@m.brq.redhat.com>
+	 <1337196743.6724.66.camel@gandalf.stny.rr.com>
+Content-Type: text/plain; charset="ISO-8859-15"
+X-Mailer: Evolution 3.2.2-1 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Gustavo Padovan <gustavo@padovan.org> [2012-05-16 16:24:31 -0300]:
+On Wed, 2012-05-16 at 15:32 -0400, Steven Rostedt wrote:
+> On Wed, 2012-05-16 at 19:48 +0200, Jiri Olsa wrote:
+> 
+> > for ppc64(record) vs x86_64(report) I got following report on latest tip:
+> > 
+> > [jolsa@dhcp-26-214 test]$ ../perf report > report.target
+> > Endianness of raw data not corrected!
+> > Warning:
+> > 718 samples with id not present in the header
+> > Warning:
+> > The perf.data file has no samples!
+> > 
 
-> > What did you do here?  I thought that maybe you had pulled from the
-> > wireless tree, but the commit ID is different.
-> 
-> I did pull from there, actually bluetooth tree, but they have the same head
-> now. Something went wrong in the process of re-doing the tree. Sorry for waste
-> you time here, John.
-> 
-> I did a correct merge now, the hashs are the same in bluetooth-next:
-> 
-> 671267b Bluetooth: mgmt: Fix device_connected sending order
-> a7d7723 Bluetooth: notify userspace of security level change
-> 574e02a rtlwifi: fix for race condition when firmware is cached
-> 
-> and in wireless:
-> 
-> 671267b Bluetooth: mgmt: Fix device_connected sending order
-> a7d7723 Bluetooth: notify userspace of security level change
-> 574e02a rtlwifi: fix for race condition when firmware is cached
-> 
-> 	Gustavo
-> 
-> ---
-> 
-> The following changes since commit 341352d13dae752610342923c53ebe461624ee2c:
-> 
->   iwlwifi: fix-up some merge damage from commit 0d6c4a2 (2012-05-08 22:18:09 -0400)
-> 
-> are available in the git repository at:
-> 
->   git://git.kernel.org/pub/scm/linux/kernel/git/bluetooth/bluetooth-next for-upstream
-> 
-> for you to fetch changes up to 48af33a8ff98515915fb40021de91066f2a45d49:
+What does perf script give you. It looks like Frederic took my code for
+this when he ported the original parse-events over to perf. I see the
+setup of these variables in tools/perf/util/trace-event-read.c
 
-I applied a last minute patch and then realized it was wrong. Just removed it,
-the new head is: d839c81372d1f0caee47f87b26a68e91d4ff3847
+If you run 'perf script' on x86 from a ppc perf.dat file, do you still
+get the same errors?
 
-	Gustavo
+-- Steve
+
+
