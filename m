@@ -1,53 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759934Ab2EPMJJ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 May 2012 08:09:09 -0400
-Received: from mail-we0-f174.google.com ([74.125.82.174]:53479 "EHLO
-	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751239Ab2EPMJH convert rfc822-to-8bit (ORCPT
+	id S1759957Ab2EPMJY (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 May 2012 08:09:24 -0400
+Received: from moutng.kundenserver.de ([212.227.17.8]:58990 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752211Ab2EPMJI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 May 2012 08:09:07 -0400
-Subject: Re: Plumbers: Tweaking scheduler policy micro-conf RFP
-Mime-Version: 1.0 (Apple Message framework v1084)
-Content-Type: text/plain; charset=us-ascii
-From: Pantelis Antoniou <pantelis.antoniou@gmail.com>
-In-Reply-To: <54348.1337113582@turing-police.cc.vt.edu>
-Date: Wed, 16 May 2012 15:08:56 +0300
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Vincent Guittot <vincent.guittot@linaro.org>,
-        mou Chen <hi3766691@gmail.com>, linux-kernel@vger.kernel.org,
-        Ingo Molnar <mingo@kernel.org>, torvalds@linux-foundation.org
-Content-Transfer-Encoding: 8BIT
-Message-Id: <3AF99A8F-BF71-43BD-ADB8-4A1FF53F9FFF@gmail.com>
-References: <CAKfTPtDSDAOAdv0GTDswZeRM7TmACrjok+5kddSaQpvy6_6xWw@mail.gmail.com> <CAKfTPtCfiY7A29+e50F+6awd8BjNJjg4=uNN4ReZfdS_4FbpkA@mail.gmail.com> <CANQmPXj_81NBBrTYCkhUO1k1i4WVu0iHwY1_10wDVOFWCSkvsw@mail.gmail.com> <CAKfTPtBhPpQyr1qugbMzq2nENh+zBT+zx_nWQpQ9NPbF=+ppcQ@mail.gmail.com> <833A8DB8-1AB4-45E4-8D44-14A0D782807D@gmail.com> <1337077714.27694.21.camel@twins> <9093E8BA-80E4-4113-B036-0259E5FB44F1@gmail.com> <54348.1337113582@turing-police.cc.vt.edu>
-To: Valdis.Kletnieks@vt.edu
-X-Mailer: Apple Mail (2.1084)
+	Wed, 16 May 2012 08:09:08 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Magnus Damm <magnus.damm@gmail.com>
+Subject: Re: [PATCH] gpio: Emma Mobile GPIO driver V2
+Date: Wed, 16 May 2012 12:09:03 +0000
+User-Agent: KMail/1.12.2 (Linux/3.4.0-rc3; KDE/4.3.2; x86_64; ; )
+Cc: Paul Mundt <lethal@linux-sh.org>, linux-kernel@vger.kernel.org,
+        rjw@sisk.pl, linus.walleij@stericsson.com, linux-sh@vger.kernel.org,
+        horms@verge.net.au, grant.likely@secretlab.ca, olof@lixom.net
+References: <20120515154333.6659.66479.sendpatchset@w520> <20120516072927.GN7988@linux-sh.org> <CANqRtoSSEb9jwEmvbhBuyHp-9BfUSRabQzqjrrVGTFDP-AHutQ@mail.gmail.com>
+In-Reply-To: <CANqRtoSSEb9jwEmvbhBuyHp-9BfUSRabQzqjrrVGTFDP-AHutQ@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201205161209.03985.arnd@arndb.de>
+X-Provags-ID: V02:K0:h4DS8oY3V8s6caVuczyaZgqV9LsMvxGNuQEVo+o+7yY
+ 2gKFUxXx2J8xEsP1KHwjQgl2MSbiGZlN+wmk+IEbV1+p8NtED5
+ lK17XeOI54m8u736W6KsRb4PIxTh6my4kyfbziOwLO+77XW6z3
+ IADOGwr/MeSQbLEoOpLUYt75Q8VSxk7HYufqF1M7I0Bl9Qb0iM
+ 7HfAkaVtyXcCqdJs5QKlisH1i+S2NkSi6jpIoTBMdJF5nZtJ/T
+ QM354CkPSbRYSLLndLsvd2ZL63zplpYmxEsKt58lYyuDk5fvMd
+ mWiMwTo4ucsTPJCiDWXcbfp6Fpcv3zjGcuck38bWWcvhko3YOn
+ w54cufvQo+Xqj2vNvguY=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-On May 15, 2012, at 11:26 PM, Valdis.Kletnieks@vt.edu wrote:
-
-> On Tue, 15 May 2012 14:35:53 +0300, Pantelis Antoniou said:
+On Wednesday 16 May 2012, Magnus Damm wrote:
+> > irq_domain_add_legacy() exists for existing static ranges, which there is
+> > really no reason to be adding in new board/platform support. You don't
+> > have to worry about virq overlap since irq_create_mapping() already wraps
+> > on top of irq_alloc_desc_xxx() for lookup.
 > 
->> Thermal management: How to distribute load to the processors in such
->> a way that the temperature of the die doesn't increase too much that
->> we have to either go to a lower OPP or shut down the core all-together.
->> This is in direct conflict with throughput since we'd have better performance
->> if we could keep the same warmed-up cpu going.
-> 
-> It's not just "temperature of the die".  When you have multiple aisles of 42U
-> racks full of servers, you often hit "must keep average total BTU load per
-> server below X" constraints.  There's plenty of colo's that are only using 40%
-> of their floor space due to cooling constraints (you may be able to get the
-> power company to pull another megawatt of copper into the building, but then
-> you need to find someplace to put another megawatt worth of cooling).
-> 
+> So I intentionally made use of the legacy domain in the non-DT case.
+> This because I want to let the SoC code set the static IRQ ranges via
+> platform data.
 
-Interesting,
+I think it's generally better to use just one code path for both cases,
+if you need both DT and non-DT support, which means you would always
+use irq_domain_add_legacy. Once you have the final patch to convert it
+to DT, you can remove the legacy domain and just convert it to linear.
 
-Never thought about that... 
-
--- Pantelis
-
+	Arnd
