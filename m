@@ -1,55 +1,179 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759571Ab2EPHiP (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 May 2012 03:38:15 -0400
-Received: from bedivere.hansenpartnership.com ([66.63.167.143]:56665 "EHLO
-	bedivere.hansenpartnership.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1759370Ab2EPHiN (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 May 2012 03:38:13 -0400
-Message-ID: <1337153889.2985.5.camel@dabdike.int.hansenpartnership.com>
-Subject: Re: [PATCH] target: Handle ATA_PASS_THROUGH_16 passthrough
-From: James Bottomley <James.Bottomley@HansenPartnership.com>
-To: mc@linux.vnet.ibm.com
-Cc: target-devel@vger.kernel.org,
-        "Nicholas A. Bellinger" <nab@linux-iscsi.org>,
-        linux-scsi@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Stefan Hajnoczi <stefanha@linux.vnet.ibm.com>
-Date: Wed, 16 May 2012 08:38:09 +0100
-In-Reply-To: <1337146409.18429.11.camel@mengcong>
-References: <1337146409.18429.11.camel@mengcong>
+	id S932901Ab2EPHjr (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 May 2012 03:39:47 -0400
+Received: from mprc.pku.edu.cn ([162.105.203.9]:58354 "EHLO mprc.pku.edu.cn"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1759370Ab2EPHjp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 16 May 2012 03:39:45 -0400
+Message-ID: <1337153329.1751.5.camel@ubuntu.ubuntu-domain>
+Subject: Re: [PATCH v2 1/3] zsmalloc: support zsmalloc to ARM, MIPS, SUPERH
+From: Guan Xuetao <gxt@mprc.pku.edu.cn>
+To: Minchan Kim <minchan@kernel.org>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Nitin Gupta <ngupta@vflare.org>,
+        Seth Jennings <sjenning@linux.vnet.ibm.com>,
+        Dan Magenheimer <dan.magenheimer@oracle.com>,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        Russell King <linux@arm.linux.org.uk>,
+        Ralf Baechle <ralf@linux-mips.org>, Paul Mundt <lethal@linux-sh.org>,
+        Chen Liqin <liqin.chen@sunplusct.com>
+Date: Wed, 16 May 2012 15:28:49 +0800
+In-Reply-To: <1337133919-4182-1-git-send-email-minchan@kernel.org>
+References: <1337133919-4182-1-git-send-email-minchan@kernel.org>
 Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3 
+X-Mailer: Evolution 3.2.2- 
 Content-Transfer-Encoding: 7bit
 Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2012-05-16 at 13:33 +0800, mengcong wrote:
-> The cdrecord uses ATA_PASS_THROUGH_16 command while burning CDs
-> with a SATA CD-ROM. This patch adds support to it so that PSCSI 
-> CD-ROM passthrough works with the cdrecord.
+On Wed, 2012-05-16 at 11:05 +0900, Minchan Kim wrote:
+> zsmalloc uses set_pte and __flush_tlb_one for performance but
+> many architecture don't support it. so this patch removes
+> set_pte and __flush_tlb_one which are x86 dependency.
+> Instead of it, use local_flush_tlb_kernel_range which are available
+> by more architectures. It would be better than supporting only x86
+> and last patch in series will enable again with supporting
+> local_flush_tlb_kernel_range in x86.
 > 
-> Signed-off-by: Cong Meng <mc@linux.vnet.ibm.com>
+> About local_flush_tlb_kernel_range,
+> If architecture is very smart, it could flush only tlb entries related to vaddr.
+> If architecture is smart, it could flush only tlb entries related to a CPU.
+> If architecture is _NOT_ smart, it could flush all entries of all CPUs.
+> So, it would be best to support both portability and performance.
+> 
+> Cc: Russell King <linux@arm.linux.org.uk>
+> Cc: Ralf Baechle <ralf@linux-mips.org>
+> Cc: Paul Mundt <lethal@linux-sh.org>
+> Cc: Guan Xuetao <gxt@mprc.pku.edu.cn>
+> Cc: Chen Liqin <liqin.chen@sunplusct.com>
+> Signed-off-by: Minchan Kim <minchan@kernel.org>
 > ---
-[...]
-> diff --git a/include/scsi/scsi.h b/include/scsi/scsi.h
-> index f34a5a8..f6dcd25 100644
-> --- a/include/scsi/scsi.h
-> +++ b/include/scsi/scsi.h
-> @@ -116,6 +116,7 @@ struct scsi_cmnd;
->  #define PERSISTENT_RESERVE_IN 0x5e
->  #define PERSISTENT_RESERVE_OUT 0x5f
->  #define VARIABLE_LENGTH_CMD   0x7f
-> +#define ATA_PASS_THROUGH_16   0x85
->  #define REPORT_LUNS           0xa0
->  #define SECURITY_PROTOCOL_IN  0xa2
->  #define MAINTENANCE_IN        0xa3
+> 
+> Need double check about supporting local_flush_tlb_kernel_range
+> in ARM, MIPS, SUPERH maintainers. And I will Ccing unicore32 and
+> score maintainers because arch directory in those arch have
+> local_flush_tlb_kernel_range, too but I'm very unfamiliar with those
+> architecture so pass it to maintainers.
+> I didn't coded up dumb local_flush_tlb_kernel_range which flush
+> all cpus. I expect someone need ZSMALLOC will implement it easily in future.
+> Seth might support it in PowerPC. :)
+> 
+> 
+>  drivers/staging/zsmalloc/Kconfig         |    6 ++---
+>  drivers/staging/zsmalloc/zsmalloc-main.c |   36 +++++++++++++++++++++---------
+>  drivers/staging/zsmalloc/zsmalloc_int.h  |    1 -
+>  3 files changed, 29 insertions(+), 14 deletions(-)
+> 
+> diff --git a/drivers/staging/zsmalloc/Kconfig b/drivers/staging/zsmalloc/Kconfig
+> index a5ab720..def2483 100644
+> --- a/drivers/staging/zsmalloc/Kconfig
+> +++ b/drivers/staging/zsmalloc/Kconfig
+> @@ -1,9 +1,9 @@
+>  config ZSMALLOC
+>  	tristate "Memory allocator for compressed pages"
+> -	# X86 dependency is because of the use of __flush_tlb_one and set_pte
+> +	# arch dependency is because of the use of local_unmap_kernel_range
+>  	# in zsmalloc-main.c.
+> -	# TODO: convert these to portable functions
+> -	depends on X86
+> +	# TODO: implement local_unmap_kernel_range in all architecture.
+> +	depends on (ARM || MIPS || SUPERH)
+I suggest removing above line, so if I want to use zsmalloc, I could
+enable this configuration easily.
 
-We already have this: they're called ATA_16 (and ATA_12) in this very
-file.
+>  	default n
+>  	help
+>  	  zsmalloc is a slab-based memory allocator designed to store
+> diff --git a/drivers/staging/zsmalloc/zsmalloc-main.c b/drivers/staging/zsmalloc/zsmalloc-main.c
+> index 4496737..8a8b08f 100644
+> --- a/drivers/staging/zsmalloc/zsmalloc-main.c
+> +++ b/drivers/staging/zsmalloc/zsmalloc-main.c
+> @@ -442,7 +442,7 @@ static int zs_cpu_notifier(struct notifier_block *nb, unsigned long action,
+>  		area = &per_cpu(zs_map_area, cpu);
+>  		if (area->vm)
+>  			break;
+> -		area->vm = alloc_vm_area(2 * PAGE_SIZE, area->vm_ptes);
+> +		area->vm = alloc_vm_area(2 * PAGE_SIZE, NULL);
+>  		if (!area->vm)
+>  			return notifier_from_errno(-ENOMEM);
+>  		break;
+> @@ -696,13 +696,22 @@ void *zs_map_object(struct zs_pool *pool, void *handle)
+>  	} else {
+>  		/* this object spans two pages */
+>  		struct page *nextp;
+> +		struct page *pages[2];
+> +		struct page **page_array = &pages[0];
+> +		int err;
+>  
+>  		nextp = get_next_page(page);
+>  		BUG_ON(!nextp);
+>  
+> +		page_array[0] = page;
+> +		page_array[1] = nextp;
+>  
+> -		set_pte(area->vm_ptes[0], mk_pte(page, PAGE_KERNEL));
+> -		set_pte(area->vm_ptes[1], mk_pte(nextp, PAGE_KERNEL));
+> +		/*
+> +		 * map_vm_area never fail because we already allocated
+> +		 * pages for page table in alloc_vm_area.
+> +		 */
+> +		err = map_vm_area(area->vm, PAGE_KERNEL, &page_array);
+> +		BUG_ON(err);
+I think WARN_ON() is better than BUG_ON() here.
 
-James
+>  
+>  		/* We pre-allocated VM area so mapping can never fail */
+>  		area->vm_addr = area->vm->addr;
+> @@ -712,6 +721,15 @@ void *zs_map_object(struct zs_pool *pool, void *handle)
+>  }
+>  EXPORT_SYMBOL_GPL(zs_map_object);
+>  
+> +static void local_unmap_kernel_range(unsigned long addr, unsigned long size)
+> +{
+> +	unsigned long end = addr + size;
+> +
+> +	flush_cache_vunmap(addr, end);
+> +	unmap_kernel_range_noflush(addr, size);
+> +	local_flush_tlb_kernel_range(addr, end);
+> +}
+> +
+>  void zs_unmap_object(struct zs_pool *pool, void *handle)
+>  {
+>  	struct page *page;
+> @@ -730,14 +748,12 @@ void zs_unmap_object(struct zs_pool *pool, void *handle)
+>  	off = obj_idx_to_offset(page, obj_idx, class->size);
+>  
+>  	area = &__get_cpu_var(zs_map_area);
+> -	if (off + class->size <= PAGE_SIZE) {
+> +	if (off + class->size <= PAGE_SIZE)
+>  		kunmap_atomic(area->vm_addr);
+> -	} else {
+> -		set_pte(area->vm_ptes[0], __pte(0));
+> -		set_pte(area->vm_ptes[1], __pte(0));
+> -		__flush_tlb_one((unsigned long)area->vm_addr);
+> -		__flush_tlb_one((unsigned long)area->vm_addr + PAGE_SIZE);
+> -	}
+> +	else
+> +		local_unmap_kernel_range((unsigned long)area->vm->addr,
+> +					PAGE_SIZE * 2);
+> +
+>  	put_cpu_var(zs_map_area);
+>  }
+>  EXPORT_SYMBOL_GPL(zs_unmap_object);
+> diff --git a/drivers/staging/zsmalloc/zsmalloc_int.h b/drivers/staging/zsmalloc/zsmalloc_int.h
+> index 6fd32a9..eaec845 100644
+> --- a/drivers/staging/zsmalloc/zsmalloc_int.h
+> +++ b/drivers/staging/zsmalloc/zsmalloc_int.h
+> @@ -111,7 +111,6 @@ static const int fullness_threshold_frac = 4;
+>  
+>  struct mapping_area {
+>  	struct vm_struct *vm;
+> -	pte_t *vm_ptes[2];
+>  	char *vm_addr;
+>  };
+>  
 
 
