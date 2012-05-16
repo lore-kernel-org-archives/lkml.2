@@ -1,85 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758893Ab2EPC3h (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 May 2012 22:29:37 -0400
-Received: from mail-wg0-f44.google.com ([74.125.82.44]:42299 "EHLO
-	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757497Ab2EPC3g (ORCPT
+	id S1758862Ab2EPCdm (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 May 2012 22:33:42 -0400
+Received: from mail-gg0-f174.google.com ([209.85.161.174]:47039 "EHLO
+	mail-gg0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758810Ab2EPCdk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 May 2012 22:29:36 -0400
-From: Marek Vasut <marek.vasut@gmail.com>
-To: Axel Lin <axel.lin@gmail.com>
-Subject: Re: [PATCH RFT 3/3] regulator: isl6271a: Convert to set_voltage_sel and regulator_map_voltage_linear
-Date: Wed, 16 May 2012 04:29:31 +0200
-User-Agent: KMail/1.13.7 (Linux/3.2.0-1-amd64; KDE/4.7.4; x86_64; ; )
-Cc: linux-kernel@vger.kernel.org, Liam Girdwood <lrg@ti.com>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>
-References: <1337134167.5940.2.camel@phoenix> <1337134273.5940.4.camel@phoenix>
-In-Reply-To: <1337134273.5940.4.camel@phoenix>
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="us-ascii"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201205160429.31382.marek.vasut@gmail.com>
+	Tue, 15 May 2012 22:33:40 -0400
+From: Robert Lee <rob.lee@linaro.org>
+To: kernel@pengutronix.de
+Cc: shawn.guo@linaro.org, u.kleine-koenig@pengutronix.de,
+        richard.zhao@freescale.com, amit.kucheria@linaro.org,
+        daniel.lezcano@linaro.org, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org, linaro-dev@lists.linaro.org,
+        patches@linaro.org, jj@chaosbits.net
+Subject: [PATCH v4 0/7] cleanup imx5 idle, add imx5/6 cpuidle
+Date: Tue, 15 May 2012 21:33:29 -0500
+Message-Id: <1337135616-8988-1-git-send-email-rob.lee@linaro.org>
+X-Mailer: git-send-email 1.7.10
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Dear Axel Lin,
+Cleanup up imx5 idle code and enable imx5 low powe idle for imx53.
 
-> Signed-off-by: Axel Lin <axel.lin@gmail.com>
-> ---
->  drivers/regulator/isl6271a-regulator.c |   21 ++++++---------------
->  1 files changed, 6 insertions(+), 15 deletions(-)
-> 
-> diff --git a/drivers/regulator/isl6271a-regulator.c
-> b/drivers/regulator/isl6271a-regulator.c index 00cb288..56d273f 100644
-> --- a/drivers/regulator/isl6271a-regulator.c
-> +++ b/drivers/regulator/isl6271a-regulator.c
-> @@ -50,25 +50,15 @@ static int isl6271a_get_voltage_sel(struct
-> regulator_dev *dev) return idx;
->  }
-> 
-> -static int isl6271a_set_voltage(struct regulator_dev *dev,
-> -				int minuV, int maxuV,
-> -				unsigned *selector)
-> +static int isl6271a_set_voltage_sel(struct regulator_dev *dev,
-> +				    unsigned selector)
->  {
->  	struct isl_pmic *pmic = rdev_get_drvdata(dev);
-> -	int err, data;
-> -
-> -	if (minuV < ISL6271A_VOLTAGE_MIN || minuV > ISL6271A_VOLTAGE_MAX)
-> -		return -EINVAL;
-> -	if (maxuV < ISL6271A_VOLTAGE_MIN || maxuV > ISL6271A_VOLTAGE_MAX)
-> -		return -EINVAL;
-> -
-> -	data = DIV_ROUND_UP(minuV - ISL6271A_VOLTAGE_MIN,
-> -			    ISL6271A_VOLTAGE_STEP);
-> -	*selector = data;
-> +	int err;
-> 
->  	mutex_lock(&pmic->mtx);
-> 
-> -	err = i2c_smbus_write_byte(pmic->client, data);
-> +	err = i2c_smbus_write_byte(pmic->client, selector);
->  	if (err < 0)
->  		dev_err(&pmic->client->dev, "Error setting voltage\n");
-> 
-> @@ -78,8 +68,9 @@ static int isl6271a_set_voltage(struct regulator_dev
-> *dev,
-> 
->  static struct regulator_ops isl_core_ops = {
->  	.get_voltage_sel = isl6271a_get_voltage_sel,
-> -	.set_voltage	= isl6271a_set_voltage,
-> +	.set_voltage_sel = isl6271a_set_voltage_sel,
->  	.list_voltage	= regulator_list_voltage_linear,
-> +	.map_voltage	= regulator_map_voltage_linear,
->  };
-> 
->  static int isl6271a_get_fixed_voltage(struct regulator_dev *dev)
+Add common imx cpuidle initialization functionality and add a i.MX5 and i.MX6Q
+platform cpuidle implementation.
 
-Hm well, I hope this won't break the driver. I can't test it any soon.
+Based on v3.4-rc7 plus recently submitted/accepted MACHINE_INIT late_initcall
+ patch: http://www.spinics.net/lists/arm-kernel/msg171620.html
 
-Best regards,
-Marek Vasut
+v4 changes:
+ * Added several imx5 idle cleanups to series.
+ * Modified imx_io_p2v function to allow common imx5 AIPS2 bus virutal address
+ * Added comment to tzic_wakeup_enable().
+ * Movied imx5 idle code from mm-imx5.c to pm-imx5.c.
+ * Removed unnecessary time consuming code execution that ran on each idle
+   instance.
+ * modified imx5_pm_init to be a late_initcall
+ * added late_initcall to all imx53 MACHINE_START entries.
+ * enabled imx5 low power idle for imx53
+ * rebased cpuidle driver on top of imx5 cleanup changes.
+ * modified cpuidle driver exit time to reflect removal of unnecessary code
+   
+
+v3 changes:
+ * removed file introduced in v1 no longer needed after v2 [per Shawn Guo]
+ * re-ordered added #includes in alphabetical order [per Shawn Guo]
+ * Remove if(!drv) check to allow handling by stack trace [per Sascha Hauer]
+ * Added missing return value in error meesage [per Shawn Guo]
+ * fixed (void *) casting problem pointed out Sasha Hauer.  Used a different
+   type of casting to properly give warning on improper casting:
+   	arm_pm_idle = (void (*)(void))imx5_idle;
+   Used this casting instead of adding a dummy caller function because
+   adding the dummy function appears to unnecessarily introduce the following
+   additional operations:
+	static void imx5_pm_idle(void)
+	{
+	  a0:	e1a0c00d 	mov	ip, sp
+	  a4:	e92dd800 	push	{fp, ip, lr, pc}
+	  a8:	e24cb004 	sub	fp, ip, #4
+		imx5_idle();
+	  ac:	ebffffd3 	bl	0 <imx5_idle>
+	}
+	  b0:	e89da800 	ldm	sp, {fp, sp, pc}
+
+http://permalink.gmane.org/gmane.linux.linaro.devel/11653
+
+v2 changes:
+ * Removed some unnecessary  spaces [per Jess Juhl]
+ * Added return value for an error message [per Sascha Hauer]
+ * Reworked init scheme to use device tree late_initcall [per Sascha and Shawn]
+ * Moved imx6q and imx5 cpuidle functionality to existing files.
+
+https://lkml.org/lkml/2012/5/1/363
+
+v1 initial submission:
+
+https://lkml.org/lkml/2012/4/16/644
+
+Robert Lee (7):
+  ARM: imx: Modify IMX_IO_P2V macro
+  ARM: imx: Add comments to tzic_enable_waker()
+  ARM: imx: clean and consolidate imx5 suspend and idle code
+  ARM: imx: Enable imx53 low power idle
+  ARM: imx: Add common imx cpuidle init functionality.
+  ARM: imx: Add imx5 cpuidle
+  ARM: imx: Add imx6q cpuidle driver
+
+ arch/arm/mach-imx/clock-mx51-mx53.c       |    1 +
+ arch/arm/mach-imx/imx53-dt.c              |    1 +
+ arch/arm/mach-imx/mach-imx6q.c            |   19 ++++++
+ arch/arm/mach-imx/mach-mx53_ard.c         |    1 +
+ arch/arm/mach-imx/mach-mx53_evk.c         |    1 +
+ arch/arm/mach-imx/mach-mx53_loco.c        |    1 +
+ arch/arm/mach-imx/mach-mx53_smd.c         |    1 +
+ arch/arm/mach-imx/mm-imx5.c               |   25 ++-----
+ arch/arm/mach-imx/pm-imx5.c               |  103 +++++++++++++++++++++--------
+ arch/arm/plat-mxc/Makefile                |    1 +
+ arch/arm/plat-mxc/cpuidle.c               |   80 ++++++++++++++++++++++
+ arch/arm/plat-mxc/include/mach/common.h   |    4 +-
+ arch/arm/plat-mxc/include/mach/cpuidle.h  |   22 ++++++
+ arch/arm/plat-mxc/include/mach/hardware.h |   25 ++++---
+ arch/arm/plat-mxc/tzic.c                  |    4 ++
+ 15 files changed, 231 insertions(+), 58 deletions(-)
+ create mode 100644 arch/arm/plat-mxc/cpuidle.c
+ create mode 100644 arch/arm/plat-mxc/include/mach/cpuidle.h
+
+-- 
+1.7.10
+
