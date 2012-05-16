@@ -1,62 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760636Ab2EPUxw (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 May 2012 16:53:52 -0400
-Received: from a.ns.miles-group.at ([95.130.255.143]:47834 "EHLO radon.swed.at"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755330Ab2EPUwN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 May 2012 16:52:13 -0400
-From: Richard Weinberger <richard@nod.at>
-To: linux-mtd@lists.infradead.org
-Cc: tglx@linutronix.de, dedekind1@gmail.com, linux-kernel@vger.kernel.org,
-        Heinz.Egger@linutronix.de, tim.bird@am.sony.com
-Subject: [RFC v5] UBI: Fastmap support (aka checkpointing)
-Date: Wed, 16 May 2012 22:51:55 +0200
-Message-Id: <1337201522-86521-1-git-send-email-richard@nod.at>
-X-Mailer: git-send-email 1.7.6.5
+	id S1755330Ab2EPUyb (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 May 2012 16:54:31 -0400
+Received: from out02.mta.xmission.com ([166.70.13.232]:32945 "EHLO
+	out02.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757080Ab2EPUy3 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 16 May 2012 16:54:29 -0400
+From: ebiederm@xmission.com (Eric W. Biederman)
+To: Oleg Nesterov <oleg@redhat.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Pavel Emelyanov <xemul@parallels.com>,
+        Cyrill Gorcunov <gorcunov@openvz.org>,
+        Louis Rilling <louis.rilling@kerlabs.com>,
+        Mike Galbraith <efault@gmx.de>
+References: <1335604790.5995.22.camel@marge.simpson.net>
+	<20120428142605.GA20248@redhat.com> <m14ns355ru.fsf@fess.ebiederm.org>
+	<20120429165846.GA19054@redhat.com>
+	<1335754867.17899.4.camel@marge.simpson.net>
+	<m1zk9rmyh4.fsf@fess.ebiederm.org>
+	<20120501134214.f6b44f4a.akpm@linux-foundation.org>
+	<87havs7rvv.fsf_-_@xmission.com> <8762c87rrd.fsf_-_@xmission.com>
+	<20120516183920.GA19975@redhat.com>
+Date: Wed, 16 May 2012 13:54:17 -0700
+In-Reply-To: <20120516183920.GA19975@redhat.com> (Oleg Nesterov's message of
+	"Wed, 16 May 2012 20:39:20 +0200")
+Message-ID: <878vgrsv7q.fsf@xmission.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.3 (gnu/linux)
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+X-XM-SPF: eid=;;;mid=;;;hst=in01.mta.xmission.com;;;ip=208.38.5.102;;;frm=ebiederm@xmission.com;;;spf=neutral
+X-XM-AID: U2FsdGVkX1/Ta7uUc+Xys6B5IMWQ7SVdvuSufqfio1c=
+X-SA-Exim-Connect-IP: 208.38.5.102
+X-SA-Exim-Mail-From: ebiederm@xmission.com
+X-Spam-Report: * -1.0 ALL_TRUSTED Passed through trusted hosts only via SMTP
+	*  0.0 TVD_RCVD_IP TVD_RCVD_IP
+	*  1.5 XMNoVowels Alpha-numberic number with no vowels
+	*  0.1 XMSubLong Long Subject
+	*  0.0 T_TM2_M_HEADER_IN_MSG BODY: T_TM2_M_HEADER_IN_MSG
+	* -0.0 BAYES_20 BODY: Bayes spam probability is 5 to 20%
+	*      [score: 0.0678]
+	* -0.0 DCC_CHECK_NEGATIVE Not listed in DCC
+	*      [sa05 1397; Body=1 Fuz1=1 Fuz2=1]
+	*  0.0 T_TooManySym_01 4+ unique symbols in subject
+X-Spam-DCC: XMission; sa05 1397; Body=1 Fuz1=1 Fuz2=1 
+X-Spam-Combo: ;Oleg Nesterov <oleg@redhat.com>
+X-Spam-Relay-Country: 
+Subject: Re: [PATCH 2/3] pidns: Guarantee that the pidns init will be the last pidns process reaped.
+X-Spam-Flag: No
+X-SA-Exim-Version: 4.2.1 (built Fri, 06 Aug 2010 16:31:04 -0600)
+X-SA-Exim-Scanned: Yes (on in01.mta.xmission.com)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is a bug-fix release. v4 handled static volumes wrong.
-v6 will address everything that Artem pointed out.
+Oleg Nesterov <oleg@redhat.com> writes:
 
-v1: https://lwn.net/Articles/481612/
-v2: https://lwn.net/Articles/496586/
-v3: Didn't release it to linux-mtd
-v4: http://article.gmane.org/gmane.linux.kernel/1297626
+> Eric, sorry for the huge delay, I was on vacation when you sent this patch...
+>
+> On 05/06, Eric W. Biederman wrote:
+>>
+>> @@ -798,6 +815,12 @@ static void forget_original_parent(struct task_struct *father)
+>>  	exit_ptrace(father);
+>>  	reaper = find_new_reaper(father);
+>>
+>> +	/* Return immediately if we aren't going to reparent anything */
+>> +	if (unlikely(reaper == father)) {
+>> +		write_unlock_irq(&tasklist_lock);
+>> +		return;
+>> +	}
+>
+> I was confused by the comment. Afaics, it is not that "we aren't
+> going to reparent", we need this change because we can't "reparent"
+> to the same thread, list_for_each_entry_safe() below can never stop.
+> But this is off-topic...
 
-Changes since v1:
-       - renamed it to UBIVIS (at least in Kconfig)
-       - UBIVIS parameters are now configurable via Kconfig
-       - several bugs have been fixed (design and implementation bugs)
-       - added lots of comments to make the review process easier
-       - made checkpatch.pl happy
+True.  We will get stuck if we try to reparent to the same process.
 
-Changes since v2:
-       - minor bugs have been fixed
-       - renamed it to UBI fastmap (as Artem requested)
+> Hmm. I don't think the patch is 100% correct. Afaics, this needs more
+> delay_pidns_leader() checks.
+>
+> For example. Suppose we have a CLONE_NEWPID zombie I, it has an
+> EXIT_DEAD child D so delay_pidns_leader(I) == T.
+>
+> Now suppose that I->real_parent exits, lets denote this task as P.
+>
+> Suppose that P->real_parent ignores SIGCHLD.
+>
+> In this case P will do release_task(I) prematurely. And worse, when
+> D finally does realease_task(D) it will do realease_task(I) again.
 
-Changes since v3:
-       - changed the on-flash layout (added padding fields, turned the
-         EBA storage into an array)
-       - fixed some corner cases (the protection queue needed some extra work)
-       - removed the data type hint logic
-       - rebased to Artems mtd tree
+Good point.  I will fix that and post a patch shortly.  It doesn't
+need a full delay_pidns_leader test just a test for children.
 
-Changes since v4:
-       - fixed static volume handling (used_ebs and last_data_bytes contained
-         bad values in some cases)
-	
-git://git.kernel.org/pub/scm/linux/kernel/git/rw/ubi2.git ubi2/v5
+In looking for any other weird corner case bugs I am noticing that
+I don't think I handled the case of a ptraced init quite right.
+I don't understand the change signaling semantics when the
+ptracer is our parent.
 
-[PATCH 1/7] [RFC] UBI: Export next_sqnum()
-[PATCH 2/7] [RFC] UBI: Export compare_lebs()
-[PATCH 3/7] [RFC] UBI: Add fastmap on-flash layout
-[PATCH 4/7] [RFC] UBI: Add fastmap structs to ubi_device
-[PATCH 5/7] [RFC] UBI: Make wl subsystem fastmap aware
-[PATCH 6/7] [RFC] UBI: Implement fastmapping support
-[PATCH 7/7] [RFC] UBI: Wire up fastmap support
-
-Thanks,
-//richard
+Eric
