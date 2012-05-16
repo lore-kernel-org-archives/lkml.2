@@ -1,57 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754857Ab2EPPRt (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 May 2012 11:17:49 -0400
-Received: from mail-ob0-f174.google.com ([209.85.214.174]:47005 "EHLO
-	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754201Ab2EPPRr convert rfc822-to-8bit (ORCPT
+	id S1754593Ab2EPPU1 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 May 2012 11:20:27 -0400
+Received: from e33.co.us.ibm.com ([32.97.110.151]:53697 "EHLO
+	e33.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754161Ab2EPPUZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 May 2012 11:17:47 -0400
-MIME-Version: 1.0
-In-Reply-To: <20120516145032.GA1139@kroah.com>
-References: <1337108498-4104-1-git-send-email-js1304@gmail.com>
-	<alpine.DEB.2.00.1205151527150.11923@router.home>
-	<alpine.LFD.2.02.1205160935340.1763@tux.localdomain>
-	<CAAmzW4PWQiKbs+mdnwG18R=iWHLT=4Bwn8iA110PJaKuvG_AQQ@mail.gmail.com>
-	<20120516145032.GA1139@kroah.com>
-Date: Thu, 17 May 2012 00:17:46 +0900
-Message-ID: <CAAmzW4PA26qX8H1boKaHSh0m0S-aw7CVCTMeeijS-rCQEQzUdQ@mail.gmail.com>
-Subject: Re: [PATCH] slub: fix a memory leak in get_partial_node()
-From: JoonSoo Kim <js1304@gmail.com>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: Pekka Enberg <penberg@kernel.org>, Christoph Lameter <cl@linux.com>,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        stable@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	Wed, 16 May 2012 11:20:25 -0400
+Subject: Re: [PATCH RFC] tun: experimental zero copy tx support
+From: Shirley Ma <mashirle@us.ibm.com>
+To: "Michael S. Tsirkin" <mst@redhat.com>
+Cc: "David S. Miller" <davem@davemloft.net>,
+        Stephen Hemminger <shemminger@vyatta.com>,
+        Joe Perches <joe@perches.com>, Jason Wang <jasowang@redhat.com>,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Ian.Campbell@citrix.com, kvm@vger.kernel.org
+In-Reply-To: <20120514183929.GB17086@redhat.com>
+References: <20120513155206.GA26847@redhat.com>
+	 <1337016890.3851.20.camel@oc3660625478.ibm.com>
+	 <20120514183929.GB17086@redhat.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Wed, 16 May 2012 08:16:55 -0700
+Message-ID: <1337181415.10741.18.camel@oc3660625478.ibm.com>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 (2.28.3-24.el6) 
+Content-Transfer-Encoding: 7bit
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 12051615-2398-0000-0000-000006B1254E
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2012/5/16 Greg Kroah-Hartman <gregkh@linuxfoundation.org>:
->> I read stable_kernel_rules.txt, this article tells me I must note
->> upstream commit ID.
->> Above patch is not included in upstream currently, so I can't find
->> upstream commit ID.
->> Is 'Acked-by from MAINTAINER' sufficient for submitting to stable-kernel?
->> Is below format right for stable submission format?
->
-> No.
->
-> Please read the second item in the list that says: "Procedure for
-> submitting patches to the -stable tree" in the file,
-> Documentation/stable_kernel_rulest.txt.  It states:
->
->  - To have the patch automatically included in the stable tree, add the tag
->     Cc: stable@vger.kernel.org
->   in the sign-off area. Once the patch is merged it will be applied to
->   the stable tree without anything else needing to be done by the author
->   or subsystem maintainer.
->
-> Does that help?
->
-> thanks,
->
-> greg k-h
+On Mon, 2012-05-14 at 21:39 +0300, Michael S. Tsirkin wrote:
+> > Hello Mike,
+> > 
+> > Have you tested this patch? I think the difference between macvtap
+> and
+> > tap is tap forwarding the packet to bridge. The zerocopy is disabled
+> in
+> > this case.
+> > 
+> > Shirley
+> 
+> Testing in progress, but the patchset I pointed to enables
+> zerocopy with bridge. 
 
-Thanks, very helpful.
+Hello Mike,
+
+You meant this patch or another patchset for enabling bridge zerocopy?
+
+I remembered we disabled forward skb zerocopy since the user space
+program might hold the buffers too long or forever.
+
+In tap/bridge case, when the tx buffers will be released?
+
+Thanks
+Shirley
+
