@@ -1,105 +1,126 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760469Ab2EPTIu (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 May 2012 15:08:50 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:28919 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1760445Ab2EPTIr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 May 2012 15:08:47 -0400
-Date: Wed, 16 May 2012 15:15:00 -0300
-From: Marcelo Tosatti <mtosatti@redhat.com>
+	id S1760504Ab2EPTJK (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 May 2012 15:09:10 -0400
+Received: from e37.co.us.ibm.com ([32.97.110.158]:46821 "EHLO
+	e37.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1760482Ab2EPTJF (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 16 May 2012 15:09:05 -0400
+Subject: Re: [V2 PATCH 9/9] vhost: zerocopy: poll vq in zerocopy callback
+From: Shirley Ma <mashirle@us.ibm.com>
 To: "Michael S. Tsirkin" <mst@redhat.com>
-Cc: x86@kernel.org, kvm@vger.kernel.org, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, Avi Kivity <avi@redhat.com>,
-        gleb@redhat.com, Linus Torvalds <torvalds@linux-foundation.org>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCHv4 3/5] kvm: host side for eoi optimization
-Message-ID: <20120516181500.GA23791@amt.cnet>
-References: <cover.1337168687.git.mst@redhat.com>
- <42ba7beaa25855997e02fea91a11c9224c51720e.1337168687.git.mst@redhat.com>
- <20120516154940.GA20549@amt.cnet>
- <20120516162247.GA10676@redhat.com>
- <20120516172058.GA22861@amt.cnet>
- <20120516175856.GD10769@redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120516175856.GD10769@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Cc: Jason Wang <jasowang@redhat.com>, eric.dumazet@gmail.com,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        ebiederm@xmission.com, davem@davemloft.net
+In-Reply-To: <20120516183629.GJ10769@redhat.com>
+References: <20120502033901.11782.13157.stgit@amd-6168-8-1.englab.nay.redhat.com>
+	 <20120502034254.11782.27314.stgit@amd-6168-8-1.englab.nay.redhat.com>
+	 <1337100630.8220.4.camel@oc3660625478.ibm.com> <4FB317C8.90002@redhat.com>
+	 <1337181027.10741.13.camel@oc3660625478.ibm.com>
+	 <20120516151444.GC9934@redhat.com>
+	 <1337189525.10741.24.camel@oc3660625478.ibm.com>
+	 <20120516183629.GJ10769@redhat.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Wed, 16 May 2012 12:08:23 -0700
+Message-ID: <1337195303.10741.37.camel@oc3660625478.ibm.com>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 (2.28.3-24.el6) 
+Content-Transfer-Encoding: 7bit
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 12051619-7408-0000-0000-00000517E85A
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, May 16, 2012 at 08:58:57PM +0300, Michael S. Tsirkin wrote:
-> On Wed, May 16, 2012 at 02:20:58PM -0300, Marcelo Tosatti wrote:
-> > On Wed, May 16, 2012 at 07:22:47PM +0300, Michael S. Tsirkin wrote:
-> > > On Wed, May 16, 2012 at 12:49:40PM -0300, Marcelo Tosatti wrote:
-> > > > > @@ -1245,9 +1306,20 @@ int kvm_get_apic_interrupt(struct kvm_vcpu *vcpu)
-> > > > >  	int vector = kvm_apic_has_interrupt(vcpu);
-> > > > >  	struct kvm_lapic *apic = vcpu->arch.apic;
-> > > > >  
-> > > > > -	if (vector == -1)
-> > > > > +	/* Detect interrupt nesting and disable EOI optimization */
-> > > > > +	if (pv_eoi_enabled(vcpu) && vector == -2)
-> > > > > +		pv_eoi_clr_pending(vcpu);
-> > > > > +
-> > > > > +	if (vector < 0)
+On Wed, 2012-05-16 at 21:36 +0300, Michael S. Tsirkin wrote:
+> On Wed, May 16, 2012 at 10:32:05AM -0700, Shirley Ma wrote:
+> > On Wed, 2012-05-16 at 18:14 +0300, Michael S. Tsirkin wrote:
+> > > On Wed, May 16, 2012 at 08:10:27AM -0700, Shirley Ma wrote:
+> > > > On Wed, 2012-05-16 at 10:58 +0800, Jason Wang wrote:
+> > > > > >>   drivers/vhost/vhost.c |    1 +
+> > > > > >>   1 files changed, 1 insertions(+), 0 deletions(-)
+> > > > > >>
+> > > > > >> diff --git a/drivers/vhost/vhost.c b/drivers/vhost/vhost.c
+> > > > > >> index 947f00d..7b75fdf 100644
+> > > > > >> --- a/drivers/vhost/vhost.c
+> > > > > >> +++ b/drivers/vhost/vhost.c
+> > > > > >> @@ -1604,6 +1604,7 @@ void vhost_zerocopy_callback(void
+> *arg)
+> > > > > >>          struct vhost_ubuf_ref *ubufs = ubuf->arg;
+> > > > > >>          struct vhost_virtqueue *vq = ubufs->vq;
+> > > > > >>
+> > > > > >> +       vhost_poll_queue(&vq->poll);
+> > > > > >>          /* set len = 1 to mark this desc buffers done DMA
+> */
+> > > > > >>          vq->heads[ubuf->desc].len = VHOST_DMA_DONE_LEN;
+> > > > > >>          kref_put(&ubufs->kref,
+> vhost_zerocopy_done_signal);
+> > > > > > Doing so, we might have redundant vhost_poll_queue(). Do you
+> > > know in
+> > > > > > which scenario there might be missing of adding and
+> signaling
+> > > during
+> > > > > > zerocopy?
+> > > > > 
+> > > > > Yes, as we only do signaling and adding during tx work, if
+> there's
+> > > no
+> > > > > tx 
+> > > > > work when the skb were sent, we may lose the opportunity to
+> let
+> > > guest 
+> > > > > know about the completion. It's easy to be reproduced with
+> netperf
+> > > > > test. 
 > > > > 
-> > > > With interrupt window exiting, the guest will exit:
+> > > > The reason which host signals guest is to free guest tx buffers,
+> if
+> > > > there is no tx work, then it's not necessary to signal the guest
+> > > unless
+> > > > guest runs out of memory. The pending buffers will be released
+> > > > virtio_net device gone.
 > > > > 
-> > > > - as soon as it sets RFLAGS.IF=1 and there is any 
-> > > > interrupt pending in IRR.
-> > > > - any new interrupt is set in IRR will kick vcpu
-> > > > out of guest mode and recalculate interrupt-window-exiting.
+> > > > What's the behavior of netperf test when you hit this situation?
 > > > > 
-> > > > Doesnt this make this bit unnecessary ?
+> > > > Thanks
+> > > > Shirley
 > > > 
-> > > Looks like we could cut it out.  But I'm not sure how architectural it is
-> > > that we exit on interrupt window.
-> > > I guess there are reasons to exit on interrupt window but
-> > > isn't it better to make the feature independent of it?
+> > > IIRC guest networking seems to be lost. 
 > > 
-> > Hum... not sure. Is it helpful for the Hyper-V interface?
+> > It seems vhost_enable_notify is missing in somewhere else?
 > > 
-> > > This almost never happens in my testing anyway, so
-> > > however we handle it is unlikely to affect performance.
-> > 
-> > It decreases the amount of state that must be maintained.
-> > 
-> > BTW there is a bug covered by interrupt window exiting:
-> > 
-> > vcpu0                               host
-> > - irr 5 set
-> > - isr 5 set, irr 5 cleared
-> > - eoi_skip bit not set, 
-> > no other bit set in irr.
-> > - enter guest
-> > 
-> >                                     irr 4 set
-> >                                     kick vcpu0 out of guest mode
-> > 
-> > - eoi pending bit not set
-> >   (previous interrupt injection 
-> >    still pending)
-> > - skip eoi
-> > 
-> > If it were not for interrupt window exiting, this would 
-> > inject vector 4 on an unrelated exit who knows how long 
-> > in the future.
-> > 
-> > Also note optimization depends on the fact that the host 
-> > kicks vcpu out unconditionally (so it is dependent on 
-> > certain kvm implementation details).
-> > 
+> > Thanks
+> > Shirley
 > 
-> Look we can summarize as follows: irq windows exit is
-> required both before and after this patch.
-> But it does not make the check above redundant.
+> Donnu. I see virtio sending packets but they do not get
+> to tun on host. debugging. 
 
-Right, it is not redundant.
+I looked at the code, if (zerocopy) check is needed for below code:
 
-The above is still a bug: a case where eoi pending bit is not updated
-properly.
++	if (zerocopy) {
+                        num_pends = likely(vq->upend_idx >= vq->done_idx) ?
+                                    (vq->upend_idx - vq->done_idx) :
+                                    (vq->upend_idx + UIO_MAXIOV - vq->done_idx);
+                        if (unlikely(num_pends > VHOST_MAX_PEND)) {
+                                tx_poll_start(net, sock);
+				vhost_poll_queue
+                                set_bit(SOCK_ASYNC_NOSPACE, &sock->flags);
+                                break;
+                        }
++	}
+                        if (unlikely(vhost_enable_notify(&net->dev, vq))) {
+                                vhost_disable_notify(&net->dev, vq);
+                                continue;
+                        }
+                        break;
 
-How come is this compatible with hyper-v again? Enlight me.
+
+Second, whether it's possible the problem comes from tx_poll_start()? In
+some situation, vhost_poll_wakeup() is not being called?
+
+Thanks
+Shirley
+
+
 
