@@ -1,79 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759354Ab2EPGva (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 May 2012 02:51:30 -0400
-Received: from hqemgate03.nvidia.com ([216.228.121.140]:15087 "EHLO
-	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759140Ab2EPGv1 convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 May 2012 02:51:27 -0400
-X-PGP-Universal: processed;
-	by hqnvupgp06.nvidia.com on Tue, 15 May 2012 23:51:11 -0700
-Date: Wed, 16 May 2012 09:51:07 +0300
-From: Hiroshi Doyu <hdoyu@nvidia.com>
-To: Olof Johansson <olof@lixom.net>
-CC: "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
-        "Russell King" <linux@arm.linux.org.uk>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Simon Glass <sjg@chromium.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 2/4] ARM: dt: tegra20.dtsi: Add Memory Controller(MC)
- nodes
-Message-ID: <20120516095107.3510cb39d0f9cd2527e0bf1e@nvidia.com>
-In-Reply-To: <CAOesGMiPvw72006zpSGLBNi-C12MTc_w2QmOPg6YTfXMW+ZSkQ@mail.gmail.com>
-References: <1336635764-30597-1-git-send-email-hdoyu@nvidia.com>
-	<1336635764-30597-2-git-send-email-hdoyu@nvidia.com>
-	<CAOesGMiPvw72006zpSGLBNi-C12MTc_w2QmOPg6YTfXMW+ZSkQ@mail.gmail.com>
-X-Mailer: Sylpheed 3.2.0beta3 (GTK+ 2.24.6; x86_64-pc-linux-gnu)
-X-NVConfidentiality: public
-MIME-Version: 1.0
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 8BIT
+	id S1759387Ab2EPGvn (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 May 2012 02:51:43 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:37791 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1759282Ab2EPGvk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 16 May 2012 02:51:40 -0400
+From: Hannes Reinecke <hare@suse.de>
+To: LKML <linux-kernel@vger.kernel.org>
+Cc: Hannes Reinecke <hare@suse.de>, Gleb Natapov <gleb@redhat.com>,
+        "H. Peter Anvin" <hpa@linux.intel.com>,
+        Alan Cox <alan@lxorguk.ukuu.org.uk>
+Subject: [PATCH] EDD: Check for correct EDD 3.0 length
+Date: Wed, 16 May 2012 08:51:36 +0200
+Message-Id: <1337151096-38511-1-git-send-email-hare@suse.de>
+X-Mailer: git-send-email 1.7.4.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Olof,
+There are two competing EDD 3.0 specifications,
+the original one from Phoenix
+<http://mbldr.sourceforge.net/specsedd30.pdf>
+and the T-13 approved one
+<http://www.t13.org/documents/UploadedDocuments/docs2004/d1572r3-EDD3.pdf>
 
-On Wed, 16 May 2012 08:35:02 +0200
-Olof Johansson <olof@lixom.net> wrote:
+They differ in the length of the device_path field, which
+is one quad word for the Phoenix spec and two quad words
+for the T-13 spec. So we need to test for both lengths
+and blank out the second quad word when a Phoenix
+version is detected.
 
-> Hi,
-> 
-> Tiny drive-by nit pick.
-> 
-> On Thu, May 10, 2012 at 12:42 AM, Hiroshi DOYU <hdoyu@nvidia.com> wrote:
-> > Add Tegra MC(Memory Controller) nodes for tegra20.dtsi.
-> >
-> > Signed-off-by: Hiroshi DOYU <hdoyu@nvidia.com>
-> > ---
-> >  arch/arm/boot/dts/tegra20.dtsi |    7 +++++++
-> >  1 files changed, 7 insertions(+), 0 deletions(-)
-> >
-> > diff --git a/arch/arm/boot/dts/tegra20.dtsi b/arch/arm/boot/dts/tegra20.dtsi
-> > index 24129fb..548b42e 100644
-> > --- a/arch/arm/boot/dts/tegra20.dtsi
-> > +++ b/arch/arm/boot/dts/tegra20.dtsi
-> > @@ -211,5 +211,12 @@
-> >                compatible = "nvidia,tegra20-ahb";
-> >                reg = <0x6000c004 0x10c>; /* AHB Arbitration + Gizmo Controller */
-> >        };
-> > +
-> > +       mc {
-> 
-> It's common to use a more plain english name here, so
-> "memory-controller" would be a good name.
+Signed-off-by: Hannes Reinecke <hare@suse.de>
+Cc: Gleb Natapov <gleb@redhat.com>
+Cc: H. Peter Anvin <hpa@linux.intel.com>
+Cc: Alan Cox <alan@lxorguk.ukuu.org.uk>
 
-Agree. Seems to be common as below. Fix patches follows, which can be squashed if possible.
-
-$% grep memory-controller arch/arm/boot/dts/*
-arch/arm/boot/dts/prima2-cb.dts:                        memory-controller@90000000 {
-arch/arm/boot/dts/vexpress-v2p-ca15-tc1.dts:    memory-controller@2b0a0000 {
-arch/arm/boot/dts/vexpress-v2p-ca15-tc1.dts:    memory-controller@7ffd0000 {
-arch/arm/boot/dts/vexpress-v2p-ca5s.dts:        memory-controller@2a150000 {
-arch/arm/boot/dts/vexpress-v2p-ca5s.dts:        memory-controller@2a190000 {
-arch/arm/boot/dts/vexpress-v2p-ca9.dts: memory-controller@100e0000 {
-arch/arm/boot/dts/vexpress-v2p-ca9.dts: memory-controller@100e1000 {
+diff --git a/drivers/firmware/edd.c b/drivers/firmware/edd.c
+index e229576..beedf4c 100644
+--- a/drivers/firmware/edd.c
++++ b/drivers/firmware/edd.c
+@@ -192,6 +192,13 @@ edd_show_interface(struct edd_device *edev, char *buf)
+ 			p += scnprintf(p, left, " ");
+ 		}
+ 	}
++	/*
++	 * Phoenix EDD 3.0 reserves only one quad word for the
++	 * device path, so blank out the second quad word.
++	 */
++	if (info->params.device_path_info_length == 36)
++		info->params.device_path.unknown.reserved2 = 0;
++
+ 	if (!strncmp(info->params.interface_type, "ATAPI", 5)) {
+ 		p += scnprintf(p, left, "\tdevice: %u  lun: %u\n",
+ 			     info->params.device_path.atapi.device,
+@@ -545,8 +552,12 @@ edd_has_edd30(struct edd_device *edev)
+ 	}
+ 
+ 
+-	/* We support only T13 spec */
+-	if (info->params.device_path_info_length != 44)
++	/*
++	 * Phoenix EDD 3.0 specifies this to be 36,
++	 * T-13 EDD 3.0 uses 44. So check for both.
++	 */
++	if (info->params.device_path_info_length != 36 &&
++	    info->params.device_path_info_length != 44)
+ 		return 0;
+ 
+ 	for (i = 30; i < info->params.device_path_info_length + 30; i++)
