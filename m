@@ -1,54 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965020Ab2EPH7e (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 May 2012 03:59:34 -0400
-Received: from mail-qa0-f49.google.com ([209.85.216.49]:54176 "EHLO
-	mail-qa0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757004Ab2EPH7c (ORCPT
+	id S1759734Ab2EPH7l (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 May 2012 03:59:41 -0400
+Received: from he.sipsolutions.net ([78.46.109.217]:58475 "EHLO
+	sipsolutions.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S965135Ab2EPH7i (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 May 2012 03:59:32 -0400
-MIME-Version: 1.0
-In-Reply-To: <20120516075754.GG10347@shlinux2.ap.freescale.net>
-References: <1337010369-28687-1-git-send-email-b29396@freescale.com>
-	<CACRpkdbW8eeq0gFTjPRpKesmV4K5zqRHuW6C-UywBn8AtqOLCg@mail.gmail.com>
-	<20120515112732.GB10347@shlinux2.ap.freescale.net>
-	<CACRpkdaKAF8bznd-sBdcGfdJW_cHSUGFZhnVk4qJ_0LJ8GoUuQ@mail.gmail.com>
-	<20120516021301.GA21517@S2100-06.ap.freescale.net>
-	<CACRpkdZw5Sag5dmpqadTPJyaT5hex1CnASeVRKT5FXWtOKijkQ@mail.gmail.com>
-	<20120516075754.GG10347@shlinux2.ap.freescale.net>
-Date: Wed, 16 May 2012 09:59:32 +0200
-Message-ID: <CACRpkdZYFiaUDkJAov=ggOknXw6gVf=Bh8+7wLyXVQO1xtLw0w@mail.gmail.com>
-Subject: Re: [PATCH 1/2] pinctrl: pinctrl-imx: add imx53 pinctrl driver
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Dong Aisheng <aisheng.dong@freescale.com>
-Cc: Guo Shawn-R65073 <r65073@freescale.com>,
-        Dong Aisheng-B29396 <B29396@freescale.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linus.walleij@stericsson.com" <linus.walleij@stericsson.com>,
-        "swarren@wwwdotorg.org" <swarren@wwwdotorg.org>,
-        "s.hauer@pengutronix.de" <s.hauer@pengutronix.de>,
-        "kernel@pengutronix.de" <kernel@pengutronix.de>
-Content-Type: text/plain; charset=ISO-8859-1
+	Wed, 16 May 2012 03:59:38 -0400
+Message-ID: <1337155171.4367.2.camel@jlt3.sipsolutions.net>
+Subject: Re: [PATCH 0/3] net: mac80211: Neaten debugging
+From: Johannes Berg <johannes@sipsolutions.net>
+To: David Miller <davem@davemloft.net>
+Cc: joe@perches.com, linville@tuxdriver.com, linux-wireless@vger.kernel.org,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+Date: Wed, 16 May 2012 09:59:31 +0200
+In-Reply-To: <20120516.012319.1903390658912592000.davem@davemloft.net>
+References: <1337106548.15553.8.camel@jlt3.sipsolutions.net>
+	 <cover.1337116578.git.joe@perches.com>
+	 <20120516.012319.1903390658912592000.davem@davemloft.net>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.2-1 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, May 16, 2012 at 9:57 AM, Dong Aisheng
-<aisheng.dong@freescale.com> wrote:
-> On Wed, May 16, 2012 at 02:50:48PM +0800, Linus Walleij wrote:
->> On Wed, May 16, 2012 at 4:13 AM, Shawn Guo <shawn.guo@freescale.com> wrote:
->>
->> > With the patches going in via pinctrl tree, we can start making machine
->> > changes from next cycle.
->>
->> Shawn are these patches OK with you? It'd be nice to have some
->> Acked-by: since they are quite big.
->>
-> Shawn said he's ok with it, but he's not available right now.
-> Maybe you could hold a few hours to wait for his tag if needed.
+On Wed, 2012-05-16 at 01:23 -0400, David Miller wrote:
+> From: Joe Perches <joe@perches.com>
+> Date: Tue, 15 May 2012 14:20:29 -0700
+> 
+> > Always use pr_debug variants instead of printk(KERN_DEBUG...)
+> > 
+> > Joe Perches (3):
+> >   net: mac80211: Convert printk(KERN_DEBUG to pr_debug
+> >   net: mac80211: Add and use ht_vdbg debugging macro
+> >   net: mac80211: Add and use ibss_vdbg debugging macro
+> 
+> I really think this is the right thing to do and I hope the wireless
+> folks integrate this.
+> 
+> I am well aware that you guys intend for some of these messages to be
+> indications and notifications the user is intended to SEE, but in the
+> cases where that is true KERN_DEBUG is absolutely not appropriate.
+> 
+> You should be using KERN_INFO or KERN_WARN in those situations
+> instead.
 
-There's no super-hurry, I just want it at some point if possible...
+Yeah, makes sense. I wonder if it makes sense to leave these under
+#ifdef though? Why #ifdef something if it's going to be invisible most
+of the time anyway?
 
-Linus Walleij
+johannes
+
