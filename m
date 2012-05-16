@@ -1,58 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030293Ab2EPL3v (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 May 2012 07:29:51 -0400
-Received: from a.ns.miles-group.at ([95.130.255.143]:47834 "EHLO radon.swed.at"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1030281Ab2EPL3u (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 May 2012 07:29:50 -0400
-Message-ID: <4FB38FAA.4080603@nod.at>
-Date: Wed, 16 May 2012 13:29:46 +0200
-From: Richard Weinberger <richard@nod.at>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:12.0) Gecko/20120421 Thunderbird/12.0
-MIME-Version: 1.0
-To: dedekind1@gmail.com
-CC: linux-mtd@lists.infradead.org, tglx@linutronix.de,
-        linux-kernel@vger.kernel.org, Heinz.Egger@linutronix.de,
-        tim.bird@am.sony.com
-Subject: Re: [RFC v4] UBI: Fastmap support (aka checkpointing)
-References: <1337101871-31181-1-git-send-email-richard@nod.at>  <1337161096.24809.36.camel@sauron.fi.intel.com> <4FB38683.7030306@nod.at>  <1337166556.24809.42.camel@sauron.fi.intel.com> <1337167083.24809.49.camel@sauron.fi.intel.com>
-In-Reply-To: <1337167083.24809.49.camel@sauron.fi.intel.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
+	id S967464Ab2EPL36 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 May 2012 07:29:58 -0400
+Received: from lxorguk.ukuu.org.uk ([81.2.110.251]:46793 "EHLO
+	lxorguk.ukuu.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1030195Ab2EPL3z (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 16 May 2012 07:29:55 -0400
+Date: Wed, 16 May 2012 12:32:46 +0100
+From: Alan Cox <alan@lxorguk.ukuu.org.uk>
+To: "Andre Hedrick (anhedric)" <anhedric@cisco.com>
+Cc: <linux-kernel@vger.kernel.org>
+Subject: Re: CFA 4.0 patch
+Message-ID: <20120516123246.325c9ba9@pyramind.ukuu.org.uk>
+In-Reply-To: <4E75C4FECC27A44E9F7E0737D71946900F686DB5@xmb-sjc-21e.amer.cisco.com>
+References: <4E75C4FECC27A44E9F7E0737D71946900F686C61@xmb-sjc-21e.amer.cisco.com>
+	<20120515153818.3e70d845@pyramind.ukuu.org.uk>
+	<4E75C4FECC27A44E9F7E0737D71946900F686DB5@xmb-sjc-21e.amer.cisco.com>
+X-Mailer: Claws Mail 3.8.0 (GTK+ 2.24.8; x86_64-redhat-linux-gnu)
+Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 16.05.2012 13:18, Artem Bityutskiy wrote:
-> On Wed, 2012-05-16 at 14:09 +0300, Artem Bityutskiy wrote:
->>> The maximum size of a fastmap is limited to UBI_FM_MAX_BLOCKS.
->>> As I said, in worst case we'd have to scan 192 PEBs, which is a constant.
->>
->> In this case you cannot use O notation at all because it is just used
->> when talking about asymptotic things.
->
-> OK, we are talking about different things. It is fine that you need to
-> scan 192 eraseblocks, this is kind of your journal. And this part may be
-> O(1). But there is another part as well.
+On Tue, 15 May 2012 11:35:57 -0700
+"Andre Hedrick (anhedric)" <anhedric@cisco.com> wrote:
 
-Yeah, seems to.
+> Hi Alan,
+> 
+> You betcha, otherwise I would not have a case.
+> 
+> STEC configed to MWDMA4 (Max reported as UDMA/66)
 
-> But as I already explained, you have a _table_ on the flash, and this
-> table stores Erase Counter and LEB number for (roughly) each PEB. The
-> more PEBs, the large is the table, linerarly.
->
-> As I explained, you have to _read_ and _interpret_ each record in this
-> table when attaching. And the more of these records you have, the longer
-> it takes to attach. And this is where you have your O(N).
+Both of these however should have the identify data indicating CF ? Do
+they also have word 83 not reporting them as CFA ?
 
-Okay, now I understand your point. :)
-
-> So basically fastmap makes UBI's linerar dependency multiplier a lot
-> smaller, so it is still a great improvement.
-
-Yep.
-
-Thanks,
-//richard
 
