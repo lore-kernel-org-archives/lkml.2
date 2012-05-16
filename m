@@ -1,119 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760734Ab2EPWsq (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 May 2012 18:48:46 -0400
-Received: from mga03.intel.com ([143.182.124.21]:35785 "EHLO mga03.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932075Ab2EPWso (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 May 2012 18:48:44 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
-   d="scan'208";a="100961108"
-Subject: Re: [PATCH] mm, x86, pat: Improve scaling of pat_pagerange_is_ram()
-From: Suresh Siddha <suresh.b.siddha@intel.com>
-Reply-To: Suresh Siddha <suresh.b.siddha@intel.com>
-To: John Dykstra <jdykstra@cray.com>
-Cc: mingo@redhat.com, linux-kernel@vger.kernel.org
-Date: Wed, 16 May 2012 15:46:47 -0700
-In-Reply-To: <1337027192.1604.9.camel@redwood>
-References: <1337027192.1604.9.camel@redwood>
-Organization: Intel Corp
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.0.3 (3.0.3-1.fc15) 
-Content-Transfer-Encoding: 7bit
-Message-ID: <1337208407.1997.49.camel@sbsiddha-desk.sc.intel.com>
-Mime-Version: 1.0
+	id S1760740Ab2EPWyT (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 May 2012 18:54:19 -0400
+Received: from mail-gg0-f174.google.com ([209.85.161.174]:62861 "EHLO
+	mail-gg0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1760689Ab2EPWyR (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 16 May 2012 18:54:17 -0400
+MIME-Version: 1.0
+X-Originating-IP: [172.22.162.26]
+In-Reply-To: <201205170037.34305.rjw@sisk.pl>
+References: <20120515154333.6659.66479.sendpatchset@w520>
+	<201205162205.09082.rjw@sisk.pl>
+	<CAOesGMjgBWxjAvMpcxWsJf7n3q90sGhccUSgfGxJQA+tfDZBHw@mail.gmail.com>
+	<201205170037.34305.rjw@sisk.pl>
+Date: Wed, 16 May 2012 15:54:16 -0700
+Message-ID: <CAOesGMi8LPO=AFSshC8UyCmBB3hG38YKHWnHmcNCnLvgR2xcTw@mail.gmail.com>
+Subject: Re: [PATCH] gpio: Emma Mobile GPIO driver V2
+From: Olof Johansson <olof@lixom.net>
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+Cc: Linus Walleij <linus.walleij@linaro.org>,
+        Magnus Damm <magnus.damm@gmail.com>, linux-kernel@vger.kernel.org,
+        linus.walleij@stericsson.com, arnd@arndb.de, linux-sh@vger.kernel.org,
+        horms@verge.net.au, grant.likely@secretlab.ca, lethal@linux-sh.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2012-05-14 at 15:26 -0500, John Dykstra wrote:
-> Function pat_pagerange_is_ram() scales poorly to large address ranges,
-> because it probes the resource tree for each page.  On a 2.6 GHz
-> Opteron, this function consumes 34 ms. for a 1 GB range.  It is called
-> twice during untrack_pfn_vma(), slowing process cleanup and handicapping
-> the OOM killer.
-> 
-> This replacement based on walk_system_ram_range() consumes less than 1
-> ms. under the same conditions.
-> 
-> Signed-off-by: John Dykstra <jdykstra@cray.com> on behalf of Cray Inc. 
-> Cc: Suresh Siddha <suresh.b.siddha@intel.com>
-> ---
->  arch/x86/mm/pat.c      |   55 ++++++++++++++++++++++++++++++-----------------
->  include/linux/ioport.h |    2 +
->  kernel/resource.c      |    2 +-
->  3 files changed, 38 insertions(+), 21 deletions(-)
-> 
-> diff --git a/arch/x86/mm/pat.c b/arch/x86/mm/pat.c
-> index f6ff57b..c119afb 100644
-> --- a/arch/x86/mm/pat.c
-> +++ b/arch/x86/mm/pat.c
-> @@ -160,29 +160,44 @@ static unsigned long pat_x_mtrr_type(u64 start, u64 end, unsigned long req_type)
->  
->  static int pat_pagerange_is_ram(resource_size_t start, resource_size_t end)
->  {
-> -	int ram_page = 0, not_rampage = 0;
-> -	unsigned long page_nr;
-> +	struct resource res;
-> +	resource_size_t pg_end, after_ram;
-> +	int ram = 0, not_ram = 0;
->  
-> -	for (page_nr = (start >> PAGE_SHIFT); page_nr < (end >> PAGE_SHIFT);
-> -	     ++page_nr) {
-> -		/*
-> -		 * For legacy reasons, physical address range in the legacy ISA
-> -		 * region is tracked as non-RAM. This will allow users of
-> -		 * /dev/mem to map portions of legacy ISA region, even when
-> -		 * some of those portions are listed(or not even listed) with
-> -		 * different e820 types(RAM/reserved/..)
-> -		 */
-> -		if (page_nr >= (ISA_END_ADDRESS >> PAGE_SHIFT) &&
-> -		    page_is_ram(page_nr))
-> -			ram_page = 1;
-> -		else
-> -			not_rampage = 1;
-> +	res.start = start & PHYSICAL_PAGE_MASK;
->  
-> -		if (ram_page == not_rampage)
-> +	/*
-> +	 * For legacy reasons, physical address range in the legacy ISA
-> +	 * region is tracked as non-RAM. This will allow users of
-> +	 * /dev/mem to map portions of legacy ISA region, even when
-> +	 * some of those portions are listed(or not even listed) with
-> +	 * different e820 types(RAM/reserved/..)
-> +	 */
-> +	if (res.start < ISA_END_ADDRESS) {
-> +		not_ram = 1;
-> +		res.start = ISA_END_ADDRESS;
-> +	}
-> +
-> +	pg_end = (end + PAGE_SIZE - 1) & PHYSICAL_PAGE_MASK;
-> +	res.end = pg_end;
-> +	res.flags = IORESOURCE_MEM | IORESOURCE_BUSY;
-> +	after_ram = res.start;
-> +	while ((res.start < res.end) &&
-> +		(find_next_system_ram(&res, "System RAM") >= 0)) {
-> +		if (res.start > after_ram)
-> +			not_ram = 1;
-> +		if (res.end > res.start)
-> +			ram = 1;
-> +
-> +		if (ram && not_ram)
->  			return -1;
-> +
-> +		after_ram = res.end + 1;
-> +		res.start = res.end + 1;
-> +		res.end = pg_end;
->  	}
+On Wed, May 16, 2012 at 3:37 PM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
+> On Thursday, May 17, 2012, Olof Johansson wrote:
+>> On Wed, May 16, 2012 at 1:05 PM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
+>> > On Wednesday, May 16, 2012, Linus Walleij wrote:
+>> >> On Wed, May 16, 2012 at 12:15 PM, Magnus Damm <magnus.damm@gmail.com> wrote:
+>> >>
+>> >> > Do you guys have any preferences how to merge this?
+>> >> >
+>> >> > Can I include it together with the EMEV2 SoC bits perhaps? That may be
+>> >> > easy so we can keep track of the platform data header file dependency.
+>> >>
+>> >> For ux500 I made a special "gpio and pins" branch and sent through ARM SoC.
+>> >
+>> > The problem is we have a patch depending on the $subject one in the EMEV2
+>> > series and it would be better to keep them both together if that's not
+>> > a big deal.
+>>
+>> Dependencies are fine, as long as they are not circular. You can
+>> either pull in the gpio/pins branch into the EMEV2 branch, or base it
+>> on it.
+>
+> I guess I'll try to merge the gpio/pins into the EMEV2 branch.
 
-Instead of duplicating what kernel/resource.c:walk_system_ram_range() is
-already doing, can we just provide a callback that can be used with
-walk_system_ram_range() and see if the expected RAM pages is what the
-callback also sees.
+By the way, I should have mentioned that if the dependencies are only
+for building and not for context when applying patches, then it's
+sufficient to let us know in the pull request so we merge the branches
+in the right order when sending to Linus (so we maintain
+bisectability).
 
-That will greatly simplify the patch and avoid code duplication.
 
-thanks,
-suresh
-
+-Olof
