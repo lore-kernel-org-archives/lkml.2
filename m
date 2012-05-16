@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758823Ab2EPGTN (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 May 2012 02:19:13 -0400
-Received: from mx2.parallels.com ([64.131.90.16]:46515 "EHLO mx2.parallels.com"
+	id S1758998Ab2EPGVW (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 May 2012 02:21:22 -0400
+Received: from mx2.parallels.com ([64.131.90.16]:46591 "EHLO mx2.parallels.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757467Ab2EPGTK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 May 2012 02:19:10 -0400
-Message-ID: <4FB34653.7060807@parallels.com>
-Date: Wed, 16 May 2012 10:16:51 +0400
+	id S1751424Ab2EPGVU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 16 May 2012 02:21:20 -0400
+Message-ID: <4FB346E3.5060507@parallels.com>
+Date: Wed, 16 May 2012 10:19:15 +0400
 From: Glauber Costa <glommer@parallels.com>
 User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.1) Gecko/20120216 Thunderbird/10.0.1
 MIME-Version: 1.0
@@ -17,59 +17,63 @@ CC: <linux-kernel@vger.kernel.org>, <cgroups@vger.kernel.org>,
         Li Zefan <lizefan@huawei.com>, Greg Thelen <gthelen@google.com>,
         Suleiman Souhlal <suleiman@google.com>, Michal Hocko <mhocko@suse.cz>,
         Johannes Weiner <hannes@cmpxchg.org>, <devel@openvz.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Li Zefan <lizf@cn.fujitsu.com>, Aditya Kali <adityakali@google.com>,
-        Oleg Nesterov <oleg@redhat.com>, Kay Sievers <kay.sievers@vrfy.org>,
-        Tim Hockin <thockin@hockin.org>, Tejun Heo <htejun@gmail.com>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [PATCH v2 11/29] cgroups: ability to stop res charge propagation
- on bounded ancestor
-References: <1336758272-24284-1-git-send-email-glommer@parallels.com> <1336758272-24284-12-git-send-email-glommer@parallels.com> <4FB1C6A1.1020602@jp.fujitsu.com>
-In-Reply-To: <4FB1C6A1.1020602@jp.fujitsu.com>
+        Christoph Lameter <cl@linux.com>,
+        Pekka Enberg <penberg@cs.helsinki.fi>
+Subject: Re: [PATCH v2 19/29] skip memcg kmem allocations in specified code
+ regions
+References: <1336758272-24284-1-git-send-email-glommer@parallels.com> <1336758272-24284-20-git-send-email-glommer@parallels.com> <4FB1C398.1010000@jp.fujitsu.com>
+In-Reply-To: <4FB1C398.1010000@jp.fujitsu.com>
 Content-Type: text/plain; charset="ISO-2022-JP"
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/15/2012 06:59 AM, KAMEZAWA Hiroyuki wrote:
+On 05/15/2012 06:46 AM, KAMEZAWA Hiroyuki wrote:
 > (2012/05/12 2:44), Glauber Costa wrote:
 > 
->> From: Frederic Weisbecker<fweisbec@gmail.com>
+>> This patch creates a mechanism that skip memcg allocations during
+>> certain pieces of our core code. It basically works in the same way
+>> as preempt_disable()/preempt_enable(): By marking a region under
+>> which all allocations will be accounted to the root memcg.
 >>
->> Moving a task from a cgroup to another may require to substract its
->> resource charge from the old cgroup and add it to the new one.
+>> We need this to prevent races in early cache creation, when we
+>> allocate data using caches that are not necessarily created already.
 >>
->> For this to happen, the uncharge/charge propagation can just stop when we
->> reach the common ancestor for the two cgroups.  Further the performance
->> reasons, we also want to avoid to temporarily overload the common
->> ancestors with a non-accurate resource counter usage if we charge first
->> the new cgroup and uncharge the old one thereafter.  This is going to be a
->> requirement for the coming max number of task subsystem.
->>
->> To solve this, provide a pair of new API that can charge/uncharge a
->> resource counter until we reach a given ancestor.
->>
->> Signed-off-by: Frederic Weisbecker<fweisbec@gmail.com>
->> Acked-by: Paul Menage<paul@paulmenage.org>
->> Acked-by: Glauber Costa<glommer@parallels.com>
->> Cc: Li Zefan<lizf@cn.fujitsu.com>
->> Cc: Johannes Weiner<hannes@cmpxchg.org>
->> Cc: Aditya Kali<adityakali@google.com>
->> Cc: Oleg Nesterov<oleg@redhat.com>
->> Cc: Kay Sievers<kay.sievers@vrfy.org>
->> Cc: Tim Hockin<thockin@hockin.org>
->> Cc: Tejun Heo<htejun@gmail.com>
->> Acked-by: Kirill A. Shutemov<kirill@shutemov.name>
->> Signed-off-by: Andrew Morton<akpm@linux-foundation.org>
+>> Signed-off-by: Glauber Costa<glommer@parallels.com>
+>> CC: Christoph Lameter<cl@linux.com>
+>> CC: Pekka Enberg<penberg@cs.helsinki.fi>
+>> CC: Michal Hocko<mhocko@suse.cz>
+>> CC: Kamezawa Hiroyuki<kamezawa.hiroyu@jp.fujitsu.com>
+>> CC: Johannes Weiner<hannes@cmpxchg.org>
+>> CC: Suleiman Souhlal<suleiman@google.com>
 > 
 > 
-> Where is this function called in this series ?
+> The concept seems okay to me but...
 > 
-> Thanks,
-> -Kame
+>> ---
+>>   include/linux/sched.h |    1 +
+>>   mm/memcontrol.c       |   25 +++++++++++++++++++++++++
+>>   2 files changed, 26 insertions(+), 0 deletions(-)
+>>
+>> diff --git a/include/linux/sched.h b/include/linux/sched.h
+>> index 81a173c..0501114 100644
+>> --- a/include/linux/sched.h
+>> +++ b/include/linux/sched.h
+>> @@ -1613,6 +1613,7 @@ struct task_struct {
+>>   		unsigned long nr_pages;	/* uncharged usage */
+>>   		unsigned long memsw_nr_pages; /* uncharged mem+swap usage */
+>>   	} memcg_batch;
+>> +	atomic_t memcg_kmem_skip_account;
 > 
-It is not... anymore!
-But I forgot the patch among the "pre-requisite" patches I had.
+> 
+> If only 'current' thread touch this, you don't need to make this atomic counter.
+> you can use 'long'.
+> 
+You're absolutely right, Kame, thanks.
+I first used atomic_t because I had it tested against current->mm->owner.
 
-Thanks, this can be dropped.
+Do you, btw, agree to use current instead of owner here?
+You can find the rationale in earlier mails between me and Suleiman.
+
+
