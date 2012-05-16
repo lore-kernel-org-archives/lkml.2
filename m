@@ -1,89 +1,216 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030251Ab2EPLOf (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 May 2012 07:14:35 -0400
-Received: from mga14.intel.com ([143.182.124.37]:56018 "EHLO mga14.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S967393Ab2EPLOe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 May 2012 07:14:34 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
-   d="asc'?scan'208";a="143852777"
-Message-ID: <1337167083.24809.49.camel@sauron.fi.intel.com>
-Subject: Re: [RFC v4] UBI: Fastmap support (aka checkpointing)
-From: Artem Bityutskiy <dedekind1@gmail.com>
-Reply-To: dedekind1@gmail.com
-To: Richard Weinberger <richard@nod.at>
-Cc: linux-mtd@lists.infradead.org, tglx@linutronix.de,
-        linux-kernel@vger.kernel.org, Heinz.Egger@linutronix.de,
-        tim.bird@am.sony.com
-Date: Wed, 16 May 2012 14:18:03 +0300
-In-Reply-To: <1337166556.24809.42.camel@sauron.fi.intel.com>
-References: <1337101871-31181-1-git-send-email-richard@nod.at>
-	 <1337161096.24809.36.camel@sauron.fi.intel.com> <4FB38683.7030306@nod.at>
-	 <1337166556.24809.42.camel@sauron.fi.intel.com>
-Content-Type: multipart/signed; micalg="pgp-sha1"; protocol="application/pgp-signature";
-	boundary="=-so6oLBU5GUuWpVSbH6JA"
-X-Mailer: Evolution 3.2.3 (3.2.3-3.fc16) 
-Mime-Version: 1.0
+	id S1030269Ab2EPLS5 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 May 2012 07:18:57 -0400
+Received: from na3sys009aog125.obsmtp.com ([74.125.149.153]:37529 "EHLO
+	na3sys009aog125.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1030229Ab2EPLS4 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 16 May 2012 07:18:56 -0400
+From: Peter Ujfalusi <peter.ujfalusi@ti.com>
+To: Samuel Ortiz <sameo@linux.intel.com>
+Cc: Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Liam Girdwood <lrg@ti.com>, Benoit Cousson <b-cousson@ti.com>,
+        linux-kernel@vger.kernel.org, devicetree-discuss@lists.ozlabs.org,
+        peter.ujfalusi@ti.com, Misael Lopez Cruz <misael.lopez@ti.com>,
+        Dmitry Torokhov <dtor@mail.ru>
+Subject: [PATCH v3 4/4] MFD: twl6040: Add support for Device Tree
+Date: Wed, 16 May 2012 14:11:58 +0300
+Message-Id: <1337166718-8458-5-git-send-email-peter.ujfalusi@ti.com>
+X-Mailer: git-send-email 1.7.8.6
+In-Reply-To: <1337166718-8458-1-git-send-email-peter.ujfalusi@ti.com>
+References: <1337166718-8458-1-git-send-email-peter.ujfalusi@ti.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Device tree based probing support for the core twl6040 driver. Child
+devices will be created as MFD devices:
+- ASoC codec is always created
+- Vibra child is only created if the vibra section present in the DT blob.
 
---=-so6oLBU5GUuWpVSbH6JA
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: quoted-printable
+Signed-off-by: Peter Ujfalusi <peter.ujfalusi@ti.com>
+---
+ Documentation/devicetree/bindings/mfd/twl6040.txt |   62 +++++++++++++++++++++
+ drivers/mfd/twl6040-core.c                        |   27 ++++++---
+ drivers/mfd/twl6040-irq.c                         |    6 ++
+ 3 files changed, 87 insertions(+), 8 deletions(-)
+ create mode 100644 Documentation/devicetree/bindings/mfd/twl6040.txt
 
-On Wed, 2012-05-16 at 14:09 +0300, Artem Bityutskiy wrote:
-> > The maximum size of a fastmap is limited to UBI_FM_MAX_BLOCKS.
-> > As I said, in worst case we'd have to scan 192 PEBs, which is a constan=
-t.
->=20
-> In this case you cannot use O notation at all because it is just used
-> when talking about asymptotic things.
-
-OK, we are talking about different things. It is fine that you need to
-scan 192 eraseblocks, this is kind of your journal. And this part may be
-O(1). But there is another part as well.
-
-But as I already explained, you have a _table_ on the flash, and this
-table stores Erase Counter and LEB number for (roughly) each PEB. The
-more PEBs, the large is the table, linerarly.
-
-As I explained, you have to _read_ and _interpret_ each record in this
-table when attaching. And the more of these records you have, the longer
-it takes to attach. And this is where you have your O(N).
-
-So basically fastmap makes UBI's linerar dependency multiplier a lot
-smaller, so it is still a great improvement.
-
---=20
-Best Regards,
-Artem Bityutskiy
-
---=-so6oLBU5GUuWpVSbH6JA
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: This is a digitally signed message part
-Content-Transfer-Encoding: 7bit
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAABAgAGBQJPs4zrAAoJECmIfjd9wqK0qx4QALLl/Wl5DnVxMoSwzhrfYSco
-2XVQfbu1ziMui3lq1+5iNYmed8YUosS+CcGYDx+VCl/CfF3LR7zB4zO6ThfI5eKI
-N4Zy6uTHlkGFEENt3uagpOOOG7SL1c6S7W24QCGqAkXuX5gA8T8ZRLezt+DnAmUp
-WRu0rXSOo1DZKgotxdHDD4edgzg0g0zrStTwC5+HwxuSHc7pdN1tUTWci9NXEPds
-H1azJPgoIK+r1tan3VVkFuXBmCKcbHRAQAHGvtpPbvxdppRp/wrL9MCuFB/D0Jtw
-ek8Wp/MTtNehBR70CGrv627stiO1ok39eur1qZpT+d53AK2m7aKu6nfrOE9DJV89
-ZXR0iuJlnqQ1h9EMWZTy4kATgZf5rowbDauulV6S7mCpc9pMC9tJVdCAPnvQc/w3
-JL30exoaWqQIDVf2jGC3zlv9teTQmE1jJzj4ytj322vy/JBP8uT85AviaChj2srx
-nmdd9/MyHHp8RIUDS+NzNTtOf3T/KImL//qMkbKwRPruCwETKdi+F8BqFcabjnuM
-7MMGnoYNaSbO8R9YpY9WzdIAA2JsqWL1+GhiHrPdzebi+QTvMrRWgfC9dFPZY7TC
-edeKwYNZa0M6us7PyDPrz1+C9QM9rrb7Pzh4MpQgY5shlGFCKQfVmWeF891Q19Fs
-1Cj0nBZPbXUpqb6+LTz4
-=GePC
------END PGP SIGNATURE-----
-
---=-so6oLBU5GUuWpVSbH6JA--
+diff --git a/Documentation/devicetree/bindings/mfd/twl6040.txt b/Documentation/devicetree/bindings/mfd/twl6040.txt
+new file mode 100644
+index 0000000..bc67c6f
+--- /dev/null
++++ b/Documentation/devicetree/bindings/mfd/twl6040.txt
+@@ -0,0 +1,62 @@
++Texas Instruments TWL6040 family
++
++The TWL6040s are 8-channel high quality low-power audio codecs providing audio
++and vibra functionality on OMAP4+ platforms.
++They are connected ot the host processor via i2c for commands, McPDM for audio
++data and commands.
++
++Required properties:
++- compatible : Must be "ti,twl6040";
++- reg: must be 0x4b for i2c address
++- interrupts: twl6040 has one interrupt line connecteded to the main SoC
++- interrupt-parent: The parent interrupt controller
++- twl6040,audpwron-gpio: Power on GPIO line for the twl6040
++
++- vio-supply: Regulator for the twl6040 VIO supply
++- v2v1-supply: Regulator for the twl6040 V2V1 supply
++
++Optional properties, nodes:
++- enable-active-high: To power on the twl6040 during boot.
++
++Vibra functionality
++Required properties:
++- vddvibl-supply: Regulator for the left vibra motor
++- vddvibr-supply: Regulator for the right vibra motor
++- vibra { }: Configuration section for vibra parameters containing the following
++	     properties:
++- ti,vibldrv-res: Resistance parameter for left driver
++- ti,vibrdrv-res: Resistance parameter for right driver
++- ti,viblmotor-res: Resistance parameter for left motor
++- ti,viblmotor-res: Resistance parameter for right motor
++
++Optional properties within vibra { } section:
++- vddvibl_uV: If the vddvibl default voltage need to be changed
++- vddvibr_uV: If the vddvibr default voltage need to be changed
++
++Example:
++&i2c1 {
++	twl6040: twl@4b {
++		compatible = "ti,twl6040";
++		reg = <0x4b>;
++
++		interrupts = <0 119 4>;
++		interrupt-parent = <&gic>;
++		twl6040,audpwron-gpio = <&gpio4 31 0>;
++
++		vio-supply = <&v1v8>;
++		v2v1-supply = <&v2v1>;
++		enable-active-high;
++
++		/* regulators for vibra motor */
++		vddvibl-supply = <&vbat>;
++		vddvibr-supply = <&vbat>;
++
++		vibra {
++			/* Vibra driver, motor resistance parameters */
++			ti,vibldrv-res = <8>;
++			ti,vibrdrv-res = <3>;
++			ti,viblmotor-res = <10>;
++			ti,vibrmotor-res = <10>;
++		};
++	};
++};
+diff --git a/drivers/mfd/twl6040-core.c b/drivers/mfd/twl6040-core.c
+index 9765dc2..450a28f 100644
+--- a/drivers/mfd/twl6040-core.c
++++ b/drivers/mfd/twl6040-core.c
+@@ -29,6 +29,10 @@
+ #include <linux/kernel.h>
+ #include <linux/err.h>
+ #include <linux/platform_device.h>
++#include <linux/of.h>
++#include <linux/of_irq.h>
++#include <linux/of_gpio.h>
++#include <linux/of_platform.h>
+ #include <linux/gpio.h>
+ #include <linux/delay.h>
+ #include <linux/i2c.h>
+@@ -505,11 +509,12 @@ static int __devinit twl6040_probe(struct i2c_client *client,
+ 				     const struct i2c_device_id *id)
+ {
+ 	struct twl6040_platform_data *pdata = client->dev.platform_data;
++	struct device_node *node = client->dev.of_node;
+ 	struct twl6040 *twl6040;
+ 	struct mfd_cell *cell = NULL;
+ 	int irq, ret, children = 0;
+ 
+-	if (!pdata) {
++	if (!pdata && !node) {
+ 		dev_err(&client->dev, "Platform data is missing\n");
+ 		return -EINVAL;
+ 	}
+@@ -560,9 +565,13 @@ static int __devinit twl6040_probe(struct i2c_client *client,
+ 	twl6040->rev = twl6040_reg_read(twl6040, TWL6040_REG_ASICREV);
+ 
+ 	/* ERRATA: Automatic power-up is not possible in ES1.0 */
+-	if (twl6040_get_revid(twl6040) > TWL6040_REV_ES1_0)
+-		twl6040->audpwron = pdata->audpwron_gpio;
+-	else
++	if (twl6040_get_revid(twl6040) > TWL6040_REV_ES1_0) {
++		if (pdata)
++			twl6040->audpwron = pdata->audpwron_gpio;
++		else
++			twl6040->audpwron = of_get_named_gpio(node,
++						"ti,audpwron-gpio", 0);
++	} else
+ 		twl6040->audpwron = -EINVAL;
+ 
+ 	if (gpio_is_valid(twl6040->audpwron)) {
+@@ -602,13 +611,13 @@ static int __devinit twl6040_probe(struct i2c_client *client,
+ 	twl6040_codec_rsrc[0].end = irq;
+ 	cell->resources = twl6040_codec_rsrc;
+ 	cell->num_resources = ARRAY_SIZE(twl6040_codec_rsrc);
+-	if (pdata->codec) {
++	if (pdata && pdata->codec) {
+ 		cell->platform_data = pdata->codec;
+ 		cell->pdata_size = sizeof(*pdata->codec);
+ 	}
+ 	children++;
+ 
+-	if (pdata->vibra) {
++	if ((pdata && pdata->vibra) || of_find_node_by_name(node, "vibra")) {
+ 		irq = twl6040->irq_base + TWL6040_IRQ_VIB;
+ 
+ 		cell = &twl6040->cells[children];
+@@ -618,8 +627,10 @@ static int __devinit twl6040_probe(struct i2c_client *client,
+ 		cell->resources = twl6040_vibra_rsrc;
+ 		cell->num_resources = ARRAY_SIZE(twl6040_vibra_rsrc);
+ 
+-		cell->platform_data = pdata->vibra;
+-		cell->pdata_size = sizeof(*pdata->vibra);
++		if (pdata && pdata->vibra) {
++			cell->platform_data = pdata->vibra;
++			cell->pdata_size = sizeof(*pdata->vibra);
++		}
+ 		children++;
+ 	}
+ 
+diff --git a/drivers/mfd/twl6040-irq.c b/drivers/mfd/twl6040-irq.c
+index 914978e..4b42543 100644
+--- a/drivers/mfd/twl6040-irq.c
++++ b/drivers/mfd/twl6040-irq.c
+@@ -25,6 +25,8 @@
+ #include <linux/module.h>
+ #include <linux/err.h>
+ #include <linux/irq.h>
++#include <linux/of.h>
++#include <linux/irqdomain.h>
+ #include <linux/interrupt.h>
+ #include <linux/mfd/core.h>
+ #include <linux/mfd/twl6040.h>
+@@ -139,6 +141,7 @@ static irqreturn_t twl6040_irq_thread(int irq, void *data)
+ 
+ int twl6040_irq_init(struct twl6040 *twl6040)
+ {
++	struct device_node *node = twl6040->dev->of_node;
+ 	int i, nr_irqs, irq_base, ret;
+ 	u8 val;
+ 
+@@ -158,6 +161,9 @@ int twl6040_irq_init(struct twl6040 *twl6040)
+ 	}
+ 	twl6040->irq_base = irq_base;
+ 
++	irq_domain_add_legacy(node, ARRAY_SIZE(twl6040_irqs), irq_base, 0,
++			      &irq_domain_simple_ops, NULL);
++
+ 	/* Register them with genirq */
+ 	for (i = irq_base; i < irq_base + nr_irqs; i++) {
+ 		irq_set_chip_data(i, twl6040);
+-- 
+1.7.8.6
 
