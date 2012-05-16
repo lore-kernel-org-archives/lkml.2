@@ -1,219 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759300Ab2EPGvH (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 May 2012 02:51:07 -0400
-Received: from mga03.intel.com ([143.182.124.21]:44872 "EHLO mga03.intel.com"
+	id S1759334Ab2EPGvS (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 May 2012 02:51:18 -0400
+Received: from mga14.intel.com ([143.182.124.37]:58216 "EHLO mga14.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759271Ab2EPGvE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 May 2012 02:51:04 -0400
+	id S1759140Ab2EPGvO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 16 May 2012 02:51:14 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
-   d="scan'208";a="143767594"
-Message-ID: <4FB34DFB.2040902@intel.com>
-Date: Wed, 16 May 2012 14:49:31 +0800
-From: Alex Shi <alex.shi@intel.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:9.0) Gecko/20111229 Thunderbird/9.0
-MIME-Version: 1.0
-To: Alex Shi <alex.shi@intel.com>
-CC: tglx@linutronix.de, mingo@redhat.com, hpa@zytor.com, arnd@arndb.de,
-        rostedt@goodmis.org, fweisbec@gmail.com, jeremy@goop.org,
-        riel@redhat.com, luto@mit.edu, avi@redhat.com, len.brown@intel.com,
-        dhowells@redhat.com, fenghua.yu@intel.com, borislav.petkov@amd.com,
-        yinghai@kernel.org, ak@linux.intel.com, cpw@sgi.com, steiner@sgi.com,
-        akpm@linux-foundation.org, penberg@kernel.org, hughd@google.com,
-        rientjes@google.com, kosaki.motohiro@jp.fujitsu.com,
-        n-horiguchi@ah.jp.nec.com, tj@kernel.org, oleg@redhat.com,
-        axboe@kernel.dk, jmorris@namei.org, a.p.zijlstra@chello.nl,
-        kamezawa.hiroyu@jp.fujitsu.com, viro@zeniv.linux.org.uk,
-        linux-kernel@vger.kernel.org, yongjie.ren@intel.com
-Subject: Re: [PATCH v5 5/7] x86/tlb: add tlb_flushall_shift for specific CPU
-References: <1337072138-8323-1-git-send-email-alex.shi@intel.com> <1337072138-8323-6-git-send-email-alex.shi@intel.com>
-In-Reply-To: <1337072138-8323-6-git-send-email-alex.shi@intel.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+   d="asc'?scan'208";a="143767633"
+Message-ID: <1337151273.24809.2.camel@sauron.fi.intel.com>
+Subject: Fastmap - please, review and test
+From: Artem Bityutskiy <dedekind1@gmail.com>
+Reply-To: dedekind1@gmail.com
+To: Shmulik Ladkani <shmulik.ladkani@gmail.com>
+Cc: Richard Weinberger <richard@nod.at>, linux-mtd@lists.infradead.org,
+        Heinz.Egger@linutronix.de, tglx@linutronix.de, tim.bird@am.sony.com,
+        linux-kernel@vger.kernel.org
+Date: Wed, 16 May 2012 09:54:33 +0300
+In-Reply-To: <20120515224645.3af023c3@halley>
+References: <1337101871-31181-1-git-send-email-richard@nod.at>
+	 <20120515224645.3af023c3@halley>
+Content-Type: multipart/signed; micalg="pgp-sha1"; protocol="application/pgp-signature";
+	boundary="=-E3V4qMSLNpij7KSIyWJw"
+X-Mailer: Evolution 3.2.3 (3.2.3-3.fc16) 
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/15/2012 04:55 PM, Alex Shi wrote:
 
-update this patch for a little change commit log and conservative 
-balance point on IVB mobile cpu.
-----
+--=-E3V4qMSLNpij7KSIyWJw
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: quoted-printable
 
->From 0a3d618e5a8b29efc6296e44a56bc5c87b506659 Mon Sep 17 00:00:00 2001
-From: Alex Shi <alex.shi@intel.com>
-Date: Mon, 14 May 2012 09:13:28 +0800
-Subject: [PATCH 5/7] x86/tlb: add tlb_flushall_shift for specific CPU
+On Tue, 2012-05-15 at 22:46 +0300, Shmulik Ladkani wrote:
+> On Tue, 15 May 2012 19:11:04 +0200 Richard Weinberger <richard@nod.at> wr=
+ote:
+> > TODO:
+> >         - Artem is fully happy with the current on-flash layout,
+> >           maybe I can merge the erase counters into the EBA table
+> >         - Get a full review :)
+>=20
+> I'd be glad to take a deep look of the code.
+>=20
+> Hopefully I'll get into it in the following days.
 
-Testing show different CPU type(micro architectures and NUMA mode) has
-different balance points between the TLB flush all and multiple invlpg.
-And there also has cases the tlb flush change has no any help.
+Thanks Shmulik - I appreciate any help as much as Richard. I am busy and
+my job now has nothing to do with MTD/UBI/UBIFS, and I have limited time
+for review.
 
-This patch give a interface to let x86 vendor developers have a chance
-to set different shift for different CPU type.
+There were many people who wanted faster UBI, and I'd ask them to
+participate now - review, test, etc.
 
-like some machine in my hands, balance points is 16 entries on
-Romely-EP; while it is at 8 entries on Bloomfield NHM-EP; and is 256 on
-IVB mobile CPU. but on model 15 core2 Xeon using invlpg has nothing
-help.
+--=20
+Best Regards,
+Artem Bityutskiy
 
-For untested machine, do a conservative optimization, same as NHM CPU.
+--=-E3V4qMSLNpij7KSIyWJw
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: This is a digitally signed message part
+Content-Transfer-Encoding: 7bit
 
-Signed-off-by: Alex Shi <alex.shi@intel.com>
----
- arch/x86/include/asm/processor.h |    2 ++
- arch/x86/kernel/cpu/common.c     |   14 ++++++++++++--
- arch/x86/kernel/cpu/intel.c      |   34 ++++++++++++++++++++++++++++++++++
- arch/x86/mm/tlb.c                |    8 ++++----
- include/asm-generic/tlb.h        |    3 ++-
- 5 files changed, 54 insertions(+), 7 deletions(-)
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
 
-diff --git a/arch/x86/include/asm/processor.h b/arch/x86/include/asm/processor.h
-index 797faca..3c0cc3d 100644
---- a/arch/x86/include/asm/processor.h
-+++ b/arch/x86/include/asm/processor.h
-@@ -72,6 +72,8 @@ extern u16 __read_mostly tlb_lli_4m[NR_INFO];
- extern u16 __read_mostly tlb_lld_4k[NR_INFO];
- extern u16 __read_mostly tlb_lld_2m[NR_INFO];
- extern u16 __read_mostly tlb_lld_4m[NR_INFO];
-+extern u16 __read_mostly tlb_flushall_shift;
-+
- /*
-  *  CPU type and hardware bug flags. Kept separately for each CPU.
-  *  Members of this structure are referenced in head.S, so think twice
-diff --git a/arch/x86/kernel/cpu/common.c b/arch/x86/kernel/cpu/common.c
-index 0152082..24255ca 100644
---- a/arch/x86/kernel/cpu/common.c
-+++ b/arch/x86/kernel/cpu/common.c
-@@ -459,16 +459,26 @@ u16 __read_mostly tlb_lld_4k[NR_INFO];
- u16 __read_mostly tlb_lld_2m[NR_INFO];
- u16 __read_mostly tlb_lld_4m[NR_INFO];
- 
-+/*
-+ * tlb_flushall_shift shows the balance point in replacing cr3 write
-+ * with multiple 'invlpg'. It will do this replacement when
-+ *   flush_tlb_lines <= active_lines/2^tlb_flushall_shift.
-+ * If tlb_flushall_shift is -1, means the replacement will be disabled.
-+ */
-+u16 __read_mostly tlb_flushall_shift;
-+
- void __cpuinit cpu_detect_tlb(struct cpuinfo_x86 *c)
- {
- 	if (c->x86_vendor == X86_VENDOR_INTEL)
- 		intel_cpu_detect_tlb(c);
- 
- 	printk(KERN_INFO "Last level iTLB entries: 4KB %d, 2MB %d, 4MB %d\n" \
--		"Last level dTLB entries: 4KB %d, 2MB %d, 4MB %d\n",
-+		"Last level dTLB entries: 4KB %d, 2MB %d, 4MB %d\n"	     \
-+		"tlb_flushall_shift is 0x%x\n",
- 		tlb_lli_4k[ENTRIES], tlb_lli_2m[ENTRIES],
- 		tlb_lli_4m[ENTRIES], tlb_lld_4k[ENTRIES],
--		tlb_lld_2m[ENTRIES], tlb_lld_4m[ENTRIES]);
-+		tlb_lld_2m[ENTRIES], tlb_lld_4m[ENTRIES],
-+		tlb_flushall_shift);
- }
- 
- void __cpuinit detect_ht(struct cpuinfo_x86 *c)
-diff --git a/arch/x86/kernel/cpu/intel.c b/arch/x86/kernel/cpu/intel.c
-index 28ecd1b..bb90754 100644
---- a/arch/x86/kernel/cpu/intel.c
-+++ b/arch/x86/kernel/cpu/intel.c
-@@ -610,6 +610,39 @@ static void __cpuinit intel_tlb_lookup(const unsigned char desc)
- 	}
- }
- 
-+static void __cpuinit intel_tlb_flushall_shift_set(struct cpuinfo_x86 *c)
-+{
-+	if (!cpu_has_invlpg) {
-+		tlb_flushall_shift = -1;
-+		return;
-+	}
-+	switch ((c->x86 << 8) + c->x86_model) {
-+	case 0x60f: /* original 65 nm celeron/pentium/core2/xeon, "Merom"/"Conroe" */
-+	case 0x616: /* single-core 65 nm celeron/core2solo "Merom-L"/"Conroe-L" */
-+	case 0x617: /* current 45 nm celeron/core2/xeon "Penryn"/"Wolfdale" */
-+	case 0x61d: /* six-core 45 nm xeon "Dunnington" */
-+		tlb_flushall_shift = -1;
-+		break;
-+	case 0x61a: /* 45 nm nehalem, "Bloomfield" */
-+	case 0x61e: /* 45 nm nehalem, "Lynnfield" */
-+	case 0x625: /* 32 nm nehalem, "Clarkdale" */
-+	case 0x62c: /* 32 nm nehalem, "Gulftown" */
-+	case 0x62e: /* 45 nm nehalem-ex, "Beckton" */
-+	case 0x62f: /* 32 nm Xeon E7 */
-+		tlb_flushall_shift = 6;
-+		break;
-+	case 0x62a: /* SandyBridge */
-+	case 0x62d: /* SandyBridge, "Romely-EP" */
-+		tlb_flushall_shift = 5;
-+		break;
-+	case 0x63a: /* Ivybridge */
-+		tlb_flushall_shift = 1;
-+		break;
-+	default:
-+		tlb_flushall_shift = 6;
-+	}
-+}
-+
- void __cpuinit intel_cpu_detect_tlb(struct cpuinfo_x86 *c)
- {
- 	int i, j, n;
-@@ -630,6 +663,7 @@ void __cpuinit intel_cpu_detect_tlb(struct cpuinfo_x86 *c)
- 		for (j = 1 ; j < 16 ; j++)
- 			intel_tlb_lookup(desc[j]);
- 	}
-+	intel_tlb_flushall_shift_set(c);
- }
- 
- static const struct cpu_dev __cpuinitconst intel_cpu_dev = {
-diff --git a/arch/x86/mm/tlb.c b/arch/x86/mm/tlb.c
-index 22e5bb1..5bf4e85 100644
---- a/arch/x86/mm/tlb.c
-+++ b/arch/x86/mm/tlb.c
-@@ -314,8 +314,6 @@ void flush_tlb_mm(struct mm_struct *mm)
- 	preempt_enable();
- }
- 
--#define FLUSHALL_BAR	16
--
- #ifdef CONFIG_TRANSPARENT_HUGEPAGE
- static inline int has_large_page(struct mm_struct *mm,
- 				 unsigned long start, unsigned long end)
-@@ -350,7 +348,8 @@ void flush_tlb_range(struct vm_area_struct *vma,
- {
- 	struct mm_struct *mm;
- 
--	if (!cpu_has_invlpg || vma->vm_flags & VM_HUGETLB) {
-+	if (!cpu_has_invlpg || vma->vm_flags & VM_HUGETLB
-+			|| tlb_flushall_shift == (u16)TLB_FLUSH_ALL) {
- flush_all:
- 		flush_tlb_mm(vma->vm_mm);
- 		return;
-@@ -371,7 +370,8 @@ flush_all:
- 			act_entries = tlb_entries > mm->total_vm ?
- 					mm->total_vm : tlb_entries;
- 
--			if ((end - start)/PAGE_SIZE > act_entries/FLUSHALL_BAR)
-+			if ((end - start) >> PAGE_SHIFT >
-+					act_entries >> tlb_flushall_shift)
- 				local_flush_tlb();
- 			else {
- 				if (has_large_page(mm, start, end)) {
-diff --git a/include/asm-generic/tlb.h b/include/asm-generic/tlb.h
-index f96a5b5..75e888b 100644
---- a/include/asm-generic/tlb.h
-+++ b/include/asm-generic/tlb.h
-@@ -113,7 +113,8 @@ static inline int tlb_fast_mode(struct mmu_gather *tlb)
- 
- void tlb_gather_mmu(struct mmu_gather *tlb, struct mm_struct *mm, bool fullmm);
- void tlb_flush_mmu(struct mmu_gather *tlb);
--void tlb_finish_mmu(struct mmu_gather *tlb, unsigned long start, unsigned long end);
-+void tlb_finish_mmu(struct mmu_gather *tlb, unsigned long start,
-+							unsigned long end);
- int __tlb_remove_page(struct mmu_gather *tlb, struct page *page);
- 
- /* tlb_remove_page
--- 
-1.7.5.4
+iQIcBAABAgAGBQJPs08pAAoJECmIfjd9wqK0L8cQAJlzXKNMgA5zNFJAYk9iggQb
+MxSW2f6WoCMWPt17ByuTruoVlh/KTWJqeFMDkzV38f+pSxySQcoGpGpcyGfpsSlF
+WtGjddOBbjWYiboDwW4RDgT4pCdcZoICkRPpUBmwv6nBhHE3M5YFlijcJLr7uu0f
+UypCAkH8VGir9xVWNnkW/BRgvm1GgzH1ixEYtjuuJ/BFhgba09l8j5xIeBGB5FCg
+vNaFinBIWlMABltL1DjIndUpZiFPBonQVcdEjBWxm9z+ZSPs2fNuQERQj+XtBS8N
+DvX14HFZjGiM3H4o7eR88tUlp8qfYLvymJb76g+04f3ImLcJ0D7GsxwZCGPbiOtb
+zImqaQhELM1ryXYoLj/Tx3bcVfBYlS6Pa8FbOVZ/3bxjjGj57Xm6N6TOd7VU6rdi
+UZxXJXJRujlNFxbqw/zSJXrK2FjmCcHaEQcUe6BB1f9bDWI7etW+oRt7RJNLVKSV
+w4/c2gkSVY6Vwi3W92TrzTdOpmXxcrdr7/2pGUViQD9cngvr2kGkCyMUNTZwEfGp
+R4rBGdSquZ6UrFMg4bF9tIQakoEX54dv/tCVSHv8U+vk+wrkhyKxEtoncXMpvIIt
+0LlIFRSBXCsccGHiWAksRDVV63fADWuLtcAAUwZMYUMakIopcb7LtEBL0epJdTVZ
+9nEg9VOvHHWaZfjIzywg
+=ORvS
+-----END PGP SIGNATURE-----
+
+--=-E3V4qMSLNpij7KSIyWJw--
 
