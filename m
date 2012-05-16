@@ -1,18 +1,27 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760014Ab2EPMmm (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 May 2012 08:42:42 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:54690 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754835Ab2EPMmk (ORCPT
+	id S933298Ab2EPMo1 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 May 2012 08:44:27 -0400
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:44735 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932888Ab2EPMoZ convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 May 2012 08:42:40 -0400
-Date: Wed, 16 May 2012 05:41:09 -0700
-From: Anton Vorontsov <anton.vorontsov@linaro.org>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Kees Cook <keescook@chromium.org>, Colin Cross <ccross@android.com>
-Cc: Arnd Bergmann <arnd@arndb.de>, John Stultz <john.stultz@linaro.org>,
-        Shuah Khan <shuahkhan@gmail.com>, arve@android.com,
+	Wed, 16 May 2012 08:44:25 -0400
+MIME-Version: 1.0
+In-Reply-To: <20120516061416.GB18058@lizard>
+References: <20120512001506.GA8653@lizard>
+	<20120512001840.GJ14782@lizard>
+	<CAGXu5j+BPHPCnJ+ont8CGuUjjEYB_d6K-YtVJgNA7uwkpbfDoQ@mail.gmail.com>
+	<20120516061416.GB18058@lizard>
+Date: Wed, 16 May 2012 05:44:23 -0700
+X-Google-Sender-Auth: Ewy9r3MbWun-xcyHp2xa50hp_kA
+Message-ID: <CAGXu5jLtEk_64NoED1XrwtMuoNYUddAxryVT5XQ2nmj-GM1voQ@mail.gmail.com>
+Subject: Re: [PATCH 10/11] pstore/ram: Switch to persistent_ram routines
+From: Kees Cook <keescook@chromium.org>
+To: Anton Vorontsov <anton.vorontsov@linaro.org>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Colin Cross <ccross@android.com>, Arnd Bergmann <arnd@arndb.de>,
+        John Stultz <john.stultz@linaro.org>, arve@android.com,
         Rebecca Schultz Zavin <rebecca@android.com>,
         Jesper Juhl <jj@chaosbits.net>, Randy Dunlap <rdunlap@xenotime.net>,
         Stephen Boyd <sboyd@codeaurora.org>, Thomas Meyer <thomas@m3y3r.de>,
@@ -21,71 +30,76 @@ Cc: Arnd Bergmann <arnd@arndb.de>, John Stultz <john.stultz@linaro.org>,
         WANG Cong <xiyou.wangcong@gmail.com>, linux-kernel@vger.kernel.org,
         devel@driverdev.osuosl.org, linaro-kernel@lists.linaro.org,
         patches@linaro.org, kernel-team@android.com
-Subject: [PATCH v2 0/6] Merge ramoops and persistent_ram, generic pstore RAM
- backend
-Message-ID: <20120516124109.GA14658@lizard>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi all,
+On Tue, May 15, 2012 at 11:14 PM, Anton Vorontsov
+<anton.vorontsov@linaro.org> wrote:
+> Hello Kees,
+>
+> On Mon, May 14, 2012 at 03:21:17PM -0700, Kees Cook wrote:
+> [...]
+>> > -       buf = cxt->virt_addr + (id * cxt->record_size);
+>> > -       memset(buf, '\0', cxt->record_size);
+>> > +       persistent_ram_free_old(cxt->przs[id]);
+>>
+>> Hm, I don't think persistent_ram_free_old() is what's wanted here.
+>> That appears to entirely release the region? I want to make sure the
+>> memory is cleared first. And will this area come back on a write, or
+>> does it stay released?
+>
+> It just releases ECC-restored memory region (a copy). The original
+> (persistent) region is still fully reusable after that call.
 
-Here is v2 of the previous patch set. The series do not include
-patches that were already merged.
+Ah-ha, okay. So this still needs to clear the memory in the "real"
+copy then. Thanks for the clarification.
 
-I believe I addressed all the previous comments, plus now the
-series include another small cleanup patch.
+>> > +       }
+>> > +
+>> > +       for (i = 0; i < cxt->max_count; i++) {
+>> > +               size_t sz = cxt->record_size;
+>> > +               phys_addr_t start = cxt->phys_addr + sz * i;
+>> > +
+>> > +               cxt->przs[i] = persistent_ram_new(start, sz, 0);
+>>
+>> persistent_ram_new() is marked as __init, so this is unsafe to call if
+>> built as a module. I think persistent_ram_new() will need to lose the
+>> __init marking, or I'm misunderstanding something.
+>
+> Um. ramoops' probe routine is also __init. persistent_ram_new is a
+> part of ramoops module, so their __init functions will be discarded
+> at the same time.
+>
+> ram_console can't be a module, so it is also fine.
+>
+> So I think it's all fine.
 
-Here's some background for the series:
+This is what I get for staring at patches instead of applying them. :)
+Yeah, if it's all built together, it's no problem. It looked to me
+like they were in different modules.
 
-There are currently two competing debug facilities to store kernel
-messages in a persistent storage: a generic pstore and Google's
-persistent_ram. Not so long ago (https://lkml.org/lkml/2012/3/8/252),
-it was decided that we should fix this situation.
+>> > +fail_przs:
+>> > +       for (i = 0; cxt->przs[i]; i++)
+>> > +               persistent_ram_free(cxt->przs[i]);
+>>
+>> This can lead to a BUG, since persistent_ram_free() doesn't handle
+>> NULL arguments.
+>
+> The for loop has 'cxt->przs[i]' condition. :-)
 
-Recently ramoops has switched to pstore, which basically means that
-it became a RAM backend for the pstore framework.
+Okay, fair enough. :)
 
-persistent_ram+ram_console and ramoops+pstore have almost the same
-features, except:
+> Thanks for the review!
 
-1. Ramoops doesn't support ECC. Having ECC is useful when a hardware
-   reset was used to bring the machine back to life (i.e. a watchdog
-   triggered). In such cases, RAM may be somewhat corrupt, but
-   usually it is restorable.
+Sure thing! Thanks for doing this work; I'm excited to have access in
+ramoops to the new interfaces. :)
 
-2. Pstore doesn't support logging kernel messages in run-time, it only
-   dumps dmesg when kernel oopses/panics. This makes pstore useless for
-   debugging hangs caused by HW issues or improper use of HW (e.g.
-   weird device inserted -> driver tried to write a reserved bits ->
-   SoC hanged. In that case we don't get any messages in the pstore.
-
-These patches solve the first issue, plus move things to their
-proper places. Patches that will fix the second issue will be sent
-shortly.
-
---- 
- Documentation/ramoops.txt                |    8 +-
- drivers/char/Kconfig                     |    9 -
- drivers/char/Makefile                    |    1 -
- drivers/char/ramoops.c                   |  362 --------------------
- drivers/staging/android/Kconfig          |   10 +-
- drivers/staging/android/Makefile         |    1 -
- drivers/staging/android/persistent_ram.c |  530 -----------------------------
- drivers/staging/android/persistent_ram.h |   84 -----
- drivers/staging/android/ram_console.c    |    2 +-
- fs/pstore/Kconfig                        |   17 +
- fs/pstore/Makefile                       |    3 +
- fs/pstore/ram.c                          |  383 +++++++++++++++++++++
- fs/pstore/ram_core.c                     |  532 ++++++++++++++++++++++++++++++
- include/linux/pstore_ram.h               |   98 ++++++
- include/linux/ramoops.h                  |   17 -
- 15 files changed, 1042 insertions(+), 1015 deletions(-)
+-Kees
 
 -- 
-Anton Vorontsov
-Email: cbouatmailru@gmail.com
+Kees Cook
+Chrome OS Security
