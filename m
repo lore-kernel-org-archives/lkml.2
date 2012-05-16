@@ -1,48 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933163Ab2EPHrQ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 May 2012 03:47:16 -0400
-Received: from vostochny.stro.at ([78.47.22.85]:42568 "EHLO vostochny.stro.at"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759599Ab2EPHrO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 May 2012 03:47:14 -0400
-From: maximilian attems <max@stro.at>
-To: linux-ia64@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Stephan Mueller <stephan.mueller@atsec.com>,
-        maximilian attems <max@stro.at>,
-        Paul Gortmaker <paul.gortmaker@windriver.com>,
-        Tony Luck <tony.luck@intel.com>
-Subject: [PATCH] ia64: add cmpxchg.h to exported userspace headers
-Date: Wed, 16 May 2012 09:46:30 +0200
-Message-Id: <1337154390-23185-1-git-send-email-max@stro.at>
-X-Mailer: git-send-email 1.7.10
+	id S965190Ab2EPHuB (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 May 2012 03:50:01 -0400
+Received: from mail-qc0-f174.google.com ([209.85.216.174]:43341 "EHLO
+	mail-qc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932713Ab2EPHuA (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 16 May 2012 03:50:00 -0400
+MIME-Version: 1.0
+In-Reply-To: <20120516074530.GE10347@shlinux2.ap.freescale.net>
+References: <1337068143-15579-1-git-send-email-b29396@freescale.com>
+	<20120516074530.GE10347@shlinux2.ap.freescale.net>
+Date: Wed, 16 May 2012 09:49:59 +0200
+Message-ID: <CACRpkdY4b9AX5ZcqwuEoquFTGNbLGH=R=vZ5js63r2g4V63EEg@mail.gmail.com>
+Subject: Re: [PATCH 1/2] pinctrl: pinctrl-imx: add imx53 pinctrl driver
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Dong Aisheng <aisheng.dong@freescale.com>
+Cc: Dong Aisheng-B29396 <B29396@freescale.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "devicetree-discuss@lists.ozlabs.org" 
+	<devicetree-discuss@lists.ozlabs.org>,
+        "linus.walleij@stericsson.com" <linus.walleij@stericsson.com>,
+        "swarren@wwwdotorg.org" <swarren@wwwdotorg.org>,
+        "s.hauer@pengutronix.de" <s.hauer@pengutronix.de>,
+        Guo Shawn-R65073 <r65073@freescale.com>,
+        "kernel@pengutronix.de" <kernel@pengutronix.de>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Fixes klibc build on ia64 after 85f8f7759e418c814ee2ceacf73eddb9bed39492.
+On Wed, May 16, 2012 at 9:45 AM, Dong Aisheng
+<aisheng.dong@freescale.com> wrote:
+> Hi Linus,
+>
+> On Tue, May 15, 2012 at 03:49:02PM +0800, Dong Aisheng-B29396 wrote:
+>> From: Dong Aisheng <dong.aisheng@linaro.org>
+>>
+>> Signed-off-by: Dong Aisheng <dong.aisheng@linaro.org>
+>> ---
+>> ChangeLog v1->v2:
+>> * change PIN_FUNC_ID base in binding doc to 0 from 1.
+> I just checked your tree and it seems you merged the v1 series.
+> Can you merge this v2 instead?
 
-Cc: Paul Gortmaker <paul.gortmaker@windriver.com>
-Cc: Tony Luck <tony.luck@intel.com>
-Signed-off-by: maximilian attems <max@stro.at>
----
- arch/ia64/include/asm/Kbuild |    1 +
- 1 file changed, 1 insertion(+)
+Aha sorry. Fixing it up now... check in some 30 mins or so.
 
-diff --git a/arch/ia64/include/asm/Kbuild b/arch/ia64/include/asm/Kbuild
-index 241d1c5..d4eb938 100644
---- a/arch/ia64/include/asm/Kbuild
-+++ b/arch/ia64/include/asm/Kbuild
-@@ -1,6 +1,7 @@
- include include/asm-generic/Kbuild.asm
- 
- header-y += break.h
-+header-y += cmpxchg.h
- header-y += fpu.h
- header-y += gcc_intrin.h
- header-y += ia64regs.h
--- 
-1.7.10
-
+Linus Walleij
