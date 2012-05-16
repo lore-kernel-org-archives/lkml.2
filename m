@@ -1,44 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758369Ab2ESSxi (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 19 May 2012 14:53:38 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:49408 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757375Ab2ESSxg (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 19 May 2012 14:53:36 -0400
-From: Devendra Naga <devendra.aaru@gmail.com>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        John Stultz <john.stultz@linaro.org>,
-        Andy Green <andy.green@linaro.org>,
-        =?UTF-8?q?Arve=20Hj=C3=B8nnev=C3=A5g?= <arve@android.com>,
-        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
-Cc: Devendra Naga <devendra.aaru@gmail.com>
-Subject: [PATCH] android/alarm: remove unnecessary goto statement
-Date: Sun, 20 May 2012 00:23:26 +0530
-Message-Id: <1337453606-6127-1-git-send-email-devendra.aaru@gmail.com>
-X-Mailer: git-send-email 1.7.9.5
+	id S1758605Ab2ESTEZ (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 19 May 2012 15:04:25 -0400
+Received: from mail.vvsu.ru ([217.74.113.15]:48213 "EHLO vvsu.ru"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1751297Ab2ESTEX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 19 May 2012 15:04:23 -0400
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8;
+ format=flowed
+Content-Transfer-Encoding: 7bit
+Date: Wed, 16 May 2012 07:38:56 -0300
+From: WONG HUI <wonghui921@yahoo.com.hk>
+To: undisclosed-recipients:;
+Reply-To: <wonghui22@postino.net>
+Mail-Reply-To: <wonghui22@postino.net>
+Message-ID: <9b71130d065fe50b76d9d23a671cea89@vvsu.ru>
+User-Agent: Roundcube Webmail/0.8-svn
+X-SA-Exim-Connect-IP: 217.74.113.14
+X-SA-Exim-Mail-From: wonghui921@yahoo.com.hk
+X-Spam-ASN: 
+Subject: BUSINESS PROPOSAL!!
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
+X-SA-Exim-Scanned: Yes (on vvsu.ru)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Devendra Naga <devendra.aaru@gmail.com>
----
- drivers/staging/android/alarm-dev.c |    1 -
- 1 file changed, 1 deletion(-)
 
-diff --git a/drivers/staging/android/alarm-dev.c b/drivers/staging/android/alarm-dev.c
-index 03efb34..1573672 100644
---- a/drivers/staging/android/alarm-dev.c
-+++ b/drivers/staging/android/alarm-dev.c
-@@ -196,7 +196,6 @@ from_old_alarm_set:
- 
- 	default:
- 		rv = -EINVAL;
--		goto err1;
- 	}
- err1:
- 	return rv;
+
 -- 
-1.7.9.5
-
+Please I would like you to keep this proposal as a top secret and 
+delete it
+if you are not interested and get back to me if you are interested for
+details as regards to the transfer of $24,500,000 to you from my bank 
+where
+I am the bank director here in Hong Kong.
+Yours Truly,
+Wong Hui.
