@@ -1,82 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755590Ab2EPPiN (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 May 2012 11:38:13 -0400
-Received: from lobo.ruivo.org ([173.14.175.98]:34759 "EHLO lobo.ruivo.org"
+	id S1755617Ab2EPPlM (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 May 2012 11:41:12 -0400
+Received: from mga02.intel.com ([134.134.136.20]:51845 "EHLO mga02.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754367Ab2EPPiM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 May 2012 11:38:12 -0400
-X-Greylist: delayed 422 seconds by postgrey-1.27 at vger.kernel.org; Wed, 16 May 2012 11:38:12 EDT
-Date: Tue, 15 May 2012 09:29:19 -0400
-From: Aristeu Sergio Rozanski Filho <aris@ruivo.org>
-To: Jenny TC <jenny.tc@intel.com>
-Cc: khali@linux-fr.org, guenter.roeck@ericsson.com, lm-sensors@lm-sensors.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] hwmon: Generic ADC support for hwmon
-Message-ID: <20120515132919.GA11693@jake.ruivo.org>
-References: <1337092008-31263-1-git-send-email-jenny.tc@intel.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1337092008-31263-1-git-send-email-jenny.tc@intel.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1755330Ab2EPPlJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 16 May 2012 11:41:09 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.67,352,1309762800"; 
+   d="scan'208";a="141323025"
+Subject: Re: [RFC PATCH 3/3] block: add queue idle timer
+From: Lin Ming <ming.m.lin@intel.com>
+To: Jens Axboe <axboe@kernel.dk>
+Cc: Jeff Moyer <jmoyer@redhat.com>, Alan Stern <stern@rowland.harvard.edu>,
+        linux-kernel@vger.kernel.org, linux-pm@vger.kernel.org,
+        linux-scsi@vger.kernel.org
+In-Reply-To: <4FB3B14E.2040306@kernel.dk>
+References: <1337071697-30920-1-git-send-email-ming.m.lin@intel.com>
+	 <1337071697-30920-4-git-send-email-ming.m.lin@intel.com>
+	 <x49mx59b6c0.fsf@segfault.boston.devel.redhat.com>
+	 <1337131643.22243.2.camel@minggr>
+	 <x49r4uke0p1.fsf@segfault.boston.devel.redhat.com>
+	 <4FB3B14E.2040306@kernel.dk>
+Content-Type: text/plain; charset="ISO-8859-1"
+Date: Wed, 16 May 2012 23:40:20 +0800
+Message-ID: <1337182820.4047.18.camel@hp6530s>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Jenny,
-On Tue, May 15, 2012 at 07:56:48PM +0530, Jenny TC wrote:
-> --- /dev/null
-> +++ b/drivers/hwmon/hwmon-adc.c
-> @@ -0,0 +1,212 @@
-> +/*
-> + *  hwmon-adc.c - Generic adc support for hardware monitoring  subsystem.
-> + *
-> + *  Copyright (C) 2012 Intel Corp
-> + *
-> + *  ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-> + *
-> + *  This program is free software; you can redistribute it and/or modify
-> + *  it under the terms of the GNU General Public License as published by
-> + *  the Free Software Foundation; version 2 of the License.
-> + *
-> + *  This program is distributed in the hope that it will be useful, but
-> + *  WITHOUT ANY WARRANTY; without even the implied warranty of
-> + *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-> + *  General Public License for more details.
-> + *
-> + *  You should have received a copy of the GNU General Public License along
-> + *  with this program; if not, write to the Free Software Foundation, Inc.,
-> + *  59 Temple Place, Suite 330, Boston, MA 02111-1307 USA.
-> + *
-> + * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-> + * Author : Jenny TC <jenny.tc@intel.com>
-> + */
-> +
-> +#include <linux/module.h>
-> +#include <linux/kernel.h>
-> +#include <linux/device.h>
-> +#include <linux/hwmon.h>
-> +#include <linux/hwmon-adc.h>
-> +
-> +LIST_HEAD(adc_lst);
-> +DEFINE_MUTEX(list_lock);
-need static here?
+On Wed, 2012-05-16 at 15:53 +0200, Jens Axboe wrote:
+> On 05/16/2012 03:04 PM, Jeff Moyer wrote:
+> > Lin Ming <ming.m.lin@intel.com> writes:
+> > 
+> >> On Tue, 2012-05-15 at 15:19 -0400, Jeff Moyer wrote:
+> >>> Lin Ming <ming.m.lin@intel.com> writes:
+> >>>
+> >>>> Add an idle timer that is set to some suitable timeout and would be
+> >>>> added when the queue first goes empty. If nothing has happened during
+> >>>> the timeout interval, then the queue is suspended.
+> >>>>
+> >>>> Queueing a new request could check the state and resume queue if it is
+> >>>> supended.
+> >>>>
+> >>>
+> >>> [snip]
+> >>>
+> >>>> @@ -1129,6 +1141,13 @@ void __blk_put_request(struct request_queue *q, struct request *req)
+> >>>>  	if (unlikely(--req->ref_count))
+> >>>>  		return;
+> >>>>  
+> >>>> +	/* PM request is not accounted */
+> >>>> +	if (!(req->cmd_flags & REQ_PM)) {
+> >>>> +		if (!(--q->nr_pending))
+> >>>> +			/* Hard code to 20secs, will move to sysfs */
+> >>>> +			mod_timer(&q->idle, jiffies + 20*HZ);
+> >>>> +	}
+> >>>> +
+> >>>
+> >>> I'm pretty sure Jens wanted to avoid doing a mod_timer, here, given that
+> >>> the queue can transition between empty and non-empty fairly rapidly for
+> >>> dependent I/O.
+> >>
+> >> I'll remove this idle timer and use runtime pm core's timer.
+> > 
+> > This issues isn't which timer to use, it's when to modify it.  Since the
+> > queue can cycle between empty and non-empty very quickly, you should try
+> > to avoid calling mod_timer for every non-empty to empty transition.
+> > Jens had described one way to do this in the thread you referenced in
+> > your 0/3 email.
+> 
+> That's exactly right, thanks Jeff.
+> 
+> Lin, you should have more slack timer handling. Look at the blk-timeout
+> handling of request timeouts for inspiration, and/or the thread that
+> Jeff also references. Doing a timer add/del for each request put is a no
+> go.
 
-> +struct device *hwmon_adc_device_register(struct device *dev,
-> +					 struct hwmon_adc_ops *adc_ops)
-> +{
-> +	struct hwmon_adc *adc_node;
-> +	struct device *hwdev;
-> +
-> +	hwdev = hwmon_device_register(dev);
-> +	if (IS_ERR(hwdev))
-> +		return hwdev;
-> +
-> +	adc_node = kzalloc(sizeof(struct hwmon_adc), GFP_ATOMIC);
-why are you using GFP_ATOMIC here? and you need to handle the case when the
-allocation fails
+You mentioned how to detect queue idle in the referenced thread:
+	
+===
+So we could probably add an idle timer that is set to some suitable
+timeout for this and would be added when the queue first goes empty. If
+new requests come in, just let it simmer and defer checking the state to
+when it actually fires.
+===
 
--- 
-Aristeu
+What do you mean of "the queue first goes empty"?
 
