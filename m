@@ -1,92 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752174Ab2EPOL6 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 May 2012 10:11:58 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:44897 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751045Ab2EPOL4 (ORCPT
+	id S1752315Ab2EPONk (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 May 2012 10:13:40 -0400
+Received: from mail-qc0-f174.google.com ([209.85.216.174]:48628 "EHLO
+	mail-qc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751522Ab2EPONi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 May 2012 10:11:56 -0400
-Date: Wed, 16 May 2012 07:11:51 -0700
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: Anton Vorontsov <anton.vorontsov@linaro.org>
-Cc: Kees Cook <keescook@chromium.org>, Colin Cross <ccross@android.com>,
-        devel@driverdev.osuosl.org, linaro-kernel@lists.linaro.org,
-        Arnd Bergmann <arnd@arndb.de>, patches@linaro.org,
-        Marco Stornelli <marco.stornelli@gmail.com>,
-        Stephen Boyd <sboyd@codeaurora.org>, linux-kernel@vger.kernel.org,
-        arve@android.com, Jesper Juhl <jj@chaosbits.net>,
-        John Stultz <john.stultz@linaro.org>, Shuah Khan <shuahkhan@gmail.com>,
-        Rebecca Schultz Zavin <rebecca@android.com>,
-        WANG Cong <xiyou.wangcong@gmail.com>,
-        Andrew Morton <akpm@linux-foundation.org>, kernel-team@android.com,
-        Thomas Meyer <thomas@m3y3r.de>
-Subject: Re: [PATCH 2/6] ramoops: Move to fs/pstore/ram.c
-Message-ID: <20120516141151.GA939@kroah.com>
-References: <20120516124109.GA14658@lizard>
- <20120516124308.GB18345@lizard>
- <20120516131751.GA23849@kroah.com>
- <20120516135749.GA26387@lizard>
+	Wed, 16 May 2012 10:13:38 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120516135749.GA26387@lizard>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <CA+55aFzOtY7tBw4YNH+QX+6L4opMsJ=sN4DfJURMv_yBTWqL1w@mail.gmail.com>
+References: <1336963631-3541-1-git-send-email-zohar@us.ibm.com>
+	<CA+55aFzrJNd5J7i3Rp7-ctc=bDn5GTWu=H1xyCgGZ-rzu74Gbw@mail.gmail.com>
+	<CA+55aFyPPZ0wayqPMCZtfP1w9nN-GnKJxYc9i_XM_Qk8d-zJzg@mail.gmail.com>
+	<CACLa4pujEBAS349Pr-EcBmzQgTHWthhCMV0Yqq0BG-F_gDjz4Q@mail.gmail.com>
+	<1337112446.20904.50.camel@falcor>
+	<CA+55aFxRRuWGD-4LYzO-T8eg22goKpej5AV36ALL8GaLP56oRA@mail.gmail.com>
+	<CA+55aFzOtY7tBw4YNH+QX+6L4opMsJ=sN4DfJURMv_yBTWqL1w@mail.gmail.com>
+Date: Wed, 16 May 2012 10:13:37 -0400
+Message-ID: <CACLa4pspOFx638fn6aDHpESVZrKmWCnrO999qoO+Mna4ccF_7g@mail.gmail.com>
+Subject: Re: [PATCH] vfs: fix IMA lockdep circular locking dependency
+From: Eric Paris <eparis@parisplace.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Mimi Zohar <zohar@linux.vnet.ibm.com>, Mimi Zohar <zohar@us.ibm.com>,
+        linux-security-module@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Al Viro <viro@zeniv.linux.org.uk>, Stephen Smalley <sds@tycho.nsa.gov>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, May 16, 2012 at 06:57:49AM -0700, Anton Vorontsov wrote:
-> On Wed, May 16, 2012 at 06:17:51AM -0700, Greg Kroah-Hartman wrote:
-> [...]
-> > > --- a/drivers/char/Kconfig
-> > > +++ b/drivers/char/Kconfig
-> > > @@ -585,15 +585,6 @@ config DEVPORT
-> > >  
-> > >  source "drivers/s390/char/Kconfig"
-> > >  
-> > > -config RAMOOPS
-> > > -	tristate "Log panic/oops to a RAM buffer"
-> > > -	depends on HAS_IOMEM
-> > > -	depends on PSTORE
-> > 
-> > This "depends on PSTORE" line is not in my staging-next tree, where did
-> > it come from?
-> 
-> The thing is that ramoops switched to pstore just recently, and the
-> patch is in -mm tree.
-> 
-> (Just for the record, I use linux-next-20120504, HEAD at commit
-> 44449d2b34aca3b1)
-> 
-> > I'm guessing that because of this, is why the other conflict happens,
-> > right?
-> 
-> Yep.
-> 
-> > Any ideas on what I can do to resolve it?  As you are moving a file, I
-> > want to make sure I move the correct version of it :)
-> 
-> There's a cross-tree dependency with -mm tree, as it appears.
-> 
-> So, I'm not sure which is better:
-> 
-> 1. Push the whole pile of patches via -mm; or
-> 
-> 2. You apply the two patches from -mm tree before my series:
->    	"ramoops: use pstore interface"
->    	linux-next commit 60aad9fc1f04ca19e800c5984ad84f405d133a11
->    and
->    	"ramoops: fix printk format warnings"
->    	linux-next commit f2a28afdb529c43a7eb21fd0c991cab5676ef011
-> 
->    http://userweb.kernel.org/~akpm/mmotm/ seem to not respond at the
->    moment, so I guess the easiest way to grab the patches would
->    be to cherry-pick the two commits above from the linux-next
->    repository. That way Andrew would automatically drop them
->    from his tree.
+On Tue, May 15, 2012 at 8:37 PM, Linus Torvalds
+<torvalds@linux-foundation.org> wrote:
 
-Ok, I'll pick from linux-next, that seems to be the easiest way.  I'll
-do that later this morning and let you know how it goes...
+> It does change some things, like say that "->mmap_file()" is only ever
+> called for actual files, not for anonymous mappings. It doesn't seem
+> to be sensible to have a security model for anonymous mappings -
+> there's nothing there to really target. Whatever.
 
-greg k-h
+So we would have no checks for anonymous mappings?  We actually do
+have some controls around them today
+
+http://www.akkadia.org/drepper/selinux-mem.html
+
+It's mostly around W+X memory.  (or was W now X memory)
+
+Admittedly with the growing prevalence of JiT stuff we are using those
+protections less and less and less....
+
+Not certain how happy some will be to see them completely disappear....
