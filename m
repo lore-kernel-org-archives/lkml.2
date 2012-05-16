@@ -1,52 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030208Ab2EPKYI (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 May 2012 06:24:08 -0400
-Received: from skyrme.org ([193.175.80.135]:36925 "EHLO skyrme.org"
+	id S967263Ab2EPKY1 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 May 2012 06:24:27 -0400
+Received: from skyrme.org ([193.175.80.135]:36921 "EHLO skyrme.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S967019Ab2EPKYE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 May 2012 06:24:04 -0400
-Date: 16 May 2012 09:41:20 +0000
-Message-Id: <1337161280-28953-6-git-send-email-oskar@scara.com>
+	id S967138Ab2EPKXz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 16 May 2012 06:23:55 -0400
+Date: 16 May 2012 09:41:19 +0000
+Message-Id: <1337161280-28953-5-git-send-email-oskar@scara.com>
 From: "Oskar Schirmer" <oskar@scara.com>
 To: linux-kernel@vger.kernel.org
 Cc: trivial@kernel.org, hannes@cmpxchg.org, shess@hessware.de,
         "Oskar Schirmer" <oskar@scara.com>,
-        "Geert Uytterhoeven" <geert@linux-m68k.org>
-Subject: [PATCH 5/5] =?UTF-8?q?arm/m68k:=20Change=20mail=20address=20of=20Se?=
+        "Paul Gortmaker" <paul.gortmaker@windriver.com>
+Subject: [PATCH 4/5] lib: Change mail address of Oskar Schirmer
 X-Mailer: git-send-email 1.6.0.3
 In-Reply-To: <1337161280-28953-1-git-send-email-oskar@scara.com>
 References: <1337161280-28953-1-git-send-email-oskar@scara.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 That old mail address doesnt exist any more.
-This changes all occurences to a current address.
+This changes all occurences to my new address.
 
 Signed-off-by: Oskar Schirmer <oskar@scara.com>
-Acked-by: Sebastian Heß <shess@hessware.de>
-Cc: Geert Uytterhoeven <geert@linux-m68k.org>
+Cc: Paul Gortmaker <paul.gortmaker@windriver.com>
 ---
- arch/m68k/platform/532x/config.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+ include/linux/rational.h |    2 +-
+ lib/rational.c           |    2 +-
+ 2 files changed, 2 insertions(+), 2 deletions(-)
 
-diff --git a/arch/m68k/platform/532x/config.c b/arch/m68k/platform/532x/config.c
-index 37082d0..21d6cb1 100644
---- a/arch/m68k/platform/532x/config.c
-+++ b/arch/m68k/platform/532x/config.c
-@@ -7,7 +7,7 @@
-  *	Copyright (C) 2000, Lineo (www.lineo.com)
-  *	Yaroslav Vinogradov yaroslav.vinogradov@freescale.com
-  *	Copyright Freescale Semiconductor, Inc 2006
-- *	Copyright (c) 2006, emlix, Sebastian Hess <sh@emlix.com>
-+ *	Copyright (c) 2006, emlix, Sebastian Hess <shess@hessware.de>
+diff --git a/include/linux/rational.h b/include/linux/rational.h
+index 4f532fc..bfa6a2b 100644
+--- a/include/linux/rational.h
++++ b/include/linux/rational.h
+@@ -1,7 +1,7 @@
+ /*
+  * rational fractions
   *
-  * This program is free software; you can redistribute it and/or modify
-  * it under the terms of the GNU General Public License as published by
+- * Copyright (C) 2009 emlix GmbH, Oskar Schirmer <os@emlix.com>
++ * Copyright (C) 2009 emlix GmbH, Oskar Schirmer <oskar@scara.com>
+  *
+  * helper functions when coping with rational numbers,
+  * e.g. when calculating optimum numerator/denominator pairs for
+diff --git a/lib/rational.c b/lib/rational.c
+index d326da3..f0aa21c 100644
+--- a/lib/rational.c
++++ b/lib/rational.c
+@@ -1,7 +1,7 @@
+ /*
+  * rational fractions
+  *
+- * Copyright (C) 2009 emlix GmbH, Oskar Schirmer <os@emlix.com>
++ * Copyright (C) 2009 emlix GmbH, Oskar Schirmer <oskar@scara.com>
+  *
+  * helper functions when coping with rational numbers
+  */
 -- 
 1.7.5.4
 
