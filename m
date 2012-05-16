@@ -1,82 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758933Ab2EPCLT (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 May 2012 22:11:19 -0400
-Received: from mail-yx0-f174.google.com ([209.85.213.174]:42744 "EHLO
-	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758373Ab2EPCLS (ORCPT
+	id S932749Ab2EPCLg (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 May 2012 22:11:36 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:45140 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758387Ab2EPCLe convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 May 2012 22:11:18 -0400
-Message-ID: <1337134273.5940.4.camel@phoenix>
-Subject: [PATCH RFT 3/3] regulator: isl6271a: Convert to set_voltage_sel and
- regulator_map_voltage_linear
-From: Axel Lin <axel.lin@gmail.com>
-To: linux-kernel@vger.kernel.org
-Cc: Marek Vasut <marek.vasut@gmail.com>, Liam Girdwood <lrg@ti.com>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>
-Date: Wed, 16 May 2012 10:11:13 +0800
-In-Reply-To: <1337134167.5940.2.camel@phoenix>
-References: <1337134167.5940.2.camel@phoenix>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.2- 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	Tue, 15 May 2012 22:11:34 -0400
+MIME-Version: 1.0
+In-Reply-To: <20120516011833.GA6599@richard>
+References: <20120410090306.GA7056@richard>
+	<20120422155202.GA13540@richard>
+	<4F95B17B.3030401@redhat.com>
+	<20120514015536.GA3331@richard>
+	<CAE9FiQUjxH+LWy2zbbL6TVQSMZ44i9grFBZf0ZZQFPEWRKANMw@mail.gmail.com>
+	<20120514064615.GB26605@richard>
+	<CAE9FiQUuHFoEXMz_Va+FOGnqEbi9=cnnoSB+h7Ug2e4Y2sFTGQ@mail.gmail.com>
+	<20120516011833.GA6599@richard>
+Date: Tue, 15 May 2012 19:11:34 -0700
+X-Google-Sender-Auth: 4gC8BmF6Qr1rvFVTvpM1RJyjef8
+Message-ID: <CAE9FiQVUcYu-KM8fBs3zO5ZnL9jxHmJSN6-Ue5-kdC-niM6=Jw@mail.gmail.com>
+Subject: Re: One problem in reassign pci bus number?
+From: Yinghai Lu <yinghai@kernel.org>
+To: Richard Yang <weiyang@linux.vnet.ibm.com>
+Cc: linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Axel Lin <axel.lin@gmail.com>
----
- drivers/regulator/isl6271a-regulator.c |   21 ++++++---------------
- 1 files changed, 6 insertions(+), 15 deletions(-)
+On Tue, May 15, 2012 at 6:18 PM, Richard Yang
+<weiyang@linux.vnet.ibm.com> wrote:
+> On Tue, May 15, 2012 at 10:32:46AM -0700, Yinghai Lu wrote:
+>>>>>>On 04/22/2012 11:52 AM, Richard Yang wrote:
+>>>>>>>All,
+>>>>>>>
+>>>>>>>I am reading the pci_scan_bridge() and not sure what will happen in
+>>>>>>>following situation.
+>>>>>>>
+>>>>>>>Suppose the kernel is not passed the pci=assign-busses.
+>>>>>>>
+>>>>>>>Below is a picture about the pci system.
+>>>>>>>
+>>>>>>>                    +-------+
+>>>>>>>                    |       | root bridge(0,255)
+>>>>>>>                    +---+---+
+>>>>>>>                        |          Bus 0
+>>>>>>>       -----+-----------+------------------------------+--
+>>>>>>>            |                                          |
+>>>>>>>            |                                          |
+>>>>>>>            |                                          |
+>>>>>>>       +----+----+                               +-----+-----+
+>>>>>>>       |         |  B1(1,15)                     |           |B2(16,28)
+>>>>>>>       +----+----+                               +-----+-----+
+>>>>>>>            |  Bus 1                                   |    Bus 16
+>>>>>>>       -----+-----------------------         ----------+----------------
+>>>>>>>                             |
+>>>>>>>                        +----+----+
+>>>>>>>                        |         | B3
+>>>>>>>                        +---------+
+>>>>>>>
+>>>>>>>Suppose B1 and B2 works fine with the BIOS, which get the right bus
+>>>>>>>number and range.
+>>>>>>>
+>>>>>>>B3 does not works fine with the BIOS, which doesn't get the bus number.
+>>>>>>>
+>>>>> Take my original question.
+>>>>>
+>>>>> B3 doesn't get the bus number, which its parent doesn't have free bus
+>>>>> number and there is no gap between B1 and B2.
+>>>>>
+>>>>> So in this case, the probe_resource() can't find bus number for B3.
+>>>>> Then cause pci_bridge_probe_busn_res() return non-zero.
+>>>>>
+>>>>> Then B3 couldn't work fine?
+>>>>
+>>>>B3 is on Bus 1? B3 is the one of bridges on Bus1?
+>>> No,  I omit other bridges on Bus#1.
+>>> They will occupy bus number 2-15, which is calculated by BIOS and set to
+>>> bridge's configuration space.
+>>
+>>with that new condition, probe_resource will return zero.
+>>
+>>for those kind of case:
+>>1. use echo 1 > /sys .../remove to remove devices under Bridge2.
+>>2. use setpci to change bus register of bridge2 to move high to make
+>>more space for bridge 1.
+>>3. rescan bridge 1 and bridge 2.
+> So these steps is done after boot up and user find B3 doesn't work?
 
-diff --git a/drivers/regulator/isl6271a-regulator.c b/drivers/regulator/isl6271a-regulator.c
-index 00cb288..56d273f 100644
---- a/drivers/regulator/isl6271a-regulator.c
-+++ b/drivers/regulator/isl6271a-regulator.c
-@@ -50,25 +50,15 @@ static int isl6271a_get_voltage_sel(struct regulator_dev *dev)
- 	return idx;
- }
- 
--static int isl6271a_set_voltage(struct regulator_dev *dev,
--				int minuV, int maxuV,
--				unsigned *selector)
-+static int isl6271a_set_voltage_sel(struct regulator_dev *dev,
-+				    unsigned selector)
- {
- 	struct isl_pmic *pmic = rdev_get_drvdata(dev);
--	int err, data;
--
--	if (minuV < ISL6271A_VOLTAGE_MIN || minuV > ISL6271A_VOLTAGE_MAX)
--		return -EINVAL;
--	if (maxuV < ISL6271A_VOLTAGE_MIN || maxuV > ISL6271A_VOLTAGE_MAX)
--		return -EINVAL;
--
--	data = DIV_ROUND_UP(minuV - ISL6271A_VOLTAGE_MIN,
--			    ISL6271A_VOLTAGE_STEP);
--	*selector = data;
-+	int err;
- 
- 	mutex_lock(&pmic->mtx);
- 
--	err = i2c_smbus_write_byte(pmic->client, data);
-+	err = i2c_smbus_write_byte(pmic->client, selector);
- 	if (err < 0)
- 		dev_err(&pmic->client->dev, "Error setting voltage\n");
- 
-@@ -78,8 +68,9 @@ static int isl6271a_set_voltage(struct regulator_dev *dev,
- 
- static struct regulator_ops isl_core_ops = {
- 	.get_voltage_sel = isl6271a_get_voltage_sel,
--	.set_voltage	= isl6271a_set_voltage,
-+	.set_voltage_sel = isl6271a_set_voltage_sel,
- 	.list_voltage	= regulator_list_voltage_linear,
-+	.map_voltage	= regulator_map_voltage_linear,
- };
- 
- static int isl6271a_get_fixed_voltage(struct regulator_dev *dev)
--- 
-1.7.5.4
+yes, after os is booted up.
 
-
-
+Yinghai
