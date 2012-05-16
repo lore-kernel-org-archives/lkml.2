@@ -1,146 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933412Ab2EPMp7 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 May 2012 08:45:59 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:42353 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933188Ab2EPMp5 (ORCPT
+	id S933371Ab2EPMsQ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 May 2012 08:48:16 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:4950 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932973Ab2EPMsO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 May 2012 08:45:57 -0400
-Date: Wed, 16 May 2012 05:44:27 -0700
-From: Anton Vorontsov <anton.vorontsov@linaro.org>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Kees Cook <keescook@chromium.org>, Colin Cross <ccross@android.com>
-Cc: Arnd Bergmann <arnd@arndb.de>, John Stultz <john.stultz@linaro.org>,
-        Shuah Khan <shuahkhan@gmail.com>, arve@android.com,
-        Rebecca Schultz Zavin <rebecca@android.com>,
-        Jesper Juhl <jj@chaosbits.net>, Randy Dunlap <rdunlap@xenotime.net>,
-        Stephen Boyd <sboyd@codeaurora.org>, Thomas Meyer <thomas@m3y3r.de>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Marco Stornelli <marco.stornelli@gmail.com>,
-        WANG Cong <xiyou.wangcong@gmail.com>, linux-kernel@vger.kernel.org,
-        devel@driverdev.osuosl.org, linaro-kernel@lists.linaro.org,
-        patches@linaro.org, kernel-team@android.com
-Subject: [PATCH 6/6] pstore/ram: Add ECC support
-Message-ID: <20120516124427.GF18345@lizard>
-References: <20120516124109.GA14658@lizard>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <20120516124109.GA14658@lizard>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Wed, 16 May 2012 08:48:14 -0400
+X-Authority-Analysis: v=2.0 cv=ae7jbGUt c=1 sm=0 a=ZycB6UtQUfgMyuk2+PxD7w==:17 a=XQbtiDEiEegA:10 a=g_LhDMiRcOYA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=MXh8i3YQ1hvvQgUc4BgA:9 a=PUjeQqilurYA:10 a=ZycB6UtQUfgMyuk2+PxD7w==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 74.67.80.29
+Message-ID: <1337172492.6724.36.camel@gandalf.stny.rr.com>
+Subject: Re: [PATCH v22] edac, ras/hw_event.h: use events to handle hw issues
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Borislav Petkov <bp@amd64.org>
+Cc: Mauro Carvalho Chehab <mchehab@redhat.com>,
+        "Luck, Tony" <tony.luck@intel.com>,
+        Linux Edac Mailing List <linux-edac@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Doug Thompson <norsk5@yahoo.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Ingo Molnar <mingo@redhat.com>
+Date: Wed, 16 May 2012 08:48:12 -0400
+In-Reply-To: <20120515163855.GE27806@aftab.osrc.amd.com>
+References: <3908561D78D1C84285E8C5FCA982C28F192EC247@ORSMSX104.amr.corp.intel.com>
+	 <4FAC6FF8.3050608@redhat.com> <20120511102527.GI8913@aftab.osrc.amd.com>
+	 <4FAD081C.5000704@redhat.com> <20120511172430.GB17299@aftab.osrc.amd.com>
+	 <4FAD5CAD.90508@redhat.com> <20120514133404.GE4231@aftab.osrc.amd.com>
+	 <4FB1163D.3010302@redhat.com> <20120515150957.GC27806@aftab.osrc.amd.com>
+	 <4FB27EDC.8040001@redhat.com> <20120515163855.GE27806@aftab.osrc.amd.com>
+Content-Type: text/plain; charset="ISO-8859-15"
+X-Mailer: Evolution 3.2.2-1 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is now straightforward: just introduce a module parameter and pass
-the needed value to persistent_ram_new().
+On Tue, 2012-05-15 at 18:38 +0200, Borislav Petkov wrote:
+> On Tue, May 15, 2012 at 01:05:48PM -0300, Mauro Carvalho Chehab wrote:
+> > > Here's what an error looks like on my system here:
+> > > 
+> > >        mcegen.py-2868  [007] .N..   178.261607: mc_event: Corrected error:amd64_edac on memory stick "unknown memory" (mc:0 csrow:3 channel:1  page:0x5bac7 offset:0x388 grain:0 syndrome:0x34ed )
+> > > 
+> > > There's still this trailing " " at the end of the error line which
+> > > shouldn't be there and also two spaces between "channel" and "page".
+> > 
+> > If you take a look at the trace printk:
+> > 
+> > + TP_printk("%s error:%s on memory stick \"%s\" (mc:%d %s %s %s)",
+> > +           (__entry->err_type == HW_EVENT_ERR_CORRECTED) ? "Corrected" :
+> > +                 ((__entry->err_type == HW_EVENT_ERR_FATAL) ?
+> > +
+> > +           __get_str(msg),
+> > +           __get_str(label),
+> > +           __entry->mc_index,
+> > +           __get_str(location),
+> > +           __get_str(detail),
+> > +           __get_str(driver_detail))
+> > 
+> > There are not extra spaces there. The first extra space is probably because
+> > there is an extra space at the label string. This should be easy to fix.
+> > 
+> > The other extra space at the end is because amd64 currently doesn't provide
+> > driver_detail information.
+> 
+> Remind me again why do we need two strings: detail and driver_detail?
+> 
+> Because they could very well be lumped together with a single "%s"
+> format - "(mc:%d %s)" - and be printed.
+> 
+> And detail will always contain something which is not the empty string,
+> so problem solved.
 
-Signed-off-by: Anton Vorontsov <anton.vorontsov@linaro.org>
-Acked-by: Marco Stornelli <marco.stornelli@gmail.com>
-Acked-by: Kees Cook <keescook@chromium.org>
----
- Documentation/ramoops.txt  |    6 ++++++
- fs/pstore/ram.c            |   15 ++++++++++++---
- include/linux/pstore_ram.h |    1 +
- 3 files changed, 19 insertions(+), 3 deletions(-)
+Here's another trick if you want to get rid of the space and keep both
+fields:
 
-diff --git a/Documentation/ramoops.txt b/Documentation/ramoops.txt
-index 470d2c4..4ba7db2 100644
---- a/Documentation/ramoops.txt
-+++ b/Documentation/ramoops.txt
-@@ -30,6 +30,11 @@ variable while setting 0 in that variable dumps only the panics.
- The module uses a counter to record multiple dumps but the counter gets reset
- on restart (i.e. new dumps after the restart will overwrite old ones).
- 
-+Ramoops also supports software ECC protection of persistent memory regions.
-+This might be useful when a hardware reset was used to bring the machine back
-+to life (i.e. a watchdog triggered). In such cases, RAM may be somewhat
-+corrupt, but usually it is restorable.
-+
- 2. Setting the parameters
- 
- Setting the ramoops parameters can be done in 2 different manners:
-@@ -46,6 +51,7 @@ static struct ramoops_platform_data ramoops_data = {
-         .mem_address            = <...>,
-         .record_size            = <...>,
-         .dump_oops              = <...>,
-+        .ecc                    = <...>,
- };
- 
- static struct platform_device ramoops_dev = {
-diff --git a/fs/pstore/ram.c b/fs/pstore/ram.c
-index 62b13ed..9123cce 100644
---- a/fs/pstore/ram.c
-+++ b/fs/pstore/ram.c
-@@ -56,12 +56,18 @@ module_param(dump_oops, int, 0600);
- MODULE_PARM_DESC(dump_oops,
- 		"set to 1 to dump oopses, 0 to only dump panics (default 1)");
- 
-+static int ramoops_ecc;
-+module_param_named(ecc, ramoops_ecc, int, 0600);
-+MODULE_PARM_DESC(ramoops_ecc,
-+		"set to 1 to enable ECC support");
-+
- struct ramoops_context {
- 	struct persistent_ram_zone **przs;
- 	phys_addr_t phys_addr;
- 	unsigned long size;
- 	size_t record_size;
- 	int dump_oops;
-+	bool ecc;
- 	unsigned int count;
- 	unsigned int max_count;
- 	unsigned int read_count;
-@@ -236,6 +242,7 @@ static int __init ramoops_probe(struct platform_device *pdev)
- 	cxt->phys_addr = pdata->mem_address;
- 	cxt->record_size = pdata->record_size;
- 	cxt->dump_oops = pdata->dump_oops;
-+	cxt->ecc = pdata->ecc;
- 
- 	cxt->przs = kzalloc(sizeof(*cxt->przs) * cxt->max_count, GFP_KERNEL);
- 	if (!cxt->przs) {
-@@ -248,7 +255,7 @@ static int __init ramoops_probe(struct platform_device *pdev)
- 		size_t sz = cxt->record_size;
- 		phys_addr_t start = cxt->phys_addr + sz * i;
- 
--		cxt->przs[i] = persistent_ram_new(start, sz, 0);
-+		cxt->przs[i] = persistent_ram_new(start, sz, cxt->ecc);
- 		if (IS_ERR(cxt->przs[i])) {
- 			err = PTR_ERR(cxt->przs[i]);
- 			dev_err(dev, "failed to request mem region (0x%zx@0x%llx): %d\n",
-@@ -281,9 +288,10 @@ static int __init ramoops_probe(struct platform_device *pdev)
- 	record_size = pdata->record_size;
- 	dump_oops = pdata->dump_oops;
- 
--	pr_info("attached 0x%lx@0x%llx (%ux0x%zx)\n",
-+	pr_info("attached 0x%lx@0x%llx (%ux0x%zx), ecc: %s\n",
- 		cxt->size, (unsigned long long)cxt->phys_addr,
--		cxt->max_count, cxt->record_size);
-+		cxt->max_count, cxt->record_size,
-+		ramoops_ecc ? "on" : "off");
- 
- 	return 0;
- 
-@@ -347,6 +355,7 @@ static int __init ramoops_init(void)
- 		dummy_data->mem_address = mem_address;
- 		dummy_data->record_size = record_size;
- 		dummy_data->dump_oops = dump_oops;
-+		dummy_data->ecc = ramoops_ecc;
- 		dummy = platform_create_bundle(&ramoops_driver, ramoops_probe,
- 			NULL, 0, dummy_data,
- 			sizeof(struct ramoops_platform_data));
-diff --git a/include/linux/pstore_ram.h b/include/linux/pstore_ram.h
-index ffe24a5..7ed7fd4 100644
---- a/include/linux/pstore_ram.h
-+++ b/include/linux/pstore_ram.h
-@@ -92,6 +92,7 @@ struct ramoops_platform_data {
- 	unsigned long	mem_address;
- 	unsigned long	record_size;
- 	int		dump_oops;
-+	bool		ecc;
- };
- 
- #endif
--- 
-1.7.9.2
+TP_printk("%s error:%s on memory stick \"%s\" (mc:%d %s %s%s%s)",
+           (__entry->err_type == HW_EVENT_ERR_CORRECTED) ? "Corrected" :
+                 ((__entry->err_type == HW_EVENT_ERR_FATAL) ?
+                 "Fatal" : "Uncorrected"),
+
+           __get_str(msg),
+           __get_str(label),
+           __entry->mc_index,
+           __get_str(location),
+           __get_str(detail),
+	   strlen(__get_str(detail)) &&
+	    strlen(__get_str(driver_detail) ? " ": "",
+           __get_str(driver_detail))
+
+-- Steve
+
+
