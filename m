@@ -1,96 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759105Ab2EPG1k (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 May 2012 02:27:40 -0400
-Received: from e23smtp07.au.ibm.com ([202.81.31.140]:57154 "EHLO
-	e23smtp07.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757824Ab2EPG1h (ORCPT
+	id S1759135Ab2EPGd1 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 May 2012 02:33:27 -0400
+Received: from tx2ehsobe004.messaging.microsoft.com ([65.55.88.14]:7723 "EHLO
+	tx2outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755584Ab2EPGdY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 May 2012 02:27:37 -0400
-Message-ID: <1337146409.18429.11.camel@mengcong>
-Subject: [PATCH] target: Handle ATA_PASS_THROUGH_16 passthrough
-From: mengcong <mc@linux.vnet.ibm.com>
-Reply-To: mc@linux.vnet.ibm.com
-To: target-devel@vger.kernel.org
-Cc: "Nicholas A. Bellinger" <nab@linux-iscsi.org>, linux-scsi@vger.kernel.org,
-        linux-kernel@vger.kernel.org,
-        Stefan Hajnoczi <stefanha@linux.vnet.ibm.com>,
-        meng cong <mc@linux.vnet.ibm.com>
-Date: Wed, 16 May 2012 13:33:29 +0800
-Organization: LTC, IBM
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.2- 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
-x-cbid: 12051519-0260-0000-0000-000001213C47
+	Wed, 16 May 2012 02:33:24 -0400
+X-SpamScore: 1
+X-BigFish: VS1(zzzz1202hzz8275bhz2ei87h2a8h668h839hd24he5bhe96h)
+X-Forefront-Antispam-Report: CIP:137.71.25.57;KIP:(null);UIP:(null);IPV:NLI;H:nwd2mta2.analog.com;RD:nwd2mail11.analog.com;EFVD:NLI
+X-FB-DOMAIN-IP-MATCH: fail
+From: Sonic Zhang <sonic.adi@gmail.com>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        <linux-serial@vger.kernel.org>
+CC: LKML <linux-kernel@vger.kernel.org>,
+        <uclinux-dist-devel@blackfin.uclinux.org>,
+        Sonic Zhang <sonic.zhang@analog.com>
+Subject: [PATCH 2/4] serial: bfin_uart: narrow the reboot condition in DMA tx interrupt
+Date: Wed, 16 May 2012 14:22:24 +0800
+Message-ID: <1337149346-5277-2-git-send-email-sonic.adi@gmail.com>
+X-Mailer: git-send-email 1.7.0.4
+In-Reply-To: <1337149346-5277-1-git-send-email-sonic.adi@gmail.com>
+References: <1337149346-5277-1-git-send-email-sonic.adi@gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The cdrecord uses ATA_PASS_THROUGH_16 command while burning CDs
-with a SATA CD-ROM. This patch adds support to it so that PSCSI 
-CD-ROM passthrough works with the cdrecord.
+From: Sonic Zhang <sonic.zhang@analog.com>
 
-Signed-off-by: Cong Meng <mc@linux.vnet.ibm.com>
+Check if xmit buffer pointers are set to zero.
+
+Signed-off-by: Sonic Zhang <sonic.zhang@analog.com>
 ---
- drivers/target/target_core_transport.c |   30 ++++++++++++++++++++++++++++++
- include/scsi/scsi.h                    |    1 +
- 2 files changed, 31 insertions(+), 0 deletions(-)
+ drivers/tty/serial/bfin_uart.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-diff --git a/drivers/target/target_core_transport.c b/drivers/target/target_core_transport.c
-index 2d75c29..41439b3 100644
---- a/drivers/target/target_core_transport.c
-+++ b/drivers/target/target_core_transport.c
-@@ -2926,6 +2926,36 @@ static int transport_generic_cmd_sequencer(
- 		size = (cdb[7] << 8) | cdb[8];
- 		cmd->se_cmd_flags |= SCF_SCSI_CONTROL_SG_IO_CDB;
- 		break;
-+	case ATA_PASS_THROUGH_16:
-+		// T_LENGTH
-+		switch (cdb[2] & 0x3) {
-+		case 0x0:
-+			sectors = 0;
-+			break;
-+		case 0x1:
-+			sectors = (((cdb[1] & 0x1) ? cdb[3] : 0) << 8) | cdb[4];
-+			break;
-+		case 0x2:
-+			sectors = (((cdb[1] & 0x1) ? cdb[5] : 0) << 8) | cdb[6];
-+			break;
-+		case 0x3:
-+			pr_err("T_LENGTH=0x3 not supported\n");
-+			goto out_invalid_cdb_field;
-+			break;
-+		}
-+		
-+		// BYTE_BLOCK
-+		if (cdb[2] & 0x4) {
-+			// BLOCK
-+			// T_TYPE: 512 or sector
-+			size = sectors * ((cdb[2] & 0x10) ? 
-+				dev->se_sub_dev->se_dev_attrib.block_size : 512);
-+		} else {
-+			// BYTE
-+			size = sectors;
-+		}
-+		cmd->se_cmd_flags |= SCF_SCSI_CONTROL_SG_IO_CDB;
-+		break;
- 	default:
- 		pr_warn("TARGET_CORE[%s]: Unsupported SCSI Opcode"
- 			" 0x%02x, sending CHECK_CONDITION.\n",
-diff --git a/include/scsi/scsi.h b/include/scsi/scsi.h
-index f34a5a8..f6dcd25 100644
---- a/include/scsi/scsi.h
-+++ b/include/scsi/scsi.h
-@@ -116,6 +116,7 @@ struct scsi_cmnd;
- #define PERSISTENT_RESERVE_IN 0x5e
- #define PERSISTENT_RESERVE_OUT 0x5f
- #define VARIABLE_LENGTH_CMD   0x7f
-+#define ATA_PASS_THROUGH_16   0x85
- #define REPORT_LUNS           0xa0
- #define SECURITY_PROTOCOL_IN  0xa2
- #define MAINTENANCE_IN        0xa3
+diff --git a/drivers/tty/serial/bfin_uart.c b/drivers/tty/serial/bfin_uart.c
+index 9acab11..56b95b0 100644
+--- a/drivers/tty/serial/bfin_uart.c
++++ b/drivers/tty/serial/bfin_uart.c
+@@ -532,7 +532,7 @@ static irqreturn_t bfin_serial_dma_tx_int(int irq, void *dev_id)
+ 		 */
+ 		UART_CLEAR_IER(uart, ETBEI);
+ 		uart->port.icount.tx += uart->tx_count;
+-		if (!uart_circ_empty(xmit)) {
++		if (!(xmit->tail == 0 && xmit->head == 0)) {
+ 			xmit->tail = (xmit->tail + uart->tx_count) & (UART_XMIT_SIZE - 1);
+ 
+ 			if (uart_circ_chars_pending(xmit) < WAKEUP_CHARS)
 -- 
-1.7.7
+1.7.0.4
 
 
