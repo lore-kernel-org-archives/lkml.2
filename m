@@ -1,71 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759628Ab2EPRzX (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 May 2012 13:55:23 -0400
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:36682 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759267Ab2EPRzW (ORCPT
+	id S1759676Ab2EPR4M (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 May 2012 13:56:12 -0400
+Received: from mail-gg0-f174.google.com ([209.85.161.174]:52218 "EHLO
+	mail-gg0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754628Ab2EPR4K convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 May 2012 13:55:22 -0400
-Date: Wed, 16 May 2012 19:55:15 +0200
-From: Sascha Hauer <s.hauer@pengutronix.de>
-To: Robert Lee <rob.lee@linaro.org>
-Cc: kernel@pengutronix.de, shawn.guo@linaro.org,
-        u.kleine-koenig@pengutronix.de, richard.zhao@freescale.com,
-        amit.kucheria@linaro.org, daniel.lezcano@linaro.org,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        linaro-dev@lists.linaro.org, patches@linaro.org, jj@chaosbits.net
-Subject: Re: [PATCH v4 5/7] ARM: imx: Add common imx cpuidle init
- functionality.
-Message-ID: <20120516175515.GX30400@pengutronix.de>
-References: <1337135616-8988-1-git-send-email-rob.lee@linaro.org>
- <1337135616-8988-6-git-send-email-rob.lee@linaro.org>
+	Wed, 16 May 2012 13:56:10 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1337135616-8988-6-git-send-email-rob.lee@linaro.org>
-X-Sent-From: Pengutronix Hildesheim
-X-URL: http://www.pengutronix.de/
-X-IRC: #ptxdist @freenode
-X-Accept-Language: de,en
-X-Accept-Content-Type: text/plain
-X-Uptime: 19:50:44 up 186 days,  1:37, 31 users,  load average: 0.00, 0.04,
- 0.46
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 2001:6f8:1178:2:21e:67ff:fe11:9c5c
-X-SA-Exim-Mail-From: sha@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
+In-Reply-To: <20120516125658.GD20475@lizard>
+References: <20120516125330.GA15460@lizard>
+	<20120516125658.GD20475@lizard>
+Date: Wed, 16 May 2012 10:56:09 -0700
+X-Google-Sender-Auth: CumIYMcxQ2FQZA_U43YCM7WtTIk
+Message-ID: <CAMbhsRRmcaS7W-eY2eiiBa6xeAeeG+t5Bj4yVmKqkiFbs1bV3Q@mail.gmail.com>
+Subject: Re: [PATCH 4/6] pstore/ram: Add some more documentation and examples
+From: Colin Cross <ccross@android.com>
+To: Anton Vorontsov <anton.vorontsov@linaro.org>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Kees Cook <keescook@chromium.org>, Tony Luck <tony.luck@intel.com>,
+        Arnd Bergmann <arnd@arndb.de>, John Stultz <john.stultz@linaro.org>,
+        Shuah Khan <shuahkhan@gmail.com>, arve@android.com,
+        Rebecca Schultz Zavin <rebecca@android.com>,
+        Jesper Juhl <jj@chaosbits.net>, Randy Dunlap <rdunlap@xenotime.net>,
+        Stephen Boyd <sboyd@codeaurora.org>, Thomas Meyer <thomas@m3y3r.de>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Marco Stornelli <marco.stornelli@gmail.com>,
+        WANG Cong <xiyou.wangcong@gmail.com>, linux-kernel@vger.kernel.org,
+        devel@driverdev.osuosl.org, linaro-kernel@lists.linaro.org,
+        patches@linaro.org, kernel-team@android.com
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, May 15, 2012 at 09:33:34PM -0500, Robert Lee wrote:
-> Add common cpuidle init functionality that can be used by various
-> imx platforms.
-> 
-> Signed-off-by: Robert Lee <rob.lee@linaro.org>
+On Wed, May 16, 2012 at 5:56 AM, Anton Vorontsov
+<anton.vorontsov@linaro.org> wrote:
+> Suggested-by: Shuah Khan <shuahkhan@gmail.com>
+> Signed-off-by: Anton Vorontsov <anton.vorontsov@linaro.org>
 > ---
+>  Documentation/ramoops.txt |   15 +++++++++++++++
+>  1 file changed, 15 insertions(+)
+>
+> diff --git a/Documentation/ramoops.txt b/Documentation/ramoops.txt
+> index 4ba7db2..138823b 100644
+> --- a/Documentation/ramoops.txt
+> +++ b/Documentation/ramoops.txt
+> @@ -40,6 +40,12 @@ corrupt, but usually it is restorable.
+>  Setting the ramoops parameters can be done in 2 different manners:
+>  1. Use the module parameters (which have the names of the variables described
+>  as before).
+> + For quick debugging, you can also reserve parts of memory during boot
+> + and then use the reserved memory for ramoops. For example, assuming a machine
+> + with > 128 MB of memory, the following kernel command line will tell the
+> + kernel to use only the first 128 MB of memory, and place ECC-protected ramoops
+> + region at 128 MB boundary:
+> + "mem=128M ramoops.mem_address=0x8000000 ramoops.ecc=1"
+>  2. Use a platform device and set the platform data. The parameters can then
+>  be set through that platform data. An example of doing that is:
+>
+> @@ -70,6 +76,15 @@ if (ret) {
+>        return ret;
+>  }
+>
+> +You can specify either RAM memory or peripheral devices' memory. However, when
+> +specifying RAM, be sure to reserve the memory by issuing memblock_reserve()
+> +very early in the architecture code, just before platform device registration,
+
+Just before platform device registration is way too late.  ARM
+provides a machine reserve callback to allow board files to call
+memblock_reserve inside arm_memblock_init() and before mm_init().
+
+> +e.g.:
 > +
-> +#ifdef CONFIG_CPU_IDLE
-> +extern int imx_cpuidle_init(struct cpuidle_driver *drv);
-> +#else
-> +static inline int imx_cpuidle_init(struct cpuidle_driver *drv)
-> +{
-> +	return -ENODEV;
-> +}
-> +#endif
-
-You should return succesfully here. Think about it, if imx_cpuidle_init
-fails you basically do nothing except maybe printing an error message
-which will be irritating when it appears on a kernel with cpuidle
-disabled.
-
-Sascha
-
-
--- 
-Pengutronix e.K.                           |                             |
-Industrial Linux Solutions                 | http://www.pengutronix.de/  |
-Peiner Str. 6-8, 31137 Hildesheim, Germany | Phone: +49-5121-206917-0    |
-Amtsgericht Hildesheim, HRA 2686           | Fax:   +49-5121-206917-5555 |
+> +#include <linux/memblock.h>
+> +
+> +memblock_reserve(ramoops_data.mem_address, ramoops_data.mem_size);
+> +
+>  3. Dump format
+>
+>  The data dump begins with a header, currently defined as "====" followed by a
+> --
+> 1.7.9.2
+>
