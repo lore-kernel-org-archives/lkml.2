@@ -1,69 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759698Ab2EPH65 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 May 2012 03:58:57 -0400
-Received: from cn.fujitsu.com ([222.73.24.84]:13668 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1756431Ab2EPH6z (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 May 2012 03:58:55 -0400
-X-IronPort-AV: E=Sophos;i="4.75,602,1330876800"; 
-   d="scan'208";a="4967728"
-Message-ID: <4FB35DEF.2040008@cn.fujitsu.com>
-Date: Wed, 16 May 2012 15:57:35 +0800
-From: zhangyanfei <zhangyanfei@cn.fujitsu.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100413 Fedora/3.0.4-2.fc13 Thunderbird/3.0.4
+	id S965020Ab2EPH7e (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 May 2012 03:59:34 -0400
+Received: from mail-qa0-f49.google.com ([209.85.216.49]:54176 "EHLO
+	mail-qa0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757004Ab2EPH7c (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 16 May 2012 03:59:32 -0400
 MIME-Version: 1.0
-To: Avi Kivity <avi@redhat.com>, mtosatti@redhat.com
-CC: ebiederm@xmission.com, luto@mit.edu, Joerg Roedel <joerg.roedel@amd.com>,
-        dzickus@redhat.com, paul.gortmaker@windriver.com,
-        ludwig.nussel@suse.de, linux-kernel@vger.kernel.org,
-        kvm@vger.kernel.org, kexec@lists.infradead.org,
-        Greg KH <gregkh@linuxfoundation.org>
-Subject: [PATCH v2 5/5] Documentation: Add ABI entry for sysfs file vmcsinfo
- and vmcsinfo_maxsize
-References: <4FB35C48.30708@cn.fujitsu.com>
-In-Reply-To: <4FB35C48.30708@cn.fujitsu.com>
-X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2012/05/16 15:57:38,
-	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2012/05/16 15:57:43,
-	Serialize complete at 2012/05/16 15:57:43
-Content-Transfer-Encoding: 7bit
-Content-Type: text/plain; charset=GB2312
+In-Reply-To: <20120516075754.GG10347@shlinux2.ap.freescale.net>
+References: <1337010369-28687-1-git-send-email-b29396@freescale.com>
+	<CACRpkdbW8eeq0gFTjPRpKesmV4K5zqRHuW6C-UywBn8AtqOLCg@mail.gmail.com>
+	<20120515112732.GB10347@shlinux2.ap.freescale.net>
+	<CACRpkdaKAF8bznd-sBdcGfdJW_cHSUGFZhnVk4qJ_0LJ8GoUuQ@mail.gmail.com>
+	<20120516021301.GA21517@S2100-06.ap.freescale.net>
+	<CACRpkdZw5Sag5dmpqadTPJyaT5hex1CnASeVRKT5FXWtOKijkQ@mail.gmail.com>
+	<20120516075754.GG10347@shlinux2.ap.freescale.net>
+Date: Wed, 16 May 2012 09:59:32 +0200
+Message-ID: <CACRpkdZYFiaUDkJAov=ggOknXw6gVf=Bh8+7wLyXVQO1xtLw0w@mail.gmail.com>
+Subject: Re: [PATCH 1/2] pinctrl: pinctrl-imx: add imx53 pinctrl driver
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Dong Aisheng <aisheng.dong@freescale.com>
+Cc: Guo Shawn-R65073 <r65073@freescale.com>,
+        Dong Aisheng-B29396 <B29396@freescale.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linus.walleij@stericsson.com" <linus.walleij@stericsson.com>,
+        "swarren@wwwdotorg.org" <swarren@wwwdotorg.org>,
+        "s.hauer@pengutronix.de" <s.hauer@pengutronix.de>,
+        "kernel@pengutronix.de" <kernel@pengutronix.de>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-We create two new sysfs files, vmcsinfo and vmcsinfo_maxsize. And
-here we add an Documentation/ABI entry for them.
+On Wed, May 16, 2012 at 9:57 AM, Dong Aisheng
+<aisheng.dong@freescale.com> wrote:
+> On Wed, May 16, 2012 at 02:50:48PM +0800, Linus Walleij wrote:
+>> On Wed, May 16, 2012 at 4:13 AM, Shawn Guo <shawn.guo@freescale.com> wrote:
+>>
+>> > With the patches going in via pinctrl tree, we can start making machine
+>> > changes from next cycle.
+>>
+>> Shawn are these patches OK with you? It'd be nice to have some
+>> Acked-by: since they are quite big.
+>>
+> Shawn said he's ok with it, but he's not available right now.
+> Maybe you could hold a few hours to wait for his tag if needed.
 
-Signed-off-by: zhangyanfei <zhangyanfei@cn.fujitsu.com>
----
- Documentation/ABI/testing/sysfs-kernel-vmcsinfo |   16 ++++++++++++++++
- 1 files changed, 16 insertions(+), 0 deletions(-)
- create mode 100644 Documentation/ABI/testing/sysfs-kernel-vmcsinfo
+There's no super-hurry, I just want it at some point if possible...
 
-diff --git a/Documentation/ABI/testing/sysfs-kernel-vmcsinfo b/Documentation/ABI/testing/sysfs-kernel-vmcsinfo
-new file mode 100644
-index 0000000..adbf866
---- /dev/null
-+++ b/Documentation/ABI/testing/sysfs-kernel-vmcsinfo
-@@ -0,0 +1,16 @@
-+What:		/sys/kernel/vmcsinfo
-+Date:		April 2012
-+KernelVersion:	3.4.0
-+Contact:	Zhang Yanfei <zhangyanfei@cn.fujitsu.com>
-+Description
-+		Shows physical address of VMCSINFO. VMCSINFO contains
-+		the VMCS revision identifier and encoded offsets of fields
-+		in VMCS data on Intel processors equipped with the VT
-+		extensions.
-+
-+What:		/sys/kernel/vmcsinfo_maxsize
-+Date:		April 2012
-+KernelVersion:	3.4.0
-+Contact:	Zhang Yanfei <zhangyanfei@cn.fujitsu.com>
-+Description
-+		Shows max size of VMCSINFO.
--- 
-1.7.1
+Linus Walleij
