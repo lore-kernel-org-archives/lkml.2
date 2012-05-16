@@ -1,53 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S966709Ab2EPJHe (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 May 2012 05:07:34 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:47003 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S965873Ab2EPJHc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 May 2012 05:07:32 -0400
-From: Oliver Neukum <oneukum@suse.de>
-Organization: SUSE
-To: Pavel Machek <pavel@ucw.cz>
-Subject: Re: 3.4.0-rc7 regression: bluetooth vs. s2ram
-Date: Wed, 16 May 2012 11:03:50 +0200
-User-Agent: KMail/1.13.5 (Linux/3.3.0-12-desktop+; KDE/4.4.4; x86_64; ; )
-Cc: "Rafael J. Wysocki" <rjw@sisk.pl>,
-        kernel list <linux-kernel@vger.kernel.org>,
-        linux-bluetooth@vger.kernel.org, marcel@holtmann.org,
-        gustavo@padovan.org, johan.hedberg@gmail.com
-References: <20120515131453.GA1936@elf.ucw.cz> <201205151529.01603.oneukum@suse.de> <20120515180105.GA1923@elf.ucw.cz>
-In-Reply-To: <20120515180105.GA1923@elf.ucw.cz>
+	id S966041Ab2EPJIk (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 May 2012 05:08:40 -0400
+Received: from rtits2.realtek.com ([60.250.210.242]:57458 "EHLO
+	rtits2.realtek.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S965873Ab2EPJIj (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 16 May 2012 05:08:39 -0400
+X-SpamFilter-By: BOX Solutions SpamTrap 5.19 with qID q4G98PHH002061, This message is released by code: ctaloc0852
+Message-ID: <4FB36E89.80404@realsil.com.cn>
+Date: Wed, 16 May 2012 17:08:25 +0800
+From: edwin_rong <edwin_rong@realsil.com.cn>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
+To: Dan Carpenter <dan.carpenter@oracle.com>
+CC: Greg KH <gregkh@linuxfoundation.org>,
+        "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] staging: update TODO files for rts5139 & rts_pstor
+References: <1337049392-8544-1-git-send-email-edwin_rong@realsil.com.cn> <20120515153931.GA25240@kroah.com> <4FB30DE9.8040406@realsil.com.cn> <20120516072028.GK16984@mwanda>
+In-Reply-To: <20120516072028.GK16984@mwanda>
+Content-Type: text/plain; charset="GB2312"
 Content-Transfer-Encoding: 7bit
-Message-Id: <201205161103.50317.oneukum@suse.de>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am Dienstag, 15. Mai 2012, 20:01:06 schrieb Pavel Machek:
-> On Tue 2012-05-15 15:29:01, Oliver Neukum wrote:
-> > Am Dienstag, 15. Mai 2012, 15:14:57 schrieb Pavel Machek:
-> > > If I suspend without bnep0 active, resume works. 
-> > > 
-> > > (This has worked before, but "before" may mean 3.2 in this case).
-> > > 
-> > > Can someone test/reproduce this? Ideas?
-> > > 
-> > > PS: Under normal suspend/resume, I see these warnings in the
-> > > log. Maybe relevant?
-> > 
-> > Most likely. Something has introduced a bug that crashes if the controller
-> > over which a bnep is run is getting away. Does it survive a surprise removal
-> > of the BT device while bnep is up?
-> 
-> No, it does not. If I turn off hardware radio kill switch, machine
-> dies in the same way. So not just sleep related...
+On 05/16/2012 03:20 PM, Dan Carpenter wrote:
+> When is the new driver going to be released?  How can we tell if
+> it's better than the cleaned up staging driver without seeing it?
+>
+> regards,
+> dan carpenter
+Hi Dan carpenter,
 
-You lose power, btusb cannot deal with that and you get an unplug/replug cycle.
-Can you get an oops when you are hitting the kill switch?
+> When is the new driver going to be released?
 
-	Regards
-		Oliver
+I'm afraid it will take a long time before we release it to kernel. You
+know that Realtek now has several series of card reader on the market, and
+we have to integrated these ICs into the new driver, and make sure it
+works well, in addition, now we're working on another new card reader IC.
+Once everything is done, the driver will be released.
+
+>  How can we tell if it's better than the cleaned up staging driver without seeing it?
+Yes, quite right. Seeing is believing.
+
+
+Thanks & BRs
+Edwin
+ 
+
+
+
+
+
