@@ -1,232 +1,191 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S966142Ab2EPUeJ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 May 2012 16:34:09 -0400
-Received: from mga02.intel.com ([134.134.136.20]:6260 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751594Ab2EPUeG convert rfc822-to-8bit (ORCPT
+	id S966228Ab2EPUe0 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 May 2012 16:34:26 -0400
+Received: from mail.work-microwave.de ([62.245.205.51]:58983 "EHLO
+	work-microwave.de" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1753318Ab2EPUeY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 May 2012 16:34:06 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.67,352,1309762800"; 
-   d="scan'208";a="141417610"
-From: "Drews, Paul" <paul.drews@intel.com>
-To: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-CC: "benjamin.tissoires@enac.fr" <benjamin.tissoires@enac.fr>
-Subject: Re: [PATCH 1/5] HID: hid-multitouch: fix wrong protocol detection
-Thread-Topic: Re: [PATCH 1/5] HID: hid-multitouch: fix wrong protocol
- detection
-Thread-Index: Ac0zkakn8ZywvVU1R+OfnQOfJeBISQ==
-Date: Wed, 16 May 2012 20:34:04 +0000
-Message-ID: <6008DE3C35C7C04D85C2A4C813D36515481E551C@ORSMSX101.amr.corp.intel.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.22.254.138]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
-MIME-Version: 1.0
+	Wed, 16 May 2012 16:34:24 -0400
+From: Roland Stigge <stigge@antcom.de>
+To: rob@landley.net, devicetree-discuss@lists.ozlabs.org,
+        grant.likely@secretlab.ca, rob.herring@calxeda.com,
+        rdunlap@xenotime.net, linux-doc@vger.kernel.org,
+        linux-kernel@vger.kernel.org, w.sang@pengutronix.de,
+        linux-arm-kernel@lists.infradead.org
+Cc: Roland Stigge <stigge@antcom.de>
+Subject: [PATCH RESEND] Documentation: devicetree: Fix value format description
+Date: Wed, 16 May 2012 22:33:55 +0200
+Message-Id: <1337200436-26528-1-git-send-email-stigge@antcom.de>
+X-Mailer: git-send-email 1.7.9
+X-FEAS-SYSTEM-WL: rst@work-microwave.de, 192.168.11.78
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->>> The previous implementation introduced a randomness in the splitting
->>> of the different touches reported by the device. This version is more
->>> robust as we don't rely on hi->input->absbit, but on our own structure.
->>>
->>> This also prepares hid-multitouch to better support Win8 devices.
->>>
->>> Signed-off-by: Benjamin Tissoires <benjamin.tissoires@enac.fr>
->
->>>  struct mt_device {
->>>       struct mt_slot curdata; /* placeholder of incoming data */
->>>       struct mt_class mtclass;        /* our mt device class */
->>> +     struct mt_fields *fields;       /* temporary placeholder for storing the
->>> +                                        multitouch fields */
->>
->> Why not skip the pointer here?
->
->well, the idea was to keep the memory footprint low. As these values
->are only needed at init, then I freed them once I finished using them.
->I can of course skip the pointer, but in that case, wouldn't the
->struct declaration be worthless?
->
->
->>> +static void mt_post_parse(struct mt_device *td)
->>> +{
->>> +     struct mt_fields *f = td->fields;
->>> +
->>> +     if (td->touches_by_report > 0) {
->>> +             int field_count_per_touch = f->length / td->touches_by_report;
->>> +             td->last_slot_field = f->usages[field_count_per_touch - 1]->hid;
->>> +     }
->>> +}
->>> +
->
+Numeric values in dts files can be specified in decimal and hex (the latter
+prefixed 0x). The current documentation is updated with this patch to prevent
+confusion about what is meant with values without "0x" (previously hex, now
+dec).
 
-The patch as it stands more-or-less depends on the group of usage->hid
-values repeating for each touch in the multi-touch report, and choosing
-the last usage->hid seen in the first group as the ultimate last_slot_field
-value.  A suggestion: as long as we're relying on this group repetition
-anyway, why not take advantage of the repetition wrap-around to
-detect the last_slot_field without having to allocate memory and store
-everything?  I've been using the following patch that does it this way
-with an Atmel MaXTouch Digitizer (3EB:211C).
+Signed-off-by: Roland Stigge <stigge@antcom.de>
+Acked-by: Rob Landley <rob@landley.net>
 
-Prior to this patch I was getting a MTBF of about 1 failure in 10 boots
-due to the out-of-range bitmap lookup coming up with an unlucky
-result and making the wrong last_slot_field conclusion.  Symptom:
-touch events get reported to user-space with previous x,y coordinates.
-Also confirmed using a printk to instrument the kernel for this.
-
-With this patch, I have tested beyond 10X the MTBF on 3.4-rc7 with no failures.
-I don't have a touchscreen other than that Atmel to test with.  Will this
-method work with the buggy touchscreen that the original patch was
-intended to fix?
-
-Patch follows:
-========================================================
->From 9ff29221247f6a3531f4b7939898fe708aa96830 Mon Sep 17 00:00:00 2001
-From: Paul Drews <paul.drews@intel.com>
-Date: Wed, 16 May 2012 11:15:00 -0700
-Subject: [PATCH] Repair detection of last slot in multitouch reports
-
-The logic for detecting the last per-touch slot in a
-multitouch report erroneously used hid usage values (large
-numbers such as 0xd0032) as indices into the smaller absbit
-bitmap (with bit indexes up to 0x3f).  This caused
-intermittent failures in the configuration of the last-slot
-value leading to stale x,y coordinates being reported in
-multi-touch input events.  It also carried the risk of a
-segmentation fault due to the out-of-range bitmap index.
-
-This patch takes a different approach of detecting the last
-per-touch slot:  when the hid usage value wraps around to
-the first hid usage value we have seen already, we must be
-looking at the slots for the next touch of a multi-touch
-report, so the last hid usage value we have seen so far must
-be the last per-touch value.
-
-Signed-off-by: Paul Drews <paul.drews@intel.com>
 ---
- drivers/hid/hid-multitouch.c |   39 ++++++++++++++++++++++++++-------------
- 1 files changed, 26 insertions(+), 13 deletions(-)
+Applies to v3.4-rc7
 
-diff --git a/drivers/hid/hid-multitouch.c b/drivers/hid/hid-multitouch.c
-index 2e6d187..226f828 100644
---- a/drivers/hid/hid-multitouch.c
-+++ b/drivers/hid/hid-multitouch.c
-@@ -75,6 +75,9 @@ struct mt_device {
- 	struct mt_class mtclass;	/* our mt device class */
- 	unsigned last_field_index;	/* last field index of the report */
- 	unsigned last_slot_field;	/* the last field of a slot */
-+	bool last_slot_field_found;	/* last_slot_field has full init */
-+	unsigned first_slot_field;
-+	bool first_slot_field_found;	/* for detecting wrap to next touch */
- 	__s8 inputmode;		/* InputMode HID feature, -1 if non-existent */
- 	__s8 maxcontact_report_id;	/* Maximum Contact Number HID feature,
- 				   -1 if non-existent */
-@@ -275,11 +278,21 @@ static void set_abs(struct input_dev *input, unsigned int code,
- 	input_set_abs_params(input, code, fmin, fmax, fuzz, 0);
- }
+ Documentation/devicetree/booting-without-of.txt |   55 ++++++++++++------------
+ 1 file changed, 28 insertions(+), 27 deletions(-)
+
+--- linux-2.6.orig/Documentation/devicetree/booting-without-of.txt
++++ linux-2.6/Documentation/devicetree/booting-without-of.txt
+@@ -551,12 +551,13 @@ Here is an example of a simple device-tr
+ designates a node followed by the node unit name. Properties are
+ presented with their name followed by their content. "content"
+ represents an ASCII string (zero terminated) value, while <content>
+-represents a 32-bit hexadecimal value. The various nodes in this
+-example will be discussed in a later chapter. At this point, it is
+-only meant to give you a idea of what a device-tree looks like. I have
+-purposefully kept the "name" and "linux,phandle" properties which
+-aren't necessary in order to give you a better idea of what the tree
+-looks like in practice.
++represents a 32-bit value, specified in decimal or hexadecimal (the
++latter prefixed 0x). The various nodes in this example will be
++discussed in a later chapter. At this point, it is only meant to give
++you a idea of what a device-tree looks like. I have purposefully kept
++the "name" and "linux,phandle" properties which aren't necessary in
++order to give you a better idea of what the tree looks like in
++practice.
  
--static void set_last_slot_field(struct hid_usage *usage, struct mt_device *td,
--		struct hid_input *hi)
-+static void update_last_slot_field(struct hid_usage *usage,
-+		struct mt_device *td)
- {
--	if (!test_bit(usage->hid, hi->input->absbit))
--		td->last_slot_field = usage->hid;
-+	if (!td->last_slot_field_found) {
-+		if (td->first_slot_field_found) {
-+			if (td->last_slot_field == usage->hid)
-+				td->last_slot_field_found = true; /* wrapped */
-+			else
-+				td->last_slot_field = usage->hid;
-+		} else {
-+			td->first_slot_field = usage->hid;
-+			td->first_slot_field_found = true;
-+			td->last_slot_field = usage->hid;
-+		}
-+	}
- }
+   / o device-tree
+       |- name = "device-tree"
+@@ -576,14 +577,14 @@ looks like in practice.
+       |   |- name = "PowerPC,970"
+       |   |- device_type = "cpu"
+       |   |- reg = <0>
+-      |   |- clock-frequency = <5f5e1000>
++      |   |- clock-frequency = <0x5f5e1000>
+       |   |- 64-bit
+       |   |- linux,phandle = <2>
+       |
+       o memory@0
+       | |- name = "memory"
+       | |- device_type = "memory"
+-      | |- reg = <00000000 00000000 00000000 20000000>
++      | |- reg = <0x00000000 0x00000000 0x00000000 0x20000000>
+       | |- linux,phandle = <3>
+       |
+       o chosen
+@@ -1010,8 +1011,8 @@ compatibility.
+ 		#size-cells = <1>;
+ 		#interrupt-cells = <2>;
+ 		device_type = "soc";
+-		ranges = <00000000 e0000000 00100000>
+-		reg = <e0000000 00003000>;
++		ranges = <0x00000000 0xe0000000 0x00100000>
++		reg = <0xe0000000 0x00003000>;
+ 		bus-frequency = <0>;
+ 	}
  
- static int mt_input_mapping(struct hid_device *hdev, struct hid_input *hi,
-@@ -340,7 +353,7 @@ static int mt_input_mapping(struct hid_device *hdev, struct hid_input *hi,
- 				cls->sn_move);
- 			/* touchscreen emulation */
- 			set_abs(hi->input, ABS_X, field, cls->sn_move);
--			set_last_slot_field(usage, td, hi);
-+			update_last_slot_field(usage, td);
- 			td->last_field_index = field->index;
- 			return 1;
- 		case HID_GD_Y:
-@@ -350,7 +363,7 @@ static int mt_input_mapping(struct hid_device *hdev, struct hid_input *hi,
- 				cls->sn_move);
- 			/* touchscreen emulation */
- 			set_abs(hi->input, ABS_Y, field, cls->sn_move);
--			set_last_slot_field(usage, td, hi);
-+			update_last_slot_field(usage, td);
- 			td->last_field_index = field->index;
- 			return 1;
- 		}
-@@ -359,24 +372,24 @@ static int mt_input_mapping(struct hid_device *hdev, struct hid_input *hi,
- 	case HID_UP_DIGITIZER:
- 		switch (usage->hid) {
- 		case HID_DG_INRANGE:
--			set_last_slot_field(usage, td, hi);
-+			update_last_slot_field(usage, td);
- 			td->last_field_index = field->index;
- 			return 1;
- 		case HID_DG_CONFIDENCE:
--			set_last_slot_field(usage, td, hi);
-+			update_last_slot_field(usage, td);
- 			td->last_field_index = field->index;
- 			return 1;
- 		case HID_DG_TIPSWITCH:
- 			hid_map_usage(hi, usage, bit, max, EV_KEY, BTN_TOUCH);
- 			input_set_capability(hi->input, EV_KEY, BTN_TOUCH);
--			set_last_slot_field(usage, td, hi);
-+			update_last_slot_field(usage, td);
- 			td->last_field_index = field->index;
- 			return 1;
- 		case HID_DG_CONTACTID:
- 			if (!td->maxcontacts)
- 				td->maxcontacts = MT_DEFAULT_MAXCONTACT;
- 			input_mt_init_slots(hi->input, td->maxcontacts);
--			td->last_slot_field = usage->hid;
-+			update_last_slot_field(usage, td);
- 			td->last_field_index = field->index;
- 			td->touches_by_report++;
- 			return 1;
-@@ -385,7 +398,7 @@ static int mt_input_mapping(struct hid_device *hdev, struct hid_input *hi,
- 					EV_ABS, ABS_MT_TOUCH_MAJOR);
- 			set_abs(hi->input, ABS_MT_TOUCH_MAJOR, field,
- 				cls->sn_width);
--			set_last_slot_field(usage, td, hi);
-+			update_last_slot_field(usage, td);
- 			td->last_field_index = field->index;
- 			return 1;
- 		case HID_DG_HEIGHT:
-@@ -395,7 +408,7 @@ static int mt_input_mapping(struct hid_device *hdev, struct hid_input *hi,
- 				cls->sn_height);
- 			input_set_abs_params(hi->input,
- 					ABS_MT_ORIENTATION, 0, 1, 0, 0);
--			set_last_slot_field(usage, td, hi);
-+			update_last_slot_field(usage, td);
- 			td->last_field_index = field->index;
- 			return 1;
- 		case HID_DG_TIPPRESSURE:
-@@ -406,7 +419,7 @@ static int mt_input_mapping(struct hid_device *hdev, struct hid_input *hi,
- 			/* touchscreen emulation */
- 			set_abs(hi->input, ABS_PRESSURE, field,
- 				cls->sn_pressure);
--			set_last_slot_field(usage, td, hi);
-+			update_last_slot_field(usage, td);
- 			td->last_field_index = field->index;
- 			return 1;
- 		case HID_DG_CONTACTCOUNT:
--- 
-1.7.3.4
-========================================================
+@@ -1085,16 +1086,16 @@ supported currently at the toplevel.
+                                  * terminated string
+ 				 */
+ 
+-  property2 = <1234abcd>;	/* define a property containing a
++  property2 = <0x1234abcd>;	/* define a property containing a
+                                  * numerical 32-bit value (hexadecimal)
+ 				 */
+ 
+-  property3 = <12345678 12345678 deadbeef>;
++  property3 = <0x12345678 0x12345678 0xdeadbeef>;
+                                 /* define a property containing 3
+                                  * numerical 32-bit values (cells) in
+                                  * hexadecimal
+ 				 */
+-  property4 = [0a 0b 0c 0d de ea ad be ef];
++  property4 = [0x0a 0x0b 0x0c 0x0d 0xde 0xea 0xad 0xbe 0xef];
+                                 /* define a property whose content is
+                                  * an arbitrary array of bytes
+                                  */
+@@ -1350,10 +1351,10 @@ Appendix A - Sample SOC node for MPC8540
+ 			model = "TSEC";
+ 			compatible = "gianfar", "simple-bus";
+ 			reg = <0x24000 0x1000>;
+-			local-mac-address = [ 00 E0 0C 00 73 00 ];
+-			interrupts = <29 2 30 2 34 2>;
++			local-mac-address = [ 0x00 0xE0 0x0C 0x00 0x73 0x00 ];
++			interrupts = <0x29 2 0x30 2 0x34 2>;
+ 			phy-handle = <&phy0>;
+-			sleep = <&pmc 00000080>;
++			sleep = <&pmc 0x00000080>;
+ 			ranges;
+ 
+ 			mdio@24520 {
+@@ -1385,10 +1386,10 @@ Appendix A - Sample SOC node for MPC8540
+ 			model = "TSEC";
+ 			compatible = "gianfar";
+ 			reg = <0x25000 0x1000>;
+-			local-mac-address = [ 00 E0 0C 00 73 01 ];
+-			interrupts = <13 2 14 2 18 2>;
++			local-mac-address = [ 0x00 0xE0 0x0C 0x00 0x73 0x01 ];
++			interrupts = <0x13 2 0x14 2 0x18 2>;
+ 			phy-handle = <&phy1>;
+-			sleep = <&pmc 00000040>;
++			sleep = <&pmc 0x00000040>;
+ 		};
+ 
+ 		ethernet@26000 {
+@@ -1396,17 +1397,17 @@ Appendix A - Sample SOC node for MPC8540
+ 			model = "FEC";
+ 			compatible = "gianfar";
+ 			reg = <0x26000 0x1000>;
+-			local-mac-address = [ 00 E0 0C 00 73 02 ];
+-			interrupts = <41 2>;
++			local-mac-address = [ 0x00 0xE0 0x0C 0x00 0x73 0x02 ];
++			interrupts = <0x41 2>;
+ 			phy-handle = <&phy3>;
+-			sleep = <&pmc 00000020>;
++			sleep = <&pmc 0x00000020>;
+ 		};
+ 
+ 		serial@4500 {
+ 			#address-cells = <1>;
+ 			#size-cells = <1>;
+ 			compatible = "fsl,mpc8540-duart", "simple-bus";
+-			sleep = <&pmc 00000002>;
++			sleep = <&pmc 0x00000002>;
+ 			ranges;
+ 
+ 			serial@4500 {
+@@ -1414,7 +1415,7 @@ Appendix A - Sample SOC node for MPC8540
+ 				compatible = "ns16550";
+ 				reg = <0x4500 0x100>;
+ 				clock-frequency = <0>;
+-				interrupts = <42 2>;
++				interrupts = <0x42 2>;
+ 			};
+ 
+ 			serial@4600 {
+@@ -1422,7 +1423,7 @@ Appendix A - Sample SOC node for MPC8540
+ 				compatible = "ns16550";
+ 				reg = <0x4600 0x100>;
+ 				clock-frequency = <0>;
+-				interrupts = <42 2>;
++				interrupts = <0x42 2>;
+ 			};
+ 		};
+ 
+@@ -1436,11 +1437,11 @@ Appendix A - Sample SOC node for MPC8540
+ 		};
+ 
+ 		i2c@3000 {
+-			interrupts = <43 2>;
++			interrupts = <0x43 2>;
+ 			reg = <0x3000 0x100>;
+ 			compatible  = "fsl-i2c";
+ 			dfsrr;
+-			sleep = <&pmc 00000004>;
++			sleep = <&pmc 0x00000004>;
+ 		};
+ 
+ 		pmc: power@e0070 {
