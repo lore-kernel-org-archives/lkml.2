@@ -1,192 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932506Ab2EPHBL (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 May 2012 03:01:11 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:25548 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759251Ab2EPG70 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 May 2012 02:59:26 -0400
-From: Jiri Olsa <jolsa@redhat.com>
-To: acme@redhat.com, a.p.zijlstra@chello.nl, mingo@elte.hu, paulus@samba.org,
-        cjashfor@linux.vnet.ibm.com, fweisbec@gmail.com
-Cc: linux-kernel@vger.kernel.org, dsahern@gmail.com,
-        Jiri Olsa <jolsa@redhat.com>
-Subject: [PATCH 1/7] perf, tool: Handle different endians properly during symbol load
-Date: Wed, 16 May 2012 08:59:02 +0200
-Message-Id: <1337151548-2396-2-git-send-email-jolsa@redhat.com>
-In-Reply-To: <1337151548-2396-1-git-send-email-jolsa@redhat.com>
-References: <1337151548-2396-1-git-send-email-jolsa@redhat.com>
+	id S1759447Ab2EPHLR (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 May 2012 03:11:17 -0400
+Received: from mail-qc0-f174.google.com ([209.85.216.174]:46855 "EHLO
+	mail-qc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759342Ab2EPHLP (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 16 May 2012 03:11:15 -0400
+MIME-Version: 1.0
+In-Reply-To: <20120515154333.6659.66479.sendpatchset@w520>
+References: <20120515154333.6659.66479.sendpatchset@w520>
+Date: Wed, 16 May 2012 09:11:14 +0200
+Message-ID: <CACRpkdb9LbjvobsJf61VA1Nt8-UCwDZzmjqC8JuN8WPdvhq+iQ@mail.gmail.com>
+Subject: Re: [PATCH] gpio: Emma Mobile GPIO driver V2
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Magnus Damm <magnus.damm@gmail.com>
+Cc: linux-kernel@vger.kernel.org, rjw@sisk.pl, linus.walleij@stericsson.com,
+        arnd@arndb.de, linux-sh@vger.kernel.org, horms@verge.net.au,
+        grant.likely@secretlab.ca, lethal@linux-sh.org, olof@lixom.net
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Currently we dont care about the file object's endianness. It's possible
-we read buildid file object from different architecture than we are
-currentlly running on. So we need to care about properly reading such
-object's data - handle different endianness properly.
+On Tue, May 15, 2012 at 5:43 PM, Magnus Damm <magnus.damm@gmail.com> wrote:
 
-Adding:
-	needs_swap DSO field
-	dso__swap_init function to initialize DSO's needs_swap
-	DSO__READ to read the data with proper swaps
+> From: Magnus Damm <damm@opensource.se>
+>
+> This patch is V2 of the Emma Mobile GPIO driver. This
+> driver is designed to be reusable between multiple SoCs
+> that share the same basic building block, but so far it
+> has only been used on Emma Mobile EV2.
+>
+> Each driver instance handles 32 GPIOs with individually
+> maskable IRQs. The driver operates on two I/O memory
+> ranges and the 32 GPIOs are hooked up to two interrupts.
+>
+> In the case of Emma Mobile EV2 this GPIO building block
+> is used as main external interrupt controller hooking up
+> 159 GPIOS as 159 interrupts via 5 driver instances and
+> 10 interrupts to the GIC and the Cortex-A9 Dual.
+>
+> Signed-off-by: Magnus Damm <damm@opensource.se>
 
-Note, running following to test perf endianity handling:
-test 1)
-  - origin system:
-    # perf record -a -- sleep 10 (any perf record will do)
-    # perf report > report.origin
-    # perf archive perf.data
+V2 is fair enough for me, so feel free to add:
+Acked-by: Linus Walleij <linus.walleij@linaro.org>
 
-  - copy the perf.data, report.origin and perf.data.tar.bz2
-    to a target system and run:
-    # tar xjvf perf.data.tar.bz2 -C ~/.debug
-    # perf report > report.target
-    # diff -u report.origin report.target
-
-  - the diff should produce no output
-    (besides some white space stuff and possibly different
-     date/TZ output)
-
-test 1)
-  - origin system:
-    # perf record -ag -fo /tmp/perf.data -- sleep 1
-  - mount origin system root to the target system on /mnt/origin
-  - target system:
-    # perf script --symfs /mnt/origin -I -i /mnt/origin/tmp/perf.data \
-     --kallsyms /mnt/origin/proc/kallsyms
-  - complete perf.data header is displayed
-
-Signed-off-by: Jiri Olsa <jolsa@redhat.com>
----
- tools/perf/util/symbol.c |   33 ++++++++++++++++++++++++++++++++-
- tools/perf/util/symbol.h |   30 ++++++++++++++++++++++++++++++
- 2 files changed, 62 insertions(+), 1 deletions(-)
-
-diff --git a/tools/perf/util/symbol.c b/tools/perf/util/symbol.c
-index e2ba885..04a83c5 100644
---- a/tools/perf/util/symbol.c
-+++ b/tools/perf/util/symbol.c
-@@ -323,6 +323,7 @@ struct dso *dso__new(const char *name)
- 		dso->sorted_by_name = 0;
- 		dso->has_build_id = 0;
- 		dso->kernel = DSO_TYPE_USER;
-+		dso->needs_swap = DSO_SWAP__UNSET;
- 		INIT_LIST_HEAD(&dso->node);
- 	}
- 
-@@ -1156,6 +1157,33 @@ static size_t elf_addr_to_index(Elf *elf, GElf_Addr addr)
- 	return -1;
- }
- 
-+static int dso__swap_init(struct dso *dso, unsigned char eidata)
-+{
-+	static unsigned int const endian = 1;
-+
-+	dso->needs_swap = DSO_SWAP__NO;
-+
-+	switch (eidata) {
-+	case ELFDATA2LSB:
-+		/* We are big endian, DSO is little endian. */
-+		if (*(unsigned char const *)&endian != 1)
-+			dso->needs_swap = DSO_SWAP__YES;
-+		break;
-+
-+	case ELFDATA2MSB:
-+		/* We are little endian, DSO is big endian. */
-+		if (*(unsigned char const *)&endian != 0)
-+			dso->needs_swap = DSO_SWAP__YES;
-+		break;
-+
-+	default:
-+		pr_err("unrecognized DSO data encoding %d\n", eidata);
-+		return -EINVAL;
-+	}
-+
-+	return 0;
-+}
-+
- static int dso__load_sym(struct dso *dso, struct map *map, const char *name,
- 			 int fd, symbol_filter_t filter, int kmodule,
- 			 int want_symtab)
-@@ -1187,6 +1215,9 @@ static int dso__load_sym(struct dso *dso, struct map *map, const char *name,
- 		goto out_elf_end;
- 	}
- 
-+	if (dso__swap_init(dso, ehdr.e_ident[EI_DATA]))
-+		goto out_elf_end;
-+
- 	/* Always reject images with a mismatched build-id: */
- 	if (dso->has_build_id) {
- 		u8 build_id[BUILD_ID_SIZE];
-@@ -1272,7 +1303,7 @@ static int dso__load_sym(struct dso *dso, struct map *map, const char *name,
- 		if (opdsec && sym.st_shndx == opdidx) {
- 			u32 offset = sym.st_value - opdshdr.sh_addr;
- 			u64 *opd = opddata->d_buf + offset;
--			sym.st_value = *opd;
-+			sym.st_value = DSO__READ(dso, u64, *opd);
- 			sym.st_shndx = elf_addr_to_index(elf, sym.st_value);
- 		}
- 
-diff --git a/tools/perf/util/symbol.h b/tools/perf/util/symbol.h
-index 5649d63..be14744 100644
---- a/tools/perf/util/symbol.h
-+++ b/tools/perf/util/symbol.h
-@@ -9,6 +9,7 @@
- #include <linux/list.h>
- #include <linux/rbtree.h>
- #include <stdio.h>
-+#include <byteswap.h>
- 
- #ifdef HAVE_CPLUS_DEMANGLE
- extern char *cplus_demangle(const char *, int);
-@@ -160,11 +161,18 @@ enum dso_kernel_type {
- 	DSO_TYPE_GUEST_KERNEL
- };
- 
-+enum dso_swap_type {
-+	DSO_SWAP__UNSET,
-+	DSO_SWAP__NO,
-+	DSO_SWAP__YES,
-+};
-+
- struct dso {
- 	struct list_head node;
- 	struct rb_root	 symbols[MAP__NR_TYPES];
- 	struct rb_root	 symbol_names[MAP__NR_TYPES];
- 	enum dso_kernel_type	kernel;
-+	enum dso_swap_type	needs_swap;
- 	u8		 adjust_symbols:1;
- 	u8		 has_build_id:1;
- 	u8		 hit:1;
-@@ -182,6 +190,28 @@ struct dso {
- 	char		 name[0];
- };
- 
-+#define DSO__READ(dso, type, val)			\
-+({							\
-+	type ____r = val;				\
-+	BUG_ON(dso->needs_swap == DSO_SWAP__UNSET);	\
-+	if (dso->needs_swap == DSO_SWAP__YES) {		\
-+		switch (sizeof(____r)) {		\
-+		case 2:					\
-+			____r = bswap_16(val);		\
-+			break;				\
-+		case 4:					\
-+			____r = bswap_32(val);		\
-+			break;				\
-+		case 8:					\
-+			____r = bswap_64(val);		\
-+			break;				\
-+		default:				\
-+			BUG_ON(1);			\
-+		}					\
-+	}						\
-+	____r;						\
-+})
-+
- struct dso *dso__new(const char *name);
- void dso__delete(struct dso *dso);
- 
--- 
-1.7.7.6
-
+Yours,
+Linus Walleij
