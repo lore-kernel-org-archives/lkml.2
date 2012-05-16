@@ -1,24 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758905Ab2EPVoe (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 May 2012 17:44:34 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:56067 "EHLO
+	id S1759295Ab2EPVp0 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 May 2012 17:45:26 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:56094 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751743Ab2EPVoc (ORCPT
+	with ESMTP id S1754397Ab2EPVpY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 May 2012 17:44:32 -0400
-Date: Wed, 16 May 2012 14:44:22 -0700
-From: tip-bot for Shuah Khan <shuahkhan@gmail.com>
-Message-ID: <tip-363f7ce3250aafdaab43011c7dc40158ea571e6b@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
-        shuahkhan@gmail.com, tglx@linutronix.de, hpa@linux.intel.com
-Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        shuahkhan@gmail.com, tglx@linutronix.de, hpa@linux.intel.com
-In-Reply-To: <1336327084.2897.15.camel@lorien2>
-References: <1336327084.2897.15.camel@lorien2>
+	Wed, 16 May 2012 17:45:24 -0400
+Date: Wed, 16 May 2012 14:45:12 -0700
+From: tip-bot for Peter Jones <pjones@redhat.com>
+Message-ID: <tip-ab7b64e9ee1e930ffe9d7f5b5eebe618a3b3a03b@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, pjones@redhat.com, hpa@zytor.com,
+        mingo@kernel.org, tglx@linutronix.de, hpa@linux.intel.com
+Reply-To: mingo@kernel.org, hpa@zytor.com, pjones@redhat.com,
+        linux-kernel@vger.kernel.org, tglx@linutronix.de, hpa@linux.intel.com
+In-Reply-To: <1337190206-12121-1-git-send-email-pjones@redhat.com>
+References: <1337190206-12121-1-git-send-email-pjones@redhat.com>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:x86/cleanups] x86: kernel/dumpstack.c simple_strtoul cleanup
-Git-Commit-ID: 363f7ce3250aafdaab43011c7dc40158ea571e6b
+Subject: [tip:x86/cleanups] x86: Don't continue booting if we can'
+ t load the specified initrd
+Git-Commit-ID: ab7b64e9ee1e930ffe9d7f5b5eebe618a3b3a03b
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -27,67 +28,48 @@ MIME-Version: 1.0
 Content-Transfer-Encoding: 8bit
 Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Wed, 16 May 2012 14:44:28 -0700 (PDT)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Wed, 16 May 2012 14:45:18 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  363f7ce3250aafdaab43011c7dc40158ea571e6b
-Gitweb:     http://git.kernel.org/tip/363f7ce3250aafdaab43011c7dc40158ea571e6b
-Author:     Shuah Khan <shuahkhan@gmail.com>
-AuthorDate: Sun, 6 May 2012 11:58:04 -0600
+Commit-ID:  ab7b64e9ee1e930ffe9d7f5b5eebe618a3b3a03b
+Gitweb:     http://git.kernel.org/tip/ab7b64e9ee1e930ffe9d7f5b5eebe618a3b3a03b
+Author:     Peter Jones <pjones@redhat.com>
+AuthorDate: Wed, 16 May 2012 13:43:26 -0400
 Committer:  H. Peter Anvin <hpa@linux.intel.com>
-CommitDate: Tue, 15 May 2012 15:36:42 -0700
+CommitDate: Wed, 16 May 2012 13:59:52 -0700
 
-x86: kernel/dumpstack.c simple_strtoul cleanup
+x86: Don't continue booting if we can't load the specified initrd
 
-Change kstack_setup() and code_bytes_setup() in kernel/dumpstack.c
-to call kstrtoul() instead of calling obsoleted simple_strtoul().
+If we've determined we can't do what the user asked, trying to do
+something else isn't going to make the user's life better.
 
-Signed-off-by: Shuah Khan <shuahkhan@gmail.com>
-Link: http://lkml.kernel.org/r/1336327084.2897.15.camel@lorien2
+Without this the screen scrolls a bit and then you get a panic
+anyway, and it's nice not to have so much scroll after the real
+problem in bug reports.
+
+Link: http://lkml.kernel.org/r/1337190206-12121-1-git-send-email-pjones@redhat.com
 Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
 ---
- arch/x86/kernel/dumpstack.c |   21 +++++++++++++++++++--
- 1 files changed, 19 insertions(+), 2 deletions(-)
+ arch/x86/kernel/setup.c |    7 +++----
+ 1 files changed, 3 insertions(+), 4 deletions(-)
 
-diff --git a/arch/x86/kernel/dumpstack.c b/arch/x86/kernel/dumpstack.c
-index 1b81839..b154f6d 100644
---- a/arch/x86/kernel/dumpstack.c
-+++ b/arch/x86/kernel/dumpstack.c
-@@ -311,16 +311,33 @@ void die(const char *str, struct pt_regs *regs, long err)
+diff --git a/arch/x86/kernel/setup.c b/arch/x86/kernel/setup.c
+index 1a29015..37ef116 100644
+--- a/arch/x86/kernel/setup.c
++++ b/arch/x86/kernel/setup.c
+@@ -393,10 +393,9 @@ static void __init reserve_initrd(void)
+ 	initrd_start = 0;
  
- static int __init kstack_setup(char *s)
- {
-+	ssize_t ret;
-+	unsigned long val;
-+
- 	if (!s)
- 		return -EINVAL;
--	kstack_depth_to_print = simple_strtoul(s, NULL, 0);
-+
-+	ret = kstrtoul(s, 0, &val);
-+	if (ret)
-+		return ret;
-+	kstack_depth_to_print = val;
- 	return 0;
- }
- early_param("kstack", kstack_setup);
+ 	if (ramdisk_size >= (end_of_lowmem>>1)) {
+-		memblock_free(ramdisk_image, ramdisk_end - ramdisk_image);
+-		printk(KERN_ERR "initrd too large to handle, "
+-		       "disabling initrd\n");
+-		return;
++		panic("initrd too large to handle, "
++		       "disabling initrd (%lld needed, %lld available)\n",
++		       ramdisk_size, end_of_lowmem>>1);
+ 	}
  
- static int __init code_bytes_setup(char *s)
- {
--	code_bytes = simple_strtoul(s, NULL, 0);
-+	ssize_t ret;
-+	unsigned long val;
-+
-+	if (!s)
-+		return -EINVAL;
-+
-+	ret = kstrtoul(s, 0, &val);
-+	if (ret)
-+		return ret;
-+
-+	code_bytes = val;
- 	if (code_bytes > 8192)
- 		code_bytes = 8192;
- 
+ 	printk(KERN_INFO "RAMDISK: %08llx - %08llx\n", ramdisk_image,
