@@ -1,72 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S967338Ab2EPFDW (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 May 2012 01:03:22 -0400
-Received: from mga14.intel.com ([143.182.124.37]:40526 "EHLO mga14.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S967285Ab2EPFAX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 May 2012 01:00:23 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
-   d="scan'208";a="100617128"
-From: "Yan, Zheng" <zheng.z.yan@intel.com>
-To: a.p.zijlstra@chello.nl, mingo@elte.hu, andi@firstfloor.org,
-        eranian@google.com, jolsa@redhat.com, ming.m.lin@intel.com,
-        gregkh@linuxfoundation.org
-Cc: linux-kernel@vger.kernel.org
-Subject: [PATCH 03/10] perf: Allow pmu to choose cpu on which to install event
-Date: Wed, 16 May 2012 12:59:56 +0800
-Message-Id: <1337144403-30841-4-git-send-email-zheng.z.yan@intel.com>
-X-Mailer: git-send-email 1.7.7.6
-In-Reply-To: <1337144403-30841-1-git-send-email-zheng.z.yan@intel.com>
-References: <1337144403-30841-1-git-send-email-zheng.z.yan@intel.com>
+	id S967275Ab2EPFH3 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 May 2012 01:07:29 -0400
+Received: from shards.monkeyblade.net ([198.137.202.13]:45401 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751638Ab2EPFH1 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 16 May 2012 01:07:27 -0400
+Date: Wed, 16 May 2012 01:06:20 -0400 (EDT)
+Message-Id: <20120516.010620.1217035745038191380.davem@davemloft.net>
+To: linville@tuxdriver.com
+Cc: linux-wireless@vger.kernel.org, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: pull request: wireless 2012-05-15
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <20120515205157.GF24572@tuxdriver.com>
+References: <20120515205157.GF24572@tuxdriver.com>
+X-Mailer: Mew version 6.5 on Emacs 24.0.95 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.6 (shards.monkeyblade.net [198.137.202.13]); Tue, 15 May 2012 22:06:22 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: "Yan, Zheng" <zheng.z.yan@intel.com>
+From: "John W. Linville" <linville@tuxdriver.com>
+Date: Tue, 15 May 2012 16:51:58 -0400
 
-Allow the pmu->event_init callback to change event->cpu, so pmu can
-choose cpu on which to install event.
+> Here are three more fixes that some of my developers are desperate to
+> see included in 3.4...
+> 
+> Johan Hedberg went to some length justifyng the inclusion of these two
+> Bluetooth fixes:
+> 
+> "The device_connected fix should be quite self-explanatory, but it's
+> actually a wider issue than just for keyboards. All profiles that do
+> incoming connection authorization (e.g. headsets) will break without it
+> with specific hardware. The reason it wasn't caught earlier is that it
+> only occurs with specific Bluetooth adapters.
+> 
+> As for the security level patch, this fixes L2CAP socket based security
+> level elevation during a connection. The HID profile needs this (for
+> keyboards) and it is the only way to achieve the security level
+> elevation when using the management interface to talk to the kernel
+> (hence the management enabling patch being the one that exposes this"
+> 
+> The rtlwifi fix addresses a regression related to firmware loading,
+> as described in kernel.org bug 43187.  It basically just moves a hunk
+> of code to a more appropriate place.
 
-Signed-off-by: Zheng Yan <zheng.z.yan@intel.com>
----
- kernel/events/core.c |    8 ++++----
- 1 files changed, 4 insertions(+), 4 deletions(-)
-
-diff --git a/kernel/events/core.c b/kernel/events/core.c
-index 9fdf394..6a2d0b9 100644
---- a/kernel/events/core.c
-+++ b/kernel/events/core.c
-@@ -6309,7 +6309,7 @@ SYSCALL_DEFINE5(perf_event_open,
- 	/*
- 	 * Get the target context (task or percpu):
- 	 */
--	ctx = find_get_context(pmu, task, cpu);
-+	ctx = find_get_context(pmu, task, event->cpu);
- 	if (IS_ERR(ctx)) {
- 		err = PTR_ERR(ctx);
- 		goto err_alloc;
-@@ -6382,16 +6382,16 @@ SYSCALL_DEFINE5(perf_event_open,
- 	mutex_lock(&ctx->mutex);
- 
- 	if (move_group) {
--		perf_install_in_context(ctx, group_leader, cpu);
-+		perf_install_in_context(ctx, group_leader, event->cpu);
- 		get_ctx(ctx);
- 		list_for_each_entry(sibling, &group_leader->sibling_list,
- 				    group_entry) {
--			perf_install_in_context(ctx, sibling, cpu);
-+			perf_install_in_context(ctx, sibling, event->cpu);
- 			get_ctx(ctx);
- 		}
- 	}
- 
--	perf_install_in_context(ctx, event, cpu);
-+	perf_install_in_context(ctx, event, event->cpu);
- 	++ctx->generation;
- 	perf_unpin_context(ctx);
- 	mutex_unlock(&ctx->mutex);
--- 
-1.7.7.6
-
+Pulled, and the above text gave me something to put into the merge
+commit log message, thanks :-)
