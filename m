@@ -1,90 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965837Ab2EPI1w (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 May 2012 04:27:52 -0400
-Received: from mx2.parallels.com ([64.131.90.16]:41229 "EHLO mx2.parallels.com"
+	id S965900Ab2EPI25 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 May 2012 04:28:57 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:13628 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932600Ab2EPI1r (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 May 2012 04:27:47 -0400
-Message-ID: <4FB36486.6060500@parallels.com>
-Date: Wed, 16 May 2012 12:25:42 +0400
-From: Glauber Costa <glommer@parallels.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.1) Gecko/20120216 Thunderbird/10.0.1
+	id S932600Ab2EPI2y (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 16 May 2012 04:28:54 -0400
+Date: Wed, 16 May 2012 11:28:41 +0300
+From: Gleb Natapov <gleb@redhat.com>
+To: Hannes Reinecke <hare@suse.de>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        "H. Peter Anvin" <hpa@linux.intel.com>,
+        Alan Cox <alan@lxorguk.ukuu.org.uk>
+Subject: Re: [PATCH] EDD: Check for correct EDD 3.0 length
+Message-ID: <20120516082841.GS32036@redhat.com>
+References: <1337151096-38511-1-git-send-email-hare@suse.de>
 MIME-Version: 1.0
-To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-CC: <linux-kernel@vger.kernel.org>, <cgroups@vger.kernel.org>,
-        <linux-mm@kvack.org>, Tejun Heo <tj@kernel.org>,
-        Li Zefan <lizefan@huawei.com>, Greg Thelen <gthelen@google.com>,
-        Suleiman Souhlal <suleiman@google.com>, Michal Hocko <mhocko@suse.cz>,
-        Johannes Weiner <hannes@cmpxchg.org>, <devel@openvz.org>,
-        Christoph Lameter <cl@linux.com>,
-        Pekka Enberg <penberg@cs.helsinki.fi>
-Subject: Re: [PATCH v2 18/29] memcg: kmem controller charge/uncharge infrastructure
-References: <1336758272-24284-1-git-send-email-glommer@parallels.com> <1336758272-24284-19-git-send-email-glommer@parallels.com> <4FB1C61F.9020102@jp.fujitsu.com> <4FB34C3D.4030401@parallels.com> <4FB362D4.8000800@jp.fujitsu.com>
-In-Reply-To: <4FB362D4.8000800@jp.fujitsu.com>
-Content-Type: text/plain; charset="ISO-2022-JP"
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1337151096-38511-1-git-send-email-hare@suse.de>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/16/2012 12:18 PM, KAMEZAWA Hiroyuki wrote:
->> If at this point the memcg hits a NOFAIL allocation worth 2 pages, by
->> >  the method I am using, the memcg will be at 4M + 4k after the
->> >  allocation. Charging it to the root memcg will leave it at 4M - 4k.
->> >  
->> >  This means that to be able to allocate a page again, you need to free
->> >  two other pages, be it the 2 pages used by the GFP allocation or any
->> >  other. In other words: the memcg that originated the charge is held
->> >  accountable for it. If he says it can't fail for whatever reason, fine,
->> >  we respect that,  but we punish it later for other allocations.
->> >  
-> I personally think 'we punish it later' is bad thing at resource accounting.
-> We have 'hard limit'. It's not soft limit.
-
-That only makes sense if you will fail the allocation. If you won't, you
-are over your hard limit anyway. You are just masquerading that.
-
->> >  Without that GFP_NOFAIL becomes just a nice way for people to bypass
->> >  those controls altogether, since after a ton of GFP_NOFAIL allocations,
->> >  normal allocations will still succeed.
->> >  
-> Allowing people to bypass is not bad because they're kernel.
-
-No, they are not. They are in process context, on behalf of a process
-that belongs to a valid memcg. If they happen to be a kernel thread,
-!current->mm test will send the allocation to the root memcg already.
-
+On Wed, May 16, 2012 at 08:51:36AM +0200, Hannes Reinecke wrote:
+> There are two competing EDD 3.0 specifications,
+> the original one from Phoenix
+> <http://mbldr.sourceforge.net/specsedd30.pdf>
+> and the T-13 approved one
+> <http://www.t13.org/documents/UploadedDocuments/docs2004/d1572r3-EDD3.pdf>
 > 
-> But, IIUC, from gfp.h
-> ==
->   * __GFP_NOFAIL: The VM implementation_must_  retry infinitely: the caller
->   * cannot handle allocation failures.  This modifier is deprecated and no new
->   * users should be added.
-> ==
+> They differ in the length of the device_path field, which
+> is one quad word for the Phoenix spec and two quad words
+> for the T-13 spec. So we need to test for both lengths
+> and blank out the second quad word when a Phoenix
+> version is detected.
 > 
-> GFP_NOFAIL will go away and no new user is recommended.
+Can you please clarify what practical problem are you seeing that
+you are trying to fix with this patch?
+
+> Signed-off-by: Hannes Reinecke <hare@suse.de>
+> Cc: Gleb Natapov <gleb@redhat.com>
+> Cc: H. Peter Anvin <hpa@linux.intel.com>
+> Cc: Alan Cox <alan@lxorguk.ukuu.org.uk>
 > 
-Yes, I am aware of that. That's actually why I don't plan to insist on
-this too much - although your e-mail didn't really convince me.
+> diff --git a/drivers/firmware/edd.c b/drivers/firmware/edd.c
+> index e229576..beedf4c 100644
+> --- a/drivers/firmware/edd.c
+> +++ b/drivers/firmware/edd.c
+> @@ -192,6 +192,13 @@ edd_show_interface(struct edd_device *edev, char *buf)
+>  			p += scnprintf(p, left, " ");
+>  		}
+>  	}
+> +	/*
+> +	 * Phoenix EDD 3.0 reserves only one quad word for the
+> +	 * device path, so blank out the second quad word.
+> +	 */
+> +	if (info->params.device_path_info_length == 36)
+> +		info->params.device_path.unknown.reserved2 = 0;
+> +
+You overwrite checksum here. Hope it will not be checked after that point.
+This will work for all interface types defined by Phoenix spec except
+SCSI as far as I see. In Phoenix spec SCSI interface is one byte LUN,
+in T13 it is changed to be: word SCSI ID, qword LUN.
 
-It should not matter in practice.
+>  	if (!strncmp(info->params.interface_type, "ATAPI", 5)) {
+>  		p += scnprintf(p, left, "\tdevice: %u  lun: %u\n",
+>  			     info->params.device_path.atapi.device,
+> @@ -545,8 +552,12 @@ edd_has_edd30(struct edd_device *edev)
+>  	}
+>  
+>  
+> -	/* We support only T13 spec */
+> -	if (info->params.device_path_info_length != 44)
+> +	/*
+> +	 * Phoenix EDD 3.0 specifies this to be 36,
+> +	 * T-13 EDD 3.0 uses 44. So check for both.
+> +	 */
+> +	if (info->params.device_path_info_length != 36 &&
+> +	    info->params.device_path_info_length != 44)
+>  		return 0;
+>  
+>  	for (i = 30; i < info->params.device_path_info_length + 30; i++)
 
-> So, please skip GFP_NOFAIL accounting and avoid to write
-> "usage may go over limit if you're unfortune, sorry" into memcg documentation.
-
-I won't write that, because that's not true. Is more like: "Allocations
-that can fail will fail if you go over limit".
-
-> 
->> >  The change you propose is totally doable. I just don't believe it should
->> >  be done.
->> >  
->> >  But let me know where you stand.
->> >  
-> My stand point is keeping "usage<= limit" is the spec. and
-> important in enterprise system. So, please avoid usage>  limit.
-> 
-As I said, I won't make a case here because those allocations shouldn't
-matter in real life anyway. I can change it.
-
+--
+			Gleb.
