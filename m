@@ -1,64 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933338Ab2EPIvA (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 May 2012 04:51:00 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:36272 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932715Ab2EPIu4 (ORCPT
+	id S966237Ab2EPIvT (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 May 2012 04:51:19 -0400
+Received: from haggis.pcug.org.au ([203.10.76.10]:37375 "EHLO
+	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933188Ab2EPIu6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 May 2012 04:50:56 -0400
-Date: Wed, 16 May 2012 09:50:52 +0100
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Axel Lin <axel.lin@gmail.com>
-Cc: linux-kernel@vger.kernel.org, David Dajun Chen <dchen@diasemi.com>,
-        Ashish Jangam <ashish.jangam@kpitcummins.com>,
-        "Ying-Chun Liu (PaulLiu)" <paul.liu@linaro.org>,
-        Liam Girdwood <lrg@ti.com>
-Subject: Re: [PATCH RFT] regulator: da9052: Convert to set_voltage_sel and
- map_voltage
-Message-ID: <20120516085051.GE6801@opensource.wolfsonmicro.com>
-References: <1337145155.10294.1.camel@phoenix>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="sfyO1m2EN8ZOtJL6"
-Content-Disposition: inline
-In-Reply-To: <1337145155.10294.1.camel@phoenix>
-X-Cookie: Advancement in position.
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Wed, 16 May 2012 04:50:58 -0400
+Date: Wed, 16 May 2012 18:50:45 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Olof Johansson <olof@lixom.net>, Arnd Bergmann <arnd@arndb.de>,
+        <linux-arm-kernel@lists.infradead.org>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Haojian Zhuang <haojian.zhuang@gmail.com>,
+        Russell King <rmk@arm.linux.org.uk>
+Subject: linux-next: manual merge of the arm-soc tree with the arm tree
+Message-Id: <20120516185045.2f9e9274f373d584fd499eb2@canb.auug.org.au>
+X-Mailer: Sylpheed 3.2.0beta7 (GTK+ 2.24.10; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Wed__16_May_2012_18_50_45_+1000_vNz9c6Paf6MEKGuK"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
---sfyO1m2EN8ZOtJL6
-Content-Type: text/plain; charset=us-ascii
+--Signature=_Wed__16_May_2012_18_50_45_+1000_vNz9c6Paf6MEKGuK
+Content-Type: text/plain; charset=US-ASCII
 Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-On Wed, May 16, 2012 at 01:12:35PM +0800, Axel Lin wrote:
-> Signed-off-by: Axel Lin <axel.lin@gmail.com>
+Hi all,
 
-Applied, thanks.
+Today's linux-next merge of the arm-soc tree got a conflict in
+arch/arm/Kconfig between commit 98fab064d321 ("ARM: Remove unnecessary
+selection of TICK_ONESHOT") from the arm tree and commit c24b31147a06
+("ARM: mmp: support DT in irq") from the arm-soc tree.
 
---sfyO1m2EN8ZOtJL6
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+Just context changes.  I fixed it up (see below) and can carry the fix as
+necessary.
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+
+diff --cc arch/arm/Kconfig
+index b1a717c,852b12b..0000000
+--- a/arch/arm/Kconfig
++++ b/arch/arm/Kconfig
+@@@ -627,6 -616,8 +611,7 @@@ config ARCH_MM
+  	select CLKDEV_LOOKUP
+  	select GENERIC_CLOCKEVENTS
+  	select GPIO_PXA
++ 	select IRQ_DOMAIN
+ -	select TICK_ONESHOT
+  	select PLAT_PXA
+  	select SPARSE_IRQ
+  	select GENERIC_ALLOCATOR
+
+--Signature=_Wed__16_May_2012_18_50_45_+1000_vNz9c6Paf6MEKGuK
+Content-Type: application/pgp-signature
 
 -----BEGIN PGP SIGNATURE-----
 Version: GnuPG v1.4.12 (GNU/Linux)
 
-iQIcBAEBAgAGBQJPs2oFAAoJEBus8iNuMP3ddisP/1RMe6G8tangYhWi19siHDEI
-92xlfvkfyd1iE9xtj4/+sWtvBDzjZqoxbgjk1OVC7ekBFWNxps1NdO0kseeg/L9v
-ZGSGJa0St3yW3qAZ6W5NrgwLv4SDSzHKjT025PV8ByGPiyE7zJBMwjQigVODacrM
-AG9ffd+XwmBBuFtrGzMYFX9pCI05104gSghXOTIhOwNvo/fCncM1M83mrtus0gph
-/Tmy1ecKtTKhLLCOv1wTsUTj8g441Nrfh9hq9/F9DyOtXGuXVGuucsF1naKcE3US
-kQ653j6q+sIhS4AT7muYuvghAvZYPWOlYDDltcpt8gvPekVCDifE+JkRRBCk97iJ
-KZyz6IbJiLDIijncR+xmlnZB9bHGJK7sDSE4V2LtlGB/GGtxI2uhcOO+fSk0PJE4
-MlVgJ7reK3/B/q7Whls1GHJvrCpMDHahJ5Le31O26/BgtQcUx2AgACAAVBREm3Lb
-j0STaYA8vKlbNA7frZqSAXfYqymV60dKDqgkCc8Kd5IyJ803ycZloZpT/KT22XNh
-4qgfDa1T0rnA4YZVFTNKo7F6jZYVem6HhAVJRC6OSgUVAaQiB/OLb3CNRgCiQW1L
-pYzS1sy1WrKyInEzQn2enHocPHxJp28MLE3wDpChD6Eq9h7Djt7wpd7hBoqv3OWo
-PKGLidCEIggb9p6y6k10
-=eXxn
+iQIcBAEBCAAGBQJPs2plAAoJEECxmPOUX5FENNEP+gNvkkL/StcBzc+izleVFKEv
+7a1PpNKUPGKklZdrpDZM43E6OPTubXoCI1zNgJvT/PS81rR8nbRPNYbqSOqiva9U
+fcZkFfkqJ+/xevN91lOjFiRy2rtYG5bY5LIZlLyJYsvQGLAer0rqTviGJSWANeoy
+gG74fDcyAQ3sDWWgiUIsyM4jsXZP0cukQLv6SMKHP7md7B5twTTOKbd12qkEKKTn
+7mr6EgzZroeFI4jOWy4KbCsAKR4EIZy+L2a0iVo+fr1sJkN094jdfD6UclnzJUMd
+Y+jWb+zz1MAQOaz4o0qGQ6sBj6WE45UqIFIDpMWXutOMKOlv9YCojjfd8eWNisbZ
+l+T6R7sgKaapayyQL71L6/BkTQtklgnlImpwcmsnab50bIkp3xdaoFqiBHU6sEPC
+kWZ+ZIFg7WIjq4J5b9O63B4PmdVWWCnYwMczZrWgzWrNhp1NubWnJ29kQ7xcMsEj
+LciAguqdObIwiiuMX4Q7JZPjKdInl4CY3ysIIXj48XiBF7WbNPXhc1ORPA6p++fs
+FgRNfrAMbjWH+vFrvHF2U9v3t7kLafB+Cuzwa8/I9TGGgl94lxhrTtwsfSHFh5Kh
++U0ckKOhlqtvPzsmtx4Mh0tdTOQFx6tNeRqoR9G2UPOCsqaCKAPTh1fenMBAjs9j
+Yo5U1oYUjeFXJ4h6aOND
+=bT3W
 -----END PGP SIGNATURE-----
 
---sfyO1m2EN8ZOtJL6--
+--Signature=_Wed__16_May_2012_18_50_45_+1000_vNz9c6Paf6MEKGuK--
