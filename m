@@ -1,55 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755084Ab2EPP01 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 May 2012 11:26:27 -0400
-Received: from mail-yw0-f46.google.com ([209.85.213.46]:63142 "EHLO
-	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753950Ab2EPP0Z (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 May 2012 11:26:25 -0400
-Date: Wed, 16 May 2012 12:26:19 -0300
-From: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-To: Namhyung Kim <namhyung.kim@lge.com>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Mackerras <paulus@samba.org>,
-        Ingo Molnar <mingo@redhat.com>, Namhyung Kim <namhyung@gmail.com>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 2/3] Revert 'perf evlist: Fix creation of cpu map'
-Message-ID: <20120516152619.GD7864@infradead.org>
-References: <1337161549-9870-1-git-send-email-namhyung.kim@lge.com>
- <1337161549-9870-2-git-send-email-namhyung.kim@lge.com>
+	id S1755213Ab2EPP1U (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 May 2012 11:27:20 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:11222 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754118Ab2EPP1T (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 16 May 2012 11:27:19 -0400
+Date: Wed, 16 May 2012 12:22:20 -0300
+From: Marcelo Tosatti <mtosatti@redhat.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: linux-kernel <linux-kernel@vger.kernel.org>, kvm <kvm@vger.kernel.org>,
+        Avi Kivity <avi@redhat.com>, Alexander Graf <agraf@suse.de>
+Subject: [GIT PULL] KVM fixes for 3.4-rc7
+Message-ID: <20120516152220.GA19763@amt.cnet>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1337161549-9870-2-git-send-email-namhyung.kim@lge.com>
-X-Url: http://acmel.wordpress.com
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Em Wed, May 16, 2012 at 06:45:48PM +0900, Namhyung Kim escreveu:
-> The commit 55261f46702c ("perf evlist: Fix creation of cpu
-> map") changed to create a per-task event when no cpu target
-> is specified. However it caused a problem since perf-task do
-> not allow event inheritance due to scalability issues so
-> that the result will contain samples only from parent, not
-> from its children.
-> 
-> So we should use perf-task-per-cpu events anyway to get the
-> right result. Revert it.
-> 
-> Reported-by: Linus Torvalds <torvalds@linux-foundation.org>
-> Analysed-by: Ingo Molnar <mingo@kernel.org>
-> Acked-and-tested-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
 
-I'm applying it, but while trying to figure out if the logic was right I
-tried:
+Linus, please pull from:
 
-perf top -C 0 -u acme
+  git://git.kernel.org/pub/scm/virt/kvm/kvm.git master
 
-To check what is that this user is doing on that CPU, and its not
-possible :-\
+To receive urgent KVM PPC updates, quoting Alexander Graf:
 
-UID switch overriding CPU!
+There are a few bugs in 3.4 that really should be fixed before people can
+be all happy and fuzzy about KVM on PowerPC. These fixes are:
 
-- Arnaldo
+  * fix POWER7 bare metal with PR=y
+  * fix deadlock on HV=y book3s_64 mode in low memory cases
+  * fix invalid MMU scope of PR=y mode on book3s_64, possibly
+    leading to memory corruption
+
+
+Alexander Graf (3):
+      KVM: PPC: Book3S: PR: Handle EMUL_ASSIST
+      KVM: PPC: Fix PR KVM on POWER7 bare metal
+      KVM: PPC: Book3S: PR: Fix hsrr code
+
+Benjamin Herrenschmidt (1):
+      powerpc/kvm: Fix VSID usage in 64-bit "PR" KVM
+
+Paul Mackerras (1):
+      KVM: PPC: Book3S HV: Fix bug leading to deadlock in guest HPT updates
+
+ arch/powerpc/include/asm/kvm_book3s.h |    7 +++--
+ arch/powerpc/kvm/book3s_64_mmu_host.c |   13 +++++----
+ arch/powerpc/kvm/book3s_hv_rm_mmu.c   |    1 +
+ arch/powerpc/kvm/book3s_segment.S     |   42 ++++++++++++++++++++++-----------
+ 4 files changed, 40 insertions(+), 23 deletions(-)
+
+
