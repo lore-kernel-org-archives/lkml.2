@@ -1,88 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933125Ab2EPDeR (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 May 2012 23:34:17 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:50297 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932873Ab2EPDeP (ORCPT
+	id S967206Ab2EPDon (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 May 2012 23:44:43 -0400
+Received: from haggis.pcug.org.au ([203.10.76.10]:57511 "EHLO
+	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S964989Ab2EPDol (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 May 2012 23:34:15 -0400
-Message-ID: <4FB32032.3000509@gmail.com>
-Date: Tue, 15 May 2012 21:34:10 -0600
-From: David Ahern <dsahern@gmail.com>
-User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.7; rv:12.0) Gecko/20120428 Thunderbird/12.0.1
-MIME-Version: 1.0
-To: Stephane Eranian <eranian@google.com>
-CC: linux-kernel@vger.kernel.org, peterz@infradead.org, mingo@elte.hu,
-        acme@redhat.com
-Subject: Re: [PATCH v2 4/5] perf record: add meta-data support for pipe-mode
-References: <1337081295-10303-1-git-send-email-eranian@google.com> <1337081295-10303-5-git-send-email-eranian@google.com>
-In-Reply-To: <1337081295-10303-5-git-send-email-eranian@google.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+	Tue, 15 May 2012 23:44:41 -0400
+Date: Wed, 16 May 2012 13:44:30 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Michal Marek <mmarek@suse.cz>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Sam Ravnborg <sam@ravnborg.org>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: linux-next: manual merge of the kbuild tree with the sparc-next
+ tree
+Message-Id: <20120516134430.14f8e43c6f75604410dae815@canb.auug.org.au>
+X-Mailer: Sylpheed 3.2.0beta7 (GTK+ 2.24.10; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Wed__16_May_2012_13_44_30_+1000_+W9pYOm1rJDFczPV"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 5/15/12 5:28 AM, Stephane Eranian wrote:
-> This patch adds the meta-data header support for perf record
-> when used in pipe mode: perf record -o -
->
-> Up until now, meta-data was only available when perf record
-> was used in "regular" mode, i.e., generating a perf.data file.
-> For users depending on pipe mode, no host, event header information
-> was gathered. This patch addresses this limitation.
->
-> The difficulty in pipe mode is that information needs to be written
-> sequentially to the pipe. Meta data headers are usually generated
-> (and also expected) at the beginning of the file (or piped output).
-> To solve this problem, we introduce new synthetic record types,
-> one for each meta-data type. The approach is similar to what
-> is already used for BUILD_ID and TRACING_DATA.
->
-> We have modified util/header.c such that the same routines are used
-> to generate and read the meta-data information regardless of pipe-mode
-> vs. regular mode. To make this work, we added a new struct called
-> feat_fd which encapsulates all the information necessary to read or
-> write meta-data information to a file/pipe or from a file/pipe.
->
-> It should be noted that there is a limitation with the current
-> perf in terms of endianess in pipe mode. Perf assumes the records
-> are generated using the same endianess during collection and
-> analysis.  That is always the case with the example shown below.
-> However, one could also do:
-> $ perf record -o - noploop 2 | perf inject -b>perf.data
-> $ cat perf.data | perf report -i -
->
-> With this patch, it is possible to get:
->   $ perf record -o - noploop 2 | perf inject -b | perf report -i -
->        # ========
->        # captured on: Fri Jan 20 18:13:55 2012
->        # ========
->        #
->        # hostname : quad
->        # os release : 3.2.0-rc7-tip
->        # perf version : 3.2.0
->        # arch : x86_64
->        # nrcpus online : 4
->        # nrcpus avail : 4
->        # cpudesc : Intel(R) Core(TM)2 Quad CPU Q6600 @ 2.40GHz
->        # cpuid : GenuineIntel,6,15,11
->        # total memory : 8092884 kB
->        ...
->        # HEADER_CPU_TOPOLOGY info available, use -I to display
->        noploop for 2 seconds
->        [ perf record: Woken up 1 times to write data ]
->        [ perf record: Captured and wrote 0.084 MB - (~3677 samples) ]
->          99.80%  noploop  noploop            [.] noploop
->           0.19%  noploop  [kernel.kallsyms]  [k] radix_tree_gang_lookup
->
-> Signed-off-by: Stephane Eranian<eranian@google.com>
+--Signature=_Wed__16_May_2012_13_44_30_+1000_+W9pYOm1rJDFczPV
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-I love the feature and it works nicely, but there has been push back on 
-adding more synthesized events.  Also the size of the patch is a bit 
-much to take in. If there is no objection to the synthesized can you 
-break the patch up -- e.g., introduce the events in one, synthesis and 
-processing functions in another, plug into the commands, ...
+Hi Michal,
 
-David
+Today's linux-next merge of the kbuild tree got a conflict in
+arch/sparc/boot/Makefile between commit 51f19cfa76d7 ("sparc32: drop
+build time btfixup patching") from the sparc-next tree and commit
+95698570510b ("kbuild: refactor final link of sparc32") from the kbuild
+tree.
+
+I have no idea, so I used the version from the sparc-next tree.
+
+Sam, can you have a look and work this out, please?
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+
+--Signature=_Wed__16_May_2012_13_44_30_+1000_+W9pYOm1rJDFczPV
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBCAAGBQJPsyKeAAoJEECxmPOUX5FEAikQAJdVUWSO3A30SPG9J/EewWEL
+J1IfvuNLc3JsbK51hKuWJK1mcXzHBCUKbu2AKXN+FEoh4IUB9FMsFOyv+jzt4wl8
+fk0WfWO77ZOzMr2BNBJ2wSPIccVKyeOiU+o0et5F5c8+aP488ojTfwGF9wet0wpY
+vgXoWFbPryKBAUT3R+qSuAvkX1pIUjrti6NybKaBnJWK+PLiziCQmOBRAz7067Hh
+uzeG8Op4Tk91ON0YeOb9b6A/K7GKAUsK0LzzFXxLEC2Y15pOORWJhCTksmP4Tz2h
+YRJdtSZovpl2dssgLCbalufkg0CbjQJpaLSftqKgvHbtzFD7Y2+DUwgi3Ss77mEU
+u05XWT+uxfPAAX0x2Qbw3bQqcHPcBG9ZFRlsNHm02wCfPkAqzS9+RDWiaCMHzU7H
+rBY0RGAxtr5AjT8nogiACpw/54YFKE1uL3a4FX0hsHRg07JHPkr87oo5FqGCVxjj
+wRS9xdxrRQCAO4IJA//Cs8Ne4ZIzXgTlAdEH0k0cSIBCViPzXCjopTUR8sg9lkv4
+Pi6IXrm6/jYEayfSFz8e5kGtAvQcl2h2ObQl+Vt4UbF0OtmZOzvtidsbo3vR4aGd
+heJj1BMCRGQXbbgSUmS2VdLDhwEGQeP//CV9DFJqhWPe2kYABFanAXftrOFvbUvM
+DHtZs3EaDd+XrJA2Gtfg
+=yLdb
+-----END PGP SIGNATURE-----
+
+--Signature=_Wed__16_May_2012_13_44_30_+1000_+W9pYOm1rJDFczPV--
