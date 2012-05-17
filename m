@@ -1,147 +1,181 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761230Ab2EQHRI (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 May 2012 03:17:08 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:52924 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1761217Ab2EQHRE (ORCPT
+	id S1761215Ab2EQHSW (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 May 2012 03:18:22 -0400
+Received: from haggis.pcug.org.au ([203.10.76.10]:52069 "EHLO
+	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1761171Ab2EQHSU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 May 2012 03:17:04 -0400
-Date: Thu, 17 May 2012 00:15:34 -0700
-From: Anton Vorontsov <anton.vorontsov@linaro.org>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Kees Cook <keescook@chromium.org>, Colin Cross <ccross@android.com>,
-        Tony Luck <tony.luck@intel.com>
-Cc: Arnd Bergmann <arnd@arndb.de>, John Stultz <john.stultz@linaro.org>,
-        Shuah Khan <shuahkhan@gmail.com>, arve@android.com,
-        Rebecca Schultz Zavin <rebecca@android.com>,
-        Jesper Juhl <jj@chaosbits.net>, Randy Dunlap <rdunlap@xenotime.net>,
-        Stephen Boyd <sboyd@codeaurora.org>, Thomas Meyer <thomas@m3y3r.de>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Marco Stornelli <marco.stornelli@gmail.com>,
-        WANG Cong <xiyou.wangcong@gmail.com>, linux-kernel@vger.kernel.org,
-        devel@driverdev.osuosl.org, linaro-kernel@lists.linaro.org,
-        patches@linaro.org, kernel-team@android.com
-Subject: [PATCH 3/3] pstore/ram: Add ECC support
-Message-ID: <20120517071534.GC19999@lizard>
-References: <20120517071148.GA16946@lizard>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <20120517071148.GA16946@lizard>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Thu, 17 May 2012 03:18:20 -0400
+Date: Thu, 17 May 2012 17:18:10 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Andrew Lunn <andrew@lunn.ch>, Olof Johansson <olof@lixom.net>,
+        Arnd Bergmann <arnd@arndb.de>, <linux-arm-kernel@lists.infradead.org>,
+        Viresh Kumar <viresh.kumar@st.com>
+Subject: linux-next: manual merge of the akpm tree with the arm-soc tree
+Message-Id: <20120517171810.64d248977f410292c18086cd@canb.auug.org.au>
+X-Mailer: Sylpheed 3.2.0beta7 (GTK+ 2.24.10; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Thu__17_May_2012_17_18_10_+1000_XO26TdLPITRQ2MIB"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is now straightforward: just introduce a module parameter and pass
-the needed value to persistent_ram_new().
+--Signature=_Thu__17_May_2012_17_18_10_+1000_XO26TdLPITRQ2MIB
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Signed-off-by: Anton Vorontsov <anton.vorontsov@linaro.org>
-Acked-by: Marco Stornelli <marco.stornelli@gmail.com>
-Acked-by: Kees Cook <keescook@chromium.org>
----
- Documentation/ramoops.txt  |    6 ++++++
- fs/pstore/ram.c            |   15 ++++++++++++---
- include/linux/pstore_ram.h |    1 +
- 3 files changed, 19 insertions(+), 3 deletions(-)
+Hi Andrew,
 
-diff --git a/Documentation/ramoops.txt b/Documentation/ramoops.txt
-index 470d2c4..4ba7db2 100644
---- a/Documentation/ramoops.txt
-+++ b/Documentation/ramoops.txt
-@@ -30,6 +30,11 @@ variable while setting 0 in that variable dumps only the panics.
- The module uses a counter to record multiple dumps but the counter gets reset
- on restart (i.e. new dumps after the restart will overwrite old ones).
- 
-+Ramoops also supports software ECC protection of persistent memory regions.
-+This might be useful when a hardware reset was used to bring the machine back
-+to life (i.e. a watchdog triggered). In such cases, RAM may be somewhat
-+corrupt, but usually it is restorable.
-+
- 2. Setting the parameters
- 
- Setting the ramoops parameters can be done in 2 different manners:
-@@ -46,6 +51,7 @@ static struct ramoops_platform_data ramoops_data = {
-         .mem_address            = <...>,
-         .record_size            = <...>,
-         .dump_oops              = <...>,
-+        .ecc                    = <...>,
- };
- 
- static struct platform_device ramoops_dev = {
-diff --git a/fs/pstore/ram.c b/fs/pstore/ram.c
-index 62b13ed..9123cce 100644
---- a/fs/pstore/ram.c
-+++ b/fs/pstore/ram.c
-@@ -56,12 +56,18 @@ module_param(dump_oops, int, 0600);
- MODULE_PARM_DESC(dump_oops,
- 		"set to 1 to dump oopses, 0 to only dump panics (default 1)");
- 
-+static int ramoops_ecc;
-+module_param_named(ecc, ramoops_ecc, int, 0600);
-+MODULE_PARM_DESC(ramoops_ecc,
-+		"set to 1 to enable ECC support");
-+
- struct ramoops_context {
- 	struct persistent_ram_zone **przs;
- 	phys_addr_t phys_addr;
- 	unsigned long size;
- 	size_t record_size;
- 	int dump_oops;
-+	bool ecc;
- 	unsigned int count;
- 	unsigned int max_count;
- 	unsigned int read_count;
-@@ -236,6 +242,7 @@ static int __init ramoops_probe(struct platform_device *pdev)
- 	cxt->phys_addr = pdata->mem_address;
- 	cxt->record_size = pdata->record_size;
- 	cxt->dump_oops = pdata->dump_oops;
-+	cxt->ecc = pdata->ecc;
- 
- 	cxt->przs = kzalloc(sizeof(*cxt->przs) * cxt->max_count, GFP_KERNEL);
- 	if (!cxt->przs) {
-@@ -248,7 +255,7 @@ static int __init ramoops_probe(struct platform_device *pdev)
- 		size_t sz = cxt->record_size;
- 		phys_addr_t start = cxt->phys_addr + sz * i;
- 
--		cxt->przs[i] = persistent_ram_new(start, sz, 0);
-+		cxt->przs[i] = persistent_ram_new(start, sz, cxt->ecc);
- 		if (IS_ERR(cxt->przs[i])) {
- 			err = PTR_ERR(cxt->przs[i]);
- 			dev_err(dev, "failed to request mem region (0x%zx@0x%llx): %d\n",
-@@ -281,9 +288,10 @@ static int __init ramoops_probe(struct platform_device *pdev)
- 	record_size = pdata->record_size;
- 	dump_oops = pdata->dump_oops;
- 
--	pr_info("attached 0x%lx@0x%llx (%ux0x%zx)\n",
-+	pr_info("attached 0x%lx@0x%llx (%ux0x%zx), ecc: %s\n",
- 		cxt->size, (unsigned long long)cxt->phys_addr,
--		cxt->max_count, cxt->record_size);
-+		cxt->max_count, cxt->record_size,
-+		ramoops_ecc ? "on" : "off");
- 
- 	return 0;
- 
-@@ -347,6 +355,7 @@ static int __init ramoops_init(void)
- 		dummy_data->mem_address = mem_address;
- 		dummy_data->record_size = record_size;
- 		dummy_data->dump_oops = dump_oops;
-+		dummy_data->ecc = ramoops_ecc;
- 		dummy = platform_create_bundle(&ramoops_driver, ramoops_probe,
- 			NULL, 0, dummy_data,
- 			sizeof(struct ramoops_platform_data));
-diff --git a/include/linux/pstore_ram.h b/include/linux/pstore_ram.h
-index ffe24a5..7ed7fd4 100644
---- a/include/linux/pstore_ram.h
-+++ b/include/linux/pstore_ram.h
-@@ -92,6 +92,7 @@ struct ramoops_platform_data {
- 	unsigned long	mem_address;
- 	unsigned long	record_size;
- 	int		dump_oops;
-+	bool		ecc;
- };
- 
- #endif
--- 
-1.7.9.2
+Today's linux-next merge of the akpm tree got a conflict in
+drivers/ata/sata_mv.c between commit eee989902aab ("ARM: Orion: SATA: Add
+per channel clk/clkdev support") from the arm-soc tree and commit
+"ata/sata_mv: remove conditional compilation of clk code" from the akpm
+tree.
+
+I fixed it up (see below) and can carry the fix as necessary.
+
+[I used the arm-soc version with all the conditionals on CONFIG_HAVE_CLK
+removed.]
+
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+
+diff --cc drivers/ata/sata_mv.c
+index 24712ad,37503b8..0000000
+--- a/drivers/ata/sata_mv.c
++++ b/drivers/ata/sata_mv.c
+@@@ -551,10 -551,7 +551,8 @@@ struct mv_host_priv=20
+  	u32			irq_mask_offset;
+  	u32			unmask_all_irqs;
+ =20
+- #if defined(CONFIG_HAVE_CLK)
+  	struct clk		*clk;
+ +	struct clk              **port_clks;
+- #endif
+  	/*
+  	 * These consistent DMA memory pools give us guaranteed
+  	 * alignment for hardware-accessed data structures,
+@@@ -4028,9 -4025,6 +4026,7 @@@ static int mv_platform_probe(struct pla
+  	struct resource *res;
+  	int n_ports =3D 0;
+  	int rc;
+- #if defined(CONFIG_HAVE_CLK)
+ +	int port;
+- #endif
+ =20
+  	ata_print_version_once(&pdev->dev, DRV_VERSION);
+ =20
+@@@ -4058,13 -4052,6 +4054,11 @@@
+ =20
+  	if (!host || !hpriv)
+  		return -ENOMEM;
+- #if defined(CONFIG_HAVE_CLK)
+ +	hpriv->port_clks =3D devm_kzalloc(&pdev->dev,
+ +					sizeof(struct clk *) * n_ports,
+ +					GFP_KERNEL);
+ +	if (!hpriv->port_clks)
+ +		return -ENOMEM;
+- #endif
+  	host->private_data =3D hpriv;
+  	hpriv->n_ports =3D n_ports;
+  	hpriv->board_idx =3D chip_soc;
+@@@ -4074,21 -4061,11 +4068,19 @@@
+  				   resource_size(res));
+  	hpriv->base -=3D SATAHC0_REG_BASE;
+ =20
+- #if defined(CONFIG_HAVE_CLK)
+  	hpriv->clk =3D clk_get(&pdev->dev, NULL);
+  	if (IS_ERR(hpriv->clk))
+ -		dev_notice(&pdev->dev, "cannot get clkdev\n");
+ +		dev_notice(&pdev->dev, "cannot get optional clkdev\n");
+  	else
+ -		clk_enable(hpriv->clk);
+ +		clk_prepare_enable(hpriv->clk);
+ +
+ +	for (port =3D 0; port < n_ports; port++) {
+ +		char port_number[16];
+ +		sprintf(port_number, "%d", port);
+ +		hpriv->port_clks[port] =3D clk_get(&pdev->dev, port_number);
+ +		if (!IS_ERR(hpriv->port_clks[port]))
+ +			clk_prepare_enable(hpriv->port_clks[port]);
+ +	}
+- #endif
+ =20
+  	/*
+  	 * (Re-)program MBUS remapping windows if we are asked to.
+@@@ -4115,18 -4092,10 +4107,16 @@@
+  		return 0;
+ =20
+  err:
+- #if defined(CONFIG_HAVE_CLK)
+  	if (!IS_ERR(hpriv->clk)) {
+ -		clk_disable(hpriv->clk);
+ +		clk_disable_unprepare(hpriv->clk);
+  		clk_put(hpriv->clk);
+  	}
+ +	for (port =3D 0; port < n_ports; port++) {
+ +		if (!IS_ERR(hpriv->port_clks[port])) {
+ +			clk_disable_unprepare(hpriv->port_clks[port]);
+ +			clk_put(hpriv->port_clks[port]);
+ +		}
+ +	}
+- #endif
+ =20
+  	return rc;
+  }
+@@@ -4142,24 -4111,13 +4132,20 @@@
+  static int __devexit mv_platform_remove(struct platform_device *pdev)
+  {
+  	struct ata_host *host =3D platform_get_drvdata(pdev);
+- #if defined(CONFIG_HAVE_CLK)
+  	struct mv_host_priv *hpriv =3D host->private_data;
+ +	int port;
+- #endif
+  	ata_host_detach(host);
+ =20
+- #if defined(CONFIG_HAVE_CLK)
+  	if (!IS_ERR(hpriv->clk)) {
+ -		clk_disable(hpriv->clk);
+ +		clk_disable_unprepare(hpriv->clk);
+  		clk_put(hpriv->clk);
+  	}
+ +	for (port =3D 0; port < host->n_ports; port++) {
+ +		if (!IS_ERR(hpriv->port_clks[port])) {
+ +			clk_disable_unprepare(hpriv->port_clks[port]);
+ +			clk_put(hpriv->port_clks[port]);
+ +		}
+ +	}
+- #endif
+  	return 0;
+  }
+ =20
+
+--Signature=_Thu__17_May_2012_17_18_10_+1000_XO26TdLPITRQ2MIB
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBCAAGBQJPtKYyAAoJEECxmPOUX5FES3IP/RbTkMl+/aBmq340NXVwnBVY
+K9bwX9axjkRKVNFmFeKylvNeB/rEdzGIAO/zYZLpr22xBruu6Qr2L6jCKfiQw3xy
+ykYSpWKs+Q960rVun55VSYZAH+sfdIzGAMYXBUSBSusHllC1mZ/114UAcmBlFuZR
+9/7PiuJ7lYEX0RwXafUnEZwzm8l9sRkgDjWojm08lCEPBXvp34vrY611wu2QoLuA
+MwmgTT/X1xHulue7dyU+mmgWS0M1PTZms3d5l8TqvX+h3Mgp5HfaHBEPxLBEjfdn
+BXZWK08Oi+iOn50CU5AIkunkjJ7vEQXHFWDhgZlkkV7iX8vXnt2PUhv4CyPZON2Y
+FjcTu0AUjcgMogzNCRC8mRxKMVigbTC9uFaX3hNI6mXJXiUWDFm874PkwLrFtLtG
+zf1wHe40XWoiibAoOQ3okS4BntXxEQwOeilAusBtW3FTrAyaCzLWFI9fvi6wTC64
+dgc8yfMukrbd2WLV9mJ/Shls9QN/q0n+F7/4CUXLbiCzASxQQQ0vuGQBwrJljPfl
+29uUOJmQg0iK+uyVKqjzX6MxzTvxfLMMO61hl9g8qkcdd05pop9sVH4f3K+KvBPg
+DXUBK94QpifktM/Q0dFUyW2mqfNGV4vLl1aw91onRtC1EWgfNp8eDVF6rA8flxd7
+ivfA7OfRbZ4oBy90ShKE
+=j58C
+-----END PGP SIGNATURE-----
+
+--Signature=_Thu__17_May_2012_17_18_10_+1000_XO26TdLPITRQ2MIB--
