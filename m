@@ -1,47 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965704Ab2EQATL (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 May 2012 20:19:11 -0400
-Received: from usmamail.tilera.com ([12.216.194.151]:23696 "EHLO
-	USMAMAIL.TILERA.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965369Ab2EQATJ (ORCPT
+	id S965885Ab2EQAT3 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 May 2012 20:19:29 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:57015 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S965369Ab2EQAT1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 May 2012 20:19:09 -0400
-Message-ID: <4FB443FA.1070003@tilera.com>
-Date: Wed, 16 May 2012 20:19:06 -0400
-From: Chris Metcalf <cmetcalf@tilera.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:12.0) Gecko/20120428 Thunderbird/12.0.1
+	Wed, 16 May 2012 20:19:27 -0400
+Date: Wed, 16 May 2012 17:19:15 -0700
+From: tip-bot for Suresh Siddha <suresh.b.siddha@intel.com>
+Message-ID: <tip-1dcc8d7ba235a316a056f993e88f0d18b92c60d9@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
+        torvalds@linux-foundation.org, suresh.b.siddha@intel.com,
+        oleg@redhat.com, tglx@linutronix.de, hpa@linux.intel.com
+Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        torvalds@linux-foundation.org, suresh.b.siddha@intel.com,
+        tglx@linutronix.de, oleg@redhat.com, hpa@linux.intel.com
+In-Reply-To: <1336692811-30576-4-git-send-email-suresh.b.siddha@intel.com>
+References: <1336692811-30576-4-git-send-email-suresh.b.siddha@intel.com>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:x86/fpu] x86, fpu: drop the fpu state during thread exit
+Git-Commit-ID: 1dcc8d7ba235a316a056f993e88f0d18b92c60d9
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
 MIME-Version: 1.0
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-CC: <linux-next@vger.kernel.org>, LKML <linux-kernel@vger.kernel.org>
-Subject: Re: linux-next: bad commit in the tile tree
-References: <20120517091417.62c65eea7002be18d8af2f34@canb.auug.org.au>
-In-Reply-To: <20120517091417.62c65eea7002be18d8af2f34@canb.auug.org.au>
-X-Enigmail-Version: 1.4.1
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Wed, 16 May 2012 17:19:21 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 5/16/2012 7:14 PM, Stephen Rothwell wrote:
-> Hi Chris,
->
-> The top commit on the tile tree has a bad description ("usb hackery" does
-> not tell us anything), sprinkles stuff (mainly printk()s) all over the
-> generic usb code and is not signed off by anyone ...
->
-> I assume it is a debugging patch (or similar) and should *not* be in
-> linux-next.
->
-> I will use the version of the tile tree from next-20120516 for today
-> (unless you update your tree very soon).
+Commit-ID:  1dcc8d7ba235a316a056f993e88f0d18b92c60d9
+Gitweb:     http://git.kernel.org/tip/1dcc8d7ba235a316a056f993e88f0d18b92c60d9
+Author:     Suresh Siddha <suresh.b.siddha@intel.com>
+AuthorDate: Wed, 16 May 2012 15:03:54 -0700
+Committer:  H. Peter Anvin <hpa@linux.intel.com>
+CommitDate: Wed, 16 May 2012 15:20:59 -0700
 
-Oops :-)  It is debugging hackery.  I committed it to do work on a
-different branch, which I then pushed, forgetting that by default I'd push
-the linux-next branch as well.  Fixed now.  Sorry!
+x86, fpu: drop the fpu state during thread exit
 
--- 
-Chris Metcalf, Tilera Corp.
-http://www.tilera.com
+There is no need to save any active fpu state to the task structure
+memory if the task is dead. Just drop the state instead.
 
+For example, this saved some 1770 xsave's during the system boot
+of a two socket Xeon system.
+
+Suggested-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Suresh Siddha <suresh.b.siddha@intel.com>
+Link: http://lkml.kernel.org/r/1336692811-30576-4-git-send-email-suresh.b.siddha@intel.com
+Cc: Oleg Nesterov <oleg@redhat.com>
+Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
+---
+ arch/x86/kernel/process.c |   19 +++++++++++++------
+ 1 files changed, 13 insertions(+), 6 deletions(-)
+
+diff --git a/arch/x86/kernel/process.c b/arch/x86/kernel/process.c
+index b7e1e0e..1219fe2 100644
+--- a/arch/x86/kernel/process.c
++++ b/arch/x86/kernel/process.c
+@@ -87,6 +87,16 @@ void arch_task_cache_init(void)
+ 				  SLAB_PANIC | SLAB_NOTRACK, NULL);
+ }
+ 
++static inline void drop_fpu(struct task_struct *tsk)
++{
++	/*
++	 * Forget coprocessor state..
++	 */
++	tsk->fpu_counter = 0;
++	clear_fpu(tsk);
++	clear_used_math();
++}
++
+ /*
+  * Free current thread data structures etc..
+  */
+@@ -109,6 +119,8 @@ void exit_thread(void)
+ 		put_cpu();
+ 		kfree(bp);
+ 	}
++
++	drop_fpu(me);
+ }
+ 
+ void show_regs(struct pt_regs *regs)
+@@ -149,12 +161,7 @@ void flush_thread(void)
+ 
+ 	flush_ptrace_hw_breakpoint(tsk);
+ 	memset(tsk->thread.tls_array, 0, sizeof(tsk->thread.tls_array));
+-	/*
+-	 * Forget coprocessor state..
+-	 */
+-	tsk->fpu_counter = 0;
+-	clear_fpu(tsk);
+-	clear_used_math();
++	drop_fpu(tsk);
+ }
+ 
+ static void hard_disable_TSC(void)
