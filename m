@@ -1,81 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760114Ab2EQJil (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 May 2012 05:38:41 -0400
-Received: from mailout1.samsung.com ([203.254.224.24]:29306 "EHLO
-	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758158Ab2EQJii (ORCPT
+	id S1760250Ab2EQJi6 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 May 2012 05:38:58 -0400
+Received: from mail-wi0-f178.google.com ([209.85.212.178]:63367 "EHLO
+	mail-wi0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758158Ab2EQJiz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 May 2012 05:38:38 -0400
-X-AuditID: cbfee61b-b7b94ae000002e44-4c-4fb4c71cf7da
-From: Seungwon Jeon <tgih.jun@samsung.com>
-To: linux-mmc@vger.kernel.org
-Cc: "'Chris Ball'" <cjb@laptop.org>, merez@codeaurora.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH v6 0/3] mmc: core: Support packed command feature of eMMC4.5
-Date: Thu, 17 May 2012 18:38:36 +0900
-Message-id: <009c01cd3410$d5539c40$7ffad4c0$%jun@samsung.com>
-MIME-version: 1.0
-Content-type: text/plain; charset=utf-8
-Content-transfer-encoding: 7bit
-X-Mailer: Microsoft Office Outlook 12.0
-Thread-index: Ac00ENSOHmJSmeP0ROCP+H7nuzpMqw==
-Content-language: ko
-X-Brightmail-Tracker: AAAAAA==
-X-TM-AS-MML: No
+	Thu, 17 May 2012 05:38:55 -0400
+From: Miklos Szeredi <miklos@szeredi.hu>
+To: netdev@vger.kernel.org
+Subject: tcp timestamp issues with google servers
+CC: linux-kernel@vger.kernel.org
+Date: Thu, 17 May 2012 11:39:27 +0200
+Message-ID: <87r4ujno34.fsf@tucsk.pomaz.szeredi.hu>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.3 (gnu/linux)
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch-set adds support of packed command feature
-for eMMC4.5 devices.
+Sometimes connection to google.com, gmail.com and other google servers
+doesn't work or takes ages to connect.  When this hits it hits all
+google servers at the same time and it's persistent.  It never happens
+to anything other than google.  Rebooting helps.  Rarely it goes away
+spontaneously.
 
-Changes in v6:
-	- Split the patch for packed read.
-	- Remove the unnecessary code. 
+Apparently google is sometimes replying with an invalid TSecr timestamp
+value (smaller than the one sent in the last packet) and this confuses
+the Linux TCP stack which either discards the packet or sends a Reset.
 
-Changes in v5:
-	- Revert "Add a variable member in mmc_host for minimum number of packed entries".
-	- Fix the partial packed command from failure index.
-	- Clean an unnecessary parameter of mmc_blk_packed_hdr_wrq_prep 
-	- Clean warning of checkpatch.
+Network dump attached.
 
-Changes in v4:
-	- Add Data-tag as CMD23 argument for packed header.
-	- Separate the capability of MMC_CAP2_PACKED_CMD into read and write.
-	- Remove unncessary initial value.
+I found only a couple of references to this issue:
 
-Changes in v3:
-	- Add a variable member in mmc_host for minimum number of packed entries.
-	  This value can be overridden by host.
-	- Fix a handling of error sequence.
+http://gotchas.livejournal.com/3028.html
 
-Changes in v2:
-	- Fix the packed read sequence and error handling.
-	- Apply checking the exception status for all cases with
-	  the comments from Maya Erez and Sahitya Tummala.
-	- Fix preparing the packed list with the comment from Maya Erez and Venkatraman.
+http://groups.google.com/group/comp.os.linux.networking/browse_thread/thread/29f56feded11b42a
 
+Turning tcp timestamps fixes the issue:
 
-Seungwon Jeon (3):
-      mmc: core: Add packed command feature of eMMC4.5
-      mmc: core: Support packed write command for eMMC4.5 device
-      mmc: core: Support packed read command for eMMC4.5 device
+  sysctl -w net.ipv4.tcp_timestamps=0
 
-drivers/mmc/card/block.c   |  507 ++++++++++++++++++++++++++++++++++++++++++--
-drivers/mmc/card/queue.c   |   49 ++++-
-drivers/mmc/card/queue.h   |   13 ++
-drivers/mmc/core/mmc.c     |   24 ++
-drivers/mmc/core/mmc_ops.c |    1 +
-include/linux/mmc/card.h   |    3 +
-include/linux/mmc/core.h   |    4 +
-include/linux/mmc/host.h   |    4 +
-include/linux/mmc/mmc.h    |   15 ++
-9 files changed, 594 insertions(+), 26 deletions(-)
+Not sure why this happens only to me and a very few others.
 
-Best regards,
-Seungwon Jeon.
---
-1.7.2.3
+It appears to be an issue with google TCP stack (is it a modified
+stack?) but I thought about issues in my network switch (restarting it
+doesn't help) or something in the ISP, but those look unlikely.
+
+Any ideas?
+
+Thanks,
+Miklos
 
 
+
+  1   0.000000 192.168.28.100 -> 74.125.232.226 TCP 51303 > http [SYN] Seq=0 Win=14600 Len=0 MSS=1460 SACK_PERM=1 TSV=35355050 TSER=0 WS=5
+  2   0.002730 74.125.232.226 -> 192.168.28.100 TCP http > 51303 [SYN, ACK] Seq=0 Ack=1 Win=14180 Len=0 MSS=1430 SACK_PERM=1 TSV=1184565067 TSER=35325344 WS=6
+  3   0.002776 192.168.28.100 -> 74.125.232.226 TCP 51303 > http [RST] Seq=1 Win=0 Len=0
+  4   1.001408 192.168.28.100 -> 74.125.232.226 TCP 51303 > http [SYN] Seq=0 Win=14600 Len=0 MSS=1460 SACK_PERM=1 TSV=35356052 TSER=0 WS=5
+  5   1.004136 74.125.232.226 -> 192.168.28.100 TCP [TCP Previous segment lost] http > 51303 [SYN, ACK] Seq=15638919 Ack=1 Win=14180 Len=0 MSS=1430 SACK_PERM=1 TSV=1184566068 TSER=35325344 WS=6
+  6   1.411915 74.125.232.226 -> 192.168.28.100 TCP http > 51303 [SYN, ACK] Seq=15638919 Ack=1 Win=14180 Len=0 MSS=1430 SACK_PERM=1 TSV=1184566476 TSER=35325344 WS=6
+  7   2.011568 74.125.232.226 -> 192.168.28.100 TCP http > 51303 [SYN, ACK] Seq=15638919 Ack=1 Win=14180 Len=0 MSS=1430 SACK_PERM=1 TSV=1184567076 TSER=35325344 WS=6
+  8   3.005400 192.168.28.100 -> 74.125.232.226 TCP 51303 > http [SYN] Seq=0 Win=14600 Len=0 MSS=1460 SACK_PERM=1 TSV=35358056 TSER=0 WS=5
+  9   3.007972 74.125.232.226 -> 192.168.28.100 TCP http > 51303 [SYN, ACK] Seq=15638919 Ack=1 Win=14180 Len=0 MSS=1430 SACK_PERM=1 TSV=1184568072 TSER=35325344 WS=6
+ 10   3.212862 74.125.232.226 -> 192.168.28.100 TCP http > 51303 [SYN, ACK] Seq=15638919 Ack=1 Win=14180 Len=0 MSS=1430 SACK_PERM=1 TSV=1184568277 TSER=35325344 WS=6
+ 11   5.612449 74.125.232.226 -> 192.168.28.100 TCP http > 51303 [SYN, ACK] Seq=15638919 Ack=1 Win=14180 Len=0 MSS=1430 SACK_PERM=1 TSV=1184570677 TSER=35325344 WS=6
+ 12   7.013405 192.168.28.100 -> 74.125.232.226 TCP 51303 > http [SYN] Seq=0 Win=14600 Len=0 MSS=1460 SACK_PERM=1 TSV=35362064 TSER=0 WS=5
+ 13   7.016627 74.125.232.226 -> 192.168.28.100 TCP http > 51303 [SYN, ACK] Seq=15638919 Ack=1 Win=14180 Len=0 MSS=1430 SACK_PERM=1 TSV=1184572080 TSER=35325344 WS=6
+ 14  10.412642 74.125.232.226 -> 192.168.28.100 TCP http > 51303 [SYN, ACK] Seq=15638919 Ack=1 Win=14180 Len=0 MSS=1430 SACK_PERM=1 TSV=1184575477 TSER=35325344 WS=6
+ 15  15.029547 192.168.28.100 -> 74.125.232.226 TCP 51303 > http [SYN] Seq=0 Win=14600 Len=0 MSS=1460 SACK_PERM=1 TSV=35370080 TSER=0 WS=5
+ 16  15.032931 74.125.232.226 -> 192.168.28.100 TCP http > 51303 [SYN, ACK] Seq=15638919 Ack=1 Win=14180 Len=0 MSS=1430 SACK_PERM=1 TSV=1184580097 TSER=35325344 WS=6
+ 17  31.061400 192.168.28.100 -> 74.125.232.226 TCP 51303 > http [SYN] Seq=0 Win=14600 Len=0 MSS=1460 SACK_PERM=1 TSV=35386112 TSER=0 WS=5
+ 18  31.064538 74.125.232.226 -> 192.168.28.100 TCP [TCP Previous segment lost] http > 51303 [SYN, ACK] Seq=485350292 Ack=1 Win=14180 Len=0 MSS=1430 SACK_PERM=1 TSV=1184596129 TSER=35325344 WS=6
+ 19  31.416339 74.125.232.226 -> 192.168.28.100 TCP http > 51303 [SYN, ACK] Seq=485350292 Ack=1 Win=14180 Len=0 MSS=1430 SACK_PERM=1 TSV=1184596480 TSER=35325344 WS=6
+ 20  32.015998 74.125.232.226 -> 192.168.28.100 TCP http > 51303 [SYN, ACK] Seq=485350292 Ack=1 Win=14180 Len=0 MSS=1430 SACK_PERM=1 TSV=1184597081 TSER=35325344 WS=6
+ 21  33.216276 74.125.232.226 -> 192.168.28.100 TCP http > 51303 [SYN, ACK] Seq=485350292 Ack=1 Win=14180 Len=0 MSS=1430 SACK_PERM=1 TSV=1184598281 TSER=35325344 WS=6
+ 22  35.616879 74.125.232.226 -> 192.168.28.100 TCP http > 51303 [SYN, ACK] Seq=485350292 Ack=1 Win=14180 Len=0 MSS=1430 SACK_PERM=1 TSV=1184600681 TSER=35325344 WS=6
+ 23  40.417065 74.125.232.226 -> 192.168.28.100 TCP http > 51303 [SYN, ACK] Seq=485350292 Ack=1 Win=14180 Len=0 MSS=1430 SACK_PERM=1 TSV=1184605482 TSER=35325344 WS=6
