@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965333Ab2EQKLr (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 May 2012 06:11:47 -0400
+	id S1761603Ab2EQKME (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 May 2012 06:12:04 -0400
 Received: from mail-pz0-f46.google.com ([209.85.210.46]:37225 "EHLO
 	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1761509Ab2EQKLo (ORCPT
+	with ESMTP id S1761553Ab2EQKL7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 May 2012 06:11:44 -0400
+	Thu, 17 May 2012 06:11:59 -0400
 From: Yong Zhang <yong.zhang0@gmail.com>
 To: linux-mips@linux-mips.org, linux-kernel@vger.kernel.org
 Cc: ralf@linux-mips.org, david.daney@cavium.com
-Subject: [PATCH 6/8] MIPS: call set_cpu_online() on the uping cpu with irq disabled
-Date: Thu, 17 May 2012 18:10:08 +0800
-Message-Id: <1337249410-7162-7-git-send-email-yong.zhang0@gmail.com>
+Subject: [PATCH 7/8] MIPS: smp: Warn on too early irq enable
+Date: Thu, 17 May 2012 18:10:09 +0800
+Message-Id: <1337249410-7162-8-git-send-email-yong.zhang0@gmail.com>
 X-Mailer: git-send-email 1.7.1
 In-Reply-To: <1337249410-7162-1-git-send-email-yong.zhang0@gmail.com>
 References: <1337249410-7162-1-git-send-email-yong.zhang0@gmail.com>
@@ -22,36 +22,29 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Yong Zhang <yong.zhang@windriver.com>
 
-To prevent a problem as commit 5fbd036b && 2baab4e9 try to resolve,
-move set_cpu_online() to the uping CPU and with irq disabled.
+Just to catch a potential issue.
 
 Signed-off-by: Yong Zhang <yong.zhang0@gmail.com>
 ---
- arch/mips/kernel/smp.c |    4 ++--
- 1 files changed, 2 insertions(+), 2 deletions(-)
+ arch/mips/kernel/smp.c |    5 +++++
+ 1 files changed, 5 insertions(+), 0 deletions(-)
 
 diff --git a/arch/mips/kernel/smp.c b/arch/mips/kernel/smp.c
-index 73a268a..042145f 100644
+index 042145f..0d48598 100644
 --- a/arch/mips/kernel/smp.c
 +++ b/arch/mips/kernel/smp.c
-@@ -122,6 +122,8 @@ asmlinkage __cpuinit void start_secondary(void)
+@@ -130,6 +130,11 @@ asmlinkage __cpuinit void start_secondary(void)
  
- 	notify_cpu_starting(cpu);
+ 	synchronise_count_slave();
  
-+	set_cpu_online(cpu, true);
-+
- 	set_cpu_sibling_map(cpu);
++	/*
++	 * irq will be enabled in ->smp_finish(), enable it too early
++	 * is dangerous.
++	 */
++	WARN_ON_ONCE(!irqs_disabled());
+ 	mp_ops->smp_finish();
  
- 	cpu_set(cpu, cpu_callin_map);
-@@ -249,8 +251,6 @@ int __cpuinit __cpu_up(unsigned int cpu)
- 	while (!cpu_isset(cpu, cpu_callin_map))
- 		udelay(100);
- 
--	set_cpu_online(cpu, true);
--
- 	return 0;
- }
- 
+ 	cpu_idle();
 -- 
 1.7.1
 
