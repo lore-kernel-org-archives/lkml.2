@@ -1,136 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S966977Ab2EQO7k (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 May 2012 10:59:40 -0400
-Received: from mailout3.samsung.com ([203.254.224.33]:64361 "EHLO
-	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1762049Ab2EQO7g (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 May 2012 10:59:36 -0400
-X-AuditID: cbfee61b-b7bb6ae0000006fb-e8-4fb512575b99
-From: Thomas Abraham <thomas.abraham@linaro.org>
-To: linux-mmc@vger.kernel.org, devicetree-discuss@lists.ozlabs.org
-Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        cjb@laptop.org, grant.likely@secretlab.ca, rob.herring@calxeda.com,
-        linux-samsung-soc@vger.kernel.org, kgene.kim@samsung.com,
-        patches@linaro.org
-Subject: [PATCH v2 3/6] mmc: dw_mmc: lookup for optional biu and ciu clocks
-Date: Thu, 17 May 2012 20:40:08 +0530
-Message-id: <1337267411-28226-4-git-send-email-thomas.abraham@linaro.org>
-X-Mailer: git-send-email 1.6.6.rc2
-In-reply-to: <1337267411-28226-1-git-send-email-thomas.abraham@linaro.org>
-References: <1337267411-28226-1-git-send-email-thomas.abraham@linaro.org>
-X-Brightmail-Tracker: AAAAAA==
-X-TM-AS-MML: No
+	id S967034Ab2EQPAA (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 May 2012 11:00:00 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:33394 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1762038Ab2EQOun (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 17 May 2012 10:50:43 -0400
+From: Mel Gorman <mgorman@suse.de>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Linux-MM <linux-mm@kvack.org>, Linux-Netdev <netdev@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        David Miller <davem@davemloft.net>, Neil Brown <neilb@suse.de>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Mike Christie <michaelc@cs.wisc.edu>,
+        Eric B Munson <emunson@mgebm.net>, Mel Gorman <mgorman@suse.de>
+Subject: [PATCH 09/17] netvm: Allow the use of __GFP_MEMALLOC by specific sockets
+Date: Thu, 17 May 2012 15:50:23 +0100
+Message-Id: <1337266231-8031-10-git-send-email-mgorman@suse.de>
+X-Mailer: git-send-email 1.7.9.2
+In-Reply-To: <1337266231-8031-1-git-send-email-mgorman@suse.de>
+References: <1337266231-8031-1-git-send-email-mgorman@suse.de>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Some platforms allow for clock gating and control of bus interface unit clock
-and card interface unit clock. Add support for clock lookup of optional biu
-and ciu clocks for clock gating and clock speed determination.
+Allow specific sockets to be tagged SOCK_MEMALLOC and use
+__GFP_MEMALLOC for their allocations. These sockets will be able to go
+below watermarks and allocate from the emergency reserve. Such sockets
+are to be used to service the VM (iow. to swap over). They must be
+handled kernel side, exposing such a socket to user-space is a bug.
 
-Signed-off-by: Abhilash Kesavan <a.kesavan@samsung.com>
-Signed-off-by: Thomas Abraham <thomas.abraham@linaro.org>
+There is a risk that the reserves be depleted so for now, the
+administrator is responsible for increasing min_free_kbytes as
+necessary to prevent deadlock for their workloads.
+
+[a.p.zijlstra@chello.nl: Original patches]
+Signed-off-by: Mel Gorman <mgorman@suse.de>
 ---
- drivers/mmc/host/dw_mmc.c  |   38 ++++++++++++++++++++++++++++++++++----
- include/linux/mmc/dw_mmc.h |    4 ++++
- 2 files changed, 38 insertions(+), 4 deletions(-)
+ include/net/sock.h |    5 ++++-
+ net/core/sock.c    |   22 ++++++++++++++++++++++
+ 2 files changed, 26 insertions(+), 1 deletion(-)
 
-diff --git a/drivers/mmc/host/dw_mmc.c b/drivers/mmc/host/dw_mmc.c
-index 5f38667..eb5fa59 100644
---- a/drivers/mmc/host/dw_mmc.c
-+++ b/drivers/mmc/host/dw_mmc.c
-@@ -1939,19 +1939,35 @@ int dw_mci_probe(struct dw_mci *host)
- 		return -ENODEV;
- 	}
+diff --git a/include/net/sock.h b/include/net/sock.h
+index d0ab047..dba4f64 100644
+--- a/include/net/sock.h
++++ b/include/net/sock.h
+@@ -607,6 +607,7 @@ enum sock_flags {
+ 	SOCK_RCVTSTAMPNS, /* %SO_TIMESTAMPNS setting */
+ 	SOCK_LOCALROUTE, /* route locally only, %SO_DONTROUTE setting */
+ 	SOCK_QUEUE_SHRUNK, /* write queue has been shrunk recently */
++	SOCK_MEMALLOC, /* VM depends on this socket for swapping */
+ 	SOCK_TIMESTAMPING_TX_HARDWARE,  /* %SOF_TIMESTAMPING_TX_HARDWARE */
+ 	SOCK_TIMESTAMPING_TX_SOFTWARE,  /* %SOF_TIMESTAMPING_TX_SOFTWARE */
+ 	SOCK_TIMESTAMPING_RX_HARDWARE,  /* %SOF_TIMESTAMPING_RX_HARDWARE */
+@@ -646,7 +647,7 @@ static inline int sock_flag(struct sock *sk, enum sock_flags flag)
  
--	if (!host->pdata->bus_hz) {
-+	host->biu_clk = clk_get(host->dev, "biu");
-+	if (IS_ERR(host->biu_clk))
-+		dev_dbg(host->dev, "biu clock not available\n");
-+	else
-+		clk_prepare_enable(host->biu_clk);
-+
-+	host->ciu_clk = clk_get(host->dev, "ciu");
-+	if (IS_ERR(host->ciu_clk))
-+		dev_dbg(host->dev, "ciu clock not available\n");
-+	else
-+		clk_prepare_enable(host->ciu_clk);
-+
-+	if (IS_ERR(host->ciu_clk))
-+		host->bus_hz = host->pdata->bus_hz;
-+	else
-+		host->bus_hz = clk_get_rate(host->ciu_clk);
-+
-+	if (!host->bus_hz) {
- 		dev_err(host->dev,
- 			"Platform data must supply bus speed\n");
--		return -ENODEV;
-+		ret = -ENODEV;
-+		goto err_clk;
- 	}
- 
--	host->bus_hz = host->pdata->bus_hz;
- 	host->quirks = host->pdata->quirks;
- 
- 	spin_lock_init(&host->lock);
- 	INIT_LIST_HEAD(&host->queue);
- 
--
- 	host->dma_ops = host->pdata->dma_ops;
- 	dw_mci_init_dma(host);
- 
-@@ -2098,6 +2114,14 @@ err_dmaunmap:
- 		regulator_disable(host->vmmc);
- 		regulator_put(host->vmmc);
- 	}
-+
-+err_clk:
-+	if (!IS_ERR(host->ciu_clk))
-+		clk_disable_unprepare(host->ciu_clk);
-+	if (!IS_ERR(host->biu_clk))
-+		clk_disable_unprepare(host->biu_clk);
-+	clk_put(host->ciu_clk);
-+	clk_put(host->biu_clk);
- 	return ret;
+ static inline gfp_t sk_gfp_atomic(struct sock *sk, gfp_t gfp_mask)
+ {
+-	return GFP_ATOMIC;
++	return GFP_ATOMIC | (sk->sk_allocation & __GFP_MEMALLOC);
  }
- EXPORT_SYMBOL(dw_mci_probe);
-@@ -2131,6 +2155,12 @@ void dw_mci_remove(struct dw_mci *host)
- 		regulator_put(host->vmmc);
- 	}
  
-+	if (!IS_ERR(host->ciu_clk))
-+		clk_disable_unprepare(host->ciu_clk);
-+	if (!IS_ERR(host->biu_clk))
-+		clk_disable_unprepare(host->biu_clk);
-+	clk_put(host->ciu_clk);
-+	clk_put(host->biu_clk);
- }
- EXPORT_SYMBOL(dw_mci_remove);
+ static inline void sk_acceptq_removed(struct sock *sk)
+@@ -787,6 +788,8 @@ extern int sk_stream_wait_memory(struct sock *sk, long *timeo_p);
+ extern void sk_stream_wait_close(struct sock *sk, long timeo_p);
+ extern int sk_stream_error(struct sock *sk, int flags, int err);
+ extern void sk_stream_kill_queues(struct sock *sk);
++extern void sk_set_memalloc(struct sock *sk);
++extern void sk_clear_memalloc(struct sock *sk);
  
-diff --git a/include/linux/mmc/dw_mmc.h b/include/linux/mmc/dw_mmc.h
-index a37a573..787ad56 100644
---- a/include/linux/mmc/dw_mmc.h
-+++ b/include/linux/mmc/dw_mmc.h
-@@ -78,6 +78,8 @@ struct mmc_data;
-  * @data_offset: Set the offset of DATA register according to VERID.
-  * @dev: Device associated with the MMC controller.
-  * @pdata: Platform data associated with the MMC controller.
-+ * @biu_clk: Pointer to bus interface unit clock instance.
-+ * @ciu_clk: Pointer to card interface unit clock instance.
-  * @slot: Slots sharing this MMC controller.
-  * @fifo_depth: depth of FIFO.
-  * @data_shift: log2 of FIFO item size.
-@@ -158,6 +160,8 @@ struct dw_mci {
- 	u16			data_offset;
- 	struct device		*dev;
- 	struct dw_mci_board	*pdata;
-+	struct clk		*biu_clk;
-+	struct clk		*ciu_clk;
- 	struct dw_mci_slot	*slot[MAX_MCI_SLOTS];
+ extern int sk_wait_data(struct sock *sk, long *timeo);
  
- 	/* FIFO push and pull */
+diff --git a/net/core/sock.c b/net/core/sock.c
+index b2e14c0..b0f0613 100644
+--- a/net/core/sock.c
++++ b/net/core/sock.c
+@@ -266,6 +266,28 @@ __u32 sysctl_rmem_default __read_mostly = SK_RMEM_MAX;
+ int sysctl_optmem_max __read_mostly = sizeof(unsigned long)*(2*UIO_MAXIOV+512);
+ EXPORT_SYMBOL(sysctl_optmem_max);
+ 
++/**
++ * sk_set_memalloc - sets %SOCK_MEMALLOC
++ * @sk: socket to set it on
++ *
++ * Set %SOCK_MEMALLOC on a socket for access to emergency reserves.
++ * It's the responsibility of the admin to adjust min_free_kbytes
++ * to meet the requirements
++ */
++void sk_set_memalloc(struct sock *sk)
++{
++	sock_set_flag(sk, SOCK_MEMALLOC);
++	sk->sk_allocation |= __GFP_MEMALLOC;
++}
++EXPORT_SYMBOL_GPL(sk_set_memalloc);
++
++void sk_clear_memalloc(struct sock *sk)
++{
++	sock_reset_flag(sk, SOCK_MEMALLOC);
++	sk->sk_allocation &= ~__GFP_MEMALLOC;
++}
++EXPORT_SYMBOL_GPL(sk_clear_memalloc);
++
+ #if defined(CONFIG_CGROUPS)
+ #if !defined(CONFIG_NET_CLS_CGROUP)
+ int net_cls_subsys_id = -1;
 -- 
-1.6.6.rc2
+1.7.9.2
 
