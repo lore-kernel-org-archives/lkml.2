@@ -1,47 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760900Ab2EQCc0 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 May 2012 22:32:26 -0400
-Received: from mga01.intel.com ([192.55.52.88]:3058 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1760881Ab2EQCcZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 May 2012 22:32:25 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
-   d="scan'208";a="153859356"
-Date: Thu, 17 May 2012 10:32:22 +0800
-From: Fengguang Wu <fengguang.wu@intel.com>
-To: Mauro Carvalho Chehab <mchehab@redhat.com>
-Cc: Hans Verkuil <hverkuil@xs4all.nl>, LKML <linux-kernel@vger.kernel.org>
-Subject: [PATCH] radio: fix build error in rtrack2_alloc()
-Message-ID: <20120517023222.GA7788@localhost>
+	id S1760914Ab2EQCcj (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 May 2012 22:32:39 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:34097 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1760881Ab2EQCcg (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 16 May 2012 22:32:36 -0400
+Date: Wed, 16 May 2012 19:32:32 -0700
+From: "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>
+To: "Wu, Aaron" <Aaron.Wu@analog.com>
+Cc: "arnd@arndb.de" <arnd@arndb.de>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "vapier@gentoo.org" <vapier@gentoo.org>,
+        "Zhang, Sonic" <Sonic.Zhang@analog.com>
+Subject: Re: [PATCH] add blackfin SPORT common driver
+Message-ID: <20120517023232.GA4870@kroah.com>
+References: <1335432293-5002-1-git-send-email-Aaron.Wu@analog.com>
+ <DB904C5425BA6F4E8424B3B51A1414D16F64F84E33@NWD2CMBX1.ad.analog.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
+In-Reply-To: <DB904C5425BA6F4E8424B3B51A1414D16F64F84E33@NWD2CMBX1.ad.analog.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Fix compile error
+A: No.
+Q: Should I include quotations after my reply?
 
-drivers/media/radio/radio-rtrack2.c: In function ‘rtrack2_alloc’:                                                                         
-drivers/media/radio/radio-rtrack2.c:46:2: error: implicit declaration of function ‘kzalloc’
+http://daringfireball.net/2007/07/on_top
 
-CC: Hans Verkuil <hverkuil@xs4all.nl>
-Signed-off-by: Fengguang Wu <fengguang.wu@intel.com>
----
- drivers/media/radio/radio-rtrack2.c |    1 +
- 1 file changed, 1 insertion(+)
+On Wed, May 16, 2012 at 10:26:41PM -0400, Wu, Aaron wrote:
+> Hi Greg/Arnd,
+> 
+> Do you have a minute reviewing this patch and give some comments, and is there a plan to merge it?
 
---- linux.orig/drivers/media/radio/radio-rtrack2.c	2012-04-06 13:23:52.548862660 +0800
-+++ linux/drivers/media/radio/radio-rtrack2.c	2012-05-17 10:18:20.679495193 +0800
-@@ -17,6 +17,7 @@
- #include <linux/videodev2.h>	/* kernel radio structs		*/
- #include <linux/mutex.h>
- #include <linux/io.h>		/* outb, outb_p			*/
-+#include <linux/slab.h>		/* kzalloc			*/
- #include <media/v4l2-device.h>
- #include <media/v4l2-ioctl.h>
- #include "radio-isa.h"
+I did review it, and already provide comments, did you not see them?
+
+greg k-h
