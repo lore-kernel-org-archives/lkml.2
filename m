@@ -1,87 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759004Ab2EQJeV (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 May 2012 05:34:21 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:46640 "EHLO mx1.redhat.com"
+	id S1759619Ab2EQJfq (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 May 2012 05:35:46 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:7463 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757325Ab2EQJeU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 May 2012 05:34:20 -0400
-Date: Thu, 17 May 2012 12:34:17 +0300
-From: Gleb Natapov <gleb@redhat.com>
-To: Avi Kivity <avi@redhat.com>
-Cc: "Michael S. Tsirkin" <mst@redhat.com>,
-        Marcelo Tosatti <mtosatti@redhat.com>, x86@kernel.org,
-        kvm@vger.kernel.org, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCHv4 3/5] kvm: host side for eoi optimization
-Message-ID: <20120517093417.GB10209@redhat.com>
-References: <20120516181500.GA23791@amt.cnet>
- <20120516182520.GH28798@redhat.com>
- <20120516182948.GF10769@redhat.com>
- <20120516183822.GI28798@redhat.com>
- <20120516190757.GA12113@redhat.com>
- <20120517072841.GW32036@redhat.com>
- <20120517074946.GA27995@redhat.com>
- <4FB4AF6D.9080305@redhat.com>
- <20120517080731.GZ32036@redhat.com>
- <4FB4C3CE.9010907@redhat.com>
+	id S1758256Ab2EQJfo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 17 May 2012 05:35:44 -0400
+Date: Thu, 17 May 2012 12:35:39 +0300
+From: "Michael S. Tsirkin" <mst@redhat.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: David Miller <davem@davemloft.net>, netdev@vger.kernel.org,
+        kvm@vger.kernel.org, virtualization@lists.linux-foundation.org,
+        linux-kernel@vger.kernel.org, amit.shah@redhat.com, mst@redhat.com,
+        rusty@rustcorp.com.au, uobergfe@redhat.com
+Subject: [PULL] virtio: last minute fixes for 3.4
+Message-ID: <20120517093539.GA30280@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <4FB4C3CE.9010907@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, May 17, 2012 at 12:24:30PM +0300, Avi Kivity wrote:
-> On 05/17/2012 11:07 AM, Gleb Natapov wrote:
-> > > 
-> > > No, let's refactor this so it makes sense.  The {has|get}_interrupt
-> > > split is the cause of the problem, I think.  We need a single function,
-> > > with callbacks that are called when an event happens.  The callbacks can
-> > > request an irq window exit, inject an interrupt, play with pveoi, or
-> > > cause a #vmexit.
-> > > 
-> > Not sure what do you mean here. I kind of like the code we have now, but
-> > this may be because I understand it :)
-> 
-> Right now we have
-> 
->    if (has_interrupt)
->        do something
->    if (get_interrupt)
->        do_something_else
-> 
-Not exactly. Now we have:
-  if (has_interrupt && can inject)
-    inject(get_interrupt())
-  if (still has_interrupt)
-    notify me when I can inject it.
+The following changes since commit 0e93b4b304ae052ba1bc73f6d34a68556fe93429:
 
-There is not if(get_interrupt).
+  Merge git://git.kernel.org/pub/scm/virt/kvm/kvm (2012-05-16 14:30:51 -0700)
 
-> this duplicates some of the logic and causes non-atomicty (which isn't a
-> problem per se, but requires us to think of what happens if conditions
-> change between the two steps).
-> 
-> What I'm thinking of is
-> 
->    void process_interrupt(bool (*handle)());
-Why we even want to pass different handle() to the function?
+are available in the git repository at:
 
-> 
-> Where the return value tells us whether the interrupt was accepted by
-> the handler.  The callback could decide to enable the irq window, to
-> queue the interrupt, or to #vmexit (note that the latter can return
-Queuing interrupt and requesting irq window ate not mutually exclusive.
 
-> either true or false, depending on whether vmx is configured to ack the
-> interrupt or not; svm would return true here if interrupts are intercepted).
-> 
-> -- 
-> error compiling committee.c: too many arguments to function
+  git://git.kernel.org/pub/scm/linux/kernel/git/mst/vhost.git for_linus
 
---
-			Gleb.
+for you to fetch changes up to ec13ee80145ccb95b00e6e610044bbd94a170051:
+
+  virtio_net: invoke softirqs after __napi_schedule (2012-05-17 12:16:38 +0300)
+
+----------------------------------------------------------------
+virtio: last minute fixes for 3.4
+
+Here are a couple of last minute virtio fixes for 3.4.
+Hope it's not too late yes - I might have tried too hard
+to make sure the fix is well tested.
+
+Fixes are by Amit and myself. One fixes module removal
+and one suspend of a VM, the last one the handling of out
+of memory condition.
+They are thus very low risk as most people never hit these paths, but do fix
+very annoying problems for people that do use the feature.
+
+Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
+
+----------------------------------------------------------------
+Amit Shah (2):
+      virtio: console: tell host of open ports after resume from s3/s4
+      virtio: balloon: let host know of updated balloon size before module removal
+
+Michael S. Tsirkin (1):
+      virtio_net: invoke softirqs after __napi_schedule
+
+ drivers/char/virtio_console.c   |    7 +++++++
+ drivers/net/virtio_net.c        |    2 ++
+ drivers/virtio/virtio_balloon.c |    1 +
+ 3 files changed, 10 insertions(+), 0 deletions(-)
