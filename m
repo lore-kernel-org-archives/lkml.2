@@ -1,123 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760105Ab2EQJG1 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 May 2012 05:06:27 -0400
-Received: from LGEMRELSE1Q.lge.com ([156.147.1.111]:50545 "EHLO
-	LGEMRELSE1Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759433Ab2EQJGS (ORCPT
+	id S1761380Ab2EQJHI (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 May 2012 05:07:08 -0400
+Received: from oproxy5-pub.bluehost.com ([67.222.38.55]:42569 "HELO
+	oproxy5-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1759433Ab2EQJHA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 May 2012 05:06:18 -0400
-X-AuditID: 9c93016f-b7c3cae000001954-4a-4fb4bf87b24b
-Message-ID: <4FB4BFB0.4010805@kernel.org>
-Date: Thu, 17 May 2012 18:06:56 +0900
-From: Minchan Kim <minchan@kernel.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
-MIME-Version: 1.0
-Newsgroups: gmane.linux.kernel.mm,gmane.linux.kernel
-To: Paul Mundt <lethal@linux-sh.org>
-CC: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Nitin Gupta <ngupta@vflare.org>,
-        Seth Jennings <sjenning@linux.vnet.ibm.com>,
-        Dan Magenheimer <dan.magenheimer@oracle.com>,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        Russell King <linux@arm.linux.org.uk>,
-        Ralf Baechle <ralf@linux-mips.org>, Guan Xuetao <gxt@mprc.pku.edu.cn>,
-        Chen Liqin <liqin.chen@sunplusct.com>
-Subject: Re: [PATCH v2 1/3] zsmalloc: support zsmalloc to ARM, MIPS, SUPERH
-References: <1337133919-4182-1-git-send-email-minchan@kernel.org> <20120517083213.GC14027@linux-sh.org>
-In-Reply-To: <20120517083213.GC14027@linux-sh.org>
-Content-Type: text/plain; charset=ISO-8859-1
+	Thu, 17 May 2012 05:07:00 -0400
+Subject: Re: NVM Mapping API
+From: Vyacheslav Dubeyko <slava@dubeyko.com>
+To: Matthew Wilcox <willy@linux.intel.com>
+Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org
+In-Reply-To: <20120516161020.GJ22985@linux.intel.com>
+References: <20120515133450.GD22985@linux.intel.com>
+	 <1337149453.1961.24.camel@slavad-ubuntu-11>
+	 <20120516161020.GJ22985@linux.intel.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Thu, 17 May 2012 13:06:44 +0400
+Message-ID: <1337245604.2521.166.camel@slavad-ubuntu-11>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
 Content-Transfer-Encoding: 7bit
-X-Brightmail-Tracker: AAAAAA==
+X-Identified-User: {2172:host202.hostmonster.com:dubeykoc:dubeyko.com} {sentby:smtp auth 178.176.166.14 authed with slava@dubeyko.com}
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/17/2012 05:32 PM, Paul Mundt wrote:
+Hi,
 
-> On Wed, May 16, 2012 at 11:05:17AM +0900, Minchan Kim wrote:
->> About local_flush_tlb_kernel_range,
->> If architecture is very smart, it could flush only tlb entries related to vaddr.
->> If architecture is smart, it could flush only tlb entries related to a CPU.
->> If architecture is _NOT_ smart, it could flush all entries of all CPUs.
->> So, it would be best to support both portability and performance.
->>
-> ..
+> No, I can't comment on any of that.  This isn't about any particular piece
+> of technology; it's an observation that there are a lot of technologies
+> that seem to fit in this niche; some of them are even available to
+> buy today.
 > 
->> Need double check about supporting local_flush_tlb_kernel_range
->> in ARM, MIPS, SUPERH maintainers. And I will Ccing unicore32 and
->> score maintainers because arch directory in those arch have
->> local_flush_tlb_kernel_range, too but I'm very unfamiliar with those
->> architecture so pass it to maintainers.
->> I didn't coded up dumb local_flush_tlb_kernel_range which flush
->> all cpus. I expect someone need ZSMALLOC will implement it easily in future.
->>
-> 
-> One thing you might consider is providing a stubbed definition that wraps
-> to flush_tlb_kernel_range() in the !SMP case, as this will extend your
-> testing coverage for staging considerably.
-
-
-AFAIUC, you mean following as,
-
-ifndef CONFIG_SMP
-void flush_tlb_kernel_range(unsinged long start, unsigned log end)
-{
-	local_flush_tlb_kernel_range(start, end);
-}
-#endif
-
-I can do it on some arch which I know a little bit but concern is
-I'm not sure what's effective between all entries flush and 
-each entry flush if range is very big.
-
-It's not a goal of this patch so I would like to pass it to arch maintainers.
-But I absolutely agree on testing coverage on your comment.
+> No statement of mine should be taken as an indication of any future
+> Intel product plans :-)
 > 
 
-> Once you exclude all of the non-SMP platforms, you're left with the
-> following:
-> 
-> 	- blackfin: doesn't count, no TLB to worry about.
-> 	- hexagon: seems to imply that the SMP case uses thread-based
-> 	  CPUs that share an MMU, so no additional cost.
-> 	- ia64: Does a global flush, which already has a FIXME comment.
-> 	- m32r, mn10300: local_flush_tlb_all() could be wrapped.
-> 	- parisc: global flush?
-> 	- s390: Tests the cpumask to do a local flush, otherwise has a
-> 	  __tlb_flush_local() that can be wrapped.
-> 	- sparc32: global flush
-> 	- sparc64: __flush_tlb_kernel_range() looks like a local flush.
-> 	- tile: does strange hypervisory things, presumably global.
-> 	- x86: has a local_flush_tlb() that could be wrapped.
+Ok. I understand. :-)
 
-> 
+> > There are a number of interesting non-volatile memory (NVM) technologies
+> > > being developed.  Some of them promise DRAM-comparable latencies and
+> > > bandwidths.  At Intel, we've been thinking about various ways to present
+> > > those to software.
+> > 
 
-> Which doesn't look quite that bad. You could probably get away with a
-> Kconfig option for optimized local TLB flushing or something, since
-> single function Kconfig options seem to be all the rage these days.
+We can be more and more radical in the case of new NVM technologies, I
+think. The non-volatile random access memory with DRAM-comparable read
+and write operations' latencies can change computer world dramatically.
+Just imagine a computer system with only NVM memory subsystem (for
+example, it can be very promising mobile solution). It means that we
+can forget about specified RAM and persistent storage solutions. We can
+keep run-time and persistent information in one place and operate it on
+the fly. Moreover, it means that we can keep any internal OS's state
+persistently without any special efforts. I think that it can open new
+very interesting opportunities.
+
+The initial purpose of a filesystem is to distinguish run-time and
+persistent information. Usually, we have slow persistent memory
+subsystem (HDD) and fast run-time memory subsystem (DRAM). Filesystem
+is a technique of synchronization a slow persistent memory subsystem
+with fast run-time memory subsystem. But if we will have a fast memory
+that can keep run-time and persistent information then it means a
+revolutionary new approach in memory architecture. It means that two
+different entities (run-time and persistent) can be one union. But for
+such joined information entity traditional filesystems' and OS's
+internal techniques are not adequate approaches. We need in
+revolutionary new approaches. From NVM technology point of view, we can
+be without filesystem completely, but, from usual user point of view,
+modern computer system can't be imagined without filesystem.
+
+We need in filesystem as a catalogue of our persistent information. But
+OS can be represented as catalogue of run-time information. Then, with
+NVM technologies, the OS and filesystem can be a union entity that
+keeps as persistent as run-time information in one catalogue structure.
+But such representation needs in dramatically reworking of OS internal
+techniques. It means that traditional hierarchy of folders and files is
+obsolete. We need in a new information structure approaches.
+Theoretically, it is possible to reinterpret all information as
+run-time and to use OS's technique of internal objects structure. But
+it is impossible situation from end users point of view. So, we need in
+filesystem layer anyway as layer which represent user information and
+structure of it.
+
+If we can operate and keep internal OS representation of information
+then it means that we can reject file abstraction. We can operate by
+information itself and keep information without using different files'
+formats. But it is known that all in Linux is a file. Then, factually,
+we can talk about completely new OS.
+
+Actually, NVM technologies can support possibility doesn't boot OS
+completely. Why does it need to boot if it is possible to keep any OS
+state in memory persistently? I think that OS booting can be obsolete
+thing.
+
+Moreover, it is possible to be without swapping completely because all
+our memory can be persistent. And for system with NVM memory only request
+queue and I/O scheduler can be obsolete thing. I think that kernel
+memory page approach can be redesign significantly, also. Such thing as
+shared libraries can be useless because all code pieces can be
+completely in memory.
+
+So, I think that all what I said can sound as a clear fantasy. But,
+maybe, it needs to discuss about new OS instead of new filesystem. :-) 
+
+With the best regards,
+Vyacheslav Dubeyko.
 
 
-Actually, I didn't want to implement dumb flush functions on all architecture
-which those functions flush all entries although we need flush a few entries.
-It might zsmalloc unuseful so I expected each maintainers can implement
-it much efficient than stupid me and then, they add their arch in Kconfig. :(
 
-If this approach is really bad, I need time to implement dumb stub functions
-in all architecture and have to receive all acks from them. Sigh. 
-
-
-> 
-> --
-> To unsubscribe, send a message with 'unsubscribe linux-mm' in
-> the body to majordomo@kvack.org.  For more info on Linux MM,
-> see: http://www.linux-mm.org/ .
-> Fight unfair telecom internet charges in Canada: sign http://stopthemeter.ca/
-> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
-> 
-
-
-
--- 
-Kind regards,
-Minchan Kim
