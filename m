@@ -1,220 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753529Ab2EQIUQ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 May 2012 04:20:16 -0400
-Received: from mail-wi0-f178.google.com ([209.85.212.178]:41313 "EHLO
-	mail-wi0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751718Ab2EQIUE (ORCPT
+	id S1755786Ab2EQIU6 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 May 2012 04:20:58 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:45585 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753698Ab2EQIUs convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 May 2012 04:20:04 -0400
-Date: Thu, 17 May 2012 10:19:58 +0200
-From: Ingo Molnar <mingo@kernel.org>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org, Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Arnaldo Carvalho de Melo <acme@infradead.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: [GIT PULL] perf fixes
-Message-ID: <20120517081958.GA19031@gmail.com>
+	Thu, 17 May 2012 04:20:48 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <4FB4613B.3020603@gmail.com>
+References: <1337155302-26244-1-git-send-email-jgq516@gmail.com>
+	<CACVXFVNzmq74BKYZN1SpXYULneV2ASmniMhs4LhevPm-XgSJpg@mail.gmail.com>
+	<4FB4613B.3020603@gmail.com>
+Date: Thu, 17 May 2012 16:20:47 +0800
+Message-ID: <CACVXFVPLf9+8qQKgkikexq3ao=b9fM4jOCasMWVJrbZEVSj_Tg@mail.gmail.com>
+Subject: Re: [PATCH 1/1] smsc95xx: add FLAG_POINTTOPOINT flag for driver_info
+From: Ming Lei <tom.leiming@gmail.com>
+To: Xiao Jiang <jgq516@gmail.com>
+Cc: steve.glendinning@smsc.com, gregkh@linuxfoundation.org,
+        netdev@vger.kernel.org, linux-usb@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Linus,
+On Thu, May 17, 2012 at 10:23 AM, Xiao Jiang <jgq516@gmail.com> wrote:
+> Ming Lei wrote:
+>>
+>> On Wed, May 16, 2012 at 4:01 PM,  <jgq516@gmail.com> wrote:
+>>
+>>>
+>>> From: Xiao Jiang <jgq516@gmail.com>
+>>>
+>>> commit c26134 introduced FLAG_POINTTOPOINT flag for USB ethernet devices
+>>> which possibly use "usb%d" names, add this flag to make sure pandaboard
+>>> can mount nfs with smsc95xx NIC.
+>>>
+>>
+>>
+>> Without the flag, I also can mount nfs successfully on my Pandaboard...
 
-Please pull the latest perf-urgent-for-linus git tree from:
+I always mount nfs in console, and not tried to mount nfs as root fs.
 
-   git://git.kernel.org/pub/scm/linux/kernel/git/tip/tip.git perf-urgent-for-linus
+>>
+>>
+>
+> I have pulled latest tree
+> (git://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux.git
+> commit 0e93b4b304ae052ba1bc73f6d34a68556fe93429), and enable related options
+> (USB_NET_SMSC95XX,
+> USB_EHCI_HCD and USB_EHCI_HCD_OMAP) with omap2plus_config, However the
+> kernel still can't mount
+> nfs, pls see below infos.
+>
+> [    3.114105] smsc95xx v1.0.4
+> [    4.533752] smsc95xx 1-1.1:1.0: *eth0*: register 'smsc95xx' at
+> usb-ehci-omap.0-1.1, smsc95xx USB 2.0 Ethernet, fe:b9:1b:07:8e:d1
+> [  108.854217] VFS: Unable to mount root fs via NFS, trying floppy.
+> [  108.861114] VFS: Cannot open root device "nfs" or unknown-block(2,0):
+> error -6
+> [  108.868713] Please append a correct "root=" boot option; here are the
+> available partitions:
+> [  108.877655] b300         7761920 mmcblk0  driver: mmcblk
+> [  108.883239]   b301           40131 mmcblk0p1
+> 00000000-0000-0000-0000-000000000mmcblk0p1
+> [  108.891662]   b302         7719232 mmcblk0p2
+> 00000000-0000-0000-0000-000000000mmcblk0p2
+> [  108.900146] Kernel panic - not syncing: VFS: Unable to mount root fs on
+> unknown-block(2,0)
+>
+> BTW: I tested it with OMAP4430 ES2.2 pandaboard, the issue can be solved
+> with apply the patch.
+>
+> Is there something which I missed? thanks.
 
-   HEAD: 9b63776fa3ca96c4ecda76f6fa947b7b0add66ac tracing: Do not enable function event with enable
+What is your kernel parameter? Maybe you use 'usb%d' in kernel parameter for
+mounting nfs as root fs. If so, could you try 'eth%d' in kernel cmd?
 
- Thanks,
-
-	Ingo
-
------------------->
-David Ahern (1):
-      perf stat: handle ENXIO error for perf_event_open
-
-Greg Kroah-Hartman (1):
-      perf: Turn off compiler warnings for flex and bison generated files
-
-Namhyung Kim (1):
-      perf build-id: Fix filename size calculation
-
-Stephane Eranian (1):
-      perf stat: Fix case where guest/host monitoring is not supported by kernel
-
-Steven Rostedt (1):
-      tracing: Do not enable function event with enable
+In fact, smsc95xx is a real LAN interface, and 'eth%d' should be prefered name
+as described in changelog of commit
+c261344d3ce3edac781f9d3c7eabe2e96d8e8fe8(usbnet:use eth%d name for
+known ethernet devices)
 
 
- include/linux/ftrace_event.h |    2 ++
- kernel/trace/trace_events.c  |    5 ++++-
- kernel/trace/trace_export.c  |    1 +
- tools/perf/Makefile          |    4 ++--
- tools/perf/builtin-stat.c    |   40 +++++++++++++++++++++++++++++++++++-----
- tools/perf/util/header.c     |    2 +-
- 6 files changed, 45 insertions(+), 9 deletions(-)
-
-diff --git a/include/linux/ftrace_event.h b/include/linux/ftrace_event.h
-index 5f3f3be..176a939 100644
---- a/include/linux/ftrace_event.h
-+++ b/include/linux/ftrace_event.h
-@@ -179,6 +179,7 @@ enum {
- 	TRACE_EVENT_FL_RECORDED_CMD_BIT,
- 	TRACE_EVENT_FL_CAP_ANY_BIT,
- 	TRACE_EVENT_FL_NO_SET_FILTER_BIT,
-+	TRACE_EVENT_FL_IGNORE_ENABLE_BIT,
- };
- 
- enum {
-@@ -187,6 +188,7 @@ enum {
- 	TRACE_EVENT_FL_RECORDED_CMD	= (1 << TRACE_EVENT_FL_RECORDED_CMD_BIT),
- 	TRACE_EVENT_FL_CAP_ANY		= (1 << TRACE_EVENT_FL_CAP_ANY_BIT),
- 	TRACE_EVENT_FL_NO_SET_FILTER	= (1 << TRACE_EVENT_FL_NO_SET_FILTER_BIT),
-+	TRACE_EVENT_FL_IGNORE_ENABLE	= (1 << TRACE_EVENT_FL_IGNORE_ENABLE_BIT),
- };
- 
- struct ftrace_event_call {
-diff --git a/kernel/trace/trace_events.c b/kernel/trace/trace_events.c
-index 079a93a..29111da 100644
---- a/kernel/trace/trace_events.c
-+++ b/kernel/trace/trace_events.c
-@@ -294,6 +294,9 @@ static int __ftrace_set_clr_event(const char *match, const char *sub,
- 		if (!call->name || !call->class || !call->class->reg)
- 			continue;
- 
-+		if (call->flags & TRACE_EVENT_FL_IGNORE_ENABLE)
-+			continue;
-+
- 		if (match &&
- 		    strcmp(match, call->name) != 0 &&
- 		    strcmp(match, call->class->system) != 0)
-@@ -1164,7 +1167,7 @@ event_create_dir(struct ftrace_event_call *call, struct dentry *d_events,
- 		return -1;
- 	}
- 
--	if (call->class->reg)
-+	if (call->class->reg && !(call->flags & TRACE_EVENT_FL_IGNORE_ENABLE))
- 		trace_create_file("enable", 0644, call->dir, call,
- 				  enable);
- 
-diff --git a/kernel/trace/trace_export.c b/kernel/trace/trace_export.c
-index 3dd15e8..e039906 100644
---- a/kernel/trace/trace_export.c
-+++ b/kernel/trace/trace_export.c
-@@ -180,6 +180,7 @@ struct ftrace_event_call __used event_##call = {			\
- 	.event.type		= etype,				\
- 	.class			= &event_class_ftrace_##call,		\
- 	.print_fmt		= print,				\
-+	.flags			= TRACE_EVENT_FL_IGNORE_ENABLE,		\
- };									\
- struct ftrace_event_call __used						\
- __attribute__((section("_ftrace_events"))) *__event_##call = &event_##call;
-diff --git a/tools/perf/Makefile b/tools/perf/Makefile
-index 9bf3fc7..92271d3 100644
---- a/tools/perf/Makefile
-+++ b/tools/perf/Makefile
-@@ -774,10 +774,10 @@ $(OUTPUT)perf.o perf.spec \
- # over the general rule for .o
- 
- $(OUTPUT)util/%-flex.o: $(OUTPUT)util/%-flex.c $(OUTPUT)PERF-CFLAGS
--	$(QUIET_CC)$(CC) -o $@ -c $(ALL_CFLAGS) -Iutil/ -Wno-redundant-decls -Wno-switch-default -Wno-unused-function $<
-+	$(QUIET_CC)$(CC) -o $@ -c $(ALL_CFLAGS) -Iutil/ -w $<
- 
- $(OUTPUT)util/%-bison.o: $(OUTPUT)util/%-bison.c $(OUTPUT)PERF-CFLAGS
--	$(QUIET_CC)$(CC) -o $@ -c $(ALL_CFLAGS) -DYYENABLE_NLS=0 -DYYLTYPE_IS_TRIVIAL=0 -Iutil/ -Wno-redundant-decls -Wno-switch-default -Wno-unused-function $<
-+	$(QUIET_CC)$(CC) -o $@ -c $(ALL_CFLAGS) -DYYENABLE_NLS=0 -DYYLTYPE_IS_TRIVIAL=0 -Iutil/ -w $<
- 
- $(OUTPUT)%.o: %.c $(OUTPUT)PERF-CFLAGS
- 	$(QUIET_CC)$(CC) -o $@ -c $(ALL_CFLAGS) $<
-diff --git a/tools/perf/builtin-stat.c b/tools/perf/builtin-stat.c
-index c941bb6..1e5e9b2 100644
---- a/tools/perf/builtin-stat.c
-+++ b/tools/perf/builtin-stat.c
-@@ -283,6 +283,8 @@ static int create_perf_stat_counter(struct perf_evsel *evsel,
- {
- 	struct perf_event_attr *attr = &evsel->attr;
- 	struct xyarray *group_fd = NULL;
-+	bool exclude_guest_missing = false;
-+	int ret;
- 
- 	if (group && evsel != first)
- 		group_fd = first->fd;
-@@ -293,16 +295,39 @@ static int create_perf_stat_counter(struct perf_evsel *evsel,
- 
- 	attr->inherit = !no_inherit;
- 
--	if (system_wide)
--		return perf_evsel__open_per_cpu(evsel, evsel_list->cpus,
-+retry:
-+	if (exclude_guest_missing)
-+		evsel->attr.exclude_guest = evsel->attr.exclude_host = 0;
-+
-+	if (system_wide) {
-+		ret = perf_evsel__open_per_cpu(evsel, evsel_list->cpus,
- 						group, group_fd);
-+		if (ret)
-+			goto check_ret;
-+		return 0;
-+	}
-+
- 	if (!target_pid && !target_tid && (!group || evsel == first)) {
- 		attr->disabled = 1;
- 		attr->enable_on_exec = 1;
- 	}
- 
--	return perf_evsel__open_per_thread(evsel, evsel_list->threads,
--					   group, group_fd);
-+	ret = perf_evsel__open_per_thread(evsel, evsel_list->threads,
-+					  group, group_fd);
-+	if (!ret)
-+		return 0;
-+	/* fall through */
-+check_ret:
-+	if (ret && errno == EINVAL) {
-+		if (!exclude_guest_missing &&
-+		    (evsel->attr.exclude_guest || evsel->attr.exclude_host)) {
-+			pr_debug("Old kernel, cannot exclude "
-+				 "guest or host samples.\n");
-+			exclude_guest_missing = true;
-+			goto retry;
-+		}
-+	}
-+	return ret;
- }
- 
- /*
-@@ -463,8 +488,13 @@ static int run_perf_stat(int argc __used, const char **argv)
- 
- 	list_for_each_entry(counter, &evsel_list->entries, node) {
- 		if (create_perf_stat_counter(counter, first) < 0) {
-+			/*
-+			 * PPC returns ENXIO for HW counters until 2.6.37
-+			 * (behavior changed with commit b0a873e).
-+			 */
- 			if (errno == EINVAL || errno == ENOSYS ||
--			    errno == ENOENT || errno == EOPNOTSUPP) {
-+			    errno == ENOENT || errno == EOPNOTSUPP ||
-+			    errno == ENXIO) {
- 				if (verbose)
- 					ui__warning("%s event is not supported by the kernel.\n",
- 						    event_name(counter));
-diff --git a/tools/perf/util/header.c b/tools/perf/util/header.c
-index 4c7c2d7..c0b70c6 100644
---- a/tools/perf/util/header.c
-+++ b/tools/perf/util/header.c
-@@ -296,7 +296,7 @@ int build_id_cache__add_s(const char *sbuild_id, const char *debugdir,
- 	if (mkdir_p(filename, 0755))
- 		goto out_free;
- 
--	snprintf(filename + len, sizeof(filename) - len, "/%s", sbuild_id);
-+	snprintf(filename + len, size - len, "/%s", sbuild_id);
- 
- 	if (access(filename, F_OK)) {
- 		if (is_kallsyms) {
+Thanks,
+-- 
+Ming Lei
