@@ -1,120 +1,175 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965728Ab2EQQ0W (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 May 2012 12:26:22 -0400
-Received: from mail-lb0-f174.google.com ([209.85.217.174]:32818 "EHLO
+	id S965463Ab2EQQ0R (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 May 2012 12:26:17 -0400
+Received: from mail-lb0-f174.google.com ([209.85.217.174]:44351 "EHLO
 	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760212Ab2EQQZj (ORCPT
+	with ESMTP id S1760711Ab2EQQZk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 May 2012 12:25:39 -0400
-Message-Id: <20120517162534.681059644@openvz.org>
+	Thu, 17 May 2012 12:25:40 -0400
+Message-Id: <20120517162534.614578188@openvz.org>
 User-Agent: quilt/0.48-1
-Date: Thu, 17 May 2012 20:07:40 +0400
+Date: Thu, 17 May 2012 20:07:39 +0400
 From: Cyrill Gorcunov <gorcunov@openvz.org>
 To: linux-kernel@vger.kernel.org
 Cc: Andrew Morton <akpm@linux-foundation.org>,
         Pavel Emelyanov <xemul@parallels.com>,
         James Bottomley <jbottomley@parallels.com>,
         linux-fsdevel@vger.kernel.org, Cyrill Gorcunov <gorcunov@openvz.org>
-Subject: [rfc 2/4] procfs: Convert /proc/pid/fdinfo/fd handling routines into seq-file with fdinfo helpers
+Subject: [rfc 1/4] procfs: Move /proc/pid/fd[info] handling code to fd.[ch]
 References: <20120517160738.116113099@openvz.org>
-Content-Disposition: inline; filename=seq-fdinfo-seq-ops-2
+Content-Disposition: inline; filename=seq-fdinfo-base-proc-2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch converts /proc/pid/fdinfo/fd handling routines to seq-files with
-ability to plug in additional fdinfo helpers from other subsystems.
-
-For example files created in eventfd/eventpoll/inotify subsystems might print
-out additional information, not just file position and flags.
-
-Still if there no fdinfo helpers registered then the output is well known
-pos, flags pair.
+This prepares the ground for further extension of /proc/pid/fd[info]
+handling code, also makes both fs/proc/base.c and fs/proc/fd.c easier
+to read.
 
 Signed-off-by: Cyrill Gorcunov <gorcunov@openvz.org>
 ---
- fs/proc/fd.c            |  248 +++++++++++++++++++++++++++++++++++++-----------
- fs/proc/fd.h            |    1 
- include/linux/proc_fs.h |   31 ++++++
- 3 files changed, 224 insertions(+), 56 deletions(-)
+ fs/proc/Makefile   |    2 
+ fs/proc/base.c     |  401 -----------------------------------------------------
+ fs/proc/fd.c       |  370 ++++++++++++++++++++++++++++++++++++++++++++++++
+ fs/proc/fd.h       |   14 +
+ fs/proc/internal.h |   49 ++++++
+ 5 files changed, 436 insertions(+), 400 deletions(-)
 
-Index: linux-2.6.git/fs/proc/fd.c
+Index: linux-2.6.git/fs/proc/Makefile
 ===================================================================
---- linux-2.6.git.orig/fs/proc/fd.c
-+++ linux-2.6.git/fs/proc/fd.c
-@@ -6,66 +6,194 @@
- #include <linux/namei.h>
- #include <linux/pid.h>
- #include <linux/security.h>
-+#include <linux/file.h>
-+#include <linux/seq_file.h>
-+#include <linux/spinlock.h>
+--- linux-2.6.git.orig/fs/proc/Makefile
++++ linux-2.6.git/fs/proc/Makefile
+@@ -8,7 +8,7 @@ proc-y			:= nommu.o task_nommu.o
+ proc-$(CONFIG_MMU)	:= mmu.o task_mmu.o
  
- #include <linux/proc_fs.h>
- 
+ proc-y       += inode.o root.o base.o generic.o array.o \
+-		proc_tty.o
++		proc_tty.o fd.o
+ proc-y	+= cmdline.o
+ proc-y	+= consoles.o
+ proc-y	+= cpuinfo.o
+Index: linux-2.6.git/fs/proc/base.c
+===================================================================
+--- linux-2.6.git.orig/fs/proc/base.c
++++ linux-2.6.git/fs/proc/base.c
+@@ -88,7 +88,9 @@
+ #include <asm/hardwall.h>
+ #endif
+ #include <trace/events/oom.h>
++
  #include "internal.h"
 +#include "fd.h"
  
--#define PROC_FDINFO_MAX 64
-+static LIST_HEAD(fdinfo_helpers);
-+static DEFINE_RWLOCK(fdinfo_helpers_lock);
+ /* NOTE:
+  *	Implementing inode permission operations in /proc is almost
+@@ -135,8 +137,6 @@ struct pid_entry {
+ 		NULL, &proc_single_file_operations,	\
+ 		{ .proc_show = show } )
  
--static int proc_fd_info(struct inode *inode, struct path *path, char *info)
-+int proc_register_fdinfo_helper(struct proc_fdinfo_helper *helper)
+-static int proc_fd_permission(struct inode *inode, int mask);
+-
+ /*
+  * Count the number of hardlinks for the pid_entry table, excluding the .
+  * and .. links.
+@@ -1485,30 +1485,14 @@ out:
+ 	return error;
+ }
+ 
+-static const struct inode_operations proc_pid_link_inode_operations = {
++const struct inode_operations proc_pid_link_inode_operations = {
+ 	.readlink	= proc_pid_readlink,
+ 	.follow_link	= proc_pid_follow_link,
+ 	.setattr	= proc_setattr,
+ };
+ 
+-
+ /* building an inode */
+ 
+-static int task_dumpable(struct task_struct *task)
+-{
+-	int dumpable = 0;
+-	struct mm_struct *mm;
+-
+-	task_lock(task);
+-	mm = task->mm;
+-	if (mm)
+-		dumpable = get_dumpable(mm);
+-	task_unlock(task);
+-	if(dumpable == 1)
+-		return 1;
+-	return 0;
+-}
+-
+ struct inode *proc_pid_make_inode(struct super_block * sb, struct task_struct *task)
  {
+ 	struct inode * inode;
+@@ -1634,15 +1618,6 @@ int pid_revalidate(struct dentry *dentry
+ 	return 0;
+ }
+ 
+-static int pid_delete_dentry(const struct dentry * dentry)
+-{
+-	/* Is the task we represent dead?
+-	 * If so, then don't put the dentry on the lru list,
+-	 * kill it immediately.
+-	 */
+-	return !proc_pid(dentry->d_inode)->tasks[PIDTYPE_PID].first;
+-}
+-
+ const struct dentry_operations pid_dentry_operations =
+ {
+ 	.d_revalidate	= pid_revalidate,
+@@ -1705,300 +1680,6 @@ end_instantiate:
+ 	return filldir(dirent, name, len, filp->f_pos, ino, type);
+ }
+ 
+-static unsigned name_to_int(struct dentry *dentry)
+-{
+-	const char *name = dentry->d_name.name;
+-	int len = dentry->d_name.len;
+-	unsigned n = 0;
+-
+-	if (len > 1 && *name == '0')
+-		goto out;
+-	while (len-- > 0) {
+-		unsigned c = *name++ - '0';
+-		if (c > 9)
+-			goto out;
+-		if (n >= (~0U-9)/10)
+-			goto out;
+-		n *= 10;
+-		n += c;
+-	}
+-	return n;
+-out:
+-	return ~0U;
+-}
+-
+-#define PROC_FDINFO_MAX 64
+-
+-static int proc_fd_info(struct inode *inode, struct path *path, char *info)
+-{
 -	struct task_struct *task = get_proc_task(inode);
 -	struct files_struct *files = NULL;
--	int fd = proc_fd(inode);
 -	struct file *file;
-+	struct proc_fdinfo_helper *item;
-+	int ret = 0;
- 
+-	int fd = proc_fd(inode);
+-
 -	if (task) {
 -		files = get_files_struct(task);
 -		put_task_struct(task);
-+	if (!helper->ops || !helper->probe)
-+		return -EINVAL;
-+
-+	write_lock(&fdinfo_helpers_lock);
-+	list_for_each_entry(item, &fdinfo_helpers, list) {
-+		if (item == helper) {
-+			pr_err("procfs fdinfo helper `%s' is already registered\n",
-+			       item->name);
-+			ret = -EINVAL;
-+			break;
-+		}
- 	}
-+	if (!ret)
-+		list_add(&helper->list, &fdinfo_helpers);
-+	write_unlock(&fdinfo_helpers_lock);
-+	return ret;
-+}
- 
+-	}
 -	if (files) {
 -		/*
--		 * We are not taking a ref to the file structure,
--		 * so we must hold ->file_lock.
+-		 * We are not taking a ref to the file structure, so we must
+-		 * hold ->file_lock.
 -		 */
 -		spin_lock(&files->file_lock);
 -		file = fcheck_files(files, fd);
-+void proc_unregister_fdinfo_helper(struct proc_fdinfo_helper *helper)
-+{
-+	struct proc_fdinfo_helper *item;
- 
 -		if (file) {
 -			unsigned int f_flags;
 -			struct fdtable *fdt;
-+	write_lock(&fdinfo_helpers_lock);
-+	list_for_each_entry(item, &fdinfo_helpers, list) {
-+		if (item == helper) {
-+			list_del(&item->list);
-+			break;
-+		}
-+	}
-+	write_unlock(&fdinfo_helpers_lock);
-+}
- 
+-
 -			fdt = files_fdtable(files);
 -			f_flags = file->f_flags & ~O_CLOEXEC;
 -			if (close_on_exec(fd, fdt))
@@ -124,196 +179,223 @@ Index: linux-2.6.git/fs/proc/fd.c
 -				*path = file->f_path;
 -				path_get(&file->f_path);
 -			}
-+static void assign_fdinfo_helper(struct proc_fdinfo_extra *extra)
-+{
-+	struct proc_fdinfo_helper *item;
-+	read_lock(&fdinfo_helpers_lock);
-+	list_for_each_entry(item, &fdinfo_helpers, list) {
-+		if (item->probe(extra->fd_file)) {
-+			extra->helper = item;
-+			break;
-+		}
-+	}
-+	read_unlock(&fdinfo_helpers_lock);
-+}
-+
-+static void *seq_start(struct seq_file *m, loff_t *pos)
-+{
-+	struct proc_fdinfo_extra *extra = m->private;
-+
-+	read_lock(&fdinfo_helpers_lock);
-+
-+	if (*pos > 0)
-+		extra->hdr_shown = true;
-+
-+	return *pos == 0 ? extra :
-+		(extra->helper ? extra->helper->ops->start(m, pos) : NULL);
-+}
-+
-+static void seq_stop(struct seq_file *m, void *v)
-+{
-+	struct proc_fdinfo_extra *extra = m->private;
-+
-+	if (extra->helper && extra->hdr_shown)
-+		extra->helper->ops->stop(m, v);
-+
-+	read_unlock(&fdinfo_helpers_lock);
-+}
-+
-+static void *seq_next(struct seq_file *m, void *p, loff_t *pos)
-+{
-+	struct proc_fdinfo_extra *extra = m->private;
-+
-+	if (extra->helper)
-+		return extra->helper->ops->next(m, p, pos);
-+
-+	++*pos;
-+	return NULL;
-+}
-+
-+static int seq_show(struct seq_file *m, void *v)
-+{
-+	struct proc_fdinfo_extra *extra = m->private;
-+
-+	if (extra->helper && extra->hdr_shown)
-+		return extra->helper->ops->show(m, v);
-+
-+	seq_printf(m, "pos:\t%lli\nflags:\t0%o\n",
-+		   (long long)extra->fd_file->f_pos,
-+		   extra->f_flags);
-+
-+	extra->hdr_shown = 1;
-+	return 0;
-+}
-+
-+static const struct seq_operations fdinfo_seq_ops = {
-+	.start	= seq_start,
-+	.next	= seq_next,
-+	.stop	= seq_stop,
-+	.show	= seq_show,
-+};
- 
 -			if (info)
 -				snprintf(info, PROC_FDINFO_MAX,
 -					 "pos:\t%lli\n"
 -					 "flags:\t0%o\n",
--					 (long long)file->f_pos,
+-					 (long long) file->f_pos,
 -					 f_flags);
-+static int seq_fdinfo_open(struct inode *inode, struct file *file)
-+{
-+	struct files_struct *files = NULL;
-+	struct proc_fdinfo_extra *extra;
-+	struct task_struct *task;
-+	struct seq_file *m;
-+	int ret;
-+
-+	extra = kzalloc(sizeof(*extra), GFP_KERNEL);
-+	if (!extra)
-+		return -ENOMEM;
-+	extra->inode = inode;
-+
-+	ret = seq_open(file, &fdinfo_seq_ops);
-+	if (!ret) {
-+		ret = -ENOENT;
-+		m = file->private_data;
-+		m->private = extra;
-+
-+		task = get_proc_task(inode);
-+		if (task) {
-+			files = get_files_struct(task);
-+			put_task_struct(task);
-+		}
-+
-+		if (files) {
-+			int fd = proc_fd(inode);
- 
-+			spin_lock(&files->file_lock);
-+			extra->fd_file = fcheck_files(files, fd);
-+			if (extra->fd_file) {
-+				struct fdtable *fdt = files_fdtable(files);
-+
-+				extra->f_flags = extra->fd_file->f_flags & ~O_CLOEXEC;
-+				if (close_on_exec(fd, fdt))
-+					extra->f_flags |= O_CLOEXEC;
-+				get_file(extra->fd_file);
-+				ret = 0;
-+			}
- 			spin_unlock(&files->file_lock);
- 			put_files_struct(files);
+-			spin_unlock(&files->file_lock);
+-			put_files_struct(files);
 -			return 0;
 -		}
- 
 -		spin_unlock(&files->file_lock);
 -		put_files_struct(files);
-+			if (extra->fd_file)
-+				assign_fdinfo_helper(extra);
-+		}
- 	}
- 
+-	}
 -	return -ENOENT;
-+	if (ret)
-+		kfree(extra);
-+	return ret;
- }
- 
-+static int seq_fdinfo_release(struct inode *inode, struct file *file)
-+{
-+	struct seq_file *m = file->private_data;
-+	struct proc_fdinfo_extra *extra = m->private;
-+
-+	put_filp(extra->fd_file);
-+	kfree(m->private);
-+
-+	return seq_release(inode, file);
-+}
-+
-+static const struct file_operations proc_fdinfo_file_operations = {
-+	.open		= seq_fdinfo_open,
-+	.read		= seq_read,
-+	.llseek		= seq_lseek,
-+	.release	= seq_fdinfo_release,
-+};
-+
- static int tid_fd_revalidate(struct dentry *dentry, struct nameidata *nd)
- {
- 	struct files_struct *files;
-@@ -120,7 +248,31 @@ static const struct dentry_operations ti
- 
- static int proc_fd_link(struct dentry *dentry, struct path *path)
- {
+-}
+-
+-static int proc_fd_link(struct dentry *dentry, struct path *path)
+-{
 -	return proc_fd_info(dentry->d_inode, path, NULL);
-+	struct inode *inode = dentry->d_inode;
-+	struct task_struct *task = get_proc_task(inode);
-+	struct files_struct *files = NULL;
-+	int fd = proc_fd(inode);
-+	struct file *file;
-+	int err = -ENOENT;
-+
-+	if (task) {
-+		files = get_files_struct(task);
-+		put_task_struct(task);
-+	}
-+
-+	if (files) {
-+		spin_lock(&files->file_lock);
-+		file = fcheck_files(files, fd);
-+		if (file) {
-+			*path = file->f_path;
-+			path_get(&file->f_path);
-+		}
-+		spin_unlock(&files->file_lock);
-+		put_files_struct(files);
-+		err = 0;
-+	}
-+
-+	return err;
- }
- 
- static struct dentry *
-@@ -263,22 +415,6 @@ out_no_task:
- 	return retval;
- }
- 
+-}
+-
+-static int tid_fd_revalidate(struct dentry *dentry, struct nameidata *nd)
+-{
+-	struct inode *inode;
+-	struct task_struct *task;
+-	int fd;
+-	struct files_struct *files;
+-	const struct cred *cred;
+-
+-	if (nd && nd->flags & LOOKUP_RCU)
+-		return -ECHILD;
+-
+-	inode = dentry->d_inode;
+-	task = get_proc_task(inode);
+-	fd = proc_fd(inode);
+-
+-	if (task) {
+-		files = get_files_struct(task);
+-		if (files) {
+-			rcu_read_lock();
+-			if (fcheck_files(files, fd)) {
+-				rcu_read_unlock();
+-				put_files_struct(files);
+-				if (task_dumpable(task)) {
+-					rcu_read_lock();
+-					cred = __task_cred(task);
+-					inode->i_uid = cred->euid;
+-					inode->i_gid = cred->egid;
+-					rcu_read_unlock();
+-				} else {
+-					inode->i_uid = 0;
+-					inode->i_gid = 0;
+-				}
+-				inode->i_mode &= ~(S_ISUID | S_ISGID);
+-				security_task_to_inode(task, inode);
+-				put_task_struct(task);
+-				return 1;
+-			}
+-			rcu_read_unlock();
+-			put_files_struct(files);
+-		}
+-		put_task_struct(task);
+-	}
+-	d_drop(dentry);
+-	return 0;
+-}
+-
+-static const struct dentry_operations tid_fd_dentry_operations =
+-{
+-	.d_revalidate	= tid_fd_revalidate,
+-	.d_delete	= pid_delete_dentry,
+-};
+-
+-static struct dentry *proc_fd_instantiate(struct inode *dir,
+-	struct dentry *dentry, struct task_struct *task, const void *ptr)
+-{
+-	unsigned fd = *(const unsigned *)ptr;
+-	struct file *file;
+-	struct files_struct *files;
+- 	struct inode *inode;
+- 	struct proc_inode *ei;
+-	struct dentry *error = ERR_PTR(-ENOENT);
+-
+-	inode = proc_pid_make_inode(dir->i_sb, task);
+-	if (!inode)
+-		goto out;
+-	ei = PROC_I(inode);
+-	ei->fd = fd;
+-	files = get_files_struct(task);
+-	if (!files)
+-		goto out_iput;
+-	inode->i_mode = S_IFLNK;
+-
+-	/*
+-	 * We are not taking a ref to the file structure, so we must
+-	 * hold ->file_lock.
+-	 */
+-	spin_lock(&files->file_lock);
+-	file = fcheck_files(files, fd);
+-	if (!file)
+-		goto out_unlock;
+-	if (file->f_mode & FMODE_READ)
+-		inode->i_mode |= S_IRUSR | S_IXUSR;
+-	if (file->f_mode & FMODE_WRITE)
+-		inode->i_mode |= S_IWUSR | S_IXUSR;
+-	spin_unlock(&files->file_lock);
+-	put_files_struct(files);
+-
+-	inode->i_op = &proc_pid_link_inode_operations;
+-	inode->i_size = 64;
+-	ei->op.proc_get_link = proc_fd_link;
+-	d_set_d_op(dentry, &tid_fd_dentry_operations);
+-	d_add(dentry, inode);
+-	/* Close the race of the process dying before we return the dentry */
+-	if (tid_fd_revalidate(dentry, NULL))
+-		error = NULL;
+-
+- out:
+-	return error;
+-out_unlock:
+-	spin_unlock(&files->file_lock);
+-	put_files_struct(files);
+-out_iput:
+-	iput(inode);
+-	goto out;
+-}
+-
+-static struct dentry *proc_lookupfd_common(struct inode *dir,
+-					   struct dentry *dentry,
+-					   instantiate_t instantiate)
+-{
+-	struct task_struct *task = get_proc_task(dir);
+-	unsigned fd = name_to_int(dentry);
+-	struct dentry *result = ERR_PTR(-ENOENT);
+-
+-	if (!task)
+-		goto out_no_task;
+-	if (fd == ~0U)
+-		goto out;
+-
+-	result = instantiate(dir, dentry, task, &fd);
+-out:
+-	put_task_struct(task);
+-out_no_task:
+-	return result;
+-}
+-
+-static int proc_readfd_common(struct file * filp, void * dirent,
+-			      filldir_t filldir, instantiate_t instantiate)
+-{
+-	struct dentry *dentry = filp->f_path.dentry;
+-	struct inode *inode = dentry->d_inode;
+-	struct task_struct *p = get_proc_task(inode);
+-	unsigned int fd, ino;
+-	int retval;
+-	struct files_struct * files;
+-
+-	retval = -ENOENT;
+-	if (!p)
+-		goto out_no_task;
+-	retval = 0;
+-
+-	fd = filp->f_pos;
+-	switch (fd) {
+-		case 0:
+-			if (filldir(dirent, ".", 1, 0, inode->i_ino, DT_DIR) < 0)
+-				goto out;
+-			filp->f_pos++;
+-		case 1:
+-			ino = parent_ino(dentry);
+-			if (filldir(dirent, "..", 2, 1, ino, DT_DIR) < 0)
+-				goto out;
+-			filp->f_pos++;
+-		default:
+-			files = get_files_struct(p);
+-			if (!files)
+-				goto out;
+-			rcu_read_lock();
+-			for (fd = filp->f_pos-2;
+-			     fd < files_fdtable(files)->max_fds;
+-			     fd++, filp->f_pos++) {
+-				char name[PROC_NUMBUF];
+-				int len;
+-
+-				if (!fcheck_files(files, fd))
+-					continue;
+-				rcu_read_unlock();
+-
+-				len = snprintf(name, sizeof(name), "%d", fd);
+-				if (proc_fill_cache(filp, dirent, filldir,
+-						    name, len, instantiate,
+-						    p, &fd) < 0) {
+-					rcu_read_lock();
+-					break;
+-				}
+-				rcu_read_lock();
+-			}
+-			rcu_read_unlock();
+-			put_files_struct(files);
+-	}
+-out:
+-	put_task_struct(p);
+-out_no_task:
+-	return retval;
+-}
+-
+-static struct dentry *proc_lookupfd(struct inode *dir, struct dentry *dentry,
+-				    struct nameidata *nd)
+-{
+-	return proc_lookupfd_common(dir, dentry, proc_fd_instantiate);
+-}
+-
+-static int proc_readfd(struct file *filp, void *dirent, filldir_t filldir)
+-{
+-	return proc_readfd_common(filp, dirent, filldir, proc_fd_instantiate);
+-}
+-
 -static ssize_t proc_fdinfo_read(struct file *file, char __user *buf,
 -				      size_t len, loff_t *ppos)
 -{
@@ -330,75 +412,564 @@ Index: linux-2.6.git/fs/proc/fd.c
 -	.llseek		= no_llseek,
 -};
 -
- static int proc_readfd(struct file *filp, void *dirent, filldir_t filldir)
+-static const struct file_operations proc_fd_operations = {
+-	.read		= generic_read_dir,
+-	.readdir	= proc_readfd,
+-	.llseek		= default_llseek,
+-};
+-
+ #ifdef CONFIG_CHECKPOINT_RESTORE
+ 
+ /*
+@@ -2344,82 +2025,6 @@ static const struct file_operations proc
+ 
+ #endif /* CONFIG_CHECKPOINT_RESTORE */
+ 
+-/*
+- * /proc/pid/fd needs a special permission handler so that a process can still
+- * access /proc/self/fd after it has executed a setuid().
+- */
+-static int proc_fd_permission(struct inode *inode, int mask)
+-{
+-	int rv = generic_permission(inode, mask);
+-	if (rv == 0)
+-		return 0;
+-	if (task_pid(current) == proc_pid(inode))
+-		rv = 0;
+-	return rv;
+-}
+-
+-/*
+- * proc directories can do almost nothing..
+- */
+-static const struct inode_operations proc_fd_inode_operations = {
+-	.lookup		= proc_lookupfd,
+-	.permission	= proc_fd_permission,
+-	.setattr	= proc_setattr,
+-};
+-
+-static struct dentry *proc_fdinfo_instantiate(struct inode *dir,
+-	struct dentry *dentry, struct task_struct *task, const void *ptr)
+-{
+-	unsigned fd = *(unsigned *)ptr;
+- 	struct inode *inode;
+- 	struct proc_inode *ei;
+-	struct dentry *error = ERR_PTR(-ENOENT);
+-
+-	inode = proc_pid_make_inode(dir->i_sb, task);
+-	if (!inode)
+-		goto out;
+-	ei = PROC_I(inode);
+-	ei->fd = fd;
+-	inode->i_mode = S_IFREG | S_IRUSR;
+-	inode->i_fop = &proc_fdinfo_file_operations;
+-	d_set_d_op(dentry, &tid_fd_dentry_operations);
+-	d_add(dentry, inode);
+-	/* Close the race of the process dying before we return the dentry */
+-	if (tid_fd_revalidate(dentry, NULL))
+-		error = NULL;
+-
+- out:
+-	return error;
+-}
+-
+-static struct dentry *proc_lookupfdinfo(struct inode *dir,
+-					struct dentry *dentry,
+-					struct nameidata *nd)
+-{
+-	return proc_lookupfd_common(dir, dentry, proc_fdinfo_instantiate);
+-}
+-
+-static int proc_readfdinfo(struct file *filp, void *dirent, filldir_t filldir)
+-{
+-	return proc_readfd_common(filp, dirent, filldir,
+-				  proc_fdinfo_instantiate);
+-}
+-
+-static const struct file_operations proc_fdinfo_operations = {
+-	.read		= generic_read_dir,
+-	.readdir	= proc_readfdinfo,
+-	.llseek		= default_llseek,
+-};
+-
+-/*
+- * proc directories can do almost nothing..
+- */
+-static const struct inode_operations proc_fdinfo_inode_operations = {
+-	.lookup		= proc_lookupfdinfo,
+-	.setattr	= proc_setattr,
+-};
+-
+-
+ static struct dentry *proc_pident_instantiate(struct inode *dir,
+ 	struct dentry *dentry, struct task_struct *task, const void *ptr)
  {
- 	return proc_readfd_common(filp, dirent, filldir, proc_fd_instantiate);
+Index: linux-2.6.git/fs/proc/fd.c
+===================================================================
+--- /dev/null
++++ linux-2.6.git/fs/proc/fd.c
+@@ -0,0 +1,370 @@
++#include <linux/sched.h>
++#include <linux/errno.h>
++#include <linux/dcache.h>
++#include <linux/path.h>
++#include <linux/fdtable.h>
++#include <linux/namei.h>
++#include <linux/pid.h>
++#include <linux/security.h>
++
++#include <linux/proc_fs.h>
++
++#include "internal.h"
++
++#define PROC_FDINFO_MAX 64
++
++static int proc_fd_info(struct inode *inode, struct path *path, char *info)
++{
++	struct task_struct *task = get_proc_task(inode);
++	struct files_struct *files = NULL;
++	int fd = proc_fd(inode);
++	struct file *file;
++
++	if (task) {
++		files = get_files_struct(task);
++		put_task_struct(task);
++	}
++
++	if (files) {
++		/*
++		 * We are not taking a ref to the file structure,
++		 * so we must hold ->file_lock.
++		 */
++		spin_lock(&files->file_lock);
++		file = fcheck_files(files, fd);
++
++		if (file) {
++			unsigned int f_flags;
++			struct fdtable *fdt;
++
++			fdt = files_fdtable(files);
++			f_flags = file->f_flags & ~O_CLOEXEC;
++			if (close_on_exec(fd, fdt))
++				f_flags |= O_CLOEXEC;
++
++			if (path) {
++				*path = file->f_path;
++				path_get(&file->f_path);
++			}
++
++			if (info)
++				snprintf(info, PROC_FDINFO_MAX,
++					 "pos:\t%lli\n"
++					 "flags:\t0%o\n",
++					 (long long)file->f_pos,
++					 f_flags);
++
++			spin_unlock(&files->file_lock);
++			put_files_struct(files);
++			return 0;
++		}
++
++		spin_unlock(&files->file_lock);
++		put_files_struct(files);
++	}
++
++	return -ENOENT;
++}
++
++static int tid_fd_revalidate(struct dentry *dentry, struct nameidata *nd)
++{
++	struct files_struct *files;
++	struct task_struct *task;
++	const struct cred *cred;
++	struct inode *inode;
++	int fd;
++
++	if (nd && nd->flags & LOOKUP_RCU)
++		return -ECHILD;
++
++	inode = dentry->d_inode;
++	task = get_proc_task(inode);
++	fd = proc_fd(inode);
++
++	if (task) {
++		files = get_files_struct(task);
++		if (files) {
++			rcu_read_lock();
++			if (fcheck_files(files, fd)) {
++				rcu_read_unlock();
++				put_files_struct(files);
++				if (task_dumpable(task)) {
++					rcu_read_lock();
++					cred = __task_cred(task);
++					inode->i_uid = cred->euid;
++					inode->i_gid = cred->egid;
++					rcu_read_unlock();
++				} else {
++					inode->i_uid = 0;
++					inode->i_gid = 0;
++				}
++				inode->i_mode &= ~(S_ISUID | S_ISGID);
++				security_task_to_inode(task, inode);
++				put_task_struct(task);
++				return 1;
++			}
++			rcu_read_unlock();
++			put_files_struct(files);
++		}
++		put_task_struct(task);
++	}
++
++	d_drop(dentry);
++	return 0;
++}
++
++static const struct dentry_operations tid_fd_dentry_operations = {
++	.d_revalidate	= tid_fd_revalidate,
++	.d_delete	= pid_delete_dentry,
++};
++
++static int proc_fd_link(struct dentry *dentry, struct path *path)
++{
++	return proc_fd_info(dentry->d_inode, path, NULL);
++}
++
++static struct dentry *
++proc_fd_instantiate(struct inode *dir, struct dentry *dentry,
++		    struct task_struct *task, const void *ptr)
++{
++	struct dentry *error = ERR_PTR(-ENOENT);
++	unsigned fd = *(const unsigned *)ptr;
++	struct files_struct *files;
++	struct proc_inode *ei;
++	struct inode *inode;
++	struct file *file;
++
++	inode = proc_pid_make_inode(dir->i_sb, task);
++	if (!inode)
++		goto out;
++
++	ei = PROC_I(inode);
++	ei->fd = fd;
++
++	files = get_files_struct(task);
++	if (!files)
++		goto out_iput;
++
++	inode->i_mode = S_IFLNK;
++
++	/*
++	 * We are not taking a ref to the file structure, so we must
++	 * hold ->file_lock.
++	 */
++	spin_lock(&files->file_lock);
++	file = fcheck_files(files, fd);
++	if (!file)
++		goto out_unlock;
++	if (file->f_mode & FMODE_READ)
++		inode->i_mode |= S_IRUSR | S_IXUSR;
++	if (file->f_mode & FMODE_WRITE)
++		inode->i_mode |= S_IWUSR | S_IXUSR;
++	spin_unlock(&files->file_lock);
++	put_files_struct(files);
++
++	inode->i_op = &proc_pid_link_inode_operations;
++	inode->i_size = 64;
++
++	ei->op.proc_get_link = proc_fd_link;
++
++	d_set_d_op(dentry, &tid_fd_dentry_operations);
++	d_add(dentry, inode);
++
++	/* Close the race of the process dying before we return the dentry */
++	if (tid_fd_revalidate(dentry, NULL))
++		error = NULL;
++out:
++	return error;
++
++out_unlock:
++	spin_unlock(&files->file_lock);
++	put_files_struct(files);
++out_iput:
++	iput(inode);
++	goto out;
++}
++
++static struct dentry *
++proc_lookupfd_common(struct inode *dir, struct dentry *dentry,
++		     instantiate_t instantiate)
++{
++	struct task_struct *task = get_proc_task(dir);
++	struct dentry *result = ERR_PTR(-ENOENT);
++	unsigned fd = name_to_int(dentry);
++
++	if (!task)
++		goto out_no_task;
++	if (fd == ~0U)
++		goto out;
++
++	result = instantiate(dir, dentry, task, &fd);
++out:
++	put_task_struct(task);
++out_no_task:
++	return result;
++}
++
++static int proc_readfd_common(struct file * filp, void * dirent,
++			      filldir_t filldir, instantiate_t instantiate)
++{
++	struct dentry *dentry = filp->f_path.dentry;
++	struct inode *inode = dentry->d_inode;
++	struct task_struct *p = get_proc_task(inode);
++	struct files_struct *files;
++	unsigned int fd, ino;
++	int retval;
++
++	retval = -ENOENT;
++	if (!p)
++		goto out_no_task;
++	retval = 0;
++
++	fd = filp->f_pos;
++	switch (fd) {
++		case 0:
++			if (filldir(dirent, ".", 1, 0, inode->i_ino, DT_DIR) < 0)
++				goto out;
++			filp->f_pos++;
++		case 1:
++			ino = parent_ino(dentry);
++			if (filldir(dirent, "..", 2, 1, ino, DT_DIR) < 0)
++				goto out;
++			filp->f_pos++;
++		default:
++			files = get_files_struct(p);
++			if (!files)
++				goto out;
++			rcu_read_lock();
++			for (fd = filp->f_pos - 2;
++			     fd < files_fdtable(files)->max_fds;
++			     fd++, filp->f_pos++) {
++				char name[PROC_NUMBUF];
++				int len;
++
++				if (!fcheck_files(files, fd))
++					continue;
++				rcu_read_unlock();
++
++				len = snprintf(name, sizeof(name), "%d", fd);
++				if (proc_fill_cache(filp, dirent, filldir,
++						    name, len, instantiate,
++						    p, &fd) < 0) {
++					rcu_read_lock();
++					break;
++				}
++				rcu_read_lock();
++			}
++			rcu_read_unlock();
++			put_files_struct(files);
++	}
++out:
++	put_task_struct(p);
++out_no_task:
++	return retval;
++}
++
++static ssize_t proc_fdinfo_read(struct file *file, char __user *buf,
++				      size_t len, loff_t *ppos)
++{
++	char tmp[PROC_FDINFO_MAX];
++	int err = proc_fd_info(file->f_path.dentry->d_inode, NULL, tmp);
++	if (!err)
++		err = simple_read_from_buffer(buf, len, ppos, tmp, strlen(tmp));
++	return err;
++}
++
++static const struct file_operations proc_fdinfo_file_operations = {
++	.open           = nonseekable_open,
++	.read		= proc_fdinfo_read,
++	.llseek		= no_llseek,
++};
++
++static int proc_readfd(struct file *filp, void *dirent, filldir_t filldir)
++{
++	return proc_readfd_common(filp, dirent, filldir, proc_fd_instantiate);
++}
++
++const struct file_operations proc_fd_operations = {
++	.read		= generic_read_dir,
++	.readdir	= proc_readfd,
++	.llseek		= default_llseek,
++};
++
++static struct dentry *proc_lookupfd(struct inode *dir, struct dentry *dentry,
++				    struct nameidata *nd)
++{
++	return proc_lookupfd_common(dir, dentry, proc_fd_instantiate);
++}
++
++/*
++ * /proc/pid/fd needs a special permission handler so that a process can still
++ * access /proc/self/fd after it has executed a setuid().
++ */
++int proc_fd_permission(struct inode *inode, int mask)
++{
++	int rv = generic_permission(inode, mask);
++	if (rv == 0)
++		return 0;
++	if (task_pid(current) == proc_pid(inode))
++		rv = 0;
++	return rv;
++}
++
++const struct inode_operations proc_fd_inode_operations = {
++	.lookup		= proc_lookupfd,
++	.permission	= proc_fd_permission,
++	.setattr	= proc_setattr,
++};
++
++static struct dentry *
++proc_fdinfo_instantiate(struct inode *dir, struct dentry *dentry,
++			struct task_struct *task, const void *ptr)
++{
++	struct dentry *error = ERR_PTR(-ENOENT);
++	unsigned fd = *(unsigned *)ptr;
++	struct proc_inode *ei;
++	struct inode *inode;
++
++	inode = proc_pid_make_inode(dir->i_sb, task);
++	if (!inode)
++		goto out;
++
++	ei = PROC_I(inode);
++	ei->fd = fd;
++
++	inode->i_mode = S_IFREG | S_IRUSR;
++	inode->i_fop = &proc_fdinfo_file_operations;
++
++	d_set_d_op(dentry, &tid_fd_dentry_operations);
++	d_add(dentry, inode);
++
++	/* Close the race of the process dying before we return the dentry */
++	if (tid_fd_revalidate(dentry, NULL))
++		error = NULL;
++
++ out:
++	return error;
++}
++
++static struct dentry *
++proc_lookupfdinfo(struct inode *dir, struct dentry *dentry, struct nameidata *nd)
++{
++	return proc_lookupfd_common(dir, dentry, proc_fdinfo_instantiate);
++}
++
++static int proc_readfdinfo(struct file *filp, void *dirent, filldir_t filldir)
++{
++	return proc_readfd_common(filp, dirent, filldir,
++				  proc_fdinfo_instantiate);
++}
++
++const struct inode_operations proc_fdinfo_inode_operations = {
++	.lookup		= proc_lookupfdinfo,
++	.setattr	= proc_setattr,
++};
++
++const struct file_operations proc_fdinfo_operations = {
++	.read		= generic_read_dir,
++	.readdir	= proc_readfdinfo,
++	.llseek		= default_llseek,
++};
 Index: linux-2.6.git/fs/proc/fd.h
 ===================================================================
---- linux-2.6.git.orig/fs/proc/fd.h
+--- /dev/null
 +++ linux-2.6.git/fs/proc/fd.h
-@@ -1,6 +1,7 @@
- #ifndef __PROCFS_FD_H__
- #define __PROCFS_FD_H__
- 
-+#include <linux/types.h>
- #include <linux/fs.h>
- 
- extern const struct file_operations proc_fd_operations;
-Index: linux-2.6.git/include/linux/proc_fs.h
+@@ -0,0 +1,14 @@
++#ifndef __PROCFS_FD_H__
++#define __PROCFS_FD_H__
++
++#include <linux/fs.h>
++
++extern const struct file_operations proc_fd_operations;
++extern const struct inode_operations proc_fd_inode_operations;
++
++extern const struct file_operations proc_fdinfo_operations;
++extern const struct inode_operations proc_fdinfo_inode_operations;
++
++extern int proc_fd_permission(struct inode *inode, int mask);
++
++#endif /* __PROCFS_FD_H__ */
+Index: linux-2.6.git/fs/proc/internal.h
 ===================================================================
---- linux-2.6.git.orig/include/linux/proc_fs.h
-+++ linux-2.6.git/include/linux/proc_fs.h
-@@ -100,6 +100,25 @@ struct vmcore {
- 	loff_t offset;
- };
+--- linux-2.6.git.orig/fs/proc/internal.h
++++ linux-2.6.git/fs/proc/internal.h
+@@ -8,7 +8,7 @@
+  * as published by the Free Software Foundation; either version
+  * 2 of the License, or (at your option) any later version.
+  */
+-
++#include <linux/sched.h>
+ #include <linux/proc_fs.h>
+ struct  ctl_table_header;
  
-+struct seq_operations;
-+struct proc_fdinfo_helper {
-+	struct list_head		list;
-+	const char			*name;
-+	const struct seq_operations	*ops;
-+	int				(*probe)(struct file *file);
-+	int				(*init)(void *private);
-+	void				(*fini)(void *private);
-+};
-+
-+struct proc_fdinfo_extra {
-+	struct proc_fdinfo_helper	*helper;
-+	struct inode			*inode;
-+	struct file			*fd_file;
-+	unsigned int			f_flags;
-+	void				*private;
-+	int				hdr_shown;
-+};
-+
- #ifdef CONFIG_PROC_FS
+@@ -67,6 +67,7 @@ extern const struct file_operations proc
+ extern const struct file_operations proc_pagemap_operations;
+ extern const struct file_operations proc_net_operations;
+ extern const struct inode_operations proc_net_inode_operations;
++extern const struct inode_operations proc_pid_link_inode_operations;
  
- extern void proc_root_init(void);
-@@ -175,6 +194,9 @@ extern struct proc_dir_entry *proc_net_m
- 
- extern struct file *proc_ns_fget(int fd);
- 
-+extern int proc_register_fdinfo_helper(struct proc_fdinfo_helper *helper);
-+extern void proc_unregister_fdinfo_helper(struct proc_fdinfo_helper *helper);
-+
- #else
- 
- #define proc_net_fops_create(net, name, mode, fops)  ({ (void)(mode), NULL; })
-@@ -229,6 +251,15 @@ static inline struct file *proc_ns_fget(
- 	return ERR_PTR(-EINVAL);
+ struct proc_maps_private {
+ 	struct pid *pid;
+@@ -93,6 +94,52 @@ static inline int proc_fd(struct inode *
+ 	return PROC_I(inode)->fd;
  }
  
-+static inline int proc_register_fdinfo_helper(struct proc_fdinfo_helper *helper)
++static inline int task_dumpable(struct task_struct *task)
 +{
-+	return -EINVAL;
++	int dumpable = 0;
++	struct mm_struct *mm;
++
++	task_lock(task);
++	mm = task->mm;
++	if (mm)
++		dumpable = get_dumpable(mm);
++	task_unlock(task);
++	if(dumpable == 1)
++		return 1;
++	return 0;
 +}
 +
-+static inline void proc_unregister_fdinfo_helper(struct proc_fdinfo_helper *helper)
++static inline int pid_delete_dentry(const struct dentry * dentry)
 +{
++	/* Is the task we represent dead?
++	 * If so, then don't put the dentry on the lru list,
++	 * kill it immediately.
++	 */
++	return !proc_pid(dentry->d_inode)->tasks[PIDTYPE_PID].first;
 +}
 +
- #endif /* CONFIG_PROC_FS */
- 
- #if !defined(CONFIG_PROC_KCORE)
++static inline unsigned name_to_int(struct dentry *dentry)
++{
++	const char *name = dentry->d_name.name;
++	int len = dentry->d_name.len;
++	unsigned n = 0;
++
++	if (len > 1 && *name == '0')
++		goto out;
++	while (len-- > 0) {
++		unsigned c = *name++ - '0';
++		if (c > 9)
++			goto out;
++		if (n >= (~0U-9)/10)
++			goto out;
++		n *= 10;
++		n += c;
++	}
++	return n;
++out:
++	return ~0U;
++}
++
+ struct dentry *proc_lookup_de(struct proc_dir_entry *de, struct inode *ino,
+ 		struct dentry *dentry);
+ int proc_readdir_de(struct proc_dir_entry *de, struct file *filp, void *dirent,
 
