@@ -1,39 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757155Ab2EQTyX (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 May 2012 15:54:23 -0400
-Received: from lxorguk.ukuu.org.uk ([81.2.110.251]:49221 "EHLO
-	lxorguk.ukuu.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752238Ab2EQTyV (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 May 2012 15:54:21 -0400
-Date: Thu, 17 May 2012 20:56:49 +0100
-From: Alan Cox <alan@lxorguk.ukuu.org.uk>
-To: "H. Peter Anvin" <hpa@zytor.com>
-Cc: mingo@kernel.org, alan@linux.intel.com, linux-kernel@vger.kernel.org,
-        tglx@linutronix.de, arne@fitzenreiter.de,
-        linux-tip-commits@vger.kernel.org
-Subject: Re: [tip:x86/urgent] x86: Fix boot on Twinhead H12Y
-Message-ID: <20120517205649.7b2061a7@pyramind.ukuu.org.uk>
-In-Reply-To: <4FB54383.5020703@zytor.com>
-References: <20120515174347.5109.94551.stgit@bluebook>
-	<tip-80b3e557371205566a71e569fbfcce5b11f92dbe@git.kernel.org>
-	<4FB54383.5020703@zytor.com>
-X-Mailer: Claws Mail 3.8.0 (GTK+ 2.24.8; x86_64-redhat-linux-gnu)
-Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S932485Ab2EQTyp (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 May 2012 15:54:45 -0400
+Received: from zene.cmpxchg.org ([85.214.230.12]:33970 "EHLO zene.cmpxchg.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932400Ab2EQTyn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 17 May 2012 15:54:43 -0400
+Date: Thu, 17 May 2012 21:54:25 +0200
+From: Johannes Weiner <hannes@cmpxchg.org>
+To: Michal Hocko <mhocko@suse.cz>
+Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        Andrew Morton <akpm@linux-foundation.org>, Mel Gorman <mel@csn.ul.ie>,
+        Minchan Kim <minchan@kernel.org>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Rik van Riel <riel@redhat.com>
+Subject: Re: [PATCH] mm: consider all swapped back pages in used-once logic
+Message-ID: <20120517195342.GB1800@cmpxchg.org>
+References: <1337246033-13719-1-git-send-email-mhocko@suse.cz>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1337246033-13719-1-git-send-email-mhocko@suse.cz>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> +DECLARE_PCI_FIXUP_HEADER(PCI_VENDOR_ID_INTEL, 0x27B9, twinhead_reserve_killing_zone);
+Hi Michal,
+
+On Thu, May 17, 2012 at 11:13:53AM +0200, Michal Hocko wrote:
+> [64574746 vmscan: detect mapped file pages used only once] made mapped pages
+> have another round in inactive list because they might be just short
+> lived and so we could consider them again next time. This heuristic
+> helps to reduce pressure on the active list with a streaming IO
+> worklods.
+> This patch fixes a regression introduced by this commit for heavy shmem
+> based workloads because unlike Anon pages, which are excluded from this
+> heuristic because they are usually long lived, shmem pages are handled
+> as a regular page cache.
+> This doesn't work quite well, unfortunately, if the workload is mostly
+> backed by shmem (in memory database sitting on 80% of memory) with a
+> streaming IO in the background (backup - up to 20% of memory). Anon
+> inactive list is full of (dirty) shmem pages when watermarks are
+> hit. Shmem pages are kept in the inactive list (they are referenced)
+> in the first round and it is hard to reclaim anything else so we reach
+> lower scanning priorities very quickly which leads to an excessive swap
+> out.
 > 
-> It seems to me that a DMI match might be more appropriate, since it
-> pretty much sounds like the BIOS fails to reserve a region it is using?
+> Let's fix this by excluding all swap backed pages (they tend to be long
+> lived wrt. the regular page cache anyway) from used-once heuristic and
+> rather activate them if they are referenced.
 
-The PCI idents are unique to the system as well ?
+Yes, the algorithm only makes sense for file cache, which is easy to
+reclaim.  Thanks for the fix!
 
+> CC: Johannes Weiner <hannes@cmpxchg.org>
+> CC: Andrew Morton <akpm@linux-foundation.org>
+> CC: Mel Gorman <mel@csn.ul.ie>
+> CC: Minchan Kim <minchan@kernel.org>
+> CC: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+> CC: Rik van Riel <riel@redhat.com>
+> CC: stable [2.6.34+]
+> Signed-off-by: Michal Hocko <mhocko@suse.cz>
 
-
+Acked-by: Johannes Weiner <hannes@cmpxchg.org>
