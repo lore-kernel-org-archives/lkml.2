@@ -1,55 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S967575Ab2EQSmN (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 May 2012 14:42:13 -0400
-Received: from mail-gg0-f174.google.com ([209.85.161.174]:47190 "EHLO
-	mail-gg0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S967533Ab2EQSmK convert rfc822-to-8bit (ORCPT
+	id S967588Ab2EQSmd (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 May 2012 14:42:33 -0400
+Received: from mail-yw0-f46.google.com ([209.85.213.46]:65231 "EHLO
+	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S967533Ab2EQSmb convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 May 2012 14:42:10 -0400
+	Thu, 17 May 2012 14:42:31 -0400
 MIME-Version: 1.0
-In-Reply-To: <CAOZdJXW2jmFG8hkBRMAsO-CJ3ruMd28LqS0b-BGZTU7FnpRi3Q@mail.gmail.com>
-References: <1337157034-22773-1-git-send-email-geert@linux-m68k.org>
-	<CAMuHMdUtL4_mv-e-EQAZmNcb9dAT=PXB59i7Vuj2vf8NnaBFzQ@mail.gmail.com>
-	<1337212281.30558.17.camel@pasglop>
-	<4FB535D3.7000106@freescale.com>
-	<CAOZdJXW2jmFG8hkBRMAsO-CJ3ruMd28LqS0b-BGZTU7FnpRi3Q@mail.gmail.com>
-Date: Thu, 17 May 2012 20:42:08 +0200
-X-Google-Sender-Auth: NMEzntaTml5QkSvlZJle51lqHyk
-Message-ID: <CAMuHMdVszy2sk6f045krqr=PPQFnd-GrtJYJMQCCPzkq-65psg@mail.gmail.com>
-Subject: Re: Re: Build regressions/improvements in v3.4-rc7
-From: Geert Uytterhoeven <geert@linux-m68k.org>
-To: Tabi Timur-B04825 <B04825@freescale.com>
-Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Linuxppc-dev <linuxppc-dev@ozlabs.org>,
-        "the arch/x86 maintainers" <x86@kernel.org>,
-        Parisc List <linux-parisc@vger.kernel.org>,
-        Wood Scott-B07421 <B07421@freescale.com>,
-        Kumar Gala <galak@kernel.crashing.org>
-Content-Type: text/plain; charset=UTF-8
+In-Reply-To: <20120517083740.GA25627@lizard>
+References: <20120517083740.GA25627@lizard>
+Date: Thu, 17 May 2012 11:42:29 -0700
+X-Google-Sender-Auth: KvxfmlNLITisRI_k5AmRKzKEyEk
+Message-ID: <CAMbhsRTGOnjB2M7L4n38=on1dB5unF=WNCScsX9n3fWZjdGEfA@mail.gmail.com>
+Subject: Re: [PATCH v2 0/6] Merge ram_console into pstore
+From: Colin Cross <ccross@android.com>
+To: Anton Vorontsov <anton.vorontsov@linaro.org>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Kees Cook <keescook@chromium.org>, Tony Luck <tony.luck@intel.com>,
+        Arnd Bergmann <arnd@arndb.de>, John Stultz <john.stultz@linaro.org>,
+        Shuah Khan <shuahkhan@gmail.com>, arve@android.com,
+        Rebecca Schultz Zavin <rebecca@android.com>,
+        Jesper Juhl <jj@chaosbits.net>, Randy Dunlap <rdunlap@xenotime.net>,
+        Stephen Boyd <sboyd@codeaurora.org>, Thomas Meyer <thomas@m3y3r.de>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Marco Stornelli <marco.stornelli@gmail.com>,
+        WANG Cong <xiyou.wangcong@gmail.com>, linux-kernel@vger.kernel.org,
+        devel@driverdev.osuosl.org, linaro-kernel@lists.linaro.org,
+        patches@linaro.org, kernel-team@android.com
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 8BIT
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, May 17, 2012 at 7:52 PM, Tabi Timur-B04825 <B04825@freescale.com> wrote:
-> On Thu, May 17, 2012 at 12:30 PM, Timur Tabi <timur@freescale.com> wrote:
+On Thu, May 17, 2012 at 1:37 AM, Anton Vorontsov
+<anton.vorontsov@linaro.org> wrote:
+> Hi all,
 >
->> Anyway, I think I see what the problem is, but it does appear when I use
->> the normal defconfigs.  What .config was being used?
+> In v2:
 >
-> I meant to say that it does NOT appear.
+> - Updated documentation per Colin Cross' comments;
+> - Corrected return value in ramoops_pstore_write() (noticed by Kees Cook);
+> - Fixed large writes handling in pstore_console_write(), i.e. when
+> �log_buf write is larger than pstore bufsize. Also Noticed by Kees Cook.
+>
+> These patches depend on the the following series:
+> http://thread.gmane.org/gmane.linux.kernel/1298642
+> "[PATCH v3 0/3] Merge ramoops and persistent_ram, generic pstore RAM backend"
+>
+> And a rationale for the series:
+>
+> Currently pstore doesn't support logging kernel messages in run-time,
+> it only dumps dmesg when kernel oopses/panics. This makes pstore
+> useless for debugging hangs caused by HW issues or improper use of HW
+> (e.g. weird device inserted -> driver tried to write reserved bits ->
+> SoC hanged. In that case we don't get any messages in the pstore.
+>
+> This series add a new message type for pstore, i.e. PSTORE_TYPE_CONSOLE,
+> plus make pstore/ram.c handle the new messages.
+>
+> The old ram_console driver is removed. This might probably cause
+> some pain for out-of-tree code, as it would need to be adjusted...
+> but "no pain, no gain"? :-) Though, if there's some serious resistance,
+> we can probably postpone the last two patches.
+>
+> Thanks!
+>
+> --
+> Anton Vorontsov
+> Email: cbouatmailru@gmail.com
 
-powerpc randconfig.
+Other than my comment on logging console into a single record,
+Acked-by: Colin Cross <ccross@android.com>
 
-Gr{oetje,eeting}s,
-
-                        Geert
-
---
-Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
-
-In personal conversations with technical people, I call myself a hacker. But
-when I'm talking to journalists I just say "programmer" or something like that.
-                                -- Linus Torvalds
+There is one feature that ram_console had but lost when I added
+persistent_ram, which would be nice to get back:  registering the
+platform driver before module_init, to allow it to log oopses that
+happen during device probing.  This requires changing module_init to
+postcore_initcall, and switching from platform_driver_probe to
+platform_driver_register because the platform device is not registered
+when the platform driver is registered.  Depending on what functions
+are __init, it may cause a cascading change from __init to __devinit
+as well.
