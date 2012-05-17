@@ -1,57 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761449Ab2EQJX1 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 May 2012 05:23:27 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:57150 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759471Ab2EQJXZ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 May 2012 05:23:25 -0400
-Date: Thu, 17 May 2012 02:24:12 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Michal Hocko <mhocko@suse.cz>
-Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        Johannes Weiner <hannes@cmpxchg.org>, Mel Gorman <mel@csn.ul.ie>,
-        Minchan Kim <minchan@kernel.org>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Rik van Riel <riel@redhat.com>
-Subject: Re: [PATCH] mm: consider all swapped back pages in used-once logic
-Message-Id: <20120517022412.9175f604.akpm@linux-foundation.org>
-In-Reply-To: <1337246033-13719-1-git-send-email-mhocko@suse.cz>
-References: <1337246033-13719-1-git-send-email-mhocko@suse.cz>
-X-Mailer: Sylpheed 2.7.1 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	id S1761478Ab2EQJYi (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 May 2012 05:24:38 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:5153 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1761400Ab2EQJYg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 17 May 2012 05:24:36 -0400
+Message-ID: <4FB4C3CE.9010907@redhat.com>
+Date: Thu, 17 May 2012 12:24:30 +0300
+From: Avi Kivity <avi@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
+MIME-Version: 1.0
+To: Gleb Natapov <gleb@redhat.com>
+CC: "Michael S. Tsirkin" <mst@redhat.com>,
+        Marcelo Tosatti <mtosatti@redhat.com>, x86@kernel.org,
+        kvm@vger.kernel.org, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCHv4 3/5] kvm: host side for eoi optimization
+References: <20120516172058.GA22861@amt.cnet> <20120516175856.GD10769@redhat.com> <20120516181500.GA23791@amt.cnet> <20120516182520.GH28798@redhat.com> <20120516182948.GF10769@redhat.com> <20120516183822.GI28798@redhat.com> <20120516190757.GA12113@redhat.com> <20120517072841.GW32036@redhat.com> <20120517074946.GA27995@redhat.com> <4FB4AF6D.9080305@redhat.com> <20120517080731.GZ32036@redhat.com>
+In-Reply-To: <20120517080731.GZ32036@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 17 May 2012 11:13:53 +0200 Michal Hocko <mhocko@suse.cz> wrote:
+On 05/17/2012 11:07 AM, Gleb Natapov wrote:
+> > 
+> > No, let's refactor this so it makes sense.  The {has|get}_interrupt
+> > split is the cause of the problem, I think.  We need a single function,
+> > with callbacks that are called when an event happens.  The callbacks can
+> > request an irq window exit, inject an interrupt, play with pveoi, or
+> > cause a #vmexit.
+> > 
+> Not sure what do you mean here. I kind of like the code we have now, but
+> this may be because I understand it :)
 
-> [64574746 vmscan: detect mapped file pages used only once] made mapped pages
-> have another round in inactive list because they might be just short
-> lived and so we could consider them again next time. This heuristic
-> helps to reduce pressure on the active list with a streaming IO
-> worklods.
-> This patch fixes a regression introduced by this commit for heavy shmem
+Right now we have
 
-A performance regression, specifically.
+   if (has_interrupt)
+       do something
+   if (get_interrupt)
+       do_something_else
 
-Are you able to quantify it?
+this duplicates some of the logic and causes non-atomicty (which isn't a
+problem per se, but requires us to think of what happens if conditions
+change between the two steps).
 
-> based workloads because unlike Anon pages, which are excluded from this
-> heuristic because they are usually long lived, shmem pages are handled
-> as a regular page cache.
-> This doesn't work quite well, unfortunately, if the workload is mostly
-> backed by shmem (in memory database sitting on 80% of memory) with a
-> streaming IO in the background (backup - up to 20% of memory). Anon
-> inactive list is full of (dirty) shmem pages when watermarks are
-> hit. Shmem pages are kept in the inactive list (they are referenced)
-> in the first round and it is hard to reclaim anything else so we reach
-> lower scanning priorities very quickly which leads to an excessive swap
-> out.
-> 
-> Let's fix this by excluding all swap backed pages (they tend to be long
-> lived wrt. the regular page cache anyway) from used-once heuristic and
-> rather activate them if they are referenced.
+What I'm thinking of is
+
+   void process_interrupt(bool (*handle)());
+
+Where the return value tells us whether the interrupt was accepted by
+the handler.  The callback could decide to enable the irq window, to
+queue the interrupt, or to #vmexit (note that the latter can return
+either true or false, depending on whether vmx is configured to ack the
+interrupt or not; svm would return true here if interrupts are intercepted).
+
+-- 
+error compiling committee.c: too many arguments to function
+
