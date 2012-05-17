@@ -1,48 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933294Ab2EQPGJ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 May 2012 11:06:09 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:41105 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933033Ab2EQPGG (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 May 2012 11:06:06 -0400
-Date: Thu, 17 May 2012 08:06:01 -0700
-From: Greg KH <gregkh@linuxfoundation.org>
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: Nicolas Ferre <nicolas.ferre@atmel.com>, sfr@canb.auug.org.au,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        plagnioj@jcrosoft.com, maxime.ripard@free-electrons.com,
-        olof@lixom.net, linux-next@vger.kernel.org
-Subject: Re: [PATCH] ARM: at91: Add ADC driver to at91sam9260/at91sam9g20
- dtsi files
-Message-ID: <20120517150601.GA28104@kroah.com>
-References: <4FB3B1F3.6080102@atmel.com>
- <1337182626-13033-1-git-send-email-nicolas.ferre@atmel.com>
- <201205161850.54765.arnd@arndb.de>
+	id S933361Ab2EQPGt (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 May 2012 11:06:49 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:34434 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S933033Ab2EQPGs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 17 May 2012 11:06:48 -0400
+Date: Thu, 17 May 2012 17:06:41 +0200 (CEST)
+From: Jiri Kosina <jkosina@suse.cz>
+To: Tejun Heo <tj@kernel.org>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Stephen Hemminger <shemminger@vyatta.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Jens Axboe <axboe@kernel.dk>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] floppy: convert to delayed work and single-thread wq
+In-Reply-To: <20120517145519.GF21275@google.com>
+Message-ID: <alpine.LNX.2.00.1205171705520.8796@pobox.suse.cz>
+References: <alpine.LNX.2.00.1205160932280.8796@pobox.suse.cz> <20120516170124.GA21275@google.com> <alpine.LNX.2.00.1205162133180.8796@pobox.suse.cz> <CA+55aFw-us7LnG-iq5EQmSDJ7xH9hiOMmCryAGobReko4LkVWg@mail.gmail.com> <20120516195332.GC21275@google.com>
+ <alpine.LNX.2.00.1205162156120.8796@pobox.suse.cz> <20120516200147.GD21275@google.com> <alpine.LNX.2.00.1205162216390.8796@pobox.suse.cz> <20120516202924.GE21275@google.com> <CA+55aFyX3OgdcWuYQO+YuS3fF_Wt1p8w-G33C5MCkiR-3ncfVA@mail.gmail.com>
+ <20120517145519.GF21275@google.com>
+User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <201205161850.54765.arnd@arndb.de>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, May 16, 2012 at 06:50:54PM +0000, Arnd Bergmann wrote:
-> On Wednesday 16 May 2012, Nicolas Ferre wrote:
-> > Now that the bulk of at91sam9g20-related nodes are located in at91sam9260.dtsi,
-> > we have to re-create the path to this ADC node for SoC specific parts.
-> > 
-> > Signed-off-by: Nicolas Ferre <nicolas.ferre@atmel.com>
+On Thu, 17 May 2012, Tejun Heo wrote:
+
+> > Umm. If there are abritrarily long things and these are serialized,
+> > then that workqueue is not good for putting floppy work on it either,
+> > is it? I don't think you can have it both ways.
 > 
-> Should we apply this patch in arm-soc so that Greg can drop the hunk that
-> no longer applies?
+> They're not being serialized.  
 
-It's not a "no longer applies", it's a "this does not merge".  The patch
-is in my tree, unless you want me to revert it, it's going to stay there
-until it goes to Linus.
+Then it's useless for this very purpose -- the sole purpose of the 
+floppy_wq having as a single-threaded wq is to run all the work 
+serialized.
 
-thanks,
+So the patch I have sent out this morning is the way to go.
 
-greg k-h
+Thanks,
+
+-- 
+Jiri Kosina
+SUSE Labs
