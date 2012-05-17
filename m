@@ -1,58 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761977Ab2EQOlR (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 May 2012 10:41:17 -0400
-Received: from mail.tpi.com ([70.99.223.143]:3739 "EHLO mail.tpi.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1761074Ab2EQOlP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 May 2012 10:41:15 -0400
-Message-ID: <4FB50E1E.8020202@canonical.com>
-Date: Thu, 17 May 2012 08:41:34 -0600
-From: Tim Gardner <tim.gardner@canonical.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
+	id S1761979Ab2EQOqa (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 May 2012 10:46:30 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:51860 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759873Ab2EQOq3 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 17 May 2012 10:46:29 -0400
+Date: Thu, 17 May 2012 07:46:22 -0700
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: Minchan Kim <minchan@kernel.org>
+Cc: Nitin Gupta <ngupta@vflare.org>,
+        Seth Jennings <sjenning@linux.vnet.ibm.com>,
+        Dan Magenheimer <dan.magenheimer@oracle.com>,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        Tejun Heo <tj@kernel.org>, David Howells <dhowells@redhat.com>,
+        x86@kernel.org, a.p.zijlstra@chello.nl,
+        Nick Piggin <npiggin@gmail.com>
+Subject: Re: [PATCH v2 3/3] x86: Support local_flush_tlb_kernel_range
+Message-ID: <20120517144622.GA27597@kroah.com>
+References: <1337133919-4182-1-git-send-email-minchan@kernel.org>
+ <1337133919-4182-3-git-send-email-minchan@kernel.org>
+ <4FB4B29C.4010908@kernel.org>
 MIME-Version: 1.0
-To: Ben Skeggs <skeggsb@gmail.com>
-CC: bskeggs@redhat.com, Seth Forshee <seth.forshee@canonical.com>,
-        linux-kernel@vger.kernel.org, dri-devel@lists.freedesktop.org
-Subject: Re: 3.4-rc7 backlight regression on Dell XPS M1710
-References: <4FB3EF1C.5040804@canonical.com> <1337214652.22052.1.camel@nisroch> <CACAvsv551Q2Wb=bj6piizN88-+k-wCJS0FgT5j5KiK5N3Se=Gw@mail.gmail.com>
-In-Reply-To: <CACAvsv551Q2Wb=bj6piizN88-+k-wCJS0FgT5j5KiK5N3Se=Gw@mail.gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4FB4B29C.4010908@kernel.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/17/2012 12:20 AM, Ben Skeggs wrote:
-> On Thu, May 17, 2012 at 10:30 AM, Ben Skeggs<bskeggs@redhat.com>  wrote:
->> Am Mittwoch, den 16.05.2012, 12:17 -0600 schrieb Tim Gardner:
->>> commit b99da31ed8521eb78d5d6930f3128f8ecdb75fae causes the backlight in
->>> my Dell XPS M1710 to stop working. Symptoms are dim display and won't
->>> respond to key brightness events. I bisected and confirmed that
->>> reverting this single patch on top of 3.4-rc7 fixes the problem.
->> That commit is correct, it may have uncovered a bug elsewhere though.
-> It's been pointed out I should probably be a bit more verbose about
-> what I'm after here... Apologies :)
->
-> The commit that causes the original regression is
-> a0b25635515ef5049f93b032a1e37f18b16e0f6f.  Did your backlight work
-> correctly before this?
->
-> Thanks,
-> Ben.
->
+On Thu, May 17, 2012 at 05:11:08PM +0900, Minchan Kim wrote:
+> Isn't there anyone for taking a time to review this patch? :)
+> 
+> On 05/16/2012 11:05 AM, Minchan Kim wrote:
 
-I just checked that brightness controls worked with the original 2.6.32 
-kernel. The original regression commit 
-a0b25635515ef5049f93b032a1e37f18b16e0f6f went into 3.3, but the 
-backlight for this laptop has continued to function until commit 
-b99da31ed8521eb78d5d6930f3128f8ecdb75fae (3.4-rc6).
+<snip>
 
-rtg@m1710:~$ uname -r
-2.6.32-41-generic
-rtg@m1710:~$ lsmod|egrep ^n
-nouveau               515227  2
+You want review within 24 hours for a staging tree patch for a feature
+that no one uses?
 
-rtg
--- 
-Tim Gardner tim.gardner@canonical.com
+That's very bold of you.  Please be realistic.
+
+greg k-h
