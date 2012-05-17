@@ -1,59 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932846Ab2EQJbO (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 May 2012 05:31:14 -0400
-Received: from casper.infradead.org ([85.118.1.10]:34119 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760865Ab2EQJbN convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 May 2012 05:31:13 -0400
-Message-ID: <1337247064.4281.18.camel@twins>
-Subject: Re: [PATCH] printk: do not flush the logbuf into console driver in
- interrupt
-From: Peter Zijlstra <peterz@infradead.org>
-To: "Liu, Chuansheng" <chuansheng.liu@intel.com>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "tglx@linutronix.de" <tglx@linutronix.de>,
-        Yanmin
-	 "Zhang <yanmin_zhang@linux.intel.com> (yanmin_zhang@linux.intel.com)" 
-	<yanmin_zhang@linux.intel.com>
-Date: Thu, 17 May 2012 11:31:04 +0200
-In-Reply-To: <27240C0AC20F114CBF8149A2696CBE4A0B1F0B@SHSMSX101.ccr.corp.intel.com>
-References: <27240C0AC20F114CBF8149A2696CBE4A0B1F0B@SHSMSX101.ccr.corp.intel.com>
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
-X-Mailer: Evolution 3.2.2- 
-Mime-Version: 1.0
+	id S1759004Ab2EQJeV (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 May 2012 05:34:21 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:46640 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757325Ab2EQJeU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 17 May 2012 05:34:20 -0400
+Date: Thu, 17 May 2012 12:34:17 +0300
+From: Gleb Natapov <gleb@redhat.com>
+To: Avi Kivity <avi@redhat.com>
+Cc: "Michael S. Tsirkin" <mst@redhat.com>,
+        Marcelo Tosatti <mtosatti@redhat.com>, x86@kernel.org,
+        kvm@vger.kernel.org, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCHv4 3/5] kvm: host side for eoi optimization
+Message-ID: <20120517093417.GB10209@redhat.com>
+References: <20120516181500.GA23791@amt.cnet>
+ <20120516182520.GH28798@redhat.com>
+ <20120516182948.GF10769@redhat.com>
+ <20120516183822.GI28798@redhat.com>
+ <20120516190757.GA12113@redhat.com>
+ <20120517072841.GW32036@redhat.com>
+ <20120517074946.GA27995@redhat.com>
+ <4FB4AF6D.9080305@redhat.com>
+ <20120517080731.GZ32036@redhat.com>
+ <4FB4C3CE.9010907@redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4FB4C3CE.9010907@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2012-05-17 at 07:46 +0000, Liu, Chuansheng wrote:
-> From: liu chuansheng <chuansheng.liu@intel.com>
-> Subject: [PATCH] printk: do not flush the logbuf into console driver in interrupt
+On Thu, May 17, 2012 at 12:24:30PM +0300, Avi Kivity wrote:
+> On 05/17/2012 11:07 AM, Gleb Natapov wrote:
+> > > 
+> > > No, let's refactor this so it makes sense.  The {has|get}_interrupt
+> > > split is the cause of the problem, I think.  We need a single function,
+> > > with callbacks that are called when an event happens.  The callbacks can
+> > > request an irq window exit, inject an interrupt, play with pveoi, or
+> > > cause a #vmexit.
+> > > 
+> > Not sure what do you mean here. I kind of like the code we have now, but
+> > this may be because I understand it :)
 > 
-> When irq handle tried to call printk, and it also has the chance to obtain the console sem,
-> then flush the log buf to console driver,but the console driver often give several ms latency
-> or more when much data in log buf existed, it will delay the irq handle.
+> Right now we have
 > 
-> The solution is when calling the printk in interrupt, just write the chars into log buf,
-> and expect other threads to flush it into console driver.
+>    if (has_interrupt)
+>        do something
+>    if (get_interrupt)
+>        do_something_else
 > 
-> Signed-off-by: liu chuansheng <chuansheng.liu@intel.com>
-> 
-> diff --git a/kernel/printk.c b/kernel/printk.c index b663c2c..99959e1 100644
-> --- a/kernel/printk.c
-> +++ b/kernel/printk.c
-> @@ -804,7 +804,8 @@ static int console_trylock_for_printk(unsigned int cpu)
->                  * the buffer. We need to hold the console semaphore
->                  * in order to do this test safely.
->                  */
-> -               if (!can_use_console(cpu)) {
-> +               if (!can_use_console(cpu) ||
-> +                       (in_interrupt() && (!oops_in_progress))) {
->                         console_locked = 0;
->                         wake = 1;
->                         retval = 0;
+Not exactly. Now we have:
+  if (has_interrupt && can inject)
+    inject(get_interrupt())
+  if (still has_interrupt)
+    notify me when I can inject it.
 
-Uhm no.. I would very much like to get my OOPSes from interrupt context
-to make it out to the console.
+There is not if(get_interrupt).
+
+> this duplicates some of the logic and causes non-atomicty (which isn't a
+> problem per se, but requires us to think of what happens if conditions
+> change between the two steps).
+> 
+> What I'm thinking of is
+> 
+>    void process_interrupt(bool (*handle)());
+Why we even want to pass different handle() to the function?
+
+> 
+> Where the return value tells us whether the interrupt was accepted by
+> the handler.  The callback could decide to enable the irq window, to
+> queue the interrupt, or to #vmexit (note that the latter can return
+Queuing interrupt and requesting irq window ate not mutually exclusive.
+
+> either true or false, depending on whether vmx is configured to ack the
+> interrupt or not; svm would return true here if interrupts are intercepted).
+> 
+> -- 
+> error compiling committee.c: too many arguments to function
+
+--
+			Gleb.
