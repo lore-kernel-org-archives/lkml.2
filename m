@@ -1,94 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752957Ab2EQEy5 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 May 2012 00:54:57 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:33632 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752477Ab2EQEy4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 May 2012 00:54:56 -0400
-Date: Thu, 17 May 2012 14:54:42 +1000
-From: NeilBrown <neilb@suse.de>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Jonathan Brassow <jbrassow@redhat.com>,
-        linux RAID <linux-raid@vger.kernel.org>,
-        lkml <linux-kernel@vger.kernel.org>
-Subject: [PULL REQUEST] two late patches for md in 3.4
-Message-ID: <20120517145442.5eeb0d1c@notabene.brown>
-X-Mailer: Claws Mail 3.7.10 (GTK+ 2.24.7; x86_64-suse-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; micalg=PGP-SHA1;
- boundary="Sig_/6umdsNtfJ9OOI/Buc2oe3B1"; protocol="application/pgp-signature"
+	id S1753150Ab2EQE5k (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 May 2012 00:57:40 -0400
+Received: from mail-yw0-f74.google.com ([209.85.213.74]:44404 "EHLO
+	mail-yw0-f74.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752481Ab2EQE5i (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 17 May 2012 00:57:38 -0400
+From: Colin Cross <ccross@android.com>
+To: linux-kernel@vger.kernel.org
+Cc: Colin Cross <ccross@android.com>, Ingo Molnar <mingo@kernel.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Thomas Gleixner <tglx@linutronix.de>, Hillf Danton <dhillf@gmail.com>
+Subject: [PATCH] sched/rt: fix SCHED_RR across cgroups
+Date: Wed, 16 May 2012 21:34:23 -0700
+Message-Id: <1337229266-15798-1-git-send-email-ccross@android.com>
+X-Mailer: git-send-email 1.7.7.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Sig_/6umdsNtfJ9OOI/Buc2oe3B1
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: quoted-printable
+task_tick_rt has an optimization to only reschedule SCHED_RR tasks
+if they were the only element on their rq.  However, with cgroups
+a SCHED_RR task could be the only element on its per-cgroup rq but
+still be competing with other SCHED_RR tasks in its parent's
+cgroup.  In this case, the SCHED_RR task in the child cgroup would
+never yield at the end of its timeslice.  If the child cgroup
+rt_runtime_us was the same as the parent cgroup rt_runtime_us,
+the task in the parent cgroup would starve completely.
 
+Modify task_tick_rt to check that the task is the only task on its
+rq, and that the each of the scheduling entities of its ancestors
+is also the only entity on its rq.
 
-Hi Linus,
- I hope it isn't too late for two more md patches.  Both deserve a slot in
-3.4 I feel :-)
+Signed-off-by: Colin Cross <ccross@android.com>
+---
+ kernel/sched/rt.c |   15 ++++++++++-----
+ 1 files changed, 10 insertions(+), 5 deletions(-)
 
-Thanks,
-NeilBrown
+diff --git a/kernel/sched/rt.c b/kernel/sched/rt.c
+index 44af55e..8f32475 100644
+--- a/kernel/sched/rt.c
++++ b/kernel/sched/rt.c
+@@ -1983,6 +1983,8 @@ static void watchdog(struct rq *rq, struct task_struct *p)
+ 
+ static void task_tick_rt(struct rq *rq, struct task_struct *p, int queued)
+ {
++	struct sched_rt_entity *rt_se = &p->rt;
++
+ 	update_curr_rt(rq);
+ 
+ 	watchdog(rq, p);
+@@ -2000,12 +2002,15 @@ static void task_tick_rt(struct rq *rq, struct task_struct *p, int queued)
+ 	p->rt.time_slice = RR_TIMESLICE;
+ 
+ 	/*
+-	 * Requeue to the end of queue if we are not the only element
+-	 * on the queue:
++	 * Requeue to the end of queue if we (and all of our ancestors) are the
++	 * only element on the queue
+ 	 */
+-	if (p->rt.run_list.prev != p->rt.run_list.next) {
+-		requeue_task_rt(rq, p, 0);
+-		set_tsk_need_resched(p);
++	for_each_sched_rt_entity(rt_se) {
++		if (rt_se->run_list.prev != rt_se->run_list.next) {
++			requeue_task_rt(rq, p, 0);
++			set_tsk_need_resched(p);
++			return;
++		}
+ 	}
+ }
+ 
+-- 
+1.7.7.3
 
-
-The following changes since commit b16b1b6cd052acbacc0a15f934bca9b354534d48:
-
-  md/bitmap: fix calculation of 'chunks' - missing shift. (2012-05-04 17:03=
-:18 +1000)
-
-are available in the git repository at:
-
-  git://neil.brown.name/md/ tags/md-3.4-fixes
-
-for you to fetch changes up to 0d9f4f135eb6dea06bdcb7065b1e4ff78274a5e9:
-
-  MD: Add del_timer_sync to mddev_suspend (fix nasty panic) (2012-05-17 10:=
-38:24 +1000)
-
-----------------------------------------------------------------
-md: 2 fixes for 3.4
-
-one fixes a bug in the new raid10 resize code so is relevant
-to 3.4 only
-Other fixes a bug in the use of md by dm-raid, so is relevant
-to any kernel with dm-raid support
-
-----------------------------------------------------------------
-Jonathan Brassow (1):
-      MD: Add del_timer_sync to mddev_suspend (fix nasty panic)
-
-NeilBrown (1):
-      md/raid10: set dev_sectors properly when resizing devices in array.
-
- drivers/md/md.c     |    2 ++
- drivers/md/raid10.c |   56 +++++++++++++++++++++++++++++------------------=
-----
- 2 files changed, 34=20
-
---Sig_/6umdsNtfJ9OOI/Buc2oe3B1
-Content-Type: application/pgp-signature; name=signature.asc
-Content-Disposition: attachment; filename=signature.asc
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.18 (GNU/Linux)
-
-iQIVAwUBT7SEkjnsnt1WYoG5AQIZRA/+O232+zpdY01Xc/c8n11NDby//epKaK/D
-CtBpZF4lLyuVswmSwQ0fNB00a+0elEhF3Ukm0b+QOY8QksE2OZ7/U1ejQmyCMQFk
-o/9oT50KmcFAnFpEXmepUvSs/KM18HQx45ubFiZ3+pYAsRJmh9xRN4Z2Px3l1Ny3
-GwhYSsvVkV+dV5IPqGqY6Q3/Jnsi2WmmFyFZySVO9NiWae0VERIc4vFEO0cBxwlM
-Np78SVJ2q/oV/YgA3YV/SLG9DUtLXSSffLt4bpHrq+YAVpC9Y1mAuvrdPzK4wIB3
-NjX0vDoUUJ9wX8ZzsCR6Tw+h+jGxOAOAHaLZtt8Y4W/YUEvIWEl0hGLQBAOtqh/n
-oHdy+akErAuT6iCX1z7T9ONo5y4ovIyjEfnxO7n+P6faDx+XKAT2NZFV+mwq+oSQ
-Q5FK5W52ibPdgIltnCfAiROqDeuuG/KJaoc3C/gBVWQnVtoWPn+duAee+Vknll+G
-4HNwHVt4SVRWvIhGLvIjgJPIkwA4zeNbmIkAV0Nb8jcotpkoYQ6zn7jYuVGDopP0
-Rsi6OuZvuh3l30xCGnqzT5dOD+Kux8uWoYiMazGibI53ODX5kwK/hboKGThnJ1fB
-Bca536Qk2mADPAE25xbeuPqOElsLRuQS8O3H7OsinHc2PEWJyolBFvxQnELSVTg7
-mS586hjdn/4=
-=Glrt
------END PGP SIGNATURE-----
-
---Sig_/6umdsNtfJ9OOI/Buc2oe3B1--
