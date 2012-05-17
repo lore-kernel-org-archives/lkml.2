@@ -1,92 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933397Ab2EQC5i (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 May 2012 22:57:38 -0400
-Received: from db3ehsobe005.messaging.microsoft.com ([213.199.154.143]:32106
-	"EHLO db3outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756097Ab2EQC5h convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 May 2012 22:57:37 -0400
-X-SpamScore: -15
-X-BigFish: VPS-15(zz9371I542M1432N98dKzz1202hzz8275bh8275dhz2dh2a8h668h839h944hd25h)
-X-Forefront-Antispam-Report: CIP:137.71.25.55;KIP:(null);UIP:(null);IPV:NLI;H:nwd2mta1.analog.com;RD:nwd2mail10.analog.com;EFVD:NLI
-From: "Zhang, Sonic" <Sonic.Zhang@analog.com>
-To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-CC: "linux-input@vger.kernel.org" <linux-input@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        "uclinux-dist-devel@blackfin.uclinux.org" 
-	<uclinux-dist-devel@blackfin.uclinux.org>,
-        Bob Liu <lliubbo@gmail.com>
-Date: Wed, 16 May 2012 22:58:00 -0400
-Subject: RE: [PATCH] input: rotary: Init wake according to platform
- pm_wakeup flag.
-Thread-Topic: [PATCH] input: rotary: Init wake according to platform
- pm_wakeup flag.
-Thread-Index: Ac0zkh0T6nEvfBSpRFqVz/ipr0KGNQARnJtg
-Message-ID: <DB904C5425BA6F4E8424B3B51A1414D16F64F84E68@NWD2CMBX1.ad.analog.com>
-References: <1337157383-13631-1-git-send-email-sonic.zhang@analog.com>
- <20120516183038.GA14471@core.coreip.homeip.net>
-In-Reply-To: <20120516183038.GA14471@core.coreip.homeip.net>
-Accept-Language: zh-CN, en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: zh-CN, en-US
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	id S1760908Ab2EQC75 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 May 2012 22:59:57 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:33079 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1758713Ab2EQC7z (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 16 May 2012 22:59:55 -0400
+Message-ID: <4FB469A1.3040507@redhat.com>
+Date: Thu, 17 May 2012 10:59:45 +0800
+From: Jason Wang <jasowang@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
 MIME-Version: 1.0
-X-OriginatorOrg: analog.com
+To: Shirley Ma <mashirle@us.ibm.com>
+CC: eric.dumazet@gmail.com, mst@redhat.com, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org, ebiederm@xmission.com,
+        davem@davemloft.net
+Subject: Re: [V2 PATCH 2/9] macvtap: zerocopy: fix truesize underestimation
+References: <20120502033901.11782.13157.stgit@amd-6168-8-1.englab.nay.redhat.com>  <20120502034144.11782.88947.stgit@amd-6168-8-1.englab.nay.redhat.com>  <1337102809.8220.10.camel@oc3660625478.ibm.com>  <4FB3192E.4030803@redhat.com> <1337180585.10741.6.camel@oc3660625478.ibm.com>
+In-Reply-To: <1337180585.10741.6.camel@oc3660625478.ibm.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Dmitry,
-
-
->-----Original Message-----
->From: Dmitry Torokhov [mailto:dmitry.torokhov@gmail.com]
->Sent: Thursday, May 17, 2012 2:31 AM
->To: Zhang, Sonic
->Cc: linux-input@vger.kernel.org; LKML; uclinux-dist-devel@blackfin.uclinux.org
->Subject: Re: [PATCH] input: rotary: Init wake according to platform pm_wakeup
->flag.
+On 05/16/2012 11:03 PM, Shirley Ma wrote:
+> On Wed, 2012-05-16 at 11:04 +0800, Jason Wang wrote:
+>>>> diff --git a/drivers/net/macvtap.c b/drivers/net/macvtap.c
+>>>> index bd4a70d..7cb2684 100644
+>>>> --- a/drivers/net/macvtap.c
+>>>> +++ b/drivers/net/macvtap.c
+>>>> @@ -519,6 +519,7 @@ static int zerocopy_sg_from_iovec(struct
+>> sk_buff
+>>>> *skb, const struct iovec *from,
+>>>>                   struct page *page[MAX_SKB_FRAGS];
+>>>>                   int num_pages;
+>>>>                   unsigned long base;
+>>>> +               unsigned long truesize;
+>>>>
+>>>>                   len = from->iov_len - offset;
+>>>>                   if (!len) {
+>>>> @@ -533,10 +534,11 @@ static int zerocopy_sg_from_iovec(struct
+>> sk_buff
+>>>> *skb, const struct iovec *from,
+>>>>                       (num_pages>   MAX_SKB_FRAGS -
+>>>> skb_shinfo(skb)->nr_frags))
+>>>>                           /* put_page is in skb free */
+>>>>                           return -EFAULT;
+>>>> +               truesize = size * PAGE_SIZE;
+>>> Here should be truesize = size * PAGE_SIZE - offset, right?
+>>>
+>> We get the whole user page, so need to account them all. Also this is
+>> aligned with skb_copy_ubufs().
+> Then this would double count the size of "first" offset left from
+> previous copy, both skb->len and truesize.
 >
->Hi Sonic,
+> Thanks
+> Shirley
 >
->On Wed, May 16, 2012 at 04:36:23PM +0800, sonic.zhang@analog.com wrote:
->> From: Sonic Zhang <sonic.zhang@analog.com>
->>
->> Rotary can't be used as a wakeup source in all Blackfin processors.
->>
->> Signed-off-by: Sonic Zhang <sonic.zhang@analog.com>
->> ---
->>  drivers/input/misc/bfin_rotary.c |    2 +-
->>  1 files changed, 1 insertions(+), 1 deletions(-)
->>
->> diff --git a/drivers/input/misc/bfin_rotary.c b/drivers/input/misc/bfin_rotary.c
->> index 1c4146f..bb1971c 100644
->> --- a/drivers/input/misc/bfin_rotary.c
->> +++ b/drivers/input/misc/bfin_rotary.c
->> @@ -182,7 +182,7 @@ static int __devinit bfin_rotary_probe(struct
->platform_device *pdev)
->>      bfin_write_CNT_CONFIG(bfin_read_CNT_CONFIG() | CNTE);
->>
->>      platform_set_drvdata(pdev, rotary);
->> -    device_init_wakeup(&pdev->dev, 1);
->> +    device_init_wakeup(&pdev->dev, pdata->pm_wakeup);
->
->I do not see pm_wakeup in bfin_rotary_platform_data.
 
-The patch against the bfin_rotary.h under blackfin architecture folder will be sent out soon by Bob Liu.
+Didn't see how this affact skb->len. And for truesize, I think they are 
+different, when the offset were not zero, the data in this vector were 
+divided into two parts. First part is copied into skb directly, and the 
+second were pinned from a whole userspace page by get_user_pages_fast(), 
+so we need count the whole page to the socket limit to prevent evil 
+application.
 
-Regards,
-
-Sonic
-
->
->Thanks.
->
->--
->Dmitry
-
-
+Thanks
