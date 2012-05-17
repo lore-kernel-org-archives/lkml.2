@@ -1,47 +1,118 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S967616Ab2EQSv4 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 May 2012 14:51:56 -0400
-Received: from ch1ehsobe002.messaging.microsoft.com ([216.32.181.182]:8961
-	"EHLO ch1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1759448Ab2EQSvy (ORCPT
+	id S967632Ab2EQS47 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 May 2012 14:56:59 -0400
+Received: from iolanthe.rowland.org ([192.131.102.54]:47550 "HELO
+	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1762375Ab2EQS45 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 May 2012 14:51:54 -0400
-X-SpamScore: 0
-X-BigFish: VS0(zz98dKzz1202h1082kzzz2dh2a8h668h839hd25he5bh)
-X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
-Message-ID: <4FB548C2.3070405@freescale.com>
-Date: Thu, 17 May 2012 13:51:46 -0500
-From: Timur Tabi <b04825@freescale.com>
-Organization: Freescale
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:11.0) Gecko/20120312 Firefox/11.0 SeaMonkey/2.8
+	Thu, 17 May 2012 14:56:57 -0400
+Date: Thu, 17 May 2012 14:56:56 -0400 (EDT)
+From: Alan Stern <stern@rowland.harvard.edu>
+X-X-Sender: stern@iolanthe.rowland.org
+To: Lin Ming <ming.m.lin@intel.com>
+cc: Jens Axboe <axboe@kernel.dk>, Jeff Moyer <jmoyer@redhat.com>,
+        <linux-kernel@vger.kernel.org>, <linux-pm@vger.kernel.org>,
+        <linux-scsi@vger.kernel.org>
+Subject: Re: [RFC v2 PATCH 2/4] block: add queue runtime pm callbacks
+In-Reply-To: <Pine.LNX.4.44L0.1205171346070.1169-100000@iolanthe.rowland.org>
+Message-ID: <Pine.LNX.4.44L0.1205171448190.1169-100000@iolanthe.rowland.org>
 MIME-Version: 1.0
-To: Scott Wood <scottwood@freescale.com>
-CC: Geert Uytterhoeven <geert@linux-m68k.org>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Linuxppc-dev <linuxppc-dev@ozlabs.org>,
-        the arch/x86 maintainers <x86@kernel.org>,
-        Parisc List <linux-parisc@vger.kernel.org>,
-        Wood Scott-B07421 <B07421@freescale.com>,
-        Kumar Gala <galak@kernel.crashing.org>
-Subject: Re: Build regressions/improvements in v3.4-rc7
-References: <1337157034-22773-1-git-send-email-geert@linux-m68k.org> <CAMuHMdUtL4_mv-e-EQAZmNcb9dAT=PXB59i7Vuj2vf8NnaBFzQ@mail.gmail.com> <1337212281.30558.17.camel@pasglop> <4FB535D3.7000106@freescale.com> <CAOZdJXW2jmFG8hkBRMAsO-CJ3ruMd28LqS0b-BGZTU7FnpRi3Q@mail.gmail.com> <CAMuHMdVszy2sk6f045krqr=PPQFnd-GrtJYJMQCCPzkq-65psg@mail.gmail.com> <4FB546FB.807@freescale.com> <4FB547F9.7000804@freescale.com>
-In-Reply-To: <4FB547F9.7000804@freescale.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
-X-OriginatorOrg: freescale.com
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Scott Wood wrote:
-> Regardless of the config that shows this, the MSR[GS] check should go
-> away.  If you have a /hypervisor node, you already know you're a guest.
+On Thu, 17 May 2012, Alan Stern wrote:
 
-Fair enough.
+> On Thu, 17 May 2012, Lin Ming wrote:
+> 
+> > Add runtime pm suspend/resume callbacks to request queue.
+> > As an example, implement these callbacks in sd driver.
+> 
+> This is not the way to do it.  The block subsystem should not use 
+> suspend/resume callbacks.
+> 
+> Instead, there should be block functions that can be called by client
+> drivers: block_pre_runtime_suspend, block_post_runtime_suspend,
+> bock_pre_runtime_resume, and block_post_runtime_resume.
+> 
+> They should do something like this:
+> 
+> 	block_pre_runtime_suspend:
+> 		If any requests are in the queue, return -EBUSY.
+> 		Otherwise set q->rpm_status to RPM_SUSPENDING and
+> 		return 0.
+> 
+> 	block_post_runtime_suspend:
+> 		If the suspend succeeded then set q->rpm_status to 
+> 		RPM_SUSPENDED.  Otherwise set it to RPM_ACTIVE and
+> 		call pm_runtime_mark_last_busy().
+> 
+> 	block_pre_runtime_resume:
+> 		Set q->rpm_status to RPM_RESUMING.
+> 
+> 	block_post_runtime_resume:
+> 		If the resume succeeded then set q->rpm_status to
+> 		RPM_ACTIVE and call pm_runtime_mark_last_busy() and
+> 		pm_runtime_request_autosuspend().
+> 		Otherwise set q->rpm_status to RPM_SUSPENDED.
+> 
+> There should also be an initialization function for client drivers to
+> call.  block_runtime_pm_init() should call pm_runtime_mark_last_busy(),
+> pm_runtime_use_autosuspend(), and pm_runtime_autosuspend().
+> 
+> Next, you have to modify the parts of the block layer that run when a 
+> new request is added to the queue or a request is removed.
+> 
+> 	When a request is added:
+> 		If q->rpm_status is RPM_SUSPENDED, or if q->rpm_status
+> 		is RPM_SUSPENDING and the REQ_PM flag isn't set, call
+> 		pm_runtime_request_resume().
+> 
+> 	When a request finishes:
+> 		Call pm_runtime_mark_last_busy().
+> 
+> Next, you have to change the parts of the block layer responsible for
+> taking a request from the queue and handing it to the lower-level
+> driver (both peek and get).  If q->rpm_status is RPM_SUSPENDED, they
+> shouldn't do anything -- act as though the queue is empty.  If
+> q->rpm_status is RPM_SUSPENDING or RPM_RESUMING, they should hand over
+> the request only if it has the REQ_PM flag set.
+> 
+> For this to work, the block layer has to know what struct device
+> pointer to pass to the pm_runtime_* routines.  You'll have to add that
+> information to the request_queue structure; I guess q->dev can get set
+> by block_pm_runtime_init().  In fact, when that's done you won't need
+> q->rpm_status any more.  You'll be able to use q->dev->power.rpm_status
+> directly, and you won't have to update it because the PM core does that
+> for you.
+> 
+> (Or maybe it would be easier to make q->rpm_status be a pointer to 
+> q->dev->power.rpm_status.  That way, if CONFIG_PM_RUNTIME isn't enabled 
+> or block_runtime_pm_init() hasn't been called, you can have 
+> q->rpm_status simply point to a static value that is permanently set to 
+> RPM_ACTIVE.)
+> 
+> I may have left some parts out from this brief description.  Hopefully 
+> you'll be able to figure out the general idea and get it to work.
 
--- 
-Timur Tabi
-Linux kernel developer at Freescale
+Oh, yes -- I knew I had forgotten something.
+
+The client driver has to be changed.  That means scsi_sysfs_add_sdev() 
+should call block_pm_runtime_init().
+
+scsi_runtime_suspend() should call block_pre_runtime_suspend() and fail
+if that routine returns an error.  Then after calling
+scsi_dev_type_suspend(), it should call block_post_runtime_suspend() 
+to let it know whether the suspend operation succeeded.
+
+Similarly, scsi_runtime_resume() should call block_pre_runtime_resume() 
+before scsi_dev_type_resume() and block_post_runtime_resume() 
+afterward.
+
+Once that's done, you can remove the scsi_autpm stuff from sd_open() 
+and sd_release().
+
+Alan Stern
 
