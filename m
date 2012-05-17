@@ -1,208 +1,182 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933508Ab2EQUE3 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 May 2012 16:04:29 -0400
+	id S965958Ab2EQUEh (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 May 2012 16:04:37 -0400
 Received: from mail-pb0-f46.google.com ([209.85.160.46]:56851 "EHLO
 	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932347Ab2EQUE2 (ORCPT
+	with ESMTP id S932347Ab2EQUEb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 May 2012 16:04:28 -0400
+	Thu, 17 May 2012 16:04:31 -0400
 From: Grant Likely <grant.likely@secretlab.ca>
 To: linux-kernel@vger.kernel.org
-Cc: Grant Likely <grant.likely@secretlab.ca>, Roland Stigge <stigge@antcom.de>
-Subject: [PATCH 1/3] gpio: Adjust of_xlate API to support multiple GPIO chips
-Date: Thu, 17 May 2012 14:04:18 -0600
-Message-Id: <1337285060-31919-1-git-send-email-grant.likely@secretlab.ca>
+Cc: Roland Stigge <stigge@antcom.de>, Grant Likely <grant.likely@secretlab.ca>
+Subject: [PATCH 2/3] gpio/lpc32xx: Add device tree support
+Date: Thu, 17 May 2012 14:04:19 -0600
+Message-Id: <1337285060-31919-2-git-send-email-grant.likely@secretlab.ca>
 X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1337285060-31919-1-git-send-email-grant.likely@secretlab.ca>
+References: <1337285060-31919-1-git-send-email-grant.likely@secretlab.ca>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch changes the of_xlate API to make it possible for multiple
-gpio_chips to refer to the same device tree node.  This is useful for
-banked GPIO controllers that use multiple gpio_chips for a single
-device.  With this change the core code will try calling of_xlate on
-each gpio_chip that references the device_node and will return the
-gpio number for the first one to return 'true'.
+From: Roland Stigge <stigge@antcom.de>
 
-Cc: Roland Stigge <stigge@antcom.de>
+This patch adds device tree support for gpio-lpc32xx.c.
+
+To register the various GPIO banks as (struct) gpio_chips via the same DT
+gpio-controller, we utilize the adjusted of_xlate API to manipulate the
+actually used struct gpio_chip.
+
+Signed-off-by: Roland Stigge <stigge@antcom.de>
+Reviewed-by: Arnd Bergmann <arnd@arndb.de>
 Signed-off-by: Grant Likely <grant.likely@secretlab.ca>
 ---
- arch/arm/mach-imx/mach-mx35_3ds.c |    3 +-
- drivers/gpio/gpiolib-of.c         |   80 ++++++++++++++++++-------------------
- drivers/gpio/gpiolib.c            |    2 +-
- include/asm-generic/gpio.h        |    2 +-
- include/linux/of_gpio.h           |    1 -
- 5 files changed, 41 insertions(+), 47 deletions(-)
+ .../devicetree/bindings/gpio/gpio_lpc32xx.txt      |   43 +++++++++++++++
+ arch/arm/mach-lpc32xx/include/mach/gpio.h          |    9 +++-
+ drivers/gpio/gpio-lpc32xx.c                        |   55 +++++++++++++++++++-
+ 3 files changed, 105 insertions(+), 2 deletions(-)
+ create mode 100644 Documentation/devicetree/bindings/gpio/gpio_lpc32xx.txt
 
-diff --git a/arch/arm/mach-imx/mach-mx35_3ds.c b/arch/arm/mach-imx/mach-mx35_3ds.c
-index 6ae51c6..6a7cf91 100644
---- a/arch/arm/mach-imx/mach-mx35_3ds.c
-+++ b/arch/arm/mach-imx/mach-mx35_3ds.c
-@@ -96,8 +96,7 @@ static struct i2c_board_info __initdata i2c_devices_3ds[] = {
- 
- static int lcd_power_gpio = -ENXIO;
- 
--static int mc9s08dz60_gpiochip_match(struct gpio_chip *chip,
--						     const void *data)
-+static int mc9s08dz60_gpiochip_match(struct gpio_chip *chip, void *data)
- {
- 	return !strcmp(chip->label, data);
- }
-diff --git a/drivers/gpio/gpiolib-of.c b/drivers/gpio/gpiolib-of.c
-index bf984b6..d18068a 100644
---- a/drivers/gpio/gpiolib-of.c
-+++ b/drivers/gpio/gpiolib-of.c
-@@ -15,11 +15,39 @@
- #include <linux/errno.h>
- #include <linux/module.h>
+diff --git a/Documentation/devicetree/bindings/gpio/gpio_lpc32xx.txt b/Documentation/devicetree/bindings/gpio/gpio_lpc32xx.txt
+new file mode 100644
+index 0000000..4981936
+--- /dev/null
++++ b/Documentation/devicetree/bindings/gpio/gpio_lpc32xx.txt
+@@ -0,0 +1,43 @@
++NXP LPC32xx SoC GPIO controller
++
++Required properties:
++- compatible: must be "nxp,lpc3220-gpio"
++- reg: Physical base address and length of the controller's registers.
++- gpio-controller: Marks the device node as a GPIO controller.
++- #gpio-cells: Should be 3:
++   1) bank:
++      0: GPIO P0
++      1: GPIO P1
++      2: GPIO P2
++      3: GPIO P3
++      4: GPI P3
++      5: GPO P3
++   2) pin number
++   3) optional parameters:
++      - bit 0 specifies polarity (0 for normal, 1 for inverted)
++- reg: Index of the GPIO group
++
++Example:
++
++	gpio: gpio@40028000 {
++		compatible = "nxp,lpc3220-gpio";
++		reg = <0x40028000 0x1000>;
++		gpio-controller;
++		#gpio-cells = <3>; /* bank, pin, flags */
++	};
++
++	leds {
++		compatible = "gpio-leds";
++
++		led0 {
++			gpios = <&gpio 5 1 1>; /* GPO_P3 1, active low */
++			linux,default-trigger = "heartbeat";
++			default-state = "off";
++		};
++
++		led1 {
++			gpios = <&gpio 5 14 1>; /* GPO_P3 14, active low */
++			linux,default-trigger = "timer";
++			default-state = "off";
++		};
++	};
+diff --git a/arch/arm/mach-lpc32xx/include/mach/gpio.h b/arch/arm/mach-lpc32xx/include/mach/gpio.h
+index 40a8c17..2ba6ca4 100644
+--- a/arch/arm/mach-lpc32xx/include/mach/gpio.h
++++ b/arch/arm/mach-lpc32xx/include/mach/gpio.h
+@@ -1 +1,8 @@
+-/* empty */
++#ifndef __MACH_GPIO_H
++#define __MACH_GPIO_H
++
++#include "gpio-lpc32xx.h"
++
++#define ARCH_NR_GPIOS (LPC32XX_GPO_P3_GRP + LPC32XX_GPO_P3_MAX)
++
++#endif /* __MACH_GPIO_H */
+diff --git a/drivers/gpio/gpio-lpc32xx.c b/drivers/gpio/gpio-lpc32xx.c
+index 61c2d08..d42bf6c 100644
+--- a/drivers/gpio/gpio-lpc32xx.c
++++ b/drivers/gpio/gpio-lpc32xx.c
+@@ -21,6 +21,9 @@
  #include <linux/io.h>
-+#include <linux/gpio.h>
- #include <linux/of.h>
- #include <linux/of_address.h>
- #include <linux/of_gpio.h>
- #include <linux/slab.h>
+ #include <linux/errno.h>
+ #include <linux/gpio.h>
++#include <linux/of_gpio.h>
++#include <linux/platform_device.h>
++#include <linux/module.h>
  
-+/* Private data structure for of_gpiochip_is_match */
-+struct gg_data {
-+	enum of_gpio_flags *flags;
-+	struct of_phandle_args gpiospec;
-+
-+	int out_gpio;
-+};
-+
-+/* Private function for resolving node pointer to gpio_chip */
-+static int of_gpiochip_find_and_xlate(struct gpio_chip *gc, void *data)
-+{
-+	struct gg_data *gg_data = data;
-+	int ret;
-+
-+	if ((gc->of_node != gg_data->gpiospec.np) ||
-+	    (gc->of_gpio_n_cells != gg_data->gpiospec.args_count) ||
-+	    (!gc->of_xlate))
-+		return false;
-+
-+	ret = gc->of_xlate(gc, &gg_data->gpiospec, gg_data->flags);
-+	if (ret < 0)
-+		return false;
-+
-+	gg_data->out_gpio = ret + gc->base;
-+	return true;
+ #include <mach/hardware.h>
+ #include <mach/platform.h>
+@@ -454,10 +457,60 @@ static struct lpc32xx_gpio_chip lpc32xx_gpiochip[] = {
+ 	},
+ };
+ 
++/* Empty now, can be removed later when mach-lpc32xx is finally switched over
++ * to DT support
++ */
+ void __init lpc32xx_gpio_init(void)
+ {
 +}
 +
- /**
-  * of_get_named_gpio_flags() - Get a GPIO number and flags to use with GPIO API
-  * @np:		device node to get GPIO from
-@@ -34,46 +62,25 @@
- int of_get_named_gpio_flags(struct device_node *np, const char *propname,
-                            int index, enum of_gpio_flags *flags)
- {
-+	struct gg_data gg_data = { .flags = flags, .out_gpio = -ENODEV };
- 	int ret;
--	struct gpio_chip *gc;
--	struct of_phandle_args gpiospec;
-+
-+	/* .of_xlate might decide to not fill in the flags, so clear it. */
-+	if (flags)
-+		*flags = 0;
- 
- 	ret = of_parse_phandle_with_args(np, propname, "#gpio-cells", index,
--					 &gpiospec);
-+					 &gg_data.gpiospec);
- 	if (ret) {
- 		pr_debug("%s: can't parse gpios property\n", __func__);
--		goto err0;
--	}
--
--	gc = of_node_to_gpiochip(gpiospec.np);
--	if (!gc) {
--		pr_debug("%s: gpio controller %s isn't registered\n",
--			 np->full_name, gpiospec.np->full_name);
--		ret = -ENODEV;
--		goto err1;
--	}
--
--	if (gpiospec.args_count != gc->of_gpio_n_cells) {
--		pr_debug("%s: wrong #gpio-cells for %s\n",
--			 np->full_name, gpiospec.np->full_name);
--		ret = -EINVAL;
--		goto err1;
++static int lpc32xx_of_xlate(struct gpio_chip **gc,
++			    const struct of_phandle_args *gpiospec, u32 *flags)
++{
++	u32 bank;
++	if (WARN_ON(gpiospec->args_count < 3))
 +		return -EINVAL;
- 	}
++
++	bank = gpiospec->args[0];
++	if (WARN_ON(bank > 5))
++		return -EINVAL;
++
++	*gc = &lpc32xx_gpiochip[bank].chip;
++	if (flags)
++		*flags = gpiospec->args[2];
++	return gpiospec->args[1];
++}
++
++static int __devinit lpc32xx_gpio_probe(struct platform_device *pdev)
++{
+ 	int i;
  
--	/* .xlate might decide to not fill in the flags, so clear it. */
--	if (flags)
--		*flags = 0;
--
--	ret = gc->of_xlate(gc, &gpiospec, flags);
--	if (ret < 0)
--		goto err1;
-+	gpiochip_find(&gg_data, of_gpiochip_find_and_xlate);
- 
--	ret += gc->base;
--err1:
--	of_node_put(gpiospec.np);
--err0:
-+	of_node_put(gg_data.gpiospec.np);
- 	pr_debug("%s exited with status %d\n", __func__, ret);
--	return ret;
-+	return gg_data.out_gpio;
+-	for (i = 0; i < ARRAY_SIZE(lpc32xx_gpiochip); i++)
++	for (i = 0; i < ARRAY_SIZE(lpc32xx_gpiochip); i++) {
++		if (pdev->dev.of_node) {
++			lpc32xx_gpiochip[i].chip.of_xlate = lpc32xx_of_xlate;
++			lpc32xx_gpiochip[i].chip.of_gpio_n_cells = 3;
++			lpc32xx_gpiochip[i].chip.of_node = pdev->dev.of_node;
++		}
+ 		gpiochip_add(&lpc32xx_gpiochip[i].chip);
++	}
++
++	return 0;
  }
- EXPORT_SYMBOL(of_get_named_gpio_flags);
- 
-@@ -227,14 +234,3 @@ void of_gpiochip_remove(struct gpio_chip *chip)
- 	if (chip->of_node)
- 		of_node_put(chip->of_node);
- }
--
--/* Private function for resolving node pointer to gpio_chip */
--static int of_gpiochip_is_match(struct gpio_chip *chip, const void *data)
--{
--	return chip->of_node == data;
--}
--
--struct gpio_chip *of_node_to_gpiochip(struct device_node *np)
--{
--	return gpiochip_find(np, of_gpiochip_is_match);
--}
-diff --git a/drivers/gpio/gpiolib.c b/drivers/gpio/gpiolib.c
-index 566d012..38353c0 100644
---- a/drivers/gpio/gpiolib.c
-+++ b/drivers/gpio/gpiolib.c
-@@ -1156,7 +1156,7 @@ EXPORT_SYMBOL_GPL(gpiochip_remove);
-  */
- struct gpio_chip *gpiochip_find(const void *data,
- 				int (*match)(struct gpio_chip *chip,
--					     const void *data))
-+					     void *data))
- {
- 	struct gpio_chip *chip = NULL;
- 	unsigned long flags;
-diff --git a/include/asm-generic/gpio.h b/include/asm-generic/gpio.h
-index 5f52690..1cb3dd1 100644
---- a/include/asm-generic/gpio.h
-+++ b/include/asm-generic/gpio.h
-@@ -144,7 +144,7 @@ extern int gpiochip_add(struct gpio_chip *chip);
- extern int __must_check gpiochip_remove(struct gpio_chip *chip);
- extern struct gpio_chip *gpiochip_find(const void *data,
- 					int (*match)(struct gpio_chip *chip,
--						     const void *data));
-+						     void *data));
- 
- 
- /* Always use the library code for GPIO management calls,
-diff --git a/include/linux/of_gpio.h b/include/linux/of_gpio.h
-index 81733d1..c454f57 100644
---- a/include/linux/of_gpio.h
-+++ b/include/linux/of_gpio.h
-@@ -58,7 +58,6 @@ extern int of_mm_gpiochip_add(struct device_node *np,
- 
- extern void of_gpiochip_add(struct gpio_chip *gc);
- extern void of_gpiochip_remove(struct gpio_chip *gc);
--extern struct gpio_chip *of_node_to_gpiochip(struct device_node *np);
- extern int of_gpio_simple_xlate(struct gpio_chip *gc,
- 				const struct of_phandle_args *gpiospec,
- 				u32 *flags);
++
++#ifdef CONFIG_OF
++static struct of_device_id lpc32xx_gpio_of_match[] __devinitdata = {
++	{ .compatible = "nxp,lpc3220-gpio", },
++	{ },
++};
++#endif
++
++static struct platform_driver lpc32xx_gpio_driver = {
++	.driver		= {
++		.name	= "lpc32xx-gpio",
++		.owner	= THIS_MODULE,
++		.of_match_table = of_match_ptr(lpc32xx_gpio_of_match),
++	},
++	.probe		= lpc32xx_gpio_probe,
++};
++
++module_platform_driver(lpc32xx_gpio_driver);
 -- 
 1.7.9.5
 
