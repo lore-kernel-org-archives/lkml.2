@@ -1,72 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030323Ab2EQRFH (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 May 2012 13:05:07 -0400
-Received: from e28smtp01.in.ibm.com ([122.248.162.1]:53783 "EHLO
-	e28smtp01.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S967512Ab2EQRFB (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 May 2012 13:05:01 -0400
-From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-Subject: [PATCH v5 5/5] cpusets: Remove/update outdated comments
-To: a.p.zijlstra@chello.nl, mingo@kernel.org, pjt@google.com,
-        paul@paulmenage.org, akpm@linux-foundation.org
-Cc: rjw@sisk.pl, nacc@us.ibm.com, rientjes@google.com,
-        paulmck@linux.vnet.ibm.com, tglx@linutronix.de,
-        seto.hidetoshi@jp.fujitsu.com, tj@kernel.org, mschmidt@redhat.com,
-        berrange@redhat.com, nikunj@linux.vnet.ibm.com,
-        vatsa@linux.vnet.ibm.com, liuj97@gmail.com,
-        linux-kernel@vger.kernel.org, linux-pm@vger.kernel.org,
-        srivatsa.bhat@linux.vnet.ibm.com
-Date: Thu, 17 May 2012 22:33:48 +0530
-Message-ID: <20120517170340.3011.83286.stgit@srivatsabhat.in.ibm.com>
-In-Reply-To: <20120517165839.3011.98723.stgit@srivatsabhat.in.ibm.com>
-References: <20120517165839.3011.98723.stgit@srivatsabhat.in.ibm.com>
-User-Agent: StGIT/0.14.3
+	id S1030366Ab2EQRFQ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 May 2012 13:05:16 -0400
+Received: from va3ehsobe010.messaging.microsoft.com ([216.32.180.30]:15502
+	"EHLO va3outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1030299Ab2EQRFG convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 17 May 2012 13:05:06 -0400
+X-Forefront-Antispam-Report: CIP:198.70.193.64;KIP:(null);UIP:(null);IPV:NLI;H:avexcashub1.qlogic.com;RD:avexcashub2.qlogic.com;EFVD:NLI
+X-SpamScore: -9
+X-BigFish: VPS-9(zz1432N98dK1447Izz1202hzz8275bh8275dhz2ei2a8h668h839h944h)
+Date: Thu, 17 May 2012 13:04:56 -0400
+From: Chad Dupuis <chad.dupuis@qlogic.com>
+To: Dan Carpenter <dan.carpenter@oracle.com>
+CC: Andrew Vasquez <andrew.vasquez@qlogic.com>,
+        Dept-Eng Linux Driver <Linux-Driver@qlogic.com>,
+        "James E.J. Bottomley" <JBottomley@parallels.com>,
+        "linux-scsi@vger.kernel.org" <linux-scsi@vger.kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        "kernel-janitors@vger.kernel.org" <kernel-janitors@vger.kernel.org>
+Subject: Re: [patch] [SCSI] qla2xxx: don't free pool that wasn't allocated
+In-Reply-To: <20120517071340.GH14660@elgon.mountain>
+Message-ID: <alpine.WNT.2.00.1205171303550.6448@N5102REMCQXM4BS.qlogic.org>
+References: <20120517071340.GH14660@elgon.mountain>
+User-Agent: Alpine 2.00 (WNT 1167 2008-08-23)
+X-X-Sender: cdupuis@qlm.qlogic.com
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
-x-cbid: 12051717-4790-0000-0000-000002BFC17B
+Content-Type: text/plain; charset="US-ASCII"; format=flowed
+Content-Transfer-Encoding: 8BIT
+X-OriginatorOrg: qlogic.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-cpuset_track_online_cpus() is no longer present. So remove the
-outdated comment and replace it with reference to cpuset_update_active_cpus()
-which is its equivalent.
 
-Also, we don't lack memory hot-unplug anymore. And David Rientjes pointed
-out how it is dealt with. So update that comment as well.
+On Thu, 17 May 2012, Dan Carpenter wrote:
 
-Signed-off-by: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
----
+> In the original code, if dma_pool_alloc() fails then we call
+> dma_pool_free().  It causes an error, possibly a NULL dereference.
+>
+> Signed-off-by: Dan Carpenter <dan.carpenter@oracle.com>
+>
+> diff --git a/drivers/scsi/qla2xxx/qla_iocb.c b/drivers/scsi/qla2xxx/qla_iocb.c
+> index c17975d..44380d3 100644
+> --- a/drivers/scsi/qla2xxx/qla_iocb.c
+> +++ b/drivers/scsi/qla2xxx/qla_iocb.c
+> @@ -2386,7 +2386,7 @@ sufficient_dsds:
+>               if (!ctx->fcp_cmnd) {
+>                       ql_log(ql_log_fatal, vha, 0x3011,
+>                           "Failed to allocate fcp_cmnd for cmd=%p.\n", cmd);
+> -                     goto queuing_error_fcp_cmnd;
+> +                     goto queuing_error;
+>               }
+>
+>               /* Initialize the DSD list and dma handle */
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-scsi" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+>
+>
 
- kernel/cpuset.c |    7 +++----
- 1 files changed, 3 insertions(+), 4 deletions(-)
+Thanks for the patch.
 
-diff --git a/kernel/cpuset.c b/kernel/cpuset.c
-index e44db78..89ff649 100644
---- a/kernel/cpuset.c
-+++ b/kernel/cpuset.c
-@@ -2046,9 +2046,8 @@ static struct cpuset *cpuset_next(struct list_head *queue)
-  * before dropping down to the next.  It always processes a node before
-  * any of its children.
-  *
-- * For now, since we lack memory hot unplug, we'll never see a cpuset
-- * that has tasks along with an empty 'mems'.  But if we did see such
-- * a cpuset, we'd handle it just like we do if its 'cpus' was empty.
-+ * In the case of memory hot-unplug, it will remove nodes from N_HIGH_MEMORY
-+ * if all present pages from a node are offlined.
-  */
- static void
- scan_cpusets_upon_hotplug(struct cpuset *root, enum hotplug_event event)
-@@ -2171,7 +2170,7 @@ void cpuset_update_active_cpus(bool cpu_online)
- /*
-  * Keep top_cpuset.mems_allowed tracking node_states[N_HIGH_MEMORY].
-  * Call this routine anytime after node_states[N_HIGH_MEMORY] changes.
-- * See also the previous routine cpuset_track_online_cpus().
-+ * See cpuset_update_active_cpus() for CPU hotplug handling.
-  */
- static int cpuset_track_online_nodes(struct notifier_block *self,
- 				unsigned long action, void *arg)
+Acked-by: Chad Dupuis <chad.dupuis@qlogic.com>
+
+This message and any attached documents contain information from QLogic Corporation or its wholly-owned subsidiaries that may be confidential. If you are not the intended recipient, you may not read, copy, distribute, or use this information. If you have received this transmission in error, please notify the sender immediately by reply e-mail and then delete this message.
 
