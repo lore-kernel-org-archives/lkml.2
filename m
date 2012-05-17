@@ -1,325 +1,150 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965179Ab2EQCIJ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 May 2012 22:08:09 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:25434 "EHLO mx1.redhat.com"
+	id S1760861Ab2EQCQb (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 May 2012 22:16:31 -0400
+Received: from linux-sh.org ([111.68.239.195]:51895 "EHLO linux-sh.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1760843Ab2EQCID (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 May 2012 22:08:03 -0400
-Message-ID: <4FB45D7C.3090306@redhat.com>
-Date: Wed, 16 May 2012 22:07:56 -0400
-From: Doug Ledford <dledford@redhat.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:12.0) Gecko/20120428 Thunderbird/12.0.1
+	id S1760826Ab2EQCQ2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 16 May 2012 22:16:28 -0400
+Date: Thu, 17 May 2012 11:14:30 +0900
+From: Paul Mundt <lethal@linux-sh.org>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Alex Shi <alex.shi@intel.com>, Nick Piggin <npiggin@gmail.com>,
+        tglx@linutronix.de, mingo@redhat.com, hpa@zytor.com, arnd@arndb.de,
+        rostedt@goodmis.org, fweisbec@gmail.com, jeremy@goop.org,
+        riel@redhat.com, luto@mit.edu, avi@redhat.com, len.brown@intel.com,
+        dhowells@redhat.com, fenghua.yu@intel.com, borislav.petkov@amd.com,
+        yinghai@kernel.org, ak@linux.intel.com, cpw@sgi.com, steiner@sgi.com,
+        akpm@linux-foundation.org, penberg@kernel.org, hughd@google.com,
+        rientjes@google.com, kosaki.motohiro@jp.fujitsu.com,
+        n-horiguchi@ah.jp.nec.com, tj@kernel.org, oleg@redhat.com,
+        axboe@kernel.dk, jmorris@namei.org, kamezawa.hiroyu@jp.fujitsu.com,
+        viro@zeniv.linux.org.uk, linux-kernel@vger.kernel.org,
+        yongjie.ren@intel.com, linux-arch@vger.kernel.org
+Subject: Re: [PATCH v5 6/7] x86/tlb: optimizing flush_tlb_mm
+Message-ID: <20120517021430.GC16069@linux-sh.org>
+References: <1337072138-8323-1-git-send-email-alex.shi@intel.com>
+ <1337072138-8323-7-git-send-email-alex.shi@intel.com>
+ <CAPa8GCDsSOrzQwX2qRJyocYAZdGbwjD4t4fjxmWXV6=EoXjXZw@mail.gmail.com>
+ <4FB2590C.1050303@intel.com>
+ <1337092577.27694.45.camel@twins>
+ <1337093840.27694.56.camel@twins>
+ <4FB34D49.1060809@intel.com>
+ <1337155239.27694.131.camel@twins>
+ <4FB3ACD2.5010900@intel.com>
+ <1337202569.4281.13.camel@twins>
 MIME-Version: 1.0
-To: Andrew Morton <akpm@linux-foundation.org>
-CC: manfred@colorfullife.com, levinsasha928@gmail.com, npiggin@gmail.com,
-        linux-kernel@vger.kernel.org
-Subject: Re: [Patch] ipc/mqueue: add rbtree node caching support
-References: <34c33c51dbd2ab946a19563b790b5e1be8f751d2.1337196473.git.dledford@redhat.com> <20120516151219.e4d55c81.akpm@linux-foundation.org>
-In-Reply-To: <20120516151219.e4d55c81.akpm@linux-foundation.org>
-X-Enigmail-Version: 1.4.1
-OpenPGP: id=0E572FDD
-Content-Type: multipart/signed; micalg=pgp-sha1;
- protocol="application/pgp-signature";
- boundary="------------enig50FFBC5E5877E8582EE7FE22"
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1337202569.4281.13.camel@twins>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is an OpenPGP/MIME signed message (RFC 2440 and 3156)
---------------enig50FFBC5E5877E8582EE7FE22
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: quoted-printable
+On Wed, May 16, 2012 at 11:09:29PM +0200, Peter Zijlstra wrote:
+> On Wed, 2012-05-16 at 21:34 +0800, Alex Shi wrote:
+> > 
+> > So, if the minimum change of tlb->start/end can be protected by
+> > HAVE_GENERIC_MMU_GATHER, it is safe and harmless, am I right?
+> > 
+> safe yes, but not entirely harmless. A quick look seems to suggest you
+> fail for VM_HUGETLB. If your mmu_gather spans a vma with VM_HUGETLB
+> you'll do a regular range flush not a full mm flush like the other paths
+> do.
+> 
+> Anyway, I did a quick refresh of my series on a recent -tip tree:
+> 
+>  git://git.kernel.org/pub/scm/linux/kernel/git/peterz/mmu.git tlb-unify
+> 
+> With that all you need is to "select HAVE_MMU_GATHER_RANGE" for x86 and
+> implement a useful flush_tlb_range().
+> 
+> In particular, see:
+> http://git.kernel.org/?p=linux/kernel/git/peterz/mmu.git;a=commitdiff;h=05e53144177e6242fda404045f50f48114bcf185;hp=2cd7dc710652127522392f4b7ecb5fa6e954941e
+> 
+> I've slightly changed the code to address an open issue with the
+> vm_flags tracking. We now force flush the mmu_gather whenever VM_HUGETLB
+> flips because most (all?) archs that look at that flag expect pure huge
+> pages and not a mixture.
+> 
+> I've seem to have misplaced my cross-compiler set, so I've only compiled
+> x86-64 for now.
 
-On 5/16/2012 6:12 PM, Andrew Morton wrote:
-> On Wed, 16 May 2012 15:28:56 -0400
-> Doug Ledford <dledford@redhat.com> wrote:
->=20
->> When I wrote the first patch that added the rbtree support for message=
+It was on my list to test when you sent out the series initially, but
+seems to have slipped my mind until I saw this thread. Here's a patch on
+top of your tlb-unify branch that gets sh working (tested on all of
+2-level, 3-level, and nommu).
 
->> queue insertion, it sped up the case where the queue was very full
->> drastically from the original code.  It, however, slowed down the
->> case where the queue was empty (not drastically though).
->>
->> This patch caches the last freed rbtree node struct so we can quickly
->> reuse it when we get a new message.  This is the common path for any
->> queue that very frequently goes from 0 to 1 then back to 0 messages
->> in queue.
->>
->> Andrew Morton didn't like that we were doing a GFP_ATOMIC allocation
->> in msg_insert, so this patch attempts to speculatively allocate a
->> new node struct outside of the spin lock when we know we need it, but
->> will still fall back to a GFP_ATOMIC allocation if it has to.
->>
->> Once I added the caching, the necessary various ret =3D ; spin_unlock
->> gyrations in mq_timedsend were getting pretty ugly, so this also sligh=
-tly
->> refactors that function to streamline the flow of the code and the
->> function exit.
->>
->> Finally, while working on getting performance back I made sure that al=
-l
->> of the node structs were always fully initialized when they were first=
+I opted to shove the asm/cacheflush.h include in to tlb.h directly since
+it is calling flush_cache_range() openly now, and the rest of the
+architectures are just getting at it through various whimsical means. sh
+was getting it through pagemap.h -> highmem.h, while ARM presently can't
+seem to make up its mind and includes pagemap.h for nommu only as well as
+cacheflush.h explicitly.
 
->> used, rendering the use of kzalloc unnecessary and a waste of CPU cycl=
-es.
->>
->> The net result of all of this is:
->>
->> 1) We will avoid a GFP_ATOMIC allocation when possible, but fall back =
-on
->> it when necessary.
->> 2) We will speculatively allocate a node struct using GFP_KERNEL if ou=
-r
->> cache is empty (and save the struct to our cache if it's still empty a=
-fter
->> we have obtained the spin lock).
->> 3) The performance of the common queue empty case has significantly
->> improved and is now much more in line with the older performance for
->> this case.
->>
->> The performance changes are:
->>
->>             Old mqueue      new mqueue      new mqueue + caching
->> queue empty
->> send/recv   305/288ns       349/318ns       310/322ns
->>
->> I don't think we'll ever be able to get the recv performance back, but=
+With the reworked interface we don't seem to actually need to stub out
+the interface for the nommu case anymore anyways, all of the users are
+insular to mm/memory.c which we don't build for nommu.
 
->> that's because the old recv performance was a direct result and conseq=
-uence
->> of the old methods abysmal send performance.  The recv path simply mus=
-t
->> do more so that the send path does not incur such a penalty under high=
-er
->> queue depths.
->>
->> As it turns out, the new caching code also sped up the various queue f=
-ull
->> cases relative to my last patch.  That could be because of the differe=
-nce
->> between the syscall path in 3.3.4-rc5 and 3.3.4-rc6, or because of the=
+Signed-off-by: Paul Mundt <lethal@linux-sh.org>
 
->> change in code flow in the mq_timedsend routine.  Regardless, I'll tak=
-e
->> it.  It wasn't huge, and I *would* say it was within the margin for er=
-ror,
->> but after many repeated runs what I'm seeing is that the old numbers
->> trend slightly higher (about 10 to 20ns depending on which test is the=
+---
 
->> one running).
->>
->=20
-> LGTM.  Here be some coding-style fixes:
->=20
-> --- a/ipc/mqueue.c~ipc-mqueue-add-rbtree-node-caching-support-fix
-> +++ a/ipc/mqueue.c
-> @@ -141,16 +141,18 @@ static int msg_insert(struct msg_msg *ms
->  	} else if (new_leaf) {
->  		leaf =3D *new_leaf;
->  		*new_leaf =3D NULL;
-> -	} else
-> +	} else {
->  		leaf =3D kmalloc(sizeof(*leaf), GFP_ATOMIC);
-> +	}
->  	if (!leaf)
->  		return -ENOMEM;
->  	if (!info->node_cache) {
->  		rb_init_node(&leaf->rb_node);
->  		INIT_LIST_HEAD(&leaf->msg_list);
->  		info->qsize +=3D sizeof(*leaf);
-> -	} else
-> +	} else {
->  		info->node_cache =3D NULL;
-> +	}
->  	leaf->priority =3D msg->m_type;
->  	rb_link_node(&leaf->rb_node, parent, p);
->  	rb_insert_color(&leaf->rb_node, &info->msg_tree);
-> @@ -196,8 +198,9 @@ try_again:
->  		if (info->node_cache) {
->  			info->qsize -=3D sizeof(*leaf);
->  			kfree(leaf);
-> -		} else
-> +		} else {
->  			info->node_cache =3D leaf;
-> +		}
->  		goto try_again;
->  	} else {
->  		msg =3D list_first_entry(&leaf->msg_list,
-> @@ -208,8 +211,9 @@ try_again:
->  			if (info->node_cache) {
->  				info->qsize -=3D sizeof(*leaf);
->  				kfree(leaf);
-> -			} else
-> +			} else {
->  				info->node_cache =3D leaf;
-> +			}
->  		}
->  	}
->  	info->attr.mq_curmsgs--;
-> @@ -1033,9 +1037,11 @@ SYSCALL_DEFINE5(mq_timedsend, mqd_t, mqd
->  	msg_ptr->m_ts =3D msg_len;
->  	msg_ptr->m_type =3D msg_prio;
-> =20
-> -	/* msg_insert really wants us to have a valid, spare node struct so
-> -	 * it doesn't have to kmalloc a GFP_ATOMIC allocation, but it will
-> -	 * fall back to that if necessary. */
-> +	/*
-> +	 * msg_insert really wants us to have a valid, spare node struct so i=
-t
-> +	 * doesn't have to kmalloc a GFP_ATOMIC allocation, but it will fall
-> +	 * back to that if necessary.
-> +	 */
->  	if (!info->node_cache)
->  		new_leaf =3D kmalloc(sizeof(*new_leaf), GFP_KERNEL);
-> =20
-> @@ -1058,8 +1064,10 @@ SYSCALL_DEFINE5(mq_timedsend, mqd_t, mqd
->  			wait.msg =3D (void *) msg_ptr;
->  			wait.state =3D STATE_NONE;
->  			ret =3D wq_sleep(info, SEND, timeout, &wait);
-> -			/* wq_sleep must be called with info->lock held, and
-> -			 * returns with the lock released */
-> +			/*
-> +			 * wq_sleep must be called with info->lock held, and
-> +			 * returns with the lock released
-> +			 */
->  			goto out_free;
->  		}
->  	} else {
-> @@ -1136,9 +1144,11 @@ SYSCALL_DEFINE5(mq_timedreceive, mqd_t,=20
->  		goto out_fput;
->  	}
-> =20
-> -	/* msg_insert really wants us to have a valid, spare node struct so
-> -	 * it doesn't have to kmalloc a GFP_ATOMIC allocation, but it will
-> -	 * fall back to that if necessary. */
-> +	/*
-> +	 * msg_insert really wants us to have a valid, spare node struct so i=
-t
-> +	 * doesn't have to kmalloc a GFP_ATOMIC allocation, but it will fall
-> +	 * back to that if necessary.
-> +	 */
->  	if (!info->node_cache)
->  		new_leaf =3D kmalloc(sizeof(*new_leaf), GFP_KERNEL);
-> =20
->=20
->=20
->> @@ -132,15 +134,24 @@ static int msg_insert(struct msg_msg *msg, struc=
-t mqueue_inode_info *info)
->>  		else
->>  			p =3D &(*p)->rb_right;
->>  	}
->> -	leaf =3D kzalloc(sizeof(*leaf), GFP_ATOMIC);
->> +	if (info->node_cache) {
->> +		leaf =3D info->node_cache;
->> +	} else if (new_leaf) {
->> +		leaf =3D *new_leaf;
->> +		*new_leaf =3D NULL;
->> +	} else
->> +		leaf =3D kmalloc(sizeof(*leaf), GFP_ATOMIC);
->>  	if (!leaf)
->>  		return -ENOMEM;
->> -	rb_init_node(&leaf->rb_node);
->> -	INIT_LIST_HEAD(&leaf->msg_list);
->> +	if (!info->node_cache) {
->> +		rb_init_node(&leaf->rb_node);
->> +		INIT_LIST_HEAD(&leaf->msg_list);
->> +		info->qsize +=3D sizeof(*leaf);
->> +	} else
->> +		info->node_cache =3D NULL;
->=20
-> So you have
->=20
-> : 	if (info->node_cache) {
-> : 		leaf =3D info->node_cache;
-> : 	} else if (new_leaf) {
-> : 		leaf =3D *new_leaf;
-> : 		*new_leaf =3D NULL;
-> : 	} else {
-> : 		leaf =3D kmalloc(sizeof(*leaf), GFP_ATOMIC);
-> : 	}
-> : 	if (!leaf)
-> : 		return -ENOMEM;
-> : 	if (!info->node_cache) {
-> : 		rb_init_node(&leaf->rb_node);
-> : 		INIT_LIST_HEAD(&leaf->msg_list);
-> : 		info->qsize +=3D sizeof(*leaf);
-> : 	} else {
-> : 		info->node_cache =3D NULL;
-> :	}
-> =20
-> But I think it's a bit simpler to do
->=20
-> : 	if (info->node_cache) {
-> : 		leaf =3D info->node_cache;
-> : 		info->node_cache =3D NULL;
-> : 	} else {
-> : 		if (new_leaf) {
-
-Hmm, there be a bug there.  That should be if (*new_leaf) {
-
-> : 			leaf =3D *new_leaf;
-> : 			*new_leaf =3D NULL;
-> : 		} else {
-> : 			leaf =3D kmalloc(sizeof(*leaf), GFP_ATOMIC);
-> : 			if (!leaf)
-> : 				return -ENOMEM;
-> : 		}
-> : 		rb_init_node(&leaf->rb_node);
-> : 		INIT_LIST_HEAD(&leaf->msg_list);
-> : 		info->qsize +=3D sizeof(*leaf);
-> : 	}
->=20
-> and my version generates 25 bytes less text.
->=20
-> But why did we need to initialise *leaf's fields if the caller passed
-> us something in *new_leaf?  sys_mq_timedsend() already initialised the
-> fields for us?
-
-Because in mq_timedsend if info->node_cache was NULL, then we would
-speculatively allocate new_leaf.  Then we would call
-spin_lock(&info->lock);.  We could end up waiting on a different thread
-that is currently getting a message, and even though info->node_cache
-was NULL when we checked it before the spin lock, it might not be
-afterwards (although we are guaranteed to have an entry in node_cache at
-that point, so I guess in mq_timedsend we could check if node_cache was
-NULL, if so move new_leaf to node_cache and initialize it, and if not
-free new_leaf because we are guaranteed that we will keep node_cache
-through msg_insert since we don't release the spin lock in that time.
-
-Let me send a new version of the patch that I like more.
-
---=20
-Doug Ledford <dledford@redhat.com>
-              GPG KeyID: 0E572FDD
-	      http://people.redhat.com/dledford
-
-Infiniband specific RPMs available at
-	      http://people.redhat.com/dledford/Infiniband
-
-
---------------enig50FFBC5E5877E8582EE7FE22
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: OpenPGP digital signature
-Content-Disposition: attachment; filename="signature.asc"
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.17 (MingW32)
-Comment: Using GnuPG with Mozilla - http://enigmail.mozdev.org/
-
-iQIcBAEBAgAGBQJPtF2BAAoJELgmozMOVy/d+7MP/30Wzc3UHmpjnQ7YWb35OO+c
-nQazTWSJkz7+d2BmI8w1J/ZJGKQ4EH+9gEpSkq99nnnv7No1taGkn/zWZ0x4xX+J
-mCqk+/lQbQbUK6lc+hrMklPfKoUHYI5gzbKGlC8gZfnARlupIJjhKaxIphZpVjlu
-hZXm9C/kPWYREShdB7qo6JIhWAWGvnfhsdpagNTNLmD+Izh5pFMjxV24ccoyniAf
-HVMeKwTUmV1IyM2ZvZj0JTtCHDX6WSvSm6tOUkbyBCNbmKj+xoJKfGElAS3weZ9e
-DN6Fv3YhOpHMybsnD/0b49DseCNd/6tuInQBBA3JiuFmSRWCNhZQkcTSlwtYRj2L
-thxVrHLr3LoVHH+0bhAxquwjB91FG7m8KncvrXnHUActbG1isLR+Ky5sLNw5Wjpg
-YYX4421dE8az6tO/BnAEadutI5Mw6ZE1xEa5p4JY3L6LQ8VIKAr9ieWPo4fSQ1Gl
-9H5cTI9j0Fi6HrGM3oDuuc3CCoOqdDdPYyfMytzEnK0Z/J3eKkY99cUjA7q59UzL
-3l9rFEx0/Nu81TSuX/Z5Girc/XRxUGpM5oQ89+17ORnttdofpX0ER5Wz8F38b2YW
-KJZ6XNrKRSWp5wLUBstQD9aWcdHMBGHf3ELcA4Z6DjzOSB/4AEdoDpXLVUt954VM
-YYA6S9CX4CkKmQVuDFMY
-=+Bep
------END PGP SIGNATURE-----
-
---------------enig50FFBC5E5877E8582EE7FE22--
+diff --git a/arch/sh/include/asm/pgalloc.h b/arch/sh/include/asm/pgalloc.h
+index 8c00785..bedc2ed 100644
+--- a/arch/sh/include/asm/pgalloc.h
++++ b/arch/sh/include/asm/pgalloc.h
+@@ -13,6 +13,8 @@ extern void pgd_free(struct mm_struct *mm, pgd_t *pgd);
+ extern void pud_populate(struct mm_struct *mm, pud_t *pudp, pmd_t *pmd);
+ extern pmd_t *pmd_alloc_one(struct mm_struct *mm, unsigned long address);
+ extern void pmd_free(struct mm_struct *mm, pmd_t *pmd);
++
++#define __pmd_free_tlb(tlb, pmdp, addr)	pmd_free((tlb)->mm, pmdp)
+ #endif
+ 
+ static inline void pmd_populate_kernel(struct mm_struct *mm, pmd_t *pmd,
+diff --git a/arch/sh/include/asm/tlb.h b/arch/sh/include/asm/tlb.h
+index 45e5925..71af915 100644
+--- a/arch/sh/include/asm/tlb.h
++++ b/arch/sh/include/asm/tlb.h
+@@ -6,18 +6,7 @@
+ #endif
+ 
+ #ifndef __ASSEMBLY__
+-#include <linux/pagemap.h>
+-
+ #ifdef CONFIG_MMU
+-#include <linux/swap.h>
+-
+-#define __tlb_remove_tlb_entry(tlb, ptep, addr) do { } while (0)
+-
+-#define __pte_free_tlb(tlb, ptep, addr)	pte_free((tlb)->mm, ptep)
+-#define __pmd_free_tlb(tlb, pmdp, addr)	pmd_free((tlb)->mm, pmdp)
+-#define __pud_free_tlb(tlb, pudp, addr)	pud_free((tlb)->mm, pudp)
+-
+-#include <asm-generic/tlb.h>
+ 
+ #if defined(CONFIG_CPU_SH4) || defined(CONFIG_SUPERH64)
+ extern void tlb_wire_entry(struct vm_area_struct *, unsigned long, pte_t);
+@@ -35,8 +24,6 @@ static inline void tlb_unwire_entry(void)
+ }
+ #endif
+ 
+-#else /* CONFIG_MMU */
+-
+ #define __tlb_remove_tlb_entry(tlb, pte, address)	do { } while (0)
+ 
+ #include <asm-generic/tlb.h>
+diff --git a/include/asm-generic/tlb.h b/include/asm-generic/tlb.h
+index 90a725c..571e2cf 100644
+--- a/include/asm-generic/tlb.h
++++ b/include/asm-generic/tlb.h
+@@ -18,6 +18,7 @@
+ #include <linux/swap.h>
+ #include <asm/pgalloc.h>
+ #include <asm/tlbflush.h>
++#include <asm/cacheflush.h>
+ 
+ static inline void tlb_remove_page(struct mmu_gather *tlb, struct page *page);
+ 
