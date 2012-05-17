@@ -1,127 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965699Ab2EQUGS (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 May 2012 16:06:18 -0400
-Received: from avon.wwwdotorg.org ([70.85.31.133]:53598 "EHLO
-	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932347Ab2EQUGQ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 May 2012 16:06:16 -0400
-Message-ID: <4FB55A35.1010902@wwwdotorg.org>
-Date: Thu, 17 May 2012 14:06:13 -0600
-From: Stephen Warren <swarren@wwwdotorg.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
+	id S967690Ab2EQUJL (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 May 2012 16:09:11 -0400
+Received: from e7.ny.us.ibm.com ([32.97.182.137]:44617 "EHLO e7.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S966020Ab2EQUJA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 17 May 2012 16:09:00 -0400
+Date: Thu, 17 May 2012 13:08:38 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Steven Rostedt <rostedt@goodmis.org>, LKML <linux-kernel@vger.kernel.org>,
+        RT <linux-rt-users@vger.kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Clark Williams <williams@redhat.com>
+Subject: Re: [RFC][PATCH RT] rwsem_rt: Another (more sane) approach to mulit
+ reader rt locks
+Message-ID: <20120517200838.GL2567@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <1337090625.14207.304.camel@gandalf.stny.rr.com>
+ <20120517151838.GA8692@linux.vnet.ibm.com>
+ <1337268779.4281.38.camel@twins>
+ <20120517154755.GG2567@linux.vnet.ibm.com>
+ <1337271467.4281.43.camel@twins>
 MIME-Version: 1.0
-To: Dong Aisheng <b29396@freescale.com>
-CC: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linus.walleij@stericsson.com, shawn.guo@freescale.com
-Subject: Re: [PATCH RFC 1/1] pinctrl: improve gpio support for dt
-References: <1337090839-21224-1-git-send-email-b29396@freescale.com>
-In-Reply-To: <1337090839-21224-1-git-send-email-b29396@freescale.com>
-X-Enigmail-Version: 1.5pre
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1337271467.4281.43.camel@twins>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 12051720-5806-0000-0000-000015522476
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/15/2012 08:07 AM, Dong Aisheng wrote:
-> From: Dong Aisheng <dong.aisheng@linaro.org>
+On Thu, May 17, 2012 at 06:17:47PM +0200, Peter Zijlstra wrote:
+> On Thu, 2012-05-17 at 08:47 -0700, Paul E. McKenney wrote:
+> > On Thu, May 17, 2012 at 05:32:59PM +0200, Peter Zijlstra wrote:
+> > > On Thu, 2012-05-17 at 08:18 -0700, Paul E. McKenney wrote:
+> > > > Some researchers at MIT RCU-ified this lock:
+> > > > 
+> > > > http://people.csail.mit.edu/nickolai/papers/clements-bonsai.pdf 
+> > > 
+> > > Ah, as have I [1].. and they seem to have gotten about as far as I have,
+> > > which means almost there but not quite [2] :-)
+> > 
+> > I had forgotten about that -- that was the first call for call_srcu(),
+> > if I remember correctly.
+> > 
+> > > The most interesting case is file maps and they simply ignored those.
+> > > While I appreciate that from an academic pov, -- they can still write a
+> > > paper on the other interesting bits -- I don't really like it from a
+> > > practical point.
+> > > 
+> > > [1] https://lkml.org/lkml/2010/1/4/257
+> > > [2] https://lkml.org/lkml/2010/1/4/532
+> > 
+> > Hmmm...  Do the recent dcache changes cover some of the things that
+> > Linus called out?  Probably not, but some at least.
 > 
-> For dt, the gpio base may be dynamically allocated, thus the original
-> implementation of gpio support based on static gpio number and pin id
-> map may not be easy to use for dt.
+> No, and the points viro made:
 > 
-> One solution is a) use alias id for gpio node and refer to it in gpio
-> range, then we can get the fixed the gpio devices for this range and
-> b) get gpio chip from node which is specified in gpio range structure,
-> then get the dynamically allocated gpio chip base and c) using the chip
-> gpio base and offset to map to a physical pin id for dt.
+>   https://lkml.org/lkml/2010/1/5/194
+> 
+> are still very much an issue, you really don't want to do fput() from an
+> asynchronous context. Which means you have to do synchronize_rcu() or
+> similar from munmap() which will be rather unpopular :/
 
-As I just mentioned in response to Shawn's driver, I don't think that
-using the aliases node is the way to go here.
+I don't claim to understand all of the code, but I am also unafraid to
+ask stupid questions.  ;-)
 
-Instead, what about the following:
+So, is it possible to do something like the following?
 
-/*
- * This function parses property @propname in DT node @np. This property
- * is a list of phandles, with optional @cellskip cells between them.
- * For each entry in ranges, the phandle at index
- * range[i].id * (1 + @cellskip) is written into range[i].np
- */
-int pinctrl_dt_gpio_ranges_add_np(struct pinctrl_gpio_range *ranges,
-				  int nranges,
-				  struct device_node *np,
-				  const char *propname,
-				  int cellskip);
+1.	Schedule a workqueue from an RCU callback, and to have that
+	workqueue do the fput.
 
-Note: cellskip is usually 0. However, to allow the same code to be used
-for pinctrl-simple/pinctrl-generic's GPIO mapping table, we allow
-additional cells between the phandles.
+2.	Make things like unmount() do rcu_barrier() followed by
+	flush_workqueue(), or probably multiple flush_workqueue()s.
 
-For example, Tegra might have:
+3.	If someone concurrently does munmap() and a write to the
+	to-be-unmapped region, then the write can legally happen.
 
-gpio-controllers = <&tegra_gpio>; // there's just 1
+4.	Acquire mmap_sem in the fault path, but only if the fault
+	requires blocking, and recheck the situation under
+	mmap_sem -- the hope being to prevent long-lived page
+	faults from messing things up.
 
-i.MX23 might have:
+Fire away!  ;-)
 
-gpio-controllers = <&gpio0 &gpio1 &gpio2 &gpio3>; // it has 4 banks
+> Since we should not use per-cpu data for either files or processes
+> (there are simply too many of those around) the alternative is
+> horrendously hideous things like:
+> 
+>   https://lkml.org/lkml/2010/1/6/136
+> 
+> which one cannot get away with either.
+> 
+> The whole thing is very vexing indeed since all of this is only needed
+> for ill-behaved applications since a well-constructed application will
+> never fault in a range it is concurrently unmapping.
+> 
+> Most annoying.
 
-whereas pinctrl-simple/pinctrl-generic might want to put the entire
-range table in this property, so might do something like:
+No argument there!!!
 
-gpio-ranges =	<&gpio0 $gpio_offset $pin_offset $count>
-		<&gpio1 $gpio_offset $pin_offset $count> ...;
+							Thanx, Paul
 
-and hence set cellskip to 3. the pinctrl-simple/pinctrl-generic code
-would need to parse the other 3 cells itself.
-
-The algorithm is roughly:
-
-prop = get_property(propname)
-for range in ranges:
-    if not range.np:
-        phandle = get_phandle_by_index(prop, range.id);
-
-Have a second function that converts the np pointer to gpio chips. This
-could be used if the np field was obtained somewhere other than by
-calling pinctrl_dt_add_np_to_ranges():
-
-int pinctrl_dt_gpio_ranges_np_to_gc(struct pinctrl_gpio_range *ranges,
-				    int nranges);
-
-Note: For any np where of_node_to_gpiochip() fails,
-pinctrl_dt_gpio_ranges_np_to_gc() should return -EPROBE_DEFER so that
-the pinctrl driver can wait for the GPIO driver to probe before continuing.
-
-The algorithm is roughly:
-
-for range in ranges:
-    if range.gc:
-        continue
-    if not range.np:
-        continue
-    range.gc = of_node_to_gpiochip(range.np)
-    if not range.gc:
-        return -EPROBE_DEFER
-
-Have a third function which converts gpio chip plus offset into the
-range's real base. This would be useful even when not using DT:
-
-int pinctrl_gpio_ranges_recalc_bases(struct pinctrl_gpio_range *ranges,
-				     int nranges);
-
-The algorithm is roughly:
-
-for range in ranges:
-    // only convert things not already set
-    if range.base:
-        continue
-    if not range.gc:
-        continue
-    range.base = base(range.gc) + range.offset
-
-One could imagine helper functions that wrapped all those 3 functions
-into 1 call for drivers to use.
-
-Does that sound like a reasonable idea?
