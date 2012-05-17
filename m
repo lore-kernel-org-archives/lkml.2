@@ -1,75 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761713Ab2EQLsu (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 May 2012 07:48:50 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:6672 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752692Ab2EQLss (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 May 2012 07:48:48 -0400
-X-Authority-Analysis: v=2.0 cv=cssZYiEi c=1 sm=0 a=ZycB6UtQUfgMyuk2+PxD7w==:17 a=XQbtiDEiEegA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=4e99ZUtEKCT8sPAI1DYA:9 a=PUjeQqilurYA:10 a=ZycB6UtQUfgMyuk2+PxD7w==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 74.67.80.29
-Message-ID: <1337255326.6724.92.camel@gandalf.stny.rr.com>
-Subject: Re: Perf record format portability
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Dmitry Antipov <dmitry.antipov@linaro.org>
-Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@redhat.com>,
-        Amit Kucheria <amit.kucheria@linaro.org>, linaro-dev@lists.linaro.org,
-        linux-kernel@vger.kernel.org, Jiri Olsa <jolsa@redhat.com>
-Date: Thu, 17 May 2012 07:48:46 -0400
-In-Reply-To: <4FB4885F.4000002@linaro.org>
-References: <4FB275EB.5050904@linaro.org>
-	  <20120515155146.GB7864@infradead.org> <4FB38677.8070601@linaro.org>
-	  <20120516145927.GC7864@infradead.org>
-	 <1337187503.6724.50.camel@gandalf.stny.rr.com>
-	 <4FB4885F.4000002@linaro.org>
-Content-Type: text/plain; charset="ISO-8859-15"
-X-Mailer: Evolution 3.2.2-1 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	id S1761743Ab2EQLuq (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 May 2012 07:50:46 -0400
+Received: from a.ns.miles-group.at ([95.130.255.143]:47834 "EHLO radon.swed.at"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1761704Ab2EQLup (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 17 May 2012 07:50:45 -0400
+Message-ID: <4FB4E613.4020100@nod.at>
+Date: Thu, 17 May 2012 13:50:43 +0200
+From: Richard Weinberger <richard@nod.at>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:8.0) Gecko/20111105 Thunderbird/8.0
+MIME-Version: 1.0
+To: dedekind1@gmail.com
+CC: linux-mtd@lists.infradead.org, tglx@linutronix.de,
+        linux-kernel@vger.kernel.org, Heinz.Egger@linutronix.de,
+        tim.bird@am.sony.com
+Subject: Re: [RFC v5] UBI: Fastmap support (aka checkpointing)
+References: <1337201522-86521-1-git-send-email-richard@nod.at> <1337225964.2730.11.camel@brekeke>
+In-Reply-To: <1337225964.2730.11.camel@brekeke>
+X-Enigmail-Version: 1.3.4
+Content-Type: multipart/signed; micalg=pgp-sha1;
+ protocol="application/pgp-signature";
+ boundary="------------enigADAA0287309751902C9FBCC6"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2012-05-17 at 09:10 +0400, Dmitry Antipov wrote:
-> On 05/16/2012 08:58 PM, Steven Rostedt wrote:
-> 
-> > On Wed, 2012-05-16 at 11:59 -0300, Arnaldo Carvalho de Melo wrote:
-> >
-> >> Steve,
-> >>
-> >> 	Was the kernel trace events infrastructure designed with that in
-> >> mind? I.e. cross analysis? I must be missing something here, still
-> >> ENOCOFFEE :-\
-> >
-> > Yes, the libparsevents library was design for this from day one. That's
-> > why trace-cmd data file can be run on an ARM and read on x86, or PPC, or
-> > whatever. I did all my development testing against 32bit, 64bit and big
-> > and little endian. This was the case from the beginning.
-> 
-> I didn't face with big/little conversion issues, most probably both x86 and
-> my ARM board are of the same (little) endian :-).
-> 
-> But the original question was about event IDs. For example,
-> /sys/kernel/debug/tracing/events/sched/sched_switch/id is 55 on my ARM board
-> and 279 on my PC host, so 'perf report' displays "unknown:unknown" instead
-> of expected "sched:sched_switch" when attempting to do some cross-analysis.
-> I suppose that original event IDs should be preserved, either within perf.data
-> or by providing the copy of original /sys/kernel/debug/tracing/*, much like
-> it's done with --kallsyms to resolve kernel symbols.
+This is an OpenPGP/MIME signed message (RFC 2440 and 3156)
+--------------enigADAA0287309751902C9FBCC6
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: quoted-printable
 
-trace-cmd copies the entire /sys/kernel/debug/tracing/events directory
-into the data file (well it copies only the events you specify). I
-thought perf did the same. It should be using what's in the perf.dat
-file and not what's on the host.
+Am 17.05.2012 05:39, schrieb Artem Bityutskiy:
+> On Wed, 2012-05-16 at 22:51 +0200, Richard Weinberger wrote:
+>> This is a bug-fix release. v4 handled static volumes wrong.
+>> v6 will address everything that Artem pointed out.
+>=20
+> Hi, I'll try to review this further, but few points I'd like to
+> highlight.
+>=20
+> 1. We'll need to re-structure the code a bit and rename scan.[ch] to
+> attach.[ch], all data structures like 'struct ubi_scan_volume' which yo=
+u
+> re-use we will also need to rename and remove the "scan" word, etc. I a=
+m
+> willing to do this preparation.
 
-Again, perf report is not what uses the events from trace-cmd. It's perf
-script that does. If perf script works, then perf report needs to be
-fixed. But after it gets updated to use the latest libparse-events,
-which I have no idea when that will ever happen.
+No problem. It's already on my list.
 
--- Steve
+> 2. You need to re-use the scanning code we have for scanning the fastma=
+p
+> volumes, I think. May be you need some amendments there, but currently
+> you have more duplication than needed. You'll just plug more of your
+> code to the attach.c file: check if there fastmap, if yes, read it and
+> scan the internal fastmap volumes by re-using functions in attach.c. So=
 
+> all the fastmap reading/checking/manipulating stuff is in fastmap.c, th=
+e
+> scanning and interpreting is in attach.c.
+
+Okay.
+
+> Again, I am willing to do corresponding preparations for you, you'll
+> need to amend your code then.
+
+As I said, v6 will contain all requested changes.
+
+> Also, I think you probably do not have to split your patches. For me it=
+
+> looks like there is a lot of work needed anyway, so you could just send=
+
+> it as one patch so far, to make things easier. Because reviewing this
+> stuff by reading patches is too difficult anyway, and the reviewer has
+> to apply it and review / navigate the real code, and just look sometime=
+s
+> to the patch.
+>=20
+
+Will do.
+
+Thanks,
+//richard
+
+
+--------------enigADAA0287309751902C9FBCC6
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: OpenPGP digital signature
+Content-Disposition: attachment; filename="signature.asc"
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.18 (GNU/Linux)
+
+iQEcBAEBAgAGBQJPtOYTAAoJEN9758yqZn9eyRoIAL3f6ktYfh1q8GUL9V6/QF0n
+MXefjgv0VYlDoPYNKRx0Itj71hNjx0nO453IHOG8mQyVebg0fUMSgq8P9Cs4TQfg
+sU7SBrGLJGW7aHlFYVAJk4QgCr/bjrVBpXJEMdrZVoG2sSqp3VvnDd8tuNf6Z+Fx
+u3nxc5ha/wev5ABqOGNL2arxyyT7Oiet55NNUkdqR2C5svRZajw/a99hyh93JblQ
+fppsl0An7W52w9CqQFstKleE2e+DWrOiuDqnhXrIDby88DvsaWF4a4GT5rpqJ6Y8
+gev1KHHYIqcomyfBREVoO1rA+cAi7ZlU0GxFeE+e58fvkb7H1N72W1SiAgv4Z0s=
+=UaEY
+-----END PGP SIGNATURE-----
+
+--------------enigADAA0287309751902C9FBCC6--
