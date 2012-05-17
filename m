@@ -1,52 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S967499Ab2EQS2t (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 May 2012 14:28:49 -0400
-Received: from mail.mev.co.uk ([62.49.15.74]:54995 "EHLO mail.mev.co.uk"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932757Ab2EQS2q (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 May 2012 14:28:46 -0400
-Message-ID: <4FB54356.5020203@mev.co.uk>
-Date: Thu, 17 May 2012 19:28:38 +0100
-From: Ian Abbott <abbotti@mev.co.uk>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:12.0) Gecko/20120428 Thunderbird/12.0.1
+	id S967524Ab2EQS3d (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 May 2012 14:29:33 -0400
+Received: from iolanthe.rowland.org ([192.131.102.54]:47526 "HELO
+	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S932633Ab2EQS3b (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 17 May 2012 14:29:31 -0400
+Date: Thu, 17 May 2012 14:29:30 -0400 (EDT)
+From: Alan Stern <stern@rowland.harvard.edu>
+X-X-Sender: stern@iolanthe.rowland.org
+To: Lin Ming <ming.m.lin@intel.com>
+cc: Jens Axboe <axboe@kernel.dk>, Jeff Moyer <jmoyer@redhat.com>,
+        <linux-kernel@vger.kernel.org>, <linux-pm@vger.kernel.org>,
+        <linux-scsi@vger.kernel.org>
+Subject: Re: [RFC v2 PATCH 2/4] block: add queue runtime pm callbacks
+In-Reply-To: <1337269686-3781-3-git-send-email-ming.m.lin@intel.com>
+Message-ID: <Pine.LNX.4.44L0.1205171346070.1169-100000@iolanthe.rowland.org>
 MIME-Version: 1.0
-To: H Hartley Sweeten <hartleys@visionengravers.com>
-CC: Ian Abbott <ian.abbott@mev.co.uk>, Greg KH <gregkh@linuxfoundation.org>,
-        Linux Kernel <linux-kernel@vger.kernel.org>,
-        "devel@driverdev.osuosl.org" <devel@driverdev.osuosl.org>,
-        "fmhess@users.sourceforge.net" <fmhess@users.sourceforge.net>
-Subject: Re: [PATCH] staging: comedi: Convert struct addi_board initialization
- to C99 format
-References: <201205161751.56913.hartleys@visionengravers.com> <20120517021805.GA32592@kroah.com> <ADE657CA350FB648AAC2C43247A983F00206986FBDDF@AUSP01VMBX24.collaborationhost.net> <4FB49E74.8030409@mev.co.uk> <20120517133221.GB5090@kroah.com> <4FB51FFA.3090800@mev.co.uk> <ADE657CA350FB648AAC2C43247A983F0020698AE0FF8@AUSP01VMBX24.collaborationhost.net>
-In-Reply-To: <ADE657CA350FB648AAC2C43247A983F0020698AE0FF8@AUSP01VMBX24.collaborationhost.net>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 17/05/2012 17:38, H Hartley Sweeten wrote:
-> On Thursday, May 17, 2012 8:58 AM, Ian Abbott wrote:
->> On 2012/05/17 02:32 PM, Greg KH wrote:
->>> I thought a few years ago, either you, or someone else, said it would be
->>> good to just delete them entirely.  Or am I making that up and just wish
->>> it would be so?  :)
->>
->> I can't remember at my age!
->>
->> There was a guy who works for Addi-Data (Krauth Julien) who had trouble
->> submitting patches to you directly (I was CC'd) back in
->> September/October 2011, so I guess they'd be unhappy if the drivers were
->> removed altogether!
->
-> I think they can be cleaned up. It's just going to take a bit of work. Of course
-> when it's done they probably will not look anything like they do now.
->
-> BTW, what actual hardware do you have available to test with?
+On Thu, 17 May 2012, Lin Ming wrote:
 
-Not a lot.  Just the Amplicon cards (amplc_* drivers).
+> Add runtime pm suspend/resume callbacks to request queue.
+> As an example, implement these callbacks in sd driver.
 
--- 
--=( Ian Abbott @ MEV Ltd.    E-mail: <abbotti@mev.co.uk>        )=-
--=( Tel: +44 (0)161 477 1898   FAX: +44 (0)161 718 3587         )=-
+This is not the way to do it.  The block subsystem should not use 
+suspend/resume callbacks.
+
+Instead, there should be block functions that can be called by client
+drivers: block_pre_runtime_suspend, block_post_runtime_suspend,
+bock_pre_runtime_resume, and block_post_runtime_resume.
+
+They should do something like this:
+
+	block_pre_runtime_suspend:
+		If any requests are in the queue, return -EBUSY.
+		Otherwise set q->rpm_status to RPM_SUSPENDING and
+		return 0.
+
+	block_post_runtime_suspend:
+		If the suspend succeeded then set q->rpm_status to 
+		RPM_SUSPENDED.  Otherwise set it to RPM_ACTIVE and
+		call pm_runtime_mark_last_busy().
+
+	block_pre_runtime_resume:
+		Set q->rpm_status to RPM_RESUMING.
+
+	block_post_runtime_resume:
+		If the resume succeeded then set q->rpm_status to
+		RPM_ACTIVE and call pm_runtime_mark_last_busy() and
+		pm_runtime_request_autosuspend().
+		Otherwise set q->rpm_status to RPM_SUSPENDED.
+
+There should also be an initialization function for client drivers to
+call.  block_runtime_pm_init() should call pm_runtime_mark_last_busy(),
+pm_runtime_use_autosuspend(), and pm_runtime_autosuspend().
+
+Next, you have to modify the parts of the block layer that run when a 
+new request is added to the queue or a request is removed.
+
+	When a request is added:
+		If q->rpm_status is RPM_SUSPENDED, or if q->rpm_status
+		is RPM_SUSPENDING and the REQ_PM flag isn't set, call
+		pm_runtime_request_resume().
+
+	When a request finishes:
+		Call pm_runtime_mark_last_busy().
+
+Next, you have to change the parts of the block layer responsible for
+taking a request from the queue and handing it to the lower-level
+driver (both peek and get).  If q->rpm_status is RPM_SUSPENDED, they
+shouldn't do anything -- act as though the queue is empty.  If
+q->rpm_status is RPM_SUSPENDING or RPM_RESUMING, they should hand over
+the request only if it has the REQ_PM flag set.
+
+For this to work, the block layer has to know what struct device
+pointer to pass to the pm_runtime_* routines.  You'll have to add that
+information to the request_queue structure; I guess q->dev can get set
+by block_pm_runtime_init().  In fact, when that's done you won't need
+q->rpm_status any more.  You'll be able to use q->dev->power.rpm_status
+directly, and you won't have to update it because the PM core does that
+for you.
+
+(Or maybe it would be easier to make q->rpm_status be a pointer to 
+q->dev->power.rpm_status.  That way, if CONFIG_PM_RUNTIME isn't enabled 
+or block_runtime_pm_init() hasn't been called, you can have 
+q->rpm_status simply point to a static value that is permanently set to 
+RPM_ACTIVE.)
+
+I may have left some parts out from this brief description.  Hopefully 
+you'll be able to figure out the general idea and get it to work.
+
+Alan Stern
+
