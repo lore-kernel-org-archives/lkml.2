@@ -1,186 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030640Ab2EQWu6 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 May 2012 18:50:58 -0400
-Received: from perceval.ideasonboard.com ([95.142.166.194]:49843 "EHLO
-	perceval.ideasonboard.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1030523Ab2EQWu4 (ORCPT
+	id S1030644Ab2EQWvS (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 May 2012 18:51:18 -0400
+Received: from mail-wi0-f178.google.com ([209.85.212.178]:64460 "EHLO
+	mail-wi0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1030523Ab2EQWvO convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 May 2012 18:50:56 -0400
-From: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
-To: Bhupesh Sharma <bhupesh.sharma@st.com>
-Cc: linux-usb@vger.kernel.org, balbi@ti.com, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/1] usb: gadget/uvc: Add support for 'USB_GADGET_DELAYED_STATUS' response for a set_intf(alt-set 1) command
-Date: Fri, 18 May 2012 00:51:04 +0200
-Message-ID: <2118581.uka9oG77q2@avalon>
-User-Agent: KMail/4.8.3 (Linux/3.2.1-gentoo-r2; KDE/4.8.3; x86_64; ; )
-In-Reply-To: <65fb24c9f639ec8cedab04799bc59d43c5683a08.1336374550.git.bhupesh.sharma@st.com>
-References: <65fb24c9f639ec8cedab04799bc59d43c5683a08.1336374550.git.bhupesh.sharma@st.com>
+	Thu, 17 May 2012 18:51:14 -0400
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
+In-Reply-To: <4FB57EB2.4050208@zytor.com>
+References: <1337292816-10839-1-git-send-email-hjl.tools@gmail.com>
+ <1337292816-10839-2-git-send-email-hjl.tools@gmail.com> <CA+55aFx98qvVg1JhMV0JjgNGb++xtir5ocseY3xgQNc3qAtWdQ@mail.gmail.com>
+ <4FB57EB2.4050208@zytor.com>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Thu, 17 May 2012 15:50:53 -0700
+X-Google-Sender-Auth: -TDx6Bu3oBfWW41fvY5YuuO5uKw
+Message-ID: <CA+55aFzztct_HzmGiit=9SwwM4_YPuXbjwMdJpM1JHMXGBNqaA@mail.gmail.com>
+Subject: Re: [PATCH 01/10] Use __kernel_long_t in struct timex
+To: "H. Peter Anvin" <hpa@zytor.com>
+Cc: "H.J. Lu" <hjl.tools@gmail.com>, linux-kernel@vger.kernel.org,
+        linux-arch@vger.kernel.org, mingo@kernel.org, tglx@linutronix.de
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Bhupesh,
+On Thu, May 17, 2012 at 3:41 PM, H. Peter Anvin <hpa@zytor.com> wrote:
+>
+> It also puts a clear line between the kernel and user space namespaces,
+> which has been an ongoing problem (we *still* haven't cleaned out some
+> namespace pollution in the i386 <asm/signal.h> for example.)
+>
+> That being said, this is a lot like the __u* and __s* types which we use
+> instead of <stdint.h> for similar reasons.  I don't know if
+> __ulong/__slong or __uword/__sword would be better here?
 
-Thank you for the patch.
+Yes, I do think this is closer to the "__u32" kind of usage, and in
+general I tend to think that's true of most of the __kernel_ prefix
+things. There is very little "kernely" things about it.
 
-On Monday 07 May 2012 12:42:37 Bhupesh Sharma wrote:
-> This patch adds the support in UVC webcam gadget design for providing
-> USB_GADGET_DELAYED_STATUS in response to a set_interface(alt setting 1)
-> command issue by the Host.
-> 
-> The current UVC webcam gadget design generates a STREAMON event
-> corresponding to a set_interface(alt setting 1) command from the Host.
-> This STREAMON event will eventually be routed to a real V4L2 device.
-> 
-> To start video streaming, it may be required to perform some register writes
-> to a camera sensor device over slow external busses like I2C or SPI. So, it
-> makes sense to ensure that we delay the STATUS stage of the
-> set_interface(alt setting 1) command.
-> 
-> Otherwise, a lot of ISOC IN tokens sent by the Host will be replied to by
-> zero-length packets by the webcam device. On certain Hosts this may even
-> lead to ISOC URBs been cancelled from the Host side.
+Yes, we have to have the double underscore (or single+capitalized),
+but I think that at least personally, I'd be happier with just
+"__long" and "__ulong".
 
-Very good point.
+I think __word would be good too, *except* for the fact that
+especially in x86 land, I think there's the legacy confusion with
+"word" being 16-bit. Ugh.
 
-> So, as soon as we finish doing all the "streaming" related stuff on the real
-> V4L2 device, we call a STREAMON ioctl on the UVC side and from here we call
-> the 'usb_composite_setup_continue' function to complete the status stage of
-> the set_interface(alt setting 1) command.
-> 
-> Signed-off-by: Bhupesh Sharma <bhupesh.sharma@st.com>
-> ---
->  drivers/usb/gadget/f_uvc.c    |   12 +++++++++++-
->  drivers/usb/gadget/uvc.h      |    4 ++++
->  drivers/usb/gadget/uvc_v4l2.c |   27 +++++++++++++++++++++++++--
->  3 files changed, 40 insertions(+), 3 deletions(-)
-> 
-> diff --git a/drivers/usb/gadget/f_uvc.c b/drivers/usb/gadget/f_uvc.c
-> index d2569b2..6f084e3 100644
-> --- a/drivers/usb/gadget/f_uvc.c
-> +++ b/drivers/usb/gadget/f_uvc.c
-> @@ -209,6 +209,14 @@ uvc_function_get_alt(struct usb_function *f, unsigned
-> interface) return uvc->state == UVC_STATE_STREAMING ? 1 : 0;
->  }
-> 
-> +void
-> +uvc_process_setup_continue(struct uvc_device *uvc)
+So I don't know. I just do know that I don't see the point in that
+"__kernel_" prefix.
 
-No need for a line split, this won't exceed the 80 columns limit.
-
-Could you please rename the function to uvc_function_setup_continue to be 
-coherent with the other non-static functions in this file (and, while you're 
-at it, move it right above uvc_function_get_alt) ?
-
-> +{
-> +	struct usb_composite_dev *cdev = uvc->func.config->cdev;
-> +
-> +	usb_composite_setup_continue(cdev);
-> +}
-> +
->  static int
->  uvc_function_set_alt(struct usb_function *f, unsigned interface, unsigned
-> alt) {
-> @@ -271,7 +279,9 @@ uvc_function_set_alt(struct usb_function *f, unsigned
-> interface, unsigned alt) v4l2_event_queue(uvc->vdev, &v4l2_event);
-> 
->  		uvc->state = UVC_STATE_STREAMING;
-> -		break;
-> +		uvc->vdev_is_streaming = false;
-
-Do you think you could combine the state and vdev_is_streaming fields ? Maybe 
-adding a UVC_STATE_PRE_STREAMING state would be enough, you could set the 
-state to that value here, and then set it to UVC_STATE_STREAMING in the 
-STREAMON ioctl handler (I would actually prefer doing that in the 
-uvc_video_enable function).
-
-If you think it makes sense, could you please try it ?
-
-> +
-> +		return USB_GADGET_DELAYED_STATUS;
-
-Could you please move the return 0 at the end of this function to the case 0 
-above ? Each case will then have its return statement.
-
->  	default:
->  		return -EINVAL;
-> diff --git a/drivers/usb/gadget/uvc.h b/drivers/usb/gadget/uvc.h
-> index bc78c60..56ac883 100644
-> --- a/drivers/usb/gadget/uvc.h
-> +++ b/drivers/usb/gadget/uvc.h
-> @@ -168,6 +168,9 @@ struct uvc_device
->  	/* Events */
->  	unsigned int event_length;
->  	unsigned int event_setup_out : 1;
-> +
-> +	/* flags */
-> +	bool vdev_is_streaming;
->  };
-> 
->  static inline struct uvc_device *to_uvc(struct usb_function *f)
-> @@ -188,6 +191,7 @@ struct uvc_file_handle
->   * Functions
->   */
-> 
-> +extern void uvc_process_setup_continue(struct uvc_device *uvc);
->  extern void uvc_endpoint_stream(struct uvc_device *dev);
-> 
->  extern void uvc_function_connect(struct uvc_device *uvc);
-> diff --git a/drivers/usb/gadget/uvc_v4l2.c b/drivers/usb/gadget/uvc_v4l2.c
-> index f761bcb..379d8ac 100644
-> --- a/drivers/usb/gadget/uvc_v4l2.c
-> +++ b/drivers/usb/gadget/uvc_v4l2.c
-> @@ -242,7 +242,18 @@ uvc_v4l2_do_ioctl(struct file *file, unsigned int cmd,
-> void *arg) if ((ret = uvc_queue_buffer(&video->queue, arg)) < 0)
->  			return ret;
-> 
-> -		return uvc_video_pump(video);
-> +		/*
-> +		 * for the very first QBUF calls (until STREAMON is
-> +		 * called) we just need to queue the buffers and start
-> +		 * pumping the data to USB side only after STREAMON has
-> +		 * been called which is handled by the STREAMON case
-> +		 * below. For QBUF calls after STREAMON, we need to pump
-> +		 * the data to the USB side here itself.
-> +		 */
-> +		if (uvc->vdev_is_streaming)
-> +			return uvc_video_pump(video);
-> +
-> +		return 0;
-> 
->  	case VIDIOC_DQBUF:
->  		return uvc_dequeue_buffer(&video->queue, arg,
-> @@ -255,7 +266,19 @@ uvc_v4l2_do_ioctl(struct file *file, unsigned int cmd,
-> void *arg) if (*type != video->queue.type)
->  			return -EINVAL;
-> 
-> -		return uvc_video_enable(video, 1);
-> +		ret = uvc_video_enable(video, 1);
-> +		if (ret < 0)
-> +			return ret;
-> +
-> +		/*
-> +		 * since the real video device has now started streaming
-> +		 * its safe now to complete the status phase of the
-> +		 * set_interface (alt setting 1)
-> +		 */
-> +		uvc_process_setup_continue(uvc);
-> +		uvc->vdev_is_streaming = true;
-
-Could you please move this to uvc_video_enable() ?
-
-> +
-> +		return 0;
->  	}
-> 
->  	case VIDIOC_STREAMOFF:
-
--- 
-Regards,
-
-Laurent Pinchart
-
+                   Linus
