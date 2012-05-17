@@ -1,64 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S967336Ab2EQWBt (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 May 2012 18:01:49 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:50689 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S965954Ab2EQWBr (ORCPT
+	id S967347Ab2EQWEj (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 May 2012 18:04:39 -0400
+Received: from casper.infradead.org ([85.118.1.10]:46299 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S965954Ab2EQWEi convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 May 2012 18:01:47 -0400
-Date: Thu, 17 May 2012 23:01:44 +0100
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Axel Lin <axel.lin@gmail.com>
-Cc: linux-kernel@vger.kernel.org, Jonghwan Choi <jhbird.choi@gmail.com>,
-        Haojian Zhuang <haojian.zhuang@marvell.com>,
-        Liam Girdwood <lrg@ti.com>
-Subject: Re: [PATCH] regulator: max8649: Remove unused check_range() function
-Message-ID: <20120517220144.GN26337@opensource.wolfsonmicro.com>
-References: <1337216562.5759.5.camel@phoenix>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="+278g007AL/ykmV8"
-Content-Disposition: inline
-In-Reply-To: <1337216562.5759.5.camel@phoenix>
-X-Cookie: Condense soup, not books!
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Thu, 17 May 2012 18:04:38 -0400
+Message-ID: <1337292273.4281.101.camel@twins>
+Subject: Re: [PATCH 2/2] block: Convert BDI proportion calculations to
+ flexible proportions
+From: Peter Zijlstra <peterz@infradead.org>
+To: Jan Kara <jack@suse.cz>
+Cc: Wu Fengguang <fengguang.wu@intel.com>, LKML <linux-kernel@vger.kernel.org>,
+        linux-mm@kvack.org
+Date: Fri, 18 May 2012 00:04:33 +0200
+In-Reply-To: <1337096583-6049-3-git-send-email-jack@suse.cz>
+References: <1337096583-6049-1-git-send-email-jack@suse.cz>
+	 <1337096583-6049-3-git-send-email-jack@suse.cz>
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
+X-Mailer: Evolution 3.2.2- 
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Tue, 2012-05-15 at 17:43 +0200, Jan Kara wrote:
+> +static struct timer_list writeout_period_timer =
+> +               TIMER_DEFERRED_INITIALIZER(writeout_period, 0, 0); 
 
---+278g007AL/ykmV8
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+So the problem with using a deferred timer is that it 'ignores' idle
+time. So if a very busy period is followed by a real quiet period you'd
+expect all the proportions to have aged to 0, but they won't have.
 
-On Thu, May 17, 2012 at 09:02:42AM +0800, Axel Lin wrote:
-> This driver has been converted to use regulator_map_voltage_linear and
-> set_voltage_sel now. regulator_map_voltage_linear will check the the voltage
-> falls within specified range. The check_range() function is not used, remove it.
+One way to solve that is to track a jiffies count of the last time the
+timer triggered and compute the missed periods from that and extend
+fprop_new_period() to deal with period increments of more than 1.
 
-Applied, thanks.
-
---+278g007AL/ykmV8
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBAgAGBQJPtXVBAAoJEBus8iNuMP3dc+wQAJVrxRZ5iwwuAYmCi/OPq74s
-Cs7gXTGL6fyw1aQwippRb8hPhpelDQkqXS3AMZy78kklrjYlY4mDwe5uUDVs/fOA
-AzJHiLixTREQ6xZorp3SZokUrv+Q4pUrioCaVogj8GmkFMNORDzvjb+x6GrFmTi4
-AaAoRJj//a0tve9qU9JlMzici2+bvwirO7dmiAEF9HGGX/xig0dW74oxr14RCcUv
-eRoJWN7v8wN1mQIsnBOb/3tBJ2Wul6iMCwqXXGvt5c9oiQxNnrmzd5jgcNwqiD/P
-+qRmglrm8OnPMxu6aJSqRr/wt/pe5PrFCBs8LATguG0pFoMFFDbGQhuYYwwugN9Z
-1TIV1PjGWPmRb7cUJs2hoYZiNqN1+xpdKfLN0AFBDRK4/CM0DszF1v5IwG7fZZrj
-CnXl4ysTmZqg0aWWcCGHZYUC9KrmlqhdfI9jSkB3E6//igIEZcBKN9OL1o3G630B
-HdZlZDyx1/wvolysIYNIYx60TspVf/ebikQQhnsTuZWJ96cGAAmqzfuFjJ0nfNvu
-rMIOeCe0qfhEByt4gDa4CDbP+ivc+xPrPRZbGSpJATLjsBE+aTIUinkXGKINQEsP
-yp42zPXd9DViBXRgYDh36nYNFpIg5G2VBxJBStw3V3KO3HrtZOe7BNUgNXccGnwe
-bmy2jxIJAKol9puOfAzJ
-=nDXK
------END PGP SIGNATURE-----
-
---+278g007AL/ykmV8--
+The other is of course to not use deferred timers.
