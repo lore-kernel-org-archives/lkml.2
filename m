@@ -1,49 +1,186 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030617Ab2EQWu1 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 May 2012 18:50:27 -0400
-Received: from perches-mx.perches.com ([206.117.179.246]:39341 "EHLO
-	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1030492Ab2EQWu0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 May 2012 18:50:26 -0400
-Message-ID: <1337295024.8872.33.camel@joe2Laptop>
-Subject: Re: [RFC PATCH net-next] hp100: delete VG/AnyLAN hp100
-From: Joe Perches <joe@perches.com>
-To: Francois Romieu <romieu@fr.zoreil.com>, Joel Soete <soete.joel@scarlet.be>
-Cc: Paul Gortmaker <paul.gortmaker@windriver.com>,
-        linux-kernel@vger.kernel.org, JBottomley@parallels.com,
-        "David S. Miller" <davem@davemloft.net>, netdev@vger.kernel.org,
-        Joel Soete <soete.joel@scarlet.be>
-Date: Thu, 17 May 2012 15:50:24 -0700
-In-Reply-To: <20120517222843.GA30680@electric-eye.fr.zoreil.com>
-References: <1337272841-25931-1-git-send-email-paul.gortmaker@windriver.com>
-	 <1337272841-25931-3-git-send-email-paul.gortmaker@windriver.com>
-	 <4FB52C99.6010303@windriver.com> <20120517212039.GC27789@windriver.com>
-	 <1337292547.8872.20.camel@joe2Laptop>
-	 <20120517222843.GA30680@electric-eye.fr.zoreil.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.2- 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	id S1030640Ab2EQWu6 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 May 2012 18:50:58 -0400
+Received: from perceval.ideasonboard.com ([95.142.166.194]:49843 "EHLO
+	perceval.ideasonboard.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1030523Ab2EQWu4 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 17 May 2012 18:50:56 -0400
+From: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
+To: Bhupesh Sharma <bhupesh.sharma@st.com>
+Cc: linux-usb@vger.kernel.org, balbi@ti.com, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/1] usb: gadget/uvc: Add support for 'USB_GADGET_DELAYED_STATUS' response for a set_intf(alt-set 1) command
+Date: Fri, 18 May 2012 00:51:04 +0200
+Message-ID: <2118581.uka9oG77q2@avalon>
+User-Agent: KMail/4.8.3 (Linux/3.2.1-gentoo-r2; KDE/4.8.3; x86_64; ; )
+In-Reply-To: <65fb24c9f639ec8cedab04799bc59d43c5683a08.1336374550.git.bhupesh.sharma@st.com>
+References: <65fb24c9f639ec8cedab04799bc59d43c5683a08.1336374550.git.bhupesh.sharma@st.com>
+MIME-Version: 1.0
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2012-05-18 at 00:28 +0200, Francois Romieu wrote:
-> Joe Perches <joe@perches.com> :
-> > On Thu, 2012-05-17 at 17:20 -0400, Paul Gortmaker wrote:
-> > > [Re: [PATCH 2/5] drivers/net: delete all code/drivers depending on CONFIG_MCA
-> > 
-> > If we're removing really old and unused stuff,
-> > how about the VG/AnyLAN driver too?
+Hi Bhupesh,
+
+Thank you for the patch.
+
+On Monday 07 May 2012 12:42:37 Bhupesh Sharma wrote:
+> This patch adds the support in UVC webcam gadget design for providing
+> USB_GADGET_DELAYED_STATUS in response to a set_interface(alt setting 1)
+> command issue by the Host.
 > 
-> Joel Soete appeared to actively use a PCI one with recent kernels back
-> in 2007.
+> The current UVC webcam gadget design generates a STREAMON event
+> corresponding to a set_interface(alt setting 1) command from the Host.
+> This STREAMON event will eventually be routed to a real V4L2 device.
+> 
+> To start video streaming, it may be required to perform some register writes
+> to a camera sensor device over slow external busses like I2C or SPI. So, it
+> makes sense to ensure that we delay the STATUS stage of the
+> set_interface(alt setting 1) command.
+> 
+> Otherwise, a lot of ISOC IN tokens sent by the Host will be replied to by
+> zero-length packets by the webcam device. On certain Hosts this may even
+> lead to ISOC URBs been cancelled from the Host side.
 
-I saw people using TR adapters with Linux as of 2008/9.
+Very good point.
 
-That doesn't mean it's common or make it desirable to
-keep TR in the current kernel tree though.
+> So, as soon as we finish doing all the "streaming" related stuff on the real
+> V4L2 device, we call a STREAMON ioctl on the UVC side and from here we call
+> the 'usb_composite_setup_continue' function to complete the status stage of
+> the set_interface(alt setting 1) command.
+> 
+> Signed-off-by: Bhupesh Sharma <bhupesh.sharma@st.com>
+> ---
+>  drivers/usb/gadget/f_uvc.c    |   12 +++++++++++-
+>  drivers/usb/gadget/uvc.h      |    4 ++++
+>  drivers/usb/gadget/uvc_v4l2.c |   27 +++++++++++++++++++++++++--
+>  3 files changed, 40 insertions(+), 3 deletions(-)
+> 
+> diff --git a/drivers/usb/gadget/f_uvc.c b/drivers/usb/gadget/f_uvc.c
+> index d2569b2..6f084e3 100644
+> --- a/drivers/usb/gadget/f_uvc.c
+> +++ b/drivers/usb/gadget/f_uvc.c
+> @@ -209,6 +209,14 @@ uvc_function_get_alt(struct usb_function *f, unsigned
+> interface) return uvc->state == UVC_STATE_STREAMING ? 1 : 0;
+>  }
+> 
+> +void
+> +uvc_process_setup_continue(struct uvc_device *uvc)
 
-Is VG/AnyLAN different?
+No need for a line split, this won't exceed the 80 columns limit.
+
+Could you please rename the function to uvc_function_setup_continue to be 
+coherent with the other non-static functions in this file (and, while you're 
+at it, move it right above uvc_function_get_alt) ?
+
+> +{
+> +	struct usb_composite_dev *cdev = uvc->func.config->cdev;
+> +
+> +	usb_composite_setup_continue(cdev);
+> +}
+> +
+>  static int
+>  uvc_function_set_alt(struct usb_function *f, unsigned interface, unsigned
+> alt) {
+> @@ -271,7 +279,9 @@ uvc_function_set_alt(struct usb_function *f, unsigned
+> interface, unsigned alt) v4l2_event_queue(uvc->vdev, &v4l2_event);
+> 
+>  		uvc->state = UVC_STATE_STREAMING;
+> -		break;
+> +		uvc->vdev_is_streaming = false;
+
+Do you think you could combine the state and vdev_is_streaming fields ? Maybe 
+adding a UVC_STATE_PRE_STREAMING state would be enough, you could set the 
+state to that value here, and then set it to UVC_STATE_STREAMING in the 
+STREAMON ioctl handler (I would actually prefer doing that in the 
+uvc_video_enable function).
+
+If you think it makes sense, could you please try it ?
+
+> +
+> +		return USB_GADGET_DELAYED_STATUS;
+
+Could you please move the return 0 at the end of this function to the case 0 
+above ? Each case will then have its return statement.
+
+>  	default:
+>  		return -EINVAL;
+> diff --git a/drivers/usb/gadget/uvc.h b/drivers/usb/gadget/uvc.h
+> index bc78c60..56ac883 100644
+> --- a/drivers/usb/gadget/uvc.h
+> +++ b/drivers/usb/gadget/uvc.h
+> @@ -168,6 +168,9 @@ struct uvc_device
+>  	/* Events */
+>  	unsigned int event_length;
+>  	unsigned int event_setup_out : 1;
+> +
+> +	/* flags */
+> +	bool vdev_is_streaming;
+>  };
+> 
+>  static inline struct uvc_device *to_uvc(struct usb_function *f)
+> @@ -188,6 +191,7 @@ struct uvc_file_handle
+>   * Functions
+>   */
+> 
+> +extern void uvc_process_setup_continue(struct uvc_device *uvc);
+>  extern void uvc_endpoint_stream(struct uvc_device *dev);
+> 
+>  extern void uvc_function_connect(struct uvc_device *uvc);
+> diff --git a/drivers/usb/gadget/uvc_v4l2.c b/drivers/usb/gadget/uvc_v4l2.c
+> index f761bcb..379d8ac 100644
+> --- a/drivers/usb/gadget/uvc_v4l2.c
+> +++ b/drivers/usb/gadget/uvc_v4l2.c
+> @@ -242,7 +242,18 @@ uvc_v4l2_do_ioctl(struct file *file, unsigned int cmd,
+> void *arg) if ((ret = uvc_queue_buffer(&video->queue, arg)) < 0)
+>  			return ret;
+> 
+> -		return uvc_video_pump(video);
+> +		/*
+> +		 * for the very first QBUF calls (until STREAMON is
+> +		 * called) we just need to queue the buffers and start
+> +		 * pumping the data to USB side only after STREAMON has
+> +		 * been called which is handled by the STREAMON case
+> +		 * below. For QBUF calls after STREAMON, we need to pump
+> +		 * the data to the USB side here itself.
+> +		 */
+> +		if (uvc->vdev_is_streaming)
+> +			return uvc_video_pump(video);
+> +
+> +		return 0;
+> 
+>  	case VIDIOC_DQBUF:
+>  		return uvc_dequeue_buffer(&video->queue, arg,
+> @@ -255,7 +266,19 @@ uvc_v4l2_do_ioctl(struct file *file, unsigned int cmd,
+> void *arg) if (*type != video->queue.type)
+>  			return -EINVAL;
+> 
+> -		return uvc_video_enable(video, 1);
+> +		ret = uvc_video_enable(video, 1);
+> +		if (ret < 0)
+> +			return ret;
+> +
+> +		/*
+> +		 * since the real video device has now started streaming
+> +		 * its safe now to complete the status phase of the
+> +		 * set_interface (alt setting 1)
+> +		 */
+> +		uvc_process_setup_continue(uvc);
+> +		uvc->vdev_is_streaming = true;
+
+Could you please move this to uvc_video_enable() ?
+
+> +
+> +		return 0;
+>  	}
+> 
+>  	case VIDIOC_STREAMOFF:
+
+-- 
+Regards,
+
+Laurent Pinchart
 
