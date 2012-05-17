@@ -1,63 +1,208 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964938Ab2EQUCk (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 May 2012 16:02:40 -0400
-Received: from perches-mx.perches.com ([206.117.179.246]:44638 "EHLO
-	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S932405Ab2EQUCj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 May 2012 16:02:39 -0400
-Message-ID: <1337284958.17726.51.camel@joe2Laptop>
-Subject: [RFC PATCH] dynamic_debug: Remove __used attribute from metadata
-From: Joe Perches <joe@perches.com>
-To: Jason Baron <jbaron@redhat.com>
-Cc: linux-kernel@vger.kernel.org, Greg Kroah-Hartman <gregkh@suse.de>,
-        Jim Cromie <jim.cromie@gmail.com>
-Date: Thu, 17 May 2012 13:02:38 -0700
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.2- 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	id S933508Ab2EQUE3 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 May 2012 16:04:29 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:56851 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932347Ab2EQUE2 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 17 May 2012 16:04:28 -0400
+From: Grant Likely <grant.likely@secretlab.ca>
+To: linux-kernel@vger.kernel.org
+Cc: Grant Likely <grant.likely@secretlab.ca>, Roland Stigge <stigge@antcom.de>
+Subject: [PATCH 1/3] gpio: Adjust of_xlate API to support multiple GPIO chips
+Date: Thu, 17 May 2012 14:04:18 -0600
+Message-Id: <1337285060-31919-1-git-send-email-grant.likely@secretlab.ca>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The __used attribute in the declaration of the
-dynamic_debug metadata stops the compiler from
-optimizing and eliminating constant tests and
-the metadata declaration used in things like:
+This patch changes the of_xlate API to make it possible for multiple
+gpio_chips to refer to the same device tree node.  This is useful for
+banked GPIO controllers that use multiple gpio_chips for a single
+device.  With this change the core code will try calling of_xlate on
+each gpio_chip that references the device_node and will return the
+gpio number for the first one to return 'true'.
 
-   #define DEBUG_LEVEL 0
-   if (DEBUG_LEVEL > 1)
-   	pr_debug("foo...");
-
-This is a common construct for debugging macros
-with a constant "level" test.
-
-When dynamic_debug is not configured, this is
-pr_debug and format string is eliminated unless
-DEBUG_LEVEL is greater than 1.
-
-Remove the unnecessary __used attribute so the
-even the dynamic_debug use of pr_debug can be
-appropriately optimized away completely.
-
-Signed-off-by: Joe Perches <joe@perches.com>
+Cc: Roland Stigge <stigge@antcom.de>
+Signed-off-by: Grant Likely <grant.likely@secretlab.ca>
 ---
- include/linux/dynamic_debug.h |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+ arch/arm/mach-imx/mach-mx35_3ds.c |    3 +-
+ drivers/gpio/gpiolib-of.c         |   80 ++++++++++++++++++-------------------
+ drivers/gpio/gpiolib.c            |    2 +-
+ include/asm-generic/gpio.h        |    2 +-
+ include/linux/of_gpio.h           |    1 -
+ 5 files changed, 41 insertions(+), 47 deletions(-)
 
-diff --git a/include/linux/dynamic_debug.h b/include/linux/dynamic_debug.h
-index 7e3c53a..85cee11 100644
---- a/include/linux/dynamic_debug.h
-+++ b/include/linux/dynamic_debug.h
-@@ -58,7 +58,7 @@ int __dynamic_netdev_dbg(struct _ddebug *descriptor,
- 			 const char *fmt, ...);
+diff --git a/arch/arm/mach-imx/mach-mx35_3ds.c b/arch/arm/mach-imx/mach-mx35_3ds.c
+index 6ae51c6..6a7cf91 100644
+--- a/arch/arm/mach-imx/mach-mx35_3ds.c
++++ b/arch/arm/mach-imx/mach-mx35_3ds.c
+@@ -96,8 +96,7 @@ static struct i2c_board_info __initdata i2c_devices_3ds[] = {
  
- #define DEFINE_DYNAMIC_DEBUG_METADATA(name, fmt)		\
--	static struct _ddebug __used __aligned(8)		\
-+	static struct _ddebug __aligned(8)			\
- 	__attribute__((section("__verbose"))) name = {		\
- 		.modname = KBUILD_MODNAME,			\
- 		.function = __func__,				\
-
+ static int lcd_power_gpio = -ENXIO;
+ 
+-static int mc9s08dz60_gpiochip_match(struct gpio_chip *chip,
+-						     const void *data)
++static int mc9s08dz60_gpiochip_match(struct gpio_chip *chip, void *data)
+ {
+ 	return !strcmp(chip->label, data);
+ }
+diff --git a/drivers/gpio/gpiolib-of.c b/drivers/gpio/gpiolib-of.c
+index bf984b6..d18068a 100644
+--- a/drivers/gpio/gpiolib-of.c
++++ b/drivers/gpio/gpiolib-of.c
+@@ -15,11 +15,39 @@
+ #include <linux/errno.h>
+ #include <linux/module.h>
+ #include <linux/io.h>
++#include <linux/gpio.h>
+ #include <linux/of.h>
+ #include <linux/of_address.h>
+ #include <linux/of_gpio.h>
+ #include <linux/slab.h>
+ 
++/* Private data structure for of_gpiochip_is_match */
++struct gg_data {
++	enum of_gpio_flags *flags;
++	struct of_phandle_args gpiospec;
++
++	int out_gpio;
++};
++
++/* Private function for resolving node pointer to gpio_chip */
++static int of_gpiochip_find_and_xlate(struct gpio_chip *gc, void *data)
++{
++	struct gg_data *gg_data = data;
++	int ret;
++
++	if ((gc->of_node != gg_data->gpiospec.np) ||
++	    (gc->of_gpio_n_cells != gg_data->gpiospec.args_count) ||
++	    (!gc->of_xlate))
++		return false;
++
++	ret = gc->of_xlate(gc, &gg_data->gpiospec, gg_data->flags);
++	if (ret < 0)
++		return false;
++
++	gg_data->out_gpio = ret + gc->base;
++	return true;
++}
++
+ /**
+  * of_get_named_gpio_flags() - Get a GPIO number and flags to use with GPIO API
+  * @np:		device node to get GPIO from
+@@ -34,46 +62,25 @@
+ int of_get_named_gpio_flags(struct device_node *np, const char *propname,
+                            int index, enum of_gpio_flags *flags)
+ {
++	struct gg_data gg_data = { .flags = flags, .out_gpio = -ENODEV };
+ 	int ret;
+-	struct gpio_chip *gc;
+-	struct of_phandle_args gpiospec;
++
++	/* .of_xlate might decide to not fill in the flags, so clear it. */
++	if (flags)
++		*flags = 0;
+ 
+ 	ret = of_parse_phandle_with_args(np, propname, "#gpio-cells", index,
+-					 &gpiospec);
++					 &gg_data.gpiospec);
+ 	if (ret) {
+ 		pr_debug("%s: can't parse gpios property\n", __func__);
+-		goto err0;
+-	}
+-
+-	gc = of_node_to_gpiochip(gpiospec.np);
+-	if (!gc) {
+-		pr_debug("%s: gpio controller %s isn't registered\n",
+-			 np->full_name, gpiospec.np->full_name);
+-		ret = -ENODEV;
+-		goto err1;
+-	}
+-
+-	if (gpiospec.args_count != gc->of_gpio_n_cells) {
+-		pr_debug("%s: wrong #gpio-cells for %s\n",
+-			 np->full_name, gpiospec.np->full_name);
+-		ret = -EINVAL;
+-		goto err1;
++		return -EINVAL;
+ 	}
+ 
+-	/* .xlate might decide to not fill in the flags, so clear it. */
+-	if (flags)
+-		*flags = 0;
+-
+-	ret = gc->of_xlate(gc, &gpiospec, flags);
+-	if (ret < 0)
+-		goto err1;
++	gpiochip_find(&gg_data, of_gpiochip_find_and_xlate);
+ 
+-	ret += gc->base;
+-err1:
+-	of_node_put(gpiospec.np);
+-err0:
++	of_node_put(gg_data.gpiospec.np);
+ 	pr_debug("%s exited with status %d\n", __func__, ret);
+-	return ret;
++	return gg_data.out_gpio;
+ }
+ EXPORT_SYMBOL(of_get_named_gpio_flags);
+ 
+@@ -227,14 +234,3 @@ void of_gpiochip_remove(struct gpio_chip *chip)
+ 	if (chip->of_node)
+ 		of_node_put(chip->of_node);
+ }
+-
+-/* Private function for resolving node pointer to gpio_chip */
+-static int of_gpiochip_is_match(struct gpio_chip *chip, const void *data)
+-{
+-	return chip->of_node == data;
+-}
+-
+-struct gpio_chip *of_node_to_gpiochip(struct device_node *np)
+-{
+-	return gpiochip_find(np, of_gpiochip_is_match);
+-}
+diff --git a/drivers/gpio/gpiolib.c b/drivers/gpio/gpiolib.c
+index 566d012..38353c0 100644
+--- a/drivers/gpio/gpiolib.c
++++ b/drivers/gpio/gpiolib.c
+@@ -1156,7 +1156,7 @@ EXPORT_SYMBOL_GPL(gpiochip_remove);
+  */
+ struct gpio_chip *gpiochip_find(const void *data,
+ 				int (*match)(struct gpio_chip *chip,
+-					     const void *data))
++					     void *data))
+ {
+ 	struct gpio_chip *chip = NULL;
+ 	unsigned long flags;
+diff --git a/include/asm-generic/gpio.h b/include/asm-generic/gpio.h
+index 5f52690..1cb3dd1 100644
+--- a/include/asm-generic/gpio.h
++++ b/include/asm-generic/gpio.h
+@@ -144,7 +144,7 @@ extern int gpiochip_add(struct gpio_chip *chip);
+ extern int __must_check gpiochip_remove(struct gpio_chip *chip);
+ extern struct gpio_chip *gpiochip_find(const void *data,
+ 					int (*match)(struct gpio_chip *chip,
+-						     const void *data));
++						     void *data));
+ 
+ 
+ /* Always use the library code for GPIO management calls,
+diff --git a/include/linux/of_gpio.h b/include/linux/of_gpio.h
+index 81733d1..c454f57 100644
+--- a/include/linux/of_gpio.h
++++ b/include/linux/of_gpio.h
+@@ -58,7 +58,6 @@ extern int of_mm_gpiochip_add(struct device_node *np,
+ 
+ extern void of_gpiochip_add(struct gpio_chip *gc);
+ extern void of_gpiochip_remove(struct gpio_chip *gc);
+-extern struct gpio_chip *of_node_to_gpiochip(struct device_node *np);
+ extern int of_gpio_simple_xlate(struct gpio_chip *gc,
+ 				const struct of_phandle_args *gpiospec,
+ 				u32 *flags);
+-- 
+1.7.9.5
 
