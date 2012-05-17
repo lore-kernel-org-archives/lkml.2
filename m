@@ -1,83 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933416Ab2EQCus (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 May 2012 22:50:48 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:13710 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932983Ab2EQCur (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 May 2012 22:50:47 -0400
-Message-ID: <4FB4677A.8020402@redhat.com>
-Date: Thu, 17 May 2012 10:50:34 +0800
-From: Jason Wang <jasowang@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
+	id S933397Ab2EQC5i (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 May 2012 22:57:38 -0400
+Received: from db3ehsobe005.messaging.microsoft.com ([213.199.154.143]:32106
+	"EHLO db3outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1756097Ab2EQC5h convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 16 May 2012 22:57:37 -0400
+X-SpamScore: -15
+X-BigFish: VPS-15(zz9371I542M1432N98dKzz1202hzz8275bh8275dhz2dh2a8h668h839h944hd25h)
+X-Forefront-Antispam-Report: CIP:137.71.25.55;KIP:(null);UIP:(null);IPV:NLI;H:nwd2mta1.analog.com;RD:nwd2mail10.analog.com;EFVD:NLI
+From: "Zhang, Sonic" <Sonic.Zhang@analog.com>
+To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+CC: "linux-input@vger.kernel.org" <linux-input@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        "uclinux-dist-devel@blackfin.uclinux.org" 
+	<uclinux-dist-devel@blackfin.uclinux.org>,
+        Bob Liu <lliubbo@gmail.com>
+Date: Wed, 16 May 2012 22:58:00 -0400
+Subject: RE: [PATCH] input: rotary: Init wake according to platform
+ pm_wakeup flag.
+Thread-Topic: [PATCH] input: rotary: Init wake according to platform
+ pm_wakeup flag.
+Thread-Index: Ac0zkh0T6nEvfBSpRFqVz/ipr0KGNQARnJtg
+Message-ID: <DB904C5425BA6F4E8424B3B51A1414D16F64F84E68@NWD2CMBX1.ad.analog.com>
+References: <1337157383-13631-1-git-send-email-sonic.zhang@analog.com>
+ <20120516183038.GA14471@core.coreip.homeip.net>
+In-Reply-To: <20120516183038.GA14471@core.coreip.homeip.net>
+Accept-Language: zh-CN, en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: zh-CN, en-US
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-To: Shirley Ma <mashirle@us.ibm.com>
-CC: "Michael S. Tsirkin" <mst@redhat.com>, eric.dumazet@gmail.com,
-        netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        ebiederm@xmission.com, davem@davemloft.net
-Subject: Re: [V2 PATCH 9/9] vhost: zerocopy: poll vq in zerocopy callback
-References: <20120502033901.11782.13157.stgit@amd-6168-8-1.englab.nay.redhat.com>  <20120502034254.11782.27314.stgit@amd-6168-8-1.englab.nay.redhat.com>  <1337100630.8220.4.camel@oc3660625478.ibm.com> <4FB317C8.90002@redhat.com>  <1337181027.10741.13.camel@oc3660625478.ibm.com>  <20120516151444.GC9934@redhat.com> <1337189525.10741.24.camel@oc3660625478.ibm.com>
-In-Reply-To: <1337189525.10741.24.camel@oc3660625478.ibm.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+X-OriginatorOrg: analog.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/17/2012 01:32 AM, Shirley Ma wrote:
-> On Wed, 2012-05-16 at 18:14 +0300, Michael S. Tsirkin wrote:
->> On Wed, May 16, 2012 at 08:10:27AM -0700, Shirley Ma wrote:
->>> On Wed, 2012-05-16 at 10:58 +0800, Jason Wang wrote:
->>>>>>    drivers/vhost/vhost.c |    1 +
->>>>>>    1 files changed, 1 insertions(+), 0 deletions(-)
->>>>>>
->>>>>> diff --git a/drivers/vhost/vhost.c b/drivers/vhost/vhost.c
->>>>>> index 947f00d..7b75fdf 100644
->>>>>> --- a/drivers/vhost/vhost.c
->>>>>> +++ b/drivers/vhost/vhost.c
->>>>>> @@ -1604,6 +1604,7 @@ void vhost_zerocopy_callback(void *arg)
->>>>>>           struct vhost_ubuf_ref *ubufs = ubuf->arg;
->>>>>>           struct vhost_virtqueue *vq = ubufs->vq;
->>>>>>
->>>>>> +       vhost_poll_queue(&vq->poll);
->>>>>>           /* set len = 1 to mark this desc buffers done DMA */
->>>>>>           vq->heads[ubuf->desc].len = VHOST_DMA_DONE_LEN;
->>>>>>           kref_put(&ubufs->kref, vhost_zerocopy_done_signal);
->>>>> Doing so, we might have redundant vhost_poll_queue(). Do you
->> know in
->>>>> which scenario there might be missing of adding and signaling
->> during
->>>>> zerocopy?
->>>> Yes, as we only do signaling and adding during tx work, if there's
->> no
->>>> tx
->>>> work when the skb were sent, we may lose the opportunity to let
->> guest
->>>> know about the completion. It's easy to be reproduced with netperf
->>>> test.
->>> The reason which host signals guest is to free guest tx buffers, if
->>> there is no tx work, then it's not necessary to signal the guest
->> unless
->>> guest runs out of memory. The pending buffers will be released
->>> virtio_net device gone.
+Hi Dmitry,
 
-Looks like we only free the skbs in .ndo_start_xmit().
->>>
->>> What's the behavior of netperf test when you hit this situation?
->>>
->>> Thanks
->>> Shirley
->> IIRC guest networking seems to be lost.
-> It seems vhost_enable_notify is missing in somewhere else?
+
+>-----Original Message-----
+>From: Dmitry Torokhov [mailto:dmitry.torokhov@gmail.com]
+>Sent: Thursday, May 17, 2012 2:31 AM
+>To: Zhang, Sonic
+>Cc: linux-input@vger.kernel.org; LKML; uclinux-dist-devel@blackfin.uclinux.org
+>Subject: Re: [PATCH] input: rotary: Init wake according to platform pm_wakeup
+>flag.
 >
-> Thanks
-> Shirley
+>Hi Sonic,
 >
+>On Wed, May 16, 2012 at 04:36:23PM +0800, sonic.zhang@analog.com wrote:
+>> From: Sonic Zhang <sonic.zhang@analog.com>
+>>
+>> Rotary can't be used as a wakeup source in all Blackfin processors.
+>>
+>> Signed-off-by: Sonic Zhang <sonic.zhang@analog.com>
+>> ---
+>>  drivers/input/misc/bfin_rotary.c |    2 +-
+>>  1 files changed, 1 insertions(+), 1 deletions(-)
+>>
+>> diff --git a/drivers/input/misc/bfin_rotary.c b/drivers/input/misc/bfin_rotary.c
+>> index 1c4146f..bb1971c 100644
+>> --- a/drivers/input/misc/bfin_rotary.c
+>> +++ b/drivers/input/misc/bfin_rotary.c
+>> @@ -182,7 +182,7 @@ static int __devinit bfin_rotary_probe(struct
+>platform_device *pdev)
+>>      bfin_write_CNT_CONFIG(bfin_read_CNT_CONFIG() | CNTE);
+>>
+>>      platform_set_drvdata(pdev, rotary);
+>> -    device_init_wakeup(&pdev->dev, 1);
+>> +    device_init_wakeup(&pdev->dev, pdata->pm_wakeup);
+>
+>I do not see pm_wakeup in bfin_rotary_platform_data.
 
-The problem is we may stop the tx queue when there no enough capacity to 
-place packets, at this moment  we depends on the tx interrupt to 
-re-enable the tx queue. So if we didn't poll the vhost during callback, 
-guest may lose the tx interrupt to re-enable the tx queue which could 
-stall the whole tx queue.
+The patch against the bfin_rotary.h under blackfin architecture folder will be sent out soon by Bob Liu.
 
-Thanks
+Regards,
+
+Sonic
+
+>
+>Thanks.
+>
+>--
+>Dmitry
+
+
