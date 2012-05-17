@@ -1,214 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759894Ab2EQA67 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 May 2012 20:58:59 -0400
-Received: from mprc.pku.edu.cn ([162.105.203.9]:45420 "EHLO mprc.pku.edu.cn"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755427Ab2EQA66 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 May 2012 20:58:58 -0400
-Message-ID: <1337216199.1837.11.camel@ubuntu.ubuntu-domain>
-Subject: Re: [PATCH v2 1/3] zsmalloc: support zsmalloc to ARM, MIPS, SUPERH
-From: Guan Xuetao <gxt@mprc.pku.edu.cn>
-To: Minchan Kim <minchan@kernel.org>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Nitin Gupta <ngupta@vflare.org>,
-        Seth Jennings <sjenning@linux.vnet.ibm.com>,
-        Dan Magenheimer <dan.magenheimer@oracle.com>,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        Russell King <linux@arm.linux.org.uk>,
-        Ralf Baechle <ralf@linux-mips.org>, Paul Mundt <lethal@linux-sh.org>,
-        Chen Liqin <liqin.chen@sunplusct.com>
-Date: Thu, 17 May 2012 08:56:39 +0800
-In-Reply-To: <4FB44147.5070704@kernel.org>
-References: <1337133919-4182-1-git-send-email-minchan@kernel.org>
-	 <1337153329.1751.5.camel@ubuntu.ubuntu-domain>
-	 <4FB44147.5070704@kernel.org>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.2- 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	id S1760326Ab2EQA70 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 May 2012 20:59:26 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:51925 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759974Ab2EQA7Y (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 16 May 2012 20:59:24 -0400
+References: <1337167186-8535-1-git-send-email-peter.ujfalusi@ti.com> <20120516193546.GA15920@core.coreip.homeip.net> <CAPo=G1zf1XJcoKgCxMn3X09T0LOUG-9aw3iopqC7OPqcuc5hcQ@mail.gmail.com>
+User-Agent: K-9 Mail for Android
+In-Reply-To: <CAPo=G1zf1XJcoKgCxMn3X09T0LOUG-9aw3iopqC7OPqcuc5hcQ@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain;
+ charset=UTF-8
+Content-Transfer-Encoding: 8bit
+Subject: Re: [PATCH] Input: twl6040-vibra: Update for device tree support
+From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+Date: Wed, 16 May 2012 17:59:14 -0700
+To: "Ujfalusi, Peter" <peter.ujfalusi@ti.com>
+CC: Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Liam Girdwood <lrg@ti.com>, Benoit Cousson <b-cousson@ti.com>,
+        linux-kernel@vger.kernel.org, devicetree-discuss@lists.ozlabs.org
+Message-ID: <94a2ece7-00b3-4624-82d5-93b22695aa5d@email.android.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2012-05-17 at 09:07 +0900, Minchan Kim wrote:
-> On 05/16/2012 04:28 PM, Guan Xuetao wrote:
-> 
-> > On Wed, 2012-05-16 at 11:05 +0900, Minchan Kim wrote:
-> >> zsmalloc uses set_pte and __flush_tlb_one for performance but
-> >> many architecture don't support it. so this patch removes
-> >> set_pte and __flush_tlb_one which are x86 dependency.
-> >> Instead of it, use local_flush_tlb_kernel_range which are available
-> >> by more architectures. It would be better than supporting only x86
-> >> and last patch in series will enable again with supporting
-> >> local_flush_tlb_kernel_range in x86.
-> >>
-> >> About local_flush_tlb_kernel_range,
-> >> If architecture is very smart, it could flush only tlb entries related to vaddr.
-> >> If architecture is smart, it could flush only tlb entries related to a CPU.
-> >> If architecture is _NOT_ smart, it could flush all entries of all CPUs.
-> >> So, it would be best to support both portability and performance.
-> >>
-> >> Cc: Russell King <linux@arm.linux.org.uk>
-> >> Cc: Ralf Baechle <ralf@linux-mips.org>
-> >> Cc: Paul Mundt <lethal@linux-sh.org>
-> >> Cc: Guan Xuetao <gxt@mprc.pku.edu.cn>
-> >> Cc: Chen Liqin <liqin.chen@sunplusct.com>
-> >> Signed-off-by: Minchan Kim <minchan@kernel.org>
-> >> ---
-> >>
-> >> Need double check about supporting local_flush_tlb_kernel_range
-> >> in ARM, MIPS, SUPERH maintainers. And I will Ccing unicore32 and
-> >> score maintainers because arch directory in those arch have
-> >> local_flush_tlb_kernel_range, too but I'm very unfamiliar with those
-> >> architecture so pass it to maintainers.
-> >> I didn't coded up dumb local_flush_tlb_kernel_range which flush
-> >> all cpus. I expect someone need ZSMALLOC will implement it easily in future.
-> >> Seth might support it in PowerPC. :)
-> >>
-> >>
-> >>  drivers/staging/zsmalloc/Kconfig         |    6 ++---
-> >>  drivers/staging/zsmalloc/zsmalloc-main.c |   36 +++++++++++++++++++++---------
-> >>  drivers/staging/zsmalloc/zsmalloc_int.h  |    1 -
-> >>  3 files changed, 29 insertions(+), 14 deletions(-)
-> >>
-> >> diff --git a/drivers/staging/zsmalloc/Kconfig b/drivers/staging/zsmalloc/Kconfig
-> >> index a5ab720..def2483 100644
-> >> --- a/drivers/staging/zsmalloc/Kconfig
-> >> +++ b/drivers/staging/zsmalloc/Kconfig
-> >> @@ -1,9 +1,9 @@
-> >>  config ZSMALLOC
-> >>  	tristate "Memory allocator for compressed pages"
-> >> -	# X86 dependency is because of the use of __flush_tlb_one and set_pte
-> >> +	# arch dependency is because of the use of local_unmap_kernel_range
-> >>  	# in zsmalloc-main.c.
-> >> -	# TODO: convert these to portable functions
-> >> -	depends on X86
-> >> +	# TODO: implement local_unmap_kernel_range in all architecture.
-> >> +	depends on (ARM || MIPS || SUPERH)
-> > I suggest removing above line, so if I want to use zsmalloc, I could
-> > enable this configuration easily.
-> 
-> 
-> I don't get it. What do you mean?
-> If I remove above line, compile error will happen if arch doesn't support local_unmap_kernel_range.
-If I want to use zsmalloc, I will verify local_unmap_kernel_range
-function. In fact, only local_flush_tlb_kernel_range need to be
-considered. So, just keeping the default option 'n' is enough.
+"Ujfalusi, Peter" <peter.ujfalusi@ti.com> wrote:
 
-> 
-> > 
-> >>  	default n
-> >>  	help
-> >>  	  zsmalloc is a slab-based memory allocator designed to store
-> >> diff --git a/drivers/staging/zsmalloc/zsmalloc-main.c b/drivers/staging/zsmalloc/zsmalloc-main.c
-> >> index 4496737..8a8b08f 100644
-> >> --- a/drivers/staging/zsmalloc/zsmalloc-main.c
-> >> +++ b/drivers/staging/zsmalloc/zsmalloc-main.c
-> >> @@ -442,7 +442,7 @@ static int zs_cpu_notifier(struct notifier_block *nb, unsigned long action,
-> >>  		area = &per_cpu(zs_map_area, cpu);
-> >>  		if (area->vm)
-> >>  			break;
-> >> -		area->vm = alloc_vm_area(2 * PAGE_SIZE, area->vm_ptes);
-> >> +		area->vm = alloc_vm_area(2 * PAGE_SIZE, NULL);
-> >>  		if (!area->vm)
-> >>  			return notifier_from_errno(-ENOMEM);
-> >>  		break;
-> >> @@ -696,13 +696,22 @@ void *zs_map_object(struct zs_pool *pool, void *handle)
-> >>  	} else {
-> >>  		/* this object spans two pages */
-> >>  		struct page *nextp;
-> >> +		struct page *pages[2];
-> >> +		struct page **page_array = &pages[0];
-> >> +		int err;
-> >>  
-> >>  		nextp = get_next_page(page);
-> >>  		BUG_ON(!nextp);
-> >>  
-> >> +		page_array[0] = page;
-> >> +		page_array[1] = nextp;
-> >>  
-> >> -		set_pte(area->vm_ptes[0], mk_pte(page, PAGE_KERNEL));
-> >> -		set_pte(area->vm_ptes[1], mk_pte(nextp, PAGE_KERNEL));
-> >> +		/*
-> >> +		 * map_vm_area never fail because we already allocated
-> >> +		 * pages for page table in alloc_vm_area.
-> >> +		 */
-> >> +		err = map_vm_area(area->vm, PAGE_KERNEL, &page_array);
-> >> +		BUG_ON(err);
-> > I think WARN_ON() is better than BUG_ON() here.
-> 
-> 
-> If we don't do BUG_ON, zsmalloc's user can use dangling pointer so that it can make system very
-> unstable, even fatal.
-The majority of archs treat BUG_ON as panic, so if zsmalloc  has some
-error, the kernel will be halted immediately. Is it the result you want?
-If yes, just ignore my suggestion.
+>Hi Dmitry,
+>
+>On Wed, May 16, 2012 at 10:35 PM, Dmitry Torokhov
+><dmitry.torokhov@gmail.com> wrote:
+>> So in this case why don't you have parent parse all DT data and
+>> construct instance of pdata for vibra driver to consume?
+>
+>If there is a need to change the parameters (add new ones for example)
+>for the vibra driver in this way the change in code only need to be
+>done in the vibra driver.
+>If the MFD core would construct the pdata, in this case I would need
+>to modify both the MFD core and vibra driver.
+>
 
-> 
-> > 
-> >>  
-> >>  		/* We pre-allocated VM area so mapping can never fail */
-> >>  		area->vm_addr = area->vm->addr;
-> >> @@ -712,6 +721,15 @@ void *zs_map_object(struct zs_pool *pool, void *handle)
-> >>  }
-> >>  EXPORT_SYMBOL_GPL(zs_map_object);
-> >>  
-> >> +static void local_unmap_kernel_range(unsigned long addr, unsigned long size)
-> >> +{
-> >> +	unsigned long end = addr + size;
-> >> +
-> >> +	flush_cache_vunmap(addr, end);
-> >> +	unmap_kernel_range_noflush(addr, size);
-> >> +	local_flush_tlb_kernel_range(addr, end);
-> >> +}
-> >> +
-> >>  void zs_unmap_object(struct zs_pool *pool, void *handle)
-> >>  {
-> >>  	struct page *page;
-> >> @@ -730,14 +748,12 @@ void zs_unmap_object(struct zs_pool *pool, void *handle)
-> >>  	off = obj_idx_to_offset(page, obj_idx, class->size);
-> >>  
-> >>  	area = &__get_cpu_var(zs_map_area);
-> >> -	if (off + class->size <= PAGE_SIZE) {
-> >> +	if (off + class->size <= PAGE_SIZE)
-> >>  		kunmap_atomic(area->vm_addr);
-> >> -	} else {
-> >> -		set_pte(area->vm_ptes[0], __pte(0));
-> >> -		set_pte(area->vm_ptes[1], __pte(0));
-> >> -		__flush_tlb_one((unsigned long)area->vm_addr);
-> >> -		__flush_tlb_one((unsigned long)area->vm_addr + PAGE_SIZE);
-> >> -	}
-> >> +	else
-> >> +		local_unmap_kernel_range((unsigned long)area->vm->addr,
-> >> +					PAGE_SIZE * 2);
-> >> +
-> >>  	put_cpu_var(zs_map_area);
-> >>  }
-> >>  EXPORT_SYMBOL_GPL(zs_unmap_object);
-> >> diff --git a/drivers/staging/zsmalloc/zsmalloc_int.h b/drivers/staging/zsmalloc/zsmalloc_int.h
-> >> index 6fd32a9..eaec845 100644
-> >> --- a/drivers/staging/zsmalloc/zsmalloc_int.h
-> >> +++ b/drivers/staging/zsmalloc/zsmalloc_int.h
-> >> @@ -111,7 +111,6 @@ static const int fullness_threshold_frac = 4;
-> >>  
-> >>  struct mapping_area {
-> >>  	struct vm_struct *vm;
-> >> -	pte_t *vm_ptes[2];
-> >>  	char *vm_addr;
-> >>  };
-> >>  
-> > 
-> > 
-> > --
-> > To unsubscribe, send a message with 'unsubscribe linux-mm' in
-> > the body to majordomo@kvack.org.  For more info on Linux MM,
-> > see: http://www.linux-mm.org/ .
-> > Fight unfair telecom internet charges in Canada: sign http://stopthemeter.ca/
-> > Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
-> > 
-> 
-> 
-> 
+Ok, fair enough.
+
+Thanks.
 
 
+--
+Dmitry
