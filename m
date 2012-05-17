@@ -1,15 +1,15 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1762163Ab2EQRAz (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 May 2012 13:00:55 -0400
-Received: from e23smtp06.au.ibm.com ([202.81.31.148]:52776 "EHLO
-	e23smtp06.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758759Ab2EQRAw (ORCPT
+	id S967455Ab2EQRBM (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 May 2012 13:01:12 -0400
+Received: from e23smtp03.au.ibm.com ([202.81.31.145]:38881 "EHLO
+	e23smtp03.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932757Ab2EQRBG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 May 2012 13:00:52 -0400
+	Thu, 17 May 2012 13:01:06 -0400
 From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-Subject: [PATCH v5 1/5] CPU hotplug, cpusets,
- suspend: Don't modify cpusets during suspend/resume
+Subject: [PATCH v5 2/5] cpusets,
+ hotplug: Implement cpuset tree traversal in a helper function
 To: a.p.zijlstra@chello.nl, mingo@kernel.org, pjt@google.com,
         paul@paulmenage.org, akpm@linux-foundation.org
 Cc: rjw@sisk.pl, nacc@us.ibm.com, rientjes@google.com,
@@ -19,150 +19,92 @@ Cc: rjw@sisk.pl, nacc@us.ibm.com, rientjes@google.com,
         vatsa@linux.vnet.ibm.com, liuj97@gmail.com,
         linux-kernel@vger.kernel.org, linux-pm@vger.kernel.org,
         srivatsa.bhat@linux.vnet.ibm.com
-Date: Thu, 17 May 2012 22:29:55 +0530
-Message-ID: <20120517165925.3011.68624.stgit@srivatsabhat.in.ibm.com>
+Date: Thu, 17 May 2012 22:30:17 +0530
+Message-ID: <20120517170010.3011.86829.stgit@srivatsabhat.in.ibm.com>
 In-Reply-To: <20120517165839.3011.98723.stgit@srivatsabhat.in.ibm.com>
 References: <20120517165839.3011.98723.stgit@srivatsabhat.in.ibm.com>
 User-Agent: StGIT/0.14.3
 MIME-Version: 1.0
 Content-Type: text/plain; charset="utf-8"
 Content-Transfer-Encoding: 7bit
-x-cbid: 12051706-7014-0000-0000-0000012D89F7
+x-cbid: 12051706-6102-0000-0000-000001819194
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-In the event of CPU hotplug, the kernel modifies the cpusets' cpus_allowed
-masks as and when necessary to ensure that the tasks belonging to the cpusets
-have some place (online CPUs) to run on. And regular CPU hotplug is
-destructive in the sense that the kernel doesn't remember the original cpuset
-configurations set by the user, across hotplug operations.
+At present, the functions that deal with cpusets during CPU/Mem hotplug
+are quite messy, since a lot of the functionality is mixed up without clear
+separation. And this takes a toll on optimization as well. For example,
+the function cpuset_update_active_cpus() is called on both CPU offline and CPU
+online events; and it invokes scan_for_empty_cpusets(), which makes sense
+only for CPU offline events. And hence, the current code ends up unnecessarily
+traversing the cpuset tree during CPU online also.
 
-However, suspend/resume (which uses CPU hotplug) is a special case in which
-the kernel has the responsibility to restore the system (during resume), to
-exactly the same state it was in before suspend.
-
-In order to achieve that, do the following:
-
-1. Don't modify cpusets during suspend/resume. At all.
-   In particular, don't move the tasks from one cpuset to another, and
-   don't modify any cpuset's cpus_allowed mask. So, simply ignore cpusets
-   during the CPU hotplug operations that are carried out in the
-   suspend/resume path.
-
-2. However, cpusets and sched domains are related. We just want to avoid
-   altering cpusets alone. So, to keep the sched domains updated, build
-   a single sched domain (containing all active cpus) during each of the
-   CPU hotplug operations carried out in s/r path, effectively ignoring
-   the cpusets' cpus_allowed masks.
-
-   (Since userspace is frozen while doing all this, it will go unnoticed.)
-
-3. During the last CPU online operation during resume, build the sched
-   domains by looking up the (unaltered) cpusets' cpus_allowed masks.
-   That will bring back the system to the same original state as it was in
-   before suspend.
-
-Ultimately, this will not only solve the cpuset problem related to suspend
-resume (ie., restores the cpusets to exactly what it was before suspend, by
-not touching it at all) but also speeds up suspend/resume because we avoid
-running cpuset update code for every CPU being offlined/onlined.
+As a first step towards cleaning up those functions, encapsulate the cpuset
+tree traversal in a helper function, so as to facilitate upcoming changes.
 
 Signed-off-by: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
-Cc: stable@vger.kernel.org
 ---
 
- kernel/cpuset.c     |    3 +++
- kernel/sched/core.c |   40 ++++++++++++++++++++++++++++++++++++----
- 2 files changed, 39 insertions(+), 4 deletions(-)
+ kernel/cpuset.c |   36 +++++++++++++++++++++++++++---------
+ 1 files changed, 27 insertions(+), 9 deletions(-)
 
 diff --git a/kernel/cpuset.c b/kernel/cpuset.c
-index 14f7070..5fc1570 100644
+index 5fc1570..15926f8 100644
 --- a/kernel/cpuset.c
 +++ b/kernel/cpuset.c
-@@ -2065,6 +2065,9 @@ static void scan_for_empty_cpusets(struct cpuset *root)
-  * (of no affect) on systems that are actively using CPU hotplug
-  * but making no active use of cpusets.
-  *
-+ * The only exception to this is suspend/resume, where we don't
-+ * modify cpusets at all.
-+ *
-  * This routine ensures that top_cpuset.cpus_allowed tracks
-  * cpu_active_mask on each CPU hotplug (cpuhp) event.
-  *
-diff --git a/kernel/sched/core.c b/kernel/sched/core.c
-index 0533a68..9c6ce0c 100644
---- a/kernel/sched/core.c
-+++ b/kernel/sched/core.c
-@@ -6801,34 +6801,66 @@ int __init sched_create_sysfs_power_savings_entries(struct device *dev)
+@@ -2001,6 +2001,32 @@ static void remove_tasks_in_empty_cpuset(struct cpuset *cs)
  }
- #endif /* CONFIG_SCHED_MC || CONFIG_SCHED_SMT */
  
-+static int num_cpus_frozen;	/* used to mark begin/end of suspend/resume */
-+
  /*
-  * Update cpusets according to cpu_active mask.  If cpusets are
-  * disabled, cpuset_update_active_cpus() becomes a simple wrapper
-  * around partition_sched_domains().
-+ *
-+ * If we come here as part of a suspend/resume, don't touch cpusets because we
-+ * want to restore it back to its original state upon resume anyway.
-  */
- static int cpuset_cpu_active(struct notifier_block *nfb, unsigned long action,
- 			     void *hcpu)
++ * Helper function to traverse cpusets.
++ * It can be used to walk the cpuset tree from top to bottom, completing
++ * one layer before dropping down to the next (thus always processing a
++ * node before any of its children).
++ */
++static struct cpuset *cpuset_next(struct list_head *queue)
++{
++	struct cpuset *cp;
++	struct cpuset *child;	/* scans child cpusets of cp */
++	struct cgroup *cont;
++
++	if (list_empty(queue))
++		return NULL;
++
++	cp = list_first_entry(queue, struct cpuset, stack_list);
++	list_del(queue->next);
++	list_for_each_entry(cont, &cp->css.cgroup->children, sibling) {
++		child = cgroup_cs(cont);
++		list_add_tail(&child->stack_list, queue);
++	}
++
++	return cp;
++}
++
++
++/*
+  * Walk the specified cpuset subtree and look for empty cpusets.
+  * The tasks of such cpuset must be moved to a parent cpuset.
+  *
+@@ -2019,19 +2045,11 @@ static void scan_for_empty_cpusets(struct cpuset *root)
  {
--	switch (action & ~CPU_TASKS_FROZEN) {
-+	switch (action) {
-+	case CPU_ONLINE_FROZEN:
-+	case CPU_DOWN_FAILED_FROZEN:
-+
-+		/*
-+		 * num_cpus_frozen tracks how many CPUs are involved in suspend
-+		 * resume sequence. As long as this is not the last online
-+		 * operation in the resume sequence, just build a single sched
-+		 * domain, ignoring cpusets.
-+		 */
-+		num_cpus_frozen--;
-+		if (likely(num_cpus_frozen)) {
-+			partition_sched_domains(1, NULL, NULL);
-+			break;
-+		}
-+
-+		/*
-+		 * This is the last CPU online operation. So fall through and
-+		 * restore the original sched domains by considering the
-+		 * cpuset configurations.
-+		 */
-+
- 	case CPU_ONLINE:
- 	case CPU_DOWN_FAILED:
- 		cpuset_update_active_cpus();
--		return NOTIFY_OK;
-+		break;
- 	default:
- 		return NOTIFY_DONE;
- 	}
-+	return NOTIFY_OK;
- }
+ 	LIST_HEAD(queue);
+ 	struct cpuset *cp;	/* scans cpusets being updated */
+-	struct cpuset *child;	/* scans child cpusets of cp */
+-	struct cgroup *cont;
+ 	static nodemask_t oldmems;	/* protected by cgroup_mutex */
  
- static int cpuset_cpu_inactive(struct notifier_block *nfb, unsigned long action,
- 			       void *hcpu)
- {
--	switch (action & ~CPU_TASKS_FROZEN) {
-+	switch (action) {
- 	case CPU_DOWN_PREPARE:
- 		cpuset_update_active_cpus();
--		return NOTIFY_OK;
-+		break;
-+	case CPU_DOWN_PREPARE_FROZEN:
-+		num_cpus_frozen++;
-+		partition_sched_domains(1, NULL, NULL);
-+		break;
- 	default:
- 		return NOTIFY_DONE;
- 	}
-+	return NOTIFY_OK;
- }
+ 	list_add_tail((struct list_head *)&root->stack_list, &queue);
  
- void __init sched_init_smp(void)
+-	while (!list_empty(&queue)) {
+-		cp = list_first_entry(&queue, struct cpuset, stack_list);
+-		list_del(queue.next);
+-		list_for_each_entry(cont, &cp->css.cgroup->children, sibling) {
+-			child = cgroup_cs(cont);
+-			list_add_tail(&child->stack_list, &queue);
+-		}
++	while ((cp = cpuset_next(&queue)) != NULL) {
+ 
+ 		/* Continue past cpusets with all cpus, mems online */
+ 		if (cpumask_subset(cp->cpus_allowed, cpu_active_mask) &&
 
