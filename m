@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759997Ab2EQIn3 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 May 2012 04:43:29 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:65088 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758938Ab2EQInC (ORCPT
+	id S1758600Ab2EQIn4 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 May 2012 04:43:56 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:47753 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758367Ab2EQImM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 May 2012 04:43:02 -0400
-Date: Thu, 17 May 2012 01:41:32 -0700
+	Thu, 17 May 2012 04:42:12 -0400
+Date: Thu, 17 May 2012 01:40:43 -0700
 From: Anton Vorontsov <anton.vorontsov@linaro.org>
 To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
         Kees Cook <keescook@chromium.org>, Colin Cross <ccross@android.com>,
@@ -22,8 +22,8 @@ Cc: Arnd Bergmann <arnd@arndb.de>, John Stultz <john.stultz@linaro.org>,
         WANG Cong <xiyou.wangcong@gmail.com>, linux-kernel@vger.kernel.org,
         devel@driverdev.osuosl.org, linaro-kernel@lists.linaro.org,
         patches@linaro.org, kernel-team@android.com
-Subject: [PATCH 6/6] pstore/ram_core: Remove now unused code
-Message-ID: <20120517084132.GF31753@lizard>
+Subject: [PATCH 2/6] pstore/ram: Add console messages handling
+Message-ID: <20120517084042.GB31753@lizard>
 References: <20120517083740.GA25627@lizard>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=utf-8
@@ -34,148 +34,104 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The code tried to maintain the global list of persistent ram zones,
-which isn't a great idea overall, plus since Android's ram_console
-is no longer there, we can remove some unused functions.
+This is all straightforward: we just use the last region for
+console logging. If there's just one region, we fall-back to
+the old behaviour: just a oops/dumps logging.
 
 Signed-off-by: Anton Vorontsov <anton.vorontsov@linaro.org>
 ---
- fs/pstore/ram_core.c       |   77 --------------------------------------------
- include/linux/pstore_ram.h |   19 -----------
- 2 files changed, 96 deletions(-)
+ fs/pstore/ram.c |   40 +++++++++++++++++++++++++++++++---------
+ 1 file changed, 31 insertions(+), 9 deletions(-)
 
-diff --git a/fs/pstore/ram_core.c b/fs/pstore/ram_core.c
-index e0d8429..b216381 100644
---- a/fs/pstore/ram_core.c
-+++ b/fs/pstore/ram_core.c
-@@ -35,8 +35,6 @@ struct persistent_ram_buffer {
+diff --git a/fs/pstore/ram.c b/fs/pstore/ram.c
+index 9123cce..5d6d53e 100644
+--- a/fs/pstore/ram.c
++++ b/fs/pstore/ram.c
+@@ -63,6 +63,7 @@ MODULE_PARM_DESC(ramoops_ecc,
  
- #define PERSISTENT_RAM_SIG (0x43474244) /* DBGC */
- 
--static __initdata LIST_HEAD(persistent_ram_list);
--
- static inline size_t buffer_size(struct persistent_ram_zone *prz)
- {
- 	return atomic_read(&prz->buffer->size);
-@@ -455,78 +453,3 @@ err:
- 	kfree(prz);
- 	return ERR_PTR(ret);
- }
--
--#ifndef MODULE
--static int __init persistent_ram_buffer_init(const char *name,
--		struct persistent_ram_zone *prz)
--{
--	int i;
--	struct persistent_ram *ram;
--	struct persistent_ram_descriptor *desc;
--	phys_addr_t start;
--
--	list_for_each_entry(ram, &persistent_ram_list, node) {
--		start = ram->start;
--		for (i = 0; i < ram->num_descs; i++) {
--			desc = &ram->descs[i];
--			if (!strcmp(desc->name, name))
--				return persistent_ram_buffer_map(start,
--						desc->size, prz);
--			start += desc->size;
--		}
--	}
--
--	return -EINVAL;
--}
--
--static  __init
--struct persistent_ram_zone *__persistent_ram_init(struct device *dev, bool ecc)
--{
--	struct persistent_ram_zone *prz;
--	int ret = -ENOMEM;
--
--	prz = kzalloc(sizeof(struct persistent_ram_zone), GFP_KERNEL);
--	if (!prz) {
--		pr_err("persistent_ram: failed to allocate persistent ram zone\n");
--		goto err;
--	}
--
--	ret = persistent_ram_buffer_init(dev_name(dev), prz);
--	if (ret) {
--		pr_err("persistent_ram: failed to initialize buffer\n");
--		goto err;
--	}
--
--	persistent_ram_post_init(prz, ecc);
--
--	return prz;
--err:
--	kfree(prz);
--	return ERR_PTR(ret);
--}
--
--struct persistent_ram_zone * __init
--persistent_ram_init_ringbuffer(struct device *dev, bool ecc)
--{
--	return __persistent_ram_init(dev, ecc);
--}
--
--int __init persistent_ram_early_init(struct persistent_ram *ram)
--{
--	int ret;
--
--	ret = memblock_reserve(ram->start, ram->size);
--	if (ret) {
--		pr_err("Failed to reserve persistent memory from %08lx-%08lx\n",
--			(long)ram->start, (long)(ram->start + ram->size - 1));
--		return ret;
--	}
--
--	list_add_tail(&ram->node, &persistent_ram_list);
--
--	pr_info("Initialized persistent memory from %08lx-%08lx\n",
--		(long)ram->start, (long)(ram->start + ram->size - 1));
--
--	return 0;
--}
--#endif
-diff --git a/include/linux/pstore_ram.h b/include/linux/pstore_ram.h
-index 7ed7fd4..d1d7d51 100644
---- a/include/linux/pstore_ram.h
-+++ b/include/linux/pstore_ram.h
-@@ -25,21 +25,6 @@
- 
- struct persistent_ram_buffer;
- 
--struct persistent_ram_descriptor {
--	const char	*name;
--	phys_addr_t	size;
--};
--
--struct persistent_ram {
--	phys_addr_t	start;
--	phys_addr_t	size;
--
--	int					num_descs;
--	struct persistent_ram_descriptor	*descs;
--
--	struct list_head node;
--};
--
- struct persistent_ram_zone {
- 	phys_addr_t paddr;
- 	size_t size;
-@@ -63,14 +48,10 @@ struct persistent_ram_zone {
- 	size_t old_log_size;
+ struct ramoops_context {
+ 	struct persistent_ram_zone **przs;
++	struct persistent_ram_zone *cprz;
+ 	phys_addr_t phys_addr;
+ 	unsigned long size;
+ 	size_t record_size;
+@@ -70,6 +71,7 @@ struct ramoops_context {
+ 	bool ecc;
+ 	unsigned int count;
+ 	unsigned int max_count;
++	unsigned int max_dump_count;
+ 	unsigned int read_count;
+ 	struct pstore_info pstore;
  };
- 
--int persistent_ram_early_init(struct persistent_ram *ram);
+@@ -92,16 +94,20 @@ static ssize_t ramoops_pstore_read(u64 *id, enum pstore_type_id *type,
+ {
+ 	ssize_t size;
+ 	struct ramoops_context *cxt = psi->data;
+-	struct persistent_ram_zone *prz;
 -
- struct persistent_ram_zone * __init persistent_ram_new(phys_addr_t start,
- 						       size_t size,
- 						       bool ecc);
- void persistent_ram_free(struct persistent_ram_zone *prz);
--struct persistent_ram_zone *persistent_ram_init_ringbuffer(struct device *dev,
--		bool ecc);
+-	if (cxt->read_count >= cxt->max_count)
+-		return -EINVAL;
++	struct persistent_ram_zone *prz = cxt->przs[cxt->read_count];
  
- int persistent_ram_write(struct persistent_ram_zone *prz, const void *s,
- 	unsigned int count);
+ 	*id = cxt->read_count++;
+-	prz = cxt->przs[*id];
+ 
+-	/* Only supports dmesg output so far. */
+-	*type = PSTORE_TYPE_DMESG;
++	if (*id < cxt->max_dump_count && persistent_ram_old_size(prz)) {
++		*type = PSTORE_TYPE_DMESG;
++	} else if (*id < cxt->max_count) {
++		*type = PSTORE_TYPE_CONSOLE;
++		prz = cxt->cprz;
++		cxt->read_count = cxt->max_count;
++	} else {
++		return 0;
++	}
++
+ 	/* TODO(kees): Bogus time for the moment. */
+ 	time->tv_sec = 0;
+ 	time->tv_nsec = 0;
+@@ -142,7 +148,13 @@ static int ramoops_pstore_write(enum pstore_type_id type,
+ 	struct persistent_ram_zone *prz = cxt->przs[cxt->count];
+ 	size_t hlen;
+ 
+-	/* Currently ramoops is designed to only store dmesg dumps. */
++	if (type == PSTORE_TYPE_CONSOLE) {
++		if (!cxt->cprz)
++			return -ENOMEM;
++		persistent_ram_write(cxt->cprz, cxt->pstore.buf, size);
++		return 0;
++	}
++
+ 	if (type != PSTORE_TYPE_DMESG)
+ 		return -EINVAL;
+ 
+@@ -170,7 +182,7 @@ static int ramoops_pstore_write(enum pstore_type_id type,
+ 		size = prz->buffer_size - hlen;
+ 	persistent_ram_write(prz, cxt->pstore.buf, size);
+ 
+-	cxt->count = (cxt->count + 1) % cxt->max_count;
++	cxt->count = (cxt->count + 1) % cxt->max_dump_count;
+ 
+ 	return 0;
+ }
+@@ -264,6 +276,16 @@ static int __init ramoops_probe(struct platform_device *pdev)
+ 		}
+ 	}
+ 
++	/*
++	 * The last zone is for TYPE_CONSOLE, unless we have only
++	 * one, in which case we use it for oops/panic logging.
++	 */
++	cxt->max_dump_count = cxt->max_count;
++	if (cxt->max_count > 1) {
++		cxt->max_dump_count--;
++		cxt->cprz = cxt->przs[cxt->max_count - 1];
++	}
++
+ 	cxt->pstore.data = cxt;
+ 	cxt->pstore.bufsize = cxt->przs[0]->buffer_size;
+ 	cxt->pstore.buf = kmalloc(cxt->pstore.bufsize, GFP_KERNEL);
 -- 
 1.7.9.2
+
