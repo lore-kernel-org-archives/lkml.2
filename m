@@ -1,196 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755778Ab2EQUmU (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 May 2012 16:42:20 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:34001 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752500Ab2EQUmR (ORCPT
+	id S1756825Ab2EQUuQ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 May 2012 16:50:16 -0400
+Received: from eddie.linux-mips.org ([78.24.191.182]:35637 "EHLO
+	cvs.linux-mips.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756145Ab2EQUuO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 May 2012 16:42:17 -0400
-Date: Thu, 17 May 2012 13:42:16 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Viresh Kumar <viresh.kumar@st.com>
-Cc: <spear-devel@list.st.com>, <viresh.linux@gmail.com>,
-        <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
-        <mturquette@linaro.org>, <sshtylyov@mvista.com>, <jgarzik@redhat.com>,
-        <linux@arm.linux.org.uk>, <w.sang@pengutronix.de>,
-        <LW@KARO-electronics.de>, <andrew@lunn.ch>,
-        <linux-ide@vger.kernel.org>
-Subject: Re: [PATCH V3 Resend 07/12] ata/sata_mv: Remove conditional
- compilation of clk code
-Message-Id: <20120517134216.8590c88a.akpm@linux-foundation.org>
-In-Reply-To: <ae865cae6b4961dea0e48d07da74b181c3958507.1336448639.git.viresh.kumar@st.com>
-References: <cover.1336448639.git.viresh.kumar@st.com>
-	<ae865cae6b4961dea0e48d07da74b181c3958507.1336448639.git.viresh.kumar@st.com>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Thu, 17 May 2012 16:50:14 -0400
+Date: Thu, 17 May 2012 22:50:03 +0200
+From: Ralf Baechle <ralf@linux-mips.org>
+To: David Daney <ddaney.cavm@gmail.com>
+Cc: Yong Zhang <yong.zhang0@gmail.com>, linux-rt-users@vger.kernel.org,
+        linux-kernel@vger.kernel.org, david.daney@cavium.com,
+        tglx@linutronix.de
+Subject: Re: [PATCH -rt] MIPS: Octeon: convert smp_reserve_lock to raw
+ spinlock
+Message-ID: <20120517205003.GE16397@linux-mips.org>
+References: <1337249709-7346-1-git-send-email-yong.zhang0@gmail.com>
+ <4FB527B2.2010800@gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4FB527B2.2010800@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 8 May 2012 09:22:34 +0530
-Viresh Kumar <viresh.kumar@st.com> wrote:
+On Thu, May 17, 2012 at 09:30:42AM -0700, David Daney wrote:
+> Date:   Thu, 17 May 2012 09:30:42 -0700
+> From: David Daney <ddaney.cavm@gmail.com>
+> To: Yong Zhang <yong.zhang0@gmail.com>, ralf@linux-mips.org
+> CC: linux-rt-users@vger.kernel.org, linux-kernel@vger.kernel.org,
+>  david.daney@cavium.com, tglx@linutronix.de
+> Subject: Re: [PATCH -rt] MIPS: Octeon: convert smp_reserve_lock to raw
+>  spinlock
+> Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+> 
+> On 05/17/2012 03:15 AM, Yong Zhang wrote:
+> >From: Yong Zhang<yong.zhang@windriver.com>
+> >
+> >Because __cpu_disable is called in atomic context and spinlock
+> >is a mutex on -rt.
+> >
+> >Signed-off-by: Yong Zhang<yong.zhang0@gmail.com>
+> >---
+> >  arch/mips/cavium-octeon/smp.c |    6 +++---
+> >  1 files changed, 3 insertions(+), 3 deletions(-)
+> >
+> >diff --git a/arch/mips/cavium-octeon/smp.c b/arch/mips/cavium-octeon/smp.c
+> >index ef9c34a..473c72b 100644
+> >--- a/arch/mips/cavium-octeon/smp.c
+> >+++ b/arch/mips/cavium-octeon/smp.c
+> >@@ -257,7 +257,7 @@ DEFINE_PER_CPU(int, cpu_state);
+> >
+> >  extern void fixup_irqs(void);
+> >
+> >-static DEFINE_SPINLOCK(smp_reserve_lock);
+> >+static DEFINE_RAW_SPINLOCK(smp_reserve_lock);
+> >
+> 
+> Ralf added this in 773cb77d (MIPS: Cavium: Add CPU hotplugging code.)
+> 
+> I'm not even sure what this lock is supposed to be protecting, so I
+> would like Ralf to take a look.
+> 
+> You can add an Acked-by: from me for either this patch as is, or if
+> Ralf thinks it is OK, removing the lock entirely.
+> 
+> In any event we can merge this via Ralf's tree.
 
-> With addition of dummy clk_*() calls for non CONFIG_HAVE_CLK cases in clk.h,
-> there is no need to have clk code enclosed in #ifdef CONFIG_HAVE_CLK, #endif
-> macros.
+The 773cb77d patch has a long history but I think I first worked on it for
+Wind River Linux 2.0 which was 2.6.21-based, then broke it out and pushed
+it upstream.  In 2.6.21 it was probably infected by the the smp_reserve_lock
+virus in the s390 code for no good reason.  So I agree, the lock can
+be dropped and I'm queueing a patch to do so for 3.5.
 
-There have been significant changes to drivers/ata/sata_mv.c in
-linux-next so I have reworked the patch as below.
-
-I notice that with x86_64 allmodconfig (CONFIG_HAVE_CLK=n), this patch
-adds quite a lot of program text:
-
-   text    data     bss     dec     hex filename
-  26926    2657    7648   37231    916f drivers/ata/sata_mv.o
-  27528    2657    7832   38017    9481 drivers/ata/sata_mv.o
-
-This is an unacceptable increase for a purely cosmetic change!
-
-For some reason,
-ata-pata_arasan-remove-conditional-compilation-of-clk-code.patch
-shrinks drivers/ata/pata_arasan_cf.o by 60 bytes, so that's good.
-
-drivers/net/can/c_can/c_can_platform.o got 18 bytes bigger, which we
-can live with.
-
-
-
-I checked a few other patches and didn't see similar code bloat.
-
-I note that usb-musb-remove-conditional-compilation-of-clk-code.patch
-accidentally fixed the build of drivers/usb/musb/ux500.c.  In the
-mainline kernel I get
-
-drivers/usb/musb/ux500.c: In function 'ux500_probe':
-drivers/usb/musb/ux500.c:89: error: expected expression before 'do'
-drivers/usb/musb/ux500.c: In function 'ux500_resume':
-drivers/usb/musb/ux500.c:175: error: expected expression before 'do'
-
-possibly because this driver isn't supposed to be built with x86_64
-allmodconfig, but someone obviously has a borked clk_enable()
-definition.  drivers/usb/gadget/pxa25x_udc.c does it wrongly.
-
-Anyway, I will drop
-ata-sata_mv-remove-conditional-compilation-of-clk-code.patch - please
-grab current linux-next and see what we can do about the code size
-issue?
-
-Thanks.
-
-
-From: Viresh Kumar <viresh.kumar@st.com>
-Subject: ata/sata_mv: remove conditional compilation of clk code
-
-With addition of dummy clk_*() calls for non CONFIG_HAVE_CLK cases in
-clk.h, there is no need to have clk code enclosed in #ifdef
-CONFIG_HAVE_CLK, #endif macros.
-
-Signed-off-by: Viresh Kumar <viresh.kumar@st.com>
-Reviewed-by: Andrew Lunn <andrew@lunn.ch>
-Cc: Jeff Garzik <jgarzik@redhat.com>
-Cc: Russell King <rmk@arm.linux.org.uk>
-Cc: Mike Turquette <mturquette@linaro.org>
-Cc: Sergei Shtylyov <sshtylyov@ru.mvista.com>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
----
-
- drivers/ata/sata_mv.c |   14 --------------
- 1 file changed, 14 deletions(-)
-
-diff -puN drivers/ata/sata_mv.c~ata-sata_mv-remove-conditional-compilation-of-clk-code drivers/ata/sata_mv.c
---- a/drivers/ata/sata_mv.c~ata-sata_mv-remove-conditional-compilation-of-clk-code
-+++ a/drivers/ata/sata_mv.c
-@@ -551,10 +551,8 @@ struct mv_host_priv {
- 	u32			irq_mask_offset;
- 	u32			unmask_all_irqs;
- 
--#if defined(CONFIG_HAVE_CLK)
- 	struct clk		*clk;
- 	struct clk              **port_clks;
--#endif
- 	/*
- 	 * These consistent DMA memory pools give us guaranteed
- 	 * alignment for hardware-accessed data structures,
-@@ -4028,9 +4026,7 @@ static int mv_platform_probe(struct plat
- 	struct resource *res;
- 	int n_ports = 0;
- 	int rc;
--#if defined(CONFIG_HAVE_CLK)
- 	int port;
--#endif
- 
- 	ata_print_version_once(&pdev->dev, DRV_VERSION);
- 
-@@ -4058,13 +4054,11 @@ static int mv_platform_probe(struct plat
- 
- 	if (!host || !hpriv)
- 		return -ENOMEM;
--#if defined(CONFIG_HAVE_CLK)
- 	hpriv->port_clks = devm_kzalloc(&pdev->dev,
- 					sizeof(struct clk *) * n_ports,
- 					GFP_KERNEL);
- 	if (!hpriv->port_clks)
- 		return -ENOMEM;
--#endif
- 	host->private_data = hpriv;
- 	hpriv->n_ports = n_ports;
- 	hpriv->board_idx = chip_soc;
-@@ -4074,7 +4068,6 @@ static int mv_platform_probe(struct plat
- 				   resource_size(res));
- 	hpriv->base -= SATAHC0_REG_BASE;
- 
--#if defined(CONFIG_HAVE_CLK)
- 	hpriv->clk = clk_get(&pdev->dev, NULL);
- 	if (IS_ERR(hpriv->clk))
- 		dev_notice(&pdev->dev, "cannot get optional clkdev\n");
-@@ -4088,7 +4081,6 @@ static int mv_platform_probe(struct plat
- 		if (!IS_ERR(hpriv->port_clks[port]))
- 			clk_prepare_enable(hpriv->port_clks[port]);
- 	}
--#endif
- 
- 	/*
- 	 * (Re-)program MBUS remapping windows if we are asked to.
-@@ -4115,7 +4107,6 @@ static int mv_platform_probe(struct plat
- 		return 0;
- 
- err:
--#if defined(CONFIG_HAVE_CLK)
- 	if (!IS_ERR(hpriv->clk)) {
- 		clk_disable_unprepare(hpriv->clk);
- 		clk_put(hpriv->clk);
-@@ -4126,7 +4117,6 @@ err:
- 			clk_put(hpriv->port_clks[port]);
- 		}
- 	}
--#endif
- 
- 	return rc;
- }
-@@ -4142,13 +4132,10 @@ err:
- static int __devexit mv_platform_remove(struct platform_device *pdev)
- {
- 	struct ata_host *host = platform_get_drvdata(pdev);
--#if defined(CONFIG_HAVE_CLK)
- 	struct mv_host_priv *hpriv = host->private_data;
- 	int port;
--#endif
- 	ata_host_detach(host);
- 
--#if defined(CONFIG_HAVE_CLK)
- 	if (!IS_ERR(hpriv->clk)) {
- 		clk_disable_unprepare(hpriv->clk);
- 		clk_put(hpriv->clk);
-@@ -4159,7 +4146,6 @@ static int __devexit mv_platform_remove(
- 			clk_put(hpriv->port_clks[port]);
- 		}
- 	}
--#endif
- 	return 0;
- }
- 
-_
-
+  Ralf
