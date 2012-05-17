@@ -1,91 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S966578Ab2EQOwJ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 May 2012 10:52:09 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:33648 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1762154Ab2EQOvl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 May 2012 10:51:41 -0400
-From: Mel Gorman <mgorman@suse.de>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Linux-MM <linux-mm@kvack.org>, Linux-Netdev <netdev@vger.kernel.org>,
-        Linux-NFS <linux-nfs@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        David Miller <davem@davemloft.net>,
-        Trond Myklebust <Trond.Myklebust@netapp.com>,
-        Neil Brown <neilb@suse.de>, Christoph Hellwig <hch@infradead.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Mike Christie <michaelc@cs.wisc.edu>,
-        Eric B Munson <emunson@mgebm.net>, Mel Gorman <mgorman@suse.de>
-Subject: [PATCH 11/12] nfs: Prevent page allocator recursions with swap over NFS.
-Date: Thu, 17 May 2012 15:51:24 +0100
-Message-Id: <1337266285-8102-12-git-send-email-mgorman@suse.de>
-X-Mailer: git-send-email 1.7.9.2
-In-Reply-To: <1337266285-8102-1-git-send-email-mgorman@suse.de>
-References: <1337266285-8102-1-git-send-email-mgorman@suse.de>
+	id S966622Ab2EQOwV (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 May 2012 10:52:21 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:40018 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S966562Ab2EQOwH convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 17 May 2012 10:52:07 -0400
+Message-ID: <1337266310.4281.30.camel@twins>
+Subject: Re: [PATCH v2 3/3] x86: Support local_flush_tlb_kernel_range
+From: Peter Zijlstra <a.p.zijlstra@chello.nl>
+To: Minchan Kim <minchan@kernel.org>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Nitin Gupta <ngupta@vflare.org>,
+        Seth Jennings <sjenning@linux.vnet.ibm.com>,
+        Dan Magenheimer <dan.magenheimer@oracle.com>,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        Tejun Heo <tj@kernel.org>, David Howells <dhowells@redhat.com>,
+        x86@kernel.org, Nick Piggin <npiggin@gmail.com>
+Date: Thu, 17 May 2012 16:51:50 +0200
+In-Reply-To: <4FB4B29C.4010908@kernel.org>
+References: <1337133919-4182-1-git-send-email-minchan@kernel.org>
+	 <1337133919-4182-3-git-send-email-minchan@kernel.org>
+	 <4FB4B29C.4010908@kernel.org>
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
+X-Mailer: Evolution 3.2.2- 
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-GFP_NOFS is _more_ permissive than GFP_NOIO in that it will initiate
-IO, just not of any filesystem data.
+On Thu, 2012-05-17 at 17:11 +0900, Minchan Kim wrote:
+> > +++ b/arch/x86/include/asm/tlbflush.h
+> > @@ -172,4 +172,16 @@ static inline void flush_tlb_kernel_range(unsigned long start,
+> >       flush_tlb_all();
+> >  }
+> >  
+> > +static inline void local_flush_tlb_kernel_range(unsigned long start,
+> > +             unsigned long end)
+> > +{
+> > +     if (cpu_has_invlpg) {
+> > +             while (start < end) {
+> > +                     __flush_tlb_single(start);
+> > +                     start += PAGE_SIZE;
+> > +             }
+> > +     } else
+> > +             local_flush_tlb();
+> > +}
 
-The problem is that previously NOFS was correct because that avoids
-recursion into the NFS code. With swap-over-NFS, it is no longer
-correct as swap IO can lead to this recursion.
 
-Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Signed-off-by: Mel Gorman <mgorman@suse.de>
----
- fs/nfs/pagelist.c |    2 +-
- fs/nfs/write.c    |    7 ++++---
- 2 files changed, 5 insertions(+), 4 deletions(-)
+It would be much better if you wait for Alex Shi's patch to mature.
+doing the invlpg thing for ranges is not an unconditional win.
 
-diff --git a/fs/nfs/pagelist.c b/fs/nfs/pagelist.c
-index 77aa83e..8e80d71 100644
---- a/fs/nfs/pagelist.c
-+++ b/fs/nfs/pagelist.c
-@@ -29,7 +29,7 @@ static struct kmem_cache *nfs_page_cachep;
- static inline struct nfs_page *
- nfs_page_alloc(void)
- {
--	struct nfs_page	*p = kmem_cache_zalloc(nfs_page_cachep, GFP_KERNEL);
-+	struct nfs_page	*p = kmem_cache_zalloc(nfs_page_cachep, GFP_NOIO);
- 	if (p)
- 		INIT_LIST_HEAD(&p->wb_list);
- 	return p;
-diff --git a/fs/nfs/write.c b/fs/nfs/write.c
-index 21cfe71..abdbe61 100644
---- a/fs/nfs/write.c
-+++ b/fs/nfs/write.c
-@@ -52,7 +52,7 @@ static mempool_t *nfs_commit_mempool;
- 
- struct nfs_write_data *nfs_commitdata_alloc(void)
- {
--	struct nfs_write_data *p = mempool_alloc(nfs_commit_mempool, GFP_NOFS);
-+	struct nfs_write_data *p = mempool_alloc(nfs_commit_mempool, GFP_NOIO);
- 
- 	if (p) {
- 		memset(p, 0, sizeof(*p));
-@@ -72,7 +72,7 @@ EXPORT_SYMBOL_GPL(nfs_commit_free);
- 
- struct nfs_write_data *nfs_writedata_alloc(unsigned int pagecount)
- {
--	struct nfs_write_data *p = mempool_alloc(nfs_wdata_mempool, GFP_NOFS);
-+	struct nfs_write_data *p = mempool_alloc(nfs_wdata_mempool, GFP_NOIO);
- 
- 	if (p) {
- 		memset(p, 0, sizeof(*p));
-@@ -81,7 +81,8 @@ struct nfs_write_data *nfs_writedata_alloc(unsigned int pagecount)
- 		if (pagecount <= ARRAY_SIZE(p->page_array))
- 			p->pagevec = p->page_array;
- 		else {
--			p->pagevec = kcalloc(pagecount, sizeof(struct page *), GFP_NOFS);
-+			p->pagevec = kcalloc(pagecount, sizeof(struct page *),
-+					GFP_NOIO);
- 			if (!p->pagevec) {
- 				mempool_free(p, nfs_wdata_mempool);
- 				p = NULL;
--- 
-1.7.9.2
-
+Also, does it even work if the range happens to be backed by huge pages?
+IIRC we try and do the identity map with large pages wherever possible.
