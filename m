@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761896Ab2EQMxI (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 May 2012 08:53:08 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:1028 "EHLO mx1.redhat.com"
+	id S1761906Ab2EQMxd (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 May 2012 08:53:33 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:23344 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1761468Ab2EQMsf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 May 2012 08:48:35 -0400
+	id S1761734Ab2EQMsc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 17 May 2012 08:48:32 -0400
 From: Steven Whitehouse <swhiteho@redhat.com>
 To: linux-kernel@vger.kernel.org, cluster-devel@redhat.com
 Cc: Bob Peterson <rpeterso@redhat.com>,
         Steven Whitehouse <swhiteho@redhat.com>
-Subject: [PATCH 07/24] GFS2: Fix function parameter comments in rgrp.c
-Date: Thu, 17 May 2012 13:23:14 +0100
-Message-Id: <1337257411-3173-8-git-send-email-swhiteho@redhat.com>
+Subject: [PATCH 05/24] GFS2: Use slab for block reservation memory
+Date: Thu, 17 May 2012 13:23:12 +0100
+Message-Id: <1337257411-3173-6-git-send-email-swhiteho@redhat.com>
 In-Reply-To: <1337257411-3173-1-git-send-email-swhiteho@redhat.com>
 References: <1337257411-3173-1-git-send-email-swhiteho@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
@@ -21,158 +21,120 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Bob Peterson <rpeterso@redhat.com>
 
-This patch just fixes a bunch of function parameter comments.
-Slowly, over the years, the comments have gotten out of date
-(mostly my fault, as I haven't been good at keeping them up to date).
-This patch rectifies some of that.
+This patch changes block reservations so it uses slab storage.
 
 Signed-off-by: Bob Peterson <rpeterso@redhat.com>
 Signed-off-by: Steven Whitehouse <swhiteho@redhat.com>
 
+diff --git a/fs/gfs2/main.c b/fs/gfs2/main.c
+index 754426b..ce17944 100644
+--- a/fs/gfs2/main.c
++++ b/fs/gfs2/main.c
+@@ -143,6 +143,12 @@ static int __init init_gfs2_fs(void)
+ 	if (!gfs2_quotad_cachep)
+ 		goto fail;
+ 
++	gfs2_rsrv_cachep = kmem_cache_create("gfs2_mblk",
++					     sizeof(struct gfs2_blkreserv),
++					       0, 0, NULL);
++	if (!gfs2_rsrv_cachep)
++		goto fail;
++
+ 	register_shrinker(&qd_shrinker);
+ 
+ 	error = register_filesystem(&gfs2_fs_type);
+@@ -186,6 +192,9 @@ fail:
+ 	unregister_shrinker(&qd_shrinker);
+ 	gfs2_glock_exit();
+ 
++	if (gfs2_rsrv_cachep)
++		kmem_cache_destroy(gfs2_rsrv_cachep);
++
+ 	if (gfs2_quotad_cachep)
+ 		kmem_cache_destroy(gfs2_quotad_cachep);
+ 
+@@ -226,6 +235,7 @@ static void __exit exit_gfs2_fs(void)
+ 	rcu_barrier();
+ 
+ 	mempool_destroy(gfs2_bh_pool);
++	kmem_cache_destroy(gfs2_rsrv_cachep);
+ 	kmem_cache_destroy(gfs2_quotad_cachep);
+ 	kmem_cache_destroy(gfs2_rgrpd_cachep);
+ 	kmem_cache_destroy(gfs2_bufdata_cachep);
 diff --git a/fs/gfs2/rgrp.c b/fs/gfs2/rgrp.c
-index 55dd010..5968eae 100644
+index 3df65c9..69fa32f 100644
 --- a/fs/gfs2/rgrp.c
 +++ b/fs/gfs2/rgrp.c
-@@ -119,6 +119,7 @@ static inline void gfs2_setbit(struct gfs2_rgrpd *rgd, unsigned char *buf1,
- 
- /**
-  * gfs2_testbit - test a bit in the bitmaps
-+ * @rgd: the resource group descriptor
-  * @buffer: the buffer that holds the bitmaps
-  * @buflen: the length (in bytes) of the buffer
-  * @block: the block to read
-@@ -180,7 +181,7 @@ static inline u64 gfs2_bit_search(const __le64 *ptr, u64 mask, u8 state)
- /**
-  * gfs2_bitfit - Search an rgrp's bitmap buffer to find a bit-pair representing
-  *       a block in a given allocation state.
-- * @buffer: the buffer that holds the bitmaps
-+ * @buf: the buffer that holds the bitmaps
-  * @len: the length (in bytes) of the buffer
-  * @goal: start search at this block's bit-pair (within @buffer)
-  * @state: GFS2_BLKST_XXX the state of the block we're looking for.
-@@ -232,6 +233,7 @@ static u32 gfs2_bitfit(const u8 *buf, const unsigned int len,
- 
- /**
-  * gfs2_bitcount - count the number of bits in a certain state
-+ * @rgd: the resource group descriptor
-  * @buffer: the buffer that holds the bitmaps
-  * @buflen: the length (in bytes) of the buffer
-  * @state: the state of the block we're looking for
-@@ -265,7 +267,6 @@ static u32 gfs2_bitcount(struct gfs2_rgrpd *rgd, const u8 *buffer,
- 
- /**
-  * gfs2_rgrp_verify - Verify that a resource group is consistent
-- * @sdp: the filesystem
-  * @rgd: the rgrp
-  *
-  */
-@@ -323,7 +324,8 @@ static inline int rgrp_contains_block(struct gfs2_rgrpd *rgd, u64 block)
- /**
-  * gfs2_blk2rgrpd - Find resource group for a given data/meta block number
-  * @sdp: The GFS2 superblock
-- * @n: The data block number
-+ * @blk: The data block number
-+ * @exact: True if this needs to be an exact match
-  *
-  * Returns: The resource group, or NULL if not found
-  */
-@@ -381,7 +383,7 @@ struct gfs2_rgrpd *gfs2_rgrpd_get_first(struct gfs2_sbd *sdp)
- 
- /**
-  * gfs2_rgrpd_get_next - get the next RG
-- * @rgd: A RG
-+ * @rgd: the resource group descriptor
-  *
-  * Returns: The next rgrp
-  */
-@@ -530,6 +532,7 @@ static int compute_bitstructs(struct gfs2_rgrpd *rgd)
- 
- /**
-  * gfs2_ri_total - Total up the file system space, according to the rindex.
-+ * @sdp: the filesystem
-  *
-  */
- u64 gfs2_ri_total(struct gfs2_sbd *sdp)
-@@ -583,7 +586,8 @@ static int rgd_insert(struct gfs2_rgrpd *rgd)
- 
- /**
-  * read_rindex_entry - Pull in a new resource index entry from the disk
-- * @gl: The glock covering the rindex inode
-+ * @ip: The GFS2 inode
-+ * @ra_state: The read-ahead state
-  *
-  * Returns: 0 on success, > 0 on EOF, error code otherwise
-  */
-@@ -742,7 +746,7 @@ static void gfs2_rgrp_out(struct gfs2_rgrpd *rgd, void *buf)
- 
- /**
-  * gfs2_rgrp_go_lock - Read in a RG's header and bitmaps
-- * @rgd: the struct gfs2_rgrpd describing the RG to read in
-+ * @gh: The glock holder for the resource group
-  *
-  * Read in all of a Resource Group's header and bitmap blocks.
-  * Caller must eventually call gfs2_rgrp_relse() to free the bitmaps.
-@@ -802,7 +806,7 @@ fail:
- 
- /**
-  * gfs2_rgrp_go_unlock - Release RG bitmaps read in with gfs2_rgrp_bh_get()
-- * @rgd: the struct gfs2_rgrpd describing the RG to read in
-+ * @gh: The glock holder for the resource group
-  *
+@@ -1002,11 +1002,13 @@ struct gfs2_qadata *gfs2_qadata_get(struct gfs2_inode *ip)
+  * Returns: the struct gfs2_qadata
   */
  
-@@ -1041,6 +1045,8 @@ static inline u32 gfs2_bi2rgd_blk(struct gfs2_bitmap *bi, u32 blk)
- /**
-  * try_rgrp_unlink - Look for any unlinked, allocated, but unused inodes
-  * @rgd: The rgrp
-+ * @last_unlinked: block address of the last dinode we unlinked
-+ * @skip: block address we should explicitly not unlink
-  *
-  * Returns: 0 if no error
-  *          The inode, if one has been found, in inode.
-@@ -1105,7 +1111,7 @@ static void try_rgrp_unlink(struct gfs2_rgrpd *rgd, u64 *last_unlinked, u64 skip
- /**
-  * get_local_rgrp - Choose and lock a rgrp for allocation
-  * @ip: the inode to reserve space for
-- * @rgp: the chosen and locked rgrp
-+ * @last_unlinked: the last unlinked block
-  *
-  * Try to acquire rgrp in way which avoids contending with others.
-  *
-@@ -1174,6 +1180,7 @@ static void gfs2_blkrsv_put(struct gfs2_inode *ip)
- /**
-  * gfs2_inplace_reserve - Reserve space in the filesystem
-  * @ip: the inode to reserve space for
-+ * @requested: the number of blocks to be reserved
-  *
-  * Returns: errno
-  */
-@@ -1272,7 +1279,6 @@ static unsigned char gfs2_get_block_type(struct gfs2_rgrpd *rgd, u64 block)
-  * @rgd: the resource group descriptor
-  * @goal: the goal block within the RG (start here to search for avail block)
-  * @state: GFS2_BLKST_XXX the before-allocation state to find
-- * @dinode: TRUE if the first block we allocate is for a dinode
-  * @rbi: address of the pointer to the bitmap containing the block found
-  *
-  * Walk rgrp's bitmap to find bits that represent a block in @state.
-@@ -1286,8 +1292,7 @@ static unsigned char gfs2_get_block_type(struct gfs2_rgrpd *rgd, u64 block)
-  * Returns: the block number found relative to the bitmap rbi
-  */
- 
--static u32 rgblk_search(struct gfs2_rgrpd *rgd, u32 goal,
--			unsigned char state,
-+static u32 rgblk_search(struct gfs2_rgrpd *rgd, u32 goal, unsigned char state,
- 			struct gfs2_bitmap **rbi)
+-static struct gfs2_blkreserv *gfs2_blkrsv_get(struct gfs2_inode *ip)
++static int gfs2_blkrsv_get(struct gfs2_inode *ip)
  {
- 	struct gfs2_bitmap *bi = NULL;
-@@ -1756,7 +1761,6 @@ void gfs2_rlist_add(struct gfs2_inode *ip, struct gfs2_rgrp_list *rlist,
-  *      and initialize an array of glock holders for them
-  * @rlist: the list of resource groups
-  * @state: the lock state to acquire the RG lock in
-- * @flags: the modifier flags for the holder structures
-  *
-  * FIXME: Don't use NOFAIL
-  *
+ 	BUG_ON(ip->i_res != NULL);
+-	ip->i_res = kzalloc(sizeof(struct gfs2_blkreserv), GFP_NOFS);
+-	return ip->i_res;
++	ip->i_res = kmem_cache_zalloc(gfs2_rsrv_cachep, GFP_NOFS);
++	if (!ip->i_res)
++		return -ENOMEM;
++	return 0;
+ }
+ 
+ /**
+@@ -1164,7 +1166,7 @@ static int get_local_rgrp(struct gfs2_inode *ip, u64 *last_unlinked)
+ static void gfs2_blkrsv_put(struct gfs2_inode *ip)
+ {
+ 	BUG_ON(ip->i_res == NULL);
+-	kfree(ip->i_res);
++	kmem_cache_free(gfs2_rsrv_cachep, ip->i_res);
+ 	ip->i_res = NULL;
+ }
+ 
+@@ -1179,14 +1181,15 @@ int gfs2_inplace_reserve(struct gfs2_inode *ip, u32 requested)
+ {
+ 	struct gfs2_sbd *sdp = GFS2_SB(&ip->i_inode);
+ 	struct gfs2_blkreserv *rs;
+-	int error = 0;
++	int error;
+ 	u64 last_unlinked = NO_BLOCK;
+ 	int tries = 0;
+ 
+-	rs = gfs2_blkrsv_get(ip);
+-	if (!rs)
+-		return -ENOMEM;
++	error = gfs2_blkrsv_get(ip);
++	if (error)
++		return error;
+ 
++	rs = ip->i_res;
+ 	rs->rs_requested = requested;
+ 	if (gfs2_assert_warn(sdp, requested)) {
+ 		error = -EINVAL;
+diff --git a/fs/gfs2/util.c b/fs/gfs2/util.c
+index 9e7765e..3afc6ac 100644
+--- a/fs/gfs2/util.c
++++ b/fs/gfs2/util.c
+@@ -25,6 +25,7 @@ struct kmem_cache *gfs2_inode_cachep __read_mostly;
+ struct kmem_cache *gfs2_bufdata_cachep __read_mostly;
+ struct kmem_cache *gfs2_rgrpd_cachep __read_mostly;
+ struct kmem_cache *gfs2_quotad_cachep __read_mostly;
++struct kmem_cache *gfs2_rsrv_cachep __read_mostly;
+ mempool_t *gfs2_bh_pool __read_mostly;
+ 
+ void gfs2_assert_i(struct gfs2_sbd *sdp)
+diff --git a/fs/gfs2/util.h b/fs/gfs2/util.h
+index a4ce76c..8fbe6cf 100644
+--- a/fs/gfs2/util.h
++++ b/fs/gfs2/util.h
+@@ -152,6 +152,7 @@ extern struct kmem_cache *gfs2_inode_cachep;
+ extern struct kmem_cache *gfs2_bufdata_cachep;
+ extern struct kmem_cache *gfs2_rgrpd_cachep;
+ extern struct kmem_cache *gfs2_quotad_cachep;
++extern struct kmem_cache *gfs2_rsrv_cachep;
+ extern mempool_t *gfs2_bh_pool;
+ 
+ static inline unsigned int gfs2_tune_get_i(struct gfs2_tune *gt,
 -- 
 1.7.4
 
