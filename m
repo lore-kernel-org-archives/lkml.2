@@ -1,99 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S967524Ab2EQS3d (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 May 2012 14:29:33 -0400
-Received: from iolanthe.rowland.org ([192.131.102.54]:47526 "HELO
-	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S932633Ab2EQS3b (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 May 2012 14:29:31 -0400
-Date: Thu, 17 May 2012 14:29:30 -0400 (EDT)
-From: Alan Stern <stern@rowland.harvard.edu>
-X-X-Sender: stern@iolanthe.rowland.org
-To: Lin Ming <ming.m.lin@intel.com>
-cc: Jens Axboe <axboe@kernel.dk>, Jeff Moyer <jmoyer@redhat.com>,
-        <linux-kernel@vger.kernel.org>, <linux-pm@vger.kernel.org>,
-        <linux-scsi@vger.kernel.org>
-Subject: Re: [RFC v2 PATCH 2/4] block: add queue runtime pm callbacks
-In-Reply-To: <1337269686-3781-3-git-send-email-ming.m.lin@intel.com>
-Message-ID: <Pine.LNX.4.44L0.1205171346070.1169-100000@iolanthe.rowland.org>
+	id S967544Ab2EQS3s (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 May 2012 14:29:48 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:35774 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932633Ab2EQS3q (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 17 May 2012 14:29:46 -0400
+Message-ID: <4FB54383.5020703@zytor.com>
+Date: Thu, 17 May 2012 11:29:23 -0700
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:11.0) Gecko/20120329 Thunderbird/11.0.1
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+To: mingo@kernel.org, hpa@zytor.com, alan@linux.intel.com,
+        linux-kernel@vger.kernel.org, tglx@linutronix.de, arne@fitzenreiter.de
+CC: linux-tip-commits@vger.kernel.org
+Subject: Re: [tip:x86/urgent] x86: Fix boot on Twinhead H12Y
+References: <20120515174347.5109.94551.stgit@bluebook> <tip-80b3e557371205566a71e569fbfcce5b11f92dbe@git.kernel.org>
+In-Reply-To: <tip-80b3e557371205566a71e569fbfcce5b11f92dbe@git.kernel.org>
+X-Enigmail-Version: 1.4.1
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 17 May 2012, Lin Ming wrote:
+On 05/17/2012 11:22 AM, tip-bot for Alan Cox wrote:
+> Commit-ID:  80b3e557371205566a71e569fbfcce5b11f92dbe
+> Gitweb:     http://git.kernel.org/tip/80b3e557371205566a71e569fbfcce5b11f92dbe
+> Author:     Alan Cox <alan@linux.intel.com>
+> AuthorDate: Tue, 15 May 2012 18:44:15 +0100
+> Committer:  Ingo Molnar <mingo@kernel.org>
+> CommitDate: Thu, 17 May 2012 20:04:00 +0200
+> 
+> x86: Fix boot on Twinhead H12Y
+> 
+> Despite lots of investigation into why this is needed we don't
+> know or have an elegant cure. The only answer found on this
+> laptop is to mark a problem region as used so that Linux doesn't
+> put anything there.
+> 
+> Currently all the users add reserve= command lines and anyone
+> not knowing this needs to find the magic page that documents it.
+> Automate it instead.
+> 
+> Signed-off-by: Alan Cox <alan@linux.intel.com>
+> Tested-and-bugfixed-by: Arne Fitzenreiter <arne@fitzenreiter.de>
+> Resolves-bug: https://bugzilla.kernel.org/show_bug.cgi?id=10231
+> Link: http://lkml.kernel.org/r/20120515174347.5109.94551.stgit@bluebook
+> Signed-off-by: Ingo Molnar <mingo@kernel.org>
+> ---
+>  arch/x86/pci/fixup.c |   17 +++++++++++++++++
+>  1 files changed, 17 insertions(+), 0 deletions(-)
+> 
+> diff --git a/arch/x86/pci/fixup.c b/arch/x86/pci/fixup.c
+> index d0e6e40..5dd467b 100644
+> --- a/arch/x86/pci/fixup.c
+> +++ b/arch/x86/pci/fixup.c
+> @@ -519,3 +519,20 @@ static void sb600_disable_hpet_bar(struct pci_dev *dev)
+>  	}
+>  }
+>  DECLARE_PCI_FIXUP_EARLY(PCI_VENDOR_ID_ATI, 0x4385, sb600_disable_hpet_bar);
+> +
+> +/*
+> + * Twinhead H12Y needs us to block out a region otherwise we map devices
+> + * there and any access kills the box.
+> + *
+> + *   See: https://bugzilla.kernel.org/show_bug.cgi?id=10231
+> + *
+> + * Match off the LPC and svid/sdid (older kernels lose the bridge subvendor)
+> + */
+> +static void __devinit twinhead_reserve_killing_zone(struct pci_dev *dev)
+> +{
+> +        if (dev->subsystem_vendor == 0x14FF && dev->subsystem_device == 0xA003) {
+> +                pr_info("Reserving memory on Twinhead H12Y\n");
+> +                request_mem_region(0xFFB00000, 0x100000, "twinhead");
+> +        }
+> +}
+> +DECLARE_PCI_FIXUP_HEADER(PCI_VENDOR_ID_INTEL, 0x27B9, twinhead_reserve_killing_zone);
 
-> Add runtime pm suspend/resume callbacks to request queue.
-> As an example, implement these callbacks in sd driver.
+It seems to me that a DMI match might be more appropriate, since it
+pretty much sounds like the BIOS fails to reserve a region it is using?
 
-This is not the way to do it.  The block subsystem should not use 
-suspend/resume callbacks.
+	-hpa
 
-Instead, there should be block functions that can be called by client
-drivers: block_pre_runtime_suspend, block_post_runtime_suspend,
-bock_pre_runtime_resume, and block_post_runtime_resume.
-
-They should do something like this:
-
-	block_pre_runtime_suspend:
-		If any requests are in the queue, return -EBUSY.
-		Otherwise set q->rpm_status to RPM_SUSPENDING and
-		return 0.
-
-	block_post_runtime_suspend:
-		If the suspend succeeded then set q->rpm_status to 
-		RPM_SUSPENDED.  Otherwise set it to RPM_ACTIVE and
-		call pm_runtime_mark_last_busy().
-
-	block_pre_runtime_resume:
-		Set q->rpm_status to RPM_RESUMING.
-
-	block_post_runtime_resume:
-		If the resume succeeded then set q->rpm_status to
-		RPM_ACTIVE and call pm_runtime_mark_last_busy() and
-		pm_runtime_request_autosuspend().
-		Otherwise set q->rpm_status to RPM_SUSPENDED.
-
-There should also be an initialization function for client drivers to
-call.  block_runtime_pm_init() should call pm_runtime_mark_last_busy(),
-pm_runtime_use_autosuspend(), and pm_runtime_autosuspend().
-
-Next, you have to modify the parts of the block layer that run when a 
-new request is added to the queue or a request is removed.
-
-	When a request is added:
-		If q->rpm_status is RPM_SUSPENDED, or if q->rpm_status
-		is RPM_SUSPENDING and the REQ_PM flag isn't set, call
-		pm_runtime_request_resume().
-
-	When a request finishes:
-		Call pm_runtime_mark_last_busy().
-
-Next, you have to change the parts of the block layer responsible for
-taking a request from the queue and handing it to the lower-level
-driver (both peek and get).  If q->rpm_status is RPM_SUSPENDED, they
-shouldn't do anything -- act as though the queue is empty.  If
-q->rpm_status is RPM_SUSPENDING or RPM_RESUMING, they should hand over
-the request only if it has the REQ_PM flag set.
-
-For this to work, the block layer has to know what struct device
-pointer to pass to the pm_runtime_* routines.  You'll have to add that
-information to the request_queue structure; I guess q->dev can get set
-by block_pm_runtime_init().  In fact, when that's done you won't need
-q->rpm_status any more.  You'll be able to use q->dev->power.rpm_status
-directly, and you won't have to update it because the PM core does that
-for you.
-
-(Or maybe it would be easier to make q->rpm_status be a pointer to 
-q->dev->power.rpm_status.  That way, if CONFIG_PM_RUNTIME isn't enabled 
-or block_runtime_pm_init() hasn't been called, you can have 
-q->rpm_status simply point to a static value that is permanently set to 
-RPM_ACTIVE.)
-
-I may have left some parts out from this brief description.  Hopefully 
-you'll be able to figure out the general idea and get it to work.
-
-Alan Stern
 
