@@ -1,83 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761491Ab2EQJ5u (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 May 2012 05:57:50 -0400
-Received: from e28smtp05.in.ibm.com ([122.248.162.5]:35044 "EHLO
-	e28smtp05.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756049Ab2EQJ5r (ORCPT
+	id S1761517Ab2EQKK1 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 May 2012 06:10:27 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:33430 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1761498Ab2EQKK0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 May 2012 05:57:47 -0400
-Message-ID: <4FB4CB71.5040408@linux.vnet.ibm.com>
-Date: Thu, 17 May 2012 15:27:05 +0530
-From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120424 Thunderbird/12.0
-MIME-Version: 1.0
-To: Peter Zijlstra <a.p.zijlstra@chello.nl>
-CC: David Rientjes <rientjes@google.com>,
-        Nishanth Aravamudan <nacc@linux.vnet.ibm.com>, mingo@kernel.org,
-        pjt@google.com, paul@paulmenage.org, akpm@linux-foundation.org,
-        rjw@sisk.pl, nacc@us.ibm.com, paulmck@linux.vnet.ibm.com,
-        tglx@linutronix.de, seto.hidetoshi@jp.fujitsu.com, tj@kernel.org,
-        mschmidt@redhat.com, berrange@redhat.com, nikunj@linux.vnet.ibm.com,
-        vatsa@linux.vnet.ibm.com, liuj97@gmail.com,
-        linux-kernel@vger.kernel.org, linux-pm@vger.kernel.org
-Subject: Re: [PATCH v3 5/5] cpusets, suspend: Save and restore cpusets during
- suspend/resume
-References: <20120513231325.3566.37740.stgit@srivatsabhat> <20120513231710.3566.45349.stgit@srivatsabhat> <alpine.DEB.2.00.1205141735050.25235@chino.kir.corp.google.com> <20120515014042.GA9774@linux.vnet.ibm.com> <alpine.DEB.2.00.1205142055160.10906@chino.kir.corp.google.com> <20120515044539.GA25256@linux.vnet.ibm.com> <alpine.DEB.2.00.1205151106490.24304@chino.kir.corp.google.com> <1337112653.27694.110.camel@twins> <alpine.DEB.2.00.1205151346570.1656@chino.kir.corp.google.com> <1337116107.27694.114.camel@twins> <alpine.DEB.2.00.1205151414210.1656@chino.kir.corp.google.com> <4FB2CDAD.4020306@linux.vnet.ibm.com> <alpine.DEB.2.00.1205151444260.1656@chino.kir.corp.google.com> <4FB2D5CB.6090209@linux.vnet.ibm.com> <1337203449.4281.15.camel@twins>
-In-Reply-To: <1337203449.4281.15.camel@twins>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-x-cbid: 12051709-8256-0000-0000-00000279FABE
+	Thu, 17 May 2012 06:10:26 -0400
+From: Yong Zhang <yong.zhang0@gmail.com>
+To: linux-mips@linux-mips.org, linux-kernel@vger.kernel.org
+Cc: ralf@linux-mips.org, david.daney@cavium.com
+Subject: [PATCH 0/8] patchset focus on MIPS SMP woes
+Date: Thu, 17 May 2012 18:10:02 +0800
+Message-Id: <1337249410-7162-1-git-send-email-yong.zhang0@gmail.com>
+X-Mailer: git-send-email 1.7.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/17/2012 02:54 AM, Peter Zijlstra wrote:
+From: Yong Zhang <yong.zhang@windriver.com>
 
-> On Wed, 2012-05-16 at 03:46 +0530, Srivatsa S. Bhat wrote:
->>
->> However, the cpu_active_mask was introduced to handle situations where hotplug
->> transition is still in progress, and the scheduler needs to take appropriate
->> decisions even with some of its data-structures in an inconsistent/stale state.
->> But once the hotplug operation is completed, the scheduler doesn't need to
->> depend on cpu_active_mask.
-> 
->> (And on those lines, making the scheduler work correctly even in such cases
->> is only a good-to-have as a robustness measure and not a "bugfix".) 
-> 
-> I think those 2(?) cases you found not covered by active mask could
-> actually happen during a hotplug. So far they simply haven't.
-> 
+Since commit 5fbd036b [sched: Cleanup cpu_active madness] and
+commit 2baab4e9 [sched: Fix select_fallback_rq() vs cpu_active/cpu_online],
+it's more safe to put notify_cpu_starting() and set_cpu_online() with
+irq disabled, otherwise we will have a typical race condition which
+above two commits try to resolve:
+
+      CPU1                            CPU2
+__cpu_up();
+   mp_ops->boot_secondary();
+                              start_secondary();
+                                ->init_secondary();
+                                  local_irq_enable();
+                              <IRQ>
+                              do something;
+                                    wake up softirqd;
+                                    try_to_wake_up();
+                                      select_fallback_rq();
+                                      /* select wrong cpu */
+   set_cpu_online();
 
 
-Yes, it could happen during a hotplug too. And its on my todo list to fix.
+This patchset fix the above issue as well as set_cpu_online is
+called on the caller cpu.
 
-(But the point I was trying to make was that keeping the sched domains outdated
-across multiple hotplug operations isn't really correct.)
+BTW, I'm only running it on Cavium board because of limited source,
+so if anyone is interested to test it on other board, that's great :)
 
-Anyway, I think this is the state where the discussion stands atm:
+Signed-off-by: Yong Zhang <yong.zhang0@gmail.com>
 
-1. We are not going to alter how cpusets are handled during regular cpu hotplug.
-   We will do a suspend/resume-only fix for cpusets.
-   David Rientjes said that this can probably be argued about endlessly, but he
-   has no objections against doing it this way.
+Yong Zhang (8):
+  MIPS: Octeon: delay enable irq to ->smp_finish()
+  MIPS: BMIPS: delay irq enable to ->smp_finish()
+  MIPS: SMTC: delay irq enable to ->smp_finish()
+  MIPS: Yosemite: delay irq enable to ->smp_finish()
+  MIPS: call ->smp_finish() a little late
+  MIPS: call set_cpu_online() on the uping cpu with irq disabled
+  MIPS: smp: Warn on too early irq enable
+  MIPS: sync-r4k: remove redundant irq operation
 
-2. David Rientjes pointed out that explicit save and restore for suspend/resume
-   needs a new per-cpuset cpu mask and he would prefer a design where we wouldn't
-   need a new per-cpuset mask.
-   Such a design is possible, by building a single sched domain (ignoring cpuset
-   configurations, by using partition_sched_domains(1, NULL, NULL)) throughout
-   suspend/resume cpu hotplug operations, and then restoring the original sched
-   domain tree by looking up the cpusets, towards end of resume (last online
-   operation).
-   
-   The frozen userspace won't notice any of this.
-
-3. David had some comments/suggestions about some patches in this series.
-
-So, I'll go with the design mentioned in 2, and address 3 and spin out a new
-version.
-
-Regards,
-Srivatsa S. Bhat
+ arch/mips/cavium-octeon/smp.c       |    2 +-
+ arch/mips/kernel/smp-bmips.c        |   14 +++++++-------
+ arch/mips/kernel/smp.c              |   12 +++++++++---
+ arch/mips/kernel/smtc.c             |    3 ++-
+ arch/mips/kernel/sync-r4k.c         |    5 -----
+ arch/mips/pmc-sierra/yosemite/smp.c |    2 +-
+ 6 files changed, 20 insertions(+), 18 deletions(-)
 
