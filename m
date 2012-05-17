@@ -1,58 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761247Ab2EQHj3 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 May 2012 03:39:29 -0400
-Received: from smtp-vbr1.xs4all.nl ([194.109.24.21]:1424 "EHLO
-	smtp-vbr1.xs4all.nl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757989Ab2EQHj2 convert rfc822-to-8bit (ORCPT
+	id S1761309Ab2EQHqd (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 May 2012 03:46:33 -0400
+Received: from mga03.intel.com ([143.182.124.21]:59203 "EHLO mga03.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1760743Ab2EQHqa convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 May 2012 03:39:28 -0400
-From: Hans Verkuil <hverkuil@xs4all.nl>
-To: Fengguang Wu <fengguang.wu@intel.com>
-Subject: Re: [PATCH] radio: fix build error in rtrack2_alloc()
-Date: Thu, 17 May 2012 09:39:14 +0200
-User-Agent: KMail/1.13.7 (Linux/3.4.0-rc3-durdane; KDE/4.7.4; x86_64; ; )
-Cc: Mauro Carvalho Chehab <mchehab@redhat.com>,
-        LKML <linux-kernel@vger.kernel.org>
-References: <20120517023222.GA7788@localhost>
-In-Reply-To: <20120517023222.GA7788@localhost>
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="utf-8"
+	Thu, 17 May 2012 03:46:30 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
+   d="scan'208";a="144279499"
+From: "Liu, Chuansheng" <chuansheng.liu@intel.com>
+To: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+CC: "peterz@infradead.org" <peterz@infradead.org>,
+        "tglx@linutronix.de" <tglx@linutronix.de>,
+        "Yanmin Zhang <yanmin_zhang@linux.intel.com>
+	(yanmin_zhang@linux.intel.com)" <yanmin_zhang@linux.intel.com>
+Subject: [PATCH] printk: do not flush the logbuf into console driver in
+ interrupt
+Thread-Topic: [PATCH] printk: do not flush the logbuf into console driver in
+ interrupt
+Thread-Index: Ac00ARpSE+MXP3zWS6qzsAtmUEu7zA==
+Date: Thu, 17 May 2012 07:46:10 +0000
+Message-ID: <27240C0AC20F114CBF8149A2696CBE4A0B1F0B@SHSMSX101.ccr.corp.intel.com>
+Accept-Language: zh-CN, en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.239.127.40]
+Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 8BIT
-Message-Id: <201205170939.14829.hverkuil@xs4all.nl>
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu May 17 2012 04:32:22 Fengguang Wu wrote:
-> Fix compile error
-> 
-> drivers/media/radio/radio-rtrack2.c: In function ‘rtrack2_alloc’:                                                                         
-> drivers/media/radio/radio-rtrack2.c:46:2: error: implicit declaration of function ‘kzalloc’
+From: liu chuansheng <chuansheng.liu@intel.com>
+Subject: [PATCH] printk: do not flush the logbuf into console driver in interrupt
 
-This fix has already been merged in the v4l staging tree, so it will find its
-way into 3.5.
+When irq handle tried to call printk, and it also has the chance to obtain the console sem,
+then flush the log buf to console driver,but the console driver often give several ms latency
+or more when much data in log buf existed, it will delay the irq handle.
 
-Regards,
+The solution is when calling the printk in interrupt, just write the chars into log buf,
+and expect other threads to flush it into console driver.
 
-	Hans
+Signed-off-by: liu chuansheng <chuansheng.liu@intel.com>
 
-> 
-> CC: Hans Verkuil <hverkuil@xs4all.nl>
-> Signed-off-by: Fengguang Wu <fengguang.wu@intel.com>
-> ---
->  drivers/media/radio/radio-rtrack2.c |    1 +
->  1 file changed, 1 insertion(+)
-> 
-> --- linux.orig/drivers/media/radio/radio-rtrack2.c	2012-04-06 13:23:52.548862660 +0800
-> +++ linux/drivers/media/radio/radio-rtrack2.c	2012-05-17 10:18:20.679495193 +0800
-> @@ -17,6 +17,7 @@
->  #include <linux/videodev2.h>	/* kernel radio structs		*/
->  #include <linux/mutex.h>
->  #include <linux/io.h>		/* outb, outb_p			*/
-> +#include <linux/slab.h>		/* kzalloc			*/
->  #include <media/v4l2-device.h>
->  #include <media/v4l2-ioctl.h>
->  #include "radio-isa.h"
-> 
+diff --git a/kernel/printk.c b/kernel/printk.c index b663c2c..99959e1 100644
+--- a/kernel/printk.c
++++ b/kernel/printk.c
+@@ -804,7 +804,8 @@ static int console_trylock_for_printk(unsigned int cpu)
+                 * the buffer. We need to hold the console semaphore
+                 * in order to do this test safely.
+                 */
+-               if (!can_use_console(cpu)) {
++               if (!can_use_console(cpu) ||
++                       (in_interrupt() && (!oops_in_progress))) {
+                        console_locked = 0;
+                        wake = 1;
+                        retval = 0;
