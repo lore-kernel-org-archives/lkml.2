@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S967819Ab2EQWPD (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 May 2012 18:15:03 -0400
+	id S1030415Ab2EQWP6 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 May 2012 18:15:58 -0400
 Received: from mga02.intel.com ([134.134.136.20]:65435 "EHLO mga02.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S967777Ab2EQWOF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 May 2012 18:14:05 -0400
+	id S967771Ab2EQWOE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 17 May 2012 18:14:04 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.67,351,1309762800"; 
-   d="scan'208";a="145320413"
+   d="scan'208";a="145320407"
 From: "H.J. Lu" <hjl.tools@gmail.com>
 To: linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org
 Cc: torvalds@linux-foundation.org, hpa@zytor.com, mingo@kernel.org,
         tglx@linutronix.de, "H.J. Lu" <hjl.tools@gmail.com>
-Subject: [PATCH 10/10] Use __kernel_[u]long_t in x86-64 struct stat
-Date: Thu, 17 May 2012 15:13:36 -0700
-Message-Id: <1337292816-10839-11-git-send-email-hjl.tools@gmail.com>
+Subject: [PATCH 07/10] Use __kernel_ulong_t in struct shmid64_ds/shminfo64
+Date: Thu, 17 May 2012 15:13:33 -0700
+Message-Id: <1337292816-10839-8-git-send-email-hjl.tools@gmail.com>
 X-Mailer: git-send-email 1.7.6.5
 In-Reply-To: <1337292816-10839-1-git-send-email-hjl.tools@gmail.com>
 References: <1337292816-10839-1-git-send-email-hjl.tools@gmail.com>
@@ -25,74 +25,52 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: "H.J. Lu" <hjl.tools@gmail.com>
 
-Include <linux/types.h>.  Replace unsigned long/long with
-__kernel_ulong_t/__kernel_long_t in x86-64 struct stat for user space.
+Replace unsigned long with __kernel_ulong_t in struct shmid64_ds and
+struct shminfo64 for user space.
 
 Signed-off-by: H.J. Lu <hjl.tools@gmail.com>
 ---
- arch/x86/include/asm/stat.h |   42 ++++++++++++++++++++++--------------------
- 1 files changed, 22 insertions(+), 20 deletions(-)
+ include/asm-generic/shmbuf.h |   24 ++++++++++++------------
+ 1 files changed, 12 insertions(+), 12 deletions(-)
 
-diff --git a/arch/x86/include/asm/stat.h b/arch/x86/include/asm/stat.h
-index e0b1d9b..6d99f66 100644
---- a/arch/x86/include/asm/stat.h
-+++ b/arch/x86/include/asm/stat.h
-@@ -3,6 +3,8 @@
- 
- #define STAT_HAVE_NSEC 1
- 
-+#include <linux/types.h>
-+
- #ifdef __i386__
- struct stat {
- 	unsigned long  st_dev;
-@@ -66,26 +68,26 @@ struct stat64 {
- #else /* __i386__ */
- 
- struct stat {
--	unsigned long	st_dev;
--	unsigned long	st_ino;
--	unsigned long	st_nlink;
--
--	unsigned int	st_mode;
--	unsigned int	st_uid;
--	unsigned int	st_gid;
--	unsigned int	__pad0;
--	unsigned long	st_rdev;
--	long		st_size;
--	long		st_blksize;
--	long		st_blocks;	/* Number 512-byte blocks allocated. */
--
--	unsigned long	st_atime;
--	unsigned long	st_atime_nsec;
--	unsigned long	st_mtime;
--	unsigned long	st_mtime_nsec;
--	unsigned long	st_ctime;
--	unsigned long   st_ctime_nsec;
--	long		__unused[3];
-+	__kernel_ulong_t st_dev;
-+	__kernel_ulong_t st_ino;
-+	__kernel_ulong_t st_nlink;
-+
-+	unsigned int	 st_mode;
-+	unsigned int	 st_uid;
-+	unsigned int	 st_gid;
-+	unsigned int	 __pad0;
-+	__kernel_ulong_t st_rdev;
-+	__kernel_long_t  st_size;
-+	__kernel_long_t  st_blksize;
-+	__kernel_long_t  st_blocks;	/* Number 512-byte blocks allocated. */
-+
-+	__kernel_ulong_t st_atime;
-+	__kernel_ulong_t st_atime_nsec;
-+	__kernel_ulong_t st_mtime;
-+	__kernel_ulong_t st_mtime_nsec;
-+	__kernel_ulong_t st_ctime;
-+	__kernel_ulong_t st_ctime_nsec;
-+	__kernel_long_t  __unused[3];
- };
+diff --git a/include/asm-generic/shmbuf.h b/include/asm-generic/shmbuf.h
+index 5768fa6..7e9fb2f 100644
+--- a/include/asm-generic/shmbuf.h
++++ b/include/asm-generic/shmbuf.h
+@@ -39,21 +39,21 @@ struct shmid64_ds {
  #endif
+ 	__kernel_pid_t		shm_cpid;	/* pid of creator */
+ 	__kernel_pid_t		shm_lpid;	/* pid of last operator */
+-	unsigned long		shm_nattch;	/* no. of current attaches */
+-	unsigned long		__unused4;
+-	unsigned long		__unused5;
++	__kernel_ulong_t	shm_nattch;	/* no. of current attaches */
++	__kernel_ulong_t	__unused4;
++	__kernel_ulong_t	__unused5;
+ };
  
+ struct shminfo64 {
+-	unsigned long	shmmax;
+-	unsigned long	shmmin;
+-	unsigned long	shmmni;
+-	unsigned long	shmseg;
+-	unsigned long	shmall;
+-	unsigned long	__unused1;
+-	unsigned long	__unused2;
+-	unsigned long	__unused3;
+-	unsigned long	__unused4;
++	__kernel_ulong_t	shmmax;
++	__kernel_ulong_t	shmmin;
++	__kernel_ulong_t	shmmni;
++	__kernel_ulong_t	shmseg;
++	__kernel_ulong_t	shmall;
++	__kernel_ulong_t	__unused1;
++	__kernel_ulong_t	__unused2;
++	__kernel_ulong_t	__unused3;
++	__kernel_ulong_t	__unused4;
+ };
+ 
+ #endif /* __ASM_GENERIC_SHMBUF_H */
 -- 
 1.7.6.5
 
