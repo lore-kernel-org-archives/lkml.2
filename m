@@ -1,107 +1,200 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S967690Ab2EQUJL (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 May 2012 16:09:11 -0400
-Received: from e7.ny.us.ibm.com ([32.97.182.137]:44617 "EHLO e7.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S966020Ab2EQUJA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 May 2012 16:09:00 -0400
-Date: Thu, 17 May 2012 13:08:38 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Steven Rostedt <rostedt@goodmis.org>, LKML <linux-kernel@vger.kernel.org>,
-        RT <linux-rt-users@vger.kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Clark Williams <williams@redhat.com>
-Subject: Re: [RFC][PATCH RT] rwsem_rt: Another (more sane) approach to mulit
- reader rt locks
-Message-ID: <20120517200838.GL2567@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <1337090625.14207.304.camel@gandalf.stny.rr.com>
- <20120517151838.GA8692@linux.vnet.ibm.com>
- <1337268779.4281.38.camel@twins>
- <20120517154755.GG2567@linux.vnet.ibm.com>
- <1337271467.4281.43.camel@twins>
+	id S1030374Ab2EQUKZ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 May 2012 16:10:25 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:45874 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755086Ab2EQUKX convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 17 May 2012 16:10:23 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1337271467.4281.43.camel@twins>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 12051720-5806-0000-0000-000015522476
+In-Reply-To: <1337285060-31919-2-git-send-email-grant.likely@secretlab.ca>
+References: <1337285060-31919-1-git-send-email-grant.likely@secretlab.ca> <1337285060-31919-2-git-send-email-grant.likely@secretlab.ca>
+From: Grant Likely <grant.likely@secretlab.ca>
+Date: Thu, 17 May 2012 14:10:01 -0600
+X-Google-Sender-Auth: SyXmB_hjgpBA-ZhyuRR3W0MyPjc
+Message-ID: <CACxGe6sxYwRF8ZmZ5o36mc8tMBJE6Q+VR1ZRKC3RoFULVrVSkA@mail.gmail.com>
+Subject: Re: [PATCH 2/3] gpio/lpc32xx: Add device tree support
+To: linux-kernel@vger.kernel.org
+Cc: Roland Stigge <stigge@antcom.de>, Grant Likely <grant.likely@secretlab.ca>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, May 17, 2012 at 06:17:47PM +0200, Peter Zijlstra wrote:
-> On Thu, 2012-05-17 at 08:47 -0700, Paul E. McKenney wrote:
-> > On Thu, May 17, 2012 at 05:32:59PM +0200, Peter Zijlstra wrote:
-> > > On Thu, 2012-05-17 at 08:18 -0700, Paul E. McKenney wrote:
-> > > > Some researchers at MIT RCU-ified this lock:
-> > > > 
-> > > > http://people.csail.mit.edu/nickolai/papers/clements-bonsai.pdf 
-> > > 
-> > > Ah, as have I [1].. and they seem to have gotten about as far as I have,
-> > > which means almost there but not quite [2] :-)
-> > 
-> > I had forgotten about that -- that was the first call for call_srcu(),
-> > if I remember correctly.
-> > 
-> > > The most interesting case is file maps and they simply ignored those.
-> > > While I appreciate that from an academic pov, -- they can still write a
-> > > paper on the other interesting bits -- I don't really like it from a
-> > > practical point.
-> > > 
-> > > [1] https://lkml.org/lkml/2010/1/4/257
-> > > [2] https://lkml.org/lkml/2010/1/4/532
-> > 
-> > Hmmm...  Do the recent dcache changes cover some of the things that
-> > Linus called out?  Probably not, but some at least.
-> 
-> No, and the points viro made:
-> 
->   https://lkml.org/lkml/2010/1/5/194
-> 
-> are still very much an issue, you really don't want to do fput() from an
-> asynchronous context. Which means you have to do synchronize_rcu() or
-> similar from munmap() which will be rather unpopular :/
+On Thu, May 17, 2012 at 2:04 PM, Grant Likely <grant.likely@secretlab.ca> wrote:
+> From: Roland Stigge <stigge@antcom.de>
+>
+> This patch adds device tree support for gpio-lpc32xx.c.
+>
+> To register the various GPIO banks as (struct) gpio_chips via the same DT
+> gpio-controller, we utilize the adjusted of_xlate API to manipulate the
+> actually used struct gpio_chip.
+>
+> Signed-off-by: Roland Stigge <stigge@antcom.de>
+> Reviewed-by: Arnd Bergmann <arnd@arndb.de>
+> Signed-off-by: Grant Likely <grant.likely@secretlab.ca>
 
-I don't claim to understand all of the code, but I am also unafraid to
-ask stupid questions.  ;-)
+Hi Roland,
 
-So, is it possible to do something like the following?
+This is only a repost of your patch unchanged.  I've separated my
+changes out into patch three so you can review them.
 
-1.	Schedule a workqueue from an RCU callback, and to have that
-	workqueue do the fput.
+g.
 
-2.	Make things like unmount() do rcu_barrier() followed by
-	flush_workqueue(), or probably multiple flush_workqueue()s.
+> ---
+>  .../devicetree/bindings/gpio/gpio_lpc32xx.txt      |   43 +++++++++++++++
+>  arch/arm/mach-lpc32xx/include/mach/gpio.h          |    9 +++-
+>  drivers/gpio/gpio-lpc32xx.c                        |   55 +++++++++++++++++++-
+>  3 files changed, 105 insertions(+), 2 deletions(-)
+>  create mode 100644 Documentation/devicetree/bindings/gpio/gpio_lpc32xx.txt
+>
+> diff --git a/Documentation/devicetree/bindings/gpio/gpio_lpc32xx.txt b/Documentation/devicetree/bindings/gpio/gpio_lpc32xx.txt
+> new file mode 100644
+> index 0000000..4981936
+> --- /dev/null
+> +++ b/Documentation/devicetree/bindings/gpio/gpio_lpc32xx.txt
+> @@ -0,0 +1,43 @@
+> +NXP LPC32xx SoC GPIO controller
+> +
+> +Required properties:
+> +- compatible: must be "nxp,lpc3220-gpio"
+> +- reg: Physical base address and length of the controller's registers.
+> +- gpio-controller: Marks the device node as a GPIO controller.
+> +- #gpio-cells: Should be 3:
+> +   1) bank:
+> +      0: GPIO P0
+> +      1: GPIO P1
+> +      2: GPIO P2
+> +      3: GPIO P3
+> +      4: GPI P3
+> +      5: GPO P3
+> +   2) pin number
+> +   3) optional parameters:
+> +      - bit 0 specifies polarity (0 for normal, 1 for inverted)
+> +- reg: Index of the GPIO group
+> +
+> +Example:
+> +
+> +       gpio: gpio@40028000 {
+> +               compatible = "nxp,lpc3220-gpio";
+> +               reg = <0x40028000 0x1000>;
+> +               gpio-controller;
+> +               #gpio-cells = <3>; /* bank, pin, flags */
+> +       };
+> +
+> +       leds {
+> +               compatible = "gpio-leds";
+> +
+> +               led0 {
+> +                       gpios = <&gpio 5 1 1>; /* GPO_P3 1, active low */
+> +                       linux,default-trigger = "heartbeat";
+> +                       default-state = "off";
+> +               };
+> +
+> +               led1 {
+> +                       gpios = <&gpio 5 14 1>; /* GPO_P3 14, active low */
+> +                       linux,default-trigger = "timer";
+> +                       default-state = "off";
+> +               };
+> +       };
+> diff --git a/arch/arm/mach-lpc32xx/include/mach/gpio.h b/arch/arm/mach-lpc32xx/include/mach/gpio.h
+> index 40a8c17..2ba6ca4 100644
+> --- a/arch/arm/mach-lpc32xx/include/mach/gpio.h
+> +++ b/arch/arm/mach-lpc32xx/include/mach/gpio.h
+> @@ -1 +1,8 @@
+> -/* empty */
+> +#ifndef __MACH_GPIO_H
+> +#define __MACH_GPIO_H
+> +
+> +#include "gpio-lpc32xx.h"
+> +
+> +#define ARCH_NR_GPIOS (LPC32XX_GPO_P3_GRP + LPC32XX_GPO_P3_MAX)
+> +
+> +#endif /* __MACH_GPIO_H */
+> diff --git a/drivers/gpio/gpio-lpc32xx.c b/drivers/gpio/gpio-lpc32xx.c
+> index 61c2d08..d42bf6c 100644
+> --- a/drivers/gpio/gpio-lpc32xx.c
+> +++ b/drivers/gpio/gpio-lpc32xx.c
+> @@ -21,6 +21,9 @@
+>  #include <linux/io.h>
+>  #include <linux/errno.h>
+>  #include <linux/gpio.h>
+> +#include <linux/of_gpio.h>
+> +#include <linux/platform_device.h>
+> +#include <linux/module.h>
+>
+>  #include <mach/hardware.h>
+>  #include <mach/platform.h>
+> @@ -454,10 +457,60 @@ static struct lpc32xx_gpio_chip lpc32xx_gpiochip[] = {
+>        },
+>  };
+>
+> +/* Empty now, can be removed later when mach-lpc32xx is finally switched over
+> + * to DT support
+> + */
+>  void __init lpc32xx_gpio_init(void)
+>  {
+> +}
+> +
+> +static int lpc32xx_of_xlate(struct gpio_chip **gc,
+> +                           const struct of_phandle_args *gpiospec, u32 *flags)
+> +{
+> +       u32 bank;
+> +       if (WARN_ON(gpiospec->args_count < 3))
+> +               return -EINVAL;
+> +
+> +       bank = gpiospec->args[0];
+> +       if (WARN_ON(bank > 5))
+> +               return -EINVAL;
+> +
+> +       *gc = &lpc32xx_gpiochip[bank].chip;
+> +       if (flags)
+> +               *flags = gpiospec->args[2];
+> +       return gpiospec->args[1];
+> +}
+> +
+> +static int __devinit lpc32xx_gpio_probe(struct platform_device *pdev)
+> +{
+>        int i;
+>
+> -       for (i = 0; i < ARRAY_SIZE(lpc32xx_gpiochip); i++)
+> +       for (i = 0; i < ARRAY_SIZE(lpc32xx_gpiochip); i++) {
+> +               if (pdev->dev.of_node) {
+> +                       lpc32xx_gpiochip[i].chip.of_xlate = lpc32xx_of_xlate;
+> +                       lpc32xx_gpiochip[i].chip.of_gpio_n_cells = 3;
+> +                       lpc32xx_gpiochip[i].chip.of_node = pdev->dev.of_node;
+> +               }
+>                gpiochip_add(&lpc32xx_gpiochip[i].chip);
+> +       }
+> +
+> +       return 0;
+>  }
+> +
+> +#ifdef CONFIG_OF
+> +static struct of_device_id lpc32xx_gpio_of_match[] __devinitdata = {
+> +       { .compatible = "nxp,lpc3220-gpio", },
+> +       { },
+> +};
+> +#endif
+> +
+> +static struct platform_driver lpc32xx_gpio_driver = {
+> +       .driver         = {
+> +               .name   = "lpc32xx-gpio",
+> +               .owner  = THIS_MODULE,
+> +               .of_match_table = of_match_ptr(lpc32xx_gpio_of_match),
+> +       },
+> +       .probe          = lpc32xx_gpio_probe,
+> +};
+> +
+> +module_platform_driver(lpc32xx_gpio_driver);
+> --
+> 1.7.9.5
+>
 
-3.	If someone concurrently does munmap() and a write to the
-	to-be-unmapped region, then the write can legally happen.
 
-4.	Acquire mmap_sem in the fault path, but only if the fault
-	requires blocking, and recheck the situation under
-	mmap_sem -- the hope being to prevent long-lived page
-	faults from messing things up.
 
-Fire away!  ;-)
-
-> Since we should not use per-cpu data for either files or processes
-> (there are simply too many of those around) the alternative is
-> horrendously hideous things like:
-> 
->   https://lkml.org/lkml/2010/1/6/136
-> 
-> which one cannot get away with either.
-> 
-> The whole thing is very vexing indeed since all of this is only needed
-> for ill-behaved applications since a well-constructed application will
-> never fault in a range it is concurrently unmapping.
-> 
-> Most annoying.
-
-No argument there!!!
-
-							Thanx, Paul
-
+-- 
+Grant Likely, B.Sc., P.Eng.
+Secret Lab Technologies Ltd.
