@@ -1,71 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S967424Ab2EQWJK (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 May 2012 18:09:10 -0400
-Received: from perches-mx.perches.com ([206.117.179.246]:39397 "EHLO
-	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S965954Ab2EQWJI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 May 2012 18:09:08 -0400
-Message-ID: <1337292547.8872.20.camel@joe2Laptop>
-Subject: [RFC PATCH net-next] hp100: delete VG/AnyLAN hp100
-From: Joe Perches <joe@perches.com>
-To: Paul Gortmaker <paul.gortmaker@windriver.com>
-Cc: linux-kernel@vger.kernel.org, JBottomley@parallels.com,
-        "David S. Miller" <davem@davemloft.net>, netdev@vger.kernel.org
-Date: Thu, 17 May 2012 15:09:07 -0700
-In-Reply-To: <20120517212039.GC27789@windriver.com>
-References: <1337272841-25931-1-git-send-email-paul.gortmaker@windriver.com>
-	 <1337272841-25931-3-git-send-email-paul.gortmaker@windriver.com>
-	 <4FB52C99.6010303@windriver.com> <20120517212039.GC27789@windriver.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.2- 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	id S967471Ab2EQWNG (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 May 2012 18:13:06 -0400
+Received: from e37.co.us.ibm.com ([32.97.110.158]:46493 "EHLO
+	e37.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932224Ab2EQWND (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 17 May 2012 18:13:03 -0400
+Date: Thu, 17 May 2012 15:12:17 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: linux-kernel@vger.kernel.org
+Cc: mingo@elte.hu, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
+        akpm@linux-foundation.org, mathieu.desnoyers@efficios.com,
+        josh@joshtriplett.org, niv@us.ibm.com, tglx@linutronix.de,
+        peterz@infradead.org, rostedt@goodmis.org, Valdis.Kletnieks@vt.edu,
+        dhowells@redhat.com, eric.dumazet@gmail.com, darren@dvhart.com,
+        fweisbec@gmail.com, patches@linaro.org
+Subject: [PATCH tip/core/rcu 0/2] Code-style fixes
+Message-ID: <20120517221217.GA12196@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 12051722-7408-0000-0000-000005213F0C
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2012-05-17 at 17:20 -0400, Paul Gortmaker wrote:
-> [Re: [PATCH 2/5] drivers/net: delete all code/drivers depending on CONFIG_MCA
+Hello!
 
-If we're removing really old and unused stuff,
-how about the VG/AnyLAN driver too?
----
- drivers/net/ethernet/Kconfig     |    1 -
- drivers/net/ethernet/Makefile    |    1 -
- drivers/net/ethernet/hp/Kconfig  |   32 -
- drivers/net/ethernet/hp/Makefile |    5 -
- drivers/net/ethernet/hp/hp100.c  | 3066 --------------------------------------
- drivers/net/ethernet/hp/hp100.h  |  615 --------
- 6 files changed, 0 insertions(+), 3720 deletions(-)
- delete mode 100644 drivers/net/ethernet/hp/Kconfig
- delete mode 100644 drivers/net/ethernet/hp/Makefile
- delete mode 100644 drivers/net/ethernet/hp/hp100.c
- delete mode 100644 drivers/net/ethernet/hp/hp100.h
+This patch series fixes some historical code-style issues in RCU:
 
-diff --git a/drivers/net/ethernet/Kconfig b/drivers/net/ethernet/Kconfig
-index a11af5c..0896c8f 100644
---- a/drivers/net/ethernet/Kconfig
-+++ b/drivers/net/ethernet/Kconfig
-@@ -52,7 +52,6 @@ source "drivers/net/ethernet/neterion/Kconfig"
- source "drivers/net/ethernet/faraday/Kconfig"
- source "drivers/net/ethernet/freescale/Kconfig"
- source "drivers/net/ethernet/fujitsu/Kconfig"
--source "drivers/net/ethernet/hp/Kconfig"
- source "drivers/net/ethernet/ibm/Kconfig"
- source "drivers/net/ethernet/intel/Kconfig"
- source "drivers/net/ethernet/i825xx/Kconfig"
-diff --git a/drivers/net/ethernet/Makefile b/drivers/net/ethernet/Makefile
-index 878ad32..756ebd3 100644
---- a/drivers/net/ethernet/Makefile
-+++ b/drivers/net/ethernet/Makefile
-@@ -27,7 +27,6 @@ obj-$(CONFIG_NET_VENDOR_EXAR) += neterion/
- obj-$(CONFIG_NET_VENDOR_FARADAY) += faraday/
- obj-$(CONFIG_NET_VENDOR_FREESCALE) += freescale/
- obj-$(CONFIG_NET_VENDOR_FUJITSU) += fujitsu/
--obj-$(CONFIG_NET_VENDOR_HP) += hp/
- obj-$(CONFIG_NET_VENDOR_IBM) += ibm/
- obj-$(CONFIG_NET_VENDOR_INTEL) += intel/
- obj-$(CONFIG_NET_VENDOR_I825XX) += i825xx/
+1.	If any branch of an if-then-else uses curly brackets, then
+	all branches are supposed to.
+2.	One exception to the 80-column rule is strings, which are
+	not supposed to be broken across lines in deference to
+	people attempting to find error messages printed by the
+	kernel.
 
+							Thanx, Paul
+
+
+ b/include/linux/rcupdate.h |    3 +--
+ b/kernel/rcutiny_plugin.h  |    3 ++-
+ b/kernel/rcutorture.c      |    3 ++-
+ b/kernel/rcutree.c         |    7 ++++---
+ b/kernel/rcutree_plugin.h  |   18 ++++++++++--------
+ b/kernel/rcutree_trace.c   |   25 ++++++++++++-------------
+ b/lib/list_debug.c         |    6 ++----
+ kernel/rcutorture.c        |   33 ++++++++++++++-------------------
+ 8 files changed, 47 insertions(+), 51 deletions(-)
 
