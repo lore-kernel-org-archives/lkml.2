@@ -1,97 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753279Ab2EQFGa (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 May 2012 01:06:30 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:45959 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752765Ab2EQFG3 (ORCPT
+	id S1753444Ab2EQFIv (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 May 2012 01:08:51 -0400
+Received: from mail-lb0-f174.google.com ([209.85.217.174]:60407 "EHLO
+	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752765Ab2EQFIu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 May 2012 01:06:29 -0400
-Message-ID: <1337231178.22713.2.camel@phoenix>
-Subject: [PATCH RFC/RFT] regulator: ab3100: Use
- regulator_map_voltage_iterate()
-From: Axel Lin <axel.lin@gmail.com>
-To: linux-kernel@vger.kernel.org
-Cc: Linus Walleij <linus.walleij@stericsson.com>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Liam Girdwood <lrg@ti.com>
-Date: Thu, 17 May 2012 13:06:18 +0800
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.2- 
+	Thu, 17 May 2012 01:08:50 -0400
+Message-ID: <4FB4885F.4000002@linaro.org>
+Date: Thu, 17 May 2012 09:10:55 +0400
+From: Dmitry Antipov <dmitry.antipov@linaro.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120428 Thunderbird/12.0.1
+MIME-Version: 1.0
+To: Steven Rostedt <rostedt@goodmis.org>
+CC: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@redhat.com>,
+        Amit Kucheria <amit.kucheria@linaro.org>, linaro-dev@lists.linaro.org,
+        linux-kernel@vger.kernel.org, Jiri Olsa <jolsa@redhat.com>
+Subject: Re: Perf record format portability
+References: <4FB275EB.5050904@linaro.org>  <20120515155146.GB7864@infradead.org> <4FB38677.8070601@linaro.org>  <20120516145927.GC7864@infradead.org> <1337187503.6724.50.camel@gandalf.stny.rr.com>
+In-Reply-To: <1337187503.6724.50.camel@gandalf.stny.rr.com>
+Content-Type: text/plain; charset=ISO-8859-15; format=flowed
 Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-regulator_map_voltage_iterate() is for drivers implementing set_voltage_sel()
-and list_voltage() to use it as their map_voltage() operation.
+On 05/16/2012 08:58 PM, Steven Rostedt wrote:
 
-In this case, regulator_map_voltage_iterate() happen to be doing the same thing
-as ab3100_get_best_voltage_index() function. So we can use it to replace
-ab3100_get_best_voltage_index() function.
+> On Wed, 2012-05-16 at 11:59 -0300, Arnaldo Carvalho de Melo wrote:
+>
+>> Steve,
+>>
+>> 	Was the kernel trace events infrastructure designed with that in
+>> mind? I.e. cross analysis? I must be missing something here, still
+>> ENOCOFFEE :-\
+>
+> Yes, the libparsevents library was design for this from day one. That's
+> why trace-cmd data file can be run on an ARM and read on x86, or PPC, or
+> whatever. I did all my development testing against 32bit, 64bit and big
+> and little endian. This was the case from the beginning.
 
+I didn't face with big/little conversion issues, most probably both x86 and
+my ARM board are of the same (little) endian :-).
 
-Signed-off-by: Axel Lin <axel.lin@gmail.com>
----
- drivers/regulator/ab3100.c |   35 +----------------------------------
- 1 files changed, 1 insertions(+), 34 deletions(-)
+But the original question was about event IDs. For example,
+/sys/kernel/debug/tracing/events/sched/sched_switch/id is 55 on my ARM board
+and 279 on my PC host, so 'perf report' displays "unknown:unknown" instead
+of expected "sched:sched_switch" when attempting to do some cross-analysis.
+I suppose that original event IDs should be preserved, either within perf.data
+or by providing the copy of original /sys/kernel/debug/tracing/*, much like
+it's done with --kallsyms to resolve kernel symbols.
 
-diff --git a/drivers/regulator/ab3100.c b/drivers/regulator/ab3100.c
-index e2062ad..03f4d9c 100644
---- a/drivers/regulator/ab3100.c
-+++ b/drivers/regulator/ab3100.c
-@@ -304,39 +304,6 @@ static int ab3100_get_voltage_regulator(struct regulator_dev *reg)
- 	return abreg->typ_voltages[regval];
- }
- 
--static int ab3100_get_best_voltage_index(struct regulator_dev *reg,
--				   int min_uV, int max_uV)
--{
--	struct ab3100_regulator *abreg = reg->reg_data;
--	int i;
--	int bestmatch;
--	int bestindex;
--
--	/*
--	 * Locate the minimum voltage fitting the criteria on
--	 * this regulator. The switchable voltages are not
--	 * in strict falling order so we need to check them
--	 * all for the best match.
--	 */
--	bestmatch = INT_MAX;
--	bestindex = -1;
--	for (i = 0; i < abreg->voltages_len; i++) {
--		if (abreg->typ_voltages[i] <= max_uV &&
--		    abreg->typ_voltages[i] >= min_uV &&
--		    abreg->typ_voltages[i] < bestmatch) {
--			bestmatch = abreg->typ_voltages[i];
--			bestindex = i;
--		}
--	}
--
--	if (bestindex < 0) {
--		dev_warn(&reg->dev, "requested %d<=x<=%d uV, out of range!\n",
--			 min_uV, max_uV);
--		return -EINVAL;
--	}
--	return bestindex;
--}
--
- static int ab3100_set_voltage_regulator_sel(struct regulator_dev *reg,
- 					    unsigned selector)
- {
-@@ -383,7 +350,7 @@ static int ab3100_set_suspend_voltage_regulator(struct regulator_dev *reg,
- 		return -EINVAL;
- 
- 	/* LDO E and BUCK have special suspend voltages you can set */
--	bestindex = ab3100_get_best_voltage_index(reg, uV, uV);
-+	bestindex = regulator_map_voltage_iterate(reg, uV, uV);
- 
- 	err = abx500_get_register_interruptible(abreg->dev, 0,
- 						targetreg, &regval);
--- 
-1.7.5.4
-
-
-
+Dmitry
