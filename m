@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761205Ab2EQHQw (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 May 2012 03:16:52 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:41582 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1761153Ab2EQHQs (ORCPT
+	id S1761230Ab2EQHRI (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 May 2012 03:17:08 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:52924 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1761217Ab2EQHRE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 May 2012 03:16:48 -0400
-Date: Thu, 17 May 2012 00:15:18 -0700
+	Thu, 17 May 2012 03:17:04 -0400
+Date: Thu, 17 May 2012 00:15:34 -0700
 From: Anton Vorontsov <anton.vorontsov@linaro.org>
 To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
         Kees Cook <keescook@chromium.org>, Colin Cross <ccross@android.com>,
@@ -22,8 +22,8 @@ Cc: Arnd Bergmann <arnd@arndb.de>, John Stultz <john.stultz@linaro.org>,
         WANG Cong <xiyou.wangcong@gmail.com>, linux-kernel@vger.kernel.org,
         devel@driverdev.osuosl.org, linaro-kernel@lists.linaro.org,
         patches@linaro.org, kernel-team@android.com
-Subject: [PATCH 2/3] pstore/ram: Switch to persistent_ram routines
-Message-ID: <20120517071518.GB19999@lizard>
+Subject: [PATCH 3/3] pstore/ram: Add ECC support
+Message-ID: <20120517071534.GC19999@lizard>
 References: <20120517071148.GA16946@lizard>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=utf-8
@@ -34,223 +34,114 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The patch switches pstore RAM backend to use persistent_ram routines,
-one step closer to the ECC support.
+This is now straightforward: just introduce a module parameter and pass
+the needed value to persistent_ram_new().
 
 Signed-off-by: Anton Vorontsov <anton.vorontsov@linaro.org>
 Acked-by: Marco Stornelli <marco.stornelli@gmail.com>
+Acked-by: Kees Cook <keescook@chromium.org>
 ---
- fs/pstore/ram.c |  106 +++++++++++++++++++++++++++++++------------------------
- 1 file changed, 59 insertions(+), 47 deletions(-)
+ Documentation/ramoops.txt  |    6 ++++++
+ fs/pstore/ram.c            |   15 ++++++++++++---
+ include/linux/pstore_ram.h |    1 +
+ 3 files changed, 19 insertions(+), 3 deletions(-)
 
+diff --git a/Documentation/ramoops.txt b/Documentation/ramoops.txt
+index 470d2c4..4ba7db2 100644
+--- a/Documentation/ramoops.txt
++++ b/Documentation/ramoops.txt
+@@ -30,6 +30,11 @@ variable while setting 0 in that variable dumps only the panics.
+ The module uses a counter to record multiple dumps but the counter gets reset
+ on restart (i.e. new dumps after the restart will overwrite old ones).
+ 
++Ramoops also supports software ECC protection of persistent memory regions.
++This might be useful when a hardware reset was used to bring the machine back
++to life (i.e. a watchdog triggered). In such cases, RAM may be somewhat
++corrupt, but usually it is restorable.
++
+ 2. Setting the parameters
+ 
+ Setting the ramoops parameters can be done in 2 different manners:
+@@ -46,6 +51,7 @@ static struct ramoops_platform_data ramoops_data = {
+         .mem_address            = <...>,
+         .record_size            = <...>,
+         .dump_oops              = <...>,
++        .ecc                    = <...>,
+ };
+ 
+ static struct platform_device ramoops_dev = {
 diff --git a/fs/pstore/ram.c b/fs/pstore/ram.c
-index e443c9c..62b13ed 100644
+index 62b13ed..9123cce 100644
 --- a/fs/pstore/ram.c
 +++ b/fs/pstore/ram.c
-@@ -57,7 +57,7 @@ MODULE_PARM_DESC(dump_oops,
+@@ -56,12 +56,18 @@ module_param(dump_oops, int, 0600);
+ MODULE_PARM_DESC(dump_oops,
  		"set to 1 to dump oopses, 0 to only dump panics (default 1)");
  
++static int ramoops_ecc;
++module_param_named(ecc, ramoops_ecc, int, 0600);
++MODULE_PARM_DESC(ramoops_ecc,
++		"set to 1 to enable ECC support");
++
  struct ramoops_context {
--	void *virt_addr;
-+	struct persistent_ram_zone **przs;
+ 	struct persistent_ram_zone **przs;
  	phys_addr_t phys_addr;
  	unsigned long size;
  	size_t record_size;
-@@ -85,39 +85,56 @@ static ssize_t ramoops_pstore_read(u64 *id, enum pstore_type_id *type,
- 				   struct pstore_info *psi)
- {
- 	ssize_t size;
--	char *rambuf;
- 	struct ramoops_context *cxt = psi->data;
-+	struct persistent_ram_zone *prz;
- 
- 	if (cxt->read_count >= cxt->max_count)
- 		return -EINVAL;
-+
- 	*id = cxt->read_count++;
-+	prz = cxt->przs[*id];
-+
- 	/* Only supports dmesg output so far. */
- 	*type = PSTORE_TYPE_DMESG;
- 	/* TODO(kees): Bogus time for the moment. */
- 	time->tv_sec = 0;
- 	time->tv_nsec = 0;
- 
--	rambuf = cxt->virt_addr + (*id * cxt->record_size);
--	size = strnlen(rambuf, cxt->record_size);
-+	size = persistent_ram_old_size(prz);
- 	*buf = kmalloc(size, GFP_KERNEL);
- 	if (*buf == NULL)
- 		return -ENOMEM;
--	memcpy(*buf, rambuf, size);
-+	memcpy(*buf, persistent_ram_old(prz), size);
- 
- 	return size;
- }
- 
-+static size_t ramoops_write_kmsg_hdr(struct persistent_ram_zone *prz)
-+{
-+	char *hdr;
-+	struct timeval timestamp;
-+	size_t len;
-+
-+	do_gettimeofday(&timestamp);
-+	hdr = kasprintf(GFP_ATOMIC, RAMOOPS_KERNMSG_HDR "%lu.%lu\n",
-+		(long)timestamp.tv_sec, (long)timestamp.tv_usec);
-+	WARN_ON_ONCE(!hdr);
-+	len = hdr ? strlen(hdr) : 0;
-+	persistent_ram_write(prz, hdr, len);
-+	kfree(hdr);
-+
-+	return len;
-+}
-+
- static int ramoops_pstore_write(enum pstore_type_id type,
- 				enum kmsg_dump_reason reason,
- 				u64 *id,
- 				unsigned int part,
- 				size_t size, struct pstore_info *psi)
- {
--	char *buf;
--	size_t res;
--	struct timeval timestamp;
- 	struct ramoops_context *cxt = psi->data;
--	size_t available = cxt->record_size;
-+	struct persistent_ram_zone *prz = cxt->przs[cxt->count];
-+	size_t hlen;
- 
- 	/* Currently ramoops is designed to only store dmesg dumps. */
- 	if (type != PSTORE_TYPE_DMESG)
-@@ -142,22 +159,10 @@ static int ramoops_pstore_write(enum pstore_type_id type,
- 	if (part != 1)
- 		return -ENOSPC;
- 
--	buf = cxt->virt_addr + (cxt->count * cxt->record_size);
--
--	res = sprintf(buf, "%s", RAMOOPS_KERNMSG_HDR);
--	buf += res;
--	available -= res;
--
--	do_gettimeofday(&timestamp);
--	res = sprintf(buf, "%lu.%lu\n", (long)timestamp.tv_sec, (long)timestamp.tv_usec);
--	buf += res;
--	available -= res;
--
--	if (size > available)
--		size = available;
--
--	memcpy(buf, cxt->pstore.buf, size);
--	memset(buf + size, '\0', available - size);
-+	hlen = ramoops_write_kmsg_hdr(prz);
-+	if (size + hlen > prz->buffer_size)
-+		size = prz->buffer_size - hlen;
-+	persistent_ram_write(prz, cxt->pstore.buf, size);
- 
- 	cxt->count = (cxt->count + 1) % cxt->max_count;
- 
-@@ -167,14 +172,12 @@ static int ramoops_pstore_write(enum pstore_type_id type,
- static int ramoops_pstore_erase(enum pstore_type_id type, u64 id,
- 				struct pstore_info *psi)
- {
--	char *buf;
- 	struct ramoops_context *cxt = psi->data;
- 
- 	if (id >= cxt->max_count)
- 		return -EINVAL;
- 
--	buf = cxt->virt_addr + (id * cxt->record_size);
--	memset(buf, '\0', cxt->record_size);
-+	persistent_ram_free_old(cxt->przs[id]);
- 
- 	return 0;
- }
-@@ -192,9 +195,11 @@ static struct ramoops_context oops_cxt = {
- 
- static int __init ramoops_probe(struct platform_device *pdev)
- {
-+	struct device *dev = &pdev->dev;
- 	struct ramoops_platform_data *pdata = pdev->dev.platform_data;
- 	struct ramoops_context *cxt = &oops_cxt;
- 	int err = -EINVAL;
-+	int i;
- 
- 	/* Only a single ramoops area allowed at a time, so fail extra
- 	 * probes.
-@@ -232,8 +237,28 @@ static int __init ramoops_probe(struct platform_device *pdev)
+ 	int dump_oops;
++	bool ecc;
+ 	unsigned int count;
+ 	unsigned int max_count;
+ 	unsigned int read_count;
+@@ -236,6 +242,7 @@ static int __init ramoops_probe(struct platform_device *pdev)
+ 	cxt->phys_addr = pdata->mem_address;
  	cxt->record_size = pdata->record_size;
  	cxt->dump_oops = pdata->dump_oops;
++	cxt->ecc = pdata->ecc;
  
-+	cxt->przs = kzalloc(sizeof(*cxt->przs) * cxt->max_count, GFP_KERNEL);
-+	if (!cxt->przs) {
-+		err = -ENOMEM;
-+		dev_err(dev, "failed to initialize a prz array\n");
-+		goto fail_out;
-+	}
-+
-+	for (i = 0; i < cxt->max_count; i++) {
-+		size_t sz = cxt->record_size;
-+		phys_addr_t start = cxt->phys_addr + sz * i;
-+
-+		cxt->przs[i] = persistent_ram_new(start, sz, 0);
-+		if (IS_ERR(cxt->przs[i])) {
-+			err = PTR_ERR(cxt->przs[i]);
-+			dev_err(dev, "failed to request mem region (0x%zx@0x%llx): %d\n",
-+				sz, (unsigned long long)start, err);
-+			goto fail_przs;
-+		}
-+	}
-+
- 	cxt->pstore.data = cxt;
--	cxt->pstore.bufsize = cxt->record_size;
-+	cxt->pstore.bufsize = cxt->przs[0]->buffer_size;
- 	cxt->pstore.buf = kmalloc(cxt->pstore.bufsize, GFP_KERNEL);
- 	spin_lock_init(&cxt->pstore.buf_lock);
- 	if (!cxt->pstore.buf) {
-@@ -241,23 +266,10 @@ static int __init ramoops_probe(struct platform_device *pdev)
- 		goto fail_clear;
- 	}
+ 	cxt->przs = kzalloc(sizeof(*cxt->przs) * cxt->max_count, GFP_KERNEL);
+ 	if (!cxt->przs) {
+@@ -248,7 +255,7 @@ static int __init ramoops_probe(struct platform_device *pdev)
+ 		size_t sz = cxt->record_size;
+ 		phys_addr_t start = cxt->phys_addr + sz * i;
  
--	if (!request_mem_region(cxt->phys_addr, cxt->size, "ramoops")) {
--		pr_err("request mem region (0x%lx@0x%llx) failed\n",
--			cxt->size, (unsigned long long)cxt->phys_addr);
--		err = -EINVAL;
--		goto fail_buf;
--	}
--
--	cxt->virt_addr = ioremap(cxt->phys_addr,  cxt->size);
--	if (!cxt->virt_addr) {
--		pr_err("ioremap failed\n");
--		goto fail_mem_region;
--	}
--
- 	err = pstore_register(&cxt->pstore);
- 	if (err) {
- 		pr_err("registering with pstore failed\n");
--		goto fail_iounmap;
-+		goto fail_buf;
- 	}
+-		cxt->przs[i] = persistent_ram_new(start, sz, 0);
++		cxt->przs[i] = persistent_ram_new(start, sz, cxt->ecc);
+ 		if (IS_ERR(cxt->przs[i])) {
+ 			err = PTR_ERR(cxt->przs[i]);
+ 			dev_err(dev, "failed to request mem region (0x%zx@0x%llx): %d\n",
+@@ -281,9 +288,10 @@ static int __init ramoops_probe(struct platform_device *pdev)
+ 	record_size = pdata->record_size;
+ 	dump_oops = pdata->dump_oops;
  
- 	/*
-@@ -275,15 +287,15 @@ static int __init ramoops_probe(struct platform_device *pdev)
+-	pr_info("attached 0x%lx@0x%llx (%ux0x%zx)\n",
++	pr_info("attached 0x%lx@0x%llx (%ux0x%zx), ecc: %s\n",
+ 		cxt->size, (unsigned long long)cxt->phys_addr,
+-		cxt->max_count, cxt->record_size);
++		cxt->max_count, cxt->record_size,
++		ramoops_ecc ? "on" : "off");
  
  	return 0;
  
--fail_iounmap:
--	iounmap(cxt->virt_addr);
--fail_mem_region:
--	release_mem_region(cxt->phys_addr, cxt->size);
- fail_buf:
- 	kfree(cxt->pstore.buf);
- fail_clear:
- 	cxt->pstore.bufsize = 0;
- 	cxt->max_count = 0;
-+fail_przs:
-+	for (i = 0; cxt->przs[i]; i++)
-+		persistent_ram_free(cxt->przs[i]);
-+	kfree(cxt->przs);
- fail_out:
- 	return err;
- }
+@@ -347,6 +355,7 @@ static int __init ramoops_init(void)
+ 		dummy_data->mem_address = mem_address;
+ 		dummy_data->record_size = record_size;
+ 		dummy_data->dump_oops = dump_oops;
++		dummy_data->ecc = ramoops_ecc;
+ 		dummy = platform_create_bundle(&ramoops_driver, ramoops_probe,
+ 			NULL, 0, dummy_data,
+ 			sizeof(struct ramoops_platform_data));
+diff --git a/include/linux/pstore_ram.h b/include/linux/pstore_ram.h
+index ffe24a5..7ed7fd4 100644
+--- a/include/linux/pstore_ram.h
++++ b/include/linux/pstore_ram.h
+@@ -92,6 +92,7 @@ struct ramoops_platform_data {
+ 	unsigned long	mem_address;
+ 	unsigned long	record_size;
+ 	int		dump_oops;
++	bool		ecc;
+ };
+ 
+ #endif
 -- 
 1.7.9.2
-
