@@ -1,75 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761336Ab2EQIGj (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 May 2012 04:06:39 -0400
-Received: from mga03.intel.com ([143.182.124.21]:18212 "EHLO mga03.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759952Ab2EQIGc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 May 2012 04:06:32 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
-   d="scan'208";a="144286475"
-Message-ID: <4FB4B129.6030701@intel.com>
-Date: Thu, 17 May 2012 16:04:57 +0800
-From: Alex Shi <alex.shi@intel.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:9.0) Gecko/20111229 Thunderbird/9.0
+	id S1761362Ab2EQIHI (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 May 2012 04:07:08 -0400
+Received: from mail-wi0-f172.google.com ([209.85.212.172]:64877 "EHLO
+	mail-wi0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1761339Ab2EQIG6 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 17 May 2012 04:06:58 -0400
+Date: Thu, 17 May 2012 10:06:52 +0200
+From: Ingo Molnar <mingo@kernel.org>
+To: Arjan van de Ven <arjan@linux.intel.com>
+Cc: Dave Jones <davej@redhat.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@elte.hu>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        David Sharp <dhsharp@google.com>,
+        Vaibhav Nagarnaik <vnagarnaik@google.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [RFC][PATCH] tracing: Remove useless 4 bytes of padding from
+ every event
+Message-ID: <20120517080651.GC17419@gmail.com>
+References: <1337175871.6724.46.camel@gandalf.stny.rr.com>
+ <CA+55aFzVngkixn-t0mK8QqgnPhCzN2AsUtzfZ3BkLiJAcjNOzQ@mail.gmail.com>
+ <1337198404.6724.81.camel@gandalf.stny.rr.com>
+ <CA+55aFyKiNBRv=z8JjPTu=yFFvyWHhkGDxjWLm=R4HpwXzEw4g@mail.gmail.com>
+ <4FB408F2.8060002@linux.intel.com>
+ <20120516201431.GA29661@redhat.com>
+ <4FB40B2B.703@linux.intel.com>
 MIME-Version: 1.0
-To: Steven Rostedt <rostedt@goodmis.org>
-CC: Peter Zijlstra <peterz@infradead.org>, Nick Piggin <npiggin@gmail.com>,
-        tglx@linutronix.de, mingo@redhat.com, hpa@zytor.com, arnd@arndb.de,
-        fweisbec@gmail.com, jeremy@goop.org, riel@redhat.com, luto@mit.edu,
-        avi@redhat.com, len.brown@intel.com, dhowells@redhat.com,
-        fenghua.yu@intel.com, borislav.petkov@amd.com, yinghai@kernel.org,
-        ak@linux.intel.com, cpw@sgi.com, steiner@sgi.com,
-        akpm@linux-foundation.org, penberg@kernel.org, hughd@google.com,
-        rientjes@google.com, kosaki.motohiro@jp.fujitsu.com,
-        n-horiguchi@ah.jp.nec.com, tj@kernel.org, oleg@redhat.com,
-        axboe@kernel.dk, jmorris@namei.org, kamezawa.hiroyu@jp.fujitsu.com,
-        viro@zeniv.linux.org.uk, linux-kernel@vger.kernel.org,
-        yongjie.ren@intel.com, linux-arch@vger.kernel.org
-Subject: Re: [PATCH v5 6/7] x86/tlb: optimizing flush_tlb_mm
-References: <1337072138-8323-1-git-send-email-alex.shi@intel.com>     <1337072138-8323-7-git-send-email-alex.shi@intel.com>     <CAPa8GCDsSOrzQwX2qRJyocYAZdGbwjD4t4fjxmWXV6=EoXjXZw@mail.gmail.com>     <4FB2590C.1050303@intel.com> <1337092577.27694.45.camel@twins>    <1337093840.27694.56.camel@twins> <4FB34D49.1060809@intel.com>   <1337155239.27694.131.camel@twins> <4FB3ACD2.5010900@intel.com>  <1337202569.4281.13.camel@twins> <4FB449C1.2020603@intel.com> <1337220428.6724.87.camel@gandalf.stny.rr.com>
-In-Reply-To: <1337220428.6724.87.camel@gandalf.stny.rr.com>
-Content-Type: text/plain; charset=ISO-8859-15
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4FB40B2B.703@linux.intel.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/17/2012 10:07 AM, Steven Rostedt wrote:
 
-> On Thu, 2012-05-17 at 08:43 +0800, Alex Shi wrote:
-> 
->>> I've seem to have misplaced my cross-compiler set, so I've only compiled
->>> x86-64 for now.
->>
->>
->> Oh, I also need a cross-compiler for other archs. Thanks reminder!
-> 
-> Here:
-> 
-> http://kernel.org/pub/tools/crosstool/
-> 
-> Oh, and if you want to automate this. I attached a ktest.pl config that
-> does it for you. I'll be pushing this config and others into a examples
-> directory come the next merge window.
-> 
-> Ktest is located in the Linux tree under tools/testing/ktest/
-> 
-> You can run a bunch of cross compiles by doing:
-> 
-> ktest.pl crosstests.conf
+* Arjan van de Ven <arjan@linux.intel.com> wrote:
 
+> > One possibility would be a config symbol to enable the 
+> > deprecated field (kind of like what we did with compat 
+> > vdso).  Distros that have a new enough powertop can then 
+> > disable it.
+> 
+> this isn't really about distro kernels; a distro that pushes a 
+> 3.7 kernel to Fedora 15 might as well do a powertop upgrade.. 
+> the later is much simpler and lighter (the main difference 
+> between 1.98 and 2.0 is the use of the perfevent library 
+> anyway)
+> 
+> it's about people who compile their own upstream kernel...
 
-It works fine. :)
-But does ktest only do one kind of config testing?
-How it do randconfig testing?
+Nor should we waste too much time over these 4 bytes really. Is 
+the kernel really in such a good shape that we must spend our 
+time trying to break working apps, over a mostly cosmetic detail 
+in an ABI which will soon be messed up with our next set up 
+mistakes anyway? ;-)
 
-> 
-> -- Steve
-> 
-> 
-> 
-> 
+Thanks,
 
-
+	Ingo
