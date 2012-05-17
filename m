@@ -1,79 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965335Ab2EQW72 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 May 2012 18:59:28 -0400
-Received: from mail-ob0-f174.google.com ([209.85.214.174]:44867 "EHLO
-	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1030346Ab2EQW70 convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 May 2012 18:59:26 -0400
+	id S1762442Ab2EQXBt (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 May 2012 19:01:49 -0400
+Received: from solo.fdn.fr ([80.67.169.19]:54474 "EHLO solo.fdn.fr"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1760557Ab2EQXBr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 17 May 2012 19:01:47 -0400
+Date: Fri, 18 May 2012 01:01:40 +0200
+From: Samuel Thibault <samuel.thibault@ens-lyon.org>
+To: Jeff Kirsher <jeffrey.t.kirsher@intel.com>,
+        Jesse Brandeburg <jesse.brandeburg@intel.com>,
+        Bruce Allan <bruce.w.allan@intel.com>,
+        Carolyn Wyborny <carolyn.wyborny@intel.com>,
+        Don Skidmore <donald.c.skidmore@intel.com>,
+        Greg Rose <gregory.v.rose@intel.com>,
+        Peter P Waskiewicz Jr <peter.p.waskiewicz.jr@intel.com>,
+        Alex Duyck <alexander.h.duyck@intel.com>,
+        John Ronciak <john.ronciak@intel.com>,
+        "David S. Miller" <davem@davemloft.net>,
+        Jiri Pirko <jpirko@redhat.com>, Dean Nelson <dnelson@redhat.com>,
+        e1000-devel@lists.sourceforge.net, netdev@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org
+Subject: [PATCH] e1000: Reset rx ring index on receive overrun
+Message-ID: <20120517230140.GZ683@type.famille.thibault.fr>
+Mail-Followup-To: Samuel Thibault <samuel.thibault@ens-lyon.org>,
+	Jeff Kirsher <jeffrey.t.kirsher@intel.com>,
+	Jesse Brandeburg <jesse.brandeburg@intel.com>,
+	Bruce Allan <bruce.w.allan@intel.com>,
+	Carolyn Wyborny <carolyn.wyborny@intel.com>,
+	Don Skidmore <donald.c.skidmore@intel.com>,
+	Greg Rose <gregory.v.rose@intel.com>,
+	Peter P Waskiewicz Jr <peter.p.waskiewicz.jr@intel.com>,
+	Alex Duyck <alexander.h.duyck@intel.com>,
+	John Ronciak <john.ronciak@intel.com>,
+	"David S. Miller" <davem@davemloft.net>,
+	Jiri Pirko <jpirko@redhat.com>, Dean Nelson <dnelson@redhat.com>,
+	e1000-devel@lists.sourceforge.net, netdev@vger.kernel.org,
+	linux-kernel@vger.kernel.org
 MIME-Version: 1.0
-In-Reply-To: <1337290826.7033.10.camel@trivette.site>
-References: <1334276935-11258-1-git-send-email-vivien.didelot@savoirfairelinux.com>
- <1334276935-11258-4-git-send-email-vivien.didelot@savoirfairelinux.com>
- <20120517210633.400633E0621@localhost> <1337290826.7033.10.camel@trivette.site>
-From: Grant Likely <grant.likely@secretlab.ca>
-Date: Thu, 17 May 2012 16:59:05 -0600
-X-Google-Sender-Auth: AcUBFEVLBL4i0NkLCj8g9jYhVIM
-Message-ID: <CACxGe6v20FnMrpE9ZFTQuhOUoJJrAgN_YKHXDT8GF4rH0VUd6A@mail.gmail.com>
-Subject: Re: [PATCH v6 3/3] gpio: TS-5500 GPIO support
-To: Vivien Didelot <vivien.didelot@savoirfairelinux.com>
-Cc: x86@kernel.org, Jerome Oufella <jerome.oufella@savoirfairelinux.com>,
-        Ingo Molnar <mingo@redhat.com>, Thomas Gleixner <tglx@linutronix.de>,
-        "H. Peter Anvin" <hpa@zytor.com>, linux-kernel@vger.kernel.org,
-        lm-sensors@lm-sensors.org, Guenter Roeck <guenter.roeck@ericsson.com>,
-        Jean Delvare <khali@linux-fr.org>,
-        Linus Walleij <linus.walleij@stericsson.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21+34 (58baf7c9f32f) (2010-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, May 17, 2012 at 3:40 PM, Vivien Didelot
-<vivien.didelot@savoirfairelinux.com> wrote:
-> On Thu, 2012-05-17 at 15:06 -0600, Grant Likely wrote:
->> >  arch/x86/include/asm/ts5500.h |   62 ++++++++
->>
->> Why the separate header file?  What will use these defines?  I
->> normally expect driver-specific defines to be in the driver .c file
->> directly; particularly for things like gpio drivers which should be a
->> generic interface that doesn't need to export symbols.
->
-> Should an intermediate driver directly use values for GPIOs instead of
-> these symbols? For example, how should a temperature sensor plugged on
-> this platform refer to inputs and outputs?
+At high traffic rate, the rx ring may get completely filled before we
+manage to consume it.  After it is filled, the kernel and device indexes
+are not synchronized any more, so we have to reset them, otherwise the
+kernel will be stuck waiting for the wrong slot to be filled.
 
-Tell me more about this platform.  Where does the data about
-connections come from?  Is it a purpose-built embedded system?  Is the
-GPIO controller described in ACPI? (probably not since GPIOs were only
-added to ACPI in v5)  Does the end-user attach her own hardware to the
-board like the temperature sensor you describe?  If so, is that
-hardware driven by kernel drivers or user-space drivers?
+Signed-off-by: Samuel Thibault <samuel.thibault@ens-lyon.org>
 
-For userspace drivers you can get information about the GPIO number
-assignments from /sys, but it isn't well documented and can probably
-be improved.
+---
+This is just a patch suggestion, I'm not an expert in network drivers, I
+leave to actual driver authors to bake a better version.
 
-If it is kernelspace, then you really need a way to add data about the
-platform to the kernel at runtime.  Having it statically compiled in
-isn't a very good solution.  I would recommend injecting configuration
-data into the kernel from userspace.  You could invent something, but
-that wouldn't be very portable.  Xilinx has done some work on this
-using Flattened Device Tree and the firmware loading infrastructure.
-The kernel requests a .dtb (device tree blob) from userspace and uses
-that to configure devices.  That may do the job for you.  GPIO and
-platform device infrastructure already have FDT support which will
-help you here.  I expect it could be done with an ACPI fragment too,
-but I just don't know of anybody having done any work in this area.
-
-That probably isn't the answer you want though since I assume you just
-need to get something that works rather than investing a whole bunch
-of time on generic infrastructure.  What I would recommend is for your
-platform setup code to use a notifier to wait for the
-BUS_NOTIFY_BOUND_DRIVER event and then register the temperature sensor
-with the correct gpio number at that time (because once you have a
-reference to the gpio controller you can calculate the assigned gpio
-numbers).
-
-g.
+diff --git a/drivers/net/ethernet/intel/e1000/e1000_main.c b/drivers/net/ethernet/intel/e1000/e1000_main.c
+index 37caa88..77c8dbc 100644
+--- a/drivers/net/ethernet/intel/e1000/e1000_main.c
++++ b/drivers/net/ethernet/intel/e1000/e1000_main.c
+@@ -3759,6 +3759,21 @@ static irqreturn_t e1000_intr(int irq, void *data)
+ 	if (unlikely(test_bit(__E1000_DOWN, &adapter->flags)))
+ 		return IRQ_HANDLED;
+ 
++	if (unlikely(icr & E1000_ICR_RXO)) {
++		/* Receive Overrun */
++		u32 rctl;
++		int i;
++		rctl = er32(RCTL);
++		ew32(RCTL, rctl & ~E1000_RCTL_EN);
++		for (i = 0; i < adapter->num_rx_queues; i++) {
++			memset(adapter->rx_ring[i].desc, 0, adapter->rx_ring[i].size);
++			adapter->rx_ring[i].next_to_clean = 0;
++		}
++		ew32(RDH, 0);
++		ew32(RCTL, rctl);
++		adapter->netdev->stats.rx_fifo_errors++;
++	}
++
+ 	if (unlikely(icr & (E1000_ICR_RXSEQ | E1000_ICR_LSC))) {
+ 		hw->get_link_status = 1;
+ 		/* guard against interrupt when we're going down */
