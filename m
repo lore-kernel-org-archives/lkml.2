@@ -1,61 +1,224 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S966902Ab2EQO5d (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 May 2012 10:57:33 -0400
-Received: from mailout2.samsung.com ([203.254.224.25]:65110 "EHLO
-	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S966601Ab2EQO52 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 May 2012 10:57:28 -0400
-X-AuditID: cbfee61b-b7bb6ae0000006fb-ca-4fb511d6aa9e
-From: Thomas Abraham <thomas.abraham@linaro.org>
-To: linux-mmc@vger.kernel.org, devicetree-discuss@lists.ozlabs.org
-Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        cjb@laptop.org, grant.likely@secretlab.ca, rob.herring@calxeda.com,
-        linux-samsung-soc@vger.kernel.org, kgene.kim@samsung.com,
-        patches@linaro.org
-Subject: [PATCH v2 0/6] mmc: dw_mmc: add support for device tree based
- instantiation
-Date: Thu, 17 May 2012 20:40:05 +0530
-Message-id: <1337267411-28226-1-git-send-email-thomas.abraham@linaro.org>
-X-Mailer: git-send-email 1.6.6.rc2
-X-Brightmail-Tracker: AAAAAA==
-X-TM-AS-MML: No
+	id S966846Ab2EQO6A (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 May 2012 10:58:00 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:33430 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1762053Ab2EQOuq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 17 May 2012 10:50:46 -0400
+From: Mel Gorman <mgorman@suse.de>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Linux-MM <linux-mm@kvack.org>, Linux-Netdev <netdev@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        David Miller <davem@davemloft.net>, Neil Brown <neilb@suse.de>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Mike Christie <michaelc@cs.wisc.edu>,
+        Eric B Munson <emunson@mgebm.net>, Mel Gorman <mgorman@suse.de>
+Subject: [PATCH 12/17] netvm: Propagate page->pfmemalloc from skb_alloc_page to skb
+Date: Thu, 17 May 2012 15:50:26 +0100
+Message-Id: <1337266231-8031-13-git-send-email-mgorman@suse.de>
+X-Mailer: git-send-email 1.7.9.2
+In-Reply-To: <1337266231-8031-1-git-send-email-mgorman@suse.de>
+References: <1337266231-8031-1-git-send-email-mgorman@suse.de>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch series is the second version of the patches that adds device tree
-support for Synopsis Designware Mobile Storage Host Controller.
+The skb->pfmemalloc flag gets set to true iff during the slab
+allocation of data in __alloc_skb that the the PFMEMALLOC reserves
+were used. If page splitting is used, it is possible that pages will
+be allocated from the PFMEMALLOC reserve without propagating this
+information to the skb. This patch propagates page->pfmemalloc from
+pages allocated for fragments to the skb.
 
-The first patch converts the copy of controller device instance into a
-reference. This is need to allow device resource management api to correctly
-manage the resources allocated by the driver. The second patch fixes the
-incorrect abort of the probe in case a slot initialization fails. This is
-fixed by allowing as many slots to be initialized successfully and failing
-only if there are no slots that were initialized.
+It works by reintroducing and expanding the skb_alloc_page() API
+to take an skb. If the page was allocated from pfmemalloc reserves,
+it is automatically copied. If the driver allocates the page before
+the skb, it should call skb_propagate_pfmemalloc() after the skb is
+allocated to ensure the flag is copied properly.
 
-The third patch adds clock lookup in the driver and this is optional. Platforms
-that do not need any clock gating and control for the dw_mmc controllers will
-not be affected with this change. The fourth patch adds a quirk to notify the
-controller about the absence of the write protect line.
+Failure to do so is not critical. The resulting driver may perform
+slower if it is used for swap-over-NBD or swap-over-NFS but it should
+not result in failure.
 
-The fifth patch adds device tree based discovery support for the dw_mmc driver.
-The sixth patch add Samsung Exynos5250 specific extentions to the driver.
+[davem@davemloft.net: API rename and consistency]
+Signed-off-by: Mel Gorman <mgorman@suse.de>
+---
+ drivers/net/ethernet/chelsio/cxgb4/sge.c          |    2 +-
+ drivers/net/ethernet/chelsio/cxgb4vf/sge.c        |    2 +-
+ drivers/net/ethernet/intel/igb/igb_main.c         |    2 +-
+ drivers/net/ethernet/intel/ixgbe/ixgbe_main.c     |    2 +-
+ drivers/net/ethernet/intel/ixgbevf/ixgbevf_main.c |    3 +-
+ drivers/net/usb/cdc-phonet.c                      |    2 +-
+ drivers/usb/gadget/f_phonet.c                     |    2 +-
+ include/linux/skbuff.h                            |   55 +++++++++++++++++++++
+ 8 files changed, 63 insertions(+), 7 deletions(-)
 
-Thomas Abraham (6):
-  mmc: dw_mmc: convert copy of struct device in struct dw_mci to a reference
-  mmc: dw_mmc: allow probe to succeed even if one slot is initialized
-  mmc: dw_mmc: lookup for optional biu and ciu clocks
-  mmc: dw_mmc: add quirk to indicate missing write protect line
-  mmc: dw_mmc: add device tree support
-  mmc: dw_mmc: add samsung exynos5250 specific extentions
-
- .../devicetree/bindings/mmc/synposis-dw-mshc.txt   |  139 ++++++++
- drivers/mmc/host/dw_mmc-pltfm.c                    |   41 +++-
- drivers/mmc/host/dw_mmc.c                          |  362 +++++++++++++++++---
- drivers/mmc/host/dw_mmc.h                          |   23 ++
- include/linux/mmc/dw_mmc.h                         |   17 +-
- 5 files changed, 530 insertions(+), 52 deletions(-)
- create mode 100644 Documentation/devicetree/bindings/mmc/synposis-dw-mshc.txt
+diff --git a/drivers/net/ethernet/chelsio/cxgb4/sge.c b/drivers/net/ethernet/chelsio/cxgb4/sge.c
+index 2dae795..c5c342c 100644
+--- a/drivers/net/ethernet/chelsio/cxgb4/sge.c
++++ b/drivers/net/ethernet/chelsio/cxgb4/sge.c
+@@ -528,7 +528,7 @@ static unsigned int refill_fl(struct adapter *adap, struct sge_fl *q, int n,
+ #endif
+ 
+ 	while (n--) {
+-		pg = alloc_page(gfp);
++		pg = __skb_alloc_page(gfp, NULL);
+ 		if (unlikely(!pg)) {
+ 			q->alloc_failed++;
+ 			break;
+diff --git a/drivers/net/ethernet/chelsio/cxgb4vf/sge.c b/drivers/net/ethernet/chelsio/cxgb4vf/sge.c
+index 0bd585b..dca0716 100644
+--- a/drivers/net/ethernet/chelsio/cxgb4vf/sge.c
++++ b/drivers/net/ethernet/chelsio/cxgb4vf/sge.c
+@@ -653,7 +653,7 @@ static unsigned int refill_fl(struct adapter *adapter, struct sge_fl *fl,
+ 
+ alloc_small_pages:
+ 	while (n--) {
+-		page = alloc_page(gfp | __GFP_NOWARN | __GFP_COLD);
++		page = __skb_alloc_page(gfp | __GFP_NOWARN, NULL);
+ 		if (unlikely(!page)) {
+ 			fl->alloc_failed++;
+ 			break;
+diff --git a/drivers/net/ethernet/intel/igb/igb_main.c b/drivers/net/ethernet/intel/igb/igb_main.c
+index 8683ca4..eacbb32 100644
+--- a/drivers/net/ethernet/intel/igb/igb_main.c
++++ b/drivers/net/ethernet/intel/igb/igb_main.c
+@@ -6232,7 +6232,7 @@ static bool igb_alloc_mapped_page(struct igb_ring *rx_ring,
+ 		return true;
+ 
+ 	if (!page) {
+-		page = alloc_page(GFP_ATOMIC | __GFP_COLD);
++		page = __skb_alloc_page(GFP_ATOMIC, bi->skb);
+ 		bi->page = page;
+ 		if (unlikely(!page)) {
+ 			rx_ring->rx_stats.alloc_failed++;
+diff --git a/drivers/net/ethernet/intel/ixgbe/ixgbe_main.c b/drivers/net/ethernet/intel/ixgbe/ixgbe_main.c
+index 467948e..cf269aa 100644
+--- a/drivers/net/ethernet/intel/ixgbe/ixgbe_main.c
++++ b/drivers/net/ethernet/intel/ixgbe/ixgbe_main.c
+@@ -1126,7 +1126,7 @@ static bool ixgbe_alloc_mapped_page(struct ixgbe_ring *rx_ring,
+ 
+ 	/* alloc new page for storage */
+ 	if (likely(!page)) {
+-		page = alloc_pages(GFP_ATOMIC | __GFP_COLD,
++		page = __skb_alloc_pages(GFP_ATOMIC, bi->skb,
+ 				   ixgbe_rx_pg_order(rx_ring));
+ 		if (unlikely(!page)) {
+ 			rx_ring->rx_stats.alloc_rx_page_failed++;
+diff --git a/drivers/net/ethernet/intel/ixgbevf/ixgbevf_main.c b/drivers/net/ethernet/intel/ixgbevf/ixgbevf_main.c
+index 307611a..f6234da 100644
+--- a/drivers/net/ethernet/intel/ixgbevf/ixgbevf_main.c
++++ b/drivers/net/ethernet/intel/ixgbevf/ixgbevf_main.c
+@@ -369,7 +369,7 @@ static void ixgbevf_alloc_rx_buffers(struct ixgbevf_adapter *adapter,
+ 		if (!bi->page_dma &&
+ 		    (adapter->flags & IXGBE_FLAG_RX_PS_ENABLED)) {
+ 			if (!bi->page) {
+-				bi->page = alloc_page(GFP_ATOMIC | __GFP_COLD);
++				bi->page = __skb_alloc_page(GFP_ATOMIC, NULL);
+ 				if (!bi->page) {
+ 					adapter->alloc_rx_page_failed++;
+ 					goto no_buffers;
+@@ -403,6 +403,7 @@ static void ixgbevf_alloc_rx_buffers(struct ixgbevf_adapter *adapter,
+ 			 */
+ 			skb_reserve(skb, NET_IP_ALIGN);
+ 
++			skb_propagate_pfmemalloc(bi->page_dma, skb);
+ 			bi->skb = skb;
+ 		}
+ 		if (!bi->dma) {
+diff --git a/drivers/net/usb/cdc-phonet.c b/drivers/net/usb/cdc-phonet.c
+index 3e41b00..470e35b 100644
+--- a/drivers/net/usb/cdc-phonet.c
++++ b/drivers/net/usb/cdc-phonet.c
+@@ -130,7 +130,7 @@ static int rx_submit(struct usbpn_dev *pnd, struct urb *req, gfp_t gfp_flags)
+ 	struct page *page;
+ 	int err;
+ 
+-	page = alloc_page(gfp_flags);
++	page = __skb_alloc_page(gfp_flags | __GFP_NOMEMALLOC, NULL);
+ 	if (!page)
+ 		return -ENOMEM;
+ 
+diff --git a/drivers/usb/gadget/f_phonet.c b/drivers/usb/gadget/f_phonet.c
+index 965a629..8ee9268 100644
+--- a/drivers/usb/gadget/f_phonet.c
++++ b/drivers/usb/gadget/f_phonet.c
+@@ -301,7 +301,7 @@ pn_rx_submit(struct f_phonet *fp, struct usb_request *req, gfp_t gfp_flags)
+ 	struct page *page;
+ 	int err;
+ 
+-	page = alloc_page(gfp_flags);
++	page = __skb_alloc_page(gfp_flags | __GFP_NOMEMALLOC, NULL);
+ 	if (!page)
+ 		return -ENOMEM;
+ 
+diff --git a/include/linux/skbuff.h b/include/linux/skbuff.h
+index df11a11..9854fbde 100644
+--- a/include/linux/skbuff.h
++++ b/include/linux/skbuff.h
+@@ -1747,6 +1747,61 @@ static inline struct sk_buff *netdev_alloc_skb_ip_align(struct net_device *dev,
+ 	return __netdev_alloc_skb_ip_align(dev, length, GFP_ATOMIC);
+ }
+ 
++/*
++ *	__skb_alloc_page - allocate pages for ps-rx on a skb and preserve pfmemalloc data
++ *	@gfp_mask: alloc_pages_node mask. Set __GFP_NOMEMALLOC if not for network packet RX
++ *	@skb: skb to set pfmemalloc on if __GFP_MEMALLOC is used
++ *	@order: size of the allocation
++ *
++ * 	Allocate a new page.
++ *
++ * 	%NULL is returned if there is no free memory.
++*/
++static inline struct page *__skb_alloc_pages(gfp_t gfp_mask,
++					      struct sk_buff *skb,
++					      unsigned int order)
++{
++	struct page *page;
++
++	gfp_mask |= __GFP_COLD;
++
++	if (!(gfp_mask & __GFP_NOMEMALLOC))
++		gfp_mask |= __GFP_MEMALLOC;
++
++	page = alloc_pages_node(NUMA_NO_NODE, gfp_mask, order);
++	if (skb && page && page->pfmemalloc)
++		skb->pfmemalloc = true;
++
++	return page;
++}
++
++/**
++ *	__skb_alloc_page - allocate a page for ps-rx for a given skb and preserve pfmemalloc data
++ *	@gfp_mask: alloc_pages_node mask. Set __GFP_NOMEMALLOC if not for network packet RX
++ *	@skb: skb to set pfmemalloc on if __GFP_MEMALLOC is used
++ *
++ * 	Allocate a new page.
++ *
++ * 	%NULL is returned if there is no free memory.
++ */
++static inline struct page *__skb_alloc_page(gfp_t gfp_mask,
++					     struct sk_buff *skb)
++{
++	return __skb_alloc_pages(gfp_mask, skb, 0);
++}
++
++/**
++ *	skb_propagate_pfmemalloc - Propagate pfmemalloc if skb is allocated after RX page
++ *	@page: The page that was allocated from skb_alloc_page
++ *	@skb: The skb that may need pfmemalloc set
++ */
++static inline void skb_propagate_pfmemalloc(struct page *page,
++					     struct sk_buff *skb)
++{
++	if (page && page->pfmemalloc)
++		skb->pfmemalloc = true;
++}
++
+ /**
+  * skb_frag_page - retrieve the page refered to by a paged fragment
+  * @frag: the paged fragment
+-- 
+1.7.9.2
 
