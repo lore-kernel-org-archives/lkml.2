@@ -1,68 +1,118 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965461Ab2EQAQM (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 May 2012 20:16:12 -0400
-Received: from e33.co.us.ibm.com ([32.97.110.151]:54091 "EHLO
-	e33.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S964943Ab2EQAQJ (ORCPT
+	id S965499Ab2EQAR4 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 May 2012 20:17:56 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:56972 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S964975Ab2EQARy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 May 2012 20:16:09 -0400
-Date: Wed, 16 May 2012 17:15:11 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Tejun Heo <tj@kernel.org>
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] workqueue: skip nr_running sanity check in
- worker_enter_idle() if trustee is active
-Message-ID: <20120517001511.GA14301@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <20120506153814.GA25681@linux.vnet.ibm.com>
- <20120507194042.GG19417@google.com>
- <20120507205516.GD21152@linux.vnet.ibm.com>
- <20120507213449.GM19417@google.com>
- <20120514221250.GA8414@google.com>
- <20120514224123.GO2441@linux.vnet.ibm.com>
+	Wed, 16 May 2012 20:17:54 -0400
+Date: Wed, 16 May 2012 17:17:36 -0700
+From: tip-bot for Suresh Siddha <suresh.b.siddha@intel.com>
+Message-ID: <tip-11aeca0b3a083a457f5c34fe8c677d5e86a0c6b3@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
+        suresh@aristanetworks.com, suresh.b.siddha@intel.com, oleg@redhat.com,
+        tglx@linutronix.de, hpa@linux.intel.com
+Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        suresh.b.siddha@intel.com, suresh@aristanetworks.com,
+        tglx@linutronix.de, oleg@redhat.com, hpa@linux.intel.com
+In-Reply-To: <1336692811-30576-2-git-send-email-suresh.b.siddha@intel.com>
+References: <1336692811-30576-2-git-send-email-suresh.b.siddha@intel.com>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:x86/fpu] coredump:
+  ensure the fpu state is flushed for proper multi-threaded core dump
+Git-Commit-ID: 11aeca0b3a083a457f5c34fe8c677d5e86a0c6b3
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-In-Reply-To: <20120514224123.GO2441@linux.vnet.ibm.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 12051700-2398-0000-0000-000006B4E13A
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Wed, 16 May 2012 17:17:42 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, May 14, 2012 at 03:41:23PM -0700, Paul E. McKenney wrote:
-> On Mon, May 14, 2012 at 03:12:50PM -0700, Tejun Heo wrote:
-> > >From 544ecf310f0e7f51fa057ac2a295fc1b3b35a9d3 Mon Sep 17 00:00:00 2001
-> > From: Tejun Heo <tj@kernel.org>
-> > Date: Mon, 14 May 2012 15:04:50 -0700
-> > 
-> > worker_enter_idle() has WARN_ON_ONCE() which triggers if nr_running
-> > isn't zero when every worker is idle.  This can trigger spuriously
-> > while a cpu is going down due to the way trustee sets %WORKER_ROGUE
-> > and zaps nr_running.
-> > 
-> > It first sets %WORKER_ROGUE on all workers without updating
-> > nr_running, releases gcwq->lock, schedules, regrabs gcwq->lock and
-> > then zaps nr_running.  If the last running worker enters idle
-> > inbetween, it would see stale nr_running which hasn't been zapped yet
-> > and trigger the WARN_ON_ONCE().
-> > 
-> > Fix it by performing the sanity check iff the trustee is idle.
-> > 
-> > Signed-off-by: Tejun Heo <tj@kernel.org>
-> > Reported-by: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-> > Cc: stable@vger.kernel.org
-> > ---
-> > Sorry about the delay.  After scratching my head quite a bit, I found
-> > where during cpu-offlining such discrepancy may happen.  I'm fairly
-> > sure this is it but I might be wrong, so please include this patch in
-> > your test setup and let me know how it goes.
-> 
-> Thank you -- I have applied it, and will let you know how it goes.
+Commit-ID:  11aeca0b3a083a457f5c34fe8c677d5e86a0c6b3
+Gitweb:     http://git.kernel.org/tip/11aeca0b3a083a457f5c34fe8c677d5e86a0c6b3
+Author:     Suresh Siddha <suresh.b.siddha@intel.com>
+AuthorDate: Wed, 16 May 2012 15:03:52 -0700
+Committer:  H. Peter Anvin <hpa@linux.intel.com>
+CommitDate: Wed, 16 May 2012 15:16:48 -0700
 
-Tested-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+coredump: ensure the fpu state is flushed for proper multi-threaded core dump
 
-							Thanx, Paul
+Nalluru reported hitting the BUG_ON(__thread_has_fpu(tsk)) in
+arch/x86/kernel/xsave.c:__sanitize_i387_state() during the coredump
+of a multi-threaded application.
 
+A look at the exit seqeuence shows that other threads can still be on the
+runqueue potentially at the below shown exit_mm() code snippet:
+
+		if (atomic_dec_and_test(&core_state->nr_threads))
+			complete(&core_state->startup);
+
+===> other threads can still be active here, but we notify the thread
+===> dumping core to wakeup from the coredump_wait() after the last thread
+===> joins this point. Core dumping thread will continue dumping
+===> all the threads state to the core file.
+
+		for (;;) {
+			set_task_state(tsk, TASK_UNINTERRUPTIBLE);
+			if (!self.task) /* see coredump_finish() */
+				break;
+			schedule();
+		}
+
+As some of those threads are on the runqueue and didn't call schedule() yet,
+their fpu state is still active in the live registers and the thread
+proceeding with the coredump will hit the above mentioned BUG_ON while
+trying to dump other threads fpustate to the coredump file.
+
+BUG_ON() in arch/x86/kernel/xsave.c:__sanitize_i387_state() is
+in the code paths for processors supporting xsaveopt. With or without
+xsaveopt, multi-threaded coredump is broken and maynot contain
+the correct fpustate at the time of exit.
+
+In coredump_wait(), wait for all the threads to be come inactive, so
+that we are sure all the extended register state is flushed to
+the memory, so that it can be reliably copied to the core file.
+
+Reported-by: Suresh Nalluru <suresh@aristanetworks.com>
+Signed-off-by: Suresh Siddha <suresh.b.siddha@intel.com>
+Link: http://lkml.kernel.org/r/1336692811-30576-2-git-send-email-suresh.b.siddha@intel.com
+Acked-by: Oleg Nesterov <oleg@redhat.com>
+Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
+---
+ fs/exec.c |   15 ++++++++++++++-
+ 1 files changed, 14 insertions(+), 1 deletions(-)
+
+diff --git a/fs/exec.c b/fs/exec.c
+index b1fd202..8e2ddeb 100644
+--- a/fs/exec.c
++++ b/fs/exec.c
+@@ -1930,8 +1930,21 @@ static int coredump_wait(int exit_code, struct core_state *core_state)
+ 		core_waiters = zap_threads(tsk, mm, core_state, exit_code);
+ 	up_write(&mm->mmap_sem);
+ 
+-	if (core_waiters > 0)
++	if (core_waiters > 0) {
++		struct core_thread *ptr;
++
+ 		wait_for_completion(&core_state->startup);
++		/*
++		 * Wait for all the threads to become inactive, so that
++		 * all the thread context (extended register state, like
++		 * fpu etc) gets copied to the memory.
++		 */
++		ptr = core_state->dumper.next;
++		while (ptr != NULL) {
++			wait_task_inactive(ptr->task, 0);
++			ptr = ptr->next;
++		}
++	}
+ 
+ 	return core_waiters;
+ }
