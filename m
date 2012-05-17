@@ -1,92 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761055Ab2EQDnG (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 May 2012 23:43:06 -0400
-Received: from mail-lb0-f174.google.com ([209.85.217.174]:34539 "EHLO
-	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760983Ab2EQDnD (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 May 2012 23:43:03 -0400
-Message-ID: <1337225964.2730.11.camel@brekeke>
-Subject: Re: [RFC v5] UBI: Fastmap support (aka checkpointing)
-From: Artem Bityutskiy <dedekind1@gmail.com>
-Reply-To: dedekind1@gmail.com
-To: Richard Weinberger <richard@nod.at>
-Cc: linux-mtd@lists.infradead.org, tglx@linutronix.de,
-        linux-kernel@vger.kernel.org, Heinz.Egger@linutronix.de,
-        tim.bird@am.sony.com
-Date: Thu, 17 May 2012 06:39:24 +0300
-In-Reply-To: <1337201522-86521-1-git-send-email-richard@nod.at>
-References: <1337201522-86521-1-git-send-email-richard@nod.at>
-Content-Type: multipart/signed; micalg="pgp-sha1"; protocol="application/pgp-signature";
-	boundary="=-12x6ye6TYGX8mFPlrknX"
-X-Mailer: Evolution 3.2.3 (3.2.3-3.fc16) 
-Mime-Version: 1.0
+	id S965267Ab2EQDot (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 May 2012 23:44:49 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:58050 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1760958Ab2EQDos (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 16 May 2012 23:44:48 -0400
+Message-ID: <4FB47420.7050003@kernel.org>
+Date: Wed, 16 May 2012 20:44:32 -0700
+From: "H. Peter Anvin" <hpa@kernel.org>
+Organization: Linux Kernel Organization, Inc.
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:11.0) Gecko/20120329 Thunderbird/11.0.1
+MIME-Version: 1.0
+To: Linus Torvalds <torvalds@linux-foundation.org>
+CC: Sasha Levin <levinsasha928@gmail.com>, Kay Sievers <kay@vrfy.org>,
+        Greg KH <gregkh@linuxfoundation.org>, Yinghai Lu <yinghai@kernel.org>,
+        Joe Perches <joe@perches.com>, Ingo Molnar <mingo@kernel.org>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH RESEND 1/3] printk: convert byte-buffer to variable-length
+ record buffer
+References: <CA+1xoqdCk9FcqdLEvwgHtfrauNh=s0dDwcpaJimMC_H83N=_5w@mail.gmail.com> <1336475689.1179.12.camel@mop> <CA+55aFwbQTq_f7p2j-eu8-hVpiZ1Uf2MCU7R+DDWHimiVbcScg@mail.gmail.com> <CAPXgP13-XQdn0wMP=coVqS=Eko1vWkOrjOtfq4JQLHFZ3JNbgg@mail.gmail.com> <1336571457.30189.29.camel@joe2Laptop> <CAPXgP11jt5u=wXs9Pe7QksZ25QTKCwNXgTHn+T6JXD6+2NzgBQ@mail.gmail.com> <CAE9FiQUzsu8CFNLXxUyZnu53YobdNdJfQQmPQd8s8r5rgJpcNg@mail.gmail.com> <20120509230649.GA10695@kroah.com> <1336617045.25027.2.camel@mop> <CA+1xoqft4aM_qedn+TDx0z8creS_4mFf3S+4SUNjz0pe+=YHAg@mail.gmail.com> <20120511151944.GA6990@kroah.com> <CA+55aFz8-96rHLfqRrRSgFAzOFmyDaDKSB15WKkCoUssHq8R-A@mail.gmail.com> <CAPXgP11teuiH0cPRrhWdvKCW1jtq4_6wkH21wgRT6UpDF0G1gQ@mail.gmail.com> <CA+55aFyG2jQFURwWebMWw7bAt3=zbXRsHSOtZVYBw-frUXqiRg@mail.gmail.com> <CA+1xoqf5YbkOJgQJWOgck0NpqGzGtxtHHJASZKHvwVuBzkKK6A@mail.gmail.com> <CA+55aFyeXdUyj_OzccctFSj1f4su1G8DyxiQwD4W5sV9Dh0Zpg@mail.gmail.com>
+In-Reply-To: <CA+55aFyeXdUyj_OzccctFSj1f4su1G8DyxiQwD4W5sV9Dh0Zpg@mail.gmail.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 05/12/2012 11:35 AM, Linus Torvalds wrote:
+> 
+>  (b) The one thing I have often wanted is not "after how many seconds
+> of boot", but "when". So it would actually be nice if the absolute
+> time was converted into local time. The kernel can actually do that,
+> so I suspect that the best format for the relative timestamps would
+> really be something like
+> 
+>    > [May12 11:27] foo
+>    > [May12 11:28] bar
+>    > [  +5.077527] zoot
+>    > [ +10.235225] foo
+>    > [  +0.002971] bar
+>    > [May12 11:29] zoot
+>    > [  +0.003081] foo
+> 
+> because that would be really useful sometimes.
+> 
+> (And no, never mind the year. If you log those things long-term, the
+> year will be in the full log, so logging the year in the dmesg is just
+> pointless.)
 
---=-12x6ye6TYGX8mFPlrknX
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: quoted-printable
+I would like to give a +1 on absolute time, and -1 on local timezone and
+a -$LARGE_NUMBER on low resolution.
 
-On Wed, 2012-05-16 at 22:51 +0200, Richard Weinberger wrote:
-> This is a bug-fix release. v4 handled static volumes wrong.
-> v6 will address everything that Artem pointed out.
+Why?  Getting events accurately timed across multiple hosts can be
+really useful when trying to reconstruct, ahem, "network events".
 
-Hi, I'll try to review this further, but few points I'd like to
-highlight.
+Getting UTC time at some fairly high resolution is useful for that.  I
+would say the useful resolution is probably milliseconds.
 
-1. We'll need to re-structure the code a bit and rename scan.[ch] to
-attach.[ch], all data structures like 'struct ubi_scan_volume' which you
-re-use we will also need to rename and remove the "scan" word, etc. I am
-willing to do this preparation.
-
-2. You need to re-use the scanning code we have for scanning the fastmap
-volumes, I think. May be you need some amendments there, but currently
-you have more duplication than needed. You'll just plug more of your
-code to the attach.c file: check if there fastmap, if yes, read it and
-scan the internal fastmap volumes by re-using functions in attach.c. So
-all the fastmap reading/checking/manipulating stuff is in fastmap.c, the
-scanning and interpreting is in attach.c.
-
-Again, I am willing to do corresponding preparations for you, you'll
-need to amend your code then.
-
-Also, I think you probably do not have to split your patches. For me it
-looks like there is a lot of work needed anyway, so you could just send
-it as one patch so far, to make things easier. Because reviewing this
-stuff by reading patches is too difficult anyway, and the reviewer has
-to apply it and review / navigate the real code, and just look sometimes
-to the patch.
-
---=20
-Best Regards,
-Artem Bityutskiy
-
---=-12x6ye6TYGX8mFPlrknX
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: This is a digitally signed message part
-Content-Transfer-Encoding: 7bit
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAABAgAGBQJPtHLsAAoJECmIfjd9wqK0DqUP/1dK3mLWOZCRkIfhy12YaTyf
-EdWZJ8lRlCY3P62bQSStWOtuJqv+Ltm23U664ORTUnstaYOD94npu/cj3qmr4Tni
-iV/NaEYbo4M+xm8mtDvLVuNHQ37jyzEw7EF+xEDYtgeU1diMJ8elHSiFdm6HFeLh
-0+GN7ka6BWbDZJFNdBIABOLH4xkwC7DnMZzEOxVCt9XfmFXC/Ho2LUoiCAETsfsH
-8SopSD2Ek68f/OgbUBnVDSM9lu+EpWtOZjnSS0SVqrjGHJdv5VTA3FFAXnOm5goF
-ZzI7Ul+1YX1tQJzIInsA16h+r9VihxEoQDP9EzAtakrHmbhQoNO1zsd4EVL+dQjW
-gtEYYO60u35X40BpBlDV9oOyH/SbSnMLSQdjUc8MteLO4Xz3+3McATeHJ6Hn9NFt
-w52QeI+kajHD+Z68L1+1XtASjatT0+b6wbYLcHjRTHY1K+QczArt5K1rw3U1ZVPA
-ypIxKtWgfJNcyDz+eWxWrOlettKcoNDDSy/n5obQOnqfbotr1uF5WJI303iz7PDg
-WF2lURD9GumCOtsVL2WJvglvwacuOFiOLOp+s0Ko/NHtoKJJocgzohXNhvpoW5gd
-Fzfz7VENqEGtPvKvDSlJlZ9BWNRSCPRsFq1lLnWmdQxuEULCFj3HHWQiK8KIhS+Q
-9D04GcwOGaQjShZx2JN6
-=+oTh
------END PGP SIGNATURE-----
-
---=-12x6ye6TYGX8mFPlrknX--
+	-hpa
 
