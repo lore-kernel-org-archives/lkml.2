@@ -1,81 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757079Ab2EQGIL (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 May 2012 02:08:11 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:39871 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754263Ab2EQGIJ (ORCPT
+	id S1757768Ab2EQGNQ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 May 2012 02:13:16 -0400
+Received: from mail.linux-iscsi.org ([67.23.28.174]:38371 "EHLO
+	linux-iscsi.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754546Ab2EQGNO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 May 2012 02:08:09 -0400
-Date: Wed, 16 May 2012 23:08:03 -0700
-From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-To: "Zhang, Sonic" <Sonic.Zhang@analog.com>
-Cc: "linux-input@vger.kernel.org" <linux-input@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        "uclinux-dist-devel@blackfin.uclinux.org" 
-	<uclinux-dist-devel@blackfin.uclinux.org>,
-        Bob Liu <lliubbo@gmail.com>
-Subject: Re: [PATCH] input: rotary: Init wake according to platform pm_wakeup
- flag.
-Message-ID: <20120517060803.GA24648@core.coreip.homeip.net>
-References: <1337157383-13631-1-git-send-email-sonic.zhang@analog.com>
- <20120516183038.GA14471@core.coreip.homeip.net>
- <DB904C5425BA6F4E8424B3B51A1414D16F64F84E68@NWD2CMBX1.ad.analog.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <DB904C5425BA6F4E8424B3B51A1414D16F64F84E68@NWD2CMBX1.ad.analog.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Thu, 17 May 2012 02:13:14 -0400
+Subject: Re: [PATCH] V2: target: Handle ATA_PASS_THROUGH_16 passthrough
+From: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
+To: mc@linux.vnet.ibm.com
+Cc: James Bottomley <James.Bottomley@hansenpartnership.com>,
+        target-devel@vger.kernel.org, linux-scsi@vger.kernel.org,
+        linux-kernel@vger.kernel.org,
+        Stefan Hajnoczi <stefanha@linux.vnet.ibm.com>
+In-Reply-To: <1337224486.18429.14.camel@mengcong>
+References: <1337146409.18429.11.camel@mengcong>
+	 <1337153889.2985.5.camel@dabdike.int.hansenpartnership.com>
+	 <1337224486.18429.14.camel@mengcong>
+Content-Type: text/plain; charset="UTF-8"
+Date: Wed, 16 May 2012 23:13:11 -0700
+Message-ID: <1337235191.32217.150.camel@haakon2.linux-iscsi.org>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, May 16, 2012 at 10:58:00PM -0400, Zhang, Sonic wrote:
-> Hi Dmitry,
+On Thu, 2012-05-17 at 11:14 +0800, mengcong wrote:
+> The cdrecord uses ATA_PASS_THROUGH_16 command while burning CDs
+> with a SATA CD-ROM. This patch adds support to it so that PSCSI 
+> CD-ROM passthrough works with the cdrecord.
 > 
+> Signed-off-by: Cong Meng <mc@linux.vnet.ibm.com>
+> ---
+>  drivers/target/target_core_transport.c |   30 ++++++++++++++++++++++++++++++
+>  1 files changed, 30 insertions(+), 0 deletions(-)
 > 
-> >-----Original Message-----
-> >From: Dmitry Torokhov [mailto:dmitry.torokhov@gmail.com]
-> >Sent: Thursday, May 17, 2012 2:31 AM
-> >To: Zhang, Sonic
-> >Cc: linux-input@vger.kernel.org; LKML; uclinux-dist-devel@blackfin.uclinux.org
-> >Subject: Re: [PATCH] input: rotary: Init wake according to platform pm_wakeup
-> >flag.
-> >
-> >Hi Sonic,
-> >
-> >On Wed, May 16, 2012 at 04:36:23PM +0800, sonic.zhang@analog.com wrote:
-> >> From: Sonic Zhang <sonic.zhang@analog.com>
-> >>
-> >> Rotary can't be used as a wakeup source in all Blackfin processors.
-> >>
-> >> Signed-off-by: Sonic Zhang <sonic.zhang@analog.com>
-> >> ---
-> >>  drivers/input/misc/bfin_rotary.c |    2 +-
-> >>  1 files changed, 1 insertions(+), 1 deletions(-)
-> >>
-> >> diff --git a/drivers/input/misc/bfin_rotary.c b/drivers/input/misc/bfin_rotary.c
-> >> index 1c4146f..bb1971c 100644
-> >> --- a/drivers/input/misc/bfin_rotary.c
-> >> +++ b/drivers/input/misc/bfin_rotary.c
-> >> @@ -182,7 +182,7 @@ static int __devinit bfin_rotary_probe(struct
-> >platform_device *pdev)
-> >>      bfin_write_CNT_CONFIG(bfin_read_CNT_CONFIG() | CNTE);
-> >>
-> >>      platform_set_drvdata(pdev, rotary);
-> >> -    device_init_wakeup(&pdev->dev, 1);
-> >> +    device_init_wakeup(&pdev->dev, pdata->pm_wakeup);
-> >
-> >I do not see pm_wakeup in bfin_rotary_platform_data.
-> 
-> The patch against the bfin_rotary.h under blackfin architecture folder will be sent out soon by Bob Liu.
 
-This split makes no sense - if I apply your patch to my tree it menas
-that my tree will be broken on blackfin architecture until blackfin arch
-gets pulled into mainline and I do next merge (around 3.5-rc3??). Please
-combine both patches and get both pieces applied at the same time.
+Ok, I've added the extra !passthrough check to enforce pSCSI backends
+only usage + /* ... */ style comments changes mentioned as feedback you
+missed in the last mail.  (That's OK this time, but please don't get
+into the habit of ignoring patch feedback..)
 
-Thanks.
+So committed into lio-core.git, and queuing shortly into
+target-pending/for-next to be picked up for tomorrow's linux-next build.
 
--- 
-Dmitry
+Thanks for your patch MC!
+
+--nab
+
+> diff --git a/drivers/target/target_core_transport.c b/drivers/target/target_core_transport.c
+> index 2d75c29..25e0fc0 100644
+> --- a/drivers/target/target_core_transport.c
+> +++ b/drivers/target/target_core_transport.c
+> @@ -2926,6 +2926,36 @@ static int transport_generic_cmd_sequencer(
+>  		size = (cdb[7] << 8) | cdb[8];
+>  		cmd->se_cmd_flags |= SCF_SCSI_CONTROL_SG_IO_CDB;
+>  		break;
+> +	case ATA_16:
+> +		// T_LENGTH
+> +		switch (cdb[2] & 0x3) {
+> +		case 0x0:
+> +			sectors = 0;
+> +			break;
+> +		case 0x1:
+> +			sectors = (((cdb[1] & 0x1) ? cdb[3] : 0) << 8) | cdb[4];
+> +			break;
+> +		case 0x2:
+> +			sectors = (((cdb[1] & 0x1) ? cdb[5] : 0) << 8) | cdb[6];
+> +			break;
+> +		case 0x3:
+> +			pr_err("T_LENGTH=0x3 not supported\n");
+> +			goto out_invalid_cdb_field;
+> +			break;
+> +		}
+> +		
+> +		// BYTE_BLOCK
+> +		if (cdb[2] & 0x4) {
+> +			// BLOCK
+> +			// T_TYPE: 512 or sector
+> +			size = sectors * ((cdb[2] & 0x10) ? 
+> +				dev->se_sub_dev->se_dev_attrib.block_size : 512);
+> +		} else {
+> +			// BYTE
+> +			size = sectors;
+> +		}
+> +		cmd->se_cmd_flags |= SCF_SCSI_CONTROL_SG_IO_CDB;
+> +		break;
+>  	default:
+>  		pr_warn("TARGET_CORE[%s]: Unsupported SCSI Opcode"
+>  			" 0x%02x, sending CHECK_CONDITION.\n",
+
+
