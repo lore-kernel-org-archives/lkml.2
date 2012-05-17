@@ -1,53 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S967210Ab2EQP2s (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 May 2012 11:28:48 -0400
-Received: from e9.ny.us.ibm.com ([32.97.182.139]:42117 "EHLO e9.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S967134Ab2EQP2q (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 May 2012 11:28:46 -0400
-Subject: Re: [V2 PATCH 2/9] macvtap: zerocopy: fix truesize underestimation
-From: Shirley Ma <mashirle@us.ibm.com>
-To: Jason Wang <jasowang@redhat.com>
-Cc: eric.dumazet@gmail.com, mst@redhat.com, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, ebiederm@xmission.com,
-        davem@davemloft.net
-In-Reply-To: <4FB469A1.3040507@redhat.com>
-References: <20120502033901.11782.13157.stgit@amd-6168-8-1.englab.nay.redhat.com>
-	 <20120502034144.11782.88947.stgit@amd-6168-8-1.englab.nay.redhat.com>
-	 <1337102809.8220.10.camel@oc3660625478.ibm.com>
-	 <4FB3192E.4030803@redhat.com>
-	 <1337180585.10741.6.camel@oc3660625478.ibm.com>
-	 <4FB469A1.3040507@redhat.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Thu, 17 May 2012 08:28:32 -0700
-Message-ID: <1337268512.10741.53.camel@oc3660625478.ibm.com>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 (2.28.3-24.el6) 
-Content-Transfer-Encoding: 7bit
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 12051715-7182-0000-0000-0000018B6A4E
+	id S966844Ab2EQP24 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 May 2012 11:28:56 -0400
+Received: from mail-lb0-f174.google.com ([209.85.217.174]:62979 "EHLO
+	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S967056Ab2EQP2x (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 17 May 2012 11:28:53 -0400
+MIME-Version: 1.0
+Date: Thu, 17 May 2012 23:28:51 +0800
+Message-ID: <CA++uP6MrvbaaBg3iCZDwYFTQdujPHaKYhAC5FFt+r9M_J-AJ_Q@mail.gmail.com>
+Subject: a volatile related bug in kernel/timer.c ?
+From: KwongYuan Wong <wong.kwongyuan@gmail.com>
+To: linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2012-05-17 at 10:59 +0800, Jason Wang wrote:
-> Didn't see how this affact skb->len. And for truesize, I think they
-> are 
-> different, when the offset were not zero, the data in this vector
-> were 
-> divided into two parts. First part is copied into skb directly, and
-> the 
-> second were pinned from a whole userspace page by
-> get_user_pages_fast(), 
-> so we need count the whole page to the socket limit to prevent evil 
-> application. 
+Hi All,
 
-What I meant that the code for skb->truesize has double added the first
-offset if any left from that vector (partically copied into skb
-directly, and then count pagesize which includes the offset (truesize +=
-PAGE_SIZE)).
+  currently, I am working on a private mips-like chip, and I came
+across the following senario:
 
-Thanks
-Shirley
+  in the function "del_timer" in kernel/timer.c, there is the following code
 
+954  if (timer_pending(timer)) {
+955    base = lock_timer_base(timer, &flags);
+956    if (timer_pending(timer)) {
+
+
+suppose timer_pending(timer) check in line 954 is A, and in line 956 is B.
+
+because the timer_pending(timer) check is very simple, so the result
+may be saved in a register, and that register is reused
+by both A and B.  While this should be wrong? the check at B should
+
+reload the value from memory instead of using previous
+result kept in register,  because lock_timer_base may have side-effect
+which change the result of time_pending?
+
+so I guess a barrier() is needed, so that the code should be the following?
+
+if (timer_pending(timer)) {
+  base = lock_timer_base(timer, &flags);
+  barrier();
+  if (timer_pending(timer)) {
+
+
+in my chip, the generated assembly is like the following:
+( the function "lock_timer_base" in inlined also)
+
+1017 del_timer:
+1018         .set    noreorder
+1019         .set    nomacro
+1020
+1021         lw    $5,0($4)
+1022         addu  $3,$0,$0
+1023         beq   $5,$0,.L121            <=== $5 is the value of the
+
+first "timer_pending(timer)"
+1024         nop
+1025
+1026         lw    $3,20($4)
+1027         addiu $2,$0,-2
+
+1028         and   $6,$3,$2
+1029         beq   $6,$0,.L122
+1030         nop
+1031
+1032 .L125:
+1033         .set push ; .set opportunistic
+1034  # 69 "include/asm/irqflags.h" 1
+1035         __raw_local_irq_save $7
+1036  # 0 "" 2
+1037         .set pop
+1038         addu  $3,$0,$0
+1039         beq   $5,$0,.L124             <=== in the second check,
+it's reused,
+                                                                   but
+it should not, $5 should be updated from memory?
+1040         nop
+
+I am a compiler engineer, a newbie in kernel,  please feel free to
+point out if there is anything wrong
+
+thanks very much
+
+---
+Warmest, regards,
+WANG.Jiong
