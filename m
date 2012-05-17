@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933496Ab2EQQmr (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 May 2012 12:42:47 -0400
-Received: from mail.windriver.com ([147.11.1.11]:40054 "EHLO
+	id S933503Ab2EQQnB (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 May 2012 12:43:01 -0400
+Received: from mail.windriver.com ([147.11.1.11]:40320 "EHLO
 	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933414Ab2EQQlc (ORCPT
+	with ESMTP id S933449Ab2EQQmp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 May 2012 12:41:32 -0400
+	Thu, 17 May 2012 12:42:45 -0400
 From: Paul Gortmaker <paul.gortmaker@windriver.com>
 To: linux-kernel@vger.kernel.org
 Cc: JBottomley@parallels.com, Paul Gortmaker <paul.gortmaker@windriver.com>,
-        "David S. Miller" <davem@davemloft.net>,
-        James Bottomley <JBottomley@parallels.com>, netdev@vger.kernel.org
-Subject: [PATCH 2/5] drivers/net: delete all code/drivers depending on CONFIG_MCA
-Date: Thu, 17 May 2012 12:40:38 -0400
-Message-Id: <1337272841-25931-3-git-send-email-paul.gortmaker@windriver.com>
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        James Bottomley <JBottomley@parallels.com>, x86@kernel.org
+Subject: [PATCH 5/5] MCA: delete all remaining traces of microchannel bus support.
+Date: Thu, 17 May 2012 12:40:41 -0400
+Message-Id: <1337272841-25931-6-git-send-email-paul.gortmaker@windriver.com>
 X-Mailer: git-send-email 1.7.9.1
 In-Reply-To: <1337272841-25931-1-git-send-email-paul.gortmaker@windriver.com>
 References: <1337272841-25931-1-git-send-email-paul.gortmaker@windriver.com>
@@ -22,1054 +23,626 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The support for CONFIG_MCA is being removed, since the 20
-year old hardware simply isn't capable of meeting today's
-software demands on CPU and memory resources.
+Hardware with MCA bus is limited to 386 and 486 class machines
+that are now 20+ years old and typically with less than 32MB
+of memory.  A quick search on the internet, and you see that
+even the MCA hobbyist/enthusiast community has lost interest
+in the early 2000 era and never really even moved ahead from
+the 2.4 kernels to the 2.6 series.
 
-This commit removes any MCA specific net drivers, and removes
-any MCA specific probe/support code from drivers that were
-doing a dual ISA/MCA role.
+This deletes anything remaining related to CONFIG_MCA from core
+kernel code and from the x86 architecture.  There is no point in
+carrying this any further into the future.
 
-Cc: "David S. Miller" <davem@davemloft.net>
+One complication to watch for is inadvertently scooping up
+stuff relating to machine check, since there is overlap in
+the TLA name space (e.g. arch/x86/boot/mca.c).
+
+Cc: Thomas Gleixner <tglx@linutronix.de>
+Cc: Ingo Molnar <mingo@redhat.com>
+Cc: "H. Peter Anvin" <hpa@zytor.com>
 Cc: James Bottomley <JBottomley@Parallels.com>
-Cc: netdev@vger.kernel.org
+Cc: x86@kernel.org
 Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
 ---
- Documentation/networking/3c509.txt     |    1 -
- Documentation/networking/fore200e.txt  |    6 +-
- drivers/net/Space.c                    |   16 +-
- drivers/net/ethernet/3com/3c509.c      |  123 +---
- drivers/net/ethernet/8390/Kconfig      |   24 -
- drivers/net/ethernet/8390/Makefile     |    1 -
- drivers/net/ethernet/8390/ne2.c        |  798 ---------------
- drivers/net/ethernet/8390/smc-mca.c    |  575 -----------
- drivers/net/ethernet/amd/depca.c       |  210 +----
- drivers/net/ethernet/fujitsu/at1700.c  |  120 +---
- drivers/net/ethernet/i825xx/3c523.c    | 1312 -------------------------
- drivers/net/ethernet/i825xx/3c523.h    |  355 -------
- drivers/net/ethernet/i825xx/3c527.c    | 1660 --------------------------------
- drivers/net/ethernet/i825xx/Kconfig    |   22 -
- drivers/net/ethernet/i825xx/Makefile   |    2 -
- drivers/net/ethernet/i825xx/eexpress.c |   60 +--
- drivers/net/ethernet/natsemi/Kconfig   |   20 +-
- drivers/net/ethernet/natsemi/Makefile  |    1 -
- 18 files changed, 18 insertions(+), 5288 deletions(-)
- delete mode 100644 drivers/net/ethernet/8390/ne2.c
- delete mode 100644 drivers/net/ethernet/8390/smc-mca.c
- delete mode 100644 drivers/net/ethernet/i825xx/3c523.c
- delete mode 100644 drivers/net/ethernet/i825xx/3c523.h
- delete mode 100644 drivers/net/ethernet/i825xx/3c527.c
+ Documentation/00-INDEX                |    2 -
+ Documentation/DocBook/Makefile        |    2 +-
+ Documentation/DocBook/kernel-api.tmpl |   13 -
+ Documentation/DocBook/mcabook.tmpl    |  107 --------
+ Documentation/devices.txt             |    8 +-
+ Documentation/eisa.txt                |    2 +-
+ Documentation/kernel-parameters.txt   |    1 -
+ Documentation/mca.txt                 |  313 ----------------------
+ MAINTAINERS                           |   13 -
+ arch/frv/include/asm/processor.h      |    1 -
+ arch/x86/Kconfig                      |   10 -
+ arch/x86/include/asm/mca.h            |   43 ---
+ arch/x86/include/asm/mca_dma.h        |  201 --------------
+ arch/x86/include/asm/mpspec.h         |    2 +-
+ arch/x86/include/asm/mpspec_def.h     |    3 +-
+ arch/x86/kernel/Makefile              |    1 -
+ arch/x86/kernel/acpi/boot.c           |    2 +-
+ arch/x86/kernel/apic/io_apic.c        |   17 +-
+ arch/x86/kernel/mca_32.c              |  476 ---------------------------------
+ arch/x86/kernel/mpparse.c             |   11 +-
+ arch/x86/kernel/nmi.c                 |   12 -
+ arch/x86/kernel/setup.c               |    8 -
+ arch/x86/kernel/time.c                |    6 -
+ arch/x86/kernel/traps.c               |    4 -
+ drivers/Makefile                      |    1 -
+ drivers/mca/Kconfig                   |   14 -
+ drivers/mca/Makefile                  |    7 -
+ drivers/mca/mca-bus.c                 |  169 ------------
+ drivers/mca/mca-device.c              |  218 ---------------
+ drivers/mca/mca-driver.c              |   63 -----
+ drivers/mca/mca-legacy.c              |  329 -----------------------
+ drivers/mca/mca-proc.c                |  249 -----------------
+ drivers/message/i2o/i2o_proc.c        |   13 -
+ include/linux/i2o-dev.h               |    2 +-
+ include/linux/mca-legacy.h            |   66 -----
+ include/linux/mca.h                   |  148 ----------
+ scripts/kconfig/mconf.c               |    2 +-
+ scripts/kconfig/nconf.c               |    2 +-
+ 38 files changed, 15 insertions(+), 2526 deletions(-)
+ delete mode 100644 Documentation/DocBook/mcabook.tmpl
+ delete mode 100644 Documentation/mca.txt
+ delete mode 100644 arch/x86/include/asm/mca.h
+ delete mode 100644 arch/x86/include/asm/mca_dma.h
+ delete mode 100644 arch/x86/kernel/mca_32.c
+ delete mode 100644 drivers/mca/Kconfig
+ delete mode 100644 drivers/mca/Makefile
+ delete mode 100644 drivers/mca/mca-bus.c
+ delete mode 100644 drivers/mca/mca-device.c
+ delete mode 100644 drivers/mca/mca-driver.c
+ delete mode 100644 drivers/mca/mca-legacy.c
+ delete mode 100644 drivers/mca/mca-proc.c
+ delete mode 100644 include/linux/mca-legacy.h
+ delete mode 100644 include/linux/mca.h
 
-diff --git a/Documentation/networking/3c509.txt b/Documentation/networking/3c509.txt
-index dcc9eaf..fbf722e 100644
---- a/Documentation/networking/3c509.txt
-+++ b/Documentation/networking/3c509.txt
-@@ -25,7 +25,6 @@ models:
-   3c509B (later revision of the ISA card; supports full-duplex)
-   3c589 (PCMCIA)
-   3c589B (later revision of the 3c589; supports full-duplex)
--  3c529 (MCA)
-   3c579 (EISA)
+diff --git a/Documentation/00-INDEX b/Documentation/00-INDEX
+index 2214f12..49c0513 100644
+--- a/Documentation/00-INDEX
++++ b/Documentation/00-INDEX
+@@ -218,8 +218,6 @@ m68k/
+ 	- directory with info about Linux on Motorola 68k architecture.
+ magic-number.txt
+ 	- list of magic numbers used to mark/protect kernel data structures.
+-mca.txt
+-	- info on supporting Micro Channel Architecture (e.g. PS/2) systems.
+ md.txt
+ 	- info on boot arguments for the multiple devices driver.
+ memory-barriers.txt
+diff --git a/Documentation/DocBook/Makefile b/Documentation/DocBook/Makefile
+index 66725a3..bc3d9f8 100644
+--- a/Documentation/DocBook/Makefile
++++ b/Documentation/DocBook/Makefile
+@@ -6,7 +6,7 @@
+ # To add a new book the only step required is to add the book to the
+ # list of DOCBOOKS.
  
- Large portions of this documentation were heavily borrowed from the guide
-diff --git a/Documentation/networking/fore200e.txt b/Documentation/networking/fore200e.txt
-index f648eb2..d52af53 100644
---- a/Documentation/networking/fore200e.txt
-+++ b/Documentation/networking/fore200e.txt
-@@ -11,12 +11,10 @@ i386, alpha (untested), powerpc, sparc and sparc64 archs.
+-DOCBOOKS := z8530book.xml mcabook.xml device-drivers.xml \
++DOCBOOKS := z8530book.xml device-drivers.xml \
+ 	    kernel-hacking.xml kernel-locking.xml deviceiobook.xml \
+ 	    writing_usb_driver.xml networking.xml \
+ 	    kernel-api.xml filesystems.xml lsm.xml usb.xml kgdb.xml \
+diff --git a/Documentation/DocBook/kernel-api.tmpl b/Documentation/DocBook/kernel-api.tmpl
+index 7160652..00687ee 100644
+--- a/Documentation/DocBook/kernel-api.tmpl
++++ b/Documentation/DocBook/kernel-api.tmpl
+@@ -212,19 +212,6 @@ X!Edrivers/pci/hotplug.c
+      <sect1><title>PCI Hotplug Support Library</title>
+ !Edrivers/pci/hotplug/pci_hotplug_core.c
+      </sect1>
+-     <sect1><title>MCA Architecture</title>
+-	<sect2><title>MCA Device Functions</title>
+-           <para>
+-              Refer to the file arch/x86/kernel/mca_32.c for more information.
+-           </para>
+-<!-- FIXME: Removed for now since no structured comments in source
+-X!Earch/x86/kernel/mca_32.c
+--->
+-	</sect2>
+-	<sect2><title>MCA Bus DMA</title>
+-!Iarch/x86/include/asm/mca_dma.h
+-	</sect2>
+-     </sect1>
+   </chapter>
  
- The intent is to enable the use of different models of FORE adapters at the
- same time, by hosts that have several bus interfaces (such as PCI+SBUS,
--PCI+MCA or PCI+EISA).
-+or PCI+EISA).
+   <chapter id="firmware">
+diff --git a/Documentation/DocBook/mcabook.tmpl b/Documentation/DocBook/mcabook.tmpl
+deleted file mode 100644
+index 467ccac..0000000
+diff --git a/Documentation/devices.txt b/Documentation/devices.txt
+index 0038318..c162be1 100644
+--- a/Documentation/devices.txt
++++ b/Documentation/devices.txt
+@@ -846,13 +846,7 @@ Your cooperation is appreciated.
+ 		    ...
+ 		 31 = /dev/tap15	16th Ethertap device
  
- Only PCI and SBUS devices are currently supported by the driver, but support
--for other bus interfaces such as EISA should not be too hard to add (this may
--be more tricky for the MCA bus, though, as FORE made some MCA-specific
--modifications to the adapter's AALI interface).
-+for other bus interfaces such as EISA should not be too hard to add.
+- 36 block	MCA ESDI hard disk
+-		  0 = /dev/eda		First ESDI disk whole disk
+-		 64 = /dev/edb		Second ESDI disk whole disk
+-		    ...
+-
+-		Partitions are handled in the same way as IDE disks
+-		(see major number 3).
++ 36 block	OBSOLETE (was MCA ESDI hard disk)
  
+  37 char	IDE tape
+ 		  0 = /dev/ht0		First IDE tape
+diff --git a/Documentation/eisa.txt b/Documentation/eisa.txt
+index 38cf0c7..a55e491 100644
+--- a/Documentation/eisa.txt
++++ b/Documentation/eisa.txt
+@@ -179,7 +179,7 @@ CONFIG_ALPHA_JENSEN or CONFIG_EISA_VLB_PRIMING are set.
  
- Firmware Copyright Notice
-diff --git a/drivers/net/Space.c b/drivers/net/Space.c
-index 486e2dc..e3f0fac 100644
---- a/drivers/net/Space.c
-+++ b/drivers/net/Space.c
-@@ -133,22 +133,9 @@ static struct devprobe2 eisa_probes[] __initdata = {
- 	{NULL, 0},
+ Converting an EISA driver to the new API mostly involves *deleting*
+ code (since probing is now in the core EISA code). Unfortunately, most
+-drivers share their probing routine between ISA, MCA and EISA. Special
++drivers share their probing routine between ISA, and EISA. Special
+ care must be taken when ripping out the EISA code, so other busses
+ won't suffer from these surgical strikes...
+ 
+diff --git a/Documentation/kernel-parameters.txt b/Documentation/kernel-parameters.txt
+index c1601e5..38cad53 100644
+--- a/Documentation/kernel-parameters.txt
++++ b/Documentation/kernel-parameters.txt
+@@ -70,7 +70,6 @@ parameter is applicable:
+ 	M68k	M68k architecture is enabled.
+ 			These options have more detailed description inside of
+ 			Documentation/m68k/kernel-options.txt.
+-	MCA	MCA bus support is enabled.
+ 	MDA	MDA console support is enabled.
+ 	MIPS	MIPS architecture is enabled.
+ 	MOUSE	Appropriate mouse support is enabled.
+diff --git a/Documentation/mca.txt b/Documentation/mca.txt
+deleted file mode 100644
+index dfd130c..0000000
+diff --git a/MAINTAINERS b/MAINTAINERS
+index 887c965..469fc46 100644
+--- a/MAINTAINERS
++++ b/MAINTAINERS
+@@ -3317,12 +3317,6 @@ T:	git git://git.kernel.org/pub/scm/linux/kernel/git/aegl/linux.git
+ S:	Maintained
+ F:	arch/ia64/
+ 
+-IBM MCA SCSI SUBSYSTEM DRIVER
+-M:	Michael Lang <langa2@kph.uni-mainz.de>
+-W:	http://www.uni-mainz.de/~langm000/linux.html
+-S:	Maintained
+-F:	drivers/scsi/ibmmca.c
+-
+ IBM Power Linux RAID adapter
+ M:	Brian King <brking@us.ibm.com>
+ S:	Supported
+@@ -4418,13 +4412,6 @@ T:	git git://git.monstr.eu/linux-2.6-microblaze.git
+ S:	Supported
+ F:	arch/microblaze/
+ 
+-MICROCHANNEL ARCHITECTURE (MCA)
+-M:	James Bottomley <James.Bottomley@HansenPartnership.com>
+-S:	Maintained
+-F:	Documentation/mca.txt
+-F:	drivers/mca/
+-F:	include/linux/mca*
+-
+ MICROTEK X6 SCANNER
+ M:	Oliver Neukum <oliver@neukum.name>
+ S:	Maintained
+diff --git a/arch/frv/include/asm/processor.h b/arch/frv/include/asm/processor.h
+index 81c2e27..4a53811 100644
+--- a/arch/frv/include/asm/processor.h
++++ b/arch/frv/include/asm/processor.h
+@@ -54,7 +54,6 @@ extern struct cpuinfo_frv __nongprelbss boot_cpu_data;
+  * Bus types
+  */
+ #define EISA_bus 0
+-#define MCA_bus 0
+ 
+ struct thread_struct {
+ 	struct pt_regs		*frame;		/* [GR28] exception frame ptr for this thread */
+diff --git a/arch/x86/Kconfig b/arch/x86/Kconfig
+index 1d14cc6..3c65147 100644
+--- a/arch/x86/Kconfig
++++ b/arch/x86/Kconfig
+@@ -2023,16 +2023,6 @@ config EISA
+ 
+ source "drivers/eisa/Kconfig"
+ 
+-config MCA
+-	bool "MCA support"
+-	---help---
+-	  MicroChannel Architecture is found in some IBM PS/2 machines and
+-	  laptops.  It is a bus system similar to PCI or ISA. See
+-	  <file:Documentation/mca.txt> (and especially the web page given
+-	  there) before attempting to build an MCA bus kernel.
+-
+-source "drivers/mca/Kconfig"
+-
+ config SCx200
+ 	tristate "NatSemi SCx200 support"
+ 	---help---
+diff --git a/arch/x86/include/asm/mca.h b/arch/x86/include/asm/mca.h
+deleted file mode 100644
+index eedbb6c..0000000
+diff --git a/arch/x86/include/asm/mca_dma.h b/arch/x86/include/asm/mca_dma.h
+deleted file mode 100644
+index 45271ae..0000000
+diff --git a/arch/x86/include/asm/mpspec.h b/arch/x86/include/asm/mpspec.h
+index 9c7d95f..3e2f42a 100644
+--- a/arch/x86/include/asm/mpspec.h
++++ b/arch/x86/include/asm/mpspec.h
+@@ -40,7 +40,7 @@ extern int quad_local_to_mp_bus_id [NR_CPUS/4][4];
+ 
+ #endif /* CONFIG_X86_64 */
+ 
+-#if defined(CONFIG_MCA) || defined(CONFIG_EISA)
++#ifdef CONFIG_EISA
+ extern int mp_bus_id_to_type[MAX_MP_BUSSES];
+ #endif
+ 
+diff --git a/arch/x86/include/asm/mpspec_def.h b/arch/x86/include/asm/mpspec_def.h
+index c0a955a..b31f8c0 100644
+--- a/arch/x86/include/asm/mpspec_def.h
++++ b/arch/x86/include/asm/mpspec_def.h
+@@ -84,7 +84,7 @@ struct mpc_bus {
+ #define BUSTYPE_EISA	"EISA"
+ #define BUSTYPE_ISA	"ISA"
+ #define BUSTYPE_INTERN	"INTERN"	/* Internal BUS */
+-#define BUSTYPE_MCA	"MCA"
++#define BUSTYPE_MCA	"MCA"		/* Obsolete */
+ #define BUSTYPE_VL	"VL"		/* Local bus */
+ #define BUSTYPE_PCI	"PCI"
+ #define BUSTYPE_PCMCIA	"PCMCIA"
+@@ -169,6 +169,5 @@ enum mp_bustype {
+ 	MP_BUS_ISA = 1,
+ 	MP_BUS_EISA,
+ 	MP_BUS_PCI,
+-	MP_BUS_MCA,
  };
+ #endif /* _ASM_X86_MPSPEC_DEF_H */
+diff --git a/arch/x86/kernel/Makefile b/arch/x86/kernel/Makefile
+index 532d2e0..7d15699 100644
+--- a/arch/x86/kernel/Makefile
++++ b/arch/x86/kernel/Makefile
+@@ -49,7 +49,6 @@ obj-y				+= cpu/
+ obj-y				+= acpi/
+ obj-y				+= reboot.o
+ obj-$(CONFIG_X86_32)		+= reboot_32.o
+-obj-$(CONFIG_MCA)		+= mca_32.o
+ obj-$(CONFIG_X86_MSR)		+= msr.o
+ obj-$(CONFIG_X86_CPUID)		+= cpuid.o
+ obj-$(CONFIG_PCI)		+= early-quirks.o
+diff --git a/arch/x86/kernel/acpi/boot.c b/arch/x86/kernel/acpi/boot.c
+index a415b1f..f564b18 100644
+--- a/arch/x86/kernel/acpi/boot.c
++++ b/arch/x86/kernel/acpi/boot.c
+@@ -990,7 +990,7 @@ void __init mp_config_acpi_legacy_irqs(void)
+ 	int i;
+ 	struct mpc_intsrc mp_irq;
  
--static struct devprobe2 mca_probes[] __initdata = {
--#ifdef CONFIG_NE2_MCA
--	{ne2_probe, 0},
--#endif
--#ifdef CONFIG_ELMC		/* 3c523 */
--	{elmc_probe, 0},
--#endif
--#ifdef CONFIG_ELMC_II		/* 3c527 */
--	{mc32_probe, 0},
--#endif
--	{NULL, 0},
--};
--
+-#if defined (CONFIG_MCA) || defined (CONFIG_EISA)
++#ifdef CONFIG_EISA
+ 	/*
+ 	 * Fabricate the legacy ISA bus (bus #31).
+ 	 */
+diff --git a/arch/x86/kernel/apic/io_apic.c b/arch/x86/kernel/apic/io_apic.c
+index e88300d..675e904 100644
+--- a/arch/x86/kernel/apic/io_apic.c
++++ b/arch/x86/kernel/apic/io_apic.c
+@@ -142,7 +142,7 @@ int mp_irq_entries;
+ /* GSI interrupts */
+ static int nr_irqs_gsi = NR_IRQS_LEGACY;
+ 
+-#if defined (CONFIG_MCA) || defined (CONFIG_EISA)
++#ifdef CONFIG_EISA
+ int mp_bus_id_to_type[MAX_MP_BUSSES];
+ #endif
+ 
+@@ -875,7 +875,7 @@ static int __init find_isa_irq_apic(int irq, int type)
+ 	return -1;
+ }
+ 
+-#if defined(CONFIG_EISA) || defined(CONFIG_MCA)
++#ifdef CONFIG_EISA
  /*
-  * ISA probes that touch addresses < 0x400 (including those that also
-- * look for EISA/PCI/MCA cards in addition to ISA cards).
-+ * look for EISA/PCI cards in addition to ISA cards).
+  * EISA Edge/Level control register, ELCR
   */
- static struct devprobe2 isa_probes[] __initdata = {
- #if defined(CONFIG_HP100) && defined(CONFIG_ISA)	/* ISA, EISA */
-@@ -278,7 +265,6 @@ static void __init ethif_probe2(int unit)
+@@ -912,12 +912,6 @@ static int EISA_ELCR(unsigned int irq)
+ #define default_PCI_trigger(idx)	(1)
+ #define default_PCI_polarity(idx)	(1)
  
- 	(void)(	probe_list2(unit, m68k_probes, base_addr == 0) &&
- 		probe_list2(unit, eisa_probes, base_addr == 0) &&
--		probe_list2(unit, mca_probes, base_addr == 0) &&
- 		probe_list2(unit, isa_probes, base_addr == 0) &&
- 		probe_list2(unit, parport_probes, base_addr == 0));
- }
-diff --git a/drivers/net/ethernet/3com/3c509.c b/drivers/net/ethernet/3com/3c509.c
-index 41719da..1a8eef2 100644
---- a/drivers/net/ethernet/3com/3c509.c
-+++ b/drivers/net/ethernet/3com/3c509.c
-@@ -69,7 +69,6 @@
- #define TX_TIMEOUT  (400*HZ/1000)
- 
- #include <linux/module.h>
--#include <linux/mca.h>
- #include <linux/isa.h>
- #include <linux/pnp.h>
- #include <linux/string.h>
-@@ -102,7 +101,7 @@ static int el3_debug = 2;
- #endif
- 
- /* Used to do a global count of all the cards in the system.  Must be
-- * a global variable so that the mca/eisa probe routines can increment
-+ * a global variable so that the eisa probe routines can increment
-  * it */
- static int el3_cards = 0;
- #define EL3_MAX_CARDS 8
-@@ -163,7 +162,7 @@ enum RxFilter {
-  */
- #define SKB_QUEUE_SIZE	64
- 
--enum el3_cardtype { EL3_ISA, EL3_PNP, EL3_MCA, EL3_EISA };
-+enum el3_cardtype { EL3_ISA, EL3_PNP, EL3_EISA };
- 
- struct el3_private {
- 	spinlock_t lock;
-@@ -505,41 +504,6 @@ static struct eisa_driver el3_eisa_driver = {
- static int eisa_registered;
- #endif
- 
--#ifdef CONFIG_MCA
--static int el3_mca_probe(struct device *dev);
+-/* MCA interrupts are always polarity zero level triggered,
+- * when listed as conforming in the MP table. */
 -
--static short el3_mca_adapter_ids[] __initdata = {
--		0x627c,
--		0x627d,
--		0x62db,
--		0x62f6,
--		0x62f7,
--		0x0000
--};
+-#define default_MCA_trigger(idx)	(1)
+-#define default_MCA_polarity(idx)	default_ISA_polarity(idx)
 -
--static char *el3_mca_adapter_names[] __initdata = {
--		"3Com 3c529 EtherLink III (10base2)",
--		"3Com 3c529 EtherLink III (10baseT)",
--		"3Com 3c529 EtherLink III (test mode)",
--		"3Com 3c529 EtherLink III (TP or coax)",
--		"3Com 3c529 EtherLink III (TP)",
--		NULL
--};
--
--static struct mca_driver el3_mca_driver = {
--		.id_table = el3_mca_adapter_ids,
--		.driver = {
--				.name = "3c529",
--				.bus = &mca_bus_type,
--				.probe = el3_mca_probe,
--				.remove = __devexit_p(el3_device_remove),
--				.suspend = el3_suspend,
--				.resume  = el3_resume,
--		},
--};
--static int mca_registered;
--#endif /* CONFIG_MCA */
--
- static const struct net_device_ops netdev_ops = {
- 	.ndo_open 		= el3_open,
- 	.ndo_stop	 	= el3_close,
-@@ -600,76 +564,6 @@ static void el3_common_remove (struct net_device *dev)
- 	free_netdev (dev);
- }
- 
--#ifdef CONFIG_MCA
--static int __init el3_mca_probe(struct device *device)
--{
--	/* Based on Erik Nygren's (nygren@mit.edu) 3c529 patch,
--	 * heavily modified by Chris Beauregard
--	 * (cpbeaure@csclub.uwaterloo.ca) to support standard MCA
--	 * probing.
--	 *
--	 * redone for multi-card detection by ZP Gu (zpg@castle.net)
--	 * now works as a module */
--
--	short i;
--	int ioaddr, irq, if_port;
--	__be16 phys_addr[3];
--	struct net_device *dev = NULL;
--	u_char pos4, pos5;
--	struct mca_device *mdev = to_mca_device(device);
--	int slot = mdev->slot;
--	int err;
--
--	pos4 = mca_device_read_stored_pos(mdev, 4);
--	pos5 = mca_device_read_stored_pos(mdev, 5);
--
--	ioaddr = ((short)((pos4&0xfc)|0x02)) << 8;
--	irq = pos5 & 0x0f;
--
--
--	pr_info("3c529: found %s at slot %d\n",
--		el3_mca_adapter_names[mdev->index], slot + 1);
--
--	/* claim the slot */
--	strncpy(mdev->name, el3_mca_adapter_names[mdev->index],
--			sizeof(mdev->name));
--	mca_device_set_claim(mdev, 1);
--
--	if_port = pos4 & 0x03;
--
--	irq = mca_device_transform_irq(mdev, irq);
--	ioaddr = mca_device_transform_ioport(mdev, ioaddr);
--	if (el3_debug > 2) {
--		pr_debug("3c529: irq %d  ioaddr 0x%x  ifport %d\n", irq, ioaddr, if_port);
--	}
--	EL3WINDOW(0);
--	for (i = 0; i < 3; i++)
--		phys_addr[i] = htons(read_eeprom(ioaddr, i));
--
--	dev = alloc_etherdev(sizeof (struct el3_private));
--	if (dev == NULL) {
--		release_region(ioaddr, EL3_IO_EXTENT);
--		return -ENOMEM;
--	}
--
--	netdev_boot_setup_check(dev);
--
--	el3_dev_fill(dev, phys_addr, ioaddr, irq, if_port, EL3_MCA);
--	dev_set_drvdata(device, dev);
--	err = el3_common_init(dev);
--
--	if (err) {
--		dev_set_drvdata(device, NULL);
--		free_netdev(dev);
--		return -ENOMEM;
--	}
--
--	el3_devs[el3_cards++] = dev;
--	return 0;
--}
--
--#endif /* CONFIG_MCA */
--
- #ifdef CONFIG_EISA
- static int __init el3_eisa_probe (struct device *device)
+ static int irq_polarity(int idx)
  {
-@@ -1547,11 +1441,6 @@ static int __init el3_init_module(void)
- 	if (!ret)
- 		eisa_registered = 1;
- #endif
--#ifdef CONFIG_MCA
--	ret = mca_register_driver(&el3_mca_driver);
--	if (!ret)
--		mca_registered = 1;
--#endif
- 
- #ifdef CONFIG_PNP
- 	if (pnp_registered)
-@@ -1563,10 +1452,6 @@ static int __init el3_init_module(void)
- 	if (eisa_registered)
- 		ret = 0;
- #endif
--#ifdef CONFIG_MCA
--	if (mca_registered)
--		ret = 0;
--#endif
- 	return ret;
- }
- 
-@@ -1584,10 +1469,6 @@ static void __exit el3_cleanup_module(void)
- 	if (eisa_registered)
- 		eisa_driver_unregister(&el3_eisa_driver);
- #endif
--#ifdef CONFIG_MCA
--	if (mca_registered)
--		mca_unregister_driver(&el3_mca_driver);
--#endif
- }
- 
- module_init (el3_init_module);
-diff --git a/drivers/net/ethernet/8390/Kconfig b/drivers/net/ethernet/8390/Kconfig
-index 910895c..2e53867 100644
---- a/drivers/net/ethernet/8390/Kconfig
-+++ b/drivers/net/ethernet/8390/Kconfig
-@@ -182,18 +182,6 @@ config NE2000
- 	  To compile this driver as a module, choose M here. The module
- 	  will be called ne.
- 
--config NE2_MCA
--	tristate "NE/2 (ne2000 MCA version) support"
--	depends on MCA_LEGACY
--	select CRC32
--	---help---
--	  If you have a network (Ethernet) card of this type, say Y and read
--	  the Ethernet-HOWTO, available from
--	  <http://www.tldp.org/docs.html#howto>.
--
--	  To compile this driver as a module, choose M here. The module
--	  will be called ne2.
--
- config NE2K_PCI
- 	tristate "PCI NE2000 and clones support (see help)"
- 	depends on PCI
-@@ -267,18 +255,6 @@ config STNIC
- 
- 	  If unsure, say N.
- 
--config ULTRAMCA
--	tristate "SMC Ultra MCA support"
--	depends on MCA
--	select CRC32
--	---help---
--	  If you have a network (Ethernet) card of this type and are running
--	  an MCA based system (PS/2), say Y and read the Ethernet-HOWTO,
--	  available from <http://www.tldp.org/docs.html#howto>.
--
--	  To compile this driver as a module, choose M here. The module
--	  will be called smc-mca.
--
- config ULTRA
- 	tristate "SMC Ultra support"
- 	depends on ISA
-diff --git a/drivers/net/ethernet/8390/Makefile b/drivers/net/ethernet/8390/Makefile
-index 3337d7f..d13790b 100644
---- a/drivers/net/ethernet/8390/Makefile
-+++ b/drivers/net/ethernet/8390/Makefile
-@@ -24,6 +24,5 @@ obj-$(CONFIG_PCMCIA_PCNET) += pcnet_cs.o 8390.o
- obj-$(CONFIG_STNIC) += stnic.o 8390.o
- obj-$(CONFIG_ULTRA) += smc-ultra.o 8390.o
- obj-$(CONFIG_ULTRA32) += smc-ultra32.o 8390.o
--obj-$(CONFIG_ULTRAMCA) += smc-mca.o 8390.o
- obj-$(CONFIG_WD80x3) += wd.o 8390.o
- obj-$(CONFIG_ZORRO8390) += zorro8390.o 8390.o
-diff --git a/drivers/net/ethernet/8390/ne2.c b/drivers/net/ethernet/8390/ne2.c
+ 	int bus = mp_irqs[idx].srcbus;
+@@ -975,7 +969,7 @@ static int irq_trigger(int idx)
+ 				trigger = default_ISA_trigger(idx);
+ 			else
+ 				trigger = default_PCI_trigger(idx);
+-#if defined(CONFIG_EISA) || defined(CONFIG_MCA)
++#ifdef CONFIG_EISA
+ 			switch (mp_bus_id_to_type[bus]) {
+ 				case MP_BUS_ISA: /* ISA pin */
+ 				{
+@@ -992,11 +986,6 @@ static int irq_trigger(int idx)
+ 					/* set before the switch */
+ 					break;
+ 				}
+-				case MP_BUS_MCA: /* MCA pin */
+-				{
+-					trigger = default_MCA_trigger(idx);
+-					break;
+-				}
+ 				default:
+ 				{
+ 					printk(KERN_WARNING "broken BIOS!!\n");
+diff --git a/arch/x86/kernel/mca_32.c b/arch/x86/kernel/mca_32.c
 deleted file mode 100644
-index ef85839..0000000
-diff --git a/drivers/net/ethernet/8390/smc-mca.c b/drivers/net/ethernet/8390/smc-mca.c
-deleted file mode 100644
-index 7a68590..0000000
-diff --git a/drivers/net/ethernet/amd/depca.c b/drivers/net/ethernet/amd/depca.c
-index 7f7b99a..c771de7 100644
---- a/drivers/net/ethernet/amd/depca.c
-+++ b/drivers/net/ethernet/amd/depca.c
-@@ -155,23 +155,10 @@
-     2 depca's in a PC).
+index 7eb1e2b..0000000
+diff --git a/arch/x86/kernel/mpparse.c b/arch/x86/kernel/mpparse.c
+index ca470e4..b02d4dd 100644
+--- a/arch/x86/kernel/mpparse.c
++++ b/arch/x86/kernel/mpparse.c
+@@ -97,7 +97,7 @@ static void __init MP_bus_info(struct mpc_bus *m)
  
-     ************************************************************************
--    Support for MCA EtherWORKS cards added 11-3-98.
-+    Support for MCA EtherWORKS cards added 11-3-98. (MCA since deleted)
-     Verified to work with up to 2 DE212 cards in a system (although not
-       fully stress-tested).
+ 	set_bit(m->busid, mp_bus_not_pci);
+ 	if (strncmp(str, BUSTYPE_ISA, sizeof(BUSTYPE_ISA) - 1) == 0) {
+-#if defined(CONFIG_EISA) || defined(CONFIG_MCA)
++#ifdef CONFIG_EISA
+ 		mp_bus_id_to_type[m->busid] = MP_BUS_ISA;
+ #endif
+ 	} else if (strncmp(str, BUSTYPE_PCI, sizeof(BUSTYPE_PCI) - 1) == 0) {
+@@ -105,12 +105,10 @@ static void __init MP_bus_info(struct mpc_bus *m)
+ 			x86_init.mpparse.mpc_oem_pci_bus(m);
  
--    Currently known bugs/limitations:
--
--    Note:  with the MCA stuff as a module, it trusts the MCA configuration,
--           not the command line for IRQ and memory address.  You can
--           specify them if you want, but it will throw your values out.
--           You still have to pass the IO address it was configured as
--           though.
--
--    ************************************************************************
--    TO DO:
--    ------
--
--
-     Revision History
-     ----------------
+ 		clear_bit(m->busid, mp_bus_not_pci);
+-#if defined(CONFIG_EISA) || defined(CONFIG_MCA)
++#ifdef CONFIG_EISA
+ 		mp_bus_id_to_type[m->busid] = MP_BUS_PCI;
+ 	} else if (strncmp(str, BUSTYPE_EISA, sizeof(BUSTYPE_EISA) - 1) == 0) {
+ 		mp_bus_id_to_type[m->busid] = MP_BUS_EISA;
+-	} else if (strncmp(str, BUSTYPE_MCA, sizeof(BUSTYPE_MCA) - 1) == 0) {
+-		mp_bus_id_to_type[m->busid] = MP_BUS_MCA;
+ #endif
+ 	} else
+ 		printk(KERN_WARNING "Unknown bustype %s - ignoring\n", str);
+@@ -368,9 +366,6 @@ static void __init construct_ioapic_table(int mpc_default_type)
+ 	case 3:
+ 		memcpy(bus.bustype, "EISA  ", 6);
+ 		break;
+-	case 4:
+-	case 7:
+-		memcpy(bus.bustype, "MCA   ", 6);
+ 	}
+ 	MP_bus_info(&bus);
+ 	if (mpc_default_type > 4) {
+@@ -623,7 +618,7 @@ void __init default_find_smp_config(void)
+ 		return;
+ 	/*
+ 	 * If it is an SMP machine we should know now, unless the
+-	 * configuration is in an EISA/MCA bus machine with an
++	 * configuration is in an EISA bus machine with an
+ 	 * extended bios data area.
+ 	 *
+ 	 * there is a real-mode segmented pointer pointing to the
+diff --git a/arch/x86/kernel/nmi.c b/arch/x86/kernel/nmi.c
+index 47acaf3..7b3fdfd 100644
+--- a/arch/x86/kernel/nmi.c
++++ b/arch/x86/kernel/nmi.c
+@@ -19,8 +19,6 @@
+ #include <linux/slab.h>
+ #include <linux/export.h>
  
-@@ -261,10 +248,6 @@
- #include <asm/io.h>
- #include <asm/dma.h>
- 
--#ifdef CONFIG_MCA
 -#include <linux/mca.h>
--#endif
 -
- #ifdef CONFIG_EISA
+ #if defined(CONFIG_EDAC)
+ #include <linux/edac.h>
+ #endif
+@@ -282,16 +280,6 @@ unknown_nmi_error(unsigned char reason, struct pt_regs *regs)
+ 
+ 	__this_cpu_add(nmi_stats.unknown, 1);
+ 
+-#ifdef CONFIG_MCA
+-	/*
+-	 * Might actually be able to figure out what the guilty party
+-	 * is:
+-	 */
+-	if (MCA_bus) {
+-		mca_handle_nmi();
+-		return;
+-	}
+-#endif
+ 	pr_emerg("Uhhuh. NMI received for unknown reason %02x on CPU %d.\n",
+ 		 reason, smp_processor_id());
+ 
+diff --git a/arch/x86/kernel/setup.c b/arch/x86/kernel/setup.c
+index 1a29015..8791664 100644
+--- a/arch/x86/kernel/setup.c
++++ b/arch/x86/kernel/setup.c
+@@ -34,7 +34,6 @@
+ #include <linux/memblock.h>
+ #include <linux/seq_file.h>
+ #include <linux/console.h>
+-#include <linux/mca.h>
+ #include <linux/root_dev.h>
+ #include <linux/highmem.h>
+ #include <linux/module.h>
+@@ -179,12 +178,6 @@ struct cpuinfo_x86 new_cpu_data __cpuinitdata = {0, 0, 0, 0, -1, 1, 0, 0, -1};
+ /* common cpu data for all cpus */
+ struct cpuinfo_x86 boot_cpu_data __read_mostly = {0, 0, 0, 0, -1, 1, 0, 0, -1};
+ EXPORT_SYMBOL(boot_cpu_data);
+-static void set_mca_bus(int x)
+-{
+-#ifdef CONFIG_MCA
+-	MCA_bus = x;
+-#endif
+-}
+ 
+ unsigned int def_to_bigsmp;
+ 
+@@ -717,7 +710,6 @@ void __init setup_arch(char **cmdline_p)
+ 	apm_info.bios = boot_params.apm_bios_info;
+ 	ist_info = boot_params.ist_info;
+ 	if (boot_params.sys_desc_table.length != 0) {
+-		set_mca_bus(boot_params.sys_desc_table.table[3] & 0x2);
+ 		machine_id = boot_params.sys_desc_table.table[0];
+ 		machine_submodel_id = boot_params.sys_desc_table.table[1];
+ 		BIOS_revision = boot_params.sys_desc_table.table[2];
+diff --git a/arch/x86/kernel/time.c b/arch/x86/kernel/time.c
+index c6eba2b..24d3c91 100644
+--- a/arch/x86/kernel/time.c
++++ b/arch/x86/kernel/time.c
+@@ -14,7 +14,6 @@
+ #include <linux/i8253.h>
+ #include <linux/time.h>
+ #include <linux/export.h>
+-#include <linux/mca.h>
+ 
+ #include <asm/vsyscall.h>
+ #include <asm/x86_init.h>
+@@ -58,11 +57,6 @@ EXPORT_SYMBOL(profile_pc);
+ static irqreturn_t timer_interrupt(int irq, void *dev_id)
+ {
+ 	global_clock_event->event_handler(global_clock_event);
+-
+-	/* MCA bus quirk: Acknowledge irq0 by setting bit 7 in port 0x61 */
+-	if (MCA_bus)
+-		outb_p(inb_p(0x61)| 0x80, 0x61);
+-
+ 	return IRQ_HANDLED;
+ }
+ 
+diff --git a/arch/x86/kernel/traps.c b/arch/x86/kernel/traps.c
+index ff9281f1..4754f51 100644
+--- a/arch/x86/kernel/traps.c
++++ b/arch/x86/kernel/traps.c
+@@ -37,10 +37,6 @@
  #include <linux/eisa.h>
  #endif
-@@ -360,44 +343,6 @@ static struct eisa_driver depca_eisa_driver = {
- };
+ 
+-#ifdef CONFIG_MCA
+-#include <linux/mca.h>
+-#endif
+-
+ #if defined(CONFIG_EDAC)
+ #include <linux/edac.h>
  #endif
- 
--#ifdef CONFIG_MCA
--/*
--** Adapter ID for the MCA EtherWORKS DE210/212 adapter
--*/
--#define DE210_ID 0x628d
--#define DE212_ID 0x6def
--
--static short depca_mca_adapter_ids[] = {
--	DE210_ID,
--	DE212_ID,
--	0x0000
--};
--
--static char *depca_mca_adapter_name[] = {
--	"DEC EtherWORKS MC Adapter (DE210)",
--	"DEC EtherWORKS MC Adapter (DE212)",
--	NULL
--};
--
--static enum depca_type depca_mca_adapter_type[] = {
--	de210,
--	de212,
--	0
--};
--
--static int depca_mca_probe (struct device *);
--
--static struct mca_driver depca_mca_driver = {
--	.id_table = depca_mca_adapter_ids,
--	.driver   = {
--		.name   = depca_string,
--		.bus    = &mca_bus_type,
--		.probe  = depca_mca_probe,
--		.remove = __devexit_p(depca_device_remove),
--	},
--};
--#endif
--
- static int depca_isa_probe (struct platform_device *);
- 
- static int __devexit depca_isa_remove(struct platform_device *pdev)
-@@ -464,8 +409,7 @@ struct depca_private {
- 	char adapter_name[DEPCA_STRLEN];	/* /proc/ioports string                  */
- 	enum depca_type adapter;		/* Adapter type */
- 	enum {
--                DEPCA_BUS_MCA = 1,
--                DEPCA_BUS_ISA,
-+                DEPCA_BUS_ISA = 1,
-                 DEPCA_BUS_EISA,
-         } depca_bus;	        /* type of bus */
- 	struct depca_init init_block;	/* Shadow Initialization block            */
-@@ -624,12 +568,6 @@ static int __init depca_hw_init (struct net_device *dev, struct device *device)
- 	       dev_name(device), depca_signature[lp->adapter], ioaddr);
- 
- 	switch (lp->depca_bus) {
--#ifdef CONFIG_MCA
--	case DEPCA_BUS_MCA:
--		printk(" (MCA slot %d)", to_mca_device(device)->slot + 1);
--		break;
--#endif
--
- #ifdef CONFIG_EISA
- 	case DEPCA_BUS_EISA:
- 		printk(" (EISA slot %d)", to_eisa_device(device)->slot);
-@@ -661,10 +599,7 @@ static int __init depca_hw_init (struct net_device *dev, struct device *device)
- 	if (nicsr & BUF) {
- 		nicsr &= ~BS;	/* DEPCA RAM in top 32k */
- 		netRAM -= 32;
--
--		/* Only EISA/ISA needs start address to be re-computed */
--		if (lp->depca_bus != DEPCA_BUS_MCA)
--			mem_start += 0x8000;
-+		mem_start += 0x8000;
- 	}
- 
- 	if ((mem_len = (NUM_RX_DESC * (sizeof(struct depca_rx_desc) + RX_BUFF_SZ) + NUM_TX_DESC * (sizeof(struct depca_tx_desc) + TX_BUFF_SZ) + sizeof(struct depca_init)))
-@@ -1325,130 +1260,6 @@ static int __init depca_common_init (u_long ioaddr, struct net_device **devp)
- 	return status;
- }
- 
--#ifdef CONFIG_MCA
--/*
--** Microchannel bus I/O device probe
--*/
--static int __init depca_mca_probe(struct device *device)
--{
--	unsigned char pos[2];
--	unsigned char where;
--	unsigned long iobase, mem_start;
--	int irq, err;
--	struct mca_device *mdev = to_mca_device (device);
--	struct net_device *dev;
--	struct depca_private *lp;
--
--	/*
--	** Search for the adapter.  If an address has been given, search
--	** specifically for the card at that address.  Otherwise find the
--	** first card in the system.
--	*/
--
--	pos[0] = mca_device_read_stored_pos(mdev, 2);
--	pos[1] = mca_device_read_stored_pos(mdev, 3);
--
--	/*
--	** IO of card is handled by bits 1 and 2 of pos0.
--	**
--	**    bit2 bit1    IO
--	**       0    0    0x2c00
--	**       0    1    0x2c10
--	**       1    0    0x2c20
--	**       1    1    0x2c30
--	*/
--	where = (pos[0] & 6) >> 1;
--	iobase = 0x2c00 + (0x10 * where);
--
--	/*
--	** Found the adapter we were looking for. Now start setting it up.
--	**
--	** First work on decoding the IRQ.  It's stored in the lower 4 bits
--	** of pos1.  Bits are as follows (from the ADF file):
--	**
--	**      Bits
--	**   3   2   1   0    IRQ
--	**   --------------------
--	**   0   0   1   0     5
--	**   0   0   0   1     9
--	**   0   1   0   0    10
--	**   1   0   0   0    11
--	*/
--	where = pos[1] & 0x0f;
--	switch (where) {
--	case 1:
--		irq = 9;
--		break;
--	case 2:
--		irq = 5;
--		break;
--	case 4:
--		irq = 10;
--		break;
--	case 8:
--		irq = 11;
--		break;
--	default:
--		printk("%s: mca_probe IRQ error.  You should never get here (%d).\n", mdev->name, where);
--		return -EINVAL;
--	}
--
--	/*
--	** Shared memory address of adapter is stored in bits 3-5 of pos0.
--	** They are mapped as follows:
--	**
--	**    Bit
--	**   5  4  3       Memory Addresses
--	**   0  0  0       C0000-CFFFF (64K)
--	**   1  0  0       C8000-CFFFF (32K)
--	**   0  0  1       D0000-DFFFF (64K)
--	**   1  0  1       D8000-DFFFF (32K)
--	**   0  1  0       E0000-EFFFF (64K)
--	**   1  1  0       E8000-EFFFF (32K)
--	*/
--	where = (pos[0] & 0x18) >> 3;
--	mem_start = 0xc0000 + (where * 0x10000);
--	if (pos[0] & 0x20) {
--		mem_start += 0x8000;
--	}
--
--	/* claim the slot */
--	strncpy(mdev->name, depca_mca_adapter_name[mdev->index],
--		sizeof(mdev->name));
--	mca_device_set_claim(mdev, 1);
--
--        /*
--	** Get everything allocated and initialized...  (almost just
--	** like the ISA and EISA probes)
--	*/
--	irq = mca_device_transform_irq(mdev, irq);
--	iobase = mca_device_transform_ioport(mdev, iobase);
--
--	if ((err = depca_common_init (iobase, &dev)))
--		goto out_unclaim;
--
--	dev->irq = irq;
--	dev->base_addr = iobase;
--	lp = netdev_priv(dev);
--	lp->depca_bus = DEPCA_BUS_MCA;
--	lp->adapter = depca_mca_adapter_type[mdev->index];
--	lp->mem_start = mem_start;
--
--	if ((err = depca_hw_init(dev, device)))
--		goto out_free;
--
--	return 0;
--
-- out_free:
--	free_netdev (dev);
--	release_region (iobase, DEPCA_TOTAL_SIZE);
-- out_unclaim:
--	mca_device_set_claim(mdev, 0);
--
--	return err;
--}
--#endif
--
- /*
- ** ISA bus I/O device probe
- */
-@@ -2059,15 +1870,10 @@ static int __init depca_module_init (void)
- {
- 	int err = 0;
- 
--#ifdef CONFIG_MCA
--	err = mca_register_driver(&depca_mca_driver);
--	if (err)
--		goto err;
--#endif
- #ifdef CONFIG_EISA
- 	err = eisa_driver_register(&depca_eisa_driver);
- 	if (err)
--		goto err_mca;
-+		goto err_eisa;
- #endif
- 	err = platform_driver_register(&depca_isa_driver);
- 	if (err)
-@@ -2079,11 +1885,6 @@ static int __init depca_module_init (void)
- err_eisa:
- #ifdef CONFIG_EISA
- 	eisa_driver_unregister(&depca_eisa_driver);
--err_mca:
--#endif
--#ifdef CONFIG_MCA
--	mca_unregister_driver(&depca_mca_driver);
--err:
- #endif
- 	return err;
- }
-@@ -2091,9 +1892,6 @@ err:
- static void __exit depca_module_exit (void)
- {
- 	int i;
--#ifdef CONFIG_MCA
--        mca_unregister_driver (&depca_mca_driver);
--#endif
- #ifdef CONFIG_EISA
-         eisa_driver_unregister (&depca_eisa_driver);
- #endif
-diff --git a/drivers/net/ethernet/fujitsu/at1700.c b/drivers/net/ethernet/fujitsu/at1700.c
-index 3d94797..4b80dc4 100644
---- a/drivers/net/ethernet/fujitsu/at1700.c
-+++ b/drivers/net/ethernet/fujitsu/at1700.c
-@@ -27,7 +27,7 @@
- 	ATI provided their EEPROM configuration code header file.
-     Thanks to NIIBE Yutaka <gniibe@mri.co.jp> for bug fixes.
- 
--    MCA bus (AT1720) support by Rene Schmit <rene@bss.lu>
-+    MCA bus (AT1720) support (now deleted) by Rene Schmit <rene@bss.lu>
- 
-   Bugs:
- 	The MB86965 has a design flaw that makes all probes unreliable.  Not
-@@ -38,7 +38,6 @@
- #include <linux/errno.h>
- #include <linux/netdevice.h>
- #include <linux/etherdevice.h>
--#include <linux/mca-legacy.h>
- #include <linux/module.h>
- #include <linux/kernel.h>
- #include <linux/types.h>
-@@ -79,24 +78,6 @@ static unsigned at1700_probe_list[] __initdata = {
- 	0x260, 0x280, 0x2a0, 0x240, 0x340, 0x320, 0x380, 0x300, 0
- };
- 
--/*
-- *	MCA
-- */
--#ifdef CONFIG_MCA_LEGACY
--static int at1700_ioaddr_pattern[] __initdata = {
--	0x00, 0x04, 0x01, 0x05, 0x02, 0x06, 0x03, 0x07
--};
--
--static int at1700_mca_probe_list[] __initdata = {
--	0x400, 0x1400, 0x2400, 0x3400, 0x4400, 0x5400, 0x6400, 0x7400, 0
--};
--
--static int at1700_irq_pattern[] __initdata = {
--	0x00, 0x00, 0x00, 0x30, 0x70, 0xb0, 0x00, 0x00,
--	0x00, 0xf0, 0x34, 0x74, 0xb4, 0x00, 0x00, 0xf4, 0x00
--};
--#endif
--
- /* use 0 for production, 1 for verification, >2 for debug */
- #ifndef NET_DEBUG
- #define NET_DEBUG 1
-@@ -114,7 +95,6 @@ struct net_local {
- 	uint tx_queue_ready:1;			/* Tx queue is ready to be sent. */
- 	uint rx_started:1;			/* Packets are Rxing. */
- 	uchar tx_queue;				/* Number of packet on the Tx queue. */
--	char mca_slot;				/* -1 means ISA */
- 	ushort tx_queue_len;			/* Current length of the Tx queue. */
- };
- 
-@@ -166,21 +146,6 @@ static void set_rx_mode(struct net_device *dev);
- static void net_tx_timeout (struct net_device *dev);
- 
- 
--#ifdef CONFIG_MCA_LEGACY
--struct at1720_mca_adapters_struct {
--	char* name;
--	int id;
--};
--/* rEnE : maybe there are others I don't know off... */
--
--static struct at1720_mca_adapters_struct at1720_mca_adapters[] __initdata = {
--	{ "Allied Telesys AT1720AT",	0x6410 },
--	{ "Allied Telesys AT1720BT", 	0x6413 },
--	{ "Allied Telesys AT1720T",	0x6416 },
--	{ NULL, 0 },
--};
--#endif
--
- /* Check for a network adaptor of this type, and return '0' iff one exists.
-    If dev->base_addr == 0, probe all likely locations.
-    If dev->base_addr == 1, always return failure.
-@@ -194,11 +159,6 @@ static int irq;
- 
- static void cleanup_card(struct net_device *dev)
- {
--#ifdef CONFIG_MCA_LEGACY
--	struct net_local *lp = netdev_priv(dev);
--	if (lp->mca_slot >= 0)
--		mca_mark_as_unused(lp->mca_slot);
--#endif
- 	free_irq(dev->irq, NULL);
- 	release_region(dev->base_addr, AT1700_IO_EXTENT);
- }
-@@ -273,7 +233,7 @@ static int __init at1700_probe1(struct net_device *dev, int ioaddr)
- 	static const char fmv_irqmap_pnp[8] = {3, 4, 5, 7, 9, 10, 11, 15};
- 	static const char at1700_irqmap[8] = {3, 4, 5, 9, 10, 11, 14, 15};
- 	unsigned int i, irq, is_fmv18x = 0, is_at1700 = 0;
--	int slot, ret = -ENODEV;
-+	int ret = -ENODEV;
- 	struct net_local *lp = netdev_priv(dev);
- 
- 	if (!request_region(ioaddr, AT1700_IO_EXTENT, DRV_NAME))
-@@ -288,64 +248,6 @@ static int __init at1700_probe1(struct net_device *dev, int ioaddr)
- 		   ioaddr, read_eeprom(ioaddr, 4), read_eeprom(ioaddr, 5),
- 		   read_eeprom(ioaddr, 6), inw(ioaddr + EEPROM_Ctrl));
- #endif
--
--#ifdef CONFIG_MCA_LEGACY
--	/* rEnE (rene@bss.lu): got this from 3c509 driver source , adapted for AT1720 */
--
--    /* Based on Erik Nygren's (nygren@mit.edu) 3c529 patch, heavily
--	modified by Chris Beauregard (cpbeaure@csclub.uwaterloo.ca)
--	to support standard MCA probing. */
--
--	/* redone for multi-card detection by ZP Gu (zpg@castle.net) */
--	/* now works as a module */
--
--	if (MCA_bus) {
--		int j;
--		int l_i;
--		u_char pos3, pos4;
--
--		for (j = 0; at1720_mca_adapters[j].name != NULL; j ++) {
--			slot = 0;
--			while (slot != MCA_NOTFOUND) {
--
--				slot = mca_find_unused_adapter( at1720_mca_adapters[j].id, slot );
--				if (slot == MCA_NOTFOUND) break;
--
--				/* if we get this far, an adapter has been detected and is
--				enabled */
--
--				pos3 = mca_read_stored_pos( slot, 3 );
--				pos4 = mca_read_stored_pos( slot, 4 );
--
--				for (l_i = 0; l_i < 8; l_i++)
--					if (( pos3 & 0x07) == at1700_ioaddr_pattern[l_i])
--						break;
--				ioaddr = at1700_mca_probe_list[l_i];
--
--				for (irq = 0; irq < 0x10; irq++)
--					if (((((pos4>>4) & 0x0f) | (pos3 & 0xf0)) & 0xff) == at1700_irq_pattern[irq])
--						break;
--
--					/* probing for a card at a particular IO/IRQ */
--				if ((dev->irq && dev->irq != irq) ||
--				    (dev->base_addr && dev->base_addr != ioaddr)) {
--				  	slot++;		/* probing next slot */
--				  	continue;
--				}
--
--				dev->irq = irq;
--
--				/* claim the slot */
--				mca_set_adapter_name( slot, at1720_mca_adapters[j].name );
--				mca_mark_as_used(slot);
--
--				goto found;
--			}
--		}
--		/* if we get here, we didn't find an MCA adapter - try ISA */
--	}
--#endif
--	slot = -1;
- 	/* We must check for the EEPROM-config boards first, else accessing
- 	   IOCONFIG0 will move the board! */
- 	if (at1700_probe_list[inb(ioaddr + IOCONFIG1) & 0x07] == ioaddr &&
-@@ -360,11 +262,7 @@ static int __init at1700_probe1(struct net_device *dev, int ioaddr)
- 		goto err_out;
- 	}
- 
--#ifdef CONFIG_MCA_LEGACY
--found:
--#endif
--
--		/* Reset the internal state machines. */
-+	/* Reset the internal state machines. */
- 	outb(0, ioaddr + RESET);
- 
- 	if (is_at1700) {
-@@ -380,11 +278,11 @@ found:
- 					break;
- 			}
- 			if (i == 8) {
--				goto err_mca;
-+				goto err_out;
- 			}
- 		} else {
- 			if (fmv18x_probe_list[inb(ioaddr + IOCONFIG) & 0x07] != ioaddr)
--				goto err_mca;
-+				goto err_out;
- 			irq = fmv_irqmap[(inb(ioaddr + IOCONFIG)>>6) & 0x03];
- 		}
- 	}
-@@ -464,23 +362,17 @@ found:
- 	spin_lock_init(&lp->lock);
- 
- 	lp->jumpered = is_fmv18x;
--	lp->mca_slot = slot;
- 	/* Snarf the interrupt vector now. */
- 	ret = request_irq(irq, net_interrupt, 0, DRV_NAME, dev);
- 	if (ret) {
- 		printk(KERN_ERR "AT1700 at %#3x is unusable due to a "
- 		       "conflict on IRQ %d.\n",
- 		       ioaddr, irq);
--		goto err_mca;
-+		goto err_out;
- 	}
- 
- 	return 0;
- 
--err_mca:
--#ifdef CONFIG_MCA_LEGACY
--	if (slot >= 0)
--		mca_mark_as_unused(slot);
--#endif
- err_out:
- 	release_region(ioaddr, AT1700_IO_EXTENT);
- 	return ret;
-diff --git a/drivers/net/ethernet/i825xx/3c523.c b/drivers/net/ethernet/i825xx/3c523.c
+diff --git a/drivers/Makefile b/drivers/Makefile
+index 95952c8..f9b82f2 100644
+--- a/drivers/Makefile
++++ b/drivers/Makefile
+@@ -92,7 +92,6 @@ obj-$(CONFIG_BT)		+= bluetooth/
+ obj-$(CONFIG_ACCESSIBILITY)	+= accessibility/
+ obj-$(CONFIG_ISDN)		+= isdn/
+ obj-$(CONFIG_EDAC)		+= edac/
+-obj-$(CONFIG_MCA)		+= mca/
+ obj-$(CONFIG_EISA)		+= eisa/
+ obj-y				+= lguest/
+ obj-$(CONFIG_CPU_FREQ)		+= cpufreq/
+diff --git a/drivers/mca/Kconfig b/drivers/mca/Kconfig
 deleted file mode 100644
-index 8451ecd..0000000
-diff --git a/drivers/net/ethernet/i825xx/3c523.h b/drivers/net/ethernet/i825xx/3c523.h
+index a7a0220..0000000
+diff --git a/drivers/mca/Makefile b/drivers/mca/Makefile
 deleted file mode 100644
-index 6956441..0000000
-diff --git a/drivers/net/ethernet/i825xx/3c527.c b/drivers/net/ethernet/i825xx/3c527.c
+index 0794b12..0000000
+diff --git a/drivers/mca/mca-bus.c b/drivers/mca/mca-bus.c
 deleted file mode 100644
-index 278e791..0000000
-diff --git a/drivers/net/ethernet/i825xx/Kconfig b/drivers/net/ethernet/i825xx/Kconfig
-index ca1ae98..fed5080 100644
---- a/drivers/net/ethernet/i825xx/Kconfig
-+++ b/drivers/net/ethernet/i825xx/Kconfig
-@@ -43,28 +43,6 @@ config EL16
- 	  To compile this driver as a module, choose M here. The module
- 	  will be called 3c507.
+index ada5ebb..0000000
+diff --git a/drivers/mca/mca-device.c b/drivers/mca/mca-device.c
+deleted file mode 100644
+index e7adf89..0000000
+diff --git a/drivers/mca/mca-driver.c b/drivers/mca/mca-driver.c
+deleted file mode 100644
+index 32cd39b..0000000
+diff --git a/drivers/mca/mca-legacy.c b/drivers/mca/mca-legacy.c
+deleted file mode 100644
+index 494f0c2..0000000
+diff --git a/drivers/mca/mca-proc.c b/drivers/mca/mca-proc.c
+deleted file mode 100644
+index 81ea0d3..0000000
+diff --git a/drivers/message/i2o/i2o_proc.c b/drivers/message/i2o/i2o_proc.c
+index 6d115c7..506c36f 100644
+--- a/drivers/message/i2o/i2o_proc.c
++++ b/drivers/message/i2o/i2o_proc.c
+@@ -283,7 +283,6 @@ static char *bus_strings[] = {
+ 	"Local Bus",
+ 	"ISA",
+ 	"EISA",
+-	"MCA",
+ 	"PCI",
+ 	"PCMCIA",
+ 	"NUBUS",
+@@ -351,18 +350,6 @@ static int i2o_seq_show_hrt(struct seq_file *seq, void *v)
+ 					   EisaSlotNumber);
+ 				break;
  
--config ELMC
--	tristate "3c523 \"EtherLink/MC\" support"
--	depends on MCA_LEGACY
--	---help---
--	  If you have a network (Ethernet) card of this type, say Y and read
--	  the Ethernet-HOWTO, available from
--	  <http://www.tldp.org/docs.html#howto>.
--
--	  To compile this driver as a module, choose M here. The module
--	  will be called 3c523.
--
--config ELMC_II
--	tristate "3c527 \"EtherLink/MC 32\" support (EXPERIMENTAL)"
--	depends on MCA && MCA_LEGACY
--	---help---
--	  If you have a network (Ethernet) card of this type, say Y and read
--	  the Ethernet-HOWTO, available from
--	  <http://www.tldp.org/docs.html#howto>.
--
--	  To compile this driver as a module, choose M here. The module
--	  will be called 3c527.
--
- config ARM_ETHER1
- 	tristate "Acorn Ether1 support"
- 	depends on ARM && ARCH_ACORN
-diff --git a/drivers/net/ethernet/i825xx/Makefile b/drivers/net/ethernet/i825xx/Makefile
-index f68a369..6adff85 100644
---- a/drivers/net/ethernet/i825xx/Makefile
-+++ b/drivers/net/ethernet/i825xx/Makefile
-@@ -7,8 +7,6 @@ obj-$(CONFIG_EEXPRESS) += eexpress.o
- obj-$(CONFIG_EEXPRESS_PRO) += eepro.o
- obj-$(CONFIG_ELPLUS) += 3c505.o
- obj-$(CONFIG_EL16) += 3c507.o
--obj-$(CONFIG_ELMC) += 3c523.o
--obj-$(CONFIG_ELMC_II) += 3c527.o
- obj-$(CONFIG_LP486E) += lp486e.o
- obj-$(CONFIG_NI52) += ni52.o
- obj-$(CONFIG_SUN3_82586) += sun3_82586.o
-diff --git a/drivers/net/ethernet/i825xx/eexpress.c b/drivers/net/ethernet/i825xx/eexpress.c
-index cc2e66a..7a6a2f0 100644
---- a/drivers/net/ethernet/i825xx/eexpress.c
-+++ b/drivers/net/ethernet/i825xx/eexpress.c
-@@ -9,7 +9,7 @@
-  * Many modifications, and currently maintained, by
-  *  Philip Blundell <philb@gnu.org>
-  * Added the Compaq LTE  Alan Cox <alan@lxorguk.ukuu.org.uk>
-- * Added MCA support Adam Fritzler
-+ * Added MCA support Adam Fritzler (now deleted)
-  *
-  * Note - this driver is experimental still - it has problems on faster
-  * machines. Someone needs to sit down and go through it line by line with
-@@ -111,7 +111,6 @@
- #include <linux/netdevice.h>
- #include <linux/etherdevice.h>
- #include <linux/skbuff.h>
--#include <linux/mca-legacy.h>
- #include <linux/spinlock.h>
- #include <linux/bitops.h>
- #include <linux/jiffies.h>
-@@ -227,16 +226,6 @@ static unsigned short start_code[] = {
- /* maps irq number to EtherExpress magic value */
- static char irqrmap[] = { 0,0,1,2,3,4,0,0,0,1,5,6,0,0,0,0 };
- 
--#ifdef CONFIG_MCA_LEGACY
--/* mapping of the first four bits of the second POS register */
--static unsigned short mca_iomap[] = {
--	0x270, 0x260, 0x250, 0x240, 0x230, 0x220, 0x210, 0x200,
--	0x370, 0x360, 0x350, 0x340, 0x330, 0x320, 0x310, 0x300
--};
--/* bits 5-7 of the second POS register */
--static char mca_irqmap[] = { 12, 9, 3, 4, 5, 10, 11, 15 };
--#endif
--
- /*
-  * Prototypes for Linux interface
-  */
-@@ -340,53 +329,6 @@ static int __init do_express_probe(struct net_device *dev)
- 
- 	dev->if_port = 0xff; /* not set */
- 
--#ifdef CONFIG_MCA_LEGACY
--	if (MCA_bus) {
--		int slot = 0;
--
--		/*
--		 * Only find one card at a time.  Subsequent calls
--		 * will find others, however, proper multicard MCA
--		 * probing and setup can't be done with the
--		 * old-style Space.c init routines.  -- ASF
--		 */
--		while (slot != MCA_NOTFOUND) {
--			int pos0, pos1;
--
--			slot = mca_find_unused_adapter(0x628B, slot);
--			if (slot == MCA_NOTFOUND)
+-			case I2O_BUS_MCA:
+-				seq_printf(seq, "     IOBase: %0#6x,",
+-					   hrt->hrt_entry[i].bus.mca_bus.
+-					   McaBaseIOPort);
+-				seq_printf(seq, " MemoryBase: %0#10x,",
+-					   hrt->hrt_entry[i].bus.mca_bus.
+-					   McaBaseMemoryAddress);
+-				seq_printf(seq, " Slot: %0#4x,",
+-					   hrt->hrt_entry[i].bus.mca_bus.
+-					   McaSlotNumber);
 -				break;
 -
--			pos0 = mca_read_stored_pos(slot, 2);
--			pos1 = mca_read_stored_pos(slot, 3);
--			ioaddr = mca_iomap[pos1&0xf];
--
--			dev->irq = mca_irqmap[(pos1>>4)&0x7];
--
--			/*
--			 * XXX: Transceiver selection is done
--			 * differently on the MCA version.
--			 * How to get it to select something
--			 * other than external/AUI is currently
--			 * unknown.  This code is just for looks. -- ASF
--			 */
--			if ((pos0 & 0x7) == 0x1)
--				dev->if_port = AUI;
--			else if ((pos0 & 0x7) == 0x5) {
--				if (pos1 & 0x80)
--					dev->if_port = BNC;
--				else
--					dev->if_port = TPE;
--			}
--
--			mca_set_adapter_name(slot, "Intel EtherExpress 16 MCA");
--			mca_set_adapter_procfn(slot, NULL, dev);
--			mca_mark_as_used(slot);
--
--			break;
--		}
--	}
--#endif
- 	if (ioaddr&0xfe00) {
- 		if (!request_region(ioaddr, EEXP_IO_EXTENT, "EtherExpress"))
- 			return -EBUSY;
-diff --git a/drivers/net/ethernet/natsemi/Kconfig b/drivers/net/ethernet/natsemi/Kconfig
-index eb836f7..f157334 100644
---- a/drivers/net/ethernet/natsemi/Kconfig
-+++ b/drivers/net/ethernet/natsemi/Kconfig
-@@ -6,9 +6,8 @@ config NET_VENDOR_NATSEMI
- 	bool "National Semi-conductor devices"
- 	default y
- 	depends on AMIGA_PCMCIA || ARM || EISA || EXPERIMENTAL || H8300 || \
--		   ISA || M32R || MAC || MACH_JAZZ || MACH_TX49XX || MCA || \
--		   MCA_LEGACY || MIPS || PCI || PCMCIA || SUPERH || \
--		   XTENSA_PLATFORM_XT2000 || ZORRO
-+		   ISA || M32R || MAC || MACH_JAZZ || MACH_TX49XX || MIPS || \
-+		   PCI || PCMCIA || SUPERH || XTENSA_PLATFORM_XT2000 || ZORRO
- 	---help---
- 	  If you have a network (Ethernet) card belonging to this class, say Y
- 	  and read the Ethernet-HOWTO, available from
-@@ -21,21 +20,6 @@ config NET_VENDOR_NATSEMI
- 
- if NET_VENDOR_NATSEMI
- 
--config IBMLANA
--	tristate "IBM LAN Adapter/A support"
--	depends on MCA
--	---help---
--	  This is a Micro Channel Ethernet adapter.  You need to set
--	  CONFIG_MCA to use this driver.  It is both available as an in-kernel
--	  driver and as a module.
--
--	  To compile this driver as a module, choose M here. The only
--	  currently supported card is the IBM LAN Adapter/A for Ethernet.  It
--	  will both support 16K and 32K memory windows, however a 32K window
--	  gives a better security against packet losses.  Usage of multiple
--	  boards with this driver should be possible, but has not been tested
--	  up to now due to lack of hardware.
--
- config MACSONIC
- 	tristate "Macintosh SONIC based ethernet (onboard, NuBus, LC, CS)"
- 	depends on MAC
-diff --git a/drivers/net/ethernet/natsemi/Makefile b/drivers/net/ethernet/natsemi/Makefile
-index 9aa5dea..764c532 100644
---- a/drivers/net/ethernet/natsemi/Makefile
-+++ b/drivers/net/ethernet/natsemi/Makefile
-@@ -2,7 +2,6 @@
- # Makefile for the National Semi-conductor Sonic devices.
- #
- 
--obj-$(CONFIG_IBMLANA) += ibmlana.o
- obj-$(CONFIG_MACSONIC) += macsonic.o
- obj-$(CONFIG_MIPS_JAZZ_SONIC) += jazzsonic.o
- obj-$(CONFIG_NATSEMI) += natsemi.o
+ 			case I2O_BUS_PCI:
+ 				seq_printf(seq, "     Bus: %0#4x",
+ 					   hrt->hrt_entry[i].bus.pci_bus.
+diff --git a/include/linux/i2o-dev.h b/include/linux/i2o-dev.h
+index a0b23dd..a8093bf 100644
+--- a/include/linux/i2o-dev.h
++++ b/include/linux/i2o-dev.h
+@@ -124,7 +124,7 @@ typedef struct i2o_sg_io_hdr {
+ #define I2O_BUS_LOCAL	0
+ #define I2O_BUS_ISA	1
+ #define I2O_BUS_EISA	2
+-#define I2O_BUS_MCA	3
++/* was  I2O_BUS_MCA	3 */
+ #define I2O_BUS_PCI	4
+ #define I2O_BUS_PCMCIA	5
+ #define I2O_BUS_NUBUS	6
+diff --git a/include/linux/mca-legacy.h b/include/linux/mca-legacy.h
+deleted file mode 100644
+index 7a3aea8..0000000
+diff --git a/include/linux/mca.h b/include/linux/mca.h
+deleted file mode 100644
+index 3797270..0000000
+diff --git a/scripts/kconfig/mconf.c b/scripts/kconfig/mconf.c
+index 2c6286c..f606738 100644
+--- a/scripts/kconfig/mconf.c
++++ b/scripts/kconfig/mconf.c
+@@ -240,7 +240,7 @@ search_help[] = N_(
+ 	"Defined at drivers/pci/Kconfig:47\n"
+ 	"Depends on: X86_LOCAL_APIC && X86_IO_APIC || IA64\n"
+ 	"Location:\n"
+-	"  -> Bus options (PCI, PCMCIA, EISA, MCA, ISA)\n"
++	"  -> Bus options (PCI, PCMCIA, EISA, ISA)\n"
+ 	"    -> PCI support (PCI [=y])\n"
+ 	"      -> PCI access mode (<choice> [=y])\n"
+ 	"Selects: LIBCRC32\n"
+diff --git a/scripts/kconfig/nconf.c b/scripts/kconfig/nconf.c
+index 73070cb..8c0eb65 100644
+--- a/scripts/kconfig/nconf.c
++++ b/scripts/kconfig/nconf.c
+@@ -223,7 +223,7 @@ search_help[] = N_(
+ "Defined at drivers/pci/Kconfig:47\n"
+ "Depends on: X86_LOCAL_APIC && X86_IO_APIC || IA64\n"
+ "Location:\n"
+-"  -> Bus options (PCI, PCMCIA, EISA, MCA, ISA)\n"
++"  -> Bus options (PCI, PCMCIA, EISA, ISA)\n"
+ "    -> PCI support (PCI [ = y])\n"
+ "      -> PCI access mode (<choice> [ = y])\n"
+ "Selects: LIBCRC32\n"
 -- 
 1.7.9.1
 
