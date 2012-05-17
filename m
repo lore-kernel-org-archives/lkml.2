@@ -1,109 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S967034Ab2EQPAA (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 May 2012 11:00:00 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:33394 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1762038Ab2EQOun (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 May 2012 10:50:43 -0400
-From: Mel Gorman <mgorman@suse.de>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Linux-MM <linux-mm@kvack.org>, Linux-Netdev <netdev@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        David Miller <davem@davemloft.net>, Neil Brown <neilb@suse.de>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Mike Christie <michaelc@cs.wisc.edu>,
-        Eric B Munson <emunson@mgebm.net>, Mel Gorman <mgorman@suse.de>
-Subject: [PATCH 09/17] netvm: Allow the use of __GFP_MEMALLOC by specific sockets
-Date: Thu, 17 May 2012 15:50:23 +0100
-Message-Id: <1337266231-8031-10-git-send-email-mgorman@suse.de>
-X-Mailer: git-send-email 1.7.9.2
-In-Reply-To: <1337266231-8031-1-git-send-email-mgorman@suse.de>
-References: <1337266231-8031-1-git-send-email-mgorman@suse.de>
+	id S1762078Ab2EQPAV (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 May 2012 11:00:21 -0400
+Received: from mailout1.samsung.com ([203.254.224.24]:59555 "EHLO
+	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1761329Ab2EQPAO (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 17 May 2012 11:00:14 -0400
+X-AuditID: cbfee61b-b7bb6ae0000006fb-0e-4fb5127b2c49
+From: Thomas Abraham <thomas.abraham@linaro.org>
+To: linux-mmc@vger.kernel.org, devicetree-discuss@lists.ozlabs.org
+Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        cjb@laptop.org, grant.likely@secretlab.ca, rob.herring@calxeda.com,
+        linux-samsung-soc@vger.kernel.org, kgene.kim@samsung.com,
+        patches@linaro.org
+Subject: [PATCH v2 4/6] mmc: dw_mmc: add quirk to indicate missing write
+ protect line
+Date: Thu, 17 May 2012 20:40:09 +0530
+Message-id: <1337267411-28226-5-git-send-email-thomas.abraham@linaro.org>
+X-Mailer: git-send-email 1.6.6.rc2
+In-reply-to: <1337267411-28226-1-git-send-email-thomas.abraham@linaro.org>
+References: <1337267411-28226-1-git-send-email-thomas.abraham@linaro.org>
+X-Brightmail-Tracker: AAAAAA==
+X-TM-AS-MML: No
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Allow specific sockets to be tagged SOCK_MEMALLOC and use
-__GFP_MEMALLOC for their allocations. These sockets will be able to go
-below watermarks and allocate from the emergency reserve. Such sockets
-are to be used to service the VM (iow. to swap over). They must be
-handled kernel side, exposing such a socket to user-space is a bug.
+If the write protect pad of the controller is not connected to the write
+protect pin of the slot, the driver should be notified of this condition
+so that incorrect check for write protection by reading the WRTORT
+register can avoided. The get_ro platform callback can be used for in
+such cases, but with device tree support enabled, such platform callbacks
+cannot be supported.
 
-There is a risk that the reserves be depleted so for now, the
-administrator is responsible for increasing min_free_kbytes as
-necessary to prevent deadlock for their workloads.
+Add a new quirk for notifying the driver about the missing write protect
+line so the driver can assume that the card write protection is disabled.
 
-[a.p.zijlstra@chello.nl: Original patches]
-Signed-off-by: Mel Gorman <mgorman@suse.de>
+Signed-off-by: Thomas Abraham <thomas.abraham@linaro.org>
+Acked-by: Will Newton <will.newton@imgtec.com>
 ---
- include/net/sock.h |    5 ++++-
- net/core/sock.c    |   22 ++++++++++++++++++++++
- 2 files changed, 26 insertions(+), 1 deletion(-)
+ drivers/mmc/host/dw_mmc.c  |    4 +++-
+ include/linux/mmc/dw_mmc.h |    3 ++-
+ 2 files changed, 5 insertions(+), 2 deletions(-)
 
-diff --git a/include/net/sock.h b/include/net/sock.h
-index d0ab047..dba4f64 100644
---- a/include/net/sock.h
-+++ b/include/net/sock.h
-@@ -607,6 +607,7 @@ enum sock_flags {
- 	SOCK_RCVTSTAMPNS, /* %SO_TIMESTAMPNS setting */
- 	SOCK_LOCALROUTE, /* route locally only, %SO_DONTROUTE setting */
- 	SOCK_QUEUE_SHRUNK, /* write queue has been shrunk recently */
-+	SOCK_MEMALLOC, /* VM depends on this socket for swapping */
- 	SOCK_TIMESTAMPING_TX_HARDWARE,  /* %SOF_TIMESTAMPING_TX_HARDWARE */
- 	SOCK_TIMESTAMPING_TX_SOFTWARE,  /* %SOF_TIMESTAMPING_TX_SOFTWARE */
- 	SOCK_TIMESTAMPING_RX_HARDWARE,  /* %SOF_TIMESTAMPING_RX_HARDWARE */
-@@ -646,7 +647,7 @@ static inline int sock_flag(struct sock *sk, enum sock_flags flag)
+diff --git a/drivers/mmc/host/dw_mmc.c b/drivers/mmc/host/dw_mmc.c
+index eb5fa59..c862b7f 100644
+--- a/drivers/mmc/host/dw_mmc.c
++++ b/drivers/mmc/host/dw_mmc.c
+@@ -812,7 +812,9 @@ static int dw_mci_get_ro(struct mmc_host *mmc)
+ 	struct dw_mci_board *brd = slot->host->pdata;
  
- static inline gfp_t sk_gfp_atomic(struct sock *sk, gfp_t gfp_mask)
- {
--	return GFP_ATOMIC;
-+	return GFP_ATOMIC | (sk->sk_allocation & __GFP_MEMALLOC);
- }
+ 	/* Use platform get_ro function, else try on board write protect */
+-	if (brd->get_ro)
++	if (brd->quirks & DW_MCI_QUIRK_NO_WRITE_PROTECT)
++		read_only = 0;
++	else if (brd->get_ro)
+ 		read_only = brd->get_ro(slot->id);
+ 	else
+ 		read_only =
+diff --git a/include/linux/mmc/dw_mmc.h b/include/linux/mmc/dw_mmc.h
+index 787ad56..b72e4aa 100644
+--- a/include/linux/mmc/dw_mmc.h
++++ b/include/linux/mmc/dw_mmc.h
+@@ -205,7 +205,8 @@ struct dw_mci_dma_ops {
+ #define DW_MCI_QUIRK_HIGHSPEED			BIT(2)
+ /* Unreliable card detection */
+ #define DW_MCI_QUIRK_BROKEN_CARD_DETECTION	BIT(3)
+-
++/* Write Protect detection not available */
++#define DW_MCI_QUIRK_NO_WRITE_PROTECT		BIT(4)
  
- static inline void sk_acceptq_removed(struct sock *sk)
-@@ -787,6 +788,8 @@ extern int sk_stream_wait_memory(struct sock *sk, long *timeo_p);
- extern void sk_stream_wait_close(struct sock *sk, long timeo_p);
- extern int sk_stream_error(struct sock *sk, int flags, int err);
- extern void sk_stream_kill_queues(struct sock *sk);
-+extern void sk_set_memalloc(struct sock *sk);
-+extern void sk_clear_memalloc(struct sock *sk);
+ struct dma_pdata;
  
- extern int sk_wait_data(struct sock *sk, long *timeo);
- 
-diff --git a/net/core/sock.c b/net/core/sock.c
-index b2e14c0..b0f0613 100644
---- a/net/core/sock.c
-+++ b/net/core/sock.c
-@@ -266,6 +266,28 @@ __u32 sysctl_rmem_default __read_mostly = SK_RMEM_MAX;
- int sysctl_optmem_max __read_mostly = sizeof(unsigned long)*(2*UIO_MAXIOV+512);
- EXPORT_SYMBOL(sysctl_optmem_max);
- 
-+/**
-+ * sk_set_memalloc - sets %SOCK_MEMALLOC
-+ * @sk: socket to set it on
-+ *
-+ * Set %SOCK_MEMALLOC on a socket for access to emergency reserves.
-+ * It's the responsibility of the admin to adjust min_free_kbytes
-+ * to meet the requirements
-+ */
-+void sk_set_memalloc(struct sock *sk)
-+{
-+	sock_set_flag(sk, SOCK_MEMALLOC);
-+	sk->sk_allocation |= __GFP_MEMALLOC;
-+}
-+EXPORT_SYMBOL_GPL(sk_set_memalloc);
-+
-+void sk_clear_memalloc(struct sock *sk)
-+{
-+	sock_reset_flag(sk, SOCK_MEMALLOC);
-+	sk->sk_allocation &= ~__GFP_MEMALLOC;
-+}
-+EXPORT_SYMBOL_GPL(sk_clear_memalloc);
-+
- #if defined(CONFIG_CGROUPS)
- #if !defined(CONFIG_NET_CLS_CGROUP)
- int net_cls_subsys_id = -1;
 -- 
-1.7.9.2
+1.6.6.rc2
 
