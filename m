@@ -1,75 +1,191 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965542Ab2EQDrq (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 May 2012 23:47:46 -0400
-Received: from haggis.pcug.org.au ([203.10.76.10]:60340 "EHLO
-	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760958Ab2EQDrp (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 May 2012 23:47:45 -0400
-Date: Thu, 17 May 2012 13:47:36 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Dave Airlie <airlied@linux.ie>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Matthew Garrett <mjg@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>
-Subject: linux-next: build failure after merge of the drm tree
-Message-Id: <20120517134736.dd91f7c321dca6c7cf459484@canb.auug.org.au>
-X-Mailer: Sylpheed 3.2.0beta7 (GTK+ 2.24.10; i486-pc-linux-gnu)
+	id S965692Ab2EQDuo (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 May 2012 23:50:44 -0400
+Received: from perches-mx.perches.com ([206.117.179.246]:39314 "EHLO
+	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S932730Ab2EQDum (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 16 May 2012 23:50:42 -0400
+Message-ID: <1337226641.17726.8.camel@joe2Laptop>
+Subject: [PATCH net-next] pktgen: Use pr_debug
+From: Joe Perches <joe@perches.com>
+To: "David S. Miller" <davem@davemloft.net>
+Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+Date: Wed, 16 May 2012 20:50:41 -0700
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.2- 
+Content-Transfer-Encoding: 7bit
 Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Thu__17_May_2012_13_47_36_+1000_HqM+OguHZB73IAtC"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Thu__17_May_2012_13_47_36_+1000_HqM+OguHZB73IAtC
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Convert printk(KERN_DEBUG to pr_debug which can
+enable dynamic debugging.
 
-Hi Dave,
+Remove embedded prefixes from the conversions as
+pr_fmt adds them.
 
-After merging the drm tree, today's linux-next build (x86_64 allmodconfig)
-failed like this:
+Align arguments.
 
-arch/x86/pci/fixup.c: In function 'pci_fixup_video':
-arch/x86/pci/fixup.c:352:3: error: implicit declaration of function 'vga_de=
-fault_device' [-Werror=3Dimplicit-function-declaration]
-arch/x86/pci/fixup.c:353:4: error: implicit declaration of function 'vga_se=
-t_default_device' [-Werror=3Dimplicit-function-declaration]
+Signed-off-by: Joe Perches <joe@perches.com>
+---
+ net/core/pktgen.c |   41 ++++++++++++++++++-----------------------
+ 1 files changed, 18 insertions(+), 23 deletions(-)
 
-Caused by commit 6cf20beec4b9 ("x86/vga: set the default device from the
-fixup").
+diff --git a/net/core/pktgen.c b/net/core/pktgen.c
+index 3391257..d22509b 100644
+--- a/net/core/pktgen.c
++++ b/net/core/pktgen.c
+@@ -891,8 +891,8 @@ static ssize_t pktgen_if_write(struct file *file,
+ 		if (copy_from_user(tb, user_buffer, copy))
+ 			return -EFAULT;
+ 		tb[copy] = 0;
+-		printk(KERN_DEBUG "pktgen: %s,%lu  buffer -:%s:-\n", name,
+-		       (unsigned long)count, tb);
++		pr_debug("%s,%lu  buffer -:%s:-\n",
++			 name, (unsigned long)count, tb);
+ 	}
+ 
+ 	if (!strcmp(name, "min_pkt_size")) {
+@@ -1261,8 +1261,7 @@ static ssize_t pktgen_if_write(struct file *file,
+ 			pkt_dev->cur_daddr = pkt_dev->daddr_min;
+ 		}
+ 		if (debug)
+-			printk(KERN_DEBUG "pktgen: dst_min set to: %s\n",
+-			       pkt_dev->dst_min);
++			pr_debug("dst_min set to: %s\n", pkt_dev->dst_min);
+ 		i += len;
+ 		sprintf(pg_result, "OK: dst_min=%s", pkt_dev->dst_min);
+ 		return count;
+@@ -1284,8 +1283,7 @@ static ssize_t pktgen_if_write(struct file *file,
+ 			pkt_dev->cur_daddr = pkt_dev->daddr_max;
+ 		}
+ 		if (debug)
+-			printk(KERN_DEBUG "pktgen: dst_max set to: %s\n",
+-			       pkt_dev->dst_max);
++			pr_debug("dst_max set to: %s\n", pkt_dev->dst_max);
+ 		i += len;
+ 		sprintf(pg_result, "OK: dst_max=%s", pkt_dev->dst_max);
+ 		return count;
+@@ -1307,7 +1305,7 @@ static ssize_t pktgen_if_write(struct file *file,
+ 		pkt_dev->cur_in6_daddr = pkt_dev->in6_daddr;
+ 
+ 		if (debug)
+-			printk(KERN_DEBUG "pktgen: dst6 set to: %s\n", buf);
++			pr_debug("dst6 set to: %s\n", buf);
+ 
+ 		i += len;
+ 		sprintf(pg_result, "OK: dst6=%s", buf);
+@@ -1329,7 +1327,7 @@ static ssize_t pktgen_if_write(struct file *file,
+ 
+ 		pkt_dev->cur_in6_daddr = pkt_dev->min_in6_daddr;
+ 		if (debug)
+-			printk(KERN_DEBUG "pktgen: dst6_min set to: %s\n", buf);
++			pr_debug("dst6_min set to: %s\n", buf);
+ 
+ 		i += len;
+ 		sprintf(pg_result, "OK: dst6_min=%s", buf);
+@@ -1350,7 +1348,7 @@ static ssize_t pktgen_if_write(struct file *file,
+ 		snprintf(buf, sizeof(buf), "%pI6c", &pkt_dev->max_in6_daddr);
+ 
+ 		if (debug)
+-			printk(KERN_DEBUG "pktgen: dst6_max set to: %s\n", buf);
++			pr_debug("dst6_max set to: %s\n", buf);
+ 
+ 		i += len;
+ 		sprintf(pg_result, "OK: dst6_max=%s", buf);
+@@ -1373,7 +1371,7 @@ static ssize_t pktgen_if_write(struct file *file,
+ 		pkt_dev->cur_in6_saddr = pkt_dev->in6_saddr;
+ 
+ 		if (debug)
+-			printk(KERN_DEBUG "pktgen: src6 set to: %s\n", buf);
++			pr_debug("src6 set to: %s\n", buf);
+ 
+ 		i += len;
+ 		sprintf(pg_result, "OK: src6=%s", buf);
+@@ -1394,8 +1392,7 @@ static ssize_t pktgen_if_write(struct file *file,
+ 			pkt_dev->cur_saddr = pkt_dev->saddr_min;
+ 		}
+ 		if (debug)
+-			printk(KERN_DEBUG "pktgen: src_min set to: %s\n",
+-			       pkt_dev->src_min);
++			pr_debug("src_min set to: %s\n", pkt_dev->src_min);
+ 		i += len;
+ 		sprintf(pg_result, "OK: src_min=%s", pkt_dev->src_min);
+ 		return count;
+@@ -1415,8 +1412,7 @@ static ssize_t pktgen_if_write(struct file *file,
+ 			pkt_dev->cur_saddr = pkt_dev->saddr_max;
+ 		}
+ 		if (debug)
+-			printk(KERN_DEBUG "pktgen: src_max set to: %s\n",
+-			       pkt_dev->src_max);
++			pr_debug("src_max set to: %s\n", pkt_dev->src_max);
+ 		i += len;
+ 		sprintf(pg_result, "OK: src_max=%s", pkt_dev->src_max);
+ 		return count;
+@@ -1527,7 +1523,7 @@ static ssize_t pktgen_if_write(struct file *file,
+ 			pkt_dev->svlan_id = 0xffff;
+ 
+ 			if (debug)
+-				printk(KERN_DEBUG "pktgen: VLAN/SVLAN auto turned off\n");
++				pr_debug("VLAN/SVLAN auto turned off\n");
+ 		}
+ 		return count;
+ 	}
+@@ -1542,10 +1538,10 @@ static ssize_t pktgen_if_write(struct file *file,
+ 			pkt_dev->vlan_id = value;  /* turn on VLAN */
+ 
+ 			if (debug)
+-				printk(KERN_DEBUG "pktgen: VLAN turned on\n");
++				pr_debug("VLAN turned on\n");
+ 
+ 			if (debug && pkt_dev->nr_labels)
+-				printk(KERN_DEBUG "pktgen: MPLS auto turned off\n");
++				pr_debug("MPLS auto turned off\n");
+ 
+ 			pkt_dev->nr_labels = 0;    /* turn off MPLS */
+ 			sprintf(pg_result, "OK: vlan_id=%u", pkt_dev->vlan_id);
+@@ -1554,7 +1550,7 @@ static ssize_t pktgen_if_write(struct file *file,
+ 			pkt_dev->svlan_id = 0xffff;
+ 
+ 			if (debug)
+-				printk(KERN_DEBUG "pktgen: VLAN/SVLAN turned off\n");
++				pr_debug("VLAN/SVLAN turned off\n");
+ 		}
+ 		return count;
+ 	}
+@@ -1599,10 +1595,10 @@ static ssize_t pktgen_if_write(struct file *file,
+ 			pkt_dev->svlan_id = value;  /* turn on SVLAN */
+ 
+ 			if (debug)
+-				printk(KERN_DEBUG "pktgen: SVLAN turned on\n");
++				pr_debug("SVLAN turned on\n");
+ 
+ 			if (debug && pkt_dev->nr_labels)
+-				printk(KERN_DEBUG "pktgen: MPLS auto turned off\n");
++				pr_debug("MPLS auto turned off\n");
+ 
+ 			pkt_dev->nr_labels = 0;    /* turn off MPLS */
+ 			sprintf(pg_result, "OK: svlan_id=%u", pkt_dev->svlan_id);
+@@ -1611,7 +1607,7 @@ static ssize_t pktgen_if_write(struct file *file,
+ 			pkt_dev->svlan_id = 0xffff;
+ 
+ 			if (debug)
+-				printk(KERN_DEBUG "pktgen: VLAN/SVLAN turned off\n");
++				pr_debug("VLAN/SVLAN turned off\n");
+ 		}
+ 		return count;
+ 	}
+@@ -1779,8 +1775,7 @@ static ssize_t pktgen_thread_write(struct file *file,
+ 	i += len;
+ 
+ 	if (debug)
+-		printk(KERN_DEBUG "pktgen: t=%s, count=%lu\n",
+-		       name, (unsigned long)count);
++		pr_debug("t=%s, count=%lu\n", name, (unsigned long)count);
+ 
+ 	if (!t) {
+ 		pr_err("ERROR: No thread\n");
 
-I have used the drm tree from next-20120516 for today.
 
-If it is relevant, I merged the drm tree before the sound tree today.
-
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-http://www.canb.auug.org.au/~sfr/
-
---Signature=_Thu__17_May_2012_13_47_36_+1000_HqM+OguHZB73IAtC
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBCAAGBQJPtHTYAAoJEECxmPOUX5FEKBkP/i9ZM+TOKA936XXkABDpHx3H
-EdDzDG9uo4LVJVZ6v/PsJdW1WNL/SHJ+RHf2T00yZNVV8OnSkPPgzkgBVn6sqICU
-9lovxjuH8167U46qa9SE/WOS3HkY9e4OwIZg0ltYugRmE+c6wbBx/j1Ut6fSdaXP
-1blSgqgxzEUNYsseJVyoXTTJcC0GCiBU08c61mK1mfnXbde9qwRJ8NbwLfvxI60E
-1gUSBG4Jk7rtS7uU712oW4jD8RRK8CkF18mrCu1ovQDe47FK51YjdARMzuHnLFc3
-wUEt7KNZKcE57ZS7vu0zM0/+5ZwjXfqCXcG0FZoqvXy0DeFQnuF+n9g3c9Smnjef
-rgUgTUFvasqFBaEiMAsx2JBzR8XXGuTE7m+3Lo2oeN38hq+hyBvXqgyx4/5KmGhI
-mx5iyobluamndTP99Pqmm7/WP5lxHUws7HNKcca2Nutp6o9/amMsB2OkOltkNk2/
-A+CXYntFvDbXmMXDXWyP7GbwRp/W0gVsm5qXYf/9OZGsBAlGxeFqCoi49qwBtRyM
-PZuTjG3WcehooUWyoYQinAv+hzL74yVMCb309OC5uqEK9zh7Y4TXX0dLOLSLEQXK
-WZpCSO+OnC7GpLhGNETBJA/RZnq//zIwTytaGJe5ryGhG0igoUA1tHRe580RY8Df
-l9ZqtL7LupX+KusLGV+2
-=069l
------END PGP SIGNATURE-----
-
---Signature=_Thu__17_May_2012_13_47_36_+1000_HqM+OguHZB73IAtC--
