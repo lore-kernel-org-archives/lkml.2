@@ -1,80 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759994Ab2EQHfe (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 May 2012 03:35:34 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:48130 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753105Ab2EQHfc (ORCPT
+	id S1761276Ab2EQHfg (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 May 2012 03:35:36 -0400
+Received: from bedivere.hansenpartnership.com ([66.63.167.143]:59581 "EHLO
+	bedivere.hansenpartnership.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753105Ab2EQHfe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 May 2012 03:35:32 -0400
-From: Shawn Guo <shawn.guo@linaro.org>
-To: Grant Likely <grant.likely@secretlab.ca>,
-        Linus Walleij <linus.walleij@stericsson.com>
-Cc: =?UTF-8?q?Lothar=20Wa=C3=9Fmann?= <LW@KARO-electronics.de>,
-        Ryan Mallon <ryan@bluewatersys.com>,
-        H Hartley Sweeten <hsweeten@visionengravers.com>,
-        Sascha Hauer <s.hauer@pengutronix.de>,
-        "Hans J. Koch" <hjk@linutronix.de>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        Shawn Guo <shawn.guo@linaro.org>
-Subject: =?UTF-8?q?=5BPATCH=200/2=5D=20Fix=20basic=5Fmmio=5Fgpio=20shadow=20initialization?=
-Date: Thu, 17 May 2012 15:35:01 +0800
-Message-Id: <1337240103-4756-1-git-send-email-shawn.guo@linaro.org>
-X-Mailer: git-send-email 1.7.5.4
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+	Thu, 17 May 2012 03:35:34 -0400
+Message-ID: <1337240130.2926.4.camel@dabdike.int.hansenpartnership.com>
+Subject: Re: [PATCH 3/5] st: get rid of scsi_tapes array
+From: James Bottomley <James.Bottomley@HansenPartnership.com>
+To: Lee Duncan <lduncan@suse.com>
+Cc: linux-scsi@vger.kernel.org, linux-kernel@vger.kernel.org,
+        kai.makisara@kolumbus.fi, jeffm@suse.com
+Date: Thu, 17 May 2012 08:35:30 +0100
+In-Reply-To: <4FB476F3.5010404@suse.com>
+References: <4FB476F3.5010404@suse.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I recently ran into a problem with gpio-generic driver on mxs platform.
-It turns out it's the exactly same problem that Lothar had run into
-on imx/mxc platform, which was fixed up in gpio-mxc driver as below.
+On Wed, 2012-05-16 at 20:56 -0700, Lee Duncan wrote:
+> st currently allocates an array to store pointers to all of the
+> scsi_tape objects. It's used to discover available indexes to use as the
+> base for the minor number selection and later to look up scsi_tape
+> devices for character devices.
+> 
+> We switch to using an IDR for minor selection and a pointer from
+> st_modedef back to scsi_tape for the lookups.
+> 
+> Signed-off-by: Jeff Mahoney <jeffm@suse.com>
+> Reviewed-by: Lee Duncan <lduncan@suse.com>
 
-commit fb1492186276ba52d99b58121b8a9a87f20cc9f3
-Author: Lothar Waßmann <LW@KARO-electronics.de>
-Date:   Thu Jul 7 14:50:16 2011 +0200
+This can't be Reviewed-by either.  The signoff chain has to follow the
+transmission path of the patch.  If you send me Jeff's patches, you have
+to add a signoff because you're a direct part of the transmission path.
+If Jeff sends me them, then he can give you Reviewed-by because you're
+not then in the direct transmission path.  (Signoff is supposed to imply
+reviewed by anyway, so the tagging is correct in either case).
 
-    gpio/mxc: add missing initialization of basic_mmio_gpio shadow variables
+James
 
-    The bgpio_init() function does not initialise the shadow register for
-    the GPIO direction register. Thus, when configuring the first GPIO with
-    gpio_set_direction() all other GPIOs of the same bank will be
-    configured as inputs. Since the bgpio layer cannot know whether the
-    register is readable, the initialisation should be done by the caller
-    of bgpio_init().
-
-    Also, the 'data' shadow variable that is used inside basic_mmio_gpio
-    to cache the current value of the GPIO_DR register is initialised from
-    the GPIO_PSR register within bgpio_init(). Thus when setting the
-    output value of a certain GPIO, the other GPIO outputs of the same
-    bank will be set or cleared depending on the pin state of the GPIO
-    inputs during bgpio_init().
-
-I think it's a problem of gpio-generic rather than platform specific
-driver, so I'm coming up this series to have the problem fixed in
-gpio-generic driver itself and then removes the fixup in gpio-mxc.
-Thus, other platform gpio drivers based on gpio-generic do not have to
-suffer from the same problem and fix it up in individually over and
-over again.
-
-Per suggestion from Lothar, I'm copying the maintainers of those
-platform gpio drivers using gpio-generic to inform the default behavior
-changing on gpio-generic.  Please let me know if anyone gets impacted
-by the changes.
-
-Regards,
-Shawn
-
-Shawn Guo (2):
-  gpio/generic: initialize basic_mmio_gpio shadow variables properly
-  gpio/mxc: remove basic_mmio_gpio shadow fixup
-
- drivers/gpio/gpio-generic.c |    4 ++++
- drivers/gpio/gpio-mxc.c     |    2 --
- 2 files changed, 4 insertions(+), 2 deletions(-)
-
--- 
-1.7.5.4
 
