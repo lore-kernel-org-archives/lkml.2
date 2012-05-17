@@ -1,86 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030342Ab2EQRMO (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 May 2012 13:12:14 -0400
-Received: from casper.infradead.org ([85.118.1.10]:42489 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758969Ab2EQRMM convert rfc822-to-8bit (ORCPT
+	id S1753749Ab2EQROz (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 May 2012 13:14:55 -0400
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:36493 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753163Ab2EQROx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 May 2012 13:12:12 -0400
-Message-ID: <1337274691.4281.63.camel@twins>
-Subject: Re: [RFC][PATCH 4/6] arm, mm: Convert arm to generic tlb
-From: Peter Zijlstra <peterz@infradead.org>
-To: Catalin Marinas <catalin.marinas@arm.com>
-Cc: Russell King <rmk@arm.linux.org.uk>, Paul Mundt <lethal@linux-sh.org>,
-        Andrea Arcangeli <aarcange@redhat.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Rik van Riel <riel@redhat.com>,
-        Ingo Molnar <mingo@elte.hu>,
-        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arch@vger.kernel.org" <linux-arch@vger.kernel.org>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        David Miller <davem@davemloft.net>,
-        Hugh Dickins <hugh.dickins@tiscali.co.uk>, Mel Gorman <mel@csn.ul.ie>,
-        Nick Piggin <npiggin@kernel.dk>, Chris Metcalf <cmetcalf@tilera.com>,
-        Martin Schwidefsky <schwidefsky@de.ibm.com>
-Date: Thu, 17 May 2012 19:11:31 +0200
-In-Reply-To: <20120517170134.GC18593@arm.com>
-References: <20110302175928.022902359@chello.nl>
-	 <20110302180259.109909335@chello.nl> <20120517030551.GA11623@linux-sh.org>
-	 <20120517093022.GA14666@arm.com>
-	 <20120517095124.GN23420@flint.arm.linux.org.uk>
-	 <1337254086.4281.26.camel@twins> <20120517160012.GB18593@arm.com>
-	 <1337271884.4281.46.camel@twins> <1337272396.4281.48.camel@twins>
-	 <1337273053.4281.50.camel@twins> <20120517170134.GC18593@arm.com>
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
-X-Mailer: Evolution 3.2.2- 
-Mime-Version: 1.0
+	Thu, 17 May 2012 13:14:53 -0400
+Date: Thu, 17 May 2012 19:14:44 +0200
+From: Sascha Hauer <s.hauer@pengutronix.de>
+To: Rob Lee <rob.lee@linaro.org>
+Cc: kernel@pengutronix.de, shawn.guo@linaro.org,
+        u.kleine-koenig@pengutronix.de, richard.zhao@freescale.com,
+        amit.kucheria@linaro.org, daniel.lezcano@linaro.org,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        linaro-dev@lists.linaro.org, patches@linaro.org, jj@chaosbits.net
+Subject: Re: [PATCH v4 3/7] ARM: imx: clean and consolidate imx5 suspend and
+ idle code
+Message-ID: <20120517171444.GC30400@pengutronix.de>
+References: <1337135616-8988-1-git-send-email-rob.lee@linaro.org>
+ <1337135616-8988-4-git-send-email-rob.lee@linaro.org>
+ <20120516173815.GV30400@pengutronix.de>
+ <CAMXH7KFQvLC-tJRLR-3KqRZTY1=VG2me5HqLGzpo6Y4BnC2Dug@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-15
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <CAMXH7KFQvLC-tJRLR-3KqRZTY1=VG2me5HqLGzpo6Y4BnC2Dug@mail.gmail.com>
+X-Sent-From: Pengutronix Hildesheim
+X-URL: http://www.pengutronix.de/
+X-IRC: #ptxdist @freenode
+X-Accept-Language: de,en
+X-Accept-Content-Type: text/plain
+X-Uptime: 19:11:18 up 187 days, 58 min, 16 users,  load average: 1.00, 0.90,
+ 0.54
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: 2001:6f8:1178:2:21e:67ff:fe11:9c5c
+X-SA-Exim-Mail-From: sha@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2012-05-17 at 18:01 +0100, Catalin Marinas wrote:
-> > So the RCU code can from ppc in commit
-> > 267239116987d64850ad2037d8e0f3071dc3b5ce, which has similar behaviour.
-> > Also I suspect the mm_users < 2 test will be incorrect for ARM since
-> > even the one user can be concurrent with your speculation engine.
+On Thu, May 17, 2012 at 09:34:26AM -0500, Rob Lee wrote:
+> On Wed, May 16, 2012 at 12:38 PM, Sascha Hauer <s.hauer@pengutronix.de> wrote:
+> > Hi Robert,
+> >
+> > Overall this looks ok now, some comments inline.
+> >
+> >> +             return ret;
+> >> +
+> >> +     if (cpu_is_mx51())
+> >> +             suspend_set_ops(&mx5_suspend_ops);
+> >
+> > Now this is called only in i.MX51 context, so you can skip the cpu_is
+> >
 > 
-> That's correct. 
+> After this patch series this is also called in i.MX53 context.  I'm
+> not confident about the i.MX53 suspend/resume and would prefer to
+> perform further testing and address issues with it in a separate patch
+> series.
 
-(I'm not sending this... really :-)
+In this case there is also the possibility that you add a imx51_pm_init
+in which you set the suspend_ops and call imx5_pm_init afterwards. The
+cpu_is_macros a kind of deprecated. Instead we settled on calling
+functions with the exact SoC name from the (dt-) board files and call
+the more generic function from the SoC specific ones.
 
----
-commit cd94154cc6a28dd9dc271042c1a59c08d26da886
-Author: Martin Schwidefsky <schwidefsky@de.ibm.com>
-Date:   Wed Apr 11 14:28:07 2012 +0200
+Sascha
 
-    [S390] fix tlb flushing for page table pages
-    
-    Git commit 36409f6353fc2d7b6516e631415f938eadd92ffa "use generic RCU
-    page-table freeing code" introduced a tlb flushing bug. Partially revert
-    the above git commit and go back to s390 specific page table flush code.
-    
-    For s390 the TLB can contain three types of entries, "normal" TLB
-    page-table entries, TLB combined region-and-segment-table (CRST) entries
-    and real-space entries. Linux does not use real-space entries which
-    leaves normal TLB entries and CRST entries. The CRST entries are
-    intermediate steps in the page-table translation called translation paths.
-    For example a 4K page access in a three-level page table setup will
-    create two CRST TLB entries and one page-table TLB entry. The advantage
-    of that approach is that a page access next to the previous one can reuse
-    the CRST entries and needs just a single read from memory to create the
-    page-table TLB entry. The disadvantage is that the TLB flushing rules are
-    more complicated, before any page-table may be freed the TLB needs to be
-    flushed.
-    
-    In short: the generic RCU page-table freeing code is incorrect for the
-    CRST entries, in particular the check for mm_users < 2 is troublesome.
-    
-    This is applicable to 3.0+ kernels.
-    
-    Cc: <stable@vger.kernel.org>
-    Signed-off-by: Martin Schwidefsky <schwidefsky@de.ibm.com>
-
+-- 
+Pengutronix e.K.                           |                             |
+Industrial Linux Solutions                 | http://www.pengutronix.de/  |
+Peiner Str. 6-8, 31137 Hildesheim, Germany | Phone: +49-5121-206917-0    |
+Amtsgericht Hildesheim, HRA 2686           | Fax:   +49-5121-206917-5555 |
