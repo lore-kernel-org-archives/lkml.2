@@ -1,80 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753973Ab2EQMKy (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 May 2012 08:10:54 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:56188 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754098Ab2EQMKx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 May 2012 08:10:53 -0400
-Date: Thu, 17 May 2012 14:10:49 +0200
-From: Michal Hocko <mhocko@suse.cz>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        Johannes Weiner <hannes@cmpxchg.org>, Mel Gorman <mel@csn.ul.ie>,
-        Minchan Kim <minchan@kernel.org>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Rik van Riel <riel@redhat.com>
-Subject: Re: [PATCH] mm: consider all swapped back pages in used-once logic
-Message-ID: <20120517121049.GA11018@tiehlicka.suse.cz>
-References: <1337246033-13719-1-git-send-email-mhocko@suse.cz>
- <20120517022412.9175f604.akpm@linux-foundation.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120517022412.9175f604.akpm@linux-foundation.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S964962Ab2EQMLw (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 May 2012 08:11:52 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:18251 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754098Ab2EQMLt (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 17 May 2012 08:11:49 -0400
+X-Authority-Analysis: v=2.0 cv=cssZYiEi c=1 sm=0 a=ZycB6UtQUfgMyuk2+PxD7w==:17 a=XQbtiDEiEegA:10 a=XlIr_nCh6zIA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=n7lzCUN1pRk5MbKrU8gA:9 a=mKWEfrWPLEBYV7PoiZQA:7 a=PUjeQqilurYA:10 a=ZycB6UtQUfgMyuk2+PxD7w==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 74.67.80.29
+Message-ID: <1337256707.6724.101.camel@gandalf.stny.rr.com>
+Subject: Re: [RFC][PATCH] tracing: Remove useless 4 bytes of padding from
+ every event
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Ingo Molnar <mingo@kernel.org>
+Cc: Arjan van de Ven <arjan@linux.intel.com>, Dave Jones <davej@redhat.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@elte.hu>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        David Sharp <dhsharp@google.com>,
+        Vaibhav Nagarnaik <vnagarnaik@google.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Andrew Morton <akpm@linux-foundation.org>
+Date: Thu, 17 May 2012 08:11:47 -0400
+In-Reply-To: <20120517080651.GC17419@gmail.com>
+References: <1337175871.6724.46.camel@gandalf.stny.rr.com>
+	 <CA+55aFzVngkixn-t0mK8QqgnPhCzN2AsUtzfZ3BkLiJAcjNOzQ@mail.gmail.com>
+	 <1337198404.6724.81.camel@gandalf.stny.rr.com>
+	 <CA+55aFyKiNBRv=z8JjPTu=yFFvyWHhkGDxjWLm=R4HpwXzEw4g@mail.gmail.com>
+	 <4FB408F2.8060002@linux.intel.com> <20120516201431.GA29661@redhat.com>
+	 <4FB40B2B.703@linux.intel.com> <20120517080651.GC17419@gmail.com>
+Content-Type: text/plain; charset="ISO-8859-15"
+X-Mailer: Evolution 3.2.2-1 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu 17-05-12 02:24:12, Andrew Morton wrote:
-> On Thu, 17 May 2012 11:13:53 +0200 Michal Hocko <mhocko@suse.cz> wrote:
+On Thu, 2012-05-17 at 10:06 +0200, Ingo Molnar wrote:
+
+> Nor should we waste too much time over these 4 bytes really. Is 
+> the kernel really in such a good shape that we must spend our 
+> time trying to break working apps, over a mostly cosmetic detail 
+> in an ABI which will soon be messed up with our next set up 
+> mistakes anyway? ;-)
 > 
-> > [64574746 vmscan: detect mapped file pages used only once] made mapped pages
-> > have another round in inactive list because they might be just short
-> > lived and so we could consider them again next time. This heuristic
-> > helps to reduce pressure on the active list with a streaming IO
-> > worklods.
-> > This patch fixes a regression introduced by this commit for heavy shmem
-> 
-> A performance regression, specifically.
-> 
-> Are you able to quantify it?
 
-The customer's workload is shmem backed database (80% of RAM) and
-they are measuring transactions/s with an IO in the background (20%).
-Transactions touch more or less random rows in the table.
-The rate goes down drastically when we start swapping out memory.
+4 bytes is not cosmetic for a 32 byte event. That's 1/8th overhead. If
+we could get rid of 4 bytes from struct page, would we do that? It's
+only just 4 bytes for ever 4096 bytes. Just a 1/1024 overhead. Of course
+perf events are much bigger than 32 bytes. It's one of the biggest
+complaints I hear about perf, the size of its events. We should be
+trying hard to fix that.
 
-Numbers are more descriptive (without the patch is 100%, with 5
-representative runs)
-Average rate	315.83%
-Best rate	131.76%
-Worst rate	641.25%
+And we are not spending time trying to break tools. The tools were
+already broken. The main motivator for getting parse-events into
+powertop was that the older version (due to this binary interface) could
+not be used on a system running a 32bit userspace on a 64bit kernel.
 
-Standard deviation (calibrated to average) is ~4% while without the
-patch we are at 62.82%. 
-The big variance without the patch is caused by the excessive swapping
-which doesn't occur with the patch applied.
+With the proper parsing, it not only was able to run on a 32/64
+environment, it can also parse the events like perf does and not need
+direct padding of space.
 
-* Worst run (100%) compared to a random run with the patch
-pgpgin	pswpin	pswpout	pgmajfault
-1.58%	0.00%	0.01%	0.22%
+-- Steve
 
-Average size of the LRU lists:
-nr_inactive_anon nr_active_anon nr_inactive_file nr_active_file
-52.91%           7234.72%       249.39%          126.64%
 
-* Best run
-pgpgin	pswpin	pswpout	pgmajfault
-3.37%	0.00%	0.11%	0.39%
-
-nr_inactive_anon nr_active_anon nr_inactive_file nr_active_file
-49.85%           3868.74%       175.03%          121.27%
-
--- 
-Michal Hocko
-SUSE Labs
-SUSE LINUX s.r.o.
-Lihovarska 1060/12
-190 00 Praha 9    
