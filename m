@@ -1,47 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933432Ab2EQDWs (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 May 2012 23:22:48 -0400
-Received: from sting.hengli.com.au ([178.18.18.71]:49490 "EHLO
-	fornost.hengli.com.au" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1760940Ab2EQDWr (ORCPT
+	id S1760978Ab2EQDgE (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 May 2012 23:36:04 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:59936 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1760937Ab2EQDgD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 May 2012 23:22:47 -0400
-Date: Thu, 17 May 2012 13:22:36 +1000
-From: Herbert Xu <herbert@gondor.hengli.com.au>
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Andreas Westin <andreas.westin@stericsson.com>,
-        Kent Yoder <key@linux.vnet.ibm.com>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Paul Mackerras <paulus@samba.org>, linuxppc-dev@lists.ozlabs.org
-Subject: Re: linux-next: manual merge of the crypto tree with the powerpc
- tree
-Message-ID: <20120517032236.GA11236@gondor.apana.org.au>
-References: <20120517132116.8a5378bce254fc39d20cb08a@canb.auug.org.au>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120517132116.8a5378bce254fc39d20cb08a@canb.auug.org.au>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Wed, 16 May 2012 23:36:03 -0400
+From: Ming Lei <ming.lei@canonical.com>
+To: Alessandro Zummo <a.zummo@towertech.it>,
+        Grant Likely <grant.likely@secretlab.ca>
+Cc: rtc-linux@googlegroups.com, linux-kernel@vger.kernel.org,
+        Ming Lei <ming.lei@canonical.com>
+Subject: [PATCH -next] rtc-twl: pass IRQF_ONESHOT to request_threaded_irq
+Date: Thu, 17 May 2012 11:35:49 +0800
+Message-Id: <1337225749-7106-1-git-send-email-ming.lei@canonical.com>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, May 17, 2012 at 01:21:16PM +1000, Stephen Rothwell wrote:
-> Hi Herbert,
-> 
-> Today's linux-next merge of the crypto tree got a conflict in
-> drivers/crypto/Kconfig between commit aef7b31c8833 ("powerpc/crypto:
-> Build files for the nx device driver") from the powerpc tree and commit
-> 2789c08fffea ("crypto: ux500 - Add driver for CRYP hardware") from the
-> crypto tree.
-> 
-> Just context changes.  I fixed it up (see below) and can carry the fix as
-> necessary.
+The flag of IRQF_ONESHOT should be passed to request_threaded_irq,
+otherwise the following failure message will be dumped because
+hardware handler is defined as NULL:
 
-Looks fine.  Thanks Stephen!
+[    3.329864] genirq: Threaded irq requested with handler=NULL and
+!ONESHOT for irq 363
+[    3.338226] twl_rtc twl_rtc: IRQ is not free.
+[    3.346099] twl_rtc: probe of twl_rtc failed with error -22
+
+The patch fixes the rtc-twl probe failure.
+
+Signed-off-by: Ming Lei <ming.lei@canonical.com>
+---
+ drivers/rtc/rtc-twl.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/drivers/rtc/rtc-twl.c b/drivers/rtc/rtc-twl.c
+index 258abea..c5d06fe 100644
+--- a/drivers/rtc/rtc-twl.c
++++ b/drivers/rtc/rtc-twl.c
+@@ -510,7 +510,7 @@ static int __devinit twl_rtc_probe(struct platform_device *pdev)
+ 	}
+ 
+ 	ret = request_threaded_irq(irq, NULL, twl_rtc_interrupt,
+-				   IRQF_TRIGGER_RISING,
++				   IRQF_TRIGGER_RISING | IRQF_ONESHOT,
+ 				   dev_name(&rtc->dev), rtc);
+ 	if (ret < 0) {
+ 		dev_err(&pdev->dev, "IRQ is not free.\n");
 -- 
-Email: Herbert Xu <herbert@gondor.apana.org.au>
-Home Page: http://gondor.apana.org.au/~herbert/
-PGP Key: http://gondor.apana.org.au/~herbert/pubkey.txt
+1.7.9.5
+
