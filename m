@@ -1,79 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759014Ab2EQAtJ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 May 2012 20:49:09 -0400
-Received: from mail-we0-f174.google.com ([74.125.82.174]:44037 "EHLO
-	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758907Ab2EQAtG (ORCPT
+	id S1759071Ab2EQAu4 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 May 2012 20:50:56 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:49291 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757766Ab2EQAuy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 May 2012 20:49:06 -0400
-Message-ID: <4FB44AF1.4060103@gmail.com>
-Date: Thu, 17 May 2012 02:48:49 +0200
-From: =?UTF-8?B?VmxhZGltaXIgJ8+GLWNvZGVyL3BoY29kZXInIFNlcmJpbmVua28=?= 
-	<phcoder@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.4) Gecko/20120510 Icedove/10.0.4
-MIME-Version: 1.0
-To: Jan Kara <jack@suse.cz>
-CC: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org
-Subject: Eliminating UDF iocharset!=utf8 code (Re: [PATCH 6/8] Support non-BMP
- characters in UDF)
-References: <4FB2E25E.900@gmail.com> <20120516143448.GD27661@quack.suse.cz> <4FB3C44F.6080409@gmail.com> <20120516200459.GD1687@quack.suse.cz> <4FB44856.40102@gmail.com>
-In-Reply-To: <4FB44856.40102@gmail.com>
-X-Enigmail-Version: 1.4.1
-Content-Type: multipart/signed; micalg=pgp-sha512;
- protocol="application/pgp-signature";
- boundary="------------enigD4A3D0FE102BEDA51465E91C"
+	Wed, 16 May 2012 20:50:54 -0400
+Message-ID: <1337215845.5759.1.camel@phoenix>
+Subject: [PATCH] regulator: rc5t583: Remove max_uV from struct
+ rc5t583_regulator_info
+From: Axel Lin <axel.lin@gmail.com>
+To: linux-kernel@vger.kernel.org
+Cc: Laxman Dewangan <ldewangan@nvidia.com>, Liam Girdwood <lrg@ti.com>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>
+Date: Thu, 17 May 2012 08:50:45 +0800
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.2- 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is an OpenPGP/MIME signed message (RFC 2440 and 3156)
---------------enigD4A3D0FE102BEDA51465E91C
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: quoted-printable
+This driver has been converted to set_voltage_sel and regulator_map_voltage_linear.
+regulator_map_voltage_linear will check the voltage falls within specified range.
+The max_uV field is not used now, remove it.
+
+Signed-off-by: Axel Lin <axel.lin@gmail.com>
+---
+ drivers/regulator/rc5t583-regulator.c |    4 ----
+ 1 files changed, 0 insertions(+), 4 deletions(-)
+
+diff --git a/drivers/regulator/rc5t583-regulator.c b/drivers/regulator/rc5t583-regulator.c
+index 987fa34..1d34e64 100644
+--- a/drivers/regulator/rc5t583-regulator.c
++++ b/drivers/regulator/rc5t583-regulator.c
+@@ -40,9 +40,6 @@ struct rc5t583_regulator_info {
+ 	uint8_t			disc_bit;
+ 	uint8_t			deepsleep_reg;
+ 
+-	/* Chip constraints on regulator behavior */
+-	int			max_uV;
+-
+ 	/* Regulator specific turn-on delay  and voltage settling time*/
+ 	int			enable_uv_per_us;
+ 	int			change_uv_per_us;
+@@ -106,7 +103,6 @@ static struct regulator_ops rc5t583_ops = {
+ 	.reg_disc_reg	= RC5T583_REG_##_disc_reg,		\
+ 	.disc_bit	= _disc_bit,				\
+ 	.deepsleep_reg	= RC5T583_REG_##_id##DAC_DS,		\
+-	.max_uV		= _max_mv * 1000,			\
+ 	.enable_uv_per_us = _enable_mv * 1000,			\
+ 	.change_uv_per_us = 40 * 1000,				\
+ 	.deepsleep_id	= RC5T583_DS_##_id,			\
+-- 
+1.7.5.4
 
 
-> I've noticed another duplication in the UDF code: there
-> is NLS support and separate UTF-8 support. UTF-8 is support by 2 ways
-> actually: with -o utf8 and -o iocharset=3Dutf8 which imply different
-> codepaths. Specific UTF-8 support is probably slightly faster by
-> avoiding calls and basically doing everything with shifts (or can be
-> made so with a small patch). Should I perhaps kill one of them? Is
-> iocharset!=3Dutf8 still of any importance? I haven't seen it in ages.
-> Perhaps we could keep just the performant UTF-8 support and map
-> iocharset=3Dutf8 to it and drop iocharset!=3Dutf8? iocharset!=3Dutf8 pr=
-obably
-> has no users anyway so keeping it we're likely to keep bugs and code
-> duplication with no benefit.
->=20
 
-Linux seems to support UTF-8-only pretty strongly: http://yarchive.net/co=
-mp/linux/utf8.html
-(message from Sun, 15 Feb 2004 02:42:45 GMT).
-And I completely agree.
-If it's ok to kill iocharset!=3Dutf8 I'll propose a series of 3 patches (=
-killing iocharset!=3Dutf8,
-extending utf16toutf8/utf8toutf16 for unaligned input, changing UDF code =
-to use common functions)
-
-
---=20
-Regards
-Vladimir '=CF=86-coder/phcoder' Serbinenko
-
-
---------------enigD4A3D0FE102BEDA51465E91C
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: OpenPGP digital signature
-Content-Disposition: attachment; filename="signature.asc"
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-Comment: Using GnuPG with Mozilla - http://enigmail.mozdev.org/
-
-iF0EAREKAAYFAk+0SvEACgkQNak7dOguQgnrOAD/dSk+wlkYznIDZoPBLzB2aKaJ
-nHi1E0txGIZ9ubJ2L08A+IbeRt7TQW9HZAlc+4Jpm5HuwrwUfbH0hMFNSttYpK4=
-=fFNP
------END PGP SIGNATURE-----
-
---------------enigD4A3D0FE102BEDA51465E91C--
