@@ -1,103 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755046Ab2EQIKt (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 May 2012 04:10:49 -0400
-Received: from LGEMRELSE7Q.lge.com ([156.147.1.151]:51391 "EHLO
-	LGEMRELSE7Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754272Ab2EQIK0 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 May 2012 04:10:26 -0400
-X-AuditID: 9c930197-b7be2ae000000ebb-3d-4fb4b270cfd7
-To: undisclosed-recipients:;
-Message-ID: <4FB4B29C.4010908@kernel.org>
-Date: Thu, 17 May 2012 17:11:08 +0900
-From: Minchan Kim <minchan@kernel.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
-MIME-Version: 1.0
-Newsgroups: gmane.linux.kernel.mm,gmane.linux.kernel
-CC: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Nitin Gupta <ngupta@vflare.org>,
-        Seth Jennings <sjenning@linux.vnet.ibm.com>,
-        Dan Magenheimer <dan.magenheimer@oracle.com>,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        Tejun Heo <tj@kernel.org>, David Howells <dhowells@redhat.com>,
-        x86@kernel.org, a.p.zijlstra@chello.nl,
-        Nick Piggin <npiggin@gmail.com>
-Subject: Re: [PATCH v2 3/3] x86: Support local_flush_tlb_kernel_range
-References: <1337133919-4182-1-git-send-email-minchan@kernel.org> <1337133919-4182-3-git-send-email-minchan@kernel.org>
-In-Reply-To: <1337133919-4182-3-git-send-email-minchan@kernel.org>
-Content-Type: text/plain; charset=UTF-8
+	id S1752496Ab2EQILv (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 May 2012 04:11:51 -0400
+Received: from mga09.intel.com ([134.134.136.24]:18712 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751289Ab2EQILo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 17 May 2012 04:11:44 -0400
+Subject: Re: Boot error: x86/efi/ioremap kconfig:x86_64-nfsroot
+ commit:a790068
+From: Matt Fleming <matt.fleming@intel.com>
+To: Fengguang Wu <wfg@linux.intel.com>
+Cc: LKML <linux-kernel@vger.kernel.org>
+In-Reply-To: <20120517065922.GA11817@localhost>
+References: <20120517030652.GA8188@localhost>
+	 <1337236495.27692.27.camel@mfleming-mobl1.ger.corp.intel.com>
+	 <20120517065922.GA11817@localhost>
+Content-Type: text/plain; charset="UTF-8"
+Organization: Intel Corporation (UK) Ltd. - Registered No. 1134945 - Pipers
+ Way, Swindon SN3 1RJ
+Date: Thu, 17 May 2012 09:11:12 +0100
+Message-ID: <1337242272.27692.29.camel@mfleming-mobl1.ger.corp.intel.com>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.3 (2.32.3-1.fc14) 
 Content-Transfer-Encoding: 7bit
-X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Isn't there anyone for taking a time to review this patch? :)
-
-On 05/16/2012 11:05 AM, Minchan Kim wrote:
-
-> The zsmalloc [un]maps non-physical contiguos pages to contiguous
-> virual address frequently so it needs frequent tlb-flush.
-> Now x86 doesn't support common utility function for flushing just
-> a few tlb entries so zsmalloc have been used set_pte and __flush_tlb_one
-> which are x86 specific functions. It means zsmalloc have a dependency
-> with x86.
+On Thu, 2012-05-17 at 14:59 +0800, Fengguang Wu wrote:
+> I happen to be building a kernel test backend for our team and
+> hopefully for the wider kernel community.
 > 
-> This patch adds new function, local_flush_tlb_kernel_range which
-> are good candidate for being common utility function because other
-> architecture(ex, MIPS, sh, unicore32, arm, score) already have
-> supportd it.
-> 
-> Cc: Thomas Gleixner <tglx@linutronix.de>
-> Cc: Ingo Molnar <mingo@redhat.com>
-> Cc: Tejun Heo <tj@kernel.org>
-> Cc: David Howells <dhowells@redhat.com>
-> Cc: x86@kernel.org
-> Signed-off-by: Minchan Kim <minchan@kernel.org>
-> ---
->  arch/x86/include/asm/tlbflush.h  |   12 ++++++++++++
->  drivers/staging/zsmalloc/Kconfig |    2 +-
->  2 files changed, 13 insertions(+), 1 deletion(-)
-> 
-> diff --git a/arch/x86/include/asm/tlbflush.h b/arch/x86/include/asm/tlbflush.h
-> index 4ece077..6e1253a 100644
-> --- a/arch/x86/include/asm/tlbflush.h
-> +++ b/arch/x86/include/asm/tlbflush.h
-> @@ -172,4 +172,16 @@ static inline void flush_tlb_kernel_range(unsigned long start,
->  	flush_tlb_all();
->  }
->  
-> +static inline void local_flush_tlb_kernel_range(unsigned long start,
-> +		unsigned long end)
-> +{
-> +	if (cpu_has_invlpg) {
-> +		while (start < end) {
-> +			__flush_tlb_single(start);
-> +			start += PAGE_SIZE;
-> +		}
-> +	} else
-> +		local_flush_tlb();
-> +}
-> +
->  #endif /* _ASM_X86_TLBFLUSH_H */
-> diff --git a/drivers/staging/zsmalloc/Kconfig b/drivers/staging/zsmalloc/Kconfig
-> index def2483..29819b8 100644
-> --- a/drivers/staging/zsmalloc/Kconfig
-> +++ b/drivers/staging/zsmalloc/Kconfig
-> @@ -3,7 +3,7 @@ config ZSMALLOC
->  	# arch dependency is because of the use of local_unmap_kernel_range
->  	# in zsmalloc-main.c.
->  	# TODO: implement local_unmap_kernel_range in all architecture.
-> -	depends on (ARM || MIPS || SUPERH)
-> +	depends on (ARM || MIPS || SUPERH || X86)
->  	default n
->  	help
->  	  zsmalloc is a slab-based memory allocator designed to store
+> What I do is to fetch a number of git trees (including yours) into my
+> test server, iterate through *all* remote branches and test out *every
+> single* commits there.
+
+That is very cool! I'll keep this in mind in future to make sure that my
+trees don't contain known buggy commits.
 
 
-
--- 
-Kind regards,
-Minchan Kim
