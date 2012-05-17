@@ -1,52 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1762284Ab2EQSAJ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 May 2012 14:00:09 -0400
-Received: from mail-wg0-f44.google.com ([74.125.82.44]:54828 "EHLO
-	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757016Ab2EQSAH (ORCPT
+	id S1762301Ab2EQSMu (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 May 2012 14:12:50 -0400
+Received: from mail-ee0-f46.google.com ([74.125.83.46]:37812 "EHLO
+	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754980Ab2EQSMs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 May 2012 14:00:07 -0400
-Date: Thu, 17 May 2012 20:00:01 +0200
-From: Ingo Molnar <mingo@kernel.org>
-To: Paul Gortmaker <paul.gortmaker@windriver.com>
-Cc: linux-kernel@vger.kernel.org, JBottomley@parallels.com,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, x86@kernel.org
-Subject: Re: [PATCH 5/5] MCA: delete all remaining traces of microchannel bus
- support.
-Message-ID: <20120517180001.GA17846@gmail.com>
-References: <1337272841-25931-1-git-send-email-paul.gortmaker@windriver.com>
- <1337272841-25931-6-git-send-email-paul.gortmaker@windriver.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1337272841-25931-6-git-send-email-paul.gortmaker@windriver.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Thu, 17 May 2012 14:12:48 -0400
+Subject: Re: tcp timestamp issues with google servers
+From: Eric Dumazet <eric.dumazet@gmail.com>
+To: Miklos Szeredi <miklos@szeredi.hu>
+Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+In-Reply-To: <87r4ujno34.fsf@tucsk.pomaz.szeredi.hu>
+References: <87r4ujno34.fsf@tucsk.pomaz.szeredi.hu>
+Content-Type: text/plain; charset="UTF-8"
+Date: Thu, 17 May 2012 20:12:43 +0200
+Message-ID: <1337278363.3403.39.camel@edumazet-glaptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-* Paul Gortmaker <paul.gortmaker@windriver.com> wrote:
-
-> Hardware with MCA bus is limited to 386 and 486 class machines
-> that are now 20+ years old and typically with less than 32MB
-> of memory.  A quick search on the internet, and you see that
-> even the MCA hobbyist/enthusiast community has lost interest
-> in the early 2000 era and never really even moved ahead from
-> the 2.4 kernels to the 2.6 series.
+On Thu, 2012-05-17 at 11:39 +0200, Miklos Szeredi wrote:
+> Sometimes connection to google.com, gmail.com and other google servers
+> doesn't work or takes ages to connect.  When this hits it hits all
+> google servers at the same time and it's persistent.  It never happens
+> to anything other than google.  Rebooting helps.  Rarely it goes away
+> spontaneously.
 > 
-> This deletes anything remaining related to CONFIG_MCA from core
-> kernel code and from the x86 architecture.  There is no point in
-> carrying this any further into the future.
+> Apparently google is sometimes replying with an invalid TSecr timestamp
+> value (smaller than the one sent in the last packet) and this confuses
+> the Linux TCP stack which either discards the packet or sends a Reset.
 > 
-> One complication to watch for is inadvertently scooping up
-> stuff relating to machine check, since there is overlap in
-> the TLA name space (e.g. arch/x86/boot/mca.c).
+> Network dump attached.
+> 
+> I found only a couple of references to this issue:
+> 
+> http://gotchas.livejournal.com/3028.html
+> 
+> http://groups.google.com/group/comp.os.linux.networking/browse_thread/thread/29f56feded11b42a
+> 
+> Turning tcp timestamps fixes the issue:
+> 
+>   sysctl -w net.ipv4.tcp_timestamps=0
+> 
+> Not sure why this happens only to me and a very few others.
+> 
+> It appears to be an issue with google TCP stack (is it a modified
+> stack?) but I thought about issues in my network switch (restarting it
+> doesn't help) or something in the ISP, but those look unlikely.
+> 
+> Any ideas?
+> 
+> Thanks,
+> Miklos
+> 
+> 
+> 
+>   1   0.000000 192.168.28.100 -> 74.125.232.226 TCP 51303 > http [SYN] Seq=0 Win=14600 Len=0 MSS=1460 SACK_PERM=1 TSV=35355050 TSER=0 WS=5
+>   2   0.002730 74.125.232.226 -> 192.168.28.100 TCP http > 51303 [SYN, ACK] Seq=0 Ack=1 Win=14180 Len=0 MSS=1430 SACK_PERM=1 TSV=1184565067 TSER=35325344 WS=6
 
-Acked-by: Ingo Molnar <mingo@elte.hu>
 
-Thanks,
+Do you really have 2730 usec RTT between you and this (Google ?)
+server ?
 
-	Ingo
+Are you sure this is not a broken middle box ?
+
+
+
