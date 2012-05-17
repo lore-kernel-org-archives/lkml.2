@@ -1,144 +1,136 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1762054Ab2EQPCJ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 May 2012 11:02:09 -0400
-Received: from mail-we0-f174.google.com ([74.125.82.174]:42572 "EHLO
-	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S967101Ab2EQPBo (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 May 2012 11:01:44 -0400
-From: Sasha Levin <levinsasha928@gmail.com>
-To: greg@kroah.com, kay@vrfy.org, torvalds@linux-foundation.org
-Cc: mingo@kernel.org, linux-kernel@vger.kernel.org, joe@perches.com,
-        hpa@kernel.org, yinghai@kernel.org,
-        Sasha Levin <levinsasha928@gmail.com>
-Subject: [RFC] printk: add relative printk timing support
-Date: Thu, 17 May 2012 17:02:49 +0200
-Message-Id: <1337266969-19181-1-git-send-email-levinsasha928@gmail.com>
-X-Mailer: git-send-email 1.7.8.6
+	id S967107Ab2EQPCg (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 May 2012 11:02:36 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:33363 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1762017Ab2EQOuj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 17 May 2012 10:50:39 -0400
+From: Mel Gorman <mgorman@suse.de>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Linux-MM <linux-mm@kvack.org>, Linux-Netdev <netdev@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        David Miller <davem@davemloft.net>, Neil Brown <neilb@suse.de>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Mike Christie <michaelc@cs.wisc.edu>,
+        Eric B Munson <emunson@mgebm.net>, Mel Gorman <mgorman@suse.de>
+Subject: [PATCH 05/17] mm: allow PF_MEMALLOC from softirq context
+Date: Thu, 17 May 2012 15:50:19 +0100
+Message-Id: <1337266231-8031-6-git-send-email-mgorman@suse.de>
+X-Mailer: git-send-email 1.7.9.2
+In-Reply-To: <1337266231-8031-1-git-send-email-mgorman@suse.de>
+References: <1337266231-8031-1-git-send-email-mgorman@suse.de>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch adds support for relative timestamps in printk output.
+This is needed to allow network softirq packet processing to make
+use of PF_MEMALLOC.
 
-First, this is how it looks now:
+Currently softirq context cannot use PF_MEMALLOC due to it not being
+associated with a task, and therefore not having task flags to fiddle
+with - thus the gfp to alloc flag mapping ignores the task flags when
+in interrupts (hard or soft) context.
 
-[  120.001386] foo
-[  181.036862] bar
-[  186.070696] zoot
-[  196.288022] foo
-[  257.415895] bar
-[  257.416580] zoot
+Allowing softirqs to make use of PF_MEMALLOC therefore requires some
+trickery. This patch borrows the task flags from whatever process happens
+to be preempted by the softirq. It then modifies the gfp to alloc flags
+mapping to not exclude task flags in softirq context, and modify the
+softirq code to save, clear and restore the PF_MEMALLOC flag.
 
-Next, with Linus' suggestion (Month and date, no seconds):
+The save and clear, ensures the preempted task's PF_MEMALLOC flag
+doesn't leak into the softirq. The restore ensures a softirq's
+PF_MEMALLOC flag cannot leak back into the preempted process. This
+should be safe due to the following reasons
 
-[May 17 14:13] foo
-[May 17 14:14] bar
-[+05.00026906] zoot
-[+10.00054898] foo
-[May 17 14:15] bar
-[+00.00000668] zoot
+Softirqs can run on multiple CPUs sure but the same task should not be
+	executing the same softirq code. Neither should the softirq
+	handler be preempted by any other softirq handler so the flags
+	should not leak to an unrelated softirq.
 
-And Peter's suggestion (MS accurate absolute time):
+Softirqs re-enable hardware interrupts in __do_softirq() so can be
+	preempted by hardware interrupts so PF_MEMALLOC is inherited
+	by the hard IRQ. However, this is similar to a process in
+	reclaim being preempted by a hardirq. While PF_MEMALLOC is
+	set, gfp_to_alloc_flags() distinguishes between hard and
+	soft irqs and avoids giving a hardirq the ALLOC_NO_WATERMARKS
+	flag.
 
-[14:16:57.970] foo
-[14:17:59.063] bar
-[+05.00032139] zoot
-[+10.00336079] foo
-[14:19:15.677] bar
-[+00.00001905] zoot
+If the softirq is deferred to ksoftirq then its flags may be used
+        instead of a normal tasks but as the softirq cannot be preempted,
+        the PF_MEMALLOC flag does not leak to other code by accident.
 
-Todo:
- - Can we get rid of the spinlock somehow? I tried using atomic64_t, but got
-hit with races causing odd prints.
- - Do we want to make the 60 second "timeout" for printing abs time
-configurable?
-- Are there any other formats we would want to add?
-
-Suggested-by: Linus Torvalds <torvalds@linux-foundation.org>
-Signed-off-by: Sasha Levin <levinsasha928@gmail.com>
+[davem@davemloft.net: Document why PF_MEMALLOC is safe]
+Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Signed-off-by: Mel Gorman <mgorman@suse.de>
 ---
- kernel/printk.c |   50 ++++++++++++++++++++++++++++++++++++++++++++------
- 1 files changed, 44 insertions(+), 6 deletions(-)
+ include/linux/sched.h |    7 +++++++
+ kernel/softirq.c      |    9 +++++++++
+ mm/page_alloc.c       |    6 +++++-
+ 3 files changed, 21 insertions(+), 1 deletion(-)
 
-diff --git a/kernel/printk.c b/kernel/printk.c
-index 32462d2..9d008e5 100644
---- a/kernel/printk.c
-+++ b/kernel/printk.c
-@@ -779,11 +779,12 @@ static int check_syslog_permissions(int type, bool from_file)
+diff --git a/include/linux/sched.h b/include/linux/sched.h
+index 81a173c..b5efaf4 100644
+--- a/include/linux/sched.h
++++ b/include/linux/sched.h
+@@ -1913,6 +1913,13 @@ static inline void rcu_copy_process(struct task_struct *p)
+ 
+ #endif
+ 
++static inline void tsk_restore_flags(struct task_struct *task,
++				unsigned long orig_flags, unsigned long flags)
++{
++	task->flags &= ~flags;
++	task->flags |= orig_flags & flags;
++}
++
+ #ifdef CONFIG_SMP
+ extern void do_set_cpus_allowed(struct task_struct *p,
+ 			       const struct cpumask *new_mask);
+diff --git a/kernel/softirq.c b/kernel/softirq.c
+index 671f959..b73e681 100644
+--- a/kernel/softirq.c
++++ b/kernel/softirq.c
+@@ -210,6 +210,14 @@ asmlinkage void __do_softirq(void)
+ 	__u32 pending;
+ 	int max_restart = MAX_SOFTIRQ_RESTART;
+ 	int cpu;
++	unsigned long old_flags = current->flags;
++
++	/*
++	 * Mask out PF_MEMALLOC s current task context is borrowed for the
++	 * softirq. A softirq handled such as network RX might set PF_MEMALLOC
++	 * again if the socket is related to swap
++	 */
++	current->flags &= ~PF_MEMALLOC;
+ 
+ 	pending = local_softirq_pending();
+ 	account_system_vtime(current);
+@@ -265,6 +273,7 @@ restart:
+ 
+ 	account_system_vtime(current);
+ 	__local_bh_enable(SOFTIRQ_OFFSET);
++	tsk_restore_flags(current, old_flags, PF_MEMALLOC);
  }
  
- #if defined(CONFIG_PRINTK_TIME)
--static bool printk_time = 1;
-+static int printk_time = 1;
- #else
--static bool printk_time;
-+static int printk_time;
- #endif
--module_param_named(time, printk_time, bool, S_IRUGO | S_IWUSR);
-+module_param_named(time, printk_time, int, S_IRUGO | S_IWUSR);
-+static DEFINE_SPINLOCK(printk_time_rel);
- 
- static size_t print_prefix(const struct log *msg, bool syslog, char *buf)
- {
-@@ -801,16 +802,53 @@ static size_t print_prefix(const struct log *msg, bool syslog, char *buf)
- 		}
+ #ifndef __ARCH_HAS_DO_SOFTIRQ
+diff --git a/mm/page_alloc.c b/mm/page_alloc.c
+index 8a63620..15aebd285 100644
+--- a/mm/page_alloc.c
++++ b/mm/page_alloc.c
+@@ -2211,7 +2211,11 @@ gfp_to_alloc_flags(gfp_t gfp_mask)
+ 	if (likely(!(gfp_mask & __GFP_NOMEMALLOC))) {
+ 		if (gfp_mask & __GFP_MEMALLOC)
+ 			alloc_flags |= ALLOC_NO_WATERMARKS;
+-		else if (likely(!(gfp_mask & __GFP_NOMEMALLOC)) && !in_interrupt())
++		else if (in_serving_softirq() && (current->flags & PF_MEMALLOC))
++			alloc_flags |= ALLOC_NO_WATERMARKS;
++		else if (!in_interrupt() &&
++				((current->flags & PF_MEMALLOC) ||
++				 unlikely(test_thread_flag(TIF_MEMDIE))))
+ 			alloc_flags |= ALLOC_NO_WATERMARKS;
  	}
  
--	if (printk_time) {
-+	if (printk_time == 1) {
- 		if (buf) {
- 			unsigned long long ts = msg->ts_nsec;
--			unsigned long rem_nsec = do_div(ts, 1000000000);
-+			unsigned long rem_nsec = do_div(ts, NSEC_PER_SEC);
- 
- 			len += sprintf(buf + len, "[%5lu.%06lu] ",
--					 (unsigned long) ts, rem_nsec / 1000);
-+					 (unsigned long) ts, rem_nsec / NSEC_PER_USEC);
- 		} else {
- 			len += 15;
- 		}
-+	} else if (printk_time == 2 || printk_time == 3) {
-+		static unsigned long long last_print;
-+		unsigned long long ts = msg->ts_nsec;
-+		unsigned long rem_nsec;
-+		bool rel = 0;
-+		static const char *months[12] = {"Jan", "Feb", "Mar", "Apr",
-+						"May", "Jun", "Jul", "Aug",
-+						"Sep", "Oct", "Nov", "Dec",};
-+
-+		if (!buf)
-+			return len + 15;
-+
-+		spin_lock(&printk_time_rel);
-+		if ((ts - last_print) / NSEC_PER_SEC < 60) {
-+			rel = 1;
-+			ts -= last_print;
-+		}
-+		last_print = msg->ts_nsec;
-+		spin_unlock(&printk_time_rel);
-+
-+		rem_nsec = do_div(ts, NSEC_PER_SEC);
-+		if (rel) {
-+			len += sprintf(buf + len, "[%+03d.%08lu] ",
-+					(int)ts, rem_nsec / NSEC_PER_USEC);
-+		} else {
-+			struct tm tm;
-+
-+			time_to_tm(get_seconds(), 0, &tm);
-+			if (printk_time == 2)
-+				len += sprintf(buf + len, "[%s %02d %02d:%02d] ",
-+						months[tm.tm_mon], tm.tm_mday,
-+						tm.tm_hour, tm.tm_min);
-+			if (printk_time == 3)
-+				len += sprintf(buf + len, "[%02d:%02d:%02d.%03lu] ",
-+						tm.tm_hour, tm.tm_min, tm.tm_sec,
-+						rem_nsec / NSEC_PER_MSEC);
-+		}
- 	}
- 
- 	return len;
 -- 
-1.7.8.6
+1.7.9.2
 
