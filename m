@@ -1,56 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760034Ab2EQJUV (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 May 2012 05:20:21 -0400
-Received: from linux-sh.org ([111.68.239.195]:52668 "EHLO linux-sh.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757679Ab2EQJUT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 May 2012 05:20:19 -0400
-Date: Thu, 17 May 2012 18:19:42 +0900
-From: Paul Mundt <lethal@linux-sh.org>
-To: Minchan Kim <minchan@kernel.org>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Nitin Gupta <ngupta@vflare.org>,
-        Seth Jennings <sjenning@linux.vnet.ibm.com>,
-        Dan Magenheimer <dan.magenheimer@oracle.com>,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        Russell King <linux@arm.linux.org.uk>,
-        Ralf Baechle <ralf@linux-mips.org>, Guan Xuetao <gxt@mprc.pku.edu.cn>,
-        Chen Liqin <liqin.chen@sunplusct.com>
-Subject: Re: [PATCH v2 1/3] zsmalloc: support zsmalloc to ARM, MIPS, SUPERH
-Message-ID: <20120517091942.GA24355@linux-sh.org>
-References: <1337133919-4182-1-git-send-email-minchan@kernel.org>
- <20120517083213.GC14027@linux-sh.org>
- <4FB4BFB0.4010805@kernel.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4FB4BFB0.4010805@kernel.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1761422Ab2EQJVE (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 May 2012 05:21:04 -0400
+Received: from mail-gg0-f174.google.com ([209.85.161.174]:63973 "EHLO
+	mail-gg0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759500Ab2EQJVA (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 17 May 2012 05:21:00 -0400
+From: Liu Ping Fan <kernelfans@gmail.com>
+To: kvm@vger.kernel.org, netdev@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org, qemu-devel@nongnu.org,
+        Avi Kivity <avi@redhat.com>, "Michael S. Tsirkin" <mst@redhat.com>,
+        Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>,
+        Rusty Russell <rusty@rustcorp.com.au>,
+        Anthony Liguori <anthony@codemonkey.ws>,
+        Ryan Harper <ryanh@us.ibm.com>, Shirley Ma <xma@us.ibm.com>,
+        Krishna Kumar <krkumar2@in.ibm.com>, Tom Lendacky <toml@us.ibm.com>
+Subject: [RFC:kvm] export host NUMA info to guest & make emulated device NUMA attr
+Date: Thu, 17 May 2012 17:20:52 +0800
+Message-Id: <1337246456-30909-1-git-send-email-kernelfans@gmail.com>
+X-Mailer: git-send-email 1.7.4.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, May 17, 2012 at 06:06:56PM +0900, Minchan Kim wrote:
-> On 05/17/2012 05:32 PM, Paul Mundt wrote:
-> > One thing you might consider is providing a stubbed definition that wraps
-> > to flush_tlb_kernel_range() in the !SMP case, as this will extend your
-> > testing coverage for staging considerably.
-> 
-> 
-> AFAIUC, you mean following as,
-> 
-> ifndef CONFIG_SMP
-> void flush_tlb_kernel_range(unsinged long start, unsigned log end)
-> {
-> 	local_flush_tlb_kernel_range(start, end);
-> }
-> #endif
-> 
-Actually I meant the opposite:
+Currently, the guest can not know the NUMA info of the vcpu, which will
+result in performance drawback.
 
-#ifndef CONFIG_SMP
-#define local_flush_tlb_kernel_range flush_tlb_kernel_range
-#endif
+This is the discovered and experiment by
+        Shirley Ma <xma@us.ibm.com>
+        Krishna Kumar <krkumar2@in.ibm.com>
+        Tom Lendacky <toml@us.ibm.com>
+Refer to - http://www.mail-archive.com/kvm@vger.kernel.org/msg69868.html
+we can see the big perfermance gap between NUMA aware and unaware.
 
-as the UP case is going to be local already. It's a bit hacky, though.
+Enlightened by their discovery, I think, we can do more work -- that is to
+export NUMA info of host to guest.
+
+So here comes the idea:
+1. export host numa info through guest's sched domain to its scheduler
+  Export vcpu's NUMA info to guest scheduler(I think mem NUMA problem
+  has been handled by host).  So the guest's lb will consider the cost.
+  I am still working on this, and my original idea is to export these info
+  through "static struct sched_domain_topology_level *sched_domain_topology"
+  to guest.
+
+2. Do a better emulation of virt mach exported to guest.
+  In real world, the devices are limited by kinds of reasons to own the NUMA
+  property. But as to Qemu, the device is emulated by thread, which inherit
+  the NUMA attr in nature.  We can implement the device as components of many
+  logic units, each of the unit is backed by a thread in different host node.
+  Currently, I want to start the work on vhost. But I think, maybe in
+  future, the iothread in Qemu can also has such attr.
+
+
+Forgive me, for the limited time, I can not have more better understand of
+vhost/virtio_net drivers. These patches are just draft, _FAR_, _FAR_ from work.
+I will do more detail work for them in future.
+
+To easy the review, the following is the sum up of the 2nd point of the idea.
+As for the 1st point of the idea, it is not reflected in the patches.
+
+--spread/shrink the vhost_workers over the host nodes as demanded from Qemu.
+  And we can consider each vhost_worker as an independent net logic device
+  embeded in physical device "vhost_net".  At the meanwhile, we spread vcpu
+  threads over the host node. 
+  The vrings on guest are allocated PAGE_SIZE align separately, so they can 
+  will only be mapped into different host node, so vhost_worker in the same
+  node can access it with the least cost. So does the vq on guest.
+
+--virtio_net driver will changes and talk with the logic device. And which
+  logic device it will talk to is determined by on which vcpu it is scheduled.
+
+--the binding of vcpus and vhost_worker is implemented by: 
+  for call direction, vq-a in the node-A will have a dedicated irq-a. And 
+  we set the irq-a's affinity to vcpus in node-A.
+  for kick direction, kick register-b trigger different eventfd-b which wake up
+  vhost_worker-b.
+
+
+Please give some comments and suggestion.
+
+Thanks and regards,
+pingfan
+
