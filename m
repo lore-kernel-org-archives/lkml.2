@@ -1,51 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760326Ab2EQA70 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 May 2012 20:59:26 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:51925 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759974Ab2EQA7Y (ORCPT
+	id S1760010Ab2EQBCu (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 May 2012 21:02:50 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:44970 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758865Ab2EQBCs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 May 2012 20:59:24 -0400
-References: <1337167186-8535-1-git-send-email-peter.ujfalusi@ti.com> <20120516193546.GA15920@core.coreip.homeip.net> <CAPo=G1zf1XJcoKgCxMn3X09T0LOUG-9aw3iopqC7OPqcuc5hcQ@mail.gmail.com>
-User-Agent: K-9 Mail for Android
-In-Reply-To: <CAPo=G1zf1XJcoKgCxMn3X09T0LOUG-9aw3iopqC7OPqcuc5hcQ@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain;
- charset=UTF-8
-Content-Transfer-Encoding: 8bit
-Subject: Re: [PATCH] Input: twl6040-vibra: Update for device tree support
-From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-Date: Wed, 16 May 2012 17:59:14 -0700
-To: "Ujfalusi, Peter" <peter.ujfalusi@ti.com>
-CC: Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Liam Girdwood <lrg@ti.com>, Benoit Cousson <b-cousson@ti.com>,
-        linux-kernel@vger.kernel.org, devicetree-discuss@lists.ozlabs.org
-Message-ID: <94a2ece7-00b3-4624-82d5-93b22695aa5d@email.android.com>
+	Wed, 16 May 2012 21:02:48 -0400
+Message-ID: <1337216562.5759.5.camel@phoenix>
+Subject: [PATCH] regulator: max8649: Remove unused check_range() function
+From: Axel Lin <axel.lin@gmail.com>
+To: linux-kernel@vger.kernel.org
+Cc: Jonghwan Choi <jhbird.choi@gmail.com>,
+        Haojian Zhuang <haojian.zhuang@marvell.com>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Liam Girdwood <lrg@ti.com>
+Date: Thu, 17 May 2012 09:02:42 +0800
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.2- 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-"Ujfalusi, Peter" <peter.ujfalusi@ti.com> wrote:
+This driver has been converted to use regulator_map_voltage_linear and
+set_voltage_sel now. regulator_map_voltage_linear will check the the voltage
+falls within specified range. The check_range() function is not used, remove it.
 
->Hi Dmitry,
->
->On Wed, May 16, 2012 at 10:35 PM, Dmitry Torokhov
-><dmitry.torokhov@gmail.com> wrote:
->> So in this case why don't you have parent parse all DT data and
->> construct instance of pdata for vibra driver to consume?
->
->If there is a need to change the parameters (add new ones for example)
->for the vibra driver in this way the change in code only need to be
->done in the vibra driver.
->If the MFD core would construct the pdata, in this case I would need
->to modify both the MFD core and vibra driver.
->
+Signed-off-by: Axel Lin <axel.lin@gmail.com>
+---
+ drivers/regulator/max8649.c |   10 ----------
+ 1 files changed, 0 insertions(+), 10 deletions(-)
 
-Ok, fair enough.
+diff --git a/drivers/regulator/max8649.c b/drivers/regulator/max8649.c
+index 39fffb2..1f4bb80 100644
+--- a/drivers/regulator/max8649.c
++++ b/drivers/regulator/max8649.c
+@@ -60,16 +60,6 @@ struct max8649_regulator_info {
+ 	unsigned	ramp_down:1;
+ };
+ 
+-/* I2C operations */
+-
+-static inline int check_range(int min_uV, int max_uV)
+-{
+-	if ((min_uV < MAX8649_DCDC_VMIN) || (max_uV > MAX8649_DCDC_VMAX)
+-		|| (min_uV > max_uV))
+-		return -EINVAL;
+-	return 0;
+-}
+-
+ /* EN_PD means pulldown on EN input */
+ static int max8649_enable(struct regulator_dev *rdev)
+ {
+-- 
+1.7.5.4
 
-Thanks.
 
 
---
-Dmitry
