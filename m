@@ -1,73 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932958Ab2EQVUh (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 May 2012 17:20:37 -0400
-Received: from nat.nue.novell.com ([195.135.221.2]:25626 "EHLO
-	nat.nue.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760661Ab2EQVUf (ORCPT
+	id S933444Ab2EQVUt (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 May 2012 17:20:49 -0400
+Received: from mail1.windriver.com ([147.11.146.13]:65516 "EHLO
+	mail1.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933056Ab2EQVUo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 May 2012 17:20:35 -0400
-Message-ID: <4FB56B9C.8080109@suse.com>
-Date: Thu, 17 May 2012 14:20:28 -0700
-From: Lee Duncan <lduncan@suse.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120421 Thunderbird/12.0
+	Thu, 17 May 2012 17:20:44 -0400
+Date: Thu, 17 May 2012 17:20:39 -0400
+From: Paul Gortmaker <paul.gortmaker@windriver.com>
+To: <linux-kernel@vger.kernel.org>, <JBottomley@parallels.com>,
+        "David S. Miller" <davem@davemloft.net>, <netdev@vger.kernel.org>
+Subject: Re: [PATCH 2/5] drivers/net: delete all code/drivers depending on
+ CONFIG_MCA
+Message-ID: <20120517212039.GC27789@windriver.com>
+References: <1337272841-25931-1-git-send-email-paul.gortmaker@windriver.com>
+ <1337272841-25931-3-git-send-email-paul.gortmaker@windriver.com>
+ <4FB52C99.6010303@windriver.com>
 MIME-Version: 1.0
-To: linux-scsi@vger.kernel.org
-CC: linux-kernel@vger.kernel.org, kai.makisara@kolumbus.fi, jeffm@suse.com
-Subject: [PATCH v2 2/5] st: clean up dev cleanup in st_probe
-X-Enigmail-Version: 1.4.1
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+In-Reply-To: <4FB52C99.6010303@windriver.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Jeff Mahoney <jeffm@suse.com>
+[Re: [PATCH 2/5] drivers/net: delete all code/drivers depending on CONFIG_MCA] On 17/05/2012 (Thu 12:51) Paul Gortmaker wrote:
 
-st_probe leaves a cdev pointer hanging around that is compared
-during the error path and freed later. There's no need for the pointer
-to hang around at all. So we free it immediately and simplify the error
-handling.
+> On 12-05-17 12:40 PM, Paul Gortmaker wrote:
+> 
+> [..]
+> 
+> >  18 files changed, 18 insertions(+), 5288 deletions(-)
+> >  delete mode 100644 drivers/net/ethernet/8390/ne2.c
+> >  delete mode 100644 drivers/net/ethernet/8390/smc-mca.c
+> >  delete mode 100644 drivers/net/ethernet/i825xx/3c523.c
+> >  delete mode 100644 drivers/net/ethernet/i825xx/3c523.h
+> >  delete mode 100644 drivers/net/ethernet/i825xx/3c527.c
+> 
+> I can also obviously delete 3c527.h too.  Not sure why I didn't
+> notice that until just now...  :(
 
-Signed-off-by: Jeff Mahoney <jeffm@suse.com>
-Signed-off-by: Lee Duncan <lduncan@suse.com>
+I've layered the above commit (with 3c527.h deleted) onto today's
+net-next, did a quick re-test of x86_64 allmodconfig and put it
+on a branch as per below (vs sending a 5000+ line patch).
+
+Thanks,
+Paul.
 ---
- drivers/scsi/st.c |   11 ++++-------
- 1 file changed, 4 insertions(+), 7 deletions(-)
 
-diff --git a/drivers/scsi/st.c b/drivers/scsi/st.c
-index 532543c..40f9d47 100644
---- a/drivers/scsi/st.c
-+++ b/drivers/scsi/st.c
-@@ -4156,6 +4156,7 @@ static int st_probe(struct device *dev)
- 				printk(KERN_ERR
- 				       "st%d: out of memory. Device not attached.\n",
- 				       dev_num);
-+				cdev_del(cdev);
- 				goto out_free_tape;
- 			}
- 			cdev->owner = THIS_MODULE;
-@@ -4194,17 +4195,13 @@ out_free_tape:
- 				  "tape");
- 		for (j=0; j < 2; j++) {
- 			if (STm->cdevs[j]) {
--				if (cdev == STm->cdevs[j])
--					cdev = NULL;
--					device_destroy(&st_sysfs_class,
--						       MKDEV(SCSI_TAPE_MAJOR,
--							     TAPE_MINOR(i, mode, j)));
-+				device_destroy(&st_sysfs_class,
-+					       MKDEV(SCSI_TAPE_MAJOR,
-+						     TAPE_MINOR(i, mode, j)));
- 				cdev_del(STm->cdevs[j]);
- 			}
- 		}
- 	}
--	if (cdev)
--		cdev_del(cdev);
- 	write_lock(&st_dev_arr_lock);
- 	scsi_tapes[dev_num] = NULL;
- 	st_nr_dev--;
--- 
-1.7.9.2
+The following changes since commit bc6a4744b827c5a78ca591acca81809bddb8b2db:
 
+  net/mlx4_en: num cores tx rings for every UP (2012-05-17 16:17:50 -0400)
+
+are available in the git repository at:
+
+  git://git.kernel.org/pub/scm/linux/kernel/git/paulg/linux.git delete-mca-net-drivers
+
+for you to fetch changes up to a5e371f61ad33c07b28e7c9b60c78d71fdd34e2a:
+
+  drivers/net: delete all code/drivers depending on CONFIG_MCA (2012-05-17 16:37:41 -0400)
+
+----------------------------------------------------------------
+Paul Gortmaker (1):
+      drivers/net: delete all code/drivers depending on CONFIG_MCA
+
+ Documentation/networking/3c509.txt     |    1 -
+ Documentation/networking/fore200e.txt  |    6 +-
+ drivers/net/Space.c                    |   16 +-
+ drivers/net/ethernet/3com/3c509.c      |  123 +---
+ drivers/net/ethernet/8390/Kconfig      |   24 -
+ drivers/net/ethernet/8390/Makefile     |    1 -
+ drivers/net/ethernet/8390/ne2.c        |  798 ---------------
+ drivers/net/ethernet/8390/smc-mca.c    |  575 -----------
+ drivers/net/ethernet/amd/depca.c       |  210 +----
+ drivers/net/ethernet/fujitsu/at1700.c  |  120 +---
+ drivers/net/ethernet/i825xx/3c523.c    | 1312 -------------------------
+ drivers/net/ethernet/i825xx/3c523.h    |  355 -------
+ drivers/net/ethernet/i825xx/3c527.c    | 1660 --------------------------------
+ drivers/net/ethernet/i825xx/3c527.h    |   81 --
+ drivers/net/ethernet/i825xx/Kconfig    |   22 -
+ drivers/net/ethernet/i825xx/Makefile   |    2 -
+ drivers/net/ethernet/i825xx/eexpress.c |   60 +--
+ drivers/net/ethernet/natsemi/Kconfig   |   20 +-
+ drivers/net/ethernet/natsemi/Makefile  |    1 -
+ 19 files changed, 18 insertions(+), 5369 deletions(-)
+ delete mode 100644 drivers/net/ethernet/8390/ne2.c
+ delete mode 100644 drivers/net/ethernet/8390/smc-mca.c
+ delete mode 100644 drivers/net/ethernet/i825xx/3c523.c
+ delete mode 100644 drivers/net/ethernet/i825xx/3c523.h
+ delete mode 100644 drivers/net/ethernet/i825xx/3c527.c
+ delete mode 100644 drivers/net/ethernet/i825xx/3c527.h
