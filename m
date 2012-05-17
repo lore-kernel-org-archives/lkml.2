@@ -1,80 +1,228 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1762110Ab2EQPpQ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 May 2012 11:45:16 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:47782 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752248Ab2EQPpO convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 May 2012 11:45:14 -0400
+	id S1762138Ab2EQPpo (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 May 2012 11:45:44 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:37895 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753040Ab2EQPpl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 17 May 2012 11:45:41 -0400
+Date: Thu, 17 May 2012 12:45:21 -0300
+From: Arnaldo Carvalho de Melo <acme@redhat.com>
+To: Feng Tang <feng.tang@intel.com>
+Cc: mingo@elte.hu, a.p.zijlstra@chello.nl, robert.richter@amd.com,
+        ak@linux.intel.com, linux-kernel@vger.kernel.org,
+        David Ahern <dsahern@gmail.com>
+Subject: Re: [PATCH 2/3] perf script: Replace "struct thread" with "struct
+ addr_location" as a parameter for "process_event()"
+Message-ID: <20120517154521.GB2636@infradead.org>
+References: <1337173155-25780-1-git-send-email-feng.tang@intel.com>
+ <1337173155-25780-2-git-send-email-feng.tang@intel.com>
 MIME-Version: 1.0
-X-Originating-IP: [46.116.86.177]
-In-Reply-To: <81C3A93C17462B4BBD7E272753C10579232F20847B@EXDCVYMBSTM005.EQ1STM.local>
-References: <1335388200-18504-1-git-send-email-sjur.brandeland@stericsson.com>
- <CAK=WgbYisX2A-DHZy6-AhFFTR3QuxJ0OcVaz+JcpzJOwxT3eWA@mail.gmail.com> <81C3A93C17462B4BBD7E272753C10579232F20847B@EXDCVYMBSTM005.EQ1STM.local>
-From: Ohad Ben-Cohen <ohad@wizery.com>
-Date: Thu, 17 May 2012 18:44:53 +0300
-Message-ID: <CAK=WgbY8RpOfZT5qNtFKOHoE5TD9s7JeqGvXadaXoZ6a7m0r4Q@mail.gmail.com>
-Subject: Re: Remoteproc adaptations for ST-Ericsson modems
-To: Sjur BRENDELAND <sjur.brandeland@stericsson.com>
-Cc: Loic PALLARDY <loic.pallardy@stericsson.com>,
-        Ludovic BARRE <ludovic.barre@stericsson.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Arnd Bergmann <arnd@arndb.de>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        =?ISO-8859-1?Q?Sjur_Br=E6ndeland?= <sjurbren@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1337173155-25780-2-git-send-email-feng.tang@intel.com>
+X-Url: http://acmel.wordpress.com
+User-Agent: Mutt/1.5.20 (2009-12-10)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Sjur,
+Em Wed, May 16, 2012 at 08:59:14PM +0800, Feng Tang escreveu:
+> Both perl and python script start processing events other than trace
+> points, and it's useful to pass the resolved symbol and the dso info
+> to the event handler in script for better analysis and statistics.
+> 
+> Struct thread is already a member of struct addr_location, using
+> addr_location will keep the thread info, while providing additional
+> symbol and dso info if exist, so that the script itself doesn't need
+> to bother to do the symbol resolving and dso searching work.
 
-Sorry for the late response. I wanted to play with a few of the stuff
-you mentioned, but some internal schedule prevented me from doing
-that, and eventually I just decided not to wait anymore so we could at
-least continue our discussion. so sorry again and thanks for your
-patience.
+This seems ok. 
 
-On Tue, May 8, 2012 at 4:26 PM, Sjur BRENDELAND
-<sjur.brandeland@stericsson.com> wrote:
-> No, I trigger this warning by calling rproc_register() and rproc_boot()
-> in sequence from a remoteproc client without using rpmsg.
+David, any objections or suggestions?
 
-Is this just testing code or a real driver you expect to merge ?
-
-It sounds like we may have a race there, but the usage you describe is
-somewhat non-standard and I don't think we really want to consider it
-valid: usually we have a low level driver, responsible for the
-platform-specific remoteproc implementation, which only calls
-rproc_register() and not rproc_boot(), and a different, high-level
-driver which triggers an rproc_boot() invocation when required by the
-use case.
-
-> 1. rproc-client does rproc_alloc() and rproc_register()
-> 2. This trigger loading of firmware asynchronously.
-> 3. Resource table is scanned for virtio device and virtio device
->   are registered.
-> 4. Registration cause probing of rpmsg virtio driver
-
-Yes, and it may also cause probing of any other virtio driver whose
-device was just registered by remoteproc.
-
-> >> I think it would be nice to be able to turn this feature off.
-> >
-> > Care to explain why ? what exactly do you want to do that you can't
-> > today ?
->
-> The difference is that I am not planning to call rproc_boot()
-> from rpmsg, but trigger booting from user space using sysfs.
-
-What's the bigger design picture you have in mind ? No kernel drivers at all ?
-How do you plan to support recovery from crashes of the remote
-processor (i.e. who notifies user space that something bad happened) ?
-
-After we'll understand the bigger picture, we could surely come up
-with the technical solution.
-
-Thanks!
-Ohad.
+- Arnaldo
+ 
+> Signed-off-by: Feng Tang <feng.tang@intel.com>
+> ---
+>  tools/perf/builtin-script.c                        |    5 +++--
+>  .../perf/util/scripting-engines/trace-event-perl.c |   11 ++++++-----
+>  .../util/scripting-engines/trace-event-python.c    |   16 ++++++++--------
+>  tools/perf/util/trace-event-scripting.c            |    2 +-
+>  tools/perf/util/trace-event.h                      |    4 +++-
+>  5 files changed, 21 insertions(+), 17 deletions(-)
+> 
+> diff --git a/tools/perf/builtin-script.c b/tools/perf/builtin-script.c
+> index d4ce733..417fe7d 100644
+> --- a/tools/perf/builtin-script.c
+> +++ b/tools/perf/builtin-script.c
+> @@ -405,9 +405,10 @@ static void process_event(union perf_event *event __unused,
+>  			  struct perf_sample *sample,
+>  			  struct perf_evsel *evsel,
+>  			  struct machine *machine,
+> -			  struct thread *thread)
+> +			  struct addr_location *al __unused)
+>  {
+>  	struct perf_event_attr *attr = &evsel->attr;
+> +	struct thread *thread = al->thread;
+>  
+>  	if (output[attr->type].fields == 0)
+>  		return;
+> @@ -520,7 +521,7 @@ static int process_sample_event(struct perf_tool *tool __used,
+>  	if (cpu_list && !test_bit(sample->cpu, cpu_bitmap))
+>  		return 0;
+>  
+> -	scripting_ops->process_event(event, sample, evsel, machine, thread);
+> +	scripting_ops->process_event(event, sample, evsel, machine, &al);
+>  
+>  	evsel->hists.stats.total_period += sample->period;
+>  	return 0;
+> diff --git a/tools/perf/util/scripting-engines/trace-event-perl.c b/tools/perf/util/scripting-engines/trace-event-perl.c
+> index e30749e..8f5eacc 100644
+> --- a/tools/perf/util/scripting-engines/trace-event-perl.c
+> +++ b/tools/perf/util/scripting-engines/trace-event-perl.c
+> @@ -252,7 +252,7 @@ static void perl_process_tracepoint(union perf_event *pevent __unused,
+>  				    struct perf_sample *sample,
+>  				    struct perf_evsel *evsel,
+>  				    struct machine *machine __unused,
+> -				    struct thread *thread)
+> +				    struct addr_location *al __unused)
+>  {
+>  	struct format_field *field;
+>  	static char handler[256];
+> @@ -264,6 +264,7 @@ static void perl_process_tracepoint(union perf_event *pevent __unused,
+>  	int cpu = sample->cpu;
+>  	void *data = sample->raw_data;
+>  	unsigned long long nsecs = sample->time;
+> +	struct thread *thread = al->thread;
+>  	char *comm = thread->comm;
+>  
+>  	dSP;
+> @@ -342,7 +343,7 @@ static void perl_process_event_generic(union perf_event *pevent __unused,
+>  				       struct perf_sample *sample,
+>  				       struct perf_evsel *evsel __unused,
+>  				       struct machine *machine __unused,
+> -				       struct thread *thread __unused)
+> +				       struct addr_location *al __unused)
+>  {
+>  	dSP;
+>  
+> @@ -368,10 +369,10 @@ static void perl_process_event(union perf_event *pevent,
+>  			       struct perf_sample *sample,
+>  			       struct perf_evsel *evsel,
+>  			       struct machine *machine,
+> -			       struct thread *thread)
+> +			       struct addr_location *al)
+>  {
+> -	perl_process_tracepoint(pevent, sample, evsel, machine, thread);
+> -	perl_process_event_generic(pevent, sample, evsel, machine, thread);
+> +	perl_process_tracepoint(pevent, sample, evsel, machine, al);
+> +	perl_process_event_generic(pevent, sample, evsel, machine, al);
+>  }
+>  
+>  static void run_start_sub(void)
+> diff --git a/tools/perf/util/scripting-engines/trace-event-python.c b/tools/perf/util/scripting-engines/trace-event-python.c
+> index aaf2679..a202881 100644
+> --- a/tools/perf/util/scripting-engines/trace-event-python.c
+> +++ b/tools/perf/util/scripting-engines/trace-event-python.c
+> @@ -210,7 +210,7 @@ static void python_process_tracepoint(union perf_event *pevent __unused,
+>  				 struct perf_sample *sample,
+>  				 struct perf_evsel *evsel __unused,
+>  				 struct machine *machine __unused,
+> -				 struct thread *thread)
+> +				 struct addr_location *al)
+>  {
+>  	PyObject *handler, *retval, *context, *t, *obj, *dict = NULL;
+>  	static char handler_name[256];
+> @@ -224,6 +224,7 @@ static void python_process_tracepoint(union perf_event *pevent __unused,
+>  	int cpu = sample->cpu;
+>  	void *data = sample->raw_data;
+>  	unsigned long long nsecs = sample->time;
+> +	struct thread *thread = al->thread;
+>  	char *comm = thread->comm;
+>  
+>  	t = PyTuple_New(MAX_FIELDS);
+> @@ -327,9 +328,9 @@ static void python_process_tracepoint(union perf_event *pevent __unused,
+>  
+>  static void python_process_general_event(union perf_event *pevent __unused,
+>  				 struct perf_sample *sample,
+> -				 struct perf_evsel *evsel __unused,
+> +				 struct perf_evsel *evsel,
+>  				 struct machine *machine __unused,
+> -				 struct thread *thread __unused)
+> +				 struct addr_location *al)
+>  {
+>  	PyObject *handler, *retval, *t;
+>  	static char handler_name[64];
+> @@ -341,14 +342,13 @@ static void python_process_general_event(union perf_event *pevent __unused,
+>  		Py_FatalError("couldn't create Python tuple");
+>  
+>  	sprintf(handler_name, "process_general_event");
+> -
+>  	handler = PyDict_GetItemString(main_dict, handler_name);
+>  	if (handler && !PyCallable_Check(handler)) {
+>  		handler = NULL;
+>  		goto exit;
+>  	}
+>  
+> -	/* Pass 3 parameters: event_attr, perf_sample, raw data */
+> +	/* Pass 3 parameters: event_attr, perf_sample, raw data, thread name */
+>  	PyTuple_SetItem(t, n++, PyString_FromStringAndSize(
+>  			(const char *)&evsel->attr, sizeof(evsel->attr)));
+>  	PyTuple_SetItem(t, n++, PyString_FromStringAndSize(
+> @@ -370,15 +370,15 @@ static void python_process_event(union perf_event *pevent,
+>  				 struct perf_sample *sample,
+>  				 struct perf_evsel *evsel,
+>  				 struct machine *machine,
+> -				 struct thread *thread)
+> +				 struct addr_location *al)
+>  {
+>  	switch (evsel->attr.type) {
+>  	case PERF_TYPE_TRACEPOINT:
+> -		python_process_tracepoint(pevent, sample, evsel, machine, thread);
+> +		python_process_tracepoint(pevent, sample, evsel, machine, al);
+>  		break;
+>  	/* Reserve for future process_hw/sw/raw APIs */
+>  	default:
+> -		python_process_general_event(pevent, sample, evsel, machine, thread);
+> +		python_process_general_event(pevent, sample, evsel, machine, al);
+>  	}
+>  }
+>  
+> diff --git a/tools/perf/util/trace-event-scripting.c b/tools/perf/util/trace-event-scripting.c
+> index 18ae6c1..b26459e 100644
+> --- a/tools/perf/util/trace-event-scripting.c
+> +++ b/tools/perf/util/trace-event-scripting.c
+> @@ -39,7 +39,7 @@ static void process_event_unsupported(union perf_event *event __unused,
+>  				      struct perf_sample *sample __unused,
+>  				      struct perf_evsel *evsel __unused,
+>  				      struct machine *machine __unused,
+> -				      struct thread *thread __unused)
+> +				      struct addr_location *al __unused)
+>  {
+>  }
+>  
+> diff --git a/tools/perf/util/trace-event.h b/tools/perf/util/trace-event.h
+> index 58ae14c..dc20ca0 100644
+> --- a/tools/perf/util/trace-event.h
+> +++ b/tools/perf/util/trace-event.h
+> @@ -289,6 +289,8 @@ enum trace_flag_type {
+>  	TRACE_FLAG_SOFTIRQ		= 0x10,
+>  };
+>  
+> +struct addr_location;
+> +
+>  struct scripting_ops {
+>  	const char *name;
+>  	int (*start_script) (const char *script, int argc, const char **argv);
+> @@ -297,7 +299,7 @@ struct scripting_ops {
+>  			       struct perf_sample *sample,
+>  			       struct perf_evsel *evsel,
+>  			       struct machine *machine,
+> -			       struct thread *thread);
+> +			       struct addr_location *al);
+>  	int (*generate_script) (const char *outfile);
+>  };
+>  
+> -- 
+> 1.7.1
