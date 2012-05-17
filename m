@@ -1,75 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761353Ab2EQIv2 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 May 2012 04:51:28 -0400
-Received: from mga02.intel.com ([134.134.136.20]:62349 "EHLO mga02.intel.com"
+	id S1761281Ab2EQIv0 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 May 2012 04:51:26 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:16728 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756359Ab2EQIvW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 May 2012 04:51:22 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.67,352,1309762800"; 
-   d="scan'208";a="141596750"
-Message-ID: <4FB4BBAC.1050106@intel.com>
-Date: Thu, 17 May 2012 16:49:48 +0800
-From: Alex Shi <alex.shi@intel.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:9.0) Gecko/20111229 Thunderbird/9.0
+	id S1752297Ab2EQIvV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 17 May 2012 04:51:21 -0400
+Date: Thu, 17 May 2012 10:51:07 +0200
+From: Jiri Olsa <jolsa@redhat.com>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        Dmitry Antipov <dmitry.antipov@linaro.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@redhat.com>,
+        Amit Kucheria <amit.kucheria@linaro.org>, linaro-dev@lists.linaro.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: Perf record format portability
+Message-ID: <20120517085106.GA1801@m.brq.redhat.com>
+References: <4FB275EB.5050904@linaro.org>
+ <20120515155146.GB7864@infradead.org>
+ <4FB38677.8070601@linaro.org>
+ <20120516145927.GC7864@infradead.org>
+ <1337187503.6724.50.camel@gandalf.stny.rr.com>
+ <20120516174825.GA11516@m.brq.redhat.com>
+ <1337196743.6724.66.camel@gandalf.stny.rr.com>
+ <1337197154.6724.68.camel@gandalf.stny.rr.com>
 MIME-Version: 1.0
-To: Alex Shi <alex.shi@intel.com>
-CC: tglx@linutronix.de, mingo@redhat.com, hpa@zytor.com, arnd@arndb.de,
-        rostedt@goodmis.org, fweisbec@gmail.com, jeremy@goop.org,
-        riel@redhat.com, luto@mit.edu, avi@redhat.com, len.brown@intel.com,
-        dhowells@redhat.com, fenghua.yu@intel.com, borislav.petkov@amd.com,
-        yinghai@kernel.org, ak@linux.intel.com, cpw@sgi.com, steiner@sgi.com,
-        akpm@linux-foundation.org, penberg@kernel.org, a.p.zijlstra@chello.nl,
-        hughd@google.com, kamezawa.hiroyu@jp.fujitsu.com,
-        viro@zeniv.linux.org.uk, linux-kernel@vger.kernel.org,
-        yongjie.ren@intel.com
-Subject: Re: [PATCH v6 0/7] tlb flush optimization on x86
-References: <1337233375-840-1-git-send-email-alex.shi@intel.com> <4FB4B964.6050501@intel.com>
-In-Reply-To: <4FB4B964.6050501@intel.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1337197154.6724.68.camel@gandalf.stny.rr.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Added a little more info.
-the machine is 2P * 4core* HT NHM EP with 12GB memory, and THP set 'always'.
-
->
-
-> Here is the macro benchmark to measure munmap change:
+On Wed, May 16, 2012 at 03:39:14PM -0400, Steven Rostedt wrote:
+> On Wed, 2012-05-16 at 15:32 -0400, Steven Rostedt wrote:
+> > On Wed, 2012-05-16 at 19:48 +0200, Jiri Olsa wrote:
+> > 
+> > > for ppc64(record) vs x86_64(report) I got following report on latest tip:
+> > > 
+> > > [jolsa@dhcp-26-214 test]$ ../perf report > report.target
+> > > Endianness of raw data not corrected!
+> > > Warning:
+> > > 718 samples with id not present in the header
+> > > Warning:
+> > > The perf.data file has no samples!
+> > > 
 > 
-> tlb_flushall_shift = -1
-> [alexs@lkp-ne04 tlb]$ 
-> [alexs@lkp-ne04 tlb]$ for t in `echo 4 8 16  `; do echo "=============== t = $t ===================="; for i in `echo  8 16 32  `; do sudo  ./munmap -t $t -n $i; done done
-> =============== t = 4 ====================
-> munmap use 164ms 5032ns/time, memory access uses 81605 times/thread/ms, cost 12ns/time
-> munmap use 86ms 5251ns/time, memory access uses 83378 times/thread/ms, cost 11ns/time
-> munmap use 46ms 5642ns/time, memory access uses 87212 times/thread/ms, cost 11ns/time
-> =============== t = 8 ====================
-> munmap use 197ms 6036ns/time, memory access uses 69295 times/thread/ms, cost 14ns/time
-> munmap use 96ms 5896ns/time, memory access uses 71895 times/thread/ms, cost 13ns/time
-> munmap use 62ms 7608ns/time, memory access uses 83895 times/thread/ms, cost 11ns/time
-> =============== t = 16 ====================
-> munmap use 274ms 8367ns/time, memory access uses 37860 times/thread/ms, cost 26ns/time
-> munmap use 139ms 8543ns/time, memory access uses 38137 times/thread/ms, cost 26ns/time
-> munmap use 74ms 9033ns/time, memory access uses 38349 times/thread/ms, cost 26ns/time
-> [alexs@lkp-ne04 tlb]$ 
-> [alexs@lkp-ne04 tlb]$ 
-> tlb_flushall_shift = 5
-> [alexs@lkp-ne04 tlb]$ for t in `echo 4 8 16  `; do echo "=============== t = $t ===================="; for i in `echo  8 16 32  `; do sudo  ./munmap -t $t -n $i; done done
-> =============== t = 4 ====================
-> munmap use 212ms 6485ns/time, memory access uses 114003 times/thread/ms, cost 8ns/time
-> munmap use 130ms 7972ns/time, memory access uses 110725 times/thread/ms, cost 9ns/time
-> munmap use 45ms 5581ns/time, memory access uses 87866 times/thread/ms, cost 11ns/time
-> =============== t = 8 ====================
-> munmap use 253ms 7734ns/time, memory access uses 94578 times/thread/ms, cost 10ns/time
-> munmap use 147ms 9012ns/time, memory access uses 83851 times/thread/ms, cost 11ns/time
-> munmap use 63ms 7713ns/time, memory access uses 87473 times/thread/ms, cost 11ns/time
-> =============== t = 16 ====================
-> munmap use 369ms 11284ns/time, memory access uses 38854 times/thread/ms, cost 25ns/time
-> munmap use 264ms 16131ns/time, memory access uses 37870 times/thread/ms, cost 26ns/time
-> munmap use 73ms 8981ns/time, memory access uses 38309 times/thread/ms, cost 26ns/time
+> What does perf script give you. It looks like Frederic took my code for
+> this when he ported the original parse-events over to perf. I see the
+> setup of these variables in tools/perf/util/trace-event-read.c
+> 
+> If you run 'perf script' on x86 from a ppc perf.dat file, do you still
+> get the same errors?
 
+yes
 
+---
+[jolsa@dhcp-26-214 test]$ ../perf script
+Endianness of raw data not corrected!
+Warning:
+718 samples with id not present in the header
+# ========
+# captured on: Wed May 16 19:53:13 2012
+# hostname : ibm-js22-vios-02-lp1.rhts.eng.bos.redhat.com
+# os release : 2.6.32-270.el6.ppc64
+# perf version : 2.6.32-270.el6.ppc64.debug
+# arch : ppc64
+# nrcpus online : 8
+# nrcpus avail : 8
+# cpudesc : POWER6 (architected), altivec supported
+# cpuid : 62,769
+# total memory : 6236992 kB
+# cmdline : /usr/bin/perf record -a -e sched:sched_switch -e
+# sched:sched_process_exit -e sched:sched_process_fork -e
+# sched:sched_wakeup -- sleep 10 
+# event : name = sched:sched_switch, type = 2, config = 0x22, config1 =
+# 0x0, config2 = 0x0, excl_usr = 0, excl_kern = 0, id = { 97, 98, 99,
+# 100, 101, 102, 103, 104 }
+# event : name = sched:sched_process_exit, type = 2, config = 0x1b,
+# config1 = 0x0, config2 = 0x0, excl_usr = 0, excl_kern = 0, id = { 105,
+# 106, 107, 108, 109, 110, 111, 112 }
+# event : name = sched:sched_process_fork, type = 2, config = 0x1d,
+# config1 = 0x0, config2 = 0x0, excl_usr = 0, excl_kern = 0, id = { 113,
+# 114, 115, 116, 117, 118, 119, 120 }
+# event : name = sched:sched_wakeup, type = 2, config = 0x17, config1 =
+# 0x0, config2 = 0x0, excl_usr = 0, excl_kern = 0, id = { 121, 122, 123,
+# 124, 125, 126, 127, 128 }
+# HEADER_CPU_TOPOLOGY info available, use -I to display
+# HEADER_NUMA_TOPOLOGY info available, use -I to display
+# ========
+#
+---
+
+jirka
