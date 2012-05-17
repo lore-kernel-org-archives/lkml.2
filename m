@@ -1,63 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761705Ab2EQX0N (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 May 2012 19:26:13 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:60722 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754074Ab2EQX0L (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 May 2012 19:26:11 -0400
-Message-ID: <4FB58901.5060604@gmail.com>
-Date: Thu, 17 May 2012 16:25:53 -0700
-From: David Daney <ddaney.cavm@gmail.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.15) Gecko/20101027 Fedora/3.0.10-1.fc12 Thunderbird/3.0.10
+	id S1761887Ab2EQX20 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 May 2012 19:28:26 -0400
+Received: from solo.fdn.fr ([80.67.169.19]:46429 "EHLO solo.fdn.fr"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1760588Ab2EQX2Y (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 17 May 2012 19:28:24 -0400
+Date: Fri, 18 May 2012 01:28:21 +0200
+From: Samuel Thibault <samuel.thibault@ens-lyon.org>
+To: "Dave, Tushar N" <tushar.n.dave@intel.com>
+Cc: "Kirsher, Jeffrey T" <jeffrey.t.kirsher@intel.com>,
+        "Brandeburg, Jesse" <jesse.brandeburg@intel.com>,
+        "Allan, Bruce W" <bruce.w.allan@intel.com>,
+        "Wyborny, Carolyn" <carolyn.wyborny@intel.com>,
+        "Skidmore, Donald C" <donald.c.skidmore@intel.com>,
+        "Rose, Gregory V" <gregory.v.rose@intel.com>,
+        "Waskiewicz Jr, Peter P" <peter.p.waskiewicz.jr@intel.com>,
+        "Duyck, Alexander H" <alexander.h.duyck@intel.com>,
+        "Ronciak, John" <john.ronciak@intel.com>,
+        "David S. Miller" <davem@davemloft.net>,
+        Jiri Pirko <jpirko@redhat.com>, Dean Nelson <dnelson@redhat.com>,
+        "e1000-devel@lists.sourceforge.net" 
+	<e1000-devel@lists.sourceforge.net>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] e1000: Reset rx ring index on receive overrun
+Message-ID: <20120517232821.GJ683@type.famille.thibault.fr>
+Mail-Followup-To: Samuel Thibault <samuel.thibault@ens-lyon.org>,
+	"Dave, Tushar N" <tushar.n.dave@intel.com>,
+	"Kirsher, Jeffrey T" <jeffrey.t.kirsher@intel.com>,
+	"Brandeburg, Jesse" <jesse.brandeburg@intel.com>,
+	"Allan, Bruce W" <bruce.w.allan@intel.com>,
+	"Wyborny, Carolyn" <carolyn.wyborny@intel.com>,
+	"Skidmore, Donald C" <donald.c.skidmore@intel.com>,
+	"Rose, Gregory V" <gregory.v.rose@intel.com>,
+	"Waskiewicz Jr, Peter P" <peter.p.waskiewicz.jr@intel.com>,
+	"Duyck, Alexander H" <alexander.h.duyck@intel.com>,
+	"Ronciak, John" <john.ronciak@intel.com>,
+	"David S. Miller" <davem@davemloft.net>,
+	Jiri Pirko <jpirko@redhat.com>, Dean Nelson <dnelson@redhat.com>,
+	"e1000-devel@lists.sourceforge.net" <e1000-devel@lists.sourceforge.net>,
+	"netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+	"linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+References: <20120517230140.GZ683@type.famille.thibault.fr>
+ <061C8A8601E8EE4CA8D8FD6990CEA891188439E0@ORSMSX102.amr.corp.intel.com>
 MIME-Version: 1.0
-To: "H. Peter Anvin" <hpa@zytor.com>
-CC: "H.J. Lu" <hjl.tools@gmail.com>, Ralf Baechle <ralf@linux-mips.org>,
-        linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org,
-        torvalds@linux-foundation.org, mingo@kernel.org, tglx@linutronix.de
-Subject: Re: [RFC PATCH 00/10] Use __kernel_[u]long_t for x32 user space compatibility
-References: <1337292816-10839-1-git-send-email-hjl.tools@gmail.com> <4FB584C0.6080807@gmail.com> <4FB585B8.2010607@zytor.com>
-In-Reply-To: <4FB585B8.2010607@zytor.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <061C8A8601E8EE4CA8D8FD6990CEA891188439E0@ORSMSX102.amr.corp.intel.com>
+User-Agent: Mutt/1.5.21+34 (58baf7c9f32f) (2010-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/17/2012 04:11 PM, H. Peter Anvin wrote:
-> On 05/17/2012 04:07 PM, David Daney wrote:
->>
->> Has anybody checked how this affects MIPS n32 userspace?
->>
->> I think it totally breaks it.
->>
->
-> Do you have any basis whatsoever for that statement?
+Dave, Tushar N, le Thu 17 May 2012 23:22:31 +0000, a écrit :
+> I am interested in to see if you have actual test case and more importantly test data that shows that kernel and device indexes are not synchronized any more.
 
-You should have asked for a 'solid basis'.
+Well, it's not with an actual physical device, but with the kvm
+emulation. Printing indexes from the clean_rx handler, I'm getting:
 
-My basis is that the name '__kernel_ulong_t' implies, in my mind, that 
-it would have the width of a kernel unsigned long.
+(status linux index/total size/device index)
 
-Really it should be called something like __abi_alternate_ulong_t.
+status 7 2/256/19
+status 7 3/256/19
+...
+status 7 18/256/19
+status 7 19/256/19
+status 7 20/256/19
+status 7 21/256/19
+...
+since the status is still 7, linux continues on.
 
-> This should have
-> zero effect on any non-x32 platforms.
+...
+status 7 254/256/19
+status 7 255/256/19
+status 7 0/256/19
+status 7 1/256/19
+status 0 2/256/19
 
-After further reflection on this, you are probably right.
+here it stops, and on next interrupts,
 
-Sorry for raising the alarm (or would that be crying Wolf?).
+status 0 2/256/20
 
->
->> In addition, 109a1f32 (sysinfo: Use explicit types in<linux/sysinfo.h>)
->> is probably bad.  I think it may need to be reverted, or somebody should
->> fix all the __kernel_{,u}long_t definitions for the ABI that may have
->> been broken by the change.
->
-> You realize __kernel_[u]long_t didn't even exist until the 3.4 kernel,
-> right?
+status 0 2/256/21
+etc. and no progress is made any more, until
 
-Yes.
+status 0 2/256/253
+status 0 2/256/254
 
-David Daney
+and it gets stuck there:
+
+status 0 2/256/254
+status 0 2/256/254
+status 0 2/256/254
+
+Samuel
