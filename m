@@ -1,77 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761135Ab2EQHO4 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 May 2012 03:14:56 -0400
-Received: from ns1.pc-advies.be ([83.149.101.17]:45183 "EHLO
-	spo001.leaseweb.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1761089Ab2EQHOw (ORCPT
+	id S1761158Ab2EQHQR (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 May 2012 03:16:17 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:52924 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759920Ab2EQHQQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 May 2012 03:14:52 -0400
-Date: Thu, 17 May 2012 09:14:49 +0200
-From: Wim Van Sebroeck <wim@iguana.be>
-To: Randy Dunlap <rdunlap@xenotime.net>
-Cc: Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
-        LKML <linux-kernel@vger.kernel.org>, linux-watchdog@vger.kernel.org
-Subject: Re: [PATCH -next] wdt: fix iTCO printk format warnings
-Message-ID: <20120517071449.GT3074@spo001.leaseweb.com>
-References: <20120514200357.e7448e4ca061c8efe3d4757d@canb.auug.org.au> <4FB167D8.9000905@xenotime.net>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4FB167D8.9000905@xenotime.net>
-User-Agent: Mutt/1.4.1i
+	Thu, 17 May 2012 03:16:16 -0400
+Message-ID: <4FB4B18A.8020803@gmail.com>
+Date: Thu, 17 May 2012 16:06:34 +0800
+From: Xiao Jiang <jgq516@gmail.com>
+User-Agent: Thunderbird 2.0.0.24 (X11/20101027)
+MIME-Version: 1.0
+To: Sergei Shtylyov <sshtylyov@mvista.com>
+CC: steve.glendinning@smsc.com, gregkh@linuxfoundation.org,
+        netdev@vger.kernel.org, linux-usb@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/1] smsc95xx: add FLAG_POINTTOPOINT flag for driver_info
+References: <1337155302-26244-1-git-send-email-jgq516@gmail.com> <4FB3A74E.4060303@mvista.com>
+In-Reply-To: <4FB3A74E.4060303@mvista.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Randi,
+Sergei Shtylyov wrote:
+> Hello.
+>
+> On 16-05-2012 12:01, jgq516@gmail.com wrote:
+>
+>> From: Xiao Jiang<jgq516@gmail.com>
+>
+>> commit c26134 introduced FLAG_POINTTOPOINT flag for USB ethernet devices
+>
+>    Please also specify that commit's summary in parens.
+Thanks, will add the summary if this patch does make sense.
 
-> From: Randy Dunlap <rdunlap@xenotime.net>
-> 
-> Fix printk format warnings:
-> 
-> drivers/watchdog/iTCO_wdt.c:577:3: warning: format '%04llx' expects type 'long long unsigned int', but argument 2 has type 'resource_size_t'
-> drivers/watchdog/iTCO_wdt.c:594:3: warning: format '%04llx' expects type 'long long unsigned int', but argument 2 has type 'resource_size_t'
-> drivers/watchdog/iTCO_wdt.c:600:2: warning: format '%04llx' expects type 'long long unsigned int', but argument 4 has type 'resource_size_t'
-> 
-> Signed-off-by: Randy Dunlap <rdunlap@xenotime.net>
-> Cc:	Wim Van Sebroeck <wim@iguana.be>
+Regards,
+Xiao
+>
+>> which possibly use "usb%d" names, add this flag to make sure pandaboard
+>> can mount nfs with smsc95xx NIC.
+>
+>> Signed-off-by: Xiao Jiang<jgq516@gmail.com>
+>
+> WBR, Sergei
 
-Had an issue with the patch (I have linenumbers in 800 instead of late 500's).
-Any idea why we have this difference?
-Below the patch I applied in linux-watchdog-next.
-
-Thanks,
-Wim.
----
-diff --git a/drivers/watchdog/iTCO_wdt.c b/drivers/watchdog/iTCO_wdt.c
-index 9fecb95..2aab56f 100644
---- a/drivers/watchdog/iTCO_wdt.c
-+++ b/drivers/watchdog/iTCO_wdt.c
-@@ -839,7 +839,7 @@ static int __devinit iTCO_wdt_init(struct pci_dev *pdev,
- 	/* The TCO logic uses the TCO_EN bit in the SMI_EN register */
- 	if (!request_region(SMI_EN, 4, "iTCO_wdt")) {
- 		pr_err("I/O address 0x%04lx already in use, device disabled\n",
--		       SMI_EN);
-+		       (u64)SMI_EN);
- 		ret = -EIO;
- 		goto out_unmap;
- 	}
-@@ -854,7 +854,7 @@ static int __devinit iTCO_wdt_init(struct pci_dev *pdev,
- 	   by the TCOBASE value */
- 	if (!request_region(TCOBASE, 0x20, "iTCO_wdt")) {
- 		pr_err("I/O address 0x%04lx already in use, device disabled\n",
--		       TCOBASE);
-+		       (u64)TCOBASE);
- 		ret = -EIO;
- 		goto unreg_smi_en;
- 	}
-@@ -862,7 +862,7 @@ static int __devinit iTCO_wdt_init(struct pci_dev *pdev,
- 	pr_info("Found a %s TCO device (Version=%d, TCOBASE=0x%04lx)\n",
- 		iTCO_chipset_info[ent->driver_data].name,
- 		iTCO_chipset_info[ent->driver_data].iTCO_version,
--		TCOBASE);
-+		(u64)TCOBASE);
- 
- 	/* Clear out the (probably old) status */
- 	outw(0x0008, TCO1_STS);	/* Clear the Time Out Status bit */
