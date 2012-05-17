@@ -1,78 +1,132 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1762078Ab2EQPAV (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 May 2012 11:00:21 -0400
-Received: from mailout1.samsung.com ([203.254.224.24]:59555 "EHLO
-	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1761329Ab2EQPAO (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 May 2012 11:00:14 -0400
-X-AuditID: cbfee61b-b7bb6ae0000006fb-0e-4fb5127b2c49
-From: Thomas Abraham <thomas.abraham@linaro.org>
-To: linux-mmc@vger.kernel.org, devicetree-discuss@lists.ozlabs.org
-Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        cjb@laptop.org, grant.likely@secretlab.ca, rob.herring@calxeda.com,
-        linux-samsung-soc@vger.kernel.org, kgene.kim@samsung.com,
-        patches@linaro.org
-Subject: [PATCH v2 4/6] mmc: dw_mmc: add quirk to indicate missing write
- protect line
-Date: Thu, 17 May 2012 20:40:09 +0530
-Message-id: <1337267411-28226-5-git-send-email-thomas.abraham@linaro.org>
-X-Mailer: git-send-email 1.6.6.rc2
-In-reply-to: <1337267411-28226-1-git-send-email-thomas.abraham@linaro.org>
-References: <1337267411-28226-1-git-send-email-thomas.abraham@linaro.org>
-X-Brightmail-Tracker: AAAAAA==
-X-TM-AS-MML: No
+	id S967025Ab2EQPAw (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 May 2012 11:00:52 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:33383 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1762030Ab2EQOum (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 17 May 2012 10:50:42 -0400
+From: Mel Gorman <mgorman@suse.de>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Linux-MM <linux-mm@kvack.org>, Linux-Netdev <netdev@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        David Miller <davem@davemloft.net>, Neil Brown <neilb@suse.de>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Mike Christie <michaelc@cs.wisc.edu>,
+        Eric B Munson <emunson@mgebm.net>, Mel Gorman <mgorman@suse.de>
+Subject: [PATCH 08/17] net: Introduce sk_gfp_atomic() to allow addition of GFP flags depending on the individual socket
+Date: Thu, 17 May 2012 15:50:22 +0100
+Message-Id: <1337266231-8031-9-git-send-email-mgorman@suse.de>
+X-Mailer: git-send-email 1.7.9.2
+In-Reply-To: <1337266231-8031-1-git-send-email-mgorman@suse.de>
+References: <1337266231-8031-1-git-send-email-mgorman@suse.de>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-If the write protect pad of the controller is not connected to the write
-protect pin of the slot, the driver should be notified of this condition
-so that incorrect check for write protection by reading the WRTORT
-register can avoided. The get_ro platform callback can be used for in
-such cases, but with device tree support enabled, such platform callbacks
-cannot be supported.
+Introduce sk_gfp_atomic(), this function allows to inject sock specific
+flags to each sock related allocation. It is only used on allocation
+paths that may be required for writing pages back to network storage.
 
-Add a new quirk for notifying the driver about the missing write protect
-line so the driver can assume that the card write protection is disabled.
-
-Signed-off-by: Thomas Abraham <thomas.abraham@linaro.org>
-Acked-by: Will Newton <will.newton@imgtec.com>
+[davem@davemloft.net: Use sk_gfp_atomic only when necessary]
+Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Signed-off-by: Mel Gorman <mgorman@suse.de>
 ---
- drivers/mmc/host/dw_mmc.c  |    4 +++-
- include/linux/mmc/dw_mmc.h |    3 ++-
- 2 files changed, 5 insertions(+), 2 deletions(-)
+ include/net/sock.h    |    5 +++++
+ net/ipv4/tcp_output.c |    9 +++++----
+ net/ipv6/tcp_ipv6.c   |    8 +++++---
+ 3 files changed, 15 insertions(+), 7 deletions(-)
 
-diff --git a/drivers/mmc/host/dw_mmc.c b/drivers/mmc/host/dw_mmc.c
-index eb5fa59..c862b7f 100644
---- a/drivers/mmc/host/dw_mmc.c
-+++ b/drivers/mmc/host/dw_mmc.c
-@@ -812,7 +812,9 @@ static int dw_mci_get_ro(struct mmc_host *mmc)
- 	struct dw_mci_board *brd = slot->host->pdata;
+diff --git a/include/net/sock.h b/include/net/sock.h
+index 5a0a58a..d0ab047 100644
+--- a/include/net/sock.h
++++ b/include/net/sock.h
+@@ -644,6 +644,11 @@ static inline int sock_flag(struct sock *sk, enum sock_flags flag)
+ 	return test_bit(flag, &sk->sk_flags);
+ }
  
- 	/* Use platform get_ro function, else try on board write protect */
--	if (brd->get_ro)
-+	if (brd->quirks & DW_MCI_QUIRK_NO_WRITE_PROTECT)
-+		read_only = 0;
-+	else if (brd->get_ro)
- 		read_only = brd->get_ro(slot->id);
- 	else
- 		read_only =
-diff --git a/include/linux/mmc/dw_mmc.h b/include/linux/mmc/dw_mmc.h
-index 787ad56..b72e4aa 100644
---- a/include/linux/mmc/dw_mmc.h
-+++ b/include/linux/mmc/dw_mmc.h
-@@ -205,7 +205,8 @@ struct dw_mci_dma_ops {
- #define DW_MCI_QUIRK_HIGHSPEED			BIT(2)
- /* Unreliable card detection */
- #define DW_MCI_QUIRK_BROKEN_CARD_DETECTION	BIT(3)
--
-+/* Write Protect detection not available */
-+#define DW_MCI_QUIRK_NO_WRITE_PROTECT		BIT(4)
++static inline gfp_t sk_gfp_atomic(struct sock *sk, gfp_t gfp_mask)
++{
++	return GFP_ATOMIC;
++}
++
+ static inline void sk_acceptq_removed(struct sock *sk)
+ {
+ 	sk->sk_ack_backlog--;
+diff --git a/net/ipv4/tcp_output.c b/net/ipv4/tcp_output.c
+index 7ac6423..884c78d 100644
+--- a/net/ipv4/tcp_output.c
++++ b/net/ipv4/tcp_output.c
+@@ -2445,7 +2445,8 @@ struct sk_buff *tcp_make_synack(struct sock *sk, struct dst_entry *dst,
  
- struct dma_pdata;
+ 	if (cvp != NULL && cvp->s_data_constant && cvp->s_data_desired)
+ 		s_data_desired = cvp->s_data_desired;
+-	skb = sock_wmalloc(sk, MAX_TCP_HEADER + 15 + s_data_desired, 1, GFP_ATOMIC);
++	skb = sock_wmalloc(sk, MAX_TCP_HEADER + 15 + s_data_desired, 1,
++			   sk_gfp_atomic(sk, GFP_ATOMIC));
+ 	if (skb == NULL)
+ 		return NULL;
  
+@@ -2741,7 +2742,7 @@ void tcp_send_ack(struct sock *sk)
+ 	 * tcp_transmit_skb() will set the ownership to this
+ 	 * sock.
+ 	 */
+-	buff = alloc_skb(MAX_TCP_HEADER, GFP_ATOMIC);
++	buff = alloc_skb(MAX_TCP_HEADER, sk_gfp_atomic(sk, GFP_ATOMIC));
+ 	if (buff == NULL) {
+ 		inet_csk_schedule_ack(sk);
+ 		inet_csk(sk)->icsk_ack.ato = TCP_ATO_MIN;
+@@ -2756,7 +2757,7 @@ void tcp_send_ack(struct sock *sk)
+ 
+ 	/* Send it off, this clears delayed acks for us. */
+ 	TCP_SKB_CB(buff)->when = tcp_time_stamp;
+-	tcp_transmit_skb(sk, buff, 0, GFP_ATOMIC);
++	tcp_transmit_skb(sk, buff, 0, sk_gfp_atomic(sk, GFP_ATOMIC));
+ }
+ 
+ /* This routine sends a packet with an out of date sequence
+@@ -2776,7 +2777,7 @@ static int tcp_xmit_probe_skb(struct sock *sk, int urgent)
+ 	struct sk_buff *skb;
+ 
+ 	/* We don't queue it, tcp_transmit_skb() sets ownership. */
+-	skb = alloc_skb(MAX_TCP_HEADER, GFP_ATOMIC);
++	skb = alloc_skb(MAX_TCP_HEADER, sk_gfp_atomic(sk, GFP_ATOMIC));
+ 	if (skb == NULL)
+ 		return -1;
+ 
+diff --git a/net/ipv6/tcp_ipv6.c b/net/ipv6/tcp_ipv6.c
+index 98256cf..ffa75a0 100644
+--- a/net/ipv6/tcp_ipv6.c
++++ b/net/ipv6/tcp_ipv6.c
+@@ -1352,7 +1352,8 @@ static struct sock * tcp_v6_syn_recv_sock(struct sock *sk, struct sk_buff *skb,
+ 	/* Clone pktoptions received with SYN */
+ 	newnp->pktoptions = NULL;
+ 	if (treq->pktopts != NULL) {
+-		newnp->pktoptions = skb_clone(treq->pktopts, GFP_ATOMIC);
++		newnp->pktoptions = skb_clone(treq->pktopts,
++					      sk_gfp_atomic(sk, GFP_ATOMIC));
+ 		kfree_skb(treq->pktopts);
+ 		treq->pktopts = NULL;
+ 		if (newnp->pktoptions)
+@@ -1405,7 +1406,8 @@ static struct sock * tcp_v6_syn_recv_sock(struct sock *sk, struct sk_buff *skb,
+ 		 * across. Shucks.
+ 		 */
+ 		tcp_md5_do_add(newsk, (union tcp_md5_addr *)&newnp->daddr,
+-			       AF_INET6, key->key, key->keylen, GFP_ATOMIC);
++			       AF_INET6, key->key, key->keylen,
++			       sk_gfp_atomic(sk, GFP_ATOMIC));
+ 	}
+ #endif
+ 
+@@ -1500,7 +1502,7 @@ static int tcp_v6_do_rcv(struct sock *sk, struct sk_buff *skb)
+ 					       --ANK (980728)
+ 	 */
+ 	if (np->rxopt.all)
+-		opt_skb = skb_clone(skb, GFP_ATOMIC);
++		opt_skb = skb_clone(skb, sk_gfp_atomic(sk, GFP_ATOMIC));
+ 
+ 	if (sk->sk_state == TCP_ESTABLISHED) { /* Fast path */
+ 		sock_rps_save_rxhash(sk, skb);
 -- 
-1.6.6.rc2
+1.7.9.2
 
