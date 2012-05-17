@@ -1,100 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1762333Ab2EQSVF (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 May 2012 14:21:05 -0400
-Received: from mail-ey0-f202.google.com ([209.85.215.202]:57277 "EHLO
-	mail-ey0-f202.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1762279Ab2EQSUo (ORCPT
+	id S1762346Ab2EQSW5 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 May 2012 14:22:57 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:35708 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1762242Ab2EQSWz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 May 2012 14:20:44 -0400
-From: Ben Chan <benchan@chromium.org>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
-        benchan@chromium.org, Paul Stewart <pstew@chromium.org>,
-        Sage Ahn <syahn@gctsemi.com>
-Subject: [PATCH] staging: gdm72xx: Set up parent link in sysfs for gdm72xx devices
-Date: Thu, 17 May 2012 11:15:10 -0700
-Message-Id: <1337278510-24168-1-git-send-email-benchan@chromium.org>
-X-Mailer: git-send-email 1.7.7.3
+	Thu, 17 May 2012 14:22:55 -0400
+Date: Thu, 17 May 2012 11:22:40 -0700
+From: tip-bot for Alan Cox <alan@linux.intel.com>
+Message-ID: <tip-80b3e557371205566a71e569fbfcce5b11f92dbe@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, alan@linux.intel.com, hpa@zytor.com,
+        mingo@kernel.org, arne@fitzenreiter.de, tglx@linutronix.de
+Reply-To: mingo@kernel.org, hpa@zytor.com, alan@linux.intel.com,
+        linux-kernel@vger.kernel.org, tglx@linutronix.de, arne@fitzenreiter.de
+In-Reply-To: <20120515174347.5109.94551.stgit@bluebook>
+References: <20120515174347.5109.94551.stgit@bluebook>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:x86/urgent] x86: Fix boot on Twinhead H12Y
+Git-Commit-ID: 80b3e557371205566a71e569fbfcce5b11f92dbe
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
+MIME-Version: 1.0
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Thu, 17 May 2012 11:22:47 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Paul Stewart <pstew@chromium.org>
+Commit-ID:  80b3e557371205566a71e569fbfcce5b11f92dbe
+Gitweb:     http://git.kernel.org/tip/80b3e557371205566a71e569fbfcce5b11f92dbe
+Author:     Alan Cox <alan@linux.intel.com>
+AuthorDate: Tue, 15 May 2012 18:44:15 +0100
+Committer:  Ingo Molnar <mingo@kernel.org>
+CommitDate: Thu, 17 May 2012 20:04:00 +0200
 
-This patch uses SET_NETDEV_DEV to set up a 'device' parent link in sysfs
-(e.g. /sys/class/net/wm0/device) for a gdm72xx device.
+x86: Fix boot on Twinhead H12Y
 
-Signed-off-by: Paul Stewart <pstew@chromium.org>
-Signed-off-by: Ben Chan <benchan@chromium.org>
-Cc: Sage Ahn <syahn@gctsemi.com>
+Despite lots of investigation into why this is needed we don't
+know or have an elegant cure. The only answer found on this
+laptop is to mark a problem region as used so that Linux doesn't
+put anything there.
+
+Currently all the users add reserve= command lines and anyone
+not knowing this needs to find the magic page that documents it.
+Automate it instead.
+
+Signed-off-by: Alan Cox <alan@linux.intel.com>
+Tested-and-bugfixed-by: Arne Fitzenreiter <arne@fitzenreiter.de>
+Resolves-bug: https://bugzilla.kernel.org/show_bug.cgi?id=10231
+Link: http://lkml.kernel.org/r/20120515174347.5109.94551.stgit@bluebook
+Signed-off-by: Ingo Molnar <mingo@kernel.org>
 ---
- drivers/staging/gdm72xx/gdm_sdio.c  |    2 +-
- drivers/staging/gdm72xx/gdm_usb.c   |    2 +-
- drivers/staging/gdm72xx/gdm_wimax.c |    3 ++-
- drivers/staging/gdm72xx/gdm_wimax.h |    2 +-
- 4 files changed, 5 insertions(+), 4 deletions(-)
+ arch/x86/pci/fixup.c |   17 +++++++++++++++++
+ 1 files changed, 17 insertions(+), 0 deletions(-)
 
-diff --git a/drivers/staging/gdm72xx/gdm_sdio.c b/drivers/staging/gdm72xx/gdm_sdio.c
-index 1ef466e..e1a3dd2 100644
---- a/drivers/staging/gdm72xx/gdm_sdio.c
-+++ b/drivers/staging/gdm72xx/gdm_sdio.c
-@@ -618,7 +618,7 @@ end_io:
- done:
- 	sdio_writeb(func, 0x00, 0x10, &ret);	/* PCRRT */
- 	if (!phy_dev->netdev)
--		register_wimax_device(phy_dev);
-+		register_wimax_device(phy_dev, &func->dev);
- }
- 
- static int gdm_sdio_receive(void *priv_dev,
-diff --git a/drivers/staging/gdm72xx/gdm_usb.c b/drivers/staging/gdm72xx/gdm_usb.c
-index f60e890..1e9dc0d 100644
---- a/drivers/staging/gdm72xx/gdm_usb.c
-+++ b/drivers/staging/gdm72xx/gdm_usb.c
-@@ -624,7 +624,7 @@ static int gdm_usb_probe(struct usb_interface *intf,
- 	INIT_WORK(&udev->pm_ws, do_pm_control);
- #endif /* CONFIG_WIMAX_GDM72XX_USB_PM */
- 
--	ret = register_wimax_device(phy_dev);
-+	ret = register_wimax_device(phy_dev, &intf->dev);
- 
- out:
- 	if (ret) {
-diff --git a/drivers/staging/gdm72xx/gdm_wimax.c b/drivers/staging/gdm72xx/gdm_wimax.c
-index 2787494..f1936b9 100644
---- a/drivers/staging/gdm72xx/gdm_wimax.c
-+++ b/drivers/staging/gdm72xx/gdm_wimax.c
-@@ -943,7 +943,7 @@ static struct net_device_ops gdm_netdev_ops = {
- 	.ndo_do_ioctl			= gdm_wimax_ioctl,
- };
- 
--int register_wimax_device(struct phy_dev *phy_dev)
-+int register_wimax_device(struct phy_dev *phy_dev, struct device *pdev)
- {
- 	struct nic *nic = NULL;
- 	struct net_device *dev;
-@@ -957,6 +957,7 @@ int register_wimax_device(struct phy_dev *phy_dev)
- 		return -ENOMEM;
+diff --git a/arch/x86/pci/fixup.c b/arch/x86/pci/fixup.c
+index d0e6e40..5dd467b 100644
+--- a/arch/x86/pci/fixup.c
++++ b/arch/x86/pci/fixup.c
+@@ -519,3 +519,20 @@ static void sb600_disable_hpet_bar(struct pci_dev *dev)
  	}
- 
-+	SET_NETDEV_DEV(dev, pdev);
- 	dev->mtu = 1400;
- 	dev->netdev_ops = &gdm_netdev_ops;
- 	dev->flags &= ~IFF_MULTICAST;
-diff --git a/drivers/staging/gdm72xx/gdm_wimax.h b/drivers/staging/gdm72xx/gdm_wimax.h
-index a1cd71e..023e649 100644
---- a/drivers/staging/gdm72xx/gdm_wimax.h
-+++ b/drivers/staging/gdm72xx/gdm_wimax.h
-@@ -85,7 +85,7 @@ struct nic {
- 
- /*#define LOOPBACK_TEST */
- 
--extern int register_wimax_device(struct phy_dev *phy_dev);
-+extern int register_wimax_device(struct phy_dev *phy_dev, struct device *pdev);
- extern int gdm_wimax_send_tx(struct sk_buff *skb, struct net_device *dev);
- extern void unregister_wimax_device(struct phy_dev *phy_dev);
- 
--- 
-1.7.7.3
-
+ }
+ DECLARE_PCI_FIXUP_EARLY(PCI_VENDOR_ID_ATI, 0x4385, sb600_disable_hpet_bar);
++
++/*
++ * Twinhead H12Y needs us to block out a region otherwise we map devices
++ * there and any access kills the box.
++ *
++ *   See: https://bugzilla.kernel.org/show_bug.cgi?id=10231
++ *
++ * Match off the LPC and svid/sdid (older kernels lose the bridge subvendor)
++ */
++static void __devinit twinhead_reserve_killing_zone(struct pci_dev *dev)
++{
++        if (dev->subsystem_vendor == 0x14FF && dev->subsystem_device == 0xA003) {
++                pr_info("Reserving memory on Twinhead H12Y\n");
++                request_mem_region(0xFFB00000, 0x100000, "twinhead");
++        }
++}
++DECLARE_PCI_FIXUP_HEADER(PCI_VENDOR_ID_INTEL, 0x27B9, twinhead_reserve_killing_zone);
