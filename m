@@ -1,77 +1,154 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S967291Ab2EQPsO (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 May 2012 11:48:14 -0400
-Received: from mail131.messagelabs.com ([216.82.242.99]:2239 "EHLO
-	mail131.messagelabs.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S967047Ab2EQPsL convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 May 2012 11:48:11 -0400
-X-Env-Sender: hartleys@visionengravers.com
-X-Msg-Ref: server-6.tower-131.messagelabs.com!1337269657!12893350!46
-X-Originating-IP: [216.166.12.72]
-X-StarScan-Version: 6.5.10; banners=-,-,-
-X-VirusChecked: Checked
-From: H Hartley Sweeten <hartleys@visionengravers.com>
-To: Shawn Guo <shawn.guo@linaro.org>, Grant Likely <grant.likely@secretlab.ca>,
-        Linus Walleij <linus.walleij@stericsson.com>
-CC: =?iso-8859-1?Q?Lothar_Wa=DFmann?= <LW@KARO-electronics.de>,
-        Ryan Mallon <ryan@bluewatersys.com>,
-        Sascha Hauer <s.hauer@pengutronix.de>,
-        "Hans J. Koch" <hjk@linutronix.de>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Date: Thu, 17 May 2012 10:47:56 -0500
-Subject: RE: [PATCH 1/2] gpio/generic: initialize basic_mmio_gpio shadow
- variables properly
-Thread-Topic: [PATCH 1/2] gpio/generic: initialize basic_mmio_gpio shadow
- variables properly
-Thread-Index: Ac0z/6jK8I8zjNWORjiHy0oTaEsWwAARFVSA
-Message-ID: <ADE657CA350FB648AAC2C43247A983F0020698AE0FBB@AUSP01VMBX24.collaborationhost.net>
-References: <1337240103-4756-1-git-send-email-shawn.guo@linaro.org>
- <1337240103-4756-2-git-send-email-shawn.guo@linaro.org>
-In-Reply-To: <1337240103-4756-2-git-send-email-shawn.guo@linaro.org>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
-MIME-Version: 1.0
+	id S966682Ab2EQPrS (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 May 2012 11:47:18 -0400
+Received: from mga03.intel.com ([143.182.124.21]:21754 "EHLO mga03.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753145Ab2EQPrO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 17 May 2012 11:47:14 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
+   d="scan'208";a="144446784"
+From: Lin Ming <ming.m.lin@intel.com>
+To: Jens Axboe <axboe@kernel.dk>, Alan Stern <stern@rowland.harvard.edu>,
+        Jeff Moyer <jmoyer@redhat.com>
+Cc: linux-kernel@vger.kernel.org, linux-pm@vger.kernel.org,
+        linux-scsi@vger.kernel.org, Lin Ming <ming.m.lin@intel.com>
+Subject: [RFC v2 PATCH 1/4] block: add a flag to identify PM request
+Date: Thu, 17 May 2012 23:48:03 +0800
+Message-Id: <1337269686-3781-2-git-send-email-ming.m.lin@intel.com>
+X-Mailer: git-send-email 1.7.2.5
+In-Reply-To: <1337269686-3781-1-git-send-email-ming.m.lin@intel.com>
+References: <1337269686-3781-1-git-send-email-ming.m.lin@intel.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday, May 17, 2012 12:35 AM, Shawn Guo wrote:
-> It fixes the issue in gpio-generic that commit fb14921 (gpio/mxc: add
-> missing initialization of basic_mmio_gpio shadow variables) manged to
-> fix in gpio-mxc driver, so that other platform specific drivers do not
-> suffer from the same problem over and over again.
->
-> Signed-off-by: Shawn Guo <shawn.guo@linaro.org>
-> ---
->  drivers/gpio/gpio-generic.c |    4 ++++
->  1 files changed, 4 insertions(+), 0 deletions(-)
->
-> diff --git a/drivers/gpio/gpio-generic.c b/drivers/gpio/gpio-generic.c
-> index e38dd0c..cfc9439 100644
-> --- a/drivers/gpio/gpio-generic.c
-> +++ b/drivers/gpio/gpio-generic.c
-> @@ -394,6 +394,10 @@ int bgpio_init(struct bgpio_chip *bgc, struct device *dev,
->  		return ret;
->  
->  	bgc->data = bgc->read_reg(bgc->reg_dat);
-> +	if (bgc->gc.set == bgpio_set_set)
-> +		bgc->data = bgc->read_reg(bgc->reg_set);
-> +	if (bgc->reg_dir)
-> +		bgc->dir = bgc->read_reg(bgc->reg_dir);
->  
->  	return ret;
->  }
+Add a flag REQ_PM to identify the request is PM related.
+As an example, modify scsi code to use this flag.
 
-This change is fine for ep93xx.
+Signed-off-by: Lin Ming <ming.m.lin@intel.com>
+---
+ drivers/scsi/scsi_lib.c    |   25 ++++++++++++++++++++++---
+ drivers/scsi/sd.c          |    9 +++++----
+ include/linux/blk_types.h  |    2 ++
+ include/scsi/scsi_device.h |    4 ++++
+ 4 files changed, 33 insertions(+), 7 deletions(-)
 
-Acked-by: H Hartley Sweeten <hsweeten@visionengravers.com>
+diff --git a/drivers/scsi/scsi_lib.c b/drivers/scsi/scsi_lib.c
+index ead6405..5a1eb5a 100644
+--- a/drivers/scsi/scsi_lib.c
++++ b/drivers/scsi/scsi_lib.c
+@@ -256,10 +256,10 @@ int scsi_execute(struct scsi_device *sdev, const unsigned char *cmd,
+ EXPORT_SYMBOL(scsi_execute);
+ 
+ 
+-int scsi_execute_req(struct scsi_device *sdev, const unsigned char *cmd,
++static int __scsi_execute_req(struct scsi_device *sdev, const unsigned char *cmd,
+ 		     int data_direction, void *buffer, unsigned bufflen,
+ 		     struct scsi_sense_hdr *sshdr, int timeout, int retries,
+-		     int *resid)
++		     int *resid, int flags)
+ {
+ 	char *sense = NULL;
+ 	int result;
+@@ -270,15 +270,34 @@ int scsi_execute_req(struct scsi_device *sdev, const unsigned char *cmd,
+ 			return DRIVER_ERROR << 24;
+ 	}
+ 	result = scsi_execute(sdev, cmd, data_direction, buffer, bufflen,
+-			      sense, timeout, retries, 0, resid);
++			      sense, timeout, retries, flags, resid);
+ 	if (sshdr)
+ 		scsi_normalize_sense(sense, SCSI_SENSE_BUFFERSIZE, sshdr);
+ 
+ 	kfree(sense);
+ 	return result;
+ }
++
++int scsi_execute_req(struct scsi_device *sdev, const unsigned char *cmd,
++		     int data_direction, void *buffer, unsigned bufflen,
++		     struct scsi_sense_hdr *sshdr, int timeout, int retries,
++		     int *resid)
++{
++	return __scsi_execute_req(sdev, cmd, data_direction, buffer, bufflen,
++			      sshdr, timeout, retries, resid, 0);
++}
+ EXPORT_SYMBOL(scsi_execute_req);
+ 
++int scsi_execute_req_flag(struct scsi_device *sdev, const unsigned char *cmd,
++		     int data_direction, void *buffer, unsigned bufflen,
++		     struct scsi_sense_hdr *sshdr, int timeout, int retries,
++		     int *resid, int flags)
++{
++	return __scsi_execute_req(sdev, cmd, data_direction, buffer, bufflen,
++			      sshdr, timeout, retries, resid, flags);
++}
++EXPORT_SYMBOL(scsi_execute_req_flag);
++
+ /*
+  * Function:    scsi_init_cmd_errh()
+  *
+diff --git a/drivers/scsi/sd.c b/drivers/scsi/sd.c
+index 5ba5c2a..1205a8b 100644
+--- a/drivers/scsi/sd.c
++++ b/drivers/scsi/sd.c
+@@ -1269,8 +1269,9 @@ static int sd_sync_cache(struct scsi_disk *sdkp)
+ 		 * Leave the rest of the command zero to indicate
+ 		 * flush everything.
+ 		 */
+-		res = scsi_execute_req(sdp, cmd, DMA_NONE, NULL, 0, &sshdr,
+-				       SD_FLUSH_TIMEOUT, SD_MAX_RETRIES, NULL);
++		res = scsi_execute_req_flag(sdp, cmd, DMA_NONE, NULL, 0, &sshdr,
++				       SD_FLUSH_TIMEOUT, SD_MAX_RETRIES, NULL,
++				       REQ_PM);
+ 		if (res == 0)
+ 			break;
+ 	}
+@@ -2812,8 +2813,8 @@ static int sd_start_stop_device(struct scsi_disk *sdkp, int start)
+ 	if (!scsi_device_online(sdp))
+ 		return -ENODEV;
+ 
+-	res = scsi_execute_req(sdp, cmd, DMA_NONE, NULL, 0, &sshdr,
+-			       SD_TIMEOUT, SD_MAX_RETRIES, NULL);
++	res = scsi_execute_req_flag(sdp, cmd, DMA_NONE, NULL, 0, &sshdr,
++			       SD_TIMEOUT, SD_MAX_RETRIES, NULL, REQ_PM);
+ 	if (res) {
+ 		sd_printk(KERN_WARNING, sdkp, "START_STOP FAILED\n");
+ 		sd_print_result(sdkp, res);
+diff --git a/include/linux/blk_types.h b/include/linux/blk_types.h
+index 4053cbd..a75f854 100644
+--- a/include/linux/blk_types.h
++++ b/include/linux/blk_types.h
+@@ -150,6 +150,7 @@ enum rq_flag_bits {
+ 	__REQ_FLUSH_SEQ,	/* request for flush sequence */
+ 	__REQ_IO_STAT,		/* account I/O stat */
+ 	__REQ_MIXED_MERGE,	/* merge of different types, fail separately */
++	__REQ_PM,		/* runtime pm request */
+ 	__REQ_NR_BITS,		/* stops here */
+ };
+ 
+@@ -191,5 +192,6 @@ enum rq_flag_bits {
+ #define REQ_IO_STAT		(1 << __REQ_IO_STAT)
+ #define REQ_MIXED_MERGE		(1 << __REQ_MIXED_MERGE)
+ #define REQ_SECURE		(1 << __REQ_SECURE)
++#define REQ_PM			(1 << __REQ_PM)
+ 
+ #endif /* __LINUX_BLK_TYPES_H */
+diff --git a/include/scsi/scsi_device.h b/include/scsi/scsi_device.h
+index 6efb2e1..7735b46 100644
+--- a/include/scsi/scsi_device.h
++++ b/include/scsi/scsi_device.h
+@@ -387,6 +387,10 @@ extern int scsi_execute_req(struct scsi_device *sdev, const unsigned char *cmd,
+ 			    int data_direction, void *buffer, unsigned bufflen,
+ 			    struct scsi_sense_hdr *, int timeout, int retries,
+ 			    int *resid);
++extern int scsi_execute_req_flag(struct scsi_device *sdev, const unsigned char *cmd,
++			    int data_direction, void *buffer, unsigned bufflen,
++			    struct scsi_sense_hdr *, int timeout, int retries,
++			    int *resid, int flags);
+ 
+ #ifdef CONFIG_PM_RUNTIME
+ extern int scsi_autopm_get_device(struct scsi_device *);
+-- 
+1.7.2.5
 
