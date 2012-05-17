@@ -1,69 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761517Ab2EQKK1 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 May 2012 06:10:27 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:33430 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1761498Ab2EQKK0 (ORCPT
+	id S1761531Ab2EQKKn (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 May 2012 06:10:43 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:43112 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1761498Ab2EQKKl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 May 2012 06:10:26 -0400
+	Thu, 17 May 2012 06:10:41 -0400
 From: Yong Zhang <yong.zhang0@gmail.com>
 To: linux-mips@linux-mips.org, linux-kernel@vger.kernel.org
 Cc: ralf@linux-mips.org, david.daney@cavium.com
-Subject: [PATCH 0/8] patchset focus on MIPS SMP woes
-Date: Thu, 17 May 2012 18:10:02 +0800
-Message-Id: <1337249410-7162-1-git-send-email-yong.zhang0@gmail.com>
+Subject: [PATCH 1/8] MIPS: Octeon: delay enable irq to ->smp_finish()
+Date: Thu, 17 May 2012 18:10:03 +0800
+Message-Id: <1337249410-7162-2-git-send-email-yong.zhang0@gmail.com>
 X-Mailer: git-send-email 1.7.1
+In-Reply-To: <1337249410-7162-1-git-send-email-yong.zhang0@gmail.com>
+References: <1337249410-7162-1-git-send-email-yong.zhang0@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Yong Zhang <yong.zhang@windriver.com>
 
-Since commit 5fbd036b [sched: Cleanup cpu_active madness] and
-commit 2baab4e9 [sched: Fix select_fallback_rq() vs cpu_active/cpu_online],
-it's more safe to put notify_cpu_starting() and set_cpu_online() with
-irq disabled, otherwise we will have a typical race condition which
-above two commits try to resolve:
-
-      CPU1                            CPU2
-__cpu_up();
-   mp_ops->boot_secondary();
-                              start_secondary();
-                                ->init_secondary();
-                                  local_irq_enable();
-                              <IRQ>
-                              do something;
-                                    wake up softirqd;
-                                    try_to_wake_up();
-                                      select_fallback_rq();
-                                      /* select wrong cpu */
-   set_cpu_online();
-
-
-This patchset fix the above issue as well as set_cpu_online is
-called on the caller cpu.
-
-BTW, I'm only running it on Cavium board because of limited source,
-so if anyone is interested to test it on other board, that's great :)
+To prepare for smoothing set_cpu_[active|online]() mess up
 
 Signed-off-by: Yong Zhang <yong.zhang0@gmail.com>
+Cc: Ralf Baechle <ralf@linux-mips.org>
+Cc: David Daney <david.daney@cavium.com>
+---
+ arch/mips/cavium-octeon/smp.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-Yong Zhang (8):
-  MIPS: Octeon: delay enable irq to ->smp_finish()
-  MIPS: BMIPS: delay irq enable to ->smp_finish()
-  MIPS: SMTC: delay irq enable to ->smp_finish()
-  MIPS: Yosemite: delay irq enable to ->smp_finish()
-  MIPS: call ->smp_finish() a little late
-  MIPS: call set_cpu_online() on the uping cpu with irq disabled
-  MIPS: smp: Warn on too early irq enable
-  MIPS: sync-r4k: remove redundant irq operation
-
- arch/mips/cavium-octeon/smp.c       |    2 +-
- arch/mips/kernel/smp-bmips.c        |   14 +++++++-------
- arch/mips/kernel/smp.c              |   12 +++++++++---
- arch/mips/kernel/smtc.c             |    3 ++-
- arch/mips/kernel/sync-r4k.c         |    5 -----
- arch/mips/pmc-sierra/yosemite/smp.c |    2 +-
- 6 files changed, 20 insertions(+), 18 deletions(-)
+diff --git a/arch/mips/cavium-octeon/smp.c b/arch/mips/cavium-octeon/smp.c
+index 97e7ce9..ef9c34a 100644
+--- a/arch/mips/cavium-octeon/smp.c
++++ b/arch/mips/cavium-octeon/smp.c
+@@ -185,7 +185,6 @@ static void __cpuinit octeon_init_secondary(void)
+ 	octeon_init_cvmcount();
+ 
+ 	octeon_irq_setup_secondary();
+-	raw_local_irq_enable();
+ }
+ 
+ /**
+@@ -233,6 +232,7 @@ static void octeon_smp_finish(void)
+ 
+ 	/* to generate the first CPU timer interrupt */
+ 	write_c0_compare(read_c0_count() + mips_hpt_frequency / HZ);
++	local_irq_enable();
+ }
+ 
+ /**
+-- 
+1.7.1
 
