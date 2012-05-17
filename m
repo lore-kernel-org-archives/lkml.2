@@ -1,43 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754394Ab2EQRTo (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 May 2012 13:19:44 -0400
-Received: from lxorguk.ukuu.org.uk ([81.2.110.251]:49057 "EHLO
-	lxorguk.ukuu.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753495Ab2EQRTm (ORCPT
+	id S1760466Ab2EQRXq (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 May 2012 13:23:46 -0400
+Received: from caramon.arm.linux.org.uk ([78.32.30.218]:49519 "EHLO
+	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754100Ab2EQRXo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 May 2012 13:19:42 -0400
-Date: Thu, 17 May 2012 18:22:32 +0100
-From: Alan Cox <alan@lxorguk.ukuu.org.uk>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Paul Gortmaker <paul.gortmaker@windriver.com>,
-        linux-kernel@vger.kernel.org, JBottomley@parallels.com,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [RFC/PATCH 0/5] Delete microchannel [CONFIG_MCA] support
-Message-ID: <20120517182232.2d0dd540@pyramind.ukuu.org.uk>
-In-Reply-To: <CA+55aFxRjxf_3hka_SSqC+p32aDMU=0rq0_RaceO=bQqmtO2xg@mail.gmail.com>
-References: <1337272841-25931-1-git-send-email-paul.gortmaker@windriver.com>
-	<CA+55aFxRjxf_3hka_SSqC+p32aDMU=0rq0_RaceO=bQqmtO2xg@mail.gmail.com>
-X-Mailer: Claws Mail 3.8.0 (GTK+ 2.24.8; x86_64-redhat-linux-gnu)
-Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Thu, 17 May 2012 13:23:44 -0400
+Date: Thu, 17 May 2012 18:22:15 +0100
+From: Russell King <rmk@arm.linux.org.uk>
+To: Catalin Marinas <catalin.marinas@arm.com>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Mundt <lethal@linux-sh.org>,
+        Andrea Arcangeli <aarcange@redhat.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Rik van Riel <riel@redhat.com>,
+        Ingo Molnar <mingo@elte.hu>,
+        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arch@vger.kernel.org" <linux-arch@vger.kernel.org>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        David Miller <davem@davemloft.net>,
+        Hugh Dickins <hugh.dickins@tiscali.co.uk>, Mel Gorman <mel@csn.ul.ie>,
+        Nick Piggin <npiggin@kernel.dk>, Chris Metcalf <cmetcalf@tilera.com>,
+        Martin Schwidefsky <schwidefsky@de.ibm.com>
+Subject: Re: [RFC][PATCH 4/6] arm, mm: Convert arm to generic tlb
+Message-ID: <20120517172215.GB11487@flint.arm.linux.org.uk>
+Mail-Followup-To: Catalin Marinas <catalin.marinas@arm.com>,
+	Peter Zijlstra <a.p.zijlstra@chello.nl>,
+	Paul Mundt <lethal@linux-sh.org>,
+	Andrea Arcangeli <aarcange@redhat.com>,
+	Thomas Gleixner <tglx@linutronix.de>,
+	Rik van Riel <riel@redhat.com>, Ingo Molnar <mingo@elte.hu>,
+	"akpm@linux-foundation.org" <akpm@linux-foundation.org>,
+	Linus Torvalds <torvalds@linux-foundation.org>,
+	"linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+	"linux-arch@vger.kernel.org" <linux-arch@vger.kernel.org>,
+	"linux-mm@kvack.org" <linux-mm@kvack.org>,
+	Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+	David Miller <davem@davemloft.net>,
+	Hugh Dickins <hugh.dickins@tiscali.co.uk>,
+	Mel Gorman <mel@csn.ul.ie>, Nick Piggin <npiggin@kernel.dk>,
+	Chris Metcalf <cmetcalf@tilera.com>,
+	Martin Schwidefsky <schwidefsky@de.ibm.com>
+References: <20110302175928.022902359@chello.nl> <20110302180259.109909335@chello.nl> <20120517030551.GA11623@linux-sh.org> <20120517093022.GA14666@arm.com> <20120517095124.GN23420@flint.arm.linux.org.uk> <1337254086.4281.26.camel@twins> <20120517160012.GB18593@arm.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120517160012.GB18593@arm.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 17 May 2012 09:53:16 -0700
-Linus Torvalds <torvalds@linux-foundation.org> wrote:
-
-> On Thu, May 17, 2012 at 9:40 AM, Paul Gortmaker
-> <paul.gortmaker@windriver.com> wrote:
-> > It was good that we could support MCA machines back in the day, but
-> > realistically, nobody is using them anymore.
+On Thu, May 17, 2012 at 05:00:12PM +0100, Catalin Marinas wrote:
+> On Thu, May 17, 2012 at 12:28:06PM +0100, Peter Zijlstra wrote:
+> > On Thu, 2012-05-17 at 10:51 +0100, Russell King wrote:
+> > > On Thu, May 17, 2012 at 10:30:23AM +0100, Catalin Marinas wrote:
+> > > > Another minor thing is that on newer ARM processors (Cortex-A15) we
+> > > > need the TLB shootdown even on UP systems, so tlb_fast_mode should
+> > > > always return 0. Something like below (untested):
+> > > 
+> > > No Catalin, we need this for virtually all ARMv7 CPUs whether they're UP
+> > > or SMP, not just for A15, because of the speculative prefetch which can
+> > > re-load TLB entries from the page tables at _any_ time.
+> > 
+> > Hmm,. so this is mostly because of the confusion/coupling between
+> > tlb_remove_page() and tlb_remove_table() I guess. Since I don't see the
+> > freeing of the actual pages being a problem with speculative TLB
+> > reloads, just the page-tables.
+> > 
+> > Should we introduce a tlb_remove_table() regardless of
+> > HAVE_RCU_TABLE_FREE which always queues the tables regardless of
+> > tlb_fast_mode()? 
 > 
-> Yeah, I think I can ack this. Looks like 3.5 will be a nice "remove
-> stupid hardware support" release.
+> BTW, looking at your tlb-unify branch, does tlb_remove_table() call
+> tlb_flush/tlb_flush_mmu before freeing the tables?  I can only see
+> tlb_remove_page() doing this. On ARM, even UP, we need the TLB flushing
+> after clearing the pmd and before freeing the pte page table (and
+> ideally doing it less often than at every pte_free_tlb() call).
 
-I have a PS/2 in the cellar if anyone needs one 8)
+Catalin,
 
-But yes I think the MCA bus code (and the PS/2 in the cellar) can both go.
+The way TLB shootdown stuff works is that _every_ single bit of memory
+which gets freed, whether its a page or a page table, gets added to a
+list of pages to be freed.
+
+So, the sequence is:
+- remove pte/pmd/pud/pgd pointers
+- add pages, whether they be pages pointed to by pte entries or page tables
+  to be freed to a list
+- when list is sufficiently full, invalidate TLBs
+- free list of pages
+
+That means the pages will not be freed, whether it be a page mapped
+into userspace or a page table until such time that the TLB has been
+invalidated.
+
+For page tables, this is done via pXX_free_tlb(), which then calls out
+to the arch specific __pXX_free_tlb(), which ultimately then hands the
+page table over to tlb_remove_page() to add to the list of to-be-freed
+pages.
+
+-- 
+Russell King
+ Linux kernel    2.6 ARM Linux   - http://www.arm.linux.org.uk/
+ maintainer of:
