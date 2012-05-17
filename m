@@ -1,291 +1,144 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S967126Ab2EQPBt (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 May 2012 11:01:49 -0400
-Received: from mailout3.samsung.com ([203.254.224.33]:65016 "EHLO
-	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S966907Ab2EQPBn (ORCPT
+	id S1762054Ab2EQPCJ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 May 2012 11:02:09 -0400
+Received: from mail-we0-f174.google.com ([74.125.82.174]:42572 "EHLO
+	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S967101Ab2EQPBo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 May 2012 11:01:43 -0400
-X-AuditID: cbfee61a-b7be0ae000001293-33-4fb512d6c05b
-From: Thomas Abraham <thomas.abraham@linaro.org>
-To: linux-mmc@vger.kernel.org, devicetree-discuss@lists.ozlabs.org
-Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        cjb@laptop.org, grant.likely@secretlab.ca, rob.herring@calxeda.com,
-        linux-samsung-soc@vger.kernel.org, kgene.kim@samsung.com,
-        patches@linaro.org
-Subject: [PATCH v2 6/6] mmc: dw_mmc: add samsung exynos5250 specific extentions
-Date: Thu, 17 May 2012 20:40:11 +0530
-Message-id: <1337267411-28226-7-git-send-email-thomas.abraham@linaro.org>
-X-Mailer: git-send-email 1.6.6.rc2
-In-reply-to: <1337267411-28226-1-git-send-email-thomas.abraham@linaro.org>
-References: <1337267411-28226-1-git-send-email-thomas.abraham@linaro.org>
-X-Brightmail-Tracker: AAAAAA==
-X-TM-AS-MML: No
+	Thu, 17 May 2012 11:01:44 -0400
+From: Sasha Levin <levinsasha928@gmail.com>
+To: greg@kroah.com, kay@vrfy.org, torvalds@linux-foundation.org
+Cc: mingo@kernel.org, linux-kernel@vger.kernel.org, joe@perches.com,
+        hpa@kernel.org, yinghai@kernel.org,
+        Sasha Levin <levinsasha928@gmail.com>
+Subject: [RFC] printk: add relative printk timing support
+Date: Thu, 17 May 2012 17:02:49 +0200
+Message-Id: <1337266969-19181-1-git-send-email-levinsasha928@gmail.com>
+X-Mailer: git-send-email 1.7.8.6
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The instantiation of the Synopsis Designware controller on Exynos5250
-include extension for SDR and DDR specific tx/rx phase shift timing
-and CIU internal divider. In addition to that, the option to skip the
-command hold stage is also introduced. Add support for these Exynos5250
-specfic extenstions.
+This patch adds support for relative timestamps in printk output.
 
-Signed-off-by: Abhilash Kesavan <a.kesavan@samsung.com>
-Signed-off-by: Thomas Abraham <thomas.abraham@linaro.org>
+First, this is how it looks now:
+
+[  120.001386] foo
+[  181.036862] bar
+[  186.070696] zoot
+[  196.288022] foo
+[  257.415895] bar
+[  257.416580] zoot
+
+Next, with Linus' suggestion (Month and date, no seconds):
+
+[May 17 14:13] foo
+[May 17 14:14] bar
+[+05.00026906] zoot
+[+10.00054898] foo
+[May 17 14:15] bar
+[+00.00000668] zoot
+
+And Peter's suggestion (MS accurate absolute time):
+
+[14:16:57.970] foo
+[14:17:59.063] bar
+[+05.00032139] zoot
+[+10.00336079] foo
+[14:19:15.677] bar
+[+00.00001905] zoot
+
+Todo:
+ - Can we get rid of the spinlock somehow? I tried using atomic64_t, but got
+hit with races causing odd prints.
+ - Do we want to make the 60 second "timeout" for printing abs time
+configurable?
+- Are there any other formats we would want to add?
+
+Suggested-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Sasha Levin <levinsasha928@gmail.com>
 ---
- .../devicetree/bindings/mmc/synposis-dw-mshc.txt   |   33 ++++++++++++++++-
- drivers/mmc/host/dw_mmc-pltfm.c                    |   15 +++++++
- drivers/mmc/host/dw_mmc.c                          |   40 +++++++++++++++++++-
- drivers/mmc/host/dw_mmc.h                          |   14 +++++++
- include/linux/mmc/dw_mmc.h                         |    6 +++
- 5 files changed, 105 insertions(+), 3 deletions(-)
+ kernel/printk.c |   50 ++++++++++++++++++++++++++++++++++++++++++++------
+ 1 files changed, 44 insertions(+), 6 deletions(-)
 
-diff --git a/Documentation/devicetree/bindings/mmc/synposis-dw-mshc.txt b/Documentation/devicetree/bindings/mmc/synposis-dw-mshc.txt
-index 3acd6c9..99b166e 100644
---- a/Documentation/devicetree/bindings/mmc/synposis-dw-mshc.txt
-+++ b/Documentation/devicetree/bindings/mmc/synposis-dw-mshc.txt
-@@ -7,6 +7,8 @@ Required Properties:
- 
- * compatible: should be one of the following
- 	- snps,dw-mshc: for controllers compliant with synopsis dw-mshc.
-+	- samsung,exynos5250-dw-mshc: for controllers with Samsung
-+	  Exynos5250 specific extentions.
- 
- * reg: physical base address of the dw-mshc controller and size of its memory
-   region.
-@@ -74,13 +76,40 @@ Aliases:
-   the following format 'mshc{n}' where n is a unique number for the alias.
- 
- 
-+Samsung Exynos5250 specific properties:
-+
-+* samsung,dw-mshc-sdr-timing: Specifies the value of CUI clock divider, CIU
-+  clock phase shift value in transmit mode and CIU clock phase shift value in
-+  receive mode for single data rate mode operation. Refer notes of the valid
-+  values below.
-+
-+* samsung,dw-mshc-ddr-timing: Specifies the value of CUI clock divider, CIU
-+  clock phase shift value in transmit mode and CIU clock phase shift value in
-+  receive mode for double data rate mode operation. Refer notes of the valid
-+  values below. The order of the cells should be
-+
-+    - First Cell: 	CIU clock divider value.
-+    - Second Cell:	CIU clock phase shift value for tx mode.
-+    - Third Cell:	CIU clock phase shift value for rx mode.
-+
-+  Valid values for SDR and DDR CIU clock timing:
-+
-+    - valid values for CIU clock divider, tx phase shift and rx phase shift
-+      is 0 to 7.
-+
-+    - When CIU clock divider value is set to 3, all possible 8 phase shift
-+      values can be used.
-+
-+    - If CIU clock divider value is 0 (that is divide by 1), both tx and rx
-+      phase shift clocks should be 0.
-+
- Example:
- 
-   The MSHC controller node can be split into two portions, SoC specific and
-   board specific portions as listed below.
- 
- 	dwmmc0@12200000 {
--		compatible = "snps,dw-mshc";
-+		compatible = "samsung,exynos5250-dw-mshc";
- 		reg = <0x12200000 0x1000>;
- 		interrupts = <0 75 0>;
- 		#address-cells = <1>;
-@@ -94,6 +123,8 @@ Example:
- 		no-write-protect;
- 		fifo-depth = <0x80>;
- 		card-detect-delay = <200>;
-+		samsung,dw-mshc-sdr-timing = <2 3 3>;
-+		samsung,dw-mshc-ddr-timing = <1 2 3>;
- 
- 		slot@0 {
- 			reg = <0>;
-diff --git a/drivers/mmc/host/dw_mmc-pltfm.c b/drivers/mmc/host/dw_mmc-pltfm.c
-index 8d24f6d..900f412 100644
---- a/drivers/mmc/host/dw_mmc-pltfm.c
-+++ b/drivers/mmc/host/dw_mmc-pltfm.c
-@@ -27,9 +27,24 @@ static struct dw_mci_drv_data synopsis_drv_data = {
- 	.ctrl_type	= DW_MCI_TYPE_SYNOPSIS,
- };
- 
-+static unsigned long exynos5250_dwmmc_caps[4] = {
-+	MMC_CAP_UHS_DDR50 | MMC_CAP_1_8V_DDR |
-+		MMC_CAP_8_BIT_DATA | MMC_CAP_CMD23,
-+	MMC_CAP_CMD23,
-+	MMC_CAP_CMD23,
-+	MMC_CAP_CMD23,
-+};
-+
-+static struct dw_mci_drv_data exynos5250_drv_data = {
-+	.ctrl_type	= DW_MCI_TYPE_EXYNOS5250,
-+	.caps		= exynos5250_dwmmc_caps,
-+};
-+
- static const struct of_device_id dw_mci_pltfm_match[] = {
- 	{ .compatible = "snps,dw-mshc",
- 			.data = (void *)&synopsis_drv_data, },
-+	{ .compatible = "samsung,exynos5250-dw-mshc",
-+			.data = (void *)&exynos5250_drv_data, },
- 	{},
- };
- MODULE_DEVICE_TABLE(of, dw_mci_pltfm_match);
-diff --git a/drivers/mmc/host/dw_mmc.c b/drivers/mmc/host/dw_mmc.c
-index 0317287..58bab5b 100644
---- a/drivers/mmc/host/dw_mmc.c
-+++ b/drivers/mmc/host/dw_mmc.c
-@@ -236,6 +236,7 @@ static void dw_mci_set_timeout(struct dw_mci *host)
- static u32 dw_mci_prepare_command(struct mmc_host *mmc, struct mmc_command *cmd)
- {
- 	struct mmc_data	*data;
-+	struct dw_mci_slot *slot = mmc_priv(mmc);
- 	u32 cmdr;
- 	cmd->error = -EINPROGRESS;
- 
-@@ -265,6 +266,17 @@ static u32 dw_mci_prepare_command(struct mmc_host *mmc, struct mmc_command *cmd)
- 			cmdr |= SDMMC_CMD_DAT_WR;
- 	}
- 
-+	/*
-+	 * Samsung Exynos5250 extends the use of CMD register with the use of
-+	 * bit 29 (which is reserved on standard MSHC controllers) for
-+	 * optionally bypassing the HOLD register for command and data. The
-+	 * HOLD register should be bypassed in case there is no phase shift
-+	 * applied on CMD/DATA that is sent to the card.
-+	 */
-+	if (slot->host->drv_data->ctrl_type == DW_MCI_TYPE_EXYNOS5250)
-+		if (SDMMC_CLKSEL_GET_SELCLK_DRV(mci_readl(slot->host, CLKSEL)))
-+			cmdr |= SDMMC_CMD_USE_HOLD_REG;
-+
- 	return cmdr;
+diff --git a/kernel/printk.c b/kernel/printk.c
+index 32462d2..9d008e5 100644
+--- a/kernel/printk.c
++++ b/kernel/printk.c
+@@ -779,11 +779,12 @@ static int check_syslog_permissions(int type, bool from_file)
  }
  
-@@ -787,10 +799,19 @@ static void dw_mci_set_ios(struct mmc_host *mmc, struct mmc_ios *ios)
- 	regs = mci_readl(slot->host, UHS_REG);
+ #if defined(CONFIG_PRINTK_TIME)
+-static bool printk_time = 1;
++static int printk_time = 1;
+ #else
+-static bool printk_time;
++static int printk_time;
+ #endif
+-module_param_named(time, printk_time, bool, S_IRUGO | S_IWUSR);
++module_param_named(time, printk_time, int, S_IRUGO | S_IWUSR);
++static DEFINE_SPINLOCK(printk_time_rel);
  
- 	/* DDR mode set */
--	if (ios->timing == MMC_TIMING_UHS_DDR50)
-+	if (ios->timing == MMC_TIMING_UHS_DDR50) {
- 		regs |= (0x1 << slot->id) << 16;
--	else
-+		mci_writel(slot->host, CLKSEL, slot->host->ddr_timing);
-+	} else {
- 		regs &= ~(0x1 << slot->id) << 16;
-+		mci_writel(slot->host, CLKSEL, slot->host->sdr_timing);
-+	}
+ static size_t print_prefix(const struct log *msg, bool syslog, char *buf)
+ {
+@@ -801,16 +802,53 @@ static size_t print_prefix(const struct log *msg, bool syslog, char *buf)
+ 		}
+ 	}
+ 
+-	if (printk_time) {
++	if (printk_time == 1) {
+ 		if (buf) {
+ 			unsigned long long ts = msg->ts_nsec;
+-			unsigned long rem_nsec = do_div(ts, 1000000000);
++			unsigned long rem_nsec = do_div(ts, NSEC_PER_SEC);
+ 
+ 			len += sprintf(buf + len, "[%5lu.%06lu] ",
+-					 (unsigned long) ts, rem_nsec / 1000);
++					 (unsigned long) ts, rem_nsec / NSEC_PER_USEC);
+ 		} else {
+ 			len += 15;
+ 		}
++	} else if (printk_time == 2 || printk_time == 3) {
++		static unsigned long long last_print;
++		unsigned long long ts = msg->ts_nsec;
++		unsigned long rem_nsec;
++		bool rel = 0;
++		static const char *months[12] = {"Jan", "Feb", "Mar", "Apr",
++						"May", "Jun", "Jul", "Aug",
++						"Sep", "Oct", "Nov", "Dec",};
 +
-+	if (slot->host->drv_data->ctrl_type == DW_MCI_TYPE_EXYNOS5250) {
-+		slot->host->bus_hz = clk_get_rate(slot->host->ciu_clk);
-+		slot->host->bus_hz /= SDMMC_CLKSEL_GET_DIVRATIO(
-+					mci_readl(slot->host, CLKSEL));
-+	}
- 
- 	mci_writel(slot->host, UHS_REG, regs);
- 
-@@ -2076,6 +2097,7 @@ static struct dw_mci_board *dw_mci_parse_dt(struct dw_mci *host)
- 	struct dw_mci_board *pdata;
- 	struct device *dev = host->dev;
- 	struct device_node *np = dev->of_node;
-+	u32 timing[3];
- 	int idx, cnt;
- 
- 	pdata = devm_kzalloc(dev, sizeof(*pdata), GFP_KERNEL);
-@@ -2098,6 +2120,20 @@ static struct dw_mci_board *dw_mci_parse_dt(struct dw_mci *host)
- 		if (of_get_property(np, of_quriks[idx].quirk, NULL))
- 			pdata->quirks |= of_quriks[idx].id;
- 
-+	if (of_property_read_u32_array(dev->of_node,
-+			"samsung,dw-mshc-sdr-timing", timing, 3))
-+		host->sdr_timing = DW_MCI_DEF_SDR_TIMING;
-+	else
-+		host->sdr_timing = SDMMC_CLKSEL_TIMING(timing[0],
-+					timing[1], timing[2]);
++		if (!buf)
++			return len + 15;
 +
-+	if (of_property_read_u32_array(dev->of_node,
-+			"samsung,dw-mshc-ddr-timing", timing, 3))
-+		host->ddr_timing = DW_MCI_DEF_DDR_TIMING;
-+	else
-+		host->ddr_timing = SDMMC_CLKSEL_TIMING(timing[0],
-+					timing[1], timing[2]);
++		spin_lock(&printk_time_rel);
++		if ((ts - last_print) / NSEC_PER_SEC < 60) {
++			rel = 1;
++			ts -= last_print;
++		}
++		last_print = msg->ts_nsec;
++		spin_unlock(&printk_time_rel);
 +
- 	if (of_property_read_u32(np, "fifo-depth", &pdata->fifo_depth))
- 		dev_info(dev, "fifo-depth property not found, using "
- 				"value of FIFOTH register as default\n");
-diff --git a/drivers/mmc/host/dw_mmc.h b/drivers/mmc/host/dw_mmc.h
-index 1ecaa02..6c17282 100644
---- a/drivers/mmc/host/dw_mmc.h
-+++ b/drivers/mmc/host/dw_mmc.h
-@@ -53,6 +53,7 @@
- #define SDMMC_IDINTEN		0x090
- #define SDMMC_DSCADDR		0x094
- #define SDMMC_BUFADDR		0x098
-+#define SDMMC_CLKSEL		0x09C /* specific to Samsung Exynos5250 */
- #define SDMMC_DATA(x)		(x)
- 
- /*
-@@ -111,6 +112,7 @@
- #define SDMMC_INT_ERROR			0xbfc2
- /* Command register defines */
- #define SDMMC_CMD_START			BIT(31)
-+#define SDMMC_CMD_USE_HOLD_REG		BIT(29)
- #define SDMMC_CMD_CCS_EXP		BIT(23)
- #define SDMMC_CMD_CEATA_RD		BIT(22)
- #define SDMMC_CMD_UPD_CLK		BIT(21)
-@@ -142,6 +144,17 @@
- /* Version ID register define */
- #define SDMMC_GET_VERID(x)		((x) & 0xFFFF)
- 
-+#define DW_MCI_DEF_SDR_TIMING		0x03030002
-+#define DW_MCI_DEF_DDR_TIMING		0x03020001
-+#define SDMMC_CLKSEL_CCLK_SAMPLE(x)	(((x) & 3) << 0)
-+#define SDMMC_CLKSEL_CCLK_DRIVE(x)	(((x) & 3) << 16)
-+#define SDMMC_CLKSEL_CCLK_DIVIDER(x)	(((x) & 3) << 24)
-+#define SDMMC_CLKSEL_TIMING(x, y, z)	(SDMMC_CLKSEL_CCLK_SAMPLE(x) |	\
-+					SDMMC_CLKSEL_CCLK_DRIVE(y) |	\
-+					SDMMC_CLKSEL_CCLK_DIVIDER(z))
-+#define SDMMC_CLKSEL_GET_DIVRATIO(x)	((((x) >> 24) & 0x7) + 1)
-+#define SDMMC_CLKSEL_GET_SELCLK_DRV(x)	(((x) >> 16) & 0x7)
++		rem_nsec = do_div(ts, NSEC_PER_SEC);
++		if (rel) {
++			len += sprintf(buf + len, "[%+03d.%08lu] ",
++					(int)ts, rem_nsec / NSEC_PER_USEC);
++		} else {
++			struct tm tm;
 +
- /* Register access macros */
- #define mci_readl(dev, reg)			\
- 	__raw_readl((dev)->regs + SDMMC_##reg)
-@@ -184,6 +197,7 @@ extern int dw_mci_resume(struct dw_mci *host);
++			time_to_tm(get_seconds(), 0, &tm);
++			if (printk_time == 2)
++				len += sprintf(buf + len, "[%s %02d %02d:%02d] ",
++						months[tm.tm_mon], tm.tm_mday,
++						tm.tm_hour, tm.tm_min);
++			if (printk_time == 3)
++				len += sprintf(buf + len, "[%02d:%02d:%02d.%03lu] ",
++						tm.tm_hour, tm.tm_min, tm.tm_sec,
++						rem_nsec / NSEC_PER_MSEC);
++		}
+ 	}
  
- /* Variations in the dw_mci controller */
- #define DW_MCI_TYPE_SYNOPSIS		0
-+#define DW_MCI_TYPE_EXYNOS5250		1 /* Samsung Exynos5250 Extensions */
- 
- /* dw_mci platform driver data */
- struct dw_mci_drv_data {
-diff --git a/include/linux/mmc/dw_mmc.h b/include/linux/mmc/dw_mmc.h
-index ae45e4f..32c778f 100644
---- a/include/linux/mmc/dw_mmc.h
-+++ b/include/linux/mmc/dw_mmc.h
-@@ -82,6 +82,8 @@ struct mmc_data;
-  * @biu_clk: Pointer to bus interface unit clock instance.
-  * @ciu_clk: Pointer to card interface unit clock instance.
-  * @slot: Slots sharing this MMC controller.
-+ * @sdr_timing: Clock phase shifting for driving and sampling in sdr mode
-+ * @ddr_timing: Clock phase shifting for driving and sampling in ddr mode
-  * @fifo_depth: depth of FIFO.
-  * @data_shift: log2 of FIFO item size.
-  * @part_buf_start: Start index in part_buf.
-@@ -166,6 +168,10 @@ struct dw_mci {
- 	struct clk		*ciu_clk;
- 	struct dw_mci_slot	*slot[MAX_MCI_SLOTS];
- 
-+	/* Phase Shift Value (for exynos5250 variant) */
-+	u32			sdr_timing;
-+	u32			ddr_timing;
-+
- 	/* FIFO push and pull */
- 	int			fifo_depth;
- 	int			data_shift;
+ 	return len;
 -- 
-1.6.6.rc2
+1.7.8.6
 
