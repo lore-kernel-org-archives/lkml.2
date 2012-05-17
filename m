@@ -1,76 +1,128 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030294Ab2EQPrl (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 May 2012 11:47:41 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:62726 "EHLO mx1.redhat.com"
+	id S1030247Ab2EQPrb (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 May 2012 11:47:31 -0400
+Received: from mga14.intel.com ([143.182.124.37]:4550 "EHLO mga14.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752248Ab2EQPri (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 May 2012 11:47:38 -0400
-Date: Thu, 17 May 2012 12:47:26 -0300
-From: Arnaldo Carvalho de Melo <acme@redhat.com>
-To: Feng Tang <feng.tang@intel.com>
-Cc: mingo@elte.hu, a.p.zijlstra@chello.nl, robert.richter@amd.com,
-        ak@linux.intel.com, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 3/3] perf script/python: Pass thread/dso name and symbol
- info to event handler in python
-Message-ID: <20120517154726.GC2636@infradead.org>
-References: <1337173155-25780-1-git-send-email-feng.tang@intel.com>
- <1337173155-25780-3-git-send-email-feng.tang@intel.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1337173155-25780-3-git-send-email-feng.tang@intel.com>
-X-Url: http://acmel.wordpress.com
-User-Agent: Mutt/1.5.20 (2009-12-10)
+	id S1752248Ab2EQPr1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 17 May 2012 11:47:27 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
+   d="scan'208";a="144446795"
+From: Lin Ming <ming.m.lin@intel.com>
+To: Jens Axboe <axboe@kernel.dk>, Alan Stern <stern@rowland.harvard.edu>,
+        Jeff Moyer <jmoyer@redhat.com>
+Cc: linux-kernel@vger.kernel.org, linux-pm@vger.kernel.org,
+        linux-scsi@vger.kernel.org, Lin Ming <ming.m.lin@intel.com>
+Subject: [RFC v2 PATCH 2/4] block: add queue runtime pm callbacks
+Date: Thu, 17 May 2012 23:48:04 +0800
+Message-Id: <1337269686-3781-3-git-send-email-ming.m.lin@intel.com>
+X-Mailer: git-send-email 1.7.2.5
+In-Reply-To: <1337269686-3781-1-git-send-email-ming.m.lin@intel.com>
+References: <1337269686-3781-1-git-send-email-ming.m.lin@intel.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Em Wed, May 16, 2012 at 08:59:15PM +0800, Feng Tang escreveu:
-> Signed-off-by: Feng Tang <feng.tang@intel.com>
-> ---
->  .../util/scripting-engines/trace-event-python.c    |   11 ++++++++++-
->  1 files changed, 10 insertions(+), 1 deletions(-)
-> 
-> diff --git a/tools/perf/util/scripting-engines/trace-event-python.c b/tools/perf/util/scripting-engines/trace-event-python.c
-> index a202881..c96f5e2 100644
-> --- a/tools/perf/util/scripting-engines/trace-event-python.c
-> +++ b/tools/perf/util/scripting-engines/trace-event-python.c
-> @@ -336,6 +336,7 @@ static void python_process_general_event(union perf_event *pevent __unused,
->  	static char handler_name[64];
->  	unsigned n = 0;
->  	void *data = sample->raw_data;
-> +	struct thread *thread = al->thread;
->  
->  	t = PyTuple_New(MAX_FIELDS);
->  	if (!t)
-> @@ -348,13 +349,21 @@ static void python_process_general_event(union perf_event *pevent __unused,
->  		goto exit;
->  	}
->  
-> -	/* Pass 3 parameters: event_attr, perf_sample, raw data, thread name */
-> +	/* Pass parameters: attr, perf_sample, raw data, thread and dso name */
->  	PyTuple_SetItem(t, n++, PyString_FromStringAndSize(
->  			(const char *)&evsel->attr, sizeof(evsel->attr)));
->  	PyTuple_SetItem(t, n++, PyString_FromStringAndSize(
->  			(const char *)sample, sizeof(*sample)));
->  	PyTuple_SetItem(t, n++, PyString_FromStringAndSize(
->  			data, sample->raw_size));
-> +	PyTuple_SetItem(t, n++, PyString_FromString(thread->comm));
-> +	PyTuple_SetItem(t, n++, PyString_FromString(al->map->dso->name));
-> +
-> +	/* Pass the resolved symbol if there is, othersize pass "Unkown" */
-> +	if (al->sym)
-> +		PyTuple_SetItem(t, n++, PyString_FromString(al->sym->name));
-> +	else
-> +		PyTuple_SetItem(t, n++, PyString_FromString("Unknown"));
+Add runtime pm suspend/resume callbacks to request queue.
+As an example, implement these callbacks in sd driver.
 
-Isn't this getting a little bit convoluted?
+Signed-off-by: Lin Ming <ming.m.lin@intel.com>
+---
+ block/blk-settings.c   |    8 ++++++++
+ drivers/scsi/sd.c      |   21 +++++++++++++++++++++
+ include/linux/blkdev.h |    6 ++++++
+ 3 files changed, 35 insertions(+), 0 deletions(-)
 
-I.e. python has dictionaries, perhaps we could pass a dict instead of a
-tuple, in that case we would simply not add the "symbol" key.
+diff --git a/block/blk-settings.c b/block/blk-settings.c
+index d3234fc..120d9fc 100644
+--- a/block/blk-settings.c
++++ b/block/blk-settings.c
+@@ -99,6 +99,14 @@ void blk_queue_lld_busy(struct request_queue *q, lld_busy_fn *fn)
+ }
+ EXPORT_SYMBOL_GPL(blk_queue_lld_busy);
+ 
++void blk_queue_runtime_pm(struct request_queue *q,
++		runtime_pm_fn *suspend_fn, runtime_pm_fn *resume_fn)
++{
++	q->runtime_suspend = suspend_fn;
++	q->runtime_resume = resume_fn;
++}
++EXPORT_SYMBOL_GPL(blk_queue_runtime_pm);
++
+ /**
+  * blk_set_default_limits - reset limits to default values
+  * @lim:  the queue_limits structure to reset
+diff --git a/drivers/scsi/sd.c b/drivers/scsi/sd.c
+index 1205a8b..0335cde 100644
+--- a/drivers/scsi/sd.c
++++ b/drivers/scsi/sd.c
+@@ -938,6 +938,25 @@ static int sd_prep_fn(struct request_queue *q, struct request *rq)
+ 	return scsi_prep_return(q, rq, ret);
+ }
+ 
++static int sd_block_runtime_suspend(struct request_queue *q)
++{
++	struct scsi_device *sdp = q->queuedata;
++
++	pm_runtime_mark_last_busy(&sdp->sdev_gendev);
++	pm_runtime_put_autosuspend(&sdp->sdev_gendev);
++
++	return 0;
++}
++
++static int sd_block_runtime_resume(struct request_queue *q)
++{
++	struct scsi_device *sdp = q->queuedata;
++
++	pm_runtime_get(&sdp->sdev_gendev);
++
++	return 0;
++}
++
+ /**
+  *	sd_open - open a scsi disk device
+  *	@inode: only i_rdev member may be used
+@@ -2616,6 +2635,8 @@ static void sd_probe_async(void *data, async_cookie_t cookie)
+ 
+ 	blk_queue_prep_rq(sdp->request_queue, sd_prep_fn);
+ 	blk_queue_unprep_rq(sdp->request_queue, sd_unprep_fn);
++	blk_queue_runtime_pm(sdp->request_queue,
++		sd_block_runtime_suspend, sd_block_runtime_resume);
+ 
+ 	gd->driverfs_dev = &sdp->sdev_gendev;
+ 	gd->flags = GENHD_FL_EXT_DEVT;
+diff --git a/include/linux/blkdev.h b/include/linux/blkdev.h
+index 2aa2466..f52f518 100644
+--- a/include/linux/blkdev.h
++++ b/include/linux/blkdev.h
+@@ -216,6 +216,7 @@ typedef void (softirq_done_fn)(struct request *);
+ typedef int (dma_drain_needed_fn)(struct request *);
+ typedef int (lld_busy_fn) (struct request_queue *q);
+ typedef int (bsg_job_fn) (struct bsg_job *);
++typedef int (runtime_pm_fn) (struct request_queue *q);
+ 
+ enum blk_eh_timer_return {
+ 	BLK_EH_NOT_HANDLED,
+@@ -289,6 +290,9 @@ struct request_queue {
+ 	rq_timed_out_fn		*rq_timed_out_fn;
+ 	dma_drain_needed_fn	*dma_drain_needed;
+ 	lld_busy_fn		*lld_busy_fn;
++	runtime_pm_fn		*runtime_suspend;
++	runtime_pm_fn		*runtime_resume;
++	int			rpm_status;
+ 
+ 	/*
+ 	 * Dispatch queue sorting
+@@ -855,6 +859,8 @@ extern void blk_queue_segment_boundary(struct request_queue *, unsigned long);
+ extern void blk_queue_prep_rq(struct request_queue *, prep_rq_fn *pfn);
+ extern void blk_queue_unprep_rq(struct request_queue *, unprep_rq_fn *ufn);
+ extern void blk_queue_merge_bvec(struct request_queue *, merge_bvec_fn *);
++extern void blk_queue_runtime_pm(struct request_queue *q,
++		runtime_pm_fn *, runtime_pm_fn *);
+ extern void blk_queue_dma_alignment(struct request_queue *, int);
+ extern void blk_queue_update_dma_alignment(struct request_queue *, int);
+ extern void blk_queue_softirq_done(struct request_queue *, softirq_done_fn *);
+-- 
+1.7.2.5
 
->  	if (_PyTuple_Resize(&t, n) == -1)
->  		Py_FatalError("error resizing Python tuple");
-> -- 
-> 1.7.1
