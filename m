@@ -1,63 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1762194Ab2EQRYh (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 May 2012 13:24:37 -0400
-Received: from mx2.parallels.com ([64.131.90.16]:54157 "EHLO mx2.parallels.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754100Ab2EQRYg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 May 2012 13:24:36 -0400
-From: James Bottomley <jbottomley@parallels.com>
-To: Paul Gortmaker <paul.gortmaker@windriver.com>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "Andrew Morton" <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: Re: [RFC/PATCH 0/5] Delete microchannel [CONFIG_MCA] support
-Thread-Topic: [RFC/PATCH 0/5] Delete microchannel [CONFIG_MCA] support
-Thread-Index: AQHNNEvq5QfBegMHnU6KIeXTVC8YWpbOsJgA
-Date: Thu, 17 May 2012 17:24:33 +0000
-Message-ID: <1337275472.30498.38.camel@dabdike.int.hansenpartnership.com>
-References: <1337272841-25931-1-git-send-email-paul.gortmaker@windriver.com>
-In-Reply-To: <1337272841-25931-1-git-send-email-paul.gortmaker@windriver.com>
-Accept-Language: en-GB, en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [87.194.65.0]
-Content-Type: text/plain; charset="utf-8"
-Content-ID: <5D9A01D7699A4D468E654912DBF35C53@sw.swsoft.com>
+	id S967249Ab2EQR2Y (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 May 2012 13:28:24 -0400
+Received: from out01.mta.xmission.com ([166.70.13.231]:55223 "EHLO
+	out01.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754273Ab2EQR2W (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 17 May 2012 13:28:22 -0400
+From: ebiederm@xmission.com (Eric W. Biederman)
+To: Oleg Nesterov <oleg@redhat.com>
+Cc: Stephen Rothwell <sfr@canb.auug.org.au>,
+        Andrew Morton <akpm@linux-foundation.org>, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+In-Reply-To: <20120516164323.GA15140@redhat.com> (Oleg Nesterov's message of
+	"Wed, 16 May 2012 18:43:24 +0200")
+References: <20120516193052.4af4ee85feb4a36b936b74df@canb.auug.org.au>
+	<20120516164323.GA15140@redhat.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.3 (gnu/linux)
+Date: Thu, 17 May 2012 11:28:08 -0600
+Message-ID: <871umizphz.fsf@xmission.com>
 MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+X-XM-SPF: eid=;;;mid=;;;hst=in01.mta.xmission.com;;;ip=208.38.5.102;;;frm=ebiederm@xmission.com;;;spf=neutral
+X-XM-AID: U2FsdGVkX18ChXacsCmiEt9nBioIcXLAxVIRV6oCu1w=
+X-SA-Exim-Connect-IP: 208.38.5.102
+X-SA-Exim-Mail-From: ebiederm@xmission.com
+X-Spam-Report: * -1.0 ALL_TRUSTED Passed through trusted hosts only via SMTP
+	*  0.0 TVD_RCVD_IP TVD_RCVD_IP
+	*  0.0 T_TM2_M_HEADER_IN_MSG BODY: T_TM2_M_HEADER_IN_MSG
+	* -3.0 BAYES_00 BODY: Bayes spam probability is 0 to 1%
+	*      [score: 0.0000]
+	* -0.0 DCC_CHECK_NEGATIVE Not listed in DCC
+	*      [sa03 1397; Body=1 Fuz1=1 Fuz2=1]
+X-Spam-DCC: XMission; sa03 1397; Body=1 Fuz1=1 Fuz2=1 
+X-Spam-Combo: ;Oleg Nesterov <oleg@redhat.com>
+X-Spam-Relay-Country: 
+Subject: Re: linux-next: manual merge of the akpm with the  tree
+X-Spam-Flag: No
+X-SA-Exim-Version: 4.2.1 (built Fri, 06 Aug 2010 16:31:04 -0600)
+X-SA-Exim-Scanned: Yes (on in01.mta.xmission.com)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by nfs id q4HHOgR8020470
 
-On Thu, 2012-05-17 at 12:40 -0400, Paul Gortmaker wrote:
-> It was good that we could support MCA machines back in the day, but
-> realistically, nobody is using them anymore.  They were limited to
-> 386-sx 16MHz CPU and some 486 class machines and never more than 64MB
-> of RAM.
+Oleg Nesterov <oleg@redhat.com> writes:
 
-This is complete rubbish.  The MCA machines go up to 686 class with up
-to 4GB of memory (admittedly, this is with the NCR MCA extensions).
+> On 05/16, Stephen Rothwell wrote:
+>>
+>> --- a/kernel/exit.c
+>> +++ b/kernel/exit.c
+>> @@@ -1218,7 -1218,7 +1218,7 @@@ static int wait_task_zombie(struct wait
+>>   	unsigned long state;
+>>   	int retval, status, traced;
+>>   	pid_t pid = task_pid_vnr(p);
+>> - 	uid_t uid = from_kuid_munged(current_user_ns(), __task_cred(p)->uid);
+>>  -	uid_t uid = task_uid(p);
+>> ++	uid_t uid = from_kuid_munged(current_user_ns(), task_uid(p));
+>>   	struct siginfo __user *infop;
+>
+> Thanks Stephen, the fix looks correct.
+>
+> Oleg.
 
->   Even the enthusiast hobbyist community seems to have dried up
-> close to ten years ago, based on what you can find searching various
-> websites dedicated to the relatively short lived hardware.
+Yes.  That looks good.
 
-Well, it's used in obsolete systems, yes.  It wasn't really that short
-lived, since it did penetrate quite widely for a while before EISA and
-eventually PCI took over.
+I'm not quite certain of my thinking there was.  The two idioms are
+equivalent.  I suspect I confused task_uid(p) which is fine with
+task_user_ns(p) which is only safe under the rtnl lock and should
+probably be removed as a helper function because it isn't used that way.
 
-> So lets remove the support relating to CONFIG_MCA.  There is no point
-> carrying this forward, wasting cycles doing routine maintenance on it;
-> wasting allyesconfig build time on validating it, wasting I/O on
-> git grep'ping over it, and so on.
-
-So what actual problems has it had that are causing these issues.  I'm
-still listed as MCA maintainer and I haven't seen any.  As far as I
-thought, it was nice and cleanly separated and builds just fine for me.
-
-James
-
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+Eric
