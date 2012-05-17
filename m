@@ -1,237 +1,166 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751284Ab2EQECA (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 May 2012 00:02:00 -0400
-Received: from nat.nue.novell.com ([195.135.221.2]:30721 "EHLO
-	nat.nue.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750708Ab2EQEB6 (ORCPT
+	id S1751802Ab2EQECe (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 May 2012 00:02:34 -0400
+Received: from e23smtp02.au.ibm.com ([202.81.31.144]:54595 "EHLO
+	e23smtp02.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751422Ab2EQECb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 May 2012 00:01:58 -0400
-Message-ID: <4FB4782F.9080907@suse.com>
-Date: Wed, 16 May 2012 21:01:51 -0700
-From: Lee Duncan <lduncan@suse.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120421 Thunderbird/12.0
-MIME-Version: 1.0
-To: linux-scsi@vger.kernel.org
-CC: linux-kernel@vger.kernel.org, kai.makisara@kolumbus.fi, jeffm@suse.com
-Subject: Re: [PATCH 1/5] st: Use static class attributes
-References: <4FB476DD.4020107@suse.com>
-In-Reply-To: <4FB476DD.4020107@suse.com>
-X-Enigmail-Version: 1.4.1
-Content-Type: text/plain; charset=ISO-8859-1
+	Thu, 17 May 2012 00:02:31 -0400
+Message-ID: <1337227263.24471.23.camel@ThinkPad-T420>
+Subject: [PATCH powerpc] fix a lockdep complaint in start_secondary
+From: Li Zhong <zhong@linux.vnet.ibm.com>
+To: LKML <linux-kernel@vger.kernel.org>
+Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Paul Mackerras <paulus@samba.org>,
+        PowerPC email list <linuxppc-dev@lists.ozlabs.org>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Date: Thu, 17 May 2012 12:01:03 +0800
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3-0ubuntu6 
 Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
+x-cbid: 12051617-5490-0000-0000-000001669E39
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Sorry. This is actually
+This patch tries to fix following lockdep complaints:
 
-Signed-off-by: Jeff Mahoney <jeffm@suse.com>
-Reviewed-by: Lee Duncan <lduncan@suse.com>
+[   81.882506] =================================
+[   81.882508] [ INFO: inconsistent lock state ]
+[   81.882511] 3.4.0-rc4-autokern1 #1 Not tainted
+[   81.882513] ---------------------------------
+[   81.882516] inconsistent {IN-HARDIRQ-W} -> {HARDIRQ-ON-W} usage.
+[   81.882519] swapper/5/0 [HC0[0]:SC0[0]:HE1:SE1] takes:
+[   81.882522]  (call_function.lock){?.....}, at:
+[<c0000000000fdaa0>] .ipi_call_lock+0x20/0x40
+[   81.882536] {IN-HARDIRQ-W} state was registered at:
+[   81.882538]   [<c0000000000f5a9c>] .__lock_acquire+0x44c/0x9e0
+[   81.882543]   [<c0000000000f60f4>] .lock_acquire+0xc4/0x260
+[   81.882548]   [<c00000000063f648>] ._raw_spin_lock+0x48/0x70
+[   81.882554]
+[<c0000000000fede4>] .generic_smp_call_function_interrupt+0x1d4/0x320
+[   81.882559]   [<c000000000037020>] .smp_ipi_demux+0x90/0x100
+[   81.882565]   [<c00000000004f98c>] .icp_hv_ipi_action+0x5c/0xc0
+[   81.882571]   [<c00000000013420c>] .handle_irq_event_percpu
++0xec/0x570
+[   81.882577]   [<c000000000138ab4>] .handle_percpu_irq+0x84/0xd0
+[   81.882582]   [<c0000000000221b4>] .call_handle_irq+0x1c/0x2c
+[   81.882588]   [<c0000000000103fc>] .do_IRQ+0x16c/0x500
+[   81.882593]   [<c0000000000038d0>] hardware_interrupt_common
++0x150/0x180
+[   81.882598]   [<c000000000010a38>] .arch_local_irq_restore+0x38/0x90
+[   81.882603]   [<c000000000017450>] .cpu_idle+0x250/0x2d0
+[   81.882607]   [<c000000000651ce0>] .start_secondary+0x378/0x384
+[   81.882613]   [<c00000000000936c>] .start_secondary_prolog+0x10/0x14
+[   81.882618] irq event stamp: 332475
+[   81.882620] hardirqs last  enabled at (332475):
+[<c000000000640414>] ._raw_spin_unlock_irqrestore+0x94/0xc0
+[   81.882625] hardirqs last disabled at (332474):
+[<c00000000063f7c0>] ._raw_spin_lock_irqsave+0x30/0x90
+[   81.882631] softirqs last  enabled at (332288):
+[<c0000000000873c4>] .irq_enter+0x94/0xd0
+[   81.882636] softirqs last disabled at (332287):
+[<c0000000000873b4>] .irq_enter+0x84/0xd0
+[   81.882640] 
+[   81.882641] other info that might help us debug this:
+[   81.882644]  Possible unsafe locking scenario:
+[   81.882645] 
+[   81.882647]        CPU0
+[   81.882649]        ----
+[   81.882650]   lock(call_function.lock);
+[   81.882654]   <Interrupt>
+[   81.882656]     lock(call_function.lock);
+[   81.882660] 
+[   81.882661]  *** DEADLOCK ***
+[   81.882662] 
+[   81.882664] no locks held by swapper/5/0.
+[   81.882666] 
+[   81.882667] stack backtrace:
+[   81.882669] Call Trace:
+[   81.882672] [c0000003c07bf860] [c0000000000146f4] .show_stack
++0x74/0x1c0 (unreliable)
+[   81.882678] [c0000003c07bf910] [c0000000000f1304] .print_usage_bug
++0x1e4/0x230
+[   81.882683] [c0000003c07bf9d0] [c0000000000f150c] .mark_lock_irq
++0x1bc/0x3c0
+[   81.882688] [c0000003c07bfa90] [c0000000000f18a0] .mark_lock
++0x190/0x4b0
+[   81.882693] [c0000003c07bfb40] [c0000000000f1d10] .mark_irqflags
++0x150/0x240
+[   81.882697] [c0000003c07bfbd0] [c0000000000f5a9c] .__lock_acquire
++0x44c/0x9e0
+[   81.882702] [c0000003c07bfce0] [c0000000000f60f4] .lock_acquire
++0xc4/0x260
+[   81.882707] [c0000003c07bfdc0] [c00000000063f648] ._raw_spin_lock
++0x48/0x70
+[   81.882712] [c0000003c07bfe50] [c0000000000fdaa0] .ipi_call_lock
++0x20/0x40
+[   81.882717] [c0000003c07bfed0] [c000000000651aa0] .start_secondary
++0x138/0x384
+[   81.882722] [c0000003c07bff90]
+[c00000000000936c] .start_secondary_prolog+0x10/0x14
 
-Apologies. The other patches in the set are labeled correctly.
 
-On 05/16/2012 08:56 PM, Lee Duncan wrote:
-> st currently sets up and tears down class attributes manually for
-> every tape drive in the system. This patch uses a statically defined
-> class with class attributes to let the device core do it for us.
-> 
-> Signed-off-by: Lee Duncan <lduncan@suse.de>
-> ---
->  drivers/scsi/st.c |   74 ++++++++++++++++++++++++-----------------------------
->  1 file changed, 33 insertions(+), 41 deletions(-)
-> 
-> diff --git a/drivers/scsi/st.c b/drivers/scsi/st.c
-> index e41998c..532543c 100644
-> --- a/drivers/scsi/st.c
-> +++ b/drivers/scsi/st.c
-> @@ -84,7 +84,8 @@ static int try_wdio = 1;
->  static int st_dev_max;
->  static int st_nr_dev;
->  
-> -static struct class *st_sysfs_class;
-> +extern struct class st_sysfs_class;
-> +extern struct device_attribute st_dev_attrs[];
->  
->  MODULE_AUTHOR("Kai Makisara");
->  MODULE_DESCRIPTION("SCSI tape (st) driver");
-> @@ -4195,7 +4196,7 @@ out_free_tape:
->  			if (STm->cdevs[j]) {
->  				if (cdev == STm->cdevs[j])
->  					cdev = NULL;
-> -					device_destroy(st_sysfs_class,
-> +					device_destroy(&st_sysfs_class,
->  						       MKDEV(SCSI_TAPE_MAJOR,
->  							     TAPE_MINOR(i, mode, j)));
->  				cdev_del(STm->cdevs[j]);
-> @@ -4236,7 +4237,7 @@ static int st_remove(struct device *dev)
->  					  "tape");
->  			for (mode = 0; mode < ST_NBR_MODES; ++mode) {
->  				for (j=0; j < 2; j++) {
-> -					device_destroy(st_sysfs_class,
-> +					device_destroy(&st_sysfs_class,
->  						       MKDEV(SCSI_TAPE_MAJOR,
->  							     TAPE_MINOR(i, mode, j)));
->  					cdev_del(tpnt->modes[mode].cdevs[j]);
-> @@ -4283,6 +4284,11 @@ static void scsi_tape_release(struct kref *kref)
->  	return;
->  }
->  
-> +struct class st_sysfs_class = {
-> +	.name = "scsi_tape",
-> +	.dev_attrs = st_dev_attrs,
-> +};
-> +
->  static int __init init_st(void)
->  {
->  	int err;
-> @@ -4292,10 +4298,10 @@ static int __init init_st(void)
->  	printk(KERN_INFO "st: Version %s, fixed bufsize %d, s/g segs %d\n",
->  		verstr, st_fixed_buffer_size, st_max_sg_segs);
->  
-> -	st_sysfs_class = class_create(THIS_MODULE, "scsi_tape");
-> -	if (IS_ERR(st_sysfs_class)) {
-> -		printk(KERN_ERR "Unable create sysfs class for SCSI tapes\n");
-> -		return PTR_ERR(st_sysfs_class);
-> +	err = class_register(&st_sysfs_class);
-> +	if (err) {
-> +		printk(KERN_ERR "Unable register sysfs class for SCSI tapes\n");
-> +		return err;
->  	}
->  
->  	err = register_chrdev_region(MKDEV(SCSI_TAPE_MAJOR, 0),
-> @@ -4322,7 +4328,7 @@ err_chrdev:
->  	unregister_chrdev_region(MKDEV(SCSI_TAPE_MAJOR, 0),
->  				 ST_MAX_TAPE_ENTRIES);
->  err_class:
-> -	class_destroy(st_sysfs_class);
-> +	class_unregister(&st_sysfs_class);
->  	return err;
->  }
->  
-> @@ -4332,7 +4338,7 @@ static void __exit exit_st(void)
->  	scsi_unregister_driver(&st_template.gendrv);
->  	unregister_chrdev_region(MKDEV(SCSI_TAPE_MAJOR, 0),
->  				 ST_MAX_TAPE_ENTRIES);
-> -	class_destroy(st_sysfs_class);
-> +	class_unregister(&st_sysfs_class);
->  	kfree(scsi_tapes);
->  	printk(KERN_INFO "st: Unloaded.\n");
->  }
-> @@ -4405,10 +4411,9 @@ static void do_remove_sysfs_files(void)
->  	driver_remove_file(sysfs, &driver_attr_try_direct_io);
->  }
->  
-> -
->  /* The sysfs simple class interface */
->  static ssize_t
-> -st_defined_show(struct device *dev, struct device_attribute *attr, char *buf)
-> +defined_show(struct device *dev, struct device_attribute *attr, char *buf)
->  {
->  	struct st_modedef *STm = dev_get_drvdata(dev);
->  	ssize_t l = 0;
-> @@ -4417,10 +4422,9 @@ st_defined_show(struct device *dev, struct device_attribute *attr, char *buf)
->  	return l;
->  }
->  
-> -DEVICE_ATTR(defined, S_IRUGO, st_defined_show, NULL);
-> -
->  static ssize_t
-> -st_defblk_show(struct device *dev, struct device_attribute *attr, char *buf)
-> +default_blksize_show(struct device *dev, struct device_attribute *attr,
-> +		     char *buf)
->  {
->  	struct st_modedef *STm = dev_get_drvdata(dev);
->  	ssize_t l = 0;
-> @@ -4429,10 +4433,10 @@ st_defblk_show(struct device *dev, struct device_attribute *attr, char *buf)
->  	return l;
->  }
->  
-> -DEVICE_ATTR(default_blksize, S_IRUGO, st_defblk_show, NULL);
->  
->  static ssize_t
-> -st_defdensity_show(struct device *dev, struct device_attribute *attr, char *buf)
-> +default_density_show(struct device *dev, struct device_attribute *attr,
-> +		     char *buf)
->  {
->  	struct st_modedef *STm = dev_get_drvdata(dev);
->  	ssize_t l = 0;
-> @@ -4443,11 +4447,9 @@ st_defdensity_show(struct device *dev, struct device_attribute *attr, char *buf)
->  	return l;
->  }
->  
-> -DEVICE_ATTR(default_density, S_IRUGO, st_defdensity_show, NULL);
-> -
->  static ssize_t
-> -st_defcompression_show(struct device *dev, struct device_attribute *attr,
-> -		       char *buf)
-> +default_compression_show(struct device *dev, struct device_attribute *attr,
-> +			 char *buf)
->  {
->  	struct st_modedef *STm = dev_get_drvdata(dev);
->  	ssize_t l = 0;
-> @@ -4456,10 +4458,8 @@ st_defcompression_show(struct device *dev, struct device_attribute *attr,
->  	return l;
->  }
->  
-> -DEVICE_ATTR(default_compression, S_IRUGO, st_defcompression_show, NULL);
-> -
->  static ssize_t
-> -st_options_show(struct device *dev, struct device_attribute *attr, char *buf)
-> +options_show(struct device *dev, struct device_attribute *attr, char *buf)
->  {
->  	struct st_modedef *STm = dev_get_drvdata(dev);
->  	struct scsi_tape *STp;
-> @@ -4498,7 +4498,14 @@ st_options_show(struct device *dev, struct device_attribute *attr, char *buf)
->  	return l;
->  }
->  
-> -DEVICE_ATTR(options, S_IRUGO, st_options_show, NULL);
-> +struct device_attribute st_dev_attrs[] = {
-> +	__ATTR_RO(defined),
-> +	__ATTR_RO(default_blksize),
-> +	__ATTR_RO(default_density),
-> +	__ATTR_RO(default_compression),
-> +	__ATTR_RO(options),
-> +	__ATTR_NULL,
-> +};
->  
->  static int do_create_class_files(struct scsi_tape *STp, int dev_num, int mode)
->  {
-> @@ -4513,7 +4520,8 @@ static int do_create_class_files(struct scsi_tape *STp, int dev_num, int mode)
->  		snprintf(name, 10, "%s%s%s", rew ? "n" : "",
->  			 STp->disk->disk_name, st_formats[i]);
->  		st_class_member =
-> -			device_create(st_sysfs_class, &STp->device->sdev_gendev,
-> +			device_create(&st_sysfs_class,
-> +				      &STp->device->sdev_gendev,
->  				      MKDEV(SCSI_TAPE_MAJOR,
->  					    TAPE_MINOR(dev_num, mode, rew)),
->  				      &STp->modes[mode], "%s", name);
-> @@ -4524,22 +4532,6 @@ static int do_create_class_files(struct scsi_tape *STp, int dev_num, int mode)
->  			goto out;
->  		}
->  
-> -		error = device_create_file(st_class_member,
-> -					   &dev_attr_defined);
-> -		if (error) goto out;
-> -		error = device_create_file(st_class_member,
-> -					   &dev_attr_default_blksize);
-> -		if (error) goto out;
-> -		error = device_create_file(st_class_member,
-> -					   &dev_attr_default_density);
-> -		if (error) goto out;
-> -		error = device_create_file(st_class_member,
-> -					   &dev_attr_default_compression);
-> -		if (error) goto out;
-> -		error = device_create_file(st_class_member,
-> -					   &dev_attr_options);
-> -		if (error) goto out;
-> -
->  		if (mode == 0 && rew == 0) {
->  			error = sysfs_create_link(&STp->device->sdev_gendev.kobj,
->  						  &st_class_member->kobj,
+>From the log, ipi_call_lock() is called in start_secondary() with irqs
+enabled. The irqs are enabled by smp_ops->setup_cpu(), in following call
+chain: 
+start_secondary --> smp_ops->setup_cpu --> smp_xics_setup_cpu -->
+pseries_notify_cpu_idle_add_cpu --> cpuidle_disable_device -->
+cpuidle_remove_state_sysfs -->  cpuidle_free_state_kobj -->
+wait_for_completion --> wait_for_common
 
+>From my understanding of the codes, I think it's not necessary to call
+pseries_notify_cpu_idle_add_cpu() in the early start_secondary()
+function before irqs could be enabled. 
+
+pseries_notify_cpu_idle_add_cpu() actually does
+cpuidle_disable_device(), and then cpuidle_enable_device(), which
+releases and allocates the resources respectively. ( Also, all the data
+are cleared and reinitialized after this cycle). The problem here is:
+something like kzalloc(GFP_KERNEL), wait_for_completion() would have
+problems running here where irqs are still disabled. 
+
+Actually, cpuidle_enable_device() is called for each possible cpu when
+the driver is registered. So I don't think the resources needed to be
+released and allocated each time cpu becomes online. Something like
+cpuidle_reset_device() would be enough to clear and reinitialize the
+data.
+
+However, after some studying of the data to be cleared, I think it's
+also reasonable to keep the previous data. For example: 
+
+/sys/devices/system/cpu/cpu#/cpuidle/state#/usage 
+        the number of times this idle state has been entered
+/sys/devices/system/cpu/cpu#/cpuidle/state#/time
+        the amount of time spent in this idle state
+
+So I think we could just remove the function call doing the
+disable/enable cycle:
+
+Please correct me if I missed anything. 
+
+Reported-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+Signed-off-by: Li Zhong <zhong@linux.vnet.ibm.com>
+Tested-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+---
+ arch/powerpc/platforms/pseries/smp.c |    1 -
+ 1 files changed, 0 insertions(+), 1 deletions(-)
+
+diff --git a/arch/powerpc/platforms/pseries/smp.c
+b/arch/powerpc/platforms/pseries/smp.c
+index e16bb8d..71706bc 100644
+--- a/arch/powerpc/platforms/pseries/smp.c
++++ b/arch/powerpc/platforms/pseries/smp.c
+@@ -147,7 +147,6 @@ static void __devinit smp_xics_setup_cpu(int cpu)
+ 	set_cpu_current_state(cpu, CPU_STATE_ONLINE);
+ 	set_default_offline_state(cpu);
+ #endif
+-	pseries_notify_cpuidle_add_cpu(cpu);
+ }
+ 
+ static int __devinit smp_pSeries_kick_cpu(int nr)
 -- 
-Lee Duncan
-SUSE Labs
+1.7.5.4
+
