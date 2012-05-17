@@ -1,66 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1762376Ab2EQWx2 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 May 2012 18:53:28 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:38241 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757211Ab2EQWx0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 May 2012 18:53:26 -0400
-Message-ID: <4FB58143.8060007@zytor.com>
-Date: Thu, 17 May 2012 15:52:51 -0700
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:11.0) Gecko/20120329 Thunderbird/11.0.1
+	id S1762394Ab2EQWyl (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 May 2012 18:54:41 -0400
+Received: from out02.mta.xmission.com ([166.70.13.232]:46885 "EHLO
+	out02.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758092Ab2EQWyj (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 17 May 2012 18:54:39 -0400
+From: ebiederm@xmission.com (Eric W. Biederman)
+To: Sasha Levin <levinsasha928@gmail.com>
+Cc: oleg@redhat.com, akpm@linux-foundation.org, linux-kernel@vger.kernel.org,
+        davej@redhat.com
+References: <1337290299-11057-1-git-send-email-levinsasha928@gmail.com>
+Date: Thu, 17 May 2012 16:54:27 -0600
+In-Reply-To: <1337290299-11057-1-git-send-email-levinsasha928@gmail.com>
+	(Sasha Levin's message of "Thu, 17 May 2012 23:31:39 +0200")
+Message-ID: <87k40as9jw.fsf@xmission.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.3 (gnu/linux)
 MIME-Version: 1.0
-To: Ingo Molnar <mingo@kernel.org>
-CC: Tony Luck <tony.luck@intel.com>, Thomas Gleixner <tglx@linutronix.de>,
-        Fenghua Yu <fenghua.yu@intel.com>, Ingo Molnar <mingo@elte.hu>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Asit K Mallick <asit.k.mallick@intel.com>,
-        Arjan Dan De Ven <arjan@linux.intel.com>,
-        Suresh B Siddha <suresh.b.siddha@intel.com>,
-        Len Brown <len.brown@intel.com>,
-        "Srivatssa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
-        Randy Dunlap <rdunlap@xenotime.net>,
-        Chen Gong <gong.chen@linux.intel.com>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        linux-pm <linux-pm@vger.kernel.org>, x86 <x86@kernel.org>,
-        Peter Zijlstra <peterz@infradead.org>
-Subject: Re: [PATCH v6 04/12] x86/smpboot.c: Don't offline CPU0 if any irq
- can not be migrated out of it and remove CPU0 check in smp_callin()
-References: <1336666614-21090-1-git-send-email-fenghua.yu@intel.com> <1336666614-21090-5-git-send-email-fenghua.yu@intel.com> <alpine.LFD.2.02.1205111352330.3231@ionos> <CA+8MBbJbEWTR2Tawa2SzcJ-mZSPzZ12a9usR5eQu=PhArZwXLA@mail.gmail.com> <20120514121725.GA10840@gmail.com>
-In-Reply-To: <20120514121725.GA10840@gmail.com>
-X-Enigmail-Version: 1.4
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+X-XM-SPF: eid=;;;mid=;;;hst=in01.mta.xmission.com;;;ip=208.38.5.102;;;frm=ebiederm@xmission.com;;;spf=neutral
+X-XM-AID: U2FsdGVkX18sTUItj50JJBn32sR0o7XeYtHJJEN/2fk=
+X-SA-Exim-Connect-IP: 208.38.5.102
+X-SA-Exim-Mail-From: ebiederm@xmission.com
+X-Spam-Report: * -1.0 ALL_TRUSTED Passed through trusted hosts only via SMTP
+	*  0.0 TVD_RCVD_IP TVD_RCVD_IP
+	*  0.1 XMSubLong Long Subject
+	*  0.0 T_TM2_M_HEADER_IN_MSG BODY: T_TM2_M_HEADER_IN_MSG
+	* -3.0 BAYES_00 BODY: Bayes spam probability is 0 to 1%
+	*      [score: 0.0000]
+	* -0.0 DCC_CHECK_NEGATIVE Not listed in DCC
+	*      [sa06 1397; Body=1 Fuz1=1 Fuz2=1]
+	*  0.0 T_XMDrugObfuBody_08 obfuscated drug references
+X-Spam-DCC: XMission; sa06 1397; Body=1 Fuz1=1 Fuz2=1 
+X-Spam-Combo: ;Sasha Levin <levinsasha928@gmail.com>
+X-Spam-Relay-Country: 
+Subject: Re: [PATCH] cred: use correct cred accessor with regards to rcu read lock
+X-Spam-Flag: No
+X-SA-Exim-Version: 4.2.1 (built Fri, 06 Aug 2010 16:31:04 -0600)
+X-SA-Exim-Scanned: Yes (on in01.mta.xmission.com)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/14/2012 05:17 AM, Ingo Molnar wrote:
-> 
-> * Tony Luck <tony.luck@intel.com> wrote:
-> 
->> Biggest code impact of that is the extra code to bring cpu0 
->> back online using NMI instead of INIT. We can't use INIT 
->> because if cpu0 gets one, it just resets the whole machine :-( 
->> But obviously we'd like to avoid special cases where there is 
->> a sane way to do so.
-> 
-> Could we just standardize on NMI bringup during regular bootup?
-> 
+Sasha Levin <levinsasha928@gmail.com> writes:
 
-The first instance has to be SIPI because you can't give the CPU an NMI
-without the IDT being setup.  We *could* assume that the processor is
-parked in real mode with the valid real-mode IDT set up (in which case
-the vector at physical address 8 applies) but that seems to assume a lot
-from the BIOS for little gain.  In particular I suspect that UEFI-based
-BIOSes may very well park the CPU in protected or long mode.
+> Commit "userns: Convert setting and getting uid and gid system calls to use
+> kuid and kgid has modified the accessors in wait_task_continued() and
+> wait_task_stopped() to use __task_cred() instead of task_uid().
+>
+> __task_cred() assumes that we're inside a rcu read lock, which is untrue
+> for these two functions.
+>
+> Modify it to use task_uid() instead.
 
-	-hpa
+Thanks applied.
+
+Eric
 
 
--- 
-H. Peter Anvin, Intel Open Source Technology Center
-I work for Intel.  I don't speak on their behalf.
-
+> Signed-off-by: Sasha Levin <levinsasha928@gmail.com>
+> ---
+>  kernel/exit.c |    4 ++--
+>  1 files changed, 2 insertions(+), 2 deletions(-)
+>
+> diff --git a/kernel/exit.c b/kernel/exit.c
+> index 6818cbb..7e54635 100644
+> --- a/kernel/exit.c
+> +++ b/kernel/exit.c
+> @@ -1455,7 +1455,7 @@ static int wait_task_stopped(struct wait_opts *wo,
+>  	if (!unlikely(wo->wo_flags & WNOWAIT))
+>  		*p_code = 0;
+>  
+> -	uid = from_kuid_munged(current_user_ns(), __task_cred(p)->uid);
+> +	uid = from_kuid_munged(current_user_ns(), task_uid(p));
+>  unlock_sig:
+>  	spin_unlock_irq(&p->sighand->siglock);
+>  	if (!exit_code)
+> @@ -1528,7 +1528,7 @@ static int wait_task_continued(struct wait_opts *wo, struct task_struct *p)
+>  	}
+>  	if (!unlikely(wo->wo_flags & WNOWAIT))
+>  		p->signal->flags &= ~SIGNAL_STOP_CONTINUED;
+> -	uid = from_kuid_munged(current_user_ns(), __task_cred(p)->uid);
+> +	uid = from_kuid_munged(current_user_ns(), task_uid(p));
+>  	spin_unlock_irq(&p->sighand->siglock);
+>  
+>  	pid = task_pid_vnr(p);
