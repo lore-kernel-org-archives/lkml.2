@@ -1,61 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759071Ab2EQAu4 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 May 2012 20:50:56 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:49291 "EHLO
+	id S1759488Ab2EQAvq (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 May 2012 20:51:46 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:45224 "EHLO
 	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757766Ab2EQAuy (ORCPT
+	with ESMTP id S1752758Ab2EQAvo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 May 2012 20:50:54 -0400
-Message-ID: <1337215845.5759.1.camel@phoenix>
-Subject: [PATCH] regulator: rc5t583: Remove max_uV from struct
- rc5t583_regulator_info
-From: Axel Lin <axel.lin@gmail.com>
-To: linux-kernel@vger.kernel.org
-Cc: Laxman Dewangan <ldewangan@nvidia.com>, Liam Girdwood <lrg@ti.com>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>
-Date: Thu, 17 May 2012 08:50:45 +0800
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.2- 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	Wed, 16 May 2012 20:51:44 -0400
+Date: Wed, 16 May 2012 17:50:14 -0700
+From: Anton Vorontsov <anton.vorontsov@linaro.org>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: Kees Cook <keescook@chromium.org>, Colin Cross <ccross@android.com>,
+        devel@driverdev.osuosl.org, linaro-kernel@lists.linaro.org,
+        Arnd Bergmann <arnd@arndb.de>, patches@linaro.org,
+        Marco Stornelli <marco.stornelli@gmail.com>,
+        Stephen Boyd <sboyd@codeaurora.org>, linux-kernel@vger.kernel.org,
+        arve@android.com, Jesper Juhl <jj@chaosbits.net>,
+        John Stultz <john.stultz@linaro.org>, Shuah Khan <shuahkhan@gmail.com>,
+        Rebecca Schultz Zavin <rebecca@android.com>,
+        WANG Cong <xiyou.wangcong@gmail.com>,
+        Andrew Morton <akpm@linux-foundation.org>, kernel-team@android.com,
+        Thomas Meyer <thomas@m3y3r.de>
+Subject: Re: [PATCH 4/6] staging: android: persistent_ram: Move to
+ fs/pstore/ram_core.c
+Message-ID: <20120517005014.GA333@lizard>
+References: <20120516124109.GA14658@lizard>
+ <20120516124338.GD18345@lizard>
+ <20120516150550.GA22945@kroah.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <20120516150550.GA22945@kroah.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This driver has been converted to set_voltage_sel and regulator_map_voltage_linear.
-regulator_map_voltage_linear will check the voltage falls within specified range.
-The max_uV field is not used now, remove it.
+On Wed, May 16, 2012 at 08:05:50AM -0700, Greg Kroah-Hartman wrote:
+[...]
+> After applying this patch, and building things, I get the following
+> errors:
+> 
+> drivers/built-in.o: In function `ram_console_write':
+> ram_console.c:(.text+0x1690b9): undefined reference to `persistent_ram_write'
+> drivers/built-in.o: In function `ram_console_read_old':
+> ram_console.c:(.text+0x1690f7): undefined reference to `persistent_ram_old_size'
+> ram_console.c:(.text+0x169103): undefined reference to `persistent_ram_old'
+> ram_console.c:(.text+0x169136): undefined reference to `persistent_ram_ecc_string'
+> ram_console.c:(.text+0x169177): undefined reference to `persistent_ram_ecc_string'
+> drivers/built-in.o: In function `ram_console_probe':
+> ram_console.c:(.init.text+0xc9ea): undefined reference to `persistent_ram_init_ringbuffer'
+> drivers/built-in.o: In function `ram_console_late_init':
+> ram_console.c:(.init.text+0xca6c): undefined reference to `persistent_ram_old_size'
+> ram_console.c:(.init.text+0xcaa2): undefined reference to `persistent_ram_free_old'
+> ram_console.c:(.init.text+0xcab4): undefined reference to `persistent_ram_old_size'
+> ram_console.c:(.init.text+0xcac3): undefined reference to `persistent_ram_ecc_string'
+> make: *** [.tmp_vmlinux1] Error 1
+> 
+> What went wrong?
 
-Signed-off-by: Axel Lin <axel.lin@gmail.com>
----
- drivers/regulator/rc5t583-regulator.c |    4 ----
- 1 files changed, 0 insertions(+), 4 deletions(-)
+I believe that error caused by two missing bytes: '=' and 'y'. :-)
+RAM_CONSOLE is a bool, so it should be enabled only when PSTORE_RAM
+is also =y. (For some reason I keep foregetting that bool's 'depends on'
+may be satisfied by tristates' =m option, which easily lead to the
+errors above.)
 
-diff --git a/drivers/regulator/rc5t583-regulator.c b/drivers/regulator/rc5t583-regulator.c
-index 987fa34..1d34e64 100644
---- a/drivers/regulator/rc5t583-regulator.c
-+++ b/drivers/regulator/rc5t583-regulator.c
-@@ -40,9 +40,6 @@ struct rc5t583_regulator_info {
- 	uint8_t			disc_bit;
- 	uint8_t			deepsleep_reg;
+Thanks for catching this!
+
+I've applied the following hunk to this patch and will resend the left
+over patches soon:
+
+diff --git a/drivers/staging/android/Kconfig b/drivers/staging/android/Kconfig
+index 4bfcceb..0e16b59 100644
+--- a/drivers/staging/android/Kconfig
++++ b/drivers/staging/android/Kconfig
+@@ -27,7 +27,7 @@ config ANDROID_LOGGER
  
--	/* Chip constraints on regulator behavior */
--	int			max_uV;
--
- 	/* Regulator specific turn-on delay  and voltage settling time*/
- 	int			enable_uv_per_us;
- 	int			change_uv_per_us;
-@@ -106,7 +103,6 @@ static struct regulator_ops rc5t583_ops = {
- 	.reg_disc_reg	= RC5T583_REG_##_disc_reg,		\
- 	.disc_bit	= _disc_bit,				\
- 	.deepsleep_reg	= RC5T583_REG_##_id##DAC_DS,		\
--	.max_uV		= _max_mv * 1000,			\
- 	.enable_uv_per_us = _enable_mv * 1000,			\
- 	.change_uv_per_us = 40 * 1000,				\
- 	.deepsleep_id	= RC5T583_DS_##_id,			\
+ config ANDROID_RAM_CONSOLE
+ 	bool "Android RAM buffer console"
+-	depends on !S390 && !UML && HAVE_MEMBLOCK && PSTORE_RAM
++	depends on !S390 && !UML && HAVE_MEMBLOCK && PSTORE_RAM=y
+ 	default n
+ 
+ config ANDROID_TIMED_OUTPUT
+
 -- 
-1.7.5.4
-
-
-
+Anton Vorontsov
+Email: cbouatmailru@gmail.com
