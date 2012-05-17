@@ -1,77 +1,116 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S966554Ab2EQNlB (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 May 2012 09:41:01 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:54166 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S966361Ab2EQNk7 (ORCPT
+	id S1761010Ab2EQNp4 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 May 2012 09:45:56 -0400
+Received: from mail-wg0-f44.google.com ([74.125.82.44]:49108 "EHLO
+	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752918Ab2EQNpz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 May 2012 09:40:59 -0400
-Date: Thu, 17 May 2012 06:40:54 -0700
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: "Zhang, Sonic" <Sonic.Zhang@analog.com>
-Cc: Arnd Bergmann <arnd@arndb.de>, LKML <linux-kernel@vger.kernel.org>,
-        "uclinux-dist-devel@blackfin.uclinux.org" 
-	<uclinux-dist-devel@blackfin.uclinux.org>
-Subject: Re: [PATCH] driver: char: bfin_crc: CRC hardware accelerator driver
- for BF60x family processors.
-Message-ID: <20120517134054.GC5380@kroah.com>
-References: <1337156767-13232-1-git-send-email-sonic.zhang@analog.com>
- <20120516121237.GC31261@kroah.com>
- <DB904C5425BA6F4E8424B3B51A1414D16F64F85057@NWD2CMBX1.ad.analog.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <DB904C5425BA6F4E8424B3B51A1414D16F64F85057@NWD2CMBX1.ad.analog.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Thu, 17 May 2012 09:45:55 -0400
+From: Lee Jones <lee.jones@linaro.org>
+To: linux-arm-kernel@lists.infradead.org, arnd@arndb.de,
+        linus.walleij@stericsson.com, grant.likely@secretlab.ca,
+        cjb@laptop.org, broonie@opensource.wolfsonmicro.com,
+        sameo@linux.intel.com
+Cc: Lee Jones <lee.jones@linaro.org>, linux-i2c@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH 01/18] i2c: Add Device Tree support to the Nomadik I2C driver
+Date: Thu, 17 May 2012 14:45:06 +0100
+Message-Id: <1337262323-27692-2-git-send-email-lee.jones@linaro.org>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1337262323-27692-1-git-send-email-lee.jones@linaro.org>
+References: <1337262323-27692-1-git-send-email-lee.jones@linaro.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, May 17, 2012 at 06:55:36AM -0400, Zhang, Sonic wrote:
-> Hi Greg,
-> 
-> >-----Original Message-----
-> >From: Greg Kroah-Hartman [mailto:gregkh@linuxfoundation.org]
-> >Sent: Wednesday, May 16, 2012 8:13 PM
-> >To: Zhang, Sonic
-> >Cc: Arnd Bergmann; LKML; uclinux-dist-devel@blackfin.uclinux.org
-> >Subject: Re: [PATCH] driver: char: bfin_crc: CRC hardware accelerator driver for
-> >BF60x family processors.
-> >
-> >On Wed, May 16, 2012 at 04:26:07PM +0800, sonic.zhang@analog.com wrote:
-> >> From: Sonic Zhang <sonic.zhang@analog.com>
-> >>
-> >> The CRC peripheral is a hardware block used to compute the CRC of the block
-> >> of data. This is based on a CRC32 engine which computes the CRC value of 32b
-> >> data words presented to it. For data words of < 32b in size, it is the
-> >> responsibility of the application to pack the data into 32b data units.
-> >>
-> >> This driver defines data strcture crc_info and 4 IOCTL interfaces for applciations.
-> >> 1) CRC Memory Scan
-> >> 2) CRC Memory Transfer
-> >> 3) CRC Data Verify
-> >> 4) CRC Data Fill
-> >>
-> >> Signed-off-by: Sonic Zhang <sonic.zhang@analog.com>
-> >> ---
-> >>  drivers/char/Kconfig    |    8 +
-> >>  drivers/char/Makefile   |    1 +
-> >>  drivers/char/bfin_crc.c |  537
-> >+++++++++++++++++++++++++++++++++++++++++++++++
-> >>  3 files changed, 546 insertions(+), 0 deletions(-)
-> >>  create mode 100644 drivers/char/bfin_crc.c
-> >
-> >Why is this a char driver, and not a crypto driver, using the existing
-> >crypto userspace api for things like this?
-> >
-> 
-> It looks only the CRC memory scan mode can be implemented as a crypto
-> ahash driver. The other 3 functions are not supported in the crypto
-> framework.  I will post a crypto driver for the CRC memory scan mode
-> later.
+Here we move the i2c-nomadik's default settings into the driver
+rather than specifying them from platform code. At the time of
+this writing we only have one user, the u8500. As new users are
+added, it is expected that they will be Device Tree compliant.
+If this is the case, we will look up their initialisation values
+by compatible entry, then apply them forthwith.
 
-Then why not extend the crypto framework to handle these 3 other
-functions?
+Cc: linux-i2c@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org
+Signed-off-by: Lee Jones <lee.jones@linaro.org>
+---
+ drivers/i2c/busses/i2c-nomadik.c |   40 +++++++++++++++++++++++++++++++++++++-
+ 1 file changed, 39 insertions(+), 1 deletion(-)
 
-greg k-h
+diff --git a/drivers/i2c/busses/i2c-nomadik.c b/drivers/i2c/busses/i2c-nomadik.c
+index 5267ab9..cd45563 100644
+--- a/drivers/i2c/busses/i2c-nomadik.c
++++ b/drivers/i2c/busses/i2c-nomadik.c
+@@ -23,6 +23,7 @@
+ #include <linux/io.h>
+ #include <linux/regulator/consumer.h>
+ #include <linux/pm_runtime.h>
++#include <linux/of_device.h>
+ 
+ #include <plat/i2c.h>
+ 
+@@ -899,15 +900,51 @@ static const struct i2c_algorithm nmk_i2c_algo = {
+ 	.functionality	= nmk_i2c_functionality
+ };
+ 
++static struct nmk_i2c_controller u8500_i2c = {
++       /*
++        * slave data setup time, which is
++        * 250 ns,100ns,10ns which is 14,6,2
++        * respectively for a 48 Mhz
++        * i2c clock
++        */
++       .slsu           = 0xe,
++       /* Tx FIFO threshold */
++       .tft            = 1,
++       /* Rx FIFO threshold */
++       .rft            = 8,
++       /* std. mode operation */
++       .clk_freq       = 100000,
++       /* Slave response timeout(ms) */
++       .timeout        = 200,
++       .sm             = I2C_FREQ_MODE_FAST,
++};
++
++
++static const struct of_device_id nmk_gpio_match[] = {
++	{ .compatible = "st,nomadik-i2c", .data = &u8500_i2c, },
++	{}
++};
++
+ static int __devinit nmk_i2c_probe(struct platform_device *pdev)
+ {
+ 	int ret = 0;
+ 	struct resource *res;
+-	struct nmk_i2c_controller *pdata =
++	const struct nmk_i2c_controller *pdata =
+ 			pdev->dev.platform_data;
++        const struct of_device_id *of_id =
++                        of_match_device(nmk_gpio_match, &pdev->dev);
+ 	struct nmk_i2c_dev	*dev;
+ 	struct i2c_adapter *adap;
+ 
++	if (!pdata) {
++		if (of_id && of_id->data)
++			/* Looks like we're booting via Device Tree. */
++			pdata = of_id->data;
++		else
++			/* No i2c configuration found, using the default. */
++			pdata = &u8500_i2c;
++	}
++
+ 	dev = kzalloc(sizeof(struct nmk_i2c_dev), GFP_KERNEL);
+ 	if (!dev) {
+ 		dev_err(&pdev->dev, "cannot allocate memory\n");
+@@ -1044,6 +1081,7 @@ static struct platform_driver nmk_i2c_driver = {
+ 		.owner = THIS_MODULE,
+ 		.name = DRIVER_NAME,
+ 		.pm = &nmk_i2c_pm,
++		.of_match_table = nmk_gpio_match,
+ 	},
+ 	.probe = nmk_i2c_probe,
+ 	.remove = __devexit_p(nmk_i2c_remove),
+-- 
+1.7.9.5
+
