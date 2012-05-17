@@ -1,543 +1,217 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S967068Ab2EQPBK (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 May 2012 11:01:10 -0400
-Received: from mailout3.samsung.com ([203.254.224.33]:64789 "EHLO
-	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S967037Ab2EQPBC (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 May 2012 11:01:02 -0400
-X-AuditID: cbfee61a-b7be0ae000001293-d7-4fb512ac786d
-From: Thomas Abraham <thomas.abraham@linaro.org>
-To: linux-mmc@vger.kernel.org, devicetree-discuss@lists.ozlabs.org
-Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        cjb@laptop.org, grant.likely@secretlab.ca, rob.herring@calxeda.com,
-        linux-samsung-soc@vger.kernel.org, kgene.kim@samsung.com,
-        patches@linaro.org
-Subject: [PATCH v2 5/6] mmc: dw_mmc: add device tree support
-Date: Thu, 17 May 2012 20:40:10 +0530
-Message-id: <1337267411-28226-6-git-send-email-thomas.abraham@linaro.org>
-X-Mailer: git-send-email 1.6.6.rc2
-In-reply-to: <1337267411-28226-1-git-send-email-thomas.abraham@linaro.org>
-References: <1337267411-28226-1-git-send-email-thomas.abraham@linaro.org>
-X-Brightmail-Tracker: AAAAAA==
-X-TM-AS-MML: No
+	id S1762027Ab2EQOul (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 May 2012 10:50:41 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:33315 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932069Ab2EQOuf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 17 May 2012 10:50:35 -0400
+From: Mel Gorman <mgorman@suse.de>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Linux-MM <linux-mm@kvack.org>, Linux-Netdev <netdev@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        David Miller <davem@davemloft.net>, Neil Brown <neilb@suse.de>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Mike Christie <michaelc@cs.wisc.edu>,
+        Eric B Munson <emunson@mgebm.net>, Mel Gorman <mgorman@suse.de>
+Subject: [PATCH 00/17] Swap-over-NBD without deadlocking V11
+Date: Thu, 17 May 2012 15:50:14 +0100
+Message-Id: <1337266231-8031-1-git-send-email-mgorman@suse.de>
+X-Mailer: git-send-email 1.7.9.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add device tree based discovery support.
+Mostly addressing feedback from David Miller.
 
-Signed-off-by: Thomas Abraham <thomas.abraham@linaro.org>
----
- .../devicetree/bindings/mmc/synposis-dw-mshc.txt   |  108 ++++++++++
- drivers/mmc/host/dw_mmc-pltfm.c                    |   24 +++
- drivers/mmc/host/dw_mmc.c                          |  205 +++++++++++++++++++-
- drivers/mmc/host/dw_mmc.h                          |    9 +
- include/linux/mmc/dw_mmc.h                         |    2 +
- 5 files changed, 342 insertions(+), 6 deletions(-)
- create mode 100644 Documentation/devicetree/bindings/mmc/synposis-dw-mshc.txt
+Changeloc since V10
+  o Rebase to 3.4-rc5
+  o Coding style fixups						      (davem)
+  o API consistency						      (davem)
+  o Rename sk_allocation to sk_gfp_atomic and use only when necessary (davem)
+  o Use static branches for sk_memalloc_socks			      (davem)
+  o Use static branch checks in fast paths			      (davem)
+  o Document concerns about PF_MEMALLOC leaking flags		      (davem)
+  o Locking fix in slab						      (mel)
 
-diff --git a/Documentation/devicetree/bindings/mmc/synposis-dw-mshc.txt b/Documentation/devicetree/bindings/mmc/synposis-dw-mshc.txt
-new file mode 100644
-index 0000000..3acd6c9
---- /dev/null
-+++ b/Documentation/devicetree/bindings/mmc/synposis-dw-mshc.txt
-@@ -0,0 +1,108 @@
-+* Synopsis Designware Mobile Storage Host Controller
-+
-+The Synopsis designware mobile storage host controller is used to interface
-+a SoC with storage medium such as eMMC or SD/MMC cards.
-+
-+Required Properties:
-+
-+* compatible: should be one of the following
-+	- snps,dw-mshc: for controllers compliant with synopsis dw-mshc.
-+
-+* reg: physical base address of the dw-mshc controller and size of its memory
-+  region.
-+
-+* interrupts: interrupt specifier for the controller. The format and value of
-+  the interrupt specifier depends on the interrupt parent for the controller.
-+
-+* #address-cells: should be 1.
-+
-+* #size-cells: should be 0.
-+
-+# Slots: The slot specific information are contained within child-nodes with
-+  each child-node representing a supported slot. There should be atleast one
-+  child node representing a card slot. The name of the child node representing
-+  the slot is recommended to be slot@n where n is the unique number of the slot
-+  connnected to the controller. The following are optional properties which
-+  can be included in the slot child node.
-+
-+	* reg: specifies the physical slot number. The valid values of this
-+	  property is 0 to (num-slots -1), where num-slots is the value
-+	  specified by the num-slots property.
-+
-+	* bus-width: specifies the width of the data bus connected from the
-+	  controller to the card slot. The value should be 1, 4 or 8. In case
-+	  this property is not specified, a default value of 1 is assumed for
-+	  this property.
-+
-+	* cd-gpios: specifies the card detect gpio line. The format of the
-+	  gpio specifier depends on the gpio controller.
-+
-+	* wp-gpios: specifies the write protect gpio line. The format of the
-+	  gpio specifier depends on the gpio controller.
-+
-+	* gpios: specifies a list of gpios used for command, clock and data
-+	  bus. The first gpio is the command line and the second gpio is the
-+	  clock line. The rest of the gpios (depending on the bus-width
-+	  property) are the data lines in no particular order. The format of
-+	  the gpio specifier depends on the gpio controller.
-+
-+Optional properties:
-+
-+* num-slots: specifies the number of slots supported by the controller.
-+  The number of physical slots actually used could be equal or less than the
-+  value specified by num-slots. If this property is not specified, the value
-+  of num-slot property is assumed to be 1.
-+
-+* fifo-depth: The maximum size of the tx/rx fifo's. If this property is not
-+  specified, the default value of the fifo size is determined from the
-+  controller registers.
-+
-+* card-detect-delay: Delay in milli-seconds before detecting card after card
-+  insert event. The default value is 0.
-+
-+* supports-highspeed: Enables support for high speed cards (upto 50MHz)
-+
-+* card-detection-broken: The card detection functionality is not available on
-+  any of the slots.
-+
-+* no-write-protect: The write protect pad of the controller is not connected
-+  to the write protect pin on the slot.
-+
-+Aliases:
-+
-+- All the MSHC controller nodes should be represented in the aliases node using
-+  the following format 'mshc{n}' where n is a unique number for the alias.
-+
-+
-+Example:
-+
-+  The MSHC controller node can be split into two portions, SoC specific and
-+  board specific portions as listed below.
-+
-+	dwmmc0@12200000 {
-+		compatible = "snps,dw-mshc";
-+		reg = <0x12200000 0x1000>;
-+		interrupts = <0 75 0>;
-+		#address-cells = <1>;
-+		#size-cells = <0>;
-+	};
-+
-+	dwmmc0@12200000 {
-+		num-slots = <1>;
-+		supports-highspeed;
-+		card-detection-broken;
-+		no-write-protect;
-+		fifo-depth = <0x80>;
-+		card-detect-delay = <200>;
-+
-+		slot@0 {
-+			reg = <0>;
-+			bus-width = <8>;
-+			cd-gpios = <&gpc0 2 2 3 3>;
-+			gpios = <&gpc0 0 2 0 3>, <&gpc0 1 2 0 3>,
-+				<&gpc1 0 2 3 3>, <&gpc1 1 2 3 3>,
-+				<&gpc1 2 2 3 3>, <&gpc1 3 2 3 3>,
-+				<&gpc0 3 2 3 3>, <&gpc0 4 2 3 3>,
-+				<&gpc0 5 2 3 3>, <&gpc0 6 2 3 3>;
-+		};
-+	};
-diff --git a/drivers/mmc/host/dw_mmc-pltfm.c b/drivers/mmc/host/dw_mmc-pltfm.c
-index 9a63299..8d24f6d 100644
---- a/drivers/mmc/host/dw_mmc-pltfm.c
-+++ b/drivers/mmc/host/dw_mmc-pltfm.c
-@@ -19,8 +19,24 @@
- #include <linux/mmc/host.h>
- #include <linux/mmc/mmc.h>
- #include <linux/mmc/dw_mmc.h>
-+#include <linux/of.h>
- #include "dw_mmc.h"
- 
-+#ifdef CONFIG_OF
-+static struct dw_mci_drv_data synopsis_drv_data = {
-+	.ctrl_type	= DW_MCI_TYPE_SYNOPSIS,
-+};
-+
-+static const struct of_device_id dw_mci_pltfm_match[] = {
-+	{ .compatible = "snps,dw-mshc",
-+			.data = (void *)&synopsis_drv_data, },
-+	{},
-+};
-+MODULE_DEVICE_TABLE(of, dw_mci_pltfm_match);
-+#else
-+static const struct of_device_id dw_mci_pltfm_match[];
-+#endif
-+
- static int dw_mci_pltfm_probe(struct platform_device *pdev)
- {
- 	struct dw_mci *host;
-@@ -51,6 +67,13 @@ static int dw_mci_pltfm_probe(struct platform_device *pdev)
- 	if (!host->regs)
- 		goto err_free;
- 	platform_set_drvdata(pdev, host);
-+
-+	if (pdev->dev.of_node) {
-+		const struct of_device_id *match;
-+		match = of_match_node(dw_mci_pltfm_match, pdev->dev.of_node);
-+		host->drv_data = match->data;
-+	}
-+
- 	ret = dw_mci_probe(host);
- 	if (ret)
- 		goto err_out;
-@@ -111,6 +134,7 @@ static struct platform_driver dw_mci_pltfm_driver = {
- 	.remove		= __exit_p(dw_mci_pltfm_remove),
- 	.driver		= {
- 		.name		= "dw_mmc",
-+		.of_match_table	= of_match_ptr(dw_mci_pltfm_match),
- 		.pm		= &dw_mci_pltfm_pmops,
- 	},
- };
-diff --git a/drivers/mmc/host/dw_mmc.c b/drivers/mmc/host/dw_mmc.c
-index c862b7f..0317287 100644
---- a/drivers/mmc/host/dw_mmc.c
-+++ b/drivers/mmc/host/dw_mmc.c
-@@ -33,9 +33,13 @@
- #include <linux/bitops.h>
- #include <linux/regulator/consumer.h>
- #include <linux/workqueue.h>
-+#include <linux/of.h>
-+#include <linux/of_gpio.h>
- 
- #include "dw_mmc.h"
- 
-+#define NUM_PINS(x) (x + 2)
-+
- /* Common flag combinations */
- #define DW_MCI_DATA_ERROR_FLAGS	(SDMMC_INT_DTO | SDMMC_INT_DCRC | \
- 				 SDMMC_INT_HTO | SDMMC_INT_SBE  | \
-@@ -86,6 +90,8 @@ struct idmac_desc {
- struct dw_mci_slot {
- 	struct mmc_host		*mmc;
- 	struct dw_mci		*host;
-+	int			wp_gpio;
-+	int			cd_gpio;
- 
- 	u32			ctype;
- 
-@@ -816,6 +822,8 @@ static int dw_mci_get_ro(struct mmc_host *mmc)
- 		read_only = 0;
- 	else if (brd->get_ro)
- 		read_only = brd->get_ro(slot->id);
-+	else if (gpio_is_valid(slot->wp_gpio))
-+		read_only = gpio_get_value(slot->wp_gpio);
- 	else
- 		read_only =
- 			mci_readl(slot->host, WRTPRT) & (1 << slot->id) ? 1 : 0;
-@@ -837,6 +845,8 @@ static int dw_mci_get_cd(struct mmc_host *mmc)
- 		present = 1;
- 	else if (brd->get_cd)
- 		present = !brd->get_cd(slot->id);
-+	else if (gpio_is_valid(slot->cd_gpio))
-+		present = gpio_get_value(slot->cd_gpio);
- 	else
- 		present = (mci_readl(slot->host, CDETECT) & (1 << slot->id))
- 			== 0 ? 1 : 0;
-@@ -1747,10 +1757,106 @@ static void dw_mci_work_routine_card(struct work_struct *work)
- 	}
- }
- 
-+#ifdef CONFIG_OF
-+static struct device_node *dw_mci_of_find_slot_node(struct device *dev, u8 slot)
-+{
-+	struct device_node *np;
-+	const __be32 *addr;
-+	int len;
-+
-+	if (!dev || !dev->of_node)
-+		return NULL;
-+
-+	for_each_child_of_node(dev->of_node, np) {
-+		addr = of_get_property(np, "reg", &len);
-+		if (!addr || (len < sizeof(int)))
-+			continue;
-+		if (be32_to_cpup(addr) == slot)
-+			return np;
-+	}
-+	return NULL;
-+}
-+
-+static u32 dw_mci_of_get_bus_wd(struct device *dev, u8 slot)
-+{
-+	struct device_node *np = dw_mci_of_find_slot_node(dev, slot);
-+	u32 bus_wd = 1;
-+
-+	if (!np)
-+		return 1;
-+
-+	if (of_property_read_u32(np, "bus-width", &bus_wd))
-+		dev_err(dev, "bus-width property not found, assuming width"
-+			       " as 1\n");
-+	return bus_wd;
-+}
-+
-+static int dw_mci_of_setup_bus(struct dw_mci *host, u8 slot, u32 bus_wd)
-+{
-+	struct device_node *np = dw_mci_of_find_slot_node(host->dev, slot);
-+	int idx, gpio, ret;
-+
-+	if (!np)
-+		return -EINVAL;
-+
-+	for (idx = 0; idx < NUM_PINS(bus_wd); idx++) {
-+		gpio = of_get_gpio(np, idx);
-+		if (!gpio_is_valid(gpio)) {
-+			dev_err(host->dev, "invalid gpio: %d\n", gpio);
-+			return -EINVAL;
-+		}
-+
-+		ret = devm_gpio_request(host->dev, gpio, "dw-mci-bus");
-+		if (ret) {
-+			dev_err(host->dev, "gpio [%d] request failed\n", gpio);
-+			return -EBUSY;
-+		}
-+	}
-+
-+	host->slot[slot]->wp_gpio = -1;
-+	gpio = of_get_named_gpio(np, "wp-gpios", 0);
-+	if (!gpio_is_valid(gpio)) {
-+		dev_info(host->dev, "wp gpio not available");
-+	} else {
-+		ret = devm_gpio_request(host->dev, gpio, "dw-mci-wp");
-+		if (ret)
-+			dev_info(host->dev, "gpio [%d] request failed\n",
-+						gpio);
-+		else
-+			host->slot[slot]->wp_gpio = gpio;
-+	}
-+
-+	host->slot[slot]->cd_gpio = -1;
-+	gpio = of_get_named_gpio(np, "cd-gpios", 0);
-+	if (!gpio_is_valid(gpio)) {
-+		dev_info(host->dev, "cd gpio not available");
-+	} else {
-+		ret = devm_gpio_request(host->dev, gpio, "dw-mci-cd");
-+		if (ret)
-+			dev_err(host->dev, "gpio [%d] request failed\n", gpio);
-+		else
-+			host->slot[slot]->cd_gpio = gpio;
-+	}
-+
-+	return 0;
-+}
-+#else /* CONFIG_OF */
-+static u32 dw_mci_of_get_bus_wd(struct device *dev, u8 slot)
-+{
-+	return 1;
-+}
-+
-+static int dw_mci_of_setup_bus(struct dw_mci *host, u8 slot, u32 bus_wd)
-+{
-+	return -EINVAL;
-+}
-+#endif /* CONFIG_OF */
-+
- static int __init dw_mci_init_slot(struct dw_mci *host, unsigned int id)
- {
- 	struct mmc_host *mmc;
- 	struct dw_mci_slot *slot;
-+	int ctrl_id, ret;
- 
- 	mmc = mmc_alloc_host(sizeof(struct dw_mci_slot), host->dev);
- 	if (!mmc)
-@@ -1760,6 +1866,7 @@ static int __init dw_mci_init_slot(struct dw_mci *host, unsigned int id)
- 	slot->id = id;
- 	slot->mmc = mmc;
- 	slot->host = host;
-+	host->slot[id] = slot;
- 
- 	mmc->ops = &dw_mci_ops;
- 	mmc->f_min = DIV_ROUND_UP(host->bus_hz, 510);
-@@ -1780,12 +1887,33 @@ static int __init dw_mci_init_slot(struct dw_mci *host, unsigned int id)
- 	if (host->pdata->caps)
- 		mmc->caps = host->pdata->caps;
- 
-+	if (host->dev->of_node) {
-+		ctrl_id = of_alias_get_id(host->dev->of_node, "mshc");
-+		if (ctrl_id < 0)
-+			ctrl_id = 0;
-+	}
-+	if (host->drv_data->caps)
-+		mmc->caps |= host->drv_data->caps[ctrl_id];
-+
- 	if (host->pdata->caps2)
- 		mmc->caps2 = host->pdata->caps2;
- 
--	if (host->pdata->get_bus_wd)
-+	if (host->pdata->get_bus_wd) {
- 		if (host->pdata->get_bus_wd(slot->id) >= 4)
- 			mmc->caps |= MMC_CAP_4_BIT_DATA;
-+	} else if (host->dev->of_node) {
-+		unsigned int bus_width;
-+		bus_width = dw_mci_of_get_bus_wd(host->dev, slot->id);
-+		switch (bus_width) {
-+		case 8:
-+			mmc->caps |= MMC_CAP_8_BIT_DATA;
-+		case 4:
-+			mmc->caps |= MMC_CAP_4_BIT_DATA;
-+		}
-+		ret = dw_mci_of_setup_bus(host, slot->id, bus_width);
-+		if (ret)
-+			goto err_setup_bus;
-+	}
- 
- 	if (host->pdata->quirks & DW_MCI_QUIRK_HIGHSPEED)
- 		mmc->caps |= MMC_CAP_SD_HIGHSPEED | MMC_CAP_MMC_HIGHSPEED;
-@@ -1830,7 +1958,6 @@ static int __init dw_mci_init_slot(struct dw_mci *host, unsigned int id)
- 	else
- 		clear_bit(DW_MMC_CARD_PRESENT, &slot->flags);
- 
--	host->slot[id] = slot;
- 	mmc_add_host(mmc);
- 
- #if defined(CONFIG_DEBUG_FS)
-@@ -1847,6 +1974,10 @@ static int __init dw_mci_init_slot(struct dw_mci *host, unsigned int id)
- 	queue_work(host->card_workqueue, &host->card_work);
- 
- 	return 0;
-+
-+err_setup_bus:
-+	mmc_free_host(mmc);
-+	return -EINVAL;
- }
- 
- static void dw_mci_cleanup_slot(struct dw_mci_slot *slot, unsigned int id)
-@@ -1923,16 +2054,78 @@ static bool mci_wait_reset(struct device *dev, struct dw_mci *host)
- 	return false;
- }
- 
-+#ifdef CONFIG_OF
-+static struct dw_mci_of_quirks {
-+	char *quirk;
-+	int id;
-+} of_quriks[] = {
-+	{
-+		.quirk	= "supports-highspeed",
-+		.id	= DW_MCI_QUIRK_HIGHSPEED,
-+	}, {
-+		.quirk	= "card-detection-broken",
-+		.id	= DW_MCI_QUIRK_BROKEN_CARD_DETECTION,
-+	}, {
-+		.quirk	= "no-write-protect",
-+		.id	= DW_MCI_QUIRK_NO_WRITE_PROTECT,
-+	}
-+};
-+
-+static struct dw_mci_board *dw_mci_parse_dt(struct dw_mci *host)
-+{
-+	struct dw_mci_board *pdata;
-+	struct device *dev = host->dev;
-+	struct device_node *np = dev->of_node;
-+	int idx, cnt;
-+
-+	pdata = devm_kzalloc(dev, sizeof(*pdata), GFP_KERNEL);
-+	if (!pdata) {
-+		dev_err(dev, "could not allocate memory for pdata\n");
-+		return ERR_PTR(-ENOMEM);
-+	}
-+
-+	/* find out number of slots supported */
-+	if (of_property_read_u32(dev->of_node, "num-slots",
-+				&pdata->num_slots)) {
-+		dev_info(dev, "num-slots property not found, "
-+				"assuming 1 slot is available\n");
-+		pdata->num_slots = 1;
-+	}
-+
-+	/* get quirks */
-+	cnt = sizeof(of_quriks) / sizeof(struct dw_mci_of_quirks);
-+	for (idx = 0; idx < cnt; idx++)
-+		if (of_get_property(np, of_quriks[idx].quirk, NULL))
-+			pdata->quirks |= of_quriks[idx].id;
-+
-+	if (of_property_read_u32(np, "fifo-depth", &pdata->fifo_depth))
-+		dev_info(dev, "fifo-depth property not found, using "
-+				"value of FIFOTH register as default\n");
-+
-+	of_property_read_u32(np, "card-detect-delay", &pdata->detect_delay_ms);
-+
-+	return pdata;
-+}
-+
-+#else /* CONFIG_OF */
-+static struct dw_mci_board *dw_mci_parse_dt(struct dw_mci *host)
-+{
-+	return ERR_PTR(-EINVAL);
-+}
-+#endif /* CONFIG_OF */
-+
- int dw_mci_probe(struct dw_mci *host)
- {
- 	int width, i, ret = 0;
- 	u32 fifo_size;
- 	int init_slots = 0;
- 
--	if (!host->pdata || !host->pdata->init) {
--		dev_err(host->dev,
--			"Platform data must supply init function\n");
--		return -ENODEV;
-+	if (!host->pdata) {
-+		host->pdata = dw_mci_parse_dt(host);
-+		if (IS_ERR(host->pdata)) {
-+			dev_err(host->dev, "platform data not available\n");
-+			return -EINVAL;
-+		}
- 	}
- 
- 	if (!host->pdata->select_slot && host->pdata->num_slots > 1) {
-diff --git a/drivers/mmc/host/dw_mmc.h b/drivers/mmc/host/dw_mmc.h
-index 15c27e1..1ecaa02 100644
---- a/drivers/mmc/host/dw_mmc.h
-+++ b/drivers/mmc/host/dw_mmc.h
-@@ -182,4 +182,13 @@ extern int dw_mci_suspend(struct dw_mci *host);
- extern int dw_mci_resume(struct dw_mci *host);
- #endif
- 
-+/* Variations in the dw_mci controller */
-+#define DW_MCI_TYPE_SYNOPSIS		0
-+
-+/* dw_mci platform driver data */
-+struct dw_mci_drv_data {
-+	unsigned long		ctrl_type;
-+	unsigned long		*caps;
-+};
-+
- #endif /* _DW_MMC_H_ */
-diff --git a/include/linux/mmc/dw_mmc.h b/include/linux/mmc/dw_mmc.h
-index b72e4aa..ae45e4f 100644
---- a/include/linux/mmc/dw_mmc.h
-+++ b/include/linux/mmc/dw_mmc.h
-@@ -78,6 +78,7 @@ struct mmc_data;
-  * @data_offset: Set the offset of DATA register according to VERID.
-  * @dev: Device associated with the MMC controller.
-  * @pdata: Platform data associated with the MMC controller.
-+ * @drv_data: Driver specific data for identified variant of the controller
-  * @biu_clk: Pointer to bus interface unit clock instance.
-  * @ciu_clk: Pointer to card interface unit clock instance.
-  * @slot: Slots sharing this MMC controller.
-@@ -160,6 +161,7 @@ struct dw_mci {
- 	u16			data_offset;
- 	struct device		*dev;
- 	struct dw_mci_board	*pdata;
-+	struct dw_mci_drv_data	*drv_data;
- 	struct clk		*biu_clk;
- 	struct clk		*ciu_clk;
- 	struct dw_mci_slot	*slot[MAX_MCI_SLOTS];
+Changelog since V9
+  o Rebase to 3.4-rc5
+  o Clarify comment on why PF_MEMALLOC is cleared in softirq handling (akpm)
+  o Only set page->pfmemalloc if ALLOC_NO_WATERMARKS was required     (rientjes)
+
+Changelog since V8
+  o Rebase to 3.4-rc2
+  o Use page flag instead of slab fields to keep structures the same size
+  o Properly detect allocations from softirq context that use PF_MEMALLOC
+  o Ensure kswapd does not sleep while processes are throttled
+  o Do not accidentally throttle !_GFP_FS processes indefinitely
+
+Changelog since V7
+  o Rebase to 3.3-rc2
+  o Take greater care propagating page->pfmemalloc to skb
+  o Propagate pfmemalloc from netdev_alloc_page to skb where possible
+  o Release RCU lock properly on preempt kernel
+
+Changelog since V6
+  o Rebase to 3.1-rc8
+  o Use wake_up instead of wake_up_interruptible()
+  o Do not throttle kernel threads
+  o Avoid a potential race between kswapd going to sleep and processes being
+    throttled
+
+Changelog since V5
+  o Rebase to 3.1-rc5
+
+Changelog since V4
+  o Update comment clarifying what protocols can be used		(Michal)
+  o Rebase to 3.0-rc3
+
+Changelog since V3
+  o Propogate pfmemalloc from packet fragment pages to skb		(Neil)
+  o Rebase to 3.0-rc2
+
+Changelog since V2
+  o Document that __GFP_NOMEMALLOC overrides __GFP_MEMALLOC		(Neil)
+  o Use wait_event_interruptible					(Neil)
+  o Use !! when casting to bool to avoid any possibilitity of type
+    truncation								(Neil)
+  o Nicer logic when using skb_pfmemalloc_protocol			(Neil)
+
+Changelog since V1
+  o Rebase on top of mmotm
+  o Use atomic_t for memalloc_socks		(David Miller)
+  o Remove use of sk_memalloc_socks in vmscan	(Neil Brown)
+  o Check throttle within prepare_to_wait	(Neil Brown)
+  o Add statistics on throttling instead of printk
+
+When a user or administrator requires swap for their application, they
+create a swap partition and file, format it with mkswap and activate it
+with swapon. Swap over the network is considered as an option in diskless
+systems. The two likely scenarios are when blade servers are used as part
+of a cluster where the form factor or maintenance costs do not allow the
+use of disks and thin clients.
+
+The Linux Terminal Server Project recommends the use of the
+Network Block Device (NBD) for swap according to the manual at
+https://sourceforge.net/projects/ltsp/files/Docs-Admin-Guide/LTSPManual.pdf/download
+There is also documentation and tutorials on how to setup swap over NBD
+at places like https://help.ubuntu.com/community/UbuntuLTSP/EnableNBDSWAP
+The nbd-client also documents the use of NBD as swap. Despite this, the
+fact is that a machine using NBD for swap can deadlock within minutes if
+swap is used intensively. This patch series addresses the problem.
+
+The core issue is that network block devices do not use mempools like
+normal block devices do. As the host cannot control where they receive
+packets from, they cannot reliably work out in advance how much memory
+they might need. Some years ago, Peter Zijlstra developed a series of
+patches that supported swap over an NFS that at least one distribution
+is carrying within their kernels. This patch series borrows very heavily
+from Peter's work to support swapping over NBD as a pre-requisite to
+supporting swap-over-NFS. The bulk of the complexity is concerned with
+preserving memory that is allocated from the PFMEMALLOC reserves for use
+by the network layer which is needed for both NBD and NFS.
+
+Patch 1 serialises access to min_free_kbytes. It's not strictly needed
+	by this series but as the series cares about watermarks in
+	general, it's a harmless fix. It could be merged independently
+	and may be if CMA is merged in advance.
+
+Patch 2 adds knowledge of the PFMEMALLOC reserves to SLAB and SLUB to
+	preserve access to pages allocated under low memory situations
+	to callers that are freeing memory.
+
+Patch 3 introduces __GFP_MEMALLOC to allow access to the PFMEMALLOC
+	reserves without setting PFMEMALLOC.
+
+Patch 4 opens the possibility for softirqs to use PFMEMALLOC reserves
+	for later use by network packet processing.
+
+Patch 6 ignores memory policies when ALLOC_NO_WATERMARKS is set.
+
+Patch 7 only sets page->pfmemalloc when ALLOC_NO_WATERMARKS was required
+
+Patches 8-14 allows network processing to use PFMEMALLOC reserves when
+	the socket has been marked as being used by the VM to clean pages. If
+	packets are received and stored in pages that were allocated under
+	low-memory situations and are unrelated to the VM, the packets
+	are dropped.
+
+	Patch 11 reintroduces __skb_alloc_page which the networking
+	folk may object to but is needed in some cases to propogate
+	pfmemalloc from a newly allocated page to an skb. If there is a
+	strong objection, this patch can be dropped with the impact being
+	that swap-over-network will be slower in some cases but it should
+	not fail.
+
+Patch 14 is a micro-optimisation to avoid a function call in the
+	common case.
+
+Patch 15 tags NBD sockets as being SOCK_MEMALLOC so they can use
+	PFMEMALLOC if necessary.
+
+Patch 16 notes that it is still possible for the PFMEMALLOC reserve
+	to be depleted. To prevent this, direct reclaimers get throttled on
+	a waitqueue if 50% of the PFMEMALLOC reserves are depleted.  It is
+	expected that kswapd and the direct reclaimers already running
+	will clean enough pages for the low watermark to be reached and
+	the throttled processes are woken up.
+
+Patch 17 adds a statistic to track how often processes get throttled
+
+Some basic performance testing was run using kernel builds, netperf
+on loopback for UDP and TCP, hackbench (pipes and sockets), iozone
+and sysbench. Each of them were expected to use the sl*b allocators
+reasonably heavily but there did not appear to be significant
+performance variances.
+
+For testing swap-over-NBD, a machine was booted with 2G of RAM with a
+swapfile backed by NBD. 8*NUM_CPU processes were started that create
+anonymous memory mappings and read them linearly in a loop. The total
+size of the mappings were 4*PHYSICAL_MEMORY to use swap heavily under
+memory pressure.
+
+Without the patches and using SLUB, the machine locks up within minutes and
+runs to completion with them applied. With SLAB, the story is different
+as an unpatched kernel run to completion. However, the patched kernel
+completed the test 40% faster.
+
+                                         3.4.0-rc2     3.4.0-rc2
+                                      vanilla-slab     swapnbd
+Sys Time Running Test (seconds)              87.90     73.45
+User+Sys Time Running Test (seconds)         91.93     76.91
+Total Elapsed Time (seconds)               4174.37   2953.96
+
+ drivers/block/nbd.c                               |    6 +-
+ drivers/net/ethernet/chelsio/cxgb4/sge.c          |    2 +-
+ drivers/net/ethernet/chelsio/cxgb4vf/sge.c        |    2 +-
+ drivers/net/ethernet/intel/igb/igb_main.c         |    2 +-
+ drivers/net/ethernet/intel/ixgbe/ixgbe_main.c     |    2 +-
+ drivers/net/ethernet/intel/ixgbevf/ixgbevf_main.c |    3 +-
+ drivers/net/usb/cdc-phonet.c                      |    2 +-
+ drivers/usb/gadget/f_phonet.c                     |    2 +-
+ include/linux/gfp.h                               |   13 +-
+ include/linux/mm_types.h                          |    9 +
+ include/linux/mmzone.h                            |    1 +
+ include/linux/page-flags.h                        |   28 +++
+ include/linux/sched.h                             |    7 +
+ include/linux/skbuff.h                            |   83 +++++++-
+ include/linux/vm_event_item.h                     |    1 +
+ include/net/sock.h                                |   19 ++
+ include/trace/events/gfpflags.h                   |    1 +
+ kernel/softirq.c                                  |    9 +
+ mm/page_alloc.c                                   |   69 +++++--
+ mm/slab.c                                         |  216 +++++++++++++++++++--
+ mm/slub.c                                         |   28 ++-
+ mm/vmscan.c                                       |  131 ++++++++++++-
+ mm/vmstat.c                                       |    1 +
+ net/core/dev.c                                    |   53 ++++-
+ net/core/filter.c                                 |    8 +
+ net/core/skbuff.c                                 |   94 +++++++--
+ net/core/sock.c                                   |   42 ++++
+ net/ipv4/tcp_output.c                             |    9 +-
+ net/ipv6/tcp_ipv6.c                               |    8 +-
+ 29 files changed, 764 insertions(+), 87 deletions(-)
+
 -- 
-1.6.6.rc2
+1.7.9.2
 
