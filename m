@@ -1,68 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S966335Ab2EQNSv (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 May 2012 09:18:51 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:58189 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1761739Ab2EQNSt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 May 2012 09:18:49 -0400
-Date: Thu, 17 May 2012 15:18:42 +0200 (CEST)
-From: Jiri Kosina <jkosina@suse.cz>
-To: Oskar Schirmer <oskar@scara.com>
-Cc: linux-kernel@vger.kernel.org, hannes@cmpxchg.org, shess@hessware.de,
-        Paul Gortmaker <paul.gortmaker@windriver.com>
-Subject: Re: [PATCH 4/5] lib: Change mail address of Oskar Schirmer
-In-Reply-To: <1337161280-28953-5-git-send-email-oskar@scara.com>
-Message-ID: <alpine.LNX.2.00.1205171518380.8796@pobox.suse.cz>
-References: <1337161280-28953-1-git-send-email-oskar@scara.com> <1337161280-28953-5-git-send-email-oskar@scara.com>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	id S1761843Ab2EQNUL (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 May 2012 09:20:11 -0400
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:41049 "EHLO
+	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1759444Ab2EQNUI (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 17 May 2012 09:20:08 -0400
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Samuel Ortiz <sameo@linux.intel.com>
+Cc: linux-kernel@vger.kernel.org, patches@opensource.wolfsonmicro.com,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>
+Subject: [PATCH] mfd: wm831x: Emulate active low IRQs as well as active high IRQs
+Date: Thu, 17 May 2012 14:18:13 +0100
+Message-Id: <1337260693-1768-1-git-send-email-broonie@opensource.wolfsonmicro.com>
+X-Mailer: git-send-email 1.7.10
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 16 May 2012, Oskar Schirmer wrote:
+As with the existing emulation this should not be used in production
+systems but is useful for test purposes.
 
-> That old mail address doesnt exist any more.
-> This changes all occurences to my new address.
-> 
-> Signed-off-by: Oskar Schirmer <oskar@scara.com>
-> Cc: Paul Gortmaker <paul.gortmaker@windriver.com>
-> ---
->  include/linux/rational.h |    2 +-
->  lib/rational.c           |    2 +-
->  2 files changed, 2 insertions(+), 2 deletions(-)
-> 
-> diff --git a/include/linux/rational.h b/include/linux/rational.h
-> index 4f532fc..bfa6a2b 100644
-> --- a/include/linux/rational.h
-> +++ b/include/linux/rational.h
-> @@ -1,7 +1,7 @@
->  /*
->   * rational fractions
->   *
-> - * Copyright (C) 2009 emlix GmbH, Oskar Schirmer <os@emlix.com>
-> + * Copyright (C) 2009 emlix GmbH, Oskar Schirmer <oskar@scara.com>
->   *
->   * helper functions when coping with rational numbers,
->   * e.g. when calculating optimum numerator/denominator pairs for
-> diff --git a/lib/rational.c b/lib/rational.c
-> index d326da3..f0aa21c 100644
-> --- a/lib/rational.c
-> +++ b/lib/rational.c
-> @@ -1,7 +1,7 @@
->  /*
->   * rational fractions
->   *
-> - * Copyright (C) 2009 emlix GmbH, Oskar Schirmer <os@emlix.com>
-> + * Copyright (C) 2009 emlix GmbH, Oskar Schirmer <oskar@scara.com>
->   *
->   * helper functions when coping with rational numbers
->   */
+Signed-off-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
+---
+ drivers/mfd/wm831x-irq.c        |   25 ++++++++++++++++++++-----
+ include/linux/mfd/wm831x/core.h |    3 ++-
+ 2 files changed, 22 insertions(+), 6 deletions(-)
 
-Applied.
-
+diff --git a/drivers/mfd/wm831x-irq.c b/drivers/mfd/wm831x-irq.c
+index ecc9d6d..4d49d66 100644
+--- a/drivers/mfd/wm831x-irq.c
++++ b/drivers/mfd/wm831x-irq.c
+@@ -413,22 +413,25 @@ static int wm831x_irq_set_type(struct irq_data *data, unsigned int type)
+ 	 * do the update here as we can be called with the bus lock
+ 	 * held.
+ 	 */
++	wm831x->gpio_level_low[irq] = false;
++	wm831x->gpio_level_high[irq] = false;
+ 	switch (type) {
+ 	case IRQ_TYPE_EDGE_BOTH:
+ 		wm831x->gpio_update[irq] = 0x10000 | WM831X_GPN_INT_MODE;
+-		wm831x->gpio_level[irq] = false;
+ 		break;
+ 	case IRQ_TYPE_EDGE_RISING:
+ 		wm831x->gpio_update[irq] = 0x10000 | WM831X_GPN_POL;
+-		wm831x->gpio_level[irq] = false;
+ 		break;
+ 	case IRQ_TYPE_EDGE_FALLING:
+ 		wm831x->gpio_update[irq] = 0x10000;
+-		wm831x->gpio_level[irq] = false;
+ 		break;
+ 	case IRQ_TYPE_LEVEL_HIGH:
+ 		wm831x->gpio_update[irq] = 0x10000 | WM831X_GPN_POL;
+-		wm831x->gpio_level[irq] = true;
++		wm831x->gpio_level_high[irq] = true;
++		break;
++	case IRQ_TYPE_LEVEL_LOW:
++		wm831x->gpio_update[irq] = 0x10000;
++		wm831x->gpio_level_low[irq] = true;
+ 		break;
+ 	default:
+ 		return -EINVAL;
+@@ -517,13 +520,25 @@ static irqreturn_t wm831x_irq_thread(int irq, void *data)
+ 		 * status.  This is sucky but improves interoperability.
+ 		 */
+ 		if (primary == WM831X_GP_INT &&
+-		    wm831x->gpio_level[i - WM831X_IRQ_GPIO_1]) {
++		    wm831x->gpio_level_high[i - WM831X_IRQ_GPIO_1]) {
+ 			ret = wm831x_reg_read(wm831x, WM831X_GPIO_LEVEL);
+ 			while (ret & 1 << (i - WM831X_IRQ_GPIO_1)) {
+ 				handle_nested_irq(irq_find_mapping(wm831x->irq_domain,
+ 								   i));
+ 				ret = wm831x_reg_read(wm831x,
+ 						      WM831X_GPIO_LEVEL);
++				dev_err(wm831x->dev, "spin high: %x\n", ret);
++			}
++		}
++
++		if (primary == WM831X_GP_INT &&
++		    wm831x->gpio_level_low[i - WM831X_IRQ_GPIO_1]) {
++			ret = wm831x_reg_read(wm831x, WM831X_GPIO_LEVEL);
++			while (!(ret & 1 << (i - WM831X_IRQ_GPIO_1))) {
++				handle_nested_irq(irq_find_mapping(wm831x->irq_domain,
++								   i));
++				ret = wm831x_reg_read(wm831x,
++						      WM831X_GPIO_LEVEL);
+ 			}
+ 		}
+ 	}
+diff --git a/include/linux/mfd/wm831x/core.h b/include/linux/mfd/wm831x/core.h
+index 736191c..4a3b83a 100644
+--- a/include/linux/mfd/wm831x/core.h
++++ b/include/linux/mfd/wm831x/core.h
+@@ -384,7 +384,8 @@ struct wm831x {
+ 
+ 	/* Used by the interrupt controller code to post writes */
+ 	int gpio_update[WM831X_NUM_GPIO_REGS];
+-	bool gpio_level[WM831X_NUM_GPIO_REGS];
++	bool gpio_level_high[WM831X_NUM_GPIO_REGS];
++	bool gpio_level_low[WM831X_NUM_GPIO_REGS];
+ 
+ 	struct mutex auxadc_lock;
+ 	struct list_head auxadc_pending;
 -- 
-Jiri Kosina
-SUSE Labs
+1.7.10
+
