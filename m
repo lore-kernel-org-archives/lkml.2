@@ -1,72 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1762301Ab2EQSMu (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 May 2012 14:12:50 -0400
-Received: from mail-ee0-f46.google.com ([74.125.83.46]:37812 "EHLO
-	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754980Ab2EQSMs (ORCPT
+	id S1762315Ab2EQSNt (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 May 2012 14:13:49 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:35625 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754980Ab2EQSNr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 May 2012 14:12:48 -0400
-Subject: Re: tcp timestamp issues with google servers
-From: Eric Dumazet <eric.dumazet@gmail.com>
-To: Miklos Szeredi <miklos@szeredi.hu>
-Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org
-In-Reply-To: <87r4ujno34.fsf@tucsk.pomaz.szeredi.hu>
-References: <87r4ujno34.fsf@tucsk.pomaz.szeredi.hu>
-Content-Type: text/plain; charset="UTF-8"
-Date: Thu, 17 May 2012 20:12:43 +0200
-Message-ID: <1337278363.3403.39.camel@edumazet-glaptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
-Content-Transfer-Encoding: 7bit
+	Thu, 17 May 2012 14:13:47 -0400
+Date: Thu, 17 May 2012 11:13:34 -0700
+From: "tip-bot for H. Peter Anvin" <hpa@linux.intel.com>
+Message-ID: <tip-2ee93ab67a73955018dff6ad76916e20a2ba10f7@git.kernel.org>
+Cc: mjg@redhat.com, linux-kernel@vger.kernel.org, hpa@zytor.com,
+        mingo@kernel.org, lenb@kernel.org, tglx@linutronix.de,
+        hpa@linux.intel.com
+Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        mjg@redhat.com, lenb@kernel.org, tglx@linutronix.de,
+        hpa@linux.intel.com
+In-Reply-To: <1336597442-9399-1-git-send-email-hpa@linux.intel.com>
+References: <1336597442-9399-1-git-send-email-hpa@linux.intel.com>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:x86/trampoline] acpi, bgrd: Add missing <linux/io.h>
+  to drivers/acpi/bgrt.c
+Git-Commit-ID: 2ee93ab67a73955018dff6ad76916e20a2ba10f7
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
+MIME-Version: 1.0
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Thu, 17 May 2012 11:13:40 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2012-05-17 at 11:39 +0200, Miklos Szeredi wrote:
-> Sometimes connection to google.com, gmail.com and other google servers
-> doesn't work or takes ages to connect.  When this hits it hits all
-> google servers at the same time and it's persistent.  It never happens
-> to anything other than google.  Rebooting helps.  Rarely it goes away
-> spontaneously.
-> 
-> Apparently google is sometimes replying with an invalid TSecr timestamp
-> value (smaller than the one sent in the last packet) and this confuses
-> the Linux TCP stack which either discards the packet or sends a Reset.
-> 
-> Network dump attached.
-> 
-> I found only a couple of references to this issue:
-> 
-> http://gotchas.livejournal.com/3028.html
-> 
-> http://groups.google.com/group/comp.os.linux.networking/browse_thread/thread/29f56feded11b42a
-> 
-> Turning tcp timestamps fixes the issue:
-> 
->   sysctl -w net.ipv4.tcp_timestamps=0
-> 
-> Not sure why this happens only to me and a very few others.
-> 
-> It appears to be an issue with google TCP stack (is it a modified
-> stack?) but I thought about issues in my network switch (restarting it
-> doesn't help) or something in the ISP, but those look unlikely.
-> 
-> Any ideas?
-> 
-> Thanks,
-> Miklos
-> 
-> 
-> 
->   1   0.000000 192.168.28.100 -> 74.125.232.226 TCP 51303 > http [SYN] Seq=0 Win=14600 Len=0 MSS=1460 SACK_PERM=1 TSV=35355050 TSER=0 WS=5
->   2   0.002730 74.125.232.226 -> 192.168.28.100 TCP http > 51303 [SYN, ACK] Seq=0 Ack=1 Win=14180 Len=0 MSS=1430 SACK_PERM=1 TSV=1184565067 TSER=35325344 WS=6
+Commit-ID:  2ee93ab67a73955018dff6ad76916e20a2ba10f7
+Gitweb:     http://git.kernel.org/tip/2ee93ab67a73955018dff6ad76916e20a2ba10f7
+Author:     H. Peter Anvin <hpa@linux.intel.com>
+AuthorDate: Wed, 9 May 2012 14:04:02 -0700
+Committer:  H. Peter Anvin <hpa@linux.intel.com>
+CommitDate: Thu, 17 May 2012 07:18:26 -0700
 
+acpi, bgrd: Add missing <linux/io.h> to drivers/acpi/bgrt.c
 
-Do you really have 2730 usec RTT between you and this (Google ?)
-server ?
+The ACPI BGRT driver uses ioremap() and memcpy_fromio(), which means
+it needs to #include <linux/io.h>.
 
-Are you sure this is not a broken middle box ?
+[ hpa: This was hidden because <asm/acpi.h> used to include <asm/trampoline.h>,
+  which then included <asm/io.h> ]
 
+Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
+Link: http://lkml.kernel.org/r/1336597442-9399-1-git-send-email-hpa@linux.intel.com
+Cc: Matthew Garrett <mjg@redhat.com>
+Cc: Len Brown <lenb@kernel.org>
+---
+ drivers/acpi/bgrt.c |    1 +
+ 1 files changed, 1 insertions(+), 0 deletions(-)
 
-
+diff --git a/drivers/acpi/bgrt.c b/drivers/acpi/bgrt.c
+index 8cf6c46..6680df3 100644
+--- a/drivers/acpi/bgrt.c
++++ b/drivers/acpi/bgrt.c
+@@ -11,6 +11,7 @@
+ #include <linux/init.h>
+ #include <linux/device.h>
+ #include <linux/sysfs.h>
++#include <linux/io.h>
+ #include <acpi/acpi.h>
+ #include <acpi/acpi_bus.h>
+ 
