@@ -1,79 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761682Ab2EQK4d (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 May 2012 06:56:33 -0400
-Received: from mailout1.w1.samsung.com ([210.118.77.11]:60161 "EHLO
-	mailout1.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760981Ab2EQKzF (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 May 2012 06:55:05 -0400
-Date: Thu, 17 May 2012 12:54:43 +0200
-From: Marek Szyprowski <m.szyprowski@samsung.com>
-Subject: [PATCHv2 2/4] mm: vmalloc: export find_vm_area() function
-In-reply-to: <1337252085-22039-1-git-send-email-m.szyprowski@samsung.com>
-To: linux-arm-kernel@lists.infradead.org, linaro-mm-sig@lists.linaro.org,
-        linux-mm@kvack.org, linux-kernel@vger.kernel.org
-Cc: Marek Szyprowski <m.szyprowski@samsung.com>,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        Arnd Bergmann <arnd@arndb.de>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        Chunsang Jeong <chunsang.jeong@linaro.org>,
-        Krishna Reddy <vdumpa@nvidia.com>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Hiroshi Doyu <hdoyu@nvidia.com>, Subash Patel <subashrp@gmail.com>
-Message-id: <1337252085-22039-3-git-send-email-m.szyprowski@samsung.com>
-MIME-version: 1.0
-X-Mailer: git-send-email 1.7.10.1
-Content-type: TEXT/PLAIN
-Content-transfer-encoding: 7BIT
-References: <1337252085-22039-1-git-send-email-m.szyprowski@samsung.com>
+	id S1761644Ab2EQK6I (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 May 2012 06:58:08 -0400
+Received: from mx2.parallels.com ([64.131.90.16]:46435 "EHLO mx2.parallels.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1760981Ab2EQK6G (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 17 May 2012 06:58:06 -0400
+Message-ID: <4FB4D945.7060108@parallels.com>
+Date: Thu, 17 May 2012 14:56:05 +0400
+From: Glauber Costa <glommer@parallels.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.1) Gecko/20120216 Thunderbird/10.0.1
+MIME-Version: 1.0
+To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+CC: Andrew Morton <akpm@linux-foundation.org>,
+        Johannes Weiner <hannes@cmpxchg.org>, Michal Hocko <mhocko@suse.cz>,
+        <cgroups@vger.kernel.org>, <linux-mm@kvack.org>,
+        <linux-kernel@vger.kernel.org>
+Subject: Re: [patch 6/6] mm: memcg: print statistics from live counters
+References: <1337018451-27359-1-git-send-email-hannes@cmpxchg.org> <1337018451-27359-7-git-send-email-hannes@cmpxchg.org> <20120516160131.fecb5ddf.akpm@linux-foundation.org> <4FB43FDB.6050300@jp.fujitsu.com>
+In-Reply-To: <4FB43FDB.6050300@jp.fujitsu.com>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-find_vm_area() function is usefull for other core subsystems (like
-dma-mapping) to get access to vm_area internals.
+On 05/17/2012 04:01 AM, KAMEZAWA Hiroyuki wrote:
+> Hm...sorry. I(fujitsu) am now considering to add meminfo for memcg...,
+>
+> add an option to override /proc/meminfo if a task is in container or
+> meminfo file somewhere.
+> (Now, we cannot trust /usr/bin/free, /usr/bin/top etc...in a container.)
 
-Signed-off-by: Marek Szyprowski <m.szyprowski@samsung.com>
-Reviewed-by: Kyungmin Park <kyungmin.park@samsung.com>
----
- include/linux/vmalloc.h |    1 +
- mm/vmalloc.c            |   10 +++++++++-
- 2 files changed, 10 insertions(+), 1 deletion(-)
+Yes, and all the previous times I tried to touch those, I think the 
+general agreement was to come up with some kind of fuse overlay that 
+would read information available from the kernel, and present it 
+correctly formatted through bind-mounts on the files of interest.
 
-diff --git a/include/linux/vmalloc.h b/include/linux/vmalloc.h
-index 2e28f4d..6071e91 100644
---- a/include/linux/vmalloc.h
-+++ b/include/linux/vmalloc.h
-@@ -93,6 +93,7 @@ extern struct vm_struct *__get_vm_area_caller(unsigned long size,
- 					unsigned long start, unsigned long end,
- 					const void *caller);
- extern struct vm_struct *remove_vm_area(const void *addr);
-+extern struct vm_struct *find_vm_area(const void *addr);
- 
- extern int map_vm_area(struct vm_struct *area, pgprot_t prot,
- 			struct page ***pages);
-diff --git a/mm/vmalloc.c b/mm/vmalloc.c
-index 8bc7f3ef..8cb7f22 100644
---- a/mm/vmalloc.c
-+++ b/mm/vmalloc.c
-@@ -1402,7 +1402,15 @@ struct vm_struct *get_vm_area_caller(unsigned long size, unsigned long flags,
- 						-1, GFP_KERNEL, caller);
- }
- 
--static struct vm_struct *find_vm_area(const void *addr)
-+/**
-+ *	find_vm_area  -  find a continuous kernel virtual area
-+ *	@addr:		base address
-+ *
-+ *	Search for the kernel VM area starting at @addr, and return it.
-+ *	It is up to the caller to do all required locking to keep the returned
-+ *	pointer valid.
-+ */
-+struct vm_struct *find_vm_area(const void *addr)
- {
- 	struct vmap_area *va;
- 
--- 
-1.7.10.1
-
+But that's mainly because we never reached agreement on how to make that 
+appear automatically from such tasks
