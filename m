@@ -1,144 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932822Ab2EQMax (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 May 2012 08:30:53 -0400
-Received: from mail-we0-f174.google.com ([74.125.82.174]:49736 "EHLO
-	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754655Ab2EQMav (ORCPT
+	id S965529Ab2EQMew (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 May 2012 08:34:52 -0400
+Received: from mail-lb0-f174.google.com ([209.85.217.174]:59969 "EHLO
+	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754869Ab2EQMeu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 May 2012 08:30:51 -0400
-From: Uri Yosef <uri.y@variscite.com>
-To: tony@atomide.com
-Cc: linux@arm.linux.org.uk, linux-omap@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        oren@variscite.com, Uri Yosef <uri.y@variscite.com>
-Subject: [PATCH] arm/dts: OMAP4: Add Variscite OMAP4 System-On-Modeule support
-Date: Thu, 17 May 2012 15:17:31 +0300
-Message-Id: <1337257051-5004-1-git-send-email-uri.y@variscite.com>
-X-Mailer: git-send-email 1.7.5.4
-In-Reply-To: <20120509213156.GZ5140@atomide.com>
-References: <20120509213156.GZ5140@atomide.com>
+	Thu, 17 May 2012 08:34:50 -0400
+Message-ID: <1337258086.2564.9.camel@koala>
+Subject: Re: [PATCH 1/7] [RFC] UBI: Export next_sqnum()
+From: Artem Bityutskiy <dedekind1@gmail.com>
+To: Richard Weinberger <richard@nod.at>
+Cc: Shmulik Ladkani <shmulik.ladkani@gmail.com>, linux-mtd@lists.infradead.org,
+        linux-kernel@vger.kernel.org, Heinz.Egger@linutronix.de,
+        tim.bird@am.sony.com, tglx@linutronix.de
+Date: Thu, 17 May 2012 15:34:46 +0300
+In-Reply-To: <4FB4E56A.3040009@nod.at>
+References: <1337101871-31181-1-git-send-email-richard@nod.at>
+	  <1337101871-31181-2-git-send-email-richard@nod.at>
+	  <20120516170324.337f2932@pixies.home.jungo.com>
+	  <1337178457.24809.56.camel@sauron.fi.intel.com>
+	  <20120517124548.262c132a@pixies.home.jungo.com>
+	 <1337255093.2564.3.camel@koala> <4FB4E56A.3040009@nod.at>
+Content-Type: multipart/signed; micalg="pgp-sha1"; protocol="application/pgp-signature";
+	boundary="=-lPTimvBXHnlVxpq/vgyl"
+X-Mailer: Evolution 3.2.3 (3.2.3-3.fc16) 
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Tony,
 
-This is the updated DTS patch for Vatiscite OMAP4 SOM support
+--=-lPTimvBXHnlVxpq/vgyl
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: quoted-printable
 
-Regatds,
-Uri Yosef
+On Thu, 2012-05-17 at 13:47 +0200, Richard Weinberger wrote:
+> Am 17.05.2012 13:44, schrieb Artem Bityutskiy:
+>  > I think I meant the compare_lebs() exporting, not this one, replied to
+> > wrong e-mail, sorry. Happens when I am in hurry - try to keep everyone
+> > happy and make sure Richard is always busy with something :-)
+> >
+>=20
+> Haha.
+> No need to keep me busy. :P
 
+By this I meant - give some review feed-back ASAP to make sure you have
+something to do and think about. Surely it is better than giving a lot
+more feed-back but with a couple of weeks delay?
 
-Signed-off-by: Uri Yosef <uri.y@variscite.com>
+--=20
+Best Regards,
+Artem Bityutskiy
 
----
- arch/arm/boot/dts/omap4-var_som.dts |   96 +++++++++++++++++++++++++++++++++++
- 1 files changed, 96 insertions(+), 0 deletions(-)
- create mode 100644 arch/arm/boot/dts/omap4-var_som.dts
+--=-lPTimvBXHnlVxpq/vgyl
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: This is a digitally signed message part
+Content-Transfer-Encoding: 7bit
 
-diff --git a/arch/arm/boot/dts/omap4-var_som.dts b/arch/arm/boot/dts/omap4-var_som.dts
-new file mode 100644
-index 0000000..d41161d
---- /dev/null
-+++ b/arch/arm/boot/dts/omap4-var_som.dts
-@@ -0,0 +1,96 @@
-+/*
-+ * Copyright (C) 2012 Variscite Ltd. - http://www.variscite.com
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License version 2 as
-+ * published by the Free Software Foundation.
-+ */
-+/dts-v1/;
-+
-+/include/ "omap4.dtsi"
-+
-+/ {
-+	model = "Variscite OMAP4 SOM";
-+	compatible = "var,omap4-var_som", "ti,omap4430", "ti,omap4";
-+
-+	memory {
-+		device_type = "memory";
-+		reg = <0x80000000 0x40000000>; /* 1 GB */
-+	};
-+
-+	vdd_eth: fixedregulator@0 {
-+		compatible = "regulator-fixed";
-+		regulator-name = "VDD_ETH";
-+		regulator-min-microvolt = <3300000>;
-+		regulator-max-microvolt = <3300000>;
-+		enable-active-high;
-+		regulator-boot-on;
-+	};
-+};
-+
-+&i2c1 {
-+	clock-frequency = <400000>;
-+
-+	twl: twl@48 {
-+		reg = <0x48>;
-+		/* SPI = 0, IRQ# = 7, 4 = active high level-sensitive */
-+		interrupts = <0 7 4>; /* IRQ_SYS_1N cascaded to gic */
-+		interrupt-parent = <&gic>;
-+	};
-+};
-+
-+/include/ "twl6030.dtsi"
-+
-+&i2c2 {
-+	clock-frequency = <400000>;
-+};
-+
-+&i2c3 {
-+	clock-frequency = <400000>;
-+
-+	/*
-+	 * Temperature Sensor
-+	 * http://www.ti.com/lit/ds/symlink/tmp105.pdf
-+	 */
-+	tmp105@49 {
-+		compatible = "ti,tmp105";
-+		reg = <0x49>;
-+	};
-+};
-+
-+&i2c4 {
-+	clock-frequency = <400000>;
-+};
-+
-+&mcspi1 {
-+	eth@0 {
-+		compatible = "ks8851";
-+		spi-max-frequency = <24000000>;
-+		reg = <0>;
-+		interrupt-parent = <&gpio6>;
-+		interrupts = <11>; /* gpio line 171 */
-+		vdd-supply = <&vdd_eth>;
-+	};
-+};
-+
-+&mmc1 {
-+	vmmc-supply = <&vmmc>;
-+	ti,bus-width = <8>;
-+	ti,non-removable;
-+};
-+
-+&mmc2 {
-+	status = "disable";
-+};
-+
-+&mmc3 {
-+	status = "disable";
-+};
-+
-+&mmc4 {
-+	status = "disable";
-+};
-+
-+&mmc5 {
-+	ti,bus-width = <4>;
-+};
--- 
-1.7.5.4
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAABAgAGBQJPtPBmAAoJECmIfjd9wqK0Mp8P/1FApMrs45lYv85Oo/Ht/Tg6
+F7sU7pFJy5FKnesNKhiHGoXTOD32bzKbuLOeVdUr1vqXNNp1/GtsKmJdAyK6eiJX
+AsHKZJE9oM6tvghmNGMGNYSxvnycxAtcjgPkrXgGYf16ILx2Ekt81oQSe9VEw9n/
+bKocKnLC+vCacL1kOsI9B2u5tpL6nLucTedalIZROJbvQijBVtVPkot5RLEYaYWK
+5fINoilzagCdfVEFYSjzuHwKF9OKM8PYCa/L0Tr+ZnPnOQkCYBOd19DERh14r/vC
+a/B0Is7E0bmfpI9ThUoECjJ2/f0+qfWv73y/5qKL38KgW4tB9lLMykkQzuiCxygC
+56O+PLmSq+Sn0ru2XugcadPzzyrTvjOWYjUrOPg5qndXR+dPoc0Yv/zLi0y9T9zO
+OwT13fglKEiMXkzumuRvZvHY0yksLOBmA28mRAspFz1Y2TFFCN/uY1L+sCoDovHe
+5LSLbZB6L7iV7N4O5DZHWZTcNcaK5GptFOO8p+tHujBBr7fjAS7Y/131V+aeWq7J
+j915txWG6+2U+AA2p2zyALbeLvzuYuvgixlUnUTeFRaqdSfSAn3lNttskvJWFcxf
+fG32GTiEaKWHZbDAj/OVZ/uJC1OdIDoM23hLdZkWKA34jrawj9jiiD9D5pE70Grf
+U2/imlAKomelV9bkiVLM
+=OxzL
+-----END PGP SIGNATURE-----
+
+--=-lPTimvBXHnlVxpq/vgyl--
 
