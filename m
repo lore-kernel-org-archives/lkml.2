@@ -1,64 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759619Ab2EQJfq (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 May 2012 05:35:46 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:7463 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758256Ab2EQJfo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 May 2012 05:35:44 -0400
-Date: Thu, 17 May 2012 12:35:39 +0300
-From: "Michael S. Tsirkin" <mst@redhat.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: David Miller <davem@davemloft.net>, netdev@vger.kernel.org,
-        kvm@vger.kernel.org, virtualization@lists.linux-foundation.org,
-        linux-kernel@vger.kernel.org, amit.shah@redhat.com, mst@redhat.com,
-        rusty@rustcorp.com.au, uobergfe@redhat.com
-Subject: [PULL] virtio: last minute fixes for 3.4
-Message-ID: <20120517093539.GA30280@redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+	id S1760114Ab2EQJil (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 May 2012 05:38:41 -0400
+Received: from mailout1.samsung.com ([203.254.224.24]:29306 "EHLO
+	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758158Ab2EQJii (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 17 May 2012 05:38:38 -0400
+X-AuditID: cbfee61b-b7b94ae000002e44-4c-4fb4c71cf7da
+From: Seungwon Jeon <tgih.jun@samsung.com>
+To: linux-mmc@vger.kernel.org
+Cc: "'Chris Ball'" <cjb@laptop.org>, merez@codeaurora.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH v6 0/3] mmc: core: Support packed command feature of eMMC4.5
+Date: Thu, 17 May 2012 18:38:36 +0900
+Message-id: <009c01cd3410$d5539c40$7ffad4c0$%jun@samsung.com>
+MIME-version: 1.0
+Content-type: text/plain; charset=utf-8
+Content-transfer-encoding: 7bit
+X-Mailer: Microsoft Office Outlook 12.0
+Thread-index: Ac00ENSOHmJSmeP0ROCP+H7nuzpMqw==
+Content-language: ko
+X-Brightmail-Tracker: AAAAAA==
+X-TM-AS-MML: No
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The following changes since commit 0e93b4b304ae052ba1bc73f6d34a68556fe93429:
+This patch-set adds support of packed command feature
+for eMMC4.5 devices.
 
-  Merge git://git.kernel.org/pub/scm/virt/kvm/kvm (2012-05-16 14:30:51 -0700)
+Changes in v6:
+	- Split the patch for packed read.
+	- Remove the unnecessary code. 
 
-are available in the git repository at:
+Changes in v5:
+	- Revert "Add a variable member in mmc_host for minimum number of packed entries".
+	- Fix the partial packed command from failure index.
+	- Clean an unnecessary parameter of mmc_blk_packed_hdr_wrq_prep 
+	- Clean warning of checkpatch.
+
+Changes in v4:
+	- Add Data-tag as CMD23 argument for packed header.
+	- Separate the capability of MMC_CAP2_PACKED_CMD into read and write.
+	- Remove unncessary initial value.
+
+Changes in v3:
+	- Add a variable member in mmc_host for minimum number of packed entries.
+	  This value can be overridden by host.
+	- Fix a handling of error sequence.
+
+Changes in v2:
+	- Fix the packed read sequence and error handling.
+	- Apply checking the exception status for all cases with
+	  the comments from Maya Erez and Sahitya Tummala.
+	- Fix preparing the packed list with the comment from Maya Erez and Venkatraman.
 
 
-  git://git.kernel.org/pub/scm/linux/kernel/git/mst/vhost.git for_linus
+Seungwon Jeon (3):
+      mmc: core: Add packed command feature of eMMC4.5
+      mmc: core: Support packed write command for eMMC4.5 device
+      mmc: core: Support packed read command for eMMC4.5 device
 
-for you to fetch changes up to ec13ee80145ccb95b00e6e610044bbd94a170051:
+drivers/mmc/card/block.c   |  507 ++++++++++++++++++++++++++++++++++++++++++--
+drivers/mmc/card/queue.c   |   49 ++++-
+drivers/mmc/card/queue.h   |   13 ++
+drivers/mmc/core/mmc.c     |   24 ++
+drivers/mmc/core/mmc_ops.c |    1 +
+include/linux/mmc/card.h   |    3 +
+include/linux/mmc/core.h   |    4 +
+include/linux/mmc/host.h   |    4 +
+include/linux/mmc/mmc.h    |   15 ++
+9 files changed, 594 insertions(+), 26 deletions(-)
 
-  virtio_net: invoke softirqs after __napi_schedule (2012-05-17 12:16:38 +0300)
+Best regards,
+Seungwon Jeon.
+--
+1.7.2.3
 
-----------------------------------------------------------------
-virtio: last minute fixes for 3.4
 
-Here are a couple of last minute virtio fixes for 3.4.
-Hope it's not too late yes - I might have tried too hard
-to make sure the fix is well tested.
-
-Fixes are by Amit and myself. One fixes module removal
-and one suspend of a VM, the last one the handling of out
-of memory condition.
-They are thus very low risk as most people never hit these paths, but do fix
-very annoying problems for people that do use the feature.
-
-Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
-
-----------------------------------------------------------------
-Amit Shah (2):
-      virtio: console: tell host of open ports after resume from s3/s4
-      virtio: balloon: let host know of updated balloon size before module removal
-
-Michael S. Tsirkin (1):
-      virtio_net: invoke softirqs after __napi_schedule
-
- drivers/char/virtio_console.c   |    7 +++++++
- drivers/net/virtio_net.c        |    2 ++
- drivers/virtio/virtio_balloon.c |    1 +
- 3 files changed, 10 insertions(+), 0 deletions(-)
