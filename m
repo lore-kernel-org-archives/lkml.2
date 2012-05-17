@@ -1,74 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760946Ab2EQDIp (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 May 2012 23:08:45 -0400
-Received: from linux-sh.org ([111.68.239.195]:53744 "EHLO linux-sh.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1760477Ab2EQDIn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 May 2012 23:08:43 -0400
-Date: Thu, 17 May 2012 12:05:52 +0900
-From: Paul Mundt <lethal@linux-sh.org>
-To: Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Catalin Marinas <catalin.marinas@arm.com>
-Cc: Andrea Arcangeli <aarcange@redhat.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Rik van Riel <riel@redhat.com>,
-        Ingo Molnar <mingo@elte.hu>, akpm@linux-foundation.org,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org,
-        linux-mm@kvack.org, Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        David Miller <davem@davemloft.net>,
-        Hugh Dickins <hugh.dickins@tiscali.co.uk>, Mel Gorman <mel@csn.ul.ie>,
-        Nick Piggin <npiggin@kernel.dk>, Russell King <rmk@arm.linux.org.uk>,
-        Chris Metcalf <cmetcalf@tilera.com>,
-        Martin Schwidefsky <schwidefsky@de.ibm.com>
-Subject: Re: [RFC][PATCH 4/6] arm, mm: Convert arm to generic tlb
-Message-ID: <20120517030551.GA11623@linux-sh.org>
-References: <20110302175928.022902359@chello.nl>
- <20110302180259.109909335@chello.nl>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110302180259.109909335@chello.nl>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1760964Ab2EQDO6 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 May 2012 23:14:58 -0400
+Received: from e28smtp07.in.ibm.com ([122.248.162.7]:37322 "EHLO
+	e28smtp07.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1760477Ab2EQDO4 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 16 May 2012 23:14:56 -0400
+Message-ID: <1337224486.18429.14.camel@mengcong>
+Subject: Re: [PATCH] V2: target: Handle ATA_PASS_THROUGH_16 passthrough
+From: mengcong <mc@linux.vnet.ibm.com>
+Reply-To: mc@linux.vnet.ibm.com
+To: James Bottomley <James.Bottomley@hansenpartnership.com>,
+        target-devel@vger.kernel.org
+Cc: "Nicholas A. Bellinger" <nab@linux-iscsi.org>, linux-scsi@vger.kernel.org,
+        linux-kernel@vger.kernel.org,
+        Stefan Hajnoczi <stefanha@linux.vnet.ibm.com>
+Date: Thu, 17 May 2012 11:14:46 +0800
+In-Reply-To: <1337153889.2985.5.camel@dabdike.int.hansenpartnership.com>
+References: <1337146409.18429.11.camel@mengcong>
+	 <1337153889.2985.5.camel@dabdike.int.hansenpartnership.com>
+Organization: LTC, IBM
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.2- 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
+x-cbid: 12051703-8878-0000-0000-0000027BA4DA
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Mar 02, 2011 at 06:59:32PM +0100, Peter Zijlstra wrote:
-> Might want to optimize the tlb_flush() function to do a full mm flush
-> when the range is 'large', IA64 does this too.
-> 
-> Cc: Russell King <rmk@arm.linux.org.uk>
-> Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
+The cdrecord uses ATA_PASS_THROUGH_16 command while burning CDs
+with a SATA CD-ROM. This patch adds support to it so that PSCSI 
+CD-ROM passthrough works with the cdrecord.
 
-The current version in tlb-unify blows up due to a missing
-tlb_add_flush() definition. I can see in this thread tlb_track_range()
-was factored in, but the __pte_free_tlb()/__pmd_free_tlb() semantics have
-changed since then. Adding a dumb tlb_add_flush() that wraps in to
-tlb_track_range() seems to do the right thing, but someone more familiar
-with LPAE and ARM's double PMDs will have to figure out whether the
-tlb_track_range() in asm-generic/tlb.h's pmd/pte_free_tlb() are
-sufficient to remove the tlb_add_flush() calls or not.
-
-Here's the dumb build fix for now though:
-
-Signed-off-by: Paul Mundt <lethal@linux-sh.org>
-
+Signed-off-by: Cong Meng <mc@linux.vnet.ibm.com>
 ---
+ drivers/target/target_core_transport.c |   30 ++++++++++++++++++++++++++++++
+ 1 files changed, 30 insertions(+), 0 deletions(-)
 
-diff --git a/arch/arm/include/asm/tlb.h b/arch/arm/include/asm/tlb.h
-index 37dbce9..1de4b21 100644
---- a/arch/arm/include/asm/tlb.h
-+++ b/arch/arm/include/asm/tlb.h
-@@ -38,6 +38,11 @@ __pmd_free_tlb(struct mmu_gather *tlb, pmd_t *pmdp, unsigned long addr);
- 
- #include <asm-generic/tlb.h>
- 
-+static inline void tlb_add_flush(struct mmu_gather *tlb, unsigned long addr)
-+{
-+	tlb_track_range(tlb, addr, addr + PAGE_SIZE);
-+}
-+
- static inline void
- __pte_free_tlb(struct mmu_gather *tlb, pgtable_t pte, unsigned long addr)
- {
+diff --git a/drivers/target/target_core_transport.c b/drivers/target/target_core_transport.c
+index 2d75c29..25e0fc0 100644
+--- a/drivers/target/target_core_transport.c
++++ b/drivers/target/target_core_transport.c
+@@ -2926,6 +2926,36 @@ static int transport_generic_cmd_sequencer(
+ 		size = (cdb[7] << 8) | cdb[8];
+ 		cmd->se_cmd_flags |= SCF_SCSI_CONTROL_SG_IO_CDB;
+ 		break;
++	case ATA_16:
++		// T_LENGTH
++		switch (cdb[2] & 0x3) {
++		case 0x0:
++			sectors = 0;
++			break;
++		case 0x1:
++			sectors = (((cdb[1] & 0x1) ? cdb[3] : 0) << 8) | cdb[4];
++			break;
++		case 0x2:
++			sectors = (((cdb[1] & 0x1) ? cdb[5] : 0) << 8) | cdb[6];
++			break;
++		case 0x3:
++			pr_err("T_LENGTH=0x3 not supported\n");
++			goto out_invalid_cdb_field;
++			break;
++		}
++		
++		// BYTE_BLOCK
++		if (cdb[2] & 0x4) {
++			// BLOCK
++			// T_TYPE: 512 or sector
++			size = sectors * ((cdb[2] & 0x10) ? 
++				dev->se_sub_dev->se_dev_attrib.block_size : 512);
++		} else {
++			// BYTE
++			size = sectors;
++		}
++		cmd->se_cmd_flags |= SCF_SCSI_CONTROL_SG_IO_CDB;
++		break;
+ 	default:
+ 		pr_warn("TARGET_CORE[%s]: Unsupported SCSI Opcode"
+ 			" 0x%02x, sending CHECK_CONDITION.\n",
+-- 
+1.7.7
+
+
+
