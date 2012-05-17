@@ -1,81 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761360Ab2EQIFp (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 May 2012 04:05:45 -0400
-Received: from LGEMRELSE7Q.lge.com ([156.147.1.151]:49218 "EHLO
-	LGEMRELSE7Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1761281Ab2EQIFd (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 May 2012 04:05:33 -0400
-X-AuditID: 9c930197-b7be2ae000000ebb-a6-4fb4b14be722
-Message-ID: <4FB4B177.9020804@kernel.org>
-Date: Thu, 17 May 2012 17:06:15 +0900
-From: Minchan Kim <minchan@kernel.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
+	id S1761336Ab2EQIGj (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 May 2012 04:06:39 -0400
+Received: from mga03.intel.com ([143.182.124.21]:18212 "EHLO mga03.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1759952Ab2EQIGc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 17 May 2012 04:06:32 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
+   d="scan'208";a="144286475"
+Message-ID: <4FB4B129.6030701@intel.com>
+Date: Thu, 17 May 2012 16:04:57 +0800
+From: Alex Shi <alex.shi@intel.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:9.0) Gecko/20111229 Thunderbird/9.0
 MIME-Version: 1.0
-Newsgroups: gmane.linux.kernel,gmane.linux.kernel.mm
-To: Seth Jennings <sjenning@linux.vnet.ibm.com>
-CC: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Nitin Gupta <ngupta@vflare.org>,
-        Dan Magenheimer <dan.magenheimer@oracle.com>,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org
-Subject: Re: [PATCH v2 2/3] remove dependency with x86
-References: <1337133919-4182-1-git-send-email-minchan@kernel.org> <1337133919-4182-2-git-send-email-minchan@kernel.org> <4FB3DFDB.80605@linux.vnet.ibm.com>
-In-Reply-To: <4FB3DFDB.80605@linux.vnet.ibm.com>
-Content-Type: text/plain; charset=ISO-8859-1
+To: Steven Rostedt <rostedt@goodmis.org>
+CC: Peter Zijlstra <peterz@infradead.org>, Nick Piggin <npiggin@gmail.com>,
+        tglx@linutronix.de, mingo@redhat.com, hpa@zytor.com, arnd@arndb.de,
+        fweisbec@gmail.com, jeremy@goop.org, riel@redhat.com, luto@mit.edu,
+        avi@redhat.com, len.brown@intel.com, dhowells@redhat.com,
+        fenghua.yu@intel.com, borislav.petkov@amd.com, yinghai@kernel.org,
+        ak@linux.intel.com, cpw@sgi.com, steiner@sgi.com,
+        akpm@linux-foundation.org, penberg@kernel.org, hughd@google.com,
+        rientjes@google.com, kosaki.motohiro@jp.fujitsu.com,
+        n-horiguchi@ah.jp.nec.com, tj@kernel.org, oleg@redhat.com,
+        axboe@kernel.dk, jmorris@namei.org, kamezawa.hiroyu@jp.fujitsu.com,
+        viro@zeniv.linux.org.uk, linux-kernel@vger.kernel.org,
+        yongjie.ren@intel.com, linux-arch@vger.kernel.org
+Subject: Re: [PATCH v5 6/7] x86/tlb: optimizing flush_tlb_mm
+References: <1337072138-8323-1-git-send-email-alex.shi@intel.com>     <1337072138-8323-7-git-send-email-alex.shi@intel.com>     <CAPa8GCDsSOrzQwX2qRJyocYAZdGbwjD4t4fjxmWXV6=EoXjXZw@mail.gmail.com>     <4FB2590C.1050303@intel.com> <1337092577.27694.45.camel@twins>    <1337093840.27694.56.camel@twins> <4FB34D49.1060809@intel.com>   <1337155239.27694.131.camel@twins> <4FB3ACD2.5010900@intel.com>  <1337202569.4281.13.camel@twins> <4FB449C1.2020603@intel.com> <1337220428.6724.87.camel@gandalf.stny.rr.com>
+In-Reply-To: <1337220428.6724.87.camel@gandalf.stny.rr.com>
+Content-Type: text/plain; charset=ISO-8859-15
 Content-Transfer-Encoding: 7bit
-X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/17/2012 02:11 AM, Seth Jennings wrote:
+On 05/17/2012 10:07 AM, Steven Rostedt wrote:
 
-> On 05/15/2012 09:05 PM, Minchan Kim wrote:
+> On Thu, 2012-05-17 at 08:43 +0800, Alex Shi wrote:
 > 
->> Exactly saying, [zram|zcache] should has a dependency with
->> zsmalloc, not x86. So replace x86 dependeny with ZSMALLOC.
+>>> I've seem to have misplaced my cross-compiler set, so I've only compiled
+>>> x86-64 for now.
 >>
->> Reviewed-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
->> Signed-off-by: Minchan Kim <minchan@kernel.org>
->> ---
->>  drivers/staging/zcache/Kconfig |    3 +--
->>  drivers/staging/zram/Kconfig   |    3 +--
->>  2 files changed, 2 insertions(+), 4 deletions(-)
 >>
->> diff --git a/drivers/staging/zcache/Kconfig b/drivers/staging/zcache/Kconfig
->> index 7048e01..ceb7f28 100644
->> --- a/drivers/staging/zcache/Kconfig
->> +++ b/drivers/staging/zcache/Kconfig
->> @@ -2,8 +2,7 @@ config ZCACHE
->>  	bool "Dynamic compression of swap pages and clean pagecache pages"
->>  	# X86 dependency is because zsmalloc uses non-portable pte/tlb
->>  	# functions
->> -	depends on (CLEANCACHE || FRONTSWAP) && CRYPTO=y && X86
->> -	select ZSMALLOC
->> +	depends on (CLEANCACHE || FRONTSWAP) && CRYPTO=y && ZSMALLOC
+>> Oh, I also need a cross-compiler for other archs. Thanks reminder!
 > 
+> Here:
 > 
-> Sorry Minchan, I should have said this the first time around.  I ran
-> into this issue before with CRYTPO vs CRYPTO=y.  ZCACHE is a bool where
-> ZSMALLOC is a tristate.  It is not sufficient for ZSMALLOC to be set; it
-> _must_ be builtin, otherwise you get linker errors.
+> http://kernel.org/pub/tools/crosstool/
+> 
+> Oh, and if you want to automate this. I attached a ktest.pl config that
+> does it for you. I'll be pushing this config and others into a examples
+> directory come the next merge window.
+> 
+> Ktest is located in the Linux tree under tools/testing/ktest/
+> 
+> You can run a bunch of cross compiles by doing:
+> 
+> ktest.pl crosstests.conf
 
->
 
-> The dependency should be ZSMALLOC=y.
-
-
-Sigh. I should have been more careful.
-Thanks. I will fix it in next spin.
+It works fine. :)
+But does ktest only do one kind of config testing?
+How it do randconfig testing?
 
 > 
-> Thanks,
-> Seth
+> -- Steve
+> 
+> 
+> 
 > 
 
 
-
--- 
-Kind regards,
-Minchan Kim
