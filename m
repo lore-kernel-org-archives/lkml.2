@@ -1,115 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030270Ab2EQPrd (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 May 2012 11:47:33 -0400
-Received: from mga03.intel.com ([143.182.124.21]:21754 "EHLO mga03.intel.com"
+	id S1030294Ab2EQPrl (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 May 2012 11:47:41 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:62726 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1762181Ab2EQPrT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 May 2012 11:47:19 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
-   d="scan'208";a="144446820"
-From: Lin Ming <ming.m.lin@intel.com>
-To: Jens Axboe <axboe@kernel.dk>, Alan Stern <stern@rowland.harvard.edu>,
-        Jeff Moyer <jmoyer@redhat.com>
-Cc: linux-kernel@vger.kernel.org, linux-pm@vger.kernel.org,
-        linux-scsi@vger.kernel.org, Lin Ming <ming.m.lin@intel.com>
-Subject: [RFC v2 PATCH 4/4] [SCSI] sd: change to auto suspend mode
-Date: Thu, 17 May 2012 23:48:06 +0800
-Message-Id: <1337269686-3781-5-git-send-email-ming.m.lin@intel.com>
-X-Mailer: git-send-email 1.7.2.5
-In-Reply-To: <1337269686-3781-1-git-send-email-ming.m.lin@intel.com>
-References: <1337269686-3781-1-git-send-email-ming.m.lin@intel.com>
+	id S1752248Ab2EQPri (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 17 May 2012 11:47:38 -0400
+Date: Thu, 17 May 2012 12:47:26 -0300
+From: Arnaldo Carvalho de Melo <acme@redhat.com>
+To: Feng Tang <feng.tang@intel.com>
+Cc: mingo@elte.hu, a.p.zijlstra@chello.nl, robert.richter@amd.com,
+        ak@linux.intel.com, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 3/3] perf script/python: Pass thread/dso name and symbol
+ info to event handler in python
+Message-ID: <20120517154726.GC2636@infradead.org>
+References: <1337173155-25780-1-git-send-email-feng.tang@intel.com>
+ <1337173155-25780-3-git-send-email-feng.tang@intel.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1337173155-25780-3-git-send-email-feng.tang@intel.com>
+X-Url: http://acmel.wordpress.com
+User-Agent: Mutt/1.5.20 (2009-12-10)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Now we don't need to do runtime pm get/put on open/release/remove path.
+Em Wed, May 16, 2012 at 08:59:15PM +0800, Feng Tang escreveu:
+> Signed-off-by: Feng Tang <feng.tang@intel.com>
+> ---
+>  .../util/scripting-engines/trace-event-python.c    |   11 ++++++++++-
+>  1 files changed, 10 insertions(+), 1 deletions(-)
+> 
+> diff --git a/tools/perf/util/scripting-engines/trace-event-python.c b/tools/perf/util/scripting-engines/trace-event-python.c
+> index a202881..c96f5e2 100644
+> --- a/tools/perf/util/scripting-engines/trace-event-python.c
+> +++ b/tools/perf/util/scripting-engines/trace-event-python.c
+> @@ -336,6 +336,7 @@ static void python_process_general_event(union perf_event *pevent __unused,
+>  	static char handler_name[64];
+>  	unsigned n = 0;
+>  	void *data = sample->raw_data;
+> +	struct thread *thread = al->thread;
+>  
+>  	t = PyTuple_New(MAX_FIELDS);
+>  	if (!t)
+> @@ -348,13 +349,21 @@ static void python_process_general_event(union perf_event *pevent __unused,
+>  		goto exit;
+>  	}
+>  
+> -	/* Pass 3 parameters: event_attr, perf_sample, raw data, thread name */
+> +	/* Pass parameters: attr, perf_sample, raw data, thread and dso name */
+>  	PyTuple_SetItem(t, n++, PyString_FromStringAndSize(
+>  			(const char *)&evsel->attr, sizeof(evsel->attr)));
+>  	PyTuple_SetItem(t, n++, PyString_FromStringAndSize(
+>  			(const char *)sample, sizeof(*sample)));
+>  	PyTuple_SetItem(t, n++, PyString_FromStringAndSize(
+>  			data, sample->raw_size));
+> +	PyTuple_SetItem(t, n++, PyString_FromString(thread->comm));
+> +	PyTuple_SetItem(t, n++, PyString_FromString(al->map->dso->name));
+> +
+> +	/* Pass the resolved symbol if there is, othersize pass "Unkown" */
+> +	if (al->sym)
+> +		PyTuple_SetItem(t, n++, PyString_FromString(al->sym->name));
+> +	else
+> +		PyTuple_SetItem(t, n++, PyString_FromString("Unknown"));
 
-Signed-off-by: Lin Ming <ming.m.lin@intel.com>
----
- drivers/scsi/scsi_pm.c |    7 ++++---
- drivers/scsi/sd.c      |   14 +++++---------
- 2 files changed, 9 insertions(+), 12 deletions(-)
+Isn't this getting a little bit convoluted?
 
-diff --git a/drivers/scsi/scsi_pm.c b/drivers/scsi/scsi_pm.c
-index c467064..a133345 100644
---- a/drivers/scsi/scsi_pm.c
-+++ b/drivers/scsi/scsi_pm.c
-@@ -171,9 +171,10 @@ static int scsi_runtime_idle(struct device *dev)
- 
- 	/* Insert hooks here for targets, hosts, and transport classes */
- 
--	if (scsi_is_sdev_device(dev))
--		err = pm_schedule_suspend(dev, 100);
--	else
-+	if (scsi_is_sdev_device(dev)) {
-+		pm_runtime_mark_last_busy(dev);
-+		err = pm_request_autosuspend(dev);
-+	} else
- 		err = pm_runtime_suspend(dev);
- 	return err;
- }
-diff --git a/drivers/scsi/sd.c b/drivers/scsi/sd.c
-index 2c3c8e7..97b5a67 100644
---- a/drivers/scsi/sd.c
-+++ b/drivers/scsi/sd.c
-@@ -985,10 +985,6 @@ static int sd_open(struct block_device *bdev, fmode_t mode)
- 
- 	sdev = sdkp->device;
- 
--	retval = scsi_autopm_get_device(sdev);
--	if (retval)
--		goto error_autopm;
--
- 	/*
- 	 * If the device is in error recovery, wait until it is done.
- 	 * If the device is offline, then disallow any access to it.
-@@ -1033,8 +1029,6 @@ static int sd_open(struct block_device *bdev, fmode_t mode)
- 	return 0;
- 
- error_out:
--	scsi_autopm_put_device(sdev);
--error_autopm:
- 	scsi_disk_put(sdkp);
- 	return retval;	
- }
-@@ -1069,7 +1063,6 @@ static int sd_release(struct gendisk *disk, fmode_t mode)
- 	 * XXX is followed by a "rmmod sd_mod"?
- 	 */
- 
--	scsi_autopm_put_device(sdev);
- 	scsi_disk_put(sdkp);
- 	return 0;
- }
-@@ -2638,6 +2631,10 @@ static void sd_probe_async(void *data, async_cookie_t cookie)
- 	blk_queue_runtime_pm(sdp->request_queue,
- 		sd_block_runtime_suspend, sd_block_runtime_resume);
- 
-+	pm_runtime_use_autosuspend(&sdp->sdev_gendev);
-+	/* Set to 10 secs for test only, user can reset it via sysfs */
-+	pm_runtime_set_autosuspend_delay(&sdp->sdev_gendev, 10 * 1000);
-+
- 	gd->driverfs_dev = &sdp->sdev_gendev;
- 	gd->flags = GENHD_FL_EXT_DEVT;
- 	if (sdp->removable) {
-@@ -2652,7 +2649,7 @@ static void sd_probe_async(void *data, async_cookie_t cookie)
- 
- 	sd_printk(KERN_NOTICE, sdkp, "Attached SCSI %sdisk\n",
- 		  sdp->removable ? "removable " : "");
--	scsi_autopm_put_device(sdp);
-+	pm_runtime_put_sync_autosuspend(&sdp->sdev_gendev);
- 	put_device(&sdkp->dev);
- }
- 
-@@ -2776,7 +2773,6 @@ static int sd_remove(struct device *dev)
- 	struct scsi_disk *sdkp;
- 
- 	sdkp = dev_get_drvdata(dev);
--	scsi_autopm_get_device(sdkp->device);
- 
- 	async_synchronize_full();
- 	blk_queue_prep_rq(sdkp->device->request_queue, scsi_prep_fn);
--- 
-1.7.2.5
+I.e. python has dictionaries, perhaps we could pass a dict instead of a
+tuple, in that case we would simply not add the "symbol" key.
 
+>  	if (_PyTuple_Resize(&t, n) == -1)
+>  		Py_FatalError("error resizing Python tuple");
+> -- 
+> 1.7.1
