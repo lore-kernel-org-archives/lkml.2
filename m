@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759032Ab2EQIm2 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 May 2012 04:42:28 -0400
+	id S1759455Ab2EQImn (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 May 2012 04:42:43 -0400
 Received: from mail-pz0-f46.google.com ([209.85.210.46]:65088 "EHLO
 	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757172Ab2EQImX (ORCPT
+	with ESMTP id S1759130Ab2EQImg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 May 2012 04:42:23 -0400
-Date: Thu, 17 May 2012 01:40:52 -0700
+	Thu, 17 May 2012 04:42:36 -0400
+Date: Thu, 17 May 2012 01:41:07 -0700
 From: Anton Vorontsov <anton.vorontsov@linaro.org>
 To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
         Kees Cook <keescook@chromium.org>, Colin Cross <ccross@android.com>,
@@ -22,8 +22,8 @@ Cc: Arnd Bergmann <arnd@arndb.de>, John Stultz <john.stultz@linaro.org>,
         WANG Cong <xiyou.wangcong@gmail.com>, linux-kernel@vger.kernel.org,
         devel@driverdev.osuosl.org, linaro-kernel@lists.linaro.org,
         patches@linaro.org, kernel-team@android.com
-Subject: [PATCH 3/6] pstore/ram_core: Silence some printks
-Message-ID: <20120517084052.GC31753@lizard>
+Subject: [PATCH 4/6] pstore/ram: Add some more documentation and examples
+Message-ID: <20120517084107.GD31753@lizard>
 References: <20120517083740.GA25627@lizard>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=utf-8
@@ -34,35 +34,44 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Since we use multiple regions, the messages are somewhat annoying.
-We do print total mapped memory already, so no need to print the
-information for each region in the library routines.
-
+Suggested-by: Shuah Khan <shuahkhan@gmail.com>
 Signed-off-by: Anton Vorontsov <anton.vorontsov@linaro.org>
 ---
- fs/pstore/ram_core.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ Documentation/ramoops.txt |   14 ++++++++++++++
+ 1 file changed, 14 insertions(+)
 
-diff --git a/fs/pstore/ram_core.c b/fs/pstore/ram_core.c
-index 31f8d18..e0d8429 100644
---- a/fs/pstore/ram_core.c
-+++ b/fs/pstore/ram_core.c
-@@ -401,13 +401,13 @@ static int __init persistent_ram_post_init(struct persistent_ram_zone *prz, bool
- 				" size %zu, start %zu\n",
- 			       buffer_size(prz), buffer_start(prz));
- 		else {
--			pr_info("persistent_ram: found existing buffer,"
-+			pr_debug("persistent_ram: found existing buffer,"
- 				" size %zu, start %zu\n",
- 			       buffer_size(prz), buffer_start(prz));
- 			persistent_ram_save_old(prz);
- 		}
- 	} else {
--		pr_info("persistent_ram: no valid data in buffer"
-+		pr_debug("persistent_ram: no valid data in buffer"
- 			" (sig = 0x%08x)\n", prz->buffer->sig);
- 	}
+diff --git a/Documentation/ramoops.txt b/Documentation/ramoops.txt
+index 4ba7db2..59a74a8 100644
+--- a/Documentation/ramoops.txt
++++ b/Documentation/ramoops.txt
+@@ -40,6 +40,12 @@ corrupt, but usually it is restorable.
+ Setting the ramoops parameters can be done in 2 different manners:
+  1. Use the module parameters (which have the names of the variables described
+  as before).
++ For quick debugging, you can also reserve parts of memory during boot
++ and then use the reserved memory for ramoops. For example, assuming a machine
++ with > 128 MB of memory, the following kernel command line will tell the
++ kernel to use only the first 128 MB of memory, and place ECC-protected ramoops
++ region at 128 MB boundary:
++ "mem=128M ramoops.mem_address=0x8000000 ramoops.ecc=1"
+  2. Use a platform device and set the platform data. The parameters can then
+  be set through that platform data. An example of doing that is:
  
+@@ -70,6 +76,14 @@ if (ret) {
+ 	return ret;
+ }
+ 
++You can specify either RAM memory or peripheral devices' memory. However, when
++specifying RAM, be sure to reserve the memory by issuing memblock_reserve()
++very early in the architecture code, e.g.:
++
++#include <linux/memblock.h>
++
++memblock_reserve(ramoops_data.mem_address, ramoops_data.mem_size);
++
+ 3. Dump format
+ 
+ The data dump begins with a header, currently defined as "====" followed by a
 -- 
 1.7.9.2
 
