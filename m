@@ -1,54 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760308Ab2EQQCz (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 May 2012 12:02:55 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:59024 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760102Ab2EQQCx (ORCPT
+	id S1755519Ab2EQQH5 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 May 2012 12:07:57 -0400
+Received: from smtp101.prem.mail.ac4.yahoo.com ([76.13.13.40]:24561 "HELO
+	smtp101.prem.mail.ac4.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1751157Ab2EQQH4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 May 2012 12:02:53 -0400
-Date: Thu, 17 May 2012 09:02:48 -0700
-From: Tejun Heo <tj@kernel.org>
-To: Jiri Kosina <jkosina@suse.cz>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Stephen Hemminger <shemminger@vyatta.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Jens Axboe <axboe@kernel.dk>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] floppy: convert to delayed work and single-thread wq
-Message-ID: <20120517160248.GJ21275@google.com>
-References: <20120516195332.GC21275@google.com>
- <alpine.LNX.2.00.1205162156120.8796@pobox.suse.cz>
- <20120516200147.GD21275@google.com>
- <alpine.LNX.2.00.1205162216390.8796@pobox.suse.cz>
- <20120516202924.GE21275@google.com>
- <CA+55aFyX3OgdcWuYQO+YuS3fF_Wt1p8w-G33C5MCkiR-3ncfVA@mail.gmail.com>
- <20120517145519.GF21275@google.com>
- <alpine.LNX.2.00.1205171705520.8796@pobox.suse.cz>
- <20120517150923.GH21275@google.com>
- <alpine.LNX.2.00.1205171744490.8796@pobox.suse.cz>
+	Thu, 17 May 2012 12:07:56 -0400
+X-Yahoo-Newman-Property: ymail-3
+X-YMail-OSG: zOq0tm8VM1lb1LEUUklzv9hveDLfVbAICnOh6Q0Tu_DESnP
+ rRrivAKPXJSl.BZkDjvFBx7R30Dpr_RqCeGH0ySdHtfcTrkEkgoBGXh8WWJm
+ t_yS5SE_b2VixavERLMNP6S_OCfCcKTIXmD7CxDBGht7z5_bPjn38121i0ki
+ 335cedvUy2iqZ8KRJEMntMXARVCchdynTc_AGCBuOhgNta7Bf5hwt8A9fiRq
+ nJpe2guiaAiTAwIXqWDwsFW8JuoygFcAry.itKlx4vc5hdn_OGSx9bwRb_zS
+ JRlq.XkN_OJUlmtyQydqEJQCv0sEgLMUCP99mBIqf4zd4eO8KiYfjGbVqBMm
+ YmeCiUYV__E5ll6imsca4vJyRD4xc7kUOQTsG1MK0nNwUzYlDkwQ2rqd50hY
+ -
+X-Yahoo-SMTP: _Dag8S.swBC1p4FJKLCXbs8NQzyse1SYSgnAbY0-
+Date: Thu, 17 May 2012 11:07:53 -0500 (CDT)
+From: Christoph Lameter <cl@linux.com>
+X-X-Sender: cl@router.home
+To: Joonsoo Kim <js1304@gmail.com>
+cc: Pekka Enberg <penberg@kernel.org>, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org
+Subject: Re: [PATCH 3/4] slub: use __SetPageSlab function to set PG_slab
+ flag
+In-Reply-To: <1337269668-4619-4-git-send-email-js1304@gmail.com>
+Message-ID: <alpine.DEB.2.00.1205171107360.5144@router.home>
+References: <1337269668-4619-1-git-send-email-js1304@gmail.com> <1337269668-4619-4-git-send-email-js1304@gmail.com>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.LNX.2.00.1205171744490.8796@pobox.suse.cz>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+On Fri, 18 May 2012, Joonsoo Kim wrote:
 
-On Thu, May 17, 2012 at 05:46:50PM +0200, Jiri Kosina wrote:
-> Well, seeing almost 200 occurences of create_singlethread_workqueue() (and 
-> not talking about non-singlethread ones) doesn't really hint about this 
-> interface being deprecated :) But whatever. The patch below uses 
-> alloc_ordered_workqueue() instead. I have given it the same round of 
-> testing, it passed.
+> To set page-flag, using SetPageXXXX() and __SetPageXXXX() is more
+> understandable and maintainable. So change it.
 
-Yeah, I need to audit them and convert them to one of the newer
-interfaces according to the actual requirements of each.
-Eh... someday. ;)
-
-Thanks.
-
--- 
-tejun
+Acked-by: Christoph Lameter <cl@linux.com>
