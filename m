@@ -1,79 +1,258 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756825Ab2EQUuQ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 May 2012 16:50:16 -0400
-Received: from eddie.linux-mips.org ([78.24.191.182]:35637 "EHLO
-	cvs.linux-mips.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756145Ab2EQUuO (ORCPT
+	id S1757475Ab2EQUut (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 May 2012 16:50:49 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:40708 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754833Ab2EQUur (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 May 2012 16:50:14 -0400
-Date: Thu, 17 May 2012 22:50:03 +0200
-From: Ralf Baechle <ralf@linux-mips.org>
-To: David Daney <ddaney.cavm@gmail.com>
-Cc: Yong Zhang <yong.zhang0@gmail.com>, linux-rt-users@vger.kernel.org,
-        linux-kernel@vger.kernel.org, david.daney@cavium.com,
-        tglx@linutronix.de
-Subject: Re: [PATCH -rt] MIPS: Octeon: convert smp_reserve_lock to raw
- spinlock
-Message-ID: <20120517205003.GE16397@linux-mips.org>
-References: <1337249709-7346-1-git-send-email-yong.zhang0@gmail.com>
- <4FB527B2.2010800@gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4FB527B2.2010800@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Thu, 17 May 2012 16:50:47 -0400
+From: Grant Likely <grant.likely@secretlab.ca>
+Subject: Re: [PATCH 2/2] gpio/MIPS/OCTEON: Add a driver for OCTEON's on-chip GPIO pins.
+To: David Daney <ddaney.cavm@gmail.com>, ralf@linux-mips.org,
+        linux-mips@linux-mips.org,
+        Linus Walleij <linus.walleij@stericsson.com>,
+        Rob Herring <rob.herring@calxeda.com>,
+        devicetree-discuss@lists.ozlabs.org
+Cc: linux-kernel@vger.kernel.org, David Daney <david.daney@cavium.com>
+In-Reply-To: <1334275820-7791-3-git-send-email-ddaney.cavm@gmail.com>
+References: <1334275820-7791-1-git-send-email-ddaney.cavm@gmail.com> <1334275820-7791-3-git-send-email-ddaney.cavm@gmail.com>
+Date: Thu, 17 May 2012 14:50:44 -0600
+Message-Id: <20120517205044.81B1C3E0621@localhost>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, May 17, 2012 at 09:30:42AM -0700, David Daney wrote:
-> Date:   Thu, 17 May 2012 09:30:42 -0700
-> From: David Daney <ddaney.cavm@gmail.com>
-> To: Yong Zhang <yong.zhang0@gmail.com>, ralf@linux-mips.org
-> CC: linux-rt-users@vger.kernel.org, linux-kernel@vger.kernel.org,
->  david.daney@cavium.com, tglx@linutronix.de
-> Subject: Re: [PATCH -rt] MIPS: Octeon: convert smp_reserve_lock to raw
->  spinlock
-> Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+On Thu, 12 Apr 2012 17:10:20 -0700, David Daney <ddaney.cavm@gmail.com> wrote:
+> From: David Daney <david.daney@cavium.com>
 > 
-> On 05/17/2012 03:15 AM, Yong Zhang wrote:
-> >From: Yong Zhang<yong.zhang@windriver.com>
-> >
-> >Because __cpu_disable is called in atomic context and spinlock
-> >is a mutex on -rt.
-> >
-> >Signed-off-by: Yong Zhang<yong.zhang0@gmail.com>
-> >---
-> >  arch/mips/cavium-octeon/smp.c |    6 +++---
-> >  1 files changed, 3 insertions(+), 3 deletions(-)
-> >
-> >diff --git a/arch/mips/cavium-octeon/smp.c b/arch/mips/cavium-octeon/smp.c
-> >index ef9c34a..473c72b 100644
-> >--- a/arch/mips/cavium-octeon/smp.c
-> >+++ b/arch/mips/cavium-octeon/smp.c
-> >@@ -257,7 +257,7 @@ DEFINE_PER_CPU(int, cpu_state);
-> >
-> >  extern void fixup_irqs(void);
-> >
-> >-static DEFINE_SPINLOCK(smp_reserve_lock);
-> >+static DEFINE_RAW_SPINLOCK(smp_reserve_lock);
-> >
+> The SOCs in the OCTEON family have 16 (or in some cases 20) on-chip
+> GPIO pins, this driver handles them all.  Configuring the pins as
+> interrupt sources is handled elsewhere (OCTEON's irq handling code).
 > 
-> Ralf added this in 773cb77d (MIPS: Cavium: Add CPU hotplugging code.)
-> 
-> I'm not even sure what this lock is supposed to be protecting, so I
-> would like Ralf to take a look.
-> 
-> You can add an Acked-by: from me for either this patch as is, or if
-> Ralf thinks it is OK, removing the lock entirely.
-> 
-> In any event we can merge this via Ralf's tree.
+> Signed-off-by: David Daney <david.daney@cavium.com>
 
-The 773cb77d patch has a long history but I think I first worked on it for
-Wind River Linux 2.0 which was 2.6.21-based, then broke it out and pushed
-it upstream.  In 2.6.21 it was probably infected by the the smp_reserve_lock
-virus in the s390 code for no good reason.  So I agree, the lock can
-be dropped and I'm queueing a patch to do so for 3.5.
+Aside from the bugs already pointed out;
 
-  Ralf
+Acked-by: Grant Likely <grant.likely@secretlab.ca>
+
+Will you merge this series via the MIPS tree, or do I need to pick it
+up?
+
+> ---
+>  drivers/gpio/Kconfig       |    8 ++
+>  drivers/gpio/Makefile      |    1 +
+>  drivers/gpio/gpio-octeon.c |  166 ++++++++++++++++++++++++++++++++++++++++++++
+>  3 files changed, 175 insertions(+), 0 deletions(-)
+>  create mode 100644 drivers/gpio/gpio-octeon.c
+> 
+> diff --git a/drivers/gpio/Kconfig b/drivers/gpio/Kconfig
+> index edadbda..d9d924c 100644
+> --- a/drivers/gpio/Kconfig
+> +++ b/drivers/gpio/Kconfig
+> @@ -136,6 +136,14 @@ config GPIO_MXS
+>  	select GPIO_GENERIC
+>  	select GENERIC_IRQ_CHIP
+>  
+> +config GPIO_OCTEON
+> +	tristate "Cavium OCTEON GPIO"
+> +	depends on GPIOLIB && CPU_CAVIUM_OCTEON
+> +	default y
+> +	help
+> +	  Say yes here to support the on-chip GPIO lines on the OCTEON
+> +	  family of SOCs.
+> +
+>  config GPIO_PL061
+>  	bool "PrimeCell PL061 GPIO support"
+>  	depends on ARM_AMBA
+> diff --git a/drivers/gpio/Makefile b/drivers/gpio/Makefile
+> index 007f54b..ce0348c 100644
+> --- a/drivers/gpio/Makefile
+> +++ b/drivers/gpio/Makefile
+> @@ -37,6 +37,7 @@ obj-$(CONFIG_GPIO_MSM_V2)	+= gpio-msm-v2.o
+>  obj-$(CONFIG_GPIO_MXC)		+= gpio-mxc.o
+>  obj-$(CONFIG_GPIO_MXS)		+= gpio-mxs.o
+>  obj-$(CONFIG_PLAT_NOMADIK)	+= gpio-nomadik.o
+> +obj-$(CONFIG_GPIO_OCTEON)	+= gpio-octeon.o
+>  obj-$(CONFIG_ARCH_OMAP)		+= gpio-omap.o
+>  obj-$(CONFIG_GPIO_PCA953X)	+= gpio-pca953x.o
+>  obj-$(CONFIG_GPIO_PCF857X)	+= gpio-pcf857x.o
+> diff --git a/drivers/gpio/gpio-octeon.c b/drivers/gpio/gpio-octeon.c
+> new file mode 100644
+> index 0000000..e679b44
+> --- /dev/null
+> +++ b/drivers/gpio/gpio-octeon.c
+> @@ -0,0 +1,166 @@
+> +/*
+> + * This file is subject to the terms and conditions of the GNU General Public
+> + * License.  See the file "COPYING" in the main directory of this archive
+> + * for more details.
+> + *
+> + * Copyright (C) 2011,2012 Cavium Inc.
+> + */
+> +
+> +#include <linux/platform_device.h>
+> +#include <linux/kernel.h>
+> +#include <linux/module.h>
+> +#include <linux/gpio.h>
+> +#include <linux/io.h>
+> +
+> +#include <asm/octeon/octeon.h>
+> +#include <asm/octeon/cvmx-gpio-defs.h>
+> +
+> +#define DRV_VERSION "1.0"
+> +#define DRV_DESCRIPTION "Cavium Inc. OCTEON GPIO Driver"
+> +
+> +#define RX_DAT 0x80
+> +#define TX_SET 0x88
+> +#define TX_CLEAR 0x90
+> +/*
+> + * The address offset of the GPIO configuration register for a given
+> + * line.
+> + */
+> +static unsigned int bit_cfg_reg(unsigned int gpio)
+> +{
+> +	if (gpio < 16)
+> +		return 8 * gpio;
+> +	else
+> +		return 8 * (gpio - 16) + 0x100;
+> +}
+> +
+> +struct octeon_gpio {
+> +	struct gpio_chip chip;
+> +	u64 register_base;
+> +};
+> +
+> +static int octeon_gpio_dir_in(struct gpio_chip *chip, unsigned offset)
+> +{
+> +	struct octeon_gpio *gpio = container_of(chip, struct octeon_gpio, chip);
+> +
+> +	cvmx_write_csr(gpio->register_base + bit_cfg_reg(offset), 0);
+> +	return 0;
+> +}
+> +
+> +static void octeon_gpio_set(struct gpio_chip *chip, unsigned offset, int value)
+> +{
+> +	struct octeon_gpio *gpio = container_of(chip, struct octeon_gpio, chip);
+> +	u64 mask = 1ull << offset;
+> +	u64 reg = gpio->register_base + (value ? TX_SET : TX_CLEAR);
+> +	cvmx_write_csr(reg, mask);
+> +}
+> +
+> +static int octeon_gpio_dir_out(struct gpio_chip *chip, unsigned offset,
+> +			       int value)
+> +{
+> +	struct octeon_gpio *gpio = container_of(chip, struct octeon_gpio, chip);
+> +	union cvmx_gpio_bit_cfgx cfgx;
+> +
+> +
+> +	octeon_gpio_set(chip, offset, value);
+> +
+> +	cfgx.u64 = 0;
+> +	cfgx.s.tx_oe = 1;
+> +
+> +	cvmx_write_csr(gpio->register_base + bit_cfg_reg(offset), cfgx.u64);
+> +	return 0;
+> +}
+> +
+> +static int octeon_gpio_get(struct gpio_chip *chip, unsigned offset)
+> +{
+> +	struct octeon_gpio *gpio = container_of(chip, struct octeon_gpio, chip);
+> +	u64 read_bits = cvmx_read_csr(gpio->register_base + RX_DAT);
+> +
+> +	return ((1ull << offset) & read_bits) != 0;
+> +}
+> +
+> +static int __init octeon_gpio_probe(struct platform_device *pdev)
+> +{
+> +	struct octeon_gpio *gpio;
+> +	struct gpio_chip *chip;
+> +	struct resource *res_mem;
+> +	int err = 0;
+> +
+> +	gpio = devm_kzalloc(&pdev->dev, sizeof(*gpio), GFP_KERNEL);
+> +	if (!gpio)
+> +		return -ENOMEM;
+> +	chip = &gpio->chip;
+> +
+> +	res_mem = platform_get_resource(pdev, IORESOURCE_MEM, 0);
+> +	if (res_mem == NULL) {
+> +		dev_err(&pdev->dev, "found no memory resource\n");
+> +		err = -ENXIO;
+> +		goto out;
+> +	}
+> +	if (!devm_request_mem_region(&pdev->dev, res_mem->start,
+> +					resource_size(res_mem),
+> +				     res_mem->name)) {
+> +		dev_err(&pdev->dev, "request_mem_region failed\n");
+> +		err = -ENXIO;
+> +		goto out;
+> +	}
+> +	gpio->register_base = (u64)devm_ioremap(&pdev->dev, res_mem->start,
+> +						resource_size(res_mem));
+> +
+> +
+> +	pdev->dev.platform_data = chip;
+> +	chip->label = "octeon-gpio";
+> +	chip->dev = &pdev->dev;
+> +	chip->owner = THIS_MODULE;
+> +	chip->base = 0;
+> +	chip->can_sleep = 0;
+> +
+> +	if (OCTEON_IS_MODEL(OCTEON_CN66XX) ||
+> +	    OCTEON_IS_MODEL(OCTEON_CN61XX) ||
+> +	    OCTEON_IS_MODEL(OCTEON_CNF71XX))
+> +		chip->ngpio = 20;
+> +	else
+> +		chip->ngpio = 16;
+> +
+> +	chip->direction_input = octeon_gpio_dir_in;
+> +	chip->get = octeon_gpio_get;
+> +	chip->direction_output = octeon_gpio_dir_out;
+> +	chip->set = octeon_gpio_set;
+> +	err = gpiochip_add(chip);
+> +	if (err)
+> +		goto out;
+> +
+> +	dev_info(&pdev->dev, "version: " DRV_VERSION "\n");
+> +out:
+> +	return err;
+> +}
+> +
+> +static int __exit octeon_gpio_remove(struct platform_device *pdev)
+> +{
+> +	struct gpio_chip *chip = pdev->dev.platform_data;
+> +	return gpiochip_remove(chip);
+> +}
+> +
+> +static struct of_device_id octeon_gpio_match[] = {
+> +	{
+> +		.compatible = "cavium,octeon-3860-gpio",
+> +	},
+> +	{},
+> +};
+> +MODULE_DEVICE_TABLE(of, octeon_mgmt_match);
+> +
+> +static struct platform_driver octeon_gpio_driver = {
+> +	.driver = {
+> +		.name		= "octeon_gpio",
+> +		.owner		= THIS_MODULE,
+> +		.of_match_table = octeon_gpio_match,
+> +	},
+> +	.probe		= octeon_gpio_probe,
+> +	.remove		= __exit_p(octeon_gpio_remove),
+> +};
+> +
+> +module_platform_driver(octeon_gpio_driver);
+> +
+> +MODULE_DESCRIPTION(DRV_DESCRIPTION);
+> +MODULE_AUTHOR("David Daney");
+> +MODULE_LICENSE("GPL");
+> +MODULE_VERSION(DRV_VERSION);
+> -- 
+> 1.7.2.3
+> 
+
+-- 
+Grant Likely, B.Sc, P.Eng.
+Secret Lab Technologies, Ltd.
