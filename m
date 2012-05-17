@@ -1,65 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932485Ab2EQTyp (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 May 2012 15:54:45 -0400
-Received: from zene.cmpxchg.org ([85.214.230.12]:33970 "EHLO zene.cmpxchg.org"
+	id S932451Ab2EQT40 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 May 2012 15:56:26 -0400
+Received: from zene.cmpxchg.org ([85.214.230.12]:33981 "EHLO zene.cmpxchg.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932400Ab2EQTyn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 May 2012 15:54:43 -0400
-Date: Thu, 17 May 2012 21:54:25 +0200
+	id S1755086Ab2EQT4Z (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 17 May 2012 15:56:25 -0400
+Date: Thu, 17 May 2012 21:56:13 +0200
 From: Johannes Weiner <hannes@cmpxchg.org>
-To: Michal Hocko <mhocko@suse.cz>
-Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        Andrew Morton <akpm@linux-foundation.org>, Mel Gorman <mel@csn.ul.ie>,
-        Minchan Kim <minchan@kernel.org>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Rik van Riel <riel@redhat.com>
-Subject: Re: [PATCH] mm: consider all swapped back pages in used-once logic
-Message-ID: <20120517195342.GB1800@cmpxchg.org>
-References: <1337246033-13719-1-git-send-email-mhocko@suse.cz>
+To: Jiri Kosina <jkosina@suse.cz>
+Cc: Oskar Schirmer <oskar@scara.com>, linux-kernel@vger.kernel.org,
+        shess@hessware.de, Chris Zankel <chris@zankel.net>
+Subject: Re: [PATCH 1/5] xtensa: Change mail addresses of Hannes Weiner and
+ Oskar
+Message-ID: <20120517195613.GC1800@cmpxchg.org>
+References: <1337161280-28953-1-git-send-email-oskar@scara.com>
+ <1337161280-28953-2-git-send-email-oskar@scara.com>
+ <alpine.LNX.2.00.1205171514250.8796@pobox.suse.cz>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1337246033-13719-1-git-send-email-mhocko@suse.cz>
+In-Reply-To: <alpine.LNX.2.00.1205171514250.8796@pobox.suse.cz>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Michal,
-
-On Thu, May 17, 2012 at 11:13:53AM +0200, Michal Hocko wrote:
-> [64574746 vmscan: detect mapped file pages used only once] made mapped pages
-> have another round in inactive list because they might be just short
-> lived and so we could consider them again next time. This heuristic
-> helps to reduce pressure on the active list with a streaming IO
-> worklods.
-> This patch fixes a regression introduced by this commit for heavy shmem
-> based workloads because unlike Anon pages, which are excluded from this
-> heuristic because they are usually long lived, shmem pages are handled
-> as a regular page cache.
-> This doesn't work quite well, unfortunately, if the workload is mostly
-> backed by shmem (in memory database sitting on 80% of memory) with a
-> streaming IO in the background (backup - up to 20% of memory). Anon
-> inactive list is full of (dirty) shmem pages when watermarks are
-> hit. Shmem pages are kept in the inactive list (they are referenced)
-> in the first round and it is hard to reclaim anything else so we reach
-> lower scanning priorities very quickly which leads to an excessive swap
-> out.
+On Thu, May 17, 2012 at 03:15:21PM +0200, Jiri Kosina wrote:
+> On Wed, 16 May 2012, Oskar Schirmer wrote:
 > 
-> Let's fix this by excluding all swap backed pages (they tend to be long
-> lived wrt. the regular page cache anyway) from used-once heuristic and
-> rather activate them if they are referenced.
-
-Yes, the algorithm only makes sense for file cache, which is easy to
-reclaim.  Thanks for the fix!
-
-> CC: Johannes Weiner <hannes@cmpxchg.org>
-> CC: Andrew Morton <akpm@linux-foundation.org>
-> CC: Mel Gorman <mel@csn.ul.ie>
-> CC: Minchan Kim <minchan@kernel.org>
-> CC: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-> CC: Rik van Riel <riel@redhat.com>
-> CC: stable [2.6.34+]
-> Signed-off-by: Michal Hocko <mhocko@suse.cz>
+> > These old mail addresses dont exist any more.
+> > This changes all occurences to the authors' current addresses.
+> > 
+> > Signed-off-by: Oskar Schirmer <oskar@scara.com>
+> > Cc: Hannes Weiner <hannes@cmpxchg.org>
+> 
+> I'd like to get Acked-by from Johannes for this patch before applying.
 
 Acked-by: Johannes Weiner <hannes@cmpxchg.org>
+
+Thanks for the patch, Oskar.  And thanks for the quick response, Jiri!
