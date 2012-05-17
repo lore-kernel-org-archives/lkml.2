@@ -1,62 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965267Ab2EQDot (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 May 2012 23:44:49 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:58050 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1760958Ab2EQDos (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 May 2012 23:44:48 -0400
-Message-ID: <4FB47420.7050003@kernel.org>
-Date: Wed, 16 May 2012 20:44:32 -0700
-From: "H. Peter Anvin" <hpa@kernel.org>
-Organization: Linux Kernel Organization, Inc.
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:11.0) Gecko/20120329 Thunderbird/11.0.1
-MIME-Version: 1.0
-To: Linus Torvalds <torvalds@linux-foundation.org>
-CC: Sasha Levin <levinsasha928@gmail.com>, Kay Sievers <kay@vrfy.org>,
-        Greg KH <gregkh@linuxfoundation.org>, Yinghai Lu <yinghai@kernel.org>,
-        Joe Perches <joe@perches.com>, Ingo Molnar <mingo@kernel.org>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH RESEND 1/3] printk: convert byte-buffer to variable-length
- record buffer
-References: <CA+1xoqdCk9FcqdLEvwgHtfrauNh=s0dDwcpaJimMC_H83N=_5w@mail.gmail.com> <1336475689.1179.12.camel@mop> <CA+55aFwbQTq_f7p2j-eu8-hVpiZ1Uf2MCU7R+DDWHimiVbcScg@mail.gmail.com> <CAPXgP13-XQdn0wMP=coVqS=Eko1vWkOrjOtfq4JQLHFZ3JNbgg@mail.gmail.com> <1336571457.30189.29.camel@joe2Laptop> <CAPXgP11jt5u=wXs9Pe7QksZ25QTKCwNXgTHn+T6JXD6+2NzgBQ@mail.gmail.com> <CAE9FiQUzsu8CFNLXxUyZnu53YobdNdJfQQmPQd8s8r5rgJpcNg@mail.gmail.com> <20120509230649.GA10695@kroah.com> <1336617045.25027.2.camel@mop> <CA+1xoqft4aM_qedn+TDx0z8creS_4mFf3S+4SUNjz0pe+=YHAg@mail.gmail.com> <20120511151944.GA6990@kroah.com> <CA+55aFz8-96rHLfqRrRSgFAzOFmyDaDKSB15WKkCoUssHq8R-A@mail.gmail.com> <CAPXgP11teuiH0cPRrhWdvKCW1jtq4_6wkH21wgRT6UpDF0G1gQ@mail.gmail.com> <CA+55aFyG2jQFURwWebMWw7bAt3=zbXRsHSOtZVYBw-frUXqiRg@mail.gmail.com> <CA+1xoqf5YbkOJgQJWOgck0NpqGzGtxtHHJASZKHvwVuBzkKK6A@mail.gmail.com> <CA+55aFyeXdUyj_OzccctFSj1f4su1G8DyxiQwD4W5sV9Dh0Zpg@mail.gmail.com>
-In-Reply-To: <CA+55aFyeXdUyj_OzccctFSj1f4su1G8DyxiQwD4W5sV9Dh0Zpg@mail.gmail.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+	id S965542Ab2EQDrq (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 May 2012 23:47:46 -0400
+Received: from haggis.pcug.org.au ([203.10.76.10]:60340 "EHLO
+	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1760958Ab2EQDrp (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 16 May 2012 23:47:45 -0400
+Date: Thu, 17 May 2012 13:47:36 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Dave Airlie <airlied@linux.ie>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Matthew Garrett <mjg@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>
+Subject: linux-next: build failure after merge of the drm tree
+Message-Id: <20120517134736.dd91f7c321dca6c7cf459484@canb.auug.org.au>
+X-Mailer: Sylpheed 3.2.0beta7 (GTK+ 2.24.10; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Thu__17_May_2012_13_47_36_+1000_HqM+OguHZB73IAtC"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/12/2012 11:35 AM, Linus Torvalds wrote:
-> 
->  (b) The one thing I have often wanted is not "after how many seconds
-> of boot", but "when". So it would actually be nice if the absolute
-> time was converted into local time. The kernel can actually do that,
-> so I suspect that the best format for the relative timestamps would
-> really be something like
-> 
->    > [May12 11:27] foo
->    > [May12 11:28] bar
->    > [  +5.077527] zoot
->    > [ +10.235225] foo
->    > [  +0.002971] bar
->    > [May12 11:29] zoot
->    > [  +0.003081] foo
-> 
-> because that would be really useful sometimes.
-> 
-> (And no, never mind the year. If you log those things long-term, the
-> year will be in the full log, so logging the year in the dmesg is just
-> pointless.)
+--Signature=_Thu__17_May_2012_13_47_36_+1000_HqM+OguHZB73IAtC
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-I would like to give a +1 on absolute time, and -1 on local timezone and
-a -$LARGE_NUMBER on low resolution.
+Hi Dave,
 
-Why?  Getting events accurately timed across multiple hosts can be
-really useful when trying to reconstruct, ahem, "network events".
+After merging the drm tree, today's linux-next build (x86_64 allmodconfig)
+failed like this:
 
-Getting UTC time at some fairly high resolution is useful for that.  I
-would say the useful resolution is probably milliseconds.
+arch/x86/pci/fixup.c: In function 'pci_fixup_video':
+arch/x86/pci/fixup.c:352:3: error: implicit declaration of function 'vga_de=
+fault_device' [-Werror=3Dimplicit-function-declaration]
+arch/x86/pci/fixup.c:353:4: error: implicit declaration of function 'vga_se=
+t_default_device' [-Werror=3Dimplicit-function-declaration]
 
-	-hpa
+Caused by commit 6cf20beec4b9 ("x86/vga: set the default device from the
+fixup").
 
+I have used the drm tree from next-20120516 for today.
+
+If it is relevant, I merged the drm tree before the sound tree today.
+
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+http://www.canb.auug.org.au/~sfr/
+
+--Signature=_Thu__17_May_2012_13_47_36_+1000_HqM+OguHZB73IAtC
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBCAAGBQJPtHTYAAoJEECxmPOUX5FEKBkP/i9ZM+TOKA936XXkABDpHx3H
+EdDzDG9uo4LVJVZ6v/PsJdW1WNL/SHJ+RHf2T00yZNVV8OnSkPPgzkgBVn6sqICU
+9lovxjuH8167U46qa9SE/WOS3HkY9e4OwIZg0ltYugRmE+c6wbBx/j1Ut6fSdaXP
+1blSgqgxzEUNYsseJVyoXTTJcC0GCiBU08c61mK1mfnXbde9qwRJ8NbwLfvxI60E
+1gUSBG4Jk7rtS7uU712oW4jD8RRK8CkF18mrCu1ovQDe47FK51YjdARMzuHnLFc3
+wUEt7KNZKcE57ZS7vu0zM0/+5ZwjXfqCXcG0FZoqvXy0DeFQnuF+n9g3c9Smnjef
+rgUgTUFvasqFBaEiMAsx2JBzR8XXGuTE7m+3Lo2oeN38hq+hyBvXqgyx4/5KmGhI
+mx5iyobluamndTP99Pqmm7/WP5lxHUws7HNKcca2Nutp6o9/amMsB2OkOltkNk2/
+A+CXYntFvDbXmMXDXWyP7GbwRp/W0gVsm5qXYf/9OZGsBAlGxeFqCoi49qwBtRyM
+PZuTjG3WcehooUWyoYQinAv+hzL74yVMCb309OC5uqEK9zh7Y4TXX0dLOLSLEQXK
+WZpCSO+OnC7GpLhGNETBJA/RZnq//zIwTytaGJe5ryGhG0igoUA1tHRe580RY8Df
+l9ZqtL7LupX+KusLGV+2
+=069l
+-----END PGP SIGNATURE-----
+
+--Signature=_Thu__17_May_2012_13_47_36_+1000_HqM+OguHZB73IAtC--
