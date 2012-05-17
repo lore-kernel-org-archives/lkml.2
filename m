@@ -1,391 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1762489Ab2EQXRI (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 May 2012 19:17:08 -0400
-Received: from e34.co.us.ibm.com ([32.97.110.152]:55005 "EHLO
-	e34.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1762467Ab2EQXRE (ORCPT
+	id S1030457Ab2EQXWg (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 May 2012 19:22:36 -0400
+Received: from mga14.intel.com ([143.182.124.37]:44471 "EHLO mga14.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1762452Ab2EQXWe convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 May 2012 19:17:04 -0400
-Date: Thu, 17 May 2012 16:16:33 -0700
-From: "Darrick J. Wong" <djwong@us.ibm.com>
-To: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
-Cc: linux-mm@kvack.org, mgorman@suse.de, kamezawa.hiroyu@jp.fujitsu.com,
-        dhillf@gmail.com, aarcange@redhat.com, mhocko@suse.cz,
-        akpm@linux-foundation.org, hannes@cmpxchg.org,
-        linux-kernel@vger.kernel.org, cgroups@vger.kernel.org
-Subject: Re: [PATCH -V2 6/9] hugetlbfs: Add memory controller support for
- private mapping
-Message-ID: <20120517231633.GB591@tux1.beaverton.ibm.com>
-Reply-To: djwong@us.ibm.com
-References: <1330593380-1361-1-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
- <1330593380-1361-7-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
+	Thu, 17 May 2012 19:22:34 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
+   d="scan'208";a="144623732"
+From: "Dave, Tushar N" <tushar.n.dave@intel.com>
+To: Samuel Thibault <samuel.thibault@ens-lyon.org>,
+        "Kirsher, Jeffrey T" <jeffrey.t.kirsher@intel.com>,
+        "Brandeburg, Jesse" <jesse.brandeburg@intel.com>,
+        "Allan, Bruce W" <bruce.w.allan@intel.com>,
+        "Wyborny, Carolyn" <carolyn.wyborny@intel.com>,
+        "Skidmore, Donald C" <donald.c.skidmore@intel.com>,
+        "Rose, Gregory V" <gregory.v.rose@intel.com>,
+        "Waskiewicz Jr, Peter P" <peter.p.waskiewicz.jr@intel.com>,
+        "Duyck, Alexander H" <alexander.h.duyck@intel.com>,
+        "Ronciak, John" <john.ronciak@intel.com>,
+        "David S. Miller" <davem@davemloft.net>,
+        Jiri Pirko <jpirko@redhat.com>, Dean Nelson <dnelson@redhat.com>,
+        "e1000-devel@lists.sourceforge.net" 
+	<e1000-devel@lists.sourceforge.net>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: RE: [PATCH] e1000: Reset rx ring index on receive overrun
+Thread-Topic: [PATCH] e1000: Reset rx ring index on receive overrun
+Thread-Index: AQHNNIHi+O7ymV9uaUqMk0/pJ2kJzJbOnHOQ
+Date: Thu, 17 May 2012 23:22:31 +0000
+Message-ID: <061C8A8601E8EE4CA8D8FD6990CEA891188439E0@ORSMSX102.amr.corp.intel.com>
+References: <20120517230140.GZ683@type.famille.thibault.fr>
+In-Reply-To: <20120517230140.GZ683@type.famille.thibault.fr>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.22.254.139]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1330593380-1361-7-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 12051723-1780-0000-0000-000005ACA9C8
-X-IBM-ISS-SpamDetectors: 
-X-IBM-ISS-DetailInfo: BY=3.00000275; HX=3.00000188; KW=3.00000007;
- PH=3.00000001; SC=3.00000002; SDB=6.00140074; UDB=6.00032443; UTC=2012-05-17
- 23:17:03
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Mar 01, 2012 at 02:46:17PM +0530, Aneesh Kumar K.V wrote:
-> From: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
-> 
-> For private mapping we always charge/uncharge from the current task memcg.
-> Charging happens during mmap(2) and uncharge happens during the
-> vm_operations->close. For child task after fork the charging happens
-> during fault time in alloc_huge_page. We also need to make sure for private
-> mapping each vma for hugeTLB mapping have struct resv_map allocated so that we
-> can store the charge list in resv_map.
-> 
-> Signed-off-by: Aneesh Kumar K.V <aneesh.kumar@linux.vnet.ibm.com>
-> ---
->  mm/hugetlb.c |  176 +++++++++++++++++++++++++++++++++------------------------
->  1 files changed, 102 insertions(+), 74 deletions(-)
-> 
-> diff --git a/mm/hugetlb.c b/mm/hugetlb.c
-> index 664c663..2d99d0a 100644
-> --- a/mm/hugetlb.c
-> +++ b/mm/hugetlb.c
-> @@ -126,6 +126,22 @@ long hugetlb_truncate_cgroup(struct hstate *h,
->  #endif
->  }
-> 
-> +long hugetlb_truncate_cgroup_range(struct hstate *h,
-> +				   struct list_head *head, long from, long end)
-> +{
-> +#ifdef CONFIG_MEM_RES_CTLR_NORECLAIM
-> +	long chg;
-> +	from = from << huge_page_order(h);
-> +	end  = end << huge_page_order(h);
-> +	chg  = mem_cgroup_truncate_chglist_range(head, from, end, h - hstates);
-> +	if (chg > 0)
-> +		return chg >> huge_page_order(h);
-> +	return chg;
-> +#else
-> +	return region_truncate_range(head, from, end);
-> +#endif
-> +}
-> +
->  /*
->   * Convert the address within this vma to the page offset within
->   * the mapping, in pagecache page units; huge pages here.
-> @@ -229,13 +245,19 @@ static struct resv_map *resv_map_alloc(void)
->  	return resv_map;
->  }
-> 
-> -static void resv_map_release(struct kref *ref)
-> +static unsigned long resv_map_release(struct hstate *h,
-> +				      struct resv_map *resv_map)
->  {
-> -	struct resv_map *resv_map = container_of(ref, struct resv_map, refs);
-> -
-> -	/* Clear out any active regions before we release the map. */
-> -	region_truncate(&resv_map->regions, 0);
-> +	unsigned long reserve;
-> +	/*
-> +	 * We should not have any regions left here, if we were able to
-> +	 * do memory allocation when in trunage_cgroup_range.
-> +	 *
-> +	 * Clear out any active regions before we release the map
-> +	 */
-> +	reserve = hugetlb_truncate_cgroup(h, &resv_map->regions, 0);
->  	kfree(resv_map);
-> +	return reserve;
->  }
-> 
->  static struct resv_map *vma_resv_map(struct vm_area_struct *vma)
-> @@ -447,9 +469,7 @@ static void free_huge_page(struct page *page)
->  	 */
->  	struct hstate *h = page_hstate(page);
->  	int nid = page_to_nid(page);
-> -	struct address_space *mapping;
-> 
-> -	mapping = (struct address_space *) page_private(page);
->  	set_page_private(page, 0);
->  	page->mapping = NULL;
->  	BUG_ON(page_count(page));
-> @@ -465,8 +485,6 @@ static void free_huge_page(struct page *page)
->  		enqueue_huge_page(h, page);
->  	}
->  	spin_unlock(&hugetlb_lock);
-> -	if (mapping)
-> -		hugetlb_put_quota(mapping, 1);
->  }
-> 
->  static void prep_new_huge_page(struct hstate *h, struct page *page, int nid)
-> @@ -887,63 +905,74 @@ static void return_unused_surplus_pages(struct hstate *h,
->   * No action is required on failure.
->   */
->  static long vma_needs_reservation(struct hstate *h,
-> -			struct vm_area_struct *vma, unsigned long addr)
-> +				  struct vm_area_struct *vma,
-> +				  unsigned long addr)
->  {
-> +	pgoff_t idx = vma_hugecache_offset(h, vma, addr);
->  	struct address_space *mapping = vma->vm_file->f_mapping;
->  	struct inode *inode = mapping->host;
-> 
-> +
->  	if (vma->vm_flags & VM_MAYSHARE) {
-> -		pgoff_t idx = vma_hugecache_offset(h, vma, addr);
->  		return hugetlb_page_charge(&inode->i_mapping->private_list,
->  					   h, idx, idx + 1);
->  	} else if (!is_vma_resv_set(vma, HPAGE_RESV_OWNER)) {
-> -		return 1;
-> -
-> -	} else  {
-> -		long err;
-> -		pgoff_t idx = vma_hugecache_offset(h, vma, addr);
-> -		struct resv_map *reservations = vma_resv_map(vma);
-> -
-> -		err = region_chg(&reservations->regions, idx, idx + 1, 0);
-> -		if (err < 0)
-> -			return err;
-> -		return 0;
-> +		struct resv_map *resv_map = vma_resv_map(vma);
-> +		if (!resv_map) {
-> +			/*
-> +			 * We didn't allocate resv_map for this vma.
-> +			 * Allocate it here.
-> +			 */
-> +			resv_map = resv_map_alloc();
-> +			if (!resv_map)
-> +				return -ENOMEM;
-> +			set_vma_resv_map(vma, resv_map);
-> +		}
-> +		return hugetlb_page_charge(&resv_map->regions,
-> +					   h, idx, idx + 1);
->  	}
-> +	/*
-> +	 * We did the private page charging in mmap call
-> +	 */
-> +	return 0;
->  }
-> 
->  static void vma_uncharge_reservation(struct hstate *h,
->  				     struct vm_area_struct *vma,
->  				     unsigned long chg)
->  {
-> +	int idx = h - hstates;
-> +	struct list_head *region_list;
->  	struct address_space *mapping = vma->vm_file->f_mapping;
->  	struct inode *inode = mapping->host;
-> 
-> 
-> -	if (vma->vm_flags & VM_MAYSHARE) {
-> -		return hugetlb_page_uncharge(&inode->i_mapping->private_list,
-> -					     h - hstates,
-> -					     chg << huge_page_order(h));
-> +	if (vma->vm_flags & VM_MAYSHARE)
-> +		region_list = &inode->i_mapping->private_list;
-> +	else {
-> +		struct resv_map *resv_map = vma_resv_map(vma);
-> +		region_list = &resv_map->regions;
->  	}
-> +	return hugetlb_page_uncharge(region_list,
-> +				     idx, chg << huge_page_order(h));
->  }
-> 
->  static void vma_commit_reservation(struct hstate *h,
->  			struct vm_area_struct *vma, unsigned long addr)
->  {
-> -
-> +	struct list_head *region_list;
-> +	pgoff_t idx = vma_hugecache_offset(h, vma, addr);
->  	struct address_space *mapping = vma->vm_file->f_mapping;
->  	struct inode *inode = mapping->host;
-> 
->  	if (vma->vm_flags & VM_MAYSHARE) {
-> -		pgoff_t idx = vma_hugecache_offset(h, vma, addr);
-> -		hugetlb_commit_page_charge(h, &inode->i_mapping->private_list,
-> -					   idx, idx + 1);
-> -	} else if (is_vma_resv_set(vma, HPAGE_RESV_OWNER)) {
-> -		pgoff_t idx = vma_hugecache_offset(h, vma, addr);
-> +		region_list = &inode->i_mapping->private_list;
-> +	} else  {
->  		struct resv_map *reservations = vma_resv_map(vma);
-> -
-> -		/* Mark this page used in the map. */
-> -		region_add(&reservations->regions, idx, idx + 1, 0);
-> +		region_list = &reservations->regions;
->  	}
-> +	hugetlb_commit_page_charge(h, region_list, idx, idx + 1);
-> +	return;
->  }
-> 
->  static struct page *alloc_huge_page(struct vm_area_struct *vma,
-> @@ -986,10 +1015,9 @@ static struct page *alloc_huge_page(struct vm_area_struct *vma,
->  			return ERR_PTR(-VM_FAULT_SIGBUS);
->  		}
->  	}
-> -
->  	set_page_private(page, (unsigned long) mapping);
-> -
-> -	vma_commit_reservation(h, vma, addr);
-> +	if (chg)
-> +		vma_commit_reservation(h, vma, addr);
->  	return page;
->  }
-> 
-> @@ -2001,25 +2029,40 @@ static void hugetlb_vm_op_open(struct vm_area_struct *vma)
->  	 */
->  	if (reservations)
->  		kref_get(&reservations->refs);
-> +	else if (!(vma->vm_flags & VM_MAYSHARE)) {
-> +		/*
-> +		 * for non shared vma we need resv map to track
-> +		 * hugetlb cgroup usage. Allocate it here. Charging
-> +		 * the cgroup will take place in fault path.
-> +		 */
-> +		struct resv_map *resv_map = resv_map_alloc();
-> +		/*
-> +		 * If we fail to allocate resv_map here. We will allocate
-> +		 * one when we do alloc_huge_page. So we don't handle
-> +		 * ENOMEM here. The function also return void. So there is
-> +		 * nothing much we can do.
-> +		 */
-> +		if (resv_map)
-> +			set_vma_resv_map(vma, resv_map);
-> +	}
->  }
-> 
->  static void hugetlb_vm_op_close(struct vm_area_struct *vma)
->  {
->  	struct hstate *h = hstate_vma(vma);
-> -	struct resv_map *reservations = vma_resv_map(vma);
-> -	unsigned long reserve;
-> -	unsigned long start;
-> -	unsigned long end;
-> +	struct resv_map *resv_map = vma_resv_map(vma);
-> +	unsigned long reserve, start, end;
-> 
-> -	if (reservations) {
-> +	if (resv_map) {
->  		start = vma_hugecache_offset(h, vma, vma->vm_start);
->  		end = vma_hugecache_offset(h, vma, vma->vm_end);
-> 
-> -		reserve = (end - start) -
-> -			region_count(&reservations->regions, start, end);
-> -
-> -		kref_put(&reservations->refs, resv_map_release);
-> -
-> +		reserve = hugetlb_truncate_cgroup_range(h, &resv_map->regions,
-> +							start, end);
+I am interested in to see if you have actual test case and more importantly test data that shows that kernel and device indexes are not synchronized any more.
 
-I wonder, what's the reason for removing the "(end - start) -" part of the
-"reserve =" statements?  region_count() and hugetlb_truncate_cgroup_range()
-both seem to return the number of bytes (I think?) between start and end that
-are mapped in that region list.
 
-This change alters the definition of "reserve" from "bytes not mapped" to
-"bytes mapped" with no corresponding change to the subsequent uses of reserve,
-which would likely cause hugetlb_acct_memory() to be invoked at the wrong
-times, I think.
+-Tushar
 
-<shrug> Does that make any sense?
-
---D
-> +		/* open coded kref_put */
-> +		if (atomic_sub_and_test(1, &resv_map->refs.refcount)) {
-> +			reserve += resv_map_release(h, resv_map);
-> +		}
->  		if (reserve) {
->  			hugetlb_acct_memory(h, -reserve);
->  			hugetlb_put_quota(vma->vm_file->f_mapping, reserve);
-> @@ -2803,8 +2846,9 @@ int hugetlb_reserve_pages(struct inode *inode,
->  					vm_flags_t vm_flags)
->  {
->  	long ret, chg;
-> +	struct list_head *region_list;
->  	struct hstate *h = hstate_inode(inode);
-> -
-> +	struct resv_map *resv_map = NULL;
->  	/*
->  	 * Only apply hugepage reservation if asked. At fault time, an
->  	 * attempt will be made for VM_NORESERVE to allocate a page
-> @@ -2820,19 +2864,17 @@ int hugetlb_reserve_pages(struct inode *inode,
->  	 * called to make the mapping read-write. Assume !vma is a shm mapping
->  	 */
->  	if (!vma || vma->vm_flags & VM_MAYSHARE) {
-> -		chg = hugetlb_page_charge(&inode->i_mapping->private_list,
-> -					  h, from, to);
-> +		region_list = &inode->i_mapping->private_list;
->  	} else {
-> -		struct resv_map *resv_map = resv_map_alloc();
-> +		resv_map = resv_map_alloc();
->  		if (!resv_map)
->  			return -ENOMEM;
-> 
-> -		chg = to - from;
-> -
->  		set_vma_resv_map(vma, resv_map);
->  		set_vma_resv_flags(vma, HPAGE_RESV_OWNER);
-> +		region_list = &resv_map->regions;
->  	}
-> -
-> +	chg = hugetlb_page_charge(region_list, h, from, to);
->  	if (chg < 0)
->  		return chg;
-> 
-> @@ -2848,29 +2890,15 @@ int hugetlb_reserve_pages(struct inode *inode,
->  	ret = hugetlb_acct_memory(h, chg);
->  	if (ret < 0)
->  		goto err_acct_mem;
-> -	/*
-> -	 * Account for the reservations made. Shared mappings record regions
-> -	 * that have reservations as they are shared by multiple VMAs.
-> -	 * When the last VMA disappears, the region map says how much
-> -	 * the reservation was and the page cache tells how much of
-> -	 * the reservation was consumed. Private mappings are per-VMA and
-> -	 * only the consumed reservations are tracked. When the VMA
-> -	 * disappears, the original reservation is the VMA size and the
-> -	 * consumed reservations are stored in the map. Hence, nothing
-> -	 * else has to be done for private mappings here
-> -	 */
-> -	if (!vma || vma->vm_flags & VM_MAYSHARE)
-> -		hugetlb_commit_page_charge(h, &inode->i_mapping->private_list,
-> -					   from, to);
-> +
-> +	hugetlb_commit_page_charge(h, region_list, from, to);
->  	return 0;
->  err_acct_mem:
->  	hugetlb_put_quota(inode->i_mapping, chg);
->  err_quota:
-> -	if (!vma || vma->vm_flags & VM_MAYSHARE)
-> -		hugetlb_page_uncharge(&inode->i_mapping->private_list,
-> -				      h - hstates, chg << huge_page_order(h));
-> +	hugetlb_page_uncharge(region_list, h - hstates,
-> +			      chg << huge_page_order(h));
->  	return ret;
-> -
->  }
-> 
->  void hugetlb_unreserve_pages(struct inode *inode, long offset, long freed)
-> @@ -2884,7 +2912,7 @@ void hugetlb_unreserve_pages(struct inode *inode, long offset, long freed)
->  	inode->i_blocks -= (blocks_per_huge_page(h) * freed);
->  	spin_unlock(&inode->i_lock);
-> 
-> -	hugetlb_put_quota(inode->i_mapping, (chg - freed));
-> +	hugetlb_put_quota(inode->i_mapping, chg);
->  	hugetlb_acct_memory(h, -(chg - freed));
->  }
-> 
-> -- 
-> 1.7.9
-> 
-> --
-> To unsubscribe, send a message with 'unsubscribe linux-mm' in
-> the body to majordomo@kvack.org.  For more info on Linux MM,
-> see: http://www.linux-mm.org/ .
-> Fight unfair telecom internet charges in Canada: sign http://stopthemeter.ca/
-> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
-> 
-
+>-----Original Message-----
+>From: netdev-owner@vger.kernel.org [mailto:netdev-owner@vger.kernel.org]
+>On Behalf Of Samuel Thibault
+>Sent: Thursday, May 17, 2012 4:02 PM
+>To: Kirsher, Jeffrey T; Brandeburg, Jesse; Allan, Bruce W; Wyborny,
+>Carolyn; Skidmore, Donald C; Rose, Gregory V; Waskiewicz Jr, Peter P;
+>Duyck, Alexander H; Ronciak, John; David S. Miller; Jiri Pirko; Dean
+>Nelson; e1000-devel@lists.sourceforge.net; netdev@vger.kernel.org
+>Cc: linux-kernel@vger.kernel.org
+>Subject: [PATCH] e1000: Reset rx ring index on receive overrun
+>
+>At high traffic rate, the rx ring may get completely filled before we
+>manage to consume it.  After it is filled, the kernel and device indexes
+>are not synchronized any more, so we have to reset them, otherwise the
+>kernel will be stuck waiting for the wrong slot to be filled.
+>
+>Signed-off-by: Samuel Thibault <samuel.thibault@ens-lyon.org>
+>
+>---
+>This is just a patch suggestion, I'm not an expert in network drivers, I
+>leave to actual driver authors to bake a better version.
+>
+>diff --git a/drivers/net/ethernet/intel/e1000/e1000_main.c
+>b/drivers/net/ethernet/intel/e1000/e1000_main.c
+>index 37caa88..77c8dbc 100644
+>--- a/drivers/net/ethernet/intel/e1000/e1000_main.c
+>+++ b/drivers/net/ethernet/intel/e1000/e1000_main.c
+>@@ -3759,6 +3759,21 @@ static irqreturn_t e1000_intr(int irq, void *data)
+> 	if (unlikely(test_bit(__E1000_DOWN, &adapter->flags)))
+> 		return IRQ_HANDLED;
+>
+>+	if (unlikely(icr & E1000_ICR_RXO)) {
+>+		/* Receive Overrun */
+>+		u32 rctl;
+>+		int i;
+>+		rctl = er32(RCTL);
+>+		ew32(RCTL, rctl & ~E1000_RCTL_EN);
+>+		for (i = 0; i < adapter->num_rx_queues; i++) {
+>+			memset(adapter->rx_ring[i].desc, 0, adapter-
+>>rx_ring[i].size);
+>+			adapter->rx_ring[i].next_to_clean = 0;
+>+		}
+>+		ew32(RDH, 0);
+>+		ew32(RCTL, rctl);
+>+		adapter->netdev->stats.rx_fifo_errors++;
+>+	}
+>+
+> 	if (unlikely(icr & (E1000_ICR_RXSEQ | E1000_ICR_LSC))) {
+> 		hw->get_link_status = 1;
+> 		/* guard against interrupt when we're going down */
+>--
+>To unsubscribe from this list: send the line "unsubscribe netdev" in the
+>body of a message to majordomo@vger.kernel.org More majordomo info at
+>http://vger.kernel.org/majordomo-info.html
