@@ -1,47 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1762382Ab2EQSlH (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 May 2012 14:41:07 -0400
-Received: from mail-we0-f174.google.com ([74.125.82.174]:52997 "EHLO
-	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760878Ab2EQSlE (ORCPT
+	id S967575Ab2EQSmN (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 May 2012 14:42:13 -0400
+Received: from mail-gg0-f174.google.com ([209.85.161.174]:47190 "EHLO
+	mail-gg0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S967533Ab2EQSmK convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 May 2012 14:41:04 -0400
-Subject: Re: [PATCH] ARM: mx35: add cpufreq support
-From: Christoph Fritz <chf.fritz@googlemail.com>
-To: Sascha Hauer <s.hauer@pengutronix.de>
-Cc: Sascha Hauer <kernel@pengutronix.de>,
-        Russell King <linux@arm.linux.org.uk>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        "Hans J. Koch" <hjk@hansjkoch.de>, Daniel Mack <daniel@zonque.org>
-In-Reply-To: <20120517182036.GK30400@pengutronix.de>
-References: <20120507141437.GA9636@lovely.krouter>
-	 <20120509072239.GG27341@pengutronix.de>
-	 <20120509075618.GA4412@lovely.krouter>
-	 <20120509081306.GK27341@pengutronix.de> <1337276960.4970.4.camel@lovely>
-	 <20120517182036.GK30400@pengutronix.de>
-Content-Type: text/plain; charset="UTF-8"
-Date: Thu, 17 May 2012 20:40:58 +0200
-Message-ID: <1337280058.4970.6.camel@lovely>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
-Content-Transfer-Encoding: 7bit
+	Thu, 17 May 2012 14:42:10 -0400
+MIME-Version: 1.0
+In-Reply-To: <CAOZdJXW2jmFG8hkBRMAsO-CJ3ruMd28LqS0b-BGZTU7FnpRi3Q@mail.gmail.com>
+References: <1337157034-22773-1-git-send-email-geert@linux-m68k.org>
+	<CAMuHMdUtL4_mv-e-EQAZmNcb9dAT=PXB59i7Vuj2vf8NnaBFzQ@mail.gmail.com>
+	<1337212281.30558.17.camel@pasglop>
+	<4FB535D3.7000106@freescale.com>
+	<CAOZdJXW2jmFG8hkBRMAsO-CJ3ruMd28LqS0b-BGZTU7FnpRi3Q@mail.gmail.com>
+Date: Thu, 17 May 2012 20:42:08 +0200
+X-Google-Sender-Auth: NMEzntaTml5QkSvlZJle51lqHyk
+Message-ID: <CAMuHMdVszy2sk6f045krqr=PPQFnd-GrtJYJMQCCPzkq-65psg@mail.gmail.com>
+Subject: Re: Re: Build regressions/improvements in v3.4-rc7
+From: Geert Uytterhoeven <geert@linux-m68k.org>
+To: Tabi Timur-B04825 <B04825@freescale.com>
+Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Linuxppc-dev <linuxppc-dev@ozlabs.org>,
+        "the arch/x86 maintainers" <x86@kernel.org>,
+        Parisc List <linux-parisc@vger.kernel.org>,
+        Wood Scott-B07421 <B07421@freescale.com>,
+        Kumar Gala <galak@kernel.crashing.org>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2012-05-17 at 20:20 +0200, Sascha Hauer wrote:
-> On Thu, May 17, 2012 at 07:49:20PM +0200, Christoph Fritz wrote:
+On Thu, May 17, 2012 at 7:52 PM, Tabi Timur-B04825 <B04825@freescale.com> wrote:
+> On Thu, May 17, 2012 at 12:30 PM, Timur Tabi <timur@freescale.com> wrote:
+>
+>> Anyway, I think I see what the problem is, but it does appear when I use
+>> the normal defconfigs.  What .config was being used?
+>
+> I meant to say that it does NOT appear.
 
-> > Is there already a version I can rebase the patch?
-> > 
-> > On your repo at git://git.pengutronix.de/git/imx/linux-2.6.git I can't
-> > find the new clock framework or even a work-in-progress version.
-> 
-> They are in linux-next now.
+powerpc randconfig.
 
-Great, I'll rebase over this weekend.
+Gr{oetje,eeting}s,
 
-Thanks,
- Christoph
+                        Geert
 
+--
+Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
+
+In personal conversations with technical people, I call myself a hacker. But
+when I'm talking to journalists I just say "programmer" or something like that.
+                                -- Linus Torvalds
