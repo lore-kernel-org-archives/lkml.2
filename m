@@ -1,80 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933492Ab2EQQoU (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 May 2012 12:44:20 -0400
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:40607 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933414Ab2EQQoS (ORCPT
+	id S933512Ab2EQQor (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 May 2012 12:44:47 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:47464 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933238Ab2EQQop convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 May 2012 12:44:18 -0400
-Date: Thu, 17 May 2012 18:44:12 +0200
-From: Sascha Hauer <s.hauer@pengutronix.de>
-To: Rob Lee <rob.lee@linaro.org>
-Cc: kernel@pengutronix.de, shawn.guo@linaro.org,
-        u.kleine-koenig@pengutronix.de, richard.zhao@freescale.com,
-        amit.kucheria@linaro.org, daniel.lezcano@linaro.org,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        linaro-dev@lists.linaro.org, patches@linaro.org, jj@chaosbits.net
-Subject: Re: [PATCH v4 4/7] ARM: imx: Enable imx53 low power idle
-Message-ID: <20120517164412.GB30400@pengutronix.de>
-References: <1337135616-8988-1-git-send-email-rob.lee@linaro.org>
- <1337135616-8988-5-git-send-email-rob.lee@linaro.org>
- <20120516174740.GW30400@pengutronix.de>
- <CAMXH7KGBK=FkggQxJBaNZ-CZDQm=bV9ZtuB3Yf6vykR5FULA8A@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-15
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <CAMXH7KGBK=FkggQxJBaNZ-CZDQm=bV9ZtuB3Yf6vykR5FULA8A@mail.gmail.com>
-X-Sent-From: Pengutronix Hildesheim
-X-URL: http://www.pengutronix.de/
-X-IRC: #ptxdist @freenode
-X-Accept-Language: de,en
-X-Accept-Content-Type: text/plain
-X-Uptime: 18:41:33 up 187 days, 28 min, 16 users,  load average: 0.00, 0.01,
- 0.05
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 2001:6f8:1178:2:21e:67ff:fe11:9c5c
-X-SA-Exim-Mail-From: sha@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
+	Thu, 17 May 2012 12:44:45 -0400
+Message-ID: <1337273053.4281.50.camel@twins>
+Subject: Re: [RFC][PATCH 4/6] arm, mm: Convert arm to generic tlb
+From: Peter Zijlstra <peterz@infradead.org>
+To: Catalin Marinas <catalin.marinas@arm.com>
+Cc: Russell King <rmk@arm.linux.org.uk>, Paul Mundt <lethal@linux-sh.org>,
+        Andrea Arcangeli <aarcange@redhat.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Rik van Riel <riel@redhat.com>,
+        Ingo Molnar <mingo@elte.hu>,
+        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arch@vger.kernel.org" <linux-arch@vger.kernel.org>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        David Miller <davem@davemloft.net>,
+        Hugh Dickins <hugh.dickins@tiscali.co.uk>, Mel Gorman <mel@csn.ul.ie>,
+        Nick Piggin <npiggin@kernel.dk>, Chris Metcalf <cmetcalf@tilera.com>,
+        Martin Schwidefsky <schwidefsky@de.ibm.com>
+Date: Thu, 17 May 2012 18:44:13 +0200
+In-Reply-To: <1337272396.4281.48.camel@twins>
+References: <20110302175928.022902359@chello.nl>
+	 <20110302180259.109909335@chello.nl> <20120517030551.GA11623@linux-sh.org>
+	 <20120517093022.GA14666@arm.com>
+	 <20120517095124.GN23420@flint.arm.linux.org.uk>
+	 <1337254086.4281.26.camel@twins> <20120517160012.GB18593@arm.com>
+	 <1337271884.4281.46.camel@twins> <1337272396.4281.48.camel@twins>
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
+X-Mailer: Evolution 3.2.2- 
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, May 17, 2012 at 09:46:21AM -0500, Rob Lee wrote:
-> On Wed, May 16, 2012 at 12:47 PM, Sascha Hauer <s.hauer@pengutronix.de> wrote:
-> >>
-> >> +void __init imx5_init_late(void)
-> >> +{
-> >> +     imx5_pm_init();
-> >> +}
-> >> +
-> >>  void __init imx51_init_late(void)
-> >>  {
-> >>       mx51_neon_fixup();
-> >> -     imx5_pm_init();
-> >> +     imx5_init_late();
-> >>  }
-> >
-> > Where would you add i.MX53 specific code above? Hint: imx5_init_late is
-> > the wrong function name.
+On Thu, 2012-05-17 at 18:33 +0200, Peter Zijlstra wrote:
+> On Thu, 2012-05-17 at 18:24 +0200, Peter Zijlstra wrote:
+> > On Thu, 2012-05-17 at 17:00 +0100, Catalin Marinas wrote:
+> > 
+> > > BTW, looking at your tlb-unify branch, does tlb_remove_table() call
+> > > tlb_flush/tlb_flush_mmu before freeing the tables?  I can only see
+> > > tlb_remove_page() doing this. On ARM, even UP, we need the TLB flushing
+> > > after clearing the pmd and before freeing the pte page table (and
+> > > ideally doing it less often than at every pte_free_tlb() call).
+> > 
+> > No I don't think it does, so far the only archs using the RCU stuff are
+> > ppc,sparc and s390 and none of those needed that (Xen might join them
+> > soon though). But I will have to look and consider this more carefully.
+> > I 'lost' most of the ppc/sparc/s390 details from memory to say this with
+> > any certainty.
 > 
-> I added imx5_init_late for late_init functionality that is common
-> among all imx5.  For example, in the future imx50 may use it as well.
-> But I can remove this and repeat the imx5_pm_init() calls for each
-> platform if you prefer that.
+> 
+> Hmm, no, thinking more that does indeed sounds strange, I'll still have
+> to consider it more carefully, but I think you might have found a bug
+> there.
 
-The point is that the init_late callback should have a imx53_* name,
-otherwise if you call it imx5_* there is no place to add imx53 only
-functionality. You can always call imx5 specific things from imx53
-context, but not the other way round.
-
-Sascha
+So the RCU code can from ppc in commit
+267239116987d64850ad2037d8e0f3071dc3b5ce, which has similar behaviour.
+Also I suspect the mm_users < 2 test will be incorrect for ARM since
+even the one user can be concurrent with your speculation engine.
 
 
--- 
-Pengutronix e.K.                           |                             |
-Industrial Linux Solutions                 | http://www.pengutronix.de/  |
-Peiner Str. 6-8, 31137 Hildesheim, Germany | Phone: +49-5121-206917-0    |
-Amtsgericht Hildesheim, HRA 2686           | Fax:   +49-5121-206917-5555 |
