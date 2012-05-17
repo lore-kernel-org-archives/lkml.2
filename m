@@ -1,76 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758173Ab2EQQOS (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 May 2012 12:14:18 -0400
-Received: from oproxy1-pub.bluehost.com ([66.147.249.253]:33443 "HELO
-	oproxy1-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1756826Ab2EQQOR (ORCPT
+	id S1758423Ab2EQQSA (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 May 2012 12:18:00 -0400
+Received: from casper.infradead.org ([85.118.1.10]:41255 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757734Ab2EQQR6 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 May 2012 12:14:17 -0400
-Message-ID: <4FB523E0.1000208@xenotime.net>
-Date: Thu, 17 May 2012 09:14:24 -0700
-From: Randy Dunlap <rdunlap@xenotime.net>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.15) Gecko/20110323 Thunderbird/3.1.9
-MIME-Version: 1.0
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-CC: linux-next@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        devel@driverdev.osuosl.org
-Subject: [PATCH -next] staging: gdm72xx depends on NET
-References: <20120517174647.fa4794992f2b856b9e5cf03c@canb.auug.org.au>
-In-Reply-To: <20120517174647.fa4794992f2b856b9e5cf03c@canb.auug.org.au>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Identified-User: {1807:box742.bluehost.com:xenotime:xenotime.net} {sentby:smtp auth 50.53.38.135 authed with rdunlap@xenotime.net}
+	Thu, 17 May 2012 12:17:58 -0400
+Message-ID: <1337271467.4281.43.camel@twins>
+Subject: Re: [RFC][PATCH RT] rwsem_rt: Another (more sane) approach to mulit
+ reader rt locks
+From: Peter Zijlstra <peterz@infradead.org>
+To: paulmck@linux.vnet.ibm.com
+Cc: Steven Rostedt <rostedt@goodmis.org>, LKML <linux-kernel@vger.kernel.org>,
+        RT <linux-rt-users@vger.kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Clark Williams <williams@redhat.com>
+Date: Thu, 17 May 2012 18:17:47 +0200
+In-Reply-To: <20120517154755.GG2567@linux.vnet.ibm.com>
+References: <1337090625.14207.304.camel@gandalf.stny.rr.com>
+	 <20120517151838.GA8692@linux.vnet.ibm.com> <1337268779.4281.38.camel@twins>
+	 <20120517154755.GG2567@linux.vnet.ibm.com>
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
+X-Mailer: Evolution 3.2.2- 
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Randy Dunlap <rdunlap@xenotime.net>
+On Thu, 2012-05-17 at 08:47 -0700, Paul E. McKenney wrote:
+> On Thu, May 17, 2012 at 05:32:59PM +0200, Peter Zijlstra wrote:
+> > On Thu, 2012-05-17 at 08:18 -0700, Paul E. McKenney wrote:
+> > > Some researchers at MIT RCU-ified this lock:
+> > > 
+> > > http://people.csail.mit.edu/nickolai/papers/clements-bonsai.pdf 
+> > 
+> > Ah, as have I [1].. and they seem to have gotten about as far as I have,
+> > which means almost there but not quite [2] :-)
+> 
+> I had forgotten about that -- that was the first call for call_srcu(),
+> if I remember correctly.
+> 
+> > The most interesting case is file maps and they simply ignored those.
+> > While I appreciate that from an academic pov, -- they can still write a
+> > paper on the other interesting bits -- I don't really like it from a
+> > practical point.
+> > 
+> > [1] https://lkml.org/lkml/2010/1/4/257
+> > [2] https://lkml.org/lkml/2010/1/4/532
+> 
+> Hmmm...  Do the recent dcache changes cover some of the things that
+> Linus called out?  Probably not, but some at least.
 
-gdm72xx uses networking interfaces, so it should depend
-at least on NET (maybe on WIMAX?).
+No, and the points viro made:
 
-ERROR: "sock_release" [drivers/staging/gdm72xx/gdmwm.ko] undefined!
-ERROR: "netif_carrier_on" [drivers/staging/gdm72xx/gdmwm.ko] undefined!
-ERROR: "netif_carrier_off" [drivers/staging/gdm72xx/gdmwm.ko] undefined!
-ERROR: "skb_realloc_headroom" [drivers/staging/gdm72xx/gdmwm.ko] undefined!
-ERROR: "netif_rx" [drivers/staging/gdm72xx/gdmwm.ko] undefined!
-ERROR: "netlink_kernel_create" [drivers/staging/gdm72xx/gdmwm.ko] undefined!
-ERROR: "netif_rx_ni" [drivers/staging/gdm72xx/gdmwm.ko] undefined!
-ERROR: "dev_alloc_skb" [drivers/staging/gdm72xx/gdmwm.ko] undefined!
-ERROR: "free_netdev" [drivers/staging/gdm72xx/gdmwm.ko] undefined!
-ERROR: "register_netdev" [drivers/staging/gdm72xx/gdmwm.ko] undefined!
-ERROR: "skb_push" [drivers/staging/gdm72xx/gdmwm.ko] undefined!
-ERROR: "dev_get_by_index" [drivers/staging/gdm72xx/gdmwm.ko] undefined!
-ERROR: "skb_pull" [drivers/staging/gdm72xx/gdmwm.ko] undefined!
-ERROR: "init_net" [drivers/staging/gdm72xx/gdmwm.ko] undefined!
-ERROR: "__alloc_skb" [drivers/staging/gdm72xx/gdmwm.ko] undefined!
-ERROR: "netlink_broadcast" [drivers/staging/gdm72xx/gdmwm.ko] undefined!
-ERROR: "kfree_skb" [drivers/staging/gdm72xx/gdmwm.ko] undefined!
-ERROR: "alloc_netdev_mqs" [drivers/staging/gdm72xx/gdmwm.ko] undefined!
-ERROR: "eth_type_trans" [drivers/staging/gdm72xx/gdmwm.ko] undefined!
-ERROR: "ether_setup" [drivers/staging/gdm72xx/gdmwm.ko] undefined!
-ERROR: "unregister_netdev" [drivers/staging/gdm72xx/gdmwm.ko] undefined!
-ERROR: "__netif_schedule" [drivers/staging/gdm72xx/gdmwm.ko] undefined!
-ERROR: "skb_put" [drivers/staging/gdm72xx/gdmwm.ko] undefined!
-ERROR: "sock_wfree" [drivers/staging/gdm72xx/gdmwm.ko] undefined!
-ERROR: "__nlmsg_put" [drivers/staging/gdm72xx/gdmwm.ko] undefined!
+  https://lkml.org/lkml/2010/1/5/194
 
-Signed-off-by: Randy Dunlap <rdunlap@xenotime.net>
----
-Please add some contact info somewhere.
+are still very much an issue, you really don't want to do fput() from an
+asynchronous context. Which means you have to do synchronize_rcu() or
+similar from munmap() which will be rather unpopular :/
 
- drivers/staging/gdm72xx/Kconfig |    1 +
- 1 file changed, 1 insertion(+)
+Since we should not use per-cpu data for either files or processes
+(there are simply too many of those around) the alternative is
+horrendously hideous things like:
 
---- linux-next-20120517.orig/drivers/staging/gdm72xx/Kconfig
-+++ linux-next-20120517/drivers/staging/gdm72xx/Kconfig
-@@ -4,6 +4,7 @@
- 
- menuconfig WIMAX_GDM72XX
- 	tristate "GCT GDM72xx WiMAX support"
-+	depends on NET
- 	help
- 	  Support for the GCT GDM72xx WiMAX chip
- 
+  https://lkml.org/lkml/2010/1/6/136
+
+which one cannot get away with either.
+
+The whole thing is very vexing indeed since all of this is only needed
+for ill-behaved applications since a well-constructed application will
+never fault in a range it is concurrently unmapping.
+
+Most annoying.
