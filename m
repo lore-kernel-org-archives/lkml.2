@@ -1,47 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S967256Ab2EQPdM (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 May 2012 11:33:12 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:54688 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S967178Ab2EQPdJ convert rfc822-to-8bit (ORCPT
+	id S1030212Ab2EQPeq (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 May 2012 11:34:46 -0400
+Received: from e39.co.us.ibm.com ([32.97.110.160]:56528 "EHLO
+	e39.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752053Ab2EQPep (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 May 2012 11:33:09 -0400
-Message-ID: <1337268779.4281.38.camel@twins>
-Subject: Re: [RFC][PATCH RT] rwsem_rt: Another (more sane) approach to mulit
- reader rt locks
-From: Peter Zijlstra <peterz@infradead.org>
-To: paulmck@linux.vnet.ibm.com
-Cc: Steven Rostedt <rostedt@goodmis.org>, LKML <linux-kernel@vger.kernel.org>,
-        RT <linux-rt-users@vger.kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Clark Williams <williams@redhat.com>
-Date: Thu, 17 May 2012 17:32:59 +0200
-In-Reply-To: <20120517151838.GA8692@linux.vnet.ibm.com>
-References: <1337090625.14207.304.camel@gandalf.stny.rr.com>
-	 <20120517151838.GA8692@linux.vnet.ibm.com>
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
-X-Mailer: Evolution 3.2.2- 
+	Thu, 17 May 2012 11:34:45 -0400
+Subject: Re: [V2 PATCH 9/9] vhost: zerocopy: poll vq in zerocopy callback
+From: Shirley Ma <mashirle@us.ibm.com>
+To: Jason Wang <jasowang@redhat.com>
+Cc: "Michael S. Tsirkin" <mst@redhat.com>, eric.dumazet@gmail.com,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        ebiederm@xmission.com, davem@davemloft.net
+In-Reply-To: <4FB4677A.8020402@redhat.com>
+References: <20120502033901.11782.13157.stgit@amd-6168-8-1.englab.nay.redhat.com>
+	 <20120502034254.11782.27314.stgit@amd-6168-8-1.englab.nay.redhat.com>
+	 <1337100630.8220.4.camel@oc3660625478.ibm.com> <4FB317C8.90002@redhat.com>
+	 <1337181027.10741.13.camel@oc3660625478.ibm.com>
+	 <20120516151444.GC9934@redhat.com>
+	 <1337189525.10741.24.camel@oc3660625478.ibm.com>
+	 <4FB4677A.8020402@redhat.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Thu, 17 May 2012 08:34:22 -0700
+Message-ID: <1337268862.10741.58.camel@oc3660625478.ibm.com>
 Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 (2.28.3-24.el6) 
+Content-Transfer-Encoding: 7bit
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 12051715-4242-0000-0000-000001B33146
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2012-05-17 at 08:18 -0700, Paul E. McKenney wrote:
-> Some researchers at MIT RCU-ified this lock:
-> 
-> http://people.csail.mit.edu/nickolai/papers/clements-bonsai.pdf 
+On Thu, 2012-05-17 at 10:50 +0800, Jason Wang wrote:
+> The problem is we may stop the tx queue when there no enough capacity
+> to 
+> place packets, at this moment  we depends on the tx interrupt to 
+> re-enable the tx queue. So if we didn't poll the vhost during
+> callback, 
+> guest may lose the tx interrupt to re-enable the tx queue which could 
+> stall the whole tx queue. 
 
-Ah, as have I [1].. and they seem to have gotten about as far as I have,
-which means almost there but not quite [2] :-)
+VHOST_MAX_PEND should handle the capacity. 
 
-The most interesting case is file maps and they simply ignored those.
-While I appreciate that from an academic pov, -- they can still write a
-paper on the other interesting bits -- I don't really like it from a
-practical point.
+Hasn't the above situation been handled in handle_tx() code?:
+...
+                        if (unlikely(num_pends > VHOST_MAX_PEND)) {
+                                tx_poll_start(net, sock);
+                                set_bit(SOCK_ASYNC_NOSPACE, &sock->flags);
+                                break;
+                        }
+...
 
-[1] https://lkml.org/lkml/2010/1/4/257
-[2] https://lkml.org/lkml/2010/1/4/532
-
+Thanks
+Shirley
 
