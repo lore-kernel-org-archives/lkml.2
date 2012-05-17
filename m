@@ -1,50 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S967388Ab2EQQs5 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 May 2012 12:48:57 -0400
-Received: from mga03.intel.com ([143.182.124.21]:2524 "EHLO mga03.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S967351Ab2EQQsz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 May 2012 12:48:55 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
-   d="scan'208";a="101269460"
-Subject: [GIT PULL] slave-dmaengine fixes
-From: Vinod Koul <vinod.koul@linux.intel.com>
-To: Linus <torvalds@linux-foundation.org>
-Cc: linux-kernel <linux-kernel@vger.kernel.org>,
-        Dan <dan.j.williams@intel.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Thu, 17 May 2012 22:10:15 +0530
-Message-ID: <1337272815.16185.5416.camel@vkoul-udesk3>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
-Content-Transfer-Encoding: 7bit
+	id S967422Ab2EQQti (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 May 2012 12:49:38 -0400
+Received: from smtp106.prem.mail.ac4.yahoo.com ([76.13.13.45]:20143 "HELO
+	smtp106.prem.mail.ac4.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S966239Ab2EQQth (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 17 May 2012 12:49:37 -0400
+X-Yahoo-Newman-Property: ymail-3
+X-YMail-OSG: 3Gr8KYoVM1lOCPjYniiwveBPxh67R_6KwXD0vWphgQ7SYrS
+ J78PEiO9m4YG8AS89BRDnbkJnjOHZhPGxzaSenOV37l2jDCWkllyP8sORYFG
+ XtoNkuzRSl5g23RFhiKXpp7y2xX_ju9yHRCutYLQXf4HSirufnAweQrp0hbq
+ ceTwKL2t3o6B_ubZO7Nc8NQBSGLxF8WLF5o2aamPsgVkoiRtqiCLlM_VmOfI
+ yrvRs1jXj7zLJVkCii3e4xPxpVBUUQp5u3ZkLQHZzC3mN61wtw5T_iiBypT4
+ VwzqhzWYqwFLEnFeF_9FehheT5MJHq7pvPshPmyMOd.mdv3HlBPFkCPqHv.i
+ K4kxEB9rLpbZPrIQSYYYw0EI.GVHK3su997AouyEyO_E7wctIIYMP7we.DFN
+ L
+X-Yahoo-SMTP: _Dag8S.swBC1p4FJKLCXbs8NQzyse1SYSgnAbY0-
+Date: Thu, 17 May 2012 11:49:34 -0500 (CDT)
+From: Christoph Lameter <cl@linux.com>
+X-X-Sender: cl@router.home
+To: Joonsoo Kim <js1304@gmail.com>
+cc: Pekka Enberg <penberg@kernel.org>, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org
+Subject: Re: [PATCH 1,2/4 v2] slub: use __cmpxchg_double_slab() at interrupt
+ disabled place
+In-Reply-To: <1337272864-5090-1-git-send-email-js1304@gmail.com>
+Message-ID: <alpine.DEB.2.00.1205171149050.8534@router.home>
+References: <1337269668-4619-1-git-send-email-js1304@gmail.com> <1337272864-5090-1-git-send-email-js1304@gmail.com>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus,
+On Fri, 18 May 2012, Joonsoo Kim wrote:
 
-Please pull the following to receive fixes of cylic dma usages in slave
-dma drivers.
+> get_freelist() is only called by __slab_alloc() with interrupt disabled,
+> so __cmpxchg_double_slab() is suitable.
+>
+> unfreeze_partials() is only called with interrupt disabled,
+> so __cmpxchg_double_slab() is suitable.
 
-The following changes since commit
-88c08a3fba9954ce0ec3e1eab07c498a419ad7e3:
+Combine these sentences as well.
 
-are available in the git repository at:
-
-  git://git.infradead.org/users/vkoul/slave-dma.git fixes
-
-Vinod Koul (2):
-      dmaengine: pl330: dont complete descriptor for cyclic dma
-      dmaengine: fix cyclic dma usage
-
- drivers/dma/at_hdmac.c   |    4 +++-
- drivers/dma/ep93xx_dma.c |    4 +++-
- drivers/dma/pl330.c      |    3 ++-
- 3 files changed, 8 insertions(+), 3 deletions(-)
-
--- 
-~Vinod
+Acked-by: Christoph Lameter <cl@linux.com>
 
