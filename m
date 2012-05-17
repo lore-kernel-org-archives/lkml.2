@@ -1,101 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758186Ab2EQAhx (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 May 2012 20:37:53 -0400
-Received: from mail-wi0-f172.google.com ([209.85.212.172]:62254 "EHLO
-	mail-wi0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752914Ab2EQAhv (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 May 2012 20:37:51 -0400
-Message-ID: <4FB44856.40102@gmail.com>
-Date: Thu, 17 May 2012 02:37:42 +0200
-From: =?UTF-8?B?VmxhZGltaXIgJ8+GLWNvZGVyL3BoY29kZXInIFNlcmJpbmVua28=?= 
-	<phcoder@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.4) Gecko/20120510 Icedove/10.0.4
+	id S965120Ab2EQAl4 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 May 2012 20:41:56 -0400
+Received: from linux-sh.org ([111.68.239.195]:46019 "EHLO linux-sh.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757175Ab2EQAly (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 16 May 2012 20:41:54 -0400
+Date: Thu, 17 May 2012 09:41:25 +0900
+From: Paul Mundt <lethal@linux-sh.org>
+To: Arnd Bergmann <arnd@arndb.de>
+Cc: Magnus Damm <magnus.damm@gmail.com>, linux-kernel@vger.kernel.org,
+        rjw@sisk.pl, linus.walleij@stericsson.com, linux-sh@vger.kernel.org,
+        horms@verge.net.au, grant.likely@secretlab.ca, olof@lixom.net
+Subject: Re: [PATCH] gpio: Emma Mobile GPIO driver V2
+Message-ID: <20120517004124.GA16069@linux-sh.org>
+References: <20120515154333.6659.66479.sendpatchset@w520>
+ <20120516072927.GN7988@linux-sh.org>
+ <CANqRtoSSEb9jwEmvbhBuyHp-9BfUSRabQzqjrrVGTFDP-AHutQ@mail.gmail.com>
+ <201205161209.03985.arnd@arndb.de>
 MIME-Version: 1.0
-To: Jan Kara <jack@suse.cz>
-CC: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org
-Subject: Re: [PATCH 6/8] Support non-BMP characters in UDF
-References: <4FB2E25E.900@gmail.com> <20120516143448.GD27661@quack.suse.cz> <4FB3C44F.6080409@gmail.com> <20120516200459.GD1687@quack.suse.cz>
-In-Reply-To: <20120516200459.GD1687@quack.suse.cz>
-X-Enigmail-Version: 1.4.1
-Content-Type: multipart/signed; micalg=pgp-sha512;
- protocol="application/pgp-signature";
- boundary="------------enig91B12E0B53F410406496C528"
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <201205161209.03985.arnd@arndb.de>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is an OpenPGP/MIME signed message (RFC 2440 and 3156)
---------------enig91B12E0B53F410406496C528
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: quoted-printable
+On Wed, May 16, 2012 at 12:09:03PM +0000, Arnd Bergmann wrote:
+> On Wednesday 16 May 2012, Magnus Damm wrote:
+> > > irq_domain_add_legacy() exists for existing static ranges, which there is
+> > > really no reason to be adding in new board/platform support. You don't
+> > > have to worry about virq overlap since irq_create_mapping() already wraps
+> > > on top of irq_alloc_desc_xxx() for lookup.
+> > 
+> > So I intentionally made use of the legacy domain in the non-DT case.
+> > This because I want to let the SoC code set the static IRQ ranges via
+> > platform data.
+> 
+> I think it's generally better to use just one code path for both cases,
+> if you need both DT and non-DT support, which means you would always
+> use irq_domain_add_legacy. Once you have the final patch to convert it
+> to DT, you can remove the legacy domain and just convert it to linear.
+> 
+That's a bit short sighted. There are going to be plenty of cases where
+we can tie in IRQ domains and will make use of it both with and without
+DT, and there is very little cause for forcing manual irq_desc
+allocation/freeing up the chain when the IRQ domain code can handle it
+just fine.
 
-On 16.05.2012 22:04, Jan Kara wrote:
+The one area that I see being problematic with IRQ domains at the moment
+is IORESOURCE_IRQ. In the 'legacy' cases this maps out to the hwirq,
+while in the non-legacy cases it works out to a virq mapping that's
+lazily inserted by of_irq_to_resource_table() in of_device_alloc().
 
-> On Wed 16-05-12 17:14:23, Vladimir '=CF=86-coder/phcoder' Serbinenko wr=
-ote:
->> On 16.05.2012 16:34, Jan Kara wrote:
->>> On Wed 16-05-12 01:10:22, Vladimir '=CF=86-coder/phcoder' Serbinenko =
-wrote:
->>>> I also have a counterpart for mkudffs/udf-tools but sourceforge home=
-page
->>>> seems to be abandoned does anybody know if there is a new homepage f=
-or
->>>> mkudffs?
->   Oh, and I forgot to reply here: mkudffs is really unmaintained. But a=
-lso
-> it's not used too much AFAIK. Most people use genisoimage to generate u=
-df
-> filesystems.
+In adding irq domain support for the sh intc subsystem I hacked up some
+prototype code for doing an in-place update of IORESOURCE_IRQ resources
+hanging off platform devices that does the hwirq->virq translation and it
+seems to work fine, albeit hacky, and something I would rather avoid. On
+the other hand, there's no need for that either if we support a 1:1 hwirq
+to virq mapping where possible, which is fairly easy to do by just trying
+to fetch a virq with irq_alloc_desc_at() before falling back on the
+existing virq hinting logic in irq_create_mapping(). We can easily or a
+flag in to the revmap type that denotes the 'static' nature of the domain
+to inhibit irq_alloc_desc_from() usage in domains with 1:1 mappings.
 
-But it doesn't seem to be appropriate for non-optical media.
+In any event, it looks like irq domains needs some more work for the
+non-DT case before it can really be useful. Creating arbitrary static
+mappings to shoe-horn a driver in to DT + non-DT shape through a legacy
+mapping seems pretty absurd, though.
 
-
->> 0) Homegrown like in previous patch
->> 1) Add a new "endianness" UTF16_LITTLE_ENDIAN_UNALIGNED
->> 2) Split code for "compressed" vs "uncompressed" and copy the string t=
-o
->> a temporary buffer in "uncompressed" branch.
->> 3) Like 2 but make buffer sliding and contain only 2 elements.
->>
->> I think 1 or 3 would be the most reasonable. Which solution do you pre=
-fer?
->   I think 1 would be the best since then it can be easily reused by oth=
-er
-> filesystems which may have similar issue.
->=20
-
-Ok, I'll do it. I've noticed another duplication in the UDF code: there
-is NLS support and separate UTF-8 support. UTF-8 is support by 2 ways
-actually: with -o utf8 and -o iocharset=3Dutf8 which imply different
-codepaths. Specific UTF-8 support is probably slightly faster by
-avoiding calls and basically doing everything with shifts (or can be
-made so with a small patch). Should I perhaps kill one of them? Is
-iocharset!=3Dutf8 still of any importance? I haven't seen it in ages.
-Perhaps we could keep just the performant UTF-8 support and map
-iocharset=3Dutf8 to it and drop iocharset!=3Dutf8? iocharset!=3Dutf8 prob=
-ably
-has no users anyway so keeping it we're likely to keep bugs and code
-duplication with no benefit.
-
---=20
-Regards
-Vladimir '=CF=86-coder/phcoder' Serbinenko
-
-
---------------enig91B12E0B53F410406496C528
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: OpenPGP digital signature
-Content-Disposition: attachment; filename="signature.asc"
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-Comment: Using GnuPG with Mozilla - http://enigmail.mozdev.org/
-
-iF4EAREKAAYFAk+0SFYACgkQNak7dOguQglETwD/V8ECStEspbMYRCtaTO9HSaFJ
-m1wM3tbCgGLoZh3omWEBALTH3NqgBSacQessZcXlX/kS4oCEFU5ZgMCiwMDdzDFe
-=8I1s
------END PGP SIGNATURE-----
-
---------------enig91B12E0B53F410406496C528--
+I'll do some more hacking on it and see what I come up with, but I'm
+certainly not going to be maintaining my own radix tree on the side and
+wrapping in to a legacy domain for the sh intc case when all of the
+support infrastructure is already extant in the irqdomain code.
