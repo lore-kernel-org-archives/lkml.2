@@ -1,58 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933346Ab2EQAZN (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 May 2012 20:25:13 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:3878 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1760765Ab2EQAZL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 May 2012 20:25:11 -0400
-Message-ID: <1337214652.22052.1.camel@nisroch>
-Subject: Re: 3.4-rc7 backlight regression on Dell XPS M1710
-From: Ben Skeggs <bskeggs@redhat.com>
-Reply-To: bskeggs@redhat.com
-To: Tim Gardner <tim.gardner@canonical.com>
-Cc: airlied@linux.ie, dri-devel@lists.freedesktop.org,
-        linux-kernel@vger.kernel.org,
-        Seth Forshee <seth.forshee@canonical.com>
-Date: Thu, 17 May 2012 10:30:52 +1000
-In-Reply-To: <4FB3EF1C.5040804@canonical.com>
-References: <4FB3EF1C.5040804@canonical.com>
-Content-Type: text/plain; charset="UTF-8"
+	id S1754994Ab2EQA1z (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 May 2012 20:27:55 -0400
+Received: from blu0-omc4-s8.blu0.hotmail.com ([65.55.111.147]:38874 "EHLO
+	blu0-omc4-s8.blu0.hotmail.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751335Ab2EQA1x (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 16 May 2012 20:27:53 -0400
+X-Originating-IP: [64.229.85.15]
+X-Originating-Email: [dave.anglin@bell.net]
+Message-ID: <BLU0-SMTP3215D3E80BA82F3C6A654197190@phx.gbl>
+From: John David Anglin <dave.anglin@bell.net>
+To: James Bottomley <James.Bottomley@HansenPartnership.com>
+In-Reply-To: <1337179563.2985.80.camel@dabdike.int.hansenpartnership.com>
+Subject: Re: Build regressions/improvements in v3.4-rc7
+References: <1337157034-22773-1-git-send-email-geert@linux-m68k.org> <CAMuHMdUtL4_mv-e-EQAZmNcb9dAT=PXB59i7Vuj2vf8NnaBFzQ@mail.gmail.com> <1337179563.2985.80.camel@dabdike.int.hansenpartnership.com>
+Content-Type: text/plain; charset="US-ASCII"; format=flowed; delsp=yes
 Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+MIME-Version: 1.0 (Apple Message framework v936)
+Date: Wed, 16 May 2012 20:27:35 -0400
+CC: Geert Uytterhoeven <geert@linux-m68k.org>, linux-kernel@vger.kernel.org,
+        Linuxppc-dev <linuxppc-dev@ozlabs.org>,
+        Parisc List <linux-parisc@vger.kernel.org>,
+        the arch/x86 maintainers <x86@kernel.org>,
+        Dmitry Kasatkin <dmitry.kasatkin@intel.com>,
+        James Morris <jmorris@namei.org>
+X-Mailer: Apple Mail (2.936)
+X-OriginalArrivalTime: 17 May 2012 00:27:51.0969 (UTC) FILETIME=[E5257910:01CD33C3]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am Mittwoch, den 16.05.2012, 12:17 -0600 schrieb Tim Gardner:
-> commit b99da31ed8521eb78d5d6930f3128f8ecdb75fae causes the backlight in
-> my Dell XPS M1710 to stop working. Symptoms are dim display and won't
-> respond to key brightness events. I bisected and confirmed that
-> reverting this single patch on top of 3.4-rc7 fixes the problem.
-That commit is correct, it may have uncovered a bug elsewhere though.
+On 16-May-12, at 10:46 AM, James Bottomley wrote:
 
-Cheers,
-Ben.
+> Wow, lib/mpi/ is a complete horror: it's full of hand crafted asm  
+> code.
+> The error in this case appears to be that umul_ppm() is implemented as
+> an xmpyu instruction.  That's a floating point instruction.  We
+> deliberately compile the kernel with floating point disabled because  
+> we
+> don't want to save and restore the floating point register file on  
+> each
+> context switch, hence the operand constraints are unsatisfiable.
 
-> 
-> 01:00.0 VGA compatible controller [0300]: nVidia Corporation G71
-> [GeForce Go 7900 GS] [10de:0298] (rev a1)
-> 	Subsystem: Dell Device [1028:019b]
-> 	Control: I/O+ Mem+ BusMaster+ SpecCycle- MemWINV- VGASnoop- ParErr-
-> Stepping- SERR- FastB2B- DisINTx-
-> 	Status: Cap+ 66MHz- UDF- FastB2B- ParErr- DEVSEL=fast >TAbort- <TAbort-
-> <MAbort- >SERR- <PERR- INTx-
-> 	Latency: 0, Cache Line Size: 64 bytes
-> 	Interrupt: pin A routed to IRQ 16
-> 	Region 0: Memory at ed000000 (32-bit, non-prefetchable) [size=16M]
-> 	Region 1: Memory at d0000000 (64-bit, prefetchable) [size=256M]
-> 	Region 3: Memory at ee000000 (64-bit, non-prefetchable) [size=16M]
-> 	Region 5: I/O ports at ef00 [size=128]
-> 	Expansion ROM at efe00000 [disabled] [size=128K]
-> 	Capabilities: <access denied>
-> 	Kernel driver in use: nouveau
-> 	Kernel modules: nouveau, nvidiafb
-> 
-> rtg
+I haven't tried this but I think the parisc implementation of umul_ppmm
+can be deleted.  There is a generic version in the file.
+
+Dave
+--
+John David Anglin	dave.anglin@bell.net
+
 
 
