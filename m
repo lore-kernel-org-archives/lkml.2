@@ -1,48 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761276Ab2EQHfg (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 May 2012 03:35:36 -0400
-Received: from bedivere.hansenpartnership.com ([66.63.167.143]:59581 "EHLO
-	bedivere.hansenpartnership.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753105Ab2EQHfe (ORCPT
+	id S1761291Ab2EQHfl (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 May 2012 03:35:41 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:48130 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1761278Ab2EQHfi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 May 2012 03:35:34 -0400
-Message-ID: <1337240130.2926.4.camel@dabdike.int.hansenpartnership.com>
-Subject: Re: [PATCH 3/5] st: get rid of scsi_tapes array
-From: James Bottomley <James.Bottomley@HansenPartnership.com>
-To: Lee Duncan <lduncan@suse.com>
-Cc: linux-scsi@vger.kernel.org, linux-kernel@vger.kernel.org,
-        kai.makisara@kolumbus.fi, jeffm@suse.com
-Date: Thu, 17 May 2012 08:35:30 +0100
-In-Reply-To: <4FB476F3.5010404@suse.com>
-References: <4FB476F3.5010404@suse.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	Thu, 17 May 2012 03:35:38 -0400
+From: Shawn Guo <shawn.guo@linaro.org>
+To: Grant Likely <grant.likely@secretlab.ca>,
+        Linus Walleij <linus.walleij@stericsson.com>
+Cc: =?UTF-8?q?Lothar=20Wa=C3=9Fmann?= <LW@KARO-electronics.de>,
+        Ryan Mallon <ryan@bluewatersys.com>,
+        H Hartley Sweeten <hsweeten@visionengravers.com>,
+        Sascha Hauer <s.hauer@pengutronix.de>,
+        "Hans J. Koch" <hjk@linutronix.de>,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        Shawn Guo <shawn.guo@linaro.org>
+Subject: [PATCH 1/2] gpio/generic: initialize basic_mmio_gpio shadow variables properly
+Date: Thu, 17 May 2012 15:35:02 +0800
+Message-Id: <1337240103-4756-2-git-send-email-shawn.guo@linaro.org>
+X-Mailer: git-send-email 1.7.5.4
+In-Reply-To: <1337240103-4756-1-git-send-email-shawn.guo@linaro.org>
+References: <1337240103-4756-1-git-send-email-shawn.guo@linaro.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2012-05-16 at 20:56 -0700, Lee Duncan wrote:
-> st currently allocates an array to store pointers to all of the
-> scsi_tape objects. It's used to discover available indexes to use as the
-> base for the minor number selection and later to look up scsi_tape
-> devices for character devices.
-> 
-> We switch to using an IDR for minor selection and a pointer from
-> st_modedef back to scsi_tape for the lookups.
-> 
-> Signed-off-by: Jeff Mahoney <jeffm@suse.com>
-> Reviewed-by: Lee Duncan <lduncan@suse.com>
+It fixes the issue in gpio-generic that commit fb14921 (gpio/mxc: add
+missing initialization of basic_mmio_gpio shadow variables) manged to
+fix in gpio-mxc driver, so that other platform specific drivers do not
+suffer from the same problem over and over again.
 
-This can't be Reviewed-by either.  The signoff chain has to follow the
-transmission path of the patch.  If you send me Jeff's patches, you have
-to add a signoff because you're a direct part of the transmission path.
-If Jeff sends me them, then he can give you Reviewed-by because you're
-not then in the direct transmission path.  (Signoff is supposed to imply
-reviewed by anyway, so the tagging is correct in either case).
+Signed-off-by: Shawn Guo <shawn.guo@linaro.org>
+---
+ drivers/gpio/gpio-generic.c |    4 ++++
+ 1 files changed, 4 insertions(+), 0 deletions(-)
 
-James
-
+diff --git a/drivers/gpio/gpio-generic.c b/drivers/gpio/gpio-generic.c
+index e38dd0c..cfc9439 100644
+--- a/drivers/gpio/gpio-generic.c
++++ b/drivers/gpio/gpio-generic.c
+@@ -394,6 +394,10 @@ int bgpio_init(struct bgpio_chip *bgc, struct device *dev,
+ 		return ret;
+ 
+ 	bgc->data = bgc->read_reg(bgc->reg_dat);
++	if (bgc->gc.set == bgpio_set_set)
++		bgc->data = bgc->read_reg(bgc->reg_set);
++	if (bgc->reg_dir)
++		bgc->dir = bgc->read_reg(bgc->reg_dir);
+ 
+ 	return ret;
+ }
+-- 
+1.7.5.4
 
