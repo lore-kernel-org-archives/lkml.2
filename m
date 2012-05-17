@@ -1,244 +1,117 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S967479Ab2EQRBb (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 May 2012 13:01:31 -0400
-Received: from e23smtp02.au.ibm.com ([202.81.31.144]:59114 "EHLO
-	e23smtp02.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932858Ab2EQRB3 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 May 2012 13:01:29 -0400
-From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-Subject: [PATCH v5 3/5] cpusets,
- hotplug: Restructure functions that are invoked during hotplug
-To: a.p.zijlstra@chello.nl, mingo@kernel.org, pjt@google.com,
-        paul@paulmenage.org, akpm@linux-foundation.org
-Cc: rjw@sisk.pl, nacc@us.ibm.com, rientjes@google.com,
-        paulmck@linux.vnet.ibm.com, tglx@linutronix.de,
-        seto.hidetoshi@jp.fujitsu.com, tj@kernel.org, mschmidt@redhat.com,
-        berrange@redhat.com, nikunj@linux.vnet.ibm.com,
-        vatsa@linux.vnet.ibm.com, liuj97@gmail.com,
-        linux-kernel@vger.kernel.org, linux-pm@vger.kernel.org,
-        srivatsa.bhat@linux.vnet.ibm.com
-Date: Thu, 17 May 2012 22:30:40 +0530
-Message-ID: <20120517170032.3011.3342.stgit@srivatsabhat.in.ibm.com>
-In-Reply-To: <20120517165839.3011.98723.stgit@srivatsabhat.in.ibm.com>
-References: <20120517165839.3011.98723.stgit@srivatsabhat.in.ibm.com>
-User-Agent: StGIT/0.14.3
+	id S1030301Ab2EQRBl (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 May 2012 13:01:41 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:1489 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S967436Ab2EQRBg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 17 May 2012 13:01:36 -0400
+Date: Thu, 17 May 2012 19:00:15 +0200
+From: Oleg Nesterov <oleg@redhat.com>
+To: "Eric W. Biederman" <ebiederm@xmission.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Pavel Emelyanov <xemul@parallels.com>,
+        Cyrill Gorcunov <gorcunov@openvz.org>,
+        Louis Rilling <louis.rilling@kerlabs.com>,
+        Mike Galbraith <efault@gmx.de>
+Subject: Re: [PATCH 2/3] pidns: Guarantee that the pidns init will be the
+	last pidns process reaped.
+Message-ID: <20120517170015.GA12436@redhat.com>
+References: <20120428142605.GA20248@redhat.com> <m14ns355ru.fsf@fess.ebiederm.org> <20120429165846.GA19054@redhat.com> <1335754867.17899.4.camel@marge.simpson.net> <m1zk9rmyh4.fsf@fess.ebiederm.org> <20120501134214.f6b44f4a.akpm@linux-foundation.org> <87havs7rvv.fsf_-_@xmission.com> <8762c87rrd.fsf_-_@xmission.com> <20120516183920.GA19975@redhat.com> <878vgrsv7q.fsf@xmission.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
-x-cbid: 12051706-5490-0000-0000-000001679CD2
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <878vgrsv7q.fsf@xmission.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Separate out the cpuset related handling for CPU/Memory online/offline.
-This also helps us exploit the most obvious and basic level of optimization
-that any notification mechanism (CPU/Mem online/offline) has to offer us:
-"We *know* why we have been invoked. So stop pretending that we are lost,
-and do only the necessary amount of processing!".
+On 05/16, Eric W. Biederman wrote:
+>
+> Oleg Nesterov <oleg@redhat.com> writes:
+>
+> > Hmm. I don't think the patch is 100% correct. Afaics, this needs more
+> > delay_pidns_leader() checks.
+> >
+> > For example. Suppose we have a CLONE_NEWPID zombie I, it has an
+> > EXIT_DEAD child D so delay_pidns_leader(I) == T.
+> >
+> > Now suppose that I->real_parent exits, lets denote this task as P.
+> >
+> > Suppose that P->real_parent ignores SIGCHLD.
+> >
+> > In this case P will do release_task(I) prematurely. And worse, when
+> > D finally does realease_task(D) it will do realease_task(I) again.
+>
+> Good point.  I will fix that and post a patch shortly.  It doesn't
+> need a full delay_pidns_leader test just a test for children.
 
-And while at it, rename scan_for_empty_cpusets() to
-scan_cpusets_upon_hotplug(), which is more appropriate considering how
-it is restructured.
+This will add more complications. And even this is not enough, I guess.
+For example __ptrace_detach()...
 
-Signed-off-by: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
----
+I agree, the idea to "hack" release_task() so that it switches to
+init is clever, but imho this is too clever ;)
 
- include/linux/cpuset.h |    4 +-
- kernel/cpuset.c        |   88 +++++++++++++++++++++++++++++++++---------------
- kernel/sched/core.c    |    4 +-
- 3 files changed, 65 insertions(+), 31 deletions(-)
+Seriously, what do you think about the patch below? Or something
+like this. It is still based on your suggestion to check ->children,
+but it is much, much more simple and understandable.
 
-diff --git a/include/linux/cpuset.h b/include/linux/cpuset.h
-index 668f66b..838320f 100644
---- a/include/linux/cpuset.h
-+++ b/include/linux/cpuset.h
-@@ -20,7 +20,7 @@ extern int number_of_cpusets;	/* How many cpusets are defined in system? */
+Just in case... Even with the PF_EXITING check __wake_up_parent()
+can be wrong, but this is very unlikely and harmless.
+
+What do you think?
+
+> In looking for any other weird corner case bugs I am noticing that
+> I don't think I handled the case of a ptraced init quite right.
+> I don't understand the change signaling semantics when the
+> ptracer is our parent.
+
+Do you mean the "if (tsk->ptrace)" code in exit_notify() ? Nobody
+understand it ;) Last time this code was modified by me (iirc), but
+I simply tried to preserve the previous behaviour.
+
+Oleg.
+
+--- x/kernel/exit.c
++++ x/kernel/exit.c
+@@ -63,6 +63,13 @@ static void exit_mm(struct task_struct *
  
- extern int cpuset_init(void);
- extern void cpuset_init_smp(void);
--extern void cpuset_update_active_cpus(void);
-+extern void cpuset_update_active_cpus(bool cpu_online);
- extern void cpuset_cpus_allowed(struct task_struct *p, struct cpumask *mask);
- extern void cpuset_cpus_allowed_fallback(struct task_struct *p);
- extern nodemask_t cpuset_mems_allowed(struct task_struct *p);
-@@ -124,7 +124,7 @@ static inline void set_mems_allowed(nodemask_t nodemask)
- static inline int cpuset_init(void) { return 0; }
- static inline void cpuset_init_smp(void) {}
- 
--static inline void cpuset_update_active_cpus(void)
-+static inline void cpuset_update_active_cpus(bool cpu_online)
+ static void __unhash_process(struct task_struct *p, bool group_dead)
  {
- 	partition_sched_domains(1, NULL, NULL);
- }
-diff --git a/kernel/cpuset.c b/kernel/cpuset.c
-index 15926f8..276a35a 100644
---- a/kernel/cpuset.c
-+++ b/kernel/cpuset.c
-@@ -147,6 +147,12 @@ typedef enum {
- 	CS_SPREAD_SLAB,
- } cpuset_flagbits_t;
- 
-+/* the type of hotplug event */
-+enum hotplug_event {
-+	CPUSET_CPU_OFFLINE,
-+	CPUSET_MEM_OFFLINE,
-+};
++	struct task_struct *parent = p->parent;
++	bool parent_is_init = false;
 +
- /* convenient tests for these bits */
- static inline int is_cpu_exclusive(const struct cpuset *cs)
- {
-@@ -2027,8 +2033,10 @@ static struct cpuset *cpuset_next(struct list_head *queue)
- 
- 
- /*
-- * Walk the specified cpuset subtree and look for empty cpusets.
-- * The tasks of such cpuset must be moved to a parent cpuset.
-+ * Walk the specified cpuset subtree upon a hotplug operation (CPU/Memory
-+ * online/offline) and update the cpusets accordingly.
-+ * For regular CPU/Mem hotplug, look for empty cpusets; the tasks of such
-+ * cpuset must be moved to a parent cpuset.
-  *
-  * Called with cgroup_mutex held.  We take callback_mutex to modify
-  * cpus_allowed and mems_allowed.
-@@ -2041,38 +2049,58 @@ static struct cpuset *cpuset_next(struct list_head *queue)
-  * that has tasks along with an empty 'mems'.  But if we did see such
-  * a cpuset, we'd handle it just like we do if its 'cpus' was empty.
-  */
--static void scan_for_empty_cpusets(struct cpuset *root)
-+static void
-+scan_cpusets_upon_hotplug(struct cpuset *root, enum hotplug_event event)
- {
- 	LIST_HEAD(queue);
--	struct cpuset *cp;	/* scans cpusets being updated */
-+	struct cpuset *cp;		/* scans cpusets being updated */
- 	static nodemask_t oldmems;	/* protected by cgroup_mutex */
- 
- 	list_add_tail((struct list_head *)&root->stack_list, &queue);
- 
--	while ((cp = cpuset_next(&queue)) != NULL) {
-+	switch (event) {
-+	case CPUSET_CPU_OFFLINE:
-+		while ((cp = cpuset_next(&queue)) != NULL) {
- 
--		/* Continue past cpusets with all cpus, mems online */
--		if (cpumask_subset(cp->cpus_allowed, cpu_active_mask) &&
--		    nodes_subset(cp->mems_allowed, node_states[N_HIGH_MEMORY]))
--			continue;
-+			/* Continue past cpusets with all cpus online */
-+			if (cpumask_subset(cp->cpus_allowed, cpu_active_mask))
-+				continue;
- 
--		oldmems = cp->mems_allowed;
-+			/* Remove offline cpus from this cpuset. */
-+			mutex_lock(&callback_mutex);
-+			cpumask_and(cp->cpus_allowed, cp->cpus_allowed,
-+							cpu_active_mask);
-+			mutex_unlock(&callback_mutex);
- 
--		/* Remove offline cpus and mems from this cpuset. */
--		mutex_lock(&callback_mutex);
--		cpumask_and(cp->cpus_allowed, cp->cpus_allowed,
--			    cpu_active_mask);
--		nodes_and(cp->mems_allowed, cp->mems_allowed,
-+			/* Move tasks from the empty cpuset to a parent */
-+			if (cpumask_empty(cp->cpus_allowed))
-+				remove_tasks_in_empty_cpuset(cp);
-+			else
-+				update_tasks_cpumask(cp, NULL);
++#ifdef CONFIG_PID_NS
++	parent_is_init = (task_active_pid_ns(p)->child_reaper == parent);
++#endif
++
+ 	nr_threads--;
+ 	detach_pid(p, PIDTYPE_PID);
+ 	if (group_dead) {
+@@ -72,6 +79,11 @@ static void __unhash_process(struct task
+ 		list_del_rcu(&p->tasks);
+ 		list_del_init(&p->sibling);
+ 		__this_cpu_dec(process_counts);
++
++		if (parent_is_init && (parent->flags & PF_EXITING)) {
++			if (list_empty(&parent->children))
++				__wake_up_parent(p, parent);
 +		}
-+		break;
-+
-+	case CPUSET_MEM_OFFLINE:
-+		while ((cp = cpuset_next(&queue)) != NULL) {
-+
-+			/* Continue past cpusets with all mems online */
-+			if (nodes_subset(cp->mems_allowed,
-+					node_states[N_HIGH_MEMORY]))
-+				continue;
-+
-+			oldmems = cp->mems_allowed;
-+
-+			/* Remove offline mems from this cpuset. */
-+			mutex_lock(&callback_mutex);
-+			nodes_and(cp->mems_allowed, cp->mems_allowed,
- 						node_states[N_HIGH_MEMORY]);
--		mutex_unlock(&callback_mutex);
-+			mutex_unlock(&callback_mutex);
- 
--		/* Move tasks from the empty cpuset to a parent */
--		if (cpumask_empty(cp->cpus_allowed) ||
--		     nodes_empty(cp->mems_allowed))
--			remove_tasks_in_empty_cpuset(cp);
--		else {
--			update_tasks_cpumask(cp, NULL);
--			update_tasks_nodemask(cp, &oldmems, NULL);
-+			/* Move tasks from the empty cpuset to a parent */
-+			if (nodes_empty(cp->mems_allowed))
-+				remove_tasks_in_empty_cpuset(cp);
-+			else
-+				update_tasks_nodemask(cp, &oldmems, NULL);
- 		}
  	}
+ 	list_del_rcu(&p->thread_group);
  }
-@@ -2091,8 +2119,11 @@ static void scan_for_empty_cpusets(struct cpuset *root)
-  *
-  * Called within get_online_cpus().  Needs to call cgroup_lock()
-  * before calling generate_sched_domains().
-+ *
-+ * @cpu_online: Indicates whether this is a CPU online event (true) or
-+ * a CPU offline event (false).
-  */
--void cpuset_update_active_cpus(void)
-+void cpuset_update_active_cpus(bool cpu_online)
- {
- 	struct sched_domain_attr *attr;
- 	cpumask_var_t *doms;
-@@ -2102,7 +2133,10 @@ void cpuset_update_active_cpus(void)
- 	mutex_lock(&callback_mutex);
- 	cpumask_copy(top_cpuset.cpus_allowed, cpu_active_mask);
- 	mutex_unlock(&callback_mutex);
--	scan_for_empty_cpusets(&top_cpuset);
-+
-+	if (!cpu_online)
-+		scan_cpusets_upon_hotplug(&top_cpuset, CPUSET_CPU_OFFLINE);
-+
- 	ndoms = generate_sched_domains(&doms, &attr);
- 	cgroup_unlock();
+--- x/kernel/pid_namespace.c
++++ x/kernel/pid_namespace.c
+@@ -184,6 +184,9 @@ void zap_pid_ns_processes(struct pid_nam
+ 		rc = sys_wait4(-1, NULL, __WALL, NULL);
+ 	} while (rc != -ECHILD);
  
-@@ -2133,9 +2167,9 @@ static int cpuset_track_online_nodes(struct notifier_block *self,
- 	case MEM_OFFLINE:
- 		/*
- 		 * needn't update top_cpuset.mems_allowed explicitly because
--		 * scan_for_empty_cpusets() will update it.
-+		 * scan_cpusets_upon_hotplug() will update it.
- 		 */
--		scan_for_empty_cpusets(&top_cpuset);
-+		scan_cpusets_upon_hotplug(&top_cpuset, CPUSET_MEM_OFFLINE);
- 		break;
- 	default:
- 		break;
-diff --git a/kernel/sched/core.c b/kernel/sched/core.c
-index 9c6ce0c..b5a0a0c 100644
---- a/kernel/sched/core.c
-+++ b/kernel/sched/core.c
-@@ -6838,7 +6838,7 @@ static int cpuset_cpu_active(struct notifier_block *nfb, unsigned long action,
++	wait_event(&current->signal->wait_chldexit,
++			list_empty(&current->children));
++
+ 	if (pid_ns->reboot)
+ 		current->signal->group_exit_code = pid_ns->reboot;
  
- 	case CPU_ONLINE:
- 	case CPU_DOWN_FAILED:
--		cpuset_update_active_cpus();
-+		cpuset_update_active_cpus(true);
- 		break;
- 	default:
- 		return NOTIFY_DONE;
-@@ -6851,7 +6851,7 @@ static int cpuset_cpu_inactive(struct notifier_block *nfb, unsigned long action,
- {
- 	switch (action) {
- 	case CPU_DOWN_PREPARE:
--		cpuset_update_active_cpus();
-+		cpuset_update_active_cpus(false);
- 		break;
- 	case CPU_DOWN_PREPARE_FROZEN:
- 		num_cpus_frozen++;
 
