@@ -1,209 +1,131 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933332Ab2EQAHB (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 May 2012 20:07:01 -0400
-Received: from LGEMRELSE6Q.lge.com ([156.147.1.121]:49499 "EHLO
-	LGEMRELSE6Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751883Ab2EQAG6 (ORCPT
+	id S965338Ab2EQAPj (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 May 2012 20:15:39 -0400
+Received: from LGEMRELSE7Q.lge.com ([156.147.1.151]:64183 "EHLO
+	LGEMRELSE7Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S964789Ab2EQAPQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 May 2012 20:06:58 -0400
-X-AuditID: 9c930179-b7bb9ae000000ea5-b0-4fb4411db814
-Message-ID: <4FB44147.5070704@kernel.org>
-Date: Thu, 17 May 2012 09:07:35 +0900
-From: Minchan Kim <minchan@kernel.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
+	Wed, 16 May 2012 20:15:16 -0400
+X-AuditID: 9c930197-b7be2ae000000ebb-f2-4fb4430a48e0
+From: Namhyung Kim <namhyung.kim@lge.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Ingo Molnar <mingo@kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Arnaldo Carvalho de Melo <acme@infradead.org>,
+        linux-kernel@vger.kernel.org, Arjan van de Ven <arjan@infradead.org>,
+        David Ahern <dsahern@gmail.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Mike Galbraith <efault@gmx.de>, Paul Mackerras <paulus@samba.org>,
+        Stephane Eranian <eranian@google.com>, arnaldo.melo@gmail.com,
+        Arnaldo Carvalho de Melo <acme@redhat.com>
+Subject: Re: [GIT PULL 0/8] Annotation weekly ponies delivery
+References: <1336852387-16322-1-git-send-email-acme@infradead.org>
+	<CA+55aFxeqrCj71fSe2r9kwzyO9q2BT9A89f7nLUgbrTG_uPP2g@mail.gmail.com>
+	<1336994000.2443.24.camel@twins> <20120514115551.GA6479@gmail.com>
+	<1337007985.1552.5.camel@leonhard> <1337077973.27694.24.camel@twins>
+	<1337093080.1493.22.camel@leonhard> <1337101633.27694.92.camel@twins>
+	<87liksd5wi.fsf@sejong.aot.lge.com>
+Date: Thu, 17 May 2012 09:13:18 +0900
+In-Reply-To: <87liksd5wi.fsf@sejong.aot.lge.com> (Namhyung Kim's message of
+	"Wed, 16 May 2012 14:57:49 +0900")
+Message-ID: <87y5or1x7l.fsf@sejong.aot.lge.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.0.95 (gnu/linux)
 MIME-Version: 1.0
-Newsgroups: gmane.linux.kernel.mm,gmane.linux.kernel
-To: Guan Xuetao <gxt@mprc.pku.edu.cn>
-CC: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Nitin Gupta <ngupta@vflare.org>,
-        Seth Jennings <sjenning@linux.vnet.ibm.com>,
-        Dan Magenheimer <dan.magenheimer@oracle.com>,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        Russell King <linux@arm.linux.org.uk>,
-        Ralf Baechle <ralf@linux-mips.org>, Paul Mundt <lethal@linux-sh.org>,
-        Chen Liqin <liqin.chen@sunplusct.com>
-Subject: Re: [PATCH v2 1/3] zsmalloc: support zsmalloc to ARM, MIPS, SUPERH
-References: <1337133919-4182-1-git-send-email-minchan@kernel.org> <1337153329.1751.5.camel@ubuntu.ubuntu-domain>
-In-Reply-To: <1337153329.1751.5.camel@ubuntu.ubuntu-domain>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain
 X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/16/2012 04:28 PM, Guan Xuetao wrote:
+Hi,
 
-> On Wed, 2012-05-16 at 11:05 +0900, Minchan Kim wrote:
->> zsmalloc uses set_pte and __flush_tlb_one for performance but
->> many architecture don't support it. so this patch removes
->> set_pte and __flush_tlb_one which are x86 dependency.
->> Instead of it, use local_flush_tlb_kernel_range which are available
->> by more architectures. It would be better than supporting only x86
->> and last patch in series will enable again with supporting
->> local_flush_tlb_kernel_range in x86.
->>
->> About local_flush_tlb_kernel_range,
->> If architecture is very smart, it could flush only tlb entries related to vaddr.
->> If architecture is smart, it could flush only tlb entries related to a CPU.
->> If architecture is _NOT_ smart, it could flush all entries of all CPUs.
->> So, it would be best to support both portability and performance.
->>
->> Cc: Russell King <linux@arm.linux.org.uk>
->> Cc: Ralf Baechle <ralf@linux-mips.org>
->> Cc: Paul Mundt <lethal@linux-sh.org>
->> Cc: Guan Xuetao <gxt@mprc.pku.edu.cn>
->> Cc: Chen Liqin <liqin.chen@sunplusct.com>
->> Signed-off-by: Minchan Kim <minchan@kernel.org>
->> ---
->>
->> Need double check about supporting local_flush_tlb_kernel_range
->> in ARM, MIPS, SUPERH maintainers. And I will Ccing unicore32 and
->> score maintainers because arch directory in those arch have
->> local_flush_tlb_kernel_range, too but I'm very unfamiliar with those
->> architecture so pass it to maintainers.
->> I didn't coded up dumb local_flush_tlb_kernel_range which flush
->> all cpus. I expect someone need ZSMALLOC will implement it easily in future.
->> Seth might support it in PowerPC. :)
->>
->>
->>  drivers/staging/zsmalloc/Kconfig         |    6 ++---
->>  drivers/staging/zsmalloc/zsmalloc-main.c |   36 +++++++++++++++++++++---------
->>  drivers/staging/zsmalloc/zsmalloc_int.h  |    1 -
->>  3 files changed, 29 insertions(+), 14 deletions(-)
->>
->> diff --git a/drivers/staging/zsmalloc/Kconfig b/drivers/staging/zsmalloc/Kconfig
->> index a5ab720..def2483 100644
->> --- a/drivers/staging/zsmalloc/Kconfig
->> +++ b/drivers/staging/zsmalloc/Kconfig
->> @@ -1,9 +1,9 @@
->>  config ZSMALLOC
->>  	tristate "Memory allocator for compressed pages"
->> -	# X86 dependency is because of the use of __flush_tlb_one and set_pte
->> +	# arch dependency is because of the use of local_unmap_kernel_range
->>  	# in zsmalloc-main.c.
->> -	# TODO: convert these to portable functions
->> -	depends on X86
->> +	# TODO: implement local_unmap_kernel_range in all architecture.
->> +	depends on (ARM || MIPS || SUPERH)
-> I suggest removing above line, so if I want to use zsmalloc, I could
-> enable this configuration easily.
+On Wed, 16 May 2012 14:57:49 +0900, Namhyung Kim wrote:
+> In fact, my perf stat -g was already broken - it cannot count at
+> all on my SNB box. I'll investigate it more.
+>
+
+It's like a matter of the number of the hw counters. The perf stat -g
+uses 6 hw events, but I can use up to 5 hw events on my SNB machine:
+
+$ ./perf stat -g -e cycles,cache-references,cache-misses,instructions,branches sleep 1
+
+ Performance counter stats for 'sleep 1':
+
+           999,008 cycles                    #    0.000 GHz                    
+            10,963 cache-references                                            
+             2,630 cache-misses              #   23.990 % of all cache refs    
+           635,225 instructions              #    0.64  insns per cycle        
+           128,014 branches                                                    
+
+       1.001466421 seconds time elapsed
 
 
-I don't get it. What do you mean?
-If I remove above line, compile error will happen if arch doesn't support local_unmap_kernel_range.
+But I adding branch-misses event outputs:
+
+ Performance counter stats for 'sleep 1':
+
+     <not counted> cycles                  
+     <not counted> cache-references        
+     <not counted> cache-misses            
+     <not counted> instructions            
+     <not counted> branches                
+     <not counted> branch-misses           
+
+       1.000742533 seconds time elapsed
 
 
-> 
->>  	default n
->>  	help
->>  	  zsmalloc is a slab-based memory allocator designed to store
->> diff --git a/drivers/staging/zsmalloc/zsmalloc-main.c b/drivers/staging/zsmalloc/zsmalloc-main.c
->> index 4496737..8a8b08f 100644
->> --- a/drivers/staging/zsmalloc/zsmalloc-main.c
->> +++ b/drivers/staging/zsmalloc/zsmalloc-main.c
->> @@ -442,7 +442,7 @@ static int zs_cpu_notifier(struct notifier_block *nb, unsigned long action,
->>  		area = &per_cpu(zs_map_area, cpu);
->>  		if (area->vm)
->>  			break;
->> -		area->vm = alloc_vm_area(2 * PAGE_SIZE, area->vm_ptes);
->> +		area->vm = alloc_vm_area(2 * PAGE_SIZE, NULL);
->>  		if (!area->vm)
->>  			return notifier_from_errno(-ENOMEM);
->>  		break;
->> @@ -696,13 +696,22 @@ void *zs_map_object(struct zs_pool *pool, void *handle)
->>  	} else {
->>  		/* this object spans two pages */
->>  		struct page *nextp;
->> +		struct page *pages[2];
->> +		struct page **page_array = &pages[0];
->> +		int err;
->>  
->>  		nextp = get_next_page(page);
->>  		BUG_ON(!nextp);
->>  
->> +		page_array[0] = page;
->> +		page_array[1] = nextp;
->>  
->> -		set_pte(area->vm_ptes[0], mk_pte(page, PAGE_KERNEL));
->> -		set_pte(area->vm_ptes[1], mk_pte(nextp, PAGE_KERNEL));
->> +		/*
->> +		 * map_vm_area never fail because we already allocated
->> +		 * pages for page table in alloc_vm_area.
->> +		 */
->> +		err = map_vm_area(area->vm, PAGE_KERNEL, &page_array);
->> +		BUG_ON(err);
-> I think WARN_ON() is better than BUG_ON() here.
+However adding ref-cycles is fine (Is it related to fixed counters?):
+
+ Performance counter stats for 'sleep 1':
+
+         1,027,263 cycles                    #    0.000 GHz                    
+            12,435 cache-references                                            
+             2,747 cache-misses              #   22.091 % of all cache refs    
+           650,100 instructions              #    0.63  insns per cycle        
+           130,765 branches                                                    
+         2,367,488 ref-cycles                                                  
+
+       1.001557088 seconds time elapsed
 
 
-If we don't do BUG_ON, zsmalloc's user can use dangling pointer so that it can make system very
-unstable, even fatal.
+BTW, dmesg says I have 7, but a counter was taken by NMI watchdog:
 
-> 
->>  
->>  		/* We pre-allocated VM area so mapping can never fail */
->>  		area->vm_addr = area->vm->addr;
->> @@ -712,6 +721,15 @@ void *zs_map_object(struct zs_pool *pool, void *handle)
->>  }
->>  EXPORT_SYMBOL_GPL(zs_map_object);
->>  
->> +static void local_unmap_kernel_range(unsigned long addr, unsigned long size)
->> +{
->> +	unsigned long end = addr + size;
->> +
->> +	flush_cache_vunmap(addr, end);
->> +	unmap_kernel_range_noflush(addr, size);
->> +	local_flush_tlb_kernel_range(addr, end);
->> +}
->> +
->>  void zs_unmap_object(struct zs_pool *pool, void *handle)
->>  {
->>  	struct page *page;
->> @@ -730,14 +748,12 @@ void zs_unmap_object(struct zs_pool *pool, void *handle)
->>  	off = obj_idx_to_offset(page, obj_idx, class->size);
->>  
->>  	area = &__get_cpu_var(zs_map_area);
->> -	if (off + class->size <= PAGE_SIZE) {
->> +	if (off + class->size <= PAGE_SIZE)
->>  		kunmap_atomic(area->vm_addr);
->> -	} else {
->> -		set_pte(area->vm_ptes[0], __pte(0));
->> -		set_pte(area->vm_ptes[1], __pte(0));
->> -		__flush_tlb_one((unsigned long)area->vm_addr);
->> -		__flush_tlb_one((unsigned long)area->vm_addr + PAGE_SIZE);
->> -	}
->> +	else
->> +		local_unmap_kernel_range((unsigned long)area->vm->addr,
->> +					PAGE_SIZE * 2);
->> +
->>  	put_cpu_var(zs_map_area);
->>  }
->>  EXPORT_SYMBOL_GPL(zs_unmap_object);
->> diff --git a/drivers/staging/zsmalloc/zsmalloc_int.h b/drivers/staging/zsmalloc/zsmalloc_int.h
->> index 6fd32a9..eaec845 100644
->> --- a/drivers/staging/zsmalloc/zsmalloc_int.h
->> +++ b/drivers/staging/zsmalloc/zsmalloc_int.h
->> @@ -111,7 +111,6 @@ static const int fullness_threshold_frac = 4;
->>  
->>  struct mapping_area {
->>  	struct vm_struct *vm;
->> -	pte_t *vm_ptes[2];
->>  	char *vm_addr;
->>  };
->>  
-> 
-> 
-> --
-> To unsubscribe, send a message with 'unsubscribe linux-mm' in
-> the body to majordomo@kvack.org.  For more info on Linux MM,
-> see: http://www.linux-mm.org/ .
-> Fight unfair telecom internet charges in Canada: sign http://stopthemeter.ca/
-> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
-> 
+$ dmesg | grep -A32 Performance
+[    0.137227] Performance Events: PEBS fmt1+, 16-deep LBR, SandyBridge events, Intel PMU driver.
+[    0.137232] ... version:                3
+[    0.137233] ... bit width:              48
+[    0.137234] ... generic registers:      4
+[    0.137235] ... value mask:             0000ffffffffffff
+[    0.137236] ... max period:             000000007fffffff
+[    0.137237] ... fixed-purpose events:   3
+[    0.137238] ... event mask:             000000070000000f
+[    0.143371] NMI watchdog: enabled, takes one hw-pmu counter.
+[    0.149251] Booting Node   0, Processors  #1
+[    0.162396] NMI watchdog: enabled, takes one hw-pmu counter.
+[    0.166265]  #2
+[    0.179401] NMI watchdog: enabled, takes one hw-pmu counter.
+[    0.183263]  #3
+[    0.196399] NMI watchdog: enabled, takes one hw-pmu counter.
+[    0.200263]  #4
+[    0.213398] NMI watchdog: enabled, takes one hw-pmu counter.
+[    0.217268]  #5
+[    0.230404] NMI watchdog: enabled, takes one hw-pmu counter.
+[    0.234263]  #6
+[    0.247402] NMI watchdog: enabled, takes one hw-pmu counter.
+[    0.251268]  #7
+[    0.264405] NMI watchdog: enabled, takes one hw-pmu counter.
+[    0.268266]  #8
+[    0.281403] NMI watchdog: enabled, takes one hw-pmu counter.
+[    0.285268]  #9
+[    0.298405] NMI watchdog: enabled, takes one hw-pmu counter.
+[    0.302264]  #10
+[    0.315401] NMI watchdog: enabled, takes one hw-pmu counter.
+[    0.319266]  #11 Ok.
+[    0.332404] NMI watchdog: enabled, takes one hw-pmu counter.
+[    0.332435] Brought up 12 CPUs
+[    0.332437] Total of 12 processors activated (76799.44 BogoMIPS).
 
 
-
--- 
-Kind regards,
-Minchan Kim
+Thanks,
+Namhyung
