@@ -1,89 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030527Ab2EQWly (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 May 2012 18:41:54 -0400
-Received: from e35.co.us.ibm.com ([32.97.110.153]:42196 "EHLO
-	e35.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1030488Ab2EQWlx (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 May 2012 18:41:53 -0400
-Date: Thu, 17 May 2012 15:41:46 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Josh Triplett <josh@joshtriplett.org>
-Cc: linux-kernel@vger.kernel.org, mingo@elte.hu, laijs@cn.fujitsu.com,
-        dipankar@in.ibm.com, akpm@linux-foundation.org,
-        mathieu.desnoyers@polymtl.ca, niv@us.ibm.com, tglx@linutronix.de,
-        peterz@infradead.org, rostedt@goodmis.org, Valdis.Kletnieks@vt.edu,
-        dhowells@redhat.com, eric.dumazet@gmail.com, darren@dvhart.com,
-        fweisbec@gmail.com, patches@linaro.org
-Subject: Re: [PATCH RFC tip/core/rcu 2/2] rcu: Fix broken strings in RCU's
- source code.
-Message-ID: <20120517224146.GP2567@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <20120517221217.GA12196@linux.vnet.ibm.com>
- <1337292765-12221-1-git-send-email-paulmck@linux.vnet.ibm.com>
- <1337292765-12221-2-git-send-email-paulmck@linux.vnet.ibm.com>
- <20120517222322.GA15766@leaf>
+	id S1030542Ab2EQWmM (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 May 2012 18:42:12 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:38063 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1030488Ab2EQWmJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 17 May 2012 18:42:09 -0400
+Message-ID: <4FB57EB2.4050208@zytor.com>
+Date: Thu, 17 May 2012 15:41:54 -0700
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:11.0) Gecko/20120329 Thunderbird/11.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120517222322.GA15766@leaf>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 12051722-6148-0000-0000-000005F0DFA0
+To: Linus Torvalds <torvalds@linux-foundation.org>
+CC: "H.J. Lu" <hjl.tools@gmail.com>, linux-kernel@vger.kernel.org,
+        linux-arch@vger.kernel.org, mingo@kernel.org, tglx@linutronix.de
+Subject: Re: [PATCH 01/10] Use __kernel_long_t in struct timex
+References: <1337292816-10839-1-git-send-email-hjl.tools@gmail.com> <1337292816-10839-2-git-send-email-hjl.tools@gmail.com> <CA+55aFx98qvVg1JhMV0JjgNGb++xtir5ocseY3xgQNc3qAtWdQ@mail.gmail.com>
+In-Reply-To: <CA+55aFx98qvVg1JhMV0JjgNGb++xtir5ocseY3xgQNc3qAtWdQ@mail.gmail.com>
+X-Enigmail-Version: 1.4
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, May 17, 2012 at 03:23:22PM -0700, Josh Triplett wrote:
-> On Thu, May 17, 2012 at 03:12:45PM -0700, Paul E. McKenney wrote:
-> > @@ -1184,27 +1183,27 @@ rcu_torture_printk(char *page)
-> >  	}
-> >  	cnt += sprintf(&page[cnt], "%s%s ", torture_type, TORTURE_FLAG);
-> >  	cnt += sprintf(&page[cnt],
-> > -		       "rtc: %p ver: %lu tfle: %d rta: %d rtaf: %d rtf: %d "
-> > -		       "rtmbe: %d rtbke: %ld rtbre: %ld "
-> > -		       "rtbf: %ld rtb: %ld nt: %ld "
-> > -		       "onoff: %ld/%ld:%ld/%ld "
-> > -		       "barrier: %ld/%ld:%ld",
-> > +		       "rtc: %p ver: %lu tfle: %d rta: %d rtaf: %d rtf: %d ",
-> >  		       rcu_torture_current,
-> >  		       rcu_torture_current_version,
-> >  		       list_empty(&rcu_torture_freelist),
-> >  		       atomic_read(&n_rcu_torture_alloc),
-> >  		       atomic_read(&n_rcu_torture_alloc_fail),
-> > -		       atomic_read(&n_rcu_torture_free),
-> > +		       atomic_read(&n_rcu_torture_free));
-> > +	cnt += sprintf(&page[cnt], "rtmbe: %d rtbke: %ld rtbre: %ld ",
-> >  		       atomic_read(&n_rcu_torture_mberror),
-> >  		       n_rcu_torture_boost_ktrerror,
-> > -		       n_rcu_torture_boost_rterror,
-> > +		       n_rcu_torture_boost_rterror);
-> > +	cnt += sprintf(&page[cnt], "rtbf: %ld rtb: %ld nt: %ld ",
-> >  		       n_rcu_torture_boost_failure,
-> >  		       n_rcu_torture_boosts,
-> > -		       n_rcu_torture_timers,
-> > +		       n_rcu_torture_timers);
-> > +	cnt += sprintf(&page[cnt], "onoff: %ld/%ld:%ld/%ld ",
-> >  		       n_online_successes,
-> >  		       n_online_attempts,
-> >  		       n_offline_successes,
-> > -		       n_offline_attempts,
-> > +		       n_offline_attempts);
-> > +	cnt += sprintf(&page[cnt], "barrier: %ld/%ld:%ld",
-> >  		       n_barrier_successes,
-> >  		       n_barrier_attempts,
-> >  		       n_rcu_torture_barrier_error);
+On 05/17/2012 03:32 PM, Linus Torvalds wrote:
 > 
-> A change like this placates tools like checkpatch, but doesn't actually
-> fix the problem. :)
+> The whole __kernel_ prefix was a mistake, but it at least makes sense
+> for certain things where it is really about some random kernel choice
+> (ie __kernel_pid_t). Even there I despise it, because it's not really
+> about "kernel choice", it's about just the real native type for uid_t
+> - the fact that user-mode then occasionally screwed up because glibc
+> has chosen crazy extended types is really not a "kernel" issue at all.
+> So the naming in general is painful.
+> 
+> When it comes to the x32 thing I think it's *doubly* wrong, because
+> this isn't even about a "kernel choice". It's damn well the native
+> machine word-size. The fact that a limited user-mode ABI then limits
+> "long" to 32-bit is not the kernels problem.
+>
+> So I'd really like to see some discussion about naming. What does this
+> have to do with "kernel"? Nothing. It's the native word-size of the
+> machine, for crying out loud. The fact that some user interfaces may
+> limit themselves is not a "user mode vs kernel" thing.
 
-The formatting would frustrate most people trying to grep for the
-debugfs output anyway, though.
+It also puts a clear line between the kernel and user space namespaces,
+which has been an ongoing problem (we *still* haven't cleaned out some
+namespace pollution in the i386 <asm/signal.h> for example.)
 
-But the main reason for the change is that it makes it easier to see
-which quantity goes with which sprintf() format specifier.  (Lazy and
-self-indulgent, I know!!!)
+That being said, this is a lot like the __u* and __s* types which we use
+instead of <stdint.h> for similar reasons.  I don't know if
+__ulong/__slong or __uword/__sword would be better here?
 
-						Thanx, Paul
+	-hpa
+
+-- 
+H. Peter Anvin, Intel Open Source Technology Center
+I work for Intel.  I don't speak on their behalf.
 
