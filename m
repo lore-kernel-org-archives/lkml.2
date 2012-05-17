@@ -1,71 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760227Ab2EQMDC (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 May 2012 08:03:02 -0400
-Received: from mail-lpp01m010-f46.google.com ([209.85.215.46]:41060 "EHLO
-	mail-lpp01m010-f46.google.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752510Ab2EQMDA (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 May 2012 08:03:00 -0400
-Message-ID: <1337256176.2564.6.camel@koala>
-Subject: Re: [RFC v5] UBI: Fastmap support (aka checkpointing)
-From: Artem Bityutskiy <dedekind1@gmail.com>
-To: Richard Weinberger <richard@nod.at>
-Cc: linux-mtd@lists.infradead.org, tglx@linutronix.de,
+	id S1760379Ab2EQMEe (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 May 2012 08:04:34 -0400
+Received: from a.ns.miles-group.at ([95.130.255.143]:47834 "EHLO radon.swed.at"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1760246Ab2EQMEd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 17 May 2012 08:04:33 -0400
+Message-ID: <4FB4E94D.7090905@nod.at>
+Date: Thu, 17 May 2012 14:04:29 +0200
+From: Richard Weinberger <richard@nod.at>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:8.0) Gecko/20111105 Thunderbird/8.0
+MIME-Version: 1.0
+To: Artem Bityutskiy <dedekind1@gmail.com>
+CC: linux-mtd@lists.infradead.org, tglx@linutronix.de,
         linux-kernel@vger.kernel.org, Heinz.Egger@linutronix.de,
         tim.bird@am.sony.com
-Date: Thu, 17 May 2012 15:02:56 +0300
-In-Reply-To: <4FB4E613.4020100@nod.at>
-References: <1337201522-86521-1-git-send-email-richard@nod.at>
-	 <1337225964.2730.11.camel@brekeke> <4FB4E613.4020100@nod.at>
-Content-Type: multipart/signed; micalg="pgp-sha1"; protocol="application/pgp-signature";
-	boundary="=-6faulPe8POSR54SZJb65"
-X-Mailer: Evolution 3.2.3 (3.2.3-3.fc16) 
-Mime-Version: 1.0
+Subject: Re: [RFC v5] UBI: Fastmap support (aka checkpointing)
+References: <1337201522-86521-1-git-send-email-richard@nod.at>  <1337225964.2730.11.camel@brekeke> <4FB4E613.4020100@nod.at> <1337256176.2564.6.camel@koala>
+In-Reply-To: <1337256176.2564.6.camel@koala>
+X-Enigmail-Version: 1.3.4
+Content-Type: multipart/signed; micalg=pgp-sha1;
+ protocol="application/pgp-signature";
+ boundary="------------enig4E95368246D015A414AA8988"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
---=-6faulPe8POSR54SZJb65
-Content-Type: text/plain; charset="UTF-8"
+This is an OpenPGP/MIME signed message (RFC 2440 and 3156)
+--------------enig4E95368246D015A414AA8988
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: quoted-printable
 
-On Thu, 2012-05-17 at 13:50 +0200, Richard Weinberger wrote:
-> > Again, I am willing to do corresponding preparations for you, you'll
-> > need to amend your code then.
+Am 17.05.2012 14:02, schrieb Artem Bityutskiy:
+> On Thu, 2012-05-17 at 13:50 +0200, Richard Weinberger wrote:
+>>> Again, I am willing to do corresponding preparations for you, you'll
+>>> need to amend your code then.
+>>
+>> As I said, v6 will contain all requested changes.
 >=20
-> As I said, v6 will contain all requested changes.
+> Please, stick to the master branch so far, let me do the code massaging=
 
-Please, stick to the master branch so far, let me do the code massaging
-- then you'll rebase.
+> - then you'll rebase.
+>=20
 
---=20
-Best Regards,
-Artem Bityutskiy
+No problem.
 
---=-6faulPe8POSR54SZJb65
+Thanks,
+//richard
+
+
+
+--------------enig4E95368246D015A414AA8988
 Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: This is a digitally signed message part
-Content-Transfer-Encoding: 7bit
+Content-Description: OpenPGP digital signature
+Content-Disposition: attachment; filename="signature.asc"
 
 -----BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
+Version: GnuPG v2.0.18 (GNU/Linux)
 
-iQIcBAABAgAGBQJPtOjwAAoJECmIfjd9wqK0hOoP/ivAantNrA3MP46qmv/gDbuS
-LiFOkaijGLakWJm3t1VWGdkyAuThcSrTwoGK0jNE9soixOxxjLeMkCPdeMuXYQBq
-HbCZtK+Q4Lf+wzmQCr5z2AD3EX1S/OYho/naf8LyElWeyshF4tmKslynaWN9v97f
-vSPSD6lmkzDRtK3P1t5Myr4XP8grhboslE2NQiZuG0e1DtXZICq2RUlDEse98pEO
-zQiDGKha6yo9qYQlzbj8FzHA4SuuB2uiLvogmSHKxpFusd2XSAJklY3QbdqDu2ds
-9iO2B8CAchQlnfLsN88JeGDNck/X1BjAHAO8sXhfKUJV77PcDst+cQp2binEv6xv
-LGAbZ20ShJzFseWwGgCZYOtwsPxG7Y3DvCg8R1RPWkqfyK6MsYph6rhqq47YcuhP
-NQwKh/F8kRrVhtHp1Onz4jjDBdCa4eyIlLD++0XI5m5FHl62ItUMXP6LyLhiz5hx
-nleB81bHw6ueolt5wctjTwx4SZwxRRFcYM34vlTNp8YEkgAOUBXnf32v928GREWb
-++mWIy0Z17PV+Z9ZXQuvFGkbZzeZFR9W6IsXvkXIX9ZNtlFktAF0Rn/ecBafaP70
-k/gGeu1YoOlnysZ5XqG4tEW2LTcS7lM1aSXb+OuEoHxAoguiu8md+NERuO2ixKl3
-/kkMsSHp9XWV9qK3K4zW
-=mcj7
+iQEcBAEBAgAGBQJPtOlOAAoJEN9758yqZn9eHx0IAKs7jtoizBuYghgXn1mPS1i4
+x28YM1uIQgKY4bome5m2xyFvFE8CtMJu0x9qV2+NzND9Pfs/TCJWbbkQXZUZoTQD
+Uj7wr/C71Vp1Sdl84l7SHplG2zQNhCJw01Ptkc1+R2TsJjzPMT7TE0v/SdqKfrO0
+2CQ/Xr5VUSJhG6JbT4L5b/J36BHDeQQtDhs8vpF4eqzE2zOw3kW9Fd01eUHFOQWY
+0Yvu2qkA4WqrAYxcXte/JRLZLfMa/Nda7XnLMTz/RzjiYpbSbTVrX/3jGrCD5eK4
+3c/oyalSLCX4+KNVR1JA8WRihO6rYBEik213OX9yfgWPaLlGz6HWWhX6v711NUQ=
+=uJq2
 -----END PGP SIGNATURE-----
 
---=-6faulPe8POSR54SZJb65--
-
+--------------enig4E95368246D015A414AA8988--
