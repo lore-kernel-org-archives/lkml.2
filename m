@@ -1,84 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1762442Ab2EQXBt (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 May 2012 19:01:49 -0400
-Received: from solo.fdn.fr ([80.67.169.19]:54474 "EHLO solo.fdn.fr"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1760557Ab2EQXBr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 May 2012 19:01:47 -0400
-Date: Fri, 18 May 2012 01:01:40 +0200
-From: Samuel Thibault <samuel.thibault@ens-lyon.org>
-To: Jeff Kirsher <jeffrey.t.kirsher@intel.com>,
-        Jesse Brandeburg <jesse.brandeburg@intel.com>,
-        Bruce Allan <bruce.w.allan@intel.com>,
-        Carolyn Wyborny <carolyn.wyborny@intel.com>,
-        Don Skidmore <donald.c.skidmore@intel.com>,
-        Greg Rose <gregory.v.rose@intel.com>,
-        Peter P Waskiewicz Jr <peter.p.waskiewicz.jr@intel.com>,
-        Alex Duyck <alexander.h.duyck@intel.com>,
-        John Ronciak <john.ronciak@intel.com>,
-        "David S. Miller" <davem@davemloft.net>,
-        Jiri Pirko <jpirko@redhat.com>, Dean Nelson <dnelson@redhat.com>,
-        e1000-devel@lists.sourceforge.net, netdev@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org
-Subject: [PATCH] e1000: Reset rx ring index on receive overrun
-Message-ID: <20120517230140.GZ683@type.famille.thibault.fr>
-Mail-Followup-To: Samuel Thibault <samuel.thibault@ens-lyon.org>,
-	Jeff Kirsher <jeffrey.t.kirsher@intel.com>,
-	Jesse Brandeburg <jesse.brandeburg@intel.com>,
-	Bruce Allan <bruce.w.allan@intel.com>,
-	Carolyn Wyborny <carolyn.wyborny@intel.com>,
-	Don Skidmore <donald.c.skidmore@intel.com>,
-	Greg Rose <gregory.v.rose@intel.com>,
-	Peter P Waskiewicz Jr <peter.p.waskiewicz.jr@intel.com>,
-	Alex Duyck <alexander.h.duyck@intel.com>,
-	John Ronciak <john.ronciak@intel.com>,
-	"David S. Miller" <davem@davemloft.net>,
-	Jiri Pirko <jpirko@redhat.com>, Dean Nelson <dnelson@redhat.com>,
-	e1000-devel@lists.sourceforge.net, netdev@vger.kernel.org,
-	linux-kernel@vger.kernel.org
+	id S1762465Ab2EQXHu (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 May 2012 19:07:50 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:54390 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759429Ab2EQXHs (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 17 May 2012 19:07:48 -0400
+Message-ID: <4FB584C0.6080807@gmail.com>
+Date: Thu, 17 May 2012 16:07:44 -0700
+From: David Daney <ddaney.cavm@gmail.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.15) Gecko/20101027 Fedora/3.0.10-1.fc12 Thunderbird/3.0.10
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21+34 (58baf7c9f32f) (2010-12-30)
+To: "H.J. Lu" <hjl.tools@gmail.com>, Ralf Baechle <ralf@linux-mips.org>,
+        "H. Peter Anvin" <hpa@zytor.com>
+CC: linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org,
+        torvalds@linux-foundation.org, hpa@zytor.com, mingo@kernel.org,
+        tglx@linutronix.de
+Subject: Re: [RFC PATCH 00/10] Use __kernel_[u]long_t for x32 user space compatibility
+References: <1337292816-10839-1-git-send-email-hjl.tools@gmail.com>
+In-Reply-To: <1337292816-10839-1-git-send-email-hjl.tools@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-At high traffic rate, the rx ring may get completely filled before we
-manage to consume it.  After it is filled, the kernel and device indexes
-are not synchronized any more, so we have to reset them, otherwise the
-kernel will be stuck waiting for the wrong slot to be filled.
+On 05/17/2012 03:13 PM, H.J. Lu wrote:
+> From: H.J. Lu<hjl.tools@gmail.com>
+>
+> This patch set changes a number of places where the kernel headers are
+> exported to user space and currently use explicit "long" or "unsigned
+> long" to use __kernel_[u]long_t in order to be compatible with the x32
+> user space ABI.  These location are places where x32 uses the x86-64
+> ABI.
+>
 
-Signed-off-by: Samuel Thibault <samuel.thibault@ens-lyon.org>
+Has anybody checked how this affects MIPS n32 userspace?
 
----
-This is just a patch suggestion, I'm not an expert in network drivers, I
-leave to actual driver authors to bake a better version.
+I think it totally breaks it.
 
-diff --git a/drivers/net/ethernet/intel/e1000/e1000_main.c b/drivers/net/ethernet/intel/e1000/e1000_main.c
-index 37caa88..77c8dbc 100644
---- a/drivers/net/ethernet/intel/e1000/e1000_main.c
-+++ b/drivers/net/ethernet/intel/e1000/e1000_main.c
-@@ -3759,6 +3759,21 @@ static irqreturn_t e1000_intr(int irq, void *data)
- 	if (unlikely(test_bit(__E1000_DOWN, &adapter->flags)))
- 		return IRQ_HANDLED;
- 
-+	if (unlikely(icr & E1000_ICR_RXO)) {
-+		/* Receive Overrun */
-+		u32 rctl;
-+		int i;
-+		rctl = er32(RCTL);
-+		ew32(RCTL, rctl & ~E1000_RCTL_EN);
-+		for (i = 0; i < adapter->num_rx_queues; i++) {
-+			memset(adapter->rx_ring[i].desc, 0, adapter->rx_ring[i].size);
-+			adapter->rx_ring[i].next_to_clean = 0;
-+		}
-+		ew32(RDH, 0);
-+		ew32(RCTL, rctl);
-+		adapter->netdev->stats.rx_fifo_errors++;
-+	}
-+
- 	if (unlikely(icr & (E1000_ICR_RXSEQ | E1000_ICR_LSC))) {
- 		hw->get_link_status = 1;
- 		/* guard against interrupt when we're going down */
+In addition, 109a1f32 (sysinfo: Use explicit types in <linux/sysinfo.h>) 
+is probably bad.  I think it may need to be reverted, or somebody should 
+fix all the __kernel_{,u}long_t definitions for the ABI that may have 
+been broken by the change.
+
+> It is quite possible that some, or even all, of these locations should
+> really use dedicated types, but in the meantime this gives the correct
+> results which the current headers do not.
+>
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
+>
+
