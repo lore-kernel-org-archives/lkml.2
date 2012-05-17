@@ -1,62 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760947Ab2EQVWY (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 May 2012 17:22:24 -0400
-Received: from nat.nue.novell.com ([195.135.221.2]:28350 "EHLO
-	nat.nue.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760151Ab2EQVWW (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 May 2012 17:22:22 -0400
-Message-ID: <4FB56C04.9040708@suse.com>
-Date: Thu, 17 May 2012 14:22:12 -0700
-From: Lee Duncan <lduncan@suse.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120421 Thunderbird/12.0
-MIME-Version: 1.0
-To: linux-scsi@vger.kernel.org
-CC: linux-kernel@vger.kernel.org, kai.makisara@kolumbus.fi, jeffm@suse.com
-Subject: [PATCH v2 5/5] st: raise device limit
-X-Enigmail-Version: 1.4.1
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1760963Ab2EQVZD (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 May 2012 17:25:03 -0400
+Received: from perches-mx.perches.com ([206.117.179.246]:36719 "EHLO
+	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1759935Ab2EQVY7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 17 May 2012 17:24:59 -0400
+Message-ID: <1337289897.8872.8.camel@joe2Laptop>
+Subject: Re: [PATCH 1/1] checkpatch: don't fake typedefs with #define
+From: Joe Perches <joe@perches.com>
+To: Phil Carmody <ext-phil.2.carmody@nokia.com>
+Cc: linux-kernel@vger.kernel.org, apw@canonical.com
+Date: Thu, 17 May 2012 14:24:57 -0700
+In-Reply-To: <20120517211641.GC27953@pcarmody2.research.nokia.com>
+References: <1337259132-28774-1-git-send-email-ext-phil.2.carmody@nokia.com>
+	 <1337288048.17726.64.camel@joe2Laptop>
+	 <20120517211641.GC27953@pcarmody2.research.nokia.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.2- 
 Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Jeff Mahoney <jeffm@suse.com>
+On Fri, 2012-05-18 at 00:16 +0300, Phil Carmody wrote:
+> On 17/05/12 13:54 -0700, ext Joe Perches wrote:
+> > > +# check for deliberate avoidance of the above anti-typedef rule
+> > > +		if ($line =~ /#\s*define\s+$Ident\s+$Type\b/) {
+> > > +			WARN("NEW_TYPEDEFS",
+> > > +			     "do not fake typedefs using #define\n" . $herecurr);
+> > > +		}
+> > > +
+> > 
+> > I think the false positive rate is pretty high.
+> > I used this and don't see too many I'd remove.
+> > 
+> > $ git grep -E "#\s*define\s+\w+\s+(struct|unsigned|char|short|int|long|const)\b"
+> > 
+> > Got an example you want this to find?
+> 
+> Too many. Alas I can't share them.
 
-The device limit of 128 tape drives was established in 2003 as a
-significant increase from the 8 tape drives allowed previously.
+Too bad.
 
-We're seeing customer sites that between a large number of drives
-and multipath are discovering more than 128 devices and running
-into problems.
+If all the defines end in _t maybe you could use
+	if ($line =~ /^\+\s*#\s*define\s+\w+_t\s+$Type\b/) {
+etc...
 
-Now that we're not stuck having to store a pointer in array
-and aren't limited by kmalloc failing on higher order allocs we can
-lift the limit to fill the entire minor range based on the number
-of modes.
-
-Based on the current code, that's 2^17 devices.
-
-Signed-off-by: Jeff Mahoney <jeffm@suse.com>
-Signed-off-by: Lee Duncan <lduncan@suse.com>
----
- drivers/scsi/st.h |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
-
-diff --git a/drivers/scsi/st.h b/drivers/scsi/st.h
-index 4456735..2092f93 100644
---- a/drivers/scsi/st.h
-+++ b/drivers/scsi/st.h
-@@ -77,7 +77,7 @@ struct st_modedef {
- #define ST_MODE_SHIFT (7 - ST_NBR_MODE_BITS)
- #define ST_MODE_MASK ((ST_NBR_MODES - 1) << ST_MODE_SHIFT)
- 
--#define ST_MAX_TAPES 128
-+#define ST_MAX_TAPES (1 << (20 - (ST_NBR_MODE_BITS + 1)))
- #define ST_MAX_TAPE_ENTRIES  (ST_MAX_TAPES << (ST_NBR_MODE_BITS + 1))
- 
- /* The status related to each partition */
--- 
-1.7.9.2
 
