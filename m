@@ -1,58 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933301Ab2EPXvr (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 May 2012 19:51:47 -0400
-Received: from gate.crashing.org ([63.228.1.57]:43353 "EHLO gate.crashing.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1760766Ab2EPXvp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 May 2012 19:51:45 -0400
-Message-ID: <1337212281.30558.17.camel@pasglop>
-Subject: Re: Build regressions/improvements in v3.4-rc7
-From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-To: Geert Uytterhoeven <geert@linux-m68k.org>
-Cc: linux-kernel@vger.kernel.org, Linuxppc-dev <linuxppc-dev@ozlabs.org>,
-        the arch/x86 maintainers <x86@kernel.org>,
-        Parisc List <linux-parisc@vger.kernel.org>,
-        Scott Wood <scottwood@freescale.com>,
-        Kumar Gala <galak@kernel.crashing.org>
-Date: Thu, 17 May 2012 09:51:21 +1000
-In-Reply-To: <CAMuHMdUtL4_mv-e-EQAZmNcb9dAT=PXB59i7Vuj2vf8NnaBFzQ@mail.gmail.com>
-References: <1337157034-22773-1-git-send-email-geert@linux-m68k.org>
-	 <CAMuHMdUtL4_mv-e-EQAZmNcb9dAT=PXB59i7Vuj2vf8NnaBFzQ@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3-0ubuntu6 
+	id S1760787Ab2EQADg (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 May 2012 20:03:36 -0400
+Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:41755 "EHLO
+	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751613Ab2EQADf (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 16 May 2012 20:03:35 -0400
+X-SecurityPolicyCheck: OK by SHieldMailChecker v1.7.4
+Message-ID: <4FB43FDB.6050300@jp.fujitsu.com>
+Date: Thu, 17 May 2012 09:01:31 +0900
+From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.0; rv:12.0) Gecko/20120428 Thunderbird/12.0.1
+MIME-Version: 1.0
+To: Andrew Morton <akpm@linux-foundation.org>
+CC: Johannes Weiner <hannes@cmpxchg.org>, Michal Hocko <mhocko@suse.cz>,
+        cgroups@vger.kernel.org, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [patch 6/6] mm: memcg: print statistics from live counters
+References: <1337018451-27359-1-git-send-email-hannes@cmpxchg.org> <1337018451-27359-7-git-send-email-hannes@cmpxchg.org> <20120516160131.fecb5ddf.akpm@linux-foundation.org>
+In-Reply-To: <20120516160131.fecb5ddf.akpm@linux-foundation.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2012-05-16 at 10:47 +0200, Geert Uytterhoeven wrote:
-> On Wed, May 16, 2012 at 10:30 AM, Geert Uytterhoeven
-> <geert@linux-m68k.org> wrote:
-> > JFYI, when comparing v3.4-rc7 to v3.4-rc6[3], the summaries are:
-> >  - build errors: +15/-14
-> 
-> 15 regressions:
->   + arch/powerpc/platforms/512x/mpc512x_shared.c: error: 'enum
-> fsl_diu_monitor_port' declared inside parameter list [-Werror]:  =>
-> 70:9, 84:9, 88:36
->   + arch/powerpc/platforms/512x/mpc512x_shared.c: error: 'return' with
-> a value, in function returning void [-Werror]:  => 189:2
->   + arch/powerpc/platforms/512x/mpc512x_shared.c: error: function
-> declaration isn't a prototype [-Werror=strict-prototypes]:  => 69:5,
-> 88:6, 83:6, 187:1
->   + arch/powerpc/platforms/512x/mpc512x_shared.c: error: its scope is
-> only this definition or declaration, which is probably not what you
-> want [-Werror]:  => 70:9
->   + drivers/virt/fsl_hypervisor.c: error: 'MSR_GS' undeclared (first
-> use in this function):  => 799:80
->
-> powerpc randconfig
- 
-Thanks. These are all freescale platforms, the relevant people should be
-already but I've added Scott and Kumar to the CC list just in case.
+(2012/05/17 8:01), Andrew Morton wrote:
 
-Cheers,
-Ben.
+> On Mon, 14 May 2012 20:00:51 +0200
+> Johannes Weiner <hannes@cmpxchg.org> wrote:
+> 
+>> Directly print statistics and event counters instead of going through
+>> an intermediate accumulation stage into a separate array, which used
+>> to require defining statistic items in more than one place.
+>>
+>> ...
+>>
+>> -static const char *memcg_stat_strings[NR_MCS_STAT] = {
+>> -	"cache",
+>> -	"rss",
+>> -	"mapped_file",
+> 
+> Bah humbug, who went and called this mapped_file?
+> 
+> This stat is derived from MEM_CGROUP_STAT_FILE_MAPPED.  But if we
+> rename MEM_CGROUP_STAT_FILE_MAPPED to MEM_CGROUP_STAT_MAPPED_FILE then
+> we also need to rename the non-memcg NR_FILE_MAPPED.  And we can't
+> change the text to "file_mapped" because it's ABI.
+> 
+
+
+Sorry..
+
+>> -	"mlock",
+>> -	"swap",
+> 
+> And "swap" is derived from MEM_CGROUP_STAT_SWAPOUT.  We could rename
+> that to MEM_CGROUP_STAT_SWAP without trouble.
+> 
+
+Yes.
+
+> But both are poor names.  There are two concepts here: a) swapout
+> events (ie: swap writeout initiation) and b) swapspace usage.  Type a)
+> only ever counts up, whereas type b) counts up and down.
+> 
+> MEM_CGROUP_STAT_SWAPOUT is actually of type b), but "swapout" is a
+> misleading term, because it refers to type a) events.
+> 
+
+I'll prepare a patch.
+
+> And the human-displayed "swap" is useless because it can refer to
+> either type a) or type b) events.  These should be called "swapped" and
+> MEM_CGROUP_STAT_SWAPPED.  But we can't change the userspace interface.
+> 
+> argh, I hate you all!
+> 
+
+Hm...sorry. I(fujitsu) am now considering to add meminfo for memcg...,
+
+add an option to override /proc/meminfo if a task is in container or
+meminfo file somewhere.
+(Now, we cannot trust /usr/bin/free, /usr/bin/top etc...in a container.)
+
+so...I think usual user experience will be better because of the same format
+with meminfo.
+
+Thanks,
+-Kame
+
 
