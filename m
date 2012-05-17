@@ -1,60 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758066Ab2EQVJN (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 May 2012 17:09:13 -0400
-Received: from zene.cmpxchg.org ([85.214.230.12]:34052 "EHLO zene.cmpxchg.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752961Ab2EQVJK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 May 2012 17:09:10 -0400
-Date: Thu, 17 May 2012 23:08:49 +0200
-From: Johannes Weiner <hannes@cmpxchg.org>
-To: "nai.xia" <nai.xia@gmail.com>
-Cc: linux-mm@kvack.org, Rik van Riel <riel@redhat.com>,
-        Andrea Arcangeli <aarcange@redhat.com>,
-        Peter Zijlstra <peterz@infradead.org>, Mel Gorman <mgorman@suse.de>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Minchan Kim <minchan.kim@gmail.com>, Hugh Dickins <hughd@google.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [patch 0/5] refault distance-based file cache sizing
-Message-ID: <20120517210849.GE1800@cmpxchg.org>
-References: <1335861713-4573-1-git-send-email-hannes@cmpxchg.org>
- <4FB33A4E.1010208@gmail.com>
- <20120516065132.GC1769@cmpxchg.org>
- <4FB3A416.9010703@gmail.com>
+	id S1759850Ab2EQVNB (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 May 2012 17:13:01 -0400
+Received: from mail132.messagelabs.com ([216.82.242.115]:39394 "EHLO
+	mail132.messagelabs.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753873Ab2EQVM7 convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 17 May 2012 17:12:59 -0400
+X-Env-Sender: hartleys@visionengravers.com
+X-Msg-Ref: server-2.tower-132.messagelabs.com!1337289175!11928894!4
+X-Originating-IP: [216.166.12.31]
+X-StarScan-Version: 6.5.10; banners=-,-,-
+X-VirusChecked: Checked
+From: H Hartley Sweeten <hartleys@visionengravers.com>
+To: Ian Abbott <abbotti@mev.co.uk>
+CC: Ian Abbott <ian.abbott@mev.co.uk>, Greg KH <gregkh@linuxfoundation.org>,
+        Linux Kernel <linux-kernel@vger.kernel.org>,
+        "devel@driverdev.osuosl.org" <devel@driverdev.osuosl.org>,
+        "fmhess@users.sourceforge.net" <fmhess@users.sourceforge.net>
+Date: Thu, 17 May 2012 16:12:54 -0500
+Subject: RE: [PATCH] staging: comedi: Convert struct addi_board
+ initialization to C99 format
+Thread-Topic: [PATCH] staging: comedi: Convert struct addi_board
+ initialization to C99 format
+Thread-Index: Ac00WuXOsS3Meow8QcuuUAZiFLnAKAAFe5jQ
+Message-ID: <ADE657CA350FB648AAC2C43247A983F0020698AE1119@AUSP01VMBX24.collaborationhost.net>
+References: <201205161751.56913.hartleys@visionengravers.com>
+ <20120517021805.GA32592@kroah.com>
+ <ADE657CA350FB648AAC2C43247A983F00206986FBDDF@AUSP01VMBX24.collaborationhost.net>
+ <4FB49E74.8030409@mev.co.uk> <20120517133221.GB5090@kroah.com>
+ <4FB51FFA.3090800@mev.co.uk>
+ <ADE657CA350FB648AAC2C43247A983F0020698AE0FF8@AUSP01VMBX24.collaborationhost.net>
+ <4FB54356.5020203@mev.co.uk>
+In-Reply-To: <4FB54356.5020203@mev.co.uk>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4FB3A416.9010703@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, May 16, 2012 at 08:56:54PM +0800, nai.xia wrote:
-> On 2012/05/16 14:51, Johannes Weiner wrote:
-> >There may have been improvements from clock-pro, but it's hard to get
-> >code merged that does not behave as expected in theory with nobody
-> >understanding what's going on.
+On Thursday, May 17, 2012 11:29 AM, Ian Abbott wrote:
+> On 17/05/2012 17:38, H Hartley Sweeten wrote:
+>> BTW, what actual hardware do you have available to test with?
+>
+> Not a lot.  Just the Amplicon cards (amplc_* drivers).
 
-Damn, that sounded way harsher and arrogant than I wanted it to sound.
-And it's only based on what I gathered from the discussions on the
-list archives.  Sorry :(
+Speaking of the amplc_* drivers... What's up with them?
 
-> OK, I assume that you do aware that the system you constructed with
-> this simple and understandable idea looks like a so called "feedback
-> system"? Or in other words, I think theoretically the refault-distance
-> of a page before and after your algorithm is applied is not the same.
-> And this changed refault-distance pattern is then feed as input into
-> your algorithm. A feedback system may be hard(and may be simple) to
-> analyze but may also work well magically.
+The dio200, pc236, and pc263 drivers appear to be some kind of
+hybrid comedi driver/comedi pci driver. If the driver is simply
+registered as a comedi pci driver will the isa drivers still work?
+If so we can get rid of a bunch of #ifdef stuff.
 
-I'm with you on that, but I can't see an alternative in this case.  We
-can't predict future page accesses very well, so we have to take
-speculative shots and be considerate about the consequences.
-
-And BECAUSE we may get it wrong, the algorithm does not rely on the
-decisions it makes to be correct.  For example, it does not activate
-pages based on refault distance, but requires the refaulted page to
-win the race against an actual active page.  Likewise, pages are not
-evicted from the active list directly, instead they get a chance at
-re-activation when challenged.
+Regards,
+Hartley
