@@ -1,27 +1,27 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965499Ab2EQAR4 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 May 2012 20:17:56 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:56972 "EHLO
+	id S965602Ab2EQASl (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 May 2012 20:18:41 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:56996 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S964975Ab2EQARy (ORCPT
+	with ESMTP id S964975Ab2EQASi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 May 2012 20:17:54 -0400
-Date: Wed, 16 May 2012 17:17:36 -0700
+	Wed, 16 May 2012 20:18:38 -0400
+Date: Wed, 16 May 2012 17:18:26 -0700
 From: tip-bot for Suresh Siddha <suresh.b.siddha@intel.com>
-Message-ID: <tip-11aeca0b3a083a457f5c34fe8c677d5e86a0c6b3@git.kernel.org>
+Message-ID: <tip-d75f1b391f5ef73016d14bc6f7e4725820ebaa5b@git.kernel.org>
 Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
-        suresh@aristanetworks.com, suresh.b.siddha@intel.com, oleg@redhat.com,
-        tglx@linutronix.de, hpa@linux.intel.com
+        torvalds@linux-foundation.org, suresh.b.siddha@intel.com,
+        oleg@redhat.com, tglx@linutronix.de, hpa@linux.intel.com
 Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        suresh.b.siddha@intel.com, suresh@aristanetworks.com,
+        torvalds@linux-foundation.org, suresh.b.siddha@intel.com,
         tglx@linutronix.de, oleg@redhat.com, hpa@linux.intel.com
-In-Reply-To: <1336692811-30576-2-git-send-email-suresh.b.siddha@intel.com>
-References: <1336692811-30576-2-git-send-email-suresh.b.siddha@intel.com>
+In-Reply-To: <1336692811-30576-3-git-send-email-suresh.b.siddha@intel.com>
+References: <1336692811-30576-3-git-send-email-suresh.b.siddha@intel.com>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:x86/fpu] coredump:
-  ensure the fpu state is flushed for proper multi-threaded core dump
-Git-Commit-ID: 11aeca0b3a083a457f5c34fe8c677d5e86a0c6b3
+Subject: [tip:x86/fpu] x86, xsave: remove thread_has_fpu()
+  bug check in __sanitize_i387_state()
+Git-Commit-ID: d75f1b391f5ef73016d14bc6f7e4725820ebaa5b
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -30,89 +30,63 @@ MIME-Version: 1.0
 Content-Transfer-Encoding: 8bit
 Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Wed, 16 May 2012 17:17:42 -0700 (PDT)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Wed, 16 May 2012 17:18:31 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  11aeca0b3a083a457f5c34fe8c677d5e86a0c6b3
-Gitweb:     http://git.kernel.org/tip/11aeca0b3a083a457f5c34fe8c677d5e86a0c6b3
+Commit-ID:  d75f1b391f5ef73016d14bc6f7e4725820ebaa5b
+Gitweb:     http://git.kernel.org/tip/d75f1b391f5ef73016d14bc6f7e4725820ebaa5b
 Author:     Suresh Siddha <suresh.b.siddha@intel.com>
-AuthorDate: Wed, 16 May 2012 15:03:52 -0700
+AuthorDate: Wed, 16 May 2012 15:03:53 -0700
 Committer:  H. Peter Anvin <hpa@linux.intel.com>
-CommitDate: Wed, 16 May 2012 15:16:48 -0700
+CommitDate: Wed, 16 May 2012 15:17:17 -0700
 
-coredump: ensure the fpu state is flushed for proper multi-threaded core dump
+x86, xsave: remove thread_has_fpu() bug check in __sanitize_i387_state()
 
-Nalluru reported hitting the BUG_ON(__thread_has_fpu(tsk)) in
-arch/x86/kernel/xsave.c:__sanitize_i387_state() during the coredump
-of a multi-threaded application.
+Code paths like fork(), exit() and signal handling flush the fpu
+state explicitly to the structures in memory.
 
-A look at the exit seqeuence shows that other threads can still be on the
-runqueue potentially at the below shown exit_mm() code snippet:
+BUG_ON() in __sanitize_i387_state() is checking that the fpu state
+is not live any more. But for preempt kernels, task can be scheduled
+out and in at any place and the preload_fpu logic during context switch
+can make the fpu registers live again.
 
-		if (atomic_dec_and_test(&core_state->nr_threads))
-			complete(&core_state->startup);
+For example, consider a 64-bit Task which uses fpu frequently and as such
+you will find its fpu_counter mostly non-zero. During its time slice, kernel
+used fpu by doing kernel_fpu_begin/kernel_fpu_end(). After this, in the same
+scheduling slice, task-A got a signal to handle. Then during the signal
+setup path we got preempted when we are just before the sanitize_i387_state()
+in arch/x86/kernel/xsave.c:save_i387_xstate(). And when we come back we
+will have the fpu registers live that can hit the bug_on.
 
-===> other threads can still be active here, but we notify the thread
-===> dumping core to wakeup from the coredump_wait() after the last thread
-===> joins this point. Core dumping thread will continue dumping
-===> all the threads state to the core file.
+Similarly during core dump, other threads can context-switch in and out
+(because of spurious wakeups while waiting for the coredump to finish in
+ kernel/exit.c:exit_mm()) and the main thread dumping core can run into this
+bug when it finds some other thread with its fpu registers live on some other cpu.
 
-		for (;;) {
-			set_task_state(tsk, TASK_UNINTERRUPTIBLE);
-			if (!self.task) /* see coredump_finish() */
-				break;
-			schedule();
-		}
+So remove the paranoid check for now, even though it caught a bug in the
+multi-threaded core dump case (fixed in the previous patch).
 
-As some of those threads are on the runqueue and didn't call schedule() yet,
-their fpu state is still active in the live registers and the thread
-proceeding with the coredump will hit the above mentioned BUG_ON while
-trying to dump other threads fpustate to the coredump file.
-
-BUG_ON() in arch/x86/kernel/xsave.c:__sanitize_i387_state() is
-in the code paths for processors supporting xsaveopt. With or without
-xsaveopt, multi-threaded coredump is broken and maynot contain
-the correct fpustate at the time of exit.
-
-In coredump_wait(), wait for all the threads to be come inactive, so
-that we are sure all the extended register state is flushed to
-the memory, so that it can be reliably copied to the core file.
-
-Reported-by: Suresh Nalluru <suresh@aristanetworks.com>
 Signed-off-by: Suresh Siddha <suresh.b.siddha@intel.com>
-Link: http://lkml.kernel.org/r/1336692811-30576-2-git-send-email-suresh.b.siddha@intel.com
-Acked-by: Oleg Nesterov <oleg@redhat.com>
+Link: http://lkml.kernel.org/r/1336692811-30576-3-git-send-email-suresh.b.siddha@intel.com
+Cc: Oleg Nesterov <oleg@redhat.com>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
 ---
- fs/exec.c |   15 ++++++++++++++-
- 1 files changed, 14 insertions(+), 1 deletions(-)
+ arch/x86/kernel/xsave.c |    2 --
+ 1 files changed, 0 insertions(+), 2 deletions(-)
 
-diff --git a/fs/exec.c b/fs/exec.c
-index b1fd202..8e2ddeb 100644
---- a/fs/exec.c
-+++ b/fs/exec.c
-@@ -1930,8 +1930,21 @@ static int coredump_wait(int exit_code, struct core_state *core_state)
- 		core_waiters = zap_threads(tsk, mm, core_state, exit_code);
- 	up_write(&mm->mmap_sem);
+diff --git a/arch/x86/kernel/xsave.c b/arch/x86/kernel/xsave.c
+index e62728e..bd18149 100644
+--- a/arch/x86/kernel/xsave.c
++++ b/arch/x86/kernel/xsave.c
+@@ -48,8 +48,6 @@ void __sanitize_i387_state(struct task_struct *tsk)
+ 	if (!fx)
+ 		return;
  
--	if (core_waiters > 0)
-+	if (core_waiters > 0) {
-+		struct core_thread *ptr;
-+
- 		wait_for_completion(&core_state->startup);
-+		/*
-+		 * Wait for all the threads to become inactive, so that
-+		 * all the thread context (extended register state, like
-+		 * fpu etc) gets copied to the memory.
-+		 */
-+		ptr = core_state->dumper.next;
-+		while (ptr != NULL) {
-+			wait_task_inactive(ptr->task, 0);
-+			ptr = ptr->next;
-+		}
-+	}
+-	BUG_ON(__thread_has_fpu(tsk));
+-
+ 	xstate_bv = tsk->thread.fpu.state->xsave.xsave_hdr.xstate_bv;
  
- 	return core_waiters;
- }
+ 	/*
