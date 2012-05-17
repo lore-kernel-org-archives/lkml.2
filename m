@@ -1,48 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761618Ab2EQKv1 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 May 2012 06:51:27 -0400
-Received: from mail-gg0-f174.google.com ([209.85.161.174]:52816 "EHLO
-	mail-gg0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751712Ab2EQKvZ convert rfc822-to-8bit (ORCPT
+	id S1761622Ab2EQKzD (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 May 2012 06:55:03 -0400
+Received: from mailout2.w1.samsung.com ([210.118.77.12]:9481 "EHLO
+	mailout2.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1760405Ab2EQKzA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 May 2012 06:51:25 -0400
-MIME-Version: 1.0
-In-Reply-To: <CAMjpGUf-AQHigrpBhxmOGJZgjfqfCWvRa29wURpGkVuj58suPg@mail.gmail.com>
-References: <1337152826-9850-1-git-send-email-sonic.zhang@analog.com>
-	<1337152826-9850-3-git-send-email-sonic.zhang@analog.com>
-	<CAM=Q2csTziLb0niCTj6oW9G=BPa2VWN58rW2jF-A1VJKXwNfCQ@mail.gmail.com>
-	<CAMjpGUf-AQHigrpBhxmOGJZgjfqfCWvRa29wURpGkVuj58suPg@mail.gmail.com>
-Date: Thu, 17 May 2012 16:21:24 +0530
-Message-ID: <CAM=Q2cujxAGes0c4Ls6L_fUENvJE=Vf10YXOvng3zku84eC6ng@mail.gmail.com>
-Subject: Re: [PATCH 3/8] i2c: i2c-bfin-twi: Break dead waiting loop if i2c
- device misbehaves.
-From: Shubhrajyoti Datta <omaplinuxkernel@gmail.com>
-To: Mike Frysinger <vapier.adi@gmail.com>
-Cc: sonic.zhang@analog.com, Ben Dooks <ben-linux@fluff.org>,
-        Wolfram Sang <w.sang@pengutronix.de>, linux-i2c@vger.kernel.org,
-        LKML <linux-kernel@vger.kernel.org>,
-        uclinux-dist-devel@blackfin.uclinux.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	Thu, 17 May 2012 06:55:00 -0400
+Date: Thu, 17 May 2012 12:54:41 +0200
+From: Marek Szyprowski <m.szyprowski@samsung.com>
+Subject: [PATCHv2 0/4] ARM: replace custom consistent dma region with vmalloc
+To: linux-arm-kernel@lists.infradead.org, linaro-mm-sig@lists.linaro.org,
+        linux-mm@kvack.org, linux-kernel@vger.kernel.org
+Cc: Marek Szyprowski <m.szyprowski@samsung.com>,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        Arnd Bergmann <arnd@arndb.de>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        Chunsang Jeong <chunsang.jeong@linaro.org>,
+        Krishna Reddy <vdumpa@nvidia.com>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Hiroshi Doyu <hdoyu@nvidia.com>, Subash Patel <subashrp@gmail.com>
+Message-id: <1337252085-22039-1-git-send-email-m.szyprowski@samsung.com>
+MIME-version: 1.0
+X-Mailer: git-send-email 1.7.10.1
+Content-type: TEXT/PLAIN
+Content-transfer-encoding: 7BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, May 17, 2012 at 10:53 AM, Mike Frysinger <vapier.adi@gmail.com> wrote:
-> On Thu, May 17, 2012 at 1:20 AM, Shubhrajyoti Datta
-> <omaplinuxkernel@gmail.com> wrote:
->> On Wed, May 16, 2012 at 12:50 PM,  <sonic.zhang@analog.com> wrote:
->>> From: Sonic Zhang <sonic.zhang@analog.com>
->>>
->>> Some fault i2c device may hold the sda/scl line and cause i2c driver
->>> wait in the BUS busy loop. This patch breaks this potential dead
->>> loop.
->>
->> How about using a non-busy loop while you are at it.
->
-> the timings here are fairly small ...
-OK no issues.
-Anyways was just a suggestion.:-)
+Hello!
 
-> -mike
+Recent changes to ioremap and unification of vmalloc regions on ARM
+significantly reduces the possible size of the consistent dma region.
+They are significantly limited allowed dma coherent/writecombine
+allocations.
+
+This experimental patchset replaces custom consistent dma regions usage
+in dma-mapping framework in favour of generic vmalloc areas created on
+demand for each coherent and writecombine allocations. The main purpose
+for this patchset is to remove 2MiB limit of dma coherent/writecombine
+allocations.
+
+Atomic allocations are served from special pool preallocated on boot,
+becasue vmalloc areas cannot be reliably created in atomic context.
+
+This patch is based on vanilla v3.4-rc7 release.
+
+Atomic allocations have been tested with s3c-sdhci driver on Samsung
+UniversalC210 board with dmabounce code enabled to force
+dma_alloc_coherent() use on each dma_map_* call (some of them are made
+from interrupts).
+
+Best regards
+Marek Szyprowski
+Samsung Poland R&D Center
+
+Changelog:
+
+v2:
+- added support for atomic allocations (served from preallocated pool)
+- minor cleanup here and there
+- rebased onto v3.4-rc7
+
+v1: http://thread.gmane.org/gmane.linux.kernel.mm/76703
+- initial version
+
+Patch summary:
+
+Marek Szyprowski (4):
+  mm: vmalloc: use const void * for caller argument
+  mm: vmalloc: export find_vm_area() function
+  mm: vmalloc: add VM_DMA flag to indicate areas used by dma-mapping
+    framework
+  ARM: dma-mapping: remove custom consistent dma region
+
+ Documentation/kernel-parameters.txt |    4 +
+ arch/arm/include/asm/dma-mapping.h  |    2 +-
+ arch/arm/mm/dma-mapping.c           |  360 ++++++++++++++++-------------------
+ include/linux/vmalloc.h             |   10 +-
+ mm/vmalloc.c                        |   31 ++--
+ 5 files changed, 185 insertions(+), 196 deletions(-)
+
+-- 
+1.7.10.1
+
