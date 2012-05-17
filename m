@@ -1,45 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761659Ab2EQK73 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 May 2012 06:59:29 -0400
-Received: from mail-lb0-f174.google.com ([209.85.217.174]:57532 "EHLO
-	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1761545Ab2EQK72 (ORCPT
+	id S965966Ab2EQL3A (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 May 2012 07:29:00 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:34128 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S965682Ab2EQL26 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 May 2012 06:59:28 -0400
-Message-ID: <4FB4D9F6.7060401@mvista.com>
-Date: Thu, 17 May 2012 14:59:02 +0400
-From: Sergei Shtylyov <sshtylyov@mvista.com>
-User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:12.0) Gecko/20120428 Thunderbird/12.0.1
-MIME-Version: 1.0
-To: Yong Zhang <yong.zhang0@gmail.com>
-CC: linux-mips@linux-mips.org, linux-kernel@vger.kernel.org,
-        ralf@linux-mips.org, david.daney@cavium.com
-Subject: Re: [PATCH 6/8] MIPS: call set_cpu_online() on the uping cpu with
- irq disabled
-References: <1337249410-7162-1-git-send-email-yong.zhang0@gmail.com> <1337249410-7162-7-git-send-email-yong.zhang0@gmail.com>
-In-Reply-To: <1337249410-7162-7-git-send-email-yong.zhang0@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+	Thu, 17 May 2012 07:28:58 -0400
+Message-ID: <1337254086.4281.26.camel@twins>
+Subject: Re: [RFC][PATCH 4/6] arm, mm: Convert arm to generic tlb
+From: Peter Zijlstra <a.p.zijlstra@chello.nl>
+To: Russell King <rmk@arm.linux.org.uk>
+Cc: Catalin Marinas <catalin.marinas@arm.com>,
+        Paul Mundt <lethal@linux-sh.org>,
+        Andrea Arcangeli <aarcange@redhat.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Rik van Riel <riel@redhat.com>,
+        Ingo Molnar <mingo@elte.hu>,
+        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arch@vger.kernel.org" <linux-arch@vger.kernel.org>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        David Miller <davem@davemloft.net>,
+        Hugh Dickins <hugh.dickins@tiscali.co.uk>, Mel Gorman <mel@csn.ul.ie>,
+        Nick Piggin <npiggin@kernel.dk>, Chris Metcalf <cmetcalf@tilera.com>,
+        Martin Schwidefsky <schwidefsky@de.ibm.com>
+Date: Thu, 17 May 2012 13:28:06 +0200
+In-Reply-To: <20120517095124.GN23420@flint.arm.linux.org.uk>
+References: <20110302175928.022902359@chello.nl>
+	 <20110302180259.109909335@chello.nl> <20120517030551.GA11623@linux-sh.org>
+	 <20120517093022.GA14666@arm.com>
+	 <20120517095124.GN23420@flint.arm.linux.org.uk>
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
+X-Mailer: Evolution 3.2.2- 
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello.
+On Thu, 2012-05-17 at 10:51 +0100, Russell King wrote:
+> On Thu, May 17, 2012 at 10:30:23AM +0100, Catalin Marinas wrote:
+> > Another minor thing is that on newer ARM processors (Cortex-A15) we
+> > need the TLB shootdown even on UP systems, so tlb_fast_mode should
+> > always return 0. Something like below (untested):
+> 
+> No Catalin, we need this for virtually all ARMv7 CPUs whether they're UP
+> or SMP, not just for A15, because of the speculative prefetch which can
+> re-load TLB entries from the page tables at _any_ time.
 
-On 17-05-2012 14:10, Yong Zhang wrote:
+Hmm,. so this is mostly because of the confusion/coupling between
+tlb_remove_page() and tlb_remove_table() I guess. Since I don't see the
+freeing of the actual pages being a problem with speculative TLB
+reloads, just the page-tables.
 
-> From: Yong Zhang<yong.zhang@windriver.com>
+Should we introduce a tlb_remove_table() regardless of
+HAVE_RCU_TABLE_FREE which always queues the tables regardless of
+tlb_fast_mode()? 
 
-> To prevent a problem as commit 5fbd036b&&  2baab4e9 try to resolve,
-
-    Please also specify the summary of those commits in parens.
-
-> move set_cpu_online() to the uping CPU and with irq disabled.
-
-    Uping? Maybe "brought up"?
-
-> Signed-off-by: Yong Zhang<yong.zhang0@gmail.com>
-
-WBR, Sergei
 
