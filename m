@@ -1,86 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S967588Ab2EQSmd (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 May 2012 14:42:33 -0400
-Received: from mail-yw0-f46.google.com ([209.85.213.46]:65231 "EHLO
-	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S967533Ab2EQSmb convert rfc822-to-8bit (ORCPT
+	id S967596Ab2EQSm4 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 May 2012 14:42:56 -0400
+Received: from db3ehsobe004.messaging.microsoft.com ([213.199.154.142]:49220
+	"EHLO db3outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S967533Ab2EQSmy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 May 2012 14:42:31 -0400
+	Thu, 17 May 2012 14:42:54 -0400
+X-SpamScore: -9
+X-BigFish: VS-9(zz1432N98dKzz1202hzzz2dh2a8h668h839hd25he5bh)
+X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
+Message-ID: <4FB546A4.7090502@freescale.com>
+Date: Thu, 17 May 2012 13:42:44 -0500
+From: Timur Tabi <timur@freescale.com>
+Organization: Freescale
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:11.0) Gecko/20120312 Firefox/11.0 SeaMonkey/2.8
 MIME-Version: 1.0
-In-Reply-To: <20120517083740.GA25627@lizard>
-References: <20120517083740.GA25627@lizard>
-Date: Thu, 17 May 2012 11:42:29 -0700
-X-Google-Sender-Auth: KvxfmlNLITisRI_k5AmRKzKEyEk
-Message-ID: <CAMbhsRTGOnjB2M7L4n38=on1dB5unF=WNCScsX9n3fWZjdGEfA@mail.gmail.com>
-Subject: Re: [PATCH v2 0/6] Merge ram_console into pstore
-From: Colin Cross <ccross@android.com>
-To: Anton Vorontsov <anton.vorontsov@linaro.org>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Kees Cook <keescook@chromium.org>, Tony Luck <tony.luck@intel.com>,
-        Arnd Bergmann <arnd@arndb.de>, John Stultz <john.stultz@linaro.org>,
-        Shuah Khan <shuahkhan@gmail.com>, arve@android.com,
-        Rebecca Schultz Zavin <rebecca@android.com>,
-        Jesper Juhl <jj@chaosbits.net>, Randy Dunlap <rdunlap@xenotime.net>,
-        Stephen Boyd <sboyd@codeaurora.org>, Thomas Meyer <thomas@m3y3r.de>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Marco Stornelli <marco.stornelli@gmail.com>,
-        WANG Cong <xiyou.wangcong@gmail.com>, linux-kernel@vger.kernel.org,
-        devel@driverdev.osuosl.org, linaro-kernel@lists.linaro.org,
-        patches@linaro.org, kernel-team@android.com
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
-X-System-Of-Record: true
+To: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+CC: Geert Uytterhoeven <geert@linux-m68k.org>, <linux-kernel@vger.kernel.org>,
+        Linuxppc-dev <linuxppc-dev@ozlabs.org>,
+        the arch/x86 maintainers <x86@kernel.org>,
+        Parisc List <linux-parisc@vger.kernel.org>,
+        Scott Wood <scottwood@freescale.com>,
+        Kumar Gala <galak@kernel.crashing.org>
+Subject: Re: Re: Build regressions/improvements in v3.4-rc7
+References: <1337157034-22773-1-git-send-email-geert@linux-m68k.org>  <CAMuHMdUtL4_mv-e-EQAZmNcb9dAT=PXB59i7Vuj2vf8NnaBFzQ@mail.gmail.com> <1337212281.30558.17.camel@pasglop>
+In-Reply-To: <1337212281.30558.17.camel@pasglop>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
+X-OriginatorOrg: freescale.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, May 17, 2012 at 1:37 AM, Anton Vorontsov
-<anton.vorontsov@linaro.org> wrote:
-> Hi all,
->
-> In v2:
->
-> - Updated documentation per Colin Cross' comments;
-> - Corrected return value in ramoops_pstore_write() (noticed by Kees Cook);
-> - Fixed large writes handling in pstore_console_write(), i.e. when
->  log_buf write is larger than pstore bufsize. Also Noticed by Kees Cook.
->
-> These patches depend on the the following series:
-> http://thread.gmane.org/gmane.linux.kernel/1298642
-> "[PATCH v3 0/3] Merge ramoops and persistent_ram, generic pstore RAM backend"
->
-> And a rationale for the series:
->
-> Currently pstore doesn't support logging kernel messages in run-time,
-> it only dumps dmesg when kernel oopses/panics. This makes pstore
-> useless for debugging hangs caused by HW issues or improper use of HW
-> (e.g. weird device inserted -> driver tried to write reserved bits ->
-> SoC hanged. In that case we don't get any messages in the pstore.
->
-> This series add a new message type for pstore, i.e. PSTORE_TYPE_CONSOLE,
-> plus make pstore/ram.c handle the new messages.
->
-> The old ram_console driver is removed. This might probably cause
-> some pain for out-of-tree code, as it would need to be adjusted...
-> but "no pain, no gain"? :-) Though, if there's some serious resistance,
-> we can probably postpone the last two patches.
->
-> Thanks!
->
-> --
-> Anton Vorontsov
-> Email: cbouatmailru@gmail.com
+Benjamin Herrenschmidt wrote:
+>   + arch/powerpc/platforms/512x/mpc512x_shared.c: error: 'enum
+>> fsl_diu_monitor_port' declared inside parameter list [-Werror]:  =>
+>> 70:9, 84:9, 88:36
+>>   + arch/powerpc/platforms/512x/mpc512x_shared.c: error: 'return' with
+>> a value, in function returning void [-Werror]:  => 189:2
+>>   + arch/powerpc/platforms/512x/mpc512x_shared.c: error: function
+>> declaration isn't a prototype [-Werror=strict-prototypes]:  => 69:5,
+>> 88:6, 83:6, 187:1
+>>   + arch/powerpc/platforms/512x/mpc512x_shared.c: error: its scope is
+>> only this definition or declaration, which is probably not what you
+>> want [-Werror]:  => 70:9
 
-Other than my comment on logging console into a single record,
-Acked-by: Colin Cross <ccross@android.com>
+So I think I have a fix for these, but I still would like the actual
+.config so that I can be sure.
 
-There is one feature that ram_console had but lost when I added
-persistent_ram, which would be nice to get back:  registering the
-platform driver before module_init, to allow it to log oopses that
-happen during device probing.  This requires changing module_init to
-postcore_initcall, and switching from platform_driver_probe to
-platform_driver_register because the platform device is not registered
-when the platform driver is registered.  Depending on what functions
-are __init, it may cause a cascading change from __init to __devinit
-as well.
+>>   + drivers/virt/fsl_hypervisor.c: error: 'MSR_GS' undeclared (first
+>> use in this function):  => 799:80
+
+I can't reproduce this one.  MSR_GS is defined in reg_booke.h.
+fsl_hypervisor.c should not be compiled on a non-booke platform.  I don't
+know if the fix is to add this to fsl_hypervisor.c:
+
+	#include <asm/reg_booke.h>
+
+or if I should update the Kconfig:
+
+config FSL_HV_MANAGER
+	tristate "Freescale hypervisor management driver"
+	depends on FSL_SOC
+
+to
+
+	depends on FSL_BOOKE
+
+or maybe
+
+	depends on FSL_BOOKE && FSL_SOC
+
+-- 
+Timur Tabi
+Linux kernel developer at Freescale
+
