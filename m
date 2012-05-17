@@ -1,93 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761292Ab2EQLpB (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 May 2012 07:45:01 -0400
-Received: from mail-lb0-f174.google.com ([209.85.217.174]:37584 "EHLO
-	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751643Ab2EQLo5 (ORCPT
+	id S1761676Ab2EQLqT (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 May 2012 07:46:19 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:34297 "EHLO
+	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750835Ab2EQLqR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 May 2012 07:44:57 -0400
-Message-ID: <1337255093.2564.3.camel@koala>
-Subject: Re: [PATCH 1/7] [RFC] UBI: Export next_sqnum()
-From: Artem Bityutskiy <dedekind1@gmail.com>
-To: Shmulik Ladkani <shmulik.ladkani@gmail.com>
-Cc: Richard Weinberger <richard@nod.at>, linux-mtd@lists.infradead.org,
-        linux-kernel@vger.kernel.org, Heinz.Egger@linutronix.de,
-        tim.bird@am.sony.com, tglx@linutronix.de
-Date: Thu, 17 May 2012 14:44:53 +0300
-In-Reply-To: <20120517124548.262c132a@pixies.home.jungo.com>
-References: <1337101871-31181-1-git-send-email-richard@nod.at>
-	 <1337101871-31181-2-git-send-email-richard@nod.at>
-	 <20120516170324.337f2932@pixies.home.jungo.com>
-	 <1337178457.24809.56.camel@sauron.fi.intel.com>
-	 <20120517124548.262c132a@pixies.home.jungo.com>
-Content-Type: multipart/signed; micalg="pgp-sha1"; protocol="application/pgp-signature";
-	boundary="=-3HTtGbtBfrxuNWizH4BF"
-X-Mailer: Evolution 3.2.3 (3.2.3-3.fc16) 
+	Thu, 17 May 2012 07:46:17 -0400
+Message-ID: <1337255159.4107.67.camel@deadeye>
+Subject: Re: [PATCH 1/1] smsc95xx: add FLAG_POINTTOPOINT flag for driver_info
+From: Ben Hutchings <ben@decadent.org.uk>
+To: Xiao Jiang <jgq516@gmail.com>
+Cc: steve.glendinning@smsc.com, gregkh@linuxfoundation.org,
+        netdev@vger.kernel.org, linux-usb@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Date: Thu, 17 May 2012 12:45:59 +0100
+In-Reply-To: <4FB4B98E.7000208@gmail.com>
+References: <1337155302-26244-1-git-send-email-jgq516@gmail.com>
+	 <1337168320.4107.42.camel@deadeye> <4FB4B98E.7000208@gmail.com>
+Content-Type: multipart/signed; micalg="pgp-sha512";
+	protocol="application/pgp-signature"; boundary="=-XexRGYIYI91xrsiTF1q5"
+X-Mailer: Evolution 3.2.2-1+b1 
 Mime-Version: 1.0
+X-SA-Exim-Connect-IP: 192.168.4.185
+X-SA-Exim-Mail-From: ben@decadent.org.uk
+X-SA-Exim-Scanned: No (on shadbolt.decadent.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
---=-3HTtGbtBfrxuNWizH4BF
+--=-XexRGYIYI91xrsiTF1q5
 Content-Type: text/plain; charset="UTF-8"
 Content-Transfer-Encoding: quoted-printable
 
-On Thu, 2012-05-17 at 12:45 +0300, Shmulik Ladkani wrote:
-> Hi Artem,
->=20
-> On Wed, 16 May 2012 17:27:37 +0300 Artem Bityutskiy <dedekind1@gmail.com>=
- wrote:
-> > On Wed, 2012-05-16 at 17:03 +0300, Shmulik Ladkani wrote:
-> > > Comment above the function should have been changed too.
-> > > (look for the "next_sqnum - get next sequence number" comment)
-> >=20
-> > I do not think we should make these non-static. We should re-use the
-> > entire scan_peb() function instead to scan the fastmap internal volume.
->=20
-> Sorry, couldn't follow you.
->=20
-> The new (outside eba.c) calls to 'ubi_next_sqnum' are from
-> 'ubi_write_fastmap' (called from the 'ubi_update_fastmap' interface,
-> implemented in fastmap.c) - during construction of VID headers of the
-> FM_SB and FM_FATA.
->=20
-> IMO this is reasonable.
->=20
-> Do you suggest to somehow use existing ubi_eba_write_xxx functions?
-> Or place the FM_SB/FM_DATA peb writing funtions into eba.c?
+On Thu, 2012-05-17 at 16:40 +0800, Xiao Jiang wrote:
+> Ben Hutchings wrote:
+> > On Wed, 2012-05-16 at 16:01 +0800, jgq516@gmail.com wrote:
+> >  =20
+> >> From: Xiao Jiang <jgq516@gmail.com>
+> >>
+> >> commit c26134 introduced FLAG_POINTTOPOINT flag for USB ethernet devic=
+es
+> >> which possibly use "usb%d" names, add this flag to make sure pandaboar=
+d
+> >> can mount nfs with smsc95xx NIC.
+> >>    =20
+> >
+> > These are normal Ethernet interfaces, whereas FLAG_POINTTOPOINT is for
+> > devices that use non-standard short physical links.
+> >
+> >  =20
+> This flag is used by some usb NICs, I amn't familiar with those cards=20
+> perhaps those are
+> non-standard short physical links as you said.
+> But smsc95xx seems need this flag to use "usb%d" name,
 
-I think I meant the compare_lebs() exporting, not this one, replied to
-wrong e-mail, sorry. Happens when I am in hurry - try to keep everyone
-happy and make sure Richard is always busy with something :-)
+But this is a regular Ethernet interface and should be named
+accordingly.
+
+> at least my=20
+> pandaboard can't
+> mount nfs with eth0 name, is there other ways to avoid nfs issue with=20
+> keep smsc95xx's
+> name unchange? thanks.
+[...]
+
+I don't know what this NFS issue is, but I don't see how this can be the
+correct solution.
+
+Ben.
 
 --=20
-Best Regards,
-Artem Bityutskiy
+Ben Hutchings
+Every program is either trivial or else contains at least one bug
 
---=-3HTtGbtBfrxuNWizH4BF
+--=-XexRGYIYI91xrsiTF1q5
 Content-Type: application/pgp-signature; name="signature.asc"
 Content-Description: This is a digitally signed message part
-Content-Transfer-Encoding: 7bit
 
 -----BEGIN PGP SIGNATURE-----
 Version: GnuPG v1.4.12 (GNU/Linux)
 
-iQIcBAABAgAGBQJPtOS1AAoJECmIfjd9wqK0FKgQAJUerJnTZzO0y5ulj2m2ee10
-pmrWYBrQCUB88mgHIlXo9qsTKp/Vq9HcSvYUOI8C3nFyM8Fwj+uQhQa9WlLGTvHn
-+TpPbr8zwoYYLyWskBd3GKUhOGVAOhQG5dUYw6+i/4cN5dxxH6rH8dtefEn7HFkE
-1f1GvzBA9p37A8hakK/K8DJ/tqIlfdxF/oEU21YeINUw42AhSael5akxsHSjazIE
-fFzMLMyAf0m4agpMp6Nmp6eaQQGnKiNbP1vhjDXC6FJScC17WHYdECRpkmDReQHv
-KdbtTfbOud3OdQ9N7xbMq1zbTYVfPn0f6k0glWBezg0FtpY1r1+OVovZbVELEdIw
-cs4jkbGoXkBGoTRd5UNIrcXbTnxSh8MyfpgQkRGPOFfpgc3EUfsWzH2hjEpJN3Mt
-hBswvesshV1REnRKh05ekzQFv2AS3ES2JFrSYFhkKmLeXfRVmGcLcYBS39+T/tq9
-AtOPyo11ml2DFfmk2HtUCmMZTxPz63C5IJuZYWmpEPM95mGYofmzjsvA8ViEczIf
-wheNeyKMwHpFBlugowRs1Pxqv6wfiAsj0dHGkPlCkStb+OFFwQia62AoXpMB+L6G
-A+D+1gbOK06wX15muQha/aQXGlGJ0bo0Vf5PtGTMtL/S7xyHqlIGq1MJhDmR8Q0W
-wVlYr3DixWremZywSQXM
-=vkza
+iQIVAwUAT7Tk9+e/yOyVhhEJAQq+5BAAx+C9OlCRObpeR7pFQBp3BjUEaqEfith9
+lgl+ioFJ6VgRDE6otYwOKTqb54uerrHIZMOvm7BNyJDeWCakzzxWaflI2v8vVIRU
+al89lI+U89Im30zrfAxEyPZsmn6BmVEK/gTfnCdfr9p9o79tHjvpe68vNHI3BXDL
+NSgw9PwbiARQc7L/HuvSy79yiEN/401O4Eg+Mu17uwyDULn9fbvqSR9NGpR32IYP
+nKG4EPzAv+YSCEphmHetdoFKLknvjlAYhSisMqbB6rcu++xHfHMKHpqJ6b5v7ND8
+8QHfmO4JUABlN18Q4tNMJZ/DtTwMKMMXeEYW8tsZ95VxOxiY5Na2wu+IIYPwkiuh
+8tY5w6kxXkFj95lPMUSLl4ywqHX5MWFD47+BP8Tkyl4MzWxzYWBpPr01SQg9aZGe
+xp3lcVPzrIpDD2CoxVL049FFKo8R2ly2hoMtneQ8veQ22pcb/XslApAD+MXIyijZ
+57A2+SXDbUow8sutaaJodJAFEOJjpgAtIFm7yzmEay4HRwAPfmCN+FYYQOVjoNR8
+mkktl8CSddaYT0Y1979tg5MWS/1qBfu3TuTCQYd516FWQ/6wACm8YIhQcRigvKRA
+H5brZj1WZaLLwyuPqOLaZmFqE2XCEAfDxJLpOozPV7wN05CfbJool7+Ixl8Cjv6V
+ao33R00LWCo=
+=Y0yD
 -----END PGP SIGNATURE-----
 
---=-3HTtGbtBfrxuNWizH4BF--
-
+--=-XexRGYIYI91xrsiTF1q5--
