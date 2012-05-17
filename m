@@ -1,49 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760894Ab2EQMzY (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 May 2012 08:55:24 -0400
-Received: from smtp.nokia.com ([147.243.1.47]:21419 "EHLO mgw-sa01.nokia.com"
+	id S1760820Ab2EQNLv (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 May 2012 09:11:51 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:61031 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753798Ab2EQMzW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 May 2012 08:55:22 -0400
-From: Phil Carmody <ext-phil.2.carmody@nokia.com>
-To: apw@canonical.com
-Cc: linux-kernel@vger.kernel.org, ext-phil.2.carmody@nokia.com
-Subject: [PATCH 1/1] checkpatch: don't fake typedefs with #define
-Date: Thu, 17 May 2012 15:52:12 +0300
-Message-Id: <1337259132-28774-1-git-send-email-ext-phil.2.carmody@nokia.com>
-X-Mailer: git-send-email 1.7.2.5
-X-Nokia-AV: Clean
+	id S1757417Ab2EQNLt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 17 May 2012 09:11:49 -0400
+Message-ID: <4FB4F902.1050708@redhat.com>
+Date: Thu, 17 May 2012 09:11:30 -0400
+From: Rik van Riel <riel@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
+MIME-Version: 1.0
+To: "nai.xia" <nai.xia@gmail.com>
+CC: Johannes Weiner <hannes@cmpxchg.org>, linux-mm@kvack.org,
+        Andrea Arcangeli <aarcange@redhat.com>,
+        Peter Zijlstra <peterz@infradead.org>, Mel Gorman <mgorman@suse.de>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Minchan Kim <minchan.kim@gmail.com>, Hugh Dickins <hughd@google.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [patch 0/5] refault distance-based file cache sizing
+References: <1335861713-4573-1-git-send-email-hannes@cmpxchg.org> <4FB33A4E.1010208@gmail.com>
+In-Reply-To: <4FB33A4E.1010208@gmail.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-People seemed to be taking the "no typedefs" rule too literally,
-and were using #define to abide by the letter rather than the
-spirit of the law. E.g. #define FOO_t struct _FOO_t
+On 05/16/2012 01:25 AM, nai.xia wrote:
+> Hi Johannes,
+>
+> Just out of curiosity(since I didn't study deep into the
+> reclaiming algorithms), I can recall from here that around 2005,
+> there was an(or some?) implementation of the "Clock-pro" algorithm
+> which also have the idea of "reuse distance", but it seems that algo
+> did not work well enough to get merged?
 
-Signed-off-by: Phil Carmody <ext-phil.2.carmody@nokia.com>
----
- scripts/checkpatch.pl |    6 ++++++
- 1 files changed, 6 insertions(+), 0 deletions(-)
+The main issue with clock-pro was scalability.
 
-diff --git a/scripts/checkpatch.pl b/scripts/checkpatch.pl
-index faea0ec..7dc41c5 100755
---- a/scripts/checkpatch.pl
-+++ b/scripts/checkpatch.pl
-@@ -2299,6 +2299,12 @@ sub process {
- 			     "do not add new typedefs\n" . $herecurr);
- 		}
- 
-+# check for deliberate avoidance of the above anti-typedef rule
-+		if ($line =~ /#\s*define\s+$Ident\s+$Type\b/) {
-+			WARN("NEW_TYPEDEFS",
-+			     "do not fake typedefs using #define\n" . $herecurr);
-+		}
-+
- # * goes on variable not on type
- 		# (char*[ const])
- 		while ($line =~ m{(\($NonptrType(\s*(?:$Modifier\b\s*|\*\s*)+)\))}g) {
+Johannes has managed to take the good parts of clock-pro,
+and add it on top of our split lru VM, which lets us keep
+the scalability, while still being able to deal with file
+faults from beyond the inactive list.
+
 -- 
-1.7.2.5
-
+All rights reversed
