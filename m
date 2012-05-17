@@ -1,58 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965568Ab2EQQfI (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 May 2012 12:35:08 -0400
-Received: from mailhub.sw.ru ([195.214.232.25]:37020 "EHLO relay.sw.ru"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754255Ab2EQQfF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 May 2012 12:35:05 -0400
-Message-ID: <4FB528B3.8000406@parallels.com>
-Date: Thu, 17 May 2012 20:34:59 +0400
-From: Pavel Emelyanov <xemul@parallels.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.1) Gecko/20120209 Thunderbird/10.0.1
+	id S1759277Ab2EQQiI (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 May 2012 12:38:08 -0400
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:59503 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932489Ab2EQQiF (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 17 May 2012 12:38:05 -0400
 MIME-Version: 1.0
-To: Cyrill Gorcunov <gorcunov@openvz.org>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+In-Reply-To: <20120517084042.GB31753@lizard>
+References: <20120517083740.GA25627@lizard>
+	<20120517084042.GB31753@lizard>
+Date: Thu, 17 May 2012 09:38:00 -0700
+X-Google-Sender-Auth: Z6FlWzBxCnC8vtg9sKJakCihYtI
+Message-ID: <CAGXu5j+XtqhVEeoaeEdvy+vWLBDpJimi2Ttbi17q9TPsw5S9Mw@mail.gmail.com>
+Subject: Re: [PATCH 2/6] pstore/ram: Add console messages handling
+From: Kees Cook <keescook@chromium.org>
+To: Anton Vorontsov <anton.vorontsov@linaro.org>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Colin Cross <ccross@android.com>, Tony Luck <tony.luck@intel.com>,
+        Arnd Bergmann <arnd@arndb.de>, John Stultz <john.stultz@linaro.org>,
+        Shuah Khan <shuahkhan@gmail.com>, arve@android.com,
+        Rebecca Schultz Zavin <rebecca@android.com>,
+        Jesper Juhl <jj@chaosbits.net>, Randy Dunlap <rdunlap@xenotime.net>,
+        Stephen Boyd <sboyd@codeaurora.org>, Thomas Meyer <thomas@m3y3r.de>,
         Andrew Morton <akpm@linux-foundation.org>,
-        James Bottomley <jbottomley@parallels.com>,
-        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>
-Subject: Re: [rfc 3/4] fs, eventfd: Add procfs fdinfo helper
-References: <20120517160738.116113099@openvz.org> <20120517162534.755208902@openvz.org>
-In-Reply-To: <20120517162534.755208902@openvz.org>
+        Marco Stornelli <marco.stornelli@gmail.com>,
+        WANG Cong <xiyou.wangcong@gmail.com>, linux-kernel@vger.kernel.org,
+        devel@driverdev.osuosl.org, linaro-kernel@lists.linaro.org,
+        patches@linaro.org, kernel-team@android.com
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> +static void *seq_start(struct seq_file *m, loff_t *pos)
-> +{
-> +	struct proc_fdinfo_extra *extra = m->private;
-> +	return *pos == 1 ? extra->fd_file : NULL;
-> +}
-> +
-> +static void seq_stop(struct seq_file *m, void *v)
-> +{
-> +}
-> +
-> +static void *seq_next(struct seq_file *m, void *p, loff_t *pos)
-> +{
-> +	struct proc_fdinfo_extra *extra = m->private;
-> +	return ++*pos == 1 ? extra->fd_file : NULL;
-> +}
-> +
+On Thu, May 17, 2012 at 1:40 AM, Anton Vorontsov
+<anton.vorontsov@linaro.org> wrote:
+> This is all straightforward: we just use the last region for
+> console logging. If there's just one region, we fall-back to
+> the old behaviour: just a oops/dumps logging.
+>
+> Signed-off-by: Anton Vorontsov <anton.vorontsov@linaro.org>
 
-<snip>
+Acked-by: Kees Cook <keescook@chromium.org>
 
-> +static const struct seq_operations eventfd_fdinfo_ops = {
-> +	.start	= seq_start,
-> +	.next	= seq_next,
-> +	.stop	= seq_stop,
-> +	.show	= seq_show,
+-Kees
 
-I think, you can use the single_ part of the seq files engine.
-
-> +};
-
-Thanks,
-Pavel
+-- 
+Kees Cook
+Chrome OS Security
