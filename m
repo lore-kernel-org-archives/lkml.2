@@ -1,105 +1,123 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761343Ab2EQJFd (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 May 2012 05:05:33 -0400
-Received: from LGEMRELSE7Q.lge.com ([156.147.1.151]:48579 "EHLO
-	LGEMRELSE7Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759912Ab2EQJF2 (ORCPT
+	id S1760105Ab2EQJG1 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 May 2012 05:06:27 -0400
+Received: from LGEMRELSE1Q.lge.com ([156.147.1.111]:50545 "EHLO
+	LGEMRELSE1Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759433Ab2EQJGS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 May 2012 05:05:28 -0400
-X-AuditID: 9c930197-b7be2ae000000ebb-48-4fb4bf54c387
-From: Namhyung Kim <namhyung.kim@lge.com>
-To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Mackerras <paulus@samba.org>,
-        Ingo Molnar <mingo@redhat.com>, LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 2/3] Revert 'perf evlist: Fix creation of cpu map'
-References: <1337161549-9870-1-git-send-email-namhyung.kim@lge.com>
-	<1337161549-9870-2-git-send-email-namhyung.kim@lge.com>
-	<20120516152619.GD7864@infradead.org>
-	<87txzf18yb.fsf@sejong.aot.lge.com>
-Date: Thu, 17 May 2012 18:03:37 +0900
-In-Reply-To: <87txzf18yb.fsf@sejong.aot.lge.com> (Namhyung Kim's message of
-	"Thu, 17 May 2012 17:57:16 +0900")
-Message-ID: <87pqa318nq.fsf@sejong.aot.lge.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.0.95 (gnu/linux)
+	Thu, 17 May 2012 05:06:18 -0400
+X-AuditID: 9c93016f-b7c3cae000001954-4a-4fb4bf87b24b
+Message-ID: <4FB4BFB0.4010805@kernel.org>
+Date: Thu, 17 May 2012 18:06:56 +0900
+From: Minchan Kim <minchan@kernel.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
 MIME-Version: 1.0
-Content-Type: text/plain
+Newsgroups: gmane.linux.kernel.mm,gmane.linux.kernel
+To: Paul Mundt <lethal@linux-sh.org>
+CC: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Nitin Gupta <ngupta@vflare.org>,
+        Seth Jennings <sjenning@linux.vnet.ibm.com>,
+        Dan Magenheimer <dan.magenheimer@oracle.com>,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        Russell King <linux@arm.linux.org.uk>,
+        Ralf Baechle <ralf@linux-mips.org>, Guan Xuetao <gxt@mprc.pku.edu.cn>,
+        Chen Liqin <liqin.chen@sunplusct.com>
+Subject: Re: [PATCH v2 1/3] zsmalloc: support zsmalloc to ARM, MIPS, SUPERH
+References: <1337133919-4182-1-git-send-email-minchan@kernel.org> <20120517083213.GC14027@linux-sh.org>
+In-Reply-To: <20120517083213.GC14027@linux-sh.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On 05/17/2012 05:32 PM, Paul Mundt wrote:
 
-On Thu, 17 May 2012 17:57:16 +0900, Namhyung Kim wrote:
-> On Wed, 16 May 2012 12:26:19 -0300, Arnaldo Carvalho de Melo wrote:
->> I'm applying it, but while trying to figure out if the logic was right I
->> tried:
+> On Wed, May 16, 2012 at 11:05:17AM +0900, Minchan Kim wrote:
+>> About local_flush_tlb_kernel_range,
+>> If architecture is very smart, it could flush only tlb entries related to vaddr.
+>> If architecture is smart, it could flush only tlb entries related to a CPU.
+>> If architecture is _NOT_ smart, it could flush all entries of all CPUs.
+>> So, it would be best to support both portability and performance.
 >>
->> perf top -C 0 -u acme
+> ..
+> 
+>> Need double check about supporting local_flush_tlb_kernel_range
+>> in ARM, MIPS, SUPERH maintainers. And I will Ccing unicore32 and
+>> score maintainers because arch directory in those arch have
+>> local_flush_tlb_kernel_range, too but I'm very unfamiliar with those
+>> architecture so pass it to maintainers.
+>> I didn't coded up dumb local_flush_tlb_kernel_range which flush
+>> all cpus. I expect someone need ZSMALLOC will implement it easily in future.
 >>
->> To check what is that this user is doing on that CPU, and its not
->> possible :-\
->>
->> UID switch overriding CPU!
->>
->
-> Maybe I need to rethink about it since I wasn't aware of the
-> per-task-per-cpu events at that time.
->
-> AFAIK the uid switch is basically a same thing as pid/tid switch, so
-> your complain should be extended to them too. And I think we can remove
-> the check from perf_target__validate(). But before that something like
-> below is needed also IMHO:
->
-
-After applying the patch below and removing the check, I got:
-
-namhyung@sejong:perf$ sudo ./perf top -C0 -u namhyung -s cpu,dso,sym --stdio
+> 
+> One thing you might consider is providing a stubbed definition that wraps
+> to flush_tlb_kernel_range() in the !SMP case, as this will extend your
+> testing coverage for staging considerably.
 
 
-   PerfTop:       5 irqs/sec  kernel:100.0%  exact:  0.0% [1000Hz cycles],  (uid: namhyung, CPU: 0)
--------------------------------------------------------------------------------------------------------------------------------
+AFAIUC, you mean following as,
 
-    91.67%  1  [kernel]  [k] dequeue_entity          
-     7.25%  5  [kernel]  [k] schedule_hrtimeout_range
-     1.01%  1  [kernel]  [k] __perf_event_task_sched 
-     0.06%  5  [kernel]  [k] native_write_msr_safe   
-     0.01%  1  [kernel]  [k] native_write_msr_safe   
-Failed to open /tmp/perf-1340.map, continuing without symbols
+ifndef CONFIG_SMP
+void flush_tlb_kernel_range(unsinged long start, unsigned log end)
+{
+	local_flush_tlb_kernel_range(start, end);
+}
+#endif
+
+I can do it on some arch which I know a little bit but concern is
+I'm not sure what's effective between all entries flush and 
+each entry flush if range is very big.
+
+It's not a goal of this patch so I would like to pass it to arch maintainers.
+But I absolutely agree on testing coverage on your comment.
+> 
+
+> Once you exclude all of the non-SMP platforms, you're left with the
+> following:
+> 
+> 	- blackfin: doesn't count, no TLB to worry about.
+> 	- hexagon: seems to imply that the SMP case uses thread-based
+> 	  CPUs that share an MMU, so no additional cost.
+> 	- ia64: Does a global flush, which already has a FIXME comment.
+> 	- m32r, mn10300: local_flush_tlb_all() could be wrapped.
+> 	- parisc: global flush?
+> 	- s390: Tests the cpumask to do a local flush, otherwise has a
+> 	  __tlb_flush_local() that can be wrapped.
+> 	- sparc32: global flush
+> 	- sparc64: __flush_tlb_kernel_range() looks like a local flush.
+> 	- tile: does strange hypervisory things, presumably global.
+> 	- x86: has a local_flush_tlb() that could be wrapped.
+
+> 
+
+> Which doesn't look quite that bad. You could probably get away with a
+> Kconfig option for optimized local TLB flushing or something, since
+> single function Kconfig options seem to be all the rage these days.
 
 
-So definitely it needs more work...
+Actually, I didn't want to implement dumb flush functions on all architecture
+which those functions flush all entries although we need flush a few entries.
+It might zsmalloc unuseful so I expected each maintainers can implement
+it much efficient than stupid me and then, they add their arch in Kconfig. :(
 
-Thanks,
-Namhyung
+If this approach is really bad, I need time to implement dumb stub functions
+in all architecture and have to receive all acks from them. Sigh. 
 
 
->
-> diff --git a/tools/perf/builtin-top.c b/tools/perf/builtin-top.c
-> index ebcd15883ab8..8e3cf429dd18 100644
-> --- a/tools/perf/builtin-top.c
-> +++ b/tools/perf/builtin-top.c
-> @@ -900,6 +900,9 @@ static void perf_top__start_counters(struct perf_top *top)
->                         attr->read_format |= PERF_FORMAT_ID;
->                 }
->  
-> +               if (perf_target__has_cpu(&top->target))
-> +                       attr->sample_type |= PERF_SAMPLE_CPU;
-> +
->                 if (symbol_conf.use_callchain)
->                         attr->sample_type |= PERF_SAMPLE_CALLCHAIN;
->  
-> diff --git a/tools/perf/util/evsel.c b/tools/perf/util/evsel.c
-> index d7a2b4b9801d..d26b8fe0abd1 100644
-> --- a/tools/perf/util/evsel.c
-> +++ b/tools/perf/util/evsel.c
-> @@ -107,7 +107,7 @@ void perf_evsel__config(struct perf_evsel *evsel, struct perf_record_opts *opts,
->         if (opts->call_graph)
->                 attr->sample_type       |= PERF_SAMPLE_CALLCHAIN;
->  
-> -       if (opts->target.system_wide)
-> +       if (perf_target__has_cpu(&opts->target))
->                 attr->sample_type       |= PERF_SAMPLE_CPU;
->  
->         if (opts->period)
+> 
+> --
+> To unsubscribe, send a message with 'unsubscribe linux-mm' in
+> the body to majordomo@kvack.org.  For more info on Linux MM,
+> see: http://www.linux-mm.org/ .
+> Fight unfair telecom internet charges in Canada: sign http://stopthemeter.ca/
+> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
+> 
+
+
+
+-- 
+Kind regards,
+Minchan Kim
