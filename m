@@ -1,18 +1,16 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760726Ab2EQQx3 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 May 2012 12:53:29 -0400
-Received: from mailout4.w1.samsung.com ([210.118.77.14]:26780 "EHLO
-	mailout4.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759612Ab2EQQx1 (ORCPT
+	id S1030260Ab2EQQxd (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 May 2012 12:53:33 -0400
+Received: from mailout1.w1.samsung.com ([210.118.77.11]:29321 "EHLO
+	mailout1.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1760784Ab2EQQxa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 May 2012 12:53:27 -0400
-MIME-version: 1.0
-Content-transfer-encoding: 7BIT
-Content-type: TEXT/PLAIN
-Date: Thu, 17 May 2012 18:53:03 +0200
+	Thu, 17 May 2012 12:53:30 -0400
+Date: Thu, 17 May 2012 18:53:06 +0200
 From: Marek Szyprowski <m.szyprowski@samsung.com>
-Subject: [PATCH/RFC 0/3] ARM: DMA-mapping: new extensions for buffer sharing
+Subject: [PATCH 3/3] ARM: dma-mapping: add support for dma_get_sgtable()
+In-reply-to: <1337273586-11089-1-git-send-email-m.szyprowski@samsung.com>
 To: linux-arm-kernel@lists.infradead.org, linaro-mm-sig@lists.linaro.org,
         linux-mm@kvack.org, linux-arch@vger.kernel.org,
         linux-kernel@vger.kernel.org
@@ -29,70 +27,147 @@ Cc: Marek Szyprowski <m.szyprowski@samsung.com>,
         Sumit Semwal <sumit.semwal@linaro.org>,
         Abhinav Kochhar <abhinav.k@samsung.com>,
         Tomasz Stanislawski <t.stanislaws@samsung.com>
-Message-id: <1337273586-11089-1-git-send-email-m.szyprowski@samsung.com>
+Message-id: <1337273586-11089-4-git-send-email-m.szyprowski@samsung.com>
+MIME-version: 1.0
 X-Mailer: git-send-email 1.7.10.1
+Content-type: TEXT/PLAIN
+Content-transfer-encoding: 7BIT
+References: <1337273586-11089-1-git-send-email-m.szyprowski@samsung.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+This patch adds dma_get_sgtable() function which is required to let
+drivers to share the buffers allocated by DMA-mapping subsystem. Right
+now the driver gets a dma address of the allocated buffer and the kernel
+virtual mapping for it. If it wants to share it with other device (= map
+into its dma address space) it usually hacks around kernel virtual
+addresses to get pointers to pages or assumes that both devices share
+the DMA address space. Both solutions are just hacks for the special
+cases, which should be avoided in the final version of buffer sharing.
+To solve this issue in a generic way, a new call to DMA mapping has been
+introduced - dma_get_sgtable(). It allocates a scatter-list which
+describes the allocated buffer and lets the driver(s) to use it with
+other device(s) by calling dma_map_sg() on it.
 
-This patch series introduces a new features to DMA mapping subsystem
-to let drivers share the allocated buffers (preferably using recently
-introduced dma_buf framework) easy and efficient.
+This patch adds this extension only to ARM architecture, mainly to
+demonstrate the buffer sharing. I plan to provide some generic
+implementations for other architectures once this idea gets accepted.
 
-The first extension is DMA_ATTR_NO_KERNEL_MAPPING attribute. It is
-intended for use with dma_{alloc, mmap, free}_attrs functions. It can be
-used to notify dma-mapping core that the driver will not use kernel
-mapping for the allocated buffer at all, so the core can skip creating
-it. This saves precious kernel virtual address space. Such buffer can be
-accessed from userspace, after calling dma_mmap_attrs() for it (a
-typical use case for multimedia buffers). The value returned by
-dma_alloc_attrs() with this attribute should be considered as a DMA
-cookie, which needs to be passed to dma_mmap_attrs() and
-dma_free_attrs() funtions.
-
-The second extension is required to let drivers to share the buffers
-allocated by DMA-mapping subsystem. Right now the driver gets a dma
-address of the allocated buffer and the kernel virtual mapping for it.
-If it wants to share it with other device (= map into its dma address
-space) it usually hacks around kernel virtual addresses to get pointers
-to pages or assumes that both devices share the DMA address space. Both
-solutions are just hacks for the special cases, which should be avoided
-in the final version of buffer sharing. To solve this issue in a generic
-way, a new call to DMA mapping has been introduced - dma_get_sgtable().
-It allocates a scatter-list which describes the allocated buffer and
-lets the driver(s) to use it with other device(s) by calling
-dma_map_sg() on it.
-
-The proposed patches have been generated on top of the ARM DMA-mapping
-redesign patch series on Linux v3.4-rc7. They are also available on the
-following GIT branch:
-
-git://git.linaro.org/people/mszyprowski/linux-dma-mapping.git 3.4-rc7-arm-dma-v10-ext
-
-with all require patches on top of vanilla v3.4-rc7 kernel.
-
-Best regards
-Marek Szyprowski
-Samsung Poland R&D Center
-
-
-Patch summary:
-
-Marek Szyprowski (3):
-  common: DMA-mapping: add DMA_ATTR_NO_KERNEL_MAPPING attribute
-  ARM: dma-mapping: add support for DMA_ATTR_NO_KERNEL_MAPPING
-    attribute
-  ARM: dma-mapping: add support for dma_get_sgtable()
-
- Documentation/DMA-attributes.txt   |   18 +++++++++++++
- arch/arm/include/asm/dma-mapping.h |   12 +++++++++
- arch/arm/mm/dma-mapping.c          |   51 ++++++++++++++++++++++++++++++++----
- include/linux/dma-attrs.h          |    1 +
+Signed-off-by: Marek Szyprowski <m.szyprowski@samsung.com>
+---
+ arch/arm/include/asm/dma-mapping.h |   12 ++++++++++++
+ arch/arm/mm/dma-mapping.c          |   31 +++++++++++++++++++++++++++++++
  include/linux/dma-mapping.h        |    3 +++
- 5 files changed, 80 insertions(+), 5 deletions(-)
+ 3 files changed, 46 insertions(+)
 
+diff --git a/arch/arm/include/asm/dma-mapping.h b/arch/arm/include/asm/dma-mapping.h
+index 80777d87..2e37778 100644
+--- a/arch/arm/include/asm/dma-mapping.h
++++ b/arch/arm/include/asm/dma-mapping.h
+@@ -221,6 +221,15 @@ static inline int dma_mmap_writecombine(struct device *dev, struct vm_area_struc
+ 	return dma_mmap_attrs(dev, vma, cpu_addr, dma_addr, size, &attrs);
+ }
+ 
++static inline int dma_get_sgtable(struct device *dev, struct sg_table *sgt,
++				  void *cpu_addr, dma_addr_t dma_addr,
++				  size_t size, struct dma_attrs *attrs)
++{
++	struct dma_map_ops *ops = get_dma_ops(dev);
++	BUG_ON(!ops);
++	return ops->get_sgtable(dev, sgt, cpu_addr, dma_addr, size, attrs);
++}
++
+ /*
+  * This can be called during boot to increase the size of the consistent
+  * DMA region above it's default value of 2MB. It must be called before the
+@@ -280,6 +289,9 @@ extern void arm_dma_sync_sg_for_cpu(struct device *, struct scatterlist *, int,
+ 		enum dma_data_direction);
+ extern void arm_dma_sync_sg_for_device(struct device *, struct scatterlist *, int,
+ 		enum dma_data_direction);
++extern int arm_dma_get_sgtable(struct device *dev, struct sg_table *sgt,
++		void *cpu_addr, dma_addr_t dma_addr, size_t size,
++		struct dma_attrs *attrs);
+ 
+ #endif /* __KERNEL__ */
+ #endif
+diff --git a/arch/arm/mm/dma-mapping.c b/arch/arm/mm/dma-mapping.c
+index 23d0ace..b140440 100644
+--- a/arch/arm/mm/dma-mapping.c
++++ b/arch/arm/mm/dma-mapping.c
+@@ -120,6 +120,7 @@ struct dma_map_ops arm_dma_ops = {
+ 	.alloc			= arm_dma_alloc,
+ 	.free			= arm_dma_free,
+ 	.mmap			= arm_dma_mmap,
++	.get_sgtable		= arm_dma_get_sgtable,
+ 	.map_page		= arm_dma_map_page,
+ 	.unmap_page		= arm_dma_unmap_page,
+ 	.map_sg			= arm_dma_map_sg,
+@@ -529,6 +530,21 @@ void arm_dma_free(struct device *dev, size_t size, void *cpu_addr,
+ 	__dma_free_buffer(pfn_to_page(dma_to_pfn(dev, handle)), size);
+ }
+ 
++int arm_dma_get_sgtable(struct device *dev, struct sg_table *sgt,
++		 void *cpu_addr, dma_addr_t handle, size_t size,
++		 struct dma_attrs *attrs)
++{
++	struct page *page = pfn_to_page(dma_to_pfn(dev, handle));
++	int ret;
++
++	ret = sg_alloc_table(sgt, 1, GFP_KERNEL);
++	if (unlikely(ret))
++		return ret;
++
++	sg_set_page(sgt->sgl, page, PAGE_ALIGN(size), 0);
++	return 0;
++}
++
+ static void dma_cache_maint_page(struct page *page, unsigned long offset,
+ 	size_t size, enum dma_data_direction dir,
+ 	void (*op)(const void *, size_t, int))
+@@ -1042,6 +1058,20 @@ void arm_iommu_free_attrs(struct device *dev, size_t size, void *cpu_addr,
+ 	__iommu_free_buffer(dev, pages, size);
+ }
+ 
++static int arm_iommu_get_sgtable(struct device *dev, struct sg_table *sgt,
++				 void *cpu_addr, dma_addr_t dma_addr,
++				 size_t size, struct dma_attrs *attrs)
++{
++	unsigned int count = PAGE_ALIGN(size) >> PAGE_SHIFT;
++	struct page **pages = __iommu_get_pages(cpu_addr, attrs);
++
++	if (!pages)
++		return -ENXIO;
++
++	return sg_alloc_table_from_pages(sgt, pages, count, 0, size,
++					 GFP_KERNEL);
++}
++
+ /*
+  * Map a part of the scatter-gather list into contiguous io address space
+  */
+@@ -1301,6 +1331,7 @@ struct dma_map_ops iommu_ops = {
+ 	.alloc		= arm_iommu_alloc_attrs,
+ 	.free		= arm_iommu_free_attrs,
+ 	.mmap		= arm_iommu_mmap_attrs,
++	.get_sgtable	= arm_iommu_get_sgtable,
+ 
+ 	.map_page		= arm_iommu_map_page,
+ 	.unmap_page		= arm_iommu_unmap_page,
+diff --git a/include/linux/dma-mapping.h b/include/linux/dma-mapping.h
+index dfc099e..94af418 100644
+--- a/include/linux/dma-mapping.h
++++ b/include/linux/dma-mapping.h
+@@ -18,6 +18,9 @@ struct dma_map_ops {
+ 	int (*mmap)(struct device *, struct vm_area_struct *,
+ 			  void *, dma_addr_t, size_t, struct dma_attrs *attrs);
+ 
++	int (*get_sgtable)(struct device *dev, struct sg_table *sgt, void *,
++			   dma_addr_t, size_t, struct dma_attrs *attrs);
++
+ 	dma_addr_t (*map_page)(struct device *dev, struct page *page,
+ 			       unsigned long offset, size_t size,
+ 			       enum dma_data_direction dir,
 -- 
 1.7.10.1
 
