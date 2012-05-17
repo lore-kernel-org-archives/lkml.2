@@ -1,41 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S967347Ab2EQWEj (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 May 2012 18:04:39 -0400
-Received: from casper.infradead.org ([85.118.1.10]:46299 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965954Ab2EQWEi convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 May 2012 18:04:38 -0400
-Message-ID: <1337292273.4281.101.camel@twins>
-Subject: Re: [PATCH 2/2] block: Convert BDI proportion calculations to
- flexible proportions
-From: Peter Zijlstra <peterz@infradead.org>
-To: Jan Kara <jack@suse.cz>
-Cc: Wu Fengguang <fengguang.wu@intel.com>, LKML <linux-kernel@vger.kernel.org>,
-        linux-mm@kvack.org
-Date: Fri, 18 May 2012 00:04:33 +0200
-In-Reply-To: <1337096583-6049-3-git-send-email-jack@suse.cz>
-References: <1337096583-6049-1-git-send-email-jack@suse.cz>
-	 <1337096583-6049-3-git-send-email-jack@suse.cz>
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
+	id S967424Ab2EQWJK (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 May 2012 18:09:10 -0400
+Received: from perches-mx.perches.com ([206.117.179.246]:39397 "EHLO
+	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S965954Ab2EQWJI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 17 May 2012 18:09:08 -0400
+Message-ID: <1337292547.8872.20.camel@joe2Laptop>
+Subject: [RFC PATCH net-next] hp100: delete VG/AnyLAN hp100
+From: Joe Perches <joe@perches.com>
+To: Paul Gortmaker <paul.gortmaker@windriver.com>
+Cc: linux-kernel@vger.kernel.org, JBottomley@parallels.com,
+        "David S. Miller" <davem@davemloft.net>, netdev@vger.kernel.org
+Date: Thu, 17 May 2012 15:09:07 -0700
+In-Reply-To: <20120517212039.GC27789@windriver.com>
+References: <1337272841-25931-1-git-send-email-paul.gortmaker@windriver.com>
+	 <1337272841-25931-3-git-send-email-paul.gortmaker@windriver.com>
+	 <4FB52C99.6010303@windriver.com> <20120517212039.GC27789@windriver.com>
+Content-Type: text/plain; charset="UTF-8"
 X-Mailer: Evolution 3.2.2- 
+Content-Transfer-Encoding: 7bit
 Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2012-05-15 at 17:43 +0200, Jan Kara wrote:
-> +static struct timer_list writeout_period_timer =
-> +               TIMER_DEFERRED_INITIALIZER(writeout_period, 0, 0); 
+On Thu, 2012-05-17 at 17:20 -0400, Paul Gortmaker wrote:
+> [Re: [PATCH 2/5] drivers/net: delete all code/drivers depending on CONFIG_MCA
 
-So the problem with using a deferred timer is that it 'ignores' idle
-time. So if a very busy period is followed by a real quiet period you'd
-expect all the proportions to have aged to 0, but they won't have.
+If we're removing really old and unused stuff,
+how about the VG/AnyLAN driver too?
+---
+ drivers/net/ethernet/Kconfig     |    1 -
+ drivers/net/ethernet/Makefile    |    1 -
+ drivers/net/ethernet/hp/Kconfig  |   32 -
+ drivers/net/ethernet/hp/Makefile |    5 -
+ drivers/net/ethernet/hp/hp100.c  | 3066 --------------------------------------
+ drivers/net/ethernet/hp/hp100.h  |  615 --------
+ 6 files changed, 0 insertions(+), 3720 deletions(-)
+ delete mode 100644 drivers/net/ethernet/hp/Kconfig
+ delete mode 100644 drivers/net/ethernet/hp/Makefile
+ delete mode 100644 drivers/net/ethernet/hp/hp100.c
+ delete mode 100644 drivers/net/ethernet/hp/hp100.h
 
-One way to solve that is to track a jiffies count of the last time the
-timer triggered and compute the missed periods from that and extend
-fprop_new_period() to deal with period increments of more than 1.
+diff --git a/drivers/net/ethernet/Kconfig b/drivers/net/ethernet/Kconfig
+index a11af5c..0896c8f 100644
+--- a/drivers/net/ethernet/Kconfig
++++ b/drivers/net/ethernet/Kconfig
+@@ -52,7 +52,6 @@ source "drivers/net/ethernet/neterion/Kconfig"
+ source "drivers/net/ethernet/faraday/Kconfig"
+ source "drivers/net/ethernet/freescale/Kconfig"
+ source "drivers/net/ethernet/fujitsu/Kconfig"
+-source "drivers/net/ethernet/hp/Kconfig"
+ source "drivers/net/ethernet/ibm/Kconfig"
+ source "drivers/net/ethernet/intel/Kconfig"
+ source "drivers/net/ethernet/i825xx/Kconfig"
+diff --git a/drivers/net/ethernet/Makefile b/drivers/net/ethernet/Makefile
+index 878ad32..756ebd3 100644
+--- a/drivers/net/ethernet/Makefile
++++ b/drivers/net/ethernet/Makefile
+@@ -27,7 +27,6 @@ obj-$(CONFIG_NET_VENDOR_EXAR) += neterion/
+ obj-$(CONFIG_NET_VENDOR_FARADAY) += faraday/
+ obj-$(CONFIG_NET_VENDOR_FREESCALE) += freescale/
+ obj-$(CONFIG_NET_VENDOR_FUJITSU) += fujitsu/
+-obj-$(CONFIG_NET_VENDOR_HP) += hp/
+ obj-$(CONFIG_NET_VENDOR_IBM) += ibm/
+ obj-$(CONFIG_NET_VENDOR_INTEL) += intel/
+ obj-$(CONFIG_NET_VENDOR_I825XX) += i825xx/
 
-The other is of course to not use deferred timers.
+
