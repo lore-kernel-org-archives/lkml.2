@@ -1,49 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965623Ab2EQMhu (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 May 2012 08:37:50 -0400
-Received: from void.printf.net ([89.145.121.20]:50771 "EHLO void.printf.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755017Ab2EQMhs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 May 2012 08:37:48 -0400
-From: Chris Ball <cjb@laptop.org>
-To: yongd <yongd@marvell.com>
-Cc: linux-mmc@vger.kernel.org, prakity@marvell.com, ohad@wizery.com,
-        linus.walleij@linaro.org, ulf.hansson@stericsson.com,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2] mmc:sdio:guarantee setting card data bus width as 4-bit
-References: <1337058583-2014-1-git-send-email-yongd@marvell.com>
-Date: Thu, 17 May 2012 08:37:36 -0400
-In-Reply-To: <1337058583-2014-1-git-send-email-yongd@marvell.com>
-	(yongd@marvell.com's message of "Tue, 15 May 2012 13:09:43 +0800")
-Message-ID: <87sjez3rvz.fsf@laptop.org>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.3 (gnu/linux)
+	id S1760586Ab2EQMrs (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 May 2012 08:47:48 -0400
+Received: from mail-vb0-f46.google.com ([209.85.212.46]:38518 "EHLO
+	mail-vb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754564Ab2EQMrr (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 17 May 2012 08:47:47 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Date: Thu, 17 May 2012 20:47:45 +0800
+Message-ID: <CAJd=RBDRdnBD8vSp9HPRjEnVGQ60BpPCGvz-HRXtwp2Nk_8VoQ@mail.gmail.com>
+Subject: BFS 420: cleanup try_preempt
+From: Hillf Danton <dhillf@gmail.com>
+To: LKML <linux-kernel@vger.kernel.org>, Hillf Danton <dhillf@gmail.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+First the cpumask on stack is removed.
 
-On Tue, May 15 2012, yongd wrote:
->   SDIO_CCCR_IF[1:0] in SDIO card is used for card data bus width
-> setting as below,
->      00b: 1-bit bus
->      01b: Reserved
->      10b: 4-bit bus
->      11b: 8-bit bus(only for embedded SDIO)
->   And sdio_enable_wide is for setting data bus width as 4-bit. But
-> currently, it 1stly read the register, 2ndly OR' 1b with SDIO_CCCR_IF[1],
-> and then write it back.
->   As we can see, such way is based on such assumption that the
-> SDIO_CCCR_IF[0] is always 0. Apparently, this is not right.
->
-> Signed-off-by: yongd <yongd@marvell.com>
+Then before scanning online CPUs, highest_prio and latest_deadline are inited
+with values of the given task, for shortening the scan as much as we could.
 
-Thanks.  Can we have your full name, for the copyright record?
+And if we get highest_prio_rq, its current task is rescheduled without bothering
+calling can_preempt, as we already do the checks when finding the
+target runqueue.
 
-- Chris.
--- 
-Chris Ball   <cjb@laptop.org>   <http://printf.net/>
-One Laptop Per Child
+
+--- a/kernel/sched/bfs.c	Mon May 14 20:50:38 2012
++++ b/kernel/sched/bfs.c	Thu May 17 20:35:46 2012
+@@ -1423,7 +1423,6 @@ static void try_preempt(struct task_stru
+ 	struct rq *highest_prio_rq = NULL;
+ 	int cpu, highest_prio;
+ 	u64 latest_deadline;
+-	cpumask_t tmp;
+
+ 	/*
+ 	 * We clear the sticky flag here because for a task to have called
+@@ -1441,14 +1440,10 @@ static void try_preempt(struct task_stru
+ 	if (p->policy == SCHED_IDLEPRIO)
+ 		return;
+
+-	if (likely(online_cpus(p)))
+-		cpus_and(tmp, cpu_online_map, p->cpus_allowed);
+-	else
+-		return;
+-
+-	highest_prio = latest_deadline = 0;
++	highest_prio = p->prio;
++	latest_deadline = p->deadline;
+
+-	for_each_cpu_mask(cpu, tmp) {
++	for_each_cpu_and(cpu, cpu_online_map, p->cpus_allowed) {
+ 		struct rq *rq;
+ 		int rq_prio;
+
+@@ -1465,10 +1460,8 @@ static void try_preempt(struct task_stru
+ 		}
+ 	}
+
+-	if (likely(highest_prio_rq)) {
+-		if (can_preempt(p, highest_prio, highest_prio_rq->rq_deadline))
+-			resched_task(highest_prio_rq->curr);
+-	}
++	if (highest_prio_rq)
++		resched_task(highest_prio_rq->curr);
+ }
+ #else /* CONFIG_SMP */
+ static inline bool needs_other_cpu(struct task_struct *p, int cpu)
+--
