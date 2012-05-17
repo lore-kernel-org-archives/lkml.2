@@ -1,41 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933382Ab2EQPJI (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 May 2012 11:09:08 -0400
-Received: from casper.infradead.org ([85.118.1.10]:40034 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759873Ab2EQPJF convert rfc822-to-8bit (ORCPT
+	id S933434Ab2EQPJb (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 May 2012 11:09:31 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:60382 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933404Ab2EQPJ2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 May 2012 11:09:05 -0400
-Message-ID: <1337267329.4281.32.camel@twins>
-Subject: Re: [PATCH v2 3/3] x86: Support local_flush_tlb_kernel_range
-From: Peter Zijlstra <peterz@infradead.org>
-To: Minchan Kim <minchan@kernel.org>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Nitin Gupta <ngupta@vflare.org>,
-        Seth Jennings <sjenning@linux.vnet.ibm.com>,
-        Dan Magenheimer <dan.magenheimer@oracle.com>,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        Tejun Heo <tj@kernel.org>, David Howells <dhowells@redhat.com>,
-        x86@kernel.org, Nick Piggin <npiggin@gmail.com>
-Date: Thu, 17 May 2012 17:08:49 +0200
-In-Reply-To: <1337266310.4281.30.camel@twins>
-References: <1337133919-4182-1-git-send-email-minchan@kernel.org>
-	 <1337133919-4182-3-git-send-email-minchan@kernel.org>
-	 <4FB4B29C.4010908@kernel.org> <1337266310.4281.30.camel@twins>
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
-X-Mailer: Evolution 3.2.2- 
-Mime-Version: 1.0
+	Thu, 17 May 2012 11:09:28 -0400
+Date: Thu, 17 May 2012 08:09:23 -0700
+From: Tejun Heo <tj@kernel.org>
+To: Jiri Kosina <jkosina@suse.cz>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Stephen Hemminger <shemminger@vyatta.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Jens Axboe <axboe@kernel.dk>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] floppy: convert to delayed work and single-thread wq
+Message-ID: <20120517150923.GH21275@google.com>
+References: <alpine.LNX.2.00.1205162133180.8796@pobox.suse.cz>
+ <CA+55aFw-us7LnG-iq5EQmSDJ7xH9hiOMmCryAGobReko4LkVWg@mail.gmail.com>
+ <20120516195332.GC21275@google.com>
+ <alpine.LNX.2.00.1205162156120.8796@pobox.suse.cz>
+ <20120516200147.GD21275@google.com>
+ <alpine.LNX.2.00.1205162216390.8796@pobox.suse.cz>
+ <20120516202924.GE21275@google.com>
+ <CA+55aFyX3OgdcWuYQO+YuS3fF_Wt1p8w-G33C5MCkiR-3ncfVA@mail.gmail.com>
+ <20120517145519.GF21275@google.com>
+ <alpine.LNX.2.00.1205171705520.8796@pobox.suse.cz>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <alpine.LNX.2.00.1205171705520.8796@pobox.suse.cz>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2012-05-17 at 16:51 +0200, Peter Zijlstra wrote:
+On Thu, May 17, 2012 at 05:06:41PM +0200, Jiri Kosina wrote:
+> On Thu, 17 May 2012, Tejun Heo wrote:
 > 
-> Also, does it even work if the range happens to be backed by huge pages?
-> IIRC we try and do the identity map with large pages wherever possible. 
+> > > Umm. If there are abritrarily long things and these are serialized,
+> > > then that workqueue is not good for putting floppy work on it either,
+> > > is it? I don't think you can have it both ways.
+> > 
+> > They're not being serialized.  
+> 
+> Then it's useless for this very purpose -- the sole purpose of the 
+> floppy_wq having as a single-threaded wq is to run all the work 
+> serialized.
+> 
+> So the patch I have sent out this morning is the way to go.
 
-OK, the Intel SDM seems to suggest it will indeed invalidate ANY mapping
-to that linear address, which would include 2M and 1G pages.
+Yeah, that seems to be my confusion here - I thought serialization is
+necessary only for a work item.  Can you please use
+alloc_ordered_workqueue() instead of create_singlethread_workqueue()?
+
+Thanks.
+
+-- 
+tejun
