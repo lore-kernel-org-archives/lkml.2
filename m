@@ -1,42 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1762426Ab2EQW5y (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 May 2012 18:57:54 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:38281 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1760557Ab2EQW5v (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 May 2012 18:57:51 -0400
-Message-ID: <4FB58263.30700@zytor.com>
-Date: Thu, 17 May 2012 15:57:39 -0700
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:11.0) Gecko/20120329 Thunderbird/11.0.1
+	id S1030510Ab2EQW6u (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 May 2012 18:58:50 -0400
+Received: from mail-wi0-f178.google.com ([209.85.212.178]:51041 "EHLO
+	mail-wi0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1760557Ab2EQW6s (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 17 May 2012 18:58:48 -0400
 MIME-Version: 1.0
-To: Linus Torvalds <torvalds@linux-foundation.org>
-CC: "H.J. Lu" <hjl.tools@gmail.com>, linux-kernel@vger.kernel.org,
-        linux-arch@vger.kernel.org, mingo@kernel.org, tglx@linutronix.de
+In-Reply-To: <4FB581D5.9010606@zytor.com>
+References: <1337292816-10839-1-git-send-email-hjl.tools@gmail.com>
+ <1337292816-10839-2-git-send-email-hjl.tools@gmail.com> <CA+55aFx98qvVg1JhMV0JjgNGb++xtir5ocseY3xgQNc3qAtWdQ@mail.gmail.com>
+ <4FB57EB2.4050208@zytor.com> <CA+55aFzztct_HzmGiit=9SwwM4_YPuXbjwMdJpM1JHMXGBNqaA@mail.gmail.com>
+ <4FB581D5.9010606@zytor.com>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Thu, 17 May 2012 15:58:26 -0700
+X-Google-Sender-Auth: IuaRBgn5Letr9Op1K-XCW_d-xkc
+Message-ID: <CA+55aFzVpx94YyC3N2rJaNYLnwUmgNDvzSJnbq1ByNhETY4q9g@mail.gmail.com>
 Subject: Re: [PATCH 01/10] Use __kernel_long_t in struct timex
-References: <1337292816-10839-1-git-send-email-hjl.tools@gmail.com> <1337292816-10839-2-git-send-email-hjl.tools@gmail.com> <CA+55aFx98qvVg1JhMV0JjgNGb++xtir5ocseY3xgQNc3qAtWdQ@mail.gmail.com> <4FB57EB2.4050208@zytor.com> <CA+55aFzztct_HzmGiit=9SwwM4_YPuXbjwMdJpM1JHMXGBNqaA@mail.gmail.com> <CA+55aFxAY5FvJOjr9=W=g7WDj_gNwKrEeCFAiY2L2YmpaDx1cw@mail.gmail.com>
-In-Reply-To: <CA+55aFxAY5FvJOjr9=W=g7WDj_gNwKrEeCFAiY2L2YmpaDx1cw@mail.gmail.com>
-X-Enigmail-Version: 1.4
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+To: "H. Peter Anvin" <hpa@zytor.com>
+Cc: "H.J. Lu" <hjl.tools@gmail.com>, linux-kernel@vger.kernel.org,
+        linux-arch@vger.kernel.org, mingo@kernel.org, tglx@linutronix.de
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/17/2012 03:56 PM, Linus Torvalds wrote:
-> 
-> It would make much more sense to use "__word" for reasons like that.
-> But I really don't think that works well in a x86 context.
-> 
-> Other ideas? Maybe "__wordsize" would be less associated with x86 16-bit words?
-> 
+On Thu, May 17, 2012 at 3:55 PM, H. Peter Anvin <hpa@zytor.com> wrote:
+>
+> I would suggest __slong and __ulong then, to keep with the __[su]*
+> namespace, or does the extra "s" look too much like crap?
 
-__[su]native maybe?
+I do think I could live with it. Maybe we can make x32 do
 
-	-hpa
+   typedef __s64 __slong;
+   typedef __u64 __ulong;
 
--- 
-H. Peter Anvin, Intel Open Source Technology Center
-I work for Intel.  I don't speak on their behalf.
+and at least not make the "we're declaring a 'long' as a 'long long'"?
 
+                     Linus
