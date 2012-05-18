@@ -1,50 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S966340Ab2ERRzs (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 May 2012 13:55:48 -0400
-Received: from shards.monkeyblade.net ([198.137.202.13]:43191 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965082Ab2ERRzr (ORCPT
+	id S966372Ab2ERRz5 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 May 2012 13:55:57 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:43676 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S965082Ab2ERRzy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 May 2012 13:55:47 -0400
-Date: Fri, 18 May 2012 13:53:35 -0400 (EDT)
-Message-Id: <20120518.135335.1910007668963165501.davem@davemloft.net>
-To: sam@ravnborg.org
-Cc: anna-maria@glx-um.de, linux-kernel@vger.kernel.org, tglx@linutronix.de
-Subject: Re: [patch 20/24] sparc: Use: generic time config
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <20120518175041.GA17334@merkur.ravnborg.org>
-References: <20120518163020.548627576@glx-um.de>
-	<20120518163106.987564297@glx-um.de>
-	<20120518175041.GA17334@merkur.ravnborg.org>
-X-Mailer: Mew version 6.5 on Emacs 24.0.95 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.6 (shards.monkeyblade.net [198.137.202.13]); Fri, 18 May 2012 10:53:37 -0700 (PDT)
+	Fri, 18 May 2012 13:55:54 -0400
+Date: Fri, 18 May 2012 10:55:48 -0700
+From: Tejun Heo <tj@kernel.org>
+To: Sasha Levin <levinsasha928@gmail.com>
+Cc: Li Zefan <lizefan@huawei.com>, containers@lists.linux-foundation.org,
+        cgroups@vger.kernel.org, linux-kernel@vger.kernel.org,
+        fweisbec@gmail.com, rni@google.com, ctalbott@google.com,
+        Vivek Goyal <vgoyal@redhat.com>, Johannes Weiner <hannes@cmpxchg.org>,
+        Michal Hocko <mhocko@suse.cz>, Balbir Singh <bsingharora@gmail.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Subject: Re: [PATCH 2/2] cgroup: make css->refcnt clearing on cgroup
+ removal optional
+Message-ID: <20120518175548.GM19388@google.com>
+References: <20120330223423.GJ28934@google.com>
+ <20120330223606.GK28934@google.com>
+ <4F77B6BA.4070207@huawei.com>
+ <20120401185430.GA9230@dhcp-172-17-108-109.mtv.corp.google.com>
+ <CA+1xoqe5hMuxzCRhMy7J0XchDk2ZnuxOHJKikROk1-ReAzcT6g@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CA+1xoqe5hMuxzCRhMy7J0XchDk2ZnuxOHJKikROk1-ReAzcT6g@mail.gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Sam Ravnborg <sam@ravnborg.org>
-Date: Fri, 18 May 2012 19:50:41 +0200
-
-> On Fri, May 18, 2012 at 04:45:54PM -0000, Anna-Maria Gleixner wrote:
->> Index: linux/arch/sparc/Kconfig
->> ===================================================================
->> --- linux.orig/arch/sparc/Kconfig
->> +++ linux/arch/sparc/Kconfig
->> @@ -30,11 +30,13 @@ config SPARC
->>  	select USE_GENERIC_SMP_HELPERS if SMP
->>  	select GENERIC_PCI_IOMAP
->>  	select HAVE_NMI_WATCHDOG if SPARC64
->> +	select GENERIC_CMOS_UPDATE
+On Thu, May 17, 2012 at 12:33:05AM +0200, Sasha Levin wrote:
+> Hi Tejun,
 > 
-> I do not see where we define the GENERIC_CMOS_UPDATE symbol,
-> so this looks wrong.
+> On Sun, Apr 1, 2012 at 8:54 PM, Tejun Heo <tj@kernel.org> wrote:
+> > Hello, Li.
+> >
+> > On Sun, Apr 01, 2012 at 10:00:26AM +0800, Li Zefan wrote:
+> >> > Signed-off-by: Tejun Heo <tj@kernel.org>
+> >>
+> >> Both patches look good.
+> >>
+> >> Acked-by: Li Zefan <lizefan@huawei.com>
+> >
+> > Alright, adding the patches to cgroup/for-3.5.
 > 
-> I looked only in upstream - and I did not look
-> in -tip.
+> This patch allows for race when removing a cgroup since one of the
+> css's may still have a dentry ref when the cgroup is removed, no? Is
+> there a plan to deal with that before this patch gets pushed into 3.5?
 
-On top of that, I get the impression that this patch series is not
-bisectable at all.
+Can you please elaborate?
+
+Thanks.
+
+-- 
+tejun
