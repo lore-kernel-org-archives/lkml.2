@@ -1,22 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1946344Ab2ERXDv (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 May 2012 19:03:51 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:35668 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1946324Ab2ERXDp (ORCPT
+	id S1031326Ab2ERX3f (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 May 2012 19:29:35 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:58844 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1946297Ab2ERXDs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 May 2012 19:03:45 -0400
-Message-Id: <20120518211601.569045687@linuxfoundation.org>
+	Fri, 18 May 2012 19:03:48 -0400
+Message-Id: <20120518211601.660505524@linuxfoundation.org>
 User-Agent: quilt/0.60-19.1
-Date: Fri, 18 May 2012 14:16:22 -0700
+Date: Fri, 18 May 2012 14:16:23 -0700
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Huajun Li <huajun.li.lee@gmail.com>,
-        Ming Lei <tom.leiming@gmail.com>, Oliver Neukum <oneukum@suse.de>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [ 23/54] usbnet: fix skb traversing races during unlink(v2)
+        alan@lxorguk.ukuu.org.uk, Mike Galbraith <efault@gmx.de>,
+        Oleg Nesterov <oleg@redhat.com>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        Pavel Emelyanov <xemul@parallels.com>,
+        Cyrill Gorcunov <gorcunov@openvz.org>,
+        Louis Rilling <louis.rilling@kerlabs.com>
+Subject: [ 24/54] namespaces, pid_ns: fix leakage on fork() failure
 In-Reply-To: <20120518212656.GA4992@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,218 +29,47 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Ming Lei <tom.leiming@gmail.com>
+From: Mike Galbraith <efault@gmx.de>
 
-commit 5b6e9bcdeb65634b4ad604eb4536404bbfc62cfa upstream.
+commit 5e2bf0142231194d36fdc9596b36a261ed2b9fe7 upstream.
 
-Commit 4231d47e6fe69f061f96c98c30eaf9fb4c14b96d(net/usbnet: avoid
-recursive locking in usbnet_stop()) fixes the recursive locking
-problem by releasing the skb queue lock before unlink, but may
-cause skb traversing races:
-	- after URB is unlinked and the queue lock is released,
-	the refered skb and skb->next may be moved to done queue,
-	even be released
-	- in skb_queue_walk_safe, the next skb is still obtained
-	by next pointer of the last skb
-	- so maybe trigger oops or other problems
+Fork() failure post namespace creation for a child cloned with
+CLONE_NEWPID leaks pid_namespace/mnt_cache due to proc being mounted
+during creation, but not unmounted during cleanup.  Call
+pid_ns_release_proc() during cleanup.
 
-This patch extends the usage of entry->state to describe 'start_unlink'
-state, so always holding the queue(rx/tx) lock to change the state if
-the referd skb is in rx or tx queue because we need to know if the
-refered urb has been started unlinking in unlink_urbs.
-
-The other part of this patch is based on Huajun's patch:
-always traverse from head of the tx/rx queue to get skb which is
-to be unlinked but not been started unlinking.
-
-Signed-off-by: Huajun Li <huajun.li.lee@gmail.com>
-Signed-off-by: Ming Lei <tom.leiming@gmail.com>
-Cc: Oliver Neukum <oneukum@suse.de>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+Signed-off-by: Mike Galbraith <efault@gmx.de>
+Acked-by: Oleg Nesterov <oleg@redhat.com>
+Reviewed-by: "Eric W. Biederman" <ebiederm@xmission.com>
+Cc: Pavel Emelyanov <xemul@parallels.com>
+Cc: Cyrill Gorcunov <gorcunov@openvz.org>
+Cc: Louis Rilling <louis.rilling@kerlabs.com>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/net/usb/usbnet.c   |   54 +++++++++++++++++++++++++++++++--------------
- include/linux/usb/usbnet.h |    3 +-
- 2 files changed, 40 insertions(+), 17 deletions(-)
+ kernel/fork.c |    3 +++
+ 1 file changed, 3 insertions(+)
 
---- a/drivers/net/usb/usbnet.c
-+++ b/drivers/net/usb/usbnet.c
-@@ -277,17 +277,32 @@ int usbnet_change_mtu (struct net_device
- }
- EXPORT_SYMBOL_GPL(usbnet_change_mtu);
- 
-+/* The caller must hold list->lock */
-+static void __usbnet_queue_skb(struct sk_buff_head *list,
-+			struct sk_buff *newsk, enum skb_state state)
-+{
-+	struct skb_data *entry = (struct skb_data *) newsk->cb;
-+
-+	__skb_queue_tail(list, newsk);
-+	entry->state = state;
-+}
-+
- /*-------------------------------------------------------------------------*/
- 
- /* some LK 2.4 HCDs oopsed if we freed or resubmitted urbs from
-  * completion callbacks.  2.5 should have fixed those bugs...
-  */
- 
--static void defer_bh(struct usbnet *dev, struct sk_buff *skb, struct sk_buff_head *list)
-+static enum skb_state defer_bh(struct usbnet *dev, struct sk_buff *skb,
-+		struct sk_buff_head *list, enum skb_state state)
- {
- 	unsigned long		flags;
-+	enum skb_state 		old_state;
-+	struct skb_data *entry = (struct skb_data *) skb->cb;
- 
- 	spin_lock_irqsave(&list->lock, flags);
-+	old_state = entry->state;
-+	entry->state = state;
- 	__skb_unlink(skb, list);
- 	spin_unlock(&list->lock);
- 	spin_lock(&dev->done.lock);
-@@ -295,6 +310,7 @@ static void defer_bh(struct usbnet *dev,
- 	if (dev->done.qlen == 1)
- 		tasklet_schedule(&dev->bh);
- 	spin_unlock_irqrestore(&dev->done.lock, flags);
-+	return old_state;
- }
- 
- /* some work can't be done in tasklets, so we use keventd
-@@ -335,7 +351,6 @@ static int rx_submit (struct usbnet *dev
- 	entry = (struct skb_data *) skb->cb;
- 	entry->urb = urb;
- 	entry->dev = dev;
--	entry->state = rx_start;
- 	entry->length = 0;
- 
- 	usb_fill_bulk_urb (urb, dev->udev, dev->in,
-@@ -367,7 +382,7 @@ static int rx_submit (struct usbnet *dev
- 			tasklet_schedule (&dev->bh);
- 			break;
- 		case 0:
--			__skb_queue_tail (&dev->rxq, skb);
-+			__usbnet_queue_skb(&dev->rxq, skb, rx_start);
- 		}
- 	} else {
- 		netif_dbg(dev, ifdown, dev->net, "rx: stopped\n");
-@@ -418,16 +433,17 @@ static void rx_complete (struct urb *urb
- 	struct skb_data		*entry = (struct skb_data *) skb->cb;
- 	struct usbnet		*dev = entry->dev;
- 	int			urb_status = urb->status;
-+	enum skb_state		state;
- 
- 	skb_put (skb, urb->actual_length);
--	entry->state = rx_done;
-+	state = rx_done;
- 	entry->urb = NULL;
- 
- 	switch (urb_status) {
- 	/* success */
- 	case 0:
- 		if (skb->len < dev->net->hard_header_len) {
--			entry->state = rx_cleanup;
-+			state = rx_cleanup;
- 			dev->net->stats.rx_errors++;
- 			dev->net->stats.rx_length_errors++;
- 			netif_dbg(dev, rx_err, dev->net,
-@@ -466,7 +482,7 @@ static void rx_complete (struct urb *urb
- 				  "rx throttle %d\n", urb_status);
- 		}
- block:
--		entry->state = rx_cleanup;
-+		state = rx_cleanup;
- 		entry->urb = urb;
- 		urb = NULL;
- 		break;
-@@ -477,17 +493,18 @@ block:
- 		// FALLTHROUGH
- 
- 	default:
--		entry->state = rx_cleanup;
-+		state = rx_cleanup;
- 		dev->net->stats.rx_errors++;
- 		netif_dbg(dev, rx_err, dev->net, "rx status %d\n", urb_status);
- 		break;
- 	}
- 
--	defer_bh(dev, skb, &dev->rxq);
-+	state = defer_bh(dev, skb, &dev->rxq, state);
- 
- 	if (urb) {
- 		if (netif_running (dev->net) &&
--		    !test_bit (EVENT_RX_HALT, &dev->flags)) {
-+		    !test_bit (EVENT_RX_HALT, &dev->flags) &&
-+		    state != unlink_start) {
- 			rx_submit (dev, urb, GFP_ATOMIC);
- 			return;
- 		}
-@@ -573,16 +590,23 @@ EXPORT_SYMBOL_GPL(usbnet_purge_paused_rx
- static int unlink_urbs (struct usbnet *dev, struct sk_buff_head *q)
- {
- 	unsigned long		flags;
--	struct sk_buff		*skb, *skbnext;
-+	struct sk_buff		*skb;
- 	int			count = 0;
- 
- 	spin_lock_irqsave (&q->lock, flags);
--	skb_queue_walk_safe(q, skb, skbnext) {
-+	while (!skb_queue_empty(q)) {
- 		struct skb_data		*entry;
- 		struct urb		*urb;
- 		int			retval;
- 
--		entry = (struct skb_data *) skb->cb;
-+		skb_queue_walk(q, skb) {
-+			entry = (struct skb_data *) skb->cb;
-+			if (entry->state != unlink_start)
-+				goto found;
-+		}
-+		break;
-+found:
-+		entry->state = unlink_start;
- 		urb = entry->urb;
- 
- 		/*
-@@ -1033,8 +1057,7 @@ static void tx_complete (struct urb *urb
- 	}
- 
- 	usb_autopm_put_interface_async(dev->intf);
--	entry->state = tx_done;
--	defer_bh(dev, skb, &dev->txq);
-+	(void) defer_bh(dev, skb, &dev->txq, tx_done);
- }
- 
- /*-------------------------------------------------------------------------*/
-@@ -1087,7 +1110,6 @@ netdev_tx_t usbnet_start_xmit (struct sk
- 	entry = (struct skb_data *) skb->cb;
- 	entry->urb = urb;
- 	entry->dev = dev;
--	entry->state = tx_start;
- 	entry->length = length;
- 
- 	usb_fill_bulk_urb (urb, dev->udev, dev->out,
-@@ -1146,7 +1168,7 @@ netdev_tx_t usbnet_start_xmit (struct sk
- 		break;
- 	case 0:
- 		net->trans_start = jiffies;
--		__skb_queue_tail (&dev->txq, skb);
-+		__usbnet_queue_skb(&dev->txq, skb, tx_start);
- 		if (dev->txq.qlen >= TX_QLEN (dev))
- 			netif_stop_queue (net);
- 	}
---- a/include/linux/usb/usbnet.h
-+++ b/include/linux/usb/usbnet.h
-@@ -191,7 +191,8 @@ extern void usbnet_cdc_status(struct usb
- enum skb_state {
- 	illegal = 0,
- 	tx_start, tx_done,
--	rx_start, rx_done, rx_cleanup
-+	rx_start, rx_done, rx_cleanup,
-+	unlink_start
- };
- 
- struct skb_data {	/* skb->cb is one of these */
+--- a/kernel/fork.c
++++ b/kernel/fork.c
+@@ -48,6 +48,7 @@
+ #include <linux/audit.h>
+ #include <linux/memcontrol.h>
+ #include <linux/ftrace.h>
++#include <linux/proc_fs.h>
+ #include <linux/profile.h>
+ #include <linux/rmap.h>
+ #include <linux/ksm.h>
+@@ -1378,6 +1379,8 @@ bad_fork_cleanup_io:
+ 	if (p->io_context)
+ 		exit_io_context(p);
+ bad_fork_cleanup_namespaces:
++	if (unlikely(clone_flags & CLONE_NEWPID))
++		pid_ns_release_proc(p->nsproxy->pid_ns);
+ 	exit_task_namespaces(p);
+ bad_fork_cleanup_mm:
+ 	if (p->mm) {
 
 
