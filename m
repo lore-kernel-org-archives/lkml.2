@@ -1,24 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1946922Ab2ERXOY (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 May 2012 19:14:24 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:38665 "EHLO
+	id S1946765Ab2ERXOW (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 May 2012 19:14:22 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:53122 "EHLO
 	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1946691Ab2ERXGl (ORCPT
+	with ESMTP id S1946696Ab2ERXGn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 May 2012 19:06:41 -0400
-Message-Id: <20120518212651.214179313@linuxfoundation.org>
+	Fri, 18 May 2012 19:06:43 -0400
+Message-Id: <20120518212651.582833534@linuxfoundation.org>
 User-Agent: quilt/0.60-19.1
-Date: Fri, 18 May 2012 14:27:11 -0700
+Date: Fri, 18 May 2012 14:27:15 -0700
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Russ Anderson <rja@sgi.com>,
-        Jack Steiner <steiner@sgi.com>, Johannes Weiner <hannes@cmpxchg.org>,
-        Tejun Heo <tj@kernel.org>, "David S. Miller" <davem@davemloft.net>,
-        Yinghai Lu <yinghai@kernel.org>,
-        Gavin Shan <shangw@linux.vnet.ibm.com>
-Subject: [ 22/47] mm: nobootmem: fix sign extend problem in __free_pages_memory()
+        alan@lxorguk.ukuu.org.uk, Christoph Hellwig <hch@lst.de>,
+        Andy Grover <agrover@redhat.com>,
+        Nicholas Bellinger <nab@linux-iscsi.org>
+Subject: [ 26/47] target: Drop incorrect se_lun_acl release for dynamic -> explict ACL conversion
 In-Reply-To: <20120518212701.GA5023@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -28,46 +26,67 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Russ Anderson <rja@sgi.com>
+From: Nicholas Bellinger <nab@linux-iscsi.org>
 
-commit 6bc2e853c6b46a6041980d58200ad9b0a73a60ff upstream.
+commit cfebf8f42f47327fa54cf05c19b98f4bd5236a26 upstream.
 
-Systems with 8 TBytes of memory or greater can hit a problem where only
-the the first 8 TB of memory shows up.  This is due to "int i" being
-smaller than "unsigned long start_aligned", causing the high bits to be
-dropped.
+This patch removes some potentially problematic legacy code within
+core_clear_initiator_node_from_tpg() that was originally intended to
+release left over se_lun_acl setup during dynamic NodeACL+MappedLUN
+generate when running with TPG demo-mode operation.
 
-The fix is to change `i' to unsigned long to match start_aligned
-and end_aligned.
+Since we now only ever expect to allocate and release se_lun_acl from
+within target_core_fabric_configfs.c:target_fabric_make_mappedlun() and
+target_fabric_drop_mappedlun() context respectively, this code for
+demo-mode release is incorrect and needs to be removed.
 
-Thanks to Jack Steiner for assistance tracking this down.
-
-Signed-off-by: Russ Anderson <rja@sgi.com>
-Cc: Jack Steiner <steiner@sgi.com>
-Cc: Johannes Weiner <hannes@cmpxchg.org>
-Cc: Tejun Heo <tj@kernel.org>
-Cc: David S. Miller <davem@davemloft.net>
-Cc: Yinghai Lu <yinghai@kernel.org>
-Cc: Gavin Shan <shangw@linux.vnet.ibm.com>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Christoph Hellwig <hch@lst.de>
+Cc: Andy Grover <agrover@redhat.com>
+Signed-off-by: Nicholas Bellinger <nab@linux-iscsi.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- mm/nobootmem.c |    3 +--
- 1 file changed, 1 insertion(+), 2 deletions(-)
+ drivers/target/target_core_tpg.c |   22 ----------------------
+ 1 file changed, 22 deletions(-)
 
---- a/mm/nobootmem.c
-+++ b/mm/nobootmem.c
-@@ -82,8 +82,7 @@ void __init free_bootmem_late(unsigned l
+--- a/drivers/target/target_core_tpg.c
++++ b/drivers/target/target_core_tpg.c
+@@ -60,7 +60,6 @@ static void core_clear_initiator_node_fr
+ 	int i;
+ 	struct se_dev_entry *deve;
+ 	struct se_lun *lun;
+-	struct se_lun_acl *acl, *acl_tmp;
  
- static void __init __free_pages_memory(unsigned long start, unsigned long end)
- {
--	int i;
--	unsigned long start_aligned, end_aligned;
-+	unsigned long i, start_aligned, end_aligned;
- 	int order = ilog2(BITS_PER_LONG);
+ 	spin_lock_irq(&nacl->device_list_lock);
+ 	for (i = 0; i < TRANSPORT_MAX_LUNS_PER_TPG; i++) {
+@@ -81,28 +80,7 @@ static void core_clear_initiator_node_fr
+ 		core_update_device_list_for_node(lun, NULL, deve->mapped_lun,
+ 			TRANSPORT_LUNFLAGS_NO_ACCESS, nacl, tpg, 0);
  
- 	start_aligned = (start + (BITS_PER_LONG - 1)) & ~(BITS_PER_LONG - 1);
+-		spin_lock(&lun->lun_acl_lock);
+-		list_for_each_entry_safe(acl, acl_tmp,
+-					&lun->lun_acl_list, lacl_list) {
+-			if (!strcmp(acl->initiatorname, nacl->initiatorname) &&
+-			    (acl->mapped_lun == deve->mapped_lun))
+-				break;
+-		}
+-
+-		if (!acl) {
+-			pr_err("Unable to locate struct se_lun_acl for %s,"
+-				" mapped_lun: %u\n", nacl->initiatorname,
+-				deve->mapped_lun);
+-			spin_unlock(&lun->lun_acl_lock);
+-			spin_lock_irq(&nacl->device_list_lock);
+-			continue;
+-		}
+-
+-		list_del(&acl->lacl_list);
+-		spin_unlock(&lun->lun_acl_lock);
+-
+ 		spin_lock_irq(&nacl->device_list_lock);
+-		kfree(acl);
+ 	}
+ 	spin_unlock_irq(&nacl->device_list_lock);
+ }
 
 
