@@ -1,23 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1946377Ab2ERXEH (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 May 2012 19:04:07 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:38665 "EHLO
+	id S1946365Ab2ERXEP (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 May 2012 19:04:15 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:53122 "EHLO
 	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1946358Ab2ERXD5 (ORCPT
+	with ESMTP id S1946376Ab2ERXEH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 May 2012 19:03:57 -0400
-Message-Id: <20120518211601.918748036@linuxfoundation.org>
+	Fri, 18 May 2012 19:04:07 -0400
+Message-Id: <20120518211602.113717596@linuxfoundation.org>
 User-Agent: quilt/0.60-19.1
-Date: Fri, 18 May 2012 14:16:26 -0700
+Date: Fri, 18 May 2012 14:16:28 -0700
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk,
-        Luis Henriques <luis.henriques@canonical.com>,
-        Jarod Wilson <jarod@redhat.com>,
-        Mauro Carvalho Chehab <mchehab@redhat.com>
-Subject: [ 27/54] media: rc: Postpone ISR registration
+        alan@lxorguk.ukuu.org.uk, Oliver Neukum <oliver@neukum.org>,
+        Dan Williams <dcbw@redhat.com>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [ 29/54] cdc_ether: add Novatel USB551L device IDs for FLAG_WWAN
 In-Reply-To: <20120518212656.GA4992@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -27,315 +26,56 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Luis Henriques <luis.henriques@canonical.com>
+From: Dan Williams <dcbw@redhat.com>
 
-commit 9ef449c6b31bb6a8e6dedc24de475a3b8c79be20 upstream.
+commit 4e6304b8420aba5311ba21fd68dab2924ae4d91a upstream.
 
-An early registration of an ISR was causing a crash to several users (for
-example, with the ite-cir driver: http://bugs.launchpad.net/bugs/972723).
-The reason was that IRQs were being triggered before a driver
-initialisation was completed.
+Needs to be tagged with FLAG_WWAN, which since it has generic
+descriptors, won't happen if we don't override the generic
+driver info.
 
-This patch fixes this by moving the invocation to request_irq() and to
-request_region() to a later stage on the driver probe function.
-
-Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
-Acked-by: Jarod Wilson <jarod@redhat.com>
-Signed-off-by: Mauro Carvalho Chehab <mchehab@redhat.com>
+Cc: Oliver Neukum <oliver@neukum.org>
+Cc: stable@vger.kernel.org
+Signed-off-by: Dan Williams <dcbw@redhat.com>
+Acked-by: Oliver Neukum <oliver@neukum.org>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/media/rc/ene_ir.c      |   32 ++++++++--------
- drivers/media/rc/fintek-cir.c  |   20 +++++-----
- drivers/media/rc/ite-cir.c     |   20 +++++-----
- drivers/media/rc/nuvoton-cir.c |   36 +++++++++---------
- drivers/media/rc/winbond-cir.c |   78 ++++++++++++++++++++---------------------
- 5 files changed, 93 insertions(+), 93 deletions(-)
+ drivers/net/usb/cdc_ether.c |   16 ++++++++++++++++
+ 1 file changed, 16 insertions(+)
 
---- a/drivers/media/rc/ene_ir.c
-+++ b/drivers/media/rc/ene_ir.c
-@@ -1017,22 +1017,6 @@ static int ene_probe(struct pnp_dev *pnp
+--- a/drivers/net/usb/cdc_ether.c
++++ b/drivers/net/usb/cdc_ether.c
+@@ -482,6 +482,7 @@ static const struct driver_info wwan_inf
+ /*-------------------------------------------------------------------------*/
  
- 	spin_lock_init(&dev->hw_lock);
+ #define HUAWEI_VENDOR_ID	0x12D1
++#define NOVATEL_VENDOR_ID	0x1410
  
--	/* claim the resources */
--	error = -EBUSY;
--	dev->hw_io = pnp_port_start(pnp_dev, 0);
--	if (!request_region(dev->hw_io, ENE_IO_SIZE, ENE_DRIVER_NAME)) {
--		dev->hw_io = -1;
--		dev->irq = -1;
--		goto error;
--	}
--
--	dev->irq = pnp_irq(pnp_dev, 0);
--	if (request_irq(dev->irq, ene_isr,
--			IRQF_SHARED, ENE_DRIVER_NAME, (void *)dev)) {
--		dev->irq = -1;
--		goto error;
--	}
--
- 	pnp_set_drvdata(pnp_dev, dev);
- 	dev->pnp_dev = pnp_dev;
- 
-@@ -1085,6 +1069,22 @@ static int ene_probe(struct pnp_dev *pnp
- 	device_set_wakeup_capable(&pnp_dev->dev, true);
- 	device_set_wakeup_enable(&pnp_dev->dev, true);
- 
-+	/* claim the resources */
-+	error = -EBUSY;
-+	dev->hw_io = pnp_port_start(pnp_dev, 0);
-+	if (!request_region(dev->hw_io, ENE_IO_SIZE, ENE_DRIVER_NAME)) {
-+		dev->hw_io = -1;
-+		dev->irq = -1;
-+		goto error;
-+	}
-+
-+	dev->irq = pnp_irq(pnp_dev, 0);
-+	if (request_irq(dev->irq, ene_isr,
-+			IRQF_SHARED, ENE_DRIVER_NAME, (void *)dev)) {
-+		dev->irq = -1;
-+		goto error;
-+	}
-+
- 	error = rc_register_device(rdev);
- 	if (error < 0)
- 		goto error;
---- a/drivers/media/rc/fintek-cir.c
-+++ b/drivers/media/rc/fintek-cir.c
-@@ -504,16 +504,6 @@ static int fintek_probe(struct pnp_dev *
- 
- 	spin_lock_init(&fintek->fintek_lock);
- 
--	ret = -EBUSY;
--	/* now claim resources */
--	if (!request_region(fintek->cir_addr,
--			    fintek->cir_port_len, FINTEK_DRIVER_NAME))
--		goto failure;
--
--	if (request_irq(fintek->cir_irq, fintek_cir_isr, IRQF_SHARED,
--			FINTEK_DRIVER_NAME, (void *)fintek))
--		goto failure;
--
- 	pnp_set_drvdata(pdev, fintek);
- 	fintek->pdev = pdev;
- 
-@@ -548,6 +538,16 @@ static int fintek_probe(struct pnp_dev *
- 	/* rx resolution is hardwired to 50us atm, 1, 25, 100 also possible */
- 	rdev->rx_resolution = US_TO_NS(CIR_SAMPLE_PERIOD);
- 
-+	ret = -EBUSY;
-+	/* now claim resources */
-+	if (!request_region(fintek->cir_addr,
-+			    fintek->cir_port_len, FINTEK_DRIVER_NAME))
-+		goto failure;
-+
-+	if (request_irq(fintek->cir_irq, fintek_cir_isr, IRQF_SHARED,
-+			FINTEK_DRIVER_NAME, (void *)fintek))
-+		goto failure;
-+
- 	ret = rc_register_device(rdev);
- 	if (ret)
- 		goto failure;
---- a/drivers/media/rc/ite-cir.c
-+++ b/drivers/media/rc/ite-cir.c
-@@ -1519,16 +1519,6 @@ static int ite_probe(struct pnp_dev *pde
- 	/* initialize raw event */
- 	init_ir_raw_event(&itdev->rawir);
- 
--	ret = -EBUSY;
--	/* now claim resources */
--	if (!request_region(itdev->cir_addr,
--				dev_desc->io_region_size, ITE_DRIVER_NAME))
--		goto failure;
--
--	if (request_irq(itdev->cir_irq, ite_cir_isr, IRQF_SHARED,
--			ITE_DRIVER_NAME, (void *)itdev))
--		goto failure;
--
- 	/* set driver data into the pnp device */
- 	pnp_set_drvdata(pdev, itdev);
- 	itdev->pdev = pdev;
-@@ -1604,6 +1594,16 @@ static int ite_probe(struct pnp_dev *pde
- 	rdev->driver_name = ITE_DRIVER_NAME;
- 	rdev->map_name = RC_MAP_RC6_MCE;
- 
-+	ret = -EBUSY;
-+	/* now claim resources */
-+	if (!request_region(itdev->cir_addr,
-+				dev_desc->io_region_size, ITE_DRIVER_NAME))
-+		goto failure;
-+
-+	if (request_irq(itdev->cir_irq, ite_cir_isr, IRQF_SHARED,
-+			ITE_DRIVER_NAME, (void *)itdev))
-+		goto failure;
-+
- 	ret = rc_register_device(rdev);
- 	if (ret)
- 		goto failure;
---- a/drivers/media/rc/nuvoton-cir.c
-+++ b/drivers/media/rc/nuvoton-cir.c
-@@ -1027,24 +1027,6 @@ static int nvt_probe(struct pnp_dev *pde
- 	spin_lock_init(&nvt->nvt_lock);
- 	spin_lock_init(&nvt->tx.lock);
- 
--	ret = -EBUSY;
--	/* now claim resources */
--	if (!request_region(nvt->cir_addr,
--			    CIR_IOREG_LENGTH, NVT_DRIVER_NAME))
--		goto failure;
--
--	if (request_irq(nvt->cir_irq, nvt_cir_isr, IRQF_SHARED,
--			NVT_DRIVER_NAME, (void *)nvt))
--		goto failure;
--
--	if (!request_region(nvt->cir_wake_addr,
--			    CIR_IOREG_LENGTH, NVT_DRIVER_NAME))
--		goto failure;
--
--	if (request_irq(nvt->cir_wake_irq, nvt_cir_wake_isr, IRQF_SHARED,
--			NVT_DRIVER_NAME, (void *)nvt))
--		goto failure;
--
- 	pnp_set_drvdata(pdev, nvt);
- 	nvt->pdev = pdev;
- 
-@@ -1091,6 +1073,24 @@ static int nvt_probe(struct pnp_dev *pde
- 	rdev->tx_resolution = XYZ;
- #endif
- 
-+	ret = -EBUSY;
-+	/* now claim resources */
-+	if (!request_region(nvt->cir_addr,
-+			    CIR_IOREG_LENGTH, NVT_DRIVER_NAME))
-+		goto failure;
-+
-+	if (request_irq(nvt->cir_irq, nvt_cir_isr, IRQF_SHARED,
-+			NVT_DRIVER_NAME, (void *)nvt))
-+		goto failure;
-+
-+	if (!request_region(nvt->cir_wake_addr,
-+			    CIR_IOREG_LENGTH, NVT_DRIVER_NAME))
-+		goto failure;
-+
-+	if (request_irq(nvt->cir_wake_irq, nvt_cir_wake_isr, IRQF_SHARED,
-+			NVT_DRIVER_NAME, (void *)nvt))
-+		goto failure;
-+
- 	ret = rc_register_device(rdev);
- 	if (ret)
- 		goto failure;
---- a/drivers/media/rc/winbond-cir.c
-+++ b/drivers/media/rc/winbond-cir.c
-@@ -1003,39 +1003,10 @@ wbcir_probe(struct pnp_dev *device, cons
- 		"(w: 0x%lX, e: 0x%lX, s: 0x%lX, i: %u)\n",
- 		data->wbase, data->ebase, data->sbase, data->irq);
- 
--	if (!request_region(data->wbase, WAKEUP_IOMEM_LEN, DRVNAME)) {
--		dev_err(dev, "Region 0x%lx-0x%lx already in use!\n",
--			data->wbase, data->wbase + WAKEUP_IOMEM_LEN - 1);
--		err = -EBUSY;
--		goto exit_free_data;
--	}
--
--	if (!request_region(data->ebase, EHFUNC_IOMEM_LEN, DRVNAME)) {
--		dev_err(dev, "Region 0x%lx-0x%lx already in use!\n",
--			data->ebase, data->ebase + EHFUNC_IOMEM_LEN - 1);
--		err = -EBUSY;
--		goto exit_release_wbase;
--	}
--
--	if (!request_region(data->sbase, SP_IOMEM_LEN, DRVNAME)) {
--		dev_err(dev, "Region 0x%lx-0x%lx already in use!\n",
--			data->sbase, data->sbase + SP_IOMEM_LEN - 1);
--		err = -EBUSY;
--		goto exit_release_ebase;
--	}
--
--	err = request_irq(data->irq, wbcir_irq_handler,
--			  IRQF_DISABLED, DRVNAME, device);
--	if (err) {
--		dev_err(dev, "Failed to claim IRQ %u\n", data->irq);
--		err = -EBUSY;
--		goto exit_release_sbase;
--	}
--
- 	led_trigger_register_simple("cir-tx", &data->txtrigger);
- 	if (!data->txtrigger) {
- 		err = -ENOMEM;
--		goto exit_free_irq;
-+		goto exit_free_data;
- 	}
- 
- 	led_trigger_register_simple("cir-rx", &data->rxtrigger);
-@@ -1074,9 +1045,38 @@ wbcir_probe(struct pnp_dev *device, cons
- 	data->dev->priv = data;
- 	data->dev->dev.parent = &device->dev;
- 
-+	if (!request_region(data->wbase, WAKEUP_IOMEM_LEN, DRVNAME)) {
-+		dev_err(dev, "Region 0x%lx-0x%lx already in use!\n",
-+			data->wbase, data->wbase + WAKEUP_IOMEM_LEN - 1);
-+		err = -EBUSY;
-+		goto exit_free_rc;
-+	}
-+
-+	if (!request_region(data->ebase, EHFUNC_IOMEM_LEN, DRVNAME)) {
-+		dev_err(dev, "Region 0x%lx-0x%lx already in use!\n",
-+			data->ebase, data->ebase + EHFUNC_IOMEM_LEN - 1);
-+		err = -EBUSY;
-+		goto exit_release_wbase;
-+	}
-+
-+	if (!request_region(data->sbase, SP_IOMEM_LEN, DRVNAME)) {
-+		dev_err(dev, "Region 0x%lx-0x%lx already in use!\n",
-+			data->sbase, data->sbase + SP_IOMEM_LEN - 1);
-+		err = -EBUSY;
-+		goto exit_release_ebase;
-+	}
-+
-+	err = request_irq(data->irq, wbcir_irq_handler,
-+			  IRQF_DISABLED, DRVNAME, device);
-+	if (err) {
-+		dev_err(dev, "Failed to claim IRQ %u\n", data->irq);
-+		err = -EBUSY;
-+		goto exit_release_sbase;
-+	}
-+
- 	err = rc_register_device(data->dev);
- 	if (err)
--		goto exit_free_rc;
-+		goto exit_free_irq;
- 
- 	device_init_wakeup(&device->dev, 1);
- 
-@@ -1084,14 +1084,6 @@ wbcir_probe(struct pnp_dev *device, cons
- 
- 	return 0;
- 
--exit_free_rc:
--	rc_free_device(data->dev);
--exit_unregister_led:
--	led_classdev_unregister(&data->led);
--exit_unregister_rxtrigger:
--	led_trigger_unregister_simple(data->rxtrigger);
--exit_unregister_txtrigger:
--	led_trigger_unregister_simple(data->txtrigger);
- exit_free_irq:
- 	free_irq(data->irq, device);
- exit_release_sbase:
-@@ -1100,6 +1092,14 @@ exit_release_ebase:
- 	release_region(data->ebase, EHFUNC_IOMEM_LEN);
- exit_release_wbase:
- 	release_region(data->wbase, WAKEUP_IOMEM_LEN);
-+exit_free_rc:
-+	rc_free_device(data->dev);
-+exit_unregister_led:
-+	led_classdev_unregister(&data->led);
-+exit_unregister_rxtrigger:
-+	led_trigger_unregister_simple(data->rxtrigger);
-+exit_unregister_txtrigger:
-+	led_trigger_unregister_simple(data->txtrigger);
- exit_free_data:
- 	kfree(data);
- 	pnp_set_drvdata(device, NULL);
+ static const struct usb_device_id	products [] = {
+ /*
+@@ -599,6 +600,21 @@ static const struct usb_device_id	produc
+  * because of bugs/quirks in a given product (like Zaurus, above).
+  */
+ {
++	/* Novatel USB551L */
++	/* This match must come *before* the generic CDC-ETHER match so that
++	 * we get FLAG_WWAN set on the device, since it's descriptors are
++	 * generic CDC-ETHER.
++	 */
++	.match_flags    =   USB_DEVICE_ID_MATCH_VENDOR
++		 | USB_DEVICE_ID_MATCH_PRODUCT
++		 | USB_DEVICE_ID_MATCH_INT_INFO,
++	.idVendor               = NOVATEL_VENDOR_ID,
++	.idProduct		= 0xB001,
++	.bInterfaceClass	= USB_CLASS_COMM,
++	.bInterfaceSubClass	= USB_CDC_SUBCLASS_ETHERNET,
++	.bInterfaceProtocol	= USB_CDC_PROTO_NONE,
++	.driver_info = (unsigned long)&wwan_info,
++}, {
+ 	USB_INTERFACE_INFO(USB_CLASS_COMM, USB_CDC_SUBCLASS_ETHERNET,
+ 			USB_CDC_PROTO_NONE),
+ 	.driver_info = (unsigned long) &cdc_info,
 
 
