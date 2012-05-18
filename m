@@ -1,43 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759785Ab2ERWpI (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 May 2012 18:45:08 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:41338 "EHLO
+	id S968178Ab2ERWqA (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 May 2012 18:46:00 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:32786 "EHLO
 	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756717Ab2ERWpF convert rfc822-to-8bit (ORCPT
+	with ESMTP id S967348Ab2ERWp6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 May 2012 18:45:05 -0400
+	Fri, 18 May 2012 18:45:58 -0400
 MIME-Version: 1.0
-In-Reply-To: <20120509140111.GD1794@sortiz-mobl>
-References: <1334696962-3642-1-git-send-email-seth.heasley@intel.com> <20120509140111.GD1794@sortiz-mobl>
+In-Reply-To: <20120517233426.57DFC3E062C@localhost>
+References: <1334696661-3569-1-git-send-email-seth.heasley@intel.com>
+ <CACRpkdam72rzUNWabCOG3GoCXiYqwv=EYHniUmSeZpdqyOV-ng@mail.gmail.com> <20120517233426.57DFC3E062C@localhost>
 From: Grant Likely <grant.likely@secretlab.ca>
-Date: Fri, 18 May 2012 16:44:45 -0600
-X-Google-Sender-Auth: 6ox_QjwkYsDItYZh_MVfxlC7Eqw
-Message-ID: <CACxGe6tJry45w8_czwoXTA-Lo=uLO8HiuETWPebBQ0_z6cnASA@mail.gmail.com>
-Subject: Re: [PATCH 3/3] lpc_sch: Add Intel Centerton Multifunction Device support
-To: Samuel Ortiz <sameo@linux.intel.com>
-Cc: Seth Heasley <seth.heasley@intel.com>, linux-kernel@vger.kernel.org,
-        James Ralston <james.d.ralston@intel.com>
+Date: Fri, 18 May 2012 16:45:38 -0600
+X-Google-Sender-Auth: HXMtho3j-W9pZeJySPCgMAB8iz0
+Message-ID: <CACxGe6t9O6pATvM54PTE9fuTw85TTmnLzKYy6q=Nhm44BffVnQ@mail.gmail.com>
+Subject: Re: [PATCH 2/3] gpio-sch: Add Intel Centerton DeviceID for GPIO
+To: Linus Walleij <linus.walleij@linaro.org>,
+        Seth Heasley <seth.heasley@intel.com>
+Cc: Linus Walleij <linus.walleij@stericsson.com>, linux-kernel@vger.kernel.org,
+        James Ralston <james.d.ralston@intel.com>,
+        Samuel Ortiz <samuel.ortiz@solidboot.com>
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, May 9, 2012 at 8:01 AM, Samuel Ortiz <sameo@linux.intel.com> wrote:
-> Hi Seth,
->
-> On Tue, Apr 17, 2012 at 02:09:22PM -0700, Seth Heasley wrote:
->> This patch adds the Intel Centerton processor DeviceID for the Integrated Legacy Block.  The ILB provides GPIO, SMBus, and Watchdog functionality. The ILB DeviceID is defined in include/linux/pci_ids.h.
+On Thu, May 17, 2012 at 5:34 PM, Grant Likely <grant.likely@secretlab.ca> wrote:
+> On Wed, 18 Apr 2012 13:42:26 +0200, Linus Walleij <linus.walleij@linaro.org> wrote:
+>> On Tue, Apr 17, 2012 at 11:04 PM, Seth Heasley <seth.heasley@intel.com> wrote:
 >>
-> Patch applied to my for-next branch, after removing this chunk (That should be
-> part of your watchdog driver submission):
+>> > This patch adds the Intel Centerton processor DeviceID for GPIO. The DeviceID is defined in include/linux/pci_ids.h
+>> >
+>> > Signed-off-by: Seth Heasley <seth.heasley@intel.com>
+>>
+>> That's straight-forward :)
+>>
+>> Acked-by: Linus Walleij <linus.walleij@linaro.org>
+>
+> Applied, thanks.
 
-Hi Samuel,
-
-Have you applied the gpio patch also [patch 2/3]?  It also depends on
-the pci device id, so it best go via your tree with the other two.
-
-I'm dropping it from my tree.
+Oops, this depends on the pci device id change in patch 1 which Samuel
+is picking up.  I'm dropping it from my tree since it should get
+merged with the other patches.
 
 g.
