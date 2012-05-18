@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1946882Ab2ERXLr (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 May 2012 19:11:47 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:65112 "EHLO
+	id S1946871Ab2ERXMG (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 May 2012 19:12:06 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:58844 "EHLO
 	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1946732Ab2ERXHX (ORCPT
+	with ESMTP id S968185Ab2ERXHU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 May 2012 19:07:23 -0400
-Message-Id: <20120518212652.819979095@linuxfoundation.org>
+	Fri, 18 May 2012 19:07:20 -0400
+Message-Id: <20120518212652.716628974@linuxfoundation.org>
 User-Agent: quilt/0.60-19.1
-Date: Fri, 18 May 2012 14:27:29 -0700
+Date: Fri, 18 May 2012 14:27:28 -0700
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Danny Kukawka <danny.kukawka@bisect.de>,
-        Tomi Valkeinen <tomi.valkeinen@ti.com>
-Subject: [ 40/47] OMAPDSS: VENC: fix NULL pointer dereference in DSS2 VENC sysfs debug attr on OMAP4
+        alan@lxorguk.ukuu.org.uk, Stephan Mueller <stephan.mueller@atsec.com>,
+        Jeff Mahoney <jeffm@suse.com>, "David S. Miller" <davem@davemloft.net>
+Subject: [ 39/47] dl2k: Clean up rio_ioctl
 In-Reply-To: <20120518212701.GA5023@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,38 +25,119 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Danny Kukawka <danny.kukawka@bisect.de>
+From: Jeff Mahoney <jeffm@suse.com>
 
-commit cc1d3e032df53d83d0ca4d537d8eb67eb5b3e808 upstream.
+commit 1bb57e940e1958e40d51f2078f50c3a96a9b2d75 upstream.
 
-Commit ba02fa37de80bea10d706f39f076dd848348320a disabled the
-venc driver registration on OMAP4. Since the driver never gets
-probed/initialised your get a dereferenceed NULL pointer if you
-try to get info from /sys/kernel/debug/omapdss/venc
+The dl2k driver's rio_ioctl call has a few issues:
+- No permissions checking
+- Implements SIOCGMIIREG and SIOCGMIIREG using the SIOCDEVPRIVATE numbers
+- Has a few ioctls that may have been used for debugging at one point
+  but have no place in the kernel proper.
 
-Return info message about disabled venc if venc_dump_regs() gets called.
+This patch removes all but the MII ioctls, renumbers them to use the
+standard ones, and adds the proper permission check for SIOCSMIIREG.
 
-Signed-off-by: Danny Kukawka <danny.kukawka@bisect.de>
-Signed-off-by: Tomi Valkeinen <tomi.valkeinen@ti.com>
+We can also get rid of the dl2k-specific struct mii_data in favor of
+the generic struct mii_ioctl_data.
+
+Since we have the phyid on hand, we can add the SIOCGMIIPHY ioctl too.
+
+Most of the MII code for the driver could probably be converted to use
+the generic MII library but I don't have a device to test the results.
+
+Reported-by: Stephan Mueller <stephan.mueller@atsec.com>
+Signed-off-by: Jeff Mahoney <jeffm@suse.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/video/omap2/dss/venc.c |    5 +++++
- 1 file changed, 5 insertions(+)
+ drivers/net/ethernet/dlink/dl2k.c |   52 ++++++--------------------------------
+ drivers/net/ethernet/dlink/dl2k.h |    7 -----
+ 2 files changed, 9 insertions(+), 50 deletions(-)
 
---- a/drivers/video/omap2/dss/venc.c
-+++ b/drivers/video/omap2/dss/venc.c
-@@ -699,6 +699,11 @@ void venc_dump_regs(struct seq_file *s)
+--- a/drivers/net/ethernet/dlink/dl2k.c
++++ b/drivers/net/ethernet/dlink/dl2k.c
+@@ -1259,55 +1259,21 @@ rio_ioctl (struct net_device *dev, struc
  {
- #define DUMPREG(r) seq_printf(s, "%-35s %08x\n", #r, venc_read_reg(r))
+ 	int phy_addr;
+ 	struct netdev_private *np = netdev_priv(dev);
+-	struct mii_data *miidata = (struct mii_data *) &rq->ifr_ifru;
+-
+-	struct netdev_desc *desc;
+-	int i;
++	struct mii_ioctl_data *miidata = if_mii(rq);
  
-+	if (cpu_is_omap44xx()) {
-+		seq_printf(s, "VENC currently disabled on OMAP44xx\n");
-+		return;
-+	}
-+
- 	if (venc_runtime_get())
- 		return;
+ 	phy_addr = np->phy_addr;
+ 	switch (cmd) {
+-	case SIOCDEVPRIVATE:
+-		break;
+-
+-	case SIOCDEVPRIVATE + 1:
+-		miidata->out_value = mii_read (dev, phy_addr, miidata->reg_num);
+-		break;
+-	case SIOCDEVPRIVATE + 2:
+-		mii_write (dev, phy_addr, miidata->reg_num, miidata->in_value);
+-		break;
+-	case SIOCDEVPRIVATE + 3:
++	case SIOCGMIIPHY:
++		miidata->phy_id = phy_addr;
+ 		break;
+-	case SIOCDEVPRIVATE + 4:
++	case SIOCGMIIREG:
++		miidata->val_out = mii_read (dev, phy_addr, miidata->reg_num);
+ 		break;
+-	case SIOCDEVPRIVATE + 5:
+-		netif_stop_queue (dev);
++	case SIOCSMIIREG:
++		if (!capable(CAP_NET_ADMIN))
++			return -EPERM;
++		mii_write (dev, phy_addr, miidata->reg_num, miidata->val_in);
+ 		break;
+-	case SIOCDEVPRIVATE + 6:
+-		netif_wake_queue (dev);
+-		break;
+-	case SIOCDEVPRIVATE + 7:
+-		printk
+-		    ("tx_full=%x cur_tx=%lx old_tx=%lx cur_rx=%lx old_rx=%lx\n",
+-		     netif_queue_stopped(dev), np->cur_tx, np->old_tx, np->cur_rx,
+-		     np->old_rx);
+-		break;
+-	case SIOCDEVPRIVATE + 8:
+-		printk("TX ring:\n");
+-		for (i = 0; i < TX_RING_SIZE; i++) {
+-			desc = &np->tx_ring[i];
+-			printk
+-			    ("%02x:cur:%08x next:%08x status:%08x frag1:%08x frag0:%08x",
+-			     i,
+-			     (u32) (np->tx_ring_dma + i * sizeof (*desc)),
+-			     (u32)le64_to_cpu(desc->next_desc),
+-			     (u32)le64_to_cpu(desc->status),
+-			     (u32)(le64_to_cpu(desc->fraginfo) >> 32),
+-			     (u32)le64_to_cpu(desc->fraginfo));
+-			printk ("\n");
+-		}
+-		printk ("\n");
+-		break;
+-
+ 	default:
+ 		return -EOPNOTSUPP;
+ 	}
+--- a/drivers/net/ethernet/dlink/dl2k.h
++++ b/drivers/net/ethernet/dlink/dl2k.h
+@@ -365,13 +365,6 @@ struct ioctl_data {
+ 	char *data;
+ };
  
+-struct mii_data {
+-	__u16 reserved;
+-	__u16 reg_num;
+-	__u16 in_value;
+-	__u16 out_value;
+-};
+-
+ /* The Rx and Tx buffer descriptors. */
+ struct netdev_desc {
+ 	__le64 next_desc;
 
 
