@@ -1,60 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760286Ab2ERGdQ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 May 2012 02:33:16 -0400
-Received: from mail-wg0-f44.google.com ([74.125.82.44]:61293 "EHLO
-	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752920Ab2ERGdO (ORCPT
+	id S1760827Ab2ERGnu (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 May 2012 02:43:50 -0400
+Received: from hqemgate03.nvidia.com ([216.228.121.140]:19087 "EHLO
+	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1760229Ab2ERGnY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 May 2012 02:33:14 -0400
-Date: Fri, 18 May 2012 08:33:08 +0200
-From: Ingo Molnar <mingo@kernel.org>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        linux-kernel@vger.kernel.org, mingo@elte.hu, laijs@cn.fujitsu.com,
-        dipankar@in.ibm.com, akpm@linux-foundation.org,
-        mathieu.desnoyers@polymtl.ca, josh@joshtriplett.org, niv@us.ibm.com,
-        tglx@linutronix.de, rostedt@goodmis.org, Valdis.Kletnieks@vt.edu,
-        dhowells@redhat.com, eric.dumazet@gmail.com, darren@dvhart.com,
-        fweisbec@gmail.com, patches@linaro.org
-Subject: Re: [PATCH RFC tip/core/rcu 2/2] rcu: Fix broken strings in RCU's
- source code.
-Message-ID: <20120518063308.GA429@gmail.com>
-References: <20120517221217.GA12196@linux.vnet.ibm.com>
- <1337292765-12221-1-git-send-email-paulmck@linux.vnet.ibm.com>
- <1337292765-12221-2-git-send-email-paulmck@linux.vnet.ibm.com>
- <1337293209.4281.111.camel@twins>
+	Fri, 18 May 2012 02:43:24 -0400
+X-PGP-Universal: processed;
+	by hqnvupgp07.nvidia.com on Thu, 17 May 2012 23:42:14 -0700
+From: Hiroshi DOYU <hdoyu@nvidia.com>
+To: <hdoyu@nvidia.com>, <joerg.roedel@amd.com>, <swarren@wwwdotorg.org>
+CC: <iommu@lists.linux-foundation.org>, <linux-tegra@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Rob Herring <rob.herring@calxeda.com>,
+        Thierry Reding <thierry.reding@avionic-design.de>,
+        <devicetree-discuss@lists.ozlabs.org>
+Subject: [PATCH 1/1] iommu/tegra: smmu: Add DMA window parser
+Date: Fri, 18 May 2012 09:43:09 +0300
+Message-ID: <1337323393-1035-1-git-send-email-hdoyu@nvidia.com>
+X-Mailer: git-send-email 1.7.5.4
+In-Reply-To: <20120518085051.4a0fca863c5ab37cf8d42cb1@nvidia.com>
+References: <20120518085051.4a0fca863c5ab37cf8d42cb1@nvidia.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1337293209.4281.111.camel@twins>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+This code was based on:
+    "arch/microblaze/kernel/prom_parse.c"
+    "arch/powerpc/kernel/prom_parse.c"
 
-* Peter Zijlstra <peterz@infradead.org> wrote:
+Can be promoted as a global function for general use.
 
-> On Thu, 2012-05-17 at 15:12 -0700, Paul E. McKenney wrote:
-> > From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-> > 
-> > Although the C language allows you to break strings across lines, doing
-> > this makes it hard for people to find the Linux kernel code corresponding
-> > to a given console message.  This commit therefore fixes broken strings
-> > throughout RCU's source code. 
-> 
-> While I'm not a strict 80 chars zealot, I do find exceedingly 
-> long lines utterly annoying, editors either wrap them in the 
-> most hideous way or you don't see them.
+Signed-off-by: Hiroshi DOYU <hdoyu@nvidia.com>
+---
+Based on the discussion:
+http://marc.info/?l=linux-tegra&m=133732046606458&w=2
+---
+ drivers/iommu/tegra-smmu.c |   50 ++++++++++++++++++++++++++++++++++++++++++++
+ 1 files changed, 50 insertions(+), 0 deletions(-)
 
-Well, but if it's exceedingly long in the editor then it's 
-probably exceedingly long in the syslog as well and need fixing, 
-right?
+diff --git a/drivers/iommu/tegra-smmu.c b/drivers/iommu/tegra-smmu.c
+index 192fc4a..7fc444b 100644
+--- a/drivers/iommu/tegra-smmu.c
++++ b/drivers/iommu/tegra-smmu.c
+@@ -874,6 +874,56 @@ static struct iommu_ops smmu_iommu_ops = {
+ 	.pgsize_bitmap	= SMMU_IOMMU_PGSIZES,
+ };
  
-Or it's printed inside some exceedingly deep nested block of 
-code, which too could use improvement, right?
++static int of_get_dma_window(struct device_node *dn,
++			const char *propname, int index,
++			unsigned long *busno,
++			dma_addr_t *addr, size_t *size)
++{
++	const __be32 *dma_window, *end;
++	int bytes, cur_index = 0;
++
++	if (!dn || !addr || !size)
++		return -EINVAL;
++
++	if (!propname)
++		propname = "dma-window";
++
++	dma_window = of_get_property(dn, propname, &bytes);
++	if (!dma_window)
++		return -ENODEV;
++	end = dma_window + bytes / sizeof(*dma_window);
++
++	while (dma_window < end) {
++		u32 cells;
++		const void *prop;
++
++		/* busno is always one cell */
++		if (busno)
++			*busno = be32_to_cpup(dma_window++);
++
++		prop = of_get_property(dn, "#dma-address-cells", NULL);
++		if (!prop)
++			prop = of_get_property(dn, "#address-cells", NULL);
++
++		cells = prop ? be32_to_cpup(prop) : of_n_addr_cells(dn);
++		if (!cells)
++			return -EINVAL;
++		*addr = of_read_number(dma_window, cells);
++		dma_window += cells;
++
++		prop = of_get_property(dn, "#dma-size-cells", NULL);
++		cells = prop ? be32_to_cpup(prop) : of_n_size_cells(dn);
++		if (!cells)
++			return -EINVAL;
++		*size = of_read_number(dma_window, cells);
++		dma_window += cells;
++
++		if (cur_index++ == index)
++			break;
++	}
++	return 0;
++}
++
+ static int tegra_smmu_suspend(struct device *dev)
+ {
+ 	struct smmu_device *smmu = dev_get_drvdata(dev);
+-- 
+1.7.5.4
 
-Thanks,
-
-	Ingo
