@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1946487Ab2ERXE7 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 May 2012 19:04:59 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:53524 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1946432Ab2ERXEx (ORCPT
+	id S1031160Ab2ERXYI (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 May 2012 19:24:08 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:35668 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1946468Ab2ERXEu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 May 2012 19:04:53 -0400
-Message-Id: <20120518211603.586366165@linuxfoundation.org>
+	Fri, 18 May 2012 19:04:50 -0400
+Message-Id: <20120518211602.634480647@linuxfoundation.org>
 User-Agent: quilt/0.60-19.1
-Date: Fri, 18 May 2012 14:16:44 -0700
+Date: Fri, 18 May 2012 14:16:34 -0700
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Jan Kara <jack@suse.cz>,
-        "Theodore Tso" <tytso@mit.edu>
-Subject: [ 45/54] ext4: fix error handling on inode bitmap corruption
+        alan@lxorguk.ukuu.org.uk, Chris Metcalf <cmetcalf@tilera.com>
+Subject: [ 35/54] arch/tile: apply commit 74fca9da0 to the compat signal handling as well
 In-Reply-To: <20120518212656.GA4992@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,40 +24,46 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jan Kara <jack@suse.cz>
+From: Chris Metcalf <cmetcalf@tilera.com>
 
-commit acd6ad83517639e8f09a8c5525b1dccd81cd2a10 upstream.
+commit a134d228298c6aa9007205c6b81cae0cac0acb5d upstream.
 
-When insert_inode_locked() fails in ext4_new_inode() it most likely means inode
-bitmap got corrupted and we allocated again inode which is already in use. Also
-doing unlock_new_inode() during error recovery is wrong since the inode does
-not have I_NEW set. Fix the problem by jumping to fail: (instead of fail_drop:)
-which declares filesystem error and does not call unlock_new_inode().
+This passes siginfo and mcontext to tilegx32 signal handlers that
+don't have SA_SIGINFO set just as we have been doing for tilegx64.
 
-Signed-off-by: Jan Kara <jack@suse.cz>
-Signed-off-by: "Theodore Ts'o" <tytso@mit.edu>
+Signed-off-by: Chris Metcalf <cmetcalf@tilera.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/ext4/ialloc.c |    8 ++++++--
- 1 file changed, 6 insertions(+), 2 deletions(-)
+ arch/tile/kernel/compat_signal.c |   12 +++++-------
+ 1 file changed, 5 insertions(+), 7 deletions(-)
 
---- a/fs/ext4/ialloc.c
-+++ b/fs/ext4/ialloc.c
-@@ -1021,8 +1021,12 @@ got:
- 	if (IS_DIRSYNC(inode))
- 		ext4_handle_sync(handle);
- 	if (insert_inode_locked(inode) < 0) {
--		err = -EINVAL;
--		goto fail_drop;
-+		/*
-+		 * Likely a bitmap corruption causing inode to be allocated
-+		 * twice.
-+		 */
-+		err = -EIO;
-+		goto fail;
- 	}
- 	spin_lock(&sbi->s_next_gen_lock);
- 	inode->i_generation = sbi->s_next_generation++;
+--- a/arch/tile/kernel/compat_signal.c
++++ b/arch/tile/kernel/compat_signal.c
+@@ -406,19 +406,17 @@ int compat_setup_rt_frame(int sig, struc
+ 	 * Set up registers for signal handler.
+ 	 * Registers that we don't modify keep the value they had from
+ 	 * user-space at the time we took the signal.
++	 * We always pass siginfo and mcontext, regardless of SA_SIGINFO,
++	 * since some things rely on this (e.g. glibc's debug/segfault.c).
+ 	 */
+ 	regs->pc = ptr_to_compat_reg(ka->sa.sa_handler);
+ 	regs->ex1 = PL_ICS_EX1(USER_PL, 1); /* set crit sec in handler */
+ 	regs->sp = ptr_to_compat_reg(frame);
+ 	regs->lr = restorer;
+ 	regs->regs[0] = (unsigned long) usig;
+-
+-	if (ka->sa.sa_flags & SA_SIGINFO) {
+-		/* Need extra arguments, so mark to restore caller-saves. */
+-		regs->regs[1] = ptr_to_compat_reg(&frame->info);
+-		regs->regs[2] = ptr_to_compat_reg(&frame->uc);
+-		regs->flags |= PT_FLAGS_CALLER_SAVES;
+-	}
++	regs->regs[1] = ptr_to_compat_reg(&frame->info);
++	regs->regs[2] = ptr_to_compat_reg(&frame->uc);
++	regs->flags |= PT_FLAGS_CALLER_SAVES;
+ 
+ 	/*
+ 	 * Notify any tracer that was single-stepping it.
 
 
