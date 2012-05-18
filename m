@@ -1,137 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S967490Ab2ERU5o (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 May 2012 16:57:44 -0400
-Received: from ogre.sisk.pl ([193.178.161.156]:53350 "EHLO ogre.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933163Ab2ERU5P (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 May 2012 16:57:15 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: ACPI Devel Mailing List <linux-acpi@vger.kernel.org>
-Subject: [PATCH 2/2] ACPI / PM: Make __acpi_bus_get_power() cover D3cold correctly
-Date: Fri, 18 May 2012 23:01:56 +0200
-User-Agent: KMail/1.13.6 (Linux/3.4.0-rc7+; KDE/4.6.0; x86_64; ; )
-Cc: LKML <linux-kernel@vger.kernel.org>, Len Brown <lenb@kernel.org>,
-        Linux PM list <linux-pm@vger.kernel.org>,
-        Lin Ming <ming.m.lin@intel.com>
-References: <201205142253.57023.rjw@sisk.pl> <201205182258.56497.rjw@sisk.pl>
-In-Reply-To: <201205182258.56497.rjw@sisk.pl>
+	id S967483Ab2ERU6f (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 May 2012 16:58:35 -0400
+Received: from mail-qc0-f174.google.com ([209.85.216.174]:43435 "EHLO
+	mail-qc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933163Ab2ERU6a convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 18 May 2012 16:58:30 -0400
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="utf-8"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201205182301.56478.rjw@sisk.pl>
+In-Reply-To: <1337368492.7562.8.camel@gandalf.stny.rr.com>
+References: <1337365643-29261-1-git-send-email-snanda@chromium.org>
+ <20120518183756.GA3216@kroah.com> <CANMivWb3iOnoVtZ8G8kh9-vXPUfNFpSP=QWue0QztbkeZ+uE=Q@mail.gmail.com>
+ <1337368492.7562.8.camel@gandalf.stny.rr.com>
+From: Sameer Nanda <snanda@chromium.org>
+Date: Fri, 18 May 2012 13:58:09 -0700
+X-Google-Sender-Auth: 8nc4J3l5hOgUN1pRUxWxz76wgLk
+Message-ID: <CANMivWbXVVd=wVqzC=FTDp7Pe3YtzR+0UcRPCPAmPN9uUV83RA@mail.gmail.com>
+Subject: Re: [PATCH] power, trace: add tracing for device_resume
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: Greg KH <gregkh@linuxfoundation.org>, rob@landley.net, len.brown@intel.com,
+        pavel@ucw.cz, rjw@sisk.pl, fweisbec@gmail.com, mingo@redhat.com,
+        jkosina@suse.cz, standby24x7@gmail.com, jj@chaosbits.net,
+        paulmck@linux.vnet.ibm.com, josh@joshtriplett.org,
+        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-pm@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Rafael J. Wysocki <rjw@sisk.pl>
+On Fri, May 18, 2012 at 12:14 PM, Steven Rostedt <rostedt@goodmis.org> wrote:
+> On Fri, 2012-05-18 at 11:57 -0700, Sameer Nanda wrote:
+>
+>> AFAICT, they are used for something completely different -- help solve
+>> suspend/resume issues by saving a hash in the RTC of the last device
+>> that suspended/resumed.  They don't use the perf tracing mechanism at
+>> all.
+>>
+>
+> Also note that all tracepoints have timestamps attached to them. You do
+> not need to add deltas. Do that in the userspace tools that read the
+> timestamps and events. This way you can have one DECLARE_EVENT_CLASS and
+> three DEFINE_EVENTs. This will save space.
 
-After recent changes of the ACPI device power states definitions, if
-power resources are not used for the device's power management, the
-state returned by __acpi_bus_get_power() cannot exceed D3hot, because
-the return values of _PSC are 0 through 3.  However, if the _PR3
-method is not present for the device and _PS3 returns 3, we have to
-assume that the device is in D3cold, so the value returned by
-__acpi_bus_get_power() in that case should be 4.
+Agreed on the space savings.  However, with the time_delta in the
+trace message itself, a one line shell script [1] that sorts on the
+time_delta field is sufficient to quickly spot the devices that take a
+long time to resume.  Without the time_delta field, the user tool is
+more complex since it needs to first match up the device_resume_in,
+device_resume_waited and device_resume_out traces and then calculate
+time deltas.
 
-Similarly, acpi_power_get_inferred_state() should take the power
-resources for the D3hot state into account in general, so that it
-can return 3 if those resources are "on" or 4 (D3cold) otherwise.
+Seems like a worthwhile trade-off to me but I can take out the
+time_delta if the general consensus is otherwise.
 
-Fix the the above two issues and make sure that if both _PSC and
-_PR3 are present for the device, the power resources listed by _PR3
-will be used to determine if the number 3 returned by _PSC is meant
-to represent D3cold or D3hot.
+[1]: here's an example script I use for sorting the device resume times:
+cat /sys/kernel/debug/tracing/trace | grep device_resume_out | awk
+'BEGIN { FS = "time_delta=" } ; { print $2 $0 }' | sort -n
 
-Signed-off-by: Rafael J. Wysocki <rjw@sisk.pl>
----
- drivers/acpi/bus.c   |   51 +++++++++++++++++++++++++++++----------------------
- drivers/acpi/power.c |    2 +-
- 2 files changed, 30 insertions(+), 23 deletions(-)
 
-Index: linux/drivers/acpi/bus.c
-===================================================================
---- linux.orig/drivers/acpi/bus.c
-+++ linux/drivers/acpi/bus.c
-@@ -202,37 +202,44 @@ static char *state_string(int state)
- 
- static int __acpi_bus_get_power(struct acpi_device *device, int *state)
- {
--	int result = 0;
--	acpi_status status = 0;
--	unsigned long long psc = 0;
-+	int result = ACPI_STATE_UNKNOWN;
- 
- 	if (!device || !state)
- 		return -EINVAL;
- 
--	*state = ACPI_STATE_UNKNOWN;
--
--	if (device->flags.power_manageable) {
--		/*
--		 * Get the device's power state either directly (via _PSC) or
--		 * indirectly (via power resources).
--		 */
--		if (device->power.flags.power_resources) {
--			result = acpi_power_get_inferred_state(device, state);
--			if (result)
--				return result;
--		} else if (device->power.flags.explicit_get) {
--			status = acpi_evaluate_integer(device->handle, "_PSC",
--						       NULL, &psc);
--			if (ACPI_FAILURE(status))
--				return -ENODEV;
--			*state = (int)psc;
--		}
--	} else {
-+	if (!device->flags.power_manageable) {
- 		/* TBD: Non-recursive algorithm for walking up hierarchy. */
- 		*state = device->parent ?
- 			device->parent->power.state : ACPI_STATE_D0;
-+		goto out;
-+	}
-+
-+	/*
-+	 * Get the device's power state either directly (via _PSC) or
-+	 * indirectly (via power resources).
-+	 */
-+	if (device->power.flags.explicit_get) {
-+		unsigned long long psc;
-+		acpi_status status = acpi_evaluate_integer(device->handle,
-+							   "_PSC", NULL, &psc);
-+		if (ACPI_FAILURE(status))
-+			return -ENODEV;
-+
-+		result = psc;
-+	}
-+	/* The test below covers ACPI_STATE_UNKNOWN too. */
-+	if (result <= ACPI_STATE_D2) {
-+	  ; /* Do nothing. */
-+	} else if (device->power.flags.power_resources) {
-+		int error = acpi_power_get_inferred_state(device, &result);
-+		if (error)
-+			return error;
-+	} else if (result == ACPI_STATE_D3_HOT) {
-+		result = ACPI_STATE_D3;
- 	}
-+	*state = result;
- 
-+ out:
- 	ACPI_DEBUG_PRINT((ACPI_DB_INFO, "Device [%s] power state is %s\n",
- 			  device->pnp.bus_id, state_string(*state)));
- 
-Index: linux/drivers/acpi/power.c
-===================================================================
---- linux.orig/drivers/acpi/power.c
-+++ linux/drivers/acpi/power.c
-@@ -631,7 +631,7 @@ int acpi_power_get_inferred_state(struct
- 	 * We know a device's inferred power state when all the resources
- 	 * required for a given D-state are 'on'.
- 	 */
--	for (i = ACPI_STATE_D0; i < ACPI_STATE_D3_HOT; i++) {
-+	for (i = ACPI_STATE_D0; i <= ACPI_STATE_D3_HOT; i++) {
- 		list = &device->power.states[i].resources;
- 		if (list->count < 1)
- 			continue;
+>
+> -- Steve
+>
+>
 
+
+
+-- 
+Sameer
