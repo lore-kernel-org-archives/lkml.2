@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1946726Ab2ERXGy (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 May 2012 19:06:54 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:38665 "EHLO
+	id S1946742Ab2ERXHH (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 May 2012 19:07:07 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:35668 "EHLO
 	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1946684Ab2ERXGs (ORCPT
+	with ESMTP id S1946720Ab2ERXGx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 May 2012 19:06:48 -0400
-Message-Id: <20120518212651.777670218@linuxfoundation.org>
+	Fri, 18 May 2012 19:06:53 -0400
+Message-Id: <20120518212651.944059391@linuxfoundation.org>
 User-Agent: quilt/0.60-19.1
-Date: Fri, 18 May 2012 14:27:17 -0700
+Date: Fri, 18 May 2012 14:27:19 -0700
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Christoph Hellwig <hch@lst.de>,
-        Nicholas Bellinger <nab@linux-iscsi.org>
-Subject: [ 28/47] target: Fix bug in handling of FILEIO + block_device resize ops
+        alan@lxorguk.ukuu.org.uk, Ben Marzinski <bmarzins@redhat.com>,
+        Mike Snitzer <snitzer@redhat.com>, Alasdair G Kergon <agk@redhat.com>
+Subject: [ 30/47] dm mpath: check if scsi_dh module already loaded before trying to load
 In-Reply-To: <20120518212701.GA5023@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,75 +25,36 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Nicholas Bellinger <nab@linux-iscsi.org>
+From: Mike Snitzer <snitzer@redhat.com>
 
-commit cd9323fd68aee3c1c6b5b21e5746c9d1b586fb58 upstream.
+commit 510193a2d3d2e03ae53b95c0ae4f33cdff02cbf8 upstream.
 
-This patch fixes a bug in the handling of FILEIO w/ underlying block_device
-resize operations where the original fd_dev->fd_dev_size was incorrectly being
-used in fd_get_blocks() for READ_CAPACITY response payloads.
+If the requested scsi_dh module is already loaded then skip
+request_module().
 
-This patch avoids using fd_dev->fd_dev_size for FILEIO devices with
-an underlying block_device, and instead changes fd_get_blocks() to
-get the sector count directly from i_size_read() as recommended by hch.
+Multipath table loads can hang in an unnecessary __request_module.
 
-Reported-by: Christoph Hellwig <hch@lst.de>
-Signed-off-by: Nicholas Bellinger <nab@linux-iscsi.org>
+Reported-by: Ben Marzinski <bmarzins@redhat.com>
+Signed-off-by: Mike Snitzer <snitzer@redhat.com>
+Signed-off-by: Alasdair G Kergon <agk@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/target/target_core_file.c |   22 ++++++++++++++++------
- 1 file changed, 16 insertions(+), 6 deletions(-)
+ drivers/md/dm-mpath.c |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
---- a/drivers/target/target_core_file.c
-+++ b/drivers/target/target_core_file.c
-@@ -169,6 +169,7 @@ static struct se_device *fd_create_virtd
- 	inode = file->f_mapping->host;
- 	if (S_ISBLK(inode->i_mode)) {
- 		struct request_queue *q;
-+		unsigned long long dev_size;
- 		/*
- 		 * Setup the local scope queue_limits from struct request_queue->limits
- 		 * to pass into transport_add_device_to_core_hba() as struct se_dev_limits.
-@@ -183,13 +184,12 @@ static struct se_device *fd_create_virtd
- 		 * one (1) logical sector from underlying struct block_device
- 		 */
- 		fd_dev->fd_block_size = bdev_logical_block_size(inode->i_bdev);
--		fd_dev->fd_dev_size = (i_size_read(file->f_mapping->host) -
-+		dev_size = (i_size_read(file->f_mapping->host) -
- 				       fd_dev->fd_block_size);
+--- a/drivers/md/dm-mpath.c
++++ b/drivers/md/dm-mpath.c
+@@ -698,8 +698,8 @@ static int parse_hw_handler(struct dm_ar
+ 		return 0;
  
- 		pr_debug("FILEIO: Using size: %llu bytes from struct"
- 			" block_device blocks: %llu logical_block_size: %d\n",
--			fd_dev->fd_dev_size,
--			div_u64(fd_dev->fd_dev_size, fd_dev->fd_block_size),
-+			dev_size, div_u64(dev_size, fd_dev->fd_block_size),
- 			fd_dev->fd_block_size);
- 	} else {
- 		if (!(fd_dev->fbd_flags & FBDF_HAS_SIZE)) {
-@@ -605,10 +605,20 @@ static u32 fd_get_device_type(struct se_
- static sector_t fd_get_blocks(struct se_device *dev)
- {
- 	struct fd_dev *fd_dev = dev->dev_ptr;
--	unsigned long long blocks_long = div_u64(fd_dev->fd_dev_size,
--			dev->se_sub_dev->se_dev_attrib.block_size);
-+	struct file *f = fd_dev->fd_file;
-+	struct inode *i = f->f_mapping->host;
-+	unsigned long long dev_size;
-+	/*
-+	 * When using a file that references an underlying struct block_device,
-+	 * ensure dev_size is always based on the current inode size in order
-+	 * to handle underlying block_device resize operations.
-+	 */
-+	if (S_ISBLK(i->i_mode))
-+		dev_size = (i_size_read(i) - fd_dev->fd_block_size);
-+	else
-+		dev_size = fd_dev->fd_dev_size;
- 
--	return blocks_long;
-+	return div_u64(dev_size, dev->se_sub_dev->se_dev_attrib.block_size);
- }
- 
- static struct se_subsystem_api fileio_template = {
+ 	m->hw_handler_name = kstrdup(dm_shift_arg(as), GFP_KERNEL);
+-	request_module("scsi_dh_%s", m->hw_handler_name);
+-	if (scsi_dh_handler_exist(m->hw_handler_name) == 0) {
++	if (!try_then_request_module(scsi_dh_handler_exist(m->hw_handler_name),
++				     "scsi_dh_%s", m->hw_handler_name)) {
+ 		ti->error = "unknown hardware handler type";
+ 		ret = -EINVAL;
+ 		goto fail;
 
 
