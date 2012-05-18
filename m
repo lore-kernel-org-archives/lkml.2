@@ -1,49 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759322Ab2ERSHI (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 May 2012 14:07:08 -0400
-Received: from mail-lpp01m010-f46.google.com ([209.85.215.46]:58762 "EHLO
-	mail-lpp01m010-f46.google.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1759246Ab2ERSHE convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 May 2012 14:07:04 -0400
-MIME-Version: 1.0
-In-Reply-To: <CAE9FiQUebVR_AdhQVE_Hq-RhB7h5AfH0Z20WaZh=ky5vHEt5BQ@mail.gmail.com>
-References: <1336422606-4244-1-git-send-email-yinghai@kernel.org>
- <1336422606-4244-6-git-send-email-yinghai@kernel.org> <CAErSpo71rKrZ7ptJjE5Lb6YnrqXVe1eGhn3pyF2Qjp=o8JHQmg@mail.gmail.com>
- <CAE9FiQUebVR_AdhQVE_Hq-RhB7h5AfH0Z20WaZh=ky5vHEt5BQ@mail.gmail.com>
-From: Bjorn Helgaas <bhelgaas@google.com>
-Date: Fri, 18 May 2012 12:06:42 -0600
-Message-ID: <CAErSpo79gZFGOGdA201r1aAPzE9a1=CtFK7XPbsOjVvRLfNJ3A@mail.gmail.com>
-Subject: Re: [PATCH 05/21] resource: adjust_resource handle resource without parent
-To: Yinghai Lu <yinghai@kernel.org>
-Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Tony Luck <tony.luck@intel.com>, David Miller <davem@davemloft.net>,
-        x86 <x86@kernel.org>, Dominik Brodowski <linux@dominikbrodowski.net>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-arch@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
-X-System-Of-Record: true
+	id S1759288Ab2ERSLX (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 May 2012 14:11:23 -0400
+Received: from nm19.bullet.mail.sp2.yahoo.com ([98.139.91.89]:33522 "HELO
+	nm19.bullet.mail.sp2.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1757978Ab2ERSLV (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 18 May 2012 14:11:21 -0400
+X-Yahoo-Newman-Id: 649946.31294.bm@smtp207.mail.gq1.yahoo.com
+X-Yahoo-Newman-Property: ymail-3
+X-YMail-OSG: cqJwVHQVM1l1fpQaX.XnzHT7QvmJUJ65906pEh0hujnsjkH
+ 4QenOJ8czV1G48AIrvUvID_HmRCbqHCwB8DI_OuuunnL1NfHc_XvOpY2dcJA
+ qL6CKzEfbcI7IFSjpx9rC0lEX5QaJtI75rBNNhdsXL8CpHr6GLlUPq1k3AiF
+ np6C.hqdNuit9VN66tAz5WJLlMPMQajdkA1VeKpIBmULw_dpCf1GghjMst7A
+ i7Gf4e1.wdpDC0FbS.BVqb73FvH1o.IHLKIELAKRo9bY.jItQfRKs_NBS0I9
+ 8083IDQENeP9aB4pX0mATx2YQ4iWmvH_5zZOfO69s2eSSIY5MgIJCnHx8twR
+ pLm7Qt5XYt9CP_BjR7YAVCYGQHEU3sABZezo4bn86UNUsthC7475RbeXIRJa
+ e623w5X0EVJTkpdEb0.gL9lcMuyJjNSJJrSHKRM9vWw0IEIPxJZ6DIt2LWef
+ XzHBKYrx763cayoalpaRluYNmd5oFJs6D4FYz2IxN6qkiDcClPbm4yqTLgH0
+ -
+X-Yahoo-SMTP: dNW5aIGswBCf1iV6QK8RWrBgWyjShXs-
+From: Jeffrin Jose <ahiliation@yahoo.co.in>
+To: mdharm-usb@one-eyed-alien.net, gregkh@linuxfoundation.org
+Cc: linux-kernel@vger.kernel.org, ahiliation@yahoo.co.in
+Subject: [PATCH 452/452]USB :storage:fixed space at the start of a line issues.
+Date: Fri, 18 May 2012 23:44:35 +0530
+Message-Id: <1337364875-3494-1-git-send-email-ahiliation@yahoo.co.in>
+X-Mailer: git-send-email 1.7.10
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, May 18, 2012 at 11:54 AM, Yinghai Lu <yinghai@kernel.org> wrote:
-> On Fri, May 18, 2012 at 10:12 AM, Bjorn Helgaas <bhelgaas@google.com> wrote:
->> On Mon, May 7, 2012 at 2:29 PM, Yinghai Lu <yinghai@kernel.org> wrote:
->
->> Where does this case occur?  When do you need to adjust a resource
->> that has no parent?
->
-> for unassigned pci bridge from BIOS, before scan busn_res.end is 0xff,
-> so you can not insert them, because the bridge could in the middle.
-> Have to update the busn_res.end and insert after the bridge is scanned
+Fixed space at the start of a line issues found
+by checkpatch.pl tool in drivers/usb/storage/usual-tables.c
 
-Does the resource have children in this case?  If it has no parent,
-it's not in the resource tree at all, is it?  Is there any reason to
-use adjust_resource() rather than just updating res->start and
-res->end directly?
+Signed-off-by: Jeffrin Jose <ahiliation@yahoo.co.in>
+---
+ drivers/usb/storage/usual-tables.c |    6 +++---
+ 1 file changed, 3 insertions(+), 3 deletions(-)
+
+diff --git a/drivers/usb/storage/usual-tables.c b/drivers/usb/storage/usual-tables.c
+index b969279..f2301ee 100644
+--- a/drivers/usb/storage/usual-tables.c
++++ b/drivers/usb/storage/usual-tables.c
+@@ -34,17 +34,17 @@
+ 		    vendorName, productName, useProtocol, useTransport, \
+ 		    initFunction, flags) \
+ { USB_DEVICE_VER(id_vendor, id_product, bcdDeviceMin, bcdDeviceMax), \
+-  .driver_info = (flags)|(USB_US_TYPE_STOR<<24) }
++.driver_info = (flags)|(USB_US_TYPE_STOR<<24) }
+ 
+ #define COMPLIANT_DEV(id_vendor, id_product, bcdDeviceMin, bcdDeviceMax, \
+ 		    vendorName, productName, useProtocol, useTransport, \
+ 		    initFunction, flags) \
+ { USB_DEVICE_VER(id_vendor, id_product, bcdDeviceMin, bcdDeviceMax), \
+-  .driver_info = (flags) }
++.driver_info = (flags) }
+ 
+ #define USUAL_DEV(useProto, useTrans, useType) \
+ { USB_INTERFACE_INFO(USB_CLASS_MASS_STORAGE, useProto, useTrans), \
+-  .driver_info = ((useType)<<24) }
++.driver_info = ((useType)<<24) }
+ 
+ struct usb_device_id usb_storage_usb_ids[] = {
+ #	include "unusual_devs.h"
+-- 
+1.7.10
+
