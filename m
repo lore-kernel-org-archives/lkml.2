@@ -1,18 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758998Ab2ERQwp (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 May 2012 12:52:45 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:7175 "EHLO mx1.redhat.com"
+	id S1758514Ab2ERQwn (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 May 2012 12:52:43 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:2972 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758415Ab2ERQdD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1758506Ab2ERQdD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 18 May 2012 12:33:03 -0400
 From: Mauro Carvalho Chehab <mchehab@redhat.com>
 Cc: Mauro Carvalho Chehab <mchehab@redhat.com>,
         Linux Edac Mailing List <linux-edac@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: [PATCH EDAC v26 33/66] edac: Remove the legacy EDAC ABI
-Date: Fri, 18 May 2012 13:32:20 -0300
-Message-Id: <1337358773-6919-34-git-send-email-mchehab@redhat.com>
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Doug Thompson <norsk5@yahoo.com>
+Subject: [PATCH EDAC v26 38/66] i5000_edac: Fix the logic that retrieves memory information
+Date: Fri, 18 May 2012 13:32:25 -0300
+Message-Id: <1337358773-6919-39-git-send-email-mchehab@redhat.com>
 In-Reply-To: <1337358773-6919-1-git-send-email-mchehab@redhat.com>
 References: <1337358773-6919-1-git-send-email-mchehab@redhat.com>
 To: unlisted-recipients:; (no To-header on input)
@@ -20,544 +21,329 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Now that all drivers got converted to use the new ABI, we can
-drop the old one.
+The logic there is broken: it basically creates two csrows for
+each DIMM and assumes that all DIMM's are dual rank. Only one of
+the csrows will contain the entire DIMM size. If single rank
+memories are found, they'll be marked with 0 bytes.
 
-Acked-by: Chris Metcalf <cmetcalf@tilera.com>
+The check if the AMB is present were also wrong.
+
+Yet, as the error reports don't use the memory size in order to
+credit an error to the right DIMM, that part of the driver seems
+to work. That's why probably nobody detected the issue yet.
+
+After this patch, the memory layout is now properly reported,
+when debug mode is enabled, and the number of ranks per dimm is
+now shown:
+
+calculate_dimm_size: ----------------------------------------------------------
+calculate_dimm_size: slot  3       0 MB   |    0 MB   |    0 MB   |    0 MB   |
+calculate_dimm_size: slot  2       0 MB   |    0 MB   |    0 MB   |    0 MB   |
+calculate_dimm_size: ----------------------------------------------------------
+calculate_dimm_size: slot  1       0 MB   |    0 MB   |    0 MB   |    0 MB   |
+calculate_dimm_size: slot  0     512 MB 1R|  512 MB 1R|  512 MB 1R|  512 MB 1R|
+calculate_dimm_size: ----------------------------------------------------------
+calculate_dimm_size:            channel 0 | channel 1 | channel 2 | channel 3 |
+calculate_dimm_size:                   branch 0       |        branch 1       |
+
+(1R above means that all memories on my test machine are single-ranked)
+
+Reviewed-by: Aristeu Rozanski <arozansk@redhat.com>
+Cc: Doug Thompson <norsk5@yahoo.com>
 Signed-off-by: Mauro Carvalho Chehab <mchehab@redhat.com>
 ---
- drivers/edac/amd64_edac.c      |    2 +-
- drivers/edac/amd76x_edac.c     |    2 +-
- drivers/edac/cell_edac.c       |    2 +-
- drivers/edac/cpc925_edac.c     |    2 +-
- drivers/edac/e752x_edac.c      |    3 +-
- drivers/edac/e7xxx_edac.c      |    2 +-
- drivers/edac/edac_core.h       |   76 +---------------------------------------
- drivers/edac/edac_mc.c         |   52 +++------------------------
- drivers/edac/i3000_edac.c      |    2 +-
- drivers/edac/i3200_edac.c      |    2 +-
- drivers/edac/i5000_edac.c      |    3 +-
- drivers/edac/i5100_edac.c      |    2 +-
- drivers/edac/i5400_edac.c      |    3 +-
- drivers/edac/i7300_edac.c      |    3 +-
- drivers/edac/i7core_edac.c     |    2 +-
- drivers/edac/i82443bxgx_edac.c |    2 +-
- drivers/edac/i82860_edac.c     |    2 +-
- drivers/edac/i82875p_edac.c    |    3 +-
- drivers/edac/i82975x_edac.c    |    2 +-
- drivers/edac/mpc85xx_edac.c    |    3 +-
- drivers/edac/mv64x60_edac.c    |    2 +-
- drivers/edac/pasemi_edac.c     |    2 +-
- drivers/edac/ppc4xx_edac.c     |    2 +-
- drivers/edac/r82600_edac.c     |    2 +-
- drivers/edac/sb_edac.c         |    2 +-
- drivers/edac/tile_edac.c       |    2 +-
- drivers/edac/x38_edac.c        |    2 +-
- 27 files changed, 32 insertions(+), 152 deletions(-)
+ drivers/edac/i5000_edac.c |  150 ++++++++++++++++++++++++---------------------
+ 1 files changed, 79 insertions(+), 71 deletions(-)
 
-diff --git a/drivers/edac/amd64_edac.c b/drivers/edac/amd64_edac.c
-index c431544..7be9b72 100644
---- a/drivers/edac/amd64_edac.c
-+++ b/drivers/edac/amd64_edac.c
-@@ -2596,7 +2596,7 @@ static int amd64_init_one_instance(struct pci_dev *F2)
- 	layers[1].type = EDAC_MC_LAYER_CHANNEL;
- 	layers[1].size = pvt->channel_count;
- 	layers[1].is_virt_csrow = false;
--	mci = new_edac_mc_alloc(nid, ARRAY_SIZE(layers), layers, 0);
-+	mci = edac_mc_alloc(nid, ARRAY_SIZE(layers), layers, 0);
- 	if (!mci)
- 		goto err_siblings;
- 
-diff --git a/drivers/edac/amd76x_edac.c b/drivers/edac/amd76x_edac.c
-index 69f2b2e..9388f3a 100644
---- a/drivers/edac/amd76x_edac.c
-+++ b/drivers/edac/amd76x_edac.c
-@@ -251,7 +251,7 @@ static int amd76x_probe1(struct pci_dev *pdev, int dev_idx)
- 	layers[1].type = EDAC_MC_LAYER_CHANNEL;
- 	layers[1].size = 1;
- 	layers[1].is_virt_csrow = false;
--	mci = new_edac_mc_alloc(0, ARRAY_SIZE(layers), layers, 0);
-+	mci = edac_mc_alloc(0, ARRAY_SIZE(layers), 0);
- 
- 	if (mci == NULL)
- 		return -ENOMEM;
-diff --git a/drivers/edac/cell_edac.c b/drivers/edac/cell_edac.c
-index 14aa174..69ee6aa 100644
---- a/drivers/edac/cell_edac.c
-+++ b/drivers/edac/cell_edac.c
-@@ -204,7 +204,7 @@ static int __devinit cell_edac_probe(struct platform_device *pdev)
- 	layers[1].type = EDAC_MC_LAYER_CHANNEL;
- 	layers[1].size = num_chans;
- 	layers[1].is_virt_csrow = false;
--	mci = new_edac_mc_alloc(pdev->id, ARRAY_SIZE(layers), layers,
-+	mci = edac_mc_alloc(pdev->id, ARRAY_SIZE(layers), layers,
- 			    sizeof(struct cell_edac_priv));
- 	if (mci == NULL)
- 		return -ENOMEM;
-diff --git a/drivers/edac/cpc925_edac.c b/drivers/edac/cpc925_edac.c
-index 2d94fa9..e22030a 100644
---- a/drivers/edac/cpc925_edac.c
-+++ b/drivers/edac/cpc925_edac.c
-@@ -982,7 +982,7 @@ static int __devinit cpc925_probe(struct platform_device *pdev)
- 	layers[1].type = EDAC_MC_LAYER_CHANNEL;
- 	layers[1].size = nr_channels;
- 	layers[1].is_virt_csrow = false;
--	mci = new_edac_mc_alloc(edac_mc_idx, ARRAY_SIZE(layers), layers,
-+	mci = edac_mc_alloc(edac_mc_idx, ARRAY_SIZE(layers), layers,
- 			    sizeof(struct cpc925_mc_pdata));
- 	if (!mci) {
- 		cpc925_printk(KERN_ERR, "No memory for mem_ctl_info\n");
-diff --git a/drivers/edac/e752x_edac.c b/drivers/edac/e752x_edac.c
-index aaa3bb8..d28a685 100644
---- a/drivers/edac/e752x_edac.c
-+++ b/drivers/edac/e752x_edac.c
-@@ -1278,8 +1278,7 @@ static int e752x_probe1(struct pci_dev *pdev, int dev_idx)
- 	layers[1].type = EDAC_MC_LAYER_CHANNEL;
- 	layers[1].size = drc_chan + 1;
- 	layers[1].is_virt_csrow = false;
--	mci = new_edac_mc_alloc(0, ARRAY_SIZE(layers), layers,
--			    sizeof(*pvt));
-+	mci = edac_mc_alloc(0, ARRAY_SIZE(layers), layers, sizeof(*pvt));
- 	if (mci == NULL)
- 		return -ENOMEM;
- 
-diff --git a/drivers/edac/e7xxx_edac.c b/drivers/edac/e7xxx_edac.c
-index d4cfc24..9a9c1a5 100644
---- a/drivers/edac/e7xxx_edac.c
-+++ b/drivers/edac/e7xxx_edac.c
-@@ -447,7 +447,7 @@ static int e7xxx_probe1(struct pci_dev *pdev, int dev_idx)
- 	layers[1].type = EDAC_MC_LAYER_CHANNEL;
- 	layers[1].size = drc_chan + 1;
- 	layers[1].is_virt_csrow = false;
--	mci = new_edac_mc_alloc(0, ARRAY_SIZE(layers), layers, sizeof(*pvt));
-+	mci = edac_mc_alloc(0, ARRAY_SIZE(layers), layers, sizeof(*pvt));
- 	if (mci == NULL)
- 		return -ENOMEM;
- 
-diff --git a/drivers/edac/edac_core.h b/drivers/edac/edac_core.h
-index 1286c5e..f06ce9a 100644
---- a/drivers/edac/edac_core.h
-+++ b/drivers/edac/edac_core.h
-@@ -447,9 +447,7 @@ static inline void pci_write_bits32(struct pci_dev *pdev, int offset,
- 
- #endif				/* CONFIG_PCI */
- 
--struct mem_ctl_info *edac_mc_alloc(unsigned sz_pvt, unsigned nr_csrows,
--				   unsigned nr_chans, int edac_index);
--struct mem_ctl_info *new_edac_mc_alloc(unsigned edac_index,
-+struct mem_ctl_info *edac_mc_alloc(unsigned mc_num,
- 				   unsigned n_layers,
- 				   struct edac_mc_layer *layers,
- 				   unsigned sz_pvt);
-@@ -460,18 +458,6 @@ extern struct mem_ctl_info *find_mci_by_dev(struct device *dev);
- extern struct mem_ctl_info *edac_mc_del_mc(struct device *dev);
- extern int edac_mc_find_csrow_by_page(struct mem_ctl_info *mci,
- 				      unsigned long page);
--
--/*
-- * The no info errors are used when error overflows are reported.
-- * There are a limited number of error logging registers that can
-- * be exausted.  When all registers are exhausted and an additional
-- * error occurs then an error overflow register records that an
-- * error occurred and the type of error, but doesn't have any
-- * further information.  The ce/ue versions make for cleaner
-- * reporting logic and function interface - reduces conditional
-- * statement clutter and extra function arguments.
-- */
--
- void edac_mc_handle_error(const enum hw_event_mc_err_type type,
- 			  struct mem_ctl_info *mci,
- 			  const unsigned long page_frame_number,
-@@ -484,66 +470,6 @@ void edac_mc_handle_error(const enum hw_event_mc_err_type type,
- 			  const char *other_detail,
- 			  const void *mcelog);
- 
--static inline void edac_mc_handle_ce(struct mem_ctl_info *mci,
--				     unsigned long page_frame_number,
--				     unsigned long offset_in_page,
--				     unsigned long syndrome, int row, int channel,
--				     const char *msg)
--{
--	 edac_mc_handle_error(HW_EVENT_ERR_CORRECTED, mci,
--			      page_frame_number, offset_in_page, syndrome,
--			      row, channel, -1, msg, NULL, NULL);
--}
--
--static inline void edac_mc_handle_ce_no_info(struct mem_ctl_info *mci,
--					     const char *msg)
--{
--	 edac_mc_handle_error(HW_EVENT_ERR_CORRECTED, mci,
--			      0, 0, 0, -1, -1, -1, msg, NULL, NULL);
--}
--
--static inline void edac_mc_handle_ue(struct mem_ctl_info *mci,
--				     unsigned long page_frame_number,
--				     unsigned long offset_in_page, int row,
--				     const char *msg)
--{
--	 edac_mc_handle_error(HW_EVENT_ERR_UNCORRECTED, mci,
--			      page_frame_number, offset_in_page, 0,
--			      row, -1, -1, msg, NULL, NULL);
--}
--
--static inline void edac_mc_handle_ue_no_info(struct mem_ctl_info *mci,
--					     const char *msg)
--{
--	 edac_mc_handle_error(HW_EVENT_ERR_UNCORRECTED, mci,
--			      0, 0, 0, -1, -1, -1, msg, NULL, NULL);
--}
--
--static inline void edac_mc_handle_fbd_ue(struct mem_ctl_info *mci,
--					 unsigned int csrow,
--					 unsigned int channel0,
--					 unsigned int channel1,
--					 char *msg)
--{
--	/*
--	 *FIXME: The error can also be at channel1 (e. g. at the second
--	 *	  channel of the same branch). The fix is to push
--	 *	  edac_mc_handle_error() call into each driver
--	 */
--	 edac_mc_handle_error(HW_EVENT_ERR_UNCORRECTED, mci,
--			      0, 0, 0,
--			      csrow, channel0, -1, msg, NULL, NULL);
--}
--
--static inline void edac_mc_handle_fbd_ce(struct mem_ctl_info *mci,
--					 unsigned int csrow,
--					 unsigned int channel, char *msg)
--{
--	 edac_mc_handle_error(HW_EVENT_ERR_CORRECTED, mci,
--			      0, 0, 0,
--			      csrow, channel, -1, msg, NULL, NULL);
--}
--
- /*
-  * edac_device APIs
-  */
-diff --git a/drivers/edac/edac_mc.c b/drivers/edac/edac_mc.c
-index 1bd237e..06028de 100644
---- a/drivers/edac/edac_mc.c
-+++ b/drivers/edac/edac_mc.c
-@@ -195,13 +195,13 @@ void *edac_align_ptr(void **p, unsigned size, int n_elems)
-  * on such scenarios, as grouping the multiple ranks require drivers change.
-  *
-  * Returns:
-- *	NULL allocation failed
-- *	struct mem_ctl_info pointer
-+ *	On failure: NULL
-+ *	On success: struct mem_ctl_info pointer
-  */
--struct mem_ctl_info *new_edac_mc_alloc(unsigned mc_num,
--				       unsigned n_layers,
--				       struct edac_mc_layer *layers,
--				       unsigned sz_pvt)
-+struct mem_ctl_info *edac_mc_alloc(unsigned mc_num,
-+				   unsigned n_layers,
-+				   struct edac_mc_layer *layers,
-+				   unsigned sz_pvt)
- {
- 	struct mem_ctl_info *mci;
- 	struct edac_mc_layer *layer;
-@@ -370,46 +370,6 @@ struct mem_ctl_info *new_edac_mc_alloc(unsigned mc_num,
- 	 */
- 	return mci;
- }
--EXPORT_SYMBOL_GPL(new_edac_mc_alloc);
--
--/**
-- * edac_mc_alloc: Allocate and partially fill a struct mem_ctl_info structure
-- * @mc_num:		Memory controller number
-- * @n_layers:		Number of layers at the MC hierarchy
-- * layers:		Describes each layer as seen by the Memory Controller
-- * @size_pvt:		Size of private storage needed
-- *
-- *
-- * FIXME: drivers handle multi-rank memories in different ways: some
-- * drivers map multi-ranked DIMMs as one DIMM while others
-- * as several DIMMs.
-- *
-- * Everything is kmalloc'ed as one big chunk - more efficient.
-- * It can only be used if all structures have the same lifetime - otherwise
-- * you have to allocate and initialize your own structures.
-- *
-- * Use edac_mc_free() to free mc structures allocated by this function.
-- *
-- * Returns:
-- *	On failure: NULL
-- *	On success: struct mem_ctl_info pointer
-- */
--
--struct mem_ctl_info *edac_mc_alloc(unsigned sz_pvt, unsigned nr_csrows,
--				   unsigned nr_chans, int mc_num)
--{
--	unsigned n_layers = 2;
--	struct edac_mc_layer layers[n_layers];
--
--	layers[0].type = EDAC_MC_LAYER_CHIP_SELECT;
--	layers[0].size = nr_csrows;
--	layers[0].is_virt_csrow = true;
--	layers[1].type = EDAC_MC_LAYER_CHANNEL;
--	layers[1].size = nr_chans;
--	layers[1].is_virt_csrow = false;
--
--	return new_edac_mc_alloc(mc_num, ARRAY_SIZE(layers), layers, sz_pvt);
--}
- EXPORT_SYMBOL_GPL(edac_mc_alloc);
- 
- /**
-diff --git a/drivers/edac/i3000_edac.c b/drivers/edac/i3000_edac.c
-index 195a92e..8ad1744 100644
---- a/drivers/edac/i3000_edac.c
-+++ b/drivers/edac/i3000_edac.c
-@@ -362,7 +362,7 @@ static int i3000_probe1(struct pci_dev *pdev, int dev_idx)
- 	layers[1].type = EDAC_MC_LAYER_CHANNEL;
- 	layers[1].size = nr_channels;
- 	layers[1].is_virt_csrow = false;
--	mci = new_edac_mc_alloc(0, ARRAY_SIZE(layers), layers, 0);
-+	mci = edac_mc_alloc(0, ARRAY_SIZE(layers), layers, 0);
- 	if (!mci)
- 		return -ENOMEM;
- 
-diff --git a/drivers/edac/i3200_edac.c b/drivers/edac/i3200_edac.c
-index d152662..bbe43ef 100644
---- a/drivers/edac/i3200_edac.c
-+++ b/drivers/edac/i3200_edac.c
-@@ -347,7 +347,7 @@ static int i3200_probe1(struct pci_dev *pdev, int dev_idx)
- 	layers[1].type = EDAC_MC_LAYER_CHANNEL;
- 	layers[1].size = nr_channels;
- 	layers[1].is_virt_csrow = false;
--	mci = new_edac_mc_alloc(0, ARRAY_SIZE(layers), layers,
-+	mci = edac_mc_alloc(0, ARRAY_SIZE(layers), layers,
- 			    sizeof(struct i3200_priv));
- 	if (!mci)
- 		return -ENOMEM;
 diff --git a/drivers/edac/i5000_edac.c b/drivers/edac/i5000_edac.c
-index fdbc57c..82f3f4d 100644
+index 82f3f4d..1c1aa7a 100644
 --- a/drivers/edac/i5000_edac.c
 +++ b/drivers/edac/i5000_edac.c
-@@ -1396,8 +1396,7 @@ static int i5000_probe1(struct pci_dev *pdev, int dev_idx)
+@@ -270,7 +270,8 @@
+ #define MTR3		0x8C
+ 
+ #define NUM_MTRS		4
+-#define CHANNELS_PER_BRANCH	(2)
++#define CHANNELS_PER_BRANCH	2
++#define MAX_BRANCHES		2
+ 
+ /* Defines to extract the vaious fields from the
+  *	MTRx - Memory Technology Registers
+@@ -962,14 +963,14 @@ static int determine_amb_present_reg(struct i5000_pvt *pvt, int channel)
+  *
+  *	return the proper MTR register as determine by the csrow and channel desired
+  */
+-static int determine_mtr(struct i5000_pvt *pvt, int csrow, int channel)
++static int determine_mtr(struct i5000_pvt *pvt, int slot, int channel)
+ {
+ 	int mtr;
+ 
+ 	if (channel < CHANNELS_PER_BRANCH)
+-		mtr = pvt->b0_mtr[csrow >> 1];
++		mtr = pvt->b0_mtr[slot];
+ 	else
+-		mtr = pvt->b1_mtr[csrow >> 1];
++		mtr = pvt->b1_mtr[slot];
+ 
+ 	return mtr;
+ }
+@@ -994,37 +995,34 @@ static void decode_mtr(int slot_row, u16 mtr)
+ 	debugf2("\t\tNUMCOL: %s\n", numcol_toString[MTR_DIMM_COLS(mtr)]);
+ }
+ 
+-static void handle_channel(struct i5000_pvt *pvt, int csrow, int channel,
++static void handle_channel(struct i5000_pvt *pvt, int slot, int channel,
+ 			struct i5000_dimm_info *dinfo)
+ {
+ 	int mtr;
+ 	int amb_present_reg;
+ 	int addrBits;
+ 
+-	mtr = determine_mtr(pvt, csrow, channel);
++	mtr = determine_mtr(pvt, slot, channel);
+ 	if (MTR_DIMMS_PRESENT(mtr)) {
+ 		amb_present_reg = determine_amb_present_reg(pvt, channel);
+ 
+-		/* Determine if there is  a  DIMM present in this DIMM slot */
+-		if (amb_present_reg & (1 << (csrow >> 1))) {
++		/* Determine if there is a DIMM present in this DIMM slot */
++		if (amb_present_reg) {
+ 			dinfo->dual_rank = MTR_DIMM_RANK(mtr);
+ 
+-			if (!((dinfo->dual_rank == 0) &&
+-				((csrow & 0x1) == 0x1))) {
+-				/* Start with the number of bits for a Bank
+-				 * on the DRAM */
+-				addrBits = MTR_DRAM_BANKS_ADDR_BITS(mtr);
+-				/* Add thenumber of ROW bits */
+-				addrBits += MTR_DIMM_ROWS_ADDR_BITS(mtr);
+-				/* add the number of COLUMN bits */
+-				addrBits += MTR_DIMM_COLS_ADDR_BITS(mtr);
+-
+-				addrBits += 6;	/* add 64 bits per DIMM */
+-				addrBits -= 20;	/* divide by 2^^20 */
+-				addrBits -= 3;	/* 8 bits per bytes */
+-
+-				dinfo->megabytes = 1 << addrBits;
+-			}
++			/* Start with the number of bits for a Bank
++				* on the DRAM */
++			addrBits = MTR_DRAM_BANKS_ADDR_BITS(mtr);
++			/* Add the number of ROW bits */
++			addrBits += MTR_DIMM_ROWS_ADDR_BITS(mtr);
++			/* add the number of COLUMN bits */
++			addrBits += MTR_DIMM_COLS_ADDR_BITS(mtr);
++
++			addrBits += 6;	/* add 64 bits per DIMM */
++			addrBits -= 20;	/* divide by 2^^20 */
++			addrBits -= 3;	/* 8 bits per bytes */
++
++			dinfo->megabytes = 1 << addrBits;
+ 		}
+ 	}
+ }
+@@ -1038,10 +1036,9 @@ static void handle_channel(struct i5000_pvt *pvt, int csrow, int channel,
+ static void calculate_dimm_size(struct i5000_pvt *pvt)
+ {
+ 	struct i5000_dimm_info *dinfo;
+-	int csrow, max_csrows;
++	int slot, channel, branch;
+ 	char *p, *mem_buffer;
+ 	int space, n;
+-	int channel;
+ 
+ 	/* ================= Generate some debug output ================= */
+ 	space = PAGE_SIZE;
+@@ -1052,22 +1049,17 @@ static void calculate_dimm_size(struct i5000_pvt *pvt)
+ 		return;
+ 	}
+ 
+-	n = snprintf(p, space, "\n");
+-	p += n;
+-	space -= n;
+-
+-	/* Scan all the actual CSROWS (which is # of DIMMS * 2)
++	/* Scan all the actual slots
+ 	 * and calculate the information for each DIMM
+-	 * Start with the highest csrow first, to display it first
+-	 * and work toward the 0th csrow
++	 * Start with the highest slot first, to display it first
++	 * and work toward the 0th slot
+ 	 */
+-	max_csrows = pvt->maxdimmperch * 2;
+-	for (csrow = max_csrows - 1; csrow >= 0; csrow--) {
++	for (slot = pvt->maxdimmperch - 1; slot >= 0; slot--) {
+ 
+-		/* on an odd csrow, first output a 'boundary' marker,
++		/* on an odd slot, first output a 'boundary' marker,
+ 		 * then reset the message buffer  */
+-		if (csrow & 0x1) {
+-			n = snprintf(p, space, "---------------------------"
++		if (slot & 0x1) {
++			n = snprintf(p, space, "--------------------------"
+ 				"--------------------------------");
+ 			p += n;
+ 			space -= n;
+@@ -1075,30 +1067,39 @@ static void calculate_dimm_size(struct i5000_pvt *pvt)
+ 			p = mem_buffer;
+ 			space = PAGE_SIZE;
+ 		}
+-		n = snprintf(p, space, "csrow %2d    ", csrow);
++		n = snprintf(p, space, "slot %2d    ", slot);
+ 		p += n;
+ 		space -= n;
+ 
+ 		for (channel = 0; channel < pvt->maxch; channel++) {
+-			dinfo = &pvt->dimm_info[csrow][channel];
+-			handle_channel(pvt, csrow, channel, dinfo);
+-			n = snprintf(p, space, "%4d MB   | ", dinfo->megabytes);
++			dinfo = &pvt->dimm_info[slot][channel];
++			handle_channel(pvt, slot, channel, dinfo);
++			if (dinfo->megabytes)
++				n = snprintf(p, space, "%4d MB %dR| ",
++					     dinfo->megabytes, dinfo->dual_rank + 1);
++			else
++				n = snprintf(p, space, "%4d MB   | ", 0);
+ 			p += n;
+ 			space -= n;
+ 		}
+-		n = snprintf(p, space, "\n");
+ 		p += n;
+ 		space -= n;
++		debugf2("%s\n", mem_buffer);
++		p = mem_buffer;
++		space = PAGE_SIZE;
+ 	}
+ 
+ 	/* Output the last bottom 'boundary' marker */
+-	n = snprintf(p, space, "---------------------------"
+-		"--------------------------------\n");
++	n = snprintf(p, space, "--------------------------"
++		"--------------------------------");
+ 	p += n;
+ 	space -= n;
++	debugf2("%s\n", mem_buffer);
++	p = mem_buffer;
++	space = PAGE_SIZE;
+ 
+ 	/* now output the 'channel' labels */
+-	n = snprintf(p, space, "            ");
++	n = snprintf(p, space, "           ");
+ 	p += n;
+ 	space -= n;
+ 	for (channel = 0; channel < pvt->maxch; channel++) {
+@@ -1106,9 +1107,17 @@ static void calculate_dimm_size(struct i5000_pvt *pvt)
+ 		p += n;
+ 		space -= n;
+ 	}
+-	n = snprintf(p, space, "\n");
++	debugf2("%s\n", mem_buffer);
++	p = mem_buffer;
++	space = PAGE_SIZE;
++
++	n = snprintf(p, space, "           ");
+ 	p += n;
+-	space -= n;
++	for (branch = 0; branch < MAX_BRANCHES; branch++) {
++		n = snprintf(p, space, "       branch %d       | ", branch);
++		p += n;
++		space -= n;
++	}
+ 
+ 	/* output the last message and free buffer */
+ 	debugf2("%s\n", mem_buffer);
+@@ -1241,14 +1250,13 @@ static void i5000_get_mc_regs(struct mem_ctl_info *mci)
+ static int i5000_init_csrows(struct mem_ctl_info *mci)
+ {
+ 	struct i5000_pvt *pvt;
+-	struct csrow_info *p_csrow;
+ 	struct dimm_info *dimm;
+ 	int empty, channel_count;
+ 	int max_csrows;
+-	int mtr, mtr1;
++	int mtr;
+ 	int csrow_megs;
+ 	int channel;
+-	int csrow;
++	int slot;
+ 
+ 	pvt = mci->pvt_info;
+ 
+@@ -1258,26 +1266,25 @@ static int i5000_init_csrows(struct mem_ctl_info *mci)
+ 	empty = 1;		/* Assume NO memory */
+ 
+ 	/*
+-	 * TODO: it would be better to not use csrow here, filling
+-	 * directly the dimm_info structs, based on branch, channel, dim number
++	 * FIXME: The memory layout used to map slot/channel into the
++	 * real memory architecture is weird: branch+slot are "csrows"
++	 * and channel is channel. That required an extra array (dimm_info)
++	 * to map the dimms. A good cleanup would be to remove this array,
++	 * and do a loop here with branch, channel, slot
+ 	 */
+-	for (csrow = 0; csrow < max_csrows; csrow++) {
+-		p_csrow = &mci->csrows[csrow];
++	for (slot = 0; slot < max_csrows; slot++) {
++		for (channel = 0; channel < pvt->maxch; channel++) {
+ 
+-		p_csrow->csrow_idx = csrow;
++			mtr = determine_mtr(pvt, slot, channel);
+ 
+-		/* use branch 0 for the basis */
+-		mtr = pvt->b0_mtr[csrow >> 1];
+-		mtr1 = pvt->b1_mtr[csrow >> 1];
++			if (!MTR_DIMMS_PRESENT(mtr))
++				continue;
+ 
+-		/* if no DIMMS on this row, continue */
+-		if (!MTR_DIMMS_PRESENT(mtr) && !MTR_DIMMS_PRESENT(mtr1))
+-			continue;
++			dimm = EDAC_DIMM_PTR(mci->layers, mci->dimms, mci->n_layers,
++				       channel / MAX_BRANCHES,
++				       channel % MAX_BRANCHES, slot);
+ 
+-		csrow_megs = 0;
+-		for (channel = 0; channel < pvt->maxch; channel++) {
+-			dimm = p_csrow->channels[channel].dimm;
+-			csrow_megs += pvt->dimm_info[csrow][channel].megabytes;
++			csrow_megs = pvt->dimm_info[slot][channel].megabytes;
+ 			dimm->grain = 8;
+ 
+ 			/* Assume DDR2 for now */
+@@ -1290,7 +1297,7 @@ static int i5000_init_csrows(struct mem_ctl_info *mci)
+ 				dimm->dtype = DEV_X4;
+ 
+ 			dimm->edac_mode = EDAC_S8ECD8ED;
+-			dimm->nr_pages = (csrow_megs << 8) / pvt->maxch;
++			dimm->nr_pages = csrow_megs << 8;
+ 		}
+ 
+ 		empty = 0;
+@@ -1337,7 +1344,7 @@ static void i5000_get_dimm_and_channel_counts(struct pci_dev *pdev,
+ 	 * supported on this memory controller
+ 	 */
+ 	pci_read_config_byte(pdev, MAXDIMMPERCH, &value);
+-	*num_dimms_per_channel = (int)value *2;
++	*num_dimms_per_channel = (int)value;
+ 
+ 	pci_read_config_byte(pdev, MAXCH, &value);
+ 	*num_channels = (int)value;
+@@ -1387,11 +1394,12 @@ static int i5000_probe1(struct pci_dev *pdev, int dev_idx)
+ 		__func__, num_channels, num_dimms_per_channel);
+ 
+ 	/* allocate a new MC control structure */
++
+ 	layers[0].type = EDAC_MC_LAYER_BRANCH;
+-	layers[0].size = 2;
+-	layers[0].is_virt_csrow = true;
++	layers[0].size = MAX_BRANCHES;
++	layers[0].is_virt_csrow = false;
+ 	layers[1].type = EDAC_MC_LAYER_CHANNEL;
+-	layers[1].size = num_channels;
++	layers[1].size = num_channels / MAX_BRANCHES;
+ 	layers[1].is_virt_csrow = false;
  	layers[2].type = EDAC_MC_LAYER_SLOT;
  	layers[2].size = num_dimms_per_channel;
- 	layers[2].is_virt_csrow = true;
--	mci = new_edac_mc_alloc(0, ARRAY_SIZE(layers), layers, sizeof(*pvt));
--
-+	mci = edac_mc_alloc(0, ARRAY_SIZE(layers), layers, sizeof(*pvt));
- 	if (mci == NULL)
- 		return -ENOMEM;
- 
-diff --git a/drivers/edac/i5100_edac.c b/drivers/edac/i5100_edac.c
-index 691cd49..d9b4921 100644
---- a/drivers/edac/i5100_edac.c
-+++ b/drivers/edac/i5100_edac.c
-@@ -936,7 +936,7 @@ static int __devinit i5100_init_one(struct pci_dev *pdev,
- 	layers[1].type = EDAC_MC_LAYER_SLOT;
- 	layers[1].size = ranksperch;
- 	layers[1].is_virt_csrow = true;
--	mci = new_edac_mc_alloc(0, ARRAY_SIZE(layers), layers,
-+	mci = edac_mc_alloc(0, ARRAY_SIZE(layers), layers,
- 			    sizeof(*priv));
- 	if (!mci) {
- 		ret = -ENOMEM;
-diff --git a/drivers/edac/i5400_edac.c b/drivers/edac/i5400_edac.c
-index 508f369..ff7bf80 100644
---- a/drivers/edac/i5400_edac.c
-+++ b/drivers/edac/i5400_edac.c
-@@ -1280,8 +1280,7 @@ static int i5400_probe1(struct pci_dev *pdev, int dev_idx)
- 	layers[2].type = EDAC_MC_LAYER_SLOT;
- 	layers[2].size = DIMMS_PER_CHANNEL;
- 	layers[2].is_virt_csrow = true;
--	mci = new_edac_mc_alloc(0, ARRAY_SIZE(layers), layers, sizeof(*pvt));
--
-+	mci = edac_mc_alloc(0, ARRAY_SIZE(layers), layers, sizeof(*pvt));
- 	if (mci == NULL)
- 		return -ENOMEM;
- 
-diff --git a/drivers/edac/i7300_edac.c b/drivers/edac/i7300_edac.c
-index dfeb44b..904e389 100644
---- a/drivers/edac/i7300_edac.c
-+++ b/drivers/edac/i7300_edac.c
-@@ -1054,8 +1054,7 @@ static int __devinit i7300_init_one(struct pci_dev *pdev,
- 	layers[2].type = EDAC_MC_LAYER_SLOT;
- 	layers[2].size = MAX_SLOTS;
- 	layers[2].is_virt_csrow = true;
--	mci = new_edac_mc_alloc(0, ARRAY_SIZE(layers), layers, sizeof(*pvt));
--
-+	mci = edac_mc_alloc(0, ARRAY_SIZE(layers), layers, sizeof(*pvt));
- 	if (mci == NULL)
- 		return -ENOMEM;
- 
-diff --git a/drivers/edac/i7core_edac.c b/drivers/edac/i7core_edac.c
-index bc2c045..6d89c78 100644
---- a/drivers/edac/i7core_edac.c
-+++ b/drivers/edac/i7core_edac.c
-@@ -2147,7 +2147,7 @@ static int i7core_register_mci(struct i7core_dev *i7core_dev)
- 	layers[1].type = EDAC_MC_LAYER_SLOT;
- 	layers[1].size = MAX_DIMMS;
- 	layers[1].is_virt_csrow = true;
--	mci = new_edac_mc_alloc(i7core_dev->socket, ARRAY_SIZE(layers), layers,
-+	mci = edac_mc_alloc(i7core_dev->socket, ARRAY_SIZE(layers), layers,
- 			    sizeof(*pvt));
- 	if (unlikely(!mci))
- 		return -ENOMEM;
-diff --git a/drivers/edac/i82443bxgx_edac.c b/drivers/edac/i82443bxgx_edac.c
-index 524f9a2..52072c2 100644
---- a/drivers/edac/i82443bxgx_edac.c
-+++ b/drivers/edac/i82443bxgx_edac.c
-@@ -255,7 +255,7 @@ static int i82443bxgx_edacmc_probe1(struct pci_dev *pdev, int dev_idx)
- 	layers[1].type = EDAC_MC_LAYER_CHANNEL;
- 	layers[1].size = I82443BXGX_NR_CHANS;
- 	layers[1].is_virt_csrow = false;
--	mci = new_edac_mc_alloc(0, ARRAY_SIZE(layers), layers, 0);
-+	mci = edac_mc_alloc(0, ARRAY_SIZE(layers), layers, 0);
- 	if (mci == NULL)
- 		return -ENOMEM;
- 
-diff --git a/drivers/edac/i82860_edac.c b/drivers/edac/i82860_edac.c
-index 8834e4e..0804505 100644
---- a/drivers/edac/i82860_edac.c
-+++ b/drivers/edac/i82860_edac.c
-@@ -206,7 +206,7 @@ static int i82860_probe1(struct pci_dev *pdev, int dev_idx)
- 	layers[1].type = EDAC_MC_LAYER_SLOT;
- 	layers[1].size = 8;
- 	layers[1].is_virt_csrow = true;
--	mci = new_edac_mc_alloc(0, ARRAY_SIZE(layers), layers, 0);
-+	mci = edac_mc_alloc(0, ARRAY_SIZE(layers), layers, 0);
- 	if (!mci)
- 		return -ENOMEM;
- 
-diff --git a/drivers/edac/i82875p_edac.c b/drivers/edac/i82875p_edac.c
-index 89ca38a..6c238df 100644
---- a/drivers/edac/i82875p_edac.c
-+++ b/drivers/edac/i82875p_edac.c
-@@ -420,8 +420,7 @@ static int i82875p_probe1(struct pci_dev *pdev, int dev_idx)
- 	layers[1].type = EDAC_MC_LAYER_CHANNEL;
- 	layers[1].size = nr_chans;
- 	layers[1].is_virt_csrow = false;
--	mci = new_edac_mc_alloc(0, ARRAY_SIZE(layers), layers, sizeof(*pvt));
--	if (!mci) {
-+	mci = edac_mc_alloc(0, ARRAY_SIZE(layers), layers, sizeof(*pvt));
- 		rc = -ENOMEM;
- 		goto fail0;
- 	}
-diff --git a/drivers/edac/i82975x_edac.c b/drivers/edac/i82975x_edac.c
-index 092fa5a..9c346d7 100644
---- a/drivers/edac/i82975x_edac.c
-+++ b/drivers/edac/i82975x_edac.c
-@@ -555,7 +555,7 @@ static int i82975x_probe1(struct pci_dev *pdev, int dev_idx)
- 	layers[1].type = EDAC_MC_LAYER_CHANNEL;
- 	layers[1].size = I82975X_NR_CSROWS(chans);
- 	layers[1].is_virt_csrow = false;
--	mci = new_edac_mc_alloc(0, ARRAY_SIZE(layers), layers, sizeof(*pvt));
-+	mci = edac_mc_alloc(0, ARRAY_SIZE(layers), layers, sizeof(*pvt));
- 	if (!mci) {
- 		rc = -ENOMEM;
- 		goto fail1;
-diff --git a/drivers/edac/mpc85xx_edac.c b/drivers/edac/mpc85xx_edac.c
-index a151410..4c40235 100644
---- a/drivers/edac/mpc85xx_edac.c
-+++ b/drivers/edac/mpc85xx_edac.c
-@@ -980,8 +980,7 @@ static int __devinit mpc85xx_mc_err_probe(struct platform_device *op)
- 	layers[1].type = EDAC_MC_LAYER_CHANNEL;
- 	layers[1].size = 1;
- 	layers[1].is_virt_csrow = false;
--	mci = new_edac_mc_alloc(edac_mc_idx, ARRAY_SIZE(layers), layers,
--			    sizeof(*pdata));
-+	mci = edac_mc_alloc(edac_mc_idx, ARRAY_SIZE(layers), sizeof(*pdata));
- 	if (!mci) {
- 		devres_release_group(&op->dev, mpc85xx_mc_err_probe);
- 		return -ENOMEM;
-diff --git a/drivers/edac/mv64x60_edac.c b/drivers/edac/mv64x60_edac.c
-index 289a6cc..b0bb5a3 100644
---- a/drivers/edac/mv64x60_edac.c
-+++ b/drivers/edac/mv64x60_edac.c
-@@ -715,7 +715,7 @@ static int __devinit mv64x60_mc_err_probe(struct platform_device *pdev)
- 	layers[1].type = EDAC_MC_LAYER_CHANNEL;
- 	layers[1].size = 1;
- 	layers[1].is_virt_csrow = false;
--	mci = new_edac_mc_alloc(edac_mc_idx, ARRAY_SIZE(layers), layers,
-+	mci = edac_mc_alloc(edac_mc_idx, ARRAY_SIZE(layers), layers,
- 			    sizeof(struct mv64x60_mc_pdata));
- 	if (!mci) {
- 		printk(KERN_ERR "%s: No memory for CPU err\n", __func__);
-diff --git a/drivers/edac/pasemi_edac.c b/drivers/edac/pasemi_edac.c
-index 46aed62..b095a90 100644
---- a/drivers/edac/pasemi_edac.c
-+++ b/drivers/edac/pasemi_edac.c
-@@ -215,7 +215,7 @@ static int __devinit pasemi_edac_probe(struct pci_dev *pdev,
- 	layers[1].type = EDAC_MC_LAYER_CHANNEL;
- 	layers[1].size = PASEMI_EDAC_NR_CHANS;
- 	layers[1].is_virt_csrow = false;
--	mci = new_edac_mc_alloc(system_mmc_id++, ARRAY_SIZE(layers), layers,
-+	mci = edac_mc_alloc(system_mmc_id++, ARRAY_SIZE(layers), layers,
- 			    0);
- 	if (mci == NULL)
- 		return -ENOMEM;
-diff --git a/drivers/edac/ppc4xx_edac.c b/drivers/edac/ppc4xx_edac.c
-index 59f50b6..f3f9fed 100644
---- a/drivers/edac/ppc4xx_edac.c
-+++ b/drivers/edac/ppc4xx_edac.c
-@@ -1291,7 +1291,7 @@ static int __devinit ppc4xx_edac_probe(struct platform_device *op)
- 	layers[1].type = EDAC_MC_LAYER_CHANNEL;
- 	layers[1].size = ppc4xx_edac_nr_chans;
- 	layers[1].is_virt_csrow = false;
--	mci = new_edac_mc_alloc(ppc4xx_edac_instance, ARRAY_SIZE(layers), layers,
-+	mci = edac_mc_alloc(ppc4xx_edac_instance, ARRAY_SIZE(layers), layers,
- 			    sizeof(struct ppc4xx_edac_pdata));
- 	if (mci == NULL) {
- 		ppc4xx_edac_printk(KERN_ERR, "%s: "
-diff --git a/drivers/edac/r82600_edac.c b/drivers/edac/r82600_edac.c
-index aea1a0c..e1cacd1 100644
---- a/drivers/edac/r82600_edac.c
-+++ b/drivers/edac/r82600_edac.c
-@@ -291,7 +291,7 @@ static int r82600_probe1(struct pci_dev *pdev, int dev_idx)
- 	layers[1].type = EDAC_MC_LAYER_CHANNEL;
- 	layers[1].size = R82600_NR_CHANS;
- 	layers[1].is_virt_csrow = false;
--	mci = new_edac_mc_alloc(0, ARRAY_SIZE(layers), layers, 0);
-+	mci = edac_mc_alloc(0, ARRAY_SIZE(layers), layers, 0);
- 	if (mci == NULL)
- 		return -ENOMEM;
- 
-diff --git a/drivers/edac/sb_edac.c b/drivers/edac/sb_edac.c
-index 8286479..2f95a1b 100644
---- a/drivers/edac/sb_edac.c
-+++ b/drivers/edac/sb_edac.c
-@@ -1640,7 +1640,7 @@ static int sbridge_register_mci(struct sbridge_dev *sbridge_dev)
- 	layers[1].type = EDAC_MC_LAYER_SLOT;
- 	layers[1].size = MAX_DIMMS;
- 	layers[1].is_virt_csrow = true;
--	mci = new_edac_mc_alloc(sbridge_dev->mc, ARRAY_SIZE(layers), layers,
-+	mci = edac_mc_alloc(sbridge_dev->mc, ARRAY_SIZE(layers), layers,
- 			    sizeof(*pvt));
- 
- 	if (unlikely(!mci))
-diff --git a/drivers/edac/tile_edac.c b/drivers/edac/tile_edac.c
-index bcdd1e4..7bb4614 100644
---- a/drivers/edac/tile_edac.c
-+++ b/drivers/edac/tile_edac.c
-@@ -141,7 +141,7 @@ static int __devinit tile_edac_mc_probe(struct platform_device *pdev)
- 	layers[1].type = EDAC_MC_LAYER_CHANNEL;
- 	layers[1].size = TILE_EDAC_NR_CHANS;
- 	layers[1].is_virt_csrow = false;
--	mci = new_edac_mc_alloc(pdev->id, ARRAY_SIZE(layers), layers,
-+	mci = edac_mc_alloc(pdev->id, ARRAY_SIZE(layers), layers,
- 			    sizeof(struct tile_edac_priv));
- 	if (mci == NULL)
- 		return -ENOMEM;
-diff --git a/drivers/edac/x38_edac.c b/drivers/edac/x38_edac.c
-index 8f8cda9..1ac7962 100644
---- a/drivers/edac/x38_edac.c
-+++ b/drivers/edac/x38_edac.c
-@@ -348,7 +348,7 @@ static int x38_probe1(struct pci_dev *pdev, int dev_idx)
- 	layers[1].type = EDAC_MC_LAYER_CHANNEL;
- 	layers[1].size = x38_channel_num;
- 	layers[1].is_virt_csrow = false;
--	mci = new_edac_mc_alloc(0, ARRAY_SIZE(layers), layers, 0);
-+	mci = edac_mc_alloc(0, ARRAY_SIZE(layers), layers, 0);
- 	if (!mci)
- 		return -ENOMEM;
- 
 -- 
 1.7.8
 
