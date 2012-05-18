@@ -1,92 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1946765Ab2ERXOW (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 May 2012 19:14:22 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:53122 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1946696Ab2ERXGn (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 May 2012 19:06:43 -0400
-Message-Id: <20120518212651.582833534@linuxfoundation.org>
-User-Agent: quilt/0.60-19.1
-Date: Fri, 18 May 2012 14:27:15 -0700
-From: Greg KH <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Christoph Hellwig <hch@lst.de>,
-        Andy Grover <agrover@redhat.com>,
-        Nicholas Bellinger <nab@linux-iscsi.org>
-Subject: [ 26/47] target: Drop incorrect se_lun_acl release for dynamic -> explict ACL conversion
-In-Reply-To: <20120518212701.GA5023@kroah.com>
+	id S1946918Ab2ERXOw (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 May 2012 19:14:52 -0400
+Received: from linux-sh.org ([111.68.239.195]:40442 "EHLO linux-sh.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1946677Ab2ERXOt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 18 May 2012 19:14:49 -0400
+Date: Sat, 19 May 2012 08:14:32 +0900
+From: Paul Mundt <lethal@linux-sh.org>
+To: Anna-Maria Gleixner <anna-maria@glx-um.de>
+Cc: LKML <linux-kernel@vger.kernel.org>, Thomas Gleixner <tglx@linutronix.de>
+Subject: Re: [patch 01/24] timers: Provide generic Kconfig switches
+Message-ID: <20120518231432.GH24355@linux-sh.org>
+References: <20120518163020.548627576@glx-um.de>
+ <20120518163104.499615021@glx-um.de>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120518163104.499615021@glx-um.de>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.3-stable review patch.  If anyone has any objections, please let me know.
-
-------------------
-
-From: Nicholas Bellinger <nab@linux-iscsi.org>
-
-commit cfebf8f42f47327fa54cf05c19b98f4bd5236a26 upstream.
-
-This patch removes some potentially problematic legacy code within
-core_clear_initiator_node_from_tpg() that was originally intended to
-release left over se_lun_acl setup during dynamic NodeACL+MappedLUN
-generate when running with TPG demo-mode operation.
-
-Since we now only ever expect to allocate and release se_lun_acl from
-within target_core_fabric_configfs.c:target_fabric_make_mappedlun() and
-target_fabric_drop_mappedlun() context respectively, this code for
-demo-mode release is incorrect and needs to be removed.
-
-Cc: Christoph Hellwig <hch@lst.de>
-Cc: Andy Grover <agrover@redhat.com>
-Signed-off-by: Nicholas Bellinger <nab@linux-iscsi.org>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
----
- drivers/target/target_core_tpg.c |   22 ----------------------
- 1 file changed, 22 deletions(-)
-
---- a/drivers/target/target_core_tpg.c
-+++ b/drivers/target/target_core_tpg.c
-@@ -60,7 +60,6 @@ static void core_clear_initiator_node_fr
- 	int i;
- 	struct se_dev_entry *deve;
- 	struct se_lun *lun;
--	struct se_lun_acl *acl, *acl_tmp;
- 
- 	spin_lock_irq(&nacl->device_list_lock);
- 	for (i = 0; i < TRANSPORT_MAX_LUNS_PER_TPG; i++) {
-@@ -81,28 +80,7 @@ static void core_clear_initiator_node_fr
- 		core_update_device_list_for_node(lun, NULL, deve->mapped_lun,
- 			TRANSPORT_LUNFLAGS_NO_ACCESS, nacl, tpg, 0);
- 
--		spin_lock(&lun->lun_acl_lock);
--		list_for_each_entry_safe(acl, acl_tmp,
--					&lun->lun_acl_list, lacl_list) {
--			if (!strcmp(acl->initiatorname, nacl->initiatorname) &&
--			    (acl->mapped_lun == deve->mapped_lun))
--				break;
--		}
--
--		if (!acl) {
--			pr_err("Unable to locate struct se_lun_acl for %s,"
--				" mapped_lun: %u\n", nacl->initiatorname,
--				deve->mapped_lun);
--			spin_unlock(&lun->lun_acl_lock);
--			spin_lock_irq(&nacl->device_list_lock);
--			continue;
--		}
--
--		list_del(&acl->lacl_list);
--		spin_unlock(&lun->lun_acl_lock);
--
- 		spin_lock_irq(&nacl->device_list_lock);
--		kfree(acl);
- 	}
- 	spin_unlock_irq(&nacl->device_list_lock);
- }
-
-
+On Fri, May 18, 2012 at 04:45:43PM -0000, Anna-Maria Gleixner wrote:
+> +# Options selectable by arch Kconfig
+> +
+> +# Watchdog function for clocksources to detect instabilities
+> +config CLOCKSOURCE_WATCHDOG
+> +	bool
+> +
+> +# Architecture has extra clocksource data
+> +config ARCH_CLOCKSOURCE_DATA
+> +	bool
+> +
+> +# Timekeeping vsyscall support
+> +config GENERIC_TIME_VSYSCALL
+> +	bool
+> +
+> +# ktime_t scalar 64bit nsec representation
+> +config KTIME_SCALAR
+> +	bool
+> +
+> +# Old style timekeeping
+> +config ARCH_USES_GETTIMEOFFSET
+> +	bool
+> +
+> +# The generic clock events infrastructure
+> +config GENERIC_CLOCKEVENTS
+> +	bool
+> +
+> +# Clockevents broadcasting infrastructure
+> +config GENERIC_CLOCKEVENTS_BROADCAST
+> +	bool
+> +	depends on GENERIC_CLOCKEVENTS
+> 
+Looks like you've missed GENERIC_CMOS_UPDATE.
