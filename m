@@ -1,63 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932134Ab2ERH0O (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 May 2012 03:26:14 -0400
-Received: from mail-wi0-f178.google.com ([209.85.212.178]:58540 "EHLO
-	mail-wi0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758486Ab2ERH0K (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 May 2012 03:26:10 -0400
-Date: Fri, 18 May 2012 09:26:05 +0200
-From: Ingo Molnar <mingo@kernel.org>
-To: Takuya Yoshikawa <takuya.yoshikawa@gmail.com>
-Cc: Peter Zijlstra <peterz@infradead.org>, linux-kernel@vger.kernel.org,
-        linux-fsdevel@vger.kernel.org, kvm@vger.kernel.org, avi@redhat.com,
-        mtosatti@redhat.com, yoshikawa.takuya@oss.ntt.co.jp
-Subject: Re: [RFC] sched: make callers check lock contention for
- cond_resched_lock()
-Message-ID: <20120518072604.GG429@gmail.com>
-References: <20120503171244.2debdd80931ccf35f387c5fe@gmail.com>
- <1336034127.13683.197.camel@twins>
- <20120503212244.6abbfa8bc3f46a7f7a932bb7@gmail.com>
- <1336048150.22523.17.camel@twins>
- <20120503220050.e91938418f882b4075526e08@gmail.com>
- <1336060050.22523.23.camel@twins>
- <20120511070357.9bf8f9b6636a12927f26bfed@gmail.com>
+	id S932242Ab2ERHcP (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 May 2012 03:32:15 -0400
+Received: from cn.fujitsu.com ([222.73.24.84]:61086 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1759333Ab2ERHcN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 18 May 2012 03:32:13 -0400
+X-IronPort-AV: E=Sophos;i="4.75,615,1330876800"; 
+   d="scan'208";a="4986507"
+Message-ID: <4FB5FC6D.4020709@cn.fujitsu.com>
+Date: Fri, 18 May 2012 15:38:21 +0800
+From: Lai Jiangshan <laijs@cn.fujitsu.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.9) Gecko/20100921 Fedora/3.1.4-1.fc14 Thunderbird/3.1.4
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120511070357.9bf8f9b6636a12927f26bfed@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+CC: linux-kernel@vger.kernel.org, mingo@elte.hu, dipankar@in.ibm.com,
+        akpm@linux-foundation.org, mathieu.desnoyers@polymtl.ca,
+        josh@joshtriplett.org, niv@us.ibm.com, tglx@linutronix.de,
+        peterz@infradead.org, rostedt@goodmis.org, Valdis.Kletnieks@vt.edu,
+        dhowells@redhat.com, eric.dumazet@gmail.com, darren@dvhart.com,
+        fweisbec@gmail.com, patches@linaro.org,
+        "Paul E. McKenney" <paul.mckenney@linaro.org>
+Subject: Re: [PATCH RFC tip/core/rcu 1/2] rcu: Fix code-style issues involving
+ "else"
+References: <20120517221217.GA12196@linux.vnet.ibm.com> <1337292765-12221-1-git-send-email-paulmck@linux.vnet.ibm.com>
+In-Reply-To: <1337292765-12221-1-git-send-email-paulmck@linux.vnet.ibm.com>
+X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2012/05/18 15:30:44,
+	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2012/05/18 15:30:55,
+	Serialize complete at 2012/05/18 15:30:55
+Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-* Takuya Yoshikawa <takuya.yoshikawa@gmail.com> wrote:
-
-> Replaced Ingo's address with kernel.org one,
+On 05/18/2012 06:12 AM, Paul E. McKenney wrote:
+> From: "Paul E. McKenney" <paul.mckenney@linaro.org>
 > 
-> On Thu, 03 May 2012 17:47:30 +0200
-> Peter Zijlstra <peterz@infradead.org> wrote:
+> The Linux kernel coding style says that single-statement blocks should
+> omit curly braces unless the other leg of the "if" statement has
+> multiple statements, in which case the curly braces should be included.
+> This commit fixes RCU's violations of this rule.
 > 
-> > On Thu, 2012-05-03 at 22:00 +0900, Takuya Yoshikawa wrote:
-> > > But as I could not see why spin_needbreak() was differently
-> > > implemented
-> > > depending on CONFIG_PREEMPT, I wanted to understand the meaning. 
-> > 
-> > Its been that way since before voluntary preemption was introduced, so
-> > its possible Ingo simply missed that spot and nobody noticed until now.
-> > 
-> > Ingo, do you have any recollections from back when?
+> Signed-off-by: Paul E. McKenney <paul.mckenney@linaro.org>
+> Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+> ---
+>  kernel/rcutiny_plugin.h |    3 ++-
+>  kernel/rcutorture.c     |    3 ++-
+>  kernel/rcutree.c        |    7 ++++---
+>  kernel/rcutree_plugin.h |   18 ++++++++++--------
+>  4 files changed, 18 insertions(+), 13 deletions(-)
 > 
-> ping
 
-I'm not sure we had a usable spin_is_contended() back then, nor 
-was the !PREEMPT case in my mind really.
-
-( The patch looks ugly though, in 99% of the lines it just does
-  something that cond_resched_lock() itself could do. )
-
-Thanks,
-
-	Ingo
+Acked-by: Lai Jiangshan <laijs@cn.fujitsu.com>
