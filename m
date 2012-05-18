@@ -1,23 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1946906Ab2ERXP5 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 May 2012 19:15:57 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:53597 "EHLO
+	id S1759842Ab2ERXQw (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 May 2012 19:16:52 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:65112 "EHLO
 	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1946641Ab2ERXG0 (ORCPT
+	with ESMTP id S1946643Ab2ERXGP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 May 2012 19:06:26 -0400
-Message-Id: <20120518212651.113683563@linuxfoundation.org>
+	Fri, 18 May 2012 19:06:15 -0400
+Message-Id: <20120518212650.828249272@linuxfoundation.org>
 User-Agent: quilt/0.60-19.1
-Date: Fri, 18 May 2012 14:27:10 -0700
+Date: Fri, 18 May 2012 14:27:07 -0700
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Chris Metcalf <cmetcalf@tilera.com>,
-        Mel Gorman <mel@csn.ul.ie>, Hillf Danton <dhillf@gmail.com>,
-        Hugh Dickins <hughd@google.com>, Michal Hocko <mhocko@suse.cz>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Subject: [ 21/47] hugetlb: prevent BUG_ON in hugetlb_fault() -> hugetlb_cow()
+        alan@lxorguk.ukuu.org.uk, Tejun Heo <tj@kernel.org>,
+        "Pavel V. Panteleev" <pp_84@mail.ru>
+Subject: [ 18/47] percpu: pcpu_embed_first_chunk() should free unused parts after all allocs are complete
 In-Reply-To: <20120518212701.GA5023@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -27,43 +25,54 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Chris Metcalf <cmetcalf@tilera.com>
+From: Tejun Heo <tj@kernel.org>
 
-commit 4998a6c0edce7fae9c0a5463f6ec3fa585258ee7 upstream.
+commit 42b64281453249dac52861f9b97d18552a7ec62b upstream.
 
-Commit 66aebce747eaf ("hugetlb: fix race condition in hugetlb_fault()")
-added code to avoid a race condition by elevating the page refcount in
-hugetlb_fault() while calling hugetlb_cow().
+pcpu_embed_first_chunk() allocates memory for each node, copies percpu
+data and frees unused portions of it before proceeding to the next
+group.  This assumes that allocations for different nodes doesn't
+overlap; however, depending on memory topology, the bootmem allocator
+may end up allocating memory from a different node than the requested
+one which may overlap with the portion freed from one of the previous
+percpu areas.  This leads to percpu groups for different nodes
+overlapping which is a serious bug.
 
-However, one code path in hugetlb_cow() includes an assertion that the
-page count is 1, whereas it may now also have the value 2 in this path.
+This patch separates out copy & partial free from the allocation loop
+such that all allocations are complete before partial frees happen.
 
-The consensus is that this BUG_ON has served its purpose, so rather than
-extending it to cover both cases, we just remove it.
+This also fixes overlapping frees which could happen on allocation
+failure path - out_free_areas path frees whole groups but the groups
+could have portions freed at that point.
 
-Signed-off-by: Chris Metcalf <cmetcalf@tilera.com>
-Acked-by: Mel Gorman <mel@csn.ul.ie>
-Acked-by: Hillf Danton <dhillf@gmail.com>
-Acked-by: Hugh Dickins <hughd@google.com>
-Cc: Michal Hocko <mhocko@suse.cz>
-Cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Tejun Heo <tj@kernel.org>
+Reported-by: "Pavel V. Panteleev" <pp_84@mail.ru>
+Tested-by: "Pavel V. Panteleev" <pp_84@mail.ru>
+LKML-Reference: <E1SNhwY-0007ui-V7.pp_84-mail-ru@f220.mail.ru>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- mm/hugetlb.c |    1 -
- 1 file changed, 1 deletion(-)
+ mm/percpu.c |   10 ++++++++++
+ 1 file changed, 10 insertions(+)
 
---- a/mm/hugetlb.c
-+++ b/mm/hugetlb.c
-@@ -2486,7 +2486,6 @@ retry_avoidcopy:
- 		if (outside_reserve) {
- 			BUG_ON(huge_pte_none(pte));
- 			if (unmap_ref_private(mm, vma, old_page, address)) {
--				BUG_ON(page_count(old_page) != 1);
- 				BUG_ON(huge_pte_none(pte));
- 				spin_lock(&mm->page_table_lock);
- 				ptep = huge_pte_offset(mm, address & huge_page_mask(h));
+--- a/mm/percpu.c
++++ b/mm/percpu.c
+@@ -1650,6 +1650,16 @@ int __init pcpu_embed_first_chunk(size_t
+ 		areas[group] = ptr;
+ 
+ 		base = min(ptr, base);
++	}
++
++	/*
++	 * Copy data and free unused parts.  This should happen after all
++	 * allocations are complete; otherwise, we may end up with
++	 * overlapping groups.
++	 */
++	for (group = 0; group < ai->nr_groups; group++) {
++		struct pcpu_group_info *gi = &ai->groups[group];
++		void *ptr = areas[group];
+ 
+ 		for (i = 0; i < gi->nr_units; i++, ptr += ai->unit_size) {
+ 			if (gi->cpu_map[i] == NR_CPUS) {
 
 
