@@ -1,75 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757921Ab2ERQAy (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 May 2012 12:00:54 -0400
-Received: from smtp101.prem.mail.ac4.yahoo.com ([76.13.13.40]:30055 "HELO
-	smtp101.prem.mail.ac4.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1757778Ab2ERQAw (ORCPT
+	id S1757936Ab2ERQBJ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 May 2012 12:01:09 -0400
+Received: from smtprelay06.ispgateway.de ([80.67.31.101]:55225 "EHLO
+	smtprelay06.ispgateway.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757924Ab2ERQBG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 May 2012 12:00:52 -0400
-X-Yahoo-Newman-Property: ymail-3
-X-YMail-OSG: QllVjOsVM1k_KMSAb.9uJvR2UfcbTV0Ld_Z8gHKkhFveb2I
- Jvc2CgaknTZk41KzOr_Dh2D98voN5u5jKu8HnrP74GFucCKJ_ZLdN9kVb49_
- _Gfzoum6e6ed7Cm2K4iYbe2lRyIy4Oq5ZcwbhEYcRDdPo3aMAK_YuPlWU4pl
- Z.7XhaA3XBliN_l5BNH25JNp__BDvC0GjT4gcAms1LlilH6CZwUXrasSKEjV
- mLVLbKwb8o8wm0cZmDcULHXiPmPSUNHFrL1IJPMsoaktQg9NnzKVScbEP2ny
- ve4iflB.Z7Ksb4LwMKnXt13_5kReLlyZXkMjDFW8QRLtqV8Q.sybF3C40HeC
- nalJze2YOc_yckeBm11v9Ktc8_d7M8QPB.qB_bzp1qanth6mxHBE1z8udhBh
- XTvqYr7IROV2vEmz4.8efX8yY4SbgcckJAl7d
-X-Yahoo-SMTP: _Dag8S.swBC1p4FJKLCXbs8NQzyse1SYSgnAbY0-
-Date: Fri, 18 May 2012 11:00:46 -0500 (CDT)
-From: Christoph Lameter <cl@linux.com>
-X-X-Sender: cl@router.home
-To: Peter Zijlstra <peterz@infradead.org>
-cc: Rik van Riel <riel@redhat.com>, mingo@kernel.org, hpa@zytor.com,
-        linux-kernel@vger.kernel.org, torvalds@linux-foundation.org,
-        pjt@google.com, bharata.rao@gmail.com, akpm@linux-foundation.org,
-        Lee.Schermerhorn@hp.com, aarcange@redhat.com, danms@us.ibm.com,
-        suresh.b.siddha@intel.com, tglx@linutronix.de,
-        linux-tip-commits@vger.kernel.org
-Subject: Re: [tip:sched/numa] sched/numa: Introduce sys_numa_{t,m}bind()
-In-Reply-To: <1337356192.573.75.camel@twins>
-Message-ID: <alpine.DEB.2.00.1205181057400.21093@router.home>
-References: <tip-nf7brf1b88w0ojwuf689xeet@git.kernel.org> <4FB66756.2060302@redhat.com> <1337355341.573.68.camel@twins> <1337355610.573.70.camel@twins> <alpine.DEB.2.00.1205181047030.21093@router.home> <1337356192.573.75.camel@twins>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+	Fri, 18 May 2012 12:01:06 -0400
+Message-ID: <4FB6722B.6050103@ladisch.de>
+Date: Fri, 18 May 2012 18:00:43 +0200
+From: Clemens Ladisch <clemens@ladisch.de>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.15) Gecko/20110323 Thunderbird/3.1.9
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+To: "Alexander E. Patrakov" <patrakov@gmail.com>
+CC: linux-kernel@vger.kernel.org, alsa-devel@alsa-project.org
+Subject: Re: kmemleak findings about USB audio recording on 3.3.2
+References: <1335112621.20322.8.camel@home>
+In-Reply-To: <1335112621.20322.8.camel@home>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
+X-Df-Sender: bGludXgta2VybmVsQGNsLmRvbWFpbmZhY3Rvcnkta3VuZGUuZGU=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 18 May 2012, Peter Zijlstra wrote:
-
-> On Fri, 2012-05-18 at 10:47 -0500, Christoph Lameter wrote:
-> > On Fri, 18 May 2012, Peter Zijlstra wrote:
-> >
-> > > On Fri, 2012-05-18 at 17:35 +0200, Peter Zijlstra wrote:
-> > > > I've also said many times over that I absolutely detest all the async
-> > > > stuff because it messes up accounting. And until someone comes up with a
-> > > > sane means of sorting that I'll stick to migrate-on-fault.
-> > >
-> > > The other nice advantage of migrate-on-fault is that you don't have to
-> > > play lifetime games with vmas. This much simplifies that aspect.
-> >
-> > The problem with migrate on fault in the past has been that there was no
-> > consistent benefit from the overhead added to the system. Useless page
-> > migration is a bit expensive.
+Alexander E. Patrakov wrote:
+> On my home computer with linux-3.3.2, kmemleak found a lot of copies of
+> this (not only from pulseaudio, but also from wine):
 >
-> I'm not sure I follow.. having the page local is a win, presuming you
-> can limit the migration rate to something low in relation to the cost of
-> remote accesses.
+> unreferenced object 0xffff88021afaed40 (size 16):
+>   comm "pulseaudio", pid 839, jiffies 4294711382 (age 31392.844s)
+>   hex dump (first 16 bytes):
+>     80 3e 00 00 c0 5d 00 00 00 7d 00 00 02 00 00 00  .>...]...}......
+>   backtrace:
+>     [<ffffffff811620d7>] create_object+0x127/0x2b0
+>     [<ffffffff81636d81>] kmemleak_alloc+0x21/0x50
+>     [<ffffffff81157bc3>] __kmalloc+0x103/0x1e0
+>     [<ffffffffa02f650b>] snd_usb_pcm_open+0x3bb/0x4c0 [snd_usb_audio]
 
-Having the page local is a win if there are a sufficient number of
-accesses to amortize the effort to move the page. Given the expensive
-nature of page migration there would need to be a large number of accesses
-to a page to justify the effort.
+Please try this patch.
 
-> How does it matter how you migrate?
+--8<---------------------------------------------------------------->8--
+ALSA: usb-audio: fix rate_list memory leak
 
-Migrate on fault incurs two types of costs:
+The array of sample rates is reallocated every time when opening
+the PCM device, but was freed only once when unplugging the device.
 
-1. Unmapping. This results in additional faults to reestablish the ptes.
+Reported-by: "Alexander E. Patrakov" <patrakov@gmail.com>
+Signed-off-by: Clemens Ladisch <clemens@ladisch.de>
+---
+ sound/usb/pcm.c |    3 +++
+ 1 files changed, 3 insertions(+), 0 deletions(-)
 
-2. Actual lazy migrate. More faults. Now the page needs to be copied to
-   the new node and the actual migration work is done.
+--- a/sound/usb/pcm.c
++++ b/sound/usb/pcm.c
+@@ -783,6 +783,9 @@ static int snd_usb_pcm_check_knot(struct snd_pcm_runtime *runtime,
+ 	int count = 0, needs_knot = 0;
+ 	int err;
 
++	kfree(subs->rate_list.list);
++	subs->rate_list.list = NULL;
++
+ 	list_for_each_entry(fp, &subs->fmt_list, list) {
+ 		if (fp->rates & SNDRV_PCM_RATE_CONTINUOUS)
+ 			return 0;
