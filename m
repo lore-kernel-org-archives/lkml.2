@@ -1,79 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S967357Ab2ERA0t (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 May 2012 20:26:49 -0400
-Received: from mga01.intel.com ([192.55.52.88]:16794 "EHLO mga01.intel.com"
+	id S966763Ab2ERA2J (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 May 2012 20:28:09 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:38832 "EHLO mail.zytor.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S966141Ab2ERA0s (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 May 2012 20:26:48 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
-   d="scan'208";a="167861299"
-Date: Thu, 17 May 2012 17:26:45 -0700 (Pacific Daylight Time)
-From: "Brandeburg, Jesse" <jesse.brandeburg@intel.com>
-To: Samuel Thibault <samuel.thibault@ens-lyon.org>
-cc: "Dave, Tushar N" <tushar.n.dave@intel.com>,
-        "Kirsher, Jeffrey T" <jeffrey.t.kirsher@intel.com>,
-        "Allan, Bruce W" <bruce.w.allan@intel.com>,
-        "Wyborny, Carolyn" <carolyn.wyborny@intel.com>,
-        "Skidmore, Donald C" <donald.c.skidmore@intel.com>,
-        "Rose, Gregory V" <gregory.v.rose@intel.com>,
-        "Waskiewicz Jr, Peter P" <peter.p.waskiewicz.jr@intel.com>,
-        "Duyck, Alexander H" <alexander.h.duyck@intel.com>,
-        "Ronciak, John" <john.ronciak@intel.com>,
-        "David S. Miller" <davem@davemloft.net>,
-        Jiri Pirko <jpirko@redhat.com>, Dean Nelson <dnelson@redhat.com>,
-        "e1000-devel@lists.sourceforge.net" 
-	<e1000-devel@lists.sourceforge.net>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] e1000: Reset rx ring index on receive overrun
-In-Reply-To: <20120518001202.GN683@type.famille.thibault.fr>
-Message-ID: <alpine.WNT.2.00.1205171718160.7900@jbrandeb-mobl2.amr.corp.intel.com>
-References: <20120517230140.GZ683@type.famille.thibault.fr> <061C8A8601E8EE4CA8D8FD6990CEA891188439E0@ORSMSX102.amr.corp.intel.com> <20120517232821.GJ683@type.famille.thibault.fr> <20120517233124.GK683@type.famille.thibault.fr>
- <alpine.WNT.2.00.1205171702590.7900@jbrandeb-mobl2.amr.corp.intel.com> <20120518001202.GN683@type.famille.thibault.fr>
-User-Agent: Alpine 2.00 (WNT 1167 2008-08-23)
-ReplyTo: "Brandeburg, Jesse" <jesse.brandeburg@intel.com>
-X-X-Sender: amrjbrandeb@imapmail.glb.intel.com
+	id S932297Ab2ERA2G (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 17 May 2012 20:28:06 -0400
+Message-ID: <4FB59789.80601@zytor.com>
+Date: Thu, 17 May 2012 17:27:53 -0700
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:11.0) Gecko/20120329 Thunderbird/11.0.1
 MIME-Version: 1.0
-Content-Type: MULTIPART/MIXED; BOUNDARY="1459309-17496-1337300807=:7900"
+To: Linus Torvalds <torvalds@linux-foundation.org>
+CC: David Daney <ddaney.cavm@gmail.com>, Ralf Baechle <ralf@linux-mips.org>,
+        "H.J. Lu" <hjl.tools@gmail.com>, linux-kernel@vger.kernel.org,
+        linux-arch@vger.kernel.org, mingo@kernel.org, tglx@linutronix.de
+Subject: Re: [PATCH 08/10] Use __kernel_ulong_t in struct msqid64_ds
+References: <1337292816-10839-1-git-send-email-hjl.tools@gmail.com> <1337292816-10839-9-git-send-email-hjl.tools@gmail.com> <4FB58EFD.7010302@zytor.com> <CA+55aFy+XOc350sVuLKDHAaKtz9GdLcVmjxs98N8XLTK4zmMYg@mail.gmail.com> <4FB59474.2020505@zytor.com> <CA+55aFwyem9KoPMhYkE-vcaUDqgP9g7arHbmD-mMHMSKXaRBOw@mail.gmail.com>
+In-Reply-To: <CA+55aFwyem9KoPMhYkE-vcaUDqgP9g7arHbmD-mMHMSKXaRBOw@mail.gmail.com>
+X-Enigmail-Version: 1.4
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-  This message is in MIME format.  The first part should be readable text,
-  while the remaining parts are likely unreadable without MIME-aware tools.
-
---1459309-17496-1337300807=:7900
-Content-Type: TEXT/PLAIN; charset=iso-8859-1
-Content-Transfer-Encoding: 8BIT
-
-
-
-On Thu, 17 May 2012, Samuel Thibault wrote:
-> Brandeburg, Jesse, le Thu 17 May 2012 17:04:04 -0700, a écrit :
-> > > BTW, it also happens easily when request_irq takes some time to
-> > > complete: since we enable E1000_TCTL_EN before that, the card can have
-> > > time to fill the ring before irqs are processed.
-> > 
-> > I think there may well be a bug in the implementation in kvm.  The 
-> > hardware doesn't have this bug.
+On 05/17/2012 05:22 PM, Linus Torvalds wrote:
 > 
-> How does it avoid filling the ring?  What is the purpose of the RXO flag
-> if it does avoid them?
+> That's why I think it's unfixable. It started out broken, and I
+> presume that 32-bit user land on a 64-bit MIPS/PPC thing either do not
+> work, or there's some compat crap (like special user-land headers)
+> fixing things up. Or they just don't use that buggered msqid64_ds
+> thing at all.
+> 
 
-RXO is only used to let the driver know "information" that the rx fifo is 
-overflowing.  As it turns out the flag isn't very useful and none of our 
-drivers currently use it for anything.
+I guess we need to find out what mips, ppc, sparc etc. do and if they
+have something which works in userland make sure that it gets exported
+accordingly, if they don't, then well... nothing we can do :-/
 
-If the hardware fills all the available receive *descriptors* then the 
-hardware's RDH (head) register will advance all the way to the RDT (tail) 
-value. The tail always points one past the rx descriptors available to 
-hardware to use.  RDH==RDT means there are no software provided 
-descriptors in the ring available to be used by the hardware.  Our drivers 
-typically allow for 1-2 descriptors to be unused in the ring to help avoid 
-any confusion.
+	-hpa
 
-Hope this helps,
- Jesse
---1459309-17496-1337300807=:7900--
+-- 
+H. Peter Anvin, Intel Open Source Technology Center
+I work for Intel.  I don't speak on their behalf.
+
