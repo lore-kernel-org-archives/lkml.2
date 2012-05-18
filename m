@@ -1,15 +1,15 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933694Ab2ERKb4 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 May 2012 06:31:56 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:42428 "EHLO
+	id S1161150Ab2ERKdQ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 May 2012 06:33:16 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:42460 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933560Ab2ERKbx (ORCPT
+	with ESMTP id S1161091Ab2ERKdO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 May 2012 06:31:53 -0400
-Date: Fri, 18 May 2012 03:31:28 -0700
+	Fri, 18 May 2012 06:33:14 -0400
+Date: Fri, 18 May 2012 03:32:18 -0700
 From: tip-bot for Peter Zijlstra <a.p.zijlstra@chello.nl>
-Message-ID: <tip-41h2mswllhkskd4bnxpoi388@git.kernel.org>
+Message-ID: <tip-2jgh4xed0dejteh84gykmxff@git.kernel.org>
 Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
         torvalds@linux-foundation.org, a.p.zijlstra@chello.nl, pjt@google.com,
         cl@linux.com, riel@redhat.com, akpm@linux-foundation.org,
@@ -22,8 +22,8 @@ Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
         aarcange@redhat.com, danms@us.ibm.com, suresh.b.siddha@intel.com,
         tglx@linutronix.de
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:sched/numa] sched, mm: Introduce tsk_home_node()
-Git-Commit-ID: 84213e2b6e2166083c3d06e91dcf54f8e136bd78
+Subject: [tip:sched/numa] mm/mpol: Make mempolicy home-node aware
+Git-Commit-ID: a9ea2f1e496e4a5cf88e692948c62369efa37be5
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -32,35 +32,33 @@ MIME-Version: 1.0
 Content-Transfer-Encoding: 8bit
 Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Fri, 18 May 2012 03:31:34 -0700 (PDT)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Fri, 18 May 2012 03:32:24 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  84213e2b6e2166083c3d06e91dcf54f8e136bd78
-Gitweb:     http://git.kernel.org/tip/84213e2b6e2166083c3d06e91dcf54f8e136bd78
+Commit-ID:  a9ea2f1e496e4a5cf88e692948c62369efa37be5
+Gitweb:     http://git.kernel.org/tip/a9ea2f1e496e4a5cf88e692948c62369efa37be5
 Author:     Peter Zijlstra <a.p.zijlstra@chello.nl>
-AuthorDate: Sat, 3 Mar 2012 17:05:16 +0100
+AuthorDate: Sat, 3 Mar 2012 17:05:54 +0100
 Committer:  Ingo Molnar <mingo@kernel.org>
-CommitDate: Fri, 18 May 2012 08:16:20 +0200
+CommitDate: Fri, 18 May 2012 08:16:21 +0200
 
-sched, mm: Introduce tsk_home_node()
+mm/mpol: Make mempolicy home-node aware
 
-Introduce the home-node concept for tasks. In order to keep memory
-locality we need to have a something to stay local to, we define the
-home-node of a task as the node we prefer to allocate memory from and
-prefer to execute on.
+Add another layer of fallback policy to make the home node concept
+useful from a memory allocation PoV.
 
-These are no hard guarantees, merely preferences. This allows for
-optimal resource usage, we can run a task away from the home-node, the
-remote memory hit -- while expensive -- is less expensive than not
-running at all, or very little, due to severe cpu overload.
+This changes the mpol order to:
 
-Similarly, we can allocate memory from another node if our home-node
-is depleted, again, some memory is better than no memory.
+ - vma->vm_ops->get_policy	[if applicable]
+ - vma->vm_policy		[if applicable]
+ - task->mempolicy
+ - tsk_home_node() preferred	[NEW]
+ - default_policy
 
-This patch merely introduces the basic infrastructure, all policy
-comes later.
+Note that the tsk_home_node() policy has Migrate-on-Fault enabled to
+facilitate efficient on-demand memory migration.
 
 Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
 Cc: Suresh Siddha <suresh.b.siddha@intel.com>
@@ -73,108 +71,70 @@ Cc: Rik van Riel <riel@redhat.com>
 Cc: Andrea Arcangeli <aarcange@redhat.com>
 Cc: Andrew Morton <akpm@linux-foundation.org>
 Cc: Linus Torvalds <torvalds@linux-foundation.org>
-Link: http://lkml.kernel.org/n/tip-41h2mswllhkskd4bnxpoi388@git.kernel.org
+Link: http://lkml.kernel.org/n/tip-2jgh4xed0dejteh84gykmxff@git.kernel.org
 Signed-off-by: Ingo Molnar <mingo@kernel.org>
 ---
- include/linux/init_task.h |    8 ++++++++
- include/linux/sched.h     |   10 ++++++++++
- kernel/sched/core.c       |   32 ++++++++++++++++++++++++++++++++
- 3 files changed, 50 insertions(+), 0 deletions(-)
+ mm/mempolicy.c |   29 +++++++++++++++++++++++++++--
+ 1 files changed, 27 insertions(+), 2 deletions(-)
 
-diff --git a/include/linux/init_task.h b/include/linux/init_task.h
-index e4baff5..d3029fa 100644
---- a/include/linux/init_task.h
-+++ b/include/linux/init_task.h
-@@ -134,6 +134,13 @@ extern struct cred init_cred;
+diff --git a/mm/mempolicy.c b/mm/mempolicy.c
+index 1ddbf22..57fbc4c 100644
+--- a/mm/mempolicy.c
++++ b/mm/mempolicy.c
+@@ -117,6 +117,22 @@ static struct mempolicy default_policy = {
+ 	.flags = MPOL_F_LOCAL,
+ };
  
- #define INIT_TASK_COMM "swapper"
- 
-+#ifdef CONFIG_NUMA
-+# define INIT_TASK_NUMA(tsk)						\
-+	.node = -1,
-+#else
-+# define INIT_TASK_NUMA(tsk)
-+#endif
++static struct mempolicy preferred_node_policy[MAX_NUMNODES];
 +
- /*
-  *  INIT_TASK is used to set up the first task table, touch at
-  * your own risk!. Base=0, limit=0x1fffff (=2MB)
-@@ -200,6 +207,7 @@ extern struct cred init_cred;
- 	INIT_TRACE_RECURSION						\
- 	INIT_TASK_RCU_PREEMPT(tsk)					\
- 	INIT_CPUSET_SEQ							\
-+	INIT_TASK_NUMA(tsk)						\
- }
- 
- 
-diff --git a/include/linux/sched.h b/include/linux/sched.h
-index 3d64480..49378f0 100644
---- a/include/linux/sched.h
-+++ b/include/linux/sched.h
-@@ -1505,6 +1505,7 @@ struct task_struct {
- 	struct mempolicy *mempolicy;	/* Protected by alloc_lock */
- 	short il_next;
- 	short pref_node_fork;
++static struct mempolicy *get_task_policy(struct task_struct *p)
++{
++	struct mempolicy *pol = p->mempolicy;
 +	int node;
- #endif
- 	struct rcu_head rcu;
- 
-@@ -1575,6 +1576,15 @@ struct task_struct {
- /* Future-safe accessor for struct task_struct's cpus_allowed. */
- #define tsk_cpus_allowed(tsk) (&(tsk)->cpus_allowed)
- 
-+static inline int tsk_home_node(struct task_struct *p)
-+{
-+#ifdef CONFIG_NUMA
-+	return p->node;
-+#else
-+	return -1;
-+#endif
++
++	if (!pol) {
++		node = tsk_home_node(p);
++		if (node != -1)
++			pol = &preferred_node_policy[node];
++	}
++
++	return pol;
 +}
 +
- /*
-  * Priority of a process goes from 0..MAX_PRIO-1, valid RT
-  * priority is 0..MAX_RT_PRIO-1, and SCHED_NORMAL/SCHED_BATCH
-diff --git a/kernel/sched/core.c b/kernel/sched/core.c
-index eb9bee9..8fd0325 100644
---- a/kernel/sched/core.c
-+++ b/kernel/sched/core.c
-@@ -6279,6 +6279,38 @@ static struct sched_domain_topology_level *sched_domain_topology = default_topol
+ static const struct mempolicy_operations {
+ 	int (*create)(struct mempolicy *pol, const nodemask_t *nodes);
+ 	/*
+@@ -1506,7 +1522,7 @@ asmlinkage long compat_sys_mbind(compat_ulong_t start, compat_ulong_t len,
+ struct mempolicy *get_vma_policy(struct task_struct *task,
+ 		struct vm_area_struct *vma, unsigned long addr)
+ {
+-	struct mempolicy *pol = task->mempolicy;
++	struct mempolicy *pol = get_task_policy(task);
  
- #ifdef CONFIG_NUMA
+ 	if (vma) {
+ 		if (vma->vm_ops && vma->vm_ops->get_policy) {
+@@ -1890,7 +1906,7 @@ retry_cpuset:
+  */
+ struct page *alloc_pages_current(gfp_t gfp, unsigned order)
+ {
+-	struct mempolicy *pol = current->mempolicy;
++	struct mempolicy *pol = get_task_policy(current);
+ 	struct page *page;
+ 	unsigned int cpuset_mems_cookie;
  
-+/*
-+ * Requeues a task ensuring its on the right load-balance list so
-+ * that it might get migrated to its new home.
-+ *
-+ * Note that we cannot actively migrate ourselves since our callers
-+ * can be from atomic context. We rely on the regular load-balance
-+ * mechanisms to move us around -- its all preference anyway.
-+ */
-+void sched_setnode(struct task_struct *p, int node)
-+{
-+	unsigned long flags;
-+	int on_rq, running;
-+	struct rq *rq;
+@@ -2358,6 +2374,15 @@ void __init numa_policy_init(void)
+ 				     sizeof(struct sp_node),
+ 				     0, SLAB_PANIC, NULL);
+ 
++	for_each_node(nid) {
++		preferred_node_policy[nid] = (struct mempolicy) {
++			.refcnt = ATOMIC_INIT(1),
++			.mode = MPOL_PREFERRED,
++			.flags = MPOL_F_MOF,
++			.v = { .preferred_node = nid, },
++		};
++	}
 +
-+	rq = task_rq_lock(p, &flags);
-+	on_rq = p->on_rq;
-+	running = task_current(rq, p);
-+
-+	if (on_rq)
-+		dequeue_task(rq, p, 0);
-+	if (running)
-+		p->sched_class->put_prev_task(rq, p);
-+
-+	p->node = node;
-+
-+	if (running)
-+		p->sched_class->set_curr_task(rq);
-+	if (on_rq)
-+		enqueue_task(rq, p, 0);
-+	task_rq_unlock(rq, p, &flags);
-+}
-+
- static int sched_domains_numa_levels;
- static int sched_domains_numa_scale;
- static int *sched_domains_numa_distance;
+ 	/*
+ 	 * Set interleaving policy for system init. Interleaving is only
+ 	 * enabled across suitably sized nodes (default is >= 16MB), or
