@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1946232Ab2ERXdq (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 May 2012 19:33:46 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:38665 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1946209Ab2ERXCy (ORCPT
+	id S1946282Ab2ERXdl (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 May 2012 19:33:41 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:53524 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1946228Ab2ERXDD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 May 2012 19:02:54 -0400
-Message-Id: <20120518211559.912269364@linuxfoundation.org>
+	Fri, 18 May 2012 19:03:03 -0400
+Message-Id: <20120518211600.286013626@linuxfoundation.org>
 User-Agent: quilt/0.60-19.1
-Date: Fri, 18 May 2012 14:16:04 -0700
+Date: Fri, 18 May 2012 14:16:08 -0700
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, "H.J. Lu" <hjl.tools@gmail.com>,
-        "H. Peter Anvin" <hpa@linux.intel.com>, Arnd Bergmann <arnd@arndb.de>
-Subject: [ 05/54] asm-generic: Use __BITS_PER_LONG in statfs.h
+        alan@lxorguk.ukuu.org.uk, Axel Lin <axel.lin@gmail.com>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>
+Subject: [ 09/54] regulator: Fix the logic to ensure new voltage setting in valid range
 In-Reply-To: <20120518212656.GA4992@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,35 +25,32 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: "H. Peter Anvin" <hpa@linux.intel.com>
+From: Axel Lin <axel.lin@gmail.com>
 
-commit f5c2347ee20a8d6964d6a6b1ad04f200f8d4dfa7 upstream.
+commit f55205f4d4a8823a11bb8b37ef2ecbd78fb09463 upstream.
 
-<asm-generic/statfs.h> is exported to userspace, so using
-BITS_PER_LONG is invalid.  We need to use __BITS_PER_LONG instead.
+I think this is a typo.
+To ensure new voltage setting won't greater than desc->max,
+the equation should be desc->min + desc->step * new_val <= desc->max.
 
-This is kernel bugzilla 43165.
-
-Reported-by: H.J. Lu <hjl.tools@gmail.com>
-Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
-Link: http://lkml.kernel.org/r/1335465916-16965-1-git-send-email-hpa@linux.intel.com
-Acked-by: Arnd Bergmann <arnd@arndb.de>
+Signed-off-by: Axel Lin <axel.lin@gmail.com>
+Signed-off-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- include/asm-generic/statfs.h |    2 +-
+ drivers/regulator/max8997.c |    2 +-
  1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/include/asm-generic/statfs.h
-+++ b/include/asm-generic/statfs.h
-@@ -15,7 +15,7 @@ typedef __kernel_fsid_t	fsid_t;
-  * with a 10' pole.
-  */
- #ifndef __statfs_word
--#if BITS_PER_LONG == 64
-+#if __BITS_PER_LONG == 64
- #define __statfs_word long
- #else
- #define __statfs_word __u32
+--- a/drivers/regulator/max8997.c
++++ b/drivers/regulator/max8997.c
+@@ -688,7 +688,7 @@ static int max8997_set_voltage_buck(stru
+ 		}
+ 
+ 		new_val++;
+-	} while (desc->min + desc->step + new_val <= desc->max);
++	} while (desc->min + desc->step * new_val <= desc->max);
+ 
+ 	new_idx = tmp_idx;
+ 	new_val = tmp_val;
 
 
