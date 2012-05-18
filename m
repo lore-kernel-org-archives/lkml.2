@@ -1,50 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757677Ab2ERPzp (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 May 2012 11:55:45 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:36997 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757339Ab2ERPzn (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 May 2012 11:55:43 -0400
-Date: Fri, 18 May 2012 08:55:38 -0700
-From: Tejun Heo <tj@kernel.org>
-To: koverstreet@google.com
-Cc: linux-bcache@vger.kernel.org, linux-kernel@vger.kernel.org,
-        dm-devel@redhat.com, linux-fsdevel@vger.kernel.org, axboe@kernel.dk,
-        agk@redhat.com, neilb@suse.de
-Subject: Re: [PATCH 01/13] block: Generalized bio pool freeing
-Message-ID: <20120518155538.GA19388@google.com>
-References: <cover.1337308722.git.koverstreet@google.com>
- <ea774fea2a27c9f1028a12ce31a7ee5e5517bef4.1337308722.git.koverstreet@google.com>
+	id S1757751Ab2ERP5R (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 May 2012 11:57:17 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:44974 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757339Ab2ERP5P (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 18 May 2012 11:57:15 -0400
+Message-ID: <4FB67146.9080804@zytor.com>
+Date: Fri, 18 May 2012 08:56:54 -0700
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:11.0) Gecko/20120329 Thunderbird/11.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <ea774fea2a27c9f1028a12ce31a7ee5e5517bef4.1337308722.git.koverstreet@google.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Ingo Molnar <mingo@elte.hu>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        "H.J. Lu" <hjl.tools@gmail.com>, Greg KH <gregkh@suse.de>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Jarkko Sakkinen <jarkko.sakkinen@intel.com>
+Subject: Urgent: x86-32 and GNU ld 2.22.52.0.1
+X-Enigmail-Version: 1.4
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, May 17, 2012 at 10:59:48PM -0400, koverstreet@google.com wrote:
-> From: Kent Overstreet <koverstreet@google.com>
-> 
-> With the old code, when you allocate a bio from a bio pool you have to
-> implement your own destructor that knows how to find the bio pool the
-> bio was originally allocated from.
-> 
-> This adds a new field to struct bio (bi_pool) and changes
-> bio_alloc_bioset() to use it. This makes various bio destructors
-> unnecessary, so they're then deleted.
-> 
-> Signed-off-by: Kent Overstreet <koverstreet@google.com>
+I need an urgent opinion.  It seems we have an epic mess on our hands.
 
-Please add Cc: to maintainers of each modified subsystem.  Other than
-that, nice cleanup even without the later removal of bi_destructor.
+GNU ld 2.22.52.0.1 silently changed the semantics of section-relative
+symbols that are part of otherwise empty sections, and silently changes
+them to absolute.  We rely on section-relative symbols staying
+section-relative, and actually have several sections in the linker
+script solely for this purpose.
 
- Acked-by: Tejun Heo <tj@kernel.org>
+The postprocessor for the x86-32 kernel, relocs.c, currently doesn't
+enforce its audited absolute symbols list.  As part of the
+tip:x86/trampoline rework, however, I made it error out rather that
+silently producing bad output.
 
-Thanks.
+Ingo has found that with this particular version of GNU ld, the error
+triggers.  I want to emphasize that this merely catches an error which
+the current version of the tool would have allowed to silently go by,
+which would have (possibly) caused a failure if the kernel was
+subsequently booted in anything but its default location.
+
+There are a few ways we can deal with this, but I think we need to do
+one or the other:
+
+1. We can blacklist this version of GNU ld.
+2. We can uprev the tool to the one from the tip:x86/trampoline work,
+   with error checking, and give it a list of symbols that should
+   be relative but may end up as absolute.  We risk build errors for
+   some people if the list isn't complete.
+3. We do a minimal forward-port of the error checking into the current
+   tool.
+4. We add to the list of relative symbols in the current version of
+   the tool without adding the error checking.
+
+However, since it seems clear that we're silently producing corrupt
+kernels out of the current build, I think we need a fix for this for 3.4.
+
+	-hpa
 
 -- 
-tejun
+H. Peter Anvin, Intel Open Source Technology Center
+I work for Intel.  I don't speak on their behalf.
+
