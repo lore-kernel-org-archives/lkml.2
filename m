@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1946846Ab2ERXIe (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 May 2012 19:08:34 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:53597 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1946715Ab2ERXHq (ORCPT
+	id S1946848Ab2ERXIx (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 May 2012 19:08:53 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:53122 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1946652Ab2ERXHn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 May 2012 19:07:46 -0400
-Message-Id: <20120518212653.363629474@linuxfoundation.org>
+	Fri, 18 May 2012 19:07:43 -0400
+Message-Id: <20120518212652.491290217@linuxfoundation.org>
 User-Agent: quilt/0.60-19.1
-Date: Fri, 18 May 2012 14:27:35 -0700
+Date: Fri, 18 May 2012 14:27:25 -0700
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Sachin Prabhu <sprabhu@redhat.com>,
-        Jian Li <jiali@redhat.com>,
-        Trond Myklebust <Trond.Myklebust@netapp.com>
-Subject: [ 46/47] Avoid beyond bounds copy while caching ACL
+        alan@lxorguk.ukuu.org.uk, Sha Zhengju <handai.szj@taobao.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        "Kirill A. Shutemov" <kirill@shutemov.name>
+Subject: [ 36/47] memcg: free spare array to avoid memory leak
 In-Reply-To: <20120518212701.GA5023@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,72 +26,38 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Sachin Prabhu <sprabhu@redhat.com>
+From: Sha Zhengju <handai.szj@taobao.com>
 
-commit 5794d21ef4639f0e33440927bb903f9598c21e92 upstream.
+commit 8c7577637ca31385e92769a77e2ab5b428e8b99c upstream.
 
-When attempting to cache ACLs returned from the server, if the bitmap
-size + the ACL size is greater than a PAGE_SIZE but the ACL size itself
-is smaller than a PAGE_SIZE, we can read past the buffer page boundary.
+When the last event is unregistered, there is no need to keep the spare
+array anymore.  So free it to avoid memory leak.
 
-Signed-off-by: Sachin Prabhu <sprabhu@redhat.com>
-Reported-by: Jian Li <jiali@redhat.com>
-Signed-off-by: Trond Myklebust <Trond.Myklebust@netapp.com>
+Signed-off-by: Sha Zhengju <handai.szj@taobao.com>
+Acked-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Reviewed-by: Kirill A. Shutemov <kirill@shutemov.name>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/nfs/nfs4proc.c |   12 +++++-------
- 1 file changed, 5 insertions(+), 7 deletions(-)
+ mm/memcontrol.c |    6 ++++++
+ 1 file changed, 6 insertions(+)
 
---- a/fs/nfs/nfs4proc.c
-+++ b/fs/nfs/nfs4proc.c
-@@ -3532,16 +3532,16 @@ out:
- 	return ret;
- }
+--- a/mm/memcontrol.c
++++ b/mm/memcontrol.c
+@@ -4480,6 +4480,12 @@ static void mem_cgroup_usage_unregister_
+ swap_buffers:
+ 	/* Swap primary and spare array */
+ 	thresholds->spare = thresholds->primary;
++	/* If all events are unregistered, free the spare array */
++	if (!new) {
++		kfree(thresholds->spare);
++		thresholds->spare = NULL;
++	}
++
+ 	rcu_assign_pointer(thresholds->primary, new);
  
--static void nfs4_write_cached_acl(struct inode *inode, const char *buf, size_t acl_len)
-+static void nfs4_write_cached_acl(struct inode *inode, struct page **pages, size_t pgbase, size_t acl_len)
- {
- 	struct nfs4_cached_acl *acl;
- 
--	if (buf && acl_len <= PAGE_SIZE) {
-+	if (pages && acl_len <= PAGE_SIZE) {
- 		acl = kmalloc(sizeof(*acl) + acl_len, GFP_KERNEL);
- 		if (acl == NULL)
- 			goto out;
- 		acl->cached = 1;
--		memcpy(acl->data, buf, acl_len);
-+		_copy_from_pages(acl->data, pages, pgbase, acl_len);
- 	} else {
- 		acl = kmalloc(sizeof(*acl), GFP_KERNEL);
- 		if (acl == NULL)
-@@ -3574,7 +3574,6 @@ static ssize_t __nfs4_get_acl_uncached(s
- 	struct nfs_getaclres res = {
- 		.acl_len = buflen,
- 	};
--	void *resp_buf;
- 	struct rpc_message msg = {
- 		.rpc_proc = &nfs4_procedures[NFSPROC4_CLNT_GETACL],
- 		.rpc_argp = &args,
-@@ -3605,7 +3604,6 @@ static ssize_t __nfs4_get_acl_uncached(s
- 	 * the page we send as a guess */
- 	if (buf == NULL)
- 		res.acl_flags |= NFS4_ACL_LEN_REQUEST;
--	resp_buf = page_address(pages[0]);
- 
- 	dprintk("%s  buf %p buflen %zu npages %d args.acl_len %zu\n",
- 		__func__, buf, buflen, npages, args.acl_len);
-@@ -3616,9 +3614,9 @@ static ssize_t __nfs4_get_acl_uncached(s
- 
- 	acl_len = res.acl_len - res.acl_data_offset;
- 	if (acl_len > args.acl_len)
--		nfs4_write_cached_acl(inode, NULL, acl_len);
-+		nfs4_write_cached_acl(inode, NULL, 0, acl_len);
- 	else
--		nfs4_write_cached_acl(inode, resp_buf + res.acl_data_offset,
-+		nfs4_write_cached_acl(inode, pages, res.acl_data_offset,
- 				      acl_len);
- 	if (buf) {
- 		ret = -ERANGE;
+ 	/* To be sure that nobody uses thresholds */
 
 
