@@ -1,126 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761512Ab2ERGsf (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 May 2012 02:48:35 -0400
-Received: from mail-wg0-f44.google.com ([74.125.82.44]:53373 "EHLO
-	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758703Ab2ERGsd (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 May 2012 02:48:33 -0400
-Date: Fri, 18 May 2012 08:48:28 +0200
-From: Ingo Molnar <mingo@kernel.org>
-To: Suresh Siddha <suresh.b.siddha@intel.com>
-Cc: John Dykstra <jdykstra@cray.com>,
-        the arch/x86 maintainers <x86@kernel.org>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] mm, x86, pat: Improve scaling of pat_pagerange_is_ram()
-Message-ID: <20120518064828.GD429@gmail.com>
-References: <1337027192.1604.9.camel@redwood>
- <1337208407.1997.49.camel@sbsiddha-desk.sc.intel.com>
+	id S1762143Ab2ERGvM (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 May 2012 02:51:12 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:47307 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1760342Ab2ERGvK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 18 May 2012 02:51:10 -0400
+Date: Fri, 18 May 2012 08:50:51 +0200
+From: Michal Hocko <mhocko@suse.cz>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        Johannes Weiner <hannes@cmpxchg.org>, Mel Gorman <mel@csn.ul.ie>,
+        Minchan Kim <minchan@kernel.org>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Rik van Riel <riel@redhat.com>
+Subject: Re: [PATCH] mm: consider all swapped back pages in used-once logic
+Message-ID: <20120518065051.GA23173@tiehlicka.suse.cz>
+References: <1337246033-13719-1-git-send-email-mhocko@suse.cz>
+ <20120517022412.9175f604.akpm@linux-foundation.org>
+ <20120517121049.GA11018@tiehlicka.suse.cz>
+ <20120517132324.e9bf9fc8.akpm@linux-foundation.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1337208407.1997.49.camel@sbsiddha-desk.sc.intel.com>
+In-Reply-To: <20120517132324.e9bf9fc8.akpm@linux-foundation.org>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-* Suresh Siddha <suresh.b.siddha@intel.com> wrote:
-
-> On Mon, 2012-05-14 at 15:26 -0500, John Dykstra wrote:
-> > Function pat_pagerange_is_ram() scales poorly to large address ranges,
-> > because it probes the resource tree for each page.  On a 2.6 GHz
-> > Opteron, this function consumes 34 ms. for a 1 GB range.  It is called
-> > twice during untrack_pfn_vma(), slowing process cleanup and handicapping
-> > the OOM killer.
-> > 
-> > This replacement based on walk_system_ram_range() consumes less than 1
-> > ms. under the same conditions.
-
-Nice performance improvement!
-
-> > 
-> > Signed-off-by: John Dykstra <jdykstra@cray.com> on behalf of Cray Inc. 
-> > Cc: Suresh Siddha <suresh.b.siddha@intel.com>
-> > ---
-> >  arch/x86/mm/pat.c      |   55 ++++++++++++++++++++++++++++++-----------------
-> >  include/linux/ioport.h |    2 +
-> >  kernel/resource.c      |    2 +-
-> >  3 files changed, 38 insertions(+), 21 deletions(-)
-> > 
-> > diff --git a/arch/x86/mm/pat.c b/arch/x86/mm/pat.c
-> > index f6ff57b..c119afb 100644
-> > --- a/arch/x86/mm/pat.c
-> > +++ b/arch/x86/mm/pat.c
-> > @@ -160,29 +160,44 @@ static unsigned long pat_x_mtrr_type(u64 start, u64 end, unsigned long req_type)
-> >  
-> >  static int pat_pagerange_is_ram(resource_size_t start, resource_size_t end)
-> >  {
-> > -	int ram_page = 0, not_rampage = 0;
-> > -	unsigned long page_nr;
-> > +	struct resource res;
-> > +	resource_size_t pg_end, after_ram;
-> > +	int ram = 0, not_ram = 0;
-> >  
-> > -	for (page_nr = (start >> PAGE_SHIFT); page_nr < (end >> PAGE_SHIFT);
-> > -	     ++page_nr) {
-> > -		/*
-> > -		 * For legacy reasons, physical address range in the legacy ISA
-> > -		 * region is tracked as non-RAM. This will allow users of
-> > -		 * /dev/mem to map portions of legacy ISA region, even when
-> > -		 * some of those portions are listed(or not even listed) with
-> > -		 * different e820 types(RAM/reserved/..)
-> > -		 */
-> > -		if (page_nr >= (ISA_END_ADDRESS >> PAGE_SHIFT) &&
-> > -		    page_is_ram(page_nr))
-> > -			ram_page = 1;
-> > -		else
-> > -			not_rampage = 1;
-> > +	res.start = start & PHYSICAL_PAGE_MASK;
-> >  
-> > -		if (ram_page == not_rampage)
-> > +	/*
-> > +	 * For legacy reasons, physical address range in the legacy ISA
-> > +	 * region is tracked as non-RAM. This will allow users of
-> > +	 * /dev/mem to map portions of legacy ISA region, even when
-> > +	 * some of those portions are listed(or not even listed) with
-> > +	 * different e820 types(RAM/reserved/..)
-> > +	 */
-> > +	if (res.start < ISA_END_ADDRESS) {
-> > +		not_ram = 1;
-> > +		res.start = ISA_END_ADDRESS;
-> > +	}
-> > +
-> > +	pg_end = (end + PAGE_SIZE - 1) & PHYSICAL_PAGE_MASK;
-> > +	res.end = pg_end;
-> > +	res.flags = IORESOURCE_MEM | IORESOURCE_BUSY;
-> > +	after_ram = res.start;
-> > +	while ((res.start < res.end) &&
-> > +		(find_next_system_ram(&res, "System RAM") >= 0)) {
-> > +		if (res.start > after_ram)
-> > +			not_ram = 1;
-> > +		if (res.end > res.start)
-> > +			ram = 1;
-> > +
-> > +		if (ram && not_ram)
-> >  			return -1;
-> > +
-> > +		after_ram = res.end + 1;
-> > +		res.start = res.end + 1;
-> > +		res.end = pg_end;
-> >  	}
+On Thu 17-05-12 13:23:24, Andrew Morton wrote:
+> On Thu, 17 May 2012 14:10:49 +0200
+> Michal Hocko <mhocko@suse.cz> wrote:
 > 
-> Instead of duplicating what kernel/resource.c:walk_system_ram_range() is
-> already doing, can we just provide a callback that can be used with
-> walk_system_ram_range() and see if the expected RAM pages is what the
-> callback also sees.
+> > > > This patch fixes a regression introduced by this commit for heavy shmem
+> > > 
+> > > A performance regression, specifically.
+> > > 
+> > > Are you able to quantify it?
+> > 
+> > The customer's workload is shmem backed database (80% of RAM) and
+> > they are measuring transactions/s with an IO in the background (20%).
+> > Transactions touch more or less random rows in the table.
+> > The rate goes down drastically when we start swapping out memory.
+> > 
+> > Numbers are more descriptive (without the patch is 100%, with 5
+> > representative runs)
+> > Average rate	315.83%
+> > Best rate	131.76%
+> > Worst rate	641.25%
+> > 
+> > Standard deviation (calibrated to average) is ~4% while without the
+> > patch we are at 62.82%. 
+> > The big variance without the patch is caused by the excessive swapping
+> > which doesn't occur with the patch applied.
+> > 
+> > * Worst run (100%) compared to a random run with the patch
+> > pgpgin	pswpin	pswpout	pgmajfault
+> > 1.58%	0.00%	0.01%	0.22%
+> > 
+> > Average size of the LRU lists:
+> > nr_inactive_anon nr_active_anon nr_inactive_file nr_active_file
+> > 52.91%           7234.72%       249.39%          126.64%
+> > 
+> > * Best run
+> > pgpgin	pswpin	pswpout	pgmajfault
+> > 3.37%	0.00%	0.11%	0.39%
+> > 
+> > nr_inactive_anon nr_active_anon nr_inactive_file nr_active_file
+> > 49.85%           3868.74%       175.03%          121.27%
 > 
-> That will greatly simplify the patch and avoid code duplication.
+> I turned the above into this soundbite:
+> 
+> : The customer's workload is shmem backed database (80% of RAM) and they are
+> : measuring transactions/s with an IO in the background (20%).  Transactions
+> : touch more or less random rows in the table.  Total runtime was
+> : approximately tripled by commit 64574746 and this patch restores the
+> : previous throughput levels.
+> 
+> Was that truthful?
 
-Agreed.
+Total runtime was same for all the runs. It is the number of executed
+transactions that was measured. I guess that what you wrote should be
+more or less equivalent but it's is not what I have numbers for.
+How about:
+"
+Total number of transactions went down 3 times (in the worst case)
+because of commit 64574746. This patch restores the previous numbers.
+"
 
-Thanks,
-
-	Ingo
+Thanks
+-- 
+Michal Hocko
+SUSE Labs
+SUSE LINUX s.r.o.
+Lihovarska 1060/12
+190 00 Praha 9    
+Czech Republic
