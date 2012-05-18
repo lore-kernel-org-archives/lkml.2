@@ -1,181 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030609Ab2ERB5f (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 May 2012 21:57:35 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:38674 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751473Ab2ERB5d convert rfc822-to-8bit (ORCPT
+	id S1030647Ab2ERCKi (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 May 2012 22:10:38 -0400
+Received: from haggis.pcug.org.au ([203.10.76.10]:54888 "EHLO
+	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751473Ab2ERCKg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 May 2012 21:57:33 -0400
-MIME-Version: 1.0
-In-Reply-To: <1337280518.4281.67.camel@twins>
-References: <1337234296-23313-1-git-send-email-ming.lei@canonical.com>
-	<20120517182830.GA5254@kroah.com>
-	<1337280518.4281.67.camel@twins>
-Date: Fri, 18 May 2012 09:57:29 +0800
-Message-ID: <CACVXFVO_8o_3UuwAHjJbVEk1ZmL+28KVngB7JikNxszct1yjkw@mail.gmail.com>
-Subject: Re: [PATCH] tty: tty_mutex: fix lockdep warning in tty_lock_pair
-From: Ming Lei <ming.lei@canonical.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-kernel@vger.kernel.org, Alan Cox <alan@linux.intel.com>,
-        Arnd Bergmann <arnd@arndb.de>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	Thu, 17 May 2012 22:10:36 -0400
+Date: Fri, 18 May 2012 12:10:27 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Dan Williams <dan.j.williams@intel.com>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        James Bottomley <James.Bottomley@HansenPartnership.com>
+Subject: linux-next: manual merge of the isci tree with the scsi tree
+Message-Id: <20120518121027.0f780260e88d034ea9aa0584@canb.auug.org.au>
+X-Mailer: Sylpheed 3.2.0beta7 (GTK+ 2.24.10; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Fri__18_May_2012_12_10_27_+1000_Viv=k+5nLDU3=HRT"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, May 18, 2012 at 2:48 AM, Peter Zijlstra <peterz@infradead.org> wrote:
-> On Thu, 2012-05-17 at 11:28 -0700, Greg Kroah-Hartman wrote:
->> > +static void __lockfunc tty_lock_nest_lock(struct tty_struct *tty,
->> > +             struct tty_struct *tty2)
->>
->> Duplicating tty_lock() just for this one issue seems wrong and prone to
->> error, don't you think?
->>
->> > +{
->> > +     if (tty->magic != TTY_MAGIC) {
->> > +             printk(KERN_ERR "L Bad %p\n", tty);
->> > +             WARN_ON(1);
->> > +             return;
->> > +     }
->> > +     tty_kref_get(tty);
->> > +     mutex_lock_nest_lock(&tty->legacy_mutex, &tty2->legacy_mutex);
->
-> Yeah, its completely broken, even the lockdep annotation is the wrong
-> one.
->
-> Something like the (completely untested) below patch is the 'right' way.
+--Signature=_Fri__18_May_2012_12_10_27_+1000_Viv=k+5nLDU3=HRT
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Yes, it should be, but the warning is still triggered with the patch, also
-it is worse, kernel hanged during boot.
+Hi Dan,
 
-> ---
->  drivers/tty/tty_mutex.c |   35 ++++++++++++++++++++---------------
->  1 file changed, 20 insertions(+), 15 deletions(-)
->
-> diff --git a/drivers/tty/tty_mutex.c b/drivers/tty/tty_mutex.c
-> index 69adc80..587330b 100644
-> --- a/drivers/tty/tty_mutex.c
-> +++ b/drivers/tty/tty_mutex.c
-> @@ -10,7 +10,7 @@
->  * Getting the big tty mutex.
->  */
->
-> -void __lockfunc tty_lock(struct tty_struct *tty)
-> +static void __lockfunc tty_lock_nested(struct tty_struct *tty, int subclass)
->  {
->        if (tty->magic != TTY_MAGIC) {
->                printk(KERN_ERR "L Bad %p\n", tty);
-> @@ -18,7 +18,12 @@ void __lockfunc tty_lock(struct tty_struct *tty)
->                return;
->        }
->        tty_kref_get(tty);
-> -       mutex_lock(&tty->legacy_mutex);
-> +       mutex_lock_nested(&tty->legacy_mutex, subclass);
-> +}
-> +
-> +void __lockfunc tty_lock(struct tty_struct *tty)
-> +{
-> +       tty_lock_nested(tty, 0);
->  }
->  EXPORT_SYMBOL(tty_lock);
->
-> @@ -38,25 +43,25 @@ EXPORT_SYMBOL(tty_unlock);
->  * Getting the big tty mutex for a pair of ttys with lock ordering
->  * On a non pty/tty pair tty2 can be NULL which is just fine.
->  */
-> -void __lockfunc tty_lock_pair(struct tty_struct *tty,
-> -                                       struct tty_struct *tty2)
-> +void __lockfunc tty_lock_pair(struct tty_struct *tty1, struct tty_struct *tty2)
->  {
-> -       if (tty < tty2) {
-> -               tty_lock(tty);
-> -               tty_lock(tty2);
-> -       } else {
-> -               if (tty2 && tty2 != tty)
-> -                       tty_lock(tty2);
-> -               tty_lock(tty);
-> +       if (!tty2 || tty1 == tty2) {
-> +               tty_lock(tty1);
-> +               return;
->        }
-> +
-> +       if (tty2 < tty1)
-> +               swap(tty1, tty2);
+Today's linux-next merge of the isci tree got a conflict in
+drivers/scsi/scsi.c between commit a7a20d103994 ("[SCSI] sd: limit the
+scope of the async probe domain") from the scsi tree and commit
+2eae65b32c9b ("scsi, sd: limit the scope of the async probe domain") from
+the isci tree.
 
-That is too crazy.
+I used the version from the scsi tree.
 
-> +
-> +       tty_lock(tty1);
-> +       tty_lock_nested(tty2, SINGLE_DEPTH_NESTING);
->  }
->  EXPORT_SYMBOL(tty_lock_pair);
->
-> -void __lockfunc tty_unlock_pair(struct tty_struct *tty,
-> -                                               struct tty_struct *tty2)
-> +void __lockfunc tty_unlock_pair(struct tty_struct *tty1, struct tty_struct *tty2)
->  {
-> -       tty_unlock(tty);
-> -       if (tty2 && tty2 != tty)
-> +       tty_unlock(tty1);
-> +       if (tty2 && tty2 != tty1)
->                tty_unlock(tty2);
->  }
->  EXPORT_SYMBOL(tty_unlock_pair);
->
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
 
-So how about the below one(tested OK)?
+--Signature=_Fri__18_May_2012_12_10_27_+1000_Viv=k+5nLDU3=HRT
+Content-Type: application/pgp-signature
 
-diff --git a/drivers/tty/tty_mutex.c b/drivers/tty/tty_mutex.c
-index 69adc80..fecf592 100644
---- a/drivers/tty/tty_mutex.c
-+++ b/drivers/tty/tty_mutex.c
-@@ -10,7 +10,8 @@
-  * Getting the big tty mutex.
-  */
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
 
--void __lockfunc tty_lock(struct tty_struct *tty)
-+static void __lockfunc tty_lock_nested(struct tty_struct *tty,
-+		int subclass)
- {
- 	if (tty->magic != TTY_MAGIC) {
- 		printk(KERN_ERR "L Bad %p\n", tty);
-@@ -18,7 +19,12 @@ void __lockfunc tty_lock(struct tty_struct *tty)
- 		return;
- 	}
- 	tty_kref_get(tty);
--	mutex_lock(&tty->legacy_mutex);
-+	mutex_lock_nested(&tty->legacy_mutex, subclass);
-+}
-+
-+void __lockfunc tty_lock(struct tty_struct *tty)
-+{
-+	tty_lock_nested(tty, 0);
- }
- EXPORT_SYMBOL(tty_lock);
+iQIcBAEBCAAGBQJPta+TAAoJEECxmPOUX5FE6jEP/0nUqRluB3sIiUnmbugT9eXi
+qPNlmyWzwfMAeuFm8PhB1PdExp2nnW8RFjrRaoHLrn/LdlQdoWfEaiWMg71zRs04
+FRxYHqVGWpmThUvUSjAmiYGCWNWMBgR22Q4mbnCCD3YwBoFAiTZnnWgpLUfxjWUj
+FoQrZBU5BNLFWUOHdrDZNxBhnTU4KmXMiurjzwgbMzHghQKgb0wKdCltWH0JAWCc
++VtFDefTHeIIk9+8Caq5QXrAjlVLjra58HIiuaVVO+eDCcRFvK/vx4hFdIjex3Fk
+BKAajypfAzzKQRqvndSrM1WZzkjauPpz59Qt9t7DtFeD2R7/0GjjDOhd/l5QQZHM
+XSqM/khBNHC+K8OEBdRp4qejlGFmqwlUBLNJKjzO4aiQq3D1Fwnj6H6Y/UqUTQ9D
+98rY1bMzSS9LfwUAIl2YZD5U+hmiZAbyoGGgs+GAi/kHFttgCGggT9mbouLNrlPW
+fOVmDHsy77E7+VmVPgM5oJjh/38+8hhdQFchlrdEsoTxvoRUPhQFqnvz5j71lff1
+qK2G7wpQley/CINPBlPbgRuLKlmzoCYCQjtJJMcujNKBxkXVdHTLHjvZv64A4Jtu
+nNpX2M84WtqIDU1zA5CMrQnQ0GlZldJrfDvc5mvhfVdJNjv85MkNn6hnFuthV9mZ
+TvMb6rKJNJqNAYR9LX2b
+=T2x5
+-----END PGP SIGNATURE-----
 
-@@ -43,11 +49,14 @@ void __lockfunc tty_lock_pair(struct tty_struct *tty,
- {
- 	if (tty < tty2) {
- 		tty_lock(tty);
--		tty_lock(tty2);
-+		tty_lock_nested(tty2, SINGLE_DEPTH_NESTING);
- 	} else {
--		if (tty2 && tty2 != tty)
-+		int nested = 0;
-+		if (tty2 && tty2 != tty) {
- 			tty_lock(tty2);
--		tty_lock(tty);
-+			nested = SINGLE_DEPTH_NESTING;
-+		}
-+		tty_lock_nested(tty, nested);
- 	}
- }
- EXPORT_SYMBOL(tty_lock_pair);
-
-
-Thanks,
---
-Ming Lei
+--Signature=_Fri__18_May_2012_12_10_27_+1000_Viv=k+5nLDU3=HRT--
