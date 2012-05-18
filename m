@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1946205Ab2ERXCv (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 May 2012 19:02:51 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:35668 "EHLO
+	id S1946272Ab2ERXDP (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 May 2012 19:03:15 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:38665 "EHLO
 	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1030799Ab2ERXCr (ORCPT
+	with ESMTP id S1946238Ab2ERXDG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 May 2012 19:02:47 -0400
-Message-Id: <20120518211559.730789462@linuxfoundation.org>
+	Fri, 18 May 2012 19:03:06 -0400
+Message-Id: <20120518211600.391829047@linuxfoundation.org>
 User-Agent: quilt/0.60-19.1
-Date: Fri, 18 May 2012 14:16:02 -0700
+Date: Fri, 18 May 2012 14:16:09 -0700
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Jan Beulich <jbeulich@suse.com>,
-        David Vrabel <david.vrabel@citrix.com>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Subject: [ 03/54] xen/pci: dont use PCI BIOS service for configuration space accesses
+        alan@lxorguk.ukuu.org.uk, Henry von Tresckow <hvontres@gmail.com>,
+        Ben Hutchings <ben@decadent.org.uk>,
+        Jason Cooper <jason@lakedaemon.net>
+Subject: [ 10/54] ARM: orion5x: Fix GPIO enable bits for MPP9
 In-Reply-To: <20120518212656.GA4992@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,49 +26,40 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: David Vrabel <david.vrabel@citrix.com>
+From: Ben Hutchings <ben@decadent.org.uk>
 
-commit 76a8df7b49168509df02461f83fab117a4a86e08 upstream.
+commit 48d99f47a81a66bdd61a348c7fe8df5a7afdf5f3 upstream.
 
-The accessing PCI configuration space with the PCI BIOS32 service does
-not work in PV guests.
+Commit 554cdaefd1cf7bb54b209c4e68c7cec87ce442a9 ('ARM: orion5x: Refactor
+mpp code to use common orion platform mpp.') seems to have accidentally
+inverted the GPIO valid bits for MPP9 (only).  For the mv2120 platform
+which uses MPP9 as a GPIO LED device, this results in the error:
 
-On systems without MMCONFIG or where the BIOS hasn't marked the
-MMCONFIG region as reserved in the e820 map, the BIOS service is
-probed (even though direct access is preferred) and this hangs.
+[   12.711476] leds-gpio: probe of leds-gpio failed with error -22
 
-Acked-by: Jan Beulich <jbeulich@suse.com>
-Signed-off-by: David Vrabel <david.vrabel@citrix.com>
-[v1: Fixed compile error when CONFIG_PCI is not set]
-Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Reported-by: Henry von Tresckow <hvontres@gmail.com>
+References: http://bugs.debian.org/667446
+Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
+Tested-by: Hans Henry von Tresckow <hvontres@gmail.com>
+Signed-off-by: Jason Cooper <jason@lakedaemon.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/x86/xen/enlighten.c |    7 +++++--
- 1 file changed, 5 insertions(+), 2 deletions(-)
+ arch/arm/mach-orion5x/mpp.h |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
---- a/arch/x86/xen/enlighten.c
-+++ b/arch/x86/xen/enlighten.c
-@@ -62,6 +62,7 @@
- #include <asm/reboot.h>
- #include <asm/stackprotector.h>
- #include <asm/hypervisor.h>
-+#include <asm/pci_x86.h>
+--- a/arch/arm/mach-orion5x/mpp.h
++++ b/arch/arm/mach-orion5x/mpp.h
+@@ -65,8 +65,8 @@
+ #define MPP8_GIGE               MPP(8,  0x1, 0, 0, 1,   1,   1)
  
- #include "xen-ops.h"
- #include "mmu.h"
-@@ -1259,8 +1260,10 @@ asmlinkage void __init xen_start_kernel(
- 		/* Make sure ACS will be enabled */
- 		pci_request_acs();
- 	}
--		
--
-+#ifdef CONFIG_PCI
-+	/* PCI BIOS service won't work from a PV guest. */
-+	pci_probe &= ~PCI_PROBE_BIOS;
-+#endif
- 	xen_raw_console_write("about to get started...\n");
+ #define MPP9_UNUSED		MPP(9,  0x0, 0, 0, 1,   1,   1)
+-#define MPP9_GPIO		MPP(9,  0x0, 0, 0, 1,   1,   1)
+-#define MPP9_GIGE               MPP(9,  0x1, 1, 1, 1,   1,   1)
++#define MPP9_GPIO		MPP(9,  0x0, 1, 1, 1,   1,   1)
++#define MPP9_GIGE               MPP(9,  0x1, 0, 0, 1,   1,   1)
  
- 	xen_setup_runstate_info(0);
+ #define MPP10_UNUSED		MPP(10, 0x0, 0, 0, 1,   1,   1)
+ #define MPP10_GPIO		MPP(10, 0x0, 1, 1, 1,   1,   1)
 
 
