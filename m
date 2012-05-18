@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1762604Ab2ERDJf (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 May 2012 23:09:35 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:40398 "EHLO
+	id S1031166Ab2ERDJc (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 May 2012 23:09:32 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:40415 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1762547Ab2ERCw1 (ORCPT
+	by vger.kernel.org with ESMTP id S1762523Ab2ERCw3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 May 2012 22:52:27 -0400
-Message-Id: <20120518023254.656357227@decadent.org.uk>
+	Thu, 17 May 2012 22:52:29 -0400
+Message-Id: <20120518023255.712118438@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Fri, 18 May 2012 03:32:56 +0100
+Date: Fri, 18 May 2012 03:33:04 +0100
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Archit Taneja <archit@ti.com>,
-        Tomi Valkeinen <tomi.valkeinen@ti.com>,
-        Tony Lindgren <tony@atomide.com>
-Subject: [ 02/53] ARM: OMAP: Revert "ARM: OMAP: ctrl: Fix CONTROL_DSIPHY register fields"
+        alan@lxorguk.ukuu.org.uk, Ingo van Lil <inguin@gmx.de>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [ 10/53] asix: Fix tx transfer padding for full-speed USB
 In-Reply-To: <20120518023254.339945758@decadent.org.uk>
 X-SA-Exim-Connect-IP: 192.168.4.185
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -29,53 +28,48 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Archit Taneja <archit@ti.com>
+From: Ingo van Lil <inguin@gmx.de>
 
-commit 08ca7444f589bedf9ad5d82883e5d0754852d73b upstream.
+[ Upstream commit 2a5809499e35b53a6044fd34e72b242688b7a862 ]
 
-This reverts commit 46f8c3c7e95c0d30d95911e7975ddc4f93b3e237.
+The asix.c USB Ethernet driver avoids ending a tx transfer with a zero-
+length packet by appending a four-byte padding to transfers whose length
+is a multiple of maxpacket. However, the hard-coded 512 byte maxpacket
+length is valid for high-speed USB only; full-speed USB uses 64 byte
+packets.
 
-The commit above swapped the DSI1_PPID and DSI2_PPID register fields in
-CONTROL_DSIPHY to be in sync with the newer public OMAP TRMs(after version V).
-
-With this commit, contention errors were reported on DSI lanes some OMAP4 SDPs.
-After probing the DSI lanes on OMAP4 SDP, it was seen that setting bits in the
-DSI2_PPID field was pulling up voltage on DSI1 lanes, and DSI1_PPID field was
-pulling up voltage on DSI2 lanes.
-
-This proves that the current version of OMAP4 TRM is incorrect, swap the
-position of register fields according to the older TRM versions as they were
-correct.
-
-Acked-by: Tomi Valkeinen <tomi.valkeinen@ti.com>
-Signed-off-by: Archit Taneja <archit@ti.com>
-Signed-off-by: Tony Lindgren <tony@atomide.com>
+Signed-off-by: Ingo van Lil <inguin@gmx.de>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- arch/arm/mach-omap2/include/mach/ctrl_module_pad_core_44xx.h |    8 ++++----
- 1 file changed, 4 insertions(+), 4 deletions(-)
+ drivers/net/usb/asix.c |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
-diff --git a/arch/arm/mach-omap2/include/mach/ctrl_module_pad_core_44xx.h b/arch/arm/mach-omap2/include/mach/ctrl_module_pad_core_44xx.h
-index 1e2d332..c88420d 100644
---- a/arch/arm/mach-omap2/include/mach/ctrl_module_pad_core_44xx.h
-+++ b/arch/arm/mach-omap2/include/mach/ctrl_module_pad_core_44xx.h
-@@ -941,10 +941,10 @@
- #define OMAP4_DSI2_LANEENABLE_MASK				(0x7 << 29)
- #define OMAP4_DSI1_LANEENABLE_SHIFT				24
- #define OMAP4_DSI1_LANEENABLE_MASK				(0x1f << 24)
--#define OMAP4_DSI2_PIPD_SHIFT					19
--#define OMAP4_DSI2_PIPD_MASK					(0x1f << 19)
--#define OMAP4_DSI1_PIPD_SHIFT					14
--#define OMAP4_DSI1_PIPD_MASK					(0x1f << 14)
-+#define OMAP4_DSI1_PIPD_SHIFT					19
-+#define OMAP4_DSI1_PIPD_MASK					(0x1f << 19)
-+#define OMAP4_DSI2_PIPD_SHIFT					14
-+#define OMAP4_DSI2_PIPD_MASK					(0x1f << 14)
+diff --git a/drivers/net/usb/asix.c b/drivers/net/usb/asix.c
+index fda4be2..a9abee8 100644
+--- a/drivers/net/usb/asix.c
++++ b/drivers/net/usb/asix.c
+@@ -403,7 +403,7 @@ static struct sk_buff *asix_tx_fixup(struct usbnet *dev, struct sk_buff *skb,
+ 	u32 packet_len;
+ 	u32 padbytes = 0xffff0000;
  
- /* CONTROL_MCBSPLP */
- #define OMAP4_ALBCTRLRX_FSX_SHIFT				31
+-	padlen = ((skb->len + 4) % 512) ? 0 : 4;
++	padlen = ((skb->len + 4) & (dev->maxpacket - 1)) ? 0 : 4;
+ 
+ 	if ((!skb_cloned(skb)) &&
+ 	    ((headroom + tailroom) >= (4 + padlen))) {
+@@ -425,7 +425,7 @@ static struct sk_buff *asix_tx_fixup(struct usbnet *dev, struct sk_buff *skb,
+ 	cpu_to_le32s(&packet_len);
+ 	skb_copy_to_linear_data(skb, &packet_len, sizeof(packet_len));
+ 
+-	if ((skb->len % 512) == 0) {
++	if (padlen) {
+ 		cpu_to_le32s(&padbytes);
+ 		memcpy(skb_tail_pointer(skb), &padbytes, sizeof(padbytes));
+ 		skb_put(skb, sizeof(padbytes));
 -- 
-1.7.10
+1.7.10.1
+
 
 
 
