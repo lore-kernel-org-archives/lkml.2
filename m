@@ -1,79 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1946349Ab2ERXbL (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 May 2012 19:31:11 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:35668 "EHLO
+	id S1946366Ab2ERXbZ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 May 2012 19:31:25 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:37906 "EHLO
 	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1946292Ab2ERXD1 (ORCPT
+	with ESMTP id S1946292Ab2ERXbP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 May 2012 19:03:27 -0400
-Message-Id: <20120518211600.178606884@linuxfoundation.org>
-User-Agent: quilt/0.60-19.1
-Date: Fri, 18 May 2012 14:16:07 -0700
-From: Greg KH <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Colin Cross <ccross@android.com>,
-        Russell King <rmk+kernel@arm.linux.org.uk>
-Subject: [ 08/54] ARM: 7414/1: SMP: prevent use of the console when using idmap_pgd
-In-Reply-To: <20120518212656.GA4992@kroah.com>
+	Fri, 18 May 2012 19:31:15 -0400
+From: Grant Likely <grant.likely@secretlab.ca>
+Subject: Re: [PATCH 3/3] gpio: tps65910: dt: process gpio specific device node info
+To: Laxman Dewangan <ldewangan@nvidia.com>, linus.walleij@stericsson.com,
+        sameo@linux.intel.com, broonie@opensource.wolfsonmicro.com,
+        lrg@slimlogic.co.uk
+Cc: linux-kernel@vger.kernel.org, Laxman Dewangan <ldewangan@nvidia.com>
+In-Reply-To: <1337373103-23933-4-git-send-email-ldewangan@nvidia.com>
+References: <1337373103-23933-1-git-send-email-ldewangan@nvidia.com> <1337373103-23933-4-git-send-email-ldewangan@nvidia.com>
+Date: Fri, 18 May 2012 17:31:13 -0600
+Message-Id: <20120518233113.7164E3E07C8@localhost>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.0-stable review patch.  If anyone has any objections, please let me know.
+On Sat, 19 May 2012 02:01:43 +0530, Laxman Dewangan <ldewangan@nvidia.com> wrote:
+> Parse the gpio specific device node information locally.
+> 
+> Signed-off-by: Laxman Dewangan <ldewangan@nvidia.com>
 
-------------------
+Acked-by: Grant Likely <grant.likely@secretlab.ca>
 
-From: Colin Cross <ccross@android.com>
+I expect this needs to go in via Samuel's tree with the mfd patches?
 
-commit fde165b2a29673aabf18ceff14dea1f1cfb0daad upstream.
+g.
 
-Commit 4e8ee7de227e3ab9a72040b448ad728c5428a042 (ARM: SMP: use
-idmap_pgd for mapping MMU enable during secondary booting)
-switched secondary boot to use idmap_pgd, which is initialized
-during early_initcall, instead of a page table initialized during
-__cpu_up.  This causes idmap_pgd to contain the static mappings
-but be missing all dynamic mappings.
+> ---
+>  drivers/gpio/gpio-tps65910.c |   36 ++++++++++++++++++++++++++++++++++++
+>  1 files changed, 36 insertions(+), 0 deletions(-)
+> 
+> diff --git a/drivers/gpio/gpio-tps65910.c b/drivers/gpio/gpio-tps65910.c
+> index af6dc83..c1ad288 100644
+> --- a/drivers/gpio/gpio-tps65910.c
+> +++ b/drivers/gpio/gpio-tps65910.c
+> @@ -20,6 +20,7 @@
+>  #include <linux/i2c.h>
+>  #include <linux/platform_device.h>
+>  #include <linux/mfd/tps65910.h>
+> +#include <linux/of_device.h>
+>  
+>  struct tps65910_gpio {
+>  	struct gpio_chip gpio_chip;
+> @@ -81,6 +82,37 @@ static int tps65910_gpio_input(struct gpio_chip *gc, unsigned offset)
+>  						GPIO_CFG_MASK);
+>  }
+>  
+> +#ifdef CONFIG_OF
+> +static struct tps65910_board *tps65910_parse_dt_for_gpio(struct device *dev,
+> +		struct tps65910 *tps65910, int chip_ngpio)
+> +{
+> +	struct tps65910_board *tps65910_board = tps65910->of_plat_data;
+> +	unsigned int prop_array[TPS6591X_MAX_NUM_GPIO];
+> +	int ngpio = min(chip_ngpio, TPS6591X_MAX_NUM_GPIO);
+> +	int ret;
+> +	int idx;
+> +
+> +	tps65910_board->gpio_base = -1;
+> +	ret = of_property_read_u32_array(tps65910->dev->of_node,
+> +			"ti,en-gpio-sleep", prop_array, ngpio);
+> +	if (ret < 0) {
+> +		dev_dbg(dev, "ti,en-gpio-sleep not specified\n");
+> +		return tps65910_board;
+> +	}
+> +
+> +	for (idx = 0; idx < ngpio; idx++)
+> +		tps65910_board->en_gpio_sleep[idx] = (prop_array[idx] != 0);
+> +
+> +	return tps65910_board;
+> +}
+> +#else
+> +static struct tps65910_board *tps65910_parse_dt_for_gpio(struct device *dev,
+> +		struct tps65910 *tps65910, int chip_ngpio)
+> +{
+> +	return NULL;
+> +}
+> +#endif
+> +
+>  static int __devinit tps65910_gpio_probe(struct platform_device *pdev)
+>  {
+>  	struct tps65910 *tps65910 = dev_get_drvdata(pdev->dev.parent);
+> @@ -122,6 +154,10 @@ static int __devinit tps65910_gpio_probe(struct platform_device *pdev)
+>  	else
+>  		tps65910_gpio->gpio_chip.base = -1;
+>  
+> +	if (!pdata && tps65910->dev->of_node)
+> +		pdata = tps65910_parse_dt_for_gpio(&pdev->dev, tps65910,
+> +			tps65910_gpio->gpio_chip.ngpio);
+> +
+>  	if (!pdata)
+>  		goto skip_init;
+>  
+> -- 
+> 1.7.1.1
+> 
 
-If a console is registered that creates a dynamic mapping, the
-printk in secondary_start_kernel will trigger a data abort on
-the missing mapping before the exception handlers have been
-initialized, leading to a hang.  Initial boot is not affected
-because no consoles have been registered, and resume is usually
-not affected because the offending console is suspended.
-Onlining a cpu with hotplug triggers the problem.
-
-A workaround is to the printk in secondary_start_kernel until
-after the page tables have been switched back to init_mm.
-
-Signed-off-by: Colin Cross <ccross@android.com>
-Signed-off-by: Russell King <rmk+kernel@arm.linux.org.uk>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
----
- arch/arm/kernel/smp.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
-
---- a/arch/arm/kernel/smp.c
-+++ b/arch/arm/kernel/smp.c
-@@ -279,8 +279,6 @@ asmlinkage void __cpuinit secondary_star
- 	struct mm_struct *mm = &init_mm;
- 	unsigned int cpu = smp_processor_id();
- 
--	printk("CPU%u: Booted secondary processor\n", cpu);
--
- 	/*
- 	 * All kernel threads share the same mm context; grab a
- 	 * reference and switch to it.
-@@ -292,6 +290,8 @@ asmlinkage void __cpuinit secondary_star
- 	enter_lazy_tlb(mm, current);
- 	local_flush_tlb_all();
- 
-+	printk("CPU%u: Booted secondary processor\n", cpu);
-+
- 	cpu_init();
- 	preempt_disable();
- 	trace_hardirqs_off();
-
-
+-- 
+Grant Likely, B.Sc, P.Eng.
+Secret Lab Technologies, Ltd.
