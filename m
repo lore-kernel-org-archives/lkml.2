@@ -1,43 +1,134 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965283Ab2ERQqd (ORCPT <rfc822;w@1wt.eu>);
+	id S1758823Ab2ERQqk (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 May 2012 12:46:40 -0400
+Received: from s15943758.onlinehome-server.info ([217.160.130.188]:41149 "EHLO
+	mail.x86-64.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S965146Ab2ERQqd (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 18 May 2012 12:46:33 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:45696 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S965146Ab2ERQq1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 May 2012 12:46:27 -0400
-Message-ID: <4FB67CD6.8040103@zytor.com>
-Date: Fri, 18 May 2012 09:46:14 -0700
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:11.0) Gecko/20120329 Thunderbird/11.0.1
+Date: Fri, 18 May 2012 18:46:15 +0200
+From: Borislav Petkov <bp@amd64.org>
+To: Mauro Carvalho Chehab <mchehab@redhat.com>
+Cc: Linux Edac Mailing List <linux-edac@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH EDAC v26 00/66] EDAC patches for v3.5
+Message-ID: <20120518164615.GY20215@aftab.osrc.amd.com>
+References: <1337358773-6919-1-git-send-email-mchehab@redhat.com>
 MIME-Version: 1.0
-To: "H.J. Lu" <hjl.tools@gmail.com>
-CC: Ingo Molnar <mingo@elte.hu>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Greg KH <gregkh@suse.de>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Jarkko Sakkinen <jarkko.sakkinen@intel.com>
-Subject: Re: Urgent: x86-32 and GNU ld 2.22.52.0.1
-References: <4FB67146.9080804@zytor.com> <CAMe9rOqp5AUNL7Oeb2fz=nFq6Z-=hdFg_T2kc+jwkYtzOKJv9g@mail.gmail.com> <CAMe9rOp-UoQFBvvorZA8-jBXk5JobkVa+trUH7ihHLxNyqMuWw@mail.gmail.com> <4FB67697.50904@zytor.com> <CAMe9rOqAJGemCiAebtYczqvV62J_cyZcZDDtkFZyLHPKZg1xqQ@mail.gmail.com>
-In-Reply-To: <CAMe9rOqAJGemCiAebtYczqvV62J_cyZcZDDtkFZyLHPKZg1xqQ@mail.gmail.com>
-X-Enigmail-Version: 1.4
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1337358773-6919-1-git-send-email-mchehab@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/18/2012 09:35 AM, H.J. Lu wrote:
+On Fri, May 18, 2012 at 01:31:47PM -0300, Mauro Carvalho Chehab wrote:
+> This is a long series of patches to fix the EDAC subsystem,
+> and is being under discussions since Jan.
 > 
-> In that case, both 2.22.52.0.1 and 2.22.52.0.2 are bad.
+> The current EDAC subsystem has several serious issues with regards
+> to all Intel Xeon and i3/i5/i7 processors. The EDAC subsystem used
+> to assume that all DIMM memory sticks have the same topology as the
+> initial PC designs, e. g:
 > 
+> 	- the DRAM chips inside the DIMM slots are directly
+> 	  accessible by the memory controller;
+> 
+> 	- there's no Advanced Memory Bufffer chips between DIMMs
+> 	  and the memory controller;
+> 
+> 	- if the memory controller has more than one channel, all
+> 	  channels are filled with the same memory type/size;
+> 
+> Due to that, all Intel drivers for hardware newer than 2005 (and
+> some older Intel hardware) have to lie to the EDAC core, providing
+> fake memory location information.
+> 
+> Also, the memory errors are reported via snprintk/printk's. As the
+> printk ABI is not preserved among Kernel versions, applications can't
+> (and don't) rely on it.
+> 
+> So, userspace applications rely, instead, on error counter sysfs
+> nodes, with don't allow them to do decay and burst detection, nor
+> to correlate errors among the same address range (with might help
+> userspace to distinguish between a real error from a temporary
+> interference.
+> 
+> -
+> 
+> v.26: 
+> 
+> - "RAS: Add a tracepoint for reporting memory..." patch was re-written
+>    in order to send to userspace ABI integer fields as such;
+> - added a fixup atch from Dan.
+> - The other patches weren't touched on this version.
+> 
+> TODO: improve per-driver error message and error details.
+> 
+> Dan Carpenter (1):
+>   edac_mc: check for allocation failure in edac_mc_alloc()
+> 
+> Joe Perches (2):
+>   edac: Use more normal debugging macro style
+>   edac: Convert debugfX to edac_dbg(X,
+> 
+> Mauro Carvalho Chehab (63):
+>   edac: Create a dimm struct and move the labels into it
+>   edac: move dimm properties to struct dimm_info
+>   edac: Don't initialize csrow's first_page & friends when not needed
+>   edac: move nr_pages to dimm struct
+>   edac: rewrite edac_align_ptr()
+>   edac.h: Add generic layers for describing a memory location
+>   edac: Change internal representation to work with layers
+>   amd64_edac: convert driver to use the new edac ABI
+>   amd76x_edac: convert driver to use the new edac ABI
+>   cell_edac: convert driver to use the new edac ABI
+>   cpc925_edac: convert driver to use the new edac ABI
+>   e752x_edac: convert driver to use the new edac ABI
+>   e7xxx_edac: convert driver to use the new edac ABI
+>   i3000_edac: convert driver to use the new edac ABI
+>   i3200_edac: convert driver to use the new edac ABI
+>   i5000_edac: convert driver to use the new edac ABI
+>   i5100_edac: convert driver to use the new edac ABI
+>   i5400_edac: convert driver to use the new edac ABI
+>   i7300_edac: convert driver to use the new edac ABI
+>   i7core_edac: convert driver to use the new edac ABI
+>   i82443bxgx_edac: convert driver to use the new edac ABI
+>   i82860_edac: convert driver to use the new edac ABI
+>   i82875p_edac: convert driver to use the new edac ABI
+>   i82975x_edac: convert driver to use the new edac ABI
+>   mpc85xx_edac: convert driver to use the new edac ABI
+>   mv64x60_edac: convert driver to use the new edac ABI
+>   pasemi_edac: convert driver to use the new edac ABI
+>   ppc4xx_edac: convert driver to use the new edac ABI
+>   r82600_edac: convert driver to use the new edac ABI
+>   sb_edac: convert driver to use the new edac ABI
+>   tile_edac: convert driver to use the new edac ABI
+>   x38_edac: convert driver to use the new edac ABI
+>   edac: Remove the legacy EDAC ABI
+>   edac: Initialize the dimm label with the known information
+>   edac: Cleanup the logs for i7core and sb edac drivers
+>   i5400_edac: improve debug messages to better represent the filled
+>     memory
+>   RAS: Add a tracepoint for reporting memory controller events
 
-I suspect that really means we should have a patch which verifies by
-construction, and not rely on version numbers.
+Are you kidding me?
 
-	-hpa
+You want to send patches upstream which are still in review and who
+knows how untested: http://marc.info/?l=linux-next&m=133735830119299&w=2
+
+I must be dreaming...
+
+NACK from me.
 
 -- 
-H. Peter Anvin, Intel Open Source Technology Center
-I work for Intel.  I don't speak on their behalf.
+Regards/Gruss,
+Boris.
 
+Advanced Micro Devices GmbH
+Einsteinring 24, 85609 Dornach
+GM: Alberto Bozzo
+Reg: Dornach, Landkreis Muenchen
+HRB Nr. 43632 WEEE Registernr: 129 19551
