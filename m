@@ -1,83 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933530Ab2ERDou (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 May 2012 23:44:50 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:65051 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932293Ab2ERDos (ORCPT
+	id S966979Ab2ERDrk (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 May 2012 23:47:40 -0400
+Received: from mail-qc0-f174.google.com ([209.85.216.174]:34067 "EHLO
+	mail-qc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1760223Ab2ERDri convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 May 2012 23:44:48 -0400
-Message-ID: <4FB5C5A7.6080000@gmail.com>
-Date: Fri, 18 May 2012 11:44:39 +0800
-From: Nai Xia <nai.xia@gmail.com>
-Reply-To: nai.xia@gmail.com
-Organization: NJU
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
+	Thu, 17 May 2012 23:47:38 -0400
 MIME-Version: 1.0
-To: Johannes Weiner <hannes@cmpxchg.org>
-CC: linux-mm@kvack.org, Rik van Riel <riel@redhat.com>,
-        Andrea Arcangeli <aarcange@redhat.com>,
-        Peter Zijlstra <peterz@infradead.org>, Mel Gorman <mgorman@suse.de>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Minchan Kim <minchan.kim@gmail.com>, Hugh Dickins <hughd@google.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [patch 0/5] refault distance-based file cache sizing
-References: <1335861713-4573-1-git-send-email-hannes@cmpxchg.org> <4FB33A4E.1010208@gmail.com> <20120516065132.GC1769@cmpxchg.org> <4FB3A416.9010703@gmail.com> <20120517210849.GE1800@cmpxchg.org>
-In-Reply-To: <20120517210849.GE1800@cmpxchg.org>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <CAMe9rOprvq3awrunB+HDW=sHb6VNvfB=PGDAP7Fj_NOx3KQU7g@mail.gmail.com>
+References: <1337292816-10839-1-git-send-email-hjl.tools@gmail.com>
+	<1337292816-10839-9-git-send-email-hjl.tools@gmail.com>
+	<4FB58EFD.7010302@zytor.com>
+	<4FB5C050.9070805@kernel.org>
+	<CAMe9rOrKq8Ait8wKudRF535J5c=dDTKekmUN_=HOs5BBLtsoGQ@mail.gmail.com>
+	<CAMe9rOprvq3awrunB+HDW=sHb6VNvfB=PGDAP7Fj_NOx3KQU7g@mail.gmail.com>
+Date: Thu, 17 May 2012 20:47:37 -0700
+Message-ID: <CAMe9rOo-g+RomUQziagrGUZKwZJwkQ3uRW0Tk3bH9uaxv5ejbw@mail.gmail.com>
+Subject: Re: [PATCH 08/10] Use __kernel_ulong_t in struct msqid64_ds
+From: "H.J. Lu" <hjl.tools@gmail.com>
+To: "H. Peter Anvin" <hpa@kernel.org>
+Cc: linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org,
+        torvalds@linux-foundation.org, mingo@kernel.org, tglx@linutronix.de,
+        Paul Mundt <lethal@linux-sh.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-
-On 2012/05/18 05:08, Johannes Weiner wrote:
-> On Wed, May 16, 2012 at 08:56:54PM +0800, nai.xia wrote:
->> On 2012/05/16 14:51, Johannes Weiner wrote:
->>> There may have been improvements from clock-pro, but it's hard to get
->>> code merged that does not behave as expected in theory with nobody
->>> understanding what's going on.
+On Thu, May 17, 2012 at 8:43 PM, H.J. Lu <hjl.tools@gmail.com> wrote:
+> On Thu, May 17, 2012 at 8:39 PM, H.J. Lu <hjl.tools@gmail.com> wrote:
+>> On Thu, May 17, 2012 at 8:21 PM, H. Peter Anvin <hpa@kernel.org> wrote:
+>>> On 05/17/2012 04:51 PM, H. Peter Anvin wrote:
+>>>>
+>>>> This patch and the one before it seems to have another problem: we
+>>>> currently define __BITS_PER_LONG as:
+>>>>
+>>>> #ifdef __x86_64__
+>>>> # define __BITS_PER_LONG 64
+>>>> #else
+>>>> # define __BITS_PER_LONG 32
+>>>> #endif
+>>>>
+>>>
+>>> H.J., do you see any problem *other* than this wretched struct
+>>> msqid64_ds with changing the above from __x86_64__ to
+>>>
+>>> #if defined(__x86_64__) && !defined(__ILP32__)
+>>>
+>>> ... in the above?
+>>>
+>>> As far as struct msqid64_ds,  I think we can fix it simply because x86
+>>> is the only compat-aware architecture which has to deal with it.
+>>>
+>>> (Incidentally, if sh is ever expanded to 64 bits, it will have a problem
+>>> in the bigendian configuration...)
+>>
+>> That will be wrong.   __BITS_PER_LONG defines # bits of long
+>> as seen by kernel.  We don't use it in user space.  Remember
+>> x32 uses the identical interface as x86-64.  So
+>>
+>> #ifdef __x86_64__
+>> # define __BITS_PER_LONG 64
+>> #else
+>> # define __BITS_PER_LONG 32
+>> #endif
+>>
+>> struct msqid64_ds {
+>>        struct ipc64_perm msg_perm;
+>>        __kernel_time_t msg_stime;      /* last msgsnd time */
+>> #if __BITS_PER_LONG != 64
+>>        unsigned long   __unused1;
+>> #endif
+>>        __kernel_time_t msg_rtime;      /* last msgrcv time */
+>> #if __BITS_PER_LONG != 64
+>>        unsigned long   __unused2;
+>> #endif
+>>        __kernel_time_t msg_ctime;      /* last change time */
+>> #if __BITS_PER_LONG != 64
+>>        unsigned long   __unused3;
+>> #endif
+>>
+>> are absolutely correct for x32.  You can think
+>>
+>> #if __BITS_PER_LONG != 64
+>>
+>> as
+>>
+>> #ifndef __x86_64__
+>>
+>> which is used in glibc.
+>>
 >
-> Damn, that sounded way harsher and arrogant than I wanted it to sound.
-> And it's only based on what I gathered from the discussions on the
-> list archives.  Sorry :(
-
-No harm done, man. I just understood your words in this way. :)
-
-But I do think that Clock-pro deserves its credit, since after all
-it's that research work firstly brought the idea of "refault/reuse
-distance" to the kernel community. Further more, it's also good
-to let the researchers and the community to together have some
-brain-storm of this problem if it's really hard to deal with in
-reality.
-
+> Now I remembered.  Here is another patch.  Here
 >
->> OK, I assume that you do aware that the system you constructed with
->> this simple and understandable idea looks like a so called "feedback
->> system"? Or in other words, I think theoretically the refault-distance
->> of a page before and after your algorithm is applied is not the same.
->> And this changed refault-distance pattern is then feed as input into
->> your algorithm. A feedback system may be hard(and may be simple) to
->> analyze but may also work well magically.
+> #if __BITS_PER_LONG == 64
 >
-> I'm with you on that, but I can't see an alternative in this case.  We
-
-I trend to agree, I once tried to deal with an anti-LRU pattern(e.g. the
-big loop like you said) of a app from kernel space and failed. Seems
-it's hard to gather a very accurate information of a program's real memory
-footprint in mixed workloads with only the help of pte bits...(but also
-may due to my lack of skills in tweaking the reclaiming code...)
-
-> can't predict future page accesses very well, so we have to take
-> speculative shots and be considerate about the consequences.
+> means
 >
-> And BECAUSE we may get it wrong, the algorithm does not rely on the
-> decisions it makes to be correct.  For example, it does not activate
-> pages based on refault distance, but requires the refaulted page to
-> win the race against an actual active page.  Likewise, pages are not
-> evicted from the active list directly, instead they get a chance at
-> re-activation when challenged.
+> #ifdef __x86_64__
+>
+> Change  __BITS_PER_LONG to __BITS_PER_LONG_AS_SEEN_BY_KERNEL
+> may avoid this confusion.
+>
 
-Yes. That sounds a smart handling.
+Or __BITS_PER_NATURAL_WORD.
+
+-- 
+H.J.
