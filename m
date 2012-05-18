@@ -1,99 +1,181 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030623Ab2ERBvi (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 May 2012 21:51:38 -0400
-Received: from mail-ob0-f174.google.com ([209.85.214.174]:33707 "EHLO
-	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1030596Ab2ERBvf (ORCPT
+	id S1030609Ab2ERB5f (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 May 2012 21:57:35 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:38674 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751473Ab2ERB5d convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 May 2012 21:51:35 -0400
-Message-ID: <4FB58A7A.4060606@gmail.com>
-Date: Thu, 17 May 2012 18:32:10 -0500
-From: Rob Herring <robherring2@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
+	Thu, 17 May 2012 21:57:33 -0400
 MIME-Version: 1.0
-To: Roland Stigge <stigge@antcom.de>
-CC: dmitry.torokhov@gmail.com, axel.lin@gmail.com, riyer@nvidia.com,
-        michael.hennerich@analog.com, grant.likely@secretlab.ca,
-        linux-input@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, kevin.wells@nxp.com,
-        srinivas.bakki@nxp.com, devicetree-discuss@lists.ozlabs.org,
-        rob.herring@calxeda.com
-Subject: Re: [PATCH RESEND v3 2/2] ARM: LPC32xx: Make platform use key driver
-References: <1337199955-26441-1-git-send-email-stigge@antcom.de> <1337199955-26441-2-git-send-email-stigge@antcom.de>
-In-Reply-To: <1337199955-26441-2-git-send-email-stigge@antcom.de>
+In-Reply-To: <1337280518.4281.67.camel@twins>
+References: <1337234296-23313-1-git-send-email-ming.lei@canonical.com>
+	<20120517182830.GA5254@kroah.com>
+	<1337280518.4281.67.camel@twins>
+Date: Fri, 18 May 2012 09:57:29 +0800
+Message-ID: <CACVXFVO_8o_3UuwAHjJbVEk1ZmL+28KVngB7JikNxszct1yjkw@mail.gmail.com>
+Subject: Re: [PATCH] tty: tty_mutex: fix lockdep warning in tty_lock_pair
+From: Ming Lei <ming.lei@canonical.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linux-kernel@vger.kernel.org, Alan Cox <alan@linux.intel.com>,
+        Arnd Bergmann <arnd@arndb.de>
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/16/2012 03:25 PM, Roland Stigge wrote:
-> This patch connects the lpc32xx-key driver to the LPC32xx platform (via
-> lpc32xx.dtsi), and more specifically to the reference board via its dts file.
-> The clock.c file needs to be changed to match the automatic device name to its
-> clock.
-> 
-> Signed-off-by: Roland Stigge <stigge@antcom.de>
+On Fri, May 18, 2012 at 2:48 AM, Peter Zijlstra <peterz@infradead.org> wrote:
+> On Thu, 2012-05-17 at 11:28 -0700, Greg Kroah-Hartman wrote:
+>> > +static void __lockfunc tty_lock_nest_lock(struct tty_struct *tty,
+>> > +             struct tty_struct *tty2)
+>>
+>> Duplicating tty_lock() just for this one issue seems wrong and prone to
+>> error, don't you think?
+>>
+>> > +{
+>> > +     if (tty->magic != TTY_MAGIC) {
+>> > +             printk(KERN_ERR "L Bad %p\n", tty);
+>> > +             WARN_ON(1);
+>> > +             return;
+>> > +     }
+>> > +     tty_kref_get(tty);
+>> > +     mutex_lock_nest_lock(&tty->legacy_mutex, &tty2->legacy_mutex);
+>
+> Yeah, its completely broken, even the lockdep annotation is the wrong
+> one.
+>
+> Something like the (completely untested) below patch is the 'right' way.
 
-Acked-by: Rob Herring <rob.herring@calxeda.com>
+Yes, it should be, but the warning is still triggered with the patch, also
+it is worse, kernel hanged during boot.
 
-> 
 > ---
-> Applies to v3.4-rc7 + LPC32xx DT patches
-> 
-> Please pick this patch for the arm-soc subsystem.
-> 
-> Changes since v2:
-> * DT: Use "keypad,num-rows", "keypad,num-columns" and "linux,keymap" properties
-> 
->  arch/arm/boot/dts/lpc32xx.dtsi |    2 ++
->  arch/arm/boot/dts/phy3250.dts  |    9 +++++++++
->  arch/arm/mach-lpc32xx/clock.c  |    2 +-
->  3 files changed, 12 insertions(+), 1 deletion(-)
-> 
-> --- linux-2.6.orig/arch/arm/boot/dts/lpc32xx.dtsi
-> +++ linux-2.6/arch/arm/boot/dts/lpc32xx.dtsi
-> @@ -249,6 +249,8 @@
->  			key@40050000 {
->  				compatible = "nxp,lpc3220-key";
->  				reg = <0x40050000 0x1000>;
-> +				interrupts = <54 0>;
-> +				status = "disable";
->  			};
->  
->  		};
-> --- linux-2.6.orig/arch/arm/boot/dts/phy3250.dts
-> +++ linux-2.6/arch/arm/boot/dts/phy3250.dts
-> @@ -135,6 +135,15 @@
->  			tsc@40048000 {
->  				status = "okay";
->  			};
+>  drivers/tty/tty_mutex.c |   35 ++++++++++++++++++++---------------
+>  1 file changed, 20 insertions(+), 15 deletions(-)
+>
+> diff --git a/drivers/tty/tty_mutex.c b/drivers/tty/tty_mutex.c
+> index 69adc80..587330b 100644
+> --- a/drivers/tty/tty_mutex.c
+> +++ b/drivers/tty/tty_mutex.c
+> @@ -10,7 +10,7 @@
+>  * Getting the big tty mutex.
+>  */
+>
+> -void __lockfunc tty_lock(struct tty_struct *tty)
+> +static void __lockfunc tty_lock_nested(struct tty_struct *tty, int subclass)
+>  {
+>        if (tty->magic != TTY_MAGIC) {
+>                printk(KERN_ERR "L Bad %p\n", tty);
+> @@ -18,7 +18,12 @@ void __lockfunc tty_lock(struct tty_struct *tty)
+>                return;
+>        }
+>        tty_kref_get(tty);
+> -       mutex_lock(&tty->legacy_mutex);
+> +       mutex_lock_nested(&tty->legacy_mutex, subclass);
+> +}
 > +
-> +			key@40050000 {
-> +				status = "okay";
-> +				keypad,num-rows = <1>;
-> +				keypad,num-columns = <1>;
-> +				nxp,debounce-delay-ms = <3>;
-> +				nxp,scan-delay-ms = <34>;
-> +				linux,keymap = <0x00000002>;
-> +			};
->  		};
->  	};
->  
-> --- linux-2.6.orig/arch/arm/mach-lpc32xx/clock.c
-> +++ linux-2.6/arch/arm/mach-lpc32xx/clock.c
-> @@ -1134,7 +1134,7 @@ static struct clk_lookup lookups[] = {
->  	CLKDEV_INIT("31020300.i2c", NULL, &clk_i2c2),
->  	CLKDEV_INIT("dev:ssp0", NULL, &clk_ssp0),
->  	CLKDEV_INIT("dev:ssp1", NULL, &clk_ssp1),
-> -	CLKDEV_INIT("lpc32xx_keys.0", NULL, &clk_kscan),
-> +	CLKDEV_INIT("40050000.key", NULL, &clk_kscan),
->  	CLKDEV_INIT("20020000.flash", NULL, &clk_nand),
->  	CLKDEV_INIT("200a8000.flash", NULL, &clk_nand_mlc),
->  	CLKDEV_INIT("40048000.adc", NULL, &clk_adc),
-> _______________________________________________
-> devicetree-discuss mailing list
-> devicetree-discuss@lists.ozlabs.org
-> https://lists.ozlabs.org/listinfo/devicetree-discuss
+> +void __lockfunc tty_lock(struct tty_struct *tty)
+> +{
+> +       tty_lock_nested(tty, 0);
+>  }
+>  EXPORT_SYMBOL(tty_lock);
+>
+> @@ -38,25 +43,25 @@ EXPORT_SYMBOL(tty_unlock);
+>  * Getting the big tty mutex for a pair of ttys with lock ordering
+>  * On a non pty/tty pair tty2 can be NULL which is just fine.
+>  */
+> -void __lockfunc tty_lock_pair(struct tty_struct *tty,
+> -                                       struct tty_struct *tty2)
+> +void __lockfunc tty_lock_pair(struct tty_struct *tty1, struct tty_struct *tty2)
+>  {
+> -       if (tty < tty2) {
+> -               tty_lock(tty);
+> -               tty_lock(tty2);
+> -       } else {
+> -               if (tty2 && tty2 != tty)
+> -                       tty_lock(tty2);
+> -               tty_lock(tty);
+> +       if (!tty2 || tty1 == tty2) {
+> +               tty_lock(tty1);
+> +               return;
+>        }
+> +
+> +       if (tty2 < tty1)
+> +               swap(tty1, tty2);
 
+That is too crazy.
+
+> +
+> +       tty_lock(tty1);
+> +       tty_lock_nested(tty2, SINGLE_DEPTH_NESTING);
+>  }
+>  EXPORT_SYMBOL(tty_lock_pair);
+>
+> -void __lockfunc tty_unlock_pair(struct tty_struct *tty,
+> -                                               struct tty_struct *tty2)
+> +void __lockfunc tty_unlock_pair(struct tty_struct *tty1, struct tty_struct *tty2)
+>  {
+> -       tty_unlock(tty);
+> -       if (tty2 && tty2 != tty)
+> +       tty_unlock(tty1);
+> +       if (tty2 && tty2 != tty1)
+>                tty_unlock(tty2);
+>  }
+>  EXPORT_SYMBOL(tty_unlock_pair);
+>
+
+So how about the below one(tested OK)?
+
+diff --git a/drivers/tty/tty_mutex.c b/drivers/tty/tty_mutex.c
+index 69adc80..fecf592 100644
+--- a/drivers/tty/tty_mutex.c
++++ b/drivers/tty/tty_mutex.c
+@@ -10,7 +10,8 @@
+  * Getting the big tty mutex.
+  */
+
+-void __lockfunc tty_lock(struct tty_struct *tty)
++static void __lockfunc tty_lock_nested(struct tty_struct *tty,
++		int subclass)
+ {
+ 	if (tty->magic != TTY_MAGIC) {
+ 		printk(KERN_ERR "L Bad %p\n", tty);
+@@ -18,7 +19,12 @@ void __lockfunc tty_lock(struct tty_struct *tty)
+ 		return;
+ 	}
+ 	tty_kref_get(tty);
+-	mutex_lock(&tty->legacy_mutex);
++	mutex_lock_nested(&tty->legacy_mutex, subclass);
++}
++
++void __lockfunc tty_lock(struct tty_struct *tty)
++{
++	tty_lock_nested(tty, 0);
+ }
+ EXPORT_SYMBOL(tty_lock);
+
+@@ -43,11 +49,14 @@ void __lockfunc tty_lock_pair(struct tty_struct *tty,
+ {
+ 	if (tty < tty2) {
+ 		tty_lock(tty);
+-		tty_lock(tty2);
++		tty_lock_nested(tty2, SINGLE_DEPTH_NESTING);
+ 	} else {
+-		if (tty2 && tty2 != tty)
++		int nested = 0;
++		if (tty2 && tty2 != tty) {
+ 			tty_lock(tty2);
+-		tty_lock(tty);
++			nested = SINGLE_DEPTH_NESTING;
++		}
++		tty_lock_nested(tty, nested);
+ 	}
+ }
+ EXPORT_SYMBOL(tty_lock_pair);
+
+
+Thanks,
+--
+Ming Lei
