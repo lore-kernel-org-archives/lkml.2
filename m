@@ -1,55 +1,126 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753818Ab2EROrC (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 May 2012 10:47:02 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:32500 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751833Ab2EROq7 (ORCPT
+	id S1754206Ab2EROsS (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 May 2012 10:48:18 -0400
+Received: from smtp02.smtpout.orange.fr ([80.12.242.124]:34143 "EHLO
+	smtp.smtpout.orange.fr" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752942Ab2EROsP convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 May 2012 10:46:59 -0400
-X-Authority-Analysis: v=2.0 cv=OMylLFmB c=1 sm=0 a=ZycB6UtQUfgMyuk2+PxD7w==:17 a=XQbtiDEiEegA:10 a=wom5GMh1gUkA:10 a=PpG1Yf0aK_AA:10 a=5SG0PmZfjMsA:10 a=kj9zAlcOel0A:10 a=meVymXHHAAAA:8 a=VwQbUJbxAAAA:8 a=ITMrOGM4ltA3Vy2fEaIA:9 a=CjuIK1q_8ugA:10 a=U62fhAwekXMA:10 a=LI9Vle30uBYA:10 a=ZycB6UtQUfgMyuk2+PxD7w==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 74.67.80.29
-Date: Fri, 18 May 2012 10:46:57 -0400
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Ben Hutchings <ben@decadent.org.uk>
-Cc: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk
-Subject: Re: [ 00/53] 3.2.18-stable review
-Message-ID: <20120518144657.GA18264@home.goodmis.org>
-References: <20120518023254.339945758@decadent.org.uk>
+	Fri, 18 May 2012 10:48:15 -0400
+Message-ID: <4FB6612C.2030205@wanadoo.fr>
+Date: Fri, 18 May 2012 16:48:12 +0200
+From: Pascal Chapperon <pascal.chapperon@wanadoo.fr>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120518023254.339945758@decadent.org.uk>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: paulmck@linux.vnet.ibm.com
+CC: Josh Boyer <jwboyer@redhat.com>, linux-kernel@vger.kernel.org,
+        kernel-team@fedoraproject.org
+Subject: Re: RCU related performance regression in 3.3
+References: <20120428034257.GA2495@linux.vnet.ibm.com> <20120501000245.GA4329@linux.vnet.ibm.com> <4F9FA50C.9070600@wanadoo.fr> <20120501154513.GD2441@linux.vnet.ibm.com> <4FA3EAEE.9030601@wanadoo.fr> <20120504150411.GC2411@linux.vnet.ibm.com> <4FA44CF9.7050604@wanadoo.fr> <20120504231442.GT2411@linux.vnet.ibm.com> <20120514223255.GA5719@linux.vnet.ibm.com> <4FB62C15.7080703@wanadoo.fr> <20120518121401.GF2518@linux.vnet.ibm.com>
+In-Reply-To: <20120518121401.GF2518@linux.vnet.ibm.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, May 18, 2012 at 03:32:54AM +0100, Ben Hutchings wrote:
-> This is the start of the stable review cycle for the 3.2.18 release.
-> There are 53 patches in this series, which will be posted as responses
-> to this one.  If anyone has any issues with these being applied, please
-> let me know.
-> 
-> Responses should be made by Sun May 20 13:00:00 UTC 2012.
-> Anything received after that time might be too late.
-> 
-> The whole patch series should soon be available in one patch at:
-> 	kernel.org/pub/linux/kernel/v3.x/stable-review/patch-3.2.18-rc1.gz
-> and the diffstat can be found below.
+Le 18/05/2012 14:14, Paul E. McKenney a écrit :
+> On Fri, May 18, 2012 at 01:01:41PM +0200, Pascal Chapperon wrote:
+>> Le 15/05/2012 00:32, Paul E. McKenney a écrit :
+>>> On Fri, May 04, 2012 at 04:14:42PM -0700, Paul E. McKenney wrote:
+>>>> On Fri, May 04, 2012 at 11:41:13PM +0200, Pascal Chapperon wrote:
+>>>>> Le 04/05/2012 17:04, Paul E. McKenney a écrit :
+>>>>>> On Fri, May 04, 2012 at 04:42:54PM +0200, Pascal Chapperon wrote:
+>>>>>>> Le 01/05/2012 17:45, Paul E. McKenney a écrit :
+>>>>>>>
+>>>>>>>> Here is my RCU_FAST_NO_HZ patch stack on top of v3.4-rc4.
+>>>>>>>>
+>>>>>>>> Or you can pull branch fnh.2012.05.01a from:
+>>>>>>>>
+>>>>>>>> 	git://git.kernel.org/pub/scm/linux/kernel/git/paulmck/linux-rcu.git
+>>>>>>>>
+>>>>>>>> 							Thanx, Paul
+>>>>>>>>
+>>>>>>> I applied your global patch on top of v3.4-rc4. But the slowdown is
+>>>>>>> worse than before : boot sequence took 80s instead 20-30s (12s for
+>>>>>>> initramfs instead of 2s).
+>>>>>>>
+>>>>>>> I'll send you rcu tracing log in a second mail.
+>>>>>>
+>>>>>> Hmmm...  Well, I guess I am glad that I finally did something that
+>>>>>> had an effect, but I sure wish that the effect had been in the other
+>>>>>> direction!
+>>>>>>
+>>>>>> Just to make sure I understand: the difference between the 20-30s and
+>>>>>> the 80s is exactly the patch I sent you?
+>>>>>>
+>>>>>> 							Thanx, Paul
+>>>>>>
+>>>>>>
+>>>>> Yes. Exactly same kernel config as in previous results, I applied
+>>>>> your patch against v3.4-rc4, and sorry, the result is exactly what I
+>>>>> said;
+>>>>> I saw that your global patch was quite huge, and addresses things which
+>>>>> are not directly related with the initial patch (commit
+>>>>> 7cb92499000e3c86dae653077b1465458a039ef6); maybe a side effect?
+>>>>>
+>>>>> However, I'm ready to try this patch on my smaller laptop which
+>>>>> supports well CONFIG_FAST_NO_HZ=y and systemd, if you think it can
+>>>>> help ?
+>>>>>
+>>>>> Another thought: this issue as nothing to do with i7 Hyper-threading
+>>>>> capacities ? (as I test core2duo, Pentium ulv in same conditions and I
+>>>>> don't encountered any slowdown ?)
+>>>>
+>>>> Well, one possibility is that your setup starts the jiffies counter
+>>>> at some interesting value.  The attached patch (also against v3.4-rc4)
+>>>> applies a bit more paranoia to the initialization to handle this
+>>>> and other possibilities.
+>>>
+>>> This patchset fixes the problem where RCU_FAST_NO_HZ's timers were
+>>> being ignored due to the dyntick-idle code having already calculated
+>>> the CPU's wakeup time (which I sent earlier, mistakenly offlist), but
+>>> also fixes a botched check in my workaround.
+>>>
+>>> Could you please try it out?  This patch is against 3.4-rc4.
+>>>
+>>> 							Thanx, Paul
+>>>
+>> Hi Paul,
+>>
+>> <  +     if (!rcu_cpu_has_nonlazy_callbacks(cpu))
+>> ---
+>>> +     if (rcu_cpu_has_nonlazy_callbacks(cpu))
+>>
+>> I was a little disappointed by the previous patch (boot sequence still
+>> took 72 s.), but this one makes a huge difference ;-)
+>> Slowdown during boot or shutdown with CONFIG_RCU_FAST_NO_HZ has
+>> disappeared (~ 10 attempts) :
+>> # systemd-analyze
+>> Startup finished in 1990ms (kernel) + 1174ms (initramfs) + 3121ms
+>> (userspace) = 6285ms
+>> .
+>
+> Very good!  And thank you very much for all your testing efforts and
+> for bearing with me through this!
+>
+> Does this mean that I can add your Tested-by?
 
-$ wget  kernel.org/pub/linux/kernel/v3.x/stable-review/patch-3.2.18-rc1.gz
---2012-05-18 10:44:23--  http://kernel.org/pub/linux/kernel/v3.x/stable-review/patch-3.2.18-rc1.gz
-Resolving kernel.org (kernel.org)... 149.20.4.69
-Connecting to kernel.org (kernel.org)|149.20.4.69|:80... connected.
-HTTP request sent, awaiting response... 404 Not Found
-2012-05-18 10:44:23 ERROR 404: Not Found.
+Yes: the results are good and stable, at least for my hardware.
+I tried with both a standard fedora 16 kernel configuration and a custom
+one (hardware optimized, preempted, etc...) and this on over more 20
+attempts.
+With or without FAST_NO_HZ makes no difference now.
 
-How much is "soon"? Did you push it to the repo yet and I'm just waiting
-on the mirroring? Or do you still need to push it yourself?
+>
+>> Do you want the rcu tracing log for this patch ?
+>
+> Could you please?  Just in case there is some other surprise that
+> I should know about that might not be visible.  ;-)
+>
+> 							Thanx, Paul
+I'll send you the logs in a second mail (offlist).
 
--- Steve
+Pascal
+
 
