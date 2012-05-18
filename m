@@ -1,81 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S966310Ab2ERLyA (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 May 2012 07:54:00 -0400
-Received: from mailhub.sw.ru ([195.214.232.25]:33911 "EHLO relay.sw.ru"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754558Ab2ERLx6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 May 2012 07:53:58 -0400
-Message-ID: <4FB6384D.7090906@parallels.com>
-Date: Fri, 18 May 2012 15:53:49 +0400
-From: Pavel Emelyanov <xemul@parallels.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.1) Gecko/20120209 Thunderbird/10.0.1
+	id S966553Ab2ERL5u (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 May 2012 07:57:50 -0400
+Received: from mail-wi0-f178.google.com ([209.85.212.178]:54347 "EHLO
+	mail-wi0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S966227Ab2ERL5s (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 18 May 2012 07:57:48 -0400
+Date: Fri, 18 May 2012 13:57:43 +0200
+From: Ingo Molnar <mingo@kernel.org>
+To: hpa@zytor.com, linux-kernel@vger.kernel.org, a.p.zijlstra@chello.nl,
+        torvalds@linux-foundation.org, pjt@google.com, cl@linux.com,
+        riel@redhat.com, bharata.rao@gmail.com, akpm@linux-foundation.org,
+        Lee.Schermerhorn@hp.com, aarcange@redhat.com, danms@us.ibm.com,
+        suresh.b.siddha@intel.com, tglx@linutronix.de
+Cc: linux-tip-commits@vger.kernel.org, bburns@redhat.com
+Subject: [FEATURE TREE] sched, mm: Introduce the 'home node' affinity concept
+Message-ID: <20120518115742.GA19785@gmail.com>
+References: <tip-41h2mswllhkskd4bnxpoi388@git.kernel.org>
 MIME-Version: 1.0
-To: Andrew Morton <akpm@linux-foundation.org>
-CC: Cyrill Gorcunov <gorcunov@openvz.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        James Bottomley <jbottomley@parallels.com>,
-        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>
-Subject: Re: [rfc 0/4] procfs fdinfo extension
-References: <20120517160738.116113099@openvz.org> <20120517120541.f2dbdee9.akpm@linux-foundation.org>
-In-Reply-To: <20120517120541.f2dbdee9.akpm@linux-foundation.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <tip-41h2mswllhkskd4bnxpoi388@git.kernel.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/17/2012 11:05 PM, Andrew Morton wrote:
-> On Thu, 17 May 2012 20:07:38 +0400
-> Cyrill Gorcunov <gorcunov@openvz.org> wrote:
+
+* tip-bot for Peter Zijlstra <a.p.zijlstra@chello.nl> wrote:
+
+> Commit-ID:  84213e2b6e2166083c3d06e91dcf54f8e136bd78
+> Gitweb:     http://git.kernel.org/tip/84213e2b6e2166083c3d06e91dcf54f8e136bd78
+> Author:     Peter Zijlstra <a.p.zijlstra@chello.nl>
+> AuthorDate: Sat, 3 Mar 2012 17:05:16 +0100
+> Committer:  Ingo Molnar <mingo@kernel.org>
+> CommitDate: Fri, 18 May 2012 08:16:20 +0200
 > 
->> when we do restore files such as eventfd/eventpoll we need to pass
->> appropriate parameters to system calls.
-> 
-> What does "such as" mean?  Provide the whole list, please.
+> sched, mm: Introduce tsk_home_node()
 
-As far as this particular set is concerned -- we'll add inotify stuff
-there and the signalfd info a bit later (no apps we test use it by now).
-That's it. But once there will appear more fd-s based on anon_inode
-and that are configured using custom syscalls, we'll have to implement
-the "get info" API for them too.
+So, I wanted to see some progress on this issue and committed 
+Peter's 'home node NUMA affinity' changes to the tip:sched/numa 
+tree.
 
-> I assume we're going to have to add ~100 lines of stuff to each and 
-> every one? Stuff which, according to this patchset, is needed even when
-> CONFIG_CHECKPOINT_RESTORE=n?
+Basically the scheme Peter implemented is an extended notion of 
+NUMA affinity, one that both the scheduler and the MM honors - 
+but one that is flexible and treats affinity as a preference, 
+not as a hard mask:
 
-Generally speaking -- yes. It can be useful to check e.g. what the event
-counter is on some eventfd for debugging purposes. Right now there's no
-way for getting this info.
+ - For example if there's significant idle time on distant CPUs
+   then the scheduler will still utilize those CPUs and fill the
+   whole machine - but otherwise the scheduler and the MM will
+   try to maintain good NUMA locality.
 
-> My reason for disliking our whole approach to integration of c/r is
-> that it exposes us to an ongoing trickle of nasty surprises.  This
-> patchset is one such nasty surprise, and we don't even know how
-> extensive this particular surprise will be.
+ - Similary, memory allocations will go to the home node even if
+   the task is running on another node temporarily. [as long as
+   the allocation can be satisfied.]
 
-Well, I wouldn't say it's nasty. The problem with evetpoll, eventfd and
-inotifies, is that each of them is a set-only API unlike most of the other
-APIs for working with fds. I.e. -- you can configure your fd, it will work,
-yes. But you have NO MEANS for finding out what you have configured 
-previously. What we do is just make the API complete.
+This is a more dynamic, more intelligent version of hard 
+partitioning the system and workloads between NUMA nodes - yet 
+it is pretty simple and existing MM and scheduling code mostly 
+support this scheme and needed only small reorganization.
 
-If you believe that using fdinfo file in proc for that is nasty, then we're
-OK to rework this. But this approach was discussed on LSF this year, that's
-why we've implemented it this way.
+When home node awareness is active then applications can use new 
+system calls to group themselves into affinity groups, via:
 
-> And how many more surprises are we going to get?
-> 
-> 
-> I'm quite apprehensive about this, largely because it has so many
-> unknowns.  How much work would it be to prepare a full list of
-> everything that still needs to be done to fully implement c/r in Linux?
+     sys_numa_tbind(tid, -1, 0);         // create new group, return new ng_id
+     sys_numa_tbind(tid, -2, 0);         // returns existing ng_id
+     sys_numa_tbind(tid, ng_id, 0);      // set ng_id
 
-I'd say, that the whole c/r project is being done to determine how much
-information the kernel does NOT provide yet. And we really appreciate that
-this happens on the mainstream kernel, rather than in a separate branch.
+... and to assign memory to a NUMA group:
 
-> .
-> 
+     sys_numa_mbind(addr, len, ng_id, 0);
+ 
+We are seeing user-space daemons trying to achieve something 
+similar, for example there's "numad":
+
+   https://fedoraproject.org/w/index.php?title=Features/numad&oldid=272815
+
+the kernel is in a much better position to handle affinities and 
+resource allocation preferences, especially ones that change and 
+mix so dynamically as scheduling and memory allocation - so 
+maybe "numad" could make use of the new syscalls and map 
+application/package policies into NUMA groups the kernel 
+recognizes.
+
+(There's more such daemons out there, in the HPC area.)
+
+One configurability detail I'd like to suggest to Peter: could 
+we make this NUMA affinity grouping capability unconditional to 
+apps, i.e. enable apps to put themselves on home node aware 
+policy even if the sysctl is off?
+
+That way this capability would always be available on NUMA 
+systems in an opt-in fashion, just like regular affinities are 
+available. The sysctl would merely control whether all tasks on 
+the system are scheduled in a home node aware fashion or not. 
+(and it would still default to off)
 
 Thanks,
-Pavel
+
+	Ingo
