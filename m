@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1946242Ab2ERXDG (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 May 2012 19:03:06 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:65112 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1946225Ab2ERXDA (ORCPT
+	id S1946232Ab2ERXdq (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 May 2012 19:33:46 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:38665 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1946209Ab2ERXCy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 May 2012 19:03:00 -0400
-Message-Id: <20120518211600.090329148@linuxfoundation.org>
+	Fri, 18 May 2012 19:02:54 -0400
+Message-Id: <20120518211559.912269364@linuxfoundation.org>
 User-Agent: quilt/0.60-19.1
-Date: Fri, 18 May 2012 14:16:06 -0700
+Date: Fri, 18 May 2012 14:16:04 -0700
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Tim Bird <tim.bird@am.sony.com>,
-        Russell King <rmk+kernel@arm.linux.org.uk>
-Subject: [ 07/54] ARM: 7410/1: Add extra clobber registers for assembly in kernel_execve
+        alan@lxorguk.ukuu.org.uk, "H.J. Lu" <hjl.tools@gmail.com>,
+        "H. Peter Anvin" <hpa@linux.intel.com>, Arnd Bergmann <arnd@arndb.de>
+Subject: [ 05/54] asm-generic: Use __BITS_PER_LONG in statfs.h
 In-Reply-To: <20120518212656.GA4992@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,40 +25,35 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Tim Bird <tim.bird@am.sony.com>
+From: "H. Peter Anvin" <hpa@linux.intel.com>
 
-commit e787ec1376e862fcea1bfd523feb7c5fb43ecdb9 upstream.
+commit f5c2347ee20a8d6964d6a6b1ad04f200f8d4dfa7 upstream.
 
-The inline assembly in kernel_execve() uses r8 and r9.  Since this
-code sequence does not return, it usually doesn't matter if the
-register clobber list is accurate.  However, I saw a case where a
-particular version of gcc used r8 as an intermediate for the value
-eventually passed to r9.  Because r8 is used in the inline
-assembly, and not mentioned in the clobber list, r9 was set
-to an incorrect value.
+<asm-generic/statfs.h> is exported to userspace, so using
+BITS_PER_LONG is invalid.  We need to use __BITS_PER_LONG instead.
 
-This resulted in a kernel panic on execution of the first user-space
-program in the system.  r9 is used in ret_to_user as the thread_info
-pointer, and if it's wrong, bad things happen.
+This is kernel bugzilla 43165.
 
-Signed-off-by: Tim Bird <tim.bird@am.sony.com>
-Signed-off-by: Russell King <rmk+kernel@arm.linux.org.uk>
+Reported-by: H.J. Lu <hjl.tools@gmail.com>
+Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
+Link: http://lkml.kernel.org/r/1335465916-16965-1-git-send-email-hpa@linux.intel.com
+Acked-by: Arnd Bergmann <arnd@arndb.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/arm/kernel/sys_arm.c |    2 +-
+ include/asm-generic/statfs.h |    2 +-
  1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/arch/arm/kernel/sys_arm.c
-+++ b/arch/arm/kernel/sys_arm.c
-@@ -115,7 +115,7 @@ int kernel_execve(const char *filename,
- 		  "Ir" (THREAD_START_SP - sizeof(regs)),
- 		  "r" (&regs),
- 		  "Ir" (sizeof(regs))
--		: "r0", "r1", "r2", "r3", "ip", "lr", "memory");
-+		: "r0", "r1", "r2", "r3", "r8", "r9", "ip", "lr", "memory");
- 
-  out:
- 	return ret;
+--- a/include/asm-generic/statfs.h
++++ b/include/asm-generic/statfs.h
+@@ -15,7 +15,7 @@ typedef __kernel_fsid_t	fsid_t;
+  * with a 10' pole.
+  */
+ #ifndef __statfs_word
+-#if BITS_PER_LONG == 64
++#if __BITS_PER_LONG == 64
+ #define __statfs_word long
+ #else
+ #define __statfs_word __u32
 
 
