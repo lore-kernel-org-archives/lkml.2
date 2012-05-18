@@ -1,25 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1031326Ab2ERX3f (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 May 2012 19:29:35 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:58844 "EHLO
+	id S1946315Ab2ERXDn (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 May 2012 19:03:43 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:53597 "EHLO
 	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1946297Ab2ERXDs (ORCPT
+	with ESMTP id S1946268Ab2ERXDd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 May 2012 19:03:48 -0400
-Message-Id: <20120518211601.660505524@linuxfoundation.org>
+	Fri, 18 May 2012 19:03:33 -0400
+Message-Id: <20120518211601.206387642@linuxfoundation.org>
 User-Agent: quilt/0.60-19.1
-Date: Fri, 18 May 2012 14:16:23 -0700
+Date: Fri, 18 May 2012 14:16:18 -0700
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Mike Galbraith <efault@gmx.de>,
-        Oleg Nesterov <oleg@redhat.com>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        Pavel Emelyanov <xemul@parallels.com>,
-        Cyrill Gorcunov <gorcunov@openvz.org>,
-        Louis Rilling <louis.rilling@kerlabs.com>
-Subject: [ 24/54] namespaces, pid_ns: fix leakage on fork() failure
+        alan@lxorguk.ukuu.org.uk, Eric Dumazet <edumazet@google.com>,
+        Neal Cardwell <ncardwell@google.com>,
+        Tom Herbert <therbert@google.com>, Yuchung Cheng <ycheng@google.com>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [ 19/54] tcp: change tcp_adv_win_scale and tcp_rmem[2]
 In-Reply-To: <20120518212656.GA4992@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -29,47 +27,118 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Mike Galbraith <efault@gmx.de>
 
-commit 5e2bf0142231194d36fdc9596b36a261ed2b9fe7 upstream.
+From: Eric Dumazet <edumazet@google.com>
 
-Fork() failure post namespace creation for a child cloned with
-CLONE_NEWPID leaks pid_namespace/mnt_cache due to proc being mounted
-during creation, but not unmounted during cleanup.  Call
-pid_ns_release_proc() during cleanup.
+[ Upstream commit b49960a05e32121d29316cfdf653894b88ac9190 ]
 
-Signed-off-by: Mike Galbraith <efault@gmx.de>
-Acked-by: Oleg Nesterov <oleg@redhat.com>
-Reviewed-by: "Eric W. Biederman" <ebiederm@xmission.com>
-Cc: Pavel Emelyanov <xemul@parallels.com>
-Cc: Cyrill Gorcunov <gorcunov@openvz.org>
-Cc: Louis Rilling <louis.rilling@kerlabs.com>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+tcp_adv_win_scale default value is 2, meaning we expect a good citizen
+skb to have skb->len / skb->truesize ratio of 75% (3/4)
+
+In 2.6 kernels we (mis)accounted for typical MSS=1460 frame :
+1536 + 64 + 256 = 1856 'estimated truesize', and 1856 * 3/4 = 1392.
+So these skbs were considered as not bloated.
+
+With recent truesize fixes, a typical MSS=1460 frame truesize is now the
+more precise :
+2048 + 256 = 2304. But 2304 * 3/4 = 1728.
+So these skb are not good citizen anymore, because 1460 < 1728
+
+(GRO can escape this problem because it build skbs with a too low
+truesize.)
+
+This also means tcp advertises a too optimistic window for a given
+allocated rcvspace : When receiving frames, sk_rmem_alloc can hit
+sk_rcvbuf limit and we call tcp_prune_queue()/tcp_collapse() too often,
+especially when application is slow to drain its receive queue or in
+case of losses (netperf is fast, scp is slow). This is a major latency
+source.
+
+We should adjust the len/truesize ratio to 50% instead of 75%
+
+This patch :
+
+1) changes tcp_adv_win_scale default to 1 instead of 2
+
+2) increase tcp_rmem[2] limit from 4MB to 6MB to take into account
+better truesize tracking and to allow autotuning tcp receive window to
+reach same value than before. Note that same amount of kernel memory is
+consumed compared to 2.6 kernels.
+
+Signed-off-by: Eric Dumazet <edumazet@google.com>
+Cc: Neal Cardwell <ncardwell@google.com>
+Cc: Tom Herbert <therbert@google.com>
+Cc: Yuchung Cheng <ycheng@google.com>
+Acked-by: Neal Cardwell <ncardwell@google.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
 ---
- kernel/fork.c |    3 +++
- 1 file changed, 3 insertions(+)
+ Documentation/networking/ip-sysctl.txt |    4 ++--
+ net/ipv4/tcp.c                         |    9 +++++----
+ net/ipv4/tcp_input.c                   |    2 +-
+ 3 files changed, 8 insertions(+), 7 deletions(-)
 
---- a/kernel/fork.c
-+++ b/kernel/fork.c
-@@ -48,6 +48,7 @@
- #include <linux/audit.h>
- #include <linux/memcontrol.h>
- #include <linux/ftrace.h>
-+#include <linux/proc_fs.h>
- #include <linux/profile.h>
- #include <linux/rmap.h>
- #include <linux/ksm.h>
-@@ -1378,6 +1379,8 @@ bad_fork_cleanup_io:
- 	if (p->io_context)
- 		exit_io_context(p);
- bad_fork_cleanup_namespaces:
-+	if (unlikely(clone_flags & CLONE_NEWPID))
-+		pid_ns_release_proc(p->nsproxy->pid_ns);
- 	exit_task_namespaces(p);
- bad_fork_cleanup_mm:
- 	if (p->mm) {
+--- a/Documentation/networking/ip-sysctl.txt
++++ b/Documentation/networking/ip-sysctl.txt
+@@ -147,7 +147,7 @@ tcp_adv_win_scale - INTEGER
+ 	(if tcp_adv_win_scale > 0) or bytes-bytes/2^(-tcp_adv_win_scale),
+ 	if it is <= 0.
+ 	Possible values are [-31, 31], inclusive.
+-	Default: 2
++	Default: 1
+ 
+ tcp_allowed_congestion_control - STRING
+ 	Show/set the congestion control choices available to non-privileged
+@@ -407,7 +407,7 @@ tcp_rmem - vector of 3 INTEGERs: min, de
+ 	net.core.rmem_max.  Calling setsockopt() with SO_RCVBUF disables
+ 	automatic tuning of that socket's receive buffer size, in which
+ 	case this value is ignored.
+-	Default: between 87380B and 4MB, depending on RAM size.
++	Default: between 87380B and 6MB, depending on RAM size.
+ 
+ tcp_sack - BOOLEAN
+ 	Enable select acknowledgments (SACKS).
+--- a/net/ipv4/tcp.c
++++ b/net/ipv4/tcp.c
+@@ -3221,7 +3221,7 @@ void __init tcp_init(void)
+ {
+ 	struct sk_buff *skb = NULL;
+ 	unsigned long limit;
+-	int i, max_share, cnt;
++	int i, max_rshare, max_wshare, cnt;
+ 	unsigned long jiffy = jiffies;
+ 
+ 	BUILD_BUG_ON(sizeof(struct tcp_skb_cb) > sizeof(skb->cb));
+@@ -3285,15 +3285,16 @@ void __init tcp_init(void)
+ 
+ 	/* Set per-socket limits to no more than 1/128 the pressure threshold */
+ 	limit = ((unsigned long)sysctl_tcp_mem[1]) << (PAGE_SHIFT - 7);
+-	max_share = min(4UL*1024*1024, limit);
++	max_wshare = min(4UL*1024*1024, limit);
++	max_rshare = min(6UL*1024*1024, limit);
+ 
+ 	sysctl_tcp_wmem[0] = SK_MEM_QUANTUM;
+ 	sysctl_tcp_wmem[1] = 16*1024;
+-	sysctl_tcp_wmem[2] = max(64*1024, max_share);
++	sysctl_tcp_wmem[2] = max(64*1024, max_wshare);
+ 
+ 	sysctl_tcp_rmem[0] = SK_MEM_QUANTUM;
+ 	sysctl_tcp_rmem[1] = 87380;
+-	sysctl_tcp_rmem[2] = max(87380, max_share);
++	sysctl_tcp_rmem[2] = max(87380, max_rshare);
+ 
+ 	printk(KERN_INFO "TCP: Hash tables configured "
+ 	       "(established %u bind %u)\n",
+--- a/net/ipv4/tcp_input.c
++++ b/net/ipv4/tcp_input.c
+@@ -83,7 +83,7 @@ int sysctl_tcp_ecn __read_mostly = 2;
+ EXPORT_SYMBOL(sysctl_tcp_ecn);
+ int sysctl_tcp_dsack __read_mostly = 1;
+ int sysctl_tcp_app_win __read_mostly = 31;
+-int sysctl_tcp_adv_win_scale __read_mostly = 2;
++int sysctl_tcp_adv_win_scale __read_mostly = 1;
+ EXPORT_SYMBOL(sysctl_tcp_adv_win_scale);
+ 
+ int sysctl_tcp_stdurg __read_mostly;
 
 
