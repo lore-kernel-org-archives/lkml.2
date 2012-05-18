@@ -1,46 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S966623Ab2ERTNr (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 May 2012 15:13:47 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:47082 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759285Ab2ERTNp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 May 2012 15:13:45 -0400
-Message-ID: <4FB69F5A.2060808@zytor.com>
-Date: Fri, 18 May 2012 12:13:30 -0700
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:11.0) Gecko/20120329 Thunderbird/11.0.1
-MIME-Version: 1.0
-To: Greg KH <gregkh@linuxfoundation.org>
-CC: "H.J. Lu" <hjl.tools@gmail.com>, Ingo Molnar <mingo@elte.hu>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Jarkko Sakkinen <jarkko.sakkinen@intel.com>
-Subject: Re: Urgent: x86-32 and GNU ld 2.22.52.0.1
-References: <4FB67146.9080804@zytor.com> <CAMe9rOqp5AUNL7Oeb2fz=nFq6Z-=hdFg_T2kc+jwkYtzOKJv9g@mail.gmail.com> <CAMe9rOp-UoQFBvvorZA8-jBXk5JobkVa+trUH7ihHLxNyqMuWw@mail.gmail.com> <4FB67697.50904@zytor.com> <CAMe9rOqAJGemCiAebtYczqvV62J_cyZcZDDtkFZyLHPKZg1xqQ@mail.gmail.com> <4FB67CD6.8040103@zytor.com> <CAMe9rOpUoj_1TM0NOqVX31aHEez3_i9v6f7_zkGeM8SZ+XDxyQ@mail.gmail.com> <4FB67E20.6080300@zytor.com> <20120518184121.GA3371@kroah.com> <4FB69A75.30507@zytor.com> <20120518191103.GA11715@kroah.com>
-In-Reply-To: <20120518191103.GA11715@kroah.com>
-X-Enigmail-Version: 1.4.1
-Content-Type: text/plain; charset=ISO-8859-1
+	id S966653Ab2ERTO6 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 May 2012 15:14:58 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:8911 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S964976Ab2ERTO4 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 18 May 2012 15:14:56 -0400
+X-Authority-Analysis: v=2.0 cv=cssZYiEi c=1 sm=0 a=ZycB6UtQUfgMyuk2+PxD7w==:17 a=XQbtiDEiEegA:10 a=uChq6B4iKcYA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=meVymXHHAAAA:8 a=VECvabN2eykZhoalTnAA:9 a=PUjeQqilurYA:10 a=ZycB6UtQUfgMyuk2+PxD7w==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 74.67.80.29
+Message-ID: <1337368492.7562.8.camel@gandalf.stny.rr.com>
+Subject: Re: [PATCH] power, trace: add tracing for device_resume
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Sameer Nanda <snanda@chromium.org>
+Cc: Greg KH <gregkh@linuxfoundation.org>, rob@landley.net, len.brown@intel.com,
+        pavel@ucw.cz, rjw@sisk.pl, fweisbec@gmail.com, mingo@redhat.com,
+        jkosina@suse.cz, standby24x7@gmail.com, jj@chaosbits.net,
+        paulmck@linux.vnet.ibm.com, josh@joshtriplett.org,
+        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-pm@vger.kernel.org
+Date: Fri, 18 May 2012 15:14:52 -0400
+In-Reply-To: <CANMivWb3iOnoVtZ8G8kh9-vXPUfNFpSP=QWue0QztbkeZ+uE=Q@mail.gmail.com>
+References: <1337365643-29261-1-git-send-email-snanda@chromium.org>
+	 <20120518183756.GA3216@kroah.com>
+	 <CANMivWb3iOnoVtZ8G8kh9-vXPUfNFpSP=QWue0QztbkeZ+uE=Q@mail.gmail.com>
+Content-Type: text/plain; charset="ISO-8859-15"
+X-Mailer: Evolution 3.2.2-1 
 Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/18/2012 12:11 PM, Greg KH wrote:
->>
->> So the question is: do you want to simply take the patches from the
->> trampoline branch (which are reasonably tested) or do a minimal backport
->> which only throws an error (which would not be)?
-> 
-> All 4 of those patches?  They look simple and "sane" to me.  They solve
-> the problem even with the "buggy" binutils, right?  If so, sure, I'll
-> take those after they land in Linus's tree, which I'm guessing will be
-> for 3.5-rc1, right?
+On Fri, 2012-05-18 at 11:57 -0700, Sameer Nanda wrote:
+
+> AFAICT, they are used for something completely different -- help solve
+> suspend/resume issues by saving a hash in the RTC of the last device
+> that suspended/resumed.  They don't use the perf tracing mechanism at
+> all.
 > 
 
-We think they fix the problem even with the buggy binutils... and will
-throw an error if they don't.  I intend to push them for 3.5-rc1, but
-Linus may want something for 3.4.
+Also note that all tracepoints have timestamps attached to them. You do
+not need to add deltas. Do that in the userspace tools that read the
+timestamps and events. This way you can have one DECLARE_EVENT_CLASS and
+three DEFINE_EVENTs. This will save space.
 
-	-hpa
+-- Steve
+
 
