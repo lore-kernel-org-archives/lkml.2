@@ -1,203 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933636Ab2ERCwN (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 May 2012 22:52:13 -0400
-Received: from mga09.intel.com ([134.134.136.24]:17351 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932859Ab2ERCwL convert rfc822-to-8bit (ORCPT
+	id S1762554Ab2ERCw2 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 May 2012 22:52:28 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:40389 "EHLO
+	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1762517Ab2ERCwY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 May 2012 22:52:11 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.67,351,1309762800"; 
-   d="scan'208";a="145391864"
-Date: Fri, 18 May 2012 10:48:56 +0800
-From: Feng Tang <feng.tang@intel.com>
-To: Arnaldo Carvalho de Melo <acme@redhat.com>
-Cc: <mingo@elte.hu>, <a.p.zijlstra@chello.nl>, <robert.richter@amd.com>,
-        <ak@linux.intel.com>, <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 1/3] perf script: Add general python handler to process
- non-tracepoint events
-Message-ID: <20120518104856.0ba4da7a@feng-i7>
-In-Reply-To: <20120517154315.GA2636@infradead.org>
-References: <1337173155-25780-1-git-send-email-feng.tang@intel.com>
-	<20120517154315.GA2636@infradead.org>
-Organization: intel
-X-Mailer: Claws Mail 3.7.6 (GTK+ 2.22.0; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 8BIT
+	Thu, 17 May 2012 22:52:24 -0400
+Message-Id: <20120518023254.339945758@decadent.org.uk>
+User-Agent: quilt/0.60-1
+Date: Fri, 18 May 2012 03:32:54 +0100
+From: Ben Hutchings <ben@decadent.org.uk>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
+Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
+        alan@lxorguk.ukuu.org.uk
+Subject: [ 00/53] 3.2.18-stable review
+X-SA-Exim-Connect-IP: 192.168.4.185
+X-SA-Exim-Mail-From: ben@decadent.org.uk
+X-SA-Exim-Scanned: No (on shadbolt.decadent.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Arnaldo,
+This is the start of the stable review cycle for the 3.2.18 release.
+There are 53 patches in this series, which will be posted as responses
+to this one.  If anyone has any issues with these being applied, please
+let me know.
 
-Thanks for your review!
+Responses should be made by Sun May 20 13:00:00 UTC 2012.
+Anything received after that time might be too late.
 
-On Thu, 17 May 2012 12:43:15 -0300
-Arnaldo Carvalho de Melo <acme@redhat.com> wrote:
+The whole patch series should soon be available in one patch at:
+	kernel.org/pub/linux/kernel/v3.x/stable-review/patch-3.2.18-rc1.gz
+and the diffstat can be found below.
 
-> Em Wed, May 16, 2012 at 08:59:13PM +0800, Feng Tang escreveu:
-> > This patch just follows Robert Richter's idea and the commit 37a058ea0
-> > 	"perf script: Add generic perl handler to process events"
-> > to similarly add a python handler for general events other than tracepoints.
-> > 
-> > For non-tracepoint events, this patch will try to find a function named
-> > "process_general_event" in the python script, and pass the event
-> 
-> But in perl isn't it named "process_event"? Can't we use the same
-> convention in the python case?
+Ben.
 
-Good point, will comply with the perl code.
+-------------
+ Documentation/networking/ip-sysctl.txt             |    4 +-
+ Makefile                                           |    4 +-
+ .../include/mach/ctrl_module_pad_core_44xx.h       |    8 +-
+ arch/arm/mach-orion5x/mpp.h                        |    4 +-
+ arch/arm/mm/fault.c                                |    4 +-
+ arch/arm/vfp/vfpmodule.c                           |   10 ++-
+ arch/ia64/include/asm/unistd.h                     |    3 +-
+ arch/ia64/kernel/entry.S                           |    1 +
+ arch/sparc/kernel/central.c                        |    2 +-
+ arch/sparc/mm/ultra.S                              |    6 +-
+ arch/tile/kernel/compat_signal.c                   |   12 ++-
+ drivers/crypto/Kconfig                             |    1 +
+ drivers/gpio/gpio-ml-ioh.c                         |    1 +
+ drivers/md/dm-mpath.c                              |    4 +-
+ drivers/md/md.c                                    |    2 +
+ drivers/media/rc/ene_ir.c                          |   32 ++++----
+ drivers/media/rc/fintek-cir.c                      |   20 ++---
+ drivers/media/rc/ite-cir.c                         |   20 ++---
+ drivers/media/rc/nuvoton-cir.c                     |   36 ++++-----
+ drivers/media/rc/winbond-cir.c                     |   78 ++++++++++----------
+ drivers/media/video/marvell-ccic/mmp-driver.c      |    1 -
+ drivers/media/video/s5p-fimc/fimc-capture.c        |    2 +-
+ drivers/net/ethernet/broadcom/tg3.c                |   18 ++++-
+ drivers/net/ethernet/intel/e1000/e1000_main.c      |    6 +-
+ drivers/net/ethernet/marvell/sky2.c                |   31 +++++---
+ drivers/net/ethernet/marvell/sky2.h                |    1 -
+ drivers/net/ethernet/stmicro/stmmac/mmc_core.c     |    1 +
+ drivers/net/ethernet/sun/sungem.c                  |    2 +-
+ drivers/net/phy/icplus.c                           |    3 +-
+ drivers/net/usb/asix.c                             |    4 +-
+ drivers/net/usb/cdc_ether.c                        |   30 +++++++-
+ drivers/net/usb/usbnet.c                           |   54 ++++++++++----
+ drivers/net/wireless/brcm80211/brcmsmac/ampdu.c    |    6 +-
+ drivers/net/wireless/brcm80211/brcmsmac/main.c     |    2 +-
+ drivers/regulator/max8997.c                        |    2 +-
+ drivers/spi/spi-topcliff-pch.c                     |   78 +++++++++++++++++---
+ drivers/target/target_core_file.c                  |   22 ++++--
+ drivers/target/target_core_pr.c                    |    3 +
+ drivers/target/target_core_tpg.c                   |   22 ------
+ fs/ext4/xattr.c                                    |    7 +-
+ fs/jffs2/gc.c                                      |    2 +-
+ fs/nfs/nfs4proc.c                                  |    1 +
+ include/linux/mtd/map.h                            |    2 +-
+ include/linux/usb/usbnet.h                         |    3 +-
+ kernel/fork.c                                      |    3 +
+ mm/hugetlb.c                                       |    1 -
+ mm/nobootmem.c                                     |    3 +-
+ mm/percpu.c                                        |   10 +++
+ net/core/dev.c                                     |   20 +++++
+ net/ipv4/tcp.c                                     |   12 +--
+ net/ipv4/tcp_input.c                               |   11 ++-
+ net/l2tp/l2tp_ip.c                                 |    3 +-
+ net/sched/sch_netem.c                              |    6 +-
+ sound/pci/echoaudio/echoaudio_dsp.c                |    2 +-
+ sound/pci/hda/hda_intel.c                          |    6 +-
+ sound/pci/hda/patch_sigmatel.c                     |    6 +-
+ sound/soc/codecs/wm8994.c                          |    2 +-
+ 57 files changed, 401 insertions(+), 239 deletions(-)
 
-> 
-> > header, attribute, perf_sample, raw_data in format of raw string. And
-> > the python script can use "struct" module's unpack function to disasemble
-> > the needed info and process.
-> > 
-> > Signed-off-by: Feng Tang <feng.tang@intel.com>
-> > ---
-> >  .../util/scripting-engines/trace-event-python.c    |   60
-> > +++++++++++++++++++- 1 files changed, 59 insertions(+), 1 deletions(-)
-> > 
-> > diff --git a/tools/perf/util/scripting-engines/trace-event-python.c
-> > b/tools/perf/util/scripting-engines/trace-event-python.c index
-> > c2623c6..aaf2679 100644 ---
-> > a/tools/perf/util/scripting-engines/trace-event-python.c +++
-> > b/tools/perf/util/scripting-engines/trace-event-python.c @@ -324,6 +325,63
-> > @@ static void python_process_event(union perf_event *pevent __unused,
-> > Py_DECREF(t); }
-> >  
-> > +static void python_process_general_event(union perf_event *pevent __unused,
-> > +				 struct perf_sample *sample,
-> > +				 struct perf_evsel *evsel __unused,
-> > +				 struct machine *machine __unused,
-> > +				 struct thread *thread __unused)
-> > +{
-> > +	PyObject *handler, *retval, *t;
-> > +	static char handler_name[64];
-> > +	unsigned n = 0;
-> > +	void *data = sample->raw_data;
-> > +
-> > +	t = PyTuple_New(MAX_FIELDS);
-> > +	if (!t)
-> > +		Py_FatalError("couldn't create Python tuple");
-> > +
-> > +	sprintf(handler_name, "process_general_event");
-> 
-> Strange use of sprintf, if you think it is safe to not bounds check, use
-> strcpy(), if you still want to use sprintf, please instead use:
-> 
-> 	snprintf(handler_name, sizeof(handler_name), "%s", "process_event");
-
-Ok, will change it. Following is the update patch:
-
-
->From 87b855a7c85438f45e1fc89250e392c1d6365ec6 Mon Sep 17 00:00:00 2001
-From: Feng Tang <feng.tang@intel.com>
-Date: Fri, 11 May 2012 16:58:05 +0800
-Subject: [PATCH] perf script: Add general python handler to process non-tracepoint events
-
-This patch just follows Robert Richter's idea and the commit 37a058ea0
-	"perf script: Add generic perl handler to process events"
-to similarly add a python handler for general events other than tracepoints.
-
-For non-tracepoint events, this patch will try to find a function named
-"process_event" in the python script, and pass the event attribute,
-perf_sample, raw_data in format of raw string. And the python script can
-use "struct" module's unpack function to disasemble the needed info and process.
-
-Signed-off-by: Feng Tang <feng.tang@intel.com>
----
- .../util/scripting-engines/trace-event-python.c    |   60 +++++++++++++++++++-
- 1 files changed, 59 insertions(+), 1 deletions(-)
-
-diff --git a/tools/perf/util/scripting-engines/trace-event-python.c b/tools/perf/util/scripting-engines/trace-event-python.c
-index c2623c6..6daa12f 100644
---- a/tools/perf/util/scripting-engines/trace-event-python.c
-+++ b/tools/perf/util/scripting-engines/trace-event-python.c
-@@ -31,6 +31,7 @@
- #include "../event.h"
- #include "../thread.h"
- #include "../trace-event.h"
-+#include "../evsel.h"
- 
- PyMODINIT_FUNC initperf_trace_context(void);
- 
-@@ -205,7 +206,7 @@ static inline struct event *find_cache_event(int type)
- 	return event;
- }
- 
--static void python_process_event(union perf_event *pevent __unused,
-+static void python_process_tracepoint(union perf_event *pevent __unused,
- 				 struct perf_sample *sample,
- 				 struct perf_evsel *evsel __unused,
- 				 struct machine *machine __unused,
-@@ -324,6 +325,63 @@ static void python_process_event(union perf_event *pevent __unused,
- 	Py_DECREF(t);
- }
- 
-+static void python_process_general_event(union perf_event *pevent __unused,
-+				 struct perf_sample *sample,
-+				 struct perf_evsel *evsel,
-+				 struct machine *machine __unused,
-+				 struct thread *thread __unused)
-+{
-+	PyObject *handler, *retval, *t;
-+	static char handler_name[64];
-+	unsigned n = 0;
-+	void *data = sample->raw_data;
-+
-+	t = PyTuple_New(MAX_FIELDS);
-+	if (!t)
-+		Py_FatalError("couldn't create Python tuple");
-+
-+	snprintf(handler_name, sizeof(handler_name), "%s", "process_event");
-+
-+	handler = PyDict_GetItemString(main_dict, handler_name);
-+	if (handler && !PyCallable_Check(handler)) {
-+		handler = NULL;
-+		goto exit;
-+	}
-+
-+	/* Pass 3 parameters: event_attr, perf_sample, raw data */
-+	PyTuple_SetItem(t, n++, PyString_FromStringAndSize(
-+			(const char *)&evsel->attr, sizeof(evsel->attr)));
-+	PyTuple_SetItem(t, n++, PyString_FromStringAndSize(
-+			(const char *)sample, sizeof(*sample)));
-+	PyTuple_SetItem(t, n++, PyString_FromStringAndSize(
-+			data, sample->raw_size));
-+
-+	if (_PyTuple_Resize(&t, n) == -1)
-+		Py_FatalError("error resizing Python tuple");
-+
-+	retval = PyObject_CallObject(handler, t);
-+	if (retval == NULL)
-+		handler_call_die(handler_name);
-+exit:
-+	Py_DECREF(t);
-+}
-+
-+static void python_process_event(union perf_event *pevent,
-+				 struct perf_sample *sample,
-+				 struct perf_evsel *evsel,
-+				 struct machine *machine,
-+				 struct thread *thread)
-+{
-+	switch (evsel->attr.type) {
-+	case PERF_TYPE_TRACEPOINT:
-+		python_process_tracepoint(pevent, sample, evsel, machine, thread);
-+		break;
-+	/* Reserve for future process_hw/sw/raw APIs */
-+	default:
-+		python_process_general_event(pevent, sample, evsel, machine, thread);
-+	}
-+}
-+
- static int run_start_sub(void)
- {
- 	PyObject *handler, *retval;
 -- 
-1.7.1
-
+Ben Hutchings
+Every program is either trivial or else contains at least one bug
 
