@@ -1,58 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S968110Ab2ERVs6 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 May 2012 17:48:58 -0400
-Received: from nm32-vm3.bullet.mail.bf1.yahoo.com ([72.30.239.139]:27574 "HELO
-	nm32-vm3.bullet.mail.bf1.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S968062Ab2ERVsz (ORCPT
+	id S968119Ab2ERVtg (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 May 2012 17:49:36 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:43192 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S968080Ab2ERVtc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 May 2012 17:48:55 -0400
-X-Yahoo-Newman-Id: 629036.71487.bm@smtp208.mail.bf1.yahoo.com
-X-Yahoo-Newman-Property: ymail-3
-X-YMail-OSG: EP9vkCEVM1kPPIGTzKUGSGKtq.NKLmMm8yz36UPR4Vzi3rX
- sB3HaJt5rr_MeRZrvHWdq2qVDUaIahi7ifnXPSqcq5rwz1tABXx_8JGWoeMA
- xrAVr2a172soK9Oaa6ReEuos50ULCqXRmyBAIc6opT4BFoVFuXUixmFFOUGO
- h1J51.L9fJeAJbSCuIbS1WavXmMqVA_A42xjXw79gfauhGczryjSe5GIUh9r
- rOhgKMX0K1mJwtikEtT0ko.dWqVcw25FwMGQo8RfKRndo5OyfFkfw2a06.tb
- XYE8B4B47JbbI5Cbrcwx4cycPM5ZNCN5I.k_zT7twL6SCVL6QCbnzx3REupt
- CohPUoVzjmb0yWR0wnL1XIN7CP3jcZAFNeMTsCyI7U2vdgvV_Ac_veRF9U_.
- JeqLK4wiNxQCtoZ7weeKWs2du4NDC9K2hbGcYroM1oJ66kZzN5eKkPaJAUEd
- r3xhwpkK8iFgytvukQrMLlAz_U3poCBMA4qQic6BtsiI3qRAg2jKkOz1n73f
- rKnxt
-X-Yahoo-SMTP: dNW5aIGswBCf1iV6QK8RWrBgWyjShXs-
-From: Jeffrin Jose <ahiliation@yahoo.co.in>
-To: davem@davemloft.net
-Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        ahiliation@yahoo.co.in
-Subject: [PATCH 1/1]net:ethernet:fixed a coding style issue relating space.
-Date: Sat, 19 May 2012 03:15:37 +0530
-Message-Id: <1337377537-4636-1-git-send-email-ahiliation@yahoo.co.in>
-X-Mailer: git-send-email 1.7.10
+	Fri, 18 May 2012 17:49:32 -0400
+Date: Fri, 18 May 2012 14:49:28 -0700
+From: Kent Overstreet <koverstreet@google.com>
+To: Tejun Heo <tj@kernel.org>
+Cc: linux-bcache@vger.kernel.org, linux-kernel@vger.kernel.org,
+        dm-devel@redhat.com, linux-fsdevel@vger.kernel.org, axboe@kernel.dk,
+        agk@redhat.com, neilb@suse.de
+Subject: Re: [PATCH 09/13] block: Add an explicit bio flag for bios that own
+ their bvec
+Message-ID: <20120518214928.GB32300@google.com>
+References: <cover.1337308722.git.koverstreet@google.com>
+ <363875943e9d0e13bee6ed28239280543e6e5055.1337308722.git.koverstreet@google.com>
+ <20120518163018.GI19388@google.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120518163018.GI19388@google.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Fixed a coding style issue relating to  space found
-by checkpatch.pl tool in net/ethernet/eth.c
+On Fri, May 18, 2012 at 09:30:18AM -0700, Tejun Heo wrote:
+> On Thu, May 17, 2012 at 10:59:56PM -0400, koverstreet@google.com wrote:
+> > From: Kent Overstreet <koverstreet@google.com>
+> > 
+> > This is for the new bio splitting code. When we split a bio, if the
+> > split occured on a bvec boundry we reuse the bvec for the new bio. But
+> > that means bio_free() can't free it, hence the explicit flag.
+> > 
+> > Signed-off-by: Kent Overstreet <koverstreet@google.com>
+> > ---
+> >  fs/bio.c                  |    3 ++-
+> >  include/linux/blk_types.h |    1 +
+> >  2 files changed, 3 insertions(+), 1 deletions(-)
+> > 
+> > diff --git a/fs/bio.c b/fs/bio.c
+> > index ecc9088..3332800 100644
+> > --- a/fs/bio.c
+> > +++ b/fs/bio.c
+> > @@ -234,7 +234,7 @@ void bio_free(struct bio *bio, struct bio_set *bs)
+> >  {
+> >  	void *p;
+> >  
+> > -	if (bio_has_allocated_vec(bio))
+> > +	if (bio_flagged(bio, BIO_HAS_VEC))
+> >  		bvec_free_bs(bs, bio->bi_io_vec, BIO_POOL_IDX(bio));
+> 
+> We can remove bio_has_allocated_vec()?
 
-Signed-off-by: Jeffrin Jose <ahiliation@yahoo.co.in>
----
- net/ethernet/eth.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
-
-diff --git a/net/ethernet/eth.c b/net/ethernet/eth.c
-index 36e5880..c847aa6 100644
---- a/net/ethernet/eth.c
-+++ b/net/ethernet/eth.c
-@@ -178,7 +178,7 @@ __be16 eth_type_trans(struct sk_buff *skb, struct net_device *dev)
- 	 *      seems to set IFF_PROMISC.
- 	 */
- 
--	else if (1 /*dev->flags&IFF_PROMISC */ ) {
-+	else if (1 /*dev->flags&IFF_PROMISC */) {
- 		if (unlikely(!ether_addr_equal_64bits(eth->h_dest,
- 						      dev->dev_addr)))
- 			skb->pkt_type = PACKET_OTHERHOST;
--- 
-1.7.10
-
+Yep! Adding that to the patch.
