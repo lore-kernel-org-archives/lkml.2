@@ -1,153 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756819Ab2EREqL (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 May 2012 00:46:11 -0400
-Received: from kirsty.vergenet.net ([202.4.237.240]:39676 "EHLO
-	kirsty.vergenet.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755853Ab2EREqI (ORCPT
+	id S1757311Ab2EREsN (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 May 2012 00:48:13 -0400
+Received: from hqemgate04.nvidia.com ([216.228.121.35]:9394 "EHLO
+	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756551Ab2EREsL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 May 2012 00:46:08 -0400
-Date: Fri, 18 May 2012 13:46:05 +0900
-From: Simon Horman <horms@verge.net.au>
-To: Magnus Damm <magnus.damm@gmail.com>
-Cc: linux-arm-kernel@lists.infradead.org, linux@arm.linux.org.uk,
-        arnd@arndb.de, linux-sh@vger.kernel.org, linux-kernel@vger.kernel.org,
-        rjw@sisk.pl, lethal@linux-sh.org, olof@lixom.net
-Subject: Re: [PATCH 00/08] mach-shmobile: Emma Mobile EV2 support V3
-Message-ID: <20120518044601.GA17682@verge.net.au>
-References: <20120516064449.32286.77941.sendpatchset@w520>
- <20120518014424.GL19000@verge.net.au>
- <CANqRtoRh0=ASdV4i+tMHw2B2+YCs6XwESre-v-H4MQ2Fy845dw@mail.gmail.com>
+	Fri, 18 May 2012 00:48:11 -0400
+X-PGP-Universal: processed;
+	by hqnvupgp07.nvidia.com on Thu, 17 May 2012 21:47:02 -0700
+Subject: Re: Clock register in early init
+From: Prashant Gaikwad <pgaikwad@nvidia.com>
+To: Mike Turquette <mturquette@ti.com>
+CC: Peter De Schrijver <pdeschrijver@nvidia.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+In-Reply-To: <20120517062131.GA9305@gmail.com>
+References: <1337227884.2066.9.camel@pgaikwad-dt2>
+	 <20120517062131.GA9305@gmail.com>
+Security: Personal
+X-NVConfidentiality: public
+Date: Fri, 18 May 2012 10:18:37 +0530
+Message-ID: <1337316517.22560.19.camel@pgaikwad-dt2>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CANqRtoRh0=ASdV4i+tMHw2B2+YCs6XwESre-v-H4MQ2Fy845dw@mail.gmail.com>
-Organisation: Horms Solutions Ltd.
-User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Mailer: Evolution 2.32.2 
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Magnus,
+Thanks for the reply Mike!!
 
-On Fri, May 18, 2012 at 12:40:21PM +0900, Magnus Damm wrote:
-> Hi Simon,
+On Thu, 2012-05-17 at 11:51 +0530, Mike Turquette wrote:
+> On 20120517-09:41, Prashant Gaikwad wrote:
+> > Hi Mike,
+> > 
+> > While porting Tegra to common clock framework I observed that if we try
+> > to allocate struct clk dynamically in early init, kernel panics since
+> > memory is not initialized yet.
+> > 
+> > In your clk-next for omap you are registering clocks in early init and
+> > clk_register allocates struct clk dynamically.
+> > 
+> > So, am I missing something here?
+> > 
 > 
-> On Fri, May 18, 2012 at 10:44 AM, Simon Horman <horms@verge.net.au> wrote:
-> > Hi Magnus,
-> >
-> > I have tested these patches on top of the soc-new branch of
-> > rafael's renesas tree, revision 5658c94, which is based on
-> > v3.4-rc6.
+> You have the same problem as my platform (OMAP).  Please check out
+> include/linux/clk-private.h.  That is a really nasty terrible hack that
+> exists for statically initializing all data.  It exposes the definition
+> of struct clk (which is bad and violates the design philosophy that
+> struct clk should be an opaque cookie).
 > 
-> Excellent!
+> Please review Documentat/clk.txt to understand the rules around
+> clk-private.h.  Namely that you MUST separate your data from your clock
+> function definitions (the clk_ops should never know the definition of
+> struct clk).
 > 
-> > I also have the cherry picked following patches before applying your patches.
-> >
-> > serial8250-em: clk_get() IS_ERR() error handling fix
-> > serial8250-em: Emma Mobile UART driver V2
-> > serial8250: Introduce serial8250_register_8250_port()
-> > serial8250: Clean up default map and dl code
-> > serial8250: Use dl_read()/dl_write() on RM9K
-> > serial8250: Use dl_read()/dl_write() on Alchemy
-> > serial8250: Add dl_read()/dl_write() callbacks
-> > 8250.c: less than 2400 baud fix.
-> > serial/8250_pci: Clear FIFOs for Intel ME Serial Over Lan device on BI
-> > tegra, serial8250: add ->handle_break() uart_port op
-> > clocksource: em_sti: Add DT support
-> > clocksource: em_sti: Emma Mobile STI driver V2
-> > clockevents: Make clockevents_config() a global symbol
+
+Yes, currently I am also doing same for Tegra and it works well. clk_ops
+and clk initialization data are in separate files. clk_ops does not
+include clk-private.h so it does not know the definition of struct clk.
+
+Will send patches for shortly.
+
+> Finally, I really want to kill off clk-private.h.  Currently OMAP does
+> clock registration during early init and that is why this crap exists.
+> However we are going to move our clock initialization to be initcall
+> based at some point in the future.  No other platform (until now) was
+> using these macros in clk-private.h, so I had planned on removing them
+> after OMAP migrated.
 > 
-> Thanks, those are indeed needed for runtime UART and STI support, but
-> there shouldn't be any build time dependencies.
+> What are the plans for Tegra?  I really don't want to have to support
+> this stuff.  Can you migrate your clock initialization to be initcall
+> based at some point in the future?
 > 
-> > I have added the follwing patch of yours
-> >
-> > gpio: Emma Mobile GPIO driver V2
-> >
-> > And one of my own, which just fixes a build problem
-> > in rafael's tree.
-> >
-> > ARM: mach-types: Manually add KZM-A9-GT
+
+We had initcall based implementation in old kernel versions. It was
+moved to early init since some clocks were required for delay
+calibrations. It may be possible to migrate it be initcall based in
+future.
+
+> Regards,
+> Mike
 > 
-> Right, that's a bit of a mess.
+> p.s: best to have these kinds of discussions on the list, out in the
+> open.  If you want to continue our discussion can you loop in LAKML?
 > 
-> > On Wed, May 16, 2012 at 03:44:49PM +0900, Magnus Damm wrote:
-> >> mach-shmobile: Emma Mobile EV2 support V3
-> >>
-> >> [PATCH 01/08] mach-shmobile: Emma Mobile EV2 SoC base support V3
-> >
-> > Tested-by: Simon Horman <horms@verge.net.au>
-> >
-> >> [PATCH 02/08] ARM: Undelete KZM9D mach-type V3
-> >
-> > I did not need this patch with the base I am using,
-> > so I did not test it.
-> 
-> Ok!
 
-:)
+Added LAKML in loop.
 
-> > Reviewed-by: Simon Horman <horms@verge.net.au>
-> >
-> >> [PATCH 03/08] mach-shmobile: KZM9D board support V3
-> >
-> > Tested-by: Simon Horman <horms@verge.net.au>
-> >
-> >> [PATCH 04/08] mach-shmobile: Emma Mobile EV2 SMP support V3
-> >
-> > Tested-by: Simon Horman <horms@verge.net.au>
-> >
-> >> [PATCH 05/08] mach-shmobile: Emma Mobile EV2 GPIO support V3
-> >
-> > I am only seeing interripts for em_gio.0, is there a
-> > way to exercise em_gio.1 .. 4 ?
-> 
-> When we start using other GPIO pins with interrupts then that will
-> happen. Right now there is no code.
+> > Same is observed if we try to allocate parent list dynamically.
+> > 
+> > Thanks & regards,
+> > Prashant G
 
-Ok, in that case
+Prashant G
 
-Tested-by: Simon Horman <horms@verge.net.au>
-
-> > Duplicate names for interrupts, that is
-> > each of em_gio.0..4 have two entries in /proc/interripts.
-> > Is this intentional?
-> 
-> Yes, it is intentional. There are two interrupt sources per 32 GPIO pins.
-
-In that case
-
-Tested-by: Simon Horman <horms@verge.net.au>
-
-> >> [PATCH 06/08] mach-shmobile: KZM9D board Ethernet support V3
-> >
-> > Tested-by: Simon Horman <horms@verge.net.au>
-> >
-> >> [PATCH 07/08] mach-shmobile: Emma Mobile EV2 DT support V3
-> >
-> > I applied this and the resulting kernel booted.
-> 
-> That's good! Thanks for testing!
-
-Tested-by: Simon Horman <horms@verge.net.au>
-
-> >> [PATCH 08/08] mach-shmobile: Use DT_MACHINE for KZM9D V3
-> >
-> > I applied this and the resulting kernel did not boot.
-> > I saw nothing after the uboot prompt..
-> 
-> Yeah, you need to select CONFIG_ARM_APPENDED_DTB=y and append the DTB
-> to the zImage, then convert that to uImage.
-
-Thanks for working me through that off-line.
-
-Tested-by: Simon Horman <horms@verge.net.au>
-
-> 
-> > Lastly, could you consider suppling a patch which provides a defconfig?
-> 
-> I've been asked to provide a defconfig that we can share between
-> multiple platforms. So it's on my TODO.
-
-Excellent
