@@ -1,63 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933129Ab2ERS3D (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 May 2012 14:29:03 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:52879 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933030Ab2ERS3A (ORCPT
+	id S966268Ab2ERS3U (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 May 2012 14:29:20 -0400
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:33542 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933030Ab2ERS3S (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 May 2012 14:29:00 -0400
-Date: Fri, 18 May 2012 11:28:34 -0700 (PDT)
-From: Hugh Dickins <hughd@google.com>
-X-X-Sender: hugh@eggly.anvils
-To: Linus Torvalds <torvalds@linux-foundation.org>
-cc: Andrew Morton <akpm@linux-foundation.org>,
-        Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Andrea Arcangeli <aarcange@redhat.com>,
-        David Rientjes <rientjes@google.com>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH] memcg,thp: fix res_counter:96 regression
-Message-ID: <alpine.LSU.2.00.1205181116160.2082@eggly.anvils>
-User-Agent: Alpine 2.00 (LSU 1167 2008-08-23)
+	Fri, 18 May 2012 14:29:18 -0400
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+In-Reply-To: <20120518175548.GM19388@google.com>
+References: <20120330223423.GJ28934@google.com> <20120330223606.GK28934@google.com>
+ <4F77B6BA.4070207@huawei.com> <20120401185430.GA9230@dhcp-172-17-108-109.mtv.corp.google.com>
+ <CA+1xoqe5hMuxzCRhMy7J0XchDk2ZnuxOHJKikROk1-ReAzcT6g@mail.gmail.com> <20120518175548.GM19388@google.com>
+From: Sasha Levin <levinsasha928@gmail.com>
+Date: Fri, 18 May 2012 20:28:56 +0200
+Message-ID: <CA+1xoqfr5aaGbxoX3YKrJHXTjU9fWSbX_xbuEOU=4K7kMay6XQ@mail.gmail.com>
+Subject: Re: [PATCH 2/2] cgroup: make css->refcnt clearing on cgroup removal optional
+To: Tejun Heo <tj@kernel.org>
+Cc: Li Zefan <lizefan@huawei.com>, containers@lists.linux-foundation.org,
+        cgroups@vger.kernel.org, linux-kernel@vger.kernel.org,
+        fweisbec@gmail.com, rni@google.com, ctalbott@google.com,
+        Vivek Goyal <vgoyal@redhat.com>, Johannes Weiner <hannes@cmpxchg.org>,
+        Michal Hocko <mhocko@suse.cz>, Balbir Singh <bsingharora@gmail.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Occasionally, testing memcg's move_charge_at_immigrate on rc7 shows
-a flurry of hundreds of warnings at kernel/res_counter.c:96, where
-res_counter_uncharge_locked() does WARN_ON(counter->usage < val).
+On Fri, May 18, 2012 at 7:55 PM, Tejun Heo <tj@kernel.org> wrote:
+> On Thu, May 17, 2012 at 12:33:05AM +0200, Sasha Levin wrote:
+>> Hi Tejun,
+>>
+>> On Sun, Apr 1, 2012 at 8:54 PM, Tejun Heo <tj@kernel.org> wrote:
+>> > Hello, Li.
+>> >
+>> > On Sun, Apr 01, 2012 at 10:00:26AM +0800, Li Zefan wrote:
+>> >> > Signed-off-by: Tejun Heo <tj@kernel.org>
+>> >>
+>> >> Both patches look good.
+>> >>
+>> >> Acked-by: Li Zefan <lizefan@huawei.com>
+>> >
+>> > Alright, adding the patches to cgroup/for-3.5.
+>>
+>> This patch allows for race when removing a cgroup since one of the
+>> css's may still have a dentry ref when the cgroup is removed, no? Is
+>> there a plan to deal with that before this patch gets pushed into 3.5?
+>
+> Can you please elaborate?
 
-The first trace of each flurry implicates __mem_cgroup_cancel_charge()
-of mc.precharge, and an audit of mc.precharge handling points to
-mem_cgroup_move_charge_pte_range()'s THP handling in 12724850e806
-"memcg: avoid THP split in task migration".
+>From what I gathered, that patch means that you'll have refs to
+dentries while you're trying to complete the unmount of the cgroup,
+which would make something really angry.
 
-Checking !mc.precharge is good everywhere else, when a single page is
-to be charged; but here the "mc.precharge -= HPAGE_PMD_NR" likely to
-follow, is liable to result in underflow (a lot can change since the
-precharge was estimated).
+I tested it by running two scripts to race with eachother:
 
-Simply check against HPAGE_PMD_NR: there's probably a better alternative,
-trying precharge for more, splitting if unsuccessful; but this one-liner
-is safer for now - no kernel/res_counter.c:96 warnings seen in 26 hours.
+First:
 
-Signed-off-by: Hugh Dickins <hughd@google.com>
----
+while [ true ];
+do
+mount -t cgroup dummy cgroup/
+mkdir cgroup/0
+rmdir cgroup/0
+umount cgroup/
+done
 
- mm/memcontrol.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+Second:
 
---- 3.4-rc7/mm/memcontrol.c	2012-05-12 22:56:05.340002552 -0700
-+++ linux/mm/memcontrol.c	2012-05-17 09:39:45.944034396 -0700
-@@ -5481,7 +5481,7 @@ static int mem_cgroup_move_charge_pte_ra
- 	 *    part of thp split is not executed yet.
- 	 */
- 	if (pmd_trans_huge_lock(pmd, vma) == 1) {
--		if (!mc.precharge) {
-+		if (mc.precharge < HPAGE_PMD_NR) {
- 			spin_unlock(&vma->vm_mm->page_table_lock);
- 			return 0;
- 		}
+while [ true ];
+do
+mount -t cgroup dummy cgroup/
+umount cgroup/
+done
+
+Now, if you give it a go, you'll see a BUG() and a system hang pretty fast.
