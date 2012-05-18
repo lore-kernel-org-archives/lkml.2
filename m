@@ -1,69 +1,157 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758431Ab2ERQXl (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 May 2012 12:23:41 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:43043 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1758286Ab2ERQXj (ORCPT
+	id S1758452Ab2ERQYw (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 May 2012 12:24:52 -0400
+Received: from service87.mimecast.com ([91.220.42.44]:51114 "EHLO
+	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757931Ab2ERQYt convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 May 2012 12:23:39 -0400
-Date: Fri, 18 May 2012 17:23:36 +0100
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Samuel Ortiz <sameo@linux.intel.com>
-Cc: Graeme Gregory <gg@slimlogic.co.uk>, linux-kernel@vger.kernel.org,
-        lrg@ti.com, b-cousson@ti.com, linux-omap@vger.kernel.org
-Subject: Re: [PATCHv2 1/4] MFD: palmas PMIC device support
-Message-ID: <20120518162335.GL4039@opensource.wolfsonmicro.com>
-References: <1337064539-3014-1-git-send-email-gg@slimlogic.co.uk>
- <1337064539-3014-2-git-send-email-gg@slimlogic.co.uk>
- <20120515181448.GD19592@opensource.wolfsonmicro.com>
- <20120518095512.GF12015@sortiz-mobl>
+	Fri, 18 May 2012 12:24:49 -0400
+Date: Fri, 18 May 2012 17:24:45 +0100
+From: Morten Rasmussen <Morten.Rasmussen@arm.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: "panto@antoniou-consulting.com" <panto@antoniou-consulting.com>,
+        "smuckle@quicinc.com" <smuckle@quicinc.com>,
+        Juri Lelli <juri.lelli@gmail.com>, "mingo@elte.hu" <mingo@elte.hu>,
+        "linaro-sched-sig@lists.linaro.org" 
+	<linaro-sched-sig@lists.linaro.org>,
+        "rostedt@goodmis.org" <rostedt@goodmis.org>,
+        "tglx@linutronix.de" <tglx@linutronix.de>,
+        "geoff@infradead.org" <geoff@infradead.org>,
+        "efault@gmx.de" <efault@gmx.de>,
+        linux-kernel <linux-kernel@vger.kernel.org>
+Subject: Re: Plumbers: Tweaking scheduler policy micro-conf RFP
+Message-ID: <20120518162445.GF18312@e103034-lin.cambridge.arm.com>
+References: <CAKfTPtDSDAOAdv0GTDswZeRM7TmACrjok+5kddSaQpvy6_6xWw@mail.gmail.com>
+ <CAKfTPtCfiY7A29+e50F+6awd8BjNJjg4=uNN4ReZfdS_4FbpkA@mail.gmail.com>
+ <1337084609.27020.156.camel@laptop>
+ <CAKfTPtDz1-fR2i5x7AVd8sGZhX2VNtz2rnQC3ePrcHO9MWK3FQ@mail.gmail.com>
+ <1337086834.27020.162.camel@laptop>
+ <CAKfTPtDrZ-tfC81jnxwpB+DCtmxhU+VfoYbtSBr8MkFt+P8JcA@mail.gmail.com>
+ <1337096141.27694.82.camel@twins>
+ <20120518161817.GE18312@e103034-lin.cambridge.arm.com>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="jtcAeju3WzRmRF+o"
+In-Reply-To: <20120518161817.GE18312@e103034-lin.cambridge.arm.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-OriginalArrivalTime: 18 May 2012 16:24:50.0121 (UTC) FILETIME=[BF71EB90:01CD3512]
+X-MC-Unique: 112051817244708201
+Content-Type: text/plain; charset=WINDOWS-1252
+Content-Transfer-Encoding: 8BIT
 Content-Disposition: inline
-In-Reply-To: <20120518095512.GF12015@sortiz-mobl>
-X-Cookie: Today is what happened to yesterday.
-User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Fri, May 18, 2012 at 05:18:17PM +0100, Morten Rasmussen wrote:
+> On Tue, May 15, 2012 at 04:35:41PM +0100, Peter Zijlstra wrote:
+> > On Tue, 2012-05-15 at 17:05 +0200, Vincent Guittot wrote:
+> > > On 15 May 2012 15:00, Peter Zijlstra <peterz@infradead.org> wrote:
+> > > > On Tue, 2012-05-15 at 14:57 +0200, Vincent Guittot wrote:
+> > > >>
+> > > >> Not sure that nobody cares but it's much more that scheduler,
+> > > >> load_balance and sched_mc are sensible enough that it's difficult to
+> > > >> ensure that a modification will not break everything for someone
+> > > >> else.
+> > > >
+> > > > Thing is, its already broken, there's nothing else to break :-)
+> > > >
+> > > 
+> > > sched_mc is the only power-aware knob in the current scheduler. It's
+> > > far from being perfect but it seems to work on some ARM platform at
+> > > least. You mentioned at the scheduler mini-summit that we need a
+> > > cleaner replacement and everybody has agreed on that point. Is anybody
+> > > working on it yet ? 
+> > 
+> > Apparently not.. 
+> > 
+> > > and can we discuss at Plumber's what this replacement would look like ?
+> > 
+> > one knob: sched_balance_policy with tri-state {performance, power, auto}
+> 
+> Interesting. What would the power policy look like? Would performance
+> and power be the two extremes of the power/performance trade-off? In
+> that case I would assume that most embedded systems would be using auto.
+> 
+> > 
+> > Where auto should likely look at things like are we on battery and
+> > co-ordinate with cpufreq muck or whatever.
+> > 
+> > Per domain knobs are insane, large multi-state knobs are insane, the
+> > existing scheme is therefore insane^2. Can you find a sysad who'd like
+> > to explore 3^3=27 states for optimal power/perf for his workload on a
+> > simple 2 socket hyper-threaded machine and 3^4=81 state space for 8
+> > sockets etc..?
+> > 
+> > As to the exact policy, I think the current 2 (load-balance + wakeup) is
+> > the sensible one..
+> > 
+> > Also, I still have this pending email from you asking about the topology
+> > setup stuff I really need to reply to.. but people keep sending me bugs
+> > reports :/
+> > 
+> > But really short, look at kernel/sched/core.c:default_topology[]
+> > 
+> > I'd like to get rid of sd_init_* into a single function like
+> > sd_numa_init(), this would mean all archs would need to do is provide a
+> > simple list of ever increasing masks that match their topology.
+> > 
+> > To aid this we can add some SDTL_flags, initially I was thinking of:
+> > 
+> >  SDTL_SHARE_CORE	-- aka SMT
+> >  SDTL_SHARE_CACHE	-- LLC cache domain (typically multi-core)
+> >  SDTL_SHARE_MEMORY	-- NUMA-node (typically socket)
+> > 
+> > The 'performance' policy is typically to spread over shared resources so
+> > as to minimize contention on these.
+> >
+> 
+> Would it be worth extending this architecture specification to contain
+> more information like CPU_POWER for each core? After having experimented
+> a bit with scheduling on big.LITTLE my experience is that more
+> information about the platform is needed to make proper scheduling
+> decisions. So if the topology definition is going to be more generic and
+> be set up by the architecture it could be worth adding all the bits of
+> information that the scheduler would need to that data structure.
+> 
+> With such data structure, the scheduler would only need one knob to
+> adjust the power/performance trade-off. Any thoughts?
+>  
 
---jtcAeju3WzRmRF+o
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+One more thing. I have experimented with PJT's load-tracking patchset
+and found it very useful for big.LITTLE scheduling. Is there any plans
+for including them?
 
-On Fri, May 18, 2012 at 11:55:12AM +0200, Samuel Ortiz wrote:
+	Morten
 
-> I'm fine with it. For the MFD parts:
+> > If you want to add some power we need some extra flags, maybe something
+> > like:
+> > 
+> >  SDTL_SHARE_POWERLINE	-- power domain (typically socket)
+> > 
+> > so you know where the boundaries are where you can turn stuff off so you
+> > know what/where to pack bits.
+> > 
+> > Possibly we also add something like:
+> > 
+> >  SDTL_PERF_SPREAD	-- spread on performance mode
+> >  SDTL_POWER_PACK	-- pack on power mode
+> > 
+> > To over-ride the defaults. But ideally I'd leave those until after we've
+> > got the basics working and there is a clear need for them (with a
+> > spread/pack default for perf/power aware).
+> 
+> In my experience power optimized scheduling is quite tricky, especially
+> if you still want some level of performance. For heterogeneous
+> architecture packing might not be the best solution. Some indication of
+> the power/performance profile of each core could be useful.
+> 
+> Best regards,
+> Morten
+> 
+> 
+> _______________________________________________
+> linaro-sched-sig mailing list
+> linaro-sched-sig@lists.linaro.org
+> http://lists.linaro.org/mailman/listinfo/linaro-sched-sig
+> 
 
-> Acked-by: Samuel Ortiz <sameo@linux.intel.com>
-
-Applied all, thanks.  I moved the header updates from the regulator into
-the MFD so the regulator driver can be applied via the regulator tree
-and the MFD via the regmap tree in order to preserve bisection.
-
---jtcAeju3WzRmRF+o
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBAgAGBQJPtndwAAoJEBus8iNuMP3dr7AP/04Fi2wErD5ja2wEOL7AdzD5
-lQNsrMswlTxAR5JGgTZ00GDyIPh/CFtyjsk2YJ9+s67neuJCRyze171TsUuuUhiy
-V1oh2mr0oFCcUj0T5PtOYUOca+qsx3Oo71DkDoHgxHkpYSoq3dnedEXIGBF9LzBH
-N9oZt8rwAFpwT5o5mwFkh7Jd3oCUbY8BiNlWtVkLPyuifR/6CUNetFtqsjxY64sD
-Nout70ybg3/0zkrdHj9LCHnDpmYsTZeGlOI56VGDSoO2lO2NisEJwi2PeHd3yamU
-KYgpNoixa71teF2GFPdo5JeWZsK3Ow7/dG1X/q+Y9IhcJBNUmceqlxvDQPMDpzBU
-0TTJsuVnR0mjwVRQ5lmbzgcVnsyyxDjn3rk4mpwuuKQBBWUyTxNj1cVdaNN8C2Kj
-dA9zMw64m4dYVZvmYL2oogOl5lUua58O/f4uTfpF9T0jcnr18m2Rn0JOpFKEJBPg
-1EWrbHvapqZU8zb14TSNnV7fpzYV7s2cq/xrbw1Og+CxPDyUSW5terN+FeUe0tIw
-zHPeJ4Bzc5o4XGas1OwOjO4CKDEWkZArdY1LkpB2waw0CaHJ7krxKKkwb7EpAv11
-3vZJ8N4aqlv+jB1qNidgw35onySDxQlbv1yaXNK1rUCSxHVnwSp0Gph5WWqPPvg0
-rDs9B+sqkfdcvRI/0Jhq
-=4uin
------END PGP SIGNATURE-----
-
---jtcAeju3WzRmRF+o--
