@@ -1,74 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933706Ab2ERLSJ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 May 2012 07:18:09 -0400
-Received: from mail-lb0-f174.google.com ([209.85.217.174]:36394 "EHLO
-	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933182Ab2ERLSH (ORCPT
+	id S1030693Ab2ERLVl (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 May 2012 07:21:41 -0400
+Received: from hqemgate04.nvidia.com ([216.228.121.35]:11197 "EHLO
+	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754523Ab2ERLVk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 May 2012 07:18:07 -0400
-Date: Fri, 18 May 2012 13:18:04 +0200
-From: Johan Hovold <jhovold@gmail.com>
-To: Samuel Ortiz <sameo@linux.intel.com>
-Cc: linux-kernel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
-        Johan Hovold <jhovold@gmail.com>
-Subject: Re: [PATCH] mfd: lm3533: fix return type of attribute is_visible
-Message-ID: <20120518111804.GA20467@localhost>
-References: <1336725641-11826-1-git-send-email-jhovold@gmail.com>
+	Fri, 18 May 2012 07:21:40 -0400
+X-PGP-Universal: processed;
+	by hqnvupgp07.nvidia.com on Fri, 18 May 2012 04:20:28 -0700
+Date: Fri, 18 May 2012 14:21:04 +0300
+From: Peter De Schrijver <pdeschrijver@nvidia.com>
+To: Prashant Gaikwad <pgaikwad@nvidia.com>
+CC: Mike Turquette <mturquette@ti.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Subject: Re: Clock register in early init
+Message-ID: <20120518112104.GL20304@tbergstrom-lnx.Nvidia.com>
+References: <1337227884.2066.9.camel@pgaikwad-dt2>
+ <20120517062131.GA9305@gmail.com>
+ <1337316517.22560.19.camel@pgaikwad-dt2>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset="us-ascii"
 Content-Disposition: inline
-In-Reply-To: <1336725641-11826-1-git-send-email-jhovold@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1337316517.22560.19.camel@pgaikwad-dt2>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Samuel,
-
-On Fri, May 11, 2012 at 10:40:41AM +0200, Johan Hovold wrote:
-> Since commit 587a1f1659 ("switch ->is_visible() to returning umode_t")
-> the return type of is_visible is umode_t rather than mode_t.
+On Fri, May 18, 2012 at 06:48:37AM +0200, Prashant Gaikwad wrote:
+> Thanks for the reply Mike!!
 > 
-> This silences a compiler warning on some architectures where these types
-> are not compatible.
+> On Thu, 2012-05-17 at 11:51 +0530, Mike Turquette wrote:
+> > On 20120517-09:41, Prashant Gaikwad wrote:
+> > > Hi Mike,
+> > > 
+> > > While porting Tegra to common clock framework I observed that if we try
+> > > to allocate struct clk dynamically in early init, kernel panics since
+> > > memory is not initialized yet.
+> > > 
+> > > In your clk-next for omap you are registering clocks in early init and
+> > > clk_register allocates struct clk dynamically.
+> > > 
+> > > So, am I missing something here?
+> > > 
+> > 
+> > You have the same problem as my platform (OMAP).  Please check out
+> > include/linux/clk-private.h.  That is a really nasty terrible hack that
+> > exists for statically initializing all data.  It exposes the definition
+> > of struct clk (which is bad and violates the design philosophy that
+> > struct clk should be an opaque cookie).
+> > 
+> > Please review Documentat/clk.txt to understand the rules around
+> > clk-private.h.  Namely that you MUST separate your data from your clock
+> > function definitions (the clk_ops should never know the definition of
+> > struct clk).
+> > 
 > 
-> Reported-by: Andrew Morton <akpm@linux-foundation.org>
-> Signed-off-by: Johan Hovold <jhovold@gmail.com>
-> ---
-
-Apparently Dan Carpenter sent a fix for this compiler warning the day
-after I submitted mine. Dan's patch, however, only fixed the return type
-and not the type of the mode variable.
-
-Could you consider applying this patch one on top of Dan's (which you
-applied to mfd-next on Monday)?
-
-Thanks,
-Johan
-
->  drivers/mfd/lm3533-core.c |    4 ++--
->  1 files changed, 2 insertions(+), 2 deletions(-)
+> Yes, currently I am also doing same for Tegra and it works well. clk_ops
+> and clk initialization data are in separate files. clk_ops does not
+> include clk-private.h so it does not know the definition of struct clk.
 > 
-> diff --git a/drivers/mfd/lm3533-core.c b/drivers/mfd/lm3533-core.c
-> index d11c891..5770bea 100644
-> --- a/drivers/mfd/lm3533-core.c
-> +++ b/drivers/mfd/lm3533-core.c
-> @@ -359,7 +359,7 @@ static struct attribute *lm3533_attributes[] = {
->  #define to_dev_attr(_attr) \
->  	container_of(_attr, struct device_attribute, attr)
->  
-> -static mode_t lm3533_attr_is_visible(struct kobject *kobj,
-> +static umode_t lm3533_attr_is_visible(struct kobject *kobj,
->  					     struct attribute *attr, int n)
->  {
->  	struct device *dev = container_of(kobj, struct device, kobj);
-> @@ -367,7 +367,7 @@ static mode_t lm3533_attr_is_visible(struct kobject *kobj,
->  	struct device_attribute *dattr = to_dev_attr(attr);
->  	struct lm3533_device_attribute *lattr = to_lm3533_dev_attr(dattr);
->  	enum lm3533_attribute_type type = lattr->type;
-> -	mode_t mode = attr->mode;
-> +	umode_t mode = attr->mode;
->  
->  	if (!lm3533->have_backlights && type == LM3533_ATTR_TYPE_BACKLIGHT)
->  		mode = 0;
+> Will send patches for shortly.
+> 
+> > Finally, I really want to kill off clk-private.h.  Currently OMAP does
+> > clock registration during early init and that is why this crap exists.
+> > However we are going to move our clock initialization to be initcall
+> > based at some point in the future.  No other platform (until now) was
+> > using these macros in clk-private.h, so I had planned on removing them
+> > after OMAP migrated.
+> > 
+> > What are the plans for Tegra?  I really don't want to have to support
+> > this stuff.  Can you migrate your clock initialization to be initcall
+> > based at some point in the future?
+> > 
+> 
+> We had initcall based implementation in old kernel versions. It was
+> moved to early init since some clocks were required for delay
+> calibrations. It may be possible to migrate it be initcall based in
+> future.
+
+I don't think we can do it all dynamic. We need to have the clockfrequency
+of the local timer at least, which depends on the PLLX frequency and
+ultimately on HFOSC input frequency which is measured by the clock code at
+boottime. I haven't figured out what else we need, but I wouldn't be surprised
+to find some more gotchas. It might be possible to split the clocks into
+'early init clocks' and normal clocks, but I would rather not go there.
+Which advantages do you see in dynamically allocating all this?
+
+Cheers,
+
+Peter.
