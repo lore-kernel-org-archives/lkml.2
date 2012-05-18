@@ -1,59 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S968119Ab2ERVtg (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 May 2012 17:49:36 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:43192 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S968080Ab2ERVtc (ORCPT
+	id S968082Ab2ERVvM (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 May 2012 17:51:12 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:41040 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757993Ab2ERVvK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 May 2012 17:49:32 -0400
-Date: Fri, 18 May 2012 14:49:28 -0700
-From: Kent Overstreet <koverstreet@google.com>
-To: Tejun Heo <tj@kernel.org>
-Cc: linux-bcache@vger.kernel.org, linux-kernel@vger.kernel.org,
-        dm-devel@redhat.com, linux-fsdevel@vger.kernel.org, axboe@kernel.dk,
-        agk@redhat.com, neilb@suse.de
-Subject: Re: [PATCH 09/13] block: Add an explicit bio flag for bios that own
- their bvec
-Message-ID: <20120518214928.GB32300@google.com>
-References: <cover.1337308722.git.koverstreet@google.com>
- <363875943e9d0e13bee6ed28239280543e6e5055.1337308722.git.koverstreet@google.com>
- <20120518163018.GI19388@google.com>
+	Fri, 18 May 2012 17:51:10 -0400
+Date: Fri, 18 May 2012 14:49:39 -0700
+From: Anton Vorontsov <anton.vorontsov@linaro.org>
+To: Kees Cook <keescook@chromium.org>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Colin Cross <ccross@android.com>, Tony Luck <tony.luck@intel.com>,
+        Arnd Bergmann <arnd@arndb.de>, John Stultz <john.stultz@linaro.org>,
+        Shuah Khan <shuahkhan@gmail.com>, arve@android.com,
+        Rebecca Schultz Zavin <rebecca@android.com>,
+        Jesper Juhl <jj@chaosbits.net>, Randy Dunlap <rdunlap@xenotime.net>,
+        Stephen Boyd <sboyd@codeaurora.org>, Thomas Meyer <thomas@m3y3r.de>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Marco Stornelli <marco.stornelli@gmail.com>,
+        WANG Cong <xiyou.wangcong@gmail.com>, linux-kernel@vger.kernel.org,
+        devel@driverdev.osuosl.org, linaro-kernel@lists.linaro.org,
+        patches@linaro.org, kernel-team@android.com
+Subject: Re: [PATCH 2/3] pstore/ram: Switch to persistent_ram routines
+Message-ID: <20120518214939.GA5412@lizard>
+References: <20120517071148.GA16946@lizard>
+ <20120517071518.GB19999@lizard>
+ <CAGXu5jJY478UM0fnqB5SML0gCc1HxoJyA-d6+rZH6mTWQkGegw@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <20120518163018.GI19388@google.com>
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <CAGXu5jJY478UM0fnqB5SML0gCc1HxoJyA-d6+rZH6mTWQkGegw@mail.gmail.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, May 18, 2012 at 09:30:18AM -0700, Tejun Heo wrote:
-> On Thu, May 17, 2012 at 10:59:56PM -0400, koverstreet@google.com wrote:
-> > From: Kent Overstreet <koverstreet@google.com>
-> > 
-> > This is for the new bio splitting code. When we split a bio, if the
-> > split occured on a bvec boundry we reuse the bvec for the new bio. But
-> > that means bio_free() can't free it, hence the explicit flag.
-> > 
-> > Signed-off-by: Kent Overstreet <koverstreet@google.com>
-> > ---
-> >  fs/bio.c                  |    3 ++-
-> >  include/linux/blk_types.h |    1 +
-> >  2 files changed, 3 insertions(+), 1 deletions(-)
-> > 
-> > diff --git a/fs/bio.c b/fs/bio.c
-> > index ecc9088..3332800 100644
-> > --- a/fs/bio.c
-> > +++ b/fs/bio.c
-> > @@ -234,7 +234,7 @@ void bio_free(struct bio *bio, struct bio_set *bs)
-> >  {
-> >  	void *p;
-> >  
-> > -	if (bio_has_allocated_vec(bio))
-> > +	if (bio_flagged(bio, BIO_HAS_VEC))
-> >  		bvec_free_bs(bs, bio->bi_io_vec, BIO_POOL_IDX(bio));
+On Thu, May 17, 2012 at 09:34:19AM -0700, Kees Cook wrote:
+[...]
+> > -       memcpy(buf, cxt->pstore.buf, size);
+> > -       memset(buf + size, '\0', available - size);
+> > +       hlen = ramoops_write_kmsg_hdr(prz);
+> > +       if (size + hlen > prz->buffer_size)
+> > +               size = prz->buffer_size - hlen;
+> > +       persistent_ram_write(prz, cxt->pstore.buf, size);
 > 
-> We can remove bio_has_allocated_vec()?
+> This still needs to wipe out the remaining bytes in the buffer (the
+> second memset above).
+[...]
+> > -       buf = cxt->virt_addr + (id * cxt->record_size);
+> > -       memset(buf, '\0', cxt->record_size);
+> > +       persistent_ram_free_old(cxt->przs[id]);
+> 
+> Same here -- erasing the buffer means wiping it with NULL bytes.
 
-Yep! Adding that to the patch.
+Well, with persistent_ram we don't need to actually erase buffers
+(with persistent_ram we might even hold binary data). But yes,
+we'd better reset size pointer, otherwise the unlinked buffer
+will show up on the next reboot. Thanks for noticing!
+
+-- 
+Anton Vorontsov
+Email: cbouatmailru@gmail.com
