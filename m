@@ -1,87 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755419Ab2ERP3p (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 May 2012 11:29:45 -0400
-Received: from e9.ny.us.ibm.com ([32.97.182.139]:42016 "EHLO e9.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754871Ab2ERP3n (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 May 2012 11:29:43 -0400
-Subject: Re: [V2 PATCH 9/9] vhost: zerocopy: poll vq in zerocopy callback
-From: Shirley Ma <mashirle@us.ibm.com>
-To: Jason Wang <jasowang@redhat.com>
-Cc: "Michael S. Tsirkin" <mst@redhat.com>, eric.dumazet@gmail.com,
-        netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        ebiederm@xmission.com, davem@davemloft.net
-In-Reply-To: <4FB61D57.4030103@redhat.com>
-References: <20120502033901.11782.13157.stgit@amd-6168-8-1.englab.nay.redhat.com>
-	 <20120502034254.11782.27314.stgit@amd-6168-8-1.englab.nay.redhat.com>
-	 <1337100630.8220.4.camel@oc3660625478.ibm.com> <4FB317C8.90002@redhat.com>
-	 <1337181027.10741.13.camel@oc3660625478.ibm.com>
-	 <20120516151444.GC9934@redhat.com>
-	 <1337189525.10741.24.camel@oc3660625478.ibm.com>
-	 <4FB4677A.8020402@redhat.com>
-	 <1337268862.10741.58.camel@oc3660625478.ibm.com>
-	 <4FB61D57.4030103@redhat.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Fri, 18 May 2012 08:29:34 -0700
-Message-ID: <1337354974.12999.12.camel@oc3660625478.ibm.com>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 (2.28.3-24.el6) 
-Content-Transfer-Encoding: 7bit
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 12051815-7182-0000-0000-0000018D6EB3
+	id S1755505Ab2ERPbI (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 May 2012 11:31:08 -0400
+Received: from mail-gg0-f174.google.com ([209.85.161.174]:60002 "EHLO
+	mail-gg0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754871Ab2ERPbF convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 18 May 2012 11:31:05 -0400
+MIME-Version: 1.0
+X-Originating-IP: [2620:0:1000:1b02:1aa9:5ff:fe24:37a9]
+In-Reply-To: <CAK5ve-Jc=g+E=fmK8HgMKAHPNBYkQdAKw=S0bLqEPYfPEbyabw@mail.gmail.com>
+References: <1335884506-15370-1-git-send-email-bryan.wu@canonical.com>
+	<alpine.LFD.2.02.1205101351380.21030@xanadu.home>
+	<CAK5ve-L4rcAx-=n5u7G0AQzvUG3ir_jzF_ibaSf-EntXAzFUCw@mail.gmail.com>
+	<201205121453.45242.arnd.bergmann@linaro.org>
+	<CAOesGMgy4QkLuB10q19e67n_kQw4++gDYbWNELN-ASayVYkjbA@mail.gmail.com>
+	<CAK5ve-Jc=g+E=fmK8HgMKAHPNBYkQdAKw=S0bLqEPYfPEbyabw@mail.gmail.com>
+Date: Fri, 18 May 2012 08:31:04 -0700
+Message-ID: <CAOesGMg=UxB1E10r7WpqKc=FFSws6TN5jGahx7rpm1+E9uSkog@mail.gmail.com>
+Subject: Re: [PATCH v9 00/19] Introduce a led trigger for CPU activity and
+ consolidate LED driver in ARM
+From: Olof Johansson <olof@lixom.net>
+To: Bryan Wu <bryan.wu@canonical.com>
+Cc: Arnd Bergmann <arnd.bergmann@linaro.org>,
+        Nicolas Ferre <nicolas.ferre@atmel.com>,
+        Alexander Shiyan <shc_work@mail.ru>,
+        Nicolas Pitre <nicolas.pitre@linaro.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>, rpurdie@rpsys.net,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        linus.walleij@linaro.org, tim.gardner@canonical.com
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2012-05-18 at 17:58 +0800, Jason Wang wrote:
-> On 05/17/2012 11:34 PM, Shirley Ma wrote:
-> > On Thu, 2012-05-17 at 10:50 +0800, Jason Wang wrote:
-> >> The problem is we may stop the tx queue when there no enough
-> capacity
-> >> to
-> >> place packets, at this moment  we depends on the tx interrupt to
-> >> re-enable the tx queue. So if we didn't poll the vhost during
-> >> callback,
-> >> guest may lose the tx interrupt to re-enable the tx queue which
-> could
-> >> stall the whole tx queue.
-> > VHOST_MAX_PEND should handle the capacity.
-> >
-> > Hasn't the above situation been handled in handle_tx() code?:
-> > ...
-> >                          if (unlikely(num_pends>  VHOST_MAX_PEND)) {
-> >                                  tx_poll_start(net, sock);
-> >
-> set_bit(SOCK_ASYNC_NOSPACE,&sock->flags);
-> >                                  break;
-> >                          }
-> > ...
-> >
-> > Thanks
-> > Shirley
-> 
-> It may not help in because:
-> 
-> - tx polling depends on skb_orphan() which is often called by device 
-> driver when it place the packet into the queue of the devices instead 
-> of  when the packets were sent. So it was too early for vhost to be 
-> notified.
-Then do you think it's better to replace with vhost_poll_queue here
-instead?
+Hi Bryan,
 
-> - it only works when the pending DMAs exceeds VHOST_MAX_PEND, it's 
-> highly possible that guest needs to be notified when the pending
-> packets 
-> isn't so much.
-In which situation the guest needs to be notified when there is no TX
-besides buffers run out?
+On Fri, May 18, 2012 at 5:43 AM, Bryan Wu <bryan.wu@canonical.com> wrote:
+> On Sun, May 13, 2012 at 3:06 PM, Olof Johansson <olof@lixom.net> wrote:
+>> Hi,
+>>
+>> On Sat, May 12, 2012 at 7:53 AM, Arnd Bergmann <arnd.bergmann@linaro.org> wrote:
+>>> On Friday 11 May 2012, Bryan Wu wrote:
+>>>> OK, I rebased my patch back on 3.4.0-rc6, please find it here:
+>>>> git://kernel.ubuntu.com/roc/linux-2.6/.git leds
+>>>>
+>>>> linux-next branch can be also found here:
+>>>> git://kernel.ubuntu.com/roc/linux-2.6/.git leds-next
+>>>>
+>>>> Arnd, could you please help me to merge? if got any issue, please
+>>>> point to me to fix.
+>>>>
+>>>
+>>> Hi Bryan,
+>>>
+>>> I've merged it into a new next/leds branch. I got conflicts with the clps711x
+>>> and at91 cleanups that are already in the next/cleanup branch but I think
+>>> I resolved them all correctly.  It would be nice if you and/or the maintainers
+>>> of those platforms could confirm that.
+>>
+>> At the end of my pass of merging branches tonight, I tried building
+>> all defconfigs on ARM and got several new build errors due to LED
+>> changes. The ones that have hit it so far are:
+>> * assabet_defconfig
+>> * at91rm9200_defconfig
+>> * ebsa100_defconfig
+>> * footbridge_defconfig
+>>
+>> Bryan, please sort these out as soon as possible. Should be easy to
+>> reproduce to debug. Meanwhile I've dropped the leds branch from
+>> arm-soc's for-next branch so that we can bring in an updated
+>> (bisectable without breakage) branch from you.
+>>
+>>
+>
+> So sorry, Arnd and Olof.
+>
+> I was travelling back from US to home recently and missed this email thread.
+> I've already push all changes:
+> git://git.kernel.org/pub/scm/linux/kernel/git/cooloney/linux-leds.git
+> for-arm-soc
+> It is based on y next branch in arm-soc git tree. I tried building and
+> fixed some errors.
+>
+> Hope it's not very late.
 
-> So this piece of code may not help and could be removed and we need
-> to 
-> poll the virt-queue during zerocopy callback ( through it could be 
-> further optimized but may not be easy). 
+Timing on this is unfortunate. Given that it's had a bit of problems
+already I would like to see more bake and test time before this goes
+into the tree. The merge window for 3.5 is too close for that.
 
-Thanks
-Shirley
+We could pick it up as a staging/ branch, but given everybody's mad
+dash at getting things in for 3.5 now, it's probably better to hold
+off and pick it up i next/ branch as soon as -rc1 is out.
 
+So, please send a fresh pull right after 3.5-rc1. Hope that's ok.
+
+
+Regards,
+
+-Olof
