@@ -1,25 +1,27 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759446Ab2ERKsT (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 May 2012 06:48:19 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:42779 "EHLO
+	id S967989Ab2ERKtN (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 May 2012 06:49:13 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:42790 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751387Ab2ERKsR (ORCPT
+	with ESMTP id S1752344Ab2ERKtJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 May 2012 06:48:17 -0400
-Date: Fri, 18 May 2012 03:48:03 -0700
-From: tip-bot for Peter Zijlstra <a.p.zijlstra@chello.nl>
-Message-ID: <tip-lz8zudea6tqgbxduk9mcs7x3@git.kernel.org>
+	Fri, 18 May 2012 06:49:09 -0400
+Date: Fri, 18 May 2012 03:48:54 -0700
+From: tip-bot for Konstantin Khlebnikov <khlebnikov@openvz.org>
+Message-ID: <tip-1d76f4381601a259323ad4faadce18db08ddebcd@git.kernel.org>
 Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
-        akpm@linux-foundation.org, torvalds@linux-foundation.org,
-        a.p.zijlstra@chello.nl, tglx@linutronix.de
+        a.p.zijlstra@chello.nl, rdunlap@xenotime.net,
+        akpm@linux-foundation.org, khlebnikov@openvz.org, tglx@linutronix.de
 Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        a.p.zijlstra@chello.nl, torvalds@linux-foundation.org,
-        akpm@linux-foundation.org, tglx@linutronix.de
+        a.p.zijlstra@chello.nl, rdunlap@xenotime.net,
+        akpm@linux-foundation.org, khlebnikov@openvz.org, tglx@linutronix.de
+In-Reply-To: <20120517232210.A292EA02FF@akpm.mtv.corp.google.com>
+References: <20120517232210.A292EA02FF@akpm.mtv.corp.google.com>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:sched/numa] sched/numa:
-  Provide sysctl knob to disable numa scheduling and turn it off by default
-Git-Commit-ID: bcdf5162b92dfc0999b0e0ecf25d778733cc4c4d
+Subject: [tip:sched/core] sched:
+  Set TAINT_UNSAFE_SMP after sleep-in-atomic bug
+Git-Commit-ID: 1d76f4381601a259323ad4faadce18db08ddebcd
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -28,270 +30,78 @@ MIME-Version: 1.0
 Content-Transfer-Encoding: 8bit
 Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Fri, 18 May 2012 03:48:09 -0700 (PDT)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Fri, 18 May 2012 03:48:59 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  bcdf5162b92dfc0999b0e0ecf25d778733cc4c4d
-Gitweb:     http://git.kernel.org/tip/bcdf5162b92dfc0999b0e0ecf25d778733cc4c4d
-Author:     Peter Zijlstra <a.p.zijlstra@chello.nl>
-AuthorDate: Thu, 17 May 2012 15:07:31 +0200
+Commit-ID:  1d76f4381601a259323ad4faadce18db08ddebcd
+Gitweb:     http://git.kernel.org/tip/1d76f4381601a259323ad4faadce18db08ddebcd
+Author:     Konstantin Khlebnikov <khlebnikov@openvz.org>
+AuthorDate: Thu, 17 May 2012 16:22:10 -0700
 Committer:  Ingo Molnar <mingo@kernel.org>
-CommitDate: Fri, 18 May 2012 09:48:59 +0200
+CommitDate: Fri, 18 May 2012 09:51:08 +0200
 
-sched/numa: Provide sysctl knob to disable numa scheduling and turn it off by default
+sched: Set TAINT_UNSAFE_SMP after sleep-in-atomic bug
 
-Provide a knob to make all this numa scheduling go-away.
+Usually sleep-in-atomic bugs are followed by dozens other
+warnings.  This patch should help to figure out original source
+of problem.  This taint flag also turns off lockdep, because it
+can go mad after that.
 
-Also provide a Kconfig entry to set the default for this new knob.
+Original TAINT_UNSAFE_SMP is used only on various ancient buggy
+K7 Athlons.  TAINT_UNSAFE_SMP is shown as 'S' in "Tainted" line,
+so let it be acronym for SMP, Scheduler and Sleep-in-atomic.
 
-Requested-by: Ingo Molnar <mingo@kernel.org>
-Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>
-Link: http://lkml.kernel.org/n/tip-lz8zudea6tqgbxduk9mcs7x3@git.kernel.org
+Probably we should rename it into TAINT_SHIT, but TAINT_CRAP is
+already there. =)
+
+Signed-off-by: Konstantin Khlebnikov <khlebnikov@openvz.org>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Acked-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Randy Dunlap <rdunlap@xenotime.net>
+Link: http://lkml.kernel.org/r/20120517232210.A292EA02FF@akpm.mtv.corp.google.com
 Signed-off-by: Ingo Molnar <mingo@kernel.org>
 ---
- include/linux/sched.h |   13 +++++++
- init/Kconfig          |   18 ++++++++++
- kernel/sched/numa.c   |   89 +++++++++++++++++++++++++++++++++++++++---------
- kernel/sysctl.c       |   11 ++++++
- 4 files changed, 114 insertions(+), 17 deletions(-)
+ Documentation/oops-tracing.txt  |    2 +-
+ Documentation/sysctl/kernel.txt |    1 +
+ kernel/sched/core.c             |    1 +
+ 3 files changed, 3 insertions(+), 1 deletions(-)
 
-diff --git a/include/linux/sched.h b/include/linux/sched.h
-index 024a5f9..4879103 100644
---- a/include/linux/sched.h
-+++ b/include/linux/sched.h
-@@ -90,6 +90,7 @@ struct sched_param {
- #include <linux/latencytop.h>
- #include <linux/cred.h>
- #include <linux/llist.h>
-+#include <linux/jump_label.h>
+diff --git a/Documentation/oops-tracing.txt b/Documentation/oops-tracing.txt
+index 13032c0..ad9b9d8 100644
+--- a/Documentation/oops-tracing.txt
++++ b/Documentation/oops-tracing.txt
+@@ -237,7 +237,7 @@ characters, each representing a particular tainted value.
+   3: 'S' if the oops occurred on an SMP kernel running on hardware that
+      hasn't been certified as safe to run multiprocessor.
+      Currently this occurs only on various Athlons that are not
+-     SMP capable.
++     SMP capable. Also cpu scheduler sets this after sleep-in-atomic bug.
  
- #include <asm/processor.h>
- 
-@@ -1584,9 +1585,14 @@ struct task_struct {
- /* Future-safe accessor for struct task_struct's cpus_allowed. */
- #define tsk_cpus_allowed(tsk) (&(tsk)->cpus_allowed)
- 
-+extern struct static_key sched_numa_disabled;
-+
- static inline int tsk_home_node(struct task_struct *p)
- {
- #ifdef CONFIG_NUMA
-+	if (static_key_false(&sched_numa_disabled))
-+		return -1;
-+
- 	return p->node;
- #else
- 	return -1;
-@@ -2058,6 +2064,13 @@ static inline void sched_autogroup_exit(struct signal_struct *sig) { }
- extern unsigned int sysctl_sched_cfs_bandwidth_slice;
- #endif
- 
-+#ifdef CONFIG_NUMA
-+extern int sysctl_sched_numa;
-+int sched_numa_handler(struct ctl_table *table, int write,
-+		void __user *buffer, size_t *lenp,
-+		loff_t *ppos);
-+#endif
-+
- #ifdef CONFIG_RT_MUTEXES
- extern int rt_mutex_getprio(struct task_struct *p);
- extern void rt_mutex_setprio(struct task_struct *p, int prio);
-diff --git a/init/Kconfig b/init/Kconfig
-index e4e84f2..2f6bfc1 100644
---- a/init/Kconfig
-+++ b/init/Kconfig
-@@ -865,6 +865,24 @@ config SCHED_AUTOGROUP
- 	  desktop applications.  Task group autogeneration is currently based
- 	  upon task session.
- 
-+config SCHED_NUMA_DEFAULT
-+	bool "Enable NUMA scheduling by default"
-+	depends on NUMA
-+	default n
-+	help
-+	  This option selects the default enablement of a scheduler feature
-+	  that gives each process a home-node and allocates all its memory
-+	  from there and tries to schedule all the process tasks on that node
-+	  (or as near to it) while trying to maintain fairness.
-+
-+	  Without this feature memory is allocated on whatever node a task
-+	  happens to run on and the scheduler is free to migrate tasks around
-+	  at will -- which can result in significant cross-node memory
-+	  traffic.
-+
-+	  Regardless of this setting it can always be changed at runtime
-+	  by changing /proc/sys/kernel/sched_numa.
-+
- config MM_OWNER
- 	def_bool NUMA
- 
-diff --git a/kernel/sched/numa.c b/kernel/sched/numa.c
-index 7b74a15..b98338b 100644
---- a/kernel/sched/numa.c
-+++ b/kernel/sched/numa.c
-@@ -18,6 +18,9 @@
- 
- #include "sched.h"
- 
-+struct static_key sched_numa_disabled = STATIC_KEY_INIT_FALSE;
-+static DEFINE_MUTEX(sched_numa_mutex);
-+int sysctl_sched_numa = IS_ENABLED(CONFIG_SCHED_NUMA_DEFAULT);
- 
- static const int numa_balance_interval = 2 * HZ; /* 2 seconds */
- 
-@@ -137,7 +140,7 @@ bool account_numa_enqueue(struct task_struct *p)
- 
- void account_numa_dequeue(struct task_struct *p)
- {
--	int home_node = tsk_home_node(p);
-+	int home_node = p->node; /* ignore sched_numa_disabled */
- 	struct numa_cpu_load *nl;
- 	struct rq *rq;
- 
-@@ -444,7 +447,7 @@ void select_task_node(struct task_struct *p, struct mm_struct *mm, int sd_flags)
- {
- 	int node;
- 
--	if (!sched_feat(NUMA_SELECT)) {
-+	if (!sched_feat(NUMA_SELECT) || !sysctl_sched_numa) {
- 		p->node = -1;
- 		return;
- 	}
-@@ -766,13 +769,74 @@ static int numad_thread(void *data)
- 	return 0;
+   4: 'R' if a module was force unloaded by "rmmod -f", ' ' if all
+      modules were unloaded normally.
+diff --git a/Documentation/sysctl/kernel.txt b/Documentation/sysctl/kernel.txt
+index 6d78841..b573910 100644
+--- a/Documentation/sysctl/kernel.txt
++++ b/Documentation/sysctl/kernel.txt
+@@ -590,6 +590,7 @@ can be ORed together:
+    2 - A module was force loaded by insmod -f.
+        Set by modutils >= 2.4.9 and module-init-tools.
+    4 - Unsafe SMP processors: SMP with CPUs not designed for SMP.
++       Also cpu scheduler sets this after sleep-in-atomic bug.
+    8 - A module was forcibly unloaded from the system by rmmod -f.
+   16 - A hardware machine check error occurred on the system.
+   32 - A bad page was discovered on the system.
+diff --git a/kernel/sched/core.c b/kernel/sched/core.c
+index 24ca677..b86eb50 100644
+--- a/kernel/sched/core.c
++++ b/kernel/sched/core.c
+@@ -3138,6 +3138,7 @@ static noinline void __schedule_bug(struct task_struct *prev)
+ 	if (irqs_disabled())
+ 		print_irqtrace_events(prev);
+ 	dump_stack();
++	add_taint(TAINT_UNSAFE_SMP);
  }
  
-+static int numad_create(struct node_queue *nq)
-+{
-+	struct task_struct *numad;
-+
-+	if (!sysctl_sched_numa)
-+		return 0;
-+
-+	numad = kthread_create_on_node(numad_thread,
-+			nq, nq->node, "numad/%d", nq->node);
-+	if (IS_ERR(numad))
-+		return PTR_ERR(numad);
-+
-+	nq->numad = numad;
-+	nq->next_schedule = jiffies + HZ;
-+
-+	return 0;
-+}
-+
-+static void numad_destroy(struct node_queue *nq)
-+{
-+	kthread_stop(nq->numad);
-+	nq->numad = NULL;
-+}
-+
-+int sched_numa_handler(struct ctl_table *table, int write,
-+		void __user *buffer, size_t *lenp,
-+		loff_t *ppos)
-+{
-+	int old, new, ret, node;
-+
-+	mutex_lock(&sched_numa_mutex);
-+	get_online_cpus();
-+
-+	old = sysctl_sched_numa;
-+	ret = proc_dointvec_minmax(table, write, buffer, lenp, ppos);
-+	new = sysctl_sched_numa;
-+
-+	if (old == new)
-+		goto unlock;
-+
-+	if (new)
-+		static_key_slow_dec(&sched_numa_disabled);
-+	else
-+		static_key_slow_inc(&sched_numa_disabled);
-+
-+	for_each_online_node(node) {
-+		struct node_queue *nq = nq_of(node);
-+
-+		if (new && !nq->numad) {
-+			if (!numad_create(nq))
-+				wake_up_process(nq->numad);
-+		} else if (!new && nq->numad)
-+			numad_destroy(nq);
-+	}
-+
-+unlock:
-+	put_online_cpus();
-+	mutex_unlock(&sched_numa_mutex);
-+
-+	return ret;
-+}
-+
- static int __cpuinit
- numa_hotplug(struct notifier_block *nb, unsigned long action, void *hcpu)
- {
- 	int cpu = (long)hcpu;
- 	int node = cpu_to_node(cpu);
- 	struct node_queue *nq = nq_of(node);
--	struct task_struct *numad;
- 	int err = 0;
- 
- 	switch (action & ~CPU_TASKS_FROZEN) {
-@@ -780,19 +844,12 @@ numa_hotplug(struct notifier_block *nb, unsigned long action, void *hcpu)
- 		if (nq->numad)
- 			break;
- 
--		numad = kthread_create_on_node(numad_thread,
--				nq, node, "numad/%d", node);
--		if (IS_ERR(numad)) {
--			err = PTR_ERR(numad);
--			break;
--		}
--
--		nq->numad = numad;
--		nq->next_schedule = jiffies + HZ; // XXX sync-up?
-+		err = numad_create(nq);
- 		break;
- 
- 	case CPU_ONLINE:
--		wake_up_process(nq->numad);
-+		if (nq->numad)
-+			wake_up_process(nq->numad);
- 		break;
- 
- 	case CPU_DEAD:
-@@ -801,10 +858,8 @@ numa_hotplug(struct notifier_block *nb, unsigned long action, void *hcpu)
- 			break;
- 
- 		if (cpumask_any_and(cpu_online_mask,
--				    cpumask_of_node(node)) >= nr_cpu_ids) {
--			kthread_stop(nq->numad);
--			nq->numad = NULL;
--		}
-+				    cpumask_of_node(node)) >= nr_cpu_ids)
-+			numad_destroy(nq);
- 		break;
- 	}
- 
-diff --git a/kernel/sysctl.c b/kernel/sysctl.c
-index 4ab1187..40ecba2 100644
---- a/kernel/sysctl.c
-+++ b/kernel/sysctl.c
-@@ -373,6 +373,17 @@ static struct ctl_table kern_table[] = {
- 		.extra1		= &one,
- 	},
- #endif
-+#ifdef CONFIG_NUMA
-+	{
-+		.procname	= "sched_numa",
-+		.data		= &sysctl_sched_numa,
-+		.maxlen		= sizeof(int),
-+		.mode		= 0644,
-+		.proc_handler	= sched_numa_handler,
-+		.extra1		= &zero,
-+		.extra2		= &one,
-+	},
-+#endif
- #ifdef CONFIG_PROVE_LOCKING
- 	{
- 		.procname	= "prove_locking",
+ /*
