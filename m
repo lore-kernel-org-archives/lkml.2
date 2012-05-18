@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030811Ab2ERXCr (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 May 2012 19:02:47 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:38665 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1030384Ab2ERXCo (ORCPT
+	id S1946221Ab2ERXC4 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 May 2012 19:02:56 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:53524 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1946199Ab2ERXCv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 May 2012 19:02:44 -0400
-Message-Id: <20120518211559.634663590@linuxfoundation.org>
+	Fri, 18 May 2012 19:02:51 -0400
+Message-Id: <20120518211559.805734534@linuxfoundation.org>
 User-Agent: quilt/0.60-19.1
-Date: Fri, 18 May 2012 14:16:01 -0700
+Date: Fri, 18 May 2012 14:16:03 -0700
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Subject: [ 02/54] xen/pte: Fix crashes when trying to see non-existent PGD/PMD/PUD/PTEs
+        alan@lxorguk.ukuu.org.uk, Tejun Heo <tj@kernel.org>,
+        Yanmin Zhang <yanmin.zhang@intel.com>, ShuoX Liu <shuox.liu@intel.com>,
+        "H. Peter Anvin" <hpa@zytor.com>
+Subject: [ 04/54] percpu, x86: dont use PMD_SIZE as embedded atom_size on 32bit
 In-Reply-To: <20120518212656.GA4992@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,60 +26,65 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+From: Tejun Heo <tj@kernel.org>
 
-commit b7e5ffe5d83fa40d702976d77452004abbe35791 upstream.
+commit d5e28005a1d2e67833852f4c9ea8ec206ea3ff85 upstream.
 
-If I try to do "cat /sys/kernel/debug/kernel_page_tables"
-I end up with:
+With the embed percpu first chunk allocator, x86 uses either PAGE_SIZE
+or PMD_SIZE for atom_size.  PMD_SIZE is used when CPU supports PSE so
+that percpu areas are aligned to PMD mappings and possibly allow using
+PMD mappings in vmalloc areas in the future.  Using larger atom_size
+doesn't waste actual memory; however, it does require larger vmalloc
+space allocation later on for !first chunks.
 
-BUG: unable to handle kernel paging request at ffffc7fffffff000
-IP: [<ffffffff8106aa51>] ptdump_show+0x221/0x480
-PGD 0
-Oops: 0000 [#1] SMP
-CPU 0
-.. snip..
-RAX: 0000000000000000 RBX: ffffc00000000fff RCX: 0000000000000000
-RDX: 0000800000000000 RSI: 0000000000000000 RDI: ffffc7fffffff000
+With reasonably sized vmalloc area, PMD_SIZE shouldn't be a problem
+but x86_32 at this point is anything but reasonable in terms of
+address space and using larger atom_size reportedly leads to frequent
+percpu allocation failures on certain setups.
 
-which is due to the fact we are trying to access a PFN that is not
-accessible to us. The reason (at least in this case) was that
-PGD[256] is set to __HYPERVISOR_VIRT_START which was setup (by the
-hypervisor) to point to a read-only linear map of the MFN->PFN array.
-During our parsing we would get the MFN (a valid one), try to look
-it up in the MFN->PFN tree and find it invalid and return ~0 as PFN.
-Then pte_mfn_to_pfn would happilly feed that in, attach the flags
-and return it back to the caller. 'ptdump_show' bitshifts it and
-gets and invalid value that it tries to dereference.
+As there is no reason to not use PMD_SIZE on x86_64 as vmalloc space
+is aplenty and most x86_64 configurations support PSE, fix the issue
+by always using PMD_SIZE on x86_64 and PAGE_SIZE on x86_32.
 
-Instead of doing all of that, we detect the ~0 case and just
-return !_PAGE_PRESENT.
+v2: drop cpu_has_pse test and make x86_64 always use PMD_SIZE and
+    x86_32 PAGE_SIZE as suggested by hpa.
 
-This bug has been in existence .. at least until 2.6.37 (yikes!)
-
-Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Signed-off-by: Tejun Heo <tj@kernel.org>
+Reported-by: Yanmin Zhang <yanmin.zhang@intel.com>
+Reported-by: ShuoX Liu <shuox.liu@intel.com>
+Acked-by: H. Peter Anvin <hpa@zytor.com>
+LKML-Reference: <4F97BA98.6010001@intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/x86/xen/mmu.c |    7 ++++++-
- 1 file changed, 6 insertions(+), 1 deletion(-)
+ arch/x86/kernel/setup_percpu.c |   14 +++++++++++++-
+ 1 file changed, 13 insertions(+), 1 deletion(-)
 
---- a/arch/x86/xen/mmu.c
-+++ b/arch/x86/xen/mmu.c
-@@ -320,8 +320,13 @@ static pteval_t pte_mfn_to_pfn(pteval_t
- {
- 	if (val & _PAGE_PRESENT) {
- 		unsigned long mfn = (val & PTE_PFN_MASK) >> PAGE_SHIFT;
-+		unsigned long pfn = mfn_to_pfn(mfn);
-+
- 		pteval_t flags = val & PTE_FLAGS_MASK;
--		val = ((pteval_t)mfn_to_pfn(mfn) << PAGE_SHIFT) | flags;
-+		if (unlikely(pfn == ~0))
-+			val = flags & ~_PAGE_PRESENT;
-+		else
-+			val = ((pteval_t)pfn << PAGE_SHIFT) | flags;
- 	}
+--- a/arch/x86/kernel/setup_percpu.c
++++ b/arch/x86/kernel/setup_percpu.c
+@@ -185,10 +185,22 @@ void __init setup_per_cpu_areas(void)
+ #endif
+ 	rc = -EINVAL;
+ 	if (pcpu_chosen_fc != PCPU_FC_PAGE) {
+-		const size_t atom_size = cpu_has_pse ? PMD_SIZE : PAGE_SIZE;
+ 		const size_t dyn_size = PERCPU_MODULE_RESERVE +
+ 			PERCPU_DYNAMIC_RESERVE - PERCPU_FIRST_CHUNK_RESERVE;
++		size_t atom_size;
  
- 	return val;
++		/*
++		 * On 64bit, use PMD_SIZE for atom_size so that embedded
++		 * percpu areas are aligned to PMD.  This, in the future,
++		 * can also allow using PMD mappings in vmalloc area.  Use
++		 * PAGE_SIZE on 32bit as vmalloc space is highly contended
++		 * and large vmalloc area allocs can easily fail.
++		 */
++#ifdef CONFIG_X86_64
++		atom_size = PMD_SIZE;
++#else
++		atom_size = PAGE_SIZE;
++#endif
+ 		rc = pcpu_embed_first_chunk(PERCPU_FIRST_CHUNK_RESERVE,
+ 					    dyn_size, atom_size,
+ 					    pcpu_cpu_distance,
 
 
