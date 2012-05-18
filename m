@@ -1,39 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S967648Ab2ERVGu (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 May 2012 17:06:50 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:47714 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S967460Ab2ERVGr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 May 2012 17:06:47 -0400
-Message-ID: <4FB6B9D3.6020307@kernel.org>
-Date: Fri, 18 May 2012 14:06:27 -0700
-From: "H. Peter Anvin" <hpa@kernel.org>
-Organization: Linux Kernel Organization, Inc.
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:11.0) Gecko/20120329 Thunderbird/11.0.1
+	id S964809Ab2ERVMc (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 May 2012 17:12:32 -0400
+Received: from s15943758.onlinehome-server.info ([217.160.130.188]:42422 "EHLO
+	mail.x86-64.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S965340Ab2ERVMa (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 18 May 2012 17:12:30 -0400
+Date: Fri, 18 May 2012 23:12:11 +0200
+From: Borislav Petkov <bp@amd64.org>
+To: "Luck, Tony" <tony.luck@intel.com>
+Cc: Borislav Petkov <bp@amd64.org>, Mauro Carvalho Chehab <mchehab@redhat.com>,
+        Ingo Molnar <mingo@kernel.org>,
+        Linux Edac Mailing List <linux-edac@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Aristeu Rozanski <arozansk@redhat.com>,
+        Doug Thompson <norsk5@yahoo.com>, Steven Rostedt <rostedt@goodmis.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Ingo Molnar <mingo@redhat.com>
+Subject: Re: [PATCH v24b] RAS: Add a tracepoint for reporting memory
+ controller events
+Message-ID: <20120518211211.GA26464@aftab.osrc.amd.com>
+References: <20120518095638.GA20215@aftab.osrc.amd.com>
+ <4FB62BAB.90808@redhat.com>
+ <20120518124338.GJ20215@aftab.osrc.amd.com>
+ <4FB64D5B.1030301@redhat.com>
+ <20120518140521.GM20215@aftab.osrc.amd.com>
+ <4FB65D52.9060108@redhat.com>
+ <20120518164014.GX20215@aftab.osrc.amd.com>
+ <4FB6866E.7090503@redhat.com>
+ <20120518185258.GE20215@aftab.osrc.amd.com>
+ <3908561D78D1C84285E8C5FCA982C28F192F1A33@ORSMSX104.amr.corp.intel.com>
 MIME-Version: 1.0
-To: "H.J. Lu" <hjl.tools@gmail.com>
-CC: Linus Torvalds <torvalds@linux-foundation.org>,
-        linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org,
-        mingo@kernel.org, tglx@linutronix.de, Paul Mundt <lethal@linux-sh.org>
-Subject: Re: [PATCH 08/10] Use __kernel_ulong_t in struct msqid64_ds
-References: <1337292816-10839-1-git-send-email-hjl.tools@gmail.com> <1337292816-10839-9-git-send-email-hjl.tools@gmail.com> <4FB58EFD.7010302@zytor.com> <4FB5C050.9070805@kernel.org> <CAMe9rOrKq8Ait8wKudRF535J5c=dDTKekmUN_=HOs5BBLtsoGQ@mail.gmail.com> <CA+55aFxtejaM8ecOw8VYk74OaXfGY7=LO3JSyz3rdHEv2r9goQ@mail.gmail.com> <CAMe9rOqKz5MjENWDixpHgcNw9BiJDZWmXzN3NmmbLkbxQEKGqA@mail.gmail.com>
-In-Reply-To: <CAMe9rOqKz5MjENWDixpHgcNw9BiJDZWmXzN3NmmbLkbxQEKGqA@mail.gmail.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <3908561D78D1C84285E8C5FCA982C28F192F1A33@ORSMSX104.amr.corp.intel.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/17/2012 08:56 PM, H.J. Lu wrote:
+On Fri, May 18, 2012 at 07:10:42PM +0000, Luck, Tony wrote:
+> > That's why _each_ _driver_ will have its format and the userspace tools
+> > parsing it will know about it!
 > 
-> We need kernel headers for constants used in system calls.  But I don't
-> mind if kernel stops exporting data structures to user space.
+> Sounds like a full employment program for parser writers.
 > 
+> There are some interesting fields that should be common to all
+> drivers ... so have twenty parsers that can handle:
+> 
+> 	paddr: 0x1234
+> 	PADDR: 0x1234
+> 	Paddr = 0x1234
+> 	Phys = 1234
+> 	addr: 0x1234
+> 	Address: 0x000000001234
+> 
+> looks like a lot of make-work ... when the OS can standardize in the ABI
+> that there is a 64-bit binary value that is the physical address of the
+> error (and another 64-bit mask saying which, if any, bits are valid).
 
-I do.  It is idiotic that data structure definitions should have be
-replicated by cut and paste; all it is is a completely unnecessary
-source of both delay and of error.
+Makes sense, I gotta say :)
 
-	-hpa
+> So we should be looking for the set of always relevant values that
+> can be kept explicitly separate in fields in TP_PROTO, and per-driver
+> specific stuff (grain/syndrome??) bits that will have to go into the
+> "details" string and require some driver specific user-mode parsing to
+> use.
 
+How about we put all the values which are globally valid for all drivers
+in separate fields and leave the "(...)" brackets for details where each
+driver can put its own relevant stuff?
+
+For the record, I very much like this reasoning :).
+
+-- 
+Regards/Gruss,
+Boris.
+
+Advanced Micro Devices GmbH
+Einsteinring 24, 85609 Dornach
+GM: Alberto Bozzo
+Reg: Dornach, Landkreis Muenchen
+HRB Nr. 43632 WEEE Registernr: 129 19551
