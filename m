@@ -1,70 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760876Ab2ERHkY (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 May 2012 03:40:24 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:45276 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754271Ab2ERHkX (ORCPT
+	id S1761102Ab2ERHqT (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 May 2012 03:46:19 -0400
+Received: from mail-ob0-f174.google.com ([209.85.214.174]:49257 "EHLO
+	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759245Ab2ERHqS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 May 2012 03:40:23 -0400
-Date: Fri, 18 May 2012 08:40:20 +0100
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Axel Lin <axel.lin@gmail.com>
-Cc: linux-kernel@vger.kernel.org, Linus Walleij <linus.walleij@stericsson.com>,
-        Liam Girdwood <lrg@ti.com>
-Subject: Re: [PATCH RFC/RFT] regulator: ab3100: Use
- regulator_map_voltage_iterate()
-Message-ID: <20120518074019.GF4073@opensource.wolfsonmicro.com>
-References: <1337231178.22713.2.camel@phoenix>
+	Fri, 18 May 2012 03:46:18 -0400
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="zaRBsRFn0XYhEU69"
-Content-Disposition: inline
-In-Reply-To: <1337231178.22713.2.camel@phoenix>
-X-Cookie: The time is right to make new friends.
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <CAFeW=patEo56jXmyO6EPkDOf4oBwk1kaNE8OQASZHK-3d3zhZA@mail.gmail.com>
+References: <CAFeW=pZcqnybTeMQPEMUguAwwgqpM1Hap2Dh3K-5majfYqMTaA@mail.gmail.com>
+	<CAFeW=pZ-HZKyBALRZVo=PeWUoaEk39QUSoMsV-1K5CBgcVUMeA@mail.gmail.com>
+	<4FB5C76F.6090504@huawei.com>
+	<CAFeW=patEo56jXmyO6EPkDOf4oBwk1kaNE8OQASZHK-3d3zhZA@mail.gmail.com>
+Date: Fri, 18 May 2012 15:46:17 +0800
+Message-ID: <CAFeW=pZ8Y7ycxjxro7zBMqdtaCOYs4RmoxtDrsN8+mqLhOL--g@mail.gmail.com>
+Subject: Re: cgroup: denying device doesn't work with 'rw' mode string
+From: Amos Kong <kongjianjun@gmail.com>
+To: Li Zefan <lizefan@huawei.com>
+Cc: serue@us.ibm.com, viro@zeniv.linux.org.uk, linux-kernel@vger.kernel.org,
+        tj@kernel.org, jmorris@namei.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+In devcgroup_create(), we create a new whitelist, and add first entry
+which type is 'DEV_ALL'.
+Execute "# echo 'b 253:3 rw' > devices/devices.deny",
+dev_whitelist_rm() will update access
+of first entry to 3, but type of first entry is also 'DEV_ALL'
 
---zaRBsRFn0XYhEU69
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+.. static void dev_whitelist_rm(struct dev_cgroup *dev_cgroup, ...) {
+..      list_for_each_entry_safe(walk, tmp, &dev_cgroup->whitelist, list) {
+..              if (walk->type == DEV_ALL)
+..                      goto remove;
 
-On Thu, May 17, 2012 at 01:06:18PM +0800, Axel Lin wrote:
-> regulator_map_voltage_iterate() is for drivers implementing set_voltage_s=
-el()
-> and list_voltage() to use it as their map_voltage() operation.
->=20
-> In this case, regulator_map_voltage_iterate() happen to be doing the same=
- thing
-> as ab3100_get_best_voltage_index() function. So we can use it to replace
-> ab3100_get_best_voltage_index() function.
+If the type is 'DEV_ALL', will try to remove it without checking major/minor/..
 
-Applied, thanks.
+.. remove:
+..              walk->access &= ~wh->access;
 
---zaRBsRFn0XYhEU69
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+                access of first entry will be updated to 7(mrw) & ~4(w) = 3
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
+..              if (!walk->access) {
 
-iQIcBAEBAgAGBQJPtfzcAAoJEBus8iNuMP3dZYkP/36UkutQyuqJuQVBf4jjW1+S
-xSAkaeqgRo5YEAipFisoyBSHAwGwUVdVttiJMLQtTkrVdIL+Uq5rsixJxZw0PcWY
-ZIlmRE2KngBVGWKe+YGI7KPHwSFWuirw3qcsFNDxN56Es4uQxjYX26SEK0n/Q2H7
-FPZfhBmIc2DGjYnnRbwDanrb8N+eG3YUi4RCEq/BdOy5Qo4FddUAdxfKc2HjCQNq
-Jpi58oRT1JR7lb3biDKdvPiO68C0CAvrTCN+m10PbBE508nMaAALVxoMwg0e0sSh
-ZiMk1NjJbm/7q7MK4BH2i0Mc2DQgcJXwRCnKq2ud8MswOH1+0L23+n8G+nIxNRXy
-ea1YfBGp/3tiu1YOfTLearsQX8gKqMaST/G37JBke8bVfo6zv3iKoPe66S9ZF79b
-JCwpwmQ5VHCcPaGQvk+VlrZcZOxvoNcSxeVJHO8XENYAHL60q55QHMGk9U0ymCy3
-UtcK7CATIkSxz8tmwwGa58ogaNcoMRmlQh9MWLww9FxcZnJJUuaIEdGPzCCDxeJa
-D9/FvpBf0D915zCUGQdPPCQJcb0Ebh6fgNvvkDb1Qog58avU3E+ihY5aLkWIVc0G
-+vnOPe6o2X7vKwOAr7ORov+/5+9jDwHWAVYyfJoHPZ+8AOhBOLGob9BIVRRhb5yK
-V6c5BDfn8YcfrOASz8oQ
-=XQHF
------END PGP SIGNATURE-----
+                first entry will not be deleted, because walk->access is not 0
 
---zaRBsRFn0XYhEU69--
+..                      list_del_rcu(&walk->list);
+..                      kfree_rcu(walk, rcu);
+
+Execute dd cmd to write device, __devcgroup_inode_permission() will be called.
+The type of first list entry is 'DEV_ALL', just pass this permission checking.
+(write operation will not be denied)
+
+.. int __devcgroup_inode_permission(struct inode *inode, int mask) {
+..         ....
+..      dev_cgroup = task_devcgroup(current);
+..      list_for_each_entry_rcu(wh, &dev_cgroup->whitelist, list) {
+..              if (wh->type & DEV_ALL)
+..                      goto found;
+
+// If type is 'DEV_ALL', pass permission check
+
+..                 ....
+..              if ((mask & MAY_WRITE) && !(wh->access & ACC_WRITE))
+..                      continue;
+.. found:
+..              rcu_read_unlock();
+..              return 0;
+..
