@@ -1,61 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753598Ab2EROnI (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 May 2012 10:43:08 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:4828 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751642Ab2EROnG (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 May 2012 10:43:06 -0400
-X-Authority-Analysis: v=2.0 cv=cssZYiEi c=1 sm=0 a=ZycB6UtQUfgMyuk2+PxD7w==:17 a=XQbtiDEiEegA:10 a=pOYm6YVgi0cA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=meVymXHHAAAA:8 a=GfgHd8XjqLkgNas_6n0A:9 a=PUjeQqilurYA:10 a=jeBq3FmKZ4MA:10 a=ZycB6UtQUfgMyuk2+PxD7w==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 74.67.80.29
-Message-ID: <1337352183.6724.107.camel@gandalf.stny.rr.com>
-Subject: Re: lockdep false positive in double_lock_balance()?
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Roland Dreier <roland@kernel.org>, Ingo Molnar <mingo@elte.hu>,
-        linux-kernel@vger.kernel.org
-Date: Fri, 18 May 2012 10:43:03 -0400
-In-Reply-To: <1337282386.4281.77.camel@twins>
-References: <1335314100-532-1-git-send-email-roland@kernel.org>
-	 <alpine.LSU.2.00.1204251411460.4188@eggly.anvils>
-	 <1337198420-5062-1-git-send-email-roland@kernel.org>
-	 <1337282386.4281.77.camel@twins>
-Content-Type: text/plain; charset="ISO-8859-15"
-X-Mailer: Evolution 3.2.2-1 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	id S1753675Ab2EROpS (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 May 2012 10:45:18 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:45191 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751692Ab2EROpP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 18 May 2012 10:45:15 -0400
+Date: Fri, 18 May 2012 16:45:04 +0200
+From: Jan Kara <jack@suse.cz>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Jan Kara <jack@suse.cz>, Wu Fengguang <fengguang.wu@intel.com>,
+        LKML <linux-kernel@vger.kernel.org>, linux-mm@kvack.org
+Subject: Re: [PATCH 1/2] lib: Proportions with flexible period
+Message-ID: <20120518144504.GD6875@quack.suse.cz>
+References: <1337096583-6049-1-git-send-email-jack@suse.cz>
+ <1337096583-6049-2-git-send-email-jack@suse.cz>
+ <1337337824.573.16.camel@twins>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1337337824.573.16.camel@twins>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2012-05-17 at 21:19 +0200, Peter Zijlstra wrote:
-
-> Something like this should fix it I think..
+On Fri 18-05-12 12:43:44, Peter Zijlstra wrote:
+> On Tue, 2012-05-15 at 17:43 +0200, Jan Kara wrote:
+> > +void __fprop_inc_percpu_max(struct fprop_global *p,
+> > +                           struct fprop_local_percpu *pl, int max_frac)
+> > +{
+> > +       if (unlikely(max_frac < 100)) {
+> > +               unsigned long numerator, denominator;
+> > +
+> > +               fprop_fraction_percpu(p, pl, &numerator, &denominator);
+> > +               if (numerator > ((long long)denominator) * max_frac / 100)
+> > +                       return;
 > 
-> 
-> ---
->  kernel/sched/rt.c |    2 +-
->  1 file changed, 1 insertion(+), 1 deletion(-)
-> 
-> diff --git a/kernel/sched/rt.c b/kernel/sched/rt.c
-> index c5565c3..b649108 100644
-> --- a/kernel/sched/rt.c
-> +++ b/kernel/sched/rt.c
-> @@ -1556,7 +1556,7 @@ static struct rq *find_lock_lowest_rq(struct task_struct *task, struct rq *rq)
->  				     task_running(rq, task) ||
->  				     !task->on_rq)) {
->  
-> -				raw_spin_unlock(&lowest_rq->lock);
-> +				double_unlock_balance(rq, lowest_rq);
+> Another thing, your fprop_fraction_percpu() can he horribly expensive
+> due to using _sum() (and to a lesser degree the retry), remember that
+> this function is called for _every_ page written out.
+  The retry happens only when new period is declared while
+fprop_fraction_percpu() is running. So that should be rather exceptional.
+Regarding the _sum I agree, luckily that's easy enough to fix.
 
-Acked-by: Steven Rostedt <rostedt@goodmis.org>
+> Esp. on the mega fast storage (multi-spindle or SSD) they're pushing cpu
+> limits as it is with iops, we should be very careful not to make it more
+> expensive than absolutely needed.
+  Yup.
 
--- Steve
+> > +       } else
+> > +               fprop_reflect_period_percpu(p, pl);
+> > +       __percpu_counter_add(&pl->events, 1, PROP_BATCH);
+> > +       percpu_counter_add(&p->events, 1);
+> > +} 
 
->  				lowest_rq = NULL;
->  				break;
->  			}
-
-
+								Honza
+-- 
+Jan Kara <jack@suse.cz>
+SUSE Labs, CR
