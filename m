@@ -1,54 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1946936Ab2ERXQC (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 May 2012 19:16:02 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:38665 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1946650Ab2ERXGS (ORCPT
+	id S1946943Ab2ERXQP (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 May 2012 19:16:15 -0400
+Received: from mail-qc0-f174.google.com ([209.85.216.174]:39414 "EHLO
+	mail-qc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1946657Ab2ERXQI convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 May 2012 19:06:18 -0400
-Message-Id: <20120518212650.137110817@linuxfoundation.org>
-User-Agent: quilt/0.60-19.1
-Date: Fri, 18 May 2012 14:26:59 -0700
-From: Greg KH <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Al Viro <viro@zeniv.linux.org.uk>,
-        Russell King <rmk+kernel@arm.linux.org.uk>
-Subject: [ 10/47] ARM: prevent VM_GROWSDOWN mmaps extending below FIRST_USER_ADDRESS
-In-Reply-To: <20120518212701.GA5023@kroah.com>
+	Fri, 18 May 2012 19:16:08 -0400
+MIME-Version: 1.0
+In-Reply-To: <20120518230117.GA6016@kroah.com>
+References: <1337365643-29261-1-git-send-email-snanda@chromium.org>
+ <1337375946.7562.11.camel@gandalf.stny.rr.com> <CANMivWZ4ygG5R7ob_Q-pkAFpoKAkK_iQf3w2eiw5Gv65AbTYNw@mail.gmail.com>
+ <201205182346.02296.rjw@sisk.pl> <CANMivWafYv8BU2_ez==+GGYWn54BM+iU6u7yLLs-2TOfm-1ftA@mail.gmail.com>
+ <20120518230117.GA6016@kroah.com>
+From: Sameer Nanda <snanda@chromium.org>
+Date: Fri, 18 May 2012 16:15:47 -0700
+X-Google-Sender-Auth: sxNd2B7Aq69kXHs9EZZ1iFWs66U
+Message-ID: <CANMivWY=-ML2v0SOZp6uiNWQKqKZ=eY82otMLqQu8S4+OvKHMA@mail.gmail.com>
+Subject: Re: [PATCH] power, trace: add tracing for device_resume
+To: Greg KH <gregkh@linuxfoundation.org>
+Cc: "Rafael J. Wysocki" <rjw@sisk.pl>, Steven Rostedt <rostedt@goodmis.org>,
+        rob@landley.net, len.brown@intel.com, pavel@ucw.cz, fweisbec@gmail.com,
+        mingo@redhat.com, jkosina@suse.cz, standby24x7@gmail.com,
+        jj@chaosbits.net, paulmck@linux.vnet.ibm.com, josh@joshtriplett.org,
+        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-pm@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.3-stable review patch.  If anyone has any objections, please let me know.
+On Fri, May 18, 2012 at 4:01 PM, Greg KH <gregkh@linuxfoundation.org> wrote:
+> On Fri, May 18, 2012 at 03:17:32PM -0700, Sameer Nanda wrote:
+>> On Fri, May 18, 2012 at 2:46 PM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
+>> > On Friday, May 18, 2012, Sameer Nanda wrote:
+>> >> On Fri, May 18, 2012 at 2:19 PM, Steven Rostedt <rostedt@goodmis.org> wrote:
+>> >> > On Fri, 2012-05-18 at 13:58 -0700, Sameer Nanda wrote:
+>> >> >> On Fri, May 18, 2012 at 12:14 PM, Steven Rostedt <rostedt@goodmis.org> wrote:
+>> >> >> > On Fri, 2012-05-18 at 11:57 -0700, Sameer Nanda wrote:
+>> >> >> >
+>> >> >> >> AFAICT, they are used for something completely different -- help solve
+>> >> >> >> suspend/resume issues by saving a hash in the RTC of the last device
+>> >> >> >> that suspended/resumed.  They don't use the perf tracing mechanism at
+>> >> >> >> all.
+>> >> >> >>
+>> >> >> >
+>> >> >> > Also note that all tracepoints have timestamps attached to them. You do
+>> >> >> > not need to add deltas. Do that in the userspace tools that read the
+>> >> >> > timestamps and events. This way you can have one DECLARE_EVENT_CLASS and
+>> >> >> > three DEFINE_EVENTs. This will save space.
+>> >> >>
+>> >> >> Agreed on the space savings.  However, with the time_delta in the
+>> >> >> trace message itself, a one line shell script [1] that sorts on the
+>> >> >> time_delta field is sufficient to quickly spot the devices that take a
+>> >> >> long time to resume.  Without the time_delta field, the user tool is
+>> >> >> more complex since it needs to first match up the device_resume_in,
+>> >> >> device_resume_waited and device_resume_out traces and then calculate
+>> >> >> time deltas.
+>> >> >>
+>> >> >> Seems like a worthwhile trade-off to me but I can take out the
+>> >> >> time_delta if the general consensus is otherwise.
+>> >> >
+>> >> > Just note that every TRACE_EVENT() adds around 5k or more code. Every
+>> >> > DEFINE_EVENT adds just about 300 bytes.
+>> >>
+>> >> Ok, let me respin the patch.  I am thinking of adding time_delta to
+>> >> all three traces.  That way we should get the space saving while still
+>> >> allowing quick spotting of devices that take long time to resume.
+>> >
+>> > Well, what's wrong with the code in drivers/base/power/main.c that
+>> > is activated by adding initcall_debug to the kernel command line?
+>>
+>> Mostly that I hadn't looked closely at initcall_debug before writing my patch :)
+>>
+>> Now that I have taken a look at it, the main issue is that the kernel
+>> command line needs to be modified to activate it.  We cannot do this
+>> for our automated regression suites since the kernel command line is
+>> protected on Chrome OS systems.
+>
+> You are kidding, right?  You have control over your test systems, don't
+> bloat everyone's kernel by 5k just because your infrastructure is
+> somehow something that you feel you can't change.
 
-------------------
+Fair enough.  But having to modify the kernel command line to do this
+is clunky.  How about exposing the ability to turn on these
+initcall_debug prints through a knob under /sys/power?
 
-From: Russell King <rmk+kernel@arm.linux.org.uk>
-
-commit 9b61a4d1b2064dbd0c9e61754305ac852170509f upstream.
-
-Reported-by: Al Viro <viro@zeniv.linux.org.uk>
-Signed-off-by: Russell King <rmk+kernel@arm.linux.org.uk>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
----
- arch/arm/mm/fault.c |    4 +++-
- 1 file changed, 3 insertions(+), 1 deletion(-)
-
---- a/arch/arm/mm/fault.c
-+++ b/arch/arm/mm/fault.c
-@@ -245,7 +245,9 @@ good_area:
- 	return handle_mm_fault(mm, vma, addr & PAGE_MASK, flags);
- 
- check_stack:
--	if (vma->vm_flags & VM_GROWSDOWN && !expand_stack(vma, addr))
-+	/* Don't allow expansion below FIRST_USER_ADDRESS */
-+	if (vma->vm_flags & VM_GROWSDOWN &&
-+	    addr >= FIRST_USER_ADDRESS && !expand_stack(vma, addr))
- 		goto good_area;
- out:
- 	return fault;
+>
+>> Does it make sense to merge these tracepoints with initcall_debug
+>> then?  The initcall_debug prints will still be conditional on the
+>> kernel command line flag but the tracepoints wouldn't be.
+>>
+>> Another possibility is to convert initcall_debug to use tracepoints
+>> instead of printks.  But I am not sure if this would break any
+>> existing tools that depend on initcall_debug on resume path?
+>
+> We have tools that use the existing printks, don't change them.
+>
+> greg k-h
 
 
+
+-- 
+Sameer
