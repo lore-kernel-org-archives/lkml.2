@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1946311Ab2ERXcF (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 May 2012 19:32:05 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:38665 "EHLO
+	id S1946297Ab2ERXc3 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 May 2012 19:32:29 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:35668 "EHLO
 	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1946276Ab2ERXDV (ORCPT
+	with ESMTP id S1946259Ab2ERXDM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 May 2012 19:03:21 -0400
-Message-Id: <20120518211600.819370543@linuxfoundation.org>
+	Fri, 18 May 2012 19:03:12 -0400
+Message-Id: <20120518211600.574469391@linuxfoundation.org>
 User-Agent: quilt/0.60-19.1
-Date: Fri, 18 May 2012 14:16:14 -0700
+Date: Fri, 18 May 2012 14:16:11 -0700
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Stephen Hemminger <shemminger@vyatta.com>,
+        alan@lxorguk.ukuu.org.uk, Eric Dumazet <edumazet@google.com>,
+        Stephen Hemminger <shemminger@osdl.org>,
         "David S. Miller" <davem@davemloft.net>
-Subject: [ 15/54] sky2: propogate rx hash when packet is copied
+Subject: [ 12/54] netem: fix possible skb leak
 In-Reply-To: <20120518212656.GA4992@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,35 +27,36 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 ------------------
 
 
-From: stephen hemminger <shemminger@vyatta.com>
+From: Eric Dumazet <edumazet@google.com>
 
-[ Upstream commit 3f42941b5d1d13542b1a755a9e4f633aa72e4d3e ]
+[ Upstream commit 116a0fc31c6c9b8fc821be5a96e5bf0b43260131 ]
 
-When a small packet is received, the driver copies it to a new skb to allow
-reusing the full size Rx buffer. The copy was propogating the checksum offload
-but not the receive hash information. The bug is impact was mostly harmless
-and therefore not observed until reviewing this area of code.
+skb_checksum_help(skb) can return an error, we must free skb in this
+case. qdisc_drop(skb, sch) can also be feeded with a NULL skb (if
+skb_unshare() failed), so lets use this generic helper.
 
-Signed-off-by: Stephen Hemminger <shemminger@vyatta.com>
+Signed-off-by: Eric Dumazet <edumazet@google.com>
+Cc: Stephen Hemminger <shemminger@osdl.org>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- drivers/net/sky2.c |    3 +++
- 1 file changed, 3 insertions(+)
+ net/sched/sch_netem.c |    6 ++----
+ 1 file changed, 2 insertions(+), 4 deletions(-)
 
---- a/drivers/net/sky2.c
-+++ b/drivers/net/sky2.c
-@@ -2344,8 +2344,11 @@ static struct sk_buff *receive_copy(stru
- 		skb_copy_from_linear_data(re->skb, skb->data, length);
- 		skb->ip_summed = re->skb->ip_summed;
- 		skb->csum = re->skb->csum;
-+		skb->rxhash = re->skb->rxhash;
-+
- 		pci_dma_sync_single_for_device(sky2->hw->pdev, re->data_addr,
- 					       length, PCI_DMA_FROMDEVICE);
-+		re->skb->rxhash = 0;
- 		re->skb->ip_summed = CHECKSUM_NONE;
- 		skb_put(skb, length);
+--- a/net/sched/sch_netem.c
++++ b/net/sched/sch_netem.c
+@@ -350,10 +350,8 @@ static int netem_enqueue(struct sk_buff
+ 	if (q->corrupt && q->corrupt >= get_crandom(&q->corrupt_cor)) {
+ 		if (!(skb = skb_unshare(skb, GFP_ATOMIC)) ||
+ 		    (skb->ip_summed == CHECKSUM_PARTIAL &&
+-		     skb_checksum_help(skb))) {
+-			sch->qstats.drops++;
+-			return NET_XMIT_DROP;
+-		}
++		     skb_checksum_help(skb)))
++			return qdisc_drop(skb, sch);
+ 
+ 		skb->data[net_random() % skb_headlen(skb)] ^= 1<<(net_random() % 8);
  	}
 
 
