@@ -1,67 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933662Ab2ERJZe (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 May 2012 05:25:34 -0400
-Received: from mail-lpp01m010-f46.google.com ([209.85.215.46]:58405 "EHLO
-	mail-lpp01m010-f46.google.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932852Ab2ERJZb (ORCPT
+	id S1030789Ab2ERJ0X (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 May 2012 05:26:23 -0400
+Received: from smtprelay04.ispgateway.de ([80.67.31.32]:58382 "EHLO
+	smtprelay04.ispgateway.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1761211Ab2ERJ0W (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 May 2012 05:25:31 -0400
-Date: Fri, 18 May 2012 12:25:26 +0300 (EEST)
-From: Pekka Enberg <penberg@kernel.org>
-X-X-Sender: penberg@tux.localdomain
-To: Joonsoo Kim <js1304@gmail.com>
-cc: Christoph Lameter <cl@linux-foundation.org>, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org, Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        stable@vger.kernel.org
-Subject: Re: [PATCH RESEND] slub: fix a memory leak in get_partial_node()
-In-Reply-To: <1337181182-23054-1-git-send-email-js1304@gmail.com>
-Message-ID: <alpine.LFD.2.02.1205181223460.3899@tux.localdomain>
-References: <alpine.LFD.2.02.1205160935340.1763@tux.localdomain> <1337181182-23054-1-git-send-email-js1304@gmail.com>
-User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
+	Fri, 18 May 2012 05:26:22 -0400
+Message-ID: <4FB615A1.1090203@ladisch.de>
+Date: Fri, 18 May 2012 11:25:53 +0200
+From: Clemens Ladisch <clemens@ladisch.de>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.15) Gecko/20110323 Thunderbird/3.1.9
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+To: KwongYuan Wong <wong.kwongyuan@gmail.com>
+CC: linux-kernel@vger.kernel.org
+Subject: Re: a volatile related bug in kernel/timer.c ?
+References: <CA++uP6MrvbaaBg3iCZDwYFTQdujPHaKYhAC5FFt+r9M_J-AJ_Q@mail.gmail.com>
+In-Reply-To: <CA++uP6MrvbaaBg3iCZDwYFTQdujPHaKYhAC5FFt+r9M_J-AJ_Q@mail.gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-Df-Sender: bGludXgta2VybmVsQGNsLmRvbWFpbmZhY3Rvcnkta3VuZGUuZGU=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 17 May 2012, Joonsoo Kim wrote:
-> In the case which is below,
-> 
-> 1. acquire slab for cpu partial list
-> 2. free object to it by remote cpu
-> 3. page->freelist = t
-> 
-> then memory leak is occurred.
-> 
-> Change acquire_slab() not to zap freelist when it works for cpu partial list.
-> I think it is a sufficient solution for fixing a memory leak.
-> 
-> Below is output of 'slabinfo -r kmalloc-256'
-> when './perf stat -r 30 hackbench 50 process 4000 > /dev/null' is done.
-> 
-> ***Vanilla***
-> Sizes (bytes)     Slabs              Debug                Memory
-> ------------------------------------------------------------------------
-> Object :     256  Total  :     468   Sanity Checks : Off  Total: 3833856
-> SlabObj:     256  Full   :     111   Redzoning     : Off  Used : 2004992
-> SlabSiz:    8192  Partial:     302   Poisoning     : Off  Loss : 1828864
-> Loss   :       0  CpuSlab:      55   Tracking      : Off  Lalig:       0
-> Align  :       8  Objects:      32   Tracing       : Off  Lpadd:       0
-> 
-> ***Patched***
-> Sizes (bytes)     Slabs              Debug                Memory
-> ------------------------------------------------------------------------
-> Object :     256  Total  :     300   Sanity Checks : Off  Total: 2457600
-> SlabObj:     256  Full   :     204   Redzoning     : Off  Used : 2348800
-> SlabSiz:    8192  Partial:      33   Poisoning     : Off  Loss :  108800
-> Loss   :       0  CpuSlab:      63   Tracking      : Off  Lalig:       0
-> Align  :       8  Objects:      32   Tracing       : Off  Lpadd:       0
-> 
-> Total and loss number is the impact of this patch.
-> 
-> Cc: <stable@vger.kernel.org>
-> Acked-by: Christoph Lameter <cl@linux.com>
-> Signed-off-by: Joonsoo Kim <js1304@gmail.com>
+KwongYuan Wong wrote:
+>   in the function "del_timer" in kernel/timer.c, there is the following code
+>
+> 954  if (timer_pending(timer)) {
+> 955    base = lock_timer_base(timer, &flags);
+> 956    if (timer_pending(timer)) {
+>
+> suppose timer_pending(timer) check in line 954 is A, and in line 956 is B.
+>
+> because the timer_pending(timer) check is very simple, so the result
+> may be saved in a register, and that register is reused
+> by both A and B.  While this should be wrong? the check at B should
+> reload the value from memory instead of using previous
+> result kept in register,  because lock_timer_base may have side-effect
+> which change the result of time_pending?
+>
+> so I guess a barrier() is needed, so that the code should be the following?
+>
+> if (timer_pending(timer)) {
+>   base = lock_timer_base(timer, &flags);
+>   barrier();
+>   if (timer_pending(timer)) {
 
-Applied, thanks!
+The spin_lock_irqsave() in lock_timer_base() already implies a barrier.
+(Well, if it's written correctly.)
+
+> in my chip, the generated assembly is like the following:
+> ( the function "lock_timer_base" in inlined also)
+>
+> 1035         __raw_local_irq_save $7
+
+This is not the arch_spin_lock() code I see in my copy of
+arch/mips/include/asm/spinlock.h.
+
+
+Regards,
+Clemens
