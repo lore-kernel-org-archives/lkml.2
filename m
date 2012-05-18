@@ -1,23 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030887Ab2ERC5M (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 May 2012 22:57:12 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:40569 "EHLO
+	id S1030872Ab2ERC5J (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 May 2012 22:57:09 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:40598 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1030728Ab2ERCwv (ORCPT
+	by vger.kernel.org with ESMTP id S1030739Ab2ERCwv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 17 May 2012 22:52:51 -0400
-Message-Id: <20120518023257.176824319@decadent.org.uk>
+Message-Id: <20120518023301.236645193@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Fri, 18 May 2012 03:33:15 +0100
+Date: Fri, 18 May 2012 03:33:45 +0100
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk,
-        Srinivas Kandagatla <srinivas.kandagatla@st.com>,
-        "David S. Miller" <davem@davemloft.net>,
-        Jonathan Nieder <jrnieder@gmail.com>
-Subject: [ 21/53] phy:icplus:fix Auto Power Saving in ip101a_config_init.
+        alan@lxorguk.ukuu.org.uk, Tushar Dave <tushar.n.dave@intel.com>,
+        Aaron Brown <aaron.f.brown@intel.com>,
+        Jeff Kirsher <jeffrey.t.kirsher@intel.com>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [ 51/53] e1000: Prevent reset task killing itself.
 In-Reply-To: <20120518023254.339945758@decadent.org.uk>
 X-SA-Exim-Connect-IP: 192.168.4.185
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -30,44 +30,42 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Srinivas Kandagatla <srinivas.kandagatla@st.com>
+From: Tushar Dave <tushar.n.dave@intel.com>
 
-[ Upstream commit b3300146aa8efc5d3937fd33f3cfdc580a3843bc ]
+commit 8ce6909f77ba1b7bcdea65cc2388fd1742b6d669 upstream.
 
-This patch fixes Auto Power Saving configuration in ip101a_config_init
-which was broken as there is no phy register write followed after
-setting IP101A_APS_ON flag.
+Killing reset task while adapter is resetting causes deadlock.
+Only kill reset task if adapter is not resetting.
+Ref bug #43132 on bugzilla.kernel.org
 
-This patch also fixes the return value of ip101a_config_init.
-
-Without this patch ip101a_config_init returns 2 which is not an error
-accroding to IS_ERR and the mac driver will continue accessing 2 as
-valid pointer to phy_dev resulting in memory fault.
-
-Signed-off-by: Srinivas Kandagatla <srinivas.kandagatla@st.com>
+Signed-off-by: Tushar Dave <tushar.n.dave@intel.com>
+Tested-by: Aaron Brown <aaron.f.brown@intel.com>
+Signed-off-by: Jeff Kirsher <jeffrey.t.kirsher@intel.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
-Signed-off-by: Jonathan Nieder <jrnieder@gmail.com>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- drivers/net/phy/icplus.c |    3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
+ drivers/net/ethernet/intel/e1000/e1000_main.c |    6 +++++-
+ 1 file changed, 5 insertions(+), 1 deletion(-)
 
-diff --git a/drivers/net/phy/icplus.c b/drivers/net/phy/icplus.c
-index c81f136ae670..b14230016d9b 100644
---- a/drivers/net/phy/icplus.c
-+++ b/drivers/net/phy/icplus.c
-@@ -150,7 +150,8 @@ static int ip101a_config_init(struct phy_device *phydev)
- 	/* Enable Auto Power Saving mode */
- 	c = phy_read(phydev, IP10XX_SPEC_CTRL_STATUS);
- 	c |= IP101A_APS_ON;
--	return c;
+diff --git a/drivers/net/ethernet/intel/e1000/e1000_main.c b/drivers/net/ethernet/intel/e1000/e1000_main.c
+index 37caa88..8d8908d 100644
+--- a/drivers/net/ethernet/intel/e1000/e1000_main.c
++++ b/drivers/net/ethernet/intel/e1000/e1000_main.c
+@@ -493,7 +493,11 @@ out:
+ static void e1000_down_and_stop(struct e1000_adapter *adapter)
+ {
+ 	set_bit(__E1000_DOWN, &adapter->flags);
+-	cancel_work_sync(&adapter->reset_task);
 +
-+	return phy_write(phydev, IP10XX_SPEC_CTRL_STATUS, c);
- }
- 
- static int ip175c_read_status(struct phy_device *phydev)
++	/* Only kill reset task if adapter is not resetting */
++	if (!test_bit(__E1000_RESETTING, &adapter->flags))
++		cancel_work_sync(&adapter->reset_task);
++
+ 	cancel_delayed_work_sync(&adapter->watchdog_task);
+ 	cancel_delayed_work_sync(&adapter->phy_info_task);
+ 	cancel_delayed_work_sync(&adapter->fifo_stall_task);
 -- 
-1.7.10.1
+1.7.10
 
 
 
