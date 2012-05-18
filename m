@@ -1,74 +1,168 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965926Ab2ERRTm (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 May 2012 13:19:42 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:37936 "EHLO mx1.redhat.com"
+	id S965799Ab2ERR1f (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 May 2012 13:27:35 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:48568 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S965290Ab2ERRTh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 May 2012 13:19:37 -0400
-Date: Fri, 18 May 2012 13:19:31 -0400
-From: Dave Jones <davej@redhat.com>
-To: Linux Kernel <linux-kernel@vger.kernel.org>
-Cc: linux-mm@kvack.org
-Subject: 3.4-rc7: kernel BUG at mm/mempolicy.c:1564!
-Message-ID: <20120518171931.GA6131@redhat.com>
-Mail-Followup-To: Dave Jones <davej@redhat.com>,
-	Linux Kernel <linux-kernel@vger.kernel.org>, linux-mm@kvack.org
+	id S965588Ab2ERR1d (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 18 May 2012 13:27:33 -0400
+Message-ID: <4FB6866E.7090503@redhat.com>
+Date: Fri, 18 May 2012 14:27:10 -0300
+From: Mauro Carvalho Chehab <mchehab@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Borislav Petkov <bp@amd64.org>
+CC: Ingo Molnar <mingo@kernel.org>,
+        Linux Edac Mailing List <linux-edac@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Aristeu Rozanski <arozansk@redhat.com>,
+        Doug Thompson <norsk5@yahoo.com>, Steven Rostedt <rostedt@goodmis.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Ingo Molnar <mingo@redhat.com>
+Subject: Re: [PATCH v24b] RAS: Add a tracepoint for reporting memory controller
+ events
+References: <1337287277-523-1-git-send-email-mchehab@redhat.com> <20120517214859.GA16777@aftab.osrc.amd.com> <20120518071244.GE429@gmail.com> <20120518095638.GA20215@aftab.osrc.amd.com> <4FB62BAB.90808@redhat.com> <20120518124338.GJ20215@aftab.osrc.amd.com> <4FB64D5B.1030301@redhat.com> <20120518140521.GM20215@aftab.osrc.amd.com> <4FB65D52.9060108@redhat.com> <20120518164014.GX20215@aftab.osrc.amd.com>
+In-Reply-To: <20120518164014.GX20215@aftab.osrc.amd.com>
+X-Enigmail-Version: 1.4.1
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-kernel BUG at mm/mempolicy.c:1564!
-invalid opcode: 0000 [#1] PREEMPT SMP 
-CPU 4 
-Modules linked in: dccp_ipv6 dccp_ipv4 dccp nfnetlink tun ipt_ULOG ip6_queue sctp libcrc32c binfmt_misc ip_queue caif_socket caif phonet bluetooth rfkill can llc2 pppoe pppox ppp_generic slhc irda crc_ccitt rds af_key decnet rose ax25 x25 atm appletalk ipx p8022 psnap llc p8023 lockd ip6t_REJECT nf_conntrack_ipv6 nf_defrag_ipv6 xt_state nf_conntrack ip6table_filter ip6_tables crc32c_intel ghash_clmulni_intel usb_debug microcode serio_raw i2c_i801 pcspkr iTCO_wdt e1000e iTCO_vendor_support sunrpc i915 drm_kms_helper drm i2c_algo_bit i2c_core video [last unloaded: scsi_wait_scan]
+Em 18-05-2012 13:40, Borislav Petkov escreveu:
+> On Fri, May 18, 2012 at 11:31:46AM -0300, Mauro Carvalho Chehab wrote:
+>> Ok, but you won't use trace_sched_switch() as a memory tracepoint, as
+>> they represent different things.
+>>
+>> Memory errors are different than CPU errors. So, their tracepoints
+>> will be different.
+> 
+> WTF? A tracepoint is a tracepoint.
 
-Pid: 1063, comm: trinity Not tainted 3.4.0-rc7+ #11 Intel Corporation 2012 Client Platform/Emerald Lake 2
-RIP: 0010:[<ffffffff8118176e>]  [<ffffffff8118176e>] policy_zonelist+0x1e/0xa0
-RSP: 0000:ffff88014209b878  EFLAGS: 00010206
-RAX: 0000000000006b6b RBX: 00000000000200da RCX: 0000000000000000
-RDX: 0000000000000000 RSI: ffff88014209b9e0 RDI: 00000000000200da
-RBP: ffff88014209b888 R08: 0000000000000000 R09: 0000000000000000
-R10: 0000000000000001 R11: 0000000000000001 R12: ffff88014209b9e0
-R13: ffff88013c628000 R14: 0000000000000000 R15: 0000000000000000
-FS:  00007f2c52fb8700(0000) GS:ffff880148400000(0000) knlGS:0000000000000000
-CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
-CR2: 00007f2c52fbf024 CR3: 000000013ca0c000 CR4: 00000000001407e0
-DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
-DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
-Process trinity (pid: 1063, threadinfo ffff88014209a000, task ffff88013c628000)
-Stack:
- ffff88014209b898 00000000000200da ffff88014209b908 ffffffff81184e64
- 00000000000577c0 0000000000000000 ffff88013c628000 ffff88013c628000
- ffff88013c628000 0000000000000000 ffff88014209bae8 0000000082303b60
-Call Trace:
- [<ffffffff81184e64>] alloc_pages_vma+0x84/0x190
- [<ffffffff811783eb>] read_swap_cache_async+0x13b/0x230
- [<ffffffff81185a64>] ? mpol_shared_policy_lookup+0x64/0x80
- [<ffffffff8117856e>] swapin_readahead+0x8e/0xd0
- [<ffffffff81155c84>] shmem_swapin+0x74/0x90
- [<ffffffff8113cc25>] ? find_get_page+0x105/0x260
- [<ffffffff8163d7ad>] ? sub_preempt_count+0x9d/0xd0
- [<ffffffff8113cc42>] ? find_get_page+0x122/0x260
- [<ffffffff8113cb20>] ? find_get_pages_tag+0x330/0x330
- [<ffffffff81157ea8>] shmem_getpage_gfp+0x3c8/0x620
- [<ffffffff81158fdf>] shmem_fault+0x4f/0xa0
- [<ffffffff812a056e>] shm_fault+0x1e/0x20
- [<ffffffff81162f91>] __do_fault+0x71/0x510
- [<ffffffff81165a64>] handle_pte_fault+0x84/0xa10
- [<ffffffff8119c850>] ? mem_cgroup_count_vm_event+0xe0/0x1e0
- [<ffffffff8163d7ad>] ? sub_preempt_count+0x9d/0xd0
- [<ffffffff811666f2>] handle_mm_fault+0x1c2/0x2c0
- [<ffffffff8163d002>] do_page_fault+0x152/0x570
- [<ffffffff8104d75c>] ? do_wait+0x12c/0x370
- [<ffffffff812fee7d>] ? trace_hardirqs_off_thunk+0x3a/0x3c
- [<ffffffff8163a1ef>] page_fault+0x1f/0x30
-Code: 66 66 66 66 2e 0f 1f 84 00 00 00 00 00 55 48 89 e5 53 48 83 ec 08 66 66 66 66 90 0f b7 46 04 66 83 f8 01 74 08 66 83 f8 02 74 42 <0f> 0b 89 fb 81 e3 00 00 04 00 f6 46 06 02 75 04 0f bf 56 08 31 
-RIP  [<ffffffff8118176e>] policy_zonelist+0x1e/0xa0
- RSP <ffff88014209b878>
----[ end trace af5aef56428c20d1 ]---
+This is the event you've mentioned:
+
+TRACE_EVENT(sched_switch,
+
+	TP_PROTO(struct task_struct *prev,
+		 struct task_struct *next),
+
+It doesn't have the same arguments of a memory tracepoint, like:
+
+TRACE_EVENT(mm_vmscan_wakeup_kswapd,
+
+	TP_PROTO(int nid, int zid, int order),
+
+trace events for different things will have different arguments.
+
+> 
+>>> Right, and this is why I'm asking you to have the following tracepoint proto:
+>>>
+>>> +       TP_PROTO(const unsigned int err_type,
+>>> +                const unsigned int mc_index,
+>>> +                const char *error_msg,
+>>> +                const char *label,
+>>> +                const char *location,
+>>> +                const char *detail)
+>>>
+>>> where detail contains all the crap one driver adds for technical people
+>>> to pinpoint where the error is.
+>>>
+>>> And not have _TWO_ detail arguments!
+>>
+>> And what I'm saying is that this should be, instead:
+>>
+>> + TP_PROTO(const unsigned int err_type,
+>> +          const unsigned int mc_index,
+>> +          const char *error_msg,
+>> +          const char *label,
+>> +          int layer0,
+>> +          int layer1,
+>> +          int layer2,
+>> +          unsigned long pfn,
+>> +          unsigned long offset,
+>> +          unsigned long grain,
+>> +          unsigned long syndrome,
+>> +          const char *driver_detail),
+>>
+>> So, having just one detail argument, filled by the driver, and not
+>> folding "location" and core "details" into strings, but keeping as they
+>> are.
+> 
+> And this way you're enforcing an interface that all drivers will have
+> to adhere to. What if "grain" doesn't mean a thing for a driver,  or
+> "syndrome" or whatever? What if some other entity wants to use that
+> tracepoint?
+
+This enforcement is already there at the EDAC API/ABI. This patch series
+won't change that.
+
+Memory controllers that can't get the error address (page/offset/grain)
+or the syndrome fills those information with 0.
+
+Maybe there is a driver deficiency (or a bad hardware implementation) 
+that would not allow to report where the error happened, but that doesn't
+mean that we should create a crappy API due to bad hardware.
+
+> 
+> See what I'm sayin?
+> 
+> Having
+> 
+>        TP_PROTO(const unsigned int err_type,
+>                 const unsigned int mc_index,
+>                 const char *error_msg,
+>                 const char *label,
+>                 const char *location,
+>                 const char *detail)
+> 
+> is a bit more generic and userspace can parse it however it likes.
+> 
+> Actually, I'd slim this up even more:
+> 
+>        TP_PROTO(const unsigned int mc_index,
+>                 const char *error_msg,
+>                 const char *label,
+>                 const char *location,
+>                 const char *detail)
+
+Well, this even more generic:
+	TP_PROTO(const char *msg)
+
+but the more we convert other fields into strings, the harder is for
+userspace to handle it, as fields may be on different order, string
+conversion patches might change or break the parsing behavior, 
+different drivers will require different parsing expressions, etc.
+
+> and have error_msg contain the "Corrected/Uncorrected/Fatal" things
+> and this way you can drop all the ternary operators in the tracepoint
+> definition.
+> 
+>>> Btw, the output looks like this here:
+>>>
+>>>            <...>-2723  [001] .N..    89.107045: mc_event: Corrected error: on memory stick "unknown memory" (mc:0 csrow:3 channel:1 page:0x5bac7 offset:0x388 grain:0 syndrome:0xfc5b driver:amd64_edac)
+>>>
+>>> Come to think of it, the "driver:amd64_edac" is not really needed
+>>> because on every single system there's only one EDAC driver running and
+>>> I don't think the fact that we're telling in the tracepoint who detected
+>>> the error is meaningfull information.
+>>>
+>>> Which means, you can remove the EDAC_MOD_STR argument you're passing to
+>>> edac_mc_handle_error() and have one less argument.
+>>
+>> That's what I said you, but you didn't seem to agree, as I understood that
+>> you've required to keep "amd64_edac"  at the trace, due to:
+>> 	http://markmail.org/message/nr3ooep7gc7mhgdl.
+>>
+>> If you're ok, I'll remove EDAC_MOD_STR argument from the amd64_edac calls
+>> on a separate patch (with can be merged latter with the patch that converted
+>> amd64_edac to the new function calls).
+> 
+> Ok.
+
+Ok, I'll prepare a patch for it after we finish discussing this patch.
+
+Regards,
+Mauro
+> 
 
