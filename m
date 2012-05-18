@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1031166Ab2ERDJc (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 May 2012 23:09:32 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:40415 "EHLO
+	id S1031151Ab2ERDJa (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 May 2012 23:09:30 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:40423 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1762523Ab2ERCw3 (ORCPT
+	by vger.kernel.org with ESMTP id S1762561Ab2ERCw3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 17 May 2012 22:52:29 -0400
-Message-Id: <20120518023255.712118438@decadent.org.uk>
+Message-Id: <20120518023255.978828329@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Fri, 18 May 2012 03:33:04 +0100
+Date: Fri, 18 May 2012 03:33:06 +0100
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Ingo van Lil <inguin@gmx.de>,
+        alan@lxorguk.ukuu.org.uk, "Eric W. Biederman" <ebiederm@xmission.com>,
         "David S. Miller" <davem@davemloft.net>
-Subject: [ 10/53] asix: Fix tx transfer padding for full-speed USB
+Subject: [ 12/53] net: In unregister_netdevice_notifier unregister the netdevices.
 In-Reply-To: <20120518023254.339945758@decadent.org.uk>
 X-SA-Exim-Connect-IP: 192.168.4.185
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -28,45 +28,63 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Ingo van Lil <inguin@gmx.de>
+From: "Eric W. Biederman" <ebiederm@xmission.com>
 
-[ Upstream commit 2a5809499e35b53a6044fd34e72b242688b7a862 ]
+[ Upstream commit 7d3d43dab4e978d8d9ad1acf8af15c9b1c4b0f0f ]
 
-The asix.c USB Ethernet driver avoids ending a tx transfer with a zero-
-length packet by appending a four-byte padding to transfers whose length
-is a multiple of maxpacket. However, the hard-coded 512 byte maxpacket
-length is valid for high-speed USB only; full-speed USB uses 64 byte
-packets.
+We already synthesize events in register_netdevice_notifier and synthesizing
+events in unregister_netdevice_notifier allows to us remove the need for
+special case cleanup code.
 
-Signed-off-by: Ingo van Lil <inguin@gmx.de>
+This change should be safe as it adds no new cases for existing callers
+of unregiser_netdevice_notifier to handle.
+
+Signed-off-by: Eric W. Biederman <ebiederm@xmission.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- drivers/net/usb/asix.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ net/core/dev.c |   20 ++++++++++++++++++++
+ 1 file changed, 20 insertions(+)
 
-diff --git a/drivers/net/usb/asix.c b/drivers/net/usb/asix.c
-index fda4be2..a9abee8 100644
---- a/drivers/net/usb/asix.c
-+++ b/drivers/net/usb/asix.c
-@@ -403,7 +403,7 @@ static struct sk_buff *asix_tx_fixup(struct usbnet *dev, struct sk_buff *skb,
- 	u32 packet_len;
- 	u32 padbytes = 0xffff0000;
+diff --git a/net/core/dev.c b/net/core/dev.c
+index 55cd370..d1d2a56 100644
+--- a/net/core/dev.c
++++ b/net/core/dev.c
+@@ -1421,14 +1421,34 @@ EXPORT_SYMBOL(register_netdevice_notifier);
+  *	register_netdevice_notifier(). The notifier is unlinked into the
+  *	kernel structures and may then be reused. A negative errno code
+  *	is returned on a failure.
++ *
++ * 	After unregistering unregister and down device events are synthesized
++ *	for all devices on the device list to the removed notifier to remove
++ *	the need for special case cleanup code.
+  */
  
--	padlen = ((skb->len + 4) % 512) ? 0 : 4;
-+	padlen = ((skb->len + 4) & (dev->maxpacket - 1)) ? 0 : 4;
+ int unregister_netdevice_notifier(struct notifier_block *nb)
+ {
++	struct net_device *dev;
++	struct net *net;
+ 	int err;
  
- 	if ((!skb_cloned(skb)) &&
- 	    ((headroom + tailroom) >= (4 + padlen))) {
-@@ -425,7 +425,7 @@ static struct sk_buff *asix_tx_fixup(struct usbnet *dev, struct sk_buff *skb,
- 	cpu_to_le32s(&packet_len);
- 	skb_copy_to_linear_data(skb, &packet_len, sizeof(packet_len));
- 
--	if ((skb->len % 512) == 0) {
-+	if (padlen) {
- 		cpu_to_le32s(&padbytes);
- 		memcpy(skb_tail_pointer(skb), &padbytes, sizeof(padbytes));
- 		skb_put(skb, sizeof(padbytes));
+ 	rtnl_lock();
+ 	err = raw_notifier_chain_unregister(&netdev_chain, nb);
++	if (err)
++		goto unlock;
++
++	for_each_net(net) {
++		for_each_netdev(net, dev) {
++			if (dev->flags & IFF_UP) {
++				nb->notifier_call(nb, NETDEV_GOING_DOWN, dev);
++				nb->notifier_call(nb, NETDEV_DOWN, dev);
++			}
++			nb->notifier_call(nb, NETDEV_UNREGISTER, dev);
++			nb->notifier_call(nb, NETDEV_UNREGISTER_BATCH, dev);
++		}
++	}
++unlock:
+ 	rtnl_unlock();
+ 	return err;
+ }
 -- 
 1.7.10.1
 
