@@ -1,252 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S967758Ab2ERVOV (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 May 2012 17:14:21 -0400
-Received: from mga14.intel.com ([143.182.124.37]:53018 "EHLO mga14.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S967427Ab2ERVOS convert rfc822-to-8bit (ORCPT
+	id S967708Ab2ERVTM (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 May 2012 17:19:12 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:19964 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933132Ab2ERVTK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 May 2012 17:14:18 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
-   d="scan'208";a="101772096"
-From: "Drews, Paul" <paul.drews@intel.com>
-To: Benjamin Tissoires <benjamin.tissoires@gmail.com>,
-        Henrik Rydberg <rydberg@euromail.se>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-CC: Dmitry Torokhov <dmitry.torokhov@gmail.com>, Jiri Kosina <jkosina@suse.cz>,
-        Stephane Chatty <chatty@enac.fr>,
-        "linux-input@vger.kernel.org" <linux-input@vger.kernel.org>
-Subject: RE: [PATCH 1/5] HID: hid-multitouch: fix wrong protocol detection
-Thread-Topic: [PATCH 1/5] HID: hid-multitouch: fix wrong protocol detection
-Thread-Index: AQHNNTU0HwFTV9GtN0C5LQg7UL6NKZbQB/NA
-Date: Fri, 18 May 2012 21:14:08 +0000
-Message-ID: <6008DE3C35C7C04D85C2A4C813D36515481E5D29@ORSMSX101.amr.corp.intel.com>
-References: <1336136030-18503-1-git-send-email-benjamin.tissoires@gmail.com>
- <1336136030-18503-2-git-send-email-benjamin.tissoires@gmail.com>
- <20120506190146.GA12571@polaris.bitmath.org>
- <CAN+gG=G9y_0Le-Mja2z68r76nBmz0De95Lc6671EkrrMZRSEHw@mail.gmail.com>
-In-Reply-To: <CAN+gG=G9y_0Le-Mja2z68r76nBmz0De95Lc6671EkrrMZRSEHw@mail.gmail.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.22.254.138]
-Content-Type: text/plain; charset="iso-8859-1"
-Content-Transfer-Encoding: 8BIT
-MIME-Version: 1.0
+	Fri, 18 May 2012 17:19:10 -0400
+X-Authority-Analysis: v=2.0 cv=ae7jbGUt c=1 sm=0 a=ZycB6UtQUfgMyuk2+PxD7w==:17 a=XQbtiDEiEegA:10 a=uChq6B4iKcYA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=meVymXHHAAAA:8 a=6h1IcWuprMDIdrxlFqcA:9 a=RGh4pXfeqi6pz_Ys_OgA:7 a=PUjeQqilurYA:10 a=jeBq3FmKZ4MA:10 a=ZycB6UtQUfgMyuk2+PxD7w==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 74.67.80.29
+Message-ID: <1337375946.7562.11.camel@gandalf.stny.rr.com>
+Subject: Re: [PATCH] power, trace: add tracing for device_resume
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Sameer Nanda <snanda@chromium.org>
+Cc: Greg KH <gregkh@linuxfoundation.org>, rob@landley.net, len.brown@intel.com,
+        pavel@ucw.cz, rjw@sisk.pl, fweisbec@gmail.com, mingo@redhat.com,
+        jkosina@suse.cz, standby24x7@gmail.com, jj@chaosbits.net,
+        paulmck@linux.vnet.ibm.com, josh@joshtriplett.org,
+        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-pm@vger.kernel.org
+Date: Fri, 18 May 2012 17:19:06 -0400
+In-Reply-To: <CANMivWbXVVd=wVqzC=FTDp7Pe3YtzR+0UcRPCPAmPN9uUV83RA@mail.gmail.com>
+References: <1337365643-29261-1-git-send-email-snanda@chromium.org>
+	 <20120518183756.GA3216@kroah.com>
+	 <CANMivWb3iOnoVtZ8G8kh9-vXPUfNFpSP=QWue0QztbkeZ+uE=Q@mail.gmail.com>
+	 <1337368492.7562.8.camel@gandalf.stny.rr.com>
+	 <CANMivWbXVVd=wVqzC=FTDp7Pe3YtzR+0UcRPCPAmPN9uUV83RA@mail.gmail.com>
+Content-Type: text/plain; charset="ISO-8859-15"
+X-Mailer: Evolution 3.2.2-1 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-
-> -----Original Message-----
-> From: linux-kernel-owner@vger.kernel.org [mailto:linux-kernel-
-> owner@vger.kernel.org] On Behalf Of Benjamin Tissoires
-> Sent: Wednesday, May 09, 2012 12:04 PM
-> To: Henrik Rydberg
-> Cc: Dmitry Torokhov; Jiri Kosina; Stephane Chatty; linux-input@vger.kernel.org;
-> linux-kernel@vger.kernel.org
-> Subject: Re: [PATCH 1/5] HID: hid-multitouch: fix wrong protocol detection
-> 
-
-> On Sun, May 6, 2012 at 9:01 PM, Henrik Rydberg <rydberg@euromail.se> wrote:
-> > Hi Benjamin,
+On Fri, 2012-05-18 at 13:58 -0700, Sameer Nanda wrote:
+> On Fri, May 18, 2012 at 12:14 PM, Steven Rostedt <rostedt@goodmis.org> wrote:
+> > On Fri, 2012-05-18 at 11:57 -0700, Sameer Nanda wrote:
 > >
-> >> The previous implementation introduced a randomness in the splitting
-> >> of the different touches reported by the device. This version is more
-> >> robust as we don't rely on hi->input->absbit, but on our own structure.
+> >> AFAICT, they are used for something completely different -- help solve
+> >> suspend/resume issues by saving a hash in the RTC of the last device
+> >> that suspended/resumed.  They don't use the perf tracing mechanism at
+> >> all.
 > >>
-
-> >> +
-> >>  struct mt_device {
-> >>       struct mt_slot curdata; /* placeholder of incoming data */
-> >>       struct mt_class mtclass;        /* our mt device class */
-> >> +     struct mt_fields *fields;       /* temporary placeholder for storing the
-> >> +                                        multitouch fields */
 > >
-> > Why not skip the pointer here?
+> > Also note that all tracepoints have timestamps attached to them. You do
+> > not need to add deltas. Do that in the userspace tools that read the
+> > timestamps and events. This way you can have one DECLARE_EVENT_CLASS and
+> > three DEFINE_EVENTs. This will save space.
 > 
-> well, the idea was to keep the memory footprint low. As these values
-> are only needed at init, then I freed them once I finished using them.
-> I can of course skip the pointer, but in that case, wouldn't the
-> struct declaration be worthless?
+> Agreed on the space savings.  However, with the time_delta in the
+> trace message itself, a one line shell script [1] that sorts on the
+> time_delta field is sufficient to quickly spot the devices that take a
+> long time to resume.  Without the time_delta field, the user tool is
+> more complex since it needs to first match up the device_resume_in,
+> device_resume_waited and device_resume_out traces and then calculate
+> time deltas.
 > 
-> >
+> Seems like a worthwhile trade-off to me but I can take out the
+> time_delta if the general consensus is otherwise.
 
-> >>
-> >> +static void mt_post_parse(struct mt_device *td)
-> >> +{
-> >> +     struct mt_fields *f = td->fields;
-> >> +
-> >> +     if (td->touches_by_report > 0) {
-> >> +             int field_count_per_touch = f->length / td->touches_by_report;
-> >> +             td->last_slot_field = f->usages[field_count_per_touch - 1]->hid;
-> >> +     }
-> >> +}
-> >> +
+Just note that every TRACE_EVENT() adds around 5k or more code. Every
+DEFINE_EVENT adds just about 300 bytes.
 
-It sounds as though:
+> [1]: here's an example script I use for sorting the device resume times:
+> cat /sys/kernel/debug/tracing/trace | grep device_resume_out | awk
+> 'BEGIN { FS = "time_delta=" } ; { print $2 $0 }' | sort -n
+> 
 
-() Reviewers are a little uncomfortable with the memory footprint and
-    allocation/free
-() The patch as it stands relies on the pattern of "usage" values repeating
-    for each touch, and deeming the last one in the repetition pattern to
-    be the last-slot-field marker.
+Question is, how often is this done? And that 5k is permanent for all
+users.
 
-If this is the case, how about avoiding storing all the slot-field values
-and just detecting the point of repetition to use the most-recently-seen
-usage value as the last-slot-field marker.  I have been successfully using
-the patch below based on this notion.  It took the failure rate from about
-1-per-10 boots to 250+ boots with no failures on an Atmel MaXTouch.
-I don't have others to try it with, including the "buggy" one that led
-to all this trouble in the first place.
+-- Steve
 
-Patch follows:
-==========================================================
->From 242f6773babe0fc0215764abbeeeff6510f3ca92 Mon Sep 17 00:00:00 2001
-From: Paul Drews <paul.drews@intel.com>
-Date: Wed, 16 May 2012 11:15:00 -0700
-Subject: [PATCH] Repair detection of last slot in multitouch reports
 
-The logic for detecting the last per-touch slot in a
-multitouch report erroneously used hid usage values (large
-numbers such as 0xd0032) as indices into the smaller absbit
-bitmap (with bit indexes up to 0x3f).  This caused
-intermittent failures in the configuration of the last-slot
-value leading to stale x,y coordinates being reported in
-multi-touch input events.  It also carried the risk of a
-segmentation fault due to the out-of-range bitmap index.
-
-This patch takes a different approach of detecting the last
-per-touch slot:  when the hid usage value wraps around to
-the first hid usage value we have seen already, we must be
-looking at the slots for the next touch of a multi-touch
-report, so the last hid usage value we have seen so far must
-be the last per-touch value.
-
-Issue: AIA-446
-Change-Id: Ic1872998502874298bb60705df9bd2fc70de1738
-Signed-off-by: Paul Drews <paul.drews@intel.com>
----
- drivers/hid/hid-multitouch.c |   39 ++++++++++++++++++++++++++-------------
- 1 files changed, 26 insertions(+), 13 deletions(-)
-
-diff --git a/drivers/hid/hid-multitouch.c b/drivers/hid/hid-multitouch.c
-index 2e6d187..226f828 100644
---- a/drivers/hid/hid-multitouch.c
-+++ b/drivers/hid/hid-multitouch.c
-@@ -75,6 +75,9 @@ struct mt_device {
- 	struct mt_class mtclass;	/* our mt device class */
- 	unsigned last_field_index;	/* last field index of the report */
- 	unsigned last_slot_field;	/* the last field of a slot */
-+	bool last_slot_field_found;	/* last_slot_field has full init */
-+	unsigned first_slot_field;
-+	bool first_slot_field_found;	/* for detecting wrap to next touch */
- 	__s8 inputmode;		/* InputMode HID feature, -1 if non-existent */
- 	__s8 maxcontact_report_id;	/* Maximum Contact Number HID feature,
- 				   -1 if non-existent */
-@@ -275,11 +278,21 @@ static void set_abs(struct input_dev *input, unsigned int code,
- 	input_set_abs_params(input, code, fmin, fmax, fuzz, 0);
- }
- 
--static void set_last_slot_field(struct hid_usage *usage, struct mt_device *td,
--		struct hid_input *hi)
-+static void update_last_slot_field(struct hid_usage *usage,
-+		struct mt_device *td)
- {
--	if (!test_bit(usage->hid, hi->input->absbit))
--		td->last_slot_field = usage->hid;
-+	if (!td->last_slot_field_found) {
-+		if (td->first_slot_field_found) {
-+			if (td->last_slot_field == usage->hid)
-+				td->last_slot_field_found = true; /* wrapped */
-+			else
-+				td->last_slot_field = usage->hid;
-+		} else {
-+			td->first_slot_field = usage->hid;
-+			td->first_slot_field_found = true;
-+			td->last_slot_field = usage->hid;
-+		}
-+	}
- }
- 
- static int mt_input_mapping(struct hid_device *hdev, struct hid_input *hi,
-@@ -340,7 +353,7 @@ static int mt_input_mapping(struct hid_device *hdev, struct hid_input *hi,
- 				cls->sn_move);
- 			/* touchscreen emulation */
- 			set_abs(hi->input, ABS_X, field, cls->sn_move);
--			set_last_slot_field(usage, td, hi);
-+			update_last_slot_field(usage, td);
- 			td->last_field_index = field->index;
- 			return 1;
- 		case HID_GD_Y:
-@@ -350,7 +363,7 @@ static int mt_input_mapping(struct hid_device *hdev, struct hid_input *hi,
- 				cls->sn_move);
- 			/* touchscreen emulation */
- 			set_abs(hi->input, ABS_Y, field, cls->sn_move);
--			set_last_slot_field(usage, td, hi);
-+			update_last_slot_field(usage, td);
- 			td->last_field_index = field->index;
- 			return 1;
- 		}
-@@ -359,24 +372,24 @@ static int mt_input_mapping(struct hid_device *hdev, struct hid_input *hi,
- 	case HID_UP_DIGITIZER:
- 		switch (usage->hid) {
- 		case HID_DG_INRANGE:
--			set_last_slot_field(usage, td, hi);
-+			update_last_slot_field(usage, td);
- 			td->last_field_index = field->index;
- 			return 1;
- 		case HID_DG_CONFIDENCE:
--			set_last_slot_field(usage, td, hi);
-+			update_last_slot_field(usage, td);
- 			td->last_field_index = field->index;
- 			return 1;
- 		case HID_DG_TIPSWITCH:
- 			hid_map_usage(hi, usage, bit, max, EV_KEY, BTN_TOUCH);
- 			input_set_capability(hi->input, EV_KEY, BTN_TOUCH);
--			set_last_slot_field(usage, td, hi);
-+			update_last_slot_field(usage, td);
- 			td->last_field_index = field->index;
- 			return 1;
- 		case HID_DG_CONTACTID:
- 			if (!td->maxcontacts)
- 				td->maxcontacts = MT_DEFAULT_MAXCONTACT;
- 			input_mt_init_slots(hi->input, td->maxcontacts);
--			td->last_slot_field = usage->hid;
-+			update_last_slot_field(usage, td);
- 			td->last_field_index = field->index;
- 			td->touches_by_report++;
- 			return 1;
-@@ -385,7 +398,7 @@ static int mt_input_mapping(struct hid_device *hdev, struct hid_input *hi,
- 					EV_ABS, ABS_MT_TOUCH_MAJOR);
- 			set_abs(hi->input, ABS_MT_TOUCH_MAJOR, field,
- 				cls->sn_width);
--			set_last_slot_field(usage, td, hi);
-+			update_last_slot_field(usage, td);
- 			td->last_field_index = field->index;
- 			return 1;
- 		case HID_DG_HEIGHT:
-@@ -395,7 +408,7 @@ static int mt_input_mapping(struct hid_device *hdev, struct hid_input *hi,
- 				cls->sn_height);
- 			input_set_abs_params(hi->input,
- 					ABS_MT_ORIENTATION, 0, 1, 0, 0);
--			set_last_slot_field(usage, td, hi);
-+			update_last_slot_field(usage, td);
- 			td->last_field_index = field->index;
- 			return 1;
- 		case HID_DG_TIPPRESSURE:
-@@ -406,7 +419,7 @@ static int mt_input_mapping(struct hid_device *hdev, struct hid_input *hi,
- 			/* touchscreen emulation */
- 			set_abs(hi->input, ABS_PRESSURE, field,
- 				cls->sn_pressure);
--			set_last_slot_field(usage, td, hi);
-+			update_last_slot_field(usage, td);
- 			td->last_field_index = field->index;
- 			return 1;
- 		case HID_DG_CONTACTCOUNT:
--- 
-1.7.3.4
-==========================================================
