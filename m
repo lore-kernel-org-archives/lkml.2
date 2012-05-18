@@ -1,43 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S966596Ab2ERTDH (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 May 2012 15:03:07 -0400
-Received: from ogre.sisk.pl ([193.178.161.156]:53243 "EHLO ogre.sisk.pl"
+	id S1759440Ab2ERTKq (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 May 2012 15:10:46 -0400
+Received: from mga09.intel.com ([134.134.136.24]:7382 "EHLO mga09.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S965781Ab2ERTDE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 May 2012 15:03:04 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-Subject: Re: linux-next: manual merge of the pm tree with Linus' tree
-Date: Fri, 18 May 2012 21:08:01 +0200
-User-Agent: KMail/1.13.6 (Linux/3.4.0-rc7+; KDE/4.6.0; x86_64; ; )
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Aaron Lu <aaron.lu@amd.com>
-References: <20120518154800.3b8cae2960234e03bee0101e@canb.auug.org.au>
-In-Reply-To: <20120518154800.3b8cae2960234e03bee0101e@canb.auug.org.au>
+	id S1758716Ab2ERTKo convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 18 May 2012 15:10:44 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.67,352,1309762800"; 
+   d="scan'208";a="142186783"
+From: "Luck, Tony" <tony.luck@intel.com>
+To: Borislav Petkov <bp@amd64.org>, Mauro Carvalho Chehab <mchehab@redhat.com>
+CC: Ingo Molnar <mingo@kernel.org>,
+        Linux Edac Mailing List <linux-edac@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Aristeu Rozanski <arozansk@redhat.com>,
+        Doug Thompson <norsk5@yahoo.com>, Steven Rostedt <rostedt@goodmis.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Ingo Molnar <mingo@redhat.com>
+Subject: RE: [PATCH v24b] RAS: Add a tracepoint for reporting memory
+ controller events
+Thread-Topic: [PATCH v24b] RAS: Add a tracepoint for reporting memory
+ controller events
+Thread-Index: AQHNNHP7b1UvI8JPs0uFG6MbkxJ3NJbO+iuAgACdgwCAAC3LAIAAEa6AgAAc+wCAAAsugIAAC6aAgAAHYgCAACPlAIAADRwAgAAX+QD//4uwYA==
+Date: Fri, 18 May 2012 19:10:42 +0000
+Message-ID: <3908561D78D1C84285E8C5FCA982C28F192F1A33@ORSMSX104.amr.corp.intel.com>
+References: <20120517214859.GA16777@aftab.osrc.amd.com>
+ <20120518071244.GE429@gmail.com> <20120518095638.GA20215@aftab.osrc.amd.com>
+ <4FB62BAB.90808@redhat.com> <20120518124338.GJ20215@aftab.osrc.amd.com>
+ <4FB64D5B.1030301@redhat.com> <20120518140521.GM20215@aftab.osrc.amd.com>
+ <4FB65D52.9060108@redhat.com> <20120518164014.GX20215@aftab.osrc.amd.com>
+ <4FB6866E.7090503@redhat.com> <20120518185258.GE20215@aftab.osrc.amd.com>
+In-Reply-To: <20120518185258.GE20215@aftab.osrc.amd.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.22.254.140]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-2"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201205182108.01664.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+> That's why _each_ _driver_ will have its format and the userspace tools
+> parsing it will know about it!
 
-On Friday, May 18, 2012, Stephen Rothwell wrote:
-> Hi Rafael,
-> 
-> Today's linux-next merge of the pm tree got a conflict in
-> drivers/acpi/scan.c between commit 5c7dd710f691 ("ACPI / PCI / PM: Fix
-> device PM regression related to D3hot/D3cold") from the  tree and commit
-> 6ef564fd2070 ("ACPI / PM: Evaluate _PS3 when entering D3 Cold") from the
-> pm tree.
-> 
-> I fixed it up (by using the version from Linus' tree) and can carry the
-> fix as necessary.
+Sounds like a full employment program for parser writers.
 
-Thanks, I'm dropping the conflicting patch from the pm tree.
+There are some interesting fields that should be common to all
+drivers ... so have twenty parsers that can handle:
 
-Rafael
+	paddr: 0x1234
+	PADDR: 0x1234
+	Paddr = 0x1234
+	Phys = 1234
+	addr: 0x1234
+	Address: 0x000000001234
+
+looks like a lot of make-work ... when the OS can standardize in the ABI
+that there is a 64-bit binary value that is the physical address of the
+error (and another 64-bit mask saying which, if any, bits are valid).
+
+So we should be looking for the set of always relevant values that can
+be kept explicitly separate in fields in TP_PROTO, and per-driver specific
+stuff (grain/syndrome??) bits that will have to go into the "details"
+string and require some driver specific user-mode parsing to use.
+
+-Tony
