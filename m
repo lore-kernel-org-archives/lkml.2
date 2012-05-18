@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964776Ab2ERQhV (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 May 2012 12:37:21 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:53628 "EHLO mx1.redhat.com"
+	id S1758863Ab2ERQd0 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 May 2012 12:33:26 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:20857 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758884Ab2ERQd1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 May 2012 12:33:27 -0400
+	id S1758194Ab2ERQdC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 18 May 2012 12:33:02 -0400
 From: Mauro Carvalho Chehab <mchehab@redhat.com>
 Cc: Mauro Carvalho Chehab <mchehab@redhat.com>,
         Linux Edac Mailing List <linux-edac@vger.kernel.org>,
         Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Michal Marek <mmarek@suse.cz>
-Subject: [PATCH EDAC v26 22/66] i82860_edac: convert driver to use the new edac ABI
-Date: Fri, 18 May 2012 13:32:09 -0300
-Message-Id: <1337358773-6919-23-git-send-email-mchehab@redhat.com>
+        Doug Thompson <norsk5@yahoo.com>,
+        Borislav Petkov <borislav.petkov@amd.com>
+Subject: [PATCH EDAC v26 08/66] amd64_edac: convert driver to use the new edac ABI
+Date: Fri, 18 May 2012 13:31:55 -0300
+Message-Id: <1337358773-6919-9-git-send-email-mchehab@redhat.com>
 In-Reply-To: <1337358773-6919-1-git-send-email-mchehab@redhat.com>
 References: <1337358773-6919-1-git-send-email-mchehab@redhat.com>
 To: unlisted-recipients:; (no To-header on input)
@@ -24,89 +25,241 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 The legacy edac ABI is going to be removed. Port the driver to use
 and benefit from the new API functionality.
 
-Cc: Michal Marek <mmarek@suse.cz>
+Cc: Doug Thompson <norsk5@yahoo.com>
+Cc: Borislav Petkov <borislav.petkov@amd.com>
 Signed-off-by: Mauro Carvalho Chehab <mchehab@redhat.com>
 ---
- drivers/edac/i82860_edac.c |   42 +++++++++++++++++++++++++++++-------------
- 1 files changed, 29 insertions(+), 13 deletions(-)
+ drivers/edac/amd64_edac.c |  137 ++++++++++++++++++++++++++++++---------------
+ 1 files changed, 92 insertions(+), 45 deletions(-)
 
-diff --git a/drivers/edac/i82860_edac.c b/drivers/edac/i82860_edac.c
-index 8485bbf..8834e4e 100644
---- a/drivers/edac/i82860_edac.c
-+++ b/drivers/edac/i82860_edac.c
-@@ -99,6 +99,7 @@ static int i82860_process_error_info(struct mem_ctl_info *mci,
- 				struct i82860_error_info *info,
- 				int handle_errors)
- {
-+	struct dimm_info *dimm;
- 	int row;
+diff --git a/drivers/edac/amd64_edac.c b/drivers/edac/amd64_edac.c
+index 1ceb8e2..c431544 100644
+--- a/drivers/edac/amd64_edac.c
++++ b/drivers/edac/amd64_edac.c
+@@ -1039,6 +1039,37 @@ static void k8_map_sysaddr_to_csrow(struct mem_ctl_info *mci, u64 sys_addr,
+ 	int channel, csrow;
+ 	u32 page, offset;
  
- 	if (!(info->errsts2 & 0x0003))
-@@ -108,18 +109,25 @@ static int i82860_process_error_info(struct mem_ctl_info *mci,
- 		return 1;
- 
- 	if ((info->errsts ^ info->errsts2) & 0x0003) {
--		edac_mc_handle_ce_no_info(mci, "UE overwrote CE");
-+		edac_mc_handle_error(HW_EVENT_ERR_UNCORRECTED, mci, 0, 0, 0,
-+				     -1, -1, -1, "UE overwrote CE", "", NULL);
- 		info->errsts = info->errsts2;
++	error_address_to_page_and_offset(sys_addr, &page, &offset);
++
++	/*
++	 * Find out which node the error address belongs to. This may be
++	 * different from the node that detected the error.
++	 */
++	src_mci = find_mc_by_sys_addr(mci, sys_addr);
++	if (!src_mci) {
++		amd64_mc_err(mci, "failed to map error addr 0x%lx to a node\n",
++			     (unsigned long)sys_addr);
++		edac_mc_handle_error(HW_EVENT_ERR_CORRECTED, mci,
++				     page, offset, syndrome,
++				     -1, -1, -1,
++				     EDAC_MOD_STR,
++				     "failed to map error addr to a node",
++				     NULL);
++		return;
++	}
++
++	/* Now map the sys_addr to a CSROW */
++	csrow = sys_addr_to_csrow(src_mci, sys_addr);
++	if (csrow < 0) {
++		edac_mc_handle_error(HW_EVENT_ERR_CORRECTED, mci,
++				     page, offset, syndrome,
++				     -1, -1, -1,
++				     EDAC_MOD_STR,
++				     "failed to map error addr to a csrow",
++				     NULL);
++		return;
++	}
++
+ 	/* CHIPKILL enabled */
+ 	if (pvt->nbcfg & NBCFG_CHIPKILL) {
+ 		channel = get_channel_from_ecc_syndrome(mci, syndrome);
+@@ -1048,9 +1079,15 @@ static void k8_map_sysaddr_to_csrow(struct mem_ctl_info *mci, u64 sys_addr,
+ 			 * 2 DIMMs is in error. So we need to ID 'both' of them
+ 			 * as suspect.
+ 			 */
+-			amd64_mc_warn(mci, "unknown syndrome 0x%04x - possible "
+-					   "error reporting race\n", syndrome);
+-			edac_mc_handle_ce_no_info(mci, EDAC_MOD_STR);
++			amd64_mc_warn(src_mci, "unknown syndrome 0x%04x - "
++				      "possible error reporting race\n",
++				      syndrome);
++			edac_mc_handle_error(HW_EVENT_ERR_CORRECTED, mci,
++					     page, offset, syndrome,
++					     csrow, -1, -1,
++					     EDAC_MOD_STR,
++					     "unknown syndrome - possible error reporting race",
++					     NULL);
+ 			return;
+ 		}
+ 	} else {
+@@ -1065,28 +1102,10 @@ static void k8_map_sysaddr_to_csrow(struct mem_ctl_info *mci, u64 sys_addr,
+ 		channel = ((sys_addr & BIT(3)) != 0);
  	}
  
- 	info->eap >>= PAGE_SHIFT;
- 	row = edac_mc_find_csrow_by_page(mci, info->eap);
-+	dimm = mci->csrows[row].channels[0].dimm;
- 
- 	if (info->errsts & 0x0002)
--		edac_mc_handle_ue(mci, info->eap, 0, row, "i82860 UE");
-+		edac_mc_handle_error(HW_EVENT_ERR_UNCORRECTED, mci,
-+				     info->eap, 0, 0,
-+				     dimm->location[0], dimm->location[1], -1,
-+				     "i82860 UE", "", NULL);
- 	else
--		edac_mc_handle_ce(mci, info->eap, 0, info->derrsyn, row, 0,
--				"i82860 UE");
-+		edac_mc_handle_error(HW_EVENT_ERR_UNCORRECTED, mci,
-+				     info->eap, 0, info->derrsyn,
-+				     dimm->location[0], dimm->location[1], -1,
-+				     "i82860 CE", "", NULL);
- 
- 	return 1;
- }
-@@ -179,18 +187,26 @@ static void i82860_init_csrows(struct mem_ctl_info *mci, struct pci_dev *pdev)
- static int i82860_probe1(struct pci_dev *pdev, int dev_idx)
- {
- 	struct mem_ctl_info *mci;
-+	struct edac_mc_layer layers[2];
- 	struct i82860_error_info discard;
- 
--	/* RDRAM has channels but these don't map onto the abstractions that
--	   edac uses.
--	   The device groups from the GRA registers seem to map reasonably
--	   well onto the notion of a chip select row.
--	   There are 16 GRA registers and since the name is associated with
--	   the channel and the GRA registers map to physical devices so we are
--	   going to make 1 channel for group.
-+	/*
-+	 * RDRAM has channels but these don't map onto the csrow abstraction.
-+	 * According with the datasheet, there are 2 Rambus channels, supporting
-+	 * up to 16 direct RDRAM devices.
-+	 * The device groups from the GRA registers seem to map reasonably
-+	 * well onto the notion of a chip select row.
-+	 * There are 16 GRA registers and since the name is associated with
-+	 * the channel and the GRA registers map to physical devices so we are
-+	 * going to make 1 channel for group.
- 	 */
--	mci = edac_mc_alloc(0, 16, 1, 0);
+-	/*
+-	 * Find out which node the error address belongs to. This may be
+-	 * different from the node that detected the error.
+-	 */
+-	src_mci = find_mc_by_sys_addr(mci, sys_addr);
+-	if (!src_mci) {
+-		amd64_mc_err(mci, "failed to map error addr 0x%lx to a node\n",
+-			     (unsigned long)sys_addr);
+-		edac_mc_handle_ce_no_info(mci, EDAC_MOD_STR);
+-		return;
+-	}
 -
-+	layers[0].type = EDAC_MC_LAYER_CHANNEL;
-+	layers[0].size = 2;
+-	/* Now map the sys_addr to a CSROW */
+-	csrow = sys_addr_to_csrow(src_mci, sys_addr);
+-	if (csrow < 0) {
+-		edac_mc_handle_ce_no_info(src_mci, EDAC_MOD_STR);
+-	} else {
+-		error_address_to_page_and_offset(sys_addr, &page, &offset);
+-
+-		edac_mc_handle_ce(src_mci, page, offset, syndrome, csrow,
+-				  channel, EDAC_MOD_STR);
+-	}
++	edac_mc_handle_error(HW_EVENT_ERR_CORRECTED, src_mci,
++			     page, offset, syndrome,
++			     csrow, channel, -1,
++			     EDAC_MOD_STR, "", NULL);
+ }
+ 
+ static int ddr2_cs_size(unsigned i, bool dct_width)
+@@ -1592,15 +1611,20 @@ static void f1x_map_sysaddr_to_csrow(struct mem_ctl_info *mci, u64 sys_addr,
+ 	u32 page, offset;
+ 	int nid, csrow, chan = 0;
+ 
++	error_address_to_page_and_offset(sys_addr, &page, &offset);
++
+ 	csrow = f1x_translate_sysaddr_to_cs(pvt, sys_addr, &nid, &chan);
+ 
+ 	if (csrow < 0) {
+-		edac_mc_handle_ce_no_info(mci, EDAC_MOD_STR);
++		edac_mc_handle_error(HW_EVENT_ERR_CORRECTED, mci,
++				     page, offset, syndrome,
++				     -1, -1, -1,
++				     EDAC_MOD_STR,
++				     "failed to map error addr to a csrow",
++				     NULL);
+ 		return;
+ 	}
+ 
+-	error_address_to_page_and_offset(sys_addr, &page, &offset);
+-
+ 	/*
+ 	 * We need the syndromes for channel detection only when we're
+ 	 * ganged. Otherwise @chan should already contain the channel at
+@@ -1609,16 +1633,10 @@ static void f1x_map_sysaddr_to_csrow(struct mem_ctl_info *mci, u64 sys_addr,
+ 	if (dct_ganging_enabled(pvt))
+ 		chan = get_channel_from_ecc_syndrome(mci, syndrome);
+ 
+-	if (chan >= 0)
+-		edac_mc_handle_ce(mci, page, offset, syndrome, csrow, chan,
+-				  EDAC_MOD_STR);
+-	else
+-		/*
+-		 * Channel unknown, report all channels on this CSROW as failed.
+-		 */
+-		for (chan = 0; chan < mci->csrows[csrow].nr_channels; chan++)
+-			edac_mc_handle_ce(mci, page, offset, syndrome,
+-					  csrow, chan, EDAC_MOD_STR);
++	edac_mc_handle_error(HW_EVENT_ERR_CORRECTED, mci,
++			     page, offset, syndrome,
++			     csrow, chan, -1,
++			     EDAC_MOD_STR, "", NULL);
+ }
+ 
+ /*
+@@ -1899,7 +1917,12 @@ static void amd64_handle_ce(struct mem_ctl_info *mci, struct mce *m)
+ 	/* Ensure that the Error Address is VALID */
+ 	if (!(m->status & MCI_STATUS_ADDRV)) {
+ 		amd64_mc_err(mci, "HW has no ERROR_ADDRESS available\n");
+-		edac_mc_handle_ce_no_info(mci, EDAC_MOD_STR);
++		edac_mc_handle_error(HW_EVENT_ERR_CORRECTED, mci,
++				     0, 0, 0,
++				     -1, -1, -1,
++				     EDAC_MOD_STR,
++				     "HW has no ERROR_ADDRESS available",
++				     NULL);
+ 		return;
+ 	}
+ 
+@@ -1923,11 +1946,17 @@ static void amd64_handle_ue(struct mem_ctl_info *mci, struct mce *m)
+ 
+ 	if (!(m->status & MCI_STATUS_ADDRV)) {
+ 		amd64_mc_err(mci, "HW has no ERROR_ADDRESS available\n");
+-		edac_mc_handle_ue_no_info(log_mci, EDAC_MOD_STR);
++		edac_mc_handle_error(HW_EVENT_ERR_UNCORRECTED, mci,
++				     0, 0, 0,
++				     -1, -1, -1,
++				     EDAC_MOD_STR,
++				     "HW has no ERROR_ADDRESS available",
++				     NULL);
+ 		return;
+ 	}
+ 
+ 	sys_addr = get_error_address(m);
++	error_address_to_page_and_offset(sys_addr, &page, &offset);
+ 
+ 	/*
+ 	 * Find out which node the error address belongs to. This may be
+@@ -1937,7 +1966,11 @@ static void amd64_handle_ue(struct mem_ctl_info *mci, struct mce *m)
+ 	if (!src_mci) {
+ 		amd64_mc_err(mci, "ERROR ADDRESS (0x%lx) NOT mapped to a MC\n",
+ 				  (unsigned long)sys_addr);
+-		edac_mc_handle_ue_no_info(log_mci, EDAC_MOD_STR);
++		edac_mc_handle_error(HW_EVENT_ERR_UNCORRECTED, mci,
++				     page, offset, 0,
++				     -1, -1, -1,
++				     EDAC_MOD_STR,
++				     "ERROR ADDRESS NOT mapped to a MC", NULL);
+ 		return;
+ 	}
+ 
+@@ -1947,10 +1980,17 @@ static void amd64_handle_ue(struct mem_ctl_info *mci, struct mce *m)
+ 	if (csrow < 0) {
+ 		amd64_mc_err(mci, "ERROR_ADDRESS (0x%lx) NOT mapped to CS\n",
+ 				  (unsigned long)sys_addr);
+-		edac_mc_handle_ue_no_info(log_mci, EDAC_MOD_STR);
++		edac_mc_handle_error(HW_EVENT_ERR_UNCORRECTED, mci,
++				     page, offset, 0,
++				     -1, -1, -1,
++				     EDAC_MOD_STR,
++				     "ERROR ADDRESS NOT mapped to CS",
++				     NULL);
+ 	} else {
+-		error_address_to_page_and_offset(sys_addr, &page, &offset);
+-		edac_mc_handle_ue(log_mci, page, offset, csrow, EDAC_MOD_STR);
++		edac_mc_handle_error(HW_EVENT_ERR_UNCORRECTED, mci,
++				     page, offset, 0,
++				     csrow, -1, -1,
++				     EDAC_MOD_STR, "", NULL);
+ 	}
+ }
+ 
+@@ -2515,6 +2555,7 @@ static int amd64_init_one_instance(struct pci_dev *F2)
+ 	struct amd64_pvt *pvt = NULL;
+ 	struct amd64_family_type *fam_type = NULL;
+ 	struct mem_ctl_info *mci = NULL;
++	struct edac_mc_layer layers[2];
+ 	int err = 0, ret;
+ 	u8 nid = get_node_id(F2);
+ 
+@@ -2549,7 +2590,13 @@ static int amd64_init_one_instance(struct pci_dev *F2)
+ 		goto err_siblings;
+ 
+ 	ret = -ENOMEM;
+-	mci = edac_mc_alloc(0, pvt->csels[0].b_cnt, pvt->channel_count, nid);
++	layers[0].type = EDAC_MC_LAYER_CHIP_SELECT;
++	layers[0].size = pvt->csels[0].b_cnt;
 +	layers[0].is_virt_csrow = true;
-+	layers[1].type = EDAC_MC_LAYER_SLOT;
-+	layers[1].size = 8;
-+	layers[1].is_virt_csrow = true;
-+	mci = new_edac_mc_alloc(0, ARRAY_SIZE(layers), layers, 0);
++	layers[1].type = EDAC_MC_LAYER_CHANNEL;
++	layers[1].size = pvt->channel_count;
++	layers[1].is_virt_csrow = false;
++	mci = new_edac_mc_alloc(nid, ARRAY_SIZE(layers), layers, 0);
  	if (!mci)
- 		return -ENOMEM;
+ 		goto err_siblings;
  
 -- 
 1.7.8
