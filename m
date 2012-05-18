@@ -1,160 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965506Ab2ERQyB (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 May 2012 12:54:01 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:22601 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757893Ab2ERQdB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 May 2012 12:33:01 -0400
-From: Mauro Carvalho Chehab <mchehab@redhat.com>
-Cc: Mauro Carvalho Chehab <mchehab@redhat.com>,
-        Linux Edac Mailing List <linux-edac@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: [PATCH EDAC v26 19/66] i7300_edac: convert driver to use the new edac ABI
-Date: Fri, 18 May 2012 13:32:06 -0300
-Message-Id: <1337358773-6919-20-git-send-email-mchehab@redhat.com>
-In-Reply-To: <1337358773-6919-1-git-send-email-mchehab@redhat.com>
-References: <1337358773-6919-1-git-send-email-mchehab@redhat.com>
-To: unlisted-recipients:; (no To-header on input)
+	id S965554Ab2ERQye (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 May 2012 12:54:34 -0400
+Received: from hqemgate03.nvidia.com ([216.228.121.140]:16518 "EHLO
+	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S965319Ab2ERQy3 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 18 May 2012 12:54:29 -0400
+X-PGP-Universal: processed;
+	by hqnvupgp08.nvidia.com on Fri, 18 May 2012 09:54:28 -0700
+Message-ID: <4FB67D9C.2040909@nvidia.com>
+Date: Fri, 18 May 2012 22:19:32 +0530
+From: Laxman Dewangan <ldewangan@nvidia.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101208 Thunderbird/3.1.7
+MIME-Version: 1.0
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Stephen Warren <swarren@nvidia.com>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: DT support for input-supply of regulator.
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The legacy edac ABI is going to be removed. Port the driver to use
-and benefit from the new API functionality.
+Hi Mark,
+When mapping the dts file for different regulator, observe that the 
+input  input-supply is not getting correctly.
 
-Signed-off-by: Mauro Carvalho Chehab <mchehab@redhat.com>
----
- drivers/edac/i7300_edac.c |   81 ++++++++++++++++++--------------------------
- 1 files changed, 33 insertions(+), 48 deletions(-)
 
-diff --git a/drivers/edac/i7300_edac.c b/drivers/edac/i7300_edac.c
-index d6f3a2d..dfeb44b 100644
---- a/drivers/edac/i7300_edac.c
-+++ b/drivers/edac/i7300_edac.c
-@@ -464,17 +464,14 @@ static void i7300_process_fbd_error(struct mem_ctl_info *mci)
- 				FERR_FAT_FBD, error_reg);
- 
- 		snprintf(pvt->tmp_prt_buffer, PAGE_SIZE,
--			"FATAL (Branch=%d DRAM-Bank=%d %s "
--			"RAS=%d CAS=%d Err=0x%lx (%s))",
--			branch, bank,
--			is_wr ? "RDWR" : "RD",
--			ras, cas,
--			errors, specific);
--
--		/* Call the helper to output message */
--		edac_mc_handle_fbd_ue(mci, rank, branch << 1,
--				      (branch << 1) + 1,
--				      pvt->tmp_prt_buffer);
-+			 "Bank=%d RAS=%d CAS=%d Err=0x%lx (%s))",
-+			 bank, ras, cas, errors, specific);
-+
-+		edac_mc_handle_error(HW_EVENT_ERR_FATAL, mci, 0, 0, 0,
-+				     branch, -1, rank,
-+				     is_wr ? "Write error" : "Read error",
-+				     pvt->tmp_prt_buffer, NULL);
-+
- 	}
- 
- 	/* read in the 1st NON-FATAL error register */
-@@ -513,23 +510,14 @@ static void i7300_process_fbd_error(struct mem_ctl_info *mci)
- 
- 		/* Form out message */
- 		snprintf(pvt->tmp_prt_buffer, PAGE_SIZE,
--			"Corrected error (Branch=%d, Channel %d), "
--			" DRAM-Bank=%d %s "
--			"RAS=%d CAS=%d, CE Err=0x%lx, Syndrome=0x%08x(%s))",
--			branch, channel,
--			bank,
--			is_wr ? "RDWR" : "RD",
--			ras, cas,
--			errors, syndrome, specific);
--
--		/*
--		 * Call the helper to output message
--		 * NOTE: Errors are reported per-branch, and not per-channel
--		 *	 Currently, we don't know how to identify the right
--		 *	 channel.
--		 */
--		edac_mc_handle_fbd_ce(mci, rank, channel,
--				      pvt->tmp_prt_buffer);
-+			 "DRAM-Bank=%d RAS=%d CAS=%d, Err=0x%lx (%s))",
-+			 bank, ras, cas, errors, specific);
-+
-+		edac_mc_handle_error(HW_EVENT_ERR_CORRECTED, mci, 0, 0,
-+				     syndrome,
-+				     branch >> 1, channel % 2, rank,
-+				     is_wr ? "Write error" : "Read error",
-+				     pvt->tmp_prt_buffer, NULL);
- 	}
- 	return;
- }
-@@ -807,13 +795,17 @@ static int i7300_init_csrows(struct mem_ctl_info *mci)
- 			for (ch = 0; ch < MAX_CH_PER_BRANCH; ch++) {
- 				int channel = to_channel(ch, branch);
- 
--				dinfo = &pvt->dimm_info[slot][channel];
-+				dimm = EDAC_DIMM_PTR(mci->layers, mci->dimms,
-+					       mci->n_layers, branch, ch, slot);
- 
--				dimm = mci->csrows[slot].channels[branch * MAX_CH_PER_BRANCH + ch].dimm;
-+				dinfo = &pvt->dimm_info[slot][channel];
- 
- 				mtr = decode_mtr(pvt, slot, ch, branch,
- 						 dinfo, dimm);
- 
-+				mci->tot_dimms++;
-+				dimm++;
-+
- 				/* if no DIMMS on this row, continue */
- 				if (!MTR_DIMMS_PRESENT(mtr))
- 					continue;
-@@ -1034,10 +1026,8 @@ static int __devinit i7300_init_one(struct pci_dev *pdev,
- 				    const struct pci_device_id *id)
- {
- 	struct mem_ctl_info *mci;
-+	struct edac_mc_layer layers[3];
- 	struct i7300_pvt *pvt;
--	int num_channels;
--	int num_dimms_per_channel;
--	int num_csrows;
- 	int rc;
- 
- 	/* wake up device */
-@@ -1054,22 +1044,17 @@ static int __devinit i7300_init_one(struct pci_dev *pdev,
- 	if (PCI_FUNC(pdev->devfn) != 0)
- 		return -ENODEV;
- 
--	/* As we don't have a motherboard identification routine to determine
--	 * actual number of slots/dimms per channel, we thus utilize the
--	 * resource as specified by the chipset. Thus, we might have
--	 * have more DIMMs per channel than actually on the mobo, but this
--	 * allows the driver to support up to the chipset max, without
--	 * some fancy mobo determination.
--	 */
--	num_dimms_per_channel = MAX_SLOTS;
--	num_channels = MAX_CHANNELS;
--	num_csrows = MAX_SLOTS * MAX_CHANNELS;
--
--	debugf0("MC: %s(): Number of - Channels= %d  DIMMS= %d  CSROWS= %d\n",
--		__func__, num_channels, num_dimms_per_channel, num_csrows);
--
- 	/* allocate a new MC control structure */
--	mci = edac_mc_alloc(sizeof(*pvt), num_csrows, num_channels, 0);
-+	layers[0].type = EDAC_MC_LAYER_BRANCH;
-+	layers[0].size = MAX_BRANCHES;
-+	layers[0].is_virt_csrow = false;
-+	layers[1].type = EDAC_MC_LAYER_CHANNEL;
-+	layers[1].size = MAX_CH_PER_BRANCH;
-+	layers[1].is_virt_csrow = true;
-+	layers[2].type = EDAC_MC_LAYER_SLOT;
-+	layers[2].size = MAX_SLOTS;
-+	layers[2].is_virt_csrow = true;
-+	mci = new_edac_mc_alloc(0, ARRAY_SIZE(layers), layers, sizeof(*pvt));
- 
- 	if (mci == NULL)
- 		return -ENOMEM;
--- 
-1.7.8
+I have following structure in the dts file for registering the regulators:
+
+        pmu: tps65910@d2 {
+                 compatible = "ti,tps65910";
+                 reg = <0xd2>;
+
+                 #gpio-cells = <2>;
+                 gpio-controller;
+::::::::::
+
+                 regulators {
+                         vdd1_reg: vdd1 {
+                                 regulator-min-microvolt = < 600000>;
+                                 regulator-max-microvolt = <1500000>;
+                         };
+                         vdd2_reg: vdd2 {
+                                 regulator-min-microvolt = < 600000>;
+                                 regulator-max-microvolt = <1500000>;
+                                 vin-supply = <&vdd1_reg>
+                         };
+                 };
+     };
+
+
+Now the regulator vdd1 get register properly, but when looking for the 
+registration for vdd2, it is not able to identify the 
+init_data->supply_regulator as we do not parse it.
+So for this, I added the code in case on such
+In function of_get_regulation_constraints()
+         if (of_find_property(np, "vin-supply", NULL))
+                 (*init_data)->supply_regulator = "vin";
+
+So when vdd2 registration happen, it looks for the vin-supply.
+
+But when it looks for the device node containing this regulator, it 
+starts searching of the props from the dev_node of parent device i.e. 
+pmu: tps65910@d2 and in search, it does not found the vin-supply 
+property. It got property for compatible reg, gpio_cell, gpio-controller 
+and then no more property.
+
+Is there any issue in laying down the regulator structure?
+
+Thanks,
+Laxman
+
+
+
+
 
