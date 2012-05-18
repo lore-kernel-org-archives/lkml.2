@@ -1,123 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755147Ab2ERP0p (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 May 2012 11:26:45 -0400
-Received: from mailhub.sw.ru ([195.214.232.25]:29761 "EHLO relay.sw.ru"
+	id S1755419Ab2ERP3p (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 May 2012 11:29:45 -0400
+Received: from e9.ny.us.ibm.com ([32.97.182.139]:42016 "EHLO e9.ny.us.ibm.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751730Ab2ERP0n (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 May 2012 11:26:43 -0400
-Subject: [PATCH] NFSd: set nfsd_serv to NULL after service destruction
-To: bfields@fieldses.org
-From: Stanislav Kinsbursky <skinsbursky@parallels.com>
-Cc: linux-nfs@vger.kernel.org, linux-kernel@vger.kernel.org, devel@openvz.org
-Date: Fri, 18 May 2012 19:26:02 +0400
-Message-ID: <20120518152314.15569.21878.stgit@localhost.localdomain>
-User-Agent: StGit/0.16
-MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
+	id S1754871Ab2ERP3n (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 18 May 2012 11:29:43 -0400
+Subject: Re: [V2 PATCH 9/9] vhost: zerocopy: poll vq in zerocopy callback
+From: Shirley Ma <mashirle@us.ibm.com>
+To: Jason Wang <jasowang@redhat.com>
+Cc: "Michael S. Tsirkin" <mst@redhat.com>, eric.dumazet@gmail.com,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        ebiederm@xmission.com, davem@davemloft.net
+In-Reply-To: <4FB61D57.4030103@redhat.com>
+References: <20120502033901.11782.13157.stgit@amd-6168-8-1.englab.nay.redhat.com>
+	 <20120502034254.11782.27314.stgit@amd-6168-8-1.englab.nay.redhat.com>
+	 <1337100630.8220.4.camel@oc3660625478.ibm.com> <4FB317C8.90002@redhat.com>
+	 <1337181027.10741.13.camel@oc3660625478.ibm.com>
+	 <20120516151444.GC9934@redhat.com>
+	 <1337189525.10741.24.camel@oc3660625478.ibm.com>
+	 <4FB4677A.8020402@redhat.com>
+	 <1337268862.10741.58.camel@oc3660625478.ibm.com>
+	 <4FB61D57.4030103@redhat.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Fri, 18 May 2012 08:29:34 -0700
+Message-ID: <1337354974.12999.12.camel@oc3660625478.ibm.com>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 (2.28.3-24.el6) 
 Content-Transfer-Encoding: 7bit
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 12051815-7182-0000-0000-0000018D6EB3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Otherwise we will get NULL pointer dereference after
-svc_shutdown_net->sv_shutdown (nfsd_last_thread) call.
-This looks safe, because all such operations (svc_destroy) are performed with
-nfsd_mutex being held.
+On Fri, 2012-05-18 at 17:58 +0800, Jason Wang wrote:
+> On 05/17/2012 11:34 PM, Shirley Ma wrote:
+> > On Thu, 2012-05-17 at 10:50 +0800, Jason Wang wrote:
+> >> The problem is we may stop the tx queue when there no enough
+> capacity
+> >> to
+> >> place packets, at this moment  we depends on the tx interrupt to
+> >> re-enable the tx queue. So if we didn't poll the vhost during
+> >> callback,
+> >> guest may lose the tx interrupt to re-enable the tx queue which
+> could
+> >> stall the whole tx queue.
+> > VHOST_MAX_PEND should handle the capacity.
+> >
+> > Hasn't the above situation been handled in handle_tx() code?:
+> > ...
+> >                          if (unlikely(num_pends>  VHOST_MAX_PEND)) {
+> >                                  tx_poll_start(net, sock);
+> >
+> set_bit(SOCK_ASYNC_NOSPACE,&sock->flags);
+> >                                  break;
+> >                          }
+> > ...
+> >
+> > Thanks
+> > Shirley
+> 
+> It may not help in because:
+> 
+> - tx polling depends on skb_orphan() which is often called by device 
+> driver when it place the packet into the queue of the devices instead 
+> of  when the packets were sent. So it was too early for vhost to be 
+> notified.
+Then do you think it's better to replace with vhost_poll_queue here
+instead?
 
-Signed-off-by: Stanislav Kinsbursky <skinsbursky@parallels.com>
----
- fs/nfsd/nfsctl.c |    4 ++--
- fs/nfsd/nfsd.h   |    6 ++++++
- fs/nfsd/nfssvc.c |   10 ++++------
- 3 files changed, 12 insertions(+), 8 deletions(-)
+> - it only works when the pending DMAs exceeds VHOST_MAX_PEND, it's 
+> highly possible that guest needs to be notified when the pending
+> packets 
+> isn't so much.
+In which situation the guest needs to be notified when there is no TX
+besides buffers run out?
 
-diff --git a/fs/nfsd/nfsctl.c b/fs/nfsd/nfsctl.c
-index c55298e..82cca1e 100644
---- a/fs/nfsd/nfsctl.c
-+++ b/fs/nfsd/nfsctl.c
-@@ -675,7 +675,7 @@ static ssize_t __write_ports_addfd(char *buf)
- 	if (err < 0) {
- 		if (nfsd_serv->sv_nrthreads == 1)
- 			svc_shutdown_net(nfsd_serv, net);
--		svc_destroy(nfsd_serv);
-+		nfsd_destroy();
- 		return err;
- 	}
- 
-@@ -746,7 +746,7 @@ out_close:
- out_err:
- 	if (nfsd_serv->sv_nrthreads == 1)
- 		svc_shutdown_net(nfsd_serv, net);
--	svc_destroy(nfsd_serv);
-+	nfsd_destroy();
- 	return err;
- }
- 
-diff --git a/fs/nfsd/nfsd.h b/fs/nfsd/nfsd.h
-index 1671429..35db369 100644
---- a/fs/nfsd/nfsd.h
-+++ b/fs/nfsd/nfsd.h
-@@ -73,6 +73,12 @@ int		nfsd_nrpools(void);
- int		nfsd_get_nrthreads(int n, int *);
- int		nfsd_set_nrthreads(int n, int *);
- 
-+static inline void nfsd_destroy(void)
-+{
-+	svc_destroy(nfsd_serv);
-+	nfsd_serv = NULL;
-+}
-+
- #if defined(CONFIG_NFSD_V2_ACL) || defined(CONFIG_NFSD_V3_ACL)
- #ifdef CONFIG_NFSD_V2_ACL
- extern struct svc_version nfsd_acl_version2;
-diff --git a/fs/nfsd/nfssvc.c b/fs/nfsd/nfssvc.c
-index ee709fc..ab89fe0 100644
---- a/fs/nfsd/nfssvc.c
-+++ b/fs/nfsd/nfssvc.c
-@@ -254,8 +254,6 @@ static void nfsd_shutdown(void)
- 
- static void nfsd_last_thread(struct svc_serv *serv, struct net *net)
- {
--	/* When last nfsd thread exits we need to do some clean-up */
--	nfsd_serv = NULL;
- 	nfsd_shutdown();
- 
- 	svc_rpcb_cleanup(serv, net);
-@@ -348,7 +346,7 @@ int nfsd_create_serv(void)
- 
- 	error = svc_bind(nfsd_serv, current->nsproxy->net_ns);
- 	if (error < 0) {
--		svc_destroy(nfsd_serv);
-+		nfsd_destroy();
- 		return error;
- 	}
- 
-@@ -430,7 +428,7 @@ int nfsd_set_nrthreads(int n, int *nthreads)
- 
- 	if (nfsd_serv->sv_nrthreads == 1)
- 		svc_shutdown_net(nfsd_serv, net);
--	svc_destroy(nfsd_serv);
-+	nfsd_destroy();
- 
- 	return err;
- }
-@@ -480,7 +478,7 @@ out_shutdown:
- out_destroy:
- 	if (nfsd_serv->sv_nrthreads == 1)
- 		svc_shutdown_net(nfsd_serv, net);
--	svc_destroy(nfsd_serv);		/* Release server */
-+	nfsd_destroy();		/* Release server */
- out:
- 	mutex_unlock(&nfsd_mutex);
- 	return error;
-@@ -684,7 +682,7 @@ int nfsd_pool_stats_release(struct inode *inode, struct file *file)
- 	/* this function really, really should have been called svc_put() */
- 	if (nfsd_serv->sv_nrthreads == 1)
- 		svc_shutdown_net(nfsd_serv, net);
--	svc_destroy(nfsd_serv);
-+	nfsd_destroy();
- 	mutex_unlock(&nfsd_mutex);
- 	return ret;
- }
+> So this piece of code may not help and could be removed and we need
+> to 
+> poll the virt-queue during zerocopy callback ( through it could be 
+> further optimized but may not be easy). 
+
+Thanks
+Shirley
 
