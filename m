@@ -1,71 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1946257Ab2ERXDL (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 May 2012 19:03:11 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:53524 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1946199Ab2ERXC4 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 May 2012 19:02:56 -0400
-Message-Id: <20120518211600.010480077@linuxfoundation.org>
-User-Agent: quilt/0.60-19.1
-Date: Fri, 18 May 2012 14:16:05 -0700
-From: Greg KH <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk
-Subject: [ 06/54] Fix __read_seqcount_begin() to use ACCESS_ONCE for sequence value read
-In-Reply-To: <20120518212656.GA4992@kroah.com>
+	id S1946368Ab2ERXco (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 May 2012 19:32:44 -0400
+Received: from mail-lpp01m010-f46.google.com ([209.85.215.46]:60633 "EHLO
+	mail-lpp01m010-f46.google.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1946262Ab2ERXcj convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 18 May 2012 19:32:39 -0400
+MIME-Version: 1.0
+In-Reply-To: <CAE9FiQXN5z0riswyECKw5OKe+nPUBN2yZ1d4=Asb3kqaj770NA@mail.gmail.com>
+References: <1336422606-4244-1-git-send-email-yinghai@kernel.org>
+ <CAErSpo6OZYXz-M=C9r154MY7kwC7LRR3ZnQe3pnmVJY2uoWeRw@mail.gmail.com> <CAE9FiQXN5z0riswyECKw5OKe+nPUBN2yZ1d4=Asb3kqaj770NA@mail.gmail.com>
+From: Bjorn Helgaas <bhelgaas@google.com>
+Date: Fri, 18 May 2012 17:32:17 -0600
+Message-ID: <CAErSpo71805jTs1qVMx+9ghzUub77r47VqpXF0sVOFuDSq6pmg@mail.gmail.com>
+Subject: Re: [PATCH 00/21] PCI: use busn_res to replace bus secondary/subordinate
+To: Yinghai Lu <yinghai@kernel.org>
+Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Tony Luck <tony.luck@intel.com>, David Miller <davem@davemloft.net>,
+        x86 <x86@kernel.org>, Dominik Brodowski <linux@dominikbrodowski.net>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-arch@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.0-stable review patch.  If anyone has any objections, please let me know.
+On Thu, May 17, 2012 at 8:13 PM, Yinghai Lu <yinghai@kernel.org> wrote:
+> On Thu, May 17, 2012 at 3:19 PM, Bjorn Helgaas <bhelgaas@google.com> wrote:
+>> Sigh.  You previously said we should do this order:
+>>
+>>        for-pci-hostbridge-cleanup
+>>        for-pci-busn-alloc
+>>        for-pci-res-alloc
+>>        for-pci-root-bus-hotplug
+>>        for-pci-for-each-res-addon
+>>
+>> I merged for-pci-hostbridge-cleanup already.  I was about to start
+>> merging for-pci-busn-alloc.
+>>
+>> But now you added for-pci-hotplug-cleanup and made for-pci-busn-alloc
+>> depend on it.  I have some comments on for-pci-hotplug-cleanup, so I'm
+>> not ready to merge it quite yet.  Can you please just go back to the
+>> original order and put the new hotplug cleanup stuff at the *end*?
+>
+> ok, update for-pci-busn_res branch, now it is based on your next branch.
+>
+> git://git.kernel.org/pub/scm/linux/kernel/git/yinghai/linux-yinghai.git
+> for-pci-busn_res
 
-------------------
+OK.  You just incorporated the hotplug-cleanup stuff into that branch,
+which isn't what I had in mind.  But in the interest of making forward
+progress, I merged as much as I could.  The result is at:
 
-From: Linus Torvalds <torvalds@linux-foundation.org>
+  git://git.kernel.org/pub/scm/linux/kernel/git/helgaas/pci.git next-3.5
 
-commit 2f624278626677bfaf73fef97f86b37981621f5c upstream.
+After Linus pulls my current "next" branch during the merge window,
+I'll put the "next-3.5" stuff into the "next" branch.
 
-We really need to use a ACCESS_ONCE() on the sequence value read in
-__read_seqcount_begin(), because otherwise the compiler might end up
-reloading the value in between the test and the return of it.  As a
-result, it might end up returning an odd value (which means that a write
-is in progress).
+Note that I stopped at your probe_resource() patch -- I already told
+you I won't merge that in its current form because I think the
+interface you propose is too complicated.
 
-If the reader is then fast enough that that odd value is still the
-current one when the read_seqcount_retry() is done, we might end up with
-a "successful" read sequence, even despite the concurrent write being
-active.
+Let me know what series you'd like me to work on next, and send the
+current patches to the list.
 
-In practice this probably never really happens - there just isn't
-anything else going on around the read of the sequence count, and the
-common case is that we end up having a read barrier immediately
-afterwards.
-
-So the code sequence in which gcc might decide to reaload from memory is
-small, and there's no reason to believe it would ever actually do the
-reload.  But if the compiler ever were to decide to do so, it would be
-incredibly annoying to debug.  Let's just make sure.
-
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
----
- include/linux/seqlock.h |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
-
---- a/include/linux/seqlock.h
-+++ b/include/linux/seqlock.h
-@@ -141,7 +141,7 @@ static inline unsigned __read_seqcount_b
- 	unsigned ret;
- 
- repeat:
--	ret = s->sequence;
-+	ret = ACCESS_ONCE(s->sequence);
- 	if (unlikely(ret & 1)) {
- 		cpu_relax();
- 		goto repeat;
-
-
+Bjorn
