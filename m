@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964804Ab2ERQhY (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 May 2012 12:37:24 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:27645 "EHLO mx1.redhat.com"
+	id S964776Ab2ERQhV (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 May 2012 12:37:21 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:53628 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758880Ab2ERQd1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1758884Ab2ERQd1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 18 May 2012 12:33:27 -0400
 From: Mauro Carvalho Chehab <mchehab@redhat.com>
 Cc: Mauro Carvalho Chehab <mchehab@redhat.com>,
         Linux Edac Mailing List <linux-edac@vger.kernel.org>,
         Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
         Michal Marek <mmarek@suse.cz>
-Subject: [PATCH EDAC v26 09/66] amd76x_edac: convert driver to use the new edac ABI
-Date: Fri, 18 May 2012 13:31:56 -0300
-Message-Id: <1337358773-6919-10-git-send-email-mchehab@redhat.com>
+Subject: [PATCH EDAC v26 22/66] i82860_edac: convert driver to use the new edac ABI
+Date: Fri, 18 May 2012 13:32:09 -0300
+Message-Id: <1337358773-6919-23-git-send-email-mchehab@redhat.com>
 In-Reply-To: <1337358773-6919-1-git-send-email-mchehab@redhat.com>
 References: <1337358773-6919-1-git-send-email-mchehab@redhat.com>
 To: unlisted-recipients:; (no To-header on input)
@@ -27,78 +27,87 @@ and benefit from the new API functionality.
 Cc: Michal Marek <mmarek@suse.cz>
 Signed-off-by: Mauro Carvalho Chehab <mchehab@redhat.com>
 ---
- drivers/edac/amd76x_edac.c |   28 +++++++++++++++++++---------
- 1 files changed, 19 insertions(+), 9 deletions(-)
+ drivers/edac/i82860_edac.c |   42 +++++++++++++++++++++++++++++-------------
+ 1 files changed, 29 insertions(+), 13 deletions(-)
 
-diff --git a/drivers/edac/amd76x_edac.c b/drivers/edac/amd76x_edac.c
-index a2dde20..69f2b2e 100644
---- a/drivers/edac/amd76x_edac.c
-+++ b/drivers/edac/amd76x_edac.c
-@@ -29,7 +29,6 @@
- 	edac_mc_chipset_printk(mci, level, "amd76x", fmt, ##arg)
+diff --git a/drivers/edac/i82860_edac.c b/drivers/edac/i82860_edac.c
+index 8485bbf..8834e4e 100644
+--- a/drivers/edac/i82860_edac.c
++++ b/drivers/edac/i82860_edac.c
+@@ -99,6 +99,7 @@ static int i82860_process_error_info(struct mem_ctl_info *mci,
+ 				struct i82860_error_info *info,
+ 				int handle_errors)
+ {
++	struct dimm_info *dimm;
+ 	int row;
  
- #define AMD76X_NR_CSROWS 8
--#define AMD76X_NR_CHANS  1
- #define AMD76X_NR_DIMMS  4
+ 	if (!(info->errsts2 & 0x0003))
+@@ -108,18 +109,25 @@ static int i82860_process_error_info(struct mem_ctl_info *mci,
+ 		return 1;
  
- /* AMD 76x register addresses - device 0 function 0 - PCI bridge */
-@@ -146,8 +145,10 @@ static int amd76x_process_error_info(struct mem_ctl_info *mci,
- 
- 		if (handle_errors) {
- 			row = (info->ecc_mode_status >> 4) & 0xf;
--			edac_mc_handle_ue(mci, mci->csrows[row].first_page, 0,
--					row, mci->ctl_name);
-+			edac_mc_handle_error(HW_EVENT_ERR_UNCORRECTED, mci,
-+					     mci->csrows[row].first_page, 0, 0,
-+					     row, 0, -1,
-+					     mci->ctl_name, "", NULL);
- 		}
+ 	if ((info->errsts ^ info->errsts2) & 0x0003) {
+-		edac_mc_handle_ce_no_info(mci, "UE overwrote CE");
++		edac_mc_handle_error(HW_EVENT_ERR_UNCORRECTED, mci, 0, 0, 0,
++				     -1, -1, -1, "UE overwrote CE", "", NULL);
+ 		info->errsts = info->errsts2;
  	}
  
-@@ -159,8 +160,10 @@ static int amd76x_process_error_info(struct mem_ctl_info *mci,
+ 	info->eap >>= PAGE_SHIFT;
+ 	row = edac_mc_find_csrow_by_page(mci, info->eap);
++	dimm = mci->csrows[row].channels[0].dimm;
  
- 		if (handle_errors) {
- 			row = info->ecc_mode_status & 0xf;
--			edac_mc_handle_ce(mci, mci->csrows[row].first_page, 0,
--					0, row, 0, mci->ctl_name);
-+			edac_mc_handle_error(HW_EVENT_ERR_CORRECTED, mci,
-+					     mci->csrows[row].first_page, 0, 0,
-+					     row, 0, -1,
-+					     mci->ctl_name, "", NULL);
- 		}
- 	}
+ 	if (info->errsts & 0x0002)
+-		edac_mc_handle_ue(mci, info->eap, 0, row, "i82860 UE");
++		edac_mc_handle_error(HW_EVENT_ERR_UNCORRECTED, mci,
++				     info->eap, 0, 0,
++				     dimm->location[0], dimm->location[1], -1,
++				     "i82860 UE", "", NULL);
+ 	else
+-		edac_mc_handle_ce(mci, info->eap, 0, info->derrsyn, row, 0,
+-				"i82860 UE");
++		edac_mc_handle_error(HW_EVENT_ERR_UNCORRECTED, mci,
++				     info->eap, 0, info->derrsyn,
++				     dimm->location[0], dimm->location[1], -1,
++				     "i82860 CE", "", NULL);
  
-@@ -232,7 +235,8 @@ static int amd76x_probe1(struct pci_dev *pdev, int dev_idx)
- 		EDAC_SECDED,
- 		EDAC_SECDED
- 	};
--	struct mem_ctl_info *mci = NULL;
-+	struct mem_ctl_info *mci;
+ 	return 1;
+ }
+@@ -179,18 +187,26 @@ static void i82860_init_csrows(struct mem_ctl_info *mci, struct pci_dev *pdev)
+ static int i82860_probe1(struct pci_dev *pdev, int dev_idx)
+ {
+ 	struct mem_ctl_info *mci;
 +	struct edac_mc_layer layers[2];
- 	u32 ems;
- 	u32 ems_mode;
- 	struct amd76x_error_info discard;
-@@ -240,11 +244,17 @@ static int amd76x_probe1(struct pci_dev *pdev, int dev_idx)
- 	debugf0("%s()\n", __func__);
- 	pci_read_config_dword(pdev, AMD76X_ECC_MODE_STATUS, &ems);
- 	ems_mode = (ems >> 10) & 0x3;
--	mci = edac_mc_alloc(0, AMD76X_NR_CSROWS, AMD76X_NR_CHANS, 0);
+ 	struct i82860_error_info discard;
  
--	if (mci == NULL) {
-+	layers[0].type = EDAC_MC_LAYER_CHIP_SELECT;
-+	layers[0].size = AMD76X_NR_CSROWS;
+-	/* RDRAM has channels but these don't map onto the abstractions that
+-	   edac uses.
+-	   The device groups from the GRA registers seem to map reasonably
+-	   well onto the notion of a chip select row.
+-	   There are 16 GRA registers and since the name is associated with
+-	   the channel and the GRA registers map to physical devices so we are
+-	   going to make 1 channel for group.
++	/*
++	 * RDRAM has channels but these don't map onto the csrow abstraction.
++	 * According with the datasheet, there are 2 Rambus channels, supporting
++	 * up to 16 direct RDRAM devices.
++	 * The device groups from the GRA registers seem to map reasonably
++	 * well onto the notion of a chip select row.
++	 * There are 16 GRA registers and since the name is associated with
++	 * the channel and the GRA registers map to physical devices so we are
++	 * going to make 1 channel for group.
+ 	 */
+-	mci = edac_mc_alloc(0, 16, 1, 0);
+-
++	layers[0].type = EDAC_MC_LAYER_CHANNEL;
++	layers[0].size = 2;
 +	layers[0].is_virt_csrow = true;
-+	layers[1].type = EDAC_MC_LAYER_CHANNEL;
-+	layers[1].size = 1;
-+	layers[1].is_virt_csrow = false;
++	layers[1].type = EDAC_MC_LAYER_SLOT;
++	layers[1].size = 8;
++	layers[1].is_virt_csrow = true;
 +	mci = new_edac_mc_alloc(0, ARRAY_SIZE(layers), layers, 0);
-+
-+	if (mci == NULL)
+ 	if (!mci)
  		return -ENOMEM;
--	}
  
- 	debugf0("%s(): mci = %p\n", __func__, mci);
- 	mci->dev = &pdev->dev;
 -- 
 1.7.8
 
