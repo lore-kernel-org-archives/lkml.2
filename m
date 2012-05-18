@@ -1,217 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1031024Ab2ERDCq (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 May 2012 23:02:46 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:59477 "EHLO
+	id S1030941Ab2ERDAO (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 May 2012 23:00:14 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:43831 "EHLO
 	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1030712Ab2ERDAP (ORCPT
+	with ESMTP id S1030707Ab2ERDAG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 May 2012 23:00:15 -0400
+	Thu, 17 May 2012 23:00:06 -0400
 From: koverstreet@google.com
 To: linux-bcache@vger.kernel.org, linux-kernel@vger.kernel.org,
         dm-devel@redhat.com, linux-fsdevel@vger.kernel.org
 Cc: Kent Overstreet <koverstreet@google.com>, tj@kernel.org, axboe@kernel.dk,
         agk@redhat.com, neilb@suse.de
-Subject: [PATCH 07/13] pktcdvd: Switch to bio_kmalloc()
-Date: Thu, 17 May 2012 22:59:54 -0400
-Message-Id: <04a4d6c2c8b6f0097e3594c6e0932093afffc1da.1337308722.git.koverstreet@google.com>
+Subject: [PATCH 00/13] Block cleanups (for bcache)
+Date: Thu, 17 May 2012 22:59:47 -0400
+Message-Id: <cover.1337308722.git.koverstreet@google.com>
 X-Mailer: git-send-email 1.7.9.rc2
-In-Reply-To: <cover.1337308722.git.koverstreet@google.com>
-References: <cover.1337308722.git.koverstreet@google.com>
-In-Reply-To: <cover.1337308722.git.koverstreet@google.com>
-References: <cover.1337308722.git.koverstreet@google.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Kent Overstreet <koverstreet@google.com>
 
-This is prep work for killing bi_destructor
+Couple related things in this patch series. This is mostly stuff I did for
+bcache, polished/expanded up a bit:
 
-Signed-off-by: Kent Overstreet <koverstreet@google.com>
----
- drivers/block/pktcdvd.c |  115 ++++++++++++++++-------------------------------
- 1 files changed, 39 insertions(+), 76 deletions(-)
+ * Bio pool freeing. This moves freeing of bios allocated from bio pools into
+   generic code.
 
-diff --git a/drivers/block/pktcdvd.c b/drivers/block/pktcdvd.c
-index ba66e44..6fe693a 100644
---- a/drivers/block/pktcdvd.c
-+++ b/drivers/block/pktcdvd.c
-@@ -522,36 +522,38 @@ static void pkt_bio_finished(struct pktcdvd_device *pd)
- 	}
- }
- 
--static void pkt_bio_destructor(struct bio *bio)
-+static void pkt_end_io_read(struct bio *bio, int err)
- {
--	kfree(bio->bi_io_vec);
--	kfree(bio);
--}
-+	struct packet_data *pkt = bio->bi_private;
-+	struct pktcdvd_device *pd = pkt->pd;
-+	BUG_ON(!pd);
- 
--static struct bio *pkt_bio_alloc(int nr_iovecs)
--{
--	struct bio_vec *bvl = NULL;
--	struct bio *bio;
-+	VPRINTK("pkt_end_io_read: bio=%p sec0=%llx sec=%llx err=%d\n", bio,
-+		(unsigned long long)pkt->sector, (unsigned long long)bio->bi_sector, err);
- 
--	bio = kmalloc(sizeof(struct bio), GFP_KERNEL);
--	if (!bio)
--		goto no_bio;
--	bio_init(bio);
-+	if (err)
-+		atomic_inc(&pkt->io_errors);
-+	if (atomic_dec_and_test(&pkt->io_wait)) {
-+		atomic_inc(&pkt->run_sm);
-+		wake_up(&pd->wqueue);
-+	}
-+	pkt_bio_finished(pd);
-+}
- 
--	bvl = kcalloc(nr_iovecs, sizeof(struct bio_vec), GFP_KERNEL);
--	if (!bvl)
--		goto no_bvl;
-+static void pkt_end_io_packet_write(struct bio *bio, int err)
-+{
-+	struct packet_data *pkt = bio->bi_private;
-+	struct pktcdvd_device *pd = pkt->pd;
-+	BUG_ON(!pd);
- 
--	bio->bi_max_vecs = nr_iovecs;
--	bio->bi_io_vec = bvl;
--	bio->bi_destructor = pkt_bio_destructor;
-+	VPRINTK("pkt_end_io_packet_write: id=%d, err=%d\n", pkt->id, err);
- 
--	return bio;
-+	pd->stats.pkt_ended++;
- 
-- no_bvl:
--	kfree(bio);
-- no_bio:
--	return NULL;
-+	pkt_bio_finished(pd);
-+	atomic_dec(&pkt->io_wait);
-+	atomic_inc(&pkt->run_sm);
-+	wake_up(&pd->wqueue);
- }
- 
- /*
-@@ -567,10 +569,13 @@ static struct packet_data *pkt_alloc_packet_data(int frames)
- 		goto no_pkt;
- 
- 	pkt->frames = frames;
--	pkt->w_bio = pkt_bio_alloc(frames);
-+	pkt->w_bio = bio_kmalloc(GFP_KERNEL, frames);
- 	if (!pkt->w_bio)
- 		goto no_bio;
- 
-+	pkt->w_bio->bi_end_io = pkt_end_io_packet_write;
-+	pkt->w_bio->bi_private = pkt;
-+
- 	for (i = 0; i < frames / FRAMES_PER_PAGE; i++) {
- 		pkt->pages[i] = alloc_page(GFP_KERNEL|__GFP_ZERO);
- 		if (!pkt->pages[i])
-@@ -581,9 +586,12 @@ static struct packet_data *pkt_alloc_packet_data(int frames)
- 	bio_list_init(&pkt->orig_bios);
- 
- 	for (i = 0; i < frames; i++) {
--		struct bio *bio = pkt_bio_alloc(1);
-+		struct bio *bio = bio_kmalloc(GFP_KERNEL, 1);
- 		if (!bio)
- 			goto no_rd_bio;
-+
-+		bio->bi_end_io = pkt_end_io_read;
-+		bio->bi_private = pkt;
- 		pkt->r_bios[i] = bio;
- 	}
- 
-@@ -1036,40 +1044,6 @@ static void pkt_make_local_copy(struct packet_data *pkt, struct bio_vec *bvec)
- 	}
- }
- 
--static void pkt_end_io_read(struct bio *bio, int err)
--{
--	struct packet_data *pkt = bio->bi_private;
--	struct pktcdvd_device *pd = pkt->pd;
--	BUG_ON(!pd);
--
--	VPRINTK("pkt_end_io_read: bio=%p sec0=%llx sec=%llx err=%d\n", bio,
--		(unsigned long long)pkt->sector, (unsigned long long)bio->bi_sector, err);
--
--	if (err)
--		atomic_inc(&pkt->io_errors);
--	if (atomic_dec_and_test(&pkt->io_wait)) {
--		atomic_inc(&pkt->run_sm);
--		wake_up(&pd->wqueue);
--	}
--	pkt_bio_finished(pd);
--}
--
--static void pkt_end_io_packet_write(struct bio *bio, int err)
--{
--	struct packet_data *pkt = bio->bi_private;
--	struct pktcdvd_device *pd = pkt->pd;
--	BUG_ON(!pd);
--
--	VPRINTK("pkt_end_io_packet_write: id=%d, err=%d\n", pkt->id, err);
--
--	pd->stats.pkt_ended++;
--
--	pkt_bio_finished(pd);
--	atomic_dec(&pkt->io_wait);
--	atomic_inc(&pkt->run_sm);
--	wake_up(&pd->wqueue);
--}
--
- /*
-  * Schedule reads for the holes in a packet
-  */
-@@ -1111,21 +1085,15 @@ static void pkt_gather_data(struct pktcdvd_device *pd, struct packet_data *pkt)
- 	 * Schedule reads for missing parts of the packet.
- 	 */
- 	for (f = 0; f < pkt->frames; f++) {
--		struct bio_vec *vec;
--
- 		int p, offset;
-+
- 		if (written[f])
- 			continue;
-+
- 		bio = pkt->r_bios[f];
--		vec = bio->bi_io_vec;
--		bio_init(bio);
--		bio->bi_max_vecs = 1;
--		bio->bi_sector = pkt->sector + f * (CD_FRAMESIZE >> 9);
--		bio->bi_bdev = pd->bdev;
--		bio->bi_end_io = pkt_end_io_read;
--		bio->bi_private = pkt;
--		bio->bi_io_vec = vec;
--		bio->bi_destructor = pkt_bio_destructor;
-+		bio_reset(bio);
-+		bio->bi_sector	= pkt->sector + f * (CD_FRAMESIZE >> 9);
-+		bio->bi_bdev	= pd->bdev;
- 
- 		p = (f * CD_FRAMESIZE) / PAGE_SIZE;
- 		offset = (f * CD_FRAMESIZE) % PAGE_SIZE;
-@@ -1418,14 +1386,9 @@ static void pkt_start_write(struct pktcdvd_device *pd, struct packet_data *pkt)
- 	}
- 
- 	/* Start the write request */
--	bio_init(pkt->w_bio);
--	pkt->w_bio->bi_max_vecs = PACKET_MAX_SIZE;
-+	bio_reset(pkt->w_bio);
- 	pkt->w_bio->bi_sector = pkt->sector;
- 	pkt->w_bio->bi_bdev = pd->bdev;
--	pkt->w_bio->bi_end_io = pkt_end_io_packet_write;
--	pkt->w_bio->bi_private = pkt;
--	pkt->w_bio->bi_io_vec = bvec;
--	pkt->w_bio->bi_destructor = pkt_bio_destructor;
- 	for (f = 0; f < pkt->frames; f++)
- 		if (!bio_add_page(pkt->w_bio, bvec[f].bv_page, CD_FRAMESIZE, bvec[f].bv_offset))
- 			BUG();
+ * Kill bi_destructor. That was Tejun's idea, but it turned out to be easier
+   than I expected.
+
+ * Improved bio splitting. This was originally part of bcache, but I pulled it
+   out and replaced the existing bio splitting code with it.
+
+ * Closures - this is from bcache. I didn't really need to use it for the next
+   patch, but IMO it makes the code a bit more elegant.
+
+ * Make generic_make_request() handle arbitrary size bios. I think this is
+   going to enable a lot of cleanups in the future.
+
+   The idea here isn't for generic_make_request() to be doing the splitting in
+   practice long term, it's more just an intermediate stage. If this goes in, I
+   think a lot of driver code - certainly a lot of virtual block drivers -
+   could easily be made to handle arbitrary sized bios, and splitting will only
+   happen when a bio is being redirected to two different devices or something
+   like that. But this should enable a lot of cleanups without having to change
+   every block driver first.
+
+Kent Overstreet (13):
+  block: Generalized bio pool freeing
+  dm: kill dm_rq_bio_destructor
+  block: Add bio_clone_bioset()
+  block: Add bio_clone_kmalloc()
+  block: Only clone bio vecs that are in use
+  block: Add bio_reset()
+  pktcdvd: Switch to bio_kmalloc()
+  block: Kill bi_destructor
+  block: Add an explicit bio flag for bios that own their bvec
+  block: Rework bio splitting
+  Closures
+  Make generic_make_request handle arbitrarily large bios
+  Gut bio_add_page()
+
+ Documentation/block/biodoc.txt      |    5 -
+ block/blk-core.c                    |  119 +++++++-
+ drivers/block/drbd/drbd_req.c       |   18 +-
+ drivers/block/osdblk.c              |    3 +-
+ drivers/block/pktcdvd.c             |  121 +++-----
+ drivers/block/rbd.c                 |   12 +-
+ drivers/md/dm-crypt.c               |    9 -
+ drivers/md/dm-io.c                  |   11 -
+ drivers/md/dm.c                     |   48 +--
+ drivers/md/linear.c                 |    6 +-
+ drivers/md/md.c                     |   42 +---
+ drivers/md/raid0.c                  |    8 +-
+ drivers/md/raid10.c                 |   23 +-
+ drivers/target/target_core_iblock.c |    9 -
+ fs/bio-integrity.c                  |   44 ---
+ fs/bio.c                            |  407 ++++++++++++-----------
+ fs/exofs/ore.c                      |    5 +-
+ include/linux/bio.h                 |   37 ++-
+ include/linux/blk_types.h           |    9 +-
+ include/linux/blkdev.h              |    3 +
+ include/linux/closure.h             |  614 +++++++++++++++++++++++++++++++++++
+ lib/Kconfig.debug                   |    8 +
+ lib/Makefile                        |    2 +-
+ lib/closure.c                       |  363 +++++++++++++++++++++
+ 24 files changed, 1419 insertions(+), 507 deletions(-)
+ create mode 100644 include/linux/closure.h
+ create mode 100644 lib/closure.c
+
 -- 
 1.7.9.rc2
 
