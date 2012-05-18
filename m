@@ -1,159 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760916Ab2ERLAW (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 May 2012 07:00:22 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:40506 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932556Ab2ERLAQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 May 2012 07:00:16 -0400
-Message-ID: <4FB62BAB.90808@redhat.com>
-Date: Fri, 18 May 2012 07:59:55 -0300
-From: Mauro Carvalho Chehab <mchehab@redhat.com>
+	id S933667Ab2ERLBu (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 May 2012 07:01:50 -0400
+Received: from smtp12.smtpout.orange.fr ([80.12.242.134]:55632 "EHLO
+	smtp.smtpout.orange.fr" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933168Ab2ERLBs convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 18 May 2012 07:01:48 -0400
+Message-ID: <4FB62C15.7080703@wanadoo.fr>
+Date: Fri, 18 May 2012 13:01:41 +0200
+From: Pascal Chapperon <pascal.chapperon@wanadoo.fr>
 User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
 MIME-Version: 1.0
-To: Borislav Petkov <bp@amd64.org>, Ingo Molnar <mingo@kernel.org>
-CC: Linux Edac Mailing List <linux-edac@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Aristeu Rozanski <arozansk@redhat.com>,
-        Doug Thompson <norsk5@yahoo.com>, Steven Rostedt <rostedt@goodmis.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Ingo Molnar <mingo@redhat.com>
-Subject: Re: [PATCH v24b] RAS: Add a tracepoint for reporting memory controller
- events
-References: <1337287277-523-1-git-send-email-mchehab@redhat.com> <20120517214859.GA16777@aftab.osrc.amd.com> <20120518071244.GE429@gmail.com> <20120518095638.GA20215@aftab.osrc.amd.com>
-In-Reply-To: <20120518095638.GA20215@aftab.osrc.amd.com>
-X-Enigmail-Version: 1.4.1
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+To: paulmck@linux.vnet.ibm.com
+CC: Josh Boyer <jwboyer@redhat.com>, linux-kernel@vger.kernel.org,
+        kernel-team@fedoraproject.org
+Subject: Re: RCU related performance regression in 3.3
+References: <20177034.34764.1335528920975.JavaMail.www@wwinf1f04> <20120428034257.GA2495@linux.vnet.ibm.com> <20120501000245.GA4329@linux.vnet.ibm.com> <4F9FA50C.9070600@wanadoo.fr> <20120501154513.GD2441@linux.vnet.ibm.com> <4FA3EAEE.9030601@wanadoo.fr> <20120504150411.GC2411@linux.vnet.ibm.com> <4FA44CF9.7050604@wanadoo.fr> <20120504231442.GT2411@linux.vnet.ibm.com> <20120514223255.GA5719@linux.vnet.ibm.com>
+In-Reply-To: <20120514223255.GA5719@linux.vnet.ibm.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Em 18-05-2012 06:56, Borislav Petkov escreveu:
-> On Fri, May 18, 2012 at 09:12:44AM +0200, Ingo Molnar wrote:
->>>> Of course, any userspace tools meant to handle errors should not parse
->>>> the above data. They should, instead, use the binary fields provided by
->>>> the tracepoint, mapping them directly into their MIBs.
+Le 15/05/2012 00:32, Paul E. McKenney a écrit :
+> On Fri, May 04, 2012 at 04:14:42PM -0700, Paul E. McKenney wrote:
+>> On Fri, May 04, 2012 at 11:41:13PM +0200, Pascal Chapperon wrote:
+>>> Le 04/05/2012 17:04, Paul E. McKenney a écrit :
+>>>> On Fri, May 04, 2012 at 04:42:54PM +0200, Pascal Chapperon wrote:
+>>>>> Le 01/05/2012 17:45, Paul E. McKenney a écrit :
+>>>>>
+>>>>>> Here is my RCU_FAST_NO_HZ patch stack on top of v3.4-rc4.
+>>>>>>
+>>>>>> Or you can pull branch fnh.2012.05.01a from:
+>>>>>>
+>>>>>> 	git://git.kernel.org/pub/scm/linux/kernel/git/paulmck/linux-rcu.git
+>>>>>>
+>>>>>> 							Thanx, Paul
+>>>>>>
+>>>>> I applied your global patch on top of v3.4-rc4. But the slowdown is
+>>>>> worse than before : boot sequence took 80s instead 20-30s (12s for
+>>>>> initramfs instead of 2s).
+>>>>>
+>>>>> I'll send you rcu tracing log in a second mail.
+>>>>
+>>>> Hmmm...  Well, I guess I am glad that I finally did something that
+>>>> had an effect, but I sure wish that the effect had been in the other
+>>>> direction!
+>>>>
+>>>> Just to make sure I understand: the difference between the 20-30s and
+>>>> the 80s is exactly the patch I sent you?
+>>>>
+>>>> 							Thanx, Paul
+>>>>
+>>>>
+>>> Yes. Exactly same kernel config as in previous results, I applied
+>>> your patch against v3.4-rc4, and sorry, the result is exactly what I
+>>> said;
+>>> I saw that your global patch was quite huge, and addresses things which
+>>> are not directly related with the initial patch (commit
+>>> 7cb92499000e3c86dae653077b1465458a039ef6); maybe a side effect?
 >>>
->>> Nacked-by: Borislav Petkov <borislav.petkov@amd.com>
+>>> However, I'm ready to try this patch on my smaller laptop which
+>>> supports well CONFIG_FAST_NO_HZ=y and systemd, if you think it can
+>>> help ?
+>>>
+>>> Another thought: this issue as nothing to do with i7 Hyper-threading
+>>> capacities ? (as I test core2duo, Pentium ulv in same conditions and I
+>>> don't encountered any slowdown ?)
 >>
->> Just wondering why this got nacked, and what the 
->> suggestions/plans are to improve the situation:
-> 
-> Basically this is the thread which lead to it: http://marc.info/?l=linux-kernel&m=133709477524773&w=2
-> 
->> I assume Mauro is working on these things to solve problems, or to
->> add features, Mauro could you please give a higher level list of
->> those problems or features? There must be more to it than just a new
->> tracepoint! :-)
-> 
-> My main objection was that the tracepoint to report errors from edac
-> contains the following prototype:
-> 
-> +	TP_PROTO(const unsigned int err_type,
-> +		 const unsigned int mc_index,
-> +		 const char *error_msg,
-> +		 const char *label,
-> +		 const char *location,
-> +		 const char *core_detail,
-> +		 const char *driver_detail),
-> 
-> and that the last args should be merged simply into one 'const char
-> *detail' which every driver can populate as it sees fit.
-> 
-> But Mauro did not want to parse the string in userspace
+>> Well, one possibility is that your setup starts the jiffies counter
+>> at some interesting value.  The attached patch (also against v3.4-rc4)
+>> applies a bit more paranoia to the initialization to handle this
+>> and other possibilities.
+>
+> This patchset fixes the problem where RCU_FAST_NO_HZ's timers were
+> being ignored due to the dyntick-idle code having already calculated
+> the CPU's wakeup time (which I sent earlier, mistakenly offlist), but
+> also fixes a botched check in my workaround.
+>
+> Could you please try it out?  This patch is against 3.4-rc4.
+>
+> 							Thanx, Paul
+>
+Hi Paul,
 
-The "detail" field above is, in fact, a group of the following integer
-values:
+< +     if (!rcu_cpu_has_nonlazy_callbacks(cpu))
+---
+ > +     if (rcu_cpu_has_nonlazy_callbacks(cpu))
 
-- physical address of the error, provided as 3 integers: page, offset an
-  the error offset granularity;
+I was a little disappointed by the previous patch (boot sequence still
+took 72 s.), but this one makes a huge difference ;-)
+Slowdown during boot or shutdown with CONFIG_RCU_FAST_NO_HZ has
+disappeared (~ 10 attempts) :
+# systemd-analyze
+Startup finished in 1990ms (kernel) + 1174ms (initramfs) + 3121ms
+(userspace) = 6285ms
+.
+Do you want the rcu tracing log for this patch ?
 
-- ECC syndrome, with has a XOR value used to determine how many and what
-  bit(s) have errors.
-
-"driver_detail" contains other driver-specific details about the errors.
-
-The "location" field is also given by 3 integers: layer0, layer1, layer2 with
-contains the branch/slot/channel or slot/channel or chip select row/channel
-position of the affected DIMM.
-
-On my last comment, I said that I'm convinced that those two fields should
-be broken into their integer components.
-
-The fields at "detail" and "location" are generated by a snprintf() logic 
-inside the EDAC core. "driver_detail" is filled by the drivers.
-
-I did that merge in order to provide a clearer output message, but this
-doesn't help userspace tools that could get the binary information at
-the trace directly.
-
-There's a conceptual issue here, and it seems that Boris is not understanding,
-probably because he doesn't have any experience on handling errors on userspace.
-
-In this point, my previous experience on writing network management
-and my work at the userspace EDAC tool helps me to see both faces of
-the coin.
-
-Currently, EDAC prints an error message, and increments some Kernel counters
-to indicate where the error is located.
-
-Userspace tools can either get the dmesg logs or read the error counters.
-The edac-tools (with is the only public tool for EDAC that I'm aware of)
-prefers to rely on the error counters, instead of parsing the error logs.
-
-I suspect that one of the reasons is because printk messages are not a
-consistent ABI, as changing them are not considered as a Kernel regression.
-
-There are several issues on relying at the Kernel error counters: they don't 
-have decay or any other kind of logic that would allow detecting bursts.
-
-So, on a machine running for 30 days with, let's say, 10 corrected errors,
-it is not possible to tell if they were all generated on a burst (because
-of some temporary interference) or if they are sparse errors generated at 
-the same DRAM, indicating a bad memory.
-
-The big advantage (maybe the only advantage) of using a tracepoint is that
-the binary data can be exported directly.
-
-If the location and memory location integers are exported as integers, it
-is simple to change the edac-tools to work with tracepoints, instead of working
-with the error counters.
-
-With this simple change, the tool can be improved to provide a more 
-consistent memory error report, as userspace should not be worried on
-parsing fields that may change in future without notice.
-
-Also, doing that will avoid the extra effort of joining everything into
-a single string, and then breaking them back into their individual fields
-on userspace.
-
-> but feed it
-> straight into a MIB (which could mean "Men In Black" for all I know),
-> right from the tracepoint:
-
-I can do a s/MIB/Management Information Base/. We can also avoid all other
-acronyms that have more than one sense, like RAS (with all network
-people will associate it with "Remote Access Service").
-
->> Of course, any userspace tools meant to handle errors should not parse
->> the above data. They should, instead, use the binary fields provided by
->> the tracepoint, mapping them directly into their MIBs.
-> 
-> And I wanted to have a generic, usable-for-all tracepoint output
-> which anyone in userspace can parse, decode, cut, paste as she sees
-> fit without forcing kernel output formatting into any abstract error
-> management hierarchy or whatever.
-
-s/printk/trace/? That doesn't sound a good idea. The advantage of
-tracepoints of printk's is that they provide an ABI that allows passing
-strucutured information to userspace.
-
-> As Tony put it, we need to hammer that out properly now before it
-> becomes an ABI.
-
-Yes, sure.
-
-Regards,
-Mauro
+Pascal
 
