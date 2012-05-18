@@ -1,105 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759208Ab2ERQ4X (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 May 2012 12:56:23 -0400
-Received: from mail131.messagelabs.com ([216.82.242.99]:30388 "EHLO
-	mail131.messagelabs.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759071Ab2ERQ4T (ORCPT
+	id S1759171Ab2ERQ5X (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 May 2012 12:57:23 -0400
+Received: from mga11.intel.com ([192.55.52.93]:34881 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755552Ab2ERQ5V convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 May 2012 12:56:19 -0400
-X-Env-Sender: hartleys@visionengravers.com
-X-Msg-Ref: server-6.tower-131.messagelabs.com!1337360175!13012173!7
-X-Originating-IP: [216.166.12.72]
-X-StarScan-Version: 6.5.10; banners=-,-,-
-X-VirusChecked: Checked
-From: H Hartley Sweeten <hartleys@visionengravers.com>
-To: Ian Abbott <abbotti@mev.co.uk>
-CC: Linux Kernel <linux-kernel@vger.kernel.org>,
-        "devel@driverdev.osuosl.org" <devel@driverdev.osuosl.org>,
-        Ian Abbott <ian.abbott@mev.co.uk>,
-        "fmhess@users.sourceforge.net" <fmhess@users.sourceforge.net>,
-        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>
-Date: Fri, 18 May 2012 11:56:15 -0500
-Subject: RE: [PATCH] staging: comedi: cleanup all the comedi_driver 'detach'
- functions
-Thread-Topic: [PATCH] staging: comedi: cleanup all the comedi_driver
- 'detach' functions
-Thread-Index: Ac004DxlDs5H0UOYRCuQKxYi3NFjqQANetGw
-Message-ID: <ADE657CA350FB648AAC2C43247A983F0020698AE1272@AUSP01VMBX24.collaborationhost.net>
-References: <201205171711.14968.hartleys@visionengravers.com>
- <4FB6230C.2080604@mev.co.uk>
-In-Reply-To: <4FB6230C.2080604@mev.co.uk>
+	Fri, 18 May 2012 12:57:21 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
+   d="scan'208";a="168175920"
+From: "Luck, Tony" <tony.luck@intel.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: RE: [git pull] machine check recovery fix
+Thread-Topic: [git pull] machine check recovery fix
+Thread-Index: AQHNNH7Tg8DRGfBqQ0uqmUy5M2GFI5bOsI78gAA0noyAAVKjAP//iwsw
+Date: Fri, 18 May 2012 16:57:19 +0000
+Message-ID: <3908561D78D1C84285E8C5FCA982C28F192F18E5@ORSMSX104.amr.corp.intel.com>
+References: <4fb531069693a1b42@agluck-desktop.sc.intel.com>
+ <CA+55aFxB6YSz-KEwVKtOesS7yrdvYw6sP3mfpuWBOheJVL6e+w@mail.gmail.com>
+ <CA+8MBbK_xeN5HWnSvbDYwzZ+E0pSpbDte30RH2deo0r1OzYBGA@mail.gmail.com>
+ <CA+55aFxvjBQ+nn2JEnrMeHrRq9O7-aost1ZYrQbOFySkU_piWg@mail.gmail.com>
+ <CA+8MBbLw9ySj5VDjJJ04fW383=8AUhDfyvqdrPnAR7+-etGFqQ@mail.gmail.com>
+ <CA+55aFygZYVpM7Agy+Vi+Majaa=7GLzeS8Mp9v3jiq-t+_=hLQ@mail.gmail.com>
+ <CA+55aFxs1vcU08=7tEhmKRSRvjw5rUAqKfgWFPyta_qx7J7cog@mail.gmail.com>
+In-Reply-To: <CA+55aFxs1vcU08=7tEhmKRSRvjw5rUAqKfgWFPyta_qx7J7cog@mail.gmail.com>
 Accept-Language: en-US
 Content-Language: en-US
 X-MS-Has-Attach: 
 X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="utf-8"
+x-originating-ip: [10.22.254.140]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by nfs id q4IGuRpk028183
 
-On Friday, May 18, 2012 3:23 AM, Ian Abbott wrote:
-> On 2012-05-18 01:11, H Hartley Sweeten wrote:
->> 2. Remove all the printk noise in the detach functions
->>
->> All of the printk output is really just noise. The user did a rmmod to
->> unload the driver, we really don't need to tell them about it.
->
-> I disagree.  It's not that unusual for drivers to report device removal. 
-> (It's not necessarily due to an rmmod either, not that that really 
-> matters.)
+> Ok, having thought it over some more, I decided to do the pull.
 
-If you feel the messages have value I think the comedi core can
-handle displaying them instead of having the message in every
-driver.
+Thanks.
 
-Can you test this patch and let me know what the resulting output
-is? You may need to change the dev_dbg to dev_info or something
-else if you don't have the proper kernel debugging enabled.
+> I still think MCE is confusing and actively buggy in many respects,
+> and your RIPV check is much much too late, but with your patch it's no
+> worse than it used to be.
 
-Thanks,
-Hartley
+Yes, it is confusing (and buggy ... VM86 mode check needs to be added
+for one thing ... the special treatment of "ip == 0" is also bad). The
+lookup table in mce-severity.c is there so that you can take the ".o"
+from the kernel tree and link with some user mode sanity checking
+tools in the mce-test toolset. Which I think is a step up from following
+the pseudo-code in the SDM (which have their own bugs).
 
----
+I'll try to make it better - but it is never going to be beautiful.
 
-From: H Hartley Sweeten <hsweeten@visionengravers.com>
-
-staging: comedi: have the comedi core output the driver detach message
-
-Instead of having a "detach" message in every comedi driver, have the
-comedi core output the message. Output the message using dev_dbg.
-
-Also, change the "BUG" message from a printk format to a dev_warn
-format.
-
-Signed-off-by: H Hartley Sweeten <hsweeten@visionengravers.com>
-
----
-
-diff --git a/drivers/staging/comedi/drivers.c b/drivers/staging/comedi/drivers.c
-index 1c3d638..d6bb1f9 100644
---- a/drivers/staging/comedi/drivers.c
-+++ b/drivers/staging/comedi/drivers.c
-@@ -91,11 +91,14 @@ static void cleanup_device(struct comedi_device *dev)
- static void __comedi_device_detach(struct comedi_device *dev)
- {
- 	dev->attached = 0;
--	if (dev->driver)
-+	if (dev->driver) {
- 		dev->driver->detach(dev);
--	else
--		printk(KERN_WARNING
-+		dev_dbg(dev->class_dev, "%s detached\n",
-+			dev->driver->driver_name);
-+	} else {
-+		dev_warn(dev->class_dev,
- 		       "BUG: dev->driver=NULL in comedi_device_detach()\n");
-+	}
- 	cleanup_device(dev);
- }
-
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+-Tony
