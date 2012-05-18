@@ -1,55 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759282Ab2ERGSw (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 May 2012 02:18:52 -0400
-Received: from ngcobalt02.manitu.net ([217.11.48.102]:56656 "EHLO
-	ngcobalt02.manitu.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755413Ab2ERGSu (ORCPT
+	id S1760044Ab2ERGWo (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 May 2012 02:22:44 -0400
+Received: from mail-ob0-f174.google.com ([209.85.214.174]:38428 "EHLO
+	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755479Ab2ERGWm convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 May 2012 02:18:50 -0400
-X-Greylist: delayed 1086 seconds by postgrey-1.27 at vger.kernel.org; Fri, 18 May 2012 02:18:49 EDT
-X-manitu-Original-Sender-IP: 79.230.34.1
-X-manitu-Original-Receiver-Name: ngcobalt02.manitu.net
-Message-ID: <4FB5E581.1090209@grandegger.com>
-Date: Fri, 18 May 2012 08:00:33 +0200
-From: Wolfgang Grandegger <wg@grandegger.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
+	Fri, 18 May 2012 02:22:42 -0400
 MIME-Version: 1.0
-To: Federico Vaga <federico.vaga@gmail.com>
-CC: Marc Kleine-Budde <mkl@pengutronix.de>, linux-can@vger.kernel.org,
-        netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Giancarlo Asnaghi <giancarlo.asnaghi@st.com>,
-        Alan Cox <alan@linux.intel.com>
-Subject: Re: [PATCH] STA2X11 CAN: CAN driver for the STA2X11 board
-References: <1337288364-17572-1-git-send-email-federico.vaga@gmail.com>
-In-Reply-To: <1337288364-17572-1-git-send-email-federico.vaga@gmail.com>
-X-Enigmail-Version: 1.4.1
+In-Reply-To: <DB904C5425BA6F4E8424B3B51A1414D16F64F8527E@NWD2CMBX1.ad.analog.com>
+References: <1337152826-9850-1-git-send-email-sonic.zhang@analog.com>
+	<1337152826-9850-4-git-send-email-sonic.zhang@analog.com>
+	<CAM=Q2cta_a2XcOLoOnnUUjZOpj1phUH99xfgZnh4nhxG8QX3-Q@mail.gmail.com>
+	<DB904C5425BA6F4E8424B3B51A1414D16F64F8527E@NWD2CMBX1.ad.analog.com>
+Date: Fri, 18 May 2012 11:52:41 +0530
+Message-ID: <CAM=Q2ctYVmok6bJu4kRWM2CX07vp7NS0VTHyeVzbJa3TttLU2Q@mail.gmail.com>
+Subject: Re: [PATCH 4/8] i2c: i2c-bfin-twi: Tighten condition when failing I2C
+ transfer if MEN bit is reset unexpectedly.
+From: Shubhrajyoti Datta <omaplinuxkernel@gmail.com>
+To: "Zhang, Sonic" <Sonic.Zhang@analog.com>
+Cc: Ben Dooks <ben-linux@fluff.org>, Wolfram Sang <w.sang@pengutronix.de>,
+        "linux-i2c@vger.kernel.org" <linux-i2c@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        "uclinux-dist-devel@blackfin.uclinux.org" 
+	<uclinux-dist-devel@blackfin.uclinux.org>
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/17/2012 10:59 PM, Federico Vaga wrote:
-> Signed-off-by: Federico Vaga <federico.vaga@gmail.com>
-> Acked-by: Giancarlo Asnaghi <giancarlo.asnaghi@st.com>
-> Cc: Alan Cox <alan@linux.intel.com>
-> ---
->  drivers/net/can/Kconfig       |   11 +
->  drivers/net/can/Makefile      |    1 +
->  drivers/net/can/sta2x11_can.c | 1085 +++++++++++++++++++++++++++++++++++++++++
->  3 files changed, 1097 insertions(+), 0 deletions(-)
->  create mode 100644 drivers/net/can/sta2x11_can.c
+On Fri, May 18, 2012 at 8:11 AM, Zhang, Sonic <Sonic.Zhang@analog.com> wrote:
+>
+>
+>>-----Original Message-----
+>>From: Shubhrajyoti Datta [mailto:omaplinuxkernel@gmail.com]
+>>Sent: Thursday, May 17, 2012 7:31 PM
+>>To: Zhang, Sonic
+>>Cc: Ben Dooks; Wolfram Sang; linux-i2c@vger.kernel.org; LKML; uclinux-dist-
+>>devel@blackfin.uclinux.org
+>>Subject: Re: [PATCH 4/8] i2c: i2c-bfin-twi: Tighten condition when failing I2C
+>>transfer if MEN bit is reset unexpectedly.
+>>
+>>On Wed, May 16, 2012 at 12:50 PM,  <sonic.zhang@analog.com> wrote:
+>>> From: Sonic Zhang <sonic.zhang@analog.com>
+>>>
+>>> Correct I2C transfer may fail because interrupt status bits XMTSERV and
+>>> RCVSERV are not checked when MCOMP interrupt is handled.
+>>>
+>>Could you expand MCOMP?
+>
+> Master transfer complete (MCOMP)
+> [1] The initiated master transfer has completed. In the absence of a
+> repeat start, the bus has been released.
+> [0] The completion of a transfer has not been detected.
+>
 
-Thanks for your contribution. At a first glance, this driver looks
-similar to the pch_can and the c_can driver. It seems that a C_CAN based
-controller is used on that board as well. If that's true, it should be
-handled by the C_CAN driver. To get ride of the obsolete pch_can driver,
-I sent some time ago the patch "[RFC/PATCH] c_can: add driver for the
-PCH CAN controller":
+A trivial suggestion may be the changelog could be enhanced.
+Thanks for the explanation.
 
-  http://marc.info/?t=132991563600003&r=1&w=4
-
-I could serve as base of a generic c_can_pci driver.
-
-Wolfgang.
+>
+> Regards,
+>
+> Sonic
+>
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
