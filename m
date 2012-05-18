@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1946347Ab2ERXaq (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 May 2012 19:30:46 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:38665 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1030799Ab2ERXDg (ORCPT
+	id S1946290Ab2ERXD0 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 May 2012 19:03:26 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:53597 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1946274Ab2ERXDS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 May 2012 19:03:36 -0400
-Message-Id: <20120518211601.291973967@linuxfoundation.org>
+	Fri, 18 May 2012 19:03:18 -0400
+Message-Id: <20120518211600.739279302@linuxfoundation.org>
 User-Agent: quilt/0.60-19.1
-Date: Fri, 18 May 2012 14:16:19 -0700
+Date: Fri, 18 May 2012 14:16:13 -0700
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Josh Boyer <jwboyer@redhat.com>,
-        Mattia Dongili <malattia@linux.it>, Matthew Garrett <mjg@redhat.com>,
-        maximilian attems <max@stro.at>
-Subject: [ 20/54] sony-laptop: Enable keyboard backlight by default
+        alan@lxorguk.ukuu.org.uk, Sasha Levin <levinsasha928@gmail.com>,
+        Eric Dumazet <edumazet@google.com>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [ 14/54] net: l2tp: unlock socket lock before returning from l2tp_ip_sendmsg
 In-Reply-To: <20120518212656.GA4992@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,47 +26,44 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Josh Boyer <jwboyer@redhat.com>
 
-commit 6fe6ae56a7cebaebc2e6daa11c423e4692f9b592 upstream.
+From: Sasha Levin <levinsasha928@gmail.com>
 
-When the keyboard backlight support was originally added, the commit said
-to default it to on with a 10 second timeout.  That actually wasn't the
-case, as the default value is commented out for the kbd_backlight parameter.
-Because it is a static variable, it gets set to 0 by default without some
-other form of initialization.
+[ Upstream commit 84768edbb2721637620b2d84501bb0d5aed603f1 ]
 
-However, it seems the function to set the value wasn't actually called
-immediately, so whatever state the keyboard was in initially would remain.
-Then commit df410d522410e67660 was introduced during the 2.6.39 timeframe to
-immediately set whatever value was present (as well as attempt to
-restore/reset the state on module removal or resume).  That seems to have
-now forced the light off immediately when the module is loaded unless
-the option kbd_backlight=1 is specified.
+l2tp_ip_sendmsg could return without releasing socket lock, making it all the
+way to userspace, and generating the following warning:
 
-Let's enable it by default again (for the first time).  This should solve
-https://bugzilla.redhat.com/show_bug.cgi?id=728478
+[  130.891594] ================================================
+[  130.894569] [ BUG: lock held when returning to user space! ]
+[  130.897257] 3.4.0-rc5-next-20120501-sasha #104 Tainted: G        W
+[  130.900336] ------------------------------------------------
+[  130.902996] trinity/8384 is leaving the kernel with locks still held!
+[  130.906106] 1 lock held by trinity/8384:
+[  130.907924]  #0:  (sk_lock-AF_INET){+.+.+.}, at: [<ffffffff82b9503f>] l2tp_ip_sendmsg+0x2f/0x550
 
-Signed-off-by: Josh Boyer <jwboyer@redhat.com>
-Acked-by: Mattia Dongili <malattia@linux.it>
-Signed-off-by: Matthew Garrett <mjg@redhat.com>
-Cc: maximilian attems <max@stro.at>
+Introduced by commit 2f16270 ("l2tp: Fix locking in l2tp_ip.c").
+
+Signed-off-by: Sasha Levin <levinsasha928@gmail.com>
+Acked-by: Eric Dumazet <edumazet@google.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
 ---
- drivers/platform/x86/sony-laptop.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ net/l2tp/l2tp_ip.c |    3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
---- a/drivers/platform/x86/sony-laptop.c
-+++ b/drivers/platform/x86/sony-laptop.c
-@@ -127,7 +127,7 @@ MODULE_PARM_DESC(minor,
- 		 "default is -1 (automatic)");
- #endif
+--- a/net/l2tp/l2tp_ip.c
++++ b/net/l2tp/l2tp_ip.c
+@@ -441,8 +441,9 @@ static int l2tp_ip_sendmsg(struct kiocb
  
--static int kbd_backlight;	/* = 1 */
-+static int kbd_backlight = 1;
- module_param(kbd_backlight, int, 0444);
- MODULE_PARM_DESC(kbd_backlight,
- 		 "set this to 0 to disable keyboard backlight, "
+ 		daddr = lip->l2tp_addr.s_addr;
+ 	} else {
++		rc = -EDESTADDRREQ;
+ 		if (sk->sk_state != TCP_ESTABLISHED)
+-			return -EDESTADDRREQ;
++			goto out;
+ 
+ 		daddr = inet->inet_daddr;
+ 		connected = 1;
 
 
