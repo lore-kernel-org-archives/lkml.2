@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030368Ab2ERW0N (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 May 2012 18:26:13 -0400
+	id S1030418Ab2ERW0f (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 May 2012 18:26:35 -0400
 Received: from mail-pb0-f46.google.com ([209.85.160.46]:60603 "EHLO
 	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1030310Ab2ERW0H (ORCPT
+	with ESMTP id S1030325Ab2ERW0a (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 May 2012 18:26:07 -0400
-Date: Fri, 18 May 2012 15:24:37 -0700
+	Fri, 18 May 2012 18:26:30 -0400
+Date: Fri, 18 May 2012 15:25:00 -0700
 From: Anton Vorontsov <anton.vorontsov@linaro.org>
 To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
         Kees Cook <keescook@chromium.org>, Colin Cross <ccross@android.com>,
@@ -22,8 +22,8 @@ Cc: Arnd Bergmann <arnd@arndb.de>, John Stultz <john.stultz@linaro.org>,
         WANG Cong <xiyou.wangcong@gmail.com>, linux-kernel@vger.kernel.org,
         devel@driverdev.osuosl.org, linaro-kernel@lists.linaro.org,
         patches@linaro.org, kernel-team@android.com
-Subject: [PATCH 04/14] pstore/ram: Should zap persistent zone on unlink
-Message-ID: <20120518222436.GD23089@lizard>
+Subject: [PATCH 05/14] pstore: Add console log messages support
+Message-ID: <20120518222500.GE23089@lizard>
 References: <20120518222314.GA9425@lizard>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=utf-8
@@ -34,56 +34,132 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Otherwise, unlinked file will reappear on the next boot.
+Pstore doesn't support logging kernel messages in run-time, it only
+dumps dmesg when kernel oopses/panics. This makes pstore useless for
+debugging hangs caused by HW issues or improper use of HW (e.g.
+weird device inserted -> driver tried to write a reserved bits ->
+SoC hanged. In that case we don't get any messages in the pstore.
 
-Reported-by: Kees Cook <keescook@chromium.org>
+Therefore, let's add a runtime logging support: PSTORE_TYPE_CONSOLE.
+
 Signed-off-by: Anton Vorontsov <anton.vorontsov@linaro.org>
+Acked-by: Kees Cook <keescook@chromium.org>
+Acked-by: Colin Cross <ccross@android.com>
 ---
- fs/pstore/ram.c            |    1 +
- fs/pstore/ram_core.c       |    6 ++++++
- include/linux/pstore_ram.h |    1 +
- 3 files changed, 8 insertions(+)
+ fs/pstore/Kconfig      |    7 +++++++
+ fs/pstore/inode.c      |    3 +++
+ fs/pstore/platform.c   |   33 +++++++++++++++++++++++++++++++++
+ include/linux/pstore.h |    1 +
+ 4 files changed, 44 insertions(+)
 
-diff --git a/fs/pstore/ram.c b/fs/pstore/ram.c
-index 3a7724b..43d9727 100644
---- a/fs/pstore/ram.c
-+++ b/fs/pstore/ram.c
-@@ -186,6 +186,7 @@ static int ramoops_pstore_erase(enum pstore_type_id type, u64 id,
- 		return -EINVAL;
+diff --git a/fs/pstore/Kconfig b/fs/pstore/Kconfig
+index 23ade26..d044de6 100644
+--- a/fs/pstore/Kconfig
++++ b/fs/pstore/Kconfig
+@@ -12,6 +12,13 @@ config PSTORE
+ 	   If you don't have a platform persistent store driver,
+ 	   say N.
  
- 	persistent_ram_free_old(cxt->przs[id]);
-+	persistent_ram_zap(cxt->przs[id]);
++config PSTORE_CONSOLE
++	bool "Log kernel console messages"
++	depends on PSTORE
++	help
++	  When the option is enabled, pstore will log all kernel
++	  messages, even if no oops or panic happened.
++
+ config PSTORE_RAM
+ 	tristate "Log panic/oops to a RAM buffer"
+ 	depends on PSTORE
+diff --git a/fs/pstore/inode.c b/fs/pstore/inode.c
+index 49b40ea..fda1331 100644
+--- a/fs/pstore/inode.c
++++ b/fs/pstore/inode.c
+@@ -212,6 +212,9 @@ int pstore_mkfile(enum pstore_type_id type, char *psname, u64 id,
+ 	case PSTORE_TYPE_DMESG:
+ 		sprintf(name, "dmesg-%s-%lld", psname, id);
+ 		break;
++	case PSTORE_TYPE_CONSOLE:
++		sprintf(name, "console-%s", psname);
++		break;
+ 	case PSTORE_TYPE_MCE:
+ 		sprintf(name, "mce-%s-%lld", psname, id);
+ 		break;
+diff --git a/fs/pstore/platform.c b/fs/pstore/platform.c
+index 82c585f..a3f6d96 100644
+--- a/fs/pstore/platform.c
++++ b/fs/pstore/platform.c
+@@ -1,6 +1,7 @@
+ /*
+  * Persistent Storage - platform driver interface parts.
+  *
++ * Copyright (C) 2007-2008 Google, Inc.
+  * Copyright (C) 2010 Intel Corporation <tony.luck@intel.com>
+  *
+  *  This program is free software; you can redistribute it and/or modify
+@@ -22,6 +23,7 @@
+ #include <linux/errno.h>
+ #include <linux/init.h>
+ #include <linux/kmsg_dump.h>
++#include <linux/console.h>
+ #include <linux/module.h>
+ #include <linux/pstore.h>
+ #include <linux/string.h>
+@@ -156,6 +158,36 @@ static struct kmsg_dumper pstore_dumper = {
+ 	.dump = pstore_dump,
+ };
  
- 	return 0;
- }
-diff --git a/fs/pstore/ram_core.c b/fs/pstore/ram_core.c
-index dff5127..28b6d7f 100644
---- a/fs/pstore/ram_core.c
-+++ b/fs/pstore/ram_core.c
-@@ -336,6 +336,12 @@ void persistent_ram_free_old(struct persistent_ram_zone *prz)
- 	prz->old_log_size = 0;
- }
- 
-+void persistent_ram_zap(struct persistent_ram_zone *prz)
++#ifdef CONFIG_PSTORE_CONSOLE
++static void pstore_console_write(struct console *con, const char *s, unsigned c)
 +{
-+	atomic_set(&prz->buffer->size, 0);
-+	persistent_ram_update_header_ecc(prz);
++	const char *e = s + c;
++
++	while (s < e) {
++		if (c > psinfo->bufsize)
++			c = psinfo->bufsize;
++		memcpy(psinfo->buf, s, c);
++		psinfo->write(PSTORE_TYPE_CONSOLE, 0, NULL, 0, c, psinfo);
++		s += c;
++		c = e - s;
++	}
 +}
 +
- static void *persistent_ram_vmap(phys_addr_t start, size_t size)
- {
- 	struct page **pages;
-diff --git a/include/linux/pstore_ram.h b/include/linux/pstore_ram.h
-index 07d59b7..085199e 100644
---- a/include/linux/pstore_ram.h
-+++ b/include/linux/pstore_ram.h
-@@ -69,6 +69,7 @@ struct persistent_ram_zone * __init persistent_ram_new(phys_addr_t start,
- 						       size_t size,
- 						       bool ecc);
- void persistent_ram_free(struct persistent_ram_zone *prz);
-+void persistent_ram_zap(struct persistent_ram_zone *prz);
- struct persistent_ram_zone *persistent_ram_init_ringbuffer(struct device *dev,
- 		bool ecc);
++static struct console pstore_console = {
++	.name	= "pstore",
++	.write	= pstore_console_write,
++	.flags	= CON_PRINTBUFFER | CON_ENABLED | CON_ANYTIME,
++	.index	= -1,
++};
++
++static void pstore_register_console(void)
++{
++	register_console(&pstore_console);
++}
++#else
++static void pstore_register_console(void) {}
++#endif
++
+ /*
+  * platform specific persistent storage driver registers with
+  * us here. If pstore is already mounted, call the platform
+@@ -193,6 +225,7 @@ int pstore_register(struct pstore_info *psi)
+ 		pstore_get_records(0);
+ 
+ 	kmsg_dump_register(&pstore_dumper);
++	pstore_register_console();
+ 
+ 	pstore_timer.expires = jiffies + PSTORE_INTERVAL;
+ 	add_timer(&pstore_timer);
+diff --git a/include/linux/pstore.h b/include/linux/pstore.h
+index e1461e1..1bd014b 100644
+--- a/include/linux/pstore.h
++++ b/include/linux/pstore.h
+@@ -29,6 +29,7 @@
+ enum pstore_type_id {
+ 	PSTORE_TYPE_DMESG	= 0,
+ 	PSTORE_TYPE_MCE		= 1,
++	PSTORE_TYPE_CONSOLE	= 2,
+ 	PSTORE_TYPE_UNKNOWN	= 255
+ };
  
 -- 
 1.7.9.2
