@@ -1,22 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1031074Ab2ERDGa (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 May 2012 23:06:30 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:40466 "EHLO
+	id S1031102Ab2ERDGb (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 May 2012 23:06:31 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:40463 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1762578Ab2ERCwd (ORCPT
+	by vger.kernel.org with ESMTP id S1762559Ab2ERCwd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 17 May 2012 22:52:33 -0400
-Message-Id: <20120518023258.178779105@decadent.org.uk>
+Message-Id: <20120518023255.315413519@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Fri, 18 May 2012 03:33:22 +0100
+Date: Fri, 18 May 2012 03:33:01 +0100
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Sylwester Nawrocki <s.nawrocki@samsung.com>,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        Mauro Carvalho Chehab <mchehab@redhat.com>
-Subject: [ 28/53] [media] s5p-fimc: Fix locking in subdev set_crop op
+        alan@lxorguk.ukuu.org.uk, Chris Metcalf <cmetcalf@tilera.com>,
+        Mel Gorman <mel@csn.ul.ie>, Hillf Danton <dhillf@gmail.com>,
+        Hugh Dickins <hughd@google.com>, Michal Hocko <mhocko@suse.cz>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Subject: [ 07/53] hugetlb: prevent BUG_ON in hugetlb_fault() -> hugetlb_cow()
 In-Reply-To: <20120518023254.339945758@decadent.org.uk>
 X-SA-Exim-Connect-IP: 192.168.4.185
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -29,37 +30,43 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Sylwester Nawrocki <s.nawrocki@samsung.com>
+From: Chris Metcalf <cmetcalf@tilera.com>
 
-commit e985dbf7d93e2a3e114b4525413e50f83613e0cb upstream.
+commit 4998a6c0edce7fae9c0a5463f6ec3fa585258ee7 upstream.
 
-When setting TRY crop on the sub-device the mutex was erroneously acquired
-rather than released on exit path. This bug is present in kernels starting
-from v3.2.
+Commit 66aebce747eaf ("hugetlb: fix race condition in hugetlb_fault()")
+added code to avoid a race condition by elevating the page refcount in
+hugetlb_fault() while calling hugetlb_cow().
 
-Signed-off-by: Sylwester Nawrocki <s.nawrocki@samsung.com>
-Signed-off-by: Kyungmin Park <kyungmin.park@samsung.com>
-Signed-off-by: Mauro Carvalho Chehab <mchehab@redhat.com>
+However, one code path in hugetlb_cow() includes an assertion that the
+page count is 1, whereas it may now also have the value 2 in this path.
+
+The consensus is that this BUG_ON has served its purpose, so rather than
+extending it to cover both cases, we just remove it.
+
+Signed-off-by: Chris Metcalf <cmetcalf@tilera.com>
+Acked-by: Mel Gorman <mel@csn.ul.ie>
+Acked-by: Hillf Danton <dhillf@gmail.com>
+Acked-by: Hugh Dickins <hughd@google.com>
+Cc: Michal Hocko <mhocko@suse.cz>
+Cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- drivers/media/video/s5p-fimc/fimc-capture.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ mm/hugetlb.c |    1 -
+ 1 file changed, 1 deletion(-)
 
-diff --git a/drivers/media/video/s5p-fimc/fimc-capture.c b/drivers/media/video/s5p-fimc/fimc-capture.c
-index b06efd2..fcf3a14 100644
---- a/drivers/media/video/s5p-fimc/fimc-capture.c
-+++ b/drivers/media/video/s5p-fimc/fimc-capture.c
-@@ -1383,7 +1383,7 @@ static int fimc_subdev_set_crop(struct v4l2_subdev *sd,
- 	fimc_capture_try_crop(ctx, r, crop->pad);
- 
- 	if (crop->which == V4L2_SUBDEV_FORMAT_TRY) {
--		mutex_lock(&fimc->lock);
-+		mutex_unlock(&fimc->lock);
- 		*v4l2_subdev_get_try_crop(fh, crop->pad) = *r;
- 		return 0;
- 	}
--- 
-1.7.10
+--- linux.orig/mm/hugetlb.c
++++ linux/mm/hugetlb.c
+@@ -2405,7 +2405,6 @@
+ 		if (outside_reserve) {
+ 			BUG_ON(huge_pte_none(pte));
+ 			if (unmap_ref_private(mm, vma, old_page, address)) {
+-				BUG_ON(page_count(old_page) != 1);
+ 				BUG_ON(huge_pte_none(pte));
+ 				spin_lock(&mm->page_table_lock);
+ 				goto retry_avoidcopy;
 
 
 
