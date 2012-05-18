@@ -1,120 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965698Ab2ERIps (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 May 2012 04:45:48 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:53667 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932852Ab2ERIpa (ORCPT
+	id S965890Ab2ERIrB (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 May 2012 04:47:01 -0400
+Received: from e28smtp04.in.ibm.com ([122.248.162.4]:50829 "EHLO
+	e28smtp04.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759104Ab2ERIq5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 May 2012 04:45:30 -0400
-Date: Fri, 18 May 2012 09:45:25 +0100
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Grant Likely <grant.likely@secretlab.ca>
-Cc: Linus Walleij <linus.walleij@stericsson.com>, linux-kernel@vger.kernel.org,
-        "Rafael J. Wysocki" <rjw@sisk.pl>, Greg Kroah-Hartman <gregkh@suse.de>,
-        Kevin Hilman <khilman@ti.com>, Alan Stern <stern@rowland.harvard.edu>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Jesse Barnes <jbarnes@virtuousgeek.org>
-Subject: Re: [PATCH] gpiolib: Defer failed gpio requests by default
-Message-ID: <20120518084525.GG4073@opensource.wolfsonmicro.com>
-References: <1335959380-8209-1-git-send-email-broonie@opensource.wolfsonmicro.com>
- <20120518043219.740113E062C@localhost>
+	Fri, 18 May 2012 04:46:57 -0400
+Message-ID: <4FB60C7A.2080508@linux.vnet.ibm.com>
+Date: Fri, 18 May 2012 14:16:50 +0530
+From: Anshuman Khandual <khandual@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:11.0) Gecko/20120411 Thunderbird/11.0.1
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="XStn23h1fwudRqtG"
-Content-Disposition: inline
-In-Reply-To: <20120518043219.740113E062C@localhost>
-X-Cookie: The time is right to make new friends.
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: linux-kernel@vger.kernel.org
+CC: Arnaldo Carvalho de Melo <arnaldo.melo@gmail.com>, eranian@google.com
+Subject: [PATCH] perf tools: Fixing perf-record documentation for branch stack
+ sampling
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+x-cbid: 12051808-5564-0000-0000-000002C51545
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+perf tools: Fixing perf-record documentation for branch stack sampling
 
---XStn23h1fwudRqtG
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+Signed-off-by: Anshuman Khandual <khandual@linux.vnet.ibm.com>
+---
+ tools/perf/Documentation/perf-record.txt |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-On Thu, May 17, 2012 at 10:32:19PM -0600, Grant Likely wrote:
+diff --git a/tools/perf/Documentation/perf-record.txt b/tools/perf/Documentation/perf-record.txt
+index a1386b2..b38a1f9 100644
+--- a/tools/perf/Documentation/perf-record.txt
++++ b/tools/perf/Documentation/perf-record.txt
+@@ -168,7 +168,7 @@ following filters are defined:
+         - any:  any type of branches
+         - any_call: any function call or system call
+         - any_ret: any function return or system call return
+-        - any_ind: any indirect branch
++        - ind_call: any indirect branch
+         - u:  only when the branch target is at the user level
+         - k: only when the branch target is in the kernel
+         - hv: only when the target is at the hypervisor level
 
-> be done is to move the device to the end of the list.  The agreement
-> when this was last discussed on the ML was to make the drivers do an
-> explicit move immediately after it has validated all its dependencies.
-> That is why it doesn't work to return -EPROBE_DEFER by default from
-> helpers; because it becomes really hard to audit if the drivers are
-> doing the right thing.
-
-Ah, oh dear - I missed that bit of the discussion I'm afraid and had
-thought we'd gone with your option 2 below.  This means that the ASoC
-usage is currently not helping anything (though it's no worse than what
-we had before), and the regulator framework usage won't do the right
-thing (though in practice I don't expect it to actually go off and
-there's fun and games associated with that if we actually need to
-suspend regulators from software anyway).
-
-> I see two solutions to this though;
-> 1) add a new .preprobe hook to device drivers that will respect
->    -EPROBE_DEFER and ignore -EPROBE_DEFER on the regular .probe.
->    Probing a driver will call both, but if the .preprobe hook is
->    populated, then it will also reorder dpm_list between the two
->    calls.
->    - This still requires modifying drivers, but at least it is
->      auditable by mere-mortal reviewers.
->    - It also means all bus_type code has to add a new hook.  Blech.
-
-Yeah, this seems very painful, especially the bit where we have to
-change a good selection of buses and drivers to implement and use it.
-
-> 2) simply force devices to the end of dpm_list before each probe
->    attempt (provided that it doesn't have any children).
->    - I've avoided this because it adds a claim of the dpm_list_mtx
->      mutex on every single probe call and adds a lot more manipulation
->      of the list....
->    - However, it should make your patch here actually safe.  If a
->      device gets deferred, it will be guaranteed to be at the end of
->      the list because it gets moved there on every probe attempt.
->    - also after reading through the code (see my notes below; I'm a
->      bit frustrated with the whole thing) I think it is probably the
->      right thing to do.
-
-This does feel much more robust to me than manually reordering in
-drivers, we'll have to see if it causes a performance problem though and
-if it does perhaps we can handle it.
-
-I guess the other thing is that if we get a lot of drivers implementing
-deferral and we stop playing around with initcall stuff then we'll loose
-a reasonable proportion of the advantage of not taking the mutex and
-reordering.
-
-Either of these options would avoid the surprise that currently exists
-with the API.
-
-> Will you be at Connect?  I could use some time sitting in a room with
-> smart people to dig through this code and talk out what it should be
-> doing.
-
-I won't be unfortunately.
-
---XStn23h1fwudRqtG
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBAgAGBQJPtgweAAoJEBus8iNuMP3dZHQP/1tuS1mFvt4mMV4WeZ2QbyJP
-uCwU1rFiCz9+CF6y1eBad/6yP1dFQq3WnI0Ffv+cC5TYlwOhdeN3pdR9hbj4o76z
-Qt0iIkPOWRxgza4nvuQu+j/IbM5kHDfh9e10fSmhrJ9UB1J7CBNH859or67QGxYY
-MAv4V/hd4/K6QoZjXt6pSf4i9adwk4qx6dkPK3Edm4IyhPYQl5DqnV+P5dMCuZjO
-JycIJ8FBBkgkxY2YEaDHI3ltB3R43gCXg7FoJ9C5tAl/uYh5YxgksiFnZzmOzJ9n
-9pryaXoK8qDJHxPHiI7STSkconDvhAW/ncZyH0WtPorcklwGqMRg5/RZeZ9A4kXQ
-rHKPr7wCXWkVYfHNYhC7D0NeO2ahFbZy1l6rkN0naJRzmTLDQx6Jissr3fKca+FN
-6z4tRq54LWj3oLF3Iq/IiURmskEdQlUwgHwOwe+vCoSlVfTg+EfhPpgpKpYuZiey
-Bxjv11U9C85DGnVwhcVIMFfad/5jbu0A+vRl1dog4zFUSD54/5d1KBc0m17452Us
-uKdtPp5ap2UHEaHr25+qpKaIFYXWJMch5QgW1Wm1+P6EXfcxnjHN5gqWoi3qLnit
-DCzaAjIOLs2pICPd+HTOxW0IGwgXd7sZsdpAtEK8MQaIRYUGBN1qXXyoH3PM2Evz
-ZrVFKJRvXoLS0kqaIFLv
-=16IX
------END PGP SIGNATURE-----
-
---XStn23h1fwudRqtG--
