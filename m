@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1946872Ab2ERXMe (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 May 2012 19:12:34 -0400
+	id S1946899Ab2ERXMg (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 May 2012 19:12:36 -0400
 Received: from mail-pb0-f46.google.com ([209.85.160.46]:53597 "EHLO
 	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1946750Ab2ERXHQ (ORCPT
+	with ESMTP id S1946733Ab2ERXHC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 May 2012 19:07:16 -0400
-Message-Id: <20120518212652.642237969@linuxfoundation.org>
+	Fri, 18 May 2012 19:07:02 -0400
+Message-Id: <20120518212652.220025358@linuxfoundation.org>
 User-Agent: quilt/0.60-19.1
-Date: Fri, 18 May 2012 14:27:27 -0700
+Date: Fri, 18 May 2012 14:27:22 -0700
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Jan Kiszka <jan.kiszka@siemens.com>
-Subject: [ 38/47] compat: Fix RT signal mask corruption via sigprocmask
+        alan@lxorguk.ukuu.org.uk, Willy Tarreau <w@1wt.eu>,
+        Eric Dumazet <edumazet@google.com>
+Subject: [ 33/47] tcp: do_tcp_sendpages() must try to push data out on oom conditions
 In-Reply-To: <20120518212701.GA5023@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -24,105 +25,54 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jan Kiszka <jan.kiszka@siemens.com>
+From: Willy Tarreau <w@1wt.eu>
 
-commit b7dafa0ef3145c31d7753be0a08b3cbda51f0209 upstream.
+commit bad115cfe5b509043b684d3a007ab54b80090aa1 upstream.
 
-compat_sys_sigprocmask reads a smaller signal mask from userspace than
-sigprogmask accepts for setting.  So the high word of blocked.sig[0]
-will be cleared, releasing any potentially blocked RT signal.
+Since recent changes on TCP splicing (starting with commits 2f533844
+"tcp: allow splice() to build full TSO packets" and 35f9c09f "tcp:
+tcp_sendpages() should call tcp_push() once"), I started seeing
+massive stalls when forwarding traffic between two sockets using
+splice() when pipe buffers were larger than socket buffers.
 
-This was discovered via userspace code that relies on get/setcontext.
-glibc's i386 versions of those functions use sigprogmask instead of
-rt_sigprogmask to save/restore signal mask and caused RT signal
-unblocking this way.
+Latest changes (net: netdev_alloc_skb() use build_skb()) made the
+problem even more apparent.
 
-As suggested by Linus, this replaces the sys_sigprocmask based compat
-version with one that open-codes the required logic, including the merge
-of the existing blocked set with the new one provided on SIG_SETMASK.
+The reason seems to be that if do_tcp_sendpages() fails on out of memory
+condition without being able to send at least one byte, tcp_push() is not
+called and the buffers cannot be flushed.
 
-Signed-off-by: Jan Kiszka <jan.kiszka@siemens.com>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+After applying the attached patch, I cannot reproduce the stalls at all
+and the data rate it perfectly stable and steady under any condition
+which previously caused the problem to be permanent.
+
+The issue seems to have been there since before the kernel migrated to
+git, which makes me think that the stalls I occasionally experienced
+with tux during stress-tests years ago were probably related to the
+same issue.
+
+This issue was first encountered on 3.0.31 and 3.2.17, so please backport
+to -stable.
+
+Signed-off-by: Willy Tarreau <w@1wt.eu>
+Acked-by: Eric Dumazet <edumazet@google.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- kernel/compat.c |   65 ++++++++++++++++++++++++++++++++++++++++----------------
- 1 file changed, 47 insertions(+), 18 deletions(-)
+ net/ipv4/tcp.c |    3 +--
+ 1 file changed, 1 insertion(+), 2 deletions(-)
 
---- a/kernel/compat.c
-+++ b/kernel/compat.c
-@@ -320,25 +320,54 @@ asmlinkage long compat_sys_sigpending(co
+--- a/net/ipv4/tcp.c
++++ b/net/ipv4/tcp.c
+@@ -849,8 +849,7 @@ new_segment:
+ wait_for_sndbuf:
+ 		set_bit(SOCK_NOSPACE, &sk->sk_socket->flags);
+ wait_for_memory:
+-		if (copied)
+-			tcp_push(sk, flags & ~MSG_MORE, mss_now, TCP_NAGLE_PUSH);
++		tcp_push(sk, flags & ~MSG_MORE, mss_now, TCP_NAGLE_PUSH);
  
- #ifdef __ARCH_WANT_SYS_SIGPROCMASK
- 
--asmlinkage long compat_sys_sigprocmask(int how, compat_old_sigset_t __user *set,
--		compat_old_sigset_t __user *oset)
-+/*
-+ * sys_sigprocmask SIG_SETMASK sets the first (compat) word of the
-+ * blocked set of signals to the supplied signal set
-+ */
-+static inline void compat_sig_setmask(sigset_t *blocked, compat_sigset_word set)
- {
--	old_sigset_t s;
--	long ret;
--	mm_segment_t old_fs;
--
--	if (set && get_user(s, set))
--		return -EFAULT;
--	old_fs = get_fs();
--	set_fs(KERNEL_DS);
--	ret = sys_sigprocmask(how,
--			      set ? (old_sigset_t __user *) &s : NULL,
--			      oset ? (old_sigset_t __user *) &s : NULL);
--	set_fs(old_fs);
--	if (ret == 0)
--		if (oset)
--			ret = put_user(s, oset);
--	return ret;
-+	memcpy(blocked->sig, &set, sizeof(set));
-+}
-+
-+asmlinkage long compat_sys_sigprocmask(int how,
-+				       compat_old_sigset_t __user *nset,
-+				       compat_old_sigset_t __user *oset)
-+{
-+	old_sigset_t old_set, new_set;
-+	sigset_t new_blocked;
-+
-+	old_set = current->blocked.sig[0];
-+
-+	if (nset) {
-+		if (get_user(new_set, nset))
-+			return -EFAULT;
-+		new_set &= ~(sigmask(SIGKILL) | sigmask(SIGSTOP));
-+
-+		new_blocked = current->blocked;
-+
-+		switch (how) {
-+		case SIG_BLOCK:
-+			sigaddsetmask(&new_blocked, new_set);
-+			break;
-+		case SIG_UNBLOCK:
-+			sigdelsetmask(&new_blocked, new_set);
-+			break;
-+		case SIG_SETMASK:
-+			compat_sig_setmask(&new_blocked, new_set);
-+			break;
-+		default:
-+			return -EINVAL;
-+		}
-+
-+		set_current_blocked(&new_blocked);
-+	}
-+
-+	if (oset) {
-+		if (put_user(old_set, oset))
-+			return -EFAULT;
-+	}
-+
-+	return 0;
- }
- 
- #endif
+ 		if ((err = sk_stream_wait_memory(sk, &timeo)) != 0)
+ 			goto do_error;
 
 
