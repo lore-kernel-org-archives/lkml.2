@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1946502Ab2ERXFC (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 May 2012 19:05:02 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:58844 "EHLO
+	id S1946517Ab2ERXFK (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 May 2012 19:05:10 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:53597 "EHLO
 	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1946476Ab2ERXE4 (ORCPT
+	with ESMTP id S1946505Ab2ERXFC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 May 2012 19:04:56 -0400
-Message-Id: <20120518211603.685622769@linuxfoundation.org>
+	Fri, 18 May 2012 19:05:02 -0400
+Message-Id: <20120518211603.854880990@linuxfoundation.org>
 User-Agent: quilt/0.60-19.1
-Date: Fri, 18 May 2012 14:16:45 -0700
+Date: Fri, 18 May 2012 14:16:47 -0700
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Lan Tianyu <tianyu.lan@intel.com>,
-        Len Brown <len.brown@intel.com>
-Subject: [ 46/54] ACPI / PM: Add Sony Vaio VPCCW29FX to nonvs blacklist.
+        alan@lxorguk.ukuu.org.uk, Kazuya Mio <k-mio@sx.jp.nec.com>,
+        Al Viro <viro@zeniv.linux.org.uk>
+Subject: [ 48/54] wake up s_wait_unfrozen when ->freeze_fs fails
 In-Reply-To: <20120518212656.GA4992@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,39 +25,40 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Lan Tianyu <tianyu.lan@intel.com>
+From: Kazuya Mio <k-mio@sx.jp.nec.com>
 
-commit 93f770846e8dedc5d9117bd4ad9d7efd18420627 upstream.
+commit e1616300a20c80396109c1cf013ba9a36055a3da upstream.
 
-Sony Vaio VPCCW29FX does not resume correctly without
-acpi_sleep=nonvs, so add it to the ACPI sleep blacklist.
+dd slept infinitely when fsfeeze failed because of EIO.
+To fix this problem, if ->freeze_fs fails, freeze_super() wakes up
+the tasks waiting for the filesystem to become unfrozen.
 
-https://bugzilla.kernel.org/show_bug.cgi?id=34722
+When s_frozen isn't SB_UNFROZEN in __generic_file_aio_write(),
+the function sleeps until FITHAW ioctl wakes up s_wait_unfrozen.
 
-Signed-off-by: Lan Tianyu <tianyu.lan@intel.com>
-Signed-off-by: Len Brown <len.brown@intel.com>
+However, if ->freeze_fs fails, s_frozen is set to SB_UNFROZEN and then
+freeze_super() returns an error number. In this case, FITHAW ioctl returns
+EINVAL because s_frozen is already SB_UNFROZEN. There is no way to wake up
+s_wait_unfrozen, so __generic_file_aio_write() sleeps infinitely.
+
+Signed-off-by: Kazuya Mio <k-mio@sx.jp.nec.com>
+Signed-off-by: Al Viro <viro@zeniv.linux.org.uk>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/acpi/sleep.c |    8 ++++++++
- 1 file changed, 8 insertions(+)
+ fs/super.c |    2 ++
+ 1 file changed, 2 insertions(+)
 
---- a/drivers/acpi/sleep.c
-+++ b/drivers/acpi/sleep.c
-@@ -422,6 +422,14 @@ static struct dmi_system_id __initdata a
- 	},
- 	{
- 	.callback = init_nvs_nosave,
-+	.ident = "Sony Vaio VPCCW29FX",
-+	.matches = {
-+		DMI_MATCH(DMI_SYS_VENDOR, "Sony Corporation"),
-+		DMI_MATCH(DMI_PRODUCT_NAME, "VPCCW29FX"),
-+		},
-+	},
-+	{
-+	.callback = init_nvs_nosave,
- 	.ident = "Averatec AV1020-ED2",
- 	.matches = {
- 		DMI_MATCH(DMI_SYS_VENDOR, "AVERATEC"),
+--- a/fs/super.c
++++ b/fs/super.c
+@@ -1009,6 +1009,8 @@ int freeze_super(struct super_block *sb)
+ 			printk(KERN_ERR
+ 				"VFS:Filesystem freeze failed\n");
+ 			sb->s_frozen = SB_UNFROZEN;
++			smp_wmb();
++			wake_up(&sb->s_wait_unfrozen);
+ 			deactivate_locked_super(sb);
+ 			return ret;
+ 		}
 
 
