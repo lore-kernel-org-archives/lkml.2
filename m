@@ -1,62 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S967286Ab2ERUFG (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 May 2012 16:05:06 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:52485 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S967295Ab2ERUFD (ORCPT
+	id S967355Ab2ERUFv (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 May 2012 16:05:51 -0400
+Received: from avon.wwwdotorg.org ([70.85.31.133]:35279 "EHLO
+	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S967295Ab2ERUFt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 May 2012 16:05:03 -0400
+	Fri, 18 May 2012 16:05:49 -0400
+Message-ID: <4FB6AB9A.4080006@wwwdotorg.org>
+Date: Fri, 18 May 2012 14:05:46 -0600
+From: Stephen Warren <swarren@wwwdotorg.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
 MIME-Version: 1.0
-From: Grant Likely <grant.likely@secretlab.ca>
-Date: Fri, 18 May 2012 14:04:42 -0600
-X-Google-Sender-Auth: LvFyDQj3ZK1ry2x9C-V-_ioAFDg
-Message-ID: <CACxGe6vuA9A6X5qBt+maej2vaJCgLcHvYfqfXRGD+sKAYt4Bnw@mail.gmail.com>
-Subject: [GIT PULL] GPIO build failure bug fix
-To: Linus Torvalds <torvalds@linux-foundation.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+To: Dong Aisheng <b29396@freescale.com>
+CC: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linus.walleij@stericsson.com
+Subject: Re: [PATCH RFC v2 2/2] pinctrl: add pinctrl gpio binding support
+References: <1337346755-8761-1-git-send-email-b29396@freescale.com> <1337346755-8761-2-git-send-email-b29396@freescale.com>
+In-Reply-To: <1337346755-8761-2-git-send-email-b29396@freescale.com>
+X-Enigmail-Version: 1.5pre
 Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus,
+On 05/18/2012 07:12 AM, Dong Aisheng wrote:
+> The gpio ranges standard dt binding format is
+> <&gpio $gpio_offset $pin_offset $npin>
+> 
+> The core will parse and register the pinctrl gpio ranges
+> from device tree.
 
-One build failure fix for GPIO needed for v3.4.  Please pull.
+Overall this conceptually makes sense, and looks good. Some comments though:
 
-g.
+> +/*
+> + * pinctrl_dt_add_gpio_range() - parse and register GPIO ranges from device tree
+> + * @pctldev: pin controller device to add the range to
+> + * @np: the device node contains the property @propname
+> + * @propname: a list of phandles of gpios and corresponding data.
+> + *  The format is: <&gpio0 $gpio_offset $pin_offset $count>
+> + */
+> +int pinctrl_dt_add_gpio_ranges(struct pinctrl_dev *pctldev,
+> +				struct device_node *np,
+> +				const char *propname)
 
-The following changes since commit 2760f7adbb6c4e39bd3ae733f56d4ac8fb5e3521:
+If this will be fully standardized, perhaps we should just choose a
+standard property name, rather than allowing different drivers to do
+different things.
 
-  gpio/exynos: Fix compiler warnings when non-exynos machines are
-selected (2012-05-11 18:25:53 -0600)
+Perhaps "gpio-map"?
 
-are available in the git repository at:
+> +	nranges = size /4;
 
-  git://git.secretlab.ca/git/linux-2.6 tags/gpio-for-linus
+Add a space after the /
 
-for you to fetch changes up to 7fd0fcff9f0d65734415fed756271c1ae2267666:
+> +	ranges = devm_kzalloc(pctldev->dev, nranges * sizeof(*ranges),
+> +				GFP_KERNEL);
+> +	for (i = 0; i < nranges; i++) {
+> +			phandle = be32_to_cpup(list++);
 
-  gpio/pch: Fix build failure when selected as a module (2012-05-14
-00:52:49 -0600)
+Looks like double indentation througout this block?
 
-----------------------------------------------------------------
-GPIO build failure bug
+> +			np_gpio = of_find_node_by_phandle(phandle);
+> +			if (!np_gpio) {
+> +				dev_err(pctldev->dev,
+> +					"failed to find gpio node(%s)\n",
+> +					np_gpio->name);
 
-The gpio pch9 patch merged for v3.4-rc7 has a build failure when built
-as a module because it is an interrupt controller and the symbols it
-needs aren't exported.  This branch restricts it to being built in to
-solve the issue until it can be fixed properly in v3.5.
+Perhaps devm_kfree(ranges) here so that if this is called multiple times
+due to deferred probe, the allocations from the failed attempts don't
+accumulate. Same for other error paths.
 
-----------------------------------------------------------------
-Grant Likely (1):
-      gpio/pch: Fix build failure when selected as a module
+> +				return -ENODEV;
+> +			}
+> +
+> +			ranges[i].gc = of_node_to_gpiochip(np_gpio);
 
- drivers/gpio/Kconfig |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+Of course, there is the outstanding question of whether this API will
+exist and how it will work.
 
+I think you can of_node_put(np_gpio) here, before the error-check for
+ranges[i].gc, to avoid having to do it in all the error paths below.
 
--- 
-Grant Likely, B.Sc., P.Eng.
-Secret Lab Technologies Ltd.
+Do you need to xxx_get(ranges[i].gc) to prevent it going away, and put()
+it when removing the ranges?
+
+> +			if (gpio_offset < 0 ||
+> +			    gpio_offset > ranges[i].gc->ngpio ||
+> +			    pin_offset < 0 || npins < 0) {
+
+These are all unsigned, so most of those conditions can never be true.
+
+Perhaps replace the remaining check with:
+
+	gpio_offset + npins > ranges[i].gc->ngpio
+
+to make sure the range isn't too long either
+
+> +	pinctrl_add_gpio_ranges(pctldev, ranges, nranges);
+
+I think we should also store ranges somewhere separate in pctldev ...
+
+> +void pinctrl_dt_remove_gpio_ranges(struct pinctrl_dev *pctldev,
+> +				   struct pinctrl_gpio_range *ranges,
+> +				   unsigned nranges)
+
+... so that this function doesn't need ranges/nranges passed to it; it
+can just get them out of pctldec.
+
+Or better yet, what if pinctrl_unregister automatically removed any
+ranges registered by pinctrl_dt_add_gpio_ranges, so this function
+doesn't even need to exist?
