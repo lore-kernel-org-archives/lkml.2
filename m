@@ -1,103 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S968168Ab2ERWfg (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 May 2012 18:35:36 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:52493 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S967348Ab2ERWfe (ORCPT
+	id S1759753Ab2ERWke (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 May 2012 18:40:34 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:46434 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755138Ab2ERWkc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 May 2012 18:35:34 -0400
+	Fri, 18 May 2012 18:40:32 -0400
 From: Grant Likely <grant.likely@secretlab.ca>
-Subject: Re: [PATCH] gpio: add a driver for GPIO pins found on AMD-8111 south bridge chips
-To: Linus Walleij <linus.walleij@linaro.org>,
-        Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>
-Cc: Linus Walleij <linus.walleij@stericsson.com>, linux-kernel@vger.kernel.org
-In-Reply-To: <CACRpkdZbr9CvCWx_a2Cf1MiJE_FDLQM4qipqRbnTRw+jM8U7gA@mail.gmail.com>
-References: <1335521331-16199-1-git-send-email-dbaryshkov@gmail.com> <CACRpkdZbr9CvCWx_a2Cf1MiJE_FDLQM4qipqRbnTRw+jM8U7gA@mail.gmail.com>
-Date: Fri, 18 May 2012 16:35:32 -0600
-Message-Id: <20120518223532.7029B3E07C8@localhost>
+Subject: Re: [PATCH] gpio: mpc8xxx: Prevent NULL pointer deref in demux handler
+To: Thomas Gleixner <tglx@linutronix.de>, LKML <linux-kernel@vger.kernel.org>
+Cc: Felix Radensky <felix@embedded-sol.com>,
+        Thomas Wucher <thwucher@linutronix.de>,
+        Kumar Gala <galak@kernel.crashing.org>
+In-Reply-To: <alpine.LFD.2.02.1205031219320.6271@ionos>
+References: <alpine.LFD.2.02.1205031207050.6271@ionos> <alpine.LFD.2.02.1205031219320.6271@ionos>
+Date: Fri, 18 May 2012 16:40:29 -0600
+Message-Id: <20120518224029.321113E07C8@localhost>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 27 Apr 2012 12:52:19 +0200, Linus Walleij <linus.walleij@linaro.org> wrote:
-> On Fri, Apr 27, 2012 at 12:08 PM, Dmitry Eremin-Solenikov
-> <dbaryshkov@gmail.com> wrote:
-> 
-> > Add a driver to use GPIO pins available on several AMD south bridges
-> > (currently only AMD 8111 is supported).
-> >
-> > Signed-off-by: Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>
-> 
-> Mainly nitpicks, it's looking good overall...
+On Thu, 3 May 2012 12:22:06 +0200 (CEST), Thomas Gleixner <tglx@linutronix.de> wrote:
+> This time with the correct CC of the reporter :)
 
-Hi Dimtry,
-
-Do you have an updated version of this patch to address Linus' comments?
+Applied, thanks.
 
 g.
 
 > 
-> > +       spin_lock_irqsave(&agp->lock, flags);
-> > +       temp = ioread8(agp->pm - PMBASE_OFFSET + PMBASE_GPIO(offset));
-> > +       temp = (temp & 0x1c) | (!!value);
+> -------------->
+> Subject: gpio: mpc8xxx: Prevent NULL pointer deref in demux handler
+> From: Thomas Gleixner <tglx@linutronix.de>
+> Date: Thu, 03 May 2012 11:58:09 +0200
 > 
-> This is a bit idomatic but I think I understand what's going on. However this
-> 0x1C magic could be better of with some #define AMD_8111_GPIO_FOO don't
-> you think?
+> commit cfadd838(powerpc/8xxx: Fix interrupt handling in MPC8xxx GPIO
+> driver) added an unconditional call of chip->irq_eoi() to the demux
+> handler.
 > 
-> > +static int amd_gpio_get(struct gpio_chip *chip, unsigned offset)
-> > +{
-> > +       struct amd_gpio *agp = to_agp(chip);
-> > +       u8 temp;
-> > +
-> > +       temp = ioread8(agp->pm - PMBASE_OFFSET + PMBASE_GPIO(offset));
-> > +
-> > +       dev_dbg(&agp->pdev->dev, "Getting gpio %d, reg=%02x\n", offset, temp);
-> > +
-> > +       return !!(temp & 0x20);
+> This leads to a NULL pointer derefernce on MPC512x platforms which use
+> this driver as well.
 > 
-> And this could be #define AMD_8111_GPIO_INVAL or so (I bet this bit has a
-> name in the datasheet, right?)
+> Make it conditional.
 > 
-> > +static int amd_gpio_dirout(struct gpio_chip *chip, unsigned offset, int value)
-> > +{
-> > +       struct amd_gpio *agp = to_agp(chip);
-> > +       u8 temp;
-> > +       unsigned long flags;
-> > +
-> > +       spin_lock_irqsave(&agp->lock, flags);
-> > +       temp = ioread8(agp->pm - PMBASE_OFFSET + PMBASE_GPIO(offset));
-> > +       temp = (temp & 0x10) | 0x4 | (!!value);
+> Reported-by: Thomas Wucher <thwucher@linutronix.de>
+> Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+> Cc: Felix Radensky <felix@embedded-sol.com>
+> Cc: Kumar Gala <galak@kernel.crashing.org>
+> Cc: Grant Likely <grant.likely@secretlab.ca>
+> Cc: stable@vger.kernel.org
+> ---
+>  drivers/gpio/gpio-mpc8xxx.c |    3 ++-
+>  1 file changed, 2 insertions(+), 1 deletion(-)
 > 
-> And so on...
-> 
-> > +       iowrite8(temp, agp->pm - PMBASE_OFFSET + PMBASE_GPIO(offset));
-> > +       spin_unlock_irqrestore(&agp->lock, flags);
-> > +
-> > +       dev_dbg(&agp->pdev->dev, "Dirout gpio %d, value %d, reg=%02x\n", offset, !!value, temp);
-> > +
-> > +       return 0;
-> > +}
-> 
-> > +static int __init mod_init(void)
-> 
-> amd_gpio_init() maybe? These names are nice for e.g. ftrace.
-> 
-> > +       printk(KERN_INFO "AMD-8111 GPIO detected\n");
-> 
-> pr_info() & friends are nice shorthands for this.
-> 
-> > +static void __exit mod_exit(void)
-> 
-> amd_gpio_mod_exit()?
-> 
-> > +MODULE_AUTHOR("The Linux Kernel team");
-> 
-> Don't be shy, put in your own name :-)
-> 
-> Yours,
-> Linus Walleij
+> Index: linux-2.6/drivers/gpio/gpio-mpc8xxx.c
+> ===================================================================
+> --- linux-2.6.orig/drivers/gpio/gpio-mpc8xxx.c
+> +++ linux-2.6/drivers/gpio/gpio-mpc8xxx.c
+> @@ -163,7 +163,8 @@ static void mpc8xxx_gpio_irq_cascade(uns
+>  	if (mask)
+>  		generic_handle_irq(irq_linear_revmap(mpc8xxx_gc->irq,
+>  						     32 - ffs(mask)));
+> -	chip->irq_eoi(&desc->irq_data);
+> +	if (chip->irq_eoi)
+> +		chip->irq_eoi(&desc->irq_data);
+>  }
+>  
+>  static void mpc8xxx_irq_unmask(struct irq_data *d)
 
 -- 
 Grant Likely, B.Sc, P.Eng.
