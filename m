@@ -1,103 +1,153 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756567Ab2EREms (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 May 2012 00:42:48 -0400
-Received: from mail-wi0-f172.google.com ([209.85.212.172]:43494 "EHLO
-	mail-wi0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751441Ab2EREmq (ORCPT
+	id S1756819Ab2EREqL (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 May 2012 00:46:11 -0400
+Received: from kirsty.vergenet.net ([202.4.237.240]:39676 "EHLO
+	kirsty.vergenet.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755853Ab2EREqI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 May 2012 00:42:46 -0400
-Message-ID: <4FB5D33A.1040400@gmail.com>
-Date: Fri, 18 May 2012 06:42:34 +0200
-From: =?UTF-8?B?VmxhZGltaXIgJ8+GLWNvZGVyL3BoY29kZXInIFNlcmJpbmVua28=?= 
-	<phcoder@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.4) Gecko/20120510 Icedove/10.0.4
+	Fri, 18 May 2012 00:46:08 -0400
+Date: Fri, 18 May 2012 13:46:05 +0900
+From: Simon Horman <horms@verge.net.au>
+To: Magnus Damm <magnus.damm@gmail.com>
+Cc: linux-arm-kernel@lists.infradead.org, linux@arm.linux.org.uk,
+        arnd@arndb.de, linux-sh@vger.kernel.org, linux-kernel@vger.kernel.org,
+        rjw@sisk.pl, lethal@linux-sh.org, olof@lixom.net
+Subject: Re: [PATCH 00/08] mach-shmobile: Emma Mobile EV2 support V3
+Message-ID: <20120518044601.GA17682@verge.net.au>
+References: <20120516064449.32286.77941.sendpatchset@w520>
+ <20120518014424.GL19000@verge.net.au>
+ <CANqRtoRh0=ASdV4i+tMHw2B2+YCs6XwESre-v-H4MQ2Fy845dw@mail.gmail.com>
 MIME-Version: 1.0
-To: Andrew Morton <akpm@linux-foundation.org>
-CC: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Evgeniy Dushistov <dushistov@mail.ru>
-Subject: Re: [PATCH] Increase file size limit on FreeBSD UFS flavours
-References: <4FAFBC30.4040305@gmail.com> <20120517161052.d37cf8ae.akpm@linux-foundation.org>
-In-Reply-To: <20120517161052.d37cf8ae.akpm@linux-foundation.org>
-X-Enigmail-Version: 1.4.1
-Content-Type: multipart/signed; micalg=pgp-sha512;
- protocol="application/pgp-signature";
- boundary="------------enigA50AC12157E24E0E37636298"
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CANqRtoRh0=ASdV4i+tMHw2B2+YCs6XwESre-v-H4MQ2Fy845dw@mail.gmail.com>
+Organisation: Horms Solutions Ltd.
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is an OpenPGP/MIME signed message (RFC 2440 and 3156)
---------------enigA50AC12157E24E0E37636298
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: quoted-printable
+Hi Magnus,
 
-On 18.05.2012 01:10, Andrew Morton wrote:
+On Fri, May 18, 2012 at 12:40:21PM +0900, Magnus Damm wrote:
+> Hi Simon,
+> 
+> On Fri, May 18, 2012 at 10:44 AM, Simon Horman <horms@verge.net.au> wrote:
+> > Hi Magnus,
+> >
+> > I have tested these patches on top of the soc-new branch of
+> > rafael's renesas tree, revision 5658c94, which is based on
+> > v3.4-rc6.
+> 
+> Excellent!
+> 
+> > I also have the cherry picked following patches before applying your patches.
+> >
+> > serial8250-em: clk_get() IS_ERR() error handling fix
+> > serial8250-em: Emma Mobile UART driver V2
+> > serial8250: Introduce serial8250_register_8250_port()
+> > serial8250: Clean up default map and dl code
+> > serial8250: Use dl_read()/dl_write() on RM9K
+> > serial8250: Use dl_read()/dl_write() on Alchemy
+> > serial8250: Add dl_read()/dl_write() callbacks
+> > 8250.c: less than 2400 baud fix.
+> > serial/8250_pci: Clear FIFOs for Intel ME Serial Over Lan device on BI
+> > tegra, serial8250: add ->handle_break() uart_port op
+> > clocksource: em_sti: Add DT support
+> > clocksource: em_sti: Emma Mobile STI driver V2
+> > clockevents: Make clockevents_config() a global symbol
+> 
+> Thanks, those are indeed needed for runtime UART and STI support, but
+> there shouldn't be any build time dependencies.
+> 
+> > I have added the follwing patch of yours
+> >
+> > gpio: Emma Mobile GPIO driver V2
+> >
+> > And one of my own, which just fixes a build problem
+> > in rafael's tree.
+> >
+> > ARM: mach-types: Manually add KZM-A9-GT
+> 
+> Right, that's a bit of a mess.
+> 
+> > On Wed, May 16, 2012 at 03:44:49PM +0900, Magnus Damm wrote:
+> >> mach-shmobile: Emma Mobile EV2 support V3
+> >>
+> >> [PATCH 01/08] mach-shmobile: Emma Mobile EV2 SoC base support V3
+> >
+> > Tested-by: Simon Horman <horms@verge.net.au>
+> >
+> >> [PATCH 02/08] ARM: Undelete KZM9D mach-type V3
+> >
+> > I did not need this patch with the base I am using,
+> > so I did not test it.
+> 
+> Ok!
 
-> On Sun, 13 May 2012 15:50:40 +0200
-> Vladimir '__-coder/phcoder' Serbinenko  <phcoder@gmail.com> wrote:
->=20
->> Increase the file size limit on FreeBSD UFS flavours.
->>
->> Signed-off-by: Vladimir Serbinenko <phcoder@gmail.com>
->>
->> diff --git a/fs/ufs/super.c b/fs/ufs/super.c
->> index ac8e279..7e80a68 100644
->> --- a/fs/ufs/super.c
->> +++ b/fs/ufs/super.c
->> @@ -768,6 +768,7 @@ static int ufs_fill_super(struct super_block *sb, =
-void *data, int silent)
->>  		uspi->s_fshift =3D 9;
->>  		uspi->s_sbsize =3D super_block_size =3D 1536;
->>  		uspi->s_sbbase =3D 0;
->> +		sb->s_maxbytes =3D MAX_LFS_FILESIZE;
->>  		flags |=3D UFS_DE_44BSD | UFS_UID_44BSD | UFS_ST_44BSD | UFS_CG_44B=
-SD;
->>  		break;
->>  	case UFS_MOUNT_UFSTYPE_UFS2:
->> @@ -778,6 +779,7 @@ static int ufs_fill_super(struct super_block *sb, =
-void *data, int silent)
->>  		uspi->s_fshift =3D 9;
->>  		uspi->s_sbsize =3D super_block_size =3D 1536;
->>  		uspi->s_sbbase =3D  0;
->> +		sb->s_maxbytes =3D MAX_LFS_FILESIZE;
->>  		flags |=3D UFS_TYPE_UFS2 | UFS_DE_44BSD | UFS_UID_44BSD | UFS_ST_44=
-BSD | UFS_CG_44BSD;
->>  		break;
->>  	=09
->=20
-> But MAX_NON_LFS exists for a reason.  Before this change, the Linux UFS=
+:)
 
-> implementation had never had to deal with >4G files (I assume).
->=20
-> Are you telling us that the fs has been thoroughly audited and tested
-> with large files and that it all worked OK with no other changes?
->=20
+> > Reviewed-by: Simon Horman <horms@verge.net.au>
+> >
+> >> [PATCH 03/08] mach-shmobile: KZM9D board support V3
+> >
+> > Tested-by: Simon Horman <horms@verge.net.au>
+> >
+> >> [PATCH 04/08] mach-shmobile: Emma Mobile EV2 SMP support V3
+> >
+> > Tested-by: Simon Horman <horms@verge.net.au>
+> >
+> >> [PATCH 05/08] mach-shmobile: Emma Mobile EV2 GPIO support V3
+> >
+> > I am only seeing interripts for em_gio.0, is there a
+> > way to exercise em_gio.1 .. 4 ?
+> 
+> When we start using other GPIO pins with interrupts then that will
+> happen. Right now there is no code.
 
-The comment indicated that this was simply because the author wasn't
-sure as to which UFS flavours actually supported big files. I've tested
-it only by creating big file, unmounting the filesystem and then
-comparing the read against another UFS implementation (the one in GRUB)
-and obtaining perfect match. I haven't done any thorough audit.
+Ok, in that case
 
+Tested-by: Simon Horman <horms@verge.net.au>
 
---=20
-Regards
-Vladimir '=CF=86-coder/phcoder' Serbinenko
+> > Duplicate names for interrupts, that is
+> > each of em_gio.0..4 have two entries in /proc/interripts.
+> > Is this intentional?
+> 
+> Yes, it is intentional. There are two interrupt sources per 32 GPIO pins.
 
+In that case
 
---------------enigA50AC12157E24E0E37636298
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: OpenPGP digital signature
-Content-Disposition: attachment; filename="signature.asc"
+Tested-by: Simon Horman <horms@verge.net.au>
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-Comment: Using GnuPG with Mozilla - http://enigmail.mozdev.org/
+> >> [PATCH 06/08] mach-shmobile: KZM9D board Ethernet support V3
+> >
+> > Tested-by: Simon Horman <horms@verge.net.au>
+> >
+> >> [PATCH 07/08] mach-shmobile: Emma Mobile EV2 DT support V3
+> >
+> > I applied this and the resulting kernel booted.
+> 
+> That's good! Thanks for testing!
 
-iF4EAREKAAYFAk+10zoACgkQNak7dOguQgkNGgEAwGO4gj6qo0lvoR/TH6UdgdSc
-gOq4hsPjDmI1s8gyBKMA/3GhEPxWAUNmvDC9DNOjKOlxWomYTRuy+EBQLHXc5QJt
-=j/vV
------END PGP SIGNATURE-----
+Tested-by: Simon Horman <horms@verge.net.au>
 
---------------enigA50AC12157E24E0E37636298--
+> >> [PATCH 08/08] mach-shmobile: Use DT_MACHINE for KZM9D V3
+> >
+> > I applied this and the resulting kernel did not boot.
+> > I saw nothing after the uboot prompt..
+> 
+> Yeah, you need to select CONFIG_ARM_APPENDED_DTB=y and append the DTB
+> to the zImage, then convert that to uImage.
+
+Thanks for working me through that off-line.
+
+Tested-by: Simon Horman <horms@verge.net.au>
+
+> 
+> > Lastly, could you consider suppling a patch which provides a defconfig?
+> 
+> I've been asked to provide a defconfig that we can share between
+> multiple platforms. So it's on my TODO.
+
+Excellent
