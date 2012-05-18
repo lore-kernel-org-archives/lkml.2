@@ -1,22 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1946297Ab2ERXc3 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 May 2012 19:32:29 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:35668 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1946259Ab2ERXDM (ORCPT
+	id S1946257Ab2ERXDL (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 May 2012 19:03:11 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:53524 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1946199Ab2ERXC4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 May 2012 19:03:12 -0400
-Message-Id: <20120518211600.574469391@linuxfoundation.org>
+	Fri, 18 May 2012 19:02:56 -0400
+Message-Id: <20120518211600.010480077@linuxfoundation.org>
 User-Agent: quilt/0.60-19.1
-Date: Fri, 18 May 2012 14:16:11 -0700
+Date: Fri, 18 May 2012 14:16:05 -0700
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Eric Dumazet <edumazet@google.com>,
-        Stephen Hemminger <shemminger@osdl.org>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [ 12/54] netem: fix possible skb leak
+        alan@lxorguk.ukuu.org.uk
+Subject: [ 06/54] Fix __read_seqcount_begin() to use ACCESS_ONCE for sequence value read
 In-Reply-To: <20120518212656.GA4992@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,37 +24,48 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
+From: Linus Torvalds <torvalds@linux-foundation.org>
 
-From: Eric Dumazet <edumazet@google.com>
+commit 2f624278626677bfaf73fef97f86b37981621f5c upstream.
 
-[ Upstream commit 116a0fc31c6c9b8fc821be5a96e5bf0b43260131 ]
+We really need to use a ACCESS_ONCE() on the sequence value read in
+__read_seqcount_begin(), because otherwise the compiler might end up
+reloading the value in between the test and the return of it.  As a
+result, it might end up returning an odd value (which means that a write
+is in progress).
 
-skb_checksum_help(skb) can return an error, we must free skb in this
-case. qdisc_drop(skb, sch) can also be feeded with a NULL skb (if
-skb_unshare() failed), so lets use this generic helper.
+If the reader is then fast enough that that odd value is still the
+current one when the read_seqcount_retry() is done, we might end up with
+a "successful" read sequence, even despite the concurrent write being
+active.
 
-Signed-off-by: Eric Dumazet <edumazet@google.com>
-Cc: Stephen Hemminger <shemminger@osdl.org>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+In practice this probably never really happens - there just isn't
+anything else going on around the read of the sequence count, and the
+common case is that we end up having a read barrier immediately
+afterwards.
+
+So the code sequence in which gcc might decide to reaload from memory is
+small, and there's no reason to believe it would ever actually do the
+reload.  But if the compiler ever were to decide to do so, it would be
+incredibly annoying to debug.  Let's just make sure.
+
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
----
- net/sched/sch_netem.c |    6 ++----
- 1 file changed, 2 insertions(+), 4 deletions(-)
 
---- a/net/sched/sch_netem.c
-+++ b/net/sched/sch_netem.c
-@@ -350,10 +350,8 @@ static int netem_enqueue(struct sk_buff
- 	if (q->corrupt && q->corrupt >= get_crandom(&q->corrupt_cor)) {
- 		if (!(skb = skb_unshare(skb, GFP_ATOMIC)) ||
- 		    (skb->ip_summed == CHECKSUM_PARTIAL &&
--		     skb_checksum_help(skb))) {
--			sch->qstats.drops++;
--			return NET_XMIT_DROP;
--		}
-+		     skb_checksum_help(skb)))
-+			return qdisc_drop(skb, sch);
+---
+ include/linux/seqlock.h |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+--- a/include/linux/seqlock.h
++++ b/include/linux/seqlock.h
+@@ -141,7 +141,7 @@ static inline unsigned __read_seqcount_b
+ 	unsigned ret;
  
- 		skb->data[net_random() % skb_headlen(skb)] ^= 1<<(net_random() % 8);
- 	}
+ repeat:
+-	ret = s->sequence;
++	ret = ACCESS_ONCE(s->sequence);
+ 	if (unlikely(ret & 1)) {
+ 		cpu_relax();
+ 		goto repeat;
 
 
