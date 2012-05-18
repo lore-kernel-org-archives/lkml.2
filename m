@@ -1,23 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1031337Ab2ERX36 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 May 2012 19:29:58 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:53597 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1946311Ab2ERXDm (ORCPT
+	id S1946331Ab2ERXaY (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 May 2012 19:30:24 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:53122 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1946265Ab2ERXDj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 May 2012 19:03:42 -0400
-Message-Id: <20120518211601.489317137@linuxfoundation.org>
+	Fri, 18 May 2012 19:03:39 -0400
+Message-Id: <20120518211601.390463740@linuxfoundation.org>
 User-Agent: quilt/0.60-19.1
-Date: Fri, 18 May 2012 14:16:21 -0700
+Date: Fri, 18 May 2012 14:16:20 -0700
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk,
-        David Henningsson <david.henningsson@canonical.com>,
-        Arun Raghavan <arun.raghavan@collabora.co.uk>,
+        alan@lxorguk.ukuu.org.uk, Mark Hills <mark@pogo.org.uk>,
         Takashi Iwai <tiwai@suse.de>
-Subject: [ 22/54] ALSA: HDA: Lessen CPU usage when waiting for chip to respond
+Subject: [ 21/54] ALSA: echoaudio: Remove incorrect part of assertion
 In-Reply-To: <20120518212656.GA4992@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -27,53 +25,44 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: David Henningsson <david.henningsson@canonical.com>
+From: Mark Hills <mark@pogo.org.uk>
 
-commit 32cf4023e689ad5b3a81a749d8cc99d7f184cb99 upstream.
+commit c914f55f7cdfafe9d7d5b248751902c7ab57691e upstream.
 
-When an IRQ for some reason gets lost, we wait up to a second using
-udelay, which is CPU intensive. This patch improves the situation by
-waiting about 30 ms in the CPU intensive mode, then stepping down to
-using msleep(2) instead. In essence, we trade some granularity in
-exchange for less CPU consumption when the waiting time is a bit longer.
+This assertion seems to imply that chip->dsp_code_to_load is a pointer.
+It's actually an integer handle on the actual firmware, and 0 has no
+special meaning.
 
-As a result, PulseAudio should no longer be killed by the kernel
-for taking up to much RT-prio CPU time. At least not for *this* reason.
+The assertion prevents initialisation of a Darla20 card, but would also
+affect other models. It seems it was introduced in commit dd7b254d.
 
-Signed-off-by: David Henningsson <david.henningsson@canonical.com>
-Tested-by: Arun Raghavan <arun.raghavan@collabora.co.uk>
+ALSA sound/pci/echoaudio/echoaudio.c:2061 Echoaudio driver starting...
+ALSA sound/pci/echoaudio/echoaudio.c:1969 chip=ebe4e000
+ALSA sound/pci/echoaudio/echoaudio.c:2007 pci=ed568000 irq=19 subdev=0010 Init hardware...
+ALSA sound/pci/echoaudio/darla20_dsp.c:36 init_hw() - Darla20
+------------[ cut here ]------------
+WARNING: at sound/pci/echoaudio/echoaudio_dsp.c:478 init_hw+0x1d1/0x86c [snd_darla20]()
+Hardware name: Dell DM051
+BUG? (!chip->dsp_code_to_load || !chip->comm_page)
+
+Signed-off-by: Mark Hills <mark@pogo.org.uk>
 Signed-off-by: Takashi Iwai <tiwai@suse.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- sound/pci/hda/hda_intel.c |    6 ++++--
- 1 file changed, 4 insertions(+), 2 deletions(-)
+ sound/pci/echoaudio/echoaudio_dsp.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/sound/pci/hda/hda_intel.c
-+++ b/sound/pci/hda/hda_intel.c
-@@ -702,11 +702,13 @@ static unsigned int azx_rirb_get_respons
- {
- 	struct azx *chip = bus->private_data;
- 	unsigned long timeout;
-+	unsigned long loopcounter;
- 	int do_poll = 0;
+--- a/sound/pci/echoaudio/echoaudio_dsp.c
++++ b/sound/pci/echoaudio/echoaudio_dsp.c
+@@ -475,7 +475,7 @@ static int load_firmware(struct echoaudi
+ 	const struct firmware *fw;
+ 	int box_type, err;
  
-  again:
- 	timeout = jiffies + msecs_to_jiffies(1000);
--	for (;;) {
-+
-+	for (loopcounter = 0;; loopcounter++) {
- 		if (chip->polling_mode || do_poll) {
- 			spin_lock_irq(&chip->reg_lock);
- 			azx_update_rirb(chip);
-@@ -722,7 +724,7 @@ static unsigned int azx_rirb_get_respons
- 		}
- 		if (time_after(jiffies, timeout))
- 			break;
--		if (bus->needs_damn_long_delay)
-+		if (bus->needs_damn_long_delay || loopcounter > 3000)
- 			msleep(2); /* temporary workaround */
- 		else {
- 			udelay(10);
+-	if (snd_BUG_ON(!chip->dsp_code_to_load || !chip->comm_page))
++	if (snd_BUG_ON(!chip->comm_page))
+ 		return -EPERM;
+ 
+ 	/* See if the ASIC is present and working - only if the DSP is already loaded */
 
 
