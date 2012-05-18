@@ -1,101 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759206Ab2ERHL3 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 May 2012 03:11:29 -0400
-Received: from citesht4.cites.illinois.edu ([192.17.212.154]:54817 "EHLO
-	citesht4.cites.illinois.edu" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754924Ab2ERHL2 (ORCPT
+	id S1759601Ab2ERHMw (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 May 2012 03:12:52 -0400
+Received: from mail-wg0-f44.google.com ([74.125.82.44]:54472 "EHLO
+	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751289Ab2ERHMt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 May 2012 03:11:28 -0400
-Message-ID: <4FB5F61C.7040203@illinois.edu>
-Date: Fri, 18 May 2012 02:11:24 -0500
-From: Matt Johnson <johnso87@illinois.edu>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
+	Fri, 18 May 2012 03:12:49 -0400
+Date: Fri, 18 May 2012 09:12:44 +0200
+From: Ingo Molnar <mingo@kernel.org>
+To: Borislav Petkov <bp@amd64.org>
+Cc: Mauro Carvalho Chehab <mchehab@redhat.com>,
+        Linux Edac Mailing List <linux-edac@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Aristeu Rozanski <arozansk@redhat.com>,
+        Doug Thompson <norsk5@yahoo.com>, Steven Rostedt <rostedt@goodmis.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Ingo Molnar <mingo@redhat.com>
+Subject: Re: [PATCH v24b] RAS: Add a tracepoint for reporting memory
+ controller events
+Message-ID: <20120518071244.GE429@gmail.com>
+References: <1337287277-523-1-git-send-email-mchehab@redhat.com>
+ <20120517214859.GA16777@aftab.osrc.amd.com>
 MIME-Version: 1.0
-To: <jgarzik@pobox.com>
-CC: <linux-kernel@vger.kernel.org>, <linux-ide@vger.kernel.org>
-Subject: Re: [PATCH 1/1] ahci: Detect Marvell 88SE9172 SATA controller
-References: <4F9A3FD6.7060206@illinois.edu> <4F9EE66E.1090009@illinois.edu>
-In-Reply-To: <4F9EE66E.1090009@illinois.edu>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [192.17.212.130]
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120517214859.GA16777@aftab.osrc.amd.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Ping?  This patch has been rock-solid on this machine for the last 3 
-weeks, and the machine won't boot without it.  I'm happy to provide any 
-additional context, but otherwise, can this be committed?
-Thanks!
--Matt
 
-On 04/30/2012 02:22 PM, Matt Johnson wrote:
-> For a bit more context, the Z68X-UD3H-B3 has the SATA controllers provided
-> by the Z68 chipset plus an extra 2 SATA3 ports from a Marvell
-> 88SE9172-NNX2.
-> The 4 lines on the chip on my board read:
-> 88SE9172-NNX2
-> PAY4850.3
-> 1116 A1P
-> TW
->
-> It seems that this chip is used on other boards as well
-> (see http://www.techpowerup.com/reviews/Gigabyte/G1_Sniper2/5.html).
-> I'm not sure whether 88SE9172-NNX2 is a distinct part from the 88SE9172, or
-> whether the 'NNX2' is manufacturing metadata.
-> In any case, drives connected to these 2 ports are not recognized at
-> boot time
-> in the latest kernel. I put /boot and the bootloader on a drive attached to
-> one of the Marvell ports. Grub worked fine, but I couldn't boot the kernel;
-> it just dumped me to busybox. Once in busybox, I could mount the drive with
-> 'echo 1b4b 917a > /sys/bus/pci/drivers/ahci/new_id', and Ctrl+d would exit
-> busybox and boot the kernel successfully.
->
-> Others have run into similar issues (see
-> http://theangryangel.co.uk/blog/marvell-88se9172-sata3-under-linux-as-of-320
-> ,
-> which has been copy-pasted onto the Marvell chipset Wikipedia page
-> http://en.wikipedia.org/wiki/List_of_Marvell_Technology_Group_chipsets ).
-> The PCI ID suggested in the linked page (1b4b 9192) didn't work for me,
-> which suggests that either the poster's chip was not a 88se9172, there
-> are multiple revs of 88se9172 with different PCI IDs, or the -NNX2 is a
-> distinct model with its own PCI ID.
->
-> In any case, I think accepting this patch will make boards like mine
-> work in
-> the near term, and we can add additional PCI IDs and clarify the comments
-> for similar chips as people report them or as we get clarification from
-> Marvell.
->
-> With this patch, the vanilla and Ubuntu kernels both boot flawlessly with
-> the boot partition hanging off the Marvell controller.
->
-> Thanks,
-> Matt
->
-> On 04/27/2012 01:42 AM, Matt Johnson wrote:
->> The Marvell 88SE9172 SATA controller (PCI ID 1b4b 917a) already worked
->> once it was detected, but was missing an ahci_pci_tbl entry.
->>
->> Boot tested on a Gigabyte Z68X-UD3H-B3 motherboard.
->>
->> Signed-off-by: Matt Johnson <johnso87@illinois.edu>
->> ---
->> drivers/ata/ahci.c | 2 ++
->> 1 file changed, 2 insertions(+)
->>
->> diff --git a/drivers/ata/ahci.c b/drivers/ata/ahci.c
->> index 79a1e9d..ebaf67e 100644
->> --- a/drivers/ata/ahci.c
->> +++ b/drivers/ata/ahci.c
->> @@ -394,6 +394,8 @@ static const struct pci_device_id ahci_pci_tbl[] = {
->> .driver_data = board_ahci_yes_fbs }, /* 88se9128 */
->> { PCI_DEVICE(0x1b4b, 0x9125),
->> .driver_data = board_ahci_yes_fbs }, /* 88se9125 */
->> + { PCI_DEVICE(0x1b4b, 0x917a),
->> + .driver_data = board_ahci_yes_fbs }, /* 88se9172 */
->> { PCI_DEVICE(0x1b4b, 0x91a3),
->> .driver_data = board_ahci_yes_fbs },
->>
->
+* Borislav Petkov <bp@amd64.org> wrote:
+
+> On Thu, May 17, 2012 at 05:41:17PM -0300, Mauro Carvalho Chehab wrote:
+> > Add a new tracepoint-based hardware events report method for
+> > reporting Memory Controller events.
+> > 
+> > Part of the description bellow is shamelessly copied from Tony
+> > Luck's notes about the Hardware Error BoF during LPC 2010 [1].
+> > Tony, thanks for your notes and discussions to generate the
+> > h/w error reporting requirements.
+> > 
+> > [1] http://lwn.net/Articles/416669/
+> > 
+> >     We have several subsystems & methods for reporting hardware errors:
+> > 
+> >     1) EDAC ("Error Detection and Correction").  In its original form
+> >     this consisted of a platform specific driver that read topology
+> >     information and error counts from chipset registers and reported
+> >     the results via a sysfs interface.
+> > 
+> >     2) mcelog - x86 specific decoding of machine check bank registers
+> >     reporting in binary form via /dev/mcelog. Recent additions make use
+> >     of the APEI extensions that were documented in version 4.0a of the
+> >     ACPI specification to acquire more information about errors without
+> >     having to rely reading chipset registers directly. A user level
+> >     programs decodes into somewhat human readable format.
+> > 
+> >     3) drivers/edac/mce_amd.c - this driver hooks into the mcelog path and
+> >     decodes errors reported via machine check bank registers in AMD
+> >     processors to the console log using printk();
+> > 
+> >     Each of these mechanisms has a band of followers ... and none
+> >     of them appear to meet all the needs of all users.
+> > 
+> > As part of a RAS subsystem, let's encapsulate the memory error hardware
+> > events into a trace facility.
+> > 
+> > The tracepoint printk will be displayed like:
+> > 
+> > mc_event: (Corrected|Uncorrected|Fatal) error:[error msg] on memory stick "[label]" ([location] [edac_mc detail] [driver_detail])
+> > 
+> > Where:
+> > 	[error msg] is the driver-specific error message
+> > 		    (e. g. "memory read", "bus error", ...);
+> > 	[location] is the location in terms of memory controller and
+> > 		   branch/channel/slot, channel/slot or csrow/channel;
+> > 	[label] is the memory stick label;
+> > 	[edac_mc detail] describes the address location of the error
+> > 			 and the syndrome;
+> > 	[driver detail] is driver-specifig error message details,
+> > 			when needed/provided (e. g. "area:DMA", ...)
+> > 
+> > For example:
+> > 
+> > mc_event: Corrected error:memory read on memory stick "DIMM_1A" (mc:0 channel:0 slot:0 page:0x586b6e offset:0xa66 grain:32 syndrome:0x0 area:DMA)
+> > 
+> > Of course, any userspace tools meant to handle errors should not parse
+> > the above data. They should, instead, use the binary fields provided by
+> > the tracepoint, mapping them directly into their MIBs.
+> 
+> Nacked-by: Borislav Petkov <borislav.petkov@amd.com>
+
+Just wondering why this got nacked, and what the 
+suggestions/plans are to improve the situation: I assume Mauro 
+is working on these things to solve problems, or to add 
+features, Mauro could you please give a higher level list of 
+those problems or features? There must be more to it than just a 
+new tracepoint! :-)
+
+Thanks,
+
+	Ingo
