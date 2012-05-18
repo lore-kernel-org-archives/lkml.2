@@ -1,22 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933654Ab2ERCwi (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 May 2012 22:52:38 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:40407 "EHLO
+	id S1030718Ab2ERCwr (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 May 2012 22:52:47 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:40527 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1762557Ab2ERCw2 (ORCPT
+	by vger.kernel.org with ESMTP id S1762557Ab2ERCwl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 May 2012 22:52:28 -0400
-Message-Id: <20120518023256.239396381@decadent.org.uk>
+	Thu, 17 May 2012 22:52:41 -0400
+Message-Id: <20120518023259.384798393@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Fri, 18 May 2012 03:33:08 +0100
+Date: Fri, 18 May 2012 03:33:31 +0100
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, stephen hemminger <shemminger@vyatta.com>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [ 14/53] sky2: propogate rx hash when packet is copied
+        alan@lxorguk.ukuu.org.uk,
+        =?UTF-8?q?=C3=89meric=20Maschino?= <emeric.maschino@gmail.com>,
+        Tony Luck <tony.luck@intel.com>
+Subject: [ 37/53] ia64: Add accept4() syscall
 In-Reply-To: <20120518023254.339945758@decadent.org.uk>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 X-SA-Exim-Connect-IP: 192.168.4.185
 X-SA-Exim-Mail-From: ben@decadent.org.uk
 X-SA-Exim-Scanned: No (on shadbolt.decadent.org.uk); SAEximRunCond expanded to false
@@ -28,41 +32,56 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: stephen hemminger <shemminger@vyatta.com>
+From: Émeric Maschino <emeric.maschino@gmail.com>
 
-[ Upstream commit 3f42941b5d1d13542b1a755a9e4f633aa72e4d3e ]
+commit 65cc21b4523e94d5640542a818748cd3be8cd6b4 upstream.
 
-When a small packet is received, the driver copies it to a new skb to allow
-reusing the full size Rx buffer. The copy was propogating the checksum offload
-but not the receive hash information. The bug is impact was mostly harmless
-and therefore not observed until reviewing this area of code.
+While debugging udev > 170 failure on Debian Wheezy
+(http://bugs.debian.org/cgi-bin/bugreport.cgi?bug=648325), it appears
+that the issue was in fact due to missing accept4() in ia64.
 
-Signed-off-by: Stephen Hemminger <shemminger@vyatta.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+This patch simply adds accept4() to ia64.
+
+Signed-off-by: Émeric Maschino <emeric.maschino@gmail.com>
+Signed-off-by: Tony Luck <tony.luck@intel.com>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- drivers/net/ethernet/marvell/sky2.c |    3 +++
- 1 file changed, 3 insertions(+)
+ arch/ia64/include/asm/unistd.h |    3 ++-
+ arch/ia64/kernel/entry.S       |    1 +
+ 2 files changed, 3 insertions(+), 1 deletion(-)
 
-diff --git a/drivers/net/ethernet/marvell/sky2.c b/drivers/net/ethernet/marvell/sky2.c
-index 7eb8a00..e1f4b65 100644
---- a/drivers/net/ethernet/marvell/sky2.c
-+++ b/drivers/net/ethernet/marvell/sky2.c
-@@ -2475,8 +2475,11 @@ static struct sk_buff *receive_copy(struct sky2_port *sky2,
- 		skb_copy_from_linear_data(re->skb, skb->data, length);
- 		skb->ip_summed = re->skb->ip_summed;
- 		skb->csum = re->skb->csum;
-+		skb->rxhash = re->skb->rxhash;
-+
- 		pci_dma_sync_single_for_device(sky2->hw->pdev, re->data_addr,
- 					       length, PCI_DMA_FROMDEVICE);
-+		re->skb->rxhash = 0;
- 		re->skb->ip_summed = CHECKSUM_NONE;
- 		skb_put(skb, length);
- 	}
+diff --git a/arch/ia64/include/asm/unistd.h b/arch/ia64/include/asm/unistd.h
+index 7617248..7a3bd25 100644
+--- a/arch/ia64/include/asm/unistd.h
++++ b/arch/ia64/include/asm/unistd.h
+@@ -323,11 +323,12 @@
+ #define __NR_sendmmsg			1331
+ #define __NR_process_vm_readv		1332
+ #define __NR_process_vm_writev		1333
++#define __NR_accept4			1334
+ 
+ #ifdef __KERNEL__
+ 
+ 
+-#define NR_syscalls			310 /* length of syscall table */
++#define NR_syscalls			311 /* length of syscall table */
+ 
+ /*
+  * The following defines stop scripts/checksyscalls.sh from complaining about
+diff --git a/arch/ia64/kernel/entry.S b/arch/ia64/kernel/entry.S
+index 5b31d46..1ccbe12 100644
+--- a/arch/ia64/kernel/entry.S
++++ b/arch/ia64/kernel/entry.S
+@@ -1779,6 +1779,7 @@ sys_call_table:
+ 	data8 sys_sendmmsg
+ 	data8 sys_process_vm_readv
+ 	data8 sys_process_vm_writev
++	data8 sys_accept4
+ 
+ 	.org sys_call_table + 8*NR_syscalls	// guard against failures to increase NR_syscalls
+ #endif /* __IA64_ASM_PARAVIRTUALIZED_NATIVE */
 -- 
-1.7.10.1
-
+1.7.10
 
 
 
