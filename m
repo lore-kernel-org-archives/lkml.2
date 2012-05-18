@@ -1,93 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S968049Ab2ERV1I (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 May 2012 17:27:08 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:46755 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S967811Ab2ERV1F (ORCPT
+	id S1030211Ab2ERVbj (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 May 2012 17:31:39 -0400
+Received: from moutng.kundenserver.de ([212.227.17.10]:61649 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S967553Ab2ERVbf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 May 2012 17:27:05 -0400
-Date: Fri, 18 May 2012 14:27:01 -0700
-From: Greg KH <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk
-Subject: [ 00/47] 3.3.7-stable review
-Message-ID: <20120518212701.GA5023@kroah.com>
+	Fri, 18 May 2012 17:31:35 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Subject: Re: [PATCH 08/10] Use __kernel_ulong_t in struct msqid64_ds
+Date: Fri, 18 May 2012 21:31:29 +0000
+User-Agent: KMail/1.12.2 (Linux/3.4.0-rc3; KDE/4.3.2; x86_64; ; )
+Cc: "H. Peter Anvin" <hpa@zytor.com>, David Daney <ddaney.cavm@gmail.com>,
+        Ralf Baechle <ralf@linux-mips.org>, "H.J. Lu" <hjl.tools@gmail.com>,
+        linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org,
+        mingo@kernel.org, tglx@linutronix.de
+References: <1337292816-10839-1-git-send-email-hjl.tools@gmail.com> <CA+55aFwyem9KoPMhYkE-vcaUDqgP9g7arHbmD-mMHMSKXaRBOw@mail.gmail.com> <CA+55aFx4sEQT=U4DBULeo9=3piOx_pQUws92ovKV5bKsu3hQQQ@mail.gmail.com>
+In-Reply-To: <CA+55aFx4sEQT=U4DBULeo9=3piOx_pQUws92ovKV5bKsu3hQQQ@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201205182131.29353.arnd@arndb.de>
+X-Provags-ID: V02:K0:uaVkLCVoZSdTv3XFwbVcJqyS8+fiUu7wb/CBCKHA3BU
+ Kg0ayjKLm5DDbIVtLoad573AKpQ+h+fL8/HYlhcXMRzfgCS8VI
+ C0FFND8fYTck0z2sW2Ci1rUIiTh8poHrtfRiMiP/wKfPtL6YSx
+ eA3wrcyKr6fBeoW6gLDE98nVsNJPIZhncXEygQN8bGv6aaK41U
+ ZPO9bpwurOgnc9rBBohkmzee+eXVND9KskMIdrZ9bXcx3+c62Q
+ nVvpbbE3ErstdeoVgGbZrKFq/ju4QpLusxOuSC9QRU+YrwpRS5
+ xR4B40o8wcmJ4MaYa5hjdNP0Qv/BwtUUJLKaXo+lYdnTZ3CbJW
+ a2ryROrCYGI0WgUQ3zMA=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is the start of the stable review cycle for the 3.3.7 release.
-There are 47 patches in this series, all will be posted as a response
-to this one.  If anyone has any issues with these being applied, please
-let me know.
+On Friday 18 May 2012, Linus Torvalds wrote:
+> For example, instead of this horrible crap:
+> 
+>           __kernel_time_t msg_stime;      /* last msgsnd time */
+>   #if __BITS_PER_LONG != 64
+>           unsigned long   __unused1;
+>   #endif
+> 
+> which is just nasty, we could have something much cleaner like this:
+> 
+>   #define align_64_entry(type,name) \
+>               union { type name; __u64 __align_##name; }
+> 
+> and then just use
+> 
+>            align_64_entry(__kernel_time_t msg_stime);
+> 
+> without any preprocessor #if/#ifdef crap anywhere.
+> 
+> It would keep the current state for the (apparently broken) case of
+> 64-bit kernel and 32-bit user space with big-endian architectures, but
+> it would also just magically work if __kernel_time_t is 64-bit
+> despite "long" being 32-bit.
+> 
+> So it would fix the x32 case, as far as I can tell.
+> 
+> Note: totally untested. Maybe there's some reason why my anonymous
+> union trick wouldn't work.
 
-Responses should be made by Sun May 20 21:26:47 UTC 2012.
-Anything received after that time might be too late.
+When the header files were written, we still allowed them to be included
+by programs that were written for older non-gcc compilers.
 
-The whole patch series can be found in one patch at:
-	kernel.org/pub/linux/kernel/v3.0/stable-review/patch-3.3.7-rc1.gz
-and the diffstat can be found below.
+We already rely on 'long long' being a valid type these days, so we could
+probably extend the requirement to cover anonymous unions as well, but
+there may be cases where some code includes this file and needs to get
+built with -std=something-old that doesn't allow anonymous unions.
 
-thanks,
+As another historical background on this header, note that some big-endian
+architectures put the padding before the variable but others don't,
+presumably because the person doing the architecture port didn't understand
+the intention or didn't care.
 
-greg k-h
+However, in the kernel we *always* copy the fields one by one for compat
+mode, even for the architectures that have identical layout between 32 and
+64 bit, and at least one libc implementation that I've seen (IIRC uClibc)
+hardcodes the data structure to be the same as x86, with the padding
+after the 'long', for all architectures. When I introduced the asm-generic
+version of this, we had a discussion about whether we should try to use
+the version with the "correct" padding but in the end decided to just use
+the x86 version because that is what most big-endian architectures do
+anyway.
 
--------------
- Makefile                                      |    4 +-
- arch/arm/mm/fault.c                           |    4 +-
- arch/arm/vfp/vfpmodule.c                      |   10 ++--
- arch/sparc/kernel/central.c                   |    2 +-
- arch/sparc/mm/ultra.S                         |    6 +-
- arch/tile/kernel/compat_signal.c              |   12 ++--
- drivers/char/virtio_console.c                 |    7 +++
- drivers/crypto/Kconfig                        |    1 +
- drivers/i2c/busses/i2c-eg20t.c                |    2 +-
- drivers/md/dm-mpath.c                         |    4 +-
- drivers/md/md.c                               |    2 +
- drivers/media/dvb/dvb-core/dvb_frontend.c     |    4 ++
- drivers/media/rc/ene_ir.c                     |   32 +++++-----
- drivers/media/rc/fintek-cir.c                 |   20 +++----
- drivers/media/rc/ite-cir.c                    |   20 +++----
- drivers/media/rc/nuvoton-cir.c                |   36 ++++++------
- drivers/media/rc/winbond-cir.c                |   78 ++++++++++++-------------
- drivers/media/video/marvell-ccic/mmp-driver.c |    1 -
- drivers/media/video/s5p-fimc/fimc-capture.c   |    2 +-
- drivers/mtd/mtdchar.c                         |    2 +-
- drivers/net/ethernet/dlink/dl2k.c             |   52 +++--------------
- drivers/net/ethernet/dlink/dl2k.h             |    7 ---
- drivers/net/ethernet/intel/e1000/e1000_main.c |    6 +-
- drivers/net/usb/cdc_ether.c                   |   30 +++++++++-
- drivers/net/usb/usbnet.c                      |   54 ++++++++++++-----
- drivers/spi/spi-topcliff-pch.c                |   78 +++++++++++++++++++++----
- drivers/target/target_core_file.c             |   22 +++++--
- drivers/target/target_core_pr.c               |    3 +
- drivers/target/target_core_tpg.c              |   22 -------
- drivers/video/omap2/dss/venc.c                |    5 ++
- fs/cifs/cifsfs.c                              |    2 +-
- fs/ext4/xattr.c                               |    7 ++-
- fs/jffs2/gc.c                                 |    2 +-
- fs/nfs/nfs4proc.c                             |   28 ++++-----
- fs/nfs/nfs4xdr.c                              |   18 +++---
- include/linux/usb/usbnet.h                    |    3 +-
- init/do_mounts.c                              |    2 +-
- kernel/compat.c                               |   63 ++++++++++++++------
- kernel/fork.c                                 |    3 +
- mm/hugetlb.c                                  |    1 -
- mm/memcontrol.c                               |    6 ++
- mm/nobootmem.c                                |    3 +-
- mm/percpu.c                                   |   12 ++++
- net/ipv4/tcp.c                                |    3 +-
- sound/pci/echoaudio/echoaudio_dsp.c           |    2 +-
- sound/pci/hda/hda_intel.c                     |    6 +-
- sound/pci/hda/patch_realtek.c                 |    1 +
- sound/pci/hda/patch_sigmatel.c                |    6 +-
- sound/soc/codecs/cs42l73.c                    |   16 ++---
- sound/soc/codecs/wm8994.c                     |    2 +-
- 50 files changed, 424 insertions(+), 290 deletions(-)
-
+	Arnd
