@@ -1,104 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933667Ab2ERLBu (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 May 2012 07:01:50 -0400
-Received: from smtp12.smtpout.orange.fr ([80.12.242.134]:55632 "EHLO
-	smtp.smtpout.orange.fr" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933168Ab2ERLBs convert rfc822-to-8bit (ORCPT
+	id S933687Ab2ERLDF (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 May 2012 07:03:05 -0400
+Received: from casper.infradead.org ([85.118.1.10]:55305 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752718Ab2ERLDD convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 May 2012 07:01:48 -0400
-Message-ID: <4FB62C15.7080703@wanadoo.fr>
-Date: Fri, 18 May 2012 13:01:41 +0200
-From: Pascal Chapperon <pascal.chapperon@wanadoo.fr>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
-MIME-Version: 1.0
-To: paulmck@linux.vnet.ibm.com
-CC: Josh Boyer <jwboyer@redhat.com>, linux-kernel@vger.kernel.org,
-        kernel-team@fedoraproject.org
-Subject: Re: RCU related performance regression in 3.3
-References: <20177034.34764.1335528920975.JavaMail.www@wwinf1f04> <20120428034257.GA2495@linux.vnet.ibm.com> <20120501000245.GA4329@linux.vnet.ibm.com> <4F9FA50C.9070600@wanadoo.fr> <20120501154513.GD2441@linux.vnet.ibm.com> <4FA3EAEE.9030601@wanadoo.fr> <20120504150411.GC2411@linux.vnet.ibm.com> <4FA44CF9.7050604@wanadoo.fr> <20120504231442.GT2411@linux.vnet.ibm.com> <20120514223255.GA5719@linux.vnet.ibm.com>
-In-Reply-To: <20120514223255.GA5719@linux.vnet.ibm.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 8BIT
+	Fri, 18 May 2012 07:03:03 -0400
+Message-ID: <1337338974.573.27.camel@twins>
+Subject: Re: [tip:sched/core] sched: Set TAINT_UNSAFE_SMP after
+ sleep-in-atomic bug
+From: Peter Zijlstra <a.p.zijlstra@chello.nl>
+To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        rdunlap@xenotime.net, akpm@linux-foundation.org, khlebnikov@openvz.org,
+        tglx@linutronix.de
+Cc: linux-tip-commits@vger.kernel.org
+Date: Fri, 18 May 2012 13:02:54 +0200
+In-Reply-To: <tip-1d76f4381601a259323ad4faadce18db08ddebcd@git.kernel.org>
+References: <20120517232210.A292EA02FF@akpm.mtv.corp.google.com>
+	 <tip-1d76f4381601a259323ad4faadce18db08ddebcd@git.kernel.org>
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
+X-Mailer: Evolution 3.2.2- 
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Le 15/05/2012 00:32, Paul E. McKenney a écrit :
-> On Fri, May 04, 2012 at 04:14:42PM -0700, Paul E. McKenney wrote:
->> On Fri, May 04, 2012 at 11:41:13PM +0200, Pascal Chapperon wrote:
->>> Le 04/05/2012 17:04, Paul E. McKenney a écrit :
->>>> On Fri, May 04, 2012 at 04:42:54PM +0200, Pascal Chapperon wrote:
->>>>> Le 01/05/2012 17:45, Paul E. McKenney a écrit :
->>>>>
->>>>>> Here is my RCU_FAST_NO_HZ patch stack on top of v3.4-rc4.
->>>>>>
->>>>>> Or you can pull branch fnh.2012.05.01a from:
->>>>>>
->>>>>> 	git://git.kernel.org/pub/scm/linux/kernel/git/paulmck/linux-rcu.git
->>>>>>
->>>>>> 							Thanx, Paul
->>>>>>
->>>>> I applied your global patch on top of v3.4-rc4. But the slowdown is
->>>>> worse than before : boot sequence took 80s instead 20-30s (12s for
->>>>> initramfs instead of 2s).
->>>>>
->>>>> I'll send you rcu tracing log in a second mail.
->>>>
->>>> Hmmm...  Well, I guess I am glad that I finally did something that
->>>> had an effect, but I sure wish that the effect had been in the other
->>>> direction!
->>>>
->>>> Just to make sure I understand: the difference between the 20-30s and
->>>> the 80s is exactly the patch I sent you?
->>>>
->>>> 							Thanx, Paul
->>>>
->>>>
->>> Yes. Exactly same kernel config as in previous results, I applied
->>> your patch against v3.4-rc4, and sorry, the result is exactly what I
->>> said;
->>> I saw that your global patch was quite huge, and addresses things which
->>> are not directly related with the initial patch (commit
->>> 7cb92499000e3c86dae653077b1465458a039ef6); maybe a side effect?
->>>
->>> However, I'm ready to try this patch on my smaller laptop which
->>> supports well CONFIG_FAST_NO_HZ=y and systemd, if you think it can
->>> help ?
->>>
->>> Another thought: this issue as nothing to do with i7 Hyper-threading
->>> capacities ? (as I test core2duo, Pentium ulv in same conditions and I
->>> don't encountered any slowdown ?)
->>
->> Well, one possibility is that your setup starts the jiffies counter
->> at some interesting value.  The attached patch (also against v3.4-rc4)
->> applies a bit more paranoia to the initialization to handle this
->> and other possibilities.
->
-> This patchset fixes the problem where RCU_FAST_NO_HZ's timers were
-> being ignored due to the dyntick-idle code having already calculated
-> the CPU's wakeup time (which I sent earlier, mistakenly offlist), but
-> also fixes a botched check in my workaround.
->
-> Could you please try it out?  This patch is against 3.4-rc4.
->
-> 							Thanx, Paul
->
-Hi Paul,
+On Fri, 2012-05-18 at 03:48 -0700, tip-bot for Konstantin Khlebnikov
+wrote:
+> Acked-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
 
-< +     if (!rcu_cpu_has_nonlazy_callbacks(cpu))
----
- > +     if (rcu_cpu_has_nonlazy_callbacks(cpu))
+This is the patch I objected to.. 
 
-I was a little disappointed by the previous patch (boot sequence still
-took 72 s.), but this one makes a huge difference ;-)
-Slowdown during boot or shutdown with CONFIG_RCU_FAST_NO_HZ has
-disappeared (~ 10 attempts) :
-# systemd-analyze
-Startup finished in 1990ms (kernel) + 1174ms (initramfs) + 3121ms
-(userspace) = 6285ms
-.
-Do you want the rcu tracing log for this patch ?
+> +++ b/kernel/sched/core.c
+> @@ -3138,6 +3138,7 @@ static noinline void __schedule_bug(struct task_struct *prev)
+>  	if (irqs_disabled())
+>  		print_irqtrace_events(prev);
+>  	dump_stack();
+> +	add_taint(TAINT_UNSAFE_SMP);
+>  }
 
-Pascal
-
+This should very much be TAINT_WARN.. it has nothing what so ever to do
+with SMP.
