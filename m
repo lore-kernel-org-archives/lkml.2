@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759084Ab2ERQwu (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 May 2012 12:52:50 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:56687 "EHLO mx1.redhat.com"
+	id S1759050Ab2ERQwr (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 May 2012 12:52:47 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:14732 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758139Ab2ERQdC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 May 2012 12:33:02 -0400
+	id S1758501Ab2ERQdD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 18 May 2012 12:33:03 -0400
 From: Mauro Carvalho Chehab <mchehab@redhat.com>
 Cc: Mauro Carvalho Chehab <mchehab@redhat.com>,
         Linux Edac Mailing List <linux-edac@vger.kernel.org>,
         Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Mark Gross <mark.gross@intel.com>, Doug Thompson <norsk5@yahoo.com>
-Subject: [PATCH EDAC v26 12/66] e752x_edac: convert driver to use the new edac ABI
-Date: Fri, 18 May 2012 13:31:59 -0300
-Message-Id: <1337358773-6919-13-git-send-email-mchehab@redhat.com>
+        Aristeu Rozanski <arozansk@redhat.com>,
+        Doug Thompson <norsk5@yahoo.com>
+Subject: [PATCH EDAC v26 34/66] edac: Initialize the dimm label with the known information
+Date: Fri, 18 May 2012 13:32:21 -0300
+Message-Id: <1337358773-6919-35-git-send-email-mchehab@redhat.com>
 In-Reply-To: <1337358773-6919-1-git-send-email-mchehab@redhat.com>
 References: <1337358773-6919-1-git-send-email-mchehab@redhat.com>
 To: unlisted-recipients:; (no To-header on input)
@@ -21,128 +22,167 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The legacy edac ABI is going to be removed. Port the driver to use
-and benefit from the new API functionality.
+While userspace doesn't fill the dimm labels, add there the dimm location,
+as described by the used memory model. This could eventually match what
+is described at the dmidecode, making easier for people to identify the
+memory.
 
-Cc: Mark Gross <mark.gross@intel.com>
+For example, on an Intel motherboard where the DMI table is reliable,
+the first memory stick is described as:
+
+Memory Device
+	Array Handle: 0x0029
+	Error Information Handle: Not Provided
+	Total Width: 64 bits
+	Data Width: 64 bits
+	Size: 2048 MB
+	Form Factor: DIMM
+	Set: 1
+	Locator: A1_DIMM0
+	Bank Locator: A1_Node0_Channel0_Dimm0
+	Type: <OUT OF SPEC>
+	Type Detail: Synchronous
+	Speed: 800 MHz
+	Manufacturer: A1_Manufacturer0
+	Serial Number: A1_SerNum0
+	Asset Tag: A1_AssetTagNum0
+	Part Number: A1_PartNum0
+
+The memory named as "A1_DIMM0" is physically located at the first
+memory controller (node 0), at channel 0, dimm slot 0.
+
+After this patch, the memory label will be filled with:
+	/sys/devices/system/edac/mc/csrow0/ch0_dimm_label:mc#0channel#0slot#0
+
+And (after the new EDAC API patches) as:
+	/sys/devices/system/edac/mc/mc0/dimm0/dimm_label:mc#0channel#0slot#0
+
+So, even if the memory label is not initialized on userspace, an useful
+information with the error location is filled there, expecially since
+several systems/motherboards are provided with enough info to map from
+channel/slot (or branch/channel/slot) into the DIMM label. So, letting the
+EDAC core fill it by default is a good thing.
+
+It should noticed that, as the label filling happens at the
+edac_mc_alloc(), drivers can override it to better describe the memories
+(and some actually do it).
+
+Cc: Aristeu Rozanski <arozansk@redhat.com>
 Cc: Doug Thompson <norsk5@yahoo.com>
 Signed-off-by: Mauro Carvalho Chehab <mchehab@redhat.com>
 ---
- drivers/edac/e752x_edac.c |   49 +++++++++++++++++++++++++++++++-------------
- 1 files changed, 34 insertions(+), 15 deletions(-)
+ drivers/edac/edac_mc.c       |   28 ++++++++++++++++++++++------
+ drivers/edac/edac_mc_sysfs.c |    8 ++++----
+ include/linux/edac.h         |    2 +-
+ 3 files changed, 27 insertions(+), 11 deletions(-)
 
-diff --git a/drivers/edac/e752x_edac.c b/drivers/edac/e752x_edac.c
-index cf17579..aaa3bb8 100644
---- a/drivers/edac/e752x_edac.c
-+++ b/drivers/edac/e752x_edac.c
-@@ -6,6 +6,9 @@
-  *
-  * See "enum e752x_chips" below for supported chipsets
-  *
-+ * Datasheet:
-+ *	http://www.intel.in/content/www/in/en/chipsets/e7525-memory-controller-hub-datasheet.html
-+ *
-  * Written by Tom Zimmerman
-  *
-  * Contributors:
-@@ -350,8 +353,10 @@ static void do_process_ce(struct mem_ctl_info *mci, u16 error_one,
- 	channel = !(error_one & 1);
+diff --git a/drivers/edac/edac_mc.c b/drivers/edac/edac_mc.c
+index 06028de..10f3750 100644
+--- a/drivers/edac/edac_mc.c
++++ b/drivers/edac/edac_mc.c
+@@ -210,10 +210,10 @@ struct mem_ctl_info *edac_mc_alloc(unsigned mc_num,
+ 	struct dimm_info *dimm;
+ 	u32 *ce_per_layer[EDAC_MAX_LAYERS], *ue_per_layer[EDAC_MAX_LAYERS];
+ 	unsigned pos[EDAC_MAX_LAYERS];
+-	void *pvt, *ptr = NULL;
+ 	unsigned size, tot_dimms = 1, count = 1;
+ 	unsigned tot_csrows = 1, tot_channels = 1, tot_errcount = 0;
+-	int i, j, err, row, chn;
++	void *pvt, *p, *ptr = NULL;
++	int i, j, err, row, chn, n, len;
+ 	bool per_rank = false;
  
- 	/* e752x mc reads 34:6 of the DRAM linear address */
--	edac_mc_handle_ce(mci, page, offset_in_page(sec1_add << 4),
--			sec1_syndrome, row, channel, "e752x CE");
-+	edac_mc_handle_error(HW_EVENT_ERR_CORRECTED, mci,
-+			     page, offset_in_page(sec1_add << 4), sec1_syndrome,
-+			     row, channel, -1,
-+			     "e752x CE", "", NULL);
- }
+ 	BUG_ON(n_layers > EDAC_MAX_LAYERS || n_layers == 0);
+@@ -325,10 +325,26 @@ struct mem_ctl_info *edac_mc_alloc(unsigned mc_num,
+ 			i, per_rank ? "rank" : "dimm", (dimm - mci->dimms),
+ 			pos[0], pos[1], pos[2], row, chn);
  
- static inline void process_ce(struct mem_ctl_info *mci, u16 error_one,
-@@ -385,9 +390,12 @@ static void do_process_ue(struct mem_ctl_info *mci, u16 error_one,
- 			edac_mc_find_csrow_by_page(mci, block_page);
+-		/* Copy DIMM location */
+-		for (j = 0; j < n_layers; j++)
++		/*
++		 * Copy DIMM location and initialize it.
++		 */
++		len = sizeof(dimm->label);
++		p = dimm->label;
++		n = snprintf(p, len, "mc#%u", mc_num);
++		p += n;
++		len -= n;
++		for (j = 0; j < n_layers; j++) {
++			n = snprintf(p, len, "%s#%u",
++				     edac_layer_name[layers[j].type],
++				     pos[j]);
++			p += n;
++			len -= n;
+ 			dimm->location[j] = pos[j];
  
- 		/* e752x mc reads 34:6 of the DRAM linear address */
--		edac_mc_handle_ue(mci, block_page,
--				offset_in_page(error_2b << 4),
--				row, "e752x UE from Read");
-+		edac_mc_handle_error(HW_EVENT_ERR_UNCORRECTED, mci,
-+					block_page,
-+					offset_in_page(error_2b << 4), 0,
-+					 row, -1, -1,
-+					"e752x UE from Read", "", NULL);
++			if (len <= 0)
++				break;
++		}
 +
- 	}
- 	if (error_one & 0x0404) {
- 		error_2b = scrb_add;
-@@ -401,9 +409,11 @@ static void do_process_ue(struct mem_ctl_info *mci, u16 error_one,
- 			edac_mc_find_csrow_by_page(mci, block_page);
+ 		/* Link it to the csrows old API data */
+ 		chan->dimm = dimm;
+ 		dimm->csrow = row;
+@@ -834,7 +850,7 @@ static void edac_inc_ce_error(struct mem_ctl_info *mci,
+ {
+ 	int i, index = 0;
  
- 		/* e752x mc reads 34:6 of the DRAM linear address */
--		edac_mc_handle_ue(mci, block_page,
--				offset_in_page(error_2b << 4),
--				row, "e752x UE from Scruber");
-+		edac_mc_handle_error(HW_EVENT_ERR_UNCORRECTED, mci,
-+					block_page,
-+					offset_in_page(error_2b << 4), 0,
-+					row, -1, -1,
-+					"e752x UE from Scruber", "", NULL);
- 	}
+-	mci->ce_count++;
++	mci->ce_mc++;
+ 
+ 	if (!enable_per_layer_report) {
+ 		mci->ce_noinfo_count++;
+@@ -858,7 +874,7 @@ static void edac_inc_ue_error(struct mem_ctl_info *mci,
+ {
+ 	int i, index = 0;
+ 
+-	mci->ue_count++;
++	mci->ue_mc++;
+ 
+ 	if (!enable_per_layer_report) {
+ 		mci->ce_noinfo_count++;
+diff --git a/drivers/edac/edac_mc_sysfs.c b/drivers/edac/edac_mc_sysfs.c
+index 1dc1c6c..f6a29b0 100644
+--- a/drivers/edac/edac_mc_sysfs.c
++++ b/drivers/edac/edac_mc_sysfs.c
+@@ -425,8 +425,8 @@ static ssize_t mci_reset_counters_store(struct mem_ctl_info *mci,
+ 
+ 	mci->ue_noinfo_count = 0;
+ 	mci->ce_noinfo_count = 0;
+-	mci->ue_count = 0;
+-	mci->ce_count = 0;
++	mci->ue_mc = 0;
++	mci->ce_mc = 0;
+ 
+ 	for (row = 0; row < mci->nr_csrows; row++) {
+ 		struct csrow_info *ri = &mci->csrows[row];
+@@ -495,12 +495,12 @@ static ssize_t mci_sdram_scrub_rate_show(struct mem_ctl_info *mci, char *data)
+ /* default attribute files for the MCI object */
+ static ssize_t mci_ue_count_show(struct mem_ctl_info *mci, char *data)
+ {
+-	return sprintf(data, "%d\n", mci->ue_count);
++	return sprintf(data, "%d\n", mci->ue_mc);
  }
  
-@@ -426,7 +436,9 @@ static inline void process_ue_no_info_wr(struct mem_ctl_info *mci,
- 		return;
- 
- 	debugf3("%s()\n", __func__);
--	edac_mc_handle_ue_no_info(mci, "e752x UE log memory write");
-+	edac_mc_handle_error(HW_EVENT_ERR_UNCORRECTED, mci, 0, 0, 0,
-+			     -1, -1, -1,
-+			     "e752x UE log memory write", "", NULL);
+ static ssize_t mci_ce_count_show(struct mem_ctl_info *mci, char *data)
+ {
+-	return sprintf(data, "%d\n", mci->ce_count);
++	return sprintf(data, "%d\n", mci->ce_mc);
  }
  
- static void do_process_ded_retry(struct mem_ctl_info *mci, u16 error,
-@@ -1081,10 +1093,11 @@ static void e752x_init_csrows(struct mem_ctl_info *mci, struct pci_dev *pdev,
- 		nr_pages = cumul_size - last_cumul_size;
- 		last_cumul_size = cumul_size;
+ static ssize_t mci_ce_noinfo_show(struct mem_ctl_info *mci, char *data)
+diff --git a/include/linux/edac.h b/include/linux/edac.h
+index d68b01c..91ba3ba 100644
+--- a/include/linux/edac.h
++++ b/include/linux/edac.h
+@@ -581,7 +581,7 @@ struct mem_ctl_info {
+ 	 * already handles that.
+ 	 */
+ 	u32 ce_noinfo_count, ue_noinfo_count;
+-	u32 ue_count, ce_count;
++	u32 ue_mc, ce_mc;
+ 	u32 *ce_per_layer[EDAC_MAX_LAYERS], *ue_per_layer[EDAC_MAX_LAYERS];
  
--		for (i = 0; i < drc_chan + 1; i++) {
-+		for (i = 0; i < csrow->nr_channels; i++) {
- 			struct dimm_info *dimm = csrow->channels[i].dimm;
- 
--			dimm->nr_pages = nr_pages / (drc_chan + 1);
-+			debugf3("Initializing rank at (%i,%i)\n", index, i);
-+			dimm->nr_pages = nr_pages / csrow->nr_channels;
- 			dimm->grain = 1 << 12;	/* 4KiB - resolution of CELOG */
- 			dimm->mtype = MEM_RDDR;	/* only one type supported */
- 			dimm->dtype = mem_dev ? DEV_X4 : DEV_X8;
-@@ -1232,6 +1245,7 @@ static int e752x_probe1(struct pci_dev *pdev, int dev_idx)
- 	u16 pci_data;
- 	u8 stat8;
- 	struct mem_ctl_info *mci;
-+	struct edac_mc_layer layers[2];
- 	struct e752x_pvt *pvt;
- 	u16 ddrcsr;
- 	int drc_chan;		/* Number of channels 0=1chan,1=2chan */
-@@ -1258,11 +1272,16 @@ static int e752x_probe1(struct pci_dev *pdev, int dev_idx)
- 	/* Dual channel = 1, Single channel = 0 */
- 	drc_chan = dual_channel_active(ddrcsr);
- 
--	mci = edac_mc_alloc(sizeof(*pvt), E752X_NR_CSROWS, drc_chan + 1, 0);
--
--	if (mci == NULL) {
-+	layers[0].type = EDAC_MC_LAYER_CHIP_SELECT;
-+	layers[0].size = E752X_NR_CSROWS;
-+	layers[0].is_virt_csrow = true;
-+	layers[1].type = EDAC_MC_LAYER_CHANNEL;
-+	layers[1].size = drc_chan + 1;
-+	layers[1].is_virt_csrow = false;
-+	mci = new_edac_mc_alloc(0, ARRAY_SIZE(layers), layers,
-+			    sizeof(*pvt));
-+	if (mci == NULL)
- 		return -ENOMEM;
--	}
- 
- 	debugf3("%s(): init mci\n", __func__);
- 	mci->mtype_cap = MEM_FLAG_RDDR;
+ 	struct completion complete;
 -- 
 1.7.8
 
