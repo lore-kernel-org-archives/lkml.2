@@ -1,15 +1,15 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1161150Ab2ERKdQ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 May 2012 06:33:16 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:42460 "EHLO
+	id S967986Ab2ERKeH (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 May 2012 06:34:07 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:42477 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1161091Ab2ERKdO (ORCPT
+	with ESMTP id S964817Ab2ERKeE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 May 2012 06:33:14 -0400
-Date: Fri, 18 May 2012 03:32:18 -0700
+	Fri, 18 May 2012 06:34:04 -0400
+Date: Fri, 18 May 2012 03:33:08 -0700
 From: tip-bot for Peter Zijlstra <a.p.zijlstra@chello.nl>
-Message-ID: <tip-2jgh4xed0dejteh84gykmxff@git.kernel.org>
+Message-ID: <tip-pdhg3wh71m4eu8xerantpvln@git.kernel.org>
 Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
         torvalds@linux-foundation.org, a.p.zijlstra@chello.nl, pjt@google.com,
         cl@linux.com, riel@redhat.com, akpm@linux-foundation.org,
@@ -22,8 +22,8 @@ Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
         aarcange@redhat.com, danms@us.ibm.com, suresh.b.siddha@intel.com,
         tglx@linutronix.de
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:sched/numa] mm/mpol: Make mempolicy home-node aware
-Git-Commit-ID: a9ea2f1e496e4a5cf88e692948c62369efa37be5
+Subject: [tip:sched/numa] mm/mpol: Lazy migrate a process/vma
+Git-Commit-ID: e9941dae870861da410835560b603d17c43dabee
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -32,33 +32,23 @@ MIME-Version: 1.0
 Content-Transfer-Encoding: 8bit
 Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Fri, 18 May 2012 03:32:24 -0700 (PDT)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Fri, 18 May 2012 03:33:14 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  a9ea2f1e496e4a5cf88e692948c62369efa37be5
-Gitweb:     http://git.kernel.org/tip/a9ea2f1e496e4a5cf88e692948c62369efa37be5
+Commit-ID:  e9941dae870861da410835560b603d17c43dabee
+Gitweb:     http://git.kernel.org/tip/e9941dae870861da410835560b603d17c43dabee
 Author:     Peter Zijlstra <a.p.zijlstra@chello.nl>
-AuthorDate: Sat, 3 Mar 2012 17:05:54 +0100
+AuthorDate: Sat, 3 Mar 2012 17:06:25 +0100
 Committer:  Ingo Molnar <mingo@kernel.org>
 CommitDate: Fri, 18 May 2012 08:16:21 +0200
 
-mm/mpol: Make mempolicy home-node aware
+mm/mpol: Lazy migrate a process/vma
 
-Add another layer of fallback policy to make the home node concept
-useful from a memory allocation PoV.
-
-This changes the mpol order to:
-
- - vma->vm_ops->get_policy	[if applicable]
- - vma->vm_policy		[if applicable]
- - task->mempolicy
- - tsk_home_node() preferred	[NEW]
- - default_policy
-
-Note that the tsk_home_node() policy has Migrate-on-Fault enabled to
-facilitate efficient on-demand memory migration.
+Provide simple functions to lazy migrate a process (or part thereof).
+These will be used to implement memory migration for NUMA process
+migration.
 
 Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
 Cc: Suresh Siddha <suresh.b.siddha@intel.com>
@@ -71,70 +61,119 @@ Cc: Rik van Riel <riel@redhat.com>
 Cc: Andrea Arcangeli <aarcange@redhat.com>
 Cc: Andrew Morton <akpm@linux-foundation.org>
 Cc: Linus Torvalds <torvalds@linux-foundation.org>
-Link: http://lkml.kernel.org/n/tip-2jgh4xed0dejteh84gykmxff@git.kernel.org
+Link: http://lkml.kernel.org/n/tip-pdhg3wh71m4eu8xerantpvln@git.kernel.org
 Signed-off-by: Ingo Molnar <mingo@kernel.org>
 ---
- mm/mempolicy.c |   29 +++++++++++++++++++++++++++--
- 1 files changed, 27 insertions(+), 2 deletions(-)
+ include/linux/mempolicy.h |    3 ++
+ mm/mempolicy.c            |   84 +++++++++++++++++++++++++++++++++++++++++++++
+ 2 files changed, 87 insertions(+), 0 deletions(-)
 
+diff --git a/include/linux/mempolicy.h b/include/linux/mempolicy.h
+index 578fcd0..af2983b 100644
+--- a/include/linux/mempolicy.h
++++ b/include/linux/mempolicy.h
+@@ -262,6 +262,9 @@ extern int vma_migratable(struct vm_area_struct *);
+ 
+ extern int mpol_misplaced(struct page *, struct vm_area_struct *, unsigned long);
+ 
++extern void lazy_migrate_vma(struct vm_area_struct *vma, int node);
++extern void lazy_migrate_process(struct mm_struct *mm, int node);
++
+ #else
+ 
+ struct mempolicy {};
 diff --git a/mm/mempolicy.c b/mm/mempolicy.c
-index 1ddbf22..57fbc4c 100644
+index 57fbc4c..df29149 100644
 --- a/mm/mempolicy.c
 +++ b/mm/mempolicy.c
-@@ -117,6 +117,22 @@ static struct mempolicy default_policy = {
- 	.flags = MPOL_F_LOCAL,
- };
+@@ -1193,6 +1193,90 @@ static long do_mbind(unsigned long start, unsigned long len,
+ 	return err;
+ }
  
-+static struct mempolicy preferred_node_policy[MAX_NUMNODES];
-+
-+static struct mempolicy *get_task_policy(struct task_struct *p)
++static nodemask_t mpol_node_mask(struct mempolicy *pol, int node)
 +{
-+	struct mempolicy *pol = p->mempolicy;
-+	int node;
++	if (pol->mode == MPOL_PREFERRED) {
++		if (pol->flags & MPOL_F_LOCAL)
++			return nodemask_of_node(node);
 +
-+	if (!pol) {
-+		node = tsk_home_node(p);
-+		if (node != -1)
-+			pol = &preferred_node_policy[node];
++		return nodemask_of_node(pol->v.preferred_node);
 +	}
 +
-+	return pol;
++	return pol->v.nodes;
 +}
 +
- static const struct mempolicy_operations {
- 	int (*create)(struct mempolicy *pol, const nodemask_t *nodes);
- 	/*
-@@ -1506,7 +1522,7 @@ asmlinkage long compat_sys_mbind(compat_ulong_t start, compat_ulong_t len,
- struct mempolicy *get_vma_policy(struct task_struct *task,
- 		struct vm_area_struct *vma, unsigned long addr)
- {
--	struct mempolicy *pol = task->mempolicy;
-+	struct mempolicy *pol = get_task_policy(task);
- 
- 	if (vma) {
- 		if (vma->vm_ops && vma->vm_ops->get_policy) {
-@@ -1890,7 +1906,7 @@ retry_cpuset:
-  */
- struct page *alloc_pages_current(gfp_t gfp, unsigned order)
- {
--	struct mempolicy *pol = current->mempolicy;
-+	struct mempolicy *pol = get_task_policy(current);
- 	struct page *page;
- 	unsigned int cpuset_mems_cookie;
- 
-@@ -2358,6 +2374,15 @@ void __init numa_policy_init(void)
- 				     sizeof(struct sp_node),
- 				     0, SLAB_PANIC, NULL);
- 
-+	for_each_node(nid) {
-+		preferred_node_policy[nid] = (struct mempolicy) {
-+			.refcnt = ATOMIC_INIT(1),
-+			.mode = MPOL_PREFERRED,
-+			.flags = MPOL_F_MOF,
-+			.v = { .preferred_node = nid, },
-+		};
-+	}
++void lazy_migrate_vma(struct vm_area_struct *vma, int node)
++{
++	struct mempolicy *pol = NULL;
++	struct mempol_walk_data data;
++	struct mm_walk walk;
++	LIST_HEAD(pagelist);
++	nodemask_t nmask;
 +
- 	/*
- 	 * Set interleaving policy for system init. Interleaving is only
- 	 * enabled across suitably sized nodes (default is >= 16MB), or
++	if (vma->vm_file)
++		return;
++
++	if (!vma_migratable(vma))
++		return;
++
++	/*
++	 * Obtain a more-or-less correct nodemask to find which pages we need
++	 * to unmap so that MoF can put them right again.
++	 *
++	 * Not quite correct for INTERLEAVE, that would need us doing
++	 * offset_il_node() from check_pte_entry().
++	 *
++	 * Also not quite correct for task policies since we don't have a task,
++	 * approximate by having @node function as local / task-home-node.
++	 */
++
++	if (vma->vm_ops && vma->vm_ops->get_policy)
++	        pol = vma->vm_ops->get_policy(vma, vma->vm_start);
++	else if (vma->vm_policy)
++		pol = vma->vm_policy;
++
++	if (pol) {
++		nmask = mpol_node_mask(pol, node);
++		mpol_cond_put(pol);
++
++		/*
++		 * If there's an explicit policy that doesn't support MoF, skip
++		 * this vma, there's nothing we can do about that.
++		 */
++		if (!(pol->flags & MPOL_F_MOF))
++			return;
++	} else
++		nmask = nodemask_of_node(node);
++
++	data = (struct mempol_walk_data){
++		.nodes = &nmask,
++		.flags = MPOL_MF_MOVE | MPOL_MF_INVERT, /* move all pages not in set */
++		.private = &pagelist,
++		.vma = vma,
++	};
++
++	walk = (struct mm_walk){
++		.pte_entry = check_pte_entry,
++		.mm = vma->vm_mm,
++		.private = &data,
++	};
++
++	if (!walk_page_range(vma->vm_start, vma->vm_end, &walk))
++		migrate_pages_unmap_only(&pagelist);
++
++	putback_lru_pages(&pagelist);
++}
++
++void lazy_migrate_process(struct mm_struct *mm, int node)
++{
++	struct vm_area_struct *vma;
++
++	down_read(&mm->mmap_sem);
++	for (vma = mm->mmap; vma; vma = vma->vm_next)
++		lazy_migrate_vma(vma, node);
++	up_read(&mm->mmap_sem);
++}
++
+ /*
+  * User space interface with variable sized bitmaps for nodelists.
+  */
