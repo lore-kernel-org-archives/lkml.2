@@ -1,153 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S966290Ab2ERRwY (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 May 2012 13:52:24 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:60596 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S966171Ab2ERRwV (ORCPT
+	id S966247Ab2ERRxN (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 May 2012 13:53:13 -0400
+Received: from mail132.messagelabs.com ([216.82.242.115]:65290 "EHLO
+	mail132.messagelabs.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S965964Ab2ERRxK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 May 2012 13:52:21 -0400
-Date: Fri, 18 May 2012 10:52:16 -0700
-From: Tejun Heo <tj@kernel.org>
-To: koverstreet@google.com
-Cc: linux-bcache@vger.kernel.org, linux-kernel@vger.kernel.org,
-        dm-devel@redhat.com, linux-fsdevel@vger.kernel.org, axboe@kernel.dk,
-        agk@redhat.com, neilb@suse.de
-Subject: Re: [PATCH 12/13] Make generic_make_request handle arbitrarily
- large bios
-Message-ID: <20120518175216.GL19388@google.com>
-References: <cover.1337308722.git.koverstreet@google.com>
- <1114e7019b0055fc09a54b59b36398d5c54f5e32.1337308722.git.koverstreet@google.com>
+	Fri, 18 May 2012 13:53:10 -0400
+X-Env-Sender: hartleys@visionengravers.com
+X-Msg-Ref: server-4.tower-132.messagelabs.com!1337363572!12020025!27
+X-Originating-IP: [216.166.12.99]
+X-StarScan-Version: 6.5.10; banners=-,-,-
+X-VirusChecked: Checked
+From: H Hartley Sweeten <hartleys@visionengravers.com>
+To: Ian Abbott <abbotti@mev.co.uk>
+CC: Ian Abbott <ian.abbott@mev.co.uk>,
+        Linux Kernel <linux-kernel@vger.kernel.org>,
+        "devel@driverdev.osuosl.org" <devel@driverdev.osuosl.org>,
+        "fmhess@users.sourceforge.net" <fmhess@users.sourceforge.net>,
+        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>
+Date: Fri, 18 May 2012 12:52:53 -0500
+Subject: RE: [PATCH] staging: comedi: cleanup all the comedi_driver 'detach'
+ functions
+Thread-Topic: [PATCH] staging: comedi: cleanup all the comedi_driver
+ 'detach' functions
+Thread-Index: Ac01HmnNH6uGuMGsTbqrDTc6Cox67QAAIGtg
+Message-ID: <ADE657CA350FB648AAC2C43247A983F0020698AE12AE@AUSP01VMBX24.collaborationhost.net>
+References: <201205171711.14968.hartleys@visionengravers.com>
+ <4FB6230C.2080604@mev.co.uk>
+ <ADE657CA350FB648AAC2C43247A983F0020698AE1272@AUSP01VMBX24.collaborationhost.net>
+ <4FB68B57.7040404@mev.co.uk>
+In-Reply-To: <4FB68B57.7040404@mev.co.uk>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="utf-8"
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1114e7019b0055fc09a54b59b36398d5c54f5e32.1337308722.git.koverstreet@google.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by nfs id q4IHrIhV028561
 
-Hello, Kent.
+On Friday, May 18, 2012 10:48 AM, Ian Abbott wrote:
+> On 2012-05-18 17:56, H Hartley Sweeten wrote:
+>> Can you test this patch and let me know what the resulting output
+>> is? You may need to change the dev_dbg to dev_info or something
+>> else if you don't have the proper kernel debugging enabled.
+>
+>> diff --git a/drivers/staging/comedi/drivers.c b/drivers/staging/comedi/drivers.c
+>> index 1c3d638..d6bb1f9 100644
+>> --- a/drivers/staging/comedi/drivers.c
+>> +++ b/drivers/staging/comedi/drivers.c
+>> @@ -91,11 +91,14 @@ static void cleanup_device(struct comedi_device *dev)
+>>   static void __comedi_device_detach(struct comedi_device *dev)
+>>   {
+>>   	dev->attached = 0;
+>> -	if (dev->driver)
+>> +	if (dev->driver) {
+>>   		dev->driver->detach(dev);
+>> -	else
+>> -		printk(KERN_WARNING
+>> +		dev_dbg(dev->class_dev, "%s detached\n",
+>> +			dev->driver->driver_name);
+>> +	} else {
+>> +		dev_warn(dev->class_dev,
+>>   		       "BUG: dev->driver=NULL in comedi_device_detach()\n");
+>> +	}
+>>   	cleanup_device(dev);
+>>   }
+>
+> It works, but I'd prefer dev_info over dev_dbg.
 
-On Thu, May 17, 2012 at 10:59:59PM -0400, koverstreet@google.com wrote:
-> From: Kent Overstreet <koverstreet@google.com>
-> 
-> The way the block layer is currently written, it goes to great lengths
-> to avoid having to split bios; upper layer code (such as bio_add_page())
-> checks what the underlying device can handle and tries to always create
-> bios that don't need to be split.
-> 
-> But this approach becomes unwieldy and eventually breaks down with
-> stacked devices and devices with dynamic limits, and it adds a lot of
-> complexity. If the block layer could split bios as needed, we could
-> eliminate a lot of complexity elsewhere - particularly in stacked
-> drivers. Code that creates bios can then create whatever size bios are
-> convenient, and more importantly stacked drivers don't have to deal with
-> both their own bio size limitations and the limitations of the
-> (potentially multiple) devices underneath them.
+OK. What was the actual message output?
 
-I generally like the idea.  Device limit directly being propagated to
-high level users is cumbersome.  Somebody has to be splitting anyway
-and doing it at top makes things, including limit propagation through
-stacked drivers, unnecessarily complicated.  Jens, what are your
-thoughts?
-
-> +static void bio_submit_split_done(struct closure *cl)
-> +{
-> +	struct bio_split_hook *s = container_of(cl, struct bio_split_hook, cl);
-> +
-> +	s->bio->bi_end_io	= s->bi_end_io;
-> +	s->bio->bi_private	= s->bi_private;
-> +	bio_endio(s->bio, 0);
-
-I'd rather you didn't indent assignments.
-
-> +	closure_debug_destroy(&s->cl);
-> +	mempool_free(s, s->q->bio_split_hook);
-> +}
-...
-> +static int bio_submit_split(struct bio *bio)
-
-bool?
-
-> +{
-> +	struct bio_split_hook *s;
-> +	struct request_queue *q = bdev_get_queue(bio->bi_bdev);
-> +
-> +	if (!bio_has_data(bio) ||
-> +	    !q ||
-> +	    !q->bio_split_hook ||
-> +	    bio_sectors(bio) <= bio_max_sectors(bio))
-
-Style issues.
-
-> +		return 0;
-> +
-> +	s = mempool_alloc(q->bio_split_hook, GFP_NOIO);
-> +
-> +	closure_init(&s->cl, NULL);
-
-Please use workqueue with open coded sequencer or maybe implement bio
-sequencer which can be used by other stacking drivers too.
-
-> +	s->bio		= bio;
-> +	s->q		= q;
-> +	s->bi_end_io	= bio->bi_end_io;
-> +	s->bi_private	= bio->bi_private;
-> +
-> +	bio_get(bio);
-> +	bio->bi_end_io	= bio_submit_split_endio;
-> +	bio->bi_private	= &s->cl;
-
-Maybe it's okay but I *hope* bi_private override weren't necessary -
-it's way too subtle.  If there's no other way and this is gonna be an
-integral part of block layer, just add a field to bio.
-
-> +unsigned __bio_max_sectors(struct bio *bio, struct block_device *bdev,
-> +			   sector_t sector)
-> +{
-> +	unsigned ret = bio_sectors(bio);
-> +	struct request_queue *q = bdev_get_queue(bdev);
-> +	struct bio_vec *bv, *end = bio_iovec(bio) +
-> +		min_t(int, bio_segments(bio), queue_max_segments(q));
-> +
-> +	struct bvec_merge_data bvm = {
-> +		.bi_bdev	= bdev,
-> +		.bi_sector	= sector,
-> +		.bi_size	= 0,
-> +		.bi_rw		= bio->bi_rw,
-> +	};
-> +
-> +	if (bio_segments(bio) > queue_max_segments(q) ||
-> +	    q->merge_bvec_fn) {
-> +		ret = 0;
-> +
-> +		for (bv = bio_iovec(bio); bv < end; bv++) {
-> +			if (q->merge_bvec_fn &&
-> +			    q->merge_bvec_fn(q, &bvm, bv) < (int) bv->bv_len)
-> +				break;
-> +
-> +			ret		+= bv->bv_len >> 9;
-> +			bvm.bi_size	+= bv->bv_len;
-> +		}
-> +
-> +		if (ret >= (BIO_MAX_PAGES * PAGE_SIZE) >> 9)
-> +			return (BIO_MAX_PAGES * PAGE_SIZE) >> 9;
-> +	}
-> +
-> +	ret = min(ret, queue_max_sectors(q));
-> +
-> +	WARN_ON(!ret);
-> +	ret = max_t(int, ret, bio_iovec(bio)->bv_len >> 9);
-> +
-> +	return ret;
-> +}
-> +EXPORT_SYMBOL_GPL(__bio_max_sectors);
-
-Does this by any chance allow killing ->merge_bvec_fn()?  That would
-be *awesome*.
-
-Thanks.
-
--- 
-tejun
+Thanks,
+Hartley
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
