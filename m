@@ -1,20 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933641Ab2ERCwc (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 May 2012 22:52:32 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:40401 "EHLO
+	id S1031148Ab2ERDHz (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 May 2012 23:07:55 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:40440 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1762553Ab2ERCw2 (ORCPT
+	by vger.kernel.org with ESMTP id S1762573Ab2ERCwb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 May 2012 22:52:28 -0400
-Message-Id: <20120518023257.040479537@decadent.org.uk>
+	Thu, 17 May 2012 22:52:31 -0400
+Message-Id: <20120518023256.648178183@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Fri, 18 May 2012 03:33:14 +0100
+Date: Fri, 18 May 2012 03:33:11 +0100
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Jonathan Nieder <jrnieder@gmail.com>
-Subject: [ 20/53] brcm80211: smac: pass missing argument to brcms_b_mute
+        alan@lxorguk.ukuu.org.uk, Matt Carlson <mcarlson@broadcom.com>,
+        Michael Chan <mchan@broadcom.com>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [ 17/53] tg3: Avoid panic from reserved statblk field access
 In-Reply-To: <20120518023254.339945758@decadent.org.uk>
 X-SA-Exim-Connect-IP: 192.168.4.185
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -27,45 +29,69 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jonathan Nieder <jrnieder@gmail.com>
+From: Matt Carlson <mcarlson@broadcom.com>
 
-[Not needed upstream --- this bug is specific to 3.2.y.]
+[ Upstream commit f891ea1634ce41f5f47ae40d8594809f4cd2ca66 ]
 
-Commit c6c44893c864, which removes the flag argument from brcms_b_mute,
-is not part of 3.2.y, and we forgot to adjust a new call accordingly
-when applying commit badc4f07622f ("brcm80211: smac: resume transmit
-fifo upon receiving frames").
+When RSS is enabled, interrupt vector 0 does not receive any rx traffic.
+The rx producer index fields for vector 0's status block should be
+considered reserved in this case.  This patch changes the code to
+respect these reserved fields, which avoids a kernel panic when these
+fields take on non-zero values.
 
- drivers/net/wireless/brcm80211/brcmsmac/main.c: In function 'brcms_c_recvctl':
- drivers/net/wireless/brcm80211/brcmsmac/main.c:7882:4: error: too few arguments to function 'brcms_b_mute'
- drivers/net/wireless/brcm80211/brcmsmac/main.c:2538:13: note: declared here
-
-Earlier build tests missed this because they didn't include this driver
-due to 'depends on BCMA=n'.
-
-Reported-by: Ben Hutchings <ben@decadent.org.uk>
-Signed-off-by: Jonathan Nieder <jrnieder@gmail.com>
+Signed-off-by: Matt Carlson <mcarlson@broadcom.com>
+Signed-off-by: Michael Chan <mchan@broadcom.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- drivers/net/wireless/brcm80211/brcmsmac/main.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/net/ethernet/broadcom/tg3.c |   18 ++++++++++++++++--
+ 1 file changed, 16 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/net/wireless/brcm80211/brcmsmac/main.c b/drivers/net/wireless/brcm80211/brcmsmac/main.c
-index f98becc9e169..833cbefcbfd2 100644
---- a/drivers/net/wireless/brcm80211/brcmsmac/main.c
-+++ b/drivers/net/wireless/brcm80211/brcmsmac/main.c
-@@ -7879,7 +7879,7 @@ brcms_c_recvctl(struct brcms_c_info *wlc, struct d11rxhdr *rxh,
- 	if (wlc->hw->suspended_fifos) {
- 		hdr = (struct ieee80211_hdr *)p->data;
- 		if (ieee80211_is_beacon(hdr->frame_control))
--			brcms_b_mute(wlc->hw, false);
-+			brcms_b_mute(wlc->hw, false, 0);
+diff --git a/drivers/net/ethernet/broadcom/tg3.c b/drivers/net/ethernet/broadcom/tg3.c
+index 3d55883..2dcac28 100644
+--- a/drivers/net/ethernet/broadcom/tg3.c
++++ b/drivers/net/ethernet/broadcom/tg3.c
+@@ -879,8 +879,13 @@ static inline unsigned int tg3_has_work(struct tg3_napi *tnapi)
+ 		if (sblk->status & SD_STATUS_LINK_CHG)
+ 			work_exists = 1;
+ 	}
+-	/* check for RX/TX work to do */
+-	if (sblk->idx[0].tx_consumer != tnapi->tx_cons ||
++
++	/* check for TX work to do */
++	if (sblk->idx[0].tx_consumer != tnapi->tx_cons)
++		work_exists = 1;
++
++	/* check for RX work to do */
++	if (tnapi->rx_rcb_prod_idx &&
+ 	    *(tnapi->rx_rcb_prod_idx) != tnapi->rx_rcb_ptr)
+ 		work_exists = 1;
+ 
+@@ -5895,6 +5900,9 @@ static int tg3_poll_work(struct tg3_napi *tnapi, int work_done, int budget)
+ 			return work_done;
  	}
  
- 	memcpy(IEEE80211_SKB_RXCB(p), &rx_status, sizeof(rx_status));
++	if (!tnapi->rx_rcb_prod_idx)
++		return work_done;
++
+ 	/* run RX thread, within the bounds set by NAPI.
+ 	 * All RX "locking" is done by ensuring outside
+ 	 * code synchronizes with tg3->napi.poll()
+@@ -7448,6 +7456,12 @@ static int tg3_alloc_consistent(struct tg3 *tp)
+ 		 */
+ 		switch (i) {
+ 		default:
++			if (tg3_flag(tp, ENABLE_RSS)) {
++				tnapi->rx_rcb_prod_idx = NULL;
++				break;
++			}
++			/* Fall through */
++		case 1:
+ 			tnapi->rx_rcb_prod_idx = &sblk->idx[0].rx_producer;
+ 			break;
+ 		case 2:
 -- 
 1.7.10.1
-
 
 
 
