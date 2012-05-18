@@ -1,65 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756537Ab2ERGGM (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 May 2012 02:06:12 -0400
-Received: from haggis.pcug.org.au ([203.10.76.10]:51026 "EHLO
-	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754403Ab2ERGGJ (ORCPT
+	id S1757279Ab2ERGK7 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 May 2012 02:10:59 -0400
+Received: from hqemgate03.nvidia.com ([216.228.121.140]:16554 "EHLO
+	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755250Ab2ERGK5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 May 2012 02:06:09 -0400
-Date: Fri, 18 May 2012 16:06:03 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Mauro Carvalho Chehab <mchehab@redhat.com>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Jiri Kosina <jkosina@suse.cz>, David Mackey <tdmackey@twitter.com>
-Subject: linux-next: manual merge of the edac tree with the trivial tree
-Message-Id: <20120518160603.0eddece830f829d3b8570ac7@canb.auug.org.au>
-X-Mailer: Sylpheed 3.2.0beta7 (GTK+ 2.24.10; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Fri__18_May_2012_16_06_03_+1000_IRBnDf43jbRFUVkm"
+	Fri, 18 May 2012 02:10:57 -0400
+X-PGP-Universal: processed;
+	by hqnvupgp05.nvidia.com on Thu, 17 May 2012 23:10:46 -0700
+From: Hiroshi DOYU <hdoyu@nvidia.com>
+To: <hdoyu@nvidia.com>, <m.szyprowski@samsung.com>,
+        <linaro-mm-sig@lists.linaro.org>
+CC: <linux-mm@kvack.org>, <linux-arm-kernel@lists.infradead.org>,
+        <iommu@lists.linux-foundation.org>, <linux-tegra@vger.kernel.org>,
+        Russell King <linux@arm.linux.org.uk>,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Arnd Bergmann <arnd@arndb.de>, <linux-kernel@vger.kernel.org>
+Subject: [RFC 1/2] dma-mapping: Export arm_iommu_{alloc,free}_iova() functions
+Date: Fri, 18 May 2012 09:10:26 +0300
+Message-ID: <1337321427-27748-2-git-send-email-hdoyu@nvidia.com>
+X-Mailer: git-send-email 1.7.5.4
+In-Reply-To: <1337321427-27748-1-git-send-email-hdoyu@nvidia.com>
+References: <1337321427-27748-1-git-send-email-hdoyu@nvidia.com>
+MIME-Version: 1.0
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Fri__18_May_2012_16_06_03_+1000_IRBnDf43jbRFUVkm
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Export __{alloc,free}_iova() as arm_iommu_{alloc,free}_iova().
 
-Hi Mauro,
+There are some cases that IOVA allocation and mapping have to be done
+seperately, especially for perf optimization reasons. This patch
+allows client modules to {alloc,free} IOVA space by themselves without
+backing up actual pages for that area.
 
-Today's linux-next merge of the edac tree got a conflict in
-drivers/edac/edac_device.c between commit 15ed103a9800 ("edac: Fix
-spelling errors") from the trivial tree and commit b9e889c84229 ("edac:
-rewrite edac_align_ptr()") from the edac tree.
+Signed-off-by: Hiroshi DOYU <hdoyu@nvidia.com>
+---
+ arch/arm/include/asm/dma-iommu.h |    4 ++++
+ arch/arm/mm/dma-mapping.c        |   31 +++++++++++++++++++++++++++++++
+ 2 files changed, 35 insertions(+), 0 deletions(-)
 
-One of the comments fixed by the former is removed by the latter, so I
-did that.
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
+diff --git a/arch/arm/include/asm/dma-iommu.h b/arch/arm/include/asm/dma-iommu.h
+index 799b094..2595928 100644
+--- a/arch/arm/include/asm/dma-iommu.h
++++ b/arch/arm/include/asm/dma-iommu.h
+@@ -30,5 +30,9 @@ void arm_iommu_release_mapping(struct dma_iommu_mapping *mapping);
+ int arm_iommu_attach_device(struct device *dev,
+ 					struct dma_iommu_mapping *mapping);
+ 
++dma_addr_t arm_iommu_alloc_iova(struct device *dev, size_t size);
++
++void arm_iommu_free_iova(struct device *dev, dma_addr_t addr, size_t size);
++
+ #endif /* __KERNEL__ */
+ #endif
+diff --git a/arch/arm/mm/dma-mapping.c b/arch/arm/mm/dma-mapping.c
+index afb5e7a..bca1715 100644
+--- a/arch/arm/mm/dma-mapping.c
++++ b/arch/arm/mm/dma-mapping.c
+@@ -1041,6 +1041,21 @@ static inline dma_addr_t __alloc_iova(struct dma_iommu_mapping *mapping,
+ 	return mapping->base + (start << (mapping->order + PAGE_SHIFT));
+ }
+ 
++/**
++ * arm_iommu_alloc_iova
++ * @dev: valid struct device pointer
++ * @size: size of buffer to allocate
++ *
++ * Allocate IOVA address range
++ */
++dma_addr_t arm_iommu_alloc_iova(struct device *dev, size_t size)
++{
++	struct dma_iommu_mapping *mapping = dev->archdata.mapping;
++
++	return __alloc_iova(mapping, size);
++}
++EXPORT_SYMBOL_GPL(arm_iommu_alloc_iova);
++
+ static inline void __free_iova(struct dma_iommu_mapping *mapping,
+ 			       dma_addr_t addr, size_t size)
+ {
+@@ -1055,6 +1070,22 @@ static inline void __free_iova(struct dma_iommu_mapping *mapping,
+ 	spin_unlock_irqrestore(&mapping->lock, flags);
+ }
+ 
++/**
++ * arm_iommu_free_iova
++ * @dev: valid struct device pointer
++ * @iova: iova address being free'ed
++ * @size: size of buffer to allocate
++ *
++ * Free IOVA address range
++ */
++void arm_iommu_free_iova(struct device *dev, dma_addr_t addr, size_t size)
++{
++	struct dma_iommu_mapping *mapping = dev->archdata.mapping;
++
++	__free_iova(mapping, addr, size);
++}
++EXPORT_SYMBOL_GPL(arm_iommu_free_iova);
++
+ static struct page **__iommu_alloc_buffer(struct device *dev, size_t size, gfp_t gfp)
+ {
+ 	struct page **pages;
+-- 
+1.7.5.4
 
---Signature=_Fri__18_May_2012_16_06_03_+1000_IRBnDf43jbRFUVkm
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBCAAGBQJPtebLAAoJEECxmPOUX5FEnTUP/RBySZAvAOBxU2G5MZvcxBh6
-6xXNRa0obL6kygqYdSi9lcntC3XjMBbtBY4gdoj/XIN0R6rAi4pgicXxb2jHl56Y
-RrQzVFfRufww7QlvhpoCni2IekY8bsCq5DVfMxlTUyg36f7LrXLiNkpAKdGyKY75
-rLoNgC8z2yfhY6rSg8VNKnNK++6yqb8Odb5Pf7wwVZyEM2ZfSq95znCuC6jf33Pw
-Spf7reXioWlkyHDNra/pFccQDIxwOoyLPQxnaz/XTN/DwP+Jd7eO5n4wOvI86pZz
-ZNxjYJ4h6YSbeIQtb+E22wkgHPVw7VspBfo6dOR+KHL6gfJqmpgyvcGu7mcxFZjJ
-V42iAfLsfA2mimpa1D/GLhywrYb+trUvYLS37SUpcIDIgR3yC6VOJZWmA54Edgby
-r5PUzt6V81u+YPYLWbADmoklgzgoOwNVaCGmV0nUo6JXf+IM1ya4fP9I4TKDCbKq
-VRKnTztllPupaxmqdQ45iBnvephywURAWntDalHtqWJPblBTMlDBaCoiRjwUCPoZ
-6C9VkD2ii7lDVsfBct0vfAtEP5fXSopu4HJJtx3YEIIZ0ig5YYeghtwmTVeCPdiI
-JKyJkzKXJyV42O7k1+OBTyMmSR4OrnHgzQ8oDjWSAtTO9j8uB8ZxJWToENUH1R8n
-rX3nCtN97MPBEjdHaiZ8
-=M+WJ
------END PGP SIGNATURE-----
-
---Signature=_Fri__18_May_2012_16_06_03_+1000_IRBnDf43jbRFUVkm--
