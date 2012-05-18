@@ -1,86 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761890Ab2ERFvn (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 May 2012 01:51:43 -0400
-Received: from hqemgate04.nvidia.com ([216.228.121.35]:1583 "EHLO
-	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755673Ab2ERFvk (ORCPT
+	id S1762103Ab2ERF4i (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 May 2012 01:56:38 -0400
+Received: from mail-yx0-f174.google.com ([209.85.213.174]:52999 "EHLO
+	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758733Ab2ERF4g (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 May 2012 01:51:40 -0400
-X-PGP-Universal: processed;
-	by hqnvupgp07.nvidia.com on Thu, 17 May 2012 22:49:47 -0700
-Date: Fri, 18 May 2012 08:50:51 +0300
-From: Hiroshi Doyu <hdoyu@nvidia.com>
-To: Joerg Roedel <joerg.roedel@amd.com>,
-        Stephen Warren <swarren@wwwdotorg.org>
-CC: "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
-        "Grant Likely" <grant.likely@secretlab.ca>,
-        Rob Herring <rob.herring@calxeda.com>, Rob Landley <rob@landley.net>,
-        Ohad Ben-Cohen <ohad@wizery.com>, "Tony Lindgren" <tony@atomide.com>,
-        Jiri Kosina <jkosina@suse.cz>,
-        Thierry Reding <thierry.reding@avionic-design.de>,
-        "devicetree-discuss@lists.ozlabs.org" 
-	<devicetree-discuss@lists.ozlabs.org>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 1/2] iommu/tegra: smmu: Add device tree support for SMMU
-Message-ID: <20120518085051.4a0fca863c5ab37cf8d42cb1@nvidia.com>
-In-Reply-To: <4FB52BE7.8080908@wwwdotorg.org>
-References: <1336636221-31575-1-git-send-email-hdoyu@nvidia.com>
-	<1336636221-31575-2-git-send-email-hdoyu@nvidia.com>
-	<4FB143C4.6030502@wwwdotorg.org>
-	<4FB52BE7.8080908@wwwdotorg.org>
-X-Mailer: Sylpheed 3.2.0beta3 (GTK+ 2.24.6; x86_64-pc-linux-gnu)
-X-NVConfidentiality: public
+	Fri, 18 May 2012 01:56:36 -0400
+Message-ID: <4FB5E48E.5090209@opensuse.org>
+Date: Fri, 18 May 2012 01:56:30 -0400
+From: =?UTF-8?B?Q3Jpc3RpYW4gUm9kcsOtZ3Vleg==?= <crrodriguez@opensuse.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120421 Thunderbird/12.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset="US-ASCII"
-Content-Transfer-Encoding: 7bit
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+CC: Linus Torvalds <torvalds@linux-foundation.org>,
+        Len Brown <lenb@kernel.org>, Lekensteyn <lekensteyn@gmail.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Linux PM list <linux-pm@vger.kernel.org>,
+        ACPI Devel Mailing List <linux-acpi@vger.kernel.org>,
+        Lin Ming <ming.m.lin@intel.com>, rocko <rockorequin@hotmail.com>
+Subject: Re: [PATCH] ACPI / PCI / PM: Fix device PM regression related to
+ D3hot/D3cold
+References: <201205180039.35318.rjw@sisk.pl>
+In-Reply-To: <201205180039.35318.rjw@sisk.pl>
+Content-Type: text/plain; charset=utf-8; format=flowed
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Stephen and Joerg,
+On 17/05/12 18:39, Rafael J. Wysocki wrote:
+> From: Rafael J. Wysocki<rjw@sisk.pl>
+>
+> Commit 1cc0c998fdf2cb665d625fb565a0d6db5c81c639 (ACPI: Fix D3hot
+> v D3cold confusion) introduced a bug in __acpi_bus_set_power() and
+> changed the behavior of acpi_pci_set_power_state() in such a way that
+> it generally doesn't work as expected if PCI_D3hot is passed to it
+> as the second argument.
+>
+> First off, if ACPI_STATE_D3 (equal to ACPI_STATE_D3_COLD) is passed
+> to __acpi_bus_set_power() and the explicit_set flag is set for the
+> D3cold state, the function will try to execute AML method called
+> "_PS4", which doesn't exist.
+>
+> Fix this by adding a check to ensure that the name of the AML method
+> to execute for transitions to ACPI_STATE_D3_COLD is correct in
+> __acpi_bus_set_power().  Also make sure that the explicit_set flag
+> for ACPI_STATE_D3_COLD will be set if _PS3 is present and modify
+> acpi_power_transition() to avoid accessing power resources for
+> ACPI_STATE_D3_COLD, because they don't exist.
+>
+> Second, if PCI_D3hot is passed to acpi_pci_set_power_state() as the
+> target state, the function will request a transition to
+> ACPI_STATE_D3_HOT instead of ACPI_STATE_D3.  However,
+> ACPI_STATE_D3_HOT is now only marked as supported if the _PR3 AML
+> method is defined for the given device, which is rare.  This causes
+> problems to happen on systems where devices were successfully put
+> into ACPI D3 by pci_set_power_state(PCI_D3hot) which doesn't work
+> now.  In particular, some unused graphics adapters are not turned
+> off as a result.
+>
+> To fix this issue restore the old behavior of
+> acpi_pci_set_power_state(), which is to request a transition to
+> ACPI_STATE_D3 (equal to ACPI_STATE_D3_COLD) if either PCI_D3hot or
+> PCI_D3cold is passed to it as the argument.
+>
+> This approach is not ideal, because generally power should not
+> be removed from devices if PCI_D3hot is the target power state,
+> but since this behavior is relied on, we have no choice but to
+> restore it at the moment and spend more time on designing a
+> better solution in the future.
+>
+> References: https://bugzilla.kernel.org/show_bug.cgi?id=43228
+> Reported-by: rocko<rockorequin@hotmail.com>
+> Reported-by: Cristian Rodríguez<crrodriguez@opensuse.org>
+> Reported-and-tested-by: Peter<lekensteyn@gmail.com>
+> Signed-off-by: Rafael J. Wysocki<rjw@sisk.pl>
+> ---
 
-On Thu, 17 May 2012 18:48:39 +0200
-Stephen Warren <swarren@wwwdotorg.org> wrote:
+Ok, tested this one in the affected box, it works.
 
-> On 05/14/2012 11:41 AM, Stephen Warren wrote:
-> > On 05/10/2012 01:50 AM, Hiroshi DOYU wrote:
-> >> The necessary info is expected to pass from DT.
-> >>
-> >> For more precise resource reservation, there shouldn't be any
-> >> overlapping of register range between SMMU and MC. SMMU register
-> >> offset needs to be calculated correctly, based on its register bank.
-> >>
-> >> Signed-off-by: Hiroshi DOYU <hdoyu@nvidia.com>
-> >> ---
-> >> This patch requires the following ones, sent earlier:
-> >>
-> >> DMA window:
-> >> http://article.gmane.org/gmane.linux.ports.tegra/4603
-> > 
-> > This patch has been merged even though the patch above isn't present in
-> > the kernel anywhere, let alone in the history of the iommu tree. This
-> > breaks compilation in linux-next.
-> > 
-> >> AHB:
-> >> http://article.gmane.org/gmane.linux.ports.tegra/4657
-> > 
-> > This patch is in linux-next, but also is not in the history of the iommu
-> > tree, so will break bisection of the iommu tree for Tegra.
-> 
-> Joerg,
-> 
-> Can this patch please be dropped or reverted? It's still breaking
-> tegra_defconfig in next-20120517 since the dependencies I mentioned
-> above aren't satisfied. At this stage, it seems unlikely that the DMA
-> window parsing change is going to make it into 3.5, so this isn't just a
-> temporary issue.
+echo OFF > /sys/kernel/debug/vgaswitcheroo/switch
+[   77.436767] VGA switcheroo: switched nouveau off
+[   77.437004] [drm] nouveau 0000:01:00.0: Disabling display...
+[   77.437110] [drm] nouveau 0000:01:00.0: Disabling fbcon...
+[   77.437113] [drm] nouveau 0000:01:00.0: Unpinning framebuffer(s)...
+[   77.437157] [drm] nouveau 0000:01:00.0: Evicting buffers...
+[   77.439175] [drm] nouveau 0000:01:00.0: Idling channels...
+[   77.439316] [drm] nouveau 0000:01:00.0: Suspending GPU objects...
+[   77.771133] [drm] nouveau 0000:01:00.0: And we're gone!
+[   78.082258] nouveau 0000:01:00.0: power state changed by ACPI to D3
 
-I can move of_get_dma_window() function into tegra-smmu.c as a static
-function. I just want SMMU available with DT for the furthuer
-development. Then, it's also possible to promote that function global
-later as is in the origianl patch.
+laptop's fan is silent again :-) , thanks for fixing it !
 
-I'm posting that patch follows this email. Please take it if this
-proposal is acceptable.
+
+
