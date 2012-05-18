@@ -1,2839 +1,1699 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932941Ab2ERQoH (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 May 2012 12:44:07 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:50408 "EHLO mx1.redhat.com"
+	id S965138Ab2ERQpt (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 May 2012 12:45:49 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:46169 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758587Ab2ERQdG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 May 2012 12:33:06 -0400
+	id S1758564Ab2ERQdF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 18 May 2012 12:33:05 -0400
 From: Mauro Carvalho Chehab <mchehab@redhat.com>
 Cc: Mauro Carvalho Chehab <mchehab@redhat.com>,
         Linux Edac Mailing List <linux-edac@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: [PATCH EDAC v26 61/66] edac: Don't add __func__ or __FILE__ for debugf[0-9] msgs
-Date: Fri, 18 May 2012 13:32:48 -0300
-Message-Id: <1337358773-6919-62-git-send-email-mchehab@redhat.com>
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Doug Thompson <norsk5@yahoo.com>,
+        Greg K H <gregkh@linuxfoundation.org>
+Subject: [PATCH EDAC v26 42/66] edac: rewrite the sysfs code to use struct device
+Date: Fri, 18 May 2012 13:32:29 -0300
+Message-Id: <1337358773-6919-43-git-send-email-mchehab@redhat.com>
 In-Reply-To: <1337358773-6919-1-git-send-email-mchehab@redhat.com>
 References: <1337358773-6919-1-git-send-email-mchehab@redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 To: unlisted-recipients:; (no To-header on input)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The debug macro already adds that. Most of the work here was
-made by this small script:
+The EDAC subsystem uses the old struct sysdev approach,
+creating all nodes using the raw sysfs API. This is bad,
+as the API is deprecated.
 
-$f .=$_ while (<>);
+As we'll be changing the EDAC API, let's first port the existing
+code to struct device.
 
-$f =~ s/(debugf[0-9]\s*\(\s*)__FILE__\s*": /\1"/g;
-$f =~ s/(debugf[0-9]\s*\(\s*)__FILE__\s*/\1/g;
-$f =~ s/(debugf[0-9]\s*\(\s*)__FILE__\s*"MC: /\1"/g;
+There's one drawback on this patch: driver-specific sysfs
+nodes, used by mpc85xx_edac, amd64_edac and i7core_edac
+ won't be created anymore. While it would be possible to
+also port the device-specific code, that would mix kobj with
+struct device, with is not recommended. Also, it is easier and nicer
+to move the code to the drivers, instead, as the core can get rid
+of some complex logic that just emulates what the device_add()
+and device_create_file() already does.
 
-$f =~ s/(debugf[0-9]\s*\(\")\%s[\:\,\(\)]*\s*([^\"]*\s*[^\)]+)__func__\s*\,\s*/\1\2/g;
-$f =~ s/(debugf[0-9]\s*\(\")\%s[\:\,\(\)]*\s*([^\"]*\s*[^\)]+),\s*__func__\s*\)/\1\2)/g;
-$f =~ s/(debugf[0-9]\s*\(\"MC\:\s*)\%s[\:\,\(\)]*\s*([^\"]*\s*[^\)]+)__func__\s*\,\s*/\1\2/g;
-$f =~ s/(debugf[0-9]\s*\(\"MC\:\s*)\%s[\:\,\(\)]*\s*([^\"]*\s*[^\)]+),\s*__func__\s*\)/\1\2)/g;
+The next patches will convert the driver-specific code to use
+the device-specific calls. Then, the remaining bits of the old
+sysfs API will be removed.
 
-$f =~ s/\"MC\: \\n\"/"MC:\\n"/g;
+NOTE: a per-MC bus is required, otherwise devices with more than
+one memory controller will hit a bug like the one below:
 
-print $f;
+[  819.094946] EDAC DEBUG: find_mci_by_dev: find_mci_by_dev()
+[  819.094948] EDAC DEBUG: edac_create_sysfs_mci_device: edac_create_sysfs_mci_device() idx=1
+[  819.094952] EDAC DEBUG: edac_create_sysfs_mci_device: edac_create_sysfs_mci_device(): creating device mc1
+[  819.094967] EDAC DEBUG: edac_create_sysfs_mci_device: edac_create_sysfs_mci_device creating dimm0, located at channel 0 slot 0
+[  819.094984] ------------[ cut here ]------------
+[  819.100142] WARNING: at fs/sysfs/dir.c:481 sysfs_add_one+0xc1/0xf0()
+[  819.107282] Hardware name: S2600CP
+[  819.111078] sysfs: cannot create duplicate filename '/bus/edac/devices/dimm0'
+[  819.119062] Modules linked in: sb_edac(+) edac_core ip6table_filter ip6_tables ebtable_nat ebtables ipt_MASQUERADE iptable_nat nf_nat nf_conntrack_ipv4 nf_defrag_ipv4 xt_state nf_conntrack ipt_REJECT xt_CHECKSUM iptable_mangle iptable_filter ip_tables bridge stp llc sunrpc binfmt_misc dm_mirror dm_region_hash dm_log vhost_net macvtap macvlan tun kvm microcode pcspkr iTCO_wdt iTCO_vendor_support igb i2c_i801 i2c_core sg ioatdma dca sr_mod cdrom sd_mod crc_t10dif ahci libahci isci libsas libata scsi_transport_sas scsi_mod wmi dm_mod [last unloaded: scsi_wait_scan]
+[  819.175748] Pid: 10902, comm: modprobe Not tainted 3.3.0-0.11.el7.v12.2.x86_64 #1
+[  819.184113] Call Trace:
+[  819.186868]  [<ffffffff8105adaf>] warn_slowpath_common+0x7f/0xc0
+[  819.193573]  [<ffffffff8105aea6>] warn_slowpath_fmt+0x46/0x50
+[  819.200000]  [<ffffffff811f53d1>] sysfs_add_one+0xc1/0xf0
+[  819.206025]  [<ffffffff811f5cf5>] sysfs_do_create_link+0x135/0x220
+[  819.212944]  [<ffffffff811f7023>] ? sysfs_create_group+0x13/0x20
+[  819.219656]  [<ffffffff811f5df3>] sysfs_create_link+0x13/0x20
+[  819.226109]  [<ffffffff813b04f6>] bus_add_device+0xe6/0x1b0
+[  819.232350]  [<ffffffff813ae7cb>] device_add+0x2db/0x460
+[  819.238300]  [<ffffffffa0325634>] edac_create_dimm_object+0x84/0xf0 [edac_core]
+[  819.246460]  [<ffffffffa0325e18>] edac_create_sysfs_mci_device+0xe8/0x290 [edac_core]
+[  819.255215]  [<ffffffffa0322e2a>] edac_mc_add_mc+0x5a/0x2c0 [edac_core]
+[  819.262611]  [<ffffffffa03412df>] sbridge_register_mci+0x1bc/0x279 [sb_edac]
+[  819.270493]  [<ffffffffa03417a3>] sbridge_probe+0xef/0x175 [sb_edac]
+[  819.277630]  [<ffffffff813ba4e8>] ? pm_runtime_enable+0x58/0x90
+[  819.284268]  [<ffffffff812f430c>] local_pci_probe+0x5c/0xd0
+[  819.290508]  [<ffffffff812f5ba1>] __pci_device_probe+0xf1/0x100
+[  819.297117]  [<ffffffff812f5bea>] pci_device_probe+0x3a/0x60
+[  819.303457]  [<ffffffff813b1003>] really_probe+0x73/0x270
+[  819.309496]  [<ffffffff813b138e>] driver_probe_device+0x4e/0xb0
+[  819.316104]  [<ffffffff813b149b>] __driver_attach+0xab/0xb0
+[  819.322337]  [<ffffffff813b13f0>] ? driver_probe_device+0xb0/0xb0
+[  819.329151]  [<ffffffff813af5d6>] bus_for_each_dev+0x56/0x90
+[  819.335489]  [<ffffffff813b0d7e>] driver_attach+0x1e/0x20
+[  819.341534]  [<ffffffff813b0980>] bus_add_driver+0x1b0/0x2a0
+[  819.347884]  [<ffffffffa0347000>] ? 0xffffffffa0346fff
+[  819.353641]  [<ffffffff813b19f6>] driver_register+0x76/0x140
+[  819.359980]  [<ffffffff8159f18b>] ? printk+0x51/0x53
+[  819.365524]  [<ffffffffa0347000>] ? 0xffffffffa0346fff
+[  819.371291]  [<ffffffff812f5896>] __pci_register_driver+0x56/0xd0
+[  819.378096]  [<ffffffffa0347054>] sbridge_init+0x54/0x1000 [sb_edac]
+[  819.385231]  [<ffffffff8100203f>] do_one_initcall+0x3f/0x170
+[  819.391577]  [<ffffffff810bcd2e>] sys_init_module+0xbe/0x230
+[  819.397926]  [<ffffffff815bb529>] system_call_fastpath+0x16/0x1b
+[  819.404633] ---[ end trace 1654fdd39556689f ]---
 
-After running the script, manual cleanups were done to fix it the remaining
-places.
+This happens because the bus is not being properly initialized.
+Instead of putting the memory sub-devices inside the memory controller,
+it is putting everything under the same directory:
 
-While here, removed the __LINE__ on most places, as it doesn't actually give
-useful info on most places.
+$ tree /sys/bus/edac/
+/sys/bus/edac/
+├── devices
+│   ├── all_channel_counts -> ../../../devices/system/edac/mc/mc0/all_channel_counts
+│   ├── csrow0 -> ../../../devices/system/edac/mc/mc0/csrow0
+│   ├── csrow1 -> ../../../devices/system/edac/mc/mc0/csrow1
+│   ├── csrow2 -> ../../../devices/system/edac/mc/mc0/csrow2
+│   ├── dimm0 -> ../../../devices/system/edac/mc/mc0/dimm0
+│   ├── dimm1 -> ../../../devices/system/edac/mc/mc0/dimm1
+│   ├── dimm3 -> ../../../devices/system/edac/mc/mc0/dimm3
+│   ├── dimm6 -> ../../../devices/system/edac/mc/mc0/dimm6
+│   ├── inject_addrmatch -> ../../../devices/system/edac/mc/mc0/inject_addrmatch
+│   ├── mc -> ../../../devices/system/edac/mc
+│   └── mc0 -> ../../../devices/system/edac/mc/mc0
+├── drivers
+├── drivers_autoprobe
+├── drivers_probe
+└── uevent
 
+On a multi-memory controller system, the names "csrow%d" and "dimm%d"
+should be under "mc%d", and not at the main hierarchy level.
+
+So, we need to create a per-MC bus, in order to have its own namespace.
+
+Reviewed-by: Aristeu Rozanski <arozansk@redhat.com>
+Cc: Doug Thompson <norsk5@yahoo.com>
+Cc: Greg K H <gregkh@linuxfoundation.org>
 Signed-off-by: Mauro Carvalho Chehab <mchehab@redhat.com>
 ---
- drivers/edac/amd76x_edac.c       |   14 ++++----
- drivers/edac/cpc925_edac.c       |   24 ++++++-------
- drivers/edac/e752x_edac.c        |   34 +++++++++---------
- drivers/edac/e7xxx_edac.c        |   34 +++++++++---------
- drivers/edac/edac_device.c       |   28 +++++++-------
- drivers/edac/edac_device_sysfs.c |   71 ++++++++++++++++++-------------------
- drivers/edac/edac_mc.c           |   44 +++++++++++------------
- drivers/edac/edac_mc_sysfs.c     |   24 +++++-------
- drivers/edac/edac_module.c       |    2 +-
- drivers/edac/edac_pci.c          |   26 +++++++-------
- drivers/edac/edac_pci_sysfs.c    |   37 +++++++++----------
- drivers/edac/i3000_edac.c        |   22 ++++++------
- drivers/edac/i3200_edac.c        |   18 +++++-----
- drivers/edac/i5000_edac.c        |   25 ++++++-------
- drivers/edac/i5400_edac.c        |   24 ++++++-------
- drivers/edac/i7300_edac.c        |   14 +++----
- drivers/edac/i7core_edac.c       |   37 ++++++++------------
- drivers/edac/i82443bxgx_edac.c   |   26 +++++++-------
- drivers/edac/i82860_edac.c       |   18 +++++-----
- drivers/edac/i82875p_edac.c      |   22 ++++++------
- drivers/edac/i82975x_edac.c      |   24 ++++++------
- drivers/edac/mpc85xx_edac.c      |   22 ++++++------
- drivers/edac/mv64x60_edac.c      |   26 +++++++-------
- drivers/edac/r82600_edac.c       |   32 ++++++++---------
- drivers/edac/sb_edac.c           |   22 +++++------
- drivers/edac/x38_edac.c          |   18 +++++-----
- 26 files changed, 331 insertions(+), 357 deletions(-)
+ drivers/edac/edac_mc.c       |   13 +-
+ drivers/edac/edac_mc_sysfs.c | 1074 ++++++++++++++++--------------------------
+ drivers/edac/edac_module.c   |   13 +-
+ drivers/edac/edac_module.h   |    9 +-
+ include/linux/edac.h         |   46 ++-
+ 5 files changed, 449 insertions(+), 706 deletions(-)
 
-diff --git a/drivers/edac/amd76x_edac.c b/drivers/edac/amd76x_edac.c
-index bebdd49..601db57 100644
---- a/drivers/edac/amd76x_edac.c
-+++ b/drivers/edac/amd76x_edac.c
-@@ -180,7 +180,7 @@ static int amd76x_process_error_info(struct mem_ctl_info *mci,
- static void amd76x_check(struct mem_ctl_info *mci)
- {
- 	struct amd76x_error_info info;
--	debugf3("%s()\n", __func__);
-+	debugf3("\n");
- 	amd76x_get_error_info(mci, &info);
- 	amd76x_process_error_info(mci, &info, 1);
- }
-@@ -241,7 +241,7 @@ static int amd76x_probe1(struct pci_dev *pdev, int dev_idx)
- 	u32 ems_mode;
- 	struct amd76x_error_info discard;
- 
--	debugf0("%s()\n", __func__);
-+	debugf0("\n");
- 	pci_read_config_dword(pdev, AMD76X_ECC_MODE_STATUS, &ems);
- 	ems_mode = (ems >> 10) & 0x3;
- 
-@@ -256,7 +256,7 @@ static int amd76x_probe1(struct pci_dev *pdev, int dev_idx)
- 	if (mci == NULL)
- 		return -ENOMEM;
- 
--	debugf0("%s(): mci = %p\n", __func__, mci);
-+	debugf0("mci = %p\n", mci);
- 	mci->pdev = &pdev->dev;
- 	mci->mtype_cap = MEM_FLAG_RDDR;
- 	mci->edac_ctl_cap = EDAC_FLAG_NONE | EDAC_FLAG_EC | EDAC_FLAG_SECDED;
-@@ -276,7 +276,7 @@ static int amd76x_probe1(struct pci_dev *pdev, int dev_idx)
- 	 * type of memory controller.  The ID is therefore hardcoded to 0.
- 	 */
- 	if (edac_mc_add_mc(mci)) {
--		debugf3("%s(): failed edac_mc_add_mc()\n", __func__);
-+		debugf3("failed edac_mc_add_mc()\n");
- 		goto fail;
- 	}
- 
-@@ -292,7 +292,7 @@ static int amd76x_probe1(struct pci_dev *pdev, int dev_idx)
- 	}
- 
- 	/* get this far and it's successful */
--	debugf3("%s(): success\n", __func__);
-+	debugf3("success\n");
- 	return 0;
- 
- fail:
-@@ -304,7 +304,7 @@ fail:
- static int __devinit amd76x_init_one(struct pci_dev *pdev,
- 				const struct pci_device_id *ent)
- {
--	debugf0("%s()\n", __func__);
-+	debugf0("\n");
- 
- 	/* don't need to call pci_enable_device() */
- 	return amd76x_probe1(pdev, ent->driver_data);
-@@ -322,7 +322,7 @@ static void __devexit amd76x_remove_one(struct pci_dev *pdev)
- {
- 	struct mem_ctl_info *mci;
- 
--	debugf0("%s()\n", __func__);
-+	debugf0("\n");
- 
- 	if (amd76x_pci)
- 		edac_pci_release_generic_ctl(amd76x_pci);
-diff --git a/drivers/edac/cpc925_edac.c b/drivers/edac/cpc925_edac.c
-index 534491d..fa39a78 100644
---- a/drivers/edac/cpc925_edac.c
-+++ b/drivers/edac/cpc925_edac.c
-@@ -316,13 +316,12 @@ static void get_total_mem(struct cpc925_mc_pdata *pdata)
- 		reg += aw;
- 		size = of_read_number(reg, sw);
- 		reg += sw;
--		debugf1("%s: start 0x%lx, size 0x%lx\n", __func__,
--			start, size);
-+		debugf1("start 0x%lx, size 0x%lx\n", start, size);
- 		pdata->total_mem += size;
- 	} while (reg < reg_end);
- 
- 	of_node_put(np);
--	debugf0("%s: total_mem 0x%lx\n", __func__, pdata->total_mem);
-+	debugf0("total_mem 0x%lx\n", pdata->total_mem);
- }
- 
- static void cpc925_init_csrows(struct mem_ctl_info *mci)
-@@ -512,7 +511,7 @@ static void cpc925_mc_get_pfn(struct mem_ctl_info *mci, u32 mear,
- 	*offset = pa & (PAGE_SIZE - 1);
- 	*pfn = pa >> PAGE_SHIFT;
- 
--	debugf0("%s: ECC physical address 0x%lx\n", __func__, pa);
-+	debugf0("ECC physical address 0x%lx\n", pa);
- }
- 
- static int cpc925_mc_find_channel(struct mem_ctl_info *mci, u16 syndrome)
-@@ -852,8 +851,8 @@ static void cpc925_add_edac_devices(void __iomem *vbase)
- 			goto err2;
- 		}
- 
--		debugf0("%s: Successfully added edac device for %s\n",
--			__func__, dev_info->ctl_name);
-+		debugf0("Successfully added edac device for %s\n",
-+			dev_info->ctl_name);
- 
- 		continue;
- 
-@@ -884,8 +883,8 @@ static void cpc925_del_edac_devices(void)
- 		if (dev_info->exit)
- 			dev_info->exit(dev_info);
- 
--		debugf0("%s: Successfully deleted edac device for %s\n",
--			__func__, dev_info->ctl_name);
-+		debugf0("Successfully deleted edac device for %s\n",
-+			dev_info->ctl_name);
- 	}
- }
- 
-@@ -900,7 +899,7 @@ static int cpc925_get_sdram_scrub_rate(struct mem_ctl_info *mci)
- 	mscr = __raw_readl(pdata->vbase + REG_MSCR_OFFSET);
- 	si = (mscr & MSCR_SI_MASK) >> MSCR_SI_SHIFT;
- 
--	debugf0("%s, Mem Scrub Ctrl Register 0x%x\n", __func__, mscr);
-+	debugf0("Mem Scrub Ctrl Register 0x%x\n", mscr);
- 
- 	if (((mscr & MSCR_SCRUB_MOD_MASK) != MSCR_BACKGR_SCRUB) ||
- 	    (si == 0)) {
-@@ -928,8 +927,7 @@ static int cpc925_mc_get_channels(void __iomem *vbase)
- 	    ((mbcr & MBCR_64BITBUS_MASK) == 0))
- 		dual = 1;
- 
--	debugf0("%s: %s channel\n", __func__,
--		(dual > 0) ? "Dual" : "Single");
-+	debugf0("%s channel\n", (dual > 0) ? "Dual" : "Single");
- 
- 	return dual;
- }
-@@ -944,7 +942,7 @@ static int __devinit cpc925_probe(struct platform_device *pdev)
- 	struct resource *r;
- 	int res = 0, nr_channels;
- 
--	debugf0("%s: %s platform device found!\n", __func__, pdev->name);
-+	debugf0("%s platform device found!\n", pdev->name);
- 
- 	if (!devres_open_group(&pdev->dev, cpc925_probe, GFP_KERNEL)) {
- 		res = -ENOMEM;
-@@ -1026,7 +1024,7 @@ static int __devinit cpc925_probe(struct platform_device *pdev)
- 	cpc925_add_edac_devices(vbase);
- 
- 	/* get this far and it's successful */
--	debugf0("%s: success\n", __func__);
-+	debugf0("success\n");
- 
- 	res = 0;
- 	goto out;
-diff --git a/drivers/edac/e752x_edac.c b/drivers/edac/e752x_edac.c
-index 7cde7f1..39c8997 100644
---- a/drivers/edac/e752x_edac.c
-+++ b/drivers/edac/e752x_edac.c
-@@ -309,7 +309,7 @@ static unsigned long ctl_page_to_phys(struct mem_ctl_info *mci,
- 	u32 remap;
- 	struct e752x_pvt *pvt = (struct e752x_pvt *)mci->pvt_info;
- 
--	debugf3("%s()\n", __func__);
-+	debugf3("\n");
- 
- 	if (page < pvt->tolm)
- 		return page;
-@@ -335,7 +335,7 @@ static void do_process_ce(struct mem_ctl_info *mci, u16 error_one,
- 	int i;
- 	struct e752x_pvt *pvt = (struct e752x_pvt *)mci->pvt_info;
- 
--	debugf3("%s()\n", __func__);
-+	debugf3("\n");
- 
- 	/* convert the addr to 4k page */
- 	page = sec1_add >> (PAGE_SHIFT - 4);
-@@ -394,7 +394,7 @@ static void do_process_ue(struct mem_ctl_info *mci, u16 error_one,
- 	int row;
- 	struct e752x_pvt *pvt = (struct e752x_pvt *)mci->pvt_info;
- 
--	debugf3("%s()\n", __func__);
-+	debugf3("\n");
- 
- 	if (error_one & 0x0202) {
- 		error_2b = ded_add;
-@@ -453,7 +453,7 @@ static inline void process_ue_no_info_wr(struct mem_ctl_info *mci,
- 	if (!handle_error)
- 		return;
- 
--	debugf3("%s()\n", __func__);
-+	debugf3("\n");
- 	edac_mc_handle_error(HW_EVENT_ERR_UNCORRECTED, mci, 0, 0, 0,
- 			     -1, -1, -1,
- 			     "e752x UE log memory write", "", NULL);
-@@ -982,7 +982,7 @@ static void e752x_check(struct mem_ctl_info *mci)
- {
- 	struct e752x_error_info info;
- 
--	debugf3("%s()\n", __func__);
-+	debugf3("\n");
- 	e752x_get_error_info(mci, &info);
- 	e752x_process_error_info(mci, &info, 1);
- }
-@@ -1102,7 +1102,7 @@ static void e752x_init_csrows(struct mem_ctl_info *mci, struct pci_dev *pdev,
- 		pci_read_config_byte(pdev, E752X_DRB + index, &value);
- 		/* convert a 128 or 64 MiB DRB to a page size. */
- 		cumul_size = value << (25 + drc_drbg - PAGE_SHIFT);
--		debugf3("%s(): (%d) cumul_size 0x%x\n", __func__, index,
-+		debugf3("(%d) cumul_size 0x%x\n", index,
- 			cumul_size);
- 		if (cumul_size == last_cumul_size)
- 			continue;	/* not populated */
-@@ -1270,7 +1270,7 @@ static int e752x_probe1(struct pci_dev *pdev, int dev_idx)
- 	int drc_chan;		/* Number of channels 0=1chan,1=2chan */
- 	struct e752x_error_info discard;
- 
--	debugf0("%s(): mci\n", __func__);
-+	debugf0("mci\n");
- 	debugf0("Starting Probe1\n");
- 
- 	/* check to see if device 0 function 1 is enabled; if it isn't, we
-@@ -1301,7 +1301,7 @@ static int e752x_probe1(struct pci_dev *pdev, int dev_idx)
- 	if (mci == NULL)
- 		return -ENOMEM;
- 
--	debugf3("%s(): init mci\n", __func__);
-+	debugf3("init mci\n");
- 	mci->mtype_cap = MEM_FLAG_RDDR;
- 	/* 3100 IMCH supports SECDEC only */
- 	mci->edac_ctl_cap = (dev_idx == I3100) ? EDAC_FLAG_SECDED :
-@@ -1311,7 +1311,7 @@ static int e752x_probe1(struct pci_dev *pdev, int dev_idx)
- 	mci->mod_ver = E752X_REVISION;
- 	mci->pdev = &pdev->dev;
- 
--	debugf3("%s(): init pvt\n", __func__);
-+	debugf3("init pvt\n");
- 	pvt = (struct e752x_pvt *)mci->pvt_info;
- 	pvt->dev_info = &e752x_devs[dev_idx];
- 	pvt->mc_symmetric = ((ddrcsr & 0x10) != 0);
-@@ -1321,7 +1321,7 @@ static int e752x_probe1(struct pci_dev *pdev, int dev_idx)
- 		return -ENODEV;
- 	}
- 
--	debugf3("%s(): more mci init\n", __func__);
-+	debugf3("more mci init\n");
- 	mci->ctl_name = pvt->dev_info->ctl_name;
- 	mci->dev_name = pci_name(pdev);
- 	mci->edac_check = e752x_check;
-@@ -1343,7 +1343,7 @@ static int e752x_probe1(struct pci_dev *pdev, int dev_idx)
- 		mci->edac_cap = EDAC_FLAG_SECDED; /* the only mode supported */
- 	else
- 		mci->edac_cap |= EDAC_FLAG_NONE;
--	debugf3("%s(): tolm, remapbase, remaplimit\n", __func__);
-+	debugf3("tolm, remapbase, remaplimit\n");
- 
- 	/* load the top of low memory, remap base, and remap limit vars */
- 	pci_read_config_word(pdev, E752X_TOLM, &pci_data);
-@@ -1360,7 +1360,7 @@ static int e752x_probe1(struct pci_dev *pdev, int dev_idx)
- 	 * type of memory controller.  The ID is therefore hardcoded to 0.
- 	 */
- 	if (edac_mc_add_mc(mci)) {
--		debugf3("%s(): failed edac_mc_add_mc()\n", __func__);
-+		debugf3("failed edac_mc_add_mc()\n");
- 		goto fail;
- 	}
- 
-@@ -1378,7 +1378,7 @@ static int e752x_probe1(struct pci_dev *pdev, int dev_idx)
- 	}
- 
- 	/* get this far and it's successful */
--	debugf3("%s(): success\n", __func__);
-+	debugf3("success\n");
- 	return 0;
- 
- fail:
-@@ -1394,7 +1394,7 @@ fail:
- static int __devinit e752x_init_one(struct pci_dev *pdev,
- 				const struct pci_device_id *ent)
- {
--	debugf0("%s()\n", __func__);
-+	debugf0("\n");
- 
- 	/* wake up and enable device */
- 	if (pci_enable_device(pdev) < 0)
-@@ -1408,7 +1408,7 @@ static void __devexit e752x_remove_one(struct pci_dev *pdev)
- 	struct mem_ctl_info *mci;
- 	struct e752x_pvt *pvt;
- 
--	debugf0("%s()\n", __func__);
-+	debugf0("\n");
- 
- 	if (e752x_pci)
- 		edac_pci_release_generic_ctl(e752x_pci);
-@@ -1454,7 +1454,7 @@ static int __init e752x_init(void)
- {
- 	int pci_rc;
- 
--	debugf3("%s()\n", __func__);
-+	debugf3("\n");
- 
-        /* Ensure that the OPSTATE is set correctly for POLL or NMI */
-        opstate_init();
-@@ -1465,7 +1465,7 @@ static int __init e752x_init(void)
- 
- static void __exit e752x_exit(void)
- {
--	debugf3("%s()\n", __func__);
-+	debugf3("\n");
- 	pci_unregister_driver(&e752x_driver);
- }
- 
-diff --git a/drivers/edac/e7xxx_edac.c b/drivers/edac/e7xxx_edac.c
-index c6c0eba..691d706 100644
---- a/drivers/edac/e7xxx_edac.c
-+++ b/drivers/edac/e7xxx_edac.c
-@@ -166,7 +166,7 @@ static const struct e7xxx_dev_info e7xxx_devs[] = {
- /* FIXME - is this valid for both SECDED and S4ECD4ED? */
- static inline int e7xxx_find_channel(u16 syndrome)
- {
--	debugf3("%s()\n", __func__);
-+	debugf3("\n");
- 
- 	if ((syndrome & 0xff00) == 0)
- 		return 0;
-@@ -186,7 +186,7 @@ static unsigned long ctl_page_to_phys(struct mem_ctl_info *mci,
- 	u32 remap;
- 	struct e7xxx_pvt *pvt = (struct e7xxx_pvt *)mci->pvt_info;
- 
--	debugf3("%s()\n", __func__);
-+	debugf3("\n");
- 
- 	if ((page < pvt->tolm) ||
- 		((page >= 0x100000) && (page < pvt->remapbase)))
-@@ -208,7 +208,7 @@ static void process_ce(struct mem_ctl_info *mci, struct e7xxx_error_info *info)
- 	int row;
- 	int channel;
- 
--	debugf3("%s()\n", __func__);
-+	debugf3("\n");
- 	/* read the error address */
- 	error_1b = info->dram_celog_add;
- 	/* FIXME - should use PAGE_SHIFT */
-@@ -225,7 +225,7 @@ static void process_ce(struct mem_ctl_info *mci, struct e7xxx_error_info *info)
- 
- static void process_ce_no_info(struct mem_ctl_info *mci)
- {
--	debugf3("%s()\n", __func__);
-+	debugf3("\n");
- 	edac_mc_handle_error(HW_EVENT_ERR_UNCORRECTED, mci, 0, 0, 0, -1, -1, -1,
- 			     "e7xxx CE log register overflow", "", NULL);
- }
-@@ -235,7 +235,7 @@ static void process_ue(struct mem_ctl_info *mci, struct e7xxx_error_info *info)
- 	u32 error_2b, block_page;
- 	int row;
- 
--	debugf3("%s()\n", __func__);
-+	debugf3("\n");
- 	/* read the error address */
- 	error_2b = info->dram_uelog_add;
- 	/* FIXME - should use PAGE_SHIFT */
-@@ -248,7 +248,7 @@ static void process_ue(struct mem_ctl_info *mci, struct e7xxx_error_info *info)
- 
- static void process_ue_no_info(struct mem_ctl_info *mci)
- {
--	debugf3("%s()\n", __func__);
-+	debugf3("\n");
- 
- 	edac_mc_handle_error(HW_EVENT_ERR_UNCORRECTED, mci, 0, 0, 0, -1, -1, -1,
- 			     "e7xxx UE log register overflow", "", NULL);
-@@ -334,7 +334,7 @@ static void e7xxx_check(struct mem_ctl_info *mci)
- {
- 	struct e7xxx_error_info info;
- 
--	debugf3("%s()\n", __func__);
-+	debugf3("\n");
- 	e7xxx_get_error_info(mci, &info);
- 	e7xxx_process_error_info(mci, &info, 1);
- }
-@@ -383,7 +383,7 @@ static void e7xxx_init_csrows(struct mem_ctl_info *mci, struct pci_dev *pdev,
- 		pci_read_config_byte(pdev, E7XXX_DRB + index, &value);
- 		/* convert a 64 or 32 MiB DRB to a page size. */
- 		cumul_size = value << (25 + drc_drbg - PAGE_SHIFT);
--		debugf3("%s(): (%d) cumul_size 0x%x\n", __func__, index,
-+		debugf3("(%d) cumul_size 0x%x\n", index,
- 			cumul_size);
- 		if (cumul_size == last_cumul_size)
- 			continue;	/* not populated */
-@@ -430,7 +430,7 @@ static int e7xxx_probe1(struct pci_dev *pdev, int dev_idx)
- 	int drc_chan;
- 	struct e7xxx_error_info discard;
- 
--	debugf0("%s(): mci\n", __func__);
-+	debugf0("mci\n");
- 
- 	pci_read_config_dword(pdev, E7XXX_DRC, &drc);
- 
-@@ -453,7 +453,7 @@ static int e7xxx_probe1(struct pci_dev *pdev, int dev_idx)
- 	if (mci == NULL)
- 		return -ENOMEM;
- 
--	debugf3("%s(): init mci\n", __func__);
-+	debugf3("init mci\n");
- 	mci->mtype_cap = MEM_FLAG_RDDR;
- 	mci->edac_ctl_cap = EDAC_FLAG_NONE | EDAC_FLAG_SECDED |
- 		EDAC_FLAG_S4ECD4ED;
-@@ -461,7 +461,7 @@ static int e7xxx_probe1(struct pci_dev *pdev, int dev_idx)
- 	mci->mod_name = EDAC_MOD_STR;
- 	mci->mod_ver = E7XXX_REVISION;
- 	mci->pdev = &pdev->dev;
--	debugf3("%s(): init pvt\n", __func__);
-+	debugf3("init pvt\n");
- 	pvt = (struct e7xxx_pvt *)mci->pvt_info;
- 	pvt->dev_info = &e7xxx_devs[dev_idx];
- 	pvt->bridge_ck = pci_get_device(PCI_VENDOR_ID_INTEL,
-@@ -474,14 +474,14 @@ static int e7xxx_probe1(struct pci_dev *pdev, int dev_idx)
- 		goto fail0;
- 	}
- 
--	debugf3("%s(): more mci init\n", __func__);
-+	debugf3("more mci init\n");
- 	mci->ctl_name = pvt->dev_info->ctl_name;
- 	mci->dev_name = pci_name(pdev);
- 	mci->edac_check = e7xxx_check;
- 	mci->ctl_page_to_phys = ctl_page_to_phys;
- 	e7xxx_init_csrows(mci, pdev, dev_idx, drc);
- 	mci->edac_cap |= EDAC_FLAG_NONE;
--	debugf3("%s(): tolm, remapbase, remaplimit\n", __func__);
-+	debugf3("tolm, remapbase, remaplimit\n");
- 	/* load the top of low memory, remap base, and remap limit vars */
- 	pci_read_config_word(pdev, E7XXX_TOLM, &pci_data);
- 	pvt->tolm = ((u32) pci_data) << 4;
-@@ -500,7 +500,7 @@ static int e7xxx_probe1(struct pci_dev *pdev, int dev_idx)
- 	 * type of memory controller.  The ID is therefore hardcoded to 0.
- 	 */
- 	if (edac_mc_add_mc(mci)) {
--		debugf3("%s(): failed edac_mc_add_mc()\n", __func__);
-+		debugf3("failed edac_mc_add_mc()\n");
- 		goto fail1;
- 	}
- 
-@@ -516,7 +516,7 @@ static int e7xxx_probe1(struct pci_dev *pdev, int dev_idx)
- 	}
- 
- 	/* get this far and it's successful */
--	debugf3("%s(): success\n", __func__);
-+	debugf3("success\n");
- 	return 0;
- 
- fail1:
-@@ -532,7 +532,7 @@ fail0:
- static int __devinit e7xxx_init_one(struct pci_dev *pdev,
- 				const struct pci_device_id *ent)
- {
--	debugf0("%s()\n", __func__);
-+	debugf0("\n");
- 
- 	/* wake up and enable device */
- 	return pci_enable_device(pdev) ?
-@@ -544,7 +544,7 @@ static void __devexit e7xxx_remove_one(struct pci_dev *pdev)
- 	struct mem_ctl_info *mci;
- 	struct e7xxx_pvt *pvt;
- 
--	debugf0("%s()\n", __func__);
-+	debugf0("\n");
- 
- 	if (e7xxx_pci)
- 		edac_pci_release_generic_ctl(e7xxx_pci);
-diff --git a/drivers/edac/edac_device.c b/drivers/edac/edac_device.c
-index cb397d9..ed46949 100644
---- a/drivers/edac/edac_device.c
-+++ b/drivers/edac/edac_device.c
-@@ -82,8 +82,8 @@ struct edac_device_ctl_info *edac_device_alloc_ctl_info(
- 	void *pvt, *p;
- 	int err;
- 
--	debugf4("%s() instances=%d blocks=%d\n",
--		__func__, nr_instances, nr_blocks);
-+	debugf4("instances=%d blocks=%d\n",
-+		nr_instances, nr_blocks);
- 
- 	/* Calculate the size of memory we need to allocate AND
- 	 * determine the offsets of the various item arrays
-@@ -156,8 +156,8 @@ struct edac_device_ctl_info *edac_device_alloc_ctl_info(
- 	/* Name of this edac device */
- 	snprintf(dev_ctl->name,sizeof(dev_ctl->name),"%s",edac_device_name);
- 
--	debugf4("%s() edac_dev=%p next after end=%p\n",
--		__func__, dev_ctl, pvt + sz_private );
-+	debugf4("edac_dev=%p next after end=%p\n",
-+		dev_ctl, pvt + sz_private );
- 
- 	/* Initialize every Instance */
- 	for (instance = 0; instance < nr_instances; instance++) {
-@@ -178,9 +178,9 @@ struct edac_device_ctl_info *edac_device_alloc_ctl_info(
- 			snprintf(blk->name, sizeof(blk->name),
- 				 "%s%d", edac_block_name, block+offset_value);
- 
--			debugf4("%s() instance=%d inst_p=%p block=#%d "
-+			debugf4("instance=%d inst_p=%p block=#%d "
- 				"block_p=%p name='%s'\n",
--				__func__, instance, inst, block,
-+				instance, inst, block,
- 				blk, blk->name);
- 
- 			/* if there are NO attributes OR no attribute pointer
-@@ -194,8 +194,8 @@ struct edac_device_ctl_info *edac_device_alloc_ctl_info(
- 			attrib_p = &dev_attrib[block*nr_instances*nr_attrib];
- 			blk->block_attributes = attrib_p;
- 
--			debugf4("%s() THIS BLOCK_ATTRIB=%p\n",
--				__func__, blk->block_attributes);
-+			debugf4("THIS BLOCK_ATTRIB=%p\n",
-+				blk->block_attributes);
- 
- 			/* Initialize every user specified attribute in this
- 			 * block with the data the caller passed in
-@@ -214,9 +214,9 @@ struct edac_device_ctl_info *edac_device_alloc_ctl_info(
- 
- 				attrib->block = blk;	/* up link */
- 
--				debugf4("%s() alloc-attrib=%p attrib_name='%s' "
-+				debugf4("alloc-attrib=%p attrib_name='%s' "
- 					"attrib-spec=%p spec-name=%s\n",
--					__func__, attrib, attrib->attr.name,
-+					attrib, attrib->attr.name,
- 					&attrib_spec[attr],
- 					attrib_spec[attr].attr.name
- 					);
-@@ -273,7 +273,7 @@ static struct edac_device_ctl_info *find_edac_device_by_dev(struct device *dev)
- 	struct edac_device_ctl_info *edac_dev;
- 	struct list_head *item;
- 
--	debugf0("%s()\n", __func__);
-+	debugf0("\n");
- 
- 	list_for_each(item, &edac_device_list) {
- 		edac_dev = list_entry(item, struct edac_device_ctl_info, link);
-@@ -408,7 +408,7 @@ static void edac_device_workq_function(struct work_struct *work_req)
- void edac_device_workq_setup(struct edac_device_ctl_info *edac_dev,
- 				unsigned msec)
- {
--	debugf0("%s()\n", __func__);
-+	debugf0("\n");
- 
- 	/* take the arg 'msec' and set it into the control structure
- 	 * to used in the time period calculation
-@@ -496,7 +496,7 @@ EXPORT_SYMBOL_GPL(edac_device_alloc_index);
-  */
- int edac_device_add_device(struct edac_device_ctl_info *edac_dev)
- {
--	debugf0("%s()\n", __func__);
-+	debugf0("\n");
- 
- #ifdef CONFIG_EDAC_DEBUG
- 	if (edac_debug_level >= 3)
-@@ -570,7 +570,7 @@ struct edac_device_ctl_info *edac_device_del_device(struct device *dev)
- {
- 	struct edac_device_ctl_info *edac_dev;
- 
--	debugf0("%s()\n", __func__);
-+	debugf0("\n");
- 
- 	mutex_lock(&device_ctls_mutex);
- 
-diff --git a/drivers/edac/edac_device_sysfs.c b/drivers/edac/edac_device_sysfs.c
-index b4ea185..1cee83e 100644
---- a/drivers/edac/edac_device_sysfs.c
-+++ b/drivers/edac/edac_device_sysfs.c
-@@ -202,7 +202,7 @@ static void edac_device_ctrl_master_release(struct kobject *kobj)
- {
- 	struct edac_device_ctl_info *edac_dev = to_edacdev(kobj);
- 
--	debugf4("%s() control index=%d\n", __func__, edac_dev->dev_idx);
-+	debugf4("control index=%d\n", edac_dev->dev_idx);
- 
- 	/* decrement the EDAC CORE module ref count */
- 	module_put(edac_dev->owner);
-@@ -233,12 +233,12 @@ int edac_device_register_sysfs_main_kobj(struct edac_device_ctl_info *edac_dev)
- 	struct bus_type *edac_subsys;
- 	int err;
- 
--	debugf1("%s()\n", __func__);
-+	debugf1("\n");
- 
- 	/* get the /sys/devices/system/edac reference */
- 	edac_subsys = edac_get_sysfs_subsys();
- 	if (edac_subsys == NULL) {
--		debugf1("%s() no edac_subsys error\n", __func__);
-+		debugf1("no edac_subsys error\n");
- 		err = -ENODEV;
- 		goto err_out;
- 	}
-@@ -264,8 +264,8 @@ int edac_device_register_sysfs_main_kobj(struct edac_device_ctl_info *edac_dev)
- 				   &edac_subsys->dev_root->kobj,
- 				   "%s", edac_dev->name);
- 	if (err) {
--		debugf1("%s()Failed to register '.../edac/%s'\n",
--			__func__, edac_dev->name);
-+		debugf1("Failed to register '.../edac/%s'\n",
-+			edac_dev->name);
- 		goto err_kobj_reg;
- 	}
- 	kobject_uevent(&edac_dev->kobj, KOBJ_ADD);
-@@ -274,8 +274,8 @@ int edac_device_register_sysfs_main_kobj(struct edac_device_ctl_info *edac_dev)
- 	 * edac_device_unregister_sysfs_main_kobj() must be used
- 	 */
- 
--	debugf4("%s() Registered '.../edac/%s' kobject\n",
--		__func__, edac_dev->name);
-+	debugf4("Registered '.../edac/%s' kobject\n",
-+		edac_dev->name);
- 
- 	return 0;
- 
-@@ -296,9 +296,9 @@ err_out:
-  */
- void edac_device_unregister_sysfs_main_kobj(struct edac_device_ctl_info *dev)
- {
--	debugf0("%s()\n", __func__);
--	debugf4("%s() name of kobject is: %s\n",
--		__func__, kobject_name(&dev->kobj));
-+	debugf0("\n");
-+	debugf4("name of kobject is: %s\n",
-+		kobject_name(&dev->kobj));
- 
- 	/*
- 	 * Unregister the edac device's kobject and
-@@ -336,7 +336,7 @@ static void edac_device_ctrl_instance_release(struct kobject *kobj)
- {
- 	struct edac_device_instance *instance;
- 
--	debugf1("%s()\n", __func__);
-+	debugf1("\n");
- 
- 	/* map from this kobj to the main control struct
- 	 * and then dec the main kobj count
-@@ -442,7 +442,7 @@ static void edac_device_ctrl_block_release(struct kobject *kobj)
- {
- 	struct edac_device_block *block;
- 
--	debugf1("%s()\n", __func__);
-+	debugf1("\n");
- 
- 	/* get the container of the kobj */
- 	block = to_block(kobj);
-@@ -524,10 +524,10 @@ static int edac_device_create_block(struct edac_device_ctl_info *edac_dev,
- 	struct edac_dev_sysfs_block_attribute *sysfs_attrib;
- 	struct kobject *main_kobj;
- 
--	debugf4("%s() Instance '%s' inst_p=%p  block '%s'  block_p=%p\n",
--		__func__, instance->name, instance, block->name, block);
--	debugf4("%s() block kobj=%p  block kobj->parent=%p\n",
--		__func__, &block->kobj, &block->kobj.parent);
-+	debugf4("Instance '%s' inst_p=%p  block '%s'  block_p=%p\n",
-+		instance->name, instance, block->name, block);
-+	debugf4("block kobj=%p  block kobj->parent=%p\n",
-+		&block->kobj, &block->kobj.parent);
- 
- 	/* init this block's kobject */
- 	memset(&block->kobj, 0, sizeof(struct kobject));
-@@ -546,8 +546,8 @@ static int edac_device_create_block(struct edac_device_ctl_info *edac_dev,
- 				   &instance->kobj,
- 				   "%s", block->name);
- 	if (err) {
--		debugf1("%s() Failed to register instance '%s'\n",
--			__func__, block->name);
-+		debugf1("Failed to register instance '%s'\n",
-+			block->name);
- 		kobject_put(main_kobj);
- 		err = -ENODEV;
- 		goto err_out;
-@@ -560,9 +560,8 @@ static int edac_device_create_block(struct edac_device_ctl_info *edac_dev,
- 	if (sysfs_attrib && block->nr_attribs) {
- 		for (i = 0; i < block->nr_attribs; i++, sysfs_attrib++) {
- 
--			debugf4("%s() creating block attrib='%s' "
-+			debugf4("creating block attrib='%s' "
- 				"attrib->%p to kobj=%p\n",
--				__func__,
- 				sysfs_attrib->attr.name,
- 				sysfs_attrib, &block->kobj);
- 
-@@ -647,14 +646,14 @@ static int edac_device_create_instance(struct edac_device_ctl_info *edac_dev,
- 	err = kobject_init_and_add(&instance->kobj, &ktype_instance_ctrl,
- 				   &edac_dev->kobj, "%s", instance->name);
- 	if (err != 0) {
--		debugf2("%s() Failed to register instance '%s'\n",
--			__func__, instance->name);
-+		debugf2("Failed to register instance '%s'\n",
-+			instance->name);
- 		kobject_put(main_kobj);
- 		goto err_out;
- 	}
- 
--	debugf4("%s() now register '%d' blocks for instance %d\n",
--		__func__, instance->nr_blocks, idx);
-+	debugf4("now register '%d' blocks for instance %d\n",
-+		instance->nr_blocks, idx);
- 
- 	/* register all blocks of this instance */
- 	for (i = 0; i < instance->nr_blocks; i++) {
-@@ -670,8 +669,8 @@ static int edac_device_create_instance(struct edac_device_ctl_info *edac_dev,
- 	}
- 	kobject_uevent(&instance->kobj, KOBJ_ADD);
- 
--	debugf4("%s() Registered instance %d '%s' kobject\n",
--		__func__, idx, instance->name);
-+	debugf4("Registered instance %d '%s' kobject\n",
-+		idx, instance->name);
- 
- 	return 0;
- 
-@@ -715,7 +714,7 @@ static int edac_device_create_instances(struct edac_device_ctl_info *edac_dev)
- 	int i, j;
- 	int err;
- 
--	debugf0("%s()\n", __func__);
-+	debugf0("\n");
- 
- 	/* iterate over creation of the instances */
- 	for (i = 0; i < edac_dev->nr_instances; i++) {
-@@ -817,12 +816,12 @@ int edac_device_create_sysfs(struct edac_device_ctl_info *edac_dev)
- 	int err;
- 	struct kobject *edac_kobj = &edac_dev->kobj;
- 
--	debugf0("%s() idx=%d\n", __func__, edac_dev->dev_idx);
-+	debugf0("idx=%d\n", edac_dev->dev_idx);
- 
- 	/*  go create any main attributes callers wants */
- 	err = edac_device_add_main_sysfs_attributes(edac_dev);
- 	if (err) {
--		debugf0("%s() failed to add sysfs attribs\n", __func__);
-+		debugf0("failed to add sysfs attribs\n");
- 		goto err_out;
- 	}
- 
-@@ -832,8 +831,8 @@ int edac_device_create_sysfs(struct edac_device_ctl_info *edac_dev)
- 	err = sysfs_create_link(edac_kobj,
- 				&edac_dev->dev->kobj, EDAC_DEVICE_SYMLINK);
- 	if (err) {
--		debugf0("%s() sysfs_create_link() returned err= %d\n",
--			__func__, err);
-+		debugf0("sysfs_create_link() returned err= %d\n",
-+			err);
- 		goto err_remove_main_attribs;
- 	}
- 
-@@ -843,14 +842,14 @@ int edac_device_create_sysfs(struct edac_device_ctl_info *edac_dev)
- 	 */
- 	err = edac_device_create_instances(edac_dev);
- 	if (err) {
--		debugf0("%s() edac_device_create_instances() "
--			"returned err= %d\n", __func__, err);
-+		debugf0("edac_device_create_instances() "
-+			"returned err= %d\n", err);
- 		goto err_remove_link;
- 	}
- 
- 
--	debugf4("%s() create-instances done, idx=%d\n",
--		__func__, edac_dev->dev_idx);
-+	debugf4("create-instances done, idx=%d\n",
-+		edac_dev->dev_idx);
- 
- 	return 0;
- 
-@@ -873,7 +872,7 @@ err_out:
-  */
- void edac_device_remove_sysfs(struct edac_device_ctl_info *edac_dev)
- {
--	debugf0("%s()\n", __func__);
-+	debugf0("\n");
- 
- 	/* remove any main attributes for this device */
- 	edac_device_remove_main_sysfs_attributes(edac_dev);
 diff --git a/drivers/edac/edac_mc.c b/drivers/edac/edac_mc.c
-index 2479831..8d7c380 100644
+index 5f5ad09..3c2b8f7 100644
 --- a/drivers/edac/edac_mc.c
 +++ b/drivers/edac/edac_mc.c
-@@ -245,18 +245,18 @@ struct mem_ctl_info *edac_mc_alloc(unsigned mc_num,
- 	layer = edac_align_ptr(&ptr, sizeof(*layer), n_layers);
- 	for (i = 0; i < n_layers; i++) {
- 		count *= layers[i].size;
--		debugf4("%s: errcount layer %d size %d\n", __func__, i, count);
-+		debugf4("errcount layer %d size %d\n", i, count);
- 		ce_per_layer[i] = edac_align_ptr(&ptr, sizeof(u32), count);
- 		ue_per_layer[i] = edac_align_ptr(&ptr, sizeof(u32), count);
- 		tot_errcount += 2 * count;
- 	}
+@@ -217,7 +217,7 @@ struct mem_ctl_info *edac_mc_alloc(unsigned mc_num,
+ 	unsigned size, tot_dimms = 1, count = 1;
+ 	unsigned tot_csrows = 1, tot_channels = 1, tot_errcount = 0;
+ 	void *pvt, *p, *ptr = NULL;
+-	int i, j, err, row, chn, n, len;
++	int i, j, row, chn, n, len;
+ 	bool per_rank = false;
  
--	debugf4("%s: allocating %d error counters\n", __func__, tot_errcount);
-+	debugf4("allocating %d error counters\n", tot_errcount);
- 	pvt = edac_align_ptr(&ptr, sz_pvt, 1);
- 	size = ((unsigned long)pvt) + sz_pvt;
+ 	BUG_ON(n_layers > EDAC_MAX_LAYERS || n_layers == 0);
+@@ -373,15 +373,6 @@ struct mem_ctl_info *edac_mc_alloc(unsigned mc_num,
+ 	mci->op_state = OP_ALLOC;
+ 	INIT_LIST_HEAD(&mci->grp_kobj_list);
  
--	debugf1("%s(): allocating %u bytes for mci data (%d %s, %d csrows/channels)\n",
--		__func__, size,
-+	debugf1("allocating %u bytes for mci data (%d %s, %d csrows/channels)\n",
-+		size,
- 		tot_dimms,
- 		per_rank ? "ranks" : "dimms",
- 		tot_csrows * tot_channels);
-@@ -325,7 +325,7 @@ struct mem_ctl_info *edac_mc_alloc(unsigned mc_num,
- 	memset(&pos, 0, sizeof(pos));
- 	row = 0;
- 	chn = 0;
--	debugf4("%s: initializing %d %s\n", __func__, tot_dimms,
-+	debugf4("initializing %d %s\n", tot_dimms,
- 		per_rank ? "ranks" : "dimms");
- 	for (i = 0; i < tot_dimms; i++) {
- 		chan = mci->csrows[row]->channels[chn];
-@@ -339,8 +339,8 @@ struct mem_ctl_info *edac_mc_alloc(unsigned mc_num,
- 		mci->dimms[off] = dimm;
- 		dimm->mci = mci;
- 
--		debugf2("%s: %d: %s%i (%d:%d:%d): row %d, chan %d\n", __func__,
--			i, per_rank ? "rank" : "dimm", off,
-+		debugf2("%d: %s%i (%d:%d:%d): row %d, chan %d\n", i,
-+			per_rank ? "rank" : "dimm", off,
- 			pos[0], pos[1], pos[2], row, chn);
- 
- 		/*
-@@ -426,7 +426,7 @@ EXPORT_SYMBOL_GPL(edac_mc_alloc);
-  */
- void edac_mc_free(struct mem_ctl_info *mci)
+-	/*
+-	 * Initialize the 'root' kobj for the edac_mc controller
+-	 */
+-	err = edac_mc_register_sysfs_main_kobj(mci);
+-	if (err) {
+-		kfree(mci);
+-		return NULL;
+-	}
+-
+ 	/* at this point, the root kobj is valid, and in order to
+ 	 * 'free' the object, then the function:
+ 	 *      edac_mc_unregister_sysfs_main_kobj() must be called
+@@ -402,7 +393,7 @@ void edac_mc_free(struct mem_ctl_info *mci)
  {
--	debugf1("%s()\n", __func__);
-+	debugf1("\n");
+ 	debugf1("%s()\n", __func__);
  
- 	/* the mci instance is freed here, when the sysfs object is dropped */
- 	edac_unregister_sysfs(mci);
-@@ -446,7 +446,7 @@ struct mem_ctl_info *find_mci_by_dev(struct device *dev)
- 	struct mem_ctl_info *mci;
- 	struct list_head *item;
+-	edac_mc_unregister_sysfs_main_kobj(mci);
++	edac_unregister_sysfs(mci);
  
--	debugf3("%s()\n", __func__);
-+	debugf3("\n");
- 
- 	list_for_each(item, &mc_devices) {
- 		mci = list_entry(item, struct mem_ctl_info, link);
-@@ -514,7 +514,7 @@ static void edac_mc_workq_function(struct work_struct *work_req)
-  */
- static void edac_mc_workq_setup(struct mem_ctl_info *mci, unsigned msec)
- {
--	debugf0("%s()\n", __func__);
-+	debugf0("\n");
- 
- 	/* if this instance is not in the POLL state, then simply return */
- 	if (mci->op_state != OP_RUNNING_POLL)
-@@ -541,8 +541,7 @@ static void edac_mc_workq_teardown(struct mem_ctl_info *mci)
- 
- 	status = cancel_delayed_work(&mci->work);
- 	if (status == 0) {
--		debugf0("%s() not canceled, flush the queue\n",
--			__func__);
-+		debugf0("not canceled, flush the queue\n");
- 
- 		/* workq instance might be running, wait for it */
- 		flush_workqueue(edac_workqueue);
-@@ -689,7 +688,7 @@ EXPORT_SYMBOL(edac_mc_find);
- /* FIXME - should a warning be printed if no error detection? correction? */
- int edac_mc_add_mc(struct mem_ctl_info *mci)
- {
--	debugf0("%s()\n", __func__);
-+	debugf0("\n");
- 
- #ifdef CONFIG_EDAC_DEBUG
- 	if (edac_debug_level >= 3)
-@@ -760,7 +759,7 @@ struct mem_ctl_info *edac_mc_del_mc(struct device *dev)
- {
- 	struct mem_ctl_info *mci;
- 
--	debugf0("%s()\n", __func__);
-+	debugf0("\n");
- 
- 	mutex_lock(&mem_ctls_mutex);
- 
-@@ -798,7 +797,7 @@ static void edac_mc_scrub_block(unsigned long page, unsigned long offset,
- 	void *virt_addr;
- 	unsigned long flags = 0;
- 
--	debugf3("%s()\n", __func__);
-+	debugf3("\n");
- 
- 	/* ECC error page was not in our memory. Ignore it. */
- 	if (!pfn_valid(page))
-@@ -828,7 +827,7 @@ int edac_mc_find_csrow_by_page(struct mem_ctl_info *mci, unsigned long page)
- 	struct csrow_info **csrows = mci->csrows;
- 	int row, i, j, n;
- 
--	debugf1("MC%d: %s(): 0x%lx\n", mci->mc_idx, __func__, page);
-+	debugf1("MC%d: 0x%lx\n", mci->mc_idx, page);
- 	row = -1;
- 
- 	for (i = 0; i < mci->nr_csrows; i++) {
-@@ -841,8 +840,8 @@ int edac_mc_find_csrow_by_page(struct mem_ctl_info *mci, unsigned long page)
- 		if (n == 0)
- 			continue;
- 
--		debugf3("MC%d: %s(): first(0x%lx) page(0x%lx) last(0x%lx) "
--			"mask(0x%lx)\n", mci->mc_idx, __func__,
-+		debugf3("MC%d: first(0x%lx) page(0x%lx) last(0x%lx) "
-+			"mask(0x%lx)\n", mci->mc_idx,
- 			csrow->first_page, page, csrow->last_page,
- 			csrow->page_mask);
- 
-@@ -1046,7 +1045,7 @@ void edac_mc_handle_error(const enum hw_event_mc_err_type type,
- 	u32 grain;
- 	bool enable_per_layer_report = false;
- 
--	debugf3("MC%d: %s()\n", mci->mc_idx, __func__);
-+	debugf3("MC%d\n", mci->mc_idx);
- 
- 	/*
- 	 * Check if the event report is consistent and if the memory
-@@ -1124,8 +1123,7 @@ void edac_mc_handle_error(const enum hw_event_mc_err_type type,
- 			 * get csrow/channel of the DIMM, in order to allow
- 			 * incrementing the compat API counters
- 			 */
--			debugf4("%s: %s csrows map: (%d,%d)\n",
--				__func__,
-+			debugf4("%s csrows map: (%d,%d)\n",
- 				mci->mem_is_per_rank ? "rank" : "dimm",
- 				dimm->csrow, dimm->cschannel);
- 
-@@ -1144,8 +1142,8 @@ void edac_mc_handle_error(const enum hw_event_mc_err_type type,
- 	if (!enable_per_layer_report) {
- 		strcpy(label, "any memory");
- 	} else {
--		debugf4("%s: csrow/channel to increment: (%d,%d)\n",
--			__func__, row, chan);
-+		debugf4("csrow/channel to increment: (%d,%d)\n",
-+			row, chan);
- 		if (p == label)
- 			strcpy(label, "unknown memory");
- 		if (type == HW_EVENT_ERR_CORRECTED) {
+ 	/* free the mci instance memory here */
+ 	kfree(mci);
 diff --git a/drivers/edac/edac_mc_sysfs.c b/drivers/edac/edac_mc_sysfs.c
-index 87b8d7d..f72de8b 100644
+index 5953719..7002c9c 100644
 --- a/drivers/edac/edac_mc_sysfs.c
 +++ b/drivers/edac/edac_mc_sysfs.c
-@@ -376,8 +376,7 @@ static int edac_create_csrow_object(struct mem_ctl_info *mci,
- 	dev_set_name(&csrow->dev, "csrow%d", index);
- 	dev_set_drvdata(&csrow->dev, csrow);
+@@ -7,17 +7,20 @@
+  *
+  * Written Doug Thompson <norsk5@xmission.com> www.softwarebitmaker.com
+  *
++ * (c) 2012 - Mauro Carvalho Chehab <mchehab@redhat.com>
++ *	The entire API were re-written, and ported to use struct device
++ *
+  */
  
--	debugf0("%s(): creating (virtual) csrow node %s\n", __func__,
--		dev_name(&csrow->dev));
-+	debugf0("creating (virtual) csrow node %s\n", dev_name(&csrow->dev));
+ #include <linux/ctype.h>
+ #include <linux/slab.h>
+ #include <linux/edac.h>
+ #include <linux/bug.h>
++#include <linux/pm_runtime.h>
  
- 	err = device_add(&csrow->dev);
- 	if (err < 0)
-@@ -623,8 +622,7 @@ static int edac_create_dimm_object(struct mem_ctl_info *mci,
+ #include "edac_core.h"
+ #include "edac_module.h"
  
- 	err =  device_add(&dimm->dev);
+-
+ /* MC EDAC Controls, setable by module parameter, and sysfs */
+ static int edac_mc_log_ue = 1;
+ static int edac_mc_log_ce = 1;
+@@ -78,6 +81,8 @@ module_param_call(edac_mc_poll_msec, edac_set_poll_msec, param_get_int,
+ 		  &edac_mc_poll_msec, 0644);
+ MODULE_PARM_DESC(edac_mc_poll_msec, "Polling period in milliseconds");
  
--	debugf0("%s(): creating rank/dimm device %s\n", __func__,
--		dev_name(&dimm->dev));
-+	debugf0("creating rank/dimm device %s\n", dev_name(&dimm->dev));
++static struct device mci_pdev;
++
+ /*
+  * various constants for Memory Controllers
+  */
+@@ -125,308 +130,336 @@ static const char *edac_caps[] = {
+ 	[EDAC_S16ECD16ED] = "S16ECD16ED"
+ };
  
+-/* EDAC sysfs CSROW data structures and methods
++/*
++ * EDAC sysfs CSROW data structures and methods
++ */
++
++#define to_csrow(k) container_of(k, struct csrow_info, dev)
++
++/*
++ * We need it to avoid namespace conflicts between the legacy API
++ * and the per-dimm/per-rank one
+  */
++#define DEVICE_ATTR_LEGACY(_name, _mode, _show, _store) \
++	struct device_attribute dev_attr_legacy_##_name = __ATTR(_name, _mode, _show, _store)
++
++struct dev_ch_attribute {
++	struct device_attribute attr;
++	int channel;
++};
++
++#define DEVICE_CHANNEL(_name, _mode, _show, _store, _var) \
++	struct dev_ch_attribute dev_attr_legacy_##_name = \
++		{ __ATTR(_name, _mode, _show, _store), (_var) }
++
++#define to_channel(k) (container_of(k, struct dev_ch_attribute, attr)->channel)
+ 
+ /* Set of more default csrow<id> attribute show/store functions */
+-static ssize_t csrow_ue_count_show(struct csrow_info *csrow, char *data,
+-				int private)
++static ssize_t csrow_ue_count_show(struct device *dev,
++				   struct device_attribute *mattr, char *data)
+ {
++	struct csrow_info *csrow = to_csrow(dev);
++
+ 	return sprintf(data, "%u\n", csrow->ue_count);
+ }
+ 
+-static ssize_t csrow_ce_count_show(struct csrow_info *csrow, char *data,
+-				int private)
++static ssize_t csrow_ce_count_show(struct device *dev,
++				   struct device_attribute *mattr, char *data)
+ {
++	struct csrow_info *csrow = to_csrow(dev);
++
+ 	return sprintf(data, "%u\n", csrow->ce_count);
+ }
+ 
+-static ssize_t csrow_size_show(struct csrow_info *csrow, char *data,
+-				int private)
++static ssize_t csrow_size_show(struct device *dev,
++			       struct device_attribute *mattr, char *data)
+ {
++	struct csrow_info *csrow = to_csrow(dev);
+ 	int i;
+ 	u32 nr_pages = 0;
+ 
+ 	for (i = 0; i < csrow->nr_channels; i++)
+ 		nr_pages += csrow->channels[i].dimm->nr_pages;
+-
+ 	return sprintf(data, "%u\n", PAGES_TO_MiB(nr_pages));
+ }
+ 
+-static ssize_t csrow_mem_type_show(struct csrow_info *csrow, char *data,
+-				int private)
++static ssize_t csrow_mem_type_show(struct device *dev,
++				   struct device_attribute *mattr, char *data)
+ {
++	struct csrow_info *csrow = to_csrow(dev);
++
+ 	return sprintf(data, "%s\n", mem_types[csrow->channels[0].dimm->mtype]);
+ }
+ 
+-static ssize_t csrow_dev_type_show(struct csrow_info *csrow, char *data,
+-				int private)
++static ssize_t csrow_dev_type_show(struct device *dev,
++				   struct device_attribute *mattr, char *data)
+ {
++	struct csrow_info *csrow = to_csrow(dev);
++
+ 	return sprintf(data, "%s\n", dev_types[csrow->channels[0].dimm->dtype]);
+ }
+ 
+-static ssize_t csrow_edac_mode_show(struct csrow_info *csrow, char *data,
+-				int private)
++static ssize_t csrow_edac_mode_show(struct device *dev,
++				    struct device_attribute *mattr,
++				    char *data)
+ {
++	struct csrow_info *csrow = to_csrow(dev);
++
+ 	return sprintf(data, "%s\n", edac_caps[csrow->channels[0].dimm->edac_mode]);
+ }
+ 
+ /* show/store functions for DIMM Label attributes */
+-static ssize_t channel_dimm_label_show(struct csrow_info *csrow,
+-				char *data, int channel)
++static ssize_t channel_dimm_label_show(struct device *dev,
++				       struct device_attribute *mattr,
++				       char *data)
+ {
++	struct csrow_info *csrow = to_csrow(dev);
++	unsigned chan = to_channel(mattr);
++	struct rank_info *rank = &csrow->channels[chan];
++
+ 	/* if field has not been initialized, there is nothing to send */
+-	if (!csrow->channels[channel].dimm->label[0])
++	if (!rank->dimm->label[0])
+ 		return 0;
+ 
+ 	return snprintf(data, EDAC_MC_LABEL_LEN, "%s\n",
+-			csrow->channels[channel].dimm->label);
++			rank->dimm->label);
+ }
+ 
+-static ssize_t channel_dimm_label_store(struct csrow_info *csrow,
+-					const char *data,
+-					size_t count, int channel)
++static ssize_t channel_dimm_label_store(struct device *dev,
++					struct device_attribute *mattr,
++					const char *data, size_t count)
+ {
++	struct csrow_info *csrow = to_csrow(dev);
++	unsigned chan = to_channel(mattr);
++	struct rank_info *rank = &csrow->channels[chan];
++
+ 	ssize_t max_size = 0;
+ 
+ 	max_size = min((ssize_t) count, (ssize_t) EDAC_MC_LABEL_LEN - 1);
+-	strncpy(csrow->channels[channel].dimm->label, data, max_size);
+-	csrow->channels[channel].dimm->label[max_size] = '\0';
++	strncpy(rank->dimm->label, data, max_size);
++	rank->dimm->label[max_size] = '\0';
+ 
+ 	return max_size;
+ }
+ 
+ /* show function for dynamic chX_ce_count attribute */
+-static ssize_t channel_ce_count_show(struct csrow_info *csrow,
+-				char *data, int channel)
++static ssize_t channel_ce_count_show(struct device *dev,
++				     struct device_attribute *mattr, char *data)
+ {
+-	return sprintf(data, "%u\n", csrow->channels[channel].ce_count);
++	struct csrow_info *csrow = to_csrow(dev);
++	unsigned chan = to_channel(mattr);
++	struct rank_info *rank = &csrow->channels[chan];
++
++	return sprintf(data, "%u\n", rank->ce_count);
+ }
+ 
+-/* csrow specific attribute structure */
+-struct csrowdev_attribute {
+-	struct attribute attr;
+-	 ssize_t(*show) (struct csrow_info *, char *, int);
+-	 ssize_t(*store) (struct csrow_info *, const char *, size_t, int);
+-	int private;
+-};
++/* cwrow<id>/attribute files */
++DEVICE_ATTR_LEGACY(size_mb, S_IRUGO, csrow_size_show, NULL);
++DEVICE_ATTR_LEGACY(dev_type, S_IRUGO, csrow_dev_type_show, NULL);
++DEVICE_ATTR_LEGACY(mem_type, S_IRUGO, csrow_mem_type_show, NULL);
++DEVICE_ATTR_LEGACY(edac_mode, S_IRUGO, csrow_edac_mode_show, NULL);
++DEVICE_ATTR_LEGACY(ue_count, S_IRUGO, csrow_ue_count_show, NULL);
++DEVICE_ATTR_LEGACY(ce_count, S_IRUGO, csrow_ce_count_show, NULL);
+ 
+-#define to_csrow(k) container_of(k, struct csrow_info, kobj)
+-#define to_csrowdev_attr(a) container_of(a, struct csrowdev_attribute, attr)
++/* default attributes of the CSROW<id> object */
++static struct attribute *csrow_attrs[] = {
++	&dev_attr_legacy_dev_type.attr,
++	&dev_attr_legacy_mem_type.attr,
++	&dev_attr_legacy_edac_mode.attr,
++	&dev_attr_legacy_size_mb.attr,
++	&dev_attr_legacy_ue_count.attr,
++	&dev_attr_legacy_ce_count.attr,
++	NULL,
++};
+ 
+-/* Set of show/store higher level functions for default csrow attributes */
+-static ssize_t csrowdev_show(struct kobject *kobj,
+-			struct attribute *attr, char *buffer)
+-{
+-	struct csrow_info *csrow = to_csrow(kobj);
+-	struct csrowdev_attribute *csrowdev_attr = to_csrowdev_attr(attr);
++static struct attribute_group csrow_attr_grp = {
++	.attrs	= csrow_attrs,
++};
+ 
+-	if (csrowdev_attr->show)
+-		return csrowdev_attr->show(csrow,
+-					buffer, csrowdev_attr->private);
+-	return -EIO;
+-}
++static const struct attribute_group *csrow_attr_groups[] = {
++	&csrow_attr_grp,
++	NULL
++};
+ 
+-static ssize_t csrowdev_store(struct kobject *kobj, struct attribute *attr,
+-			const char *buffer, size_t count)
++static void csrow_attr_release(struct device *device)
+ {
+-	struct csrow_info *csrow = to_csrow(kobj);
+-	struct csrowdev_attribute *csrowdev_attr = to_csrowdev_attr(attr);
+-
+-	if (csrowdev_attr->store)
+-		return csrowdev_attr->store(csrow,
+-					buffer,
+-					count, csrowdev_attr->private);
+-	return -EIO;
++	debugf1("Releasing csrow device %s\n", dev_name(device));
+ }
+ 
+-static const struct sysfs_ops csrowfs_ops = {
+-	.show = csrowdev_show,
+-	.store = csrowdev_store
++static struct device_type csrow_attr_type = {
++	.groups		= csrow_attr_groups,
++	.release	= csrow_attr_release,
+ };
+ 
+-#define CSROWDEV_ATTR(_name,_mode,_show,_store,_private)	\
+-static struct csrowdev_attribute attr_##_name = {			\
+-	.attr = {.name = __stringify(_name), .mode = _mode },	\
+-	.show   = _show,					\
+-	.store  = _store,					\
+-	.private = _private,					\
+-};
+-
+-/* default cwrow<id>/attribute files */
+-CSROWDEV_ATTR(size_mb, S_IRUGO, csrow_size_show, NULL, 0);
+-CSROWDEV_ATTR(dev_type, S_IRUGO, csrow_dev_type_show, NULL, 0);
+-CSROWDEV_ATTR(mem_type, S_IRUGO, csrow_mem_type_show, NULL, 0);
+-CSROWDEV_ATTR(edac_mode, S_IRUGO, csrow_edac_mode_show, NULL, 0);
+-CSROWDEV_ATTR(ue_count, S_IRUGO, csrow_ue_count_show, NULL, 0);
+-CSROWDEV_ATTR(ce_count, S_IRUGO, csrow_ce_count_show, NULL, 0);
++/*
++ * possible dynamic channel DIMM Label attribute files
++ *
++ */
+ 
+-/* default attributes of the CSROW<id> object */
+-static struct csrowdev_attribute *default_csrow_attr[] = {
+-	&attr_dev_type,
+-	&attr_mem_type,
+-	&attr_edac_mode,
+-	&attr_size_mb,
+-	&attr_ue_count,
+-	&attr_ce_count,
+-	NULL,
+-};
++#define EDAC_NR_CHANNELS	6
+ 
+-/* possible dynamic channel DIMM Label attribute files */
+-CSROWDEV_ATTR(ch0_dimm_label, S_IRUGO | S_IWUSR,
++DEVICE_CHANNEL(ch0_dimm_label, S_IRUGO | S_IWUSR,
+ 	channel_dimm_label_show, channel_dimm_label_store, 0);
+-CSROWDEV_ATTR(ch1_dimm_label, S_IRUGO | S_IWUSR,
++DEVICE_CHANNEL(ch1_dimm_label, S_IRUGO | S_IWUSR,
+ 	channel_dimm_label_show, channel_dimm_label_store, 1);
+-CSROWDEV_ATTR(ch2_dimm_label, S_IRUGO | S_IWUSR,
++DEVICE_CHANNEL(ch2_dimm_label, S_IRUGO | S_IWUSR,
+ 	channel_dimm_label_show, channel_dimm_label_store, 2);
+-CSROWDEV_ATTR(ch3_dimm_label, S_IRUGO | S_IWUSR,
++DEVICE_CHANNEL(ch3_dimm_label, S_IRUGO | S_IWUSR,
+ 	channel_dimm_label_show, channel_dimm_label_store, 3);
+-CSROWDEV_ATTR(ch4_dimm_label, S_IRUGO | S_IWUSR,
++DEVICE_CHANNEL(ch4_dimm_label, S_IRUGO | S_IWUSR,
+ 	channel_dimm_label_show, channel_dimm_label_store, 4);
+-CSROWDEV_ATTR(ch5_dimm_label, S_IRUGO | S_IWUSR,
++DEVICE_CHANNEL(ch5_dimm_label, S_IRUGO | S_IWUSR,
+ 	channel_dimm_label_show, channel_dimm_label_store, 5);
+ 
+ /* Total possible dynamic DIMM Label attribute file table */
+-static struct csrowdev_attribute *dynamic_csrow_dimm_attr[] = {
+-	&attr_ch0_dimm_label,
+-	&attr_ch1_dimm_label,
+-	&attr_ch2_dimm_label,
+-	&attr_ch3_dimm_label,
+-	&attr_ch4_dimm_label,
+-	&attr_ch5_dimm_label
++static struct device_attribute *dynamic_csrow_dimm_attr[] = {
++	&dev_attr_legacy_ch0_dimm_label.attr,
++	&dev_attr_legacy_ch1_dimm_label.attr,
++	&dev_attr_legacy_ch2_dimm_label.attr,
++	&dev_attr_legacy_ch3_dimm_label.attr,
++	&dev_attr_legacy_ch4_dimm_label.attr,
++	&dev_attr_legacy_ch5_dimm_label.attr
+ };
+ 
+ /* possible dynamic channel ce_count attribute files */
+-CSROWDEV_ATTR(ch0_ce_count, S_IRUGO | S_IWUSR, channel_ce_count_show, NULL, 0);
+-CSROWDEV_ATTR(ch1_ce_count, S_IRUGO | S_IWUSR, channel_ce_count_show, NULL, 1);
+-CSROWDEV_ATTR(ch2_ce_count, S_IRUGO | S_IWUSR, channel_ce_count_show, NULL, 2);
+-CSROWDEV_ATTR(ch3_ce_count, S_IRUGO | S_IWUSR, channel_ce_count_show, NULL, 3);
+-CSROWDEV_ATTR(ch4_ce_count, S_IRUGO | S_IWUSR, channel_ce_count_show, NULL, 4);
+-CSROWDEV_ATTR(ch5_ce_count, S_IRUGO | S_IWUSR, channel_ce_count_show, NULL, 5);
++DEVICE_CHANNEL(ch0_ce_count, S_IRUGO | S_IWUSR,
++		   channel_ce_count_show, NULL, 0);
++DEVICE_CHANNEL(ch1_ce_count, S_IRUGO | S_IWUSR,
++		   channel_ce_count_show, NULL, 1);
++DEVICE_CHANNEL(ch2_ce_count, S_IRUGO | S_IWUSR,
++		   channel_ce_count_show, NULL, 2);
++DEVICE_CHANNEL(ch3_ce_count, S_IRUGO | S_IWUSR,
++		   channel_ce_count_show, NULL, 3);
++DEVICE_CHANNEL(ch4_ce_count, S_IRUGO | S_IWUSR,
++		   channel_ce_count_show, NULL, 4);
++DEVICE_CHANNEL(ch5_ce_count, S_IRUGO | S_IWUSR,
++		   channel_ce_count_show, NULL, 5);
+ 
+ /* Total possible dynamic ce_count attribute file table */
+-static struct csrowdev_attribute *dynamic_csrow_ce_count_attr[] = {
+-	&attr_ch0_ce_count,
+-	&attr_ch1_ce_count,
+-	&attr_ch2_ce_count,
+-	&attr_ch3_ce_count,
+-	&attr_ch4_ce_count,
+-	&attr_ch5_ce_count
++static struct device_attribute *dynamic_csrow_ce_count_attr[] = {
++	&dev_attr_legacy_ch0_ce_count.attr,
++	&dev_attr_legacy_ch1_ce_count.attr,
++	&dev_attr_legacy_ch2_ce_count.attr,
++	&dev_attr_legacy_ch3_ce_count.attr,
++	&dev_attr_legacy_ch4_ce_count.attr,
++	&dev_attr_legacy_ch5_ce_count.attr
+ };
+ 
+-#define EDAC_NR_CHANNELS	6
+-
+-/* Create dynamic CHANNEL files, indexed by 'chan',  under specifed CSROW */
+-static int edac_create_channel_files(struct kobject *kobj, int chan)
++/* Create a CSROW object under specifed edac_mc_device */
++static int edac_create_csrow_object(struct mem_ctl_info *mci,
++				    struct csrow_info *csrow, int index)
+ {
+-	int err = -ENODEV;
++	int err, chan;
+ 
+-	if (chan >= EDAC_NR_CHANNELS)
+-		return err;
++	if (csrow->nr_channels >= EDAC_NR_CHANNELS)
++		return -ENODEV;
+ 
+-	/* create the DIMM label attribute file */
+-	err = sysfs_create_file(kobj,
+-				(struct attribute *)
+-				dynamic_csrow_dimm_attr[chan]);
+-
+-	if (!err) {
+-		/* create the CE Count attribute file */
+-		err = sysfs_create_file(kobj,
+-					(struct attribute *)
+-					dynamic_csrow_ce_count_attr[chan]);
+-	} else {
+-		debugf1("%s()  dimm labels and ce_count files created",
+-			__func__);
+-	}
++	csrow->dev.type = &csrow_attr_type;
++	csrow->dev.bus = &mci->bus;
++	device_initialize(&csrow->dev);
++	csrow->dev.parent = &mci->dev;
++	dev_set_name(&csrow->dev, "csrow%d", index);
++	dev_set_drvdata(&csrow->dev, csrow);
+ 
+-	return err;
+-}
++	debugf0("%s(): creating (virtual) csrow node %s\n", __func__,
++		dev_name(&csrow->dev));
+ 
+-/* No memory to release for this kobj */
+-static void edac_csrow_instance_release(struct kobject *kobj)
+-{
+-	struct mem_ctl_info *mci;
+-	struct csrow_info *cs;
++	err = device_add(&csrow->dev);
++	if (err < 0)
++		return err;
+ 
+-	debugf1("%s()\n", __func__);
++	for (chan = 0; chan < csrow->nr_channels; chan++) {
++		err = device_create_file(&csrow->dev,
++					 dynamic_csrow_dimm_attr[chan]);
++		if (err < 0)
++			goto error;
++		err = device_create_file(&csrow->dev,
++					 dynamic_csrow_ce_count_attr[chan]);
++		if (err < 0) {
++			device_remove_file(&csrow->dev,
++					   dynamic_csrow_dimm_attr[chan]);
++			goto error;
++		}
++	}
+ 
+-	cs = container_of(kobj, struct csrow_info, kobj);
+-	mci = cs->mci;
++	return 0;
+ 
+-	kobject_put(&mci->edac_mci_kobj);
+-}
++error:
++	for (--chan; chan >= 0; chan--) {
++		device_remove_file(&csrow->dev,
++					dynamic_csrow_dimm_attr[chan]);
++		device_remove_file(&csrow->dev,
++					   dynamic_csrow_ce_count_attr[chan]);
++	}
++	put_device(&csrow->dev);
+ 
+-/* the kobj_type instance for a CSROW */
+-static struct kobj_type ktype_csrow = {
+-	.release = edac_csrow_instance_release,
+-	.sysfs_ops = &csrowfs_ops,
+-	.default_attrs = (struct attribute **)default_csrow_attr,
+-};
++	return err;
++}
+ 
+ /* Create a CSROW object under specifed edac_mc_device */
+-static int edac_create_csrow_object(struct mem_ctl_info *mci,
+-					struct csrow_info *csrow, int index)
++static int edac_create_csrow_objects(struct mem_ctl_info *mci)
+ {
+-	struct kobject *kobj_mci = &mci->edac_mci_kobj;
+-	struct kobject *kobj;
+-	int chan;
+-	int err;
++	int err, i, chan;
++	struct csrow_info *csrow;
+ 
+-	/* generate ..../edac/mc/mc<id>/csrow<index>   */
+-	memset(&csrow->kobj, 0, sizeof(csrow->kobj));
+-	csrow->mci = mci;	/* include container up link */
++	for (i = 0; i < mci->nr_csrows; i++) {
++		err = edac_create_csrow_object(mci, &mci->csrows[i], i);
++		if (err < 0)
++			goto error;
++	}
++	return 0;
+ 
+-	/* bump the mci instance's kobject's ref count */
+-	kobj = kobject_get(&mci->edac_mci_kobj);
+-	if (!kobj) {
+-		err = -ENODEV;
+-		goto err_out;
++error:
++	for (--i; i >= 0; i--) {
++		csrow = &mci->csrows[i];
++		for (chan = csrow->nr_channels - 1; chan >= 0; chan--) {
++			device_remove_file(&csrow->dev,
++						dynamic_csrow_dimm_attr[chan]);
++			device_remove_file(&csrow->dev,
++						dynamic_csrow_ce_count_attr[chan]);
++		}
++		put_device(&mci->csrows[i].dev);
+ 	}
+ 
+-	/* Instanstiate the csrow object */
+-	err = kobject_init_and_add(&csrow->kobj, &ktype_csrow, kobj_mci,
+-				   "csrow%d", index);
+-	if (err)
+-		goto err_release_top_kobj;
++	return err;
++}
+ 
+-	/* At this point, to release a csrow kobj, one must
+-	 * call the kobject_put and allow that tear down
+-	 * to work the releasing
+-	 */
++static void edac_delete_csrow_objects(struct mem_ctl_info *mci)
++{
++	int i, chan;
++	struct csrow_info *csrow;
+ 
+-	/* Create the dyanmic attribute files on this csrow,
+-	 * namely, the DIMM labels and the channel ce_count
+-	 */
+-	for (chan = 0; chan < csrow->nr_channels; chan++) {
+-		err = edac_create_channel_files(&csrow->kobj, chan);
+-		if (err) {
+-			/* special case the unregister here */
+-			kobject_put(&csrow->kobj);
+-			goto err_out;
++	for (i = mci->nr_csrows - 1; i >= 0; i--) {
++		csrow = &mci->csrows[i];
++		for (chan = csrow->nr_channels - 1; chan >= 0; chan--) {
++			debugf1("Removing csrow %d channel %d sysfs nodes\n",
++				i, chan);
++			device_remove_file(&csrow->dev,
++						dynamic_csrow_dimm_attr[chan]);
++			device_remove_file(&csrow->dev,
++						dynamic_csrow_ce_count_attr[chan]);
+ 		}
++		put_device(&mci->csrows[i].dev);
++		device_del(&mci->csrows[i].dev);
+ 	}
+-	kobject_uevent(&csrow->kobj, KOBJ_ADD);
+-	return 0;
+-
+-	/* error unwind stack */
+-err_release_top_kobj:
+-	kobject_put(&mci->edac_mci_kobj);
+-
+-err_out:
+-	return err;
+ }
+ 
+-/* default sysfs methods and data structures for the main MCI kobject */
++/*
++ * Memory controller device
++ */
++
++#define to_mci(k) container_of(k, struct mem_ctl_info, dev)
+ 
+-static ssize_t mci_reset_counters_store(struct mem_ctl_info *mci,
++static ssize_t mci_reset_counters_store(struct device *dev,
++					struct device_attribute *mattr,
+ 					const char *data, size_t count)
+ {
+-	int row, chan;
+-
+-	mci->ue_noinfo_count = 0;
+-	mci->ce_noinfo_count = 0;
++	struct mem_ctl_info *mci = to_mci(dev);
++	int cnt, row, chan, i;
+ 	mci->ue_mc = 0;
+ 	mci->ce_mc = 0;
++	mci->ue_noinfo_count = 0;
++	mci->ce_noinfo_count = 0;
+ 
+ 	for (row = 0; row < mci->nr_csrows; row++) {
+ 		struct csrow_info *ri = &mci->csrows[row];
+@@ -438,6 +471,13 @@ static ssize_t mci_reset_counters_store(struct mem_ctl_info *mci,
+ 			ri->channels[chan].ce_count = 0;
+ 	}
+ 
++	cnt = 1;
++	for (i = 0; i < mci->n_layers; i++) {
++		cnt *= mci->layers[i].size;
++		memset(mci->ce_per_layer[i], 0, cnt * sizeof(u32));
++		memset(mci->ue_per_layer[i], 0, cnt * sizeof(u32));
++	}
++
+ 	mci->start_time = jiffies;
+ 	return count;
+ }
+@@ -451,9 +491,11 @@ static ssize_t mci_reset_counters_store(struct mem_ctl_info *mci,
+  * Negative value still means that an error has occurred while setting
+  * the scrub rate.
+  */
+-static ssize_t mci_sdram_scrub_rate_store(struct mem_ctl_info *mci,
++static ssize_t mci_sdram_scrub_rate_store(struct device *dev,
++					  struct device_attribute *mattr,
+ 					  const char *data, size_t count)
+ {
++	struct mem_ctl_info *mci = to_mci(dev);
+ 	unsigned long bandwidth = 0;
+ 	int new_bw = 0;
+ 
+@@ -476,8 +518,11 @@ static ssize_t mci_sdram_scrub_rate_store(struct mem_ctl_info *mci,
+ /*
+  * ->get_sdram_scrub_rate() return value semantics same as above.
+  */
+-static ssize_t mci_sdram_scrub_rate_show(struct mem_ctl_info *mci, char *data)
++static ssize_t mci_sdram_scrub_rate_show(struct device *dev,
++					 struct device_attribute *mattr,
++					 char *data)
+ {
++	struct mem_ctl_info *mci = to_mci(dev);
+ 	int bandwidth = 0;
+ 
+ 	if (!mci->get_sdram_scrub_rate)
+@@ -493,38 +538,65 @@ static ssize_t mci_sdram_scrub_rate_show(struct mem_ctl_info *mci, char *data)
+ }
+ 
+ /* default attribute files for the MCI object */
+-static ssize_t mci_ue_count_show(struct mem_ctl_info *mci, char *data)
++static ssize_t mci_ue_count_show(struct device *dev,
++				 struct device_attribute *mattr,
++				 char *data)
+ {
++	struct mem_ctl_info *mci = to_mci(dev);
++
+ 	return sprintf(data, "%d\n", mci->ue_mc);
+ }
+ 
+-static ssize_t mci_ce_count_show(struct mem_ctl_info *mci, char *data)
++static ssize_t mci_ce_count_show(struct device *dev,
++				 struct device_attribute *mattr,
++				 char *data)
+ {
++	struct mem_ctl_info *mci = to_mci(dev);
++
+ 	return sprintf(data, "%d\n", mci->ce_mc);
+ }
+ 
+-static ssize_t mci_ce_noinfo_show(struct mem_ctl_info *mci, char *data)
++static ssize_t mci_ce_noinfo_show(struct device *dev,
++				  struct device_attribute *mattr,
++				  char *data)
+ {
++	struct mem_ctl_info *mci = to_mci(dev);
++
+ 	return sprintf(data, "%d\n", mci->ce_noinfo_count);
+ }
+ 
+-static ssize_t mci_ue_noinfo_show(struct mem_ctl_info *mci, char *data)
++static ssize_t mci_ue_noinfo_show(struct device *dev,
++				  struct device_attribute *mattr,
++				  char *data)
+ {
++	struct mem_ctl_info *mci = to_mci(dev);
++
+ 	return sprintf(data, "%d\n", mci->ue_noinfo_count);
+ }
+ 
+-static ssize_t mci_seconds_show(struct mem_ctl_info *mci, char *data)
++static ssize_t mci_seconds_show(struct device *dev,
++				struct device_attribute *mattr,
++				char *data)
+ {
++	struct mem_ctl_info *mci = to_mci(dev);
++
+ 	return sprintf(data, "%ld\n", (jiffies - mci->start_time) / HZ);
+ }
+ 
+-static ssize_t mci_ctl_name_show(struct mem_ctl_info *mci, char *data)
++static ssize_t mci_ctl_name_show(struct device *dev,
++				 struct device_attribute *mattr,
++				 char *data)
+ {
++	struct mem_ctl_info *mci = to_mci(dev);
++
+ 	return sprintf(data, "%s\n", mci->ctl_name);
+ }
+ 
+-static ssize_t mci_size_mb_show(struct mem_ctl_info *mci, char *data)
++static ssize_t mci_size_mb_show(struct device *dev,
++				struct device_attribute *mattr,
++				char *data)
+ {
++	struct mem_ctl_info *mci = to_mci(dev);
+ 	int total_pages = 0, csrow_idx, j;
+ 
+ 	for (csrow_idx = 0; csrow_idx < mci->nr_csrows; csrow_idx++) {
+@@ -540,360 +612,53 @@ static ssize_t mci_size_mb_show(struct mem_ctl_info *mci, char *data)
+ 	return sprintf(data, "%u\n", PAGES_TO_MiB(total_pages));
+ }
+ 
+-#define to_mci(k) container_of(k, struct mem_ctl_info, edac_mci_kobj)
+-#define to_mcidev_attr(a) container_of(a,struct mcidev_sysfs_attribute,attr)
+-
+-/* MCI show/store functions for top most object */
+-static ssize_t mcidev_show(struct kobject *kobj, struct attribute *attr,
+-			char *buffer)
+-{
+-	struct mem_ctl_info *mem_ctl_info = to_mci(kobj);
+-	struct mcidev_sysfs_attribute *mcidev_attr = to_mcidev_attr(attr);
+-
+-	debugf1("%s() mem_ctl_info %p\n", __func__, mem_ctl_info);
+-
+-	if (mcidev_attr->show)
+-		return mcidev_attr->show(mem_ctl_info, buffer);
+-
+-	return -EIO;
+-}
+-
+-static ssize_t mcidev_store(struct kobject *kobj, struct attribute *attr,
+-			const char *buffer, size_t count)
+-{
+-	struct mem_ctl_info *mem_ctl_info = to_mci(kobj);
+-	struct mcidev_sysfs_attribute *mcidev_attr = to_mcidev_attr(attr);
+-
+-	debugf1("%s() mem_ctl_info %p\n", __func__, mem_ctl_info);
+-
+-	if (mcidev_attr->store)
+-		return mcidev_attr->store(mem_ctl_info, buffer, count);
+-
+-	return -EIO;
+-}
+-
+-/* Intermediate show/store table */
+-static const struct sysfs_ops mci_ops = {
+-	.show = mcidev_show,
+-	.store = mcidev_store
+-};
+-
+-#define MCIDEV_ATTR(_name,_mode,_show,_store)			\
+-static struct mcidev_sysfs_attribute mci_attr_##_name = {			\
+-	.attr = {.name = __stringify(_name), .mode = _mode },	\
+-	.show   = _show,					\
+-	.store  = _store,					\
+-};
+-
+ /* default Control file */
+-MCIDEV_ATTR(reset_counters, S_IWUSR, NULL, mci_reset_counters_store);
++DEVICE_ATTR(reset_counters, S_IWUSR, NULL, mci_reset_counters_store);
+ 
+ /* default Attribute files */
+-MCIDEV_ATTR(mc_name, S_IRUGO, mci_ctl_name_show, NULL);
+-MCIDEV_ATTR(size_mb, S_IRUGO, mci_size_mb_show, NULL);
+-MCIDEV_ATTR(seconds_since_reset, S_IRUGO, mci_seconds_show, NULL);
+-MCIDEV_ATTR(ue_noinfo_count, S_IRUGO, mci_ue_noinfo_show, NULL);
+-MCIDEV_ATTR(ce_noinfo_count, S_IRUGO, mci_ce_noinfo_show, NULL);
+-MCIDEV_ATTR(ue_count, S_IRUGO, mci_ue_count_show, NULL);
+-MCIDEV_ATTR(ce_count, S_IRUGO, mci_ce_count_show, NULL);
++DEVICE_ATTR(mc_name, S_IRUGO, mci_ctl_name_show, NULL);
++DEVICE_ATTR(size_mb, S_IRUGO, mci_size_mb_show, NULL);
++DEVICE_ATTR(seconds_since_reset, S_IRUGO, mci_seconds_show, NULL);
++DEVICE_ATTR(ue_noinfo_count, S_IRUGO, mci_ue_noinfo_show, NULL);
++DEVICE_ATTR(ce_noinfo_count, S_IRUGO, mci_ce_noinfo_show, NULL);
++DEVICE_ATTR(ue_count, S_IRUGO, mci_ue_count_show, NULL);
++DEVICE_ATTR(ce_count, S_IRUGO, mci_ce_count_show, NULL);
+ 
+ /* memory scrubber attribute file */
+-MCIDEV_ATTR(sdram_scrub_rate, S_IRUGO | S_IWUSR, mci_sdram_scrub_rate_show,
++DEVICE_ATTR(sdram_scrub_rate, S_IRUGO | S_IWUSR, mci_sdram_scrub_rate_show,
+ 	mci_sdram_scrub_rate_store);
+ 
+-static struct mcidev_sysfs_attribute *mci_attr[] = {
+-	&mci_attr_reset_counters,
+-	&mci_attr_mc_name,
+-	&mci_attr_size_mb,
+-	&mci_attr_seconds_since_reset,
+-	&mci_attr_ue_noinfo_count,
+-	&mci_attr_ce_noinfo_count,
+-	&mci_attr_ue_count,
+-	&mci_attr_ce_count,
+-	&mci_attr_sdram_scrub_rate,
++static struct attribute *mci_attrs[] = {
++	&dev_attr_reset_counters.attr,
++	&dev_attr_mc_name.attr,
++	&dev_attr_size_mb.attr,
++	&dev_attr_seconds_since_reset.attr,
++	&dev_attr_ue_noinfo_count.attr,
++	&dev_attr_ce_noinfo_count.attr,
++	&dev_attr_ue_count.attr,
++	&dev_attr_ce_count.attr,
++	&dev_attr_sdram_scrub_rate.attr,
+ 	NULL
+ };
+ 
+-
+-/*
+- * Release of a MC controlling instance
+- *
+- *	each MC control instance has the following resources upon entry:
+- *		a) a ref count on the top memctl kobj
+- *		b) a ref count on this module
+- *
+- *	this function must decrement those ref counts and then
+- *	issue a free on the instance's memory
+- */
+-static void edac_mci_control_release(struct kobject *kobj)
+-{
+-	struct mem_ctl_info *mci;
+-
+-	mci = to_mci(kobj);
+-
+-	debugf0("%s() mci instance idx=%d releasing\n", __func__, mci->mc_idx);
+-
+-	/* decrement the module ref count */
+-	module_put(mci->owner);
+-}
+-
+-static struct kobj_type ktype_mci = {
+-	.release = edac_mci_control_release,
+-	.sysfs_ops = &mci_ops,
+-	.default_attrs = (struct attribute **)mci_attr,
+-};
+-
+-/* EDAC memory controller sysfs kset:
+- *	/sys/devices/system/edac/mc
+- */
+-static struct kset *mc_kset;
+-
+-/*
+- * edac_mc_register_sysfs_main_kobj
+- *
+- *	setups and registers the main kobject for each mci
+- */
+-int edac_mc_register_sysfs_main_kobj(struct mem_ctl_info *mci)
+-{
+-	struct kobject *kobj_mci;
+-	int err;
+-
+-	debugf1("%s()\n", __func__);
+-
+-	kobj_mci = &mci->edac_mci_kobj;
+-
+-	/* Init the mci's kobject */
+-	memset(kobj_mci, 0, sizeof(*kobj_mci));
+-
+-	/* Record which module 'owns' this control structure
+-	 * and bump the ref count of the module
+-	 */
+-	mci->owner = THIS_MODULE;
+-
+-	/* bump ref count on this module */
+-	if (!try_module_get(mci->owner)) {
+-		err = -ENODEV;
+-		goto fail_out;
+-	}
+-
+-	/* this instance become part of the mc_kset */
+-	kobj_mci->kset = mc_kset;
+-
+-	/* register the mc<id> kobject to the mc_kset */
+-	err = kobject_init_and_add(kobj_mci, &ktype_mci, NULL,
+-				   "mc%d", mci->mc_idx);
+-	if (err) {
+-		debugf1("%s()Failed to register '.../edac/mc%d'\n",
+-			__func__, mci->mc_idx);
+-		goto kobj_reg_fail;
+-	}
+-	kobject_uevent(kobj_mci, KOBJ_ADD);
+-
+-	/* At this point, to 'free' the control struct,
+-	 * edac_mc_unregister_sysfs_main_kobj() must be used
+-	 */
+-
+-	debugf1("%s() Registered '.../edac/mc%d' kobject\n",
+-		__func__, mci->mc_idx);
+-
+-	return 0;
+-
+-	/* Error exit stack */
+-
+-kobj_reg_fail:
+-	module_put(mci->owner);
+-
+-fail_out:
+-	return err;
+-}
+-
+-/*
+- * edac_mc_register_sysfs_main_kobj
+- *
+- *	tears down and the main mci kobject from the mc_kset
+- */
+-void edac_mc_unregister_sysfs_main_kobj(struct mem_ctl_info *mci)
+-{
+-	debugf1("%s()\n", __func__);
+-
+-	/* delete the kobj from the mc_kset */
+-	kobject_put(&mci->edac_mci_kobj);
+-}
+-
+-#define EDAC_DEVICE_SYMLINK	"device"
+-
+-#define grp_to_mci(k) (container_of(k, struct mcidev_sysfs_group_kobj, kobj)->mci)
+-
+-/* MCI show/store functions for top most object */
+-static ssize_t inst_grp_show(struct kobject *kobj, struct attribute *attr,
+-			char *buffer)
+-{
+-	struct mem_ctl_info *mem_ctl_info = grp_to_mci(kobj);
+-	struct mcidev_sysfs_attribute *mcidev_attr = to_mcidev_attr(attr);
+-
+-	debugf1("%s() mem_ctl_info %p\n", __func__, mem_ctl_info);
+-
+-	if (mcidev_attr->show)
+-		return mcidev_attr->show(mem_ctl_info, buffer);
+-
+-	return -EIO;
+-}
+-
+-static ssize_t inst_grp_store(struct kobject *kobj, struct attribute *attr,
+-			const char *buffer, size_t count)
+-{
+-	struct mem_ctl_info *mem_ctl_info = grp_to_mci(kobj);
+-	struct mcidev_sysfs_attribute *mcidev_attr = to_mcidev_attr(attr);
+-
+-	debugf1("%s() mem_ctl_info %p\n", __func__, mem_ctl_info);
+-
+-	if (mcidev_attr->store)
+-		return mcidev_attr->store(mem_ctl_info, buffer, count);
+-
+-	return -EIO;
+-}
+-
+-/* No memory to release for this kobj */
+-static void edac_inst_grp_release(struct kobject *kobj)
+-{
+-	struct mcidev_sysfs_group_kobj *grp;
+-	struct mem_ctl_info *mci;
+-
+-	debugf1("%s()\n", __func__);
+-
+-	grp = container_of(kobj, struct mcidev_sysfs_group_kobj, kobj);
+-	mci = grp->mci;
+-}
+-
+-/* Intermediate show/store table */
+-static struct sysfs_ops inst_grp_ops = {
+-	.show = inst_grp_show,
+-	.store = inst_grp_store
++static struct attribute_group mci_attr_grp = {
++	.attrs	= mci_attrs,
+ };
+ 
+-/* the kobj_type instance for a instance group */
+-static struct kobj_type ktype_inst_grp = {
+-	.release = edac_inst_grp_release,
+-	.sysfs_ops = &inst_grp_ops,
++static const struct attribute_group *mci_attr_groups[] = {
++	&mci_attr_grp,
++	NULL
+ };
+ 
+-
+-/*
+- * edac_create_mci_instance_attributes
+- *	create MC driver specific attributes bellow an specified kobj
+- * This routine calls itself recursively, in order to create an entire
+- * object tree.
+- */
+-static int edac_create_mci_instance_attributes(struct mem_ctl_info *mci,
+-				const struct mcidev_sysfs_attribute *sysfs_attrib,
+-				struct kobject *kobj)
++static void mci_attr_release(struct device *device)
+ {
+-	int err;
+-
+-	debugf4("%s()\n", __func__);
+-
+-	while (sysfs_attrib) {
+-		debugf4("%s() sysfs_attrib = %p\n",__func__, sysfs_attrib);
+-		if (sysfs_attrib->grp) {
+-			struct mcidev_sysfs_group_kobj *grp_kobj;
+-
+-			grp_kobj = kzalloc(sizeof(*grp_kobj), GFP_KERNEL);
+-			if (!grp_kobj)
+-				return -ENOMEM;
+-
+-			grp_kobj->grp = sysfs_attrib->grp;
+-			grp_kobj->mci = mci;
+-			list_add_tail(&grp_kobj->list, &mci->grp_kobj_list);
+-
+-			debugf0("%s() grp %s, mci %p\n", __func__,
+-				sysfs_attrib->grp->name, mci);
+-
+-			err = kobject_init_and_add(&grp_kobj->kobj,
+-						&ktype_inst_grp,
+-						&mci->edac_mci_kobj,
+-						sysfs_attrib->grp->name);
+-			if (err < 0) {
+-				printk(KERN_ERR "kobject_init_and_add failed: %d\n", err);
+-				return err;
+-			}
+-			err = edac_create_mci_instance_attributes(mci,
+-					grp_kobj->grp->mcidev_attr,
+-					&grp_kobj->kobj);
+-
+-			if (err < 0)
+-				return err;
+-		} else if (sysfs_attrib->attr.name) {
+-			debugf4("%s() file %s\n", __func__,
+-				sysfs_attrib->attr.name);
+-
+-			err = sysfs_create_file(kobj, &sysfs_attrib->attr);
+-			if (err < 0) {
+-				printk(KERN_ERR "sysfs_create_file failed: %d\n", err);
+-				return err;
+-			}
+-		} else
+-			break;
+-
+-		sysfs_attrib++;
+-	}
+-
+-	return 0;
++	debugf1("Releasing mci device %s\n", dev_name(device));
+ }
+ 
+-/*
+- * edac_remove_mci_instance_attributes
+- *	remove MC driver specific attributes at the topmost level
+- *	directory of this mci instance.
+- */
+-static void edac_remove_mci_instance_attributes(struct mem_ctl_info *mci,
+-				const struct mcidev_sysfs_attribute *sysfs_attrib,
+-				struct kobject *kobj, int count)
+-{
+-	struct mcidev_sysfs_group_kobj *grp_kobj, *tmp;
+-
+-	debugf1("%s()\n", __func__);
+-
+-	/*
+-	 * loop if there are attributes and until we hit a NULL entry
+-	 * Remove first all the attributes
+-	 */
+-	while (sysfs_attrib) {
+-		debugf4("%s() sysfs_attrib = %p\n",__func__, sysfs_attrib);
+-		if (sysfs_attrib->grp) {
+-			debugf4("%s() seeking for group %s\n",
+-				__func__, sysfs_attrib->grp->name);
+-			list_for_each_entry(grp_kobj,
+-					    &mci->grp_kobj_list, list) {
+-				debugf4("%s() grp_kobj->grp = %p\n",__func__, grp_kobj->grp);
+-				if (grp_kobj->grp == sysfs_attrib->grp) {
+-					edac_remove_mci_instance_attributes(mci,
+-						    grp_kobj->grp->mcidev_attr,
+-						    &grp_kobj->kobj, count + 1);
+-					debugf4("%s() group %s\n", __func__,
+-						sysfs_attrib->grp->name);
+-					kobject_put(&grp_kobj->kobj);
+-				}
+-			}
+-			debugf4("%s() end of seeking for group %s\n",
+-				__func__, sysfs_attrib->grp->name);
+-		} else if (sysfs_attrib->attr.name) {
+-			debugf4("%s() file %s\n", __func__,
+-				sysfs_attrib->attr.name);
+-			sysfs_remove_file(kobj, &sysfs_attrib->attr);
+-		} else
+-			break;
+-		sysfs_attrib++;
+-	}
+-
+-	/* Remove the group objects */
+-	if (count)
+-		return;
+-	list_for_each_entry_safe(grp_kobj, tmp,
+-				 &mci->grp_kobj_list, list) {
+-		list_del(&grp_kobj->list);
+-		kfree(grp_kobj);
+-	}
+-}
++static struct device_type mci_attr_type = {
++	.groups		= mci_attr_groups,
++	.release	= mci_attr_release,
++};
+ 
+ 
+ /*
+@@ -906,77 +671,80 @@ static void edac_remove_mci_instance_attributes(struct mem_ctl_info *mci,
+  */
+ int edac_create_sysfs_mci_device(struct mem_ctl_info *mci)
+ {
+-	int i, j;
+-	int err;
+-	struct csrow_info *csrow;
+-	struct kobject *kobj_mci = &mci->edac_mci_kobj;
++	int i, err;
+ 
+ 	debugf0("%s() idx=%d\n", __func__, mci->mc_idx);
+ 
+-	INIT_LIST_HEAD(&mci->grp_kobj_list);
++	/* get the /sys/devices/system/edac subsys reference */
+ 
+-	/* create a symlink for the device */
+-	err = sysfs_create_link(kobj_mci, &mci->pdev->kobj,
+-				EDAC_DEVICE_SYMLINK);
+-	if (err) {
+-		debugf1("%s() failure to create symlink\n", __func__);
+-		goto fail0;
+-	}
++	mci->dev.type = &mci_attr_type;
++	device_initialize(&mci->dev);
+ 
+-	/* If the low level driver desires some attributes,
+-	 * then create them now for the driver.
++	mci->dev.parent = &mci_pdev;
++	mci->dev.bus = &mci->bus;
++	dev_set_name(&mci->dev, "mc%d", mci->mc_idx);
++	dev_set_drvdata(&mci->dev, mci);
++	pm_runtime_forbid(&mci->dev);
++
++	/*
++	 * The memory controller needs its own bus, in order to avoid
++	 * namespace conflicts at /sys/bus/edac.
+ 	 */
+-	if (mci->mc_driver_sysfs_attributes) {
+-		err = edac_create_mci_instance_attributes(mci,
+-					mci->mc_driver_sysfs_attributes,
+-					&mci->edac_mci_kobj);
+-		if (err) {
+-			debugf1("%s() failure to create mci attributes\n",
+-				__func__);
+-			goto fail0;
+-		}
++	debugf0("creating bus %s\n",mci->bus.name);
++	mci->bus.name = kstrdup(dev_name(&mci->dev), GFP_KERNEL);
++	err = bus_register(&mci->bus);
++	if (err < 0)
++		return err;
++
++	debugf0("%s(): creating device %s\n", __func__,
++		dev_name(&mci->dev));
++	err = device_add(&mci->dev);
++	if (err < 0) {
++		bus_unregister(&mci->bus);
++		kfree(mci->bus.name);
++		return err;
+ 	}
+ 
+-	/* Make directories for each CSROW object under the mc<id> kobject
++	/*
++	 * Create the dimm/rank devices
+ 	 */
+-	for (i = 0; i < mci->nr_csrows; i++) {
+-		int nr_pages = 0;
+-
+-		csrow = &mci->csrows[i];
+-		for (j = 0; j < csrow->nr_channels; j++)
+-			nr_pages += csrow->channels[j].dimm->nr_pages;
+-
+-		if (nr_pages > 0) {
+-			err = edac_create_csrow_object(mci, csrow, i);
+-			if (err) {
+-				debugf1("%s() failure: create csrow %d obj\n",
+-					__func__, i);
+-				goto fail1;
+-			}
++	for (i = 0; i < mci->tot_dimms; i++) {
++		struct dimm_info *dimm = &mci->dimms[i];
++		/* Only expose populated DIMMs */
++		if (dimm->nr_pages == 0)
++			continue;
++#ifdef CONFIG_EDAC_DEBUG
++		debugf1("%s creating dimm%d, located at ",
++			__func__, i);
++		if (edac_debug_level >= 1) {
++			int lay;
++			for (lay = 0; lay < mci->n_layers; lay++)
++				printk(KERN_CONT "%s %d ",
++					edac_layer_name[mci->layers[lay].type],
++					dimm->location[lay]);
++			printk(KERN_CONT "\n");
+ 		}
++#endif
+ 	}
+ 
++	err = edac_create_csrow_objects(mci);
++	if (err < 0)
++		goto fail;
++
+ 	return 0;
+ 
+-fail1:
++fail:
+ 	for (i--; i >= 0; i--) {
+-		int nr_pages = 0;
+-
+-		csrow = &mci->csrows[i];
+-		for (j = 0; j < csrow->nr_channels; j++)
+-			nr_pages += csrow->channels[j].dimm->nr_pages;
+-		if (nr_pages > 0)
+-			kobject_put(&mci->csrows[i].kobj);
++		struct dimm_info *dimm = &mci->dimms[i];
++		if (dimm->nr_pages == 0)
++			continue;
++		put_device(&dimm->dev);
++		device_del(&dimm->dev);
+ 	}
+-
+-	/* remove the mci instance's attributes, if any */
+-	edac_remove_mci_instance_attributes(mci,
+-		mci->mc_driver_sysfs_attributes, &mci->edac_mci_kobj, 0);
+-
+-	/* remove the symlink */
+-	sysfs_remove_link(kobj_mci, EDAC_DEVICE_SYMLINK);
+-
+-fail0:
++	put_device(&mci->dev);
++	device_del(&mci->dev);
++	bus_unregister(&mci->bus);
++	kfree(mci->bus.name);
  	return err;
  }
-@@ -981,8 +979,7 @@ int edac_create_sysfs_mci_device(struct mem_ctl_info *mci)
- 	dev_set_drvdata(&mci->dev, mci);
- 	pm_runtime_forbid(&mci->dev);
  
--	debugf0("%s(): creating device %s\n", __func__,
--		dev_name(&mci->dev));
-+	debugf0("creating device %s\n", dev_name(&mci->dev));
- 	err = device_add(&mci->dev);
- 	if (err < 0) {
- 		bus_unregister(&mci->bus);
-@@ -999,8 +996,8 @@ int edac_create_sysfs_mci_device(struct mem_ctl_info *mci)
- 		if (dimm->nr_pages == 0)
- 			continue;
- #ifdef CONFIG_EDAC_DEBUG
--		debugf1("%s creating dimm%d, located at ",
--			__func__, i);
-+		debugf1("creating dimm%d, located at ",
-+			i);
- 		if (edac_debug_level >= 1) {
- 			int lay;
- 			for (lay = 0; lay < mci->n_layers; lay++)
-@@ -1012,8 +1009,8 @@ int edac_create_sysfs_mci_device(struct mem_ctl_info *mci)
- #endif
- 		err = edac_create_dimm_object(mci, dimm, i);
- 		if (err) {
--			debugf1("%s() failure: create dimm %d obj\n",
--				__func__, i);
-+			debugf1("failure: create dimm %d obj\n",
-+				i);
- 			goto fail;
- 		}
- 	}
-@@ -1051,7 +1048,7 @@ void edac_remove_sysfs_mci_device(struct mem_ctl_info *mci)
+@@ -985,98 +753,70 @@ fail0:
+  */
+ void edac_remove_sysfs_mci_device(struct mem_ctl_info *mci)
  {
- 	int i;
+-	struct csrow_info *csrow;
+-	int i, j;
++	int i;
  
--	debugf0("%s()\n", __func__);
-+	debugf0("\n");
+ 	debugf0("%s()\n", __func__);
  
- #ifdef CONFIG_EDAC_DEBUG
- 	debugfs_remove(mci->debugfs);
-@@ -1064,8 +1061,7 @@ void edac_remove_sysfs_mci_device(struct mem_ctl_info *mci)
- 		struct dimm_info *dimm = mci->dimms[i];
- 		if (dimm->nr_pages == 0)
- 			continue;
--		debugf0("%s(): removing device %s\n", __func__,
--			dev_name(&dimm->dev));
-+		debugf0("removing device %s\n", dev_name(&dimm->dev));
- 		put_device(&dimm->dev);
- 		device_del(&dimm->dev);
+-	/* remove all csrow kobjects */
+-	debugf4("%s()  unregister this mci kobj\n", __func__);
+-	for (i = 0; i < mci->nr_csrows; i++) {
+-		int nr_pages = 0;
+-
+-		csrow = &mci->csrows[i];
+-		for (j = 0; j < csrow->nr_channels; j++)
+-			nr_pages += csrow->channels[j].dimm->nr_pages;
+-		if (nr_pages > 0) {
+-			debugf0("%s()  unreg csrow-%d\n", __func__, i);
+-			kobject_put(&mci->csrows[i].kobj);
+-		}
+-	}
++	edac_delete_csrow_objects(mci);
+ 
+-	/* remove this mci instance's attribtes */
+-	if (mci->mc_driver_sysfs_attributes) {
+-		debugf4("%s()  unregister mci private attributes\n", __func__);
+-		edac_remove_mci_instance_attributes(mci,
+-						mci->mc_driver_sysfs_attributes,
+-						&mci->edac_mci_kobj, 0);
++	for (i = 0; i < mci->tot_dimms; i++) {
++		struct dimm_info *dimm = &mci->dimms[i];
++		if (dimm->nr_pages == 0)
++			continue;
++		debugf0("%s(): removing device %s\n", __func__,
++			dev_name(&dimm->dev));
++		put_device(&dimm->dev);
++		device_del(&dimm->dev);
  	}
-@@ -1105,7 +1101,7 @@ int __init edac_mc_sysfs_init(void)
+-
+-	/* remove the symlink */
+-	debugf4("%s()  remove_link\n", __func__);
+-	sysfs_remove_link(&mci->edac_mci_kobj, EDAC_DEVICE_SYMLINK);
+-
+-	/* unregister this instance's kobject */
+-	debugf4("%s()  remove_mci_instance\n", __func__);
+-	kobject_put(&mci->edac_mci_kobj);
+ }
+ 
++void edac_unregister_sysfs(struct mem_ctl_info *mci)
++{
++	debugf1("Unregistering device %s\n", dev_name(&mci->dev));
++	put_device(&mci->dev);
++	device_del(&mci->dev);
++	bus_unregister(&mci->bus);
++	kfree(mci->bus.name);
++}
+ 
++static void mc_attr_release(struct device *device)
++{
++	debugf1("Releasing device %s\n", dev_name(device));
++}
+ 
+-
++static struct device_type mc_attr_type = {
++	.release	= mc_attr_release,
++};
+ /*
+- * edac_setup_sysfs_mc_kset(void)
+- *
+- * Initialize the mc_kset for the 'mc' entry
+- *	This requires creating the top 'mc' directory with a kset
+- *	and its controls/attributes.
+- *
+- *	To this 'mc' kset, instance 'mci' will be grouped as children.
+- *
+- * Return:  0 SUCCESS
+- *         !0 FAILURE error code
++ * Init/exit code for the module. Basically, creates/removes /sys/class/rc
+  */
+-int edac_sysfs_setup_mc_kset(void)
++int __init edac_mc_sysfs_init(void)
+ {
+-	int err = -EINVAL;
+ 	struct bus_type *edac_subsys;
+-
+-	debugf1("%s()\n", __func__);
++	int err;
+ 
  	/* get the /sys/devices/system/edac subsys reference */
  	edac_subsys = edac_get_sysfs_subsys();
  	if (edac_subsys == NULL) {
--		debugf1("%s() no edac_subsys\n", __func__);
-+		debugf1("no edac_subsys\n");
- 		return -EINVAL;
+-		debugf1("%s() no edac_subsys error=%d\n", __func__, err);
+-		goto fail_out;
++		debugf1("%s() no edac_subsys\n", __func__);
++		return -EINVAL;
  	}
  
+-	/* Init the MC's kobject */
+-	mc_kset = kset_create_and_add("mc", NULL, &edac_subsys->dev_root->kobj);
+-	if (!mc_kset) {
+-		err = -ENOMEM;
+-		debugf1("%s() Failed to register '.../edac/mc'\n", __func__);
+-		goto fail_kset;
+-	}
++	mci_pdev.bus = edac_subsys;
++	mci_pdev.type = &mc_attr_type;
++	device_initialize(&mci_pdev);
++	dev_set_name(&mci_pdev, "mc");
+ 
+-	debugf1("%s() Registered '.../edac/mc' kobject\n", __func__);
++	err = device_add(&mci_pdev);
++	if (err < 0)
++		return err;
+ 
+ 	return 0;
+-
+-fail_kset:
+-	edac_put_sysfs_subsys();
+-
+-fail_out:
+-	return err;
+ }
+ 
+-/*
+- * edac_sysfs_teardown_mc_kset
+- *
+- *	deconstruct the mc_ket for memory controllers
+- */
+-void edac_sysfs_teardown_mc_kset(void)
++void __exit edac_mc_sysfs_exit(void)
+ {
+-	kset_unregister(mc_kset);
++	put_device(&mci_pdev);
++	device_del(&mci_pdev);
+ 	edac_put_sysfs_subsys();
+ }
+-
 diff --git a/drivers/edac/edac_module.c b/drivers/edac/edac_module.c
-index 8735a0d..9de2484 100644
+index 5ddaa86..8735a0d 100644
 --- a/drivers/edac/edac_module.c
 +++ b/drivers/edac/edac_module.c
-@@ -113,7 +113,7 @@ error:
-  */
- static void __exit edac_exit(void)
- {
--	debugf0("%s()\n", __func__);
-+	debugf0("\n");
+@@ -90,10 +90,7 @@ static int __init edac_init(void)
+ 	 */
+ 	edac_pci_clear_parity_errors();
+ 
+-	/*
+-	 * now set up the mc_kset under the edac class object
+-	 */
+-	err = edac_sysfs_setup_mc_kset();
++	err = edac_mc_sysfs_init();
+ 	if (err)
+ 		goto error;
+ 
+@@ -101,15 +98,11 @@ static int __init edac_init(void)
+ 	err = edac_workqueue_setup();
+ 	if (err) {
+ 		edac_printk(KERN_ERR, EDAC_MC, "init WorkQueue failure\n");
+-		goto workq_fail;
++		goto error;
+ 	}
+ 
+ 	return 0;
+ 
+-	/* Error teardown stack */
+-workq_fail:
+-	edac_sysfs_teardown_mc_kset();
+-
+ error:
+ 	return err;
+ }
+@@ -124,7 +117,7 @@ static void __exit edac_exit(void)
  
  	/* tear down the various subsystems */
  	edac_workqueue_teardown();
-diff --git a/drivers/edac/edac_pci.c b/drivers/edac/edac_pci.c
-index f1ac866..51dd4e0 100644
---- a/drivers/edac/edac_pci.c
-+++ b/drivers/edac/edac_pci.c
-@@ -45,7 +45,7 @@ struct edac_pci_ctl_info *edac_pci_alloc_ctl_info(unsigned int sz_pvt,
- 	void *p = NULL, *pvt;
- 	unsigned int size;
+-	edac_sysfs_teardown_mc_kset();
++	edac_mc_sysfs_exit();
+ }
  
--	debugf1("%s()\n", __func__);
-+	debugf1("\n");
- 
- 	pci = edac_align_ptr(&p, sizeof(*pci), 1);
- 	pvt = edac_align_ptr(&p, 1, sz_pvt);
-@@ -80,7 +80,7 @@ EXPORT_SYMBOL_GPL(edac_pci_alloc_ctl_info);
+ /*
+diff --git a/drivers/edac/edac_module.h b/drivers/edac/edac_module.h
+index 0ea7d14..1af1367 100644
+--- a/drivers/edac/edac_module.h
++++ b/drivers/edac/edac_module.h
+@@ -19,12 +19,12 @@
+  *
+  * edac_mc objects
   */
- void edac_pci_free_ctl_info(struct edac_pci_ctl_info *pci)
- {
--	debugf1("%s()\n", __func__);
-+	debugf1("\n");
+-extern int edac_sysfs_setup_mc_kset(void);
+-extern void edac_sysfs_teardown_mc_kset(void);
+-extern int edac_mc_register_sysfs_main_kobj(struct mem_ctl_info *mci);
+-extern void edac_mc_unregister_sysfs_main_kobj(struct mem_ctl_info *mci);
++	/* on edac_mc_sysfs.c */
++int edac_mc_sysfs_init(void);
++void edac_mc_sysfs_exit(void);
+ extern int edac_create_sysfs_mci_device(struct mem_ctl_info *mci);
+ extern void edac_remove_sysfs_mci_device(struct mem_ctl_info *mci);
++void edac_unregister_sysfs(struct mem_ctl_info *mci);
+ extern int edac_get_log_ue(void);
+ extern int edac_get_log_ce(void);
+ extern int edac_get_panic_on_ue(void);
+@@ -34,6 +34,7 @@ extern int edac_mc_get_panic_on_ue(void);
+ extern int edac_get_poll_msec(void);
+ extern int edac_mc_get_poll_msec(void);
  
- 	edac_pci_remove_sysfs(pci);
- }
-@@ -97,7 +97,7 @@ static struct edac_pci_ctl_info *find_edac_pci_by_dev(struct device *dev)
- 	struct edac_pci_ctl_info *pci;
- 	struct list_head *item;
++	/* on edac_device.c */
+ extern int edac_device_register_sysfs_main_kobj(
+ 				struct edac_device_ctl_info *edac_dev);
+ extern void edac_device_unregister_sysfs_main_kobj(
+diff --git a/include/linux/edac.h b/include/linux/edac.h
+index 4e32e8d..aeaafd0 100644
+--- a/include/linux/edac.h
++++ b/include/linux/edac.h
+@@ -448,14 +448,15 @@ struct edac_mc_layer {
+ 	__p;								\
+ })
  
--	debugf1("%s()\n", __func__);
-+	debugf1("\n");
+-
+-/* FIXME: add the proper per-location error counts */
+ struct dimm_info {
++	struct device dev;
++
+ 	char label[EDAC_MC_LABEL_LEN + 1];	/* DIMM label on motherboard */
  
- 	list_for_each(item, &edac_pci_list) {
- 		pci = list_entry(item, struct edac_pci_ctl_info, link);
-@@ -122,7 +122,7 @@ static int add_edac_pci_to_global_list(struct edac_pci_ctl_info *pci)
- 	struct list_head *item, *insert_before;
- 	struct edac_pci_ctl_info *rover;
+ 	/* Memory location data */
+ 	unsigned location[EDAC_MAX_LAYERS];
  
--	debugf1("%s()\n", __func__);
-+	debugf1("\n");
++	struct kobject kobj;		/* sysfs kobject for this csrow */
+ 	struct mem_ctl_info *mci;	/* the parent */
  
- 	insert_before = &edac_pci_list;
- 
-@@ -226,7 +226,7 @@ static void edac_pci_workq_function(struct work_struct *work_req)
- 	int msec;
- 	unsigned long delay;
- 
--	debugf3("%s() checking\n", __func__);
-+	debugf3("checking\n");
- 
- 	mutex_lock(&edac_pci_ctls_mutex);
- 
-@@ -261,7 +261,7 @@ static void edac_pci_workq_function(struct work_struct *work_req)
- static void edac_pci_workq_setup(struct edac_pci_ctl_info *pci,
- 				 unsigned int msec)
- {
--	debugf0("%s()\n", __func__);
-+	debugf0("\n");
- 
- 	INIT_DELAYED_WORK(&pci->work, edac_pci_workq_function);
- 	queue_delayed_work(edac_workqueue, &pci->work,
-@@ -276,7 +276,7 @@ static void edac_pci_workq_teardown(struct edac_pci_ctl_info *pci)
- {
- 	int status;
- 
--	debugf0("%s()\n", __func__);
-+	debugf0("\n");
- 
- 	status = cancel_delayed_work(&pci->work);
- 	if (status == 0)
-@@ -293,7 +293,7 @@ static void edac_pci_workq_teardown(struct edac_pci_ctl_info *pci)
- void edac_pci_reset_delay_period(struct edac_pci_ctl_info *pci,
- 				 unsigned long value)
- {
--	debugf0("%s()\n", __func__);
-+	debugf0("\n");
- 
- 	edac_pci_workq_teardown(pci);
- 
-@@ -333,7 +333,7 @@ EXPORT_SYMBOL_GPL(edac_pci_alloc_index);
+ 	u32 grain;		/* granularity of reported error in bytes */
+@@ -484,6 +485,8 @@ struct dimm_info {
+  *	  patches in this series will fix this issue.
   */
- int edac_pci_add_device(struct edac_pci_ctl_info *pci, int edac_idx)
- {
--	debugf0("%s()\n", __func__);
-+	debugf0("\n");
+ struct rank_info {
++	struct device dev;
++
+ 	int chan_idx;
+ 	struct csrow_info *csrow;
+ 	struct dimm_info *dimm;
+@@ -492,6 +495,8 @@ struct rank_info {
+ };
  
- 	pci->pci_idx = edac_idx;
- 	pci->start_time = jiffies;
-@@ -393,7 +393,7 @@ struct edac_pci_ctl_info *edac_pci_del_device(struct device *dev)
- {
- 	struct edac_pci_ctl_info *pci;
+ struct csrow_info {
++	struct device dev;
++
+ 	/* Used only by edac_mc_find_csrow_by_page() */
+ 	unsigned long first_page;	/* first page number in csrow */
+ 	unsigned long last_page;	/* last page number in csrow */
+@@ -517,15 +522,6 @@ struct mcidev_sysfs_group {
+ 	const struct mcidev_sysfs_attribute *mcidev_attr; /* group attributes */
+ };
  
--	debugf0("%s()\n", __func__);
-+	debugf0("\n");
+-struct mcidev_sysfs_group_kobj {
+-	struct list_head list;		/* list for all instances within a mc */
+-
+-	struct kobject kobj;		/* kobj for the group */
+-
+-	const struct mcidev_sysfs_group *grp;	/* group description table */
+-	struct mem_ctl_info *mci;	/* the parent */
+-};
+-
+ /* mcidev_sysfs_attribute structure
+  *	used for driver sysfs attributes and in mem_ctl_info
+  * 	sysfs top level entries
+@@ -536,13 +532,27 @@ struct mcidev_sysfs_attribute {
+ 	const struct mcidev_sysfs_group *grp;	/* Points to a group of attributes */
  
- 	mutex_lock(&edac_pci_ctls_mutex);
+ 	/* Ops for show/store values at the attribute - not used on group */
+-        ssize_t (*show)(struct mem_ctl_info *,char *);
+-        ssize_t (*store)(struct mem_ctl_info *, const char *,size_t);
++	ssize_t (*show)(struct mem_ctl_info *, char *);
++	ssize_t (*store)(struct mem_ctl_info *, const char *, size_t);
++
++	void *priv;
++};
++
++/*
++ * struct errcount_attribute - used to store the several error counts
++ */
++struct errcount_attribute_data {
++	int n_layers;
++	int pos[EDAC_MAX_LAYERS];
++	int layer0, layer1, layer2;
+ };
  
-@@ -430,7 +430,7 @@ EXPORT_SYMBOL_GPL(edac_pci_del_device);
+ /* MEMORY controller information structure
   */
- static void edac_pci_generic_check(struct edac_pci_ctl_info *pci)
- {
--	debugf4("%s()\n", __func__);
-+	debugf4("\n");
- 	edac_pci_do_parity_check();
- }
- 
-@@ -475,7 +475,7 @@ struct edac_pci_ctl_info *edac_pci_create_generic_ctl(struct device *dev,
- 	pdata->edac_idx = edac_pci_idx++;
- 
- 	if (edac_pci_add_device(pci, pdata->edac_idx) > 0) {
--		debugf3("%s(): failed edac_pci_add_device()\n", __func__);
-+		debugf3("failed edac_pci_add_device()\n");
- 		edac_pci_free_ctl_info(pci);
- 		return NULL;
- 	}
-@@ -491,7 +491,7 @@ EXPORT_SYMBOL_GPL(edac_pci_create_generic_ctl);
-  */
- void edac_pci_release_generic_ctl(struct edac_pci_ctl_info *pci)
- {
--	debugf0("%s() pci mod=%s\n", __func__, pci->mod_name);
-+	debugf0("pci mod=%s\n", pci->mod_name);
- 
- 	edac_pci_del_device(pci->dev);
- 	edac_pci_free_ctl_info(pci);
-diff --git a/drivers/edac/edac_pci_sysfs.c b/drivers/edac/edac_pci_sysfs.c
-index 97f5064..6678216 100644
---- a/drivers/edac/edac_pci_sysfs.c
-+++ b/drivers/edac/edac_pci_sysfs.c
-@@ -78,7 +78,7 @@ static void edac_pci_instance_release(struct kobject *kobj)
- {
- 	struct edac_pci_ctl_info *pci;
- 
--	debugf0("%s()\n", __func__);
-+	debugf0("\n");
- 
- 	/* Form pointer to containing struct, the pci control struct */
- 	pci = to_instance(kobj);
-@@ -161,7 +161,7 @@ static int edac_pci_create_instance_kobj(struct edac_pci_ctl_info *pci, int idx)
- 	struct kobject *main_kobj;
- 	int err;
- 
--	debugf0("%s()\n", __func__);
-+	debugf0("\n");
- 
- 	/* First bump the ref count on the top main kobj, which will
- 	 * track the number of PCI instances we have, and thus nest
-@@ -177,14 +177,14 @@ static int edac_pci_create_instance_kobj(struct edac_pci_ctl_info *pci, int idx)
- 	err = kobject_init_and_add(&pci->kobj, &ktype_pci_instance,
- 				   edac_pci_top_main_kobj, "pci%d", idx);
- 	if (err != 0) {
--		debugf2("%s() failed to register instance pci%d\n",
--			__func__, idx);
-+		debugf2("failed to register instance pci%d\n",
-+			idx);
- 		kobject_put(edac_pci_top_main_kobj);
- 		goto error_out;
- 	}
- 
- 	kobject_uevent(&pci->kobj, KOBJ_ADD);
--	debugf1("%s() Register instance 'pci%d' kobject\n", __func__, idx);
-+	debugf1("Register instance 'pci%d' kobject\n", idx);
- 
- 	return 0;
- 
-@@ -201,7 +201,7 @@ error_out:
- static void edac_pci_unregister_sysfs_instance_kobj(
- 			struct edac_pci_ctl_info *pci)
- {
--	debugf0("%s()\n", __func__);
-+	debugf0("\n");
- 
- 	/* Unregister the instance kobject and allow its release
- 	 * function release the main reference count and then
-@@ -317,7 +317,7 @@ static struct edac_pci_dev_attribute *edac_pci_attr[] = {
-  */
- static void edac_pci_release_main_kobj(struct kobject *kobj)
- {
--	debugf0("%s() here to module_put(THIS_MODULE)\n", __func__);
-+	debugf0("here to module_put(THIS_MODULE)\n");
- 
- 	kfree(kobj);
- 
-@@ -345,7 +345,7 @@ static int edac_pci_main_kobj_setup(void)
- 	int err;
- 	struct bus_type *edac_subsys;
- 
--	debugf0("%s()\n", __func__);
-+	debugf0("\n");
- 
- 	/* check and count if we have already created the main kobject */
- 	if (atomic_inc_return(&edac_pci_sysfs_refcount) != 1)
-@@ -356,7 +356,7 @@ static int edac_pci_main_kobj_setup(void)
- 	 */
- 	edac_subsys = edac_get_sysfs_subsys();
- 	if (edac_subsys == NULL) {
--		debugf1("%s() no edac_subsys\n", __func__);
-+		debugf1("no edac_subsys\n");
- 		err = -ENODEV;
- 		goto decrement_count_fail;
- 	}
-@@ -366,7 +366,7 @@ static int edac_pci_main_kobj_setup(void)
- 	 * level main kobj for EDAC PCI
- 	 */
- 	if (!try_module_get(THIS_MODULE)) {
--		debugf1("%s() try_module_get() failed\n", __func__);
-+		debugf1("try_module_get() failed\n");
- 		err = -ENODEV;
- 		goto mod_get_fail;
- 	}
-@@ -421,15 +421,14 @@ decrement_count_fail:
-  */
- static void edac_pci_main_kobj_teardown(void)
- {
--	debugf0("%s()\n", __func__);
-+	debugf0("\n");
- 
- 	/* Decrement the count and only if no more controller instances
- 	 * are connected perform the unregisteration of the top level
- 	 * main kobj
- 	 */
- 	if (atomic_dec_return(&edac_pci_sysfs_refcount) == 0) {
--		debugf0("%s() called kobject_put on main kobj\n",
--			__func__);
-+		debugf0("called kobject_put on main kobj\n");
- 		kobject_put(edac_pci_top_main_kobj);
- 	}
- 	edac_put_sysfs_subsys();
-@@ -446,7 +445,7 @@ int edac_pci_create_sysfs(struct edac_pci_ctl_info *pci)
- 	int err;
- 	struct kobject *edac_kobj = &pci->kobj;
- 
--	debugf0("%s() idx=%d\n", __func__, pci->pci_idx);
-+	debugf0("idx=%d\n", pci->pci_idx);
- 
- 	/* create the top main EDAC PCI kobject, IF needed */
- 	err = edac_pci_main_kobj_setup();
-@@ -460,8 +459,8 @@ int edac_pci_create_sysfs(struct edac_pci_ctl_info *pci)
- 
- 	err = sysfs_create_link(edac_kobj, &pci->dev->kobj, EDAC_PCI_SYMLINK);
- 	if (err) {
--		debugf0("%s() sysfs_create_link() returned err= %d\n",
--			__func__, err);
-+		debugf0("sysfs_create_link() returned err= %d\n",
-+			err);
- 		goto symlink_fail;
- 	}
- 
-@@ -484,7 +483,7 @@ unregister_cleanup:
-  */
- void edac_pci_remove_sysfs(struct edac_pci_ctl_info *pci)
- {
--	debugf0("%s() index=%d\n", __func__, pci->pci_idx);
-+	debugf0("index=%d\n", pci->pci_idx);
- 
- 	/* Remove the symlink */
- 	sysfs_remove_link(&pci->kobj, EDAC_PCI_SYMLINK);
-@@ -496,7 +495,7 @@ void edac_pci_remove_sysfs(struct edac_pci_ctl_info *pci)
- 	 * if this 'pci' is the last instance.
- 	 * If it is, the main kobject will be unregistered as a result
- 	 */
--	debugf0("%s() calling edac_pci_main_kobj_teardown()\n", __func__);
-+	debugf0("calling edac_pci_main_kobj_teardown()\n");
- 	edac_pci_main_kobj_teardown();
- }
- 
-@@ -671,7 +670,7 @@ void edac_pci_do_parity_check(void)
- {
- 	int before_count;
- 
--	debugf3("%s()\n", __func__);
-+	debugf3("\n");
- 
- 	/* if policy has PCI check off, leave now */
- 	if (!check_pci_errors)
-diff --git a/drivers/edac/i3000_edac.c b/drivers/edac/i3000_edac.c
-index 812213d..67975ba 100644
---- a/drivers/edac/i3000_edac.c
-+++ b/drivers/edac/i3000_edac.c
-@@ -275,7 +275,7 @@ static void i3000_check(struct mem_ctl_info *mci)
- {
- 	struct i3000_error_info info;
- 
--	debugf1("MC%d: %s()\n", mci->mc_idx, __func__);
-+	debugf1("MC%d\n", mci->mc_idx);
- 	i3000_get_error_info(mci, &info);
- 	i3000_process_error_info(mci, &info, 1);
- }
-@@ -322,7 +322,7 @@ static int i3000_probe1(struct pci_dev *pdev, int dev_idx)
- 	unsigned long mchbar;
- 	void __iomem *window;
- 
--	debugf0("MC: %s()\n", __func__);
-+	debugf0("MC:\n");
- 
- 	pci_read_config_dword(pdev, I3000_MCHBAR, (u32 *) & mchbar);
- 	mchbar &= I3000_MCHBAR_MASK;
-@@ -366,7 +366,7 @@ static int i3000_probe1(struct pci_dev *pdev, int dev_idx)
- 	if (!mci)
- 		return -ENOMEM;
- 
--	debugf3("MC: %s(): init mci\n", __func__);
-+	debugf3("MC: init mci\n");
- 
- 	mci->pdev = &pdev->dev;
- 	mci->mtype_cap = MEM_FLAG_DDR2;
-@@ -399,8 +399,8 @@ static int i3000_probe1(struct pci_dev *pdev, int dev_idx)
- 		cumul_size = value << (I3000_DRB_SHIFT - PAGE_SHIFT);
- 		if (interleaved)
- 			cumul_size <<= 1;
--		debugf3("MC: %s(): (%d) cumul_size 0x%x\n",
--			__func__, i, cumul_size);
-+		debugf3("MC: (%d) cumul_size 0x%x\n",
-+			i, cumul_size);
- 		if (cumul_size == last_cumul_size)
- 			continue;
- 
-@@ -429,7 +429,7 @@ static int i3000_probe1(struct pci_dev *pdev, int dev_idx)
- 
- 	rc = -ENODEV;
- 	if (edac_mc_add_mc(mci)) {
--		debugf3("MC: %s(): failed edac_mc_add_mc()\n", __func__);
-+		debugf3("MC: failed edac_mc_add_mc()\n");
- 		goto fail;
- 	}
- 
-@@ -445,7 +445,7 @@ static int i3000_probe1(struct pci_dev *pdev, int dev_idx)
- 	}
- 
- 	/* get this far and it's successful */
--	debugf3("MC: %s(): success\n", __func__);
-+	debugf3("MC: success\n");
- 	return 0;
- 
- fail:
-@@ -461,7 +461,7 @@ static int __devinit i3000_init_one(struct pci_dev *pdev,
- {
- 	int rc;
- 
--	debugf0("MC: %s()\n", __func__);
-+	debugf0("MC:\n");
- 
- 	if (pci_enable_device(pdev) < 0)
- 		return -EIO;
-@@ -477,7 +477,7 @@ static void __devexit i3000_remove_one(struct pci_dev *pdev)
- {
- 	struct mem_ctl_info *mci;
- 
--	debugf0("%s()\n", __func__);
-+	debugf0("\n");
- 
- 	if (i3000_pci)
- 		edac_pci_release_generic_ctl(i3000_pci);
-@@ -511,7 +511,7 @@ static int __init i3000_init(void)
- {
- 	int pci_rc;
- 
--	debugf3("MC: %s()\n", __func__);
-+	debugf3("MC:\n");
- 
-        /* Ensure that the OPSTATE is set correctly for POLL or NMI */
-        opstate_init();
-@@ -552,7 +552,7 @@ fail0:
- 
- static void __exit i3000_exit(void)
- {
--	debugf3("MC: %s()\n", __func__);
-+	debugf3("MC:\n");
- 
- 	pci_unregister_driver(&i3000_driver);
- 	if (!i3000_registered) {
-diff --git a/drivers/edac/i3200_edac.c b/drivers/edac/i3200_edac.c
-index c5f0fb3..9698ca3 100644
---- a/drivers/edac/i3200_edac.c
-+++ b/drivers/edac/i3200_edac.c
-@@ -245,7 +245,7 @@ static void i3200_check(struct mem_ctl_info *mci)
- {
- 	struct i3200_error_info info;
- 
--	debugf1("MC%d: %s()\n", mci->mc_idx, __func__);
-+	debugf1("MC%d\n", mci->mc_idx);
- 	i3200_get_and_clear_error_info(mci, &info);
- 	i3200_process_error_info(mci, &info);
- }
-@@ -332,7 +332,7 @@ static int i3200_probe1(struct pci_dev *pdev, int dev_idx)
- 	void __iomem *window;
- 	struct i3200_priv *priv;
- 
--	debugf0("MC: %s()\n", __func__);
-+	debugf0("MC:\n");
- 
- 	window = i3200_map_mchbar(pdev);
- 	if (!window)
-@@ -352,7 +352,7 @@ static int i3200_probe1(struct pci_dev *pdev, int dev_idx)
- 	if (!mci)
- 		return -ENOMEM;
- 
--	debugf3("MC: %s(): init mci\n", __func__);
-+	debugf3("MC: init mci\n");
- 
- 	mci->pdev = &pdev->dev;
- 	mci->mtype_cap = MEM_FLAG_DDR2;
-@@ -403,12 +403,12 @@ static int i3200_probe1(struct pci_dev *pdev, int dev_idx)
- 
- 	rc = -ENODEV;
- 	if (edac_mc_add_mc(mci)) {
--		debugf3("MC: %s(): failed edac_mc_add_mc()\n", __func__);
-+		debugf3("MC: failed edac_mc_add_mc()\n");
- 		goto fail;
- 	}
- 
- 	/* get this far and it's successful */
--	debugf3("MC: %s(): success\n", __func__);
-+	debugf3("MC: success\n");
- 	return 0;
- 
- fail:
-@@ -424,7 +424,7 @@ static int __devinit i3200_init_one(struct pci_dev *pdev,
- {
- 	int rc;
- 
--	debugf0("MC: %s()\n", __func__);
-+	debugf0("MC:\n");
- 
- 	if (pci_enable_device(pdev) < 0)
- 		return -EIO;
-@@ -441,7 +441,7 @@ static void __devexit i3200_remove_one(struct pci_dev *pdev)
- 	struct mem_ctl_info *mci;
- 	struct i3200_priv *priv;
- 
--	debugf0("%s()\n", __func__);
-+	debugf0("\n");
- 
- 	mci = edac_mc_del_mc(&pdev->dev);
- 	if (!mci)
-@@ -475,7 +475,7 @@ static int __init i3200_init(void)
- {
- 	int pci_rc;
- 
--	debugf3("MC: %s()\n", __func__);
-+	debugf3("MC:\n");
- 
- 	/* Ensure that the OPSTATE is set correctly for POLL or NMI */
- 	opstate_init();
-@@ -516,7 +516,7 @@ fail0:
- 
- static void __exit i3200_exit(void)
- {
--	debugf3("MC: %s()\n", __func__);
-+	debugf3("MC:\n");
- 
- 	pci_unregister_driver(&i3200_driver);
- 	if (!i3200_registered) {
-diff --git a/drivers/edac/i5000_edac.c b/drivers/edac/i5000_edac.c
-index a7da4c7..4a5ca52 100644
---- a/drivers/edac/i5000_edac.c
-+++ b/drivers/edac/i5000_edac.c
-@@ -779,7 +779,7 @@ static void i5000_clear_error(struct mem_ctl_info *mci)
- static void i5000_check_error(struct mem_ctl_info *mci)
- {
- 	struct i5000_error_info info;
--	debugf4("MC%d: %s: %s()\n", mci->mc_idx, __FILE__, __func__);
-+	debugf4("MC%d\n", mci->mc_idx);
- 	i5000_get_error_info(mci, &info);
- 	i5000_process_error_info(mci, &info, 1);
- }
-@@ -1363,9 +1363,8 @@ static int i5000_probe1(struct pci_dev *pdev, int dev_idx)
- 	int num_channels;
- 	int num_dimms_per_channel;
- 
--	debugf0("MC: %s: %s(), pdev bus %u dev=0x%x fn=0x%x\n",
--		__FILE__, __func__,
--		pdev->bus->number,
-+	debugf0("MC: %s(), pdev bus %u dev=0x%x fn=0x%x\n",
-+		__FILE__, pdev->bus->number,
- 		PCI_SLOT(pdev->devfn), PCI_FUNC(pdev->devfn));
- 
- 	/* We only are looking for func 0 of the set */
-@@ -1388,8 +1387,8 @@ static int i5000_probe1(struct pci_dev *pdev, int dev_idx)
- 	i5000_get_dimm_and_channel_counts(pdev, &num_dimms_per_channel,
- 					&num_channels);
- 
--	debugf0("MC: %s(): Number of Branches=2 Channels= %d  DIMMS= %d\n",
--		__func__, num_channels, num_dimms_per_channel);
-+	debugf0("MC: Number of Branches=2 Channels= %d  DIMMS= %d\n",
-+		num_channels, num_dimms_per_channel);
- 
- 	/* allocate a new MC control structure */
- 
-@@ -1406,7 +1405,7 @@ static int i5000_probe1(struct pci_dev *pdev, int dev_idx)
- 	if (mci == NULL)
- 		return -ENOMEM;
- 
--	debugf0("MC: %s: %s(): mci = %p\n", __FILE__, __func__, mci);
-+	debugf0("MC: %s(): mci = %p\n", __FILE__, mci);
- 
- 	mci->pdev = &pdev->dev;	/* record ptr  to the generic device */
- 
-@@ -1449,8 +1448,8 @@ static int i5000_probe1(struct pci_dev *pdev, int dev_idx)
- 
- 	/* add this new MC control structure to EDAC's list of MCs */
- 	if (edac_mc_add_mc(mci)) {
--		debugf0("MC: %s: %s(): failed edac_mc_add_mc()\n",
--			__FILE__, __func__);
-+		debugf0("MC: %s(): failed edac_mc_add_mc()\n",
-+			__FILE__);
- 		/* FIXME: perhaps some code should go here that disables error
- 		 * reporting if we just enabled it
- 		 */
-@@ -1494,7 +1493,7 @@ static int __devinit i5000_init_one(struct pci_dev *pdev,
- {
- 	int rc;
- 
--	debugf0("MC: %s: %s()\n", __FILE__, __func__);
-+	debugf0("MC: %s()\n", __FILE__);
- 
- 	/* wake up device */
- 	rc = pci_enable_device(pdev);
-@@ -1513,7 +1512,7 @@ static void __devexit i5000_remove_one(struct pci_dev *pdev)
- {
- 	struct mem_ctl_info *mci;
- 
--	debugf0("%s: %s()\n", __FILE__, __func__);
-+	debugf0("%s()\n", __FILE__);
- 
- 	if (i5000_pci)
- 		edac_pci_release_generic_ctl(i5000_pci);
-@@ -1559,7 +1558,7 @@ static int __init i5000_init(void)
- {
- 	int pci_rc;
- 
--	debugf2("MC: %s: %s()\n", __FILE__, __func__);
-+	debugf2("MC: %s()\n", __FILE__);
- 
-        /* Ensure that the OPSTATE is set correctly for POLL or NMI */
-        opstate_init();
-@@ -1575,7 +1574,7 @@ static int __init i5000_init(void)
-  */
- static void __exit i5000_exit(void)
- {
--	debugf2("MC: %s: %s()\n", __FILE__, __func__);
-+	debugf2("MC: %s()\n", __FILE__);
- 	pci_unregister_driver(&i5000_driver);
- }
- 
-diff --git a/drivers/edac/i5400_edac.c b/drivers/edac/i5400_edac.c
-index 0570cf3..be1880d 100644
---- a/drivers/edac/i5400_edac.c
-+++ b/drivers/edac/i5400_edac.c
-@@ -700,7 +700,7 @@ static void i5400_clear_error(struct mem_ctl_info *mci)
- static void i5400_check_error(struct mem_ctl_info *mci)
- {
- 	struct i5400_error_info info;
--	debugf4("MC%d: %s: %s()\n", mci->mc_idx, __FILE__, __func__);
-+	debugf4("MC%d\n", mci->mc_idx);
- 	i5400_get_error_info(mci, &info);
- 	i5400_process_error_info(mci, &info);
- }
-@@ -1203,8 +1203,7 @@ static int i5400_init_dimms(struct mem_ctl_info *mci)
- 
- 			size_mb =  pvt->dimm_info[slot][channel].megabytes;
- 
--			debugf2("%s: dimm (branch %d channel %d slot %d): %d.%03d GB\n",
--				__func__,
-+			debugf2("dimm (branch %d channel %d slot %d): %d.%03d GB\n",
- 				channel / 2, channel % 2, slot,
- 				size_mb / 1000, size_mb % 1000);
- 
-@@ -1270,9 +1269,8 @@ static int i5400_probe1(struct pci_dev *pdev, int dev_idx)
- 	if (dev_idx >= ARRAY_SIZE(i5400_devs))
- 		return -EINVAL;
- 
--	debugf0("MC: %s: %s(), pdev bus %u dev=0x%x fn=0x%x\n",
--		__FILE__, __func__,
--		pdev->bus->number,
-+	debugf0("MC: %s(), pdev bus %u dev=0x%x fn=0x%x\n",
-+		__FILE__, pdev->bus->number,
- 		PCI_SLOT(pdev->devfn), PCI_FUNC(pdev->devfn));
- 
- 	/* We only are looking for func 0 of the set */
-@@ -1297,7 +1295,7 @@ static int i5400_probe1(struct pci_dev *pdev, int dev_idx)
- 	if (mci == NULL)
- 		return -ENOMEM;
- 
--	debugf0("MC: %s: %s(): mci = %p\n", __FILE__, __func__, mci);
-+	debugf0("MC: %s(): mci = %p\n", __FILE__, mci);
- 
- 	mci->pdev = &pdev->dev;	/* record ptr  to the generic device */
- 
-@@ -1340,8 +1338,8 @@ static int i5400_probe1(struct pci_dev *pdev, int dev_idx)
- 
- 	/* add this new MC control structure to EDAC's list of MCs */
- 	if (edac_mc_add_mc(mci)) {
--		debugf0("MC: %s: %s(): failed edac_mc_add_mc()\n",
--			__FILE__, __func__);
-+		debugf0("MC: %s(): failed edac_mc_add_mc()\n",
-+			__FILE__);
- 		/* FIXME: perhaps some code should go here that disables error
- 		 * reporting if we just enabled it
- 		 */
-@@ -1385,7 +1383,7 @@ static int __devinit i5400_init_one(struct pci_dev *pdev,
- {
- 	int rc;
- 
--	debugf0("MC: %s: %s()\n", __FILE__, __func__);
-+	debugf0("MC: %s()\n", __FILE__);
- 
- 	/* wake up device */
- 	rc = pci_enable_device(pdev);
-@@ -1404,7 +1402,7 @@ static void __devexit i5400_remove_one(struct pci_dev *pdev)
- {
- 	struct mem_ctl_info *mci;
- 
--	debugf0("%s: %s()\n", __FILE__, __func__);
-+	debugf0("%s()\n", __FILE__);
- 
- 	if (i5400_pci)
- 		edac_pci_release_generic_ctl(i5400_pci);
-@@ -1450,7 +1448,7 @@ static int __init i5400_init(void)
- {
- 	int pci_rc;
- 
--	debugf2("MC: %s: %s()\n", __FILE__, __func__);
-+	debugf2("MC: %s()\n", __FILE__);
- 
- 	/* Ensure that the OPSTATE is set correctly for POLL or NMI */
- 	opstate_init();
-@@ -1466,7 +1464,7 @@ static int __init i5400_init(void)
-  */
- static void __exit i5400_exit(void)
- {
--	debugf2("MC: %s: %s()\n", __FILE__, __func__);
-+	debugf2("MC: %s()\n", __FILE__);
- 	pci_unregister_driver(&i5400_driver);
- }
- 
-diff --git a/drivers/edac/i7300_edac.c b/drivers/edac/i7300_edac.c
-index db84456..20435ee 100644
---- a/drivers/edac/i7300_edac.c
-+++ b/drivers/edac/i7300_edac.c
-@@ -1032,8 +1032,7 @@ static int __devinit i7300_init_one(struct pci_dev *pdev,
- 	if (rc == -EIO)
- 		return rc;
- 
--	debugf0("MC: " __FILE__ ": %s(), pdev bus %u dev=0x%x fn=0x%x\n",
--		__func__,
-+	debugf0("MC: pdev bus %u dev=0x%x fn=0x%x\n",
- 		pdev->bus->number,
- 		PCI_SLOT(pdev->devfn), PCI_FUNC(pdev->devfn));
- 
-@@ -1055,7 +1054,7 @@ static int __devinit i7300_init_one(struct pci_dev *pdev,
- 	if (mci == NULL)
- 		return -ENOMEM;
- 
--	debugf0("MC: " __FILE__ ": %s(): mci = %p\n", __func__, mci);
-+	debugf0("MC: mci = %p\n", mci);
- 
- 	mci->pdev = &pdev->dev;	/* record ptr  to the generic device */
- 
-@@ -1099,8 +1098,7 @@ static int __devinit i7300_init_one(struct pci_dev *pdev,
- 
- 	/* add this new MC control structure to EDAC's list of MCs */
- 	if (edac_mc_add_mc(mci)) {
--		debugf0("MC: " __FILE__
--			": %s(): failed edac_mc_add_mc()\n", __func__);
-+		debugf0("MC: failed edac_mc_add_mc()\n");
- 		/* FIXME: perhaps some code should go here that disables error
- 		 * reporting if we just enabled it
- 		 */
-@@ -1142,7 +1140,7 @@ static void __devexit i7300_remove_one(struct pci_dev *pdev)
- 	struct mem_ctl_info *mci;
- 	char *tmp;
- 
--	debugf0(__FILE__ ": %s()\n", __func__);
-+	debugf0("\n");
- 
- 	if (i7300_pci)
- 		edac_pci_release_generic_ctl(i7300_pci);
-@@ -1189,7 +1187,7 @@ static int __init i7300_init(void)
- {
- 	int pci_rc;
- 
--	debugf2("MC: " __FILE__ ": %s()\n", __func__);
-+	debugf2("\n");
- 
- 	/* Ensure that the OPSTATE is set correctly for POLL or NMI */
- 	opstate_init();
-@@ -1204,7 +1202,7 @@ static int __init i7300_init(void)
-  */
- static void __exit i7300_exit(void)
- {
--	debugf2("MC: " __FILE__ ": %s()\n", __func__);
-+	debugf2("\n");
- 	pci_unregister_driver(&i7300_driver);
- }
- 
-diff --git a/drivers/edac/i7core_edac.c b/drivers/edac/i7core_edac.c
-index c29944f..f851a43 100644
---- a/drivers/edac/i7core_edac.c
-+++ b/drivers/edac/i7core_edac.c
-@@ -824,7 +824,7 @@ static ssize_t i7core_inject_store_##param(			\
- 	long value;						\
- 	int rc;							\
- 								\
--	debugf1("%s()\n", __func__);				\
-+	debugf1("\n");				\
- 	pvt = mci->pvt_info;					\
- 								\
- 	if (pvt->inject.enable)					\
-@@ -852,7 +852,7 @@ static ssize_t i7core_inject_show_##param(			\
- 	struct i7core_pvt *pvt;					\
- 								\
- 	pvt = mci->pvt_info;					\
--	debugf1("%s() pvt=%p\n", __func__, pvt);		\
-+	debugf1("pvt=%p\n", pvt);		\
- 	if (pvt->inject.param < 0)				\
- 		return sprintf(data, "any\n");			\
- 	else							\
-@@ -1059,7 +1059,7 @@ static ssize_t i7core_show_counter_##param(			\
- 	struct mem_ctl_info *mci = to_mci(dev);			\
- 	struct i7core_pvt *pvt = mci->pvt_info;			\
- 								\
--	debugf1("%s()\n", __func__);				\
-+	debugf1("\n");				\
- 	if (!pvt->ce_count_available || (pvt->is_registered))	\
- 		return sprintf(data, "data unavailable\n");	\
- 	return sprintf(data, "%lu\n",				\
-@@ -1190,8 +1190,7 @@ static int i7core_create_sysfs_devices(struct mem_ctl_info *mci)
- 	dev_set_name(pvt->addrmatch_dev, "inject_addrmatch");
- 	dev_set_drvdata(pvt->addrmatch_dev, mci);
- 
--	debugf1("%s(): creating %s\n", __func__,
--		dev_name(pvt->addrmatch_dev));
-+	debugf1("creating %s\n", dev_name(pvt->addrmatch_dev));
- 
- 	rc = device_add(pvt->addrmatch_dev);
- 	if (rc < 0)
-@@ -1213,8 +1212,7 @@ static int i7core_create_sysfs_devices(struct mem_ctl_info *mci)
- 		dev_set_name(pvt->chancounts_dev, "all_channel_counts");
- 		dev_set_drvdata(pvt->chancounts_dev, mci);
- 
--		debugf1("%s(): creating %s\n", __func__,
--			dev_name(pvt->chancounts_dev));
-+		debugf1("creating %s\n", dev_name(pvt->chancounts_dev));
- 
- 		rc = device_add(pvt->chancounts_dev);
- 		if (rc < 0)
-@@ -1254,7 +1252,7 @@ static void i7core_put_devices(struct i7core_dev *i7core_dev)
- {
- 	int i;
- 
--	debugf0(__FILE__ ": %s()\n", __func__);
-+	debugf0("\n");
- 	for (i = 0; i < i7core_dev->n_devs; i++) {
- 		struct pci_dev *pdev = i7core_dev->pdev[i];
- 		if (!pdev)
-@@ -1652,7 +1650,7 @@ static void i7core_udimm_check_mc_ecc_err(struct mem_ctl_info *mci)
- 	int new0, new1, new2;
- 
- 	if (!pvt->pci_mcr[4]) {
--		debugf0("%s MCR registers not found\n", __func__);
-+		debugf0("MCR registers not found\n");
- 		return;
- 	}
- 
-@@ -2190,8 +2188,7 @@ static void i7core_unregister_mci(struct i7core_dev *i7core_dev)
- 	struct i7core_pvt *pvt;
- 
- 	if (unlikely(!mci || !mci->pvt_info)) {
--		debugf0("MC: " __FILE__ ": %s(): dev = %p\n",
--			__func__, &i7core_dev->pdev[0]->dev);
-+		debugf0("MC: dev = %p\n", &i7core_dev->pdev[0]->dev);
- 
- 		i7core_printk(KERN_ERR, "Couldn't find mci handler\n");
- 		return;
-@@ -2199,8 +2196,7 @@ static void i7core_unregister_mci(struct i7core_dev *i7core_dev)
- 
- 	pvt = mci->pvt_info;
- 
--	debugf0("MC: " __FILE__ ": %s(): mci = %p, dev = %p\n",
--		__func__, mci, &i7core_dev->pdev[0]->dev);
-+	debugf0("MC: mci = %p, dev = %p\n", mci, &i7core_dev->pdev[0]->dev);
- 
- 	/* Disable scrubrate setting */
- 	if (pvt->enable_scrub)
-@@ -2241,8 +2237,7 @@ static int i7core_register_mci(struct i7core_dev *i7core_dev)
- 	if (unlikely(!mci))
- 		return -ENOMEM;
- 
--	debugf0("MC: " __FILE__ ": %s(): mci = %p, dev = %p\n",
--		__func__, mci, &i7core_dev->pdev[0]->dev);
-+	debugf0("MC: mci = %p, dev = %p\n", mci, &i7core_dev->pdev[0]->dev);
- 
- 	pvt = mci->pvt_info;
- 	memset(pvt, 0, sizeof(*pvt));
-@@ -2285,8 +2280,7 @@ static int i7core_register_mci(struct i7core_dev *i7core_dev)
- 
- 	/* add this new MC control structure to EDAC's list of MCs */
- 	if (unlikely(edac_mc_add_mc(mci))) {
--		debugf0("MC: " __FILE__
--			": %s(): failed edac_mc_add_mc()\n", __func__);
-+		debugf0("MC: failed edac_mc_add_mc()\n");
- 		/* FIXME: perhaps some code should go here that disables error
- 		 * reporting if we just enabled it
- 		 */
-@@ -2295,8 +2289,7 @@ static int i7core_register_mci(struct i7core_dev *i7core_dev)
- 		goto fail0;
- 	}
- 	if (i7core_create_sysfs_devices(mci)) {
--		debugf0("MC: " __FILE__
--			": %s(): failed to create sysfs nodes\n", __func__);
-+		debugf0("MC: failed to create sysfs nodes\n");
- 		edac_mc_del_mc(mci->pdev);
- 		rc = -EINVAL;
- 		goto fail0;
-@@ -2402,7 +2395,7 @@ static void __devexit i7core_remove(struct pci_dev *pdev)
- {
- 	struct i7core_dev *i7core_dev;
- 
--	debugf0(__FILE__ ": %s()\n", __func__);
-+	debugf0("\n");
- 
- 	/*
- 	 * we have a trouble here: pdev value for removal will be wrong, since
-@@ -2451,7 +2444,7 @@ static int __init i7core_init(void)
- {
- 	int pci_rc;
- 
--	debugf2("MC: " __FILE__ ": %s()\n", __func__);
-+	debugf2("\n");
- 
- 	/* Ensure that the OPSTATE is set correctly for POLL or NMI */
- 	opstate_init();
-@@ -2476,7 +2469,7 @@ static int __init i7core_init(void)
-  */
- static void __exit i7core_exit(void)
- {
--	debugf2("MC: " __FILE__ ": %s()\n", __func__);
-+	debugf2("\n");
- 	pci_unregister_driver(&i7core_driver);
- }
- 
-diff --git a/drivers/edac/i82443bxgx_edac.c b/drivers/edac/i82443bxgx_edac.c
-index 0f2751b..c43214f 100644
---- a/drivers/edac/i82443bxgx_edac.c
-+++ b/drivers/edac/i82443bxgx_edac.c
-@@ -178,7 +178,7 @@ static void i82443bxgx_edacmc_check(struct mem_ctl_info *mci)
- {
- 	struct i82443bxgx_edacmc_error_info info;
- 
--	debugf1("MC%d: %s: %s()\n", mci->mc_idx, __FILE__, __func__);
-+	debugf1("MC%d\n", mci->mc_idx);
- 	i82443bxgx_edacmc_get_error_info(mci, &info);
- 	i82443bxgx_edacmc_process_error_info(mci, &info, 1);
- }
-@@ -201,13 +201,13 @@ static void i82443bxgx_init_csrows(struct mem_ctl_info *mci,
- 		dimm = csrow->channels[0]->dimm;
- 
- 		pci_read_config_byte(pdev, I82443BXGX_DRB + index, &drbar);
--		debugf1("MC%d: %s: %s() Row=%d DRB = %#0x\n",
--			mci->mc_idx, __FILE__, __func__, index, drbar);
-+		debugf1("MC%d: Row=%d DRB = %#0x\n",
-+			mci->mc_idx,index, drbar);
- 		row_high_limit = ((u32) drbar << 23);
- 		/* find the DRAM Chip Select Base address and mask */
--		debugf1("MC%d: %s: %s() Row=%d, "
-+		debugf1("MC%d: Row=%d, "
- 			"Boundary Address=%#0x, Last = %#0x\n",
--			mci->mc_idx, __FILE__, __func__, index, row_high_limit,
-+			mci->mc_idx, index, row_high_limit,
- 			row_high_limit_last);
- 
- 		/* 440GX goes to 2GB, represented with a DRB of 0. */
-@@ -241,7 +241,7 @@ static int i82443bxgx_edacmc_probe1(struct pci_dev *pdev, int dev_idx)
- 	enum mem_type mtype;
- 	enum edac_type edac_mode;
- 
--	debugf0("MC: %s: %s()\n", __FILE__, __func__);
-+	debugf0("MC: %s()\n", __FILE__);
- 
- 	/* Something is really hosed if PCI config space reads from
- 	 * the MC aren't working.
-@@ -259,7 +259,7 @@ static int i82443bxgx_edacmc_probe1(struct pci_dev *pdev, int dev_idx)
- 	if (mci == NULL)
- 		return -ENOMEM;
- 
--	debugf0("MC: %s: %s(): mci = %p\n", __FILE__, __func__, mci);
-+	debugf0("MC: %s(): mci = %p\n", __FILE__, mci);
- 	mci->pdev = &pdev->dev;
- 	mci->mtype_cap = MEM_FLAG_EDO | MEM_FLAG_SDR | MEM_FLAG_RDR;
- 	mci->edac_ctl_cap = EDAC_FLAG_NONE | EDAC_FLAG_EC | EDAC_FLAG_SECDED;
-@@ -305,8 +305,8 @@ static int i82443bxgx_edacmc_probe1(struct pci_dev *pdev, int dev_idx)
- 		edac_mode = EDAC_SECDED;
- 		break;
- 	default:
--		debugf0("%s(): Unknown/reserved ECC state "
--			"in NBXCFG register!\n", __func__);
-+		debugf0("Unknown/reserved ECC state "
-+			"in NBXCFG register!\n");
- 		edac_mode = EDAC_UNKNOWN;
- 		break;
- 	}
-@@ -330,7 +330,7 @@ static int i82443bxgx_edacmc_probe1(struct pci_dev *pdev, int dev_idx)
- 	mci->ctl_page_to_phys = NULL;
- 
- 	if (edac_mc_add_mc(mci)) {
--		debugf3("%s(): failed edac_mc_add_mc()\n", __func__);
-+		debugf3("failed edac_mc_add_mc()\n");
- 		goto fail;
- 	}
- 
-@@ -345,7 +345,7 @@ static int i82443bxgx_edacmc_probe1(struct pci_dev *pdev, int dev_idx)
- 			__func__);
- 	}
- 
--	debugf3("MC: %s: %s(): success\n", __FILE__, __func__);
-+	debugf3("MC: %s(): success\n", __FILE__);
- 	return 0;
- 
- fail:
-@@ -361,7 +361,7 @@ static int __devinit i82443bxgx_edacmc_init_one(struct pci_dev *pdev,
- {
- 	int rc;
- 
--	debugf0("MC: %s: %s()\n", __FILE__, __func__);
-+	debugf0("MC: %s()\n", __FILE__);
- 
- 	/* don't need to call pci_enable_device() */
- 	rc = i82443bxgx_edacmc_probe1(pdev, ent->driver_data);
-@@ -376,7 +376,7 @@ static void __devexit i82443bxgx_edacmc_remove_one(struct pci_dev *pdev)
- {
- 	struct mem_ctl_info *mci;
- 
--	debugf0("%s: %s()\n", __FILE__, __func__);
-+	debugf0("%s()\n", __FILE__);
- 
- 	if (i82443bxgx_pci)
- 		edac_pci_release_generic_ctl(i82443bxgx_pci);
-diff --git a/drivers/edac/i82860_edac.c b/drivers/edac/i82860_edac.c
-index 06a3c8d..d4ec21d 100644
---- a/drivers/edac/i82860_edac.c
-+++ b/drivers/edac/i82860_edac.c
-@@ -136,7 +136,7 @@ static void i82860_check(struct mem_ctl_info *mci)
- {
- 	struct i82860_error_info info;
- 
--	debugf1("MC%d: %s()\n", mci->mc_idx, __func__);
-+	debugf1("MC%d\n", mci->mc_idx);
- 	i82860_get_error_info(mci, &info);
- 	i82860_process_error_info(mci, &info, 1);
- }
-@@ -167,7 +167,7 @@ static void i82860_init_csrows(struct mem_ctl_info *mci, struct pci_dev *pdev)
- 		pci_read_config_word(pdev, I82860_GBA + index * 2, &value);
- 		cumul_size = (value & I82860_GBA_MASK) <<
- 			(I82860_GBA_SHIFT - PAGE_SHIFT);
--		debugf3("%s(): (%d) cumul_size 0x%x\n", __func__, index,
-+		debugf3("(%d) cumul_size 0x%x\n", index,
- 			cumul_size);
- 
- 		if (cumul_size == last_cumul_size)
-@@ -210,7 +210,7 @@ static int i82860_probe1(struct pci_dev *pdev, int dev_idx)
- 	if (!mci)
- 		return -ENOMEM;
- 
--	debugf3("%s(): init mci\n", __func__);
-+	debugf3("init mci\n");
- 	mci->pdev = &pdev->dev;
- 	mci->mtype_cap = MEM_FLAG_DDR;
- 	mci->edac_ctl_cap = EDAC_FLAG_NONE | EDAC_FLAG_SECDED;
-@@ -229,7 +229,7 @@ static int i82860_probe1(struct pci_dev *pdev, int dev_idx)
- 	 * type of memory controller.  The ID is therefore hardcoded to 0.
- 	 */
- 	if (edac_mc_add_mc(mci)) {
--		debugf3("%s(): failed edac_mc_add_mc()\n", __func__);
-+		debugf3("failed edac_mc_add_mc()\n");
- 		goto fail;
- 	}
- 
-@@ -245,7 +245,7 @@ static int i82860_probe1(struct pci_dev *pdev, int dev_idx)
- 	}
- 
- 	/* get this far and it's successful */
--	debugf3("%s(): success\n", __func__);
-+	debugf3("success\n");
- 
- 	return 0;
- 
-@@ -260,7 +260,7 @@ static int __devinit i82860_init_one(struct pci_dev *pdev,
- {
- 	int rc;
- 
--	debugf0("%s()\n", __func__);
-+	debugf0("\n");
- 	i82860_printk(KERN_INFO, "i82860 init one\n");
- 
- 	if (pci_enable_device(pdev) < 0)
-@@ -278,7 +278,7 @@ static void __devexit i82860_remove_one(struct pci_dev *pdev)
- {
- 	struct mem_ctl_info *mci;
- 
--	debugf0("%s()\n", __func__);
-+	debugf0("\n");
- 
- 	if (i82860_pci)
- 		edac_pci_release_generic_ctl(i82860_pci);
-@@ -311,7 +311,7 @@ static int __init i82860_init(void)
- {
- 	int pci_rc;
- 
--	debugf3("%s()\n", __func__);
-+	debugf3("\n");
- 
-        /* Ensure that the OPSTATE is set correctly for POLL or NMI */
-        opstate_init();
-@@ -352,7 +352,7 @@ fail0:
- 
- static void __exit i82860_exit(void)
- {
--	debugf3("%s()\n", __func__);
-+	debugf3("\n");
- 
- 	pci_unregister_driver(&i82860_driver);
- 
-diff --git a/drivers/edac/i82875p_edac.c b/drivers/edac/i82875p_edac.c
-index fd77ecb..20b40a76 100644
---- a/drivers/edac/i82875p_edac.c
-+++ b/drivers/edac/i82875p_edac.c
-@@ -263,7 +263,7 @@ static void i82875p_check(struct mem_ctl_info *mci)
- {
- 	struct i82875p_error_info info;
- 
--	debugf1("MC%d: %s()\n", mci->mc_idx, __func__);
-+	debugf1("MC%d\n", mci->mc_idx);
- 	i82875p_get_error_info(mci, &info);
- 	i82875p_process_error_info(mci, &info, 1);
- }
-@@ -371,7 +371,7 @@ static void i82875p_init_csrows(struct mem_ctl_info *mci,
- 
- 		value = readb(ovrfl_window + I82875P_DRB + index);
- 		cumul_size = value << (I82875P_DRB_SHIFT - PAGE_SHIFT);
--		debugf3("%s(): (%d) cumul_size 0x%x\n", __func__, index,
-+		debugf3("(%d) cumul_size 0x%x\n", index,
- 			cumul_size);
- 		if (cumul_size == last_cumul_size)
- 			continue;	/* not populated */
-@@ -405,7 +405,7 @@ static int i82875p_probe1(struct pci_dev *pdev, int dev_idx)
- 	u32 nr_chans;
- 	struct i82875p_error_info discard;
- 
--	debugf0("%s()\n", __func__);
-+	debugf0("\n");
- 
- 	ovrfl_pdev = pci_get_device(PCI_VEND_DEV(INTEL, 82875_6), NULL);
- 
-@@ -425,7 +425,7 @@ static int i82875p_probe1(struct pci_dev *pdev, int dev_idx)
- 		goto fail0;
- 	}
- 
--	debugf3("%s(): init mci\n", __func__);
-+	debugf3("init mci\n");
- 	mci->pdev = &pdev->dev;
- 	mci->mtype_cap = MEM_FLAG_DDR;
- 	mci->edac_ctl_cap = EDAC_FLAG_NONE | EDAC_FLAG_SECDED;
-@@ -436,7 +436,7 @@ static int i82875p_probe1(struct pci_dev *pdev, int dev_idx)
- 	mci->dev_name = pci_name(pdev);
- 	mci->edac_check = i82875p_check;
- 	mci->ctl_page_to_phys = NULL;
--	debugf3("%s(): init pvt\n", __func__);
-+	debugf3("init pvt\n");
- 	pvt = (struct i82875p_pvt *)mci->pvt_info;
- 	pvt->ovrfl_pdev = ovrfl_pdev;
- 	pvt->ovrfl_window = ovrfl_window;
-@@ -447,7 +447,7 @@ static int i82875p_probe1(struct pci_dev *pdev, int dev_idx)
- 	 * type of memory controller.  The ID is therefore hardcoded to 0.
- 	 */
- 	if (edac_mc_add_mc(mci)) {
--		debugf3("%s(): failed edac_mc_add_mc()\n", __func__);
-+		debugf3("failed edac_mc_add_mc()\n");
- 		goto fail1;
- 	}
- 
-@@ -463,7 +463,7 @@ static int i82875p_probe1(struct pci_dev *pdev, int dev_idx)
- 	}
- 
- 	/* get this far and it's successful */
--	debugf3("%s(): success\n", __func__);
-+	debugf3("success\n");
- 	return 0;
- 
- fail1:
-@@ -484,7 +484,7 @@ static int __devinit i82875p_init_one(struct pci_dev *pdev,
- {
- 	int rc;
- 
--	debugf0("%s()\n", __func__);
-+	debugf0("\n");
- 	i82875p_printk(KERN_INFO, "i82875p init one\n");
- 
- 	if (pci_enable_device(pdev) < 0)
-@@ -503,7 +503,7 @@ static void __devexit i82875p_remove_one(struct pci_dev *pdev)
- 	struct mem_ctl_info *mci;
- 	struct i82875p_pvt *pvt = NULL;
- 
--	debugf0("%s()\n", __func__);
-+	debugf0("\n");
- 
- 	if (i82875p_pci)
- 		edac_pci_release_generic_ctl(i82875p_pci);
-@@ -549,7 +549,7 @@ static int __init i82875p_init(void)
- {
- 	int pci_rc;
- 
--	debugf3("%s()\n", __func__);
-+	debugf3("\n");
- 
-        /* Ensure that the OPSTATE is set correctly for POLL or NMI */
-        opstate_init();
-@@ -592,7 +592,7 @@ fail0:
- 
- static void __exit i82875p_exit(void)
- {
--	debugf3("%s()\n", __func__);
-+	debugf3("\n");
- 
- 	i82875p_remove_one(mci_pdev);
- 	pci_dev_put(mci_pdev);
-diff --git a/drivers/edac/i82975x_edac.c b/drivers/edac/i82975x_edac.c
-index 4d239ab..91b9e33 100644
---- a/drivers/edac/i82975x_edac.c
-+++ b/drivers/edac/i82975x_edac.c
-@@ -331,7 +331,7 @@ static void i82975x_check(struct mem_ctl_info *mci)
- {
- 	struct i82975x_error_info info;
- 
--	debugf1("MC%d: %s()\n", mci->mc_idx, __func__);
-+	debugf1("MC%d\n", mci->mc_idx);
- 	i82975x_get_error_info(mci, &info);
- 	i82975x_process_error_info(mci, &info, 1);
- }
-@@ -406,7 +406,7 @@ static void i82975x_init_csrows(struct mem_ctl_info *mci,
- 		 */
- 		if (csrow->nr_channels > 1)
- 			cumul_size <<= 1;
--		debugf3("%s(): (%d) cumul_size 0x%x\n", __func__, index,
-+		debugf3("(%d) cumul_size 0x%x\n", index,
- 			cumul_size);
- 
- 		nr_pages = cumul_size - last_cumul_size;
-@@ -489,11 +489,11 @@ static int i82975x_probe1(struct pci_dev *pdev, int dev_idx)
- 	u8 c1drb[4];
- #endif
- 
--	debugf0("%s()\n", __func__);
-+	debugf0("\n");
- 
- 	pci_read_config_dword(pdev, I82975X_MCHBAR, &mchbar);
- 	if (!(mchbar & 1)) {
--		debugf3("%s(): failed, MCHBAR disabled!\n", __func__);
-+		debugf3("failed, MCHBAR disabled!\n");
- 		goto fail0;
- 	}
- 	mchbar &= 0xffffc000;	/* bits 31:14 used for 16K window */
-@@ -558,7 +558,7 @@ static int i82975x_probe1(struct pci_dev *pdev, int dev_idx)
- 		goto fail1;
- 	}
- 
--	debugf3("%s(): init mci\n", __func__);
-+	debugf3("init mci\n");
- 	mci->pdev = &pdev->dev;
- 	mci->mtype_cap = MEM_FLAG_DDR2;
- 	mci->edac_ctl_cap = EDAC_FLAG_NONE | EDAC_FLAG_SECDED;
-@@ -569,7 +569,7 @@ static int i82975x_probe1(struct pci_dev *pdev, int dev_idx)
- 	mci->dev_name = pci_name(pdev);
- 	mci->edac_check = i82975x_check;
- 	mci->ctl_page_to_phys = NULL;
--	debugf3("%s(): init pvt\n", __func__);
-+	debugf3("init pvt\n");
- 	pvt = (struct i82975x_pvt *) mci->pvt_info;
- 	pvt->mch_window = mch_window;
- 	i82975x_init_csrows(mci, pdev, mch_window);
-@@ -578,12 +578,12 @@ static int i82975x_probe1(struct pci_dev *pdev, int dev_idx)
- 
- 	/* finalize this instance of memory controller with edac core */
- 	if (edac_mc_add_mc(mci)) {
--		debugf3("%s(): failed edac_mc_add_mc()\n", __func__);
-+		debugf3("failed edac_mc_add_mc()\n");
- 		goto fail2;
- 	}
- 
- 	/* get this far and it's successful */
--	debugf3("%s(): success\n", __func__);
-+	debugf3("success\n");
- 	return 0;
- 
- fail2:
-@@ -601,7 +601,7 @@ static int __devinit i82975x_init_one(struct pci_dev *pdev,
- {
- 	int rc;
- 
--	debugf0("%s()\n", __func__);
-+	debugf0("\n");
- 
- 	if (pci_enable_device(pdev) < 0)
- 		return -EIO;
-@@ -619,7 +619,7 @@ static void __devexit i82975x_remove_one(struct pci_dev *pdev)
- 	struct mem_ctl_info *mci;
- 	struct i82975x_pvt *pvt;
- 
--	debugf0("%s()\n", __func__);
-+	debugf0("\n");
- 
- 	mci = edac_mc_del_mc(&pdev->dev);
- 	if (mci  == NULL)
-@@ -655,7 +655,7 @@ static int __init i82975x_init(void)
- {
- 	int pci_rc;
- 
--	debugf3("%s()\n", __func__);
-+	debugf3("\n");
- 
-        /* Ensure that the OPSTATE is set correctly for POLL or NMI */
-        opstate_init();
-@@ -697,7 +697,7 @@ fail0:
- 
- static void __exit i82975x_exit(void)
- {
--	debugf3("%s()\n", __func__);
-+	debugf3("\n");
- 
- 	pci_unregister_driver(&i82975x_driver);
- 
-diff --git a/drivers/edac/mpc85xx_edac.c b/drivers/edac/mpc85xx_edac.c
-index 0db6f1e..e01c678 100644
---- a/drivers/edac/mpc85xx_edac.c
-+++ b/drivers/edac/mpc85xx_edac.c
-@@ -280,7 +280,7 @@ static int __devinit mpc85xx_pci_err_probe(struct platform_device *op)
- 	out_be32(pdata->pci_vbase + MPC85XX_PCI_ERR_DR, ~0);
- 
- 	if (edac_pci_add_device(pci, pdata->edac_idx) > 0) {
--		debugf3("%s(): failed edac_pci_add_device()\n", __func__);
-+		debugf3("failed edac_pci_add_device()\n");
- 		goto err;
- 	}
- 
-@@ -303,7 +303,7 @@ static int __devinit mpc85xx_pci_err_probe(struct platform_device *op)
- 	}
- 
- 	devres_remove_group(&op->dev, mpc85xx_pci_err_probe);
--	debugf3("%s(): success\n", __func__);
-+	debugf3("success\n");
- 	printk(KERN_INFO EDAC_MOD_STR " PCI err registered\n");
- 
- 	return 0;
-@@ -321,7 +321,7 @@ static int mpc85xx_pci_err_remove(struct platform_device *op)
- 	struct edac_pci_ctl_info *pci = dev_get_drvdata(&op->dev);
- 	struct mpc85xx_pci_pdata *pdata = pci->pvt_info;
- 
--	debugf0("%s()\n", __func__);
-+	debugf0("\n");
- 
- 	out_be32(pdata->pci_vbase + MPC85XX_PCI_ERR_CAP_DR,
- 		 orig_pci_err_cap_dr);
-@@ -582,7 +582,7 @@ static int __devinit mpc85xx_l2_err_probe(struct platform_device *op)
- 	pdata->edac_idx = edac_dev_idx++;
- 
- 	if (edac_device_add_device(edac_dev) > 0) {
--		debugf3("%s(): failed edac_device_add_device()\n", __func__);
-+		debugf3("failed edac_device_add_device()\n");
- 		goto err;
- 	}
- 
-@@ -610,7 +610,7 @@ static int __devinit mpc85xx_l2_err_probe(struct platform_device *op)
- 
- 	devres_remove_group(&op->dev, mpc85xx_l2_err_probe);
- 
--	debugf3("%s(): success\n", __func__);
-+	debugf3("success\n");
- 	printk(KERN_INFO EDAC_MOD_STR " L2 err registered\n");
- 
- 	return 0;
-@@ -628,7 +628,7 @@ static int mpc85xx_l2_err_remove(struct platform_device *op)
- 	struct edac_device_ctl_info *edac_dev = dev_get_drvdata(&op->dev);
- 	struct mpc85xx_l2_pdata *pdata = edac_dev->pvt_info;
- 
--	debugf0("%s()\n", __func__);
-+	debugf0("\n");
- 
- 	if (edac_op_state == EDAC_OPSTATE_INT) {
- 		out_be32(pdata->l2_vbase + MPC85XX_L2_ERRINTEN, 0);
-@@ -1037,7 +1037,7 @@ static int __devinit mpc85xx_mc_err_probe(struct platform_device *op)
- 		goto err;
- 	}
- 
--	debugf3("%s(): init mci\n", __func__);
-+	debugf3("init mci\n");
- 	mci->mtype_cap = MEM_FLAG_RDDR | MEM_FLAG_RDDR2 |
- 	    MEM_FLAG_DDR | MEM_FLAG_DDR2;
- 	mci->edac_ctl_cap = EDAC_FLAG_NONE | EDAC_FLAG_SECDED;
-@@ -1063,13 +1063,13 @@ static int __devinit mpc85xx_mc_err_probe(struct platform_device *op)
- 	out_be32(pdata->mc_vbase + MPC85XX_MC_ERR_DETECT, ~0);
- 
- 	if (edac_mc_add_mc(mci)) {
--		debugf3("%s(): failed edac_mc_add_mc()\n", __func__);
-+		debugf3("failed edac_mc_add_mc()\n");
- 		goto err;
- 	}
- 
- 	if (mpc85xx_create_sysfs_attributes(mci)) {
- 		edac_mc_del_mc(mci->pdev);
--		debugf3("%s(): failed edac_mc_add_mc()\n", __func__);
-+		debugf3("failed edac_mc_add_mc()\n");
- 		goto err;
- 	}
- 
-@@ -1103,7 +1103,7 @@ static int __devinit mpc85xx_mc_err_probe(struct platform_device *op)
- 	}
- 
- 	devres_remove_group(&op->dev, mpc85xx_mc_err_probe);
--	debugf3("%s(): success\n", __func__);
-+	debugf3("success\n");
- 	printk(KERN_INFO EDAC_MOD_STR " MC err registered\n");
- 
- 	return 0;
-@@ -1121,7 +1121,7 @@ static int mpc85xx_mc_err_remove(struct platform_device *op)
- 	struct mem_ctl_info *mci = dev_get_drvdata(&op->dev);
- 	struct mpc85xx_mc_pdata *pdata = mci->pvt_info;
- 
--	debugf0("%s()\n", __func__);
-+	debugf0("\n");
- 
- 	if (edac_op_state == EDAC_OPSTATE_INT) {
- 		out_be32(pdata->mc_vbase + MPC85XX_MC_ERR_INT_EN, 0);
-diff --git a/drivers/edac/mv64x60_edac.c b/drivers/edac/mv64x60_edac.c
-index 3a58ba9..25851ef 100644
---- a/drivers/edac/mv64x60_edac.c
-+++ b/drivers/edac/mv64x60_edac.c
-@@ -169,7 +169,7 @@ static int __devinit mv64x60_pci_err_probe(struct platform_device *pdev)
- 		 MV64X60_PCIx_ERR_MASK_VAL);
- 
- 	if (edac_pci_add_device(pci, pdata->edac_idx) > 0) {
--		debugf3("%s(): failed edac_pci_add_device()\n", __func__);
-+		debugf3("failed edac_pci_add_device()\n");
- 		goto err;
- 	}
- 
-@@ -194,7 +194,7 @@ static int __devinit mv64x60_pci_err_probe(struct platform_device *pdev)
- 	devres_remove_group(&pdev->dev, mv64x60_pci_err_probe);
- 
- 	/* get this far and it's successful */
--	debugf3("%s(): success\n", __func__);
-+	debugf3("success\n");
- 
- 	return 0;
- 
-@@ -210,7 +210,7 @@ static int mv64x60_pci_err_remove(struct platform_device *pdev)
- {
- 	struct edac_pci_ctl_info *pci = platform_get_drvdata(pdev);
- 
--	debugf0("%s()\n", __func__);
-+	debugf0("\n");
- 
- 	edac_pci_del_device(&pdev->dev);
- 
-@@ -336,7 +336,7 @@ static int __devinit mv64x60_sram_err_probe(struct platform_device *pdev)
- 	pdata->edac_idx = edac_dev_idx++;
- 
- 	if (edac_device_add_device(edac_dev) > 0) {
--		debugf3("%s(): failed edac_device_add_device()\n", __func__);
-+		debugf3("failed edac_device_add_device()\n");
- 		goto err;
- 	}
- 
-@@ -363,7 +363,7 @@ static int __devinit mv64x60_sram_err_probe(struct platform_device *pdev)
- 	devres_remove_group(&pdev->dev, mv64x60_sram_err_probe);
- 
- 	/* get this far and it's successful */
--	debugf3("%s(): success\n", __func__);
-+	debugf3("success\n");
- 
- 	return 0;
- 
-@@ -379,7 +379,7 @@ static int mv64x60_sram_err_remove(struct platform_device *pdev)
- {
- 	struct edac_device_ctl_info *edac_dev = platform_get_drvdata(pdev);
- 
--	debugf0("%s()\n", __func__);
-+	debugf0("\n");
- 
- 	edac_device_del_device(&pdev->dev);
- 	edac_device_free_ctl_info(edac_dev);
-@@ -531,7 +531,7 @@ static int __devinit mv64x60_cpu_err_probe(struct platform_device *pdev)
- 	pdata->edac_idx = edac_dev_idx++;
- 
- 	if (edac_device_add_device(edac_dev) > 0) {
--		debugf3("%s(): failed edac_device_add_device()\n", __func__);
-+		debugf3("failed edac_device_add_device()\n");
- 		goto err;
- 	}
- 
-@@ -558,7 +558,7 @@ static int __devinit mv64x60_cpu_err_probe(struct platform_device *pdev)
- 	devres_remove_group(&pdev->dev, mv64x60_cpu_err_probe);
- 
- 	/* get this far and it's successful */
--	debugf3("%s(): success\n", __func__);
-+	debugf3("success\n");
- 
- 	return 0;
- 
-@@ -574,7 +574,7 @@ static int mv64x60_cpu_err_remove(struct platform_device *pdev)
- {
- 	struct edac_device_ctl_info *edac_dev = platform_get_drvdata(pdev);
- 
--	debugf0("%s()\n", __func__);
-+	debugf0("\n");
- 
- 	edac_device_del_device(&pdev->dev);
- 	edac_device_free_ctl_info(edac_dev);
-@@ -766,7 +766,7 @@ static int __devinit mv64x60_mc_err_probe(struct platform_device *pdev)
- 		goto err2;
- 	}
- 
--	debugf3("%s(): init mci\n", __func__);
-+	debugf3("init mci\n");
- 	mci->mtype_cap = MEM_FLAG_RDDR | MEM_FLAG_DDR;
- 	mci->edac_ctl_cap = EDAC_FLAG_NONE | EDAC_FLAG_SECDED;
- 	mci->edac_cap = EDAC_FLAG_SECDED;
-@@ -790,7 +790,7 @@ static int __devinit mv64x60_mc_err_probe(struct platform_device *pdev)
- 	out_le32(pdata->mc_vbase + MV64X60_SDRAM_ERR_ECC_CNTL, ctl);
- 
- 	if (edac_mc_add_mc(mci)) {
--		debugf3("%s(): failed edac_mc_add_mc()\n", __func__);
-+		debugf3("failed edac_mc_add_mc()\n");
- 		goto err;
- 	}
- 
-@@ -815,7 +815,7 @@ static int __devinit mv64x60_mc_err_probe(struct platform_device *pdev)
- 	}
- 
- 	/* get this far and it's successful */
--	debugf3("%s(): success\n", __func__);
-+	debugf3("success\n");
- 
- 	return 0;
- 
-@@ -831,7 +831,7 @@ static int mv64x60_mc_err_remove(struct platform_device *pdev)
- {
- 	struct mem_ctl_info *mci = platform_get_drvdata(pdev);
- 
--	debugf0("%s()\n", __func__);
-+	debugf0("\n");
- 
- 	edac_mc_del_mc(&pdev->dev);
- 	edac_mc_free(mci);
-diff --git a/drivers/edac/r82600_edac.c b/drivers/edac/r82600_edac.c
-index 445c9ff..872c3b9 100644
---- a/drivers/edac/r82600_edac.c
-+++ b/drivers/edac/r82600_edac.c
-@@ -205,7 +205,7 @@ static void r82600_check(struct mem_ctl_info *mci)
- {
- 	struct r82600_error_info info;
- 
--	debugf1("MC%d: %s()\n", mci->mc_idx, __func__);
-+	debugf1("MC%d\n", mci->mc_idx);
- 	r82600_get_error_info(mci, &info);
- 	r82600_process_error_info(mci, &info, 1);
- }
-@@ -236,13 +236,13 @@ static void r82600_init_csrows(struct mem_ctl_info *mci, struct pci_dev *pdev,
- 		/* find the DRAM Chip Select Base address and mask */
- 		pci_read_config_byte(pdev, R82600_DRBA + index, &drbar);
- 
--		debugf1("%s() Row=%d DRBA = %#0x\n", __func__, index, drbar);
-+		debugf1("Row=%d DRBA = %#0x\n", index, drbar);
- 
- 		row_high_limit = ((u32) drbar << 24);
- /*		row_high_limit = ((u32)drbar << 24) | 0xffffffUL; */
- 
--		debugf1("%s() Row=%d, Boundary Address=%#0x, Last = %#0x\n",
--			__func__, index, row_high_limit, row_high_limit_last);
-+		debugf1("Row=%d, Boundary Address=%#0x, Last = %#0x\n",
-+			index, row_high_limit, row_high_limit_last);
- 
- 		/* Empty row [p.57] */
- 		if (row_high_limit == row_high_limit_last)
-@@ -277,14 +277,13 @@ static int r82600_probe1(struct pci_dev *pdev, int dev_idx)
- 	u32 sdram_refresh_rate;
- 	struct r82600_error_info discard;
- 
--	debugf0("%s()\n", __func__);
-+	debugf0("\n");
- 	pci_read_config_byte(pdev, R82600_DRAMC, &dramcr);
- 	pci_read_config_dword(pdev, R82600_EAP, &eapr);
- 	scrub_disabled = eapr & BIT(31);
- 	sdram_refresh_rate = dramcr & (BIT(0) | BIT(1));
--	debugf2("%s(): sdram refresh rate = %#0x\n", __func__,
--		sdram_refresh_rate);
--	debugf2("%s(): DRAMC register = %#0x\n", __func__, dramcr);
-+	debugf2("sdram refresh rate = %#0x\n", sdram_refresh_rate);
-+	debugf2("DRAMC register = %#0x\n", dramcr);
- 	layers[0].type = EDAC_MC_LAYER_CHIP_SELECT;
- 	layers[0].size = R82600_NR_CSROWS;
- 	layers[0].is_virt_csrow = true;
-@@ -295,7 +294,7 @@ static int r82600_probe1(struct pci_dev *pdev, int dev_idx)
- 	if (mci == NULL)
- 		return -ENOMEM;
- 
--	debugf0("%s(): mci = %p\n", __func__, mci);
-+	debugf0("mci = %p\n", mci);
- 	mci->pdev = &pdev->dev;
- 	mci->mtype_cap = MEM_FLAG_RDDR | MEM_FLAG_DDR;
- 	mci->edac_ctl_cap = EDAC_FLAG_NONE | EDAC_FLAG_EC | EDAC_FLAG_SECDED;
-@@ -311,8 +310,8 @@ static int r82600_probe1(struct pci_dev *pdev, int dev_idx)
- 
- 	if (ecc_enabled(dramcr)) {
- 		if (scrub_disabled)
--			debugf3("%s(): mci = %p - Scrubbing disabled! EAP: "
--				"%#0x\n", __func__, mci, eapr);
-+			debugf3("mci = %p - Scrubbing disabled! EAP: "
-+				"%#0x\n", mci, eapr);
- 	} else
- 		mci->edac_cap = EDAC_FLAG_NONE;
- 
-@@ -329,15 +328,14 @@ static int r82600_probe1(struct pci_dev *pdev, int dev_idx)
- 	 * type of memory controller.  The ID is therefore hardcoded to 0.
- 	 */
- 	if (edac_mc_add_mc(mci)) {
--		debugf3("%s(): failed edac_mc_add_mc()\n", __func__);
-+		debugf3("failed edac_mc_add_mc()\n");
- 		goto fail;
- 	}
- 
- 	/* get this far and it's successful */
- 
- 	if (disable_hardware_scrub) {
--		debugf3("%s(): Disabling Hardware Scrub (scrub on error)\n",
--			__func__);
-+		debugf3("Disabling Hardware Scrub (scrub on error)\n");
- 		pci_write_bits32(pdev, R82600_EAP, BIT(31), BIT(31));
- 	}
- 
-@@ -352,7 +350,7 @@ static int r82600_probe1(struct pci_dev *pdev, int dev_idx)
- 			__func__);
- 	}
- 
--	debugf3("%s(): success\n", __func__);
-+	debugf3("success\n");
- 	return 0;
- 
- fail:
-@@ -364,7 +362,7 @@ fail:
- static int __devinit r82600_init_one(struct pci_dev *pdev,
- 				const struct pci_device_id *ent)
- {
--	debugf0("%s()\n", __func__);
-+	debugf0("\n");
- 
- 	/* don't need to call pci_enable_device() */
- 	return r82600_probe1(pdev, ent->driver_data);
-@@ -374,7 +372,7 @@ static void __devexit r82600_remove_one(struct pci_dev *pdev)
- {
- 	struct mem_ctl_info *mci;
- 
--	debugf0("%s()\n", __func__);
-+	debugf0("\n");
- 
- 	if (r82600_pci)
- 		edac_pci_release_generic_ctl(r82600_pci);
-diff --git a/drivers/edac/sb_edac.c b/drivers/edac/sb_edac.c
-index efa4883..96efa49 100644
---- a/drivers/edac/sb_edac.c
-+++ b/drivers/edac/sb_edac.c
-@@ -1064,7 +1064,7 @@ static void sbridge_put_devices(struct sbridge_dev *sbridge_dev)
- {
- 	int i;
- 
--	debugf0(__FILE__ ": %s()\n", __func__);
-+	debugf0("\n");
- 	for (i = 0; i < sbridge_dev->n_devs; i++) {
- 		struct pci_dev *pdev = sbridge_dev->pdev[i];
- 		if (!pdev)
-@@ -1592,8 +1592,7 @@ static void sbridge_unregister_mci(struct sbridge_dev *sbridge_dev)
- 	struct sbridge_pvt *pvt;
- 
- 	if (unlikely(!mci || !mci->pvt_info)) {
--		debugf0("MC: " __FILE__ ": %s(): dev = %p\n",
--			__func__, &sbridge_dev->pdev[0]->dev);
-+		debugf0("MC: dev = %p\n", &sbridge_dev->pdev[0]->dev);
- 
- 		sbridge_printk(KERN_ERR, "Couldn't find mci handler\n");
- 		return;
-@@ -1601,8 +1600,8 @@ static void sbridge_unregister_mci(struct sbridge_dev *sbridge_dev)
- 
- 	pvt = mci->pvt_info;
- 
--	debugf0("MC: " __FILE__ ": %s(): mci = %p, dev = %p\n",
--		__func__, mci, &sbridge_dev->pdev[0]->dev);
-+	debugf0("MC: mci = %p, dev = %p\n",
-+		mci, &sbridge_dev->pdev[0]->dev);
- 
- 	mce_unregister_decode_chain(&sbridge_mce_dec);
- 
-@@ -1640,8 +1639,8 @@ static int sbridge_register_mci(struct sbridge_dev *sbridge_dev)
- 	if (unlikely(!mci))
- 		return -ENOMEM;
- 
--	debugf0("MC: " __FILE__ ": %s(): mci = %p, dev = %p\n",
--		__func__, mci, &sbridge_dev->pdev[0]->dev);
-+	debugf0("MC: mci = %p, dev = %p\n",
-+		mci, &sbridge_dev->pdev[0]->dev);
- 
- 	pvt = mci->pvt_info;
- 	memset(pvt, 0, sizeof(*pvt));
-@@ -1676,8 +1675,7 @@ static int sbridge_register_mci(struct sbridge_dev *sbridge_dev)
- 
- 	/* add this new MC control structure to EDAC's list of MCs */
- 	if (unlikely(edac_mc_add_mc(mci))) {
--		debugf0("MC: " __FILE__
--			": %s(): failed edac_mc_add_mc()\n", __func__);
-+		debugf0("MC: failed edac_mc_add_mc()\n");
- 		rc = -EINVAL;
- 		goto fail0;
- 	}
-@@ -1755,7 +1753,7 @@ static void __devexit sbridge_remove(struct pci_dev *pdev)
- {
- 	struct sbridge_dev *sbridge_dev;
- 
--	debugf0(__FILE__ ": %s()\n", __func__);
-+	debugf0("\n");
- 
- 	/*
- 	 * we have a trouble here: pdev value for removal will be wrong, since
-@@ -1804,7 +1802,7 @@ static int __init sbridge_init(void)
- {
- 	int pci_rc;
- 
--	debugf2("MC: " __FILE__ ": %s()\n", __func__);
-+	debugf2("\n");
- 
- 	/* Ensure that the OPSTATE is set correctly for POLL or NMI */
- 	opstate_init();
-@@ -1826,7 +1824,7 @@ static int __init sbridge_init(void)
-  */
- static void __exit sbridge_exit(void)
- {
--	debugf2("MC: " __FILE__ ": %s()\n", __func__);
-+	debugf2("\n");
- 	pci_unregister_driver(&sbridge_driver);
- }
- 
-diff --git a/drivers/edac/x38_edac.c b/drivers/edac/x38_edac.c
-index ae699be..70c7454 100644
---- a/drivers/edac/x38_edac.c
-+++ b/drivers/edac/x38_edac.c
-@@ -243,7 +243,7 @@ static void x38_check(struct mem_ctl_info *mci)
- {
- 	struct x38_error_info info;
- 
--	debugf1("MC%d: %s()\n", mci->mc_idx, __func__);
-+	debugf1("MC%d\n", mci->mc_idx);
- 	x38_get_and_clear_error_info(mci, &info);
- 	x38_process_error_info(mci, &info);
- }
-@@ -331,7 +331,7 @@ static int x38_probe1(struct pci_dev *pdev, int dev_idx)
- 	bool stacked;
- 	void __iomem *window;
- 
--	debugf0("MC: %s()\n", __func__);
-+	debugf0("MC:\n");
- 
- 	window = x38_map_mchbar(pdev);
- 	if (!window)
-@@ -352,7 +352,7 @@ static int x38_probe1(struct pci_dev *pdev, int dev_idx)
- 	if (!mci)
- 		return -ENOMEM;
- 
--	debugf3("MC: %s(): init mci\n", __func__);
-+	debugf3("MC: init mci\n");
- 
- 	mci->pdev = &pdev->dev;
- 	mci->mtype_cap = MEM_FLAG_DDR2;
-@@ -402,12 +402,12 @@ static int x38_probe1(struct pci_dev *pdev, int dev_idx)
- 
- 	rc = -ENODEV;
- 	if (edac_mc_add_mc(mci)) {
--		debugf3("MC: %s(): failed edac_mc_add_mc()\n", __func__);
-+		debugf3("MC: failed edac_mc_add_mc()\n");
- 		goto fail;
- 	}
- 
- 	/* get this far and it's successful */
--	debugf3("MC: %s(): success\n", __func__);
-+	debugf3("MC: success\n");
- 	return 0;
- 
- fail:
-@@ -423,7 +423,7 @@ static int __devinit x38_init_one(struct pci_dev *pdev,
- {
- 	int rc;
- 
--	debugf0("MC: %s()\n", __func__);
-+	debugf0("MC:\n");
- 
- 	if (pci_enable_device(pdev) < 0)
- 		return -EIO;
-@@ -439,7 +439,7 @@ static void __devexit x38_remove_one(struct pci_dev *pdev)
- {
- 	struct mem_ctl_info *mci;
- 
--	debugf0("%s()\n", __func__);
-+	debugf0("\n");
- 
- 	mci = edac_mc_del_mc(&pdev->dev);
- 	if (!mci)
-@@ -472,7 +472,7 @@ static int __init x38_init(void)
- {
- 	int pci_rc;
- 
--	debugf3("MC: %s()\n", __func__);
-+	debugf3("MC:\n");
- 
- 	/* Ensure that the OPSTATE is set correctly for POLL or NMI */
- 	opstate_init();
-@@ -513,7 +513,7 @@ fail0:
- 
- static void __exit x38_exit(void)
- {
--	debugf3("MC: %s()\n", __func__);
-+	debugf3("MC:\n");
- 
- 	pci_unregister_driver(&x38_driver);
- 	if (!x38_registered) {
+ struct mem_ctl_info {
++	struct device			dev;
++	struct bus_type			bus;
++
+ 	struct list_head link;	/* for global list of mem_ctl_info structs */
+ 
+ 	struct module *owner;	/* Module owner of this control struct */
+@@ -587,7 +597,15 @@ struct mem_ctl_info {
+ 	struct csrow_info *csrows;
+ 	unsigned nr_csrows, num_cschannel;
+ 
+-	/* Memory Controller hierarchy */
++	/*
++	 * Memory Controller hierarchy
++	 *
++	 * There are basically two types of memory controller: the ones that
++	 * sees memory sticks ("dimms"), and the ones that sees memory ranks.
++	 * All old memory controllers enumerate memories per rank, but most
++	 * of the recent drivers enumerate memories per DIMM, instead.
++	 * When the memory controller is per rank, mem_is_per_rank is true.
++	 */
+ 	unsigned n_layers;
+ 	struct edac_mc_layer *layers;
+ 	bool mem_is_per_rank;
 -- 
 1.7.8
 
