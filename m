@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1946331Ab2ERXaY (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 May 2012 19:30:24 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:53122 "EHLO
+	id S1946347Ab2ERXaq (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 May 2012 19:30:46 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:38665 "EHLO
 	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1946265Ab2ERXDj (ORCPT
+	with ESMTP id S1030799Ab2ERXDg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 May 2012 19:03:39 -0400
-Message-Id: <20120518211601.390463740@linuxfoundation.org>
+	Fri, 18 May 2012 19:03:36 -0400
+Message-Id: <20120518211601.291973967@linuxfoundation.org>
 User-Agent: quilt/0.60-19.1
-Date: Fri, 18 May 2012 14:16:20 -0700
+Date: Fri, 18 May 2012 14:16:19 -0700
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Mark Hills <mark@pogo.org.uk>,
-        Takashi Iwai <tiwai@suse.de>
-Subject: [ 21/54] ALSA: echoaudio: Remove incorrect part of assertion
+        alan@lxorguk.ukuu.org.uk, Josh Boyer <jwboyer@redhat.com>,
+        Mattia Dongili <malattia@linux.it>, Matthew Garrett <mjg@redhat.com>,
+        maximilian attems <max@stro.at>
+Subject: [ 20/54] sony-laptop: Enable keyboard backlight by default
 In-Reply-To: <20120518212656.GA4992@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,44 +26,47 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Mark Hills <mark@pogo.org.uk>
+From: Josh Boyer <jwboyer@redhat.com>
 
-commit c914f55f7cdfafe9d7d5b248751902c7ab57691e upstream.
+commit 6fe6ae56a7cebaebc2e6daa11c423e4692f9b592 upstream.
 
-This assertion seems to imply that chip->dsp_code_to_load is a pointer.
-It's actually an integer handle on the actual firmware, and 0 has no
-special meaning.
+When the keyboard backlight support was originally added, the commit said
+to default it to on with a 10 second timeout.  That actually wasn't the
+case, as the default value is commented out for the kbd_backlight parameter.
+Because it is a static variable, it gets set to 0 by default without some
+other form of initialization.
 
-The assertion prevents initialisation of a Darla20 card, but would also
-affect other models. It seems it was introduced in commit dd7b254d.
+However, it seems the function to set the value wasn't actually called
+immediately, so whatever state the keyboard was in initially would remain.
+Then commit df410d522410e67660 was introduced during the 2.6.39 timeframe to
+immediately set whatever value was present (as well as attempt to
+restore/reset the state on module removal or resume).  That seems to have
+now forced the light off immediately when the module is loaded unless
+the option kbd_backlight=1 is specified.
 
-ALSA sound/pci/echoaudio/echoaudio.c:2061 Echoaudio driver starting...
-ALSA sound/pci/echoaudio/echoaudio.c:1969 chip=ebe4e000
-ALSA sound/pci/echoaudio/echoaudio.c:2007 pci=ed568000 irq=19 subdev=0010 Init hardware...
-ALSA sound/pci/echoaudio/darla20_dsp.c:36 init_hw() - Darla20
-------------[ cut here ]------------
-WARNING: at sound/pci/echoaudio/echoaudio_dsp.c:478 init_hw+0x1d1/0x86c [snd_darla20]()
-Hardware name: Dell DM051
-BUG? (!chip->dsp_code_to_load || !chip->comm_page)
+Let's enable it by default again (for the first time).  This should solve
+https://bugzilla.redhat.com/show_bug.cgi?id=728478
 
-Signed-off-by: Mark Hills <mark@pogo.org.uk>
-Signed-off-by: Takashi Iwai <tiwai@suse.de>
+Signed-off-by: Josh Boyer <jwboyer@redhat.com>
+Acked-by: Mattia Dongili <malattia@linux.it>
+Signed-off-by: Matthew Garrett <mjg@redhat.com>
+Cc: maximilian attems <max@stro.at>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- sound/pci/echoaudio/echoaudio_dsp.c |    2 +-
+ drivers/platform/x86/sony-laptop.c |    2 +-
  1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/sound/pci/echoaudio/echoaudio_dsp.c
-+++ b/sound/pci/echoaudio/echoaudio_dsp.c
-@@ -475,7 +475,7 @@ static int load_firmware(struct echoaudi
- 	const struct firmware *fw;
- 	int box_type, err;
+--- a/drivers/platform/x86/sony-laptop.c
++++ b/drivers/platform/x86/sony-laptop.c
+@@ -127,7 +127,7 @@ MODULE_PARM_DESC(minor,
+ 		 "default is -1 (automatic)");
+ #endif
  
--	if (snd_BUG_ON(!chip->dsp_code_to_load || !chip->comm_page))
-+	if (snd_BUG_ON(!chip->comm_page))
- 		return -EPERM;
- 
- 	/* See if the ASIC is present and working - only if the DSP is already loaded */
+-static int kbd_backlight;	/* = 1 */
++static int kbd_backlight = 1;
+ module_param(kbd_backlight, int, 0444);
+ MODULE_PARM_DESC(kbd_backlight,
+ 		 "set this to 0 to disable keyboard backlight, "
 
 
