@@ -1,23 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1946949Ab2ERXS7 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 May 2012 19:18:59 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:38665 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1946592Ab2ERXFs (ORCPT
+	id S966983Ab2ERXT3 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 May 2012 19:19:29 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:65112 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1030988Ab2ERXFm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 May 2012 19:05:48 -0400
-Message-Id: <20120518212650.055640307@linuxfoundation.org>
+	Fri, 18 May 2012 19:05:42 -0400
+Message-Id: <20120518212649.883305120@linuxfoundation.org>
 User-Agent: quilt/0.60-19.1
-Date: Fri, 18 May 2012 14:26:58 -0700
+Date: Fri, 18 May 2012 14:26:56 -0700
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Hyungwoo Yang <hwoo.yang@gmail.com>,
-        Hyungwoo Yang <hyungwooy@nvidia.com>,
-        Will Deacon <will.deacon@arm.com>,
-        Russell King <rmk+kernel@arm.linux.org.uk>
-Subject: [ 09/47] ARM: 7417/1: vfp: ensure preemption is disabled when enabling VFP access
+        alan@lxorguk.ukuu.org.uk, Meelis Roos <mroos@linux.ee>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [ 07/47] sparc64: Do not clobber %g2 in xcall_fetch_glob_regs().
 In-Reply-To: <20120518212701.GA5023@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -27,70 +25,52 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Will Deacon <will.deacon@arm.com>
+From: "David S. Miller" <davem@davemloft.net>
 
-commit 998de4acb2ba188d20768d1065658377a2e7d29b upstream.
+[ Upstream commit a5a737e090e25981e99d69f01400e3a80356581c ]
 
-The vfp_enable function enables access to the VFP co-processor register
-space (cp10 and cp11) on the current CPU and must be called with
-preemption disabled. Unfortunately, the vfp_init late initcall does not
-disable preemption and can lead to an oops during boot if thread
-migration occurs at the wrong time and we end up attempting to access
-the FPSID on a CPU with VFP access disabled.
+%g2 is meant to hold the CPUID number throughout this routine, since
+at the very beginning, and at the very end, we use %g2 to calculate
+indexes into per-cpu arrays.
 
-This patch fixes the initcall to call vfp_enable from a non-preemptible
-context on each CPU and adds a BUG_ON(preemptible) to ensure that any
-similar problems are easily spotted in the future.
+However we erroneously clobber it in order to hold the %cwp register
+value mid-stream.
 
-Reported-by: Hyungwoo Yang <hwoo.yang@gmail.com>
-Signed-off-by: Hyungwoo Yang <hyungwooy@nvidia.com>
-Signed-off-by: Will Deacon <will.deacon@arm.com>
-Signed-off-by: Russell King <rmk+kernel@arm.linux.org.uk>
+Fix this code to use %g3 for the %cwp read and related calulcations
+instead.
+
+Reported-by: Meelis Roos <mroos@linux.ee>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
 ---
- arch/arm/vfp/vfpmodule.c |   10 ++++++----
- 1 file changed, 6 insertions(+), 4 deletions(-)
+ arch/sparc/kernel/central.c |    2 +-
+ arch/sparc/mm/ultra.S       |    6 +++---
+ 2 files changed, 4 insertions(+), 4 deletions(-)
 
---- a/arch/arm/vfp/vfpmodule.c
-+++ b/arch/arm/vfp/vfpmodule.c
-@@ -11,6 +11,7 @@
- #include <linux/types.h>
- #include <linux/cpu.h>
- #include <linux/cpu_pm.h>
-+#include <linux/hardirq.h>
- #include <linux/kernel.h>
- #include <linux/notifier.h>
- #include <linux/signal.h>
-@@ -428,7 +429,10 @@ void VFP_bounce(u32 trigger, u32 fpexc,
+--- a/arch/sparc/kernel/central.c
++++ b/arch/sparc/kernel/central.c
+@@ -269,4 +269,4 @@ static int __init sunfire_init(void)
+ 	return 0;
+ }
  
- static void vfp_enable(void *unused)
- {
--	u32 access = get_copro_access();
-+	u32 access;
-+
-+	BUG_ON(preemptible());
-+	access = get_copro_access();
- 
- 	/*
- 	 * Enable full access to VFP (cp10 and cp11)
-@@ -556,7 +560,7 @@ static int __init vfp_init(void)
- 	unsigned int cpu_arch = cpu_architecture();
- 
- 	if (cpu_arch >= CPU_ARCH_ARMv6)
--		vfp_enable(NULL);
-+		on_each_cpu(vfp_enable, NULL, 1);
- 
- 	/*
- 	 * First check that there is a VFP that we can use.
-@@ -577,8 +581,6 @@ static int __init vfp_init(void)
- 	} else {
- 		hotcpu_notifier(vfp_hotplug, 0);
- 
--		smp_call_function(vfp_enable, NULL, 1);
--
- 		VFP_arch = (vfpsid & FPSID_ARCH_MASK) >> FPSID_ARCH_BIT;  /* Extract the architecture version */
- 		printk("implementor %02x architecture %d part %02x variant %x rev %x\n",
- 			(vfpsid & FPSID_IMPLEMENTER_MASK) >> FPSID_IMPLEMENTER_BIT,
+-subsys_initcall(sunfire_init);
++fs_initcall(sunfire_init);
+--- a/arch/sparc/mm/ultra.S
++++ b/arch/sparc/mm/ultra.S
+@@ -495,11 +495,11 @@ xcall_fetch_glob_regs:
+ 	stx		%o7, [%g1 + GR_SNAP_O7]
+ 	stx		%i7, [%g1 + GR_SNAP_I7]
+ 	/* Don't try this at home kids... */
+-	rdpr		%cwp, %g2
+-	sub		%g2, 1, %g7
++	rdpr		%cwp, %g3
++	sub		%g3, 1, %g7
+ 	wrpr		%g7, %cwp
+ 	mov		%i7, %g7
+-	wrpr		%g2, %cwp
++	wrpr		%g3, %cwp
+ 	stx		%g7, [%g1 + GR_SNAP_RPC]
+ 	sethi		%hi(trap_block), %g7
+ 	or		%g7, %lo(trap_block), %g7
 
 
