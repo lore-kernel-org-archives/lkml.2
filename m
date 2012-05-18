@@ -1,158 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965249Ab2ERQqa (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 May 2012 12:46:30 -0400
-Received: from li42-95.members.linode.com ([209.123.162.95]:59705 "EHLO
-	li42-95.members.linode.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932246Ab2ERQqY (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 May 2012 12:46:24 -0400
-Subject: Re: Plumbers: Tweaking scheduler policy micro-conf RFP
-Mime-Version: 1.0 (Apple Message framework v1084)
-Content-Type: text/plain; charset=us-ascii
-From: Pantelis Antoniou <panto@antoniou-consulting.com>
-In-Reply-To: <20120518162445.GF18312@e103034-lin.cambridge.arm.com>
-Date: Fri, 18 May 2012 19:46:09 +0300
-Cc: Peter Zijlstra <peterz@infradead.org>,
-        "smuckle@quicinc.com" <smuckle@quicinc.com>,
-        Juri Lelli <juri.lelli@gmail.com>, "mingo@elte.hu" <mingo@elte.hu>,
-        "linaro-sched-sig@lists.linaro.org" 
-	<linaro-sched-sig@lists.linaro.org>,
-        "rostedt@goodmis.org" <rostedt@goodmis.org>,
-        "tglx@linutronix.de" <tglx@linutronix.de>,
-        "geoff@infradead.org" <geoff@infradead.org>,
-        "efault@gmx.de" <efault@gmx.de>,
-        linux-kernel <linux-kernel@vger.kernel.org>
-Content-Transfer-Encoding: 7bit
-Message-Id: <7858EF87-0E5A-49FB-994E-16DF0727C625@antoniou-consulting.com>
-References: <CAKfTPtDSDAOAdv0GTDswZeRM7TmACrjok+5kddSaQpvy6_6xWw@mail.gmail.com> <CAKfTPtCfiY7A29+e50F+6awd8BjNJjg4=uNN4ReZfdS_4FbpkA@mail.gmail.com> <1337084609.27020.156.camel@laptop> <CAKfTPtDz1-fR2i5x7AVd8sGZhX2VNtz2rnQC3ePrcHO9MWK3FQ@mail.gmail.com> <1337086834.27020.162.camel@laptop> <CAKfTPtDrZ-tfC81jnxwpB+DCtmxhU+VfoYbtSBr8MkFt+P8JcA@mail.gmail.com> <1337096141.27694.82.camel@twins> <20120518161817.GE18312@e103034-lin.cambridge.arm.com> <20120518162445.GF18312@e103034-lin.cambridge.arm.com>
-To: Morten Rasmussen <Morten.Rasmussen@arm.com>
-X-Mailer: Apple Mail (2.1084)
+	id S965096Ab2ERQpq (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 May 2012 12:45:46 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:42474 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1758572Ab2ERQdG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 18 May 2012 12:33:06 -0400
+From: Mauro Carvalho Chehab <mchehab@redhat.com>
+Cc: Mauro Carvalho Chehab <mchehab@redhat.com>,
+        Linux Edac Mailing List <linux-edac@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Doug Thompson <norsk5@yahoo.com>,
+        Greg K H <gregkh@linuxfoundation.org>
+Subject: [PATCH EDAC v26 48/66] edac: add a sysfs node to report the maximum location for the system
+Date: Fri, 18 May 2012 13:32:35 -0300
+Message-Id: <1337358773-6919-49-git-send-email-mchehab@redhat.com>
+In-Reply-To: <1337358773-6919-1-git-send-email-mchehab@redhat.com>
+References: <1337358773-6919-1-git-send-email-mchehab@redhat.com>
+To: unlisted-recipients:; (no To-header on input)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+The userspace tools need to know what's the maximum location on each
+system, as it helps to create nice maps showing how the memory was
+filled at the system.
 
-On May 18, 2012, at 7:24 PM, Morten Rasmussen wrote:
+Reviewed-by: Aristeu Rozanski <arozansk@redhat.com>
+Cc: Doug Thompson <norsk5@yahoo.com>
+Cc: Greg K H <gregkh@linuxfoundation.org>
+Signed-off-by: Mauro Carvalho Chehab <mchehab@redhat.com>
+---
+ drivers/edac/edac_mc_sysfs.c |   19 +++++++++++++++++++
+ 1 files changed, 19 insertions(+), 0 deletions(-)
 
-> On Fri, May 18, 2012 at 05:18:17PM +0100, Morten Rasmussen wrote:
->> On Tue, May 15, 2012 at 04:35:41PM +0100, Peter Zijlstra wrote:
->>> On Tue, 2012-05-15 at 17:05 +0200, Vincent Guittot wrote:
->>>> On 15 May 2012 15:00, Peter Zijlstra <peterz@infradead.org> wrote:
->>>>> On Tue, 2012-05-15 at 14:57 +0200, Vincent Guittot wrote:
->>>>>> 
->>>>>> Not sure that nobody cares but it's much more that scheduler,
->>>>>> load_balance and sched_mc are sensible enough that it's difficult to
->>>>>> ensure that a modification will not break everything for someone
->>>>>> else.
->>>>> 
->>>>> Thing is, its already broken, there's nothing else to break :-)
->>>>> 
->>>> 
->>>> sched_mc is the only power-aware knob in the current scheduler. It's
->>>> far from being perfect but it seems to work on some ARM platform at
->>>> least. You mentioned at the scheduler mini-summit that we need a
->>>> cleaner replacement and everybody has agreed on that point. Is anybody
->>>> working on it yet ? 
->>> 
->>> Apparently not.. 
->>> 
->>>> and can we discuss at Plumber's what this replacement would look like ?
->>> 
->>> one knob: sched_balance_policy with tri-state {performance, power, auto}
->> 
->> Interesting. What would the power policy look like? Would performance
->> and power be the two extremes of the power/performance trade-off? In
->> that case I would assume that most embedded systems would be using auto.
->> 
->>> 
->>> Where auto should likely look at things like are we on battery and
->>> co-ordinate with cpufreq muck or whatever.
->>> 
->>> Per domain knobs are insane, large multi-state knobs are insane, the
->>> existing scheme is therefore insane^2. Can you find a sysad who'd like
->>> to explore 3^3=27 states for optimal power/perf for his workload on a
->>> simple 2 socket hyper-threaded machine and 3^4=81 state space for 8
->>> sockets etc..?
->>> 
->>> As to the exact policy, I think the current 2 (load-balance + wakeup) is
->>> the sensible one..
->>> 
->>> Also, I still have this pending email from you asking about the topology
->>> setup stuff I really need to reply to.. but people keep sending me bugs
->>> reports :/
->>> 
->>> But really short, look at kernel/sched/core.c:default_topology[]
->>> 
->>> I'd like to get rid of sd_init_* into a single function like
->>> sd_numa_init(), this would mean all archs would need to do is provide a
->>> simple list of ever increasing masks that match their topology.
->>> 
->>> To aid this we can add some SDTL_flags, initially I was thinking of:
->>> 
->>> SDTL_SHARE_CORE	-- aka SMT
->>> SDTL_SHARE_CACHE	-- LLC cache domain (typically multi-core)
->>> SDTL_SHARE_MEMORY	-- NUMA-node (typically socket)
->>> 
->>> The 'performance' policy is typically to spread over shared resources so
->>> as to minimize contention on these.
->>> 
->> 
->> Would it be worth extending this architecture specification to contain
->> more information like CPU_POWER for each core? After having experimented
->> a bit with scheduling on big.LITTLE my experience is that more
->> information about the platform is needed to make proper scheduling
->> decisions. So if the topology definition is going to be more generic and
->> be set up by the architecture it could be worth adding all the bits of
->> information that the scheduler would need to that data structure.
->> 
->> With such data structure, the scheduler would only need one knob to
->> adjust the power/performance trade-off. Any thoughts?
->> 
-> 
-> One more thing. I have experimented with PJT's load-tracking patchset
-> and found it very useful for big.LITTLE scheduling. Is there any plans
-> for including them?
-> 
-> 	Morten
-> 
-
-One more vote for speedy integration of PJT's patches. They are working fine
-as far as I can tell, and they are absolutely needed for the power aware
-scheduler work.
-
--- Pantelis
-
->>> If you want to add some power we need some extra flags, maybe something
->>> like:
->>> 
->>> SDTL_SHARE_POWERLINE	-- power domain (typically socket)
->>> 
->>> so you know where the boundaries are where you can turn stuff off so you
->>> know what/where to pack bits.
->>> 
->>> Possibly we also add something like:
->>> 
->>> SDTL_PERF_SPREAD	-- spread on performance mode
->>> SDTL_POWER_PACK	-- pack on power mode
->>> 
->>> To over-ride the defaults. But ideally I'd leave those until after we've
->>> got the basics working and there is a clear need for them (with a
->>> spread/pack default for perf/power aware).
->> 
->> In my experience power optimized scheduling is quite tricky, especially
->> if you still want some level of performance. For heterogeneous
->> architecture packing might not be the best solution. Some indication of
->> the power/performance profile of each core could be useful.
->> 
->> Best regards,
->> Morten
->> 
->> 
->> _______________________________________________
->> linaro-sched-sig mailing list
->> linaro-sched-sig@lists.linaro.org
->> http://lists.linaro.org/mailman/listinfo/linaro-sched-sig
->> 
-> 
+diff --git a/drivers/edac/edac_mc_sysfs.c b/drivers/edac/edac_mc_sysfs.c
+index 86da176..87fb396 100644
+--- a/drivers/edac/edac_mc_sysfs.c
++++ b/drivers/edac/edac_mc_sysfs.c
+@@ -766,6 +766,23 @@ static ssize_t mci_size_mb_show(struct device *dev,
+ 	return sprintf(data, "%u\n", PAGES_TO_MiB(total_pages));
+ }
+ 
++static ssize_t mci_max_location_show(struct device *dev,
++				     struct device_attribute *mattr,
++				     char *data)
++{
++	struct mem_ctl_info *mci = to_mci(dev);
++	int i;
++	char *p = data;
++
++	for (i = 0; i < mci->n_layers; i++) {
++		p += sprintf(p, "%s %d ",
++			     edac_layer_name[mci->layers[i].type],
++			     mci->layers[i].size - 1);
++	}
++
++	return p - data;
++}
++
+ /* default Control file */
+ DEVICE_ATTR(reset_counters, S_IWUSR, NULL, mci_reset_counters_store);
+ 
+@@ -777,6 +794,7 @@ DEVICE_ATTR(ue_noinfo_count, S_IRUGO, mci_ue_noinfo_show, NULL);
+ DEVICE_ATTR(ce_noinfo_count, S_IRUGO, mci_ce_noinfo_show, NULL);
+ DEVICE_ATTR(ue_count, S_IRUGO, mci_ue_count_show, NULL);
+ DEVICE_ATTR(ce_count, S_IRUGO, mci_ce_count_show, NULL);
++DEVICE_ATTR(max_location, S_IRUGO, mci_max_location_show, NULL);
+ 
+ /* memory scrubber attribute file */
+ DEVICE_ATTR(sdram_scrub_rate, S_IRUGO | S_IWUSR, mci_sdram_scrub_rate_show,
+@@ -792,6 +810,7 @@ static struct attribute *mci_attrs[] = {
+ 	&dev_attr_ue_count.attr,
+ 	&dev_attr_ce_count.attr,
+ 	&dev_attr_sdram_scrub_rate.attr,
++	&dev_attr_max_location.attr,
+ 	NULL
+ };
+ 
+-- 
+1.7.8
 
