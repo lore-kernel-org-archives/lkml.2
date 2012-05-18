@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1946871Ab2ERXMG (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 May 2012 19:12:06 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:58844 "EHLO
+	id S1946872Ab2ERXMe (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 May 2012 19:12:34 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:53597 "EHLO
 	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S968185Ab2ERXHU (ORCPT
+	with ESMTP id S1946750Ab2ERXHQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 May 2012 19:07:20 -0400
-Message-Id: <20120518212652.716628974@linuxfoundation.org>
+	Fri, 18 May 2012 19:07:16 -0400
+Message-Id: <20120518212652.642237969@linuxfoundation.org>
 User-Agent: quilt/0.60-19.1
-Date: Fri, 18 May 2012 14:27:28 -0700
+Date: Fri, 18 May 2012 14:27:27 -0700
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Stephan Mueller <stephan.mueller@atsec.com>,
-        Jeff Mahoney <jeffm@suse.com>, "David S. Miller" <davem@davemloft.net>
-Subject: [ 39/47] dl2k: Clean up rio_ioctl
+        alan@lxorguk.ukuu.org.uk, Jan Kiszka <jan.kiszka@siemens.com>
+Subject: [ 38/47] compat: Fix RT signal mask corruption via sigprocmask
 In-Reply-To: <20120518212701.GA5023@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,119 +24,105 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jeff Mahoney <jeffm@suse.com>
+From: Jan Kiszka <jan.kiszka@siemens.com>
 
-commit 1bb57e940e1958e40d51f2078f50c3a96a9b2d75 upstream.
+commit b7dafa0ef3145c31d7753be0a08b3cbda51f0209 upstream.
 
-The dl2k driver's rio_ioctl call has a few issues:
-- No permissions checking
-- Implements SIOCGMIIREG and SIOCGMIIREG using the SIOCDEVPRIVATE numbers
-- Has a few ioctls that may have been used for debugging at one point
-  but have no place in the kernel proper.
+compat_sys_sigprocmask reads a smaller signal mask from userspace than
+sigprogmask accepts for setting.  So the high word of blocked.sig[0]
+will be cleared, releasing any potentially blocked RT signal.
 
-This patch removes all but the MII ioctls, renumbers them to use the
-standard ones, and adds the proper permission check for SIOCSMIIREG.
+This was discovered via userspace code that relies on get/setcontext.
+glibc's i386 versions of those functions use sigprogmask instead of
+rt_sigprogmask to save/restore signal mask and caused RT signal
+unblocking this way.
 
-We can also get rid of the dl2k-specific struct mii_data in favor of
-the generic struct mii_ioctl_data.
+As suggested by Linus, this replaces the sys_sigprocmask based compat
+version with one that open-codes the required logic, including the merge
+of the existing blocked set with the new one provided on SIG_SETMASK.
 
-Since we have the phyid on hand, we can add the SIOCGMIIPHY ioctl too.
-
-Most of the MII code for the driver could probably be converted to use
-the generic MII library but I don't have a device to test the results.
-
-Reported-by: Stephan Mueller <stephan.mueller@atsec.com>
-Signed-off-by: Jeff Mahoney <jeffm@suse.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+Signed-off-by: Jan Kiszka <jan.kiszka@siemens.com>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/net/ethernet/dlink/dl2k.c |   52 ++++++--------------------------------
- drivers/net/ethernet/dlink/dl2k.h |    7 -----
- 2 files changed, 9 insertions(+), 50 deletions(-)
+ kernel/compat.c |   65 ++++++++++++++++++++++++++++++++++++++++----------------
+ 1 file changed, 47 insertions(+), 18 deletions(-)
 
---- a/drivers/net/ethernet/dlink/dl2k.c
-+++ b/drivers/net/ethernet/dlink/dl2k.c
-@@ -1259,55 +1259,21 @@ rio_ioctl (struct net_device *dev, struc
+--- a/kernel/compat.c
++++ b/kernel/compat.c
+@@ -320,25 +320,54 @@ asmlinkage long compat_sys_sigpending(co
+ 
+ #ifdef __ARCH_WANT_SYS_SIGPROCMASK
+ 
+-asmlinkage long compat_sys_sigprocmask(int how, compat_old_sigset_t __user *set,
+-		compat_old_sigset_t __user *oset)
++/*
++ * sys_sigprocmask SIG_SETMASK sets the first (compat) word of the
++ * blocked set of signals to the supplied signal set
++ */
++static inline void compat_sig_setmask(sigset_t *blocked, compat_sigset_word set)
  {
- 	int phy_addr;
- 	struct netdev_private *np = netdev_priv(dev);
--	struct mii_data *miidata = (struct mii_data *) &rq->ifr_ifru;
+-	old_sigset_t s;
+-	long ret;
+-	mm_segment_t old_fs;
 -
--	struct netdev_desc *desc;
--	int i;
-+	struct mii_ioctl_data *miidata = if_mii(rq);
+-	if (set && get_user(s, set))
+-		return -EFAULT;
+-	old_fs = get_fs();
+-	set_fs(KERNEL_DS);
+-	ret = sys_sigprocmask(how,
+-			      set ? (old_sigset_t __user *) &s : NULL,
+-			      oset ? (old_sigset_t __user *) &s : NULL);
+-	set_fs(old_fs);
+-	if (ret == 0)
+-		if (oset)
+-			ret = put_user(s, oset);
+-	return ret;
++	memcpy(blocked->sig, &set, sizeof(set));
++}
++
++asmlinkage long compat_sys_sigprocmask(int how,
++				       compat_old_sigset_t __user *nset,
++				       compat_old_sigset_t __user *oset)
++{
++	old_sigset_t old_set, new_set;
++	sigset_t new_blocked;
++
++	old_set = current->blocked.sig[0];
++
++	if (nset) {
++		if (get_user(new_set, nset))
++			return -EFAULT;
++		new_set &= ~(sigmask(SIGKILL) | sigmask(SIGSTOP));
++
++		new_blocked = current->blocked;
++
++		switch (how) {
++		case SIG_BLOCK:
++			sigaddsetmask(&new_blocked, new_set);
++			break;
++		case SIG_UNBLOCK:
++			sigdelsetmask(&new_blocked, new_set);
++			break;
++		case SIG_SETMASK:
++			compat_sig_setmask(&new_blocked, new_set);
++			break;
++		default:
++			return -EINVAL;
++		}
++
++		set_current_blocked(&new_blocked);
++	}
++
++	if (oset) {
++		if (put_user(old_set, oset))
++			return -EFAULT;
++	}
++
++	return 0;
+ }
  
- 	phy_addr = np->phy_addr;
- 	switch (cmd) {
--	case SIOCDEVPRIVATE:
--		break;
--
--	case SIOCDEVPRIVATE + 1:
--		miidata->out_value = mii_read (dev, phy_addr, miidata->reg_num);
--		break;
--	case SIOCDEVPRIVATE + 2:
--		mii_write (dev, phy_addr, miidata->reg_num, miidata->in_value);
--		break;
--	case SIOCDEVPRIVATE + 3:
-+	case SIOCGMIIPHY:
-+		miidata->phy_id = phy_addr;
- 		break;
--	case SIOCDEVPRIVATE + 4:
-+	case SIOCGMIIREG:
-+		miidata->val_out = mii_read (dev, phy_addr, miidata->reg_num);
- 		break;
--	case SIOCDEVPRIVATE + 5:
--		netif_stop_queue (dev);
-+	case SIOCSMIIREG:
-+		if (!capable(CAP_NET_ADMIN))
-+			return -EPERM;
-+		mii_write (dev, phy_addr, miidata->reg_num, miidata->val_in);
- 		break;
--	case SIOCDEVPRIVATE + 6:
--		netif_wake_queue (dev);
--		break;
--	case SIOCDEVPRIVATE + 7:
--		printk
--		    ("tx_full=%x cur_tx=%lx old_tx=%lx cur_rx=%lx old_rx=%lx\n",
--		     netif_queue_stopped(dev), np->cur_tx, np->old_tx, np->cur_rx,
--		     np->old_rx);
--		break;
--	case SIOCDEVPRIVATE + 8:
--		printk("TX ring:\n");
--		for (i = 0; i < TX_RING_SIZE; i++) {
--			desc = &np->tx_ring[i];
--			printk
--			    ("%02x:cur:%08x next:%08x status:%08x frag1:%08x frag0:%08x",
--			     i,
--			     (u32) (np->tx_ring_dma + i * sizeof (*desc)),
--			     (u32)le64_to_cpu(desc->next_desc),
--			     (u32)le64_to_cpu(desc->status),
--			     (u32)(le64_to_cpu(desc->fraginfo) >> 32),
--			     (u32)le64_to_cpu(desc->fraginfo));
--			printk ("\n");
--		}
--		printk ("\n");
--		break;
--
- 	default:
- 		return -EOPNOTSUPP;
- 	}
---- a/drivers/net/ethernet/dlink/dl2k.h
-+++ b/drivers/net/ethernet/dlink/dl2k.h
-@@ -365,13 +365,6 @@ struct ioctl_data {
- 	char *data;
- };
- 
--struct mii_data {
--	__u16 reserved;
--	__u16 reg_num;
--	__u16 in_value;
--	__u16 out_value;
--};
--
- /* The Rx and Tx buffer descriptors. */
- struct netdev_desc {
- 	__le64 next_desc;
+ #endif
 
 
