@@ -1,114 +1,218 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761446Ab2ERIGN (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 May 2012 04:06:13 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:51872 "EHLO mx2.suse.de"
+	id S1761493Ab2ERIGo (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 May 2012 04:06:44 -0400
+Received: from antcom.de ([188.40.178.216]:60666 "EHLO chuck.antcom.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932281Ab2ERIGD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 May 2012 04:06:03 -0400
-Date: Fri, 18 May 2012 18:05:50 +1000
-From: NeilBrown <neilb@suse.de>
-To: koverstreet@google.com
-Cc: linux-bcache@vger.kernel.org, linux-kernel@vger.kernel.org,
-        dm-devel@redhat.com, linux-fsdevel@vger.kernel.org, tj@kernel.org,
-        axboe@kernel.dk, agk@redhat.com
-Subject: Re: [PATCH 12/13] Make generic_make_request handle arbitrarily
- large bios
-Message-ID: <20120518180550.0a6cdc34@notabene.brown>
-In-Reply-To: <1114e7019b0055fc09a54b59b36398d5c54f5e32.1337308722.git.koverstreet@google.com>
-References: <cover.1337308722.git.koverstreet@google.com>
-	<1114e7019b0055fc09a54b59b36398d5c54f5e32.1337308722.git.koverstreet@google.com>
-X-Mailer: Claws Mail 3.7.10 (GTK+ 2.24.7; x86_64-suse-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; micalg=PGP-SHA1;
- boundary="Sig_/w5vxMlcq6bve1stJTPTa04p"; protocol="application/pgp-signature"
+	id S1760959Ab2ERIGf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 18 May 2012 04:06:35 -0400
+Message-ID: <4FB6030A.4030209@antcom.de>
+Date: Fri, 18 May 2012 10:06:34 +0200
+From: Roland Stigge <stigge@antcom.de>
+Organization: ANTCOM IT Research & Development
+User-Agent: Mozilla/5.0 (X11; Linux i686 on x86_64; rv:8.0) Gecko/20120216 Icedove/8.0
+MIME-Version: 1.0
+To: Grant Likely <grant.likely@secretlab.ca>
+CC: linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/3] gpio: Adjust of_xlate API to support multiple GPIO
+ chips
+References: <1337285060-31919-1-git-send-email-grant.likely@secretlab.ca>
+In-Reply-To: <1337285060-31919-1-git-send-email-grant.likely@secretlab.ca>
+X-Enigmail-Version: 1.3.4
+OpenPGP: url=subkeys.pgp.net
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Sig_/w5vxMlcq6bve1stJTPTa04p
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: quoted-printable
+On 05/17/2012 10:04 PM, Grant Likely wrote:
+> This patch changes the of_xlate API to make it possible for multiple
+> gpio_chips to refer to the same device tree node.  This is useful for
+> banked GPIO controllers that use multiple gpio_chips for a single
+> device.  With this change the core code will try calling of_xlate on
+> each gpio_chip that references the device_node and will return the
+> gpio number for the first one to return 'true'.
+> 
+> Cc: Roland Stigge <stigge@antcom.de>
+> Signed-off-by: Grant Likely <grant.likely@secretlab.ca>
 
+Tested-by: Roland Stigge <stigge@antcom.de>
 
-Hi Kent,
- there is lots of good stuff in this series and I certainly hope a lot of it
- can eventually go upstream.
-
- However there is a part of this patch that I don't think is safe:
-
-
-> +static void __bio_submit_split(struct closure *cl)
+> ---
+>  arch/arm/mach-imx/mach-mx35_3ds.c |    3 +-
+>  drivers/gpio/gpiolib-of.c         |   80 ++++++++++++++++++-------------------
+>  drivers/gpio/gpiolib.c            |    2 +-
+>  include/asm-generic/gpio.h        |    2 +-
+>  include/linux/of_gpio.h           |    1 -
+>  5 files changed, 41 insertions(+), 47 deletions(-)
+> 
+> diff --git a/arch/arm/mach-imx/mach-mx35_3ds.c b/arch/arm/mach-imx/mach-mx35_3ds.c
+> index 6ae51c6..6a7cf91 100644
+> --- a/arch/arm/mach-imx/mach-mx35_3ds.c
+> +++ b/arch/arm/mach-imx/mach-mx35_3ds.c
+> @@ -96,8 +96,7 @@ static struct i2c_board_info __initdata i2c_devices_3ds[] = {
+>  
+>  static int lcd_power_gpio = -ENXIO;
+>  
+> -static int mc9s08dz60_gpiochip_match(struct gpio_chip *chip,
+> -						     const void *data)
+> +static int mc9s08dz60_gpiochip_match(struct gpio_chip *chip, void *data)
+>  {
+>  	return !strcmp(chip->label, data);
+>  }
+> diff --git a/drivers/gpio/gpiolib-of.c b/drivers/gpio/gpiolib-of.c
+> index bf984b6..d18068a 100644
+> --- a/drivers/gpio/gpiolib-of.c
+> +++ b/drivers/gpio/gpiolib-of.c
+> @@ -15,11 +15,39 @@
+>  #include <linux/errno.h>
+>  #include <linux/module.h>
+>  #include <linux/io.h>
+> +#include <linux/gpio.h>
+>  #include <linux/of.h>
+>  #include <linux/of_address.h>
+>  #include <linux/of_gpio.h>
+>  #include <linux/slab.h>
+>  
+> +/* Private data structure for of_gpiochip_is_match */
+> +struct gg_data {
+> +	enum of_gpio_flags *flags;
+> +	struct of_phandle_args gpiospec;
+> +
+> +	int out_gpio;
+> +};
+> +
+> +/* Private function for resolving node pointer to gpio_chip */
+> +static int of_gpiochip_find_and_xlate(struct gpio_chip *gc, void *data)
 > +{
-> +	struct bio_split_hook *s =3D container_of(cl, struct bio_split_hook, cl=
-);
-> +	struct bio *bio =3D s->bio, *n;
+> +	struct gg_data *gg_data = data;
+> +	int ret;
 > +
-> +	do {
-> +		n =3D bio_split(bio, bio_max_sectors(bio),
-> +			      GFP_NOIO, s->q->bio_split);
-> +		if (!n)
-> +			continue_at(cl, __bio_submit_split, bio_split_wq);
+> +	if ((gc->of_node != gg_data->gpiospec.np) ||
+> +	    (gc->of_gpio_n_cells != gg_data->gpiospec.args_count) ||
+> +	    (!gc->of_xlate))
+> +		return false;
 > +
-> +		closure_get(cl);
-> +		generic_make_request(n);
-> +	} while (n !=3D bio);
+> +	ret = gc->of_xlate(gc, &gg_data->gpiospec, gg_data->flags);
+> +	if (ret < 0)
+> +		return false;
 > +
-> +	continue_at(cl, bio_submit_split_done, NULL);
+> +	gg_data->out_gpio = ret + gc->base;
+> +	return true;
 > +}
+> +
+>  /**
+>   * of_get_named_gpio_flags() - Get a GPIO number and flags to use with GPIO API
+>   * @np:		device node to get GPIO from
+> @@ -34,46 +62,25 @@
+>  int of_get_named_gpio_flags(struct device_node *np, const char *propname,
+>                             int index, enum of_gpio_flags *flags)
+>  {
+> +	struct gg_data gg_data = { .flags = flags, .out_gpio = -ENODEV };
+>  	int ret;
+> -	struct gpio_chip *gc;
+> -	struct of_phandle_args gpiospec;
+> +
+> +	/* .of_xlate might decide to not fill in the flags, so clear it. */
+> +	if (flags)
+> +		*flags = 0;
+>  
+>  	ret = of_parse_phandle_with_args(np, propname, "#gpio-cells", index,
+> -					 &gpiospec);
+> +					 &gg_data.gpiospec);
+>  	if (ret) {
+>  		pr_debug("%s: can't parse gpios property\n", __func__);
+> -		goto err0;
+> -	}
+> -
+> -	gc = of_node_to_gpiochip(gpiospec.np);
+> -	if (!gc) {
+> -		pr_debug("%s: gpio controller %s isn't registered\n",
+> -			 np->full_name, gpiospec.np->full_name);
+> -		ret = -ENODEV;
+> -		goto err1;
+> -	}
+> -
+> -	if (gpiospec.args_count != gc->of_gpio_n_cells) {
+> -		pr_debug("%s: wrong #gpio-cells for %s\n",
+> -			 np->full_name, gpiospec.np->full_name);
+> -		ret = -EINVAL;
+> -		goto err1;
+> +		return -EINVAL;
+>  	}
+>  
+> -	/* .xlate might decide to not fill in the flags, so clear it. */
+> -	if (flags)
+> -		*flags = 0;
+> -
+> -	ret = gc->of_xlate(gc, &gpiospec, flags);
+> -	if (ret < 0)
+> -		goto err1;
+> +	gpiochip_find(&gg_data, of_gpiochip_find_and_xlate);
+>  
+> -	ret += gc->base;
+> -err1:
+> -	of_node_put(gpiospec.np);
+> -err0:
+> +	of_node_put(gg_data.gpiospec.np);
+>  	pr_debug("%s exited with status %d\n", __func__, ret);
+> -	return ret;
+> +	return gg_data.out_gpio;
+>  }
+>  EXPORT_SYMBOL(of_get_named_gpio_flags);
+>  
+> @@ -227,14 +234,3 @@ void of_gpiochip_remove(struct gpio_chip *chip)
+>  	if (chip->of_node)
+>  		of_node_put(chip->of_node);
+>  }
+> -
+> -/* Private function for resolving node pointer to gpio_chip */
+> -static int of_gpiochip_is_match(struct gpio_chip *chip, const void *data)
+> -{
+> -	return chip->of_node == data;
+> -}
+> -
+> -struct gpio_chip *of_node_to_gpiochip(struct device_node *np)
+> -{
+> -	return gpiochip_find(np, of_gpiochip_is_match);
+> -}
+> diff --git a/drivers/gpio/gpiolib.c b/drivers/gpio/gpiolib.c
+> index 566d012..38353c0 100644
+> --- a/drivers/gpio/gpiolib.c
+> +++ b/drivers/gpio/gpiolib.c
+> @@ -1156,7 +1156,7 @@ EXPORT_SYMBOL_GPL(gpiochip_remove);
+>   */
+>  struct gpio_chip *gpiochip_find(const void *data,
+>  				int (*match)(struct gpio_chip *chip,
+> -					     const void *data))
+> +					     void *data))
+>  {
+>  	struct gpio_chip *chip = NULL;
+>  	unsigned long flags;
+> diff --git a/include/asm-generic/gpio.h b/include/asm-generic/gpio.h
+> index 5f52690..1cb3dd1 100644
+> --- a/include/asm-generic/gpio.h
+> +++ b/include/asm-generic/gpio.h
+> @@ -144,7 +144,7 @@ extern int gpiochip_add(struct gpio_chip *chip);
+>  extern int __must_check gpiochip_remove(struct gpio_chip *chip);
+>  extern struct gpio_chip *gpiochip_find(const void *data,
+>  					int (*match)(struct gpio_chip *chip,
+> -						     const void *data));
+> +						     void *data));
+>  
+>  
+>  /* Always use the library code for GPIO management calls,
+> diff --git a/include/linux/of_gpio.h b/include/linux/of_gpio.h
+> index 81733d1..c454f57 100644
+> --- a/include/linux/of_gpio.h
+> +++ b/include/linux/of_gpio.h
+> @@ -58,7 +58,6 @@ extern int of_mm_gpiochip_add(struct device_node *np,
+>  
+>  extern void of_gpiochip_add(struct gpio_chip *gc);
+>  extern void of_gpiochip_remove(struct gpio_chip *gc);
+> -extern struct gpio_chip *of_node_to_gpiochip(struct device_node *np);
+>  extern int of_gpio_simple_xlate(struct gpio_chip *gc,
+>  				const struct of_phandle_args *gpiospec,
+>  				u32 *flags);
 
-Firstly a small point:  Can bio_split ever return NULL here?  I don't
-think it can, so there is no need to test.
-But if it can, then calling generic_make_request(NULL) doesn't seem like a
-good idea.
-
-More significantly though::
-  This is called from generic_make_request which can be called recursively =
-and
-enforces a tail-recursion semantic.
-If that generic_make_request was a recursive call, then the
-generic_make_request in __bio_submit_split will not start the request, but
-will queue the bio for later handling.  If we then call bio_split again, we
-could try to allocation from a mempool while we are holding one entry
-allocated from that pool captive.  This can deadlock.
-
-i.e. if the original bio is so large that it needs to be split into 3 piece=
-s,
-then we will try to allocate the second piece before the first piece has a
-chance to be released.  If this happens in enough threads to exhaust the po=
-ol
-(4 I think), it will deadlock.
-
-I realise this sounds like a very unlikely case, but of course they happen.
-
-One possible approach might be to count how many splits will be required,
-then have an interface to mempools so you can allocate them all at once,
-or block and wait.
-
-Thanks,
-NeilBrown
-
-
---Sig_/w5vxMlcq6bve1stJTPTa04p
-Content-Type: application/pgp-signature; name=signature.asc
-Content-Disposition: attachment; filename=signature.asc
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.18 (GNU/Linux)
-
-iQIVAwUBT7YC3jnsnt1WYoG5AQKglg//Xze/QbSQ0KVWwYqBQD1GphnYewUp574T
-AYyhTO0crZiVeChW9g1Nk/bPCyIokYkGFz5wLFd6kO1hwuVHJpB4GEXS5aPyOqq5
-hM7Gy6iAqc4+PxYRClN9QzHYfMqePlF91VN0nPH6htBr2pk2AKLGEzT12cXJEOFr
-bInWnijJ0wEA4K6YHNNs99Ibzb6+ul4TjTgOdRj6Hh8kW49zPctaZuUbfU1sg2eB
-irNiZr5IBdbP76M74HfMgJcCT6/rCYhKr8jbbR4bUU8ROiW4vh2b8FqLoW5qem6a
-N297B1EQp8IVpuWkPybIuOuKWNeb5QH65lk93AvXpA1mBJIb1VGKQ2QVgMUW9rhn
-KeNsFk5IWzneRegKbfutBNsFMZ4ruXpNsbr4cRt6pAf1di+QOZW7OFlv3Y9nsndn
-vW1+0B1TOzCtaYxYRffN2L0oGVckeTVrAVtDCB9ZG11GVEmiyCEssKo5PpyTM+uY
-vQfsrLPhB6682KhS6qyngY3GkdTysLUdT7mP7mX19q7EuVx89s+4N/89Fq9PEStk
-ZXGP76LiZzz0MYjXRQHpCgvIXdtBfPWuxnwdDmRO0hR0ohGN+y271DKJXDbPTQay
-0q20Uw/VvYYrvJtETG7iLUGi2s5dCx1vlRGCjlr6WUsiTTDKxsnB2Zb1pP7s/rtj
-LVAyv+knoKs=
-=RBfr
------END PGP SIGNATURE-----
-
---Sig_/w5vxMlcq6bve1stJTPTa04p--
