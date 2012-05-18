@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1946709Ab2ERXGr (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 May 2012 19:06:47 -0400
+	id S1946726Ab2ERXGy (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 May 2012 19:06:54 -0400
 Received: from mail-pz0-f46.google.com ([209.85.210.46]:38665 "EHLO
 	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1946684Ab2ERXGj (ORCPT
+	with ESMTP id S1946684Ab2ERXGs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 May 2012 19:06:39 -0400
-Message-Id: <20120518212651.399623713@linuxfoundation.org>
+	Fri, 18 May 2012 19:06:48 -0400
+Message-Id: <20120518212651.777670218@linuxfoundation.org>
 User-Agent: quilt/0.60-19.1
-Date: Fri, 18 May 2012 14:27:13 -0700
+Date: Fri, 18 May 2012 14:27:17 -0700
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Chris Metcalf <cmetcalf@tilera.com>
-Subject: [ 24/47] arch/tile: apply commit 74fca9da0 to the compat signal handling as well
+        alan@lxorguk.ukuu.org.uk, Christoph Hellwig <hch@lst.de>,
+        Nicholas Bellinger <nab@linux-iscsi.org>
+Subject: [ 28/47] target: Fix bug in handling of FILEIO + block_device resize ops
 In-Reply-To: <20120518212701.GA5023@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -24,46 +25,75 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Chris Metcalf <cmetcalf@tilera.com>
+From: Nicholas Bellinger <nab@linux-iscsi.org>
 
-commit a134d228298c6aa9007205c6b81cae0cac0acb5d upstream.
+commit cd9323fd68aee3c1c6b5b21e5746c9d1b586fb58 upstream.
 
-This passes siginfo and mcontext to tilegx32 signal handlers that
-don't have SA_SIGINFO set just as we have been doing for tilegx64.
+This patch fixes a bug in the handling of FILEIO w/ underlying block_device
+resize operations where the original fd_dev->fd_dev_size was incorrectly being
+used in fd_get_blocks() for READ_CAPACITY response payloads.
 
-Signed-off-by: Chris Metcalf <cmetcalf@tilera.com>
+This patch avoids using fd_dev->fd_dev_size for FILEIO devices with
+an underlying block_device, and instead changes fd_get_blocks() to
+get the sector count directly from i_size_read() as recommended by hch.
+
+Reported-by: Christoph Hellwig <hch@lst.de>
+Signed-off-by: Nicholas Bellinger <nab@linux-iscsi.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/tile/kernel/compat_signal.c |   12 +++++-------
- 1 file changed, 5 insertions(+), 7 deletions(-)
+ drivers/target/target_core_file.c |   22 ++++++++++++++++------
+ 1 file changed, 16 insertions(+), 6 deletions(-)
 
---- a/arch/tile/kernel/compat_signal.c
-+++ b/arch/tile/kernel/compat_signal.c
-@@ -403,19 +403,17 @@ int compat_setup_rt_frame(int sig, struc
- 	 * Set up registers for signal handler.
- 	 * Registers that we don't modify keep the value they had from
- 	 * user-space at the time we took the signal.
-+	 * We always pass siginfo and mcontext, regardless of SA_SIGINFO,
-+	 * since some things rely on this (e.g. glibc's debug/segfault.c).
- 	 */
- 	regs->pc = ptr_to_compat_reg(ka->sa.sa_handler);
- 	regs->ex1 = PL_ICS_EX1(USER_PL, 1); /* set crit sec in handler */
- 	regs->sp = ptr_to_compat_reg(frame);
- 	regs->lr = restorer;
- 	regs->regs[0] = (unsigned long) usig;
--
--	if (ka->sa.sa_flags & SA_SIGINFO) {
--		/* Need extra arguments, so mark to restore caller-saves. */
--		regs->regs[1] = ptr_to_compat_reg(&frame->info);
--		regs->regs[2] = ptr_to_compat_reg(&frame->uc);
--		regs->flags |= PT_FLAGS_CALLER_SAVES;
--	}
-+	regs->regs[1] = ptr_to_compat_reg(&frame->info);
-+	regs->regs[2] = ptr_to_compat_reg(&frame->uc);
-+	regs->flags |= PT_FLAGS_CALLER_SAVES;
+--- a/drivers/target/target_core_file.c
++++ b/drivers/target/target_core_file.c
+@@ -169,6 +169,7 @@ static struct se_device *fd_create_virtd
+ 	inode = file->f_mapping->host;
+ 	if (S_ISBLK(inode->i_mode)) {
+ 		struct request_queue *q;
++		unsigned long long dev_size;
+ 		/*
+ 		 * Setup the local scope queue_limits from struct request_queue->limits
+ 		 * to pass into transport_add_device_to_core_hba() as struct se_dev_limits.
+@@ -183,13 +184,12 @@ static struct se_device *fd_create_virtd
+ 		 * one (1) logical sector from underlying struct block_device
+ 		 */
+ 		fd_dev->fd_block_size = bdev_logical_block_size(inode->i_bdev);
+-		fd_dev->fd_dev_size = (i_size_read(file->f_mapping->host) -
++		dev_size = (i_size_read(file->f_mapping->host) -
+ 				       fd_dev->fd_block_size);
  
- 	/*
- 	 * Notify any tracer that was single-stepping it.
+ 		pr_debug("FILEIO: Using size: %llu bytes from struct"
+ 			" block_device blocks: %llu logical_block_size: %d\n",
+-			fd_dev->fd_dev_size,
+-			div_u64(fd_dev->fd_dev_size, fd_dev->fd_block_size),
++			dev_size, div_u64(dev_size, fd_dev->fd_block_size),
+ 			fd_dev->fd_block_size);
+ 	} else {
+ 		if (!(fd_dev->fbd_flags & FBDF_HAS_SIZE)) {
+@@ -605,10 +605,20 @@ static u32 fd_get_device_type(struct se_
+ static sector_t fd_get_blocks(struct se_device *dev)
+ {
+ 	struct fd_dev *fd_dev = dev->dev_ptr;
+-	unsigned long long blocks_long = div_u64(fd_dev->fd_dev_size,
+-			dev->se_sub_dev->se_dev_attrib.block_size);
++	struct file *f = fd_dev->fd_file;
++	struct inode *i = f->f_mapping->host;
++	unsigned long long dev_size;
++	/*
++	 * When using a file that references an underlying struct block_device,
++	 * ensure dev_size is always based on the current inode size in order
++	 * to handle underlying block_device resize operations.
++	 */
++	if (S_ISBLK(i->i_mode))
++		dev_size = (i_size_read(i) - fd_dev->fd_block_size);
++	else
++		dev_size = fd_dev->fd_dev_size;
+ 
+-	return blocks_long;
++	return div_u64(dev_size, dev->se_sub_dev->se_dev_attrib.block_size);
+ }
+ 
+ static struct se_subsystem_api fileio_template = {
 
 
