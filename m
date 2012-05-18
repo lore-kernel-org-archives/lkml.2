@@ -1,67 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933701Ab2ERLQt (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 May 2012 07:16:49 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:42959 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933182Ab2ERLQr (ORCPT
+	id S933706Ab2ERLSJ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 May 2012 07:18:09 -0400
+Received: from mail-lb0-f174.google.com ([209.85.217.174]:36394 "EHLO
+	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933182Ab2ERLSH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 May 2012 07:16:47 -0400
-Date: Fri, 18 May 2012 04:16:32 -0700
-From: tip-bot for Konstantin Khlebnikov <khlebnikov@openvz.org>
-Message-ID: <tip-1c2927f18576d65631d8e0ddd19e1d023183222e@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
-        a.p.zijlstra@chello.nl, khlebnikov@openvz.org, tglx@linutronix.de
-Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        a.p.zijlstra@chello.nl, khlebnikov@openvz.org, tglx@linutronix.de
-In-Reply-To: <20120510122004.4873.12726.stgit@zurg>
-References: <20120510122004.4873.12726.stgit@zurg>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:sched/core] sched:
-  Taint kernel with TAINT_WARN after sleep-in-atomic bug
-Git-Commit-ID: 1c2927f18576d65631d8e0ddd19e1d023183222e
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
-  to get blacklisted from these emails
+	Fri, 18 May 2012 07:18:07 -0400
+Date: Fri, 18 May 2012 13:18:04 +0200
+From: Johan Hovold <jhovold@gmail.com>
+To: Samuel Ortiz <sameo@linux.intel.com>
+Cc: linux-kernel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
+        Johan Hovold <jhovold@gmail.com>
+Subject: Re: [PATCH] mfd: lm3533: fix return type of attribute is_visible
+Message-ID: <20120518111804.GA20467@localhost>
+References: <1336725641-11826-1-git-send-email-jhovold@gmail.com>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Fri, 18 May 2012 04:16:39 -0700 (PDT)
+In-Reply-To: <1336725641-11826-1-git-send-email-jhovold@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  1c2927f18576d65631d8e0ddd19e1d023183222e
-Gitweb:     http://git.kernel.org/tip/1c2927f18576d65631d8e0ddd19e1d023183222e
-Author:     Konstantin Khlebnikov <khlebnikov@openvz.org>
-AuthorDate: Thu, 10 May 2012 16:20:04 +0400
-Committer:  Ingo Molnar <mingo@kernel.org>
-CommitDate: Fri, 18 May 2012 13:07:40 +0200
+Hi Samuel,
 
-sched: Taint kernel with TAINT_WARN after sleep-in-atomic bug
+On Fri, May 11, 2012 at 10:40:41AM +0200, Johan Hovold wrote:
+> Since commit 587a1f1659 ("switch ->is_visible() to returning umode_t")
+> the return type of is_visible is umode_t rather than mode_t.
+> 
+> This silences a compiler warning on some architectures where these types
+> are not compatible.
+> 
+> Reported-by: Andrew Morton <akpm@linux-foundation.org>
+> Signed-off-by: Johan Hovold <jhovold@gmail.com>
+> ---
 
-Usually sleep-in-atomic bugs are followed by dozens other warnings.
-This patch should help to figure out original source of problem.
+Apparently Dan Carpenter sent a fix for this compiler warning the day
+after I submitted mine. Dan's patch, however, only fixed the return type
+and not the type of the mode variable.
 
-Signed-off-by: Konstantin Khlebnikov <khlebnikov@openvz.org>
-Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Link: http://lkml.kernel.org/r/20120510122004.4873.12726.stgit@zurg
-Signed-off-by: Ingo Molnar <mingo@kernel.org>
----
- kernel/sched/core.c |    1 +
- 1 files changed, 1 insertions(+), 0 deletions(-)
+Could you consider applying this patch one on top of Dan's (which you
+applied to mfd-next on Monday)?
 
-diff --git a/kernel/sched/core.c b/kernel/sched/core.c
-index 24ca677..ab9745f 100644
---- a/kernel/sched/core.c
-+++ b/kernel/sched/core.c
-@@ -3138,6 +3138,7 @@ static noinline void __schedule_bug(struct task_struct *prev)
- 	if (irqs_disabled())
- 		print_irqtrace_events(prev);
- 	dump_stack();
-+	add_taint(TAINT_WARN);
- }
- 
- /*
+Thanks,
+Johan
+
+>  drivers/mfd/lm3533-core.c |    4 ++--
+>  1 files changed, 2 insertions(+), 2 deletions(-)
+> 
+> diff --git a/drivers/mfd/lm3533-core.c b/drivers/mfd/lm3533-core.c
+> index d11c891..5770bea 100644
+> --- a/drivers/mfd/lm3533-core.c
+> +++ b/drivers/mfd/lm3533-core.c
+> @@ -359,7 +359,7 @@ static struct attribute *lm3533_attributes[] = {
+>  #define to_dev_attr(_attr) \
+>  	container_of(_attr, struct device_attribute, attr)
+>  
+> -static mode_t lm3533_attr_is_visible(struct kobject *kobj,
+> +static umode_t lm3533_attr_is_visible(struct kobject *kobj,
+>  					     struct attribute *attr, int n)
+>  {
+>  	struct device *dev = container_of(kobj, struct device, kobj);
+> @@ -367,7 +367,7 @@ static mode_t lm3533_attr_is_visible(struct kobject *kobj,
+>  	struct device_attribute *dattr = to_dev_attr(attr);
+>  	struct lm3533_device_attribute *lattr = to_lm3533_dev_attr(dattr);
+>  	enum lm3533_attribute_type type = lattr->type;
+> -	mode_t mode = attr->mode;
+> +	umode_t mode = attr->mode;
+>  
+>  	if (!lm3533->have_backlights && type == LM3533_ATTR_TYPE_BACKLIGHT)
+>  		mode = 0;
