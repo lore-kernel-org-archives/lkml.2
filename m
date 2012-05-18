@@ -1,19 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965274Ab2ERQsO (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 May 2012 12:48:14 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:3282 "EHLO mx1.redhat.com"
+	id S965322Ab2ERQsY (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 May 2012 12:48:24 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:62956 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758546Ab2ERQdF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1758535Ab2ERQdF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 18 May 2012 12:33:05 -0400
 From: Mauro Carvalho Chehab <mchehab@redhat.com>
 Cc: Mauro Carvalho Chehab <mchehab@redhat.com>,
         Linux Edac Mailing List <linux-edac@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Greg K H <gregkh@linuxfoundation.org>
-Subject: [PATCH EDAC v26 45/66] i7core_edac: convert it to use struct device
-Date: Fri, 18 May 2012 13:32:32 -0300
-Message-Id: <1337358773-6919-46-git-send-email-mchehab@redhat.com>
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: [PATCH EDAC v26 57/66] edac: move documentation ABI to ABI/testing/sysfs-devices-edac
+Date: Fri, 18 May 2012 13:32:44 -0300
+Message-Id: <1337358773-6919-58-git-send-email-mchehab@redhat.com>
 In-Reply-To: <1337358773-6919-1-git-send-email-mchehab@redhat.com>
 References: <1337358773-6919-1-git-send-email-mchehab@redhat.com>
 To: unlisted-recipients:; (no To-header on input)
@@ -21,528 +20,232 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Instead of relying on a complex logic inside the edac core to create
-a "device tree-like" sysfs struct, just use device_add.
+The EDAC MC API is currently stored at the wrong place. Move the
+parts of the EDAC MC ABI that will be kept to
+ABI/testing/sysfs-devices-edac.
 
-Reviewed-by: Aristeu Rozanski <arozansk@redhat.com>
-Cc: Greg K H <gregkh@linuxfoundation.org>
+The Date: field were added based on git timestamps for the git
+commit patches that added the functionality at edac.txt.
+
+Acked-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 Signed-off-by: Mauro Carvalho Chehab <mchehab@redhat.com>
 ---
- drivers/edac/i7core_edac.c |  338 +++++++++++++++++++++++++++-----------------
- 1 files changed, 209 insertions(+), 129 deletions(-)
+ Documentation/ABI/testing/sysfs-devices-edac |   76 +++++++++++++++++
+ Documentation/edac.txt                       |  112 ++------------------------
+ 2 files changed, 84 insertions(+), 104 deletions(-)
+ create mode 100644 Documentation/ABI/testing/sysfs-devices-edac
 
-diff --git a/drivers/edac/i7core_edac.c b/drivers/edac/i7core_edac.c
-index cb004ca..316b0db 100644
---- a/drivers/edac/i7core_edac.c
-+++ b/drivers/edac/i7core_edac.c
-@@ -246,6 +246,8 @@ struct i7core_dev {
- };
- 
- struct i7core_pvt {
-+	struct device addrmatch_dev, chancounts_dev;
+diff --git a/Documentation/ABI/testing/sysfs-devices-edac b/Documentation/ABI/testing/sysfs-devices-edac
+new file mode 100644
+index 0000000..40db633
+--- /dev/null
++++ b/Documentation/ABI/testing/sysfs-devices-edac
+@@ -0,0 +1,76 @@
++What:		/sys/devices/system/edac/mc/mc*/reset_counters
++Date:		January 2006
++Contact:	linux-edac@vger.kernel.org
++Description:	This write-only control file will zero all the statistical
++		counters for UE and CE errors on the given memory controller.
++		Zeroing the counters will also reset the timer indicating how
++		long since the last counter were reset. This is useful for
++		computing errors/time.  Since the counters are always reset
++		at driver initialization time, no module/kernel parameter
++		is available.
 +
- 	struct pci_dev	*pci_noncore;
- 	struct pci_dev	*pci_mcr[MAX_MCR_FUNC + 1];
- 	struct pci_dev	*pci_ch[NUM_CHANS][MAX_CHAN_FUNC + 1];
-@@ -659,6 +661,8 @@ static int get_dimm_config(struct mem_ctl_info *mci)
- 			Error insertion routines
-  ****************************************************************************/
- 
-+#define to_mci(k) container_of(k, struct mem_ctl_info, dev)
++What:		/sys/devices/system/edac/mc/mc*/seconds_since_reset
++Date:		January 2006
++Contact:	linux-edac@vger.kernel.org
++Description:	This attribute file displays how many seconds have elapsed
++		since the last counter reset. This can be used with the error
++		counters to measure error rates.
 +
- /* The i7core has independent error injection features per channel.
-    However, to have a simpler code, we don't allow enabling error injection
-    on more than one channel.
-@@ -688,9 +692,11 @@ static int disable_inject(const struct mem_ctl_info *mci)
-  *	bit 0 - refers to the lower 32-byte half cacheline
-  *	bit 1 - refers to the upper 32-byte half cacheline
-  */
--static ssize_t i7core_inject_section_store(struct mem_ctl_info *mci,
-+static ssize_t i7core_inject_section_store(struct device *dev,
-+					   struct device_attribute *mattr,
- 					   const char *data, size_t count)
- {
-+	struct mem_ctl_info *mci = to_mci(dev);
- 	struct i7core_pvt *pvt = mci->pvt_info;
- 	unsigned long value;
- 	int rc;
-@@ -706,9 +712,11 @@ static ssize_t i7core_inject_section_store(struct mem_ctl_info *mci,
- 	return count;
- }
- 
--static ssize_t i7core_inject_section_show(struct mem_ctl_info *mci,
--					      char *data)
-+static ssize_t i7core_inject_section_show(struct device *dev,
-+					  struct device_attribute *mattr,
-+					  char *data)
- {
-+	struct mem_ctl_info *mci = to_mci(dev);
- 	struct i7core_pvt *pvt = mci->pvt_info;
- 	return sprintf(data, "0x%08x\n", pvt->inject.section);
- }
-@@ -721,10 +729,12 @@ static ssize_t i7core_inject_section_show(struct mem_ctl_info *mci,
-  *	bit 1 - inject ECC error
-  *	bit 2 - inject parity error
-  */
--static ssize_t i7core_inject_type_store(struct mem_ctl_info *mci,
-+static ssize_t i7core_inject_type_store(struct device *dev,
-+					struct device_attribute *mattr,
- 					const char *data, size_t count)
- {
--	struct i7core_pvt *pvt = mci->pvt_info;
-+	struct mem_ctl_info *mci = to_mci(dev);
-+struct i7core_pvt *pvt = mci->pvt_info;
- 	unsigned long value;
- 	int rc;
- 
-@@ -739,10 +749,13 @@ static ssize_t i7core_inject_type_store(struct mem_ctl_info *mci,
- 	return count;
- }
- 
--static ssize_t i7core_inject_type_show(struct mem_ctl_info *mci,
--					      char *data)
-+static ssize_t i7core_inject_type_show(struct device *dev,
-+				       struct device_attribute *mattr,
-+				       char *data)
- {
-+	struct mem_ctl_info *mci = to_mci(dev);
- 	struct i7core_pvt *pvt = mci->pvt_info;
++What:		/sys/devices/system/edac/mc/mc*/mc_name
++Date:		January 2006
++Contact:	linux-edac@vger.kernel.org
++Description:	This attribute file displays the type of memory controller
++		that is being utilized.
 +
- 	return sprintf(data, "0x%08x\n", pvt->inject.type);
- }
++What:		/sys/devices/system/edac/mc/mc*/size_mb
++Date:		January 2006
++Contact:	linux-edac@vger.kernel.org
++Description:	This attribute file displays, in count of megabytes, of memory
++		that this memory controller manages.
++
++What:		/sys/devices/system/edac/mc/mc*/ue_count
++Date:		January 2006
++Contact:	linux-edac@vger.kernel.org
++Description:	This attribute file displays the total count of uncorrectable
++		errors that have occurred on this memory controller. If
++		panic_on_ue is set, this counter will not have a chance to
++		increment, since EDAC will panic the system
++
++What:		/sys/devices/system/edac/mc/mc*/ue_noinfo_count
++Date:		January 2006
++Contact:	linux-edac@vger.kernel.org
++Description:	This attribute file displays the number of UEs that have
++		occurred on this memory controller with no information as to
++		which DIMM slot is having errors.
++
++What:		/sys/devices/system/edac/mc/mc*/ce_count
++Date:		January 2006
++Contact:	linux-edac@vger.kernel.org
++Description:	This attribute file displays the total count of correctable
++		errors that have occurred on this memory controller. This
++		count is very important to examine. CEs provide early
++		indications that a DIMM is beginning to fail. This count
++		field should be monitored for non-zero values and report
++		such information to the system administrator.
++
++What:		/sys/devices/system/edac/mc/mc*/ce_noinfo_count
++Date:		January 2006
++Contact:	linux-edac@vger.kernel.org
++Description:	This attribute file displays the number of CEs that
++		have occurred on this memory controller wherewith no
++		information as to which DIMM slot is having errors. Memory is
++		handicapped, but operational, yet no information is available
++		to indicate which slot the failing memory is in. This count
++		field should be also be monitored for non-zero values.
++
++What:		/sys/devices/system/edac/mc/mc*/sdram_scrub_rate
++Date:		February 2007
++Contact:	linux-edac@vger.kernel.org
++Description:	Read/Write attribute file that controls memory scrubbing.
++		The scrubbing rate used by the memory controller is set by
++		writing a minimum bandwidth in bytes/sec to the attribute file.
++		The rate will be translated to an internal value that gives at
++		least the specified rate.
++		Reading the file will return the actual scrubbing rate employed.
++		If configuration fails or memory scrubbing is not implemented,
++		the value of the attribute file will be -1.
+diff --git a/Documentation/edac.txt b/Documentation/edac.txt
+index fdcc49f..c25f086 100644
+--- a/Documentation/edac.txt
++++ b/Documentation/edac.txt
+@@ -232,116 +232,20 @@ EDAC control and attribute files.
  
-@@ -756,9 +769,11 @@ static ssize_t i7core_inject_type_show(struct mem_ctl_info *mci,
-  *   23:16 and 31:24). Flipping bits in two symbol pairs will cause an
-  *   uncorrectable error to be injected.
-  */
--static ssize_t i7core_inject_eccmask_store(struct mem_ctl_info *mci,
--					const char *data, size_t count)
-+static ssize_t i7core_inject_eccmask_store(struct device *dev,
-+					   struct device_attribute *mattr,
-+					   const char *data, size_t count)
- {
-+	struct mem_ctl_info *mci = to_mci(dev);
- 	struct i7core_pvt *pvt = mci->pvt_info;
- 	unsigned long value;
- 	int rc;
-@@ -774,10 +789,13 @@ static ssize_t i7core_inject_eccmask_store(struct mem_ctl_info *mci,
- 	return count;
- }
  
--static ssize_t i7core_inject_eccmask_show(struct mem_ctl_info *mci,
--					      char *data)
-+static ssize_t i7core_inject_eccmask_show(struct device *dev,
-+					  struct device_attribute *mattr,
-+					  char *data)
- {
-+	struct mem_ctl_info *mci = to_mci(dev);
- 	struct i7core_pvt *pvt = mci->pvt_info;
-+
- 	return sprintf(data, "0x%08x\n", pvt->inject.eccmask);
- }
+ In 'mcX' directories are EDAC control and attribute files for
+-this 'X' instance of the memory controllers:
+-
+-
+-Counter reset control file:
+-
+-	'reset_counters'
+-
+-	This write-only control file will zero all the statistical counters
+-	for UE and CE errors.  Zeroing the counters will also reset the timer
+-	indicating how long since the last counter zero.  This is useful
+-	for computing errors/time.  Since the counters are always reset at
+-	driver initialization time, no module/kernel parameter is available.
+-
+-	RUN TIME: echo "anything" >/sys/devices/system/edac/mc/mc0/counter_reset
+-
+-		This resets the counters on memory controller 0
+-
+-
+-Seconds since last counter reset control file:
+-
+-	'seconds_since_reset'
+-
+-	This attribute file displays how many seconds have elapsed since the
+-	last counter reset. This can be used with the error counters to
+-	measure error rates.
+-
+-
+-
+-Memory Controller name attribute file:
+-
+-	'mc_name'
+-
+-	This attribute file displays the type of memory controller
+-	that is being utilized.
+-
+-
+-Total memory managed by this memory controller attribute file:
+-
+-	'size_mb'
+-
+-	This attribute file displays, in count of megabytes, of memory
+-	that this instance of memory controller manages.
+-
+-
+-Total Uncorrectable Errors count attribute file:
+-
+-	'ue_count'
+-
+-	This attribute file displays the total count of uncorrectable
+-	errors that have occurred on this memory controller. If panic_on_ue
+-	is set this counter will not have a chance to increment,
+-	since EDAC will panic the system.
+-
+-
+-Total UE count that had no information attribute fileY:
+-
+-	'ue_noinfo_count'
+-
+-	This attribute file displays the number of UEs that have occurred
+-	with no information as to which DIMM slot is having errors.
+-
+-
+-Total Correctable Errors count attribute file:
+-
+-	'ce_count'
+-
+-	This attribute file displays the total count of correctable
+-	errors that have occurred on this memory controller. This
+-	count is very important to examine. CEs provide early
+-	indications that a DIMM is beginning to fail. This count
+-	field should be monitored for non-zero values and report
+-	such information to the system administrator.
+-
+-
+-Total Correctable Errors count attribute file:
+-
+-	'ce_noinfo_count'
+-
+-	This attribute file displays the number of CEs that
+-	have occurred wherewith no information as to which DIMM slot
+-	is having errors. Memory is handicapped, but operational,
+-	yet no information is available to indicate which slot
+-	the failing memory is in. This count field should be also
+-	be monitored for non-zero values.
+-
+-Device Symlink:
+-
+-	'device'
+-
+-	Symlink to the memory controller device.
+-
+-Sdram memory scrubbing rate:
+-
+-	'sdram_scrub_rate'
+-
+-	Read/Write attribute file that controls memory scrubbing. The scrubbing
+-	rate is set by writing a minimum bandwidth in bytes/sec to the attribute
+-	file. The rate will be translated to an internal value that gives at
+-	least the specified rate.
+-
+-	Reading the file will return the actual scrubbing rate employed.
+-
+-	If configuration fails or memory scrubbing is not implemented, accessing
+-	that attribute will fail.
++this 'X' instance of the memory controllers.
  
-@@ -794,9 +812,11 @@ static ssize_t i7core_inject_eccmask_show(struct mem_ctl_info *mci,
++For a description of the sysfs API, please see:
++	Documentation/ABI/testing/sysfs/devices-edac
  
- #define DECLARE_ADDR_MATCH(param, limit)			\
- static ssize_t i7core_inject_store_##param(			\
--		struct mem_ctl_info *mci,			\
--		const char *data, size_t count)			\
-+	struct device *dev,					\
-+	struct device_attribute *mattr,				\
-+	const char *data, size_t count)				\
- {								\
-+	struct mem_ctl_info *mci = to_mci(dev);			\
- 	struct i7core_pvt *pvt;					\
- 	long value;						\
- 	int rc;							\
-@@ -821,9 +841,11 @@ static ssize_t i7core_inject_store_##param(			\
- }								\
- 								\
- static ssize_t i7core_inject_show_##param(			\
--		struct mem_ctl_info *mci,			\
--		char *data)					\
-+	struct device *dev,					\
-+	struct device_attribute *mattr,				\
-+	char *data)						\
- {								\
-+	struct mem_ctl_info *mci = to_mci(dev);			\
- 	struct i7core_pvt *pvt;					\
- 								\
- 	pvt = mci->pvt_info;					\
-@@ -835,14 +857,9 @@ static ssize_t i7core_inject_show_##param(			\
- }
  
- #define ATTR_ADDR_MATCH(param)					\
--	{							\
--		.attr = {					\
--			.name = #param,				\
--			.mode = (S_IRUGO | S_IWUSR)		\
--		},						\
--		.show  = i7core_inject_show_##param,		\
--		.store = i7core_inject_store_##param,		\
--	}
-+	static DEVICE_ATTR(param, S_IRUGO | S_IWUSR,		\
-+		    i7core_inject_show_##param,			\
-+		    i7core_inject_store_##param)
+ ============================================================================
+ 'csrowX' DIRECTORIES
  
- DECLARE_ADDR_MATCH(channel, 3);
- DECLARE_ADDR_MATCH(dimm, 3);
-@@ -851,6 +868,13 @@ DECLARE_ADDR_MATCH(bank, 32);
- DECLARE_ADDR_MATCH(page, 0x10000);
- DECLARE_ADDR_MATCH(col, 0x4000);
++When CONFIG_EDAC_LEGACY_SYSFS is enabled, the sysfs will contain the
++csrowX directories. As this API doesn't work properly for Rambus, FB-DIMMs
++and modern Intel Memory Controllers, this is being deprecated in favor
++of dimmX directories.
++
+ In the 'csrowX' directories are EDAC control and attribute files for
+ this 'X' instance of csrow:
  
-+ATTR_ADDR_MATCH(channel);
-+ATTR_ADDR_MATCH(dimm);
-+ATTR_ADDR_MATCH(rank);
-+ATTR_ADDR_MATCH(bank);
-+ATTR_ADDR_MATCH(page);
-+ATTR_ADDR_MATCH(col);
-+
- static int write_and_test(struct pci_dev *dev, const int where, const u32 val)
- {
- 	u32 read;
-@@ -896,9 +920,11 @@ static int write_and_test(struct pci_dev *dev, const int where, const u32 val)
-  *    is reliable enough to check if the MC is using the
-  *    three channels. However, this is not clear at the datasheet.
-  */
--static ssize_t i7core_inject_enable_store(struct mem_ctl_info *mci,
--				       const char *data, size_t count)
-+static ssize_t i7core_inject_enable_store(struct device *dev,
-+					  struct device_attribute *mattr,
-+					  const char *data, size_t count)
- {
-+	struct mem_ctl_info *mci = to_mci(dev);
- 	struct i7core_pvt *pvt = mci->pvt_info;
- 	u32 injectmask;
- 	u64 mask = 0;
-@@ -999,9 +1025,11 @@ static ssize_t i7core_inject_enable_store(struct mem_ctl_info *mci,
- 	return count;
- }
- 
--static ssize_t i7core_inject_enable_show(struct mem_ctl_info *mci,
--					char *data)
-+static ssize_t i7core_inject_enable_show(struct device *dev,
-+					 struct device_attribute *mattr,
-+					 char *data)
- {
-+	struct mem_ctl_info *mci = to_mci(dev);
- 	struct i7core_pvt *pvt = mci->pvt_info;
- 	u32 injectmask;
- 
-@@ -1021,12 +1049,14 @@ static ssize_t i7core_inject_enable_show(struct mem_ctl_info *mci,
- 
- #define DECLARE_COUNTER(param)					\
- static ssize_t i7core_show_counter_##param(			\
--		struct mem_ctl_info *mci,			\
--		char *data)					\
-+	struct device *dev,					\
-+	struct device_attribute *mattr,				\
-+	char *data)						\
- {								\
-+	struct mem_ctl_info *mci = to_mci(dev);			\
- 	struct i7core_pvt *pvt = mci->pvt_info;			\
- 								\
--	debugf1("%s() \n", __func__);				\
-+	debugf1("%s()\n", __func__);				\
- 	if (!pvt->ce_count_available || (pvt->is_registered))	\
- 		return sprintf(data, "data unavailable\n");	\
- 	return sprintf(data, "%lu\n",				\
-@@ -1034,121 +1064,167 @@ static ssize_t i7core_show_counter_##param(			\
- }
- 
- #define ATTR_COUNTER(param)					\
--	{							\
--		.attr = {					\
--			.name = __stringify(udimm##param),	\
--			.mode = (S_IRUGO | S_IWUSR)		\
--		},						\
--		.show  = i7core_show_counter_##param		\
--	}
-+	static DEVICE_ATTR(udimm##param, S_IRUGO | S_IWUSR,	\
-+		    i7core_show_counter_##param,		\
-+		    NULL)
- 
- DECLARE_COUNTER(0);
- DECLARE_COUNTER(1);
- DECLARE_COUNTER(2);
- 
-+ATTR_COUNTER(0);
-+ATTR_COUNTER(1);
-+ATTR_COUNTER(2);
-+
- /*
-- * Sysfs struct
-+ * inject_addrmatch device sysfs struct
-  */
- 
--static const struct mcidev_sysfs_attribute i7core_addrmatch_attrs[] = {
--	ATTR_ADDR_MATCH(channel),
--	ATTR_ADDR_MATCH(dimm),
--	ATTR_ADDR_MATCH(rank),
--	ATTR_ADDR_MATCH(bank),
--	ATTR_ADDR_MATCH(page),
--	ATTR_ADDR_MATCH(col),
--	{ } /* End of list */
-+static struct attribute *i7core_addrmatch_attrs[] = {
-+	&dev_attr_channel.attr,
-+	&dev_attr_dimm.attr,
-+	&dev_attr_rank.attr,
-+	&dev_attr_bank.attr,
-+	&dev_attr_page.attr,
-+	&dev_attr_col.attr,
-+	NULL
- };
- 
--static const struct mcidev_sysfs_group i7core_inject_addrmatch = {
--	.name  = "inject_addrmatch",
--	.mcidev_attr = i7core_addrmatch_attrs,
-+static struct attribute_group addrmatch_grp = {
-+	.attrs	= i7core_addrmatch_attrs,
- };
- 
--static const struct mcidev_sysfs_attribute i7core_udimm_counters_attrs[] = {
--	ATTR_COUNTER(0),
--	ATTR_COUNTER(1),
--	ATTR_COUNTER(2),
--	{ .attr = { .name = NULL } }
-+static const struct attribute_group *addrmatch_groups[] = {
-+	&addrmatch_grp,
-+	NULL
- };
- 
--static const struct mcidev_sysfs_group i7core_udimm_counters = {
--	.name  = "all_channel_counts",
--	.mcidev_attr = i7core_udimm_counters_attrs,
-+static void addrmatch_release(struct device *device)
-+{
-+	debugf1("Releasing device %s\n", dev_name(device));
-+}
-+
-+static struct device_type addrmatch_type = {
-+	.groups		= addrmatch_groups,
-+	.release	= addrmatch_release,
- };
- 
--static const struct mcidev_sysfs_attribute i7core_sysfs_rdimm_attrs[] = {
--	{
--		.attr = {
--			.name = "inject_section",
--			.mode = (S_IRUGO | S_IWUSR)
--		},
--		.show  = i7core_inject_section_show,
--		.store = i7core_inject_section_store,
--	}, {
--		.attr = {
--			.name = "inject_type",
--			.mode = (S_IRUGO | S_IWUSR)
--		},
--		.show  = i7core_inject_type_show,
--		.store = i7core_inject_type_store,
--	}, {
--		.attr = {
--			.name = "inject_eccmask",
--			.mode = (S_IRUGO | S_IWUSR)
--		},
--		.show  = i7core_inject_eccmask_show,
--		.store = i7core_inject_eccmask_store,
--	}, {
--		.grp = &i7core_inject_addrmatch,
--	}, {
--		.attr = {
--			.name = "inject_enable",
--			.mode = (S_IRUGO | S_IWUSR)
--		},
--		.show  = i7core_inject_enable_show,
--		.store = i7core_inject_enable_store,
--	},
--	{ }	/* End of list */
-+/*
-+ * all_channel_counts sysfs struct
-+ */
-+
-+static struct attribute *i7core_udimm_counters_attrs[] = {
-+	&dev_attr_udimm0.attr,
-+	&dev_attr_udimm1.attr,
-+	&dev_attr_udimm2.attr,
-+	NULL
-+};
-+
-+static struct attribute_group all_channel_counts_grp = {
-+	.attrs	= i7core_udimm_counters_attrs,
- };
- 
--static const struct mcidev_sysfs_attribute i7core_sysfs_udimm_attrs[] = {
--	{
--		.attr = {
--			.name = "inject_section",
--			.mode = (S_IRUGO | S_IWUSR)
--		},
--		.show  = i7core_inject_section_show,
--		.store = i7core_inject_section_store,
--	}, {
--		.attr = {
--			.name = "inject_type",
--			.mode = (S_IRUGO | S_IWUSR)
--		},
--		.show  = i7core_inject_type_show,
--		.store = i7core_inject_type_store,
--	}, {
--		.attr = {
--			.name = "inject_eccmask",
--			.mode = (S_IRUGO | S_IWUSR)
--		},
--		.show  = i7core_inject_eccmask_show,
--		.store = i7core_inject_eccmask_store,
--	}, {
--		.grp = &i7core_inject_addrmatch,
--	}, {
--		.attr = {
--			.name = "inject_enable",
--			.mode = (S_IRUGO | S_IWUSR)
--		},
--		.show  = i7core_inject_enable_show,
--		.store = i7core_inject_enable_store,
--	}, {
--		.grp = &i7core_udimm_counters,
--	},
--	{ }	/* End of list */
-+static const struct attribute_group *all_channel_counts_groups[] = {
-+	&all_channel_counts_grp,
-+	NULL
- };
- 
-+static void all_channel_counts_release(struct device *device)
-+{
-+	debugf1("Releasing device %s\n", dev_name(device));
-+}
-+
-+static struct device_type all_channel_counts_type = {
-+	.groups		= all_channel_counts_groups,
-+	.release	= all_channel_counts_release,
-+};
-+
-+/*
-+ * inject sysfs attributes
-+ */
-+
-+static DEVICE_ATTR(inject_section, S_IRUGO | S_IWUSR,
-+		   i7core_inject_section_show, i7core_inject_section_store);
-+
-+static DEVICE_ATTR(inject_type, S_IRUGO | S_IWUSR,
-+		   i7core_inject_type_show, i7core_inject_type_store);
-+
-+
-+static DEVICE_ATTR(inject_eccmask, S_IRUGO | S_IWUSR,
-+		   i7core_inject_eccmask_show, i7core_inject_eccmask_store);
-+
-+static DEVICE_ATTR(inject_enable, S_IRUGO | S_IWUSR,
-+		   i7core_inject_enable_show, i7core_inject_enable_store);
-+
-+static int i7core_create_sysfs_devices(struct mem_ctl_info *mci)
-+{
-+	struct i7core_pvt *pvt = mci->pvt_info;
-+	int rc;
-+
-+	rc = device_create_file(&mci->dev, &dev_attr_inject_section);
-+	if (rc < 0)
-+		return rc;
-+	rc = device_create_file(&mci->dev, &dev_attr_inject_type);
-+	if (rc < 0)
-+		return rc;
-+	rc = device_create_file(&mci->dev, &dev_attr_inject_eccmask);
-+	if (rc < 0)
-+		return rc;
-+	rc = device_create_file(&mci->dev, &dev_attr_inject_enable);
-+	if (rc < 0)
-+		return rc;
-+
-+	pvt->addrmatch_dev.type = &addrmatch_type;
-+	pvt->addrmatch_dev.bus = mci->dev.bus;
-+	device_initialize(&pvt->addrmatch_dev);
-+	pvt->addrmatch_dev.parent = &mci->dev;
-+	dev_set_name(&pvt->addrmatch_dev, "inject_addrmatch");
-+	dev_set_drvdata(&pvt->addrmatch_dev, mci);
-+
-+	debugf1("%s(): creating %s\n", __func__,
-+		dev_name(&pvt->addrmatch_dev));
-+
-+	rc = device_add(&pvt->addrmatch_dev);
-+	if (rc < 0)
-+		return rc;
-+
-+	if (!pvt->is_registered) {
-+		pvt->chancounts_dev.type = &all_channel_counts_type;
-+		pvt->chancounts_dev.bus = mci->dev.bus;
-+		device_initialize(&pvt->chancounts_dev);
-+		pvt->chancounts_dev.parent = &mci->dev;
-+		dev_set_name(&pvt->chancounts_dev, "all_channel_counts");
-+		dev_set_drvdata(&pvt->chancounts_dev, mci);
-+
-+		debugf1("%s(): creating %s\n", __func__,
-+			dev_name(&pvt->chancounts_dev));
-+
-+		rc = device_add(&pvt->chancounts_dev);
-+		if (rc < 0)
-+			return rc;
-+	}
-+	return 0;
-+}
-+
-+static void i7core_delete_sysfs_devices(struct mem_ctl_info *mci)
-+{
-+	struct i7core_pvt *pvt = mci->pvt_info;
-+
-+	debugf1("\n");
-+
-+	device_remove_file(&mci->dev, &dev_attr_inject_section);
-+	device_remove_file(&mci->dev, &dev_attr_inject_type);
-+	device_remove_file(&mci->dev, &dev_attr_inject_eccmask);
-+	device_remove_file(&mci->dev, &dev_attr_inject_enable);
-+
-+	if (!pvt->is_registered) {
-+		put_device(&pvt->chancounts_dev);
-+		device_del(&pvt->chancounts_dev);
-+	}
-+	put_device(&pvt->addrmatch_dev);
-+	device_del(&pvt->addrmatch_dev);
-+}
-+
- /****************************************************************************
- 	Device initialization routines: put/get, init/exit
-  ****************************************************************************/
-@@ -2119,6 +2195,7 @@ static void i7core_unregister_mci(struct i7core_dev *i7core_dev)
- 	i7core_pci_ctl_release(pvt);
- 
- 	/* Remove MC sysfs nodes */
-+	i7core_delete_sysfs_devices(mci);
- 	edac_mc_del_mc(mci->pdev);
- 
- 	debugf1("%s: free mci struct\n", mci->ctl_name);
-@@ -2177,10 +2254,6 @@ static int i7core_register_mci(struct i7core_dev *i7core_dev)
- 	if (unlikely(rc < 0))
- 		goto fail0;
- 
--	if (pvt->is_registered)
--		mci->mc_driver_sysfs_attributes = i7core_sysfs_rdimm_attrs;
--	else
--		mci->mc_driver_sysfs_attributes = i7core_sysfs_udimm_attrs;
- 
- 	/* Get dimm basic config */
- 	get_dimm_config(mci);
-@@ -2204,6 +2277,13 @@ static int i7core_register_mci(struct i7core_dev *i7core_dev)
- 		rc = -EINVAL;
- 		goto fail0;
- 	}
-+	if (i7core_create_sysfs_devices(mci)) {
-+		debugf0("MC: " __FILE__
-+			": %s(): failed to create sysfs nodes\n", __func__);
-+		edac_mc_del_mc(mci->pdev);
-+		rc = -EINVAL;
-+		goto fail0;
-+	}
- 
- 	/* Default error mask is any memory */
- 	pvt->inject.channel = 0;
 -- 
 1.7.8
 
