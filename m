@@ -1,26 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1946664Ab2ERXRO (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 May 2012 19:17:14 -0400
+	id S1759866Ab2ERXRf (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 May 2012 19:17:35 -0400
 Received: from mail-pz0-f46.google.com ([209.85.210.46]:38665 "EHLO
 	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1946628Ab2ERXGJ (ORCPT
+	with ESMTP id S1946621Ab2ERXGD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 May 2012 19:06:09 -0400
-Message-Id: <20120518212650.644174692@linuxfoundation.org>
+	Fri, 18 May 2012 19:06:03 -0400
+Message-Id: <20120518212650.475234903@linuxfoundation.org>
 User-Agent: quilt/0.60-19.1
-Date: Fri, 18 May 2012 14:27:05 -0700
+Date: Fri, 18 May 2012 14:27:03 -0700
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Markus Kolb <linux-201011@tower-net.de>,
-        =?UTF-8?q?Iker=20Salm=C3=B3n=20San=20Mill=C3=A1n?= 
-	<shaola@esdebian.org>,
-        Jonathan Nieder <jrnieder@gmail.com>,
-        Oliver Neukum <oliver@neukum.org>,
-        =?UTF-8?q?Bj=C3=B8rn=20Mork?= <bjorn@mork.no>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [ 16/47] cdc_ether: Ignore bogus union descriptor for RNDIS devices
+        alan@lxorguk.ukuu.org.uk, Brian Austin <brian.austin@cirrus.com>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>
+Subject: [ 14/47] ASoC: cs42l73: Sync digital mixer kcontrols to allow for 0dB
 In-Reply-To: <20120518212701.GA5023@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -30,69 +25,52 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Bjørn Mork <bjorn@mork.no>
+From: Brian Austin <brian.austin@cirrus.com>
 
-commit 6eddcb4c82883451aec3be1240f17793370fa62f upstream.
+commit 5807c3bf68eb489032ca8ff70b3d3c833fd8172b upstream.
 
-Some RNDIS devices include a bogus CDC Union descriptor pointing
-to non-existing interfaces.  The RNDIS code is already prepared
-to handle devices without a CDC Union descriptor by hardwiring
-the driver to use interfaces 0 and 1, which is correct for the
-devices with the bogus descriptor as well. So we can reuse the
-existing workaround.
+Some of the Digital mixer kcontrol max values were off by 1 not allowing a max of 0dB.
 
-Cc: Markus Kolb <linux-201011@tower-net.de>
-Cc: Iker Salmón San Millán <shaola@esdebian.org>
-Cc: Jonathan Nieder <jrnieder@gmail.com>
-Cc: Oliver Neukum <oliver@neukum.org>
-Cc: 655387@bugs.debian.org
-Signed-off-by: Bjørn Mork <bjorn@mork.no>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+Signed-off-by: Brian Austin <brian.austin@cirrus.com>
+Signed-off-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/net/usb/cdc_ether.c |   14 ++++++++++++--
- 1 file changed, 12 insertions(+), 2 deletions(-)
+ sound/soc/codecs/cs42l73.c |   16 ++++++++--------
+ 1 file changed, 8 insertions(+), 8 deletions(-)
 
---- a/drivers/net/usb/cdc_ether.c
-+++ b/drivers/net/usb/cdc_ether.c
-@@ -83,6 +83,7 @@ int usbnet_generic_cdc_bind(struct usbne
- 	struct cdc_state		*info = (void *) &dev->data;
- 	int				status;
- 	int				rndis;
-+	bool				android_rndis_quirk = false;
- 	struct usb_driver		*driver = driver_of(intf);
- 	struct usb_cdc_mdlm_desc	*desc = NULL;
- 	struct usb_cdc_mdlm_detail_desc *detail = NULL;
-@@ -195,6 +196,11 @@ int usbnet_generic_cdc_bind(struct usbne
- 					info->control,
- 					info->u->bSlaveInterface0,
- 					info->data);
-+				/* fall back to hard-wiring for RNDIS */
-+				if (rndis) {
-+					android_rndis_quirk = true;
-+					goto next_desc;
-+				}
- 				goto bad_desc;
- 			}
- 			if (info->control != intf) {
-@@ -271,11 +277,15 @@ next_desc:
- 	/* Microsoft ActiveSync based and some regular RNDIS devices lack the
- 	 * CDC descriptors, so we'll hard-wire the interfaces and not check
- 	 * for descriptors.
-+	 *
-+	 * Some Android RNDIS devices have a CDC Union descriptor pointing
-+	 * to non-existing interfaces.  Ignore that and attempt the same
-+	 * hard-wired 0 and 1 interfaces.
- 	 */
--	if (rndis && !info->u) {
-+	if (rndis && (!info->u || android_rndis_quirk)) {
- 		info->control = usb_ifnum_to_if(dev->udev, 0);
- 		info->data = usb_ifnum_to_if(dev->udev, 1);
--		if (!info->control || !info->data) {
-+		if (!info->control || !info->data || info->control != intf) {
- 			dev_dbg(&intf->dev,
- 				"rndis: master #0/%p slave #1/%p\n",
- 				info->control,
+--- a/sound/soc/codecs/cs42l73.c
++++ b/sound/soc/codecs/cs42l73.c
+@@ -568,22 +568,22 @@ static const struct snd_kcontrol_new cs4
+ 			attn_tlv),
+ 
+ 	SOC_SINGLE_TLV("SPK-IP Mono Volume",
+-			CS42L73_SPKMIPMA, 0, 0x3E, 1, attn_tlv),
++			CS42L73_SPKMIPMA, 0, 0x3F, 1, attn_tlv),
+ 	SOC_SINGLE_TLV("SPK-XSP Mono Volume",
+-			CS42L73_SPKMXSPA, 0, 0x3E, 1, attn_tlv),
++			CS42L73_SPKMXSPA, 0, 0x3F, 1, attn_tlv),
+ 	SOC_SINGLE_TLV("SPK-ASP Mono Volume",
+-			CS42L73_SPKMASPA, 0, 0x3E, 1, attn_tlv),
++			CS42L73_SPKMASPA, 0, 0x3F, 1, attn_tlv),
+ 	SOC_SINGLE_TLV("SPK-VSP Mono Volume",
+-			CS42L73_SPKMVSPMA, 0, 0x3E, 1, attn_tlv),
++			CS42L73_SPKMVSPMA, 0, 0x3F, 1, attn_tlv),
+ 
+ 	SOC_SINGLE_TLV("ESL-IP Mono Volume",
+-			CS42L73_ESLMIPMA, 0, 0x3E, 1, attn_tlv),
++			CS42L73_ESLMIPMA, 0, 0x3F, 1, attn_tlv),
+ 	SOC_SINGLE_TLV("ESL-XSP Mono Volume",
+-			CS42L73_ESLMXSPA, 0, 0x3E, 1, attn_tlv),
++			CS42L73_ESLMXSPA, 0, 0x3F, 1, attn_tlv),
+ 	SOC_SINGLE_TLV("ESL-ASP Mono Volume",
+-			CS42L73_ESLMASPA, 0, 0x3E, 1, attn_tlv),
++			CS42L73_ESLMASPA, 0, 0x3F, 1, attn_tlv),
+ 	SOC_SINGLE_TLV("ESL-VSP Mono Volume",
+-			CS42L73_ESLMVSPMA, 0, 0x3E, 1, attn_tlv),
++			CS42L73_ESLMVSPMA, 0, 0x3F, 1, attn_tlv),
+ 
+ 	SOC_ENUM("IP Digital Swap/Mono Select", ip_swap_enum),
+ 
 
 
