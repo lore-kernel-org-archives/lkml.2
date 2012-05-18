@@ -1,70 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1031155Ab2ERNvN (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 May 2012 09:51:13 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:62550 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1945988Ab2ERNvL (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 May 2012 09:51:11 -0400
-Date: Fri, 18 May 2012 21:51:07 +0800
-From: Shawn Guo <shawn.guo@linaro.org>
-To: Grant Likely <grant.likely@secretlab.ca>,
-        Linus Walleij <linus.walleij@stericsson.com>
-Cc: Lothar =?iso-8859-1?Q?Wa=DFmann?= <LW@KARO-electronics.de>,
-        Ryan Mallon <ryan@bluewatersys.com>,
-        H Hartley Sweeten <hsweeten@visionengravers.com>,
-        Sascha Hauer <s.hauer@pengutronix.de>,
-        "Hans J. Koch" <hjk@linutronix.de>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/2] gpio/generic: initialize basic_mmio_gpio shadow
- variables properly
-Message-ID: <20120518135104.GC5427@S2101-09.ap.freescale.net>
-References: <1337240103-4756-1-git-send-email-shawn.guo@linaro.org>
- <1337240103-4756-2-git-send-email-shawn.guo@linaro.org>
+	id S1031191Ab2ERNvo (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 May 2012 09:51:44 -0400
+Received: from solo.fdn.fr ([80.67.169.19]:58363 "EHLO solo.fdn.fr"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1031117Ab2ERNvl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 18 May 2012 09:51:41 -0400
+Date: Fri, 18 May 2012 15:51:37 +0200
+From: Samuel Thibault <samuel.thibault@ens-lyon.org>
+To: "Brandeburg, Jesse" <jesse.brandeburg@intel.com>, qemu-devel@nongnu.org,
+        dlaor@redhat.com
+Cc: "Dave, Tushar N" <tushar.n.dave@intel.com>,
+        "Kirsher, Jeffrey T" <jeffrey.t.kirsher@intel.com>,
+        "Allan, Bruce W" <bruce.w.allan@intel.com>,
+        "Wyborny, Carolyn" <carolyn.wyborny@intel.com>,
+        "Skidmore, Donald C" <donald.c.skidmore@intel.com>,
+        "Rose, Gregory V" <gregory.v.rose@intel.com>,
+        "Waskiewicz Jr, Peter P" <peter.p.waskiewicz.jr@intel.com>,
+        "Duyck, Alexander H" <alexander.h.duyck@intel.com>,
+        "Ronciak, John" <john.ronciak@intel.com>,
+        "David S. Miller" <davem@davemloft.net>,
+        Jiri Pirko <jpirko@redhat.com>, Dean Nelson <dnelson@redhat.com>,
+        "e1000-devel@lists.sourceforge.net" 
+	<e1000-devel@lists.sourceforge.net>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: e1000 rx emulation bug (Was: [PATCH] e1000: Reset rx ring index on
+ receive overrun)
+Message-ID: <20120518135136.GV683@type.famille.thibault.fr>
+Mail-Followup-To: Samuel Thibault <samuel.thibault@ens-lyon.org>,
+	"Brandeburg, Jesse" <jesse.brandeburg@intel.com>,
+	qemu-devel@nongnu.org, dlaor@redhat.com,
+	"Dave, Tushar N" <tushar.n.dave@intel.com>,
+	"Kirsher, Jeffrey T" <jeffrey.t.kirsher@intel.com>,
+	"Allan, Bruce W" <bruce.w.allan@intel.com>,
+	"Wyborny, Carolyn" <carolyn.wyborny@intel.com>,
+	"Skidmore, Donald C" <donald.c.skidmore@intel.com>,
+	"Rose, Gregory V" <gregory.v.rose@intel.com>,
+	"Waskiewicz Jr, Peter P" <peter.p.waskiewicz.jr@intel.com>,
+	"Duyck, Alexander H" <alexander.h.duyck@intel.com>,
+	"Ronciak, John" <john.ronciak@intel.com>,
+	"David S. Miller" <davem@davemloft.net>,
+	Jiri Pirko <jpirko@redhat.com>, Dean Nelson <dnelson@redhat.com>,
+	"e1000-devel@lists.sourceforge.net" <e1000-devel@lists.sourceforge.net>,
+	"netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+	"linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+References: <20120517230140.GZ683@type.famille.thibault.fr>
+ <061C8A8601E8EE4CA8D8FD6990CEA891188439E0@ORSMSX102.amr.corp.intel.com>
+ <20120517232821.GJ683@type.famille.thibault.fr>
+ <20120517233124.GK683@type.famille.thibault.fr>
+ <alpine.WNT.2.00.1205171702590.7900@jbrandeb-mobl2.amr.corp.intel.com>
+ <20120518001202.GN683@type.famille.thibault.fr>
+ <alpine.WNT.2.00.1205171718160.7900@jbrandeb-mobl2.amr.corp.intel.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1337240103-4756-2-git-send-email-shawn.guo@linaro.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <alpine.WNT.2.00.1205171718160.7900@jbrandeb-mobl2.amr.corp.intel.com>
+User-Agent: Mutt/1.5.21+34 (58baf7c9f32f) (2010-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Grant, Linus,
+Hello,
 
-Can we manage to get it in with the upcoming merge window, as it fixes
-a bug that we may not want to live with for another cycle?
+There seems to be a bug in qemu in the e1000 emulation, which triggers
+an issue with the Linux driver.
 
-Regards,
-Shawn
+What happens in Linux is the following:
 
-On Thu, May 17, 2012 at 03:35:02PM +0800, Shawn Guo wrote:
-> It fixes the issue in gpio-generic that commit fb14921 (gpio/mxc: add
-> missing initialization of basic_mmio_gpio shadow variables) manged to
-> fix in gpio-mxc driver, so that other platform specific drivers do not
-> suffer from the same problem over and over again.
-> 
-> Signed-off-by: Shawn Guo <shawn.guo@linaro.org>
-> ---
->  drivers/gpio/gpio-generic.c |    4 ++++
->  1 files changed, 4 insertions(+), 0 deletions(-)
-> 
-> diff --git a/drivers/gpio/gpio-generic.c b/drivers/gpio/gpio-generic.c
-> index e38dd0c..cfc9439 100644
-> --- a/drivers/gpio/gpio-generic.c
-> +++ b/drivers/gpio/gpio-generic.c
-> @@ -394,6 +394,10 @@ int bgpio_init(struct bgpio_chip *bgc, struct device *dev,
->  		return ret;
->  
->  	bgc->data = bgc->read_reg(bgc->reg_dat);
-> +	if (bgc->gc.set == bgpio_set_set)
-> +		bgc->data = bgc->read_reg(bgc->reg_set);
-> +	if (bgc->reg_dir)
-> +		bgc->dir = bgc->read_reg(bgc->reg_dir);
->  
->  	return ret;
->  }
-> -- 
-> 1.7.5.4
-> 
+- e1000_open 
+  - e1000_configure
+    - e1000_setup_rctl
+      - enables E1000_RCTL_EN
+    - e1000_configure_rx
+      - sets RDT/RDH to 0
+    - alloc_rx_buf
+      - pushes buffers to the ring
+
+with bad luck, or on high traffic of small packets, what is observed is
+that between setting RDT/RDH and pushing buffers, the ring fills up in
+qemu. Here is what happens there on the qemu side:
+
+- e1000_receive
+  - e1000_has_rxbufs
+    - total_size <= s->rxbuf_size (because it's small)
+      return s->mac_reg[RDH] != s->mac_reg[RDT] || !s->check_rxov;
+
+although RDH == RDT == 0, it returns 1, because since RDT/RDH have
+just been set to 0, set_rdt has cleared check_rxov. e1000_receive
+thus believes there is room, and proceeds with filling the ring.
+Unfortunately, since no buffer was pushed, desc.buffer_addr is NULL, and
+thus the do loop skips all these nul rx descriptors of the ring, but
+marking each of them with E1000_RXD_STAT_DD, and eventually wrapping
+around.  From then on, since check_rxov has been set by the do loop,
+nothing more is pushed, until the linux driver pushes buffers to the
+ring. qemu can then fill some descriptors, and Linux read them, but
+since the whole ring was filled with E1000_RXD_STAT_DD, Linux goes on
+reading, and thus gets completely desynchronized with the device.
+
+That raises two questions:
+
+- what is the role of the check_rxov flag?  Is hardware really allowed
+  to push in some cases, even when RDH==RDT?  Removing it makes things
+  work just fine.
+- BTW, when skipping a descriptor because of NULL address, does
+  E1000_RXD_STAT_DD have to be set?
+
+Samuel
