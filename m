@@ -1,84 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1762705Ab2ERKfU (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 May 2012 06:35:20 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:42517 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760510Ab2ERKfS (ORCPT
+	id S1762716Ab2ERKgO (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 May 2012 06:36:14 -0400
+Received: from na3sys009aog125.obsmtp.com ([74.125.149.153]:41330 "EHLO
+	na3sys009aog125.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1760510Ab2ERKgM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 May 2012 06:35:18 -0400
-Date: Fri, 18 May 2012 03:34:48 -0700
-From: tip-bot for Peter Zijlstra <a.p.zijlstra@chello.nl>
-Message-ID: <tip-4322064vbioqsteebl2atrtk@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
-        torvalds@linux-foundation.org, a.p.zijlstra@chello.nl, pjt@google.com,
-        cl@linux.com, riel@redhat.com, akpm@linux-foundation.org,
-        bharata.rao@gmail.com, aarcange@redhat.com, Lee.Schermerhorn@hp.com,
-        suresh.b.siddha@intel.com, danms@us.ibm.com, tglx@linutronix.de
-Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        a.p.zijlstra@chello.nl, torvalds@linux-foundation.org, pjt@google.com,
-        cl@linux.com, riel@redhat.com, bharata.rao@gmail.com,
-        akpm@linux-foundation.org, Lee.Schermerhorn@hp.com,
-        aarcange@redhat.com, danms@us.ibm.com, suresh.b.siddha@intel.com,
-        tglx@linutronix.de
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:sched/numa] sched: Introduce sched_feat_numa()
-Git-Commit-ID: c143bcf78cabb3f2060473ac8527de8a81756313
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
-  to get blacklisted from these emails
+	Fri, 18 May 2012 06:36:12 -0400
+Message-ID: <4FB62611.7080908@ti.com>
+Date: Fri, 18 May 2012 16:06:01 +0530
+From: Santosh Shilimkar <santosh.shilimkar@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Fri, 18 May 2012 03:34:53 -0700 (PDT)
+To: Colin Cross <ccross@android.com>
+CC: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-pm@lists.linux-foundation.org, Kevin Hilman <khilman@ti.com>,
+        Len Brown <len.brown@intel.com>, Trinabh Gupta <g.trinabh@gmail.com>,
+        Arjan van de Ven <arjan@linux.intel.com>,
+        Deepthi Dharwar <deepthi@linux.vnet.ibm.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Kay Sievers <kay.sievers@vrfy.org>,
+        Daniel Lezcano <daniel.lezcano@linaro.org>,
+        Amit Kucheria <amit.kucheria@linaro.org>,
+        Lorenzo Pieralisi <lorenzo.pieralisi@arm.com>,
+        Arnd Bergmann <arnd.bergmann@linaro.org>,
+        Russell King <linux@arm.linux.org.uk>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>
+Subject: Re: [PATCHv3 0/4] coupled cpuidle state support
+References: <1336438662-10484-1-git-send-email-ccross@android.com>
+In-Reply-To: <1336438662-10484-1-git-send-email-ccross@android.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  c143bcf78cabb3f2060473ac8527de8a81756313
-Gitweb:     http://git.kernel.org/tip/c143bcf78cabb3f2060473ac8527de8a81756313
-Author:     Peter Zijlstra <a.p.zijlstra@chello.nl>
-AuthorDate: Tue, 1 May 2012 23:47:08 +0200
-Committer:  Ingo Molnar <mingo@kernel.org>
-CommitDate: Fri, 18 May 2012 08:16:22 +0200
+On Tuesday 08 May 2012 06:27 AM, Colin Cross wrote:
+> On some ARM SMP SoCs (OMAP4460, Tegra 2, and probably more), the
+> cpus cannot be independently powered down, either due to
+> sequencing restrictions (on Tegra 2, cpu 0 must be the last to
+> power down), or due to HW bugs (on OMAP4460, a cpu powering up
+> will corrupt the gic state unless the other cpu runs a work
+> around).  Each cpu has a power state that it can enter without
+> coordinating with the other cpu (usually Wait For Interrupt, or
+> WFI), and one or more "coupled" power states that affect blocks
+> shared between the cpus (L2 cache, interrupt controller, and
+> sometimes the whole SoC).  Entering a coupled power state must
+> be tightly controlled on both cpus.
+> 
 
-sched: Introduce sched_feat_numa()
+[...]
 
-Avoid a few #ifdef's later on.
+> This series has been tested and reviewed by Santosh and Kevin
+> for OMAP4, which has a cpuidle series ready for 3.5, and Tegra
+> and Exynos5 patches are in progress.  I think this is ready to
+> go in.  Lean, are you maintaining a cpuidle tree for linux-next?
+> If not, I can publish a tree for linux-next, or this could go in
+> through Arnd's tree.
 
-Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Suresh Siddha <suresh.b.siddha@intel.com>
-Cc: Paul Turner <pjt@google.com>
-Cc: Dan Smith <danms@us.ibm.com>
-Cc: Bharata B Rao <bharata.rao@gmail.com>
-Cc: Lee Schermerhorn <Lee.Schermerhorn@hp.com>
-Cc: Christoph Lameter <cl@linux.com>
-Cc: Rik van Riel <riel@redhat.com>
-Cc: Andrea Arcangeli <aarcange@redhat.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>
-Link: http://lkml.kernel.org/n/tip-4322064vbioqsteebl2atrtk@git.kernel.org
-Signed-off-by: Ingo Molnar <mingo@kernel.org>
----
- kernel/sched/sched.h |    6 ++++++
- 1 files changed, 6 insertions(+), 0 deletions(-)
+I haven't seen any response so far on who is lining up this
+series for 3.5 ? Not sure if it made it to linux-next either.
 
-diff --git a/kernel/sched/sched.h b/kernel/sched/sched.h
-index 8f93e91..0d6d1c0 100644
---- a/kernel/sched/sched.h
-+++ b/kernel/sched/sched.h
-@@ -645,6 +645,12 @@ extern struct static_key sched_feat_keys[__SCHED_FEAT_NR];
- #define sched_feat(x) (sysctl_sched_features & (1UL << __SCHED_FEAT_##x))
- #endif /* SCHED_DEBUG && HAVE_JUMP_LABEL */
- 
-+#ifdef CONFIG_NUMA
-+#define sched_feat_numa(x) sched_feat(x)
-+#else
-+#define sched_feat_numa(x) (0)
-+#endif
-+
- static inline u64 global_rt_period(void)
- {
- 	return (u64)sysctl_sched_rt_period * NSEC_PER_USEC;
+Regards
+santosh
