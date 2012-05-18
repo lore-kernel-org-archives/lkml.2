@@ -1,99 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759301Ab2ERDeI (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 May 2012 23:34:08 -0400
-Received: from mail-wi0-f172.google.com ([209.85.212.172]:61408 "EHLO
-	mail-wi0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751795Ab2ERDeG convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 May 2012 23:34:06 -0400
+	id S1760065Ab2ERDe7 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 May 2012 23:34:59 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:39936 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751795Ab2ERDe5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 17 May 2012 23:34:57 -0400
+Message-ID: <4FB5C347.6010105@zytor.com>
+Date: Thu, 17 May 2012 20:34:31 -0700
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:11.0) Gecko/20120329 Thunderbird/11.0.1
 MIME-Version: 1.0
-In-Reply-To: <CA+8MBbLw9ySj5VDjJJ04fW383=8AUhDfyvqdrPnAR7+-etGFqQ@mail.gmail.com>
-References: <4fb531069693a1b42@agluck-desktop.sc.intel.com>
- <CA+55aFxB6YSz-KEwVKtOesS7yrdvYw6sP3mfpuWBOheJVL6e+w@mail.gmail.com>
- <CA+8MBbK_xeN5HWnSvbDYwzZ+E0pSpbDte30RH2deo0r1OzYBGA@mail.gmail.com>
- <CA+55aFxvjBQ+nn2JEnrMeHrRq9O7-aost1ZYrQbOFySkU_piWg@mail.gmail.com> <CA+8MBbLw9ySj5VDjJJ04fW383=8AUhDfyvqdrPnAR7+-etGFqQ@mail.gmail.com>
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Thu, 17 May 2012 20:33:44 -0700
-X-Google-Sender-Auth: SEhwXYw4In_ZH23DeO3Q0wNinI0
-Message-ID: <CA+55aFygZYVpM7Agy+Vi+Majaa=7GLzeS8Mp9v3jiq-t+_=hLQ@mail.gmail.com>
-Subject: Re: [git pull] machine check recovery fix
-To: Tony Luck <tony.luck@intel.com>
-Cc: linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+To: "Yu, Fenghua" <fenghua.yu@intel.com>
+CC: "Siddha, Suresh B" <suresh.b.siddha@intel.com>,
+        Ingo Molnar <mingo@kernel.org>, "Luck, Tony" <tony.luck@intel.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        "Mallick, Asit K" <asit.k.mallick@intel.com>,
+        Arjan Dan De Ven <arjan@linux.intel.com>,
+        "Brown, Len" <len.brown@intel.com>,
+        "Srivatssa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
+        Randy Dunlap <rdunlap@xenotime.net>,
+        Chen Gong <gong.chen@linux.intel.com>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        linux-pm <linux-pm@vger.kernel.org>, x86 <x86@kernel.org>,
+        Peter Zijlstra <peterz@infradead.org>
+Subject: Re: [PATCH v6 04/12] x86/smpboot.c: Don't offline CPU0 if any irq
+ can not be migrated out of it and remove CPU0 check in smp_callin()
+References: <1336666614-21090-1-git-send-email-fenghua.yu@intel.com>  <1336666614-21090-5-git-send-email-fenghua.yu@intel.com>  <alpine.LFD.2.02.1205111352330.3231@ionos>  <CA+8MBbJbEWTR2Tawa2SzcJ-mZSPzZ12a9usR5eQu=PhArZwXLA@mail.gmail.com>  <20120514121725.GA10840@gmail.com> <1337294829.1997.96.camel@sbsiddha-desk.sc.intel.com> <3E5A0FA7E9CA944F9D5414FEC6C71220077185AE@ORSMSX105.amr.corp.intel.com>
+In-Reply-To: <3E5A0FA7E9CA944F9D5414FEC6C71220077185AE@ORSMSX105.amr.corp.intel.com>
+X-Enigmail-Version: 1.4
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, May 17, 2012 at 7:37 PM, Tony Luck <tony.luck@intel.com> wrote:
->
-> When we assign the severity for the error we check for kernel vs. user
-> space. If we took the machine check in kernel space it will get assigned
-> MCE_PANIC_SEVERITY severity ... and we won;t try to do any
-> recovery.  We only play the games with TIF_MCE_NOTIFY if we
-> see severity MCE_AR_SEVERITY ... which we will only do if the
-> machine check happened in user mode.
+On 05/17/2012 06:47 PM, Yu, Fenghua wrote:
+> 
+> Then booting up AP via INIT and putting AP online back via NMI/mwait
+> will have different wakeup method and code. We probably need a way to
+> tell if it is first AP bringup or online AP/BSP during run time.
+> 
+> And if offlined CPU is not in mwait (e.g. CPU without mwait feature),
+> mwait based bringup won't work. Do we need to fall back to NMI wakeup
+> if offlined CPU is not in mwait?
+> 
 
-Ok, this code is a rats nest. I'm looking at mce_severity(), and I'm
-just going "that's unreadable, and totally not understandable".
+I guess we need NMI (or just re-SIPI) in that case, since we're spinning
+in CLI; HLT...
 
-And it's wrong.
+	-hpa
 
-> So current recovery code only tries to deal with the user case.
 
-Ugh. And it mixes up the EIPV bit checking both in "error_context()"
-_and_ in the logic in the "severities" array, both of which can check
-that bit in two different ways.
+-- 
+H. Peter Anvin, Intel Open Source Technology Center
+I work for Intel.  I don't speak on their behalf.
 
-The code is crazy. It's an unreadable mess. Not surprising that it
-then also is buggy.
-
-Who seriously thinks that you get a *more* reliable machine by
-executing code that seems to do these kinds of random things?
-
-Looking at the code, I don't think it has been written by a human. I'm
-guessing here, but did somebody stare at some MCE document flow-chart
-while writing this? It feels like the way things happened was:
-
- - an engineer told a technical writer what he thought the flow should be
- - a technical writer wrote a piece of document
- - another unrelated engineer then took that document and tried to codify it
- - nobody actually talked to each other and asked each other "does
-this make sense"
-
-Some of that code is clearly pure garbage. For example, if I as a user
-can trigger a machine check (say, I can make the CPU overheat by
-looping on all CPU's), I can fool that code to say that it happened
-IN_KERNEL by just making "ip" be zero. Which is quite trivially done
-even if I cannot mmap the virtual NULL address: just create a new code
-segment, put a "jmp 0" at the zero address, and jump to that. Voila -
-guaranteed zero ip.
-
-Which then makes the MCE code say "oh, that must be kernel mode". For
-the great (NOT!) reason that some less than giften individual (see - I
-can avoid the word "moron" if I really try!) thought that "zero means
-not available". Even if zero is also a possible valid value!
-
-That "is it in kernel mode" check also seems to not know about vm86
-mode. Let's hope those MCE's can never happen on an instruction in
-vm86 mode, because then the CS check is crap too.
-
-In fact, it's *all* crap. Because it shouldn't check "m->cs" and
-"m->ip" at all, because what matters is not which instruction caused
-the MCE, but whether the *return* address is in kernel mode or not!
-Maybe the error that triggered the MCE happened in user mode, but
-asynchronously, so the return address is in kernel mode. So the whole
-"error_context()" thing is testing entirely the wrong thing.
-
-What we should worry about is whether RIPV is set, and we're returning
-to kernel mode or not. THAT is the case that the kernel cares about,
-because it cannot fix it up.
-
-So I'm looking at mce-severity.c, and I think the problems there go
-*much* deeper than your little patch.
-
-There's two totally independent bugs in just *one* line of code in the
-error_context() function.
-
-                         Linus
