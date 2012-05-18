@@ -1,117 +1,153 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1762437Ab2ERBoc (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 May 2012 21:44:32 -0400
-Received: from kirsty.vergenet.net ([202.4.237.240]:60075 "EHLO
-	kirsty.vergenet.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760971Ab2ERBoa (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 May 2012 21:44:30 -0400
-Date: Fri, 18 May 2012 10:44:26 +0900
-From: Simon Horman <horms@verge.net.au>
-To: Magnus Damm <magnus.damm@gmail.com>
-Cc: linux-arm-kernel@lists.infradead.org, linux@arm.linux.org.uk,
-        arnd@arndb.de, linux-sh@vger.kernel.org, linux-kernel@vger.kernel.org,
-        rjw@sisk.pl, lethal@linux-sh.org, olof@lixom.net
-Subject: Re: [PATCH 00/08] mach-shmobile: Emma Mobile EV2 support V3
-Message-ID: <20120518014424.GL19000@verge.net.au>
-References: <20120516064449.32286.77941.sendpatchset@w520>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120516064449.32286.77941.sendpatchset@w520>
-Organisation: Horms Solutions Ltd.
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1762500Ab2ERBpu (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 May 2012 21:45:50 -0400
+Received: from mga01.intel.com ([192.55.52.88]:24063 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1761998Ab2ERBps (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 17 May 2012 21:45:48 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
+   d="scan'208";a="154251120"
+From: Huang Ying <ying.huang@intel.com>
+To: Len Brown <lenb@kernel.org>
+Cc: linux-kernel@vger.kernel.org, "Rafael J. Wysocki" <rjw@sisk.pl>,
+        ying.huang@intel.com, linux-acpi@vger.kernel.org
+Subject: [PATCH -v2] ACPI, PM, Specify lowest allowed state for device sleep state
+Date: Fri, 18 May 2012 09:45:44 +0800
+Message-Id: <1337305544-10393-1-git-send-email-ying.huang@intel.com>
+X-Mailer: git-send-email 1.7.10
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Magnus,
+Lower device sleep state can save more power, but has more exit
+latency too.  Sometimes, to satisfy some power QoS and other
+requirement, we need to constrain the lowest device sleep state.
 
-I have tested these patches on top of the soc-new branch of
-rafael's renesas tree, revision 5658c94, which is based on
-v3.4-rc6.
+In this patch, a parameter to specify lowest allowed state for
+acpi_pm_device_sleep_state is added.  So that the caller can enforce
+the constraint via the parameter.
 
-I also have the cherry picked following patches before applying your patches.
+This is needed by PCIe D3cold support, where the lowest power state
+allowed may be D3_HOT instead of default D3_COLD.
 
-serial8250-em: clk_get() IS_ERR() error handling fix
-serial8250-em: Emma Mobile UART driver V2
-serial8250: Introduce serial8250_register_8250_port()
-serial8250: Clean up default map and dl code
-serial8250: Use dl_read()/dl_write() on RM9K
-serial8250: Use dl_read()/dl_write() on Alchemy
-serial8250: Add dl_read()/dl_write() callbacks
-8250.c: less than 2400 baud fix.
-serial/8250_pci: Clear FIFOs for Intel ME Serial Over Lan device on BI
-tegra, serial8250: add ->handle_break() uart_port op
-clocksource: em_sti: Add DT support
-clocksource: em_sti: Emma Mobile STI driver V2
-clockevents: Make clockevents_config() a global symbol
+Changelog:
 
-I have added the follwing patch of yours
+v2:
+- Minor change per Rafeal's comments
 
-gpio: Emma Mobile GPIO driver V2
+Signed-off-by: Huang Ying <ying.huang@intel.com>
+---
+ drivers/acpi/sleep.c       |   24 +++++++++++++++++++-----
+ drivers/pci/pci-acpi.c     |    3 ++-
+ drivers/pnp/pnpacpi/core.c |    4 ++--
+ include/acpi/acpi_bus.h    |    6 +++---
+ 4 files changed, 26 insertions(+), 11 deletions(-)
 
-And one of my own, which just fixes a build problem
-in rafael's tree.
-
-ARM: mach-types: Manually add KZM-A9-GT
-
-On Wed, May 16, 2012 at 03:44:49PM +0900, Magnus Damm wrote:
-> mach-shmobile: Emma Mobile EV2 support V3
-> 
-> [PATCH 01/08] mach-shmobile: Emma Mobile EV2 SoC base support V3
-
-Tested-by: Simon Horman <horms@verge.net.au>
-
-> [PATCH 02/08] ARM: Undelete KZM9D mach-type V3
-
-I did not need this patch with the base I am using,
-so I did not test it.
-
-Reviewed-by: Simon Horman <horms@verge.net.au>
-
-> [PATCH 03/08] mach-shmobile: KZM9D board support V3
-
-Tested-by: Simon Horman <horms@verge.net.au>
-
-> [PATCH 04/08] mach-shmobile: Emma Mobile EV2 SMP support V3
-
-Tested-by: Simon Horman <horms@verge.net.au>
-
-> [PATCH 05/08] mach-shmobile: Emma Mobile EV2 GPIO support V3
-
-I am only seeing interripts for em_gio.0, is there a
-way to exercise em_gio.1 .. 4 ?
-
-Duplicate names for interrupts, that is
-each of em_gio.0..4 have two entries in /proc/interripts.
-Is this intentional?
-
- 99:         32          0       GIC  em_gio.0
- 100:          0          0       GIC  em_gio.0
- 101:          0          0       GIC  em_gio.1
- 102:          0          0       GIC  em_gio.1
- 103:          0          0       GIC  em_gio.2
- 104:          0          0       GIC  em_gio.2
- 105:          0          0       GIC  em_gio.3
- 106:          0          0       GIC  em_gio.3
- 107:          0          0       GIC  em_gio.4
- 108:          0          0       GIC  em_gio.4
- 157:      35952          0       GIC  em_sti.0
-
-> [PATCH 06/08] mach-shmobile: KZM9D board Ethernet support V3
-
-Tested-by: Simon Horman <horms@verge.net.au>
-
-> [PATCH 07/08] mach-shmobile: Emma Mobile EV2 DT support V3
-
-I applied this and the resulting kernel booted.
-
-> [PATCH 08/08] mach-shmobile: Use DT_MACHINE for KZM9D V3
-
-I applied this and the resulting kernel did not boot.
-I saw nothing after the uboot prompt..
-
-
-Lastly, could you consider suppling a patch which provides a defconfig?
+--- a/drivers/acpi/sleep.c
++++ b/drivers/acpi/sleep.c
+@@ -677,8 +677,9 @@ int acpi_suspend(u32 acpi_state)
+  *	@dev: device to examine; its driver model wakeup flags control
+  *		whether it should be able to wake up the system
+  *	@d_min_p: used to store the upper limit of allowed states range
+- *	Return value: preferred power state of the device on success, -ENODEV on
+- *		failure (ie. if there's no 'struct acpi_device' for @dev)
++ *	@d_max_in: specify the lowest allowed states
++ *	Return value: preferred power state of the device on success, -ENODEV
++ *	(ie. if there's no 'struct acpi_device' for @dev) or -EINVAL on failure
+  *
+  *	Find the lowest power (highest number) ACPI device power state that
+  *	device @dev can be in while the system is in the sleep state represented
+@@ -693,13 +694,15 @@ int acpi_suspend(u32 acpi_state)
+  *	via @wake.
+  */
+ 
+-int acpi_pm_device_sleep_state(struct device *dev, int *d_min_p)
++int acpi_pm_device_sleep_state(struct device *dev, int *d_min_p, int d_max_in)
+ {
+ 	acpi_handle handle = DEVICE_ACPI_HANDLE(dev);
+ 	struct acpi_device *adev;
+ 	char acpi_method[] = "_SxD";
+ 	unsigned long long d_min, d_max;
+ 
++	if (d_max_in < ACPI_STATE_D0 || d_max_in > ACPI_STATE_D3)
++		return -EINVAL;
+ 	if (!handle || ACPI_FAILURE(acpi_bus_get_device(handle, &adev))) {
+ 		printk(KERN_DEBUG "ACPI handle has no context!\n");
+ 		return -ENODEV;
+@@ -707,8 +710,10 @@ int acpi_pm_device_sleep_state(struct de
+ 
+ 	acpi_method[2] = '0' + acpi_target_sleep_state;
+ 	/*
+-	 * If the sleep state is S0, we will return D3, but if the device has
+-	 * _S0W, we will use the value from _S0W
++	 * If the sleep state is S0, the lowest limit from ACPI is D3,
++	 * but if the device has _S0W, we will use the value from _S0W
++	 * as the lowest limit from ACPI.  Finally, we will constrain
++	 * the lowest limit with the specified one.
+ 	 */
+ 	d_min = ACPI_STATE_D0;
+ 	d_max = ACPI_STATE_D3;
+@@ -752,8 +757,17 @@ int acpi_pm_device_sleep_state(struct de
+ 		}
+ 	}
+ 
++	if (d_max_in < d_min)
++		return -EINVAL;
+ 	if (d_min_p)
+ 		*d_min_p = d_min;
++	/* constrain d_max with specified lowest limit (max number) */
++	if (d_max > d_max_in) {
++		for (d_max = d_max_in; d_max > d_min; d_max--) {
++			if (adev->power.states[d_max].flags.valid)
++				break;
++		}
++	}
+ 	return d_max;
+ }
+ #endif /* CONFIG_PM */
+--- a/drivers/pci/pci-acpi.c
++++ b/drivers/pci/pci-acpi.c
+@@ -189,7 +189,8 @@ static pci_power_t acpi_pci_choose_state
+ {
+ 	int acpi_state;
+ 
+-	acpi_state = acpi_pm_device_sleep_state(&pdev->dev, NULL);
++	acpi_state = acpi_pm_device_sleep_state(&pdev->dev, NULL,
++						ACPI_STATE_D3);
+ 	if (acpi_state < 0)
+ 		return PCI_POWER_ERROR;
+ 
+--- a/drivers/pnp/pnpacpi/core.c
++++ b/drivers/pnp/pnpacpi/core.c
+@@ -170,8 +170,8 @@ static int pnpacpi_suspend(struct pnp_de
+ 	}
+ 
+ 	if (acpi_bus_power_manageable(handle)) {
+-		int power_state = acpi_pm_device_sleep_state(&dev->dev, NULL);
+-
++		int power_state = acpi_pm_device_sleep_state(&dev->dev, NULL,
++							     ACPI_STATE_D3);
+ 		if (power_state < 0)
+ 			power_state = (state.event == PM_EVENT_ON) ?
+ 					ACPI_STATE_D0 : ACPI_STATE_D3;
+--- a/include/acpi/acpi_bus.h
++++ b/include/acpi/acpi_bus.h
+@@ -383,13 +383,13 @@ int acpi_enable_wakeup_device_power(stru
+ int acpi_disable_wakeup_device_power(struct acpi_device *dev);
+ 
+ #ifdef CONFIG_PM
+-int acpi_pm_device_sleep_state(struct device *, int *);
++int acpi_pm_device_sleep_state(struct device *, int *, int);
+ #else
+-static inline int acpi_pm_device_sleep_state(struct device *d, int *p)
++static inline int acpi_pm_device_sleep_state(struct device *d, int *p, int m)
+ {
+ 	if (p)
+ 		*p = ACPI_STATE_D0;
+-	return ACPI_STATE_D3;
++	return (m >= ACPI_STATE_D0 && <= ACPI_STATE_D3) ? m : ACPI_STATE_D0;
+ }
+ #endif
+ 
