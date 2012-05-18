@@ -1,53 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S966970Ab2ERMDQ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 May 2012 08:03:16 -0400
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:36720 "EHLO
-	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965342Ab2ERMDO (ORCPT
+	id S1762178Ab2ERMGk (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 May 2012 08:06:40 -0400
+Received: from mail-qc0-f174.google.com ([209.85.216.174]:55241 "EHLO
+	mail-qc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755432Ab2ERMGg convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 May 2012 08:03:14 -0400
-Date: Fri, 18 May 2012 14:03:08 +0200
-From: Ingo Molnar <mingo@kernel.org>
-To: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: hpa@zytor.com, satoru.moriya@hds.com, linux-kernel@vger.kernel.org,
-        seiji.aguchi@hds.com, tony.luck@intel.com,
-        dle-develop@lists.sourceforge.net, tglx@linutronix.de,
-        dzickus@redhat.com, linux-tip-commits@vger.kernel.org
-Subject: Re: [tip:core/debug] kdump: Execute kmsg_dump(KMSG_DUMP_PANIC) after
- smp_send_stop()
-Message-ID: <20120518120307.GC19785@gmail.com>
-References: <5C4C569E8A4B9B42A84A977CF070A35B2E4D7A5CE2@USINDEVS01.corp.hds.com>
- <tip-f80f749132165fb083865e51afd65cf0f05dcd62@git.kernel.org>
- <1337340419.573.32.camel@twins>
+	Fri, 18 May 2012 08:06:36 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1337340419.573.32.camel@twins>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <29366.1337341984@redhat.com>
+References: <1337292816-10839-1-git-send-email-hjl.tools@gmail.com>
+	<1337292816-10839-9-git-send-email-hjl.tools@gmail.com>
+	<4FB58EFD.7010302@zytor.com>
+	<4FB5C050.9070805@kernel.org>
+	<CAMe9rOrKq8Ait8wKudRF535J5c=dDTKekmUN_=HOs5BBLtsoGQ@mail.gmail.com>
+	<CA+55aFxtejaM8ecOw8VYk74OaXfGY7=LO3JSyz3rdHEv2r9goQ@mail.gmail.com>
+	<4FB5C843.9070002@kernel.org>
+	<29366.1337341984@redhat.com>
+Date: Fri, 18 May 2012 05:06:35 -0700
+Message-ID: <CAMe9rOoU=2ma7e+sbfCV1Ca10_XCRY44DS7OJgFq79sNuXoo0A@mail.gmail.com>
+Subject: Re: [PATCH 08/10] Use __kernel_ulong_t in struct msqid64_ds
+From: "H.J. Lu" <hjl.tools@gmail.com>
+To: David Howells <dhowells@redhat.com>
+Cc: "H. Peter Anvin" <hpa@kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org,
+        mingo@kernel.org, tglx@linutronix.de, Paul Mundt <lethal@linux-sh.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Fri, May 18, 2012 at 4:53 AM, David Howells <dhowells@redhat.com> wrote:
+> H. Peter Anvin <hpa@kernel.org> wrote:
+>
+>> User mode can, and should, be able to use the exported headers.  David
+>> Howells have been doing even more work to distill out the actual
+>> exported ABIs from the kernel and remove remaining chaff.
+>
+> See:
+>
+>        http://git.infradead.org/users/dhowells/linux-headers.git/shortlog/refs/heads/uapi-split
+>
+> Linus: Any chance of this being pulled at the end of the next merge window?  I
+> know you said you didn't want to do another big header file cleanup for a
+> while after pulling the system.h disintegration, but I'm wondering if your
+> distaste has expired yet.
+>
 
-* Peter Zijlstra <a.p.zijlstra@chello.nl> wrote:
+As shown by x32, the kernel interface types are really arch-dependent.
+Any generic types based on long won't work for x32.
 
-> On Fri, 2012-05-18 at 03:49 -0700, tip-bot for Seiji Aguchi wrote:
-> 
-> > kdump: Execute kmsg_dump(KMSG_DUMP_PANIC) after smp_send_stop()
-> > 
-> > This patch moves kmsg_dump(KMSG_DUMP_PANIC) below smp_send_stop(),
-> > to serialize the crash-logging process via smp_send_stop() and to
-> > thus retrieve a more stable crash image of all CPUs stopped.
-> 
-> I don't want to be a spoil sport or anything, but this patch doesn't
-> move anything, it just removes..
 
-Hm, indeed. And the patch in the email is fine. I think I messed 
-up a conflict resolution ...
-
-Should be fixed now.
-
-Thanks,
-
-	Ingo
+-- 
+H.J.
