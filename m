@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030836Ab2ERCzN (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 May 2012 22:55:13 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:40599 "EHLO
+	id S1030813Ab2ERCzJ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 May 2012 22:55:09 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:40560 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1030741Ab2ERCwx (ORCPT
+	by vger.kernel.org with ESMTP id S1030723Ab2ERCwx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 17 May 2012 22:52:53 -0400
-Message-Id: <20120518023259.275988327@decadent.org.uk>
+Message-Id: <20120518023258.848665132@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Fri, 18 May 2012 03:33:30 +0100
+Date: Fri, 18 May 2012 03:33:27 +0100
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Eric Sandeen <sandeen@redhat.com>,
-        "Theodore Tso" <tytso@mit.edu>
-Subject: [ 36/53] ext4: avoid deadlock on sync-mounted FS w/o journal
+        alan@lxorguk.ukuu.org.uk, Tomoya MORINAGA <tomoya.rohm@gmail.com>,
+        Grant Likely <grant.likely@secretlab.ca>
+Subject: [ 33/53] spi-topcliff-pch: Fix issue for transmitting over 4KByte
 In-Reply-To: <20120518023254.339945758@decadent.org.uk>
 X-SA-Exim-Connect-IP: 192.168.4.185
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -28,64 +28,186 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Eric Sandeen <sandeen@redhat.com>
+From: Tomoya MORINAGA <tomoya.rohm@gmail.com>
 
-commit c1bb05a657fb3d8c6179a4ef7980261fae4521d7 upstream.
+commit 7d05b3e868ee0f9231baf40cb77be3df5dd1f18c upstream.
 
-Processes hang forever on a sync-mounted ext2 file system that
-is mounted with the ext4 module (default in Fedora 16).
+Currently, when spi-topcliff-pch receives transmit request over 4KByte,
+this driver can't process correctly. This driver needs to divide the data
+into 4Kbyte unit.
+This patch fixes the issue.
 
-I can reproduce this reliably by mounting an ext2 partition with
-"-o sync" and opening a new file an that partition with vim. vim
-will hang in "D" state forever.  The same happens on ext4 without
-a journal.
-
-I am attaching a small patch here that solves this issue for me.
-In the sync mounted case without a journal,
-ext4_handle_dirty_metadata() may call sync_dirty_buffer(), which
-can't be called with buffer lock held.
-
-Also move mb_cache_entry_release inside lock to avoid race
-fixed previously by 8a2bfdcb ext[34]: EA block reference count racing fix
-Note too that ext2 fixed this same problem in 2006 with
-b2f49033 [PATCH] fix deadlock in ext2
-
-Signed-off-by: Martin.Wilck@ts.fujitsu.com
-[sandeen@redhat.com: move mb_cache_entry_release before unlock, edit commit msg]
-Signed-off-by: Eric Sandeen <sandeen@redhat.com>
-Signed-off-by: "Theodore Ts'o" <tytso@mit.edu>
+Signed-off-by: Tomoya MORINAGA <tomoya.rohm@gmail.com>
+Signed-off-by: Grant Likely <grant.likely@secretlab.ca>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- fs/ext4/xattr.c |    7 ++++---
- 1 file changed, 4 insertions(+), 3 deletions(-)
+ drivers/spi/spi-topcliff-pch.c |   66 +++++++++++++++++++++++++++++++++-------
+ 1 file changed, 55 insertions(+), 11 deletions(-)
 
-diff --git a/fs/ext4/xattr.c b/fs/ext4/xattr.c
-index 1bff752..3369157 100644
---- a/fs/ext4/xattr.c
-+++ b/fs/ext4/xattr.c
-@@ -484,18 +484,19 @@ ext4_xattr_release_block(handle_t *handle, struct inode *inode,
- 		ext4_free_blocks(handle, inode, bh, 0, 1,
- 				 EXT4_FREE_BLOCKS_METADATA |
- 				 EXT4_FREE_BLOCKS_FORGET);
-+		unlock_buffer(bh);
+diff --git a/drivers/spi/spi-topcliff-pch.c b/drivers/spi/spi-topcliff-pch.c
+index 4b32fd7..4fdb83a 100644
+--- a/drivers/spi/spi-topcliff-pch.c
++++ b/drivers/spi/spi-topcliff-pch.c
+@@ -196,6 +196,7 @@ struct pch_spi_data {
+ 	struct pch_spi_dma_ctrl dma;
+ 	int use_dma;
+ 	u8 irq_reg_sts;
++	int save_total_len;
+ };
+ 
+ /**
+@@ -823,11 +824,13 @@ static void pch_spi_copy_rx_data_for_dma(struct pch_spi_data *data, int bpw)
+ 		rx_dma_buf = data->dma.rx_buf_virt;
+ 		for (j = 0; j < data->bpw_len; j++)
+ 			*rx_buf++ = *rx_dma_buf++ & 0xFF;
++		data->cur_trans->rx_buf = rx_buf;
  	} else {
- 		le32_add_cpu(&BHDR(bh)->h_refcount, -1);
-+		if (ce)
-+			mb_cache_entry_release(ce);
-+		unlock_buffer(bh);
- 		error = ext4_handle_dirty_metadata(handle, inode, bh);
- 		if (IS_SYNC(inode))
- 			ext4_handle_sync(handle);
- 		dquot_free_block(inode, 1);
- 		ea_bdebug(bh, "refcount now=%d; releasing",
- 			  le32_to_cpu(BHDR(bh)->h_refcount));
--		if (ce)
--			mb_cache_entry_release(ce);
+ 		rx_sbuf = data->cur_trans->rx_buf;
+ 		rx_dma_sbuf = data->dma.rx_buf_virt;
+ 		for (j = 0; j < data->bpw_len; j++)
+ 			*rx_sbuf++ = *rx_dma_sbuf++;
++		data->cur_trans->rx_buf = rx_sbuf;
  	}
--	unlock_buffer(bh);
- out:
- 	ext4_std_error(inode->i_sb, error);
- 	return;
+ }
+ 
+@@ -853,6 +856,9 @@ static int pch_spi_start_transfer(struct pch_spi_data *data)
+ 	rtn = wait_event_interruptible_timeout(data->wait,
+ 					       data->transfer_complete,
+ 					       msecs_to_jiffies(2 * HZ));
++	if (!rtn)
++		dev_err(&data->master->dev,
++			"%s wait-event timeout\n", __func__);
+ 
+ 	dma_sync_sg_for_cpu(&data->master->dev, dma->sg_rx_p, dma->nent,
+ 			    DMA_FROM_DEVICE);
+@@ -989,6 +995,7 @@ static void pch_spi_handle_dma(struct pch_spi_data *data, int *bpw)
+ 	int i;
+ 	int size;
+ 	int rem;
++	int head;
+ 	unsigned long flags;
+ 	struct pch_spi_dma_ctrl *dma;
+ 
+@@ -1017,6 +1024,11 @@ static void pch_spi_handle_dma(struct pch_spi_data *data, int *bpw)
+ 	}
+ 	data->bpw_len = data->cur_trans->len / (*bpw / 8);
+ 
++	if (data->bpw_len > PCH_BUF_SIZE) {
++		data->bpw_len = PCH_BUF_SIZE;
++		data->cur_trans->len -= PCH_BUF_SIZE;
++	}
++
+ 	/* copy Tx Data */
+ 	if (data->cur_trans->tx_buf != NULL) {
+ 		if (*bpw == 8) {
+@@ -1031,10 +1043,17 @@ static void pch_spi_handle_dma(struct pch_spi_data *data, int *bpw)
+ 				*tx_dma_sbuf++ = *tx_sbuf++;
+ 		}
+ 	}
++
++	/* Calculate Rx parameter for DMA transmitting */
+ 	if (data->bpw_len > PCH_DMA_TRANS_SIZE) {
+-		num = data->bpw_len / PCH_DMA_TRANS_SIZE + 1;
++		if (data->bpw_len % PCH_DMA_TRANS_SIZE) {
++			num = data->bpw_len / PCH_DMA_TRANS_SIZE + 1;
++			rem = data->bpw_len % PCH_DMA_TRANS_SIZE;
++		} else {
++			num = data->bpw_len / PCH_DMA_TRANS_SIZE;
++			rem = PCH_DMA_TRANS_SIZE;
++		}
+ 		size = PCH_DMA_TRANS_SIZE;
+-		rem = data->bpw_len % PCH_DMA_TRANS_SIZE;
+ 	} else {
+ 		num = 1;
+ 		size = data->bpw_len;
+@@ -1094,15 +1113,23 @@ static void pch_spi_handle_dma(struct pch_spi_data *data, int *bpw)
+ 	dma->nent = num;
+ 	dma->desc_rx = desc_rx;
+ 
+-	/* TX */
+-	if (data->bpw_len > PCH_DMA_TRANS_SIZE) {
+-		num = data->bpw_len / PCH_DMA_TRANS_SIZE;
++	/* Calculate Tx parameter for DMA transmitting */
++	if (data->bpw_len > PCH_MAX_FIFO_DEPTH) {
++		head = PCH_MAX_FIFO_DEPTH - PCH_DMA_TRANS_SIZE;
++		if (data->bpw_len % PCH_DMA_TRANS_SIZE > 4) {
++			num = data->bpw_len / PCH_DMA_TRANS_SIZE + 1;
++			rem = data->bpw_len % PCH_DMA_TRANS_SIZE - head;
++		} else {
++			num = data->bpw_len / PCH_DMA_TRANS_SIZE;
++			rem = data->bpw_len % PCH_DMA_TRANS_SIZE +
++			      PCH_DMA_TRANS_SIZE - head;
++		}
+ 		size = PCH_DMA_TRANS_SIZE;
+-		rem = 16;
+ 	} else {
+ 		num = 1;
+ 		size = data->bpw_len;
+ 		rem = data->bpw_len;
++		head = 0;
+ 	}
+ 
+ 	dma->sg_tx_p = kzalloc(sizeof(struct scatterlist)*num, GFP_ATOMIC);
+@@ -1112,11 +1139,17 @@ static void pch_spi_handle_dma(struct pch_spi_data *data, int *bpw)
+ 	for (i = 0; i < num; i++, sg++) {
+ 		if (i == 0) {
+ 			sg->offset = 0;
++			sg_set_page(sg, virt_to_page(dma->tx_buf_virt), size + head,
++				    sg->offset);
++			sg_dma_len(sg) = size + head;
++		} else if (i == (num - 1)) {
++			sg->offset = head + size * i;
++			sg->offset = sg->offset * (*bpw / 8);
+ 			sg_set_page(sg, virt_to_page(dma->tx_buf_virt), rem,
+ 				    sg->offset);
+ 			sg_dma_len(sg) = rem;
+ 		} else {
+-			sg->offset = rem + size * (i - 1);
++			sg->offset = head + size * i;
+ 			sg->offset = sg->offset * (*bpw / 8);
+ 			sg_set_page(sg, virt_to_page(dma->tx_buf_virt), size,
+ 				    sg->offset);
+@@ -1204,6 +1237,7 @@ static void pch_spi_process_messages(struct work_struct *pwork)
+ 				    data->current_msg->spi->bits_per_word);
+ 	pch_spi_writereg(data->master, PCH_SSNXCR, SSN_NO_CONTROL);
+ 	do {
++		int cnt;
+ 		/* If we are already processing a message get the next
+ 		transfer structure from the message otherwise retrieve
+ 		the 1st transfer request from the message. */
+@@ -1223,11 +1257,20 @@ static void pch_spi_process_messages(struct work_struct *pwork)
+ 		}
+ 		spin_unlock(&data->lock);
+ 
++		if (!data->cur_trans->len)
++			goto out;
++		cnt = (data->cur_trans->len - 1) / PCH_BUF_SIZE + 1;
++		data->save_total_len = data->cur_trans->len;
+ 		if (data->use_dma) {
+-			pch_spi_handle_dma(data, &bpw);
+-			if (!pch_spi_start_transfer(data))
+-				goto out;
+-			pch_spi_copy_rx_data_for_dma(data, bpw);
++			int i;
++			char *save_rx_buf = data->cur_trans->rx_buf;
++			for (i = 0; i < cnt; i ++) {
++				pch_spi_handle_dma(data, &bpw);
++				if (!pch_spi_start_transfer(data))
++					goto out;
++				pch_spi_copy_rx_data_for_dma(data, bpw);
++			}
++			data->cur_trans->rx_buf = save_rx_buf;
+ 		} else {
+ 			pch_spi_set_tx(data, &bpw);
+ 			pch_spi_set_ir(data);
+@@ -1238,6 +1281,7 @@ static void pch_spi_process_messages(struct work_struct *pwork)
+ 			data->pkt_tx_buff = NULL;
+ 		}
+ 		/* increment message count */
++		data->cur_trans->len = data->save_total_len;
+ 		data->current_msg->actual_length += data->cur_trans->len;
+ 
+ 		dev_dbg(&data->master->dev,
 -- 
 1.7.10
 
