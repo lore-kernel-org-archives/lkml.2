@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S966983Ab2ERXT3 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 May 2012 19:19:29 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:65112 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1030988Ab2ERXFm (ORCPT
+	id S1030976Ab2ERXFl (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 May 2012 19:05:41 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:35668 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1946578Ab2ERXFd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 May 2012 19:05:42 -0400
-Message-Id: <20120518212649.883305120@linuxfoundation.org>
+	Fri, 18 May 2012 19:05:33 -0400
+Message-Id: <20120518212649.605056418@linuxfoundation.org>
 User-Agent: quilt/0.60-19.1
-Date: Fri, 18 May 2012 14:26:56 -0700
+Date: Fri, 18 May 2012 14:26:53 -0700
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Meelis Roos <mroos@linux.ee>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [ 07/47] sparc64: Do not clobber %g2 in xcall_fetch_glob_regs().
+        alan@lxorguk.ukuu.org.uk, Takashi Iwai <tiwai@suse.de>
+Subject: [ 04/47] ALSA: hda/idt - Fix power-map for speaker-pins with some HP laptops
 In-Reply-To: <20120518212701.GA5023@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,52 +24,43 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: "David S. Miller" <davem@davemloft.net>
+From: Takashi Iwai <tiwai@suse.de>
 
-[ Upstream commit a5a737e090e25981e99d69f01400e3a80356581c ]
+commit b0791dda813c179e539b0fc1ecd3f5f30f2571e2 upstream.
 
-%g2 is meant to hold the CPUID number throughout this routine, since
-at the very beginning, and at the very end, we use %g2 to calculate
-indexes into per-cpu arrays.
+BIOS on some HP laptops don't set the speaker-pins as fixed but expose
+as jacks, and this confuses the driver as if these pins are
+jack-detectable.  As a result, the machine doesn't get sounds from
+speakers because the driver prepares the power-map update via jack
+unsol events which never come up in reality.  The bug was introduced
+in some time in 3.2 for enabling the power-mapping feature.
 
-However we erroneously clobber it in order to hold the %cwp register
-value mid-stream.
+This patch fixes the problem by replacing the check of the persistent
+power-map bits with a proper is_jack_detectable() call.
 
-Fix this code to use %g3 for the %cwp read and related calulcations
-instead.
+Bugzilla: https://bugzilla.kernel.org/show_bug.cgi?id=43240
 
-Reported-by: Meelis Roos <mroos@linux.ee>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+Signed-off-by: Takashi Iwai <tiwai@suse.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
----
- arch/sparc/kernel/central.c |    2 +-
- arch/sparc/mm/ultra.S       |    6 +++---
- 2 files changed, 4 insertions(+), 4 deletions(-)
 
---- a/arch/sparc/kernel/central.c
-+++ b/arch/sparc/kernel/central.c
-@@ -269,4 +269,4 @@ static int __init sunfire_init(void)
- 	return 0;
- }
- 
--subsys_initcall(sunfire_init);
-+fs_initcall(sunfire_init);
---- a/arch/sparc/mm/ultra.S
-+++ b/arch/sparc/mm/ultra.S
-@@ -495,11 +495,11 @@ xcall_fetch_glob_regs:
- 	stx		%o7, [%g1 + GR_SNAP_O7]
- 	stx		%i7, [%g1 + GR_SNAP_I7]
- 	/* Don't try this at home kids... */
--	rdpr		%cwp, %g2
--	sub		%g2, 1, %g7
-+	rdpr		%cwp, %g3
-+	sub		%g3, 1, %g7
- 	wrpr		%g7, %cwp
- 	mov		%i7, %g7
--	wrpr		%g2, %cwp
-+	wrpr		%g3, %cwp
- 	stx		%g7, [%g1 + GR_SNAP_RPC]
- 	sethi		%hi(trap_block), %g7
- 	or		%g7, %lo(trap_block), %g7
+---
+ sound/pci/hda/patch_sigmatel.c |    6 +++---
+ 1 file changed, 3 insertions(+), 3 deletions(-)
+
+--- a/sound/pci/hda/patch_sigmatel.c
++++ b/sound/pci/hda/patch_sigmatel.c
+@@ -4394,9 +4394,9 @@ static int stac92xx_init(struct hda_code
+ 		def_conf = get_defcfg_connect(def_conf);
+ 		/* skip any ports that don't have jacks since presence
+  		 * detection is useless */
+-		if (def_conf != AC_JACK_PORT_COMPLEX) {
+-			if (def_conf != AC_JACK_PORT_NONE)
+-				stac_toggle_power_map(codec, nid, 1);
++		if (def_conf != AC_JACK_PORT_NONE &&
++		    !is_jack_detectable(codec, nid)) {
++			stac_toggle_power_map(codec, nid, 1);
+ 			continue;
+ 		}
+ 		if (enable_pin_detect(codec, nid, STAC_PWR_EVENT)) {
 
 
