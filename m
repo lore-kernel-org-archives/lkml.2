@@ -1,61 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753675Ab2EROpS (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 May 2012 10:45:18 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:45191 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751692Ab2EROpP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 May 2012 10:45:15 -0400
-Date: Fri, 18 May 2012 16:45:04 +0200
-From: Jan Kara <jack@suse.cz>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Jan Kara <jack@suse.cz>, Wu Fengguang <fengguang.wu@intel.com>,
-        LKML <linux-kernel@vger.kernel.org>, linux-mm@kvack.org
-Subject: Re: [PATCH 1/2] lib: Proportions with flexible period
-Message-ID: <20120518144504.GD6875@quack.suse.cz>
-References: <1337096583-6049-1-git-send-email-jack@suse.cz>
- <1337096583-6049-2-git-send-email-jack@suse.cz>
- <1337337824.573.16.camel@twins>
+	id S1753818Ab2EROrC (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 May 2012 10:47:02 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:32500 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751833Ab2EROq7 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 18 May 2012 10:46:59 -0400
+X-Authority-Analysis: v=2.0 cv=OMylLFmB c=1 sm=0 a=ZycB6UtQUfgMyuk2+PxD7w==:17 a=XQbtiDEiEegA:10 a=wom5GMh1gUkA:10 a=PpG1Yf0aK_AA:10 a=5SG0PmZfjMsA:10 a=kj9zAlcOel0A:10 a=meVymXHHAAAA:8 a=VwQbUJbxAAAA:8 a=ITMrOGM4ltA3Vy2fEaIA:9 a=CjuIK1q_8ugA:10 a=U62fhAwekXMA:10 a=LI9Vle30uBYA:10 a=ZycB6UtQUfgMyuk2+PxD7w==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 74.67.80.29
+Date: Fri, 18 May 2012 10:46:57 -0400
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Ben Hutchings <ben@decadent.org.uk>
+Cc: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        torvalds@linux-foundation.org, akpm@linux-foundation.org,
+        alan@lxorguk.ukuu.org.uk
+Subject: Re: [ 00/53] 3.2.18-stable review
+Message-ID: <20120518144657.GA18264@home.goodmis.org>
+References: <20120518023254.339945758@decadent.org.uk>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1337337824.573.16.camel@twins>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <20120518023254.339945758@decadent.org.uk>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri 18-05-12 12:43:44, Peter Zijlstra wrote:
-> On Tue, 2012-05-15 at 17:43 +0200, Jan Kara wrote:
-> > +void __fprop_inc_percpu_max(struct fprop_global *p,
-> > +                           struct fprop_local_percpu *pl, int max_frac)
-> > +{
-> > +       if (unlikely(max_frac < 100)) {
-> > +               unsigned long numerator, denominator;
-> > +
-> > +               fprop_fraction_percpu(p, pl, &numerator, &denominator);
-> > +               if (numerator > ((long long)denominator) * max_frac / 100)
-> > +                       return;
+On Fri, May 18, 2012 at 03:32:54AM +0100, Ben Hutchings wrote:
+> This is the start of the stable review cycle for the 3.2.18 release.
+> There are 53 patches in this series, which will be posted as responses
+> to this one.  If anyone has any issues with these being applied, please
+> let me know.
 > 
-> Another thing, your fprop_fraction_percpu() can he horribly expensive
-> due to using _sum() (and to a lesser degree the retry), remember that
-> this function is called for _every_ page written out.
-  The retry happens only when new period is declared while
-fprop_fraction_percpu() is running. So that should be rather exceptional.
-Regarding the _sum I agree, luckily that's easy enough to fix.
+> Responses should be made by Sun May 20 13:00:00 UTC 2012.
+> Anything received after that time might be too late.
+> 
+> The whole patch series should soon be available in one patch at:
+> 	kernel.org/pub/linux/kernel/v3.x/stable-review/patch-3.2.18-rc1.gz
+> and the diffstat can be found below.
 
-> Esp. on the mega fast storage (multi-spindle or SSD) they're pushing cpu
-> limits as it is with iops, we should be very careful not to make it more
-> expensive than absolutely needed.
-  Yup.
+$ wget  kernel.org/pub/linux/kernel/v3.x/stable-review/patch-3.2.18-rc1.gz
+--2012-05-18 10:44:23--  http://kernel.org/pub/linux/kernel/v3.x/stable-review/patch-3.2.18-rc1.gz
+Resolving kernel.org (kernel.org)... 149.20.4.69
+Connecting to kernel.org (kernel.org)|149.20.4.69|:80... connected.
+HTTP request sent, awaiting response... 404 Not Found
+2012-05-18 10:44:23 ERROR 404: Not Found.
 
-> > +       } else
-> > +               fprop_reflect_period_percpu(p, pl);
-> > +       __percpu_counter_add(&pl->events, 1, PROP_BATCH);
-> > +       percpu_counter_add(&p->events, 1);
-> > +} 
+How much is "soon"? Did you push it to the repo yet and I'm just waiting
+on the mirroring? Or do you still need to push it yourself?
 
-								Honza
--- 
-Jan Kara <jack@suse.cz>
-SUSE Labs, CR
+-- Steve
+
