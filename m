@@ -1,63 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S966534Ab2ERAPB (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 May 2012 20:15:01 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:38726 "EHLO mail.zytor.com"
+	id S966797Ab2ERAQj (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 May 2012 20:16:39 -0400
+Received: from mga03.intel.com ([143.182.124.21]:3906 "EHLO mga03.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1761133Ab2ERAO5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 May 2012 20:14:57 -0400
-Message-ID: <4FB59474.2020505@zytor.com>
-Date: Thu, 17 May 2012 17:14:44 -0700
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:11.0) Gecko/20120329 Thunderbird/11.0.1
+	id S933558Ab2ERAQh convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 17 May 2012 20:16:37 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
+   d="scan'208";a="101423200"
+From: "Liu, Chuansheng" <chuansheng.liu@intel.com>
+To: Peter Zijlstra <peterz@infradead.org>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "tglx@linutronix.de" <tglx@linutronix.de>,
+        "Yanmin Zhang <yanmin_zhang@linux.intel.com>
+	(yanmin_zhang@linux.intel.com)" <yanmin_zhang@linux.intel.com>
+Subject: RE: [PATCH] printk: do not flush the logbuf into console driver in
+ interrupt
+Thread-Topic: [PATCH] printk: do not flush the logbuf into console driver in
+ interrupt
+Thread-Index: AQHNNA/O5D5Fgjq34UmFIOYYpsVqOpbOrkLg
+Date: Fri, 18 May 2012 00:16:32 +0000
+Message-ID: <27240C0AC20F114CBF8149A2696CBE4A0B2479@SHSMSX101.ccr.corp.intel.com>
+References: <27240C0AC20F114CBF8149A2696CBE4A0B1F0B@SHSMSX101.ccr.corp.intel.com>
+ <1337247064.4281.18.camel@twins>
+In-Reply-To: <1337247064.4281.18.camel@twins>
+Accept-Language: zh-CN, en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.239.127.40]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-To: Linus Torvalds <torvalds@linux-foundation.org>,
-        David Daney <ddaney.cavm@gmail.com>,
-        Ralf Baechle <ralf@linux-mips.org>
-CC: "H.J. Lu" <hjl.tools@gmail.com>, linux-kernel@vger.kernel.org,
-        linux-arch@vger.kernel.org, mingo@kernel.org, tglx@linutronix.de
-Subject: Re: [PATCH 08/10] Use __kernel_ulong_t in struct msqid64_ds
-References: <1337292816-10839-1-git-send-email-hjl.tools@gmail.com> <1337292816-10839-9-git-send-email-hjl.tools@gmail.com> <4FB58EFD.7010302@zytor.com> <CA+55aFy+XOc350sVuLKDHAaKtz9GdLcVmjxs98N8XLTK4zmMYg@mail.gmail.com>
-In-Reply-To: <CA+55aFy+XOc350sVuLKDHAaKtz9GdLcVmjxs98N8XLTK4zmMYg@mail.gmail.com>
-X-Enigmail-Version: 1.4
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/17/2012 05:07 PM, Linus Torvalds wrote:
-> On Thu, May 17, 2012 at 4:51 PM, H. Peter Anvin <hpa@zytor.com> wrote:
->>
->> The sane thing would seem to be to change __BITS_PER_LONG to 32 on x32
->> and fix the padding hacks in struct shmid64_ds; H.J., would you agree?
+> Uhm no.. I would very much like to get my OOPSes from interrupt context to
+> make it out to the console.
+(!oops_in_progress) this condition is in the patch, it should cover OOPSes output
+to console in interrupt context, I tested this case just now.
+
+> -----Original Message-----
+> From: Peter Zijlstra [mailto:peterz@infradead.org]
+> Sent: Thursday, May 17, 2012 5:31 PM
+> To: Liu, Chuansheng
+> Cc: linux-kernel@vger.kernel.org; tglx@linutronix.de; Yanmin Zhang
+> <yanmin_zhang@linux.intel.com> (yanmin_zhang@linux.intel.com)
+> Subject: Re: [PATCH] printk: do not flush the logbuf into console driver in
+> interrupt
 > 
-> Ugh. That looks like a disaster.
+> On Thu, 2012-05-17 at 07:46 +0000, Liu, Chuansheng wrote:
+> > From: liu chuansheng <chuansheng.liu@intel.com>
+> > Subject: [PATCH] printk: do not flush the logbuf into console driver
+> > in interrupt
+> >
+> > When irq handle tried to call printk, and it also has the chance to
+> > obtain the console sem, then flush the log buf to console driver,but
+> > the console driver often give several ms latency or more when much data in
+> log buf existed, it will delay the irq handle.
+> >
+> > The solution is when calling the printk in interrupt, just write the
+> > chars into log buf, and expect other threads to flush it into console driver.
+> >
+> > Signed-off-by: liu chuansheng <chuansheng.liu@intel.com>
+> >
+> > diff --git a/kernel/printk.c b/kernel/printk.c index b663c2c..99959e1
+> > 100644
+> > --- a/kernel/printk.c
+> > +++ b/kernel/printk.c
+> > @@ -804,7 +804,8 @@ static int console_trylock_for_printk(unsigned int
+> cpu)
+> >                  * the buffer. We need to hold the console semaphore
+> >                  * in order to do this test safely.
+> >                  */
+> > -               if (!can_use_console(cpu)) {
+> > +               if (!can_use_console(cpu) ||
+> > +                       (in_interrupt() && (!oops_in_progress))) {
+> >                         console_locked = 0;
+> >                         wake = 1;
+> >                         retval = 0;
 > 
-> The padding hacks that depend on __BITS_PER_LONG seem pretty damn broken anyway.
-> 
-> They only work if the kernel agrees with the value (which is against
-> the whole point of making __BITS_PER_LONG be about some user-level ABI
-> thing) or for little-endian machines.
-> 
-> IOW, all the __BITS_PER_LONG games look totally broken to me. I can't
-> see how they could possibly even be fixed.
-> 
-
-Well, on existing compat (e.g. i386) __BITS_PER_LONG is definitely not
-the same as kernel.  And yes, I don't see how the heck this was ever
-correct on bigendian machines or even for compat in any form (if the
-kernel tries to interpret the extra bits and user space didn't
-initialize them we're lost.)
-
-The "logical" thing to do here seems to just use __s64, but I have no
-idea if that would suddenly break bigendian architectures...
-
-David, Ralf, do you have any idea what e.g. MIPS does here?
-
-	-hpa
-
--- 
-H. Peter Anvin, Intel Open Source Technology Center
-I work for Intel.  I don't speak on their behalf.
-
+> Uhm no.. I would very much like to get my OOPSes from interrupt context to
+> make it out to the console.
