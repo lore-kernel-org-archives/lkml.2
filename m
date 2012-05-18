@@ -1,18 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965322Ab2ERQsY (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 May 2012 12:48:24 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:62956 "EHLO mx1.redhat.com"
+	id S965346Ab2ERQsb (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 May 2012 12:48:31 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:5143 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758535Ab2ERQdF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1758534Ab2ERQdF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 18 May 2012 12:33:05 -0400
 From: Mauro Carvalho Chehab <mchehab@redhat.com>
 Cc: Mauro Carvalho Chehab <mchehab@redhat.com>,
         Linux Edac Mailing List <linux-edac@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: [PATCH EDAC v26 57/66] edac: move documentation ABI to ABI/testing/sysfs-devices-edac
-Date: Fri, 18 May 2012 13:32:44 -0300
-Message-Id: <1337358773-6919-58-git-send-email-mchehab@redhat.com>
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Doug Thompson <norsk5@yahoo.com>
+Subject: [PATCH EDAC v26 54/66] edac: Only expose csrows/channels on legacy API if they're populated
+Date: Fri, 18 May 2012 13:32:41 -0300
+Message-Id: <1337358773-6919-55-git-send-email-mchehab@redhat.com>
 In-Reply-To: <1337358773-6919-1-git-send-email-mchehab@redhat.com>
 References: <1337358773-6919-1-git-send-email-mchehab@redhat.com>
 To: unlisted-recipients:; (no To-header on input)
@@ -20,232 +21,108 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The EDAC MC API is currently stored at the wrong place. Move the
-parts of the EDAC MC ABI that will be kept to
-ABI/testing/sysfs-devices-edac.
+This patch actually fixes a bug with the legacy API, where, at the
+same csrow, some channels may have different DIMMs. This can happen
+on FB-DIMM/RAMBUS and modern Intel controllers.
 
-The Date: field were added based on git timestamps for the git
-commit patches that added the functionality at edac.txt.
+This is the case, for example, of Nehalem machines:
 
-Acked-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+$ ./edac-ctl --layout
+       +-----------------------------------+
+       |                mc0                |
+       | channel0  | channel1  | channel2  |
+-------+-----------------------------------+
+slot2: |     0 MB  |     0 MB  |     0 MB  |
+slot1: |  1024 MB  |     0 MB  |     0 MB  |
+slot0: |  1024 MB  |  1024 MB  |  1024 MB  |
+-------+-----------------------------------+
+
+Before this patch, non-filled memories were shown. Now, only what's
+filled is there:
+
+grep . /sys/devices/system/edac/mc/mc0/csrow*/ch?*
+/sys/devices/system/edac/mc/mc0/csrow0/ch0_ce_count:0
+/sys/devices/system/edac/mc/mc0/csrow0/ch0_dimm_label:CPU#0Channel#0_DIMM#0
+/sys/devices/system/edac/mc/mc0/csrow0/ch1_ce_count:0
+/sys/devices/system/edac/mc/mc0/csrow0/ch1_dimm_label:CPU#0Channel#0_DIMM#1
+/sys/devices/system/edac/mc/mc0/csrow1/ch0_ce_count:0
+/sys/devices/system/edac/mc/mc0/csrow1/ch0_dimm_label:CPU#0Channel#1_DIMM#0
+/sys/devices/system/edac/mc/mc0/csrow2/ch0_ce_count:0
+/sys/devices/system/edac/mc/mc0/csrow2/ch0_dimm_label:CPU#0Channel#2_DIMM#0
+
+Thanks-to: Aristeu Rozanski Filho <arozansk@redhat.com>
+Reviewed-by: Aristeu Rozanski <arozansk@redhat.com>
+Cc: Doug Thompson <norsk5@yahoo.com>
 Signed-off-by: Mauro Carvalho Chehab <mchehab@redhat.com>
 ---
- Documentation/ABI/testing/sysfs-devices-edac |   76 +++++++++++++++++
- Documentation/edac.txt                       |  112 ++------------------------
- 2 files changed, 84 insertions(+), 104 deletions(-)
- create mode 100644 Documentation/ABI/testing/sysfs-devices-edac
+ drivers/edac/edac_mc_sysfs.c |   24 ++++++++++++++++++++++++
+ 1 files changed, 24 insertions(+), 0 deletions(-)
 
-diff --git a/Documentation/ABI/testing/sysfs-devices-edac b/Documentation/ABI/testing/sysfs-devices-edac
-new file mode 100644
-index 0000000..40db633
---- /dev/null
-+++ b/Documentation/ABI/testing/sysfs-devices-edac
-@@ -0,0 +1,76 @@
-+What:		/sys/devices/system/edac/mc/mc*/reset_counters
-+Date:		January 2006
-+Contact:	linux-edac@vger.kernel.org
-+Description:	This write-only control file will zero all the statistical
-+		counters for UE and CE errors on the given memory controller.
-+		Zeroing the counters will also reset the timer indicating how
-+		long since the last counter were reset. This is useful for
-+		computing errors/time.  Since the counters are always reset
-+		at driver initialization time, no module/kernel parameter
-+		is available.
-+
-+What:		/sys/devices/system/edac/mc/mc*/seconds_since_reset
-+Date:		January 2006
-+Contact:	linux-edac@vger.kernel.org
-+Description:	This attribute file displays how many seconds have elapsed
-+		since the last counter reset. This can be used with the error
-+		counters to measure error rates.
-+
-+What:		/sys/devices/system/edac/mc/mc*/mc_name
-+Date:		January 2006
-+Contact:	linux-edac@vger.kernel.org
-+Description:	This attribute file displays the type of memory controller
-+		that is being utilized.
-+
-+What:		/sys/devices/system/edac/mc/mc*/size_mb
-+Date:		January 2006
-+Contact:	linux-edac@vger.kernel.org
-+Description:	This attribute file displays, in count of megabytes, of memory
-+		that this memory controller manages.
-+
-+What:		/sys/devices/system/edac/mc/mc*/ue_count
-+Date:		January 2006
-+Contact:	linux-edac@vger.kernel.org
-+Description:	This attribute file displays the total count of uncorrectable
-+		errors that have occurred on this memory controller. If
-+		panic_on_ue is set, this counter will not have a chance to
-+		increment, since EDAC will panic the system
-+
-+What:		/sys/devices/system/edac/mc/mc*/ue_noinfo_count
-+Date:		January 2006
-+Contact:	linux-edac@vger.kernel.org
-+Description:	This attribute file displays the number of UEs that have
-+		occurred on this memory controller with no information as to
-+		which DIMM slot is having errors.
-+
-+What:		/sys/devices/system/edac/mc/mc*/ce_count
-+Date:		January 2006
-+Contact:	linux-edac@vger.kernel.org
-+Description:	This attribute file displays the total count of correctable
-+		errors that have occurred on this memory controller. This
-+		count is very important to examine. CEs provide early
-+		indications that a DIMM is beginning to fail. This count
-+		field should be monitored for non-zero values and report
-+		such information to the system administrator.
-+
-+What:		/sys/devices/system/edac/mc/mc*/ce_noinfo_count
-+Date:		January 2006
-+Contact:	linux-edac@vger.kernel.org
-+Description:	This attribute file displays the number of CEs that
-+		have occurred on this memory controller wherewith no
-+		information as to which DIMM slot is having errors. Memory is
-+		handicapped, but operational, yet no information is available
-+		to indicate which slot the failing memory is in. This count
-+		field should be also be monitored for non-zero values.
-+
-+What:		/sys/devices/system/edac/mc/mc*/sdram_scrub_rate
-+Date:		February 2007
-+Contact:	linux-edac@vger.kernel.org
-+Description:	Read/Write attribute file that controls memory scrubbing.
-+		The scrubbing rate used by the memory controller is set by
-+		writing a minimum bandwidth in bytes/sec to the attribute file.
-+		The rate will be translated to an internal value that gives at
-+		least the specified rate.
-+		Reading the file will return the actual scrubbing rate employed.
-+		If configuration fails or memory scrubbing is not implemented,
-+		the value of the attribute file will be -1.
-diff --git a/Documentation/edac.txt b/Documentation/edac.txt
-index fdcc49f..c25f086 100644
---- a/Documentation/edac.txt
-+++ b/Documentation/edac.txt
-@@ -232,116 +232,20 @@ EDAC control and attribute files.
+diff --git a/drivers/edac/edac_mc_sysfs.c b/drivers/edac/edac_mc_sysfs.c
+index daa418b..0f67190 100644
+--- a/drivers/edac/edac_mc_sysfs.c
++++ b/drivers/edac/edac_mc_sysfs.c
+@@ -347,6 +347,16 @@ static struct device_attribute *dynamic_csrow_ce_count_attr[] = {
+ 	&dev_attr_legacy_ch5_ce_count.attr
+ };
  
- 
- In 'mcX' directories are EDAC control and attribute files for
--this 'X' instance of the memory controllers:
--
--
--Counter reset control file:
--
--	'reset_counters'
--
--	This write-only control file will zero all the statistical counters
--	for UE and CE errors.  Zeroing the counters will also reset the timer
--	indicating how long since the last counter zero.  This is useful
--	for computing errors/time.  Since the counters are always reset at
--	driver initialization time, no module/kernel parameter is available.
--
--	RUN TIME: echo "anything" >/sys/devices/system/edac/mc/mc0/counter_reset
--
--		This resets the counters on memory controller 0
--
--
--Seconds since last counter reset control file:
--
--	'seconds_since_reset'
--
--	This attribute file displays how many seconds have elapsed since the
--	last counter reset. This can be used with the error counters to
--	measure error rates.
--
--
--
--Memory Controller name attribute file:
--
--	'mc_name'
--
--	This attribute file displays the type of memory controller
--	that is being utilized.
--
--
--Total memory managed by this memory controller attribute file:
--
--	'size_mb'
--
--	This attribute file displays, in count of megabytes, of memory
--	that this instance of memory controller manages.
--
--
--Total Uncorrectable Errors count attribute file:
--
--	'ue_count'
--
--	This attribute file displays the total count of uncorrectable
--	errors that have occurred on this memory controller. If panic_on_ue
--	is set this counter will not have a chance to increment,
--	since EDAC will panic the system.
--
--
--Total UE count that had no information attribute fileY:
--
--	'ue_noinfo_count'
--
--	This attribute file displays the number of UEs that have occurred
--	with no information as to which DIMM slot is having errors.
--
--
--Total Correctable Errors count attribute file:
--
--	'ce_count'
--
--	This attribute file displays the total count of correctable
--	errors that have occurred on this memory controller. This
--	count is very important to examine. CEs provide early
--	indications that a DIMM is beginning to fail. This count
--	field should be monitored for non-zero values and report
--	such information to the system administrator.
--
--
--Total Correctable Errors count attribute file:
--
--	'ce_noinfo_count'
--
--	This attribute file displays the number of CEs that
--	have occurred wherewith no information as to which DIMM slot
--	is having errors. Memory is handicapped, but operational,
--	yet no information is available to indicate which slot
--	the failing memory is in. This count field should be also
--	be monitored for non-zero values.
--
--Device Symlink:
--
--	'device'
--
--	Symlink to the memory controller device.
--
--Sdram memory scrubbing rate:
--
--	'sdram_scrub_rate'
--
--	Read/Write attribute file that controls memory scrubbing. The scrubbing
--	rate is set by writing a minimum bandwidth in bytes/sec to the attribute
--	file. The rate will be translated to an internal value that gives at
--	least the specified rate.
--
--	Reading the file will return the actual scrubbing rate employed.
--
--	If configuration fails or memory scrubbing is not implemented, accessing
--	that attribute will fail.
-+this 'X' instance of the memory controllers.
- 
-+For a description of the sysfs API, please see:
-+	Documentation/ABI/testing/sysfs/devices-edac
- 
- 
- ============================================================================
- 'csrowX' DIRECTORIES
- 
-+When CONFIG_EDAC_LEGACY_SYSFS is enabled, the sysfs will contain the
-+csrowX directories. As this API doesn't work properly for Rambus, FB-DIMMs
-+and modern Intel Memory Controllers, this is being deprecated in favor
-+of dimmX directories.
++static inline int nr_pages_per_csrow(struct csrow_info *csrow)
++{
++	int chan, nr_pages = 0;
 +
- In the 'csrowX' directories are EDAC control and attribute files for
- this 'X' instance of csrow:
++	for (chan = 0; chan < csrow->nr_channels; chan++)
++		nr_pages += csrow->channels[chan].dimm->nr_pages;
++
++	return nr_pages;
++}
++
+ /* Create a CSROW object under specifed edac_mc_device */
+ static int edac_create_csrow_object(struct mem_ctl_info *mci,
+ 				    struct csrow_info *csrow, int index)
+@@ -371,6 +381,9 @@ static int edac_create_csrow_object(struct mem_ctl_info *mci,
+ 		return err;
  
+ 	for (chan = 0; chan < csrow->nr_channels; chan++) {
++		/* Only expose populated DIMMs */
++		if (!csrow->channels[chan].dimm->nr_pages)
++			continue;
+ 		err = device_create_file(&csrow->dev,
+ 					 dynamic_csrow_dimm_attr[chan]);
+ 		if (err < 0)
+@@ -405,6 +418,9 @@ static int edac_create_csrow_objects(struct mem_ctl_info *mci)
+ 	struct csrow_info *csrow;
+ 
+ 	for (i = 0; i < mci->nr_csrows; i++) {
++		csrow = &mci->csrows[i];
++		if (!nr_pages_per_csrow(csrow))
++			continue;
+ 		err = edac_create_csrow_object(mci, &mci->csrows[i], i);
+ 		if (err < 0)
+ 			goto error;
+@@ -414,7 +430,11 @@ static int edac_create_csrow_objects(struct mem_ctl_info *mci)
+ error:
+ 	for (--i; i >= 0; i--) {
+ 		csrow = &mci->csrows[i];
++		if (!nr_pages_per_csrow(csrow))
++			continue;
+ 		for (chan = csrow->nr_channels - 1; chan >= 0; chan--) {
++			if (!csrow->channels[chan].dimm->nr_pages)
++				continue;
+ 			device_remove_file(&csrow->dev,
+ 						dynamic_csrow_dimm_attr[chan]);
+ 			device_remove_file(&csrow->dev,
+@@ -433,7 +453,11 @@ static void edac_delete_csrow_objects(struct mem_ctl_info *mci)
+ 
+ 	for (i = mci->nr_csrows - 1; i >= 0; i--) {
+ 		csrow = &mci->csrows[i];
++		if (!nr_pages_per_csrow(csrow))
++			continue;
+ 		for (chan = csrow->nr_channels - 1; chan >= 0; chan--) {
++			if (!csrow->channels[chan].dimm->nr_pages)
++				continue;
+ 			debugf1("Removing csrow %d channel %d sysfs nodes\n",
+ 				i, chan);
+ 			device_remove_file(&csrow->dev,
 -- 
 1.7.8
 
