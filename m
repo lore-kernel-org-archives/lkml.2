@@ -1,39 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S967110Ab2ERXUJ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 May 2012 19:20:09 -0400
-Received: from mail-wg0-f44.google.com ([74.125.82.44]:35659 "EHLO
-	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754442Ab2ERXUB convert rfc822-to-8bit (ORCPT
+	id S967210Ab2ERXUe (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 May 2012 19:20:34 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:53524 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1030929Ab2ERXFj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 May 2012 19:20:01 -0400
-MIME-Version: 1.0
-In-Reply-To: <CACxGe6vuA9A6X5qBt+maej2vaJCgLcHvYfqfXRGD+sKAYt4Bnw@mail.gmail.com>
-References: <CACxGe6vuA9A6X5qBt+maej2vaJCgLcHvYfqfXRGD+sKAYt4Bnw@mail.gmail.com>
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Fri, 18 May 2012 16:19:39 -0700
-X-Google-Sender-Auth: XEHE52QxoljDeYOZzSR1NkH0UEM
-Message-ID: <CA+55aFxXrX5QboJXYDM2G0sG3xf4Fx19snaMgPRknRsmTOJRKg@mail.gmail.com>
-Subject: Re: [GIT PULL] GPIO build failure bug fix
-To: Grant Likely <grant.likely@secretlab.ca>, Jiri Kosina <jkosina@suse.cz>
-Cc: Thomas Gleixner <tglx@linutronix.de>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	Fri, 18 May 2012 19:05:39 -0400
+Message-Id: <20120518212649.790229737@linuxfoundation.org>
+User-Agent: quilt/0.60-19.1
+Date: Fri, 18 May 2012 14:26:55 -0700
+From: Greg KH <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
+Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
+        alan@lxorguk.ukuu.org.uk, Mike Galbraith <efault@gmx.de>,
+        Oleg Nesterov <oleg@redhat.com>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        Pavel Emelyanov <xemul@parallels.com>,
+        Cyrill Gorcunov <gorcunov@openvz.org>,
+        Louis Rilling <louis.rilling@kerlabs.com>
+Subject: [ 06/47] namespaces, pid_ns: fix leakage on fork() failure
+In-Reply-To: <20120518212701.GA5023@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, May 18, 2012 at 1:04 PM, Grant Likely <grant.likely@secretlab.ca> wrote:
-> GPIO build failure bug
->
-> The gpio pch9 patch merged for v3.4-rc7 has a build failure when built
-> as a module because it is an interrupt controller and the symbols it
-> needs aren't exported.  This branch restricts it to being built in to
-> solve the issue until it can be fixed properly in v3.5.
+3.3-stable review patch.  If anyone has any objections, please let me know.
 
-Umm.  They got exported by commit 3911ff30f5d1. So this bugfix seems stale.
+------------------
 
-Or is there something else going on too?
+From: Mike Galbraith <efault@gmx.de>
 
-                   Linus
+commit 5e2bf0142231194d36fdc9596b36a261ed2b9fe7 upstream.
+
+Fork() failure post namespace creation for a child cloned with
+CLONE_NEWPID leaks pid_namespace/mnt_cache due to proc being mounted
+during creation, but not unmounted during cleanup.  Call
+pid_ns_release_proc() during cleanup.
+
+Signed-off-by: Mike Galbraith <efault@gmx.de>
+Acked-by: Oleg Nesterov <oleg@redhat.com>
+Reviewed-by: "Eric W. Biederman" <ebiederm@xmission.com>
+Cc: Pavel Emelyanov <xemul@parallels.com>
+Cc: Cyrill Gorcunov <gorcunov@openvz.org>
+Cc: Louis Rilling <louis.rilling@kerlabs.com>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+
+---
+ kernel/fork.c |    3 +++
+ 1 file changed, 3 insertions(+)
+
+--- a/kernel/fork.c
++++ b/kernel/fork.c
+@@ -47,6 +47,7 @@
+ #include <linux/audit.h>
+ #include <linux/memcontrol.h>
+ #include <linux/ftrace.h>
++#include <linux/proc_fs.h>
+ #include <linux/profile.h>
+ #include <linux/rmap.h>
+ #include <linux/ksm.h>
+@@ -1438,6 +1439,8 @@ bad_fork_cleanup_io:
+ 	if (p->io_context)
+ 		exit_io_context(p);
+ bad_fork_cleanup_namespaces:
++	if (unlikely(clone_flags & CLONE_NEWPID))
++		pid_ns_release_proc(p->nsproxy->pid_ns);
+ 	exit_task_namespaces(p);
+ bad_fork_cleanup_mm:
+ 	if (p->mm)
+
+
