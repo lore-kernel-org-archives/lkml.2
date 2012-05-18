@@ -1,20 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030748Ab2ERC5P (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 May 2012 22:57:15 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:40561 "EHLO
+	id S1030887Ab2ERC5M (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 May 2012 22:57:12 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:40569 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1030724Ab2ERCwv (ORCPT
+	by vger.kernel.org with ESMTP id S1030728Ab2ERCwv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 17 May 2012 22:52:51 -0400
-Message-Id: <20120518023300.045698778@decadent.org.uk>
+Message-Id: <20120518023257.176824319@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Fri, 18 May 2012 03:33:36 +0100
+Date: Fri, 18 May 2012 03:33:15 +0100
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Takashi Iwai <tiwai@suse.de>
-Subject: [ 42/53] ALSA: hda/idt - Fix power-map for speaker-pins with some HP laptops
+        alan@lxorguk.ukuu.org.uk,
+        Srinivas Kandagatla <srinivas.kandagatla@st.com>,
+        "David S. Miller" <davem@davemloft.net>,
+        Jonathan Nieder <jrnieder@gmail.com>
+Subject: [ 21/53] phy:icplus:fix Auto Power Saving in ip101a_config_init.
 In-Reply-To: <20120518023254.339945758@decadent.org.uk>
 X-SA-Exim-Connect-IP: 192.168.4.185
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -27,47 +30,44 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Takashi Iwai <tiwai@suse.de>
+From: Srinivas Kandagatla <srinivas.kandagatla@st.com>
 
-commit b0791dda813c179e539b0fc1ecd3f5f30f2571e2 upstream.
+[ Upstream commit b3300146aa8efc5d3937fd33f3cfdc580a3843bc ]
 
-BIOS on some HP laptops don't set the speaker-pins as fixed but expose
-as jacks, and this confuses the driver as if these pins are
-jack-detectable.  As a result, the machine doesn't get sounds from
-speakers because the driver prepares the power-map update via jack
-unsol events which never come up in reality.  The bug was introduced
-in some time in 3.2 for enabling the power-mapping feature.
+This patch fixes Auto Power Saving configuration in ip101a_config_init
+which was broken as there is no phy register write followed after
+setting IP101A_APS_ON flag.
 
-This patch fixes the problem by replacing the check of the persistent
-power-map bits with a proper is_jack_detectable() call.
+This patch also fixes the return value of ip101a_config_init.
 
-Bugzilla: https://bugzilla.kernel.org/show_bug.cgi?id=43240
+Without this patch ip101a_config_init returns 2 which is not an error
+accroding to IS_ERR and the mac driver will continue accessing 2 as
+valid pointer to phy_dev resulting in memory fault.
 
-Signed-off-by: Takashi Iwai <tiwai@suse.de>
+Signed-off-by: Srinivas Kandagatla <srinivas.kandagatla@st.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
+Signed-off-by: Jonathan Nieder <jrnieder@gmail.com>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- sound/pci/hda/patch_sigmatel.c |    6 +++---
- 1 file changed, 3 insertions(+), 3 deletions(-)
+ drivers/net/phy/icplus.c |    3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
-diff --git a/sound/pci/hda/patch_sigmatel.c b/sound/pci/hda/patch_sigmatel.c
-index 4742cac..2cb1e08 100644
---- a/sound/pci/hda/patch_sigmatel.c
-+++ b/sound/pci/hda/patch_sigmatel.c
-@@ -4415,9 +4415,9 @@ static int stac92xx_init(struct hda_codec *codec)
- 		def_conf = get_defcfg_connect(def_conf);
- 		/* skip any ports that don't have jacks since presence
-  		 * detection is useless */
--		if (def_conf != AC_JACK_PORT_COMPLEX) {
--			if (def_conf != AC_JACK_PORT_NONE)
--				stac_toggle_power_map(codec, nid, 1);
-+		if (def_conf != AC_JACK_PORT_NONE &&
-+		    !is_jack_detectable(codec, nid)) {
-+			stac_toggle_power_map(codec, nid, 1);
- 			continue;
- 		}
- 		if (enable_pin_detect(codec, nid, STAC_PWR_EVENT)) {
+diff --git a/drivers/net/phy/icplus.c b/drivers/net/phy/icplus.c
+index c81f136ae670..b14230016d9b 100644
+--- a/drivers/net/phy/icplus.c
++++ b/drivers/net/phy/icplus.c
+@@ -150,7 +150,8 @@ static int ip101a_config_init(struct phy_device *phydev)
+ 	/* Enable Auto Power Saving mode */
+ 	c = phy_read(phydev, IP10XX_SPEC_CTRL_STATUS);
+ 	c |= IP101A_APS_ON;
+-	return c;
++
++	return phy_write(phydev, IP10XX_SPEC_CTRL_STATUS, c);
+ }
+ 
+ static int ip175c_read_status(struct phy_device *phydev)
 -- 
-1.7.10
+1.7.10.1
 
 
 
