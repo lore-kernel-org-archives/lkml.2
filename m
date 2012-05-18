@@ -1,60 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760065Ab2ERDe7 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 May 2012 23:34:59 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:39936 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751795Ab2ERDe5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 May 2012 23:34:57 -0400
-Message-ID: <4FB5C347.6010105@zytor.com>
-Date: Thu, 17 May 2012 20:34:31 -0700
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:11.0) Gecko/20120329 Thunderbird/11.0.1
+	id S966589Ab2ERDhT (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 May 2012 23:37:19 -0400
+Received: from mail-ob0-f174.google.com ([209.85.214.174]:51380 "EHLO
+	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751795Ab2ERDhQ convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 17 May 2012 23:37:16 -0400
 MIME-Version: 1.0
-To: "Yu, Fenghua" <fenghua.yu@intel.com>
-CC: "Siddha, Suresh B" <suresh.b.siddha@intel.com>,
-        Ingo Molnar <mingo@kernel.org>, "Luck, Tony" <tony.luck@intel.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        "Mallick, Asit K" <asit.k.mallick@intel.com>,
-        Arjan Dan De Ven <arjan@linux.intel.com>,
-        "Brown, Len" <len.brown@intel.com>,
-        "Srivatssa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
-        Randy Dunlap <rdunlap@xenotime.net>,
-        Chen Gong <gong.chen@linux.intel.com>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        linux-pm <linux-pm@vger.kernel.org>, x86 <x86@kernel.org>,
-        Peter Zijlstra <peterz@infradead.org>
-Subject: Re: [PATCH v6 04/12] x86/smpboot.c: Don't offline CPU0 if any irq
- can not be migrated out of it and remove CPU0 check in smp_callin()
-References: <1336666614-21090-1-git-send-email-fenghua.yu@intel.com>  <1336666614-21090-5-git-send-email-fenghua.yu@intel.com>  <alpine.LFD.2.02.1205111352330.3231@ionos>  <CA+8MBbJbEWTR2Tawa2SzcJ-mZSPzZ12a9usR5eQu=PhArZwXLA@mail.gmail.com>  <20120514121725.GA10840@gmail.com> <1337294829.1997.96.camel@sbsiddha-desk.sc.intel.com> <3E5A0FA7E9CA944F9D5414FEC6C71220077185AE@ORSMSX105.amr.corp.intel.com>
-In-Reply-To: <3E5A0FA7E9CA944F9D5414FEC6C71220077185AE@ORSMSX105.amr.corp.intel.com>
-X-Enigmail-Version: 1.4
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <CAFeW=pZcqnybTeMQPEMUguAwwgqpM1Hap2Dh3K-5majfYqMTaA@mail.gmail.com>
+References: <CAFeW=pZcqnybTeMQPEMUguAwwgqpM1Hap2Dh3K-5majfYqMTaA@mail.gmail.com>
+Date: Fri, 18 May 2012 11:37:15 +0800
+Message-ID: <CAFeW=pZ-HZKyBALRZVo=PeWUoaEk39QUSoMsV-1K5CBgcVUMeA@mail.gmail.com>
+Subject: Re: cgroup: denying device doesn't work with 'rw' mode string
+From: Amos Kong <kongjianjun@gmail.com>
+To: serue@us.ibm.com, viro@zeniv.linux.org.uk
+Cc: linux-kernel@vger.kernel.org, lizf@cn.fujitsu.com, tj@kernel.org,
+        jmorris@namei.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/17/2012 06:47 PM, Yu, Fenghua wrote:
-> 
-> Then booting up AP via INIT and putting AP online back via NMI/mwait
-> will have different wakeup method and code. We probably need a way to
-> tell if it is first AP bringup or online AP/BSP during run time.
-> 
-> And if offlined CPU is not in mwait (e.g. CPU without mwait feature),
-> mwait based bringup won't work. Do we need to fall back to NMI wakeup
-> if offlined CPU is not in mwait?
-> 
+CC: Li Zefan <lizf@cn.fujitsu.com>, Tejun Heo <tj@kernel.org>, jmorris@namei.org
 
-I guess we need NMI (or just re-SIPI) in that case, since we're spinning
-in CLI; HLT...
-
-	-hpa
-
-
--- 
-H. Peter Anvin, Intel Open Source Technology Center
-I work for Intel.  I don't speak on their behalf.
-
+On Sat, Oct 15, 2011 at 8:39 AM, Amos Kong <kongjianjun@gmail.com> wrote:
+> # mount -t cgroup -o devices none /cgroup
+> # mkdir /cgroups/devices
+> # ls -l /dev/vg/lv
+> lrwxrwxrwx. 1 root root 7 Oct 14 19:03 /dev/vg/lv -> ../dm-3
+> # ls -l /dev/dm-3
+> brw-rw----. 1 root disk 253, 3 Oct 14 19:03 /dev/dm-3
+>
+>
+> ------- test1
+> deny read-write permission of dm-3, but it doesn't effect.
+>
+> # echo a > devices/devices.allow
+> # echo 'b 253:2 rw' > devices.deny
+>                ^^
+> # echo $$ > task
+> # dd if=/dev/zero of=/dev/dm-3 bs=1M count=1
+> can write to /dev/dm-3 successfully  (problem exists)
+>
+> ------- test2
+> # echo a > devices/devices.allow
+> # echo 'b 253:3 rwm' > devices/devices.deny
+>                ^^^
+> # echo $$ > task
+> # dd if=/dev/zero of=/dev/dm-3 bs=1M count=1
+> couldn't write to /dev/dm-3 successfully
+>
+> -----------
+>
+> related upstream commit:
+> commit 08ce5f16ee466ffc5bf243800deeecd77d9eaf50
+> Author: Serge E. Hallyn <serue@us.ibm.com>
+> Date:   Tue Apr 29 01:00:10 2008 -0700
+>
+>    cgroups: implement device whitelist
+>
+>
+> cgroup tracks and enforces open and mknod restrictions on device files,
+> so 'm' are always needed in the mode string? 'rw' is ineffective?
