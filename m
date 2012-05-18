@@ -1,65 +1,218 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1945972Ab2ERNGI (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 May 2012 09:06:08 -0400
-Received: from moutng.kundenserver.de ([212.227.17.9]:51410 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1945932Ab2ERNGG (ORCPT
+	id S1945997Ab2ERNIT (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 May 2012 09:08:19 -0400
+Received: from am1ehsobe004.messaging.microsoft.com ([213.199.154.207]:11867
+	"EHLO am1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1945979Ab2ERNIQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 May 2012 09:06:06 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-Subject: Re: [PATCH] ARM: at91: Add ADC driver to at91sam9260/at91sam9g20 dtsi files
-Date: Fri, 18 May 2012 13:03:28 +0000
-User-Agent: KMail/1.12.2 (Linux/3.4.0-rc3; KDE/4.3.2; x86_64; ; )
-Cc: Greg KH <gregkh@linuxfoundation.org>,
-        Nicolas Ferre <nicolas.ferre@atmel.com>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        plagnioj@jcrosoft.com, maxime.ripard@free-electrons.com,
-        olof@lixom.net, linux-next@vger.kernel.org
-References: <4FB3B1F3.6080102@atmel.com> <20120517150601.GA28104@kroah.com> <20120518084446.a7b229074ea215fd7bcd1eb8@canb.auug.org.au>
-In-Reply-To: <20120518084446.a7b229074ea215fd7bcd1eb8@canb.auug.org.au>
+	Fri, 18 May 2012 09:08:16 -0400
+X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
+X-SpamScore: -2
+X-BigFish: VS-2(zz154dMzz1202h1082kzz8275dhz2dh2a8h668h839hd24he5bhf0ah)
+From: Dong Aisheng <b29396@freescale.com>
+To: <linux-kernel@vger.kernel.org>
+CC: <linux-arm-kernel@lists.infradead.org>, <linus.walleij@stericsson.com>,
+        <swarren@wwwdotorg.org>
+Subject: [PATCH RFC v2 2/2] pinctrl: add pinctrl gpio binding support
+Date: Fri, 18 May 2012 21:12:35 +0800
+Message-ID: <1337346755-8761-2-git-send-email-b29396@freescale.com>
+X-Mailer: git-send-email 1.7.0.4
+In-Reply-To: <1337346755-8761-1-git-send-email-b29396@freescale.com>
+References: <1337346755-8761-1-git-send-email-b29396@freescale.com>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-15"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201205181303.28535.arnd@arndb.de>
-X-Provags-ID: V02:K0:aHkgUGOObRjpp8YazShCHY6k+3zQWzqAkFEkrSgmwDW
- aWMBriiCzcHcfE8XCSBH4T70EtSLZ+Z4bS7z40rDVmF61wvMa9
- q+gK12bBHWAafqLrd8qxthDwO46bfD7NON/e1J/gdRbdMkjoww
- MZFKLW3cdIMXQjf2K6NCfk5u+m+GpMnW2AKyam/8C4r3FzEWVf
- gt/eNS8fqylt/RWA5Zoq/bbFZ2tC60SxVYbUli9kF/RZyuNBw5
- vT4RK03NzPlwkGuXdxTyl6h5thjt8yolxH08Oj7BWNYg5w+t1W
- 9Bn3o+ZpvSxnCQV7nuTCTvRVWZkwGZzF65OpfPJyzVMWsL+XMX
- jgxzRPTo/S5L3zxtm2fM=
+Content-Type: text/plain
+X-OriginatorOrg: freescale.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday 17 May 2012, Stephen Rothwell wrote:
-> On Thu, 17 May 2012 08:06:01 -0700 Greg KH <gregkh@linuxfoundation.org> wrote:
-> >
-> > On Wed, May 16, 2012 at 06:50:54PM +0000, Arnd Bergmann wrote:
-> > > On Wednesday 16 May 2012, Nicolas Ferre wrote:
-> > > > Now that the bulk of at91sam9g20-related nodes are located in at91sam9260.dtsi,
-> > > > we have to re-create the path to this ADC node for SoC specific parts.
-> > > > 
-> > > > Signed-off-by: Nicolas Ferre <nicolas.ferre@atmel.com>
-> > > 
-> > > Should we apply this patch in arm-soc so that Greg can drop the hunk that
-> > > no longer applies?
-> > 
-> > It's not a "no longer applies", it's a "this does not merge".  The patch
-> > is in my tree, unless you want me to revert it, it's going to stay there
-> > until it goes to Linus.
-> 
-> Just apply the patch to the arm-soc tree - then the merge resolution
-> becomes "use the arm-soc version".   There is no need for Greg to revert
-> the other patch.
-> 
+From: Dong Aisheng <dong.aisheng@linaro.org>
 
-Yes, good point.
+The gpio ranges standard dt binding format is
+<&gpio $gpio_offset $pin_offset $npin>
 
-I've applied the patch on the at91/dt branch now.
+The core will parse and register the pinctrl gpio ranges
+from device tree.
 
-	Arnd
+TODO: add binding doc.
+
+Signed-off-by: Dong Aisheng <dong.aisheng@linaro.org>
+
+---
+ChangeLog v1->v2:
+* introduce standard binding for gpio range.
+---
+ drivers/pinctrl/devicetree.c    |   95 +++++++++++++++++++++++++++++++++++++++
+ drivers/pinctrl/devicetree.h    |    3 -
+ include/linux/pinctrl/pinctrl.h |   22 +++++++++
+ 3 files changed, 117 insertions(+), 3 deletions(-)
+
+diff --git a/drivers/pinctrl/devicetree.c b/drivers/pinctrl/devicetree.c
+index fcb1de4..c1b87e6 100644
+--- a/drivers/pinctrl/devicetree.c
++++ b/drivers/pinctrl/devicetree.c
+@@ -17,7 +17,9 @@
+  */
+ 
+ #include <linux/device.h>
++#include <linux/module.h>
+ #include <linux/of.h>
++#include <linux/of_gpio.h>
+ #include <linux/pinctrl/pinctrl.h>
+ #include <linux/slab.h>
+ 
+@@ -247,3 +249,96 @@ err:
+ 	pinctrl_dt_free_maps(p);
+ 	return ret;
+ }
++
++/*
++ * pinctrl_dt_add_gpio_range() - parse and register GPIO ranges from device tree
++ * @pctldev: pin controller device to add the range to
++ * @np: the device node contains the property @propname
++ * @propname: a list of phandles of gpios and corresponding data.
++ *  The format is: <&gpio0 $gpio_offset $pin_offset $count>
++ */
++int pinctrl_dt_add_gpio_ranges(struct pinctrl_dev *pctldev,
++				struct device_node *np,
++				const char *propname)
++{
++	struct pinctrl_gpio_range *ranges;
++	unsigned int gpio_offset, pin_offset, npins;
++	struct device_node *np_gpio;
++	struct property *prop;
++	const __be32 *list;
++	phandle phandle;
++	int nranges;
++	int size;
++	int i;
++
++	if (!np || !propname) {
++		dev_err(pctldev->dev, "no device node or gpios propname\n");
++		return -EINVAL;
++	}
++
++	prop = of_find_property(np, propname, &size);
++	if (!prop)
++		return -ENODEV;
++
++	list = prop->value;
++	size /= sizeof(*list);
++	if (size % 4) {
++		dev_err(pctldev->dev, "wrong gpio range table format\n");
++		return -EINVAL;
++	}
++
++	nranges = size /4;
++	ranges = devm_kzalloc(pctldev->dev, nranges * sizeof(*ranges),
++				GFP_KERNEL);
++	for (i = 0; i < nranges; i++) {
++			phandle = be32_to_cpup(list++);
++			np_gpio = of_find_node_by_phandle(phandle);
++			if (!np_gpio) {
++				dev_err(pctldev->dev,
++					"failed to find gpio node(%s)\n",
++					np_gpio->name);
++				return -ENODEV;
++			}
++
++			ranges[i].gc = of_node_to_gpiochip(np_gpio);
++			if (!ranges[i].gc) {
++				dev_err(pctldev->dev,
++					"can not find gpio chip of node(%s)\n",
++					np->name);
++				of_node_put(np_gpio);
++				return -ENODEV;
++			}
++
++			gpio_offset = be32_to_cpu(*list++);
++			pin_offset = be32_to_cpu(*list++);
++			npins = be32_to_cpu(*list++);
++
++			if (gpio_offset < 0 ||
++			    gpio_offset > ranges[i].gc->ngpio ||
++			    pin_offset < 0 || npins < 0) {
++				dev_err(pctldev->dev,
++					"wrong data in the gpio range table\n");
++				of_node_put(np_gpio);
++				return -ENODEV;
++			}
++
++			ranges[i].name = dev_name(pctldev->dev);
++			ranges[i].base = ranges[i].gc->base + gpio_offset;
++			ranges[i].pin_base = pin_offset;
++			ranges[i].npins = npins;
++			of_node_put(np_gpio);
++	}
++
++	pinctrl_add_gpio_ranges(pctldev, ranges, nranges);
++
++	return 0;
++}
++EXPORT_SYMBOL_GPL(pinctrl_dt_add_gpio_ranges);
++
++void pinctrl_dt_remove_gpio_ranges(struct pinctrl_dev *pctldev,
++				   struct pinctrl_gpio_range *ranges,
++				   unsigned nranges)
++{
++	pinctrl_remove_gpio_ranges(pctldev, ranges, nranges);
++}
++EXPORT_SYMBOL_GPL(pinctrl_dt_remove_gpio_ranges);
+diff --git a/drivers/pinctrl/devicetree.h b/drivers/pinctrl/devicetree.h
+index 760bc49..9f79657 100644
+--- a/drivers/pinctrl/devicetree.h
++++ b/drivers/pinctrl/devicetree.h
+@@ -20,9 +20,7 @@
+ 
+ void pinctrl_dt_free_maps(struct pinctrl *p);
+ int pinctrl_dt_to_map(struct pinctrl *p);
+-
+ #else
+-
+ static inline int pinctrl_dt_to_map(struct pinctrl *p)
+ {
+ 	return 0;
+@@ -31,5 +29,4 @@ static inline int pinctrl_dt_to_map(struct pinctrl *p)
+ static inline void pinctrl_dt_free_maps(struct pinctrl *p)
+ {
+ }
+-
+ #endif
+diff --git a/include/linux/pinctrl/pinctrl.h b/include/linux/pinctrl/pinctrl.h
+index 6a29965..98d77b4 100644
+--- a/include/linux/pinctrl/pinctrl.h
++++ b/include/linux/pinctrl/pinctrl.h
+@@ -141,6 +141,28 @@ extern void pinctrl_remove_gpio_ranges(struct pinctrl_dev *pctldev,
+ 				unsigned nranges);
+ extern const char *pinctrl_dev_get_name(struct pinctrl_dev *pctldev);
+ extern void *pinctrl_dev_get_drvdata(struct pinctrl_dev *pctldev);
++
++#ifdef CONFIG_OF
++extern int pinctrl_dt_add_gpio_ranges(struct pinctrl_dev *pctldev,
++				struct device_node *np,
++				const char *propname);
++extern void pinctrl_dt_remove_gpio_ranges(struct pinctrl_dev *pctldev,
++				   struct pinctrl_gpio_range *ranges,
++				   unsigned nranges);
++#else
++static inline int pinctrl_dt_add_gpio_ranges(struct pinctrl_dev *pctldev,
++				struct device_node *np,
++				const char *propname)
++{
++	return 0;
++}
++static void pinctrl_dt_remove_gpio_ranges(struct pinctrl_dev *pctldev,
++				   struct pinctrl_gpio_range *ranges,
++				   unsigned nranges)
++{
++}
++#endif	/* !CONFIG_OF */
++
+ #else
+ 
+ struct pinctrl_dev;
+-- 
+1.7.0.4
+
+
