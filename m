@@ -1,58 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S968146Ab2ERWIy (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 May 2012 18:08:54 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:48114 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S967321Ab2ERWIx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 May 2012 18:08:53 -0400
-Message-ID: <4FB6C862.5060401@zytor.com>
-Date: Fri, 18 May 2012 15:08:34 -0700
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:11.0) Gecko/20120329 Thunderbird/11.0.1
+	id S1759687Ab2ERWR4 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 May 2012 18:17:56 -0400
+Received: from mail-qa0-f46.google.com ([209.85.216.46]:55500 "EHLO
+	mail-qa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756790Ab2ERWRy convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 18 May 2012 18:17:54 -0400
 MIME-Version: 1.0
-To: Arnd Bergmann <arnd@arndb.de>
-CC: Linus Torvalds <torvalds@linux-foundation.org>,
-        David Daney <ddaney.cavm@gmail.com>,
-        Ralf Baechle <ralf@linux-mips.org>, "H.J. Lu" <hjl.tools@gmail.com>,
-        linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org,
-        mingo@kernel.org, tglx@linutronix.de
-Subject: Re: [PATCH 08/10] Use __kernel_ulong_t in struct msqid64_ds
-References: <1337292816-10839-1-git-send-email-hjl.tools@gmail.com> <201205182131.29353.arnd@arndb.de> <4FB6C1F7.1010307@zytor.com> <201205182158.59616.arnd@arndb.de>
-In-Reply-To: <201205182158.59616.arnd@arndb.de>
-X-Enigmail-Version: 1.4.1
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <201205182346.02296.rjw@sisk.pl>
+References: <1337365643-29261-1-git-send-email-snanda@chromium.org>
+ <1337375946.7562.11.camel@gandalf.stny.rr.com> <CANMivWZ4ygG5R7ob_Q-pkAFpoKAkK_iQf3w2eiw5Gv65AbTYNw@mail.gmail.com>
+ <201205182346.02296.rjw@sisk.pl>
+From: Sameer Nanda <snanda@chromium.org>
+Date: Fri, 18 May 2012 15:17:32 -0700
+X-Google-Sender-Auth: M4sUuqc6WHmu9txUfeuMZPQ-LaY
+Message-ID: <CANMivWafYv8BU2_ez==+GGYWn54BM+iU6u7yLLs-2TOfm-1ftA@mail.gmail.com>
+Subject: Re: [PATCH] power, trace: add tracing for device_resume
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+Cc: Steven Rostedt <rostedt@goodmis.org>, Greg KH <gregkh@linuxfoundation.org>,
+        rob@landley.net, len.brown@intel.com, pavel@ucw.cz, fweisbec@gmail.com,
+        mingo@redhat.com, jkosina@suse.cz, standby24x7@gmail.com,
+        jj@chaosbits.net, paulmck@linux.vnet.ibm.com, josh@joshtriplett.org,
+        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-pm@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/18/2012 02:58 PM, Arnd Bergmann wrote:
-> 
-> But why do you think it's wrong the way it is? I see the idea of putting
-> padding in varying places depending on the endianess as a failed experiment
-> and defining a structure that is always the same as the logical conclusion
-> from that, even if it's a bit silly to have any padding in it at all.
-> 
+On Fri, May 18, 2012 at 2:46 PM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
+> On Friday, May 18, 2012, Sameer Nanda wrote:
+>> On Fri, May 18, 2012 at 2:19 PM, Steven Rostedt <rostedt@goodmis.org> wrote:
+>> > On Fri, 2012-05-18 at 13:58 -0700, Sameer Nanda wrote:
+>> >> On Fri, May 18, 2012 at 12:14 PM, Steven Rostedt <rostedt@goodmis.org> wrote:
+>> >> > On Fri, 2012-05-18 at 11:57 -0700, Sameer Nanda wrote:
+>> >> >
+>> >> >> AFAICT, they are used for something completely different -- help solve
+>> >> >> suspend/resume issues by saving a hash in the RTC of the last device
+>> >> >> that suspended/resumed.  They don't use the perf tracing mechanism at
+>> >> >> all.
+>> >> >>
+>> >> >
+>> >> > Also note that all tracepoints have timestamps attached to them. You do
+>> >> > not need to add deltas. Do that in the userspace tools that read the
+>> >> > timestamps and events. This way you can have one DECLARE_EVENT_CLASS and
+>> >> > three DEFINE_EVENTs. This will save space.
+>> >>
+>> >> Agreed on the space savings.  However, with the time_delta in the
+>> >> trace message itself, a one line shell script [1] that sorts on the
+>> >> time_delta field is sufficient to quickly spot the devices that take a
+>> >> long time to resume.  Without the time_delta field, the user tool is
+>> >> more complex since it needs to first match up the device_resume_in,
+>> >> device_resume_waited and device_resume_out traces and then calculate
+>> >> time deltas.
+>> >>
+>> >> Seems like a worthwhile trade-off to me but I can take out the
+>> >> time_delta if the general consensus is otherwise.
+>> >
+>> > Just note that every TRACE_EVENT() adds around 5k or more code. Every
+>> > DEFINE_EVENT adds just about 300 bytes.
+>>
+>> Ok, let me respin the patch.  I am thinking of adding time_delta to
+>> all three traces.  That way we should get the space saving while still
+>> allowing quick spotting of devices that take long time to resume.
+>
+> Well, what's wrong with the code in drivers/base/power/main.c that
+> is activated by adding initcall_debug to the kernel command line?
 
-The *whole point* is to make the structure the same across modes, to
-make the compat layer's job easier.
+Mostly that I hadn't looked closely at initcall_debug before writing my patch :)
 
-> Being consistent seems more important here than following the intent
-> of whoever came up with the concept of the ipc64 data structures
-> and was consequently ignored by most people after him.
+Now that I have taken a look at it, the main issue is that the kernel
+command line needs to be modified to activate it.  We cannot do this
+for our automated regression suites since the kernel command line is
+protected on Chrome OS systems.
 
-So you're saying because some architectures introduced a bug, we should
-*CONTINUE* to introduce the same bug??  WTF??
+Does it make sense to merge these tracepoints with initcall_debug
+then?  The initcall_debug prints will still be conditional on the
+kernel command line flag but the tracepoints wouldn't be.
 
-> If we really wanted the data structures to be compatible between 32 and
-> 64 bit mode, we'd have to use __u64 here but that would mean having to
-> change all bits of user code that already rely on the existing x86
-> compatible layout.
+Another possibility is to convert initcall_debug to use tracepoints
+instead of printks.  But I am not sure if this would break any
+existing tools that depend on initcall_debug on resume path?
 
-x86 is doing it right.  Some bigendian architectures blindly copied what
-x86 was doing without thinking.  That's a bug on their part, period.
-
-	-hpa
+>
+> Rafael
 
 
+
+-- 
+Sameer
