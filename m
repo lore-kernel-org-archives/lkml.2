@@ -1,22 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1031148Ab2ERDHz (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 May 2012 23:07:55 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:40440 "EHLO
+	id S1031137Ab2ERDHx (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 May 2012 23:07:53 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:40434 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1762573Ab2ERCwb (ORCPT
+	by vger.kernel.org with ESMTP id S1762568Ab2ERCwb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 17 May 2012 22:52:31 -0400
-Message-Id: <20120518023256.648178183@decadent.org.uk>
+Message-Id: <20120518023256.905701155@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Fri, 18 May 2012 03:33:11 +0100
+Date: Fri, 18 May 2012 03:33:13 +0100
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Matt Carlson <mcarlson@broadcom.com>,
-        Michael Chan <mchan@broadcom.com>,
+        alan@lxorguk.ukuu.org.uk, Eric Dumazet <edumazet@google.com>,
+        Neal Cardwell <ncardwell@google.com>,
+        Tom Herbert <therbert@google.com>, Yuchung Cheng <ycheng@google.com>,
         "David S. Miller" <davem@davemloft.net>
-Subject: [ 17/53] tg3: Avoid panic from reserved statblk field access
+Subject: [ 19/53] tcp: change tcp_adv_win_scale and tcp_rmem[2]
 In-Reply-To: <20120518023254.339945758@decadent.org.uk>
 X-SA-Exim-Connect-IP: 192.168.4.185
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -29,70 +30,126 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Matt Carlson <mcarlson@broadcom.com>
+From: Eric Dumazet <edumazet@google.com>
 
-[ Upstream commit f891ea1634ce41f5f47ae40d8594809f4cd2ca66 ]
+[ Upstream commit b49960a05e32121d29316cfdf653894b88ac9190 ]
 
-When RSS is enabled, interrupt vector 0 does not receive any rx traffic.
-The rx producer index fields for vector 0's status block should be
-considered reserved in this case.  This patch changes the code to
-respect these reserved fields, which avoids a kernel panic when these
-fields take on non-zero values.
+tcp_adv_win_scale default value is 2, meaning we expect a good citizen
+skb to have skb->len / skb->truesize ratio of 75% (3/4)
 
-Signed-off-by: Matt Carlson <mcarlson@broadcom.com>
-Signed-off-by: Michael Chan <mchan@broadcom.com>
+In 2.6 kernels we (mis)accounted for typical MSS=1460 frame :
+1536 + 64 + 256 = 1856 'estimated truesize', and 1856 * 3/4 = 1392.
+So these skbs were considered as not bloated.
+
+With recent truesize fixes, a typical MSS=1460 frame truesize is now the
+more precise :
+2048 + 256 = 2304. But 2304 * 3/4 = 1728.
+So these skb are not good citizen anymore, because 1460 < 1728
+
+(GRO can escape this problem because it build skbs with a too low
+truesize.)
+
+This also means tcp advertises a too optimistic window for a given
+allocated rcvspace : When receiving frames, sk_rmem_alloc can hit
+sk_rcvbuf limit and we call tcp_prune_queue()/tcp_collapse() too often,
+especially when application is slow to drain its receive queue or in
+case of losses (netperf is fast, scp is slow). This is a major latency
+source.
+
+We should adjust the len/truesize ratio to 50% instead of 75%
+
+This patch :
+
+1) changes tcp_adv_win_scale default to 1 instead of 2
+
+2) increase tcp_rmem[2] limit from 4MB to 6MB to take into account
+better truesize tracking and to allow autotuning tcp receive window to
+reach same value than before. Note that same amount of kernel memory is
+consumed compared to 2.6 kernels.
+
+Signed-off-by: Eric Dumazet <edumazet@google.com>
+Cc: Neal Cardwell <ncardwell@google.com>
+Cc: Tom Herbert <therbert@google.com>
+Cc: Yuchung Cheng <ycheng@google.com>
+Acked-by: Neal Cardwell <ncardwell@google.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- drivers/net/ethernet/broadcom/tg3.c |   18 ++++++++++++++++--
- 1 file changed, 16 insertions(+), 2 deletions(-)
+ Documentation/networking/ip-sysctl.txt |    4 ++--
+ net/ipv4/tcp.c                         |    9 +++++----
+ net/ipv4/tcp_input.c                   |    2 +-
+ 3 files changed, 8 insertions(+), 7 deletions(-)
 
-diff --git a/drivers/net/ethernet/broadcom/tg3.c b/drivers/net/ethernet/broadcom/tg3.c
-index 3d55883..2dcac28 100644
---- a/drivers/net/ethernet/broadcom/tg3.c
-+++ b/drivers/net/ethernet/broadcom/tg3.c
-@@ -879,8 +879,13 @@ static inline unsigned int tg3_has_work(struct tg3_napi *tnapi)
- 		if (sblk->status & SD_STATUS_LINK_CHG)
- 			work_exists = 1;
- 	}
--	/* check for RX/TX work to do */
--	if (sblk->idx[0].tx_consumer != tnapi->tx_cons ||
-+
-+	/* check for TX work to do */
-+	if (sblk->idx[0].tx_consumer != tnapi->tx_cons)
-+		work_exists = 1;
-+
-+	/* check for RX work to do */
-+	if (tnapi->rx_rcb_prod_idx &&
- 	    *(tnapi->rx_rcb_prod_idx) != tnapi->rx_rcb_ptr)
- 		work_exists = 1;
+diff --git a/Documentation/networking/ip-sysctl.txt b/Documentation/networking/ip-sysctl.txt
+index 589f2da..a4399f5 100644
+--- a/Documentation/networking/ip-sysctl.txt
++++ b/Documentation/networking/ip-sysctl.txt
+@@ -137,7 +137,7 @@ tcp_adv_win_scale - INTEGER
+ 	(if tcp_adv_win_scale > 0) or bytes-bytes/2^(-tcp_adv_win_scale),
+ 	if it is <= 0.
+ 	Possible values are [-31, 31], inclusive.
+-	Default: 2
++	Default: 1
  
-@@ -5895,6 +5900,9 @@ static int tg3_poll_work(struct tg3_napi *tnapi, int work_done, int budget)
- 			return work_done;
- 	}
+ tcp_allowed_congestion_control - STRING
+ 	Show/set the congestion control choices available to non-privileged
+@@ -397,7 +397,7 @@ tcp_rmem - vector of 3 INTEGERs: min, default, max
+ 	net.core.rmem_max.  Calling setsockopt() with SO_RCVBUF disables
+ 	automatic tuning of that socket's receive buffer size, in which
+ 	case this value is ignored.
+-	Default: between 87380B and 4MB, depending on RAM size.
++	Default: between 87380B and 6MB, depending on RAM size.
  
-+	if (!tnapi->rx_rcb_prod_idx)
-+		return work_done;
-+
- 	/* run RX thread, within the bounds set by NAPI.
- 	 * All RX "locking" is done by ensuring outside
- 	 * code synchronizes with tg3->napi.poll()
-@@ -7448,6 +7456,12 @@ static int tg3_alloc_consistent(struct tg3 *tp)
- 		 */
- 		switch (i) {
- 		default:
-+			if (tg3_flag(tp, ENABLE_RSS)) {
-+				tnapi->rx_rcb_prod_idx = NULL;
-+				break;
-+			}
-+			/* Fall through */
-+		case 1:
- 			tnapi->rx_rcb_prod_idx = &sblk->idx[0].rx_producer;
- 			break;
- 		case 2:
+ tcp_sack - BOOLEAN
+ 	Enable select acknowledgments (SACKS).
+diff --git a/net/ipv4/tcp.c b/net/ipv4/tcp.c
+index 34f5db1..0237ad3 100644
+--- a/net/ipv4/tcp.c
++++ b/net/ipv4/tcp.c
+@@ -3216,7 +3216,7 @@ void __init tcp_init(void)
+ {
+ 	struct sk_buff *skb = NULL;
+ 	unsigned long limit;
+-	int i, max_share, cnt;
++	int i, max_rshare, max_wshare, cnt;
+ 	unsigned long jiffy = jiffies;
+ 
+ 	BUILD_BUG_ON(sizeof(struct tcp_skb_cb) > sizeof(skb->cb));
+@@ -3280,15 +3280,16 @@ void __init tcp_init(void)
+ 
+ 	/* Set per-socket limits to no more than 1/128 the pressure threshold */
+ 	limit = ((unsigned long)sysctl_tcp_mem[1]) << (PAGE_SHIFT - 7);
+-	max_share = min(4UL*1024*1024, limit);
++	max_wshare = min(4UL*1024*1024, limit);
++	max_rshare = min(6UL*1024*1024, limit);
+ 
+ 	sysctl_tcp_wmem[0] = SK_MEM_QUANTUM;
+ 	sysctl_tcp_wmem[1] = 16*1024;
+-	sysctl_tcp_wmem[2] = max(64*1024, max_share);
++	sysctl_tcp_wmem[2] = max(64*1024, max_wshare);
+ 
+ 	sysctl_tcp_rmem[0] = SK_MEM_QUANTUM;
+ 	sysctl_tcp_rmem[1] = 87380;
+-	sysctl_tcp_rmem[2] = max(87380, max_share);
++	sysctl_tcp_rmem[2] = max(87380, max_rshare);
+ 
+ 	printk(KERN_INFO "TCP: Hash tables configured "
+ 	       "(established %u bind %u)\n",
+diff --git a/net/ipv4/tcp_input.c b/net/ipv4/tcp_input.c
+index b9c6567..06a4052 100644
+--- a/net/ipv4/tcp_input.c
++++ b/net/ipv4/tcp_input.c
+@@ -83,7 +83,7 @@ int sysctl_tcp_ecn __read_mostly = 2;
+ EXPORT_SYMBOL(sysctl_tcp_ecn);
+ int sysctl_tcp_dsack __read_mostly = 1;
+ int sysctl_tcp_app_win __read_mostly = 31;
+-int sysctl_tcp_adv_win_scale __read_mostly = 2;
++int sysctl_tcp_adv_win_scale __read_mostly = 1;
+ EXPORT_SYMBOL(sysctl_tcp_adv_win_scale);
+ 
+ int sysctl_tcp_stdurg __read_mostly;
 -- 
 1.7.10.1
-
 
 
 
