@@ -1,74 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965928Ab2ERSwe (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 May 2012 14:52:34 -0400
-Received: from smtp.snhosting.dk ([87.238.248.203]:21774 "EHLO
-	smtp.domainteam.dk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933076Ab2ERSwd (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 May 2012 14:52:33 -0400
-Date: Fri, 18 May 2012 20:52:30 +0200
-From: Sam Ravnborg <sam@ravnborg.org>
-To: David Miller <davem@davemloft.net>
-Cc: anna-maria@glx-um.de, linux-kernel@vger.kernel.org, tglx@linutronix.de
-Subject: Re: [patch 20/24] sparc: Use: generic time config
-Message-ID: <20120518185230.GA17830@merkur.ravnborg.org>
-References: <20120518163020.548627576@glx-um.de> <20120518163106.987564297@glx-um.de> <20120518175041.GA17334@merkur.ravnborg.org> <20120518.135335.1910007668963165501.davem@davemloft.net>
+	id S966386Ab2ERSwz (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 May 2012 14:52:55 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:46858 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S933070Ab2ERSwx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 18 May 2012 14:52:53 -0400
+Message-ID: <4FB69A75.30507@zytor.com>
+Date: Fri, 18 May 2012 11:52:37 -0700
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:11.0) Gecko/20120329 Thunderbird/11.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120518.135335.1910007668963165501.davem@davemloft.net>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+To: Greg KH <gregkh@linuxfoundation.org>
+CC: "H.J. Lu" <hjl.tools@gmail.com>, Ingo Molnar <mingo@elte.hu>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Jarkko Sakkinen <jarkko.sakkinen@intel.com>
+Subject: Re: Urgent: x86-32 and GNU ld 2.22.52.0.1
+References: <4FB67146.9080804@zytor.com> <CAMe9rOqp5AUNL7Oeb2fz=nFq6Z-=hdFg_T2kc+jwkYtzOKJv9g@mail.gmail.com> <CAMe9rOp-UoQFBvvorZA8-jBXk5JobkVa+trUH7ihHLxNyqMuWw@mail.gmail.com> <4FB67697.50904@zytor.com> <CAMe9rOqAJGemCiAebtYczqvV62J_cyZcZDDtkFZyLHPKZg1xqQ@mail.gmail.com> <4FB67CD6.8040103@zytor.com> <CAMe9rOpUoj_1TM0NOqVX31aHEez3_i9v6f7_zkGeM8SZ+XDxyQ@mail.gmail.com> <4FB67E20.6080300@zytor.com> <20120518184121.GA3371@kroah.com>
+In-Reply-To: <20120518184121.GA3371@kroah.com>
+X-Enigmail-Version: 1.4.1
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, May 18, 2012 at 01:53:35PM -0400, David Miller wrote:
-> From: Sam Ravnborg <sam@ravnborg.org>
-> Date: Fri, 18 May 2012 19:50:41 +0200
+On 05/18/2012 11:41 AM, Greg KH wrote:
+> On Fri, May 18, 2012 at 09:51:44AM -0700, H. Peter Anvin wrote:
+>> On 05/18/2012 09:50 AM, H.J. Lu wrote:
+>>>
+>>> A small testcase:
+>>>
+>>
+>> Right, but we can equally well just let the postprocessing tool throw an
+>> error.
 > 
-> > On Fri, May 18, 2012 at 04:45:54PM -0000, Anna-Maria Gleixner wrote:
-> >> Index: linux/arch/sparc/Kconfig
-> >> ===================================================================
-> >> --- linux.orig/arch/sparc/Kconfig
-> >> +++ linux/arch/sparc/Kconfig
-> >> @@ -30,11 +30,13 @@ config SPARC
-> >>  	select USE_GENERIC_SMP_HELPERS if SMP
-> >>  	select GENERIC_PCI_IOMAP
-> >>  	select HAVE_NMI_WATCHDOG if SPARC64
-> >> +	select GENERIC_CMOS_UPDATE
-> > 
-> > I do not see where we define the GENERIC_CMOS_UPDATE symbol,
-> > so this looks wrong.
-> > 
-> > I looked only in upstream - and I did not look
-> > in -tip.
+> That would probably be the best thing to do right now, and we can
+> backport that to the stable kernel releases also to ensure they work
+> properly.
 > 
-> On top of that, I get the impression that this patch series is not
-> bisectable at all.
 
-I should be bisectable.
+So the question is: do you want to simply take the patches from the
+trampoline branch (which are reasonably tested) or do a minimal backport
+which only throws an error (which would not be)?
 
-The first patch introduce the symbols with the default value n.
-But kconfig will use the "highest" value is see, independent on
-the order.
+	-hpa
 
-So the following fragment:
-
-config FOO
-        def_bool y
-
-config FOO
-        bool
-
-config BAR
-        bool "BAR"
-
-produces a CONFIG_FOO == y.
-
-And for good measure I also tried with the two
-"config FOO" symbols reversed and this produced identical output.
-
-So unless I overlooked something it should be bisectable.
-
-	Sam
