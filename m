@@ -1,191 +1,165 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1031170Ab2EROEZ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 May 2012 10:04:25 -0400
-Received: from mga11.intel.com ([192.55.52.93]:13384 "EHLO mga11.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S967303Ab2EROEX convert rfc822-to-8bit (ORCPT
+	id S968022Ab2EROFl (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 May 2012 10:05:41 -0400
+Received: from s15943758.onlinehome-server.info ([217.160.130.188]:39779 "EHLO
+	mail.x86-64.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933560Ab2EROFj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 May 2012 10:04:23 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
-   d="scan'208";a="168111357"
-From: "Sosnowski, Maciej" <maciej.sosnowski@intel.com>
-To: Jiang Liu <liuj97@gmail.com>, "Williams, Dan J" <dan.j.williams@intel.com>
-CC: Jiang Liu <jiang.liu@huawei.com>,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Keping Chen <chenkeping@huawei.com>
-Subject: RE: [RESEND,PATCH] DCA, x86: fix invalid memory access in DCA core
-Thread-Topic: [RESEND,PATCH] DCA, x86: fix invalid memory access in DCA core
-Thread-Index: AQHNLGpswXPcpzMJXUaOCs7yj0xbMZbPWXWg
-Date: Fri, 18 May 2012 14:04:18 +0000
-Message-ID: <436EC33EF05C3442BBF5497FC9483FF4162732BC@IRSMSX101.ger.corp.intel.com>
-References: <1336406288-9479-1-git-send-email-jiang.liu@huawei.com>
-In-Reply-To: <1336406288-9479-1-git-send-email-jiang.liu@huawei.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [163.33.239.180]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Fri, 18 May 2012 10:05:39 -0400
+Date: Fri, 18 May 2012 16:05:21 +0200
+From: Borislav Petkov <bp@amd64.org>
+To: Mauro Carvalho Chehab <mchehab@redhat.com>
+Cc: Borislav Petkov <bp@amd64.org>, Ingo Molnar <mingo@kernel.org>,
+        Linux Edac Mailing List <linux-edac@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Aristeu Rozanski <arozansk@redhat.com>,
+        Doug Thompson <norsk5@yahoo.com>, Steven Rostedt <rostedt@goodmis.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Ingo Molnar <mingo@redhat.com>
+Subject: Re: [PATCH v24b] RAS: Add a tracepoint for reporting memory
+ controller events
+Message-ID: <20120518140521.GM20215@aftab.osrc.amd.com>
+References: <1337287277-523-1-git-send-email-mchehab@redhat.com>
+ <20120517214859.GA16777@aftab.osrc.amd.com>
+ <20120518071244.GE429@gmail.com>
+ <20120518095638.GA20215@aftab.osrc.amd.com>
+ <4FB62BAB.90808@redhat.com>
+ <20120518124338.GJ20215@aftab.osrc.amd.com>
+ <4FB64D5B.1030301@redhat.com>
 MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <4FB64D5B.1030301@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, May 07, 2012 5:58 PM, Jiang Liu <liuj97@gmail.com> wrote:
->
->From: Jiang Liu <jiang.liu@huawei.com>
->
->When unregister_dca_providers() is called, it will remove all registered
->providers from the dca_providrers list by calling list_del(&dca->node).
->list_del(node) poisons node->next and node->prev as 0xDEADBEEF and
->0xBEEFDEAD.
->Later when unregister_dca_provider() is called to remove a DCA provier,
->it calls list_del(&dca->node) to remove the dca from the list again,
->but dca->node has already been poisoned, then causes invalid memory
->access.
->
->The solution here is to use list_del_init(&dca->node) instead of
->list_del(&dca->node) in function unregister_dca_providers(), so it won't
->cause invalid memory access in unregister_dca_provider() later.
->
->---
->
->This issue is triggered when hot-removing IOHs on Intel platforms, which
->will remove all IOAT devices built in the IOHs.
->
->ioatdma 0000:80:16.7: Removing dma and dca services
->ioatdma 0000:80:16.7: PCI INT D disabled
->ioatdma 0000:80:16.6: Removing dma and dca services
->ioatdma 0000:80:16.7: Removing dma and dca services
->ioatdma 0000:80:16.7: PCI INT D disabled
->ioatdma 0000:80:16.6: Removing dma and dca services
->ioatdma 0000:80:16.6: PCI INT C disabled
->ioatdma 0000:00:16.0: Removing dma and dca services
->------------[ cut here ]------------
->WARNING: at lib/list_debug.c:47 __list_del_entry+0x63/0xd0()
->Hardware name: System x3850 X5 -[7143O3G]-
->list_del corruption, ffff880463540bc0->next is LIST_POISON1
->(dead000000100100)
->Modules linked in: ebtable_nat ebtables ipt_MASQUERADE iptable_nat
->nf_nat xt_CHECKSUM iptable_mangle bridge stp llc autofs4 sunrpc
->cpufreq_ondemand acpi_cpufreq freq_table mperf ipt_REJECT
->nf_conntrack_ipv4 nf_defrag_ipv4 iptable_filter ip_tables ip6t_REJECT
->nf_conntrack_ipv6 nf_defrag_ipv6 xt_state nf_conntrack ip6table_filter
->ip6_tables ipv6 vfat fat vhost_net macvtap macvlan tun kvm_intel kvm uinput
->microcode pcspkr serio_raw pmcraid sg be2net cdc_ether usbnet mii i2c_i801
->i2c_core iTCO_wdt iTCO_vendor_support shpchp ioatdma i7core_edac
->edac_core igb dca e1000e bnx2 ext4 mbcache jbd2 sr_mod cdrom sd_mod
->crc_t10dif qla2xxx pata_acpi ata_generic ata_piix bfa scsi_transport_fc
->scsi_tgt megaraid_sas dm_mirror dm_region_hash dm_log dm_mod [last
->unloaded: scsi_wait_scan]
->Pid: 10049, comm: bash.sh Not tainted 3.2.0IOAT+ #5
->Call Trace:
-> [<ffffffff8106426f>] warn_slowpath_common+0x7f/0xc0
-> [<ffffffff81064366>] warn_slowpath_fmt+0x46/0x50
-> [<ffffffff8108c675>] ? __blocking_notifier_call_chain+0x65/0x80
-> [<ffffffff81256073>] __list_del_entry+0x63/0xd0
-> [<ffffffff812560f1>] list_del+0x11/0x40
-> [<ffffffffa001b2e2>] unregister_dca_provider+0x42/0xe0 [dca]
-> [<ffffffffa021f87d>] ioat_remove+0x43/0x67 [ioatdma]
-> [<ffffffff8126b1a2>] pci_device_remove+0x52/0x120
-> [<ffffffff8132b2dc>] __device_release_driver+0x7c/0xe0
-> [<ffffffff8132b42d>] device_release_driver+0x2d/0x40
-> [<ffffffff8132a871>] driver_unbind+0xa1/0xc0
-> [<ffffffff81329cbc>] drv_attr_store+0x2c/0x30
-> [<ffffffff811d72ef>] sysfs_write_file+0xef/0x170
-> [<ffffffff81167338>] vfs_write+0xc8/0x190
-> [<ffffffff81167501>] sys_write+0x51/0x90
-> [<ffffffff814fa382>] system_call_fastpath+0x16/0x1b
->---[ end trace b81b51e7c494ec0d ]---
->BUG: unable to handle kernel NULL pointer dereference at 0000000000000010
->IP: [<ffffffffa001b360>] unregister_dca_provider+0xc0/0xe0 [dca]
->PGD 1465b48067 PUD 1465035067 PMD 0
->Oops: 0000 [#1] SMP
->CPU 57
->Modules linked in: ebtable_nat ebtables ipt_MASQUERADE iptable_nat
->nf_nat xt_CHECKSUM iptable_mangle bridge stp llc autofs4 sunrpc
->cpufreq_ondemand acpi_cpufreq freq_table mperf ipt_REJECT
->nf_conntrack_ipv4 nf_defrag_ipv4 iptable_filter ip_tables ip6t_REJECT
->nf_conntrack_ipv6 nf_defrag_ipv6 xt_state nf_conntrack ip6table_filter
->ip6_tables ipv6 vfat fat vhost_net macvtap macvlan tun kvm_intel kvm uinput
->microcode pcspkr serio_raw pmcraid sg be2net cdc_ether usbnet mii i2c_i801
->i2c_core iTCO_wdt iTCO_vendor_support shpchp ioatdma i7core_edac
->edac_core igb dca e1000e bnx2 ext4 mbcache jbd2 sr_mod cdrom sd_mod
->crc_t10dif qla2xxx pata_acpi ata_generic ata_piix bfa scsi_transport_fc
->scsi_tgt megaraid_sas dm_mirror dm_region_hash dm_log dm_mod [last
->unloaded: scsi_wait_scan]
->
->Pid: 10049, comm: bash.sh Tainted: G        W    3.2.0IOAT+ #5 IBM System x3850
->X5 -[7143O3G]-/Node 1, Processor Card
->RIP: 0010:[<ffffffffa001b360>]  [<ffffffffa001b360>]
->unregister_dca_provider+0xc0/0xe0 [dca]
->RSP: 0018:ffff880c4eafbdb8  EFLAGS: 00010046
->RAX: 0000000000000010 RBX: ffff880463540bc0 RCX: 0000000000002288
->RDX: ffff881465a51800 RSI: 0000000000000046 RDI: 0000000000000009
->RBP: ffff880c4eafbdd8 R08: 0000000000000000 R09: 0000000000000000
->R10: 0000000000000010 R11: 000000000000000b R12: 0000000000000000
->R13: 0000000000000257 R14: ffff881465abe000 R15: ffff881464199840
->FS:  00007f91d8314700(0000) GS:ffff88147fd20000(0000)
->knlGS:0000000000000000
->CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033
->CR2: 0000000000000010 CR3: 0000001457b07000 CR4: 00000000000006e0
->DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
->DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
->Process bash.sh (pid: 10049, threadinfo ffff880c4eafa000, task
->ffff880c4e3b8af0)
->Stack:
-> 0000000000000206 ffff88046133a218 ffff881465abe090 ffffffffa0222560
-> ffff880c4eafbdf8 ffffffffa021f87d ffff881465abe090 ffff881465abe208
-> ffff880c4eafbe28 ffffffff8126b1a2 ffff881465abe090 ffffffffa02225c0
->Call Trace:
-> [<ffffffffa021f87d>] ioat_remove+0x43/0x67 [ioatdma]
-> [<ffffffff8126b1a2>] pci_device_remove+0x52/0x120
-> [<ffffffff8132b2dc>] __device_release_driver+0x7c/0xe0
-> [<ffffffff8132b42d>] device_release_driver+0x2d/0x40
-> [<ffffffff8132a871>] driver_unbind+0xa1/0xc0
-> [<ffffffff81329cbc>] drv_attr_store+0x2c/0x30
-> [<ffffffff811d72ef>] sysfs_write_file+0xef/0x170
-> [<ffffffff81167338>] vfs_write+0xc8/0x190
-> [<ffffffff81167501>] sys_write+0x51/0x90
-> [<ffffffff814fa382>] system_call_fastpath+0x16/0x1b
->Code: c7 20 c0 01 a0 e8 51 6c 4d e1 48 89 df e8 c9 05 00 00 48 83 c4 08 5b 41 5c 41
->5d c9 c3 66 0f 1f 44 00 00 45 31 e4 49 8d 44 24 10 <49> 39 44 24 10 75 c9 4c 89 e7
->e8 71 ad 23 e1 4c 89 e7 e8 19 7b
->RIP  [<ffffffffa001b360>] unregister_dca_provider+0xc0/0xe0 [dca]
-> RSP <ffff880c4eafbdb8>
->CR2: 0000000000000010
->---[ end trace b81b51e7c494ec0e ]---
+On Fri, May 18, 2012 at 10:23:39AM -0300, Mauro Carvalho Chehab wrote:
+> Em 18-05-2012 09:43, Borislav Petkov escreveu:
+> 
+> (offensive/ironic comments skipped)
+> 
+> > you fail to see that I'm trying to make this as generic as possible and
+> > not fit it into anything so that EVERYONE can use it.
+> 
+> Tracepoints are generic enough. Everyone can use it. If need new fields are
+> needed, just add a new tracepoint.
 
-Jiang,
+This is exactly what I'm talking about - this is wrong on so many levels
+that it ain't even funny! You can add as many tracepoints if you want
+to to your pet project but in the kernel we add one tracepoint for one
+thing which fits all users.
 
-Could you verify if the following fixes the issue above?
+I want to see you be successful at adding a new tracepoint
+to, say, prepare_task_switch() in kernel/sched/core.c because
+trace_sched_switch() does not fit your needs.
 
-Thanks,
-Maciej
----
+> Converting it into a new printk way won't make it usable by everyone.
+> It will just make the ABI unstable.
 
- drivers/dca/dca-core.c |    5 +++++
- 1 files changed, 5 insertions(+), 0 deletions(-)
+WTF? We're not even talking about converting it into a new printk!
 
-diff --git a/drivers/dca/dca-core.c b/drivers/dca/dca-core.c
-index bc6f5fa..819dfda 100644
---- a/drivers/dca/dca-core.c
-+++ b/drivers/dca/dca-core.c
-@@ -420,6 +420,11 @@ void unregister_dca_provider(struct dca_
- 
- 	raw_spin_lock_irqsave(&dca_lock, flags);
- 
-+	if (list_empty(&dca_domains)) {
-+		raw_spin_unlock_irqrestore(&dca_lock, flags);
-+		return;
-+	}
-+
- 	list_del(&dca->node);
- 
- 	pci_rc = dca_pci_rc_from_dev(dev);
+[ … ]
 
+> > Guess what, you can do decay very successfully in userspace.
+> 
+> Yes, if and only if userspace receives the errors on a proper way.
 
+Doh, am I talking to the wall here, do you even read what I'm sayin?
+
+> >> So, on a machine running for 30 days with, let's say, 10 corrected
+> >> errors, it is not possible to tell if they were all generated on a
+> >> burst (because of some temporary interference) or if they are sparse
+> >> errors generated at the same DRAM, indicating a bad memory.
+> > 
+> > Why not, you don't have timestamps?
+> 
+> At the error counters? No.
+> 
+> There are timestamps at printk's, but printk's can't be reliably parsed, as
+> formats are not consistent among drivers, and the "ABI" can break on every 
+> Kernel release.
+
+Yes, enough already! We know about the printks! The whole world knows.
+
+> >> With this simple change, the tool can be improved to provide a more
+> >> consistent memory error report, as userspace should not be worried on
+> >> parsing fields that may change in future without notice.
+> > 
+> > Which userspace, your userspace? What happens if another userspace comes
+> > with slightly different error formatting requirements? We change the
+> > kernel again or we can't because this tracepoint is being used and we
+> > add another tracepoint and let the bloat begin?
+> 
+> As said before, this is not about error formatting requirements! TP_printk() macro
+> does formatting. I'm not discussing TP_printk() output.
+> 
+> All Userspace tools require access to the error fields.
+> 
+> The real issue with tracepoint is to provide access to the structured data that
+> userspace needs (so, what fields should be exported), and not about what printk
+> formats. With regards to the printk format there's already an agreement that
+> seems to satisfy you, me and Tony.
+> 
+> By adding all fields there at the tracepoint, no changes will be needed inside
+> Kernel to satisfy any userspace requirements, and the ABI will be reliable and
+> stable.
+
+Right, and this is why I'm asking you to have the following tracepoint proto:
+
++       TP_PROTO(const unsigned int err_type,
++                const unsigned int mc_index,
++                const char *error_msg,
++                const char *label,
++                const char *location,
++                const char *detail)
+
+where detail contains all the crap one driver adds for technical people
+to pinpoint where the error is.
+
+And not have _TWO_ detail arguments!
+
+Btw, the output looks like this here:
+
+           <...>-2723  [001] .N..    89.107045: mc_event: Corrected error: on memory stick "unknown memory" (mc:0 csrow:3 channel:1 page:0x5bac7 offset:0x388 grain:0 syndrome:0xfc5b driver:amd64_edac)
+
+Come to think of it, the "driver:amd64_edac" is not really needed
+because on every single system there's only one EDAC driver running and
+I don't think the fact that we're telling in the tracepoint who detected
+the error is meaningfull information.
+
+Which means, you can remove the EDAC_MOD_STR argument you're passing to
+edac_mc_handle_error() and have one less argument.
+
+> >> Also, doing that will avoid the extra effort of joining everything into
+> >> a single string, and then breaking them back into their individual fields
+> >> on userspace.
+> > 
+> > I'm being told this is very easy to do in userspace in your garden
+> > variety language.
+> 
+> Well, ask the one that told you that to write a parser that will get all 
+> EDAC error reports on all drivers, on several kernel versions using dmesg.
+
+Nobody is talking about dmesg - I'm talking about the "const char
+*detail" string in the tracepoint above and how I want it to be a single
+char * so that userspace can read it out and fumble with it the way it
+sees fit.
+
+Having "detail" and "other_detail" is simply misleading and unneeded and
+a clear sign that this ABI is not designed properly yet.
+
+That's it.
+
+-- 
+Regards/Gruss,
+Boris.
+
+Advanced Micro Devices GmbH
+Einsteinring 24, 85609 Dornach
+GM: Alberto Bozzo
+Reg: Dornach, Landkreis Muenchen
+HRB Nr. 43632 WEEE Registernr: 129 19551
