@@ -1,177 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933039Ab2ERIT7 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 May 2012 04:19:59 -0400
-Received: from mail.work-microwave.de ([62.245.205.51]:33017 "EHLO
-	work-microwave.de" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S932668Ab2ERIT5 (ORCPT
+	id S1762571Ab2ERIVq (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 May 2012 04:21:46 -0400
+Received: from moutng.kundenserver.de ([212.227.126.187]:57597 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932281Ab2ERIVh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 May 2012 04:19:57 -0400
-From: Roland Stigge <stigge@antcom.de>
-To: linux-kernel@vger.kernel.org, grant.likely@secretlab.ca
-Cc: Roland Stigge <stigge@antcom.de>
-Subject: [PATCH 2/2] gpio: Device tree support for LPC32xx
-Date: Fri, 18 May 2012 10:19:52 +0200
-Message-Id: <1337329192-5699-2-git-send-email-stigge@antcom.de>
-X-Mailer: git-send-email 1.7.9
-In-Reply-To: <1337329192-5699-1-git-send-email-stigge@antcom.de>
-References: <1337329192-5699-1-git-send-email-stigge@antcom.de>
-X-FEAS-SYSTEM-WL: rst@work-microwave.de, 192.168.11.78
+	Fri, 18 May 2012 04:21:37 -0400
+Date: Fri, 18 May 2012 10:21:32 +0200 (CEST)
+From: Guennadi Liakhovetski <g.liakhovetski@gmx.de>
+X-X-Sender: lyakh@axis700.grange
+To: Vinod Koul <vkoul@infradead.org>
+cc: vinod.koul@intel.com, linux-kernel@vger.kernel.org,
+        Magnus Damm <magnus.damm@gmail.com>,
+        Yoshihiro Shimoda <yoshihiro.shimoda.uh@renesas.com>,
+        Paul Mundt <lethal@linux-sh.org>, linux-sh@vger.kernel.org,
+        Alan Cox <alan@linux.intel.com>
+Subject: Re: [PATCH 5/9 v3] serial: sh-sci: prepare for conversion to the
+ shdma base library
+In-Reply-To: <1337056029.16185.5363.camel@vkoul-udesk3>
+Message-ID: <Pine.LNX.4.64.1205181018570.23140@axis700.grange>
+References: <1336576161-27082-1-git-send-email-g.liakhovetski@gmx.de> 
+ <1336576161-27082-6-git-send-email-g.liakhovetski@gmx.de>
+ <1337056029.16185.5363.camel@vkoul-udesk3>
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Provags-ID: V02:K0:7QvlDkixm4M4U6+jYx740cQNumCs+REQinXTE2Ueqiz
+ wD1oRUSRQ0aC1324vsfJ3+cargMKFJVIlQm0w8s/6eUAPnk3a+
+ aGqadmmV/NglO+g7CK1scuj04Icwh4zRUNGbUJxl/OMtNQsdwr
+ g8KYyvb0vByCxDjURmY8RuziCDWZ2Wa+EgQsiN5CjuWjRMsIWB
+ 6HOCckkc1itksqitgXsOJWXspV2nqNMF225Gc8N3rCxXtyZiZu
+ FwvA5Q2kRnWNrVA0iB+EhLVocQQAh7ZG8Vl0AF55sPlUdOSuly
+ 9OMmtFAwLT8+F1237FgduNfhKW2X/JyWG24q0LYQ4nAXdDMdPX
+ pDluXCF/xS1Nqt1PGzBqqrqAefxMj4p0sBJx2Q3hS9t9HhRoA7
+ kfXMqKfIZQV5w==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch adds device tree support for gpio-lpc32xx.c.
+On Tue, 15 May 2012, Vinod Koul wrote:
 
-To register the various GPIO banks as (struct) gpio_chips via the same DT
-gpio-controller, we utilize the adjusted of_xlate API to manipulate the
-actually used struct gpio_chip.
+> On Wed, 2012-05-09 at 17:09 +0200, Guennadi Liakhovetski wrote:
+> > Signed-off-by: Guennadi Liakhovetski <g.liakhovetski@gmx.de>
+> > Cc: Alan Cox <alan@linux.intel.com>
+> > ---
+> >  drivers/tty/serial/sh-sci.c |    8 ++++----
+> >  1 files changed, 4 insertions(+), 4 deletions(-)
+> > 
+> > diff --git a/drivers/tty/serial/sh-sci.c b/drivers/tty/serial/sh-sci.c
+> > index bf461cf..49e3b2a 100644
+> > --- a/drivers/tty/serial/sh-sci.c
+> > +++ b/drivers/tty/serial/sh-sci.c
+> > @@ -1579,9 +1579,9 @@ static bool filter(struct dma_chan *chan, void *slave)
+> >  	struct sh_dmae_slave *param = slave;
+> >  
+> >  	dev_dbg(chan->device->dev, "%s: slave ID %d\n", __func__,
+> > -		param->slave_id);
+> > +		param->shdma_slave.slave_id);
+> >  
+> > -	chan->private = param;
+> > +	chan->private = &param->shdma_slave;
+> passing stuff using chan->private is a dead road, so don't use it.
 
-Signed-off-by: Roland Stigge <stigge@antcom.de>
-Reviewed-by: Arnd Bergmann <arnd@arndb.de>
-Signed-off-by: Grant Likely <grant.likely@secretlab.ca>
+As you see, it _is_ already done now and has been that way since some 
+time. We do want to change this, but not with this patch series.
 
+> >  	return true;
+> >  }
+> >  
+> > @@ -1620,7 +1620,7 @@ static void sci_request_dma(struct uart_port *port)
+> >  	param = &s->param_tx;
+> >  
+> >  	/* Slave ID, e.g., SHDMA_SLAVE_SCIF0_TX */
+> > -	param->slave_id = s->cfg->dma_slave_tx;
+> > +	param->shdma_slave.slave_id = s->cfg->dma_slave_tx;
+> >  
+> >  	s->cookie_tx = -EINVAL;
+> >  	chan = dma_request_channel(mask, filter, param);
+> > @@ -1648,7 +1648,7 @@ static void sci_request_dma(struct uart_port *port)
+> >  	param = &s->param_rx;
+> >  
+> >  	/* Slave ID, e.g., SHDMA_SLAVE_SCIF0_RX */
+> > -	param->slave_id = s->cfg->dma_slave_rx;
+> > +	param->shdma_slave.slave_id = s->cfg->dma_slave_rx;
+> >  
+> >  	chan = dma_request_channel(mask, filter, param);
+> >  	dev_dbg(port->dev, "%s: RX: got channel %p\n", __func__, chan);
+
+Thanks
+Guennadi
 ---
-
-Thanks to Jean-Christophe PLAGNIOL-VILLARD, Grant Likely, Arnd Bergmann, Jon
-Smirl, Mark Brown for reviewing!
-
-You can also pull from:
-  git://git.antcom.de/linux-2.6.git dt/gpio
-  http://git.antcom.de/linux-2.6.git dt/gpio
-  http://git.antcom.de/?p=linux-2.6.git;a=shortlog;h=refs/heads/dt/gpio
-
- Documentation/devicetree/bindings/gpio/gpio_lpc32xx.txt |   43 +++++++++++++
- arch/arm/mach-lpc32xx/include/mach/gpio.h               |    9 ++
- drivers/gpio/gpio-lpc32xx.c                             |   52 +++++++++++++++-
- 3 files changed, 102 insertions(+), 2 deletions(-)
-
---- /dev/null
-+++ linux-2.6/Documentation/devicetree/bindings/gpio/gpio_lpc32xx.txt
-@@ -0,0 +1,43 @@
-+NXP LPC32xx SoC GPIO controller
-+
-+Required properties:
-+- compatible: must be "nxp,lpc3220-gpio"
-+- reg: Physical base address and length of the controller's registers.
-+- gpio-controller: Marks the device node as a GPIO controller.
-+- #gpio-cells: Should be 3:
-+   1) bank:
-+      0: GPIO P0
-+      1: GPIO P1
-+      2: GPIO P2
-+      3: GPIO P3
-+      4: GPI P3
-+      5: GPO P3
-+   2) pin number
-+   3) optional parameters:
-+      - bit 0 specifies polarity (0 for normal, 1 for inverted)
-+- reg: Index of the GPIO group
-+
-+Example:
-+
-+	gpio: gpio@40028000 {
-+		compatible = "nxp,lpc3220-gpio";
-+		reg = <0x40028000 0x1000>;
-+		gpio-controller;
-+		#gpio-cells = <3>; /* bank, pin, flags */
-+	};
-+
-+	leds {
-+		compatible = "gpio-leds";
-+
-+		led0 {
-+			gpios = <&gpio 5 1 1>; /* GPO_P3 1, active low */
-+			linux,default-trigger = "heartbeat";
-+			default-state = "off";
-+		};
-+
-+		led1 {
-+			gpios = <&gpio 5 14 1>; /* GPO_P3 14, active low */
-+			linux,default-trigger = "timer";
-+			default-state = "off";
-+		};
-+	};
---- linux-2.6.orig/arch/arm/mach-lpc32xx/include/mach/gpio.h
-+++ linux-2.6/arch/arm/mach-lpc32xx/include/mach/gpio.h
-@@ -1 +1,8 @@
--/* empty */
-+#ifndef __MACH_GPIO_H
-+#define __MACH_GPIO_H
-+
-+#include "gpio-lpc32xx.h"
-+
-+#define ARCH_NR_GPIOS (LPC32XX_GPO_P3_GRP + LPC32XX_GPO_P3_MAX)
-+
-+#endif /* __MACH_GPIO_H */
---- linux-2.6.orig/drivers/gpio/gpio-lpc32xx.c
-+++ linux-2.6/drivers/gpio/gpio-lpc32xx.c
-@@ -21,6 +21,9 @@
- #include <linux/io.h>
- #include <linux/errno.h>
- #include <linux/gpio.h>
-+#include <linux/of_gpio.h>
-+#include <linux/platform_device.h>
-+#include <linux/module.h>
- 
- #include <mach/hardware.h>
- #include <mach/platform.h>
-@@ -454,10 +457,57 @@ static struct lpc32xx_gpio_chip lpc32xx_
- 	},
- };
- 
-+/* Empty now, can be removed later when mach-lpc32xx is finally switched over
-+ * to DT support
-+ */
- void __init lpc32xx_gpio_init(void)
- {
-+}
-+
-+static int lpc32xx_of_xlate(struct gpio_chip *gc,
-+			    const struct of_phandle_args *gpiospec, u32 *flags)
-+{
-+	/* Is this the correct bank? */
-+	u32 bank = gpiospec->args[0];
-+	if ((bank > ARRAY_SIZE(lpc32xx_gpiochip) ||
-+	    (gc != &lpc32xx_gpiochip[bank].chip)))
-+		return -EINVAL;
-+
-+	if (flags)
-+		*flags = gpiospec->args[2];
-+	return gpiospec->args[1];
-+}
-+
-+static int __devinit lpc32xx_gpio_probe(struct platform_device *pdev)
-+{
- 	int i;
- 
--	for (i = 0; i < ARRAY_SIZE(lpc32xx_gpiochip); i++)
-+	for (i = 0; i < ARRAY_SIZE(lpc32xx_gpiochip); i++) {
-+		if (pdev->dev.of_node) {
-+			lpc32xx_gpiochip[i].chip.of_xlate = lpc32xx_of_xlate;
-+			lpc32xx_gpiochip[i].chip.of_gpio_n_cells = 3;
-+			lpc32xx_gpiochip[i].chip.of_node = pdev->dev.of_node;
-+		}
- 		gpiochip_add(&lpc32xx_gpiochip[i].chip);
-+	}
-+
-+	return 0;
- }
-+
-+#ifdef CONFIG_OF
-+static struct of_device_id lpc32xx_gpio_of_match[] __devinitdata = {
-+	{ .compatible = "nxp,lpc3220-gpio", },
-+	{ },
-+};
-+#endif
-+
-+static struct platform_driver lpc32xx_gpio_driver = {
-+	.driver		= {
-+		.name	= "lpc32xx-gpio",
-+		.owner	= THIS_MODULE,
-+		.of_match_table = of_match_ptr(lpc32xx_gpio_of_match),
-+	},
-+	.probe		= lpc32xx_gpio_probe,
-+};
-+
-+module_platform_driver(lpc32xx_gpio_driver);
+Guennadi Liakhovetski, Ph.D.
+Freelance Open-Source Software Developer
+http://www.open-technology.de/
