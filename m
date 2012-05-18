@@ -1,85 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758002Ab2ERQFS (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 May 2012 12:05:18 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:58681 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757788Ab2ERQFP (ORCPT
+	id S1758105Ab2ERQFp (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 May 2012 12:05:45 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:36495 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758036Ab2ERQFn convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 May 2012 12:05:15 -0400
-Date: Fri, 18 May 2012 09:05:11 -0700
-From: Tejun Heo <tj@kernel.org>
-To: koverstreet@google.com
-Cc: linux-bcache@vger.kernel.org, linux-kernel@vger.kernel.org,
-        dm-devel@redhat.com, linux-fsdevel@vger.kernel.org, axboe@kernel.dk,
-        agk@redhat.com, neilb@suse.de
-Subject: Re: [PATCH 03/13] block: Add bio_clone_bioset()
-Message-ID: <20120518160511.GC19388@google.com>
-References: <cover.1337308722.git.koverstreet@google.com>
- <eb6a7d3fe7ae203202bc365d7274ee531631a9ca.1337308722.git.koverstreet@google.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <eb6a7d3fe7ae203202bc365d7274ee531631a9ca.1337308722.git.koverstreet@google.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Fri, 18 May 2012 12:05:43 -0400
+Message-ID: <1337357128.573.88.camel@twins>
+Subject: Re: [tip:sched/numa] sched/numa: Introduce sys_numa_{t,m}bind()
+From: Peter Zijlstra <a.p.zijlstra@chello.nl>
+To: Rik van Riel <riel@redhat.com>
+Cc: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        torvalds@linux-foundation.org, pjt@google.com, cl@linux.com,
+        bharata.rao@gmail.com, akpm@linux-foundation.org,
+        Lee.Schermerhorn@hp.com, aarcange@redhat.com, danms@us.ibm.com,
+        suresh.b.siddha@intel.com, tglx@linutronix.de,
+        linux-tip-commits@vger.kernel.org
+Date: Fri, 18 May 2012 18:05:28 +0200
+In-Reply-To: <4FB66F5D.4020803@redhat.com>
+References: <tip-nf7brf1b88w0ojwuf689xeet@git.kernel.org>
+	  <4FB66756.2060302@redhat.com> <1337355341.573.68.camel@twins>
+	 <4FB66F5D.4020803@redhat.com>
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
+X-Mailer: Evolution 3.2.2- 
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hey, Kent.
+On Fri, 2012-05-18 at 11:48 -0400, Rik van Riel wrote:
 
-On Thu, May 17, 2012 at 10:59:50PM -0400, koverstreet@google.com wrote:
-> From: Kent Overstreet <koverstreet@google.com>
+> Whether we like it or not, managed runtimes are here,
+> and people are using them in droves.
 > 
-> This consolidates some code, and will help in a later patch changing how
-> bio cloning works.
+> I believe that the kernel should be able to handle
+> NUMA placement for such uses.
+
+Possibly, but it would also help if runtimes grew the capability to
+express such relations. That said..  I never said we shouldn't/couldn't
+help them eventually.
+
+> > I still have serious concerns about his approach; it very much assumes
+> > there's a temporal page<->thread relation to exploit. This might not at
+> > all be true for some programs (including JVM) that have hardly any data
+> > separation and just point chase their way around the entire object set.
 > 
-> Signed-off-by: Kent Overstreet <koverstreet@google.com>
+> Neither his approach or your approach will be able to
+> help these workloads. I do not see how that should be
+> counted against Andrea's approach, though, since it
+> does seem to be useful for sane workloads.
 
-I'd prefer a bit more explanation on what's going on generally and why
-and how dm conversion is different.
+Well, if you have a sane workload you often already have strong data
+separation in your application, so telling the kernel about it isn't too
+much bother, right?
 
-> diff --git a/drivers/md/dm.c b/drivers/md/dm.c
-> index 3cc2169..3e33039 100644
-> --- a/drivers/md/dm.c
-> +++ b/drivers/md/dm.c
-> @@ -1072,26 +1072,19 @@ static struct bio *split_bvec(struct bio *bio, sector_t sector,
->   * Creates a bio that consists of range of complete bvecs.
->   */
->  static struct bio *clone_bio(struct bio *bio, sector_t sector,
-> -			     unsigned short idx, unsigned short bv_count,
-> +			     unsigned short bv_count,
->  			     unsigned int len, struct bio_set *bs)
->  {
->  	struct bio *clone;
->  
-> -	clone = bio_alloc_bioset(GFP_NOIO, bio->bi_max_vecs, bs);
-> -	__bio_clone(clone, bio);
-> +	clone = bio_clone_bioset(bio, GFP_NOIO, bs);
->  	clone->bi_sector = sector;
-> -	clone->bi_idx = idx;
-> -	clone->bi_vcnt = idx + bv_count;
-> +	clone->bi_vcnt = bv_count;
->  	clone->bi_size = to_bytes(len);
-> -	clone->bi_flags &= ~(1 << BIO_SEG_VALID);
+The thing is, I've been traumatized by too much exposure to the
+auto-parallelization crazies. I've never seen auto parallelization worth
+using, despite lots of presumably smart people wanting to make it
+happen.
 
-Maybe removal of @idx deserves a separate patch?
+> > I very much believe in doing the simple thing first, and this is that,
+> 
+> Leave out your syscalls (which might not be useful for
+> managed runtimes), and you actually have the simple
+> thing :)
 
-> -	if (bio_integrity(bio)) {
-> -		bio_integrity_clone(clone, bio, GFP_NOIO, bs);
-> -
-> -		if (idx != bio->bi_idx || clone->bi_size < bio->bi_size)
-> -			bio_integrity_trim(clone,
-> -					   bio_sector_offset(bio, idx, 0), len);
-> -	}
-> +	if (bio_integrity(bio) &&
-> +	    clone->bi_size < bio->bi_size)
+Right, but the virt people could actually trivially use those, and vnuma
+doesn't have the scambling issue outlined earlier since the guest kernel
+would also try to keep home-node affinity.
 
-Unnecessary line break.
+Avi already said patching kvm would be like 5 minutes work.
 
-Other than that, looks good to me.
+It also absolutely avoids the false sharing issue otherwise present with
+per-cpu memory, since you explicitly tell it where it belongs.
 
-Thanks.
 
--- 
-tejun
