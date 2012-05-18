@@ -1,23 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1946405Ab2ERXEX (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 May 2012 19:04:23 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:35668 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1946376Ab2ERXEQ (ORCPT
+	id S1946439Ab2ERXEi (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 May 2012 19:04:38 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:53597 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1946399Ab2ERXEW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 May 2012 19:04:16 -0400
-Message-Id: <20120518211602.372333802@linuxfoundation.org>
+	Fri, 18 May 2012 19:04:22 -0400
+Message-Id: <20120518211602.541111605@linuxfoundation.org>
 User-Agent: quilt/0.60-19.1
-Date: Fri, 18 May 2012 14:16:31 -0700
+Date: Fri, 18 May 2012 14:16:33 -0700
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Chris Metcalf <cmetcalf@tilera.com>,
-        Mel Gorman <mel@csn.ul.ie>, Hillf Danton <dhillf@gmail.com>,
-        Hugh Dickins <hughd@google.com>, Michal Hocko <mhocko@suse.cz>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Subject: [ 32/54] hugetlb: prevent BUG_ON in hugetlb_fault() -> hugetlb_cow()
+        alan@lxorguk.ukuu.org.uk, Josh Cartwright <joshc@linux.com>,
+        Artem Bityutskiy <artem.bityutskiy@linux.intel.com>,
+        David Woodhouse <David.Woodhouse@intel.com>
+Subject: [ 34/54] jffs2: Fix lock acquisition order bug in gc path
 In-Reply-To: <20120518212656.GA4992@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -27,43 +26,100 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Chris Metcalf <cmetcalf@tilera.com>
+From: Josh Cartwright <joshc@linux.com>
 
-commit 4998a6c0edce7fae9c0a5463f6ec3fa585258ee7 upstream.
+commit 226bb7df3d22bcf4a1c0fe8206c80cc427498eae upstream.
 
-Commit 66aebce747eaf ("hugetlb: fix race condition in hugetlb_fault()")
-added code to avoid a race condition by elevating the page refcount in
-hugetlb_fault() while calling hugetlb_cow().
+The locking policy is such that the erase_complete_block spinlock is
+nested within the alloc_sem mutex.  This fixes a case in which the
+acquisition order was erroneously reversed.  This issue was caught by
+the following lockdep splat:
 
-However, one code path in hugetlb_cow() includes an assertion that the
-page count is 1, whereas it may now also have the value 2 in this path.
+   =======================================================
+   [ INFO: possible circular locking dependency detected ]
+   3.0.5 #1
+   -------------------------------------------------------
+   jffs2_gcd_mtd6/299 is trying to acquire lock:
+    (&c->alloc_sem){+.+.+.}, at: [<c01f7714>] jffs2_garbage_collect_pass+0x314/0x890
 
-The consensus is that this BUG_ON has served its purpose, so rather than
-extending it to cover both cases, we just remove it.
+   but task is already holding lock:
+    (&(&c->erase_completion_lock)->rlock){+.+...}, at: [<c01f7708>] jffs2_garbage_collect_pass+0x308/0x890
 
-Signed-off-by: Chris Metcalf <cmetcalf@tilera.com>
-Acked-by: Mel Gorman <mel@csn.ul.ie>
-Acked-by: Hillf Danton <dhillf@gmail.com>
-Acked-by: Hugh Dickins <hughd@google.com>
-Cc: Michal Hocko <mhocko@suse.cz>
-Cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+   which lock already depends on the new lock.
+
+   the existing dependency chain (in reverse order) is:
+
+   -> #1 (&(&c->erase_completion_lock)->rlock){+.+...}:
+          [<c008bec4>] validate_chain+0xe6c/0x10bc
+          [<c008c660>] __lock_acquire+0x54c/0xba4
+          [<c008d240>] lock_acquire+0xa4/0x114
+          [<c046780c>] _raw_spin_lock+0x3c/0x4c
+          [<c01f744c>] jffs2_garbage_collect_pass+0x4c/0x890
+          [<c01f937c>] jffs2_garbage_collect_thread+0x1b4/0x1cc
+          [<c0071a68>] kthread+0x98/0xa0
+          [<c000f264>] kernel_thread_exit+0x0/0x8
+
+   -> #0 (&c->alloc_sem){+.+.+.}:
+          [<c008ad2c>] print_circular_bug+0x70/0x2c4
+          [<c008c08c>] validate_chain+0x1034/0x10bc
+          [<c008c660>] __lock_acquire+0x54c/0xba4
+          [<c008d240>] lock_acquire+0xa4/0x114
+          [<c0466628>] mutex_lock_nested+0x74/0x33c
+          [<c01f7714>] jffs2_garbage_collect_pass+0x314/0x890
+          [<c01f937c>] jffs2_garbage_collect_thread+0x1b4/0x1cc
+          [<c0071a68>] kthread+0x98/0xa0
+          [<c000f264>] kernel_thread_exit+0x0/0x8
+
+   other info that might help us debug this:
+
+    Possible unsafe locking scenario:
+
+          CPU0                    CPU1
+          ----                    ----
+     lock(&(&c->erase_completion_lock)->rlock);
+                                  lock(&c->alloc_sem);
+                                  lock(&(&c->erase_completion_lock)->rlock);
+     lock(&c->alloc_sem);
+
+    *** DEADLOCK ***
+
+   1 lock held by jffs2_gcd_mtd6/299:
+    #0:  (&(&c->erase_completion_lock)->rlock){+.+...}, at: [<c01f7708>] jffs2_garbage_collect_pass+0x308/0x890
+
+   stack backtrace:
+   [<c00155dc>] (unwind_backtrace+0x0/0x100) from [<c0463dc0>] (dump_stack+0x20/0x24)
+   [<c0463dc0>] (dump_stack+0x20/0x24) from [<c008ae84>] (print_circular_bug+0x1c8/0x2c4)
+   [<c008ae84>] (print_circular_bug+0x1c8/0x2c4) from [<c008c08c>] (validate_chain+0x1034/0x10bc)
+   [<c008c08c>] (validate_chain+0x1034/0x10bc) from [<c008c660>] (__lock_acquire+0x54c/0xba4)
+   [<c008c660>] (__lock_acquire+0x54c/0xba4) from [<c008d240>] (lock_acquire+0xa4/0x114)
+   [<c008d240>] (lock_acquire+0xa4/0x114) from [<c0466628>] (mutex_lock_nested+0x74/0x33c)
+   [<c0466628>] (mutex_lock_nested+0x74/0x33c) from [<c01f7714>] (jffs2_garbage_collect_pass+0x314/0x890)
+   [<c01f7714>] (jffs2_garbage_collect_pass+0x314/0x890) from [<c01f937c>] (jffs2_garbage_collect_thread+0x1b4/0x1cc)
+   [<c01f937c>] (jffs2_garbage_collect_thread+0x1b4/0x1cc) from [<c0071a68>] (kthread+0x98/0xa0)
+   [<c0071a68>] (kthread+0x98/0xa0) from [<c000f264>] (kernel_thread_exit+0x0/0x8)
+
+This was introduce in '81cfc9f jffs2: Fix serious write stall due to erase'.
+
+Signed-off-by: Josh Cartwright <joshc@linux.com>
+Signed-off-by: Artem Bityutskiy <artem.bityutskiy@linux.intel.com>
+Signed-off-by: David Woodhouse <David.Woodhouse@intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- mm/hugetlb.c |    1 -
- 1 file changed, 1 deletion(-)
+ fs/jffs2/gc.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/mm/hugetlb.c
-+++ b/mm/hugetlb.c
-@@ -2398,7 +2398,6 @@ retry_avoidcopy:
- 		if (outside_reserve) {
- 			BUG_ON(huge_pte_none(pte));
- 			if (unmap_ref_private(mm, vma, old_page, address)) {
--				BUG_ON(page_count(old_page) != 1);
- 				BUG_ON(huge_pte_none(pte));
- 				spin_lock(&mm->page_table_lock);
- 				goto retry_avoidcopy;
+--- a/fs/jffs2/gc.c
++++ b/fs/jffs2/gc.c
+@@ -225,8 +225,8 @@ int jffs2_garbage_collect_pass(struct jf
+ 			return 0;
+ 
+ 		D1(printk(KERN_DEBUG "No progress from erasing blocks; doing GC anyway\n"));
+-		spin_lock(&c->erase_completion_lock);
+ 		mutex_lock(&c->alloc_sem);
++		spin_lock(&c->erase_completion_lock);
+ 	}
+ 
+ 	/* First, work out which block we're garbage-collecting */
 
 
