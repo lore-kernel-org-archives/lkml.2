@@ -1,96 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030941Ab2ERDAO (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 May 2012 23:00:14 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:43831 "EHLO
+	id S1031028Ab2ERDD3 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 May 2012 23:03:29 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:38968 "EHLO
 	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1030707Ab2ERDAG (ORCPT
+	with ESMTP id S1030896Ab2ERDAN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 May 2012 23:00:06 -0400
+	Thu, 17 May 2012 23:00:13 -0400
 From: koverstreet@google.com
 To: linux-bcache@vger.kernel.org, linux-kernel@vger.kernel.org,
         dm-devel@redhat.com, linux-fsdevel@vger.kernel.org
 Cc: Kent Overstreet <koverstreet@google.com>, tj@kernel.org, axboe@kernel.dk,
         agk@redhat.com, neilb@suse.de
-Subject: [PATCH 00/13] Block cleanups (for bcache)
-Date: Thu, 17 May 2012 22:59:47 -0400
-Message-Id: <cover.1337308722.git.koverstreet@google.com>
+Subject: [PATCH 05/13] block: Only clone bio vecs that are in use
+Date: Thu, 17 May 2012 22:59:52 -0400
+Message-Id: <cb68d8803c2ada3becdf1bd6c9bed280c38d3265.1337308722.git.koverstreet@google.com>
 X-Mailer: git-send-email 1.7.9.rc2
+In-Reply-To: <cover.1337308722.git.koverstreet@google.com>
+References: <cover.1337308722.git.koverstreet@google.com>
+In-Reply-To: <cover.1337308722.git.koverstreet@google.com>
+References: <cover.1337308722.git.koverstreet@google.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Kent Overstreet <koverstreet@google.com>
 
-Couple related things in this patch series. This is mostly stuff I did for
-bcache, polished/expanded up a bit:
+bcache creates large bios internally, and then splits them according to
+the device requirements before it sends them down. If a lower level
+device tries to clone the bio, and the original bio had more than
+BIO_MAX_PAGES, the clone will fail unecessarily.
 
- * Bio pool freeing. This moves freeing of bios allocated from bio pools into
-   generic code.
+We can fix this by only cloning the bio vecs that are actually in use.
 
- * Kill bi_destructor. That was Tejun's idea, but it turned out to be easier
-   than I expected.
+Signed-off-by: Kent Overstreet <koverstreet@google.com>
+---
+ fs/bio.c |   13 +++++++------
+ 1 files changed, 7 insertions(+), 6 deletions(-)
 
- * Improved bio splitting. This was originally part of bcache, but I pulled it
-   out and replaced the existing bio splitting code with it.
-
- * Closures - this is from bcache. I didn't really need to use it for the next
-   patch, but IMO it makes the code a bit more elegant.
-
- * Make generic_make_request() handle arbitrary size bios. I think this is
-   going to enable a lot of cleanups in the future.
-
-   The idea here isn't for generic_make_request() to be doing the splitting in
-   practice long term, it's more just an intermediate stage. If this goes in, I
-   think a lot of driver code - certainly a lot of virtual block drivers -
-   could easily be made to handle arbitrary sized bios, and splitting will only
-   happen when a bio is being redirected to two different devices or something
-   like that. But this should enable a lot of cleanups without having to change
-   every block driver first.
-
-Kent Overstreet (13):
-  block: Generalized bio pool freeing
-  dm: kill dm_rq_bio_destructor
-  block: Add bio_clone_bioset()
-  block: Add bio_clone_kmalloc()
-  block: Only clone bio vecs that are in use
-  block: Add bio_reset()
-  pktcdvd: Switch to bio_kmalloc()
-  block: Kill bi_destructor
-  block: Add an explicit bio flag for bios that own their bvec
-  block: Rework bio splitting
-  Closures
-  Make generic_make_request handle arbitrarily large bios
-  Gut bio_add_page()
-
- Documentation/block/biodoc.txt      |    5 -
- block/blk-core.c                    |  119 +++++++-
- drivers/block/drbd/drbd_req.c       |   18 +-
- drivers/block/osdblk.c              |    3 +-
- drivers/block/pktcdvd.c             |  121 +++-----
- drivers/block/rbd.c                 |   12 +-
- drivers/md/dm-crypt.c               |    9 -
- drivers/md/dm-io.c                  |   11 -
- drivers/md/dm.c                     |   48 +--
- drivers/md/linear.c                 |    6 +-
- drivers/md/md.c                     |   42 +---
- drivers/md/raid0.c                  |    8 +-
- drivers/md/raid10.c                 |   23 +-
- drivers/target/target_core_iblock.c |    9 -
- fs/bio-integrity.c                  |   44 ---
- fs/bio.c                            |  407 ++++++++++++-----------
- fs/exofs/ore.c                      |    5 +-
- include/linux/bio.h                 |   37 ++-
- include/linux/blk_types.h           |    9 +-
- include/linux/blkdev.h              |    3 +
- include/linux/closure.h             |  614 +++++++++++++++++++++++++++++++++++
- lib/Kconfig.debug                   |    8 +
- lib/Makefile                        |    2 +-
- lib/closure.c                       |  363 +++++++++++++++++++++
- 24 files changed, 1419 insertions(+), 507 deletions(-)
- create mode 100644 include/linux/closure.h
- create mode 100644 lib/closure.c
-
+diff --git a/fs/bio.c b/fs/bio.c
+index e2c0970..de0733e 100644
+--- a/fs/bio.c
++++ b/fs/bio.c
+@@ -435,8 +435,9 @@ EXPORT_SYMBOL(bio_phys_segments);
+  */
+ void __bio_clone(struct bio *bio, struct bio *bio_src)
+ {
+-	memcpy(bio->bi_io_vec, bio_src->bi_io_vec,
+-		bio_src->bi_max_vecs * sizeof(struct bio_vec));
++	memcpy(bio->bi_io_vec,
++	       bio_iovec(bio_src),
++	       bio_segments(bio_src) * sizeof(struct bio_vec));
+ 
+ 	/*
+ 	 * most users will be overriding ->bi_bdev with a new target,
+@@ -445,10 +446,10 @@ void __bio_clone(struct bio *bio, struct bio *bio_src)
+ 	bio->bi_sector = bio_src->bi_sector;
+ 	bio->bi_bdev = bio_src->bi_bdev;
+ 	bio->bi_flags |= 1 << BIO_CLONED;
++	bio->bi_flags &= ~(1 << BIO_SEG_VALID);
+ 	bio->bi_rw = bio_src->bi_rw;
+-	bio->bi_vcnt = bio_src->bi_vcnt;
++	bio->bi_vcnt = bio_segments(bio_src);
+ 	bio->bi_size = bio_src->bi_size;
+-	bio->bi_idx = bio_src->bi_idx;
+ }
+ EXPORT_SYMBOL(__bio_clone);
+ 
+@@ -463,7 +464,7 @@ EXPORT_SYMBOL(__bio_clone);
+ struct bio *bio_clone_bioset(struct bio *bio, gfp_t gfp_mask,
+ 			     struct bio_set *bs)
+ {
+-	struct bio *b = bio_alloc_bioset(gfp_mask, bio->bi_max_vecs, bs);
++	struct bio *b = bio_alloc_bioset(gfp_mask, bio_segments(bio), bs);
+ 
+ 	if (!b)
+ 		return NULL;
+@@ -493,7 +494,7 @@ EXPORT_SYMBOL(bio_clone);
+ 
+ struct bio *bio_clone_kmalloc(struct bio *bio, gfp_t gfp_mask)
+ {
+-	struct bio *b = bio_kmalloc(gfp_mask, bio->bi_max_vecs);
++	struct bio *b = bio_kmalloc(gfp_mask, bio_segments(bio));
+ 
+ 	if (!b)
+ 		return NULL;
 -- 
 1.7.9.rc2
 
