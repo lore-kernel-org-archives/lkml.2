@@ -1,42 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932965Ab2ERQwA (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 May 2012 12:52:00 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:45863 "EHLO mail.zytor.com"
+	id S965072Ab2ERQvL (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 May 2012 12:51:11 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:63496 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932891Ab2ERQv4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 May 2012 12:51:56 -0400
-Message-ID: <4FB67E20.6080300@zytor.com>
-Date: Fri, 18 May 2012 09:51:44 -0700
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:11.0) Gecko/20120329 Thunderbird/11.0.1
-MIME-Version: 1.0
-To: "H.J. Lu" <hjl.tools@gmail.com>
-CC: Ingo Molnar <mingo@elte.hu>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
+	id S1758515Ab2ERQdE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 18 May 2012 12:33:04 -0400
+From: Mauro Carvalho Chehab <mchehab@redhat.com>
+Cc: Mauro Carvalho Chehab <mchehab@redhat.com>,
+        Linux Edac Mailing List <linux-edac@vger.kernel.org>,
         Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Jarkko Sakkinen <jarkko.sakkinen@intel.com>
-Subject: Re: Urgent: x86-32 and GNU ld 2.22.52.0.1
-References: <4FB67146.9080804@zytor.com> <CAMe9rOqp5AUNL7Oeb2fz=nFq6Z-=hdFg_T2kc+jwkYtzOKJv9g@mail.gmail.com> <CAMe9rOp-UoQFBvvorZA8-jBXk5JobkVa+trUH7ihHLxNyqMuWw@mail.gmail.com> <4FB67697.50904@zytor.com> <CAMe9rOqAJGemCiAebtYczqvV62J_cyZcZDDtkFZyLHPKZg1xqQ@mail.gmail.com> <4FB67CD6.8040103@zytor.com> <CAMe9rOpUoj_1TM0NOqVX31aHEez3_i9v6f7_zkGeM8SZ+XDxyQ@mail.gmail.com>
-In-Reply-To: <CAMe9rOpUoj_1TM0NOqVX31aHEez3_i9v6f7_zkGeM8SZ+XDxyQ@mail.gmail.com>
-X-Enigmail-Version: 1.4
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+        Tim Small <tim@buttersideup.com>
+Subject: [PATCH EDAC v26 29/66] r82600_edac: convert driver to use the new edac ABI
+Date: Fri, 18 May 2012 13:32:16 -0300
+Message-Id: <1337358773-6919-30-git-send-email-mchehab@redhat.com>
+In-Reply-To: <1337358773-6919-1-git-send-email-mchehab@redhat.com>
+References: <1337358773-6919-1-git-send-email-mchehab@redhat.com>
+To: unlisted-recipients:; (no To-header on input)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/18/2012 09:50 AM, H.J. Lu wrote:
-> 
-> A small testcase:
-> 
+The legacy edac ABI is going to be removed. Port the driver to use
+and benefit from the new API functionality.
 
-Right, but we can equally well just let the postprocessing tool throw an
-error.
+Cc: Tim Small <tim@buttersideup.com>
+Signed-off-by: Mauro Carvalho Chehab <mchehab@redhat.com>
+---
+ drivers/edac/r82600_edac.c |   27 ++++++++++++++++++---------
+ 1 files changed, 18 insertions(+), 9 deletions(-)
 
-	-hpa
-
+diff --git a/drivers/edac/r82600_edac.c b/drivers/edac/r82600_edac.c
+index c41b375..aea1a0c 100644
+--- a/drivers/edac/r82600_edac.c
++++ b/drivers/edac/r82600_edac.c
+@@ -179,10 +179,11 @@ static int r82600_process_error_info(struct mem_ctl_info *mci,
+ 		error_found = 1;
+ 
+ 		if (handle_errors)
+-			edac_mc_handle_ce(mci, page, 0,	/* not avail */
+-					syndrome,
+-					edac_mc_find_csrow_by_page(mci, page),
+-					0, mci->ctl_name);
++			edac_mc_handle_error(HW_EVENT_ERR_CORRECTED, mci,
++					     page, 0, syndrome,
++					     edac_mc_find_csrow_by_page(mci, page),
++					     0, -1,
++					     mci->ctl_name, "", NULL);
+ 	}
+ 
+ 	if (info->eapr & BIT(1)) {	/* UE? */
+@@ -190,9 +191,11 @@ static int r82600_process_error_info(struct mem_ctl_info *mci,
+ 
+ 		if (handle_errors)
+ 			/* 82600 doesn't give enough info */
+-			edac_mc_handle_ue(mci, page, 0,
+-					edac_mc_find_csrow_by_page(mci, page),
+-					mci->ctl_name);
++			edac_mc_handle_error(HW_EVENT_ERR_UNCORRECTED, mci,
++					     page, 0, 0,
++					     edac_mc_find_csrow_by_page(mci, page),
++					     0, -1,
++					     mci->ctl_name, "", NULL);
+ 	}
+ 
+ 	return error_found;
+@@ -267,6 +270,7 @@ static void r82600_init_csrows(struct mem_ctl_info *mci, struct pci_dev *pdev,
+ static int r82600_probe1(struct pci_dev *pdev, int dev_idx)
+ {
+ 	struct mem_ctl_info *mci;
++	struct edac_mc_layer layers[2];
+ 	u8 dramcr;
+ 	u32 eapr;
+ 	u32 scrub_disabled;
+@@ -281,8 +285,13 @@ static int r82600_probe1(struct pci_dev *pdev, int dev_idx)
+ 	debugf2("%s(): sdram refresh rate = %#0x\n", __func__,
+ 		sdram_refresh_rate);
+ 	debugf2("%s(): DRAMC register = %#0x\n", __func__, dramcr);
+-	mci = edac_mc_alloc(0, R82600_NR_CSROWS, R82600_NR_CHANS, 0);
+-
++	layers[0].type = EDAC_MC_LAYER_CHIP_SELECT;
++	layers[0].size = R82600_NR_CSROWS;
++	layers[0].is_virt_csrow = true;
++	layers[1].type = EDAC_MC_LAYER_CHANNEL;
++	layers[1].size = R82600_NR_CHANS;
++	layers[1].is_virt_csrow = false;
++	mci = new_edac_mc_alloc(0, ARRAY_SIZE(layers), layers, 0);
+ 	if (mci == NULL)
+ 		return -ENOMEM;
+ 
 -- 
-H. Peter Anvin, Intel Open Source Technology Center
-I work for Intel.  I don't speak on their behalf.
+1.7.8
 
