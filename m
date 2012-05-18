@@ -1,109 +1,131 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S967842Ab2ERWY7 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 May 2012 18:24:59 -0400
-Received: from mail1.windriver.com ([147.11.146.13]:48143 "EHLO
-	mail1.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S967775Ab2ERWYz (ORCPT
+	id S968157Ab2ERWZP (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 May 2012 18:25:15 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:42808 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S966531Ab2ERWZN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 May 2012 18:24:55 -0400
-Date: Fri, 18 May 2012 18:24:41 -0400
-From: Paul Gortmaker <paul.gortmaker@windriver.com>
-To: Sam Ravnborg <sam@ravnborg.org>
-CC: <kvm@vger.kernel.org>, Avi Kivity <avi@redhat.com>,
-        Eric B Munson <emunson@mgebm.net>, Arnd Bergmann <arnd@arndb.de>,
-        <linux-kernel@vger.kernel.org>, Marcelo Tosatti <mtosatti@redhat.com>
-Subject: Re: [PATCH] kvm: make asm-generic/kvm_para.h have an ifdef
- __KERNEL__ block
-Message-ID: <20120518222441.GD15256@windriver.com>
-References: <1337363979-5121-1-git-send-email-paul.gortmaker@windriver.com>
- <20120518184217.GA17367@merkur.ravnborg.org>
+	Fri, 18 May 2012 18:25:13 -0400
+Date: Fri, 18 May 2012 17:25:07 -0500
+From: Serge Hallyn <serge.hallyn@canonical.com>
+To: Auke Kok <auke-jan.h.kok@intel.com>
+Cc: linux-security-module@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Eric Paris <eparis@redhat.com>
+Subject: Re: [PATCH] Trace event for capable().
+Message-ID: <20120518222507.GA7188@sergelap>
+References: <1337284200-1838-1-git-send-email-auke-jan.h.kok@intel.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20120518184217.GA17367@merkur.ravnborg.org>
+In-Reply-To: <1337284200-1838-1-git-send-email-auke-jan.h.kok@intel.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-[Re: [PATCH] kvm: make asm-generic/kvm_para.h have an ifdef __KERNEL__ block] On 18/05/2012 (Fri 20:42) Sam Ravnborg wrote:
-
-> On Fri, May 18, 2012 at 01:59:39PM -0400, Paul Gortmaker wrote:
-> > There are two functions in this asm-generic file.  Looking at
-> > other arch which do not use the generic version, these two fcns
-> > are within an #ifdef __KERNEL__ block, so make the generic one
-> > consistent with those.
-> > 
-> > Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
-> > 
-> > diff --git a/include/asm-generic/kvm_para.h b/include/asm-generic/kvm_para.h
-> > index 9a7bbad..5cba37f 100644
-> > --- a/include/asm-generic/kvm_para.h
-> > +++ b/include/asm-generic/kvm_para.h
-> > @@ -1,6 +1,7 @@
-> >  #ifndef _ASM_GENERIC_KVM_PARA_H
-> >  #define _ASM_GENERIC_KVM_PARA_H
-> >  
-> > +#ifdef __KERNEL__
-> >  
-> >  /*
-> >   * This function is used by architectures that support kvm to avoid issuing
-> > @@ -16,4 +17,6 @@ static inline unsigned int kvm_arch_para_features(void)
-> >  	return 0;
-> >  }
-> >  
-> > +#endif	/* _KERNEL__ */
-> > +
-> >  #endif
+Quoting Auke Kok (auke-jan.h.kok@intel.com):
+> Add a simple trace event for capable().
 > 
-> I do not have this file in my tree...
-
-It appears in linux-next with this commit:
-
-commit 3b5d56b9317fa7b5407dff1aa7b115bf6cdbd494
-Author: Eric B Munson <emunson@mgebm.net>
-Date:   Sat Mar 10 14:37:26 2012 -0500
-
-    kvmclock: Add functions to check if the host has stopped the vm
-
-Additional stub is added to it in this commit (also linux-next):
-
-commit 1f15d10984c854e077da5aa1a23f901496b49773
-Author: Marcelo Tosatti <mtosatti@redhat.com>
-Date:   Fri Apr 20 18:21:46 2012 -0300
-
-    KVM: add kvm_arch_para_features stub to asm-generic/kvm_para.h
-
-> But in general we should try to separate out exporeted stuff in their own headers,
-> so no new files should ever use __KERNEL__.
+> There's been a lot of discussion around capable(), and there
+> are plenty of tools to help reduce capabilities' usage from
+> userspace. A major gap however is that it's almost impossible
+> to see or verify which bits are requested from either userspace
+> or in the kernel.
 > 
-> Either everything or nothing is exported.
+> This patch adds a minimal tracer that will print out which
+> CAPs are requested and whether the request was granted.
+> 
+> Signed-off-by: Auke Kok <auke-jan.h.kok@intel.com>
+> Cc: linux-security-module@vger.kernel.org
+> Cc: linux-kernel@vger.kernel.org
+> Cc: Serge Hallyn <serge.hallyn@canonical.com>
 
-I cant argue with that.  So, just for context, the issue I was looking
-at was this failure in linux-next:
+Hi,
 
-CHECK   include/asm (32 files)
-/scratch/kisskb/build/linux-next_parisc-defconfig_parisc/usr/include/asm/kvm_para.h:1:
-included file 'asm-generic/kvm_para.h' is not exported
-make[3]: ***
-[/scratch/kisskb/build/linux-next_parisc-defconfig_parisc/usr/include/asm/.check]
-Error 123
-make[3]: Target `__headerscheck' not remade because of errors.
-make[2]: *** [headers_check] Error 2
-make[1]: *** [vmlinux] Error 2
+is there any measurable performance impact by this patch?  (Have you
+measured it?)
 
-http://kisskb.ellerman.id.au/kisskb/buildresult/6337975/
+I'm not familiar enough with the tracing stuff, but if the tracing is
+done so there's no impact when not tracing, then I have no problem with
+this.  It could be quite useful as you say.
 
-The above is pa-risc, but it also appears on any arch using the generic
-header, instead of an arch specific one, like sparc:
+Acked-by: Serge Hallyn <serge.hallyn@ubuntu.com>
 
-http://kisskb.ellerman.id.au/kisskb/buildresult/6291409/
+thanks,
+-serge
 
-My patch doesn't fix this issue, but I thought it made sense at the
-time, just based on the comparison to the other arch specific versions
-of the same file.  I'm fine with junking it and leaving you guys to
-decide what is best to export and where [for headers_check].
-
-Thanks,
-Paul.
+> Cc: Eric Paris <eparis@redhat.com>
+> ---
+>  include/trace/events/capabilities.h |   33 +++++++++++++++++++++++++++++++++
+>  kernel/capability.c                 |    5 +++++
+>  2 files changed, 38 insertions(+)
+>  create mode 100644 include/trace/events/capabilities.h
+> 
+> diff --git a/include/trace/events/capabilities.h b/include/trace/events/capabilities.h
+> new file mode 100644
+> index 0000000..97997fa
+> --- /dev/null
+> +++ b/include/trace/events/capabilities.h
+> @@ -0,0 +1,33 @@
+> +#undef TRACE_SYSTEM
+> +#define TRACE_SYSTEM capabilities
+> +
+> +#if !defined(_TRACE_CAPABILITIES_H) || defined(TRACE_HEADER_MULTI_READ)
+> +#define _TRACE_CAPABILITIES_H
+> +
+> +#include <linux/tracepoint.h>
+> +
+> +TRACE_EVENT(capable,
+> +
+> +	TP_PROTO(pid_t pid, int cap, bool rc),
+> +
+> +	TP_ARGS(pid, cap, rc),
+> +
+> +	TP_STRUCT__entry(
+> +		__field(pid_t, pid)
+> +		__field(int, cap)
+> +		__field(bool, rc)
+> +	),
+> +
+> +	TP_fast_assign(
+> +		__entry->pid = pid;
+> +		__entry->cap = cap;
+> +		__entry->rc = rc;
+> +	),
+> +
+> +	TP_printk("pid=%d cap=%d rc=%d", __entry->pid, __entry->cap, __entry->rc)
+> +);
+> +
+> +#endif /* _TRACE_CAPABILITIES_H */
+> +
+> +/* This part must be outside protection */
+> +#include <trace/define_trace.h>
+> diff --git a/kernel/capability.c b/kernel/capability.c
+> index 3f1adb6..2941f37 100644
+> --- a/kernel/capability.c
+> +++ b/kernel/capability.c
+> @@ -17,6 +17,9 @@
+>  #include <linux/user_namespace.h>
+>  #include <asm/uaccess.h>
+>  
+> +#define CREATE_TRACE_POINTS
+> +#include <trace/events/capabilities.h>
+> +
+>  /*
+>   * Leveraged for setting/resetting capabilities
+>   */
+> @@ -386,8 +389,10 @@ bool ns_capable(struct user_namespace *ns, int cap)
+>  
+>  	if (security_capable(current_cred(), ns, cap) == 0) {
+>  		current->flags |= PF_SUPERPRIV;
+> +		trace_capable(current->pid, cap, true);
+>  		return true;
+>  	}
+> +	trace_capable(current->pid, cap, false);
+>  	return false;
+>  }
+>  EXPORT_SYMBOL(ns_capable);
+> -- 
+> 1.7.10
+> 
