@@ -1,72 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761657Ab2ERMGi (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 May 2012 08:06:38 -0400
-Received: from mga11.intel.com ([192.55.52.93]:55705 "EHLO mga11.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756599Ab2ERMGg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 May 2012 08:06:36 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
-   d="asc'?scan'208";a="154400201"
-Message-ID: <1337343005.2483.38.camel@sauron.fi.intel.com>
-Subject: Re: [PATCH] mtd: nandsim: don't open code a do_div helper
-From: Artem Bityutskiy <artem.bityutskiy@linux.intel.com>
-Reply-To: artem.bityutskiy@linux.intel.com
-To: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
-Cc: linux-mtd@lists.infradead.org, David Woodhouse <dwmw2@infradead.org>,
-        linux-kernel@vger.kernel.org, Nicolas Pitre <nico@fluxnic.net>,
-        Russell King <linux@arm.linux.org.uk>
-Date: Fri, 18 May 2012 15:10:05 +0300
-In-Reply-To: <20120516192145.GB2913@herton-Z68MA-D2H-B3>
-References: <20120516192145.GB2913@herton-Z68MA-D2H-B3>
-Content-Type: multipart/signed; micalg="pgp-sha1"; protocol="application/pgp-signature";
-	boundary="=-kl0hgMyQTcJf8zN8e+Vs"
-X-Mailer: Evolution 3.2.3 (3.2.3-3.fc16) 
-Mime-Version: 1.0
+	id S1762776Ab2ERMH0 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 May 2012 08:07:26 -0400
+Received: from mail-ey0-f174.google.com ([209.85.215.174]:63304 "EHLO
+	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756599Ab2ERMHX convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 18 May 2012 08:07:23 -0400
+MIME-Version: 1.0
+In-Reply-To: <20120516155728.GH22985@linux.intel.com>
+References: <20120515133450.GD22985@linux.intel.com>
+	<20120515174639.GA31752@kroah.com>
+	<20120516155728.GH22985@linux.intel.com>
+Date: Fri, 18 May 2012 14:07:22 +0200
+Message-ID: <CANGUGtAstHXLW-_kQJYMtrh35htpnGa2wXGtgC-PZnJJausTLg@mail.gmail.com>
+Subject: Re: NVM Mapping API
+From: Marco Stornelli <marco.stornelli@gmail.com>
+To: Matthew Wilcox <willy@linux.intel.com>
+Cc: Greg KH <greg@kroah.com>, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+2012/5/16 Matthew Wilcox <willy@linux.intel.com>:
+> On Tue, May 15, 2012 at 10:46:39AM -0700, Greg KH wrote:
+>> On Tue, May 15, 2012 at 09:34:51AM -0400, Matthew Wilcox wrote:
+>> > What we'd really like is for people to think about how they might use
+>> > fast NVM inside the kernel.  There's likely to be a lot of it (at least in
+>> > servers); all the technologies are promising cheaper per-bit prices than
+>> > DRAM, so it's likely to be sold in larger capacities than DRAM is today.
+>> >
+>> > Caching is one obvious use (be it FS-Cache, Bcache, Flashcache or
+>> > something else), but I bet there are more radical things we can do
+>> > with it.  What if we stored the inode cache in it?  Would booting with
+>> > a hot inode cache improve boot times?  How about storing the tree of
+>> > 'struct devices' in it so we don't have to rescan the busses at startup?
+>>
+>> Rescanning the busses at startup are required anyway, as devices can be
+>> added and removed when the power is off, and I would be amazed if that
+>> is actually taking any measurable time.  Do you have any numbers for
+>> this for different busses?
+>
+> Hi Greg,
+>
+> I wasn't particularly serious about this example ... I did once time
+> the scan of a PCIe bus and it took a noticable number of milliseconds
+> (which is why we now only scan the first device for the downstream "bus"
+> of root ports and downstream ports).
+>
+> I'm just trying to stimulate a bit of discussion of possible usages for
+> persistent memory.
+>
+>> What about pramfs for the nvram?  I have a recent copy of the patches,
+>> and I think they are clean enough for acceptance, there was no
+>> complaints the last time it was suggested.  Can you use that for this
+>> type of hardware?
+>
+> pramfs is definitely one filesystem that's under investigation.  I know
+> there will be types of NVM for which it won't be suitable, so rather
 
---=-kl0hgMyQTcJf8zN8e+Vs
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: quoted-printable
+For example?
 
-On Wed, 2012-05-16 at 16:21 -0300, Herton Ronaldo Krzesinski wrote:
-> We don't need to open code the divide function, just use div_u64 that
-> already exists and do the same job. While this is a straightforward
-> clean up, there is more to that, the real motivation for this.
+> than people calling pramfs-specific functions, the notion is to get a
+> core API in the VFS that can call into the various different filesystems
+> that can handle the vagaries of different types of NVM.
+>
 
-Did not remove CC -stable, added Nicolas' Ack, and pushed to l2-mtd.git,
-thanks!
+The idea could be good but I have doubt about it. Any fs is designed
+for a specific environment, to provide VFS api to manage NVM is not
+enough. I mean, a fs designed to reduce the seek time on hd, it adds
+not needed complexity for this kind of environment. Maybe the goal
+could be only for a "specific" support, for the journal for example.
 
---=20
-Best Regards,
-Artem Bityutskiy
-
---=-kl0hgMyQTcJf8zN8e+Vs
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: This is a digitally signed message part
-Content-Transfer-Encoding: 7bit
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAABAgAGBQJPtjweAAoJECmIfjd9wqK0LT8QALD1JoILwGnwKWCBbjFE1NA9
-9QONyTCfwnNjixaMZmPjB6DxfaMZuOkaNjFcEIbjpOrOn6tsQi2jhJN582i7nFuA
-4p8pG53DtHqEY+D6NH1dlGPo3Rvb6WWDbidlbvDec9evy8rJgehOeippwFaKXD48
-H5HESa9ahMZHyyOTzXSVFEFBcwSPcb0/8WuUNveP50mQkQ8Y06pwVqNTsc3/sYDh
-eXUdifZBmxl7WLCMmuSwxiBeTPd2KpMArGE3ki9qTTphm0tf34aI5vC2Q+5jbe6W
-pe7GM9mMptH/umTxFsyiTl3CYabeG/mFQRCQ+JLEJDtBKczIKHt28yPsORzKoq7L
-frjoPisd53erQGGL544SlRg7WG6HbFXgRe0IDsIJHFik90Z3pdwUbfNF+vpbAb9D
-T3ZOqpfiwPsHJNFYpEsu+henfsun3tco8jUHW68vkkJIR71RncQ80B8wGvmerIN8
-fZDiGYjrtLUbuU8rTA5kyuSl44kcAOpGZps/ShRUghChFzAaIcszZCtDNNbgEJe8
-q5sMXlvGWK+T/MpKPlvK3AfVFHgOzVHFAr+PyMThcV5VJumT/NVt4ec0GMALjNC+
-7z8i+4ZKqfudylLP+0/zUfTdj+nQN/jAWjgYbt81jta1euIQXVDnnrq6YOe0WZtQ
-zmaSem0hz3ypdKvYVhkx
-=UVlr
------END PGP SIGNATURE-----
-
---=-kl0hgMyQTcJf8zN8e+Vs--
-
+Marco
