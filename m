@@ -1,23 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1946315Ab2ERXDn (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 May 2012 19:03:43 -0400
+	id S1031337Ab2ERX36 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 May 2012 19:29:58 -0400
 Received: from mail-pb0-f46.google.com ([209.85.160.46]:53597 "EHLO
 	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1946268Ab2ERXDd (ORCPT
+	with ESMTP id S1946311Ab2ERXDm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 May 2012 19:03:33 -0400
-Message-Id: <20120518211601.206387642@linuxfoundation.org>
+	Fri, 18 May 2012 19:03:42 -0400
+Message-Id: <20120518211601.489317137@linuxfoundation.org>
 User-Agent: quilt/0.60-19.1
-Date: Fri, 18 May 2012 14:16:18 -0700
+Date: Fri, 18 May 2012 14:16:21 -0700
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Eric Dumazet <edumazet@google.com>,
-        Neal Cardwell <ncardwell@google.com>,
-        Tom Herbert <therbert@google.com>, Yuchung Cheng <ycheng@google.com>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [ 19/54] tcp: change tcp_adv_win_scale and tcp_rmem[2]
+        alan@lxorguk.ukuu.org.uk,
+        David Henningsson <david.henningsson@canonical.com>,
+        Arun Raghavan <arun.raghavan@collabora.co.uk>,
+        Takashi Iwai <tiwai@suse.de>
+Subject: [ 22/54] ALSA: HDA: Lessen CPU usage when waiting for chip to respond
 In-Reply-To: <20120518212656.GA4992@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -27,118 +27,53 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
+From: David Henningsson <david.henningsson@canonical.com>
 
-From: Eric Dumazet <edumazet@google.com>
+commit 32cf4023e689ad5b3a81a749d8cc99d7f184cb99 upstream.
 
-[ Upstream commit b49960a05e32121d29316cfdf653894b88ac9190 ]
+When an IRQ for some reason gets lost, we wait up to a second using
+udelay, which is CPU intensive. This patch improves the situation by
+waiting about 30 ms in the CPU intensive mode, then stepping down to
+using msleep(2) instead. In essence, we trade some granularity in
+exchange for less CPU consumption when the waiting time is a bit longer.
 
-tcp_adv_win_scale default value is 2, meaning we expect a good citizen
-skb to have skb->len / skb->truesize ratio of 75% (3/4)
+As a result, PulseAudio should no longer be killed by the kernel
+for taking up to much RT-prio CPU time. At least not for *this* reason.
 
-In 2.6 kernels we (mis)accounted for typical MSS=1460 frame :
-1536 + 64 + 256 = 1856 'estimated truesize', and 1856 * 3/4 = 1392.
-So these skbs were considered as not bloated.
-
-With recent truesize fixes, a typical MSS=1460 frame truesize is now the
-more precise :
-2048 + 256 = 2304. But 2304 * 3/4 = 1728.
-So these skb are not good citizen anymore, because 1460 < 1728
-
-(GRO can escape this problem because it build skbs with a too low
-truesize.)
-
-This also means tcp advertises a too optimistic window for a given
-allocated rcvspace : When receiving frames, sk_rmem_alloc can hit
-sk_rcvbuf limit and we call tcp_prune_queue()/tcp_collapse() too often,
-especially when application is slow to drain its receive queue or in
-case of losses (netperf is fast, scp is slow). This is a major latency
-source.
-
-We should adjust the len/truesize ratio to 50% instead of 75%
-
-This patch :
-
-1) changes tcp_adv_win_scale default to 1 instead of 2
-
-2) increase tcp_rmem[2] limit from 4MB to 6MB to take into account
-better truesize tracking and to allow autotuning tcp receive window to
-reach same value than before. Note that same amount of kernel memory is
-consumed compared to 2.6 kernels.
-
-Signed-off-by: Eric Dumazet <edumazet@google.com>
-Cc: Neal Cardwell <ncardwell@google.com>
-Cc: Tom Herbert <therbert@google.com>
-Cc: Yuchung Cheng <ycheng@google.com>
-Acked-by: Neal Cardwell <ncardwell@google.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+Signed-off-by: David Henningsson <david.henningsson@canonical.com>
+Tested-by: Arun Raghavan <arun.raghavan@collabora.co.uk>
+Signed-off-by: Takashi Iwai <tiwai@suse.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
----
- Documentation/networking/ip-sysctl.txt |    4 ++--
- net/ipv4/tcp.c                         |    9 +++++----
- net/ipv4/tcp_input.c                   |    2 +-
- 3 files changed, 8 insertions(+), 7 deletions(-)
 
---- a/Documentation/networking/ip-sysctl.txt
-+++ b/Documentation/networking/ip-sysctl.txt
-@@ -147,7 +147,7 @@ tcp_adv_win_scale - INTEGER
- 	(if tcp_adv_win_scale > 0) or bytes-bytes/2^(-tcp_adv_win_scale),
- 	if it is <= 0.
- 	Possible values are [-31, 31], inclusive.
--	Default: 2
-+	Default: 1
- 
- tcp_allowed_congestion_control - STRING
- 	Show/set the congestion control choices available to non-privileged
-@@ -407,7 +407,7 @@ tcp_rmem - vector of 3 INTEGERs: min, de
- 	net.core.rmem_max.  Calling setsockopt() with SO_RCVBUF disables
- 	automatic tuning of that socket's receive buffer size, in which
- 	case this value is ignored.
--	Default: between 87380B and 4MB, depending on RAM size.
-+	Default: between 87380B and 6MB, depending on RAM size.
- 
- tcp_sack - BOOLEAN
- 	Enable select acknowledgments (SACKS).
---- a/net/ipv4/tcp.c
-+++ b/net/ipv4/tcp.c
-@@ -3221,7 +3221,7 @@ void __init tcp_init(void)
+---
+ sound/pci/hda/hda_intel.c |    6 ++++--
+ 1 file changed, 4 insertions(+), 2 deletions(-)
+
+--- a/sound/pci/hda/hda_intel.c
++++ b/sound/pci/hda/hda_intel.c
+@@ -702,11 +702,13 @@ static unsigned int azx_rirb_get_respons
  {
- 	struct sk_buff *skb = NULL;
- 	unsigned long limit;
--	int i, max_share, cnt;
-+	int i, max_rshare, max_wshare, cnt;
- 	unsigned long jiffy = jiffies;
+ 	struct azx *chip = bus->private_data;
+ 	unsigned long timeout;
++	unsigned long loopcounter;
+ 	int do_poll = 0;
  
- 	BUILD_BUG_ON(sizeof(struct tcp_skb_cb) > sizeof(skb->cb));
-@@ -3285,15 +3285,16 @@ void __init tcp_init(void)
- 
- 	/* Set per-socket limits to no more than 1/128 the pressure threshold */
- 	limit = ((unsigned long)sysctl_tcp_mem[1]) << (PAGE_SHIFT - 7);
--	max_share = min(4UL*1024*1024, limit);
-+	max_wshare = min(4UL*1024*1024, limit);
-+	max_rshare = min(6UL*1024*1024, limit);
- 
- 	sysctl_tcp_wmem[0] = SK_MEM_QUANTUM;
- 	sysctl_tcp_wmem[1] = 16*1024;
--	sysctl_tcp_wmem[2] = max(64*1024, max_share);
-+	sysctl_tcp_wmem[2] = max(64*1024, max_wshare);
- 
- 	sysctl_tcp_rmem[0] = SK_MEM_QUANTUM;
- 	sysctl_tcp_rmem[1] = 87380;
--	sysctl_tcp_rmem[2] = max(87380, max_share);
-+	sysctl_tcp_rmem[2] = max(87380, max_rshare);
- 
- 	printk(KERN_INFO "TCP: Hash tables configured "
- 	       "(established %u bind %u)\n",
---- a/net/ipv4/tcp_input.c
-+++ b/net/ipv4/tcp_input.c
-@@ -83,7 +83,7 @@ int sysctl_tcp_ecn __read_mostly = 2;
- EXPORT_SYMBOL(sysctl_tcp_ecn);
- int sysctl_tcp_dsack __read_mostly = 1;
- int sysctl_tcp_app_win __read_mostly = 31;
--int sysctl_tcp_adv_win_scale __read_mostly = 2;
-+int sysctl_tcp_adv_win_scale __read_mostly = 1;
- EXPORT_SYMBOL(sysctl_tcp_adv_win_scale);
- 
- int sysctl_tcp_stdurg __read_mostly;
+  again:
+ 	timeout = jiffies + msecs_to_jiffies(1000);
+-	for (;;) {
++
++	for (loopcounter = 0;; loopcounter++) {
+ 		if (chip->polling_mode || do_poll) {
+ 			spin_lock_irq(&chip->reg_lock);
+ 			azx_update_rirb(chip);
+@@ -722,7 +724,7 @@ static unsigned int azx_rirb_get_respons
+ 		}
+ 		if (time_after(jiffies, timeout))
+ 			break;
+-		if (bus->needs_damn_long_delay)
++		if (bus->needs_damn_long_delay || loopcounter > 3000)
+ 			msleep(2); /* temporary workaround */
+ 		else {
+ 			udelay(10);
 
 
