@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1946439Ab2ERXEi (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 May 2012 19:04:38 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:53597 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1946399Ab2ERXEW (ORCPT
+	id S1946473Ab2ERXEv (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 May 2012 19:04:51 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:38665 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1946437Ab2ERXEh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 May 2012 19:04:22 -0400
-Message-Id: <20120518211602.541111605@linuxfoundation.org>
+	Fri, 18 May 2012 19:04:37 -0400
+Message-Id: <20120518211603.096728097@linuxfoundation.org>
 User-Agent: quilt/0.60-19.1
-Date: Fri, 18 May 2012 14:16:33 -0700
+Date: Fri, 18 May 2012 14:16:39 -0700
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Josh Cartwright <joshc@linux.com>,
-        Artem Bityutskiy <artem.bityutskiy@linux.intel.com>,
-        David Woodhouse <David.Woodhouse@intel.com>
-Subject: [ 34/54] jffs2: Fix lock acquisition order bug in gc path
+        alan@lxorguk.ukuu.org.uk, Eric Sandeen <sandeen@redhat.com>,
+        "Theodore Tso" <tytso@mit.edu>
+Subject: [ 40/54] ext4: avoid deadlock on sync-mounted FS w/o journal
 In-Reply-To: <20120518212656.GA4992@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,100 +25,62 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Josh Cartwright <joshc@linux.com>
+From: Eric Sandeen <sandeen@redhat.com>
 
-commit 226bb7df3d22bcf4a1c0fe8206c80cc427498eae upstream.
+commit c1bb05a657fb3d8c6179a4ef7980261fae4521d7 upstream.
 
-The locking policy is such that the erase_complete_block spinlock is
-nested within the alloc_sem mutex.  This fixes a case in which the
-acquisition order was erroneously reversed.  This issue was caught by
-the following lockdep splat:
+Processes hang forever on a sync-mounted ext2 file system that
+is mounted with the ext4 module (default in Fedora 16).
 
-   =======================================================
-   [ INFO: possible circular locking dependency detected ]
-   3.0.5 #1
-   -------------------------------------------------------
-   jffs2_gcd_mtd6/299 is trying to acquire lock:
-    (&c->alloc_sem){+.+.+.}, at: [<c01f7714>] jffs2_garbage_collect_pass+0x314/0x890
+I can reproduce this reliably by mounting an ext2 partition with
+"-o sync" and opening a new file an that partition with vim. vim
+will hang in "D" state forever.  The same happens on ext4 without
+a journal.
 
-   but task is already holding lock:
-    (&(&c->erase_completion_lock)->rlock){+.+...}, at: [<c01f7708>] jffs2_garbage_collect_pass+0x308/0x890
+I am attaching a small patch here that solves this issue for me.
+In the sync mounted case without a journal,
+ext4_handle_dirty_metadata() may call sync_dirty_buffer(), which
+can't be called with buffer lock held.
 
-   which lock already depends on the new lock.
+Also move mb_cache_entry_release inside lock to avoid race
+fixed previously by 8a2bfdcb ext[34]: EA block reference count racing fix
+Note too that ext2 fixed this same problem in 2006 with
+b2f49033 [PATCH] fix deadlock in ext2
 
-   the existing dependency chain (in reverse order) is:
-
-   -> #1 (&(&c->erase_completion_lock)->rlock){+.+...}:
-          [<c008bec4>] validate_chain+0xe6c/0x10bc
-          [<c008c660>] __lock_acquire+0x54c/0xba4
-          [<c008d240>] lock_acquire+0xa4/0x114
-          [<c046780c>] _raw_spin_lock+0x3c/0x4c
-          [<c01f744c>] jffs2_garbage_collect_pass+0x4c/0x890
-          [<c01f937c>] jffs2_garbage_collect_thread+0x1b4/0x1cc
-          [<c0071a68>] kthread+0x98/0xa0
-          [<c000f264>] kernel_thread_exit+0x0/0x8
-
-   -> #0 (&c->alloc_sem){+.+.+.}:
-          [<c008ad2c>] print_circular_bug+0x70/0x2c4
-          [<c008c08c>] validate_chain+0x1034/0x10bc
-          [<c008c660>] __lock_acquire+0x54c/0xba4
-          [<c008d240>] lock_acquire+0xa4/0x114
-          [<c0466628>] mutex_lock_nested+0x74/0x33c
-          [<c01f7714>] jffs2_garbage_collect_pass+0x314/0x890
-          [<c01f937c>] jffs2_garbage_collect_thread+0x1b4/0x1cc
-          [<c0071a68>] kthread+0x98/0xa0
-          [<c000f264>] kernel_thread_exit+0x0/0x8
-
-   other info that might help us debug this:
-
-    Possible unsafe locking scenario:
-
-          CPU0                    CPU1
-          ----                    ----
-     lock(&(&c->erase_completion_lock)->rlock);
-                                  lock(&c->alloc_sem);
-                                  lock(&(&c->erase_completion_lock)->rlock);
-     lock(&c->alloc_sem);
-
-    *** DEADLOCK ***
-
-   1 lock held by jffs2_gcd_mtd6/299:
-    #0:  (&(&c->erase_completion_lock)->rlock){+.+...}, at: [<c01f7708>] jffs2_garbage_collect_pass+0x308/0x890
-
-   stack backtrace:
-   [<c00155dc>] (unwind_backtrace+0x0/0x100) from [<c0463dc0>] (dump_stack+0x20/0x24)
-   [<c0463dc0>] (dump_stack+0x20/0x24) from [<c008ae84>] (print_circular_bug+0x1c8/0x2c4)
-   [<c008ae84>] (print_circular_bug+0x1c8/0x2c4) from [<c008c08c>] (validate_chain+0x1034/0x10bc)
-   [<c008c08c>] (validate_chain+0x1034/0x10bc) from [<c008c660>] (__lock_acquire+0x54c/0xba4)
-   [<c008c660>] (__lock_acquire+0x54c/0xba4) from [<c008d240>] (lock_acquire+0xa4/0x114)
-   [<c008d240>] (lock_acquire+0xa4/0x114) from [<c0466628>] (mutex_lock_nested+0x74/0x33c)
-   [<c0466628>] (mutex_lock_nested+0x74/0x33c) from [<c01f7714>] (jffs2_garbage_collect_pass+0x314/0x890)
-   [<c01f7714>] (jffs2_garbage_collect_pass+0x314/0x890) from [<c01f937c>] (jffs2_garbage_collect_thread+0x1b4/0x1cc)
-   [<c01f937c>] (jffs2_garbage_collect_thread+0x1b4/0x1cc) from [<c0071a68>] (kthread+0x98/0xa0)
-   [<c0071a68>] (kthread+0x98/0xa0) from [<c000f264>] (kernel_thread_exit+0x0/0x8)
-
-This was introduce in '81cfc9f jffs2: Fix serious write stall due to erase'.
-
-Signed-off-by: Josh Cartwright <joshc@linux.com>
-Signed-off-by: Artem Bityutskiy <artem.bityutskiy@linux.intel.com>
-Signed-off-by: David Woodhouse <David.Woodhouse@intel.com>
+Signed-off-by: Martin.Wilck@ts.fujitsu.com
+[sandeen@redhat.com: move mb_cache_entry_release before unlock, edit commit msg]
+Signed-off-by: Eric Sandeen <sandeen@redhat.com>
+Signed-off-by: "Theodore Ts'o" <tytso@mit.edu>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/jffs2/gc.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ fs/ext4/xattr.c |    7 ++++---
+ 1 file changed, 4 insertions(+), 3 deletions(-)
 
---- a/fs/jffs2/gc.c
-+++ b/fs/jffs2/gc.c
-@@ -225,8 +225,8 @@ int jffs2_garbage_collect_pass(struct jf
- 			return 0;
- 
- 		D1(printk(KERN_DEBUG "No progress from erasing blocks; doing GC anyway\n"));
--		spin_lock(&c->erase_completion_lock);
- 		mutex_lock(&c->alloc_sem);
-+		spin_lock(&c->erase_completion_lock);
+--- a/fs/ext4/xattr.c
++++ b/fs/ext4/xattr.c
+@@ -487,18 +487,19 @@ ext4_xattr_release_block(handle_t *handl
+ 		ext4_free_blocks(handle, inode, bh, 0, 1,
+ 				 EXT4_FREE_BLOCKS_METADATA |
+ 				 EXT4_FREE_BLOCKS_FORGET);
++		unlock_buffer(bh);
+ 	} else {
+ 		le32_add_cpu(&BHDR(bh)->h_refcount, -1);
++		if (ce)
++			mb_cache_entry_release(ce);
++		unlock_buffer(bh);
+ 		error = ext4_handle_dirty_metadata(handle, inode, bh);
+ 		if (IS_SYNC(inode))
+ 			ext4_handle_sync(handle);
+ 		dquot_free_block(inode, 1);
+ 		ea_bdebug(bh, "refcount now=%d; releasing",
+ 			  le32_to_cpu(BHDR(bh)->h_refcount));
+-		if (ce)
+-			mb_cache_entry_release(ce);
  	}
- 
- 	/* First, work out which block we're garbage-collecting */
+-	unlock_buffer(bh);
+ out:
+ 	ext4_std_error(inode->i_sb, error);
+ 	return;
 
 
