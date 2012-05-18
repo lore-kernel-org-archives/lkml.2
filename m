@@ -1,66 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760582Ab2ERFsM (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 May 2012 01:48:12 -0400
-Received: from haggis.pcug.org.au ([203.10.76.10]:47061 "EHLO
-	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755638Ab2ERFsK (ORCPT
+	id S1761890Ab2ERFvn (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 May 2012 01:51:43 -0400
+Received: from hqemgate04.nvidia.com ([216.228.121.35]:1583 "EHLO
+	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755673Ab2ERFvk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 May 2012 01:48:10 -0400
-Date: Fri, 18 May 2012 15:48:00 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Aaron Lu <aaron.lu@amd.com>
-Subject: linux-next: manual merge of the pm tree with Linus' tree
-Message-Id: <20120518154800.3b8cae2960234e03bee0101e@canb.auug.org.au>
-X-Mailer: Sylpheed 3.2.0beta7 (GTK+ 2.24.10; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Fri__18_May_2012_15_48_00_+1000_IRrGdO.y8TcJ9.HZ"
+	Fri, 18 May 2012 01:51:40 -0400
+X-PGP-Universal: processed;
+	by hqnvupgp07.nvidia.com on Thu, 17 May 2012 22:49:47 -0700
+Date: Fri, 18 May 2012 08:50:51 +0300
+From: Hiroshi Doyu <hdoyu@nvidia.com>
+To: Joerg Roedel <joerg.roedel@amd.com>,
+        Stephen Warren <swarren@wwwdotorg.org>
+CC: "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
+        "Grant Likely" <grant.likely@secretlab.ca>,
+        Rob Herring <rob.herring@calxeda.com>, Rob Landley <rob@landley.net>,
+        Ohad Ben-Cohen <ohad@wizery.com>, "Tony Lindgren" <tony@atomide.com>,
+        Jiri Kosina <jkosina@suse.cz>,
+        Thierry Reding <thierry.reding@avionic-design.de>,
+        "devicetree-discuss@lists.ozlabs.org" 
+	<devicetree-discuss@lists.ozlabs.org>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 1/2] iommu/tegra: smmu: Add device tree support for SMMU
+Message-ID: <20120518085051.4a0fca863c5ab37cf8d42cb1@nvidia.com>
+In-Reply-To: <4FB52BE7.8080908@wwwdotorg.org>
+References: <1336636221-31575-1-git-send-email-hdoyu@nvidia.com>
+	<1336636221-31575-2-git-send-email-hdoyu@nvidia.com>
+	<4FB143C4.6030502@wwwdotorg.org>
+	<4FB52BE7.8080908@wwwdotorg.org>
+X-Mailer: Sylpheed 3.2.0beta3 (GTK+ 2.24.6; x86_64-pc-linux-gnu)
+X-NVConfidentiality: public
+MIME-Version: 1.0
+Content-Type: text/plain; charset="US-ASCII"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Fri__18_May_2012_15_48_00_+1000_IRrGdO.y8TcJ9.HZ
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Hi Stephen and Joerg,
 
-Hi Rafael,
+On Thu, 17 May 2012 18:48:39 +0200
+Stephen Warren <swarren@wwwdotorg.org> wrote:
 
-Today's linux-next merge of the pm tree got a conflict in
-drivers/acpi/scan.c between commit 5c7dd710f691 ("ACPI / PCI / PM: Fix
-device PM regression related to D3hot/D3cold") from the  tree and commit
-6ef564fd2070 ("ACPI / PM: Evaluate _PS3 when entering D3 Cold") from the
-pm tree.
+> On 05/14/2012 11:41 AM, Stephen Warren wrote:
+> > On 05/10/2012 01:50 AM, Hiroshi DOYU wrote:
+> >> The necessary info is expected to pass from DT.
+> >>
+> >> For more precise resource reservation, there shouldn't be any
+> >> overlapping of register range between SMMU and MC. SMMU register
+> >> offset needs to be calculated correctly, based on its register bank.
+> >>
+> >> Signed-off-by: Hiroshi DOYU <hdoyu@nvidia.com>
+> >> ---
+> >> This patch requires the following ones, sent earlier:
+> >>
+> >> DMA window:
+> >> http://article.gmane.org/gmane.linux.ports.tegra/4603
+> > 
+> > This patch has been merged even though the patch above isn't present in
+> > the kernel anywhere, let alone in the history of the iommu tree. This
+> > breaks compilation in linux-next.
+> > 
+> >> AHB:
+> >> http://article.gmane.org/gmane.linux.ports.tegra/4657
+> > 
+> > This patch is in linux-next, but also is not in the history of the iommu
+> > tree, so will break bisection of the iommu tree for Tegra.
+> 
+> Joerg,
+> 
+> Can this patch please be dropped or reverted? It's still breaking
+> tegra_defconfig in next-20120517 since the dependencies I mentioned
+> above aren't satisfied. At this stage, it seems unlikely that the DMA
+> window parsing change is going to make it into 3.5, so this isn't just a
+> temporary issue.
 
-I fixed it up (by using the version from Linus' tree) and can carry the
-fix as necessary.
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
+I can move of_get_dma_window() function into tegra-smmu.c as a static
+function. I just want SMMU available with DT for the furthuer
+development. Then, it's also possible to promote that function global
+later as is in the origianl patch.
 
---Signature=_Fri__18_May_2012_15_48_00_+1000_IRrGdO.y8TcJ9.HZ
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBCAAGBQJPteKQAAoJEECxmPOUX5FEZYkP/0xzvyhb46DcntZl2rYCuRSJ
-2rK0TY3vCJakZe6a74N8SzE1roe93Hk/GWIAwg0ihGUX5MdLHRKDqmApAFbsUPjw
-K5VO3ms0fbFOo9h+7CvIrPX1umpfDKq94aQyUH3yskzlNmdk5HYfRDaIwRmsFwAS
-E9WYGwvWJGCQ2q9G8GWVuCS3Vp/hyGtuGGnQPKICdzHmMmGZUbjn0ruaNJQjFjor
-MasnJ+qqlozF7xJCLYnCwUj32Nlvv2mnNXdvIJLwZd60fw8i+8hB35Hx2E2T2bZ2
-b3PsB4LeIzRYP/lLMy5YoRtScJmnnBFNMmBPwB4J0/mMSFITb3YBVumaMVgkvA8a
-Rjmz+EG9j4+lXyYCvq4h8nTyjsjKpSLe7R6S2BgkIXSTumvHZZ8XZXNenQ64RDdJ
-uSRCN0l19ZTXF43ML1ptl+yJl81eKpE1Qe+KaTIDV5HvipRZ6YMTp4RccNT379Pg
-0OW7E9QL05P02Ygd3GePEChFABA5/hpAgW++5jMnnCJjBUi0ZZ96hyz006IEhPav
-7xSRrwkWtlXi8uKlT6+3Ow94rHltCrLrw3SP/OPWEN+ezIe8vc25imF2Re7tLjgs
-O3fDLaDlKBEQwh4AmvZY2YiLMt5mH9jjbHH+gGhLi8FbMCFUCbUbLx44FnVJMnkL
-Bm/1u8e/CMTimng13EQA
-=5s0T
------END PGP SIGNATURE-----
-
---Signature=_Fri__18_May_2012_15_48_00_+1000_IRrGdO.y8TcJ9.HZ--
+I'm posting that patch follows this email. Please take it if this
+proposal is acceptable.
