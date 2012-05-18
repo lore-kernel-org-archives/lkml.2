@@ -1,112 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S966640Ab2ERMds (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 May 2012 08:33:48 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:22095 "EHLO mx1.redhat.com"
+	id S1030214Ab2ERMkn (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 May 2012 08:40:43 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:27616 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S965342Ab2ERMdj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 May 2012 08:33:39 -0400
-Message-ID: <4FB64185.5020308@redhat.com>
-Date: Fri, 18 May 2012 08:33:09 -0400
-From: Bill Burns <bburns@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
+	id S1759667Ab2ERMkl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 18 May 2012 08:40:41 -0400
+Date: Fri, 18 May 2012 14:39:11 +0200
+From: Oleg Nesterov <oleg@redhat.com>
+To: "Eric W. Biederman" <ebiederm@xmission.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Pavel Emelyanov <xemul@parallels.com>,
+        Cyrill Gorcunov <gorcunov@openvz.org>,
+        Louis Rilling <louis.rilling@kerlabs.com>,
+        Mike Galbraith <efault@gmx.de>
+Subject: Re: [PATCH 2/3] pidns: Guarantee that the pidns init will be the
+	last pidns process reaped.
+Message-ID: <20120518123911.GA417@redhat.com>
+References: <20120429165846.GA19054@redhat.com> <1335754867.17899.4.camel@marge.simpson.net> <m1zk9rmyh4.fsf@fess.ebiederm.org> <20120501134214.f6b44f4a.akpm@linux-foundation.org> <87havs7rvv.fsf_-_@xmission.com> <8762c87rrd.fsf_-_@xmission.com> <20120516183920.GA19975@redhat.com> <878vgrsv7q.fsf@xmission.com> <20120517170015.GA12436@redhat.com> <87d3628oqa.fsf@xmission.com>
 MIME-Version: 1.0
-To: Ingo Molnar <mingo@kernel.org>
-CC: hpa@zytor.com, linux-kernel@vger.kernel.org, a.p.zijlstra@chello.nl,
-        torvalds@linux-foundation.org, pjt@google.com, cl@linux.com,
-        riel@redhat.com, bharata.rao@gmail.com, akpm@linux-foundation.org,
-        Lee.Schermerhorn@hp.com, aarcange@redhat.com, danms@us.ibm.com,
-        suresh.b.siddha@intel.com, tglx@linutronix.de,
-        linux-tip-commits@vger.kernel.org, bburns@redhat.com,
-        Bill Gray <bgray@redhat.com>
-Subject: Re: [FEATURE TREE] sched, mm: Introduce the 'home node' affinity
- concept
-References: <tip-41h2mswllhkskd4bnxpoi388@git.kernel.org> <20120518115742.GA19785@gmail.com>
-In-Reply-To: <20120518115742.GA19785@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <87d3628oqa.fsf@xmission.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/18/2012 07:57 AM, Ingo Molnar wrote:
-> * tip-bot for Peter Zijlstra<a.p.zijlstra@chello.nl>  wrote:
+On 05/17, Eric W. Biederman wrote:
 >
->> Commit-ID:  84213e2b6e2166083c3d06e91dcf54f8e136bd78
->> Gitweb:     http://git.kernel.org/tip/84213e2b6e2166083c3d06e91dcf54f8e136bd78
->> Author:     Peter Zijlstra<a.p.zijlstra@chello.nl>
->> AuthorDate: Sat, 3 Mar 2012 17:05:16 +0100
->> Committer:  Ingo Molnar<mingo@kernel.org>
->> CommitDate: Fri, 18 May 2012 08:16:20 +0200
->>
->> sched, mm: Introduce tsk_home_node()
-> So, I wanted to see some progress on this issue and committed
-> Peter's 'home node NUMA affinity' changes to the tip:sched/numa
-> tree.
+> Oleg Nesterov <oleg@redhat.com> writes:
 >
-> Basically the scheme Peter implemented is an extended notion of
-> NUMA affinity, one that both the scheduler and the MM honors -
-> but one that is flexible and treats affinity as a preference,
-> not as a hard mask:
+> > What do you think?
 >
->   - For example if there's significant idle time on distant CPUs
->     then the scheduler will still utilize those CPUs and fill the
->     whole machine - but otherwise the scheduler and the MM will
->     try to maintain good NUMA locality.
->
->   - Similary, memory allocations will go to the home node even if
->     the task is running on another node temporarily. [as long as
->     the allocation can be satisfied.]
->
-> This is a more dynamic, more intelligent version of hard
-> partitioning the system and workloads between NUMA nodes - yet
-> it is pretty simple and existing MM and scheduling code mostly
-> support this scheme and needed only small reorganization.
->
-> When home node awareness is active then applications can use new
-> system calls to group themselves into affinity groups, via:
->
->       sys_numa_tbind(tid, -1, 0);         // create new group, return new ng_id
->       sys_numa_tbind(tid, -2, 0);         // returns existing ng_id
->       sys_numa_tbind(tid, ng_id, 0);      // set ng_id
->
-> ... and to assign memory to a NUMA group:
->
->       sys_numa_mbind(addr, len, ng_id, 0);
->
-> We are seeing user-space daemons trying to achieve something
-> similar, for example there's "numad":
->
->     https://fedoraproject.org/w/index.php?title=Features/numad&oldid=272815
->
-> the kernel is in a much better position to handle affinities and
-> resource allocation preferences, especially ones that change and
-> mix so dynamically as scheduling and memory allocation - so
-> maybe "numad" could make use of the new syscalls and map
-> application/package policies into NUMA groups the kernel
-> recognizes.
-Thanks for the cc on this. I have cc'ed Bill Gray who authored
-numad and will leave it to him to comment on the interfaces,
-but indeed this has been something that we have been looking
-for, the concept of a home node (or nodes).
+> I think there is something very compelling about your solution,
+> we do need my bit about making the init process ignore SIGCHLD
+> so all of init's children self reap.
 
-cheers,
-  Bill (Burns)
+Not sure I understand. This can work with or without 3/3 which
+changes zap_pid_ns_processes() to ignore SIGCHLD. And just in
+case, I think 3/3 is fine.
 
-> (There's more such daemons out there, in the HPC area.)
+And once again, this wait_event() + __wake_up_parent() is very
+simple and straightforward, we can cleanup this code later if
+needed.
+
+
+> > Do you mean the "if (tsk->ptrace)" code in exit_notify() ? Nobody
+> > understand it ;) Last time this code was modified by me (iirc), but
+> > I simply tried to preserve the previous behaviour.
 >
-> One configurability detail I'd like to suggest to Peter: could
-> we make this NUMA affinity grouping capability unconditional to
-> apps, i.e. enable apps to put themselves on home node aware
-> policy even if the sysctl is off?
->
-> That way this capability would always be available on NUMA
-> systems in an opt-in fashion, just like regular affinities are
-> available. The sysctl would merely control whether all tasks on
-> the system are scheduled in a home node aware fashion or not.
-> (and it would still default to off)
->
-> Thanks,
->
-> 	Ingo
+> Yes.  It is some pretty strange code.
+
+Yes. In particular, I think it should always use SIGCHLD.
+
+> Especially where we are reading
+> a return result which is always false.  I think there is a bug somewhere
+> between that code and ptrace detach
+
+Yes. This is the known oddity. We always notify the tracer if the
+leader exits, even if !thread_group_empty(). But after that the
+tracer can't detach, and it can't do do_wait(WEXITED).
+
+The problem is not that we can't "fix" this. Just any discussed
+fix adds the subtle/incompatible user-visible change.
+
+Oleg.
 
