@@ -1,66 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S966589Ab2ERDhT (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 May 2012 23:37:19 -0400
-Received: from mail-ob0-f174.google.com ([209.85.214.174]:51380 "EHLO
-	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751795Ab2ERDhQ convert rfc822-to-8bit (ORCPT
+	id S1760157Ab2ERDjJ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 May 2012 23:39:09 -0400
+Received: from mail-qa0-f49.google.com ([209.85.216.49]:39090 "EHLO
+	mail-qa0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759047Ab2ERDjH convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 May 2012 23:37:16 -0400
+	Thu, 17 May 2012 23:39:07 -0400
 MIME-Version: 1.0
-In-Reply-To: <CAFeW=pZcqnybTeMQPEMUguAwwgqpM1Hap2Dh3K-5majfYqMTaA@mail.gmail.com>
-References: <CAFeW=pZcqnybTeMQPEMUguAwwgqpM1Hap2Dh3K-5majfYqMTaA@mail.gmail.com>
-Date: Fri, 18 May 2012 11:37:15 +0800
-Message-ID: <CAFeW=pZ-HZKyBALRZVo=PeWUoaEk39QUSoMsV-1K5CBgcVUMeA@mail.gmail.com>
-Subject: Re: cgroup: denying device doesn't work with 'rw' mode string
-From: Amos Kong <kongjianjun@gmail.com>
-To: serue@us.ibm.com, viro@zeniv.linux.org.uk
-Cc: linux-kernel@vger.kernel.org, lizf@cn.fujitsu.com, tj@kernel.org,
-        jmorris@namei.org
+In-Reply-To: <4FB5C050.9070805@kernel.org>
+References: <1337292816-10839-1-git-send-email-hjl.tools@gmail.com>
+	<1337292816-10839-9-git-send-email-hjl.tools@gmail.com>
+	<4FB58EFD.7010302@zytor.com>
+	<4FB5C050.9070805@kernel.org>
+Date: Thu, 17 May 2012 20:39:07 -0700
+Message-ID: <CAMe9rOrKq8Ait8wKudRF535J5c=dDTKekmUN_=HOs5BBLtsoGQ@mail.gmail.com>
+Subject: Re: [PATCH 08/10] Use __kernel_ulong_t in struct msqid64_ds
+From: "H.J. Lu" <hjl.tools@gmail.com>
+To: "H. Peter Anvin" <hpa@kernel.org>
+Cc: linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org,
+        torvalds@linux-foundation.org, mingo@kernel.org, tglx@linutronix.de,
+        Paul Mundt <lethal@linux-sh.org>
 Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-CC: Li Zefan <lizf@cn.fujitsu.com>, Tejun Heo <tj@kernel.org>, jmorris@namei.org
+On Thu, May 17, 2012 at 8:21 PM, H. Peter Anvin <hpa@kernel.org> wrote:
+> On 05/17/2012 04:51 PM, H. Peter Anvin wrote:
+>>
+>> This patch and the one before it seems to have another problem: we
+>> currently define __BITS_PER_LONG as:
+>>
+>> #ifdef __x86_64__
+>> # define __BITS_PER_LONG 64
+>> #else
+>> # define __BITS_PER_LONG 32
+>> #endif
+>>
+>
+> H.J., do you see any problem *other* than this wretched struct
+> msqid64_ds with changing the above from __x86_64__ to
+>
+> #if defined(__x86_64__) && !defined(__ILP32__)
+>
+> ... in the above?
+>
+> As far as struct msqid64_ds,  I think we can fix it simply because x86
+> is the only compat-aware architecture which has to deal with it.
+>
+> (Incidentally, if sh is ever expanded to 64 bits, it will have a problem
+> in the bigendian configuration...)
 
-On Sat, Oct 15, 2011 at 8:39 AM, Amos Kong <kongjianjun@gmail.com> wrote:
-> # mount -t cgroup -o devices none /cgroup
-> # mkdir /cgroups/devices
-> # ls -l /dev/vg/lv
-> lrwxrwxrwx. 1 root root 7 Oct 14 19:03 /dev/vg/lv -> ../dm-3
-> # ls -l /dev/dm-3
-> brw-rw----. 1 root disk 253, 3 Oct 14 19:03 /dev/dm-3
->
->
-> ------- test1
-> deny read-write permission of dm-3, but it doesn't effect.
->
-> # echo a > devices/devices.allow
-> # echo 'b 253:2 rw' > devices.deny
->                ^^
-> # echo $$ > task
-> # dd if=/dev/zero of=/dev/dm-3 bs=1M count=1
-> can write to /dev/dm-3 successfully  (problem exists)
->
-> ------- test2
-> # echo a > devices/devices.allow
-> # echo 'b 253:3 rwm' > devices/devices.deny
->                ^^^
-> # echo $$ > task
-> # dd if=/dev/zero of=/dev/dm-3 bs=1M count=1
-> couldn't write to /dev/dm-3 successfully
->
-> -----------
->
-> related upstream commit:
-> commit 08ce5f16ee466ffc5bf243800deeecd77d9eaf50
-> Author: Serge E. Hallyn <serue@us.ibm.com>
-> Date:   Tue Apr 29 01:00:10 2008 -0700
->
->    cgroups: implement device whitelist
->
->
-> cgroup tracks and enforces open and mknod restrictions on device files,
-> so 'm' are always needed in the mode string? 'rw' is ineffective?
+That will be wrong.   __BITS_PER_LONG defines # bits of long
+as seen by kernel.  We don't use it in user space.  Remember
+x32 uses the identical interface as x86-64.  So
+
+#ifdef __x86_64__
+# define __BITS_PER_LONG 64
+#else
+# define __BITS_PER_LONG 32
+#endif
+
+struct msqid64_ds {
+        struct ipc64_perm msg_perm;
+        __kernel_time_t msg_stime;      /* last msgsnd time */
+#if __BITS_PER_LONG != 64
+        unsigned long   __unused1;
+#endif
+        __kernel_time_t msg_rtime;      /* last msgrcv time */
+#if __BITS_PER_LONG != 64
+        unsigned long   __unused2;
+#endif
+        __kernel_time_t msg_ctime;      /* last change time */
+#if __BITS_PER_LONG != 64
+        unsigned long   __unused3;
+#endif
+
+are absolutely correct for x32.  You can think
+
+#if __BITS_PER_LONG != 64
+
+as
+
+#ifndef __x86_64__
+
+which is used in glibc.
+
+
+-- 
+H.J.
