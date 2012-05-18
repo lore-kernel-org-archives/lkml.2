@@ -1,51 +1,158 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758955Ab2ESASO (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 May 2012 20:18:14 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:57180 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756862Ab2ESASM (ORCPT
+	id S964934Ab2ESAUV (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 May 2012 20:20:21 -0400
+Received: from queueout02-winn.ispmail.ntl.com ([81.103.221.56]:27289 "EHLO
+	queueout02-winn.ispmail.ntl.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1757672Ab2ESAUT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 May 2012 20:18:12 -0400
-Date: Fri, 18 May 2012 17:16:41 -0700
-From: Anton Vorontsov <cbouatmailru@gmail.com>
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-Cc: Mika Westerberg <mika.westerberg@linux.intel.com>,
-        linux-next@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: linux-next: build failure after merge of the final tree (battery
- tree related)
-Message-ID: <20120519001641.GA32057@lizard>
-References: <20120507171458.5ce17d20c40856e9440b3e5f@canb.auug.org.au>
- <20120507082637.GH31494@intel.com>
- <20120516161256.b046bcb06148ac6417fd51b5@canb.auug.org.au>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <20120516161256.b046bcb06148ac6417fd51b5@canb.auug.org.au>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Fri, 18 May 2012 20:20:19 -0400
+From: Daniel Drake <dsd@laptop.org>
+To: rjw@sisk.pl
+Cc: linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [PATCH] firmware_class: improve suspend handling
+Message-Id: <20120518222148.E80C09D401E@zog.reactivated.net>
+Date: Fri, 18 May 2012 23:21:48 +0100 (BST)
+X-Cloudmark-Analysis: v=1.1 cv=R50lirqlHffDPPkwUlkuVa99MrvKdVWo//yz83qex8g= c=1 sm=0 a=iYjdmjDZoDAA:10 a=vJ1w_8FsMGIA:10 a=Op-mwl0xAAAA:8 a=V8FXLIK7Igfs69iHzY0A:9 a=J9AMwZtvULrPSre1dY0A:7 a=d4CUUju0HPYA:10 a=tRLYjYU6DWh_wypD:21 a=2ZN5Iu1KVTj6muYk:21 a=HpAAvcLHHh0Zw7uRqdWCyQ==:117
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, May 16, 2012 at 04:12:56PM +1000, Stephen Rothwell wrote:
-[...]
-> > diff --git a/drivers/power/smb347-charger.c b/drivers/power/smb347-charger.c
-> > index 09d19d2..f8eedd8 100644
-> > --- a/drivers/power/smb347-charger.c
-> > +++ b/drivers/power/smb347-charger.c
-> > @@ -11,6 +11,7 @@
-> >   * published by the Free Software Foundation.
-> >   */
-> >  
-> > +#include <linux/err.h>
-> >  #include <linux/gpio.h>
-> >  #include <linux/kernel.h>
-> >  #include <linux/module.h>
-> 
-> Ping?
+libertas kicks off asynchronous firmware loading from its probe routine.
+The probe routine is run on every system resume, because we choose to
+(cleanly) shut down the device during suspend.
 
-Applied, thank you!
+As the libertas suspend routine can be called before the asynchronous
+firmware loading has completed (i.e. when the system is suspended very soon
+after probe), the libertas suspend routine must wait for any ongoing
+firmware loads to complete before suspending the device (which would
+involve sending some commands to it under normal circumstances - so the
+firmware must be running first).
 
+This is proving problematic. Testing by suspending the system very soon
+after system resume, i.e.:
+	echo mem > /sys/power/state; echo mem > /sys/power/state
+
+The first problematic case is that userspace is busy loading the firmware
+when the suspend kicks in. Userspace gets frozen, no more firmware data
+arrives at the kernel, so we hit a long timeout before the system
+eventually suspends.
+
+This patch adds a pm_notifier to the firmware loader to detect this case
+and immediately abort any in-progress firmware loads.
+
+The second problematic case is that the asynchronous firmware loading
+work item gets scheduled and executed after userspace has frozen,
+but before kernel tasks have been frozen. This results in the kernel
+trying to ask a frozen userspace for a firmware file, invoking another
+long timeout before the system eventually suspends.
+
+This patch uses the pm_notifier to track when userspace is frozen and
+immediately aborts any attempted firmware loads while userspace is frozen.
+
+Signed-off-by: Daniel Drake <dsd@laptop.org>
+---
+ drivers/base/firmware_class.c |   54 +++++++++++++++++++++++++++++++++++++++++
+ 1 file changed, 54 insertions(+)
+
+diff --git a/drivers/base/firmware_class.c b/drivers/base/firmware_class.c
+index 72c644b..cc6679d 100644
+--- a/drivers/base/firmware_class.c
++++ b/drivers/base/firmware_class.c
+@@ -20,6 +20,7 @@
+ #include <linux/highmem.h>
+ #include <linux/firmware.h>
+ #include <linux/slab.h>
++#include <linux/suspend.h>
+ 
+ #define to_dev(obj) container_of(obj, struct device, kobj)
+ 
+@@ -90,6 +91,9 @@ static inline long firmware_loading_timeout(void)
+  * guarding for corner cases a global lock should be OK */
+ static DEFINE_MUTEX(fw_lock);
+ 
++/* Is userspace frozen? */
++static bool is_suspended;
++
+ struct firmware_priv {
+ 	struct completion completion;
+ 	struct firmware *fw;
+@@ -186,6 +190,45 @@ static struct class firmware_class = {
+ 	.dev_release	= fw_dev_release,
+ };
+ 
++static int cancel_active_request(struct device *dev, void *data)
++{
++	struct firmware_priv *fw_priv = to_firmware_priv(dev);
++	dev_dbg(dev, "Cancelling firmware load of %s due to suspend",
++		fw_priv->fw_id);
++	fw_load_abort(fw_priv);
++	return 0;
++}
++
++static int fw_pm_notify(struct notifier_block *notifier, unsigned long action,
++			void *ptr)
++{
++	switch (action) {
++	case PM_SUSPEND_PREPARE:
++		/*
++		 * When going into suspend, abort all active firmware loads
++		 * from userspace. Userspace will now be frozen and would
++		 * hence be unable to continue loading the firmware.
++		 */
++		mutex_lock(&fw_lock);
++		is_suspended = true;
++		class_for_each_device(&firmware_class, NULL, NULL,
++				      cancel_active_request);
++		mutex_unlock(&fw_lock);
++		break;
++
++	case PM_POST_SUSPEND:
++		mutex_lock(&fw_lock);
++		is_suspended = false;
++		mutex_unlock(&fw_lock);
++		break;
++	}
++	return 0;
++}
++
++static struct notifier_block fw_pm_notifier = {
++	.notifier_call = fw_pm_notify,
++};
++
+ static ssize_t firmware_loading_show(struct device *dev,
+ 				     struct device_attribute *attr, char *buf)
+ {
+@@ -535,6 +578,15 @@ static int _request_firmware_prepare(const struct firmware **firmware_p,
+ 		return 0;
+ 	}
+ 
++	mutex_lock(&fw_lock);
++	if (is_suspended) {
++		dev_dbg(device, "firmware: not loading %s, we're suspending\n",
++			name);
++		mutex_unlock(&fw_lock);
++		return -ENODATA;
++	}
++	mutex_unlock(&fw_lock);
++
+ 	return 1;
+ }
+ 
+@@ -738,11 +790,13 @@ request_firmware_nowait(
+ 
+ static int __init firmware_class_init(void)
+ {
++	register_pm_notifier(&fw_pm_notifier);
+ 	return class_register(&firmware_class);
+ }
+ 
+ static void __exit firmware_class_exit(void)
+ {
++	unregister_pm_notifier(&fw_pm_notifier);
+ 	class_unregister(&firmware_class);
+ }
+ 
 -- 
-Anton Vorontsov
-Email: cbouatmailru@gmail.com
+1.7.10.1
+
