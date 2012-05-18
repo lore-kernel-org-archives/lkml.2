@@ -1,61 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759027Ab2ERSGf (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 May 2012 14:06:35 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:54408 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751931Ab2ERSGd (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 May 2012 14:06:33 -0400
-Date: Fri, 18 May 2012 11:06:28 -0700
-From: Greg KH <gregkh@linuxfoundation.org>
-To: Alan Cox <alan@lxorguk.ukuu.org.uk>
-Cc: Rabin Vincent <rabin@rab.in>, alan@linux.intel.com,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: Race in vt_event_wait() during suspend/resume
-Message-ID: <20120518180628.GA27021@kroah.com>
-References: <CAH+eYFAm-bp5nRgK4mBJa4CSoXw3V4wNvCUbnB+A8Ywvs3=M1w@mail.gmail.com>
- <20120518124051.6cd03ab0@pyramind.ukuu.org.uk>
+	id S1759322Ab2ERSHI (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 May 2012 14:07:08 -0400
+Received: from mail-lpp01m010-f46.google.com ([209.85.215.46]:58762 "EHLO
+	mail-lpp01m010-f46.google.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1759246Ab2ERSHE convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 18 May 2012 14:07:04 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120518124051.6cd03ab0@pyramind.ukuu.org.uk>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <CAE9FiQUebVR_AdhQVE_Hq-RhB7h5AfH0Z20WaZh=ky5vHEt5BQ@mail.gmail.com>
+References: <1336422606-4244-1-git-send-email-yinghai@kernel.org>
+ <1336422606-4244-6-git-send-email-yinghai@kernel.org> <CAErSpo71rKrZ7ptJjE5Lb6YnrqXVe1eGhn3pyF2Qjp=o8JHQmg@mail.gmail.com>
+ <CAE9FiQUebVR_AdhQVE_Hq-RhB7h5AfH0Z20WaZh=ky5vHEt5BQ@mail.gmail.com>
+From: Bjorn Helgaas <bhelgaas@google.com>
+Date: Fri, 18 May 2012 12:06:42 -0600
+Message-ID: <CAErSpo79gZFGOGdA201r1aAPzE9a1=CtFK7XPbsOjVvRLfNJ3A@mail.gmail.com>
+Subject: Re: [PATCH 05/21] resource: adjust_resource handle resource without parent
+To: Yinghai Lu <yinghai@kernel.org>
+Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Tony Luck <tony.luck@intel.com>, David Miller <davem@davemloft.net>,
+        x86 <x86@kernel.org>, Dominik Brodowski <linux@dominikbrodowski.net>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-arch@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, May 18, 2012 at 12:40:51PM +0100, Alan Cox wrote:
-> On Fri, 18 May 2012 16:34:53 +0530
-> Rabin Vincent <rabin@rab.in> wrote:
-> 
-> > pm_restore_console() is called from the suspend/resume path,
-> > this calls vt_move_to_console(), which calls vt_event_wait().
-> > 
-> > There's a race in this path which causes the process
-> > which requests the suspend to sleep indefinitely waiting
-> > for an event which already happened:
-> > 
-> > P1					P2
-> >  vt_move_to_console()
-> >    set_console()
-> >      schedule_console_callback()
-> >    vt_waitactive()
-> >      check n == fg_console +1
-> > 					console_callback()
-> > 					  switch_screen()
-> > 					  vt_event_post() // no waiters
-> > 
-> >      vt_event_wait() // forever
-> > 
-> > I think the following should fix it.  Comments?
-> > 
-> 
-> Looks right to me.
+On Fri, May 18, 2012 at 11:54 AM, Yinghai Lu <yinghai@kernel.org> wrote:
+> On Fri, May 18, 2012 at 10:12 AM, Bjorn Helgaas <bhelgaas@google.com> wrote:
+>> On Mon, May 7, 2012 at 2:29 PM, Yinghai Lu <yinghai@kernel.org> wrote:
+>
+>> Where does this case occur?  When do you need to adjust a resource
+>> that has no parent?
+>
+> for unassigned pci bridge from BIOS, before scan busn_res.end is 0xff,
+> so you can not insert them, because the bridge could in the middle.
+> Have to update the busn_res.end and insert after the bridge is scanned
 
-Great, Rabin, care to resend it with a proper Signed-off-by: line so
-that I can apply it?
-
-thanks,
-
-greg k-h
+Does the resource have children in this case?  If it has no parent,
+it's not in the resource tree at all, is it?  Is there any reason to
+use adjust_resource() rather than just updating res->start and
+res->end directly?
