@@ -1,55 +1,37 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761894Ab2ERLiH (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 May 2012 07:38:07 -0400
-Received: from lxorguk.ukuu.org.uk ([81.2.110.251]:50179 "EHLO
-	lxorguk.ukuu.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752529Ab2ERLiF (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 May 2012 07:38:05 -0400
-Date: Fri, 18 May 2012 12:40:51 +0100
-From: Alan Cox <alan@lxorguk.ukuu.org.uk>
-To: Rabin Vincent <rabin@rab.in>
-Cc: alan@linux.intel.com, gregkh@linuxfoundation.org,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: Race in vt_event_wait() during suspend/resume
-Message-ID: <20120518124051.6cd03ab0@pyramind.ukuu.org.uk>
-In-Reply-To: <CAH+eYFAm-bp5nRgK4mBJa4CSoXw3V4wNvCUbnB+A8Ywvs3=M1w@mail.gmail.com>
-References: <CAH+eYFAm-bp5nRgK4mBJa4CSoXw3V4wNvCUbnB+A8Ywvs3=M1w@mail.gmail.com>
-X-Mailer: Claws Mail 3.8.0 (GTK+ 2.24.8; x86_64-redhat-linux-gnu)
-Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1761962Ab2ERLor (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 May 2012 07:44:47 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:62611 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755432Ab2ERLop (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 18 May 2012 07:44:45 -0400
+Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
+	Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
+	Kingdom.
+	Registered in England and Wales under Company Registration No. 3798903
+From: David Howells <dhowells@redhat.com>
+In-Reply-To: <CA+55aFx4sEQT=U4DBULeo9=3piOx_pQUws92ovKV5bKsu3hQQQ@mail.gmail.com>
+References: <CA+55aFx4sEQT=U4DBULeo9=3piOx_pQUws92ovKV5bKsu3hQQQ@mail.gmail.com> <1337292816-10839-1-git-send-email-hjl.tools@gmail.com> <1337292816-10839-9-git-send-email-hjl.tools@gmail.com> <4FB58EFD.7010302@zytor.com> <CA+55aFy+XOc350sVuLKDHAaKtz9GdLcVmjxs98N8XLTK4zmMYg@mail.gmail.com> <4FB59474.2020505@zytor.com> <CA+55aFwyem9KoPMhYkE-vcaUDqgP9g7arHbmD-mMHMSKXaRBOw@mail.gmail.com> 
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: dhowells@redhat.com, "H. Peter Anvin" <hpa@zytor.com>,
+        David Daney <ddaney.cavm@gmail.com>,
+        Ralf Baechle <ralf@linux-mips.org>, "H.J. Lu" <hjl.tools@gmail.com>,
+        linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org,
+        mingo@kernel.org, tglx@linutronix.de
+Subject: Re: [PATCH 08/10] Use __kernel_ulong_t in struct msqid64_ds
+Date: Fri, 18 May 2012 12:44:25 +0100
+Message-ID: <29114.1337341465@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 18 May 2012 16:34:53 +0530
-Rabin Vincent <rabin@rab.in> wrote:
+Linus Torvalds <torvalds@linux-foundation.org> wrote:
 
-> pm_restore_console() is called from the suspend/resume path,
-> this calls vt_move_to_console(), which calls vt_event_wait().
-> 
-> There's a race in this path which causes the process
-> which requests the suspend to sleep indefinitely waiting
-> for an event which already happened:
-> 
-> P1					P2
->  vt_move_to_console()
->    set_console()
->      schedule_console_callback()
->    vt_waitactive()
->      check n == fg_console +1
-> 					console_callback()
-> 					  switch_screen()
-> 					  vt_event_post() // no waiters
-> 
->      vt_event_wait() // forever
-> 
-> I think the following should fix it.  Comments?
-> 
+> Note: totally untested. Maybe there's some reason why my anonymous
+> union trick wouldn't work.
 
-Looks right to me.
+It might conceivably break a userspace compiler if it gets exported to
+userspace.  I'm not sure how likely that would be, though.
 
-Alan
+David
