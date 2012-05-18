@@ -1,52 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933580Ab2ERAH4 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 May 2012 20:07:56 -0400
-Received: from shards.monkeyblade.net ([198.137.202.13]:36338 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932585Ab2ERAHy (ORCPT
+	id S933594Ab2ERAIH (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 May 2012 20:08:07 -0400
+Received: from mail-wg0-f44.google.com ([74.125.82.44]:57679 "EHLO
+	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932585Ab2ERAIE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 May 2012 20:07:54 -0400
-Date: Thu, 17 May 2012 20:05:09 -0400 (EDT)
-Message-Id: <20120517.200509.2290282427866555176.davem@davemloft.net>
-To: bpoirier@suse.de
-Cc: netdev@vger.kernel.org, kuznet@ms2.inr.ac.ru, jmorris@namei.org,
-        yoshfuji@linux-ipv6.org, kaber@trash.net, linux-kernel@vger.kernel.org,
-        steffen.klassert@secunet.com
-Subject: Re: [PATCH v3] xfrm: take iphdr size into account for esp payload
- size calculation
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <1337196925-4919-1-git-send-email-bpoirier@suse.de>
-References: <20120514.183952.1459413342269893446.davem@davemloft.net>
-	<1337196925-4919-1-git-send-email-bpoirier@suse.de>
-X-Mailer: Mew version 6.5 on Emacs 24.0.95 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.6 (shards.monkeyblade.net [198.137.202.13]); Thu, 17 May 2012 17:05:13 -0700 (PDT)
+	Thu, 17 May 2012 20:08:04 -0400
+MIME-Version: 1.0
+In-Reply-To: <4FB58EFD.7010302@zytor.com>
+References: <1337292816-10839-1-git-send-email-hjl.tools@gmail.com>
+ <1337292816-10839-9-git-send-email-hjl.tools@gmail.com> <4FB58EFD.7010302@zytor.com>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Thu, 17 May 2012 17:07:42 -0700
+X-Google-Sender-Auth: GPcqiqtJRUNZHIWCwc0aRd4aYnQ
+Message-ID: <CA+55aFy+XOc350sVuLKDHAaKtz9GdLcVmjxs98N8XLTK4zmMYg@mail.gmail.com>
+Subject: Re: [PATCH 08/10] Use __kernel_ulong_t in struct msqid64_ds
+To: "H. Peter Anvin" <hpa@zytor.com>
+Cc: "H.J. Lu" <hjl.tools@gmail.com>, linux-kernel@vger.kernel.org,
+        linux-arch@vger.kernel.org, mingo@kernel.org, tglx@linutronix.de
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Benjamin Poirier <bpoirier@suse.de>
-Date: Wed, 16 May 2012 15:35:25 -0400
+On Thu, May 17, 2012 at 4:51 PM, H. Peter Anvin <hpa@zytor.com> wrote:
+>
+> The sane thing would seem to be to change __BITS_PER_LONG to 32 on x32
+> and fix the padding hacks in struct shmid64_ds; H.J., would you agree?
 
-> Corrects the function that determines the esp payload size.
-> The calculations done in esp4_get_mtu lead to overlength frames in transport
-> mode for certain mtu values and suboptimal frames for others.
-> 
-> According to what is done, mainly in esp_output(), net_header_len aka
-> sizeof(struct iphdr) must be taken into account before doing the alignment
-> calculation.
-> 
-> Signed-off-by: Benjamin Poirier <bpoirier@suse.de>
+Ugh. That looks like a disaster.
 
-This looks great.
+The padding hacks that depend on __BITS_PER_LONG seem pretty damn broken anyway.
 
-Could you please fix net/ipv6/esp6.c too, it seems to have the same
-exact bug.
+They only work if the kernel agrees with the value (which is against
+the whole point of making __BITS_PER_LONG be about some user-level ABI
+thing) or for little-endian machines.
 
-Once you respin this patch with both ipv4 and ipv6 fixed, I'll apply
-it.
+IOW, all the __BITS_PER_LONG games look totally broken to me. I can't
+see how they could possibly even be fixed.
 
-Thank you.
+
+                           Linus
