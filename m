@@ -1,63 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030700Ab2ERDLV (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 May 2012 23:11:21 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:40391 "EHLO
-	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1762532Ab2ERCw0 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 May 2012 22:52:26 -0400
-Message-Id: <20120518023254.521494545@decadent.org.uk>
-User-Agent: quilt/0.60-1
-Date: Fri, 18 May 2012 03:32:55 +0100
-From: Ben Hutchings <ben@decadent.org.uk>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Axel Lin <axel.lin@gmail.com>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>
-Subject: [ 01/53] regulator: Fix the logic to ensure new voltage setting in valid range
-In-Reply-To: <20120518023254.339945758@decadent.org.uk>
-X-SA-Exim-Connect-IP: 192.168.4.185
-X-SA-Exim-Mail-From: ben@decadent.org.uk
-X-SA-Exim-Scanned: No (on shadbolt.decadent.org.uk); SAEximRunCond expanded to false
+	id S1762280Ab2ERDWQ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 May 2012 23:22:16 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:39837 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751562Ab2ERDWO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 17 May 2012 23:22:14 -0400
+Message-ID: <4FB5C050.9070805@kernel.org>
+Date: Thu, 17 May 2012 20:21:52 -0700
+From: "H. Peter Anvin" <hpa@kernel.org>
+Organization: Linux Kernel Organization, Inc.
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:11.0) Gecko/20120329 Thunderbird/11.0.1
+MIME-Version: 1.0
+To: "H.J. Lu" <hjl.tools@gmail.com>
+CC: linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org,
+        torvalds@linux-foundation.org, mingo@kernel.org, tglx@linutronix.de,
+        Paul Mundt <lethal@linux-sh.org>
+Subject: Re: [PATCH 08/10] Use __kernel_ulong_t in struct msqid64_ds
+References: <1337292816-10839-1-git-send-email-hjl.tools@gmail.com> <1337292816-10839-9-git-send-email-hjl.tools@gmail.com> <4FB58EFD.7010302@zytor.com>
+In-Reply-To: <4FB58EFD.7010302@zytor.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.2.18-stable review patch.  If anyone has any objections, please let me know.
+On 05/17/2012 04:51 PM, H. Peter Anvin wrote:
+> 
+> This patch and the one before it seems to have another problem: we
+> currently define __BITS_PER_LONG as:
+> 
+> #ifdef __x86_64__
+> # define __BITS_PER_LONG 64
+> #else
+> # define __BITS_PER_LONG 32
+> #endif
+> 
 
-------------------
+H.J., do you see any problem *other* than this wretched struct
+msqid64_ds with changing the above from __x86_64__ to
 
-From: Axel Lin <axel.lin@gmail.com>
+#if defined(__x86_64__) && !defined(__ILP32__)
 
-commit f55205f4d4a8823a11bb8b37ef2ecbd78fb09463 upstream.
+... in the above?
 
-I think this is a typo.
-To ensure new voltage setting won't greater than desc->max,
-the equation should be desc->min + desc->step * new_val <= desc->max.
+As far as struct msqid64_ds,  I think we can fix it simply because x86
+is the only compat-aware architecture which has to deal with it.
 
-Signed-off-by: Axel Lin <axel.lin@gmail.com>
-Signed-off-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
-Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
----
- drivers/regulator/max8997.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+(Incidentally, if sh is ever expanded to 64 bits, it will have a problem
+in the bigendian configuration...)
 
-diff --git a/drivers/regulator/max8997.c b/drivers/regulator/max8997.c
-index 9657929..17a58c5 100644
---- a/drivers/regulator/max8997.c
-+++ b/drivers/regulator/max8997.c
-@@ -684,7 +684,7 @@ static int max8997_set_voltage_buck(struct regulator_dev *rdev,
- 		}
- 
- 		new_val++;
--	} while (desc->min + desc->step + new_val <= desc->max);
-+	} while (desc->min + desc->step * new_val <= desc->max);
- 
- 	new_idx = tmp_idx;
- 	new_val = tmp_val;
--- 
-1.7.10
-
-
+	-hpa
 
