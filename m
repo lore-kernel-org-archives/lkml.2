@@ -1,80 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1946229Ab2ERXmI (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 May 2012 19:42:08 -0400
-Received: from mail-yx0-f174.google.com ([209.85.213.174]:56929 "EHLO
-	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1030314Ab2ERXmF convert rfc822-to-8bit (ORCPT
+	id S1946252Ab2ERXoO (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 May 2012 19:44:14 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:57741 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1946137Ab2ERXoM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 May 2012 19:42:05 -0400
-MIME-Version: 1.0
-In-Reply-To: <20120518222426.GC23089@lizard>
-References: <20120518222314.GA9425@lizard>
-	<20120518222426.GC23089@lizard>
-Date: Fri, 18 May 2012 16:42:03 -0700
-X-Google-Sender-Auth: pSuPXSvTbPtxEXnMjygyZwStTd0
-Message-ID: <CAMbhsRRTFY-U7e4ifoDKjgy9mQj+p79aa52U=PoOmwBxjpLXNg@mail.gmail.com>
-Subject: Re: [PATCH 03/14] pstore/ram_core: Do not reset restored zone's
- position and size
-From: Colin Cross <ccross@android.com>
-To: Anton Vorontsov <anton.vorontsov@linaro.org>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Kees Cook <keescook@chromium.org>, Tony Luck <tony.luck@intel.com>,
-        Arnd Bergmann <arnd@arndb.de>, John Stultz <john.stultz@linaro.org>,
-        Shuah Khan <shuahkhan@gmail.com>, arve@android.com,
-        Rebecca Schultz Zavin <rebecca@android.com>,
-        Jesper Juhl <jj@chaosbits.net>, Randy Dunlap <rdunlap@xenotime.net>,
-        Stephen Boyd <sboyd@codeaurora.org>, Thomas Meyer <thomas@m3y3r.de>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Marco Stornelli <marco.stornelli@gmail.com>,
-        WANG Cong <xiyou.wangcong@gmail.com>, linux-kernel@vger.kernel.org,
-        devel@driverdev.osuosl.org, linaro-kernel@lists.linaro.org,
-        patches@linaro.org, kernel-team@android.com
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
-X-System-Of-Record: true
+	Fri, 18 May 2012 19:44:12 -0400
+From: Grant Likely <grant.likely@secretlab.ca>
+Subject: Re: [PATCH] GPIO/TCA6424: merge I2C transactions, remove cast
+To: Andreas Schallenberg <Andreas.Schallenberg@3alitytechnica.com>,
+        linus.walleij@stericsson.com, linux-kernel@vger.kernel.org
+In-Reply-To: <0M9AKX-1SNwZq1JrJ-00CWsH@mrelayeu.kundenserver.de>
+References: <0M9AKX-1SNwZq1JrJ-00CWsH@mrelayeu.kundenserver.de>
+Date: Fri, 18 May 2012 17:44:10 -0600
+Message-Id: <20120518234410.E079C3E07C8@localhost>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, May 18, 2012 at 3:24 PM, Anton Vorontsov
-<anton.vorontsov@linaro.org> wrote:
-> Otherwise, the files will survive just one reboot, and on a subsequent
-> boot they will disappear.
->
-> Signed-off-by: Anton Vorontsov <anton.vorontsov@linaro.org>
+On Fri, 18 May 2012 17:01:36 +0200, Andreas Schallenberg <Andreas.Schallenberg@3alitytechnica.com> wrote:
+> From 1a80280e20dfef57c6bc6429e5bdf7e10d10fda9 Mon Sep 17 00:00:00 2001
+> From: Andreas Schallenberg <Andreas.Schallenberg@3alitytechnica.com>
+> Date: Fri, 18 May 2012 16:20:31 +0200
+> Subject: [PATCH] GPIO/TCA6424: merge I2C transactions, remove cast
+> 
+> This is a follow-up to "[PATCH v2] Add support for TCA6424":
+> - Use 3 byte transfers instead of two separate transfers (2+1 byte)
+> - An unnecessary cast removed
+> 
+> Please check especially if endianness conversion is done the way it should be.
+
+It works I suppose.  Personally, I'd explicitly use a byte array, but
+I'll apply this patch as-is anyway.
+
+g.
+
+> 
+> Signed-off-by: Andreas Schallenberg <Andreas.Schallenberg@3alitytechnica.com>
+> 
 > ---
->  fs/pstore/ram_core.c |    1 +
->  1 file changed, 1 insertion(+)
->
-> diff --git a/fs/pstore/ram_core.c b/fs/pstore/ram_core.c
-> index 849a542..dff5127 100644
-> --- a/fs/pstore/ram_core.c
-> +++ b/fs/pstore/ram_core.c
-> @@ -422,6 +422,7 @@ static int __init persistent_ram_post_init(struct persistent_ram_zone *prz, bool
->                                " size %zu, start %zu\n",
->                               buffer_size(prz), buffer_start(prz));
->                        persistent_ram_save_old(prz);
-> +                       return 0;
->                }
->        } else {
->                pr_info("persistent_ram: no valid data in buffer"
+>  drivers/gpio/gpio-pca953x.c |   27 ++++++++++++++++-----------
+>  1 files changed, 16 insertions(+), 11 deletions(-)
+> 
+> diff --git a/drivers/gpio/gpio-pca953x.c b/drivers/gpio/gpio-pca953x.c
+> index 1c313c7..5eee524 100644
+> --- a/drivers/gpio/gpio-pca953x.c
+> +++ b/drivers/gpio/gpio-pca953x.c
+> @@ -98,12 +98,11 @@ static int pca953x_write_reg(struct pca953x_chip *chip, 
+> int reg, u32 val)
+>         if (chip->gpio_chip.ngpio <= 8)
+>                 ret = i2c_smbus_write_byte_data(chip->client, reg, val);
+>         else if (chip->gpio_chip.ngpio == 24) {
+> -               ret = i2c_smbus_write_word_data(chip->client,
+> +               cpu_to_le32s(&val);
+> +               ret = i2c_smbus_write_i2c_block_data(chip->client,
+>                                                 (reg << 2) | REG_ADDR_AI,
+> -                                               val & 0xffff);
+> -               ret = i2c_smbus_write_byte_data(chip->client,
+> -                                               (reg << 2) + 2,
+> -                                               (val & 0xff0000) >> 16);
+> +                                               3,
+> +                                               (u8 *) &val);
+>         }
+>         else {
+>                 switch (chip->chip_type) {
+> @@ -135,22 +134,28 @@ static int pca953x_read_reg(struct pca953x_chip *chip, 
+> int reg, u32 *val)
+>  {
+>         int ret;
+>  
+> -       if (chip->gpio_chip.ngpio <= 8)
+> +       if (chip->gpio_chip.ngpio <= 8) {
+>                 ret = i2c_smbus_read_byte_data(chip->client, reg);
+> +               *val = ret;
+> +       }
+>         else if (chip->gpio_chip.ngpio == 24) {
+> -               ret =  i2c_smbus_read_word_data(chip->client, reg << 2);
+> -               ret |= (i2c_smbus_read_byte_data(chip->client,
+> -                                                (reg << 2) + 2)<<16);
+> +               *val = 0;
+> +               ret = i2c_smbus_read_i2c_block_data(chip->client,
+> +                                               (reg << 2) | REG_ADDR_AI,
+> +                                               3,
+> +                                               (u8 *) val);
+> +               le32_to_cpus(val);
+>         }
+> -       else
+> +       else {
+>                 ret = i2c_smbus_read_word_data(chip->client, reg << 1);
+> +               *val = ret;
+> +       }
+>  
+>         if (ret < 0) {
+>                 dev_err(&chip->client->dev, "failed reading register\n");
+>                 return ret;
+>         }
+>  
+> -       *val = (u32)ret;
+>         return 0;
+>  }
+>  
+> -- 
+> 1.7.3.4
 > --
-> 1.7.9.2
->
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
 
-This causes an interesting behavior change in the console logging.
-Before this change, the console log would show only the messages from
-the last reboot.  After this change, the console log will have logs
-from multiple boots appended to each other.  I can think of some
-places where that could very handy, so I'm not against the change, but
-as is it makes reading the logs much harder - the first oops you see
-while skimming the log may not be from the last reboot.
-
-One possibility would be to insert an obvious (and script parseable)
-header during probe to separate the boots.  Another option would be to
-expand the ringbuffer metadata to contain duplicate start and size
-fields that only cover the most recent reboot, and export two files,
-console-ramoops that contains the last log, and console-all-ramoops
-that contains all the logs.  Or you could just zap the console buffer
-at boot to keep the old behavior.
+-- 
+Grant Likely, B.Sc, P.Eng.
+Secret Lab Technologies, Ltd.
