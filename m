@@ -1,44 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933594Ab2ERAIH (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 May 2012 20:08:07 -0400
-Received: from mail-wg0-f44.google.com ([74.125.82.44]:57679 "EHLO
-	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932585Ab2ERAIE (ORCPT
+	id S966381Ab2ERAKt (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 May 2012 20:10:49 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:57658 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S965781Ab2ERAKr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 May 2012 20:08:04 -0400
-MIME-Version: 1.0
-In-Reply-To: <4FB58EFD.7010302@zytor.com>
-References: <1337292816-10839-1-git-send-email-hjl.tools@gmail.com>
- <1337292816-10839-9-git-send-email-hjl.tools@gmail.com> <4FB58EFD.7010302@zytor.com>
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Thu, 17 May 2012 17:07:42 -0700
-X-Google-Sender-Auth: GPcqiqtJRUNZHIWCwc0aRd4aYnQ
-Message-ID: <CA+55aFy+XOc350sVuLKDHAaKtz9GdLcVmjxs98N8XLTK4zmMYg@mail.gmail.com>
-Subject: Re: [PATCH 08/10] Use __kernel_ulong_t in struct msqid64_ds
-To: "H. Peter Anvin" <hpa@zytor.com>
-Cc: "H.J. Lu" <hjl.tools@gmail.com>, linux-kernel@vger.kernel.org,
-        linux-arch@vger.kernel.org, mingo@kernel.org, tglx@linutronix.de
-Content-Type: text/plain; charset=ISO-8859-1
+	Thu, 17 May 2012 20:10:47 -0400
+From: Grant Likely <grant.likely@secretlab.ca>
+Subject: Re: [PATCH 2/2] gpiolib: Implement devm_gpio_request_one()
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Linus Walleij <linus.walleij@stericsson.com>
+Cc: linux-kernel@vger.kernel.org
+In-Reply-To: <20120512190501.GB11435@sirena.org.uk>
+References: <1335959206-8138-1-git-send-email-broonie@opensource.wolfsonmicro.com> <1335959206-8138-2-git-send-email-broonie@opensource.wolfsonmicro.com> <20120512190501.GB11435@sirena.org.uk>
+Date: Thu, 17 May 2012 18:10:45 -0600
+Message-Id: <20120518001045.259CA3E062C@localhost>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, May 17, 2012 at 4:51 PM, H. Peter Anvin <hpa@zytor.com> wrote:
->
-> The sane thing would seem to be to change __BITS_PER_LONG to 32 on x32
-> and fix the padding hacks in struct shmid64_ds; H.J., would you agree?
+On Sat, 12 May 2012 20:05:02 +0100, Mark Brown <broonie@opensource.wolfsonmicro.com> wrote:
+> On Wed, May 02, 2012 at 12:46:46PM +0100, Mark Brown wrote:
+> > Allow drivers to use the modern request and configure idiom together
+> > with devres.
+> 
+> > As with plain gpio_request() and gpio_request_one() we can't implement
+> > the old school version in terms of _one() as this would force the
+> > explicit selection of a direction in gpio_request() which could break
+> > systems if we pick the wrong one.  Implementing devm_gpio_request_one()
+> > in terms of devm_gpio_request() would needlessly complicate things or
+> > lead to duplication from the unmanaged version depending on how it's
+> > done.
+> > 
+> > Signed-off-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
+> 
+> Any chance we can get this into 3.5?  Writing error handling code is
+> boring :)
 
-Ugh. That looks like a disaster.
+Applied, thanks.  I'll push it out this evening.
 
-The padding hacks that depend on __BITS_PER_LONG seem pretty damn broken anyway.
-
-They only work if the kernel agrees with the value (which is against
-the whole point of making __BITS_PER_LONG be about some user-level ABI
-thing) or for little-endian machines.
-
-IOW, all the __BITS_PER_LONG games look totally broken to me. I can't
-see how they could possibly even be fixed.
+g.
 
 
-                           Linus
+-- 
+Grant Likely, B.Sc, P.Eng.
+Secret Lab Technologies, Ltd.
