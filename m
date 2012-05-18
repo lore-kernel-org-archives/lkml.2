@@ -1,75 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757441Ab2ERPs2 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 May 2012 11:48:28 -0400
-Received: from avon.wwwdotorg.org ([70.85.31.133]:59481 "EHLO
-	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756841Ab2ERPs1 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 May 2012 11:48:27 -0400
-Message-ID: <4FB66F47.8010306@wwwdotorg.org>
-Date: Fri, 18 May 2012 09:48:23 -0600
-From: Stephen Warren <swarren@wwwdotorg.org>
+	id S1757363Ab2ERPtZ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 May 2012 11:49:25 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:12451 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756841Ab2ERPtX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 18 May 2012 11:49:23 -0400
+Message-ID: <4FB66F5D.4020803@redhat.com>
+Date: Fri, 18 May 2012 11:48:45 -0400
+From: Rik van Riel <riel@redhat.com>
 User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
 MIME-Version: 1.0
-To: Dong Aisheng <aisheng.dong@freescale.com>
-CC: Dong Aisheng-B29396 <B29396@freescale.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linus.walleij@stericsson.com" <linus.walleij@stericsson.com>,
-        Guo Shawn-R65073 <r65073@freescale.com>
-Subject: Re: [PATCH RFC 1/1] pinctrl: improve gpio support for dt
-References: <1337090839-21224-1-git-send-email-b29396@freescale.com> <4FB55A35.1010902@wwwdotorg.org> <20120518072613.GJ10347@shlinux2.ap.freescale.net>
-In-Reply-To: <20120518072613.GJ10347@shlinux2.ap.freescale.net>
-X-Enigmail-Version: 1.5pre
-Content-Type: text/plain; charset=ISO-8859-1
+To: Peter Zijlstra <a.p.zijlstra@chello.nl>
+CC: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        torvalds@linux-foundation.org, pjt@google.com, cl@linux.com,
+        bharata.rao@gmail.com, akpm@linux-foundation.org,
+        Lee.Schermerhorn@hp.com, aarcange@redhat.com, danms@us.ibm.com,
+        suresh.b.siddha@intel.com, tglx@linutronix.de,
+        linux-tip-commits@vger.kernel.org
+Subject: Re: [tip:sched/numa] sched/numa: Introduce sys_numa_{t,m}bind()
+References: <tip-nf7brf1b88w0ojwuf689xeet@git.kernel.org>  <4FB66756.2060302@redhat.com> <1337355341.573.68.camel@twins>
+In-Reply-To: <1337355341.573.68.camel@twins>
+Content-Type: text/plain; charset=UTF-8; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/18/2012 01:26 AM, Dong Aisheng wrote:
-> On Fri, May 18, 2012 at 04:06:13AM +0800, Stephen Warren wrote:
->> On 05/15/2012 08:07 AM, Dong Aisheng wrote:
->>> For dt, the gpio base may be dynamically allocated, thus the original
->>> implementation of gpio support based on static gpio number and pin id
-...
->> For example, Tegra might have:
->>
->> gpio-controllers = <&tegra_gpio>; // there's just 1
->>
->> i.MX23 might have:
->>
->> gpio-controllers = <&gpio0 &gpio1 &gpio2 &gpio3>; // it has 4 banks
->>
->> whereas pinctrl-simple/pinctrl-generic might want to put the entire
->> range table in this property, so might do something like:
->>
->> gpio-ranges =	<&gpio0 $gpio_offset $pin_offset $count>
->> 		<&gpio1 $gpio_offset $pin_offset $count> ...;
->>
->> and hence set cellskip to 3. the pinctrl-simple/pinctrl-generic code
->> would need to parse the other 3 cells itself.
+On 05/18/2012 11:35 AM, Peter Zijlstra wrote:
+> On Fri, 2012-05-18 at 11:14 -0400, Rik van Riel wrote:
+
+>> While this may work well for programs written in languages
+>> with pointers, and for virtual machines, I do not see how
+>> eg. a JVM could provide useful hints to the kernel, because
+>> the Java program running on top has no idea about the
+>> memory addresses of its objects, and the Java language has
+>> no way to hint which thread will be the predominant user
+>> of an object.
 >
-> I like this way. :-)
-> You made me come up a few more thoughts on it.
-> Why shouldn't we use this format as a standard binding way for gpio ranges
-> in pinctrl core and let core handle it totally for creating the range table?
+> This is one of the many reasons why you'll never see me use Java or any
+> other 'managed' language.
 
-Yes, that's probably reasonable.
+You are hardly a typical user, though :)
 
-Typically I'd argue that since the pinctrl driver probably knows this
-information, and it's static, it should be in the driver not DT.
-However, since the data is very small, and half of it needs to be in DT
-anyway to provide the ability to look up the gpio_chip, it seems
-reasonable to just put the whole thing in DT..
+Whether we like it or not, managed runtimes are here,
+and people are using them in droves.
 
-> The only concern is i'm not sure if any other SoC needs more cells for
-> this format since we want this to be a standard bind format.
-> But for now i did not see any need, people may raise it if any.
+I believe that the kernel should be able to handle
+NUMA placement for such uses.
 
-There's still the open question re: how to look up the gpio_chip from
-the DT node, since there may be multiple gpio_chips for a single DT node
-(banked controllers). Still, I hope that's just an implementation detail
-rather than anything that conceptually breaks this idea.
+>> I like your code for handling smaller processes in NUMA
+>> systems, but we do need to have a serious discussion on
+>> how to handle processes that do not fit in one node.
+>>
+>> The more I think about it, the more Andrea's code looks
+>> like it might be the more flexible way forward.
+>
+> I still have serious concerns about his approach; it very much assumes
+> there's a temporal page<->thread relation to exploit. This might not at
+> all be true for some programs (including JVM) that have hardly any data
+> separation and just point chase their way around the entire object set.
+
+Neither his approach or your approach will be able to
+help these workloads. I do not see how that should be
+counted against Andrea's approach, though, since it
+does seem to be useful for sane workloads.
+
+> I've also yet to see a coherent patch-set from Andrea with coherent
+> changelogs and comments (this very much precludes PDFs of any kind).
+>
+> And you know I detest the way he cobbled his way around the scheduler
+> instead of integrating it properly. And I'll very much not accept
+> anything like the spaghetti code anywhere near the scheduler I have to
+> maintain. (I recently looked at the THP code and if that's the standard
+> I'm not having it).
+>
+> That said, I'll leave the door open and will consider something like his
+> scanning stuff as an optional add on on-top of this.
+
+No argument there. Your scheduler integration is nicer,
+and Andrea's code could stand some documentation.
+
+> I very much believe in doing the simple thing first, and this is that,
+
+Leave out your syscalls (which might not be useful for
+managed runtimes), and you actually have the simple
+thing :)
+
+I am all in favor of simplicity, and doing one thing
+at a time.
+
+-- 
+All rights reversed
