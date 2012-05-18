@@ -1,18 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964983Ab2ERQoN (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 May 2012 12:44:13 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:57105 "EHLO mx1.redhat.com"
+	id S965048Ab2ERQoQ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 May 2012 12:44:16 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:43947 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758581Ab2ERQdG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1758577Ab2ERQdG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 18 May 2012 12:33:06 -0400
 From: Mauro Carvalho Chehab <mchehab@redhat.com>
 Cc: Mauro Carvalho Chehab <mchehab@redhat.com>,
         Linux Edac Mailing List <linux-edac@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: [PATCH EDAC v26 65/66] edac: Increase version to 3.0.0
-Date: Fri, 18 May 2012 13:32:52 -0300
-Message-Id: <1337358773-6919-66-git-send-email-mchehab@redhat.com>
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Doug Thompson <norsk5@yahoo.com>,
+        Greg K H <gregkh@linuxfoundation.org>
+Subject: [PATCH EDAC v26 49/66] edac: Add debufs nodes to allow doing fake error inject
+Date: Fri, 18 May 2012 13:32:36 -0300
+Message-Id: <1337358773-6919-50-git-send-email-mchehab@redhat.com>
 In-Reply-To: <1337358773-6919-1-git-send-email-mchehab@redhat.com>
 References: <1337358773-6919-1-git-send-email-mchehab@redhat.com>
 To: unlisted-recipients:; (no To-header on input)
@@ -20,35 +22,176 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-There were lots of changes introduced to justify renaming it to
-3.0.0:
+Sometimes, it is useful to have a mechanism that generates fake
+errors, in order to test the EDAC core code, and the userspace
+tools.
 
-  - EDAC core were redesigned to represent all types of
-    memory controllers;
+Provide such mechanism by adding a few debugfs nodes.
 
-  - EDAC API were redesigned to properly represent the memory
-    controller hierarchy;
-
-  - a tracepoint-based API were added to report memory errors.
-
+Reviewed-by: Aristeu Rozanski <arozansk@redhat.com>
+Cc: Doug Thompson <norsk5@yahoo.com>
+Cc: Greg K H <gregkh@linuxfoundation.org>
 Signed-off-by: Mauro Carvalho Chehab <mchehab@redhat.com>
 ---
- drivers/edac/edac_module.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+ drivers/edac/edac_mc_sysfs.c |   87 ++++++++++++++++++++++++++++++++++++++++++
+ include/linux/edac.h         |    8 ++++
+ 2 files changed, 95 insertions(+), 0 deletions(-)
 
-diff --git a/drivers/edac/edac_module.c b/drivers/edac/edac_module.c
-index cbba80d..3454798 100644
---- a/drivers/edac/edac_module.c
-+++ b/drivers/edac/edac_module.c
-@@ -15,7 +15,7 @@
+diff --git a/drivers/edac/edac_mc_sysfs.c b/drivers/edac/edac_mc_sysfs.c
+index 87fb396..daa418b 100644
+--- a/drivers/edac/edac_mc_sysfs.c
++++ b/drivers/edac/edac_mc_sysfs.c
+@@ -17,6 +17,7 @@
+ #include <linux/edac.h>
+ #include <linux/bug.h>
+ #include <linux/pm_runtime.h>
++#include <linux/uaccess.h>
+ 
  #include "edac_core.h"
  #include "edac_module.h"
+@@ -783,6 +784,47 @@ static ssize_t mci_max_location_show(struct device *dev,
+ 	return p - data;
+ }
  
--#define EDAC_VERSION "Ver: 2.1.0"
-+#define EDAC_VERSION "Ver: 3.0.0"
++#ifdef CONFIG_EDAC_DEBUG
++static ssize_t edac_fake_inject_write(struct file *file,
++				      const char __user *data,
++				      size_t count, loff_t *ppos)
++{
++	struct device *dev = file->private_data;
++	struct mem_ctl_info *mci = to_mci(dev);
++	static enum hw_event_mc_err_type type;
++
++	type = mci->fake_inject_ue ? HW_EVENT_ERR_UNCORRECTED
++				   : HW_EVENT_ERR_CORRECTED;
++
++	printk(KERN_DEBUG
++	       "Generating a %s fake error to %d.%d.%d to test core handling. NOTE: this won't test the driver-specific decoding logic.\n",
++		(type == HW_EVENT_ERR_UNCORRECTED) ? "UE" : "CE",
++		mci->fake_inject_layer[0],
++		mci->fake_inject_layer[1],
++		mci->fake_inject_layer[2]
++	       );
++	edac_mc_handle_error(type, mci, 0, 0, 0,
++			     mci->fake_inject_layer[0],
++			     mci->fake_inject_layer[1],
++			     mci->fake_inject_layer[2],
++			     "FAKE ERROR", "for EDAC testing only", NULL);
++
++	return count;
++}
++
++static int debugfs_open(struct inode *inode, struct file *file)
++{
++	file->private_data = inode->i_private;
++	return 0;
++}
++
++static const struct file_operations debug_fake_inject_fops = {
++	.open = debugfs_open,
++	.write = edac_fake_inject_write,
++	.llseek = generic_file_llseek,
++};
++#endif
++
+ /* default Control file */
+ DEVICE_ATTR(reset_counters, S_IWUSR, NULL, mci_reset_counters_store);
  
- #ifdef CONFIG_EDAC_DEBUG
- /* Values of 0 to 4 will generate output */
+@@ -833,6 +875,45 @@ static struct device_type mci_attr_type = {
+ 	.release	= mci_attr_release,
+ };
+ 
++#ifdef CONFIG_EDAC_DEBUG
++int edac_create_debug_nodes(struct mem_ctl_info *mci)
++{
++	struct dentry *d, *parent;
++	char name[80];
++	int i;
++
++	d = debugfs_create_dir(mci->dev.kobj.name, mci->debugfs);
++	if (!d)
++		return -ENOMEM;
++	parent = d;
++
++	for (i = 0; i < mci->n_layers; i++) {
++		sprintf(name, "fake_inject_%s",
++			     edac_layer_name[mci->layers[i].type]);
++		d = debugfs_create_u8(name, S_IRUGO | S_IWUSR, parent,
++				      &mci->fake_inject_layer[i]);
++		if (!d)
++			goto nomem;
++	}
++
++	d = debugfs_create_bool("fake_inject_ue", S_IRUGO | S_IWUSR, parent,
++				&mci->fake_inject_ue);
++	if (!d)
++		goto nomem;
++
++	d = debugfs_create_file("fake_inject", S_IWUSR, parent,
++				&mci->dev,
++				&debug_fake_inject_fops);
++	if (!d)
++		goto nomem;
++
++	return 0;
++nomem:
++	debugfs_remove(mci->debugfs);
++	return -ENOMEM;
++}
++#endif
++
+ /*
+  * Create a new Memory Controller kobject instance,
+  *	mc<id> under the 'mc' directory
+@@ -911,6 +992,9 @@ int edac_create_sysfs_mci_device(struct mem_ctl_info *mci)
+ 		goto fail;
+ #endif
+ 
++#ifdef CONFIG_EDAC_DEBUG
++	edac_create_debug_nodes(mci);
++#endif
+ 	return 0;
+ 
+ fail:
+@@ -937,6 +1021,9 @@ void edac_remove_sysfs_mci_device(struct mem_ctl_info *mci)
+ 
+ 	debugf0("%s()\n", __func__);
+ 
++#ifdef CONFIG_EDAC_DEBUG
++	debugfs_remove(mci->debugfs);
++#endif
+ #ifdef CONFIG_EDAC_LEGACY_SYSFS
+ 	edac_delete_csrow_objects(mci);
+ #endif
+diff --git a/include/linux/edac.h b/include/linux/edac.h
+index 08fdceb..64ae0c5 100644
+--- a/include/linux/edac.h
++++ b/include/linux/edac.h
+@@ -13,9 +13,11 @@
+ #define _LINUX_EDAC_H_
+ 
+ #include <linux/atomic.h>
++#include <linux/device.h>
+ #include <linux/kobject.h>
+ #include <linux/completion.h>
+ #include <linux/workqueue.h>
++#include <linux/debugfs.h>
+ 
+ struct device;
+ 
+@@ -633,6 +635,12 @@ struct mem_ctl_info {
+ 
+ 	/* the internal state of this controller instance */
+ 	int op_state;
++
++#ifdef CONFIG_EDAC_DEBUG
++	struct dentry *debugfs;
++	u8 fake_inject_layer[EDAC_MAX_LAYERS];
++	u32 fake_inject_ue;
++#endif
+ };
+ 
+ #endif
 -- 
 1.7.8
 
