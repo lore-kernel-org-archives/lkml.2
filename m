@@ -1,207 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965375Ab2ERQti (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 May 2012 12:49:38 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:37266 "EHLO mx1.redhat.com"
+	id S965343Ab2ERQth (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 May 2012 12:49:37 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:4551 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758520Ab2ERQdE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1758526Ab2ERQdE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 18 May 2012 12:33:04 -0400
 From: Mauro Carvalho Chehab <mchehab@redhat.com>
 Cc: Mauro Carvalho Chehab <mchehab@redhat.com>,
         Linux Edac Mailing List <linux-edac@vger.kernel.org>,
         Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        =?UTF-8?q?Niklas=20S=C3=B6derlund?= <niklas.soderlund@ericsson.com>,
-        Borislav Petkov <borislav.petkov@amd.com>
-Subject: [PATCH EDAC v26 17/66] i5100_edac: convert driver to use the new edac ABI
-Date: Fri, 18 May 2012 13:32:04 -0300
-Message-Id: <1337358773-6919-18-git-send-email-mchehab@redhat.com>
+        Mark Gross <mark.gross@intel.com>, Doug Thompson <norsk5@yahoo.com>
+Subject: [PATCH EDAC v26 39/66] e752x_edac: provide more info about how DIMMS/ranks are mapped
+Date: Fri, 18 May 2012 13:32:26 -0300
+Message-Id: <1337358773-6919-40-git-send-email-mchehab@redhat.com>
 In-Reply-To: <1337358773-6919-1-git-send-email-mchehab@redhat.com>
 References: <1337358773-6919-1-git-send-email-mchehab@redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
 To: unlisted-recipients:; (no To-header on input)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The legacy edac ABI is going to be removed. Port the driver to use
-and benefit from the new API functionality.
+No funtional changes here. Only the comments got updated.
 
-Cc: "Niklas Söderlund" <niklas.soderlund@ericsson.com>
-Cc: Borislav Petkov <borislav.petkov@amd.com>
+Reviewed-by: Aristeu Rozanski <arozansk@redhat.com>
+Cc: Mark Gross <mark.gross@intel.com>
+Cc: Doug Thompson <norsk5@yahoo.com>
 Signed-off-by: Mauro Carvalho Chehab <mchehab@redhat.com>
 ---
- drivers/edac/i5100_edac.c |   90 ++++++++++++++++++++-------------------------
- 1 files changed, 40 insertions(+), 50 deletions(-)
+ drivers/edac/e752x_edac.c |   26 ++++++++++++++++++++++----
+ 1 files changed, 22 insertions(+), 4 deletions(-)
 
-diff --git a/drivers/edac/i5100_edac.c b/drivers/edac/i5100_edac.c
-index c08e940..691cd49 100644
---- a/drivers/edac/i5100_edac.c
-+++ b/drivers/edac/i5100_edac.c
-@@ -14,6 +14,11 @@
-  * rows for each respective channel are laid out one after another,
-  * the first half belonging to channel 0, the second half belonging
-  * to channel 1.
-+ *
-+ * This driver is for DDR2 DIMMs, and it uses chip select to select among the
-+ * several ranks. However, instead of showing memories as ranks, it outputs
-+ * them as DIMM's. An internal table creates the association between ranks
-+ * and DIMM's.
+diff --git a/drivers/edac/e752x_edac.c b/drivers/edac/e752x_edac.c
+index d28a685..3186512 100644
+--- a/drivers/edac/e752x_edac.c
++++ b/drivers/edac/e752x_edac.c
+@@ -4,10 +4,11 @@
+  * This file may be distributed under the terms of the
+  * GNU General Public License.
+  *
+- * See "enum e752x_chips" below for supported chipsets
++ * Implement support for the e7520, E7525, e7320 and i3100 memory controllers.
+  *
+- * Datasheet:
++ * Datasheets:
+  *	http://www.intel.in/content/www/in/en/chipsets/e7525-memory-controller-hub-datasheet.html
++ *	ftp://download.intel.com/design/intarch/datashts/31345803.pdf
+  *
+  * Written by Tom Zimmerman
+  *
+@@ -16,8 +17,6 @@
+  * 	Wang Zhenyu at intel.com
+  * 	Dave Jiang at mvista.com
+  *
+- * $Id: edac_e752x.c,v 1.5.2.11 2005/10/05 00:43:44 dsp_llnl Exp $
+- *
   */
+ 
  #include <linux/module.h>
- #include <linux/init.h>
-@@ -410,14 +415,6 @@ static int i5100_csrow_to_chan(const struct mem_ctl_info *mci, int csrow)
- 	return csrow / priv->ranksperchan;
- }
+@@ -190,6 +189,25 @@ enum e752x_chips {
+ 	I3100 = 3
+ };
  
--static unsigned i5100_rank_to_csrow(const struct mem_ctl_info *mci,
--				    int chan, int rank)
--{
--	const struct i5100_priv *priv = mci->pvt_info;
--
--	return chan * priv->ranksperchan + rank;
--}
--
- static void i5100_handle_ce(struct mem_ctl_info *mci,
- 			    int chan,
- 			    unsigned bank,
-@@ -427,21 +424,17 @@ static void i5100_handle_ce(struct mem_ctl_info *mci,
- 			    unsigned ras,
- 			    const char *msg)
- {
--	const int csrow = i5100_rank_to_csrow(mci, chan, rank);
--	char *label = NULL;
-+	char detail[80];
- 
--	if (mci->csrows[csrow].channels[0].dimm)
--		label = mci->csrows[csrow].channels[0].dimm->label;
-+	/* Form out message */
-+	snprintf(detail, sizeof(detail),
-+		 "bank %u, cas %u, ras %u\n",
-+		 bank, cas, ras);
- 
--	printk(KERN_ERR
--		"CE chan %d, bank %u, rank %u, syndrome 0x%lx, "
--		"cas %u, ras %u, csrow %u, label \"%s\": %s\n",
--		chan, bank, rank, syndrome, cas, ras,
--		csrow, label, msg);
--
--	mci->ce_count++;
--	mci->csrows[csrow].ce_count++;
--	mci->csrows[csrow].channels[0].ce_count++;
-+	edac_mc_handle_error(HW_EVENT_ERR_CORRECTED, mci,
-+			     0, 0, syndrome,
-+			     chan, rank, -1,
-+			     msg, detail, NULL);
- }
- 
- static void i5100_handle_ue(struct mem_ctl_info *mci,
-@@ -453,20 +446,17 @@ static void i5100_handle_ue(struct mem_ctl_info *mci,
- 			    unsigned ras,
- 			    const char *msg)
- {
--	const int csrow = i5100_rank_to_csrow(mci, chan, rank);
--	char *label = NULL;
--
--	if (mci->csrows[csrow].channels[0].dimm)
--		label = mci->csrows[csrow].channels[0].dimm->label;
-+	char detail[80];
- 
--	printk(KERN_ERR
--		"UE chan %d, bank %u, rank %u, syndrome 0x%lx, "
--		"cas %u, ras %u, csrow %u, label \"%s\": %s\n",
--		chan, bank, rank, syndrome, cas, ras,
--		csrow, label, msg);
-+	/* Form out message */
-+	snprintf(detail, sizeof(detail),
-+		 "bank %u, cas %u, ras %u\n",
-+		 bank, cas, ras);
- 
--	mci->ue_count++;
--	mci->csrows[csrow].ue_count++;
-+	edac_mc_handle_error(HW_EVENT_ERR_UNCORRECTED, mci,
-+			     0, 0, syndrome,
-+			     chan, rank, -1,
-+			     msg, detail, NULL);
- }
- 
- static void i5100_read_log(struct mem_ctl_info *mci, int chan,
-@@ -843,11 +833,10 @@ static void __devinit i5100_init_interleaving(struct pci_dev *pdev,
- static void __devinit i5100_init_csrows(struct mem_ctl_info *mci)
- {
- 	int i;
--	unsigned long total_pages = 0UL;
- 	struct i5100_priv *priv = mci->pvt_info;
--	struct dimm_info *dimm;
- 
--	for (i = 0; i < mci->nr_csrows; i++) {
-+	for (i = 0; i < mci->tot_dimms; i++) {
-+		struct dimm_info *dimm;
- 		const unsigned long npages = i5100_npages(mci, i);
- 		const unsigned chan = i5100_csrow_to_chan(mci, i);
- 		const unsigned rank = i5100_csrow_to_rank(mci, i);
-@@ -855,30 +844,23 @@ static void __devinit i5100_init_csrows(struct mem_ctl_info *mci)
- 		if (!npages)
- 			continue;
- 
--		/*
--		 * FIXME: these two are totally bogus -- I don't see how to
--		 * map them correctly to this structure...
--		 */
--		mci->csrows[i].csrow_idx = i;
--		mci->csrows[i].mci = mci;
--		mci->csrows[i].nr_channels = 1;
--		mci->csrows[i].channels[0].csrow = mci->csrows + i;
--		total_pages += npages;
-+		dimm = EDAC_DIMM_PTR(mci->layers, mci->dimms, mci->n_layers,
-+			       chan, rank, 0);
- 
--		dimm = mci->csrows[i].channels[0].dimm;
- 		dimm->nr_pages = npages;
- 		if (npages) {
--			total_pages += npages;
--
- 			dimm->grain = 32;
- 			dimm->dtype = (priv->mtr[chan][rank].width == 4) ?
--				DEV_X4 : DEV_X8;
-+					DEV_X4 : DEV_X8;
- 			dimm->mtype = MEM_RDDR2;
- 			dimm->edac_mode = EDAC_SECDED;
- 			snprintf(dimm->label, sizeof(dimm->label),
- 				"DIMM%u",
- 				i5100_rank_to_slot(mci, chan, rank));
- 		}
++/*
++ * Those chips Support single-rank and dual-rank memories only.
++ *
++ * On e752x chips, the odd rows are present only on dual-rank memories.
++ * Dividing the rank by two will provide the dimm#
++ *
++ * i3100 MC has a different mapping: it supports only 4 ranks.
++ *
++ * The mapping is (from 1 to n):
++ *	slot	   single-ranked	double-ranked
++ *	dimm #1 -> rank #4		NA
++ *	dimm #2 -> rank #3		NA
++ *	dimm #3 -> rank #2		Ranks 2 and 3
++ *	dimm #4 -> rank $1		Ranks 1 and 4
++ *
++ * FIXME: The current mapping for i3100 considers that it supports up to 8
++ *	  ranks/chanel, but datasheet says that the MC supports only 4 ranks.
++ */
 +
-+		debugf2("dimm channel %d, rank %d, size %zd\n",
-+			chan, rank, PAGES_TO_MiB(npages));
- 	}
- }
- 
-@@ -887,6 +869,7 @@ static int __devinit i5100_init_one(struct pci_dev *pdev,
- {
- 	int rc;
- 	struct mem_ctl_info *mci;
-+	struct edac_mc_layer layers[2];
- 	struct i5100_priv *priv;
- 	struct pci_dev *ch0mm, *ch1mm;
- 	int ret = 0;
-@@ -947,7 +930,14 @@ static int __devinit i5100_init_one(struct pci_dev *pdev,
- 		goto bail_ch1;
- 	}
- 
--	mci = edac_mc_alloc(sizeof(*priv), ranksperch * 2, 1, 0);
-+	layers[0].type = EDAC_MC_LAYER_CHANNEL;
-+	layers[0].size = 2;
-+	layers[0].is_virt_csrow = false;
-+	layers[1].type = EDAC_MC_LAYER_SLOT;
-+	layers[1].size = ranksperch;
-+	layers[1].is_virt_csrow = true;
-+	mci = new_edac_mc_alloc(0, ARRAY_SIZE(layers), layers,
-+			    sizeof(*priv));
- 	if (!mci) {
- 		ret = -ENOMEM;
- 		goto bail_disable_ch1;
+ struct e752x_pvt {
+ 	struct pci_dev *bridge_ck;
+ 	struct pci_dev *dev_d0f0;
 -- 
 1.7.8
 
