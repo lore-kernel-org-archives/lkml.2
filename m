@@ -1,53 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S967951Ab2ERJpW (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 May 2012 05:45:22 -0400
-Received: from mga11.intel.com ([192.55.52.93]:38064 "EHLO mga11.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S967112Ab2ERJpR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 May 2012 05:45:17 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
-   d="scan'208";a="154372161"
-Date: Fri, 18 May 2012 11:55:12 +0200
-From: Samuel Ortiz <sameo@linux.intel.com>
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>
-Cc: Graeme Gregory <gg@slimlogic.co.uk>, linux-kernel@vger.kernel.org,
-        lrg@ti.com, b-cousson@ti.com, linux-omap@vger.kernel.org
-Subject: Re: [PATCHv2 1/4] MFD: palmas PMIC device support
-Message-ID: <20120518095512.GF12015@sortiz-mobl>
-References: <1337064539-3014-1-git-send-email-gg@slimlogic.co.uk>
- <1337064539-3014-2-git-send-email-gg@slimlogic.co.uk>
- <20120515181448.GD19592@opensource.wolfsonmicro.com>
+	id S1762611Ab2ERJ47 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 May 2012 05:56:59 -0400
+Received: from s15943758.onlinehome-server.info ([217.160.130.188]:38614 "EHLO
+	mail.x86-64.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1762250Ab2ERJ45 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 18 May 2012 05:56:57 -0400
+Date: Fri, 18 May 2012 11:56:38 +0200
+From: Borislav Petkov <bp@amd64.org>
+To: Ingo Molnar <mingo@kernel.org>
+Cc: Borislav Petkov <bp@amd64.org>, Mauro Carvalho Chehab <mchehab@redhat.com>,
+        Linux Edac Mailing List <linux-edac@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Aristeu Rozanski <arozansk@redhat.com>,
+        Doug Thompson <norsk5@yahoo.com>, Steven Rostedt <rostedt@goodmis.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Ingo Molnar <mingo@redhat.com>
+Subject: Re: [PATCH v24b] RAS: Add a tracepoint for reporting memory
+ controller events
+Message-ID: <20120518095638.GA20215@aftab.osrc.amd.com>
+References: <1337287277-523-1-git-send-email-mchehab@redhat.com>
+ <20120517214859.GA16777@aftab.osrc.amd.com>
+ <20120518071244.GE429@gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20120515181448.GD19592@opensource.wolfsonmicro.com>
+In-Reply-To: <20120518071244.GE429@gmail.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Mark,
-
-On Tue, May 15, 2012 at 07:14:51PM +0100, Mark Brown wrote:
-> On Tue, May 15, 2012 at 03:48:56PM +0900, Graeme Gregory wrote:
-> > Palmas is a PMIC from Texas Instruments and this is the MFD part of the
-> > driver for this chip. The PMIC has SMPS and LDO regulators, a general
-> > purpose ADC, GPIO, USB OTG mode detection, watchdog and RTC features.
+On Fri, May 18, 2012 at 09:12:44AM +0200, Ingo Molnar wrote:
+> > > Of course, any userspace tools meant to handle errors should not parse
+> > > the above data. They should, instead, use the binary fields provided by
+> > > the tracepoint, mapping them directly into their MIBs.
+> > 
+> > Nacked-by: Borislav Petkov <borislav.petkov@amd.com>
 > 
-> Reviwed-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
-> 
-> however this depends on some new regmap-irq changes that Graeme posted a
-> couple of days ago and are only on regmap at the minute - Samuel, if
-> you're OK with this I guess the easiest thing is if I apply there?
-I'm fine with it. For the MFD parts:
+> Just wondering why this got nacked, and what the 
+> suggestions/plans are to improve the situation:
 
-Acked-by: Samuel Ortiz <sameo@linux.intel.com>
+Basically this is the thread which lead to it: http://marc.info/?l=linux-kernel&m=133709477524773&w=2
 
-Cheers,
-Samuel.
+> I assume Mauro is working on these things to solve problems, or to
+> add features, Mauro could you please give a higher level list of
+> those problems or features? There must be more to it than just a new
+> tracepoint! :-)
+
+My main objection was that the tracepoint to report errors from edac
+contains the following prototype:
+
++	TP_PROTO(const unsigned int err_type,
++		 const unsigned int mc_index,
++		 const char *error_msg,
++		 const char *label,
++		 const char *location,
++		 const char *core_detail,
++		 const char *driver_detail),
+
+and that the last args should be merged simply into one 'const char
+*detail' which every driver can populate as it sees fit.
+
+But Mauro did not want to parse the string in userspace but feed it
+straight into a MIB (which could mean "Men In Black" for all I know),
+right from the tracepoint:
+
+> Of course, any userspace tools meant to handle errors should not parse
+> the above data. They should, instead, use the binary fields provided by
+> the tracepoint, mapping them directly into their MIBs.
+
+And I wanted to have a generic, usable-for-all tracepoint output
+which anyone in userspace can parse, decode, cut, paste as she sees
+fit without forcing kernel output formatting into any abstract error
+management hierarchy or whatever.
+
+As Tony put it, we need to hammer that out properly now before it
+becomes an ABI.
 
 -- 
-Intel Open Source Technology Centre
-http://oss.intel.com/
+Regards/Gruss,
+Boris.
+
+Advanced Micro Devices GmbH
+Einsteinring 24, 85609 Dornach
+GM: Alberto Bozzo
+Reg: Dornach, Landkreis Muenchen
+HRB Nr. 43632 WEEE Registernr: 129 19551
