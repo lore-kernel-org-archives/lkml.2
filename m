@@ -1,19 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965072Ab2ERQvL (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 May 2012 12:51:11 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:63496 "EHLO mx1.redhat.com"
+	id S1759109Ab2ERQwx (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 May 2012 12:52:53 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:30745 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758515Ab2ERQdE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 May 2012 12:33:04 -0400
+	id S1757992Ab2ERQdB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 18 May 2012 12:33:01 -0400
 From: Mauro Carvalho Chehab <mchehab@redhat.com>
 Cc: Mauro Carvalho Chehab <mchehab@redhat.com>,
         Linux Edac Mailing List <linux-edac@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Tim Small <tim@buttersideup.com>
-Subject: [PATCH EDAC v26 29/66] r82600_edac: convert driver to use the new edac ABI
-Date: Fri, 18 May 2012 13:32:16 -0300
-Message-Id: <1337358773-6919-30-git-send-email-mchehab@redhat.com>
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: [PATCH EDAC v26 23/66] i82875p_edac: convert driver to use the new edac ABI
+Date: Fri, 18 May 2012 13:32:10 -0300
+Message-Id: <1337358773-6919-24-git-send-email-mchehab@redhat.com>
 In-Reply-To: <1337358773-6919-1-git-send-email-mchehab@redhat.com>
 References: <1337358773-6919-1-git-send-email-mchehab@redhat.com>
 To: unlisted-recipients:; (no To-header on input)
@@ -24,71 +23,81 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 The legacy edac ABI is going to be removed. Port the driver to use
 and benefit from the new API functionality.
 
-Cc: Tim Small <tim@buttersideup.com>
 Signed-off-by: Mauro Carvalho Chehab <mchehab@redhat.com>
 ---
- drivers/edac/r82600_edac.c |   27 ++++++++++++++++++---------
- 1 files changed, 18 insertions(+), 9 deletions(-)
+ drivers/edac/i82875p_edac.c |   29 +++++++++++++++++++++--------
+ 1 files changed, 21 insertions(+), 8 deletions(-)
 
-diff --git a/drivers/edac/r82600_edac.c b/drivers/edac/r82600_edac.c
-index c41b375..aea1a0c 100644
---- a/drivers/edac/r82600_edac.c
-+++ b/drivers/edac/r82600_edac.c
-@@ -179,10 +179,11 @@ static int r82600_process_error_info(struct mem_ctl_info *mci,
- 		error_found = 1;
+diff --git a/drivers/edac/i82875p_edac.c b/drivers/edac/i82875p_edac.c
+index e16281b..89ca38a 100644
+--- a/drivers/edac/i82875p_edac.c
++++ b/drivers/edac/i82875p_edac.c
+@@ -38,7 +38,8 @@
+ #endif				/* PCI_DEVICE_ID_INTEL_82875_6 */
  
- 		if (handle_errors)
--			edac_mc_handle_ce(mci, page, 0,	/* not avail */
--					syndrome,
--					edac_mc_find_csrow_by_page(mci, page),
--					0, mci->ctl_name);
-+			edac_mc_handle_error(HW_EVENT_ERR_CORRECTED, mci,
-+					     page, 0, syndrome,
-+					     edac_mc_find_csrow_by_page(mci, page),
-+					     0, -1,
-+					     mci->ctl_name, "", NULL);
+ /* four csrows in dual channel, eight in single channel */
+-#define I82875P_NR_CSROWS(nr_chans) (8/(nr_chans))
++#define I82875P_NR_DIMMS		8
++#define I82875P_NR_CSROWS(nr_chans)	(I82875P_NR_DIMMS / (nr_chans))
+ 
+ /* Intel 82875p register addresses - device 0 function 0 - DRAM Controller */
+ #define I82875P_EAP		0x58	/* Error Address Pointer (32b)
+@@ -235,7 +236,9 @@ static int i82875p_process_error_info(struct mem_ctl_info *mci,
+ 		return 1;
+ 
+ 	if ((info->errsts ^ info->errsts2) & 0x0081) {
+-		edac_mc_handle_ce_no_info(mci, "UE overwrote CE");
++		edac_mc_handle_error(HW_EVENT_ERR_UNCORRECTED, mci, 0, 0, 0,
++				     -1, -1, -1,
++				     "UE overwrote CE", "", NULL);
+ 		info->errsts = info->errsts2;
  	}
  
- 	if (info->eapr & BIT(1)) {	/* UE? */
-@@ -190,9 +191,11 @@ static int r82600_process_error_info(struct mem_ctl_info *mci,
+@@ -243,11 +246,15 @@ static int i82875p_process_error_info(struct mem_ctl_info *mci,
+ 	row = edac_mc_find_csrow_by_page(mci, info->eap);
  
- 		if (handle_errors)
- 			/* 82600 doesn't give enough info */
--			edac_mc_handle_ue(mci, page, 0,
--					edac_mc_find_csrow_by_page(mci, page),
--					mci->ctl_name);
-+			edac_mc_handle_error(HW_EVENT_ERR_UNCORRECTED, mci,
-+					     page, 0, 0,
-+					     edac_mc_find_csrow_by_page(mci, page),
-+					     0, -1,
-+					     mci->ctl_name, "", NULL);
- 	}
+ 	if (info->errsts & 0x0080)
+-		edac_mc_handle_ue(mci, info->eap, 0, row, "i82875p UE");
++		edac_mc_handle_error(HW_EVENT_ERR_UNCORRECTED, mci,
++				     info->eap, 0, 0,
++				     row, -1, -1,
++				     "i82875p UE", "", NULL);
+ 	else
+-		edac_mc_handle_ce(mci, info->eap, 0, info->derrsyn, row,
+-				multi_chan ? (info->des & 0x1) : 0,
+-				"i82875p CE");
++		edac_mc_handle_error(HW_EVENT_ERR_CORRECTED, mci,
++				     info->eap, 0, info->derrsyn,
++				     row, multi_chan ? (info->des & 0x1) : 0,
++				     -1, "i82875p CE", "", NULL);
  
- 	return error_found;
-@@ -267,6 +270,7 @@ static void r82600_init_csrows(struct mem_ctl_info *mci, struct pci_dev *pdev,
- static int r82600_probe1(struct pci_dev *pdev, int dev_idx)
+ 	return 1;
+ }
+@@ -390,6 +397,7 @@ static int i82875p_probe1(struct pci_dev *pdev, int dev_idx)
  {
+ 	int rc = -ENODEV;
  	struct mem_ctl_info *mci;
 +	struct edac_mc_layer layers[2];
- 	u8 dramcr;
- 	u32 eapr;
- 	u32 scrub_disabled;
-@@ -281,8 +285,13 @@ static int r82600_probe1(struct pci_dev *pdev, int dev_idx)
- 	debugf2("%s(): sdram refresh rate = %#0x\n", __func__,
- 		sdram_refresh_rate);
- 	debugf2("%s(): DRAMC register = %#0x\n", __func__, dramcr);
--	mci = edac_mc_alloc(0, R82600_NR_CSROWS, R82600_NR_CHANS, 0);
--
+ 	struct i82875p_pvt *pvt;
+ 	struct pci_dev *ovrfl_pdev;
+ 	void __iomem *ovrfl_window;
+@@ -405,9 +413,14 @@ static int i82875p_probe1(struct pci_dev *pdev, int dev_idx)
+ 		return -ENODEV;
+ 	drc = readl(ovrfl_window + I82875P_DRC);
+ 	nr_chans = dual_channel_active(drc) + 1;
+-	mci = edac_mc_alloc(sizeof(*pvt), I82875P_NR_CSROWS(nr_chans),
+-			nr_chans, 0);
+ 
 +	layers[0].type = EDAC_MC_LAYER_CHIP_SELECT;
-+	layers[0].size = R82600_NR_CSROWS;
++	layers[0].size = I82875P_NR_CSROWS(nr_chans);
 +	layers[0].is_virt_csrow = true;
 +	layers[1].type = EDAC_MC_LAYER_CHANNEL;
-+	layers[1].size = R82600_NR_CHANS;
++	layers[1].size = nr_chans;
 +	layers[1].is_virt_csrow = false;
-+	mci = new_edac_mc_alloc(0, ARRAY_SIZE(layers), layers, 0);
- 	if (mci == NULL)
- 		return -ENOMEM;
- 
++	mci = new_edac_mc_alloc(0, ARRAY_SIZE(layers), layers, sizeof(*pvt));
+ 	if (!mci) {
+ 		rc = -ENOMEM;
+ 		goto fail0;
 -- 
 1.7.8
 
