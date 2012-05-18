@@ -1,68 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S967873Ab2ERJbu (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 May 2012 05:31:50 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:50119 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932852Ab2ERJbs (ORCPT
+	id S967894Ab2ERJcF (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 May 2012 05:32:05 -0400
+Received: from mail-lpp01m010-f46.google.com ([209.85.215.46]:36036 "EHLO
+	mail-lpp01m010-f46.google.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S965511Ab2ERJcA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 May 2012 05:31:48 -0400
-Message-ID: <4FB61626.9010506@gmail.com>
-Date: Fri, 18 May 2012 17:28:06 +0800
-From: "WANG.Jiong" <wong.kwongyuan@gmail.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.15) Gecko/20110307 Fedora/3.1.9-0.39.b3pre.fc14 Lightning/1.0b2 Thunderbird/3.1.9
+	Fri, 18 May 2012 05:32:00 -0400
+Date: Fri, 18 May 2012 12:31:49 +0300 (EEST)
+From: Pekka Enberg <penberg@kernel.org>
+X-X-Sender: penberg@tux.localdomain
+To: Joonsoo Kim <js1304@gmail.com>
+cc: Christoph Lameter <cl@linux-foundation.org>, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org
+Subject: Re: [PATCH 3/4] slub: use __SetPageSlab function to set PG_slab
+ flag
+In-Reply-To: <1337269668-4619-4-git-send-email-js1304@gmail.com>
+Message-ID: <alpine.LFD.2.02.1205181231440.3899@tux.localdomain>
+References: <1337269668-4619-1-git-send-email-js1304@gmail.com> <1337269668-4619-4-git-send-email-js1304@gmail.com>
+User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
 MIME-Version: 1.0
-To: Clemens Ladisch <clemens@ladisch.de>
-CC: linux-kernel@vger.kernel.org
-Subject: Re: a volatile related bug in kernel/timer.c ?
-References: <CA++uP6MrvbaaBg3iCZDwYFTQdujPHaKYhAC5FFt+r9M_J-AJ_Q@mail.gmail.com> <4FB615A1.1090203@ladisch.de>
-In-Reply-To: <4FB615A1.1090203@ladisch.de>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/18/2012 05:25 PM, Clemens Ladisch wrote:
-> KwongYuan Wong wrote:
->>   in the function "del_timer" in kernel/timer.c, there is the following code
->>
->> 954  if (timer_pending(timer)) {
->> 955    base = lock_timer_base(timer, &flags);
->> 956    if (timer_pending(timer)) {
->>
->> suppose timer_pending(timer) check in line 954 is A, and in line 956 is B.
->>
->> because the timer_pending(timer) check is very simple, so the result
->> may be saved in a register, and that register is reused
->> by both A and B.  While this should be wrong? the check at B should
->> reload the value from memory instead of using previous
->> result kept in register,  because lock_timer_base may have side-effect
->> which change the result of time_pending?
->>
->> so I guess a barrier() is needed, so that the code should be the following?
->>
->> if (timer_pending(timer)) {
->>   base = lock_timer_base(timer, &flags);
->>   barrier();
->>   if (timer_pending(timer)) {
-> The spin_lock_irqsave() in lock_timer_base() already implies a barrier.
-> (Well, if it's written correctly.)
->
-     Clemens,
+On Fri, 18 May 2012, Joonsoo Kim wrote:
 
-         Yes,  our "spin_lock_irqsave" are implemented wrongly, it's
-without the barrier, fixed
+> To set page-flag, using SetPageXXXX() and __SetPageXXXX() is more
+> understandable and maintainable. So change it.
+> 
+> Signed-off-by: Joonsoo Kim <js1304@gmail.com>
+> 
+> diff --git a/mm/slub.c b/mm/slub.c
+> index c38efce..69342fd 100644
+> --- a/mm/slub.c
+> +++ b/mm/slub.c
+> @@ -1369,7 +1369,7 @@ static struct page *new_slab(struct kmem_cache *s, gfp_t flags, int node)
+>  
+>  	inc_slabs_node(s, page_to_nid(page), page->objects);
+>  	page->slab = s;
+> -	page->flags |= 1 << PG_slab;
+> +	__SetPageSlab(page);
+>  
+>  	start = page_address(page);
 
-         Thanks very much
->> in my chip, the generated assembly is like the following:
->> ( the function "lock_timer_base" in inlined also)
->>
->> 1035         __raw_local_irq_save $7
-> This is not the arch_spin_lock() code I see in my copy of
-> arch/mips/include/asm/spinlock.h.
->
->
-> Regards,
-> Clemens
-
+Applied
