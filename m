@@ -1,99 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1762143Ab2ERGvM (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 May 2012 02:51:12 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:47307 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1760342Ab2ERGvK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 May 2012 02:51:10 -0400
-Date: Fri, 18 May 2012 08:50:51 +0200
-From: Michal Hocko <mhocko@suse.cz>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        Johannes Weiner <hannes@cmpxchg.org>, Mel Gorman <mel@csn.ul.ie>,
-        Minchan Kim <minchan@kernel.org>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Rik van Riel <riel@redhat.com>
-Subject: Re: [PATCH] mm: consider all swapped back pages in used-once logic
-Message-ID: <20120518065051.GA23173@tiehlicka.suse.cz>
-References: <1337246033-13719-1-git-send-email-mhocko@suse.cz>
- <20120517022412.9175f604.akpm@linux-foundation.org>
- <20120517121049.GA11018@tiehlicka.suse.cz>
- <20120517132324.e9bf9fc8.akpm@linux-foundation.org>
+	id S1758917Ab2ERHFE (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 May 2012 03:05:04 -0400
+Received: from mail-gg0-f174.google.com ([209.85.161.174]:54756 "EHLO
+	mail-gg0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751366Ab2ERHE7 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 18 May 2012 03:04:59 -0400
+Message-ID: <4FB5F48D.1090902@gmail.com>
+Date: Fri, 18 May 2012 15:04:45 +0800
+From: Wang Sheng-Hui <shhuiw@gmail.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.18) Gecko/20110617 Thunderbird/3.1.11
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120517132324.e9bf9fc8.akpm@linux-foundation.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Jan Kara <jack@suse.cz>, linux-ext4@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH] ext2: trivial fix to comment for ext2_free_blocks
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu 17-05-12 13:23:24, Andrew Morton wrote:
-> On Thu, 17 May 2012 14:10:49 +0200
-> Michal Hocko <mhocko@suse.cz> wrote:
-> 
-> > > > This patch fixes a regression introduced by this commit for heavy shmem
-> > > 
-> > > A performance regression, specifically.
-> > > 
-> > > Are you able to quantify it?
-> > 
-> > The customer's workload is shmem backed database (80% of RAM) and
-> > they are measuring transactions/s with an IO in the background (20%).
-> > Transactions touch more or less random rows in the table.
-> > The rate goes down drastically when we start swapping out memory.
-> > 
-> > Numbers are more descriptive (without the patch is 100%, with 5
-> > representative runs)
-> > Average rate	315.83%
-> > Best rate	131.76%
-> > Worst rate	641.25%
-> > 
-> > Standard deviation (calibrated to average) is ~4% while without the
-> > patch we are at 62.82%. 
-> > The big variance without the patch is caused by the excessive swapping
-> > which doesn't occur with the patch applied.
-> > 
-> > * Worst run (100%) compared to a random run with the patch
-> > pgpgin	pswpin	pswpout	pgmajfault
-> > 1.58%	0.00%	0.01%	0.22%
-> > 
-> > Average size of the LRU lists:
-> > nr_inactive_anon nr_active_anon nr_inactive_file nr_active_file
-> > 52.91%           7234.72%       249.39%          126.64%
-> > 
-> > * Best run
-> > pgpgin	pswpin	pswpout	pgmajfault
-> > 3.37%	0.00%	0.11%	0.39%
-> > 
-> > nr_inactive_anon nr_active_anon nr_inactive_file nr_active_file
-> > 49.85%           3868.74%       175.03%          121.27%
-> 
-> I turned the above into this soundbite:
-> 
-> : The customer's workload is shmem backed database (80% of RAM) and they are
-> : measuring transactions/s with an IO in the background (20%).  Transactions
-> : touch more or less random rows in the table.  Total runtime was
-> : approximately tripled by commit 64574746 and this patch restores the
-> : previous throughput levels.
-> 
-> Was that truthful?
+The function is ext2_free_blocks(), not ext2_free_blocks_sb().
 
-Total runtime was same for all the runs. It is the number of executed
-transactions that was measured. I guess that what you wrote should be
-more or less equivalent but it's is not what I have numbers for.
-How about:
-"
-Total number of transactions went down 3 times (in the worst case)
-because of commit 64574746. This patch restores the previous numbers.
-"
+Signed-off-by: Wang Sheng-Hui <shhuiw@gmail.com>
+---
+ fs/ext2/balloc.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-Thanks
+diff --git a/fs/ext2/balloc.c b/fs/ext2/balloc.c
+index a8cbe1b..1a6bf5e 100644
+--- a/fs/ext2/balloc.c
++++ b/fs/ext2/balloc.c
+@@ -479,7 +479,7 @@ void ext2_discard_reservation(struct inode *inode)
+ }
+ 
+ /**
+- * ext2_free_blocks_sb() -- Free given blocks and update quota and i_blocks
++ * ext2_free_blocks() -- Free given blocks and update quota and i_blocks
+  * @inode:		inode
+  * @block:		start physcial block to free
+  * @count:		number of blocks to free
 -- 
-Michal Hocko
-SUSE Labs
-SUSE LINUX s.r.o.
-Lihovarska 1060/12
-190 00 Praha 9    
-Czech Republic
+1.7.1
+
