@@ -1,21 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759842Ab2ERXQw (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 May 2012 19:16:52 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:65112 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1946643Ab2ERXGP (ORCPT
+	id S1946664Ab2ERXRO (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 May 2012 19:17:14 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:38665 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1946628Ab2ERXGJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 May 2012 19:06:15 -0400
-Message-Id: <20120518212650.828249272@linuxfoundation.org>
+	Fri, 18 May 2012 19:06:09 -0400
+Message-Id: <20120518212650.644174692@linuxfoundation.org>
 User-Agent: quilt/0.60-19.1
-Date: Fri, 18 May 2012 14:27:07 -0700
+Date: Fri, 18 May 2012 14:27:05 -0700
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Tejun Heo <tj@kernel.org>,
-        "Pavel V. Panteleev" <pp_84@mail.ru>
-Subject: [ 18/47] percpu: pcpu_embed_first_chunk() should free unused parts after all allocs are complete
+        alan@lxorguk.ukuu.org.uk, Markus Kolb <linux-201011@tower-net.de>,
+        =?UTF-8?q?Iker=20Salm=C3=B3n=20San=20Mill=C3=A1n?= 
+	<shaola@esdebian.org>,
+        Jonathan Nieder <jrnieder@gmail.com>,
+        Oliver Neukum <oliver@neukum.org>,
+        =?UTF-8?q?Bj=C3=B8rn=20Mork?= <bjorn@mork.no>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [ 16/47] cdc_ether: Ignore bogus union descriptor for RNDIS devices
 In-Reply-To: <20120518212701.GA5023@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,54 +30,69 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Tejun Heo <tj@kernel.org>
+From: Bjørn Mork <bjorn@mork.no>
 
-commit 42b64281453249dac52861f9b97d18552a7ec62b upstream.
+commit 6eddcb4c82883451aec3be1240f17793370fa62f upstream.
 
-pcpu_embed_first_chunk() allocates memory for each node, copies percpu
-data and frees unused portions of it before proceeding to the next
-group.  This assumes that allocations for different nodes doesn't
-overlap; however, depending on memory topology, the bootmem allocator
-may end up allocating memory from a different node than the requested
-one which may overlap with the portion freed from one of the previous
-percpu areas.  This leads to percpu groups for different nodes
-overlapping which is a serious bug.
+Some RNDIS devices include a bogus CDC Union descriptor pointing
+to non-existing interfaces.  The RNDIS code is already prepared
+to handle devices without a CDC Union descriptor by hardwiring
+the driver to use interfaces 0 and 1, which is correct for the
+devices with the bogus descriptor as well. So we can reuse the
+existing workaround.
 
-This patch separates out copy & partial free from the allocation loop
-such that all allocations are complete before partial frees happen.
-
-This also fixes overlapping frees which could happen on allocation
-failure path - out_free_areas path frees whole groups but the groups
-could have portions freed at that point.
-
-Signed-off-by: Tejun Heo <tj@kernel.org>
-Reported-by: "Pavel V. Panteleev" <pp_84@mail.ru>
-Tested-by: "Pavel V. Panteleev" <pp_84@mail.ru>
-LKML-Reference: <E1SNhwY-0007ui-V7.pp_84-mail-ru@f220.mail.ru>
+Cc: Markus Kolb <linux-201011@tower-net.de>
+Cc: Iker Salmón San Millán <shaola@esdebian.org>
+Cc: Jonathan Nieder <jrnieder@gmail.com>
+Cc: Oliver Neukum <oliver@neukum.org>
+Cc: 655387@bugs.debian.org
+Signed-off-by: Bjørn Mork <bjorn@mork.no>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- mm/percpu.c |   10 ++++++++++
- 1 file changed, 10 insertions(+)
+ drivers/net/usb/cdc_ether.c |   14 ++++++++++++--
+ 1 file changed, 12 insertions(+), 2 deletions(-)
 
---- a/mm/percpu.c
-+++ b/mm/percpu.c
-@@ -1650,6 +1650,16 @@ int __init pcpu_embed_first_chunk(size_t
- 		areas[group] = ptr;
- 
- 		base = min(ptr, base);
-+	}
-+
-+	/*
-+	 * Copy data and free unused parts.  This should happen after all
-+	 * allocations are complete; otherwise, we may end up with
-+	 * overlapping groups.
-+	 */
-+	for (group = 0; group < ai->nr_groups; group++) {
-+		struct pcpu_group_info *gi = &ai->groups[group];
-+		void *ptr = areas[group];
- 
- 		for (i = 0; i < gi->nr_units; i++, ptr += ai->unit_size) {
- 			if (gi->cpu_map[i] == NR_CPUS) {
+--- a/drivers/net/usb/cdc_ether.c
++++ b/drivers/net/usb/cdc_ether.c
+@@ -83,6 +83,7 @@ int usbnet_generic_cdc_bind(struct usbne
+ 	struct cdc_state		*info = (void *) &dev->data;
+ 	int				status;
+ 	int				rndis;
++	bool				android_rndis_quirk = false;
+ 	struct usb_driver		*driver = driver_of(intf);
+ 	struct usb_cdc_mdlm_desc	*desc = NULL;
+ 	struct usb_cdc_mdlm_detail_desc *detail = NULL;
+@@ -195,6 +196,11 @@ int usbnet_generic_cdc_bind(struct usbne
+ 					info->control,
+ 					info->u->bSlaveInterface0,
+ 					info->data);
++				/* fall back to hard-wiring for RNDIS */
++				if (rndis) {
++					android_rndis_quirk = true;
++					goto next_desc;
++				}
+ 				goto bad_desc;
+ 			}
+ 			if (info->control != intf) {
+@@ -271,11 +277,15 @@ next_desc:
+ 	/* Microsoft ActiveSync based and some regular RNDIS devices lack the
+ 	 * CDC descriptors, so we'll hard-wire the interfaces and not check
+ 	 * for descriptors.
++	 *
++	 * Some Android RNDIS devices have a CDC Union descriptor pointing
++	 * to non-existing interfaces.  Ignore that and attempt the same
++	 * hard-wired 0 and 1 interfaces.
+ 	 */
+-	if (rndis && !info->u) {
++	if (rndis && (!info->u || android_rndis_quirk)) {
+ 		info->control = usb_ifnum_to_if(dev->udev, 0);
+ 		info->data = usb_ifnum_to_if(dev->udev, 1);
+-		if (!info->control || !info->data) {
++		if (!info->control || !info->data || info->control != intf) {
+ 			dev_dbg(&intf->dev,
+ 				"rndis: master #0/%p slave #1/%p\n",
+ 				info->control,
 
 
