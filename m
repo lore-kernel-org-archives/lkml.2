@@ -1,51 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1762527Ab2ERBs1 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 May 2012 21:48:27 -0400
-Received: from mprc.pku.edu.cn ([162.105.203.9]:55882 "EHLO mprc.pku.edu.cn"
+	id S967288Ab2ERBsy (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 May 2012 21:48:54 -0400
+Received: from mga02.intel.com ([134.134.136.20]:10798 "EHLO mga02.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1762496Ab2ERBs0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 May 2012 21:48:26 -0400
-Message-ID: <1337305553.1844.3.camel@ubuntu.ubuntu-domain>
-Subject: Re: [PATCH v2 1/3] zsmalloc: support zsmalloc to ARM, MIPS, SUPERH
-From: Guan Xuetao <gxt@mprc.pku.edu.cn>
-To: Minchan Kim <minchan@kernel.org>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Nitin Gupta <ngupta@vflare.org>,
-        Seth Jennings <sjenning@linux.vnet.ibm.com>,
-        Dan Magenheimer <dan.magenheimer@oracle.com>,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        Russell King <linux@arm.linux.org.uk>,
-        Ralf Baechle <ralf@linux-mips.org>, Paul Mundt <lethal@linux-sh.org>,
-        Chen Liqin <liqin.chen@sunplusct.com>
-Date: Fri, 18 May 2012 09:45:53 +0800
-In-Reply-To: <4FB4B109.9000703@kernel.org>
-References: <1337133919-4182-1-git-send-email-minchan@kernel.org>
-	  <1337153329.1751.5.camel@ubuntu.ubuntu-domain>
-	  <4FB44147.5070704@kernel.org>
-	 <1337216199.1837.11.camel@ubuntu.ubuntu-domain>
-	 <4FB4B109.9000703@kernel.org>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.2- 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	id S1762496Ab2ERBsw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 17 May 2012 21:48:52 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.67,351,1309762800"; 
+   d="scan'208";a="145376651"
+From: Huang Ying <ying.huang@intel.com>
+To: Bjorn Helgaas <bhelgaas@google.com>
+Cc: ming.m.lin@intel.com, linux-kernel@vger.kernel.org,
+        linux-pm@vger.kernel.org, "Rafael J. Wysocki" <rjw@sisk.pl>,
+        Huang Ying <ying.huang@intel.com>, Zheng Yan <zheng.z.yan@intel.com>
+Subject: [PATCH -v4 0/2] PCIe: Add PCIe runtime D3cold support
+Date: Fri, 18 May 2012 09:48:43 +0800
+Message-Id: <1337305725-10482-1-git-send-email-ying.huang@intel.com>
+X-Mailer: git-send-email 1.7.10
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2012-05-17 at 17:04 +0900, Minchan Kim wrote:
+This patchset is based on the following patch:
 
-> ...
-> I don't think so.
-> It's terrible experience if all users have to look up local_flush_tlb_kernel_range of arch for using zsmalloc.
-> 
-> BTW, does unicore32 support that function?
-> If so, I would like to add unicore32 in Kconfig.
-> 
-Yes. Thanks.
+[PATCH -v2] ACPI, PM, Specify lowest allowed state for device sleep state
 
-Could you give me some materials on performance and testsuite?
+Changelog:
 
+v4:
 
-Guan Xuetao
+- Minors fixes based on comments from Rafael
 
+v3:
+
+- Drop device.power.power_must_be_on, use pci_dev.no_d3cold instead
+- Drop device.power.power_off_user, use pci_dev.d3cold_allowed instead
+- Use black list instead of white list in pcie port runtime support per request from Bjorn
+- Various fixes based on comments from Rafael
+
+v2:
+
+- Refreshed based on comments from Rafael
+
+[PATCH -v4 1/2] PCIe: Add runtime PM support to PCIe port
+[PATCH -v4 2/2] PCIe: Add PCIe runtime D3cold support
+
+Best Regards,
+Huang Ying
