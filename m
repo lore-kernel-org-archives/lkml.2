@@ -1,52 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758212Ab2ERQJN (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 May 2012 12:09:13 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:62714 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757808Ab2ERQJK (ORCPT
+	id S932173Ab2ERQKL (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 May 2012 12:10:11 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:42702 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754030Ab2ERQKH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 May 2012 12:09:10 -0400
-Date: Fri, 18 May 2012 09:09:03 -0700
-From: Tejun Heo <tj@kernel.org>
-To: koverstreet@google.com
-Cc: linux-bcache@vger.kernel.org, linux-kernel@vger.kernel.org,
-        dm-devel@redhat.com, linux-fsdevel@vger.kernel.org, axboe@kernel.dk,
-        agk@redhat.com, neilb@suse.de
-Subject: Re: [PATCH 04/13] block: Add bio_clone_kmalloc()
-Message-ID: <20120518160903.GD19388@google.com>
-References: <cover.1337308722.git.koverstreet@google.com>
- <1c7c2d4b89bc3d0e907608cec37bcf0ee50f4c0e.1337308722.git.koverstreet@google.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1c7c2d4b89bc3d0e907608cec37bcf0ee50f4c0e.1337308722.git.koverstreet@google.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Fri, 18 May 2012 12:10:07 -0400
+Date: Sat, 19 May 2012 01:10:01 +0900
+From: Takuya Yoshikawa <takuya.yoshikawa@gmail.com>
+To: Ingo Molnar <mingo@kernel.org>
+Cc: Peter Zijlstra <peterz@infradead.org>, linux-kernel@vger.kernel.org,
+        linux-fsdevel@vger.kernel.org, kvm@vger.kernel.org, avi@redhat.com,
+        mtosatti@redhat.com, yoshikawa.takuya@oss.ntt.co.jp
+Subject: Re: [RFC] sched: make callers check lock contention for
+ cond_resched_lock()
+Message-Id: <20120519011001.521acd09c636f97e38f000d6@gmail.com>
+In-Reply-To: <20120518072604.GG429@gmail.com>
+References: <20120503171244.2debdd80931ccf35f387c5fe@gmail.com>
+	<1336034127.13683.197.camel@twins>
+	<20120503212244.6abbfa8bc3f46a7f7a932bb7@gmail.com>
+	<1336048150.22523.17.camel@twins>
+	<20120503220050.e91938418f882b4075526e08@gmail.com>
+	<1336060050.22523.23.camel@twins>
+	<20120511070357.9bf8f9b6636a12927f26bfed@gmail.com>
+	<20120518072604.GG429@gmail.com>
+X-Mailer: Sylpheed 3.2.0beta3 (GTK+ 2.24.6; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, May 17, 2012 at 10:59:51PM -0400, koverstreet@google.com wrote:
-> @@ -729,7 +729,7 @@ static struct bio *bio_chain_clone(struct bio **old, struct bio **next,
->  	}
->  
->  	while (old_chain && (total < len)) {
-> -		tmp = bio_kmalloc(gfpmask, old_chain->bi_max_vecs);
-> +		tmp = bio_clone_kmalloc(old_chain, gfpmask);
->  		if (!tmp)
->  			goto err_out;
->  
-> @@ -751,13 +751,9 @@ static struct bio *bio_chain_clone(struct bio **old, struct bio **next,
->  			if (!bp)
->  				goto err_out;
->  
-> -			__bio_clone(tmp, &bp->bio1);
-> -
+On Fri, 18 May 2012 09:26:05 +0200
+Ingo Molnar <mingo@kernel.org> wrote:
 
-This effectively swaps the order of bio_split() and __bio_clone().  Is
-that safe?  Also, please cc the maintainer.
+> I'm not sure we had a usable spin_is_contended() back then, nor 
+> was the !PREEMPT case in my mind really.
 
-Thanks.
+The fact that both spin_needbreak() and spin_is_contended() can be
+used outside of sched is a bit confusing.
 
--- 
-tejun
+For example, in mm/compaction.c we are using spin_is_contended(), but
+in mm/memory.c spin_needbreak().
+
+BTW, the actual users of spin_is_contended() look to be only:
+	mm/compaction.c
+	security/keys/gc.c
+
+> ( The patch looks ugly though, in 99% of the lines it just does
+>   something that cond_resched_lock() itself could do. )
+
+Please ignore the patch.  I have already found a way to solve my
+problem without cond_resched().
+
+Thanks,
+	Takuya
