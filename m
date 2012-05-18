@@ -1,106 +1,156 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1946366Ab2ERXbZ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 May 2012 19:31:25 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:37906 "EHLO
+	id S1946376Ab2ERXbo (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 May 2012 19:31:44 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:35668 "EHLO
 	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1946292Ab2ERXbP (ORCPT
+	with ESMTP id S1946285Ab2ERXDY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 May 2012 19:31:15 -0400
-From: Grant Likely <grant.likely@secretlab.ca>
-Subject: Re: [PATCH 3/3] gpio: tps65910: dt: process gpio specific device node info
-To: Laxman Dewangan <ldewangan@nvidia.com>, linus.walleij@stericsson.com,
-        sameo@linux.intel.com, broonie@opensource.wolfsonmicro.com,
-        lrg@slimlogic.co.uk
-Cc: linux-kernel@vger.kernel.org, Laxman Dewangan <ldewangan@nvidia.com>
-In-Reply-To: <1337373103-23933-4-git-send-email-ldewangan@nvidia.com>
-References: <1337373103-23933-1-git-send-email-ldewangan@nvidia.com> <1337373103-23933-4-git-send-email-ldewangan@nvidia.com>
-Date: Fri, 18 May 2012 17:31:13 -0600
-Message-Id: <20120518233113.7164E3E07C8@localhost>
+	Fri, 18 May 2012 19:03:24 -0400
+Message-Id: <20120518211600.918346657@linuxfoundation.org>
+User-Agent: quilt/0.60-19.1
+Date: Fri, 18 May 2012 14:16:15 -0700
+From: Greg KH <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
+Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
+        alan@lxorguk.ukuu.org.uk, Mirko Lindner <mlindner@marvell.com>,
+        Stephen Hemminger <shemminger@vyatta.com>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [ 16/54] sky2: fix receive length error in mixed non-VLAN/VLAN traffic
+In-Reply-To: <20120518212656.GA4992@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 19 May 2012 02:01:43 +0530, Laxman Dewangan <ldewangan@nvidia.com> wrote:
-> Parse the gpio specific device node information locally.
-> 
-> Signed-off-by: Laxman Dewangan <ldewangan@nvidia.com>
+3.0-stable review patch.  If anyone has any objections, please let me know.
 
-Acked-by: Grant Likely <grant.likely@secretlab.ca>
+------------------
 
-I expect this needs to go in via Samuel's tree with the mfd patches?
 
-g.
+From: stephen hemminger <shemminger@vyatta.com>
 
-> ---
->  drivers/gpio/gpio-tps65910.c |   36 ++++++++++++++++++++++++++++++++++++
->  1 files changed, 36 insertions(+), 0 deletions(-)
-> 
-> diff --git a/drivers/gpio/gpio-tps65910.c b/drivers/gpio/gpio-tps65910.c
-> index af6dc83..c1ad288 100644
-> --- a/drivers/gpio/gpio-tps65910.c
-> +++ b/drivers/gpio/gpio-tps65910.c
-> @@ -20,6 +20,7 @@
->  #include <linux/i2c.h>
->  #include <linux/platform_device.h>
->  #include <linux/mfd/tps65910.h>
-> +#include <linux/of_device.h>
->  
->  struct tps65910_gpio {
->  	struct gpio_chip gpio_chip;
-> @@ -81,6 +82,37 @@ static int tps65910_gpio_input(struct gpio_chip *gc, unsigned offset)
->  						GPIO_CFG_MASK);
->  }
->  
-> +#ifdef CONFIG_OF
-> +static struct tps65910_board *tps65910_parse_dt_for_gpio(struct device *dev,
-> +		struct tps65910 *tps65910, int chip_ngpio)
-> +{
-> +	struct tps65910_board *tps65910_board = tps65910->of_plat_data;
-> +	unsigned int prop_array[TPS6591X_MAX_NUM_GPIO];
-> +	int ngpio = min(chip_ngpio, TPS6591X_MAX_NUM_GPIO);
-> +	int ret;
-> +	int idx;
-> +
-> +	tps65910_board->gpio_base = -1;
-> +	ret = of_property_read_u32_array(tps65910->dev->of_node,
-> +			"ti,en-gpio-sleep", prop_array, ngpio);
-> +	if (ret < 0) {
-> +		dev_dbg(dev, "ti,en-gpio-sleep not specified\n");
-> +		return tps65910_board;
-> +	}
-> +
-> +	for (idx = 0; idx < ngpio; idx++)
-> +		tps65910_board->en_gpio_sleep[idx] = (prop_array[idx] != 0);
-> +
-> +	return tps65910_board;
-> +}
-> +#else
-> +static struct tps65910_board *tps65910_parse_dt_for_gpio(struct device *dev,
-> +		struct tps65910 *tps65910, int chip_ngpio)
-> +{
-> +	return NULL;
-> +}
-> +#endif
-> +
->  static int __devinit tps65910_gpio_probe(struct platform_device *pdev)
->  {
->  	struct tps65910 *tps65910 = dev_get_drvdata(pdev->dev.parent);
-> @@ -122,6 +154,10 @@ static int __devinit tps65910_gpio_probe(struct platform_device *pdev)
->  	else
->  		tps65910_gpio->gpio_chip.base = -1;
->  
-> +	if (!pdata && tps65910->dev->of_node)
-> +		pdata = tps65910_parse_dt_for_gpio(&pdev->dev, tps65910,
-> +			tps65910_gpio->gpio_chip.ngpio);
-> +
->  	if (!pdata)
->  		goto skip_init;
->  
-> -- 
-> 1.7.1.1
-> 
+[ Upstream commit e072b3fad5f3915102c94628b4971f52ff99dd05 ]
 
--- 
-Grant Likely, B.Sc, P.Eng.
-Secret Lab Technologies, Ltd.
+Bug: The VLAN bit of the MAC RX Status Word is unreliable in several older
+supported chips. Sometimes the VLAN bit is not set for valid VLAN packets
+and also sometimes the VLAN bit is set for non-VLAN packets that came after
+a VLAN packet. This results in a receive length error when VLAN hardware
+tagging is enabled.
+
+Fix: Variation on original fix proposed by Mirko.
+The VLAN information is decoded in the status loop, and can be
+applied to the received SKB there. This eliminates the need for the
+separate tag field in the interface data structure. The tag has to
+be copied and cleared if packet is copied. This version checked out
+with vlan and normal traffic.
+
+Note: vlan_tx_tag_present should be renamed vlan_tag_present, but that
+is outside scope of this.
+
+Reported-by: Mirko Lindner <mlindner@marvell.com>
+Signed-off-by: Stephen Hemminger <shemminger@vyatta.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+---
+ drivers/net/sky2.c |   28 +++++++++++++++++-----------
+ drivers/net/sky2.h |    1 -
+ 2 files changed, 17 insertions(+), 12 deletions(-)
+
+--- a/drivers/net/sky2.c
++++ b/drivers/net/sky2.c
+@@ -2345,9 +2345,11 @@ static struct sk_buff *receive_copy(stru
+ 		skb->ip_summed = re->skb->ip_summed;
+ 		skb->csum = re->skb->csum;
+ 		skb->rxhash = re->skb->rxhash;
++		skb->vlan_tci = re->skb->vlan_tci;
+ 
+ 		pci_dma_sync_single_for_device(sky2->hw->pdev, re->data_addr,
+ 					       length, PCI_DMA_FROMDEVICE);
++		re->skb->vlan_tci = 0;
+ 		re->skb->rxhash = 0;
+ 		re->skb->ip_summed = CHECKSUM_NONE;
+ 		skb_put(skb, length);
+@@ -2433,9 +2435,6 @@ static struct sk_buff *sky2_receive(stru
+ 	struct sk_buff *skb = NULL;
+ 	u16 count = (status & GMR_FS_LEN) >> 16;
+ 
+-	if (status & GMR_FS_VLAN)
+-		count -= VLAN_HLEN;	/* Account for vlan tag */
+-
+ 	netif_printk(sky2, rx_status, KERN_DEBUG, dev,
+ 		     "rx slot %u status 0x%x len %d\n",
+ 		     sky2->rx_next, status, length);
+@@ -2443,6 +2442,9 @@ static struct sk_buff *sky2_receive(stru
+ 	sky2->rx_next = (sky2->rx_next + 1) % sky2->rx_pending;
+ 	prefetch(sky2->rx_ring + sky2->rx_next);
+ 
++	if (vlan_tx_tag_present(re->skb))
++		count -= VLAN_HLEN;	/* Account for vlan tag */
++
+ 	/* This chip has hardware problems that generates bogus status.
+ 	 * So do only marginal checking and expect higher level protocols
+ 	 * to handle crap frames.
+@@ -2500,11 +2502,8 @@ static inline void sky2_tx_done(struct n
+ }
+ 
+ static inline void sky2_skb_rx(const struct sky2_port *sky2,
+-			       u32 status, struct sk_buff *skb)
++			       struct sk_buff *skb)
+ {
+-	if (status & GMR_FS_VLAN)
+-		__vlan_hwaccel_put_tag(skb, be16_to_cpu(sky2->rx_tag));
+-
+ 	if (skb->ip_summed == CHECKSUM_NONE)
+ 		netif_receive_skb(skb);
+ 	else
+@@ -2558,6 +2557,14 @@ static void sky2_rx_checksum(struct sky2
+ 	}
+ }
+ 
++static void sky2_rx_tag(struct sky2_port *sky2, u16 length)
++{
++	struct sk_buff *skb;
++
++	skb = sky2->rx_ring[sky2->rx_next].skb;
++	__vlan_hwaccel_put_tag(skb, be16_to_cpu(length));
++}
++
+ static void sky2_rx_hash(struct sky2_port *sky2, u32 status)
+ {
+ 	struct sk_buff *skb;
+@@ -2616,8 +2623,7 @@ static int sky2_status_intr(struct sky2_
+ 			}
+ 
+ 			skb->protocol = eth_type_trans(skb, dev);
+-
+-			sky2_skb_rx(sky2, status, skb);
++			sky2_skb_rx(sky2, skb);
+ 
+ 			/* Stop after net poll weight */
+ 			if (++work_done >= to_do)
+@@ -2625,11 +2631,11 @@ static int sky2_status_intr(struct sky2_
+ 			break;
+ 
+ 		case OP_RXVLAN:
+-			sky2->rx_tag = length;
++			sky2_rx_tag(sky2, length);
+ 			break;
+ 
+ 		case OP_RXCHKSVLAN:
+-			sky2->rx_tag = length;
++			sky2_rx_tag(sky2, length);
+ 			/* fall through */
+ 		case OP_RXCHKS:
+ 			if (likely(dev->features & NETIF_F_RXCSUM))
+--- a/drivers/net/sky2.h
++++ b/drivers/net/sky2.h
+@@ -2236,7 +2236,6 @@ struct sky2_port {
+ 	u16		     rx_pending;
+ 	u16		     rx_data_size;
+ 	u16		     rx_nfrags;
+-	u16		     rx_tag;
+ 
+ 	struct {
+ 		unsigned long last;
+
+
