@@ -1,43 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S966159Ab2ERLxW (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 May 2012 07:53:22 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:43882 "EHLO mx1.redhat.com"
+	id S966310Ab2ERLyA (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 May 2012 07:54:00 -0400
+Received: from mailhub.sw.ru ([195.214.232.25]:33911 "EHLO relay.sw.ru"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933335Ab2ERLxU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 May 2012 07:53:20 -0400
-Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
-	Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
-	Kingdom.
-	Registered in England and Wales under Company Registration No. 3798903
-From: David Howells <dhowells@redhat.com>
-In-Reply-To: <4FB5C843.9070002@kernel.org>
-References: <4FB5C843.9070002@kernel.org> <1337292816-10839-1-git-send-email-hjl.tools@gmail.com> <1337292816-10839-9-git-send-email-hjl.tools@gmail.com> <4FB58EFD.7010302@zytor.com> <4FB5C050.9070805@kernel.org> <CAMe9rOrKq8Ait8wKudRF535J5c=dDTKekmUN_=HOs5BBLtsoGQ@mail.gmail.com> <CA+55aFxtejaM8ecOw8VYk74OaXfGY7=LO3JSyz3rdHEv2r9goQ@mail.gmail.com> 
-To: "H. Peter Anvin" <hpa@kernel.org>
-Cc: dhowells@redhat.com, Linus Torvalds <torvalds@linux-foundation.org>,
-        "H.J. Lu" <hjl.tools@gmail.com>, linux-kernel@vger.kernel.org,
-        linux-arch@vger.kernel.org, mingo@kernel.org, tglx@linutronix.de,
-        Paul Mundt <lethal@linux-sh.org>
-Subject: Re: [PATCH 08/10] Use __kernel_ulong_t in struct msqid64_ds
-Date: Fri, 18 May 2012 12:53:04 +0100
-Message-ID: <29366.1337341984@redhat.com>
+	id S1754558Ab2ERLx6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 18 May 2012 07:53:58 -0400
+Message-ID: <4FB6384D.7090906@parallels.com>
+Date: Fri, 18 May 2012 15:53:49 +0400
+From: Pavel Emelyanov <xemul@parallels.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.1) Gecko/20120209 Thunderbird/10.0.1
+MIME-Version: 1.0
+To: Andrew Morton <akpm@linux-foundation.org>
+CC: Cyrill Gorcunov <gorcunov@openvz.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        James Bottomley <jbottomley@parallels.com>,
+        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>
+Subject: Re: [rfc 0/4] procfs fdinfo extension
+References: <20120517160738.116113099@openvz.org> <20120517120541.f2dbdee9.akpm@linux-foundation.org>
+In-Reply-To: <20120517120541.f2dbdee9.akpm@linux-foundation.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-H. Peter Anvin <hpa@kernel.org> wrote:
+On 05/17/2012 11:05 PM, Andrew Morton wrote:
+> On Thu, 17 May 2012 20:07:38 +0400
+> Cyrill Gorcunov <gorcunov@openvz.org> wrote:
+> 
+>> when we do restore files such as eventfd/eventpoll we need to pass
+>> appropriate parameters to system calls.
+> 
+> What does "such as" mean?  Provide the whole list, please.
 
-> User mode can, and should, be able to use the exported headers.  David
-> Howells have been doing even more work to distill out the actual
-> exported ABIs from the kernel and remove remaining chaff.
+As far as this particular set is concerned -- we'll add inotify stuff
+there and the signalfd info a bit later (no apps we test use it by now).
+That's it. But once there will appear more fd-s based on anon_inode
+and that are configured using custom syscalls, we'll have to implement
+the "get info" API for them too.
 
-See:
+> I assume we're going to have to add ~100 lines of stuff to each and 
+> every one? Stuff which, according to this patchset, is needed even when
+> CONFIG_CHECKPOINT_RESTORE=n?
 
-	http://git.infradead.org/users/dhowells/linux-headers.git/shortlog/refs/heads/uapi-split
+Generally speaking -- yes. It can be useful to check e.g. what the event
+counter is on some eventfd for debugging purposes. Right now there's no
+way for getting this info.
 
-Linus: Any chance of this being pulled at the end of the next merge window?  I
-know you said you didn't want to do another big header file cleanup for a
-while after pulling the system.h disintegration, but I'm wondering if your
-distaste has expired yet.
+> My reason for disliking our whole approach to integration of c/r is
+> that it exposes us to an ongoing trickle of nasty surprises.  This
+> patchset is one such nasty surprise, and we don't even know how
+> extensive this particular surprise will be.
 
-David
+Well, I wouldn't say it's nasty. The problem with evetpoll, eventfd and
+inotifies, is that each of them is a set-only API unlike most of the other
+APIs for working with fds. I.e. -- you can configure your fd, it will work,
+yes. But you have NO MEANS for finding out what you have configured 
+previously. What we do is just make the API complete.
+
+If you believe that using fdinfo file in proc for that is nasty, then we're
+OK to rework this. But this approach was discussed on LSF this year, that's
+why we've implemented it this way.
+
+> And how many more surprises are we going to get?
+> 
+> 
+> I'm quite apprehensive about this, largely because it has so many
+> unknowns.  How much work would it be to prepare a full list of
+> everything that still needs to be done to fully implement c/r in Linux?
+
+I'd say, that the whole c/r project is being done to determine how much
+information the kernel does NOT provide yet. And we really appreciate that
+this happens on the mainstream kernel, rather than in a separate branch.
+
+> .
+> 
+
+Thanks,
+Pavel
