@@ -1,53 +1,159 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1762774Ab2ERKy1 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 May 2012 06:54:27 -0400
-Received: from mga01.intel.com ([192.55.52.88]:6968 "EHLO mga01.intel.com"
+	id S1760916Ab2ERLAW (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 May 2012 07:00:22 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:40506 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1762427Ab2ERKyZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 May 2012 06:54:25 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
-   d="scan'208";a="154385570"
-Date: Fri, 18 May 2012 13:04:20 +0200
-From: Samuel Ortiz <sameo@linux.intel.com>
-To: Randy Dunlap <rdunlap@xenotime.net>
-Cc: Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
-        LKML <linux-kernel@vger.kernel.org>,
-        Uwe Kleine-Koenig <u.kleine-koenig@pengutronix.de>
-Subject: Re: linux-next: Tree for May 16 (mfd/mc13xxx)
-Message-ID: <20120518110420.GM12015@sortiz-mobl>
-References: <20120516201426.3a162ecd6adeb7132413f1b9@canb.auug.org.au>
- <4FB3CF4E.8000106@xenotime.net>
+	id S932556Ab2ERLAQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 18 May 2012 07:00:16 -0400
+Message-ID: <4FB62BAB.90808@redhat.com>
+Date: Fri, 18 May 2012 07:59:55 -0300
+From: Mauro Carvalho Chehab <mchehab@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4FB3CF4E.8000106@xenotime.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Borislav Petkov <bp@amd64.org>, Ingo Molnar <mingo@kernel.org>
+CC: Linux Edac Mailing List <linux-edac@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Aristeu Rozanski <arozansk@redhat.com>,
+        Doug Thompson <norsk5@yahoo.com>, Steven Rostedt <rostedt@goodmis.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Ingo Molnar <mingo@redhat.com>
+Subject: Re: [PATCH v24b] RAS: Add a tracepoint for reporting memory controller
+ events
+References: <1337287277-523-1-git-send-email-mchehab@redhat.com> <20120517214859.GA16777@aftab.osrc.amd.com> <20120518071244.GE429@gmail.com> <20120518095638.GA20215@aftab.osrc.amd.com>
+In-Reply-To: <20120518095638.GA20215@aftab.osrc.amd.com>
+X-Enigmail-Version: 1.4.1
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Randy,
+Em 18-05-2012 06:56, Borislav Petkov escreveu:
+> On Fri, May 18, 2012 at 09:12:44AM +0200, Ingo Molnar wrote:
+>>>> Of course, any userspace tools meant to handle errors should not parse
+>>>> the above data. They should, instead, use the binary fields provided by
+>>>> the tracepoint, mapping them directly into their MIBs.
+>>>
+>>> Nacked-by: Borislav Petkov <borislav.petkov@amd.com>
+>>
+>> Just wondering why this got nacked, and what the 
+>> suggestions/plans are to improve the situation:
+> 
+> Basically this is the thread which lead to it: http://marc.info/?l=linux-kernel&m=133709477524773&w=2
+> 
+>> I assume Mauro is working on these things to solve problems, or to
+>> add features, Mauro could you please give a higher level list of
+>> those problems or features? There must be more to it than just a new
+>> tracepoint! :-)
+> 
+> My main objection was that the tracepoint to report errors from edac
+> contains the following prototype:
+> 
+> +	TP_PROTO(const unsigned int err_type,
+> +		 const unsigned int mc_index,
+> +		 const char *error_msg,
+> +		 const char *label,
+> +		 const char *location,
+> +		 const char *core_detail,
+> +		 const char *driver_detail),
+> 
+> and that the last args should be merged simply into one 'const char
+> *detail' which every driver can populate as it sees fit.
+> 
+> But Mauro did not want to parse the string in userspace
 
-On Wed, May 16, 2012 at 09:01:18AM -0700, Randy Dunlap wrote:
-> On 05/16/2012 03:14 AM, Stephen Rothwell wrote:
-> 
-> > 
-> > The mfd tree lost its build failure but gained another so I used the
-> > version from next-20120511.
-> 
-> 
-> drivers/mfd/mc13xxx-core.c:726:2: error: implicit declaration of function 'regmap_exit'
-> 
-> 
-> Full randconfig file is attached.
-> (REGMAP is not enabled.)
-I just pushed a patch to fix this one.
+The "detail" field above is, in fact, a group of the following integer
+values:
 
-Cheers,
-Samuel
+- physical address of the error, provided as 3 integers: page, offset an
+  the error offset granularity;
 
--- 
-Intel Open Source Technology Centre
-http://oss.intel.com/
+- ECC syndrome, with has a XOR value used to determine how many and what
+  bit(s) have errors.
+
+"driver_detail" contains other driver-specific details about the errors.
+
+The "location" field is also given by 3 integers: layer0, layer1, layer2 with
+contains the branch/slot/channel or slot/channel or chip select row/channel
+position of the affected DIMM.
+
+On my last comment, I said that I'm convinced that those two fields should
+be broken into their integer components.
+
+The fields at "detail" and "location" are generated by a snprintf() logic 
+inside the EDAC core. "driver_detail" is filled by the drivers.
+
+I did that merge in order to provide a clearer output message, but this
+doesn't help userspace tools that could get the binary information at
+the trace directly.
+
+There's a conceptual issue here, and it seems that Boris is not understanding,
+probably because he doesn't have any experience on handling errors on userspace.
+
+In this point, my previous experience on writing network management
+and my work at the userspace EDAC tool helps me to see both faces of
+the coin.
+
+Currently, EDAC prints an error message, and increments some Kernel counters
+to indicate where the error is located.
+
+Userspace tools can either get the dmesg logs or read the error counters.
+The edac-tools (with is the only public tool for EDAC that I'm aware of)
+prefers to rely on the error counters, instead of parsing the error logs.
+
+I suspect that one of the reasons is because printk messages are not a
+consistent ABI, as changing them are not considered as a Kernel regression.
+
+There are several issues on relying at the Kernel error counters: they don't 
+have decay or any other kind of logic that would allow detecting bursts.
+
+So, on a machine running for 30 days with, let's say, 10 corrected errors,
+it is not possible to tell if they were all generated on a burst (because
+of some temporary interference) or if they are sparse errors generated at 
+the same DRAM, indicating a bad memory.
+
+The big advantage (maybe the only advantage) of using a tracepoint is that
+the binary data can be exported directly.
+
+If the location and memory location integers are exported as integers, it
+is simple to change the edac-tools to work with tracepoints, instead of working
+with the error counters.
+
+With this simple change, the tool can be improved to provide a more 
+consistent memory error report, as userspace should not be worried on
+parsing fields that may change in future without notice.
+
+Also, doing that will avoid the extra effort of joining everything into
+a single string, and then breaking them back into their individual fields
+on userspace.
+
+> but feed it
+> straight into a MIB (which could mean "Men In Black" for all I know),
+> right from the tracepoint:
+
+I can do a s/MIB/Management Information Base/. We can also avoid all other
+acronyms that have more than one sense, like RAS (with all network
+people will associate it with "Remote Access Service").
+
+>> Of course, any userspace tools meant to handle errors should not parse
+>> the above data. They should, instead, use the binary fields provided by
+>> the tracepoint, mapping them directly into their MIBs.
+> 
+> And I wanted to have a generic, usable-for-all tracepoint output
+> which anyone in userspace can parse, decode, cut, paste as she sees
+> fit without forcing kernel output formatting into any abstract error
+> management hierarchy or whatever.
+
+s/printk/trace/? That doesn't sound a good idea. The advantage of
+tracepoints of printk's is that they provide an ABI that allows passing
+strucutured information to userspace.
+
+> As Tony put it, we need to hammer that out properly now before it
+> becomes an ABI.
+
+Yes, sure.
+
+Regards,
+Mauro
+
