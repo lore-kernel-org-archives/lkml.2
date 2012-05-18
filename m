@@ -1,55 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1946025Ab2ERNZr (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 May 2012 09:25:47 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:40129 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933711Ab2ERNZp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 May 2012 09:25:45 -0400
-Date: Fri, 18 May 2012 15:25:24 +0200
-From: Jan Kara <jack@suse.cz>
-To: Wang Sheng-Hui <shhuiw@gmail.com>
-Cc: Jan Kara <jack@suse.cz>, linux-ext4@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] ext2: trivial fix to comment for ext2_free_blocks
-Message-ID: <20120518132524.GB5589@quack.suse.cz>
-References: <4FB5F48D.1090902@gmail.com>
+	id S968010Ab2ERN1c (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 May 2012 09:27:32 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:42396 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1761163Ab2ERN13 convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 18 May 2012 09:27:29 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4FB5F48D.1090902@gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <1337263737-3541-1-git-send-email-andi@firstfloor.org>
+References: <1337263737-3541-1-git-send-email-andi@firstfloor.org>
+Date: Fri, 18 May 2012 21:27:29 +0800
+Message-ID: <CAJd=RBCwLOxQwfmppxxJjfJzEJ+RSoL4MaE9wKtSrotKe2J56w@mail.gmail.com>
+Subject: Re: [PATCH] Add ACPI and power trace points for laptop overheating
+From: Hillf Danton <dhillf@gmail.com>
+To: Andi Kleen <andi@firstfloor.org>
+Cc: linux-acpi@vger.kernel.org, lenb@kernel.org, linux-kernel@vger.kernel.org,
+        Andi Kleen <ak@linux.intel.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri 18-05-12 15:04:45, Wang Sheng-Hui wrote:
-> The function is ext2_free_blocks(), not ext2_free_blocks_sb().
-  Thanks. Merged.
+Hi Andi
 
-								Honza
-> 
-> Signed-off-by: Wang Sheng-Hui <shhuiw@gmail.com>
+On Thu, May 17, 2012 at 10:08 PM, Andi Kleen <andi@firstfloor.org> wrote:
+> From: Andi Kleen <ak@linux.intel.com>
+>
+> Add trace points for ACPI power events which are important for a laptop's
+> thermal: acpi throttling/pstate, ec communication, GPU overheating. Useful
+> for understanding the thermal behaviour of laptops on the thermal edge.
+>
+> The generic power events have gpu_limit, overtemp_pstate and overtemp_throttling
+> I added ACPI specific new events for EC desynchronization (which
+> seems to be a common problem, but is entirely uninstrumented currently),
+> and can lead to lost throttling events.
+>
+> Signed-off-by: Andi Kleen <ak@linux.intel.com>
 > ---
->  fs/ext2/balloc.c |    2 +-
->  1 files changed, 1 insertions(+), 1 deletions(-)
-> 
-> diff --git a/fs/ext2/balloc.c b/fs/ext2/balloc.c
-> index a8cbe1b..1a6bf5e 100644
-> --- a/fs/ext2/balloc.c
-> +++ b/fs/ext2/balloc.c
-> @@ -479,7 +479,7 @@ void ext2_discard_reservation(struct inode *inode)
->  }
->  
->  /**
-> - * ext2_free_blocks_sb() -- Free given blocks and update quota and i_blocks
-> + * ext2_free_blocks() -- Free given blocks and update quota and i_blocks
->   * @inode:		inode
->   * @block:		start physcial block to free
->   * @count:		number of blocks to free
-> -- 
-> 1.7.1
-> 
--- 
-Jan Kara <jack@suse.cz>
-SUSE Labs, CR
+>  Documentation/trace/events-acpi.txt  |   13 ++++++++
+>  Documentation/trace/events-power.txt |   20 +++++++++++++
+>  drivers/acpi/Makefile                |    1 +
+>  drivers/acpi/acpi-trace.c            |    7 ++++
+>  drivers/acpi/ec.c                    |    4 ++
+>  drivers/acpi/processor_thermal.c     |    4 ++
+>  drivers/platform/x86/intel_ips.c     |    4 ++
+>  include/trace/events/power.h         |   51 ++++++++++++++++++++++++++++++++++
+>  kernel/trace/power-traces.c          |    3 ++
+>  9 files changed, 107 insertions(+), 0 deletions(-)
+>  create mode 100644 Documentation/trace/events-acpi.txt
+>  create mode 100644 drivers/acpi/acpi-trace.c
+>
+[...]
+> --- a/drivers/acpi/Makefile
+> +++ b/drivers/acpi/Makefile
+> @@ -73,3 +73,4 @@ obj-$(CONFIG_ACPI_PROCESSOR_AGGREGATOR) += acpi_pad.o
+>  obj-$(CONFIG_ACPI_IPMI)                += acpi_ipmi.o
+>
+>  obj-$(CONFIG_ACPI_APEI)                += apei/
+> +obj-$(CONFIG_TRACEPOINTS)      += acpi-trace.o
+> \ No newline at end of file
+
+For what the newline is?
