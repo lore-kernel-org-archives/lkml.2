@@ -1,23 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030988Ab2ERXWm (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 May 2012 19:22:42 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:65112 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1946511Ab2ERXFJ (ORCPT
+	id S1031210Ab2ERXXG (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 May 2012 19:23:06 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:53122 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1946504Ab2ERXFG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 May 2012 19:05:09 -0400
-Message-Id: <20120518211604.027709476@linuxfoundation.org>
+	Fri, 18 May 2012 19:05:06 -0400
+Message-Id: <20120518211603.940245440@linuxfoundation.org>
 User-Agent: quilt/0.60-19.1
-Date: Fri, 18 May 2012 14:16:49 -0700
+Date: Fri, 18 May 2012 14:16:48 -0700
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk,
-        Toshiharu Okada <toshiharu-linux@dsn.okisemi.com>,
-        "David S. Miller" <davem@davemloft.net>,
+        alan@lxorguk.ukuu.org.uk, Grant Likely <grant.likely@secretlab.ca>,
         Tomoya MORINAGA <tomoya.rohm@gmail.com>
-Subject: [ 50/54] pch_gbe: fixed the issue which receives an unnecessary packet.
+Subject: [ 49/54] pch_gpio: Support new device LAPIS Semiconductor ML7831 IOH
 In-Reply-To: <20120518212656.GA4992@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -27,67 +25,56 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Toshiharu Okada <toshiharu-linux@dsn.okisemi.com>
+From: Tomoya MORINAGA <tomoya.rohm@gmail.com>
 
-commit 5229d87edcd80a3bceb0708ebd767faff2e589a9 upstream.
+commit 868fea0507308b6548bba7debe5f5c2d5ca47fca upstream.
 
-This patch fixed the issue which receives an unnecessary packet before link
+ML7831 is companion chip for Intel Atom E6xx series.
 
-When using PHY of GMII, an unnecessary packet is received,
-And it becomes impossible to receive a packet after link up.
-
-Signed-off-by: Toshiharu Okada <toshiharu-linux@dsn.okisemi.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+Signed-off-by: Grant Likely <grant.likely@secretlab.ca>
 Signed-off-by: Tomoya MORINAGA <tomoya.rohm@gmail.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
 ---
- drivers/net/pch_gbe/pch_gbe_main.c |   21 ++++++++++++++-------
- 1 file changed, 14 insertions(+), 7 deletions(-)
+ drivers/gpio/Kconfig    |   11 ++++++-----
+ drivers/gpio/pch_gpio.c |    1 +
+ 2 files changed, 7 insertions(+), 5 deletions(-)
 
---- a/drivers/net/pch_gbe/pch_gbe_main.c
-+++ b/drivers/net/pch_gbe/pch_gbe_main.c
-@@ -717,13 +717,6 @@ static void pch_gbe_configure_rx(struct
- 	iowrite32(rdba, &hw->reg->RX_DSC_BASE);
- 	iowrite32(rdlen, &hw->reg->RX_DSC_SIZE);
- 	iowrite32((rdba + rdlen), &hw->reg->RX_DSC_SW_P);
--
--	/* Enables Receive DMA */
--	rxdma = ioread32(&hw->reg->DMA_CTRL);
--	rxdma |= PCH_GBE_RX_DMA_EN;
--	iowrite32(rxdma, &hw->reg->DMA_CTRL);
--	/* Enables Receive */
--	iowrite32(PCH_GBE_MRE_MAC_RX_EN, &hw->reg->MAC_RX_EN);
- }
+--- a/drivers/gpio/Kconfig
++++ b/drivers/gpio/Kconfig
+@@ -350,18 +350,19 @@ config GPIO_LANGWELL
+ 	  Say Y here to support Intel Langwell/Penwell GPIO.
  
- /**
-@@ -1097,6 +1090,19 @@ void pch_gbe_update_stats(struct pch_gbe
- 	spin_unlock_irqrestore(&adapter->stats_lock, flags);
- }
+ config GPIO_PCH
+-	tristate "Intel EG20T PCH / OKI SEMICONDUCTOR ML7223 IOH GPIO"
++	tristate "Intel EG20T PCH/LAPIS Semiconductor IOH(ML7223/ML7831) GPIO"
+ 	depends on PCI && X86
+ 	help
+ 	  This driver is for PCH(Platform controller Hub) GPIO of Intel Topcliff
+ 	  which is an IOH(Input/Output Hub) for x86 embedded processor.
+ 	  This driver can access PCH GPIO device.
  
-+static void pch_gbe_start_receive(struct pch_gbe_hw *hw)
-+{
-+	u32 rxdma;
-+
-+	/* Enables Receive DMA */
-+	rxdma = ioread32(&hw->reg->DMA_CTRL);
-+	rxdma |= PCH_GBE_RX_DMA_EN;
-+	iowrite32(rxdma, &hw->reg->DMA_CTRL);
-+	/* Enables Receive */
-+	iowrite32(PCH_GBE_MRE_MAC_RX_EN, &hw->reg->MAC_RX_EN);
-+	return;
-+}
-+
- /**
-  * pch_gbe_intr - Interrupt Handler
-  * @irq:   Interrupt number
-@@ -1717,6 +1723,7 @@ int pch_gbe_up(struct pch_gbe_adapter *a
- 	pch_gbe_alloc_tx_buffers(adapter, tx_ring);
- 	pch_gbe_alloc_rx_buffers(adapter, rx_ring, rx_ring->count);
- 	adapter->tx_queue_len = netdev->tx_queue_len;
-+	pch_gbe_start_receive(&adapter->hw);
+-	  This driver also can be used for OKI SEMICONDUCTOR IOH(Input/
+-	  Output Hub), ML7223.
++	  This driver also can be used for LAPIS Semiconductor IOH(Input/
++	  Output Hub), ML7223 and ML7831.
+ 	  ML7223 IOH is for MP(Media Phone) use.
+-	  ML7223 is companion chip for Intel Atom E6xx series.
+-	  ML7223 is completely compatible for Intel EG20T PCH.
++	  ML7831 IOH is for general purpose use.
++	  ML7223/ML7831 is companion chip for Intel Atom E6xx series.
++	  ML7223/ML7831 is completely compatible for Intel EG20T PCH.
  
- 	mod_timer(&adapter->watchdog_timer, jiffies);
- 
+ config GPIO_ML_IOH
+ 	tristate "OKI SEMICONDUCTOR ML7213 IOH GPIO support"
+--- a/drivers/gpio/pch_gpio.c
++++ b/drivers/gpio/pch_gpio.c
+@@ -287,6 +287,7 @@ static int pch_gpio_resume(struct pci_de
+ static DEFINE_PCI_DEVICE_TABLE(pch_gpio_pcidev_id) = {
+ 	{ PCI_DEVICE(PCI_VENDOR_ID_INTEL, 0x8803) },
+ 	{ PCI_DEVICE(PCI_VENDOR_ID_ROHM, 0x8014) },
++	{ PCI_DEVICE(PCI_VENDOR_ID_ROHM, 0x8803) },
+ 	{ 0, }
+ };
+ MODULE_DEVICE_TABLE(pci, pch_gpio_pcidev_id);
 
 
