@@ -1,76 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1161037Ab2ERKFL (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 May 2012 06:05:11 -0400
-Received: from mail.mev.co.uk ([62.49.15.74]:55605 "EHLO mail.mev.co.uk"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S967310Ab2ERKFJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 May 2012 06:05:09 -0400
-Message-ID: <4FB61ECE.6060202@mev.co.uk>
-Date: Fri, 18 May 2012 11:05:02 +0100
-From: Ian Abbott <abbotti@mev.co.uk>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120516 Thunderbird/12.0.1
+	id S967955Ab2ERKGL (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 May 2012 06:06:11 -0400
+Received: from moutng.kundenserver.de ([212.227.17.9]:55242 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S967889Ab2ERKGI (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 18 May 2012 06:06:08 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Kent Overstreet <koverstreet@google.com>
+Subject: Re: [Bcache v13 00/16]
+Date: Fri, 18 May 2012 10:06:04 +0000
+User-Agent: KMail/1.12.2 (Linux/3.4.0-rc3; KDE/4.3.2; x86_64; ; )
+Cc: linux-bcache@vger.kernel.org, linux-kernel@vger.kernel.org,
+        dm-devel@redhat.com, tejun@google.com, agk@redhat.com
+References: <cover.1336619038.git.koverstreet@google.com>
+In-Reply-To: <cover.1336619038.git.koverstreet@google.com>
 MIME-Version: 1.0
-To: H Hartley Sweeten <hartleys@visionengravers.com>
-CC: Ian Abbott <ian.abbott@mev.co.uk>, Greg KH <gregkh@linuxfoundation.org>,
-        Linux Kernel <linux-kernel@vger.kernel.org>,
-        "devel@driverdev.osuosl.org" <devel@driverdev.osuosl.org>,
-        "fmhess@users.sourceforge.net" <fmhess@users.sourceforge.net>
-Subject: Re: [PATCH] staging: comedi: Convert struct addi_board initialization
- to C99 format
-References: <201205161751.56913.hartleys@visionengravers.com> <20120517021805.GA32592@kroah.com> <ADE657CA350FB648AAC2C43247A983F00206986FBDDF@AUSP01VMBX24.collaborationhost.net> <4FB49E74.8030409@mev.co.uk> <20120517133221.GB5090@kroah.com> <4FB51FFA.3090800@mev.co.uk> <ADE657CA350FB648AAC2C43247A983F0020698AE0FF8@AUSP01VMBX24.collaborationhost.net> <4FB54356.5020203@mev.co.uk> <ADE657CA350FB648AAC2C43247A983F0020698AE1119@AUSP01VMBX24.collaborationhost.net>
-In-Reply-To: <ADE657CA350FB648AAC2C43247A983F0020698AE1119@AUSP01VMBX24.collaborationhost.net>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
 Content-Transfer-Encoding: 7bit
+Message-Id: <201205181006.04575.arnd@arndb.de>
+X-Provags-ID: V02:K0:J16oyAfcliy0mfWXWY3HoRKWZxzxOVsGRtjQKPvuVEz
+ 9KmgCtLE5aVtkaf9HZCSWSat6xhBH2Pfg5pyd3JfdT1YOHN3yG
+ vc1dYEoHDxHuZJrITz+/ZGsF41bNmZnnSE6IqEKzLx+twM+AKl
+ 4iESc9gyJ2UgUU6O8I641DDqyLpLwIUFfCuCugQdsDXGgYq9DO
+ stz14P4ux0dT3WbrAA35fzUN4xiJb0jjFyt1wyF2lQXGDOjv2Y
+ oSSm3B5bF4sPv3YIy8enxT4KJaH1EBeXfD6j5R1GLaNlNFFxjU
+ MuhPEJI7ofLMP2aMY6NTAIix9w/IA/DYhGWiAuunxda6MaLoKB
+ tUUlFBSIUuJzRe+DvtYE=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2012-05-17 22:12, H Hartley Sweeten wrote:
-> On Thursday, May 17, 2012 11:29 AM, Ian Abbott wrote:
->> On 17/05/2012 17:38, H Hartley Sweeten wrote:
->>> BTW, what actual hardware do you have available to test with?
->>
->> Not a lot.  Just the Amplicon cards (amplc_* drivers).
->
-> Speaking of the amplc_* drivers... What's up with them?
->
-> The dio200, pc236, and pc263 drivers appear to be some kind of
-> hybrid comedi driver/comedi pci driver.
+On Thursday 10 May 2012, Kent Overstreet wrote:
+> TODO/known issues:
+> 
+> __up_write() needs to be exported for bcache to compile as a module - it's
+> used for bypassing lockdep when traversing the btree during garbage
+> collection. If someone else knows a better solution, please let me know.
+> 
+> The userspace interface is going to change before it goes in. The general
+> consensus at LSF was that we don't want yet another interface for
+> probing/managing block devices, and dm exists so we may as well use that. I
+> don't think anyone's started on that yet, though.
+> 
+> Documentation needs to be updated. That's being actively worked on, though.
 
-That's right.  The ISA devices and PCI devices are selected separately 
-in the configuration, but they are similar enough to share the same code.
+Hi Kent,
 
-> If the driver is simply
-> registered as a comedi pci driver will the isa drivers still work?
+Sorry for jumping in late in the discussion. I believe we discussed the
+requirements for the low-end media when you posted v12 and it seemed that
+there are issues with a lot of the low-end media you were planning to
+support. I have seen devices with 12MB or 16MB erase block size, which you 
+didn't handle well, and many devices are severely limited on the number of
+buckets (erase blocks that a device can write to concurrently), typically
+3 to 8 for an SD card and slightly more for a USB drive.
 
-Yes if both the ISA devices and PCI devices are enabled in the 
-configuration.  But you might have one or the other.
+Are you still planning to support those devices or are you focusing now
+on other hardware? If you plan to support them, what are you current
+limits on the bucket size and the number of buckets?
 
-In amplc_dio200.c (for example, but similarly for the others), you can 
-assume that at least one of the CONFIG_COMEDI_AMPLC_DIO200_ISA and 
-CONFIG_COMEDI_AMPLC_DIO200_PCI macros is #define'd, so you could do 
-(with the existing variable names, that you'd probably change):
+FWIW, Tixy has written a tool named flashsim[1] to simulate the behavior
+of all kinds of flash drives, so you can use a blocktrace file as
+input and it will tell you the write amplification factor that a given
+drive would suffer given that workload. You can use it to find out how
+your algorithms would interact with devices that can only support a
+smaller number of buckets that you would actually want.
 
-#ifdef CONFIG_COMEDI_AMPLC_DIO200_PCI
-module_comedi_pci_driver(driver_amplc_dio200, 
-driver_amplc_dio200_pci_driver);
-#else
-module_comedi_driver(driver_amplc_dio200);
-#endif
+	Arnd
 
-(I guess you'd change driver_amplc_dio200 to amplc_dio200_driver and 
-driver_amplc_dio200_pci_driver to amplc_dio200_pci_driver.)
-
-> If so we can get rid of a bunch of #ifdef stuff.
-
-Some of them are there to separately configure the ISA and PCI devices 
-and some are just there to trim out some code that is unreachable when 
-one or the other isn't defined.
-
-I tend not to include several functions within the same #ifdef, so it 
-should be easy to move things around to avoid forward declarations.
-
--- 
--=( Ian Abbott @ MEV Ltd.    E-mail: <abbotti@mev.co.uk>        )=-
--=( Tel: +44 (0)161 477 1898   FAX: +44 (0)161 718 3587         )=-
+[1] http://yxit.co.uk/public/flash-performance/
