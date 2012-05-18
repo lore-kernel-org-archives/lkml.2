@@ -1,54 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965703Ab2ERRTO (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 May 2012 13:19:14 -0400
-Received: from www.tglx.de ([62.245.132.106]:59989 "EHLO Tesla.tglx.de"
+	id S965803Ab2ERRT3 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 May 2012 13:19:29 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:62762 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932482Ab2ERRMy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 May 2012 13:12:54 -0400
-Message-Id: <20120518163107.510619939@glx-um.de>
-User-Agent: quilt/0.48-1
-Date: Fri, 18 May 2012 16:45:56 -0000
-From: Anna-Maria Gleixner <anna-maria@glx-um.de>
-To: LKML <linux-kernel@vger.kernel.org>
-Cc: Thomas Gleixner <tglx@linutronix.de>, Matt Turner <mattst88@gmail.com>
-Subject: [patch 24/24] alpha: Use generic time config
-References: <20120518163020.548627576@glx-um.de>
-Content-Disposition: inline; filename=alpha-use-generic-time-config.patch
-X-TGLX-Spam-Score: -1.0
-X-TGLX-Spam-Level: -
-X-TGLX-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1
+	id S965404Ab2ERRTZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 18 May 2012 13:19:25 -0400
+Date: Fri, 18 May 2012 14:19:12 -0300
+From: Arnaldo Carvalho de Melo <acme@redhat.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: David Ahern <dsahern@gmail.com>, Stephane Eranian <eranian@google.com>,
+        linux-kernel@vger.kernel.org, mingo@elte.hu
+Subject: Re: [PATCH v2 4/5] perf record: add meta-data support for pipe-mode
+Message-ID: <20120518171911.GH2636@infradead.org>
+References: <1337081295-10303-1-git-send-email-eranian@google.com>
+ <1337081295-10303-5-git-send-email-eranian@google.com>
+ <4FB32032.3000509@gmail.com>
+ <CABPqkBQyZfSczhAROdH8p0_asy=c2AJho4Kv9wRYabaLNKkURA@mail.gmail.com>
+ <4FB67DE5.8050000@gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4FB67DE5.8050000@gmail.com>
+X-Url: http://acmel.wordpress.com
+User-Agent: Mutt/1.5.20 (2009-12-10)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Anna-Maria Gleixner <anna-maria@glx-um.de>
-Cc: Matt Turner <mattst88@gmail.com>
----
- arch/alpha/Kconfig |    4 +---
- 1 file changed, 1 insertion(+), 3 deletions(-)
+Em Fri, May 18, 2012 at 10:50:45AM -0600, David Ahern escreveu:
+> On 5/16/12 1:41 AM, Stephane Eranian wrote:
+> >On Wed, May 16, 2012 at 5:34 AM, David Ahern<dsahern@gmail.com>  wrote:
+> >>I love the feature and it works nicely, but there has been push back on
+> >>adding more synthesized events.  Also the size of the patch is a bit much to
+> >>take in. If there is no objection to the synthesized can you break the patch
+> >>up -- e.g., introduce the events in one, synthesis and processing functions
+> >>in another, plug into the commands, ...
+> >>
+> >Without new synthesized events, you cannot make this work. This is by
+> >construction
+> >of the pipe mode. Meta-data has be be injected in the stream and
+> >therefore it needs
+> >PERF_RECORD_* types.
+> 
+> Understood. I don't object to synthesized events.
+> 
+> Arnaldo: preferences?
 
-Index: linux/arch/alpha/Kconfig
-===================================================================
---- linux.orig/arch/alpha/Kconfig
-+++ linux/arch/alpha/Kconfig
-@@ -15,6 +15,7 @@ config ALPHA
- 	select GENERIC_IRQ_SHOW
- 	select ARCH_WANT_OPTIONAL_GPIOLIB
- 	select ARCH_HAVE_NMI_SAFE_CMPXCHG
-+	select GENERIC_CMOS_UPDATE
- 	help
- 	  The Alpha is a 64-bit general-purpose processor designed and
- 	  marketed by the Digital Equipment Corporation of blessed memory,
-@@ -47,9 +48,6 @@ config GENERIC_CALIBRATE_DELAY
- 	bool
- 	default y
- 
--config GENERIC_CMOS_UPDATE
--        def_bool y
--
- config GENERIC_GPIO
- 	bool
- 
+PeterZ was the one objecting to adding more userspace only events,
+Peter?
 
-
+- Arnaldo
