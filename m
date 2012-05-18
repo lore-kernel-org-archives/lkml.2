@@ -1,30 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1762753Ab2ERKuT (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 May 2012 06:50:19 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:42816 "EHLO
+	id S1762766Ab2ERKuq (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 May 2012 06:50:46 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:42824 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752344Ab2ERKuO (ORCPT
+	with ESMTP id S1756077Ab2ERKun (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 May 2012 06:50:14 -0400
-Date: Fri, 18 May 2012 03:49:44 -0700
-From: tip-bot for Seiji Aguchi <seiji.aguchi@hds.com>
-Message-ID: <tip-f80f749132165fb083865e51afd65cf0f05dcd62@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, satoru.moriya@hds.com, hpa@zytor.com,
-        mingo@kernel.org, a.p.zijlstra@chello.nl, seiji.aguchi@hds.com,
-        tony.luck@intel.com, dle-develop@lists.sourceforge.net,
-        tglx@linutronix.de, dzickus@redhat.com
-Reply-To: mingo@kernel.org, hpa@zytor.com, satoru.moriya@hds.com,
-        linux-kernel@vger.kernel.org, a.p.zijlstra@chello.nl,
-        seiji.aguchi@hds.com, tony.luck@intel.com,
-        dle-develop@lists.sourceforge.net, tglx@linutronix.de,
-        dzickus@redhat.com
-In-Reply-To: <5C4C569E8A4B9B42A84A977CF070A35B2E4D7A5CE2@USINDEVS01.corp.hds.com>
-References: <5C4C569E8A4B9B42A84A977CF070A35B2E4D7A5CE2@USINDEVS01.corp.hds.com>
+	Fri, 18 May 2012 06:50:43 -0400
+Date: Fri, 18 May 2012 03:50:34 -0700
+From: tip-bot for Alex Shi <alex.shi@intel.com>
+Message-ID: <tip-evv5bekiipi2pmyzdsy8lkkw@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
+        alex.shi@intel.com, tglx@linutronix.de
+Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        tglx@linutronix.de, alex.shi@intel.com
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:core/debug] kdump: Execute kmsg_dump(KMSG_DUMP_PANIC)
-  after smp_send_stop()
-Git-Commit-ID: f80f749132165fb083865e51afd65cf0f05dcd62
+Subject: [tip:x86/mm] x86/tlb: Clean up and unify TLB_FLUSH_ALL definition
+Git-Commit-ID: 3e7f3db001de6133db1c385c92eec944409a8b4f
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -33,46 +25,46 @@ MIME-Version: 1.0
 Content-Transfer-Encoding: 8bit
 Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Fri, 18 May 2012 03:49:50 -0700 (PDT)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Fri, 18 May 2012 03:50:39 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  f80f749132165fb083865e51afd65cf0f05dcd62
-Gitweb:     http://git.kernel.org/tip/f80f749132165fb083865e51afd65cf0f05dcd62
-Author:     Seiji Aguchi <seiji.aguchi@hds.com>
-AuthorDate: Tue, 15 May 2012 17:35:09 -0400
+Commit-ID:  3e7f3db001de6133db1c385c92eec944409a8b4f
+Gitweb:     http://git.kernel.org/tip/3e7f3db001de6133db1c385c92eec944409a8b4f
+Author:     Alex Shi <alex.shi@intel.com>
+AuthorDate: Thu, 10 May 2012 18:01:59 +0800
 Committer:  Ingo Molnar <mingo@kernel.org>
-CommitDate: Fri, 18 May 2012 10:07:37 +0200
+CommitDate: Fri, 18 May 2012 10:13:37 +0200
 
-kdump: Execute kmsg_dump(KMSG_DUMP_PANIC) after smp_send_stop()
+x86/tlb: Clean up and unify TLB_FLUSH_ALL definition
 
-This patch moves kmsg_dump(KMSG_DUMP_PANIC) below smp_send_stop(),
-to serialize the crash-logging process via smp_send_stop() and to
-thus retrieve a more stable crash image of all CPUs stopped.
+Since sizeof(long) is 4 in x86_32 mode, and it's 8 in x86_64
+mode, sizeof(long long) is also 8 byte in x86_64 mode.
+use long mode can fit TLB_FLUSH_ALL defination here both in 32
+or 64 bits mode.
 
-Signed-off-by: Seiji Aguchi <seiji.aguchi@hds.com>
-Acked-by: Don Zickus <dzickus@redhat.com>
-Cc: dle-develop@lists.sourceforge.net <dle-develop@lists.sourceforge.net>
-Cc: Satoru Moriya <satoru.moriya@hds.com>
-Cc: Tony Luck <tony.luck@intel.com>
-Cc: a.p.zijlstra@chello.nl <a.p.zijlstra@chello.nl>
-Link: http://lkml.kernel.org/r/5C4C569E8A4B9B42A84A977CF070A35B2E4D7A5CE2@USINDEVS01.corp.hds.com
+Signed-off-by: Alex Shi <alex.shi@intel.com>
+Link: http://lkml.kernel.org/n/tip-evv5bekiipi2pmyzdsy8lkkw@git.kernel.org
 Signed-off-by: Ingo Molnar <mingo@kernel.org>
 ---
- kernel/panic.c |    2 --
- 1 files changed, 0 insertions(+), 2 deletions(-)
+ arch/x86/include/asm/tlbflush.h |    6 +-----
+ 1 files changed, 1 insertions(+), 5 deletions(-)
 
-diff --git a/kernel/panic.c b/kernel/panic.c
-index b6215b7..d4f0b61 100644
---- a/kernel/panic.c
-+++ b/kernel/panic.c
-@@ -108,8 +108,6 @@ void panic(const char *fmt, ...)
- 	 */
- 	crash_kexec(NULL);
+diff --git a/arch/x86/include/asm/tlbflush.h b/arch/x86/include/asm/tlbflush.h
+index 169be89..63af909 100644
+--- a/arch/x86/include/asm/tlbflush.h
++++ b/arch/x86/include/asm/tlbflush.h
+@@ -62,11 +62,7 @@ static inline void __flush_tlb_one(unsigned long addr)
+ 		__flush_tlb();
+ }
  
--	kmsg_dump(KMSG_DUMP_PANIC);
--
- 	/*
- 	 * Note smp_send_stop is the usual smp shutdown function, which
- 	 * unfortunately means it may not be hardened to work in a panic
+-#ifdef CONFIG_X86_32
+-# define TLB_FLUSH_ALL	0xffffffff
+-#else
+-# define TLB_FLUSH_ALL	-1ULL
+-#endif
++#define TLB_FLUSH_ALL	-1UL
+ 
+ /*
+  * TLB flushing:
