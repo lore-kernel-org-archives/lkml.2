@@ -1,53 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933674Ab2ERMov (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 May 2012 08:44:51 -0400
-Received: from mail-lpp01m010-f46.google.com ([209.85.215.46]:44890 "EHLO
-	mail-lpp01m010-f46.google.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S966197Ab2ERMot convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 May 2012 08:44:49 -0400
+	id S966412Ab2ERMzY (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 May 2012 08:55:24 -0400
+Received: from s15943758.onlinehome-server.info ([217.160.130.188]:39484 "EHLO
+	mail.x86-64.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751343Ab2ERMzX (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 18 May 2012 08:55:23 -0400
+Date: Fri, 18 May 2012 14:55:05 +0200
+From: Borislav Petkov <bp@amd64.org>
+To: Ingo Molnar <mingo@kernel.org>
+Cc: Peter Zijlstra <peterz@infradead.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>, Ingo Molnar <mingo@elte.hu>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Borislav Petkov <borislav.petkov@amd.com>
+Subject: Re: [PATCH 1/2] perf: Add persistent event facilities
+Message-ID: <20120518125505.GK20215@aftab.osrc.amd.com>
+References: <1332340496-21658-1-git-send-email-bp@amd64.org>
+ <1332340496-21658-2-git-send-email-bp@amd64.org>
+ <1337336040.573.12.camel@twins>
+ <20120518110357.GH20215@aftab.osrc.amd.com>
+ <1337340263.573.31.camel@twins>
+ <20120518115957.GB19785@gmail.com>
 MIME-Version: 1.0
-In-Reply-To: <4FB60C7A.2080508@linux.vnet.ibm.com>
-References: <4FB60C7A.2080508@linux.vnet.ibm.com>
-Date: Fri, 18 May 2012 14:44:47 +0200
-Message-ID: <CABPqkBR=otfRebYYh+aZP79YMGYzX384VHYK82JoBLcbbctRnw@mail.gmail.com>
-Subject: Re: [PATCH] perf tools: Fixing perf-record documentation for branch
- stack sampling
-From: Stephane Eranian <eranian@google.com>
-To: Anshuman Khandual <khandual@linux.vnet.ibm.com>
-Cc: linux-kernel@vger.kernel.org,
-        Arnaldo Carvalho de Melo <arnaldo.melo@gmail.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
-X-System-Of-Record: true
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120518115957.GB19785@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, May 18, 2012 at 10:46 AM, Anshuman Khandual
-<khandual@linux.vnet.ibm.com> wrote:
-> perf tools: Fixing perf-record documentation for branch stack sampling
->
-> Signed-off-by: Anshuman Khandual <khandual@linux.vnet.ibm.com>
+On Fri, May 18, 2012 at 01:59:57PM +0200, Ingo Molnar wrote:
+> 
+> * Peter Zijlstra <peterz@infradead.org> wrote:
+> 
+> > On Fri, 2012-05-18 at 13:03 +0200, Borislav Petkov wrote:
+> > > >  - you allow an arbitrary place in debugfs; this might make finding
+> > > > them 'interesting'. Should we put them all in the same place?
+> > > 
+> > > My take on this is that we want to be able to make the same events we
+> > > have now, persistent. Basically not trace for the duration of a child
+> > > process but in a process-agnostic way, system-wide.
+> > 
+> > This would argue against per-task persistent events.. 
+> 
+> Yeah, 'persistency' is something that's per CPU at minimum.
 
-Acked-by: Stephane Eranian <eranian@google.com>
+Yeah, forget the per-task thing - that's me not understanding the code
+fully. They need to be per CPU and "taskless."
 
-> ---
->  tools/perf/Documentation/perf-record.txt |    2 +-
->  1 file changed, 1 insertion(+), 1 deletion(-)
->
-> diff --git a/tools/perf/Documentation/perf-record.txt b/tools/perf/Documentation/perf-record.txt
-> index a1386b2..b38a1f9 100644
-> --- a/tools/perf/Documentation/perf-record.txt
-> +++ b/tools/perf/Documentation/perf-record.txt
-> @@ -168,7 +168,7 @@ following filters are defined:
->         - any:  any type of branches
->         - any_call: any function call or system call
->         - any_ret: any function return or system call return
-> -        - any_ind: any indirect branch
-> +        - ind_call: any indirect branch
->         - u:  only when the branch target is at the user level
->         - k: only when the branch target is in the kernel
->         - hv: only when the target is at the hypervisor level
->
+> > Note the plural there, it might be very desirable to allow 
+> > multiple events into a single persistent buffer.
+> 
+> very, very, very much so. One (per CPU) buffer, with many events 
+> multiplexed into it.
+
+Which begs the other question: mce could use buffers which are RO - at
+least, I don't see a usecase where we want to delete entries from them -
+but other persistent events users might want to delete those events to
+free up the buffers.
+
+It is an interesting question how we handle that RO/RW thing? Maybe per
+event and do something of a kernel-side filtering which Peter didn't
+like in Robert's IBS stuff.
+
+Hmmm...
+
+-- 
+Regards/Gruss,
+Boris.
+
+Advanced Micro Devices GmbH
+Einsteinring 24, 85609 Dornach
+GM: Alberto Bozzo
+Reg: Dornach, Landkreis Muenchen
+HRB Nr. 43632 WEEE Registernr: 129 19551
