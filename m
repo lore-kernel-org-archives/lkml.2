@@ -1,63 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1946848Ab2ERXIx (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 May 2012 19:08:53 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:53122 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1946652Ab2ERXHn (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 May 2012 19:07:43 -0400
-Message-Id: <20120518212652.491290217@linuxfoundation.org>
-User-Agent: quilt/0.60-19.1
-Date: Fri, 18 May 2012 14:27:25 -0700
-From: Greg KH <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Sha Zhengju <handai.szj@taobao.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        "Kirill A. Shutemov" <kirill@shutemov.name>
-Subject: [ 36/47] memcg: free spare array to avoid memory leak
-In-Reply-To: <20120518212701.GA5023@kroah.com>
+	id S1946852Ab2ERXJX (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 May 2012 19:09:23 -0400
+Received: from mga09.intel.com ([134.134.136.24]:62470 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1946814Ab2ERXJS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 18 May 2012 19:09:18 -0400
+MIME-Version: 1.0
+In-Reply-To: <CAFLxGvzZ_YJS25wK=YHCELwJOZZuhdeoB6S5Yw_TMVEXzTofOg@mail.gmail.com>
+References: <1337284200-1838-1-git-send-email-auke-jan.h.kok@intel.com>
+	<CAFLxGvzZ_YJS25wK=YHCELwJOZZuhdeoB6S5Yw_TMVEXzTofOg@mail.gmail.com>
+Date: Fri, 18 May 2012 16:09:15 -0700
+Message-ID: <CABsxX9JWK1qVubuYt0+HoZy-Lhz0kp6a3MxyT7ny5YzLS2rMJQ@mail.gmail.com>
+Subject: Re: [PATCH] Trace event for capable().
+From: "Kok, Auke-jan H" <auke-jan.h.kok@intel.com>
+To: richard -rw- weinberger <richard.weinberger@gmail.com>
+Cc: Serge Hallyn <serge.hallyn@canonical.com>,
+        linux-security-module@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Eric Paris <eparis@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.3-stable review patch.  If anyone has any objections, please let me know.
+On Fri, May 18, 2012 at 3:33 PM, richard -rw- weinberger
+<richard.weinberger@gmail.com> wrote:
+>
+> On Thu, May 17, 2012 at 9:50 PM, Auke Kok <auke-jan.h.kok@intel.com>
+> wrote:
+> > Add a simple trace event for capable().
+> >
+> > There's been a lot of discussion around capable(), and there
+> > are plenty of tools to help reduce capabilities' usage from
+> > userspace. A major gap however is that it's almost impossible
+> > to see or verify which bits are requested from either userspace
+> > or in the kernel.
+> >
+> > This patch adds a minimal tracer that will print out which
+> > CAPs are requested and whether the request was granted.
+>
+> Can we please have support for user namespaces?
+> At least idicate whether the current namespace is init_user_ns or not.
 
-------------------
+that was the main reason for sending this out already - that should be
+trivial to add to the trace event, but I haven't looked at namespaces
+yet myself. I'll check it out.
 
-From: Sha Zhengju <handai.szj@taobao.com>
-
-commit 8c7577637ca31385e92769a77e2ab5b428e8b99c upstream.
-
-When the last event is unregistered, there is no need to keep the spare
-array anymore.  So free it to avoid memory leak.
-
-Signed-off-by: Sha Zhengju <handai.szj@taobao.com>
-Acked-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Reviewed-by: Kirill A. Shutemov <kirill@shutemov.name>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
----
- mm/memcontrol.c |    6 ++++++
- 1 file changed, 6 insertions(+)
-
---- a/mm/memcontrol.c
-+++ b/mm/memcontrol.c
-@@ -4480,6 +4480,12 @@ static void mem_cgroup_usage_unregister_
- swap_buffers:
- 	/* Swap primary and spare array */
- 	thresholds->spare = thresholds->primary;
-+	/* If all events are unregistered, free the spare array */
-+	if (!new) {
-+		kfree(thresholds->spare);
-+		thresholds->spare = NULL;
-+	}
-+
- 	rcu_assign_pointer(thresholds->primary, new);
- 
- 	/* To be sure that nobody uses thresholds */
-
-
+Auke
