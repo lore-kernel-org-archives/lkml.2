@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1946791Ab2ERXJu (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 May 2012 19:09:50 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:35668 "EHLO
+	id S1946774Ab2ERXHb (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 May 2012 19:07:31 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:53122 "EHLO
 	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1946780Ab2ERXHe (ORCPT
+	with ESMTP id S1946720Ab2ERXHL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 May 2012 19:07:34 -0400
-Message-Id: <20120518212653.093913025@linuxfoundation.org>
+	Fri, 18 May 2012 19:07:11 -0400
+Message-Id: <20120518212651.678362622@linuxfoundation.org>
 User-Agent: quilt/0.60-19.1
-Date: Fri, 18 May 2012 14:27:32 -0700
+Date: Fri, 18 May 2012 14:27:16 -0700
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Tomoya MORINAGA <tomoya.rohm@gmail.com>,
-        Grant Likely <grant.likely@secretlab.ca>
-Subject: [ 43/47] spi-topcliff-pch: Fix issue for transmitting over 4KByte
+        alan@lxorguk.ukuu.org.uk, Bernhard Kohl <bernhard.kohl@gmx.net>,
+        Nicholas Bellinger <nab@linux-iscsi.org>
+Subject: [ 27/47] target: Fix SPC-2 RELEASE bug for multi-session iSCSI client setups
 In-Reply-To: <20120518212701.GA5023@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,184 +25,39 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Tomoya MORINAGA <tomoya.rohm@gmail.com>
+From: Bernhard Kohl <Riedel-und-Kohl@t-online.de>
 
-commit 7d05b3e868ee0f9231baf40cb77be3df5dd1f18c upstream.
+commit edc318d9fea6854df752ec8c645b960b0d5a1d23 upstream.
 
-Currently, when spi-topcliff-pch receives transmit request over 4KByte,
-this driver can't process correctly. This driver needs to divide the data
-into 4Kbyte unit.
-This patch fixes the issue.
+This patch addresses a bug in a special case for target core SPC-2 RELEASE
+logic where the same physical client (eg: iSCSI InitiatorName) with
+differing iSCSI session identifiers (ISID) is allowed to incorrectly release
+the same client's SPC-2 reservation from the non reservation holding path.
 
-Signed-off-by: Tomoya MORINAGA <tomoya.rohm@gmail.com>
-Signed-off-by: Grant Likely <grant.likely@secretlab.ca>
+Note this bug is specific to iscsi-target w/ SPC-2 reservations, and
+with the default enforce_pr_isids=1 device attr setting in target-core
+controls if a InitiatorName + different ISID reservations are handled
+the same as a single iSCSI client entity.
+
+Signed-off-by: Bernhard Kohl <bernhard.kohl@gmx.net>
+Signed-off-by: Nicholas Bellinger <nab@linux-iscsi.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/spi/spi-topcliff-pch.c |   66 ++++++++++++++++++++++++++++++++++-------
- 1 file changed, 55 insertions(+), 11 deletions(-)
+ drivers/target/target_core_pr.c |    3 +++
+ 1 file changed, 3 insertions(+)
 
---- a/drivers/spi/spi-topcliff-pch.c
-+++ b/drivers/spi/spi-topcliff-pch.c
-@@ -196,6 +196,7 @@ struct pch_spi_data {
- 	struct pch_spi_dma_ctrl dma;
- 	int use_dma;
- 	u8 irq_reg_sts;
-+	int save_total_len;
- };
+--- a/drivers/target/target_core_pr.c
++++ b/drivers/target/target_core_pr.c
+@@ -220,6 +220,9 @@ int target_scsi2_reservation_release(str
+ 	if (dev->dev_reserved_node_acl != sess->se_node_acl)
+ 		goto out_unlock;
  
- /**
-@@ -823,11 +824,13 @@ static void pch_spi_copy_rx_data_for_dma
- 		rx_dma_buf = data->dma.rx_buf_virt;
- 		for (j = 0; j < data->bpw_len; j++)
- 			*rx_buf++ = *rx_dma_buf++ & 0xFF;
-+		data->cur_trans->rx_buf = rx_buf;
- 	} else {
- 		rx_sbuf = data->cur_trans->rx_buf;
- 		rx_dma_sbuf = data->dma.rx_buf_virt;
- 		for (j = 0; j < data->bpw_len; j++)
- 			*rx_sbuf++ = *rx_dma_sbuf++;
-+		data->cur_trans->rx_buf = rx_sbuf;
- 	}
- }
- 
-@@ -853,6 +856,9 @@ static int pch_spi_start_transfer(struct
- 	rtn = wait_event_interruptible_timeout(data->wait,
- 					       data->transfer_complete,
- 					       msecs_to_jiffies(2 * HZ));
-+	if (!rtn)
-+		dev_err(&data->master->dev,
-+			"%s wait-event timeout\n", __func__);
- 
- 	dma_sync_sg_for_cpu(&data->master->dev, dma->sg_rx_p, dma->nent,
- 			    DMA_FROM_DEVICE);
-@@ -989,6 +995,7 @@ static void pch_spi_handle_dma(struct pc
- 	int i;
- 	int size;
- 	int rem;
-+	int head;
- 	unsigned long flags;
- 	struct pch_spi_dma_ctrl *dma;
- 
-@@ -1017,6 +1024,11 @@ static void pch_spi_handle_dma(struct pc
- 	}
- 	data->bpw_len = data->cur_trans->len / (*bpw / 8);
- 
-+	if (data->bpw_len > PCH_BUF_SIZE) {
-+		data->bpw_len = PCH_BUF_SIZE;
-+		data->cur_trans->len -= PCH_BUF_SIZE;
-+	}
++	if (dev->dev_res_bin_isid != sess->sess_bin_isid)
++		goto out_unlock;
 +
- 	/* copy Tx Data */
- 	if (data->cur_trans->tx_buf != NULL) {
- 		if (*bpw == 8) {
-@@ -1031,10 +1043,17 @@ static void pch_spi_handle_dma(struct pc
- 				*tx_dma_sbuf++ = *tx_sbuf++;
- 		}
- 	}
-+
-+	/* Calculate Rx parameter for DMA transmitting */
- 	if (data->bpw_len > PCH_DMA_TRANS_SIZE) {
--		num = data->bpw_len / PCH_DMA_TRANS_SIZE + 1;
-+		if (data->bpw_len % PCH_DMA_TRANS_SIZE) {
-+			num = data->bpw_len / PCH_DMA_TRANS_SIZE + 1;
-+			rem = data->bpw_len % PCH_DMA_TRANS_SIZE;
-+		} else {
-+			num = data->bpw_len / PCH_DMA_TRANS_SIZE;
-+			rem = PCH_DMA_TRANS_SIZE;
-+		}
- 		size = PCH_DMA_TRANS_SIZE;
--		rem = data->bpw_len % PCH_DMA_TRANS_SIZE;
- 	} else {
- 		num = 1;
- 		size = data->bpw_len;
-@@ -1094,15 +1113,23 @@ static void pch_spi_handle_dma(struct pc
- 	dma->nent = num;
- 	dma->desc_rx = desc_rx;
- 
--	/* TX */
--	if (data->bpw_len > PCH_DMA_TRANS_SIZE) {
--		num = data->bpw_len / PCH_DMA_TRANS_SIZE;
-+	/* Calculate Tx parameter for DMA transmitting */
-+	if (data->bpw_len > PCH_MAX_FIFO_DEPTH) {
-+		head = PCH_MAX_FIFO_DEPTH - PCH_DMA_TRANS_SIZE;
-+		if (data->bpw_len % PCH_DMA_TRANS_SIZE > 4) {
-+			num = data->bpw_len / PCH_DMA_TRANS_SIZE + 1;
-+			rem = data->bpw_len % PCH_DMA_TRANS_SIZE - head;
-+		} else {
-+			num = data->bpw_len / PCH_DMA_TRANS_SIZE;
-+			rem = data->bpw_len % PCH_DMA_TRANS_SIZE +
-+			      PCH_DMA_TRANS_SIZE - head;
-+		}
- 		size = PCH_DMA_TRANS_SIZE;
--		rem = 16;
- 	} else {
- 		num = 1;
- 		size = data->bpw_len;
- 		rem = data->bpw_len;
-+		head = 0;
- 	}
- 
- 	dma->sg_tx_p = kzalloc(sizeof(struct scatterlist)*num, GFP_ATOMIC);
-@@ -1112,11 +1139,17 @@ static void pch_spi_handle_dma(struct pc
- 	for (i = 0; i < num; i++, sg++) {
- 		if (i == 0) {
- 			sg->offset = 0;
-+			sg_set_page(sg, virt_to_page(dma->tx_buf_virt), size + head,
-+				    sg->offset);
-+			sg_dma_len(sg) = size + head;
-+		} else if (i == (num - 1)) {
-+			sg->offset = head + size * i;
-+			sg->offset = sg->offset * (*bpw / 8);
- 			sg_set_page(sg, virt_to_page(dma->tx_buf_virt), rem,
- 				    sg->offset);
- 			sg_dma_len(sg) = rem;
- 		} else {
--			sg->offset = rem + size * (i - 1);
-+			sg->offset = head + size * i;
- 			sg->offset = sg->offset * (*bpw / 8);
- 			sg_set_page(sg, virt_to_page(dma->tx_buf_virt), size,
- 				    sg->offset);
-@@ -1204,6 +1237,7 @@ static void pch_spi_process_messages(str
- 				    data->current_msg->spi->bits_per_word);
- 	pch_spi_writereg(data->master, PCH_SSNXCR, SSN_NO_CONTROL);
- 	do {
-+		int cnt;
- 		/* If we are already processing a message get the next
- 		transfer structure from the message otherwise retrieve
- 		the 1st transfer request from the message. */
-@@ -1223,11 +1257,20 @@ static void pch_spi_process_messages(str
- 		}
- 		spin_unlock(&data->lock);
- 
-+		if (!data->cur_trans->len)
-+			goto out;
-+		cnt = (data->cur_trans->len - 1) / PCH_BUF_SIZE + 1;
-+		data->save_total_len = data->cur_trans->len;
- 		if (data->use_dma) {
--			pch_spi_handle_dma(data, &bpw);
--			if (!pch_spi_start_transfer(data))
--				goto out;
--			pch_spi_copy_rx_data_for_dma(data, bpw);
-+			int i;
-+			char *save_rx_buf = data->cur_trans->rx_buf;
-+			for (i = 0; i < cnt; i ++) {
-+				pch_spi_handle_dma(data, &bpw);
-+				if (!pch_spi_start_transfer(data))
-+					goto out;
-+				pch_spi_copy_rx_data_for_dma(data, bpw);
-+			}
-+			data->cur_trans->rx_buf = save_rx_buf;
- 		} else {
- 			pch_spi_set_tx(data, &bpw);
- 			pch_spi_set_ir(data);
-@@ -1238,6 +1281,7 @@ static void pch_spi_process_messages(str
- 			data->pkt_tx_buff = NULL;
- 		}
- 		/* increment message count */
-+		data->cur_trans->len = data->save_total_len;
- 		data->current_msg->actual_length += data->cur_trans->len;
- 
- 		dev_dbg(&data->master->dev,
+ 	dev->dev_reserved_node_acl = NULL;
+ 	dev->dev_flags &= ~DF_SPC2_RESERVATIONS;
+ 	if (dev->dev_flags & DF_SPC2_RESERVATIONS_WITH_ISID) {
 
 
