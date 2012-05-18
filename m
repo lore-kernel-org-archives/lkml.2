@@ -1,82 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1762412Ab2ERAiV (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 May 2012 20:38:21 -0400
-Received: from smtp.gentoo.org ([140.211.166.183]:43026 "EHLO smtp.gentoo.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1761734Ab2ERAiS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 May 2012 20:38:18 -0400
-From: Mike Frysinger <vapier@gentoo.org>
-Organization: wh0rd.org
-To: "H. Peter Anvin" <hpa@zytor.com>
-Subject: Re: [RFC PATCH 00/10] Use __kernel_[u]long_t for x32 user space compatibility
-Date: Thu, 17 May 2012 20:38:46 -0400
-User-Agent: KMail/1.13.7 (Linux/3.4.0-rc6; KDE/4.6.5; x86_64; ; )
-Cc: "H.J. Lu" <hjl.tools@gmail.com>, linux-kernel@vger.kernel.org,
-        linux-arch@vger.kernel.org, torvalds@linux-foundation.org,
-        mingo@kernel.org, tglx@linutronix.de
-References: <1337292816-10839-1-git-send-email-hjl.tools@gmail.com> <201205172019.27462.vapier@gentoo.org> <4FB5960E.6070205@zytor.com>
-In-Reply-To: <4FB5960E.6070205@zytor.com>
+	id S1030412Ab2ERAjw (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 May 2012 20:39:52 -0400
+Received: from LGEMRELSE7Q.lge.com ([156.147.1.151]:54674 "EHLO
+	LGEMRELSE7Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1761734Ab2ERAjv (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 17 May 2012 20:39:51 -0400
+X-AuditID: 9c930197-b7be2ae000000ebb-f4-4fb59a545d4e
+Message-ID: <4FB59A82.2050705@kernel.org>
+Date: Fri, 18 May 2012 09:40:34 +0900
+From: Minchan Kim <minchan@kernel.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
 MIME-Version: 1.0
-Content-Type: multipart/signed;
-  boundary="nextPart4978962.d8zlrftm2Z";
-  protocol="application/pgp-signature";
-  micalg=pgp-sha1
+Newsgroups: gmane.linux.kernel.mm,gmane.linux.kernel
+To: Michal Hocko <mhocko@suse.cz>
+CC: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        Johannes Weiner <hannes@cmpxchg.org>,
+        Andrew Morton <akpm@linux-foundation.org>, Mel Gorman <mel@csn.ul.ie>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Rik van Riel <riel@redhat.com>
+Subject: Re: [PATCH] mm: consider all swapped back pages in used-once logic
+References: <1337246033-13719-1-git-send-email-mhocko@suse.cz>
+In-Reply-To: <1337246033-13719-1-git-send-email-mhocko@suse.cz>
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
-Message-Id: <201205172038.48371.vapier@gentoo.org>
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---nextPart4978962.d8zlrftm2Z
-Content-Type: Text/Plain;
-  charset="utf-8"
-Content-Transfer-Encoding: quoted-printable
+On 05/17/2012 06:13 PM, Michal Hocko wrote:
 
-On Thursday 17 May 2012 20:21:34 H. Peter Anvin wrote:
-> On 05/17/2012 05:19 PM, Mike Frysinger wrote:
-> > On Thursday 17 May 2012 18:13:26 H.J. Lu wrote:
-> >> From: H.J. Lu <hjl.tools@gmail.com>
-> >>=20
-> >> This patch set changes a number of places where the kernel
-> >> headers are exported to user space and currently use explicit
-> >> "long" or "unsigned long" to use __kernel_[u]long_t in order to
-> >> be compatible with the x32 user space ABI.  These location are
-> >> places where x32 uses the x86-64 ABI.
-> >>=20
-> >> It is quite possible that some, or even all, of these locations
-> >> should really use dedicated types, but in the meantime this gives
-> >> the correct results which the current headers do not.
-> >=20
-> > tangentially related, but what happened to the x86 asm/ptrace.h
-> > patch i sent that changed all the registers from unsigned long to
-> > u64 ?  e.g. struct pt_regs { -	unsigned long r15; +	__u64 r15;
->=20
-> Link please?
+> [64574746 vmscan: detect mapped file pages used only once] made mapped pages
+> have another round in inactive list because they might be just short
+> lived and so we could consider them again next time. This heuristic
+> helps to reduce pressure on the active list with a streaming IO
+> worklods.
+> This patch fixes a regression introduced by this commit for heavy shmem
+> based workloads because unlike Anon pages, which are excluded from this
+> heuristic because they are usually long lived, shmem pages are handled
+> as a regular page cache.
+> This doesn't work quite well, unfortunately, if the workload is mostly
+> backed by shmem (in memory database sitting on 80% of memory) with a
+> streaming IO in the background (backup - up to 20% of memory). Anon
+> inactive list is full of (dirty) shmem pages when watermarks are
+> hit. Shmem pages are kept in the inactive list (they are referenced)
+> in the first round and it is hard to reclaim anything else so we reach
+> lower scanning priorities very quickly which leads to an excessive swap
+> out.
+> 
+> Let's fix this by excluding all swap backed pages (they tend to be long
+> lived wrt. the regular page cache anyway) from used-once heuristic and
+> rather activate them if they are referenced.
+> 
+> CC: Johannes Weiner <hannes@cmpxchg.org>
+> CC: Andrew Morton <akpm@linux-foundation.org>
+> CC: Mel Gorman <mel@csn.ul.ie>
+> CC: Minchan Kim <minchan@kernel.org>
+> CC: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+> CC: Rik van Riel <riel@redhat.com>
+> CC: stable [2.6.34+]
+> Signed-off-by: Michal Hocko <mhocko@suse.cz>
 
-https://groups.google.com/group/x32-abi/msg/b0b5be30d7aab1f8
-=2Dmike
 
---nextPart4978962.d8zlrftm2Z
-Content-Type: application/pgp-signature; name=signature.asc 
-Content-Description: This is a digitally signed message part.
+Reviewed-by: Minchan Kim <minchan@kernel.org>
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.17 (GNU/Linux)
-
-iQIcBAABAgAGBQJPtZoYAAoJEEFjO5/oN/WBMygP+gO1rJfkE3Y9WEobAJVirip1
-KXgfTeslXcjJNA+b5D5QnGoTvrjhq0BOTlt5EBw55N0Dfke0LOprWc2E8AywVe57
-1Yagw+nF6XWfOHt55fwlcEKsU8IoNfEWPGWO1K1bLz7uB3dlSJUDrhzpljsanV6d
-xDKmrVGqrKqDZddY/6KEhm+tV1Dek+PwMhpA+vdrH6uJmEMo3kA53BPTiazhdVs1
-JcTHeaYOM8Jhzy9aFLSxN+7Alj6oLIrzS+C+3AGmixJhlvB72jyMPPnCzONrbyOz
-FSBkyjoM8ssBz4cGnD3HuQXo5+N8KvnP3aNHmahHX5xKtRBJLkT6xllcqk5Z9MJT
-qqn6AyZ2lUWa9zSSbmJx+K8oZoLvDVCXVyRFcANWCEyy38KcJ1LyXrx4UgQUn7WT
-GWMrOjYr2FXBqZe2bdhEaz5B/AlAoDd91KMWkrkb2r+QiS49rIuPzK9Nl33v+8pv
-WuWwvkntLfik6XKyWh+kCXJJx2zkdpe7T3fssEglKa9kEQdSewu583U0MIy2oHSd
-SboixACbRAdn0/rJ9TRNFU6Rg+Y7xZzzeM0nOp2xlRkGjKHEX3cUJjEMyQ3vJ1LK
-9qUvbkOrjB6QbVr8Y5NCJVYBmwd3wIcXQAdpe/N2paE9BXTQAYskO0OtU7pAPVAs
-LzxH1hzWBfPdVV/wn3bB
-=0JPu
------END PGP SIGNATURE-----
-
---nextPart4978962.d8zlrftm2Z--
+Good spot!
+-- 
+Kind regards,
+Minchan Kim
