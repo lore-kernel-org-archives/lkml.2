@@ -1,21 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030893Ab2ERCzZ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 May 2012 22:55:25 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:40572 "EHLO
+	id S1030882Ab2ERCzW (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 May 2012 22:55:22 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:40584 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1030729Ab2ERCwv (ORCPT
+	by vger.kernel.org with ESMTP id S1030737Ab2ERCww (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 May 2012 22:52:51 -0400
-Message-Id: <20120518023300.708921105@decadent.org.uk>
+	Thu, 17 May 2012 22:52:52 -0400
+Message-Id: <20120518023259.516750715@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Fri, 18 May 2012 03:33:41 +0100
+Date: Fri, 18 May 2012 03:33:32 +0100
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Chris Metcalf <cmetcalf@tilera.com>
-Subject: [ 47/53] arch/tile: apply commit 74fca9da0 to the compat signal handling as
- well
+        alan@lxorguk.ukuu.org.uk, Arend van Spriel <arend@broadcom.com>,
+        Stanislaw Gruszka <sgruszka@redhat.com>,
+        Pieter-Paul Giesberts <pieterpg@broadcom.com>,
+        Alwin Beukers <alwin@broadcom.com>,
+        "John W. Linville" <linville@tuxdriver.com>
+Subject: [ 38/53] brcm80211: smac: fix endless retry of A-MPDU transmissions
 In-Reply-To: <20120518023254.339945758@decadent.org.uk>
 X-SA-Exim-Connect-IP: 192.168.4.185
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -28,48 +31,59 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Chris Metcalf <cmetcalf@tilera.com>
+From: Arend van Spriel <arend@broadcom.com>
 
-commit a134d228298c6aa9007205c6b81cae0cac0acb5d upstream.
+commit 5e379203c7788b7af01150bfadbc74d2797a2ef4 upstream.
 
-This passes siginfo and mcontext to tilegx32 signal handlers that
-don't have SA_SIGINFO set just as we have been doing for tilegx64.
+The A-MPDU code checked against a retry limit, but it was using
+the wrong variable to do so. This patch fixes this to assure
+proper retry mechanism.
 
-Signed-off-by: Chris Metcalf <cmetcalf@tilera.com>
+This problem had a side-effect causing the mac80211 flush callback
+to remain waiting forever as well. That side effect has been fixed
+by commit by Stanislaw Gruszka:
+
+commit f96b08a7e6f69c0f0a576554df3df5b1b519c479
+Date:   Tue Jan 17 12:38:50 2012 +0100
+
+    brcmsmac: fix tx queue flush infinite loop
+
+    Reference:
+    https://bugzilla.kernel.org/show_bug.cgi?id=42576
+
+Cc: Stanislaw Gruszka <sgruszka@redhat.com>
+Reviewed-by: Pieter-Paul Giesberts <pieterpg@broadcom.com>
+Reviewed-by: Alwin Beukers <alwin@broadcom.com>
+Signed-off-by: Arend van Spriel <arend@broadcom.com>
+Signed-off-by: John W. Linville <linville@tuxdriver.com>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- arch/tile/kernel/compat_signal.c |   12 +++++-------
- 1 file changed, 5 insertions(+), 7 deletions(-)
+ drivers/net/wireless/brcm80211/brcmsmac/ampdu.c |    6 +-----
+ 1 file changed, 1 insertion(+), 5 deletions(-)
 
-diff --git a/arch/tile/kernel/compat_signal.c b/arch/tile/kernel/compat_signal.c
-index 77763cc..cdef6e5 100644
---- a/arch/tile/kernel/compat_signal.c
-+++ b/arch/tile/kernel/compat_signal.c
-@@ -403,19 +403,17 @@ int compat_setup_rt_frame(int sig, struct k_sigaction *ka, siginfo_t *info,
- 	 * Set up registers for signal handler.
- 	 * Registers that we don't modify keep the value they had from
- 	 * user-space at the time we took the signal.
-+	 * We always pass siginfo and mcontext, regardless of SA_SIGINFO,
-+	 * since some things rely on this (e.g. glibc's debug/segfault.c).
- 	 */
- 	regs->pc = ptr_to_compat_reg(ka->sa.sa_handler);
- 	regs->ex1 = PL_ICS_EX1(USER_PL, 1); /* set crit sec in handler */
- 	regs->sp = ptr_to_compat_reg(frame);
- 	regs->lr = restorer;
- 	regs->regs[0] = (unsigned long) usig;
--
--	if (ka->sa.sa_flags & SA_SIGINFO) {
--		/* Need extra arguments, so mark to restore caller-saves. */
--		regs->regs[1] = ptr_to_compat_reg(&frame->info);
--		regs->regs[2] = ptr_to_compat_reg(&frame->uc);
--		regs->flags |= PT_FLAGS_CALLER_SAVES;
--	}
-+	regs->regs[1] = ptr_to_compat_reg(&frame->info);
-+	regs->regs[2] = ptr_to_compat_reg(&frame->uc);
-+	regs->flags |= PT_FLAGS_CALLER_SAVES;
- 
- 	/*
- 	 * Notify any tracer that was single-stepping it.
+diff --git a/drivers/net/wireless/brcm80211/brcmsmac/ampdu.c b/drivers/net/wireless/brcm80211/brcmsmac/ampdu.c
+index d89dcb1..c1ce831 100644
+--- a/drivers/net/wireless/brcm80211/brcmsmac/ampdu.c
++++ b/drivers/net/wireless/brcm80211/brcmsmac/ampdu.c
+@@ -1051,17 +1051,13 @@ brcms_c_ampdu_dotxstatus_complete(struct ampdu_info *ampdu, struct scb *scb,
+ 		}
+ 		/* either retransmit or send bar if ack not recd */
+ 		if (!ack_recd) {
+-			struct ieee80211_tx_rate *txrate =
+-			    tx_info->status.rates;
+-			if (retry && (txrate[0].count < (int)retry_limit)) {
++			if (retry && (ini->txretry[index] < (int)retry_limit)) {
+ 				ini->txretry[index]++;
+ 				ini->tx_in_transit--;
+ 				/*
+ 				 * Use high prededence for retransmit to
+ 				 * give some punch
+ 				 */
+-				/* brcms_c_txq_enq(wlc, scb, p,
+-				 * BRCMS_PRIO_TO_PREC(tid)); */
+ 				brcms_c_txq_enq(wlc, scb, p,
+ 						BRCMS_PRIO_TO_HI_PREC(tid));
+ 			} else {
 -- 
 1.7.10
 
