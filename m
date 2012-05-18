@@ -1,51 +1,33 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761423Ab2ERHzV (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 May 2012 03:55:21 -0400
-Received: from www.linutronix.de ([62.245.132.108]:48882 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760274Ab2ERHzS (ORCPT
+	id S932576Ab2ERIAJ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 May 2012 04:00:09 -0400
+Received: from mail-gg0-f174.google.com ([209.85.161.174]:60053 "EHLO
+	mail-gg0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757069Ab2ERIAG convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 May 2012 03:55:18 -0400
-Date: Fri, 18 May 2012 09:55:13 +0200 (CEST)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Ning Jiang <ning.n.jiang@gmail.com>
-cc: rjw@sisk.pl, linux-kernel@vger.kernel.org
-Subject: Re: add IRQS_PENDING for nested, simple and level handler to early
- abort suspend operation
-In-Reply-To: <CAH3Oq6Rhqr+cZmYPCOhHqOP=B60zw_GRFDCkOTjEr9wp9NtFmA@mail.gmail.com>
-Message-ID: <alpine.LFD.2.02.1205180950400.3231@ionos>
-References: <CAH3Oq6Rhqr+cZmYPCOhHqOP=B60zw_GRFDCkOTjEr9wp9NtFmA@mail.gmail.com>
-User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
+	Fri, 18 May 2012 04:00:06 -0400
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+In-Reply-To: <20120517213120.GA12329@redhat.com>
+References: <20120517213120.GA12329@redhat.com>
+From: Sasha Levin <levinsasha928@gmail.com>
+Date: Fri, 18 May 2012 09:59:39 +0200
+Message-ID: <CA+1xoqd3=mB83R8DpeAsFpqZ==-W8_q9FSupLJJsOqhKg+TUSg@mail.gmail.com>
+Subject: Re: 3.4-rc7 numa_policy slab poison.
+To: Dave Jones <davej@redhat.com>, Linux Kernel <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 18 May 2012, Ning Jiang wrote:
+On Thu, May 17, 2012 at 11:31 PM, Dave Jones <davej@redhat.com> wrote:
+> Just found this while fuzzing.
+>
+>        Dave
+>
+> [ 7613.229315] =============================================================================
+> [ 7613.229955] BUG numa_policy (Not tainted): Poison overwritten
+> [ 7613.230560] -----------------------------------------------------------------------------
 
-> During suspend check_wakeup_irqs() will check IRQS_PENDING flag to
-> abort a suspend operation, however, this only applies for edge
-> triggered irq. Add IRQS_PENDING for nested, simple and level handler
-> to mimic the same behaviour as edge irq handler.
-> 
-> Without this optimization, level irq can be handled correctly but there
-> is some penalty. It has to go through a full run/suspend power cycle for level
-> irq to be detected and handled. With it, we can abort the suspend operation
-> earlier and thus shorten the interrupt latency.
-> 
-> I know this is ugly as IRQS_PENDING is intended for edge irq but I don't
-> know how to do it in a right way. Please enlighten me if you have better ideas.
-
-First of all, please send patches inlined. Aside of that a similar
-patch is queued in tip/irq/core commit d4dc0f90.
-
-Thanks,
-
-	tglx
-
-
+I've just hit the same with latest linux-next inside a KVM guest.
