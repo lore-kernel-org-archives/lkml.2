@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1946825Ab2ERXIO (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 May 2012 19:08:14 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:53122 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1946822Ab2ERXHw (ORCPT
+	id S1946846Ab2ERXIe (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 May 2012 19:08:34 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:53597 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1946715Ab2ERXHq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 May 2012 19:07:52 -0400
-Message-Id: <20120518212653.286608998@linuxfoundation.org>
+	Fri, 18 May 2012 19:07:46 -0400
+Message-Id: <20120518212653.363629474@linuxfoundation.org>
 User-Agent: quilt/0.60-19.1
-Date: Fri, 18 May 2012 14:27:34 -0700
+Date: Fri, 18 May 2012 14:27:35 -0700
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Tomoya MORINAGA <tomoya.rohm@gmail.com>,
-        Grant Likely <grant.likely@secretlab.ca>
-Subject: [ 45/47] spi-topcliff-pch: add recovery processing in case wait-event timeout
+        alan@lxorguk.ukuu.org.uk, Sachin Prabhu <sprabhu@redhat.com>,
+        Jian Li <jiali@redhat.com>,
+        Trond Myklebust <Trond.Myklebust@netapp.com>
+Subject: [ 46/47] Avoid beyond bounds copy while caching ACL
 In-Reply-To: <20120518212701.GA5023@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,40 +26,72 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Tomoya MORINAGA <tomoya.rohm@gmail.com>
+From: Sachin Prabhu <sprabhu@redhat.com>
 
-commit 0f57e168aa109775430c76cc663fb64909813d84 upstream.
+commit 5794d21ef4639f0e33440927bb903f9598c21e92 upstream.
 
-Currently, pch_spi_start_transfer failure is not anticipated.
-This patch adds the processing.
+When attempting to cache ACLs returned from the server, if the bitmap
+size + the ACL size is greater than a PAGE_SIZE but the ACL size itself
+is smaller than a PAGE_SIZE, we can read past the buffer page boundary.
 
-Signed-off-by: Tomoya MORINAGA <tomoya.rohm@gmail.com>
-Signed-off-by: Grant Likely <grant.likely@secretlab.ca>
+Signed-off-by: Sachin Prabhu <sprabhu@redhat.com>
+Reported-by: Jian Li <jiali@redhat.com>
+Signed-off-by: Trond Myklebust <Trond.Myklebust@netapp.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/spi/spi-topcliff-pch.c |   10 +++++++++-
- 1 file changed, 9 insertions(+), 1 deletion(-)
+ fs/nfs/nfs4proc.c |   12 +++++-------
+ 1 file changed, 5 insertions(+), 7 deletions(-)
 
---- a/drivers/spi/spi-topcliff-pch.c
-+++ b/drivers/spi/spi-topcliff-pch.c
-@@ -1266,8 +1266,16 @@ static void pch_spi_process_messages(str
- 			char *save_rx_buf = data->cur_trans->rx_buf;
- 			for (i = 0; i < cnt; i ++) {
- 				pch_spi_handle_dma(data, &bpw);
--				if (!pch_spi_start_transfer(data))
-+				if (!pch_spi_start_transfer(data)) {
-+					data->transfer_complete = true;
-+					data->current_msg->status = -EIO;
-+					data->current_msg->complete
-+						   (data->current_msg->context);
-+					data->bcurrent_msg_processing = false;
-+					data->current_msg = NULL;
-+					data->cur_trans = NULL;
- 					goto out;
-+				}
- 				pch_spi_copy_rx_data_for_dma(data, bpw);
- 			}
- 			data->cur_trans->rx_buf = save_rx_buf;
+--- a/fs/nfs/nfs4proc.c
++++ b/fs/nfs/nfs4proc.c
+@@ -3532,16 +3532,16 @@ out:
+ 	return ret;
+ }
+ 
+-static void nfs4_write_cached_acl(struct inode *inode, const char *buf, size_t acl_len)
++static void nfs4_write_cached_acl(struct inode *inode, struct page **pages, size_t pgbase, size_t acl_len)
+ {
+ 	struct nfs4_cached_acl *acl;
+ 
+-	if (buf && acl_len <= PAGE_SIZE) {
++	if (pages && acl_len <= PAGE_SIZE) {
+ 		acl = kmalloc(sizeof(*acl) + acl_len, GFP_KERNEL);
+ 		if (acl == NULL)
+ 			goto out;
+ 		acl->cached = 1;
+-		memcpy(acl->data, buf, acl_len);
++		_copy_from_pages(acl->data, pages, pgbase, acl_len);
+ 	} else {
+ 		acl = kmalloc(sizeof(*acl), GFP_KERNEL);
+ 		if (acl == NULL)
+@@ -3574,7 +3574,6 @@ static ssize_t __nfs4_get_acl_uncached(s
+ 	struct nfs_getaclres res = {
+ 		.acl_len = buflen,
+ 	};
+-	void *resp_buf;
+ 	struct rpc_message msg = {
+ 		.rpc_proc = &nfs4_procedures[NFSPROC4_CLNT_GETACL],
+ 		.rpc_argp = &args,
+@@ -3605,7 +3604,6 @@ static ssize_t __nfs4_get_acl_uncached(s
+ 	 * the page we send as a guess */
+ 	if (buf == NULL)
+ 		res.acl_flags |= NFS4_ACL_LEN_REQUEST;
+-	resp_buf = page_address(pages[0]);
+ 
+ 	dprintk("%s  buf %p buflen %zu npages %d args.acl_len %zu\n",
+ 		__func__, buf, buflen, npages, args.acl_len);
+@@ -3616,9 +3614,9 @@ static ssize_t __nfs4_get_acl_uncached(s
+ 
+ 	acl_len = res.acl_len - res.acl_data_offset;
+ 	if (acl_len > args.acl_len)
+-		nfs4_write_cached_acl(inode, NULL, acl_len);
++		nfs4_write_cached_acl(inode, NULL, 0, acl_len);
+ 	else
+-		nfs4_write_cached_acl(inode, resp_buf + res.acl_data_offset,
++		nfs4_write_cached_acl(inode, pages, res.acl_data_offset,
+ 				      acl_len);
+ 	if (buf) {
+ 		ret = -ERANGE;
 
 
