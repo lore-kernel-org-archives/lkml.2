@@ -1,164 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1762543Ab2ERIVo (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 May 2012 04:21:44 -0400
-Received: from moutng.kundenserver.de ([212.227.126.187]:57892 "EHLO
+	id S932703Ab2ERIW0 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 May 2012 04:22:26 -0400
+Received: from moutng.kundenserver.de ([212.227.17.8]:56498 "EHLO
 	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1761453Ab2ERIVh (ORCPT
+	with ESMTP id S1760331Ab2ERIVk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 May 2012 04:21:37 -0400
-Date: Fri, 18 May 2012 10:21:21 +0200 (CEST)
+	Fri, 18 May 2012 04:21:40 -0400
+Date: Fri, 18 May 2012 10:21:28 +0200 (CEST)
 From: Guennadi Liakhovetski <g.liakhovetski@gmx.de>
 X-X-Sender: lyakh@axis700.grange
 To: Vinod Koul <vinod.koul@linux.intel.com>
 cc: linux-kernel@vger.kernel.org, Magnus Damm <magnus.damm@gmail.com>,
         Yoshihiro Shimoda <yoshihiro.shimoda.uh@renesas.com>,
-        Paul Mundt <lethal@linux-sh.org>, linux-sh@vger.kernel.org,
-        Sascha Hauer <s.hauer@pengutronix.de>
-Subject: Re: [PATCH 1/9 v3] dmaengine: add an shdma-base library
-In-Reply-To: <1337055734.16185.5360.camel@vkoul-udesk3>
-Message-ID: <Pine.LNX.4.64.1205171912140.10086@axis700.grange>
+        Paul Mundt <lethal@linux-sh.org>, linux-sh@vger.kernel.org
+Subject: Re: [PATCH 2/9 v3] dma: shdma: prepare for conversion to the shdma
+ base library
+In-Reply-To: <1337055832.16185.5362.camel@vkoul-udesk3>
+Message-ID: <Pine.LNX.4.64.1205181017250.23140@axis700.grange>
 References: <1336576161-27082-1-git-send-email-g.liakhovetski@gmx.de> 
- <1336576161-27082-2-git-send-email-g.liakhovetski@gmx.de>
- <1337055734.16185.5360.camel@vkoul-udesk3>
+ <1336576161-27082-3-git-send-email-g.liakhovetski@gmx.de>
+ <1337055832.16185.5362.camel@vkoul-udesk3>
 MIME-Version: 1.0
 Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Provags-ID: V02:K0:240V2O9+gVBzqatuanvRm9KU028ZO1q+2gSAkLnoXzq
- V24ksJDYXivMADlvWIZYbguI0IOaaOjM1rC1sEwONj6fSW0WHb
- VQa9McMYO7qn+2x+mIN5PL7KtLJ0/csLKbiRjSlankM1wUU1F0
- FwjvUGO6SCH6doSSgW75H2YPsjLYdMUg4kzADzdm7ENazxgUO2
- gyoRJoCuyDVFhzI5UAFRGvhA16PQJox0AKxrmlx0KfcbP8LRCo
- eTPmNw/X8tPNz0XbKdrTFLtk6dMHKWkCyZvEKQv6okpm54LMAN
- JOTIkaRQZ+uDXxlYd/NW612DewPK6dJBCKZ76wPwcfEPMoTrEZ
- mTTepNieXt86ecT2B9HGBq/ZUI3vlYncc0Smcl8ImusM4ZXeAu
- yJ3YxWWiUQS2g==
+X-Provags-ID: V02:K0:5wJSPp19+VuOUSsRayV/4J2FBA1cOXvMznoMudB/83i
+ WajcccFHATN8M39jTC+W3dvKIPk47dxqPuXaqfPUA/0GBZCFd2
+ FPh23ktxT1iU+zeJqjc21enhkhLokFlBzTFv+++FkiOHOm/i1m
+ 1QbT0WXpnhuIUSiXtp5TtPDwozChdBy/O1LtIGaQ7aeL7xojAy
+ lDoMNNLbjYGI/q9eknRyWZRywQLb4hQiqIr3eVii6Vzhl1PEoy
+ EaG1gHuT0sOlxxujO37zFa9DTNwYyGSHgMM34N1h9LP8t702Nc
+ nIMJTat6XjiZOJZUW7Q9TFvlgHxt54BSQ9QyeU6rnznc+G/377
+ IVzw00KETU5hk5bWYhv/VXGnQRpe2yEQjlNkgmpk/u3Oni5L3w
+ xSjOs5IrH59Ig==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Vinod
-
-Thanks for your review.
-
 On Tue, 15 May 2012, Vinod Koul wrote:
 
-> On Wed, 2012-05-09 at 17:09 +0200, Guennadi Liakhovetski wrote: 
-> > This patch extracts code from shdma.c, that does not directly deal with
-> > hardware implementation details and can be re-used with diverse DMA
-> > controller variants, found on SH-based SoCs.
-> Have you see recent Russell's virtual dma patches [1]? I like the idea
-> and simplifies things for implementation in each driver.
-> Said that, do we need this libarry. Can you see if you can use/enhance
-> that one.
+> On Wed, 2012-05-09 at 17:09 +0200, Guennadi Liakhovetski wrote:
+> > By placing an anonymous union at the top of struct sh_dmae_slave we can
+> > transparently prepare all device and client drivers for the upcoming
+> > shdma-base conversion.
+> > 
+> > Signed-off-by: Guennadi Liakhovetski <g.liakhovetski@gmx.de>
+> > ---
+> >  include/linux/sh_dma.h |    8 ++++++--
+> >  1 files changed, 6 insertions(+), 2 deletions(-)
+> > 
+> > diff --git a/include/linux/sh_dma.h b/include/linux/sh_dma.h
+> > index 425450b..e081e8e 100644
+> > --- a/include/linux/sh_dma.h
+> > +++ b/include/linux/sh_dma.h
+> > @@ -10,12 +10,16 @@
+> >  #ifndef SH_DMA_H
+> >  #define SH_DMA_H
+> >  
+> > -#include <linux/list.h>
+> >  #include <linux/dmaengine.h>
+> > +#include <linux/list.h>
+> > +#include <linux/shdma-base.h>
+> >  
+> >  /* Used by slave DMA clients to request DMA to/from a specific peripheral */
+> >  struct sh_dmae_slave {
+> > -	unsigned int			slave_id; /* Set by the platform */
+> > +	union {
+> > +		unsigned int		slave_id; /* Set by the platform */
+> > +		struct shdma_slave	shdma_slave;
+> again, this should be move to dma_slave_config
 
-No, I haven't seen it. I had a look at it, and it doesn't seem to provide 
-an immediate solution to our problem. It can be used as a part of one, but 
-a significant amount of work would still be required to convert shdma to a 
-virtual-channel based design.
+Same reasoning as in patch 1: I think such changes should be done 
+separately.
 
-Let me try to describe, what such a virtual channel solution would look 
-like:
-
-1. One (virtual) DMA channel is allocated per client
-2. As clients issue dma_request_channel(), the correct channel is selected
-3. The client configures the channel with a call to 
-   dmaengine_slave_config()
-4. As transfers are prepared and issued they are queued in per-virtual 
-   channel lists
-5. Each virtual channel links to a list of suitable DMA devices and 
-   channels
-6. As a new transfer request on a specific virtual channel has to be 
-   processed, a suitable free physical channel is picked up, configured 
-   and the request is sent out
-
-If this my understanding is right, this should be doable, but not within 
-the current 3.5 time-frame. Further, if we first do this conversion, we'll 
-still have to split the driver similar to what is proposed by this patch 
-series, but then it would be largely a new effort, most of the work 
-invested into this so far will be lost. OTOH, if we now push the shdma 
-driver split, we enable the merge of the SUDMAC support and porting to the 
-virtual channel design should also become easier, because the hardware and 
-the software parts of the driver will already be separated and presumably 
-the hardware part will not need to be changed.
-
-One more thing, before going into detail and replying to your comments: 
-this split doesn't change driver's functionality, it simply splits it into 
-two parts. So, most questions, that you ask in this your review would also 
-apply to the current driver. This patch just extracts hardware-neutral 
-code from the shdma driver into a separate file. I think, any functional 
-changes should be done separately from this driver-split series.
-
-[snip]
-
-> > +static dma_cookie_t shdma_tx_submit(struct dma_async_tx_descriptor *tx)
-> > +{
-> > +	struct shdma_desc *chunk, *c, *desc =
-> > +		container_of(tx, struct shdma_desc, async_tx),
-> > +		*last = desc;
-> > +	struct shdma_chan *schan = to_shdma_chan(tx->chan);
-> > +	struct shdma_slave *slave = tx->chan->private;
-> > +	dma_async_tx_callback callback = tx->callback;
-> > +	dma_cookie_t cookie;
-> > +	bool power_up;
-> > +
-> > +	spin_lock_irq(&schan->chan_lock);
-> > +
-> > +	power_up = list_empty(&schan->ld_queue);
-> > +
-> > +	cookie = dma_cookie_assign(tx);
-> > +
-> > +	/* Mark all chunks of this descriptor as submitted, move to the queue */
-> > +	list_for_each_entry_safe(chunk, c, desc->node.prev, node) {
-> > +		/*
-> > +		 * All chunks are on the global ld_free, so, we have to find
-> > +		 * the end of the chain ourselves
-> > +		 */
-> > +		if (chunk != desc && (chunk->mark == DESC_IDLE ||
-> > +				      chunk->async_tx.cookie > 0 ||
-> > +				      chunk->async_tx.cookie == -EBUSY ||
-> > +				      &chunk->node == &schan->ld_free))
-> > +			break;
-> > +		chunk->mark = DESC_SUBMITTED;
-> > +		/* Callback goes to the last chunk */
-> > +		chunk->async_tx.callback = NULL;
-> > +		chunk->cookie = cookie;
-> > +		list_move_tail(&chunk->node, &schan->ld_queue);
-> > +		last = chunk;
-> > +
-> > +		dev_dbg(schan->dev, "submit #%d@%p on %d\n",
-> > +			tx->cookie, &last->async_tx, schan->id);
-> > +	}
-> > +
-> > +	last->async_tx.callback = callback;
-> > +	last->async_tx.callback_param = tx->callback_param;
-> > +
-> > +	if (power_up) {
-> > +		int ret;
-> > +		schan->pm_state = SHDMA_PM_BUSY;
-> > +
-> > +		ret = pm_runtime_get(schan->dev);
-> any reason why this is here and not in issue pending?
-
-Sorry, we have discussed this multiple times already. See, for example,
-
-http://thread.gmane.org/gmane.linux.kernel/1181989/focus=12187
-
-[snip]
-
-> > +/*
-> > + * Drivers, using this library are expected to embed struct shdma_dev,
-> > + * struct shdma_chan, struct shdma_desc, and struct shdma_slave
-> > + * in their respective device, channel, descriptor and slave objects.
-> > + */
-> > +
-> > +struct shdma_slave {
-> > +	unsigned int slave_id;
-> this should be moved to struct dma_slave_config 
-
-Again, this would be a functional change. And struct dma_slave_config 
-doesn't have a slave-ID field in it, which is the only thing we need for 
-now. Instead it has a bunch of other fields, of which none is so far used 
-by this driver.
+> > +	};
+> >  	struct device			*dma_dev; /* Set by the platform */
+> >  	const struct sh_dmae_slave_config	*config;  /* Set by the driver */
+> >  };
 
 Thanks
 Guennadi
