@@ -1,87 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S966797Ab2ERAQj (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 May 2012 20:16:39 -0400
-Received: from mga03.intel.com ([143.182.124.21]:3906 "EHLO mga03.intel.com"
+	id S966994Ab2ERARi (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 May 2012 20:17:38 -0400
+Received: from mga11.intel.com ([192.55.52.93]:18393 "EHLO mga11.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933558Ab2ERAQh convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 May 2012 20:16:37 -0400
+	id S933558Ab2ERARg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 17 May 2012 20:17:36 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
-   d="scan'208";a="101423200"
-From: "Liu, Chuansheng" <chuansheng.liu@intel.com>
-To: Peter Zijlstra <peterz@infradead.org>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "tglx@linutronix.de" <tglx@linutronix.de>,
-        "Yanmin Zhang <yanmin_zhang@linux.intel.com>
-	(yanmin_zhang@linux.intel.com)" <yanmin_zhang@linux.intel.com>
-Subject: RE: [PATCH] printk: do not flush the logbuf into console driver in
- interrupt
-Thread-Topic: [PATCH] printk: do not flush the logbuf into console driver in
- interrupt
-Thread-Index: AQHNNA/O5D5Fgjq34UmFIOYYpsVqOpbOrkLg
-Date: Fri, 18 May 2012 00:16:32 +0000
-Message-ID: <27240C0AC20F114CBF8149A2696CBE4A0B2479@SHSMSX101.ccr.corp.intel.com>
-References: <27240C0AC20F114CBF8149A2696CBE4A0B1F0B@SHSMSX101.ccr.corp.intel.com>
- <1337247064.4281.18.camel@twins>
-In-Reply-To: <1337247064.4281.18.camel@twins>
-Accept-Language: zh-CN, en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.239.127.40]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+   d="scan'208";a="154233294"
+Message-ID: <4FB594C3.9080706@intel.com>
+Date: Fri, 18 May 2012 08:16:03 +0800
+From: Alex Shi <alex.shi@intel.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:9.0) Gecko/20111229 Thunderbird/9.0
 MIME-Version: 1.0
+To: Alex Shi <alex.shi@intel.com>
+CC: tglx@linutronix.de, mingo@redhat.com, hpa@zytor.com, arnd@arndb.de,
+        rostedt@goodmis.org, fweisbec@gmail.com, jeremy@goop.org,
+        riel@redhat.com, luto@mit.edu, avi@redhat.com, len.brown@intel.com,
+        dhowells@redhat.com, fenghua.yu@intel.com, borislav.petkov@amd.com,
+        yinghai@kernel.org, ak@linux.intel.com, cpw@sgi.com, steiner@sgi.com,
+        akpm@linux-foundation.org, penberg@kernel.org, a.p.zijlstra@chello.nl,
+        hughd@google.com, kamezawa.hiroyu@jp.fujitsu.com,
+        viro@zeniv.linux.org.uk, linux-kernel@vger.kernel.org,
+        yongjie.ren@intel.com
+Subject: Re: [PATCH v6 0/7] tlb flush optimization on x86
+References: <1337233375-840-1-git-send-email-alex.shi@intel.com>
+In-Reply-To: <1337233375-840-1-git-send-email-alex.shi@intel.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> Uhm no.. I would very much like to get my OOPSes from interrupt context to
-> make it out to the console.
-(!oops_in_progress) this condition is in the patch, it should cover OOPSes output
-to console in interrupt context, I tested this case just now.
+On 05/17/2012 01:42 PM, Alex Shi wrote:
 
-> -----Original Message-----
-> From: Peter Zijlstra [mailto:peterz@infradead.org]
-> Sent: Thursday, May 17, 2012 5:31 PM
-> To: Liu, Chuansheng
-> Cc: linux-kernel@vger.kernel.org; tglx@linutronix.de; Yanmin Zhang
-> <yanmin_zhang@linux.intel.com> (yanmin_zhang@linux.intel.com)
-> Subject: Re: [PATCH] printk: do not flush the logbuf into console driver in
-> interrupt
+> Thanks Peter Z, Peter Anvin, Nick Piggin, and many others' comments!
 > 
-> On Thu, 2012-05-17 at 07:46 +0000, Liu, Chuansheng wrote:
-> > From: liu chuansheng <chuansheng.liu@intel.com>
-> > Subject: [PATCH] printk: do not flush the logbuf into console driver
-> > in interrupt
-> >
-> > When irq handle tried to call printk, and it also has the chance to
-> > obtain the console sem, then flush the log buf to console driver,but
-> > the console driver often give several ms latency or more when much data in
-> log buf existed, it will delay the irq handle.
-> >
-> > The solution is when calling the printk in interrupt, just write the
-> > chars into log buf, and expect other threads to flush it into console driver.
-> >
-> > Signed-off-by: liu chuansheng <chuansheng.liu@intel.com>
-> >
-> > diff --git a/kernel/printk.c b/kernel/printk.c index b663c2c..99959e1
-> > 100644
-> > --- a/kernel/printk.c
-> > +++ b/kernel/printk.c
-> > @@ -804,7 +804,8 @@ static int console_trylock_for_printk(unsigned int
-> cpu)
-> >                  * the buffer. We need to hold the console semaphore
-> >                  * in order to do this test safely.
-> >                  */
-> > -               if (!can_use_console(cpu)) {
-> > +               if (!can_use_console(cpu) ||
-> > +                       (in_interrupt() && (!oops_in_progress))) {
-> >                         console_locked = 0;
-> >                         wake = 1;
-> >                         retval = 0;
+> The main change of this version is on generic mmu_gather code.
+> It was tested with arm cross-compiler.
 > 
-> Uhm no.. I would very much like to get my OOPSes from interrupt context to
-> make it out to the console.
+> Thanks Rongjie's testing, that show the real case performance gain.
+> 
+> Alex Shi
+> 
+> [PATCH v6 1/7] x86/tlb: unify TLB_FLUSH_ALL definition
+> [PATCH v6 2/7] x86/tlb_info: get last level TLB entry number of CPU
+> [PATCH v6 3/7] x86/flush_tlb: try flush_tlb_single one by one in
+> [PATCH v6 4/7] x86/tlb: fall back to flush all when meet a THP large
+> [PATCH v6 5/7] x86/tlb: add tlb_flushall_shift for specific CPU
+> [PATCH v6 6/7] x86/tlb: enable tlb flush range support for generic
+> [PATCH v6 7/7] x86/tlb: add tlb_flushall_shift knob into debugfs
+
+
+
+Anyone like to pick up this patchset? It has benefit not only in theory,
+but also in real word. And seems more modern CPU has more performance gain.
+
+Thanks
+Alex Shi
