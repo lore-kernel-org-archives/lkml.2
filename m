@@ -1,75 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761504Ab2ERIIr (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 May 2012 04:08:47 -0400
-Received: from antcom.de ([188.40.178.216]:60935 "EHLO chuck.antcom.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759814Ab2ERIIo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 May 2012 04:08:44 -0400
-Message-ID: <4FB6038A.90201@antcom.de>
-Date: Fri, 18 May 2012 10:08:42 +0200
-From: Roland Stigge <stigge@antcom.de>
-Organization: ANTCOM IT Research & Development
-User-Agent: Mozilla/5.0 (X11; Linux i686 on x86_64; rv:8.0) Gecko/20120216 Icedove/8.0
+	id S1761544Ab2ERIOb (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 May 2012 04:14:31 -0400
+Received: from mail-wg0-f44.google.com ([74.125.82.44]:44355 "EHLO
+	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756323Ab2ERIOW (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 18 May 2012 04:14:22 -0400
+Date: Fri, 18 May 2012 10:14:16 +0200
+From: Ingo Molnar <mingo@kernel.org>
+To: Vlad Zolotarov <vlad@scalemp.com>
+Cc: linux-kernel <linux-kernel@vger.kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        "Shai Fultheim (Shai@ScaleMP.com)" <Shai@scalemp.com>
+Subject: Re: [PATCH v2 2/2] x86: Added read_mostly declaration/definition to
+ vars from smp.h
+Message-ID: <20120518081416.GA20872@gmail.com>
+References: <201205151831.57871.vlad@scalemp.com>
 MIME-Version: 1.0
-To: Grant Likely <grant.likely@secretlab.ca>
-CC: linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 3/3] gpio/lpc32xx: Fixup of_xlate for core changes
-References: <1337285060-31919-1-git-send-email-grant.likely@secretlab.ca> <1337285060-31919-3-git-send-email-grant.likely@secretlab.ca>
-In-Reply-To: <1337285060-31919-3-git-send-email-grant.likely@secretlab.ca>
-X-Enigmail-Version: 1.3.4
-OpenPGP: url=subkeys.pgp.net
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <201205151831.57871.vlad@scalemp.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/17/2012 10:04 PM, Grant Likely wrote:
-> Hi Roland,
+
+* Vlad Zolotarov <vlad@scalemp.com> wrote:
+
+> Added a "read-mostly" qualifier to the following variables in smp.h:
+>  - cpu_sibling_map
+>  - cpu_core_map
+>  - cpu_llc_shared_map
+>  - cpu_llc_id
+>  - cpu_number
+>  - x86_cpu_to_apicid
+>  - x86_bios_cpu_apicid
+>  - x86_cpu_to_logical_apicid
 > 
-> I've reworked the of_xlate code for gpios in a way that I'm happier with, but it is untested.  Can you try it out with this patch to your code and make sure it works properly for you?  You can roll this change into your patch if it works.
+> As long as all the variables above are only written during the initialization,
+> this change is meant to prevent the false sharing and improve the
+> performance on large multiprocessor systems.
 > 
-> Signed-off-by: Grant Likely <grant.likely@secretlab.ca>
-> Cc: Roland Stigge <stigge@antcom.de>
-
-(After fixing the typo below.)
-
-Tested-by: Roland Stigge <stigge@antcom.de>
-
+> Signed-off-by: Vlad Zolotarov <vlad@scalemp.com>
+> Signed-off-by: Shai Fultheim <shai@scalemp.com>
 > ---
->  drivers/gpio/gpio-lpc32xx.c |   13 +++++--------
->  1 file changed, 5 insertions(+), 8 deletions(-)
-> 
-> diff --git a/drivers/gpio/gpio-lpc32xx.c b/drivers/gpio/gpio-lpc32xx.c
-> index d42bf6c..6ea7b38 100644
-> --- a/drivers/gpio/gpio-lpc32xx.c
-> +++ b/drivers/gpio/gpio-lpc32xx.c
-> @@ -464,18 +464,15 @@ void __init lpc32xx_gpio_init(void)
->  {
->  }
->  
-> -static int lpc32xx_of_xlate(struct gpio_chip **gc,
-> +static int lpc32xx_of_xlate(struct gpio_chip *gc,
->  			    const struct of_phandle_args *gpiospec, u32 *flags)
->  {
-> -	u32 bank;
-> -	if (WARN_ON(gpiospec->args_count < 3))
-> +	/* Is this the correct bank? */
-> +	u32 bank = gpiospec->args[0];
-> +	if ((bank > ARRAY_SIZE(lpc32xx_gpiochip) ||
-> +	    (gc != &lpc32xx_gpiochip[bank].chip))
+>  arch/x86/include/asm/apic.h    |    2 +-
+>  arch/x86/include/asm/smp.h     |   16 ++++++++--------
+>  arch/x86/kernel/apic/apic.c    |    6 +++---
+>  arch/x86/kernel/setup_percpu.c |    2 +-
+>  arch/x86/kernel/smpboot.c      |    8 ++++----
+>  5 files changed, 17 insertions(+), 17 deletions(-)
 
-One final closing parenthesis is missing here.
 
->  		return -EINVAL;
->  
-> -	bank = gpiospec->args[0];
-> -	if (WARN_ON(bank > 5))
-> -		return -EINVAL;
-> -
-> -	*gc = &lpc32xx_gpiochip[bank].chip;
->  	if (flags)
->  		*flags = gpiospec->args[2];
->  	return gpiospec->args[1];
+This does not build on !SMP kernels that has APIC enabled.
 
+Thanks,
+
+	Ingo
