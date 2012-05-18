@@ -1,55 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761240Ab2ERHrq (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 May 2012 03:47:46 -0400
-Received: from ozlabs.org ([203.10.76.45]:50041 "EHLO ozlabs.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1760123Ab2ERHrp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 May 2012 03:47:45 -0400
-Message-ID: <1337327263.20191.6.camel@concordia>
-Subject: Re: Re: Build regressions/improvements in v3.4-rc7
-From: Michael Ellerman <michael@ellerman.id.au>
-To: Timur Tabi <timur@freescale.com>
-Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        linux-kernel@vger.kernel.org, Linuxppc-dev <linuxppc-dev@ozlabs.org>,
-        Geert Uytterhoeven <geert@linux-m68k.org>,
-        Scott Wood <scottwood@freescale.com>
-Date: Fri, 18 May 2012 17:47:43 +1000
-In-Reply-To: <4FB546A4.7090502@freescale.com>
-References: <1337157034-22773-1-git-send-email-geert@linux-m68k.org>
-	 <CAMuHMdUtL4_mv-e-EQAZmNcb9dAT=PXB59i7Vuj2vf8NnaBFzQ@mail.gmail.com>
-	 <1337212281.30558.17.camel@pasglop> <4FB546A4.7090502@freescale.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3-0ubuntu6 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	id S1761339Ab2ERHtb (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 May 2012 03:49:31 -0400
+Received: from caramon.arm.linux.org.uk ([78.32.30.218]:47619 "EHLO
+	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1760926Ab2ERHt3 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 18 May 2012 03:49:29 -0400
+Date: Fri, 18 May 2012 08:49:01 +0100
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: Thomas Abraham <thomas.abraham@linaro.org>
+Cc: linux-mmc@vger.kernel.org, devicetree-discuss@lists.ozlabs.org,
+        linux-samsung-soc@vger.kernel.org, patches@linaro.org,
+        linux-kernel@vger.kernel.org, rob.herring@calxeda.com,
+        grant.likely@secretlab.ca, kgene.kim@samsung.com, cjb@laptop.org,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH v2 3/6] mmc: dw_mmc: lookup for optional biu and ciu
+	clocks
+Message-ID: <20120518074901.GA843@n2100.arm.linux.org.uk>
+References: <1337267411-28226-1-git-send-email-thomas.abraham@linaro.org> <1337267411-28226-4-git-send-email-thomas.abraham@linaro.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1337267411-28226-4-git-send-email-thomas.abraham@linaro.org>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2012-05-17 at 13:42 -0500, Timur Tabi wrote:
-> Benjamin Herrenschmidt wrote:
-> >   + arch/powerpc/platforms/512x/mpc512x_shared.c: error: 'enum
-> >> fsl_diu_monitor_port' declared inside parameter list [-Werror]:  =>
-> >> 70:9, 84:9, 88:36
-> >>   + arch/powerpc/platforms/512x/mpc512x_shared.c: error: 'return' with
-> >> a value, in function returning void [-Werror]:  => 189:2
-> >>   + arch/powerpc/platforms/512x/mpc512x_shared.c: error: function
-> >> declaration isn't a prototype [-Werror=strict-prototypes]:  => 69:5,
-> >> 88:6, 83:6, 187:1
-> >>   + arch/powerpc/platforms/512x/mpc512x_shared.c: error: its scope is
-> >> only this definition or declaration, which is probably not what you
-> >> want [-Werror]:  => 70:9
-> 
-> So I think I have a fix for these, but I still would like the actual
-> .config so that I can be sure.
+On Thu, May 17, 2012 at 08:40:08PM +0530, Thomas Abraham wrote:
+> +err_clk:
+> +	if (!IS_ERR(host->ciu_clk))
+> +		clk_disable_unprepare(host->ciu_clk);
+> +	if (!IS_ERR(host->biu_clk))
+> +		clk_disable_unprepare(host->biu_clk);
+> +	clk_put(host->ciu_clk);
+> +	clk_put(host->biu_clk);
 
-I believe it's this one:
++	if (!IS_ERR(host->ciu_clk)) {
++		clk_disable_unprepare(host->ciu_clk);
++		clk_put(host->ciu_clk);
++	}
++	if (!IS_ERR(host->biu_clk)) {
++		clk_disable_unprepare(host->biu_clk);
++		clk_put(host->biu_clk);
++	}
 
-http://kisskb.ellerman.id.au/kisskb/buildresult/6312867/config/
-
-
-cheers
-
-
-
+And the same in the other occurrence.
