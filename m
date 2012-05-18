@@ -1,85 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964809Ab2ERVMc (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 May 2012 17:12:32 -0400
-Received: from s15943758.onlinehome-server.info ([217.160.130.188]:42422 "EHLO
-	mail.x86-64.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965340Ab2ERVMa (ORCPT
+	id S967663Ab2ERVOJ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 May 2012 17:14:09 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:52811 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S967427Ab2ERVOH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 May 2012 17:12:30 -0400
-Date: Fri, 18 May 2012 23:12:11 +0200
-From: Borislav Petkov <bp@amd64.org>
-To: "Luck, Tony" <tony.luck@intel.com>
-Cc: Borislav Petkov <bp@amd64.org>, Mauro Carvalho Chehab <mchehab@redhat.com>,
-        Ingo Molnar <mingo@kernel.org>,
-        Linux Edac Mailing List <linux-edac@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Aristeu Rozanski <arozansk@redhat.com>,
-        Doug Thompson <norsk5@yahoo.com>, Steven Rostedt <rostedt@goodmis.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Ingo Molnar <mingo@redhat.com>
-Subject: Re: [PATCH v24b] RAS: Add a tracepoint for reporting memory
- controller events
-Message-ID: <20120518211211.GA26464@aftab.osrc.amd.com>
-References: <20120518095638.GA20215@aftab.osrc.amd.com>
- <4FB62BAB.90808@redhat.com>
- <20120518124338.GJ20215@aftab.osrc.amd.com>
- <4FB64D5B.1030301@redhat.com>
- <20120518140521.GM20215@aftab.osrc.amd.com>
- <4FB65D52.9060108@redhat.com>
- <20120518164014.GX20215@aftab.osrc.amd.com>
- <4FB6866E.7090503@redhat.com>
- <20120518185258.GE20215@aftab.osrc.amd.com>
- <3908561D78D1C84285E8C5FCA982C28F192F1A33@ORSMSX104.amr.corp.intel.com>
+	Fri, 18 May 2012 17:14:07 -0400
+Date: Fri, 18 May 2012 14:14:03 -0700
+From: Kent Overstreet <koverstreet@google.com>
+To: Tejun Heo <tj@kernel.org>
+Cc: linux-bcache@vger.kernel.org, linux-kernel@vger.kernel.org,
+        dm-devel@redhat.com, linux-fsdevel@vger.kernel.org, axboe@kernel.dk,
+        agk@redhat.com, neilb@suse.de
+Subject: Re: [PATCH 05/13] block: Only clone bio vecs that are in use
+Message-ID: <20120518211403.GE9673@google.com>
+References: <cover.1337308722.git.koverstreet@google.com>
+ <cb68d8803c2ada3becdf1bd6c9bed280c38d3265.1337308722.git.koverstreet@google.com>
+ <20120518161334.GE19388@google.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <3908561D78D1C84285E8C5FCA982C28F192F1A33@ORSMSX104.amr.corp.intel.com>
+In-Reply-To: <20120518161334.GE19388@google.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, May 18, 2012 at 07:10:42PM +0000, Luck, Tony wrote:
-> > That's why _each_ _driver_ will have its format and the userspace tools
-> > parsing it will know about it!
+On Fri, May 18, 2012 at 09:13:34AM -0700, Tejun Heo wrote:
+> On Thu, May 17, 2012 at 10:59:52PM -0400, koverstreet@google.com wrote:
+> > diff --git a/fs/bio.c b/fs/bio.c
+> > index e2c0970..de0733e 100644
+> > --- a/fs/bio.c
+> > +++ b/fs/bio.c
+> > @@ -435,8 +435,9 @@ EXPORT_SYMBOL(bio_phys_segments);
+> >   */
+> >  void __bio_clone(struct bio *bio, struct bio *bio_src)
+> >  {
+> > -	memcpy(bio->bi_io_vec, bio_src->bi_io_vec,
+> > -		bio_src->bi_max_vecs * sizeof(struct bio_vec));
+> > +	memcpy(bio->bi_io_vec,
+> > +	       bio_iovec(bio_src),
 > 
-> Sounds like a full employment program for parser writers.
+> Unnecessary line break.
 > 
-> There are some interesting fields that should be common to all
-> drivers ... so have twenty parsers that can handle:
+> > +	       bio_segments(bio_src) * sizeof(struct bio_vec));
+> >  
+> >  	/*
+> >  	 * most users will be overriding ->bi_bdev with a new target,
+> > @@ -445,10 +446,10 @@ void __bio_clone(struct bio *bio, struct bio *bio_src)
+> >  	bio->bi_sector = bio_src->bi_sector;
+> >  	bio->bi_bdev = bio_src->bi_bdev;
+> >  	bio->bi_flags |= 1 << BIO_CLONED;
+> > +	bio->bi_flags &= ~(1 << BIO_SEG_VALID);
 > 
-> 	paddr: 0x1234
-> 	PADDR: 0x1234
-> 	Paddr = 0x1234
-> 	Phys = 1234
-> 	addr: 0x1234
-> 	Address: 0x000000001234
-> 
-> looks like a lot of make-work ... when the OS can standardize in the ABI
-> that there is a 64-bit binary value that is the physical address of the
-> error (and another 64-bit mask saying which, if any, bits are valid).
+> Can probably be conditionalized on bi_idx?
 
-Makes sense, I gotta say :)
-
-> So we should be looking for the set of always relevant values that
-> can be kept explicitly separate in fields in TP_PROTO, and per-driver
-> specific stuff (grain/syndrome??) bits that will have to go into the
-> "details" string and require some driver specific user-mode parsing to
-> use.
-
-How about we put all the values which are globally valid for all drivers
-in separate fields and leave the "(...)" brackets for details where each
-driver can put its own relevant stuff?
-
-For the record, I very much like this reasoning :).
-
--- 
-Regards/Gruss,
-Boris.
-
-Advanced Micro Devices GmbH
-Einsteinring 24, 85609 Dornach
-GM: Alberto Bozzo
-Reg: Dornach, Landkreis Muenchen
-HRB Nr. 43632 WEEE Registernr: 129 19551
+I've never been that clear on the semantics of BIO_SEG_VALID. I'll defer
+to you on that.
