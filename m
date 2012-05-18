@@ -1,58 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1762784Ab2EROVu (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 May 2012 10:21:50 -0400
-Received: from s15943758.onlinehome-server.info ([217.160.130.188]:39924 "EHLO
-	mail.x86-64.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752765Ab2EROVs (ORCPT
+	id S1755493Ab2EROWb (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 May 2012 10:22:31 -0400
+Received: from casper.infradead.org ([85.118.1.10]:58188 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750862Ab2EROW3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 May 2012 10:21:48 -0400
-Date: Fri, 18 May 2012 16:21:31 +0200
-From: Borislav Petkov <bp@amd64.org>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Ingo Molnar <mingo@kernel.org>, Frederic Weisbecker <fweisbec@gmail.com>,
-        Ingo Molnar <mingo@elte.hu>, Steven Rostedt <rostedt@goodmis.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Borislav Petkov <borislav.petkov@amd.com>
-Subject: Re: [PATCH 1/2] perf: Add persistent event facilities
-Message-ID: <20120518142131.GO20215@aftab.osrc.amd.com>
-References: <1332340496-21658-1-git-send-email-bp@amd64.org>
- <1332340496-21658-2-git-send-email-bp@amd64.org>
- <1337336040.573.12.camel@twins>
- <20120518110357.GH20215@aftab.osrc.amd.com>
- <1337340263.573.31.camel@twins>
- <20120518115957.GB19785@gmail.com>
- <20120518125505.GK20215@aftab.osrc.amd.com>
- <1337348267.573.37.camel@twins>
- <20120518140945.GN20215@aftab.osrc.amd.com>
- <1337350462.573.39.camel@twins>
+	Fri, 18 May 2012 10:22:29 -0400
+Date: Fri, 18 May 2012 16:22:26 +0200
+From: Jens Axboe <axboe@kernel.dk>
+To: Philipp Reisner <philipp.reisner@linbit.com>
+Cc: linux-kernel@vger.kernel.org, drbd-dev@lists.linbit.com
+Subject: Re: [GIT PULL] drbd-8.3 updates
+Message-ID: <20120518142226.GF6496@kernel.dk>
+References: <4277851.LeAnKnANCB@fat-tyre>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1337350462.573.39.camel@twins>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <4277851.LeAnKnANCB@fat-tyre>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, May 18, 2012 at 04:14:22PM +0200, Peter Zijlstra wrote:
-> On Fri, 2012-05-18 at 16:09 +0200, Borislav Petkov wrote:
-> > What happens here if a second user wants to enable a second set of
-> > persistent events, allocate a second set of per-CPU buffers? 
+On Thu, May 10 2012, Philipp Reisner wrote:
+> Hi Jens,
 > 
-> I'm not seeing the relation to VM_SHARED here.
+> This are the updates we have in the drbd-8.3 tree. They are intended
+> for your "for-3.5/drivers" drivers branch.
+> 
+> These changes include one new feature:
+>  * Allow detach from frozen backing devices with the new --force option;
+>    configurable timeout for backing devices by the new disk-timeout option
+> 
+> And huge number of bug fixes:
+>  * Fixed a write ordering problem on SyncTarget nodes for a write
+>    to a block that gets resynced at the same time. The bug can
+>    only be triggered with a device that has a firmware that
+>    actually reorders writes to the same block
+>  * Fixed a race between disconnect and receive_state, that could cause
+>    a IO lockup
+>  * Fixed resend/resubmit for requests with disk or network timeout
+>  * Make sure that hard state changed do not disturb the connection
+>    establishing process (I.e. detach due to an IO error). When the
+>    bug was triggered it caused a retry in the connect process
+>  * Postpone soft state changes to no disturb the connection
+>    establishing process (I.e. becoming primary). When the bug
+>    was triggered it could cause both nodes going into SyncSource state
+>  * Fixed a refcount leak that could cause failures when trying to
+>    unload a protocol family modules, that was used by DRBD
+>  * Dedicated page pool for meta data IOs
+>  * Deny normal detach (as opposed to --forced) if the user tries
+>    to detach from the last UpToDate disk in the resource
+>  * Fixed a possible protocol error that could be caused by
+>    "unusual" BIOs.
+>  * Enforce the disk-timeout option also on meta-data IO operations
+>  * Implemented stable bitmap pages when we do a full write out of
+>    the bitmap
+>  * Fixed a rare compatibility issue with DRBD's older than 8.3.7
+>    when negotiating the bio_size
+>  * Fixed a rare race condition where an empty resync could stall with
+>    if pause/unpause events happen in parallel
+>  * Made the re-establishing of connections quicker, if it got a broken pipe
+>    once. Previously there was a bug in the code caused it to waste the first
+>    successful established connection after a broken pipe event.
+> 
+> PS: I am postponing the drbd-8.4 for mainline for one or two kernel
+>     development cycles more (the ~400 patchets set).
+> 
+> Best regards,
+>  Philipp
+> 
+> The following changes since commit 0b7877d4eea3f93e3dd941999522bbd8c538cb53:
+> 
+>   Merge tag 'v3.4-rc5' into for-3.5/core (2012-05-01 14:29:55 +0200)
+> 
+> are available in the git repository at:
+> 
+>   git@git.drbd.org:linux-drbd for-jens
 
-Well, in the sense that if mmap fails in the !VM_SHARED case, I can't
-enable any persistent events except the ones which are enabled and so
-I need to allocate another set of resources for that second persistent
-events user.
+Thanks, pulled in. Your git url confused me a bit, though, I pulled in
+git://git.drbd.org/linux-drbd for-jens
+
+Diffstat matches etc, so I'm jotting the above down to a typo in your
+pull request script.
 
 -- 
-Regards/Gruss,
-Boris.
+Jens Axboe
 
-Advanced Micro Devices GmbH
-Einsteinring 24, 85609 Dornach
-GM: Alberto Bozzo
-Reg: Dornach, Landkreis Muenchen
-HRB Nr. 43632 WEEE Registernr: 129 19551
