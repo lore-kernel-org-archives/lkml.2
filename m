@@ -1,58 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1946866Ab2ERXK7 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 May 2012 19:10:59 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:58844 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1946744Ab2ERXH2 (ORCPT
+	id S1946877Ab2ERXLO (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 May 2012 19:11:14 -0400
+Received: from mga10.intel.com ([192.55.52.92]:2953 "EHLO
+	fmsmga102.fm.intel.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1946766Ab2ERXLK convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 May 2012 19:07:28 -0400
-Message-Id: <20120518212652.917821752@linuxfoundation.org>
-User-Agent: quilt/0.60-19.1
-Date: Fri, 18 May 2012 14:27:30 -0700
-From: Greg KH <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Tomoya MORINAGA <tomoya.rohm@gmail.com>,
-        Wolfram Sang <w.sang@pengutronix.de>
-Subject: [ 41/47] i2c-eg20t: change timeout value 50msec to 1000msec
-In-Reply-To: <20120518212701.GA5023@kroah.com>
+	Fri, 18 May 2012 19:11:10 -0400
+MIME-Version: 1.0
+In-Reply-To: <20120518222507.GA7188@sergelap>
+References: <1337284200-1838-1-git-send-email-auke-jan.h.kok@intel.com>
+	<20120518222507.GA7188@sergelap>
+Date: Fri, 18 May 2012 16:11:07 -0700
+Message-ID: <CABsxX9+Tt5Ey0qpUWqS7beVOCiBzWtSDGU+Bd2KiN=07Bkm3SA@mail.gmail.com>
+Subject: Re: [PATCH] Trace event for capable().
+From: "Kok, Auke-jan H" <auke-jan.h.kok@intel.com>
+To: Serge Hallyn <serge.hallyn@canonical.com>
+Cc: linux-security-module@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Eric Paris <eparis@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.3-stable review patch.  If anyone has any objections, please let me know.
+On Fri, May 18, 2012 at 3:25 PM, Serge Hallyn
+<serge.hallyn@canonical.com> wrote:
+> Quoting Auke Kok (auke-jan.h.kok@intel.com):
+>> Add a simple trace event for capable().
+>>
+>> There's been a lot of discussion around capable(), and there
+>> are plenty of tools to help reduce capabilities' usage from
+>> userspace. A major gap however is that it's almost impossible
+>> to see or verify which bits are requested from either userspace
+>> or in the kernel.
+>>
+>> This patch adds a minimal tracer that will print out which
+>> CAPs are requested and whether the request was granted.
+>>
+>> Signed-off-by: Auke Kok <auke-jan.h.kok@intel.com>
+>> Cc: linux-security-module@vger.kernel.org
+>> Cc: linux-kernel@vger.kernel.org
+>> Cc: Serge Hallyn <serge.hallyn@canonical.com>
+>
+> Hi,
+>
+> is there any measurable performance impact by this patch?  (Have you
+> measured it?)
 
-------------------
+I actually did a full OS boot test and didn't see a noticeable
+difference - basically
+ booted with init=/bin/bash, mount debugfs, start the tracer and then
+exec /sbin/init...
+It's anecdotal, but, given the use of this tracer should be more than
+acceptable.
 
-From: Tomoya MORINAGA <tomoya.rohm@gmail.com>
+Of course, there is a small (nop - ~1 cycle) penalty to the tracepoint
+even if tracing
+is disabled, but the codepath should never be in any form of hotpath no matter
+what, since any call to capable() will end up in LSM checks and audit
+checks anyway.
 
-commit 8a52f9f347da721b199b7f9dcc0168bbe7d0baae upstream.
+> I'm not familiar enough with the tracing stuff, but if the tracing is
+> done so there's no impact when not tracing, then I have no problem with
+> this.  It could be quite useful as you say.
+>
+> Acked-by: Serge Hallyn <serge.hallyn@ubuntu.com>
 
-Currently, during i2c works alone, wait-event timeout is not occurred.
-However, as CPU load increases, timeout occurs frequently.
-So, I modified like this patch.
-Modifying like this patch, I've never seen the timeout event with high
-load test.
+thanks, - I might resend a new patch if I can add the namespace info
+as per the other comment.
 
-Signed-off-by: Tomoya MORINAGA <tomoya.rohm@gmail.com>
-Signed-off-by: Wolfram Sang <w.sang@pengutronix.de>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
----
- drivers/i2c/busses/i2c-eg20t.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
-
---- a/drivers/i2c/busses/i2c-eg20t.c
-+++ b/drivers/i2c/busses/i2c-eg20t.c
-@@ -318,7 +318,7 @@ static s32 pch_i2c_wait_for_xfer_complet
- {
- 	long ret;
- 	ret = wait_event_timeout(pch_event,
--			(adap->pch_event_flag != 0), msecs_to_jiffies(50));
-+			(adap->pch_event_flag != 0), msecs_to_jiffies(1000));
- 
- 	if (ret == 0) {
- 		pch_err(adap, "timeout: %x\n", adap->pch_event_flag);
-
-
+Auke
