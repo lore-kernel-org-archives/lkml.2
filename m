@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1762596Ab2ERCwf (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 May 2012 22:52:35 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:40405 "EHLO
+	id S1031058Ab2ERDEh (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 May 2012 23:04:37 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:40459 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1762555Ab2ERCw2 (ORCPT
+	by vger.kernel.org with ESMTP id S1762553Ab2ERCwf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 May 2012 22:52:28 -0400
-Message-Id: <20120518023256.109160335@decadent.org.uk>
+	Thu, 17 May 2012 22:52:35 -0400
+Message-Id: <20120518023258.316703628@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Fri, 18 May 2012 03:33:07 +0100
+Date: Fri, 18 May 2012 03:33:23 +0100
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Sasha Levin <levinsasha928@gmail.com>,
-        Eric Dumazet <edumazet@google.com>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [ 13/53] net: l2tp: unlock socket lock before returning from l2tp_ip_sendmsg
+        alan@lxorguk.ukuu.org.uk, Mike Snitzer <snitzer@redhat.com>,
+        Ben Marzinski <bmarzins@redhat.com>,
+        Alasdair G Kergon <agk@redhat.com>
+Subject: [ 29/53] dm mpath: check if scsi_dh module already loaded before trying to load
 In-Reply-To: <20120518023254.339945758@decadent.org.uk>
 X-SA-Exim-Connect-IP: 192.168.4.185
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -29,49 +29,40 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Sasha Levin <levinsasha928@gmail.com>
+From: Mike Snitzer <snitzer@redhat.com>
 
-[ Upstream commit 84768edbb2721637620b2d84501bb0d5aed603f1 ]
+commit 510193a2d3d2e03ae53b95c0ae4f33cdff02cbf8 upstream.
 
-l2tp_ip_sendmsg could return without releasing socket lock, making it all the
-way to userspace, and generating the following warning:
+If the requested scsi_dh module is already loaded then skip
+request_module().
 
-[  130.891594] ================================================
-[  130.894569] [ BUG: lock held when returning to user space! ]
-[  130.897257] 3.4.0-rc5-next-20120501-sasha #104 Tainted: G        W
-[  130.900336] ------------------------------------------------
-[  130.902996] trinity/8384 is leaving the kernel with locks still held!
-[  130.906106] 1 lock held by trinity/8384:
-[  130.907924]  #0:  (sk_lock-AF_INET){+.+.+.}, at: [<ffffffff82b9503f>] l2tp_ip_sendmsg+0x2f/0x550
+Multipath table loads can hang in an unnecessary __request_module.
 
-Introduced by commit 2f16270 ("l2tp: Fix locking in l2tp_ip.c").
-
-Signed-off-by: Sasha Levin <levinsasha928@gmail.com>
-Acked-by: Eric Dumazet <edumazet@google.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+Reported-by: Ben Marzinski <bmarzins@redhat.com>
+Signed-off-by: Mike Snitzer <snitzer@redhat.com>
+Signed-off-by: Alasdair G Kergon <agk@redhat.com>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- net/l2tp/l2tp_ip.c |    3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
+ drivers/md/dm-mpath.c |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
-diff --git a/net/l2tp/l2tp_ip.c b/net/l2tp/l2tp_ip.c
-index 55670ec..2a2a3e7 100644
---- a/net/l2tp/l2tp_ip.c
-+++ b/net/l2tp/l2tp_ip.c
-@@ -441,8 +441,9 @@ static int l2tp_ip_sendmsg(struct kiocb *iocb, struct sock *sk, struct msghdr *m
+diff --git a/drivers/md/dm-mpath.c b/drivers/md/dm-mpath.c
+index 922a338..754f38f 100644
+--- a/drivers/md/dm-mpath.c
++++ b/drivers/md/dm-mpath.c
+@@ -718,8 +718,8 @@ static int parse_hw_handler(struct dm_arg_set *as, struct multipath *m)
+ 		return 0;
  
- 		daddr = lip->l2tp_addr.s_addr;
- 	} else {
-+		rc = -EDESTADDRREQ;
- 		if (sk->sk_state != TCP_ESTABLISHED)
--			return -EDESTADDRREQ;
-+			goto out;
- 
- 		daddr = inet->inet_daddr;
- 		connected = 1;
+ 	m->hw_handler_name = kstrdup(dm_shift_arg(as), GFP_KERNEL);
+-	request_module("scsi_dh_%s", m->hw_handler_name);
+-	if (scsi_dh_handler_exist(m->hw_handler_name) == 0) {
++	if (!try_then_request_module(scsi_dh_handler_exist(m->hw_handler_name),
++				     "scsi_dh_%s", m->hw_handler_name)) {
+ 		ti->error = "unknown hardware handler type";
+ 		ret = -EINVAL;
+ 		goto fail;
 -- 
-1.7.10.1
-
+1.7.10
 
 
 
