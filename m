@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030757Ab2ERCwx (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 May 2012 22:52:53 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:40553 "EHLO
+	id S1030788Ab2ERCxK (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 May 2012 22:53:10 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:40565 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1030720Ab2ERCwr (ORCPT
+	by vger.kernel.org with ESMTP id S1030725Ab2ERCww (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 May 2012 22:52:47 -0400
-Message-Id: <20120518023258.712784652@decadent.org.uk>
+	Thu, 17 May 2012 22:52:52 -0400
+Message-Id: <20120518023257.504451459@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Fri, 18 May 2012 03:33:26 +0100
+Date: Fri, 18 May 2012 03:33:17 +0100
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Tomoya MORINAGA <tomoya.rohm@gmail.com>,
-        Grant Likely <grant.likely@secretlab.ca>
-Subject: [ 32/53] spi-topcliff-pch: Modify pci-bus number dynamically to get DMA device info
+        alan@lxorguk.ukuu.org.uk, Nicholas Bellinger <nab@linux-iscsi.org>,
+        Christoph Hellwig <hch@lst.de>, Andy Grover <agrover@redhat.com>
+Subject: [ 23/53] target: Drop incorrect se_lun_acl release for dynamic -> explict ACL conversion
 In-Reply-To: <20120518023254.339945758@decadent.org.uk>
 X-SA-Exim-Connect-IP: 192.168.4.185
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -28,31 +28,69 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Tomoya MORINAGA <tomoya.rohm@gmail.com>
+From: Nicholas Bellinger <nab@linux-iscsi.org>
 
-commit ee2ece5261a639b89f194d141444b03b4c923179 upstream.
+commit cfebf8f42f47327fa54cf05c19b98f4bd5236a26 upstream.
 
-Signed-off-by: Tomoya MORINAGA <tomoya.rohm@gmail.com>
-Signed-off-by: Grant Likely <grant.likely@secretlab.ca>
+This patch removes some potentially problematic legacy code within
+core_clear_initiator_node_from_tpg() that was originally intended to
+release left over se_lun_acl setup during dynamic NodeACL+MappedLUN
+generate when running with TPG demo-mode operation.
+
+Since we now only ever expect to allocate and release se_lun_acl from
+within target_core_fabric_configfs.c:target_fabric_make_mappedlun() and
+target_fabric_drop_mappedlun() context respectively, this code for
+demo-mode release is incorrect and needs to be removed.
+
+Cc: Christoph Hellwig <hch@lst.de>
+Cc: Andy Grover <agrover@redhat.com>
+Signed-off-by: Nicholas Bellinger <nab@linux-iscsi.org>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- drivers/spi/spi-topcliff-pch.c |    3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
+ drivers/target/target_core_tpg.c |   22 ----------------------
+ 1 file changed, 22 deletions(-)
 
-diff --git a/drivers/spi/spi-topcliff-pch.c b/drivers/spi/spi-topcliff-pch.c
-index 4a5fafb..4b32fd7 100644
---- a/drivers/spi/spi-topcliff-pch.c
-+++ b/drivers/spi/spi-topcliff-pch.c
-@@ -924,7 +924,8 @@ static void pch_spi_request_dma(struct pch_spi_data *data, int bpw)
- 	dma_cap_set(DMA_SLAVE, mask);
+diff --git a/drivers/target/target_core_tpg.c b/drivers/target/target_core_tpg.c
+index 70c3ffb..e320ec2 100644
+--- a/drivers/target/target_core_tpg.c
++++ b/drivers/target/target_core_tpg.c
+@@ -60,7 +60,6 @@ static void core_clear_initiator_node_from_tpg(
+ 	int i;
+ 	struct se_dev_entry *deve;
+ 	struct se_lun *lun;
+-	struct se_lun_acl *acl, *acl_tmp;
  
- 	/* Get DMA's dev information */
--	dma_dev = pci_get_bus_and_slot(2, PCI_DEVFN(12, 0));
-+	dma_dev = pci_get_bus_and_slot(data->board_dat->pdev->bus->number,
-+				       PCI_DEVFN(12, 0));
+ 	spin_lock_irq(&nacl->device_list_lock);
+ 	for (i = 0; i < TRANSPORT_MAX_LUNS_PER_TPG; i++) {
+@@ -81,28 +80,7 @@ static void core_clear_initiator_node_from_tpg(
+ 		core_update_device_list_for_node(lun, NULL, deve->mapped_lun,
+ 			TRANSPORT_LUNFLAGS_NO_ACCESS, nacl, tpg, 0);
  
- 	/* Set Tx DMA */
- 	param = &dma->param_tx;
+-		spin_lock(&lun->lun_acl_lock);
+-		list_for_each_entry_safe(acl, acl_tmp,
+-					&lun->lun_acl_list, lacl_list) {
+-			if (!strcmp(acl->initiatorname, nacl->initiatorname) &&
+-			    (acl->mapped_lun == deve->mapped_lun))
+-				break;
+-		}
+-
+-		if (!acl) {
+-			pr_err("Unable to locate struct se_lun_acl for %s,"
+-				" mapped_lun: %u\n", nacl->initiatorname,
+-				deve->mapped_lun);
+-			spin_unlock(&lun->lun_acl_lock);
+-			spin_lock_irq(&nacl->device_list_lock);
+-			continue;
+-		}
+-
+-		list_del(&acl->lacl_list);
+-		spin_unlock(&lun->lun_acl_lock);
+-
+ 		spin_lock_irq(&nacl->device_list_lock);
+-		kfree(acl);
+ 	}
+ 	spin_unlock_irq(&nacl->device_list_lock);
+ }
 -- 
 1.7.10
 
