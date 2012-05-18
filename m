@@ -1,21 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030270Ab2ERXVU (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 May 2012 19:21:20 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:65112 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1946549Ab2ERXFa (ORCPT
+	id S968226Ab2ERXVs (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 May 2012 19:21:48 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:53122 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1946554Ab2ERXF1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 May 2012 19:05:30 -0400
-Message-Id: <20120518212649.496270084@linuxfoundation.org>
+	Fri, 18 May 2012 19:05:27 -0400
+Message-Id: <20120518212649.411772717@linuxfoundation.org>
 User-Agent: quilt/0.60-19.1
-Date: Fri, 18 May 2012 14:26:52 -0700
+Date: Fri, 18 May 2012 14:26:51 -0700
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Philipp Matthias Hahn <pmhahn@pmhahn.de>,
+        alan@lxorguk.ukuu.org.uk,
+        David Henningsson <david.henningsson@canonical.com>,
+        Arun Raghavan <arun.raghavan@collabora.co.uk>,
         Takashi Iwai <tiwai@suse.de>
-Subject: [ 03/47] ALSA: hda/realtek - Add missing CD-input pin for MSI-7350 mobo
+Subject: [ 02/47] ALSA: HDA: Lessen CPU usage when waiting for chip to respond
 In-Reply-To: <20120518212701.GA5023@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,27 +27,53 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Takashi Iwai <tiwai@suse.de>
+From: David Henningsson <david.henningsson@canonical.com>
 
-commit bca40138558f0b39357fd1ca477868e4f52f4b1e upstream.
+commit 32cf4023e689ad5b3a81a749d8cc99d7f184cb99 upstream.
 
-Reported-by: Philipp Matthias Hahn <pmhahn@pmhahn.de>
+When an IRQ for some reason gets lost, we wait up to a second using
+udelay, which is CPU intensive. This patch improves the situation by
+waiting about 30 ms in the CPU intensive mode, then stepping down to
+using msleep(2) instead. In essence, we trade some granularity in
+exchange for less CPU consumption when the waiting time is a bit longer.
+
+As a result, PulseAudio should no longer be killed by the kernel
+for taking up to much RT-prio CPU time. At least not for *this* reason.
+
+Signed-off-by: David Henningsson <david.henningsson@canonical.com>
+Tested-by: Arun Raghavan <arun.raghavan@collabora.co.uk>
 Signed-off-by: Takashi Iwai <tiwai@suse.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- sound/pci/hda/patch_realtek.c |    1 +
- 1 file changed, 1 insertion(+)
+ sound/pci/hda/hda_intel.c |    6 ++++--
+ 1 file changed, 4 insertions(+), 2 deletions(-)
 
---- a/sound/pci/hda/patch_realtek.c
-+++ b/sound/pci/hda/patch_realtek.c
-@@ -4665,6 +4665,7 @@ static const struct snd_pci_quirk alc882
- 	SND_PCI_QUIRK(0x106b, 0x3e00, "iMac 24 Aluminum", ALC885_FIXUP_MACPRO_GPIO),
+--- a/sound/pci/hda/hda_intel.c
++++ b/sound/pci/hda/hda_intel.c
+@@ -779,11 +779,13 @@ static unsigned int azx_rirb_get_respons
+ {
+ 	struct azx *chip = bus->private_data;
+ 	unsigned long timeout;
++	unsigned long loopcounter;
+ 	int do_poll = 0;
  
- 	SND_PCI_QUIRK(0x1071, 0x8258, "Evesham Voyaeger", ALC882_FIXUP_EAPD),
-+	SND_PCI_QUIRK(0x1462, 0x7350, "MSI-7350", ALC889_FIXUP_CD),
- 	SND_PCI_QUIRK_VENDOR(0x1462, "MSI", ALC882_FIXUP_GPIO3),
- 	SND_PCI_QUIRK(0x1458, 0xa002, "Gigabyte EP45-DS3", ALC889_FIXUP_CD),
- 	SND_PCI_QUIRK(0x147b, 0x107a, "Abit AW9D-MAX", ALC882_FIXUP_ABIT_AW9D_MAX),
+  again:
+ 	timeout = jiffies + msecs_to_jiffies(1000);
+-	for (;;) {
++
++	for (loopcounter = 0;; loopcounter++) {
+ 		if (chip->polling_mode || do_poll) {
+ 			spin_lock_irq(&chip->reg_lock);
+ 			azx_update_rirb(chip);
+@@ -799,7 +801,7 @@ static unsigned int azx_rirb_get_respons
+ 		}
+ 		if (time_after(jiffies, timeout))
+ 			break;
+-		if (bus->needs_damn_long_delay)
++		if (bus->needs_damn_long_delay || loopcounter > 3000)
+ 			msleep(2); /* temporary workaround */
+ 		else {
+ 			udelay(10);
 
 
