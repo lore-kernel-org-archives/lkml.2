@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932985Ab2ERRMv (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 May 2012 13:12:51 -0400
-Received: from www.tglx.de ([62.245.132.106]:59986 "EHLO Tesla.tglx.de"
+	id S965601Ab2ERRM6 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 May 2012 13:12:58 -0400
+Received: from www.tglx.de ([62.245.132.106]:59987 "EHLO Tesla.tglx.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932482Ab2ERRMu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 May 2012 13:12:50 -0400
-X-Greylist: delayed 1624 seconds by postgrey-1.27 at vger.kernel.org; Fri, 18 May 2012 13:12:50 EDT
-Message-Id: <20120518163106.857566635@glx-um.de>
+	id S932879Ab2ERRMv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 18 May 2012 13:12:51 -0400
+Message-Id: <20120518163106.073559820@glx-um.de>
 User-Agent: quilt/0.48-1
-Date: Fri, 18 May 2012 16:45:53 -0000
+Date: Fri, 18 May 2012 16:45:50 -0000
 From: Anna-Maria Gleixner <anna-maria@glx-um.de>
 To: LKML <linux-kernel@vger.kernel.org>
-Cc: Thomas Gleixner <tglx@linutronix.de>, Paul Mundt <lethal@linux-sh.org>
-Subject: [patch 19/24] sh: Use generic time config
+Cc: Thomas Gleixner <tglx@linutronix.de>, Ralf Baechle <ralf@linux-mips.org>
+Subject: [patch 13/24] mips: Use generic time config
 References: <20120518163020.548627576@glx-um.de>
-Content-Disposition: inline; filename=sh-use-generic-time-config.patch
+Content-Disposition: inline; filename=mips-use-generic-time-config.patch
 X-TGLX-Spam-Score: -1.0
 X-TGLX-Spam-Level: -
 X-TGLX-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1
@@ -24,40 +23,48 @@ List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 Signed-off-by: Anna-Maria Gleixner <anna-maria@glx-um.de>
-Cc: Paul Mundt <lethal@linux-sh.org>
+Cc: Ralf Baechle <ralf@linux-mips.org>
 ---
- arch/sh/Kconfig |   12 ++----------
- 1 file changed, 2 insertions(+), 10 deletions(-)
+ arch/mips/Kconfig |   13 ++-----------
+ 1 file changed, 2 insertions(+), 11 deletions(-)
 
-Index: linux/arch/sh/Kconfig
+Index: linux/arch/mips/Kconfig
 ===================================================================
---- linux.orig/arch/sh/Kconfig
-+++ linux/arch/sh/Kconfig
-@@ -28,6 +28,8 @@ config SUPERH
- 	select RTC_LIB
- 	select GENERIC_ATOMIC64
- 	select GENERIC_IRQ_SHOW
+--- linux.orig/arch/mips/Kconfig
++++ linux/arch/mips/Kconfig
+@@ -29,6 +29,8 @@ config MIPS
+ 	select HAVE_MEMBLOCK
+ 	select HAVE_MEMBLOCK_NODE_MAP
+ 	select ARCH_DISCARD_MEMBLOCK
 +	select GENERIC_CLOCKEVENTS
-+	select GENERIC_CMOS_UPDATE if SH_SH03 || SH_DREAMCAST
- 	help
- 	  The SuperH is a RISC processor targeted for use in embedded systems
- 	  and consumer electronics; it was also used in the Sega Dreamcast
-@@ -86,16 +88,6 @@ config GENERIC_GPIO
- config GENERIC_CALIBRATE_DELAY
++	select GENERIC_CMOS_UPDATE
+ 
+ menu "Machine selection"
+ 
+@@ -856,14 +858,6 @@ config GENERIC_CALIBRATE_DELAY
  	bool
+ 	default y
  
 -config GENERIC_CLOCKEVENTS
--	def_bool y
+-	bool
+-	default y
 -
+-config GENERIC_CMOS_UPDATE
+-	bool
+-	default y
+-
+ config SCHED_OMIT_FRAME_POINTER
+ 	bool
+ 	default y
+@@ -2050,9 +2044,6 @@ config CPU_HAS_SYNC
+ 	depends on !CPU_R3000
+ 	default y
+ 
 -config GENERIC_CLOCKEVENTS_BROADCAST
 -	bool
 -
--config GENERIC_CMOS_UPDATE
--	def_bool y
--	depends on SH_SH03 || SH_DREAMCAST
--
- config GENERIC_LOCKBREAK
- 	def_bool y
- 	depends on SMP && PREEMPT
+ #
+ # CPU non-features
+ #
 
 
