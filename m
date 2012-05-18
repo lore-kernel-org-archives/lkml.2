@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030917Ab2ERC7V (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 May 2012 22:59:21 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:40563 "EHLO
+	id S1030939Ab2ERC7X (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 May 2012 22:59:23 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:40555 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1030726Ab2ERCwt (ORCPT
+	by vger.kernel.org with ESMTP id S1030721Ab2ERCws (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 May 2012 22:52:49 -0400
-Message-Id: <20120518023259.116734346@decadent.org.uk>
+	Thu, 17 May 2012 22:52:48 -0400
+Message-Id: <20120518023258.981754890@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Fri, 18 May 2012 03:33:29 +0100
+Date: Fri, 18 May 2012 03:33:28 +0100
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
         alan@lxorguk.ukuu.org.uk, Tomoya MORINAGA <tomoya.rohm@gmail.com>,
         Grant Likely <grant.likely@secretlab.ca>
-Subject: [ 35/53] spi-topcliff-pch: add recovery processing in case wait-event timeout
+Subject: [ 34/53] spi-topcliff-pch: supports a spi mode setup and bit order setup by IO control
 In-Reply-To: <20120518023254.339945758@decadent.org.uk>
 X-SA-Exim-Connect-IP: 192.168.4.185
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -30,40 +30,31 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Tomoya MORINAGA <tomoya.rohm@gmail.com>
 
-commit 0f57e168aa109775430c76cc663fb64909813d84 upstream.
+commit f258b44e22e07f5e98ac2260c70acff5784791b6 upstream.
 
-Currently, pch_spi_start_transfer failure is not anticipated.
-This patch adds the processing.
+This patch supports a spi mode setup and bit order setup by IO control.
+    spi mode:     mode 0 to mode 3
+    bit order:    LSB first, MSB first
 
 Signed-off-by: Tomoya MORINAGA <tomoya.rohm@gmail.com>
 Signed-off-by: Grant Likely <grant.likely@secretlab.ca>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- drivers/spi/spi-topcliff-pch.c |   10 +++++++++-
- 1 file changed, 9 insertions(+), 1 deletion(-)
+ drivers/spi/spi-topcliff-pch.c |    1 +
+ 1 file changed, 1 insertion(+)
 
 diff --git a/drivers/spi/spi-topcliff-pch.c b/drivers/spi/spi-topcliff-pch.c
-index 5a477e9..c9e1fcc 100644
+index 4fdb83a..5a477e9 100644
 --- a/drivers/spi/spi-topcliff-pch.c
 +++ b/drivers/spi/spi-topcliff-pch.c
-@@ -1266,8 +1266,16 @@ static void pch_spi_process_messages(struct work_struct *pwork)
- 			char *save_rx_buf = data->cur_trans->rx_buf;
- 			for (i = 0; i < cnt; i ++) {
- 				pch_spi_handle_dma(data, &bpw);
--				if (!pch_spi_start_transfer(data))
-+				if (!pch_spi_start_transfer(data)) {
-+					data->transfer_complete = true;
-+					data->current_msg->status = -EIO;
-+					data->current_msg->complete
-+						   (data->current_msg->context);
-+					data->bcurrent_msg_processing = false;
-+					data->current_msg = NULL;
-+					data->cur_trans = NULL;
- 					goto out;
-+				}
- 				pch_spi_copy_rx_data_for_dma(data, bpw);
- 			}
- 			data->cur_trans->rx_buf = save_rx_buf;
+@@ -1434,6 +1434,7 @@ static int __devinit pch_spi_pd_probe(struct platform_device *plat_dev)
+ 	master->num_chipselect = PCH_MAX_CS;
+ 	master->setup = pch_spi_setup;
+ 	master->transfer = pch_spi_transfer;
++	master->mode_bits = SPI_CPOL | SPI_CPHA | SPI_LSB_FIRST;
+ 
+ 	data->board_dat = board_dat;
+ 	data->plat_dev = plat_dev;
 -- 
 1.7.10
 
