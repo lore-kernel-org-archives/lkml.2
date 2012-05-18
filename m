@@ -1,23 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030343Ab2ERJKd (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 May 2012 05:10:33 -0400
-Received: from smtp3.mundo-r.com ([212.51.32.191]:41780 "EHLO
+	id S1030764Ab2ERJKl (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 May 2012 05:10:41 -0400
+Received: from smtp3.mundo-r.com ([212.51.32.191]:39870 "EHLO
 	smtp4.mundo-r.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S967180Ab2ERJKY (ORCPT
+	with ESMTP id S1030267Ab2ERJKd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 May 2012 05:10:24 -0400
+	Fri, 18 May 2012 05:10:33 -0400
 X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: Av0EABMRtk9bdWOb/2dsb2JhbABFs2eBB4IWAQUnQBIQUVcGE4gSvBSQRQOVIIkihlOCaw
+X-IronPort-Anti-Spam-Result: Av0EABMRtk9bdWOb/2dsb2JhbABFs2eBB4IWAQUnUhBRVwYTiBK8FJBFA5Ugj3WCaw
 X-IronPort-AV: E=Sophos;i="4.75,616,1330902000"; 
-   d="scan'208";a="915536499"
+   d="scan'208";a="915536506"
 From: Samuel Iglesias Gonsalvez <siglesias@igalia.com>
 To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 Cc: Samuel Iglesias Gonsalvez <siglesias@igalia.com>,
         devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
-Subject: [PATCH 2/4] Staging: ipack: remove board_name and bus_name fields from struct ipack_device
-Date: Fri, 18 May 2012 11:10:06 +0200
-Message-Id: <1337332208-26057-2-git-send-email-siglesias@igalia.com>
+Subject: [PATCH 4/4] Staging: ipack/bridges/tpci200: remove unneeded casts
+Date: Fri, 18 May 2012 11:10:08 +0200
+Message-Id: <1337332208-26057-4-git-send-email-siglesias@igalia.com>
 X-Mailer: git-send-email 1.7.10
 In-Reply-To: <1337332208-26057-1-git-send-email-siglesias@igalia.com>
 References: <1337332208-26057-1-git-send-email-siglesias@igalia.com>
@@ -25,109 +25,96 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Removed board_name and bus_name fields from struct ipack_device that are
-completely useless.
-
 Signed-off-by: Samuel Iglesias Gonsalvez <siglesias@igalia.com>
 ---
- drivers/staging/ipack/bridges/tpci200.c |   20 ++++----------------
- drivers/staging/ipack/bridges/tpci200.h |    8 ++++----
- drivers/staging/ipack/ipack.h           |    4 ----
- 3 files changed, 8 insertions(+), 24 deletions(-)
+ drivers/staging/ipack/bridges/tpci200.c |   36 ++++++++++++++-----------------
+ 1 file changed, 16 insertions(+), 20 deletions(-)
 
 diff --git a/drivers/staging/ipack/bridges/tpci200.c b/drivers/staging/ipack/bridges/tpci200.c
-index 392aec0..b460587 100644
+index c043345..ad28707 100644
 --- a/drivers/staging/ipack/bridges/tpci200.c
 +++ b/drivers/staging/ipack/bridges/tpci200.c
-@@ -371,9 +371,7 @@ static irqreturn_t tpci200_interrupt(int irq, void *dev_id)
+@@ -321,8 +321,8 @@ static irqreturn_t tpci200_interrupt(int irq, void *dev_id)
+ 	spin_lock_irqsave(&tpci200->info->access_lock, flags);
  
- #ifdef CONFIG_SYSFS
+ 	/* Read status register */
+-	status_reg = readw((void __iomem *) (tpci200->info->interface_regs +
+-					       TPCI200_STATUS_REG));
++	status_reg = readw(tpci200->info->interface_regs +
++			   TPCI200_STATUS_REG);
  
--static struct ipack_device *tpci200_slot_register(const char *board_name,
--						  int size,
--						  unsigned int tpci200_number,
-+static struct ipack_device *tpci200_slot_register(unsigned int tpci200_number,
- 						  unsigned int slot_position)
- {
- 	int found = 0;
-@@ -437,7 +435,7 @@ static ssize_t tpci200_store_board(struct device *pdev, const char *buf,
- 	if (dev != NULL)
- 		return -EBUSY;
+ 	if (status_reg & TPCI200_SLOT_INT_MASK) {
+ 		unhandled_ints = status_reg & TPCI200_SLOT_INT_MASK;
+@@ -334,12 +334,10 @@ static irqreturn_t tpci200_interrupt(int irq, void *dev_id)
+ 				ret = tpci200->slots[i].irq->handler(tpci200->slots[i].irq->arg);
  
--	dev = tpci200_slot_register(buf, count, card->number, slot);
-+	dev = tpci200_slot_register(card->number, slot);
- 	if (dev == NULL)
- 		return -ENODEV;
+ 				/* Dummy reads */
+-				readw((void __iomem *)
+-				      (tpci200->slots[i].dev->io_space.address +
+-				       0xC0));
+-				readw((void __iomem *)
+-				      (tpci200->slots[i].dev->io_space.address +
+-				       0xC2));
++				readw(tpci200->slots[i].dev->io_space.address +
++				      0xC0);
++				readw(tpci200->slots[i].dev->io_space.address +
++				      0xC2);
  
-@@ -450,7 +448,7 @@ static ssize_t tpci200_show_board(struct device *pdev, char *buf, int slot)
- 	struct ipack_device *dev = card->slots[slot].dev;
+ 				unhandled_ints &= ~(((TPCI200_A_INT0 | TPCI200_A_INT1) << (2*i)));
+ 			}
+@@ -352,13 +350,13 @@ static irqreturn_t tpci200_interrupt(int irq, void *dev_id)
+ 				pr_info("No registered ISR for slot [%d:%d]!. IRQ will be disabled.\n",
+ 					tpci200->number, i);
+ 				reg_value = readw(
+-					(void __iomem *)(tpci200->info->interface_regs +
+-								     control_reg[i]));
++					tpci200->info->interface_regs +
++					control_reg[i]);
+ 				reg_value &=
+ 					~(TPCI200_INT0_EN | TPCI200_INT1_EN);
+ 				writew(reg_value,
+-				       (void __iomem *)(tpci200->info->interface_regs +
+-							control_reg[i]));
++				       (tpci200->info->interface_regs +
++					control_reg[i]));
+ 			}
+ 		}
+ 	}
+@@ -659,9 +657,8 @@ static int tpci200_register(struct tpci200_board *tpci200)
+ 			(void __iomem *)mem_base + TPCI200_MEM8_GAP*i;
+ 		tpci200->slots[i].mem_phys.size = TPCI200_MEM8_SIZE;
  
- 	if (dev != NULL)
--		return snprintf(buf, PAGE_SIZE, "%s\n", dev->board_name);
-+		return snprintf(buf, PAGE_SIZE, "%s\n", dev_name(&dev->dev));
- 	else
- 		return snprintf(buf, PAGE_SIZE, "none\n");
+-		writew(slot_ctrl,
+-		       (void __iomem *)(tpci200->info->interface_regs +
+-					  control_reg[i]));
++		writew(slot_ctrl, (tpci200->info->interface_regs +
++				   control_reg[i]));
+ 	}
+ 
+ 	res = request_irq(tpci200->info->pdev->irq,
+@@ -703,8 +700,8 @@ static int __tpci200_request_irq(struct tpci200_board *tpci200,
+ 	 * clock rate 8 MHz
+ 	 */
+ 	slot_ctrl = TPCI200_INT0_EN | TPCI200_INT1_EN;
+-	writew(slot_ctrl, (void __iomem *)(tpci200->info->interface_regs +
+-					     control_reg[dev->slot]));
++	writew(slot_ctrl, (tpci200->info->interface_regs +
++			   control_reg[dev->slot]));
+ 
+ 	return 0;
  }
-@@ -975,17 +973,7 @@ static int tpci200_request_irq(struct ipack_device *dev, int vector,
- 	slot_irq->vector = vector;
- 	slot_irq->handler = handler;
- 	slot_irq->arg = arg;
--	if (dev->board_name) {
--		if (strlen(dev->board_name) > IPACK_IRQ_NAME_SIZE) {
--			pr_warning("Slot [%s %d:%d] IRQ name too long (%d char > %d char MAX). Will be truncated!\n",
--				   TPCI200_SHORTNAME, dev->bus_nr, dev->slot,
--				   (int)strlen(dev->board_name),
--				   IPACK_IRQ_NAME_SIZE);
--		}
--		strncpy(slot_irq->name, dev->board_name, IPACK_IRQ_NAME_SIZE-1);
--	} else {
--		strcpy(slot_irq->name, "Unknown");
--	}
-+	slot_irq->name = dev_name(&dev->dev);
+@@ -723,9 +720,8 @@ static void __tpci200_free_irq(struct tpci200_board *tpci200,
+ 	 * clock rate 8 MHz
+ 	 */
+ 	slot_ctrl = 0;
+-	writew(slot_ctrl,
+-	       (void __iomem *)(tpci200->info->interface_regs +
+-				control_reg[dev->slot]));
++	writew(slot_ctrl, (tpci200->info->interface_regs +
++			   control_reg[dev->slot]));
+ }
  
- 	tpci200->slots[dev->slot].irq = slot_irq;
- 	res = __tpci200_request_irq(tpci200, dev);
-diff --git a/drivers/staging/ipack/bridges/tpci200.h b/drivers/staging/ipack/bridges/tpci200.h
-index e3a7e5d..7eb994d 100644
---- a/drivers/staging/ipack/bridges/tpci200.h
-+++ b/drivers/staging/ipack/bridges/tpci200.h
-@@ -112,10 +112,10 @@
-  *
-  */
- struct slot_irq {
--	int          vector;
--	int         (*handler)(void *);
--	void         *arg;
--	char         name[IPACK_IRQ_NAME_SIZE];
-+	int		vector;
-+	int		(*handler)(void *);
-+	void		*arg;
-+	const char	*name;
- };
- 
- /**
-diff --git a/drivers/staging/ipack/ipack.h b/drivers/staging/ipack/ipack.h
-index d50af71..8bc001e 100644
---- a/drivers/staging/ipack/ipack.h
-+++ b/drivers/staging/ipack/ipack.h
-@@ -11,8 +11,6 @@
- 
- #include <linux/device.h>
- 
--#define IPACK_BOARD_NAME_SIZE			16
--#define IPACK_IRQ_NAME_SIZE			50
- #define IPACK_IDPROM_OFFSET_I			0x01
- #define IPACK_IDPROM_OFFSET_P			0x03
- #define IPACK_IDPROM_OFFSET_A			0x05
-@@ -64,8 +62,6 @@ struct ipack_addr_space {
-  * by the carrier board throught bus->ops.
-  */
- struct ipack_device {
--	char board_name[IPACK_BOARD_NAME_SIZE];
--	char bus_name[IPACK_BOARD_NAME_SIZE];
- 	unsigned int bus_nr;
- 	unsigned int slot;
- 	unsigned int irq;
+ static int tpci200_free_irq(struct ipack_device *dev)
 -- 
 1.7.10
 
