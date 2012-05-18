@@ -1,54 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758116Ab2ERQHx (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 May 2012 12:07:53 -0400
-Received: from smtp107.prem.mail.ac4.yahoo.com ([76.13.13.46]:43570 "HELO
-	smtp107.prem.mail.ac4.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1757808Ab2ERQHv (ORCPT
+	id S1758212Ab2ERQJN (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 May 2012 12:09:13 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:62714 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757808Ab2ERQJK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 May 2012 12:07:51 -0400
-X-Yahoo-Newman-Property: ymail-3
-X-YMail-OSG: nO68lC4VM1kvuSLF8umO_iW_jg5cEBwHNXEGhuDFlIIqJOJ
- JPGC2_z9x6qf2W8CgPKzTxbkH6juDKRdtNb2Oyyq3wkyDCFReE24auslx9T3
- hthIK_ltRYuz1Eyb1ieks42qQHs1jRFoQPoETAQMz7BYP_upfQ50wF4iVbiL
- rUxnFBsoDdr42SBizeR2hrUyslczCk_q6UDdR.Ba.q3iJVmMtJpZYd3oIi5M
- 1PLDJglatS2pvlZPhNzdByPbSNDmg5DmRaNLBjYIAMbsI_V5JL0jWsSobbls
- qT.4hqg7zjYULYUvp0b5aPY1v399WiEH9QlAmxAOvDGwS4R8u.jklQDoJ8Me
- GPbjMg5JgzPSJPDM1XfHsIO0ByM9r5YTsHQEcP3hxnxoXW_Y5q9foeu6HP.M
- Q.9WAwtnNix0VsxTuWVr4zSeCO_GefCz_0mkS
-X-Yahoo-SMTP: _Dag8S.swBC1p4FJKLCXbs8NQzyse1SYSgnAbY0-
-Date: Fri, 18 May 2012 11:07:45 -0500 (CDT)
-From: Christoph Lameter <cl@linux.com>
-X-X-Sender: cl@router.home
-To: Peter Zijlstra <peterz@infradead.org>
-cc: Rik van Riel <riel@redhat.com>, mingo@kernel.org, hpa@zytor.com,
-        linux-kernel@vger.kernel.org, torvalds@linux-foundation.org,
-        pjt@google.com, bharata.rao@gmail.com, akpm@linux-foundation.org,
-        Lee.Schermerhorn@hp.com, aarcange@redhat.com, danms@us.ibm.com,
-        suresh.b.siddha@intel.com, tglx@linutronix.de,
-        linux-tip-commits@vger.kernel.org
-Subject: Re: [tip:sched/numa] sched/numa: Introduce sys_numa_{t,m}bind()
-In-Reply-To: <1337357041.573.86.camel@twins>
-Message-ID: <alpine.DEB.2.00.1205181107090.21093@router.home>
-References: <tip-nf7brf1b88w0ojwuf689xeet@git.kernel.org> <4FB66756.2060302@redhat.com> <1337355341.573.68.camel@twins> <1337355610.573.70.camel@twins> <alpine.DEB.2.00.1205181047030.21093@router.home> <1337356192.573.75.camel@twins>
- <alpine.DEB.2.00.1205181057400.21093@router.home> <1337357041.573.86.camel@twins>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+	Fri, 18 May 2012 12:09:10 -0400
+Date: Fri, 18 May 2012 09:09:03 -0700
+From: Tejun Heo <tj@kernel.org>
+To: koverstreet@google.com
+Cc: linux-bcache@vger.kernel.org, linux-kernel@vger.kernel.org,
+        dm-devel@redhat.com, linux-fsdevel@vger.kernel.org, axboe@kernel.dk,
+        agk@redhat.com, neilb@suse.de
+Subject: Re: [PATCH 04/13] block: Add bio_clone_kmalloc()
+Message-ID: <20120518160903.GD19388@google.com>
+References: <cover.1337308722.git.koverstreet@google.com>
+ <1c7c2d4b89bc3d0e907608cec37bcf0ee50f4c0e.1337308722.git.koverstreet@google.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1c7c2d4b89bc3d0e907608cec37bcf0ee50f4c0e.1337308722.git.koverstreet@google.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 18 May 2012, Peter Zijlstra wrote:
+On Thu, May 17, 2012 at 10:59:51PM -0400, koverstreet@google.com wrote:
+> @@ -729,7 +729,7 @@ static struct bio *bio_chain_clone(struct bio **old, struct bio **next,
+>  	}
+>  
+>  	while (old_chain && (total < len)) {
+> -		tmp = bio_kmalloc(gfpmask, old_chain->bi_max_vecs);
+> +		tmp = bio_clone_kmalloc(old_chain, gfpmask);
+>  		if (!tmp)
+>  			goto err_out;
+>  
+> @@ -751,13 +751,9 @@ static struct bio *bio_chain_clone(struct bio **old, struct bio **next,
+>  			if (!bp)
+>  				goto err_out;
+>  
+> -			__bio_clone(tmp, &bp->bio1);
+> -
 
-> On Fri, 2012-05-18 at 11:00 -0500, Christoph Lameter wrote:
->
-> > Having the page local is a win if there are a sufficient number of
-> > accesses to amortize the effort to move the page. Given the expensive
-> > nature of page migration there would need to be a large number of accesses
-> > to a page to justify the effort.
->
-> Right, but this is true of any migration scheme and not specific to MoF.
+This effectively swaps the order of bio_split() and __bio_clone().  Is
+that safe?  Also, please cc the maintainer.
 
-Yes and the concern about auto migration schemes not improving performance
-in general applies to all migration schemes.
+Thanks.
+
+-- 
+tejun
