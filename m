@@ -1,23 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S967232Ab2ERNKv (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 May 2012 09:10:51 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:11861 "EHLO
+	id S1946003Ab2ERNK7 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 May 2012 09:10:59 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:18640 "EHLO
 	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932423Ab2ERNKt (ORCPT
+	with ESMTP id S967202Ab2ERNKv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 May 2012 09:10:49 -0400
-X-Authority-Analysis: v=2.0 cv=ae7jbGUt c=1 sm=0 a=ZycB6UtQUfgMyuk2+PxD7w==:17 a=XQbtiDEiEegA:10 a=Ciwy3NGCPMMA:10 a=PBMTFcUQrH0A:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=meVymXHHAAAA:8 a=VwQbUJbxAAAA:8 a=xhxp10SrCP8l0B6zuM0A:9 a=Bn5ogaBAa_D6PcerJFMA:7 a=QEXdDO2ut3YA:10 a=8Zei_r7EaOSdfo0PWvkA:9 a=ZycB6UtQUfgMyuk2+PxD7w==:117
+	Fri, 18 May 2012 09:10:51 -0400
+X-Authority-Analysis: v=2.0 cv=D8PF24tj c=1 sm=0 a=ZycB6UtQUfgMyuk2+PxD7w==:17 a=XQbtiDEiEegA:10 a=Ciwy3NGCPMMA:10 a=8ypjEO02qyYA:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=meVymXHHAAAA:8 a=20KFwNOVAAAA:8 a=5KKST3nhYfKchGJsNdYA:9 a=AZVu-Z0au8g6cMJEbnkA:7 a=QEXdDO2ut3YA:10 a=jEp0ucaQiEUA:10 a=jeBq3FmKZ4MA:10 a=McqO6jb0Q3gc4cdrnH0A:9 a=ZycB6UtQUfgMyuk2+PxD7w==:117
 X-Cloudmark-Score: 0
 X-Originating-IP: 74.67.80.29
-Message-Id: <20120518130858.392919640@goodmis.org>
+Message-Id: <20120518131050.256420374@goodmis.org>
 User-Agent: quilt/0.60-1
-Date: Fri, 18 May 2012 09:08:58 -0400
+Date: Fri, 18 May 2012 09:09:07 -0400
 From: Steven Rostedt <rostedt@goodmis.org>
 To: linux-kernel@vger.kernel.org
 Cc: Ingo Molnar <mingo@elte.hu>, Andrew Morton <akpm@linux-foundation.org>,
         Frederic Weisbecker <fweisbec@gmail.com>
-Subject: [PATCH 00/15] [GIT PULL] tracing: Updates for 3.5
+Subject: [PATCH 09/15] ftrace: Remove extra helper functions
+References: <20120518130858.392919640@goodmis.org>
+Content-Disposition: inline; filename=0009-ftrace-Remove-extra-helper-functions.patch
 Content-Type: multipart/signed; micalg="pgp-sha1"; protocol="application/pgp-signature"; boundary="00GvhwF7k39YY"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -27,50 +29,140 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 Content-Type: text/plain; charset="UTF-8"
 Content-Transfer-Encoding: quoted-printable
 
+From: Steven Rostedt <srostedt@redhat.com>
 
-Ingo,
+The ftrace_record_ip() and ftrace_alloc_dyn_node() were from the
+time of the ftrace daemon. Although they were still used, they
+still make things a bit more complex than necessary.
 
-This should be my last set of changes for the next merge window.
+Move the code into the one function that uses it, and remove the
+helper functions.
 
-Please pull the latest tip/perf/core tree, which can be found at:
-
-  git://git.kernel.org/pub/scm/linux/kernel/git/rostedt/linux-trace.git
-tip/perf/core
-
-Head SHA1: b732d439cb43336cd6d7e804ecb2c81193ef63b0
-
-
-Namhyung Kim (1):
-      tracing: Check return value of tracing_dentry_percpu()
-
-Steven Rostedt (11):
-      tracing: Clean up tracing_mark_write()
-      ring-buffer: Add integrity check at end of iter read
-      ring-buffer: Reset head page before running self test
-      ftrace: Sort all function addresses, not just per page
-      ftrace: Remove extra helper functions
-      ftrace: Speed up search by skipping pages by address
-      ftrace: Consolidate ftrace_location() and ftrace_text_reserved()
-      ftrace: Return record ip addr for ftrace_location()
-      ftrace: Make ftrace_modify_all_code() global for archs to use
-      ftrace/x86: Have x86 ftrace use the ftrace_modify_all_code()
-      ftrace: Remove selecting FRAME_POINTER with FUNCTION_TRACER
-
-Vaibhav Nagarnaik (3):
-      ring-buffer: Make removal of ring buffer pages atomic
-      ring-buffer: Make addition of pages in ring buffer atomic
-      tracing: change CPU ring buffer state from tracing_cpumask
-
+Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+---
+ kernel/trace/ftrace.c |   61 +++++++++++++++++++--------------------------=
 ----
- arch/x86/kernel/ftrace.c          |   15 +-
- include/asm-generic/vmlinux.lds.h |    2 +-
- include/linux/ftrace.h            |    5 +-
- kernel/trace/Kconfig              |    1 -
- kernel/trace/ftrace.c             |  198 ++++++++++---------
- kernel/trace/ring_buffer.c        |  394 +++++++++++++++++++++++++++++----=
-----
- kernel/trace/trace.c              |   49 ++---
- 7 files changed, 446 insertions(+), 218 deletions(-)
+ 1 file changed, 24 insertions(+), 37 deletions(-)
+
+diff --git a/kernel/trace/ftrace.c b/kernel/trace/ftrace.c
+index 53ed01e..e10f9e5 100644
+--- a/kernel/trace/ftrace.c
++++ b/kernel/trace/ftrace.c
+@@ -1520,35 +1520,6 @@ static void ftrace_hash_rec_enable(struct ftrace_ops=
+ *ops,
+ 	__ftrace_hash_rec_update(ops, filter_hash, 1);
+ }
+=20
+-static struct dyn_ftrace *ftrace_alloc_dyn_node(unsigned long ip)
+-{
+-	if (ftrace_pages->index =3D=3D ftrace_pages->size) {
+-		/* We should have allocated enough */
+-		if (WARN_ON(!ftrace_pages->next))
+-			return NULL;
+-		ftrace_pages =3D ftrace_pages->next;
+-	}
+-
+-	return &ftrace_pages->records[ftrace_pages->index++];
+-}
+-
+-static struct dyn_ftrace *
+-ftrace_record_ip(unsigned long ip)
+-{
+-	struct dyn_ftrace *rec;
+-
+-	if (ftrace_disabled)
+-		return NULL;
+-
+-	rec =3D ftrace_alloc_dyn_node(ip);
+-	if (!rec)
+-		return NULL;
+-
+-	rec->ip =3D ip;
+-
+-	return rec;
+-}
+-
+ static void print_ip_ins(const char *fmt, unsigned char *p)
+ {
+ 	int i;
+@@ -3693,7 +3664,9 @@ static int ftrace_process_locs(struct module *mod,
+ 			       unsigned long *start,
+ 			       unsigned long *end)
+ {
++	struct ftrace_page *start_pg;
+ 	struct ftrace_page *pg;
++	struct dyn_ftrace *rec;
+ 	unsigned long count;
+ 	unsigned long *p;
+ 	unsigned long addr;
+@@ -3708,8 +3681,8 @@ static int ftrace_process_locs(struct module *mod,
+ 	sort(start, count, sizeof(*start),
+ 	     ftrace_cmp_ips, ftrace_swap_ips);
+=20
+-	pg =3D ftrace_allocate_pages(count);
+-	if (!pg)
++	start_pg =3D ftrace_allocate_pages(count);
++	if (!start_pg)
+ 		return -ENOMEM;
+=20
+ 	mutex_lock(&ftrace_lock);
+@@ -3722,7 +3695,7 @@ static int ftrace_process_locs(struct module *mod,
+ 	if (!mod) {
+ 		WARN_ON(ftrace_pages || ftrace_pages_start);
+ 		/* First initialization */
+-		ftrace_pages =3D ftrace_pages_start =3D pg;
++		ftrace_pages =3D ftrace_pages_start =3D start_pg;
+ 	} else {
+ 		if (!ftrace_pages)
+ 			goto out;
+@@ -3733,11 +3706,11 @@ static int ftrace_process_locs(struct module *mod,
+ 				ftrace_pages =3D ftrace_pages->next;
+ 		}
+=20
+-		ftrace_pages->next =3D pg;
+-		ftrace_pages =3D pg;
++		ftrace_pages->next =3D start_pg;
+ 	}
+=20
+ 	p =3D start;
++	pg =3D start_pg;
+ 	while (p < end) {
+ 		addr =3D ftrace_call_adjust(*p++);
+ 		/*
+@@ -3748,12 +3721,26 @@ static int ftrace_process_locs(struct module *mod,
+ 		 */
+ 		if (!addr)
+ 			continue;
+-		if (!ftrace_record_ip(addr))
+-			break;
++
++		if (pg->index =3D=3D pg->size) {
++			/* We should have allocated enough */
++			if (WARN_ON(!pg->next))
++				break;
++			pg =3D pg->next;
++		}
++
++		rec =3D &pg->records[pg->index++];
++		rec->ip =3D addr;
+ 	}
+=20
++	/* We should have used all pages */
++	WARN_ON(pg->next);
++
++	/* Assign the last page to ftrace_pages */
++	ftrace_pages =3D pg;
++
+ 	/* These new locations need to be initialized */
+-	ftrace_new_pgs =3D pg;
++	ftrace_new_pgs =3D start_pg;
+=20
+ 	/*
+ 	 * We only need to disable interrupts on start up
+--=20
+1.7.10
+
+
 
 --00GvhwF7k39YY
 Content-Type: application/pgp-signature; name="signature.asc"
@@ -79,19 +171,19 @@ Content-Description: This is a digitally signed message part
 -----BEGIN PGP SIGNATURE-----
 Version: GnuPG v1.4.12 (GNU/Linux)
 
-iQIcBAABAgAGBQJPtkpTAAoJEIy3vGnGbaoA4Q0QAIvKzRwzMjAdS6bvYJFmnwX2
-z/PsgwxX7yeDIzS+ojMXOkwE804jNUbYS3ksRfTSsyNeEXCrByNzL7sn86dGN2zK
-qBcgs+UOCn/UUbkZRfASnMdE5yIWHiMY9gqunTI4Xs9bM+fjI5J3+bBJl1S3FNMQ
-Gr6Er3CWqD9JpyQtIRwzDTRwFpUDfGLEJWMlLGLkslFWD6l4itFFpIjvdQJPa/8S
-I/BQwXIEk4YmBnIHEkofmgCIdcyjbMpx57+X79ub+ZNqkH4X3idKqGkU3lChgkbS
-ujKpLKgE+Wf21Qy/ql9us+FMmXPKCBkzgxoJqfeRnajlsSHncosRPgEtzwLDKkwo
-H2XK6vYyNfp+G+078NhurL+y/mk/8tHFVQ6YxNU7fs8t7eg55xVa6amyQ5iUj/NR
-7wUBP95zB7hp7hzraertPqs0OajHnRRH300eIxUD/zQ8JH6BwuvUVHKDgnroNRKC
-0U6nT0gd8HVZ4vycIDBzCZokWoBIT6SE7s6OEzkJbsqCXM+LsG7bSyXGz60wTZ1A
-F9YUcnC0BLz4qprf09KKCcZOnBXUdZLqtUz6ir5hKG6UHQHrm3qoX726auAoJWNG
-D1HujeDlPI5sPNIQ1R4ucgdnEBGjfI+SF3Lyi3/hPH5jMfTs0i7NFvhAXeBtmwe5
-OMZr9zosMYwdqxAtcvdr
-=7tk6
+iQIcBAABAgAGBQJPtkpaAAoJEIy3vGnGbaoAMRYP/3t+YJS2VYTtOu7fyimLnFvk
+CxnsNDAgj1sAV3MniuZpRjYao4tgcQsQ6nI/KcbDdKX6EOUY+wWSYKso528c153K
+Cs7Y1AFHY6FxHPVa4dpw9wV+c45WzzJK0JTYTviyp+a+o6mDLTlAokhtfsoW5GOs
+M5s1d1ZO5DiMewU7Xr+jVNGjqX1bJWL16vs3k/83tc7TiTk0vy8to6iZ2ZARbwgS
+X/HgUtfDye5ZqBYujgUB1fCaHoE/JXx4IN58aeOw7Bhh/lFT+tPShlRaZgHBAFgj
+9pr14k+/mIJFm9uV2YnzQ7iHsRfAEWyIildptPKp6BYnMRPaX3XukIMu/h4DkyOq
+1C4VMxj12Zh2++ZbKHiu+tDZ+Ha7aVisxxMtvOWjaTeiX+b863U5VOg8Gl2YUAul
+GYfMZ0XbDAEwb43xA3etXOfcdH1dgMqvGeKy+A1TIchfmTM3Swxjh9cxaG6zUUix
+Co7nS0RqpGTZ0po/knbYd34m3Ap4MoyjjF3qtW2meynT5Joy82XrIO76qR7iEk0Y
+GNyv5s5FR2JblYEA0hebecIiBd8pTJTGvP9UyHbuHFwyAHJj8KF6nTgbBTetrlCS
+6vLX3J33KLmqMtidB6lAr031FYeTAUGliLxDBgrBCWHDmTZkosxWZ3b+U0Zo+vvA
+upxqs+Iya1slTx7w7ZvW
+=FPji
 -----END PGP SIGNATURE-----
 
 --00GvhwF7k39YY--
