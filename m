@@ -1,16 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932389Ab2ERQeh (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 May 2012 12:34:37 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:35944 "EHLO mx1.redhat.com"
+	id S932464Ab2ERQek (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 May 2012 12:34:40 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:55222 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758898Ab2ERQe1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 May 2012 12:34:27 -0400
+	id S1758939Ab2ERQe3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 18 May 2012 12:34:29 -0400
 From: Mauro Carvalho Chehab <mchehab@redhat.com>
 Cc: Mauro Carvalho Chehab <mchehab@redhat.com>,
         Linux Edac Mailing List <linux-edac@vger.kernel.org>,
         Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Doug Thompson <norsk5@yahoo.com>, Mark Gross <mark.gross@intel.com>,
+        Doug Thompson <norsk5@yahoo.com>,
+        Borislav Petkov <borislav.petkov@amd.com>,
+        Mark Gross <mark.gross@intel.com>,
         Jason Uhlenkott <juhlenko@akamai.com>,
         Tim Small <tim@buttersideup.com>,
         Ranganathan Desikan <ravi@jetztechnologies.com>,
@@ -24,9 +26,9 @@ Cc: Mauro Carvalho Chehab <mchehab@redhat.com>,
         =?UTF-8?q?Niklas=20S=C3=B6derlund?= <niklas.soderlund@ericsson.com>,
         Shaohui Xie <Shaohui.Xie@freescale.com>,
         Josh Boyer <jwboyer@gmail.com>, linuxppc-dev@lists.ozlabs.org
-Subject: [PATCH EDAC v26 04/66] edac: move nr_pages to dimm struct
-Date: Fri, 18 May 2012 13:31:51 -0300
-Message-Id: <1337358773-6919-5-git-send-email-mchehab@redhat.com>
+Subject: [PATCH EDAC v26 40/66] edac: Rename the parent dev to pdev
+Date: Fri, 18 May 2012 13:32:27 -0300
+Message-Id: <1337358773-6919-41-git-send-email-mchehab@redhat.com>
 In-Reply-To: <1337358773-6919-1-git-send-email-mchehab@redhat.com>
 References: <1337358773-6919-1-git-send-email-mchehab@redhat.com>
 MIME-Version: 1.0
@@ -37,18 +39,16 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The number of pages is a dimm property. Move it to the dimm struct.
+As EDAC doesn't use struct device itself, it created a parent dev
+pointer called as "pdev".  Now that we'll be converting it to use
+struct device, instead of struct devsys, this needs to be fixed.
 
-After this change, it is possible to add sysfs nodes for the DIMM's that
-will properly represent the DIMM stick properties, including its size.
-
-A TODO fix here is to properly represent dual-rank/quad-rank DIMMs when
-the memory controller represents the memory via chip select rows.
+No functional changes.
 
 Reviewed-by: Aristeu Rozanski <arozansk@redhat.com>
-Acked-by: Borislav Petkov <borislav.petkov@amd.com>
 Acked-by: Chris Metcalf <cmetcalf@tilera.com>
 Cc: Doug Thompson <norsk5@yahoo.com>
+Cc: Borislav Petkov <borislav.petkov@amd.com>
 Cc: Mark Gross <mark.gross@intel.com>
 Cc: Jason Uhlenkott <juhlenko@akamai.com>
 Cc: Tim Small <tim@buttersideup.com>
@@ -69,977 +69,640 @@ Cc: Josh Boyer <jwboyer@gmail.com>
 Cc: linuxppc-dev@lists.ozlabs.org
 Signed-off-by: Mauro Carvalho Chehab <mchehab@redhat.com>
 ---
- drivers/edac/amd64_edac.c      |   10 +++++---
- drivers/edac/amd76x_edac.c     |    6 ++--
- drivers/edac/cell_edac.c       |    8 ++++--
- drivers/edac/cpc925_edac.c     |    8 ++++--
- drivers/edac/e752x_edac.c      |    6 +++-
- drivers/edac/e7xxx_edac.c      |    5 ++-
- drivers/edac/edac_mc.c         |   16 ++++++++-----
- drivers/edac/edac_mc_sysfs.c   |   47 ++++++++++++++++++++++++++++------------
- drivers/edac/i3000_edac.c      |    6 +++-
- drivers/edac/i3200_edac.c      |    3 +-
- drivers/edac/i5000_edac.c      |   14 ++++++-----
- drivers/edac/i5100_edac.c      |   22 +++++++++++-------
- drivers/edac/i5400_edac.c      |    9 ++-----
- drivers/edac/i7300_edac.c      |   22 +++++-------------
- drivers/edac/i7core_edac.c     |   10 ++------
- drivers/edac/i82443bxgx_edac.c |    2 +-
- drivers/edac/i82860_edac.c     |    2 +-
- drivers/edac/i82875p_edac.c    |    5 ++-
- drivers/edac/i82975x_edac.c    |   11 ++++++--
- drivers/edac/mpc85xx_edac.c    |    3 +-
- drivers/edac/mv64x60_edac.c    |    3 +-
- drivers/edac/pasemi_edac.c     |   14 ++++++------
- drivers/edac/ppc4xx_edac.c     |    5 ++-
- drivers/edac/r82600_edac.c     |    3 +-
- drivers/edac/sb_edac.c         |    8 +-----
- drivers/edac/tile_edac.c       |    2 +-
- drivers/edac/x38_edac.c        |    4 +-
- include/linux/edac.h           |    8 ++++--
- 28 files changed, 146 insertions(+), 116 deletions(-)
+ drivers/edac/amd64_edac.c      |    2 +-
+ drivers/edac/amd76x_edac.c     |    4 ++--
+ drivers/edac/cell_edac.c       |   12 ++++++------
+ drivers/edac/cpc925_edac.c     |    2 +-
+ drivers/edac/e752x_edac.c      |    2 +-
+ drivers/edac/e7xxx_edac.c      |    2 +-
+ drivers/edac/edac_mc.c         |    8 ++++----
+ drivers/edac/edac_mc_sysfs.c   |    2 +-
+ drivers/edac/i3000_edac.c      |    4 ++--
+ drivers/edac/i3200_edac.c      |    6 +++---
+ drivers/edac/i5000_edac.c      |    2 +-
+ drivers/edac/i5100_edac.c      |    2 +-
+ drivers/edac/i5400_edac.c      |    2 +-
+ drivers/edac/i7300_edac.c      |    2 +-
+ drivers/edac/i7core_edac.c     |    4 ++--
+ drivers/edac/i82443bxgx_edac.c |    4 ++--
+ drivers/edac/i82860_edac.c     |    4 ++--
+ drivers/edac/i82875p_edac.c    |    4 ++--
+ drivers/edac/i82975x_edac.c    |    4 ++--
+ drivers/edac/mpc85xx_edac.c    |    4 ++--
+ drivers/edac/mv64x60_edac.c    |    2 +-
+ drivers/edac/pasemi_edac.c     |    6 +++---
+ drivers/edac/ppc4xx_edac.c     |    8 ++++----
+ drivers/edac/r82600_edac.c     |    4 ++--
+ drivers/edac/sb_edac.c         |    4 ++--
+ drivers/edac/tile_edac.c       |    4 ++--
+ drivers/edac/x38_edac.c        |    6 +++---
+ include/linux/edac.h           |    2 +-
+ 28 files changed, 56 insertions(+), 56 deletions(-)
 
 diff --git a/drivers/edac/amd64_edac.c b/drivers/edac/amd64_edac.c
-index e2c5a94..1ceb8e2 100644
+index 7be9b72..821bc2c 100644
 --- a/drivers/edac/amd64_edac.c
 +++ b/drivers/edac/amd64_edac.c
-@@ -2152,7 +2152,7 @@ static u32 amd64_csrow_nr_pages(struct amd64_pvt *pvt, u8 dct, int csrow_nr)
- 	nr_pages = pvt->ops->dbam_to_cs(pvt, dct, cs_mode) << (20 - PAGE_SHIFT);
+@@ -2601,7 +2601,7 @@ static int amd64_init_one_instance(struct pci_dev *F2)
+ 		goto err_siblings;
  
- 	debugf0("  (csrow=%d) DBAM map index= %d\n", csrow_nr, cs_mode);
--	debugf0("    nr_pages= %u  channel-count = %d\n",
-+	debugf0("    nr_pages/channel= %u  channel-count = %d\n",
- 		nr_pages, pvt->channel_count);
+ 	mci->pvt_info = pvt;
+-	mci->dev = &pvt->F2->dev;
++	mci->pdev = &pvt->F2->dev;
  
- 	return nr_pages;
-@@ -2171,6 +2171,7 @@ static int init_csrows(struct mem_ctl_info *mci)
- 	int i, j, empty = 1;
- 	enum mem_type mtype;
- 	enum edac_type edac_mode;
-+	int nr_pages = 0;
- 
- 	amd64_read_pci_cfg(pvt->F3, NBCFG, &val);
- 
-@@ -2194,9 +2195,9 @@ static int init_csrows(struct mem_ctl_info *mci)
- 
- 		empty = 0;
- 		if (csrow_enabled(i, 0, pvt))
--			csrow->nr_pages = amd64_csrow_nr_pages(pvt, 0, i);
-+			nr_pages = amd64_csrow_nr_pages(pvt, 0, i);
- 		if (csrow_enabled(i, 1, pvt))
--			csrow->nr_pages += amd64_csrow_nr_pages(pvt, 1, i);
-+			nr_pages += amd64_csrow_nr_pages(pvt, 1, i);
- 
- 		get_cs_base_and_mask(pvt, i, 0, &base, &mask);
- 		/* 8 bytes of resolution */
-@@ -2204,7 +2205,7 @@ static int init_csrows(struct mem_ctl_info *mci)
- 		mtype = amd64_determine_memory_type(pvt, i);
- 
- 		debugf1("  for MC node %d csrow %d:\n", pvt->mc_node_id, i);
--		debugf1("    nr_pages: %u\n", csrow->nr_pages);
-+		debugf1("    nr_pages: %u\n", nr_pages * pvt->channel_count);
- 
- 		/*
- 		 * determine whether CHIPKILL or JUST ECC or NO ECC is operating
-@@ -2218,6 +2219,7 @@ static int init_csrows(struct mem_ctl_info *mci)
- 		for (j = 0; j < pvt->channel_count; j++) {
- 			csrow->channels[j].dimm->mtype = mtype;
- 			csrow->channels[j].dimm->edac_mode = edac_mode;
-+			csrow->channels[j].dimm->nr_pages = nr_pages;
- 		}
- 	}
+ 	setup_mci_misc_attrs(mci, fam_type);
  
 diff --git a/drivers/edac/amd76x_edac.c b/drivers/edac/amd76x_edac.c
-index fcfe359..a2dde20 100644
+index 9388f3a..65e639c 100644
 --- a/drivers/edac/amd76x_edac.c
 +++ b/drivers/edac/amd76x_edac.c
-@@ -205,10 +205,10 @@ static void amd76x_init_csrows(struct mem_ctl_info *mci, struct pci_dev *pdev,
- 		mba_mask = ((mba & 0xff80) << 16) | 0x7fffffUL;
- 		pci_read_config_dword(pdev, AMD76X_DRAM_MODE_STATUS, &dms);
- 		csrow->first_page = mba_base >> PAGE_SHIFT;
--		csrow->nr_pages = (mba_mask + 1) >> PAGE_SHIFT;
--		csrow->last_page = csrow->first_page + csrow->nr_pages - 1;
-+		dimm->nr_pages = (mba_mask + 1) >> PAGE_SHIFT;
-+		csrow->last_page = csrow->first_page + dimm->nr_pages - 1;
- 		csrow->page_mask = mba_mask >> PAGE_SHIFT;
--		dimm->grain = csrow->nr_pages << PAGE_SHIFT;
-+		dimm->grain = dimm->nr_pages << PAGE_SHIFT;
- 		dimm->mtype = MEM_RDDR;
- 		dimm->dtype = ((dms >> index) & 0x1) ? DEV_X4 : DEV_UNKNOWN;
- 		dimm->edac_mode = edac_mode;
+@@ -105,7 +105,7 @@ static void amd76x_get_error_info(struct mem_ctl_info *mci,
+ {
+ 	struct pci_dev *pdev;
+ 
+-	pdev = to_pci_dev(mci->dev);
++	pdev = to_pci_dev(mci->pdev);
+ 	pci_read_config_dword(pdev, AMD76X_ECC_MODE_STATUS,
+ 			&info->ecc_mode_status);
+ 
+@@ -257,7 +257,7 @@ static int amd76x_probe1(struct pci_dev *pdev, int dev_idx)
+ 		return -ENOMEM;
+ 
+ 	debugf0("%s(): mci = %p\n", __func__, mci);
+-	mci->dev = &pdev->dev;
++	mci->pdev = &pdev->dev;
+ 	mci->mtype_cap = MEM_FLAG_RDDR;
+ 	mci->edac_ctl_cap = EDAC_FLAG_NONE | EDAC_FLAG_EC | EDAC_FLAG_SECDED;
+ 	mci->edac_cap = ems_mode ?
 diff --git a/drivers/edac/cell_edac.c b/drivers/edac/cell_edac.c
-index 94fbb12..09e1b5d 100644
+index 69ee6aa..2e5b953 100644
 --- a/drivers/edac/cell_edac.c
 +++ b/drivers/edac/cell_edac.c
-@@ -128,6 +128,7 @@ static void __devinit cell_edac_init_csrows(struct mem_ctl_info *mci)
- 	struct cell_edac_priv		*priv = mci->pvt_info;
- 	struct device_node		*np;
- 	int				j;
-+	u32				nr_pages;
+@@ -36,7 +36,7 @@ static void cell_edac_count_ce(struct mem_ctl_info *mci, int chan, u64 ar)
+ 	struct csrow_info		*csrow = &mci->csrows[0];
+ 	unsigned long			address, pfn, offset, syndrome;
  
- 	for (np = NULL;
- 	     (np = of_find_node_by_name(np, "memory")) != NULL;) {
-@@ -142,19 +143,20 @@ static void __devinit cell_edac_init_csrows(struct mem_ctl_info *mci)
- 		if (of_node_to_nid(np) != priv->node)
- 			continue;
- 		csrow->first_page = r.start >> PAGE_SHIFT;
--		csrow->nr_pages = resource_size(&r) >> PAGE_SHIFT;
--		csrow->last_page = csrow->first_page + csrow->nr_pages - 1;
-+		nr_pages = resource_size(&r) >> PAGE_SHIFT;
-+		csrow->last_page = csrow->first_page + nr_pages - 1;
+-	dev_dbg(mci->dev, "ECC CE err on node %d, channel %d, ar = 0x%016llx\n",
++	dev_dbg(mci->pdev, "ECC CE err on node %d, channel %d, ar = 0x%016llx\n",
+ 		priv->node, chan, ar);
  
- 		for (j = 0; j < csrow->nr_channels; j++) {
- 			dimm = csrow->channels[j].dimm;
- 			dimm->mtype = MEM_XDR;
+ 	/* Address decoding is likely a bit bogus, to dbl check */
+@@ -59,7 +59,7 @@ static void cell_edac_count_ue(struct mem_ctl_info *mci, int chan, u64 ar)
+ 	struct csrow_info		*csrow = &mci->csrows[0];
+ 	unsigned long			address, pfn, offset;
+ 
+-	dev_dbg(mci->dev, "ECC UE err on node %d, channel %d, ar = 0x%016llx\n",
++	dev_dbg(mci->pdev, "ECC UE err on node %d, channel %d, ar = 0x%016llx\n",
+ 		priv->node, chan, ar);
+ 
+ 	/* Address decoding is likely a bit bogus, to dbl check */
+@@ -83,7 +83,7 @@ static void cell_edac_check(struct mem_ctl_info *mci)
+ 	fir = in_be64(&priv->regs->mic_fir);
+ #ifdef DEBUG
+ 	if (fir != priv->prev_fir) {
+-		dev_dbg(mci->dev, "fir change : 0x%016lx\n", fir);
++		dev_dbg(mci->pdev, "fir change : 0x%016lx\n", fir);
+ 		priv->prev_fir = fir;
+ 	}
+ #endif
+@@ -119,7 +119,7 @@ static void cell_edac_check(struct mem_ctl_info *mci)
+ 		mb();	/* sync up */
+ #ifdef DEBUG
+ 		fir = in_be64(&priv->regs->mic_fir);
+-		dev_dbg(mci->dev, "fir clear  : 0x%016lx\n", fir);
++		dev_dbg(mci->pdev, "fir clear  : 0x%016lx\n", fir);
+ #endif
+ 	}
+ }
+@@ -155,7 +155,7 @@ static void __devinit cell_edac_init_csrows(struct mem_ctl_info *mci)
  			dimm->edac_mode = EDAC_SECDED;
-+			dimm->nr_pages = nr_pages / csrow->nr_channels;
+ 			dimm->nr_pages = nr_pages / csrow->nr_channels;
  		}
- 		dev_dbg(mci->dev,
+-		dev_dbg(mci->dev,
++		dev_dbg(mci->pdev,
  			"Initialized on node %d, chanmask=0x%x,"
  			" first_page=0x%lx, nr_pages=0x%x\n",
  			priv->node, priv->chanmask,
--			csrow->first_page, csrow->nr_pages);
-+			csrow->first_page, dimm->nr_pages);
- 		break;
- 	}
- }
+@@ -212,7 +212,7 @@ static int __devinit cell_edac_probe(struct platform_device *pdev)
+ 	priv->regs = regs;
+ 	priv->node = pdev->id;
+ 	priv->chanmask = chanmask;
+-	mci->dev = &pdev->dev;
++	mci->pdev = &pdev->dev;
+ 	mci->mtype_cap = MEM_FLAG_XDR;
+ 	mci->edac_ctl_cap = EDAC_FLAG_NONE | EDAC_FLAG_EC | EDAC_FLAG_SECDED;
+ 	mci->edac_cap = EDAC_FLAG_EC | EDAC_FLAG_SECDED;
 diff --git a/drivers/edac/cpc925_edac.c b/drivers/edac/cpc925_edac.c
-index ee90f3d..7b764a8 100644
+index e22030a..9488723 100644
 --- a/drivers/edac/cpc925_edac.c
 +++ b/drivers/edac/cpc925_edac.c
-@@ -332,7 +332,7 @@ static void cpc925_init_csrows(struct mem_ctl_info *mci)
- 	struct dimm_info *dimm;
- 	int index, j;
- 	u32 mbmr, mbbar, bba;
--	unsigned long row_size, last_nr_pages = 0;
-+	unsigned long row_size, nr_pages, last_nr_pages = 0;
+@@ -995,7 +995,7 @@ static int __devinit cpc925_probe(struct platform_device *pdev)
+ 	pdata->edac_idx = edac_mc_idx++;
+ 	pdata->name = pdev->name;
  
- 	get_total_mem(pdata);
- 
-@@ -351,12 +351,14 @@ static void cpc925_init_csrows(struct mem_ctl_info *mci)
- 
- 		row_size = bba * (1UL << 28);	/* 256M */
- 		csrow->first_page = last_nr_pages;
--		csrow->nr_pages = row_size >> PAGE_SHIFT;
--		csrow->last_page = csrow->first_page + csrow->nr_pages - 1;
-+		nr_pages = row_size >> PAGE_SHIFT;
-+		csrow->last_page = csrow->first_page + nr_pages - 1;
- 		last_nr_pages = csrow->last_page + 1;
- 
- 		for (j = 0; j < csrow->nr_channels; j++) {
- 			dimm = csrow->channels[j].dimm;
-+
-+			dimm->nr_pages = nr_pages / csrow->nr_channels;
- 			dimm->mtype = MEM_RDDR;
- 			dimm->edac_mode = EDAC_SECDED;
- 
+-	mci->dev = &pdev->dev;
++	mci->pdev = &pdev->dev;
+ 	platform_set_drvdata(pdev, mci);
+ 	mci->dev_name = dev_name(&pdev->dev);
+ 	mci->mtype_cap = MEM_FLAG_RDDR | MEM_FLAG_DDR;
 diff --git a/drivers/edac/e752x_edac.c b/drivers/edac/e752x_edac.c
-index 6cf6ec6..cf17579 100644
+index 3186512..d756606 100644
 --- a/drivers/edac/e752x_edac.c
 +++ b/drivers/edac/e752x_edac.c
-@@ -1044,7 +1044,7 @@ static void e752x_init_csrows(struct mem_ctl_info *mci, struct pci_dev *pdev,
- 	int drc_drbg;		/* DRB granularity 0=64mb, 1=128mb */
- 	int drc_ddim;		/* DRAM Data Integrity Mode 0=none, 2=edac */
- 	u8 value;
--	u32 dra, drc, cumul_size, i;
-+	u32 dra, drc, cumul_size, i, nr_pages;
+@@ -1308,7 +1308,7 @@ static int e752x_probe1(struct pci_dev *pdev, int dev_idx)
+ 	/* FIXME - what if different memory types are in different csrows? */
+ 	mci->mod_name = EDAC_MOD_STR;
+ 	mci->mod_ver = E752X_REVISION;
+-	mci->dev = &pdev->dev;
++	mci->pdev = &pdev->dev;
  
- 	dra = 0;
- 	for (index = 0; index < 4; index++) {
-@@ -1078,11 +1078,13 @@ static void e752x_init_csrows(struct mem_ctl_info *mci, struct pci_dev *pdev,
- 
- 		csrow->first_page = last_cumul_size;
- 		csrow->last_page = cumul_size - 1;
--		csrow->nr_pages = cumul_size - last_cumul_size;
-+		nr_pages = cumul_size - last_cumul_size;
- 		last_cumul_size = cumul_size;
- 
- 		for (i = 0; i < drc_chan + 1; i++) {
- 			struct dimm_info *dimm = csrow->channels[i].dimm;
-+
-+			dimm->nr_pages = nr_pages / (drc_chan + 1);
- 			dimm->grain = 1 << 12;	/* 4KiB - resolution of CELOG */
- 			dimm->mtype = MEM_RDDR;	/* only one type supported */
- 			dimm->dtype = mem_dev ? DEV_X4 : DEV_X8;
+ 	debugf3("%s(): init pvt\n", __func__);
+ 	pvt = (struct e752x_pvt *)mci->pvt_info;
 diff --git a/drivers/edac/e7xxx_edac.c b/drivers/edac/e7xxx_edac.c
-index 5ed97f6..709aca2 100644
+index 9a9c1a5..b111266 100644
 --- a/drivers/edac/e7xxx_edac.c
 +++ b/drivers/edac/e7xxx_edac.c
-@@ -349,7 +349,7 @@ static void e7xxx_init_csrows(struct mem_ctl_info *mci, struct pci_dev *pdev,
- 	unsigned long last_cumul_size;
- 	int index, j;
- 	u8 value;
--	u32 dra, cumul_size;
-+	u32 dra, cumul_size, nr_pages;
- 	int drc_chan, drc_drbg, drc_ddim, mem_dev;
- 	struct csrow_info *csrow;
- 	struct dimm_info *dimm;
-@@ -380,12 +380,13 @@ static void e7xxx_init_csrows(struct mem_ctl_info *mci, struct pci_dev *pdev,
- 
- 		csrow->first_page = last_cumul_size;
- 		csrow->last_page = cumul_size - 1;
--		csrow->nr_pages = cumul_size - last_cumul_size;
-+		nr_pages = cumul_size - last_cumul_size;
- 		last_cumul_size = cumul_size;
- 
- 		for (j = 0; j < drc_chan + 1; j++) {
- 			dimm = csrow->channels[j].dimm;
- 
-+			dimm->nr_pages = nr_pages / (drc_chan + 1);
- 			dimm->grain = 1 << 12;	/* 4KiB - resolution of CELOG */
- 			dimm->mtype = MEM_RDDR;	/* only one type supported */
- 			dimm->dtype = mem_dev ? DEV_X4 : DEV_X8;
+@@ -458,7 +458,7 @@ static int e7xxx_probe1(struct pci_dev *pdev, int dev_idx)
+ 	/* FIXME - what if different memory types are in different csrows? */
+ 	mci->mod_name = EDAC_MOD_STR;
+ 	mci->mod_ver = E7XXX_REVISION;
+-	mci->dev = &pdev->dev;
++	mci->pdev = &pdev->dev;
+ 	debugf3("%s(): init pvt\n", __func__);
+ 	pvt = (struct e7xxx_pvt *)mci->pvt_info;
+ 	pvt->dev_info = &e7xxx_devs[dev_idx];
 diff --git a/drivers/edac/edac_mc.c b/drivers/edac/edac_mc.c
-index 0942efa..072aa81 100644
+index 5006461..5f5ad09 100644
 --- a/drivers/edac/edac_mc.c
 +++ b/drivers/edac/edac_mc.c
-@@ -43,9 +43,10 @@ static void edac_mc_dump_channel(struct rank_info *chan)
- {
- 	debugf4("\tchannel = %p\n", chan);
- 	debugf4("\tchannel->chan_idx = %d\n", chan->chan_idx);
--	debugf4("\tchannel->ce_count = %d\n", chan->dimm->ce_count);
--	debugf4("\tchannel->label = '%s'\n", chan->dimm->label);
- 	debugf4("\tchannel->csrow = %p\n\n", chan->csrow);
-+	debugf4("\tdimm->ce_count = %d\n", chan->dimm->ce_count);
-+	debugf4("\tdimm->label = '%s'\n", chan->dimm->label);
-+	debugf4("\tdimm->nr_pages = 0x%x\n", chan->dimm->nr_pages);
+@@ -92,7 +92,7 @@ static void edac_mc_dump_mci(struct mem_ctl_info *mci)
+ 		mci->nr_csrows, mci->csrows);
+ 	debugf3("\tmci->nr_dimms = %d, dimms = %p\n",
+ 		mci->tot_dimms, mci->dimms);
+-	debugf3("\tdev = %p\n", mci->dev);
++	debugf3("\tdev = %p\n", mci->pdev);
+ 	debugf3("\tmod_name:ctl_name = %s:%s\n", mci->mod_name, mci->ctl_name);
+ 	debugf3("\tpvt_info = %p\n\n", mci->pvt_info);
  }
+@@ -427,7 +427,7 @@ struct mem_ctl_info *find_mci_by_dev(struct device *dev)
+ 	list_for_each(item, &mc_devices) {
+ 		mci = list_entry(item, struct mem_ctl_info, link);
  
- static void edac_mc_dump_csrow(struct csrow_info *csrow)
-@@ -55,7 +56,6 @@ static void edac_mc_dump_csrow(struct csrow_info *csrow)
- 	debugf4("\tcsrow->first_page = 0x%lx\n", csrow->first_page);
- 	debugf4("\tcsrow->last_page = 0x%lx\n", csrow->last_page);
- 	debugf4("\tcsrow->page_mask = 0x%lx\n", csrow->page_mask);
--	debugf4("\tcsrow->nr_pages = 0x%x\n", csrow->nr_pages);
- 	debugf4("\tcsrow->nr_channels = %d\n", csrow->nr_channels);
- 	debugf4("\tcsrow->channels = %p\n", csrow->channels);
- 	debugf4("\tcsrow->mci = %p\n\n", csrow->mci);
-@@ -652,15 +652,19 @@ static void edac_mc_scrub_block(unsigned long page, unsigned long offset,
- int edac_mc_find_csrow_by_page(struct mem_ctl_info *mci, unsigned long page)
- {
- 	struct csrow_info *csrows = mci->csrows;
--	int row, i;
-+	int row, i, j, n;
+-		if (mci->dev == dev)
++		if (mci->pdev == dev)
+ 			return mci;
+ 	}
  
- 	debugf1("MC%d: %s(): 0x%lx\n", mci->mc_idx, __func__, page);
- 	row = -1;
+@@ -579,7 +579,7 @@ static int add_mc_to_global_list(struct mem_ctl_info *mci)
  
- 	for (i = 0; i < mci->nr_csrows; i++) {
- 		struct csrow_info *csrow = &csrows[i];
--
--		if (csrow->nr_pages == 0)
-+		n = 0;
-+		for (j = 0; j < csrow->nr_channels; j++) {
-+			struct dimm_info *dimm = csrow->channels[j].dimm;
-+			n += dimm->nr_pages;
-+		}
-+		if (n == 0)
- 			continue;
+ 	insert_before = &mc_devices;
  
- 		debugf3("MC%d: %s(): first(0x%lx) page(0x%lx) last(0x%lx) "
+-	p = find_mci_by_dev(mci->dev);
++	p = find_mci_by_dev(mci->pdev);
+ 	if (unlikely(p != NULL))
+ 		goto fail0;
+ 
+@@ -601,7 +601,7 @@ static int add_mc_to_global_list(struct mem_ctl_info *mci)
+ 
+ fail0:
+ 	edac_printk(KERN_WARNING, EDAC_MC,
+-		"%s (%s) %s %s already assigned %d\n", dev_name(p->dev),
++		"%s (%s) %s %s already assigned %d\n", dev_name(p->pdev),
+ 		edac_dev_name(mci), p->mod_name, p->ctl_name, p->mc_idx);
+ 	return 1;
+ 
 diff --git a/drivers/edac/edac_mc_sysfs.c b/drivers/edac/edac_mc_sysfs.c
-index 487e03e..1dc1c6c 100644
+index f6a29b0..5953719 100644
 --- a/drivers/edac/edac_mc_sysfs.c
 +++ b/drivers/edac/edac_mc_sysfs.c
-@@ -144,7 +144,13 @@ static ssize_t csrow_ce_count_show(struct csrow_info *csrow, char *data,
- static ssize_t csrow_size_show(struct csrow_info *csrow, char *data,
- 				int private)
- {
--	return sprintf(data, "%u\n", PAGES_TO_MiB(csrow->nr_pages));
-+	int i;
-+	u32 nr_pages = 0;
-+
-+	for (i = 0; i < csrow->nr_channels; i++)
-+		nr_pages += csrow->channels[i].dimm->nr_pages;
-+
-+	return sprintf(data, "%u\n", PAGES_TO_MiB(nr_pages));
- }
+@@ -916,7 +916,7 @@ int edac_create_sysfs_mci_device(struct mem_ctl_info *mci)
+ 	INIT_LIST_HEAD(&mci->grp_kobj_list);
  
- static ssize_t csrow_mem_type_show(struct csrow_info *csrow, char *data,
-@@ -519,16 +525,16 @@ static ssize_t mci_ctl_name_show(struct mem_ctl_info *mci, char *data)
- 
- static ssize_t mci_size_mb_show(struct mem_ctl_info *mci, char *data)
- {
--	int total_pages, csrow_idx;
-+	int total_pages = 0, csrow_idx, j;
- 
--	for (total_pages = csrow_idx = 0; csrow_idx < mci->nr_csrows;
--		csrow_idx++) {
-+	for (csrow_idx = 0; csrow_idx < mci->nr_csrows; csrow_idx++) {
- 		struct csrow_info *csrow = &mci->csrows[csrow_idx];
- 
--		if (!csrow->nr_pages)
--			continue;
-+		for (j = 0; j < csrow->nr_channels; j++) {
-+			struct dimm_info *dimm = csrow->channels[j].dimm;
- 
--		total_pages += csrow->nr_pages;
-+			total_pages += dimm->nr_pages;
-+		}
- 	}
- 
- 	return sprintf(data, "%u\n", PAGES_TO_MiB(total_pages));
-@@ -900,7 +906,7 @@ static void edac_remove_mci_instance_attributes(struct mem_ctl_info *mci,
-  */
- int edac_create_sysfs_mci_device(struct mem_ctl_info *mci)
- {
--	int i;
-+	int i, j;
- 	int err;
- 	struct csrow_info *csrow;
- 	struct kobject *kobj_mci = &mci->edac_mci_kobj;
-@@ -934,10 +940,13 @@ int edac_create_sysfs_mci_device(struct mem_ctl_info *mci)
- 	/* Make directories for each CSROW object under the mc<id> kobject
- 	 */
- 	for (i = 0; i < mci->nr_csrows; i++) {
-+		int nr_pages = 0;
-+
- 		csrow = &mci->csrows[i];
-+		for (j = 0; j < csrow->nr_channels; j++)
-+			nr_pages += csrow->channels[j].dimm->nr_pages;
- 
--		/* Only expose populated CSROWs */
--		if (csrow->nr_pages > 0) {
-+		if (nr_pages > 0) {
- 			err = edac_create_csrow_object(mci, csrow, i);
- 			if (err) {
- 				debugf1("%s() failure: create csrow %d obj\n",
-@@ -949,10 +958,14 @@ int edac_create_sysfs_mci_device(struct mem_ctl_info *mci)
- 
- 	return 0;
- 
--	/* CSROW error: backout what has already been registered,  */
- fail1:
- 	for (i--; i >= 0; i--) {
--		if (mci->csrows[i].nr_pages > 0)
-+		int nr_pages = 0;
-+
-+		csrow = &mci->csrows[i];
-+		for (j = 0; j < csrow->nr_channels; j++)
-+			nr_pages += csrow->channels[j].dimm->nr_pages;
-+		if (nr_pages > 0)
- 			kobject_put(&mci->csrows[i].kobj);
- 	}
- 
-@@ -972,14 +985,20 @@ fail0:
-  */
- void edac_remove_sysfs_mci_device(struct mem_ctl_info *mci)
- {
--	int i;
-+	struct csrow_info *csrow;
-+	int i, j;
- 
- 	debugf0("%s()\n", __func__);
- 
- 	/* remove all csrow kobjects */
- 	debugf4("%s()  unregister this mci kobj\n", __func__);
- 	for (i = 0; i < mci->nr_csrows; i++) {
--		if (mci->csrows[i].nr_pages > 0) {
-+		int nr_pages = 0;
-+
-+		csrow = &mci->csrows[i];
-+		for (j = 0; j < csrow->nr_channels; j++)
-+			nr_pages += csrow->channels[j].dimm->nr_pages;
-+		if (nr_pages > 0) {
- 			debugf0("%s()  unreg csrow-%d\n", __func__, i);
- 			kobject_put(&mci->csrows[i].kobj);
- 		}
+ 	/* create a symlink for the device */
+-	err = sysfs_create_link(kobj_mci, &mci->dev->kobj,
++	err = sysfs_create_link(kobj_mci, &mci->pdev->kobj,
+ 				EDAC_DEVICE_SYMLINK);
+ 	if (err) {
+ 		debugf1("%s() failure to create symlink\n", __func__);
 diff --git a/drivers/edac/i3000_edac.c b/drivers/edac/i3000_edac.c
-index 8fe60ee..719ccbe 100644
+index 8ad1744..d1ebd9b 100644
 --- a/drivers/edac/i3000_edac.c
 +++ b/drivers/edac/i3000_edac.c
-@@ -306,7 +306,7 @@ static int i3000_probe1(struct pci_dev *pdev, int dev_idx)
- 	int rc;
- 	int i, j;
- 	struct mem_ctl_info *mci = NULL;
--	unsigned long last_cumul_size;
-+	unsigned long last_cumul_size, nr_pages;
- 	int interleaved, nr_channels;
- 	unsigned char dra[I3000_RANKS / 2], drb[I3000_RANKS];
- 	unsigned char *c0dra = dra, *c1dra = &dra[I3000_RANKS_PER_CHANNEL / 2];
-@@ -391,11 +391,13 @@ static int i3000_probe1(struct pci_dev *pdev, int dev_idx)
+@@ -194,7 +194,7 @@ static void i3000_get_error_info(struct mem_ctl_info *mci,
+ {
+ 	struct pci_dev *pdev;
  
- 		csrow->first_page = last_cumul_size;
- 		csrow->last_page = cumul_size - 1;
--		csrow->nr_pages = cumul_size - last_cumul_size;
-+		nr_pages = cumul_size - last_cumul_size;
- 		last_cumul_size = cumul_size;
+-	pdev = to_pci_dev(mci->dev);
++	pdev = to_pci_dev(mci->pdev);
  
- 		for (j = 0; j < nr_channels; j++) {
- 			struct dimm_info *dimm = csrow->channels[j].dimm;
-+
-+			dimm->nr_pages = nr_pages / nr_channels;
- 			dimm->grain = I3000_DEAP_GRAIN;
- 			dimm->mtype = MEM_DDR2;
- 			dimm->dtype = DEV_UNKNOWN;
+ 	/*
+ 	 * This is a mess because there is no atomic way to read all the
+@@ -368,7 +368,7 @@ static int i3000_probe1(struct pci_dev *pdev, int dev_idx)
+ 
+ 	debugf3("MC: %s(): init mci\n", __func__);
+ 
+-	mci->dev = &pdev->dev;
++	mci->pdev = &pdev->dev;
+ 	mci->mtype_cap = MEM_FLAG_DDR2;
+ 
+ 	mci->edac_ctl_cap = EDAC_FLAG_SECDED;
 diff --git a/drivers/edac/i3200_edac.c b/drivers/edac/i3200_edac.c
-index 93c4d5a..3b36222 100644
+index bbe43ef..600a05d 100644
 --- a/drivers/edac/i3200_edac.c
 +++ b/drivers/edac/i3200_edac.c
-@@ -376,11 +376,10 @@ static int i3200_probe1(struct pci_dev *pdev, int dev_idx)
- 		if (nr_pages == 0)
- 			continue;
+@@ -159,7 +159,7 @@ static void i3200_clear_error_info(struct mem_ctl_info *mci)
+ {
+ 	struct pci_dev *pdev;
  
--		csrow->nr_pages = nr_pages;
--
- 		for (j = 0; j < nr_channels; j++) {
- 			struct dimm_info *dimm = csrow->channels[j].dimm;
+-	pdev = to_pci_dev(mci->dev);
++	pdev = to_pci_dev(mci->pdev);
  
-+			dimm->nr_pages = nr_pages / nr_channels;
- 			dimm->grain = nr_pages << PAGE_SHIFT;
- 			dimm->mtype = MEM_DDR2;
- 			dimm->dtype = DEV_UNKNOWN;
+ 	/*
+ 	 * Clear any error bits.
+@@ -176,7 +176,7 @@ static void i3200_get_and_clear_error_info(struct mem_ctl_info *mci,
+ 	struct i3200_priv *priv = mci->pvt_info;
+ 	void __iomem *window = priv->window;
+ 
+-	pdev = to_pci_dev(mci->dev);
++	pdev = to_pci_dev(mci->pdev);
+ 
+ 	/*
+ 	 * This is a mess because there is no atomic way to read all the
+@@ -354,7 +354,7 @@ static int i3200_probe1(struct pci_dev *pdev, int dev_idx)
+ 
+ 	debugf3("MC: %s(): init mci\n", __func__);
+ 
+-	mci->dev = &pdev->dev;
++	mci->pdev = &pdev->dev;
+ 	mci->mtype_cap = MEM_FLAG_DDR2;
+ 
+ 	mci->edac_ctl_cap = EDAC_FLAG_SECDED;
 diff --git a/drivers/edac/i5000_edac.c b/drivers/edac/i5000_edac.c
-index 26b4055..f3a1a3e 100644
+index 1c1aa7a..9146100 100644
 --- a/drivers/edac/i5000_edac.c
 +++ b/drivers/edac/i5000_edac.c
-@@ -1236,6 +1236,7 @@ static int i5000_init_csrows(struct mem_ctl_info *mci)
- {
- 	struct i5000_pvt *pvt;
- 	struct csrow_info *p_csrow;
-+	struct dimm_info *dimm;
- 	int empty, channel_count;
- 	int max_csrows;
- 	int mtr, mtr1;
-@@ -1265,21 +1266,22 @@ static int i5000_init_csrows(struct mem_ctl_info *mci)
+@@ -1411,7 +1411,7 @@ static int i5000_probe1(struct pci_dev *pdev, int dev_idx)
+ 	kobject_get(&mci->edac_mci_kobj);
+ 	debugf0("MC: %s: %s(): mci = %p\n", __FILE__, __func__, mci);
  
- 		csrow_megs = 0;
- 		for (channel = 0; channel < pvt->maxch; channel++) {
-+			dimm = p_csrow->channels[channel].dimm;
- 			csrow_megs += pvt->dimm_info[csrow][channel].megabytes;
--			p_csrow->channels[channel].dimm->grain = 8;
-+			dimm->grain = 8;
- 
- 			/* Assume DDR2 for now */
--			p_csrow->channels[channel].dimm->mtype = MEM_FB_DDR2;
-+			dimm->mtype = MEM_FB_DDR2;
- 
- 			/* ask what device type on this row */
- 			if (MTR_DRAM_WIDTH(mtr))
--				p_csrow->channels[channel].dimm->dtype = DEV_X8;
-+				dimm->dtype = DEV_X8;
- 			else
--				p_csrow->channels[channel].dimm->dtype = DEV_X4;
-+				dimm->dtype = DEV_X4;
- 
--			p_csrow->channels[channel].dimm->edac_mode = EDAC_S8ECD8ED;
-+			dimm->edac_mode = EDAC_S8ECD8ED;
-+			dimm->nr_pages = (csrow_megs << 8) / pvt->maxch;
- 		}
--		p_csrow->nr_pages = csrow_megs << 8;
- 
- 		empty = 0;
- 	}
-diff --git a/drivers/edac/i5100_edac.c b/drivers/edac/i5100_edac.c
-index 5338c79..c08e940 100644
---- a/drivers/edac/i5100_edac.c
-+++ b/drivers/edac/i5100_edac.c
-@@ -859,7 +859,6 @@ static void __devinit i5100_init_csrows(struct mem_ctl_info *mci)
- 		 * FIXME: these two are totally bogus -- I don't see how to
- 		 * map them correctly to this structure...
- 		 */
--		mci->csrows[i].nr_pages = npages;
- 		mci->csrows[i].csrow_idx = i;
- 		mci->csrows[i].mci = mci;
- 		mci->csrows[i].nr_channels = 1;
-@@ -867,14 +866,19 @@ static void __devinit i5100_init_csrows(struct mem_ctl_info *mci)
- 		total_pages += npages;
- 
- 		dimm = mci->csrows[i].channels[0].dimm;
--		dimm->grain = 32;
--		dimm->dtype = (priv->mtr[chan][rank].width == 4) ?
--			      DEV_X4 : DEV_X8;
--		dimm->mtype = MEM_RDDR2;
--		dimm->edac_mode = EDAC_SECDED;
--		snprintf(dimm->label, sizeof(dimm->label),
--			 "DIMM%u",
--			 i5100_rank_to_slot(mci, chan, rank));
-+		dimm->nr_pages = npages;
-+		if (npages) {
-+			total_pages += npages;
-+
-+			dimm->grain = 32;
-+			dimm->dtype = (priv->mtr[chan][rank].width == 4) ?
-+				DEV_X4 : DEV_X8;
-+			dimm->mtype = MEM_RDDR2;
-+			dimm->edac_mode = EDAC_SECDED;
-+			snprintf(dimm->label, sizeof(dimm->label),
-+				"DIMM%u",
-+				i5100_rank_to_slot(mci, chan, rank));
-+		}
- 	}
- }
- 
-diff --git a/drivers/edac/i5400_edac.c b/drivers/edac/i5400_edac.c
-index 6f85dcb..6543f4a 100644
---- a/drivers/edac/i5400_edac.c
-+++ b/drivers/edac/i5400_edac.c
-@@ -1156,7 +1156,7 @@ static int i5400_init_csrows(struct mem_ctl_info *mci)
- 	int empty, channel_count;
- 	int max_csrows;
- 	int mtr;
--	int csrow_megs;
-+	int size_mb;
- 	int channel;
- 	int csrow;
- 	struct dimm_info *dimm;
-@@ -1171,8 +1171,6 @@ static int i5400_init_csrows(struct mem_ctl_info *mci)
- 	for (csrow = 0; csrow < max_csrows; csrow++) {
- 		p_csrow = &mci->csrows[csrow];
- 
--		p_csrow->csrow_idx = csrow;
--
- 		/* use branch 0 for the basis */
- 		mtr = determine_mtr(pvt, csrow, 0);
- 
-@@ -1180,12 +1178,11 @@ static int i5400_init_csrows(struct mem_ctl_info *mci)
- 		if (!MTR_DIMMS_PRESENT(mtr))
- 			continue;
- 
--		csrow_megs = 0;
- 		for (channel = 0; channel < pvt->maxch; channel++) {
--			csrow_megs += pvt->dimm_info[csrow][channel].megabytes;
-+			size_mb = pvt->dimm_info[csrow][channel].megabytes;
- 
--			p_csrow->nr_pages = csrow_megs << 8;
- 			dimm = p_csrow->channels[channel].dimm;
-+			dimm->nr_pages = size_mb << 8;
- 			dimm->grain = 8;
- 			dimm->dtype = MTR_DRAM_WIDTH(mtr) ? DEV_X8 : DEV_X4;
- 			dimm->mtype = MEM_RDDR2;
-diff --git a/drivers/edac/i7300_edac.c b/drivers/edac/i7300_edac.c
-index d4153d6..d6f3a2d 100644
---- a/drivers/edac/i7300_edac.c
-+++ b/drivers/edac/i7300_edac.c
-@@ -617,9 +617,7 @@ static void i7300_enable_error_reporting(struct mem_ctl_info *mci)
- static int decode_mtr(struct i7300_pvt *pvt,
- 		      int slot, int ch, int branch,
- 		      struct i7300_dimm_info *dinfo,
--		      struct csrow_info *p_csrow,
--		      struct dimm_info *dimm,
--		      u32 *nr_pages)
-+		      struct dimm_info *dimm)
- {
- 	int mtr, ans, addrBits, channel;
- 
-@@ -651,7 +649,6 @@ static int decode_mtr(struct i7300_pvt *pvt,
- 	addrBits -= 3;	/* 8 bits per bytes */
- 
- 	dinfo->megabytes = 1 << addrBits;
--	*nr_pages = dinfo->megabytes << 8;
- 
- 	debugf2("\t\tWIDTH: x%d\n", MTR_DRAM_WIDTH(mtr));
- 
-@@ -664,8 +661,6 @@ static int decode_mtr(struct i7300_pvt *pvt,
- 	debugf2("\t\tNUMCOL: %s\n", numcol_toString[MTR_DIMM_COLS(mtr)]);
- 	debugf2("\t\tSIZE: %d MB\n", dinfo->megabytes);
- 
--	p_csrow->csrow_idx = slot;
--
- 	/*
- 	 * The type of error detection actually depends of the
- 	 * mode of operation. When it is just one single memory chip, at
-@@ -675,6 +670,7 @@ static int decode_mtr(struct i7300_pvt *pvt,
- 	 * See datasheet Sections 7.3.6 to 7.3.8
- 	 */
- 
-+	dimm->nr_pages = MiB_TO_PAGES(dinfo->megabytes);
- 	dimm->grain = 8;
- 	dimm->mtype = MEM_FB_DDR2;
- 	if (IS_SINGLE_MODE(pvt->mc_settings_a)) {
-@@ -774,11 +770,9 @@ static int i7300_init_csrows(struct mem_ctl_info *mci)
- {
- 	struct i7300_pvt *pvt;
- 	struct i7300_dimm_info *dinfo;
--	struct csrow_info *p_csrow;
- 	int rc = -ENODEV;
- 	int mtr;
- 	int ch, branch, slot, channel;
--	u32 nr_pages;
- 	struct dimm_info *dimm;
+-	mci->dev = &pdev->dev;	/* record ptr  to the generic device */
++	mci->pdev = &pdev->dev;	/* record ptr  to the generic device */
  
  	pvt = mci->pvt_info;
-@@ -804,7 +798,6 @@ static int i7300_init_csrows(struct mem_ctl_info *mci)
+ 	pvt->system_address = pdev;	/* Record this device in our private */
+diff --git a/drivers/edac/i5100_edac.c b/drivers/edac/i5100_edac.c
+index d9b4921..cfe07e1 100644
+--- a/drivers/edac/i5100_edac.c
++++ b/drivers/edac/i5100_edac.c
+@@ -943,7 +943,7 @@ static int __devinit i5100_init_one(struct pci_dev *pdev,
+ 		goto bail_disable_ch1;
  	}
  
- 	/* Get the set of MTR[0-7] regs by each branch */
--	nr_pages = 0;
- 	for (slot = 0; slot < MAX_SLOTS; slot++) {
- 		int where = mtr_regs[slot];
- 		for (branch = 0; branch < MAX_BRANCHES; branch++) {
-@@ -815,21 +808,18 @@ static int i7300_init_csrows(struct mem_ctl_info *mci)
- 				int channel = to_channel(ch, branch);
+-	mci->dev = &pdev->dev;
++	mci->pdev = &pdev->dev;
  
- 				dinfo = &pvt->dimm_info[slot][channel];
--				p_csrow = &mci->csrows[slot];
+ 	priv = mci->pvt_info;
+ 	priv->ranksperchan = ranksperch;
+diff --git a/drivers/edac/i5400_edac.c b/drivers/edac/i5400_edac.c
+index 6640c29..ba60694 100644
+--- a/drivers/edac/i5400_edac.c
++++ b/drivers/edac/i5400_edac.c
+@@ -1299,7 +1299,7 @@ static int i5400_probe1(struct pci_dev *pdev, int dev_idx)
  
--				dimm = p_csrow->channels[branch * MAX_CH_PER_BRANCH + ch].dimm;
-+				dimm = mci->csrows[slot].channels[branch * MAX_CH_PER_BRANCH + ch].dimm;
+ 	debugf0("MC: %s: %s(): mci = %p\n", __FILE__, __func__, mci);
  
- 				mtr = decode_mtr(pvt, slot, ch, branch,
--						 dinfo, p_csrow, dimm,
--						 &nr_pages);
-+						 dinfo, dimm);
-+
- 				/* if no DIMMS on this row, continue */
- 				if (!MTR_DIMMS_PRESENT(mtr))
- 					continue;
+-	mci->dev = &pdev->dev;	/* record ptr  to the generic device */
++	mci->pdev = &pdev->dev;	/* record ptr  to the generic device */
  
--				/* Update per_csrow memory count */
--				p_csrow->nr_pages += nr_pages;
--
- 				rc = 0;
-+
- 			}
- 		}
- 	}
+ 	pvt = mci->pvt_info;
+ 	pvt->system_address = pdev;	/* Record this device in our private */
+diff --git a/drivers/edac/i7300_edac.c b/drivers/edac/i7300_edac.c
+index 904e389..381f7cd 100644
+--- a/drivers/edac/i7300_edac.c
++++ b/drivers/edac/i7300_edac.c
+@@ -1060,7 +1060,7 @@ static int __devinit i7300_init_one(struct pci_dev *pdev,
+ 
+ 	debugf0("MC: " __FILE__ ": %s(): mci = %p\n", __func__, mci);
+ 
+-	mci->dev = &pdev->dev;	/* record ptr  to the generic device */
++	mci->pdev = &pdev->dev;	/* record ptr  to the generic device */
+ 
+ 	pvt = mci->pvt_info;
+ 	pvt->pci_dev_16_0_fsb_ctlr = pdev;	/* Record this device in our private */
 diff --git a/drivers/edac/i7core_edac.c b/drivers/edac/i7core_edac.c
-index 76c957c..0e3cc34 100644
+index 2aacd95..cb004ca 100644
 --- a/drivers/edac/i7core_edac.c
 +++ b/drivers/edac/i7core_edac.c
-@@ -715,17 +715,12 @@ static int get_dimm_config(struct mem_ctl_info *mci)
- 			npages = MiB_TO_PAGES(size);
+@@ -2119,7 +2119,7 @@ static void i7core_unregister_mci(struct i7core_dev *i7core_dev)
+ 	i7core_pci_ctl_release(pvt);
  
- 			csr = &mci->csrows[csrow];
--			csr->nr_pages = npages;
--
--			csr->csrow_idx = csrow;
--			csr->nr_channels = 1;
--
--			csr->channels[0].chan_idx = i;
--			csr->channels[0].ce_count = 0;
+ 	/* Remove MC sysfs nodes */
+-	edac_mc_del_mc(mci->dev);
++	edac_mc_del_mc(mci->pdev);
  
- 			pvt->csrow_map[i][j] = csrow;
+ 	debugf1("%s: free mci struct\n", mci->ctl_name);
+ 	kfree(mci->ctl_name);
+@@ -2185,7 +2185,7 @@ static int i7core_register_mci(struct i7core_dev *i7core_dev)
+ 	/* Get dimm basic config */
+ 	get_dimm_config(mci);
+ 	/* record ptr to the generic device */
+-	mci->dev = &i7core_dev->pdev[0]->dev;
++	mci->pdev = &i7core_dev->pdev[0]->dev;
+ 	/* Set the function pointer to an actual operation function */
+ 	mci->edac_check = i7core_check_error;
  
- 			dimm = csr->channels[0].dimm;
-+			dimm->nr_pages = npages;
-+
- 			switch (banks) {
- 			case 4:
- 				dimm->dtype = DEV_X4;
-@@ -746,6 +741,7 @@ static int get_dimm_config(struct mem_ctl_info *mci)
- 			dimm->grain = 8;
- 			dimm->edac_mode = mode;
- 			dimm->mtype = mtype;
-+			csrow++;
- 		}
- 
- 		pci_read_config_dword(pdev, MC_SAG_CH_0, &value[0]);
 diff --git a/drivers/edac/i82443bxgx_edac.c b/drivers/edac/i82443bxgx_edac.c
-index 0b98dd3..02b252a 100644
+index 52072c2..65fd2e1 100644
 --- a/drivers/edac/i82443bxgx_edac.c
 +++ b/drivers/edac/i82443bxgx_edac.c
-@@ -220,7 +220,7 @@ static void i82443bxgx_init_csrows(struct mem_ctl_info *mci,
- 		row_base = row_high_limit_last;
- 		csrow->first_page = row_base >> PAGE_SHIFT;
- 		csrow->last_page = (row_high_limit >> PAGE_SHIFT) - 1;
--		csrow->nr_pages = csrow->last_page - csrow->first_page + 1;
-+		dimm->nr_pages = csrow->last_page - csrow->first_page + 1;
- 		/* EAP reports in 4kilobyte granularity [61] */
- 		dimm->grain = 1 << 12;
- 		dimm->mtype = mtype;
+@@ -124,7 +124,7 @@ static void i82443bxgx_edacmc_get_error_info(struct mem_ctl_info *mci,
+ 				*info)
+ {
+ 	struct pci_dev *pdev;
+-	pdev = to_pci_dev(mci->dev);
++	pdev = to_pci_dev(mci->pdev);
+ 	pci_read_config_dword(pdev, I82443BXGX_EAP, &info->eap);
+ 	if (info->eap & I82443BXGX_EAP_OFFSET_SBE)
+ 		/* Clear error to allow next error to be reported [p.61] */
+@@ -260,7 +260,7 @@ static int i82443bxgx_edacmc_probe1(struct pci_dev *pdev, int dev_idx)
+ 		return -ENOMEM;
+ 
+ 	debugf0("MC: %s: %s(): mci = %p\n", __FILE__, __func__, mci);
+-	mci->dev = &pdev->dev;
++	mci->pdev = &pdev->dev;
+ 	mci->mtype_cap = MEM_FLAG_EDO | MEM_FLAG_SDR | MEM_FLAG_RDR;
+ 	mci->edac_ctl_cap = EDAC_FLAG_NONE | EDAC_FLAG_EC | EDAC_FLAG_SECDED;
+ 	pci_read_config_byte(pdev, I82443BXGX_DRAMC, &dramc);
 diff --git a/drivers/edac/i82860_edac.c b/drivers/edac/i82860_edac.c
-index 3eb7784..8485bbf 100644
+index 0804505..8f33500 100644
 --- a/drivers/edac/i82860_edac.c
 +++ b/drivers/edac/i82860_edac.c
-@@ -167,7 +167,7 @@ static void i82860_init_csrows(struct mem_ctl_info *mci, struct pci_dev *pdev)
+@@ -67,7 +67,7 @@ static void i82860_get_error_info(struct mem_ctl_info *mci,
+ {
+ 	struct pci_dev *pdev;
  
- 		csrow->first_page = last_cumul_size;
- 		csrow->last_page = cumul_size - 1;
--		csrow->nr_pages = cumul_size - last_cumul_size;
-+		dimm->nr_pages = cumul_size - last_cumul_size;
- 		last_cumul_size = cumul_size;
- 		dimm->grain = 1 << 12;	/* I82860_EAP has 4KiB reolution */
- 		dimm->mtype = MEM_RMBS;
+-	pdev = to_pci_dev(mci->dev);
++	pdev = to_pci_dev(mci->pdev);
+ 
+ 	/*
+ 	 * This is a mess because there is no atomic way to read all the
+@@ -211,7 +211,7 @@ static int i82860_probe1(struct pci_dev *pdev, int dev_idx)
+ 		return -ENOMEM;
+ 
+ 	debugf3("%s(): init mci\n", __func__);
+-	mci->dev = &pdev->dev;
++	mci->pdev = &pdev->dev;
+ 	mci->mtype_cap = MEM_FLAG_DDR;
+ 	mci->edac_ctl_cap = EDAC_FLAG_NONE | EDAC_FLAG_SECDED;
+ 	/* I"m not sure about this but I think that all RDRAM is SECDED */
 diff --git a/drivers/edac/i82875p_edac.c b/drivers/edac/i82875p_edac.c
-index eac5742..e16281b 100644
+index 6c238df..7ab033d 100644
 --- a/drivers/edac/i82875p_edac.c
 +++ b/drivers/edac/i82875p_edac.c
-@@ -347,7 +347,7 @@ static void i82875p_init_csrows(struct mem_ctl_info *mci,
- 	unsigned long last_cumul_size;
- 	u8 value;
- 	u32 drc_ddim;		/* DRAM Data Integrity Mode 0=none,2=edac */
--	u32 cumul_size;
-+	u32 cumul_size, nr_pages;
- 	int index, j;
+@@ -189,7 +189,7 @@ static void i82875p_get_error_info(struct mem_ctl_info *mci,
+ {
+ 	struct pci_dev *pdev;
  
- 	drc_ddim = (drc >> 18) & 0x1;
-@@ -371,12 +371,13 @@ static void i82875p_init_csrows(struct mem_ctl_info *mci,
+-	pdev = to_pci_dev(mci->dev);
++	pdev = to_pci_dev(mci->pdev);
  
- 		csrow->first_page = last_cumul_size;
- 		csrow->last_page = cumul_size - 1;
--		csrow->nr_pages = cumul_size - last_cumul_size;
-+		nr_pages = cumul_size - last_cumul_size;
- 		last_cumul_size = cumul_size;
+ 	/*
+ 	 * This is a mess because there is no atomic way to read all the
+@@ -429,7 +429,7 @@ static int i82875p_probe1(struct pci_dev *pdev, int dev_idx)
+ 	kobject_get(&mci->edac_mci_kobj);
  
- 		for (j = 0; j < nr_chans; j++) {
- 			dimm = csrow->channels[j].dimm;
- 
-+			dimm->nr_pages = nr_pages / nr_chans;
- 			dimm->grain = 1 << 12;	/* I82875P_EAP has 4KiB reolution */
- 			dimm->mtype = MEM_DDR;
- 			dimm->dtype = DEV_UNKNOWN;
+ 	debugf3("%s(): init mci\n", __func__);
+-	mci->dev = &pdev->dev;
++	mci->pdev = &pdev->dev;
+ 	mci->mtype_cap = MEM_FLAG_DDR;
+ 	mci->edac_ctl_cap = EDAC_FLAG_NONE | EDAC_FLAG_SECDED;
+ 	mci->edac_cap = EDAC_FLAG_UNKNOWN;
 diff --git a/drivers/edac/i82975x_edac.c b/drivers/edac/i82975x_edac.c
-index b8ec871..014a948 100644
+index 9c346d7..00b8668 100644
 --- a/drivers/edac/i82975x_edac.c
 +++ b/drivers/edac/i82975x_edac.c
-@@ -370,7 +370,7 @@ static void i82975x_init_csrows(struct mem_ctl_info *mci,
- 	struct csrow_info *csrow;
- 	unsigned long last_cumul_size;
- 	u8 value;
--	u32 cumul_size;
-+	u32 cumul_size, nr_pages;
- 	int index, chan;
- 	struct dimm_info *dimm;
- 	enum dev_type dtype;
-@@ -402,6 +402,7 @@ static void i82975x_init_csrows(struct mem_ctl_info *mci,
- 		debugf3("%s(): (%d) cumul_size 0x%x\n", __func__, index,
- 			cumul_size);
+@@ -241,7 +241,7 @@ static void i82975x_get_error_info(struct mem_ctl_info *mci,
+ {
+ 	struct pci_dev *pdev;
  
-+		nr_pages = cumul_size - last_cumul_size;
- 		/*
- 		 * Initialise dram labels
- 		 * index values:
-@@ -411,6 +412,11 @@ static void i82975x_init_csrows(struct mem_ctl_info *mci,
- 		dtype = i82975x_dram_type(mch_window, index);
- 		for (chan = 0; chan < csrow->nr_channels; chan++) {
- 			dimm = mci->csrows[index].channels[chan].dimm;
-+
-+			if (!nr_pages)
-+				continue;
-+
-+			dimm->nr_pages = nr_pages / csrow->nr_channels;
- 			strncpy(csrow->channels[chan].dimm->label,
- 					labels[(index >> 1) + (chan * 2)],
- 					EDAC_MC_LABEL_LEN);
-@@ -420,12 +426,11 @@ static void i82975x_init_csrows(struct mem_ctl_info *mci,
- 			dimm->edac_mode = EDAC_SECDED; /* only supported */
- 		}
+-	pdev = to_pci_dev(mci->dev);
++	pdev = to_pci_dev(mci->pdev);
  
--		if (cumul_size == last_cumul_size)
-+		if (!nr_pages)
- 			continue;	/* not populated */
- 
- 		csrow->first_page = last_cumul_size;
- 		csrow->last_page = cumul_size - 1;
--		csrow->nr_pages = cumul_size - last_cumul_size;
- 		last_cumul_size = cumul_size;
+ 	/*
+ 	 * This is a mess because there is no atomic way to read all the
+@@ -562,7 +562,7 @@ static int i82975x_probe1(struct pci_dev *pdev, int dev_idx)
  	}
- }
+ 
+ 	debugf3("%s(): init mci\n", __func__);
+-	mci->dev = &pdev->dev;
++	mci->pdev = &pdev->dev;
+ 	mci->mtype_cap = MEM_FLAG_DDR2;
+ 	mci->edac_ctl_cap = EDAC_FLAG_NONE | EDAC_FLAG_SECDED;
+ 	mci->edac_cap = EDAC_FLAG_NONE | EDAC_FLAG_SECDED;
 diff --git a/drivers/edac/mpc85xx_edac.c b/drivers/edac/mpc85xx_edac.c
-index fb92916..c1d9e15 100644
+index 4c40235..67fb328 100644
 --- a/drivers/edac/mpc85xx_edac.c
 +++ b/drivers/edac/mpc85xx_edac.c
-@@ -947,7 +947,8 @@ static void __devinit mpc85xx_init_csrows(struct mem_ctl_info *mci)
+@@ -989,9 +989,9 @@ static int __devinit mpc85xx_mc_err_probe(struct platform_device *op)
+ 	pdata = mci->pvt_info;
+ 	pdata->name = "mpc85xx_mc_err";
+ 	pdata->irq = NO_IRQ;
+-	mci->dev = &op->dev;
++	mci->pdev = &op->dev;
+ 	pdata->edac_idx = edac_mc_idx++;
+-	dev_set_drvdata(mci->dev, mci);
++	dev_set_drvdata(mci->pdev, mci);
+ 	mci->ctl_name = pdata->name;
+ 	mci->dev_name = pdata->name;
  
- 		csrow->first_page = start;
- 		csrow->last_page = end;
--		csrow->nr_pages = end + 1 - start;
-+
-+		dimm->nr_pages = end + 1 - start;
- 		dimm->grain = 8;
- 		dimm->mtype = mtype;
- 		dimm->dtype = DEV_UNKNOWN;
 diff --git a/drivers/edac/mv64x60_edac.c b/drivers/edac/mv64x60_edac.c
-index d2e3c39..281e245 100644
+index b0bb5a3..ff6b8e2 100644
 --- a/drivers/edac/mv64x60_edac.c
 +++ b/drivers/edac/mv64x60_edac.c
-@@ -667,7 +667,8 @@ static void mv64x60_init_csrows(struct mem_ctl_info *mci,
- 
- 	csrow = &mci->csrows[0];
- 	dimm = csrow->channels[0].dimm;
--	csrow->nr_pages = pdata->total_mem >> PAGE_SHIFT;
-+
-+	dimm->nr_pages = pdata->total_mem >> PAGE_SHIFT;
- 	dimm->grain = 8;
- 
- 	dimm->mtype = (ctl & MV64X60_SDRAM_REGISTERED) ? MEM_RDDR : MEM_DDR;
-diff --git a/drivers/edac/pasemi_edac.c b/drivers/edac/pasemi_edac.c
-index 4e53270..3fcefda 100644
---- a/drivers/edac/pasemi_edac.c
-+++ b/drivers/edac/pasemi_edac.c
-@@ -153,20 +153,20 @@ static int pasemi_edac_init_csrows(struct mem_ctl_info *mci,
- 		switch ((rankcfg & MCDRAM_RANKCFG_TYPE_SIZE_M) >>
- 			MCDRAM_RANKCFG_TYPE_SIZE_S) {
- 		case 0:
--			csrow->nr_pages = 128 << (20 - PAGE_SHIFT);
-+			dimm->nr_pages = 128 << (20 - PAGE_SHIFT);
- 			break;
- 		case 1:
--			csrow->nr_pages = 256 << (20 - PAGE_SHIFT);
-+			dimm->nr_pages = 256 << (20 - PAGE_SHIFT);
- 			break;
- 		case 2:
- 		case 3:
--			csrow->nr_pages = 512 << (20 - PAGE_SHIFT);
-+			dimm->nr_pages = 512 << (20 - PAGE_SHIFT);
- 			break;
- 		case 4:
--			csrow->nr_pages = 1024 << (20 - PAGE_SHIFT);
-+			dimm->nr_pages = 1024 << (20 - PAGE_SHIFT);
- 			break;
- 		case 5:
--			csrow->nr_pages = 2048 << (20 - PAGE_SHIFT);
-+			dimm->nr_pages = 2048 << (20 - PAGE_SHIFT);
- 			break;
- 		default:
- 			edac_mc_printk(mci, KERN_ERR,
-@@ -176,8 +176,8 @@ static int pasemi_edac_init_csrows(struct mem_ctl_info *mci,
- 		}
- 
- 		csrow->first_page = last_page_in_mmc;
--		csrow->last_page = csrow->first_page + csrow->nr_pages - 1;
--		last_page_in_mmc += csrow->nr_pages;
-+		csrow->last_page = csrow->first_page + dimm->nr_pages - 1;
-+		last_page_in_mmc += dimm->nr_pages;
- 		csrow->page_mask = 0;
- 		dimm->grain = PASEMI_EDAC_ERROR_GRAIN;
- 		dimm->mtype = MEM_DDR;
-diff --git a/drivers/edac/ppc4xx_edac.c b/drivers/edac/ppc4xx_edac.c
-index ec5e529..95cfc0f 100644
---- a/drivers/edac/ppc4xx_edac.c
-+++ b/drivers/edac/ppc4xx_edac.c
-@@ -896,7 +896,7 @@ ppc4xx_edac_init_csrows(struct mem_ctl_info *mci, u32 mcopt1)
- 	enum dev_type dtype;
- 	enum edac_type edac_mode;
- 	int row, j;
--	u32 mbxcf, size;
-+	u32 mbxcf, size, nr_pages;
- 
- 	/* Establish the memory type and width */
- 
-@@ -947,7 +947,7 @@ ppc4xx_edac_init_csrows(struct mem_ctl_info *mci, u32 mcopt1)
- 		case SDRAM_MBCF_SZ_2GB:
- 		case SDRAM_MBCF_SZ_4GB:
- 		case SDRAM_MBCF_SZ_8GB:
--			csi->nr_pages = SDRAM_MBCF_SZ_TO_PAGES(size);
-+			nr_pages = SDRAM_MBCF_SZ_TO_PAGES(size);
- 			break;
- 		default:
- 			ppc4xx_edac_mc_printk(KERN_ERR, mci,
-@@ -973,6 +973,7 @@ ppc4xx_edac_init_csrows(struct mem_ctl_info *mci, u32 mcopt1)
- 		for (j = 0; j < csi->nr_channels; j++) {
- 			struct dimm_info *dimm = csi->channels[j].dimm;
- 
-+			dimm->nr_pages  = nr_pages / csi->nr_channels;
- 			dimm->grain	= 1;
- 
- 			dimm->mtype	= mtype;
-diff --git a/drivers/edac/r82600_edac.c b/drivers/edac/r82600_edac.c
-index 70b0dfa..c41b375 100644
---- a/drivers/edac/r82600_edac.c
-+++ b/drivers/edac/r82600_edac.c
-@@ -249,7 +249,8 @@ static void r82600_init_csrows(struct mem_ctl_info *mci, struct pci_dev *pdev,
- 
- 		csrow->first_page = row_base >> PAGE_SHIFT;
- 		csrow->last_page = (row_high_limit >> PAGE_SHIFT) - 1;
--		csrow->nr_pages = csrow->last_page - csrow->first_page + 1;
-+
-+		dimm->nr_pages = csrow->last_page - csrow->first_page + 1;
- 		/* Error address is top 19 bits - so granularity is      *
- 		 * 14 bits                                               */
- 		dimm->grain = 1 << 14;
-diff --git a/drivers/edac/sb_edac.c b/drivers/edac/sb_edac.c
-index d5892c0..2ce9bf5 100644
---- a/drivers/edac/sb_edac.c
-+++ b/drivers/edac/sb_edac.c
-@@ -561,7 +561,6 @@ static int get_dimm_config(struct mem_ctl_info *mci)
- 	u32 reg;
- 	enum edac_type mode;
- 	enum mem_type mtype;
--	struct dimm_info *dimm;
- 
- 	pci_read_config_dword(pvt->pci_br, SAD_TARGET, &reg);
- 	pvt->sbridge_dev->source_id = SOURCE_ID(reg);
-@@ -613,11 +612,11 @@ static int get_dimm_config(struct mem_ctl_info *mci)
- 	/* On all supported DDR3 DIMM types, there are 8 banks available */
- 	banks = 8;
- 
--	dimm = mci->dimms;
- 	for (i = 0; i < NUM_CHANNELS; i++) {
- 		u32 mtr;
- 
- 		for (j = 0; j < ARRAY_SIZE(mtr_regs); j++) {
-+			struct dimm_info *dimm = &mci->dimms[j];
- 			pci_read_config_dword(pvt->pci_tad[i],
- 					      mtr_regs[j], &mtr);
- 			debugf4("Channel #%d  MTR%d = %x\n", i, j, mtr);
-@@ -642,15 +641,12 @@ static int get_dimm_config(struct mem_ctl_info *mci)
- 				 * csrows.
- 				 */
- 				csr = &mci->csrows[csrow];
--				csr->nr_pages = npages;
--				csr->csrow_idx = csrow;
--				csr->nr_channels = 1;
--				csr->channels[0].chan_idx = i;
- 				pvt->csrow_map[i][j] = csrow;
- 				last_page += npages;
- 				csrow++;
- 
- 				csr->channels[0].dimm = dimm;
-+				dimm->nr_pages = npages;
- 				dimm->grain = 32;
- 				dimm->dtype = (banks == 8) ? DEV_X8 : DEV_X4;
- 				dimm->mtype = mtype;
-diff --git a/drivers/edac/tile_edac.c b/drivers/edac/tile_edac.c
-index 54067c4..054c9bb 100644
---- a/drivers/edac/tile_edac.c
-+++ b/drivers/edac/tile_edac.c
-@@ -110,7 +110,7 @@ static int __devinit tile_edac_init_csrows(struct mem_ctl_info *mci)
- 		return -1;
+@@ -724,7 +724,7 @@ static int __devinit mv64x60_mc_err_probe(struct platform_device *pdev)
  	}
  
--	csrow->nr_pages = mem_info.mem_size >> PAGE_SHIFT;
-+	dimm->nr_pages = mem_info.mem_size >> PAGE_SHIFT;
- 	dimm->grain = TILE_EDAC_ERROR_GRAIN;
- 	dimm->dtype = DEV_UNKNOWN;
+ 	pdata = mci->pvt_info;
+-	mci->dev = &pdev->dev;
++	mci->pdev = &pdev->dev;
+ 	platform_set_drvdata(pdev, mci);
+ 	pdata->name = "mv64x60_mc_err";
+ 	pdata->irq = NO_IRQ;
+diff --git a/drivers/edac/pasemi_edac.c b/drivers/edac/pasemi_edac.c
+index b095a90..92becaa 100644
+--- a/drivers/edac/pasemi_edac.c
++++ b/drivers/edac/pasemi_edac.c
+@@ -74,7 +74,7 @@ static int system_mmc_id;
+ 
+ static u32 pasemi_edac_get_error_info(struct mem_ctl_info *mci)
+ {
+-	struct pci_dev *pdev = to_pci_dev(mci->dev);
++	struct pci_dev *pdev = to_pci_dev(mci->pdev);
+ 	u32 tmp;
+ 
+ 	pci_read_config_dword(pdev, MCDEBUG_ERRSTA,
+@@ -95,7 +95,7 @@ static u32 pasemi_edac_get_error_info(struct mem_ctl_info *mci)
+ 
+ static void pasemi_edac_process_error_info(struct mem_ctl_info *mci, u32 errsta)
+ {
+-	struct pci_dev *pdev = to_pci_dev(mci->dev);
++	struct pci_dev *pdev = to_pci_dev(mci->pdev);
+ 	u32 errlog1a;
+ 	u32 cs;
+ 
+@@ -225,7 +225,7 @@ static int __devinit pasemi_edac_probe(struct pci_dev *pdev,
+ 		MCCFG_ERRCOR_ECC_GEN_EN |
+ 		MCCFG_ERRCOR_ECC_CRR_EN;
+ 
+-	mci->dev = &pdev->dev;
++	mci->pdev = &pdev->dev;
+ 	mci->mtype_cap = MEM_FLAG_DDR | MEM_FLAG_RDDR;
+ 	mci->edac_ctl_cap = EDAC_FLAG_NONE | EDAC_FLAG_EC | EDAC_FLAG_SECDED;
+ 	mci->edac_cap = (errcor & MCCFG_ERRCOR_ECC_GEN_EN) ?
+diff --git a/drivers/edac/ppc4xx_edac.c b/drivers/edac/ppc4xx_edac.c
+index f3f9fed..5351982 100644
+--- a/drivers/edac/ppc4xx_edac.c
++++ b/drivers/edac/ppc4xx_edac.c
+@@ -1027,9 +1027,9 @@ ppc4xx_edac_mc_init(struct mem_ctl_info *mci,
+ 
+ 	/* Initial driver pointers and private data */
+ 
+-	mci->dev		= &op->dev;
++	mci->pdev		= &op->dev;
+ 
+-	dev_set_drvdata(mci->dev, mci);
++	dev_set_drvdata(mci->pdev, mci);
+ 
+ 	pdata			= mci->pvt_info;
+ 
+@@ -1334,7 +1334,7 @@ static int __devinit ppc4xx_edac_probe(struct platform_device *op)
+ 	return 0;
+ 
+  fail1:
+-	edac_mc_del_mc(mci->dev);
++	edac_mc_del_mc(mci->pdev);
+ 
+  fail:
+ 	edac_mc_free(mci);
+@@ -1368,7 +1368,7 @@ ppc4xx_edac_remove(struct platform_device *op)
+ 
+ 	dcr_unmap(pdata->dcr_host, SDRAM_DCR_RESOURCE_LEN);
+ 
+-	edac_mc_del_mc(mci->dev);
++	edac_mc_del_mc(mci->pdev);
+ 	edac_mc_free(mci);
+ 
+ 	return 0;
+diff --git a/drivers/edac/r82600_edac.c b/drivers/edac/r82600_edac.c
+index e1cacd1..cf4ccbd 100644
+--- a/drivers/edac/r82600_edac.c
++++ b/drivers/edac/r82600_edac.c
+@@ -140,7 +140,7 @@ static void r82600_get_error_info(struct mem_ctl_info *mci,
+ {
+ 	struct pci_dev *pdev;
+ 
+-	pdev = to_pci_dev(mci->dev);
++	pdev = to_pci_dev(mci->pdev);
+ 	pci_read_config_dword(pdev, R82600_EAP, &info->eapr);
+ 
+ 	if (info->eapr & BIT(0))
+@@ -296,7 +296,7 @@ static int r82600_probe1(struct pci_dev *pdev, int dev_idx)
+ 		return -ENOMEM;
+ 
+ 	debugf0("%s(): mci = %p\n", __func__, mci);
+-	mci->dev = &pdev->dev;
++	mci->pdev = &pdev->dev;
+ 	mci->mtype_cap = MEM_FLAG_RDDR | MEM_FLAG_DDR;
+ 	mci->edac_ctl_cap = EDAC_FLAG_NONE | EDAC_FLAG_EC | EDAC_FLAG_SECDED;
+ 	/* FIXME try to work out if the chip leads have been used for COM2
+diff --git a/drivers/edac/sb_edac.c b/drivers/edac/sb_edac.c
+index e834dfd..efa4883 100644
+--- a/drivers/edac/sb_edac.c
++++ b/drivers/edac/sb_edac.c
+@@ -1607,7 +1607,7 @@ static void sbridge_unregister_mci(struct sbridge_dev *sbridge_dev)
+ 	mce_unregister_decode_chain(&sbridge_mce_dec);
+ 
+ 	/* Remove MC sysfs nodes */
+-	edac_mc_del_mc(mci->dev);
++	edac_mc_del_mc(mci->pdev);
+ 
+ 	debugf1("%s: free mci struct\n", mci->ctl_name);
+ 	kfree(mci->ctl_name);
+@@ -1672,7 +1672,7 @@ static int sbridge_register_mci(struct sbridge_dev *sbridge_dev)
+ 	get_memory_layout(mci);
+ 
+ 	/* record ptr to the generic device */
+-	mci->dev = &sbridge_dev->pdev[0]->dev;
++	mci->pdev = &sbridge_dev->pdev[0]->dev;
+ 
+ 	/* add this new MC control structure to EDAC's list of MCs */
+ 	if (unlikely(edac_mc_add_mc(mci))) {
+diff --git a/drivers/edac/tile_edac.c b/drivers/edac/tile_edac.c
+index 7bb4614..604bc4d 100644
+--- a/drivers/edac/tile_edac.c
++++ b/drivers/edac/tile_edac.c
+@@ -69,7 +69,7 @@ static void tile_edac_check(struct mem_ctl_info *mci)
+ 
+ 	/* Check if the current error count is different from the saved one. */
+ 	if (mem_error.sbe_count != priv->ce_count) {
+-		dev_dbg(mci->dev, "ECC CE err on node %d\n", priv->node);
++		dev_dbg(mci->pdev, "ECC CE err on node %d\n", priv->node);
+ 		priv->ce_count = mem_error.sbe_count;
+ 		edac_mc_handle_error(HW_EVENT_ERR_CORRECTED, mci,
+ 				     0, 0, 0,
+@@ -149,7 +149,7 @@ static int __devinit tile_edac_mc_probe(struct platform_device *pdev)
+ 	priv->node = pdev->id;
+ 	priv->hv_devhdl = hv_devhdl;
+ 
+-	mci->dev = &pdev->dev;
++	mci->pdev = &pdev->dev;
+ 	mci->mtype_cap = MEM_FLAG_DDR2;
+ 	mci->edac_ctl_cap = EDAC_FLAG_SECDED;
  
 diff --git a/drivers/edac/x38_edac.c b/drivers/edac/x38_edac.c
-index bc7f880..e324799 100644
+index 1ac7962..f9506f2 100644
 --- a/drivers/edac/x38_edac.c
 +++ b/drivers/edac/x38_edac.c
-@@ -373,10 +373,10 @@ static int x38_probe1(struct pci_dev *pdev, int dev_idx)
- 		if (nr_pages == 0)
- 			continue;
+@@ -151,7 +151,7 @@ static void x38_clear_error_info(struct mem_ctl_info *mci)
+ {
+ 	struct pci_dev *pdev;
  
--		csrow->nr_pages = nr_pages;
--
- 		for (j = 0; j < x38_channel_num; j++) {
- 			struct dimm_info *dimm = csrow->channels[j].dimm;
-+
-+			dimm->nr_pages = nr_pages / x38_channel_num;
- 			dimm->grain = nr_pages << PAGE_SHIFT;
- 			dimm->mtype = MEM_DDR2;
- 			dimm->dtype = DEV_UNKNOWN;
+-	pdev = to_pci_dev(mci->dev);
++	pdev = to_pci_dev(mci->pdev);
+ 
+ 	/*
+ 	 * Clear any error bits.
+@@ -172,7 +172,7 @@ static void x38_get_and_clear_error_info(struct mem_ctl_info *mci,
+ 	struct pci_dev *pdev;
+ 	void __iomem *window = mci->pvt_info;
+ 
+-	pdev = to_pci_dev(mci->dev);
++	pdev = to_pci_dev(mci->pdev);
+ 
+ 	/*
+ 	 * This is a mess because there is no atomic way to read all the
+@@ -354,7 +354,7 @@ static int x38_probe1(struct pci_dev *pdev, int dev_idx)
+ 
+ 	debugf3("MC: %s(): init mci\n", __func__);
+ 
+-	mci->dev = &pdev->dev;
++	mci->pdev = &pdev->dev;
+ 	mci->mtype_cap = MEM_FLAG_DDR2;
+ 
+ 	mci->edac_ctl_cap = EDAC_FLAG_SECDED;
 diff --git a/include/linux/edac.h b/include/linux/edac.h
-index 87aa07d..67717ca 100644
+index 91ba3ba..ec1b527 100644
 --- a/include/linux/edac.h
 +++ b/include/linux/edac.h
-@@ -324,6 +324,8 @@ struct dimm_info {
- 	enum mem_type mtype;	/* memory dimm type */
- 	enum edac_type edac_mode;	/* EDAC mode for this dimm */
- 
-+	u32 nr_pages;			/* number of pages in csrow */
-+
- 	u32 ce_count;		/* Correctable Errors for this dimm */
- };
- 
-@@ -350,12 +352,12 @@ struct rank_info {
- };
- 
- struct csrow_info {
-+	/* Used only by edac_mc_find_csrow_by_page() */
- 	unsigned long first_page;	/* first page number in csrow */
- 	unsigned long last_page;	/* last page number in csrow */
--	u32 nr_pages;			/* number of pages in csrow */
- 	unsigned long page_mask;	/* used for interleaving -
--					 * 0UL for non intlv
--					 */
-+					 * 0UL for non intlv */
-+
- 	int csrow_idx;			/* the chip-select row */
- 
- 	u32 ue_count;		/* Uncorrectable Errors for this csrow */
+@@ -567,7 +567,7 @@ struct mem_ctl_info {
+ 	 * unique.  dev pointer should be sufficiently unique, but
+ 	 * BUS:SLOT.FUNC numbers may not be unique.
+ 	 */
+-	struct device *dev;
++	struct device *pdev;
+ 	const char *mod_name;
+ 	const char *mod_ver;
+ 	const char *ctl_name;
 -- 
 1.7.8
 
