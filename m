@@ -1,58 +1,136 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933600Ab2ERIhY (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 May 2012 04:37:24 -0400
-Received: from LGEMRELSE7Q.lge.com ([156.147.1.151]:43437 "EHLO
-	LGEMRELSE7Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933136Ab2ERIhV (ORCPT
+	id S933623Ab2ERIje (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 May 2012 04:39:34 -0400
+Received: from mail-wg0-f44.google.com ([74.125.82.44]:53297 "EHLO
+	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933136Ab2ERIja (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 May 2012 04:37:21 -0400
-X-AuditID: 9c930197-b7be2ae000000ebb-33-4fb60a3f44ff
-Message-ID: <4FB60A70.6050707@kernel.org>
-Date: Fri, 18 May 2012 17:38:08 +0900
-From: Minchan Kim <minchan@kernel.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
-MIME-Version: 1.0
-Newsgroups: gmane.linux.kernel.mm,gmane.linux.kernel
-To: Guan Xuetao <gxt@mprc.pku.edu.cn>
-CC: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Nitin Gupta <ngupta@vflare.org>,
-        Seth Jennings <sjenning@linux.vnet.ibm.com>,
-        Dan Magenheimer <dan.magenheimer@oracle.com>,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        Russell King <linux@arm.linux.org.uk>,
-        Ralf Baechle <ralf@linux-mips.org>, Paul Mundt <lethal@linux-sh.org>,
-        Chen Liqin <liqin.chen@sunplusct.com>
-Subject: Re: [PATCH v2 1/3] zsmalloc: support zsmalloc to ARM, MIPS, SUPERH
-References: <1337133919-4182-1-git-send-email-minchan@kernel.org>   <1337153329.1751.5.camel@ubuntu.ubuntu-domain>   <4FB44147.5070704@kernel.org>  <1337216199.1837.11.camel@ubuntu.ubuntu-domain>  <4FB4B109.9000703@kernel.org> <1337305553.1844.3.camel@ubuntu.ubuntu-domain>
-In-Reply-To: <1337305553.1844.3.camel@ubuntu.ubuntu-domain>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
-X-Brightmail-Tracker: AAAAAA==
+	Fri, 18 May 2012 04:39:30 -0400
+From: Lee Jones <lee.jones@linaro.org>
+To: linux-arm-kernel@lists.infradead.org, arnd@arndb.de,
+        linus.walleij@stericsson.com, grant.likely@secretlab.ca,
+        cjb@laptop.org, broonie@opensource.wolfsonmicro.com,
+        sameo@linux.intel.com
+Cc: Lee Jones <lee.jones@linaro.org>, linux-kernel@vger.kernel.org
+Subject: [PATCH 05/16] regulator: db8500-prcmu: Separate regulator registration from probe
+Date: Fri, 18 May 2012 09:39:04 +0100
+Message-Id: <1337330355-17747-6-git-send-email-lee.jones@linaro.org>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1337330355-17747-1-git-send-email-lee.jones@linaro.org>
+References: <1337330355-17747-1-git-send-email-lee.jones@linaro.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Guan,
+This will provide us with a convenient way to register regulators when
+booting with Device Tree both enabled & disabled and will save us a
+great deal of code duplication in time.
 
-On 05/18/2012 10:45 AM, Guan Xuetao wrote:
+Cc: linux-kernel@vger.kernel.org
+Signed-off-by: Lee Jones <lee.jones@linaro.org>
+---
+ drivers/regulator/db8500-prcmu.c |   71 +++++++++++++++++++++++---------------
+ 1 file changed, 44 insertions(+), 27 deletions(-)
 
-> On Thu, 2012-05-17 at 17:04 +0900, Minchan Kim wrote:
-> 
->> ...
->> I don't think so.
->> It's terrible experience if all users have to look up local_flush_tlb_kernel_range of arch for using zsmalloc.
->>
->> BTW, does unicore32 support that function?
->> If so, I would like to add unicore32 in Kconfig.
->>
-> Yes. Thanks.
-> 
-> Could you give me some materials on performance and testsuite?
-
-
-Unfortunately, I don't have them. Nitin, Could you help Guan?
-
+diff --git a/drivers/regulator/db8500-prcmu.c b/drivers/regulator/db8500-prcmu.c
+index 87b2e83..d6b4d4c 100644
+--- a/drivers/regulator/db8500-prcmu.c
++++ b/drivers/regulator/db8500-prcmu.c
+@@ -410,40 +410,58 @@ dbx500_regulator_info[DB8500_NUM_REGULATORS] = {
+ 	},
+ };
+ 
++static __devinit int db8500_regulator_register(struct platform_device *pdev,
++					struct regulator_init_data *init_data,
++					int id,
++					struct device_node *np)
++{
++	struct dbx500_regulator_info *info;
++	struct regulator_config config = { };
++	int err;
++
++	/* assign per-regulator data */
++	info = &dbx500_regulator_info[id];
++	info->dev = &pdev->dev;
++
++	config.dev = &pdev->dev;
++	config.init_data = init_data;
++	config.driver_data = info;
++	config.of_node = np;
++
++	/* register with the regulator framework */
++	info->rdev = regulator_register(&info->desc, &config);
++	if (IS_ERR(info->rdev)) {
++		err = PTR_ERR(info->rdev);
++		dev_err(&pdev->dev, "failed to register %s: err %i\n",
++			info->desc.name, err);
++
++		/* if failing, unregister all earlier regulators */
++		while (--id >= 0) {
++			info = &dbx500_regulator_info[id];
++			regulator_unregister(info->rdev);
++		}
++		return err;
++	}
++
++	dev_dbg(rdev_get_dev(info->rdev),
++		"regulator-%s-probed\n", info->desc.name);
++
++	return 0;
++}
++
+ static int __devinit db8500_regulator_probe(struct platform_device *pdev)
+ {
+ 	struct regulator_init_data *db8500_init_data =
+ 					dev_get_platdata(&pdev->dev);
+-	struct regulator_config config = { };
+ 	int i, err;
+ 
+ 	/* register all regulators */
+ 	for (i = 0; i < ARRAY_SIZE(dbx500_regulator_info); i++) {
+-		struct dbx500_regulator_info *info;
+-		struct regulator_init_data *init_data = &db8500_init_data[i];
+-
+-		/* assign per-regulator data */
+-		info = &dbx500_regulator_info[i];
+-		info->dev = &pdev->dev;
+-
+-		config.dev = &pdev->dev;
+-		config.init_data = init_data;
+-		config.driver_data = info;
+-
+-		/* register with the regulator framework */
+-		info->rdev = regulator_register(&info->desc, &config);
+-		if (IS_ERR(info->rdev)) {
+-			err = PTR_ERR(info->rdev);
+-			dev_err(&pdev->dev, "failed to register %s: err %i\n",
+-				info->desc.name, err);
+-
+-			/* if failing, unregister all earlier regulators */
+-			while (--i >= 0) {
+-				info = &dbx500_regulator_info[i];
+-				regulator_unregister(info->rdev);
+-			}
++		err = db8500_regulator_register(pdev,
++						&db8500_init_data[i],
++						i, NULL);
++		if (err)
+ 			return err;
+-		}
+ 
+ 		dev_dbg(rdev_get_dev(info->rdev),
+ 			"regulator-%s-probed\n", info->desc.name);
+@@ -451,8 +469,7 @@ static int __devinit db8500_regulator_probe(struct platform_device *pdev)
+ 	err = ux500_regulator_debug_init(pdev,
+ 					 dbx500_regulator_info,
+ 					 ARRAY_SIZE(dbx500_regulator_info));
+-
+-	return err;
++	return 0;
+ }
+ 
+ static int __exit db8500_regulator_remove(struct platform_device *pdev)
 -- 
-Kind regards,
-Minchan Kim
+1.7.9.5
+
