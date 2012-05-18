@@ -1,79 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S966411Ab2ERSFg (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 May 2012 14:05:36 -0400
-Received: from mail-fa0-f74.google.com ([209.85.161.74]:42385 "EHLO
-	mail-fa0-f74.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S966353Ab2ERSF2 (ORCPT
+	id S1759027Ab2ERSGf (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 May 2012 14:06:35 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:54408 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751931Ab2ERSGd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 May 2012 14:05:28 -0400
-From: Colin Cross <ccross@android.com>
-To: Len Brown <len.brown@intel.com>
-Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-pm@lists.linux-foundation.org, Kevin Hilman <khilman@ti.com>,
-        Arjan van de Ven <arjan@linux.intel.com>,
-        Deepthi Dharwar <deepthi@linux.vnet.ibm.com>,
-        Santosh Shilimkar <santosh.shilimkar@ti.com>,
-        Daniel Lezcano <daniel.lezcano@linaro.org>,
-        Amit Kucheria <amit.kucheria@linaro.org>,
-        Lorenzo Pieralisi <lorenzo.pieralisi@arm.com>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>, Colin Cross <ccross@android.com>
-Subject: [PATCH 1/2] cpuidle: coupled: fix count of online cpus
-Date: Fri, 18 May 2012 11:05:23 -0700
-Message-Id: <1337364324-12171-2-git-send-email-ccross@android.com>
-X-Mailer: git-send-email 1.7.7.3
-In-Reply-To: <1337364324-12171-1-git-send-email-ccross@android.com>
-References: <1337364324-12171-1-git-send-email-ccross@android.com>
+	Fri, 18 May 2012 14:06:33 -0400
+Date: Fri, 18 May 2012 11:06:28 -0700
+From: Greg KH <gregkh@linuxfoundation.org>
+To: Alan Cox <alan@lxorguk.ukuu.org.uk>
+Cc: Rabin Vincent <rabin@rab.in>, alan@linux.intel.com,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: Race in vt_event_wait() during suspend/resume
+Message-ID: <20120518180628.GA27021@kroah.com>
+References: <CAH+eYFAm-bp5nRgK4mBJa4CSoXw3V4wNvCUbnB+A8Ywvs3=M1w@mail.gmail.com>
+ <20120518124051.6cd03ab0@pyramind.ukuu.org.uk>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120518124051.6cd03ab0@pyramind.ukuu.org.uk>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-online_count was never incremented on boot, and was also counting
-cpus that were not part of the coupled set.  Fix both issues by
-introducting a new function that counts online coupled cpus, and
-call it from register as well as the hotplug notifier.
+On Fri, May 18, 2012 at 12:40:51PM +0100, Alan Cox wrote:
+> On Fri, 18 May 2012 16:34:53 +0530
+> Rabin Vincent <rabin@rab.in> wrote:
+> 
+> > pm_restore_console() is called from the suspend/resume path,
+> > this calls vt_move_to_console(), which calls vt_event_wait().
+> > 
+> > There's a race in this path which causes the process
+> > which requests the suspend to sleep indefinitely waiting
+> > for an event which already happened:
+> > 
+> > P1					P2
+> >  vt_move_to_console()
+> >    set_console()
+> >      schedule_console_callback()
+> >    vt_waitactive()
+> >      check n == fg_console +1
+> > 					console_callback()
+> > 					  switch_screen()
+> > 					  vt_event_post() // no waiters
+> > 
+> >      vt_event_wait() // forever
+> > 
+> > I think the following should fix it.  Comments?
+> > 
+> 
+> Looks right to me.
 
-Signed-off-by: Colin Cross <ccross@android.com>
----
- drivers/cpuidle/coupled.c |   11 ++++++++++-
- 1 files changed, 10 insertions(+), 1 deletions(-)
+Great, Rabin, care to resend it with a proper Signed-off-by: line so
+that I can apply it?
 
-diff --git a/drivers/cpuidle/coupled.c b/drivers/cpuidle/coupled.c
-index 3e65de1..b02810a 100644
---- a/drivers/cpuidle/coupled.c
-+++ b/drivers/cpuidle/coupled.c
-@@ -532,6 +532,13 @@ int cpuidle_enter_state_coupled(struct cpuidle_device *dev,
- 	return entered_state;
- }
- 
-+static void cpuidle_coupled_update_online_cpus(struct cpuidle_coupled *coupled)
-+{
-+	cpumask_t cpus;
-+	cpumask_and(&cpus, cpu_online_mask, &coupled->coupled_cpus);
-+	coupled->online_count = cpumask_weight(&cpus);
-+}
-+
- /**
-  * cpuidle_coupled_register_device - register a coupled cpuidle device
-  * @dev: struct cpuidle_device for the current cpu
-@@ -570,6 +577,8 @@ int cpuidle_coupled_register_device(struct cpuidle_device *dev)
- 	if (WARN_ON(!cpumask_equal(&dev->coupled_cpus, &coupled->coupled_cpus)))
- 		coupled->prevent++;
- 
-+	cpuidle_coupled_update_online_cpus(coupled);
-+
- 	coupled->refcnt++;
- 
- 	csd = &per_cpu(cpuidle_coupled_poke_cb, dev->cpu);
-@@ -668,7 +677,7 @@ static int cpuidle_coupled_cpu_notify(struct notifier_block *nb,
- 		break;
- 	case CPU_ONLINE:
- 	case CPU_DEAD:
--		dev->coupled->online_count = num_online_cpus();
-+		cpuidle_coupled_update_online_cpus(dev->coupled);
- 		/* Fall through */
- 	case CPU_UP_CANCELED:
- 	case CPU_DOWN_FAILED:
--- 
-1.7.7.3
+thanks,
 
+greg k-h
