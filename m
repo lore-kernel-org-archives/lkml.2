@@ -1,89 +1,162 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S967100Ab2ERMnd (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 May 2012 08:43:33 -0400
-Received: from mail-yw0-f46.google.com ([209.85.213.46]:49114 "EHLO
-	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965914Ab2ERMnb convert rfc822-to-8bit (ORCPT
+	id S967692Ab2ERMn7 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 May 2012 08:43:59 -0400
+Received: from s15943758.onlinehome-server.info ([217.160.130.188]:39443 "EHLO
+	mail.x86-64.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S965914Ab2ERMn4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 May 2012 08:43:31 -0400
+	Fri, 18 May 2012 08:43:56 -0400
+Date: Fri, 18 May 2012 14:43:38 +0200
+From: Borislav Petkov <bp@amd64.org>
+To: Mauro Carvalho Chehab <mchehab@redhat.com>
+Cc: Borislav Petkov <bp@amd64.org>, Ingo Molnar <mingo@kernel.org>,
+        Linux Edac Mailing List <linux-edac@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Aristeu Rozanski <arozansk@redhat.com>,
+        Doug Thompson <norsk5@yahoo.com>, Steven Rostedt <rostedt@goodmis.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Ingo Molnar <mingo@redhat.com>
+Subject: Re: [PATCH v24b] RAS: Add a tracepoint for reporting memory
+ controller events
+Message-ID: <20120518124338.GJ20215@aftab.osrc.amd.com>
+References: <1337287277-523-1-git-send-email-mchehab@redhat.com>
+ <20120517214859.GA16777@aftab.osrc.amd.com>
+ <20120518071244.GE429@gmail.com>
+ <20120518095638.GA20215@aftab.osrc.amd.com>
+ <4FB62BAB.90808@redhat.com>
 MIME-Version: 1.0
-In-Reply-To: <CAOesGMgy4QkLuB10q19e67n_kQw4++gDYbWNELN-ASayVYkjbA@mail.gmail.com>
-References: <1335884506-15370-1-git-send-email-bryan.wu@canonical.com>
- <alpine.LFD.2.02.1205101351380.21030@xanadu.home> <CAK5ve-L4rcAx-=n5u7G0AQzvUG3ir_jzF_ibaSf-EntXAzFUCw@mail.gmail.com>
- <201205121453.45242.arnd.bergmann@linaro.org> <CAOesGMgy4QkLuB10q19e67n_kQw4++gDYbWNELN-ASayVYkjbA@mail.gmail.com>
-From: Bryan Wu <bryan.wu@canonical.com>
-Date: Fri, 18 May 2012 20:43:07 +0800
-X-Google-Sender-Auth: 4B9ZaIbeC6TJYMk3GupM2c6gvSw
-Message-ID: <CAK5ve-Jc=g+E=fmK8HgMKAHPNBYkQdAKw=S0bLqEPYfPEbyabw@mail.gmail.com>
-Subject: Re: [PATCH v9 00/19] Introduce a led trigger for CPU activity and
- consolidate LED driver in ARM
-To: Olof Johansson <olof@lixom.net>
-Cc: Arnd Bergmann <arnd.bergmann@linaro.org>,
-        Nicolas Ferre <nicolas.ferre@atmel.com>,
-        Alexander Shiyan <shc_work@mail.ru>,
-        Nicolas Pitre <nicolas.pitre@linaro.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>, rpurdie@rpsys.net,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        linus.walleij@linaro.org, tim.gardner@canonical.com
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4FB62BAB.90808@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, May 13, 2012 at 3:06 PM, Olof Johansson <olof@lixom.net> wrote:
-> Hi,
->
-> On Sat, May 12, 2012 at 7:53 AM, Arnd Bergmann <arnd.bergmann@linaro.org> wrote:
->> On Friday 11 May 2012, Bryan Wu wrote:
->>> OK, I rebased my patch back on 3.4.0-rc6, please find it here:
->>> git://kernel.ubuntu.com/roc/linux-2.6/.git leds
->>>
->>> linux-next branch can be also found here:
->>> git://kernel.ubuntu.com/roc/linux-2.6/.git leds-next
->>>
->>> Arnd, could you please help me to merge? if got any issue, please
->>> point to me to fix.
->>>
->>
->> Hi Bryan,
->>
->> I've merged it into a new next/leds branch. I got conflicts with the clps711x
->> and at91 cleanups that are already in the next/cleanup branch but I think
->> I resolved them all correctly.  It would be nice if you and/or the maintainers
->> of those platforms could confirm that.
->
-> At the end of my pass of merging branches tonight, I tried building
-> all defconfigs on ARM and got several new build errors due to LED
-> changes. The ones that have hit it so far are:
-> * assabet_defconfig
-> * at91rm9200_defconfig
-> * ebsa100_defconfig
-> * footbridge_defconfig
->
-> Bryan, please sort these out as soon as possible. Should be easy to
-> reproduce to debug. Meanwhile I've dropped the leds branch from
-> arm-soc's for-next branch so that we can bring in an updated
-> (bisectable without breakage) branch from you.
->
->
+On Fri, May 18, 2012 at 07:59:55AM -0300, Mauro Carvalho Chehab wrote:
+> The "detail" field above is, in fact, a group of the following integer
+> values:
+> 
+> - physical address of the error, provided as 3 integers: page, offset an
+>   the error offset granularity;
+> 
+> - ECC syndrome, with has a XOR value used to determine how many and what
+>   bit(s) have errors.
+> 
+> "driver_detail" contains other driver-specific details about the errors.
+> 
+> The "location" field is also given by 3 integers: layer0, layer1, layer2 with
+> contains the branch/slot/channel or slot/channel or chip select row/channel
+> position of the affected DIMM.
+> 
+> On my last comment, I said that I'm convinced that those two fields should
+> be broken into their integer components.
+> 
+> The fields at "detail" and "location" are generated by a snprintf() logic 
+> inside the EDAC core. "driver_detail" is filled by the drivers.
+> 
+> I did that merge in order to provide a clearer output message, but this
+> doesn't help userspace tools that could get the binary information at
+> the trace directly.
+> 
+> There's a conceptual issue here, and it seems that Boris is not understanding,
+> probably because he doesn't have any experience on handling errors on userspace.
 
-So sorry, Arnd and Olof.
+Probably you're too stuck up with your error handling "experience" and
+you fail to see that I'm trying to make this as generic as possible and
+not fit it into anything so that EVERYONE can use it.
 
-I was travelling back from US to home recently and missed this email thread.
-I've already push all changes:
-git://git.kernel.org/pub/scm/linux/kernel/git/cooloney/linux-leds.git
-for-arm-soc
-It is based on y next branch in arm-soc git tree. I tried building and
-fixed some errors.
+> In this point, my previous experience on writing network management
+> and my work at the userspace EDAC tool helps me to see both faces of
+> the coin.
+> 
+> Currently, EDAC prints an error message, and increments some Kernel counters
+> to indicate where the error is located.
+> 
+> Userspace tools can either get the dmesg logs or read the error counters.
+> The edac-tools (with is the only public tool for EDAC that I'm aware of)
+> prefers to rely on the error counters, instead of parsing the error logs.
+> 
+> I suspect that one of the reasons is because printk messages are not a
+> consistent ABI, as changing them are not considered as a Kernel regression.
 
-Hope it's not very late.
+Oh yeah, teach me more about that, that's like not appearing maybe once
+a week on lkml but what do I know...
 
-Thanks,
+> There are several issues on relying at the Kernel error counters: they
+> don't have decay or any other kind of logic that would allow detecting
+> bursts.
+
+Guess what, you can do decay very successfully in userspace.
+
+> So, on a machine running for 30 days with, let's say, 10 corrected
+> errors, it is not possible to tell if they were all generated on a
+> burst (because of some temporary interference) or if they are sparse
+> errors generated at the same DRAM, indicating a bad memory.
+
+Why not, you don't have timestamps?
+
+> The big advantage (maybe the only advantage) of using a tracepoint is that
+> the binary data can be exported directly.
+
+Really?? You don't say. Teach me more about tracepoints and why it is a
+good thing to use them for error reporting.
+
+> If the location and memory location integers are exported as integers,
+> it is simple to change the edac-tools to work with tracepoints,
+> instead of working with the error counters.
+
+Yeah, so?
+
+> With this simple change, the tool can be improved to provide a more
+> consistent memory error report, as userspace should not be worried on
+> parsing fields that may change in future without notice.
+
+Which userspace, your userspace? What happens if another userspace comes
+with slightly different error formatting requirements? We change the
+kernel again or we can't because this tracepoint is being used and we
+add another tracepoint and let the bloat begin?
+
+> Also, doing that will avoid the extra effort of joining everything into
+> a single string, and then breaking them back into their individual fields
+> on userspace.
+
+I'm being told this is very easy to do in userspace in your garden
+variety language.
+
+> > but feed it
+> > straight into a MIB (which could mean "Men In Black" for all I know),
+> > right from the tracepoint:
+> 
+> I can do a s/MIB/Management Information Base/. We can also avoid all other
+> acronyms that have more than one sense, like RAS (with all network
+> people will associate it with "Remote Access Service").
+
+Oh, I know, MIB=Mauro Is Best.
+
+> >> Of course, any userspace tools meant to handle errors should not parse
+> >> the above data. They should, instead, use the binary fields provided by
+> >> the tracepoint, mapping them directly into their MIBs.
+> > 
+> > And I wanted to have a generic, usable-for-all tracepoint output
+> > which anyone in userspace can parse, decode, cut, paste as she sees
+> > fit without forcing kernel output formatting into any abstract error
+> > management hierarchy or whatever.
+> 
+> s/printk/trace/? That doesn't sound a good idea. The advantage of
+> tracepoints of printk's is that they provide an ABI that allows passing
+> strucutured information to userspace.
+
+WTF? Maybe you don't understand what I'm talking about at all and I'm
+wasting my time completely.
+
 -- 
-Bryan Wu <bryan.wu@canonical.com>
-Kernel Developer    +86.186-168-78255 Mobile
-Canonical Ltd.      www.canonical.com
-Ubuntu - Linux for human beings | www.ubuntu.com
+Regards/Gruss,
+Boris.
+
+Advanced Micro Devices GmbH
+Einsteinring 24, 85609 Dornach
+GM: Alberto Bozzo
+Reg: Dornach, Landkreis Muenchen
+HRB Nr. 43632 WEEE Registernr: 129 19551
