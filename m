@@ -1,44 +1,144 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965354Ab2ERQu4 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 May 2012 12:50:56 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:57095 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758357Ab2ERQuv (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 May 2012 12:50:51 -0400
-Message-ID: <4FB67DE5.8050000@gmail.com>
-Date: Fri, 18 May 2012 10:50:45 -0600
-From: David Ahern <dsahern@gmail.com>
-User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.7; rv:12.0) Gecko/20120428 Thunderbird/12.0.1
-MIME-Version: 1.0
-To: Stephane Eranian <eranian@google.com>, acme@redhat.com
-CC: linux-kernel@vger.kernel.org, peterz@infradead.org, mingo@elte.hu
-Subject: Re: [PATCH v2 4/5] perf record: add meta-data support for pipe-mode
-References: <1337081295-10303-1-git-send-email-eranian@google.com> <1337081295-10303-5-git-send-email-eranian@google.com> <4FB32032.3000509@gmail.com> <CABPqkBQyZfSczhAROdH8p0_asy=c2AJho4Kv9wRYabaLNKkURA@mail.gmail.com>
-In-Reply-To: <CABPqkBQyZfSczhAROdH8p0_asy=c2AJho4Kv9wRYabaLNKkURA@mail.gmail.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+	id S965389Ab2ERQvO (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 May 2012 12:51:14 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:16617 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1758514Ab2ERQdD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 18 May 2012 12:33:03 -0400
+From: Mauro Carvalho Chehab <mchehab@redhat.com>
+Cc: Mauro Carvalho Chehab <mchehab@redhat.com>,
+        Linux Edac Mailing List <linux-edac@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Doug Thompson <norsk5@yahoo.com>
+Subject: [PATCH EDAC v26 41/66] edac: use Documentation-nano format for some data structs
+Date: Fri, 18 May 2012 13:32:28 -0300
+Message-Id: <1337358773-6919-42-git-send-email-mchehab@redhat.com>
+In-Reply-To: <1337358773-6919-1-git-send-email-mchehab@redhat.com>
+References: <1337358773-6919-1-git-send-email-mchehab@redhat.com>
+To: unlisted-recipients:; (no To-header on input)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 5/16/12 1:41 AM, Stephane Eranian wrote:
-> On Wed, May 16, 2012 at 5:34 AM, David Ahern<dsahern@gmail.com>  wrote:
->> I love the feature and it works nicely, but there has been push back on
->> adding more synthesized events.  Also the size of the patch is a bit much to
->> take in. If there is no objection to the synthesized can you break the patch
->> up -- e.g., introduce the events in one, synthesis and processing functions
->> in another, plug into the commands, ...
->>
-> Without new synthesized events, you cannot make this work. This is by
-> construction
-> of the pipe mode. Meta-data has be be injected in the stream and
-> therefore it needs
-> PERF_RECORD_* types.
+No functional changes. Just comment improvements.
 
-Understood. I don't object to synthesized events.
+Reviewed-by: Aristeu Rozanski <arozansk@redhat.com>
+Cc: Doug Thompson <norsk5@yahoo.com>
+Signed-off-by: Mauro Carvalho Chehab <mchehab@redhat.com>
+---
+ include/linux/edac.h |   82 ++++++++++++++++++++++++++++++++++++--------------
+ 1 files changed, 59 insertions(+), 23 deletions(-)
 
-Arnaldo: preferences?
+diff --git a/include/linux/edac.h b/include/linux/edac.h
+index ec1b527..4e32e8d 100644
+--- a/include/linux/edac.h
++++ b/include/linux/edac.h
+@@ -49,7 +49,19 @@ static inline void opstate_init(void)
+ #define EDAC_MC_LABEL_LEN	31
+ #define MC_PROC_NAME_MAX_LEN	7
+ 
+-/* memory devices */
++/**
++ * enum dev_type - describe the type of memory DRAM chips used at the stick
++ * @DEV_UNKNOWN:	Can't be determined, or MC doesn't support detect it
++ * @DEV_X1:		1 bit for data
++ * @DEV_X2:		2 bits for data
++ * @DEV_X4:		4 bits for data
++ * @DEV_X8:		8 bits for data
++ * @DEV_X16:		16 bits for data
++ * @DEV_X32:		32 bits for data
++ * @DEV_X64:		64 bits for data
++ *
++ * Typical values are x4 and x8.
++ */
+ enum dev_type {
+ 	DEV_UNKNOWN = 0,
+ 	DEV_X1,
+@@ -167,18 +179,30 @@ enum mem_type {
+ #define MEM_FLAG_DDR3		 BIT(MEM_DDR3)
+ #define MEM_FLAG_RDDR3		 BIT(MEM_RDDR3)
+ 
+-/* chipset Error Detection and Correction capabilities and mode */
++/**
++ * enum edac-type - Error Detection and Correction capabilities and mode
++ * @EDAC_UNKNOWN:	Unknown if ECC is available
++ * @EDAC_NONE:		Doesn't support ECC
++ * @EDAC_RESERVED:	Reserved ECC type
++ * @EDAC_PARITY:	Detects parity errors
++ * @EDAC_EC:		Error Checking - no correction
++ * @EDAC_SECDED:	Single bit error correction, Double detection
++ * @EDAC_S2ECD2ED:	Chipkill x2 devices - do these exist?
++ * @EDAC_S4ECD4ED:	Chipkill x4 devices
++ * @EDAC_S8ECD8ED:	Chipkill x8 devices
++ * @EDAC_S16ECD16ED:	Chipkill x16 devices
++ */
+ enum edac_type {
+-	EDAC_UNKNOWN = 0,	/* Unknown if ECC is available */
+-	EDAC_NONE,		/* Doesn't support ECC */
+-	EDAC_RESERVED,		/* Reserved ECC type */
+-	EDAC_PARITY,		/* Detects parity errors */
+-	EDAC_EC,		/* Error Checking - no correction */
+-	EDAC_SECDED,		/* Single bit error correction, Double detection */
+-	EDAC_S2ECD2ED,		/* Chipkill x2 devices - do these exist? */
+-	EDAC_S4ECD4ED,		/* Chipkill x4 devices */
+-	EDAC_S8ECD8ED,		/* Chipkill x8 devices */
+-	EDAC_S16ECD16ED,	/* Chipkill x16 devices */
++	EDAC_UNKNOWN =	0,
++	EDAC_NONE,
++	EDAC_RESERVED,
++	EDAC_PARITY,
++	EDAC_EC,
++	EDAC_SECDED,
++	EDAC_S2ECD2ED,
++	EDAC_S4ECD4ED,
++	EDAC_S8ECD8ED,
++	EDAC_S16ECD16ED,
+ };
+ 
+ #define EDAC_FLAG_UNKNOWN	BIT(EDAC_UNKNOWN)
+@@ -191,18 +215,30 @@ enum edac_type {
+ #define EDAC_FLAG_S8ECD8ED	BIT(EDAC_S8ECD8ED)
+ #define EDAC_FLAG_S16ECD16ED	BIT(EDAC_S16ECD16ED)
+ 
+-/* scrubbing capabilities */
++/**
++ * enum scrub_type - scrubbing capabilities
++ * @SCRUB_UNKNOWN		Unknown if scrubber is available
++ * @SCRUB_NONE:			No scrubber
++ * @SCRUB_SW_PROG:		SW progressive (sequential) scrubbing
++ * @SCRUB_SW_SRC:		Software scrub only errors
++ * @SCRUB_SW_PROG_SRC:		Progressive software scrub from an error
++ * @SCRUB_SW_TUNABLE:		Software scrub frequency is tunable
++ * @SCRUB_HW_PROG:		HW progressive (sequential) scrubbing
++ * @SCRUB_HW_SRC:		Hardware scrub only errors
++ * @SCRUB_HW_PROG_SRC:		Progressive hardware scrub from an error
++ * SCRUB_HW_TUNABLE:		Hardware scrub frequency is tunable
++ */
+ enum scrub_type {
+-	SCRUB_UNKNOWN = 0,	/* Unknown if scrubber is available */
+-	SCRUB_NONE,		/* No scrubber */
+-	SCRUB_SW_PROG,		/* SW progressive (sequential) scrubbing */
+-	SCRUB_SW_SRC,		/* Software scrub only errors */
+-	SCRUB_SW_PROG_SRC,	/* Progressive software scrub from an error */
+-	SCRUB_SW_TUNABLE,	/* Software scrub frequency is tunable */
+-	SCRUB_HW_PROG,		/* HW progressive (sequential) scrubbing */
+-	SCRUB_HW_SRC,		/* Hardware scrub only errors */
+-	SCRUB_HW_PROG_SRC,	/* Progressive hardware scrub from an error */
+-	SCRUB_HW_TUNABLE	/* Hardware scrub frequency is tunable */
++	SCRUB_UNKNOWN =	0,
++	SCRUB_NONE,
++	SCRUB_SW_PROG,
++	SCRUB_SW_SRC,
++	SCRUB_SW_PROG_SRC,
++	SCRUB_SW_TUNABLE,
++	SCRUB_HW_PROG,
++	SCRUB_HW_SRC,
++	SCRUB_HW_PROG_SRC,
++	SCRUB_HW_TUNABLE
+ };
+ 
+ #define SCRUB_FLAG_SW_PROG	BIT(SCRUB_SW_PROG)
+-- 
+1.7.8
 
-David
