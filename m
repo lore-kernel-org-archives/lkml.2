@@ -1,153 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1762500Ab2ERBpu (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 May 2012 21:45:50 -0400
-Received: from mga01.intel.com ([192.55.52.88]:24063 "EHLO mga01.intel.com"
+	id S1762510Ab2ERBrN (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 May 2012 21:47:13 -0400
+Received: from mga01.intel.com ([192.55.52.88]:30946 "EHLO mga01.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1761998Ab2ERBps (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 May 2012 21:45:48 -0400
+	id S1751795Ab2ERBrL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 17 May 2012 21:47:11 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
-   d="scan'208";a="154251120"
-From: Huang Ying <ying.huang@intel.com>
-To: Len Brown <lenb@kernel.org>
-Cc: linux-kernel@vger.kernel.org, "Rafael J. Wysocki" <rjw@sisk.pl>,
-        ying.huang@intel.com, linux-acpi@vger.kernel.org
-Subject: [PATCH -v2] ACPI, PM, Specify lowest allowed state for device sleep state
-Date: Fri, 18 May 2012 09:45:44 +0800
-Message-Id: <1337305544-10393-1-git-send-email-ying.huang@intel.com>
-X-Mailer: git-send-email 1.7.10
+   d="scan'208";a="167885125"
+From: "Yu, Fenghua" <fenghua.yu@intel.com>
+To: "Siddha, Suresh B" <suresh.b.siddha@intel.com>,
+        Ingo Molnar <mingo@kernel.org>
+CC: "Luck, Tony" <tony.luck@intel.com>, Thomas Gleixner <tglx@linutronix.de>,
+        Ingo Molnar <mingo@elte.hu>, H Peter Anvin <hpa@zytor.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        "Mallick, Asit K" <asit.k.mallick@intel.com>,
+        Arjan Dan De Ven <arjan@linux.intel.com>,
+        "Brown, Len" <len.brown@intel.com>,
+        "Srivatssa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
+        Randy Dunlap <rdunlap@xenotime.net>,
+        Chen Gong <gong.chen@linux.intel.com>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        linux-pm <linux-pm@vger.kernel.org>, x86 <x86@kernel.org>,
+        Peter Zijlstra <peterz@infradead.org>
+Subject: RE: [PATCH v6 04/12] x86/smpboot.c: Don't offline CPU0 if any irq
+ can not be migrated out of it and remove CPU0 check in smp_callin()
+Thread-Topic: [PATCH v6 04/12] x86/smpboot.c: Don't offline CPU0 if any irq
+ can not be migrated out of it and remove CPU0 check in smp_callin()
+Thread-Index: AQHNLsnr6BtSjocSukKcCXDRs7eVypbE9IsAgABuzwCABEt1gIAFZvGA//+54cA=
+Date: Fri, 18 May 2012 01:47:09 +0000
+Message-ID: <3E5A0FA7E9CA944F9D5414FEC6C71220077185AE@ORSMSX105.amr.corp.intel.com>
+References: <1336666614-21090-1-git-send-email-fenghua.yu@intel.com>
+	 <1336666614-21090-5-git-send-email-fenghua.yu@intel.com>
+	 <alpine.LFD.2.02.1205111352330.3231@ionos>
+	 <CA+8MBbJbEWTR2Tawa2SzcJ-mZSPzZ12a9usR5eQu=PhArZwXLA@mail.gmail.com>
+	 <20120514121725.GA10840@gmail.com>
+ <1337294829.1997.96.camel@sbsiddha-desk.sc.intel.com>
+In-Reply-To: <1337294829.1997.96.camel@sbsiddha-desk.sc.intel.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.22.254.140]
+Content-Type: text/plain; charset="utf-8"
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by nfs id q4I1lIJd023052
 
-Lower device sleep state can save more power, but has more exit
-latency too.  Sometimes, to satisfy some power QoS and other
-requirement, we need to constrain the lowest device sleep state.
+> -----Original Message-----
+> From: Siddha, Suresh B
+> Sent: Thursday, May 17, 2012 3:47 PM
+> To: Ingo Molnar
+> Cc: Luck, Tony; Thomas Gleixner; Yu, Fenghua; Ingo Molnar; H Peter
+> Anvin; Linus Torvalds; Andrew Morton; Mallick, Asit K; Arjan Dan De Ven;
+> Brown, Len; Srivatssa S. Bhat; Randy Dunlap; Chen Gong; linux-kernel;
+> linux-pm; x86; Peter Zijlstra
+> Subject: Re: [PATCH v6 04/12] x86/smpboot.c: Don't offline CPU0 if any
+> irq can not be migrated out of it and remove CPU0 check in smp_callin()
+> 
+> On Mon, 2012-05-14 at 14:17 +0200, Ingo Molnar wrote:
+> > * Tony Luck <tony.luck@intel.com> wrote:
+> >
+> > > Biggest code impact of that is the extra code to bring cpu0
+> > > back online using NMI instead of INIT. We can't use INIT
+> > > because if cpu0 gets one, it just resets the whole machine :-(
+> > > But obviously we'd like to avoid special cases where there is
+> > > a sane way to do so.
+> >
+> > Could we just standardize on NMI bringup during regular bootup?
+> 
+> May be we can use the NMI or even better monitor/mwait based bringup to
+> re-online an AP that is currently offline in play_dead(), specifically
+> if we haven't lost that AP processor state because of suspend/resume
+> event etc.
+> 
+> This can speed-up online if we want to use light weight online/offline
+> of the AP's for saving power on mobile platforms.
 
-In this patch, a parameter to specify lowest allowed state for
-acpi_pm_device_sleep_state is added.  So that the caller can enforce
-the constraint via the parameter.
+Then booting up AP via INIT and putting AP online back via NMI/mwait will have different wakeup method and code. We probably need a way to tell if it is first AP bringup or online AP/BSP during run time.
 
-This is needed by PCIe D3cold support, where the lowest power state
-allowed may be D3_HOT instead of default D3_COLD.
+And if offlined CPU is not in mwait (e.g. CPU without mwait feature), mwait based bringup won't work. Do we need to fall back to NMI wakeup if offlined CPU is not in mwait?
 
-Changelog:
+Thanks.
 
-v2:
-- Minor change per Rafeal's comments
-
-Signed-off-by: Huang Ying <ying.huang@intel.com>
----
- drivers/acpi/sleep.c       |   24 +++++++++++++++++++-----
- drivers/pci/pci-acpi.c     |    3 ++-
- drivers/pnp/pnpacpi/core.c |    4 ++--
- include/acpi/acpi_bus.h    |    6 +++---
- 4 files changed, 26 insertions(+), 11 deletions(-)
-
---- a/drivers/acpi/sleep.c
-+++ b/drivers/acpi/sleep.c
-@@ -677,8 +677,9 @@ int acpi_suspend(u32 acpi_state)
-  *	@dev: device to examine; its driver model wakeup flags control
-  *		whether it should be able to wake up the system
-  *	@d_min_p: used to store the upper limit of allowed states range
-- *	Return value: preferred power state of the device on success, -ENODEV on
-- *		failure (ie. if there's no 'struct acpi_device' for @dev)
-+ *	@d_max_in: specify the lowest allowed states
-+ *	Return value: preferred power state of the device on success, -ENODEV
-+ *	(ie. if there's no 'struct acpi_device' for @dev) or -EINVAL on failure
-  *
-  *	Find the lowest power (highest number) ACPI device power state that
-  *	device @dev can be in while the system is in the sleep state represented
-@@ -693,13 +694,15 @@ int acpi_suspend(u32 acpi_state)
-  *	via @wake.
-  */
- 
--int acpi_pm_device_sleep_state(struct device *dev, int *d_min_p)
-+int acpi_pm_device_sleep_state(struct device *dev, int *d_min_p, int d_max_in)
- {
- 	acpi_handle handle = DEVICE_ACPI_HANDLE(dev);
- 	struct acpi_device *adev;
- 	char acpi_method[] = "_SxD";
- 	unsigned long long d_min, d_max;
- 
-+	if (d_max_in < ACPI_STATE_D0 || d_max_in > ACPI_STATE_D3)
-+		return -EINVAL;
- 	if (!handle || ACPI_FAILURE(acpi_bus_get_device(handle, &adev))) {
- 		printk(KERN_DEBUG "ACPI handle has no context!\n");
- 		return -ENODEV;
-@@ -707,8 +710,10 @@ int acpi_pm_device_sleep_state(struct de
- 
- 	acpi_method[2] = '0' + acpi_target_sleep_state;
- 	/*
--	 * If the sleep state is S0, we will return D3, but if the device has
--	 * _S0W, we will use the value from _S0W
-+	 * If the sleep state is S0, the lowest limit from ACPI is D3,
-+	 * but if the device has _S0W, we will use the value from _S0W
-+	 * as the lowest limit from ACPI.  Finally, we will constrain
-+	 * the lowest limit with the specified one.
- 	 */
- 	d_min = ACPI_STATE_D0;
- 	d_max = ACPI_STATE_D3;
-@@ -752,8 +757,17 @@ int acpi_pm_device_sleep_state(struct de
- 		}
- 	}
- 
-+	if (d_max_in < d_min)
-+		return -EINVAL;
- 	if (d_min_p)
- 		*d_min_p = d_min;
-+	/* constrain d_max with specified lowest limit (max number) */
-+	if (d_max > d_max_in) {
-+		for (d_max = d_max_in; d_max > d_min; d_max--) {
-+			if (adev->power.states[d_max].flags.valid)
-+				break;
-+		}
-+	}
- 	return d_max;
- }
- #endif /* CONFIG_PM */
---- a/drivers/pci/pci-acpi.c
-+++ b/drivers/pci/pci-acpi.c
-@@ -189,7 +189,8 @@ static pci_power_t acpi_pci_choose_state
- {
- 	int acpi_state;
- 
--	acpi_state = acpi_pm_device_sleep_state(&pdev->dev, NULL);
-+	acpi_state = acpi_pm_device_sleep_state(&pdev->dev, NULL,
-+						ACPI_STATE_D3);
- 	if (acpi_state < 0)
- 		return PCI_POWER_ERROR;
- 
---- a/drivers/pnp/pnpacpi/core.c
-+++ b/drivers/pnp/pnpacpi/core.c
-@@ -170,8 +170,8 @@ static int pnpacpi_suspend(struct pnp_de
- 	}
- 
- 	if (acpi_bus_power_manageable(handle)) {
--		int power_state = acpi_pm_device_sleep_state(&dev->dev, NULL);
--
-+		int power_state = acpi_pm_device_sleep_state(&dev->dev, NULL,
-+							     ACPI_STATE_D3);
- 		if (power_state < 0)
- 			power_state = (state.event == PM_EVENT_ON) ?
- 					ACPI_STATE_D0 : ACPI_STATE_D3;
---- a/include/acpi/acpi_bus.h
-+++ b/include/acpi/acpi_bus.h
-@@ -383,13 +383,13 @@ int acpi_enable_wakeup_device_power(stru
- int acpi_disable_wakeup_device_power(struct acpi_device *dev);
- 
- #ifdef CONFIG_PM
--int acpi_pm_device_sleep_state(struct device *, int *);
-+int acpi_pm_device_sleep_state(struct device *, int *, int);
- #else
--static inline int acpi_pm_device_sleep_state(struct device *d, int *p)
-+static inline int acpi_pm_device_sleep_state(struct device *d, int *p, int m)
- {
- 	if (p)
- 		*p = ACPI_STATE_D0;
--	return ACPI_STATE_D3;
-+	return (m >= ACPI_STATE_D0 && <= ACPI_STATE_D3) ? m : ACPI_STATE_D0;
- }
- #endif
- 
+-Fenghua
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éÝ¶¥Šwÿº{.nÇ+‰·¥Š{±þG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŽŠÝ¢j"ú¶m§ÿÿ¾«þG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
