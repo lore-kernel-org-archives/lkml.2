@@ -1,25 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1946066Ab2ERNMx (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 May 2012 09:12:53 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:5608 "EHLO
+	id S1946040Ab2ERNMv (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 May 2012 09:12:51 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:4228 "EHLO
 	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933721Ab2ERNKx (ORCPT
+	with ESMTP id S933722Ab2ERNKx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 18 May 2012 09:10:53 -0400
-X-Authority-Analysis: v=2.0 cv=OMylLFmB c=1 sm=0 a=ZycB6UtQUfgMyuk2+PxD7w==:17 a=XQbtiDEiEegA:10 a=Ciwy3NGCPMMA:10 a=1_hdgFqO5gIA:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=meVymXHHAAAA:8 a=20KFwNOVAAAA:8 a=_IGxp2mfFUYWymhGOywA:9 a=9GTYEX1tESxK75rzqtoA:7 a=QEXdDO2ut3YA:10 a=jEp0ucaQiEUA:10 a=jeBq3FmKZ4MA:10 a=1xYCUaPE22q-fCWBymAA:9 a=ZycB6UtQUfgMyuk2+PxD7w==:117
+X-Authority-Analysis: v=2.0 cv=OMylLFmB c=1 sm=0 a=ZycB6UtQUfgMyuk2+PxD7w==:17 a=XQbtiDEiEegA:10 a=Ciwy3NGCPMMA:10 a=qKccPN6sc8AA:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=meVymXHHAAAA:8 a=20KFwNOVAAAA:8 a=3nbZYyFuAAAA:8 a=xkS7cEQK18UYUIan8ZcA:9 a=5U9k56OlpVqdqvqouuEA:7 a=QEXdDO2ut3YA:10 a=jEp0ucaQiEUA:10 a=EvKJbDF4Ut8A:10 a=jeBq3FmKZ4MA:10 a=rJmqdrJ-pPgpA_SZ:21 a=d70PUlaOxHDhe0oF:21 a=mRso85lu_IU--pLBQ3EA:9 a=ZycB6UtQUfgMyuk2+PxD7w==:117
 X-Cloudmark-Score: 0
 X-Originating-IP: 74.67.80.29
-Message-Id: <20120518131049.947535513@goodmis.org>
+Message-Id: <20120518131050.631235481@goodmis.org>
 User-Agent: quilt/0.60-1
-Date: Fri, 18 May 2012 09:09:06 -0400
+Date: Fri, 18 May 2012 09:09:08 -0400
 From: Steven Rostedt <rostedt@goodmis.org>
 To: linux-kernel@vger.kernel.org
 Cc: Ingo Molnar <mingo@elte.hu>, Andrew Morton <akpm@linux-foundation.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>
-Subject: [PATCH 08/15] ftrace: Sort all function addresses, not just per page
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Subject: [PATCH 10/15] ftrace: Speed up search by skipping pages by address
 References: <20120518130858.392919640@goodmis.org>
-Content-Disposition: inline; filename=0008-ftrace-Sort-all-function-addresses-not-just-per-page.patch
+Content-Disposition: inline; filename=0010-ftrace-Speed-up-search-by-skipping-pages-by-address.patch
 Content-Type: multipart/signed; micalg="pgp-sha1"; protocol="application/pgp-signature"; boundary="00GvhwF7k39YY"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -31,95 +32,64 @@ Content-Transfer-Encoding: quoted-printable
 
 From: Steven Rostedt <srostedt@redhat.com>
 
-Instead of just sorting the ip's of the functions per ftrace page,
-sort the entire list before adding them to the ftrace pages.
+As all records in a page of the ftrace table are sorted, we can
+speed up the search algorithm by checking if the address to look for
+falls in between the first and last record ip on the page.
 
-This will allow the bsearch algorithm to be sped up as it can
-also sort by pages, not just records within a page.
+This speeds up both the ftrace_location() and ftrace_text_reserved()
+algorithms, as it can skip full pages when the search address is
+not in them.
 
+Cc: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
 Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
 ---
- include/asm-generic/vmlinux.lds.h |    2 +-
- kernel/trace/ftrace.c             |   34 ++++++++++++++++++++++------------
- 2 files changed, 23 insertions(+), 13 deletions(-)
+ kernel/trace/ftrace.c |   22 ++++++++++++++++------
+ 1 file changed, 16 insertions(+), 6 deletions(-)
 
-diff --git a/include/asm-generic/vmlinux.lds.h b/include/asm-generic/vmlinu=
-x.lds.h
-index 8aeadf6..4e2e1cc 100644
---- a/include/asm-generic/vmlinux.lds.h
-+++ b/include/asm-generic/vmlinux.lds.h
-@@ -486,8 +486,8 @@
- 	CPU_DISCARD(init.data)						\
- 	MEM_DISCARD(init.data)						\
- 	KERNEL_CTORS()							\
--	*(.init.rodata)							\
- 	MCOUNT_REC()							\
-+	*(.init.rodata)							\
- 	FTRACE_EVENTS()							\
- 	TRACE_SYSCALLS()						\
- 	DEV_DISCARD(init.rodata)					\
 diff --git a/kernel/trace/ftrace.c b/kernel/trace/ftrace.c
-index cf81f27..53ed01e 100644
+index e10f9e5..fc93562 100644
 --- a/kernel/trace/ftrace.c
 +++ b/kernel/trace/ftrace.c
-@@ -3666,15 +3666,27 @@ static __init int ftrace_init_dyn_debugfs(struct de=
-ntry *d_tracer)
+@@ -1411,6 +1411,8 @@ int ftrace_location(unsigned long ip)
+ 	key.ip =3D ip;
+=20
+ 	for (pg =3D ftrace_pages_start; pg; pg =3D pg->next) {
++		if (ip < pg->records[0].ip || ip > pg->records[pg->index - 1].ip)
++			continue;
+ 		rec =3D bsearch(&key, pg->records, pg->index,
+ 			      sizeof(struct dyn_ftrace),
+ 			      ftrace_cmp_recs);
+@@ -1571,16 +1573,24 @@ void ftrace_bug(int failed, unsigned long ip)
+=20
+=20
+ /* Return 1 if the address range is reserved for ftrace */
+-int ftrace_text_reserved(void *start, void *end)
++int ftrace_text_reserved(void *s, void *e)
+ {
+ 	struct dyn_ftrace *rec;
+ 	struct ftrace_page *pg;
++	unsigned long start =3D (unsigned long)s;
++	unsigned long end =3D (unsigned long)e;
++	int i;
+=20
+-	do_for_each_ftrace_rec(pg, rec) {
+-		if (rec->ip <=3D (unsigned long)end &&
+-		    rec->ip + MCOUNT_INSN_SIZE > (unsigned long)start)
+-			return 1;
+-	} while_for_each_ftrace_rec();
++	for (pg =3D ftrace_pages_start; pg; pg =3D pg->next) {
++		if (end < pg->records[0].ip ||
++		    start >=3D (pg->records[pg->index - 1].ip + MCOUNT_INSN_SIZE))
++			continue;
++		for (i =3D 0; i < pg->index; i++) {
++			rec =3D &pg->records[i];
++			if (rec->ip <=3D end && rec->ip + MCOUNT_INSN_SIZE > start)
++				return 1;
++		}
++	}
  	return 0;
  }
 =20
--static void ftrace_swap_recs(void *a, void *b, int size)
-+static int ftrace_cmp_ips(const void *a, const void *b)
- {
--	struct dyn_ftrace *reca =3D a;
--	struct dyn_ftrace *recb =3D b;
--	struct dyn_ftrace t;
-+	const unsigned long *ipa =3D a;
-+	const unsigned long *ipb =3D b;
-=20
--	t =3D *reca;
--	*reca =3D *recb;
--	*recb =3D t;
-+	if (*ipa > *ipb)
-+		return 1;
-+	if (*ipa < *ipb)
-+		return -1;
-+	return 0;
-+}
-+
-+static void ftrace_swap_ips(void *a, void *b, int size)
-+{
-+	unsigned long *ipa =3D a;
-+	unsigned long *ipb =3D b;
-+	unsigned long t;
-+
-+	t =3D *ipa;
-+	*ipa =3D *ipb;
-+	*ipb =3D t;
- }
-=20
- static int ftrace_process_locs(struct module *mod,
-@@ -3693,6 +3705,9 @@ static int ftrace_process_locs(struct module *mod,
- 	if (!count)
- 		return 0;
-=20
-+	sort(start, count, sizeof(*start),
-+	     ftrace_cmp_ips, ftrace_swap_ips);
-+
- 	pg =3D ftrace_allocate_pages(count);
- 	if (!pg)
- 		return -ENOMEM;
-@@ -3740,11 +3755,6 @@ static int ftrace_process_locs(struct module *mod,
- 	/* These new locations need to be initialized */
- 	ftrace_new_pgs =3D pg;
-=20
--	/* Make each individual set of pages sorted by ips */
--	for (; pg; pg =3D pg->next)
--		sort(pg->records, pg->index, sizeof(struct dyn_ftrace),
--		     ftrace_cmp_recs, ftrace_swap_recs);
--
- 	/*
- 	 * We only need to disable interrupts on start up
- 	 * because we are modifying code that an interrupt
 --=20
 1.7.10
 
@@ -132,19 +102,19 @@ Content-Description: This is a digitally signed message part
 -----BEGIN PGP SIGNATURE-----
 Version: GnuPG v1.4.12 (GNU/Linux)
 
-iQIcBAABAgAGBQJPtkpaAAoJEIy3vGnGbaoA2UwQAOS4UeDY+P6tA6JLUsDvSBc+
-udcxqIfC8Key7fxtGFvas2qUi6SXcXtTAHWykLLYLvKIhJGT9Hmv5QCTUHY87EOK
-ybpD2TqQbtl/K7Ifyi6OPEXdNgc+x6w7FukykVFljAcFOf9yRQu72yyWXrWR5ErM
-swkxzPKRE7Mg+chXNZZzntaQ6fODIqNmsKcDeZlPvHy33S1pa9/922LMFBA0luZr
-1PXRK3g46Cc+xGHU4ceNOuJ5X9zvgIj00cFJyTe7T22ab2+iLzfcoUDlJlUa0TlI
-GUtIfFEtQY35ugQvpQFVjcXr5Lh35sPXt8ex9xt5rNE+pM1g51gZSTWPYJJe0xAO
-K4FdgUKkd7EF4wQSg8Skf3lN3Xt7w4szOhyV+DmvX1iHaJQ7OrTjsB7cfeB7Z2sB
-rZlS4lmk/ZjYDUxACwek/2T8x5KK/XfI7pCo1+bcK6UriogestC0annA/rr5B3Ql
-lhSUsqQQZGbI9uD28kJORNyTIlNfDqk88rIXsmXHFCqRGHSh0E0s3rSd3bWzzn5a
-v+QZTirLhE6ihESikVpwNrFnRY8VJFLvv5GbANXvrKX1hDgkGC8MEPrOD6dMq3a6
-bJcl3Xehuwa+hNu/JP9HaBuawxty/t7EKs71Y4d0DjC1dQBQxYjPtfp37lU9MQhU
-T4ls80Nq5mzdi/GYBF7a
-=hCcd
+iQIcBAABAgAGBQJPtkpaAAoJEIy3vGnGbaoAjo4QAMVxAIGVJ7DMPpud9Cw/1EjZ
+tBFWQzLnE7obchzVEy6mCQcPPdhGZ+NKGCQbnb1mL/5r4J955UC/OUQ8H8PwMxIu
+Lki4asfU5GyQ9JAZb1Jc/BETZmRp4RzpurZWx3o5+buxkHCqugk9yar4aHYUVBuL
+gRuCp1Jb7YmKDJaxT6Vy+e9L7LQtimHjJBD1CCEcKXTyAz2cU5oOX4gR6CONs8z9
+dSxV24Lyq8nW8P7iaW3azzhtQUCZy7uatOspBUbBLGeaN4i5NfmoDVGkPMLx6CvS
+dpUK7nBN8l63slbutUwR5U39mnMWykoUkClYVAWFFQjjMRElcEcIk7SE8rB2ifAi
+iWPA7tzoYWuMnaI/2mVAiouZpCbRZ4Y76uNQpKCdh8VVj87AKkF4NqJxTg+x//I1
+e8EgVA8l1r31G0mFByXAydg2l+dxO2Fmsfkd1VnSqvfEyT45ZLpqDcEE0mysozSl
+g+F6EU7Rb2XRPkNtiVTeeLvxpR6arePy8yYIQEvmLWCmN2g9nJ7e9bLCgpbQJ0m2
+qI/WcdAmkMKEoRU59bfBYLmyrkuxgCSq4cM1JT7bYXyshAQ/ChOWtPlZK1VY5xmZ
+8fRFLGIMe7WwVE0jXLu6uygBkzU4H5fANQCTjjQLn8bRMtR2OghgPju30OtLHK18
+iRp4r4OlooLtX8jO1wTw
+=il/n
 -----END PGP SIGNATURE-----
 
 --00GvhwF7k39YY--
