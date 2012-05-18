@@ -1,73 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1946368Ab2ERXco (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 May 2012 19:32:44 -0400
-Received: from mail-lpp01m010-f46.google.com ([209.85.215.46]:60633 "EHLO
-	mail-lpp01m010-f46.google.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1946262Ab2ERXcj convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 May 2012 19:32:39 -0400
-MIME-Version: 1.0
-In-Reply-To: <CAE9FiQXN5z0riswyECKw5OKe+nPUBN2yZ1d4=Asb3kqaj770NA@mail.gmail.com>
-References: <1336422606-4244-1-git-send-email-yinghai@kernel.org>
- <CAErSpo6OZYXz-M=C9r154MY7kwC7LRR3ZnQe3pnmVJY2uoWeRw@mail.gmail.com> <CAE9FiQXN5z0riswyECKw5OKe+nPUBN2yZ1d4=Asb3kqaj770NA@mail.gmail.com>
-From: Bjorn Helgaas <bhelgaas@google.com>
-Date: Fri, 18 May 2012 17:32:17 -0600
-Message-ID: <CAErSpo71805jTs1qVMx+9ghzUub77r47VqpXF0sVOFuDSq6pmg@mail.gmail.com>
-Subject: Re: [PATCH 00/21] PCI: use busn_res to replace bus secondary/subordinate
-To: Yinghai Lu <yinghai@kernel.org>
-Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Tony Luck <tony.luck@intel.com>, David Miller <davem@davemloft.net>,
-        x86 <x86@kernel.org>, Dominik Brodowski <linux@dominikbrodowski.net>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-arch@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
-X-System-Of-Record: true
+	id S1031316Ab2ERXdJ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 May 2012 19:33:09 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:35668 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1946244Ab2ERXDJ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 18 May 2012 19:03:09 -0400
+Message-Id: <20120518211600.491203571@linuxfoundation.org>
+User-Agent: quilt/0.60-19.1
+Date: Fri, 18 May 2012 14:16:10 -0700
+From: Greg KH <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
+Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
+        alan@lxorguk.ukuu.org.uk, Ingo van Lil <inguin@gmx.de>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [ 11/54] asix: Fix tx transfer padding for full-speed USB
+In-Reply-To: <20120518212656.GA4992@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, May 17, 2012 at 8:13 PM, Yinghai Lu <yinghai@kernel.org> wrote:
-> On Thu, May 17, 2012 at 3:19 PM, Bjorn Helgaas <bhelgaas@google.com> wrote:
->> Sigh.  You previously said we should do this order:
->>
->>        for-pci-hostbridge-cleanup
->>        for-pci-busn-alloc
->>        for-pci-res-alloc
->>        for-pci-root-bus-hotplug
->>        for-pci-for-each-res-addon
->>
->> I merged for-pci-hostbridge-cleanup already.  I was about to start
->> merging for-pci-busn-alloc.
->>
->> But now you added for-pci-hotplug-cleanup and made for-pci-busn-alloc
->> depend on it.  I have some comments on for-pci-hotplug-cleanup, so I'm
->> not ready to merge it quite yet.  Can you please just go back to the
->> original order and put the new hotplug cleanup stuff at the *end*?
->
-> ok, update for-pci-busn_res branch, now it is based on your next branch.
->
-> git://git.kernel.org/pub/scm/linux/kernel/git/yinghai/linux-yinghai.git
-> for-pci-busn_res
+3.0-stable review patch.  If anyone has any objections, please let me know.
 
-OK.  You just incorporated the hotplug-cleanup stuff into that branch,
-which isn't what I had in mind.  But in the interest of making forward
-progress, I merged as much as I could.  The result is at:
+------------------
 
-  git://git.kernel.org/pub/scm/linux/kernel/git/helgaas/pci.git next-3.5
 
-After Linus pulls my current "next" branch during the merge window,
-I'll put the "next-3.5" stuff into the "next" branch.
+From: Ingo van Lil <inguin@gmx.de>
 
-Note that I stopped at your probe_resource() patch -- I already told
-you I won't merge that in its current form because I think the
-interface you propose is too complicated.
+[ Upstream commit 2a5809499e35b53a6044fd34e72b242688b7a862 ]
 
-Let me know what series you'd like me to work on next, and send the
-current patches to the list.
+The asix.c USB Ethernet driver avoids ending a tx transfer with a zero-
+length packet by appending a four-byte padding to transfers whose length
+is a multiple of maxpacket. However, the hard-coded 512 byte maxpacket
+length is valid for high-speed USB only; full-speed USB uses 64 byte
+packets.
 
-Bjorn
+Signed-off-by: Ingo van Lil <inguin@gmx.de>
+Signed-off-by: David S. Miller <davem@davemloft.net>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+---
+ drivers/net/usb/asix.c |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+--- a/drivers/net/usb/asix.c
++++ b/drivers/net/usb/asix.c
+@@ -398,7 +398,7 @@ static struct sk_buff *asix_tx_fixup(str
+ 	u32 packet_len;
+ 	u32 padbytes = 0xffff0000;
+ 
+-	padlen = ((skb->len + 4) % 512) ? 0 : 4;
++	padlen = ((skb->len + 4) & (dev->maxpacket - 1)) ? 0 : 4;
+ 
+ 	if ((!skb_cloned(skb)) &&
+ 	    ((headroom + tailroom) >= (4 + padlen))) {
+@@ -420,7 +420,7 @@ static struct sk_buff *asix_tx_fixup(str
+ 	cpu_to_le32s(&packet_len);
+ 	skb_copy_to_linear_data(skb, &packet_len, sizeof(packet_len));
+ 
+-	if ((skb->len % 512) == 0) {
++	if (padlen) {
+ 		cpu_to_le32s(&padbytes);
+ 		memcpy(skb_tail_pointer(skb), &padbytes, sizeof(padbytes));
+ 		skb_put(skb, sizeof(padbytes));
+
+
