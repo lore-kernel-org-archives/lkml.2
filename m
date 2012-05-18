@@ -1,245 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1161046Ab2ERKVr (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 May 2012 06:21:47 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:42181 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1762566Ab2ERKVp (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 May 2012 06:21:45 -0400
-Date: Fri, 18 May 2012 03:21:25 -0700
-From: tip-bot for Peter Zijlstra <a.p.zijlstra@chello.nl>
-Message-ID: <tip-o0ih1vq2js8eswn0nmr6w49r@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
-        torvalds@linux-foundation.org, a.p.zijlstra@chello.nl, pjt@google.com,
-        cl@linux.com, riel@redhat.com, akpm@linux-foundation.org,
-        bharata.rao@gmail.com, aarcange@redhat.com, Lee.Schermerhorn@hp.com,
-        danms@us.ibm.com, suresh.b.siddha@intel.com, tglx@linutronix.de
-Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        a.p.zijlstra@chello.nl, torvalds@linux-foundation.org, pjt@google.com,
-        cl@linux.com, riel@redhat.com, bharata.rao@gmail.com,
-        akpm@linux-foundation.org, Lee.Schermerhorn@hp.com,
-        aarcange@redhat.com, suresh.b.siddha@intel.com, danms@us.ibm.com,
-        tglx@linutronix.de
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:sched/numa] mm/mpol: Re-implement check_*_range()
-  using walk_page_range()
-Git-Commit-ID: 8c41549ed1b3adefe17fa78a2cab81ed7060f0e5
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
-  to get blacklisted from these emails
-MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Fri, 18 May 2012 03:21:31 -0700 (PDT)
+	id S967961Ab2ERKWL (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 May 2012 06:22:11 -0400
+Received: from mga02.intel.com ([134.134.136.20]:7381 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1161026Ab2ERKWI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 18 May 2012 06:22:08 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.67,352,1309762800"; 
+   d="asc'?scan'208";a="142042608"
+Message-ID: <1337336737.2483.16.camel@sauron.fi.intel.com>
+Subject: Re: [PATCH v2 0/4] do not use s_dirt in ext4
+From: Artem Bityutskiy <dedekind1@gmail.com>
+Reply-To: dedekind1@gmail.com
+To: Ted Tso <tytso@mit.edu>
+Cc: Linux Kernel Maling List <linux-kernel@vger.kernel.org>,
+        Linux FS Maling List <linux-fsdevel@vger.kernel.org>,
+        Ext4 Mailing List <linux-ext4@vger.kernel.org>,
+        Jan Kara <jack@suse.cz>
+Date: Fri, 18 May 2012 13:25:37 +0300
+In-Reply-To: <1333367140-28370-1-git-send-email-artem.bityutskiy@linux.intel.com>
+References: <1333367140-28370-1-git-send-email-artem.bityutskiy@linux.intel.com>
+Content-Type: multipart/signed; micalg="pgp-sha1"; protocol="application/pgp-signature";
+	boundary="=-tNRrMboxeLp9eoriN0/y"
+X-Mailer: Evolution 3.2.3 (3.2.3-3.fc16) 
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  8c41549ed1b3adefe17fa78a2cab81ed7060f0e5
-Gitweb:     http://git.kernel.org/tip/8c41549ed1b3adefe17fa78a2cab81ed7060f0e5
-Author:     Peter Zijlstra <a.p.zijlstra@chello.nl>
-AuthorDate: Mon, 30 Jan 2012 17:23:26 +0100
-Committer:  Ingo Molnar <mingo@kernel.org>
-CommitDate: Thu, 17 May 2012 14:06:12 +0200
 
-mm/mpol: Re-implement check_*_range() using walk_page_range()
+--=-tNRrMboxeLp9eoriN0/y
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: quoted-printable
 
-We have this very nice generic page-table walker, use it to save a few
-lines and make it easier to later reuse various bits of this existing
-machinery.
+Hi Ted,
 
-Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Fixes-by: Dan Smith <danms@us.ibm.com>
-Cc: Suresh Siddha <suresh.b.siddha@intel.com>
-Cc: Paul Turner <pjt@google.com>
-Cc: Dan Smith <danms@us.ibm.com>
-Cc: Bharata B Rao <bharata.rao@gmail.com>
-Cc: Lee Schermerhorn <Lee.Schermerhorn@hp.com>
-Cc: Christoph Lameter <cl@linux.com>
-Cc: Rik van Riel <riel@redhat.com>
-Cc: Andrea Arcangeli <aarcange@redhat.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>
-Link: http://lkml.kernel.org/n/tip-o0ih1vq2js8eswn0nmr6w49r@git.kernel.org
-Signed-off-by: Ingo Molnar <mingo@kernel.org>
----
- mm/mempolicy.c |  147 ++++++++++++++++++-------------------------------------
- 1 files changed, 48 insertions(+), 99 deletions(-)
+the merge window is about to open and I am getting worried about this
+patch-set - I won't have time to fix it if you indicate an issue...
 
-diff --git a/mm/mempolicy.c b/mm/mempolicy.c
-index 1a51b7f..cdb3b9d 100644
---- a/mm/mempolicy.c
-+++ b/mm/mempolicy.c
-@@ -460,105 +460,45 @@ static const struct mempolicy_operations mpol_ops[MPOL_MAX] = {
- static void migrate_page_add(struct page *page, struct list_head *pagelist,
- 				unsigned long flags);
- 
--/* Scan through pages checking if pages follow certain conditions. */
--static int check_pte_range(struct vm_area_struct *vma, pmd_t *pmd,
--		unsigned long addr, unsigned long end,
--		const nodemask_t *nodes, unsigned long flags,
--		void *private)
--{
--	pte_t *orig_pte;
--	pte_t *pte;
--	spinlock_t *ptl;
--
--	orig_pte = pte = pte_offset_map_lock(vma->vm_mm, pmd, addr, &ptl);
--	do {
--		struct page *page;
--		int nid;
--
--		if (!pte_present(*pte))
--			continue;
--		page = vm_normal_page(vma, addr, *pte);
--		if (!page)
--			continue;
--		/*
--		 * vm_normal_page() filters out zero pages, but there might
--		 * still be PageReserved pages to skip, perhaps in a VDSO.
--		 * And we cannot move PageKsm pages sensibly or safely yet.
--		 */
--		if (PageReserved(page) || PageKsm(page))
--			continue;
--		nid = page_to_nid(page);
--		if (node_isset(nid, *nodes) == !!(flags & MPOL_MF_INVERT))
--			continue;
--
--		if (flags & (MPOL_MF_MOVE | MPOL_MF_MOVE_ALL))
--			migrate_page_add(page, private, flags);
--		else
--			break;
--	} while (pte++, addr += PAGE_SIZE, addr != end);
--	pte_unmap_unlock(orig_pte, ptl);
--	return addr != end;
--}
-+struct mempol_walk_data {
-+	struct vm_area_struct *vma;
-+	const nodemask_t *nodes;
-+	unsigned long flags;
-+	void *private;
-+};
- 
--static inline int check_pmd_range(struct vm_area_struct *vma, pud_t *pud,
--		unsigned long addr, unsigned long end,
--		const nodemask_t *nodes, unsigned long flags,
--		void *private)
-+static int check_pte_entry(pte_t *pte, unsigned long addr,
-+			   unsigned long end, struct mm_walk *walk)
- {
--	pmd_t *pmd;
--	unsigned long next;
-+	struct mempol_walk_data *data = walk->private;
-+	struct page *page;
-+	int nid;
- 
--	pmd = pmd_offset(pud, addr);
--	do {
--		next = pmd_addr_end(addr, end);
--		split_huge_page_pmd(vma->vm_mm, pmd);
--		if (pmd_none_or_trans_huge_or_clear_bad(pmd))
--			continue;
--		if (check_pte_range(vma, pmd, addr, next, nodes,
--				    flags, private))
--			return -EIO;
--	} while (pmd++, addr = next, addr != end);
--	return 0;
--}
-+	if (!pte_present(*pte))
-+		return 0;
- 
--static inline int check_pud_range(struct vm_area_struct *vma, pgd_t *pgd,
--		unsigned long addr, unsigned long end,
--		const nodemask_t *nodes, unsigned long flags,
--		void *private)
--{
--	pud_t *pud;
--	unsigned long next;
-+	page = vm_normal_page(data->vma, addr, *pte);
-+	if (!page)
-+		return 0;
- 
--	pud = pud_offset(pgd, addr);
--	do {
--		next = pud_addr_end(addr, end);
--		if (pud_none_or_clear_bad(pud))
--			continue;
--		if (check_pmd_range(vma, pud, addr, next, nodes,
--				    flags, private))
--			return -EIO;
--	} while (pud++, addr = next, addr != end);
--	return 0;
--}
-+	/*
-+	 * vm_normal_page() filters out zero pages, but there might
-+	 * still be PageReserved pages to skip, perhaps in a VDSO.
-+	 * And we cannot move PageKsm pages sensibly or safely yet.
-+	 */
-+	if (PageReserved(page) || PageKsm(page))
-+		return 0;
- 
--static inline int check_pgd_range(struct vm_area_struct *vma,
--		unsigned long addr, unsigned long end,
--		const nodemask_t *nodes, unsigned long flags,
--		void *private)
--{
--	pgd_t *pgd;
--	unsigned long next;
-+	nid = page_to_nid(page);
-+	if (node_isset(nid, *data->nodes) == !!(data->flags & MPOL_MF_INVERT))
-+		return 0;
- 
--	pgd = pgd_offset(vma->vm_mm, addr);
--	do {
--		next = pgd_addr_end(addr, end);
--		if (pgd_none_or_clear_bad(pgd))
--			continue;
--		if (check_pud_range(vma, pgd, addr, next, nodes,
--				    flags, private))
--			return -EIO;
--	} while (pgd++, addr = next, addr != end);
--	return 0;
-+	if (data->flags & (MPOL_MF_MOVE | MPOL_MF_MOVE_ALL)) {
-+		migrate_page_add(page, data->private, data->flags);
-+		return 0;
-+	}
-+
-+	return -EIO;
- }
- 
- /*
-@@ -570,9 +510,18 @@ static struct vm_area_struct *
- check_range(struct mm_struct *mm, unsigned long start, unsigned long end,
- 		const nodemask_t *nodes, unsigned long flags, void *private)
- {
--	int err;
- 	struct vm_area_struct *first, *vma, *prev;
--
-+	struct mempol_walk_data data = {
-+		.nodes = nodes,
-+		.flags = flags,
-+		.private = private,
-+	};
-+	struct mm_walk walk = {
-+		.pte_entry = check_pte_entry,
-+		.mm = mm,
-+		.private = &data,
-+	};
-+	int err;
- 
- 	first = find_vma(mm, start);
- 	if (!first)
-@@ -595,8 +544,8 @@ check_range(struct mm_struct *mm, unsigned long start, unsigned long end,
- 				endvma = end;
- 			if (vma->vm_start > start)
- 				start = vma->vm_start;
--			err = check_pgd_range(vma, start, endvma, nodes,
--						flags, private);
-+			data.vma = vma;
-+			err = walk_page_range(start, endvma, &walk);
- 			if (err) {
- 				first = ERR_PTR(err);
- 				break;
+On Mon, 2012-04-02 at 14:45 +0300, Artem Bityutskiy wrote:
+> This patch-set makes ext4 independent of the VFS superblock management
+> services. Namely, ext4 does not require to register the 'write_super()' V=
+FS
+> call-back.
+>=20
+> The reason of this exercises is to get rid of the 'sync_supers()' kernel =
+thread
+> which wakes up every 5 seconds (by default) even if all superblocks are c=
+lean.
+> This is wasteful from power management POW (unnecessary wake-ups).
+>=20
+> Version 1 of this patch-set can be found here:
+> https://lkml.org/lkml/2012/3/20/220
+>=20
+> Changes between v1 and v2.
+>   * Rake different strategy - instead of pushing 's_dirt' down "as-is" an=
+d
+>     emulating old behavior, we now just submit the superblock for writing
+>     straight away, either via the journal or directly. Thank to Jan Kara
+>     for helping with this.
+>   * Ted picked some of the patches already, which made this series shorte=
+r
+>     - thanks!
+>   * This time I've tested the changes using xfstests.
+>   * Rebased to 3.4-rc1.
+>=20
+> Note: Ted, you merged the "mm: export dirty_writeback_interval", but it l=
+ooks
+> like we won't need this for ext[23]. However, for other file-systems we w=
+ill
+> need this change.
+>=20
+> Thanks,
+> Artem.
+
+--=20
+Best Regards,
+Artem Bityutskiy
+
+--=-tNRrMboxeLp9eoriN0/y
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: This is a digitally signed message part
+Content-Transfer-Encoding: 7bit
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAABAgAGBQJPtiOhAAoJECmIfjd9wqK00RQP/3y650jca1m4NDL7G21oDiZA
+CGZS19VrteBJHBILlNwNm+gkSC70e4WknFakfbyvNJJlwbdmwRX02oPvPtXSe8gd
+zwv9c4+PQZwU9ZETV8Be3BMJ12GUE2p4t1il/bBqxXljhd2Tk63DjvktrBlhEovq
+qLggiBmeEkul9iUkcyCDTyZXMQlhL0CNChypB2Mdiy7v+LzXqln8N18/G8ROrTR+
+rFW4WJHK7r8tl309GWK+wglL5mvZLp6msUJzz9c2EYetRaLoMCWN3fT7WPvYP3Va
+4vYmQd8251mW2lZ8ZrPGzvc7KqHL3j2tHj+BHdmGHYhKhwyY8XiMAmJ6gSATcsbm
+C5k9azSQYmv7xl/gaImsuOIw8ClqThatJTmW4SjW8qeYaK5WxsT8SdduNA9ab4wR
+rpWTD4ufzi3fpVd7iXXP6aZDJz2AWSmlBHZkdgaDSscWKkcWnSc29eCzWxIZqL4p
+52kEmBnN2sH8EPS5Z8wLtNKevkQkRp+k/YfGusBT3tUvY4tCR55FCbNiJqnIr1hG
+ETdDv0+0h8C+3yzXcuURYSViNnUA7P7oKx3c/CRO/p5V9DVNRVhe7l2LiDqX8vNP
+99BvwvJ8LB00+wgcHP6q14cZVdPQQhYjMv1NiYc3oahvR1+k1+Azlpg6dujATb90
+ewOZnU49/k9O5S47qn0h
+=drwO
+-----END PGP SIGNATURE-----
+
+--=-tNRrMboxeLp9eoriN0/y--
+
