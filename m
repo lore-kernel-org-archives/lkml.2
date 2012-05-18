@@ -1,50 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S967909Ab2ERJgt (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 May 2012 05:36:49 -0400
-Received: from moutng.kundenserver.de ([212.227.17.8]:52895 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S967117Ab2ERJgs (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 May 2012 05:36:48 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: Roland Stigge <stigge@antcom.de>
-Subject: Re: [PATCH 1/2] gpio: Adjust of_xlate API to support multiple GPIO chips
-Date: Fri, 18 May 2012 09:36:45 +0000
-User-Agent: KMail/1.12.2 (Linux/3.4.0-rc3; KDE/4.3.2; x86_64; ; )
-Cc: linux-kernel@vger.kernel.org, grant.likely@secretlab.ca
-References: <1337329192-5699-1-git-send-email-stigge@antcom.de>
-In-Reply-To: <1337329192-5699-1-git-send-email-stigge@antcom.de>
+	id S967901Ab2ERJnv (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 May 2012 05:43:51 -0400
+Received: from mga09.intel.com ([134.134.136.24]:57097 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S967112Ab2ERJnu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 18 May 2012 05:43:50 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.67,351,1309762800"; 
+   d="scan'208";a="145503981"
+Date: Fri, 18 May 2012 11:53:45 +0200
+From: Samuel Ortiz <sameo@linux.intel.com>
+To: Rhyland Klein <rklein@nvidia.com>
+Cc: Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Grant Likely <grant.likely@secretlab.ca>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v4] mfd: tps65910-irq: Add devicetree init support
+Message-ID: <20120518095345.GE12015@sortiz-mobl>
+References: <1337036142-10899-1-git-send-email-rklein@nvidia.com>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-15"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201205180936.45449.arnd@arndb.de>
-X-Provags-ID: V02:K0:yk22719IWIgFzZcZyeWi9fgt0TXw99Nr2gvqpskvnTC
- EwMrJSD9f44dMcJ6FlicofMzAUZUQSH2+EOIBMvvsW1bvg5Ao7
- v2bR/zsy4fnIsV/JRMjqo6NVgNOhMsb3Aa+hPvg0J4mZnCiJIB
- u+eErE2NOy3r1Gn2kN3kZ6RA+NQ4BOF9lLXRHjOLmLKTqPJUXn
- 8zZApiZ3s5DIUEwZrn5y4gupJBXgbDrSDZYkn4eqaieUiJFQPt
- MGn3nx36cqqWr0sXtjMjSd7+M/c8kt1rRitbKIRqfXhkRhldbJ
- OHbuo25YxQjA7lqFBxgGpB7GVv0UQQf+8B0xaJe+LKAG75xXnX
- Hvs2rYYgf/I5tctVCTyI=
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1337036142-10899-1-git-send-email-rklein@nvidia.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday 18 May 2012, Roland Stigge wrote:
-> From: Grant Likely <grant.likely@secretlab.ca>
-> 
-> This patch changes the of_xlate API to make it possible for multiple
-> gpio_chips to refer to the same device tree node.  This is useful for
-> banked GPIO controllers that use multiple gpio_chips for a single
-> device.  With this change the core code will try calling of_xlate on
-> each gpio_chip that references the device_node and will return the
-> gpio number for the first one to return 'true'.
-> 
-> Cc: Roland Stigge <stigge@antcom.de>
-> Signed-off-by: Grant Likely <grant.likely@secretlab.ca>
-> Tested-by: Roland Stigge <stigge@antcom.de>
-> 
+Hi Rhyland,
 
-Acked-by: Arnd Bergmann <arnd@arndb.de>
+On Mon, May 14, 2012 at 06:55:42PM -0400, Rhyland Klein wrote:
+> This change changes the tps65910-irq code to use irqdomain, and support
+> initialization from devicetree. This assumes that the irq_base in the platform
+> data is -1 if devicetree is used.
+> 
+> Signed-off-by: Rhyland Klein <rklein@nvidia.com>
+Patch applied, thanks.
+
+Cheers,
+Samuel.
+
+-- 
+Intel Open Source Technology Centre
+http://oss.intel.com/
