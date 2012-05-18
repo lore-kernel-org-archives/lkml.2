@@ -1,77 +1,124 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1946018Ab2ERNTz (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 May 2012 09:19:55 -0400
-Received: from mga09.intel.com ([134.134.136.24]:31051 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1760638Ab2ERNTx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 May 2012 09:19:53 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.67,352,1309762800"; 
-   d="asc'?scan'208";a="142082851"
-Message-ID: <1337347403.2483.48.camel@sauron.fi.intel.com>
-Subject: Re: [PATCH v2] UBIFS: read crypto_lookup from datanodes to znodes
-From: Artem Bityutskiy <dedekind1@gmail.com>
-Reply-To: dedekind1@gmail.com
-To: Joel Reardon <joel@clambassador.com>
-Cc: linux-mtd@lists.infradead.org, linux-kernel@vger.kernel.org
-Date: Fri, 18 May 2012 16:23:23 +0300
-In-Reply-To: <alpine.DEB.2.00.1205161451250.27131@eristoteles.iwoars.net>
-References: <alpine.DEB.2.00.1205151101100.17750@eristoteles.iwoars.net>
-	 <1337087022.2528.204.camel@sauron.fi.intel.com>
-	 <alpine.DEB.2.00.1205161451250.27131@eristoteles.iwoars.net>
-Content-Type: multipart/signed; micalg="pgp-sha1"; protocol="application/pgp-signature";
-	boundary="=-wD6DKjo42awzPpoXsJjc"
-X-Mailer: Evolution 3.2.3 (3.2.3-3.fc16) 
-Mime-Version: 1.0
+	id S1762757Ab2ERNUp (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 May 2012 09:20:45 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:43813 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1760638Ab2ERNUi (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 18 May 2012 09:20:38 -0400
+MIME-Version: 1.0
+Date: Fri, 18 May 2012 21:20:37 +0800
+Message-ID: <CAJd=RBBu8G12NP6d-Q7NCEsU0RN0JVf41pUKqEa3JzOPgtfF4A@mail.gmail.com>
+Subject: BFS 420: fix ttwu stat
+From: Hillf Danton <dhillf@gmail.com>
+To: LKML <linux-kernel@vger.kernel.org>, Hillf Danton <dhillf@gmail.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Due to monolithic runqueue used by BFS, the ttwu stat is bogus as we could not
+tell/predict on which CPU a woken task will run after it is activated. And we
+have to delay updating ttwu stat until the stage when task is taken off run
+queue. To achieve that, a field, wakeup_cpu, is added in the task struct, and is
+inited to be invalid CPU number for each new task.
 
---=-wD6DKjo42awzPpoXsJjc
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: quoted-printable
+When updating ttwu stat, now it is simply to mark the delayed operation; and
+when taking task off runqueue, the stat is updated.
 
-On Wed, 2012-05-16 at 14:52 +0200, Joel Reardon wrote:
-> +	if (key_type(c, &(zbr->key)) =3D=3D UBIFS_DATA_KEY) {
-> +		struct ubifs_data_node *dn =3D node;
-> +		long long crypto_lookup =3D le64_to_cpu(dn->crypto_lookup);
-> +		if (zbr->crypto_lookup !=3D 0)
-> +			ubifs_assert(zbr->crypto_lookup =3D=3D crypto_lookup);
-> +		else
-> +			zbr->crypto_lookup =3D crypto_lookup;
-> +	}
 
-Could you please just inject this code directly to
-'ubifs_tnc_read_node()' ? I think it is much easier and more nicer, no?
+--- a/include/linux/sched.h	Fri May 18 20:51:06 2012
++++ b/include/linux/sched.h	Fri May 18 20:32:20 2012
+@@ -1255,6 +1255,11 @@ struct task_struct {
+ 	struct list_head run_list;
+ 	u64 last_ran;
+ 	u64 sched_time; /* sched_clock time spent running */
++#ifdef CONFIG_SCHEDSTATS
++#ifdef CONFIG_SMP
++	int wakeup_cpu; //for ttwu stat
++#endif
++#endif
+ #ifdef CONFIG_SMP
+ 	bool sticky; /* Soft affined flag */
+ #endif
+--- a/kernel/sched/bfs.c	Mon May 14 20:50:38 2012
++++ b/kernel/sched/bfs.c	Fri May 18 20:46:22 2012
+@@ -1145,6 +1145,30 @@ static inline void unstick_task(struct r
+  */
+ static inline void take_task(int cpu, struct task_struct *p)
+ {
++#ifdef CONFIG_SCHEDSTATS
++#ifdef CONFIG_SMP
++	if (p->wakeup_cpu == -1)
++		goto skip;
++
++	if (cpu == p->wakeup_cpu) {
++		schedstat_inc(cpu_rq(cpu), ttwu_local);
++	}
++	else if (cpu_online(p->wakeup_cpu)) {
++		struct sched_domain *sd;
++
++		rcu_read_lock();
++		for_each_domain(p->wakeup_cpu, sd) {
++			if (cpumask_test_cpu(cpu, sched_domain_span(sd))) {
++				schedstat_inc(sd, ttwu_wake_remote);
++				break;
++			}
++		}
++		rcu_read_unlock();
++	}
++	p->wakeup_cpu = -1;
++skip:
++#endif
++#endif
+ 	set_task_cpu(p, cpu);
+ 	dequeue_task(p);
+ 	clear_sticky(p);
+@@ -1485,30 +1509,13 @@ static void try_preempt(struct task_stru
+ }
+ #endif /* CONFIG_SMP */
 
---=20
-Best Regards,
-Artem Bityutskiy
+-static void
+-ttwu_stat(struct task_struct *p, int cpu, int wake_flags)
++static void ttwu_stat(struct task_struct *p, int cpu, int wake_flags)
+ {
+ #ifdef CONFIG_SCHEDSTATS
+ 	struct rq *rq = this_rq();
 
---=-wD6DKjo42awzPpoXsJjc
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: This is a digitally signed message part
-Content-Transfer-Encoding: 7bit
+ #ifdef CONFIG_SMP
+-	int this_cpu = smp_processor_id();
+-
+-	if (cpu == this_cpu)
+-		schedstat_inc(rq, ttwu_local);
+-	else {
+-		struct sched_domain *sd;
+-
+-		rcu_read_lock();
+-		for_each_domain(this_cpu, sd) {
+-			if (cpumask_test_cpu(cpu, sched_domain_span(sd))) {
+-				schedstat_inc(sd, ttwu_wake_remote);
+-				break;
+-			}
+-		}
+-		rcu_read_unlock();
+-	}
+-
++	p->wakeup_cpu = smp_processor_id();
+ #endif /* CONFIG_SMP */
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
+ 	schedstat_inc(rq, ttwu_count);
+@@ -1717,6 +1724,12 @@ void sched_fork(struct task_struct *p)
+ #if defined(CONFIG_SCHEDSTATS) || defined(CONFIG_TASK_DELAY_ACCT)
+ 	if (unlikely(sched_info_on()))
+ 		memset(&p->sched_info, 0, sizeof(p->sched_info));
++#endif
++
++#ifdef CONFIG_SCHEDSTATS
++#ifdef CONFIG_SMP
++	p->wakeup_cpu = -1;
++#endif
+ #endif
 
-iQIcBAABAgAGBQJPtk1LAAoJECmIfjd9wqK0kZcP/1XEVMXn9Le+HBtv4j9Irs2X
-gcXOdB1VWUx/zy6+enOHErvRGI0eZiVsvHebE4DMRmlaTfvX14dflWGo2k4inydE
-9pGoX9x/LoOIbRt15SCz3LRAlnIM4G8cl5UmCjA6QHwCSf7KOK33qTM1r7q5y1C7
-HSLEarmpeOyw8CPOCOJK4+KZCnyli99MOOJl1g8PmuQwGvX6FhYBJiNragq1bTIy
-z7/ZmX4SiO0tQFXENqyJFSaqCFFbsVEaJM1Jz6Upp7ae21QJQAufBcZIvKpjqBST
-3u+O7TfHF37Six7BcIqSQ5cI6FX9yFhe09fx+R5C8x64Z5v5gD5DuXqUNmp0xGQJ
-0DlyS8/ZmTFy8AHJbEfwPa9RrugzgAJcN3EbU47cZYFx2X5ISPcZW/168HA9OKrA
-8mvdIS/voBpI5tLSGazCELdRVaSPAKUHTUBrucAyKY47YRz3/AgjaGpcz13zPYQ7
-l0bxO4kzUygqNd6KRi45xWF8KD9T5/+Zil02r1hEiVsXnf/zAugzlc00SvSTtUZq
-pgTPU+v+u5zAJpPN5j6FUM4si1hBv0kFL4792nAyK6dwrx6mja4xXMkgl0TXFWk8
-tR0EHAfKSTIMvYmRW0UocGoctPlL1ctiGSmylar00tnWAbqY2L+pt6fzvbnyxo9Z
-jK8TIHxZWLrtv9L1yfOw
-=5aab
------END PGP SIGNATURE-----
-
---=-wD6DKjo42awzPpoXsJjc--
-
+ 	p->on_cpu = false;
+--
