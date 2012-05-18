@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933623Ab2ERIje (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 May 2012 04:39:34 -0400
+	id S933658Ab2ERIji (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 May 2012 04:39:38 -0400
 Received: from mail-wg0-f44.google.com ([74.125.82.44]:53297 "EHLO
 	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933136Ab2ERIja (ORCPT
+	with ESMTP id S933617Ab2ERIje (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 May 2012 04:39:30 -0400
+	Fri, 18 May 2012 04:39:34 -0400
 From: Lee Jones <lee.jones@linaro.org>
 To: linux-arm-kernel@lists.infradead.org, arnd@arndb.de,
         linus.walleij@stericsson.com, grant.likely@secretlab.ca,
         cjb@laptop.org, broonie@opensource.wolfsonmicro.com,
         sameo@linux.intel.com
 Cc: Lee Jones <lee.jones@linaro.org>, linux-kernel@vger.kernel.org
-Subject: [PATCH 05/16] regulator: db8500-prcmu: Separate regulator registration from probe
-Date: Fri, 18 May 2012 09:39:04 +0100
-Message-Id: <1337330355-17747-6-git-send-email-lee.jones@linaro.org>
+Subject: [PATCH 07/16] regulator: Enable Device Tree for the db8500-prcmu regulator driver
+Date: Fri, 18 May 2012 09:39:06 +0100
+Message-Id: <1337330355-17747-8-git-send-email-lee.jones@linaro.org>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1337330355-17747-1-git-send-email-lee.jones@linaro.org>
 References: <1337330355-17747-1-git-send-email-lee.jones@linaro.org>
@@ -23,59 +23,68 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This will provide us with a convenient way to register regulators when
-booting with Device Tree both enabled & disabled and will save us a
-great deal of code duplication in time.
+Here we use the previous regulator register code separated from probe to
+register each of the regulators mentioned in Device Tree.
 
 Cc: linux-kernel@vger.kernel.org
 Signed-off-by: Lee Jones <lee.jones@linaro.org>
 ---
- drivers/regulator/db8500-prcmu.c |   71 +++++++++++++++++++++++---------------
- 1 file changed, 44 insertions(+), 27 deletions(-)
+ drivers/regulator/db8500-prcmu.c |   76 ++++++++++++++++++++++++++++++++++----
+ 1 file changed, 69 insertions(+), 7 deletions(-)
 
 diff --git a/drivers/regulator/db8500-prcmu.c b/drivers/regulator/db8500-prcmu.c
-index 87b2e83..d6b4d4c 100644
+index d6b4d4c..968f97f 100644
 --- a/drivers/regulator/db8500-prcmu.c
 +++ b/drivers/regulator/db8500-prcmu.c
-@@ -410,40 +410,58 @@ dbx500_regulator_info[DB8500_NUM_REGULATORS] = {
- 	},
- };
+@@ -17,6 +17,8 @@
+ #include <linux/regulator/driver.h>
+ #include <linux/regulator/machine.h>
+ #include <linux/regulator/db8500-prcmu.h>
++#include <linux/regulator/of_regulator.h>
++#include <linux/of.h>
+ #include <linux/module.h>
+ #include "dbx500-prcmu.h"
  
-+static __devinit int db8500_regulator_register(struct platform_device *pdev,
-+					struct regulator_init_data *init_data,
-+					int id,
-+					struct device_node *np)
+@@ -449,23 +451,77 @@ static __devinit int db8500_regulator_register(struct platform_device *pdev,
+ 	return 0;
+ }
+ 
++static struct of_regulator_match db8500_regulator_matches[] = {
++	{ .name	= "db8500-vape",          .driver_data = (void *) DB8500_REGULATOR_VAPE, },
++	{ .name	= "db8500-varm",          .driver_data = (void *) DB8500_REGULATOR_VARM, },
++	{ .name	= "db8500-vmodem",        .driver_data = (void *) DB8500_REGULATOR_VMODEM, },
++	{ .name	= "db8500-vpll",          .driver_data = (void *) DB8500_REGULATOR_VPLL, },
++	{ .name	= "db8500-vsmps1",        .driver_data = (void *) DB8500_REGULATOR_VSMPS1, },
++	{ .name	= "db8500-vsmps2",        .driver_data = (void *) DB8500_REGULATOR_VSMPS2, },
++	{ .name	= "db8500-vsmps3",        .driver_data = (void *) DB8500_REGULATOR_VSMPS3, },
++	{ .name	= "db8500-vrf1",          .driver_data = (void *) DB8500_REGULATOR_VRF1, },
++	{ .name	= "db8500-sva-mmdsp",     .driver_data = (void *) DB8500_REGULATOR_SWITCH_SVAMMDSP, },
++	{ .name	= "db8500-sva-mmdsp-ret", .driver_data = (void *) DB8500_REGULATOR_SWITCH_SVAMMDSPRET, },
++	{ .name	= "db8500-sva-pipe",      .driver_data = (void *) DB8500_REGULATOR_SWITCH_SVAPIPE, },
++	{ .name	= "db8500-sia-mmdsp",     .driver_data = (void *) DB8500_REGULATOR_SWITCH_SIAMMDSP, },
++	{ .name	= "db8500-sia-mmdsp-ret", .driver_data = (void *) DB8500_REGULATOR_SWITCH_SIAMMDSPRET, },
++	{ .name	= "db8500-sia-pipe",      .driver_data = (void *) DB8500_REGULATOR_SWITCH_SIAPIPE, },
++	{ .name	= "db8500-sga",           .driver_data = (void *) DB8500_REGULATOR_SWITCH_SGA, },
++	{ .name	= "db8500-b2r2-mcde",     .driver_data = (void *) DB8500_REGULATOR_SWITCH_B2R2_MCDE, },
++	{ .name	= "db8500-esram12",       .driver_data = (void *) DB8500_REGULATOR_SWITCH_ESRAM12, },
++	{ .name	= "db8500-esram12-ret",   .driver_data = (void *) DB8500_REGULATOR_SWITCH_ESRAM12RET, },
++	{ .name	= "db8500-esram34",       .driver_data = (void *) DB8500_REGULATOR_SWITCH_ESRAM34, },
++	{ .name	= "db8500-esram34-ret",   .driver_data = (void *) DB8500_REGULATOR_SWITCH_ESRAM34RET, },
++};
++
++static __devinit int
++db8500_regulator_of_probe(struct platform_device *pdev,
++			struct device_node *np)
 +{
-+	struct dbx500_regulator_info *info;
-+	struct regulator_config config = { };
-+	int err;
++	int i, err;
 +
-+	/* assign per-regulator data */
-+	info = &dbx500_regulator_info[id];
-+	info->dev = &pdev->dev;
-+
-+	config.dev = &pdev->dev;
-+	config.init_data = init_data;
-+	config.driver_data = info;
-+	config.of_node = np;
-+
-+	/* register with the regulator framework */
-+	info->rdev = regulator_register(&info->desc, &config);
-+	if (IS_ERR(info->rdev)) {
-+		err = PTR_ERR(info->rdev);
-+		dev_err(&pdev->dev, "failed to register %s: err %i\n",
-+			info->desc.name, err);
-+
-+		/* if failing, unregister all earlier regulators */
-+		while (--id >= 0) {
-+			info = &dbx500_regulator_info[id];
-+			regulator_unregister(info->rdev);
-+		}
-+		return err;
++	for (i = 0; i < ARRAY_SIZE(dbx500_regulator_info); i++) {
++		err = db8500_regulator_register(
++			pdev, db8500_regulator_matches[i].init_data,
++			i, db8500_regulator_matches[i].of_node);
++		if (err)
++			return err;
 +	}
-+
-+	dev_dbg(rdev_get_dev(info->rdev),
-+		"regulator-%s-probed\n", info->desc.name);
 +
 +	return 0;
 +}
@@ -84,53 +93,60 @@ index 87b2e83..d6b4d4c 100644
  {
  	struct regulator_init_data *db8500_init_data =
  					dev_get_platdata(&pdev->dev);
--	struct regulator_config config = { };
++	struct device_node *np = pdev->dev.of_node;
  	int i, err;
  
  	/* register all regulators */
- 	for (i = 0; i < ARRAY_SIZE(dbx500_regulator_info); i++) {
--		struct dbx500_regulator_info *info;
--		struct regulator_init_data *init_data = &db8500_init_data[i];
--
--		/* assign per-regulator data */
--		info = &dbx500_regulator_info[i];
--		info->dev = &pdev->dev;
--
--		config.dev = &pdev->dev;
--		config.init_data = init_data;
--		config.driver_data = info;
--
--		/* register with the regulator framework */
--		info->rdev = regulator_register(&info->desc, &config);
--		if (IS_ERR(info->rdev)) {
--			err = PTR_ERR(info->rdev);
--			dev_err(&pdev->dev, "failed to register %s: err %i\n",
--				info->desc.name, err);
--
--			/* if failing, unregister all earlier regulators */
--			while (--i >= 0) {
--				info = &dbx500_regulator_info[i];
--				regulator_unregister(info->rdev);
--			}
-+		err = db8500_regulator_register(pdev,
-+						&db8500_init_data[i],
-+						i, NULL);
-+		if (err)
+-	for (i = 0; i < ARRAY_SIZE(dbx500_regulator_info); i++) {
+-		err = db8500_regulator_register(pdev,
+-						&db8500_init_data[i],
+-						i, NULL);
+-		if (err)
++	if (np) {
++		err = of_regulator_match(&pdev->dev, np,
++					db8500_regulator_matches,
++					ARRAY_SIZE(db8500_regulator_matches));
++		if (err < 0) {
++			dev_err(&pdev->dev,
++				"Error parsing regulator init data: %d\n", err);
  			return err;
--		}
++		}
  
- 		dev_dbg(rdev_get_dev(info->rdev),
- 			"regulator-%s-probed\n", info->desc.name);
-@@ -451,8 +469,7 @@ static int __devinit db8500_regulator_probe(struct platform_device *pdev)
+-		dev_dbg(rdev_get_dev(info->rdev),
+-			"regulator-%s-probed\n", info->desc.name);
++		err = db8500_regulator_of_probe(pdev, np);
++		if (err)
++			return err;
++	} else {
++		for (i = 0; i < ARRAY_SIZE(dbx500_regulator_info); i++) {
++			err = db8500_regulator_register(pdev,
++							&db8500_init_data[i],
++							i, NULL);
++			if (err)
++				return err;
++		}
+ 	}
++
  	err = ux500_regulator_debug_init(pdev,
  					 dbx500_regulator_info,
  					 ARRAY_SIZE(dbx500_regulator_info));
--
--	return err;
-+	return 0;
+@@ -491,10 +547,16 @@ static int __exit db8500_regulator_remove(struct platform_device *pdev)
+ 	return 0;
  }
  
- static int __exit db8500_regulator_remove(struct platform_device *pdev)
++static const struct of_device_id db8500_prcmu_regulator_match[] = {
++        { .compatible = "stericsson,db8500-prcmu-regulator", },
++        {}
++};
++
+ static struct platform_driver db8500_regulator_driver = {
+ 	.driver = {
+ 		.name = "db8500-prcmu-regulators",
+ 		.owner = THIS_MODULE,
++		.of_match_table = db8500_prcmu_regulator_match,
+ 	},
+ 	.probe = db8500_regulator_probe,
+ 	.remove = __exit_p(db8500_regulator_remove),
 -- 
 1.7.9.5
 
