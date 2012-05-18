@@ -1,15 +1,15 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S967986Ab2ERKeH (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 May 2012 06:34:07 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:42477 "EHLO
+	id S1762697Ab2ERKer (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 May 2012 06:34:47 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:42492 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S964817Ab2ERKeE (ORCPT
+	with ESMTP id S1753345Ab2ERKep (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 May 2012 06:34:04 -0400
-Date: Fri, 18 May 2012 03:33:08 -0700
+	Fri, 18 May 2012 06:34:45 -0400
+Date: Fri, 18 May 2012 03:33:58 -0700
 From: tip-bot for Peter Zijlstra <a.p.zijlstra@chello.nl>
-Message-ID: <tip-pdhg3wh71m4eu8xerantpvln@git.kernel.org>
+Message-ID: <tip-qg63apu64i9i4slg4bor4oww@git.kernel.org>
 Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
         torvalds@linux-foundation.org, a.p.zijlstra@chello.nl, pjt@google.com,
         cl@linux.com, riel@redhat.com, akpm@linux-foundation.org,
@@ -22,8 +22,9 @@ Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
         aarcange@redhat.com, danms@us.ibm.com, suresh.b.siddha@intel.com,
         tglx@linutronix.de
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:sched/numa] mm/mpol: Lazy migrate a process/vma
-Git-Commit-ID: e9941dae870861da410835560b603d17c43dabee
+Subject: [tip:sched/numa] sched, mm: Rework sched_{fork,
+ exec} node assignment
+Git-Commit-ID: 0ea86208345b9a41863c3929c69b7ccfbfa6275e
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -32,23 +33,28 @@ MIME-Version: 1.0
 Content-Transfer-Encoding: 8bit
 Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Fri, 18 May 2012 03:33:14 -0700 (PDT)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Fri, 18 May 2012 03:34:03 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  e9941dae870861da410835560b603d17c43dabee
-Gitweb:     http://git.kernel.org/tip/e9941dae870861da410835560b603d17c43dabee
+Commit-ID:  0ea86208345b9a41863c3929c69b7ccfbfa6275e
+Gitweb:     http://git.kernel.org/tip/0ea86208345b9a41863c3929c69b7ccfbfa6275e
 Author:     Peter Zijlstra <a.p.zijlstra@chello.nl>
-AuthorDate: Sat, 3 Mar 2012 17:06:25 +0100
+AuthorDate: Sat, 3 Mar 2012 16:54:42 +0100
 Committer:  Ingo Molnar <mingo@kernel.org>
-CommitDate: Fri, 18 May 2012 08:16:21 +0200
+CommitDate: Fri, 18 May 2012 08:16:22 +0200
 
-mm/mpol: Lazy migrate a process/vma
+sched, mm: Rework sched_{fork,exec} node assignment
 
-Provide simple functions to lazy migrate a process (or part thereof).
-These will be used to implement memory migration for NUMA process
-migration.
+Rework the scheduler fork,exec hooks to allow home-node assignment.
+
+In particular:
+
+  - call sched_fork() after the mm is set up and the thread
+    group list is initialized (such that we can iterate the mm_owner
+    thread group).
+  - call sched_exec() after we've got our fresh mm.
 
 Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
 Cc: Suresh Siddha <suresh.b.siddha@intel.com>
@@ -61,119 +67,129 @@ Cc: Rik van Riel <riel@redhat.com>
 Cc: Andrea Arcangeli <aarcange@redhat.com>
 Cc: Andrew Morton <akpm@linux-foundation.org>
 Cc: Linus Torvalds <torvalds@linux-foundation.org>
-Link: http://lkml.kernel.org/n/tip-pdhg3wh71m4eu8xerantpvln@git.kernel.org
+Link: http://lkml.kernel.org/n/tip-qg63apu64i9i4slg4bor4oww@git.kernel.org
 Signed-off-by: Ingo Molnar <mingo@kernel.org>
 ---
- include/linux/mempolicy.h |    3 ++
- mm/mempolicy.c            |   84 +++++++++++++++++++++++++++++++++++++++++++++
- 2 files changed, 87 insertions(+), 0 deletions(-)
+ fs/exec.c             |    4 ++--
+ include/linux/sched.h |    4 ++--
+ kernel/fork.c         |    9 +++++----
+ kernel/sched/core.c   |    7 +++++--
+ kernel/sched/sched.h  |    5 +++++
+ 5 files changed, 19 insertions(+), 10 deletions(-)
 
-diff --git a/include/linux/mempolicy.h b/include/linux/mempolicy.h
-index 578fcd0..af2983b 100644
---- a/include/linux/mempolicy.h
-+++ b/include/linux/mempolicy.h
-@@ -262,6 +262,9 @@ extern int vma_migratable(struct vm_area_struct *);
+diff --git a/fs/exec.c b/fs/exec.c
+index b1fd202..8a12a7f 100644
+--- a/fs/exec.c
++++ b/fs/exec.c
+@@ -1506,8 +1506,6 @@ static int do_execve_common(const char *filename,
+ 	if (IS_ERR(file))
+ 		goto out_unmark;
  
- extern int mpol_misplaced(struct page *, struct vm_area_struct *, unsigned long);
+-	sched_exec();
+-
+ 	bprm->file = file;
+ 	bprm->filename = filename;
+ 	bprm->interp = filename;
+@@ -1516,6 +1514,8 @@ static int do_execve_common(const char *filename,
+ 	if (retval)
+ 		goto out_file;
  
-+extern void lazy_migrate_vma(struct vm_area_struct *vma, int node);
-+extern void lazy_migrate_process(struct mm_struct *mm, int node);
++	sched_exec(bprm->mm);
 +
- #else
+ 	bprm->argc = count(argv, MAX_ARG_STRINGS);
+ 	if ((retval = bprm->argc) < 0)
+ 		goto out;
+diff --git a/include/linux/sched.h b/include/linux/sched.h
+index 49378f0..8bb49f6 100644
+--- a/include/linux/sched.h
++++ b/include/linux/sched.h
+@@ -1966,9 +1966,9 @@ task_sched_runtime(struct task_struct *task);
  
- struct mempolicy {};
-diff --git a/mm/mempolicy.c b/mm/mempolicy.c
-index 57fbc4c..df29149 100644
---- a/mm/mempolicy.c
-+++ b/mm/mempolicy.c
-@@ -1193,6 +1193,90 @@ static long do_mbind(unsigned long start, unsigned long len,
- 	return err;
+ /* sched_exec is called by processes performing an exec */
+ #ifdef CONFIG_SMP
+-extern void sched_exec(void);
++extern void sched_exec(struct mm_struct *mm);
+ #else
+-#define sched_exec()   {}
++#define sched_exec(mm)   {}
+ #endif
+ 
+ extern void sched_clock_idle_sleep_event(void);
+diff --git a/kernel/fork.c b/kernel/fork.c
+index f01be7f..7acf6ae 100644
+--- a/kernel/fork.c
++++ b/kernel/fork.c
+@@ -1302,9 +1302,6 @@ static struct task_struct *copy_process(unsigned long clone_flags,
+ 	p->memcg_batch.memcg = NULL;
+ #endif
+ 
+-	/* Perform scheduler related setup. Assign this task to a CPU. */
+-	sched_fork(p);
+-
+ 	retval = perf_event_init_task(p);
+ 	if (retval)
+ 		goto bad_fork_cleanup_policy;
+@@ -1357,6 +1354,11 @@ static struct task_struct *copy_process(unsigned long clone_flags,
+ 	 * Clear TID on mm_release()?
+ 	 */
+ 	p->clear_child_tid = (clone_flags & CLONE_CHILD_CLEARTID) ? child_tidptr : NULL;
++
++	INIT_LIST_HEAD(&p->thread_group);
++	/* Perform scheduler related setup. Assign this task to a CPU. */
++	sched_fork(p);
++
+ #ifdef CONFIG_BLOCK
+ 	p->plug = NULL;
+ #endif
+@@ -1405,7 +1407,6 @@ static struct task_struct *copy_process(unsigned long clone_flags,
+ 	 * We dont wake it up yet.
+ 	 */
+ 	p->group_leader = p;
+-	INIT_LIST_HEAD(&p->thread_group);
+ 
+ 	/* Now that the task is set up, run cgroup callbacks if
+ 	 * necessary. We need to run them before the task is visible
+diff --git a/kernel/sched/core.c b/kernel/sched/core.c
+index 8fd0325..9c9c0ee 100644
+--- a/kernel/sched/core.c
++++ b/kernel/sched/core.c
+@@ -1798,8 +1798,9 @@ void sched_fork(struct task_struct *p)
+ #ifdef CONFIG_SMP
+ 	plist_node_init(&p->pushable_tasks, MAX_PRIO);
+ #endif
+-
+ 	put_cpu();
++
++	select_task_node(p, p->mm, SD_BALANCE_FORK);
  }
  
-+static nodemask_t mpol_node_mask(struct mempolicy *pol, int node)
-+{
-+	if (pol->mode == MPOL_PREFERRED) {
-+		if (pol->flags & MPOL_F_LOCAL)
-+			return nodemask_of_node(node);
-+
-+		return nodemask_of_node(pol->v.preferred_node);
-+	}
-+
-+	return pol->v.nodes;
-+}
-+
-+void lazy_migrate_vma(struct vm_area_struct *vma, int node)
-+{
-+	struct mempolicy *pol = NULL;
-+	struct mempol_walk_data data;
-+	struct mm_walk walk;
-+	LIST_HEAD(pagelist);
-+	nodemask_t nmask;
-+
-+	if (vma->vm_file)
-+		return;
-+
-+	if (!vma_migratable(vma))
-+		return;
-+
-+	/*
-+	 * Obtain a more-or-less correct nodemask to find which pages we need
-+	 * to unmap so that MoF can put them right again.
-+	 *
-+	 * Not quite correct for INTERLEAVE, that would need us doing
-+	 * offset_il_node() from check_pte_entry().
-+	 *
-+	 * Also not quite correct for task policies since we don't have a task,
-+	 * approximate by having @node function as local / task-home-node.
-+	 */
-+
-+	if (vma->vm_ops && vma->vm_ops->get_policy)
-+	        pol = vma->vm_ops->get_policy(vma, vma->vm_start);
-+	else if (vma->vm_policy)
-+		pol = vma->vm_policy;
-+
-+	if (pol) {
-+		nmask = mpol_node_mask(pol, node);
-+		mpol_cond_put(pol);
-+
-+		/*
-+		 * If there's an explicit policy that doesn't support MoF, skip
-+		 * this vma, there's nothing we can do about that.
-+		 */
-+		if (!(pol->flags & MPOL_F_MOF))
-+			return;
-+	} else
-+		nmask = nodemask_of_node(node);
-+
-+	data = (struct mempol_walk_data){
-+		.nodes = &nmask,
-+		.flags = MPOL_MF_MOVE | MPOL_MF_INVERT, /* move all pages not in set */
-+		.private = &pagelist,
-+		.vma = vma,
-+	};
-+
-+	walk = (struct mm_walk){
-+		.pte_entry = check_pte_entry,
-+		.mm = vma->vm_mm,
-+		.private = &data,
-+	};
-+
-+	if (!walk_page_range(vma->vm_start, vma->vm_end, &walk))
-+		migrate_pages_unmap_only(&pagelist);
-+
-+	putback_lru_pages(&pagelist);
-+}
-+
-+void lazy_migrate_process(struct mm_struct *mm, int node)
-+{
-+	struct vm_area_struct *vma;
-+
-+	down_read(&mm->mmap_sem);
-+	for (vma = mm->mmap; vma; vma = vma->vm_next)
-+		lazy_migrate_vma(vma, node);
-+	up_read(&mm->mmap_sem);
-+}
-+
  /*
-  * User space interface with variable sized bitmaps for nodelists.
+@@ -2565,12 +2566,14 @@ static void update_cpu_load_active(struct rq *this_rq)
+  * sched_exec - execve() is a valuable balancing opportunity, because at
+  * this point the task has the smallest effective memory and cache footprint.
   */
+-void sched_exec(void)
++void sched_exec(struct mm_struct *mm)
+ {
+ 	struct task_struct *p = current;
+ 	unsigned long flags;
+ 	int dest_cpu;
+ 
++	select_task_node(p, mm, SD_BALANCE_EXEC);
++
+ 	raw_spin_lock_irqsave(&p->pi_lock, flags);
+ 	dest_cpu = p->sched_class->select_task_rq(p, SD_BALANCE_EXEC, 0);
+ 	if (dest_cpu == smp_processor_id())
+diff --git a/kernel/sched/sched.h b/kernel/sched/sched.h
+index ba9dccf..8f93e91 100644
+--- a/kernel/sched/sched.h
++++ b/kernel/sched/sched.h
+@@ -1156,3 +1156,8 @@ enum rq_nohz_flag_bits {
+ 
+ #define nohz_flags(cpu)	(&cpu_rq(cpu)->nohz_flags)
+ #endif
++
++/*
++ * Macro to avoid argument evaluation
++ */
++#define select_task_node(p, mm, sd_flags) do { } while (0)
