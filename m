@@ -1,72 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030699Ab2ERClN (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 May 2012 22:41:13 -0400
-Received: from va3ehsobe003.messaging.microsoft.com ([216.32.180.13]:4948 "EHLO
-	va3outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1030509Ab2ERClK convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 May 2012 22:41:10 -0400
-X-Forefront-Antispam-Report: CIP:137.71.25.57;KIP:(null);UIP:(null);IPV:NLI;H:nwd2mta2.analog.com;RD:nwd2mail11.analog.com;EFVD:NLI
-X-SpamScore: -15
-X-BigFish: VPS-15(zz9371I542M1432N98dKzz1202hzz8275bh8275dhz2dh2a8h668h839h944hd25hf0ah)
-From: "Zhang, Sonic" <Sonic.Zhang@analog.com>
-To: Shubhrajyoti Datta <omaplinuxkernel@gmail.com>
-CC: Ben Dooks <ben-linux@fluff.org>, Wolfram Sang <w.sang@pengutronix.de>,
-        "linux-i2c@vger.kernel.org" <linux-i2c@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        "uclinux-dist-devel@blackfin.uclinux.org" 
-	<uclinux-dist-devel@blackfin.uclinux.org>
-Date: Thu, 17 May 2012 22:41:21 -0400
-Subject: RE: [PATCH 4/8] i2c: i2c-bfin-twi: Tighten condition when failing
- I2C transfer if MEN bit is reset unexpectedly.
-Thread-Topic: [PATCH 4/8] i2c: i2c-bfin-twi: Tighten condition when failing
- I2C transfer if MEN bit is reset unexpectedly.
-Thread-Index: Ac00IJok9/SGUKUVTUyzdjR5Iv6MTAAfuXrg
-Message-ID: <DB904C5425BA6F4E8424B3B51A1414D16F64F8527E@NWD2CMBX1.ad.analog.com>
-References: <1337152826-9850-1-git-send-email-sonic.zhang@analog.com>
-	<1337152826-9850-4-git-send-email-sonic.zhang@analog.com>
- <CAM=Q2cta_a2XcOLoOnnUUjZOpj1phUH99xfgZnh4nhxG8QX3-Q@mail.gmail.com>
-In-Reply-To: <CAM=Q2cta_a2XcOLoOnnUUjZOpj1phUH99xfgZnh4nhxG8QX3-Q@mail.gmail.com>
-Accept-Language: zh-CN, en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: zh-CN, en-US
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
-MIME-Version: 1.0
-X-OriginatorOrg: analog.com
+	id S1761576Ab2ERCrM (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 May 2012 22:47:12 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:39788 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751473Ab2ERCrK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 17 May 2012 22:47:10 -0400
+Date: Fri, 18 May 2012 12:46:51 +1000
+From: NeilBrown <neilb@suse.de>
+To: Andi Shyti <andi.shyti@gmail.com>
+Cc: Samuel Ortiz <sameo@linux.intel.com>, Felipe Balbi <balbi@ti.com>,
+        Anton Vorontsov <cbou@mail.ru>, David Woodhouse <dwmw2@infradead.org>,
+        Grazvydas Ignotas <notasas@gmail.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linux-kernel@vger.kernel.org, linux-usb@vger.kernel.org,
+        Tero Kristo <t-kristo@ti.com>
+Subject: Re: [PATCH 3/4] power_supply/MFD: twl4030_charger: Allow charger to
+ control the regulator that feeds it.
+Message-ID: <20120518124651.39af8eeb@notabene.brown>
+In-Reply-To: <20120513181208.GA2641@andi>
+References: <20120508213518.2844.95446.stgit@notabene.brown>
+	<20120508214040.2844.5662.stgit@notabene.brown>
+	<20120513181208.GA2641@andi>
+X-Mailer: Claws Mail 3.7.10 (GTK+ 2.24.7; x86_64-suse-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; micalg=PGP-SHA1;
+ boundary="Sig_/AANF5Su85=o39a8+tcU+HR9"; protocol="application/pgp-signature"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+--Sig_/AANF5Su85=o39a8+tcU+HR9
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: quoted-printable
+
+On Sun, 13 May 2012 20:12:08 +0200 Andi Shyti <andi.shyti@gmail.com> wrote:
+
+> Hi Neil,
+>=20
+> On Wed, May 09, 2012 at 07:40:40AM +1000, NeilBrown wrote:
+> > @@ -183,6 +186,12 @@ static int twl4030_charger_enable_usb(struct twl40=
+30_bci *bci, bool enable)
+> >  			return -EACCES;
+> >  		}
+> > =20
+> > +		/* Need to keep regulator on */
+> > +		if (!bci->usb_enabled) {
+> > +			regulator_enable(bci->usb_reg);
+>=20
+> Should you consider here a failure case?
+
+Probably.  Something like this?
+
++		/* Need to keep regulator on */
++		if (!bci->usb_enabled &&
++		    bci->usb_reg &&
++		    regulator_enable(bci->usb_reg) =3D=3D 0)
++			bci->usb_enabled =3D 1;
++
+
+>=20
+> > +			bci->usb_enabled =3D 1;
+> > +		}
+> > +
+> >  		/* forcing the field BCIAUTOUSB (BOOT_BCI[1]) to 1 */
+> >  		ret =3D twl4030_clear_set_boot_bci(0, TWL4030_BCIAUTOUSB);
+> >  		if (ret < 0)
+> > @@ -511,6 +524,8 @@ static int __init twl4030_bci_probe(struct platform=
+_device *pdev)
+> >  	bci->usb.num_properties =3D ARRAY_SIZE(twl4030_charger_props);
+> >  	bci->usb.get_property =3D twl4030_bci_get_property;
+> > =20
+> > +	bci->usb_reg =3D regulator_get(bci->dev, "bci3v1");
+>=20
+> ... and here.
+
+In what circumstances can that fail, I wonder.
+Still, maybe this is best:
 
 
->-----Original Message-----
->From: Shubhrajyoti Datta [mailto:omaplinuxkernel@gmail.com]
->Sent: Thursday, May 17, 2012 7:31 PM
->To: Zhang, Sonic
->Cc: Ben Dooks; Wolfram Sang; linux-i2c@vger.kernel.org; LKML; uclinux-dist-
->devel@blackfin.uclinux.org
->Subject: Re: [PATCH 4/8] i2c: i2c-bfin-twi: Tighten condition when failing I2C
->transfer if MEN bit is reset unexpectedly.
->
->On Wed, May 16, 2012 at 12:50 PM,  <sonic.zhang@analog.com> wrote:
->> From: Sonic Zhang <sonic.zhang@analog.com>
->>
->> Correct I2C transfer may fail because interrupt status bits XMTSERV and
->> RCVSERV are not checked when MCOMP interrupt is handled.
->>
->Could you expand MCOMP?
++	bci->usb_reg =3D regulator_get(bci->dev, "bci3v1");
++	if (IS_ERR(bci->usb_reg)) {
++		dev_warn(&bci->dev, "regulator get bci3v1 failed\n");
++		bci->usb_reg =3D NULL;
++	}
++
 
-Master transfer complete (MCOMP)
-[1] The initiated master transfer has completed. In the absence of a
-repeat start, the bus has been released.
-[0] The completion of a transfer has not been detected.
+Thanks,
+NeilBrown
 
+--Sig_/AANF5Su85=o39a8+tcU+HR9
+Content-Type: application/pgp-signature; name=signature.asc
+Content-Disposition: attachment; filename=signature.asc
 
-Regards,
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.18 (GNU/Linux)
 
-Sonic
+iQIVAwUBT7W4Gznsnt1WYoG5AQIwzg/7BDG78G7JjjkH9grSoJ1dfD6Op+jfpvmU
++y29/5sRUuAyN9TcSKlnY3HDPcrCETz3MIwGXXMWw1wBdvCzPb4IuIZ6OsaDiJbd
+findFVB+T4UzQZJXP7udVudol+17u1U3NpxIcvgLklPKHaI6Af6gNcNoss2YFy24
+D83bWn1487wjaOMGVu/ZCNLZKFSQMr+s9Scqw5x+5BJaQo6huAlJNBepzVk76R8Z
+5/6rAGN5FXVoK0Xgkor0rQipG9R9813K7M02/+FesOWV2M1oR0KqygwEXFOlT0X/
+xDRJiYAsju5KTwRKAM9JSI1j/ABr1y6PdHQ/3JwqAWWnIiF8PUnVldBMawUn3Ps/
+GHNnkdyKx4az5dQ9Xv1ge1qjrVANvTC2GQm4UGEJbi8FP2Kc8zU0eAI0pRrzdtBf
+JB9+1+FK54V2225PqMMmtSeNp1UlmCVFa0VJfCZ37rNlYzhwTfPqbTWg2gIoEmwD
+w5zLJa9ez2BB/8rxQ19lqENXp88WaAu69kwANNXDBKJ1jgh+j6+sFm432o0xHSy+
+ZjYO6ChMud7Jhn1i6lB56PY1UJg+GYnNxzfuQl6iFlV38dBl8nvznQK3cpmH2KAX
+BX+/DjAOJflSMm9ACaZupnq/hkVP8qEzpUjYQW9FiiHRbIUPbb7SP4AnF5wSBe4b
+LPw63qqsrJ8=
+=K48o
+-----END PGP SIGNATURE-----
 
+--Sig_/AANF5Su85=o39a8+tcU+HR9--
