@@ -1,68 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1946930Ab2ERXS1 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 May 2012 19:18:27 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:58844 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1946599Ab2ERXFv (ORCPT
+	id S1946947Ab2ERXSj (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 May 2012 19:18:39 -0400
+Received: from mail-qa0-f74.google.com ([209.85.216.74]:48533 "EHLO
+	mail-qa0-f74.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1946599Ab2ERXSe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 May 2012 19:05:51 -0400
-Message-Id: <20120518212649.314002280@linuxfoundation.org>
-User-Agent: quilt/0.60-19.1
-Date: Fri, 18 May 2012 14:26:50 -0700
-From: Greg KH <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Mark Hills <mark@pogo.org.uk>,
-        Takashi Iwai <tiwai@suse.de>
-Subject: [ 01/47] ALSA: echoaudio: Remove incorrect part of assertion
-In-Reply-To: <20120518212701.GA5023@kroah.com>
+	Fri, 18 May 2012 19:18:34 -0400
+Subject: [PATCH 1/2] resources: set type of new resource returned by
+	__request_region()
+To: David Woodhouse <dwmw2@infradead.org>
+From: Bjorn Helgaas <bhelgaas@google.com>
+Cc: linux-kernel@vger.kernel.org, iommu@lists.linux-foundation.org,
+        Ingo Molnar <mingo@elte.hu>, Suresh Siddha <suresh.b.siddha@intel.com>
+Date: Fri, 18 May 2012 17:18:32 -0600
+Message-ID: <20120518231832.31187.10630.stgit@bhelgaas.mtv.corp.google.com>
+In-Reply-To: <20120518231238.31187.44571.stgit@bhelgaas.mtv.corp.google.com>
+References: <20120518231238.31187.44571.stgit@bhelgaas.mtv.corp.google.com>
+User-Agent: StGit/0.15
+MIME-Version: 1.0
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.3-stable review patch.  If anyone has any objections, please let me know.
+Previously we returned a new struct resource with only IORESOURCE_BUSY
+set (and possibly IORESOURCE_MUXED or IORESOURCE_EXCLUSIVE), but no
+MEM/IO/etc. bits set.  The new resource should inherit the type of
+its parent.
 
-------------------
-
-From: Mark Hills <mark@pogo.org.uk>
-
-commit c914f55f7cdfafe9d7d5b248751902c7ab57691e upstream.
-
-This assertion seems to imply that chip->dsp_code_to_load is a pointer.
-It's actually an integer handle on the actual firmware, and 0 has no
-special meaning.
-
-The assertion prevents initialisation of a Darla20 card, but would also
-affect other models. It seems it was introduced in commit dd7b254d.
-
-ALSA sound/pci/echoaudio/echoaudio.c:2061 Echoaudio driver starting...
-ALSA sound/pci/echoaudio/echoaudio.c:1969 chip=ebe4e000
-ALSA sound/pci/echoaudio/echoaudio.c:2007 pci=ed568000 irq=19 subdev=0010 Init hardware...
-ALSA sound/pci/echoaudio/darla20_dsp.c:36 init_hw() - Darla20
-------------[ cut here ]------------
-WARNING: at sound/pci/echoaudio/echoaudio_dsp.c:478 init_hw+0x1d1/0x86c [snd_darla20]()
-Hardware name: Dell DM051
-BUG? (!chip->dsp_code_to_load || !chip->comm_page)
-
-Signed-off-by: Mark Hills <mark@pogo.org.uk>
-Signed-off-by: Takashi Iwai <tiwai@suse.de>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
+Signed-off-by: Bjorn Helgaas <bhelgaas@google.com>
 ---
- sound/pci/echoaudio/echoaudio_dsp.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ kernel/resource.c |    3 ++-
+ 1 files changed, 2 insertions(+), 1 deletions(-)
 
---- a/sound/pci/echoaudio/echoaudio_dsp.c
-+++ b/sound/pci/echoaudio/echoaudio_dsp.c
-@@ -475,7 +475,7 @@ static int load_firmware(struct echoaudi
- 	const struct firmware *fw;
- 	int box_type, err;
+diff --git a/kernel/resource.c b/kernel/resource.c
+index 7e8ea66..04bb527 100644
+--- a/kernel/resource.c
++++ b/kernel/resource.c
+@@ -847,7 +847,8 @@ struct resource * __request_region(struct resource *parent,
+ 	res->name = name;
+ 	res->start = start;
+ 	res->end = start + n - 1;
+-	res->flags = IORESOURCE_BUSY;
++	res->flags = parent->flags;
++	res->flags |= IORESOURCE_BUSY;
+ 	res->flags |= flags;
  
--	if (snd_BUG_ON(!chip->dsp_code_to_load || !chip->comm_page))
-+	if (snd_BUG_ON(!chip->comm_page))
- 		return -EPERM;
- 
- 	/* See if the ASIC is present and working - only if the DSP is already loaded */
-
+ 	write_lock(&resource_lock);
 
