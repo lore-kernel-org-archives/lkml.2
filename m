@@ -1,124 +1,128 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1762757Ab2ERNUp (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 May 2012 09:20:45 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:43813 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760638Ab2ERNUi (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 May 2012 09:20:38 -0400
+	id S933725Ab2ERNX6 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 May 2012 09:23:58 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:55568 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1761708Ab2ERNX4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 18 May 2012 09:23:56 -0400
+Message-ID: <4FB64D5B.1030301@redhat.com>
+Date: Fri, 18 May 2012 10:23:39 -0300
+From: Mauro Carvalho Chehab <mchehab@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
 MIME-Version: 1.0
-Date: Fri, 18 May 2012 21:20:37 +0800
-Message-ID: <CAJd=RBBu8G12NP6d-Q7NCEsU0RN0JVf41pUKqEa3JzOPgtfF4A@mail.gmail.com>
-Subject: BFS 420: fix ttwu stat
-From: Hillf Danton <dhillf@gmail.com>
-To: LKML <linux-kernel@vger.kernel.org>, Hillf Danton <dhillf@gmail.com>
-Content-Type: text/plain; charset=UTF-8
+To: Borislav Petkov <bp@amd64.org>
+CC: Ingo Molnar <mingo@kernel.org>,
+        Linux Edac Mailing List <linux-edac@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Aristeu Rozanski <arozansk@redhat.com>,
+        Doug Thompson <norsk5@yahoo.com>, Steven Rostedt <rostedt@goodmis.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Ingo Molnar <mingo@redhat.com>
+Subject: Re: [PATCH v24b] RAS: Add a tracepoint for reporting memory controller
+ events
+References: <1337287277-523-1-git-send-email-mchehab@redhat.com> <20120517214859.GA16777@aftab.osrc.amd.com> <20120518071244.GE429@gmail.com> <20120518095638.GA20215@aftab.osrc.amd.com> <4FB62BAB.90808@redhat.com> <20120518124338.GJ20215@aftab.osrc.amd.com>
+In-Reply-To: <20120518124338.GJ20215@aftab.osrc.amd.com>
+X-Enigmail-Version: 1.4.1
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Due to monolithic runqueue used by BFS, the ttwu stat is bogus as we could not
-tell/predict on which CPU a woken task will run after it is activated. And we
-have to delay updating ttwu stat until the stage when task is taken off run
-queue. To achieve that, a field, wakeup_cpu, is added in the task struct, and is
-inited to be invalid CPU number for each new task.
+Em 18-05-2012 09:43, Borislav Petkov escreveu:
 
-When updating ttwu stat, now it is simply to mark the delayed operation; and
-when taking task off runqueue, the stat is updated.
+(offensive/ironic comments skipped)
 
+> you fail to see that I'm trying to make this as generic as possible and
+> not fit it into anything so that EVERYONE can use it.
 
---- a/include/linux/sched.h	Fri May 18 20:51:06 2012
-+++ b/include/linux/sched.h	Fri May 18 20:32:20 2012
-@@ -1255,6 +1255,11 @@ struct task_struct {
- 	struct list_head run_list;
- 	u64 last_ran;
- 	u64 sched_time; /* sched_clock time spent running */
-+#ifdef CONFIG_SCHEDSTATS
-+#ifdef CONFIG_SMP
-+	int wakeup_cpu; //for ttwu stat
-+#endif
-+#endif
- #ifdef CONFIG_SMP
- 	bool sticky; /* Soft affined flag */
- #endif
---- a/kernel/sched/bfs.c	Mon May 14 20:50:38 2012
-+++ b/kernel/sched/bfs.c	Fri May 18 20:46:22 2012
-@@ -1145,6 +1145,30 @@ static inline void unstick_task(struct r
-  */
- static inline void take_task(int cpu, struct task_struct *p)
- {
-+#ifdef CONFIG_SCHEDSTATS
-+#ifdef CONFIG_SMP
-+	if (p->wakeup_cpu == -1)
-+		goto skip;
-+
-+	if (cpu == p->wakeup_cpu) {
-+		schedstat_inc(cpu_rq(cpu), ttwu_local);
-+	}
-+	else if (cpu_online(p->wakeup_cpu)) {
-+		struct sched_domain *sd;
-+
-+		rcu_read_lock();
-+		for_each_domain(p->wakeup_cpu, sd) {
-+			if (cpumask_test_cpu(cpu, sched_domain_span(sd))) {
-+				schedstat_inc(sd, ttwu_wake_remote);
-+				break;
-+			}
-+		}
-+		rcu_read_unlock();
-+	}
-+	p->wakeup_cpu = -1;
-+skip:
-+#endif
-+#endif
- 	set_task_cpu(p, cpu);
- 	dequeue_task(p);
- 	clear_sticky(p);
-@@ -1485,30 +1509,13 @@ static void try_preempt(struct task_stru
- }
- #endif /* CONFIG_SMP */
+Tracepoints are generic enough. Everyone can use it. If need new fields are
+needed, just add a new tracepoint. Converting it into a new printk way
+won't make it usable by everyone. It will just make the ABI unstable.
 
--static void
--ttwu_stat(struct task_struct *p, int cpu, int wake_flags)
-+static void ttwu_stat(struct task_struct *p, int cpu, int wake_flags)
- {
- #ifdef CONFIG_SCHEDSTATS
- 	struct rq *rq = this_rq();
+For sure the fields required for memory errors are different than the ones
+required by PCI, CPU or other types of hardware.
 
- #ifdef CONFIG_SMP
--	int this_cpu = smp_processor_id();
--
--	if (cpu == this_cpu)
--		schedstat_inc(rq, ttwu_local);
--	else {
--		struct sched_domain *sd;
--
--		rcu_read_lock();
--		for_each_domain(this_cpu, sd) {
--			if (cpumask_test_cpu(cpu, sched_domain_span(sd))) {
--				schedstat_inc(sd, ttwu_wake_remote);
--				break;
--			}
--		}
--		rcu_read_unlock();
--	}
--
-+	p->wakeup_cpu = smp_processor_id();
- #endif /* CONFIG_SMP */
+>> There are several issues on relying at the Kernel error counters: they
+>> don't have decay or any other kind of logic that would allow detecting
+>> bursts.
+> 
+> Guess what, you can do decay very successfully in userspace.
 
- 	schedstat_inc(rq, ttwu_count);
-@@ -1717,6 +1724,12 @@ void sched_fork(struct task_struct *p)
- #if defined(CONFIG_SCHEDSTATS) || defined(CONFIG_TASK_DELAY_ACCT)
- 	if (unlikely(sched_info_on()))
- 		memset(&p->sched_info, 0, sizeof(p->sched_info));
-+#endif
-+
-+#ifdef CONFIG_SCHEDSTATS
-+#ifdef CONFIG_SMP
-+	p->wakeup_cpu = -1;
-+#endif
- #endif
+Yes, if and only if userspace receives the errors on a proper way.
 
- 	p->on_cpu = false;
---
+>> So, on a machine running for 30 days with, let's say, 10 corrected
+>> errors, it is not possible to tell if they were all generated on a
+>> burst (because of some temporary interference) or if they are sparse
+>> errors generated at the same DRAM, indicating a bad memory.
+> 
+> Why not, you don't have timestamps?
+
+At the error counters? No.
+
+There are timestamps at printk's, but printk's can't be reliably parsed, as
+formats are not consistent among drivers, and the "ABI" can break on every 
+Kernel release.
+
+>> With this simple change, the tool can be improved to provide a more
+>> consistent memory error report, as userspace should not be worried on
+>> parsing fields that may change in future without notice.
+> 
+> Which userspace, your userspace? What happens if another userspace comes
+> with slightly different error formatting requirements? We change the
+> kernel again or we can't because this tracepoint is being used and we
+> add another tracepoint and let the bloat begin?
+
+As said before, this is not about error formatting requirements! TP_printk() macro
+does formatting. I'm not discussing TP_printk() output.
+
+All Userspace tools require access to the error fields.
+
+The real issue with tracepoint is to provide access to the structured data that
+userspace needs (so, what fields should be exported), and not about what printk
+formats. With regards to the printk format there's already an agreement that
+seems to satisfy you, me and Tony.
+
+By adding all fields there at the tracepoint, no changes will be needed inside
+Kernel to satisfy any userspace requirements, and the ABI will be reliable and
+stable.
+
+>> Also, doing that will avoid the extra effort of joining everything into
+>> a single string, and then breaking them back into their individual fields
+>> on userspace.
+> 
+> I'm being told this is very easy to do in userspace in your garden
+> variety language.
+
+Well, ask the one that told you that to write a parser that will get all 
+EDAC error reports on all drivers, on several kernel versions using dmesg.
+This is not easy, as the messages are not consistent, the right fields are 
+sometimes at the wrong places, and different kernel versions have different
+printk's.
+
+Just to give you an example, this is how sb_edac currently outputs an error:
+
+EDAC MC1: CE row 10, channel 0, label "DIMM_5": 1 Unknown error(s): memory scrubbing on FATAL area : cpu=6 Err=0008:00c2 (ch=2), addr = 0x22719d0780 => socket=1, Channel=3(mask=8), rank=4
+
+The above error happened at the memory controlled by the second CPU socket,
+at slot #1 of channel 3.
+
+A similar report for amd64_edac (if amd64 would have 4 channels) would be:
+
+EDAC MC1: amd64_edac: row 1, channel 3, label "DIMM_5" [...]
+
+E. g. the error location fields are on different places. Writing a parser for
+that would require to look inside each driver, and will require parsers
+rewrite on each kernel version (for example, on this patch series, the '='
+delimiter were replaced by ':' due to upstream feedback).
+
+I think we merged some printk change for sb_edac on 3.4. If so, this driver,
+that started on 3.3, will have 3 different printk ABI variants: one for
+3.3, one for 3.4 and another for 3.5.
+
+Also, as the "mask" needs to be properly parsed, 3.6 will also have yet another
+printk format.
+
+Regards,
+Mauro
