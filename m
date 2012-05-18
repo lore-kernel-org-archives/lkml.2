@@ -1,28 +1,28 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756376Ab2ERPgW (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 May 2012 11:36:22 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:37203 "EHLO
+	id S1756550Ab2ERPgn (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 May 2012 11:36:43 -0400
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:58635 "EHLO
 	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753673Ab2ERPgT (ORCPT
+	by vger.kernel.org with ESMTP id S1755485Ab2ERPgl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 May 2012 11:36:19 -0400
-Date: Fri, 18 May 2012 16:36:15 +0100
+	Fri, 18 May 2012 11:36:41 -0400
+Date: Fri, 18 May 2012 16:36:38 +0100
 From: Mark Brown <broonie@opensource.wolfsonmicro.com>
 To: Lee Jones <lee.jones@linaro.org>
 Cc: linux-arm-kernel@lists.infradead.org, arnd@arndb.de,
         linus.walleij@stericsson.com, grant.likely@secretlab.ca,
         cjb@laptop.org, sameo@linux.intel.com, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 05/16] regulator: db8500-prcmu: Separate regulator
- registration from probe
-Message-ID: <20120518153615.GF4039@opensource.wolfsonmicro.com>
+Subject: Re: [PATCH 07/16] regulator: Enable Device Tree for the db8500-prcmu
+ regulator driver
+Message-ID: <20120518153636.GG4039@opensource.wolfsonmicro.com>
 References: <1337330355-17747-1-git-send-email-lee.jones@linaro.org>
- <1337330355-17747-6-git-send-email-lee.jones@linaro.org>
+ <1337330355-17747-8-git-send-email-lee.jones@linaro.org>
 MIME-Version: 1.0
 Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="gdTfX7fkYsEEjebm"
+	protocol="application/pgp-signature"; boundary="gm5TwAJMO0F2iVRz"
 Content-Disposition: inline
-In-Reply-To: <1337330355-17747-6-git-send-email-lee.jones@linaro.org>
+In-Reply-To: <1337330355-17747-8-git-send-email-lee.jones@linaro.org>
 X-Cookie: Today is what happened to yesterday.
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
@@ -30,37 +30,36 @@ List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
---gdTfX7fkYsEEjebm
+--gm5TwAJMO0F2iVRz
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
 
-On Fri, May 18, 2012 at 09:39:04AM +0100, Lee Jones wrote:
-> This will provide us with a convenient way to register regulators when
-> booting with Device Tree both enabled & disabled and will save us a
-> great deal of code duplication in time.
+On Fri, May 18, 2012 at 09:39:06AM +0100, Lee Jones wrote:
+> Here we use the previous regulator register code separated from probe to
+> register each of the regulators mentioned in Device Tree.
 
 Applied, thanks.
 
---gdTfX7fkYsEEjebm
+--gm5TwAJMO0F2iVRz
 Content-Type: application/pgp-signature; name="signature.asc"
 Content-Description: Digital signature
 
 -----BEGIN PGP SIGNATURE-----
 Version: GnuPG v1.4.12 (GNU/Linux)
 
-iQIcBAEBAgAGBQJPtmxoAAoJEBus8iNuMP3dbI8P/1ccbeUTEy4Pt4voKhSgGg+W
-oOgtLDZ2TL9fKxDBqUvmxBeOChVEpxOeKgxGZ61r9f+dLqwxSWuM9EUlcLGQNiZO
-HFp+gLF6MUwDDK3z7P3DAAP7S6DDxUcn90qWHYWfXs2/EOgO1s5w9Kg+Awt0Vl0y
-mu1/w0dY83lslFeRH7gQhjZLa7DjdvKYnUeByQjzREZaQ8hoolz9fvaLhnHKhCP2
-tL55//XgrN22E2lLK750WirP5m/5O+npy09F4fmVCIzLs6ppikxqp+puyWthmtGA
-ieo0VG1BlpQpngVlBuJth/0XgO50rO6sa63A5LSZM9MF/zPxzDpER3TScAzPTGc9
-Dg70UbCLyJjThI88amSz4GtxU+iPUVBzPSOvP3alSB56V3uUkZdbXfCRb5ZCAAh+
-nCeDppuzgBQZv88wQazL0PnKH4UORUVwJ8Lg4KUH5DVbbQamH1dhFtrMEKKEww6P
-+mc+Wxgc+4lRYYDx4leqq2pZy0/WBJz5iGOWk0dp34FG8aIbSXpyhUSqY8kHBKTa
-0D9J9h9XuRsCYXC7HtuCkzXziEFnraavUtAKN8rX6ikCrw4JbNmQ2LztIH/ElCaw
-EVTwUsL6/qNVySmEJgqxSlDUanZCsdCpHziNyDouXScITZNfnd9wtSmlvNYspIn6
-VnEsRUq3amzoPaXiWqQP
-=C7cf
+iQIcBAEBAgAGBQJPtmx5AAoJEBus8iNuMP3dlvAP/jKC6FyGFYSA2UM0lKyDZ1XB
+9Bizx+fZPi9VT9vPQ5lnNrCKbadE7+6Tjol8+Z8RUhiZc6gSMpo1sg4B3uOxN7Xd
+HcbIxQjByEaI5cOXHDCvOOPAbjVkG0NnHAHKQTFft/9cTb7Ay2pSuUD4MFeDDZMt
+w3YtH3BiVDeuNZukmDcP5NfBhJGsJaQFWzccG6JeTEju40W/pv/rXJMLosHAW40q
+UbsqpjYdNxS8sJ+PlEcJ/4EumPLZxaWfJAMgkGcR4P6th4tAD31pDn1N18te3jZO
+cYzU8Zlx5gx7erFG5R3DHldb3BLS5p9h53Y84jEx5UPRO/PYWah6pqox2OaXfvKp
+5EwggYyXMbXa68geZb7WcbRn+tGlmmf7ov8HT523Uc3vt4Cj/HSZoE1ADck8cK+i
+2+8ScxpC102sRXw0lyCa7PMC5A8ueA+K7B4YUYhsU1M2X6/rN7UxiK3bXt8bs2Z9
+W2FUEG3HRHs+YaQ0Y2RdJLLAHIgFRdOnEn/XQtR4Fx2O3JOH/PI4lZxE4gzYcuIo
+tB4ZBKMSCW7DT5AX9QYSUQx6XTjQe5ykmgv6ZYRYbQJ/cJC4/KGPfmv2PhikAZ4I
+0xxCBckmW4G4G9A0vrWhu+QlVw1QudAxG32S5HLbESPk5vVNC5MuR0zZAzfznRKh
+egJdmOnjQI61lG5VNlWI
+=/UZa
 -----END PGP SIGNATURE-----
 
---gdTfX7fkYsEEjebm--
+--gm5TwAJMO0F2iVRz--
