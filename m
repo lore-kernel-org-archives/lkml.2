@@ -1,50 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757535Ab2ERPvZ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 May 2012 11:51:25 -0400
-Received: from mail-lb0-f174.google.com ([209.85.217.174]:35277 "EHLO
-	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756910Ab2ERPvX (ORCPT
+	id S1757677Ab2ERPzp (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 May 2012 11:55:45 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:36997 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757339Ab2ERPzn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 May 2012 11:51:23 -0400
-Date: Fri, 18 May 2012 19:51:19 +0400
-From: Cyrill Gorcunov <gorcunov@openvz.org>
-To: Alexander Gordeev <agordeev@redhat.com>
-Cc: linux-kernel@vger.kernel.org, x86@kernel.org,
-        Suresh Siddha <suresh.b.siddha@intel.com>,
-        Yinghai Lu <yinghai@kernel.org>
-Subject: Re: [PATCH 2/3] x86: x2apic/cluster: Make use of lowest priority
- delivery mode
-Message-ID: <20120518155119.GG8455@moon>
-References: <20120518102640.GB31517@dhcp-26-207.brq.redhat.com>
- <20120518144153.GD8455@moon>
- <20120518154236.GA23406@dhcp-26-207.brq.redhat.com>
+	Fri, 18 May 2012 11:55:43 -0400
+Date: Fri, 18 May 2012 08:55:38 -0700
+From: Tejun Heo <tj@kernel.org>
+To: koverstreet@google.com
+Cc: linux-bcache@vger.kernel.org, linux-kernel@vger.kernel.org,
+        dm-devel@redhat.com, linux-fsdevel@vger.kernel.org, axboe@kernel.dk,
+        agk@redhat.com, neilb@suse.de
+Subject: Re: [PATCH 01/13] block: Generalized bio pool freeing
+Message-ID: <20120518155538.GA19388@google.com>
+References: <cover.1337308722.git.koverstreet@google.com>
+ <ea774fea2a27c9f1028a12ce31a7ee5e5517bef4.1337308722.git.koverstreet@google.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20120518154236.GA23406@dhcp-26-207.brq.redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <ea774fea2a27c9f1028a12ce31a7ee5e5517bef4.1337308722.git.koverstreet@google.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, May 18, 2012 at 05:42:37PM +0200, Alexander Gordeev wrote:
-> > Hi Alexander,
-> > 
-> > I'm a bit confused, we do compose destination id from target cpumask
-> > and send one ipi per _cluster_ with all cpus belonging to this cluster
-> > OR'ed. So if my memory doesn't betray me all specified cpus in cluster
-> > should obtain this message. Thus I'm wondering where do you find that
-> > only one apic obtains ipi? (note i don't have the real physical
-> > machine with x2apic enabled handy to test, so please share
-> > the experience).
+On Thu, May 17, 2012 at 10:59:48PM -0400, koverstreet@google.com wrote:
+> From: Kent Overstreet <koverstreet@google.com>
 > 
-> Cyrill,
+> With the old code, when you allocate a bio from a bio pool you have to
+> implement your own destructor that knows how to find the bio pool the
+> bio was originally allocated from.
 > 
-> This patchset is not about IPIs at all. It is about interrupts coming from
-> IO-APICs.
+> This adds a new field to struct bio (bi_pool) and changes
+> bio_alloc_bioset() to use it. This makes various bio destructors
+> unnecessary, so they're then deleted.
+> 
+> Signed-off-by: Kent Overstreet <koverstreet@google.com>
 
-Ah, you mean io-apic here. I'll try to find some time tonight/tomorrow-morning
-for review. Thanks!
+Please add Cc: to maintainers of each modified subsystem.  Other than
+that, nice cleanup even without the later removal of bi_destructor.
 
-	Cyrill
+ Acked-by: Tejun Heo <tj@kernel.org>
+
+Thanks.
+
+-- 
+tejun
