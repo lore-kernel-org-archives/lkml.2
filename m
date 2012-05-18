@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030788Ab2ERCxK (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 May 2012 22:53:10 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:40565 "EHLO
+	id S1030775Ab2ERCxH (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 May 2012 22:53:07 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:40588 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1030725Ab2ERCww (ORCPT
+	by vger.kernel.org with ESMTP id S1030734Ab2ERCww (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 17 May 2012 22:52:52 -0400
-Message-Id: <20120518023257.504451459@decadent.org.uk>
+Message-Id: <20120518023300.324366126@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Fri, 18 May 2012 03:33:17 +0100
+Date: Fri, 18 May 2012 03:33:38 +0100
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Nicholas Bellinger <nab@linux-iscsi.org>,
-        Christoph Hellwig <hch@lst.de>, Andy Grover <agrover@redhat.com>
-Subject: [ 23/53] target: Drop incorrect se_lun_acl release for dynamic -> explict ACL conversion
+        alan@lxorguk.ukuu.org.uk, Ming Lei <tom.leiming@gmail.com>,
+        Huajun Li <huajun.li.lee@gmail.com>, Oliver Neukum <oneukum@suse.de>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [ 44/53] usbnet: fix skb traversing races during unlink(v2)
 In-Reply-To: <20120518023254.339945758@decadent.org.uk>
 X-SA-Exim-Connect-IP: 192.168.4.185
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -28,71 +29,217 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Nicholas Bellinger <nab@linux-iscsi.org>
+From: Ming Lei <tom.leiming@gmail.com>
 
-commit cfebf8f42f47327fa54cf05c19b98f4bd5236a26 upstream.
+commit 5b6e9bcdeb65634b4ad604eb4536404bbfc62cfa upstream.
 
-This patch removes some potentially problematic legacy code within
-core_clear_initiator_node_from_tpg() that was originally intended to
-release left over se_lun_acl setup during dynamic NodeACL+MappedLUN
-generate when running with TPG demo-mode operation.
+Commit 4231d47e6fe69f061f96c98c30eaf9fb4c14b96d(net/usbnet: avoid
+recursive locking in usbnet_stop()) fixes the recursive locking
+problem by releasing the skb queue lock before unlink, but may
+cause skb traversing races:
+	- after URB is unlinked and the queue lock is released,
+	the refered skb and skb->next may be moved to done queue,
+	even be released
+	- in skb_queue_walk_safe, the next skb is still obtained
+	by next pointer of the last skb
+	- so maybe trigger oops or other problems
 
-Since we now only ever expect to allocate and release se_lun_acl from
-within target_core_fabric_configfs.c:target_fabric_make_mappedlun() and
-target_fabric_drop_mappedlun() context respectively, this code for
-demo-mode release is incorrect and needs to be removed.
+This patch extends the usage of entry->state to describe 'start_unlink'
+state, so always holding the queue(rx/tx) lock to change the state if
+the referd skb is in rx or tx queue because we need to know if the
+refered urb has been started unlinking in unlink_urbs.
 
-Cc: Christoph Hellwig <hch@lst.de>
-Cc: Andy Grover <agrover@redhat.com>
-Signed-off-by: Nicholas Bellinger <nab@linux-iscsi.org>
+The other part of this patch is based on Huajun's patch:
+always traverse from head of the tx/rx queue to get skb which is
+to be unlinked but not been started unlinking.
+
+Signed-off-by: Huajun Li <huajun.li.lee@gmail.com>
+Signed-off-by: Ming Lei <tom.leiming@gmail.com>
+Cc: Oliver Neukum <oneukum@suse.de>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- drivers/target/target_core_tpg.c |   22 ----------------------
- 1 file changed, 22 deletions(-)
+ drivers/net/usb/usbnet.c   |   54 +++++++++++++++++++++++++++++++-------------
+ include/linux/usb/usbnet.h |    3 ++-
+ 2 files changed, 40 insertions(+), 17 deletions(-)
 
-diff --git a/drivers/target/target_core_tpg.c b/drivers/target/target_core_tpg.c
-index 70c3ffb..e320ec2 100644
---- a/drivers/target/target_core_tpg.c
-+++ b/drivers/target/target_core_tpg.c
-@@ -60,7 +60,6 @@ static void core_clear_initiator_node_from_tpg(
- 	int i;
- 	struct se_dev_entry *deve;
- 	struct se_lun *lun;
--	struct se_lun_acl *acl, *acl_tmp;
- 
- 	spin_lock_irq(&nacl->device_list_lock);
- 	for (i = 0; i < TRANSPORT_MAX_LUNS_PER_TPG; i++) {
-@@ -81,28 +80,7 @@ static void core_clear_initiator_node_from_tpg(
- 		core_update_device_list_for_node(lun, NULL, deve->mapped_lun,
- 			TRANSPORT_LUNFLAGS_NO_ACCESS, nacl, tpg, 0);
- 
--		spin_lock(&lun->lun_acl_lock);
--		list_for_each_entry_safe(acl, acl_tmp,
--					&lun->lun_acl_list, lacl_list) {
--			if (!strcmp(acl->initiatorname, nacl->initiatorname) &&
--			    (acl->mapped_lun == deve->mapped_lun))
--				break;
--		}
--
--		if (!acl) {
--			pr_err("Unable to locate struct se_lun_acl for %s,"
--				" mapped_lun: %u\n", nacl->initiatorname,
--				deve->mapped_lun);
--			spin_unlock(&lun->lun_acl_lock);
--			spin_lock_irq(&nacl->device_list_lock);
--			continue;
--		}
--
--		list_del(&acl->lacl_list);
--		spin_unlock(&lun->lun_acl_lock);
--
- 		spin_lock_irq(&nacl->device_list_lock);
--		kfree(acl);
- 	}
- 	spin_unlock_irq(&nacl->device_list_lock);
+--- linux.orig/drivers/net/usb/usbnet.c
++++ linux/drivers/net/usb/usbnet.c
+@@ -281,17 +281,32 @@
  }
--- 
-1.7.10
-
+ EXPORT_SYMBOL_GPL(usbnet_change_mtu);
+ 
++/* The caller must hold list->lock */
++static void __usbnet_queue_skb(struct sk_buff_head *list,
++			struct sk_buff *newsk, enum skb_state state)
++{
++	struct skb_data *entry = (struct skb_data *) newsk->cb;
++
++	__skb_queue_tail(list, newsk);
++	entry->state = state;
++}
++
+ /*-------------------------------------------------------------------------*/
+ 
+ /* some LK 2.4 HCDs oopsed if we freed or resubmitted urbs from
+  * completion callbacks.  2.5 should have fixed those bugs...
+  */
+ 
+-static void defer_bh(struct usbnet *dev, struct sk_buff *skb, struct sk_buff_head *list)
++static enum skb_state defer_bh(struct usbnet *dev, struct sk_buff *skb,
++		struct sk_buff_head *list, enum skb_state state)
+ {
+ 	unsigned long		flags;
++	enum skb_state 		old_state;
++	struct skb_data *entry = (struct skb_data *) skb->cb;
+ 
+ 	spin_lock_irqsave(&list->lock, flags);
++	old_state = entry->state;
++	entry->state = state;
+ 	__skb_unlink(skb, list);
+ 	spin_unlock(&list->lock);
+ 	spin_lock(&dev->done.lock);
+@@ -299,6 +314,7 @@
+ 	if (dev->done.qlen == 1)
+ 		tasklet_schedule(&dev->bh);
+ 	spin_unlock_irqrestore(&dev->done.lock, flags);
++	return old_state;
+ }
+ 
+ /* some work can't be done in tasklets, so we use keventd
+@@ -339,7 +355,6 @@
+ 	entry = (struct skb_data *) skb->cb;
+ 	entry->urb = urb;
+ 	entry->dev = dev;
+-	entry->state = rx_start;
+ 	entry->length = 0;
+ 
+ 	usb_fill_bulk_urb (urb, dev->udev, dev->in,
+@@ -371,7 +386,7 @@
+ 			tasklet_schedule (&dev->bh);
+ 			break;
+ 		case 0:
+-			__skb_queue_tail (&dev->rxq, skb);
++			__usbnet_queue_skb(&dev->rxq, skb, rx_start);
+ 		}
+ 	} else {
+ 		netif_dbg(dev, ifdown, dev->net, "rx: stopped\n");
+@@ -422,16 +437,17 @@
+ 	struct skb_data		*entry = (struct skb_data *) skb->cb;
+ 	struct usbnet		*dev = entry->dev;
+ 	int			urb_status = urb->status;
++	enum skb_state		state;
+ 
+ 	skb_put (skb, urb->actual_length);
+-	entry->state = rx_done;
++	state = rx_done;
+ 	entry->urb = NULL;
+ 
+ 	switch (urb_status) {
+ 	/* success */
+ 	case 0:
+ 		if (skb->len < dev->net->hard_header_len) {
+-			entry->state = rx_cleanup;
++			state = rx_cleanup;
+ 			dev->net->stats.rx_errors++;
+ 			dev->net->stats.rx_length_errors++;
+ 			netif_dbg(dev, rx_err, dev->net,
+@@ -470,7 +486,7 @@
+ 				  "rx throttle %d\n", urb_status);
+ 		}
+ block:
+-		entry->state = rx_cleanup;
++		state = rx_cleanup;
+ 		entry->urb = urb;
+ 		urb = NULL;
+ 		break;
+@@ -481,17 +497,18 @@
+ 		// FALLTHROUGH
+ 
+ 	default:
+-		entry->state = rx_cleanup;
++		state = rx_cleanup;
+ 		dev->net->stats.rx_errors++;
+ 		netif_dbg(dev, rx_err, dev->net, "rx status %d\n", urb_status);
+ 		break;
+ 	}
+ 
+-	defer_bh(dev, skb, &dev->rxq);
++	state = defer_bh(dev, skb, &dev->rxq, state);
+ 
+ 	if (urb) {
+ 		if (netif_running (dev->net) &&
+-		    !test_bit (EVENT_RX_HALT, &dev->flags)) {
++		    !test_bit (EVENT_RX_HALT, &dev->flags) &&
++		    state != unlink_start) {
+ 			rx_submit (dev, urb, GFP_ATOMIC);
+ 			return;
+ 		}
+@@ -577,16 +594,23 @@
+ static int unlink_urbs (struct usbnet *dev, struct sk_buff_head *q)
+ {
+ 	unsigned long		flags;
+-	struct sk_buff		*skb, *skbnext;
++	struct sk_buff		*skb;
+ 	int			count = 0;
+ 
+ 	spin_lock_irqsave (&q->lock, flags);
+-	skb_queue_walk_safe(q, skb, skbnext) {
++	while (!skb_queue_empty(q)) {
+ 		struct skb_data		*entry;
+ 		struct urb		*urb;
+ 		int			retval;
+ 
+-		entry = (struct skb_data *) skb->cb;
++		skb_queue_walk(q, skb) {
++			entry = (struct skb_data *) skb->cb;
++			if (entry->state != unlink_start)
++				goto found;
++		}
++		break;
++found:
++		entry->state = unlink_start;
+ 		urb = entry->urb;
+ 
+ 		/*
+@@ -1037,8 +1061,7 @@
+ 	}
+ 
+ 	usb_autopm_put_interface_async(dev->intf);
+-	entry->state = tx_done;
+-	defer_bh(dev, skb, &dev->txq);
++	(void) defer_bh(dev, skb, &dev->txq, tx_done);
+ }
+ 
+ /*-------------------------------------------------------------------------*/
+@@ -1094,7 +1117,6 @@
+ 	entry = (struct skb_data *) skb->cb;
+ 	entry->urb = urb;
+ 	entry->dev = dev;
+-	entry->state = tx_start;
+ 	entry->length = length;
+ 
+ 	usb_fill_bulk_urb (urb, dev->udev, dev->out,
+@@ -1153,7 +1175,7 @@
+ 		break;
+ 	case 0:
+ 		net->trans_start = jiffies;
+-		__skb_queue_tail (&dev->txq, skb);
++		__usbnet_queue_skb(&dev->txq, skb, tx_start);
+ 		if (dev->txq.qlen >= TX_QLEN (dev))
+ 			netif_stop_queue (net);
+ 	}
+--- linux.orig/include/linux/usb/usbnet.h
++++ linux/include/linux/usb/usbnet.h
+@@ -191,7 +191,8 @@
+ enum skb_state {
+ 	illegal = 0,
+ 	tx_start, tx_done,
+-	rx_start, rx_done, rx_cleanup
++	rx_start, rx_done, rx_cleanup,
++	unlink_start
+ };
+ 
+ struct skb_data {	/* skb->cb is one of these */
 
 
