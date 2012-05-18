@@ -1,19 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965346Ab2ERQsb (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 May 2012 12:48:31 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:5143 "EHLO mx1.redhat.com"
+	id S965313Ab2ERQsT (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 May 2012 12:48:19 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:37488 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758534Ab2ERQdF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1758552Ab2ERQdF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 18 May 2012 12:33:05 -0400
 From: Mauro Carvalho Chehab <mchehab@redhat.com>
 Cc: Mauro Carvalho Chehab <mchehab@redhat.com>,
         Linux Edac Mailing List <linux-edac@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Doug Thompson <norsk5@yahoo.com>
-Subject: [PATCH EDAC v26 54/66] edac: Only expose csrows/channels on legacy API if they're populated
-Date: Fri, 18 May 2012 13:32:41 -0300
-Message-Id: <1337358773-6919-55-git-send-email-mchehab@redhat.com>
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: [PATCH EDAC v26 58/66] Edac: Add ABI Documentation for the new device nodes
+Date: Fri, 18 May 2012 13:32:45 -0300
+Message-Id: <1337358773-6919-59-git-send-email-mchehab@redhat.com>
 In-Reply-To: <1337358773-6919-1-git-send-email-mchehab@redhat.com>
 References: <1337358773-6919-1-git-send-email-mchehab@redhat.com>
 To: unlisted-recipients:; (no To-header on input)
@@ -21,108 +20,91 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch actually fixes a bug with the legacy API, where, at the
-same csrow, some channels may have different DIMMs. This can happen
-on FB-DIMM/RAMBUS and modern Intel controllers.
+The EDAC ABI were extended to add support for per-DIMM or per-rank
+information and silkscreen labels. Properly document them.
 
-This is the case, for example, of Nehalem machines:
+Most of the comments there came from edac.txt descriptions of the
+fields that are part of the legacy csrowX ABI (e. g.
+/sys/devices/system/edac/mc/mc*/csrow*/*).
 
-$ ./edac-ctl --layout
-       +-----------------------------------+
-       |                mc0                |
-       | channel0  | channel1  | channel2  |
--------+-----------------------------------+
-slot2: |     0 MB  |     0 MB  |     0 MB  |
-slot1: |  1024 MB  |     0 MB  |     0 MB  |
-slot0: |  1024 MB  |  1024 MB  |  1024 MB  |
--------+-----------------------------------+
-
-Before this patch, non-filled memories were shown. Now, only what's
-filled is there:
-
-grep . /sys/devices/system/edac/mc/mc0/csrow*/ch?*
-/sys/devices/system/edac/mc/mc0/csrow0/ch0_ce_count:0
-/sys/devices/system/edac/mc/mc0/csrow0/ch0_dimm_label:CPU#0Channel#0_DIMM#0
-/sys/devices/system/edac/mc/mc0/csrow0/ch1_ce_count:0
-/sys/devices/system/edac/mc/mc0/csrow0/ch1_dimm_label:CPU#0Channel#0_DIMM#1
-/sys/devices/system/edac/mc/mc0/csrow1/ch0_ce_count:0
-/sys/devices/system/edac/mc/mc0/csrow1/ch0_dimm_label:CPU#0Channel#1_DIMM#0
-/sys/devices/system/edac/mc/mc0/csrow2/ch0_ce_count:0
-/sys/devices/system/edac/mc/mc0/csrow2/ch0_dimm_label:CPU#0Channel#2_DIMM#0
-
-Thanks-to: Aristeu Rozanski Filho <arozansk@redhat.com>
-Reviewed-by: Aristeu Rozanski <arozansk@redhat.com>
-Cc: Doug Thompson <norsk5@yahoo.com>
+Acked-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 Signed-off-by: Mauro Carvalho Chehab <mchehab@redhat.com>
 ---
- drivers/edac/edac_mc_sysfs.c |   24 ++++++++++++++++++++++++
- 1 files changed, 24 insertions(+), 0 deletions(-)
+ Documentation/ABI/testing/sysfs-devices-edac |   64 ++++++++++++++++++++++++++
+ 1 files changed, 64 insertions(+), 0 deletions(-)
 
-diff --git a/drivers/edac/edac_mc_sysfs.c b/drivers/edac/edac_mc_sysfs.c
-index daa418b..0f67190 100644
---- a/drivers/edac/edac_mc_sysfs.c
-+++ b/drivers/edac/edac_mc_sysfs.c
-@@ -347,6 +347,16 @@ static struct device_attribute *dynamic_csrow_ce_count_attr[] = {
- 	&dev_attr_legacy_ch5_ce_count.attr
- };
- 
-+static inline int nr_pages_per_csrow(struct csrow_info *csrow)
-+{
-+	int chan, nr_pages = 0;
+diff --git a/Documentation/ABI/testing/sysfs-devices-edac b/Documentation/ABI/testing/sysfs-devices-edac
+index 40db633..30ee78a 100644
+--- a/Documentation/ABI/testing/sysfs-devices-edac
++++ b/Documentation/ABI/testing/sysfs-devices-edac
+@@ -74,3 +74,67 @@ Description:	Read/Write attribute file that controls memory scrubbing.
+ 		Reading the file will return the actual scrubbing rate employed.
+ 		If configuration fails or memory scrubbing is not implemented,
+ 		the value of the attribute file will be -1.
 +
-+	for (chan = 0; chan < csrow->nr_channels; chan++)
-+		nr_pages += csrow->channels[chan].dimm->nr_pages;
++What:		/sys/devices/system/edac/mc/mc*/max_location
++Date:		April 2012
++Contact:	Mauro Carvalho Chehab <mchehab@redhat.com>
++		linux-edac@vger.kernel.org
++Description:	This attribute file displays the information about the last
++		available memory slot in this memory controller. It is used by
++		userspace tools in order to display the memory filling layout.
 +
-+	return nr_pages;
-+}
++What:		/sys/devices/system/edac/mc/mc*/(dimm|rank)*/size
++Date:		April 2012
++Contact:	Mauro Carvalho Chehab <mchehab@redhat.com>
++		linux-edac@vger.kernel.org
++Description:	This attribute file will display the size of dimm or rank.
++		For dimm*/size, this is the size, in MB of the DIMM memory
++		stick. For rank*/size, this is the size, in MB for one rank
++		of the DIMM memory stick. On single rank memories (1R), this
++		is also the total size of the dimm. On dual rank (2R) memories,
++		this is half the size of the total DIMM memories.
 +
- /* Create a CSROW object under specifed edac_mc_device */
- static int edac_create_csrow_object(struct mem_ctl_info *mci,
- 				    struct csrow_info *csrow, int index)
-@@ -371,6 +381,9 @@ static int edac_create_csrow_object(struct mem_ctl_info *mci,
- 		return err;
- 
- 	for (chan = 0; chan < csrow->nr_channels; chan++) {
-+		/* Only expose populated DIMMs */
-+		if (!csrow->channels[chan].dimm->nr_pages)
-+			continue;
- 		err = device_create_file(&csrow->dev,
- 					 dynamic_csrow_dimm_attr[chan]);
- 		if (err < 0)
-@@ -405,6 +418,9 @@ static int edac_create_csrow_objects(struct mem_ctl_info *mci)
- 	struct csrow_info *csrow;
- 
- 	for (i = 0; i < mci->nr_csrows; i++) {
-+		csrow = &mci->csrows[i];
-+		if (!nr_pages_per_csrow(csrow))
-+			continue;
- 		err = edac_create_csrow_object(mci, &mci->csrows[i], i);
- 		if (err < 0)
- 			goto error;
-@@ -414,7 +430,11 @@ static int edac_create_csrow_objects(struct mem_ctl_info *mci)
- error:
- 	for (--i; i >= 0; i--) {
- 		csrow = &mci->csrows[i];
-+		if (!nr_pages_per_csrow(csrow))
-+			continue;
- 		for (chan = csrow->nr_channels - 1; chan >= 0; chan--) {
-+			if (!csrow->channels[chan].dimm->nr_pages)
-+				continue;
- 			device_remove_file(&csrow->dev,
- 						dynamic_csrow_dimm_attr[chan]);
- 			device_remove_file(&csrow->dev,
-@@ -433,7 +453,11 @@ static void edac_delete_csrow_objects(struct mem_ctl_info *mci)
- 
- 	for (i = mci->nr_csrows - 1; i >= 0; i--) {
- 		csrow = &mci->csrows[i];
-+		if (!nr_pages_per_csrow(csrow))
-+			continue;
- 		for (chan = csrow->nr_channels - 1; chan >= 0; chan--) {
-+			if (!csrow->channels[chan].dimm->nr_pages)
-+				continue;
- 			debugf1("Removing csrow %d channel %d sysfs nodes\n",
- 				i, chan);
- 			device_remove_file(&csrow->dev,
++What:		/sys/devices/system/edac/mc/mc*/(dimm|rank)*/dimm_dev_type
++Date:		April 2012
++Contact:	Mauro Carvalho Chehab <mchehab@redhat.com>
++		linux-edac@vger.kernel.org
++Description:	This attribute file will display what type of DRAM device is
++		being utilized on this DIMM (x1, x2, x4, x8, ...).
++
++What:		/sys/devices/system/edac/mc/mc*/(dimm|rank)*/dimm_edac_mode
++Date:		April 2012
++Contact:	Mauro Carvalho Chehab <mchehab@redhat.com>
++		linux-edac@vger.kernel.org
++Description:	This attribute file will display what type of Error detection
++		and correction is being utilized. For example: S4ECD4ED would
++		mean a Chipkill with x4 DRAM.
++
++What:		/sys/devices/system/edac/mc/mc*/(dimm|rank)*/dimm_label
++Date:		April 2012
++Contact:	Mauro Carvalho Chehab <mchehab@redhat.com>
++		linux-edac@vger.kernel.org
++Description:	This control file allows this DIMM to have a label assigned
++		to it. With this label in the module, when errors occur
++		the output can provide the DIMM label in the system log.
++		This becomes vital for panic events to isolate the
++		cause of the UE event.
++		DIMM Labels must be assigned after booting, with information
++		that correctly identifies the physical slot with its
++		silk screen label. This information is currently very
++		motherboard specific and determination of this information
++		must occur in userland at this time.
++
++What:		/sys/devices/system/edac/mc/mc*/(dimm|rank)*/dimm_location
++Date:		April 2012
++Contact:	Mauro Carvalho Chehab <mchehab@redhat.com>
++		linux-edac@vger.kernel.org
++Description:	This attribute file will display the location (csrow/channel,
++		branch/channel/slot or channel/slot) of the dimm or rank.
++
++What:		/sys/devices/system/edac/mc/mc*/(dimm|rank)*/dimm_mem_type
++Date:		April 2012
++Contact:	Mauro Carvalho Chehab <mchehab@redhat.com>
++		linux-edac@vger.kernel.org
++Description:	This attribute file will display what type of memory is
++		currently on this csrow. Normally, either buffered or
++		unbuffered memory (for example, Unbuffered-DDR3).
 -- 
 1.7.8
 
