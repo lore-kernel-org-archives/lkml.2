@@ -1,21 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1946517Ab2ERXFK (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 May 2012 19:05:10 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:53597 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1946505Ab2ERXFC (ORCPT
+	id S1946534Ab2ERXFP (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 May 2012 19:05:15 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:35668 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1946505Ab2ERXFM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 May 2012 19:05:02 -0400
-Message-Id: <20120518211603.854880990@linuxfoundation.org>
+	Fri, 18 May 2012 19:05:12 -0400
+Message-Id: <20120518211604.114318868@linuxfoundation.org>
 User-Agent: quilt/0.60-19.1
-Date: Fri, 18 May 2012 14:16:47 -0700
+Date: Fri, 18 May 2012 14:16:50 -0700
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Kazuya Mio <k-mio@sx.jp.nec.com>,
-        Al Viro <viro@zeniv.linux.org.uk>
-Subject: [ 48/54] wake up s_wait_unfrozen when ->freeze_fs fails
+        alan@lxorguk.ukuu.org.uk,
+        Toshiharu Okada <toshiharu-linux@dsn.okisemi.com>,
+        "David S. Miller" <davem@davemloft.net>,
+        Tomoya MORINAGA <tomoya.rohm@gmail.com>
+Subject: [ 51/54] pch_gbe: support ML7831 IOH
 In-Reply-To: <20120518212656.GA4992@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,40 +27,78 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Kazuya Mio <k-mio@sx.jp.nec.com>
+From: Toshiharu Okada <toshiharu-linux@dsn.okisemi.com>
 
-commit e1616300a20c80396109c1cf013ba9a36055a3da upstream.
+commit 7756332f5b64c9c1535712b9679792e8bd4f0019 upstream.
 
-dd slept infinitely when fsfeeze failed because of EIO.
-To fix this problem, if ->freeze_fs fails, freeze_super() wakes up
-the tasks waiting for the filesystem to become unfrozen.
+Support new device OKI SEMICONDUCTOR ML7831 IOH(Input/Output Hub)
 
-When s_frozen isn't SB_UNFROZEN in __generic_file_aio_write(),
-the function sleeps until FITHAW ioctl wakes up s_wait_unfrozen.
+ML7831 is for general purpose use.
+ML7831 is companion chip for Intel Atom E6xx series.
+ML7831 is completely compatible for Intel EG20T PCH.
 
-However, if ->freeze_fs fails, s_frozen is set to SB_UNFROZEN and then
-freeze_super() returns an error number. In this case, FITHAW ioctl returns
-EINVAL because s_frozen is already SB_UNFROZEN. There is no way to wake up
-s_wait_unfrozen, so __generic_file_aio_write() sleeps infinitely.
-
-Signed-off-by: Kazuya Mio <k-mio@sx.jp.nec.com>
-Signed-off-by: Al Viro <viro@zeniv.linux.org.uk>
+Signed-off-by: Toshiharu Okada <toshiharu-linux@dsn.okisemi.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
+Signed-off-by: Tomoya MORINAGA <tomoya.rohm@gmail.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/super.c |    2 ++
- 1 file changed, 2 insertions(+)
+ drivers/net/Kconfig                |   11 ++++++-----
+ drivers/net/pch_gbe/pch_gbe_main.c |   10 ++++++++++
+ 2 files changed, 16 insertions(+), 5 deletions(-)
 
---- a/fs/super.c
-+++ b/fs/super.c
-@@ -1009,6 +1009,8 @@ int freeze_super(struct super_block *sb)
- 			printk(KERN_ERR
- 				"VFS:Filesystem freeze failed\n");
- 			sb->s_frozen = SB_UNFROZEN;
-+			smp_wmb();
-+			wake_up(&sb->s_wait_unfrozen);
- 			deactivate_locked_super(sb);
- 			return ret;
- 		}
+--- a/drivers/net/Kconfig
++++ b/drivers/net/Kconfig
+@@ -2543,7 +2543,7 @@ config S6GMAC
+ source "drivers/net/stmmac/Kconfig"
+ 
+ config PCH_GBE
+-	tristate "Intel EG20T PCH / OKI SEMICONDUCTOR ML7223 IOH GbE"
++	tristate "Intel EG20T PCH/OKI SEMICONDUCTOR IOH(ML7223/ML7831) GbE"
+ 	depends on PCI
+ 	select MII
+ 	---help---
+@@ -2556,10 +2556,11 @@ config PCH_GBE
+ 	  This driver enables Gigabit Ethernet function.
+ 
+ 	  This driver also can be used for OKI SEMICONDUCTOR IOH(Input/
+-	  Output Hub), ML7223.
+-	  ML7223 IOH is for MP(Media Phone) use.
+-	  ML7223 is companion chip for Intel Atom E6xx series.
+-	  ML7223 is completely compatible for Intel EG20T PCH.
++	  Output Hub), ML7223/ML7831.
++	  ML7223 IOH is for MP(Media Phone) use. ML7831 IOH is for general
++	  purpose use.
++	  ML7223/ML7831 is companion chip for Intel Atom E6xx series.
++	  ML7223/ML7831 is completely compatible for Intel EG20T PCH.
+ 
+ endif # NETDEV_1000
+ 
+--- a/drivers/net/pch_gbe/pch_gbe_main.c
++++ b/drivers/net/pch_gbe/pch_gbe_main.c
+@@ -39,6 +39,9 @@ const char pch_driver_version[] = DRV_VE
+ #define PCI_VENDOR_ID_ROHM			0x10db
+ #define PCI_DEVICE_ID_ROHM_ML7223_GBE		0x8013
+ 
++/* Macros for ML7831 */
++#define PCI_DEVICE_ID_ROHM_ML7831_GBE		0x8802
++
+ #define PCH_GBE_TX_WEIGHT         64
+ #define PCH_GBE_RX_WEIGHT         64
+ #define PCH_GBE_RX_BUFFER_WRITE   16
+@@ -2457,6 +2460,13 @@ static DEFINE_PCI_DEVICE_TABLE(pch_gbe_p
+ 	 .subvendor = PCI_ANY_ID,
+ 	 .subdevice = PCI_ANY_ID,
+ 	 .class = (PCI_CLASS_NETWORK_ETHERNET << 8),
++	 .class_mask = (0xFFFF00)
++	 },
++	{.vendor = PCI_VENDOR_ID_ROHM,
++	 .device = PCI_DEVICE_ID_ROHM_ML7831_GBE,
++	 .subvendor = PCI_ANY_ID,
++	 .subdevice = PCI_ANY_ID,
++	 .class = (PCI_CLASS_NETWORK_ETHERNET << 8),
+ 	 .class_mask = (0xFFFF00)
+ 	 },
+ 	/* required last entry */
 
 
