@@ -1,61 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S966130Ab2ERRsV (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 May 2012 13:48:21 -0400
-Received: from mail.mev.co.uk ([62.49.15.74]:56103 "EHLO mail.mev.co.uk"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S965970Ab2ERRsT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 May 2012 13:48:19 -0400
-Message-ID: <4FB68B57.7040404@mev.co.uk>
-Date: Fri, 18 May 2012 18:48:07 +0100
-From: Ian Abbott <abbotti@mev.co.uk>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120516 Thunderbird/12.0.1
+	id S966167Ab2ERRup (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 May 2012 13:50:45 -0400
+Received: from smtp.snhosting.dk ([87.238.248.203]:28828 "EHLO
+	smtp.domainteam.dk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S965967Ab2ERRun (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 18 May 2012 13:50:43 -0400
+Date: Fri, 18 May 2012 19:50:41 +0200
+From: Sam Ravnborg <sam@ravnborg.org>
+To: Anna-Maria Gleixner <anna-maria@glx-um.de>
+Cc: LKML <linux-kernel@vger.kernel.org>, Thomas Gleixner <tglx@linutronix.de>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: Re: [patch 20/24] sparc: Use: generic time config
+Message-ID: <20120518175041.GA17334@merkur.ravnborg.org>
+References: <20120518163020.548627576@glx-um.de> <20120518163106.987564297@glx-um.de>
 MIME-Version: 1.0
-To: H Hartley Sweeten <hartleys@visionengravers.com>
-CC: Ian Abbott <ian.abbott@mev.co.uk>,
-        Linux Kernel <linux-kernel@vger.kernel.org>,
-        "devel@driverdev.osuosl.org" <devel@driverdev.osuosl.org>,
-        "fmhess@users.sourceforge.net" <fmhess@users.sourceforge.net>,
-        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>
-Subject: Re: [PATCH] staging: comedi: cleanup all the comedi_driver 'detach'
- functions
-References: <201205171711.14968.hartleys@visionengravers.com> <4FB6230C.2080604@mev.co.uk> <ADE657CA350FB648AAC2C43247A983F0020698AE1272@AUSP01VMBX24.collaborationhost.net>
-In-Reply-To: <ADE657CA350FB648AAC2C43247A983F0020698AE1272@AUSP01VMBX24.collaborationhost.net>
-Content-Type: text/plain; charset="UTF-8"; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120518163106.987564297@glx-um.de>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2012-05-18 17:56, H Hartley Sweeten wrote:
-> Can you test this patch and let me know what the resulting output
-> is? You may need to change the dev_dbg to dev_info or something
-> else if you don't have the proper kernel debugging enabled.
+Hi Anna-Maria.
 
-> diff --git a/drivers/staging/comedi/drivers.c b/drivers/staging/comedi/drivers.c
-> index 1c3d638..d6bb1f9 100644
-> --- a/drivers/staging/comedi/drivers.c
-> +++ b/drivers/staging/comedi/drivers.c
-> @@ -91,11 +91,14 @@ static void cleanup_device(struct comedi_device *dev)
->   static void __comedi_device_detach(struct comedi_device *dev)
->   {
->   	dev->attached = 0;
-> -	if (dev->driver)
-> +	if (dev->driver) {
->   		dev->driver->detach(dev);
-> -	else
-> -		printk(KERN_WARNING
-> +		dev_dbg(dev->class_dev, "%s detached\n",
-> +			dev->driver->driver_name);
-> +	} else {
-> +		dev_warn(dev->class_dev,
->   		       "BUG: dev->driver=NULL in comedi_device_detach()\n");
-> +	}
->   	cleanup_device(dev);
->   }
+I really like the cleanup provided by this patch-set, but..
 
-It works, but I'd prefer dev_info over dev_dbg.
+On Fri, May 18, 2012 at 04:45:54PM -0000, Anna-Maria Gleixner wrote:
+> Signed-off-by: Anna-Maria Gleixner <anna-maria@glx-um.de>
+> Cc: "David S. Miller" <davem@davemloft.net>
+> ---
+>  arch/sparc/Kconfig |   15 +++------------
+>  1 file changed, 3 insertions(+), 12 deletions(-)
+> 
+> Index: linux/arch/sparc/Kconfig
+> ===================================================================
+> --- linux.orig/arch/sparc/Kconfig
+> +++ linux/arch/sparc/Kconfig
+> @@ -30,11 +30,13 @@ config SPARC
+>  	select USE_GENERIC_SMP_HELPERS if SMP
+>  	select GENERIC_PCI_IOMAP
+>  	select HAVE_NMI_WATCHDOG if SPARC64
+> +	select GENERIC_CMOS_UPDATE
 
--- 
--=( Ian Abbott @ MEV Ltd.    E-mail: <abbotti@mev.co.uk>        )=-
--=( Tel: +44 (0)161 477 1898   FAX: +44 (0)161 718 3587         )=-
+I do not see where we define the GENERIC_CMOS_UPDATE symbol,
+so this looks wrong.
+
+I looked only in upstream - and I did not look
+in -tip.
+
+	Sam
