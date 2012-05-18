@@ -1,69 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S968067Ab2ERVlK (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 May 2012 17:41:10 -0400
-Received: from ogre.sisk.pl ([193.178.161.156]:53459 "EHLO ogre.sisk.pl"
+	id S968077Ab2ERVlk (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 May 2012 17:41:40 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:47915 "EHLO mail.zytor.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S968012Ab2ERVlI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 May 2012 17:41:08 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Sameer Nanda <snanda@chromium.org>
-Subject: Re: [PATCH] power, trace: add tracing for device_resume
-Date: Fri, 18 May 2012 23:46:02 +0200
-User-Agent: KMail/1.13.6 (Linux/3.4.0-rc7+; KDE/4.6.0; x86_64; ; )
-Cc: Steven Rostedt <rostedt@goodmis.org>, Greg KH <gregkh@linuxfoundation.org>,
-        rob@landley.net, len.brown@intel.com, pavel@ucw.cz, fweisbec@gmail.com,
-        mingo@redhat.com, jkosina@suse.cz, standby24x7@gmail.com,
-        jj@chaosbits.net, paulmck@linux.vnet.ibm.com, josh@joshtriplett.org,
-        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-pm@vger.kernel.org
-References: <1337365643-29261-1-git-send-email-snanda@chromium.org> <1337375946.7562.11.camel@gandalf.stny.rr.com> <CANMivWZ4ygG5R7ob_Q-pkAFpoKAkK_iQf3w2eiw5Gv65AbTYNw@mail.gmail.com>
-In-Reply-To: <CANMivWZ4ygG5R7ob_Q-pkAFpoKAkK_iQf3w2eiw5Gv65AbTYNw@mail.gmail.com>
+	id S968043Ab2ERVli (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 18 May 2012 17:41:38 -0400
+Message-ID: <4FB6C1F7.1010307@zytor.com>
+Date: Fri, 18 May 2012 14:41:11 -0700
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:11.0) Gecko/20120329 Thunderbird/11.0.1
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="utf-8"
+To: Arnd Bergmann <arnd@arndb.de>
+CC: Linus Torvalds <torvalds@linux-foundation.org>,
+        David Daney <ddaney.cavm@gmail.com>,
+        Ralf Baechle <ralf@linux-mips.org>, "H.J. Lu" <hjl.tools@gmail.com>,
+        linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org,
+        mingo@kernel.org, tglx@linutronix.de
+Subject: Re: [PATCH 08/10] Use __kernel_ulong_t in struct msqid64_ds
+References: <1337292816-10839-1-git-send-email-hjl.tools@gmail.com> <CA+55aFwyem9KoPMhYkE-vcaUDqgP9g7arHbmD-mMHMSKXaRBOw@mail.gmail.com> <CA+55aFx4sEQT=U4DBULeo9=3piOx_pQUws92ovKV5bKsu3hQQQ@mail.gmail.com> <201205182131.29353.arnd@arndb.de>
+In-Reply-To: <201205182131.29353.arnd@arndb.de>
+X-Enigmail-Version: 1.4.1
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-Message-Id: <201205182346.02296.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday, May 18, 2012, Sameer Nanda wrote:
-> On Fri, May 18, 2012 at 2:19 PM, Steven Rostedt <rostedt@goodmis.org> wrote:
-> > On Fri, 2012-05-18 at 13:58 -0700, Sameer Nanda wrote:
-> >> On Fri, May 18, 2012 at 12:14 PM, Steven Rostedt <rostedt@goodmis.org> wrote:
-> >> > On Fri, 2012-05-18 at 11:57 -0700, Sameer Nanda wrote:
-> >> >
-> >> >> AFAICT, they are used for something completely different -- help solve
-> >> >> suspend/resume issues by saving a hash in the RTC of the last device
-> >> >> that suspended/resumed.  They don't use the perf tracing mechanism at
-> >> >> all.
-> >> >>
-> >> >
-> >> > Also note that all tracepoints have timestamps attached to them. You do
-> >> > not need to add deltas. Do that in the userspace tools that read the
-> >> > timestamps and events. This way you can have one DECLARE_EVENT_CLASS and
-> >> > three DEFINE_EVENTs. This will save space.
-> >>
-> >> Agreed on the space savings.  However, with the time_delta in the
-> >> trace message itself, a one line shell script [1] that sorts on the
-> >> time_delta field is sufficient to quickly spot the devices that take a
-> >> long time to resume.  Without the time_delta field, the user tool is
-> >> more complex since it needs to first match up the device_resume_in,
-> >> device_resume_waited and device_resume_out traces and then calculate
-> >> time deltas.
-> >>
-> >> Seems like a worthwhile trade-off to me but I can take out the
-> >> time_delta if the general consensus is otherwise.
-> >
-> > Just note that every TRACE_EVENT() adds around 5k or more code. Every
-> > DEFINE_EVENT adds just about 300 bytes.
+On 05/18/2012 02:31 PM, Arnd Bergmann wrote:
 > 
-> Ok, let me respin the patch.  I am thinking of adding time_delta to
-> all three traces.  That way we should get the space saving while still
-> allowing quick spotting of devices that take long time to resume.
+> However, in the kernel we *always* copy the fields one by one for compat
+> mode, even for the architectures that have identical layout between 32 and
+> 64 bit, and at least one libc implementation that I've seen (IIRC uClibc)
+> hardcodes the data structure to be the same as x86, with the padding
+> after the 'long', for all architectures. When I introduced the asm-generic
+> version of this, we had a discussion about whether we should try to use
+> the version with the "correct" padding but in the end decided to just use
+> the x86 version because that is what most big-endian architectures do
+> anyway.
+> 
 
-Well, what's wrong with the code in drivers/base/power/main.c that
-is activated by adding initcall_debug to the kernel command line?
+Ouch.  Fail.  asm-generic should be about what is the right thing going
+forward.
 
-Rafael
+	-hpa
+
+
