@@ -1,92 +1,351 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S968194Ab2ERWra (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 May 2012 18:47:30 -0400
-Received: from out01.mta.xmission.com ([166.70.13.231]:60728 "EHLO
-	out01.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757228Ab2ERWr1 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 May 2012 18:47:27 -0400
-From: ebiederm@xmission.com (Eric W. Biederman)
-To: "Serge E. Hallyn" <serge@hallyn.com>
-Cc: Pavel Emelyanov <xemul@parallels.com>, Al Viro <viro@ZenIV.linux.org.uk>,
-        Daniel Lezcano <dlezcano@fr.ibm.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        "linux-fsdevel\@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
-        Miklos Szeredi <mszeredi@suse.cz>
-References: <4FAD0524.3000307@parallels.com> <4FAD0555.4090906@parallels.com>
-	<87mx5e5tho.fsf_-_@xmission.com> <4FAE4C70.5000804@parallels.com>
-	<20120518194417.GA14195@mail.hallyn.com>
-Date: Fri, 18 May 2012 16:47:02 -0600
-In-Reply-To: <20120518194417.GA14195@mail.hallyn.com> (Serge E. Hallyn's
-	message of "Fri, 18 May 2012 19:44:17 +0000")
-Message-ID: <87sjexp0nt.fsf@xmission.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.3 (gnu/linux)
+	id S968205Ab2ERWsz (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 May 2012 18:48:55 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:59369 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S967822Ab2ERWsw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 18 May 2012 18:48:52 -0400
+Date: Fri, 18 May 2012 18:48:37 -0400 (EDT)
+From: Mikulas Patocka <mpatocka@redhat.com>
+X-X-Sender: mpatocka@file.rdu.redhat.com
+To: device-mapper development <dm-devel@redhat.com>
+cc: linux-bcache@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-fsdevel@vger.kernel.org, tj@kernel.org, axboe@kernel.dk,
+        Kent Overstreet <koverstreet@google.com>, agk@redhat.com
+Subject: Re: [dm-devel] [PATCH 12/13] Make generic_make_request handle
+ arbitrarily large bios
+In-Reply-To: <1114e7019b0055fc09a54b59b36398d5c54f5e32.1337308722.git.koverstreet@google.com>
+Message-ID: <Pine.LNX.4.64.1205181823540.26504@file.rdu.redhat.com>
+References: <cover.1337308722.git.koverstreet@google.com>
+ <1114e7019b0055fc09a54b59b36398d5c54f5e32.1337308722.git.koverstreet@google.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-X-XM-SPF: eid=;;;mid=;;;hst=in02.mta.xmission.com;;;ip=208.38.5.102;;;frm=ebiederm@xmission.com;;;spf=neutral
-X-XM-AID: U2FsdGVkX1+6BNB1J2uTR2sHxSQDqRLtJF/Z6Vv9nvo=
-X-SA-Exim-Connect-IP: 208.38.5.102
-X-SA-Exim-Mail-From: ebiederm@xmission.com
-X-Spam-Report: * -1.0 ALL_TRUSTED Passed through trusted hosts only via SMTP
-	*  0.0 TVD_RCVD_IP TVD_RCVD_IP
-	*  0.0 T_TM2_M_HEADER_IN_MSG BODY: T_TM2_M_HEADER_IN_MSG
-	* -3.0 BAYES_00 BODY: Bayes spam probability is 0 to 1%
-	*      [score: 0.0000]
-	* -0.0 DCC_CHECK_NEGATIVE Not listed in DCC
-	*      [sa06 1397; Body=1 Fuz1=1 Fuz2=1]
-X-Spam-DCC: XMission; sa06 1397; Body=1 Fuz1=1 Fuz2=1 
-X-Spam-Combo: ;"Serge E. Hallyn" <serge@hallyn.com>
-X-Spam-Relay-Country: 
-Subject: Re: [PATCH] vfs: Add setns support for the mount namespace
-X-Spam-Flag: No
-X-SA-Exim-Version: 4.2.1 (built Fri, 06 Aug 2010 16:31:04 -0600)
-X-SA-Exim-Scanned: Yes (on in02.mta.xmission.com)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-"Serge E. Hallyn" <serge@hallyn.com> writes:
+Hi
 
-> Quoting Pavel Emelyanov (xemul@parallels.com):
->> On 05/12/2012 12:54 AM, Eric W. Biederman wrote:
->> > 
->> > setns support for the mount namespace is a little tricky as an arbitrary
->> > decision must be made about what to set fs->root and fs->pwd to, as
->> > there is no expectation of a relationship between the two mount
->> > namespaces.  Therefore I arbitrarily find the root mount point, and
->> > follow every mount on top of it to find the top of the mount stack.
->> > Then I set fs->root and fs->pwd to that location.  The topmost root of
->> > the mount stack seems like a reasonable place to be.
->> > 
->> > Bind mount support for the mount namespace inodes has the possibility of
->> > creating circular dependencies between mount namespaces.  Circular
->> > dependencies can result in loops that prevent mount namespaces from
->> > every being freed.  I avoid creating those circular dependencies by
->> > adding a sequence number to the mount namespace and require all bind
->> > mounts be of a younger mount namespace into an older mount namespace.
->> > 
->> > Add a helper function proc_ns_inode so it is possible to detect when we
->> > are attempting to bind mound a namespace inode.
->> > 
->> > Signed-off-by: Eric W. Biederman <ebiederm@xmission.com>
->> 
->> Acked-by: Pavel Emelyanov <xemul@parallels.com>
->
-> These patches haven't made it into linux-next or Linus' tree.  (More
-> worrisome, is that the several online linux-kernel mail archives I've
-> checked seem to have most of this thread, but not Eric's original
-> patch.)  What path were they expected to go in by?
+This patch looks very good, this approach will hopefully fix the long 
+standing bug - when you add usb disk to dm-mirro or md-raid-1, requests 
+would fail because the usb disk has different limits.
 
-I was hoping Al Viro would pick it up in the vfs tree, or at least
-review the patch.  With a backup possibility that Andrew Morton might.
+bio_segments returns the number of pages (not segments) in the bio. And 
+this is incorrectly compared to queue_max_segments. It should compare 
+bio_phys_segments to queue_max_segments.
 
-Given that the merge window is likely to open in next couple of days
-I plan to resubmit this after the merge window closes. 
 
-I don't have a clue what happened to the archives that day but it does
-look like there was a significant mail hiccup as the number of messages
-archived are way down.
+If you have this split infrastructure, it would be good if you allow to 
+use it by other drivers - I'd suggest that you change q->make_request_fn 
+to return 0 on success (bio submitted) and a number of sectors on failure 
+(this means that the driver only accepts the specified number of sector 
+and --- generic_make_request needs to split the bio and submit a smaller 
+bio with the specified number of sectors). If you do it this way, md and 
+dm can be simplified - they will no longer need to do their own request 
+splitting and they could just return a number of sectors they accept.
 
-Eric
+What I mean:
+generic_make_request calls q->make_request_fn(q, bio). If the return value 
+is zero, continue with the next bio. If the return value is nonzero, split 
+the current bio so that the first part of the bio has the number of 
+sectors specified in the return value. Submit the partial bio (normally it 
+should be accepted, but in the extreme case when someone changed dm 
+mapping underneath, we would need to split it again) and the remainder.
+
+The check bio_sectors(bio) <= bio_max_sectors(bio) can then be moved to 
+blk_queue_bio.
+
+This way, we could remove bio splitting from dm and md and simplify them.
+
+Mikulas
+
+
+
+On Thu, 17 May 2012, koverstreet@google.com wrote:
+
+> From: Kent Overstreet <koverstreet@google.com>
+> 
+> The way the block layer is currently written, it goes to great lengths
+> to avoid having to split bios; upper layer code (such as bio_add_page())
+> checks what the underlying device can handle and tries to always create
+> bios that don't need to be split.
+> 
+> But this approach becomes unwieldy and eventually breaks down with
+> stacked devices and devices with dynamic limits, and it adds a lot of
+> complexity. If the block layer could split bios as needed, we could
+> eliminate a lot of complexity elsewhere - particularly in stacked
+> drivers. Code that creates bios can then create whatever size bios are
+> convenient, and more importantly stacked drivers don't have to deal with
+> both their own bio size limitations and the limitations of the
+> (potentially multiple) devices underneath them.
+> 
+> Signed-off-by: Kent Overstreet <koverstreet@google.com>
+> ---
+>  block/blk-core.c       |  111 ++++++++++++++++++++++++++++++++++++++++++++++++
+>  fs/bio.c               |   41 ++++++++++++++++++
+>  include/linux/bio.h    |    7 +++
+>  include/linux/blkdev.h |    3 +
+>  4 files changed, 162 insertions(+), 0 deletions(-)
+> 
+> diff --git a/block/blk-core.c b/block/blk-core.c
+> index 91617eb..1d7a482 100644
+> --- a/block/blk-core.c
+> +++ b/block/blk-core.c
+> @@ -29,6 +29,7 @@
+>  #include <linux/fault-inject.h>
+>  #include <linux/list_sort.h>
+>  #include <linux/delay.h>
+> +#include <linux/closure.h>
+>  
+>  #define CREATE_TRACE_POINTS
+>  #include <trace/events/block.h>
+> @@ -52,6 +53,12 @@ static struct kmem_cache *request_cachep;
+>  struct kmem_cache *blk_requestq_cachep;
+>  
+>  /*
+> + * For bio_split_hook
+> + */
+> +static struct kmem_cache *bio_split_cache;
+> +static struct workqueue_struct *bio_split_wq;
+> +
+> +/*
+>   * Controlling structure to kblockd
+>   */
+>  static struct workqueue_struct *kblockd_workqueue;
+> @@ -487,6 +494,14 @@ struct request_queue *blk_alloc_queue_node(gfp_t gfp_mask, int node_id)
+>  	if (q->id < 0)
+>  		goto fail_q;
+>  
+> +	q->bio_split_hook = mempool_create_slab_pool(4, bio_split_cache);
+> +	if (!q->bio_split_hook)
+> +		goto fail_split_hook;
+> +
+> +	q->bio_split = bioset_create(4, 0);
+> +	if (!q->bio_split)
+> +		goto fail_split;
+> +
+>  	q->backing_dev_info.ra_pages =
+>  			(VM_MAX_READAHEAD * 1024) / PAGE_CACHE_SIZE;
+>  	q->backing_dev_info.state = 0;
+> @@ -526,6 +541,10 @@ struct request_queue *blk_alloc_queue_node(gfp_t gfp_mask, int node_id)
+>  
+>  fail_id:
+>  	ida_simple_remove(&blk_queue_ida, q->id);
+> +fail_split:
+> +	bioset_free(q->bio_split);
+> +fail_split_hook:
+> +	mempool_destroy(q->bio_split_hook);
+>  fail_q:
+>  	kmem_cache_free(blk_requestq_cachep, q);
+>  	return NULL;
+> @@ -1493,6 +1512,83 @@ static inline bool should_fail_request(struct hd_struct *part,
+>  
+>  #endif /* CONFIG_FAIL_MAKE_REQUEST */
+>  
+> +struct bio_split_hook {
+> +	struct closure		cl;
+> +	struct request_queue	*q;
+> +	struct bio		*bio;
+> +	bio_end_io_t		*bi_end_io;
+> +	void			*bi_private;
+> +};
+> +
+> +static void bio_submit_split_done(struct closure *cl)
+> +{
+> +	struct bio_split_hook *s = container_of(cl, struct bio_split_hook, cl);
+> +
+> +	s->bio->bi_end_io	= s->bi_end_io;
+> +	s->bio->bi_private	= s->bi_private;
+> +	bio_endio(s->bio, 0);
+> +
+> +	closure_debug_destroy(&s->cl);
+> +	mempool_free(s, s->q->bio_split_hook);
+> +}
+> +
+> +static void bio_submit_split_endio(struct bio *bio, int error)
+> +{
+> +	struct closure *cl = bio->bi_private;
+> +	struct bio_split_hook *s = container_of(cl, struct bio_split_hook, cl);
+> +
+> +	if (error)
+> +		clear_bit(BIO_UPTODATE, &s->bio->bi_flags);
+> +
+> +	bio_put(bio);
+> +	closure_put(cl);
+> +}
+> +
+> +static void __bio_submit_split(struct closure *cl)
+> +{
+> +	struct bio_split_hook *s = container_of(cl, struct bio_split_hook, cl);
+> +	struct bio *bio = s->bio, *n;
+> +
+> +	do {
+> +		n = bio_split(bio, bio_max_sectors(bio),
+> +			      GFP_NOIO, s->q->bio_split);
+> +		if (!n)
+> +			continue_at(cl, __bio_submit_split, bio_split_wq);
+> +
+> +		closure_get(cl);
+> +		generic_make_request(n);
+> +	} while (n != bio);
+> +
+> +	continue_at(cl, bio_submit_split_done, NULL);
+> +}
+> +
+> +static int bio_submit_split(struct bio *bio)
+> +{
+> +	struct bio_split_hook *s;
+> +	struct request_queue *q = bdev_get_queue(bio->bi_bdev);
+> +
+> +	if (!bio_has_data(bio) ||
+> +	    !q ||
+> +	    !q->bio_split_hook ||
+> +	    bio_sectors(bio) <= bio_max_sectors(bio))
+> +		return 0;
+> +
+> +	s = mempool_alloc(q->bio_split_hook, GFP_NOIO);
+> +
+> +	closure_init(&s->cl, NULL);
+> +	s->bio		= bio;
+> +	s->q		= q;
+> +	s->bi_end_io	= bio->bi_end_io;
+> +	s->bi_private	= bio->bi_private;
+> +
+> +	bio_get(bio);
+> +	bio->bi_end_io	= bio_submit_split_endio;
+> +	bio->bi_private	= &s->cl;
+> +
+> +	__bio_submit_split(&s->cl);
+> +	return 1;
+> +}
+> +
+>  /*
+>   * Check whether this bio extends beyond the end of the device.
+>   */
+> @@ -1646,6 +1742,14 @@ void generic_make_request(struct bio *bio)
+>  	 * it is non-NULL, then a make_request is active, and new requests
+>  	 * should be added at the tail
+>  	 */
+> +
+> +	/*
+> +	 * If the device can't accept arbitrary sized bios, check if we
+> +	 * need to split:
+> +	 */
+> +	if (bio_submit_split(bio))
+> +		return;
+> +
+>  	if (current->bio_list) {
+>  		bio_list_add(current->bio_list, bio);
+>  		return;
+> @@ -2892,11 +2996,18 @@ int __init blk_dev_init(void)
+>  	if (!kblockd_workqueue)
+>  		panic("Failed to create kblockd\n");
+>  
+> +	bio_split_wq = alloc_workqueue("bio_split", WQ_MEM_RECLAIM, 0);
+> +	if (!bio_split_wq)
+> +		panic("Failed to create bio_split wq\n");
+> +
+>  	request_cachep = kmem_cache_create("blkdev_requests",
+>  			sizeof(struct request), 0, SLAB_PANIC, NULL);
+>  
+>  	blk_requestq_cachep = kmem_cache_create("blkdev_queue",
+>  			sizeof(struct request_queue), 0, SLAB_PANIC, NULL);
+>  
+> +	bio_split_cache = kmem_cache_create("bio_split_hook",
+> +			sizeof(struct bio_split_hook), 0, SLAB_PANIC, NULL);
+> +
+>  	return 0;
+>  }
+> diff --git a/fs/bio.c b/fs/bio.c
+> index 781a8cf..360ac93 100644
+> --- a/fs/bio.c
+> +++ b/fs/bio.c
+> @@ -428,6 +428,47 @@ inline int bio_phys_segments(struct request_queue *q, struct bio *bio)
+>  }
+>  EXPORT_SYMBOL(bio_phys_segments);
+>  
+> +unsigned __bio_max_sectors(struct bio *bio, struct block_device *bdev,
+> +			   sector_t sector)
+> +{
+> +	unsigned ret = bio_sectors(bio);
+> +	struct request_queue *q = bdev_get_queue(bdev);
+> +	struct bio_vec *bv, *end = bio_iovec(bio) +
+> +		min_t(int, bio_segments(bio), queue_max_segments(q));
+> +
+> +	struct bvec_merge_data bvm = {
+> +		.bi_bdev	= bdev,
+> +		.bi_sector	= sector,
+> +		.bi_size	= 0,
+> +		.bi_rw		= bio->bi_rw,
+> +	};
+> +
+> +	if (bio_segments(bio) > queue_max_segments(q) ||
+> +	    q->merge_bvec_fn) {
+> +		ret = 0;
+> +
+> +		for (bv = bio_iovec(bio); bv < end; bv++) {
+> +			if (q->merge_bvec_fn &&
+> +			    q->merge_bvec_fn(q, &bvm, bv) < (int) bv->bv_len)
+> +				break;
+> +
+> +			ret		+= bv->bv_len >> 9;
+> +			bvm.bi_size	+= bv->bv_len;
+> +		}
+> +
+> +		if (ret >= (BIO_MAX_PAGES * PAGE_SIZE) >> 9)
+> +			return (BIO_MAX_PAGES * PAGE_SIZE) >> 9;
+> +	}
+> +
+> +	ret = min(ret, queue_max_sectors(q));
+> +
+> +	WARN_ON(!ret);
+> +	ret = max_t(int, ret, bio_iovec(bio)->bv_len >> 9);
+> +
+> +	return ret;
+> +}
+> +EXPORT_SYMBOL_GPL(__bio_max_sectors);
+> +
+>  /**
+>   * 	__bio_clone	-	clone a bio
+>   * 	@bio: destination bio
+> diff --git a/include/linux/bio.h b/include/linux/bio.h
+> index db38175..79f8173 100644
+> --- a/include/linux/bio.h
+> +++ b/include/linux/bio.h
+> @@ -224,6 +224,13 @@ extern void bio_endio(struct bio *, int);
+>  struct request_queue;
+>  extern int bio_phys_segments(struct request_queue *, struct bio *);
+>  
+> +unsigned __bio_max_sectors(struct bio *, struct block_device *, sector_t);
+> +
+> +static inline unsigned bio_max_sectors(struct bio *bio)
+> +{
+> +	return __bio_max_sectors(bio, bio->bi_bdev, bio->bi_sector);
+> +}
+> +
+>  extern void __bio_clone(struct bio *, struct bio *);
+>  extern struct bio *bio_clone_bioset(struct bio *, gfp_t, struct bio_set *bs);
+>  extern struct bio *bio_clone(struct bio *, gfp_t);
+> diff --git a/include/linux/blkdev.h b/include/linux/blkdev.h
+> index 2aa2466..464adb7 100644
+> --- a/include/linux/blkdev.h
+> +++ b/include/linux/blkdev.h
+> @@ -399,6 +399,9 @@ struct request_queue {
+>  	/* Throttle data */
+>  	struct throtl_data *td;
+>  #endif
+> +
+> +	mempool_t		*bio_split_hook;
+> +	struct bio_set		*bio_split;
+>  };
+>  
+>  #define QUEUE_FLAG_QUEUED	1	/* uses generic tag queueing */
+> -- 
+> 1.7.9.rc2
+> 
+> --
+> dm-devel mailing list
+> dm-devel@redhat.com
+> https://www.redhat.com/mailman/listinfo/dm-devel
+> 
