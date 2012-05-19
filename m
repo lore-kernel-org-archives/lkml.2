@@ -1,80 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758740Ab2ESPpm (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 19 May 2012 11:45:42 -0400
-Received: from oproxy7-pub.bluehost.com ([67.222.55.9]:42595 "HELO
-	oproxy7-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1756283Ab2ESPpk (ORCPT
+	id S1759419Ab2ESPp6 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 19 May 2012 11:45:58 -0400
+Received: from manchmal.in-ulm.de ([217.10.9.201]:34021 "EHLO
+	manchmal.in-ulm.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758974Ab2ESPp4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 19 May 2012 11:45:40 -0400
-Message-ID: <4FB7C028.80406@xenotime.net>
-Date: Sat, 19 May 2012 08:45:44 -0700
-From: Randy Dunlap <rdunlap@xenotime.net>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.15) Gecko/20110323 Thunderbird/3.1.9
+	Sat, 19 May 2012 11:45:56 -0400
+Date: Sat, 19 May 2012 17:45:51 +0200
+From: Christoph Biedl <linux-kernel.bfrz@manchmal.in-ulm.de>
+To: Greg KH <gregkh@linuxfoundation.org>, linux-kernel@vger.kernel.org,
+        stable@vger.kernel.org, torvalds@linux-foundation.org,
+        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
+        Sami Liedes <sami.liedes@iki.fi>, Tejun Heo <tj@kernel.org>,
+        Christoph Lameter <cl@linux-foundation.org>,
+        Catalin Marinas <catalin.marinas@arm.com>
+Subject: Re: [ 31/54] kmemleak: Fix the kmemleak tracking of the percpu
+ areas with !SMP
+Message-ID: <1337442045@msgid.manchmal.in-ulm.de>
+References: <20120518212656.GA4992@kroah.com>
+ <20120518211602.287791770@linuxfoundation.org>
+ <1337433313@msgid.manchmal.in-ulm.de>
+ <20120519144652.GA2067@kroah.com>
 MIME-Version: 1.0
-To: Sergei Shtylyov <sshtylyov@mvista.com>
-CC: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
-        LKML <linux-kernel@vger.kernel.org>, Ian Abbott <abbotti@mev.co.uk>,
-        Frank Mori Hess <fmhess@users.sourceforge.net>,
-        devel@driverdev.osuosl.org, linux-usb@vger.kernel.org
-Subject: Re: [PATCH -next] usb: add usb.h stubs for CONFIG_USB not enabled
-References: <20120518184943.2c762e8441e53ea24748d1b8@canb.auug.org.au> <4FB6ED55.6090805@xenotime.net> <20120519005031.GA27613@kroah.com> <4FB6FFBF.6000509@xenotime.net> <4FB7AB4D.5040900@mvista.com>
-In-Reply-To: <4FB7AB4D.5040900@mvista.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Identified-User: {1807:box742.bluehost.com:xenotime:xenotime.net} {sentby:smtp auth 50.53.38.135 authed with rdunlap@xenotime.net}
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20120519144652.GA2067@kroah.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/19/2012 07:16 AM, Sergei Shtylyov wrote:
+Greg KH wrote...
 
-> Hello.
+> On Sat, May 19, 2012 at 03:27:33PM +0200, Christoph Biedl wrote:
+> > Greg KH wrote...
+> > 
+> > > 3.0-stable review patch.  If anyone has any objections, please let me know.
+> > 
+> > > From: Catalin Marinas <catalin.marinas@arm.com>
+> > > 
+> > > commit 100d13c3b5b9410f604b86f5e0a34da64b8cf659 upstream.
+> > 
+> > > +	/* kmemleak tracks the percpu allocations separately */
+> > > +	kmemleak_free(fc);
+> > 
+> > That one causes:
+> > 
+> >     mm/percpu.c: In function ‘setup_per_cpu_areas’:
+> >     mm/percpu.c:1877: error: implicit declaration of function ‘kmemleak_free’
+> >     make[1]: *** [mm/percpu.o] Error 1
+> >     make: *** [mm] Error 2
 > 
-> On 19-05-2012 6:04, Randy Dunlap wrote:
-> 
->> From: Randy Dunlap<rdunlap@xenotime.net>
-> 
->> Add stubs for some usb core functions when CONFIG_USB
->> is not enabled.  This fixes these comedi build errors:
-> 
->> ERROR: "usb_deregister" [drivers/staging/comedi/comedi.ko] undefined!
->> ERROR: "usb_register_driver" [drivers/staging/comedi/comedi.ko] undefined!
-> 
->> Signed-off-by: Randy Dunlap<rdunlap@xenotime.net>
->> ---
->> I am only adding the stubs that are needed for comedi to build.
->> I expect that more stubs will be needed as more build errors are
->> found.  It seems to me that linux/usb.h might need more (major)
->> moving of lines to support more stubs in the future.
-> 
->>   Documentation/usb/error-codes.txt |    2 ++
->>   include/linux/usb.h               |   24 +++++++++++++++++++++++-
->>   2 files changed, 25 insertions(+), 1 deletion(-)
->>
->> --- linux-next-20120518.orig/include/linux/usb.h
->> +++ linux-next-20120518/include/linux/usb.h
->> @@ -10,7 +10,7 @@
->>
->>   #ifdef __KERNEL__
->>
->> -#include<linux/errno.h>         /* for -ENODEV */
->> +#include<linux/errno.h>         /* for -ENODEV, -ENOSYS */
->>   #include<linux/delay.h>    /* for mdelay() */
->>   #include<linux/interrupt.h>    /* for in_interrupt() */
->>   #include<linux/list.h>        /* for struct list_head */
->> @@ -515,6 +515,8 @@ static inline struct usb_device *interfa
->>       return to_usb_device(intf->dev.parent);
->>   }
->>
->> +#if defined(CONFIG_USB) || defined(CONFIG_USB_MODULE)
-> 
->    You can use IS_ENABLED(CONFIG_USB) instead of these two now.
+> Odd, it doesn't cause that problem here for me, what ARCH are you
+> building for?  I'm on x86-64.
 
+x86-64 and ARM, not x86-32 for whatever reason, parisc not tested yet.
 
-I know, but I chose not to do that in case the patch
-needs to be applied to some earlier kernels.
+But, if I read the nested #ifdef right, CONFIG_CMP must be disabled to
+hit that code.
 
--- 
-~Randy
+> Actually, I don't think this is needed at all for 3.0 as percpu memleak
+> handling went in with the patch you reference above, so this would cause
+> problems on 3.0.  So I'll go delete that patch from the queue, thanks
+> for letting me know.
+
+I'm fine with that descision.
+
+    Christoph
