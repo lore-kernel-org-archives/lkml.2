@@ -1,140 +1,393 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933298Ab2ESBoY (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 May 2012 21:44:24 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:42122 "EHLO
+	id S1759938Ab2ESBok (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 May 2012 21:44:40 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:37733 "EHLO
 	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757475Ab2ESBoW convert rfc822-to-8bit (ORCPT
+	with ESMTP id S933301Ab2ESBod (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 May 2012 21:44:22 -0400
+	Fri, 18 May 2012 21:44:33 -0400
+Date: Fri, 18 May 2012 18:44:17 -0700 (PDT)
+From: Hugh Dickins <hughd@google.com>
+X-X-Sender: hugh@eggly.anvils
+To: Andrew Morton <akpm@linux-foundation.org>
+cc: Christoph Hellwig <hch@infradead.org>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Alan Cox <alan@lxorguk.ukuu.org.uk>,
+        Stephane Marchesin <marcheu@chromium.org>,
+        Andi Kleen <andi@firstfloor.org>, Dave Airlie <airlied@gmail.com>,
+        Daniel Vetter <daniel@ffwll.ch>, Rob Clark <rob.clark@linaro.org>,
+        Cong Wang <xiyou.wangcong@gmail.com>, linux-mm@kvack.org,
+        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [PATCH v2 1/10] shmem: substitute page if mapping excludes its
+ zone
+In-Reply-To: <alpine.LSU.2.00.1205181753310.9617@eggly.anvils>
+Message-ID: <alpine.LSU.2.00.1205181841540.9617@eggly.anvils>
+References: <alpine.LSU.2.00.1205120447380.28861@eggly.anvils> <alpine.LSU.2.00.1205120453210.28861@eggly.anvils> <20120514161330.def0ac52.akpm@linux-foundation.org> <alpine.LSU.2.00.1205142101420.2196@eggly.anvils>
+ <alpine.LSU.2.00.1205181753310.9617@eggly.anvils>
+User-Agent: Alpine 2.00 (LSU 1167 2008-08-23)
 MIME-Version: 1.0
-In-Reply-To: <CAOesGMh1VQ5BAybLEzVLqL2cOQe2CJ8CgbK+5-R4sH4iG0Kvog@mail.gmail.com>
-References: <20120515154333.6659.66479.sendpatchset@w520> <201205162205.09082.rjw@sisk.pl>
- <CAOesGMjgBWxjAvMpcxWsJf7n3q90sGhccUSgfGxJQA+tfDZBHw@mail.gmail.com>
- <201205170037.34305.rjw@sisk.pl> <CAOesGMi8LPO=AFSshC8UyCmBB3hG38YKHWnHmcNCnLvgR2xcTw@mail.gmail.com>
- <20120518225625.28C643E07C8@localhost> <CAOesGMh1VQ5BAybLEzVLqL2cOQe2CJ8CgbK+5-R4sH4iG0Kvog@mail.gmail.com>
-From: Grant Likely <grant.likely@secretlab.ca>
-Date: Fri, 18 May 2012 19:44:01 -0600
-X-Google-Sender-Auth: 3Iud6fY0kdyB9yEshQH593vc1LY
-Message-ID: <CACxGe6uNgE6Xdx965fSi8ezVts7FFiW6kuBbyEGJXkRD4eoP6Q@mail.gmail.com>
-Subject: Re: [PATCH] gpio: Emma Mobile GPIO driver V2
-To: Olof Johansson <olof@lixom.net>
-Cc: "Rafael J. Wysocki" <rjw@sisk.pl>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Magnus Damm <magnus.damm@gmail.com>, linux-kernel@vger.kernel.org,
-        linus.walleij@stericsson.com, arnd@arndb.de, linux-sh@vger.kernel.org,
-        horms@verge.net.au, lethal@linux-sh.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, May 18, 2012 at 7:18 PM, Olof Johansson <olof@lixom.net> wrote:
-> On Fri, May 18, 2012 at 3:56 PM, Grant Likely <grant.likely@secretlab.ca> wrote:
->> On Wed, 16 May 2012 15:54:16 -0700, Olof Johansson <olof@lixom.net> wrote:
->>> On Wed, May 16, 2012 at 3:37 PM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
->>> > On Thursday, May 17, 2012, Olof Johansson wrote:
->>> >> On Wed, May 16, 2012 at 1:05 PM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
->>> >> > On Wednesday, May 16, 2012, Linus Walleij wrote:
->>> >> >> On Wed, May 16, 2012 at 12:15 PM, Magnus Damm <magnus.damm@gmail.com> wrote:
->>> >> >>
->>> >> >> > Do you guys have any preferences how to merge this?
->>> >> >> >
->>> >> >> > Can I include it together with the EMEV2 SoC bits perhaps? That may be
->>> >> >> > easy so we can keep track of the platform data header file dependency.
->>> >> >>
->>> >> >> For ux500 I made a special "gpio and pins" branch and sent through ARM SoC.
->>> >> >
->>> >> > The problem is we have a patch depending on the $subject one in the EMEV2
->>> >> > series and it would be better to keep them both together if that's not
->>> >> > a big deal.
->>> >>
->>> >> Dependencies are fine, as long as they are not circular. You can
->>> >> either pull in the gpio/pins branch into the EMEV2 branch, or base it
->>> >> on it.
->>> >
->>> > I guess I'll try to merge the gpio/pins into the EMEV2 branch.
->>>
->>> By the way, I should have mentioned that if the dependencies are only
->>> for building and not for context when applying patches, then it's
->>> sufficient to let us know in the pull request so we merge the branches
->>> in the right order when sending to Linus (so we maintain
->>> bisectability).
->>
->> Really?  I don't think that works. The actually commit point will
->> always be unbuildable regardless of the merge order in mainline.  If
->> there is a dependency then the dependency must be merged into the
->> working branch before applying the commit.
->
-> Not if the prerequisite commit sits in a branch that is merged before
-> the dependent commit.
->
-> A git bisect should never end up in a situation where the second
-> commit is included but the first is not. Either that, or I have
-> completely misunderstood how it works.
->
-> Of course, this assumes that the dependency is one-way, and not mutual.
+The GMA500 GPU driver uses GEM shmem objects, but with a new twist:
+the backing RAM has to be below 4GB.  Not a problem while the boards
+supported only 4GB: but now Intel's D2700MUD boards support 8GB, and
+their GMA3600 is managed by the GMA500 driver.
 
-I think either you've misunderstood, or I've misunderstood you.  Sooo,
-let's trot out an example:
+shmem/tmpfs has never pretended to support hardware restrictions on
+the backing memory, but it might have appeared to do so before v3.1,
+and even now it works fine until a page is swapped out then back in.
+When read_cache_page_gfp() supplied a freshly allocated page for copy,
+that compensated for whatever choice might have been made by earlier
+swapin readahead; but swapoff was likely to destroy the illusion.
 
-Consider the following:
+We would like to continue to support GMA500, so now add a new
+shmem_should_substitute_page() check on the zone when about to move a
+page from swapcache to filecache (in swapin and swapoff cases), with
+shmem_substitute_page() to allocate and substitute a suitable page
+(given gma500/gem.c's mapping_set_gfp_mask GFP_KERNEL | __GFP_DMA32).
 
-Mainline (git log --oneline --graph)
-* cc88978 C
-* 3fcf8cf B
-* ecc927b A
+This does involve a minor extension to mem_cgroup_replace_page_cache()
+(the page may or may not have already been charged); and I've removed
+a comment and call to mem_cgroup_uncharge_cache_page(), which in fact
+is always a no-op while PageSwapCache.
 
-Branch X:
-* a3152ba X1
-* 3fcf8cf B
-* ecc927b A
+Also removed optimization of an unlikely path in shmem_getpage_gfp(),
+now that we need to check PageSwapCache more carefully (a racing caller
+might already have made the copy).  And at one point shmem_unuse_inode()
+needs to use the hitherto private page_swapcount(), to guard against
+racing with inode eviction.
 
-Branch Y:
-* 7ebda88 Y1
-* 3fcf8cf B
-* ecc927b A
+It would make sense to extend shmem_should_substitute_page(), to cover
+cpuset and NUMA mempolicy restrictions too, but set that aside for
+now: needs a cleanup of shmem mempolicy handling, and more testing,
+and ought to handle swap faults in do_swap_page() as well as shmem.
 
-Commits A and B are common on all three branches.  Mainline has an
-additional commit 'C', X has X1 and Y has Y1.  Now; let's say commit
-Y1 actually depends on commit X1, and let's say the merge order
-reflects that.  Mainline will now look like:
+Signed-off-by: Hugh Dickins <hughd@google.com>
+Acked-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+---
+I've Cc'ed Stephane, Andi, Dave, Daniel and Rob because of their interest
+in the i915 Sandybridge issue; but reiterate that this patch does nothing
+for that case.
 
-*   602fa8f E: Merge branch 'Y'
-|\
-| * 7ebda88 Y1
-* |   14697ca D: Merge branch 'X'
-|\ \
-| * | a3152ba X1
-| |/
-* | cc88978 C
-|/
-* 3fcf8cf B
-* ecc927b A
+ include/linux/swap.h |    6 +
+ mm/memcontrol.c      |   17 +++-
+ mm/shmem.c           |  158 ++++++++++++++++++++++++++++++++++++-----
+ mm/swapfile.c        |    2 
+ 4 files changed, 159 insertions(+), 24 deletions(-)
 
-Right?  Now if we do a git bisect:
-$ git bisect bad
-You need to start by "git bisect start"
-Do you want me to do it for you [Y/n]? y
-(master|BISECTING) ~/test/gittry$ git bisect bad HEAD
-(master|BISECTING) ~/test/gittry$ git bisect good ecc927b
-Bisecting: 3 revisions left to test after this (roughly 2 steps)
-[a3152ba87f16b1b319869d0920e414a70cdaf2d9] X1
-((a3152ba...)|BISECTING) ~/test/gittry$ git bisect good
-Bisecting: 1 revision left to test after this (roughly 1 step)
-[14697cab82f0ea655d0f8ee10f57f197fe69acb8] D: Merge branch 'X'
-((14697ca...)|BISECTING) ~/test/gittry$ git bisect good
-Bisecting: 0 revisions left to test after this (roughly 0 steps)
-[7ebda88aec6eeeda8e9264de3f22df5ac86d3c70] Y1
-((7ebda88...)|BISECTING) ~/test/gittry$ git log --oneline
-7ebda88 Y1
-3fcf8cf B
-ecc927b A
-
-See?  Y1 shows up without the X1 parent.  With git, there is never a
-straight line history, so every commit must be fully built on top of
-all the commits it needs.  (And did I understand what you were trying
-to describe correctly?)
-
-g.
+--- 3045N.orig/include/linux/swap.h	2012-05-17 16:30:20.222078994 -0700
++++ 3045N/include/linux/swap.h	2012-05-17 16:30:29.786078930 -0700
+@@ -355,6 +355,7 @@ extern int swap_type_of(dev_t, sector_t,
+ extern unsigned int count_swap_pages(int, int);
+ extern sector_t map_swap_page(struct page *, struct block_device **);
+ extern sector_t swapdev_block(int, pgoff_t);
++extern int page_swapcount(struct page *);
+ extern int reuse_swap_page(struct page *);
+ extern int try_to_free_swap(struct page *);
+ struct backing_dev_info;
+@@ -448,6 +449,11 @@ static inline void delete_from_swap_cach
+ {
+ }
+ 
++static inline int page_swapcount(struct page *page)
++{
++	return 0;
++}
++
+ #define reuse_swap_page(page)	(page_mapcount(page) == 1)
+ 
+ static inline int try_to_free_swap(struct page *page)
+--- 3045N.orig/mm/memcontrol.c	2012-05-17 16:30:20.226078835 -0700
++++ 3045N/mm/memcontrol.c	2012-05-17 16:30:29.786078930 -0700
+@@ -3548,7 +3548,7 @@ void mem_cgroup_end_migration(struct mem
+ void mem_cgroup_replace_page_cache(struct page *oldpage,
+ 				  struct page *newpage)
+ {
+-	struct mem_cgroup *memcg;
++	struct mem_cgroup *memcg = NULL;
+ 	struct page_cgroup *pc;
+ 	enum charge_type type = MEM_CGROUP_CHARGE_TYPE_CACHE;
+ 
+@@ -3558,11 +3558,20 @@ void mem_cgroup_replace_page_cache(struc
+ 	pc = lookup_page_cgroup(oldpage);
+ 	/* fix accounting on old pages */
+ 	lock_page_cgroup(pc);
+-	memcg = pc->mem_cgroup;
+-	mem_cgroup_charge_statistics(memcg, false, -1);
+-	ClearPageCgroupUsed(pc);
++	if (PageCgroupUsed(pc)) {
++		memcg = pc->mem_cgroup;
++		mem_cgroup_charge_statistics(memcg, false, -1);
++		ClearPageCgroupUsed(pc);
++	}
+ 	unlock_page_cgroup(pc);
+ 
++	/*
++	 * When called from shmem_substitute_page(), in some cases the
++	 * oldpage has already been charged, and in some cases not.
++	 */
++	if (!memcg)
++		return;
++
+ 	if (PageSwapBacked(oldpage))
+ 		type = MEM_CGROUP_CHARGE_TYPE_SHMEM;
+ 
+--- 3045N.orig/mm/shmem.c	2012-05-17 16:30:20.226078835 -0700
++++ 3045N/mm/shmem.c	2012-05-18 16:28:33.642198028 -0700
+@@ -103,6 +103,9 @@ static unsigned long shmem_default_max_i
+ }
+ #endif
+ 
++static bool shmem_should_substitute_page(struct page *page, gfp_t gfp);
++static int shmem_substitute_page(struct page **pagep, gfp_t gfp,
++				struct shmem_inode_info *info, pgoff_t index);
+ static int shmem_getpage_gfp(struct inode *inode, pgoff_t index,
+ 	struct page **pagep, enum sgp_type sgp, gfp_t gfp, int *fault_type);
+ 
+@@ -604,12 +607,13 @@ static void shmem_evict_inode(struct ino
+  * If swap found in inode, free it and move page from swapcache to filecache.
+  */
+ static int shmem_unuse_inode(struct shmem_inode_info *info,
+-			     swp_entry_t swap, struct page *page)
++			     swp_entry_t swap, struct page **pagep)
+ {
+ 	struct address_space *mapping = info->vfs_inode.i_mapping;
+ 	void *radswap;
+ 	pgoff_t index;
+-	int error;
++	gfp_t gfp;
++	int error = 0;
+ 
+ 	radswap = swp_to_radix_entry(swap);
+ 	index = radix_tree_locate_item(&mapping->page_tree, radswap);
+@@ -625,22 +629,48 @@ static int shmem_unuse_inode(struct shme
+ 	if (shmem_swaplist.next != &info->swaplist)
+ 		list_move_tail(&shmem_swaplist, &info->swaplist);
+ 
++	gfp = mapping_gfp_mask(mapping);
++	if (shmem_should_substitute_page(*pagep, gfp)) {
++		mutex_unlock(&shmem_swaplist_mutex);
++		error = shmem_substitute_page(pagep, gfp, info, index);
++		mutex_lock(&shmem_swaplist_mutex);
++		/*
++		 * We needed to drop mutex to make that restrictive page
++		 * allocation, but the inode might have been freed while we
++		 * dropped it: although a racing shmem_evict_inode() cannot
++		 * complete without emptying the radix_tree, our page lock
++		 * on this swapcache page is not enough to prevent that -
++		 * free_swap_and_cache() of our swap entry will only
++		 * trylock_page(), removing swap from radix_tree whatever.
++		 *
++		 * We must not proceed to shmem_add_to_page_cache() if the
++		 * inode has been freed, but of course we cannot rely on
++		 * inode or mapping or info to check that.  However, we can
++		 * safely check if our swap entry is still in use (and here
++		 * it can't have got reused for another page): if it's still
++		 * in use, then the inode cannot have been freed yet, and we
++		 * can safely proceed (if it's no longer in use, that tells
++		 * nothing about the inode, but we don't need to unuse swap).
++		 */
++		if (!page_swapcount(*pagep))
++			error = -ENOENT;
++	}
++
+ 	/*
+ 	 * We rely on shmem_swaplist_mutex, not only to protect the swaplist,
+ 	 * but also to hold up shmem_evict_inode(): so inode cannot be freed
+ 	 * beneath us (pagelock doesn't help until the page is in pagecache).
+ 	 */
+-	error = shmem_add_to_page_cache(page, mapping, index,
++	if (!error)
++		error = shmem_add_to_page_cache(*pagep, mapping, index,
+ 						GFP_NOWAIT, radswap);
+-	/* which does mem_cgroup_uncharge_cache_page on error */
+-
+ 	if (error != -ENOMEM) {
+ 		/*
+ 		 * Truncation and eviction use free_swap_and_cache(), which
+ 		 * only does trylock page: if we raced, best clean up here.
+ 		 */
+-		delete_from_swap_cache(page);
+-		set_page_dirty(page);
++		delete_from_swap_cache(*pagep);
++		set_page_dirty(*pagep);
+ 		if (!error) {
+ 			spin_lock(&info->lock);
+ 			info->swapped--;
+@@ -660,7 +690,14 @@ int shmem_unuse(swp_entry_t swap, struct
+ 	struct list_head *this, *next;
+ 	struct shmem_inode_info *info;
+ 	int found = 0;
+-	int error;
++	int error = 0;
++
++	/*
++	 * There's a faint possibility that swap page was substituted before
++	 * caller locked it: caller will come back later with the right page.
++	 */
++	if (unlikely(!PageSwapCache(page) || page_private(page) != swap.val))
++		goto out;
+ 
+ 	/*
+ 	 * Charge page using GFP_KERNEL while we can wait, before taking
+@@ -676,7 +713,7 @@ int shmem_unuse(swp_entry_t swap, struct
+ 	list_for_each_safe(this, next, &shmem_swaplist) {
+ 		info = list_entry(this, struct shmem_inode_info, swaplist);
+ 		if (info->swapped)
+-			found = shmem_unuse_inode(info, swap, page);
++			found = shmem_unuse_inode(info, swap, &page);
+ 		else
+ 			list_del_init(&info->swaplist);
+ 		cond_resched();
+@@ -685,8 +722,6 @@ int shmem_unuse(swp_entry_t swap, struct
+ 	}
+ 	mutex_unlock(&shmem_swaplist_mutex);
+ 
+-	if (!found)
+-		mem_cgroup_uncharge_cache_page(page);
+ 	if (found < 0)
+ 		error = found;
+ out:
+@@ -856,6 +891,89 @@ static inline struct mempolicy *shmem_ge
+ #endif
+ 
+ /*
++ * When a page is moved from swapcache to shmem filecache (either by the
++ * usual swapin of shmem_getpage_gfp(), or by the less common swapoff of
++ * shmem_unuse_inode()), it may have been read in earlier from swap, in
++ * ignorance of the mapping it belongs to.  If that mapping has special
++ * constraints (like the gma500 GEM driver, which requires RAM below 4GB),
++ * we may need to copy to a suitable page before moving to filecache.
++ *
++ * In a future release, this may well be extended to respect cpuset and
++ * NUMA mempolicy, and applied also to anonymous pages in do_swap_page();
++ * but for now it is a simple matter of zone.
++ */
++static bool shmem_should_substitute_page(struct page *page, gfp_t gfp)
++{
++	return page_zonenum(page) > gfp_zone(gfp);
++}
++
++static int shmem_substitute_page(struct page **pagep, gfp_t gfp,
++				   struct shmem_inode_info *info, pgoff_t index)
++{
++	struct page *oldpage, *newpage;
++	struct address_space *swap_mapping;
++	pgoff_t swap_index;
++	int error;
++
++	oldpage = *pagep;
++	swap_index = page_private(oldpage);
++	swap_mapping = page_mapping(oldpage);
++
++	/*
++	 * We have arrived here because our zones are constrained, so don't
++	 * limit chance of success by further cpuset and node constraints.
++	 */
++	gfp &= ~GFP_CONSTRAINT_MASK;
++	newpage = shmem_alloc_page(gfp, info, index);
++	if (!newpage)
++		return -ENOMEM;
++
++	page_cache_get(newpage);
++	copy_highpage(newpage, oldpage);
++	flush_dcache_page(newpage);
++
++	__set_page_locked(newpage);
++	SetPageUptodate(newpage);
++	SetPageSwapBacked(newpage);
++	set_page_private(newpage, swap_index);
++	SetPageSwapCache(newpage);
++
++	/*
++	 * Our caller will very soon move newpage out of swapcache, but it's a
++	 * nice clean interface for us to substitute newpage for oldpage there.
++	 */
++	spin_lock_irq(&swap_mapping->tree_lock);
++	error = shmem_radix_tree_replace(swap_mapping, swap_index, oldpage,
++								   newpage);
++	if (!error) {
++		__inc_zone_page_state(newpage, NR_FILE_PAGES);
++		__dec_zone_page_state(oldpage, NR_FILE_PAGES);
++	}
++	spin_unlock_irq(&swap_mapping->tree_lock);
++
++	if (unlikely(error)) {
++		/*
++		 * Is this possible?  I think not, now that our callers check
++		 * both PageSwapCache and page_private after getting page lock;
++		 * but be defensive.  Reverse old to newpage for clear and free.
++		 */
++		oldpage = newpage;
++	} else {
++		mem_cgroup_replace_page_cache(oldpage, newpage);
++		lru_cache_add_anon(newpage);
++		*pagep = newpage;
++	}
++
++	ClearPageSwapCache(oldpage);
++	set_page_private(oldpage, 0);
++
++	unlock_page(oldpage);
++	page_cache_release(oldpage);
++	page_cache_release(oldpage);
++	return error;
++}
++
++/*
+  * shmem_getpage_gfp - find page in cache, or get from swap, or allocate
+  *
+  * If we allocate a new one we do not mark it dirty. That's up to the
+@@ -923,19 +1041,21 @@ repeat:
+ 
+ 		/* We have to do this with page locked to prevent races */
+ 		lock_page(page);
++		if (!PageSwapCache(page) || page_private(page) != swap.val ||
++		    page->mapping) {
++			error = -EEXIST;	/* try again */
++			goto failed;
++		}
+ 		if (!PageUptodate(page)) {
+ 			error = -EIO;
+ 			goto failed;
+ 		}
+ 		wait_on_page_writeback(page);
+ 
+-		/* Someone may have already done it for us */
+-		if (page->mapping) {
+-			if (page->mapping == mapping &&
+-			    page->index == index)
+-				goto done;
+-			error = -EEXIST;
+-			goto failed;
++		if (shmem_should_substitute_page(page, gfp)) {
++			error = shmem_substitute_page(&page, gfp, info, index);
++			if (error)
++				goto failed;
+ 		}
+ 
+ 		error = mem_cgroup_cache_charge(page, current->mm,
+@@ -998,7 +1118,7 @@ repeat:
+ 		if (sgp == SGP_DIRTY)
+ 			set_page_dirty(page);
+ 	}
+-done:
++
+ 	/* Perhaps the file has been truncated since we checked */
+ 	if (sgp != SGP_WRITE &&
+ 	    ((loff_t)index << PAGE_CACHE_SHIFT) >= i_size_read(inode)) {
+--- 3045N.orig/mm/swapfile.c	2012-05-17 16:30:20.226078835 -0700
++++ 3045N/mm/swapfile.c	2012-05-17 16:30:29.790078925 -0700
+@@ -604,7 +604,7 @@ void swapcache_free(swp_entry_t entry, s
+  * This does not give an exact answer when swap count is continued,
+  * but does include the high COUNT_CONTINUED flag to allow for that.
+  */
+-static inline int page_swapcount(struct page *page)
++int page_swapcount(struct page *page)
+ {
+ 	int count = 0;
+ 	struct swap_info_struct *p;
