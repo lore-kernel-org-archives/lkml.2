@@ -1,72 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933333Ab2ESDTR (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 May 2012 23:19:17 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:22600 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933272Ab2ESDTP (ORCPT
+	id S968310Ab2ESDb7 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 May 2012 23:31:59 -0400
+Received: from intermatrixgroup.ru ([195.178.208.66]:58527 "EHLO
+	tservice.net.ru" rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org
+	with ESMTP id S965245Ab2ESDb5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 May 2012 23:19:15 -0400
-X-Authority-Analysis: v=2.0 cv=OMylLFmB c=1 sm=0 a=ZycB6UtQUfgMyuk2+PxD7w==:17 a=XQbtiDEiEegA:10 a=bvAfA6HpYssA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=meVymXHHAAAA:8 a=ayC55rCoAAAA:8 a=w0nfZR6-_8xqnvfk7_8A:9 a=PUjeQqilurYA:10 a=jeBq3FmKZ4MA:10 a=ZycB6UtQUfgMyuk2+PxD7w==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 74.67.80.29
-Message-ID: <1337397553.7562.24.camel@gandalf.stny.rr.com>
-Subject: Re: [PATCH] tracing: Merge separate resize loops
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Vaibhav Nagarnaik <vnagarnaik@google.com>
-Cc: Laurent Chavey <chavey@google.com>, Justin Teravest <teravest@google.com>,
-        David Sharp <dhsharp@google.com>, linux-kernel@vger.kernel.org
-Date: Fri, 18 May 2012 23:19:13 -0400
-In-Reply-To: <CAL26m8KwqabX1TqOcrVZC1cAFyzbo6fKPB44jcrQfqDytNfANA@mail.gmail.com>
-References: <1337372991-14783-1-git-send-email-vnagarnaik@google.com>
-	 <1337392560.7562.21.camel@gandalf.stny.rr.com>
-	 <CAL26m8KwqabX1TqOcrVZC1cAFyzbo6fKPB44jcrQfqDytNfANA@mail.gmail.com>
-Content-Type: text/plain; charset="ISO-8859-15"
-X-Mailer: Evolution 3.2.2-1 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	Fri, 18 May 2012 23:31:57 -0400
+Date: Sat, 19 May 2012 07:31:54 +0400
+From: Evgeniy Polyakov <zbr@ioremap.net>
+To: Devendra Naga <devendra.aaru@gmail.com>
+Cc: linux-kernel@vger.kernel.org, GregKH <greg@kroah.com>
+Subject: Re: [PATCH] drivers/w1: cleanup w1_uevent
+Message-ID: <20120519033154.GA12188@ioremap.net>
+References: <1337330963-20485-1-git-send-email-devendra.aaru@gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1337330963-20485-1-git-send-email-devendra.aaru@gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2012-05-18 at 20:00 -0700, Vaibhav Nagarnaik wrote:
-> On Fri, May 18, 2012 at 6:56 PM, Steven Rostedt <rostedt@goodmis.org> wrote:
-> > On Fri, 2012-05-18 at 13:29 -0700, Vaibhav Nagarnaik wrote:
-> >>
-> >>               /* wait for all the updates to complete */
-> >>               for_each_buffer_cpu(buffer, cpu) {
-> >>                       cpu_buffer = buffer->buffers[cpu];
-> >> -                     if (!cpu_buffer->nr_pages_to_update||
-> >> -                         !cpu_online(cpu))
-> >> +                     if (!cpu_buffer->nr_pages_to_update)
-> >>                               continue;
-> >>
-> >
-> > Why did you make this change? As we only need to wait for completions.
-> >
-> >> -                     wait_for_completion(&cpu_buffer->update_completion);
-> >> -                     /* reset this value */
-> >> +                     if (cpu_online(cpu))
-> >> +                             wait_for_completion(&cpu_buffer->update_done);
-> >>                       cpu_buffer->nr_pages_to_update = 0;
-> >
-> > Or was the original patch buggy, where we never set nr_page_to_update to
-> > zero for the offline case?
+Hi
+
+On Fri, May 18, 2012 at 02:19:23PM +0530, Devendra Naga (devendra.aaru@gmail.com) wrote:
+> There were some return statements around in the w1_uevent, used goto
+> to cleanup those return statements with the help of err variable,
+> and also removed a semi colon at the end of the w1_uevent's closing
+> brace.
+
+I personally do not see whether this is better than what was before
+So, Greg, it is up to you to decide :)
+
+If you pull it in, then feel free to add my acked-by.
+Thank you.
+
+> Signed-off-by: Devendra Naga <devendra.aaru@gmail.com>
+> ---
+>  drivers/w1/w1.c |   14 ++++++--------
+>  1 file changed, 6 insertions(+), 8 deletions(-)
 > 
-> I don't see a bug, since at the start of the resize operation, we
-> always recalculate this value. It will be reset to 0, if there are no
-> updates. I set it to zero at the end just as a precautionary measure.
+> diff --git a/drivers/w1/w1.c b/drivers/w1/w1.c
+> index 9761950..a0d3c59 100644
+> --- a/drivers/w1/w1.c
+> +++ b/drivers/w1/w1.c
+> @@ -557,7 +557,7 @@ static int w1_uevent(struct device *dev, struct kobj_uevent_env *env)
+>  	struct w1_master *md = NULL;
+>  	struct w1_slave *sl = NULL;
+>  	char *event_owner, *name;
+> -	int err;
+> +	int err = 0;
+>  
+>  	if (dev->driver == &w1_master_driver) {
+>  		md = container_of(dev, struct w1_master, dev);
+> @@ -576,19 +576,17 @@ static int w1_uevent(struct device *dev, struct kobj_uevent_env *env)
+>  			event_owner, name, dev_name(dev));
+>  
+>  	if (dev->driver != &w1_slave_driver || !sl)
+> -		return 0;
+> +		goto end;
+>  
+>  	err = add_uevent_var(env, "W1_FID=%02X", sl->reg_num.family);
+>  	if (err)
+> -		return err;
+> +		goto end;
+>  
+>  	err = add_uevent_var(env, "W1_SLAVE_ID=%024LX",
+>  			     (unsigned long long)sl->reg_num.id);
+> -	if (err)
+> -		return err;
+> -
+> -	return 0;
+> -};
+> +end:
+> +	return err;
+> +}
+>  #else
+>  static int w1_uevent(struct device *dev, struct kobj_uevent_env *env)
+>  {
+> -- 
+> 1.7.9.5
 
-But if there were updates on a offline CPU, then the original patch
-would not have set this to zero at the end.
-
-Or are you just saying that we don't need to set this to zero, as it
-isn't used later on? And when we re-enter this function (where its the
-only place, and what it calls, that uses nr_page_to_update), it gets
-reset.
-
-IOW, this reset is just a "clean up" of the nr_pages_to_update. Right?
-
--- Steve
-
-
+-- 
+	Evgeniy Polyakov
