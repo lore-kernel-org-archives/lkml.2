@@ -1,133 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1946479Ab2ESBU2 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 May 2012 21:20:28 -0400
-Received: from mail-lb0-f174.google.com ([209.85.217.174]:33316 "EHLO
-	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932841Ab2ESBUZ convert rfc822-to-8bit (ORCPT
+	id S968291Ab2ESB0y (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 May 2012 21:26:54 -0400
+Received: from mail.active-venture.com ([67.228.131.205]:59599 "EHLO
+	mail.active-venture.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759894Ab2ESB0w (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 May 2012 21:20:25 -0400
-MIME-Version: 1.0
-In-Reply-To: <20120514024816.GA15371@hp-xd.sh.intel.com>
-References: <20120514024816.GA15371@hp-xd.sh.intel.com>
-From: Bjorn Helgaas <bhelgaas@google.com>
-Date: Fri, 18 May 2012 19:20:02 -0600
-Message-ID: <CAErSpo6jE+3uzjrx9v+f=memXP6TpmHnOBcqW5bH1HJO_EQVuw@mail.gmail.com>
-Subject: Re: [PATCH 1/1] Enable LTR/OBFF before device is used by driver
-To: Xudong Hao <xudong.hao@linux.intel.com>
-Cc: linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org,
-        kvm@vger.kernel.org, avi@redhat.com, alex.williamson@redhat.com,
-        xiantao.zhang@intel.com, xudong.hao@intel.com
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
-X-System-Of-Record: true
+	Fri, 18 May 2012 21:26:52 -0400
+X-Originating-IP: 99.61.165.181
+Message-Id: <6.2.5.6.2.20120518181141.028c8090@roeck-us.net>
+X-Mailer: QUALCOMM Windows Eudora Version 6.2.5.6
+Date: Fri, 18 May 2012 18:20:01 -0700
+To: Wim Van Sebroeck <wim@iguana.be>, Stephen Rothwell <sfr@canb.auug.org.au>
+From: Guenter Roeck <guenter@roeck-us.net>
+Subject: Re: linux-next: manual merge of the watchdog tree with the mfd
+  tree
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Aaron Sierra <asierra@xes-inc.com>,
+        Samuel Ortiz <sameo@linux.intel.com>,
+        Randy Dunlap <rdunlap@xenotime.net>, linux-watchdog@vger.kernel.org,
+        Jean Delvare <khali@linux-fr.org>
+In-Reply-To: <20120518083234.GW3074@spo001.leaseweb.com>
+References: <20120518152348.1e5070cdc16cfdf00682546d@canb.auug.org.au>
+ <20120518083234.GW3074@spo001.leaseweb.com>
+Mime-Version: 1.0
+Content-Type: text/plain; charset="us-ascii"; format=flowed
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, May 13, 2012 at 8:48 PM, Xudong Hao <xudong.hao@linux.intel.com> wrote:
-> Enable LTR(Latency tolerance reporting) and OBFF(optimized buffer flush/fill) in
->  pci_enable_device(), so that they are enabled before the device is used by driver.
-
-Please split this into two patches (one for LTR and another for OBFF)
-so they can be reverted individually if they cause trouble.  It would
-be nice if you bundled these together with your other "save/restore
-max Latency Value" patch so they were all together on the mailing
-list.
-
-I read the LTR sections of the PCIe spec, but I can't figure out how
-it's supposed to work.  It says "power management policies ... can be
-implemented to consider Endpoint service requirements."  Does that
-mean there's some OS software that might be involved, or is this just
-a matter of software flipping the LTR-enable bit and the hardware
-doing everything else?  How confident can we be that enabling this is
-safe?
-
-For OBFF, is there some OS piece not included here that tells a Root
-Complex that "now is a good time for Endpoints to do something," e.g.,
-the spec mentions an "operating system timer tick."  Is there some
-benefit to this patch without that piece?  I don't understand the big
-picture yet.
-
-> Signed-off-by: Xudong Hao <xudong.hao@intel.com>
+At 01:32 AM 5/18/2012, Wim Van Sebroeck wrote:
+>Hi Stephen,
 >
-> ---
->  drivers/pci/pci.c |   29 +++++++++++++++++++++++++++++
->  1 files changed, 29 insertions(+), 0 deletions(-)
+> > Today's linux-next merge of the watchdog tree got a conflict in
+> > drivers/watchdog/iTCO_wdt.c between commit 887c8ec7219f ("watchdog:
+> > Convert iTCO_wdt driver to mfd model") from the  tree and commit
+> > c3614aa19d3e ("watchdog: iTCO_wdt.c: fix printk format warnings") from
+> > the watchdog tree.
+> >
+> > I fixed it up (see below) and can carry the fix as necessary.
 >
-> diff --git a/drivers/pci/pci.c b/drivers/pci/pci.c
-> index 111569c..2369883 100644
-> --- a/drivers/pci/pci.c
-> +++ b/drivers/pci/pci.c
-> @@ -1134,6 +1134,31 @@ int pci_load_and_free_saved_state(struct pci_dev *dev,
->  }
->  EXPORT_SYMBOL_GPL(pci_load_and_free_saved_state);
+>Thanks for fixing this up.
 >
-> +static void pci_enable_dev_caps(struct pci_dev *dev)
-> +{
-> +       /* set default value */
-> +       unsigned long type = PCI_EXP_OBFF_SIGNAL_ALWAYS;
+>But I'm a bit surprised: I wasn't Cc'ed about this patch to Convert
+>the iTCO_wdt driver to the mfd model...
+Oh my. Kind of embarrassing to forget one of the maintainers in all 
+the discussions which tree this patch set should go through. Even 
+though I didn't much of the code, my sign-off is there, and I should 
+have made sure that you are on the Cc: list. Sorry for that, and I 
+owe you a beer or two if we ever meet in person.
 
-There's only one use of this value, so skip the variable and just use
-PCI_EXP_OBFF_SIGNAL_ALWAYS in the call.
+Hope you are ok with the changes - the patch set already missed the 
+last commit window because of the which-tree-to-use issue, and it 
+would be sad to miss another one. And Jean is really waiting for it 
+to go in to be able to push some related patches which need the gpio driver.
 
-The comment at pci_enable_obff() says PCI_OBFF_SIGNAL_L0 is the
-preferred type, so please explain why you're not using that.
+Thanks,
+Guenter
 
-> +
-> +       /* LTR(Latency tolerance reporting) allows devices to send
-> +        * messages to the root complex indicating their latency
-> +        * tolerance for snooped & unsnooped memory transactions.
-> +        */
-
-Follow Linux comment style, i.e.,
-
-    /*
-     * LTR ...
-     */
-
-> +       pci_enable_ltr(dev);
-> +
-> +       /* OBFF (optimized buffer flush/fill), where supported,
-> +        * can help improve energy efficiency by giving devices
-> +        * information about when interrupts and other activity
-> +        * will have a reduced power impact.
-> +        */
-> +       pci_enable_obff(dev, type);
-> +}
-> +
-> +static void pci_disable_dev_caps(struct pci_dev *dev)
-> +{
-> +       pci_disable_obff(dev);
-> +       pci_disable_ltr(dev);
-> +}
-> +
->  static int do_pci_enable_device(struct pci_dev *dev, int bars)
->  {
->        int err;
-> @@ -1146,6 +1171,9 @@ static int do_pci_enable_device(struct pci_dev *dev, int bars)
->                return err;
->        pci_fixup_device(pci_fixup_enable, dev);
->
-> +       /* Enable some device capibility before it's used by driver. */
-> +       pci_enable_dev_caps(dev);
-
-Why is this here?  It seems similar to what's already in
-pci_init_capabilities().  Is there a reason to do this in the
-pci_enable_device() path rather than in the pci_device_add() path?
-
-> +
->        return 0;
->  }
->
-> @@ -1361,6 +1389,7 @@ static void do_pci_disable_device(struct pci_dev *dev)
->        }
->
->        pcibios_disable_device(dev);
-> +       pci_disable_dev_caps(dev);
->  }
->
->  /**
-> --
-> 1.6.0.rc1
->
