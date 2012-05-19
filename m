@@ -1,320 +1,585 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760067Ab2ESCrj (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 May 2012 22:47:39 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:14262 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753626Ab2ESCrg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 May 2012 22:47:36 -0400
-Message-ID: <1337395622.28883.43.camel@bling.home>
-Subject: Re: [PATCH 05/13] pci: New pci_acs_enabled()
-From: Alex Williamson <alex.williamson@redhat.com>
-To: Don Dutile <ddutile@redhat.com>
-Cc: Bjorn Helgaas <bhelgaas@google.com>, kvm@vger.kernel.org,
-        B07421@freescale.com, aik@ozlabs.ru, benh@kernel.crashing.org,
-        linux-pci@vger.kernel.org, agraf@suse.de, qemu-devel@nongnu.org,
-        chrisw@sous-sol.org, B08248@freescale.com,
-        iommu@lists.linux-foundation.org, gregkh@linuxfoundation.org,
-        avi@redhat.com, benve@cisco.com, dwmw2@infradead.org,
-        linux-kernel@vger.kernel.org, david@gibson.dropbear.id.au
-Date: Fri, 18 May 2012 20:47:02 -0600
-In-Reply-To: <4FB6D47C.4010003@redhat.com>
-References: <20120511222148.30496.68571.stgit@bling.home>
-		 <20120511225602.30496.80438.stgit@bling.home>
-		 <CAErSpo58hKPFb5duOi64sWuR5AJDTVp0rRHkQLotYE3CMXRRhA@mail.gmail.com>
-		 <1337035766.6954.74.camel@bling.home>
-		 <CAErSpo48ES5iLDCh1WzmHezSEYhPjhtgD5uxoY-TCTKgUBab2g@mail.gmail.com>
-		 <1337116157.6954.212.camel@bling.home> <4FB3ABCF.4030708@redhat.com>
-	 <1337185318.6954.243.camel@bling.home> <4FB6D47C.4010003@redhat.com>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	id S968295Ab2ESC4N (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 May 2012 22:56:13 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:49993 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753626Ab2ESC4I (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 18 May 2012 22:56:08 -0400
+Date: Fri, 18 May 2012 19:55:44 -0700
+Message-Id: <201205190255.q4J2tiGR019358@terminus.zytor.com>
+From: "H. Peter Anvin" <hpa@linux.intel.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Subject: [GIT PULL/RFC] x86/relocs fixes for ld 2.22.52.0.x bug
+Cc: <stable@vger.kernel.org>, "H. Peter Anvin" <hpa@linux.intel.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, "H.J. Lu" <hjl.tools@gmail.com>,
+        Ingo Molnar <mingo@elte.hu>, Ingo Molnar <mingo@kernel.org>,
+        Jarkko Sakkinen <jarkko.sakkinen@intel.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Fri, 18 May 2012 19:55:50 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2012-05-18 at 19:00 -0400, Don Dutile wrote:
-> On 05/18/2012 06:02 PM, Alex Williamson wrote:
-> > On Wed, 2012-05-16 at 09:29 -0400, Don Dutile wrote:
-> >> On 05/15/2012 05:09 PM, Alex Williamson wrote:
-> >>> On Tue, 2012-05-15 at 13:56 -0600, Bjorn Helgaas wrote:
-> >>>> On Mon, May 14, 2012 at 4:49 PM, Alex Williamson
-> >>>> <alex.williamson@redhat.com>   wrote:
-> >>>>> On Mon, 2012-05-14 at 16:02 -0600, Bjorn Helgaas wrote:
-> >>>>>> On Fri, May 11, 2012 at 4:56 PM, Alex Williamson
-> >>>>>> <alex.williamson@redhat.com>   wrote:
-> >>>>>>> In a PCIe environment, transactions aren't always required to
-> >>>>>>> reach the root bus before being re-routed.  Peer-to-peer DMA
-> >>>>>>> may actually not be seen by the IOMMU in these cases.  For
-> >>>>>>> IOMMU groups, we want to provide IOMMU drivers a way to detect
-> >>>>>>> these restrictions.  Provided with a PCI device, pci_acs_enabled
-> >>>>>>> returns the furthest downstream device with a complete PCI ACS
-> >>>>>>> chain.  This information can then be used in grouping to create
-> >>>>>>> fully isolated groups.  ACS chain logic extracted from libvirt.
-> >>>>>>
-> >>>>>> The name "pci_acs_enabled()" sounds like it returns a boolean, but it doesn't.
-> >>>>>
-> >>>>> Right, maybe this should be:
-> >>>>>
-> >>>>> struct pci_dev *pci_find_upstream_acs(struct pci_dev *pdev);
-> >>>>>
-> >> +1; there is a global in the PCI code, pci_acs_enable,
-> >> and a function pci_enable_acs(), which the above name certainly
-> >> confuses.  I recommend  pci_find_top_acs_bridge()
-> >> would be most descriptive.
-> Finally, with my email filters fixed, I can see this email... :)
+Hi Linus,
 
-Welcome back ;)
+This is in case you want to take the patches for the GNU ld
+2.22.52.0.x bug at this time -- the code is a direct cherry-pick from
+the tip:x86/trampoline branch, except I have folded five patches on
+that branch into three.
 
-> > Yep, the new API I'm working with is:
-> >
-> > bool pci_acs_enabled(struct pci_dev *pdev, u16 acs_flags);
-> > bool pci_acs_path_enabled(struct pci_dev *start,
-> >                            struct pci_dev *end, u16 acs_flags);
-> >
-> ok.
-> 
-> >>>>>> I'm not sure what "a complete PCI ACS chain" means.
-> >>>>>>
-> >>>>>> The function starts from "dev" and searches *upstream*, so I'm
-> >>>>>> guessing it returns the root of a subtree that must be contained in a
-> >>>>>> group.
-> >>>>>
-> >>>>> Any intermediate switch between an endpoint and the root bus can
-> >>>>> redirect a dma access without iommu translation,
-> >>>>
-> >>>> Is this "redirection" just the normal PCI bridge forwarding that
-> >>>> allows peer-to-peer transactions, i.e., the rule (from P2P bridge
-> >>>> spec, rev 1.2, sec 4.1) that the bridge apertures define address
-> >>>> ranges that are forwarded from primary to secondary interface, and the
-> >>>> inverse ranges are forwarded from secondary to primary?  For example,
-> >>>> here:
-> >>>>
-> >>>>                      ^
-> >>>>                      |
-> >>>>             +--------+-------+
-> >>>>             |                |
-> >>>>      +------+-----+    +-----++-----+
-> >>>>      | Downstream |    | Downstream |
-> >>>>      |    Port    |    |    Port    |
-> >>>>      |   06:05.0  |    |   06:06.0  |
-> >>>>      +------+-----+    +------+-----+
-> >>>>             |                 |
-> >>>>        +----v----+       +----v----+
-> >>>>        | Endpoint|       | Endpoint|
-> >>>>        | 07:00.0 |       | 08:00.0 |
-> >>>>        +---------+       +---------+
-> >>>>
-> >>>> that rule is all that's needed for a transaction from 07:00.0 to be
-> >>>> forwarded from upstream to the internal switch bus 06, then claimed by
-> >>>> 06:06.0 and forwarded downstream to 08:00.0.  This is plain old PCI,
-> >>>> nothing specific to PCIe.
-> >>>
-> >>> Right, I think the main PCI difference is the point-to-point nature of
-> >>> PCIe vs legacy PCI bus.  On a legacy PCI bus there's no way to prevent
-> >>> devices talking to each other, but on PCIe the transaction makes a
-> >>> U-turn at some point and heads out another downstream port.  ACS allows
-> >>> us to prevent that from happening.
-> >>>
-> >> detail: PCIe up/downstream routing is really done by an internal switch;
-> >>           ACS forces the legacy, PCI base-limit address routing and *forces*
-> >>           the switch to always route the transaction from a downstream port
-> >>           to the upstream port.
-> >>
-> >>>> I don't understand ACS very well, but it looks like it basically
-> >>>> provides ways to prevent that peer-to-peer forwarding, so transactions
-> >>>> would be sent upstream toward the root (and specifically, the IOMMU)
-> >>>> instead of being directly claimed by 06:06.0.
-> >>>
-> >>> Yep, that's my meager understanding as well.
-> >>>
-> >> +1
-> >>
-> >>>>> so we're looking for
-> >>>>> the furthest upstream device for which acs is enabled all the way up to
-> >>>>> the root bus.
-> >>>>
-> >>>> Correct me if this is wrong: To force device A's DMAs to be processed
-> >>>> by an IOMMU, ACS must be enabled on the root port and every downstream
-> >>>> port along the path to A.
-> >>>
-> >>> Yes, modulo this comment in libvirt source:
-> >>>
-> >>>       /* if we have no parent, and this is the root bus, ACS doesn't come
-> >>>        * into play since devices on the root bus can't P2P without going
-> >>>        * through the root IOMMU.
-> >>>        */
-> >>>
-> >> Correct. PCIe spec says roots must support ACS. I believe all the
-> >> root bridges that have an IOMMU have ACS wired in/on.
-> >
-> > Would you mind looking for the paragraph that says this?  I'd rather
-> > code this into the iommu driver callers than core PCI code if this is
-> > just a platform standard.
-> >
-> In section 6.12.1.1 of PCIe Base spec, rev 3.0, it states:
-> ACS upstream fwding: Must be implemented by Root Ports if the RC supports
->                       Redirected Request Validation;
+This is not a minimal fix, not at all, but it is a tested code base.
 
-Huh?  (If support ACS.RR then must support ACS.UF) != must support ACS.
+The following changes since commit 36be50515fe2aef61533b516fa2576a2c7fe7664:
 
-> -- which means, if a Root port allows a peer-to-peer transaction to another
->     one of its ports, then it has to support ACS.
+  Linux 3.4-rc7 (2012-05-12 18:37:47 -0700)
 
-I don't get that at all from 6.12.1.1, especially given the first
-sentence of that section:
+are available in the git repository at:
+  git://git.kernel.org/pub/scm/linux/kernel/git/tip/tip.git x86/ld-fix
 
-        This section applies to Root Ports and Downstream Switch Ports
-        that implement an ACS Extended Capability structure.
-        
+The head of this tree is 24ab82bd9bf18f3efc69a131d73577940941e1b7.
 
-> So, this means that:
-> (a) if a Root complex with multiple ports can't do peer-to-peer to another port,
->      ACS isn't needed
-> (b) if a Root complex w/multiple ports can do peer-to-peer to another port,
->      it must have ACS capability if it does...
-> and since the linux code turns on ACS for all ports with an ACS cap,
-> it degenerates (in Linux) that all Root ports are implementing the
-> end functionality of ACS==on, all traffic goes up to IOMMU in RC.
->   
-> >>> So we assume that a redirect at the point of the iommu will factor in
-> >>> iommu translation.
-> >>>
-> >>>> If so, I think you're trying to find out the closest upstream device X
-> >>>> such that everything leading to X has ACS enabled.  Every device below
-> >>>> X can DMA freely to other devices below X, so they would all have to
-> >>>> be in the same isolated group.
-> >>>
-> >>> Yes
-> >>>
-> >>>> I tried to work through some examples to develop some intuition about this:
-> >>>
-> >>> (inserting fixed url)
-> >>>> http://www.asciiflow.com/#3736558963405980039
-> >>>
-> >>>> pci_acs_enabled(00:00.0) = 00:00.0 (on root bus (but doesn't it matter
-> >>>> if 00:00.0 is PCIe or if RP has ACS?))
-> >>>
-> >>> Hmm, the latter is the assumption above.  For the former, I think
-> >>> libvirt was probably assuming that PCI devices must have a PCIe device
-> >>> upstream from them because x86 doesn't have assignment friendly IOMMUs
-> >>> except on PCIe.  I'll need to work on making that more generic.
-> >>>
-> >>>> pci_acs_enabled(00:01.0) = 00:01.0 (on root bus)
-> >>>> pci_acs_enabled(01:00.0) = 01:00.0 (acs_dev = 00:01.0, 01:00.0 is not
-> >>>> PCIe; seems wrong)
-> >>>
-> >>> Oops, I'm calling pci_find_upstream_pcie_bridge() first on any of my
-> >>> input devices, so this was passing for me.  I'll need to incorporate
-> >>> that generically.
-> >>>
-> >>>> pci_acs_enabled(00:02.0) = 00:02.0 (on root bus; seems wrong if RP
-> >>>> doesn't have ACS)
-> >>>
-> >>> Yeah, let me validate the libvirt assumption.  I see ACS on my root
-> >>> port, so maybe they're just assuming it's always enabled or that the
-> >>> precedence favors IOMMU translation.  I'm also starting to think that we
-> >>> might want "from" and "to" struct pci_dev parameters to make it more
-> >>> flexible where the iommu lives in the system.
-> >>>
-> >> see comment above wrt root ports that have IOMMUs in them.
-> >
-> > Except it really seems to be platform convention where the IOMMU lives.
-> > The DMAR for VT-d describes which devices and hierarchies a DRHD is used
-> > for and from that we can make assumptions about where it physically
-> > lives.  AMD-Vi exposes a PCI device as the IOMMU, but it's just a peer
-> > function on the root bus.  For now I'm just allowing
-> > pci_acs_path_enabled to take NULL for and end, which means "up to the
-> > root bus".
-> >
-> ATM, VT-d IOMMUs are only in the RCs, so, ACS at each downstream port
-> in a tree would/should return 'true' to the acs_enabled check when it gets to a Root port.
-> For AMD-Vi, I thought the same held true, ATM, but I have to dig through
-> yet-another spec (or ask Joerg to check-in to this thread & provide the details).
+H. Peter Anvin (3):
+      x86, realmode: 16-bit real-mode code support for relocs tool
+      x86, relocs: Workaround for binutils 2.22.52.0.1 section bug
+      x86, relocs: When printing an error, say relative or absolute
 
-But are we programming to convention or spec?  And I'm still confused
-about why we assume the root port isn't susceptible to redirection
-before IOMMU translation.  One of the benefits of the
-pci_acs_path_enable() API is that it pushes convention out to the IOMMU
-driver.  So it's intel-iommu.c's problem whether to test for ACS support
-to the RC or to a given level (and for that matter know whether IOMMU
-translation takes precedence over redirection in the RC).
+ Makefile                                     |    9 +-
+ arch/x86/Makefile                            |    3 +
+ arch/x86/boot/compressed/Makefile            |    9 +-
+ arch/x86/tools/.gitignore                    |    1 +
+ arch/x86/tools/Makefile                      |    4 +
+ arch/x86/{boot/compressed => tools}/relocs.c |  242 ++++++++++++++++++++------
+ scripts/Makefile                             |    2 +
+ 7 files changed, 205 insertions(+), 65 deletions(-)
 
-> >>
-> >>>> pci_acs_enabled(02:00.0) = 00:02.0 (acs_dev = 00:02.0, 02:00.0 has no ACS cap)
-> >>>> pci_acs_enabled(03:00.0) = 00:02.0 (acs_dev = 00:02.0)
-> >>>> pci_acs_enabled(02:01.0) = 02:01.0 (acs_dev = 00:02.0, 02:01.0 has ACS enabled)
-> >>>> pci_acs_enabled(04:00.0) = 04:00.0 (acs_dev = 02:01.0, 04:00.0 is not
-> >>>> a bridge; seems wrong if 04:00 is a multi-function device)
-> >>>
-> >>> AIUI, ACS is not an endpoint property, so this is what should happen.  I
-> >>> don't think multifunction plays a role other than how much do we trust
-> >>> the implementation to not allow back channels between functions (the
-> >>> answer should probably be not at all).
-> >>>
-> >> correct. ACS is a *bridge* property.
-> >> The unknown wrt multifunction devices is that such devices *could* be implemented
-> >> by a hidden (not responding to PCI cfg accesses from downstream port) PCI bridge
-> >> btwn the functions within a device.
-> >> Such a bridge could allow peer-to-peer xactions and there is no way for OS's to
-> >> force ACS.  So, one has to ask the hw vendors if such a hidden device exists
-> >> in the implementation, and whether peer-to-peer is enabled/allowed -- a hidden PCI
-> >> bridge/PCIe-switch could just be hardwired to push all IO to upstream port,
-> >> and allow parent bridge re-route it back down if peer-to-peer is desired.
-> >> Debate exists whether multifunction devices are 'secure' b/c of this unknown.
-> >> Maybe a PCIe (min., SRIOV) spec change is needed in this area to
-> >> determine this status about a device (via pci cfg/cap space).
-> >
-> > Well, there is actually a section of the ACS part of the spec
-> > identifying valid flags for multifunction devices.  Secretly I'd like to
-> > use this as justification for blacklisting all multifunction devices
-> > that don't explicitly support ACS, but that makes for pretty course
-> > granularity.  For instance, all these devices end up in a group:
-> >
-> >     +-14.0  ATI Technologies Inc SBx00 SMBus Controller
-> >     +-14.2  ATI Technologies Inc SBx00 Azalia (Intel HDA)
-> >     +-14.3  ATI Technologies Inc SB7x0/SB8x0/SB9x0 LPC host controller
-> >     +-14.4-[05]----0e.0  VIA Technologies, Inc. VT6306/7/8 [Fire II(M)] IEEE 1394 OHCI Controller
-> >
-> >    00:14.4 PCI bridge: ATI Technologies Inc SBx00 PCI to PCI Bridge (rev 40)
-> >
-> > And these in another:
-> >
-> >     +-15.0-[06]----00.0  Realtek Semiconductor Co., Ltd. RTL8111/8168B PCI Express Gigabit Ethernet controller
-> >     +-15.1-[07]----00.0  Etron Technology, Inc. EJ168 USB 3.0 Host Controller
-> >     +-15.2-[08]--
-> >     +-15.3-[09]--
-> >
-> >    00:15.0 PCI bridge: ATI Technologies Inc SB700/SB800/SB900 PCI to PCI bridge (PCIE port 0)
-> >    00:15.1 PCI bridge: ATI Technologies Inc SB700/SB800/SB900 PCI to PCI bridge (PCIE port 1)
-> >    00:15.2 PCI bridge: ATI Technologies Inc SB900 PCI to PCI bridge (PCIE port 2)
-> >    00:15.3 PCI bridge: ATI Technologies Inc SB900 PCI to PCI bridge (PCIE port 3)
-> >
-> > Am I misinterpreting the spec or is this the correct, if strict,
-> > interpretation?
-> >
-> > Alex
-> >
-> Well, in digging into the ACS-support in Root port question above,
-> I just found out about this ACS support status for multifunctions too.
-> I need more time to read/digest, but a quick read says MFDs should have
-> an ACS cap with relevant RO-status & control bits to direct/control
-> peer-to-peer and ACS-upstream.  Lack of an ACS struct implies(?)
-> peer-to-peer can happen, and thus, the above have to be in the same iommu group.
-> Unfortunately, I think a large lot of MFDs don't have ACS caps,
-> and don't/can't do peer-to-peer, so the above is heavy-handed,
-> albeit to spec.
-> Maybe we need a (large?) pci-quirk for the list of existing
-> MFDs that don't have ACS caps that would enable the above devices
-> to be in separate groups.
-> On the flip side, it solves some of the quirks for MFDs that
-> use the wrong BDF in their src-id dma packets! :) -- they default
-> to the same group now...
-
-Yep, sounds like you might agree with my patch, it's heavy handed, but
-seems to adhere to the spec.  That probably just means we need an option
-to allow a more lenient interpretation, that maybe we don't have to
-support.  Thanks,
-
-Alex
-
+diff --git a/Makefile b/Makefile
+index 48bd1f5..db2bcf3 100644
+--- a/Makefile
++++ b/Makefile
+@@ -442,7 +442,7 @@ asm-generic:
+ 
+ no-dot-config-targets := clean mrproper distclean \
+ 			 cscope gtags TAGS tags help %docs check% coccicheck \
+-			 include/linux/version.h headers_% archheaders \
++			 include/linux/version.h headers_% archheaders archscripts \
+ 			 kernelversion %src-pkg
+ 
+ config-targets := 0
+@@ -979,7 +979,7 @@ prepare1: prepare2 include/linux/version.h include/generated/utsrelease.h \
+                    include/config/auto.conf
+ 	$(cmd_crmodverdir)
+ 
+-archprepare: archheaders prepare1 scripts_basic
++archprepare: archheaders archscripts prepare1 scripts_basic
+ 
+ prepare0: archprepare FORCE
+ 	$(Q)$(MAKE) $(build)=.
+@@ -1049,8 +1049,11 @@ hdr-dst = $(if $(KBUILD_HEADERS), dst=include/asm-$(hdr-arch), dst=include/asm)
+ PHONY += archheaders
+ archheaders:
+ 
++PHONY += archscripts
++archscripts:
++
+ PHONY += __headers
+-__headers: include/linux/version.h scripts_basic asm-generic archheaders FORCE
++__headers: include/linux/version.h scripts_basic asm-generic archheaders archscripts FORCE
+ 	$(Q)$(MAKE) $(build)=scripts build_unifdef
+ 
+ PHONY += headers_install_all
+diff --git a/arch/x86/Makefile b/arch/x86/Makefile
+index 41a7237..94e91e4 100644
+--- a/arch/x86/Makefile
++++ b/arch/x86/Makefile
+@@ -134,6 +134,9 @@ KBUILD_CFLAGS += $(call cc-option,-mno-avx,)
+ KBUILD_CFLAGS += $(mflags-y)
+ KBUILD_AFLAGS += $(mflags-y)
+ 
++archscripts:
++	$(Q)$(MAKE) $(build)=arch/x86/tools relocs
++
+ ###
+ # Syscall table generation
+ 
+diff --git a/arch/x86/boot/compressed/Makefile b/arch/x86/boot/compressed/Makefile
+index fd55a2f..e398bb5 100644
+--- a/arch/x86/boot/compressed/Makefile
++++ b/arch/x86/boot/compressed/Makefile
+@@ -40,13 +40,12 @@ OBJCOPYFLAGS_vmlinux.bin :=  -R .comment -S
+ $(obj)/vmlinux.bin: vmlinux FORCE
+ 	$(call if_changed,objcopy)
+ 
++targets += vmlinux.bin.all vmlinux.relocs
+ 
+-targets += vmlinux.bin.all vmlinux.relocs relocs
+-hostprogs-$(CONFIG_X86_NEED_RELOCS) += relocs
+-
++CMD_RELOCS = arch/x86/tools/relocs
+ quiet_cmd_relocs = RELOCS  $@
+-      cmd_relocs = $(obj)/relocs $< > $@;$(obj)/relocs --abs-relocs $<
+-$(obj)/vmlinux.relocs: vmlinux $(obj)/relocs FORCE
++      cmd_relocs = $(CMD_RELOCS) $< > $@;$(CMD_RELOCS) --abs-relocs $<
++$(obj)/vmlinux.relocs: vmlinux FORCE
+ 	$(call if_changed,relocs)
+ 
+ vmlinux.bin.all-y := $(obj)/vmlinux.bin
+diff --git a/arch/x86/tools/.gitignore b/arch/x86/tools/.gitignore
+new file mode 100644
+index 0000000..be0ed06
+--- /dev/null
++++ b/arch/x86/tools/.gitignore
+@@ -0,0 +1 @@
++relocs
+diff --git a/arch/x86/tools/Makefile b/arch/x86/tools/Makefile
+index d511aa9..733057b 100644
+--- a/arch/x86/tools/Makefile
++++ b/arch/x86/tools/Makefile
+@@ -36,3 +36,7 @@ HOSTCFLAGS_insn_sanity.o := -Wall -I$(objtree)/arch/x86/lib/ -I$(srctree)/arch/x
+ $(obj)/test_get_len.o: $(srctree)/arch/x86/lib/insn.c $(srctree)/arch/x86/lib/inat.c $(srctree)/arch/x86/include/asm/inat_types.h $(srctree)/arch/x86/include/asm/inat.h $(srctree)/arch/x86/include/asm/insn.h $(objtree)/arch/x86/lib/inat-tables.c
+ 
+ $(obj)/insn_sanity.o: $(srctree)/arch/x86/lib/insn.c $(srctree)/arch/x86/lib/inat.c $(srctree)/arch/x86/include/asm/inat_types.h $(srctree)/arch/x86/include/asm/inat.h $(srctree)/arch/x86/include/asm/insn.h $(objtree)/arch/x86/lib/inat-tables.c
++
++HOST_EXTRACFLAGS += -I$(srctree)/tools/include
++hostprogs-y	+= relocs
++relocs: $(obj)/relocs
+diff --git a/arch/x86/boot/compressed/relocs.c b/arch/x86/tools/relocs.c
+similarity index 76%
+rename from arch/x86/boot/compressed/relocs.c
+rename to arch/x86/tools/relocs.c
+index fb7117a..b43cfcd 100644
+--- a/arch/x86/boot/compressed/relocs.c
++++ b/arch/x86/tools/relocs.c
+@@ -18,6 +18,8 @@ static void die(char *fmt, ...);
+ static Elf32_Ehdr ehdr;
+ static unsigned long reloc_count, reloc_idx;
+ static unsigned long *relocs;
++static unsigned long reloc16_count, reloc16_idx;
++static unsigned long *relocs16;
+ 
+ struct section {
+ 	Elf32_Shdr     shdr;
+@@ -28,52 +30,86 @@ struct section {
+ };
+ static struct section *secs;
+ 
++enum symtype {
++	S_ABS,
++	S_REL,
++	S_SEG,
++	S_LIN,
++	S_NSYMTYPES
++};
++
++static const char * const sym_regex_kernel[S_NSYMTYPES] = {
+ /*
+  * Following symbols have been audited. There values are constant and do
+  * not change if bzImage is loaded at a different physical address than
+  * the address for which it has been compiled. Don't warn user about
+  * absolute relocations present w.r.t these symbols.
+  */
+-static const char abs_sym_regex[] =
++	[S_ABS] =
+ 	"^(xen_irq_disable_direct_reloc$|"
+ 	"xen_save_fl_direct_reloc$|"
+ 	"VDSO|"
+-	"__crc_)";
+-static regex_t abs_sym_regex_c;
+-static int is_abs_reloc(const char *sym_name)
+-{
+-	return !regexec(&abs_sym_regex_c, sym_name, 0, NULL, 0);
+-}
++	"__crc_)",
+ 
+ /*
+  * These symbols are known to be relative, even if the linker marks them
+  * as absolute (typically defined outside any section in the linker script.)
+  */
+-static const char rel_sym_regex[] =
+-	"^_end$";
+-static regex_t rel_sym_regex_c;
+-static int is_rel_reloc(const char *sym_name)
++	[S_REL] =
++	"^(__init_(begin|end)|"
++	"__x86_cpu_dev_(start|end)|"
++	"(__parainstructions|__alt_instructions)(|_end)|"
++	"(__iommu_table|__apicdrivers|__smp_locks)(|_end)|"
++	"_end)$"
++};
++
++
++static const char * const sym_regex_realmode[S_NSYMTYPES] = {
++/*
++ * These are 16-bit segment symbols when compiling 16-bit code.
++ */
++	[S_SEG] =
++	"^real_mode_seg$",
++
++/*
++ * These are offsets belonging to segments, as opposed to linear addresses,
++ * when compiling 16-bit code.
++ */
++	[S_LIN] =
++	"^pa_",
++};
++
++static const char * const *sym_regex;
++
++static regex_t sym_regex_c[S_NSYMTYPES];
++static int is_reloc(enum symtype type, const char *sym_name)
+ {
+-	return !regexec(&rel_sym_regex_c, sym_name, 0, NULL, 0);
++	return sym_regex[type] &&
++		!regexec(&sym_regex_c[type], sym_name, 0, NULL, 0);
+ }
+ 
+-static void regex_init(void)
++static void regex_init(int use_real_mode)
+ {
+         char errbuf[128];
+         int err;
+-	
+-        err = regcomp(&abs_sym_regex_c, abs_sym_regex,
+-                      REG_EXTENDED|REG_NOSUB);
+-        if (err) {
+-                regerror(err, &abs_sym_regex_c, errbuf, sizeof errbuf);
+-                die("%s", errbuf);
+-        }
++	int i;
++
++	if (use_real_mode)
++		sym_regex = sym_regex_realmode;
++	else
++		sym_regex = sym_regex_kernel;
+ 
+-        err = regcomp(&rel_sym_regex_c, rel_sym_regex,
+-                      REG_EXTENDED|REG_NOSUB);
+-        if (err) {
+-                regerror(err, &rel_sym_regex_c, errbuf, sizeof errbuf);
+-                die("%s", errbuf);
++	for (i = 0; i < S_NSYMTYPES; i++) {
++		if (!sym_regex[i])
++			continue;
++
++		err = regcomp(&sym_regex_c[i], sym_regex[i],
++			      REG_EXTENDED|REG_NOSUB);
++
++		if (err) {
++			regerror(err, &sym_regex_c[i], errbuf, sizeof errbuf);
++			die("%s", errbuf);
++		}
+         }
+ }
+ 
+@@ -154,6 +190,10 @@ static const char *rel_type(unsigned type)
+ 		REL_TYPE(R_386_RELATIVE),
+ 		REL_TYPE(R_386_GOTOFF),
+ 		REL_TYPE(R_386_GOTPC),
++		REL_TYPE(R_386_8),
++		REL_TYPE(R_386_PC8),
++		REL_TYPE(R_386_16),
++		REL_TYPE(R_386_PC16),
+ #undef REL_TYPE
+ 	};
+ 	const char *name = "unknown type rel type name";
+@@ -189,7 +229,7 @@ static const char *sym_name(const char *sym_strtab, Elf32_Sym *sym)
+ 		name = sym_strtab + sym->st_name;
+ 	}
+ 	else {
+-		name = sec_name(secs[sym->st_shndx].shdr.sh_name);
++		name = sec_name(sym->st_shndx);
+ 	}
+ 	return name;
+ }
+@@ -472,7 +512,7 @@ static void print_absolute_relocs(void)
+ 			 * Before warning check if this absolute symbol
+ 			 * relocation is harmless.
+ 			 */
+-			if (is_abs_reloc(name) || is_rel_reloc(name))
++			if (is_reloc(S_ABS, name) || is_reloc(S_REL, name))
+ 				continue;
+ 
+ 			if (!printed) {
+@@ -496,7 +536,8 @@ static void print_absolute_relocs(void)
+ 		printf("\n");
+ }
+ 
+-static void walk_relocs(void (*visit)(Elf32_Rel *rel, Elf32_Sym *sym))
++static void walk_relocs(void (*visit)(Elf32_Rel *rel, Elf32_Sym *sym),
++			int use_real_mode)
+ {
+ 	int i;
+ 	/* Walk through the relocations */
+@@ -521,30 +562,67 @@ static void walk_relocs(void (*visit)(Elf32_Rel *rel, Elf32_Sym *sym))
+ 			Elf32_Rel *rel;
+ 			Elf32_Sym *sym;
+ 			unsigned r_type;
++			const char *symname;
++			int shn_abs;
++
+ 			rel = &sec->reltab[j];
+ 			sym = &sh_symtab[ELF32_R_SYM(rel->r_info)];
+ 			r_type = ELF32_R_TYPE(rel->r_info);
+-			/* Don't visit relocations to absolute symbols */
+-			if (sym->st_shndx == SHN_ABS &&
+-			    !is_rel_reloc(sym_name(sym_strtab, sym))) {
+-				continue;
+-			}
++
++			shn_abs = sym->st_shndx == SHN_ABS;
++
+ 			switch (r_type) {
+ 			case R_386_NONE:
+ 			case R_386_PC32:
++			case R_386_PC16:
++			case R_386_PC8:
+ 				/*
+ 				 * NONE can be ignored and and PC relative
+ 				 * relocations don't need to be adjusted.
+ 				 */
+ 				break;
++
++			case R_386_16:
++				symname = sym_name(sym_strtab, sym);
++				if (!use_real_mode)
++					goto bad;
++				if (shn_abs) {
++					if (is_reloc(S_ABS, symname))
++						break;
++					else if (!is_reloc(S_SEG, symname))
++						goto bad;
++				} else {
++					if (is_reloc(S_LIN, symname))
++						goto bad;
++					else
++						break;
++				}
++				visit(rel, sym);
++				break;
++
+ 			case R_386_32:
+-				/* Visit relocations that need to be adjusted */
++				symname = sym_name(sym_strtab, sym);
++				if (shn_abs) {
++					if (is_reloc(S_ABS, symname))
++						break;
++					else if (!is_reloc(S_REL, symname))
++						goto bad;
++				} else {
++					if (use_real_mode &&
++					    !is_reloc(S_LIN, symname))
++						break;
++				}
+ 				visit(rel, sym);
+ 				break;
+ 			default:
+ 				die("Unsupported relocation type: %s (%d)\n",
+ 				    rel_type(r_type), r_type);
+ 				break;
++			bad:
++				symname = sym_name(sym_strtab, sym);
++				die("Invalid %s %s relocation: %s\n",
++				    shn_abs ? "absolute" : "relative",
++				    rel_type(r_type), symname);
+ 			}
+ 		}
+ 	}
+@@ -552,13 +630,19 @@ static void walk_relocs(void (*visit)(Elf32_Rel *rel, Elf32_Sym *sym))
+ 
+ static void count_reloc(Elf32_Rel *rel, Elf32_Sym *sym)
+ {
+-	reloc_count += 1;
++	if (ELF32_R_TYPE(rel->r_info) == R_386_16)
++		reloc16_count++;
++	else
++		reloc_count++;
+ }
+ 
+ static void collect_reloc(Elf32_Rel *rel, Elf32_Sym *sym)
+ {
+ 	/* Remember the address that needs to be adjusted. */
+-	relocs[reloc_idx++] = rel->r_offset;
++	if (ELF32_R_TYPE(rel->r_info) == R_386_16)
++		relocs16[reloc16_idx++] = rel->r_offset;
++	else
++		relocs[reloc_idx++] = rel->r_offset;
+ }
+ 
+ static int cmp_relocs(const void *va, const void *vb)
+@@ -568,23 +652,41 @@ static int cmp_relocs(const void *va, const void *vb)
+ 	return (*a == *b)? 0 : (*a > *b)? 1 : -1;
+ }
+ 
+-static void emit_relocs(int as_text)
++static int write32(unsigned int v, FILE *f)
++{
++	unsigned char buf[4];
++
++	put_unaligned_le32(v, buf);
++	return fwrite(buf, 1, 4, f) == 4 ? 0 : -1;
++}
++
++static void emit_relocs(int as_text, int use_real_mode)
+ {
+ 	int i;
+ 	/* Count how many relocations I have and allocate space for them. */
+ 	reloc_count = 0;
+-	walk_relocs(count_reloc);
++	walk_relocs(count_reloc, use_real_mode);
+ 	relocs = malloc(reloc_count * sizeof(relocs[0]));
+ 	if (!relocs) {
+ 		die("malloc of %d entries for relocs failed\n",
+ 			reloc_count);
+ 	}
++
++	relocs16 = malloc(reloc16_count * sizeof(relocs[0]));
++	if (!relocs16) {
++		die("malloc of %d entries for relocs16 failed\n",
++			reloc16_count);
++	}
+ 	/* Collect up the relocations */
+ 	reloc_idx = 0;
+-	walk_relocs(collect_reloc);
++	walk_relocs(collect_reloc, use_real_mode);
++
++	if (reloc16_count && !use_real_mode)
++		die("Segment relocations found but --realmode not specified\n");
+ 
+ 	/* Order the relocations for more efficient processing */
+ 	qsort(relocs, reloc_count, sizeof(relocs[0]), cmp_relocs);
++	qsort(relocs16, reloc16_count, sizeof(relocs16[0]), cmp_relocs);
+ 
+ 	/* Print the relocations */
+ 	if (as_text) {
+@@ -593,58 +695,83 @@ static void emit_relocs(int as_text)
+ 		 */
+ 		printf(".section \".data.reloc\",\"a\"\n");
+ 		printf(".balign 4\n");
+-		for (i = 0; i < reloc_count; i++) {
+-			printf("\t .long 0x%08lx\n", relocs[i]);
++		if (use_real_mode) {
++			printf("\t.long %lu\n", reloc16_count);
++			for (i = 0; i < reloc16_count; i++)
++				printf("\t.long 0x%08lx\n", relocs16[i]);
++			printf("\t.long %lu\n", reloc_count);
++			for (i = 0; i < reloc_count; i++) {
++				printf("\t.long 0x%08lx\n", relocs[i]);
++			}
++		} else {
++			/* Print a stop */
++			printf("\t.long 0x%08lx\n", (unsigned long)0);
++			for (i = 0; i < reloc_count; i++) {
++				printf("\t.long 0x%08lx\n", relocs[i]);
++			}
+ 		}
++
+ 		printf("\n");
+ 	}
+ 	else {
+-		unsigned char buf[4];
+-		/* Print a stop */
+-		fwrite("\0\0\0\0", 4, 1, stdout);
+-		/* Now print each relocation */
+-		for (i = 0; i < reloc_count; i++) {
+-			put_unaligned_le32(relocs[i], buf);
+-			fwrite(buf, 4, 1, stdout);
++		if (use_real_mode) {
++			write32(reloc16_count, stdout);
++			for (i = 0; i < reloc16_count; i++)
++				write32(relocs16[i], stdout);
++			write32(reloc_count, stdout);
++
++			/* Now print each relocation */
++			for (i = 0; i < reloc_count; i++)
++				write32(relocs[i], stdout);
++		} else {
++			/* Print a stop */
++			write32(0, stdout);
++
++			/* Now print each relocation */
++			for (i = 0; i < reloc_count; i++) {
++				write32(relocs[i], stdout);
++			}
+ 		}
+ 	}
+ }
+ 
+ static void usage(void)
+ {
+-	die("relocs [--abs-syms |--abs-relocs | --text] vmlinux\n");
++	die("relocs [--abs-syms|--abs-relocs|--text|--realmode] vmlinux\n");
+ }
+ 
+ int main(int argc, char **argv)
+ {
+ 	int show_absolute_syms, show_absolute_relocs;
+-	int as_text;
++	int as_text, use_real_mode;
+ 	const char *fname;
+ 	FILE *fp;
+ 	int i;
+ 
+-	regex_init();
+-
+ 	show_absolute_syms = 0;
+ 	show_absolute_relocs = 0;
+ 	as_text = 0;
++	use_real_mode = 0;
+ 	fname = NULL;
+ 	for (i = 1; i < argc; i++) {
+ 		char *arg = argv[i];
+ 		if (*arg == '-') {
+-			if (strcmp(argv[1], "--abs-syms") == 0) {
++			if (strcmp(arg, "--abs-syms") == 0) {
+ 				show_absolute_syms = 1;
+ 				continue;
+ 			}
+-
+-			if (strcmp(argv[1], "--abs-relocs") == 0) {
++			if (strcmp(arg, "--abs-relocs") == 0) {
+ 				show_absolute_relocs = 1;
+ 				continue;
+ 			}
+-			else if (strcmp(argv[1], "--text") == 0) {
++			if (strcmp(arg, "--text") == 0) {
+ 				as_text = 1;
+ 				continue;
+ 			}
++			if (strcmp(arg, "--realmode") == 0) {
++				use_real_mode = 1;
++				continue;
++			}
+ 		}
+ 		else if (!fname) {
+ 			fname = arg;
+@@ -655,6 +782,7 @@ int main(int argc, char **argv)
+ 	if (!fname) {
+ 		usage();
+ 	}
++	regex_init(use_real_mode);
+ 	fp = fopen(fname, "r");
+ 	if (!fp) {
+ 		die("Cannot open %s: %s\n",
+@@ -673,6 +801,6 @@ int main(int argc, char **argv)
+ 		print_absolute_relocs();
+ 		return 0;
+ 	}
+-	emit_relocs(as_text);
++	emit_relocs(as_text, use_real_mode);
+ 	return 0;
+ }
+diff --git a/scripts/Makefile b/scripts/Makefile
+index df7678f..3626666 100644
+--- a/scripts/Makefile
++++ b/scripts/Makefile
+@@ -8,6 +8,8 @@
+ # conmakehash:	 Create arrays for initializing the kernel console tables
+ # docproc:       Used in Documentation/DocBook
+ 
++HOST_EXTRACFLAGS += -I$(srctree)/tools/include
++
+ hostprogs-$(CONFIG_KALLSYMS)     += kallsyms
+ hostprogs-$(CONFIG_LOGO)         += pnmtologo
+ hostprogs-$(CONFIG_VT)           += conmakehash
