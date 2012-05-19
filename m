@@ -1,74 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759028Ab2ESH7M (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 19 May 2012 03:59:12 -0400
-Received: from arroyo.ext.ti.com ([192.94.94.40]:54680 "EHLO arroyo.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758362Ab2ESH7I (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 19 May 2012 03:59:08 -0400
-From: Santosh Shilimkar <santosh.shilimkar@ti.com>
-To: <linux-mmc@vger.kernel.org>
-CC: <linux-kernel@vger.kernel.org>,
-        Santosh Shilimkar <santosh.shilimkar@ti.com>,
-        Chris Ball <cjb@laptop.org>
-Subject: [PATCH] mmc: core: Fix build warning with !CONFIG_SUSPEND
-Date: Sat, 19 May 2012 13:28:39 +0530
-Message-ID: <1337414319-27719-1-git-send-email-santosh.shilimkar@ti.com>
-X-Mailer: git-send-email 1.7.5.4
+	id S965124Ab2ESIES (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 19 May 2012 04:04:18 -0400
+Received: from saturn.retrosnub.co.uk ([178.18.118.26]:56778 "EHLO
+	saturn.retrosnub.co.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932206Ab2ESIEJ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 19 May 2012 04:04:09 -0400
+Message-ID: <4FB753F4.2080004@kernel.org>
+Date: Sat, 19 May 2012 09:04:04 +0100
+From: Jonathan Cameron <jic23@kernel.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:11.0) Gecko/20120314 Thunderbird/11.0
 MIME-Version: 1.0
-Content-Type: text/plain
+To: Johan Hovold <jhovold@gmail.com>
+CC: Jonathan Cameron <jic23@cam.ac.uk>, Rob Landley <rob@landley.net>,
+        Richard Purdie <rpurdie@rpsys.net>,
+        Samuel Ortiz <sameo@linux.intel.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Florian Tobias Schandinat <FlorianSchandinat@gmx.de>,
+        Arnd Bergmann <arnd@arndb.de>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-iio@vger.kernel.org, devel@driverdev.osuosl.org,
+        linux-fbdev@vger.kernel.org
+Subject: Re: [PATCH v2 2/4] iio: add LM3533 ambient light sensor driver
+References: <1336040799-18433-3-git-send-email-jhovold@gmail.com> <4FA26E9A.8080209@cam.ac.uk> <20120503163617.GD15752@localhost> <4FA923E7.6050707@cam.ac.uk> <20120515164456.GB15632@localhost> <4FB2B5EE.6080009@kernel.org> <20120516130507.GA10774@localhost> <4FB3B7DA.5050306@cam.ac.uk> <20120518122725.GB20467@localhost> <4FB68809.2010009@kernel.org> <20120518175742.GA12894@localhost>
+In-Reply-To: <20120518175742.GA12894@localhost>
+X-Enigmail-Version: 1.4.1
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-With !CONFIG_SUSPEND, mmc core layer throws below build warnings.
+On 05/18/2012 06:57 PM, Johan Hovold wrote:
+> On Fri, May 18, 2012 at 06:34:01PM +0100, Jonathan Cameron wrote:
+>> On 05/18/2012 01:27 PM, Johan Hovold wrote:
+> 
+> [...]
+> 
+>>> I really think that this should remain a device specific attribute as I
+>>> originally suggested. It's an integration parameter that needs to be set
+>>> precisely depending on the actual hardware setup (which analog light
+>>> sensor and other external components). 
+>> Then it shouldn't be exposed to userspace.  If there is reason to vary
+>> it from userspace then it is a calibration parameter and should be
+>> treated like the other ones we have, if not it should be done from
+>> dt or platform data.
+>>>
+>>> The lm3533 also supports two types of light sensors: pwm- and analog-
+>>> output ones. The resistor select settings only applies when in analog
+>>> mode as the input is always high impedance otherwise. Thus a generic
+>>> attribute (such as calibscale or hardware gain) shouldn't be used as it
+>>> will have no effect whatsoever in PWM-mode.
+>>>
+>>> I'm thus back at my original proposal, albeit with a different name (I
+>>> think a lot of this discussion could have been avoided had I not
+>>> misnamed the parameter "gain"): 
+>>>
+>>> What:		/sys/bus/iio/devices/iio:deviceX/r_select
+>>> Description:
+>>> 		Set the ALS internal pull-down resistor for analog input mode
+>>> 		(1..127), such that,
+>>>
+>>> 		R_als = 200000 / r_select	(ohm)
+>>>
+>>> 		This setting is ignored in PWM-mode (input is always high
+>>> 		impedance in PWM-mode).
+>>>
+>>> I don't think much is gained from using ohm as the unit: it just adds
+>>> complexity and the selected resistor setting will likely not match the
+>>> input value anyway. It's better that the chip integrators have full
+>>> control over which resistor setting is actually used so that it matches
+>>> external components.
+>> This smacks of something that should never be exposed to users.
+>> I'd hide it away in platform data.
+> 
+> Fair enough. I'll drop the sysfs param and submit a patch for mfd-next
+> which adds r_select to the platform data.
+> 
+cool. I'll review the rest of the patch with the assumption you'll do this.
 
-drivers/mmc/core/bus.c:125: warning: 'mmc_bus_suspend' defined but not used
-drivers/mmc/core/bus.c:136: warning: 'mmc_bus_resume' defined but not used
-drivers/mmc/core/sdio_bus.c:197: warning: 'pm_no_operation' defined but not used
-
-Fix is by wrapping suspend hooks under CONFIG_SUSPEND
-
-Signed-off-by: Santosh Shilimkar <santosh.shilimkar@ti.com>
-Cc: Chris Ball <cjb@laptop.org>
----
- drivers/mmc/core/bus.c      |    2 ++
- drivers/mmc/core/sdio_bus.c |    2 +-
- 2 files changed, 3 insertions(+), 1 deletions(-)
-
-diff --git a/drivers/mmc/core/bus.c b/drivers/mmc/core/bus.c
-index c60cee9..ca8925d 100644
---- a/drivers/mmc/core/bus.c
-+++ b/drivers/mmc/core/bus.c
-@@ -122,6 +122,7 @@ static int mmc_bus_remove(struct device *dev)
- 	return 0;
- }
- 
-+#ifdef CONFIG_SUSPEND
- static int mmc_bus_suspend(struct device *dev)
- {
- 	struct mmc_driver *drv = to_mmc_driver(dev->driver);
-@@ -143,6 +144,7 @@ static int mmc_bus_resume(struct device *dev)
- 		ret = drv->resume(card);
- 	return ret;
- }
-+#endif
- 
- #ifdef CONFIG_PM_RUNTIME
- 
-diff --git a/drivers/mmc/core/sdio_bus.c b/drivers/mmc/core/sdio_bus.c
-index 236842e..87d1b7e 100644
---- a/drivers/mmc/core/sdio_bus.c
-+++ b/drivers/mmc/core/sdio_bus.c
-@@ -192,7 +192,7 @@ static int sdio_bus_remove(struct device *dev)
- 	return ret;
- }
- 
--#ifdef CONFIG_PM
-+#ifdef CONFIG_SUSPEND
- 
- static int pm_no_operation(struct device *dev)
- {
--- 
-1.7.5.4
-
+Jonathan
