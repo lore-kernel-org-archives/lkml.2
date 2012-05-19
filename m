@@ -1,45 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1946197Ab2ESA7q (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 May 2012 20:59:46 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:13470 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759853Ab2ESA7n (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 May 2012 20:59:43 -0400
-Date: Sat, 19 May 2012 01:59:32 +0100
-From: Alasdair G Kergon <agk@redhat.com>
-To: Tejun Heo <tj@kernel.org>
-Cc: koverstreet@google.com, axboe@kernel.dk, dm-devel@redhat.com,
-        linux-kernel@vger.kernel.org, linux-bcache@vger.kernel.org,
-        linux-fsdevel@vger.kernel.org, agk@redhat.com
-Subject: Re: [dm-devel] [PATCH 12/13] Make generic_make_request handle
-	arbitrarily large bios
-Message-ID: <20120519005932.GM29330@agk-dp.fab.redhat.com>
-Mail-Followup-To: Tejun Heo <tj@kernel.org>, koverstreet@google.com,
-	axboe@kernel.dk, dm-devel@redhat.com, linux-kernel@vger.kernel.org,
-	linux-bcache@vger.kernel.org, linux-fsdevel@vger.kernel.org,
-	agk@redhat.com
-References: <cover.1337308722.git.koverstreet@google.com> <1114e7019b0055fc09a54b59b36398d5c54f5e32.1337308722.git.koverstreet@google.com> <20120518175216.GL19388@google.com>
+	id S1946413Ab2ESBBK (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 May 2012 21:01:10 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:9305 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S965436Ab2ESBBI (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 18 May 2012 21:01:08 -0400
+X-Authority-Analysis: v=2.0 cv=ae7jbGUt c=1 sm=0 a=ZycB6UtQUfgMyuk2+PxD7w==:17 a=XQbtiDEiEegA:10 a=wom5GMh1gUkA:10 a=x7mfEr8YMI8A:10 a=5SG0PmZfjMsA:10 a=kj9zAlcOel0A:10 a=meVymXHHAAAA:8 a=VwQbUJbxAAAA:8 a=MtHueFpr6HgN3IXgc4wA:9 a=CjuIK1q_8ugA:10 a=U62fhAwekXMA:10 a=ZycB6UtQUfgMyuk2+PxD7w==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 74.67.80.29
+Date: Fri, 18 May 2012 21:01:05 -0400
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Greg KH <gregkh@linuxfoundation.org>
+Cc: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        torvalds@linux-foundation.org, akpm@linux-foundation.org,
+        alan@lxorguk.ukuu.org.uk
+Subject: Re: [ 00/54] 3.0.32-stable review
+Message-ID: <20120519010105.GB18264@home.goodmis.org>
+References: <20120518212656.GA4992@kroah.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20120518175216.GL19388@google.com>
-Organization: Red Hat UK Ltd. Registered in England and Wales, number
-	03798903. Registered Office: 64 Baker Street, 4th floor, London,
-	W1U 7DF.
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <20120518212656.GA4992@kroah.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, May 18, 2012 at 10:52:16AM -0700, Tejun Heo wrote:
-> Does this by any chance allow killing ->merge_bvec_fn()?
+On Fri, May 18, 2012 at 02:26:56PM -0700, Greg KH wrote:
+> This is the start of the stable review cycle for the 3.0.32 release.
+> There are 54 patches in this series, all will be posted as a response
+> to this one.  If anyone has any issues with these being applied, please
+> let me know.
+> 
+> Responses should be made by Sun May 20 21:15:57 UTC 2012.
+> Anything received after that time might be too late.
 
-merge_bvec also has an impact on efficiency.
+You really want people to work over the weekends don't you? ;-)
 
-Why create a too-large bio in the first place if it's only going to have to
-get split up again?
+Well, I set up a box to run ktest randconfigs and some other checks.
+Right now it's running on the 3.2.18-rc release. If I can sneak away
+from the misses, I may be able to kick off tests against these releases
+too. But I only have one box dedicated for this, so everything needs to
+be processed serially.
 
-If a change like this goes in, the various trade-offs should be re-examined.
+-- Steve
 
-Alasdair
+> 
+> The whole patch series can be found in one patch at:
+> 	kernel.org/pub/linux/kernel/v3.0/stable-review/patch-3.0.32-rc1.gz
+> and the diffstat can be found below.
