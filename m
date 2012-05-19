@@ -1,112 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757318Ab2ESK3Z (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 19 May 2012 06:29:25 -0400
-Received: from mail.work-microwave.de ([62.245.205.51]:36457 "EHLO
-	work-microwave.de" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1755345Ab2ESK3Y (ORCPT
+	id S1759330Ab2ESKaK (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 19 May 2012 06:30:10 -0400
+Received: from einhorn.in-berlin.de ([192.109.42.8]:57513 "EHLO
+	einhorn.in-berlin.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757540Ab2ESKaF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 19 May 2012 06:29:24 -0400
-From: Roland Stigge <stigge@antcom.de>
-To: arm@kernel.org, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, kevin.wells@nxp.com,
-        srinivas.bakki@nxp.com
-Cc: Roland Stigge <stigge@antcom.de>
-Subject: [PATCH] ARM: LPC32xx: Adjust dts files to gpio dt binding
-Date: Sat, 19 May 2012 12:28:53 +0200
-Message-Id: <1337423333-24356-1-git-send-email-stigge@antcom.de>
-X-Mailer: git-send-email 1.7.9
-X-FEAS-SYSTEM-WL: rst@work-microwave.de, 192.168.11.78
+	Sat, 19 May 2012 06:30:05 -0400
+X-Envelope-From: stefanr@s5r6.in-berlin.de
+Date: Sat, 19 May 2012 12:29:49 +0200
+From: Stefan Richter <stefanr@s5r6.in-berlin.de>
+To: Chris Boot <bootc@bootc.net>
+Cc: linux1394-devel@lists.sourceforge.net, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] firewire-sbp2: Initialise sbp2_orb->rcode for
+ management ORBs
+Message-ID: <20120519122949.0024a909@stein>
+In-Reply-To: <20120304134802.2ed6fbd6@stein>
+References: <1329600949-55157-1-git-send-email-bootc@bootc.net>
+	<20120304134802.2ed6fbd6@stein>
+X-Mailer: Claws Mail 3.8.0 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The GPIO devicetree binding in 3.5 doesn't register the various LPC32xx GPIO
-banks via DT subnodes but always all at once, and changes the gpio referencing
-to 3 cells (bank, gpio, flags). This patch adjusts the DTS files to this
-binding that was just accepted to the gpio subsystem.
+On Mar 04 Stefan Richter wrote:
+> On Feb 18 Chris Boot wrote:
+> > When sending ORBs the struct sbp2_orb->rcode field should be initialised
+> > to -1 otherwise complete_transaction() assumes the request is successful
+> > (RCODE_COMPLETE is 0). When sending managament ORBs, such as LOGIN or
+> > LOGOUT, this was not done and so the initiator would wait for the
+> > request to time out before trying again.
+> > 
+> > Without this, LOGINs are only retried when the management ORB times out,
+> > rather than the initiator noticing an error occurred and retrying soon
+> > after. For targets that advertise more than one LUN per unit, and can
+> > only accept one management request at a time, this means LUNs are only
+> > logged in one per timeout period.
+[...]
+> I left this hanging in my inbox for too long, sorry...
+> 
+> While I agree that the current initialization of orb->base.rcode with 0 is
+> wrong, I don't think your change alone is sufficient:
+> 
+> Consider the case that a login request to LU 0 causes the target to pull
+> out the hardware behind that LU out of a powered-down state --- which may
+> take a very long time --- and login requests to LU 1 would be aborted by
+> the target with resp_conflict_error on any Management_Agent write
+> request.  Of course a reasonably clever target would accept login before
+> full power-up, but you never now.
+> 
+> We retry login 5 times in 0.2 seconds intervals, and this 1 s in total may
+> not be enough.
+[...]
 
-Signed-off-by: Roland Stigge <stigge@antcom.de>
+Chris, I obviously haven't done anything about this potentially too short
+retry period yet; it is still on my list.
 
----
-
-Applies to branch next/dt of arm-soc.git
-
-You can also pull from
-
-git://git.antcom.de/linux-2.6.git lpc32xx/dt
-
-(where just this single commit is new)
-
- arch/arm/boot/dts/lpc32xx.dtsi |   41 ++---------------------------------------
- arch/arm/boot/dts/phy3250.dts  |    4 ++--
- 2 files changed, 4 insertions(+), 41 deletions(-)
-
---- linux-2.6.orig/arch/arm/boot/dts/lpc32xx.dtsi
-+++ linux-2.6/arch/arm/boot/dts/lpc32xx.dtsi
-@@ -215,45 +215,8 @@
- 			gpio: gpio@40028000 {
- 				compatible = "nxp,lpc3220-gpio";
- 				reg = <0x40028000 0x1000>;
--				/* create a private address space for enumeration */
--				#address-cells = <1>;
--				#size-cells = <0>;
--
--				gpio_p0: gpio-bank@0 {
--					gpio-controller;
--					#gpio-cells = <2>;
--					reg = <0>;
--				};
--
--				gpio_p1: gpio-bank@1 {
--					gpio-controller;
--					#gpio-cells = <2>;
--					reg = <1>;
--				};
--
--				gpio_p2: gpio-bank@2 {
--					gpio-controller;
--					#gpio-cells = <2>;
--					reg = <2>;
--				};
--
--				gpio_p3: gpio-bank@3 {
--					gpio-controller;
--					#gpio-cells = <2>;
--					reg = <3>;
--				};
--
--				gpi_p3: gpio-bank@4 {
--					gpio-controller;
--					#gpio-cells = <2>;
--					reg = <4>;
--				};
--
--				gpo_p3: gpio-bank@5 {
--					gpio-controller;
--					#gpio-cells = <2>;
--					reg = <5>;
--				};
-+				gpio-controller;
-+				#gpio-cells = <3>; /* bank, pin, flags */
- 			};
- 
- 			watchdog@4003C000 {
---- linux-2.6.orig/arch/arm/boot/dts/phy3250.dts
-+++ linux-2.6/arch/arm/boot/dts/phy3250.dts
-@@ -131,13 +131,13 @@
- 		compatible = "gpio-leds";
- 
- 		led0 {
--			gpios = <&gpo_p3 1 1>; /* GPO_P3 1, GPIO 80, active low */
-+			gpios = <&gpio 5 1 1>; /* GPO_P3 1, GPIO 80, active low */
- 			linux,default-trigger = "heartbeat";
- 			default-state = "off";
- 		};
- 
- 		led1 {
--			gpios = <&gpo_p3 14 1>; /* GPO_P3 14, GPIO 93, active low */
-+			gpios = <&gpio 5 14 1>; /* GPO_P3 14, GPIO 93, active low */
- 			linux,default-trigger = "timer";
- 			default-state = "off";
- 		};
+Perhaps we should not count the number of retries but watch the time that
+retries take.  I.e. accumulate the time that each try takes; break out of
+the retry loop after a maximum time; but reset the accumulated time at a
+bus reset as a precaution for buses with many nodes coming online at
+different times.
+-- 
+Stefan Richter
+-=====-===-- -=-= =--==
+http://arcgraph.de/sr/
