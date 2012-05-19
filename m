@@ -1,79 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757792Ab2ESWjb (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 19 May 2012 18:39:31 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:49842 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752551Ab2ESWj3 (ORCPT
+	id S1757973Ab2ESWsZ (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 19 May 2012 18:48:25 -0400
+Received: from shards.monkeyblade.net ([198.137.202.13]:53160 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754872Ab2ESWsY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 19 May 2012 18:39:29 -0400
-Date: Sat, 19 May 2012 23:39:25 +0100
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Grant Likely <grant.likely@secretlab.ca>
-Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Thomas Gleixner <tglx@linutronix.de>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] irq_domain: Standardise legacy/linear domain selection
-Message-ID: <20120519223924.GC16590@opensource.wolfsonmicro.com>
-References: <1337428920-7674-1-git-send-email-broonie@opensource.wolfsonmicro.com>
- <20120519202258.D9B903E03B8@localhost>
- <20120519205400.GB16590@opensource.wolfsonmicro.com>
- <CACxGe6vqzOyeLf8okuo2OdTFUaB_E=5KFSN11n05vgEyJzpmBQ@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="/e2eDi0V/xtL+Mc8"
-Content-Disposition: inline
-In-Reply-To: <CACxGe6vqzOyeLf8okuo2OdTFUaB_E=5KFSN11n05vgEyJzpmBQ@mail.gmail.com>
-X-Cookie: You will be married within a year.
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Sat, 19 May 2012 18:48:24 -0400
+Date: Sat, 19 May 2012 18:48:12 -0400 (EDT)
+Message-Id: <20120519.184812.2116650800791553287.davem@davemloft.net>
+To: ajb@spheresystems.co.uk
+Cc: oliver@neukum.name, gregkh@linuxfoundation.org, linux-usb@vger.kernel.org,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] USB CDC-Ether - Add ZTE WWAN matches before generic
+ Ethernet
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <1337435767-9544-1-git-send-email-ajb@spheresystems.co.uk>
+References: <1337435767-9544-1-git-send-email-ajb@spheresystems.co.uk>
+X-Mailer: Mew version 6.5 on Emacs 24.0.95 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.6 (shards.monkeyblade.net [198.137.202.13]); Sat, 19 May 2012 15:48:14 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+From: Andrew Bird <ajb@spheresystems.co.uk>
+Date: Sat, 19 May 2012 14:56:07 +0100
 
---/e2eDi0V/xtL+Mc8
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+> Some ZTE WWAN devices have generic CDC Ether descriptors. Add those
+> into the whitelist so that we get FLAG_WWAN on the interface
+> 
+> Signed-off-by: Andrew Bird <ajb@spheresystems.co.uk>
 
-On Sat, May 19, 2012 at 02:59:51PM -0600, Grant Likely wrote:
+Applied.
 
-> It will actually be like all legacy users switched to creating an
-> linear mapping, and then either associating already allocated
-> irq_descs with that domain or telling the domain to pre-map a specific
-> range of irq_descs (and manage allocations).  Those two use cases will
-> be separate APIs.  I don't think they should be combined (at least
-> from my current thinking) because it depends on whether or not the
-> irq_descs are already allocated.
-
-Hrm.  Given that the target for this API is drivers that mostly don't
-care and are only supporting the current linear mappings in order to
-allow their GPIOs to be used with generic drivers that only want an IRQ
-I'd expect we'll wind up with a similar helper somehow.  Copying a
-number around for irq_start isn't much hassle for individual drivers but
-having to worry about more than that seems like too much effort, they
-shouldn't have to care about the management of irq_descs.  It'd be more
-work and it'd make it more painful for platforms to change between the
-preallocated and dynamic models.
-
---/e2eDi0V/xtL+Mc8
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBAgAGBQJPuCDYAAoJEBus8iNuMP3dLXoP/2cVnRn5bcFzJLblFwMRgwLP
-J8f+sGUw8f94wgbLZ8a0tPjGUCDN2z38/KabAK/G3nMeW2n/dFJJA3s4AJhDoDZa
-Ry61ASwOf+XpoLL0kxEBAuncBffuwtUI0wyNkuEAgxsRY59otPlWGpPfcWJRnSYF
-Mm+ThuCfd3/eYbizGT0GzkD/4SHwHVbT5wVn0VU0HoQU4YNHlYDH4T65z3OuaD6Q
-IJk3dqO8Mq3TPRQ95u6wPptjZZO5heC+3DwE+ieYLC1ij83ts1eG3nzkcLcEoSa+
-6eabQWoq436SiBYzq3IdgYxvzRzjc5QZw7oD8dAOnTjDqNITPWkmvf34RPNkqWNq
-6ojOH2zCCKtLOq1umm5+UhC68Umza0eHVX1mo9GOUJKEDhxoFqdwQb0w7f0H/t3C
-aBjOezn/ZzUQM1uD0lGcaqkmXDtbKAQRgFSo10g7hshnbGDFNkpawofK+S/RX5Al
-UuwLV1jT+1BJKjjyHhpeGJYUQQejVMmbpL2eGJvduSaWqLgNS/1yrQvWoGEcR9bc
-mRH1L8q/l4gu6cH38nGMBgiIUNdgg7RfTiAjvmAYUChR9WvC6UWCzOuIwnPLJOUp
-JV2sz31urHnkYcGHMwoPbA1Kwoy+HvxM2FDXk4J82S16UsuGH67QWislpN8Q15kV
-2IEROGgsJtmkADKBWrFr
-=Kiym
------END PGP SIGNATURE-----
-
---/e2eDi0V/xtL+Mc8--
+But I changed the Subject line to have a more appropriate prefix,
+namely "net: cdc_ether: "
