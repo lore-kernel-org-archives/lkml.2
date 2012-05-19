@@ -1,61 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756204Ab2ESRl5 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 19 May 2012 13:41:57 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:53914 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755646Ab2ESRl4 (ORCPT
+	id S1756297Ab2ESRnt (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 19 May 2012 13:43:49 -0400
+Received: from queue01.mail.zen.net.uk ([212.23.3.234]:38023 "EHLO
+	queue01.mail.zen.net.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755607Ab2ESRnr convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 19 May 2012 13:41:56 -0400
-Date: Sat, 19 May 2012 18:41:53 +0100
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Laxman Dewangan <ldewangan@nvidia.com>
-Cc: lrg@ti.com, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 4/5] regulator: tps65910: use devm_* for memory allocation
-Message-ID: <20120519174153.GY4039@opensource.wolfsonmicro.com>
-References: <1337438050-3707-1-git-send-email-ldewangan@nvidia.com>
- <1337438050-3707-5-git-send-email-ldewangan@nvidia.com>
+	Sat, 19 May 2012 13:43:47 -0400
+From: "Andrew Bird (Sphere Systems)" <ajb@spheresystems.co.uk>
+Organization: Sphere Systems Ltd
+To: =?utf-8?q?Bj=C3=B8rn_Mork?= <bjorn@mork.no>
+Subject: Re: [PATCH] USB CDC-Ether - Add ZTE WWAN matches before generic Ethernet
+Date: Sat, 19 May 2012 18:42:38 +0100
+User-Agent: KMail/1.13.7 (Linux/2.6.43.2-6.fc15.i686; KDE/4.6.5; i686; ; )
+Cc: oliver@neukum.name, gregkh@linuxfoundation.org, linux-usb@vger.kernel.org,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+References: <1337435767-9544-1-git-send-email-ajb@spheresystems.co.uk> <87aa14jcyi.fsf@nemi.mork.no>
+In-Reply-To: <87aa14jcyi.fsf@nemi.mork.no>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="dnBRaVjvtun1Q0Od"
-Content-Disposition: inline
-In-Reply-To: <1337438050-3707-5-git-send-email-ldewangan@nvidia.com>
-X-Cookie: Today is what happened to yesterday.
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: Text/Plain;
+  charset="utf-8"
+Content-Transfer-Encoding: 8BIT
+Message-Id: <201205191842.38567.ajb@spheresystems.co.uk>
+X-Originating-Smarthost01-IP: [82.71.70.22]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Saturday 19 May 2012, Bjørn Mork wrote:
+> Andrew Bird <ajb@spheresystems.co.uk> writes:
+> > Some ZTE WWAN devices have generic CDC Ether descriptors. Add those
+> > into the whitelist so that we get FLAG_WWAN on the interface
+> 
+> Are you sure none of these export QMI via the CDC Ether control
+> interface?  Or are they not Qualcomm devices at all?
+> 
+> As usual, if you see a spurious "CDC: unexpected notification 01" logged
+> from cdc_ether, then there is reason to examine those closer.  If you
+> don't see any such messages, then there isn't any QMI there.
+> 
+> 
+> Bjørn
 
---dnBRaVjvtun1Q0Od
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+Hi Bjørn,
+	No these are devices that use the Icera chipset. They have cdc-acm serial 
+ports and firmware has implemented AT commands for (de)activating the pseudo 
+Ethernet and getting IP + DNS values etc. Actually applying this patch will 
+provide little in terms of operation except to make the interface name wwan%d 
+unstead of usb%d and to flag the interface such that Network Manager does not 
+try to bring it up via DHCP as soon as it appears, like it would with a fixed 
+Ethernet interface.
 
-On Sat, May 19, 2012 at 08:04:09PM +0530, Laxman Dewangan wrote:
-> use the devm_* apis for memory allocation.
+Good tip about the 'unexpected notification 01' I'll look out for that!
 
-Applied, thanks.
-
---dnBRaVjvtun1Q0Od
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBAgAGBQJPt9taAAoJEBus8iNuMP3dkYAP/icaBfbr/yLBDH8Tr0XOxTnZ
-uogcAgmMrgd9wz7HjRsXBGAAEhNKSgwy/nzOiGCdzFkQtoLz2rQWYdgfj9FWJBkZ
-DWpBVrs6B060Qh3q6/ARTaJyIvJyDirQxrLk9nf/vCZmG51rfLkQvW2DULeR33I6
-i8sfcSpUu2nB7wGT8t1NhNERF36QCQgO2QKh56WLwqIK0tKP15opTbDImFYAj3fJ
-ZrR/o1taGpq2YwDoYwQCGrUY1Vxjj6Y8bPnAMtDt+sBGG0QGkcCjQxGuykPrb7wN
-lBrhARDdgfOEhz1YetM2A4LSUef6W71x8gMIj68MSlXGHBQsInDzHozKZ4vSD8Ys
-sE6B2Vg4xmfpzdrRwALdAa1yTHSMubtvgUE8jLfvfXe2cILrBwMfhUmQ4gSP8KHC
-dfiUVzU0GbOxfZ6j4WGNq8dbY08PEwEFGRF/kKfrBRzSy0E5D8rfZ+mwyEko5xZd
-T+3fAZyh36yktQLT5HaOjq9gllX7kd7DIDv1k4U8mjeHxCeSAY1bOIniS0vsh7AB
-YAzxnbIYn78OeTDqEkhs6sotMcBIcrB5EkVBoEmPG/cqXkzbM9YpHGVue5ygvQ1W
-yWKlexaZUtNQ3+8yX6A+qrsCJ+NFeZZTcuwLQDMtFpy3rOkzH3EY43utc7tuoAMN
-ToG224u2GXLwxo/hFZGP
-=keTc
------END PGP SIGNATURE-----
-
---dnBRaVjvtun1Q0Od--
+Andrew
