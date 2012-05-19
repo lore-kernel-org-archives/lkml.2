@@ -1,61 +1,126 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965543Ab2ESAh3 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 May 2012 20:37:29 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:54921 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S964782Ab2ESAh1 (ORCPT
+	id S1759063Ab2ESAkV (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 May 2012 20:40:21 -0400
+Received: from oproxy8-pub.bluehost.com ([69.89.22.20]:41982 "HELO
+	oproxy8-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1756318Ab2ESAkS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 May 2012 20:37:27 -0400
-Date: Fri, 18 May 2012 17:37:24 -0700
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: Samuel Iglesias Gonsalvez <siglesias@igalia.com>
-Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 3/4] Staging: ipack/bridges/tpci200: remove
- TPCI200_SHORTNAME constant
-Message-ID: <20120519003724.GA10111@kroah.com>
-References: <1337332208-26057-1-git-send-email-siglesias@igalia.com>
- <1337332208-26057-3-git-send-email-siglesias@igalia.com>
+	Fri, 18 May 2012 20:40:18 -0400
+Message-ID: <4FB6EBF8.3000401@xenotime.net>
+Date: Fri, 18 May 2012 17:40:24 -0700
+From: Randy Dunlap <rdunlap@xenotime.net>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.15) Gecko/20110323 Thunderbird/3.1.9
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1337332208-26057-3-git-send-email-siglesias@igalia.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Linda Walsh <lkml@tlinx.org>
+CC: LKML <linux-kernel@vger.kernel.org>
+Subject: Re: linux-3.3.6 compile errors...crypto? require ia32?
+References: <4FB6D755.5000603@tlinx.org>
+In-Reply-To: <4FB6D755.5000603@tlinx.org>
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: 8bit
+X-Identified-User: {1807:box742.bluehost.com:xenotime:xenotime.net} {sentby:smtp auth 50.53.38.135 authed with rdunlap@xenotime.net}
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, May 18, 2012 at 11:10:07AM +0200, Samuel Iglesias Gonsalvez wrote:
-> Removed TPCI200_SHORTNAME. For the pr_* the name of the module is already
-> included due to pr_fmt declaration.
+On 05/18/2012 04:12 PM, Linda Walsh wrote:
+
+> I ran through 'gconfig' (xconfig kept crashing my Cygwin X server -- remote compile from win),
+> on a 3.3.2 image... got some compile errors... wanted to make sure I had latest
+> source and fresh tree, so pulled down 3.3.6, copied over my .config, and first ran
+> make 'oldconfig'... (one new driver popped up, said 'no')... then did a make -j. Got some errors in compiling -- and was wondering what I might have done to cause them?
 > 
-> In other cases, KBUILD_MODNAME is used instead.
+> @ end is my .config.
 > 
-> Signed-off-by: Samuel Iglesias Gonsalvez <siglesias@igalia.com>
-> ---
->  drivers/staging/ipack/bridges/tpci200.c |   70 +++++++++++++++----------------
->  drivers/staging/ipack/bridges/tpci200.h |    2 -
->  2 files changed, 33 insertions(+), 39 deletions(-)
+> (running x86-64 suse base, w/gcc 4.5)
 > 
-> diff --git a/drivers/staging/ipack/bridges/tpci200.c b/drivers/staging/ipack/bridges/tpci200.c
-> index b460587..c043345 100644
-> --- a/drivers/staging/ipack/bridges/tpci200.c
-> +++ b/drivers/staging/ipack/bridges/tpci200.c
-> @@ -54,16 +54,15 @@ static struct tpci200_board *check_slot(struct ipack_device *dev)
->  	}
->  
->  	if (dev->slot >= TPCI200_NB_SLOT) {
-> -		pr_info("Slot [%s %d:%d] doesn't exist! Last tpci200 slot is %d.\n",
-> -			TPCI200_SHORTNAME, dev->bus_nr, dev->slot,
-> -			TPCI200_NB_SLOT-1);
-> +		pr_info("Slot [%d:%d] doesn't exist! Last tpci200 slot is %d.\n",
-> +			dev->bus_nr, dev->slot, TPCI200_NB_SLOT-1);
+> 
+> Seems that for some reason -- some of the modules are trying to include 32-bit calls
+> vanilla kernel just downloaded.
+> 
+> I thought it might have something to do with intel specific crypto instructions,
+> but they all say x64... so not sure..
+> 
+> Do intel crypto instructions require 32-bit sys calls?
+> 
 
-All of these should really be dev_err() calls, right?
 
-You should have no pr_* calls at all in any driver, and probably none in
-the ipack core as well, care to fix them all up?
+Hi Linda,
 
-thanks,
+I don't know what the problem is here.  Your config builds
+fine for me (no errors).
 
-greg k-h
+
+> 
+> 
+> 
+> Ishtar:linux/ish-336> make clean
+>  CLEAN   .
+>  CLEAN   .tmp_versions
+> Ishtar:linux/ish-336> make
+> make[1]: Nothing to be done for `all'.
+>  CHK     include/linux/version.h
+>  CHK     include/generated/utsrelease.h
+>  HOSTCC  scripts/basic/fixdep
+>  CC      kernel/bounds.s
+>  GEN     include/generated/bounds.h
+>  CC      arch/x86/kernel/asm-offsets.s
+>  GEN     include/generated/asm-offsets.h
+>  CALL    scripts/checksyscalls.sh
+>  HOSTCC  scripts/genksyms/genksyms.o
+>  HOSTCC  scripts/genksyms/lex.lex.o
+>  HOSTCC  scripts/genksyms/parse.tab.o
+>  HOSTLD  scripts/genksyms/genksyms
+>  CC      scripts/mod/empty.o
+>  HOSTCC  scripts/mod/mk_elfconfig
+>  MKELF   scripts/mod/elfconfig.h
+>  HOSTCC  scripts/mod/file2alias.o
+>  HOSTCC  scripts/mod/modpost.o
+>  HOSTCC  scripts/mod/sumversion.o
+>  HOSTLD  scripts/mod/modpost
+>  HOSTCC  scripts/kallsyms
+>  HOSTCC  scripts/pnmtologo
+>  HOSTCC  scripts/conmakehash
+>  HOSTCC  scripts/bin2c
+>  CC      init/main.o
+>  CHK     include/generated/compile.h
+>  CC      init/version.o
+>  CC      init/do_mounts.o
+>  CC      init/do_mounts_rd.o
+>  LD      init/mounts.o
+>  CC      init/noinitramfs.o
+>  CC      init/calibrate.o
+>  LD      init/built-in.o
+>  LD      usr/built-in.o
+>  AS      arch/x86/crypto/aes-x86_64-asm_64.o
+>  CC      arch/x86/crypto/aes_glue.o
+>  AS      arch/x86/crypto/aesni-intel_asm.o
+>  CC      arch/x86/crypto/aesni-intel_glue.o
+>  CC      arch/x86/crypto/fpu.o
+>  AS      arch/x86/crypto/twofish-x86_64-asm_64-3way.o
+>  CC      arch/x86/crypto/twofish_glue_3way.o
+>  AS      arch/x86/crypto/twofish-x86_64-asm_64.o
+>  CC      arch/x86/crypto/twofish_glue.o
+>  LD      arch/x86/crypto/aes-x86_64.o
+>  LD      arch/x86/crypto/twofish-x86_64.o
+>  LD      arch/x86/crypto/twofish-x86_64-3way.o
+>  LD      arch/x86/crypto/aesni-intel.o
+>  CC      arch/x86/crypto/crc32c-intel.o
+>  LD      arch/x86/crypto/built-in.o
+>  AS      arch/x86/ia32/ia32entry.o
+>  CC      arch/x86/ia32/sys_ia32.o
+>  CC      arch/x86/ia32/ia32_signal.o
+> arch/x86/ia32/ia32_signal.c: In function ‘ia32_setup_frame’:
+> arch/x86/ia32/ia32_signal.c:421:3: error: ‘__NR_ia32_sigreturn’ undeclared (first use in this function)
+> arch/x86/ia32/ia32_signal.c:421:3: note: each undeclared identifier is reported only once for each function it appears in
+> arch/x86/ia32/ia32_signal.c: In function ‘ia32_setup_rt_frame’:
+> arch/x86/ia32/ia32_signal.c:500:3: error: ‘__NR_ia32_rt_sigreturn’ undeclared (first use in this function)
+> make[2]: *** [arch/x86/ia32/ia32_signal.o] Error 1
+> make[1]: *** [arch/x86/ia32] Error 2
+> make: *** [arch/x86] Error 2
+
+
+
+-- 
+~Randy
