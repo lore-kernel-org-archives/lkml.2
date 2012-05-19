@@ -1,70 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759330Ab2ESKaK (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 19 May 2012 06:30:10 -0400
-Received: from einhorn.in-berlin.de ([192.109.42.8]:57513 "EHLO
-	einhorn.in-berlin.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757540Ab2ESKaF (ORCPT
+	id S1759034Ab2ESKaI (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 19 May 2012 06:30:08 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:52177 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757526Ab2ESK3o (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 19 May 2012 06:30:05 -0400
-X-Envelope-From: stefanr@s5r6.in-berlin.de
-Date: Sat, 19 May 2012 12:29:49 +0200
-From: Stefan Richter <stefanr@s5r6.in-berlin.de>
-To: Chris Boot <bootc@bootc.net>
-Cc: linux1394-devel@lists.sourceforge.net, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] firewire-sbp2: Initialise sbp2_orb->rcode for
- management ORBs
-Message-ID: <20120519122949.0024a909@stein>
-In-Reply-To: <20120304134802.2ed6fbd6@stein>
-References: <1329600949-55157-1-git-send-email-bootc@bootc.net>
-	<20120304134802.2ed6fbd6@stein>
-X-Mailer: Claws Mail 3.8.0 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Sat, 19 May 2012 06:29:44 -0400
+Date: Sat, 19 May 2012 03:29:17 -0700
+From: tip-bot for Robert Richter <robert.richter@amd.com>
+Message-ID: <tip-5bcdf5e4fee3c45e1281c25e4941f2163cb28c65@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, eranian@google.com, hpa@zytor.com,
+        mingo@kernel.org, robert.richter@amd.com, peterz@infradead.org,
+        tglx@linutronix.de
+Reply-To: mingo@kernel.org, hpa@zytor.com, eranian@google.com,
+        linux-kernel@vger.kernel.org, robert.richter@amd.com,
+        peterz@infradead.org, tglx@linutronix.de
+In-Reply-To: <1337337642-1621-1-git-send-email-robert.richter@amd.com>
+References: <1337337642-1621-1-git-send-email-robert.richter@amd.com>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:perf/urgent] perf/x86:
+  Update event scheduling constraints for AMD family 15h models
+Git-Commit-ID: 5bcdf5e4fee3c45e1281c25e4941f2163cb28c65
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
+MIME-Version: 1.0
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Sat, 19 May 2012 03:29:25 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mar 04 Stefan Richter wrote:
-> On Feb 18 Chris Boot wrote:
-> > When sending ORBs the struct sbp2_orb->rcode field should be initialised
-> > to -1 otherwise complete_transaction() assumes the request is successful
-> > (RCODE_COMPLETE is 0). When sending managament ORBs, such as LOGIN or
-> > LOGOUT, this was not done and so the initiator would wait for the
-> > request to time out before trying again.
-> > 
-> > Without this, LOGINs are only retried when the management ORB times out,
-> > rather than the initiator noticing an error occurred and retrying soon
-> > after. For targets that advertise more than one LUN per unit, and can
-> > only accept one management request at a time, this means LUNs are only
-> > logged in one per timeout period.
-[...]
-> I left this hanging in my inbox for too long, sorry...
-> 
-> While I agree that the current initialization of orb->base.rcode with 0 is
-> wrong, I don't think your change alone is sufficient:
-> 
-> Consider the case that a login request to LU 0 causes the target to pull
-> out the hardware behind that LU out of a powered-down state --- which may
-> take a very long time --- and login requests to LU 1 would be aborted by
-> the target with resp_conflict_error on any Management_Agent write
-> request.  Of course a reasonably clever target would accept login before
-> full power-up, but you never now.
-> 
-> We retry login 5 times in 0.2 seconds intervals, and this 1 s in total may
-> not be enough.
-[...]
+Commit-ID:  5bcdf5e4fee3c45e1281c25e4941f2163cb28c65
+Gitweb:     http://git.kernel.org/tip/5bcdf5e4fee3c45e1281c25e4941f2163cb28c65
+Author:     Robert Richter <robert.richter@amd.com>
+AuthorDate: Fri, 18 May 2012 12:40:42 +0200
+Committer:  Ingo Molnar <mingo@kernel.org>
+CommitDate: Fri, 18 May 2012 14:07:46 +0200
 
-Chris, I obviously haven't done anything about this potentially too short
-retry period yet; it is still on my list.
+perf/x86: Update event scheduling constraints for AMD family 15h models
 
-Perhaps we should not count the number of retries but watch the time that
-retries take.  I.e. accumulate the time that each try takes; break out of
-the retry loop after a maximum time; but reset the accumulated time at a
-bus reset as a precaution for buses with many nodes coming online at
-different times.
--- 
-Stefan Richter
--=====-===-- -=-= =--==
-http://arcgraph.de/sr/
+This update is for newer family 15h cpu models from 0x02 to 0x1f.
+
+Signed-off-by: Robert Richter <robert.richter@amd.com>
+Acked-by: Peter Zijlstra <peterz@infradead.org>
+Cc: Stephane Eranian <eranian@google.com>
+Cc: stable@vger.kernel.org # v2.6.39+
+Link: http://lkml.kernel.org/r/1337337642-1621-1-git-send-email-robert.richter@amd.com
+Signed-off-by: Ingo Molnar <mingo@kernel.org>
+---
+ arch/x86/kernel/cpu/perf_event_amd.c |   11 ++++++++++-
+ 1 files changed, 10 insertions(+), 1 deletions(-)
+
+diff --git a/arch/x86/kernel/cpu/perf_event_amd.c b/arch/x86/kernel/cpu/perf_event_amd.c
+index 95e7fe1..9edc786 100644
+--- a/arch/x86/kernel/cpu/perf_event_amd.c
++++ b/arch/x86/kernel/cpu/perf_event_amd.c
+@@ -493,6 +493,7 @@ static __initconst const struct x86_pmu amd_pmu = {
+  * 0x023	DE	PERF_CTL[2:0]
+  * 0x02D	LS	PERF_CTL[3]
+  * 0x02E	LS	PERF_CTL[3,0]
++ * 0x031	LS	PERF_CTL[2:0] (**)
+  * 0x043	CU	PERF_CTL[2:0]
+  * 0x045	CU	PERF_CTL[2:0]
+  * 0x046	CU	PERF_CTL[2:0]
+@@ -506,10 +507,12 @@ static __initconst const struct x86_pmu amd_pmu = {
+  * 0x0DD	LS	PERF_CTL[5:0]
+  * 0x0DE	LS	PERF_CTL[5:0]
+  * 0x0DF	LS	PERF_CTL[5:0]
++ * 0x1C0	EX	PERF_CTL[5:3]
+  * 0x1D6	EX	PERF_CTL[5:0]
+  * 0x1D8	EX	PERF_CTL[5:0]
+  *
+- * (*) depending on the umask all FPU counters may be used
++ * (*)  depending on the umask all FPU counters may be used
++ * (**) only one unitmask enabled at a time
+  */
+ 
+ static struct event_constraint amd_f15_PMC0  = EVENT_CONSTRAINT(0, 0x01, 0);
+@@ -559,6 +562,12 @@ amd_get_event_constraints_f15h(struct cpu_hw_events *cpuc, struct perf_event *ev
+ 			return &amd_f15_PMC3;
+ 		case 0x02E:
+ 			return &amd_f15_PMC30;
++		case 0x031:
++			if (hweight_long(hwc->config & ARCH_PERFMON_EVENTSEL_UMASK) <= 1)
++				return &amd_f15_PMC20;
++			return &emptyconstraint;
++		case 0x1C0:
++			return &amd_f15_PMC53;
+ 		default:
+ 			return &amd_f15_PMC50;
+ 		}
