@@ -1,53 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758771Ab2ESPJO (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 19 May 2012 11:09:14 -0400
-Received: from hqemgate04.nvidia.com ([216.228.121.35]:17588 "EHLO
-	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754376Ab2ESPJM (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 19 May 2012 11:09:12 -0400
-X-PGP-Universal: processed;
-	by hqnvupgp05.nvidia.com on Sat, 19 May 2012 08:09:11 -0700
-Message-ID: <4FB7B667.9010606@nvidia.com>
-Date: Sat, 19 May 2012 20:34:07 +0530
-From: Laxman Dewangan <ldewangan@nvidia.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101208 Thunderbird/3.1.7
+	id S1758139Ab2ESPWn (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 19 May 2012 11:22:43 -0400
+Received: from mga01.intel.com ([192.55.52.88]:63119 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753697Ab2ESPWm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 19 May 2012 11:22:42 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
+   d="scan'208";a="168504668"
+Date: Sat, 19 May 2012 17:32:36 +0200
+From: Samuel Ortiz <sameo@linux.intel.com>
+To: Peter Ujfalusi <peter.ujfalusi@ti.com>
+Cc: Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Liam Girdwood <lrg@ti.com>, Benoit Cousson <b-cousson@ti.com>,
+        linux-kernel@vger.kernel.org, devicetree-discuss@lists.ozlabs.org,
+        Misael Lopez Cruz <misael.lopez@ti.com>,
+        Dmitry Torokhov <dtor@mail.ru>
+Subject: Re: [PATCH v3 0/4] MFD: twl6040: Device tree support
+Message-ID: <20120519153236.GQ12015@sortiz-mobl>
+References: <1337166718-8458-1-git-send-email-peter.ujfalusi@ti.com>
 MIME-Version: 1.0
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>
-CC: Stephen Warren <swarren@nvidia.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: DT support for input-supply of regulator.
-References: <4FB67D9C.2040909@nvidia.com> <20120519104436.GR4039@opensource.wolfsonmicro.com>
-In-Reply-To: <20120519104436.GR4039@opensource.wolfsonmicro.com>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1337166718-8458-1-git-send-email-peter.ujfalusi@ti.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Saturday 19 May 2012 04:14 PM, Mark Brown wrote:
-> * PGP Signed by an unknown key
->
-> On Fri, May 18, 2012 at 10:19:32PM +0530, Laxman Dewangan wrote:
->
->> But when it looks for the device node containing this regulator, it
->> starts searching of the props from the dev_node of parent device
->> i.e. pmu: tps65910@d2 and in search, it does not found the
->> vin-supply property. It got property for compatible reg, gpio_cell,
->> gpio-controller and then no more property.
->> Is there any issue in laying down the regulator structure?
-> I'm sorry but I'm having a really hard time parsing what you're saying
-> above.  It sounds like there's some sort of device tree specific bug
-> that needs fixing.
->
+Hi Peter,
 
-I found small issue in core regulator and the tps65910 regulator driver 
-where it was not passing correct regulator node. After fixing this, it 
-worked fine.
-I already sent the patches for review.
+On Wed, May 16, 2012 at 02:11:54PM +0300, Peter Ujfalusi wrote:
+> Hello,
+> 
+> Changes since v2:
+> - Child devices are no longer described in dts, they are created with
+>   mfd_add_devices()
+> - ASoC codec device is created unconditionally (main function of twl6040)
+> 
+> Changes since v1:
+> - Commit message for patch 2 (Allocate IRQ numbers dynamically) has been updated
+>   to describe that the twl6040 can not be used as IRQ extender type of device.
+> 
+> Commit message from v1:
+> 
+> The following series adds device tree support for the twl6040 MFD core driver.
+> Support for the child drivers (vibra, ASoC codec) will be submitted via the
+> corresponding subsystem since there is no compile time dependency between them.
+> 
+> The first patch is a minor clean up patch to remove wrapped lines in the
+> twl6040-irq.c. The resulting code is more natural to read to me.
+> 
+> The series depends on the regulator support patch for the twl6040:
+> http://marc.info/?l=linux-kernel&m=133596703610515&w=2
+All 4 patches applied, thanks.
 
-Thanks,
-Laxman
+Cheers,
+Samuel.
 
-
+-- 
+Intel Open Source Technology Centre
+http://oss.intel.com/
