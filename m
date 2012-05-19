@@ -1,67 +1,141 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757641Ab2ESG5N (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 19 May 2012 02:57:13 -0400
-Received: from linux-sh.org ([111.68.239.195]:45455 "EHLO linux-sh.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754434Ab2ESG5L (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 19 May 2012 02:57:11 -0400
-Date: Sat, 19 May 2012 15:57:04 +0900
-From: Paul Mundt <lethal@linux-sh.org>
-To: Joe Perches <joe@perches.com>
-Cc: Grant Likely <grant.likely@secretlab.ca>, linux-sh@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 7/8] irqdomain: trivial pr_fmt conversion.
-Message-ID: <20120519065704.GB32537@linux-sh.org>
-References: <1337407908-7421-1-git-send-email-lethal@linux-sh.org> <1337407908-7421-8-git-send-email-lethal@linux-sh.org> <1337409295.10521.4.camel@joe2Laptop>
-Mime-Version: 1.0
+	id S1758082Ab2ESG7e (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 19 May 2012 02:59:34 -0400
+Received: from out01.mta.xmission.com ([166.70.13.231]:37091 "EHLO
+	out01.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756468Ab2ESG7a (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 19 May 2012 02:59:30 -0400
+From: ebiederm@xmission.com (Eric W. Biederman)
+To: Auke Kok <auke-jan.h.kok@intel.com>
+Cc: Serge Hallyn <serge.hallyn@canonical.com>,
+        linux-security-module@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Eric Paris <eparis@redhat.com>
+References: <1337284200-1838-1-git-send-email-auke-jan.h.kok@intel.com>
+Date: Sat, 19 May 2012 00:59:19 -0600
+In-Reply-To: <1337284200-1838-1-git-send-email-auke-jan.h.kok@intel.com> (Auke
+	Kok's message of "Thu, 17 May 2012 12:50:00 -0700")
+Message-ID: <87havchd14.fsf@xmission.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.3 (gnu/linux)
+MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1337409295.10521.4.camel@joe2Laptop>
-User-Agent: Mutt/1.4.1i
+X-XM-SPF: eid=;;;mid=;;;hst=in01.mta.xmission.com;;;ip=208.38.5.102;;;frm=ebiederm@xmission.com;;;spf=neutral
+X-XM-AID: U2FsdGVkX18iG8sWL8kLjqa4mmR19wi9sZ3O9hMZI50=
+X-SA-Exim-Connect-IP: 208.38.5.102
+X-SA-Exim-Mail-From: ebiederm@xmission.com
+X-Spam-Report: * -1.0 ALL_TRUSTED Passed through trusted hosts only via SMTP
+	*  0.0 TVD_RCVD_IP TVD_RCVD_IP
+	*  0.0 T_TM2_M_HEADER_IN_MSG BODY: T_TM2_M_HEADER_IN_MSG
+	* -3.0 BAYES_00 BODY: Bayes spam probability is 0 to 1%
+	*      [score: 0.0000]
+	* -0.0 DCC_CHECK_NEGATIVE Not listed in DCC
+	*      [sa05 1397; Body=1 Fuz1=1 Fuz2=1]
+	*  0.0 T_TooManySym_01 4+ unique symbols in subject
+	*  0.0 T_TooManySym_02 5+ unique symbols in subject
+X-Spam-DCC: XMission; sa05 1397; Body=1 Fuz1=1 Fuz2=1 
+X-Spam-Combo: ;Auke Kok <auke-jan.h.kok@intel.com>
+X-Spam-Relay-Country: 
+Subject: Re: [PATCH] Trace event for capable().
+X-Spam-Flag: No
+X-SA-Exim-Version: 4.2.1 (built Fri, 06 Aug 2010 16:31:04 -0600)
+X-SA-Exim-Scanned: Yes (on in01.mta.xmission.com)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, May 18, 2012 at 11:34:55PM -0700, Joe Perches wrote:
-> On Sat, 2012-05-19 at 15:11 +0900, Paul Mundt wrote:
-> > Convert to pr_fmt before things start to get out of hand and some
-> > janitors start getting overly excited.
-> 
-> ;)  OK then, here's some trivia:
-> 
-> > diff --git a/kernel/irq/irqdomain.c b/kernel/irq/irqdomain.c
-> []
-> > @@ -1,3 +1,5 @@
-> > +#define pr_fmt(fmt)  "irq: " fmt
-> 
-> "irqdomain: " (KBUILD_MODNAME) may be more sensible
-> 
-Perhaps. The point of the patch was to consolidate rather than change
-behaviour. With a consolidation in place it's possible to change it to
-whatever people are happy with.
+Auke Kok <auke-jan.h.kok@intel.com> writes:
 
-> []
-> > @@ -410,23 +412,23 @@ unsigned int irq_create_mapping(struct irq_domain *domain,
-> >  	unsigned int hint;
-> >  	int virq;
-> >  
-> > -	pr_debug("irq: irq_create_mapping(0x%p, 0x%lx)\n", domain, hwirq);
-> > +	pr_debug("irq_create_mapping(0x%p, 0x%lx)\n", domain, hwirq);
-> 
-> "%s: ...", __func__, etc...
-> 
-Unrelated to pr_fmt conversion. In any event, these debug calls are
-unlikely to hang around for very long.
+> Add a simple trace event for capable().
+>
+> There's been a lot of discussion around capable(), and there
+> are plenty of tools to help reduce capabilities' usage from
+> userspace. A major gap however is that it's almost impossible
+> to see or verify which bits are requested from either userspace
+> or in the kernel.
+>
+> This patch adds a minimal tracer that will print out which
+> CAPs are requested and whether the request was granted.
 
-> >  	if (domain == NULL) {
-> > -		printk(KERN_WARNING "irq_create_mapping called for"
-> > -		       " NULL domain, hwirq=%lx\n", hwirq);
-> > +		pr_warning("irq_create_mapping called for"
-> > +			   " NULL domain, hwirq=%lx\n", hwirq);
-> 
-> 		pr_warn("%s: called with NULL domain, hwirq=%lx\n", hwirq);
-> 
-No. pr_warning() matches the log level, pr_warn() does not. A quick grep
-also shoes more pr_warning() users than pr_warn(), so it sounds like you
-have your work cut out for you. Good luck.
+A small comment assigned from the other issues.
+
+current->pid for anything going to userspace is broken,
+and in fact current->pid should be killed on of these days.
+
+Which pid namespace is your tracer running in?
+
+> Signed-off-by: Auke Kok <auke-jan.h.kok@intel.com>
+> Cc: linux-security-module@vger.kernel.org
+> Cc: linux-kernel@vger.kernel.org
+> Cc: Serge Hallyn <serge.hallyn@canonical.com>
+> Cc: Eric Paris <eparis@redhat.com>
+> ---
+>  include/trace/events/capabilities.h |   33 +++++++++++++++++++++++++++++++++
+>  kernel/capability.c                 |    5 +++++
+>  2 files changed, 38 insertions(+)
+>  create mode 100644 include/trace/events/capabilities.h
+>
+> diff --git a/include/trace/events/capabilities.h b/include/trace/events/capabilities.h
+> new file mode 100644
+> index 0000000..97997fa
+> --- /dev/null
+> +++ b/include/trace/events/capabilities.h
+> @@ -0,0 +1,33 @@
+> +#undef TRACE_SYSTEM
+> +#define TRACE_SYSTEM capabilities
+> +
+> +#if !defined(_TRACE_CAPABILITIES_H) || defined(TRACE_HEADER_MULTI_READ)
+> +#define _TRACE_CAPABILITIES_H
+> +
+> +#include <linux/tracepoint.h>
+> +
+> +TRACE_EVENT(capable,
+> +
+> +	TP_PROTO(pid_t pid, int cap, bool rc),
+> +
+> +	TP_ARGS(pid, cap, rc),
+> +
+> +	TP_STRUCT__entry(
+> +		__field(pid_t, pid)
+> +		__field(int, cap)
+> +		__field(bool, rc)
+> +	),
+> +
+> +	TP_fast_assign(
+> +		__entry->pid = pid;
+> +		__entry->cap = cap;
+> +		__entry->rc = rc;
+> +	),
+> +
+> +	TP_printk("pid=%d cap=%d rc=%d", __entry->pid, __entry->cap, __entry->rc)
+> +);
+> +
+> +#endif /* _TRACE_CAPABILITIES_H */
+> +
+> +/* This part must be outside protection */
+> +#include <trace/define_trace.h>
+> diff --git a/kernel/capability.c b/kernel/capability.c
+> index 3f1adb6..2941f37 100644
+> --- a/kernel/capability.c
+> +++ b/kernel/capability.c
+> @@ -17,6 +17,9 @@
+>  #include <linux/user_namespace.h>
+>  #include <asm/uaccess.h>
+>  
+> +#define CREATE_TRACE_POINTS
+> +#include <trace/events/capabilities.h>
+> +
+>  /*
+>   * Leveraged for setting/resetting capabilities
+>   */
+> @@ -386,8 +389,10 @@ bool ns_capable(struct user_namespace *ns, int cap)
+>  
+>  	if (security_capable(current_cred(), ns, cap) == 0) {
+>  		current->flags |= PF_SUPERPRIV;
+> +		trace_capable(current->pid, cap, true);
+>  		return true;
+>  	}
+> +	trace_capable(current->pid, cap, false);
+>  	return false;
+>  }
+>  EXPORT_SYMBOL(ns_capable);
