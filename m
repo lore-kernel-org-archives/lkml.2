@@ -1,68 +1,129 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753782Ab2ESFpd (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 19 May 2012 01:45:33 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:39084 "EHLO
+	id S1753962Ab2ESFrR (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 19 May 2012 01:47:17 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:53016 "EHLO
 	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751027Ab2ESFpc convert rfc822-to-8bit (ORCPT
+	with ESMTP id S1753167Ab2ESFrO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 19 May 2012 01:45:32 -0400
-MIME-Version: 1.0
-In-Reply-To: <20120519054403.A0A233E046E@localhost>
-References: <1337240103-4756-1-git-send-email-shawn.guo@linaro.org>
- <1337240103-4756-2-git-send-email-shawn.guo@linaro.org> <20120519054403.A0A233E046E@localhost>
+	Sat, 19 May 2012 01:47:14 -0400
 From: Grant Likely <grant.likely@secretlab.ca>
-Date: Fri, 18 May 2012 23:45:11 -0600
-X-Google-Sender-Auth: _lRXJ6BGKwXNPMF_V45TMgsL_O8
-Message-ID: <CACxGe6tbK3R9FgsjSbDQEtFavt9_3NWR3=kBgZtK3av3X41kaQ@mail.gmail.com>
-Subject: Re: [PATCH 1/2] gpio/generic: initialize basic_mmio_gpio shadow
- variables properly
-To: Shawn Guo <shawn.guo@linaro.org>,
-        Linus Walleij <linus.walleij@stericsson.com>
-Cc: =?ISO-8859-1?Q?Lothar_Wa=DFmann?= <LW@karo-electronics.de>,
-        Ryan Mallon <ryan@bluewatersys.com>,
-        H Hartley Sweeten <hsweeten@visionengravers.com>,
-        Sascha Hauer <s.hauer@pengutronix.de>,
-        "Hans J. Koch" <hjk@linutronix.de>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Subject: Re: [PATCH V4 1/3] GPIO: MIPS: lantiq: move gpio-stp and gpio-ebu to the subsystem folder
+To: John Crispin <blogic@openwrt.org>, Ralf Baechle <ralf@linux-mips.org>
+Cc: linux-mips@linux-mips.org, John Crispin <blogic@openwrt.org>,
+        linux-kernel@vger.kernel.org
+In-Reply-To: <1337355777-1680-1-git-send-email-blogic@openwrt.org>
+References: <1337355777-1680-1-git-send-email-blogic@openwrt.org>
+Date: Fri, 18 May 2012 23:47:12 -0600
+Message-Id: <20120519054712.EF0903E046E@localhost>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, May 18, 2012 at 11:44 PM, Grant Likely
-<grant.likely@secretlab.ca> wrote:
-> On Thu, 17 May 2012 15:35:02 +0800, Shawn Guo <shawn.guo@linaro.org> wrote:
->> It fixes the issue in gpio-generic that commit fb14921 (gpio/mxc: add
->> missing initialization of basic_mmio_gpio shadow variables) manged to
->> fix in gpio-mxc driver, so that other platform specific drivers do not
->> suffer from the same problem over and over again.
->>
->> Signed-off-by: Shawn Guo <shawn.guo@linaro.org>
->> ---
->>  drivers/gpio/gpio-generic.c |    4 ++++
->>  1 files changed, 4 insertions(+), 0 deletions(-)
->>
->> diff --git a/drivers/gpio/gpio-generic.c b/drivers/gpio/gpio-generic.c
->> index e38dd0c..cfc9439 100644
->> --- a/drivers/gpio/gpio-generic.c
->> +++ b/drivers/gpio/gpio-generic.c
->> @@ -394,6 +394,10 @@ int bgpio_init(struct bgpio_chip *bgc, struct device *dev,
->>               return ret;
->>
->>       bgc->data = bgc->read_reg(bgc->reg_dat);
->> +     if (bgc->gc.set == bgpio_set_set)
->> +             bgc->data = bgc->read_reg(bgc->reg_set);
->> +     if (bgc->reg_dir)
->> +             bgc->dir = bgc->read_reg(bgc->reg_dir);
->
-> This assumes that the set and dir registers are actually readable
-> which isn't the case on some hardware.  There needs to be a mechanism
-> for drivers using bgpio_init to control how data & dir are initialized
-> (possibly with some flags; maybe replace the big_endian arg with a
-> flags arg).
+On Fri, 18 May 2012 17:42:55 +0200, John Crispin <blogic@openwrt.org> wrote:
+> Move the 2 drivers from arch/mips/lantiq/xway/ to the subsystem and make them
+> buildable.
+> 
+> The following 2 patches will convert the drivers to OF.
+> 
+> Signed-off-by: John Crispin <blogic@openwrt.org>
+> Cc: Grant Likely <grant.likely@secretlab.ca>
+> Cc: linux-kernel@vger.kernel.org
 
-If you can turn it around quickly, I'll still try to get it in for v3.5
+for all 3:
+
+Acked-by: Grant Likely <grant.likely@secretlab.ca>
 
 g.
+
+> ---
+> This patch is part of a series moving the mips/lantiq target to OF and clkdev
+> support. The patch, once Acked, should go upstream via Ralf's MIPS tree.
+> 
+>  arch/mips/lantiq/xway/Makefile                     |    2 +-
+>  drivers/gpio/Kconfig                               |   18 ++++++++++++++++++
+>  drivers/gpio/Makefile                              |    2 ++
+>  .../gpio_ebu.c => drivers/gpio/gpio-mm-lantiq.c    |    0
+>  .../gpio_stp.c => drivers/gpio/gpio-stp-xway.c     |    0
+>  5 files changed, 21 insertions(+), 1 deletions(-)
+>  rename arch/mips/lantiq/xway/gpio_ebu.c => drivers/gpio/gpio-mm-lantiq.c (100%)
+>  rename arch/mips/lantiq/xway/gpio_stp.c => drivers/gpio/gpio-stp-xway.c (100%)
+> 
+> diff --git a/arch/mips/lantiq/xway/Makefile b/arch/mips/lantiq/xway/Makefile
+> index edef6c5..dc3194f 100644
+> --- a/arch/mips/lantiq/xway/Makefile
+> +++ b/arch/mips/lantiq/xway/Makefile
+> @@ -1 +1 @@
+> -obj-y := prom.o sysctrl.o clk.o reset.o gpio.o gpio_stp.o gpio_ebu.o dma.o
+> +obj-y := prom.o sysctrl.o clk.o reset.o gpio.o dma.o
+> diff --git a/drivers/gpio/Kconfig b/drivers/gpio/Kconfig
+> index e03653d..8fae079 100644
+> --- a/drivers/gpio/Kconfig
+> +++ b/drivers/gpio/Kconfig
+> @@ -96,6 +96,14 @@ config GPIO_EP93XX
+>  	depends on ARCH_EP93XX
+>  	select GPIO_GENERIC
+>  
+> +config GPIO_MM_LANTIQ
+> +	bool "Lantiq Memory mapped GPIOs"
+> +	depends on LANTIQ && SOC_XWAY
+> +	help
+> +	  This enables support for memory mapped GPIOs on the External Bus Unit
+> +	  (EBU) found on Lantiq SoCs. The gpios are output only as they are
+> +	  created by attaching a 16bit latch to the bus.
+> +
+>  config GPIO_MPC5200
+>  	def_bool y
+>  	depends on PPC_MPC52xx
+> @@ -306,6 +314,16 @@ config GPIO_STMPE
+>  	  This enables support for the GPIOs found on the STMPE I/O
+>  	  Expanders.
+>  
+> +config GPIO_STP_XWAY
+> +	bool "XWAY STP GPIOs"
+> +	depends on SOC_XWAY
+> +	help
+> +	  This enables support for the Serial To Parallel (STP) unit found on
+> +	  XWAY SoC. The STP allows the SoC to drive a shift registers cascade,
+> +	  that can be up to 24 bit. This peripheral is aimed at driving leds.
+> +	  Some of the gpios/leds can be auto updated by the soc with dsl and
+> +	  phy status.
+> +
+>  config GPIO_TC3589X
+>  	bool "TC3589X GPIOs"
+>  	depends on MFD_TC3589X
+> diff --git a/drivers/gpio/Makefile b/drivers/gpio/Makefile
+> index 007f54b..ed1c96d 100644
+> --- a/drivers/gpio/Makefile
+> +++ b/drivers/gpio/Makefile
+> @@ -30,6 +30,7 @@ obj-$(CONFIG_GPIO_MC33880)	+= gpio-mc33880.o
+>  obj-$(CONFIG_GPIO_MC9S08DZ60)	+= gpio-mc9s08dz60.o
+>  obj-$(CONFIG_GPIO_MCP23S08)	+= gpio-mcp23s08.o
+>  obj-$(CONFIG_GPIO_ML_IOH)	+= gpio-ml-ioh.o
+> +obj-$(CONFIG_GPIO_MM_LANTIQ)	+= gpio-mm-lantiq.o
+>  obj-$(CONFIG_GPIO_MPC5200)	+= gpio-mpc5200.o
+>  obj-$(CONFIG_GPIO_MPC8XXX)	+= gpio-mpc8xxx.o
+>  obj-$(CONFIG_GPIO_MSM_V1)	+= gpio-msm-v1.o
+> @@ -49,6 +50,7 @@ obj-$(CONFIG_ARCH_SA1100)	+= gpio-sa1100.o
+>  obj-$(CONFIG_GPIO_SCH)		+= gpio-sch.o
+>  obj-$(CONFIG_GPIO_SODAVILLE)	+= gpio-sodaville.o
+>  obj-$(CONFIG_GPIO_STMPE)	+= gpio-stmpe.o
+> +obj-$(CONFIG_GPIO_STP_XWAY)	+= gpio-stp-xway.o
+>  obj-$(CONFIG_GPIO_SX150X)	+= gpio-sx150x.o
+>  obj-$(CONFIG_GPIO_TC3589X)	+= gpio-tc3589x.o
+>  obj-$(CONFIG_ARCH_TEGRA)	+= gpio-tegra.o
+> diff --git a/arch/mips/lantiq/xway/gpio_ebu.c b/drivers/gpio/gpio-mm-lantiq.c
+> similarity index 100%
+> rename from arch/mips/lantiq/xway/gpio_ebu.c
+> rename to drivers/gpio/gpio-mm-lantiq.c
+> diff --git a/arch/mips/lantiq/xway/gpio_stp.c b/drivers/gpio/gpio-stp-xway.c
+> similarity index 100%
+> rename from arch/mips/lantiq/xway/gpio_stp.c
+> rename to drivers/gpio/gpio-stp-xway.c
+> -- 
+> 1.7.9.1
+> 
+
+-- 
+Grant Likely, B.Sc, P.Eng.
+Secret Lab Technologies, Ltd.
