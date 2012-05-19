@@ -1,31 +1,33 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757112Ab2ESSeK (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 19 May 2012 14:34:10 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:51082 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756931Ab2ESSeG (ORCPT
+	id S1757322Ab2ESSex (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 19 May 2012 14:34:53 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:59964 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757268Ab2ESSes (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 19 May 2012 14:34:06 -0400
+	Sat, 19 May 2012 14:34:48 -0400
 From: Grant Likely <grant.likely@secretlab.ca>
-Subject: Re: [PATCH 1/8] irqdomain: Support removal of IRQ domains.
+Subject: Re: [PATCH 2/8] irqdomain: Export remaining public API symbols.
 To: Paul Mundt <lethal@linux-sh.org>
 Cc: linux-sh@vger.kernel.org, linux-kernel@vger.kernel.org,
         Paul Mundt <lethal@linux-sh.org>
-In-Reply-To: <1337407908-7421-2-git-send-email-lethal@linux-sh.org>
-References: <1337407908-7421-1-git-send-email-lethal@linux-sh.org> <1337407908-7421-2-git-send-email-lethal@linux-sh.org>
-Date: Sat, 19 May 2012 12:34:03 -0600
-Message-Id: <20120519183403.6B1883E03B8@localhost>
+In-Reply-To: <1337407908-7421-3-git-send-email-lethal@linux-sh.org>
+References: <1337407908-7421-1-git-send-email-lethal@linux-sh.org> <1337407908-7421-3-git-send-email-lethal@linux-sh.org>
+Date: Sat, 19 May 2012 12:34:46 -0600
+Message-Id: <20120519183446.C55013E03B8@localhost>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 19 May 2012 15:11:41 +0900, Paul Mundt <lethal@linux-sh.org> wrote:
-> Now that IRQ domains are being used by modules it's necessary to support
-> removing them, too. This adds a new irq_domain_remove() routine for doing
-> the bulk of the heavy lifting. It's left as an exercise to the caller to
-> ensure all mappings have been appropriatey disposed of before attempting
-> to remove the domain.
+On Sat, 19 May 2012 15:11:42 +0900, Paul Mundt <lethal@linux-sh.org> wrote:
+> modules making use of irq domains at the very least need access to the
+> add/remove/lookup routines, though there's nothing preventing them from
+> using the remainder of the public API, either.
+> 
+> The current set of exports seem primarily geared at DT-enabled platforms
+> using DT-backed IRQ domains, where many of the API accesses are hidden
+> away in OF code. The non-DT cases need to do most of this on their own.
 > 
 > Signed-off-by: Paul Mundt <lethal@linux-sh.org>
 
@@ -34,114 +36,93 @@ Applied, thanks.
 g.
 
 > ---
->  include/linux/irqdomain.h |    4 ++-
->  kernel/irq/irqdomain.c    |   61 +++++++++++++++++++++++++++++++++++++++++++-
->  2 files changed, 62 insertions(+), 3 deletions(-)
+>  kernel/irq/irqdomain.c |   10 ++++++++++
+>  1 files changed, 10 insertions(+), 0 deletions(-)
 > 
-> diff --git a/include/linux/irqdomain.h b/include/linux/irqdomain.h
-> index c65740d..a796dbf 100644
-> --- a/include/linux/irqdomain.h
-> +++ b/include/linux/irqdomain.h
-> @@ -141,10 +141,12 @@ static inline struct irq_domain *irq_domain_add_legacy_isa(
->  	return irq_domain_add_legacy(of_node, NUM_ISA_INTERRUPTS, 0, 0, ops,
->  				     host_data);
->  }
-> +
-> +extern void irq_domain_remove(struct irq_domain *host);
-> +
->  extern struct irq_domain *irq_find_host(struct device_node *node);
->  extern void irq_set_default_host(struct irq_domain *host);
->  
-> -
->  extern unsigned int irq_create_mapping(struct irq_domain *host,
->  				       irq_hw_number_t hwirq);
->  extern void irq_dispose_mapping(unsigned int virq);
 > diff --git a/kernel/irq/irqdomain.c b/kernel/irq/irqdomain.c
-> index 0e0ba5f..9cae0b2 100644
+> index 9cae0b2..01d4a0d 100644
 > --- a/kernel/irq/irqdomain.c
 > +++ b/kernel/irq/irqdomain.c
-> @@ -56,6 +56,12 @@ static struct irq_domain *irq_domain_alloc(struct device_node *of_node,
->  	return domain;
->  }
+> @@ -122,6 +122,7 @@ void irq_domain_remove(struct irq_domain *domain)
 >  
-> +static void irq_domain_free(struct irq_domain *domain)
-> +{
-> +	of_node_put(domain->of_node);
-> +	kfree(domain);
-> +}
-> +
->  static void irq_domain_add(struct irq_domain *domain)
->  {
->  	mutex_lock(&irq_domain_mutex);
-> @@ -65,6 +71,58 @@ static void irq_domain_add(struct irq_domain *domain)
->  		 domain->revmap_type, domain);
+>  	irq_domain_free(domain);
 >  }
+> +EXPORT_SYMBOL_GPL(irq_domain_remove);
 >  
-> +/**
-> + * irq_domain_remove() - Remove an irq domain.
-> + * @domain: domain to remove
-> + *
-> + * This routine is used to remove an irq domain. The caller must ensure
-> + * that all mappings within the domain have been disposed of prior to
-> + * use, depending on the revmap type.
-> + */
-> +void irq_domain_remove(struct irq_domain *domain)
-> +{
-> +	mutex_lock(&irq_domain_mutex);
-> +
-> +	switch (domain->revmap_type) {
-> +	case IRQ_DOMAIN_MAP_LEGACY:
-> +		/*
-> +		 * Legacy domains don't manage their own irq_desc
-> +		 * allocations, we expect the caller to handle irq_desc
-> +		 * freeing on their own.
-> +		 */
-> +		break;
-> +	case IRQ_DOMAIN_MAP_TREE:
-> +		/*
-> +		 * radix_tree_delete() takes care of destroying the root
-> +		 * node when all entries are removed. Shout if there are
-> +		 * any mappings left.
-> +		 */
-> +		WARN_ON(domain->revmap_data.tree.height);
-> +		break;
-> +	case IRQ_DOMAIN_MAP_LINEAR:
-> +		kfree(domain->revmap_data.linear.revmap);
-> +		domain->revmap_data.linear.size = 0;
-> +		break;
-> +	case IRQ_DOMAIN_MAP_NOMAP:
-> +		break;
-> +	}
-> +
-> +	list_del(&domain->link);
-> +
-> +	/*
-> +	 * If the going away domain is the default one, reset it.
-> +	 */
-> +	if (unlikely(irq_default_domain == domain))
-> +		irq_set_default_host(NULL);
-> +
-> +	mutex_unlock(&irq_domain_mutex);
-> +
-> +	pr_debug("irq: Removed domain of type %d @0x%p\n",
-> +		 domain->revmap_type, domain);
-> +
-> +	irq_domain_free(domain);
-> +}
-> +
 >  static unsigned int irq_domain_legacy_revmap(struct irq_domain *domain,
 >  					     irq_hw_number_t hwirq)
->  {
-> @@ -117,8 +175,7 @@ struct irq_domain *irq_domain_add_legacy(struct device_node *of_node,
+> @@ -209,6 +210,7 @@ struct irq_domain *irq_domain_add_legacy(struct device_node *of_node,
+>  	irq_domain_add(domain);
+>  	return domain;
+>  }
+> +EXPORT_SYMBOL_GPL(irq_domain_add_legacy);
 >  
->  		if (WARN_ON(!irq_data || irq_data->domain)) {
->  			mutex_unlock(&irq_domain_mutex);
-> -			of_node_put(domain->of_node);
-> -			kfree(domain);
-> +			irq_domain_free(domain);
->  			return NULL;
->  		}
+>  /**
+>   * irq_domain_add_linear() - Allocate and register a legacy revmap irq_domain.
+> @@ -238,6 +240,7 @@ struct irq_domain *irq_domain_add_linear(struct device_node *of_node,
+>  	irq_domain_add(domain);
+>  	return domain;
+>  }
+> +EXPORT_SYMBOL_GPL(irq_domain_add_linear);
+>  
+>  struct irq_domain *irq_domain_add_nomap(struct device_node *of_node,
+>  					 unsigned int max_irq,
+> @@ -252,6 +255,7 @@ struct irq_domain *irq_domain_add_nomap(struct device_node *of_node,
 >  	}
+>  	return domain;
+>  }
+> +EXPORT_SYMBOL_GPL(irq_domain_add_nomap);
+>  
+>  /**
+>   * irq_domain_add_tree()
+> @@ -273,6 +277,7 @@ struct irq_domain *irq_domain_add_tree(struct device_node *of_node,
+>  	}
+>  	return domain;
+>  }
+> +EXPORT_SYMBOL_GPL(irq_domain_add_tree);
+>  
+>  /**
+>   * irq_find_host() - Locates a domain for a given device node
+> @@ -320,6 +325,7 @@ void irq_set_default_host(struct irq_domain *domain)
+>  
+>  	irq_default_domain = domain;
+>  }
+> +EXPORT_SYMBOL_GPL(irq_set_default_host);
+>  
+>  static int irq_setup_virq(struct irq_domain *domain, unsigned int virq,
+>  			    irq_hw_number_t hwirq)
+> @@ -378,6 +384,7 @@ unsigned int irq_create_direct_mapping(struct irq_domain *domain)
+>  
+>  	return virq;
+>  }
+> +EXPORT_SYMBOL_GPL(irq_create_direct_mapping);
+>  
+>  /**
+>   * irq_create_mapping() - Map a hardware interrupt into linux irq space
+> @@ -617,6 +624,7 @@ unsigned int irq_radix_revmap_lookup(struct irq_domain *domain,
+>  	 */
+>  	return irq_data ? irq_data->irq : irq_find_mapping(domain, hwirq);
+>  }
+> +EXPORT_SYMBOL_GPL(irq_radix_revmap_lookup);
+>  
+>  /**
+>   * irq_radix_revmap_insert() - Insert a hw irq to linux irq number mapping.
+> @@ -641,6 +649,7 @@ void irq_radix_revmap_insert(struct irq_domain *domain, unsigned int virq,
+>  		mutex_unlock(&revmap_trees_mutex);
+>  	}
+>  }
+> +EXPORT_SYMBOL_GPL(irq_radix_revmap_insert);
+>  
+>  /**
+>   * irq_linear_revmap() - Find a linux irq from a hw irq number.
+> @@ -674,6 +683,7 @@ unsigned int irq_linear_revmap(struct irq_domain *domain,
+>  
+>  	return revmap[hwirq];
+>  }
+> +EXPORT_SYMBOL_GPL(irq_linear_revmap);
+>  
+>  #ifdef CONFIG_IRQ_DOMAIN_DEBUG
+>  static int virq_debug_show(struct seq_file *m, void *private)
 > -- 
 > 1.7.9.rc0.28.g0e1cf
 > 
