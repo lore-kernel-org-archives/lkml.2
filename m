@@ -1,54 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757685Ab2ESNsy (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 19 May 2012 09:48:54 -0400
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:58810 "EHLO
-	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751642Ab2ESNsv (ORCPT
+	id S1758570Ab2ESNv0 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 19 May 2012 09:51:26 -0400
+Received: from eu1sys200aog117.obsmtp.com ([207.126.144.143]:35069 "EHLO
+	eu1sys200aog117.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751642Ab2ESNvY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 19 May 2012 09:48:51 -0400
-Message-ID: <4FB7A4A2.20408@mvista.com>
-Date: Sat, 19 May 2012 17:48:18 +0400
-From: Sergei Shtylyov <sshtylyov@mvista.com>
-User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:12.0) Gecko/20120428 Thunderbird/12.0.1
+	Sat, 19 May 2012 09:51:24 -0400
+From: Soumik DAS <soumik.das@stericsson.com>
+To: "John W. Linville" <linville@tuxdriver.com>
+Cc: linux-wireless <linux-kernel@vger.kernel.org>,
+        Johannes Berg <johannes@sipsolutions.net>,
+        Soumik Das <soumik.das@stericsson.com>
+Subject: [PATCH] mac80211: Fix race in sending null to check AP
+Date: Sat, 19 May 2012 19:20:53 +0530
+Message-ID: <1337435453-1661-1-git-send-email-soumik.das@stericsson.com>
+X-Mailer: git-send-email 1.7.0.4
 MIME-Version: 1.0
-To: Jeffrin Jose <ahiliation@yahoo.co.in>
-CC: mdharm-usb@one-eyed-alien.net, gregkh@linuxfoundation.org,
-        linux-usb@vger.kernel.org, usb-storage@lists.one-eyed-alien.net,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/1]USB:storage:fixed space at the start of a line issues.
-References: <1337368715-3859-1-git-send-email-ahiliation@yahoo.co.in>
-In-Reply-To: <1337368715-3859-1-git-send-email-ahiliation@yahoo.co.in>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello.
+From: Soumik Das <soumik.das@stericsson.com>
 
-On 18-05-2012 23:18, Jeffrin Jose wrote:
+mac80211 tries to verify the existence of the current AP by
+probing or sending a NULL frame in function
+ieee80211_mgd_probe_ap_send. It 1st sends a null frame to the AP,
+increments probe_send_count and waits for the ACK to the NULL
+frame for a finite duration of time. At times, it happens that by
+the time mac80211 gets to increment probe_send_count, the ACK for
+the NULL frame transmitted has already been processed. This leads
+to a race condition where mac80211 times out waiting for the ACK
+for the NULL frame causing unnecessary disconnection with the AP.
 
-> Fixed space at the start of a line issues found
-> by checkpatch.pl tool in drivers/usb/storage/usual-tables.c
+Signed-off-by: Soumik Das <soumik.das@stericsson.com>
+---
+ net/mac80211/mlme.c |    3 ++-
+ 1 files changed, 2 insertions(+), 1 deletions(-)
 
-> Signed-off-by: Jeffrin Jose<ahiliation@yahoo.co.in>
-> ---
->   drivers/usb/storage/usual-tables.c |    6 +++---
->   1 file changed, 3 insertions(+), 3 deletions(-)
+diff --git a/net/mac80211/mlme.c b/net/mac80211/mlme.c
+index dbd4bd9..40c933c 100644
+--- a/net/mac80211/mlme.c
++++ b/net/mac80211/mlme.c
+@@ -1522,6 +1522,8 @@ static void ieee80211_mgd_probe_ap_send(struct ieee80211_sub_if_data *sdata)
+ 	 * anymore. The timeout will be reset if the frame is ACKed by
+ 	 * the AP.
+ 	 */
++	ifmgd->probe_send_count++;
++
+ 	if (sdata->local->hw.flags & IEEE80211_HW_REPORTS_TX_ACK_STATUS) {
+ 		ifmgd->nullfunc_failed = false;
+ 		ieee80211_send_nullfunc(sdata->local, sdata, 0);
+@@ -1538,7 +1540,6 @@ static void ieee80211_mgd_probe_ap_send(struct ieee80211_sub_if_data *sdata)
+ 					 0, (u32) -1, true, false);
+ 	}
+ 
+-	ifmgd->probe_send_count++;
+ 	ifmgd->probe_timeout = jiffies + msecs_to_jiffies(probe_wait_ms);
+ 	run_again(ifmgd, ifmgd->probe_timeout);
+ 	if (sdata->local->hw.flags & IEEE80211_HW_REPORTS_TX_ACK_STATUS)
+-- 
+1.7.0.4
 
-> diff --git a/drivers/usb/storage/usual-tables.c b/drivers/usb/storage/usual-tables.c
-> index b969279..f2301ee 100644
-> --- a/drivers/usb/storage/usual-tables.c
-> +++ b/drivers/usb/storage/usual-tables.c
-> @@ -34,17 +34,17 @@
->   		    vendorName, productName, useProtocol, useTransport, \
->   		    initFunction, flags) \
->   { USB_DEVICE_VER(id_vendor, id_product, bcdDeviceMin, bcdDeviceMax), \
-> -  .driver_info = (flags)|(USB_US_TYPE_STOR<<24) }
-> +.driver_info = (flags)|(USB_US_TYPE_STOR<<24) }
-
-    Spaces are usually replaced by tab. Without indentation this looks worse 
-than it was.
-
-WBR, Sergei
