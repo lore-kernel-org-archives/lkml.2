@@ -1,54 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S968261Ab2ESAvg (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 May 2012 20:51:36 -0400
-Received: from oproxy8-pub.bluehost.com ([69.89.22.20]:54791 "HELO
-	oproxy8-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S932764Ab2ESAve (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 May 2012 20:51:34 -0400
-Message-ID: <4FB6EE9D.8010103@xenotime.net>
-Date: Fri, 18 May 2012 17:51:41 -0700
-From: Randy Dunlap <rdunlap@xenotime.net>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.15) Gecko/20110323 Thunderbird/3.1.9
+	id S968256Ab2ESAx6 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 May 2012 20:53:58 -0400
+Received: from ozlabs.org ([203.10.76.45]:38966 "EHLO ozlabs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754420Ab2ESAxz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 18 May 2012 20:53:55 -0400
+From: Rusty Russell <rusty@rustcorp.com.au>
+To: David Howells <dhowells@redhat.com>
+Cc: kyle@mcmartin.ca, linux-kernel@vger.kernel.org,
+        linux-security-module@vger.kernel.org, keyrings@linux-nfs.org
+Subject: Re: [PATCH 00/29] Crypto keys and module signing [ver #4]
+In-Reply-To: <20120510233901.4137.19023.stgit@warthog.procyon.org.uk>
+References: <20120510233901.4137.19023.stgit@warthog.procyon.org.uk>
+User-Agent: Notmuch/0.12 (http://notmuchmail.org) Emacs/23.3.1 (i686-pc-linux-gnu)
+Date: Sat, 19 May 2012 10:23:05 +0930
+Message-ID: <87ipft3sb2.fsf@rustcorp.com.au>
 MIME-Version: 1.0
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-CC: Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
-        LKML <linux-kernel@vger.kernel.org>, Ian Abbott <abbotti@mev.co.uk>,
-        Frank Mori Hess <fmhess@users.sourceforge.net>,
-        devel@driverdev.osuosl.org
-Subject: Re: [PATCH -next] comedi: fix build when USB is not enabled
-References: <20120518184943.2c762e8441e53ea24748d1b8@canb.auug.org.au> <4FB6ED55.6090805@xenotime.net> <20120519005031.GA27613@kroah.com>
-In-Reply-To: <20120519005031.GA27613@kroah.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Identified-User: {1807:box742.bluehost.com:xenotime:xenotime.net} {sentby:smtp auth 50.53.38.135 authed with rdunlap@xenotime.net}
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/18/2012 05:50 PM, Greg Kroah-Hartman wrote:
-
-> On Fri, May 18, 2012 at 05:46:13PM -0700, Randy Dunlap wrote:
->> From: Randy Dunlap <rdunlap@xenotime.net>
->>
->> Calls to optional subsystems cannot be made indiscriminately.
->> Enclose all of the usb helper functions inside
->> #if IS_ENABLED(CONFIG_USB)
->> to fix these build errors.
->>
->> (The pci helper functions are OK since there are stubs in
->> linux/pci.h for the called functions when PCI is not enabled.
->> Possibly the same could be done for the called USB functions.)
->>
->> ERROR: "usb_deregister" [drivers/staging/comedi/comedi.ko] undefined!
->> ERROR: "usb_register_driver" [drivers/staging/comedi/comedi.ko] undefined!
+On Fri, 11 May 2012 00:39:01 +0100, David Howells <dhowells@redhat.com> wrote:
 > 
-> I would rather stub these out in usb.h instead, care to make a patch for
-> that?
+> Hi Rusty,
+> 
+> Here's my latest take on my module signing patch set.  I've retained my
+> strip-proof[*] signature-in-module concept, but I've shrunk the module
+> verification code by nearly half.  Its .text segment now stands at just over 2K
+> in size for an x86_64 kernel.
 
+Hi David!
 
-I'll see how that goes...
+        I get it.  Some management bigwig at RH has told you to get this
+patch in, right?  And you told them it'd had been Nacked, that the
+maintainer had said it was never going in, and of course, that it was a
+stupid idea and to give up on the idea of stripping modules after
+signing, and just append a magic marker and the signature.
 
--- 
-~Randy
+        But they just wouldn't listen, would they?  So you had to waste
+your time polishing this turd, until you annoy me enough to get the kind
+of flaming rejection which is visible from space and chars the eyeballs
+of your manager so they understand.
+
+        Well, here it is.  I even put it in caps for you!
+
+NAK.  THIS PATCH WILL NEVER, EVER GO IN.  I AM NOT PUTTING CRAP IN THE
+KERNEL BECAUSE RH CAN'T FIGURE OUT HOW TO PRODUCE STRIPPED VERSIONS OF
+MODULES DURING BUILD.  DON'T BE TOO PROUD OF THIS TECHNOLOGICAL TERROR
+YOU'VE CONSTRUCTED.
+
+I look forward to you updated patch series!
+Rusty.
