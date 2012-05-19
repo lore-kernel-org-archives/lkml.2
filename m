@@ -1,70 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759261Ab2ESKol (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 19 May 2012 06:44:41 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:60675 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752932Ab2ESKok (ORCPT
+	id S1759475Ab2ESKrb (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 19 May 2012 06:47:31 -0400
+Received: from mail-lpp01m010-f46.google.com ([209.85.215.46]:42545 "EHLO
+	mail-lpp01m010-f46.google.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754692Ab2ESKra (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 19 May 2012 06:44:40 -0400
-Date: Sat, 19 May 2012 11:44:36 +0100
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Laxman Dewangan <ldewangan@nvidia.com>
-Cc: Stephen Warren <swarren@nvidia.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: DT support for input-supply of regulator.
-Message-ID: <20120519104436.GR4039@opensource.wolfsonmicro.com>
-References: <4FB67D9C.2040909@nvidia.com>
+	Sat, 19 May 2012 06:47:30 -0400
+Date: Sat, 19 May 2012 14:47:25 +0400
+From: Cyrill Gorcunov <gorcunov@openvz.org>
+To: Alexander Gordeev <agordeev@redhat.com>, linux-kernel@vger.kernel.org,
+        x86@kernel.org, Suresh Siddha <suresh.b.siddha@intel.com>,
+        Yinghai Lu <yinghai@kernel.org>
+Subject: Re: [PATCH 2/3] x86: x2apic/cluster: Make use of lowest priority
+ delivery mode
+Message-ID: <20120519104725.GA18768@moon>
+References: <20120518102640.GB31517@dhcp-26-207.brq.redhat.com>
+ <20120518144153.GD8455@moon>
+ <20120518154236.GA23406@dhcp-26-207.brq.redhat.com>
+ <20120518155119.GG8455@moon>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="qOEfHYdX8LquYLAx"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <4FB67D9C.2040909@nvidia.com>
-X-Cookie: Today is what happened to yesterday.
+In-Reply-To: <20120518155119.GG8455@moon>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Fri, May 18, 2012 at 07:51:19PM +0400, Cyrill Gorcunov wrote:
+> On Fri, May 18, 2012 at 05:42:37PM +0200, Alexander Gordeev wrote:
+> > > Hi Alexander,
+> > > 
+> > > I'm a bit confused, we do compose destination id from target cpumask
+> > > and send one ipi per _cluster_ with all cpus belonging to this cluster
+> > > OR'ed. So if my memory doesn't betray me all specified cpus in cluster
+> > > should obtain this message. Thus I'm wondering where do you find that
+> > > only one apic obtains ipi? (note i don't have the real physical
+> > > machine with x2apic enabled handy to test, so please share
+> > > the experience).
+> > 
+> > This patchset is not about IPIs at all. It is about interrupts coming from
+> > IO-APICs.
+> 
+> Ah, you mean io-apic here. I'll try to find some time tonight/tomorrow-morning
+> for review. Thanks!
 
---qOEfHYdX8LquYLAx
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+Sorry for delay, Alexander. I can only review the code (I've no x2apic
+testing machine at the moment) and it looks good for me.
 
-On Fri, May 18, 2012 at 10:19:32PM +0530, Laxman Dewangan wrote:
+Reviewed-by: Cyrill Gorcunov <gorcunov@openvz.org>
 
-> But when it looks for the device node containing this regulator, it
-> starts searching of the props from the dev_node of parent device
-> i.e. pmu: tps65910@d2 and in search, it does not found the
-> vin-supply property. It got property for compatible reg, gpio_cell,
-> gpio-controller and then no more property.
+p.s. Hope Suresh and Yinghai will take a look too. The thing which bothers
+me is that we use LowPrio delivery mode, while there is no lowprio in
+x2apic ipi messages and I assume the same should apply to ioapic generated
+messages.
 
-> Is there any issue in laying down the regulator structure?
-
-I'm sorry but I'm having a really hard time parsing what you're saying
-above.  It sounds like there's some sort of device tree specific bug
-that needs fixing.
-
---qOEfHYdX8LquYLAx
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBAgAGBQJPt3mOAAoJEBus8iNuMP3d+LIP/i1BIOpgqRYatzHDpjWORw/A
-cgxiCVyLcJp9u4k94pudUhRMMmYgZSCu3W7TotsISDJby5xvEZaFvnmEJqBqX5Fd
-xOQKhGeUP/bLXuJpIh4pSD0f/5L11I+3n9UpJ+x7/4yuu5qiGgioOiPnL+y/302E
-oHLFAsucyasGRrHjDM+lT3l+zxfuNyraq1SYR3w3pzyYWK4xOcgp9Jjr7pBk6OHx
-+2ovfqPZC4qf4zOiPy6JEBYvNeeKo6jq16BgjjM2J0UjeoQCN+0A4/L6IycPfYAy
-s1Q2q/8Srq42HL+xgt630JwPRNDpoAZzoE2ZB9dkcVpBZAQ/Fjal9K9CwxRk3Re9
-KfVx/wv1EJH+HAEOWh+wYmC1GkDAhxz+zQDpBPaZ2rAAEu3H5qEY04RJsaJ4NKIS
-pcmkKnKBqmf+TuxBTaVrMsXa09iPzgI5lSo2qHworpOCXoumUASJsF1mRpKZWALW
-c3xHKuIadFLG6piHmcjUwgkBnjKpeRTOSSiWJ7j+sJbQRUJn5TPFhLAn16NxoSwN
-/H/HFH/qp1fUnTL6KaTzIOHbK1q1bQoC2HkUUdRgc3zfT4fDP4Atz3yVNnTEAaQF
-dFn0CvraRn7WEd9oqnDcyMGZW1KmpIg4NFMdp7ARLM06mGgyEF/JN7t3Se+YqdUm
-/5wC6gyGvSS2hZuHRFld
-=ybdJ
------END PGP SIGNATURE-----
-
---qOEfHYdX8LquYLAx--
+	Cyrill
