@@ -1,86 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759890Ab2ESMEF (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 19 May 2012 08:04:05 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:46675 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754487Ab2ESMEC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 19 May 2012 08:04:02 -0400
-Message-ID: <4FB78C28.2040009@redhat.com>
-Date: Sat, 19 May 2012 09:03:52 -0300
-From: Mauro Carvalho Chehab <mchehab@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
-MIME-Version: 1.0
-To: Randy Dunlap <rdunlap@xenotime.net>
-CC: Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
-        LKML <linux-kernel@vger.kernel.org>, linux-edac@vger.kernel.org,
-        thayne.l.h@gmail.com
-Subject: Re: linux-next: Tree for May 18 (edac)
-References: <20120518184943.2c762e8441e53ea24748d1b8@canb.auug.org.au> <4FB70267.9030702@xenotime.net>
-In-Reply-To: <4FB70267.9030702@xenotime.net>
-X-Enigmail-Version: 1.4.1
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1756743Ab2ESMZ7 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 19 May 2012 08:25:59 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:23382 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755434Ab2ESMZ5 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 19 May 2012 08:25:57 -0400
+X-Authority-Analysis: v=2.0 cv=OMylLFmB c=1 sm=0 a=ZycB6UtQUfgMyuk2+PxD7w==:17 a=XQbtiDEiEegA:10 a=mtloJUw6WWAA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=meVymXHHAAAA:8 a=ayC55rCoAAAA:8 a=ccESZ9927CwFfQE8lG0A:9 a=PUjeQqilurYA:10 a=jeBq3FmKZ4MA:10 a=ZycB6UtQUfgMyuk2+PxD7w==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 74.67.80.29
+Message-ID: <1337430355.32434.0.camel@gandalf.stny.rr.com>
+Subject: Re: [PATCH 00/15] [GIT PULL] tracing: Updates for 3.5
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Ingo Molnar <mingo@kernel.org>
+Cc: linux-kernel@vger.kernel.org, Ingo Molnar <mingo@elte.hu>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Vaibhav Nagarnaik <vnagarnaik@google.com>
+Date: Sat, 19 May 2012 08:25:55 -0400
+In-Reply-To: <20120519101243.GA17997@gmail.com>
+References: <20120518130858.392919640@goodmis.org>
+	 <1337391816.7562.18.camel@gandalf.stny.rr.com>
+	 <20120519101243.GA17997@gmail.com>
+Content-Type: text/plain; charset="ISO-8859-15"
+X-Mailer: Evolution 3.2.2-1 
 Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Em 18-05-2012 23:16, Randy Dunlap escreveu:
-> On 05/18/2012 01:49 AM, Stephen Rothwell wrote:
+On Sat, 2012-05-19 at 12:12 +0200, Ingo Molnar wrote:
+> * Steven Rostedt <rostedt@goodmis.org> wrote:
 > 
->> Hi all,
->>
->> Changes since 201205017:
+> > On Fri, 2012-05-18 at 09:08 -0400, Steven Rostedt wrote:
+> > > Ingo,
+> > > 
+> > > This should be my last set of changes for the next merge window.
+> > 
+> > Not quite :-)
+> > 
+> > You can hold off on pulling this. I want to add Masami's Acked-by tag,
+> > and Vaibhav gave me two more patches. I'll run it through my own tests
+> > and then do another pull request.
 > 
-> 
-> 
-> on i386:
-> 
-> lots of build errors for the attached randconfig file.
-> 
-Sorry, this was due to a bad rebase conflict at the edac tree:
-	https://lkml.org/lkml/2012/5/18/321
+> I already pulled them and they tested out fine. Please queue up 
+> the two patches on top.
 
-changeset 90b40d5cadba20d7fe2fce12d61f97e0870c1ba6 should be, instead:
+OK, will do. I actually found an old patch that should have gone in a
+long time ago too. It's a minor clean up, so I'll add that one too.
 
-	http://git.infradead.org/users/mchehab/edac.git/commit/d24e447c14c328d0285317e916a0012c73df0d0b
+-- Steve
 
-Just updated the tree with the fixed patch merged with
-the broken one.
 
-Anyway, the fix patch is enclosed.
-
-Regards,
-Mauro
-
--
-
-edac: Fix compilation breakage on amd76x_edac and i82875p
-
-Signed-off-by: Mauro Carvalho Chehab <mchehab@redhat.com>
-
-diff --git a/drivers/edac/amd76x_edac.c b/drivers/edac/amd76x_edac.c
-index c974da7..a015fba 100644
---- a/drivers/edac/amd76x_edac.c
-+++ b/drivers/edac/amd76x_edac.c
-@@ -251,7 +251,7 @@ static int amd76x_probe1(struct pci_dev *pdev, int dev_idx)
- 	layers[1].type = EDAC_MC_LAYER_CHANNEL;
- 	layers[1].size = 1;
- 	layers[1].is_virt_csrow = false;
--	mci = edac_mc_alloc(0, ARRAY_SIZE(layers), 0);
-+	mci = edac_mc_alloc(0, ARRAY_SIZE(layers), layers, 0);
- 
- 	if (mci == NULL)
- 		return -ENOMEM;
-diff --git a/drivers/edac/i82875p_edac.c b/drivers/edac/i82875p_edac.c
-index ae15359..db64bd7 100644
---- a/drivers/edac/i82875p_edac.c
-+++ b/drivers/edac/i82875p_edac.c
-@@ -420,6 +420,7 @@ static int i82875p_probe1(struct pci_dev *pdev, int dev_idx)
- 	layers[1].size = nr_chans;
- 	layers[1].is_virt_csrow = false;
- 	mci = edac_mc_alloc(0, ARRAY_SIZE(layers), layers, sizeof(*pvt));
-+	if (!mci) {
- 		rc = -ENOMEM;
- 		goto fail0;
- 	}
