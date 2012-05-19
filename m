@@ -1,91 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756641Ab2ESOQt (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 19 May 2012 10:16:49 -0400
-Received: from mga09.intel.com ([134.134.136.24]:21793 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753848Ab2ESOQr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 19 May 2012 10:16:47 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.67,351,1309762800"; 
-   d="scan'208";a="145883452"
-Date: Sat, 19 May 2012 22:13:30 +0800
-From: Feng Tang <feng.tang@intel.com>
-To: Arnaldo Carvalho de Melo <acme@redhat.com>
-Cc: <mingo@elte.hu>, <a.p.zijlstra@chello.nl>, <robert.richter@amd.com>,
-        <ak@linux.intel.com>, <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 3/3] perf script/python: Pass thread/dso name and symbol
- info to event handler in python
-Message-ID: <20120519221330.08b24ed1@feng-i7>
-In-Reply-To: <20120518153854.GF2636@infradead.org>
-References: <1337173155-25780-1-git-send-email-feng.tang@intel.com>
-	<1337173155-25780-3-git-send-email-feng.tang@intel.com>
-	<20120517154726.GC2636@infradead.org>
-	<20120518105527.154fe294@feng-i7>
-	<20120518153854.GF2636@infradead.org>
-Organization: intel
-X-Mailer: Claws Mail 3.7.6 (GTK+ 2.22.0; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	id S1757156Ab2ESORW (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 19 May 2012 10:17:22 -0400
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:44646 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754537Ab2ESORU (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 19 May 2012 10:17:20 -0400
+Message-ID: <4FB7AB4D.5040900@mvista.com>
+Date: Sat, 19 May 2012 18:16:45 +0400
+From: Sergei Shtylyov <sshtylyov@mvista.com>
+User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:12.0) Gecko/20120428 Thunderbird/12.0.1
+MIME-Version: 1.0
+To: Randy Dunlap <rdunlap@xenotime.net>
+CC: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
+        LKML <linux-kernel@vger.kernel.org>, Ian Abbott <abbotti@mev.co.uk>,
+        Frank Mori Hess <fmhess@users.sourceforge.net>,
+        devel@driverdev.osuosl.org, linux-usb@vger.kernel.org
+Subject: Re: [PATCH -next] usb: add usb.h stubs for CONFIG_USB not enabled
+References: <20120518184943.2c762e8441e53ea24748d1b8@canb.auug.org.au> <4FB6ED55.6090805@xenotime.net> <20120519005031.GA27613@kroah.com> <4FB6FFBF.6000509@xenotime.net>
+In-Reply-To: <4FB6FFBF.6000509@xenotime.net>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Arnaldo,
+Hello.
 
+On 19-05-2012 6:04, Randy Dunlap wrote:
 
-On Fri, 18 May 2012 12:38:54 -0300
-Arnaldo Carvalho de Melo <acme@redhat.com> wrote:
+> From: Randy Dunlap<rdunlap@xenotime.net>
 
-> Em Fri, May 18, 2012 at 10:55:27AM +0800, Feng Tang escreveu:
-> > On Thu, 17 May 2012 12:47:26 -0300
-> > Arnaldo Carvalho de Melo <acme@redhat.com> wrote:
-> > > >  	PyTuple_SetItem(t, n++, PyString_FromStringAndSize(
-> > > >  			data, sample->raw_size));
-> > > > +	PyTuple_SetItem(t, n++, PyString_FromString(thread->comm));
-> > > > +	PyTuple_SetItem(t, n++,
-> > > > PyString_FromString(al->map->dso->name)); +
-> > > > +	/* Pass the resolved symbol if there is, othersize pass
-> > > > "Unkown" */
-> > > > +	if (al->sym)
-> > > > +		PyTuple_SetItem(t, n++,
-> > > > PyString_FromString(al->sym->name));
-> > > > +	else
-> > > > +		PyTuple_SetItem(t, n++,
-> > > > PyString_FromString("Unknown"));
-> > > 
-> > > Isn't this getting a little bit convoluted?
-> > > 
-> > > I.e. python has dictionaries, perhaps we could pass a dict instead of a
-> > > tuple, in that case we would simply not add the "symbol" key.
-> > 
-> > IIRC, the PyObject_CallObjects() only accept "tuple" arguments, or did
-> > you mean make the "symbol" a dict and an item of the "t" tuple?
-> > 
-> > I agree the symbol code is ugly, is following a little better?	
-> > 	PyTuple_SetItem(t, n++, PyString_FromString((al->sym) ?
-> > al->sym->name : "Unknown"));
-> 
-> What I meant was: make it so that the process_event() python method we
-> look for receives as its first argument a dict.
-> 
-> I.e. pass a tuple to PyObject_CallObjects() that has just one entry: a
-> dict.
-> 
-> This way if we need to add more parameters in the future, some of which
-> may not exist (the "Unknown" ones). This way older scripts will continue
-> working with newer perf tools, they just won't process the new stuff.
+> Add stubs for some usb core functions when CONFIG_USB
+> is not enabled.  This fixes these comedi build errors:
 
-Got your point now. I've modified the code as you suggested and tested
-them with my script which worked fine. Will send out a V2 for the whole
-patch set after I got comments from David Ahern for my [PATCH 2/3]. Thanks,
+> ERROR: "usb_deregister" [drivers/staging/comedi/comedi.ko] undefined!
+> ERROR: "usb_register_driver" [drivers/staging/comedi/comedi.ko] undefined!
 
-- Feng
+> Signed-off-by: Randy Dunlap<rdunlap@xenotime.net>
+> ---
+> I am only adding the stubs that are needed for comedi to build.
+> I expect that more stubs will be needed as more build errors are
+> found.  It seems to me that linux/usb.h might need more (major)
+> moving of lines to support more stubs in the future.
 
-> 
-> I.e. when adding features make sure that old scripts works with newer
-> perf tools and vice versa as much as possible. If not possible, add
-> notes to the relevant tools/perf/Documentation/ file.
-> 
-> - Arnaldo
+>   Documentation/usb/error-codes.txt |    2 ++
+>   include/linux/usb.h               |   24 +++++++++++++++++++++++-
+>   2 files changed, 25 insertions(+), 1 deletion(-)
+>
+> --- linux-next-20120518.orig/include/linux/usb.h
+> +++ linux-next-20120518/include/linux/usb.h
+> @@ -10,7 +10,7 @@
+>
+>   #ifdef __KERNEL__
+>
+> -#include<linux/errno.h>         /* for -ENODEV */
+> +#include<linux/errno.h>         /* for -ENODEV, -ENOSYS */
+>   #include<linux/delay.h>	/* for mdelay() */
+>   #include<linux/interrupt.h>	/* for in_interrupt() */
+>   #include<linux/list.h>		/* for struct list_head */
+> @@ -515,6 +515,8 @@ static inline struct usb_device *interfa
+>   	return to_usb_device(intf->dev.parent);
+>   }
+>
+> +#if defined(CONFIG_USB) || defined(CONFIG_USB_MODULE)
+
+    You can use IS_ENABLED(CONFIG_USB) instead of these two now.
+
+WBR, Sergei
