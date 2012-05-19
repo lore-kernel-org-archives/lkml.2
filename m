@@ -1,74 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756925Ab2ESUhi (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 19 May 2012 16:37:38 -0400
-Received: from mail-ob0-f174.google.com ([209.85.214.174]:50150 "EHLO
-	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755908Ab2ESUhh convert rfc822-to-8bit (ORCPT
+	id S1757036Ab2ESUqU (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 19 May 2012 16:46:20 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:41258 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752345Ab2ESUqS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 19 May 2012 16:37:37 -0400
+	Sat, 19 May 2012 16:46:18 -0400
+Date: Sat, 19 May 2012 13:45:57 -0700 (PDT)
+From: Hugh Dickins <hughd@google.com>
+X-X-Sender: hugh@eggly.anvils
+To: Sam Portolla <samportolla@yahoo.com>
+cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "aarcange@redhat.com" <aarcange@redhat.com>
+Subject: Re: exit_mmap BUG_ON in 2.6.23
+In-Reply-To: <1337406674.48432.YahooMailNeo@web121303.mail.ne1.yahoo.com>
+Message-ID: <alpine.LSU.2.00.1205191301430.10539@eggly.anvils>
+References: <1337406674.48432.YahooMailNeo@web121303.mail.ne1.yahoo.com>
+User-Agent: Alpine 2.00 (LSU 1167 2008-08-23)
 MIME-Version: 1.0
-In-Reply-To: <1337433062.7075.9.camel@Abyss>
-References: <1337229266-15798-1-git-send-email-ccross@android.com>
-	<1337331395.573.3.camel@twins>
-	<CAMbhsRQYeM8b167HVge11kVtniWKEukN+xGMvcMDf5+UOOc8_w@mail.gmail.com>
-	<1337366237.573.106.camel@twins>
-	<CAMbhsRRnweLW_J+aBUsSbBh_Rp-PzVFap1FaRV1t9G0o9fZZAw@mail.gmail.com>
-	<1337433062.7075.9.camel@Abyss>
-Date: Sat, 19 May 2012 13:37:36 -0700
-X-Google-Sender-Auth: HDXTisHM_ZEWM5MaMPW-op7K7V4
-Message-ID: <CAMbhsRQYgOQA7NB-mdMDi8GxtTaZDQhED2J2X9YmyiYjAzXx4w@mail.gmail.com>
-Subject: Re: [PATCH] sched/rt: fix SCHED_RR across cgroups
-From: Colin Cross <ccross@android.com>
-To: Dario Faggioli <raistlin@linux.it>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, linux-kernel@vger.kernel.org,
-        Ingo Molnar <mingo@kernel.org>, Steven Rostedt <rostedt@goodmis.org>,
-        Thomas Gleixner <tglx@linutronix.de>, Hillf Danton <dhillf@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
-X-System-Of-Record: true
+Content-Type: MULTIPART/MIXED; BOUNDARY="8323584-1553049524-1337460364=:10539"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, May 19, 2012 at 6:11 AM, Dario Faggioli <raistlin@linux.it> wrote:
-> On Fri, 2012-05-18 at 17:13 -0700, Colin Cross wrote:
->> Even with this patch, scheduling of SCHED_RR tasks in cgroups is a
->> little odd.  Each cgroup is treated as a schedulable entity alongside
->> the tasks in the same parent cgroup, and then the tasks inside the
->> child cgroup round robin through the child cgroup's time slices.  So
->> in the setup:
->> root_cgroup
->>    task 1
->>    cgroup
->>       task 2
->>       task 3
->>
->> The RR will be:
->> task 1, cgroup(task 2), task 1, cgroup(task 3), ...
->>
->> task 1 will run twice as often, for a full RR_TIMESLICE each time, as
->> tasks 2 and 3.
->>
-> That looks right to me...
->
->> Is that the way SCHED_RR is intended to interact with cgroups?
->>
-> I would say it is. That's what you get because of putting task1 and
-> cgroup at the same level in the "hierarchy". I'm curious, what kind of
-> behaviour were you expecting?
+  This message is in MIME format.  The first part should be readable text,
+  while the remaining parts are likely unreadable without MIME-aware tools.
 
-That behavior matches exactly with scheduling of normal tasks and
-cgroups with default cpu.shares, but doesn't match too well with what
-I can see of the posix SCHED_RR description, which suggests all the
-SCHED_RR threads go into a single queue.  I was just curious if the
-behavior my patch restored was correct, since it can't be adjusted by
-tweaking any parameters like cpu.shares.
+--8323584-1553049524-1337460364=:10539
+Content-Type: TEXT/PLAIN; charset=iso-8859-1
+Content-Transfer-Encoding: QUOTED-PRINTABLE
 
-> Of course, the actual schedule also depends on the real-time priority of
-> the various tasks (groups don't have a priority, they inherit it from
-> their tasks, or at least it was like this when I used to work with
-> it :-P), but I guess you're putting all the tasks in the same queue
-> (i.e., same rt-prio), is it that the case?
+On Fri, 18 May 2012, Sam Portolla wrote:
+> [please cc samPortolla@yahoo.com on your replies, not subscribed to the l=
+inux-kernel mailer]
+>=20
+> Hi, I have read the thread on same issue in 3.1:
+> but this is happening on earlier GNU linux version 2.6.23 for x86_64,
+> which does not have THP (I believe), nor it has huge_memory.c.
+> Is there a fix one of you experts could supply?=A0 Issue is not reproduci=
+ble
+> so far, but happened on a customer site. Some info below.
+>=20
+> kernel BUG at .../bfc/linux/kernel-2.6.x/mm/mmap.c:2049!
+>=20
+> Line 2049 is in exit_mmap():
+>=20
+> BUG_ON(mm->nr_ptes > (FIRST_USER_ADDRESS+PMD_SIZE-1)>>PMD_SHIFT);
+>=20
+> =A0RIP: 0010:[<ffffffff80277840>]  [<ffffffff80277840>] exit_mmap+0xf0/0x=
+100=20
+> [snip]
+> =A0Call Trace:
+>  [<ffffffff8022ee14>] mmput+0x44/0xd0
+>  [<ffffffff802340a1>] exit_mm+0x91/0x100
+>  [<ffffffff802347ea>] do_exit+0x17a/0x960
+>  [<ffffffff8023c4bc>] __dequeue_signal+0xec/0x1b0
+>  [<ffffffff80235048>] do_group_exit+0x38/0x90
+>  [<ffffffff8023e3c6>] get_signal_to_deliver+0x2d6/0x4b0
+>  [<ffffffff8020b69a>] do_notify_resume+0xaa/0x760
+>  [<ffffffff8020c818>] retint_signal+0x3d/0x85
 
-Yes.
+I've checked back through old ChangeLogs, and (apart from a UserModeLinux
+case) I don't see any fix for a BUG_ON(nr_ptes) issue in between 2.6.19
+and the much later THP issue, which you're right to think cannot be yours.
+
+But the 2.6.19 case, and one which a video driver writer had more recently,
+were both caused by unrelated code zeroing beyond what it had allocated:
+happening to zero part of a higher-level page table, making it impossible
+for task exit to locate all the page tables (and pages) it had to free.
+
+Though I can't be sure, these BUG_ON(nr_ptes) reports do seem perhaps
+too infrequent to be caused by bad logic in mm itself: I suspect memory
+corruption in your case too.
+
+There's no clue here as to what the cause might be, I'm afraid.
+Rebuilding your kernel with CONFIG_DEBUG_PAGEALLOC=3Dy, and slab debugging
+on, might shed more light: but that's probably not something you want to
+get into on a customer site, for a problem only seen once or twice.
+
+The best I can suggest is for you to change that BUG_ON to a WARN_ON,
+so at least the kernel doesn't crash there, and you might gather more
+information from each time it happens; but you'll probably leak pages,
+and may very well crash soon for other reasons (e.g. when evicting an
+inode cannot locate all the maps of its pages).
+
+Hugh
+--8323584-1553049524-1337460364=:10539--
