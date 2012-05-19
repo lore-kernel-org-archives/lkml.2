@@ -1,334 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759857Ab2ESBmF (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 May 2012 21:42:05 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:39171 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757089Ab2ESBmA (ORCPT
+	id S1759904Ab2ESBnk (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 May 2012 21:43:40 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:23164 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756489Ab2ESBni (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 May 2012 21:42:00 -0400
-Date: Fri, 18 May 2012 18:41:38 -0700 (PDT)
-From: Hugh Dickins <hughd@google.com>
-X-X-Sender: hugh@eggly.anvils
-To: Andrew Morton <akpm@linux-foundation.org>
-cc: Christoph Hellwig <hch@infradead.org>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Alan Cox <alan@lxorguk.ukuu.org.uk>,
-        Stephane Marchesin <marcheu@chromium.org>,
-        Andi Kleen <andi@firstfloor.org>, Dave Airlie <airlied@gmail.com>,
-        Daniel Vetter <daniel@ffwll.ch>, Rob Clark <rob.clark@linaro.org>,
-        Cong Wang <xiyou.wangcong@gmail.com>, linux-mm@kvack.org,
-        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/10] shmem: replace page if mapping excludes its zone
-In-Reply-To: <alpine.LSU.2.00.1205142101420.2196@eggly.anvils>
-Message-ID: <alpine.LSU.2.00.1205181753310.9617@eggly.anvils>
-References: <alpine.LSU.2.00.1205120447380.28861@eggly.anvils> <alpine.LSU.2.00.1205120453210.28861@eggly.anvils> <20120514161330.def0ac52.akpm@linux-foundation.org> <alpine.LSU.2.00.1205142101420.2196@eggly.anvils>
-User-Agent: Alpine 2.00 (LSU 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	Fri, 18 May 2012 21:43:38 -0400
+X-Authority-Analysis: v=2.0 cv=cssZYiEi c=1 sm=0 a=ZycB6UtQUfgMyuk2+PxD7w==:17 a=XQbtiDEiEegA:10 a=mtloJUw6WWAA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=meVymXHHAAAA:8 a=ayC55rCoAAAA:8 a=VwQbUJbxAAAA:8 a=C4wabflVbsGNTArt7ecA:9 a=Ut3vS4csiTRVBCAwAa4A:7 a=PUjeQqilurYA:10 a=ZycB6UtQUfgMyuk2+PxD7w==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 74.67.80.29
+Message-ID: <1337391816.7562.18.camel@gandalf.stny.rr.com>
+Subject: Re: [PATCH 00/15] [GIT PULL] tracing: Updates for 3.5
+From: Steven Rostedt <rostedt@goodmis.org>
+To: linux-kernel@vger.kernel.org
+Cc: Ingo Molnar <mingo@elte.hu>, Andrew Morton <akpm@linux-foundation.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Vaibhav Nagarnaik <vnagarnaik@google.com>
+Date: Fri, 18 May 2012 21:43:36 -0400
+In-Reply-To: <20120518130858.392919640@goodmis.org>
+References: <20120518130858.392919640@goodmis.org>
+Content-Type: text/plain; charset="ISO-8859-15"
+X-Mailer: Evolution 3.2.2-1 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 14 May 2012, Hugh Dickins wrote:
-> On Mon, 14 May 2012, Andrew Morton wrote:
-> > On Sat, 12 May 2012 04:59:56 -0700 (PDT)
-> > Hugh Dickins <hughd@google.com> wrote:
-> > > 
-> > > We'd like to continue to support GMA500, so now add a new
-> > > shmem_should_replace_page() check on the zone when about to move
-> > > a page from swapcache to filecache (in swapin and swapoff cases),
-> > > with shmem_replace_page() to allocate and substitute a suitable page
-> > > (given gma500/gem.c's mapping_set_gfp_mask GFP_KERNEL | __GFP_DMA32).
-> > >  
-> ...
-> > > +	gfp = mapping_gfp_mask(mapping);
-> > > +	if (shmem_should_replace_page(*pagep, gfp)) {
-> > > +		mutex_unlock(&shmem_swaplist_mutex);
-> > > +		error = shmem_replace_page(pagep, gfp, info, index);
-> > > +		mutex_lock(&shmem_swaplist_mutex);
-> > > +		/*
-> > > +		 * We needed to drop mutex to make that restrictive page
-> > > +		 * allocation; but the inode might already be freed by now,
-> > > +		 * and we cannot refer to inode or mapping or info to check.
-> > > +		 * However, we do hold page lock on the PageSwapCache page,
-> > > +		 * so can check if that still has our reference remaining.
-> > > +		 */
-> > > +		if (!page_swapcount(*pagep))
-> > > +			error = -ENOENT;
-> > 
-> > This has my head spinning a bit.  What is "our reference"?  I'd expect
-> > that to mean a temporary reference which was taken by this thread of
-> > control.
+On Fri, 2012-05-18 at 09:08 -0400, Steven Rostedt wrote:
+> Ingo,
 > 
-> (I'm sure you'll prefer a reworking of that comment in an incremental
-> fixes patch, but let me try to explain better here too.)
-> 
-> No, I didn't mean a temporary reference taken by this (swapoff) thread,
-> but the reference (swap entry) which has just been located in the inode's
-> radix_tree, just before this hunk: which would be tracked by page_swapcount
-> 1 (there's also a page swapcache bit in the swap_map along with the count,
-> corresponding to the reference from the swapcache page itself, but that's
-> not included in page_swapcount).
-> 
-> > But such a thing has no relevance when trying to determine
-> > the state of the page and/or data structures which refer to it.
-> 
-> I don't understand you there, but maybe it won't matter.
-> 
-> > 
-> > Also, what are we trying to determine here with this test?  Whether the
-> > page was removed from swapcache under our feet?  Presumably not, as it
-> > is locked.
-> > 
-> > So perhaps you could spell out in more detail what we're trying to do
-> > here, and what contributes to page_swapcount() here?
-> 
-> The danger here is that the inode we're dealing with has gone through
-> shmem_evict_inode() while we dropped shmem_swaplist_mutex: inode was
-> certainly in use before, and shmem_swaplist_mutex (together with inode
-> being on shmem_swaplist) holds it up from being evicted and freed; but
-> once we drop the mutex, it could go away at any moment.  We cannot
-> determine that by looking at struct inode or struct address_space or
-> struct shmem_inode_info, they're all part of what would be freed;
-> but we cannot proceed to shmem_add_to_page_cache() once they're freed.
-> How to tell whether it's been freed?
-> 
-> Once upon a time I "solved" it with igrab() and iput(), but Konstantin
-> demonstrated how that gives no safety against unmounting, and I remain
-> reluctant to go back to relying upon filesystem semantics to solve this.
-> 
-> It occurred to me that the inode cannot be freed until that radix_tree
-> entry has been removed (by shmem_evict_inode's shmem_truncate_range),
-> and the act or removing that entry (free_swap_and_cache) brings
-> page_swapcount down from 1 to 0.
-> 
-> You're thinking that the page cannot be removed from swapcache while
-> we hold page lock: correct, but... free_swap_and_cache() only does a
-> trylock_page(), and happily leaves the swapcache page to be garbage
-> collected later if it cannot get the page lock.  (And I certainly
-> would not want to change it to wait for page lock.)  So, the inode
-> can get evicted while the page is still in swapcache: the page lock
-> gives no protection against that, until the page itself gets into
-> the radix_tree.
-> 
-> I doubt that writing this essay into a comment there will be the
-> right thing to do (and I may still be losing you); but I shall try
-> to rewrite it, and if there's one missing fact that needs highlighting,
-> it probably is that last, that free_swap_and_cache() only does a trylock,
-> so our page lock does not protect the inode from eviction.
-> 
-> (At this moment, I can't think what is the relevance of my comment
-> "we do hold page lock on the PageSwapCache page": in other contexts it
-> would be important, but here in swapoff we know that that swap cannot
-> get reused, or not before we're done.)
-> 
-> > > @@ -660,7 +679,14 @@ int shmem_unuse(swp_entry_t swap, struct
-> > >  	struct list_head *this, *next;
-> > >  	struct shmem_inode_info *info;
-> > >  	int found = 0;
-> > > -	int error;
-> > > +	int error = 0;
-> > > +
-> > > +	/*
-> > > +	 * There's a faint possibility that swap page was replaced before
-> > > +	 * caller locked it: it will come back later with the right page.
-> > 
-> > So a caller locked the page then failed to check that it's still the
-> > right sort of page?  Shouldn't the caller locally clean up its own mess
-> > rather than requiring a callee to know about the caller's intricate
-> > shortcomings?
-> 
-> The caller being try_to_unuse().  You're certainly not the first to argue
-> that way.  Perhaps I'm a bit perverse, in letting code which works even
-> in the surprising cases, remain as it is without weeding out those
-> surprising cases.  And on this occasion didn't want to add an additional
-> dependence on a slight subtle change in mm/swapfile.c functionality.
-> 
-> Hmm, yes, I do still prefer to have the check here in shmem.c:
-> particularly since it is this "shmem_replace_page" business which is
-> increasing the likelihood of such a race, and making further demands
-> on it (if we're going to make the copied page PageSwapCache, then we
-> need to be sure that the page it's replacing was PageSwapCache - though
-> that's something I need to think through again in the light of the race
-> which I thought of in responding to Cong).
-> 
-> > > +	newpage = shmem_alloc_page(gfp, info, index);
-> > > +	if (!newpage)
-> > > +		return -ENOMEM;
-> > > +	VM_BUG_ON(shmem_should_replace_page(newpage, gfp));
-> > > +
-> > > +	*pagep = newpage;
-> > > +	page_cache_get(newpage);
-> > > +	copy_highpage(newpage, oldpage);
-> > 
-> > copy_highpage() doesn't do flush_dcache_page() - did we need copy_user_highpage()?
-> 
-> Ooh, I'm pretty sure you're right that we do need flush_dcache_page()
-> there: good catch, thank you.  We can't use copy_user_highpage() because
-> in general we don't know any address and vma; but should be following the
-> shmem_getpage_gfp() pattern of clear_highpage+flush_dcache_page+SetUptodate.
-> 
-> > 
-> > shmem_replace_page() is a fairly generic and unexceptional sounding
-> > thing.  Methinks shmem_substitute_page() would be a better name.
-> 
-> Okay, shmem_replace_page() seemed appropriate to me (especially thinking
-> of it as "re-place"), but I don't mind changing to shmem_substitute_page().
-> 
-> The flush_dcache_page() addition is important, but until people are
-> using GMA500 on ARM or something (I doubt that combination) with more
-> than 4GB, this code is not coming into play - so I'm not breaking anyone's
-> system if it sneaks into linux-next before I fix that.
-> 
-> The main thing I need to think through quietly is the slippery swap race:
-> I'll send you an incremental patch to fix all these up once I'm satisfied
-> on that.
+> This should be my last set of changes for the next merge window.
 
-I promised you an incremental, but that's not really possible because of
-the name changes from "replace" to "substitute".  So I'll be sending you
-a v2 patch in a moment, to replace (or substitute for) the original 1/10.
+Not quite :-)
 
-It responds to feedback comment:
+You can hold off on pulling this. I want to add Masami's Acked-by tag,
+and Vaibhav gave me two more patches. I'll run it through my own tests
+and then do another pull request.
 
-1. "substitute" instead of "replace" [akpm]
-2. more explanation of page_swapcount test [akpm]
-3. flush_dcache_page after copy_highpage [akpm]
-4. removal of excessive VM_BUG_ONs [wangcong]
-5. check page_private before and error path within substitute_page [hughd]
+Thanks!
 
-See below for a diff from v1 for review, omitting replace->substitute mods.
+-- Steve
 
-Please don't be disappointed if I send you a further patch to
-shmem_substitute_page() in the weeks ahead: although the page_private
-checks I've added in this one make it very very very unlikely, and its
-consequence very probably benign, there is still a surprising (never
-observed) race by which shmem_getpage_gfp() could get hold of someone
-else's swap.
+> 
+> Please pull the latest tip/perf/core tree, which can be found at:
+> 
+>   git://git.kernel.org/pub/scm/linux/kernel/git/rostedt/linux-trace.git
+> tip/perf/core
+> 
+> Head SHA1: b732d439cb43336cd6d7e804ecb2c81193ef63b0
+> 
+> 
+> Namhyung Kim (1):
+>       tracing: Check return value of tracing_dentry_percpu()
+> 
+> Steven Rostedt (11):
+>       tracing: Clean up tracing_mark_write()
+>       ring-buffer: Add integrity check at end of iter read
+>       ring-buffer: Reset head page before running self test
+>       ftrace: Sort all function addresses, not just per page
+>       ftrace: Remove extra helper functions
+>       ftrace: Speed up search by skipping pages by address
+>       ftrace: Consolidate ftrace_location() and ftrace_text_reserved()
+>       ftrace: Return record ip addr for ftrace_location()
+>       ftrace: Make ftrace_modify_all_code() global for archs to use
+>       ftrace/x86: Have x86 ftrace use the ftrace_modify_all_code()
+>       ftrace: Remove selecting FRAME_POINTER with FUNCTION_TRACER
+> 
+> Vaibhav Nagarnaik (3):
+>       ring-buffer: Make removal of ring buffer pages atomic
+>       ring-buffer: Make addition of pages in ring buffer atomic
+>       tracing: change CPU ring buffer state from tracing_cpumask
+> 
+> ----
+>  arch/x86/kernel/ftrace.c          |   15 +-
+>  include/asm-generic/vmlinux.lds.h |    2 +-
+>  include/linux/ftrace.h            |    5 +-
+>  kernel/trace/Kconfig              |    1 -
+>  kernel/trace/ftrace.c             |  198 ++++++++++---------
+>  kernel/trace/ring_buffer.c        |  394 +++++++++++++++++++++++++++++--------
+>  kernel/trace/trace.c              |   49 ++---
+>  7 files changed, 446 insertions(+), 218 deletions(-)
 
-It's correctly resolved by shmem_add_to_page_cache(), but by that time
-we have already done a mem_cgroup charge, and now also this substitution.
-It would be better to rearrange a little here, to eliminate all chance of
-that surprise: I hoped to complete that earlier, but now think I'd better
-get the safer intermediate version to you first.
-
-Thanks,
-Hugh
-
----
- mm/shmem.c |   57 +++++++++++++++++++++++++++++++++------------------
- 1 file changed, 37 insertions(+), 20 deletions(-)
-
---- 3045N.orig/mm/shmem.c	2012-05-17 16:28:43.278076430 -0700
-+++ 3045N/mm/shmem.c	2012-05-18 16:28:33.642198028 -0700
-@@ -636,10 +636,21 @@ static int shmem_unuse_inode(struct shme
- 		mutex_lock(&shmem_swaplist_mutex);
- 		/*
- 		 * We needed to drop mutex to make that restrictive page
--		 * allocation; but the inode might already be freed by now,
--		 * and we cannot refer to inode or mapping or info to check.
--		 * However, we do hold page lock on the PageSwapCache page,
--		 * so can check if that still has our reference remaining.
-+		 * allocation, but the inode might have been freed while we
-+		 * dropped it: although a racing shmem_evict_inode() cannot
-+		 * complete without emptying the radix_tree, our page lock
-+		 * on this swapcache page is not enough to prevent that -
-+		 * free_swap_and_cache() of our swap entry will only
-+		 * trylock_page(), removing swap from radix_tree whatever.
-+		 *
-+		 * We must not proceed to shmem_add_to_page_cache() if the
-+		 * inode has been freed, but of course we cannot rely on
-+		 * inode or mapping or info to check that.  However, we can
-+		 * safely check if our swap entry is still in use (and here
-+		 * it can't have got reused for another page): if it's still
-+		 * in use, then the inode cannot have been freed yet, and we
-+		 * can safely proceed (if it's no longer in use, that tells
-+		 * nothing about the inode, but we don't need to unuse swap).
- 		 */
- 		if (!page_swapcount(*pagep))
- 			error = -ENOENT;
-@@ -683,9 +694,9 @@ int shmem_unuse(swp_entry_t swap, struct
- 
- 	/*
- 	 * There's a faint possibility that swap page was substituted before
--	 * caller locked it: it will come back later with the right page.
-+	 * caller locked it: caller will come back later with the right page.
- 	 */
--	if (unlikely(!PageSwapCache(page)))
-+	if (unlikely(!PageSwapCache(page) || page_private(page) != swap.val))
- 		goto out;
- 
- 	/*
-@@ -916,21 +927,15 @@ static int shmem_substitute_page(struct
- 	newpage = shmem_alloc_page(gfp, info, index);
- 	if (!newpage)
- 		return -ENOMEM;
--	VM_BUG_ON(shmem_should_substitute_page(newpage, gfp));
- 
--	*pagep = newpage;
- 	page_cache_get(newpage);
- 	copy_highpage(newpage, oldpage);
-+	flush_dcache_page(newpage);
- 
--	VM_BUG_ON(!PageLocked(oldpage));
- 	__set_page_locked(newpage);
--	VM_BUG_ON(!PageUptodate(oldpage));
- 	SetPageUptodate(newpage);
--	VM_BUG_ON(!PageSwapBacked(oldpage));
- 	SetPageSwapBacked(newpage);
--	VM_BUG_ON(!swap_index);
- 	set_page_private(newpage, swap_index);
--	VM_BUG_ON(!PageSwapCache(oldpage));
- 	SetPageSwapCache(newpage);
- 
- 	/*
-@@ -940,13 +945,24 @@ static int shmem_substitute_page(struct
- 	spin_lock_irq(&swap_mapping->tree_lock);
- 	error = shmem_radix_tree_replace(swap_mapping, swap_index, oldpage,
- 								   newpage);
--	__inc_zone_page_state(newpage, NR_FILE_PAGES);
--	__dec_zone_page_state(oldpage, NR_FILE_PAGES);
-+	if (!error) {
-+		__inc_zone_page_state(newpage, NR_FILE_PAGES);
-+		__dec_zone_page_state(oldpage, NR_FILE_PAGES);
-+	}
- 	spin_unlock_irq(&swap_mapping->tree_lock);
--	BUG_ON(error);
- 
--	mem_cgroup_replace_page_cache(oldpage, newpage);
--	lru_cache_add_anon(newpage);
-+	if (unlikely(error)) {
-+		/*
-+		 * Is this possible?  I think not, now that our callers check
-+		 * both PageSwapCache and page_private after getting page lock;
-+		 * but be defensive.  Reverse old to newpage for clear and free.
-+		 */
-+		oldpage = newpage;
-+	} else {
-+		mem_cgroup_replace_page_cache(oldpage, newpage);
-+		lru_cache_add_anon(newpage);
-+		*pagep = newpage;
-+	}
- 
- 	ClearPageSwapCache(oldpage);
- 	set_page_private(oldpage, 0);
-@@ -954,7 +970,7 @@ static int shmem_substitute_page(struct
- 	unlock_page(oldpage);
- 	page_cache_release(oldpage);
- 	page_cache_release(oldpage);
--	return 0;
-+	return error;
- }
- 
- /*
-@@ -1025,7 +1041,8 @@ repeat:
- 
- 		/* We have to do this with page locked to prevent races */
- 		lock_page(page);
--		if (!PageSwapCache(page) || page->mapping) {
-+		if (!PageSwapCache(page) || page_private(page) != swap.val ||
-+		    page->mapping) {
- 			error = -EEXIST;	/* try again */
- 			goto failed;
- 		}
 
