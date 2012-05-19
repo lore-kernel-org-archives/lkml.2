@@ -1,183 +1,156 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758046Ab2ESStT (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 19 May 2012 14:49:19 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:33227 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757268Ab2ESStR (ORCPT
+	id S1758293Ab2ESSvM (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 19 May 2012 14:51:12 -0400
+Received: from bedivere.hansenpartnership.com ([66.63.167.143]:42876 "EHLO
+	bedivere.hansenpartnership.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1756989Ab2ESSvJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 19 May 2012 14:49:17 -0400
-From: Grant Likely <grant.likely@secretlab.ca>
-Subject: Re: [PATCH 7/8] irqdomain: trivial pr_fmt conversion.
-To: Paul Mundt <lethal@linux-sh.org>
-Cc: linux-sh@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Paul Mundt <lethal@linux-sh.org>
-In-Reply-To: <1337407908-7421-8-git-send-email-lethal@linux-sh.org>
-References: <1337407908-7421-1-git-send-email-lethal@linux-sh.org> <1337407908-7421-8-git-send-email-lethal@linux-sh.org>
-Date: Sat, 19 May 2012 12:49:14 -0600
-Message-Id: <20120519184915.772FE3E03B8@localhost>
+	Sat, 19 May 2012 14:51:09 -0400
+Message-ID: <1337453465.2930.6.camel@dabdike.int.hansenpartnership.com>
+Subject: [GIT PULL] parisc fixes for 3.3-rc5
+From: James Bottomley <James.Bottomley@HansenPartnership.com>
+To: Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Parisc List <linux-parisc@vger.kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>
+Date: Sat, 19 May 2012 19:51:05 +0100
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 19 May 2012 15:11:47 +0900, Paul Mundt <lethal@linux-sh.org> wrote:
-> Convert to pr_fmt before things start to get out of hand and some
-> janitors start getting overly excited.
-> 
-> Signed-off-by: Paul Mundt <lethal@linux-sh.org>
+This is a set of three bug fixes that gets parisc running again on
+systems with PA1.1 processors.  Two fix regressions introduced in 2.6.39
+and one fixes a prefetch bug that only affects PA7300LC processors.  We
+also have another pending fix to do with the sectional arrangement of
+vmlinux.lds, but there's a query on it during testing on one particular
+system type, so I'll hold off sending it in for now.
 
-Applied, thanks.
+The patches are here:
 
-g.
+git://git.kernel.org/pub/scm/linux/kernel/git/jejb/parisc-2.6.git parisc-fixes
 
-> ---
->  kernel/irq/irqdomain.c |   36 +++++++++++++++++++-----------------
->  1 files changed, 19 insertions(+), 17 deletions(-)
-> 
-> diff --git a/kernel/irq/irqdomain.c b/kernel/irq/irqdomain.c
-> index ac44781..e8ac7df 100644
-> --- a/kernel/irq/irqdomain.c
-> +++ b/kernel/irq/irqdomain.c
-> @@ -1,3 +1,5 @@
-> +#define pr_fmt(fmt)  "irq: " fmt
-> +
->  #include <linux/debugfs.h>
->  #include <linux/hardirq.h>
->  #include <linux/interrupt.h>
-> @@ -124,7 +126,7 @@ void irq_domain_remove(struct irq_domain *domain)
->  
->  	mutex_unlock(&irq_domain_mutex);
->  
-> -	pr_debug("irq: Removed domain of type %d @0x%p\n",
-> +	pr_debug("Removed domain of type %d @0x%p\n",
->  		 domain->revmap_type, domain);
->  
->  	irq_domain_free(domain);
-> @@ -329,7 +331,7 @@ EXPORT_SYMBOL_GPL(irq_find_host);
->   */
->  void irq_set_default_host(struct irq_domain *domain)
->  {
-> -	pr_debug("irq: Default domain set to @0x%p\n", domain);
-> +	pr_debug("Default domain set to @0x%p\n", domain);
->  
->  	irq_default_domain = domain;
->  }
-> @@ -343,7 +345,7 @@ static int irq_setup_virq(struct irq_domain *domain, unsigned int virq,
->  	irq_data->hwirq = hwirq;
->  	irq_data->domain = domain;
->  	if (domain->ops->map(domain, virq, hwirq)) {
-> -		pr_debug("irq: -> mapping failed, freeing\n");
-> +		pr_debug("-> mapping failed, freeing\n");
->  		irq_data->domain = NULL;
->  		irq_data->hwirq = 0;
->  		return -1;
-> @@ -374,7 +376,7 @@ unsigned int irq_create_direct_mapping(struct irq_domain *domain)
->  
->  	virq = irq_alloc_desc_from(1, irq_domain_nid(domain->of_node));
->  	if (!virq) {
-> -		pr_debug("irq: create_direct virq allocation failed\n");
-> +		pr_debug("create_direct virq allocation failed\n");
->  		return 0;
->  	}
->  	if (virq >= domain->revmap_data.nomap.max_irq) {
-> @@ -383,7 +385,7 @@ unsigned int irq_create_direct_mapping(struct irq_domain *domain)
->  		irq_free_desc(virq);
->  		return 0;
->  	}
-> -	pr_debug("irq: create_direct obtained virq %d\n", virq);
-> +	pr_debug("create_direct obtained virq %d\n", virq);
->  
->  	if (irq_setup_virq(domain, virq, virq)) {
->  		irq_free_desc(virq);
-> @@ -410,23 +412,23 @@ unsigned int irq_create_mapping(struct irq_domain *domain,
->  	unsigned int hint;
->  	int virq;
->  
-> -	pr_debug("irq: irq_create_mapping(0x%p, 0x%lx)\n", domain, hwirq);
-> +	pr_debug("irq_create_mapping(0x%p, 0x%lx)\n", domain, hwirq);
->  
->  	/* Look for default domain if nececssary */
->  	if (domain == NULL)
->  		domain = irq_default_domain;
->  	if (domain == NULL) {
-> -		printk(KERN_WARNING "irq_create_mapping called for"
-> -		       " NULL domain, hwirq=%lx\n", hwirq);
-> +		pr_warning("irq_create_mapping called for"
-> +			   " NULL domain, hwirq=%lx\n", hwirq);
->  		WARN_ON(1);
->  		return 0;
->  	}
-> -	pr_debug("irq: -> using domain @%p\n", domain);
-> +	pr_debug("-> using domain @%p\n", domain);
->  
->  	/* Check if mapping already exists */
->  	virq = irq_find_mapping(domain, hwirq);
->  	if (virq) {
-> -		pr_debug("irq: -> existing mapping on virq %d\n", virq);
-> +		pr_debug("-> existing mapping on virq %d\n", virq);
->  		return virq;
->  	}
->  
-> @@ -442,7 +444,7 @@ unsigned int irq_create_mapping(struct irq_domain *domain,
->  	if (virq <= 0)
->  		virq = irq_alloc_desc_from(1, irq_domain_nid(domain->of_node));
->  	if (virq <= 0) {
-> -		pr_debug("irq: -> virq allocation failed\n");
-> +		pr_debug("-> virq allocation failed\n");
->  		return 0;
->  	}
->  
-> @@ -452,7 +454,7 @@ unsigned int irq_create_mapping(struct irq_domain *domain,
->  		return 0;
->  	}
->  
-> -	pr_debug("irq: irq %lu on domain %s mapped to virtual irq %u\n",
-> +	pr_debug("irq %lu on domain %s mapped to virtual irq %u\n",
->  		hwirq, domain->of_node ? domain->of_node->full_name : "null", virq);
->  
->  	return virq;
-> @@ -472,7 +474,7 @@ unsigned int irq_create_identity_mapping(struct irq_domain *domain,
->  {
->  	int virq;
->  
-> -	pr_debug("irq: irq_create_identity_mapping(0x%p, 0x%lx)\n",
-> +	pr_debug("irq_create_identity_mapping(0x%p, 0x%lx)\n",
->  		 domain, hwirq);
->  
->  	if (domain == NULL)
-> @@ -484,7 +486,7 @@ unsigned int irq_create_identity_mapping(struct irq_domain *domain,
->  
->  	virq = irq_alloc_desc_at(hwirq, irq_domain_nid(domain->of_node));
->  	if (virq < 0) {
-> -		pr_debug("irq: -> virq allocation failed\n");
-> +		pr_debug("-> virq allocation failed\n");
->  		return 0;
->  	}
->  
-> @@ -494,7 +496,7 @@ unsigned int irq_create_identity_mapping(struct irq_domain *domain,
->  		return 0;
->  	}
->  
-> -	pr_debug("irq: irq %lu identity mapped\n", hwirq);
-> +	pr_debug("irq %lu identity mapped\n", hwirq);
->  
->  	return virq;
->  }
-> @@ -522,8 +524,8 @@ unsigned int irq_create_of_mapping(struct device_node *controller,
->  		if (intsize > 0)
->  			return intspec[0];
->  #endif
-> -		printk(KERN_WARNING "irq: no irq domain found for %s !\n",
-> -		       controller->full_name);
-> +		pr_warning("no irq domain found for %s !\n",
-> +			   controller->full_name);
->  		return 0;
->  	}
->  
-> -- 
-> 1.7.9.rc0.28.g0e1cf
-> 
+The short changelog is:
 
--- 
-Grant Likely, B.Sc, P.Eng.
-Secret Lab Technologies, Ltd.
+
+James Bottomley (2):
+      [PARISC] fix panic on prefetch(NULL) on PA7300LC
+      [PARISC] fix PA1.1 oops on boot
+
+John David Anglin (1):
+      [PARISC] fix crash in flush_icache_page_asm on PA1.1
+
+
+And the diffstat:
+
+ arch/parisc/include/asm/prefetch.h |    7 ++++++-
+ arch/parisc/kernel/entry.S         |    4 ++++
+ arch/parisc/kernel/pacache.S       |   38 +++++++++++++++++++-----------------
+ 3 files changed, 30 insertions(+), 19 deletions(-)
+
+With the full diff below
+
+James
+
+---
+
+diff --git a/arch/parisc/include/asm/prefetch.h b/arch/parisc/include/asm/prefetch.h
+index c5edc60..1ee7c82 100644
+--- a/arch/parisc/include/asm/prefetch.h
++++ b/arch/parisc/include/asm/prefetch.h
+@@ -21,7 +21,12 @@
+ #define ARCH_HAS_PREFETCH
+ static inline void prefetch(const void *addr)
+ {
+-	__asm__("ldw 0(%0), %%r0" : : "r" (addr));
++	__asm__(
++#ifndef CONFIG_PA20
++		/* Need to avoid prefetch of NULL on PA7300LC */
++		"	extrw,u,= %0,31,32,%%r0\n"
++#endif
++		"	ldw 0(%0), %%r0" : : "r" (addr));
+ }
+ 
+ /* LDD is a PA2.0 addition. */
+diff --git a/arch/parisc/kernel/entry.S b/arch/parisc/kernel/entry.S
+index 6f05944..5350342 100644
+--- a/arch/parisc/kernel/entry.S
++++ b/arch/parisc/kernel/entry.S
+@@ -581,7 +581,11 @@
+ 	 */
+ 	cmpiclr,=	0x01,\tmp,%r0
+ 	ldi		(_PAGE_DIRTY|_PAGE_READ|_PAGE_WRITE),\prot
++#ifdef CONFIG_64BIT
+ 	depd,z		\prot,8,7,\prot
++#else
++	depw,z		\prot,8,7,\prot
++#endif
+ 	/*
+ 	 * OK, it is in the temp alias region, check whether "from" or "to".
+ 	 * Check "subtle" note in pacache.S re: r23/r26.
+diff --git a/arch/parisc/kernel/pacache.S b/arch/parisc/kernel/pacache.S
+index 93ff3d9..5d7218a 100644
+--- a/arch/parisc/kernel/pacache.S
++++ b/arch/parisc/kernel/pacache.S
+@@ -692,7 +692,7 @@ ENTRY(flush_icache_page_asm)
+ 
+ 	/* Purge any old translation */
+ 
+-	pitlb		(%sr0,%r28)
++	pitlb		(%sr4,%r28)
+ 
+ 	ldil		L%icache_stride, %r1
+ 	ldw		R%icache_stride(%r1), %r1
+@@ -706,27 +706,29 @@ ENTRY(flush_icache_page_asm)
+ 	sub		%r25, %r1, %r25
+ 
+ 
+-1:      fic,m		%r1(%r28)
+-	fic,m		%r1(%r28)
+-	fic,m		%r1(%r28)
+-	fic,m		%r1(%r28)
+-	fic,m		%r1(%r28)
+-	fic,m		%r1(%r28)
+-	fic,m		%r1(%r28)
+-	fic,m		%r1(%r28)
+-	fic,m		%r1(%r28)
+-	fic,m		%r1(%r28)
+-	fic,m		%r1(%r28)
+-	fic,m		%r1(%r28)
+-	fic,m		%r1(%r28)
+-	fic,m		%r1(%r28)
+-	fic,m		%r1(%r28)
++	/* fic only has the type 26 form on PA1.1, requiring an
++	 * explicit space specification, so use %sr4 */
++1:      fic,m		%r1(%sr4,%r28)
++	fic,m		%r1(%sr4,%r28)
++	fic,m		%r1(%sr4,%r28)
++	fic,m		%r1(%sr4,%r28)
++	fic,m		%r1(%sr4,%r28)
++	fic,m		%r1(%sr4,%r28)
++	fic,m		%r1(%sr4,%r28)
++	fic,m		%r1(%sr4,%r28)
++	fic,m		%r1(%sr4,%r28)
++	fic,m		%r1(%sr4,%r28)
++	fic,m		%r1(%sr4,%r28)
++	fic,m		%r1(%sr4,%r28)
++	fic,m		%r1(%sr4,%r28)
++	fic,m		%r1(%sr4,%r28)
++	fic,m		%r1(%sr4,%r28)
+ 	cmpb,COND(<<)		%r28, %r25,1b
+-	fic,m		%r1(%r28)
++	fic,m		%r1(%sr4,%r28)
+ 
+ 	sync
+ 	bv		%r0(%r2)
+-	pitlb		(%sr0,%r25)
++	pitlb		(%sr4,%r25)
+ 	.exit
+ 
+ 	.procend
+
+
