@@ -1,73 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757414Ab2ESGrD (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 19 May 2012 02:47:03 -0400
-Received: from mail.mev.co.uk ([62.49.15.74]:56520 "EHLO mail.mev.co.uk"
+	id S1757641Ab2ESG5N (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 19 May 2012 02:57:13 -0400
+Received: from linux-sh.org ([111.68.239.195]:45455 "EHLO linux-sh.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755323Ab2ESGrA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 19 May 2012 02:47:00 -0400
-Message-ID: <4FB74225.3000404@mev.co.uk>
-Date: Sat, 19 May 2012 07:48:05 +0100
-From: Ian Abbott <abbotti@mev.co.uk>
-Organization: MEV Ltd
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
-MIME-Version: 1.0
-To: H Hartley Sweeten <hartleys@visionengravers.com>
-CC: Ian Abbott <ian.abbott@mev.co.uk>,
-        Linux Kernel <linux-kernel@vger.kernel.org>,
-        "devel@driverdev.osuosl.org" <devel@driverdev.osuosl.org>,
-        "fmhess@users.sourceforge.net" <fmhess@users.sourceforge.net>,
-        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>
-Subject: Re: [PATCH] staging: comedi: cleanup all the comedi_driver 'detach'
- functions
-References: <201205171711.14968.hartleys@visionengravers.com> <4FB6230C.2080604@mev.co.uk> <ADE657CA350FB648AAC2C43247A983F0020698AE1272@AUSP01VMBX24.collaborationhost.net> <4FB68B57.7040404@mev.co.uk> <ADE657CA350FB648AAC2C43247A983F0020698AE12AE@AUSP01VMBX24.collaborationhost.net>
-In-Reply-To: <ADE657CA350FB648AAC2C43247A983F0020698AE12AE@AUSP01VMBX24.collaborationhost.net>
-Content-Type: text/plain; charset="UTF-8"; format=flowed
-Content-Transfer-Encoding: 7bit
+	id S1754434Ab2ESG5L (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 19 May 2012 02:57:11 -0400
+Date: Sat, 19 May 2012 15:57:04 +0900
+From: Paul Mundt <lethal@linux-sh.org>
+To: Joe Perches <joe@perches.com>
+Cc: Grant Likely <grant.likely@secretlab.ca>, linux-sh@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 7/8] irqdomain: trivial pr_fmt conversion.
+Message-ID: <20120519065704.GB32537@linux-sh.org>
+References: <1337407908-7421-1-git-send-email-lethal@linux-sh.org> <1337407908-7421-8-git-send-email-lethal@linux-sh.org> <1337409295.10521.4.camel@joe2Laptop>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1337409295.10521.4.camel@joe2Laptop>
+User-Agent: Mutt/1.4.1i
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 18/05/12 18:52, H Hartley Sweeten wrote:
-> On Friday, May 18, 2012 10:48 AM, Ian Abbott wrote:
->> On 2012-05-18 17:56, H Hartley Sweeten wrote:
->>> Can you test this patch and let me know what the resulting output
->>> is? You may need to change the dev_dbg to dev_info or something
->>> else if you don't have the proper kernel debugging enabled.
->>
->>> diff --git a/drivers/staging/comedi/drivers.c b/drivers/staging/comedi/drivers.c
->>> index 1c3d638..d6bb1f9 100644
->>> --- a/drivers/staging/comedi/drivers.c
->>> +++ b/drivers/staging/comedi/drivers.c
->>> @@ -91,11 +91,14 @@ static void cleanup_device(struct comedi_device *dev)
->>>    static void __comedi_device_detach(struct comedi_device *dev)
->>>    {
->>>    	dev->attached = 0;
->>> -	if (dev->driver)
->>> +	if (dev->driver) {
->>>    		dev->driver->detach(dev);
->>> -	else
->>> -		printk(KERN_WARNING
->>> +		dev_dbg(dev->class_dev, "%s detached\n",
->>> +			dev->driver->driver_name);
->>> +	} else {
->>> +		dev_warn(dev->class_dev,
->>>    		       "BUG: dev->driver=NULL in comedi_device_detach()\n");
->>> +	}
->>>    	cleanup_device(dev);
->>>    }
->>
->> It works, but I'd prefer dev_info over dev_dbg.
->
-> OK. What was the actual message output?
+On Fri, May 18, 2012 at 11:34:55PM -0700, Joe Perches wrote:
+> On Sat, 2012-05-19 at 15:11 +0900, Paul Mundt wrote:
+> > Convert to pr_fmt before things start to get out of hand and some
+> > janitors start getting overly excited.
+> 
+> ;)  OK then, here's some trivia:
+> 
+> > diff --git a/kernel/irq/irqdomain.c b/kernel/irq/irqdomain.c
+> []
+> > @@ -1,3 +1,5 @@
+> > +#define pr_fmt(fmt)  "irq: " fmt
+> 
+> "irqdomain: " (KBUILD_MODNAME) may be more sensible
+> 
+Perhaps. The point of the patch was to consolidate rather than change
+behaviour. With a consolidation in place it's possible to change it to
+whatever people are happy with.
 
-Nothing surprising.  After changing it to dbg_info I got:
+> []
+> > @@ -410,23 +412,23 @@ unsigned int irq_create_mapping(struct irq_domain *domain,
+> >  	unsigned int hint;
+> >  	int virq;
+> >  
+> > -	pr_debug("irq: irq_create_mapping(0x%p, 0x%lx)\n", domain, hwirq);
+> > +	pr_debug("irq_create_mapping(0x%p, 0x%lx)\n", domain, hwirq);
+> 
+> "%s: ...", __func__, etc...
+> 
+Unrelated to pr_fmt conversion. In any event, these debug calls are
+unlikely to hang around for very long.
 
-comedi comedi0 amplc_pci230 detached
-
-after removing a pci230 on /dev/comedi0, either by rmmod'ing the 
-amplc_pci230 module, or by running `comedi_config -r /dev/comedi0`.
-
--- 
--=( Ian Abbott @ MEV Ltd.    E-mail: <abbotti@mev.co.uk>        )=-
--=( Tel: +44 (0)161 477 1898   FAX: +44 (0)161 718 3587         )=-
+> >  	if (domain == NULL) {
+> > -		printk(KERN_WARNING "irq_create_mapping called for"
+> > -		       " NULL domain, hwirq=%lx\n", hwirq);
+> > +		pr_warning("irq_create_mapping called for"
+> > +			   " NULL domain, hwirq=%lx\n", hwirq);
+> 
+> 		pr_warn("%s: called with NULL domain, hwirq=%lx\n", hwirq);
+> 
+No. pr_warning() matches the log level, pr_warn() does not. A quick grep
+also shoes more pr_warning() users than pr_warn(), so it sounds like you
+have your work cut out for you. Good luck.
