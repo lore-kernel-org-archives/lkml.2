@@ -1,50 +1,135 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965266Ab2ESAYg (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 May 2012 20:24:36 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:5721 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S964782Ab2ESAYe (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 May 2012 20:24:34 -0400
-X-Authority-Analysis: v=2.0 cv=D8PF24tj c=1 sm=0 a=ZycB6UtQUfgMyuk2+PxD7w==:17 a=XQbtiDEiEegA:10 a=uChq6B4iKcYA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=meVymXHHAAAA:8 a=ayC55rCoAAAA:8 a=EgozEG-oAAAA:8 a=wjpWQke1tntAgQoPrAwA:9 a=PUjeQqilurYA:10 a=DF_ZnzWi7xUA:10 a=ZycB6UtQUfgMyuk2+PxD7w==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 74.67.80.29
-Message-ID: <1337387071.7562.12.camel@gandalf.stny.rr.com>
-Subject: Re: [PATCH] power, trace: add tracing for device_resume
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Greg KH <gregkh@linuxfoundation.org>
-Cc: Sameer Nanda <snanda@chromium.org>, "Rafael J. Wysocki" <rjw@sisk.pl>,
-        rob@landley.net, len.brown@intel.com, pavel@ucw.cz, fweisbec@gmail.com,
-        mingo@redhat.com, jkosina@suse.cz, standby24x7@gmail.com,
-        jj@chaosbits.net, paulmck@linux.vnet.ibm.com, josh@joshtriplett.org,
-        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-pm@vger.kernel.org
-Date: Fri, 18 May 2012 20:24:31 -0400
-In-Reply-To: <20120518230117.GA6016@kroah.com>
-References: <1337365643-29261-1-git-send-email-snanda@chromium.org>
-	 <1337375946.7562.11.camel@gandalf.stny.rr.com>
-	 <CANMivWZ4ygG5R7ob_Q-pkAFpoKAkK_iQf3w2eiw5Gv65AbTYNw@mail.gmail.com>
-	 <201205182346.02296.rjw@sisk.pl>
-	 <CANMivWafYv8BU2_ez==+GGYWn54BM+iU6u7yLLs-2TOfm-1ftA@mail.gmail.com>
-	 <20120518230117.GA6016@kroah.com>
-Content-Type: text/plain; charset="ISO-8859-15"
-X-Mailer: Evolution 3.2.2-1 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	id S933199Ab2ESA1t (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 May 2012 20:27:49 -0400
+Received: from mail-lpp01m010-f46.google.com ([209.85.215.46]:58174 "EHLO
+	mail-lpp01m010-f46.google.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S932448Ab2ESA1r convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 18 May 2012 20:27:47 -0400
+MIME-Version: 1.0
+In-Reply-To: <403610A45A2B5242BD291EDAE8B37D300FDBDA97@SHSMSX102.ccr.corp.intel.com>
+References: <20120506151156.GA13805@hp-xd.sh.intel.com> <CAErSpo5-iwY1X6GrKzEAHM=eZS1hs_6wNV1fB0GhLuo3YQcV-A@mail.gmail.com>
+ <403610A45A2B5242BD291EDAE8B37D300FDBDA97@SHSMSX102.ccr.corp.intel.com>
+From: Bjorn Helgaas <bhelgaas@google.com>
+Date: Fri, 18 May 2012 18:27:24 -0600
+Message-ID: <CAErSpo4p9mRukyv8j6jhuFgiOE0usxF7xde7Vp+zNtAEowX-gQ@mail.gmail.com>
+Subject: Re: [PATCH] PCI: save/restore max Latency Value for device LTR
+To: "Hao, Xudong" <xudong.hao@intel.com>
+Cc: Xudong Hao <xudong.hao@linux.intel.com>,
+        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "kvm@vger.kernel.org" <kvm@vger.kernel.org>,
+        "Zhang, Xiantao" <xiantao.zhang@intel.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2012-05-18 at 16:01 -0700, Greg KH wrote:
-> You are kidding, right?  You have control over your test systems, don't
-> bloat everyone's kernel by 5k just because your infrastructure is
-> somehow something that you feel you can't change.
-> 
+On Tue, May 8, 2012 at 3:09 AM, Hao, Xudong <xudong.hao@intel.com> wrote:
+>> -----Original Message-----
+>> From: Bjorn Helgaas [mailto:bhelgaas@google.com]
+>> >  }
+>> >
+>>
+>> This doesn't make any sense to me.  "pos" is the offset of the PCI
+>> Express Capability (identifier 10h).  LTR is a separate extended
+>> capability (identifier 18h), so you at least have to look up its
+>> offset.
+>>
+> Sorry paste a wrong patch...
+>
+> How about this patch, not a formal patch.
+>
+> diff --git a/drivers/pci/pci.c b/drivers/pci/pci.c
+> index 111569c..eced407 100644
+> --- a/drivers/pci/pci.c
+> +++ b/drivers/pci/pci.c
+> @@ -910,6 +910,45 @@ static void pci_restore_pcie_state(struct pci_dev *dev)
+>                pci_write_config_word(dev, pos + PCI_EXP_SLTCTL2, cap[i++]);
+>  }
+>
+> +static int pci_save_ltr_value(struct pci_dev *dev)
+> +{
+> +       int i = 0, pos;
+> +       struct pci_cap_saved_state *save_state;
+> +       u16 *cap;
+> +
+> +       pos = pci_find_ext_capability(dev, PCI_EXT_CAP_ID_LTR);
+> +       if (!pos)
+> +               return -ENOTSUPP;
+> +
+> +       save_state = pci_find_saved_cap(dev, PCI_EXT_CAP_ID_LTR);
+> +       if (!save_state) {
+> +               dev_err(&dev->dev, "buffer not found in %s\n", __func__);
+> +               return -ENOMEM;
+> +       }
+> +       cap = (u16 *)&save_state->cap.ltr_data[0];
+> +
+> +       pci_read_config_word(dev, pos + PCI_LTR_MAX_SNOOP_LAT, &cap[i++]);
+> +       pci_read_config_word(dev, pos + PCI_LTR_MAX_NOSNOOP_LAT, &cap[i++]);
+> +}
+> +
+> +static void pci_restore_ltr_value(struct pci_dev *dev)
+> +{
+> +       int i = 0, pos;
+> +       struct pci_cap_saved_state *save_state;
+> +       u16 *cap;
+> +
+> +       if (!pci_ltr_supported(dev))
+> +               return;
+> +
+> +       save_state = pci_find_saved_cap(dev, PCI_EXT_CAP_ID_LTR);
+> +       pos = pci_find_ext_capability(dev, PCI_EXT_CAP_ID_LTR);
+> +       if (!save_state || !pos)
+> +               return;
+> +       cap = (u16 *)&save_state->cap.ltr_data[0];
+> +
+> +       pci_write_config_word(dev, pos + PCI_LTR_MAX_SNOOP_LAT, cap[i++]);
+> +       pci_write_config_word(dev, pos + PCI_LTR_MAX_NOSNOOP_LAT, cap[i++]);
+> +}
+>
+>  static int pci_save_pcix_state(struct pci_dev *dev)
+>  {
+> @@ -964,6 +1003,10 @@ pci_save_state(struct pci_dev *dev)
+>                return i;
+>        if ((i = pci_save_pcix_state(dev)) != 0)
+>                return i;
+> +
+> +       if (pci_ltr_supported(dev))
+> +               return pci_save_ltr_value(dev);
+> +
+>        return 0;
+>  }
+>
+> @@ -1032,6 +1075,7 @@ void pci_restore_state(struct pci_dev *dev)
+>        pci_restore_pcix_state(dev);
+>        pci_restore_msi_state(dev);
+>        pci_restore_iov_state(dev);
+> +       pci_restore_ltr_value(dev);
+>
+>        dev->state_saved = false;
+>  }
+> diff --git a/include/linux/pci.h b/include/linux/pci.h
+> index e444f5b..6343aeb 100644
+> --- a/include/linux/pci.h
+> +++ b/include/linux/pci.h
+> @@ -220,6 +220,7 @@ struct pci_cap_saved_data {
+>        char cap_nr;
+>        unsigned int size;
+>        u32 data[0];
+> +       u32 ltr_data[0];
+>  };
+>
+>  struct pci_cap_saved_state {
 
-It has been a while since I've done the trace point bloat check. I
-should do it again to see where it stands. It may be less than 5k today,
-but then again, it may be more.
+Did you test this?
 
--- Steve
+I can't believe this works at all.  You're calling
+"pci_find_saved_cap(dev, PCI_EXT_CAP_ID_LTR)", which searches the
+pci_dev->saved_cap_space list, but you never add a PCI_EXT_CAP_ID_LTR
+buffer to that list.
 
+Bjorn
