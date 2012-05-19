@@ -1,129 +1,321 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753962Ab2ESFrR (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 19 May 2012 01:47:17 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:53016 "EHLO
+	id S1754122Ab2ESGBc (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 19 May 2012 02:01:32 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:43204 "EHLO
 	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753167Ab2ESFrO (ORCPT
+	with ESMTP id S1753548Ab2ESGBa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 19 May 2012 01:47:14 -0400
+	Sat, 19 May 2012 02:01:30 -0400
 From: Grant Likely <grant.likely@secretlab.ca>
-Subject: Re: [PATCH V4 1/3] GPIO: MIPS: lantiq: move gpio-stp and gpio-ebu to the subsystem folder
-To: John Crispin <blogic@openwrt.org>, Ralf Baechle <ralf@linux-mips.org>
-Cc: linux-mips@linux-mips.org, John Crispin <blogic@openwrt.org>,
-        linux-kernel@vger.kernel.org
-In-Reply-To: <1337355777-1680-1-git-send-email-blogic@openwrt.org>
-References: <1337355777-1680-1-git-send-email-blogic@openwrt.org>
-Date: Fri, 18 May 2012 23:47:12 -0600
-Message-Id: <20120519054712.EF0903E046E@localhost>
+Subject: Re: [PATCH v8 2/4] MIPS: Octeon: Setup irq_domains for interrupts.
+To: David Daney <ddaney.cavm@gmail.com>, linux-mips@linux-mips.org,
+        ralf@linux-mips.org, devicetree-discuss@lists.ozlabs.org,
+        Rob Herring <rob.herring@calxeda.com>
+Cc: linux-kernel@vger.kernel.org, David Daney <david.daney@cavium.com>
+In-Reply-To: <1335487678-26223-3-git-send-email-ddaney.cavm@gmail.com>
+References: <1335487678-26223-1-git-send-email-ddaney.cavm@gmail.com> <1335487678-26223-3-git-send-email-ddaney.cavm@gmail.com>
+Date: Sat, 19 May 2012 00:01:26 -0600
+Message-Id: <20120519060126.30A443E046E@localhost>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 18 May 2012 17:42:55 +0200, John Crispin <blogic@openwrt.org> wrote:
-> Move the 2 drivers from arch/mips/lantiq/xway/ to the subsystem and make them
-> buildable.
+On Thu, 26 Apr 2012 17:47:56 -0700, David Daney <ddaney.cavm@gmail.com> wrote:
+> From: David Daney <david.daney@cavium.com>
 > 
-> The following 2 patches will convert the drivers to OF.
+> Create two domains.  One for the GPIO lines, and the other for on-chip
+> sources.
 > 
-> Signed-off-by: John Crispin <blogic@openwrt.org>
-> Cc: Grant Likely <grant.likely@secretlab.ca>
-> Cc: linux-kernel@vger.kernel.org
-
-for all 3:
+> Signed-off-by: David Daney <david.daney@cavium.com>
 
 Acked-by: Grant Likely <grant.likely@secretlab.ca>
 
-g.
+but I've got some comments below that should probably be addressed in
+follow up patches.
 
 > ---
-> This patch is part of a series moving the mips/lantiq target to OF and clkdev
-> support. The patch, once Acked, should go upstream via Ralf's MIPS tree.
+>  arch/mips/cavium-octeon/octeon-irq.c |  215 ++++++++++++++++++++++++++++++++--
+>  1 files changed, 206 insertions(+), 9 deletions(-)
 > 
->  arch/mips/lantiq/xway/Makefile                     |    2 +-
->  drivers/gpio/Kconfig                               |   18 ++++++++++++++++++
->  drivers/gpio/Makefile                              |    2 ++
->  .../gpio_ebu.c => drivers/gpio/gpio-mm-lantiq.c    |    0
->  .../gpio_stp.c => drivers/gpio/gpio-stp-xway.c     |    0
->  5 files changed, 21 insertions(+), 1 deletions(-)
->  rename arch/mips/lantiq/xway/gpio_ebu.c => drivers/gpio/gpio-mm-lantiq.c (100%)
->  rename arch/mips/lantiq/xway/gpio_stp.c => drivers/gpio/gpio-stp-xway.c (100%)
-> 
-> diff --git a/arch/mips/lantiq/xway/Makefile b/arch/mips/lantiq/xway/Makefile
-> index edef6c5..dc3194f 100644
-> --- a/arch/mips/lantiq/xway/Makefile
-> +++ b/arch/mips/lantiq/xway/Makefile
-> @@ -1 +1 @@
-> -obj-y := prom.o sysctrl.o clk.o reset.o gpio.o gpio_stp.o gpio_ebu.o dma.o
-> +obj-y := prom.o sysctrl.o clk.o reset.o gpio.o dma.o
-> diff --git a/drivers/gpio/Kconfig b/drivers/gpio/Kconfig
-> index e03653d..8fae079 100644
-> --- a/drivers/gpio/Kconfig
-> +++ b/drivers/gpio/Kconfig
-> @@ -96,6 +96,14 @@ config GPIO_EP93XX
->  	depends on ARCH_EP93XX
->  	select GPIO_GENERIC
+> diff --git a/arch/mips/cavium-octeon/octeon-irq.c b/arch/mips/cavium-octeon/octeon-irq.c
+> index 89b6f27..fc40d0b 100644
+> --- a/arch/mips/cavium-octeon/octeon-irq.c
+> +++ b/arch/mips/cavium-octeon/octeon-irq.c
+> @@ -3,14 +3,17 @@
+>   * License.  See the file "COPYING" in the main directory of this archive
+>   * for more details.
+>   *
+> - * Copyright (C) 2004-2008, 2009, 2010, 2011 Cavium Networks
+> + * Copyright (C) 2004-2012 Cavium, Inc.
+>   */
 >  
-> +config GPIO_MM_LANTIQ
-> +	bool "Lantiq Memory mapped GPIOs"
-> +	depends on LANTIQ && SOC_XWAY
-> +	help
-> +	  This enables support for memory mapped GPIOs on the External Bus Unit
-> +	  (EBU) found on Lantiq SoCs. The gpios are output only as they are
-> +	  created by attaching a 16bit latch to the bus.
-> +
->  config GPIO_MPC5200
->  	def_bool y
->  	depends on PPC_MPC52xx
-> @@ -306,6 +314,16 @@ config GPIO_STMPE
->  	  This enables support for the GPIOs found on the STMPE I/O
->  	  Expanders.
+>  #include <linux/interrupt.h>
+> +#include <linux/irqdomain.h>
+>  #include <linux/bitops.h>
+>  #include <linux/percpu.h>
+> +#include <linux/slab.h>
+>  #include <linux/irq.h>
+>  #include <linux/smp.h>
+> +#include <linux/of.h>
 >  
-> +config GPIO_STP_XWAY
-> +	bool "XWAY STP GPIOs"
-> +	depends on SOC_XWAY
-> +	help
-> +	  This enables support for the Serial To Parallel (STP) unit found on
-> +	  XWAY SoC. The STP allows the SoC to drive a shift registers cascade,
-> +	  that can be up to 24 bit. This peripheral is aimed at driving leds.
-> +	  Some of the gpios/leds can be auto updated by the soc with dsl and
-> +	  phy status.
+>  #include <asm/octeon/octeon.h>
+>  
+> @@ -42,9 +45,9 @@ struct octeon_core_chip_data {
+>  
+>  static struct octeon_core_chip_data octeon_irq_core_chip_data[MIPS_CORE_IRQ_LINES];
+>  
+> -static void __init octeon_irq_set_ciu_mapping(int irq, int line, int bit,
+> -					      struct irq_chip *chip,
+> -					      irq_flow_handler_t handler)
+> +static void octeon_irq_set_ciu_mapping(int irq, int line, int bit,
+> +				       struct irq_chip *chip,
+> +				       irq_flow_handler_t handler)
+>  {
+>  	union octeon_ciu_chip_data cd;
+>  
+> @@ -838,6 +841,178 @@ static struct irq_chip octeon_irq_chip_ciu_wd = {
+>  	.irq_mask = octeon_irq_dummy_mask,
+>  };
+>  
+> +static bool octeon_irq_ciu_is_edge(unsigned int line, unsigned int bit)
+> +{
+> +	bool edge = false;
 > +
->  config GPIO_TC3589X
->  	bool "TC3589X GPIOs"
->  	depends on MFD_TC3589X
-> diff --git a/drivers/gpio/Makefile b/drivers/gpio/Makefile
-> index 007f54b..ed1c96d 100644
-> --- a/drivers/gpio/Makefile
-> +++ b/drivers/gpio/Makefile
-> @@ -30,6 +30,7 @@ obj-$(CONFIG_GPIO_MC33880)	+= gpio-mc33880.o
->  obj-$(CONFIG_GPIO_MC9S08DZ60)	+= gpio-mc9s08dz60.o
->  obj-$(CONFIG_GPIO_MCP23S08)	+= gpio-mcp23s08.o
->  obj-$(CONFIG_GPIO_ML_IOH)	+= gpio-ml-ioh.o
-> +obj-$(CONFIG_GPIO_MM_LANTIQ)	+= gpio-mm-lantiq.o
->  obj-$(CONFIG_GPIO_MPC5200)	+= gpio-mpc5200.o
->  obj-$(CONFIG_GPIO_MPC8XXX)	+= gpio-mpc8xxx.o
->  obj-$(CONFIG_GPIO_MSM_V1)	+= gpio-msm-v1.o
-> @@ -49,6 +50,7 @@ obj-$(CONFIG_ARCH_SA1100)	+= gpio-sa1100.o
->  obj-$(CONFIG_GPIO_SCH)		+= gpio-sch.o
->  obj-$(CONFIG_GPIO_SODAVILLE)	+= gpio-sodaville.o
->  obj-$(CONFIG_GPIO_STMPE)	+= gpio-stmpe.o
-> +obj-$(CONFIG_GPIO_STP_XWAY)	+= gpio-stp-xway.o
->  obj-$(CONFIG_GPIO_SX150X)	+= gpio-sx150x.o
->  obj-$(CONFIG_GPIO_TC3589X)	+= gpio-tc3589x.o
->  obj-$(CONFIG_ARCH_TEGRA)	+= gpio-tegra.o
-> diff --git a/arch/mips/lantiq/xway/gpio_ebu.c b/drivers/gpio/gpio-mm-lantiq.c
-> similarity index 100%
-> rename from arch/mips/lantiq/xway/gpio_ebu.c
-> rename to drivers/gpio/gpio-mm-lantiq.c
-> diff --git a/arch/mips/lantiq/xway/gpio_stp.c b/drivers/gpio/gpio-stp-xway.c
-> similarity index 100%
-> rename from arch/mips/lantiq/xway/gpio_stp.c
-> rename to drivers/gpio/gpio-stp-xway.c
-> -- 
-> 1.7.9.1
-> 
+> +	if (line == 0)
+> +		switch (bit) {
+> +		case 48 ... 49: /* GMX DRP */
+> +		case 50: /* IPD_DRP */
+> +		case 52 ... 55: /* Timers */
+> +		case 58: /* MPI */
+> +			edge = true;
+> +			break;
+> +		default:
+> +			break;
+> +		}
+> +	else /* line == 1 */
+> +		switch (bit) {
+> +		case 47: /* PTP */
+> +			edge = true;
+> +			break;
+> +		default:
+> +			break;
+> +		}
 
--- 
-Grant Likely, B.Sc, P.Eng.
-Secret Lab Technologies, Ltd.
+Nit: A bitmap would result in a lot nicer and probably smaller code here..
+
+ie. edge = test_bit(bitmap, (line << 64) & bit);
+
+> +	return edge;
+> +}
+> +
+> +struct octeon_irq_gpio_domain_data {
+> +	unsigned int base_hwirq;
+> +};
+> +
+> +static int octeon_irq_gpio_xlat(struct irq_domain *d,
+> +				struct device_node *node,
+> +				const u32 *intspec,
+> +				unsigned int intsize,
+> +				unsigned long *out_hwirq,
+> +				unsigned int *out_type)
+> +{
+> +	unsigned int type;
+> +	unsigned int pin;
+> +	unsigned int trigger;
+> +	struct octeon_irq_gpio_domain_data *gpiod;
+> +
+> +	if (d->of_node != node)
+> +		return -EINVAL;
+> +
+> +	if (intsize < 2)
+> +		return -EINVAL;
+> +
+> +	pin = intspec[0];
+> +	if (pin >= 16)
+> +		return -EINVAL;
+> +
+> +	trigger = intspec[1];
+> +
+> +	switch (trigger) {
+> +	case 1:
+> +		type = IRQ_TYPE_EDGE_RISING;
+> +		break;
+> +	case 2:
+> +		type = IRQ_TYPE_EDGE_FALLING;
+> +		break;
+> +	case 4:
+> +		type = IRQ_TYPE_LEVEL_HIGH;
+> +		break;
+> +	case 8:
+> +		type = IRQ_TYPE_LEVEL_LOW;
+> +		break;
+> +	default:
+> +		pr_err("Error: (%s) Invalid irq trigger specification: %x\n",
+> +		       node->name,
+> +		       trigger);
+> +		type = IRQ_TYPE_LEVEL_LOW;
+> +		break;
+> +	}
+> +	*out_type = type;
+> +	gpiod = d->host_data;
+> +	*out_hwirq = gpiod->base_hwirq + pin;
+> +
+> +	return 0;
+> +}
+> +
+> +static int octeon_irq_ciu_xlat(struct irq_domain *d,
+> +			       struct device_node *node,
+> +			       const u32 *intspec,
+> +			       unsigned int intsize,
+> +			       unsigned long *out_hwirq,
+> +			       unsigned int *out_type)
+> +{
+> +	unsigned int ciu, bit;
+> +
+> +	ciu = intspec[0];
+> +	bit = intspec[1];
+> +
+> +	if (ciu > 1 || bit > 63)
+> +		return -EINVAL;
+> +
+> +	/* These are the GPIO lines */
+> +	if (ciu == 0 && bit >= 16 && bit < 32)
+> +		return -EINVAL;
+> +
+> +	*out_hwirq = (ciu << 6) | bit;
+> +	*out_type = 0;
+> +
+> +	return 0;
+> +}
+> +
+> +static struct irq_chip *octeon_irq_ciu_chip;
+> +static struct irq_chip *octeon_irq_gpio_chip;
+> +
+> +static bool octeon_irq_virq_in_range(unsigned int virq)
+> +{
+> +	/* We cannot let it overflow the mapping array. */
+> +	if (virq < (1ul << 8 * sizeof (octeon_irq_ciu_to_irq[0][0])))
+> +		return true;
+> +
+> +	WARN_ONCE(true, "virq out of range %u.\n", virq);
+> +	return false;
+> +}
+> +
+> +static int octeon_irq_ciu_map(struct irq_domain *d,
+> +			      unsigned int virq, irq_hw_number_t hw)
+> +{
+> +	unsigned int line = hw >> 6;
+> +	unsigned int bit = hw & 63;
+> +
+> +	if (!octeon_irq_virq_in_range(virq))
+> +		return -EINVAL;
+> +
+> +	if (line > 1 || octeon_irq_ciu_to_irq[line][bit] != 0)
+> +		return -EINVAL;
+> +
+> +	if (octeon_irq_ciu_is_edge(line, bit))
+> +		octeon_irq_set_ciu_mapping(virq, line, bit,
+> +					   octeon_irq_ciu_chip,
+> +					   handle_level_irq);
+> +	else
+> +		octeon_irq_set_ciu_mapping(virq, line, bit,
+> +					   octeon_irq_ciu_chip,
+> +					   handle_edge_irq);
+> +
+> +	return 0;
+> +}
+> +
+> +static int octeon_irq_gpio_map(struct irq_domain *d,
+> +			       unsigned int virq, irq_hw_number_t hw)
+> +{
+> +	unsigned int line = hw >> 6;
+> +	unsigned int bit = hw & 63;
+> +
+> +	if (!octeon_irq_virq_in_range(virq))
+> +		return -EINVAL;
+> +
+> +	if (line > 1 || octeon_irq_ciu_to_irq[line][bit] != 0)
+> +		return -EINVAL;
+> +
+> +	octeon_irq_set_ciu_mapping(virq, line, bit,
+> +				   octeon_irq_gpio_chip,
+> +				   octeon_irq_handle_gpio);
+> +
+> +	return 0;
+> +}
+> +
+> +static struct irq_domain_ops octeon_irq_domain_ciu_ops = {
+> +	.map = octeon_irq_ciu_map,
+> +	.xlate = octeon_irq_ciu_xlat,
+> +};
+> +
+> +static struct irq_domain_ops octeon_irq_domain_gpio_ops = {
+> +	.map = octeon_irq_gpio_map,
+> +	.xlate = octeon_irq_gpio_xlat,
+> +};
+> +
+>  static void octeon_irq_ip2_v1(void)
+>  {
+>  	const unsigned long core_id = cvmx_get_core_num();
+> @@ -963,7 +1138,8 @@ static void __init octeon_irq_init_ciu(void)
+>  	struct irq_chip *chip;
+>  	struct irq_chip *chip_mbox;
+>  	struct irq_chip *chip_wd;
+> -	struct irq_chip *chip_gpio;
+> +	struct device_node *gpio_node;
+> +	struct device_node *ciu_node;
+>  
+>  	octeon_irq_init_ciu_percpu();
+>  	octeon_irq_setup_secondary = octeon_irq_setup_secondary_ciu;
+> @@ -977,15 +1153,16 @@ static void __init octeon_irq_init_ciu(void)
+>  		chip = &octeon_irq_chip_ciu_v2;
+>  		chip_mbox = &octeon_irq_chip_ciu_mbox_v2;
+>  		chip_wd = &octeon_irq_chip_ciu_wd_v2;
+> -		chip_gpio = &octeon_irq_chip_ciu_gpio_v2;
+> +		octeon_irq_gpio_chip = &octeon_irq_chip_ciu_gpio_v2;
+>  	} else {
+>  		octeon_irq_ip2 = octeon_irq_ip2_v1;
+>  		octeon_irq_ip3 = octeon_irq_ip3_v1;
+>  		chip = &octeon_irq_chip_ciu;
+>  		chip_mbox = &octeon_irq_chip_ciu_mbox;
+>  		chip_wd = &octeon_irq_chip_ciu_wd;
+> -		chip_gpio = &octeon_irq_chip_ciu_gpio;
+> +		octeon_irq_gpio_chip = &octeon_irq_chip_ciu_gpio;
+>  	}
+> +	octeon_irq_ciu_chip = chip;
+>  	octeon_irq_ip4 = octeon_irq_ip4_mask;
+>  
+>  	/* Mips internal */
+> @@ -994,8 +1171,6 @@ static void __init octeon_irq_init_ciu(void)
+>  	/* CIU_0 */
+>  	for (i = 0; i < 16; i++)
+>  		octeon_irq_set_ciu_mapping(i + OCTEON_IRQ_WORKQ0, 0, i + 0, chip, handle_level_irq);
+> -	for (i = 0; i < 16; i++)
+> -		octeon_irq_set_ciu_mapping(i + OCTEON_IRQ_GPIO0, 0, i + 16, chip_gpio, octeon_irq_handle_gpio);
+>  
+>  	octeon_irq_set_ciu_mapping(OCTEON_IRQ_MBOX0, 0, 32, chip_mbox, handle_percpu_irq);
+>  	octeon_irq_set_ciu_mapping(OCTEON_IRQ_MBOX1, 0, 33, chip_mbox, handle_percpu_irq);
+> @@ -1026,6 +1201,28 @@ static void __init octeon_irq_init_ciu(void)
+>  	octeon_irq_set_ciu_mapping(OCTEON_IRQ_USB1, 1, 17, chip, handle_level_irq);
+>  	octeon_irq_set_ciu_mapping(OCTEON_IRQ_MII1, 1, 18, chip, handle_level_irq);
+>  
+> +	gpio_node = of_find_compatible_node(NULL, NULL, "cavium,octeon-3860-gpio");
+> +	if (gpio_node) {
+> +		struct octeon_irq_gpio_domain_data *gpiod;
+> +
+> +		gpiod = kzalloc(sizeof (*gpiod), GFP_KERNEL);
+> +		if (gpiod) {
+> +			/* gpio domain host_data is the base hwirq number. */
+> +			gpiod->base_hwirq = 16;
+> +			irq_domain_add_linear(gpio_node, 16, &octeon_irq_domain_gpio_ops, gpiod);
+
+base_hwirq appears to be a fixed offset.  Is there a reason that it is
+parameterized?  The code would be simpler if the size of the linear
+domain was bumped to 32 (with the lower 16 never used or allocated) or
+modify the driver to start hwirq counting at 0 instead of 16.  Either
+way it would be better than hwirq being a parameter than isn't
+actually a parameter (assuming I'm reading the code correctly).
+
+g.
+
