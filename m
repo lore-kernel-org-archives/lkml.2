@@ -1,181 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756423Ab2ESNfY (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 19 May 2012 09:35:24 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:57095 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755389Ab2ESNfW (ORCPT
+	id S1757309Ab2ESNgT (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 19 May 2012 09:36:19 -0400
+Received: from manchmal.in-ulm.de ([217.10.9.201]:35215 "EHLO
+	manchmal.in-ulm.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756215Ab2ESNgS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 19 May 2012 09:35:22 -0400
-From: Shawn Guo <shawn.guo@linaro.org>
-To: Grant Likely <grant.likely@secretlab.ca>,
-        Linus Walleij <linus.walleij@stericsson.com>
-Cc: Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
-        Ryan Mallon <rmallon@gmail.com>,
-        Hartley Sweeten <hsweeten@visionengravers.com>,
-        Sascha Hauer <s.hauer@pengutronix.de>, LW@KARO-electronics.de,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        Shawn Guo <shawn.guo@linaro.org>
-Subject: [PATCH v2 RESEND] gpio/generic: initialize basic_mmio_gpio shadow variables properly
-Date: Sat, 19 May 2012 21:34:58 +0800
-Message-Id: <1337434498-6119-1-git-send-email-shawn.guo@linaro.org>
-X-Mailer: git-send-email 1.7.5.4
-In-Reply-To: <1337417751-24848-1-git-send-email-shawn.guo@linaro.org>
-References: <1337417751-24848-1-git-send-email-shawn.guo@linaro.org>
+	Sat, 19 May 2012 09:36:18 -0400
+X-Greylist: delayed 520 seconds by postgrey-1.27 at vger.kernel.org; Sat, 19 May 2012 09:36:17 EDT
+Date: Sat, 19 May 2012 15:27:33 +0200
+From: Christoph Biedl <linux-kernel.bfrz@manchmal.in-ulm.de>
+To: Greg KH <gregkh@linuxfoundation.org>
+Cc: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        torvalds@linux-foundation.org, akpm@linux-foundation.org,
+        alan@lxorguk.ukuu.org.uk, Sami Liedes <sami.liedes@iki.fi>,
+        Tejun Heo <tj@kernel.org>, Christoph Lameter <cl@linux-foundation.org>,
+        Catalin Marinas <catalin.marinas@arm.com>
+Subject: Re: [ 31/54] kmemleak: Fix the kmemleak tracking of the percpu
+ areas with !SMP
+Message-ID: <1337433313@msgid.manchmal.in-ulm.de>
+References: <20120518212656.GA4992@kroah.com>
+ <20120518211602.287791770@linuxfoundation.org>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="C7zPtVaVf+AK4Oqc"
+Content-Disposition: inline
+In-Reply-To: <20120518211602.287791770@linuxfoundation.org>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-It fixes the issue in gpio-generic that commit fb14921 (gpio/mxc: add
-missing initialization of basic_mmio_gpio shadow variables) manged to
-fix in gpio-mxc driver, so that other platform specific drivers do not
-suffer from the same problem over and over again.
 
-Changes since v1:
-* Turn the last parameter of bgpio_init() "bool big_endian" into
-  "unsigned long flags" and give those really quirky hardwares a
-  chance to tell that reg_set and reg_dir are unreadable.
+--C7zPtVaVf+AK4Oqc
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Signed-off-by: Shawn Guo <shawn.guo@linaro.org>
----
-Resend to have bgpio_pdev_probe adapt bgpio_init parameter change.
+Greg KH wrote...
 
- drivers/gpio/gpio-ep93xx.c      |    2 +-
- drivers/gpio/gpio-generic.c     |   16 +++++++++++-----
- drivers/gpio/gpio-mxc.c         |    2 +-
- drivers/gpio/gpio-mxs.c         |    2 +-
- drivers/gpio/gpio-sodaville.c   |    2 +-
- include/linux/basic_mmio_gpio.h |    6 +++++-
- 6 files changed, 20 insertions(+), 10 deletions(-)
+> 3.0-stable review patch.  If anyone has any objections, please let me kno=
+w.
 
-diff --git a/drivers/gpio/gpio-ep93xx.c b/drivers/gpio/gpio-ep93xx.c
-index 776b772..9fe5b8fe 100644
---- a/drivers/gpio/gpio-ep93xx.c
-+++ b/drivers/gpio/gpio-ep93xx.c
-@@ -325,7 +325,7 @@ static int ep93xx_gpio_add_bank(struct bgpio_chip *bgc, struct device *dev,
- 	void __iomem *dir =  mmio_base + bank->dir;
- 	int err;
- 
--	err = bgpio_init(bgc, dev, 1, data, NULL, NULL, dir, NULL, false);
-+	err = bgpio_init(bgc, dev, 1, data, NULL, NULL, dir, NULL, 0);
- 	if (err)
- 		return err;
- 
-diff --git a/drivers/gpio/gpio-generic.c b/drivers/gpio/gpio-generic.c
-index e38dd0c..ae59663 100644
---- a/drivers/gpio/gpio-generic.c
-+++ b/drivers/gpio/gpio-generic.c
-@@ -364,7 +364,7 @@ EXPORT_SYMBOL_GPL(bgpio_remove);
- int bgpio_init(struct bgpio_chip *bgc, struct device *dev,
- 	       unsigned long sz, void __iomem *dat, void __iomem *set,
- 	       void __iomem *clr, void __iomem *dirout, void __iomem *dirin,
--	       bool big_endian)
-+	       unsigned long flags)
- {
- 	int ret;
- 
-@@ -385,7 +385,7 @@ int bgpio_init(struct bgpio_chip *bgc, struct device *dev,
- 	if (ret)
- 		return ret;
- 
--	ret = bgpio_setup_accessors(dev, bgc, big_endian);
-+	ret = bgpio_setup_accessors(dev, bgc, flags & BGPIOF_BIG_ENDIAN);
- 	if (ret)
- 		return ret;
- 
-@@ -394,6 +394,11 @@ int bgpio_init(struct bgpio_chip *bgc, struct device *dev,
- 		return ret;
- 
- 	bgc->data = bgc->read_reg(bgc->reg_dat);
-+	if (bgc->gc.set == bgpio_set_set &&
-+			!(flags & BGPIOF_UNREADABLE_REG_SET))
-+		bgc->data = bgc->read_reg(bgc->reg_set);
-+	if (bgc->reg_dir && !(flags & BGPIOF_UNREADABLE_REG_DIR))
-+		bgc->dir = bgc->read_reg(bgc->reg_dir);
- 
- 	return ret;
- }
-@@ -449,7 +454,7 @@ static int __devinit bgpio_pdev_probe(struct platform_device *pdev)
- 	void __iomem *dirout;
- 	void __iomem *dirin;
- 	unsigned long sz;
--	bool be;
-+	unsigned long flags;
- 	int err;
- 	struct bgpio_chip *bgc;
- 	struct bgpio_pdata *pdata = dev_get_platdata(dev);
-@@ -480,13 +485,14 @@ static int __devinit bgpio_pdev_probe(struct platform_device *pdev)
- 	if (err)
- 		return err;
- 
--	be = !strcmp(platform_get_device_id(pdev)->name, "basic-mmio-gpio-be");
-+	flags = !strcmp(platform_get_device_id(pdev)->name,
-+			"basic-mmio-gpio-be");
- 
- 	bgc = devm_kzalloc(&pdev->dev, sizeof(*bgc), GFP_KERNEL);
- 	if (!bgc)
- 		return -ENOMEM;
- 
--	err = bgpio_init(bgc, dev, sz, dat, set, clr, dirout, dirin, be);
-+	err = bgpio_init(bgc, dev, sz, dat, set, clr, dirout, dirin, flags);
- 	if (err)
- 		return err;
- 
-diff --git a/drivers/gpio/gpio-mxc.c b/drivers/gpio/gpio-mxc.c
-index e791476..c337143 100644
---- a/drivers/gpio/gpio-mxc.c
-+++ b/drivers/gpio/gpio-mxc.c
-@@ -417,7 +417,7 @@ static int __devinit mxc_gpio_probe(struct platform_device *pdev)
- 	err = bgpio_init(&port->bgc, &pdev->dev, 4,
- 			 port->base + GPIO_PSR,
- 			 port->base + GPIO_DR, NULL,
--			 port->base + GPIO_GDIR, NULL, false);
-+			 port->base + GPIO_GDIR, NULL, 0);
- 	if (err)
- 		goto out_iounmap;
- 
-diff --git a/drivers/gpio/gpio-mxs.c b/drivers/gpio/gpio-mxs.c
-index 429228b..39e4956 100644
---- a/drivers/gpio/gpio-mxs.c
-+++ b/drivers/gpio/gpio-mxs.c
-@@ -285,7 +285,7 @@ static int __devinit mxs_gpio_probe(struct platform_device *pdev)
- 	err = bgpio_init(&port->bgc, &pdev->dev, 4,
- 			 port->base + PINCTRL_DIN(port),
- 			 port->base + PINCTRL_DOUT(port), NULL,
--			 port->base + PINCTRL_DOE(port), NULL, false);
-+			 port->base + PINCTRL_DOE(port), NULL, 0);
- 	if (err)
- 		return err;
- 
-diff --git a/drivers/gpio/gpio-sodaville.c b/drivers/gpio/gpio-sodaville.c
-index 820209c..9d9891f 100644
---- a/drivers/gpio/gpio-sodaville.c
-+++ b/drivers/gpio/gpio-sodaville.c
-@@ -224,7 +224,7 @@ static int __devinit sdv_gpio_probe(struct pci_dev *pdev,
- 
- 	ret = bgpio_init(&sd->bgpio, &pdev->dev, 4,
- 			sd->gpio_pub_base + GPINR, sd->gpio_pub_base + GPOUTR,
--			NULL, sd->gpio_pub_base + GPOER, NULL, false);
-+			NULL, sd->gpio_pub_base + GPOER, NULL, 0);
- 	if (ret)
- 		goto unmap;
- 	sd->bgpio.gc.ngpio = SDV_NUM_PUB_GPIOS;
-diff --git a/include/linux/basic_mmio_gpio.h b/include/linux/basic_mmio_gpio.h
-index feb91219..1c504ca 100644
---- a/include/linux/basic_mmio_gpio.h
-+++ b/include/linux/basic_mmio_gpio.h
-@@ -67,6 +67,10 @@ int bgpio_remove(struct bgpio_chip *bgc);
- int bgpio_init(struct bgpio_chip *bgc, struct device *dev,
- 	       unsigned long sz, void __iomem *dat, void __iomem *set,
- 	       void __iomem *clr, void __iomem *dirout, void __iomem *dirin,
--	       bool big_endian);
-+	       unsigned long flags);
-+
-+#define BGPIOF_BIG_ENDIAN		BIT(0)
-+#define BGPIOF_UNREADABLE_REG_SET	BIT(1) /* reg_set is unreadable */
-+#define BGPIOF_UNREADABLE_REG_DIR	BIT(2) /* reg_dir is unreadable */
- 
- #endif /* __BASIC_MMIO_GPIO_H */
--- 
-1.7.5.4
+> From: Catalin Marinas <catalin.marinas@arm.com>
+>=20
+> commit 100d13c3b5b9410f604b86f5e0a34da64b8cf659 upstream.
 
+> +	/* kmemleak tracks the percpu allocations separately */
+> +	kmemleak_free(fc);
+
+That one causes:
+
+    mm/percpu.c: In function =E2=80=98setup_per_cpu_areas=E2=80=99:
+    mm/percpu.c:1877: error: implicit declaration of function =E2=80=98kmem=
+leak_free=E2=80=99
+    make[1]: *** [mm/percpu.o] Error 1
+    make: *** [mm] Error 2
+
+Trivial fix, works for me: Add
+
+    #include <linux/kmemleak.h>
+
+to mm/percpu.c. FWIW, upstream did this in in f528f0b but I cannot
+tell whether that commit is in any way of interest for 3.0.x.
+
+Regards,
+
+    Christoph
+
+--C7zPtVaVf+AK4Oqc
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+Content-Disposition: inline
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.10 (GNU/Linux)
+
+iEYEARECAAYFAk+3n8UACgkQBq/69tVAGy3wygCffp9VrxCxtNzqzQV/JOFvGBuT
+eq0AnRcPoFGs3u8xHQXZ/m0xUgIjyZPD
+=yTqG
+-----END PGP SIGNATURE-----
+
+--C7zPtVaVf+AK4Oqc--
