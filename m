@@ -1,63 +1,123 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756763Ab2ESMBT (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 19 May 2012 08:01:19 -0400
-Received: from ogre.sisk.pl ([193.178.161.156]:54375 "EHLO ogre.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750835Ab2ESMBR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 19 May 2012 08:01:17 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Olof Johansson <olof@lixom.net>
-Subject: Re: [PATCH] gpio: Emma Mobile GPIO driver V2
-Date: Sat, 19 May 2012 14:06:14 +0200
-User-Agent: KMail/1.13.6 (Linux/3.4.0-rc7+; KDE/4.6.0; x86_64; ; )
-Cc: Linus Walleij <linus.walleij@linaro.org>,
-        Magnus Damm <magnus.damm@gmail.com>, linux-kernel@vger.kernel.org,
-        linus.walleij@stericsson.com, arnd@arndb.de, linux-sh@vger.kernel.org,
-        horms@verge.net.au, grant.likely@secretlab.ca, lethal@linux-sh.org
-References: <20120515154333.6659.66479.sendpatchset@w520> <201205170037.34305.rjw@sisk.pl> <CAOesGMi8LPO=AFSshC8UyCmBB3hG38YKHWnHmcNCnLvgR2xcTw@mail.gmail.com>
-In-Reply-To: <CAOesGMi8LPO=AFSshC8UyCmBB3hG38YKHWnHmcNCnLvgR2xcTw@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201205191406.15061.rjw@sisk.pl>
+	id S1758271Ab2ESMCZ (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 19 May 2012 08:02:25 -0400
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:48157 "EHLO
+	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753949Ab2ESMCX (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 19 May 2012 08:02:23 -0400
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Thomas Gleixner <tglx@linutronix.de>
+Cc: linux-kernel@vger.kernel.org,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>
+Subject: [PATCH] irq_domain: Standardise legacy/linear domain selection
+Date: Sat, 19 May 2012 13:02:00 +0100
+Message-Id: <1337428920-7674-1-git-send-email-broonie@opensource.wolfsonmicro.com>
+X-Mailer: git-send-email 1.7.10
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday, May 17, 2012, Olof Johansson wrote:
-> On Wed, May 16, 2012 at 3:37 PM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
-> > On Thursday, May 17, 2012, Olof Johansson wrote:
-> >> On Wed, May 16, 2012 at 1:05 PM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
-> >> > On Wednesday, May 16, 2012, Linus Walleij wrote:
-> >> >> On Wed, May 16, 2012 at 12:15 PM, Magnus Damm <magnus.damm@gmail.com> wrote:
-> >> >>
-> >> >> > Do you guys have any preferences how to merge this?
-> >> >> >
-> >> >> > Can I include it together with the EMEV2 SoC bits perhaps? That may be
-> >> >> > easy so we can keep track of the platform data header file dependency.
-> >> >>
-> >> >> For ux500 I made a special "gpio and pins" branch and sent through ARM SoC.
-> >> >
-> >> > The problem is we have a patch depending on the $subject one in the EMEV2
-> >> > series and it would be better to keep them both together if that's not
-> >> > a big deal.
-> >>
-> >> Dependencies are fine, as long as they are not circular. You can
-> >> either pull in the gpio/pins branch into the EMEV2 branch, or base it
-> >> on it.
-> >
-> > I guess I'll try to merge the gpio/pins into the EMEV2 branch.
-> 
-> By the way, I should have mentioned that if the dependencies are only
-> for building and not for context when applying patches, then it's
-> sufficient to let us know in the pull request so we merge the branches
-> in the right order when sending to Linus (so we maintain
-> bisectability).
+A large proportion of interrupt controllers that support legacy mappings
+do so because non-DT systems need to use fixed IRQ numbers when registering
+devices via buses but can otherwise use a linear mapping. The interrupt
+controller itself typically is not affected by the mapping used and best
+practice is to use a linear mapping where possible so drivers frequently
+select at runtime depending on if a legacy range has been allocated to
+them.
 
-Well, eventually I have taken the GPIO patch from Magnus into the emev2 branch,
-because that has been much more convenient to me (pull request sent already).
+Standardise this behaviour by providing irq_domain_register_simple() which
+will allocate a linear mapping unless a positive first_irq is provided in
+which case it will fall back to a legacy mapping. This helps make best
+practice for irq_domain adoption clearer.
 
-Thanks,
-Rafael
+Signed-off-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
+---
+ Documentation/IRQ-domain.txt |    5 +++++
+ include/linux/irqdomain.h    |    5 +++++
+ kernel/irq/irqdomain.c       |   30 ++++++++++++++++++++++++++++++
+ 3 files changed, 40 insertions(+)
+
+diff --git a/Documentation/IRQ-domain.txt b/Documentation/IRQ-domain.txt
+index 27dcaab..1401cec 100644
+--- a/Documentation/IRQ-domain.txt
++++ b/Documentation/IRQ-domain.txt
+@@ -93,6 +93,7 @@ Linux IRQ number into the hardware.
+ Most drivers cannot use this mapping.
+ 
+ ==== Legacy ====
++irq_domain_add_simple()
+ irq_domain_add_legacy()
+ irq_domain_add_legacy_isa()
+ 
+@@ -115,3 +116,7 @@ The legacy map should only be used if fixed IRQ mappings must be
+ supported.  For example, ISA controllers would use the legacy map for
+ mapping Linux IRQs 0-15 so that existing ISA drivers get the correct IRQ
+ numbers.
++
++Most users of legacy mappings should use irq_domain_add_simple() which
++will use a legacy domain only if an IRQ range is supplied by the
++system and will otherwise use a linear domain mapping.
+diff --git a/include/linux/irqdomain.h b/include/linux/irqdomain.h
+index c65740d..fcf4142 100644
+--- a/include/linux/irqdomain.h
++++ b/include/linux/irqdomain.h
+@@ -112,6 +112,11 @@ struct irq_domain {
+ };
+ 
+ #ifdef CONFIG_IRQ_DOMAIN
++struct irq_domain *irq_domain_add_simple(struct device_node *of_node,
++					 unsigned int size,
++					 unsigned int first_irq,
++					 const struct irq_domain_ops *ops,
++					 void *host_data);
+ struct irq_domain *irq_domain_add_legacy(struct device_node *of_node,
+ 					 unsigned int size,
+ 					 unsigned int first_irq,
+diff --git a/kernel/irq/irqdomain.c b/kernel/irq/irqdomain.c
+index d0e50eb..86ae10f 100644
+--- a/kernel/irq/irqdomain.c
++++ b/kernel/irq/irqdomain.c
+@@ -77,6 +77,36 @@ static unsigned int irq_domain_legacy_revmap(struct irq_domain *domain,
+ }
+ 
+ /**
++ * irq_domain_add_simple() - Allocate and register a simple irq_domain.
++ * @of_node: pointer to interrupt controller's device tree node.
++ * @size: total number of irqs in mapping
++ * @first_irq: first number of irq block assigned to the domain
++ * @ops: map/unmap domain callbacks
++ * @host_data: Controller private data pointer
++ *
++ * Allocates a legacy irq_domain if irq_base is positive or a linear
++ * domain otherwise.
++ *
++ * This is intended to implement the expected behaviour for most
++ * interrupt controllers which is that a linear mapping should
++ * normally be used unless the system requires a legacy mapping in
++ * order to support supplying interrupt numbers during non-DT
++ * registration of devices.
++ */
++struct irq_domain *irq_domain_add_simple(struct device_node *of_node,
++					 unsigned int size,
++					 unsigned int first_irq,
++					 const struct irq_domain_ops *ops,
++					 void *host_data)
++{
++	if (first_irq > 0)
++		return irq_domain_add_legacy(of_node, size, first_irq, 0,
++					     ops, host_data);
++	else
++		return irq_domain_add_linear(of_node, size, ops, host_data);
++}
++
++/**
+  * irq_domain_add_legacy() - Allocate and register a legacy revmap irq_domain.
+  * @of_node: pointer to interrupt controller's device tree node.
+  * @size: total number of irqs in legacy mapping
+-- 
+1.7.10
+
