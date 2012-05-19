@@ -1,66 +1,183 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757788Ab2ESSsW (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 19 May 2012 14:48:22 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:38929 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1757268Ab2ESSsV (ORCPT
+	id S1758046Ab2ESStT (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 19 May 2012 14:49:19 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:33227 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757268Ab2ESStR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 19 May 2012 14:48:21 -0400
-Date: Sat, 19 May 2012 19:48:18 +0100
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Laxman Dewangan <ldewangan@nvidia.com>
-Cc: lrg@ti.com, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 5/5] regulator: tps65910: add error message in case of
- failure
-Message-ID: <20120519184818.GG4039@opensource.wolfsonmicro.com>
-References: <1337438050-3707-1-git-send-email-ldewangan@nvidia.com>
- <1337438050-3707-6-git-send-email-ldewangan@nvidia.com>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="ht9V8wKec6a3w1Ef"
-Content-Disposition: inline
-In-Reply-To: <1337438050-3707-6-git-send-email-ldewangan@nvidia.com>
-X-Cookie: Today is what happened to yesterday.
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Sat, 19 May 2012 14:49:17 -0400
+From: Grant Likely <grant.likely@secretlab.ca>
+Subject: Re: [PATCH 7/8] irqdomain: trivial pr_fmt conversion.
+To: Paul Mundt <lethal@linux-sh.org>
+Cc: linux-sh@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Paul Mundt <lethal@linux-sh.org>
+In-Reply-To: <1337407908-7421-8-git-send-email-lethal@linux-sh.org>
+References: <1337407908-7421-1-git-send-email-lethal@linux-sh.org> <1337407908-7421-8-git-send-email-lethal@linux-sh.org>
+Date: Sat, 19 May 2012 12:49:14 -0600
+Message-Id: <20120519184915.772FE3E03B8@localhost>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Sat, 19 May 2012 15:11:47 +0900, Paul Mundt <lethal@linux-sh.org> wrote:
+> Convert to pr_fmt before things start to get out of hand and some
+> janitors start getting overly excited.
+> 
+> Signed-off-by: Paul Mundt <lethal@linux-sh.org>
 
---ht9V8wKec6a3w1Ef
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+Applied, thanks.
 
-On Sat, May 19, 2012 at 08:04:10PM +0530, Laxman Dewangan wrote:
-> Prints error message whenever there is failure on allocating
-> resource. Also used the dev_* to print messages instead of pr_*
+g.
 
-This is fine but it depends on patch 2 so wouldn't apply.  I generally
-recommend putting this sort of cleanup earlier on in the series so that
-it can be applied even if there's some problem with the more substantial
-changes later on.
+> ---
+>  kernel/irq/irqdomain.c |   36 +++++++++++++++++++-----------------
+>  1 files changed, 19 insertions(+), 17 deletions(-)
+> 
+> diff --git a/kernel/irq/irqdomain.c b/kernel/irq/irqdomain.c
+> index ac44781..e8ac7df 100644
+> --- a/kernel/irq/irqdomain.c
+> +++ b/kernel/irq/irqdomain.c
+> @@ -1,3 +1,5 @@
+> +#define pr_fmt(fmt)  "irq: " fmt
+> +
+>  #include <linux/debugfs.h>
+>  #include <linux/hardirq.h>
+>  #include <linux/interrupt.h>
+> @@ -124,7 +126,7 @@ void irq_domain_remove(struct irq_domain *domain)
+>  
+>  	mutex_unlock(&irq_domain_mutex);
+>  
+> -	pr_debug("irq: Removed domain of type %d @0x%p\n",
+> +	pr_debug("Removed domain of type %d @0x%p\n",
+>  		 domain->revmap_type, domain);
+>  
+>  	irq_domain_free(domain);
+> @@ -329,7 +331,7 @@ EXPORT_SYMBOL_GPL(irq_find_host);
+>   */
+>  void irq_set_default_host(struct irq_domain *domain)
+>  {
+> -	pr_debug("irq: Default domain set to @0x%p\n", domain);
+> +	pr_debug("Default domain set to @0x%p\n", domain);
+>  
+>  	irq_default_domain = domain;
+>  }
+> @@ -343,7 +345,7 @@ static int irq_setup_virq(struct irq_domain *domain, unsigned int virq,
+>  	irq_data->hwirq = hwirq;
+>  	irq_data->domain = domain;
+>  	if (domain->ops->map(domain, virq, hwirq)) {
+> -		pr_debug("irq: -> mapping failed, freeing\n");
+> +		pr_debug("-> mapping failed, freeing\n");
+>  		irq_data->domain = NULL;
+>  		irq_data->hwirq = 0;
+>  		return -1;
+> @@ -374,7 +376,7 @@ unsigned int irq_create_direct_mapping(struct irq_domain *domain)
+>  
+>  	virq = irq_alloc_desc_from(1, irq_domain_nid(domain->of_node));
+>  	if (!virq) {
+> -		pr_debug("irq: create_direct virq allocation failed\n");
+> +		pr_debug("create_direct virq allocation failed\n");
+>  		return 0;
+>  	}
+>  	if (virq >= domain->revmap_data.nomap.max_irq) {
+> @@ -383,7 +385,7 @@ unsigned int irq_create_direct_mapping(struct irq_domain *domain)
+>  		irq_free_desc(virq);
+>  		return 0;
+>  	}
+> -	pr_debug("irq: create_direct obtained virq %d\n", virq);
+> +	pr_debug("create_direct obtained virq %d\n", virq);
+>  
+>  	if (irq_setup_virq(domain, virq, virq)) {
+>  		irq_free_desc(virq);
+> @@ -410,23 +412,23 @@ unsigned int irq_create_mapping(struct irq_domain *domain,
+>  	unsigned int hint;
+>  	int virq;
+>  
+> -	pr_debug("irq: irq_create_mapping(0x%p, 0x%lx)\n", domain, hwirq);
+> +	pr_debug("irq_create_mapping(0x%p, 0x%lx)\n", domain, hwirq);
+>  
+>  	/* Look for default domain if nececssary */
+>  	if (domain == NULL)
+>  		domain = irq_default_domain;
+>  	if (domain == NULL) {
+> -		printk(KERN_WARNING "irq_create_mapping called for"
+> -		       " NULL domain, hwirq=%lx\n", hwirq);
+> +		pr_warning("irq_create_mapping called for"
+> +			   " NULL domain, hwirq=%lx\n", hwirq);
+>  		WARN_ON(1);
+>  		return 0;
+>  	}
+> -	pr_debug("irq: -> using domain @%p\n", domain);
+> +	pr_debug("-> using domain @%p\n", domain);
+>  
+>  	/* Check if mapping already exists */
+>  	virq = irq_find_mapping(domain, hwirq);
+>  	if (virq) {
+> -		pr_debug("irq: -> existing mapping on virq %d\n", virq);
+> +		pr_debug("-> existing mapping on virq %d\n", virq);
+>  		return virq;
+>  	}
+>  
+> @@ -442,7 +444,7 @@ unsigned int irq_create_mapping(struct irq_domain *domain,
+>  	if (virq <= 0)
+>  		virq = irq_alloc_desc_from(1, irq_domain_nid(domain->of_node));
+>  	if (virq <= 0) {
+> -		pr_debug("irq: -> virq allocation failed\n");
+> +		pr_debug("-> virq allocation failed\n");
+>  		return 0;
+>  	}
+>  
+> @@ -452,7 +454,7 @@ unsigned int irq_create_mapping(struct irq_domain *domain,
+>  		return 0;
+>  	}
+>  
+> -	pr_debug("irq: irq %lu on domain %s mapped to virtual irq %u\n",
+> +	pr_debug("irq %lu on domain %s mapped to virtual irq %u\n",
+>  		hwirq, domain->of_node ? domain->of_node->full_name : "null", virq);
+>  
+>  	return virq;
+> @@ -472,7 +474,7 @@ unsigned int irq_create_identity_mapping(struct irq_domain *domain,
+>  {
+>  	int virq;
+>  
+> -	pr_debug("irq: irq_create_identity_mapping(0x%p, 0x%lx)\n",
+> +	pr_debug("irq_create_identity_mapping(0x%p, 0x%lx)\n",
+>  		 domain, hwirq);
+>  
+>  	if (domain == NULL)
+> @@ -484,7 +486,7 @@ unsigned int irq_create_identity_mapping(struct irq_domain *domain,
+>  
+>  	virq = irq_alloc_desc_at(hwirq, irq_domain_nid(domain->of_node));
+>  	if (virq < 0) {
+> -		pr_debug("irq: -> virq allocation failed\n");
+> +		pr_debug("-> virq allocation failed\n");
+>  		return 0;
+>  	}
+>  
+> @@ -494,7 +496,7 @@ unsigned int irq_create_identity_mapping(struct irq_domain *domain,
+>  		return 0;
+>  	}
+>  
+> -	pr_debug("irq: irq %lu identity mapped\n", hwirq);
+> +	pr_debug("irq %lu identity mapped\n", hwirq);
+>  
+>  	return virq;
+>  }
+> @@ -522,8 +524,8 @@ unsigned int irq_create_of_mapping(struct device_node *controller,
+>  		if (intsize > 0)
+>  			return intspec[0];
+>  #endif
+> -		printk(KERN_WARNING "irq: no irq domain found for %s !\n",
+> -		       controller->full_name);
+> +		pr_warning("no irq domain found for %s !\n",
+> +			   controller->full_name);
+>  		return 0;
+>  	}
+>  
+> -- 
+> 1.7.9.rc0.28.g0e1cf
+> 
 
---ht9V8wKec6a3w1Ef
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBAgAGBQJPt+pUAAoJEBus8iNuMP3ddccP/2Winn/+zVa4DBeRz4OQG67/
-CnCBa8JwWyIJh2t+cPb/GLR9cEw5rc+dQvvYFSnNIFw9y1GrxosRHc0/IXkuadpf
-KOI7tbip1QWd5bJ9/3UQQCLM/bI10OlC8ShriqWim4ynF980oJjwoLSLRG4SZAPF
-H2wfw1OpUY9Xt+BQgxuKAdl31UnB15X5oTPZmfYl9q1bmENyMdKKIbjqFVDvoel8
-3EkV+l+ElilAEJS21vVLBMtMmKskU9laWEu6T9Z8RMnVYoI4kfEjfN19LPNGsUZ5
-EE23QMfVfnvLyHa4c0EmeF9kHGMb2p1Z29FU0HI2HZbt4awtao1P//GTMDFrRnuY
-O3F4cNGoagkEV5D0yrpE+VD88z7yrQl264us6/vRTakFsgrYEbYR91mdeva1BdTV
-x+YlYxQxZtAX0oEZXREugENLYrRpXJdL8/q1o43wdyK6vgygEZZi5EmYxTb6ChkS
-JXpxDacZmtg240gFfpvewanTY7BALQ/ZCW9Wz4c56afzGAwQ9/UTV89QmlmkFp+z
-s9berQHTRdvC0rEhYK94Nr4qyzTtTOFeP35+7zEi7zLz6nyFGVC5xmW1NOR8/Rv2
-BCPoWkGsoMc+GWVJwWijGT220MO8d/ceja07+EJ25imak2aKafQgCkFh8o4wgNc7
-w9UD1bFXw3Tz1lkBif5H
-=hnUI
------END PGP SIGNATURE-----
-
---ht9V8wKec6a3w1Ef--
+-- 
+Grant Likely, B.Sc, P.Eng.
+Secret Lab Technologies, Ltd.
