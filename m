@@ -1,59 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760278Ab2ESLmO (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 19 May 2012 07:42:14 -0400
-Received: from nm23-vm0.bullet.mail.sp2.yahoo.com ([98.139.91.224]:36086 "HELO
-	nm23-vm0.bullet.mail.sp2.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1754487Ab2ESLmM (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 19 May 2012 07:42:12 -0400
-X-Yahoo-Newman-Id: 33702.91801.bm@smtp103.mail.gq1.yahoo.com
-X-Yahoo-Newman-Property: ymail-3
-X-YMail-OSG: EChdYE8VM1nXyl_LouoIR1cfjZr29NYozX43fyvik8Ft0p.
- qerOnhjTnbhDSTQTe.igfAvDbJvN.uxBFNAh8zYoD7KGF55iYHphrVDVqFgb
- BYW9884MaoWtoKx4AhaOZYSEpI_RchlOfKykqh9XjEH2AayCMaSKD4GQ.FWq
- .nRqz462.mNqT25FTecuxj35MFHmGmSQgWga7fVTx0PomQLQ2Ast.qDgQxaS
- BGw9NxS0XO1KoJMaGVdvzetAPMWITTp.kNafYinvXLOUeC6zKgxmoti34slH
- bj0LggT3QuZh6Ih_O37IHqm5EDnYQw1FwBG0PKgi3k_k9MDqckoL_xfFdXQB
- s_nw3EMFbj.n9MPcwbPfWm8VVvQ7hRHL3kcxFaKk6Gmk1mZy.UAFZtzmxHfj
- lqPBFDxYleztg42LNusiIrIMRg5zxqtlEKunKvyoHo48N_BINyVQGwVQFbzs
- 6Kr9IVSZucM1DunO0qGpmlFl4vaDuDLTEuA.uee7JMOiNzhgDbVy8k3Yr_s8
- -
-X-Yahoo-SMTP: dNW5aIGswBCf1iV6QK8RWrBgWyjShXs-
-From: Jeffrin Jose <ahiliation@yahoo.co.in>
-To: davem@davemloft.net, kuznet@ms2.inr.ac.ru, jmorris@namei.org,
-        yoshfuji@linux-ipv6.org, kaber@trash.net
-Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        ahiliation@yahoo.co.in
-Subject: [PATCH 1/1] net:ipv6:fixed a trailing white space issue.
-Date: Sat, 19 May 2012 17:15:21 +0530
-Message-Id: <1337427921-2848-1-git-send-email-ahiliation@yahoo.co.in>
-X-Mailer: git-send-email 1.7.10
+	id S1760158Ab2ESLyZ (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 19 May 2012 07:54:25 -0400
+Received: from ogre.sisk.pl ([193.178.161.156]:54357 "EHLO ogre.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751878Ab2ESLyW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 19 May 2012 07:54:22 -0400
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Sameer Nanda <snanda@chromium.org>, Greg KH <gregkh@linuxfoundation.org>
+Subject: Re: [PATCH] power, trace: add tracing for device_resume
+Date: Sat, 19 May 2012 13:59:20 +0200
+User-Agent: KMail/1.13.6 (Linux/3.4.0-rc7+; KDE/4.6.0; x86_64; ; )
+Cc: Steven Rostedt <rostedt@goodmis.org>, rob@landley.net, len.brown@intel.com,
+        pavel@ucw.cz, fweisbec@gmail.com, mingo@redhat.com, jkosina@suse.cz,
+        standby24x7@gmail.com, jj@chaosbits.net, paulmck@linux.vnet.ibm.com,
+        josh@joshtriplett.org, linux-doc@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-pm@vger.kernel.org
+References: <1337365643-29261-1-git-send-email-snanda@chromium.org> <20120518230117.GA6016@kroah.com> <CANMivWY=-ML2v0SOZp6uiNWQKqKZ=eY82otMLqQu8S4+OvKHMA@mail.gmail.com>
+In-Reply-To: <CANMivWY=-ML2v0SOZp6uiNWQKqKZ=eY82otMLqQu8S4+OvKHMA@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="utf-8"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201205191359.20457.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Fixed a trailing white space issue found by
-checkpatch.pl tool in net/ipv6/udp.c
+On Saturday, May 19, 2012, Sameer Nanda wrote:
+> On Fri, May 18, 2012 at 4:01 PM, Greg KH <gregkh@linuxfoundation.org> wrote:
+> > On Fri, May 18, 2012 at 03:17:32PM -0700, Sameer Nanda wrote:
+> >> On Fri, May 18, 2012 at 2:46 PM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
+> >> > On Friday, May 18, 2012, Sameer Nanda wrote:
+> >> >> On Fri, May 18, 2012 at 2:19 PM, Steven Rostedt <rostedt@goodmis.org> wrote:
+> >> >> > On Fri, 2012-05-18 at 13:58 -0700, Sameer Nanda wrote:
+> >> >> >> On Fri, May 18, 2012 at 12:14 PM, Steven Rostedt <rostedt@goodmis.org> wrote:
+> >> >> >> > On Fri, 2012-05-18 at 11:57 -0700, Sameer Nanda wrote:
+> >> >> >> >
+> >> >> >> >> AFAICT, they are used for something completely different -- help solve
+> >> >> >> >> suspend/resume issues by saving a hash in the RTC of the last device
+> >> >> >> >> that suspended/resumed.  They don't use the perf tracing mechanism at
+> >> >> >> >> all.
+> >> >> >> >>
+> >> >> >> >
+> >> >> >> > Also note that all tracepoints have timestamps attached to them. You do
+> >> >> >> > not need to add deltas. Do that in the userspace tools that read the
+> >> >> >> > timestamps and events. This way you can have one DECLARE_EVENT_CLASS and
+> >> >> >> > three DEFINE_EVENTs. This will save space.
+> >> >> >>
+> >> >> >> Agreed on the space savings.  However, with the time_delta in the
+> >> >> >> trace message itself, a one line shell script [1] that sorts on the
+> >> >> >> time_delta field is sufficient to quickly spot the devices that take a
+> >> >> >> long time to resume.  Without the time_delta field, the user tool is
+> >> >> >> more complex since it needs to first match up the device_resume_in,
+> >> >> >> device_resume_waited and device_resume_out traces and then calculate
+> >> >> >> time deltas.
+> >> >> >>
+> >> >> >> Seems like a worthwhile trade-off to me but I can take out the
+> >> >> >> time_delta if the general consensus is otherwise.
+> >> >> >
+> >> >> > Just note that every TRACE_EVENT() adds around 5k or more code. Every
+> >> >> > DEFINE_EVENT adds just about 300 bytes.
+> >> >>
+> >> >> Ok, let me respin the patch.  I am thinking of adding time_delta to
+> >> >> all three traces.  That way we should get the space saving while still
+> >> >> allowing quick spotting of devices that take long time to resume.
+> >> >
+> >> > Well, what's wrong with the code in drivers/base/power/main.c that
+> >> > is activated by adding initcall_debug to the kernel command line?
+> >>
+> >> Mostly that I hadn't looked closely at initcall_debug before writing my patch :)
+> >>
+> >> Now that I have taken a look at it, the main issue is that the kernel
+> >> command line needs to be modified to activate it.  We cannot do this
+> >> for our automated regression suites since the kernel command line is
+> >> protected on Chrome OS systems.
+> >
+> > You are kidding, right?  You have control over your test systems, don't
+> > bloat everyone's kernel by 5k just because your infrastructure is
+> > somehow something that you feel you can't change.
+> 
+> Fair enough.  But having to modify the kernel command line to do this
+> is clunky.  How about exposing the ability to turn on these
+> initcall_debug prints through a knob under /sys/power?
 
-Signed-off-by: Jeffrin Jose <ahiliation@yahoo.co.in>
----
- net/ipv6/udp.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+This might work, but first you'd need to make them depend on something
+different from initcall_debug (and make that thing in turn be set if
+initcall_debug is put into the kernel command line).  Then, you could
+export the new variable.
 
-diff --git a/net/ipv6/udp.c b/net/ipv6/udp.c
-index c1d91a7..847253c 100644
---- a/net/ipv6/udp.c
-+++ b/net/ipv6/udp.c
-@@ -103,7 +103,7 @@ int udp_v6_get_port(struct sock *sk, unsigned short snum)
- {
- 	unsigned int hash2_nulladdr =
- 		udp6_portaddr_hash(sock_net(sk), &in6addr_any, snum);
--	unsigned int hash2_partial = 
-+	unsigned int hash2_partial =
- 		udp6_portaddr_hash(sock_net(sk), &inet6_sk(sk)->rcv_saddr, 0);
- 
- 	/* precompute partial secondary hash */
--- 
-1.7.10
+Greg, does that make sense to you?
 
+Rafael
