@@ -1,93 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760593Ab2ESPFV (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 19 May 2012 11:05:21 -0400
-Received: from mail-lpp01m010-f46.google.com ([209.85.215.46]:48205 "EHLO
-	mail-lpp01m010-f46.google.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754376Ab2ESPFG (ORCPT
+	id S1758771Ab2ESPJO (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 19 May 2012 11:09:14 -0400
+Received: from hqemgate04.nvidia.com ([216.228.121.35]:17588 "EHLO
+	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754376Ab2ESPJM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 19 May 2012 11:05:06 -0400
+	Sat, 19 May 2012 11:09:12 -0400
+X-PGP-Universal: processed;
+	by hqnvupgp05.nvidia.com on Sat, 19 May 2012 08:09:11 -0700
+Message-ID: <4FB7B667.9010606@nvidia.com>
+Date: Sat, 19 May 2012 20:34:07 +0530
+From: Laxman Dewangan <ldewangan@nvidia.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101208 Thunderbird/3.1.7
 MIME-Version: 1.0
-In-Reply-To: <1337083082.27020.151.camel@laptop>
-References: <CAKfTPtDSDAOAdv0GTDswZeRM7TmACrjok+5kddSaQpvy6_6xWw@mail.gmail.com>
-	<CAKfTPtCfiY7A29+e50F+6awd8BjNJjg4=uNN4ReZfdS_4FbpkA@mail.gmail.com>
-	<CANQmPXj_81NBBrTYCkhUO1k1i4WVu0iHwY1_10wDVOFWCSkvsw@mail.gmail.com>
-	<CAKfTPtBhPpQyr1qugbMzq2nENh+zBT+zx_nWQpQ9NPbF=+ppcQ@mail.gmail.com>
-	<833A8DB8-1AB4-45E4-8D44-14A0D782807D@gmail.com>
-	<1337077714.27694.21.camel@twins>
-	<9093E8BA-80E4-4113-B036-0259E5FB44F1@gmail.com>
-	<1337083082.27020.151.camel@laptop>
-Date: Sat, 19 May 2012 22:58:32 +0800
-Message-ID: <CAJRGBZzriRQMO9Mutk+VzrwKDdjFTBw7v2CbXseyKvshxXhxKA@mail.gmail.com>
-Subject: Re: Plumbers: Tweaking scheduler policy micro-conf RFP
-From: Luming Yu <luming.yu@gmail.com>
-To: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Pantelis Antoniou <pantelis.antoniou@gmail.com>,
-        Vincent Guittot <vincent.guittot@linaro.org>,
-        mou Chen <hi3766691@gmail.com>, linux-kernel@vger.kernel.org,
-        Ingo Molnar <mingo@kernel.org>, torvalds@linux-foundation.org
-Content-Type: text/plain; charset=UTF-8
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>
+CC: Stephen Warren <swarren@nvidia.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: DT support for input-supply of regulator.
+References: <4FB67D9C.2040909@nvidia.com> <20120519104436.GR4039@opensource.wolfsonmicro.com>
+In-Reply-To: <20120519104436.GR4039@opensource.wolfsonmicro.com>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, May 15, 2012 at 7:58 PM, Peter Zijlstra <a.p.zijlstra@chello.nl> wrote:
-> On Tue, 2012-05-15 at 14:35 +0300, Pantelis Antoniou wrote:
-
->> Power: Now that's a tricky one, we can't measure power directly, it's a
->> function of the cpu load we run in a period of time, along with any
->> history of the cstates & pstates of that period. How can we collect
->> information about that? Also we to take into account peripheral device
->> power to that; GPUs are particularly power hungry.
+On Saturday 19 May 2012 04:14 PM, Mark Brown wrote:
+> * PGP Signed by an unknown key
 >
-> Intel provides some measure of CPU power drain on recent chips (iirc),
-> but yeah that doesn't include GPUs and other peripherals iirc.
+> On Fri, May 18, 2012 at 10:19:32PM +0530, Laxman Dewangan wrote:
 >
->> Thermal management: How to distribute load to the processors in such
->> a way that the temperature of the die doesn't increase too much that
->> we have to either go to a lower OPP or shut down the core all-together.
->> This is in direct conflict with throughput since we'd have better performance
->> if we could keep the same warmed-up cpu going.
->
-> Core-hopping.. yay! We have the whole sensors framework that provides an
-> interface to such hardware, the question is, do chips have enough
-> sensors spread on them to be useful?
->
->> Memory I/O: Some workloads are memory bandwidth hungry but do not need
->> much CPU power. In the case of asymmetric cores it would make sense to move
->> the memory bandwidth hog to a lower performance CPU without any impact.
->> Probably need to use some kind of performance counter for that; not going
->> to be very generic.
->
-> You're assuming the slower cores have the same memory bandwidth, isn't
-> that a dangerous assumption?
->
-> Anyway, so the 'problem' with using PMCs from within the scheduler is
-> that, 1) they're ass backwards slow on some chips (x86 anyone?) 2) some
-> userspace gets 'upset' if they can't get at all of them.
->
-> So it has to be optional at best, and I hate knobs :-) Also, the more
-> information you're going to feed this load-balancer thing, the harder
-> all that becomes, you don't want to do the full nm! m-dimensional bin
-> fit.. :-)
+>> But when it looks for the device node containing this regulator, it
+>> starts searching of the props from the dev_node of parent device
+>> i.e. pmu: tps65910@d2 and in search, it does not found the
+>> vin-supply property. It got property for compatible reg, gpio_cell,
+>> gpio-controller and then no more property.
+>> Is there any issue in laying down the regulator structure?
+> I'm sorry but I'm having a really hard time parsing what you're saying
+> above.  It sounds like there's some sort of device tree specific bug
+> that needs fixing.
 >
 
-Just curious if load-balance doesn't necessarily mean power/thermal balance,
-or memory balance, then where to hack to satisfy such needs when it became
-critical. e.g. People may want to have fine granularity usage plan to
-control over
-how processors gets used in day-to-day life. e.g. People may want to idle half
-processors for few hours,while we want the request done in a way that it create
-minimal impact on the quality of service provided by the system, which means:
-1. we need to choose best cpus to idle. 2. soft-offline-cpu is not
-right solution,
-3. when really needed, get them back to service as fast as possible.
+I found small issue in core regulator and the tps65910 regulator driver 
+where it was not passing correct regulator node. After fixing this, it 
+worked fine.
+I already sent the patches for review.
 
-So my question is if any existing scheduler can help me do this?
-Yes, I need knobs or interfaces :-)  that could be used by another
-driver which could be
-thermal or power related.  if there isn't, I would be very interested
-to help create one.
+Thanks,
+Laxman
 
-thanks.
-/l
+
