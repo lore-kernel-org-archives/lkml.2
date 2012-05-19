@@ -1,43 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760082Ab2ESLPl (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 19 May 2012 07:15:41 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:36720 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752682Ab2ESLPj (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 19 May 2012 07:15:39 -0400
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Thomas Gleixner <tglx@linutronix.de>
-Cc: linux-kernel@vger.kernel.org,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>
-Subject: [PATCH] irq_domain: Document size parameter of irq_domain_add_linear()
-Date: Sat, 19 May 2012 12:15:35 +0100
-Message-Id: <1337426135-9807-1-git-send-email-broonie@opensource.wolfsonmicro.com>
-X-Mailer: git-send-email 1.7.10
+	id S932357Ab2ESLTS (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 19 May 2012 07:19:18 -0400
+Received: from a.ns.miles-group.at ([95.130.255.143]:47834 "EHLO radon.swed.at"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754444Ab2ESLTO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 19 May 2012 07:19:14 -0400
+From: Richard Weinberger <richard@nod.at>
+To: jonas@southpole.se
+Cc: linux@openrisc.net, linux-kernel@vger.kernel.org,
+        Richard Weinberger <richard@nod.at>
+Subject: [PATCH] OpenRISC: Make do_signal() non-static
+Date: Sat, 19 May 2012 13:19:07 +0200
+Message-Id: <1337426347-3557-1-git-send-email-richard@nod.at>
+X-Mailer: git-send-email 1.7.7.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
----
- kernel/irq/irqdomain.c |    1 +
- 1 file changed, 1 insertion(+)
+There is no need to export this function.
 
-diff --git a/kernel/irq/irqdomain.c b/kernel/irq/irqdomain.c
-index 0e0ba5f..d0e50eb 100644
---- a/kernel/irq/irqdomain.c
-+++ b/kernel/irq/irqdomain.c
-@@ -156,6 +156,7 @@ struct irq_domain *irq_domain_add_legacy(struct device_node *of_node,
- /**
-  * irq_domain_add_linear() - Allocate and register a legacy revmap irq_domain.
-  * @of_node: pointer to interrupt controller's device tree node.
-+ * @size: Number of interrupts in the domain.
-  * @ops: map/unmap domain callbacks
-  * @host_data: Controller private data pointer
+Signed-off-by: Richard Weinberger <richard@nod.at>
+---
+ arch/openrisc/kernel/signal.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
+
+diff --git a/arch/openrisc/kernel/signal.c b/arch/openrisc/kernel/signal.c
+index 44749d4..f0446ec 100644
+--- a/arch/openrisc/kernel/signal.c
++++ b/arch/openrisc/kernel/signal.c
+@@ -284,7 +284,7 @@ handle_signal(unsigned long sig,
+  * mode below.
   */
+ 
+-void do_signal(struct pt_regs *regs)
++static void do_signal(struct pt_regs *regs)
+ {
+ 	siginfo_t info;
+ 	int signr;
 -- 
-1.7.10
+1.7.7.3
 
