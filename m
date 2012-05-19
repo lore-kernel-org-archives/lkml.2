@@ -1,55 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S968256Ab2ESAx6 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 May 2012 20:53:58 -0400
-Received: from ozlabs.org ([203.10.76.45]:38966 "EHLO ozlabs.org"
+	id S968276Ab2ESAyh (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 May 2012 20:54:37 -0400
+Received: from smtp.fullrate.dk ([90.185.1.42]:55222 "EHLO smtp.fullrate.dk"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754420Ab2ESAxz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 May 2012 20:53:55 -0400
-From: Rusty Russell <rusty@rustcorp.com.au>
-To: David Howells <dhowells@redhat.com>
-Cc: kyle@mcmartin.ca, linux-kernel@vger.kernel.org,
-        linux-security-module@vger.kernel.org, keyrings@linux-nfs.org
-Subject: Re: [PATCH 00/29] Crypto keys and module signing [ver #4]
-In-Reply-To: <20120510233901.4137.19023.stgit@warthog.procyon.org.uk>
-References: <20120510233901.4137.19023.stgit@warthog.procyon.org.uk>
-User-Agent: Notmuch/0.12 (http://notmuchmail.org) Emacs/23.3.1 (i686-pc-linux-gnu)
-Date: Sat, 19 May 2012 10:23:05 +0930
-Message-ID: <87ipft3sb2.fsf@rustcorp.com.au>
+	id S966670Ab2ESAyf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 18 May 2012 20:54:35 -0400
+Message-ID: <4FB6EF47.2040107@molgaard.org>
+Date: Sat, 19 May 2012 02:54:31 +0200
+From: =?ISO-8859-1?Q?Sune_M=F8lgaard?= <sune@molgaard.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/15.0 Firefox/15.0a1 SeaMonkey/2.12a1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+To: linux-kernel@vger.kernel.org
+Subject: Re: Boot failure since 3.3-rc?
+References: <4F931C6D.8040407@molgaard.org>
+In-Reply-To: <4F931C6D.8040407@molgaard.org>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 11 May 2012 00:39:01 +0100, David Howells <dhowells@redhat.com> wrote:
-> 
-> Hi Rusty,
-> 
-> Here's my latest take on my module signing patch set.  I've retained my
-> strip-proof[*] signature-in-module concept, but I've shrunk the module
-> verification code by nearly half.  Its .text segment now stands at just over 2K
-> in size for an x86_64 kernel.
+Problem solved.
 
-Hi David!
+At some point between 3.3-rc3 and 3.3-rc4, something has made the uuids 
+in /dev/disk/by-uuid/ different from the uuids that are embedded in md 
+raid member v 0.90 metadata.
 
-        I get it.  Some management bigwig at RH has told you to get this
-patch in, right?  And you told them it'd had been Nacked, that the
-maintainer had said it was never going in, and of course, that it was a
-stupid idea and to give up on the idea of stripping modules after
-signing, and just append a magic marker and the signature.
+Failure at my end was caused by my adding (mdN) entries to 
+/bot/grub/device.map at some time in the past, mapping them to the 
+entries there.
 
-        But they just wouldn't listen, would they?  So you had to waste
-your time polishing this turd, until you annoy me enough to get the kind
-of flaming rejection which is visible from space and chars the eyeballs
-of your manager so they understand.
+Changing said entries to point to symlinks in /dev/disk/by-id solved 
+this for me.
 
-        Well, here it is.  I even put it in caps for you!
+Problem was compunded by the use of initrd since, as one will readily 
+surmise post-hoc, a kernel with no other problems will boot if the 
+corresponding initrd image was built under a kernel with the old 
+behaviour wrt. to /dev/disk/by-uuid mappings, thus prompting one to "git 
+bisect good", whereas the kernel built while being booted in that 
+kernel, with the initrd image being built under it will fail if it 
+exhibits the new behaviour, leading to an off-by-one in the binary 
+search of git bisect.
 
-NAK.  THIS PATCH WILL NEVER, EVER GO IN.  I AM NOT PUTTING CRAP IN THE
-KERNEL BECAUSE RH CAN'T FIGURE OUT HOW TO PRODUCE STRIPPED VERSIONS OF
-MODULES DURING BUILD.  DON'T BE TOO PROUD OF THIS TECHNOLOGICAL TERROR
-YOU'VE CONSTRUCTED.
+This mail is meant jointly as a "problem solved" message to this list, 
+and as explanation for posterity if someone else happens to run into 
+similar problems.
 
-I look forward to you updated patch series!
-Rusty.
+Initial confusion was mainly due to the lack of an attached monitor, the 
+acquirement of which showed the eroor to be one of failure to mount the 
+root fs, and even if that might have been seen via netconsole, I decided 
+to order one before realising that some of the kernels would label my 
+two ethernet cards differently than what udev picked up at one time and 
+made permanent...
+
+In closing: Thank you all for your input and sorry for the noise.
+
+Best regards,
+
+Sune Mølgaard
+
+-- 
+Nothing exists except atoms and empty space; everything else is
+opinion.
+- Democritus
+
+
