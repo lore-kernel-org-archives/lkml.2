@@ -1,124 +1,236 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757332Ab2ESUvB (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 19 May 2012 16:51:01 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:48746 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756173Ab2ESUvA (ORCPT
+	id S1757411Ab2ESUxk (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 19 May 2012 16:53:40 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:47573 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756173Ab2ESUxh convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 19 May 2012 16:51:00 -0400
-Date: Sat, 19 May 2012 21:50:56 +0100
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Laxman Dewangan <ldewangan@nvidia.com>
-Cc: "lrg@ti.com" <lrg@ti.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] regulator: core: use correct device for device supply
- lookup
-Message-ID: <20120519205055.GA16590@opensource.wolfsonmicro.com>
-References: <1337436846-30025-1-git-send-email-ldewangan@nvidia.com>
- <20120519164134.GT4039@opensource.wolfsonmicro.com>
- <4FB7D4D8.2050501@nvidia.com>
- <4FB7D676.9000609@nvidia.com>
- <20120519174052.GX4039@opensource.wolfsonmicro.com>
- <4FB7DEB0.3040001@nvidia.com>
- <20120519182658.GB4039@opensource.wolfsonmicro.com>
- <4FB7EE84.7090704@nvidia.com>
+	Sat, 19 May 2012 16:53:37 -0400
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="x+6KMIRAuhnl3hBn"
-Content-Disposition: inline
-In-Reply-To: <4FB7EE84.7090704@nvidia.com>
-X-Cookie: You will be married within a year.
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20120518102640.GB31517@dhcp-26-207.brq.redhat.com>
+References: <20120518102640.GB31517@dhcp-26-207.brq.redhat.com>
+Date: Sat, 19 May 2012 13:53:36 -0700
+X-Google-Sender-Auth: nkKxDZiTT36e99z4HFzojA8CML8
+Message-ID: <CAE9FiQXUM-+KSZ1OcxipRW-3XQED3Csyxs=0ke0hJZR7E_hrhg@mail.gmail.com>
+Subject: Re: [PATCH 2/3] x86: x2apic/cluster: Make use of lowest priority
+ delivery mode
+From: Yinghai Lu <yinghai@kernel.org>
+To: Alexander Gordeev <agordeev@redhat.com>
+Cc: linux-kernel@vger.kernel.org, x86@kernel.org,
+        Suresh Siddha <suresh.b.siddha@intel.com>,
+        Cyrill Gorcunov <gorcunov@openvz.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Fri, May 18, 2012 at 3:26 AM, Alexander Gordeev <agordeev@redhat.com> wrote:
+> Currently x2APIC in logical destination mode delivers interrupts to a
+> single CPU, no matter how many CPUs were specified in the destination
+> cpumask.
+>
+> This fix enables delivery of interrupts to multiple CPUs by bit-ORing
+> Logical IDs of destination CPUs that have matching Cluster ID.
+>
+> Because only one cluster could be specified in a message destination
+> address, the destination cpumask is tried for a cluster that contains
+> maximum number of CPUs matching this cpumask. The CPUs in this cluster
+> are selected to receive the interrupts while all other CPUs (in the
+> cpumask) are ignored.
+>
+> Signed-off-by: Alexander Gordeev <agordeev@redhat.com>
+> ---
+>  arch/x86/include/asm/x2apic.h         |    9 --
+>  arch/x86/kernel/apic/x2apic_cluster.c |  140 +++++++++++++++++++++++++++++----
+>  arch/x86/kernel/apic/x2apic_phys.c    |    9 ++-
+>  3 files changed, 131 insertions(+), 27 deletions(-)
+>
+> diff --git a/arch/x86/include/asm/x2apic.h b/arch/x86/include/asm/x2apic.h
+> index 92e54ab..7a5a832 100644
+> --- a/arch/x86/include/asm/x2apic.h
+> +++ b/arch/x86/include/asm/x2apic.h
+> @@ -28,15 +28,6 @@ static int x2apic_apic_id_registered(void)
+>        return 1;
+>  }
+>
+> -/*
+> - * For now each logical cpu is in its own vector allocation domain.
+> - */
+> -static void x2apic_vector_allocation_domain(int cpu, struct cpumask *retmask)
+> -{
+> -       cpumask_clear(retmask);
+> -       cpumask_set_cpu(cpu, retmask);
+> -}
+> -
+>  static void
+>  __x2apic_send_IPI_dest(unsigned int apicid, int vector, unsigned int dest)
+>  {
+> diff --git a/arch/x86/kernel/apic/x2apic_cluster.c b/arch/x86/kernel/apic/x2apic_cluster.c
+> index 8f012b2..f8fa4c4 100644
+> --- a/arch/x86/kernel/apic/x2apic_cluster.c
+> +++ b/arch/x86/kernel/apic/x2apic_cluster.c
+> @@ -96,36 +96,142 @@ static void x2apic_send_IPI_all(int vector)
+>        __x2apic_send_IPI_mask(cpu_online_mask, vector, APIC_DEST_ALLINC);
+>  }
+>
+> +static inline unsigned int
+> +__x2apic_cluster_to_apicid(int cpu_in_cluster, const struct cpumask *cpumask)
+> +{
+> +       unsigned int apicid = 0;
+> +       int cpu;
+> +
+> +       for_each_cpu_and(cpu, per_cpu(cpus_in_cluster, cpu_in_cluster), cpumask)
+> +               apicid |= per_cpu(x86_cpu_to_logical_apicid, cpu);
+> +
+> +       return apicid;
+> +}
+> +
+> +static int
+> +__x2apic_cpu_mask_to_apicid(const struct cpumask *cpumask, unsigned int *apicid)
+> +{
+> +       int ret = 0;
+> +       int cpu, heaviest;
+> +       unsigned int weight, max_weight;
+> +       cpumask_var_t target_cpus, cluster_cpus;
+> +
+> +       if (unlikely(!alloc_cpumask_var(&target_cpus, GFP_ATOMIC))) {
+> +               ret = -ENOMEM;
+> +               goto out;
+> +       }
+> +       if (unlikely(!alloc_cpumask_var(&cluster_cpus, GFP_ATOMIC))) {
+> +               ret = -ENOMEM;
+> +               goto out_free_target_cpus;
+> +       }
+> +
+> +       cpumask_and(target_cpus, cpumask, cpu_online_mask);
+> +       max_weight = 0;
+> +
+> +       for_each_cpu(cpu, target_cpus) {
+> +               cpumask_and(cluster_cpus, per_cpu(cpus_in_cluster, cpu), cpumask);
+> +
+> +               weight = cpumask_weight(cluster_cpus);
+> +               if (weight > max_weight) {
+> +                       max_weight = weight;
+> +                       heaviest = cpu;
+> +               }
+> +
+> +               cpumask_andnot(target_cpus, target_cpus, cluster_cpus);
+> +       }
+> +
+> +       if (!max_weight) {
+> +               ret = -EINVAL;
+> +               goto out_free_cluster_cpus;
+> +       }
+> +
+> +       *apicid = __x2apic_cluster_to_apicid(heaviest, cpumask);
+> +
+> +out_free_cluster_cpus:
+> +       free_cpumask_var(cluster_cpus);
+> +out_free_target_cpus:
+> +       free_cpumask_var(target_cpus);
+> +out:
+> +       return ret;
+> +}
+> +
+>  static unsigned int x2apic_cpu_mask_to_apicid(const struct cpumask *cpumask)
+>  {
+> -       /*
+> -        * We're using fixed IRQ delivery, can only return one logical APIC ID.
+> -        * May as well be the first.
+> -        */
+> -       int cpu = cpumask_first(cpumask);
+> +       int err;
+> +       int cpu;
+> +       unsigned int apicid;
+>
+> -       if ((unsigned)cpu < nr_cpu_ids)
+> -               return per_cpu(x86_cpu_to_logical_apicid, cpu);
+> -       else
+> -               return BAD_APICID;
+> +       err = __x2apic_cpu_mask_to_apicid(cpumask, &apicid);
+> +       WARN_ON(err);
+> +
+> +       if (!err)
+> +               return apicid;
+> +
+> +       if (err == -ENOMEM) {
+> +               for_each_cpu(cpu, cpumask) {
+> +                       if (cpumask_test_cpu(cpu, cpu_online_mask))
+> +                               break;
+> +               }
+> +               if (cpu < nr_cpu_ids)
+> +                       return __x2apic_cluster_to_apicid(cpu, cpumask);
+> +       }
+> +
+> +       return BAD_APICID;
+>  }
+>
+>  static unsigned int
+>  x2apic_cpu_mask_to_apicid_and(const struct cpumask *cpumask,
+>                              const struct cpumask *andmask)
+>  {
+> -       int cpu;
+> +       int err;
+> +       int cpu, first_cpu;
+> +       unsigned int apicid;
+> +       cpumask_var_t target_cpus;
+> +
+> +       if (likely(alloc_cpumask_var(&target_cpus, GFP_ATOMIC))) {
+> +               cpumask_and(target_cpus, cpumask, andmask);
+> +
+> +               err = __x2apic_cpu_mask_to_apicid(target_cpus, &apicid);
+> +
+> +               free_cpumask_var(target_cpus);
+> +
+> +               if (!err)
+> +                       return apicid;
+> +       } else {
+> +               err = -ENOMEM;
+> +       }
+> +
+> +       WARN_ON(err);
+> +
+> +       if (err != -ENOMEM)
+> +               return 0;
+> +
+> +       apicid = 0;
+> +       first_cpu = nr_cpu_ids;
+>
+> -       /*
+> -        * We're using fixed IRQ delivery, can only return one logical APIC ID.
+> -        * May as well be the first.
+> -        */
+>        for_each_cpu_and(cpu, cpumask, andmask) {
+> -               if (cpumask_test_cpu(cpu, cpu_online_mask))
+> +               if (cpumask_test_cpu(cpu, cpu_online_mask)) {
+> +                       first_cpu = cpu;
+>                        break;
+> +               }
+> +       }
+> +
+> +       if (first_cpu < nr_cpu_ids) {
+> +               for_each_cpu_and(cpu, per_cpu(cpus_in_cluster, first_cpu),
+> +                                cpumask) {
+> +                       if (!cpumask_test_cpu(cpu, andmask))
+> +                               continue;
+> +                       apicid |= per_cpu(x86_cpu_to_logical_apicid, cpu);
+> +               }
+>        }
+>
+> -       return per_cpu(x86_cpu_to_logical_apicid, cpu);
+> +       return apicid;
+> +}
+> +
+> +static void
+> +x2apic_cluster_vector_allocation_domain(int cpu, struct cpumask *retmask)
+> +{
+> +       cpumask_copy(retmask, cpu_possible_mask);
 
---x+6KMIRAuhnl3hBn
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+why not using per_cpu(cpus_in_cluster, cpu) instead?
 
-On Sun, May 20, 2012 at 12:33:32AM +0530, Laxman Dewangan wrote:
+also you may add one per cpu var like x86_cpu_to_logical_cluster_apicid.
 
-> My board dts file is
->       pmu: tps65910@d2 {
->                 compatible =3D "ti,tps65910";
->                 reg =3D <0xd2>;
->                 interrupt-parent =3D <&intc>;
->                 interrupts =3D < 0 118 0x04 >;
->=20
->                 #gpio-cells =3D <2>;
->                 gpio-controller;
->=20
->                 #interrupt-cells =3D <2>;
->                 interrupt-controller;
->=20
->                 regulators {
->                         vdd1_reg: vdd1 {
->                                 regulator-min-microvolt =3D < 600000>;
->                                 regulator-max-microvolt =3D <1500000>;
->                                 regulator-always-on;
->                                 regulator-boot-on;
->                                 ti,regulator-ext-sleep-control =3D <0>;
->                         };
->                         vdd2_reg: vdd2 {
->                                 regulator-min-microvolt =3D < 600000>;
->                                 regulator-max-microvolt =3D <1500000>;
->                                 regulator-always-on;
->                                 regulator-boot-on;
->                                 ti,regulator-ext-sleep-control =3D <4>;
->                         };
->             };
->     };
 
-Supplies aren't specified for any of the regulators here...
-
-> So currently, when regulator_register gets called in
-> tps65910-regulator.c, it sets the
-> config.dev =3D tps65910->dev;
-> config.of_node as
->                 config.of_node =3D
-> of_find_node_by_name(tps65910->dev->of_node,
->                                                         info->name);
-> So here config.of_node always shows NULL as the in
-> tps65910->dev->of_node does not have name same as info->name ie.
-> regulator name like vdd1, vdd2.
-
-Of course, this is just like any other supply - since you've not
-specified a mapping for it of course the framework isn't able to look it
-up.
-
-> >If there is a change needed in the core you need to explain what you
-> >believe that change will do.
-
-> I though this is straight but seems it is becoming more complex now.
-> I will describe all this details if we agree to change require.
-
-I still don't see any change needed here, from the above it simply looks
-like the supplies aren't set up.
-
---x+6KMIRAuhnl3hBn
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBAgAGBQJPuAepAAoJEBus8iNuMP3dnBcP/39r6cTCAiOVY5urcGJG5/gP
-e9ZmJtxOXXBKmSQwg/1MM8aQCJQClB4hsTSJWr9ZJnQDicN0JNDQQllz0ToHqjYT
-Gox+IckutALRsZYp8ZBBa7UGtBAfOdfsDcZxn3tuCB3X1qGhUJp0P7oayzy5VSMz
-ZySLpHJ4r6ZCfgSJNRQ5bpxHs2ShAKMRXqctvLqRaTfL2EFVaNelOD4FkgGacRID
-84c0Ilkf6FRbXRlcHogCeiYibHEXMLhSREx+qlqwCPnZRawIzug+iG1inb8tYe2B
-4M3MN9YxcUwIDxAz5jF5xrcMSep2u6H/rxyqv5xHxIVc0XYCQBui5adP2C1T4yWk
-Nl03li+cDFVvNaF6Bv+iGjsKo54NNLpzTghJUnGOJuYaDtnRRn+s7yn4nfHDnxmx
-bUbzn21py/xqePRcX559aoOEkRKWv6TA8d25zJtrsr0wr11VtgRDaOPhxgppxMWE
-o99pgbNwTNyh3zNEcUV0I/ZFurOPxiGzYpV0bfyOmIU35jfv2POEiyL3VONSE1ET
-278l1BdBJUSbIulvwIbig41hXPz+Ij5BTrvJN3j5CE4919M402MsRFxVqFZJ6fJM
-SdoFK22tLQNw5BtOawbsxTUoqBDyZuBdJRW4cWGRUrB1qAUuoCowTa/wmTAC9pis
-zCiz0Rp3XP7BPK89kywR
-=lLhK
------END PGP SIGNATURE-----
-
---x+6KMIRAuhnl3hBn--
+Yinghai
