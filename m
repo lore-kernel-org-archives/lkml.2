@@ -1,65 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754653Ab2ESJrE (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 19 May 2012 05:47:04 -0400
-Received: from static.78-46-68-141.clients.your-server.de ([78.46.68.141]:33951
-	"HELO eristoteles.iwoars.net" rhost-flags-OK-FAIL-OK-FAIL)
-	by vger.kernel.org with SMTP id S1751339Ab2ESJrB (ORCPT
+	id S1755172Ab2ESKIf (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 19 May 2012 06:08:35 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:62689 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754508Ab2ESKId (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 19 May 2012 05:47:01 -0400
-Date: Sat, 19 May 2012 11:46:58 +0200 (CEST)
-From: Joel Reardon <joel@clambassador.com>
-X-X-Sender: joel@eristoteles.iwoars.net
-To: Artem Bityutskiy <dedekind1@gmail.com>
-cc: linux-mtd@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH V2] UBI: add ubi_lnum_purge function to clear work queue
- for a lnum
-In-Reply-To: <1337082012.2528.181.camel@sauron.fi.intel.com>
-Message-ID: <alpine.DEB.2.00.1205191140280.19017@eristoteles.iwoars.net>
-References: <alpine.DEB.2.00.1205150943470.17750@eristoteles.iwoars.net> <1337082012.2528.181.camel@sauron.fi.intel.com>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	Sat, 19 May 2012 06:08:33 -0400
+Message-ID: <1337422103.23904.1.camel@phoenix>
+Subject: [PATCH] [SCSI] scsi_pm: fix passing incompatible pointer for
+ scsi_device_resume()
+From: Axel Lin <axel.lin@gmail.com>
+To: linux-kernel@vger.kernel.org
+Cc: Aaron Lu <Aaron.Lu@amd.com>, Alan Stern <stern@rowland.harvard.edu>,
+        James Bottomley <JBottomley@Parallels.com>, linux-scsi@vger.kernel.org
+Date: Sat, 19 May 2012 18:08:23 +0800
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.2- 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> Take the work_sem at the beginning. Release at the very end.
->
-> Then you can do something like this:
->
-> int found = 1;
->
-> while (found) {
-> 	found = 0;
->
-> 	spin_lock(&ubi->wl_lock);
-> 	list_for_each_entry(wrk, tmp, &ubi->works, list) {
-> 		if (wrk->lnum == lnum) {
-> 			list_del(&wrk->list);
-> 			ubi->works_count -= 1;
-> 			ubi_assert(ubi->works_count >= 0);
-> 			spin_unlock(&ubi->wl_lock);
->
-> 			err = wrk->func(ubi, wrk, 0);
-> 			if (err)
-> 				return err;
->
-> 			spin_lock(&ubi->wl_lock);
-> 			found = 1;
-> 			break;
-> 	}
-> 	spin_unlock(&ubi->wl_lock);
-> }
->
+Fix below build warning:
+
+  CC      drivers/scsi/scsi_pm.o
+drivers/scsi/scsi_pm.c: In function 'scsi_dev_type_suspend':
+drivers/scsi/scsi_pm.c:30:5: warning: passing argument 1 of 'scsi_device_resume' from incompatible pointer type [enabled by default]
+include/scsi/scsi_device.h:368:13: note: expected 'struct scsi_device *' but argument is of type 'struct device *'
+
+Signed-off-by: Axel Lin <axel.lin@gmail.com>
+---
+ drivers/scsi/scsi_pm.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
+
+diff --git a/drivers/scsi/scsi_pm.c b/drivers/scsi/scsi_pm.c
+index 9bd2c41..d4201de 100644
+--- a/drivers/scsi/scsi_pm.c
++++ b/drivers/scsi/scsi_pm.c
+@@ -27,7 +27,7 @@ static int scsi_dev_type_suspend(struct device *dev, pm_message_t msg)
+ 		if (drv && drv->suspend) {
+ 			err = drv->suspend(dev, msg);
+ 			if (err)
+-				scsi_device_resume(dev);
++				scsi_device_resume(to_scsi_device(dev));
+ 		}
+ 	}
+ 	dev_dbg(dev, "scsi suspend: %d\n", err);
+-- 
+1.7.5.4
 
 
-If I use list_for_each_entry_safe(), it protects against deleting as it
-iterates. If I take the work_sem first, is it okay to do a simple
-traversal instead of one traversal per removed item? Even if another
-thread adds new work for the same vol_id/lnum, its okay, because the
-caller of this function only cares about vol_id/lnums erasures that
-it knows are currently on the worklist.
 
-Cheers,
-Joel Reardon
