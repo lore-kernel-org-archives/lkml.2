@@ -1,136 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756757Ab2ESUXD (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 19 May 2012 16:23:03 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:51658 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755411Ab2ESUXB (ORCPT
+	id S1756925Ab2ESUhi (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 19 May 2012 16:37:38 -0400
+Received: from mail-ob0-f174.google.com ([209.85.214.174]:50150 "EHLO
+	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755908Ab2ESUhh convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 19 May 2012 16:23:01 -0400
-From: Grant Likely <grant.likely@secretlab.ca>
-Subject: Re: [PATCH] irq_domain: Standardise legacy/linear domain selection
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Thomas Gleixner <tglx@linutronix.de>
-Cc: linux-kernel@vger.kernel.org,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>
-In-Reply-To: <1337428920-7674-1-git-send-email-broonie@opensource.wolfsonmicro.com>
-References: <1337428920-7674-1-git-send-email-broonie@opensource.wolfsonmicro.com>
-Date: Sat, 19 May 2012 14:22:58 -0600
-Message-Id: <20120519202258.D9B903E03B8@localhost>
+	Sat, 19 May 2012 16:37:37 -0400
+MIME-Version: 1.0
+In-Reply-To: <1337433062.7075.9.camel@Abyss>
+References: <1337229266-15798-1-git-send-email-ccross@android.com>
+	<1337331395.573.3.camel@twins>
+	<CAMbhsRQYeM8b167HVge11kVtniWKEukN+xGMvcMDf5+UOOc8_w@mail.gmail.com>
+	<1337366237.573.106.camel@twins>
+	<CAMbhsRRnweLW_J+aBUsSbBh_Rp-PzVFap1FaRV1t9G0o9fZZAw@mail.gmail.com>
+	<1337433062.7075.9.camel@Abyss>
+Date: Sat, 19 May 2012 13:37:36 -0700
+X-Google-Sender-Auth: HDXTisHM_ZEWM5MaMPW-op7K7V4
+Message-ID: <CAMbhsRQYgOQA7NB-mdMDi8GxtTaZDQhED2J2X9YmyiYjAzXx4w@mail.gmail.com>
+Subject: Re: [PATCH] sched/rt: fix SCHED_RR across cgroups
+From: Colin Cross <ccross@android.com>
+To: Dario Faggioli <raistlin@linux.it>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, linux-kernel@vger.kernel.org,
+        Ingo Molnar <mingo@kernel.org>, Steven Rostedt <rostedt@goodmis.org>,
+        Thomas Gleixner <tglx@linutronix.de>, Hillf Danton <dhillf@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 19 May 2012 13:02:00 +0100, Mark Brown <broonie@opensource.wolfsonmicro.com> wrote:
-> A large proportion of interrupt controllers that support legacy mappings
-> do so because non-DT systems need to use fixed IRQ numbers when registering
-> devices via buses but can otherwise use a linear mapping. The interrupt
-> controller itself typically is not affected by the mapping used and best
-> practice is to use a linear mapping where possible so drivers frequently
-> select at runtime depending on if a legacy range has been allocated to
-> them.
-> 
-> Standardise this behaviour by providing irq_domain_register_simple() which
-> will allocate a linear mapping unless a positive first_irq is provided in
-> which case it will fall back to a legacy mapping. This helps make best
-> practice for irq_domain adoption clearer.
-> 
-> Signed-off-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
-> ---
->  Documentation/IRQ-domain.txt |    5 +++++
->  include/linux/irqdomain.h    |    5 +++++
->  kernel/irq/irqdomain.c       |   30 ++++++++++++++++++++++++++++++
->  3 files changed, 40 insertions(+)
+On Sat, May 19, 2012 at 6:11 AM, Dario Faggioli <raistlin@linux.it> wrote:
+> On Fri, 2012-05-18 at 17:13 -0700, Colin Cross wrote:
+>> Even with this patch, scheduling of SCHED_RR tasks in cgroups is a
+>> little odd.  Each cgroup is treated as a schedulable entity alongside
+>> the tasks in the same parent cgroup, and then the tasks inside the
+>> child cgroup round robin through the child cgroup's time slices.  So
+>> in the setup:
+>> root_cgroup
+>>    task 1
+>>    cgroup
+>>       task 2
+>>       task 3
+>>
+>> The RR will be:
+>> task 1, cgroup(task 2), task 1, cgroup(task 3), ...
+>>
+>> task 1 will run twice as often, for a full RR_TIMESLICE each time, as
+>> tasks 2 and 3.
+>>
+> That looks right to me...
+>
+>> Is that the way SCHED_RR is intended to interact with cgroups?
+>>
+> I would say it is. That's what you get because of putting task1 and
+> cgroup at the same level in the "hierarchy". I'm curious, what kind of
+> behaviour were you expecting?
 
-I'm looking at killing the legacy mapping entirely which will push
-changing all the users anyway.  I'm going to hold off on applying this
-one for a day or so until I'm sure of what it will look like.
+That behavior matches exactly with scheduling of normal tasks and
+cgroups with default cpu.shares, but doesn't match too well with what
+I can see of the posix SCHED_RR description, which suggests all the
+SCHED_RR threads go into a single queue.  I was just curious if the
+behavior my patch restored was correct, since it can't be adjusted by
+tweaking any parameters like cpu.shares.
 
-g.
+> Of course, the actual schedule also depends on the real-time priority of
+> the various tasks (groups don't have a priority, they inherit it from
+> their tasks, or at least it was like this when I used to work with
+> it :-P), but I guess you're putting all the tasks in the same queue
+> (i.e., same rt-prio), is it that the case?
 
-> 
-> diff --git a/Documentation/IRQ-domain.txt b/Documentation/IRQ-domain.txt
-> index 27dcaab..1401cec 100644
-> --- a/Documentation/IRQ-domain.txt
-> +++ b/Documentation/IRQ-domain.txt
-> @@ -93,6 +93,7 @@ Linux IRQ number into the hardware.
->  Most drivers cannot use this mapping.
->  
->  ==== Legacy ====
-> +irq_domain_add_simple()
->  irq_domain_add_legacy()
->  irq_domain_add_legacy_isa()
->  
-> @@ -115,3 +116,7 @@ The legacy map should only be used if fixed IRQ mappings must be
->  supported.  For example, ISA controllers would use the legacy map for
->  mapping Linux IRQs 0-15 so that existing ISA drivers get the correct IRQ
->  numbers.
-> +
-> +Most users of legacy mappings should use irq_domain_add_simple() which
-> +will use a legacy domain only if an IRQ range is supplied by the
-> +system and will otherwise use a linear domain mapping.
-> diff --git a/include/linux/irqdomain.h b/include/linux/irqdomain.h
-> index c65740d..fcf4142 100644
-> --- a/include/linux/irqdomain.h
-> +++ b/include/linux/irqdomain.h
-> @@ -112,6 +112,11 @@ struct irq_domain {
->  };
->  
->  #ifdef CONFIG_IRQ_DOMAIN
-> +struct irq_domain *irq_domain_add_simple(struct device_node *of_node,
-> +					 unsigned int size,
-> +					 unsigned int first_irq,
-> +					 const struct irq_domain_ops *ops,
-> +					 void *host_data);
->  struct irq_domain *irq_domain_add_legacy(struct device_node *of_node,
->  					 unsigned int size,
->  					 unsigned int first_irq,
-> diff --git a/kernel/irq/irqdomain.c b/kernel/irq/irqdomain.c
-> index d0e50eb..86ae10f 100644
-> --- a/kernel/irq/irqdomain.c
-> +++ b/kernel/irq/irqdomain.c
-> @@ -77,6 +77,36 @@ static unsigned int irq_domain_legacy_revmap(struct irq_domain *domain,
->  }
->  
->  /**
-> + * irq_domain_add_simple() - Allocate and register a simple irq_domain.
-> + * @of_node: pointer to interrupt controller's device tree node.
-> + * @size: total number of irqs in mapping
-> + * @first_irq: first number of irq block assigned to the domain
-> + * @ops: map/unmap domain callbacks
-> + * @host_data: Controller private data pointer
-> + *
-> + * Allocates a legacy irq_domain if irq_base is positive or a linear
-> + * domain otherwise.
-> + *
-> + * This is intended to implement the expected behaviour for most
-> + * interrupt controllers which is that a linear mapping should
-> + * normally be used unless the system requires a legacy mapping in
-> + * order to support supplying interrupt numbers during non-DT
-> + * registration of devices.
-> + */
-> +struct irq_domain *irq_domain_add_simple(struct device_node *of_node,
-> +					 unsigned int size,
-> +					 unsigned int first_irq,
-> +					 const struct irq_domain_ops *ops,
-> +					 void *host_data)
-> +{
-> +	if (first_irq > 0)
-> +		return irq_domain_add_legacy(of_node, size, first_irq, 0,
-> +					     ops, host_data);
-> +	else
-> +		return irq_domain_add_linear(of_node, size, ops, host_data);
-> +}
-> +
-> +/**
->   * irq_domain_add_legacy() - Allocate and register a legacy revmap irq_domain.
->   * @of_node: pointer to interrupt controller's device tree node.
->   * @size: total number of irqs in legacy mapping
-> -- 
-> 1.7.10
-> 
-
--- 
-Grant Likely, B.Sc, P.Eng.
-Secret Lab Technologies, Ltd.
+Yes.
