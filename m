@@ -1,66 +1,151 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757146Ab2ESScV (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 19 May 2012 14:32:21 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:34370 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1757066Ab2ESScT (ORCPT
+	id S1757112Ab2ESSeK (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 19 May 2012 14:34:10 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:51082 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756931Ab2ESSeG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 19 May 2012 14:32:19 -0400
-Date: Sat, 19 May 2012 19:32:17 +0100
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Laxman Dewangan <ldewangan@nvidia.com>
-Cc: "lrg@ti.com" <lrg@ti.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 2/5] regulator: tps65910: set of_node for regulator
- register config
-Message-ID: <20120519183216.GC4039@opensource.wolfsonmicro.com>
-References: <1337438050-3707-1-git-send-email-ldewangan@nvidia.com>
- <1337438050-3707-3-git-send-email-ldewangan@nvidia.com>
- <20120519174829.GZ4039@opensource.wolfsonmicro.com>
- <4FB7E449.1030801@nvidia.com>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="VmlJMtejgecKmNHY"
-Content-Disposition: inline
-In-Reply-To: <4FB7E449.1030801@nvidia.com>
-X-Cookie: Today is what happened to yesterday.
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Sat, 19 May 2012 14:34:06 -0400
+From: Grant Likely <grant.likely@secretlab.ca>
+Subject: Re: [PATCH 1/8] irqdomain: Support removal of IRQ domains.
+To: Paul Mundt <lethal@linux-sh.org>
+Cc: linux-sh@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Paul Mundt <lethal@linux-sh.org>
+In-Reply-To: <1337407908-7421-2-git-send-email-lethal@linux-sh.org>
+References: <1337407908-7421-1-git-send-email-lethal@linux-sh.org> <1337407908-7421-2-git-send-email-lethal@linux-sh.org>
+Date: Sat, 19 May 2012 12:34:03 -0600
+Message-Id: <20120519183403.6B1883E03B8@localhost>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Sat, 19 May 2012 15:11:41 +0900, Paul Mundt <lethal@linux-sh.org> wrote:
+> Now that IRQ domains are being used by modules it's necessary to support
+> removing them, too. This adds a new irq_domain_remove() routine for doing
+> the bulk of the heavy lifting. It's left as an exercise to the caller to
+> ensure all mappings have been appropriatey disposed of before attempting
+> to remove the domain.
+> 
+> Signed-off-by: Paul Mundt <lethal@linux-sh.org>
 
---VmlJMtejgecKmNHY
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+Applied, thanks.
 
-On Sat, May 19, 2012 at 11:49:53PM +0530, Laxman Dewangan wrote:
+g.
 
-> In this case it will not need to have #ifdef CONFIG_OF in the client code?
+> ---
+>  include/linux/irqdomain.h |    4 ++-
+>  kernel/irq/irqdomain.c    |   61 +++++++++++++++++++++++++++++++++++++++++++-
+>  2 files changed, 62 insertions(+), 3 deletions(-)
+> 
+> diff --git a/include/linux/irqdomain.h b/include/linux/irqdomain.h
+> index c65740d..a796dbf 100644
+> --- a/include/linux/irqdomain.h
+> +++ b/include/linux/irqdomain.h
+> @@ -141,10 +141,12 @@ static inline struct irq_domain *irq_domain_add_legacy_isa(
+>  	return irq_domain_add_legacy(of_node, NUM_ISA_INTERRUPTS, 0, 0, ops,
+>  				     host_data);
+>  }
+> +
+> +extern void irq_domain_remove(struct irq_domain *host);
+> +
+>  extern struct irq_domain *irq_find_host(struct device_node *node);
+>  extern void irq_set_default_host(struct irq_domain *host);
+>  
+> -
+>  extern unsigned int irq_create_mapping(struct irq_domain *host,
+>  				       irq_hw_number_t hwirq);
+>  extern void irq_dispose_mapping(unsigned int virq);
+> diff --git a/kernel/irq/irqdomain.c b/kernel/irq/irqdomain.c
+> index 0e0ba5f..9cae0b2 100644
+> --- a/kernel/irq/irqdomain.c
+> +++ b/kernel/irq/irqdomain.c
+> @@ -56,6 +56,12 @@ static struct irq_domain *irq_domain_alloc(struct device_node *of_node,
+>  	return domain;
+>  }
+>  
+> +static void irq_domain_free(struct irq_domain *domain)
+> +{
+> +	of_node_put(domain->of_node);
+> +	kfree(domain);
+> +}
+> +
+>  static void irq_domain_add(struct irq_domain *domain)
+>  {
+>  	mutex_lock(&irq_domain_mutex);
+> @@ -65,6 +71,58 @@ static void irq_domain_add(struct irq_domain *domain)
+>  		 domain->revmap_type, domain);
+>  }
+>  
+> +/**
+> + * irq_domain_remove() - Remove an irq domain.
+> + * @domain: domain to remove
+> + *
+> + * This routine is used to remove an irq domain. The caller must ensure
+> + * that all mappings within the domain have been disposed of prior to
+> + * use, depending on the revmap type.
+> + */
+> +void irq_domain_remove(struct irq_domain *domain)
+> +{
+> +	mutex_lock(&irq_domain_mutex);
+> +
+> +	switch (domain->revmap_type) {
+> +	case IRQ_DOMAIN_MAP_LEGACY:
+> +		/*
+> +		 * Legacy domains don't manage their own irq_desc
+> +		 * allocations, we expect the caller to handle irq_desc
+> +		 * freeing on their own.
+> +		 */
+> +		break;
+> +	case IRQ_DOMAIN_MAP_TREE:
+> +		/*
+> +		 * radix_tree_delete() takes care of destroying the root
+> +		 * node when all entries are removed. Shout if there are
+> +		 * any mappings left.
+> +		 */
+> +		WARN_ON(domain->revmap_data.tree.height);
+> +		break;
+> +	case IRQ_DOMAIN_MAP_LINEAR:
+> +		kfree(domain->revmap_data.linear.revmap);
+> +		domain->revmap_data.linear.size = 0;
+> +		break;
+> +	case IRQ_DOMAIN_MAP_NOMAP:
+> +		break;
+> +	}
+> +
+> +	list_del(&domain->link);
+> +
+> +	/*
+> +	 * If the going away domain is the default one, reset it.
+> +	 */
+> +	if (unlikely(irq_default_domain == domain))
+> +		irq_set_default_host(NULL);
+> +
+> +	mutex_unlock(&irq_domain_mutex);
+> +
+> +	pr_debug("irq: Removed domain of type %d @0x%p\n",
+> +		 domain->revmap_type, domain);
+> +
+> +	irq_domain_free(domain);
+> +}
+> +
+>  static unsigned int irq_domain_legacy_revmap(struct irq_domain *domain,
+>  					     irq_hw_number_t hwirq)
+>  {
+> @@ -117,8 +175,7 @@ struct irq_domain *irq_domain_add_legacy(struct device_node *of_node,
+>  
+>  		if (WARN_ON(!irq_data || irq_data->domain)) {
+>  			mutex_unlock(&irq_domain_mutex);
+> -			of_node_put(domain->of_node);
+> -			kfree(domain);
+> +			irq_domain_free(domain);
+>  			return NULL;
+>  		}
+>  	}
+> -- 
+> 1.7.9.rc0.28.g0e1cf
+> 
 
-Right, we'll be able to skip it.
-
---VmlJMtejgecKmNHY
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBAgAGBQJPt+YHAAoJEBus8iNuMP3dq6wQAJbvIGAJshbAMpAENOMnDlUw
-iRyNo3eRWgsVR2/N8TdNkqC0/W9kHQqwWoPcuqHZfECLBBWGSh8IAaPYKLoycLUc
-pqYOuu7HW+E6tIJ8+J9PYTnWJnaK2pV/fOUzLkKg891jaZhwCzj8vDfi34VKxxLI
-8Cj4ZAVUxrwXPNgxVuWTGUHoI3IoCKvb6KJKLrUR/Gn08et77aIYs5twQ4nknus+
-CfGRtuQ/Uutr3+ZmTa5NkBYafjHoUGkRt1ox8ZVHBBbTwWS3SyDdp3+efos85EmB
-NOA5CW6mlRdSO3HIx+Ave9C+iCyHpSRo5lihJxvDyBkpsdIBbAuVrwMR1wX9Yd/m
-csW+KeeTpYIQNbk/wFLDlhCOpHnsOCeAy7TdDu874qvcuyvOeiY/FzICZL4oWpNr
-q0OAcvC1jhecdmlG5c040UaI/ucbYP3Puz6unSBFXZ4/65mRVftwWEOdWxevHedp
-LtndAlC/NZHuXNkjG8bpGOnJidCM98Rj4zFDOfCtipWCqWZaCb4nUpW80n0yg8TS
-21wQhsuIVmF0Z6K7bhP0y5KX9RTXXW89U8CWmSKx89eY0GHGs2SmsBGpY909dBJy
-6RfW5vE3ZBxY4EStYoG1qZH3AtnlZ2QeWu1W8i/9sv7iatPZQOKaxeS7V4j4/6BK
-Br8gsh/s83s1KoVYKyGY
-=S7kL
------END PGP SIGNATURE-----
-
---VmlJMtejgecKmNHY--
+-- 
+Grant Likely, B.Sc, P.Eng.
+Secret Lab Technologies, Ltd.
