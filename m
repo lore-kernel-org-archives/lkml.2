@@ -1,53 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758075Ab2ESXWg (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 19 May 2012 19:22:36 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:59472 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754903Ab2ESXWf convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 19 May 2012 19:22:35 -0400
-Message-ID: <1337469731.573.154.camel@twins>
-Subject: Re: Plumbers: Tweaking scheduler policy micro-conf RFP
-From: Peter Zijlstra <peterz@infradead.org>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Vincent Guittot <vincent.guittot@linaro.org>, paulmck@linux.vnet.ibm.com,
-        smuckle@quicinc.com, khilman@ti.com, Robin.Randhawa@arm.com,
-        suresh.b.siddha@intel.com, thebigcorporation@gmail.com,
-        venki@google.com, panto@antoniou-consulting.com, mingo@elte.hu,
-        paul.brett@intel.com, pdeschrijver@nvidia.com, pjt@google.com,
-        efault@gmx.de, fweisbec@gmail.com, geoff@infradead.org,
-        rostedt@goodmis.org, tglx@linutronix.de, amit.kucheria@linaro.org,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        linaro-sched-sig@lists.linaro.org,
-        Morten Rasmussen <Morten.Rasmussen@arm.com>,
-        Juri Lelli <juri.lelli@gmail.com>
-Date: Sun, 20 May 2012 01:22:11 +0200
-In-Reply-To: <CA+55aFzuygx6L-2hVCMbk5cvEdDp6AUtOGq-wYFn=4yEyebPLw@mail.gmail.com>
-References: <CAKfTPtDSDAOAdv0GTDswZeRM7TmACrjok+5kddSaQpvy6_6xWw@mail.gmail.com>
-	 <CAKfTPtCfiY7A29+e50F+6awd8BjNJjg4=uNN4ReZfdS_4FbpkA@mail.gmail.com>
-	 <1337084609.27020.156.camel@laptop>
-	 <CAKfTPtDz1-fR2i5x7AVd8sGZhX2VNtz2rnQC3ePrcHO9MWK3FQ@mail.gmail.com>
-	 <1337086834.27020.162.camel@laptop>
-	 <CAKfTPtDrZ-tfC81jnxwpB+DCtmxhU+VfoYbtSBr8MkFt+P8JcA@mail.gmail.com>
-	 <1337096141.27694.82.camel@twins> <1337193010.27694.146.camel@twins>
-	 <CA+55aFzuygx6L-2hVCMbk5cvEdDp6AUtOGq-wYFn=4yEyebPLw@mail.gmail.com>
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
-X-Mailer: Evolution 3.2.2- 
-Mime-Version: 1.0
+	id S1757094Ab2ESXsY (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 19 May 2012 19:48:24 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:56115 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752538Ab2ESXsX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 19 May 2012 19:48:23 -0400
+Message-ID: <4FB83123.3020402@zytor.com>
+Date: Sat, 19 May 2012 16:47:47 -0700
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:11.0) Gecko/20120329 Thunderbird/11.0.1
+MIME-Version: 1.0
+To: Arnd Bergmann <arnd@arndb.de>
+CC: "H.J. Lu" <hjl.tools@gmail.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        "H. Peter Anvin" <hpa@kernel.org>, linux-kernel@vger.kernel.org,
+        linux-arch@vger.kernel.org, mingo@kernel.org, tglx@linutronix.de,
+        Paul Mundt <lethal@linux-sh.org>, David Howells <dhowells@redhat.com>
+Subject: Re: [PATCH 08/10] Use __kernel_ulong_t in struct msqid64_ds
+References: <1337292816-10839-1-git-send-email-hjl.tools@gmail.com> <CA+55aFzfku-5qgVPahu27DLz-y8MUmh7Mw9sq_TyO49Zb0tg=A@mail.gmail.com> <CAMe9rOr883q0OAsh+JGA83ww603y6QSbQJKx+wk2YJfkYcaEdQ@mail.gmail.com> <201205182121.02706.arnd@arndb.de>
+In-Reply-To: <201205182121.02706.arnd@arndb.de>
+X-Enigmail-Version: 1.4.1
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 2012-05-19 at 10:08 -0700, Linus Torvalds wrote:
-> And I
-> *do* know that the real world simply isn't simple enough that we could
-> ever do a perfect job, so don't even try - instead aim for
-> "understandable, maintainable, and gets the main issues roughly
-> right". 
+On 05/18/2012 02:21 PM, Arnd Bergmann wrote:
+> On Friday 18 May 2012, H.J. Lu wrote:
+>> Since x32 uses the same kernel interface as x86-64 with a few
+>> exceptions.  The current kernel header files with
+>>
+>> #ifdef __x86_64__
+>> # define __BITS_PER_LONG 64
+>> #else
+>> # define __BITS_PER_LONG 32
+>> #endif
+>>
+>> #if __BITS_PER_LONG == 64
+>> Define x86-64 types
+>> #endif
+>>
+>> work fine for x32 even if long for x32 is 32 bits.  If __BITS_PER_LONG
+>> is changed to 32 for x32, many types in kernel header files will be
+>> wrong for x32.
+>>
+> 
+> A lot of things are broken if __BITS_PER_LONG is set to 64 in x32 user
+> space. It was specifically introduced to get around places in exported
+> headers that incorrectly used '#ifdef CONFIG_64BIT' to define a user
+> space structure, so that we can depend on whatever the user sees
+> in bitmasks and other data structures.
+> 
 
-I think we're in violent agreement on many points and most of this is
-based on a mis-understanding. I've argued for exactly this many times.
+I'm not entirely sure I follow the above statement, as it seems
+contradict itself.  Either way, I would agree, __BITS_PER_LONG should be
+32 in x32 space and if there are places where that is wrong then we need
+to fix them.
+
+Fortunately x32 is littleendian, so no "littleendian bitmask on a
+bigendian architecture" drain bamage...
+
+	-hpa
 
 
