@@ -1,59 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759833Ab2ESANb (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 May 2012 20:13:31 -0400
-Received: from mail-ob0-f174.google.com ([209.85.214.174]:42999 "EHLO
-	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754250Ab2ESAN3 (ORCPT
+	id S1946398Ab2ESAOT (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 May 2012 20:14:19 -0400
+Received: from mail-vb0-f46.google.com ([209.85.212.46]:64518 "EHLO
+	mail-vb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S968173Ab2ESANt convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 May 2012 20:13:29 -0400
+	Fri, 18 May 2012 20:13:49 -0400
 MIME-Version: 1.0
-In-Reply-To: <1337366237.573.106.camel@twins>
-References: <1337229266-15798-1-git-send-email-ccross@android.com>
-	<1337331395.573.3.camel@twins>
-	<CAMbhsRQYeM8b167HVge11kVtniWKEukN+xGMvcMDf5+UOOc8_w@mail.gmail.com>
-	<1337366237.573.106.camel@twins>
-Date: Fri, 18 May 2012 17:13:28 -0700
-X-Google-Sender-Auth: uOGWZs086CfxE4CxBPzMHBzjEzg
-Message-ID: <CAMbhsRRnweLW_J+aBUsSbBh_Rp-PzVFap1FaRV1t9G0o9fZZAw@mail.gmail.com>
-Subject: Re: [PATCH] sched/rt: fix SCHED_RR across cgroups
-From: Colin Cross <ccross@android.com>
-To: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: linux-kernel@vger.kernel.org, Ingo Molnar <mingo@kernel.org>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Thomas Gleixner <tglx@linutronix.de>, Hillf Danton <dhillf@gmail.com>
+In-Reply-To: <1337267329.4281.32.camel@twins>
+References: <1337133919-4182-1-git-send-email-minchan@kernel.org>
+	<1337133919-4182-3-git-send-email-minchan@kernel.org>
+	<4FB4B29C.4010908@kernel.org>
+	<1337266310.4281.30.camel@twins>
+	<1337267329.4281.32.camel@twins>
+Date: Sat, 19 May 2012 08:13:48 +0800
+Message-ID: <CAGjg+kEu0e=JyMz8F9Wxc36A-TQJ0iSW8LX6d9duZiz172e6AA@mail.gmail.com>
+Subject: Re: [PATCH v2 3/3] x86: Support local_flush_tlb_kernel_range
+From: Alex Shi <lkml.alex@gmail.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Minchan Kim <minchan@kernel.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Nitin Gupta <ngupta@vflare.org>,
+        Seth Jennings <sjenning@linux.vnet.ibm.com>,
+        Dan Magenheimer <dan.magenheimer@oracle.com>,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        Tejun Heo <tj@kernel.org>, David Howells <dhowells@redhat.com>,
+        x86@kernel.org, Nick Piggin <npiggin@gmail.com>,
+        Alex Shi <alex.shi@intel.com>
 Content-Type: text/plain; charset=ISO-8859-1
-X-System-Of-Record: true
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, May 18, 2012 at 11:37 AM, Peter Zijlstra <a.p.zijlstra@chello.nl> wrote:
-> On Fri, 2012-05-18 at 10:52 -0700, Colin Cross wrote:
->
->> > OK, fair enough.. one does wonder though, WTH is android doing with
->> > SCHED_RR?
+On Thu, May 17, 2012 at 11:08 PM, Peter Zijlstra <peterz@infradead.org> wrote:
+> On Thu, 2012-05-17 at 16:51 +0200, Peter Zijlstra wrote:
 >>
->> Nothing, I was just experimenting with how it interacted with cgroups
->> and the numbers didn't make sense.
+>> Also, does it even work if the range happens to be backed by huge pages?
+>> IIRC we try and do the identity map with large pages wherever possible.
 >
-> OK. Thanks anyway!
+> OK, the Intel SDM seems to suggest it will indeed invalidate ANY mapping
+> to that linear address, which would include 2M and 1G pages.
 
-Even with this patch, scheduling of SCHED_RR tasks in cgroups is a
-little odd.  Each cgroup is treated as a schedulable entity alongside
-the tasks in the same parent cgroup, and then the tasks inside the
-child cgroup round robin through the child cgroup's time slices.  So
-in the setup:
-root_cgroup
-   task 1
-   cgroup
-      task 2
-      task 3
+As for as I know, the 1GB TLB fold into 2MB now, and 2MB page still
+maybe fold into 4K page in TLB flush. We are tracking this.
 
-The RR will be:
-task 1, cgroup(task 2), task 1, cgroup(task 3), ...
-
-task 1 will run twice as often, for a full RR_TIMESLICE each time, as
-tasks 2 and 3.
-
-Is that the way SCHED_RR is intended to interact with cgroups?
+>
+> --
+> To unsubscribe, send a message with 'unsubscribe linux-mm' in
+> the body to majordomo@kvack.org.  For more info on Linux MM,
+> see: http://www.linux-mm.org/ .
+> Fight unfair telecom internet charges in Canada: sign http://stopthemeter.ca/
+> Don't email: <a hrefmailto:"dont@kvack.org"> email@kvack.org </a>
