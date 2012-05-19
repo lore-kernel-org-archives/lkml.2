@@ -1,107 +1,123 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933239Ab2ESAbs (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 May 2012 20:31:48 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:49598 "EHLO
-	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932552Ab2ESAbq (ORCPT
+	id S933266Ab2ESAcL (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 May 2012 20:32:11 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:52029 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932552Ab2ESAcI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 May 2012 20:31:46 -0400
-Message-ID: <1337387496.4107.110.camel@deadeye>
-Subject: Re: [ 12/53] net: In unregister_netdevice_notifier unregister the
- netdevices.
-From: Ben Hutchings <ben@decadent.org.uk>
-To: David Miller <davem@davemloft.net>
-Cc: herton.krzesinski@canonical.com, linux-kernel@vger.kernel.org,
-        stable@vger.kernel.org, torvalds@linux-foundation.org,
-        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        ebiederm@xmission.com, eric.dumazet@gmail.com
-Date: Sat, 19 May 2012 01:31:36 +0100
-In-Reply-To: <20120518.014131.519437851000725829.davem@davemloft.net>
-References: <20120518023254.339945758@decadent.org.uk>
-	 <20120518023255.978828329@decadent.org.uk>
-	 <20120518050904.GA2971@herton-Z68MA-D2H-B3>
-	 <20120518.014131.519437851000725829.davem@davemloft.net>
-Content-Type: multipart/signed; micalg="pgp-sha512";
-	protocol="application/pgp-signature"; boundary="=-+IW4jNr8PpKXCrMjZrd/"
-X-Mailer: Evolution 3.2.2-1+b1 
-Mime-Version: 1.0
-X-SA-Exim-Connect-IP: 192.168.4.185
-X-SA-Exim-Mail-From: ben@decadent.org.uk
-X-SA-Exim-Scanned: No (on shadbolt.decadent.org.uk); SAEximRunCond expanded to false
+	Fri, 18 May 2012 20:32:08 -0400
+Date: Fri, 18 May 2012 17:32:04 -0700
+From: Greg KH <gregkh@linuxfoundation.org>
+To: H Hartley Sweeten <hartleys@visionengravers.com>
+Cc: Linux Kernel <linux-kernel@vger.kernel.org>, devel@driverdev.osuosl.org,
+        fmhess@users.sourceforge.net, abbotti@mev.co.uk
+Subject: Re: [PATCH] staging: comedi: cleanup all the comedi_driver 'detach'
+ functions
+Message-ID: <20120519003204.GA1210@kroah.com>
+References: <201205171711.14968.hartleys@visionengravers.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <201205171711.14968.hartleys@visionengravers.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Thu, May 17, 2012 at 05:11:14PM -0700, H Hartley Sweeten wrote:
+> 1. Change the return type from int to void
+> 
+> All the detach functions, except for the comedi usb drivers, simply
+> return success (0). Plus, the return code is never checked in the
+> comedi core.
+> 
+> The comedi usb drivers do return error codes but the conditions can
+> never happen.
+> 
+> The first check is:
+> 
+> 	if (!dev)
+> 		return -EFAULT;
+> 
+> This checks that the passed comedi_device pointer is valid. The detach
+> function itself is called using this pointer so it MUST always be valid
+> or there is a bug in the core:
+> 
+> 	if (dev->driver)
+> 		dev->driver->detach(dev);
+> 
+> And the second check:
+> 
+> 	usb = dev->private;
+> 	if (!usb)
+> 		return -EFAULT;
+> 
+> The dev->private pointer is setup in the attach function to point to the
+> probed usb device. This value could be NULL if the attach fails. But,
+> since the comedi core is going to unload the driver anyway and does not
+> check for errors there is no gain by returning one.
+> 
+> After removing these checks from the comedi usb drivers the detach
+> functions required a bit of cleanup.
+> 
+> 2. Remove all the printk noise in the detach functions
+> 
+> All of the printk output is really just noise. The user did a rmmod to
+> unload the driver, we really don't need to tell them about it.
+> 
+> Also, some of the messages are output using:
+> 
+> 	dev_dbg(dev->hw_dev, ...
+> or
+> 	dev_info(dev->hw_dev, ...
+> 
+> Unfortunately the hw_dev value is only used by drivers that are doing
+> DMA. For most drivers this variable is going to be NULL so the output
+> is not going to work as expected.
 
---=-+IW4jNr8PpKXCrMjZrd/
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: quoted-printable
+Sorry about that, I probably caused a lot of that.  As no one ever
+complained, odds are no one is using those drivers :)
 
-On Fri, 2012-05-18 at 01:41 -0400, David Miller wrote:
-> From: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
-> Date: Fri, 18 May 2012 02:09:05 -0300
->=20
-> > On Fri, May 18, 2012 at 03:33:06AM +0100, Ben Hutchings wrote:
-> >> 3.2.18-stable review patch.  If anyone has any objections, please let =
-me know.
-> >>=20
-> >> ------------------
-> >>=20
-> >> From: "Eric W. Biederman" <ebiederm@xmission.com>
-> >>=20
-> >> [ Upstream commit 7d3d43dab4e978d8d9ad1acf8af15c9b1c4b0f0f ]
-> >>=20
-> >> We already synthesize events in register_netdevice_notifier and synthe=
-sizing
-> >> events in unregister_netdevice_notifier allows to us remove the need f=
-or
-> >> special case cleanup code.
-> >>=20
-> >> This change should be safe as it adds no new cases for existing caller=
-s
-> >> of unregiser_netdevice_notifier to handle.
-> >=20
-> > It seems this introduces a regression later fixed by commit
-> > c57b54684060c8aced64a5b78ff69ff289af97b9
->=20
-> Indeed, but thankfully that only hits people who try to unload the
-> pktgen module which is a pretty small group of people :)
+> 
+> 3. Refactor a couple static 'free_resource' functions into the detach
+>    functions.
+> 
+> The 'free_resource' function is only being called by the detach and it
+> makes more sense to just absorb the code.
+> 
+> 4. Remove a couple unnecessary braces for single statements.
+> 
+> 5. Remove unnecessary comments.
+> 
+> Most of the comedi drivers appear to be based on the comedi skel driver
+> and have the comments from that driver included. These comments make
+> sense in the skel driver for reference but they don't need to be in any
+> of the actual drivers.
+> 
+> 6. Remove all the extra whitespace.
+> 
+> It's not needed to make the functions any more readable.
+> 
+> 7. Remove the now unused 'attached_successfully' variable in the
+>    cb_pcimdda driver.
+> 
+> This variable was only used to conditionally output some driver noise
+> during the detach. Since all the printk's have been removed this
+> variable is no longer necessary.
+> 
+> Signed-off-by: H Hartley Sweeten <hsweeten@visionengravers.com>
+> Cc: Ian Abbott <abbotti@mev.co.uk>
+> Cc: Mori Hess <fmhess@users.sourceforge.net>
+> 
+> ---
+> 
+> This is a pretty large patch but it's mostly line removal. I can break
+> it up if necessary.
 
-Surely we ought to avoid introducing a known regression.  Though I also
-see that that the above fix for pktgen was incorrect and the
-fix-of-the-fix (d4b1133558e0d417342d5d2c49e4c35b428ff20d) is not in
-mainline yet.  But if the latter reaches mainline by Sunday, perhaps I
-could add them both?
+Not a problem this time, I've taken it as-is, as I need to close the
+merge window in a few minutes...
 
-Ben.
+thanks,
 
---=20
-Ben Hutchings
-Experience is directly proportional to the value of equipment destroyed.
-                                                         - Carolyn Scheppne=
-r
-
---=-+IW4jNr8PpKXCrMjZrd/
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: This is a digitally signed message part
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIVAwUAT7bp6Oe/yOyVhhEJAQoRwA//QiMpfcIQERor6x1agicpho531HkigB/7
-JAZsPMWR9Iz1WnFQE/R7CO6Fj/9byD1Qefy/s99TjjSR3+2gzfNewWbfdrIkhGRG
-YJLzGpxEJXQicFgo0NTXLOG9hje3gfhvXVwM0tMRCpGvzeZJLfTK86S6DI4DmGxP
-lo0MxiumrOB/Uu2nQmGMMur3NooPYRcPUfviJL6A4dUBgxx64WGKqKocUtgywjj8
-9eDOMx6NQRucNxsAU6404wxce0BdOX7yqnUhEQlopPgESVeEL5Lsn0QXEDhFaHPQ
-dlMW58S3jxqORFnYFgF9mTPAe0QZuM4L59ahcrMlLExl24DNZMS2b9DQaN+SMqya
-g2AYQfhMo6dX3WtRsmDQr8nRjqGh3roU4ojNcFJDd+RSYs0357JxVEFDAugE5Shb
-0wYKr6/W53ej8u3dx2uwu/rCwVcuIKYQPJAqz2kjLrzKNIuiaCQVzELKd8s7zVZ2
-MjwwMRggvMy5zq+H375GLrL+mRjibMUcr70MmuQiD3vmFILT+ML6TLplaDwdkHAE
-ITA+nx3W2u56RutMhHTy7yDH9Kn+7/3KeAIRhAbgy2wOa5w24C9yiO9HSPSSocVR
-Q97m3PLIhcudIZisIKx4qDFohbIkHjiPhTjcKaWMmPz2tkkGd8K2sFvn/k/Y7SJw
-UNQyB2eMTyo=
-=/t7p
------END PGP SIGNATURE-----
-
---=-+IW4jNr8PpKXCrMjZrd/--
+greg k-h
