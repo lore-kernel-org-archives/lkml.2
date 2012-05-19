@@ -1,90 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754836Ab2ESQMP (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 19 May 2012 12:12:15 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:33193 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750936Ab2ESQMN (ORCPT
+	id S1755286Ab2ESQMm (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 19 May 2012 12:12:42 -0400
+Received: from mail-ob0-f174.google.com ([209.85.214.174]:63920 "EHLO
+	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754986Ab2ESQMk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 19 May 2012 12:12:13 -0400
-Date: Sat, 19 May 2012 09:12:07 -0700
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: Randy Dunlap <rdunlap@xenotime.net>
-Cc: Sergei Shtylyov <sshtylyov@mvista.com>, devel@driverdev.osuosl.org,
-        Frank Mori Hess <fmhess@users.sourceforge.net>,
-        Stephen Rothwell <sfr@canb.auug.org.au>, linux-usb@vger.kernel.org,
-        LKML <linux-kernel@vger.kernel.org>, Ian Abbott <abbotti@mev.co.uk>,
-        linux-next@vger.kernel.org
-Subject: Re: [PATCH -next] usb: add usb.h stubs for CONFIG_USB not enabled
-Message-ID: <20120519161207.GA31712@kroah.com>
-References: <20120518184943.2c762e8441e53ea24748d1b8@canb.auug.org.au>
- <4FB6ED55.6090805@xenotime.net>
- <20120519005031.GA27613@kroah.com>
- <4FB6FFBF.6000509@xenotime.net>
- <4FB7AB4D.5040900@mvista.com>
- <4FB7C028.80406@xenotime.net>
+	Sat, 19 May 2012 12:12:40 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4FB7C028.80406@xenotime.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Date: Sat, 19 May 2012 18:12:38 +0200
+Message-ID: <CAA85sZv1DB7b5Q4j_Qotych+BXAQUCA5Ro2Mer0wDuS07NOnkw@mail.gmail.com>
+Subject: [PATCH] small spelling correction
+From: Ian Kumlien <ian.kumlien@gmail.com>
+To: linux-kernel@vger.kernel.org
+Content-Type: multipart/mixed; boundary=14dae934089313d50e04c065f00b
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, May 19, 2012 at 08:45:44AM -0700, Randy Dunlap wrote:
-> On 05/19/2012 07:16 AM, Sergei Shtylyov wrote:
-> 
-> > Hello.
-> > 
-> > On 19-05-2012 6:04, Randy Dunlap wrote:
-> > 
-> >> From: Randy Dunlap<rdunlap@xenotime.net>
-> > 
-> >> Add stubs for some usb core functions when CONFIG_USB
-> >> is not enabled.  This fixes these comedi build errors:
-> > 
-> >> ERROR: "usb_deregister" [drivers/staging/comedi/comedi.ko] undefined!
-> >> ERROR: "usb_register_driver" [drivers/staging/comedi/comedi.ko] undefined!
-> > 
-> >> Signed-off-by: Randy Dunlap<rdunlap@xenotime.net>
-> >> ---
-> >> I am only adding the stubs that are needed for comedi to build.
-> >> I expect that more stubs will be needed as more build errors are
-> >> found.  It seems to me that linux/usb.h might need more (major)
-> >> moving of lines to support more stubs in the future.
-> > 
-> >>   Documentation/usb/error-codes.txt |    2 ++
-> >>   include/linux/usb.h               |   24 +++++++++++++++++++++++-
-> >>   2 files changed, 25 insertions(+), 1 deletion(-)
-> >>
-> >> --- linux-next-20120518.orig/include/linux/usb.h
-> >> +++ linux-next-20120518/include/linux/usb.h
-> >> @@ -10,7 +10,7 @@
-> >>
-> >>   #ifdef __KERNEL__
-> >>
-> >> -#include<linux/errno.h>         /* for -ENODEV */
-> >> +#include<linux/errno.h>         /* for -ENODEV, -ENOSYS */
-> >>   #include<linux/delay.h>    /* for mdelay() */
-> >>   #include<linux/interrupt.h>    /* for in_interrupt() */
-> >>   #include<linux/list.h>        /* for struct list_head */
-> >> @@ -515,6 +515,8 @@ static inline struct usb_device *interfa
-> >>       return to_usb_device(intf->dev.parent);
-> >>   }
-> >>
-> >> +#if defined(CONFIG_USB) || defined(CONFIG_USB_MODULE)
-> > 
-> >    You can use IS_ENABLED(CONFIG_USB) instead of these two now.
-> 
-> 
-> I know, but I chose not to do that in case the patch
-> needs to be applied to some earlier kernels.
+--14dae934089313d50e04c065f00b
+Content-Type: text/plain; charset=UTF-8
 
-If it did, the person doing that would do the change :)
+Hi,
 
-Please use IS_ENABLED().
+Just saw spotted a spelling error when updating one of my machines to
+3.4.0-rc7, but since it was so small i actually
+ran hunspell on the config, that's where the adapter change came from
+- hope it's ok =)
 
-thanks,
+Changes in drivers/usb/host/Kconfig:
+compilant => compliant
+provieds  => provides
+Adaptor   => Adapter
 
-greg k-h
+--14dae934089313d50e04c065f00b
+Content-Type: application/octet-stream; name="spelling-patch.diff"
+Content-Disposition: attachment; filename="spelling-patch.diff"
+Content-Transfer-Encoding: base64
+X-Attachment-Id: f_h2evhrgv0
+
+RnJvbSA5ZjMyNTM1YmNjY2Y1NGY3ZmRkYjZlMWM4ZmQ0ZDNmMjVjMTczY2M3IE1vbiBTZXAgMTcg
+MDA6MDA6MDAgMjAwMQpGcm9tOiBJYW4gS3VtbGllbiA8aWFuLmt1bWxpZW5AZ21haWwuY29tPgpE
+YXRlOiBTYXQsIDE5IE1heSAyMDEyIDE4OjA0OjMxICswMjAwClN1YmplY3Q6IFtQQVRDSF0gRml4
+ZWQgc29tZSBtaW5vciBzcGVsbGluZyBtaXN0YWtlcwoKRml4aW5nIHNvbWUgc3BlbGxpbmcgbWlz
+dGFrZXMgdGhhdCBsb29rcyBsaWtlIHNwZWVkIHR5cGluZy4KCmNvbXBpbGFudCA9PiBjb21wbGlh
+bnQKcHJvdmllZHMgID0+IHByb3ZpZGVzCkFkYXB0b3IgICA9PiBBZGFwdGVyCi0tLQogZHJpdmVy
+cy91c2IvaG9zdC9LY29uZmlnIHwgICAgOCArKysrLS0tLQogMSBmaWxlcyBjaGFuZ2VkLCA0IGlu
+c2VydGlvbnMoKyksIDQgZGVsZXRpb25zKC0pCgpkaWZmIC0tZ2l0IGEvZHJpdmVycy91c2IvaG9z
+dC9LY29uZmlnIGIvZHJpdmVycy91c2IvaG9zdC9LY29uZmlnCmluZGV4IGY3ODhlYjguLmU0OWMy
+M2IgMTAwNjQ0Ci0tLSBhL2RyaXZlcnMvdXNiL2hvc3QvS2NvbmZpZworKysgYi9kcml2ZXJzL3Vz
+Yi9ob3N0L0tjb25maWcKQEAgLTEyNSw3ICsxMjUsNyBAQCBjb25maWcgWFBTX1VTQl9IQ0RfWElM
+SU5YCiAJc2VsZWN0IFVTQl9FSENJX0JJR19FTkRJQU5fREVTQwogCXNlbGVjdCBVU0JfRUhDSV9C
+SUdfRU5ESUFOX01NSU8KIAktLS1oZWxwLS0tCi0JCVhpbGlueCB4cHMgVVNCIGhvc3QgY29udHJv
+bGxlciBjb3JlIGlzIEVIQ0kgY29tcGlsYW50IGFuZCBoYXMKKwkJWGlsaW54IHhwcyBVU0IgaG9z
+dCBjb250cm9sbGVyIGNvcmUgaXMgRUhDSSBjb21wbGlhbnQgYW5kIGhhcwogCQl0cmFuc2FjdGlv
+biB0cmFuc2xhdG9yIGJ1aWx0LWluLiBJdCBjYW4gYmUgY29uZmlndXJlZCB0byBlaXRoZXIKIAkJ
+c3VwcG9ydCBib3RoIGhpZ2ggc3BlZWQgYW5kIGZ1bGwgc3BlZWQgZGV2aWNlcywgb3IgaGlnaCBz
+cGVlZAogCQlkZXZpY2VzIG9ubHkuCkBAIC00MTEsNyArNDExLDcgQEAgY29uZmlnIFVTQl9PSENJ
+X0hDRF9QTEFURk9STQogCWRlZmF1bHQgbgogCS0tLWhlbHAtLS0KIAkgIEFkZHMgYW4gT0hDSSBo
+b3N0IGRyaXZlciBmb3IgYSBnZW5lcmljIHBsYXRmb3JtIGRldmljZSwgd2hpY2gKLQkgIHByb3Zp
+ZWRzIGEgbWVtb3J5IHNwYWNlIGFuZCBhbiBpcnEuCisJICBwcm92aWRlcyBhIG1lbW9yeSBzcGFj
+ZSBhbmQgYW4gaXJxLgogCiAJICBJZiB1bnN1cmUsIHNheSBOLgogCkBAIC00MjEsNyArNDIxLDcg
+QEAgY29uZmlnIFVTQl9FSENJX0hDRF9QTEFURk9STQogCWRlZmF1bHQgbgogCS0tLWhlbHAtLS0K
+IAkgIEFkZHMgYW4gRUhDSSBob3N0IGRyaXZlciBmb3IgYSBnZW5lcmljIHBsYXRmb3JtIGRldmlj
+ZSwgd2hpY2gKLQkgIHByb3ZpZWRzIGEgbWVtb3J5IHNwYWNlIGFuZCBhbiBpcnEuCisJICBwcm92
+aWRlcyBhIG1lbW9yeSBzcGFjZSBhbmQgYW4gaXJxLgogCiAJICBJZiB1bnN1cmUsIHNheSBOLgog
+CkBAIC01OTYsNyArNTk2LDcgQEAgY29uZmlnIFVTQl9IV0FfSENECiAJc2VsZWN0IFVXQl9IV0EK
+IAloZWxwCiAJICBUaGlzIGRyaXZlciBlbmFibGVzIHlvdSB0byBjb25uZWN0IFdpcmVsZXNzIFVT
+QiBkZXZpY2VzIHRvCi0JICB5b3VyIHN5c3RlbSB1c2luZyBhIEhvc3QgV2lyZSBBZGFwdG9yIFVT
+QiBkb25nbGUuIFRoaXMgaXMgYW4KKwkgIHlvdXIgc3lzdGVtIHVzaW5nIGEgSG9zdCBXaXJlIEFk
+YXB0ZXIgVVNCIGRvbmdsZS4gVGhpcyBpcyBhbgogCSAgVVdCIFJhZGlvIENvbnRyb2xsZXIgYW5k
+IFdVU0IgSG9zdCBDb250cm9sbGVyIGNvbm5lY3RlZCB0bwogCSAgeW91ciBtYWNoaW5lIHZpYSBV
+U0IgKHNwZWNpZmllZCBpbiBXVVNCMS4wKS4KIAotLSAKMS43LjMuNAoK
+--14dae934089313d50e04c065f00b--
