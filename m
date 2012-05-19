@@ -1,55 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755172Ab2ESKIf (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 19 May 2012 06:08:35 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:62689 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754508Ab2ESKId (ORCPT
+	id S1755490Ab2ESKMu (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 19 May 2012 06:12:50 -0400
+Received: from mail-wi0-f178.google.com ([209.85.212.178]:63549 "EHLO
+	mail-wi0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754272Ab2ESKMs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 19 May 2012 06:08:33 -0400
-Message-ID: <1337422103.23904.1.camel@phoenix>
-Subject: [PATCH] [SCSI] scsi_pm: fix passing incompatible pointer for
- scsi_device_resume()
-From: Axel Lin <axel.lin@gmail.com>
-To: linux-kernel@vger.kernel.org
-Cc: Aaron Lu <Aaron.Lu@amd.com>, Alan Stern <stern@rowland.harvard.edu>,
-        James Bottomley <JBottomley@Parallels.com>, linux-scsi@vger.kernel.org
-Date: Sat, 19 May 2012 18:08:23 +0800
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.2- 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	Sat, 19 May 2012 06:12:48 -0400
+Date: Sat, 19 May 2012 12:12:43 +0200
+From: Ingo Molnar <mingo@kernel.org>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: linux-kernel@vger.kernel.org, Ingo Molnar <mingo@elte.hu>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Vaibhav Nagarnaik <vnagarnaik@google.com>
+Subject: Re: [PATCH 00/15] [GIT PULL] tracing: Updates for 3.5
+Message-ID: <20120519101243.GA17997@gmail.com>
+References: <20120518130858.392919640@goodmis.org>
+ <1337391816.7562.18.camel@gandalf.stny.rr.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1337391816.7562.18.camel@gandalf.stny.rr.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Fix below build warning:
 
-  CC      drivers/scsi/scsi_pm.o
-drivers/scsi/scsi_pm.c: In function 'scsi_dev_type_suspend':
-drivers/scsi/scsi_pm.c:30:5: warning: passing argument 1 of 'scsi_device_resume' from incompatible pointer type [enabled by default]
-include/scsi/scsi_device.h:368:13: note: expected 'struct scsi_device *' but argument is of type 'struct device *'
+* Steven Rostedt <rostedt@goodmis.org> wrote:
 
-Signed-off-by: Axel Lin <axel.lin@gmail.com>
----
- drivers/scsi/scsi_pm.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+> On Fri, 2012-05-18 at 09:08 -0400, Steven Rostedt wrote:
+> > Ingo,
+> > 
+> > This should be my last set of changes for the next merge window.
+> 
+> Not quite :-)
+> 
+> You can hold off on pulling this. I want to add Masami's Acked-by tag,
+> and Vaibhav gave me two more patches. I'll run it through my own tests
+> and then do another pull request.
 
-diff --git a/drivers/scsi/scsi_pm.c b/drivers/scsi/scsi_pm.c
-index 9bd2c41..d4201de 100644
---- a/drivers/scsi/scsi_pm.c
-+++ b/drivers/scsi/scsi_pm.c
-@@ -27,7 +27,7 @@ static int scsi_dev_type_suspend(struct device *dev, pm_message_t msg)
- 		if (drv && drv->suspend) {
- 			err = drv->suspend(dev, msg);
- 			if (err)
--				scsi_device_resume(dev);
-+				scsi_device_resume(to_scsi_device(dev));
- 		}
- 	}
- 	dev_dbg(dev, "scsi suspend: %d\n", err);
--- 
-1.7.5.4
+I already pulled them and they tested out fine. Please queue up 
+the two patches on top.
 
+Thanks,
 
-
+	Ingo
