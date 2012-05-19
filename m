@@ -1,65 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758570Ab2ESNv0 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 19 May 2012 09:51:26 -0400
-Received: from eu1sys200aog117.obsmtp.com ([207.126.144.143]:35069 "EHLO
-	eu1sys200aog117.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751642Ab2ESNvY (ORCPT
+	id S1759625Ab2ESOEK (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 19 May 2012 10:04:10 -0400
+Received: from usmamail.tilera.com ([12.216.194.151]:40475 "EHLO
+	USMAMAIL.TILERA.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753969Ab2ESOEI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 19 May 2012 09:51:24 -0400
-From: Soumik DAS <soumik.das@stericsson.com>
-To: "John W. Linville" <linville@tuxdriver.com>
-Cc: linux-wireless <linux-kernel@vger.kernel.org>,
-        Johannes Berg <johannes@sipsolutions.net>,
-        Soumik Das <soumik.das@stericsson.com>
-Subject: [PATCH] mac80211: Fix race in sending null to check AP
-Date: Sat, 19 May 2012 19:20:53 +0530
-Message-ID: <1337435453-1661-1-git-send-email-soumik.das@stericsson.com>
-X-Mailer: git-send-email 1.7.0.4
+	Sat, 19 May 2012 10:04:08 -0400
+Message-ID: <4FB7A856.4090803@tilera.com>
+Date: Sat, 19 May 2012 10:04:06 -0400
+From: Chris Metcalf <cmetcalf@tilera.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:12.0) Gecko/20120428 Thunderbird/12.0.1
 MIME-Version: 1.0
-Content-Type: text/plain
+To: Paul Gortmaker <paul.gortmaker@windriver.com>
+CC: <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] tile: set KBUILD_DEFCONFIG to point at a real config
+ file
+References: <1337381165-7376-1-git-send-email-paul.gortmaker@windriver.com> <4FB6F28F.3090404@tilera.com> <20120519031806.GA24697@windriver.com>
+In-Reply-To: <20120519031806.GA24697@windriver.com>
+X-Enigmail-Version: 1.4.1
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Soumik Das <soumik.das@stericsson.com>
+On 5/18/2012 11:18 PM, Paul Gortmaker wrote:
+> [Re: [PATCH] tile: set KBUILD_DEFCONFIG to point at a real config file] On 18/05/2012 (Fri 21:08) Chris Metcalf wrote:
+>
+>> On 5/18/2012 6:46 PM, Paul Gortmaker wrote:
+>>> To fix this:
+>>>
+>>> ~/git/linux-head$ make defconfig
+>>> *** Default configuration is based on 'tile_defconfig'
+>>> ***
+>>> *** Can't find default configuration "arch/tile/configs/tile_defconfig"!
+>>> ***
+>>> make[1]: *** [defconfig] Error 1
+>>> make: *** [defconfig] Error 2
+>>>
+>>> There is no need to use $ARCH in the tile/Makefile, since if we are
+>>> in there, we know ARCH must be tile.  Use the GX as the defconfig,
+>>> as that is what is used in linux-next.
+>> No, the odd thing about arch/tile is that you must build it either as
+>> ARCH=tilepro or ARCH=tilegx.  There is no ARCH=tile.  So the $ARCH piece is
+>> actually correct.
+> That is interesting, since this is what I've been doing on any of my
+> tile builds right from the beginning.
+>
+> PATH=/home/paul/tc/tilegx-x86_64/bin:$PATH
+> export CROSS_COMPILE=tilegx-unknown-linux-gnu-
+> export ARCH=tile
+>
+> ...and it works.  Aside from the defconfig thing I just reported.
+> It is the same boilerplate type of env. settings I use for arm, mips
+> and whatever other random thing I'm building.  I'm pretty sure I'm
+> not the only one who would make this assumption.  Actually I *know*
+> I am not the only one.  Here is a snippet from linux-next build:
+>
+> /scratch/kisskb/prod/kisskb/kisskb3/backend/makewrap.py ARCH=tile
+> O=/scratch/kisskb/prod/kisskb/kisskb3/backend/build/linux-next_tilegx_defconfig_tilegx
+> CROSS_COMPILE=/opt/cross/gcc-4.6.2-nolibc/tilegx-linux/bin/tilegx-linux-
+> tilegx_defconfig
+>
+> So maybe some validation on the ARCH value is in order if you really
+> don't want people doing this?
 
-mac80211 tries to verify the existence of the current AP by
-probing or sending a NULL frame in function
-ieee80211_mgd_probe_ap_send. It 1st sends a null frame to the AP,
-increments probe_send_count and waits for the ACK to the NULL
-frame for a finite duration of time. At times, it happens that by
-the time mac80211 gets to increment probe_send_count, the ACK for
-the NULL frame transmitted has already been processed. This leads
-to a race condition where mac80211 times out waiting for the ACK
-for the NULL frame causing unnecessary disconnection with the AP.
+Yes.  I think what I will do is "promote" ARCH=tile to ARCH=tilegx in
+arch/tile/Makefile as the "default" Tilera architecture.  Thanks for the
+suggestion - I've been too close to this issue to actually notice it :-)
 
-Signed-off-by: Soumik Das <soumik.das@stericsson.com>
----
- net/mac80211/mlme.c |    3 ++-
- 1 files changed, 2 insertions(+), 1 deletions(-)
-
-diff --git a/net/mac80211/mlme.c b/net/mac80211/mlme.c
-index dbd4bd9..40c933c 100644
---- a/net/mac80211/mlme.c
-+++ b/net/mac80211/mlme.c
-@@ -1522,6 +1522,8 @@ static void ieee80211_mgd_probe_ap_send(struct ieee80211_sub_if_data *sdata)
- 	 * anymore. The timeout will be reset if the frame is ACKed by
- 	 * the AP.
- 	 */
-+	ifmgd->probe_send_count++;
-+
- 	if (sdata->local->hw.flags & IEEE80211_HW_REPORTS_TX_ACK_STATUS) {
- 		ifmgd->nullfunc_failed = false;
- 		ieee80211_send_nullfunc(sdata->local, sdata, 0);
-@@ -1538,7 +1540,6 @@ static void ieee80211_mgd_probe_ap_send(struct ieee80211_sub_if_data *sdata)
- 					 0, (u32) -1, true, false);
- 	}
- 
--	ifmgd->probe_send_count++;
- 	ifmgd->probe_timeout = jiffies + msecs_to_jiffies(probe_wait_ms);
- 	run_again(ifmgd, ifmgd->probe_timeout);
- 	if (sdata->local->hw.flags & IEEE80211_HW_REPORTS_TX_ACK_STATUS)
 -- 
-1.7.0.4
+Chris Metcalf, Tilera Corp.
+http://www.tilera.com
 
