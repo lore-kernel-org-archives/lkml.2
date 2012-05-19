@@ -1,68 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753143Ab2ESP6E (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 19 May 2012 11:58:04 -0400
-Received: from oproxy5-pub.bluehost.com ([67.222.38.55]:35307 "HELO
-	oproxy5-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1750806Ab2ESP6C (ORCPT
+	id S1754024Ab2ESQAS (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 19 May 2012 12:00:18 -0400
+Received: from nm32-vm7.bullet.mail.ne1.yahoo.com ([98.138.229.55]:20414 "HELO
+	nm32-vm7.bullet.mail.ne1.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1750806Ab2ESQAQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 19 May 2012 11:58:02 -0400
-Message-ID: <4FB7C310.3010403@xenotime.net>
-Date: Sat, 19 May 2012 08:58:08 -0700
-From: Randy Dunlap <rdunlap@xenotime.net>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.15) Gecko/20110323 Thunderbird/3.1.9
-MIME-Version: 1.0
-To: Samuel Ortiz <sameo@linux.intel.com>
-CC: Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
-        LKML <linux-kernel@vger.kernel.org>,
-        Mike Rapoport <mike@compulab.co.il>
-Subject: Re: linux-next: Tree for May 16 (mfd/tpx6586x)
-References: <20120516201426.3a162ecd6adeb7132413f1b9@canb.auug.org.au> <4FB3D2C3.3030507@xenotime.net> <20120519142506.GN12015@sortiz-mobl>
-In-Reply-To: <20120519142506.GN12015@sortiz-mobl>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Identified-User: {1807:box742.bluehost.com:xenotime:xenotime.net} {sentby:smtp auth 50.53.38.135 authed with rdunlap@xenotime.net}
+	Sat, 19 May 2012 12:00:16 -0400
+X-Greylist: delayed 364 seconds by postgrey-1.27 at vger.kernel.org; Sat, 19 May 2012 12:00:16 EDT
+X-Yahoo-Newman-Id: 338016.88235.bm@smtp202.mail.ne1.yahoo.com
+X-Yahoo-Newman-Property: ymail-3
+X-YMail-OSG: QSSPl7MVM1knyEwCUSXA3VIf73wmYpekvu_qtAfA65oi2EL
+ 9KbfCMf5rd6oZJ7300CJY7BzJaMrEx9tQgjf_5x9r8zNnfhBh3BhpGICbc1N
+ t5gQr5l9SGQQ.OtvLvtwHwzy01Fq6Rrm2yZ6y439jii5gc4gOMtk5SxsUoln
+ AUObiV1BSyqRb3UEUqjmEHDuhUih2eHkR82.uAZhEiEV0_ZNTM2CSfVnzm38
+ JEatnVRtlSvRs5U_SN31p5skPOpJ5Hi7fsTFqA6aUyEZAEcDt.zXmPMK1eiF
+ 9TenMiHKipEbYCJjDGIdWfpGDHiAVA7GQdo3qN_x7FHYeilZOt8X_xgw2kd.
+ BGIBPBL5j9isWRfLmKXNLIkV0nX.IbFBwinf4l2_SWkWdeocDHBp4CL3bjmA
+ .L6VOy2pIOoCc82AaJ8IhZPBZNj0Ifq1kLtDTekFLuZZA4j3NKQK7quhEloz
+ Y.RVK8LpkI4_7vyMr_NC15Esv2OFsVE4-
+X-Yahoo-SMTP: dNW5aIGswBCf1iV6QK8RWrBgWyjShXs-
+From: Jeffrin Jose <ahiliation@yahoo.co.in>
+To: tytso@mit.edu, adilger.kernel@dilger.ca
+Cc: linux-ext4@vger.kernel.org, linux-kernel@vger.kernel.org,
+        ahiliation@yahoo.co.in
+Subject: [PATCH]fs:ext4:fixed space issue related to * operator.
+Date: Sat, 19 May 2012 21:27:20 +0530
+Message-Id: <1337443040-3609-1-git-send-email-ahiliation@yahoo.co.in>
+X-Mailer: git-send-email 1.7.10
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/19/2012 07:25 AM, Samuel Ortiz wrote:
+Fixed coding style issue relating to * operator found
+by checkpath.pl tool in fs/ext4/fsync.c
 
-> Hi Randy,
-> 
-> On Wed, May 16, 2012 at 09:16:03AM -0700, Randy Dunlap wrote:
->> On 05/16/2012 03:14 AM, Stephen Rothwell wrote:
->>
->>>
->>> The mfd tree lost its build failure but gained another so I used the
->>> version from next-20120511.
->>>
->>
->>
->>
->> (on i386)
->>
->> drivers/built-in.o: In function `tps6586x_i2c_probe':
->> tps6586x.c:(.devinit.text+0x144e0): undefined reference to `of_regulator_match'
->>
-> Is this one fixed now ? It's coming from Mark's regulator tree, not the MFD
-> one.
+Signed-off-by: Jeffrin Jose <ahiliation@yahoo.co.in>
+---
+ fs/ext4/fsync.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-
-It still fails in linux-next of 20120518.
-
-> Mark, I think mfd/tps6586x.c should select REGULATOR to avoid this one.
-> 
-> Cheers,
-> Samuel.
-> 
-> 
->> Full randconfig file is attached.
->>
->> -- 
->> ~Randy
-
-
+diff --git a/fs/ext4/fsync.c b/fs/ext4/fsync.c
+index bb6c7d8..b06e330 100644
+--- a/fs/ext4/fsync.c
++++ b/fs/ext4/fsync.c
+@@ -34,7 +34,7 @@
+ 
+ #include <trace/events/ext4.h>
+ 
+-static void dump_completed_IO(struct inode * inode)
++static void dump_completed_IO(struct inode *inode)
+ {
+ #ifdef	EXT4FS_DEBUG
+ 	struct list_head *cur, *before, *after;
 -- 
-~Randy
+1.7.10
+
