@@ -1,58 +1,36 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757754Ab2ESWXS (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 19 May 2012 18:23:18 -0400
-Received: from mail-wg0-f44.google.com ([74.125.82.44]:36870 "EHLO
-	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755966Ab2ESWXR (ORCPT
+	id S1757935Ab2ESWiV (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 19 May 2012 18:38:21 -0400
+Received: from shards.monkeyblade.net ([198.137.202.13]:53103 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754898Ab2ESWiU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 19 May 2012 18:23:17 -0400
-Message-ID: <4FB81D52.5050106@suse.cz>
-Date: Sun, 20 May 2012 00:23:14 +0200
-From: Jiri Slaby <jslaby@suse.cz>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120514 Thunderbird/14.0a2
-MIME-Version: 1.0
-To: Dave Airlie <airlied@redhat.com>
-CC: dri-devel@lists.freedesktop.org, LKML <linux-kernel@vger.kernel.org>,
-        Jiri Slaby <jirislaby@gmail.com>
-Subject: [-next] DRM_CIRRUS_QEMU breaks build
-X-Enigmail-Version: 1.5pre
-Content-Type: text/plain; charset=ISO-8859-2
+	Sat, 19 May 2012 18:38:20 -0400
+Date: Sat, 19 May 2012 18:35:39 -0400 (EDT)
+Message-Id: <20120519.183539.1401215480478237110.davem@davemloft.net>
+To: ahiliation@yahoo.co.in
+Cc: kuznet@ms2.inr.ac.ru, jmorris@namei.org, yoshfuji@linux-ipv6.org,
+        kaber@trash.net, netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/1] net:ipv6:fixed space issues relating to operators.
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <1337428744-2935-1-git-send-email-ahiliation@yahoo.co.in>
+References: <1337428744-2935-1-git-send-email-ahiliation@yahoo.co.in>
+X-Mailer: Mew version 6.5 on Emacs 24.0.95 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
 Content-Transfer-Encoding: 7bit
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.6 (shards.monkeyblade.net [198.137.202.13]); Sat, 19 May 2012 15:35:41 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+From: Jeffrin Jose <ahiliation@yahoo.co.in>
+Date: Sat, 19 May 2012 17:29:04 +0530
 
-when that option is selected to be Y, I'm getting linking errors like:
-    (.text+0xefd8d): undefined reference to `ttm_tt_init'
-    drivers/built-in.o: In function `cirrus_mm_init':
-and many others, like undefined sys_fillrect.
+> Fixed space issues relating to operators found by
+> checkpatch.pl tool in net/ipv6/udp.c
+> 
+> Signed-off-by: Jeffrin Jose <ahiliation@yahoo.co.in>
 
-You perhaps have a patch on your queue already and I need not to turn
-this into a patch, right :):
-
---- a/drivers/gpu/drm/cirrus/Kconfig
-+++ b/drivers/gpu/drm/cirrus/Kconfig
-@@ -1,10 +1,11 @@
- config DRM_CIRRUS_QEMU
-        tristate "Cirrus driver for QEMU emulated device"
-        depends on DRM && PCI && EXPERIMENTAL
--       select FB_CFB_FILLRECT
--       select FB_CFB_COPYAREA
--       select FB_CFB_IMAGEBLIT
-+       select FB_SYS_FILLRECT
-+       select FB_SYS_COPYAREA
-+       select FB_SYS_IMAGEBLIT
-        select DRM_KMS_HELPER
-+       select DRM_TTM
-        help
-         This is a KMS driver for emulated cirrus device in qemu.
-         It is *NOT* intended for real cirrus devices. This requires
-
-regards,
--- 
-js
-suse labs
-
+Applied.
