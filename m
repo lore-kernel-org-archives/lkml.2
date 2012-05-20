@@ -1,282 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756989Ab2ETWxs (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 20 May 2012 18:53:48 -0400
-Received: from perches-mx.perches.com ([206.117.179.246]:33517 "EHLO
-	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1756848Ab2ETWxq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 20 May 2012 18:53:46 -0400
-Message-ID: <1337553915.31503.12.camel@joe2Laptop>
-Subject: [PATCH] media: Use pr_info not homegrown pr_reg macro
-From: Joe Perches <joe@perches.com>
-To: Mauro Carvalho Chehab <mchehab@infradead.org>
-Cc: linux-media@vger.kernel.org, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset="UTF-8"
-Date: Sun, 20 May 2012 15:45:15 -0700
-Mime-Version: 1.0
-X-Mailer: Evolution 3.2.2- 
-Content-Transfer-Encoding: 7bit
+	id S1752451Ab2ETXWh (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 20 May 2012 19:22:37 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:58728 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750864Ab2ETXWf (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 20 May 2012 19:22:35 -0400
+Date: Sun, 20 May 2012 16:22:32 -0700 (PDT)
+From: David Rientjes <rientjes@google.com>
+X-X-Sender: rientjes@chino.kir.corp.google.com
+To: Linus Torvalds <torvalds@linux-foundation.org>
+cc: Steven Rostedt <rostedt@goodmis.org>, Greg KH <gregkh@linuxfoundation.org>,
+        linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
+        Peter Zijlstra <peterz@infradead.org>
+Subject: Re: [PATCH] pidmap: Use GFP_ATOMIC to allocate page (was: Re: [
+ 00/54] 3.0.32-stable review)
+In-Reply-To: <CA+55aFwGpDtMR=8GfDqyZGdw_pQFxG-EL15LaNm0wVoXZChXSA@mail.gmail.com>
+Message-ID: <alpine.DEB.2.00.1205201333210.10189@chino.kir.corp.google.com>
+References: <20120518212656.GA4992@kroah.com> <20120519010105.GB18264@home.goodmis.org> <20120519042038.GB11939@kroah.com> <1337479307.32434.16.camel@gandalf.stny.rr.com> <alpine.DEB.2.00.1205191930310.24674@chino.kir.corp.google.com>
+ <CA+55aFwGpDtMR=8GfDqyZGdw_pQFxG-EL15LaNm0wVoXZChXSA@mail.gmail.com>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-No need to duplicate normal kernel logging capabilities.
+On Sun, 20 May 2012, Linus Torvalds wrote:
 
-Add pr_fmt and convert pr_reg to pr_info.
-Remove pr_reg macros.
+> > Why wasn't this caught by gfp_allowed_mask in slab_pre_alloc_hook()?
+> > GFP_KERNEL should be allowed in this context.
+> 
+> We set gfp_allowed_mask to allow all allocations before this point: it
+> happens when we enable interrupts fairly early during start_kernel().
+> 
+> So by the time pidmap_init() is called, GFP_KERNEL does imply that
+> scheduling can happen.
+> 
 
-Signed-off-by: Joe Perches <joe@perches.com>
----
- drivers/media/rc/fintek-cir.c  |   32 +++++----
- drivers/media/rc/nuvoton-cir.c |  145 ++++++++++++++++++++--------------------
- 2 files changed, 90 insertions(+), 87 deletions(-)
+Steven notes that he's using CONFIG_PREEMPT_VOLUNTARY which means all 
+might_sleep()'s in the kernel actually get turned into cond_resched()'s.  
+I had thought that might_sleep() and might_sleep_if() such as in the slab 
+allocators were simply for CONFIG_DEBUG_ATOMIC_SLEEP, but it has been 
+hijacked for other purposes.  Do we really want to infuse cond_resched()'s 
+on every slab allocation for desktop users who are urged in the Kconfig to 
+enable CONFIG_PREEMPT_VOLUNTARY?
 
-diff --git a/drivers/media/rc/fintek-cir.c b/drivers/media/rc/fintek-cir.c
-index 4a3a238..01764a3 100644
---- a/drivers/media/rc/fintek-cir.c
-+++ b/drivers/media/rc/fintek-cir.c
-@@ -23,6 +23,8 @@
-  * USA
-  */
- 
-+#define pr_fmt(fmt) KBUILD_MODNAME ": " fmt
-+
- #include <linux/kernel.h>
- #include <linux/module.h>
- #include <linux/pnp.h>
-@@ -110,30 +112,32 @@ static u8 fintek_cir_reg_read(struct fintek_dev *fintek, u8 offset)
- 	return val;
- }
- 
--#define pr_reg(text, ...) \
--	printk(KERN_INFO KBUILD_MODNAME ": " text, ## __VA_ARGS__)
--
- /* dump current cir register contents */
- static void cir_dump_regs(struct fintek_dev *fintek)
- {
- 	fintek_config_mode_enable(fintek);
- 	fintek_select_logical_dev(fintek, fintek->logical_dev_cir);
- 
--	pr_reg("%s: Dump CIR logical device registers:\n", FINTEK_DRIVER_NAME);
--	pr_reg(" * CR CIR BASE ADDR: 0x%x\n",
--	       (fintek_cr_read(fintek, CIR_CR_BASE_ADDR_HI) << 8) |
-+	pr_info("%s: Dump CIR logical device registers:\n", FINTEK_DRIVER_NAME);
-+	pr_info(" * CR CIR BASE ADDR: 0x%x\n",
-+		(fintek_cr_read(fintek, CIR_CR_BASE_ADDR_HI) << 8) |
- 		fintek_cr_read(fintek, CIR_CR_BASE_ADDR_LO));
--	pr_reg(" * CR CIR IRQ NUM:   0x%x\n",
--	       fintek_cr_read(fintek, CIR_CR_IRQ_SEL));
-+	pr_info(" * CR CIR IRQ NUM:   0x%x\n",
-+		fintek_cr_read(fintek, CIR_CR_IRQ_SEL));
- 
- 	fintek_config_mode_disable(fintek);
- 
--	pr_reg("%s: Dump CIR registers:\n", FINTEK_DRIVER_NAME);
--	pr_reg(" * STATUS:     0x%x\n", fintek_cir_reg_read(fintek, CIR_STATUS));
--	pr_reg(" * CONTROL:    0x%x\n", fintek_cir_reg_read(fintek, CIR_CONTROL));
--	pr_reg(" * RX_DATA:    0x%x\n", fintek_cir_reg_read(fintek, CIR_RX_DATA));
--	pr_reg(" * TX_CONTROL: 0x%x\n", fintek_cir_reg_read(fintek, CIR_TX_CONTROL));
--	pr_reg(" * TX_DATA:    0x%x\n", fintek_cir_reg_read(fintek, CIR_TX_DATA));
-+	pr_info("%s: Dump CIR registers:\n", FINTEK_DRIVER_NAME);
-+	pr_info(" * STATUS:     0x%x\n",
-+		fintek_cir_reg_read(fintek, CIR_STATUS));
-+	pr_info(" * CONTROL:    0x%x\n",
-+		fintek_cir_reg_read(fintek, CIR_CONTROL));
-+	pr_info(" * RX_DATA:    0x%x\n",
-+		fintek_cir_reg_read(fintek, CIR_RX_DATA));
-+	pr_info(" * TX_CONTROL: 0x%x\n",
-+		fintek_cir_reg_read(fintek, CIR_TX_CONTROL));
-+	pr_info(" * TX_DATA:    0x%x\n",
-+		fintek_cir_reg_read(fintek, CIR_TX_DATA));
- }
- 
- /* detect hardware features */
-diff --git a/drivers/media/rc/nuvoton-cir.c b/drivers/media/rc/nuvoton-cir.c
-index 8b2c071..f7b064f 100644
---- a/drivers/media/rc/nuvoton-cir.c
-+++ b/drivers/media/rc/nuvoton-cir.c
-@@ -25,6 +25,8 @@
-  * USA
-  */
- 
-+#define pr_fmt(fmt) KBUILD_MODNAME ": " fmt
-+
- #include <linux/kernel.h>
- #include <linux/module.h>
- #include <linux/pnp.h>
-@@ -123,43 +125,40 @@ static u8 nvt_cir_wake_reg_read(struct nvt_dev *nvt, u8 offset)
- 	return val;
- }
- 
--#define pr_reg(text, ...) \
--	printk(KERN_INFO KBUILD_MODNAME ": " text, ## __VA_ARGS__)
--
- /* dump current cir register contents */
- static void cir_dump_regs(struct nvt_dev *nvt)
- {
- 	nvt_efm_enable(nvt);
- 	nvt_select_logical_dev(nvt, LOGICAL_DEV_CIR);
- 
--	pr_reg("%s: Dump CIR logical device registers:\n", NVT_DRIVER_NAME);
--	pr_reg(" * CR CIR ACTIVE :   0x%x\n",
--	       nvt_cr_read(nvt, CR_LOGICAL_DEV_EN));
--	pr_reg(" * CR CIR BASE ADDR: 0x%x\n",
--	       (nvt_cr_read(nvt, CR_CIR_BASE_ADDR_HI) << 8) |
-+	pr_info("%s: Dump CIR logical device registers:\n", NVT_DRIVER_NAME);
-+	pr_info(" * CR CIR ACTIVE :   0x%x\n",
-+		nvt_cr_read(nvt, CR_LOGICAL_DEV_EN));
-+	pr_info(" * CR CIR BASE ADDR: 0x%x\n",
-+		(nvt_cr_read(nvt, CR_CIR_BASE_ADDR_HI) << 8) |
- 		nvt_cr_read(nvt, CR_CIR_BASE_ADDR_LO));
--	pr_reg(" * CR CIR IRQ NUM:   0x%x\n",
--	       nvt_cr_read(nvt, CR_CIR_IRQ_RSRC));
-+	pr_info(" * CR CIR IRQ NUM:   0x%x\n",
-+		nvt_cr_read(nvt, CR_CIR_IRQ_RSRC));
- 
- 	nvt_efm_disable(nvt);
- 
--	pr_reg("%s: Dump CIR registers:\n", NVT_DRIVER_NAME);
--	pr_reg(" * IRCON:     0x%x\n", nvt_cir_reg_read(nvt, CIR_IRCON));
--	pr_reg(" * IRSTS:     0x%x\n", nvt_cir_reg_read(nvt, CIR_IRSTS));
--	pr_reg(" * IREN:      0x%x\n", nvt_cir_reg_read(nvt, CIR_IREN));
--	pr_reg(" * RXFCONT:   0x%x\n", nvt_cir_reg_read(nvt, CIR_RXFCONT));
--	pr_reg(" * CP:        0x%x\n", nvt_cir_reg_read(nvt, CIR_CP));
--	pr_reg(" * CC:        0x%x\n", nvt_cir_reg_read(nvt, CIR_CC));
--	pr_reg(" * SLCH:      0x%x\n", nvt_cir_reg_read(nvt, CIR_SLCH));
--	pr_reg(" * SLCL:      0x%x\n", nvt_cir_reg_read(nvt, CIR_SLCL));
--	pr_reg(" * FIFOCON:   0x%x\n", nvt_cir_reg_read(nvt, CIR_FIFOCON));
--	pr_reg(" * IRFIFOSTS: 0x%x\n", nvt_cir_reg_read(nvt, CIR_IRFIFOSTS));
--	pr_reg(" * SRXFIFO:   0x%x\n", nvt_cir_reg_read(nvt, CIR_SRXFIFO));
--	pr_reg(" * TXFCONT:   0x%x\n", nvt_cir_reg_read(nvt, CIR_TXFCONT));
--	pr_reg(" * STXFIFO:   0x%x\n", nvt_cir_reg_read(nvt, CIR_STXFIFO));
--	pr_reg(" * FCCH:      0x%x\n", nvt_cir_reg_read(nvt, CIR_FCCH));
--	pr_reg(" * FCCL:      0x%x\n", nvt_cir_reg_read(nvt, CIR_FCCL));
--	pr_reg(" * IRFSM:     0x%x\n", nvt_cir_reg_read(nvt, CIR_IRFSM));
-+	pr_info("%s: Dump CIR registers:\n", NVT_DRIVER_NAME);
-+	pr_info(" * IRCON:     0x%x\n", nvt_cir_reg_read(nvt, CIR_IRCON));
-+	pr_info(" * IRSTS:     0x%x\n", nvt_cir_reg_read(nvt, CIR_IRSTS));
-+	pr_info(" * IREN:      0x%x\n", nvt_cir_reg_read(nvt, CIR_IREN));
-+	pr_info(" * RXFCONT:   0x%x\n", nvt_cir_reg_read(nvt, CIR_RXFCONT));
-+	pr_info(" * CP:        0x%x\n", nvt_cir_reg_read(nvt, CIR_CP));
-+	pr_info(" * CC:        0x%x\n", nvt_cir_reg_read(nvt, CIR_CC));
-+	pr_info(" * SLCH:      0x%x\n", nvt_cir_reg_read(nvt, CIR_SLCH));
-+	pr_info(" * SLCL:      0x%x\n", nvt_cir_reg_read(nvt, CIR_SLCL));
-+	pr_info(" * FIFOCON:   0x%x\n", nvt_cir_reg_read(nvt, CIR_FIFOCON));
-+	pr_info(" * IRFIFOSTS: 0x%x\n", nvt_cir_reg_read(nvt, CIR_IRFIFOSTS));
-+	pr_info(" * SRXFIFO:   0x%x\n", nvt_cir_reg_read(nvt, CIR_SRXFIFO));
-+	pr_info(" * TXFCONT:   0x%x\n", nvt_cir_reg_read(nvt, CIR_TXFCONT));
-+	pr_info(" * STXFIFO:   0x%x\n", nvt_cir_reg_read(nvt, CIR_STXFIFO));
-+	pr_info(" * FCCH:      0x%x\n", nvt_cir_reg_read(nvt, CIR_FCCH));
-+	pr_info(" * FCCL:      0x%x\n", nvt_cir_reg_read(nvt, CIR_FCCL));
-+	pr_info(" * IRFSM:     0x%x\n", nvt_cir_reg_read(nvt, CIR_IRFSM));
- }
- 
- /* dump current cir wake register contents */
-@@ -170,59 +169,59 @@ static void cir_wake_dump_regs(struct nvt_dev *nvt)
- 	nvt_efm_enable(nvt);
- 	nvt_select_logical_dev(nvt, LOGICAL_DEV_CIR_WAKE);
- 
--	pr_reg("%s: Dump CIR WAKE logical device registers:\n",
--	       NVT_DRIVER_NAME);
--	pr_reg(" * CR CIR WAKE ACTIVE :   0x%x\n",
--	       nvt_cr_read(nvt, CR_LOGICAL_DEV_EN));
--	pr_reg(" * CR CIR WAKE BASE ADDR: 0x%x\n",
--	       (nvt_cr_read(nvt, CR_CIR_BASE_ADDR_HI) << 8) |
-+	pr_info("%s: Dump CIR WAKE logical device registers:\n",
-+		NVT_DRIVER_NAME);
-+	pr_info(" * CR CIR WAKE ACTIVE :   0x%x\n",
-+		nvt_cr_read(nvt, CR_LOGICAL_DEV_EN));
-+	pr_info(" * CR CIR WAKE BASE ADDR: 0x%x\n",
-+		(nvt_cr_read(nvt, CR_CIR_BASE_ADDR_HI) << 8) |
- 		nvt_cr_read(nvt, CR_CIR_BASE_ADDR_LO));
--	pr_reg(" * CR CIR WAKE IRQ NUM:   0x%x\n",
--	       nvt_cr_read(nvt, CR_CIR_IRQ_RSRC));
-+	pr_info(" * CR CIR WAKE IRQ NUM:   0x%x\n",
-+		nvt_cr_read(nvt, CR_CIR_IRQ_RSRC));
- 
- 	nvt_efm_disable(nvt);
- 
--	pr_reg("%s: Dump CIR WAKE registers\n", NVT_DRIVER_NAME);
--	pr_reg(" * IRCON:          0x%x\n",
--	       nvt_cir_wake_reg_read(nvt, CIR_WAKE_IRCON));
--	pr_reg(" * IRSTS:          0x%x\n",
--	       nvt_cir_wake_reg_read(nvt, CIR_WAKE_IRSTS));
--	pr_reg(" * IREN:           0x%x\n",
--	       nvt_cir_wake_reg_read(nvt, CIR_WAKE_IREN));
--	pr_reg(" * FIFO CMP DEEP:  0x%x\n",
--	       nvt_cir_wake_reg_read(nvt, CIR_WAKE_FIFO_CMP_DEEP));
--	pr_reg(" * FIFO CMP TOL:   0x%x\n",
--	       nvt_cir_wake_reg_read(nvt, CIR_WAKE_FIFO_CMP_TOL));
--	pr_reg(" * FIFO COUNT:     0x%x\n",
--	       nvt_cir_wake_reg_read(nvt, CIR_WAKE_FIFO_COUNT));
--	pr_reg(" * SLCH:           0x%x\n",
--	       nvt_cir_wake_reg_read(nvt, CIR_WAKE_SLCH));
--	pr_reg(" * SLCL:           0x%x\n",
--	       nvt_cir_wake_reg_read(nvt, CIR_WAKE_SLCL));
--	pr_reg(" * FIFOCON:        0x%x\n",
--	       nvt_cir_wake_reg_read(nvt, CIR_WAKE_FIFOCON));
--	pr_reg(" * SRXFSTS:        0x%x\n",
--	       nvt_cir_wake_reg_read(nvt, CIR_WAKE_SRXFSTS));
--	pr_reg(" * SAMPLE RX FIFO: 0x%x\n",
--	       nvt_cir_wake_reg_read(nvt, CIR_WAKE_SAMPLE_RX_FIFO));
--	pr_reg(" * WR FIFO DATA:   0x%x\n",
--	       nvt_cir_wake_reg_read(nvt, CIR_WAKE_WR_FIFO_DATA));
--	pr_reg(" * RD FIFO ONLY:   0x%x\n",
--	       nvt_cir_wake_reg_read(nvt, CIR_WAKE_RD_FIFO_ONLY));
--	pr_reg(" * RD FIFO ONLY IDX: 0x%x\n",
--	       nvt_cir_wake_reg_read(nvt, CIR_WAKE_RD_FIFO_ONLY_IDX));
--	pr_reg(" * FIFO IGNORE:    0x%x\n",
--	       nvt_cir_wake_reg_read(nvt, CIR_WAKE_FIFO_IGNORE));
--	pr_reg(" * IRFSM:          0x%x\n",
--	       nvt_cir_wake_reg_read(nvt, CIR_WAKE_IRFSM));
-+	pr_info("%s: Dump CIR WAKE registers\n", NVT_DRIVER_NAME);
-+	pr_info(" * IRCON:          0x%x\n",
-+		nvt_cir_wake_reg_read(nvt, CIR_WAKE_IRCON));
-+	pr_info(" * IRSTS:          0x%x\n",
-+		nvt_cir_wake_reg_read(nvt, CIR_WAKE_IRSTS));
-+	pr_info(" * IREN:           0x%x\n",
-+		nvt_cir_wake_reg_read(nvt, CIR_WAKE_IREN));
-+	pr_info(" * FIFO CMP DEEP:  0x%x\n",
-+		nvt_cir_wake_reg_read(nvt, CIR_WAKE_FIFO_CMP_DEEP));
-+	pr_info(" * FIFO CMP TOL:   0x%x\n",
-+		nvt_cir_wake_reg_read(nvt, CIR_WAKE_FIFO_CMP_TOL));
-+	pr_info(" * FIFO COUNT:     0x%x\n",
-+		nvt_cir_wake_reg_read(nvt, CIR_WAKE_FIFO_COUNT));
-+	pr_info(" * SLCH:           0x%x\n",
-+		nvt_cir_wake_reg_read(nvt, CIR_WAKE_SLCH));
-+	pr_info(" * SLCL:           0x%x\n",
-+		nvt_cir_wake_reg_read(nvt, CIR_WAKE_SLCL));
-+	pr_info(" * FIFOCON:        0x%x\n",
-+		nvt_cir_wake_reg_read(nvt, CIR_WAKE_FIFOCON));
-+	pr_info(" * SRXFSTS:        0x%x\n",
-+		nvt_cir_wake_reg_read(nvt, CIR_WAKE_SRXFSTS));
-+	pr_info(" * SAMPLE RX FIFO: 0x%x\n",
-+		nvt_cir_wake_reg_read(nvt, CIR_WAKE_SAMPLE_RX_FIFO));
-+	pr_info(" * WR FIFO DATA:   0x%x\n",
-+		nvt_cir_wake_reg_read(nvt, CIR_WAKE_WR_FIFO_DATA));
-+	pr_info(" * RD FIFO ONLY:   0x%x\n",
-+		nvt_cir_wake_reg_read(nvt, CIR_WAKE_RD_FIFO_ONLY));
-+	pr_info(" * RD FIFO ONLY IDX: 0x%x\n",
-+		nvt_cir_wake_reg_read(nvt, CIR_WAKE_RD_FIFO_ONLY_IDX));
-+	pr_info(" * FIFO IGNORE:    0x%x\n",
-+		nvt_cir_wake_reg_read(nvt, CIR_WAKE_FIFO_IGNORE));
-+	pr_info(" * IRFSM:          0x%x\n",
-+		nvt_cir_wake_reg_read(nvt, CIR_WAKE_IRFSM));
- 
- 	fifo_len = nvt_cir_wake_reg_read(nvt, CIR_WAKE_FIFO_COUNT);
--	pr_reg("%s: Dump CIR WAKE FIFO (len %d)\n", NVT_DRIVER_NAME, fifo_len);
--	pr_reg("* Contents = ");
-+	pr_info("%s: Dump CIR WAKE FIFO (len %d)\n", NVT_DRIVER_NAME, fifo_len);
-+	pr_info("* Contents =");
- 	for (i = 0; i < fifo_len; i++)
--		printk(KERN_CONT "%02x ",
--		       nvt_cir_wake_reg_read(nvt, CIR_WAKE_RD_FIFO_ONLY));
--	printk(KERN_CONT "\n");
-+		pr_cont(" %02x",
-+			nvt_cir_wake_reg_read(nvt, CIR_WAKE_RD_FIFO_ONLY));
-+	pr_cont("\n");
- }
- 
- /* detect hardware features */
+> Which does imply that we set gfp_allowed_mask *much* too early. We
+> still cannot schedule at that point (well, at least there's a comment
+> saying so):
+> 
+>         /*
+>          * Disable preemption - early bootup scheduling is extremely
+>          * fragile until we cpu_idle() for the first time.
+>          */
+>         preempt_disable();
+> 
+> so logically we should move the gfp_allowed_mask setting down to where
+> we really are properly alive.
+> 
+> How about moving it down to after we've done the full smp_init() and
+> after we've actually done the first schedule and have proper idle
+> CPU's?
+> 
+> Something like the attached (UNTESTED!) patch?
+> 
+>  init/main.c | 6 +++---
+>  1 file changed, 3 insertions(+), 3 deletions(-)
+> 
+> diff --git a/init/main.c b/init/main.c
+> index 44b2433334c7..0cf00943d755 100644
+> --- a/init/main.c
+> +++ b/init/main.c
+> @@ -560,9 +560,6 @@ asmlinkage void __init start_kernel(void)
+>  	early_boot_irqs_disabled = false;
+>  	local_irq_enable();
+>  
+> -	/* Interrupts are enabled now so all GFP allocations are safe. */
+> -	gfp_allowed_mask = __GFP_BITS_MASK;
+> -
+>  	kmem_cache_init_late();
+>  
+>  	/*
+> @@ -861,6 +858,9 @@ static int __init kernel_init(void * unused)
+>  	smp_init();
+>  	sched_init_smp();
+>  
+> +	/* Now we're finally set up and can do any allocation */
+> +	gfp_allowed_mask = __GFP_BITS_MASK;
+> +
+>  	do_basic_setup();
+>  
+>  	/* Open the /dev/console on the rootfs, this should never fail */
 
+I think this may be unnecessarily too late; smp_init() will rely on the 
+arch-dependent cpu_up to guarantee that cpu_idle() has been called and 
+sched_init_smp() seems to think we can do GFP_KERNEL.
 
+So putting this in between smp_init() and sched_init_smp() may be the 
+first time we can absolutely guarantee that we are scheduable.  BUT, we 
+typically become schedulable when kernel_init() returns from the 
+wait_for_completion(&kthreadd_done) because cpu_idle() has been called in 
+rest_init() right after doing complete(&kthreadd_done) so it's slightly 
+racy.
+
+I think we should look in between that wait_for_completion() and 
+smp_init() to determine if there's anything that would benefit from 
+GFP_KERNEL over GFP_NOWAIT and I can't see anything.  I do think 
+sched_init_smp() unnecessarily suppresses __GFP_WAIT with your patch, so 
+perhaps it should be moved right before it if we're actually going to 
+allow CONFIG_PREEMPT_VOLUNTARY to schedule on might_sleep()'s.
