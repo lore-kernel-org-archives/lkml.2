@@ -1,60 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754197Ab2ETMPS (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 20 May 2012 08:15:18 -0400
-Received: from hqemgate04.nvidia.com ([216.228.121.35]:13074 "EHLO
-	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753921Ab2ETMPQ (ORCPT
+	id S1754321Ab2ETMSL (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 20 May 2012 08:18:11 -0400
+Received: from ogre.sisk.pl ([193.178.161.156]:55188 "EHLO ogre.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753909Ab2ETMSJ convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 20 May 2012 08:15:16 -0400
-X-PGP-Universal: processed;
-	by hqnvupgp06.nvidia.com on Sun, 20 May 2012 05:15:16 -0700
-Message-ID: <4FB8DF1B.5080206@nvidia.com>
-Date: Sun, 20 May 2012 17:40:03 +0530
-From: Laxman Dewangan <ldewangan@nvidia.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101208 Thunderbird/3.1.7
+	Sun, 20 May 2012 08:18:09 -0400
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Jiri Slaby <jslaby@suse.cz>
+Subject: Re: [-next regression] TCP window full with EPOLLWAKEUP
+Date: Sun, 20 May 2012 14:23:08 +0200
+User-Agent: KMail/1.13.6 (Linux/3.4.0-rc7+; KDE/4.6.0; x86_64; ; )
+Cc: Arve =?utf-8?q?Hj=C3=B8nnev=C3=A5g?= <arve@android.com>,
+        NeilBrown <neilb@suse.de>, LKML <linux-kernel@vger.kernel.org>,
+        Jiri Slaby <jirislaby@gmail.com>,
+        Linux PM list <linux-pm@vger.kernel.org>
+References: <4FB81981.3050509@suse.cz>
+In-Reply-To: <4FB81981.3050509@suse.cz>
 MIME-Version: 1.0
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>
-CC: "lrg@ti.com" <lrg@ti.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] regulator: core: use correct device for device supply
- lookup
-References: <4FB7D4D8.2050501@nvidia.com> <4FB7D676.9000609@nvidia.com> <20120519174052.GX4039@opensource.wolfsonmicro.com> <4FB7DEB0.3040001@nvidia.com> <20120519182658.GB4039@opensource.wolfsonmicro.com> <4FB7EE84.7090704@nvidia.com> <20120519205055.GA16590@opensource.wolfsonmicro.com> <4FB80CEE.4050201@nvidia.com> <20120519231347.GD16590@opensource.wolfsonmicro.com> <4FB89E6D.7000206@nvidia.com> <20120520090112.GE16590@opensource.wolfsonmicro.com>
-In-Reply-To: <20120520090112.GE16590@opensource.wolfsonmicro.com>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: Text/Plain;
+  charset="utf-8"
+Content-Transfer-Encoding: 8BIT
+Message-Id: <201205201423.08334.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sunday 20 May 2012 02:31 PM, Mark Brown wrote:
-> * PGP Signed by an unknown key
->
-> On Sun, May 20, 2012 at 01:04:05PM +0530, Laxman Dewangan wrote:
->
->>          ldo2_reg: ldo2 {
->>              ::::::::
->>              /** regulatr entry */
->>              ::::::::::::
->>              ldo2-supply =<&ldo1_reg>; /* So ldo1 supply the ldo2. */
-> This mapping should be moved up to the chip top level; this is just like
-> any other supply for the chip.
->
+On Sunday, May 20, 2012, Jiri Slaby wrote:
+> Hi,
+> 
+> a bisection shows that with the following commit from -next:
+> commit 4d7e30d98939a0340022ccd49325a3d70f7e0238
+> Author: Arve Hjønnevåg <arve@android.com>
+> Date:   Tue May 1 21:33:34 2012 +0200
+> 
+>     epoll: Add a flag, EPOLLWAKEUP, to prevent suspend while epoll
+> events are ready
+> 
+> ====
+> 
+> one of mono programs I use stops receiving data from the network.
+> Wireshark shows that the TCP window of a connection is filled. This
+> means the program does not read the data fast enough after requesting
+> the data.
+> 
+> If I revert that commit on the top of -next (20120518), everything works
+> as expected.
 
-Ok, After moving this mapping (ldo2-supply = <&ldo1_reg>;) to top level 
-under tps65911,  then it worked without core driver changes.
-Becasue at this time, the ldo2->desc->supply_name = "ldo2" get find on 
-the chip level node and then it return the regulator node properly.
+Hmm.  I suppose that the failing program doesn't set EPOLLWAKEUP by mistake,
+does it?
 
-
->> ldo1 registration went fine.
->> During ldo2 registration, I passed the regulator_desc->supply_name as ldo2.
-> I'd be somewhat surprised if this is what the pin is actually called,
-> idiomatically the supply name should be whatever the pin is named on the
-> chip.
-Yes, I need to add the code in tps65911-regulator.c to use the proper 
-pin name as per datasheet for looking for input supply. Like "vcc3" is 
-the pin name for ldo6,ldo7 and ldo8 supply and hence look for 
-"vcc3-supply" in the chip level rather than "ldo6-supply" or 
-"ldo7-supply" etc.
-I will post the patch for these changes.
+Rafael
