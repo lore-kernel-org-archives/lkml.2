@@ -1,52 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752913Ab2ETJ1t (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 20 May 2012 05:27:49 -0400
-Received: from smtp.snhosting.dk ([87.238.248.203]:60364 "EHLO
-	smtp.domainteam.dk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751609Ab2ETJ1q (ORCPT
+	id S1753030Ab2ETJh7 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 20 May 2012 05:37:59 -0400
+Received: from mail-ob0-f174.google.com ([209.85.214.174]:35373 "EHLO
+	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752346Ab2ETJh5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 20 May 2012 05:27:46 -0400
-Date: Sun, 20 May 2012 11:27:44 +0200
-From: Sam Ravnborg <sam@ravnborg.org>
-To: Geert Uytterhoeven <geert@linux-m68k.org>, Michal Marek <mmarek@suse.cz>
-Cc: linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org,
-        Andi Kleen <ak@linux.intel.com>, "H. Peter Anvin" <hpa@zytor.com>,
-        Michal Marek <mmarek@suse.cz>, linux-kbuild@vger.kernel.org
-Subject: Re: [PATCH 1/4] [-next] Makefile: Do not call cc-option before
-	including the arch's Makefile
-Message-ID: <20120520092744.GA21341@merkur.ravnborg.org>
-References: <1336855148-18817-1-git-send-email-geert@linux-m68k.org>
+	Sun, 20 May 2012 05:37:57 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1336855148-18817-1-git-send-email-geert@linux-m68k.org>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <CAMO-S2g9fkg_KH0CPOsB_7GQTN2mu8zir+UZDp6=VC+7XDrfrg@mail.gmail.com>
+References: <1337268092-6765-1-git-send-email-h.mitake@gmail.com>
+	<4FB52636.3040604@linux.intel.com>
+	<CAMO-S2g9fkg_KH0CPOsB_7GQTN2mu8zir+UZDp6=VC+7XDrfrg@mail.gmail.com>
+Date: Sun, 20 May 2012 18:37:57 +0900
+Message-ID: <CAMO-S2gyzK3VTQcTRw+FAO9ui_gy=1z=MVxUYM9sPN51KrDgkg@mail.gmail.com>
+Subject: Re: [PATCH] perf bench: add new benchmark subsystem and suite "futex wait"
+From: Hitoshi Mitake <h.mitake@gmail.com>
+To: Darren Hart <dvhart@linux.intel.com>
+Cc: Ingo Molnar <mingo@elte.hu>, linux-kernel@vger.kernel.org,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Paul Mackerras <paulus@samba.org>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        Michel Lespinasse <walken@google.com>,
+        Rusty Russell <rusty@rustcorp.com.au>,
+        Eric Dumazet <eric.dumazet@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, May 12, 2012 at 10:39:05PM +0200, Geert Uytterhoeven wrote:
-> On architectures that setup CROSS_COMPILE in their arch/*/Makefile
-> (blackfin, h8300, m68k, mips, parisc, score, sh, tile, unicore32, xtensa),
-> cc-option may check against the wrong compiler, causing errors like
-> 
-> cc1: error: unrecognized command line option "-fno-ipa-cp-clone"
-> 
-> if the host gcc supports -fno-ipa-cp-clone, while the cross compiler
-> doesn't support that option.
-> 
-> Move the CONFIG_READABLE_ASM section below the inclusion of the arch's
-> Makefile to fix this.
-> 
-> Signed-off-by: Geert Uytterhoeven <geert@linux-m68k.org>
-> Cc: Andi Kleen <ak@linux.intel.com>
-> Cc: H. Peter Anvin <hpa@zytor.com>
-> Cc: Michal Marek <mmarek@suse.cz>
-> Cc: linux-kbuild@vger.kernel.org
+On Sun, May 20, 2012 at 5:32 PM, Hitoshi Mitake <h.mitake@gmail.com> wrote:
+> On Fri, May 18, 2012 at 1:24 AM, Darren Hart <dvhart@linux.intel.com> wrote:
+>> On 05/17/2012 08:21 AM, Hitoshi Mitake wrote:
+>>> Hi Ingo, Eric and Darren,
+>>> (CCed perf and futex folks)
+>>>
+>>> I wrote this patch for adding new subsystem "futex" and its suite "wait" to perf
+>>> bench on tip/master. This is based on futextest by Darren Hart.
+>>>
+>>> Could you allow me to import your source code of futextest to perf bench, Darren?
+>>>
+>>
+>> I do have some concerns I'd like to address first.
+>>
+>> What is advantage of incorporating this into perf as opposed to running
+>> it with perf?
+>
+> The main and direct advantage is that perf bench can share useful
+> utilities stored under tools/perf/util/ directory e.g. parse-options[ch].
+>
 
-Michal - was this serie ever applied to kbuild?
+BTW, I often feel parse-options.[ch] of perf (this was come from git,
+right?) is very useful not only for perf and git but also other
+projects. So I think these stuff are worth independence as a
+library. If the library contains unified feature for parsing and
+evaluating configuration files, the hell of managing configurable
+options will be reduced. e.g. I often use "strace -e open <command>"
+to detect configuration files read by the <command>...
 
-Acked-by: Sam Ravnborg <sam@ravnborg.org>
+I thought that if perf bench can be independent from perf with such
+efforts, it can be smaller sized and statically linked binary. From my
+experience, this will be good for embedded systems people.
 
-	Sam
+This independence also has risk: less people can find it or is
+attracted even if it stays in the kernel tree (e.g. tools/bench/). But
+it seems that very few people know about perf bench, so this will not
+be a serious problem ;)
+
+I'd like to hear your opinion.
+
+Thanks,
+
+-- 
+Hitoshi Mitake
+h.mitake@gmail.com
