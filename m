@@ -1,89 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753210Ab2ETX2i (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 20 May 2012 19:28:38 -0400
-Received: from mailout2.samsung.com ([203.254.224.25]:39691 "EHLO
-	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751212Ab2ETX2h (ORCPT
+	id S1753619Ab2ETXgV (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 20 May 2012 19:36:21 -0400
+Received: from mail-we0-f174.google.com ([74.125.82.174]:33038 "EHLO
+	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752174Ab2ETXgT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 20 May 2012 19:28:37 -0400
-MIME-version: 1.0
-Content-transfer-encoding: 8BIT
-Content-type: text/plain; charset=UTF-8
-X-AuditID: cbfee61a-b7fe76d0000023f5-bd-4fb97e2215bb
-Message-id: <4FB97E22.7090604@samsung.com>
-Date: Mon, 21 May 2012 08:28:34 +0900
-From: Chanwoo Choi <cw00.choi@samsung.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:10.0.2) Gecko/20120216
- Thunderbird/10.0.2
-To: Greg KH <gregkh@linuxfoundation.org>
-Cc: broonie@opensource.wolfsonmicro.com, thomas.abraham@linaro.org,
-        grant.likely@secretlab.ca, sameo@linux.intel.com,
-        myungjoo.ham@samsung.com, kyungmin.park@samsung.com,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v3 1/2] mfd: add irq domain support for max8997 interrupts
-References: <1337154104-22036-1-git-send-email-cw00.choi@samsung.com>
- <20120518235916.GA14015@kroah.com>
-In-reply-to: <20120518235916.GA14015@kroah.com>
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrOLMWRmVeSWpSXmKPExsVy+t9jAV2lup3+BhufKltc3jWHzYHR4/Mm
-	uQDGKC6blNSczLLUIn27BK6M3qO3WAreC1QsenCVvYFxGV8XIyeHhICJRPeXt8wQtpjEhXvr
-	2boYuTiEBBYxSvSu/8ICkuAVEJT4MfkekM3BwSwgL3HkUjZImFlAXWLSvEXMEPXdTBITV7Qx
-	QtRrSTzZc5IJxGYRUJVY2LedDcRmA4rvf3GDDWSOqECExK9+DpCwiICGxEug20DmMAucZpQ4
-	f2cRWL2wgJ/Ekx9rmEHqhQSyJO4d0wcJcwroS7yf/Il5AqPALCTXzUK4bhaS6xYwMq9iFE0t
-	SC4oTkrPNdQrTswtLs1L10vOz93ECA6+Z1I7GFc2WBxiFOBgVOLhLV+8w1+INbGsuDL3EKME
-	B7OSCK90FlCINyWxsiq1KD++qDQntfgQozQHi5I4rx1ItUB6YklqdmpqQWoRTJaJg1OqgXFT
-	ymdXQ9mq9g8NovZTWfUu9lxomJsco8HxnunSu0179Sf4hX666cYf78G00XWPj6Pz6rPd5QsW
-	XfrEviBpy0rBbZv71t2UWR2hv/T6wWiNpc5ba/NYvrxrXu5Uo8aY8Tvhy4WlX8x+fFmxZ7u5
-	bZzf3LubKnTmrn+n8yD87ml50bzJfuseqKgrsRRnJBpqMRcVJwIAP6pdTDoCAAA=
-X-TM-AS-MML: No
+	Sun, 20 May 2012 19:36:19 -0400
+MIME-Version: 1.0
+In-Reply-To: <alpine.DEB.2.00.1205201333210.10189@chino.kir.corp.google.com>
+References: <20120518212656.GA4992@kroah.com> <20120519010105.GB18264@home.goodmis.org>
+ <20120519042038.GB11939@kroah.com> <1337479307.32434.16.camel@gandalf.stny.rr.com>
+ <alpine.DEB.2.00.1205191930310.24674@chino.kir.corp.google.com>
+ <CA+55aFwGpDtMR=8GfDqyZGdw_pQFxG-EL15LaNm0wVoXZChXSA@mail.gmail.com> <alpine.DEB.2.00.1205201333210.10189@chino.kir.corp.google.com>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Sun, 20 May 2012 16:35:57 -0700
+X-Google-Sender-Auth: d4MACWQ5oMICqKfRyvOfXcRf3UU
+Message-ID: <CA+55aFw3f1ru3A78ycaZj8nPMR8s5cfLvNcRBg761M7Losn6qw@mail.gmail.com>
+Subject: Re: [PATCH] pidmap: Use GFP_ATOMIC to allocate page (was: Re: [
+ 00/54] 3.0.32-stable review)
+To: David Rientjes <rientjes@google.com>
+Cc: Steven Rostedt <rostedt@goodmis.org>, Greg KH <gregkh@linuxfoundation.org>,
+        linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
+        Peter Zijlstra <peterz@infradead.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Greg,
+On Sun, May 20, 2012 at 4:22 PM, David Rientjes <rientjes@google.com> wrote:
+>
+> I think this may be unnecessarily too late; smp_init() will rely on the
+> arch-dependent cpu_up to guarantee that cpu_idle() has been called and
+> sched_init_smp() seems to think we can do GFP_KERNEL.
 
-On 05/19/2012 08:59 AM, Greg KH wrote:
+Well, yes, we can pretty much rely on scheduling having to work at the
+top of kernel_init(), since kernel_init is being run in a new thread
+(and thus must have scheduled from the original thread that becomes
+the first idle thread).
 
-> On Wed, May 16, 2012 at 04:41:44PM +0900, Chanwoo Choi wrote:
->> From: Thomas Abraham <thomas.abraham@linaro.org>
->>
->> Add irq domain support for max8997 interrupts. The reverse mapping method
->> used is linear mapping since the sub-drivers of max8997 such as regulator
->> and charger drivers can use the max8997 irq_domain to get the linux irq
->> number for max8997 interrupts. All uses of irq_base in platform data and
->> max8997 driver private data are removed.
->>
->> Signed-off-by: Thomas Abraham <thomas.abraham@linaro.org>
->> Acked-by: MyungJoo Ham <myungjoo.ham@samsung.com>
->> Acked-by: Grant Likely <grant.likely@secretlab.ca>
->> Acked-by: Samuel Ortiz <sameo@linux.intel.com>
->> Signed-off-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
->> 	[Fix two bug which set max8997->irq_domain and correct wrong parameter]
->> Signed-off-by: Chanwoo Choi <cw00.choi@samsung.com>
->> Signed-off-by: Kyungmin Park <kyungmin.park@samsung.com>
-> 
-> Same problem as before, I apply this and it breaks the build with the
-> following errors:
-> 
-> drivers/extcon/extcon-max8997.c: In function ‘max8997_muic_irq_work’:
-> drivers/extcon/extcon-max8997.c:350:36: error: ‘struct max8997_dev’ has no member named ‘irq_base’
-> drivers/extcon/extcon-max8997.c: In function ‘max8997_muic_probe’:
-> drivers/extcon/extcon-max8997.c:452:35: error: ‘struct max8997_platform_data’ has no member named ‘irq_base’
-> drivers/extcon/extcon-max8997.c: In function ‘max8997_muic_remove’:
-> drivers/extcon/extcon-max8997.c:514:19: error: ‘struct max8997_dev’ has no member named ‘irq_base’
-> 
-> Please fix.
+But I thought we might as well delay it until the system was really
+up, since I wasn't entirely sure what the heck the other CPU's might
+be doing. That said, I don't really care deeply, I think that anywhere
+in kernel_init should be fine.  I have no strong opinions, but the
+current location does seem buggy.
 
-I posted patchset including below two patch. The second patch fix that
-extcon-max8997 driver use irq_domain instead of irq_base field in
-'struct max8997_dev'.
+That said, I'm not going to delay 3.4 over this (in fact, I already
+tagged it locally, but haven't pushed out yet because the back-end
+kernel.org machines seem to be unreachable right now). It apparently
+only matters for configurations that are not really all that
+realistic.
 
-Please apply second patch when test this patchset.
-If you want to consolidate this patchset, I will resend it.
-
-[PATCH v3 1/2] mfd: add irq domain support for max8997 interrupts
-[PATCH v3 2/2] Extcon: MAX8997: Add support irq domain for MAX8997 muic
-
-Best Regards,
-Chanwoo Choi
-
+                             Linus
