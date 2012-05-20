@@ -1,58 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756764Ab2ETS01 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 20 May 2012 14:26:27 -0400
-Received: from nm24-vm1.bullet.mail.ne1.yahoo.com ([98.138.90.45]:28331 "HELO
-	nm24-vm1.bullet.mail.ne1.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1754402Ab2ETS0Z (ORCPT
+	id S1756791Ab2ETS31 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 20 May 2012 14:29:27 -0400
+Received: from ogre.sisk.pl ([193.178.161.156]:55427 "EHLO ogre.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754402Ab2ETS3Z convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 20 May 2012 14:26:25 -0400
-X-Greylist: delayed 355 seconds by postgrey-1.27 at vger.kernel.org; Sun, 20 May 2012 14:26:25 EDT
-X-Yahoo-Newman-Id: 577193.26313.bm@smtp107.mail.ne1.yahoo.com
-X-Yahoo-Newman-Property: ymail-3
-X-YMail-OSG: ILor_dMVM1nm6CK1Wp4f7Y1uKQTBHGOrYLxXa_ZOS8USwGu
- ZQA65zhI.I3h6YMr42mYoUhwDWVg6ZfZPJ02w_eE4ifVAAtBZqnvGw37pJyx
- YYVGY4bMLaqm6u6imM6WkrC2lTrkwYTFLwfhR1VbEt.FJcQDrA838O2uYwU2
- N3PfYMQYQrUyEGlPZajE4EGHfkIXt9OJnPX2rJ16a7SPxTt4EPJkRdQMnFte
- kH_nBo6AQh3S3p.6yafocPjzBpfWiEDnYiub.d_VQ9V4ZQp3hQpc.1UY2Rpw
- 4fv8K0iP534DTZABM6Bg1Vx7kM43R_Q0o27cTHgSSQFkIHSco57z4ryaq8HF
- cSDpqRHytanHKu5EeRT5AQiUmuVRJ8cvP7kL8.84sBYJrJqmOaj4no3ZQxyJ
- OQjdBmsBbrTzeovAJzoyz7TdIS1Fci4jyXzyf1B2PhXSJngnSzl2xP1zHLSY
- tB2uPimloaBpi.B6jVzppOn9cOxOJ1NQrycVffOpW
-X-Yahoo-SMTP: dNW5aIGswBCf1iV6QK8RWrBgWyjShXs-
-From: Jeffrin Jose <ahiliation@yahoo.co.in>
-To: sds@tycho.nsa.gov, james.l.morris@oracle.com, eparis@parisplace.org
-Cc: linux-security-module@vger.kernel.org, linux-kernel@vger.kernel.org,
-        ahiliation@yahoo.co.in
-Subject: [PATCH]security:selinux:fixed spacing issues relating to : and ? operators.
-Date: Sun, 20 May 2012 23:53:49 +0530
-Message-Id: <1337538229-4784-1-git-send-email-ahiliation@yahoo.co.in>
-X-Mailer: git-send-email 1.7.10
+	Sun, 20 May 2012 14:29:25 -0400
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Jiri Slaby <jslaby@suse.cz>
+Subject: Re: [-next regression] TCP window full with EPOLLWAKEUP
+Date: Sun, 20 May 2012 20:34:24 +0200
+User-Agent: KMail/1.13.6 (Linux/3.4.0-rc7+; KDE/4.6.0; x86_64; ; )
+Cc: Arve =?utf-8?q?Hj=C3=B8nnev=C3=A5g?= <arve@android.com>,
+        NeilBrown <neilb@suse.de>, LKML <linux-kernel@vger.kernel.org>,
+        Jiri Slaby <jirislaby@gmail.com>,
+        Linux PM list <linux-pm@vger.kernel.org>
+References: <4FB81981.3050509@suse.cz> <201205201423.08334.rjw@sisk.pl> <201205201453.11794.rjw@sisk.pl>
+In-Reply-To: <201205201453.11794.rjw@sisk.pl>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="utf-8"
+Content-Transfer-Encoding: 8BIT
+Message-Id: <201205202034.24541.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Fixed spacing issues of : and ? operators found by
-checkpatch.pl in security/selinux/xfrm.c
+On Sunday, May 20, 2012, Rafael J. Wysocki wrote:
+> On Sunday, May 20, 2012, Rafael J. Wysocki wrote:
+> > On Sunday, May 20, 2012, Jiri Slaby wrote:
+> > > Hi,
+> > > 
+> > > a bisection shows that with the following commit from -next:
+> > > commit 4d7e30d98939a0340022ccd49325a3d70f7e0238
+> > > Author: Arve Hjønnevåg <arve@android.com>
+> > > Date:   Tue May 1 21:33:34 2012 +0200
+> > > 
+> > >     epoll: Add a flag, EPOLLWAKEUP, to prevent suspend while epoll
+> > > events are ready
+> > > 
+> > > ====
+> > > 
+> > > one of mono programs I use stops receiving data from the network.
+> > > Wireshark shows that the TCP window of a connection is filled. This
+> > > means the program does not read the data fast enough after requesting
+> > > the data.
+> > > 
+> > > If I revert that commit on the top of -next (20120518), everything works
+> > > as expected.
+> > 
+> > Hmm.  I suppose that the failing program doesn't set EPOLLWAKEUP by mistake,
+> > does it?
+> 
+> If it doesn't, we can assume that epi-ws is always NULL and all of the added
+> overhead comes from the function calls.  So, I wonder if the appended patch
+> makes any difference?
 
-Signed-off-by: Jeffrin Jose <ahiliation@yahoo.co.in>
+Having thought more about this I have to say this doesn't seem to make much
+sense, because in that case you'd see some progress, although probably a bit
+slower than before.
+
+So, I think what happens is that the application tries to set EPOLLWAKEUP,
+but doesn't have the capability, so the entire operation fails for it, but
+it doesn't check the return value.
+
+I wonder if the following helps, then.
+
+Thanks,
+Rafael
+
+
 ---
- security/selinux/xfrm.c |    2 +-
+ fs/eventpoll.c |    2 +-
  1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/security/selinux/xfrm.c b/security/selinux/xfrm.c
-index 48665ec..a3cb878 100644
---- a/security/selinux/xfrm.c
-+++ b/security/selinux/xfrm.c
-@@ -140,7 +140,7 @@ int selinux_xfrm_state_pol_flow_match(struct xfrm_state *x, struct xfrm_policy *
+Index: linux/fs/eventpoll.c
+===================================================================
+--- linux.orig/fs/eventpoll.c
++++ linux/fs/eventpoll.c
+@@ -1711,7 +1711,7 @@ SYSCALL_DEFINE4(epoll_ctl, int, epfd, in
  
- 	rc = avc_has_perm(fl->flowi_secid, state_sid, SECCLASS_ASSOCIATION,
- 			  ASSOCIATION__SENDTO,
--			  NULL)? 0:1;
-+			  NULL) ? 0 : 1;
+ 	/* Check if EPOLLWAKEUP is allowed */
+ 	if ((epds.events & EPOLLWAKEUP) && !capable(CAP_EPOLLWAKEUP))
+-		goto error_tgt_fput;
++		epds.events &= ~EPOLLWAKEUP;
  
  	/*
- 	 * We don't need a separate SA Vs. policy polmatch check
--- 
-1.7.10
-
+ 	 * We have to check that the file structure underneath the file descriptor
