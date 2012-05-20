@@ -1,59 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756092Ab2ETOkF (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 20 May 2012 10:40:05 -0400
-Received: from prod-mail-xrelay05.akamai.com ([96.6.114.97]:44779 "EHLO
-	prod-mail-xrelay05.akamai.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755635Ab2ETOkB (ORCPT
+	id S1756054Ab2ETPG5 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 20 May 2012 11:06:57 -0400
+Received: from acsinet15.oracle.com ([141.146.126.227]:18852 "EHLO
+	acsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754845Ab2ETPG4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 20 May 2012 10:40:01 -0400
-X-Greylist: delayed 430 seconds by postgrey-1.27 at vger.kernel.org; Sun, 20 May 2012 10:40:01 EDT
-From: Josh Hunt <johunt@akamai.com>
-To: Eric.Moore@lsi.com, support@lsi.com, DL-MPTFusionLinux@lsi.com,
-        linux-scsi@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, Josh Hunt <johunt@akamai.com>
-Subject: [RFC/PATCH] mptscsih: Set DRIVER_SENSE when sense data present
-Date: Sun, 20 May 2012 07:32:49 -0700
-Message-Id: <1337524369-8622-1-git-send-email-johunt@akamai.com>
-X-Mailer: git-send-email 1.7.0.4
+	Sun, 20 May 2012 11:06:56 -0400
+Date: Sun, 20 May 2012 18:10:37 +0300
+From: Dan Carpenter <dan.carpenter@oracle.com>
+To: Nasir Abed <nasirabed@gmail.com>
+Cc: devel@driverdev.osuosl.org, gregkh@linuxfoundation.org,
+        Nasir Abed <nasirabed+kernel@gmail.com>, linux-kernel@vger.kernel.org,
+        swetland@google.com
+Subject: Re: [PATCH] Staging: android: alarm: fixed quoted string split
+ across lines
+Message-ID: <20120520151037.GB4637@mwanda>
+References: <1337507659-14740-1-git-send-email-nasirabed+kernel@gmail.com>
+ <20120520141701.GA4637@mwanda>
+ <CAMXkaZHmks+iHfV+uY7RQtt4WwvnkGgn4JY2baVW8MZe-+203Q@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAMXkaZHmks+iHfV+uY7RQtt4WwvnkGgn4JY2baVW8MZe-+203Q@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: acsinet21.oracle.com [141.146.126.237]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-While looking into some drive errors on a few of our systems I noticed that
-DRIVER_SENSE was not being set by mptscsih even though there was sense data
-present. DRIVER_SENSE does eventually get set by scsi_finish_command() when
-it detects the sense data. I won't pretend I'm an expert in this area, I'm
-just looking for an explanation as to why the patch below or something like
-it is not currently in the driver? Is it sufficient enough that we're detecting
-this case later on in the scsi code?
+On Sun, May 20, 2012 at 04:20:45PM +0200, Nasir Abed wrote:
+> Yeah, this is a tag, which I use. Like the one I used for:
+> http://git.kernel.org/?p=linux/kernel/git/torvalds/linux.git;a=commit;h=0bdd2b6
+> 
 
-Thanks
-Josh
+Yeah, sorry, I should have caught it the first time.  Please don't
+do that.
 
----
-
-Currently when sense data is present only check condition is set. This
-sets DRIVER_SENSE as well.
-
-Signed-off-by: Josh Hunt <johunt@akamai.com>
----
- drivers/message/fusion/mptscsih.c |    2 ++
- 1 files changed, 2 insertions(+), 0 deletions(-)
-
-diff --git a/drivers/message/fusion/mptscsih.c b/drivers/message/fusion/mptscsih.c
-index 0c3ced7..3ccf5cf 100644
---- a/drivers/message/fusion/mptscsih.c
-+++ b/drivers/message/fusion/mptscsih.c
-@@ -889,6 +889,8 @@ mptscsih_io_done(MPT_ADAPTER *ioc, MPT_FRAME_HDR *mf, MPT_FRAME_HDR *mr)
- 			} else if (scsi_state &
- 			    MPI_SCSI_STATE_AUTOSENSE_VALID) {
- 
-+				sc->result |= (DRIVER_SENSE << 24);
-+
- 				/*
- 				 * For potential trouble on LSI53C1030.
- 				 * (date:2007.xx.)
--- 
-1.7.0.4
+regards,
+dan carpenter
 
