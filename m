@@ -1,81 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758291Ab2ETCrY (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 19 May 2012 22:47:24 -0400
-Received: from db3ehsobe006.messaging.microsoft.com ([213.199.154.144]:28074
-	"EHLO db3outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1757879Ab2ETCrX (ORCPT
+	id S1758334Ab2ETCzR (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 19 May 2012 22:55:17 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:56499 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758198Ab2ETCzO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 19 May 2012 22:47:23 -0400
-X-SpamScore: -3
-X-BigFish: VS-3(zz98dKzz1202hzzz2dh2a8h668h839h944hd25hf0ah)
-X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
-Date: Sun, 20 May 2012 11:06:54 +0800
-From: Shawn Guo <shawn.guo@freescale.com>
-To: Rob Herring <robherring2@gmail.com>
-CC: Mike Turquette <mturquette@linaro.org>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        "arm@kernel.org" <arm@kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [GIT PULL] DT clk binding support
-Message-ID: <20120520030653.GB5810@S2100-06.ap.freescale.net>
-References: <4FB80F32.5090309@gmail.com>
+	Sat, 19 May 2012 22:55:14 -0400
+Message-ID: <4FB85D0C.7070108@gmail.com>
+Date: Sat, 19 May 2012 20:55:08 -0600
+From: David Ahern <dsahern@gmail.com>
+User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.7; rv:12.0) Gecko/20120428 Thunderbird/12.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-In-Reply-To: <4FB80F32.5090309@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-OriginatorOrg: freescale.com
+To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+CC: Ingo Molnar <mingo@kernel.org>, linux-kernel@vger.kernel.org,
+        Arnaldo Carvalho de Melo <acme@infradead.org>,
+        Corey Ashford <cjashfor@linux.vnet.ibm.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Namhyung Kim <namhyung@gmail.com>, Namhyung Kim <namhyung.kim@lge.com>,
+        Paul Mackerras <paulus@samba.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Robert Richter <robert.richter@amd.com>,
+        Stephane Eranian <eranian@google.com>, arnaldo.melo@gmail.com,
+        Arnaldo Carvalho de Melo <acme@redhat.com>
+Subject: Re: [GIT PULL 0/6] perf/core fixes
+References: <1337480196-761-1-git-send-email-acme@infradead.org>
+In-Reply-To: <1337480196-761-1-git-send-email-acme@infradead.org>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, May 19, 2012 at 04:22:58PM -0500, Rob Herring wrote:
-> Grant Likely (2):
->       clk: add DT clock binding support
+On 5/19/12 8:16 PM, Arnaldo Carvalho de Melo wrote:
 
-I just checked your branch and found that a couple of comments that
-I put on this patch haven't get addressed.  The most notable one would
-be the "clocks" property of clock consumers.
+> Arnaldo Carvalho de Melo (1):
+>        Merge remote-tracking branch 'tip/perf/urgent' into perf/core
+>
+> David Ahern (1):
+>        perf evsel: Create events initially disabled -- again
+>
+> Jiri Olsa (2):
+>        perf hists: Fix callchain ip printf format
+>        perf tools: Split term type into value type and term type
+>
+> Namhyung Kim (3):
+>        perf target: Rename functions to avoid double negation
+>        Revert 'perf evlist: Fix creation of cpu map'
+>        perf target: Add uses_mmap field
 
-+==Clock consumers==
-+
-+Required properties:
-+clocks:                List of phandle and clock specifier pairs, one pair
-+               for each clock input to the device.  Note: if the
-+               clock provider specifies '0' for #clock-cells, then
-+               only the phandle portion of the pair will appear.
-+
-+Optional properties:
-+clock-names:   List of clock input name strings sorted in the same
-+               order as the clocks property.  Consumers drivers
-+               will use clock-names to match clock input names
-+               with clocks specifiers.
+What about Stephane's pipe mode patch set? The first 3 and the last one 
+of the 5 are good fixes to pick up.
 
-As I said, any clock in the clock tree except root clock is not only
-a clock provider but also a consumer.  If you define "clocks" as a
-required property for clock consumers, you are essentially asking users
-to either define the whole clock tree in the device tree or stay away
-from device tree completely.
-
-Are you sure this is the right thing to do?  If I remember correctly,
-Grant's position is it should be pretty reasonable to have most of
-the clock tree defined in clock driver and only define those leaf
-clocks which are very likely to become the clock providers for other
-peripherals.
-
-Let me put a terrible example here.  Since clock tree is actually SoC
-specific, I can reasonably choose to define the entire imx6q clock tree
-and all the clk lookups for imx6q peripherals in clk-imx6q driver.
-On imx6q-sabrelite board, the audio codec sgtl5000 uses cko (an imx6q
-clock available on pad) as the clock source.  That said, I need a board
-specific clk lookup here, which should be the best user of clock DT
-bindings.  But sadly, with the current bindings, I can not give the
-required "clocks" property for sgtl5000 node.
-
--- 
-Regards,
-Shawn
-
+David
