@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755288Ab2ETNhO (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 20 May 2012 09:37:14 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:35078 "EHLO
+	id S1755351Ab2ETNiT (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 20 May 2012 09:38:19 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:64698 "EHLO
 	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754082Ab2ETNhM (ORCPT
+	with ESMTP id S1754705Ab2ETNiS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 20 May 2012 09:37:12 -0400
+	Sun, 20 May 2012 09:38:18 -0400
 From: Devendra Naga <devendra.aaru@gmail.com>
-To: git sendGreg Kroah-Hartman <gregkh@linuxfoundation.org>,
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
         Joseph Salisbury <salisbury.joseph@gmail.com>,
         Devendra Naga <devendra.aaru@gmail.com>, devel@driverdev.osuosl.org,
         linux-kernel@vger.kernel.org
 Subject: [PATCH 3/3] staging/wlan-ng: Fix checkpatch warnings
-Date: Sun, 20 May 2012 19:06:47 +0530
-Message-Id: <1337521007-23229-1-git-send-email-devendra.aaru@gmail.com>
+Date: Sun, 20 May 2012 19:08:11 +0530
+Message-Id: <1337521091-23322-1-git-send-email-devendra.aaru@gmail.com>
 X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
