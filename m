@@ -1,53 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756525Ab2ETQUM (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 20 May 2012 12:20:12 -0400
-Received: from mail1.windriver.com ([147.11.146.13]:61195 "EHLO
-	mail1.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751107Ab2ETQUK (ORCPT
+	id S1755097Ab2ETQYQ (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 20 May 2012 12:24:16 -0400
+Received: from hqemgate03.nvidia.com ([216.228.121.140]:16331 "EHLO
+	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751794Ab2ETQYP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 20 May 2012 12:20:10 -0400
-Date: Sun, 20 May 2012 12:20:06 -0400
-From: Paul Gortmaker <paul.gortmaker@windriver.com>
-To: Chris Metcalf <cmetcalf@tilera.com>
-CC: <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] tile: set KBUILD_DEFCONFIG to point at a real config file
-Message-ID: <20120520162005.GB21177@windriver.com>
-References: <1337381165-7376-1-git-send-email-paul.gortmaker@windriver.com>
- <4FB6F28F.3090404@tilera.com>
- <20120519031806.GA24697@windriver.com>
- <4FB7A856.4090803@tilera.com>
+	Sun, 20 May 2012 12:24:15 -0400
+X-PGP-Universal: processed;
+	by hqnvupgp06.nvidia.com on Sun, 20 May 2012 09:24:10 -0700
+From: Laxman Dewangan <ldewangan@nvidia.com>
+To: <lrg@ti.com>, <broonie@opensource.wolfsonmicro.com>
+CC: <linux-kernel@vger.kernel.org>, Laxman Dewangan <ldewangan@nvidia.com>
+Subject: [PATCH] regulator: tps62360: dt: initialize of_node param for regulator register.
+Date: Sun, 20 May 2012 21:48:47 +0530
+Message-ID: <1337530730-16605-1-git-send-email-ldewangan@nvidia.com>
+X-Mailer: git-send-email 1.7.1.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-In-Reply-To: <4FB7A856.4090803@tilera.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-[Re: [PATCH] tile: set KBUILD_DEFCONFIG to point at a real config file] On 19/05/2012 (Sat 10:04) Chris Metcalf wrote:
+Initialize config.of_node for regulator before registering.
+This is needed for DT based regulator support.
+Regulator stores this of_node value in rdev->dev.of_node
+and used for lookup when client ask for regulator_get().
 
-> On 5/18/2012 11:18 PM, Paul Gortmaker wrote:
+Signed-off-by: Laxman Dewangan <ldewangan@nvidia.com>
+---
+ drivers/regulator/tps62360-regulator.c |    1 +
+ 1 files changed, 1 insertions(+), 0 deletions(-)
 
-[...]
+diff --git a/drivers/regulator/tps62360-regulator.c b/drivers/regulator/tps62360-regulator.c
+index b5be0d0..e534269 100644
+--- a/drivers/regulator/tps62360-regulator.c
++++ b/drivers/regulator/tps62360-regulator.c
+@@ -490,6 +490,7 @@ static int __devinit tps62360_probe(struct i2c_client *client,
+ 	config.dev = &client->dev;
+ 	config.init_data = pdata->reg_init_data;
+ 	config.driver_data = tps;
++	config.of_node = client->dev.of_node;
+ 
+ 	/* Register the regulators */
+ 	rdev = regulator_register(&tps->desc, &config);
+-- 
+1.7.1.1
 
-> >
-> > So maybe some validation on the ARCH value is in order if you really
-> > don't want people doing this?
-> 
-> Yes.  I think what I will do is "promote" ARCH=tile to ARCH=tilegx in
-> arch/tile/Makefile as the "default" Tilera architecture.  Thanks for the
-> suggestion - I've been too close to this issue to actually notice it :-)
-
-No problem, I figured that was the case -- that setting ARCH=tile never
-crossed your mind since you already knew what was expected by your own
-Makefile.  :)
-
-Paul.
-
-> 
-> -- 
-> Chris Metcalf, Tilera Corp.
-> http://www.tilera.com
-> 
