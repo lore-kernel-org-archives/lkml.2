@@ -1,76 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753030Ab2ETJh7 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 20 May 2012 05:37:59 -0400
-Received: from mail-ob0-f174.google.com ([209.85.214.174]:35373 "EHLO
-	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752346Ab2ETJh5 (ORCPT
+	id S1753302Ab2ETJsH (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 20 May 2012 05:48:07 -0400
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:58601 "EHLO
+	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753183Ab2ETJr4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 20 May 2012 05:37:57 -0400
+	Sun, 20 May 2012 05:47:56 -0400
+Date: Sun, 20 May 2012 10:47:51 +0100
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Yadwinder Singh Brar <yadi.brar01@gmail.com>
+Cc: linux-kernel@vger.kernel.org, linux-samsung-soc@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, Liam Girdwood <lrg@ti.com>,
+        Yadwinder Singh Brar <yadi.brar@samsung.com>
+Subject: Re: [PATCH v2 1/2] mfd: Add support for MAX77686.
+Message-ID: <20120520094750.GB20652@opensource.wolfsonmicro.com>
+References: <1337261967-26004-1-git-send-email-yadi.brar@samsung.com>
+ <1337261967-26004-2-git-send-email-yadi.brar@samsung.com>
 MIME-Version: 1.0
-In-Reply-To: <CAMO-S2g9fkg_KH0CPOsB_7GQTN2mu8zir+UZDp6=VC+7XDrfrg@mail.gmail.com>
-References: <1337268092-6765-1-git-send-email-h.mitake@gmail.com>
-	<4FB52636.3040604@linux.intel.com>
-	<CAMO-S2g9fkg_KH0CPOsB_7GQTN2mu8zir+UZDp6=VC+7XDrfrg@mail.gmail.com>
-Date: Sun, 20 May 2012 18:37:57 +0900
-Message-ID: <CAMO-S2gyzK3VTQcTRw+FAO9ui_gy=1z=MVxUYM9sPN51KrDgkg@mail.gmail.com>
-Subject: Re: [PATCH] perf bench: add new benchmark subsystem and suite "futex wait"
-From: Hitoshi Mitake <h.mitake@gmail.com>
-To: Darren Hart <dvhart@linux.intel.com>
-Cc: Ingo Molnar <mingo@elte.hu>, linux-kernel@vger.kernel.org,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Paul Mackerras <paulus@samba.org>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        Michel Lespinasse <walken@google.com>,
-        Rusty Russell <rusty@rustcorp.com.au>,
-        Eric Dumazet <eric.dumazet@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="Yylu36WmvOXNoKYn"
+Content-Disposition: inline
+In-Reply-To: <1337261967-26004-2-git-send-email-yadi.brar@samsung.com>
+X-Cookie: You have a truly strong individuality.
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, May 20, 2012 at 5:32 PM, Hitoshi Mitake <h.mitake@gmail.com> wrote:
-> On Fri, May 18, 2012 at 1:24 AM, Darren Hart <dvhart@linux.intel.com> wrote:
->> On 05/17/2012 08:21 AM, Hitoshi Mitake wrote:
->>> Hi Ingo, Eric and Darren,
->>> (CCed perf and futex folks)
->>>
->>> I wrote this patch for adding new subsystem "futex" and its suite "wait" to perf
->>> bench on tip/master. This is based on futextest by Darren Hart.
->>>
->>> Could you allow me to import your source code of futextest to perf bench, Darren?
->>>
->>
->> I do have some concerns I'd like to address first.
->>
->> What is advantage of incorporating this into perf as opposed to running
->> it with perf?
->
-> The main and direct advantage is that perf bench can share useful
-> utilities stored under tools/perf/util/ directory e.g. parse-options[ch].
->
 
-BTW, I often feel parse-options.[ch] of perf (this was come from git,
-right?) is very useful not only for perf and git but also other
-projects. So I think these stuff are worth independence as a
-library. If the library contains unified feature for parsing and
-evaluating configuration files, the hell of managing configurable
-options will be reduced. e.g. I often use "strace -e open <command>"
-to detect configuration files read by the <command>...
+--Yylu36WmvOXNoKYn
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-I thought that if perf bench can be independent from perf with such
-efforts, it can be smaller sized and statically linked binary. From my
-experience, this will be good for embedded systems people.
+On Thu, May 17, 2012 at 07:09:26PM +0530, Yadwinder Singh Brar wrote:
+> MAX77686 is a mulitifunction device with PMIC, RTC and Charger on chip. This
+> driver provides common support for accessing the device. This is initial
+> version of this driver that supports to enable the chip with its primary I2C
+> bus.It also includes IRQ and device tree support for MAX77686 chip.
 
-This independence also has risk: less people can find it or is
-attracted even if it stays in the kernel tree (e.g. tools/bench/). But
-it seems that very few people know about perf bench, so this will not
-be a serious problem ;)
+Reviwed-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
 
-I'd like to hear your opinion.
+--Yylu36WmvOXNoKYn
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
-Thanks,
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
 
--- 
-Hitoshi Mitake
-h.mitake@gmail.com
+iQIcBAEBAgAGBQJPuL2gAAoJEBus8iNuMP3dvFYQAJFpSA+6LbmF0M6l4KRAjxN5
+Kjg3J165Ut+RAXehO78I7SJLeJMhLzUTgHzWoSTO60CcNMwGQYnE1XWpviynmkEi
+lKuyx85BgwK35rWg80K7LujXMdkLnTzP6SuvrvxtRYXZdYKiYyBK/17ESZHmMAaM
+EntYRz8GAYZt6x9MkwL0UUrjHChUET5Niu8y+b/i2nuBNOm7QBfC1QF5KiGOZlvd
+u8SIPfDNnnswmydFF2MwlAMVjU0Vn1x92IVZHVx9wLOOm6Q3VGcBmKPULQwpnvdR
+H6GfWqImHvLHdyKeiYY3XGQtA3EFjA8gx1jVhfmUt4G7vluxHcRNNwNim8Zt2POr
+dZzqUYJSBJJT8c3uAn6qhzAhxvNIs6ry4M8wcm6Z+VWWJVC9P+sALu7vXar7yneV
+vn7JdrgoeEhPaoxNwktsyikMMuVebUjyDvoELgQib2q6ZkZJphQHbkK2U0Q3ulPJ
+cmJyLcgsuH/4+ALkfh39E1MRyQKdXb6YQ5X5nQ+AqKL5AbygWebw6TZeTK2wUWRs
+GQYbFtjFvuMvOvtNV9m6uh+WdMl/UvmOmAEp5es7RZz5yFVbcQJWEWUbj2hsxsp8
+OSUiWh+zJbCQEV2QsMiiXNWSUnnY8FruYsimN14hKpM7+Rbk17RJmgk6gGQO71Ma
+ho3m7LJghYGwNZHw5XsA
+=197Y
+-----END PGP SIGNATURE-----
+
+--Yylu36WmvOXNoKYn--
