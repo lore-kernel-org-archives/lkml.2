@@ -1,84 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753588Ab2ETBTY (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 19 May 2012 21:19:24 -0400
-Received: from mga03.intel.com ([143.182.124.21]:33340 "EHLO mga03.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751124Ab2ETBTX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 19 May 2012 21:19:23 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
-   d="scan'208";a="145275676"
-From: Tony Luck <tony.luck@intel.com>
-Date: Sat, 19 May 2012 17:49:24 -0700
-Subject: [PATCH] x86/mce: Fix check for processor context when machine check was taken.
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org
-Message-Id: <0169270@agluck-desktop.sc.intel.com>
+	id S1754659Ab2ETBcw (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 19 May 2012 21:32:52 -0400
+Received: from mail-qc0-f174.google.com ([209.85.216.174]:53163 "EHLO
+	mail-qc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754132Ab2ETBcu convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 19 May 2012 21:32:50 -0400
+MIME-Version: 1.0
+In-Reply-To: <4FB83123.3020402@zytor.com>
+References: <1337292816-10839-1-git-send-email-hjl.tools@gmail.com>
+	<CA+55aFzfku-5qgVPahu27DLz-y8MUmh7Mw9sq_TyO49Zb0tg=A@mail.gmail.com>
+	<CAMe9rOr883q0OAsh+JGA83ww603y6QSbQJKx+wk2YJfkYcaEdQ@mail.gmail.com>
+	<201205182121.02706.arnd@arndb.de>
+	<4FB83123.3020402@zytor.com>
+Date: Sat, 19 May 2012 18:32:49 -0700
+Message-ID: <CAMe9rOrKWTFPdFzdN5d6_zR9bPs8Td-oFgs4ObypbB_sd3GovA@mail.gmail.com>
+Subject: Re: [PATCH 08/10] Use __kernel_ulong_t in struct msqid64_ds
+From: "H.J. Lu" <hjl.tools@gmail.com>
+To: "H. Peter Anvin" <hpa@zytor.com>
+Cc: Arnd Bergmann <arnd@arndb.de>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        "H. Peter Anvin" <hpa@kernel.org>, linux-kernel@vger.kernel.org,
+        linux-arch@vger.kernel.org, mingo@kernel.org, tglx@linutronix.de,
+        Paul Mundt <lethal@linux-sh.org>, David Howells <dhowells@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Linus pointed out that checking "m->ip" was incorrect as "0" is
-a legitimate value.  Also we need to consider that we may have
-interrupted VM86 execution (in which case "CS" isn't any use in
-determining user/kernel).
+On Sat, May 19, 2012 at 4:47 PM, H. Peter Anvin <hpa@zytor.com> wrote:
+> On 05/18/2012 02:21 PM, Arnd Bergmann wrote:
+>> On Friday 18 May 2012, H.J. Lu wrote:
+>>> Since x32 uses the same kernel interface as x86-64 with a few
+>>> exceptions.  The current kernel header files with
+>>>
+>>> #ifdef __x86_64__
+>>> # define __BITS_PER_LONG 64
+>>> #else
+>>> # define __BITS_PER_LONG 32
+>>> #endif
+>>>
+>>> #if __BITS_PER_LONG == 64
+>>> Define x86-64 types
+>>> #endif
+>>>
+>>> work fine for x32 even if long for x32 is 32 bits.  If __BITS_PER_LONG
+>>> is changed to 32 for x32, many types in kernel header files will be
+>>> wrong for x32.
+>>>
+>>
+>> A lot of things are broken if __BITS_PER_LONG is set to 64 in x32 user
+>> space. It was specifically introduced to get around places in exported
+>> headers that incorrectly used '#ifdef CONFIG_64BIT' to define a user
+>> space structure, so that we can depend on whatever the user sees
+>> in bitmasks and other data structures.
+>>
+>
+> I'm not entirely sure I follow the above statement, as it seems
+> contradict itself.  Either way, I would agree, __BITS_PER_LONG should be
+> 32 in x32 space and if there are places where that is wrong then we need
+> to fix them.
+>
+> Fortunately x32 is littleendian, so no "littleendian bitmask on a
+> bigendian architecture" drain bamage...
+>
 
-Reported-by: Linus Torvalds <torvalds@linux-foundation.org>
-Signed-off-by: Tony Luck <tony.luck@intel.com>
----
-In case you are unable to sleep at night worrying about those
-poor systems that don't recover because they do the wrong thing
-if there is a VM86 process running, or some malicious user has
-a "jmp 0" at the base of a code segment.
+If __BITS_PER_LONG is set to 32 for x32, we need to audit all
+exported kernel headers where __BITS_PER_LONG is checked.
+If long is used in those places, it has to be updated for x32.
 
-Mea culpa: Andi fixed the VM86 part of this a year and
-a half ago, and I failed to pick up the fix from his tree
-when I took over. There are some other bits I need to pick
-up too.
-
- arch/x86/kernel/cpu/mcheck/mce-severity.c |   11 +++++------
- arch/x86/kernel/cpu/mcheck/mce.c          |    2 ++
- 2 files changed, 7 insertions(+), 6 deletions(-)
-
-diff --git a/arch/x86/kernel/cpu/mcheck/mce-severity.c b/arch/x86/kernel/cpu/mcheck/mce-severity.c
-index 0c82091..5dfb77a 100644
---- a/arch/x86/kernel/cpu/mcheck/mce-severity.c
-+++ b/arch/x86/kernel/cpu/mcheck/mce-severity.c
-@@ -165,15 +165,14 @@ static struct severity {
- };
- 
- /*
-- * If the EIPV bit is set, it means the saved IP is the
-- * instruction which caused the MCE.
-+ * No need to re-check mcgstatus here. We either found a
-+ * good value for "cs" on the stack earlier (or faked one
-+ * for the VM86 case) - or we didn't and "m->cs" will be
-+ * zero which we will treat conservatively as "IN_KERNEL".
-  */
- static int error_context(struct mce *m)
- {
--	if (m->mcgstatus & MCG_STATUS_EIPV)
--		return (m->ip && (m->cs & 3) == 3) ? IN_USER : IN_KERNEL;
--	/* Unknown, assume kernel */
--	return IN_KERNEL;
-+	return ((m->cs & 3) == 3) ? IN_USER : IN_KERNEL;
- }
- 
- int mce_severity(struct mce *m, int tolerant, char **msg)
-diff --git a/arch/x86/kernel/cpu/mcheck/mce.c b/arch/x86/kernel/cpu/mcheck/mce.c
-index 11c9166..a2d53f3 100644
---- a/arch/x86/kernel/cpu/mcheck/mce.c
-+++ b/arch/x86/kernel/cpu/mcheck/mce.c
-@@ -437,6 +437,8 @@ static inline void mce_gather_info(struct mce *m, struct pt_regs *regs)
- 		if (m->mcgstatus & (MCG_STATUS_RIPV|MCG_STATUS_EIPV)) {
- 			m->ip = regs->ip;
- 			m->cs = regs->cs;
-+			if (v8086_mode(regs))
-+				m->cs |= 3; /* fake user mode for VM86 */
- 		}
- 		/* Use accurate RIP reporting if available. */
- 		if (rip_msr)
 -- 
-1.7.9.5
-
+H.J.
