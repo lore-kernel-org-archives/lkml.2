@@ -1,61 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753863Ab2EVNLF (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 May 2012 09:11:05 -0400
-Received: from hqemgate03.nvidia.com ([216.228.121.140]:11374 "EHLO
-	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751982Ab2EVNLB (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 May 2012 09:11:01 -0400
-X-PGP-Universal: processed;
-	by hqnvupgp05.nvidia.com on Tue, 22 May 2012 06:10:51 -0700
-From: Laxman Dewangan <ldewangan@nvidia.com>
-To: <swarren@nvidia.com>, <olof@lixom.net>, <linux@arm.linux.org.uk>
-CC: <linux-kernel@vger.kernel.org>, <linux-tegra@vger.kernel.org>,
-        Laxman Dewangan <ldewangan@nvidia.com>
-Subject: [PATCH 1/2] ARM: tegra: config: enable TPS65910 drivers
-Date: Tue, 22 May 2012 18:35:16 +0530
-Message-ID: <1337691917-15040-1-git-send-email-ldewangan@nvidia.com>
-X-Mailer: git-send-email 1.7.1.1
-MIME-Version: 1.0
-Content-Type: text/plain
+	id S1753973Ab2EVNOc (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 May 2012 09:14:32 -0400
+Received: from mail.mimuw.edu.pl ([193.0.96.6]:49095 "EHLO mail.mimuw.edu.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751505Ab2EVNOa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 May 2012 09:14:30 -0400
+X-Greylist: delayed 509 seconds by postgrey-1.27 at vger.kernel.org; Tue, 22 May 2012 09:14:30 EDT
+From: Marek Marczykowski <marmarek@invisiblethingslab.com>
+Date: Sun, 20 May 2012 13:45:10 +0200
+Subject: [PATCH] xen: do not disable netfront in dom0
+Organization: Invisible Things Lab
+To: xen-devel@lists.xen.org
+Cc: Marek Marczykowski <marmarek@invisiblethingslab.com>,
+        virtualization@lists.linux-foundation.org,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Jeremy Fitzhardinge <jeremy@goop.org>, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Message-Id: <20120522130558.D828E6C7@duch.mimuw.edu.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Enable TPS65910 mfd, gpio and regulator drivers.
-This is the PMIC module for Tegra30 based cardhu
-platform.
+Netfront driver can be also useful in dom0, eg when all NICs are assigned to
+some domU (aka driver domain). Then using netback in domU and netfront in dom0
+is the only way to get network access in dom0.
 
-Signed-off-by: Laxman Dewangan <ldewangan@nvidia.com>
+Signed-off-by: Marek Marczykowski <marmarek@invisiblethingslab.com>
 ---
- arch/arm/configs/tegra_defconfig |    3 +++
- 1 files changed, 3 insertions(+), 0 deletions(-)
+ drivers/net/xen-netfront.c |    6 ------
+ 1 files changed, 0 insertions(+), 6 deletions(-)
 
-diff --git a/arch/arm/configs/tegra_defconfig b/arch/arm/configs/tegra_defconfig
-index 1198dd6..26ad2b4 100644
---- a/arch/arm/configs/tegra_defconfig
-+++ b/arch/arm/configs/tegra_defconfig
-@@ -106,16 +106,19 @@ CONFIG_I2C=y
- CONFIG_I2C_TEGRA=y
- CONFIG_SPI=y
- CONFIG_SPI_TEGRA=y
-+CONFIG_GPIO_TPS65910=y
- CONFIG_POWER_SUPPLY=y
- CONFIG_BATTERY_SBS=y
- CONFIG_SENSORS_LM90=y
- CONFIG_MFD_TPS6586X=y
-+CONFIG_MFD_TPS65910=y
- CONFIG_REGULATOR=y
- CONFIG_REGULATOR_FIXED_VOLTAGE=y
- CONFIG_REGULATOR_VIRTUAL_CONSUMER=y
- CONFIG_REGULATOR_GPIO=y
- CONFIG_REGULATOR_TPS62360=y
- CONFIG_REGULATOR_TPS6586X=y
-+CONFIG_REGULATOR_TPS65910=y
- CONFIG_SOUND=y
- CONFIG_SND=y
- # CONFIG_SND_SUPPORT_OLD_API is not set
+diff --git a/drivers/net/xen-netfront.c b/drivers/net/xen-netfront.c
+index 698b905..e31ebff 100644
+--- a/drivers/net/xen-netfront.c
++++ b/drivers/net/xen-netfront.c
+@@ -1953,9 +1953,6 @@ static int __init netif_init(void)
+ 	if (!xen_domain())
+ 		return -ENODEV;
+ 
+-	if (xen_initial_domain())
+-		return 0;
+-
+ 	printk(KERN_INFO "Initialising Xen virtual ethernet driver.\n");
+ 
+ 	return xenbus_register_frontend(&netfront_driver);
+@@ -1965,9 +1962,6 @@ module_init(netif_init);
+ 
+ static void __exit netif_exit(void)
+ {
+-	if (xen_initial_domain())
+-		return;
+-
+ 	xenbus_unregister_driver(&netfront_driver);
+ }
+ module_exit(netif_exit);
 -- 
-1.7.1.1
+1.7.4.4
 
