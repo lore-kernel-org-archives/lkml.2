@@ -1,173 +1,646 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756261Ab2ETPTb (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 20 May 2012 11:19:31 -0400
-Received: from orion.tchmachines.com ([208.76.84.200]:34913 "EHLO
-	orion.tchmachines.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750972Ab2ETPT2 (ORCPT
+	id S1756163Ab2ETP0O (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 20 May 2012 11:26:14 -0400
+Received: from smtp-vbr9.xs4all.nl ([194.109.24.29]:4070 "EHLO
+	smtp-vbr9.xs4all.nl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755722Ab2ETP0M (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 20 May 2012 11:19:28 -0400
-Message-ID: <1337527165.6093.16.camel@vlad>
-Subject: [PATCH v3 2/2] x86: Added read_mostly declaration/definition to
- vars from smp.h
-From: Vlad Zolotarov <vlad@scalemp.com>
-To: Thomas Gleixner <tglx@linutronix.de>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
-        Ingo Molnar <mingo@kernel.org>
-Cc: "Shai Fultheim (Shai@ScaleMP.com)" <Shai@scalemp.com>
-Date: Sun, 20 May 2012 18:19:25 +0300
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.2- 
+	Sun, 20 May 2012 11:26:12 -0400
+From: Hans Verkuil <hverkuil@xs4all.nl>
+To: Federico Vaga <federico.vaga@gmail.com>
+Subject: Re: [PATCH 1/3] adv7180: add support to user controls
+Date: Sun, 20 May 2012 17:25:17 +0200
+User-Agent: KMail/1.13.7 (Linux/3.4.0-rc7-durdane; KDE/4.7.4; x86_64; ; )
+Cc: Mauro Carvalho Chehab <mchehab@infradead.org>, linux-media@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Alan Cox <alan@linux.intel.com>,
+        Giancarlo Asnaghi <giancarlo.asnaghi@st.com>
+References: <1334248778-16625-1-git-send-email-federico.vaga@gmail.com>
+In-Reply-To: <1334248778-16625-1-git-send-email-federico.vaga@gmail.com>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="iso-8859-15"
 Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
-X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
-X-AntiAbuse: Primary Hostname - orion.tchmachines.com
-X-AntiAbuse: Original Domain - vger.kernel.org
-X-AntiAbuse: Originator/Caller UID/GID - [47 12] / [47 12]
-X-AntiAbuse: Sender Address Domain - scalemp.com
+Message-Id: <201205201725.17131.hverkuil@xs4all.nl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Added "read-mostly" qualifier to the following variables in smp.h:
- - cpu_sibling_map
- - cpu_core_map
- - cpu_llc_shared_map
- - cpu_llc_id
- - cpu_number
- - x86_cpu_to_apicid
- - x86_bios_cpu_apicid
- - x86_cpu_to_logical_apicid
+Hi Frederico!
 
-As long as all the variables above are only written during the initialization,
-this change is meant to prevent the false sharing and improve the
-performance on large multiprocessor systems.
+On Thu April 12 2012 18:39:36 Federico Vaga wrote:
+> Video user controls such as brightness, contrast, saturation, and
+> hue are now handled.
 
-Signed-off-by: Vlad Zolotarov <vlad@scalemp.com>
-Signed-off-by: Shai Fultheim <shai@scalemp.com>
----
- arch/x86/include/asm/apic.h    |    2 +-
- arch/x86/include/asm/smp.h     |   16 ++++++++--------
- arch/x86/kernel/apic/apic.c    |    6 +++---
- arch/x86/kernel/setup_percpu.c |    2 +-
- arch/x86/kernel/smpboot.c      |    8 ++++----
- 5 files changed, 17 insertions(+), 17 deletions(-)
+I just saw this patch series being merged, and I wonder if you could make a
+follow-up patch for 3.6 where you implement the control framework for adv7180
+and sta2x11. See Documentation/video4linux/v4l2-controls.txt and the many
+drivers that use it now.
 
-diff --git a/arch/x86/include/asm/apic.h b/arch/x86/include/asm/apic.h
-index d854101..ca11940 100644
---- a/arch/x86/include/asm/apic.h
-+++ b/arch/x86/include/asm/apic.h
-@@ -520,7 +520,7 @@ static inline const struct cpumask *default_target_cpus(void)
- #endif
- }
- 
--DECLARE_EARLY_PER_CPU(u16, x86_bios_cpu_apicid);
-+DECLARE_EARLY_PER_CPU_READ_MOSTLY(u16, x86_bios_cpu_apicid);
- 
- 
- static inline unsigned int read_apic_id(void)
-diff --git a/arch/x86/include/asm/smp.h b/arch/x86/include/asm/smp.h
-index 0434c40..2a5304a 100644
---- a/arch/x86/include/asm/smp.h
-+++ b/arch/x86/include/asm/smp.h
-@@ -31,12 +31,12 @@ static inline bool cpu_has_ht_siblings(void)
- 	return has_siblings;
- }
- 
--DECLARE_PER_CPU(cpumask_var_t, cpu_sibling_map);
--DECLARE_PER_CPU(cpumask_var_t, cpu_core_map);
-+DECLARE_PER_CPU_READ_MOSTLY(cpumask_var_t, cpu_sibling_map);
-+DECLARE_PER_CPU_READ_MOSTLY(cpumask_var_t, cpu_core_map);
- /* cpus sharing the last level cache: */
--DECLARE_PER_CPU(cpumask_var_t, cpu_llc_shared_map);
--DECLARE_PER_CPU(u16, cpu_llc_id);
--DECLARE_PER_CPU(int, cpu_number);
-+DECLARE_PER_CPU_READ_MOSTLY(cpumask_var_t, cpu_llc_shared_map);
-+DECLARE_PER_CPU_READ_MOSTLY(u16, cpu_llc_id);
-+DECLARE_PER_CPU_READ_MOSTLY(int, cpu_number);
- 
- static inline struct cpumask *cpu_sibling_mask(int cpu)
- {
-@@ -53,10 +53,10 @@ static inline struct cpumask *cpu_llc_shared_mask(int cpu)
- 	return per_cpu(cpu_llc_shared_map, cpu);
- }
- 
--DECLARE_EARLY_PER_CPU(u16, x86_cpu_to_apicid);
--DECLARE_EARLY_PER_CPU(u16, x86_bios_cpu_apicid);
-+DECLARE_EARLY_PER_CPU_READ_MOSTLY(u16, x86_cpu_to_apicid);
-+DECLARE_EARLY_PER_CPU_READ_MOSTLY(u16, x86_bios_cpu_apicid);
- #if defined(CONFIG_X86_LOCAL_APIC) && defined(CONFIG_X86_32)
--DECLARE_EARLY_PER_CPU(int, x86_cpu_to_logical_apicid);
-+DECLARE_EARLY_PER_CPU_READ_MOSTLY(int, x86_cpu_to_logical_apicid);
- #endif
- 
- /* Static state in head.S used to set up a CPU */
-diff --git a/arch/x86/kernel/apic/apic.c b/arch/x86/kernel/apic/apic.c
-index edc2448..33c3672 100644
---- a/arch/x86/kernel/apic/apic.c
-+++ b/arch/x86/kernel/apic/apic.c
-@@ -74,8 +74,8 @@ physid_mask_t phys_cpu_present_map;
- /*
-  * Map cpu index to physical APIC ID
-  */
--DEFINE_EARLY_PER_CPU(u16, x86_cpu_to_apicid, BAD_APICID);
--DEFINE_EARLY_PER_CPU(u16, x86_bios_cpu_apicid, BAD_APICID);
-+DEFINE_EARLY_PER_CPU_READ_MOSTLY(u16, x86_cpu_to_apicid, BAD_APICID);
-+DEFINE_EARLY_PER_CPU_READ_MOSTLY(u16, x86_bios_cpu_apicid, BAD_APICID);
- EXPORT_EARLY_PER_CPU_SYMBOL(x86_cpu_to_apicid);
- EXPORT_EARLY_PER_CPU_SYMBOL(x86_bios_cpu_apicid);
- 
-@@ -87,7 +87,7 @@ EXPORT_EARLY_PER_CPU_SYMBOL(x86_bios_cpu_apicid);
-  * used for the mapping.  This is where the behaviors of x86_64 and 32
-  * actually diverge.  Let's keep it ugly for now.
-  */
--DEFINE_EARLY_PER_CPU(int, x86_cpu_to_logical_apicid, BAD_APICID);
-+DEFINE_EARLY_PER_CPU_READ_MOSTLY(int, x86_cpu_to_logical_apicid, BAD_APICID);
- 
- /*
-  * Knob to control our willingness to enable the local APIC.
-diff --git a/arch/x86/kernel/setup_percpu.c b/arch/x86/kernel/setup_percpu.c
-index 5a98aa2..5cdff03 100644
---- a/arch/x86/kernel/setup_percpu.c
-+++ b/arch/x86/kernel/setup_percpu.c
-@@ -21,7 +21,7 @@
- #include <asm/cpu.h>
- #include <asm/stackprotector.h>
- 
--DEFINE_PER_CPU(int, cpu_number);
-+DEFINE_PER_CPU_READ_MOSTLY(int, cpu_number);
- EXPORT_PER_CPU_SYMBOL(cpu_number);
- 
- #ifdef CONFIG_X86_64
-diff --git a/arch/x86/kernel/smpboot.c b/arch/x86/kernel/smpboot.c
-index 6e1e406..3d877b1 100644
---- a/arch/x86/kernel/smpboot.c
-+++ b/arch/x86/kernel/smpboot.c
-@@ -118,17 +118,17 @@ int smp_num_siblings = 1;
- EXPORT_SYMBOL(smp_num_siblings);
- 
- /* Last level cache ID of each logical CPU */
--DEFINE_PER_CPU(u16, cpu_llc_id) = BAD_APICID;
-+DEFINE_PER_CPU_READ_MOSTLY(u16, cpu_llc_id) = BAD_APICID;
- 
- /* representing HT siblings of each logical CPU */
--DEFINE_PER_CPU(cpumask_var_t, cpu_sibling_map);
-+DEFINE_PER_CPU_READ_MOSTLY(cpumask_var_t, cpu_sibling_map);
- EXPORT_PER_CPU_SYMBOL(cpu_sibling_map);
- 
- /* representing HT and core siblings of each logical CPU */
--DEFINE_PER_CPU(cpumask_var_t, cpu_core_map);
-+DEFINE_PER_CPU_READ_MOSTLY(cpumask_var_t, cpu_core_map);
- EXPORT_PER_CPU_SYMBOL(cpu_core_map);
- 
--DEFINE_PER_CPU(cpumask_var_t, cpu_llc_shared_map);
-+DEFINE_PER_CPU_READ_MOSTLY(cpumask_var_t, cpu_llc_shared_map);
- 
- /* Per CPU bogomips and other parameters */
- DEFINE_PER_CPU_SHARED_ALIGNED(struct cpuinfo_x86, cpu_info);
--- 
-1.7.5.4
+I missed this patch series or I would have requested it at the time. Unfortunately
+I had to deal with other things in March and April so I was for the most part
+absent from the list during those months.
 
+My goal is to convert all subdevice drivers like adv7180 and as many bridge and
+platform drivers as is possible to the control framework. I try to prevent new
+drivers from getting in that do not use that framework to prevent double work,
+but I didn't catch this one.
 
+If you could do that work, then that would be much appreciated. You have the
+hardware, after all, so that makes it easier for you.
 
+Regards,
+
+	Hans
+
+> 
+> Signed-off-by: Federico Vaga <federico.vaga@gmail.com>
+> Acked-by: Giancarlo Asnaghi <giancarlo.asnaghi@st.com>
+> Cc: Alan Cox <alan@linux.intel.com>
+> ---
+>  drivers/media/video/adv7180.c |  417 ++++++++++++++++++++++++++++++++++-------
+>  1 files changed, 350 insertions(+), 67 deletions(-)
+> 
+> diff --git a/drivers/media/video/adv7180.c b/drivers/media/video/adv7180.c
+> index b8b6c4b..174bffa 100644
+> --- a/drivers/media/video/adv7180.c
+> +++ b/drivers/media/video/adv7180.c
+> @@ -48,6 +48,7 @@
+>  #define ADV7180_INPUT_CONTROL_PAL_COMB_N_PED		0xd0
+>  #define ADV7180_INPUT_CONTROL_PAL_SECAM			0xe0
+>  #define ADV7180_INPUT_CONTROL_PAL_SECAM_PED		0xf0
+> +#define ADV7180_INPUT_CONTROL_INSEL_MASK		0x0f
+>  
+>  #define ADV7180_EXTENDED_OUTPUT_CONTROL_REG		0x04
+>  #define ADV7180_EXTENDED_OUTPUT_CONTROL_NTSCDIS		0xC5
+> @@ -55,9 +56,29 @@
+>  #define ADV7180_AUTODETECT_ENABLE_REG			0x07
+>  #define ADV7180_AUTODETECT_DEFAULT			0x7f
+>  
+> +#define ADV7180_CON_REG		0x08	/*Unsigned */
+> +#define CON_REG_MIN		0
+> +#define CON_REG_DEF		128
+> +#define CON_REG_MAX		255
+> +
+> +#define ADV7180_BRI_REG		0x0a	/*Signed */
+> +#define BRI_REG_MIN		-128
+> +#define BRI_REG_DEF		0
+> +#define BRI_REG_MAX		127
+> +
+> +#define ADV7180_HUE_REG		0x0b	/*Signed, inverted */
+> +#define HUE_REG_MIN		-127
+> +#define HUE_REG_DEF		0
+> +#define HUE_REG_MAX		128
+> +
+>  #define ADV7180_ADI_CTRL_REG				0x0e
+>  #define ADV7180_ADI_CTRL_IRQ_SPACE			0x20
+>  
+> +#define ADV7180_PWR_MAN_REG		0x0f
+> +#define ADV7180_PWR_MAN_ON		0x04
+> +#define ADV7180_PWR_MAN_OFF		0x24
+> +#define ADV7180_PWR_MAN_RES		0x80
+> +
+>  #define ADV7180_STATUS1_REG				0x10
+>  #define ADV7180_STATUS1_IN_LOCK		0x01
+>  #define ADV7180_STATUS1_AUTOD_MASK	0x70
+> @@ -78,6 +99,12 @@
+>  #define ADV7180_ICONF1_PSYNC_ONLY	0x10
+>  #define ADV7180_ICONF1_ACTIVE_TO_CLR	0xC0
+>  
+> +#define ADV7180_SD_SAT_CB_REG	0xe3	/*Unsigned */
+> +#define ADV7180_SD_SAT_CR_REG	0xe4	/*Unsigned */
+> +#define SAT_REG_MIN		0
+> +#define SAT_REG_DEF		128
+> +#define SAT_REG_MAX		255
+> +
+>  #define ADV7180_IRQ1_LOCK	0x01
+>  #define ADV7180_IRQ1_UNLOCK	0x02
+>  #define ADV7180_ISR1_ADI	0x42
+> @@ -90,6 +117,9 @@
+>  #define ADV7180_IMR3_ADI	0x4C
+>  #define ADV7180_IMR4_ADI	0x50
+>  
+> +#define ADV7180_NTSC_V_BIT_END_REG	0xE6
+> +#define ADV7180_NTSC_V_BIT_END_MANUAL_NVEND	0x4F
+> +
+>  struct adv7180_state {
+>  	struct v4l2_subdev	sd;
+>  	struct work_struct	work;
+> @@ -97,6 +127,11 @@ struct adv7180_state {
+>  	int			irq;
+>  	v4l2_std_id		curr_norm;
+>  	bool			autodetect;
+> +	s8			brightness;
+> +	s16			hue;
+> +	u8			contrast;
+> +	u8			saturation;
+> +	u8			input;
+>  };
+>  
+>  static v4l2_std_id adv7180_std_to_v4l2(u8 status1)
+> @@ -155,7 +190,7 @@ static u32 adv7180_status_to_v4l2(u8 status1)
+>  }
+>  
+>  static int __adv7180_status(struct i2c_client *client, u32 *status,
+> -	v4l2_std_id *std)
+> +			    v4l2_std_id *std)
+>  {
+>  	int status1 = i2c_smbus_read_byte_data(client, ADV7180_STATUS1_REG);
+>  
+> @@ -192,6 +227,36 @@ static int adv7180_querystd(struct v4l2_subdev *sd, v4l2_std_id *std)
+>  	return err;
+>  }
+>  
+> +static int adv7180_s_routing(struct v4l2_subdev *sd, u32 input,
+> +			     u32 output, u32 config)
+> +{
+> +	struct adv7180_state *state = to_state(sd);
+> +	int ret = mutex_lock_interruptible(&state->mutex);
+> +	struct i2c_client *client = v4l2_get_subdevdata(sd);
+> +
+> +	if (ret)
+> +		return ret;
+> +
+> +	/*We cannot discriminate between LQFP and 40-pin LFCSP, so accept
+> +	 * all inputs and let the card driver take care of validation
+> +	 */
+> +	if ((input & ADV7180_INPUT_CONTROL_INSEL_MASK) != input)
+> +		goto out;
+> +
+> +	ret = i2c_smbus_read_byte_data(client, ADV7180_INPUT_CONTROL_REG);
+> +
+> +	if (ret < 0)
+> +		goto out;
+> +
+> +	ret &= ~ADV7180_INPUT_CONTROL_INSEL_MASK;
+> +	ret = i2c_smbus_write_byte_data(client,
+> +					ADV7180_INPUT_CONTROL_REG, ret | input);
+> +	state->input = input;
+> +out:
+> +	mutex_unlock(&state->mutex);
+> +	return ret;
+> +}
+> +
+>  static int adv7180_g_input_status(struct v4l2_subdev *sd, u32 *status)
+>  {
+>  	struct adv7180_state *state = to_state(sd);
+> @@ -205,7 +270,7 @@ static int adv7180_g_input_status(struct v4l2_subdev *sd, u32 *status)
+>  }
+>  
+>  static int adv7180_g_chip_ident(struct v4l2_subdev *sd,
+> -	struct v4l2_dbg_chip_ident *chip)
+> +				struct v4l2_dbg_chip_ident *chip)
+>  {
+>  	struct i2c_client *client = v4l2_get_subdevdata(sd);
+>  
+> @@ -222,9 +287,10 @@ static int adv7180_s_std(struct v4l2_subdev *sd, v4l2_std_id std)
+>  
+>  	/* all standards -> autodetect */
+>  	if (std == V4L2_STD_ALL) {
+> -		ret = i2c_smbus_write_byte_data(client,
+> -			ADV7180_INPUT_CONTROL_REG,
+> -			ADV7180_INPUT_CONTROL_AD_PAL_BG_NTSC_J_SECAM);
+> +		ret =
+> +		    i2c_smbus_write_byte_data(client, ADV7180_INPUT_CONTROL_REG,
+> +				ADV7180_INPUT_CONTROL_AD_PAL_BG_NTSC_J_SECAM
+> +					      | state->input);
+>  		if (ret < 0)
+>  			goto out;
+>  
+> @@ -236,7 +302,8 @@ static int adv7180_s_std(struct v4l2_subdev *sd, v4l2_std_id std)
+>  			goto out;
+>  
+>  		ret = i2c_smbus_write_byte_data(client,
+> -			ADV7180_INPUT_CONTROL_REG, ret);
+> +						ADV7180_INPUT_CONTROL_REG,
+> +						ret | state->input);
+>  		if (ret < 0)
+>  			goto out;
+>  
+> @@ -249,14 +316,138 @@ out:
+>  	return ret;
+>  }
+>  
+> +static int adv7180_queryctrl(struct v4l2_subdev *sd, struct v4l2_queryctrl *qc)
+> +{
+> +	switch (qc->id) {
+> +	case V4L2_CID_BRIGHTNESS:
+> +		return v4l2_ctrl_query_fill(qc, BRI_REG_MIN, BRI_REG_MAX,
+> +					    1, BRI_REG_DEF);
+> +	case V4L2_CID_HUE:
+> +		return v4l2_ctrl_query_fill(qc, HUE_REG_MIN, HUE_REG_MAX,
+> +					    1, HUE_REG_DEF);
+> +	case V4L2_CID_CONTRAST:
+> +		return v4l2_ctrl_query_fill(qc, CON_REG_MIN, CON_REG_MAX,
+> +					    1, CON_REG_DEF);
+> +	case V4L2_CID_SATURATION:
+> +		return v4l2_ctrl_query_fill(qc, SAT_REG_MIN, SAT_REG_MAX,
+> +					    1, SAT_REG_DEF);
+> +	default:
+> +		break;
+> +	}
+> +
+> +	return -EINVAL;
+> +}
+> +
+> +static int adv7180_g_ctrl(struct v4l2_subdev *sd, struct v4l2_control *ctrl)
+> +{
+> +	struct adv7180_state *state = to_state(sd);
+> +	int ret = mutex_lock_interruptible(&state->mutex);
+> +	if (ret)
+> +		return ret;
+> +
+> +	switch (ctrl->id) {
+> +	case V4L2_CID_BRIGHTNESS:
+> +		ctrl->value = state->brightness;
+> +		break;
+> +	case V4L2_CID_HUE:
+> +		ctrl->value = state->hue;
+> +		break;
+> +	case V4L2_CID_CONTRAST:
+> +		ctrl->value = state->contrast;
+> +		break;
+> +	case V4L2_CID_SATURATION:
+> +		ctrl->value = state->saturation;
+> +		break;
+> +	default:
+> +		ret = -EINVAL;
+> +	}
+> +
+> +	mutex_unlock(&state->mutex);
+> +	return ret;
+> +}
+> +
+> +static int adv7180_s_ctrl(struct v4l2_subdev *sd, struct v4l2_control *ctrl)
+> +{
+> +	struct adv7180_state *state = to_state(sd);
+> +	struct i2c_client *client = v4l2_get_subdevdata(sd);
+> +	int ret = mutex_lock_interruptible(&state->mutex);
+> +	if (ret)
+> +		return ret;
+> +
+> +	switch (ctrl->id) {
+> +	case V4L2_CID_BRIGHTNESS:
+> +		if ((ctrl->value > BRI_REG_MAX)
+> +		    || (ctrl->value < BRI_REG_MIN)) {
+> +			ret = -ERANGE;
+> +			break;
+> +		}
+> +		state->brightness = ctrl->value;
+> +		ret = i2c_smbus_write_byte_data(client,
+> +						ADV7180_BRI_REG,
+> +						state->brightness);
+> +		break;
+> +	case V4L2_CID_HUE:
+> +		if ((ctrl->value > HUE_REG_MAX)
+> +		    || (ctrl->value < HUE_REG_MIN)) {
+> +			ret = -ERANGE;
+> +			break;
+> +		}
+> +		state->hue = ctrl->value;
+> +		/*Hue is inverted according to HSL chart */
+> +		ret = i2c_smbus_write_byte_data(client,
+> +						ADV7180_HUE_REG, -state->hue);
+> +		break;
+> +	case V4L2_CID_CONTRAST:
+> +		if ((ctrl->value > CON_REG_MAX)
+> +		    || (ctrl->value < CON_REG_MIN)) {
+> +			ret = -ERANGE;
+> +			break;
+> +		}
+> +		state->contrast = ctrl->value;
+> +		ret = i2c_smbus_write_byte_data(client,
+> +						ADV7180_CON_REG,
+> +						state->contrast);
+> +		break;
+> +	case V4L2_CID_SATURATION:
+> +		if ((ctrl->value > SAT_REG_MAX)
+> +		    || (ctrl->value < SAT_REG_MIN)) {
+> +			ret = -ERANGE;
+> +			break;
+> +		}
+> +		/*
+> +		 *This could be V4L2_CID_BLUE_BALANCE/V4L2_CID_RED_BALANCE
+> +		 *Let's not confuse the user, everybody understands saturation
+> +		 */
+> +		state->saturation = ctrl->value;
+> +		ret = i2c_smbus_write_byte_data(client,
+> +						ADV7180_SD_SAT_CB_REG,
+> +						state->saturation);
+> +		if (ret < 0)
+> +			break;
+> +		ret = i2c_smbus_write_byte_data(client,
+> +						ADV7180_SD_SAT_CR_REG,
+> +						state->saturation);
+> +		break;
+> +	default:
+> +		ret = -EINVAL;
+> +	}
+> +
+> +	mutex_unlock(&state->mutex);
+> +	return ret;
+> +}
+> +
+>  static const struct v4l2_subdev_video_ops adv7180_video_ops = {
+>  	.querystd = adv7180_querystd,
+>  	.g_input_status = adv7180_g_input_status,
+> +	.s_routing = adv7180_s_routing,
+>  };
+>  
+>  static const struct v4l2_subdev_core_ops adv7180_core_ops = {
+>  	.g_chip_ident = adv7180_g_chip_ident,
+>  	.s_std = adv7180_s_std,
+> +	.queryctrl = adv7180_queryctrl,
+> +	.g_ctrl = adv7180_g_ctrl,
+> +	.s_ctrl = adv7180_s_ctrl,
+>  };
+>  
+>  static const struct v4l2_subdev_ops adv7180_ops = {
+> @@ -267,13 +458,13 @@ static const struct v4l2_subdev_ops adv7180_ops = {
+>  static void adv7180_work(struct work_struct *work)
+>  {
+>  	struct adv7180_state *state = container_of(work, struct adv7180_state,
+> -		work);
+> +						   work);
+>  	struct i2c_client *client = v4l2_get_subdevdata(&state->sd);
+>  	u8 isr3;
+>  
+>  	mutex_lock(&state->mutex);
+>  	i2c_smbus_write_byte_data(client, ADV7180_ADI_CTRL_REG,
+> -		ADV7180_ADI_CTRL_IRQ_SPACE);
+> +				  ADV7180_ADI_CTRL_IRQ_SPACE);
+>  	isr3 = i2c_smbus_read_byte_data(client, ADV7180_ISR3_ADI);
+>  	/* clear */
+>  	i2c_smbus_write_byte_data(client, ADV7180_ICR3_ADI, isr3);
+> @@ -297,56 +488,51 @@ static irqreturn_t adv7180_irq(int irq, void *devid)
+>  	return IRQ_HANDLED;
+>  }
+>  
+> -/*
+> - * Generic i2c probe
+> - * concerning the addresses: i2c wants 7 bit (without the r/w bit), so '>>1'
+> - */
+> -
+> -static __devinit int adv7180_probe(struct i2c_client *client,
+> -			const struct i2c_device_id *id)
+> +static int init_device(struct i2c_client *client, struct adv7180_state *state)
+>  {
+> -	struct adv7180_state *state;
+> -	struct v4l2_subdev *sd;
+>  	int ret;
+>  
+> -	/* Check if the adapter supports the needed features */
+> -	if (!i2c_check_functionality(client->adapter, I2C_FUNC_SMBUS_BYTE_DATA))
+> -		return -EIO;
+> -
+> -	v4l_info(client, "chip found @ 0x%02x (%s)\n",
+> -			client->addr << 1, client->adapter->name);
+> -
+> -	state = kzalloc(sizeof(struct adv7180_state), GFP_KERNEL);
+> -	if (state == NULL) {
+> -		ret = -ENOMEM;
+> -		goto err;
+> -	}
+> -
+> -	state->irq = client->irq;
+> -	INIT_WORK(&state->work, adv7180_work);
+> -	mutex_init(&state->mutex);
+> -	state->autodetect = true;
+> -	sd = &state->sd;
+> -	v4l2_i2c_subdev_init(sd, client, &adv7180_ops);
+> -
+>  	/* Initialize adv7180 */
+>  	/* Enable autodetection */
+> -	ret = i2c_smbus_write_byte_data(client, ADV7180_INPUT_CONTROL_REG,
+> -		ADV7180_INPUT_CONTROL_AD_PAL_BG_NTSC_J_SECAM);
+> -	if (ret < 0)
+> -		goto err_unreg_subdev;
+> +	if (state->autodetect) {
+> +		ret =
+> +		    i2c_smbus_write_byte_data(client, ADV7180_INPUT_CONTROL_REG,
+> +				ADV7180_INPUT_CONTROL_AD_PAL_BG_NTSC_J_SECAM
+> +					      | state->input);
+> +		if (ret < 0)
+> +			return ret;
+>  
+> -	ret = i2c_smbus_write_byte_data(client, ADV7180_AUTODETECT_ENABLE_REG,
+> -		ADV7180_AUTODETECT_DEFAULT);
+> -	if (ret < 0)
+> -		goto err_unreg_subdev;
+> +		ret =
+> +		    i2c_smbus_write_byte_data(client,
+> +					      ADV7180_AUTODETECT_ENABLE_REG,
+> +					      ADV7180_AUTODETECT_DEFAULT);
+> +		if (ret < 0)
+> +			return ret;
+> +	} else {
+> +		ret = v4l2_std_to_adv7180(state->curr_norm);
+> +		if (ret < 0)
+> +			return ret;
+>  
+> +		ret =
+> +		    i2c_smbus_write_byte_data(client, ADV7180_INPUT_CONTROL_REG,
+> +					      ret | state->input);
+> +		if (ret < 0)
+> +			return ret;
+> +
+> +	}
+>  	/* ITU-R BT.656-4 compatible */
+>  	ret = i2c_smbus_write_byte_data(client,
+> -		ADV7180_EXTENDED_OUTPUT_CONTROL_REG,
+> -		ADV7180_EXTENDED_OUTPUT_CONTROL_NTSCDIS);
+> +			ADV7180_EXTENDED_OUTPUT_CONTROL_REG,
+> +			ADV7180_EXTENDED_OUTPUT_CONTROL_NTSCDIS);
+>  	if (ret < 0)
+> -		goto err_unreg_subdev;
+> +		return ret;
+> +
+> +	/* Manually set V bit end position in NTSC mode */
+> +	ret = i2c_smbus_write_byte_data(client,
+> +					ADV7180_NTSC_V_BIT_END_REG,
+> +					ADV7180_NTSC_V_BIT_END_MANUAL_NVEND);
+> +	if (ret < 0)
+> +		return ret;
+>  
+>  	/* read current norm */
+>  	__adv7180_status(client, NULL, &state->curr_norm);
+> @@ -354,45 +540,109 @@ static __devinit int adv7180_probe(struct i2c_client *client,
+>  	/* register for interrupts */
+>  	if (state->irq > 0) {
+>  		ret = request_irq(state->irq, adv7180_irq, 0, DRIVER_NAME,
+> -			state);
+> +				  state);
+>  		if (ret)
+> -			goto err_unreg_subdev;
+> +			return ret;
+>  
+>  		ret = i2c_smbus_write_byte_data(client, ADV7180_ADI_CTRL_REG,
+> -			ADV7180_ADI_CTRL_IRQ_SPACE);
+> +						ADV7180_ADI_CTRL_IRQ_SPACE);
+>  		if (ret < 0)
+> -			goto err_unreg_subdev;
+> +			return ret;
+>  
+>  		/* config the Interrupt pin to be active low */
+>  		ret = i2c_smbus_write_byte_data(client, ADV7180_ICONF1_ADI,
+> -			ADV7180_ICONF1_ACTIVE_LOW | ADV7180_ICONF1_PSYNC_ONLY);
+> +						ADV7180_ICONF1_ACTIVE_LOW |
+> +						ADV7180_ICONF1_PSYNC_ONLY);
+>  		if (ret < 0)
+> -			goto err_unreg_subdev;
+> +			return ret;
+>  
+>  		ret = i2c_smbus_write_byte_data(client, ADV7180_IMR1_ADI, 0);
+>  		if (ret < 0)
+> -			goto err_unreg_subdev;
+> +			return ret;
+>  
+>  		ret = i2c_smbus_write_byte_data(client, ADV7180_IMR2_ADI, 0);
+>  		if (ret < 0)
+> -			goto err_unreg_subdev;
+> +			return ret;
+>  
+>  		/* enable AD change interrupts interrupts */
+>  		ret = i2c_smbus_write_byte_data(client, ADV7180_IMR3_ADI,
+> -			ADV7180_IRQ3_AD_CHANGE);
+> +						ADV7180_IRQ3_AD_CHANGE);
+>  		if (ret < 0)
+> -			goto err_unreg_subdev;
+> +			return ret;
+>  
+>  		ret = i2c_smbus_write_byte_data(client, ADV7180_IMR4_ADI, 0);
+>  		if (ret < 0)
+> -			goto err_unreg_subdev;
+> +			return ret;
+>  
+>  		ret = i2c_smbus_write_byte_data(client, ADV7180_ADI_CTRL_REG,
+> -			0);
+> +						0);
+>  		if (ret < 0)
+> -			goto err_unreg_subdev;
+> +			return ret;
+>  	}
+>  
+> +	/*Set default value for controls */
+> +	ret = i2c_smbus_write_byte_data(client, ADV7180_BRI_REG,
+> +					state->brightness);
+> +	if (ret < 0)
+> +		return ret;
+> +
+> +	ret = i2c_smbus_write_byte_data(client, ADV7180_HUE_REG, state->hue);
+> +	if (ret < 0)
+> +		return ret;
+> +
+> +	ret = i2c_smbus_write_byte_data(client, ADV7180_CON_REG,
+> +					state->contrast);
+> +	if (ret < 0)
+> +		return ret;
+> +
+> +	ret = i2c_smbus_write_byte_data(client, ADV7180_SD_SAT_CB_REG,
+> +					state->saturation);
+> +	if (ret < 0)
+> +		return ret;
+> +
+> +	ret = i2c_smbus_write_byte_data(client, ADV7180_SD_SAT_CR_REG,
+> +					state->saturation);
+> +	if (ret < 0)
+> +		return ret;
+> +
+> +	return 0;
+> +}
+> +
+> +static __devinit int adv7180_probe(struct i2c_client *client,
+> +				   const struct i2c_device_id *id)
+> +{
+> +	struct adv7180_state *state;
+> +	struct v4l2_subdev *sd;
+> +	int ret;
+> +
+> +	/* Check if the adapter supports the needed features */
+> +	if (!i2c_check_functionality(client->adapter, I2C_FUNC_SMBUS_BYTE_DATA))
+> +		return -EIO;
+> +
+> +	v4l_info(client, "chip found @ 0x%02x (%s)\n",
+> +		 client->addr, client->adapter->name);
+> +
+> +	state = kzalloc(sizeof(struct adv7180_state), GFP_KERNEL);
+> +	if (state == NULL) {
+> +		ret = -ENOMEM;
+> +		goto err;
+> +	}
+> +
+> +	state->irq = client->irq;
+> +	INIT_WORK(&state->work, adv7180_work);
+> +	mutex_init(&state->mutex);
+> +	state->autodetect = true;
+> +	state->brightness = BRI_REG_DEF;
+> +	state->hue = HUE_REG_DEF;
+> +	state->contrast = CON_REG_DEF;
+> +	state->saturation = SAT_REG_DEF;
+> +	state->input = 0;
+> +	sd = &state->sd;
+> +	v4l2_i2c_subdev_init(sd, client, &adv7180_ops);
+> +
+> +	ret = init_device(client, state);
+> +	if (0 != ret)
+> +		goto err_unreg_subdev;
+>  	return 0;
+>  
+>  err_unreg_subdev:
+> @@ -432,16 +682,49 @@ static const struct i2c_device_id adv7180_id[] = {
+>  	{},
+>  };
+>  
+> +#ifdef CONFIG_PM
+> +static int adv7180_suspend(struct i2c_client *client, pm_message_t state)
+> +{
+> +	int ret;
+> +
+> +	ret = i2c_smbus_write_byte_data(client, ADV7180_PWR_MAN_REG,
+> +					ADV7180_PWR_MAN_OFF);
+> +	if (ret < 0)
+> +		return ret;
+> +	return 0;
+> +}
+> +
+> +static int adv7180_resume(struct i2c_client *client)
+> +{
+> +	struct v4l2_subdev *sd = i2c_get_clientdata(client);
+> +	struct adv7180_state *state = to_state(sd);
+> +	int ret;
+> +
+> +	ret = i2c_smbus_write_byte_data(client, ADV7180_PWR_MAN_REG,
+> +					ADV7180_PWR_MAN_ON);
+> +	if (ret < 0)
+> +		return ret;
+> +	ret = init_device(client, state);
+> +	if (ret < 0)
+> +		return ret;
+> +	return 0;
+> +}
+> +#endif
+> +
+>  MODULE_DEVICE_TABLE(i2c, adv7180_id);
+>  
+>  static struct i2c_driver adv7180_driver = {
+>  	.driver = {
+> -		.owner	= THIS_MODULE,
+> -		.name	= DRIVER_NAME,
+> -	},
+> -	.probe		= adv7180_probe,
+> -	.remove		= __devexit_p(adv7180_remove),
+> -	.id_table	= adv7180_id,
+> +		   .owner = THIS_MODULE,
+> +		   .name = DRIVER_NAME,
+> +		   },
+> +	.probe = adv7180_probe,
+> +	.remove = __devexit_p(adv7180_remove),
+> +#ifdef CONFIG_PM
+> +	.suspend = adv7180_suspend,
+> +	.resume = adv7180_resume,
+> +#endif
+> +	.id_table = adv7180_id,
+>  };
+>  
+>  module_i2c_driver(adv7180_driver);
+> 
