@@ -1,119 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754504Ab2ETMTj (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 20 May 2012 08:19:39 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:44083 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754200Ab2ETMTh (ORCPT
+	id S1754577Ab2ETMUF (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 20 May 2012 08:20:05 -0400
+Received: from hqemgate04.nvidia.com ([216.228.121.35]:13190 "EHLO
+	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753921Ab2ETMUD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 20 May 2012 08:19:37 -0400
-Date: Sun, 20 May 2012 20:19:26 +0800
-From: Yong Zhang <yong.zhang0@gmail.com>
-To: Christophe Huriaux <c.huriaux@gmail.com>
-Cc: Uwe =?utf-8?Q?Kleine-K=EF=BF=BDnig?= 
-	<u.kleine-koenig@pengutronix.de>,
-        linux-rt-users@vger.kernel.org, Thomas Gleixner <tglx@linutronix.de>,
-        Steven Rostedt <rostedt@goodmis.org>, linux-kernel@vger.kernel.org,
-        Andreas Mohr <andi@lisas.de>
-Subject: [PATCH v2] genirq: don't sync irq thread if current happen to be
- the very irq thread
-Message-ID: <20120520121926.GA24585@zhy>
-Reply-To: Yong Zhang <yong.zhang0@gmail.com>
-References: <CAEOomG9NEoQKqp=pMx0NpzGaFpHBimALwhemnZL4F-8g7XURkA@mail.gmail.com>
- <20120509174931.GB31844@pengutronix.de>
- <CAEOomG9FZD9TEQZZKhCrNrq8SNXi3otWB2mDX69i3tWh5YQenw@mail.gmail.com>
- <20120520052731.GA3864@zhy>
+	Sun, 20 May 2012 08:20:03 -0400
+X-PGP-Universal: processed;
+	by hqnvupgp06.nvidia.com on Sun, 20 May 2012 05:20:03 -0700
+Message-ID: <4FB8E03B.6030404@nvidia.com>
+Date: Sun, 20 May 2012 17:44:51 +0530
+From: Laxman Dewangan <ldewangan@nvidia.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101208 Thunderbird/3.1.7
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <20120520052731.GA3864@zhy>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>
+CC: "lrg@ti.com" <lrg@ti.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] regulator: core: use correct device for device supply
+ lookup
+References: <20120519174052.GX4039@opensource.wolfsonmicro.com> <4FB7DEB0.3040001@nvidia.com> <20120519182658.GB4039@opensource.wolfsonmicro.com> <4FB7EE84.7090704@nvidia.com> <20120519205055.GA16590@opensource.wolfsonmicro.com> <4FB80CEE.4050201@nvidia.com> <20120519231347.GD16590@opensource.wolfsonmicro.com> <4FB89E6D.7000206@nvidia.com> <20120520090112.GE16590@opensource.wolfsonmicro.com> <4FB8C9EF.7010400@nvidia.com> <20120520120626.GD20652@opensource.wolfsonmicro.com>
+In-Reply-To: <20120520120626.GD20652@opensource.wolfsonmicro.com>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, May 20, 2012 at 01:27:31PM +0800, Yong Zhang wrote:
-> --- a/kernel/irq/manage.c
-> +++ b/kernel/irq/manage.c
-> @@ -41,6 +41,7 @@ early_param("threadirqs", setup_forced_irqthreads);
->  void synchronize_irq(unsigned int irq)
->  {
->  	struct irq_desc *desc = irq_to_desc(irq);
-> +	struct irqaction *action = desc->action;
+On Sunday 20 May 2012 05:36 PM, Mark Brown wrote:
+> * PGP Signed by an unknown key
+>
+> On Sun, May 20, 2012 at 04:09:43PM +0530, Laxman Dewangan wrote:
+>> On Sunday 20 May 2012 02:31 PM, Mark Brown wrote:
+>>> No.  This is happening because the device tree doesn't have any supplies
+>>> mapped for the regulators.  This is nothing at all to do with where the
+>>> code looks for the supplies, no matter where it looks there's nothing to
+>>> find.
+>> No, we should not put the regulator mapping under parent, need to
+>> have under "regulator" otherwise we need to fix the issue in dt
+>> parsing where first it looks for "regulator" and then parse the rail
+>> mapping.
+> What is this issue and why should we not fix it?
+>
 
-Bad time for dereferencing *action.
+I will go with the way it is done in mc13892 driver and then it is not 
+require to change the node layouts for regulator.
 
----
-From: Yong Zhang <yong.zhang@windriver.com>
-Date: Sun, 20 May 2012 12:56:46 +0800
-Subject: [PATCH v2] genirq: don't sync irq thread if current happen to be the very irq thread
+>
+>
+>> I want to have similar fix in my tps65910-regulator.c.
+> So why can't you do what mc13892 is doing?
+>
 
-Christophe reported against -rt http://marc.info/?l=linux-rt-users&m=133665600214984&w=2
-BUG: scheduling while atomic: irq/37-s3c-mci/253/0x00000102
-Modules linked in:
-[<c000e9fc>] (unwind_backtrace+0x0/0x12c) from [<c029b82c>] (__schedule+0x58/0x2c0)
-[<c029b82c>] (__schedule+0x58/0x2c0) from [<c029bc10>] (schedule+0x8c/0xb0)
-[<c029bc10>] (schedule+0x8c/0xb0) from [<c0055614>] (synchronize_irq+0xbc/0xd8)
-[<c0055614>] (synchronize_irq+0xbc/0xd8) from [<c01db6b0>] (pio_tasklet+0x34/0x11c)
-[<c01db6b0>] (pio_tasklet+0x34/0x11c) from [<c0024914>] (__tasklet_action+0x68/0x80)
-[<c0024914>] (__tasklet_action+0x68/0x80) from [<c0024ca4>] (__do_softirq+0x88/0x130)
-[<c0024ca4>] (__do_softirq+0x88/0x130) from [<c0024ef0>] (do_softirq+0x48/0x54)
-[<c0024ef0>] (do_softirq+0x48/0x54) from [<c0025048>] (local_bh_enable+0x8c/0xc0)
-[<c0025048>] (local_bh_enable+0x8c/0xc0) from [<c0054678>] (irq_forced_thread_fn+0x4c/0x54)
-[<c0054678>] (irq_forced_thread_fn+0x4c/0x54) from [<c0054454>] (irq_thread+0xa0/0x1c0)
-[<c0054454>] (irq_thread+0xa0/0x1c0) from [<c0038628>] (kthread+0x84/0x8c)
-[<c0038628>] (kthread+0x84/0x8c) from [<c000a100>] (kernel_thread_exit+0x0/0x8)
+Fine, I will post the similar fix in tps65910-regulator to match with 
+the mc13892 regulator driver.
+I tested this and it worked fine if changes are done in same way.
 
-Whe looking at this issue, I find that there is a typical deadlock
-scenario with forced treaded irq,
 
-irq_forced_thread_fn()
-  local_bh_enable();
-    do_softirq();
-      disable_irq();
-        synchronize_irq();
-          wait_event();
-          /*DEAD*/
+>> I am sorry that I am not able to explain the issue correctly. I think
+>> I will take help from Stephen Warren here to first explain him  and
+>> then I will come back for core changes.
+> OK, I guess.  I think a key thing here is that these shouldn't be any
+> different to any other supply.  Adding something that is specific to
+> regulator-regulator supplies doesn't do that so is a clear sign that
+> something has been missed.
 
-Cure it by unsync if current happen to be the very irq thread.
-
-Reported-by: Christophe Huriaux <c.huriaux@gmail.com>
-Signed-off-by: Yong Zhang <yong.zhang0@gmail.com>
-Cc: Steven Rostedt <rostedt@goodmis.org>
-Cc: Thomas Gleixner <tglx@linutronix.de>
----
- kernel/irq/manage.c |   10 ++++++++++
- 1 files changed, 10 insertions(+), 0 deletions(-)
-
-diff --git a/kernel/irq/manage.c b/kernel/irq/manage.c
-index 89a3ea8..7a48f74 100644
---- a/kernel/irq/manage.c
-+++ b/kernel/irq/manage.c
-@@ -41,6 +41,7 @@ early_param("threadirqs", setup_forced_irqthreads);
- void synchronize_irq(unsigned int irq)
- {
- 	struct irq_desc *desc = irq_to_desc(irq);
-+	struct irqaction *action;
- 	bool inprogress;
- 
- 	if (!desc)
-@@ -67,7 +68,16 @@ void synchronize_irq(unsigned int irq)
- 	/*
- 	 * We made sure that no hardirq handler is running. Now verify
- 	 * that no threaded handlers are active.
-+	 * But for theaded irq, we don't sync if current happens to be
-+	 * the irq thread; otherwise we could deadlock.
- 	 */
-+	action = desc->action;
-+	while (action) {
-+		if (action->thread && action->thread == current)
-+			return;
-+		action = action->next;
-+	}
-+
- 	wait_event(desc->wait_for_threads, !atomic_read(&desc->threads_active));
- }
- EXPORT_SYMBOL(synchronize_irq);
--- 
-1.7.1
+I tested by moving the regulator supply to top level as you suggested 
+and then core driver change does not needed. So I will add this in dt 
+documentation for tps65911 and do some more changes in driver to take 
+proper pin name.
 
