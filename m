@@ -1,126 +1,222 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751643Ab2ETF1q (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 20 May 2012 01:27:46 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:63632 "EHLO
+	id S1751729Ab2ETFak (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 20 May 2012 01:30:40 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:51189 "EHLO
 	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750984Ab2ETF1n (ORCPT
+	with ESMTP id S1751164Ab2ETFai (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 20 May 2012 01:27:43 -0400
-Date: Sun, 20 May 2012 13:27:31 +0800
-From: Yong Zhang <yong.zhang0@gmail.com>
-To: Christophe Huriaux <c.huriaux@gmail.com>
-Cc: Uwe =?utf-8?Q?Kleine-K=EF=BF=BDnig?= 
-	<u.kleine-koenig@pengutronix.de>,
-        linux-rt-users@vger.kernel.org, Thomas Gleixner <tglx@linutronix.de>,
-        Steven Rostedt <rostedt@goodmis.org>, linux-kernel@vger.kernel.org
-Subject: [PATCH] genirq: don't sync irq thread if current happen to be the
- very irq thread
-Message-ID: <20120520052731.GA3864@zhy>
-Reply-To: Yong Zhang <yong.zhang0@gmail.com>
-References: <CAEOomG9NEoQKqp=pMx0NpzGaFpHBimALwhemnZL4F-8g7XURkA@mail.gmail.com>
- <20120509174931.GB31844@pengutronix.de>
- <CAEOomG9FZD9TEQZZKhCrNrq8SNXi3otWB2mDX69i3tWh5YQenw@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <CAEOomG9FZD9TEQZZKhCrNrq8SNXi3otWB2mDX69i3tWh5YQenw@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Sun, 20 May 2012 01:30:38 -0400
+Message-ID: <1337491828.4017.1.camel@phoenix>
+Subject: [PATCH RFC/RFT v2] regulator: lp3971: Use
+ regulator_list_voltage_table()
+From: Axel Lin <axel.lin@gmail.com>
+To: linux-kernel@vger.kernel.org
+Cc: Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Liam Girdwood <lrg@ti.com>,
+        Marek Szyprowski <m.szyprowski@samsung.com>
+Date: Sun, 20 May 2012 13:30:28 +0800
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.2- 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, May 10, 2012 at 03:17:17PM +0200, Christophe Huriaux wrote:
-> 2012/5/9 Uwe Kleine-K?nig <u.kleine-koenig@pengutronix.de>:
-> > If you enable CONFIG_KALLSYMS you get a more usable backtrace.
-> > Alternatively you can use
-> >
-> > ? ? ? ?$CROSS_COMPILE-addr2line -e vmlinux 0xc000e90c
-> >
-> > to get the file and line that resulted in the code at that address.
-> >
-> 
->   Thanks, I was wondering which config option would enable that. The
-> complete backtrace is much more usable :
-
-Actually I don't think this is a -rt issue, you could also trigger this
-warning with vanilla if you boot your kernel with 'threadirqs'.
-
-Could you pleaes try the follow patch?
-
-Thanks,
-Yong
-
+Signed-off-by: Axel Lin <axel.lin@gmail.com>
 ---
-From: Yong Zhang <yong.zhang@windriver.com>
-Date: Sun, 20 May 2012 12:56:46 +0800
-Subject: [PATCH] genirq: don't sync irq thread if current happen to be the very irq thread
+v2: Now the values in buck_voltage_map table are microvolt.
+   So in lp3971_dcdc_get_voltage() we should return
+   buck_voltage_map[reg] instead of 1000 * buck_voltage_map[reg].
 
-Christophe reported against -rt:
-BUG: scheduling while atomic: irq/37-s3c-mci/253/0x00000102
-Modules linked in:
-[<c000e9fc>] (unwind_backtrace+0x0/0x12c) from [<c029b82c>] (__schedule+0x58/0x2c0)
-[<c029b82c>] (__schedule+0x58/0x2c0) from [<c029bc10>] (schedule+0x8c/0xb0)
-[<c029bc10>] (schedule+0x8c/0xb0) from [<c0055614>] (synchronize_irq+0xbc/0xd8)
-[<c0055614>] (synchronize_irq+0xbc/0xd8) from [<c01db6b0>] (pio_tasklet+0x34/0x11c)
-[<c01db6b0>] (pio_tasklet+0x34/0x11c) from [<c0024914>] (__tasklet_action+0x68/0x80)
-[<c0024914>] (__tasklet_action+0x68/0x80) from [<c0024ca4>] (__do_softirq+0x88/0x130)
-[<c0024ca4>] (__do_softirq+0x88/0x130) from [<c0024ef0>] (do_softirq+0x48/0x54)
-[<c0024ef0>] (do_softirq+0x48/0x54) from [<c0025048>] (local_bh_enable+0x8c/0xc0)
-[<c0025048>] (local_bh_enable+0x8c/0xc0) from [<c0054678>] (irq_forced_thread_fn+0x4c/0x54)
-[<c0054678>] (irq_forced_thread_fn+0x4c/0x54) from [<c0054454>] (irq_thread+0xa0/0x1c0)
-[<c0054454>] (irq_thread+0xa0/0x1c0) from [<c0038628>] (kthread+0x84/0x8c)
-[<c0038628>] (kthread+0x84/0x8c) from [<c000a100>] (kernel_thread_exit+0x0/0x8)
+ drivers/regulator/lp3971.c |   66 +++++++++++++++----------------------------
+ 1 files changed, 23 insertions(+), 43 deletions(-)
 
-Whe looking at this issue, I find that there is a typical deadlock
-scenario with forced treaded irq,
-
-irq_forced_thread_fn()
-  local_bh_enable();
-    do_softirq();
-      disable_irq();
-        synchronize_irq();
-          wait_event();
-          /*DEAD*/
-
-Cure it by unsync if current happen to be the very irq thread.
-
-Reported-by: Christophe Huriaux <c.huriaux@gmail.com>
-Signed-off-by: Yong Zhang <yong.zhang0@gmail.com>
-Cc: Steven Rostedt <rostedt@goodmis.org>
-Cc: Thomas Gleixner <tglx@linutronix.de>
----
- kernel/irq/manage.c |    9 +++++++++
- 1 files changed, 9 insertions(+), 0 deletions(-)
-
-diff --git a/kernel/irq/manage.c b/kernel/irq/manage.c
-index 89a3ea8..d5b96e7 100644
---- a/kernel/irq/manage.c
-+++ b/kernel/irq/manage.c
-@@ -41,6 +41,7 @@ early_param("threadirqs", setup_forced_irqthreads);
- void synchronize_irq(unsigned int irq)
- {
- 	struct irq_desc *desc = irq_to_desc(irq);
-+	struct irqaction *action = desc->action;
- 	bool inprogress;
+diff --git a/drivers/regulator/lp3971.c b/drivers/regulator/lp3971.c
+index 981bea9..7c6e3b8 100644
+--- a/drivers/regulator/lp3971.c
++++ b/drivers/regulator/lp3971.c
+@@ -65,11 +65,11 @@ static const int buck_base_addr[] = {
+ #define LP3971_BUCK_TARGET_VOL1_REG(x) (buck_base_addr[x])
+ #define LP3971_BUCK_TARGET_VOL2_REG(x) (buck_base_addr[x]+1)
  
- 	if (!desc)
-@@ -67,7 +68,15 @@ void synchronize_irq(unsigned int irq)
- 	/*
- 	 * We made sure that no hardirq handler is running. Now verify
- 	 * that no threaded handlers are active.
-+	 * But for theaded irq, we don't sync if current happens to be
-+	 * the irq thread; otherwise we could deadlock.
- 	 */
-+	while (action) {
-+		if (action->thread && action->thread == current)
-+			return;
-+		action = action->next;
-+	}
-+
- 	wait_event(desc->wait_for_threads, !atomic_read(&desc->threads_active));
+-static const int buck_voltage_map[] = {
+-	   0,  800,  850,  900,  950, 1000, 1050, 1100,
+-	1150, 1200, 1250, 1300, 1350, 1400, 1450, 1500,
+-	1550, 1600, 1650, 1700, 1800, 1900, 2500, 2800,
+-	3000, 3300,
++static const unsigned int buck_voltage_map[] = {
++	      0,  800000,  850000,  900000,  950000, 1000000, 1050000, 1100000,
++	1150000, 1200000, 1250000, 1300000, 1350000, 1400000, 1450000, 1500000,
++	1550000, 1600000, 1650000, 1700000, 1800000, 1900000, 2500000, 2800000,
++	3000000, 3300000,
+ };
+ 
+ #define BUCK_TARGET_VOL_MASK 0x3f
+@@ -98,39 +98,19 @@ static const int buck_voltage_map[] = {
+ #define LDO_VOL_CONTR_SHIFT(x) ((x & 1) << 2)
+ #define LDO_VOL_CONTR_MASK 0x0f
+ 
+-static const int ldo45_voltage_map[] = {
+-	1000, 1050, 1100, 1150, 1200, 1250, 1300, 1350,
+-	1400, 1500, 1800, 1900, 2500, 2800, 3000, 3300,
++static const unsigned int ldo45_voltage_map[] = {
++	1000000, 1050000, 1100000, 1150000, 1200000, 1250000, 1300000, 1350000,
++	1400000, 1500000, 1800000, 1900000, 2500000, 2800000, 3000000, 3300000,
+ };
+ 
+-static const int ldo123_voltage_map[] = {
+-	1800, 1900, 2000, 2100, 2200, 2300, 2400, 2500,
+-	2600, 2700, 2800, 2900, 3000, 3100, 3200, 3300,
++static const unsigned int ldo123_voltage_map[] = {
++	1800000, 1900000, 2000000, 2100000, 2200000, 2300000, 2400000, 2500000,
++	2600000, 2700000, 2800000, 2900000, 3000000, 3100000, 3200000, 3300000,
+ };
+ 
+-static const int *ldo_voltage_map[] = {
+-	ldo123_voltage_map, /* LDO1 */
+-	ldo123_voltage_map, /* LDO2 */
+-	ldo123_voltage_map, /* LDO3 */
+-	ldo45_voltage_map, /* LDO4 */
+-	ldo45_voltage_map, /* LDO5 */
+-};
+-
+-#define LDO_VOL_VALUE_MAP(x) (ldo_voltage_map[(x - LP3971_LDO1)])
+-
+ #define LDO_VOL_MIN_IDX 0x00
+ #define LDO_VOL_MAX_IDX 0x0f
+ 
+-static int lp3971_ldo_list_voltage(struct regulator_dev *dev, unsigned index)
+-{
+-	int ldo = rdev_get_id(dev) - LP3971_LDO1;
+-
+-	if (index > LDO_VOL_MAX_IDX)
+-		return -EINVAL;
+-
+-	return 1000 * LDO_VOL_VALUE_MAP(ldo)[index];
+-}
+-
+ static int lp3971_ldo_is_enabled(struct regulator_dev *dev)
+ {
+ 	struct lp3971 *lp3971 = rdev_get_drvdata(dev);
+@@ -169,7 +149,7 @@ static int lp3971_ldo_get_voltage(struct regulator_dev *dev)
+ 	reg = lp3971_reg_read(lp3971, LP3971_LDO_VOL_CONTR_REG(ldo));
+ 	val = (reg >> LDO_VOL_CONTR_SHIFT(ldo)) & LDO_VOL_CONTR_MASK;
+ 
+-	return 1000 * LDO_VOL_VALUE_MAP(ldo)[val];
++	return dev->desc->volt_table[val];
  }
- EXPORT_SYMBOL(synchronize_irq);
+ 
+ static int lp3971_ldo_set_voltage_sel(struct regulator_dev *dev,
+@@ -184,7 +164,7 @@ static int lp3971_ldo_set_voltage_sel(struct regulator_dev *dev,
+ }
+ 
+ static struct regulator_ops lp3971_ldo_ops = {
+-	.list_voltage = lp3971_ldo_list_voltage,
++	.list_voltage = regulator_list_voltage_table,
+ 	.is_enabled = lp3971_ldo_is_enabled,
+ 	.enable = lp3971_ldo_enable,
+ 	.disable = lp3971_ldo_disable,
+@@ -192,14 +172,6 @@ static struct regulator_ops lp3971_ldo_ops = {
+ 	.set_voltage_sel = lp3971_ldo_set_voltage_sel,
+ };
+ 
+-static int lp3971_dcdc_list_voltage(struct regulator_dev *dev, unsigned index)
+-{
+-	if (index < BUCK_TARGET_VOL_MIN_IDX || index > BUCK_TARGET_VOL_MAX_IDX)
+-		return -EINVAL;
+-
+-	return 1000 * buck_voltage_map[index];
+-}
+-
+ static int lp3971_dcdc_is_enabled(struct regulator_dev *dev)
+ {
+ 	struct lp3971 *lp3971 = rdev_get_drvdata(dev);
+@@ -240,7 +212,7 @@ static int lp3971_dcdc_get_voltage(struct regulator_dev *dev)
+ 	reg &= BUCK_TARGET_VOL_MASK;
+ 
+ 	if (reg <= BUCK_TARGET_VOL_MAX_IDX)
+-		val = 1000 * buck_voltage_map[reg];
++		val = buck_voltage_map[reg];
+ 	else {
+ 		val = 0;
+ 		dev_warn(&dev->dev, "chip reported incorrect voltage value.\n");
+@@ -273,7 +245,7 @@ static int lp3971_dcdc_set_voltage_sel(struct regulator_dev *dev,
+ }
+ 
+ static struct regulator_ops lp3971_dcdc_ops = {
+-	.list_voltage = lp3971_dcdc_list_voltage,
++	.list_voltage = regulator_list_voltage_table,
+ 	.is_enabled = lp3971_dcdc_is_enabled,
+ 	.enable = lp3971_dcdc_enable,
+ 	.disable = lp3971_dcdc_disable,
+@@ -287,6 +259,7 @@ static const struct regulator_desc regulators[] = {
+ 		.id = LP3971_LDO1,
+ 		.ops = &lp3971_ldo_ops,
+ 		.n_voltages = ARRAY_SIZE(ldo123_voltage_map),
++		.volt_table = ldo123_voltage_map,
+ 		.type = REGULATOR_VOLTAGE,
+ 		.owner = THIS_MODULE,
+ 	},
+@@ -295,6 +268,7 @@ static const struct regulator_desc regulators[] = {
+ 		.id = LP3971_LDO2,
+ 		.ops = &lp3971_ldo_ops,
+ 		.n_voltages = ARRAY_SIZE(ldo123_voltage_map),
++		.volt_table = ldo123_voltage_map,
+ 		.type = REGULATOR_VOLTAGE,
+ 		.owner = THIS_MODULE,
+ 	},
+@@ -303,6 +277,7 @@ static const struct regulator_desc regulators[] = {
+ 		.id = LP3971_LDO3,
+ 		.ops = &lp3971_ldo_ops,
+ 		.n_voltages = ARRAY_SIZE(ldo123_voltage_map),
++		.volt_table = ldo123_voltage_map,
+ 		.type = REGULATOR_VOLTAGE,
+ 		.owner = THIS_MODULE,
+ 	},
+@@ -311,6 +286,7 @@ static const struct regulator_desc regulators[] = {
+ 		.id = LP3971_LDO4,
+ 		.ops = &lp3971_ldo_ops,
+ 		.n_voltages = ARRAY_SIZE(ldo45_voltage_map),
++		.volt_table = ldo45_voltage_map,
+ 		.type = REGULATOR_VOLTAGE,
+ 		.owner = THIS_MODULE,
+ 	},
+@@ -319,6 +295,7 @@ static const struct regulator_desc regulators[] = {
+ 		.id = LP3971_LDO5,
+ 		.ops = &lp3971_ldo_ops,
+ 		.n_voltages = ARRAY_SIZE(ldo45_voltage_map),
++		.volt_table = ldo45_voltage_map,
+ 		.type = REGULATOR_VOLTAGE,
+ 		.owner = THIS_MODULE,
+ 	},
+@@ -327,6 +304,7 @@ static const struct regulator_desc regulators[] = {
+ 		.id = LP3971_DCDC1,
+ 		.ops = &lp3971_dcdc_ops,
+ 		.n_voltages = ARRAY_SIZE(buck_voltage_map),
++		.volt_table = buck_voltage_map,
+ 		.type = REGULATOR_VOLTAGE,
+ 		.owner = THIS_MODULE,
+ 	},
+@@ -335,6 +313,7 @@ static const struct regulator_desc regulators[] = {
+ 		.id = LP3971_DCDC2,
+ 		.ops = &lp3971_dcdc_ops,
+ 		.n_voltages = ARRAY_SIZE(buck_voltage_map),
++		.volt_table = buck_voltage_map,
+ 		.type = REGULATOR_VOLTAGE,
+ 		.owner = THIS_MODULE,
+ 	},
+@@ -343,6 +322,7 @@ static const struct regulator_desc regulators[] = {
+ 		.id = LP3971_DCDC3,
+ 		.ops = &lp3971_dcdc_ops,
+ 		.n_voltages = ARRAY_SIZE(buck_voltage_map),
++		.volt_table = buck_voltage_map,
+ 		.type = REGULATOR_VOLTAGE,
+ 		.owner = THIS_MODULE,
+ 	},
 -- 
-1.7.1
+1.7.5.4
+
+
 
