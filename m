@@ -1,222 +1,128 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751729Ab2ETFak (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 20 May 2012 01:30:40 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:51189 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751164Ab2ETFai (ORCPT
+	id S1751897Ab2ETFpl (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 20 May 2012 01:45:41 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:65451 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750769Ab2ETFpj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 20 May 2012 01:30:38 -0400
-Message-ID: <1337491828.4017.1.camel@phoenix>
-Subject: [PATCH RFC/RFT v2] regulator: lp3971: Use
- regulator_list_voltage_table()
-From: Axel Lin <axel.lin@gmail.com>
-To: linux-kernel@vger.kernel.org
-Cc: Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Liam Girdwood <lrg@ti.com>,
-        Marek Szyprowski <m.szyprowski@samsung.com>
-Date: Sun, 20 May 2012 13:30:28 +0800
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.2- 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	Sun, 20 May 2012 01:45:39 -0400
+From: Grant Likely <grant.likely@secretlab.ca>
+To: spi-devel-general@lists.sourceforge.com, linux-kernel@vger.kernel.org
+Cc: Grant Likely <grant.likely@secretlab.ca>
+Subject: [PATCH] spi: By default setup spi_masters with 1 chipselect and dynamics bus number
+Date: Sat, 19 May 2012 23:45:37 -0600
+Message-Id: <1337492737-32259-1-git-send-email-grant.likely@secretlab.ca>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Axel Lin <axel.lin@gmail.com>
+Trivial simplification.  Instead of requiring spi master drivers to
+always set the bus number (even when a dynamic number is desired),
+this patch modifies spi_alloc_master() to initialize num_chipselect to
+1 (because there will always be at least one CS) and bus_num to -1 for
+dynamic allocation.  This simplifies the code needed to be written for
+drivers.
+
+Signed-off-by: Grant Likely <grant.likely@secretlab.ca>
 ---
-v2: Now the values in buck_voltage_map table are microvolt.
-   So in lp3971_dcdc_get_voltage() we should return
-   buck_voltage_map[reg] instead of 1000 * buck_voltage_map[reg].
+ drivers/spi/spi-ath79.c        |    3 ---
+ drivers/spi/spi-lm70llp.c      |    3 ---
+ drivers/spi/spi-mpc52xx.c      |    3 ---
+ drivers/spi/spi-ppc4xx.c       |    3 ---
+ drivers/spi/spi-topcliff-pch.c |    1 -
+ drivers/spi/spi.c              |    2 ++
+ 6 files changed, 2 insertions(+), 13 deletions(-)
 
- drivers/regulator/lp3971.c |   66 +++++++++++++++----------------------------
- 1 files changed, 23 insertions(+), 43 deletions(-)
-
-diff --git a/drivers/regulator/lp3971.c b/drivers/regulator/lp3971.c
-index 981bea9..7c6e3b8 100644
---- a/drivers/regulator/lp3971.c
-+++ b/drivers/regulator/lp3971.c
-@@ -65,11 +65,11 @@ static const int buck_base_addr[] = {
- #define LP3971_BUCK_TARGET_VOL1_REG(x) (buck_base_addr[x])
- #define LP3971_BUCK_TARGET_VOL2_REG(x) (buck_base_addr[x]+1)
+diff --git a/drivers/spi/spi-ath79.c b/drivers/spi/spi-ath79.c
+index acc88b4..249077e 100644
+--- a/drivers/spi/spi-ath79.c
++++ b/drivers/spi/spi-ath79.c
+@@ -216,9 +216,6 @@ static __devinit int ath79_spi_probe(struct platform_device *pdev)
+ 	if (pdata) {
+ 		master->bus_num = pdata->bus_num;
+ 		master->num_chipselect = pdata->num_chipselect;
+-	} else {
+-		master->bus_num = -1;
+-		master->num_chipselect = 1;
+ 	}
  
--static const int buck_voltage_map[] = {
--	   0,  800,  850,  900,  950, 1000, 1050, 1100,
--	1150, 1200, 1250, 1300, 1350, 1400, 1450, 1500,
--	1550, 1600, 1650, 1700, 1800, 1900, 2500, 2800,
--	3000, 3300,
-+static const unsigned int buck_voltage_map[] = {
-+	      0,  800000,  850000,  900000,  950000, 1000000, 1050000, 1100000,
-+	1150000, 1200000, 1250000, 1300000, 1350000, 1400000, 1450000, 1500000,
-+	1550000, 1600000, 1650000, 1700000, 1800000, 1900000, 2500000, 2800000,
-+	3000000, 3300000,
- };
+ 	sp->bitbang.master = spi_master_get(master);
+diff --git a/drivers/spi/spi-lm70llp.c b/drivers/spi/spi-lm70llp.c
+index 933eb9d..0759b5d 100644
+--- a/drivers/spi/spi-lm70llp.c
++++ b/drivers/spi/spi-lm70llp.c
+@@ -219,9 +219,6 @@ static void spi_lm70llp_attach(struct parport *p)
+ 	}
+ 	pp = spi_master_get_devdata(master);
  
- #define BUCK_TARGET_VOL_MASK 0x3f
-@@ -98,39 +98,19 @@ static const int buck_voltage_map[] = {
- #define LDO_VOL_CONTR_SHIFT(x) ((x & 1) << 2)
- #define LDO_VOL_CONTR_MASK 0x0f
- 
--static const int ldo45_voltage_map[] = {
--	1000, 1050, 1100, 1150, 1200, 1250, 1300, 1350,
--	1400, 1500, 1800, 1900, 2500, 2800, 3000, 3300,
-+static const unsigned int ldo45_voltage_map[] = {
-+	1000000, 1050000, 1100000, 1150000, 1200000, 1250000, 1300000, 1350000,
-+	1400000, 1500000, 1800000, 1900000, 2500000, 2800000, 3000000, 3300000,
- };
- 
--static const int ldo123_voltage_map[] = {
--	1800, 1900, 2000, 2100, 2200, 2300, 2400, 2500,
--	2600, 2700, 2800, 2900, 3000, 3100, 3200, 3300,
-+static const unsigned int ldo123_voltage_map[] = {
-+	1800000, 1900000, 2000000, 2100000, 2200000, 2300000, 2400000, 2500000,
-+	2600000, 2700000, 2800000, 2900000, 3000000, 3100000, 3200000, 3300000,
- };
- 
--static const int *ldo_voltage_map[] = {
--	ldo123_voltage_map, /* LDO1 */
--	ldo123_voltage_map, /* LDO2 */
--	ldo123_voltage_map, /* LDO3 */
--	ldo45_voltage_map, /* LDO4 */
--	ldo45_voltage_map, /* LDO5 */
--};
+-	master->bus_num = -1;	/* dynamic alloc of a bus number */
+-	master->num_chipselect = 1;
 -
--#define LDO_VOL_VALUE_MAP(x) (ldo_voltage_map[(x - LP3971_LDO1)])
+ 	/*
+ 	 * SPI and bitbang hookup.
+ 	 */
+diff --git a/drivers/spi/spi-mpc52xx.c b/drivers/spi/spi-mpc52xx.c
+index 57633d9..cb3a383 100644
+--- a/drivers/spi/spi-mpc52xx.c
++++ b/drivers/spi/spi-mpc52xx.c
+@@ -433,7 +433,6 @@ static int __devinit mpc52xx_spi_probe(struct platform_device *op)
+ 		goto err_alloc;
+ 	}
+ 
+-	master->bus_num = -1;
+ 	master->setup = mpc52xx_spi_setup;
+ 	master->transfer = mpc52xx_spi_transfer;
+ 	master->mode_bits = SPI_CPOL | SPI_CPHA | SPI_LSB_FIRST;
+@@ -479,8 +478,6 @@ static int __devinit mpc52xx_spi_probe(struct platform_device *op)
+ 			gpio_direction_output(gpio_cs, 1);
+ 			ms->gpio_cs[i] = gpio_cs;
+ 		}
+-	} else {
+-		master->num_chipselect = 1;
+ 	}
+ 
+ 	spin_lock_init(&ms->lock);
+diff --git a/drivers/spi/spi-ppc4xx.c b/drivers/spi/spi-ppc4xx.c
+index d95d307..75ac9d4 100644
+--- a/drivers/spi/spi-ppc4xx.c
++++ b/drivers/spi/spi-ppc4xx.c
+@@ -466,9 +466,6 @@ static int __init spi_ppc4xx_of_probe(struct platform_device *op)
+ 	bbp->master->setup = spi_ppc4xx_setup;
+ 	bbp->master->cleanup = spi_ppc4xx_cleanup;
+ 
+-	/* Allocate bus num dynamically. */
+-	bbp->master->bus_num = -1;
 -
- #define LDO_VOL_MIN_IDX 0x00
- #define LDO_VOL_MAX_IDX 0x0f
+ 	/* the spi->mode bits understood by this driver: */
+ 	bbp->master->mode_bits =
+ 		SPI_CPHA | SPI_CPOL | SPI_CS_HIGH | SPI_LSB_FIRST;
+diff --git a/drivers/spi/spi-topcliff-pch.c b/drivers/spi/spi-topcliff-pch.c
+index 77c4562..cd56dcf 100644
+--- a/drivers/spi/spi-topcliff-pch.c
++++ b/drivers/spi/spi-topcliff-pch.c
+@@ -1438,7 +1438,6 @@ static int __devinit pch_spi_pd_probe(struct platform_device *plat_dev)
+ 		plat_dev->id, data->io_remap_addr);
  
--static int lp3971_ldo_list_voltage(struct regulator_dev *dev, unsigned index)
--{
--	int ldo = rdev_get_id(dev) - LP3971_LDO1;
--
--	if (index > LDO_VOL_MAX_IDX)
--		return -EINVAL;
--
--	return 1000 * LDO_VOL_VALUE_MAP(ldo)[index];
--}
--
- static int lp3971_ldo_is_enabled(struct regulator_dev *dev)
- {
- 	struct lp3971 *lp3971 = rdev_get_drvdata(dev);
-@@ -169,7 +149,7 @@ static int lp3971_ldo_get_voltage(struct regulator_dev *dev)
- 	reg = lp3971_reg_read(lp3971, LP3971_LDO_VOL_CONTR_REG(ldo));
- 	val = (reg >> LDO_VOL_CONTR_SHIFT(ldo)) & LDO_VOL_CONTR_MASK;
+ 	/* initialize members of SPI master */
+-	master->bus_num = -1;
+ 	master->num_chipselect = PCH_MAX_CS;
+ 	master->setup = pch_spi_setup;
+ 	master->transfer = pch_spi_transfer;
+diff --git a/drivers/spi/spi.c b/drivers/spi/spi.c
+index 2d65b16..1041cb8 100644
+--- a/drivers/spi/spi.c
++++ b/drivers/spi/spi.c
+@@ -936,6 +936,8 @@ struct spi_master *spi_alloc_master(struct device *dev, unsigned size)
+ 		return NULL;
  
--	return 1000 * LDO_VOL_VALUE_MAP(ldo)[val];
-+	return dev->desc->volt_table[val];
- }
- 
- static int lp3971_ldo_set_voltage_sel(struct regulator_dev *dev,
-@@ -184,7 +164,7 @@ static int lp3971_ldo_set_voltage_sel(struct regulator_dev *dev,
- }
- 
- static struct regulator_ops lp3971_ldo_ops = {
--	.list_voltage = lp3971_ldo_list_voltage,
-+	.list_voltage = regulator_list_voltage_table,
- 	.is_enabled = lp3971_ldo_is_enabled,
- 	.enable = lp3971_ldo_enable,
- 	.disable = lp3971_ldo_disable,
-@@ -192,14 +172,6 @@ static struct regulator_ops lp3971_ldo_ops = {
- 	.set_voltage_sel = lp3971_ldo_set_voltage_sel,
- };
- 
--static int lp3971_dcdc_list_voltage(struct regulator_dev *dev, unsigned index)
--{
--	if (index < BUCK_TARGET_VOL_MIN_IDX || index > BUCK_TARGET_VOL_MAX_IDX)
--		return -EINVAL;
--
--	return 1000 * buck_voltage_map[index];
--}
--
- static int lp3971_dcdc_is_enabled(struct regulator_dev *dev)
- {
- 	struct lp3971 *lp3971 = rdev_get_drvdata(dev);
-@@ -240,7 +212,7 @@ static int lp3971_dcdc_get_voltage(struct regulator_dev *dev)
- 	reg &= BUCK_TARGET_VOL_MASK;
- 
- 	if (reg <= BUCK_TARGET_VOL_MAX_IDX)
--		val = 1000 * buck_voltage_map[reg];
-+		val = buck_voltage_map[reg];
- 	else {
- 		val = 0;
- 		dev_warn(&dev->dev, "chip reported incorrect voltage value.\n");
-@@ -273,7 +245,7 @@ static int lp3971_dcdc_set_voltage_sel(struct regulator_dev *dev,
- }
- 
- static struct regulator_ops lp3971_dcdc_ops = {
--	.list_voltage = lp3971_dcdc_list_voltage,
-+	.list_voltage = regulator_list_voltage_table,
- 	.is_enabled = lp3971_dcdc_is_enabled,
- 	.enable = lp3971_dcdc_enable,
- 	.disable = lp3971_dcdc_disable,
-@@ -287,6 +259,7 @@ static const struct regulator_desc regulators[] = {
- 		.id = LP3971_LDO1,
- 		.ops = &lp3971_ldo_ops,
- 		.n_voltages = ARRAY_SIZE(ldo123_voltage_map),
-+		.volt_table = ldo123_voltage_map,
- 		.type = REGULATOR_VOLTAGE,
- 		.owner = THIS_MODULE,
- 	},
-@@ -295,6 +268,7 @@ static const struct regulator_desc regulators[] = {
- 		.id = LP3971_LDO2,
- 		.ops = &lp3971_ldo_ops,
- 		.n_voltages = ARRAY_SIZE(ldo123_voltage_map),
-+		.volt_table = ldo123_voltage_map,
- 		.type = REGULATOR_VOLTAGE,
- 		.owner = THIS_MODULE,
- 	},
-@@ -303,6 +277,7 @@ static const struct regulator_desc regulators[] = {
- 		.id = LP3971_LDO3,
- 		.ops = &lp3971_ldo_ops,
- 		.n_voltages = ARRAY_SIZE(ldo123_voltage_map),
-+		.volt_table = ldo123_voltage_map,
- 		.type = REGULATOR_VOLTAGE,
- 		.owner = THIS_MODULE,
- 	},
-@@ -311,6 +286,7 @@ static const struct regulator_desc regulators[] = {
- 		.id = LP3971_LDO4,
- 		.ops = &lp3971_ldo_ops,
- 		.n_voltages = ARRAY_SIZE(ldo45_voltage_map),
-+		.volt_table = ldo45_voltage_map,
- 		.type = REGULATOR_VOLTAGE,
- 		.owner = THIS_MODULE,
- 	},
-@@ -319,6 +295,7 @@ static const struct regulator_desc regulators[] = {
- 		.id = LP3971_LDO5,
- 		.ops = &lp3971_ldo_ops,
- 		.n_voltages = ARRAY_SIZE(ldo45_voltage_map),
-+		.volt_table = ldo45_voltage_map,
- 		.type = REGULATOR_VOLTAGE,
- 		.owner = THIS_MODULE,
- 	},
-@@ -327,6 +304,7 @@ static const struct regulator_desc regulators[] = {
- 		.id = LP3971_DCDC1,
- 		.ops = &lp3971_dcdc_ops,
- 		.n_voltages = ARRAY_SIZE(buck_voltage_map),
-+		.volt_table = buck_voltage_map,
- 		.type = REGULATOR_VOLTAGE,
- 		.owner = THIS_MODULE,
- 	},
-@@ -335,6 +313,7 @@ static const struct regulator_desc regulators[] = {
- 		.id = LP3971_DCDC2,
- 		.ops = &lp3971_dcdc_ops,
- 		.n_voltages = ARRAY_SIZE(buck_voltage_map),
-+		.volt_table = buck_voltage_map,
- 		.type = REGULATOR_VOLTAGE,
- 		.owner = THIS_MODULE,
- 	},
-@@ -343,6 +322,7 @@ static const struct regulator_desc regulators[] = {
- 		.id = LP3971_DCDC3,
- 		.ops = &lp3971_dcdc_ops,
- 		.n_voltages = ARRAY_SIZE(buck_voltage_map),
-+		.volt_table = buck_voltage_map,
- 		.type = REGULATOR_VOLTAGE,
- 		.owner = THIS_MODULE,
- 	},
+ 	device_initialize(&master->dev);
++	master->bus_num = -1;
++	master->num_chipselect = 1;
+ 	master->dev.class = &spi_master_class;
+ 	master->dev.parent = get_device(dev);
+ 	spi_master_set_devdata(master, &master[1]);
 -- 
-1.7.5.4
-
-
+1.7.9.5
 
