@@ -1,44 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751014Ab2ETEzT (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 20 May 2012 00:55:19 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:40006 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750864Ab2ETEzQ (ORCPT
+	id S1751278Ab2ETFAh (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 20 May 2012 01:00:37 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:47310 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750933Ab2ETFAf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 20 May 2012 00:55:16 -0400
+	Sun, 20 May 2012 01:00:35 -0400
 From: Grant Likely <grant.likely@secretlab.ca>
-Subject: Re: [PATCH] spi/omap2-mcspi: convert to the pump message infrastructure
-To: Shubhrajyoti Datta <omaplinuxkernel@gmail.com>,
-        Linus Walleij <linus.walleij@linaro.org>
-Cc: spi-devel-general@lists.sourceforge.net,
-        Shubhrajyoti D <shubhrajyoti@ti.com>, linux-kernel@vger.kernel.org
-In-Reply-To: <CAM=Q2csCk3B=mQH+zifE8y0XfPW=qgjH=Ya9PunaWRHFo+dLfQ@mail.gmail.com>
-References: <1336654665-693-1-git-send-email-shubhrajyoti@ti.com> <CACRpkdbb0pRmnN-E_M7MLZoN5c_vYNj4AWsSvv-9ZDJzh3Pbjw@mail.gmail.com> <CAM=Q2csCk3B=mQH+zifE8y0XfPW=qgjH=Ya9PunaWRHFo+dLfQ@mail.gmail.com>
-Date: Sat, 19 May 2012 22:55:14 -0600
-Message-Id: <20120520045514.AD9BB3E03B8@localhost>
+Subject: Re: [PATCH RFC] spi: Dont call prepare/unprepare transfer if not populated
+To: Andrew Lunn <andrew@lunn.ch>
+Cc: Linus Walleij <linus.walleij@linaro.org>,
+        Shubhrajyoti D <shubhrajyoti@ti.com>,
+        spi-devel-general@lists.sourceforge.net, linux-kernel@vger.kernel.org,
+        andrew@lunn.ch
+In-Reply-To: <20120515195801.GE23254@lunn.ch>
+References: <1336657841-2306-1-git-send-email-shubhrajyoti@ti.com> <CACRpkdZmr+i6d+k8XU6Qxo425=mFZo5kzUe1wFk+grxDshaoVA@mail.gmail.com> <20120511032455.6BB853E04A6@localhost> <20120515195801.GE23254@lunn.ch>
+Date: Sat, 19 May 2012 23:00:33 -0600
+Message-Id: <20120520050033.1D3DD3E03B8@localhost>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 15 May 2012 12:04:15 +0530, Shubhrajyoti Datta <omaplinuxkernel@gmail.com> wrote:
-> Hi Linus,
+On Tue, 15 May 2012 21:58:01 +0200, Andrew Lunn <andrew@lunn.ch> wrote:
+> On Thu, May 10, 2012 at 09:24:55PM -0600, Grant Likely wrote:
+> > On Thu, 10 May 2012 16:01:27 +0200, Linus Walleij <linus.walleij@linaro.org> wrote:
+> > > On Thu, May 10, 2012 at 3:50 PM, Shubhrajyoti D <shubhrajyoti@ti.com> wrote:
+> > > 
+> > > > Currently the prepare/unprepare transfer are called unconditionally.
+> > > > The assumption is that every driver using the spi core queue infrastructure
+> > > > has to populate the prepare and unprepare functions. This encourages
+> > > > drivers to populate empty functions to prevent crashing.
+> > > > This patch prevents the call to prepare/unprepare if not populated.
+> > > >
+> > > > Cc: Linus Walleij <linus.walleij@linaro.org>
+> > > > Signed-off-by: Shubhrajyoti D <shubhrajyoti@ti.com>
+> > > 
+> > > Great!
+> > > Acked-by: Linus Walleij <linus.walleij@linaro.org>
+> > 
+> > Applied, thanks (after fixing extra whitespace defect).
 > 
-> On Tue, May 15, 2012 at 1:42 AM, Linus Walleij <linus.walleij@linaro.org> wrote:
-> > On Thu, May 10, 2012 at 2:57 PM, Shubhrajyoti D <shubhrajyoti@ti.com> wrote:
-> >
-> >> This patch converts the OMAP SPI driver to use the SPI infrastructure
-> >> pump message queue.Also fixes the below warning.
-> >> master is unqueued, this is deprecated
-> >>
-> >> Signed-off-by: Shubhrajyoti D <shubhrajyoti@ti.com>
-> >
-> > Final version of the patch?
-> Lest someone has comments.
+> Hi Grant
 > 
-> > Acked-by: Linus Walleij <linus.walleij@linaro.org>
+> Is this going to appear in linux-next soon? Can i depend on having
+> this patch for 3.5?
 
-Applied, thanks.
+It's pushed out now.
 
 g.
 
