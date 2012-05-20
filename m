@@ -1,106 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756144Ab2ETANb (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 19 May 2012 20:13:31 -0400
-Received: from mail-ey0-f174.google.com ([209.85.215.174]:42909 "EHLO
-	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751661Ab2ETAN3 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 19 May 2012 20:13:29 -0400
-From: Eldad Zack <eldad@fogrefinery.com>
-To: "David S. Miller" <davem@davemloft.net>,
-        Alexey Kuznetsov <kuznet@ms2.inr.ac.ru>,
-        James Morris <jmorris@namei.org>,
-        Hideaki YOSHIFUJI <yoshfuji@linux-ipv6.org>,
-        Patrick McHardy <kaber@trash.net>
-Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Eldad Zack <eldad@fogrefinery.com>
-Subject: [PATCH] net/ipv4: replace simple_strtoul with kstrtoul
-Date: Sun, 20 May 2012 02:13:18 +0200
-Message-Id: <1337472798-18913-1-git-send-email-eldad@fogrefinery.com>
-X-Mailer: git-send-email 1.7.10
+	id S1753588Ab2ETBTY (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 19 May 2012 21:19:24 -0400
+Received: from mga03.intel.com ([143.182.124.21]:33340 "EHLO mga03.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751124Ab2ETBTX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 19 May 2012 21:19:23 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
+   d="scan'208";a="145275676"
+From: Tony Luck <tony.luck@intel.com>
+Date: Sat, 19 May 2012 17:49:24 -0700
+Subject: [PATCH] x86/mce: Fix check for processor context when machine check was taken.
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org
+Message-Id: <0169270@agluck-desktop.sc.intel.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Replace simple_strtoul with kstrtoul in three similar occurrences, all setup
-handlers:
-* route.c: set_rhash_entries
-* tcp.c: set_thash_entries
-* udp.c: set_uhash_entries
+Linus pointed out that checking "m->ip" was incorrect as "0" is
+a legitimate value.  Also we need to consider that we may have
+interrupted VM86 execution (in which case "CS" isn't any use in
+determining user/kernel).
 
-Also check if the conversion failed.
-
-Signed-off-by: Eldad Zack <eldad@fogrefinery.com>
+Reported-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Tony Luck <tony.luck@intel.com>
 ---
- net/ipv4/route.c |    8 +++++++-
- net/ipv4/tcp.c   |    8 +++++++-
- net/ipv4/udp.c   |    8 +++++++-
- 3 files changed, 21 insertions(+), 3 deletions(-)
+In case you are unable to sleep at night worrying about those
+poor systems that don't recover because they do the wrong thing
+if there is a VM86 process running, or some malicious user has
+a "jmp 0" at the base of a code segment.
 
-diff --git a/net/ipv4/route.c b/net/ipv4/route.c
-index 167ea10..84d1832 100644
---- a/net/ipv4/route.c
-+++ b/net/ipv4/route.c
-@@ -3430,9 +3430,15 @@ struct ip_rt_acct __percpu *ip_rt_acct __read_mostly;
- static __initdata unsigned long rhash_entries;
- static int __init set_rhash_entries(char *str)
+Mea culpa: Andi fixed the VM86 part of this a year and
+a half ago, and I failed to pick up the fix from his tree
+when I took over. There are some other bits I need to pick
+up too.
+
+ arch/x86/kernel/cpu/mcheck/mce-severity.c |   11 +++++------
+ arch/x86/kernel/cpu/mcheck/mce.c          |    2 ++
+ 2 files changed, 7 insertions(+), 6 deletions(-)
+
+diff --git a/arch/x86/kernel/cpu/mcheck/mce-severity.c b/arch/x86/kernel/cpu/mcheck/mce-severity.c
+index 0c82091..5dfb77a 100644
+--- a/arch/x86/kernel/cpu/mcheck/mce-severity.c
++++ b/arch/x86/kernel/cpu/mcheck/mce-severity.c
+@@ -165,15 +165,14 @@ static struct severity {
+ };
+ 
+ /*
+- * If the EIPV bit is set, it means the saved IP is the
+- * instruction which caused the MCE.
++ * No need to re-check mcgstatus here. We either found a
++ * good value for "cs" on the stack earlier (or faked one
++ * for the VM86 case) - or we didn't and "m->cs" will be
++ * zero which we will treat conservatively as "IN_KERNEL".
+  */
+ static int error_context(struct mce *m)
  {
-+	ssize_t ret;
-+
- 	if (!str)
- 		return 0;
--	rhash_entries = simple_strtoul(str, &str, 0);
-+
-+	ret = kstrtoul(str, 0, &rhash_entries);
-+	if (ret)
-+		return 0;
-+
- 	return 1;
+-	if (m->mcgstatus & MCG_STATUS_EIPV)
+-		return (m->ip && (m->cs & 3) == 3) ? IN_USER : IN_KERNEL;
+-	/* Unknown, assume kernel */
+-	return IN_KERNEL;
++	return ((m->cs & 3) == 3) ? IN_USER : IN_KERNEL;
  }
- __setup("rhash_entries=", set_rhash_entries);
-diff --git a/net/ipv4/tcp.c b/net/ipv4/tcp.c
-index 6589e11..6ed0552 100644
---- a/net/ipv4/tcp.c
-+++ b/net/ipv4/tcp.c
-@@ -3222,9 +3222,15 @@ extern struct tcp_congestion_ops tcp_reno;
- static __initdata unsigned long thash_entries;
- static int __init set_thash_entries(char *str)
- {
-+	ssize_t ret;
-+
- 	if (!str)
- 		return 0;
--	thash_entries = simple_strtoul(str, &str, 0);
-+
-+	ret = kstrtoul(str, 0, &thash_entries);
-+	if (ret)
-+		return 0;
-+
- 	return 1;
- }
- __setup("thash_entries=", set_thash_entries);
-diff --git a/net/ipv4/udp.c b/net/ipv4/udp.c
-index fe14105..662836a 100644
---- a/net/ipv4/udp.c
-+++ b/net/ipv4/udp.c
-@@ -2163,9 +2163,15 @@ void udp4_proc_exit(void)
- static __initdata unsigned long uhash_entries;
- static int __init set_uhash_entries(char *str)
- {
-+	ssize_t ret;
-+
- 	if (!str)
- 		return 0;
--	uhash_entries = simple_strtoul(str, &str, 0);
-+
-+	ret = kstrtoul(str, 0, &uhash_entries);
-+	if (ret)
-+		return 0;
-+
- 	if (uhash_entries && uhash_entries < UDP_HTABLE_SIZE_MIN)
- 		uhash_entries = UDP_HTABLE_SIZE_MIN;
- 	return 1;
+ 
+ int mce_severity(struct mce *m, int tolerant, char **msg)
+diff --git a/arch/x86/kernel/cpu/mcheck/mce.c b/arch/x86/kernel/cpu/mcheck/mce.c
+index 11c9166..a2d53f3 100644
+--- a/arch/x86/kernel/cpu/mcheck/mce.c
++++ b/arch/x86/kernel/cpu/mcheck/mce.c
+@@ -437,6 +437,8 @@ static inline void mce_gather_info(struct mce *m, struct pt_regs *regs)
+ 		if (m->mcgstatus & (MCG_STATUS_RIPV|MCG_STATUS_EIPV)) {
+ 			m->ip = regs->ip;
+ 			m->cs = regs->cs;
++			if (v8086_mode(regs))
++				m->cs |= 3; /* fake user mode for VM86 */
+ 		}
+ 		/* Use accurate RIP reporting if available. */
+ 		if (rip_msr)
 -- 
-1.7.10
+1.7.9.5
 
