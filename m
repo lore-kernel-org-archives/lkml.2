@@ -1,66 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753302Ab2ETJsH (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 20 May 2012 05:48:07 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:58601 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753183Ab2ETJr4 (ORCPT
+	id S1753112Ab2ETJrp (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 20 May 2012 05:47:45 -0400
+Received: from mail-ob0-f174.google.com ([209.85.214.174]:51755 "EHLO
+	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752009Ab2ETJrn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 20 May 2012 05:47:56 -0400
-Date: Sun, 20 May 2012 10:47:51 +0100
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Yadwinder Singh Brar <yadi.brar01@gmail.com>
-Cc: linux-kernel@vger.kernel.org, linux-samsung-soc@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, Liam Girdwood <lrg@ti.com>,
-        Yadwinder Singh Brar <yadi.brar@samsung.com>
-Subject: Re: [PATCH v2 1/2] mfd: Add support for MAX77686.
-Message-ID: <20120520094750.GB20652@opensource.wolfsonmicro.com>
-References: <1337261967-26004-1-git-send-email-yadi.brar@samsung.com>
- <1337261967-26004-2-git-send-email-yadi.brar@samsung.com>
+	Sun, 20 May 2012 05:47:43 -0400
+Date: Sun, 20 May 2012 04:47:35 -0500
+From: Jonathan Nieder <jrnieder@gmail.com>
+To: stable@vger.kernel.org
+Cc: "Stephen M. Cameron" <scameron@beardog.cce.hp.com>,
+        Steven Williamson <steven.williamson@dialogue.net>,
+        james.bottomley@hansenpartnership.com, linux-scsi@vger.kernel.org,
+        linux-kernel@vger.kernel.org, mikem@beardog.cce.hp.com,
+        stephenmcameron@gmail.com, thenzl@redhat.com, scott.teel@hp.com,
+        akpm@linux-foundation.org
+Subject: [3.0.y, 3.2.y, 3.3.y] Re: [PATCH 05/10] hpsa: Fix problem with
+ MSA2xxx devices
+Message-ID: <20120520094735.GA14683@burratino>
+References: <20120119200042.17835.93058.stgit@beardog.cce.hp.com>
+ <20120119200104.17835.29536.stgit@beardog.cce.hp.com>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="Yylu36WmvOXNoKYn"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1337261967-26004-2-git-send-email-yadi.brar@samsung.com>
-X-Cookie: You have a truly strong individuality.
+In-Reply-To: <20120119200104.17835.29536.stgit@beardog.cce.hp.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hi Greg and Ben,
 
---Yylu36WmvOXNoKYn
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+Please consider
 
-On Thu, May 17, 2012 at 07:09:26PM +0530, Yadwinder Singh Brar wrote:
-> MAX77686 is a mulitifunction device with PMIC, RTC and Charger on chip. This
-> driver provides common support for accessing the device. This is initial
-> version of this driver that supports to enable the chip with its primary I2C
-> bus.It also includes IRQ and device tree support for MAX77686 chip.
+  9bc3711cbb67 [SCSI] hpsa: Fix problem with MSA2xxx devices
 
-Reviwed-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
+for application to next week's 3.0.y, 3.2.y, and 3.3.y trees.
 
---Yylu36WmvOXNoKYn
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+As Steven Williamson noticed[1], without this patch:
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
+> The hpsa driver fails to correctly assign devices when there are
+> multiple paths on at least the Smart Array 712m with the latest
+> firmware.
+>
+> The end result is only one device node is created in /dev and multipath
+> tools then only detect one path.
 
-iQIcBAEBAgAGBQJPuL2gAAoJEBus8iNuMP3dvFYQAJFpSA+6LbmF0M6l4KRAjxN5
-Kjg3J165Ut+RAXehO78I7SJLeJMhLzUTgHzWoSTO60CcNMwGQYnE1XWpviynmkEi
-lKuyx85BgwK35rWg80K7LujXMdkLnTzP6SuvrvxtRYXZdYKiYyBK/17ESZHmMAaM
-EntYRz8GAYZt6x9MkwL0UUrjHChUET5Niu8y+b/i2nuBNOm7QBfC1QF5KiGOZlvd
-u8SIPfDNnnswmydFF2MwlAMVjU0Vn1x92IVZHVx9wLOOm6Q3VGcBmKPULQwpnvdR
-H6GfWqImHvLHdyKeiYY3XGQtA3EFjA8gx1jVhfmUt4G7vluxHcRNNwNim8Zt2POr
-dZzqUYJSBJJT8c3uAn6qhzAhxvNIs6ry4M8wcm6Z+VWWJVC9P+sALu7vXar7yneV
-vn7JdrgoeEhPaoxNwktsyikMMuVebUjyDvoELgQib2q6ZkZJphQHbkK2U0Q3ulPJ
-cmJyLcgsuH/4+ALkfh39E1MRyQKdXb6YQ5X5nQ+AqKL5AbygWebw6TZeTK2wUWRs
-GQYbFtjFvuMvOvtNV9m6uh+WdMl/UvmOmAEp5es7RZz5yFVbcQJWEWUbj2hsxsp8
-OSUiWh+zJbCQEV2QsMiiXNWSUnnY8FruYsimN14hKpM7+Rbk17RJmgk6gGQO71Ma
-ho3m7LJghYGwNZHw5XsA
-=197Y
------END PGP SIGNATURE-----
+He tested this patch + fda38518f236 "[SCSI] hpsa: add P2000 to list of
+shared SAS devices" (which is already in v3.0) on top of a
+2.6.32.y-based kernel and found:
 
---Yylu36WmvOXNoKYn--
+> Applying the patch here:
+> http://www.spinics.net/lists/linux-scsi/msg56690.html
+> to the current stable version of the squeeze kernel fixes the issue.
+>
+> This was tested on a Smart Array 712m, connected via 2 SAS switches to a
+> HP P2000 G3 SAS Array.
+
+Stephen, are any other patches from the series at [2] or elsewhere
+candidates for inclusion in stable trees?
+
+Thanks and hope that helps,
+Jonathan
+
+[1] http://bugs.debian.org/661057
+[2] http://thread.gmane.org/gmane.linux.kernel/1241509
