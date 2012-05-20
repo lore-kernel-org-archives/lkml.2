@@ -1,128 +1,167 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751897Ab2ETFpl (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 20 May 2012 01:45:41 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:65451 "EHLO
+	id S1751944Ab2ETFrB (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 20 May 2012 01:47:01 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:34006 "EHLO
 	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750769Ab2ETFpj (ORCPT
+	with ESMTP id S1751276Ab2ETFq6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 20 May 2012 01:45:39 -0400
+	Sun, 20 May 2012 01:46:58 -0400
 From: Grant Likely <grant.likely@secretlab.ca>
-To: spi-devel-general@lists.sourceforge.com, linux-kernel@vger.kernel.org
-Cc: Grant Likely <grant.likely@secretlab.ca>
-Subject: [PATCH] spi: By default setup spi_masters with 1 chipselect and dynamics bus number
-Date: Sat, 19 May 2012 23:45:37 -0600
-Message-Id: <1337492737-32259-1-git-send-email-grant.likely@secretlab.ca>
-X-Mailer: git-send-email 1.7.9.5
+Subject: Re: [PATCH 2/2] spi: Add SPI master controller for OCTEON SOCs.
+To: David Daney <ddaney.cavm@gmail.com>, devicetree-discuss@lists.ozlabs.org,
+        Rob Herring <rob.herring@calxeda.com>,
+        spi-devel-general@lists.sourceforge.net
+Cc: linux-kernel@vger.kernel.org, linux-mips@linux-mips.org,
+        linux-doc@vger.kernel.org, David Daney <david.daney@cavium.com>
+In-Reply-To: <1336772086-17248-3-git-send-email-ddaney.cavm@gmail.com>
+References: <1336772086-17248-1-git-send-email-ddaney.cavm@gmail.com> <1336772086-17248-3-git-send-email-ddaney.cavm@gmail.com>
+Date: Sat, 19 May 2012 23:46:56 -0600
+Message-Id: <20120520054657.091DA3E03B8@localhost>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Trivial simplification.  Instead of requiring spi master drivers to
-always set the bus number (even when a dynamic number is desired),
-this patch modifies spi_alloc_master() to initialize num_chipselect to
-1 (because there will always be at least one CS) and bus_num to -1 for
-dynamic allocation.  This simplifies the code needed to be written for
-drivers.
+On Fri, 11 May 2012 14:34:46 -0700, David Daney <ddaney.cavm@gmail.com> wrote:
+> From: David Daney <david.daney@cavium.com>
+> 
+> Add the driver, link it into the kbuild system and provide device tree
+> binding documentation.
+> 
+> Signed-off-by: David Daney <david.daney@cavium.com>
 
-Signed-off-by: Grant Likely <grant.likely@secretlab.ca>
----
- drivers/spi/spi-ath79.c        |    3 ---
- drivers/spi/spi-lm70llp.c      |    3 ---
- drivers/spi/spi-mpc52xx.c      |    3 ---
- drivers/spi/spi-ppc4xx.c       |    3 ---
- drivers/spi/spi-topcliff-pch.c |    1 -
- drivers/spi/spi.c              |    2 ++
- 6 files changed, 2 insertions(+), 13 deletions(-)
+Some comments below, but you can add my a-b:
 
-diff --git a/drivers/spi/spi-ath79.c b/drivers/spi/spi-ath79.c
-index acc88b4..249077e 100644
---- a/drivers/spi/spi-ath79.c
-+++ b/drivers/spi/spi-ath79.c
-@@ -216,9 +216,6 @@ static __devinit int ath79_spi_probe(struct platform_device *pdev)
- 	if (pdata) {
- 		master->bus_num = pdata->bus_num;
- 		master->num_chipselect = pdata->num_chipselect;
--	} else {
--		master->bus_num = -1;
--		master->num_chipselect = 1;
- 	}
- 
- 	sp->bitbang.master = spi_master_get(master);
-diff --git a/drivers/spi/spi-lm70llp.c b/drivers/spi/spi-lm70llp.c
-index 933eb9d..0759b5d 100644
---- a/drivers/spi/spi-lm70llp.c
-+++ b/drivers/spi/spi-lm70llp.c
-@@ -219,9 +219,6 @@ static void spi_lm70llp_attach(struct parport *p)
- 	}
- 	pp = spi_master_get_devdata(master);
- 
--	master->bus_num = -1;	/* dynamic alloc of a bus number */
--	master->num_chipselect = 1;
--
- 	/*
- 	 * SPI and bitbang hookup.
- 	 */
-diff --git a/drivers/spi/spi-mpc52xx.c b/drivers/spi/spi-mpc52xx.c
-index 57633d9..cb3a383 100644
---- a/drivers/spi/spi-mpc52xx.c
-+++ b/drivers/spi/spi-mpc52xx.c
-@@ -433,7 +433,6 @@ static int __devinit mpc52xx_spi_probe(struct platform_device *op)
- 		goto err_alloc;
- 	}
- 
--	master->bus_num = -1;
- 	master->setup = mpc52xx_spi_setup;
- 	master->transfer = mpc52xx_spi_transfer;
- 	master->mode_bits = SPI_CPOL | SPI_CPHA | SPI_LSB_FIRST;
-@@ -479,8 +478,6 @@ static int __devinit mpc52xx_spi_probe(struct platform_device *op)
- 			gpio_direction_output(gpio_cs, 1);
- 			ms->gpio_cs[i] = gpio_cs;
- 		}
--	} else {
--		master->num_chipselect = 1;
- 	}
- 
- 	spin_lock_init(&ms->lock);
-diff --git a/drivers/spi/spi-ppc4xx.c b/drivers/spi/spi-ppc4xx.c
-index d95d307..75ac9d4 100644
---- a/drivers/spi/spi-ppc4xx.c
-+++ b/drivers/spi/spi-ppc4xx.c
-@@ -466,9 +466,6 @@ static int __init spi_ppc4xx_of_probe(struct platform_device *op)
- 	bbp->master->setup = spi_ppc4xx_setup;
- 	bbp->master->cleanup = spi_ppc4xx_cleanup;
- 
--	/* Allocate bus num dynamically. */
--	bbp->master->bus_num = -1;
--
- 	/* the spi->mode bits understood by this driver: */
- 	bbp->master->mode_bits =
- 		SPI_CPHA | SPI_CPOL | SPI_CS_HIGH | SPI_LSB_FIRST;
-diff --git a/drivers/spi/spi-topcliff-pch.c b/drivers/spi/spi-topcliff-pch.c
-index 77c4562..cd56dcf 100644
---- a/drivers/spi/spi-topcliff-pch.c
-+++ b/drivers/spi/spi-topcliff-pch.c
-@@ -1438,7 +1438,6 @@ static int __devinit pch_spi_pd_probe(struct platform_device *plat_dev)
- 		plat_dev->id, data->io_remap_addr);
- 
- 	/* initialize members of SPI master */
--	master->bus_num = -1;
- 	master->num_chipselect = PCH_MAX_CS;
- 	master->setup = pch_spi_setup;
- 	master->transfer = pch_spi_transfer;
-diff --git a/drivers/spi/spi.c b/drivers/spi/spi.c
-index 2d65b16..1041cb8 100644
---- a/drivers/spi/spi.c
-+++ b/drivers/spi/spi.c
-@@ -936,6 +936,8 @@ struct spi_master *spi_alloc_master(struct device *dev, unsigned size)
- 		return NULL;
- 
- 	device_initialize(&master->dev);
-+	master->bus_num = -1;
-+	master->num_chipselect = 1;
- 	master->dev.class = &spi_master_class;
- 	master->dev.parent = get_device(dev);
- 	spi_master_set_devdata(master, &master[1]);
+Acked-by: Grant Likely <grant.likely@secretlab.ca>
+
+> +#include <asm/octeon/octeon.h>
+> +#include <asm/octeon/cvmx-mpi-defs.h>
+> +
+> +#define DRV_VERSION "2.0" /* Version 1 was the out-of-tree driver */
+
+As already discussed, drop this line.
+
+> +#define DRV_DESCRIPTION "Cavium, Inc. OCTEON SPI bus driver"
+
+Used exactly once.  Drop this line and move string to the
+MODULE_DESCRIPTION().
+
+> +static int __devinit octeon_spi_probe(struct platform_device *pdev)
+> +{
+> +
+> +	struct resource *res_mem;
+> +	struct spi_master *master;
+> +	struct octeon_spi *p;
+> +	int err = -ENOENT;
+> +
+> +	master = spi_alloc_master(&pdev->dev, sizeof(struct octeon_spi));
+> +	if (!master)
+> +		return -ENOMEM;
+> +	p = spi_master_get_devdata(master);
+> +	platform_set_drvdata(pdev, p);
+> +	p->my_master = master;
+> +
+> +	res_mem = platform_get_resource(pdev, IORESOURCE_MEM, 0);
+> +
+> +	if (res_mem == NULL) {
+> +		dev_err(&pdev->dev, "found no memory resource\n");
+> +		err = -ENXIO;
+> +		goto fail;
+> +	}
+> +	if (!devm_request_mem_region(&pdev->dev, res_mem->start,
+> +				     resource_size(res_mem), res_mem->name)) {
+> +		dev_err(&pdev->dev, "request_mem_region failed\n");
+> +		goto fail;
+> +	}
+> +	p->register_base = (u64)devm_ioremap(&pdev->dev, res_mem->start,
+> +					     resource_size(res_mem));
+
+Nasty cast.  p->register_base needs to be an __iomem pointer
+variable.  The fact taht cvmx_read_csr accepts a uint64_t instead of
+an __iomem pointer looks really wrong.  Why is it written that way?
+
+> +
+> +	/* Dynamic bus numbering */
+> +	master->bus_num = -1;
+> +	master->num_chipselect = 4;
+> +	master->mode_bits = SPI_CPHA |
+> +			    SPI_CPOL |
+> +			    SPI_CS_HIGH |
+> +			    SPI_LSB_FIRST |
+> +			    SPI_3WIRE;
+> +
+> +	master->setup = octeon_spi_setup;
+> +	master->cleanup = octeon_spi_cleanup;
+> +	master->prepare_transfer_hardware = octeon_spi_nop_transfer_hardware;
+> +	master->transfer_one_message = octeon_spi_transfer_one_message;
+> +	master->unprepare_transfer_hardware = octeon_spi_nop_transfer_hardware;
+> +
+> +	master->dev.of_node = pdev->dev.of_node;
+> +	err = spi_register_master(master);
+> +	if (err) {
+> +		dev_err(&pdev->dev, "register master failed: %d\n", err);
+> +		goto fail;
+> +	}
+> +
+> +	dev_info(&pdev->dev, "Version " DRV_VERSION "\n");
+> +
+> +	return 0;
+> +fail:
+> +	spi_master_put(master);
+> +	return err;
+> +}
+> +
+> +static int __devexit octeon_spi_remove(struct platform_device *pdev)
+> +{
+> +	struct octeon_spi *p = platform_get_drvdata(pdev);
+> +	struct spi_master *master = p->my_master;
+> +
+> +	spi_unregister_master(master);
+> +
+> +	/* Clear the CSENA* and put everything in a known state. */
+> +	cvmx_write_csr(p->register_base + OCTEON_SPI_CFG, 0);
+> +	spi_master_put(master);
+> +	return 0;
+> +}
+> +
+> +static struct of_device_id octeon_spi_match[] = {
+> +	{
+> +		.compatible = "cavium,octeon-3010-spi",
+> +	},
+> +	{},
+
+Nitpick:
+	{ .compatible = "cavium,octeon-3010-spi", },
+	{},
+
+No need for the extra lines when it is so short.
+
+> +};
+> +MODULE_DEVICE_TABLE(of, octeon_spi_match);
+> +
+> +static struct platform_driver octeon_spi_driver = {
+> +	.driver = {
+> +		.name		= "spi-octeon",
+> +		.owner		= THIS_MODULE,
+> +		.of_match_table = octeon_spi_match,
+> +	},
+> +	.probe		= octeon_spi_probe,
+> +	.remove		= __exit_p(octeon_spi_remove),
+
+__devexit_p
+
+> +};
+> +
+> +module_platform_driver(octeon_spi_driver);
+> +
+> +MODULE_DESCRIPTION(DRV_DESCRIPTION);
+> +MODULE_VERSION(DRV_VERSION);
+> +MODULE_AUTHOR("David Daney");
+> +MODULE_LICENSE("GPL");
+> -- 
+> 1.7.2.3
+> 
+
 -- 
-1.7.9.5
-
+Grant Likely, B.Sc, P.Eng.
+Secret Lab Technologies, Ltd.
