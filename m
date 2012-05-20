@@ -1,139 +1,258 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754244Ab2ETDwo (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 19 May 2012 23:52:44 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:60146 "EHLO
-	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752151Ab2ETDwm (ORCPT
+	id S1754750Ab2ETD6Y (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 19 May 2012 23:58:24 -0400
+Received: from vitalin.sorra.shikadi.net ([173.255.220.46]:41664 "EHLO
+	vitalin.sorra.shikadi.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753120Ab2ETD6W (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 19 May 2012 23:52:42 -0400
-Message-ID: <1337485947.4107.295.camel@deadeye>
-Subject: Re: [WARNING] lockdep and kmemcheck_alloc_shadow
-From: Ben Hutchings <ben@decadent.org.uk>
-To: Steven Rostedt <rostedt@goodmis.org>, Christoph Lameter <cl@linux.com>
-Cc: LKML <linux-kernel@vger.kernel.org>, stable <stable@vger.kernel.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Peter Zijlstra <peterz@infradead.org>
-Date: Sun, 20 May 2012 04:52:27 +0100
-In-Reply-To: <1337449661.32434.4.camel@gandalf.stny.rr.com>
-References: <1337449661.32434.4.camel@gandalf.stny.rr.com>
-Content-Type: multipart/signed; micalg="pgp-sha512";
-	protocol="application/pgp-signature"; boundary="=-mTWdG1Q4Ikzjr4ALVgFc"
-X-Mailer: Evolution 3.2.2-1+b1 
-Mime-Version: 1.0
-X-SA-Exim-Connect-IP: 192.168.4.185
-X-SA-Exim-Mail-From: ben@decadent.org.uk
-X-SA-Exim-Scanned: No (on shadbolt.decadent.org.uk); SAEximRunCond expanded to false
+	Sat, 19 May 2012 23:58:22 -0400
+Message-ID: <4FB86BD7.6030304@shikadi.net>
+Date: Sun, 20 May 2012 13:58:15 +1000
+From: Adam Nielsen <a.nielsen@shikadi.net>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-GB; rv:1.8.1.23) Gecko/20091130 Thunderbird/2.0.0.23 Mnenhy/0.7.5.0
+MIME-Version: 1.0
+To: LKML Mailinglist <linux-kernel@vger.kernel.org>
+CC: linuxwacom-devel@lists.sourceforge.net
+Subject: [PATCH] Input: wacom - add support for the DTI-520 graphics tablet
+References: <4F892952.6020409@shikadi.net>
+In-Reply-To: <4F892952.6020409@shikadi.net>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Add support for the two interfaces provided by the Wacom DTI-520 tablet.  This
+allows both the tablet itself as well as the hardware buttons to be seen by the
+kernel.
 
---=-mTWdG1Q4Ikzjr4ALVgFc
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: quoted-printable
+Signed-off-by: Adam Nielsen <a.nielsen@shikadi.net>
+---
+Hi all,
 
-On Sat, 2012-05-19 at 13:47 -0400, Steven Rostedt wrote:
-> Testing 3.2.18-rc1 I hit the following:
->=20
-> WARNING: at /work/autotest/nobackup/linux-test.git/kernel/lockdep.c:2739 =
-lockdep_trace_alloc+0xee/0xf0()
+I'm resending this and CC'ing the linuxwacom-devel list as suggested.  There
+are no changes since the previous post.  This is the kernel code that makes the
+tablet appear as an input device.
 
-Which is:
+Cheers,
+Adam.
 
-	/*
-	 * Oi! Can't be having __GFP_FS allocations with IRQs disabled.
-	 */
-	if (DEBUG_LOCKS_WARN_ON(irqs_disabled_flags(flags)))
-		return;
+ drivers/input/tablet/wacom_sys.c |   13 +++++
+ drivers/input/tablet/wacom_wac.c |  113 +++++++++++++++++++++++++++++++++++++-
+ drivers/input/tablet/wacom_wac.h |    3 +
+ 3 files changed, 128 insertions(+), 1 deletion(-)
 
-> Hardware name:        =20
-> Pid: 0, comm: swapper/0 Not tainted 3.2.18-rc1-test+ #1
-> Call Trace:^M
->  [<ffffffff81066175>] warn_slowpath_common+0x75/0xb0
->  [<ffffffff81066285>] warn_slowpath_null+0x15/0x20
->  [<ffffffff81098aee>] lockdep_trace_alloc+0xee/0xf0
->  [<ffffffff810d8adc>] __alloc_pages_nodemask+0x8c/0x7e0
->  [<ffffffff81098537>] ? trace_hardirqs_off_caller+0xb7/0x120
->  [<ffffffff8143467d>] ? trace_hardirqs_off_thunk+0x3a/0x3c
->  [<ffffffff81098537>] ? trace_hardirqs_off_caller+0xb7/0x120
->  [<ffffffff8143467d>] ? trace_hardirqs_off_thunk+0x3a/0x3c
->  [<ffffffff81098537>] ? trace_hardirqs_off_caller+0xb7/0x120
->  [<ffffffff8143467d>] ? trace_hardirqs_off_thunk+0x3a/0x3c
->  [<ffffffff81c8d567>] ? retint_restore_args+0x6/0x13
->  [<ffffffff81113c9b>] kmemcheck_alloc_shadow+0x4b/0xf0
->  [<ffffffff8111016f>] new_slab+0x26f/0x370
->  [<ffffffff81c70677>] __slab_alloc+0x2ee/0x421
->  [<ffffffff8143467d>] ? trace_hardirqs_off_thunk+0x3a/0x3c
->  [<ffffffff8110997e>] ? do_set_mempolicy+0x4e/0x210^M
->  [<ffffffff81c8d567>] ? retint_restore_args+0x6/0x13
->  [<ffffffff8110997e>] ? do_set_mempolicy+0x4e/0x210
->  [<ffffffff8111122d>] kmem_cache_alloc+0x12d/0x140
->  [<ffffffff8110997e>] do_set_mempolicy+0x4e/0x210
->  [<ffffffff822e945e>] numa_policy_init+0x11f/0x13f
->  [<ffffffff822c7aae>] start_kernel+0x2d0/0x36e
-[...]
+diff --git a/drivers/input/tablet/wacom_sys.c b/drivers/input/tablet/wacom_sys.c
+index 0d26921..5d1e35d 100644
+--- a/drivers/input/tablet/wacom_sys.c
++++ b/drivers/input/tablet/wacom_sys.c
+@@ -459,6 +459,19 @@ static int wacom_retrieve_hid_descriptor(struct usb_interface *intf,
+ 	features->y_fuzz = 4;
+ 	features->pressure_fuzz = 0;
+ 	features->distance_fuzz = 0;
++	features->x_phy = 0;
++	features->y_phy = 0;
++
++	/* DTI devices have two interfaces */
++	if (features->type == WACOM_DTI) {
++		if (interface->desc.bInterfaceNumber == 0) {
++			/* digitizer */
++		} else {
++			/* buttons */
++			features->device_type = 0;
++			features->pktlen = WACOM_PKGLEN_DTIBTN;
++		}
++	}
+ 
+ 	/*
+ 	 * The wireless device HID is basic and layout conflicts with
+diff --git a/drivers/input/tablet/wacom_wac.c b/drivers/input/tablet/wacom_wac.c
+index cecd35c..f0ada18 100644
+--- a/drivers/input/tablet/wacom_wac.c
++++ b/drivers/input/tablet/wacom_wac.c
+@@ -1073,6 +1073,80 @@ static int wacom_wireless_irq(struct wacom_wac *wacom, size_t len)
+ 	return 0;
+ }
+ 
++static int wacom_dti_pen(struct wacom_wac *wacom)
++{
++	struct wacom_features *features = &wacom->features;
++	char *data = wacom->data;
++	struct input_dev *input = wacom->input;
++	int pressure;
++	bool prox = data[1] & 0x40;
++
++	if (data[0] != WACOM_REPORT_PENABLED) {
++		dbg("wacom_dti_pen: received unknown report #%d", data[0]);
++		return 0;
++	}
++
++	input_report_key(input, wacom->tool[0], prox);
++
++	if (prox) {
++		wacom->tool[0] = BTN_TOOL_PEN;
++		wacom->id[0] = STYLUS_DEVICE_ID;
++	}
++	if (wacom->id[0]) {
++		input_report_key(input, BTN_STYLUS, data[7] & 0x01);
++		input_report_key(input, BTN_STYLUS2, data[7] & 0x02);
++		input_report_abs(input, ABS_X, be16_to_cpup((__be16 *)&data[2]));
++		input_report_abs(input, ABS_Y, be16_to_cpup((__be16 *)&data[4]));
++		pressure = (data[6] << 1) | ((data[7] & 0x80) >> 7);
++		if (pressure < 0)
++			pressure = features->pressure_max + pressure + 1;
++		input_report_abs(input, ABS_PRESSURE, pressure);
++
++		return 1;
++	}
++
++	if (!prox)
++		wacom->id[0] = 0;
++
++	return 0;
++}
++
++static int wacom_dti_pad(struct wacom_wac *wacom)
++{
++	char *data = wacom->data;
++	struct input_dev *input = wacom->input;
++
++	if (data[0] == WACOM_REPORT_DTIBTN) {
++		input_report_key(input, BTN_3, data[1] & 0x01); /* up */
++		input_report_key(input, BTN_4, data[1] & 0x02); /* down */
++		input_report_key(input, BTN_0, data[1] & 0x04); /* L */
++		input_report_key(input, BTN_2, data[1] & 0x08); /* R */
++		input_report_key(input, BTN_1, data[1] & 0x10); /* both Ctrl */
++
++		/* Buttons along the top of the display */
++		input_report_key(input, BTN_7, data[2] & 0x01);
++		input_report_key(input, BTN_5, data[2] & 0x02);
++		input_report_key(input, BTN_6, data[2] & 0x04);
++		input_report_key(input, BTN_8, data[2] & 0x08);
++		input_report_key(input, BTN_9, data[2] & 0x10);
++
++		return 1;
++	}
++
++	dbg("wacom_dti_pad: received unknown report #%d", data[0]);
++	return 0;
++}
++
++static int wacom_dti_irq(struct wacom_wac *wacom, size_t len)
++{
++	if (len == WACOM_PKGLEN_GRAPHIRE)
++		return wacom_dti_pen(wacom);
++	else if (len == WACOM_PKGLEN_DTIBTN)
++		return wacom_dti_pad(wacom);
++
++	return 0;
++}
++
+ void wacom_wac_irq(struct wacom_wac *wacom_wac, size_t len)
+ {
+ 	bool sync;
+@@ -1127,6 +1201,10 @@ void wacom_wac_irq(struct wacom_wac *wacom_wac, size_t len)
+ 		sync = wacom_wireless_irq(wacom_wac, len);
+ 		break;
+ 
++	case WACOM_DTI:
++		sync = wacom_dti_irq(wacom_wac, len);
++		break;
++
+ 	default:
+ 		sync = false;
+ 		break;
+@@ -1241,7 +1319,7 @@ void wacom_setup_input_capabilities(struct input_dev *input_dev,
+ 		/* penabled devices have fixed resolution for each model */
+ 		input_abs_set_res(input_dev, ABS_X, features->x_resolution);
+ 		input_abs_set_res(input_dev, ABS_Y, features->y_resolution);
+-	} else {
++	} else if ((features->x_phy > 0) && (features->y_phy > 0)) {
+ 		input_abs_set_res(input_dev, ABS_X,
+ 			wacom_calculate_touch_res(features->x_max,
+ 						features->x_phy));
+@@ -1404,6 +1482,35 @@ void wacom_setup_input_capabilities(struct input_dev *input_dev,
+ 		__set_bit(INPUT_PROP_DIRECT, input_dev->propbit);
+ 		break;
+ 
++	case WACOM_DTI:
++		__clear_bit(ABS_MISC, input_dev->absbit);
++		switch (features->device_type) {
++		case BTN_TOOL_PEN:
++			__set_bit(BTN_TOOL_PEN, input_dev->keybit);
++			__set_bit(BTN_STYLUS, input_dev->keybit);
++			__set_bit(BTN_STYLUS2, input_dev->keybit);
++
++			__set_bit(INPUT_PROP_DIRECT, input_dev->propbit);
++			break;
++
++		case 0:
++			__set_bit(BTN_0, input_dev->keybit);
++			__set_bit(BTN_1, input_dev->keybit);
++			__set_bit(BTN_2, input_dev->keybit);
++			__set_bit(BTN_3, input_dev->keybit);
++			__set_bit(BTN_4, input_dev->keybit);
++
++			__set_bit(BTN_5, input_dev->keybit);
++			__set_bit(BTN_6, input_dev->keybit);
++			__set_bit(BTN_7, input_dev->keybit);
++			__set_bit(BTN_8, input_dev->keybit);
++			__set_bit(BTN_9, input_dev->keybit);
++
++			__clear_bit(BTN_TOUCH, input_dev->keybit);
++			break;
++		}
++		break;
++
+ 	case PTU:
+ 		__set_bit(BTN_STYLUS2, input_dev->keybit);
+ 		/* fall through */
+@@ -1566,6 +1673,9 @@ static const struct wacom_features wacom_features_0x38 =
+ static const struct wacom_features wacom_features_0x39 =
+ 	{ "Wacom DTU710",         WACOM_PKGLEN_GRAPHIRE,  34080, 27660,  511,
+ 	  0, PL, WACOM_PL_RES, WACOM_PL_RES };
++static const struct wacom_features wacom_features_0x3A =
++	{ "Wacom DTI520UB/L",     WACOM_PKGLEN_GRAPHIRE,   6282,  4762,  511,
++	  0, WACOM_DTI, WACOM_PL_RES, WACOM_PL_RES };
+ static const struct wacom_features wacom_features_0xC4 =
+ 	{ "Wacom DTF521",         WACOM_PKGLEN_GRAPHIRE,   6282,  4762,  511,
+ 	  0, PL, WACOM_PL_RES, WACOM_PL_RES };
+@@ -1780,6 +1890,7 @@ const struct usb_device_id wacom_ids[] = {
+ 	{ USB_DEVICE_WACOM(0x37) },
+ 	{ USB_DEVICE_WACOM(0x38) },
+ 	{ USB_DEVICE_WACOM(0x39) },
++	{ USB_DEVICE_WACOM(0x3A) },
+ 	{ USB_DEVICE_WACOM(0xC4) },
+ 	{ USB_DEVICE_WACOM(0xC0) },
+ 	{ USB_DEVICE_WACOM(0xC2) },
+diff --git a/drivers/input/tablet/wacom_wac.h b/drivers/input/tablet/wacom_wac.h
+index ba5a334..008aa12 100644
+--- a/drivers/input/tablet/wacom_wac.h
++++ b/drivers/input/tablet/wacom_wac.h
+@@ -15,6 +15,7 @@
+ #define WACOM_PKGLEN_MAX	64
+ 
+ /* packet length for individual models */
++#define WACOM_PKGLEN_DTIBTN	 3
+ #define WACOM_PKGLEN_PENPRTN	 7
+ #define WACOM_PKGLEN_GRAPHIRE	 8
+ #define WACOM_PKGLEN_BBFUN	 9
+@@ -35,6 +36,7 @@
+ 
+ /* wacom data packet report IDs */
+ #define WACOM_REPORT_PENABLED		2
++#define WACOM_REPORT_DTIBTN		4
+ #define WACOM_REPORT_INTUOSREAD		5
+ #define WACOM_REPORT_INTUOSWRITE	6
+ #define WACOM_REPORT_INTUOSPAD		12
+@@ -72,6 +74,7 @@ enum {
+ 	WACOM_MO,
+ 	TABLETPC,
+ 	TABLETPC2FG,
++	WACOM_DTI,
+ 	MAX_TYPE
+ };
+ 
+-- 1.7.10
 
-Seems to be a bug in SLUB:
-
-> static struct page *allocate_slab(struct kmem_cache *s, gfp_t flags, int =
-node)
-> {
-[...]
-> 	if (flags & __GFP_WAIT)
-> 		local_irq_disable();
->=20
-> 	if (!page)
-> 		return NULL;
->=20
-> 	if (kmemcheck_enabled
-> 		&& !(s->flags & (SLAB_NOTRACK | DEBUG_DEFAULT_FLAGS))) {
-> 		int pages =3D 1 << oo_order(oo);
->=20
-> 		kmemcheck_alloc_shadow(page, oo_order(oo), flags, node);
-[...]
-
-So kmemcheck_alloc_shadow() runs with IRQs off, but uses the same flags
-as the original allocation.
-
-Looks like this was introduced by:
-
-commit 7e0528dadc9f8b04e4de0dba48a075100c2afe75
-Author: Christoph Lameter <cl@linux.com>
-Date:   Wed Jun 1 12:25:44 2011 -0500
-
-    slub: Push irq disable into allocate_slab()
-
-which went into 3.1.
-
-Ben.
-
---=20
-Ben Hutchings
-Experience is directly proportional to the value of equipment destroyed.
-                                                         - Carolyn Scheppne=
-r
-
---=-mTWdG1Q4Ikzjr4ALVgFc
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: This is a digitally signed message part
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIVAwUAT7hqe+e/yOyVhhEJAQomkg//eE3KjcRWNjWCSPeqvxcvSre0AyOzP8dk
-KDdbIkNM4/D9d/GF6wf2Ek2/CWhZQ2cIuP/Nrrp4EsoMcy0sZJLc/4WSlO0ucoR5
-Ij9BCoG13m+zrSQ4+otLhwL+/21oltVZ8DfmIDv6AFE8zM5praFpw3Tx2DnLa0B5
-+q5HZeZlu8WtcTG5wQrrl3CU/ceUEko1cm1lFTy+uc4lXj5Fe3eNd+8KPCiDZNJ7
-ntTrarcaNIeKsxly7bt6nq7wGb1XmspEd7qSZvumMJ61egWN5DmZQ2sGwFbRhdLg
-I3V2pb3ev+vwfaRKJEw8nPFaUpCueOtG9nRluS0wjeyq9CH+360fiHJTkGRlFJjJ
-mSp31agVMqmaVUwTUBD27jQMQT63arlUzNJ0tOES6JUNGGzGe/dkAf2kx0RCP46/
-pJMc8RT/G6t2hh/OsHNybLZzp4una5YL6zzBKazUwMmqVqNIlFA3BvR+HCz0DU89
-6MAY3J0+yx/Dy4no3zmECeSxIxIDxsPefyyEBPMojfY2tsW/LA/0qbpVnF+6YetS
-Q7ioublVom8bMXZnbX/1wElHTLeMQSkbtZrjqyIepty8OPzVX9OpYMEI7a8BEFsU
-KMOPdjU8avi+ulyNanWWxwWwAg7n9BLA/rOKWGsncSexRGhUsZA9VEohY/hVDRKO
-V5aFeoVss6M=
-=dyWh
------END PGP SIGNATURE-----
-
---=-mTWdG1Q4Ikzjr4ALVgFc--
