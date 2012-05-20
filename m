@@ -1,119 +1,135 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755428Ab2ETNZD (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 20 May 2012 09:25:03 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:56920 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753710Ab2ETNX7 (ORCPT
+	id S1755907Ab2ETNZX (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 20 May 2012 09:25:23 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:50441 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755158Ab2ETNYN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 20 May 2012 09:23:59 -0400
+	Sun, 20 May 2012 09:24:13 -0400
 From: Akinobu Mita <akinobu.mita@gmail.com>
 To: linux-kernel@vger.kernel.org, akpm@linux-foundation.org
-Cc: Akinobu Mita <akinobu.mita@gmail.com>, Anders Larsen <al@alarsen.net>,
-        Alasdair Kergon <agk@redhat.com>, dm-devel@redhat.com,
-        linux-fsdevel@vger.kernel.org,
-        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
-        linux-media@vger.kernel.org, Mark Fasheh <mfasheh@suse.com>,
-        Joel Becker <jlbec@evilplan.org>, ocfs2-devel@oss.oracle.com,
-        Jan Kara <jack@suse.cz>, linux-ext4@vger.kernel.org,
-        Andreas Dilger <adilger.kernel@dilger.ca>,
-        "Theodore Ts'o" <tytso@mit.edu>
-Subject: [PATCH 01/10] string: introduce memweight
-Date: Sun, 20 May 2012 22:23:14 +0900
-Message-Id: <1337520203-29147-1-git-send-email-akinobu.mita@gmail.com>
+Cc: Akinobu Mita <akinobu.mita@gmail.com>, "Theodore Ts'o" <tytso@mit.edu>,
+        Andreas Dilger <adilger.kernel@dilger.ca>, linux-ext4@vger.kernel.org
+Subject: [PATCH 10/10] ext4: use memweight()
+Date: Sun, 20 May 2012 22:23:23 +0900
+Message-Id: <1337520203-29147-10-git-send-email-akinobu.mita@gmail.com>
 X-Mailer: git-send-email 1.7.7.6
+In-Reply-To: <1337520203-29147-1-git-send-email-akinobu.mita@gmail.com>
+References: <1337520203-29147-1-git-send-email-akinobu.mita@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-memweight() is the function that counts the total number of bits set
-in memory area.  The memory area doesn't need to be aligned to
-long-word boundary unlike bitmap_weight().
+Use memweight() to count the total number of bits clear in memory area.
+This change only affects the code segments enabled by EXT4FS_DEBUG.
 
 Signed-off-by: Akinobu Mita <akinobu.mita@gmail.com>
-Cc: Anders Larsen <al@alarsen.net>
-Cc: Alasdair Kergon <agk@redhat.com>
-Cc: dm-devel@redhat.com
-Cc: linux-fsdevel@vger.kernel.org
-Cc: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
-Cc: linux-media@vger.kernel.org
-Cc: Mark Fasheh <mfasheh@suse.com>
-Cc: Joel Becker <jlbec@evilplan.org>
-Cc: ocfs2-devel@oss.oracle.com
-Cc: Jan Kara <jack@suse.cz>
-Cc: linux-ext4@vger.kernel.org
-Cc: Andrew Morton <akpm@linux-foundation.org>
-Cc: Andreas Dilger <adilger.kernel@dilger.ca>
 Cc: "Theodore Ts'o" <tytso@mit.edu>
+Cc: Andreas Dilger <adilger.kernel@dilger.ca>
+Cc: linux-ext4@vger.kernel.org
 ---
- include/linux/string.h |    3 +++
- lib/string.c           |   37 +++++++++++++++++++++++++++++++++++++
- 2 files changed, 40 insertions(+), 0 deletions(-)
+ fs/ext4/Makefile |    2 +-
+ fs/ext4/balloc.c |    3 ++-
+ fs/ext4/bitmap.c |   31 -------------------------------
+ fs/ext4/ext4.h   |    3 ---
+ fs/ext4/ialloc.c |    4 +++-
+ 5 files changed, 6 insertions(+), 37 deletions(-)
+ delete mode 100644 fs/ext4/bitmap.c
 
-diff --git a/include/linux/string.h b/include/linux/string.h
-index e033564..ffe0442 100644
---- a/include/linux/string.h
-+++ b/include/linux/string.h
-@@ -145,4 +145,7 @@ static inline bool strstarts(const char *str, const char *prefix)
- 	return strncmp(str, prefix, strlen(prefix)) == 0;
- }
- #endif
-+
-+extern size_t memweight(const void *ptr, size_t bytes);
-+
- #endif /* _LINUX_STRING_H_ */
-diff --git a/lib/string.c b/lib/string.c
-index e5878de..c8b92a0 100644
---- a/lib/string.c
-+++ b/lib/string.c
-@@ -26,6 +26,7 @@
- #include <linux/export.h>
- #include <linux/bug.h>
- #include <linux/errno.h>
-+#include <linux/bitmap.h>
+diff --git a/fs/ext4/Makefile b/fs/ext4/Makefile
+index 56fd8f86..0caff90 100644
+--- a/fs/ext4/Makefile
++++ b/fs/ext4/Makefile
+@@ -4,7 +4,7 @@
  
- #ifndef __HAVE_ARCH_STRNICMP
- /**
-@@ -824,3 +825,39 @@ void *memchr_inv(const void *start, int c, size_t bytes)
- 	return check_bytes8(start, value, bytes % 8);
- }
- EXPORT_SYMBOL(memchr_inv);
-+
-+/**
-+ * memweight - count the total number of bits set in memory area
-+ * @ptr: pointer to the start of the area
-+ * @bytes: the size of the area
-+ */
-+size_t memweight(const void *ptr, size_t bytes)
-+{
-+	size_t w = 0;
-+	size_t longs;
-+	union {
-+		const void *ptr;
-+		const unsigned char *b;
-+		unsigned long address;
-+	} bitmap;
-+
-+	for (bitmap.ptr = ptr; bytes > 0 && bitmap.address % sizeof(long);
-+			bytes--, bitmap.address++)
-+		w += hweight8(*bitmap.b);
-+
-+	for (longs = bytes / sizeof(long); longs > 0; ) {
-+		size_t bits = min_t(size_t, INT_MAX & ~(BITS_PER_LONG - 1),
-+					longs * BITS_PER_LONG);
-+
-+		w += bitmap_weight(bitmap.ptr, bits);
-+		bytes -= bits / BITS_PER_BYTE;
-+		bitmap.address += bits / BITS_PER_BYTE;
-+		longs -= bits / BITS_PER_LONG;
-+	}
-+
-+	for (; bytes > 0; bytes--, bitmap.address++)
-+		w += hweight8(*bitmap.b);
-+
-+	return w;
-+}
-+EXPORT_SYMBOL(memweight);
+ obj-$(CONFIG_EXT4_FS) += ext4.o
+ 
+-ext4-y	:= balloc.o bitmap.o dir.o file.o fsync.o ialloc.o inode.o page-io.o \
++ext4-y	:= balloc.o dir.o file.o fsync.o ialloc.o inode.o page-io.o \
+ 		ioctl.o namei.o super.o symlink.o hash.o resize.o extents.o \
+ 		ext4_jbd2.o migrate.o mballoc.o block_validity.o move_extent.o \
+ 		mmp.o indirect.o
+diff --git a/fs/ext4/balloc.c b/fs/ext4/balloc.c
+index 4bbd07a..57e3bfb 100644
+--- a/fs/ext4/balloc.c
++++ b/fs/ext4/balloc.c
+@@ -584,7 +584,8 @@ ext4_fsblk_t ext4_count_free_clusters(struct super_block *sb)
+ 		if (bitmap_bh == NULL)
+ 			continue;
+ 
+-		x = ext4_count_free(bitmap_bh, sb->s_blocksize);
++		x = sb->s_blocksize * BITS_PER_BYTE -
++			memweight(bitmap_bh->b_data, sb->s_blocksize);
+ 		printk(KERN_DEBUG "group %u: stored = %d, counted = %u\n",
+ 			i, ext4_free_group_clusters(sb, gdp), x);
+ 		bitmap_count += x;
+diff --git a/fs/ext4/bitmap.c b/fs/ext4/bitmap.c
+deleted file mode 100644
+index fa3af81..0000000
+--- a/fs/ext4/bitmap.c
++++ /dev/null
+@@ -1,31 +0,0 @@
+-/*
+- *  linux/fs/ext4/bitmap.c
+- *
+- * Copyright (C) 1992, 1993, 1994, 1995
+- * Remy Card (card@masi.ibp.fr)
+- * Laboratoire MASI - Institut Blaise Pascal
+- * Universite Pierre et Marie Curie (Paris VI)
+- */
+-
+-#include <linux/buffer_head.h>
+-#include <linux/jbd2.h>
+-#include "ext4.h"
+-
+-#ifdef EXT4FS_DEBUG
+-
+-static const int nibblemap[] = {4, 3, 3, 2, 3, 2, 2, 1, 3, 2, 2, 1, 2, 1, 1, 0};
+-
+-unsigned int ext4_count_free(struct buffer_head *map, unsigned int numchars)
+-{
+-	unsigned int i, sum = 0;
+-
+-	if (!map)
+-		return 0;
+-	for (i = 0; i < numchars; i++)
+-		sum += nibblemap[map->b_data[i] & 0xf] +
+-			nibblemap[(map->b_data[i] >> 4) & 0xf];
+-	return sum;
+-}
+-
+-#endif  /*  EXT4FS_DEBUG  */
+-
+diff --git a/fs/ext4/ext4.h b/fs/ext4/ext4.h
+index 0e01e90..9c616d9 100644
+--- a/fs/ext4/ext4.h
++++ b/fs/ext4/ext4.h
+@@ -1782,9 +1782,6 @@ struct mmpd_data {
+ # define ATTRIB_NORET	__attribute__((noreturn))
+ # define NORET_AND	noreturn,
+ 
+-/* bitmap.c */
+-extern unsigned int ext4_count_free(struct buffer_head *, unsigned);
+-
+ /* balloc.c */
+ extern unsigned int ext4_block_group(struct super_block *sb,
+ 			ext4_fsblk_t blocknr);
+diff --git a/fs/ext4/ialloc.c b/fs/ext4/ialloc.c
+index 409c2ee..2452bb7 100644
+--- a/fs/ext4/ialloc.c
++++ b/fs/ext4/ialloc.c
+@@ -1011,7 +1011,9 @@ unsigned long ext4_count_free_inodes(struct super_block *sb)
+ 		if (!bitmap_bh)
+ 			continue;
+ 
+-		x = ext4_count_free(bitmap_bh, EXT4_INODES_PER_GROUP(sb) / 8);
++		x = EXT4_INODES_PER_GROUP(sb) / 8 * BITS_PER_BYTE -
++			memweight(bitmap_bh->b_data,
++				EXT4_INODES_PER_GROUP(sb) / 8);
+ 		printk(KERN_DEBUG "group %lu: stored = %d, counted = %lu\n",
+ 			(unsigned long) i, ext4_free_inodes_count(sb, gdp), x);
+ 		bitmap_count += x;
 -- 
 1.7.7.6
 
