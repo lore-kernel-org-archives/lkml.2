@@ -1,41 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754886Ab2ETNMR (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 20 May 2012 09:12:17 -0400
-Received: from mga11.intel.com ([192.55.52.93]:11594 "EHLO mga11.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752783Ab2ETNMQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 20 May 2012 09:12:16 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
-   d="scan'208";a="168758790"
-Date: Sun, 20 May 2012 15:22:13 +0200
-From: Samuel Ortiz <sameo@linux.intel.com>
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] mfd: wm831x: Emulate active low IRQs as well as active
- high IRQs
-Message-ID: <20120520132213.GX12015@sortiz-mobl>
-References: <1337356922-21650-1-git-send-email-broonie@opensource.wolfsonmicro.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1337356922-21650-1-git-send-email-broonie@opensource.wolfsonmicro.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1754984Ab2ETNX7 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 20 May 2012 09:23:59 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:50441 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753710Ab2ETNX6 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 20 May 2012 09:23:58 -0400
+From: Akinobu Mita <akinobu.mita@gmail.com>
+To: linux-kernel@vger.kernel.org, akpm@linux-foundation.org
+Cc: Akinobu Mita <akinobu.mita@gmail.com>
+Subject: [PATCH 02/10] minixfs: use memweight()
+Date: Sun, 20 May 2012 22:23:15 +0900
+Message-Id: <1337520203-29147-2-git-send-email-akinobu.mita@gmail.com>
+X-Mailer: git-send-email 1.7.7.6
+In-Reply-To: <1337520203-29147-1-git-send-email-akinobu.mita@gmail.com>
+References: <1337520203-29147-1-git-send-email-akinobu.mita@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Mark,
+Use memweight() to count the total number of bits clear in memory area.
 
-On Fri, May 18, 2012 at 05:02:02PM +0100, Mark Brown wrote:
-> As with the existing emulation this should not be used in production
-> systems but is useful for test purposes.
-Applied, thanks.
+Signed-off-by: Akinobu Mita <akinobu.mita@gmail.com>
+---
+ fs/minix/bitmap.c |    6 ++----
+ 1 files changed, 2 insertions(+), 4 deletions(-)
 
-Cheers,
-Samuel.
-
+diff --git a/fs/minix/bitmap.c b/fs/minix/bitmap.c
+index 4bc50da..564f1a5 100644
+--- a/fs/minix/bitmap.c
++++ b/fs/minix/bitmap.c
+@@ -29,10 +29,8 @@ static __u32 count_free(struct buffer_head *map[], unsigned blocksize, __u32 num
+ 	unsigned blocks = DIV_ROUND_UP(numbits, blocksize * 8);
+ 
+ 	while (blocks--) {
+-		unsigned words = blocksize / 2;
+-		__u16 *p = (__u16 *)(*map++)->b_data;
+-		while (words--)
+-			sum += 16 - hweight16(*p++);
++		sum += blocksize * BITS_PER_BYTE -
++			memweight((*map++)->b_data, blocksize);
+ 	}
+ 
+ 	return sum;
 -- 
-Intel Open Source Technology Centre
-http://oss.intel.com/
+1.7.7.6
+
