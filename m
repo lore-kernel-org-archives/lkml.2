@@ -1,37 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756868Ab2ETV1A (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 20 May 2012 17:27:00 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:44224 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755584Ab2ETV06 (ORCPT
+	id S1756809Ab2ETVtC (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 20 May 2012 17:49:02 -0400
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:45605 "EHLO
+	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752328Ab2ETVtA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 20 May 2012 17:26:58 -0400
-Date: Sun, 20 May 2012 14:26:55 -0700 (PDT)
-From: David Rientjes <rientjes@google.com>
-X-X-Sender: rientjes@chino.kir.corp.google.com
-To: Joe Perches <joe@perches.com>
-cc: Nasir Abed <nasirabed@gmail.com>, gregkh@linuxfoundation.org,
-        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
-        swetland@google.com, Nasir Abed <nasirabed+kernel@gmail.com>
-Subject: Re: [PATCH] Staging: android: alarm: Rename pr_alarm to alarm_dbg
-In-Reply-To: <1337547996.31503.8.camel@joe2Laptop>
-Message-ID: <alpine.DEB.2.00.1205201426430.10189@chino.kir.corp.google.com>
-References: <1337507659-14740-1-git-send-email-nasirabed+kernel@gmail.com> <alpine.DEB.2.00.1205201328170.10189@chino.kir.corp.google.com> <1337546284.31503.5.camel@joe2Laptop> <1337547996.31503.8.camel@joe2Laptop>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+	Sun, 20 May 2012 17:49:00 -0400
+Date: Sun, 20 May 2012 22:48:54 +0100
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Axel Lin <axel.lin@gmail.com>
+Cc: linux-kernel@vger.kernel.org, Lee Jones <lee.jones@linaro.org>,
+        Linus Walleij <linus.walleij@stericsson.com>,
+        Liam Girdwood <lrg@ti.com>, Anuj Aggarwal <anuj.aggarwal@ti.com>,
+        Marek Szyprowski <m.szyprowski@samsung.com>
+Subject: Re: [PATCH RFC/RFT 1/7] regulator: core: Allow drivers to set
+ voltage mapping table in regulator_desc
+Message-ID: <20120520214853.GE9337@opensource.wolfsonmicro.com>
+References: <1337481021.7204.1.camel@phoenix>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="BQPnanjtCNWHyqYD"
+Content-Disposition: inline
+In-Reply-To: <1337481021.7204.1.camel@phoenix>
+X-Cookie: Chess tonight.
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 20 May 2012, Joe Perches wrote:
 
-> Rename a macro to make it explicit it's for debugging.
-> 
-> Use %s: __func__ instead of embedding function names.
-> Coalesce formats, align arguments.
-> 
-> Signed-off-by: Joe Perches <joe@perches.com>
+--BQPnanjtCNWHyqYD
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-Acked-by: David Rientjes <rientjes@google.com>
+On Sun, May 20, 2012 at 10:30:21AM +0800, Axel Lin wrote:
+> Some regulator hardware use table based mapping can set volt_table in
+> regulator_desc and use regulator_list_voltage_table() for their list_voltage
+> callback.
+
+Applied all, thanks!
+
+--BQPnanjtCNWHyqYD
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBAgAGBQJPuWa+AAoJEBus8iNuMP3dKKkP/0Pl+nzEaUKiURw13MIbSSON
+pPmGM45tghl4yj2aavn9yRQWNaQRUU4Plul0XfiZVKbzYik6ahVUg4CC428pk1hK
+0zz5RRaLXhfrEAyLvwS2657Z3mtBzhgSFa4xQxLW85dQjK9UUVIizLmLFHZkhGpN
+8lv/gUOOevozOmtYX2RvxM+At5vMV6kxOpguLzFbxKR+nF5sjVqMJHIZx1wzHXaQ
+Iwch4OxRe0ACd/Zc2NAGYpS0ycnrQojZu0FMzSIrrd3mTP8aaGgVlYE02JacgwCP
+r2voA49j5Mf6BboE5GdLm+4/zIJutjGQfTPe5mlIAMp64VeibZROeGjqiQZJZnLO
+zaDCZd9wTsax2odDgz9i8r4t8v5Y4CcvOLkNmWxzCl2tjwxXj6CCX00ouItSuE1+
+a6HQvbUzQH4xyZdHrOFy8cC1rF9EQw+gb+PQ5ArSgjsYl8gKADEyTvga1Z28PGaM
+R+gmiv3x2FqEhL9aHurXOX6BukGBOYBrwz5bTJZ6dzBcC63dUzCp6/SYH3n5MJE7
++tfu8AAlPfCEdQ4PIfzGiXMW0Rov0yiT3tNc2LO2VxsKy967Z5qUR/3fqwCnhF3K
+C6fl0CZwZ7gDJfNj23SXogsW9oyay/AM9yvCXspTuFQI53FRqsZfVGiMFXbiCuj2
+YUv5SzzmKowxYsPRktDC
+=FrUj
+-----END PGP SIGNATURE-----
+
+--BQPnanjtCNWHyqYD--
