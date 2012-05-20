@@ -1,60 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752894Ab2ETJCI (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 20 May 2012 05:02:08 -0400
-Received: from moutng.kundenserver.de ([212.227.17.10]:54858 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752586Ab2ETJBd (ORCPT
+	id S1752913Ab2ETJ1t (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 20 May 2012 05:27:49 -0400
+Received: from smtp.snhosting.dk ([87.238.248.203]:60364 "EHLO
+	smtp.domainteam.dk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751609Ab2ETJ1q (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 20 May 2012 05:01:33 -0400
-Message-ID: <4FB8B2E6.5010601@onlinehome.de>
-Date: Sun, 20 May 2012 11:01:26 +0200
-From: Martin <marogge@onlinehome.de>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
+	Sun, 20 May 2012 05:27:46 -0400
+Date: Sun, 20 May 2012 11:27:44 +0200
+From: Sam Ravnborg <sam@ravnborg.org>
+To: Geert Uytterhoeven <geert@linux-m68k.org>, Michal Marek <mmarek@suse.cz>
+Cc: linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org,
+        Andi Kleen <ak@linux.intel.com>, "H. Peter Anvin" <hpa@zytor.com>,
+        Michal Marek <mmarek@suse.cz>, linux-kbuild@vger.kernel.org
+Subject: Re: [PATCH 1/4] [-next] Makefile: Do not call cc-option before
+	including the arch's Makefile
+Message-ID: <20120520092744.GA21341@merkur.ravnborg.org>
+References: <1336855148-18817-1-git-send-email-geert@linux-m68k.org>
 MIME-Version: 1.0
-To: Hillf Danton <dhillf@gmail.com>
-CC: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: BFS 420: cleanup in tick handling
-References: <j2MgV-2Qe-9@gated-at.bofh.it>
-In-Reply-To: <j2MgV-2Qe-9@gated-at.bofh.it>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Provags-ID: V02:K0:qDh6zhhXv4RUpJkrfmqlps4iE8kfxhD7W6cGBczzGZN
- QfUivhy3fV7biwhh+RkIfR/2yl+nhEryAvF2hcBjTBmHLebXpp
- Y0HyQZqUCzp+1jeFK00qrjk9f5SfJcD2r+bbkyWWUcHIbZPJJh
- x9SfbG0ZoJXw6IPKWMvjoyYXe2OmG8vZZCXpTYue0ULdygoFxh
- +vvbvmUT4d9ER+CZ4wHXZ/uFBcuw+fUo11rR12Y4leTlshd/Bt
- DUFI/s+VR7iJ3w+ta5lIX3xyKc5ZtnQINnLersKhoLajWvY1fb
- viwonmaWG/EpX4QrVsGhc3EeF1f+PewA329pzG4RdwdBY9yiIX
- /Nha5b9IeY0dpYgAq234=
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1336855148-18817-1-git-send-email-geert@linux-m68k.org>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/19/2012 09:30 AM, Hillf Danton wrote:
-> The cpu on stack is not needed, so remove it.
->
-> --- a/kernel/sched/bfs.c	Mon May 14 20:50:38 2012
-> +++ b/kernel/sched/bfs.c	Sat May 19 15:18:24 2012
-> @@ -2822,8 +2822,7 @@ void wake_up_idle_cpu(int cpu);
->    */
->   void scheduler_tick(void)
->   {
-> -	int cpu __maybe_unused = smp_processor_id();
-> -	struct rq *rq = cpu_rq(cpu);
-> +	struct rq *rq = this_rq();
->
->   	sched_clock_tick();
->   	/* grq lock not grabbed, so only update rq clock */
-> --
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+On Sat, May 12, 2012 at 10:39:05PM +0200, Geert Uytterhoeven wrote:
+> On architectures that setup CROSS_COMPILE in their arch/*/Makefile
+> (blackfin, h8300, m68k, mips, parisc, score, sh, tile, unicore32, xtensa),
+> cc-option may check against the wrong compiler, causing errors like
+> 
+> cc1: error: unrecognized command line option "-fno-ipa-cp-clone"
+> 
+> if the host gcc supports -fno-ipa-cp-clone, while the cross compiler
+> doesn't support that option.
+> 
+> Move the CONFIG_READABLE_ASM section below the inclusion of the arch's
+> Makefile to fix this.
+> 
+> Signed-off-by: Geert Uytterhoeven <geert@linux-m68k.org>
+> Cc: Andi Kleen <ak@linux.intel.com>
+> Cc: H. Peter Anvin <hpa@zytor.com>
+> Cc: Michal Marek <mmarek@suse.cz>
+> Cc: linux-kbuild@vger.kernel.org
 
-Hillf, I noticed you posting a few patches to BFS recently. Just wanted 
-to make you aware that there is a certain erm communication issue 
-between the kernel maintainers and the author of BFS. Since he is busy 
-in real life you should contact him directly or cc him. See tail -1 
-Documentation/scheduler/sched-BFS.txt for email.
+Michal - was this serie ever applied to kbuild?
+
+Acked-by: Sam Ravnborg <sam@ravnborg.org>
+
+	Sam
