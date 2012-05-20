@@ -1,54 +1,119 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754321Ab2ETMSL (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 20 May 2012 08:18:11 -0400
-Received: from ogre.sisk.pl ([193.178.161.156]:55188 "EHLO ogre.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753909Ab2ETMSJ convert rfc822-to-8bit (ORCPT
+	id S1754504Ab2ETMTj (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 20 May 2012 08:19:39 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:44083 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754200Ab2ETMTh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 20 May 2012 08:18:09 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Jiri Slaby <jslaby@suse.cz>
-Subject: Re: [-next regression] TCP window full with EPOLLWAKEUP
-Date: Sun, 20 May 2012 14:23:08 +0200
-User-Agent: KMail/1.13.6 (Linux/3.4.0-rc7+; KDE/4.6.0; x86_64; ; )
-Cc: Arve =?utf-8?q?Hj=C3=B8nnev=C3=A5g?= <arve@android.com>,
-        NeilBrown <neilb@suse.de>, LKML <linux-kernel@vger.kernel.org>,
-        Jiri Slaby <jirislaby@gmail.com>,
-        Linux PM list <linux-pm@vger.kernel.org>
-References: <4FB81981.3050509@suse.cz>
-In-Reply-To: <4FB81981.3050509@suse.cz>
+	Sun, 20 May 2012 08:19:37 -0400
+Date: Sun, 20 May 2012 20:19:26 +0800
+From: Yong Zhang <yong.zhang0@gmail.com>
+To: Christophe Huriaux <c.huriaux@gmail.com>
+Cc: Uwe =?utf-8?Q?Kleine-K=EF=BF=BDnig?= 
+	<u.kleine-koenig@pengutronix.de>,
+        linux-rt-users@vger.kernel.org, Thomas Gleixner <tglx@linutronix.de>,
+        Steven Rostedt <rostedt@goodmis.org>, linux-kernel@vger.kernel.org,
+        Andreas Mohr <andi@lisas.de>
+Subject: [PATCH v2] genirq: don't sync irq thread if current happen to be
+ the very irq thread
+Message-ID: <20120520121926.GA24585@zhy>
+Reply-To: Yong Zhang <yong.zhang0@gmail.com>
+References: <CAEOomG9NEoQKqp=pMx0NpzGaFpHBimALwhemnZL4F-8g7XURkA@mail.gmail.com>
+ <20120509174931.GB31844@pengutronix.de>
+ <CAEOomG9FZD9TEQZZKhCrNrq8SNXi3otWB2mDX69i3tWh5YQenw@mail.gmail.com>
+ <20120520052731.GA3864@zhy>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="utf-8"
-Content-Transfer-Encoding: 8BIT
-Message-Id: <201205201423.08334.rjw@sisk.pl>
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <20120520052731.GA3864@zhy>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sunday, May 20, 2012, Jiri Slaby wrote:
-> Hi,
-> 
-> a bisection shows that with the following commit from -next:
-> commit 4d7e30d98939a0340022ccd49325a3d70f7e0238
-> Author: Arve Hjønnevåg <arve@android.com>
-> Date:   Tue May 1 21:33:34 2012 +0200
-> 
->     epoll: Add a flag, EPOLLWAKEUP, to prevent suspend while epoll
-> events are ready
-> 
-> ====
-> 
-> one of mono programs I use stops receiving data from the network.
-> Wireshark shows that the TCP window of a connection is filled. This
-> means the program does not read the data fast enough after requesting
-> the data.
-> 
-> If I revert that commit on the top of -next (20120518), everything works
-> as expected.
+On Sun, May 20, 2012 at 01:27:31PM +0800, Yong Zhang wrote:
+> --- a/kernel/irq/manage.c
+> +++ b/kernel/irq/manage.c
+> @@ -41,6 +41,7 @@ early_param("threadirqs", setup_forced_irqthreads);
+>  void synchronize_irq(unsigned int irq)
+>  {
+>  	struct irq_desc *desc = irq_to_desc(irq);
+> +	struct irqaction *action = desc->action;
 
-Hmm.  I suppose that the failing program doesn't set EPOLLWAKEUP by mistake,
-does it?
+Bad time for dereferencing *action.
 
-Rafael
+---
+From: Yong Zhang <yong.zhang@windriver.com>
+Date: Sun, 20 May 2012 12:56:46 +0800
+Subject: [PATCH v2] genirq: don't sync irq thread if current happen to be the very irq thread
+
+Christophe reported against -rt http://marc.info/?l=linux-rt-users&m=133665600214984&w=2
+BUG: scheduling while atomic: irq/37-s3c-mci/253/0x00000102
+Modules linked in:
+[<c000e9fc>] (unwind_backtrace+0x0/0x12c) from [<c029b82c>] (__schedule+0x58/0x2c0)
+[<c029b82c>] (__schedule+0x58/0x2c0) from [<c029bc10>] (schedule+0x8c/0xb0)
+[<c029bc10>] (schedule+0x8c/0xb0) from [<c0055614>] (synchronize_irq+0xbc/0xd8)
+[<c0055614>] (synchronize_irq+0xbc/0xd8) from [<c01db6b0>] (pio_tasklet+0x34/0x11c)
+[<c01db6b0>] (pio_tasklet+0x34/0x11c) from [<c0024914>] (__tasklet_action+0x68/0x80)
+[<c0024914>] (__tasklet_action+0x68/0x80) from [<c0024ca4>] (__do_softirq+0x88/0x130)
+[<c0024ca4>] (__do_softirq+0x88/0x130) from [<c0024ef0>] (do_softirq+0x48/0x54)
+[<c0024ef0>] (do_softirq+0x48/0x54) from [<c0025048>] (local_bh_enable+0x8c/0xc0)
+[<c0025048>] (local_bh_enable+0x8c/0xc0) from [<c0054678>] (irq_forced_thread_fn+0x4c/0x54)
+[<c0054678>] (irq_forced_thread_fn+0x4c/0x54) from [<c0054454>] (irq_thread+0xa0/0x1c0)
+[<c0054454>] (irq_thread+0xa0/0x1c0) from [<c0038628>] (kthread+0x84/0x8c)
+[<c0038628>] (kthread+0x84/0x8c) from [<c000a100>] (kernel_thread_exit+0x0/0x8)
+
+Whe looking at this issue, I find that there is a typical deadlock
+scenario with forced treaded irq,
+
+irq_forced_thread_fn()
+  local_bh_enable();
+    do_softirq();
+      disable_irq();
+        synchronize_irq();
+          wait_event();
+          /*DEAD*/
+
+Cure it by unsync if current happen to be the very irq thread.
+
+Reported-by: Christophe Huriaux <c.huriaux@gmail.com>
+Signed-off-by: Yong Zhang <yong.zhang0@gmail.com>
+Cc: Steven Rostedt <rostedt@goodmis.org>
+Cc: Thomas Gleixner <tglx@linutronix.de>
+---
+ kernel/irq/manage.c |   10 ++++++++++
+ 1 files changed, 10 insertions(+), 0 deletions(-)
+
+diff --git a/kernel/irq/manage.c b/kernel/irq/manage.c
+index 89a3ea8..7a48f74 100644
+--- a/kernel/irq/manage.c
++++ b/kernel/irq/manage.c
+@@ -41,6 +41,7 @@ early_param("threadirqs", setup_forced_irqthreads);
+ void synchronize_irq(unsigned int irq)
+ {
+ 	struct irq_desc *desc = irq_to_desc(irq);
++	struct irqaction *action;
+ 	bool inprogress;
+ 
+ 	if (!desc)
+@@ -67,7 +68,16 @@ void synchronize_irq(unsigned int irq)
+ 	/*
+ 	 * We made sure that no hardirq handler is running. Now verify
+ 	 * that no threaded handlers are active.
++	 * But for theaded irq, we don't sync if current happens to be
++	 * the irq thread; otherwise we could deadlock.
+ 	 */
++	action = desc->action;
++	while (action) {
++		if (action->thread && action->thread == current)
++			return;
++		action = action->next;
++	}
++
+ 	wait_event(desc->wait_for_threads, !atomic_read(&desc->threads_active));
+ }
+ EXPORT_SYMBOL(synchronize_irq);
+-- 
+1.7.1
+
