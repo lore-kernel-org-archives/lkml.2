@@ -1,40 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755971Ab2ETOgj (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 20 May 2012 10:36:39 -0400
-Received: from [58.120.227.170] ([58.120.227.170]:60855 "EHLO jesusletter.kr"
-	rhost-flags-FAIL-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1753983Ab2ETOgi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 20 May 2012 10:36:38 -0400
-X-Greylist: delayed 7162 seconds by postgrey-1.27 at vger.kernel.org; Sun, 20 May 2012 10:36:37 EDT
-Date: Sun, 20 May 2012 21:37:09 +0900
-Message-Id: <201205201237.q4KCb9nL023851@jesusletter.kr>
-To: linux-kernel@vger.kernel.org
-Subject: International Order
-From: Mcckoy Robertson <nbmglobalsupply@gmail.com>
-Reply-To: nbmglobalsupply@gmail.com
-MIME-Version: 1.0
-Content-Type: text/plain
-Content-Transfer-Encoding: 8bit
+	id S1756092Ab2ETOkF (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 20 May 2012 10:40:05 -0400
+Received: from prod-mail-xrelay05.akamai.com ([96.6.114.97]:44779 "EHLO
+	prod-mail-xrelay05.akamai.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755635Ab2ETOkB (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 20 May 2012 10:40:01 -0400
+X-Greylist: delayed 430 seconds by postgrey-1.27 at vger.kernel.org; Sun, 20 May 2012 10:40:01 EDT
+From: Josh Hunt <johunt@akamai.com>
+To: Eric.Moore@lsi.com, support@lsi.com, DL-MPTFusionLinux@lsi.com,
+        linux-scsi@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org, Josh Hunt <johunt@akamai.com>
+Subject: [RFC/PATCH] mptscsih: Set DRIVER_SENSE when sense data present
+Date: Sun, 20 May 2012 07:32:49 -0700
+Message-Id: <1337524369-8622-1-git-send-email-johunt@akamai.com>
+X-Mailer: git-send-email 1.7.0.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello Sales
-     I went over your contact online and found some items which we have interest in purchasing to our store in Spain for urgent supply. I will like to know the prices per each items plus the shipping cost. I also want to know if Letter of Credit or T/T is acceptable for payment. I await your quick response asap so i can proceed with my needed items and quantity.
+While looking into some drive errors on a few of our systems I noticed that
+DRIVER_SENSE was not being set by mptscsih even though there was sense data
+present. DRIVER_SENSE does eventually get set by scsi_finish_command() when
+it detects the sense data. I won't pretend I'm an expert in this area, I'm
+just looking for an explanation as to why the patch below or something like
+it is not currently in the driver? Is it sufficient enough that we're detecting
+this case later on in the scsi code?
 
-Thank you
-mcckoy robertson
+Thanks
+Josh
 
+---
 
-N.B.M Global Supply Inc
-Address: Autovía A-5,
-salidas 22 y 26.
-Arroyomolinos,
-28939 Madrid Spain
-Tel: +34 902 26 77 26
-Email: nbmglobalsupply@gmail.com
-Website : http://www.brplastics.com
+Currently when sense data is present only check condition is set. This
+sets DRIVER_SENSE as well.
 
+Signed-off-by: Josh Hunt <johunt@akamai.com>
+---
+ drivers/message/fusion/mptscsih.c |    2 ++
+ 1 files changed, 2 insertions(+), 0 deletions(-)
 
+diff --git a/drivers/message/fusion/mptscsih.c b/drivers/message/fusion/mptscsih.c
+index 0c3ced7..3ccf5cf 100644
+--- a/drivers/message/fusion/mptscsih.c
++++ b/drivers/message/fusion/mptscsih.c
+@@ -889,6 +889,8 @@ mptscsih_io_done(MPT_ADAPTER *ioc, MPT_FRAME_HDR *mf, MPT_FRAME_HDR *mr)
+ 			} else if (scsi_state &
+ 			    MPI_SCSI_STATE_AUTOSENSE_VALID) {
+ 
++				sc->result |= (DRIVER_SENSE << 24);
++
+ 				/*
+ 				 * For potential trouble on LSI53C1030.
+ 				 * (date:2007.xx.)
+-- 
+1.7.0.4
 
