@@ -1,80 +1,119 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755275Ab2ETNYV (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 20 May 2012 09:24:21 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:56546 "EHLO
+	id S1755428Ab2ETNZD (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 20 May 2012 09:25:03 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:56920 "EHLO
 	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754607Ab2ETNX7 (ORCPT
+	with ESMTP id S1753710Ab2ETNX7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Sun, 20 May 2012 09:23:59 -0400
 From: Akinobu Mita <akinobu.mita@gmail.com>
 To: linux-kernel@vger.kernel.org, akpm@linux-foundation.org
-Cc: Akinobu Mita <akinobu.mita@gmail.com>, Anders Larsen <al@alarsen.net>
-Subject: [PATCH 03/10] qnx4fs: use memweight()
-Date: Sun, 20 May 2012 22:23:16 +0900
-Message-Id: <1337520203-29147-3-git-send-email-akinobu.mita@gmail.com>
+Cc: Akinobu Mita <akinobu.mita@gmail.com>, Anders Larsen <al@alarsen.net>,
+        Alasdair Kergon <agk@redhat.com>, dm-devel@redhat.com,
+        linux-fsdevel@vger.kernel.org,
+        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
+        linux-media@vger.kernel.org, Mark Fasheh <mfasheh@suse.com>,
+        Joel Becker <jlbec@evilplan.org>, ocfs2-devel@oss.oracle.com,
+        Jan Kara <jack@suse.cz>, linux-ext4@vger.kernel.org,
+        Andreas Dilger <adilger.kernel@dilger.ca>,
+        "Theodore Ts'o" <tytso@mit.edu>
+Subject: [PATCH 01/10] string: introduce memweight
+Date: Sun, 20 May 2012 22:23:14 +0900
+Message-Id: <1337520203-29147-1-git-send-email-akinobu.mita@gmail.com>
 X-Mailer: git-send-email 1.7.7.6
-In-Reply-To: <1337520203-29147-1-git-send-email-akinobu.mita@gmail.com>
-References: <1337520203-29147-1-git-send-email-akinobu.mita@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Use memweight() to count the total number of bits clear in memory area.
+memweight() is the function that counts the total number of bits set
+in memory area.  The memory area doesn't need to be aligned to
+long-word boundary unlike bitmap_weight().
 
 Signed-off-by: Akinobu Mita <akinobu.mita@gmail.com>
 Cc: Anders Larsen <al@alarsen.net>
+Cc: Alasdair Kergon <agk@redhat.com>
+Cc: dm-devel@redhat.com
+Cc: linux-fsdevel@vger.kernel.org
+Cc: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
+Cc: linux-media@vger.kernel.org
+Cc: Mark Fasheh <mfasheh@suse.com>
+Cc: Joel Becker <jlbec@evilplan.org>
+Cc: ocfs2-devel@oss.oracle.com
+Cc: Jan Kara <jack@suse.cz>
+Cc: linux-ext4@vger.kernel.org
+Cc: Andrew Morton <akpm@linux-foundation.org>
+Cc: Andreas Dilger <adilger.kernel@dilger.ca>
+Cc: "Theodore Ts'o" <tytso@mit.edu>
 ---
- fs/qnx4/bitmap.c |   24 +++++-------------------
- 1 files changed, 5 insertions(+), 19 deletions(-)
+ include/linux/string.h |    3 +++
+ lib/string.c           |   37 +++++++++++++++++++++++++++++++++++++
+ 2 files changed, 40 insertions(+), 0 deletions(-)
 
-diff --git a/fs/qnx4/bitmap.c b/fs/qnx4/bitmap.c
-index 22e0d60..fc04ef1 100644
---- a/fs/qnx4/bitmap.c
-+++ b/fs/qnx4/bitmap.c
-@@ -17,23 +17,6 @@
- #include <linux/bitops.h>
- #include "qnx4.h"
- 
--static void count_bits(register const char *bmPart, register int size,
--		       int *const tf)
--{
--	char b;
--	int tot = *tf;
--
--	if (size > QNX4_BLOCK_SIZE) {
--		size = QNX4_BLOCK_SIZE;
--	}
--	do {
--		b = *bmPart++;
--		tot += 8 - hweight8(b);
--		size--;
--	} while (size != 0);
--	*tf = tot;
--}
--
- unsigned long qnx4_count_free_blocks(struct super_block *sb)
- {
- 	int start = le32_to_cpu(qnx4_sb(sb)->BitMap->di_first_xtnt.xtnt_blk) - 1;
-@@ -44,13 +27,16 @@ unsigned long qnx4_count_free_blocks(struct super_block *sb)
- 	struct buffer_head *bh;
- 
- 	while (total < size) {
-+		int bytes = min(size - total, QNX4_BLOCK_SIZE);
+diff --git a/include/linux/string.h b/include/linux/string.h
+index e033564..ffe0442 100644
+--- a/include/linux/string.h
++++ b/include/linux/string.h
+@@ -145,4 +145,7 @@ static inline bool strstarts(const char *str, const char *prefix)
+ 	return strncmp(str, prefix, strlen(prefix)) == 0;
+ }
+ #endif
 +
- 		if ((bh = sb_bread(sb, start + offset)) == NULL) {
- 			printk(KERN_ERR "qnx4: I/O error in counting free blocks\n");
- 			break;
- 		}
--		count_bits(bh->b_data, size - total, &total_free);
-+		total_free += bytes * BITS_PER_BYTE-
-+				memweight(bh->b_data, bytes);
- 		brelse(bh);
--		total += QNX4_BLOCK_SIZE;
-+		total += bytes;
- 		offset++;
- 	}
++extern size_t memweight(const void *ptr, size_t bytes);
++
+ #endif /* _LINUX_STRING_H_ */
+diff --git a/lib/string.c b/lib/string.c
+index e5878de..c8b92a0 100644
+--- a/lib/string.c
++++ b/lib/string.c
+@@ -26,6 +26,7 @@
+ #include <linux/export.h>
+ #include <linux/bug.h>
+ #include <linux/errno.h>
++#include <linux/bitmap.h>
  
+ #ifndef __HAVE_ARCH_STRNICMP
+ /**
+@@ -824,3 +825,39 @@ void *memchr_inv(const void *start, int c, size_t bytes)
+ 	return check_bytes8(start, value, bytes % 8);
+ }
+ EXPORT_SYMBOL(memchr_inv);
++
++/**
++ * memweight - count the total number of bits set in memory area
++ * @ptr: pointer to the start of the area
++ * @bytes: the size of the area
++ */
++size_t memweight(const void *ptr, size_t bytes)
++{
++	size_t w = 0;
++	size_t longs;
++	union {
++		const void *ptr;
++		const unsigned char *b;
++		unsigned long address;
++	} bitmap;
++
++	for (bitmap.ptr = ptr; bytes > 0 && bitmap.address % sizeof(long);
++			bytes--, bitmap.address++)
++		w += hweight8(*bitmap.b);
++
++	for (longs = bytes / sizeof(long); longs > 0; ) {
++		size_t bits = min_t(size_t, INT_MAX & ~(BITS_PER_LONG - 1),
++					longs * BITS_PER_LONG);
++
++		w += bitmap_weight(bitmap.ptr, bits);
++		bytes -= bits / BITS_PER_BYTE;
++		bitmap.address += bits / BITS_PER_BYTE;
++		longs -= bits / BITS_PER_LONG;
++	}
++
++	for (; bytes > 0; bytes--, bitmap.address++)
++		w += hweight8(*bitmap.b);
++
++	return w;
++}
++EXPORT_SYMBOL(memweight);
 -- 
 1.7.7.6
 
