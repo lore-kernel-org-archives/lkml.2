@@ -1,88 +1,117 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756706Ab2ETRoi (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 20 May 2012 13:44:38 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:6262 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755359Ab2ETRoh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 20 May 2012 13:44:37 -0400
-Message-ID: <4FB92D5A.3060507@redhat.com>
-Date: Sun, 20 May 2012 20:43:54 +0300
-From: Avi Kivity <avi@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
+	id S1756723Ab2ETR7M (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 20 May 2012 13:59:12 -0400
+Received: from alerce.vps.bitfolk.com ([85.119.82.134]:51028 "EHLO
+	alerce.vps.bitfolk.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756577Ab2ETR7J (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 20 May 2012 13:59:09 -0400
+X-Greylist: delayed 1028 seconds by postgrey-1.27 at vger.kernel.org; Sun, 20 May 2012 13:59:09 EDT
+Date: Sun, 20 May 2012 14:38:12 -0300
+From: Leandro Lucarella <luca@llucax.com.ar>
+To: cpufreq@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: cpufreq not working properly with ondemand governor on Intel(R)
+ Core(TM) i5-2467M
+Message-ID: <20120520173812.GU4370@llucax.com.ar>
 MIME-Version: 1.0
-To: zhangyanfei <zhangyanfei@cn.fujitsu.com>
-CC: mtosatti@redhat.com, ebiederm@xmission.com, luto@mit.edu,
-        Joerg Roedel <joerg.roedel@amd.com>, dzickus@redhat.com,
-        paul.gortmaker@windriver.com, ludwig.nussel@suse.de,
-        linux-kernel@vger.kernel.org, kvm@vger.kernel.org,
-        kexec@lists.infradead.org, Greg KH <gregkh@linuxfoundation.org>
-Subject: Re: [PATCH v2 0/5] Export offsets of VMCS fields as note information
- for kdump
-References: <4FB35C48.30708@cn.fujitsu.com>
-In-Reply-To: <4FB35C48.30708@cn.fujitsu.com>
-Content-Type: text/plain; charset=GB2312
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+X-Paranoid: Just because you're paranoid, don't mean they're not after you.
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/16/2012 10:50 AM, zhangyanfei wrote:
-> This patch set exports offsets of VMCS fields as note information for
-> kdump. We call it VMCSINFO. The purpose of VMCSINFO is to retrieve
-> runtime state of guest machine image, such as registers, in host
-> machine's crash dump as VMCS format. The problem is that VMCS internal
-> is hidden by Intel in its specification. So, we slove this problem
-> by reverse engineering implemented in this patch set. The VMCSINFO
-> is exported via sysfs to kexec-tools just like VMCOREINFO.
->
-> Here are two usercases for two features that we want.
->
-> 1) Create guest machine's crash dumpfile from host machine's crash dumpfile
->
-> In general, we want to use this feature on failure analysis for the system
-> where the processing depends on the communication between host and guest
-> machines to look into the system from both machines's viewpoints.
->
-> As a concrete situation, consider where there's heartbeat monitoring
-> feature on the guest machine's side, where we need to determine in
-> which machine side the cause of heartbeat stop lies. In our actual
-> experiments, we encountered such situation and we found the cause of
-> the bug was in host's process schedular so guest machine's vcpu stopped
-> for a long time and then led to heartbeat stop.
->
-> The module that judges heartbeat stop is on guest machine, so we need
-> to debug guest machine's data. But if the cause lies in host machine
-> side, we need to look into host machine's crash dump.
+I just bought a Toshiba Z830 and I'm having a problem with cpufreq. The
+default governor is ondemand and it's not working properly, the
+frequency is stuck at the lowest one, which makes the notebook really
+annoying to use. I've tried the performance governor and it looks like
+the CPU goes to the maximum frequency, but when querying with cpufreq-
+info, I still see the minimum freq, but in the statistics about the
+frequencies used, I see the maximum frequency getting more and more
+percentage of use.
 
-Do you mean, that a heartbeat failure in the guest lead to host panic?
+Finally I tried the conservative governor, and it really look like it
+behaves like the ondeman should. The frequency is rapidily increased as
+needed and dropped down again when is not needed anymore. This is the
+only governor that seems to be changing the frequency in a way cpufreq-
+info can really see it, as I see the frequency going up and down when
+using that governor. The userspace governor also seems to be working as
+expected though.
 
-My expectation is that a problem in the guest will cause the guest to
-panic and perhaps produce a dump; the host will remain up.
+Another strange thing is that among the supported frequencies, I get
+1.60GHz (the maximum frequency supported) listed twice.
 
-> Without this feature, we first create guest machine's dump and then
-> create host mahine's, but there's only a short time between two
-> processings, during which it's unlikely that buggy situation remains.
->
-> So, we think the feature is useful to debug both guest machine's and
-> host machine's sides at the same time, and expect we can make failure
-> analysis efficiently.
->
-> Of course, we believe this feature is commonly useful on the situation
-> where guest machine doesn't work well due to something of host machine's.
->
-> 2) Get offsets of VMCS information on the CPU running on the host machine
->
-> If kdump doesn't work well, then it means we cannot use kvm API to get
-> register values of guest machine and they are still left on its vmcs
-> region. In the case, we use crash dump mechanism running outside of
-> linux kernel, such as sadump, a firmware-based crash dump. Then VMCS
-> information is then necessary.
+Here is an example run of cpufreq-info:
+cpufrequtils 007: cpufreq-info (C) Dominik Brodowski 2004-2009
+Report errors and bugs to cpufreq@vger.kernel.org, please.
+analyzing CPU 0:
+  driver: acpi-cpufreq
+  CPUs which run at the same hardware frequency: 0 1 2 3
+  CPUs which need to have their frequency coordinated by software: 0
+  maximum transition latency: 10.0 us.
+  hardware limits: 800 MHz - 1.60 GHz
+  available frequency steps: 1.60 GHz, 1.60 GHz, 1.50 GHz, 1.40 GHz, 1.30 GHz, 1.20 GHz, 1.10 GHz, 1000 MHz, 900 MHz, 800 MHz
+  available cpufreq governors: conservative, ondemand, userspace, powersave, performance
+  current policy: frequency should be within 800 MHz and 1.60 GHz.
+                  The governor "conservative" may decide which speed to use
+                  within this range.
+  current CPU frequency is 800 MHz.
+  cpufreq stats: 1.60 GHz:6.40%, 1.60 GHz:0.01%, 1.50 GHz:0.02%, 1.40 GHz:0.02%, 1.30 GHz:0.02%, 1.20 GHz:0.06%, 1.10 GHz:0.03%, 1000 MHz:0.04%, 900 MHz:0.07%, 800 MHz:93.33%  (795)
+analyzing CPU 1:
+  driver: acpi-cpufreq
+  CPUs which run at the same hardware frequency: 0 1 2 3
+  CPUs which need to have their frequency coordinated by software: 1
+  maximum transition latency: 10.0 us.
+  hardware limits: 800 MHz - 1.60 GHz
+  available frequency steps: 1.60 GHz, 1.60 GHz, 1.50 GHz, 1.40 GHz, 1.30 GHz, 1.20 GHz, 1.10 GHz, 1000 MHz, 900 MHz, 800 MHz
+  available cpufreq governors: conservative, ondemand, userspace, powersave, performance
+  current policy: frequency should be within 800 MHz and 1.60 GHz.
+                  The governor "conservative" may decide which speed to use
+                  within this range.
+  current CPU frequency is 800 MHz.
+  cpufreq stats: 1.60 GHz:20.97%, 1.60 GHz:0.02%, 1.50 GHz:0.06%, 1.40 GHz:0.07%, 1.30 GHz:0.10%, 1.20 GHz:0.18%, 1.10 GHz:0.10%, 1000 MHz:0.15%, 900 MHz:0.19%, 800 MHz:78.16%  (424)
+analyzing CPU 2:
+  driver: acpi-cpufreq
+  CPUs which run at the same hardware frequency: 0 1 2 3
+  CPUs which need to have their frequency coordinated by software: 2
+  maximum transition latency: 10.0 us.
+  hardware limits: 800 MHz - 1.60 GHz
+  available frequency steps: 1.60 GHz, 1.60 GHz, 1.50 GHz, 1.40 GHz, 1.30 GHz, 1.20 GHz, 1.10 GHz, 1000 MHz, 900 MHz, 800 MHz
+  available cpufreq governors: conservative, ondemand, userspace, powersave, performance
+  current policy: frequency should be within 800 MHz and 1.60 GHz.
+                  The governor "conservative" may decide which speed to use
+                  within this range.
+  current CPU frequency is 800 MHz.
+  cpufreq stats: 1.60 GHz:20.95%, 1.60 GHz:0.02%, 1.50 GHz:0.11%, 1.40 GHz:0.10%, 1.30 GHz:0.12%, 1.20 GHz:0.32%, 1.10 GHz:0.24%, 1000 MHz:0.25%, 900 MHz:0.38%, 800 MHz:77.51%  (622)
+analyzing CPU 3:
+  driver: acpi-cpufreq
+  CPUs which run at the same hardware frequency: 0 1 2 3
+  CPUs which need to have their frequency coordinated by software: 3
+  maximum transition latency: 10.0 us.
+  hardware limits: 800 MHz - 1.60 GHz
+  available frequency steps: 1.60 GHz, 1.60 GHz, 1.50 GHz, 1.40 GHz, 1.30 GHz, 1.20 GHz, 1.10 GHz, 1000 MHz, 900 MHz, 800 MHz
+  available cpufreq governors: conservative, ondemand, userspace, powersave, performance
+  current policy: frequency should be within 800 MHz and 1.60 GHz.
+                  The governor "conservative" may decide which speed to use
+                  within this range.
+  current CPU frequency is 800 MHz.
+  cpufreq stats: 1.60 GHz:20.89%, 1.60 GHz:0.03%, 1.50 GHz:0.09%, 1.40 GHz:0.11%, 1.30 GHz:0.11%, 1.20 GHz:0.19%, 1.10 GHz:0.15%, 1000 MHz:0.13%, 900 MHz:0.14%, 800 MHz:78.15%  (451)
 
-Shouldn't sadump then expose the VMCS offsets? Perhaps bundling them
-into its dump file?
+I first reported this issue to Ubuntu but it seems to be a general
+kernel problem. You can find all the details (kernel version, CPU model,
+etc.) in that bug report. Let me know if you need any other information.
+https://bugs.launchpad.net/bugs/987531
 
+
+Thanks.
 
 -- 
-error compiling committee.c: too many arguments to function
-
+Leandro Lucarella (AKA luca)                     http://llucax.com.ar/
+----------------------------------------------------------------------
+GPG Key: 5F5A8D05 (F8CD F9A7 BF00 5431 4145  104C 949E BFB6 5F5A 8D05)
+----------------------------------------------------------------------
+Hey you, with you ear against the wall
+Waiting for someone to call out
+Would you touch me?
