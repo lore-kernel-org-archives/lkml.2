@@ -1,39 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755693Ab2ETCJG (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 19 May 2012 22:09:06 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:56680 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754285Ab2ETCJE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 19 May 2012 22:09:04 -0400
-Message-ID: <4FB85222.9040909@kernel.org>
-Date: Sat, 19 May 2012 19:08:34 -0700
-From: "H. Peter Anvin" <hpa@kernel.org>
-Organization: Linux Kernel Organization, Inc.
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
+	id S1756296Ab2ETCL7 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 19 May 2012 22:11:59 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:42648 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750877Ab2ETCL5 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 19 May 2012 22:11:57 -0400
+Date: Sat, 19 May 2012 19:11:55 -0700 (PDT)
+From: David Rientjes <rientjes@google.com>
+X-X-Sender: rientjes@chino.kir.corp.google.com
+To: Jiri Kosina <jkosina@suse.cz>
+cc: Przemo Firszt <przemo@firszt.eu>, pinglinux@gmail.com,
+        linux-kernel@vger.kernel.org, linux-input@vger.kernel.org,
+        linuxwacom-devel@lists.sourceforge.net
+Subject: Re: [PATCH] HID: wacom: Add LED selector control for Wacom Intuos4
+ WL
+In-Reply-To: <alpine.LNX.2.00.1205111448350.17928@pobox.suse.cz>
+Message-ID: <alpine.DEB.2.00.1205191905430.24674@chino.kir.corp.google.com>
+References: <1336674232-5410-1-git-send-email-przemo@firszt.eu> <alpine.LNX.2.00.1205111448350.17928@pobox.suse.cz>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-To: "H.J. Lu" <hjl.tools@gmail.com>
-CC: "H. Peter Anvin" <hpa@zytor.com>, Arnd Bergmann <arnd@arndb.de>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org,
-        mingo@kernel.org, tglx@linutronix.de, Paul Mundt <lethal@linux-sh.org>,
-        David Howells <dhowells@redhat.com>
-Subject: Re: [PATCH 08/10] Use __kernel_ulong_t in struct msqid64_ds
-References: <1337292816-10839-1-git-send-email-hjl.tools@gmail.com> <CA+55aFzfku-5qgVPahu27DLz-y8MUmh7Mw9sq_TyO49Zb0tg=A@mail.gmail.com> <CAMe9rOr883q0OAsh+JGA83ww603y6QSbQJKx+wk2YJfkYcaEdQ@mail.gmail.com> <201205182121.02706.arnd@arndb.de> <4FB83123.3020402@zytor.com> <CAMe9rOrKWTFPdFzdN5d6_zR9bPs8Td-oFgs4ObypbB_sd3GovA@mail.gmail.com>
-In-Reply-To: <CAMe9rOrKWTFPdFzdN5d6_zR9bPs8Td-oFgs4ObypbB_sd3GovA@mail.gmail.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/19/2012 06:32 PM, H.J. Lu wrote:
+On Fri, 11 May 2012, Jiri Kosina wrote:
+
+> > Add sysfs attribute to control LED selector on Wacom Intuos4. 
 > 
-> If __BITS_PER_LONG is set to 32 for x32, we need to audit all
-> exported kernel headers where __BITS_PER_LONG is checked.
-> If long is used in those places, it has to be updated for x32.
+> Applied, thanks.
 > 
 
-I think we have to do that anyway.
+This results in a build failure if you've enabled CONFIG_HID_WACOM without 
+CONFIG_NEW_LEDS, which is required for CONFIG_LEDS_CLASS.
 
-	-hpa
+drivers/built-in.o: In function `led_classdev_unregister':
+(.text+0x3ff685): undefined reference to `led_brightness_set'
+drivers/built-in.o: In function `led_classdev_unregister':
+(.text+0x3ff695): undefined reference to `leds_list_lock'
+drivers/built-in.o: In function `led_classdev_unregister':
+(.text+0x3ff6ab): undefined reference to `leds_list_lock'
+drivers/built-in.o: In function `led_classdev_register':
+(.text+0x3ff6e9): undefined reference to `leds_list_lock'
+drivers/built-in.o: In function `led_classdev_register':
+(.text+0x3ff6f5): undefined reference to `leds_list'
+drivers/built-in.o: In function `led_classdev_register':
+(.text+0x3ff700): undefined reference to `leds_list'
+drivers/built-in.o: In function `led_classdev_register':
+(.text+0x3ff70c): undefined reference to `leds_list_lock'
+
+Please apply the patch below.
+
+
+hid, wacom: fix build breakage without CONFIG_LEDS_CLASS
+
+CONFIG_HID_WACOM must depend on CONFIG_LEDS_CLASS, otherwise 
+CONFIG_NEW_LEDS may be disabled.
+
+Signed-off-by: David Rientjes <rientjes@google.com>
+---
+ drivers/hid/Kconfig |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
+
+diff --git a/drivers/hid/Kconfig b/drivers/hid/Kconfig
+--- a/drivers/hid/Kconfig
++++ b/drivers/hid/Kconfig
+@@ -613,8 +613,8 @@ config THRUSTMASTER_FF
+ config HID_WACOM
+ 	tristate "Wacom Bluetooth devices support"
+ 	depends on BT_HIDP
++	depends on LEDS_CLASS
+ 	select POWER_SUPPLY
+-	select LEDS_CLASS
+ 	---help---
+ 	Support for Wacom Graphire Bluetooth and Intuos4 WL tablets.
+ 
