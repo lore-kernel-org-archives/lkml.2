@@ -1,22 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753789Ab2ETLf3 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 20 May 2012 07:35:29 -0400
-Received: from static.78-46-68-141.clients.your-server.de ([78.46.68.141]:42956
+	id S1753774Ab2ETLmc (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 20 May 2012 07:42:32 -0400
+Received: from static.78-46-68-141.clients.your-server.de ([78.46.68.141]:52755
 	"HELO eristoteles.iwoars.net" rhost-flags-OK-FAIL-OK-FAIL)
-	by vger.kernel.org with SMTP id S1752936Ab2ETLf2 (ORCPT
+	by vger.kernel.org with SMTP id S1751843Ab2ETLmb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 20 May 2012 07:35:28 -0400
-Date: Sun, 20 May 2012 13:35:26 +0200 (CEST)
+	Sun, 20 May 2012 07:42:31 -0400
+Date: Sun, 20 May 2012 13:42:29 +0200 (CEST)
 From: Joel Reardon <joel@clambassador.com>
 X-X-Sender: joel@eristoteles.iwoars.net
 To: Artem Bityutskiy <dedekind1@gmail.com>
 cc: linux-mtd@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: [patch] UBIFS: improved comment for data node's format history
-In-Reply-To: <1337427288.2041.24.camel@koala>
-Message-ID: <alpine.DEB.2.00.1205201334080.26953@eristoteles.iwoars.net>
-References: <alpine.DEB.2.00.1205151101100.17750@eristoteles.iwoars.net>  <1337087022.2528.204.camel@sauron.fi.intel.com>  <alpine.DEB.2.00.1205161451250.27131@eristoteles.iwoars.net>  <alpine.DEB.2.00.1205191027340.18672@eristoteles.iwoars.net>
- <1337427288.2041.24.camel@koala>
+Subject: [patch] UBI: add in hex the value for UBI_INTERNAL_VOL_START to
+ comment
+Message-ID: <alpine.DEB.2.00.1205201340410.26953@eristoteles.iwoars.net>
 User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
 Content-Type: TEXT/PLAIN; charset=US-ASCII
@@ -24,30 +22,32 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-A few more lines of comment on ksa_pos field in struct ubifs_data_node.
+Explicitly provide the first internal volume ID value in the comment for
+UBI_INTERNAL_VOL_START. This allows developers who, when adding features
+related to volume ids and observe unexpected very large volume ids, to grep
+for the observed value in the source code and find out immediately that it is
+expected behaviour.
 
 Signed-off-by: Joel Reardon <reardonj@inf.ethz.ch>
 ---
- fs/ubifs/ubifs-media.h |    5 +++++
- 1 files changed, 5 insertions(+), 0 deletions(-)
+ drivers/mtd/ubi/ubi-media.h |    4 ++--
+ 1 files changed, 2 insertions(+), 2 deletions(-)
 
-diff --git a/fs/ubifs/ubifs-media.h b/fs/ubifs/ubifs-media.h
-index 55f2ccd..90f348c 100644
---- a/fs/ubifs/ubifs-media.h
-+++ b/fs/ubifs/ubifs-media.h
-@@ -545,6 +545,11 @@ struct ubifs_dent_node {
-  * @padding: reserved for future, zeroes
-  * @data: data
-  *
-+ * The @ksa_pos value is used for secure deletion enhancement of UBIFS.
-+ * In older versions of UBIFS, @ksa_pos did not exist but was instead an
-+ * unused part of @key and was set to all zeros. UBIFS partitions with secure
-+ * deletion disabled also store all zeros for ksa_pos.
-+ *
-  * Note, do not forget to amend 'zero_data_node_unused()' function when
-  * changing the padding fields.
+diff --git a/drivers/mtd/ubi/ubi-media.h b/drivers/mtd/ubi/ubi-media.h
+index 6fb8ec2..9dab25d 100644
+--- a/drivers/mtd/ubi/ubi-media.h
++++ b/drivers/mtd/ubi/ubi-media.h
+@@ -298,8 +298,8 @@ struct ubi_vid_hdr {
+ #define UBI_INT_VOL_COUNT 1
+
+ /*
+- * Starting ID of internal volumes. There is reserved room for 4096 internal
+- * volumes.
++ * Starting ID of internal volumes: 0x7fffefff.
++ * There is reserved room for 4096 internal volumes.
   */
+ #define UBI_INTERNAL_VOL_START (0x7FFFFFFF - 4096)
+
 -- 
 1.7.5.4
-
 
