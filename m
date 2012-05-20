@@ -1,145 +1,234 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755820Ab2ETNZU (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 20 May 2012 09:25:20 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:50441 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755147Ab2ETNYL (ORCPT
+	id S932093Ab2ETNZp (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 20 May 2012 09:25:45 -0400
+Received: from 212.199.104.198.static.012.net.il ([212.199.104.198]:6329 "EHLO
+	lx-merez.qi.qualcomm.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1755131Ab2ETNZk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 20 May 2012 09:24:11 -0400
-From: Akinobu Mita <akinobu.mita@gmail.com>
-To: linux-kernel@vger.kernel.org, akpm@linux-foundation.org
-Cc: Akinobu Mita <akinobu.mita@gmail.com>, Jan Kara <jack@suse.cz>,
-        Andreas Dilger <adilger.kernel@dilger.ca>, linux-ext4@vger.kernel.org
-Subject: [PATCH 09/10] ext3: use memweight()
-Date: Sun, 20 May 2012 22:23:22 +0900
-Message-Id: <1337520203-29147-9-git-send-email-akinobu.mita@gmail.com>
-X-Mailer: git-send-email 1.7.7.6
-In-Reply-To: <1337520203-29147-1-git-send-email-akinobu.mita@gmail.com>
-References: <1337520203-29147-1-git-send-email-akinobu.mita@gmail.com>
+	Sun, 20 May 2012 09:25:40 -0400
+X-Greylist: delayed 509 seconds by postgrey-1.27 at vger.kernel.org; Sun, 20 May 2012 09:25:40 EDT
+From: Maya Erez <merez@codeaurora.org>
+To: linux-mmc@vger.kernel.org
+Cc: linux-arm-msm@vger.kernel.org, Maya Erez <merez@codeaurora.org>,
+        linux-kernel@vger.kernel.org (open list)
+Subject: [RFC/PATCH] mmc: block: Add write packing control
+Date: Sun, 20 May 2012 16:16:45 +0300
+Message-Id: <1337519805-31919-2-git-send-email-merez@codeaurora.org>
+X-Mailer: git-send-email 1.7.3.3
+In-Reply-To: <1337519805-31919-1-git-send-email-merez@codeaurora.org>
+References: <1337519805-31919-1-git-send-email-merez@codeaurora.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Use memweight() to count the total number of bits clear in memory area.
-This change only affects the code segments enabled by EXT3FS_DEBUG.
+The write packing control will ensure that read requests latency is
+not increased due to long write packed commands.
 
-This also fixes printk format warning that only reveals with EXT3FS_DEBUG.
+The trigger for enabling the write packing is managing to pack several
+write requests. The number of potential packed requests that will trigger
+the packing can be configured via sysfs.
+The trigger for disabling the write packing is a fetch of a read request.
 
-Signed-off-by: Akinobu Mita <akinobu.mita@gmail.com>
-Cc: Jan Kara <jack@suse.cz>
-Cc: Andrew Morton <akpm@linux-foundation.org>
-Cc: Andreas Dilger <adilger.kernel@dilger.ca>
-Cc: linux-ext4@vger.kernel.org
+Signed-off-by: Maya Erez <merez@codeaurora.org>
 ---
- fs/ext3/Makefile |    2 +-
- fs/ext3/balloc.c |    5 +++--
- fs/ext3/bitmap.c |   30 ------------------------------
- fs/ext3/ext3.h   |    2 --
- fs/ext3/ialloc.c |    4 +++-
- 5 files changed, 7 insertions(+), 36 deletions(-)
- delete mode 100644 fs/ext3/bitmap.c
+ drivers/mmc/card/block.c |   44 ++++++++++++++++++++++++++++++++++++++++++++
+ drivers/mmc/card/queue.c |    2 ++
+ drivers/mmc/card/queue.h |    2 ++
+ drivers/mmc/core/host.c  |   45 +++++++++++++++++++++++++++++++++++++++++++++
+ include/linux/mmc/host.h |    5 ++++-
+ 5 files changed, 97 insertions(+), 1 deletions(-)
 
-diff --git a/fs/ext3/Makefile b/fs/ext3/Makefile
-index e77766a..ce93e94 100644
---- a/fs/ext3/Makefile
-+++ b/fs/ext3/Makefile
-@@ -4,7 +4,7 @@
- 
- obj-$(CONFIG_EXT3_FS) += ext3.o
- 
--ext3-y	:= balloc.o bitmap.o dir.o file.o fsync.o ialloc.o inode.o \
-+ext3-y	:= balloc.o dir.o file.o fsync.o ialloc.o inode.o \
- 	   ioctl.o namei.o super.o symlink.o hash.o resize.o ext3_jbd.o
- 
- ext3-$(CONFIG_EXT3_FS_XATTR)	 += xattr.o xattr_user.o xattr_trusted.o
-diff --git a/fs/ext3/balloc.c b/fs/ext3/balloc.c
-index baac1b1..676bd53 100644
---- a/fs/ext3/balloc.c
-+++ b/fs/ext3/balloc.c
-@@ -1804,7 +1804,8 @@ ext3_fsblk_t ext3_count_free_blocks(struct super_block *sb)
- 		if (bitmap_bh == NULL)
- 			continue;
- 
--		x = ext3_count_free(bitmap_bh, sb->s_blocksize);
-+		x = sb->s_blocksize * BITS_PER_BYTE -
-+			memweight(bitmap_bh->b_data, sb->s_blocksize);
- 		printk("group %d: stored = %d, counted = %lu\n",
- 			i, le16_to_cpu(gdp->bg_free_blocks_count), x);
- 		bitmap_count += x;
-@@ -1812,7 +1813,7 @@ ext3_fsblk_t ext3_count_free_blocks(struct super_block *sb)
- 	brelse(bitmap_bh);
- 	printk("ext3_count_free_blocks: stored = "E3FSBLK
- 		", computed = "E3FSBLK", "E3FSBLK"\n",
--	       le32_to_cpu(es->s_free_blocks_count),
-+		(ext3_fsblk_t)le32_to_cpu(es->s_free_blocks_count),
- 		desc_count, bitmap_count);
- 	return bitmap_count;
- #else
-diff --git a/fs/ext3/bitmap.c b/fs/ext3/bitmap.c
-deleted file mode 100644
-index 909d13e..0000000
---- a/fs/ext3/bitmap.c
-+++ /dev/null
-@@ -1,30 +0,0 @@
--/*
-- *  linux/fs/ext3/bitmap.c
-- *
-- * Copyright (C) 1992, 1993, 1994, 1995
-- * Remy Card (card@masi.ibp.fr)
-- * Laboratoire MASI - Institut Blaise Pascal
-- * Universite Pierre et Marie Curie (Paris VI)
-- */
+diff --git a/drivers/mmc/card/block.c b/drivers/mmc/card/block.c
+index 2785fd4..c4f7573 100644
+--- a/drivers/mmc/card/block.c
++++ b/drivers/mmc/card/block.c
+@@ -1313,6 +1313,43 @@ static void mmc_blk_rw_rq_prep(struct mmc_queue_req *mqrq,
+ 	mmc_queue_bounce_pre(mqrq);
+ }
+
++static void mmc_blk_write_packing_control(struct mmc_queue *mq,
++					  struct request *req)
++{
++	struct mmc_host *host = mq->card->host;
++	int data_dir = 0;
++
++	if (!(host->caps2 & MMC_CAP2_PACKED_WR))
++		return;
++
++	if (!(host->caps2 & MMC_CAP2_PACKED_WR_CONTROL)) {
++		mq->write_packing_enabled = 1;
++		return;
++	}
++
++	if (!req || (req && (req->cmd_flags & REQ_FLUSH))) {
++		if (mq->num_of_potential_packed_wr_reqs >
++				host->num_wr_reqs_to_start_packing)
++			mq->write_packing_enabled = 1;
++		return;
++	}
++
++	data_dir = rq_data_dir(req);
++
++	if (data_dir == READ) {
++		mq->num_of_potential_packed_wr_reqs = 0;
++		mq->write_packing_enabled = 0;
++		return;
++	} else if (data_dir == WRITE) {
++		mq->num_of_potential_packed_wr_reqs++;
++	}
++
++	if (mq->num_of_potential_packed_wr_reqs >
++			host->num_wr_reqs_to_start_packing)
++		mq->write_packing_enabled = 1;
++
++}
++
+ static u8 mmc_blk_prep_packed_list(struct mmc_queue *mq, struct request *req)
+ {
+ 	struct request_queue *q = mq->queue;
+@@ -1332,6 +1369,9 @@ static u8 mmc_blk_prep_packed_list(struct mmc_queue *mq, struct request *req)
+ 			!card->ext_csd.packed_event_en)
+ 		goto no_packed;
+
++	if (!mq->write_packing_enabled)
++		goto no_packed;
++
+ 	if ((rq_data_dir(cur) == WRITE) &&
+ 			(card->host->caps2 & MMC_CAP2_PACKED_WR))
+ 		max_packed_rw = card->ext_csd.max_packed_writes;
+@@ -1396,6 +1436,8 @@ static u8 mmc_blk_prep_packed_list(struct mmc_queue *mq, struct request *req)
+ 			break;
+ 		}
+
++		if (rq_data_dir(next) == WRITE)
++			mq->num_of_potential_packed_wr_reqs++;
+ 		list_add_tail(&next->queuelist, &mq->mqrq_cur->packed_list);
+ 		cur = next;
+ 		reqs++;
+@@ -1780,6 +1822,8 @@ static int mmc_blk_issue_rq(struct mmc_queue *mq, struct request *req)
+ 		goto out;
+ 	}
+
++	mmc_blk_write_packing_control(mq, req);
++
+ 	if (req && req->cmd_flags & REQ_DISCARD) {
+ 		/* complete ongoing async transfer before issuing discard */
+ 		if (card->host->areq)
+diff --git a/drivers/mmc/card/queue.c b/drivers/mmc/card/queue.c
+index 165d85a..2d8dcd9 100644
+--- a/drivers/mmc/card/queue.c
++++ b/drivers/mmc/card/queue.c
+@@ -181,6 +181,8 @@ int mmc_init_queue(struct mmc_queue *mq, struct mmc_card *card,
+ 	mq->mqrq_cur = mqrq_cur;
+ 	mq->mqrq_prev = mqrq_prev;
+ 	mq->queue->queuedata = mq;
++	mq->write_packing_enabled = 0;
++	mq->num_of_potential_packed_wr_reqs = 0;
+
+ 	blk_queue_prep_rq(mq->queue, mmc_prep_request);
+ 	queue_flag_set_unlocked(QUEUE_FLAG_NONROT, mq->queue);
+diff --git a/drivers/mmc/card/queue.h b/drivers/mmc/card/queue.h
+index d761bf1..c5fd2ac 100644
+--- a/drivers/mmc/card/queue.h
++++ b/drivers/mmc/card/queue.h
+@@ -44,6 +44,8 @@ struct mmc_queue {
+ 	struct mmc_queue_req	mqrq[2];
+ 	struct mmc_queue_req	*mqrq_cur;
+ 	struct mmc_queue_req	*mqrq_prev;
++	int			write_packing_enabled;
++	int			num_of_potential_packed_wr_reqs;
+ };
+
+ extern int mmc_init_queue(struct mmc_queue *, struct mmc_card *, spinlock_t *,
+diff --git a/drivers/mmc/core/host.c b/drivers/mmc/core/host.c
+index 91c84c7..d7e3552 100644
+--- a/drivers/mmc/core/host.c
++++ b/drivers/mmc/core/host.c
+@@ -345,6 +345,8 @@ struct mmc_host *mmc_alloc_host(int extra, struct device *dev)
+ 	host->max_blk_size = 512;
+ 	host->max_blk_count = PAGE_CACHE_SIZE / 512;
+
++	host->num_wr_reqs_to_start_packing = 17;
++
+ 	return host;
+
+ free:
+@@ -353,6 +355,49 @@ free:
+ }
+
+ EXPORT_SYMBOL(mmc_alloc_host);
++static ssize_t
++show_num_wr_reqs_to_start_packing(struct device *dev,
++				  struct device_attribute *attr, char *buf)
++{
++	struct mmc_host *host = dev_get_drvdata(dev);
++	int num_wr_reqs_to_start_packing = 0;
++
++	spin_lock(&host->lock);
++	num_wr_reqs_to_start_packing = host->num_wr_reqs_to_start_packing;
++	spin_unlock(&host->lock);
++
++	return snprintf(buf, PAGE_SIZE, "num_wr_reqs_to_start_packing = %d\n",
++					num_wr_reqs_to_start_packing);
++}
++
++static ssize_t
++set_num_wr_reqs_to_start_packing(struct device *dev,
++				 struct device_attribute *attr,
++				 const char *buf, size_t count)
++{
++	int value;
++	struct mmc_host *host = dev_get_drvdata(dev);
++	sscanf(buf, "%d", &value);
++	if (value) {
++		spin_lock(&host->lock);
++		host->num_wr_reqs_to_start_packing = value;
++		spin_unlock(&host->lock);
++	}
++
++	return count;
++}
++
++static DEVICE_ATTR(num_wr_reqs_to_start_packing, S_IRUGO | S_IWUSR,
++		show_num_wr_reqs_to_start_packing,
++		set_num_wr_reqs_to_start_packing);
++
++static struct attribute *dev_attrs[] = {
++	&dev_attr_num_wr_reqs_to_start_packing.attr,
++	NULL,
++};
++static struct attribute_group dev_attr_grp = {
++	.attrs = dev_attrs,
++};
+
+ /**
+  *	mmc_add_host - initialise host hardware
+diff --git a/include/linux/mmc/host.h b/include/linux/mmc/host.h
+index 9d0d946..55667a0 100644
+--- a/include/linux/mmc/host.h
++++ b/include/linux/mmc/host.h
+@@ -242,7 +242,7 @@ struct mmc_host {
+ #define MMC_CAP2_PACKED_WR	(1 << 11)	/* Allow packed write */
+ #define MMC_CAP2_PACKED_CMD	(MMC_CAP2_PACKED_RD | \
+ 				 MMC_CAP2_PACKED_WR) /* Allow packed commands */
 -
--#include "ext3.h"
--
--#ifdef EXT3FS_DEBUG
--
--static const int nibblemap[] = {4, 3, 3, 2, 3, 2, 2, 1, 3, 2, 2, 1, 2, 1, 1, 0};
--
--unsigned long ext3_count_free (struct buffer_head * map, unsigned int numchars)
--{
--	unsigned int i;
--	unsigned long sum = 0;
--
--	if (!map)
--		return (0);
--	for (i = 0; i < numchars; i++)
--		sum += nibblemap[map->b_data[i] & 0xf] +
--			nibblemap[(map->b_data[i] >> 4) & 0xf];
--	return (sum);
--}
--
--#endif  /*  EXT3FS_DEBUG  */
--
-diff --git a/fs/ext3/ext3.h b/fs/ext3/ext3.h
-index b6515fd..5c6246d 100644
---- a/fs/ext3/ext3.h
-+++ b/fs/ext3/ext3.h
-@@ -1029,8 +1029,6 @@ extern struct inode * ext3_orphan_get (struct super_block *, unsigned long);
- extern unsigned long ext3_count_free_inodes (struct super_block *);
- extern unsigned long ext3_count_dirs (struct super_block *);
- extern void ext3_check_inodes_bitmap (struct super_block *);
--extern unsigned long ext3_count_free (struct buffer_head *, unsigned);
--
- 
- /* inode.c */
- int ext3_forget(handle_t *handle, int is_metadata, struct inode *inode,
-diff --git a/fs/ext3/ialloc.c b/fs/ext3/ialloc.c
-index e3c39e4..b58c8e2 100644
---- a/fs/ext3/ialloc.c
-+++ b/fs/ext3/ialloc.c
-@@ -683,7 +683,9 @@ unsigned long ext3_count_free_inodes (struct super_block * sb)
- 		if (!bitmap_bh)
- 			continue;
- 
--		x = ext3_count_free(bitmap_bh, EXT3_INODES_PER_GROUP(sb) / 8);
-+		x = EXT3_INODES_PER_GROUP(sb) / 8 * BITS_PER_BYTE -
-+			memweight(bitmap_bh->b_data,
-+				EXT3_INODES_PER_GROUP(sb) / 8);
- 		printk("group %d: stored = %d, counted = %lu\n",
- 			i, le16_to_cpu(gdp->bg_free_inodes_count), x);
- 		bitmap_count += x;
++#define MMC_CAP2_PACKED_WR_CONTROL (1 << 12) /* Allow write packing control */
+ 	mmc_pm_flag_t		pm_caps;	/* supported pm features */
+ 	unsigned int        power_notify_type;
+ #define MMC_HOST_PW_NOTIFY_NONE		0
+@@ -324,6 +324,9 @@ struct mmc_host {
+
+ 	unsigned int		actual_clock;	/* Actual HC clock rate */
+
++	/* Write packing control attributes */
++	int			num_wr_reqs_to_start_packing;
++
+ 	unsigned long		private[0] ____cacheline_aligned;
+ };
+
+--
+1.7.3.3
 -- 
-1.7.7.6
-
+Sent by a consultant of the Qualcomm Innovation Center, Inc.
+The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
