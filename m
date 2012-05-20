@@ -1,81 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755606Ab2ETNz6 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 20 May 2012 09:55:58 -0400
-Received: from orion.tchmachines.com ([208.76.84.200]:59757 "EHLO
-	orion.tchmachines.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755458Ab2ETNz4 (ORCPT
+	id S1755524Ab2ETN7H (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 20 May 2012 09:59:07 -0400
+Received: from e28smtp07.in.ibm.com ([122.248.162.7]:46806 "EHLO
+	e28smtp07.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755500Ab2ETN7E (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 20 May 2012 09:55:56 -0400
-Message-ID: <4FB8F7E9.4020005@scalemp.com>
-Date: Sun, 20 May 2012 16:55:53 +0300
-From: Vlad <vlad@scalemp.com>
-Reply-To: vlad@scalemp.com
-Organization: ScaleMP
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
+	Sun, 20 May 2012 09:59:04 -0400
+Message-ID: <4FB8F86B.1080906@linux.vnet.ibm.com>
+Date: Sun, 20 May 2012 19:28:03 +0530
+From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120424 Thunderbird/12.0
 MIME-Version: 1.0
-To: Ingo Molnar <mingo@kernel.org>
-CC: linux-kernel <linux-kernel@vger.kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        "Shai Fultheim (Shai@ScaleMP.com)" <Shai@scalemp.com>
-Subject: Re: [PATCH v2 2/2] x86: Added read_mostly declaration/definition
- to vars from smp.h
-References: <201205151831.57871.vlad@scalemp.com> <20120518081416.GA20872@gmail.com>
-In-Reply-To: <20120518081416.GA20872@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+To: Peter Zijlstra <a.p.zijlstra@chello.nl>
+CC: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>, mingo@kernel.org,
+        pjt@google.com, paul@paulmenage.org, akpm@linux-foundation.org,
+        rjw@sisk.pl, nacc@us.ibm.com, rientjes@google.com,
+        paulmck@linux.vnet.ibm.com, tglx@linutronix.de,
+        seto.hidetoshi@jp.fujitsu.com, tj@kernel.org, mschmidt@redhat.com,
+        berrange@redhat.com, nikunj@linux.vnet.ibm.com,
+        vatsa@linux.vnet.ibm.com, liuj97@gmail.com,
+        linux-kernel@vger.kernel.org, linux-pm@vger.kernel.org
+Subject: Re: [PATCH v5 0/5] CPU hotplug, cpusets, suspend/resume: Fixes, cleanups
+ and optimizations
+References: <20120517165839.3011.98723.stgit@srivatsabhat.in.ibm.com>
+In-Reply-To: <20120517165839.3011.98723.stgit@srivatsabhat.in.ibm.com>
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
-X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
-X-AntiAbuse: Primary Hostname - orion.tchmachines.com
-X-AntiAbuse: Original Domain - vger.kernel.org
-X-AntiAbuse: Originator/Caller UID/GID - [47 12] / [47 12]
-X-AntiAbuse: Sender Address Domain - scalemp.com
+x-cbid: 12052013-8878-0000-0000-000002846A38
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/18/2012 11:14 AM, Ingo Molnar wrote:
-> * Vlad Zolotarov<vlad@scalemp.com>  wrote:
->
->> Added a "read-mostly" qualifier to the following variables in smp.h:
->>   - cpu_sibling_map
->>   - cpu_core_map
->>   - cpu_llc_shared_map
->>   - cpu_llc_id
->>   - cpu_number
->>   - x86_cpu_to_apicid
->>   - x86_bios_cpu_apicid
->>   - x86_cpu_to_logical_apicid
->>
->> As long as all the variables above are only written during the initialization,
->> this change is meant to prevent the false sharing and improve the
->> performance on large multiprocessor systems.
->>
->> Signed-off-by: Vlad Zolotarov<vlad@scalemp.com>
->> Signed-off-by: Shai Fultheim<shai@scalemp.com>
->> ---
->>   arch/x86/include/asm/apic.h    |    2 +-
->>   arch/x86/include/asm/smp.h     |   16 ++++++++--------
->>   arch/x86/kernel/apic/apic.c    |    6 +++---
->>   arch/x86/kernel/setup_percpu.c |    2 +-
->>   arch/x86/kernel/smpboot.c      |    8 ++++----
->>   5 files changed, 17 insertions(+), 17 deletions(-)
->
-> This does not build on !SMP kernels that has APIC enabled.
+Hi Peter,
 
-Oops... :) My bad. I'll rebase and respin.
+Did you get a chance to take a look at this patchset?
 
-Thanks,
-vlad
+(I have added a summary of the changes between the versions below.)
 
+Thanks a lot!
+
+On 05/17/2012 10:29 PM, Srivatsa S. Bhat wrote:
+
+> Currently the kernel doesn't handle cpusets properly during suspend/resume.
+> After a resume, all non-root cpusets end up having only 1 cpu (the boot cpu),
+> causing massive performance degradation of workloads. One major user of cpusets
+> is libvirt, which means that after a suspend/hibernation cycle, all VMs
+> suddenly end up running terribly slow!
+> 
+> Also, the kernel moves the tasks from one cpuset to another during CPU hotplug
+> in the suspend/resume path, leading to a task-management nightmare after
+> resume.
+> 
+> Patch 1 fixes this by keeping cpusets unmodified in the suspend/resume path.
+> But to ensure we don't trip over, it keeps the sched domains updated during
+> every CPU hotplug in the s/r path.
+> This is a long standing issue and we need to fix up stable kernels too.
+> 
+> The rest of the patches in the series are mostly cleanups/optimizations
+> (except patch 4 which is a non-critical bug fix).
 >
-> Thanks,
->
-> 	Ingo
+
+
+Changelog:
+
+v5 : Don't do explicit save/restore of cpusets' cpu masks during s/r, to avoid
+     the overhead of a new per-cpuset cpu mask to help with that. Also, ensure
+     that the sched domains are updated on each hotplug.
+     The s/r fix (patch 1) is now distinct from the cleanups (patches 2-5).
+
+v4 : (Never had this version. I skipped from v3 to v5 accidentally).
+
+v3 : Explicitly save and restore cpusets' cpu masks during s/r. Don't alter
+     the semantics of regular cpu hotplug.
+     http://thread.gmane.org/gmane.linux.kernel/1296339
+
+v2 : http://thread.gmane.org/gmane.linux.documentation/4805/
+
+v1 : thread.gmane.org/gmane.linux.kernel/1250097/
+ 
+
 > --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
->
+>  Srivatsa S. Bhat (5):
+>       CPU hotplug, cpusets, suspend: Don't modify cpusets during suspend/resume
+>       cpusets, hotplug: Implement cpuset tree traversal in a helper function
+>       cpusets, hotplug: Restructure functions that are invoked during hotplug
+>       cpusets: Update tasks' cpus_allowed mask upon updates to root cpuset
+>       cpusets: Remove/update outdated comments
+> 
+> 
+>   include/linux/cpuset.h |    4 +
+>  kernel/cpuset.c        |  161 +++++++++++++++++++++++++++++++++++-------------
+>  kernel/sched/core.c    |   44 +++++++++++--
+>  3 files changed, 159 insertions(+), 50 deletions(-)
+
+
+Regards,
+Srivatsa S. Bhat
 
