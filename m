@@ -1,100 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755524Ab2ETN7H (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 20 May 2012 09:59:07 -0400
-Received: from e28smtp07.in.ibm.com ([122.248.162.7]:46806 "EHLO
-	e28smtp07.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755500Ab2ETN7E (ORCPT
+	id S1755850Ab2ETOIM (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 20 May 2012 10:08:12 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:45946 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754942Ab2ETOIL convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 20 May 2012 09:59:04 -0400
-Message-ID: <4FB8F86B.1080906@linux.vnet.ibm.com>
-Date: Sun, 20 May 2012 19:28:03 +0530
-From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120424 Thunderbird/12.0
+	Sun, 20 May 2012 10:08:11 -0400
 MIME-Version: 1.0
-To: Peter Zijlstra <a.p.zijlstra@chello.nl>
-CC: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>, mingo@kernel.org,
-        pjt@google.com, paul@paulmenage.org, akpm@linux-foundation.org,
-        rjw@sisk.pl, nacc@us.ibm.com, rientjes@google.com,
-        paulmck@linux.vnet.ibm.com, tglx@linutronix.de,
-        seto.hidetoshi@jp.fujitsu.com, tj@kernel.org, mschmidt@redhat.com,
-        berrange@redhat.com, nikunj@linux.vnet.ibm.com,
-        vatsa@linux.vnet.ibm.com, liuj97@gmail.com,
-        linux-kernel@vger.kernel.org, linux-pm@vger.kernel.org
-Subject: Re: [PATCH v5 0/5] CPU hotplug, cpusets, suspend/resume: Fixes, cleanups
- and optimizations
-References: <20120517165839.3011.98723.stgit@srivatsabhat.in.ibm.com>
-In-Reply-To: <20120517165839.3011.98723.stgit@srivatsabhat.in.ibm.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
-x-cbid: 12052013-8878-0000-0000-000002846A38
+In-Reply-To: <20120518045907.GA3397@kroah.com>
+References: <20120518045907.GA3397@kroah.com>
+Date: Sun, 20 May 2012 22:08:08 +0800
+Message-ID: <CACVXFVPhPmTfdB-pKpz7NpL+N03cxDvPpiFdPWeZcqBNNSffYw@mail.gmail.com>
+Subject: =?UTF-8?Q?Re=3A_Race_condition_between_driver=5Fprobe=5Fdevice_and_d?=
+	=?UTF-8?Q?evice=5Fshutdown=E2=80=8F?=
+From: Ming Lei <ming.lei@canonical.com>
+To: Greg KH <gregkh@linuxfoundation.org>
+Cc: Wedson Almeida Filho <wedsonaf@gmail.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Peter,
+Hi,
 
-Did you get a chance to take a look at this patchset?
-
-(I have added a summary of the changes between the versions below.)
-
-Thanks a lot!
-
-On 05/17/2012 10:29 PM, Srivatsa S. Bhat wrote:
-
-> Currently the kernel doesn't handle cpusets properly during suspend/resume.
-> After a resume, all non-root cpusets end up having only 1 cpu (the boot cpu),
-> causing massive performance degradation of workloads. One major user of cpusets
-> is libvirt, which means that after a suspend/hibernation cycle, all VMs
-> suddenly end up running terribly slow!
-> 
-> Also, the kernel moves the tasks from one cpuset to another during CPU hotplug
-> in the suspend/resume path, leading to a task-management nightmare after
-> resume.
-> 
-> Patch 1 fixes this by keeping cpusets unmodified in the suspend/resume path.
-> But to ensure we don't trip over, it keeps the sched domains updated during
-> every CPU hotplug in the s/r path.
-> This is a long standing issue and we need to fix up stable kernels too.
-> 
-> The rest of the patches in the series are mostly cleanups/optimizations
-> (except patch 4 which is a non-critical bug fix).
+On Fri, May 18, 2012 at 12:59 PM, Greg KH <gregkh@linuxfoundation.org> wrote:
+>> Hi,
 >
+> First off, sorry for missing this, and thanks to Andrew for pointing it
+> out to me.  You might want to use the tool, scripts/get_maintainer.pl
+> for who to know to cc: for patches like this, so I don't miss it.
+>
+>> I'm seeing a driver crash in its shutdown routine because it's
+>> touching some uninitialized state. It turns out that the driver's
+>> probe routine was still running [for the same device]. There also
+>> appears to be an issue in the remove path, where device_shutdown()
+>> checks the dev->driver pointer and uses it later, with seemingly
+>> nothing to guarantee that it doesn't change.
+>
+> What type of driver is having this problem?  What type of bus is it on?
+> Usually the bus prevents this from happening with its own serialization.
+
+Looks it is a generic problem.
+
+There are two races, one is between .probe and .shutdown, and another
+is between .release  and .shutdown, see below:
 
 
-Changelog:
+void device_shutdown(void)
 
-v5 : Don't do explicit save/restore of cpusets' cpu masks during s/r, to avoid
-     the overhead of a new per-cpuset cpu mask to help with that. Also, ensure
-     that the sched domains are updated on each hotplug.
-     The s/r fix (patch 1) is now distinct from the cleanups (patches 2-5).
+		......
+		/* Don't allow any more runtime suspends */
+		pm_runtime_get_noresume(dev);
+		pm_runtime_barrier(dev);
 
-v4 : (Never had this version. I skipped from v3 to v5 accidentally).
+		if (dev->bus && dev->bus->shutdown) {
+			dev_dbg(dev, "shutdown\n");
+			dev->bus->shutdown(dev);
+		} else if (dev->driver && dev->driver->shutdown) {  /*line-driver*/
+			dev_dbg(dev, "shutdown\n");
+			dev->driver->shutdown(dev);                              /*line-shut*/
+		}
+		......
 
-v3 : Explicitly save and restore cpusets' cpu masks during s/r. Don't alter
-     the semantics of regular cpu hotplug.
-     http://thread.gmane.org/gmane.linux.kernel/1296339
+If dev->driver is just set(really_probe) before 'line-driver' and .probe is
+not executed before 'line-shut', the .shutdown may touch a uninitialized
+device.
 
-v2 : http://thread.gmane.org/gmane.linux.documentation/4805/
-
-v1 : thread.gmane.org/gmane.linux.kernel/1250097/
- 
-
-> --
->  Srivatsa S. Bhat (5):
->       CPU hotplug, cpusets, suspend: Don't modify cpusets during suspend/resume
->       cpusets, hotplug: Implement cpuset tree traversal in a helper function
->       cpusets, hotplug: Restructure functions that are invoked during hotplug
->       cpusets: Update tasks' cpus_allowed mask upon updates to root cpuset
->       cpusets: Remove/update outdated comments
-> 
-> 
->   include/linux/cpuset.h |    4 +
->  kernel/cpuset.c        |  161 +++++++++++++++++++++++++++++++++++-------------
->  kernel/sched/core.c    |   44 +++++++++++--
->  3 files changed, 159 insertions(+), 50 deletions(-)
+Also if dev->driver is just cleared(__device_release_driver) after "line-driver"
+and before "line-shut", null pointer will be referenced and oops will
+be triggered.
 
 
-Regards,
-Srivatsa S. Bhat
+>> Shouldn't we synchronize the shutdown routine with probe/remove to
+>> prevent such races?
+>
+> Normally, yes, and for some reason, I thought we already were doing
+> that.
 
+Looks the races are still there.
+
+>> The patch below should take care of these races.
+>
+> Does this patch solve your problem?  Care to show me the oops you get
+> without it?
+>
+>> diff --git a/drivers/base/core.c b/drivers/base/core.c
+>> index e28ce98..f2c63c6 100644
+>> --- a/drivers/base/core.c
+>> +++ b/drivers/base/core.c
+>> @@ -1823,6 +1823,9 @@ void device_shutdown(void)
+>>                 pm_runtime_get_noresume(dev);
+>>                 pm_runtime_barrier(dev);
+>>
+>> +               if (dev->parent)        /* Needed for USB */
+>> +                       device_lock(dev->parent);
+>> +               device_lock(dev);
+
+Looks the above makes sense to serialize .shutdown with
+.probe and .release.
+
+
+Thanks,
+--
+Ming Lei
