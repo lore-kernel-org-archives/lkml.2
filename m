@@ -1,64 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756612Ab2ETRXt (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 20 May 2012 13:23:49 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:40662 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755525Ab2ETRXW (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 20 May 2012 13:23:22 -0400
-Date: Sun, 20 May 2012 18:23:19 +0100
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Laxman Dewangan <ldewangan@nvidia.com>
-Cc: lrg@ti.com, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] regulator: tps62360: dt: initialize of_node param for
- regulator register.
-Message-ID: <20120520172319.GC9337@opensource.wolfsonmicro.com>
-References: <1337530730-16605-1-git-send-email-ldewangan@nvidia.com>
+	id S1756706Ab2ETRoi (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 20 May 2012 13:44:38 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:6262 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755359Ab2ETRoh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 20 May 2012 13:44:37 -0400
+Message-ID: <4FB92D5A.3060507@redhat.com>
+Date: Sun, 20 May 2012 20:43:54 +0300
+From: Avi Kivity <avi@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="zCKi3GIZzVBPywwA"
-Content-Disposition: inline
-In-Reply-To: <1337530730-16605-1-git-send-email-ldewangan@nvidia.com>
-X-Cookie: Chess tonight.
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: zhangyanfei <zhangyanfei@cn.fujitsu.com>
+CC: mtosatti@redhat.com, ebiederm@xmission.com, luto@mit.edu,
+        Joerg Roedel <joerg.roedel@amd.com>, dzickus@redhat.com,
+        paul.gortmaker@windriver.com, ludwig.nussel@suse.de,
+        linux-kernel@vger.kernel.org, kvm@vger.kernel.org,
+        kexec@lists.infradead.org, Greg KH <gregkh@linuxfoundation.org>
+Subject: Re: [PATCH v2 0/5] Export offsets of VMCS fields as note information
+ for kdump
+References: <4FB35C48.30708@cn.fujitsu.com>
+In-Reply-To: <4FB35C48.30708@cn.fujitsu.com>
+Content-Type: text/plain; charset=GB2312
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 05/16/2012 10:50 AM, zhangyanfei wrote:
+> This patch set exports offsets of VMCS fields as note information for
+> kdump. We call it VMCSINFO. The purpose of VMCSINFO is to retrieve
+> runtime state of guest machine image, such as registers, in host
+> machine's crash dump as VMCS format. The problem is that VMCS internal
+> is hidden by Intel in its specification. So, we slove this problem
+> by reverse engineering implemented in this patch set. The VMCSINFO
+> is exported via sysfs to kexec-tools just like VMCOREINFO.
+>
+> Here are two usercases for two features that we want.
+>
+> 1) Create guest machine's crash dumpfile from host machine's crash dumpfile
+>
+> In general, we want to use this feature on failure analysis for the system
+> where the processing depends on the communication between host and guest
+> machines to look into the system from both machines's viewpoints.
+>
+> As a concrete situation, consider where there's heartbeat monitoring
+> feature on the guest machine's side, where we need to determine in
+> which machine side the cause of heartbeat stop lies. In our actual
+> experiments, we encountered such situation and we found the cause of
+> the bug was in host's process schedular so guest machine's vcpu stopped
+> for a long time and then led to heartbeat stop.
+>
+> The module that judges heartbeat stop is on guest machine, so we need
+> to debug guest machine's data. But if the cause lies in host machine
+> side, we need to look into host machine's crash dump.
 
---zCKi3GIZzVBPywwA
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+Do you mean, that a heartbeat failure in the guest lead to host panic?
 
-On Sun, May 20, 2012 at 09:48:47PM +0530, Laxman Dewangan wrote:
-> Initialize config.of_node for regulator before registering.
-> This is needed for DT based regulator support.
-> Regulator stores this of_node value in rdev->dev.of_node
-> and used for lookup when client ask for regulator_get().
+My expectation is that a problem in the guest will cause the guest to
+panic and perhaps produce a dump; the host will remain up.
 
-Applied, thanks.
+> Without this feature, we first create guest machine's dump and then
+> create host mahine's, but there's only a short time between two
+> processings, during which it's unlikely that buggy situation remains.
+>
+> So, we think the feature is useful to debug both guest machine's and
+> host machine's sides at the same time, and expect we can make failure
+> analysis efficiently.
+>
+> Of course, we believe this feature is commonly useful on the situation
+> where guest machine doesn't work well due to something of host machine's.
+>
+> 2) Get offsets of VMCS information on the CPU running on the host machine
+>
+> If kdump doesn't work well, then it means we cannot use kvm API to get
+> register values of guest machine and they are still left on its vmcs
+> region. In the case, we use crash dump mechanism running outside of
+> linux kernel, such as sadump, a firmware-based crash dump. Then VMCS
+> information is then necessary.
 
---zCKi3GIZzVBPywwA
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+Shouldn't sadump then expose the VMCS offsets? Perhaps bundling them
+into its dump file?
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
 
-iQIcBAEBAgAGBQJPuShrAAoJEBus8iNuMP3dz9kP/1wS/k+3MTf4zE/SKFBXRHeH
-Tgyom5sS8p9PkjWxH76PWKKmyPOsl9O4Z3WSEp9pDPsmKvIfIE5T7saj/ak1djyr
-Og7KiyxChOjTK6N7l6nyNDyKSVbNbsYT+Zu+O5Zai7Sl23DSO0AT8/8m4v9ju2HM
-D3YCCDRr8/o0nW94HEFUUy7kzbK0bPAO8o5OiyuQfU6d1t0UtB7eYaQ5fcyY4XPj
-WuQz6le0HPLhufvGjndQ7AlzqcP5LvYy/Uhrj0JkLM0dm88pVI9ORlUNYILCx40z
-WLmz8nSo1i0y+HEG/GNLwEVldJcmP6Dra8r5if2Bx7C22onXv/epOrRNCeFw24o+
-QjAcS2sBrBfduxNLKKiNwdLeXnLSKcMRQMPZo+zXQMewjf+nyIkBBfC/tpJ2p+t/
-BVrlr7MdLpo21aigz02uKY5lRrrYDr1EHzubmO83HsNiirzfd7JFUS8xerpJlfT1
-WrE780gKoMtZfWOHKWtpMC40Ksx8gm3+xdjPbYVoEoCCYQTix1MyM0aupz+7/whb
-FZddmiu910/inTu4DkN3miVM+QSdrpJMxbjtNIAg2lYJ/IhH9dKzuMKmy+0GnyyK
-Ysl5uGKVCmK3eiLfnt+pTL3GnJ1jEe7Snsapb/ZSKeFDV1ZeF2A+zh/6pD8UcUJA
-9y7TD9CNGUfnuAKdtDFs
-=mkwk
------END PGP SIGNATURE-----
+-- 
+error compiling committee.c: too many arguments to function
 
---zCKi3GIZzVBPywwA--
