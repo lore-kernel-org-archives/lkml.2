@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755733Ab2ETNZR (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 20 May 2012 09:25:17 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:56920 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755131Ab2ETNYJ (ORCPT
+	id S1755679Ab2ETNZP (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 20 May 2012 09:25:15 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:50441 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755105Ab2ETNYH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 20 May 2012 09:24:09 -0400
+	Sun, 20 May 2012 09:24:07 -0400
 From: Akinobu Mita <akinobu.mita@gmail.com>
 To: linux-kernel@vger.kernel.org, akpm@linux-foundation.org
-Cc: Akinobu Mita <akinobu.mita@gmail.com>, Jan Kara <jack@suse.cz>,
-        linux-ext4@vger.kernel.org
-Subject: [PATCH 08/10] ext2: use memweight()
-Date: Sun, 20 May 2012 22:23:21 +0900
-Message-Id: <1337520203-29147-8-git-send-email-akinobu.mita@gmail.com>
+Cc: Akinobu Mita <akinobu.mita@gmail.com>, Mark Fasheh <mfasheh@suse.com>,
+        Joel Becker <jlbec@evilplan.org>, ocfs2-devel@oss.oracle.com
+Subject: [PATCH 07/10] ocfs2: use memweight()
+Date: Sun, 20 May 2012 22:23:20 +0900
+Message-Id: <1337520203-29147-7-git-send-email-akinobu.mita@gmail.com>
 X-Mailer: git-send-email 1.7.7.6
 In-Reply-To: <1337520203-29147-1-git-send-email-akinobu.mita@gmail.com>
 References: <1337520203-29147-1-git-send-email-akinobu.mita@gmail.com>
@@ -21,94 +21,37 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Use memweight() to count the total number of bits clear in memory area.
-This change only affects the code segments enabled by EXT2FS_DEBUG.
-
-This also fixes printk format warning that only reveals with EXT2FS_DEBUG.
+Use memweight to count the total number of bits set in memory area.
 
 Signed-off-by: Akinobu Mita <akinobu.mita@gmail.com>
-Cc: Jan Kara <jack@suse.cz>
-Cc: linux-ext4@vger.kernel.org
+Cc: Mark Fasheh <mfasheh@suse.com>
+Cc: Joel Becker <jlbec@evilplan.org>
+Cc: ocfs2-devel@oss.oracle.com
 ---
- fs/ext2/balloc.c |   22 ++--------------------
- fs/ext2/ext2.h   |    1 -
- fs/ext2/ialloc.c |    5 ++++-
- 3 files changed, 6 insertions(+), 22 deletions(-)
+ fs/ocfs2/localalloc.c |    8 ++------
+ 1 files changed, 2 insertions(+), 6 deletions(-)
 
-diff --git a/fs/ext2/balloc.c b/fs/ext2/balloc.c
-index a8cbe1b..3351731 100644
---- a/fs/ext2/balloc.c
-+++ b/fs/ext2/balloc.c
-@@ -1443,25 +1443,6 @@ ext2_fsblk_t ext2_new_block(struct inode *inode, unsigned long goal, int *errp)
- 	return ext2_new_blocks(inode, goal, &count, errp);
- }
+diff --git a/fs/ocfs2/localalloc.c b/fs/ocfs2/localalloc.c
+index 210c352..a9f78c7 100644
+--- a/fs/ocfs2/localalloc.c
++++ b/fs/ocfs2/localalloc.c
+@@ -784,14 +784,10 @@ bail:
  
--#ifdef EXT2FS_DEBUG
--
--static const int nibblemap[] = {4, 3, 3, 2, 3, 2, 2, 1, 3, 2, 2, 1, 2, 1, 1, 0};
--
--unsigned long ext2_count_free (struct buffer_head * map, unsigned int numchars)
--{
--	unsigned int i;
--	unsigned long sum = 0;
--
--	if (!map)
--		return (0);
--	for (i = 0; i < numchars; i++)
--		sum += nibblemap[map->b_data[i] & 0xf] +
--			nibblemap[(map->b_data[i] >> 4) & 0xf];
--	return (sum);
--}
--
--#endif  /*  EXT2FS_DEBUG  */
--
- unsigned long ext2_count_free_blocks (struct super_block * sb)
+ static u32 ocfs2_local_alloc_count_bits(struct ocfs2_dinode *alloc)
  {
- 	struct ext2_group_desc * desc;
-@@ -1485,7 +1466,8 @@ unsigned long ext2_count_free_blocks (struct super_block * sb)
- 		if (!bitmap_bh)
- 			continue;
- 		
--		x = ext2_count_free(bitmap_bh, sb->s_blocksize);
-+		x = sb->s_blocksize * BITS_PER_BYTE -
-+			memweight(bitmap_bh->b_data, sb->s_blocksize);
- 		printk ("group %d: stored = %d, counted = %lu\n",
- 			i, le16_to_cpu(desc->bg_free_blocks_count), x);
- 		bitmap_count += x;
-diff --git a/fs/ext2/ext2.h b/fs/ext2/ext2.h
-index 0b2b4db..de2a4e5 100644
---- a/fs/ext2/ext2.h
-+++ b/fs/ext2/ext2.h
-@@ -745,7 +745,6 @@ extern struct inode * ext2_new_inode (struct inode *, umode_t, const struct qstr
- extern void ext2_free_inode (struct inode *);
- extern unsigned long ext2_count_free_inodes (struct super_block *);
- extern void ext2_check_inodes_bitmap (struct super_block *);
--extern unsigned long ext2_count_free (struct buffer_head *, unsigned);
+-	int i;
+-	u8 *buffer;
+-	u32 count = 0;
++	u32 count;
+ 	struct ocfs2_local_alloc *la = OCFS2_LOCAL_ALLOC(alloc);
  
- /* inode.c */
- extern struct inode *ext2_iget (struct super_block *, unsigned long);
-diff --git a/fs/ext2/ialloc.c b/fs/ext2/ialloc.c
-index 8b15cf8..82139c4 100644
---- a/fs/ext2/ialloc.c
-+++ b/fs/ext2/ialloc.c
-@@ -639,13 +639,16 @@ unsigned long ext2_count_free_inodes (struct super_block * sb)
- 		if (!bitmap_bh)
- 			continue;
+-	buffer = la->la_bitmap;
+-	for (i = 0; i < le16_to_cpu(la->la_size); i++)
+-		count += hweight8(buffer[i]);
++	count = memweight(la->la_bitmap, le16_to_cpu(la->la_size));
  
--		x = ext2_count_free(bitmap_bh, EXT2_INODES_PER_GROUP(sb) / 8);
-+		x = EXT2_INODES_PER_GROUP(sb) / 8 * BITS_PER_BYTE -
-+			memweight(bitmap_bh->b_data,
-+				EXT2_INODES_PER_GROUP(sb) / 8);
- 		printk("group %d: stored = %d, counted = %u\n",
- 			i, le16_to_cpu(desc->bg_free_inodes_count), x);
- 		bitmap_count += x;
- 	}
- 	brelse(bitmap_bh);
- 	printk("ext2_count_free_inodes: stored = %lu, computed = %lu, %lu\n",
-+		(unsigned long)
- 		percpu_counter_read(&EXT2_SB(sb)->s_freeinodes_counter),
- 		desc_count, bitmap_count);
- 	return desc_count;
+ 	trace_ocfs2_local_alloc_count_bits(count);
+ 	return count;
 -- 
 1.7.7.6
 
