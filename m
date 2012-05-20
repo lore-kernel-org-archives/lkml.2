@@ -1,85 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932146Ab2ETSkU (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 20 May 2012 14:40:20 -0400
-Received: from mail-lpp01m010-f46.google.com ([209.85.215.46]:60906 "EHLO
-	mail-lpp01m010-f46.google.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756754Ab2ETSkT (ORCPT
+	id S1756860Ab2ETTEG (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 20 May 2012 15:04:06 -0400
+Received: from mail-we0-f174.google.com ([74.125.82.174]:55253 "EHLO
+	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756741Ab2ETTED (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 20 May 2012 14:40:19 -0400
-Message-ID: <1337539215.1745.11.camel@koala>
-Subject: Re: [PATCH] UBIFS: add ksa_pos to replay buds, read when replaying
-From: Artem Bityutskiy <dedekind1@gmail.com>
-To: Joel Reardon <joel@clambassador.com>
-Cc: linux-mtd@lists.infradead.org, linux-kernel@vger.kernel.org
-Date: Sun, 20 May 2012 21:40:15 +0300
-In-Reply-To: <alpine.DEB.2.00.1205201418170.27583@eristoteles.iwoars.net>
-References: <alpine.DEB.2.00.1205201418170.27583@eristoteles.iwoars.net>
-Content-Type: multipart/signed; micalg="pgp-sha1"; protocol="application/pgp-signature";
-	boundary="=-9er1qBiRnbqeAFWZUooY"
-X-Mailer: Evolution 3.2.3 (3.2.3-3.fc16) 
-Mime-Version: 1.0
+	Sun, 20 May 2012 15:04:03 -0400
+MIME-Version: 1.0
+In-Reply-To: <alpine.DEB.2.00.1205191930310.24674@chino.kir.corp.google.com>
+References: <20120518212656.GA4992@kroah.com> <20120519010105.GB18264@home.goodmis.org>
+ <20120519042038.GB11939@kroah.com> <1337479307.32434.16.camel@gandalf.stny.rr.com>
+ <alpine.DEB.2.00.1205191930310.24674@chino.kir.corp.google.com>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Sun, 20 May 2012 12:03:40 -0700
+X-Google-Sender-Auth: SgekXNQOgS6yxVAwYxa1v7MUJF8
+Message-ID: <CA+55aFwGpDtMR=8GfDqyZGdw_pQFxG-EL15LaNm0wVoXZChXSA@mail.gmail.com>
+Subject: Re: [PATCH] pidmap: Use GFP_ATOMIC to allocate page (was: Re: [
+ 00/54] 3.0.32-stable review)
+To: David Rientjes <rientjes@google.com>
+Cc: Steven Rostedt <rostedt@goodmis.org>, Greg KH <gregkh@linuxfoundation.org>,
+        linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
+        Peter Zijlstra <peterz@infradead.org>
+Content-Type: multipart/mixed; boundary=0016e6d58aebc7d28c04c07c7237
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+--0016e6d58aebc7d28c04c07c7237
+Content-Type: text/plain; charset=ISO-8859-1
 
---=-9er1qBiRnbqeAFWZUooY
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: quoted-printable
+On Sat, May 19, 2012 at 7:32 PM, David Rientjes <rientjes@google.com> wrote:
+>
+> Why wasn't this caught by gfp_allowed_mask in slab_pre_alloc_hook()?
+> GFP_KERNEL should be allowed in this context.
 
-On Sun, 2012-05-20 at 14:28 +0200, Joel Reardon wrote:
-> This patch read the ksa_pos from data nodes to the replay buds when perfo=
-rming
-> a replay after unclean commit. This is critical for the correctness of th=
-e key
-> state map, because the keys that are assigned to uncommited data nodes wi=
-ll be
-> considered "unused" after mounting but will be considered "used" after
-> replaying. The ksa_pos values stored in the replay bud are passed to the =
-TNC
-> using ubifs_tnc_add.
->=20
-> This was tested by assigning distinct ksa_pos values and disabling commit=
-ing.
-> Data was written and then the drive was remounted. The ksa_pos values wer=
-e
-> read from the journal and outputted while replaying. When the file was la=
-ter
-> read, it was confirmed that the ksa_pos values were already loaded into t=
-he
-> TNC.
->=20
-> Signed-off-by: Joel Reardon <reardonj@inf.ethz.ch>
+We set gfp_allowed_mask to allow all allocations before this point: it
+happens when we enable interrupts fairly early during start_kernel().
 
-Pushed to the "joel" branch as well.
+So by the time pidmap_init() is called, GFP_KERNEL does imply that
+scheduling can happen.
 
---=20
-Best Regards,
-Artem Bityutskiy
+Which does imply that we set gfp_allowed_mask *much* too early. We
+still cannot schedule at that point (well, at least there's a comment
+saying so):
 
---=-9er1qBiRnbqeAFWZUooY
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: This is a digitally signed message part
-Content-Transfer-Encoding: 7bit
+        /*
+         * Disable preemption - early bootup scheduling is extremely
+         * fragile until we cpu_idle() for the first time.
+         */
+        preempt_disable();
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
+so logically we should move the gfp_allowed_mask setting down to where
+we really are properly alive.
 
-iQIcBAABAgAGBQJPuTqPAAoJECmIfjd9wqK08sgQAKe0wqzhOfZHwhCvtaAzJKVE
-5W6TYiRF8+MkdM2whHoJ2fWZrbtzPbyzgr/xCQNiExe9UY64qNLBbEyMgK5DXafp
-GPBVZq0PYV8rdBPmCs2XBp8S83JmwMHxLVHTdXnwLSyOO16mo6ETyCbGo5dHEL2s
-CMFQfpWPMKmk4ey14ihOEyxJOb4IJy+XoUiroqfJVoaMFBdPJTzjssP99Kh7ej44
-vroGIqsjGq7KnIlvUW5A9LPQ6Y/ERx4TzZvN4sf6VEZVOn2U4U5ynj/sKrfbYyb3
-k2I8gwEOzrtDDkc1RulH8iQb5T0U/nzs6A2sDE1TdPBuDzJ8fTezq/7ORVLXbbtR
-p8Zi80oZyBAHJW/4W4Nh6l1aGFeZqAE0Q8yNwSQqayKGHHNRXBJwXu41zKwBEnM/
-7ZGjBOiZO0t4VQf3j8idcxhlNmQsSfLKOsypv1GqXtAvO3W6JmGtkks7PTehezGG
-WFOCPK2nguj/kiFTeSLivtRwRAvb5PWLdWLDNz6Ce7ci0cs6NqYsGntLlJFeKcUm
-EDTIcXv1j0wQ7KgvCIBkeIApchLUkd9V3uQTxpZ1LkyfGBrxnMlNHVFpbr/zZ22d
-zXQnErbmHg55BYOwlSVskF3AZvU1yu5h/UTumQuZN6AwkZ+NjHwfcShcuTOZZ8+b
-W7PSh3PrdEDMXx+sTpXM
-=5jg2
------END PGP SIGNATURE-----
+How about moving it down to after we've done the full smp_init() and
+after we've actually done the first schedule and have proper idle
+CPU's?
 
---=-9er1qBiRnbqeAFWZUooY--
+Something like the attached (UNTESTED!) patch?
 
+                       Linus
+
+--0016e6d58aebc7d28c04c07c7237
+Content-Type: application/octet-stream; name="patch.diff"
+Content-Disposition: attachment; filename="patch.diff"
+Content-Transfer-Encoding: base64
+X-Attachment-Id: f_h2gh5e5w0
+
+IGluaXQvbWFpbi5jIHwgNiArKystLS0KIDEgZmlsZSBjaGFuZ2VkLCAzIGluc2VydGlvbnMoKyks
+IDMgZGVsZXRpb25zKC0pCgpkaWZmIC0tZ2l0IGEvaW5pdC9tYWluLmMgYi9pbml0L21haW4uYwpp
+bmRleCA0NGIyNDMzMzM0YzcuLjBjZjAwOTQzZDc1NSAxMDA2NDQKLS0tIGEvaW5pdC9tYWluLmMK
+KysrIGIvaW5pdC9tYWluLmMKQEAgLTU2MCw5ICs1NjAsNiBAQCBhc21saW5rYWdlIHZvaWQgX19p
+bml0IHN0YXJ0X2tlcm5lbCh2b2lkKQogCWVhcmx5X2Jvb3RfaXJxc19kaXNhYmxlZCA9IGZhbHNl
+OwogCWxvY2FsX2lycV9lbmFibGUoKTsKIAotCS8qIEludGVycnVwdHMgYXJlIGVuYWJsZWQgbm93
+IHNvIGFsbCBHRlAgYWxsb2NhdGlvbnMgYXJlIHNhZmUuICovCi0JZ2ZwX2FsbG93ZWRfbWFzayA9
+IF9fR0ZQX0JJVFNfTUFTSzsKLQogCWttZW1fY2FjaGVfaW5pdF9sYXRlKCk7CiAKIAkvKgpAQCAt
+ODYxLDYgKzg1OCw5IEBAIHN0YXRpYyBpbnQgX19pbml0IGtlcm5lbF9pbml0KHZvaWQgKiB1bnVz
+ZWQpCiAJc21wX2luaXQoKTsKIAlzY2hlZF9pbml0X3NtcCgpOwogCisJLyogTm93IHdlJ3JlIGZp
+bmFsbHkgc2V0IHVwIGFuZCBjYW4gZG8gYW55IGFsbG9jYXRpb24gKi8KKwlnZnBfYWxsb3dlZF9t
+YXNrID0gX19HRlBfQklUU19NQVNLOworCiAJZG9fYmFzaWNfc2V0dXAoKTsKIAogCS8qIE9wZW4g
+dGhlIC9kZXYvY29uc29sZSBvbiB0aGUgcm9vdGZzLCB0aGlzIHNob3VsZCBuZXZlciBmYWlsICov
+Cg==
+--0016e6d58aebc7d28c04c07c7237--
