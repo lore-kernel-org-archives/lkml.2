@@ -1,314 +1,146 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754142Ab2ETMBB (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 20 May 2012 08:01:01 -0400
-Received: from mail-wg0-f44.google.com ([74.125.82.44]:57493 "EHLO
-	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753968Ab2ETMAj (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 20 May 2012 08:00:39 -0400
-From: Ohad Ben-Cohen <ohad@wizery.com>
-To: <linux-kernel@vger.kernel.org>
-Cc: <linux-omap@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
-        Michal Simek <monstr@monstr.eu>, Ohad Ben-Cohen <ohad@wizery.com>
-Subject: [PATCH] remoteproc: allocate vrings on demand, free when not needed
-Date: Sun, 20 May 2012 15:00:28 +0300
-Message-Id: <1337515228-31910-1-git-send-email-ohad@wizery.com>
-X-Mailer: git-send-email 1.7.5.4
+	id S1754165Ab2ETMFv (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 20 May 2012 08:05:51 -0400
+Received: from ogre.sisk.pl ([193.178.161.156]:55166 "EHLO ogre.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753919Ab2ETMFt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 20 May 2012 08:05:49 -0400
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Andreas Mohr <andi@lisas.de>, Len Brown <lenb@kernel.org>
+Subject: Re: [PATCH 1/2] ACPI / PM: Fix error messages in drivers/acpi/bus.c
+Date: Sun, 20 May 2012 14:10:47 +0200
+User-Agent: KMail/1.13.6 (Linux/3.4.0-rc7+; KDE/4.6.0; x86_64; ; )
+Cc: ACPI Devel Mailing List <linux-acpi@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Linux PM list <linux-pm@vger.kernel.org>,
+        Lin Ming <ming.m.lin@intel.com>
+References: <20120520100138.GA20179@rhlx01.hs-esslingen.de>
+In-Reply-To: <20120520100138.GA20179@rhlx01.hs-esslingen.de>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201205201410.48030.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Dynamically allocate the vrings' DMA when the remote processor
-is about to be powered on (i.e. when ->find_vqs() is invoked),
-and release them as soon as it is powered off (i.e. when ->del_vqs()
-is invoked).
+On Sunday, May 20, 2012, Andreas Mohr wrote:
+> Hi,
+> 
+> > --- linux.orig/drivers/acpi/bus.c
+> > +++ linux/drivers/acpi/bus.c
+> > @@ -182,6 +182,24 @@ EXPORT_SYMBOL(acpi_bus_get_private_data)
+> >                                   Power Management
+> >     -------------------------------------------------------------------------- */
+> >  
+> > +static char *state_string(int state)
+> > +{
+> > +	switch (state) {
+> > +	case ACPI_STATE_D0:
+> > +		return "D0";
+> > +	case ACPI_STATE_D1:
+> > +		return "D1";
+> 
+> "const char", please?
 
-The obvious and immediate benefit is better memory utilization, since
-memory for the vrings is now only allocated when the relevant remote
-processor is being used.
+Sure, appended.
 
-Additionally, this approach also makes recovery of a (crashing)
-remote processor easier: one just needs to remove the relevant
-vdevs, and the entire vrings cleanup takes place automagically.
+I don't think it makes much difference, though.  In case it does, please feel
+free to post a patch changing pm_verb() along this line.
 
-Tested-by: Fernando Guzman Lugo <fernando.lugo@ti.com>
-Signed-off-by: Ohad Ben-Cohen <ohad@wizery.com>
+> In general: nice work, thanks!
+
+Well, thanks! :-)
+
 ---
- drivers/remoteproc/remoteproc_core.c     |  109 +++++++++++++++---------------
- drivers/remoteproc/remoteproc_internal.h |    2 +
- drivers/remoteproc/remoteproc_virtio.c   |   13 +++-
- 3 files changed, 67 insertions(+), 57 deletions(-)
+From: Rafael J. Wysocki <rjw@sisk.pl>
+Subject: ACPI / PM: Fix error messages in drivers/acpi/bus.c
 
-diff --git a/drivers/remoteproc/remoteproc_core.c b/drivers/remoteproc/remoteproc_core.c
-index e756a0d..40e2b2d 100644
---- a/drivers/remoteproc/remoteproc_core.c
-+++ b/drivers/remoteproc/remoteproc_core.c
-@@ -279,34 +279,17 @@ rproc_load_segments(struct rproc *rproc, const u8 *elf_data, size_t len)
- 	return ret;
- }
+After recent changes of the ACPI device low-power states definitions
+kernel messages in drivers/acpi/bus.c need to be updated so that they
+include the correct names of the states in question (currently is
+"D3" for D3hot and "D4" for D3cold, which is incorrect).
+
+Signed-off-by: Rafael J. Wysocki <rjw@sisk.pl>
+---
+ drivers/acpi/bus.c |   37 ++++++++++++++++++++++++++++---------
+ 1 file changed, 28 insertions(+), 9 deletions(-)
+
+Index: linux/drivers/acpi/bus.c
+===================================================================
+--- linux.orig/drivers/acpi/bus.c
++++ linux/drivers/acpi/bus.c
+@@ -182,6 +182,24 @@ EXPORT_SYMBOL(acpi_bus_get_private_data)
+                                  Power Management
+    -------------------------------------------------------------------------- */
  
--static int
--__rproc_handle_vring(struct rproc_vdev *rvdev, struct fw_rsc_vdev *rsc, int i)
-+int rproc_alloc_vring(struct rproc_vdev *rvdev, int i)
- {
- 	struct rproc *rproc = rvdev->rproc;
- 	struct device *dev = rproc->dev;
--	struct fw_rsc_vdev_vring *vring = &rsc->vring[i];
-+	struct rproc_vring *rvring = &rvdev->vring[i];
- 	dma_addr_t dma;
- 	void *va;
- 	int ret, size, notifyid;
- 
--	dev_dbg(dev, "vdev rsc: vring%d: da %x, qsz %d, align %d\n",
--				i, vring->da, vring->num, vring->align);
--
--	/* make sure reserved bytes are zeroes */
--	if (vring->reserved) {
--		dev_err(dev, "vring rsc has non zero reserved bytes\n");
--		return -EINVAL;
--	}
--
--	/* verify queue size and vring alignment are sane */
--	if (!vring->num || !vring->align) {
--		dev_err(dev, "invalid qsz (%d) or alignment (%d)\n",
--						vring->num, vring->align);
--		return -EINVAL;
--	}
--
- 	/* actual size of vring (in bytes) */
--	size = PAGE_ALIGN(vring_size(vring->num, vring->align));
-+	size = PAGE_ALIGN(vring_size(rvring->len, rvring->align));
- 
- 	if (!idr_pre_get(&rproc->notifyids, GFP_KERNEL)) {
- 		dev_err(dev, "idr_pre_get failed\n");
-@@ -316,6 +299,7 @@ __rproc_handle_vring(struct rproc_vdev *rvdev, struct fw_rsc_vdev *rsc, int i)
- 	/*
- 	 * Allocate non-cacheable memory for the vring. In the future
- 	 * this call will also configure the IOMMU for us
-+	 * TODO: let the rproc know the da of this vring
- 	 */
- 	va = dma_alloc_coherent(dev, size, &dma, GFP_KERNEL);
- 	if (!va) {
-@@ -323,44 +307,67 @@ __rproc_handle_vring(struct rproc_vdev *rvdev, struct fw_rsc_vdev *rsc, int i)
- 		return -EINVAL;
- 	}
- 
--	/* assign an rproc-wide unique index for this vring */
--	/* TODO: assign a notifyid for rvdev updates as well */
--	ret = idr_get_new(&rproc->notifyids, &rvdev->vring[i], &notifyid);
-+	/*
-+	 * Assign an rproc-wide unique index for this vring
-+	 * TODO: assign a notifyid for rvdev updates as well
-+	 * TODO: let the rproc know the notifyid of this vring
-+	 * TODO: support predefined notifyids (via resource table)
-+	 */
-+	ret = idr_get_new(&rproc->notifyids, rvring, &notifyid);
- 	if (ret) {
- 		dev_err(dev, "idr_get_new failed: %d\n", ret);
- 		dma_free_coherent(dev, size, va, dma);
- 		return ret;
- 	}
- 
--	/* let the rproc know the da and notifyid of this vring */
--	/* TODO: expose this to remote processor */
--	vring->da = dma;
--	vring->notifyid = notifyid;
--
- 	dev_dbg(dev, "vring%d: va %p dma %x size %x idr %d\n", i, va,
- 					dma, size, notifyid);
- 
--	rvdev->vring[i].len = vring->num;
--	rvdev->vring[i].align = vring->align;
--	rvdev->vring[i].va = va;
--	rvdev->vring[i].dma = dma;
--	rvdev->vring[i].notifyid = notifyid;
--	rvdev->vring[i].rvdev = rvdev;
-+	rvring->va = va;
-+	rvring->dma = dma;
-+	rvring->notifyid = notifyid;
- 
- 	return 0;
- }
- 
--static void __rproc_free_vrings(struct rproc_vdev *rvdev, int i)
-+static int
-+rproc_parse_vring(struct rproc_vdev *rvdev, struct fw_rsc_vdev *rsc, int i)
- {
- 	struct rproc *rproc = rvdev->rproc;
-+	struct device *dev = rproc->dev;
-+	struct fw_rsc_vdev_vring *vring = &rsc->vring[i];
-+	struct rproc_vring *rvring = &rvdev->vring[i];
- 
--	for (i--; i >= 0; i--) {
--		struct rproc_vring *rvring = &rvdev->vring[i];
--		int size = PAGE_ALIGN(vring_size(rvring->len, rvring->align));
-+	dev_dbg(dev, "vdev rsc: vring%d: da %x, qsz %d, align %d\n",
-+				i, vring->da, vring->num, vring->align);
-+
-+	/* make sure reserved bytes are zeroes */
-+	if (vring->reserved) {
-+		dev_err(dev, "vring rsc has non zero reserved bytes\n");
-+		return -EINVAL;
++static const char *state_string(int state)
++{
++	switch (state) {
++	case ACPI_STATE_D0:
++		return "D0";
++	case ACPI_STATE_D1:
++		return "D1";
++	case ACPI_STATE_D2:
++		return "D2";
++	case ACPI_STATE_D3_HOT:
++		return "D3hot";
++	case ACPI_STATE_D3_COLD:
++		return "D3";
++	default:
++		return "(unknown)";
 +	}
- 
--		dma_free_coherent(rproc->dev, size, rvring->va, rvring->dma);
--		idr_remove(&rproc->notifyids, rvring->notifyid);
-+	/* verify queue size and vring alignment are sane */
-+	if (!vring->num || !vring->align) {
-+		dev_err(dev, "invalid qsz (%d) or alignment (%d)\n",
-+						vring->num, vring->align);
-+		return -EINVAL;
- 	}
-+
-+	rvring->len = vring->num;
-+	rvring->align = vring->align;
-+	rvring->rvdev = rvdev;
-+
-+	return 0;
 +}
 +
-+void rproc_free_vring(struct rproc_vring *rvring)
-+{
-+	int size = PAGE_ALIGN(vring_size(rvring->len, rvring->align));
-+	struct rproc *rproc = rvring->rvdev->rproc;
-+
-+	dma_free_coherent(rproc->dev, size, rvring->va, rvring->dma);
-+	idr_remove(&rproc->notifyids, rvring->notifyid);
- }
- 
- /**
-@@ -425,11 +432,11 @@ static int rproc_handle_vdev(struct rproc *rproc, struct fw_rsc_vdev *rsc,
- 
- 	rvdev->rproc = rproc;
- 
--	/* allocate the vrings */
-+	/* parse the vrings */
- 	for (i = 0; i < rsc->num_of_vrings; i++) {
--		ret = __rproc_handle_vring(rvdev, rsc, i);
-+		ret = rproc_parse_vring(rvdev, rsc, i);
- 		if (ret)
--			goto free_vrings;
-+			goto free_rvdev;
+ static int __acpi_bus_get_power(struct acpi_device *device, int *state)
+ {
+ 	int result = 0;
+@@ -215,8 +233,8 @@ static int __acpi_bus_get_power(struct a
+ 			device->parent->power.state : ACPI_STATE_D0;
  	}
  
- 	/* remember the device features */
-@@ -440,12 +447,11 @@ static int rproc_handle_vdev(struct rproc *rproc, struct fw_rsc_vdev *rsc,
- 	/* it is now safe to add the virtio device */
- 	ret = rproc_add_virtio_dev(rvdev, rsc->id);
- 	if (ret)
--		goto free_vrings;
-+		goto free_rvdev;
+-	ACPI_DEBUG_PRINT((ACPI_DB_INFO, "Device [%s] power state is D%d\n",
+-			  device->pnp.bus_id, *state));
++	ACPI_DEBUG_PRINT((ACPI_DB_INFO, "Device [%s] power state is %s\n",
++			  device->pnp.bus_id, state_string(*state)));
  
  	return 0;
- 
--free_vrings:
--	__rproc_free_vrings(rvdev, i);
-+free_rvdev:
- 	kfree(rvdev);
- 	return ret;
  }
-@@ -1265,18 +1271,11 @@ EXPORT_SYMBOL(rproc_shutdown);
- void rproc_release(struct kref *kref)
- {
- 	struct rproc *rproc = container_of(kref, struct rproc, refcount);
--	struct rproc_vdev *rvdev, *rvtmp;
+@@ -234,13 +252,14 @@ static int __acpi_bus_set_power(struct a
+ 	/* Make sure this is a valid target state */
  
- 	dev_info(rproc->dev, "removing %s\n", rproc->name);
- 
- 	rproc_delete_debug_dir(rproc);
- 
--	/* clean up remote vdev entries */
--	list_for_each_entry_safe(rvdev, rvtmp, &rproc->rvdevs, node) {
--		__rproc_free_vrings(rvdev, RVDEV_NUM_VRINGS);
--		list_del(&rvdev->node);
--	}
--
- 	/*
- 	 * At this point no one holds a reference to rproc anymore,
- 	 * so we can directly unroll rproc_alloc()
-@@ -1547,7 +1546,7 @@ EXPORT_SYMBOL(rproc_free);
-  */
- int rproc_unregister(struct rproc *rproc)
- {
--	struct rproc_vdev *rvdev;
-+	struct rproc_vdev *rvdev, *tmp;
- 
- 	if (!rproc)
- 		return -EINVAL;
-@@ -1556,7 +1555,7 @@ int rproc_unregister(struct rproc *rproc)
- 	wait_for_completion(&rproc->firmware_loading_complete);
- 
- 	/* clean up remote vdev entries */
--	list_for_each_entry(rvdev, &rproc->rvdevs, node)
-+	list_for_each_entry_safe(rvdev, tmp, &rproc->rvdevs, node)
- 		rproc_remove_virtio_dev(rvdev);
- 
- 	/* the rproc is downref'ed as soon as it's removed from the klist */
-diff --git a/drivers/remoteproc/remoteproc_internal.h b/drivers/remoteproc/remoteproc_internal.h
-index 9f336d6..f4957cf 100644
---- a/drivers/remoteproc/remoteproc_internal.h
-+++ b/drivers/remoteproc/remoteproc_internal.h
-@@ -41,4 +41,6 @@ void rproc_create_debug_dir(struct rproc *rproc);
- void rproc_init_debugfs(void);
- void rproc_exit_debugfs(void);
- 
-+void rproc_free_vring(struct rproc_vring *rvring);
-+int rproc_alloc_vring(struct rproc_vdev *rvdev, int i);
- #endif /* REMOTEPROC_INTERNAL_H */
-diff --git a/drivers/remoteproc/remoteproc_virtio.c b/drivers/remoteproc/remoteproc_virtio.c
-index ecf6121..26a7144 100644
---- a/drivers/remoteproc/remoteproc_virtio.c
-+++ b/drivers/remoteproc/remoteproc_virtio.c
-@@ -77,14 +77,17 @@ static struct virtqueue *rp_find_vq(struct virtio_device *vdev,
- 	struct rproc_vring *rvring;
- 	struct virtqueue *vq;
- 	void *addr;
--	int len, size;
-+	int len, size, ret;
- 
- 	/* we're temporarily limited to two virtqueues per rvdev */
- 	if (id >= ARRAY_SIZE(rvdev->vring))
- 		return ERR_PTR(-EINVAL);
- 
--	rvring = &rvdev->vring[id];
-+	ret = rproc_alloc_vring(rvdev, id);
-+	if (ret)
-+		return ERR_PTR(ret);
- 
-+	rvring = &rvdev->vring[id];
- 	addr = rvring->va;
- 	len = rvring->len;
- 
-@@ -103,6 +106,7 @@ static struct virtqueue *rp_find_vq(struct virtio_device *vdev,
- 					rproc_virtio_notify, callback, name);
- 	if (!vq) {
- 		dev_err(rproc->dev, "vring_new_virtqueue %s failed\n", name);
-+		rproc_free_vring(rvring);
- 		return ERR_PTR(-ENOMEM);
+ 	if (state == device->power.state) {
+-		ACPI_DEBUG_PRINT((ACPI_DB_INFO, "Device is already at D%d\n",
+-				  state));
++		ACPI_DEBUG_PRINT((ACPI_DB_INFO, "Device is already at %s\n",
++				  state_string(state)));
+ 		return 0;
  	}
  
-@@ -125,6 +129,7 @@ static void rproc_virtio_del_vqs(struct virtio_device *vdev)
- 		rvring = vq->priv;
- 		rvring->vq = NULL;
- 		vring_del_virtqueue(vq);
-+		rproc_free_vring(rvring);
+ 	if (!device->power.states[state].flags.valid) {
+-		printk(KERN_WARNING PREFIX "Device does not support D%d\n", state);
++		printk(KERN_WARNING PREFIX "Device does not support %s\n",
++		       state_string(state));
+ 		return -ENODEV;
  	}
- }
+ 	if (device->parent && (state < device->parent->power.state)) {
+@@ -294,13 +313,13 @@ static int __acpi_bus_set_power(struct a
+       end:
+ 	if (result)
+ 		printk(KERN_WARNING PREFIX
+-			      "Device [%s] failed to transition to D%d\n",
+-			      device->pnp.bus_id, state);
++			      "Device [%s] failed to transition to %s\n",
++			      device->pnp.bus_id, state_string(state));
+ 	else {
+ 		device->power.state = state;
+ 		ACPI_DEBUG_PRINT((ACPI_DB_INFO,
+-				  "Device [%s] transitioned to D%d\n",
+-				  device->pnp.bus_id, state));
++				  "Device [%s] transitioned to %s\n",
++				  device->pnp.bus_id, state_string(state)));
+ 	}
  
-@@ -228,8 +233,12 @@ static struct virtio_config_ops rproc_virtio_config_ops = {
- static void rproc_vdev_release(struct device *dev)
- {
- 	struct virtio_device *vdev = dev_to_virtio(dev);
-+	struct rproc_vdev *rvdev = vdev_to_rvdev(vdev);
- 	struct rproc *rproc = vdev_to_rproc(vdev);
- 
-+	list_del(&rvdev->node);
-+	kfree(rvdev);
-+
- 	kref_put(&rproc->refcount, rproc_release);
- }
- 
--- 
-1.7.5.4
-
+ 	return result;
