@@ -1,158 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752104Ab2ETGOq (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 20 May 2012 02:14:46 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:46562 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751422Ab2ETGOo (ORCPT
+	id S1752212Ab2ETHY1 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 20 May 2012 03:24:27 -0400
+Received: from hqemgate04.nvidia.com ([216.228.121.35]:6305 "EHLO
+	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751096Ab2ETHYZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 20 May 2012 02:14:44 -0400
-From: Grant Likely <grant.likely@secretlab.ca>
-Subject: Re: [PATCH 3/3] eeprom/of: Add device tree bindings to at25.
-To: David Daney <ddaney.cavm@gmail.com>, devicetree-discuss@lists.ozlabs.org,
-        Rob Herring <rob.herring@calxeda.com>,
-        spi-devel-general@lists.sourceforge.net
-Cc: linux-kernel@vger.kernel.org, linux-mips@linux-mips.org,
-        linux-doc@vger.kernel.org, David Daney <david.daney@cavium.com>,
-        Michael Hennerich <michael.hennerich@analog.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Axel Lin <axel.lin@gmail.com>
-In-Reply-To: <1336773923-17866-4-git-send-email-ddaney.cavm@gmail.com>
-References: <1336773923-17866-1-git-send-email-ddaney.cavm@gmail.com> <1336773923-17866-4-git-send-email-ddaney.cavm@gmail.com>
-Date: Sun, 20 May 2012 00:14:41 -0600
-Message-Id: <20120520061441.D5C9B3E03B8@localhost>
+	Sun, 20 May 2012 03:24:25 -0400
+X-PGP-Universal: processed;
+	by hqnvupgp07.nvidia.com on Sun, 20 May 2012 00:23:10 -0700
+Message-ID: <4FB89AEF.3080107@nvidia.com>
+Date: Sun, 20 May 2012 12:49:11 +0530
+From: Laxman Dewangan <ldewangan@nvidia.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101208 Thunderbird/3.1.7
+MIME-Version: 1.0
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>
+CC: "grant.likely@secretlab.ca" <grant.likely@secretlab.ca>,
+        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
+        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
+        "lrg@ti.com" <lrg@ti.com>, Stephen Warren <swarren@nvidia.com>,
+        "olof@lixom.net" <olof@lixom.net>,
+        "devicetree-discuss@lists.ozlabs.org" 
+	<devicetree-discuss@lists.ozlabs.org>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>
+Subject: Re: [PATCH V3 2/4] regulator: tps62360: add dt support
+References: <1336718325-8372-1-git-send-email-ldewangan@nvidia.com> <1336718325-8372-3-git-send-email-ldewangan@nvidia.com> <20120511145833.GG3960@opensource.wolfsonmicro.com> <4FAD31A5.7090006@nvidia.com> <20120511213001.GD29835@opensource.wolfsonmicro.com>
+In-Reply-To: <20120511213001.GD29835@opensource.wolfsonmicro.com>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 11 May 2012 15:05:23 -0700, David Daney <ddaney.cavm@gmail.com> wrote:
-> From: David Daney <david.daney@cavium.com>
-> 
-> We can extract the "pagesize", "size" and "address-width" from the
-> device tree so that SPI eeproms can be fully specified in the device
-> tree.
-> 
-> Also add a MODULE_DEVICE_TABLE so the drivers can be automatically bound.
-> 
-> Signed-off-by: David Daney <david.daney@cavium.com>
-> Cc: Michael Hennerich <michael.hennerich@analog.com>
-> Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-> Cc: Axel Lin <axel.lin@gmail.com>
-> ---
->  drivers/misc/eeprom/at25.c |   61 +++++++++++++++++++++++++++++++++++++++++---
+On Saturday 12 May 2012 03:00 AM, Mark Brown wrote:
+> * PGP Signed by an unknown key
+>
+> On Fri, May 11, 2012 at 09:05:01PM +0530, Laxman Dewangan wrote:
+>
+>> I think this is not require to enable always otherwise there may be
+>> power dissipation from this path always, just when we off the rail
+>> (disable rail or when go to shutdown so that the voltage output can
+>> go down faster).
+>> Should we add "unsigned en_discharge:1" in regulator init data but
+>> did not get how core driver can use this flag specially when
+>> shutdown?
+> Oh, now you say this I think I remember discussing this with you before!
+> This is pretty unusual for such hardware.  Normally there's something in
+> the digital block so that the discharge is only enabled if the regulator
+> is disabled, if it's enabled then the discharge would automatically be
+> taken off since actively discharging while enabled doesn't make sense
+> and may in fact be actively harmful.
+>
 
-Documentation on binding?  It needs to be there before merging.
+Just to share  here with our new pmu which we got recently, the 
+discharge path behavior is exactly same as what Mark mentioned
+It need to be enable always. The pmu auto disable the DISC path in 
+normal operation so there is no power dissipation but when it detects 
+the en_bit is written 0 or any external control is making the rail to be 
+off, it automatically turn on the path so that ramp-down can happen faster.
+Just we need to enable this always.
 
-g.
+> If the hardware doesn't do that then I'd expect the driver to take care
+> of this if it implements the framework feature (once the framework
+> feature is added).
 
->  1 files changed, 57 insertions(+), 4 deletions(-)
-> 
-> diff --git a/drivers/misc/eeprom/at25.c b/drivers/misc/eeprom/at25.c
-> index 01ab3c9..609ee72 100644
-> --- a/drivers/misc/eeprom/at25.c
-> +++ b/drivers/misc/eeprom/at25.c
-> @@ -16,6 +16,7 @@
->  #include <linux/delay.h>
->  #include <linux/device.h>
->  #include <linux/sched.h>
-> +#include <linux/of.h>
->  
->  #include <linux/spi/spi.h>
->  #include <linux/spi/eeprom.h>
-> @@ -293,6 +294,9 @@ static int at25_probe(struct spi_device *spi)
->  {
->  	struct at25_data	*at25 = NULL;
->  	const struct spi_eeprom *chip;
-> +#ifdef CONFIG_OF
-> +	struct spi_eeprom of_chip;
-> +#endif
->  	int			err;
->  	int			sr;
->  	int			addrlen;
-> @@ -300,9 +304,51 @@ static int at25_probe(struct spi_device *spi)
->  	/* Chip description */
->  	chip = spi->dev.platform_data;
->  	if (!chip) {
-> -		dev_dbg(&spi->dev, "no chip description\n");
-> -		err = -ENODEV;
-> -		goto fail;
-> +#ifdef CONFIG_OF
-> +		if (spi->dev.of_node) {
-> +			u32 val;
-> +			memset(&of_chip, 0, sizeof(of_chip));
-> +			if (of_property_read_u32(spi->dev.of_node, "pagesize", &val)) {
-> +				dev_dbg(&spi->dev, "no \"pagesize\" property\n");
-> +				err = -ENODEV;
-> +				goto fail;
-> +			}
-> +			of_chip.page_size = val;
-> +			if (of_property_read_u32(spi->dev.of_node, "size", &val)) {
-> +				dev_dbg(&spi->dev, "no \"size\" property\n");
-> +				err = -ENODEV;
-> +				goto fail;
-> +			}
-> +			of_chip.byte_len = val;
-> +			if (of_property_read_u32(spi->dev.of_node, "address-width", &val)) {
-> +				dev_dbg(&spi->dev, "no \"address-width\" property\n");
-> +				err = -ENODEV;
-> +				goto fail;
-> +			}
-> +			switch (val) {
-> +			case 8:
-> +				of_chip.flags |= EE_ADDR1;
-> +				break;
-> +			case 16:
-> +				of_chip.flags |= EE_ADDR2;
-> +				break;
-> +			case 24:
-> +				of_chip.flags |= EE_ADDR3;
-> +				break;
-> +			default:
-> +				dev_dbg(&spi->dev, "bad \"address-width\" property: %u\n", val);
-> +				err = -EINVAL;
-> +				goto fail;
-> +			}
-> +			strlcpy(of_chip.name, spi->dev.of_node->name, sizeof(of_chip.name));
-> +			chip = &of_chip;
-> +		} else
-> +#endif
-> +		{
-> +			dev_dbg(&spi->dev, "no chip description\n");
-> +			err = -ENODEV;
-> +			goto fail;
-> +		}
->  	}
->  
->  	/* For now we only support 8/16/24 bit addressing */
-> @@ -396,11 +442,19 @@ static int __devexit at25_remove(struct spi_device *spi)
->  
->  /*-------------------------------------------------------------------------*/
->  
-> +static const struct spi_device_id at25_id[] = {
-> +	{"at25", 0},
-> +	{"m95256", 0},
-> +	{ }
-> +};
-> +MODULE_DEVICE_TABLE(spi, at25_id);
-> +
->  static struct spi_driver at25_driver = {
->  	.driver = {
->  		.name		= "at25",
->  		.owner		= THIS_MODULE,
->  	},
-> +	.id_table	= at25_id,
->  	.probe		= at25_probe,
->  	.remove		= __devexit_p(at25_remove),
->  };
-> @@ -410,4 +464,3 @@ module_spi_driver(at25_driver);
->  MODULE_DESCRIPTION("Driver for most SPI EEPROMs");
->  MODULE_AUTHOR("David Brownell");
->  MODULE_LICENSE("GPL");
-> -MODULE_ALIAS("spi:at25");
-> -- 
-> 1.7.2.3
-> 
-
--- 
-Grant Likely, B.Sc, P.Eng.
-Secret Lab Technologies, Ltd.
