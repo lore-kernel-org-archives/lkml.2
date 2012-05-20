@@ -1,53 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753774Ab2ETLmc (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 20 May 2012 07:42:32 -0400
-Received: from static.78-46-68-141.clients.your-server.de ([78.46.68.141]:52755
-	"HELO eristoteles.iwoars.net" rhost-flags-OK-FAIL-OK-FAIL)
-	by vger.kernel.org with SMTP id S1751843Ab2ETLmb (ORCPT
+	id S1753955Ab2ETL74 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 20 May 2012 07:59:56 -0400
+Received: from mail-ey0-f174.google.com ([209.85.215.174]:41567 "EHLO
+	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753193Ab2ETL7y (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 20 May 2012 07:42:31 -0400
-Date: Sun, 20 May 2012 13:42:29 +0200 (CEST)
-From: Joel Reardon <joel@clambassador.com>
-X-X-Sender: joel@eristoteles.iwoars.net
-To: Artem Bityutskiy <dedekind1@gmail.com>
-cc: linux-mtd@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: [patch] UBI: add in hex the value for UBI_INTERNAL_VOL_START to
- comment
-Message-ID: <alpine.DEB.2.00.1205201340410.26953@eristoteles.iwoars.net>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	Sun, 20 May 2012 07:59:54 -0400
+From: Eldad Zack <eldad@fogrefinery.com>
+To: "David S. Miller" <davem@davemloft.net>,
+        Alexey Kuznetsov <kuznet@ms2.inr.ac.ru>,
+        James Morris <jmorris@namei.org>,
+        Hideaki YOSHIFUJI <yoshfuji@linux-ipv6.org>,
+        Patrick McHardy <kaber@trash.net>
+Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Eldad Zack <eldad@fogrefinery.com>
+Subject: [PATCH] ipv6/exthdrs: strict Pad1 and PadN check
+Date: Sun, 20 May 2012 13:59:33 +0200
+Message-Id: <1337515173-23648-1-git-send-email-eldad@fogrefinery.com>
+X-Mailer: git-send-email 1.7.10
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Explicitly provide the first internal volume ID value in the comment for
-UBI_INTERNAL_VOL_START. This allows developers who, when adding features
-related to volume ids and observe unexpected very large volume ids, to grep
-for the observed value in the source code and find out immediately that it is
-expected behaviour.
+The following tightens the padding check from commit
+c1412fce7eccae62b4de22494f6ab3ff8a90c0c6 :
 
-Signed-off-by: Joel Reardon <reardonj@inf.ethz.ch>
+* Take into account combinations of consecutive Pad1 and PadN.
+
+* Catch the corner case of when only padding is present in the
+  header, when the extention header length is 0 (i.e., 8 bytes).
+  In this case, the header would have exactly 6 bytes of padding:
+
++-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+:  Next Header  : Hdr Ext Len=0 :                               :
++-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+                               +
+:                        Padding (Pad1 or PadN)                 :
++-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+
+Signed-off-by: Eldad Zack <eldad@fogrefinery.com>
 ---
- drivers/mtd/ubi/ubi-media.h |    4 ++--
- 1 files changed, 2 insertions(+), 2 deletions(-)
+ net/ipv6/exthdrs.c |   15 ++++++++++++++-
+ 1 file changed, 14 insertions(+), 1 deletion(-)
 
-diff --git a/drivers/mtd/ubi/ubi-media.h b/drivers/mtd/ubi/ubi-media.h
-index 6fb8ec2..9dab25d 100644
---- a/drivers/mtd/ubi/ubi-media.h
-+++ b/drivers/mtd/ubi/ubi-media.h
-@@ -298,8 +298,8 @@ struct ubi_vid_hdr {
- #define UBI_INT_VOL_COUNT 1
-
- /*
-- * Starting ID of internal volumes. There is reserved room for 4096 internal
-- * volumes.
-+ * Starting ID of internal volumes: 0x7fffefff.
-+ * There is reserved room for 4096 internal volumes.
-  */
- #define UBI_INTERNAL_VOL_START (0x7FFFFFFF - 4096)
-
+diff --git a/net/ipv6/exthdrs.c b/net/ipv6/exthdrs.c
+index 50ec95f..6447dc4 100644
+--- a/net/ipv6/exthdrs.c
++++ b/net/ipv6/exthdrs.c
+@@ -144,6 +144,7 @@ static bool ip6_parse_tlv(const struct tlvtype_proc *procs, struct sk_buff *skb)
+ 	const unsigned char *nh = skb_network_header(skb);
+ 	int off = skb_network_header_len(skb);
+ 	int len = (skb_transport_header(skb)[1] + 1) << 3;
++	int padlen = 0;
+ 
+ 	if (skb_transport_offset(skb) + len > skb_headlen(skb))
+ 		goto bad;
+@@ -158,6 +159,9 @@ static bool ip6_parse_tlv(const struct tlvtype_proc *procs, struct sk_buff *skb)
+ 		switch (nh[off]) {
+ 		case IPV6_TLV_PAD1:
+ 			optlen = 1;
++			padlen++;
++			if (padlen > 7)
++				goto bad;
+ 			break;
+ 
+ 		case IPV6_TLV_PADN:
+@@ -166,7 +170,8 @@ static bool ip6_parse_tlv(const struct tlvtype_proc *procs, struct sk_buff *skb)
+ 			 * of 8. 7 is therefore the highest valid value.
+ 			 * See also RFC 4942, Section 2.1.9.5.
+ 			 */
+-			if (optlen > 7)
++			padlen += optlen;
++			if (padlen > 7)
+ 				goto bad;
+ 			/* RFC 4942 recommends receiving hosts to
+ 			 * actively check PadN payload to contain
+@@ -195,11 +200,19 @@ static bool ip6_parse_tlv(const struct tlvtype_proc *procs, struct sk_buff *skb)
+ 				if (ip6_tlvopt_unknown(skb, off) == 0)
+ 					return false;
+ 			}
++			padlen = 0;
+ 			break;
+ 		}
+ 		off += optlen;
+ 		len -= optlen;
+ 	}
++	/* This case will not be caught by above check since its padding
++	 * length is smaller than 7:
++	 * 1 byte NH + 1 byte Length + 6 bytes Padding
++	 */
++	if ((padlen == 6) && ((off - skb_network_header_len(skb)) == 8))
++		goto bad;
++
+ 	if (len == 0)
+ 		return true;
+ bad:
 -- 
-1.7.5.4
+1.7.10
 
