@@ -1,73 +1,130 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932326Ab2EUJIu (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 May 2012 05:08:50 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:38300 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932215Ab2EUJIr (ORCPT
+	id S932337Ab2EUJJb (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 May 2012 05:09:31 -0400
+Received: from cn.fujitsu.com ([222.73.24.84]:32900 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1756871Ab2EUJJ3 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 May 2012 05:08:47 -0400
-Date: Mon, 21 May 2012 02:08:34 -0700
-From: tip-bot for Anna-Maria Gleixner <anna-maria@glx-um.de>
-Message-ID: <tip-6e24f31eab6af44043e9d432bde415c1b4ca1a9e@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
-        mattst88@gmail.com, tglx@linutronix.de, anna-maria@glx-um.de
-Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        mattst88@gmail.com, tglx@linutronix.de, anna-maria@glx-um.de
-In-Reply-To: <20120518163107.510619939@glx-um.de>
-References: <20120518163107.510619939@glx-um.de>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:timers/core] alpha: Use generic time config
-Git-Commit-ID: 6e24f31eab6af44043e9d432bde415c1b4ca1a9e
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
-  to get blacklisted from these emails
+	Mon, 21 May 2012 05:09:29 -0400
+X-IronPort-AV: E=Sophos;i="4.75,630,1330876800"; 
+   d="scan'208";a="5002308"
+Message-ID: <4FBA05F6.8070804@cn.fujitsu.com>
+Date: Mon, 21 May 2012 17:08:06 +0800
+From: Yanfei Zhang <zhangyanfei@cn.fujitsu.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100413 Fedora/3.0.4-2.fc13 Thunderbird/3.0.4
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Mon, 21 May 2012 02:08:39 -0700 (PDT)
+To: Avi Kivity <avi@redhat.com>
+CC: mtosatti@redhat.com, ebiederm@xmission.com, luto@mit.edu,
+        Joerg Roedel <joerg.roedel@amd.com>, dzickus@redhat.com,
+        paul.gortmaker@windriver.com, ludwig.nussel@suse.de,
+        linux-kernel@vger.kernel.org, kvm@vger.kernel.org,
+        kexec@lists.infradead.org, Greg KH <gregkh@linuxfoundation.org>
+Subject: Re: [PATCH v2 0/5] Export offsets of VMCS fields as note information
+ for kdump
+References: <4FB35C48.30708@cn.fujitsu.com> <4FB92D5A.3060507@redhat.com> <4FB9A92D.7050108@cn.fujitsu.com> <4FB9FE08.4050905@redhat.com>
+In-Reply-To: <4FB9FE08.4050905@redhat.com>
+X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2012/05/21 17:08:03,
+	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2012/05/21 17:08:04
+Content-Type: text/plain; charset=GB2312
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  6e24f31eab6af44043e9d432bde415c1b4ca1a9e
-Gitweb:     http://git.kernel.org/tip/6e24f31eab6af44043e9d432bde415c1b4ca1a9e
-Author:     Anna-Maria Gleixner <anna-maria@glx-um.de>
-AuthorDate: Fri, 18 May 2012 16:45:56 +0000
-Committer:  Thomas Gleixner <tglx@linutronix.de>
-CommitDate: Mon, 21 May 2012 11:01:41 +0200
+于 2012年05月21日 16:34, Avi Kivity 写道:
+> On 05/21/2012 05:32 AM, Yanfei Zhang wrote:
+>> 于 2012年05月21日 01:43, Avi Kivity 写道:
+>>> On 05/16/2012 10:50 AM, zhangyanfei wrote:
+>>>> This patch set exports offsets of VMCS fields as note information for
+>>>> kdump. We call it VMCSINFO. The purpose of VMCSINFO is to retrieve
+>>>> runtime state of guest machine image, such as registers, in host
+>>>> machine's crash dump as VMCS format. The problem is that VMCS internal
+>>>> is hidden by Intel in its specification. So, we slove this problem
+>>>> by reverse engineering implemented in this patch set. The VMCSINFO
+>>>> is exported via sysfs to kexec-tools just like VMCOREINFO.
+>>>>
+>>>> Here are two usercases for two features that we want.
+>>>>
+>>>> 1) Create guest machine's crash dumpfile from host machine's crash dumpfile
+>>>>
+>>>> In general, we want to use this feature on failure analysis for the system
+>>>> where the processing depends on the communication between host and guest
+>>>> machines to look into the system from both machines's viewpoints.
+>>>>
+>>>> As a concrete situation, consider where there's heartbeat monitoring
+>>>> feature on the guest machine's side, where we need to determine in
+>>>> which machine side the cause of heartbeat stop lies. In our actual
+>>>> experiments, we encountered such situation and we found the cause of
+>>>> the bug was in host's process schedular so guest machine's vcpu stopped
+>>>> for a long time and then led to heartbeat stop.
+>>>>
+>>>> The module that judges heartbeat stop is on guest machine, so we need
+>>>> to debug guest machine's data. But if the cause lies in host machine
+>>>> side, we need to look into host machine's crash dump.
+>>>
+>>> Do you mean, that a heartbeat failure in the guest lead to host panic?
+>>>
+>>> My expectation is that a problem in the guest will cause the guest to
+>>> panic and perhaps produce a dump; the host will remain up.
+>>>
+>>
+>> The point is that before our investigation, we didn't know which side 
+>> leads to this buggy situation. Maybe a bug in host machine or the guest
+>> machine itself causes a heartbeat failure.
+> 
+> How can a guest bug cause a host panic?
+> 
+>> So we want to get both host machine's crash dump and guest machine's
+>> crash dump *at the same time*. Then we could use userspace tools to
+>> get guest machine crash dump from host machine's and analyse them
+>> separately to find which side causes the problem.
+>>
+> 
+> If the guest caused the problem, there would be no panic; therefore
+> there was a host bug.
+> 
 
-alpha: Use generic time config
+Yes, a guest bug cannot cause a host panic. When heartbeat stops in guest
+machine, we could trigger the host dump mechanism to work. This is because
+we want to get the status of both host and guest machine at the same time
+when heartbeat stops in guest machine. Then we can look for bug reasons
+from both host machine's and guest machine's views.
 
-Signed-off-by: Anna-Maria Gleixner <anna-maria@glx-um.de>
-Acked-by: Matt Turner <mattst88@gmail.com>
-Link: http://lkml.kernel.org/r/20120518163107.510619939@glx-um.de
-Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
----
- arch/alpha/Kconfig |    4 +---
- 1 files changed, 1 insertions(+), 3 deletions(-)
+>>>> Without this feature, we first create guest machine's dump and then
+>>>> create host mahine's, but there's only a short time between two
+>>>> processings, during which it's unlikely that buggy situation remains.
+>>>>
+>>>> So, we think the feature is useful to debug both guest machine's and
+>>>> host machine's sides at the same time, and expect we can make failure
+>>>> analysis efficiently.
+>>>>
+>>>> Of course, we believe this feature is commonly useful on the situation
+>>>> where guest machine doesn't work well due to something of host machine's.
+>>>>
+>>>> 2) Get offsets of VMCS information on the CPU running on the host machine
+>>>>
+>>>> If kdump doesn't work well, then it means we cannot use kvm API to get
+>>>> register values of guest machine and they are still left on its vmcs
+>>>> region. In the case, we use crash dump mechanism running outside of
+>>>> linux kernel, such as sadump, a firmware-based crash dump. Then VMCS
+>>>> information is then necessary.
+>>>
+>>> Shouldn't sadump then expose the VMCS offsets? Perhaps bundling them
+>>> into its dump file?
+>>>
+>>
+>> Firmware-based crash dump doesn't concern the os running on the machine.
+>> So it will not do any os handling when machine crashes.
+> 
+> Seems to me the VMCS offsets are OS independent.
+> 
+Hmm, you mean we could get VMCS offsets in sadump itself?
+But I think if we just export VMCS offsets in kernel, we could use the current
+existing dump tools with no or just very tiny change. I think this could be
+a more general mechanism than making changes in all kinds of dump tools.
 
-diff --git a/arch/alpha/Kconfig b/arch/alpha/Kconfig
-index 22e58a9..77ba268 100644
---- a/arch/alpha/Kconfig
-+++ b/arch/alpha/Kconfig
-@@ -15,6 +15,7 @@ config ALPHA
- 	select GENERIC_IRQ_SHOW
- 	select ARCH_WANT_OPTIONAL_GPIOLIB
- 	select ARCH_HAVE_NMI_SAFE_CMPXCHG
-+	select GENERIC_CMOS_UPDATE
- 	help
- 	  The Alpha is a 64-bit general-purpose processor designed and
- 	  marketed by the Digital Equipment Corporation of blessed memory,
-@@ -47,9 +48,6 @@ config GENERIC_CALIBRATE_DELAY
- 	bool
- 	default y
- 
--config GENERIC_CMOS_UPDATE
--        def_bool y
--
- config GENERIC_GPIO
- 	bool
- 
+Thanks
+Zhang Yanfei
