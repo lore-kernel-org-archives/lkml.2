@@ -1,128 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756980Ab2EUC1v (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 20 May 2012 22:27:51 -0400
-Received: from haggis.pcug.org.au ([203.10.76.10]:49774 "EHLO
-	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755985Ab2EUC1t (ORCPT
+	id S1757030Ab2EUC32 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 20 May 2012 22:29:28 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:59060 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756271Ab2EUC31 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 20 May 2012 22:27:49 -0400
-Date: Mon, 21 May 2012 12:27:38 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: David Miller <davem@davemloft.net>, <netdev@vger.kernel.org>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Parav Pandit <parav.pandit@emulex.com>,
-        Roland Dreier <roland@kernel.org>, linux-rdma@vger.kernel.org,
-        Somnath Kotur <somnath.kotur@emulex.com>,
-        Somnath Kotur <somnath.kotur@emulex.com>
-Subject: linux-next: manual merge of the net-next tree with the  tree
-Message-Id: <20120521122738.6efeece76ae43e7948a12d04@canb.auug.org.au>
-X-Mailer: Sylpheed 3.2.0beta7 (GTK+ 2.24.10; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Mon__21_May_2012_12_27_38_+1000_Rb256l.qXR3KiJys"
+	Sun, 20 May 2012 22:29:27 -0400
+Date: Sun, 20 May 2012 19:29:21 -0700
+From: Greg KH <gregkh@linuxfoundation.org>
+To: Chanwoo Choi <cw00.choi@samsung.com>
+Cc: broonie@opensource.wolfsonmicro.com, thomas.abraham@linaro.org,
+        grant.likely@secretlab.ca, sameo@linux.intel.com,
+        myungjoo.ham@samsung.com, kyungmin.park@samsung.com,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v3 1/2] mfd: add irq domain support for max8997 interrupts
+Message-ID: <20120521022921.GA13084@kroah.com>
+References: <1337154104-22036-1-git-send-email-cw00.choi@samsung.com>
+ <20120518235916.GA14015@kroah.com>
+ <4FB97E22.7090604@samsung.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <4FB97E22.7090604@samsung.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Mon__21_May_2012_12_27_38_+1000_Rb256l.qXR3KiJys
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On Mon, May 21, 2012 at 08:28:34AM +0900, Chanwoo Choi wrote:
+> Hi Greg,
+> 
+> On 05/19/2012 08:59 AM, Greg KH wrote:
+> 
+> > On Wed, May 16, 2012 at 04:41:44PM +0900, Chanwoo Choi wrote:
+> >> From: Thomas Abraham <thomas.abraham@linaro.org>
+> >>
+> >> Add irq domain support for max8997 interrupts. The reverse mapping method
+> >> used is linear mapping since the sub-drivers of max8997 such as regulator
+> >> and charger drivers can use the max8997 irq_domain to get the linux irq
+> >> number for max8997 interrupts. All uses of irq_base in platform data and
+> >> max8997 driver private data are removed.
+> >>
+> >> Signed-off-by: Thomas Abraham <thomas.abraham@linaro.org>
+> >> Acked-by: MyungJoo Ham <myungjoo.ham@samsung.com>
+> >> Acked-by: Grant Likely <grant.likely@secretlab.ca>
+> >> Acked-by: Samuel Ortiz <sameo@linux.intel.com>
+> >> Signed-off-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
+> >> 	[Fix two bug which set max8997->irq_domain and correct wrong parameter]
+> >> Signed-off-by: Chanwoo Choi <cw00.choi@samsung.com>
+> >> Signed-off-by: Kyungmin Park <kyungmin.park@samsung.com>
+> > 
+> > Same problem as before, I apply this and it breaks the build with the
+> > following errors:
+> > 
+> > drivers/extcon/extcon-max8997.c: In function ‘max8997_muic_irq_work’:
+> > drivers/extcon/extcon-max8997.c:350:36: error: ‘struct max8997_dev’ has no member named ‘irq_base’
+> > drivers/extcon/extcon-max8997.c: In function ‘max8997_muic_probe’:
+> > drivers/extcon/extcon-max8997.c:452:35: error: ‘struct max8997_platform_data’ has no member named ‘irq_base’
+> > drivers/extcon/extcon-max8997.c: In function ‘max8997_muic_remove’:
+> > drivers/extcon/extcon-max8997.c:514:19: error: ‘struct max8997_dev’ has no member named ‘irq_base’
+> > 
+> > Please fix.
+> 
+> I posted patchset including below two patch. The second patch fix that
+> extcon-max8997 driver use irq_domain instead of irq_base field in
+> 'struct max8997_dev'.
+> 
+> Please apply second patch when test this patchset.
 
-Hi all,
+No, you can not break the build at any point in the patch process,
+sorry.
 
-Today's linux-next merge of the net-next tree got a conflict in
-drivers/net/ethernet/emulex/benet/be.h between commit c72adfd767af
-("be2net: Add functionality to support RoCE driver") from the infiniband
-tree and commit 941a77d582c8 ("be2net: Fix to allow get/set of debug
-levels in the firmware") from the net-next tree.
+Please resend these so the build does not break, but note, you have
+missed the merge window for 3.5, as 3.4 is now out (well, will be in a
+few hours once kernel.org comes back from the dead...)
 
-Just context changes.  I fixed it up (see below) and carry the fix as
-necessary.
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
+So you will have to wait for 3.5-rc1 to be released before I can apply
+it.
 
-diff --cc drivers/net/ethernet/emulex/benet/be.h
-index 7bb2e97,ff4eb8f..0000000
---- a/drivers/net/ethernet/emulex/benet/be.h
-+++ b/drivers/net/ethernet/emulex/benet/be.h
-@@@ -32,9 -32,8 +32,9 @@@
-  #include <linux/u64_stats_sync.h>
- =20
-  #include "be_hw.h"
- +#include "be_roce.h"
- =20
-- #define DRV_VER			"4.2.116u"
-+ #define DRV_VER			"4.2.220u"
-  #define DRV_NAME		"be2net"
-  #define BE_NAME			"ServerEngines BladeEngine2 10Gbps NIC"
-  #define BE3_NAME		"ServerEngines BladeEngine3 10Gbps NIC"
-@@@ -379,22 -404,7 +406,18 @@@ struct be_adapter=20
-  	u32 rx_fc;		/* Rx flow control */
-  	u32 tx_fc;		/* Tx flow control */
-  	bool stats_cmd_sent;
-- 	int link_speed;
-- 	u8 port_type;
-- 	u8 transceiver;
-- 	u8 autoneg;
-  	u8 generation;		/* BladeEngine ASIC generation */
- +	u32 if_type;
- +	struct {
- +		u8 __iomem *base;	/* Door Bell */
- +		u32 size;
- +		u32 total_size;
- +		u64 io_addr;
- +	} roce_db;
- +	u32 num_msix_roce_vec;
- +	struct ocrdma_dev *ocrdma_dev;
- +	struct list_head entry;
- +
-  	u32 flash_status;
-  	struct completion flash_compl;
- =20
-@@@ -606,17 -603,7 +626,19 @@@ extern void be_link_status_update(struc
-  extern void be_parse_stats(struct be_adapter *adapter);
-  extern int be_load_fw(struct be_adapter *adapter, u8 *func);
-  extern bool be_is_wol_supported(struct be_adapter *adapter);
-+ extern bool be_pause_supported(struct be_adapter *adapter);
-+ extern u32 be_get_fw_log_level(struct be_adapter *adapter);
- =20
- +/*
- + * internal function to initialize-cleanup roce device.
- + */
- +extern void be_roce_dev_add(struct be_adapter *);
- +extern void be_roce_dev_remove(struct be_adapter *);
- +
- +/*
- + * internal function to open-close roce device during ifup-ifdown.
- + */
- +extern void be_roce_dev_open(struct be_adapter *);
- +extern void be_roce_dev_close(struct be_adapter *);
- +
-  #endif				/* BE_H */
+thanks,
 
---Signature=_Mon__21_May_2012_12_27_38_+1000_Rb256l.qXR3KiJys
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBCAAGBQJPuagaAAoJEECxmPOUX5FEKz0P/0Uxpxw019qrDslPLhaACCMq
-kVaH34tV1DtEPVEna3TzYmqqcVC1aIAshWWDDVDoeTDVolrKtDTzUTGdevZabSCs
-l5UpE01ddktmGfQEikbRLE7327t3sloi6wOI4ESgD6lHlxEpQ9o22Ef7ZxvM3jxf
-G3vBMXIZX/4pKvqlKnWJixInclyLdS6GnPtECUBA3CCClXPl7cxaEUhnU4ITCNGT
-qlWlA3Ffnb2WinFTPDnXW+9CUl9iOxU5YfVV1HZcGZPr6GwIfdYSEqnDAoq1ibnp
-E883+DCNPOfE2AF7+QcvgyxkhFviFUBB1XyUJyiMEviQ4Hc+fxD7uZSKlLn/imN/
-/zK0omFiAMwyHVpCDb771XEpH+ICb9FG1+LyCiyyWDyHW9YJuS0zkI2HThU1P+7Z
-TMBsx6OOY6eHEkupsM0O8YRBp9ExAF6cvSwOUS6k/y+dSK/liikYg7RV5bYwbrMM
-EeIIzkNrozmVC6wud9i3oSib9u4qzSgtE9ywjMrwVUytfZLKxi5eLzTtzawBVfl2
-DkEy+NYPxKiEuCJ1w4ZAmJyQRPH8PYfJ1nqNE0cbQAC1yFb3uaL3k32M1OLK/21h
-l1JfNmhf/yEahdHRzHWuHKVj6lf3g5e9aSrSQsTDxHxVzEayS/GmE5n9OR0lfiuZ
-6wy3QlAMA9/EaU8qhCXd
-=nvHC
------END PGP SIGNATURE-----
-
---Signature=_Mon__21_May_2012_12_27_38_+1000_Rb256l.qXR3KiJys--
+greg k-h
