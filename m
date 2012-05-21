@@ -1,367 +1,129 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755253Ab2EUHNR (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 May 2012 03:13:17 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:25736 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752401Ab2EUHNO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 May 2012 03:13:14 -0400
-From: Jiri Olsa <jolsa@redhat.com>
-To: acme@redhat.com, a.p.zijlstra@chello.nl, mingo@elte.hu, paulus@samba.org,
-        cjashfor@linux.vnet.ibm.com, fweisbec@gmail.com
-Cc: linux-kernel@vger.kernel.org, Jiri Olsa <jolsa@redhat.com>
-Subject: [PATCH 3/5] perf, tool: Use allocated list for each parsed event
-Date: Mon, 21 May 2012 09:12:51 +0200
-Message-Id: <1337584373-2741-4-git-send-email-jolsa@redhat.com>
-In-Reply-To: <1337584373-2741-1-git-send-email-jolsa@redhat.com>
-References: <1337584373-2741-1-git-send-email-jolsa@redhat.com>
+	id S1755442Ab2EUHPE (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 May 2012 03:15:04 -0400
+Received: from e28smtp04.in.ibm.com ([122.248.162.4]:60207 "EHLO
+	e28smtp04.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753075Ab2EUHPA (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 21 May 2012 03:15:00 -0400
+From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
+Subject: [PATCH] ftrace: Disable function tracing during suspend/resume and
+ hibernation, again
+To: rostedt@goodmis.org, rjw@sisk.pl
+Cc: mingo@kernel.org, lenb@kernel.org, pavel@ucw.cz, linux-pm@vger.kernel.org,
+        linux-kernel@vger.kernel.org, srivatsa.bhat@linux.vnet.ibm.com
+Date: Mon, 21 May 2012 12:27:14 +0530
+Message-ID: <20120521065651.4142.36898.stgit@srivatsabhat.in.ibm.com>
+User-Agent: StGIT/0.14.3
+MIME-Version: 1.0
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
+x-cbid: 12052106-5564-0000-0000-000002CBB973
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Switch from using static temporary event list into dynamically
-allocated one. This way we dont need to pass temp list to the
-parse_events_parse which makes the interface more clear.
+If function tracing is enabled for some of the low-level suspend/resume
+functions, it leads to triple fault during resume from suspend, ultimately
+ending up in a reboot instead of a resume (or a total refusal to come out
+of suspended state, on some machines).
 
-Signed-off-by: Jiri Olsa <jolsa@redhat.com>
+This issue was explained in more detail in commit f42ac38c59e0a03d (ftrace:
+disable tracing for suspend to ram). However, the changes made by that commit
+got reverted by commit cbe2f5a6e84eebb (tracing: allow tracing of
+suspend/resume & hibernation code again). So, unfortunately since things are
+not yet robust enough to allow tracing of low-level suspend/resume functions,
+suspend/resume is still broken when ftrace is enabled.
+
+So fix this by disabling function tracing during suspend/resume & hibernation.
+
+Signed-off-by: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
+Cc: stable@vger.kernel.org
 ---
- tools/perf/util/parse-events.c |   39 ++++++++++++++---------
- tools/perf/util/parse-events.h |   16 +++------
- tools/perf/util/parse-events.y |   69 ++++++++++++++++++++++++++++++---------
- 3 files changed, 83 insertions(+), 41 deletions(-)
 
-diff --git a/tools/perf/util/parse-events.c b/tools/perf/util/parse-events.c
-index 6704978..4025e18 100644
---- a/tools/perf/util/parse-events.c
-+++ b/tools/perf/util/parse-events.c
-@@ -26,8 +26,7 @@ struct event_symbol {
- #ifdef PARSER_DEBUG
- extern int parse_events_debug;
- #endif
--int parse_events_parse(struct list_head *list, struct list_head *list_tmp,
--		       int *idx);
-+int parse_events_parse(struct list_head *list, int *idx);
+ kernel/power/hibernate.c |    6 ++++++
+ kernel/power/suspend.c   |    3 +++
+ 2 files changed, 9 insertions(+), 0 deletions(-)
+
+diff --git a/kernel/power/hibernate.c b/kernel/power/hibernate.c
+index e09dfbf..52a1817 100644
+--- a/kernel/power/hibernate.c
++++ b/kernel/power/hibernate.c
+@@ -352,6 +352,7 @@ int hibernation_snapshot(int platform_mode)
+ 	}
  
- #define CHW(x) .type = PERF_TYPE_HARDWARE, .config = PERF_COUNT_HW_##x
- #define CSW(x) .type = PERF_TYPE_SOFTWARE, .config = PERF_COUNT_SW_##x
-@@ -358,20 +357,30 @@ const char *__event_name(int type, u64 config)
- 	return "unknown";
- }
+ 	suspend_console();
++	ftrace_stop();
+ 	pm_restrict_gfp_mask();
  
--static int add_event(struct list_head *list, int *idx,
-+static int add_event(struct list_head **_list, int *idx,
- 		     struct perf_event_attr *attr, char *name)
- {
- 	struct perf_evsel *evsel;
-+	struct list_head *list = *_list;
-+
-+	if (!list) {
-+		list = malloc(sizeof(*list));
-+		if (!list)
-+			return -ENOMEM;
-+		INIT_LIST_HEAD(list);
-+	}
+ 	error = dpm_suspend(PMSG_FREEZE);
+@@ -377,6 +378,7 @@ int hibernation_snapshot(int platform_mode)
+ 	if (error || !in_suspend)
+ 		pm_restore_gfp_mask();
  
- 	event_attr_init(attr);
++	ftrace_start();
+ 	resume_console();
+ 	dpm_complete(msg);
  
- 	evsel = perf_evsel__new(attr, (*idx)++);
--	if (!evsel)
-+	if (!evsel) {
-+		free(list);
- 		return -ENOMEM;
--
--	list_add_tail(&evsel->node, list);
-+	}
+@@ -479,6 +481,7 @@ int hibernation_restore(int platform_mode)
  
- 	evsel->name = strdup(name);
-+	list_add_tail(&evsel->node, list);
-+	*_list = list;
- 	return 0;
- }
+ 	pm_prepare_console();
+ 	suspend_console();
++	ftrace_stop();
+ 	pm_restrict_gfp_mask();
+ 	error = dpm_suspend_start(PMSG_QUIESCE);
+ 	if (!error) {
+@@ -486,6 +489,7 @@ int hibernation_restore(int platform_mode)
+ 		dpm_resume_end(PMSG_RECOVER);
+ 	}
+ 	pm_restore_gfp_mask();
++	ftrace_start();
+ 	resume_console();
+ 	pm_restore_console();
+ 	return error;
+@@ -512,6 +516,7 @@ int hibernation_platform_enter(void)
  
-@@ -393,7 +402,7 @@ static int parse_aliases(char *str, const char *names[][MAX_ALIASES], int size)
- 	return -1;
- }
+ 	entering_platform_hibernation = true;
+ 	suspend_console();
++	ftrace_stop();
+ 	error = dpm_suspend_start(PMSG_HIBERNATE);
+ 	if (error) {
+ 		if (hibernation_ops->recover)
+@@ -555,6 +560,7 @@ int hibernation_platform_enter(void)
+  Resume_devices:
+ 	entering_platform_hibernation = false;
+ 	dpm_resume_end(PMSG_RESTORE);
++	ftrace_start();
+ 	resume_console();
  
--int parse_events_add_cache(struct list_head *list, int *idx,
-+int parse_events_add_cache(struct list_head **list, int *idx,
- 			   char *type, char *op_result1, char *op_result2)
- {
- 	struct perf_event_attr attr;
-@@ -454,7 +463,7 @@ int parse_events_add_cache(struct list_head *list, int *idx,
- 	return add_event(list, idx, &attr, name);
- }
+  Close:
+diff --git a/kernel/power/suspend.c b/kernel/power/suspend.c
+index 396d262..c8b7446 100644
+--- a/kernel/power/suspend.c
++++ b/kernel/power/suspend.c
+@@ -24,6 +24,7 @@
+ #include <linux/export.h>
+ #include <linux/suspend.h>
+ #include <linux/syscore_ops.h>
++#include <linux/ftrace.h>
+ #include <trace/events/power.h>
  
--static int add_tracepoint(struct list_head *list, int *idx,
-+static int add_tracepoint(struct list_head **list, int *idx,
- 			  char *sys_name, char *evt_name)
- {
- 	struct perf_event_attr attr;
-@@ -491,7 +500,7 @@ static int add_tracepoint(struct list_head *list, int *idx,
- 	return add_event(list, idx, &attr, name);
- }
- 
--static int add_tracepoint_multi(struct list_head *list, int *idx,
-+static int add_tracepoint_multi(struct list_head **list, int *idx,
- 				char *sys_name, char *evt_name)
- {
- 	char evt_path[MAXPATHLEN];
-@@ -522,7 +531,7 @@ static int add_tracepoint_multi(struct list_head *list, int *idx,
- 	return ret;
- }
- 
--int parse_events_add_tracepoint(struct list_head *list, int *idx,
-+int parse_events_add_tracepoint(struct list_head **list, int *idx,
- 				char *sys, char *event)
- {
- 	int ret;
-@@ -566,7 +575,7 @@ parse_breakpoint_type(const char *type, struct perf_event_attr *attr)
- 	return 0;
- }
- 
--int parse_events_add_breakpoint(struct list_head *list, int *idx,
-+int parse_events_add_breakpoint(struct list_head **list, int *idx,
- 				void *ptr, char *type)
- {
- 	struct perf_event_attr attr;
-@@ -645,7 +654,7 @@ static int config_attr(struct perf_event_attr *attr,
- 	return 0;
- }
- 
--int parse_events_add_numeric(struct list_head *list, int *idx,
-+int parse_events_add_numeric(struct list_head **list, int *idx,
- 			     unsigned long type, unsigned long config,
- 			     struct list_head *head_config)
- {
-@@ -663,7 +672,7 @@ int parse_events_add_numeric(struct list_head *list, int *idx,
- 			 (char *) __event_name(type, config));
- }
- 
--int parse_events_add_pmu(struct list_head *list, int *idx,
-+int parse_events_add_pmu(struct list_head **list, int *idx,
- 			 char *name, struct list_head *head_config)
- {
- 	struct perf_event_attr attr;
-@@ -696,7 +705,7 @@ void parse_events_update_lists(struct list_head *list_event,
- 	 * list, for next event definition.
- 	 */
- 	list_splice_tail(list_event, list_all);
--	INIT_LIST_HEAD(list_event);
-+	free(list_event);
- }
- 
- int parse_events_modifier(struct list_head *list, char *str)
-@@ -774,7 +783,7 @@ int parse_events(struct perf_evlist *evlist, const char *str, int unset __used)
- #ifdef PARSER_DEBUG
- 	parse_events_debug = 1;
- #endif
--	ret = parse_events_parse(&list, &list_tmp, &idx);
-+	ret = parse_events_parse(&list, &idx);
- 
- 	parse_events__flush_buffer(buffer);
- 	parse_events__delete_buffer(buffer);
-diff --git a/tools/perf/util/parse-events.h b/tools/perf/util/parse-events.h
-index d287adc..25ae373 100644
---- a/tools/perf/util/parse-events.h
-+++ b/tools/perf/util/parse-events.h
-@@ -68,25 +68,21 @@ int parse_events__term_num(struct parse_events__term **_term,
- int parse_events__term_str(struct parse_events__term **_term,
- 			   int type_term, char *config, char *str);
- void parse_events__free_terms(struct list_head *terms);
--int parse_events_modifier(struct list_head *list __used, char *str __used);
--int parse_events_add_tracepoint(struct list_head *list, int *idx,
-+int parse_events_modifier(struct list_head *list, char *str);
-+int parse_events_add_tracepoint(struct list_head **list, int *idx,
- 				char *sys, char *event);
--int parse_events_add_raw(struct perf_evlist *evlist, unsigned long config,
--			 unsigned long config1, unsigned long config2,
--			 char *mod);
--int parse_events_add_numeric(struct list_head *list, int *idx,
-+int parse_events_add_numeric(struct list_head **list, int *idx,
- 			     unsigned long type, unsigned long config,
- 			     struct list_head *head_config);
--int parse_events_add_cache(struct list_head *list, int *idx,
-+int parse_events_add_cache(struct list_head **list, int *idx,
- 			   char *type, char *op_result1, char *op_result2);
--int parse_events_add_breakpoint(struct list_head *list, int *idx,
-+int parse_events_add_breakpoint(struct list_head **list, int *idx,
- 				void *ptr, char *type);
--int parse_events_add_pmu(struct list_head *list, int *idx,
-+int parse_events_add_pmu(struct list_head **list, int *idx,
- 			 char *pmu , struct list_head *head_config);
- void parse_events_update_lists(struct list_head *list_event,
- 			       struct list_head *list_all);
- void parse_events_error(struct list_head *list_all,
--			struct list_head *list_event,
- 			int *idx, char const *msg);
- int parse_events__test(void);
- 
-diff --git a/tools/perf/util/parse-events.y b/tools/perf/util/parse-events.y
-index 936913e..126fad0 100644
---- a/tools/perf/util/parse-events.y
-+++ b/tools/perf/util/parse-events.y
-@@ -1,7 +1,6 @@
- 
- %name-prefix "parse_events_"
- %parse-param {struct list_head *list_all}
--%parse-param {struct list_head *list_event}
- %parse-param {int *idx}
- 
- %{
-@@ -41,6 +40,14 @@ do { \
- %type <str> PE_MODIFIER_BP
- %type <head> event_config
- %type <term> event_term
-+%type <head> event_pmu
-+%type <head> event_legacy_symbol
-+%type <head> event_legacy_cache
-+%type <head> event_legacy_mem
-+%type <head> event_legacy_tracepoint
-+%type <head> event_legacy_numeric
-+%type <head> event_legacy_raw
-+%type <head> event_def
- 
- %union
- {
-@@ -62,13 +69,13 @@ event_def PE_MODIFIER_EVENT
- 	 * (there could be more events added for multiple tracepoint
- 	 * definitions via '*?'.
- 	 */
--	ABORT_ON(parse_events_modifier(list_event, $2));
--	parse_events_update_lists(list_event, list_all);
-+	ABORT_ON(parse_events_modifier($1, $2));
-+	parse_events_update_lists($1, list_all);
- }
- |
- event_def
- {
--	parse_events_update_lists(list_event, list_all);
-+	parse_events_update_lists($1, list_all);
- }
- 
- event_def: event_pmu |
-@@ -82,71 +89,102 @@ event_def: event_pmu |
- event_pmu:
- PE_NAME '/' event_config '/'
- {
--	ABORT_ON(parse_events_add_pmu(list_event, idx, $1, $3));
-+	struct list_head *list = NULL;
-+
-+	ABORT_ON(parse_events_add_pmu(&list, idx, $1, $3));
- 	parse_events__free_terms($3);
-+	$$ = list;
- }
- 
- event_legacy_symbol:
- PE_VALUE_SYM '/' event_config '/'
- {
-+	struct list_head *list = NULL;
- 	int type = $1 >> 16;
- 	int config = $1 & 255;
- 
--	ABORT_ON(parse_events_add_numeric(list_event, idx, type, config, $3));
-+	ABORT_ON(parse_events_add_numeric(&list, idx, type, config, $3));
- 	parse_events__free_terms($3);
-+	$$ = list;
- }
- |
- PE_VALUE_SYM sep_slash_dc
- {
-+	struct list_head *list = NULL;
- 	int type = $1 >> 16;
- 	int config = $1 & 255;
- 
--	ABORT_ON(parse_events_add_numeric(list_event, idx, type, config, NULL));
-+	ABORT_ON(parse_events_add_numeric(&list, idx, type, config, NULL));
-+	$$ = list;
- }
- 
- event_legacy_cache:
- PE_NAME_CACHE_TYPE '-' PE_NAME_CACHE_OP_RESULT '-' PE_NAME_CACHE_OP_RESULT
- {
--	ABORT_ON(parse_events_add_cache(list_event, idx, $1, $3, $5));
-+	struct list_head *list = NULL;
-+
-+	ABORT_ON(parse_events_add_cache(&list, idx, $1, $3, $5));
-+	$$ = list;
- }
- |
- PE_NAME_CACHE_TYPE '-' PE_NAME_CACHE_OP_RESULT
- {
--	ABORT_ON(parse_events_add_cache(list_event, idx, $1, $3, NULL));
-+	struct list_head *list = NULL;
-+
-+	ABORT_ON(parse_events_add_cache(&list, idx, $1, $3, NULL));
-+	$$ = list;
- }
- |
- PE_NAME_CACHE_TYPE
- {
--	ABORT_ON(parse_events_add_cache(list_event, idx, $1, NULL, NULL));
-+	struct list_head *list = NULL;
-+
-+	ABORT_ON(parse_events_add_cache(&list, idx, $1, NULL, NULL));
-+	$$ = list;
- }
- 
- event_legacy_mem:
- PE_PREFIX_MEM PE_VALUE ':' PE_MODIFIER_BP sep_dc
- {
--	ABORT_ON(parse_events_add_breakpoint(list_event, idx, (void *) $2, $4));
-+	struct list_head *list = NULL;
-+
-+	ABORT_ON(parse_events_add_breakpoint(&list, idx, (void *) $2, $4));
-+	$$ = list;
- }
- |
- PE_PREFIX_MEM PE_VALUE sep_dc
- {
--	ABORT_ON(parse_events_add_breakpoint(list_event, idx, (void *) $2, NULL));
-+	struct list_head *list = NULL;
-+
-+	ABORT_ON(parse_events_add_breakpoint(&list, idx, (void *) $2, NULL));
-+	$$ = list;
- }
- 
- event_legacy_tracepoint:
- PE_NAME ':' PE_NAME
- {
--	ABORT_ON(parse_events_add_tracepoint(list_event, idx, $1, $3));
-+	struct list_head *list = NULL;
-+
-+	ABORT_ON(parse_events_add_tracepoint(&list, idx, $1, $3));
-+	$$ = list;
- }
- 
- event_legacy_numeric:
- PE_VALUE ':' PE_VALUE
- {
--	ABORT_ON(parse_events_add_numeric(list_event, idx, $1, $3, NULL));
-+	struct list_head *list = NULL;
-+
-+	ABORT_ON(parse_events_add_numeric(&list, idx, $1, $3, NULL));
-+	$$ = list;
- }
- 
- event_legacy_raw:
- PE_RAW
- {
--	ABORT_ON(parse_events_add_numeric(list_event, idx, PERF_TYPE_RAW, $1, NULL));
-+	struct list_head *list = NULL;
-+
-+	ABORT_ON(parse_events_add_numeric(&list, idx, PERF_TYPE_RAW, $1, NULL));
-+	$$ = list;
- }
- 
- event_config:
-@@ -222,7 +260,6 @@ sep_slash_dc: '/' | ':' |
- %%
- 
- void parse_events_error(struct list_head *list_all __used,
--			struct list_head *list_event __used,
- 			int *idx __used,
- 			char const *msg __used)
- {
--- 
-1.7.7.6
+ #include "power.h"
+@@ -212,6 +213,7 @@ int suspend_devices_and_enter(suspend_state_t state)
+ 			goto Close;
+ 	}
+ 	suspend_console();
++	ftrace_stop();
+ 	suspend_test_start();
+ 	error = dpm_suspend_start(PMSG_SUSPEND);
+ 	if (error) {
+@@ -231,6 +233,7 @@ int suspend_devices_and_enter(suspend_state_t state)
+ 	suspend_test_start();
+ 	dpm_resume_end(PMSG_RESUME);
+ 	suspend_test_finish("resume devices");
++	ftrace_start();
+ 	resume_console();
+  Close:
+ 	if (suspend_ops->end)
 
