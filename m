@@ -1,112 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751653Ab2EUK7y (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 May 2012 06:59:54 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:60501 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750875Ab2EUK7j (ORCPT
+	id S1751840Ab2EULMX (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 May 2012 07:12:23 -0400
+Received: from orion.tchmachines.com ([208.76.84.200]:46433 "EHLO
+	orion.tchmachines.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751090Ab2EULMW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 May 2012 06:59:39 -0400
-Date: Mon, 21 May 2012 19:07:00 +0800
-From: Zheng Liu <gnehzuil.liu@gmail.com>
-To: Johannes Weiner <hannes@cmpxchg.org>
-Cc: Michal Hocko <mhocko@suse.cz>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org,
-        Andrew Morton <akpm@linux-foundation.org>, Mel Gorman <mel@csn.ul.ie>,
-        Minchan Kim <minchan@kernel.org>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Rik van Riel <riel@redhat.com>
-Subject: Re: [PATCH] mm: consider all swapped back pages in used-once logic
-Message-ID: <20120521110659.GA7143@gmail.com>
-Mail-Followup-To: Johannes Weiner <hannes@cmpxchg.org>,
-	Michal Hocko <mhocko@suse.cz>, linux-mm@kvack.org,
-	linux-kernel@vger.kernel.org,
-	Andrew Morton <akpm@linux-foundation.org>,
-	Mel Gorman <mel@csn.ul.ie>, Minchan Kim <minchan@kernel.org>,
-	KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-	Rik van Riel <riel@redhat.com>
-References: <1337246033-13719-1-git-send-email-mhocko@suse.cz>
- <20120517195342.GB1800@cmpxchg.org>
- <20120521025149.GA32375@gmail.com>
- <20120521073632.GL1406@cmpxchg.org>
- <20120521085951.GA4687@gmail.com>
- <20120521093705.GM1406@cmpxchg.org>
+	Mon, 21 May 2012 07:12:22 -0400
+From: Vlad Zolotarov <vlad@scalemp.com>
+To: Ingo Molnar <mingo@kernel.org>
+Cc: linux-kernel <linux-kernel@vger.kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        "Shai Fultheim (Shai@ScaleMP.com)" <Shai@scalemp.com>,
+        Ido Yariv <ido@wizery.com>
+Subject: Re: [PATCH v3 1/2] x86: Define early read-mostly per-cpu macros
+Date: Mon, 21 May 2012 14:12:18 +0300
+Message-ID: <10387490.kMM6uuuW2C@vlad>
+Organization: ScaleMP Ltd.
+User-Agent: KMail/4.8.2 (Linux/3.2.0-24-generic; KDE/4.8.2; i686; ; )
+In-Reply-To: <20120521084626.GD31407@gmail.com>
+References: <1337527154.6093.15.camel@vlad> <20120521084626.GD31407@gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120521093705.GM1406@cmpxchg.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
+X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
+X-AntiAbuse: Primary Hostname - orion.tchmachines.com
+X-AntiAbuse: Original Domain - vger.kernel.org
+X-AntiAbuse: Originator/Caller UID/GID - [47 12] / [47 12]
+X-AntiAbuse: Sender Address Domain - scalemp.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, May 21, 2012 at 11:37:05AM +0200, Johannes Weiner wrote:
-[snip]
-> > > Is it because the read()/write() IO is high throughput and pushes
-> > > pages through the LRU lists faster than the mmap pages are referenced?
+On Monday, May 21, 2012 10:46:26 AM Ingo Molnar wrote:
+> * Vlad Zolotarov <vlad@scalemp.com> wrote:
+> > Some read-mostly per-cpu data may need to be declared or defined early,
+> > so it can be initialized and accessed before per_cpu areas are
+> > allocated.
 > > 
-> > Yes, in this application, one query needs to access mapped file page
-> > twice and file page cache twice.  Namely, one query needs to do 4 disk
-> > I/Os.  We have used fadvise(2) to reduce file page cache accessing to
-> > only once.  For mapped file page, in fact them are accessed only once
-> > because in one query the same data is accessed twice.  Thus, one query
-> > causes 2 disk I/Os now.  The size of read/write is quite larger than
-> > mmap/munmap.  So, as you see, if we can keep mmap/munmap file in memory
-> > as much as possible, we will gain the better performance.
-> 
-> You access the same unmapped cache twice, i.e. repeated reads or
-> writes against the same file offset?
-
-No.  We access the same mapped file twice.
-
-> 
-> How do you use fadvise?
-
-We access the header and content of the file respectively using read/write.
-The header and content are sequentially.  So we use fadivse(2) with
-FADV_WILLNEED flag to do a readahead.
-
-> > In addition, another factor also has some impacts for this application.
-> > In inactive_file_is_low_global(), it is different between 2.6.18 and
-> > upstream kernel.  IMHO, it causes that mapped file pages in active list
-> > are moved into inactive list frequently.
+> > Only the data that resides in the per_cpu areas should be read-mostly,
+> > as there is little benefit in optimizing cache lines on initialization.
 > > 
-> > Currently, we add a parameter in inactive_file_is_low_global() to adjust
-> > this ratio.  Meanwhile we activate every mapped file pages for the first
-> > time.  Then the performance gets better, but it still doesn't reach the
-> > performance of 2.6.18.
+> > Signed-off-by: Vlad Zolotarov <vlad@scalemp.com>
+> > Signed-off-by: Ido Yariv <ido@wizery.com>
+> > Signed-off-by: Shai Fultheim <shai@scalemp.com>
 > 
-> 2.6.18 didn't have the active list protection at all and always
-> forcibly deactivated pages during reclaim.  Have you tried fully
-> reverting to this by making inactive_file_is_low_global() return true
-> unconditionally?
+> That's not a valid signoff chain. If you send me a patch then
+> you should be the last SOB - but as the author you should be the
+> first SOB as well. I edited the two SOBs to be Acked-by's.
 
-No, I don't try it.  AFAIK, 2.6.18 didn't protect the active list.  But
-it doesn't always forcibly deactivate the pages.  I remember that in
-2.6.18 kernel we calculate 'mapped_ratio' in shrink_active_list(), and
-then we get 'swap_tendency' according to 'mapped_ratio', 'distress', and
-'sc->swappiness'.  If 'swap_tendency' is not greater than 100.  It
-doesn't reclaim mapped file pages.  By this equation, if the sum of the
-anonymous pages and mapped file pages is not greater than the 50% of
-total pages, we don't deactivate these pages.  Am I missing something?
+Thanks, Ingo. I understand. However the "history" of this patch is not as 
+simple as u represent. ;) 
 
-> Could it be that by accessing your "used-once" unmapped cache twice in
-> short succession, you accidentally activate it all?
+It was originally written by Ido and I just posted it (then I put my SOB at 
+the end of SOB list). But after u noted that it didn't compile on !SMP i 
+reworked it but yet Ido did at least half of the coding, so I put my SOB at 
+the first place (as I was the last one writing the code) and then Ido's as he 
+actually wrote the code in this patch as well and I do wanted to give him a 
+credit.
 
-It could not happen.  Certainly it is possible to access a file twice at
-the same offset in product system.  That is reason why we use buffered
-IO rather than direct IO.  But in testing system we could not access the
-same file twice at the same offset.
+Do u still think changing his (Ido's) SOB to Acked-by was the right thing to 
+do?
 
-> Thereby having ONLY mapped file pages on the inactive list, adding to
-> the pressure on them?
+Thanks,
+vlad
+
 > 
-> And, by having the wrong pages on the active list, actually benefit
-> from the active list not being protected from inactive list cycle
-> speed and instead pushed out quickly again?
-
-Sorry, you mean that in 2.6.18 kernel it benefits from the wrong pages
-on the active list, isn't it?
-
-Regards,
-Zheng
+> Thanks,
+> 
+> 	Ingo
