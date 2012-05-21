@@ -1,85 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757259Ab2EUN5U (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 May 2012 09:57:20 -0400
-Received: from mga01.intel.com ([192.55.52.88]:31089 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755616Ab2EUN5T (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 May 2012 09:57:19 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
-   d="asc'?scan'208";a="169160708"
-Message-ID: <1337608854.2483.71.camel@sauron.fi.intel.com>
-Subject: Re: [PATCH 1/7] [RFC] UBI: Export next_sqnum()
-From: Artem Bityutskiy <dedekind1@gmail.com>
-Reply-To: dedekind1@gmail.com
-To: Richard Weinberger <richard@nod.at>
-Cc: linux-mtd@lists.infradead.org, tglx@linutronix.de,
-        linux-kernel@vger.kernel.org, Heinz.Egger@linutronix.de,
-        tim.bird@am.sony.com
-Date: Mon, 21 May 2012 17:00:54 +0300
-In-Reply-To: <4FBA4448.20509@nod.at>
-References: <1337101871-31181-1-git-send-email-richard@nod.at>
-	  <1337101871-31181-2-git-send-email-richard@nod.at>
-	 <1337173272.24809.52.camel@sauron.fi.intel.com> <4FBA4448.20509@nod.at>
-Content-Type: multipart/signed; micalg="pgp-sha1"; protocol="application/pgp-signature";
-	boundary="=-ZVmqaDdU6kPZ8Mtmfu2+"
-X-Mailer: Evolution 3.2.3 (3.2.3-3.fc16) 
-Mime-Version: 1.0
+	id S1757328Ab2EUOBE (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 May 2012 10:01:04 -0400
+Received: from mail-gg0-f174.google.com ([209.85.161.174]:60949 "EHLO
+	mail-gg0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755773Ab2EUOBB (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 21 May 2012 10:01:01 -0400
+MIME-Version: 1.0
+X-Originating-IP: [109.186.15.47]
+In-Reply-To: <CAHTX3d+=QTZo994jct6+pPqsCniG0B2a_9q6fLdGjvcbZ7qj_A@mail.gmail.com>
+References: <1330589497-4139-1-git-send-email-ohad@wizery.com>
+ <1330589497-4139-2-git-send-email-ohad@wizery.com> <4F6354E4.8030704@monstr.eu>
+ <CAK=Wgbbbi4GnuHedSh6cR1LhkZr8c9q6i=_TLSL252LpPB8Xsw@mail.gmail.com>
+ <CAK=WgbYeQr5ZwTSBo+ZJUzN7fQ--0QbC8HSjrGT-Geycs4SKcg@mail.gmail.com> <CAHTX3d+=QTZo994jct6+pPqsCniG0B2a_9q6fLdGjvcbZ7qj_A@mail.gmail.com>
+From: Ohad Ben-Cohen <ohad@wizery.com>
+Date: Mon, 21 May 2012 17:00:40 +0300
+Message-ID: <CAK=WgbahzGHmvszw6HBgihN4NcPA8ceaQCNSOk_FC61bToxBXQ@mail.gmail.com>
+Subject: Re: [PATCH 1/7] remoteproc: resource table overhaul
+To: Michal Simek <monstr@monstr.eu>
+Cc: linux-omap@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org,
+        Brian Swetland <swetland@google.com>,
+        Iliyan Malchev <malchev@google.com>, Arnd Bergmann <arnd@arndb.de>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Rusty Russell <rusty@rustcorp.com.au>, Mark Grosen <mgrosen@ti.com>,
+        John Williams <john.williams@petalogix.com>,
+        Loic PALLARDY <loic.pallardy@stericsson.com>,
+        Ludovic BARRE <ludovic.barre@stericsson.com>,
+        Omar Ramirez Luna <omar.luna@linaro.org>,
+        Guzman Lugo Fernando <fernando.lugo@ti.com>,
+        Anna Suman <s-anna@ti.com>, Clark Rob <rob@ti.com>,
+        Stephen Boyd <sboyd@codeaurora.org>,
+        Saravana Kannan <skannan@codeaurora.org>,
+        David Brown <davidb@codeaurora.org>,
+        Kieran Bingham <kieranbingham@gmail.com>,
+        Tony Lindgren <tony@atomide.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hi Michal,
 
---=-ZVmqaDdU6kPZ8Mtmfu2+
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: quoted-printable
+On Mon, May 21, 2012 at 4:02 PM, Michal Simek <monstr@monstr.eu> wrote:
+> I have looked at it and tested on latest and greatest and the problem is
+> still there.
 
-On Mon, 2012-05-21 at 15:34 +0200, Richard Weinberger wrote:
-> > +	/* TODO: Before checking version - check the CRC.
->=20
-> The CRC covers only the fastmap data, not the super block.
+Ok, I see why this is happening.
 
-Everything should be protected with CRC.
+We're now allocating the vrings' DMA in ->find_vqs() just before we
+boot the remote processor, and we release it on ->del_vqs(). These are
+the virtio handlers for setting up and tearing down the vrings, so it
+makes sense to do so, but as a result, we still don't get the early
+carveout allocation you wanted.
 
-> >   	for (i =3D 0; i<  nblocks; i++) {
-> > +		/* TODO: you basically perform the scanning here - you should
-> > +		 * share the same code as we use in scan.c: use process_peb().
-> > +		 */
->=20
-> What exactly do you mean by that?
-> process_eb() will not help much because the fastmap data is written=20
-> "raw" to the flash. (Without any interaction from the WL sub-system)
+> I have looked at the code and path is
+> rproc_fw_config_virtio -> rproc_handliefirtion_rsc -> rproc_handle_vdev
 
-It still contains EC and VID headers. So you can use the existing code
-for scanning it.
+Please note that rproc_handle_vdev doesn't allocate any DMA at this
+point, and the allocation path is now quite different - it begins with
+virtio_rpmsg_bus probing and then calling into the ->find_vqs()
+handler.
 
---=20
-Best Regards,
-Artem Bityutskiy
+> For me it is necessary to ensure that dma_alloc_coherent in
+> rproc_alloc_vring is called after carveout allocation
+> just because dma_alloc_cohorent takes mermory from preallocated pool which
+> starts at 0x0.
 
---=-ZVmqaDdU6kPZ8Mtmfu2+
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: This is a digitally signed message part
-Content-Transfer-Encoding: 7bit
+ok.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
+> I also don't have
+> any other advance mechanism how to ensure mapping for the second arm core.
 
-iQIcBAABAgAGBQJPukqWAAoJECmIfjd9wqK0vGkQAMkOgV6tOpMnivvD8/gCQWNu
-sgvjZ7IkmcdvcJRyemYNGpVHaA/vvwTAjFh3fOnPLB+3dmJoJdGRSTQ0CQt1kYFN
-34US9nCapc82Jq2LapUngJ/AiPfV4QO6NoN25PMcZHTQsNsy8JGWTXbi7pFsS/Q8
-kK8A6mghzQDE08up6q00+NuZrhe8eOmz09GviIod+JIpKVfIU34z7sKcghFdceZw
-GibPxJcFyngBwdFs24gB6rMwUC1mnKZzRxpPv+s/0RBoWoXCZEXe1AWDPhFPoyL2
-79yAQS2XHOe/95mjfweJEVKct5x2Eb9XU7WLSdqz8eum/u7kU7+/gw3YfDrO2nLh
-PYb6MVkxcE5mZBj8/+l7i3EaaF43YKXmWi3kbR2p+JGiK+qmGBQL3sYRVRqagXSW
-B3L2GYc8fzCiIeMY372SuwOhvNeQYT9NMQ1ti+iSmxyLHEW31lePOYDpP9km2Z+V
-EYZkQA6MYXF2/ZgtWCKq3lkDyfBx3HxX7XkznduiV6DAbzwXkSC5f3yltd/Qtycx
-73T6NtSiRoOgMVtaP8S+a7MaKYp5WDGUD1AvwpII4BJ2nA6G6zozYMBZvrt95Zev
-CvdMXLJTvQ2DClbfhG5/CLRwEj5yMvyQ5thNarlGOa/5t3bPuo8xmBIf4zdERj4d
-5AudAdcZLTTgG50ulGBV
-=3/dh
------END PGP SIGNATURE-----
+Probably the best way to ensure this (without it breaking unexpectedly
+again as remoteproc evolves) is to have separate sub-devices for
+different kind of memories, which remoteproc could then look up using
+something like device_find_child().
 
---=-ZVmqaDdU6kPZ8Mtmfu2+--
+Ludovic is exploring this direction too, because STE also needs to
+bind specific memory regions with predefined purposes, without
+depending on the order of DMA allocations.
 
+I think Ludovic already has a preliminary patch which he may be able
+to share with you.
+
+> Here is log which I need to get. Look at attached patch which exactly show
+> you what I need to do which I have tested.
+
+Yes, I see. Another temporary approach might be moving the vrings'
+allocations to the rproc_handle_rsc table (in the RSC_VDEV slot), but
+I'm not sure we want to merge this as well because this solution too
+is only hiding the real issue and not solving it permanently.
+
+Thanks,
+Ohad.
