@@ -1,68 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758014Ab2EUOQ0 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 May 2012 10:16:26 -0400
-Received: from moutng.kundenserver.de ([212.227.17.8]:54133 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757116Ab2EUOQZ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 May 2012 10:16:25 -0400
-Date: Mon, 21 May 2012 16:16:19 +0200
-From: Thierry Reding <thierry.reding@avionic-design.de>
-To: Hiroshi DOYU <hdoyu@nvidia.com>
-Cc: linux-tegra@vger.kernel.org, Joerg Roedel <joerg.roedel@amd.com>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Bharat Nihalani <bnihalani@nvidia.com>,
-        Vandana Salve <vsalve@nvidia.com>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/2] iommu/tegra: gart: Remove unnecessary cleanup with
- devm_*()
-Message-ID: <20120521141619.GB21513@avionic-0098.mockup.avionic-design.de>
-References: <1337019127-6863-1-git-send-email-hdoyu@nvidia.com>
+	id S1758032Ab2EUOQz (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 May 2012 10:16:55 -0400
+Received: from a.ns.miles-group.at ([95.130.255.143]:47834 "EHLO radon.swed.at"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757076Ab2EUOQy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 21 May 2012 10:16:54 -0400
+Message-ID: <4FBA4E52.8090807@nod.at>
+Date: Mon, 21 May 2012 16:16:50 +0200
+From: Richard Weinberger <richard@nod.at>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:12.0) Gecko/20120421 Thunderbird/12.0
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="ADZbWkCsHQ7r3kzd"
-Content-Disposition: inline
-In-Reply-To: <1337019127-6863-1-git-send-email-hdoyu@nvidia.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Provags-ID: V02:K0:PZwoKzURZPHYJoOzPd4Gp9SGfGfnqhwRnj3YXas1oCf
- I8A31S6VvD3rl5GYOyeTKNdZorjJGtBNMgsOzXHj36Y/9OTCyk
- vm6zkn9H1gfluxZRvNlwyWQxVyV5VAsj4Km0dGZELmFhC+4EI6
- CT1YMzgr6mA5yxCnWy16sVc0sBcgPcbDxEfgSpRqgavo40wV/J
- 51HY72qNbcrtmyzJdgrk0EM7mboMgDyRqefOaivWlQHA4jMhfa
- Xlo4AQcWHezznvSmgCWlrtG3eT7ZJlDsYxSm/nzU8v0dBvfv6u
- dojxxcLIbFSFZq2LPVe0DJ2WlwGGCkhO3gqFUOBTF43G/AK5tO
- jm/hd/uH2lS3ca1xyTYqGHImrh63h67plzy6JC7P6tGXoISCwC
- OECxbypIA7nHVDK0hgrqeedW2nbvkCPoBA=
+To: dedekind1@gmail.com
+CC: linux-mtd@lists.infradead.org, tglx@linutronix.de,
+        linux-kernel@vger.kernel.org, Heinz.Egger@linutronix.de,
+        tim.bird@am.sony.com
+Subject: Re: [PATCH 1/7] [RFC] UBI: Export next_sqnum()
+References: <1337101871-31181-1-git-send-email-richard@nod.at>   <1337101871-31181-2-git-send-email-richard@nod.at>  <1337173272.24809.52.camel@sauron.fi.intel.com> <4FBA4448.20509@nod.at> <1337608854.2483.71.camel@sauron.fi.intel.com>
+In-Reply-To: <1337608854.2483.71.camel@sauron.fi.intel.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 21.05.2012 16:00, Artem Bityutskiy wrote:
+> On Mon, 2012-05-21 at 15:34 +0200, Richard Weinberger wrote:
+>>> +	/* TODO: Before checking version - check the CRC.
+>>
+>> The CRC covers only the fastmap data, not the super block.
+>
+> Everything should be protected with CRC.
 
---ADZbWkCsHQ7r3kzd
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Okay, done. :)
 
-* Hiroshi DOYU wrote:
-> Remove unnecessary cleanup procedures with devm_*().
->=20
-> Signed-off-by: Hiroshi DOYU <hdoyu@nvidia.com>
-> ---
->  drivers/iommu/tegra-gart.c |   22 +++-------------------
->  1 files changed, 3 insertions(+), 19 deletions(-)
->=20
+>>>    	for (i = 0; i<   nblocks; i++) {
+>>> +		/* TODO: you basically perform the scanning here - you should
+>>> +		 * share the same code as we use in scan.c: use process_peb().
+>>> +		 */
+>>
+>> What exactly do you mean by that?
+>> process_eb() will not help much because the fastmap data is written
+>> "raw" to the flash. (Without any interaction from the WL sub-system)
+>
+> It still contains EC and VID headers. So you can use the existing code
+> for scanning it.
 
-Reviewed-by: Thierry Reding <thierry.reding@avionic-design.de>
+I use already ubi_io_read_vid_hdr() and ubi_io_read_ec_hdr() what should 
+I reuse?
+Also checking the image sequence would make sense.
 
---ADZbWkCsHQ7r3kzd
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.19 (GNU/Linux)
-
-iEYEARECAAYFAk+6TjMACgkQZ+BJyKLjJp+4CACfbDPNm04hXdSTQy1Xnpc+RlSN
-ULQAoIiBJwfbh8g88+dapELylyzz/wQB
-=/pYT
------END PGP SIGNATURE-----
-
---ADZbWkCsHQ7r3kzd--
+Thanks,
+//richard
