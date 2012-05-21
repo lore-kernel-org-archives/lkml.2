@@ -1,110 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755602Ab2EUPqU (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 May 2012 11:46:20 -0400
-Received: from e06smtp17.uk.ibm.com ([195.75.94.113]:35522 "EHLO
-	e06smtp17.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755267Ab2EUPqR (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 May 2012 11:46:17 -0400
-From: Martin Schwidefsky <schwidefsky@de.ibm.com>
-To: Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@kernel.org>,
-        Mike Galbraith <efault@gmx.de>, linux-kernel@vger.kernel.org
-Cc: Heiko Carstens <heiko.carstens@de.ibm.com>,
-        Christian Ehrhardt <ehrhardt@linux.vnet.ibm.com>,
-        Martin Schwidefsky <schwidefsky@de.ibm.com>
-Subject: [PATCH 1/2] sched: readd FAIR_SLEEPERS feature
-Date: Mon, 21 May 2012 17:45:36 +0200
-Message-Id: <1337615137-55111-2-git-send-email-schwidefsky@de.ibm.com>
-X-Mailer: git-send-email 1.7.10.2
-In-Reply-To: <1337615137-55111-1-git-send-email-schwidefsky@de.ibm.com>
-References: <1337615137-55111-1-git-send-email-schwidefsky@de.ibm.com>
-x-cbid: 12052115-0542-0000-0000-000001EC61A4
+	id S1755445Ab2EUPrS (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 May 2012 11:47:18 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:25411 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751055Ab2EUPrQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 21 May 2012 11:47:16 -0400
+Date: Mon, 21 May 2012 11:47:09 -0400
+From: Dave Jones <davej@redhat.com>
+To: Linux Kernel <linux-kernel@vger.kernel.org>, linux-mm@kvack.org
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: Re: 3.4-rc7 numa_policy slab poison.
+Message-ID: <20120521154709.GA8697@redhat.com>
+Mail-Followup-To: Dave Jones <davej@redhat.com>,
+	Linux Kernel <linux-kernel@vger.kernel.org>, linux-mm@kvack.org,
+	Andrew Morton <akpm@linux-foundation.org>,
+	Linus Torvalds <torvalds@linux-foundation.org>
+References: <20120517213120.GA12329@redhat.com>
+ <20120518185851.GA5728@redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120518185851.GA5728@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-git commit 5ca9880c6f4ba4c8 "sched: Remove FAIR_SLEEPERS features" removed
-the ability to disable sleeper fairness. The benefit is a saved branch
-on desktop systems where preemption is important and fair sleepers are
-always enabled. But the control is important for server systems where
-disabling sleeper fairness has a performance benefit.
+On Fri, May 18, 2012 at 02:58:51PM -0400, Dave Jones wrote:
+ > On Thu, May 17, 2012 at 05:31:20PM -0400, Dave Jones wrote:
+ > 
+ >  > =============================================================================
+ >  > BUG numa_policy (Not tainted): Poison overwritten
+ >  > -----------------------------------------------------------------------------
+ >  > 
+ >  > INFO: 0xffff880146498250-0xffff880146498250. First byte 0x6a instead of 0x6b
+ >  > INFO: Allocated in mpol_new+0xa3/0x140 age=46310 cpu=6 pid=32154
+ >  > 	__slab_alloc+0x3d3/0x445
+ >  > 	kmem_cache_alloc+0x29d/0x2b0
+ >  > 	mpol_new+0xa3/0x140
+ >  > 	sys_mbind+0x142/0x620
+ >  > 	system_call_fastpath+0x16/0x1b
+ >  > INFO: Freed in __mpol_put+0x27/0x30 age=46268 cpu=6 pid=32154
+ >  > 	__slab_free+0x2e/0x1de
+ >  > 	kmem_cache_free+0x25a/0x260
+ >  > 	__mpol_put+0x27/0x30
+ >  > 	remove_vma+0x68/0x90
+ >  > 	exit_mmap+0x118/0x140
+ >  > 	mmput+0x73/0x110
+ >  > 	exit_mm+0x108/0x130
+ >  > 	do_exit+0x162/0xb90
+ >  > 	do_group_exit+0x4f/0xc0
+ >  > 	sys_exit_group+0x17/0x20
+ >  > 	system_call_fastpath+0x16/0x1b
+ >  > INFO: Slab 0xffffea0005192600 objects=27 used=27 fp=0x          (null) flags=0x20000000004080
+ >  > INFO: Object 0xffff880146498250 @offset=592 fp=0xffff88014649b9d0
+ > 
+ > As I can reproduce this fairly easily, I enabled the dynamic debug prints for mempolicy.c,
+ > and noticed something odd (but different to the above trace..)
+ > 
+ > INFO: 0xffff88014649abf0-0xffff88014649abf0. First byte 0x6a instead of 0x6b
+ > INFO: Allocated in mpol_new+0xa3/0x140 age=196087 cpu=7 pid=11496
+ >  __slab_alloc+0x3d3/0x445
+ >  kmem_cache_alloc+0x29d/0x2b0
+ >  mpol_new+0xa3/0x140
+ >  sys_mbind+0x142/0x620
+ >  system_call_fastpath+0x16/0x1b
+ > INFO: Freed in __mpol_put+0x27/0x30 age=40838 cpu=7 pid=20824
+ >  __slab_free+0x2e/0x1de
+ >  kmem_cache_free+0x25a/0x260
+ >  __mpol_put+0x27/0x30
+ >  mpol_set_shared_policy+0xe6/0x280
+ >  shmem_set_policy+0x2a/0x30
+ >  shm_set_policy+0x28/0x30
+ >  sys_mbind+0x4e7/0x620
+ >  system_call_fastpath+0x16/0x1b
+ > INFO: Slab 0xffffea0005192600 objects=27 used=27 fp=0x          (null) flags=0x20000000004080
+ > INFO: Object 0xffff88014649abf0 @offset=11248 fp=0xffff880146498de0
+ > 
+ > In this case, it seems the policy was allocated by pid 11496, and freed by a different pid!
+ > How is that possible ?  (Does kind of explain why it looks like a double-free though I guess).
+ > 
+ > debug printout for the relevant pids below, in case it yields further clues..
 
-Readd the fair sleepers control but add a compile time option to be able to
-disable the control again. The default is no control, if an architecture
-wants to have the control CONFIG_SCHED_FAIR_SLEEPERS needs to be selected.
+Anyone ?  This can be reproduced very quickly by doing..
 
-Reported-by: Christian Ehrhardt <ehrhardt@linux.vnet.ibm.com>
-Signed-off-by: Martin Schwidefsky <schwidefsky@de.ibm.com>
----
- init/Kconfig            |    3 +++
- kernel/sched/fair.c     |   14 +++++++++++++-
- kernel/sched/features.h |    9 +++++++++
- 3 files changed, 25 insertions(+), 1 deletion(-)
+$ git clone git://git.codemonkey.org.uk/trinity.git
+$ make
+$ ./trinity -q -c mbind
 
-diff --git a/init/Kconfig b/init/Kconfig
-index 6cfd71d..ddfd2c2 100644
---- a/init/Kconfig
-+++ b/init/Kconfig
-@@ -865,6 +865,9 @@ config SCHED_AUTOGROUP
- 	  desktop applications.  Task group autogeneration is currently based
- 	  upon task session.
- 
-+config SCHED_FAIR_SLEEPERS
-+	bool
-+
- config MM_OWNER
- 	bool
- 
-diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
-index e955364..a791a9d 100644
---- a/kernel/sched/fair.c
-+++ b/kernel/sched/fair.c
-@@ -1046,6 +1046,18 @@ static void check_spread(struct cfs_rq *cfs_rq, struct sched_entity *se)
- #endif
- }
- 
-+#ifdef CONFIG_SCHED_FAIR_SLEEPERS
-+static inline is_fair_sleeper(int initial)
-+{
-+	return !initial && sched_feat(FAIR_SLEEPERS);
-+}
-+#else /* CONFIG_SCHED_FAIR_SLEEPERS */
-+static inline is_fair_sleeper(int initial)
-+{
-+	return !initial;
-+}
-+#endif /* CONFIG_SCHED_FAIR_SLEEPERS */
-+
- static void
- place_entity(struct cfs_rq *cfs_rq, struct sched_entity *se, int initial)
- {
-@@ -1061,7 +1073,7 @@ place_entity(struct cfs_rq *cfs_rq, struct sched_entity *se, int initial)
- 		vruntime += sched_vslice(cfs_rq, se);
- 
- 	/* sleeps up to a single latency don't count. */
--	if (!initial) {
-+	if (is_fair_sleeper(initial)) {
- 		unsigned long thresh = sysctl_sched_latency;
- 
- 		/*
-diff --git a/kernel/sched/features.h b/kernel/sched/features.h
-index de00a48..e72dc7a 100644
---- a/kernel/sched/features.h
-+++ b/kernel/sched/features.h
-@@ -1,3 +1,12 @@
-+#ifdef CONFIG_SCHED_FAIR_SLEEPERS
-+/*
-+ * Disregards a certain amount of sleep time (sched_latency_ns) and
-+ * considers the task to be running during that period. This gives it
-+ * a service deficit on wakeup, allowing it to run sooner.
-+ */
-+SCHED_FEAT(FAIR_SLEEPERS, false)
-+#endif
-+
- /*
-  * Only give sleepers 50% of their service deficit. This allows
-  * them to run sooner, but does not allow tons of sleepers to
--- 
-1.7.10.2
+On my 8-core box, it happens within 30 seconds.
+
+If I run this long enough, the box wedges completely, needing a power cycle to reboot.
+
+	Dave
 
