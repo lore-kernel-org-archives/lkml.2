@@ -1,89 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757463Ab2EUJS0 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 May 2012 05:18:26 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:38485 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757328Ab2EUJSY (ORCPT
+	id S1757494Ab2EUJSk (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 May 2012 05:18:40 -0400
+Received: from mailout3.samsung.com ([203.254.224.33]:56473 "EHLO
+	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757169Ab2EUJSi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 May 2012 05:18:24 -0400
-Date: Mon, 21 May 2012 02:17:50 -0700
-From: tip-bot for Anna-Maria Gleixner <anna-maria@glx-um.de>
-Message-ID: <tip-cde1794b069f44ca02f3f4f50a903e9361132244@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
-        ralf@linux-mips.org, tglx@linutronix.de, anna-maria@glx-um.de
-Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        ralf@linux-mips.org, tglx@linutronix.de, anna-maria@glx-um.de
-In-Reply-To: <20120518163106.073559820@glx-um.de>
-References: <20120518163106.073559820@glx-um.de>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:timers/core] mips: Use generic time config
-Git-Commit-ID: cde1794b069f44ca02f3f4f50a903e9361132244
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
-  to get blacklisted from these emails
-MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Mon, 21 May 2012 02:17:56 -0700 (PDT)
+	Mon, 21 May 2012 05:18:38 -0400
+X-AuditID: cbfee61a-b7fe76d0000023f5-54-4fba086cf537
+From: Jingoo Han <jg1.han@samsung.com>
+To: "'Andrew Morton'" <akpm@linux-foundation.org>,
+        "'LKML'" <linux-kernel@vger.kernel.org>
+Cc: "'Richard Purdie'" <rpurdie@rpsys.net>,
+        "'Hans-Christian Egtvedt'" <egtvedt@samfundet.no>,
+        "'Jingoo Han'" <jg1.han@samsung.com>
+Subject: [PATCH 1/3] backlight: atmel-pwm-bl: use devm_ functions
+Date: Mon, 21 May 2012 18:18:36 +0900
+Message-id: <002b01cd3732$b3d4c290$1b7e47b0$%han@samsung.com>
+MIME-version: 1.0
+Content-type: text/plain; charset=us-ascii
+Content-transfer-encoding: 7bit
+X-Mailer: Microsoft Office Outlook 12.0
+Thread-index: Ac03MrM/LZOGZISnRF+oIdaEbEeIsg==
+Content-language: ko
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrKLMWRmVeSWpSXmKPExsVy+t9jAd1cjl3+BvePslhc3jWHzYHR4/Mm
+	uQDGKC6blNSczLLUIn27BK6Mf6e+shUs5apobJ3G2sB4maOLkZNDQsBE4tqRE4wQtpjEhXvr
+	2boYuTiEBBYxSnz6vp4VwpnNJHFo2xFWkCo2ATWJL18Os4PYIgIREs0zZjGDFDELNDJK7N25
+	AKxIWMBRouVmPxOIzSKgKtG+cSVYA6+ArcTXDVcYIWxBiR+T77GA2MwCWhLrdx5ngrDlJTav
+	eQs0lAPoJHWJR391QUwRAT2JNzscISpEJPa9eMc4gVFgFpJBs5AMmoVk0CwkLQsYWVYxiqYW
+	JBcUJ6XnGuoVJ+YWl+al6yXn525iBAfmM6kdjCsbLA4xCnAwKvHwzny601+INbGsuDL3EKME
+	B7OSCO/dh0Ah3pTEyqrUovz4otKc1OJDjNIcLErivHaLd/gLCaQnlqRmp6YWpBbBZJk4OKUa
+	GH0+8+xyEzq27m6Pb7l56Zz7r4q+ONqm9f+M5d73SfHX8WILyWdf/66bW/bJ1vKohsNhPdG/
+	7PlmuzwOPet/tNQk7lNl3Im0hUr5B895nnx94tmWkx+Xd74xeb9sVfPPnXeiuVZtqL8s9vXy
+	HanG/RXb54nyCXwun/r8hmb51MY9l4ukX2tu2nVDiaU4I9FQi7moOBEAlI+lrkgCAAA=
+X-TM-AS-MML: No
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  cde1794b069f44ca02f3f4f50a903e9361132244
-Gitweb:     http://git.kernel.org/tip/cde1794b069f44ca02f3f4f50a903e9361132244
-Author:     Anna-Maria Gleixner <anna-maria@glx-um.de>
-AuthorDate: Fri, 18 May 2012 16:45:50 +0000
-Committer:  Thomas Gleixner <tglx@linutronix.de>
-CommitDate: Mon, 21 May 2012 11:01:43 +0200
+The devm_ functions allocate memory that is released when a driver
+detaches. This patch uses devm_kzalloc of these functions.
 
-mips: Use generic time config
-
-Signed-off-by: Anna-Maria Gleixner <anna-maria@glx-um.de>
-Cc: Ralf Baechle <ralf@linux-mips.org>
-Link: http://lkml.kernel.org/r/20120518163106.073559820@glx-um.de
-Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+Cc: Hans-Christian Egtvedt <egtvedt@samfundet.no>
+Cc: Richard Purdie <rpurdie@rpsys.net>
+Signed-off-by: Jingoo Han <jg1.han@samsung.com>
 ---
- arch/mips/Kconfig |   13 ++-----------
- 1 files changed, 2 insertions(+), 11 deletions(-)
+ drivers/video/backlight/atmel-pwm-bl.c |    5 ++---
+ 1 files changed, 2 insertions(+), 3 deletions(-)
 
-diff --git a/arch/mips/Kconfig b/arch/mips/Kconfig
-index ce30e2f..c9c330b 100644
---- a/arch/mips/Kconfig
-+++ b/arch/mips/Kconfig
-@@ -29,6 +29,8 @@ config MIPS
- 	select HAVE_MEMBLOCK
- 	select HAVE_MEMBLOCK_NODE_MAP
- 	select ARCH_DISCARD_MEMBLOCK
-+	select GENERIC_CLOCKEVENTS
-+	select GENERIC_CMOS_UPDATE
+diff --git a/drivers/video/backlight/atmel-pwm-bl.c b/drivers/video/backlight/atmel-pwm-bl.c
+index 0443a4f..cd64073 100644
+--- a/drivers/video/backlight/atmel-pwm-bl.c
++++ b/drivers/video/backlight/atmel-pwm-bl.c
+@@ -127,7 +127,8 @@ static int atmel_pwm_bl_probe(struct platform_device *pdev)
+ 	struct atmel_pwm_bl *pwmbl;
+ 	int retval;
  
- menu "Machine selection"
+-	pwmbl = kzalloc(sizeof(struct atmel_pwm_bl), GFP_KERNEL);
++	pwmbl = devm_kzalloc(&pdev->dev, sizeof(struct atmel_pwm_bl),
++				GFP_KERNEL);
+ 	if (!pwmbl)
+ 		return -ENOMEM;
  
-@@ -856,14 +858,6 @@ config GENERIC_CALIBRATE_DELAY
- 	bool
- 	default y
+@@ -202,7 +203,6 @@ err_free_gpio:
+ err_free_pwm:
+ 	pwm_channel_free(&pwmbl->pwmc);
+ err_free_mem:
+-	kfree(pwmbl);
+ 	return retval;
+ }
  
--config GENERIC_CLOCKEVENTS
--	bool
--	default y
--
--config GENERIC_CMOS_UPDATE
--	bool
--	default y
--
- config SCHED_OMIT_FRAME_POINTER
- 	bool
- 	default y
-@@ -2050,9 +2044,6 @@ config CPU_HAS_SYNC
- 	depends on !CPU_R3000
- 	default y
+@@ -218,7 +218,6 @@ static int __exit atmel_pwm_bl_remove(struct platform_device *pdev)
+ 	pwm_channel_free(&pwmbl->pwmc);
+ 	backlight_device_unregister(pwmbl->bldev);
+ 	platform_set_drvdata(pdev, NULL);
+-	kfree(pwmbl);
  
--config GENERIC_CLOCKEVENTS_BROADCAST
--	bool
--
- #
- # CPU non-features
- #
+ 	return 0;
+ }
+-- 
+1.7.1
+
+
