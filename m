@@ -1,48 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753050Ab2EUPWi (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 May 2012 11:22:38 -0400
-Received: from rcsinet15.oracle.com ([148.87.113.117]:34382 "EHLO
-	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752967Ab2EUPWg (ORCPT
+	id S1752490Ab2EUPXz (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 May 2012 11:23:55 -0400
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:34689 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751003Ab2EUPXx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 May 2012 11:22:36 -0400
-Date: Mon, 21 May 2012 18:26:26 +0300
-From: Dan Carpenter <dan.carpenter@oracle.com>
-To: "Justin P. Mattock" <justinmattock@gmail.com>
-Cc: gregkh@linuxfoundation.org, devel@driverdev.osuosl.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH NEXT]staging: "rts_pstor" Fix typos.
-Message-ID: <20120521152626.GE4629@mwanda>
-References: <1337609955-15544-1-git-send-email-justinmattock@gmail.com>
- <20120521143530.GC4637@mwanda>
- <4FBA5737.3010209@gmail.com>
+	Mon, 21 May 2012 11:23:53 -0400
+Date: Mon, 21 May 2012 17:23:48 +0200
+From: Ingo Molnar <mingo@kernel.org>
+To: Vlad Zolotarov <vlad@scalemp.com>
+Cc: "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>,
+        linux-kernel <linux-kernel@vger.kernel.org>, Shai@scalemp.com,
+        ido@wizery.com
+Subject: Re: [PATCH v4 0/2] Move x86_cpu_to_apicid to the __read_mostly
+ section
+Message-ID: <20120521152345.GC7068@gmail.com>
+References: <1744141.b5asW8k6jC@vlad>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <4FBA5737.3010209@gmail.com>
+In-Reply-To: <1744141.b5asW8k6jC@vlad>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, May 21, 2012 at 07:54:47AM -0700, Justin P. Mattock wrote:
-> On 05/21/2012 07:35 AM, Dan Carpenter wrote:
-> >On Mon, May 21, 2012 at 07:19:15AM -0700, Justin P. Mattock wrote:
-> >>From: "Justin P. Mattock"<justinmattock@gmail.com>
-> >>
-> >>  Signed-off-by: Justin P. Mattock<justinmattock@gmail.com>
-> >   ^
-> >Your scripts are adding an extra space here.i
+
+* Vlad Zolotarov <vlad@scalemp.com> wrote:
+
+> Pls., consider applying this patch series.
+> It contains the following changes:
+>  - Adds two new macros DEFINE_EARLY_PER_CPU_READ_MOSTLY() and
+>    DECLARE_EARLY_PER_CPU_READ_MOSTLY().
+>  - Adds "read-mostly" qualifier to the following variables in smp.h:
+>   - cpu_sibling_map
+>   - cpu_core_map
+>   - cpu_llc_shared_map
+>   - cpu_llc_id
+>   - cpu_number
+>   - x86_cpu_to_apicid
+>   - x86_bios_cpu_apicid
+>   - x86_cpu_to_logical_apicid
 > 
-> after git format-patch my signature is in the subject line. pressing
-> enter a few times moves it down. is there a git command for properly
-> aligning this?
+> As long as all the variables above are only written during the 
+> initialization, this change is meant to prevent the false 
+> sharing and improve the performance on large multiprocessor 
+> systems.
 
-The first line is the subject and then you need to leave the next
-line of the commit blank.
+Why have you resent this? The feedback I gave has not been 
+addressed:
 
-regards,
-dan carpenter
+> Well, a quick tally of percpu variables on a 'make defconfig' 
+> kernel would tell us one way or another?
+> 
+> Here there's almost 200 percpu variables active in the 64-bit 
+> x86 defconfig, and a quick random sample suggests that most 
+> are read-mostly.
+>
+> I have no fundamental prefer to either approach, but the 
+> direction taken should be justified explicitly, with numbers, 
+> arguments, etc. - also a short blurb somewhere in the headers 
+> that explains when they should be used, so that others can be 
+> aware of vSMP's special needs here.
 
+Thanks,
+
+	Ingo
