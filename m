@@ -1,40 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932722Ab2EUR6X (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 May 2012 13:58:23 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:44155 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759234Ab2EUR6H (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 May 2012 13:58:07 -0400
-Message-ID: <4FBA821F.60806@zytor.com>
-Date: Mon, 21 May 2012 10:57:51 -0700
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:11.0) Gecko/20120329 Thunderbird/11.0.1
+	id S1759300Ab2EUR6l (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 May 2012 13:58:41 -0400
+Received: from acsinet15.oracle.com ([141.146.126.227]:40426 "EHLO
+	acsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932688Ab2EUR6R (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 21 May 2012 13:58:17 -0400
+Date: Mon, 21 May 2012 13:51:42 -0400
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+To: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+Cc: "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] xen: do not map the same GSI twice
+Message-ID: <20120521175142.GA13990@phenom.dumpdata.com>
+References: <1337615650-27911-1-git-send-email-stefano.stabellini@eu.citrix.com>
+ <20120521172703.GA9988@phenom.dumpdata.com>
+ <alpine.DEB.2.00.1205211846510.26786@kaball-desktop>
 MIME-Version: 1.0
-To: Joe Perches <joe@perches.com>
-CC: mingo@kernel.org, levinsasha928@gmail.com, linux-kernel@vger.kernel.org,
-        tglx@linutronix.de, linux-tip-commits@vger.kernel.org
-Subject: Re: [tip:x86/urgent] x86, printk: Add missing KERN_CONT to NMI selftest
-References: <1336492573-17530-3-git-send-email-levinsasha928@gmail.com>  <tip-29d679ffd850ea37a303bb930142be14982611e4@git.kernel.org>  <1337621394.13812.2.camel@joe2Laptop> <4FBA7E95.5040101@zytor.com> <1337622999.13812.11.camel@joe2Laptop>
-In-Reply-To: <1337622999.13812.11.camel@joe2Laptop>
-X-Enigmail-Version: 1.4.1
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <alpine.DEB.2.00.1205211846510.26786@kaball-desktop>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/21/2012 10:56 AM, Joe Perches wrote:
+On Mon, May 21, 2012 at 06:47:44PM +0100, Stefano Stabellini wrote:
+> On Mon, 21 May 2012, Konrad Rzeszutek Wilk wrote:
+> > On Mon, May 21, 2012 at 04:54:10PM +0100, Stefano Stabellini wrote:
+> > > PV on HVM guests map GSIs into event channels; at restore time the
+> > > event channels are resumed by restore_pirqs.
+> > > Device drivers might try to register the same GSI again through ACPI at
+> > > restore time, but the GSI has already been mapped and bound by
+> > > restore_pirqs.
+> > 
+> > Which means... what kind of error do we get without this patch?
 > 
-> True.
+> Xen would print:
 > 
-> All the other printks in the same file
-> without KERN_ levels should be fixed too.
+> (XEN) irq.c:2235: dom4: pirq 23 or emuirq 28 already mapped
 > 
-> It might be better to fix them all at once.
-> 
+> and waste a pirq
 
-Feel free to submit a patchset...
-
-	-hpa
-
+OK. This sounds like it has been a bug since ..oh forever then?
