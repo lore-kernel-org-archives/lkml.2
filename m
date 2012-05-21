@@ -1,215 +1,312 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756473Ab2EUCW2 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 20 May 2012 22:22:28 -0400
-Received: from mail.linux-iscsi.org ([67.23.28.174]:45608 "EHLO
-	linux-iscsi.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755209Ab2EUCWZ (ORCPT
+	id S1756505Ab2EUCYF (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 20 May 2012 22:24:05 -0400
+Received: from LGEMRELSE1Q.lge.com ([156.147.1.111]:49563 "EHLO
+	LGEMRELSE1Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752128Ab2EUCYD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 20 May 2012 22:22:25 -0400
-Subject: [GIT PULL] target for-next v3.5-rc1 updates + new drivers merge
- status
-From: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: target-devel <target-devel@vger.kernel.org>,
-        linux-scsi <linux-scsi@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>, Christoph Hellwig <hch@lst.de>,
-        Andy Grover <agrover@redhat.com>, Roland Dreier <roland@kernel.org>,
-        Andrew Vasquez <andrew.vasquez@qlogic.com>,
-        Chad Dupuis <chad.dupuis@qlogic.com>,
-        James Bottomley <jbottomley@parallels.com>,
-        Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
-        Chris Boot <bootc@bootc.net>, "Ted Ts'o" <tytso@thunk.org>
-Content-Type: text/plain; charset="UTF-8"
-Date: Sun, 20 May 2012 19:22:19 -0700
-Message-ID: <1337566939.32217.667.camel@haakon2.linux-iscsi.org>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
-Content-Transfer-Encoding: 8bit
+	Sun, 20 May 2012 22:24:03 -0400
+X-AuditID: 9c93016f-b7c3cae000001954-ba-4fb9a73f126b
+From: Minchan Kim <minchan@kernel.org>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Minchan Kim <minchan@kernel.org>,
+        Seth Jennings <sjenning@linux.vnet.ibm.com>,
+        Dan Magenheimer <dan.magenheimer@oracle.com>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Nitin Gupta <ngupta@vflare.org>
+Subject: [PATCH] zsmalloc: use unsigned long instead of void *
+Date: Mon, 21 May 2012 11:23:33 +0900
+Message-Id: <1337567013-4741-1-git-send-email-minchan@kernel.org>
+X-Mailer: git-send-email 1.7.9.5
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus & Co,
+We should use unsigned long as handle instead of void * to avoid any
+confusion. Without this, users may just treat zs_malloc return value as
+a pointer and try to deference it.
 
-With the v3.5 merge window now officially upon us, here is the first
-pull request for the current set of target pending for-next core +
-existing fabric module changes for the v3.5 round..
+This patch passed compile test(zram, zcache and ramster) and zram is
+tested on qemu.
 
-Please go ahead and pull from:
+Cc: Seth Jennings <sjenning@linux.vnet.ibm.com>
+Cc: Dan Magenheimer <dan.magenheimer@oracle.com>
+Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Cc: Nitin Gupta <ngupta@vflare.org>
+Signed-off-by: Minchan Kim <minchan@kernel.org>
+---
 
-  git://git.kernel.org/pub/scm/linux/kernel/git/nab/target-pending.git for-next
+Nitin, Konrad and I discussed and concluded that we should use 'unsigned long'
+instead of 'void *'.
+Look at the lengthy thread if you have a question.
+http://marc.info/?l=linux-mm&m=133716653118566&w=4
+Watch out! it has number of noises.
 
-Thank you to everyone who has contributed this round.
+ drivers/staging/zcache/zcache-main.c     |   12 ++++++------
+ drivers/staging/zram/zram_drv.c          |   16 ++++++++--------
+ drivers/staging/zram/zram_drv.h          |    2 +-
+ drivers/staging/zsmalloc/zsmalloc-main.c |   24 ++++++++++++------------
+ drivers/staging/zsmalloc/zsmalloc.h      |    8 ++++----
+ 5 files changed, 31 insertions(+), 31 deletions(-)
 
-There has been lots of work in existing code in a number of areas this
-past cycle.  The major highlights have been:
-
-*) Removal of transport_do_task_sg_chain() from core + fabrics (Roland)
-*) target-core: Removal of se_task abstraction from target-core and
-   enforce hw_max_sectors for pSCSI backends (hch)
-*) Re-factoring of iscsi-target tx immediate/response queues (agrover)
-*) Conversion of iscsi-target back to using target core memory allocation
-   logic (agrover)
-
-We've had one last minute iscsi-target patch go into for-next to address
-a nasty regression bug related to the target core allocation logic
-conversion from agrover that is not included in friday's linux-next
-build, but has been included in this series.
-
-On the new fabric module code front for-3.5, here is a brief status
-update for the three currently in flight this round:
-
-*) usb-gadget target driver:
-
-Sebastian Siewior's driver for supporting usb-gadget target mode
-operation.  This will be going out as a separate PULL request from
-target-pending/usb-target-merge with subsystem maintainer ACKs.
-There is one minor target-core patch in this series required to
-function.
-
-*) sbp ieee-1394/firewire target driver:
-
-Chris Boot's driver for supportting the Serial Block Protocol (SBP)
-across IEEE-1394 Firewire hardware.  This will be going out as a
-separate PULL request from target-pending/sbp-target-merge with two
-additional drivers/firewire/ patches w/ subsystem maintainer ACKs.
-
-*) qla2xxx LLD target mode infrastructure changes + tcm_qla2xxx:
-
-The Qlogic >= 24xx series HW target mode LLD infrastructure patch-set
-and tcm_qla2xxx fabric driver.  Support for FC target mode using qla2xxx
-LLD code has been officially submitted by Qlogic to James below, and is
-currently outstanding but not yet merged into scsi.git/for-next..
-
-[PATCH 00/22] qla2xxx: Updates for scsi "misc" branch
-http://www.spinics.net/lists/linux-scsi/msg59350.html
-
-Note there are *zero* direct dependencies upon this for-next series for
-the qla2xxx LLD target + tcm_qla2xxx patches submitted above, and over
-the last days the target mode team has been tracking down an tcm_qla2xxx
-specific active I/O shutdown bug that appears to now be almost squashed
-for 3.5-rc-fixes.
-
-Please let us know if you have any concerns,
-
-Thanks!
-
---nab
-
-Andy Grover (13):
-  target/iscsi: Rename iscsi_cmd.i_list to iscsi_cmd.i_conn_node
-  target/iscsi: Misc cleanups from Agrover (round 1)
-  target/iscsi: Remove unneeded locking from iscsi_target_tx_thread
-  target/iscsi: Refactor target_tx_thread immediate+response queue
-    loops
-  target/iscsi: Misc cleanups from Agrover (round 2)
-  target: Rename target_allocate_tasks to target_setup_cmd_from_cdb
-  target: rewrite comment for generic_new_cmd
-  target/iscsi: Inline iscsit_allocate_se_cmd and *_for_tmr
-  target/iscsi: Move init_se_cmd closer to lookup_cmd_lun
-  target/iscsi: Eliminate iscsi_cmd.data_length
-  target/iscsi: Fold _decide_list_to_build into
-    _build_pdu_and_seq_lists
-  target: Call core_alua_check_nonop_delay in target_submit_cmd()
-  target/iscsi: Go back to core allocating data buffer for cmd
-
-Bernhard Kohl (1):
-  target: add support for the WRITE_VERIFY command
-
-Christoph Hellwig (16):
-  target: misc ramdisk backend cleanups
-  target: don't limit transfer sizes for the ramdisk backend
-  target: stop splitting commands into multiple tasks
-  target: remove the unused transport_limit_task_sectors helper
-  target: remove target_get_task_cdb
-  target: remove the task_lba field in struct se_task
-  target: remove the task_size field in struct se_task
-  target: remove the task_sectors field in struct se_task
-  target: replace ->execute_task with ->execute_cmd
-  target: always allocate a single task
-  target: simplify command to task linkage
-  target: move the state and execute lists to the command
-  target: remove struct se_task
-  target: remove the t_task_cdbs_left field in struct se_cmd
-  target: remove the t_task_cdbs_ex_left field in struct se_cmd
-  target: remove the t_se_count field in struct se_cmd
-
-Dan Carpenter (3):
-  target/iscsi: cleanup some allocation style issues
-  target: lock => unlock typo in transport_lun_wait_for_tasks
-  iscsi-target: remove dead code in iscsi_check_valuelist_for_support
-
-Jörn Engel (2):
-  target: cleanup transport_execute_tasks()
-  target: make target_put_session void
-
-Nicholas Bellinger (6):
-  target: Remove obsolete DF_READ_ONLY usage
-  target: Enforce hw_max_sectors for SCF_SCSI_DATA_SG_IO_CDB
-  target: Remove max_sectors device attribute for modern se_task less
-    code
-  target: Fix MAINTENANCE_IN service action CDB checks to use lower 5
-    bits
-  target: Add MI_REPORT_TARGET_PGS ext. header + implict_trans_secs
-    attribute
-  iscsi-target: Fix iov_count calculation bug in iscsit_allocate_iovecs
-
-Roland Dreier (3):
-  tcm_fc: Remove use of transport_do_task_sg_chain()
-  IB/srpt: Remove use of transport_do_task_sg_chain()
-  target: Remove transport_do_task_sg_chain() and associated detritus
-
-Sebastian Andrzej Siewior (1):
-  target: add unknown size flag to target_submit_cmd()
-
-Stefan Hajnoczi (1):
-  target: Handle GET_EVENT_STATUS_NOTIFICATION passthrough
-
-mengcong (1):
-  target: Handle ATA_16 passthrough for pSCSI backend devices
-
- drivers/infiniband/ulp/srpt/ib_srpt.c             |   10 +-
- drivers/target/iscsi/iscsi_target.c               |  821 +++++++++---------
- drivers/target/iscsi/iscsi_target.h               |    3 +-
- drivers/target/iscsi/iscsi_target_configfs.c      |    2 +-
- drivers/target/iscsi/iscsi_target_core.h          |   12 +-
- drivers/target/iscsi/iscsi_target_datain_values.c |   35 +-
- drivers/target/iscsi/iscsi_target_erl0.c          |   31 +-
- drivers/target/iscsi/iscsi_target_erl1.c          |   23 +-
- drivers/target/iscsi/iscsi_target_erl2.c          |   28 +-
- drivers/target/iscsi/iscsi_target_parameters.c    |   17 -
- drivers/target/iscsi/iscsi_target_seq_pdu_list.c  |  145 ++--
- drivers/target/iscsi/iscsi_target_seq_pdu_list.h  |    2 +-
- drivers/target/iscsi/iscsi_target_tmr.c           |   15 +-
- drivers/target/iscsi/iscsi_target_util.c          |  192 +----
- drivers/target/iscsi/iscsi_target_util.h          |    3 -
- drivers/target/loopback/tcm_loop.c                |    4 +-
- drivers/target/target_core_alua.c                 |  100 ++-
- drivers/target/target_core_alua.h                 |   14 +-
- drivers/target/target_core_cdb.c                  |  118 +--
- drivers/target/target_core_configfs.c             |   25 +-
- drivers/target/target_core_device.c               |   84 +--
- drivers/target/target_core_file.c                 |  131 +--
- drivers/target/target_core_file.h                 |    4 -
- drivers/target/target_core_iblock.c               |  152 ++--
- drivers/target/target_core_iblock.h               |    1 -
- drivers/target/target_core_internal.h             |   25 +-
- drivers/target/target_core_pr.c                   |   67 +-
- drivers/target/target_core_pr.h                   |    8 +-
- drivers/target/target_core_pscsi.c                |  179 ++---
- drivers/target/target_core_pscsi.h                |    1 -
- drivers/target/target_core_rd.c                   |  168 +---
- drivers/target/target_core_rd.h                   |   20 -
- drivers/target/target_core_tmr.c                  |   71 +-
- drivers/target/target_core_tpg.c                  |    5 +-
- drivers/target/target_core_transport.c            |  994 ++++++---------------
- drivers/target/tcm_fc/tfc_cmd.c                   |   18 +-
- drivers/target/tcm_fc/tfc_conf.c                  |    3 -
- drivers/target/tcm_fc/tfc_io.c                    |    2 +-
- include/target/target_core_backend.h              |   16 +-
- include/target/target_core_base.h                 |   59 +-
- include/target/target_core_fabric.h               |   11 +-
- 41 files changed, 1315 insertions(+), 2304 deletions(-)
-
+diff --git a/drivers/staging/zcache/zcache-main.c b/drivers/staging/zcache/zcache-main.c
+index 2734dac..4c218a7 100644
+--- a/drivers/staging/zcache/zcache-main.c
++++ b/drivers/staging/zcache/zcache-main.c
+@@ -700,7 +700,7 @@ static struct zv_hdr *zv_create(struct zs_pool *pool, uint32_t pool_id,
+ 	struct zv_hdr *zv;
+ 	u32 size = clen + sizeof(struct zv_hdr);
+ 	int chunks = (size + (CHUNK_SIZE - 1)) >> CHUNK_SHIFT;
+-	void *handle = NULL;
++	unsigned long handle = 0;
+ 
+ 	BUG_ON(!irqs_disabled());
+ 	BUG_ON(chunks >= NCHUNKS);
+@@ -718,10 +718,10 @@ static struct zv_hdr *zv_create(struct zs_pool *pool, uint32_t pool_id,
+ 	memcpy((char *)zv + sizeof(struct zv_hdr), cdata, clen);
+ 	zs_unmap_object(pool, handle);
+ out:
+-	return handle;
++	return (struct zv_hdr *)handle;
+ }
+ 
+-static void zv_free(struct zs_pool *pool, void *handle)
++static void zv_free(struct zs_pool *pool, unsigned long handle)
+ {
+ 	unsigned long flags;
+ 	struct zv_hdr *zv;
+@@ -743,7 +743,7 @@ static void zv_free(struct zs_pool *pool, void *handle)
+ 	local_irq_restore(flags);
+ }
+ 
+-static void zv_decompress(struct page *page, void *handle)
++static void zv_decompress(struct page *page, unsigned long handle)
+ {
+ 	unsigned int clen = PAGE_SIZE;
+ 	char *to_va;
+@@ -1247,7 +1247,7 @@ static int zcache_pampd_get_data(char *data, size_t *bufsize, bool raw,
+ 	int ret = 0;
+ 
+ 	BUG_ON(is_ephemeral(pool));
+-	zv_decompress((struct page *)(data), pampd);
++	zv_decompress((struct page *)(data), (unsigned long)pampd);
+ 	return ret;
+ }
+ 
+@@ -1282,7 +1282,7 @@ static void zcache_pampd_free(void *pampd, struct tmem_pool *pool,
+ 		atomic_dec(&zcache_curr_eph_pampd_count);
+ 		BUG_ON(atomic_read(&zcache_curr_eph_pampd_count) < 0);
+ 	} else {
+-		zv_free(cli->zspool, pampd);
++		zv_free(cli->zspool, (unsigned long)pampd);
+ 		atomic_dec(&zcache_curr_pers_pampd_count);
+ 		BUG_ON(atomic_read(&zcache_curr_pers_pampd_count) < 0);
+ 	}
+diff --git a/drivers/staging/zram/zram_drv.c b/drivers/staging/zram/zram_drv.c
+index 685d612..abd69d1 100644
+--- a/drivers/staging/zram/zram_drv.c
++++ b/drivers/staging/zram/zram_drv.c
+@@ -135,7 +135,7 @@ static void zram_set_disksize(struct zram *zram, size_t totalram_bytes)
+ 
+ static void zram_free_page(struct zram *zram, size_t index)
+ {
+-	void *handle = zram->table[index].handle;
++	unsigned long handle = zram->table[index].handle;
+ 
+ 	if (unlikely(!handle)) {
+ 		/*
+@@ -150,7 +150,7 @@ static void zram_free_page(struct zram *zram, size_t index)
+ 	}
+ 
+ 	if (unlikely(zram_test_flag(zram, index, ZRAM_UNCOMPRESSED))) {
+-		__free_page(handle);
++		__free_page((struct page *)handle);
+ 		zram_clear_flag(zram, index, ZRAM_UNCOMPRESSED);
+ 		zram_stat_dec(&zram->stats.pages_expand);
+ 		goto out;
+@@ -166,7 +166,7 @@ out:
+ 			zram->table[index].size);
+ 	zram_stat_dec(&zram->stats.pages_stored);
+ 
+-	zram->table[index].handle = NULL;
++	zram->table[index].handle = 0;
+ 	zram->table[index].size = 0;
+ }
+ 
+@@ -189,7 +189,7 @@ static void handle_uncompressed_page(struct zram *zram, struct bio_vec *bvec,
+ 	unsigned char *user_mem, *cmem;
+ 
+ 	user_mem = kmap_atomic(page);
+-	cmem = kmap_atomic(zram->table[index].handle);
++	cmem = kmap_atomic((struct page *)zram->table[index].handle);
+ 
+ 	memcpy(user_mem + bvec->bv_offset, cmem + offset, bvec->bv_len);
+ 	kunmap_atomic(cmem);
+@@ -317,7 +317,7 @@ static int zram_bvec_write(struct zram *zram, struct bio_vec *bvec, u32 index,
+ 	int ret;
+ 	u32 store_offset;
+ 	size_t clen;
+-	void *handle;
++	unsigned long handle;
+ 	struct zobj_header *zheader;
+ 	struct page *page, *page_store;
+ 	unsigned char *user_mem, *cmem, *src, *uncmem = NULL;
+@@ -399,7 +399,7 @@ static int zram_bvec_write(struct zram *zram, struct bio_vec *bvec, u32 index,
+ 		store_offset = 0;
+ 		zram_set_flag(zram, index, ZRAM_UNCOMPRESSED);
+ 		zram_stat_inc(&zram->stats.pages_expand);
+-		handle = page_store;
++		handle = (unsigned long)page_store;
+ 		src = kmap_atomic(page);
+ 		cmem = kmap_atomic(page_store);
+ 		goto memstore;
+@@ -592,12 +592,12 @@ void __zram_reset_device(struct zram *zram)
+ 
+ 	/* Free all pages that are still in this zram device */
+ 	for (index = 0; index < zram->disksize >> PAGE_SHIFT; index++) {
+-		void *handle = zram->table[index].handle;
++		unsigned long handle = zram->table[index].handle;
+ 		if (!handle)
+ 			continue;
+ 
+ 		if (unlikely(zram_test_flag(zram, index, ZRAM_UNCOMPRESSED)))
+-			__free_page(handle);
++			__free_page((struct page *)handle);
+ 		else
+ 			zs_free(zram->mem_pool, handle);
+ 	}
+diff --git a/drivers/staging/zram/zram_drv.h b/drivers/staging/zram/zram_drv.h
+index fbe8ac9..7a7e256 100644
+--- a/drivers/staging/zram/zram_drv.h
++++ b/drivers/staging/zram/zram_drv.h
+@@ -81,7 +81,7 @@ enum zram_pageflags {
+ 
+ /* Allocated for each disk page */
+ struct table {
+-	void *handle;
++	unsigned long handle;
+ 	u16 size;	/* object size (excluding header) */
+ 	u8 count;	/* object ref count (not yet used) */
+ 	u8 flags;
+diff --git a/drivers/staging/zsmalloc/zsmalloc-main.c b/drivers/staging/zsmalloc/zsmalloc-main.c
+index 4496737..ae10a1a 100644
+--- a/drivers/staging/zsmalloc/zsmalloc-main.c
++++ b/drivers/staging/zsmalloc/zsmalloc-main.c
+@@ -247,10 +247,10 @@ static void *obj_location_to_handle(struct page *page, unsigned long obj_idx)
+ }
+ 
+ /* Decode <page, obj_idx> pair from the given object handle */
+-static void obj_handle_to_location(void *handle, struct page **page,
++static void obj_handle_to_location(unsigned long handle, struct page **page,
+ 				unsigned long *obj_idx)
+ {
+-	unsigned long hval = (unsigned long)handle;
++	unsigned long hval = handle;
+ 
+ 	*page = pfn_to_page(hval >> OBJ_INDEX_BITS);
+ 	*obj_idx = hval & OBJ_INDEX_MASK;
+@@ -568,12 +568,12 @@ EXPORT_SYMBOL_GPL(zs_destroy_pool);
+  * @size: size of block to allocate
+  *
+  * On success, handle to the allocated object is returned,
+- * otherwise NULL.
++ * otherwise 0.
+  * Allocation requests with size > ZS_MAX_ALLOC_SIZE will fail.
+  */
+-void *zs_malloc(struct zs_pool *pool, size_t size)
++unsigned long zs_malloc(struct zs_pool *pool, size_t size)
+ {
+-	void *obj;
++	unsigned long obj;
+ 	struct link_free *link;
+ 	int class_idx;
+ 	struct size_class *class;
+@@ -582,7 +582,7 @@ void *zs_malloc(struct zs_pool *pool, size_t size)
+ 	unsigned long m_objidx, m_offset;
+ 
+ 	if (unlikely(!size || size > ZS_MAX_ALLOC_SIZE))
+-		return NULL;
++		return 0;
+ 
+ 	class_idx = get_size_class_index(size);
+ 	class = &pool->size_class[class_idx];
+@@ -595,14 +595,14 @@ void *zs_malloc(struct zs_pool *pool, size_t size)
+ 		spin_unlock(&class->lock);
+ 		first_page = alloc_zspage(class, pool->flags);
+ 		if (unlikely(!first_page))
+-			return NULL;
++			return 0;
+ 
+ 		set_zspage_mapping(first_page, class->index, ZS_EMPTY);
+ 		spin_lock(&class->lock);
+ 		class->pages_allocated += class->pages_per_zspage;
+ 	}
+ 
+-	obj = first_page->freelist;
++	obj = (unsigned long)first_page->freelist;
+ 	obj_handle_to_location(obj, &m_page, &m_objidx);
+ 	m_offset = obj_idx_to_offset(m_page, m_objidx, class->size);
+ 
+@@ -621,7 +621,7 @@ void *zs_malloc(struct zs_pool *pool, size_t size)
+ }
+ EXPORT_SYMBOL_GPL(zs_malloc);
+ 
+-void zs_free(struct zs_pool *pool, void *obj)
++void zs_free(struct zs_pool *pool, unsigned long obj)
+ {
+ 	struct link_free *link;
+ 	struct page *first_page, *f_page;
+@@ -648,7 +648,7 @@ void zs_free(struct zs_pool *pool, void *obj)
+ 							+ f_offset);
+ 	link->next = first_page->freelist;
+ 	kunmap_atomic(link);
+-	first_page->freelist = obj;
++	first_page->freelist = (void *)obj;
+ 
+ 	first_page->inuse--;
+ 	fullness = fix_fullness_group(pool, first_page);
+@@ -672,7 +672,7 @@ EXPORT_SYMBOL_GPL(zs_free);
+  * this function. When done with the object, it must be unmapped using
+  * zs_unmap_object
+ */
+-void *zs_map_object(struct zs_pool *pool, void *handle)
++void *zs_map_object(struct zs_pool *pool, unsigned long handle)
+ {
+ 	struct page *page;
+ 	unsigned long obj_idx, off;
+@@ -712,7 +712,7 @@ void *zs_map_object(struct zs_pool *pool, void *handle)
+ }
+ EXPORT_SYMBOL_GPL(zs_map_object);
+ 
+-void zs_unmap_object(struct zs_pool *pool, void *handle)
++void zs_unmap_object(struct zs_pool *pool, unsigned long handle)
+ {
+ 	struct page *page;
+ 	unsigned long obj_idx, off;
+diff --git a/drivers/staging/zsmalloc/zsmalloc.h b/drivers/staging/zsmalloc/zsmalloc.h
+index 949384e..485cbb1 100644
+--- a/drivers/staging/zsmalloc/zsmalloc.h
++++ b/drivers/staging/zsmalloc/zsmalloc.h
+@@ -20,11 +20,11 @@ struct zs_pool;
+ struct zs_pool *zs_create_pool(const char *name, gfp_t flags);
+ void zs_destroy_pool(struct zs_pool *pool);
+ 
+-void *zs_malloc(struct zs_pool *pool, size_t size);
+-void zs_free(struct zs_pool *pool, void *obj);
++unsigned long zs_malloc(struct zs_pool *pool, size_t size);
++void zs_free(struct zs_pool *pool, unsigned long obj);
+ 
+-void *zs_map_object(struct zs_pool *pool, void *handle);
+-void zs_unmap_object(struct zs_pool *pool, void *handle);
++void *zs_map_object(struct zs_pool *pool, unsigned long handle);
++void zs_unmap_object(struct zs_pool *pool, unsigned long handle);
+ 
+ u64 zs_get_total_size_bytes(struct zs_pool *pool);
+ 
+-- 
+1.7.9.5
 
