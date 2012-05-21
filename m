@@ -1,71 +1,177 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752362Ab2EULRr (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 May 2012 07:17:47 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:41590 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751107Ab2EULRi (ORCPT
+	id S1752169Ab2EULaK (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 May 2012 07:30:10 -0400
+Received: from wolverine02.qualcomm.com ([199.106.114.251]:40310 "EHLO
+	wolverine02.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751604Ab2EULaJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 May 2012 07:17:38 -0400
-Date: Mon, 21 May 2012 12:17:35 +0100
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Linus Walleij <linus.walleij@linaro.org>
-Cc: Axel Lin <axel.lin@gmail.com>, linux-kernel@vger.kernel.org,
-        Lee Jones <lee.jones@linaro.org>,
-        Linus Walleij <linus.walleij@stericsson.com>,
-        Liam Girdwood <lrg@ti.com>
-Subject: Re: [PATCH RFC/RFT 3/7] regulator: ab8500: Use
- regulator_list_voltage_table()
-Message-ID: <20120521111734.GC4983@opensource.wolfsonmicro.com>
-References: <1337481021.7204.1.camel@phoenix>
- <1337481215.7204.4.camel@phoenix>
- <CACRpkda7BdaJsDdfaWXW466Yi687EAms5MAmZySVQ_xrAZNoXA@mail.gmail.com>
+	Mon, 21 May 2012 07:30:09 -0400
+X-IronPort-AV: E=McAfee;i="5400,1158,6717"; a="190733792"
+Message-ID: <4FBA273B.6010106@codeaurora.org>
+Date: Mon, 21 May 2012 17:00:03 +0530
+From: Subhash Jadavani <subhashj@codeaurora.org>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:12.0) Gecko/20120428 Thunderbird/12.0.1
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="oTHb8nViIGeoXxdp"
-Content-Disposition: inline
-In-Reply-To: <CACRpkda7BdaJsDdfaWXW466Yi687EAms5MAmZySVQ_xrAZNoXA@mail.gmail.com>
-X-Cookie: You have no real enemies.
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Seungwon Jeon <tgih.jun@samsung.com>
+CC: linux-mmc@vger.kernel.org, "'Chris Ball'" <cjb@laptop.org>,
+        merez@codeaurora.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v6 1/3] mmc: core: Add packed command feature of eMMC4.5
+References: <009d01cd3411$0febc350$2fc349f0$%jun@samsung.com>
+In-Reply-To: <009d01cd3411$0febc350$2fc349f0$%jun@samsung.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
---oTHb8nViIGeoXxdp
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+Hi Seungwon,
 
-On Mon, May 21, 2012 at 12:43:16PM +0200, Linus Walleij wrote:
+Sorry for commenting on this late. I have one comment below. Please 
+check if it makes sense or not.
 
-> Acked-by: Linus Walleij <linus.walleij@linaro.org>
+On 5/17/2012 3:10 PM, Seungwon Jeon wrote:
+> This patch adds packed command feature of eMMC4.5.
+> The maximum number for packing read(or write) is offered
+> and exception event relevant to packed command which is
+> used for error handling is enabled. If host wants to use
+> this feature, MMC_CAP2_PACKED_CMD should be set.
+>
+> Signed-off-by: Seungwon Jeon<tgih.jun@samsung.com>
+> ---
+>   drivers/mmc/core/mmc.c   |   24 ++++++++++++++++++++++++
+>   include/linux/mmc/card.h |    3 +++
+>   include/linux/mmc/host.h |    4 ++++
+>   include/linux/mmc/mmc.h  |   15 +++++++++++++++
+>   4 files changed, 46 insertions(+), 0 deletions(-)
+>
+> diff --git a/drivers/mmc/core/mmc.c b/drivers/mmc/core/mmc.c
+> index 2f0e11c..8310ce8 100644
+> --- a/drivers/mmc/core/mmc.c
+> +++ b/drivers/mmc/core/mmc.c
+> @@ -516,6 +516,11 @@ static int mmc_read_ext_csd(struct mmc_card *card, u8 *ext_csd)
+>   		} else {
+>   			card->ext_csd.data_tag_unit_size = 0;
+>   		}
+> +
+> +		card->ext_csd.max_packed_writes =
+> +			ext_csd[EXT_CSD_MAX_PACKED_WRITES];
+> +		card->ext_csd.max_packed_reads =
+> +			ext_csd[EXT_CSD_MAX_PACKED_READS];
+>   	}
+>
+>   out:
+> @@ -1244,6 +1249,25 @@ static int mmc_init_card(struct mmc_host *host, u32 ocr,
+>   		}
+>   	}
+>
+> +	if ((host->caps2&  MMC_CAP2_PACKED_CMD)&&
+> +			(card->ext_csd.max_packed_writes>  0)&&
+> +			(card->ext_csd.max_packed_reads>  0)) {
+why both max_packed_reads and max_packed_writes need to be non-zero to 
+enable the write packing event? What if write packing is not supported 
+by card and only read packing is supported? Shouldn't we still make the 
+read packing work?
 
-> Hm, probably also already applied, whatever.
+I would suggest to change it like this:
+     if (  (host->caps2 & MMC_CAP2_PACKED_WR && 
+card->ext_csd.max_packed_writes > 0) ||
+            (host->caps2 & MMC_CAP2_PACKED_RD && 
+card->ext_csd.max_packed_reads > 0)
+> +		err = mmc_switch(card, EXT_CSD_CMD_SET_NORMAL,
+> +				EXT_CSD_EXP_EVENTS_CTRL,
+> +				EXT_CSD_PACKED_EVENT_EN,
+> +				card->ext_csd.generic_cmd6_time);
+> +		if (err&&  err != -EBADMSG)
+> +			goto free_card;
+> +		if (err) {
+> +			pr_warning("%s: Enabling packed event failed\n",
+> +					mmc_hostname(card->host));
+> +			card->ext_csd.packed_event_en = 0;
+> +			err = 0;
+> +		} else {
+> +			card->ext_csd.packed_event_en = 1;
+> +		}
+> +	}
+> +
+>   	if (!oldcard)
+>   		host->card = card;
+>
+> diff --git a/include/linux/mmc/card.h b/include/linux/mmc/card.h
+> index d76513b..4aeb4e9 100644
+> --- a/include/linux/mmc/card.h
+> +++ b/include/linux/mmc/card.h
+> @@ -53,6 +53,9 @@ struct mmc_ext_csd {
+>   	u8			part_config;
+>   	u8			cache_ctrl;
+>   	u8			rst_n_function;
+> +	u8			max_packed_writes;
+> +	u8			max_packed_reads;
+> +	u8			packed_event_en;
+>   	unsigned int		part_time;		/* Units: ms */
+>   	unsigned int		sa_timeout;		/* Units: 100ns */
+>   	unsigned int		generic_cmd6_time;	/* Units: 10ms */
+> diff --git a/include/linux/mmc/host.h b/include/linux/mmc/host.h
+> index 0707d22..9d0d946 100644
+> --- a/include/linux/mmc/host.h
+> +++ b/include/linux/mmc/host.h
+> @@ -238,6 +238,10 @@ struct mmc_host {
+>   #define MMC_CAP2_BROKEN_VOLTAGE	(1<<  7)	/* Use the broken voltage */
+>   #define MMC_CAP2_DETECT_ON_ERR	(1<<  8)	/* On I/O err check card removal */
+>   #define MMC_CAP2_HC_ERASE_SZ	(1<<  9)	/* High-capacity erase size */
+> +#define MMC_CAP2_PACKED_RD	(1<<  10)	/* Allow packed read */
+> +#define MMC_CAP2_PACKED_WR	(1<<  11)	/* Allow packed write */
+> +#define MMC_CAP2_PACKED_CMD	(MMC_CAP2_PACKED_RD | \
+> +				 MMC_CAP2_PACKED_WR) /* Allow packed commands */
+>
+>   	mmc_pm_flag_t		pm_caps;	/* supported pm features */
+>   	unsigned int        power_notify_type;
+> diff --git a/include/linux/mmc/mmc.h b/include/linux/mmc/mmc.h
+> index d425cab..254901a 100644
+> --- a/include/linux/mmc/mmc.h
+> +++ b/include/linux/mmc/mmc.h
+> @@ -139,6 +139,7 @@ static inline bool mmc_op_multi(u32 opcode)
+>   #define R1_CURRENT_STATE(x)	((x&  0x00001E00)>>  9)	/* sx, b (4 bits) */
+>   #define R1_READY_FOR_DATA	(1<<  8)	/* sx, a */
+>   #define R1_SWITCH_ERROR		(1<<  7)	/* sx, c */
+> +#define R1_EXP_EVENT		(1<<  6)	/* sr, a */
+>   #define R1_APP_CMD		(1<<  5)	/* sr, c */
+>
+>   #define R1_STATE_IDLE	0
+> @@ -274,6 +275,10 @@ struct _mmc_csd {
+>   #define EXT_CSD_FLUSH_CACHE		32      /* W */
+>   #define EXT_CSD_CACHE_CTRL		33      /* R/W */
+>   #define EXT_CSD_POWER_OFF_NOTIFICATION	34	/* R/W */
+> +#define EXT_CSD_PACKED_FAILURE_INDEX	35	/* RO */
+> +#define EXT_CSD_PACKED_CMD_STATUS	36	/* RO */
+> +#define EXT_CSD_EXP_EVENTS_STATUS	54	/* RO, 2 bytes */
+> +#define EXT_CSD_EXP_EVENTS_CTRL	56	/* R/W, 2 bytes */
+>   #define EXT_CSD_DATA_SECTOR_SIZE	61	/* R */
+>   #define EXT_CSD_GP_SIZE_MULT		143	/* R/W */
+>   #define EXT_CSD_PARTITION_ATTRIBUTE	156	/* R/W */
+> @@ -318,6 +323,8 @@ struct _mmc_csd {
+>   #define EXT_CSD_CACHE_SIZE		249	/* RO, 4 bytes */
+>   #define EXT_CSD_TAG_UNIT_SIZE		498	/* RO */
+>   #define EXT_CSD_DATA_TAG_SUPPORT	499	/* RO */
+> +#define EXT_CSD_MAX_PACKED_WRITES	500	/* RO */
+> +#define EXT_CSD_MAX_PACKED_READS	501	/* RO */
+>   #define EXT_CSD_HPI_FEATURES		503	/* RO */
+>
+>   /*
+> @@ -377,6 +384,14 @@ struct _mmc_csd {
+>   #define EXT_CSD_PWR_CL_4BIT_MASK	0x0F	/* 8 bit PWR CLS */
+>   #define EXT_CSD_PWR_CL_8BIT_SHIFT	4
+>   #define EXT_CSD_PWR_CL_4BIT_SHIFT	0
+> +
+> +#define EXT_CSD_PACKED_EVENT_EN	(1<<  3)
+> +
+> +#define EXT_CSD_PACKED_FAILURE	(1<<  3)
+> +
+> +#define EXT_CSD_PACKED_GENERIC_ERROR	(1<<  0)
+> +#define EXT_CSD_PACKED_INDEXED_ERROR	(1<<  1)
+> +
+>   /*
+>    * MMC_SWITCH access modes
+>    */
 
-It was but it's not made 3.5 so I'll add your ack - review for the
-ab8500 has been a bit patchy so I have been tending to apply things
-fairly quickly rather than waiting.
-
---oTHb8nViIGeoXxdp
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBAgAGBQJPuiRDAAoJEBus8iNuMP3dRxkP+wWpjlOSLJj9fILUFb86ybW2
-9KvBTjV4fU8P/64OMXVkReJwpvfZgDUMDY2MnfAK2CuyoIiH0QoTyU0erU6YBNJY
-Kj4iPWzgWCVba0DUGmdaFiQiExgaD0ew84S14VeG5GhjCMrKdb2o69VuhKV1Zext
-INU16A1zQytiqDL067ZR+GJ9IE2wxu6u5wTyN/7gI+aLbgyAdgyCc9HY3nFOulis
-tVS6dlPqea2lv3/olMfuPMWMscfGkY2J2RGc5eeN89+bH3RxL6qaD8VxqKfiR+9j
-/BnHJq2KvlbudVb1u5UnYyh5tatynFVr4FnvsW/R+2py0L41jR6V9xWjHfLeznSH
-1JmFJ0Yzg+eMy9uoGVP3XiSDtukwd58ajz2DPOaBwjT2E9eFALHVdBzr+md/NWN+
-eJKwiSsvnP/UoFqZh27aTzNQUJYX52jFTOaaQ2l8KscnhWK73MVMvrAgTQ0HMAx8
-Mo2Pv60DAXbWaUT4hu4ieGMdFhiv7Kp2LTu/fkZMcNh17CWoaw0+lOzYS2p0ToO0
-AbU4crEU6cNrMiPoVTxqxD6s5iB9QrVgwz8TnwmhwoXuM8eyeLqAPsAOq6xTVy/H
-vf7jutBXDZmvggsrZo++JnAlUDhFisXq0OEFVDcvogRl8VVrY9KV9pNJL6Bp5Lzy
-8gJtE12SyeK7hTAj+pnn
-=ht4V
------END PGP SIGNATURE-----
-
---oTHb8nViIGeoXxdp--
