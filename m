@@ -1,73 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752175Ab2EUGAX (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 May 2012 02:00:23 -0400
-Received: from mail-wi0-f172.google.com ([209.85.212.172]:63504 "EHLO
-	mail-wi0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751144Ab2EUGAW (ORCPT
+	id S1753130Ab2EUGA7 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 May 2012 02:00:59 -0400
+Received: from mail-wi0-f178.google.com ([209.85.212.178]:33170 "EHLO
+	mail-wi0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752818Ab2EUGA5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 May 2012 02:00:22 -0400
+	Mon, 21 May 2012 02:00:57 -0400
 From: Yong Zhang <yong.zhang0@gmail.com>
 To: linux-mips@linux-mips.org, linux-kernel@vger.kernel.org
 Cc: ralf@linux-mips.org, sshtylyov@mvista.com, david.daney@cavium.com
-Subject: [V1 PATCH 0/8] patchset focus on MIPS SMP woes
-Date: Mon, 21 May 2012 14:00:00 +0800
-Message-Id: <1337580008-7280-1-git-send-email-yong.zhang0@gmail.com>
+Subject: [PATCH 2/8] MIPS: BMIPS: delay irq enable to ->smp_finish()
+Date: Mon, 21 May 2012 14:00:02 +0800
+Message-Id: <1337580008-7280-3-git-send-email-yong.zhang0@gmail.com>
 X-Mailer: git-send-email 1.7.5.4
+In-Reply-To: <1337580008-7280-1-git-send-email-yong.zhang0@gmail.com>
+References: <1337580008-7280-1-git-send-email-yong.zhang0@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Changes from V0:
-  a) Fix grammar and add summary for commit reference; (Sergei Shtylyov)
-  b) Collect Acks
+From: Yong Zhang <yong.zhang@windriver.com>
 
+To prepare for smoothing set_cpu_[active|online]() mess up
 
-Since commit 5fbd036b [sched: Cleanup cpu_active madness] and
-commit 2baab4e9 [sched: Fix select_fallback_rq() vs cpu_active/cpu_online],
-it's more safe to put notify_cpu_starting() and set_cpu_online() with
-irq disabled, otherwise we will have a typical race condition which
-above two commits try to resolve:
+Signed-off-by: Yong Zhang <yong.zhang0@gmail.com>
+Cc: Ralf Baechle <ralf@linux-mips.org>
+Acked-by: David Daney <david.daney@cavium.com>
+---
+ arch/mips/kernel/smp-bmips.c |   14 +++++++-------
+ 1 files changed, 7 insertions(+), 7 deletions(-)
 
-       CPU1                            CPU2
-__cpu_up();
-    mp_ops->boot_secondary();
-                               start_secondary();
-                                 ->init_secondary();
-                                   local_irq_enable();
-                               <IRQ>
-                               do something;
-                                     wake up softirqd;
-                                     try_to_wake_up();
-                                       select_fallback_rq();
-                                       /* select wrong cpu */
-    set_cpu_online();
-
-
-This patchset fix the above issue as well as set_cpu_online is
-called on the caller cpu.
-
-BTW, I'm only running it on Cavium board because of limited source,
-so if anyone is interested to test it on other board, that's great :)
-
-Yong Zhang (8):
-  MIPS: Octeon: delay enable irq to ->smp_finish()
-  MIPS: BMIPS: delay irq enable to ->smp_finish()
-  MIPS: SMTC: delay irq enable to ->smp_finish()
-  MIPS: Yosemite: delay irq enable to ->smp_finish()
-  MIPS: call ->smp_finish() a little late
-  MIPS: call set_cpu_online() on the uping cpu with irq disabled
-  MIPS: smp: Warn on too early irq enable
-  MIPS: sync-r4k: remove redundant irq operation
-
- arch/mips/cavium-octeon/smp.c       |    2 +-
- arch/mips/kernel/smp-bmips.c        |   14 +++++++-------
- arch/mips/kernel/smp.c              |   12 +++++++++---
- arch/mips/kernel/smtc.c             |    3 ++-
- arch/mips/kernel/sync-r4k.c         |    5 -----
- arch/mips/pmc-sierra/yosemite/smp.c |    2 +-
- 6 files changed, 20 insertions(+), 18 deletions(-)
-
+diff --git a/arch/mips/kernel/smp-bmips.c b/arch/mips/kernel/smp-bmips.c
+index 3046e29..298b437 100644
+--- a/arch/mips/kernel/smp-bmips.c
++++ b/arch/mips/kernel/smp-bmips.c
+@@ -197,13 +197,6 @@ static void bmips_init_secondary(void)
+ 
+ 	write_c0_brcm_action(ACTION_CLR_IPI(smp_processor_id(), 0));
+ #endif
+-
+-	/* make sure there won't be a timer interrupt for a little while */
+-	write_c0_compare(read_c0_count() + mips_hpt_frequency / HZ);
+-
+-	irq_enable_hazard();
+-	set_c0_status(IE_SW0 | IE_SW1 | IE_IRQ1 | IE_IRQ5 | ST0_IE);
+-	irq_enable_hazard();
+ }
+ 
+ /*
+@@ -212,6 +205,13 @@ static void bmips_init_secondary(void)
+ static void bmips_smp_finish(void)
+ {
+ 	pr_info("SMP: CPU%d is running\n", smp_processor_id());
++
++	/* make sure there won't be a timer interrupt for a little while */
++	write_c0_compare(read_c0_count() + mips_hpt_frequency / HZ);
++
++	irq_enable_hazard();
++	set_c0_status(IE_SW0 | IE_SW1 | IE_IRQ1 | IE_IRQ5 | ST0_IE);
++	irq_enable_hazard();
+ }
+ 
+ /*
 -- 
 1.7.5.4
 
