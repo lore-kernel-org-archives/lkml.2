@@ -1,74 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932560Ab2EUXLI (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 May 2012 19:11:08 -0400
-Received: from www.linutronix.de ([62.245.132.108]:34018 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932388Ab2EUXLD (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 May 2012 19:11:03 -0400
-Date: Tue, 22 May 2012 01:11:01 +0200 (CEST)
-From: Thomas Gleixner <tglx@linutronix.de>
+	id S1757519Ab2EUXMg (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 May 2012 19:12:36 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:47823 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752090Ab2EUXMf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 21 May 2012 19:12:35 -0400
+Message-ID: <4FBACBD5.6080207@zytor.com>
+Date: Mon, 21 May 2012 16:12:21 -0700
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:11.0) Gecko/20120329 Thunderbird/11.0.1
+MIME-Version: 1.0
 To: "Michael S. Tsirkin" <mst@redhat.com>
-cc: kvm@vger.kernel.org, Avi Kivity <avi@redhat.com>,
-        Marcelo Tosatti <mtosatti@redhat.com>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, x86@kernel.org,
+CC: Thomas Gleixner <tglx@linutronix.de>, kvm@vger.kernel.org,
+        Avi Kivity <avi@redhat.com>, Marcelo Tosatti <mtosatti@redhat.com>,
+        Ingo Molnar <mingo@redhat.com>, x86@kernel.org,
         linux-kernel@vger.kernel.org
 Subject: Re: [PATCH] kvm: optimize ISR lookups
-In-Reply-To: <20120521222449.GJ17031@redhat.com>
-Message-ID: <alpine.LFD.2.02.1205220102050.3231@ionos>
-References: <20120521163727.GA13337@redhat.com> <alpine.LFD.2.02.1205211940030.3231@ionos> <20120521215127.GH17031@redhat.com> <alpine.LFD.2.02.1205220012020.3231@ionos> <20120521222449.GJ17031@redhat.com>
-User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+References: <20120521163727.GA13337@redhat.com> <alpine.LFD.2.02.1205211940030.3231@ionos> <20120521230623.GO17031@redhat.com>
+In-Reply-To: <20120521230623.GO17031@redhat.com>
+X-Enigmail-Version: 1.4.1
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 22 May 2012, Michael S. Tsirkin wrote:
-> On Tue, May 22, 2012 at 12:14:18AM +0200, Thomas Gleixner wrote:
-> > On Tue, 22 May 2012, Michael S. Tsirkin wrote:
-> > 
-> > > On Mon, May 21, 2012 at 11:04:25PM +0200, Thomas Gleixner wrote:
-> > > > > @@ -242,6 +262,25 @@ static inline void apic_clear_irr(int vec, struct kvm_lapic *apic)
-> > > > >  		apic->irr_pending = true;
-> > > > >  }
-> > > > >  
-> > > > > +static inline void apic_set_isr(int vec, struct kvm_lapic *apic)
-> > > > > +{
-> > > > > +	if (!__apic_test_and_set_vector(vec, apic->regs + APIC_ISR))
-> > > > > +		++apic->isr_count;
-> > > > > +	ASSERT(apic->isr_count > MAX_APIC_VECTOR);
-> > > > 
-> > > > I'm really curious what you observed when defining DEBUG in that file.
-> > > > 
-> > > > Clearly you never did.
-> > > 
-> > > Sorry :(
-> > > Yes clearly silly, thanks for pointing this out.
-> > 
-> > That's all you have a reply for? That's the least of the problems ....
+On 05/21/2012 04:06 PM, Michael S. Tsirkin wrote:
 > 
-> Others are not my fault :)
+> I think the reason is __apic_read which now simply copies the registers
+> out to guest, this code will become less straight-forward if it's not
+> 1:1.
 > 
-> Seriously, if Avi/Marcelo want to rewrite the ISR emulation
-> I can help. If they want to keep it 1:1 with hardware
-> then what I wrote seems the only way.
 
-Seriously. You submitted a code monkey patch, solving a problem by
-curing the symptom, but not the root cause.
+It can still be 1:1, just drop the 12 bytes of completely useless
+padding after each 32-bit datum.
 
-And then you hide behind Avi and Marcelo?
+>> And if you look deeper, then you'll notice that _ALL_ APIC registers
+>> are on a 16 byte boundary (thanks Peter for pointing that out).
+>>
+>> So it's even more silly to have a 1:1 representation instead of
+>> implementing the default emulated apic_read/write functions to access
+>> (offset >> 2).
+>>
+>> And of course, that design decision causes lookups to be slow.
+> 
+> Yes, it might be one of the reasons why my patch helps so
+> much: it adds a cache in front of this data structure.
+> 
 
-Did you ever think about the real problem of that lapic emulation?
+Well, *fix the fscking data structure first*.
 
-Let's assume you did and it occured to you that the whole thing is
-wrong and backwards, then you still insist on adding more bullshit to
-that file instead of optimizing and fixing it in the first place?
+> 
+> So what you propose is in fact to rework apic registers at least for
+> ISR,IRR,TMR to use a bitmap.
+> I am fine with this suggestion but would like some feedback from kvm
+> maintainers on where they want to go before I spend time on that.
+> 
 
-Thanks,
+This should be a 20-minute hack.
 
-	tglx
+	-hpa
