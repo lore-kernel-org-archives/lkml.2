@@ -1,142 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757624Ab2EUXK2 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 May 2012 19:10:28 -0400
-Received: from mail-lpp01m010-f46.google.com ([209.85.215.46]:52889 "EHLO
-	mail-lpp01m010-f46.google.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756866Ab2EUXKU convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 May 2012 19:10:20 -0400
+	id S932560Ab2EUXLI (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 May 2012 19:11:08 -0400
+Received: from www.linutronix.de ([62.245.132.108]:34018 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932388Ab2EUXLD (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 21 May 2012 19:11:03 -0400
+Date: Tue, 22 May 2012 01:11:01 +0200 (CEST)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: "Michael S. Tsirkin" <mst@redhat.com>
+cc: kvm@vger.kernel.org, Avi Kivity <avi@redhat.com>,
+        Marcelo Tosatti <mtosatti@redhat.com>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, x86@kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] kvm: optimize ISR lookups
+In-Reply-To: <20120521222449.GJ17031@redhat.com>
+Message-ID: <alpine.LFD.2.02.1205220102050.3231@ionos>
+References: <20120521163727.GA13337@redhat.com> <alpine.LFD.2.02.1205211940030.3231@ionos> <20120521215127.GH17031@redhat.com> <alpine.LFD.2.02.1205220012020.3231@ionos> <20120521222449.GJ17031@redhat.com>
+User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
 MIME-Version: 1.0
-In-Reply-To: <CAErSpo5M9g9UyW_Xc4EtPg-vWf1fOHF+KoSFkmYScXSvi9h5_w@mail.gmail.com>
-References: <20120427143410.GB27535@alberich.amd.com> <20120427143621.GC27535@alberich.amd.com>
- <CAErSpo7gkkqZgR0TZ5Xx162pLN9ZaYVhMmyHn+H8Lqr1CBSXXQ@mail.gmail.com>
- <20120504130332.GC12199@alberich.amd.com> <CAErSpo5_ZB=ggNDGM5N8Rt1TtW8DQQm1k2s9FBwFHjh7nFA4hw@mail.gmail.com>
- <20120507073547.GE10668@alberich.amd.com> <CAErSpo7-PBOsTiM37f6PFjfeJ=QrLiu1DCFesquWMctLbwirAA@mail.gmail.com>
- <20120508074348.GC26061@alberich.amd.com> <CAErSpo5M9g9UyW_Xc4EtPg-vWf1fOHF+KoSFkmYScXSvi9h5_w@mail.gmail.com>
-From: Bjorn Helgaas <bhelgaas@google.com>
-Date: Mon, 21 May 2012 17:09:58 -0600
-Message-ID: <CAErSpo619=HTLeAtBPQMYeRkpcmZSa=bmHAMLVjA94SfiZc5sQ@mail.gmail.com>
-Subject: Re: [PATCH 1/2][RESEND] x86/pci/amd: Restore early_fill_mp_bus_to_node
-To: Andreas Herrmann <andreas.herrmann3@amd.com>
-Cc: linux-kernel@vger.kernel.org, linux-pci@vger.kernel.org,
-        Ingo Molnar <mingo@kernel.org>, Yinghai Lu <yinghai@kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
-X-System-Of-Record: true
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, May 8, 2012 at 10:02 AM, Bjorn Helgaas <bhelgaas@google.com> wrote:
-> On Tue, May 8, 2012 at 12:43 AM, Andreas Herrmann
-> <andreas.herrmann3@amd.com> wrote:
->> On Mon, May 07, 2012 at 09:44:16AM -0700, Bjorn Helgaas wrote:
->>> On Mon, May 7, 2012 at 12:35 AM, Andreas Herrmann
->>> <andreas.herrmann3@amd.com> wrote:
->>> > On Fri, May 04, 2012 at 10:35:05AM -0600, Bjorn Helgaas wrote:
->>> >> On Fri, May 4, 2012 at 7:03 AM, Andreas Herrmann
->>> >> <andreas.herrmann3@amd.com> wrote:
->>> >> > On Wed, May 02, 2012 at 11:33:17AM -0600, Bjorn Helgaas wrote:
->>> >> >> On Fri, Apr 27, 2012 at 8:36 AM, Andreas Herrmann
->>> >> >> <andreas.herrmann3@amd.com> wrote:
->>> >> >> >
->>> >> >> > Once upon a time this function was overloaded with quirky stuff to fix
->>> >> >> > resource detection on systems w/ _CRS defects (seems that some Sun and
->>> >> >> > HP systems were affected).
->>> >> >> >
->>> >> >> > See commit 30a18d6c3f1e774de656ebd8ff219d53e2ba4029
->>> >> >> > (x86: multi pci root bus with different io resource range, on 64-bit)
->>> >> >> >
->>> >> >> > Restore the old function and thus decouple it from the quirk that is
->>> >> >> > CPU family specific (e.g. it won't work on AMD family 15h CPUs). BTW,
->>> >> >> > I assume that the _CRS stuff is working on current systems.
->>> >> >> >
->>> >> >> > This is required to properly initilize the numa_node information of
->>> >> >> > existing PCI busses and associated devices.
->>> >> >>
->>> >> >> I applied some of Yinghai's patches that also touch this area.  Can
->>> >> >> you refresh these so they apply on top of my "next" branch
->>> >> >> (git://git.kernel.org/pub/scm/linux/kernel/git/helgaas/pci.git next)?
->>> >> >
->>> >> > Arrgh, will adapt my patch and resend it (asap).
->>> >> >
->>> >> >> Can you also be more specific about what these patches fix?
->>> >> >
->>> >> >> My understanding is that amd_bus.c (1) sets NUMA info with
->>> >> >> set_mp_bus_to_node() and (2) figures out MMIO and I/O port apertures,
->>> >> >> which are only used when blind probing and when ignoring _CRS.
->>> >> >>
->>> >> >> It seems like the main change in this patch is that we skip (2)
->>> >> >> completely when family >= 0x11, and I don't understand what that could
->>> >> >> fix.
->>> >> >
->>> >> > The patch restores a very old function that was used to detect the
->>> >> > nearest node for a PCI bus, so yes it's used to do (1). IMHO this
->>> >> > function was totally screwed up with Yinghai's code to do (2). It
->>> >> > seems that Sun has (had?) some systems where (2) was req'd. I don't
->>> >> > care about this part. But I'd like to do (1) on all AMD CPU NUMA
->>> >> > systems.
->>> >>
->>> >> Thanks for the explanation.  But I'm afraid I'm still confused.
->>> >>
->>> >> First, it sounds like you're trying to change the way we do part (1),
->>> >> i.e., the set_mp_bus_to_node() calls, but I think the effect of your
->>> >> patch is to stop doing part (2) in some cases.
->>> >>
->>> >> Second, I am pretty sure that the current early_fill_mp_bus_info()
->>> >> (before your patch) does the exact same set_mp_bus_to_node() calls as
->>> >> your early_fill_mp_bus_to_node() does.
->>> >
->>> >
->>> > I want to do (1) on all AMD CPUs that might be used in NUMA systems.
->>> >
->>> > What's done for (2) is very specific to certain AMD CPU families --
->>> > some of the register accesses are wrong/incomplete for newer AMD
->>> > CPUs. Furhtermore _CRS should provide the required info. I really
->>> > don't want to extend all the quirky stuff in (2) for future AMD CPUs.
->>>
->>> I'm all in favor of limiting part (2) to older AMD CPUs.  I certainly
->>> don't want to maintain it for future CPUs.
->>>
->>> >> Finally, on all systems with ACPI, the set_mp_bus_to_node() call in
->>> >> pci_acpi_scan_root() should be doing what you need.  In fact, that
->>> >> call happens later, so it should be overwriting the information filled
->>> >> in by amd_bus.c.  If there's something wrong in this ACPI path, the
->>> >> most likely cause is a BIOS defect, such as  a missing _PXM method on
->>> >> the PNP0A03/0A08 host bridge device.
->>> >
->>> > Good point. I'll check what's wrong in this ACPI path.
->>>
->>> I hope you find something, especially if it's a bug in the Linux code
->>> that interprets  the NUMA info.  Then we could fix that and limit both
->>> parts to older CPUs.
->>
->> Simply, there is no _PXM object for the host bridge devices. At least
->> on the systems that I checked.
->>
->> I'll try to find out whether this is sort of "common BIOS practice" on
->> AMD boxes and how to avoid that in the future.
->
-> _PXM can also be attached to any parent of the host bridge, since
-> devices default to the domain of their parents.  It looks like
-> acpi_get_pxm() should already handle that correctly, so I assume these
-> systems just don't have any _PXM anywhere in the path between the host
-> bridge and the root.
->
-> If these are just old machines with BIOS bugs, I guess I'm OK with
-> doing a Linux fix along the lines of your patch.  What I don't like is
-> just silently covering up BIOS bugs in new platforms by keeping this
-> CPU-specific code when we have a perfectly good generic mechanism for
-> doing proximity.  That's a maintenance problem, as you pointed out for
-> the aperture code (part (2)).
+On Tue, 22 May 2012, Michael S. Tsirkin wrote:
+> On Tue, May 22, 2012 at 12:14:18AM +0200, Thomas Gleixner wrote:
+> > On Tue, 22 May 2012, Michael S. Tsirkin wrote:
+> > 
+> > > On Mon, May 21, 2012 at 11:04:25PM +0200, Thomas Gleixner wrote:
+> > > > > @@ -242,6 +262,25 @@ static inline void apic_clear_irr(int vec, struct kvm_lapic *apic)
+> > > > >  		apic->irr_pending = true;
+> > > > >  }
+> > > > >  
+> > > > > +static inline void apic_set_isr(int vec, struct kvm_lapic *apic)
+> > > > > +{
+> > > > > +	if (!__apic_test_and_set_vector(vec, apic->regs + APIC_ISR))
+> > > > > +		++apic->isr_count;
+> > > > > +	ASSERT(apic->isr_count > MAX_APIC_VECTOR);
+> > > > 
+> > > > I'm really curious what you observed when defining DEBUG in that file.
+> > > > 
+> > > > Clearly you never did.
+> > > 
+> > > Sorry :(
+> > > Yes clearly silly, thanks for pointing this out.
+> > 
+> > That's all you have a reply for? That's the least of the problems ....
+> 
+> Others are not my fault :)
+> 
+> Seriously, if Avi/Marcelo want to rewrite the ISR emulation
+> I can help. If they want to keep it 1:1 with hardware
+> then what I wrote seems the only way.
 
-I think we still need to do something here, don't we?
+Seriously. You submitted a code monkey patch, solving a problem by
+curing the symptom, but not the root cause.
 
-I'm expecting we'll end up with at least two patches: one to keep us
-from looking at MSRs on future CPUs where they might be different from
-current CPUs, and another to work around BIOS defects (missing _PXM
-methods) on some systems.  I'm guessing the second should be somehow
-limited to certain CPU families and possibly BIOS dates.
+And then you hide behind Avi and Marcelo?
 
-Bjorn
+Did you ever think about the real problem of that lapic emulation?
+
+Let's assume you did and it occured to you that the whole thing is
+wrong and backwards, then you still insist on adding more bullshit to
+that file instead of optimizing and fixing it in the first place?
+
+Thanks,
+
+	tglx
