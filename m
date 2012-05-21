@@ -1,63 +1,274 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932490Ab2EUSS1 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 May 2012 14:18:27 -0400
-Received: from mail-wg0-f42.google.com ([74.125.82.42]:60428 "EHLO
-	mail-wg0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932095Ab2EUSSZ (ORCPT
+	id S933443Ab2EUSS4 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 May 2012 14:18:56 -0400
+Received: from e36.co.us.ibm.com ([32.97.110.154]:38563 "EHLO
+	e36.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932095Ab2EUSSy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 May 2012 14:18:25 -0400
+	Mon, 21 May 2012 14:18:54 -0400
+Message-ID: <4FBA86E4.6090001@linaro.org>
+Date: Mon, 21 May 2012 11:18:12 -0700
+From: John Stultz <john.stultz@linaro.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
 MIME-Version: 1.0
-In-Reply-To: <1337623623.1997.115.camel@sbsiddha-desk.sc.intel.com>
-References: <20120518102640.GB31517@dhcp-26-207.brq.redhat.com>
- <20120521082240.GA31407@gmail.com> <20120521093648.GC28930@dhcp-26-207.brq.redhat.com>
- <20120521124025.GC17065@gmail.com> <20120521144812.GD28930@dhcp-26-207.brq.redhat.com>
- <20120521145904.GA7068@gmail.com> <CA+55aFxJxfx+OfDiATCCPojVAPew_Hy+2=jx9g4=2_WRvixBFw@mail.gmail.com>
- <1337623623.1997.115.camel@sbsiddha-desk.sc.intel.com>
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Mon, 21 May 2012 11:18:04 -0700
-X-Google-Sender-Auth: Gbohhl2SsaDI3DrLyyeSHAeKV6M
-Message-ID: <CA+55aFx3ogOzGWZvfETgoKqoLzTc7qw6QjmouSLG4JF9aRdjig@mail.gmail.com>
-Subject: Re: [PATCH 2/3] x86: x2apic/cluster: Make use of lowest priority
- delivery mode
-To: Suresh Siddha <suresh.b.siddha@intel.com>
-Cc: Ingo Molnar <mingo@kernel.org>, Alexander Gordeev <agordeev@redhat.com>,
-        Arjan van de Ven <arjan@infradead.org>, linux-kernel@vger.kernel.org,
-        x86@kernel.org, Cyrill Gorcunov <gorcunov@openvz.org>,
-        Yinghai Lu <yinghai@kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+To: Richard Cochran <richardcochran@gmail.com>
+CC: linux-kernel@vger.kernel.org, Thomas Gleixner <tglx@linutronix.de>
+Subject: Re: [PATCH RFC V2 5/6] time: move leap second management into time
+ keeping core
+References: <cover.1337348892.git.richardcochran@gmail.com> <5f60e1921361bc58ff4c3ed252528bc0914a7b35.1337348892.git.richardcochran@gmail.com>
+In-Reply-To: <5f60e1921361bc58ff4c3ed252528bc0914a7b35.1337348892.git.richardcochran@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 12052118-7606-0000-0000-00000082B92D
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, May 21, 2012 at 11:07 AM, Suresh Siddha
-<suresh.b.siddha@intel.com> wrote:
+On 05/18/2012 07:09 AM, Richard Cochran wrote:
+> This patch refactors the timekeeping and ntp code in order to
+> improve leap second handling and to provide a TAI based clock.
+> The change has a number of aspects.
 >
-> All the cluster members of a given x2apic cluster belong to the same
-> package. These x2apic cluster id's are setup by the HW and not by the
-> SW. And only one cluster (with one or multiple members of that cluster
-> set) can be specified in the interrupt destination field of the routing
-> table entry.
+> * remove the NTP time_status variable
+>
+> Instead, compute this value on demand in adjtimex.
+>
+> * move TAI managment into timekeeping core from ntp
+>
+> Currently NTP manages the TAI offset. Since there's plans for a
+> CLOCK_TAI clockid, push the TAI management into the timekeeping
+> core.
+>
+> [ Original idea from: John Stultz<john.stultz@linaro.org>  ]
+> [ Changed by RC: ]
+>
+>    - replace u32 with time_t
+>    - fixup second call site of second_overflow()
+>
+> * replace modulus with integer test and schedule leap second
+>
+> On the day of a leap second, the NTP code performs a division on every
+> tick in order to know when to leap. This patch replaces the division
+> with an integer comparison, making the code faster and easier to
+> understand.
+>
+> Signed-off-by: Richard Cochran<richardcochran@gmail.com>
+> ---
+>   include/linux/time.h      |    1 +
+>   kernel/time/ntp.c         |   86 +++++++++++++-------------------------------
+>   kernel/time/timekeeping.c |   54 ++++++++++++++++++++++++----
+>   3 files changed, 73 insertions(+), 68 deletions(-)
+>
+> diff --git a/include/linux/time.h b/include/linux/time.h
+> index 179f4d6..b6034b0 100644
+> --- a/include/linux/time.h
+> +++ b/include/linux/time.h
+> @@ -168,6 +168,7 @@ extern struct timespec timespec_trunc(struct timespec t, unsigned gran);
+>   extern int timekeeping_valid_for_hres(void);
+>   extern u64 timekeeping_max_deferment(void);
+>   extern int timekeeping_inject_offset(struct timespec *ts);
+> +extern void timekeeping_set_tai_offset(time_t tai_offset);
+>
+>   struct tms;
+>   extern void do_sys_times(struct tms *);
+> diff --git a/kernel/time/ntp.c b/kernel/time/ntp.c
+> index d4d48b0..53c3227 100644
+> --- a/kernel/time/ntp.c
+> +++ b/kernel/time/ntp.c
+> @@ -16,6 +16,7 @@
+>   #include<linux/mm.h>
+>   #include<linux/module.h>
+>
+> +#include "leap-seconds.h"
+>   #include "tick-internal.h"
+>
+>   /*
+> @@ -24,6 +25,7 @@
+>
+>   DEFINE_SPINLOCK(ntp_lock);
+>
+> +#define STA_LEAP		(STA_INS | STA_DEL)
+>
+>   /* USER_HZ period (usecs): */
+>   unsigned long			tick_usec = TICK_USEC;
+> @@ -42,19 +44,9 @@ static u64			tick_length_base;
+>    * phase-lock loop variables
+>    */
+>
+> -/*
+> - * clock synchronization status
+> - *
+> - * (TIME_ERROR prevents overwriting the CMOS clock)
+> - */
+> -static int			time_state = TIME_OK;
+> -
+>   /* clock status bits:							*/
+>   static int			time_status = STA_UNSYNC;
+>
+> -/* TAI offset (secs):							*/
+> -static long			time_tai;
+> -
+>   /* time adjustment (nsecs):						*/
+>   static s64			time_offset;
+>
+> @@ -386,57 +378,14 @@ u64 ntp_tick_length(void)
+>    * They were originally developed for SUN and DEC kernels.
+>    * All the kudos should go to Dave for this stuff.
+>    *
+> - * Also handles leap second processing, and returns leap offset
+>    */
+>   int second_overflow(unsigned long secs)
 
-Ok, then the main question ends up being if there are enough cache or
-power domains within a cluster to still worry about it.
+Might be good to rename second_overflow() to ntp_second_overflow() and 
+drop passing the time_t as its now unused.
 
-For example, you say "package", but that can sometimes mean multiple
-dies, or even just split caches that are big enough to matter
-(although I can't think of any such right now on the x86 side - Core2
-Duo had huge L2's, but they were shared, not split).
+>   {
+>   	s64 delta;
+> -	int leap = 0;
+>   	unsigned long flags;
+>
+>   	spin_lock_irqsave(&ntp_lock, flags);
+>
+> -	/*
+> -	 * Leap second processing. If in leap-insert state at the end of the
+> -	 * day, the system clock is set back one second; if in leap-delete
+> -	 * state, the system clock is set ahead one second.
+> -	 */
+> -	switch (time_state) {
+> -	case TIME_OK:
+> -		if (time_status&  STA_INS)
+> -			time_state = TIME_INS;
+> -		else if (time_status&  STA_DEL)
+> -			time_state = TIME_DEL;
+> -		break;
+> -	case TIME_INS:
+> -		if (secs % 86400 == 0) {
+> -			leap = -1;
+> -			time_state = TIME_OOP;
+> -			time_tai++;
+> -			printk(KERN_NOTICE
+> -				"Clock: inserting leap second 23:59:60 UTC\n");
+> -		}
+> -		break;
+> -	case TIME_DEL:
+> -		if ((secs + 1) % 86400 == 0) {
+> -			leap = 1;
+> -			time_tai--;
+> -			time_state = TIME_WAIT;
+> -			printk(KERN_NOTICE
+> -				"Clock: deleting leap second 23:59:59 UTC\n");
+> -		}
+> -		break;
+> -	case TIME_OOP:
+> -		time_state = TIME_WAIT;
+> -		break;
+> -
+> -	case TIME_WAIT:
+> -		if (!(time_status&  (STA_INS | STA_DEL)))
+> -			time_state = TIME_OK;
+> -		break;
+> -	}
+> -
+> -
+>   	/* Bump the maxerror field */
+>   	time_maxerror += MAXFREQ / NSEC_PER_USEC;
+>   	if (time_maxerror>  NTP_PHASE_LIMIT) {
+> @@ -478,7 +427,7 @@ int second_overflow(unsigned long secs)
+>   out:
+>   	spin_unlock_irqrestore(&ntp_lock, flags);
+>
+> -	return leap;
+> +	return 0;
+>   }
+[snip]
 
-> Power aware interrupt routing in IVB does this. And the policy of
-> whether you want the interrupt to be routed to the busy core (to save
-> power) or an idle core (for minimizing the interruptions on the busy
-> core) can be selected by the SW (using IA32_ENERGY_PERF_BIAS MSR).
+> -	getnstimeofday(&ts);
+> +	result = timekeeping_gettod_status(&ts,&orig_tai);
+> +	time_tai = orig_tai;
+> +
+> +	if (txc->modes&  ADJ_STATUS) {
+> +		/*
+> +		 * Check for new leap second commands.
+> +		 */
+> +		if (!(time_status&  STA_INS)&&  (txc->status&  STA_INS))
+> +			timekeeping_insert_leap_second();
+> +
+> +		else if (!(time_status&  STA_DEL)&&  (txc->status&  STA_DEL))
+> +			timekeeping_delete_leap_second();
+> +
+> +		else if ((time_status&  STA_LEAP)&&  !(txc->status&  STA_LEAP))
+> +			timekeeping_finish_leap_second();
+> +	}
+Doing this early doesn't run into any trouble with the tcx->modes rules, 
+right?
 
-Sounds like we definitely would want to support this at least in the
-IVB timeframe then.
+I'm just worried about changes in behavior if  modes = 
+ADJ_ADJTIME|ADJ_STATUS
 
-But I do agree with Ingo that it would be really good to actually see
-numbers (and no, I don't mean "look here, now the irq's are nicely
-spread out", but power and/or performance numbers showing that it
-actually helps something).
 
-                   Linus
+>   	spin_lock_irq(&ntp_lock);
+>
+> @@ -673,7 +637,7 @@ int do_adjtimex(struct timex *txc)
+>
+>   		/* If there are input parameters, then process them: */
+>   		if (txc->modes)
+> -			process_adjtimex_modes(txc);
+> +			process_adjtimex_modes(txc,&time_tai);
+>
+>   		txc->offset = shift_right(time_offset * NTP_INTERVAL_FREQ,
+>   				  NTP_SCALE_SHIFT);
+> @@ -681,7 +645,6 @@ int do_adjtimex(struct timex *txc)
+>   			txc->offset /= NSEC_PER_USEC;
+>   	}
+>
+> -	result = time_state;	/* mostly `TIME_OK' */
+>   	/* check for errors */
+>   	if (is_error_status(time_status))
+>   		result = TIME_ERROR;
+> @@ -702,6 +665,9 @@ int do_adjtimex(struct timex *txc)
+>
+>   	spin_unlock_irq(&ntp_lock);
+>
+> +	if (time_tai != orig_tai&&  result == TIME_OK)
+> +		timekeeping_set_tai_offset(time_tai);
+> +
+>   	txc->time.tv_sec = ts.tv_sec;
+>   	txc->time.tv_usec = ts.tv_nsec;
+>   	if (!(time_status&  STA_NANO))
+> diff --git a/kernel/time/timekeeping.c b/kernel/time/timekeeping.c
+> index eab03fb..fdd1a48 100644
+> --- a/kernel/time/timekeeping.c
+> +++ b/kernel/time/timekeeping.c
+> @@ -444,6 +444,18 @@ int timekeeping_inject_offset(struct timespec *ts)
+>   EXPORT_SYMBOL(timekeeping_inject_offset);
+>
+>   /**
+> + * timekeeping_set_tai_offset - Sets the current TAI offset from UTC
+> + */
+> +void timekeeping_set_tai_offset(time_t tai_offset)
+> +{
+> +	unsigned long flags;
+> +
+> +	write_seqlock_irqsave(&timekeeper.lock, flags);
+> +	timekeeper.tai_offset = tai_offset;
+> +	write_sequnlock_irqrestore(&timekeeper.lock, flags);
+> +}
+> +
+> +/**
+>    * change_clocksource - Swaps clocksources if a new one is available
+>    *
+>    * Accumulates current time interval and initializes new clocksource
+> @@ -950,6 +962,38 @@ static void timekeeping_adjust(s64 offset)
+>   				timekeeper.ntp_error_shift;
+>   }
+>
+> +static void timekeeper_overflow(void)
+
+Mind renaming this to timekeeper_second_overflow, just so readers don't 
+mix it up with clocksource related overflows.
+
+thanks
+-john
+
