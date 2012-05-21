@@ -1,57 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1750917Ab2EUPF3 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 May 2012 11:05:29 -0400
-Received: from rcsinet15.oracle.com ([148.87.113.117]:24518 "EHLO
-	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750785Ab2EUPF2 convert rfc822-to-8bit (ORCPT
+	id S1751353Ab2EUPJq (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 May 2012 11:09:46 -0400
+Received: from oproxy9.bluehost.com ([69.89.24.6]:50135 "HELO
+	oproxy9.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1750884Ab2EUPJp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 May 2012 11:05:28 -0400
+	Mon, 21 May 2012 11:09:45 -0400
+Message-ID: <4FBA5ABD.2070003@xenotime.net>
+Date: Mon, 21 May 2012 08:09:49 -0700
+From: Randy Dunlap <rdunlap@xenotime.net>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.15) Gecko/20110323 Thunderbird/3.1.9
 MIME-Version: 1.0
-Message-ID: <ee168801-3f7e-49ec-9a6e-14b6a4bc6a5f@default>
-Date: Mon, 21 May 2012 08:04:00 -0700 (PDT)
-From: Dan Magenheimer <dan.magenheimer@oracle.com>
-To: Seth Jennings <sjenning@linux.vnet.ibm.com>,
-        Minchan Kim <minchan@kernel.org>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Konrad Wilk <konrad.wilk@oracle.com>, Nitin Gupta <ngupta@vflare.org>
-Subject: RE: [PATCH] zsmalloc: use unsigned long instead of void *
-References: <1337567013-4741-1-git-send-email-minchan@kernel.org>
- <4FBA4EE2.8050308@linux.vnet.ibm.com>
-In-Reply-To: <4FBA4EE2.8050308@linux.vnet.ibm.com>
-X-Priority: 3
-X-Mailer: Oracle Beehive Extensions for Outlook 2.0.1.6  (510070) [OL
- 12.0.6607.1000 (x86)]
-Content-Type: text/plain; charset=us-ascii
-Content-Transfer-Encoding: 8BIT
-X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+CC: linux-next@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>
+Subject: Re: linux-next: Tree for May 21
+References: <20120521190531.b764b9cd339c883d3434aef8@canb.auug.org.au>
+In-Reply-To: <20120521190531.b764b9cd339c883d3434aef8@canb.auug.org.au>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-Identified-User: {1807:box742.bluehost.com:xenotime:xenotime.net} {sentby:smtp auth 50.53.38.135 authed with rdunlap@xenotime.net}
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> From: Seth Jennings [mailto:sjenning@linux.vnet.ibm.com]
-> Subject: Re: [PATCH] zsmalloc: use unsigned long instead of void *
-> 
-> On 05/20/2012 09:23 PM, Minchan Kim wrote:
-> 
-> > We should use unsigned long as handle instead of void * to avoid any
-> > confusion. Without this, users may just treat zs_malloc return value as
-> > a pointer and try to deference it.
-> 
-> I wouldn't have agreed with you about the need for this change as people
-> should understand a void * to be the address of some data with unknown
-> structure.
-> 
-> However, I recently discussed with Dan regarding his RAMster project
-> where he assumed that the void * would be an address, and as such,
-> 4-byte aligned.  So he has masked two bits into the two LSBs of the
-> handle for RAMster, which doesn't work with zsmalloc since the handle is
-> not an address.
-> 
-> So really we do need to convey as explicitly as possible to the user
-> that the handle is an _opaque_ value about which no assumption can be made.
+On 05/21/2012 02:05 AM, Stephen Rothwell wrote:
 
-Someone once said: "Opaque is a computer science term and has no
-meaning in system software and computer engineering."  ;-)
+> Hi all,
+> 
+> Changes since 201205018:
+
+> ----------------------------------------------------------------------------
+> 
+> I have created today's linux-next tree at
+> git://git.kernel.org/pub/scm/linux/kernel/git/next/linux-next.git
+> (patches at http://www.kernel.org/pub/linux/kernel/next/ ).
+
+
+no linux-next 20120521 patch file  :(
+
+
+-- 
+~Randy
