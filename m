@@ -1,69 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932104Ab2EUT61 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 May 2012 15:58:27 -0400
-Received: from mga01.intel.com ([192.55.52.88]:64623 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756333Ab2EUT6Z (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 May 2012 15:58:25 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
-   d="scan'208";a="155318449"
-Subject: Re: [PATCH 2/3] x86: x2apic/cluster: Make use of lowest priority
- delivery mode
-From: Suresh Siddha <suresh.b.siddha@intel.com>
-Reply-To: Suresh Siddha <suresh.b.siddha@intel.com>
-To: Ingo Molnar <mingo@kernel.org>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Alexander Gordeev <agordeev@redhat.com>,
-        Arjan van de Ven <arjan@infradead.org>, linux-kernel@vger.kernel.org,
-        x86@kernel.org, Cyrill Gorcunov <gorcunov@openvz.org>,
-        Yinghai Lu <yinghai@kernel.org>, Peter Zijlstra <peterz@infradead.org>
-Date: Mon, 21 May 2012 12:56:48 -0700
-In-Reply-To: <20120521191546.GA28819@gmail.com>
-References: <20120518102640.GB31517@dhcp-26-207.brq.redhat.com>
-	 <20120521082240.GA31407@gmail.com>
-	 <20120521093648.GC28930@dhcp-26-207.brq.redhat.com>
-	 <20120521124025.GC17065@gmail.com>
-	 <20120521144812.GD28930@dhcp-26-207.brq.redhat.com>
-	 <20120521145904.GA7068@gmail.com>
-	 <CA+55aFxJxfx+OfDiATCCPojVAPew_Hy+2=jx9g4=2_WRvixBFw@mail.gmail.com>
-	 <20120521191546.GA28819@gmail.com>
-Organization: Intel Corp
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.0.3 (3.0.3-1.fc15) 
-Content-Transfer-Encoding: 7bit
-Message-ID: <1337630208.1997.141.camel@sbsiddha-desk.sc.intel.com>
-Mime-Version: 1.0
+	id S1759077Ab2EUUAE (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 May 2012 16:00:04 -0400
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:42363 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758833Ab2EUUAA convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 21 May 2012 16:00:00 -0400
+MIME-Version: 1.0
+In-Reply-To: <20120518222639.GN23089@lizard>
+References: <20120518222314.GA9425@lizard>
+	<20120518222639.GN23089@lizard>
+Date: Mon, 21 May 2012 12:59:59 -0700
+X-Google-Sender-Auth: J7-ezfM7m-Vk_6zBfzg4vkfeGYg
+Message-ID: <CAGXu5j+kE+cagPSjF5yGsxvuwxTaFY3t_BmiroJ+qCx2Fydstg@mail.gmail.com>
+Subject: Re: [PATCH 14/14] pstore/platform: Remove automatic updates
+From: Kees Cook <keescook@chromium.org>
+To: Anton Vorontsov <anton.vorontsov@linaro.org>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Colin Cross <ccross@android.com>, Tony Luck <tony.luck@intel.com>,
+        Arnd Bergmann <arnd@arndb.de>, John Stultz <john.stultz@linaro.org>,
+        Shuah Khan <shuahkhan@gmail.com>, arve@android.com,
+        Rebecca Schultz Zavin <rebecca@android.com>,
+        Jesper Juhl <jj@chaosbits.net>, Randy Dunlap <rdunlap@xenotime.net>,
+        Stephen Boyd <sboyd@codeaurora.org>, Thomas Meyer <thomas@m3y3r.de>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Marco Stornelli <marco.stornelli@gmail.com>,
+        WANG Cong <xiyou.wangcong@gmail.com>, linux-kernel@vger.kernel.org,
+        devel@driverdev.osuosl.org, linaro-kernel@lists.linaro.org,
+        patches@linaro.org, kernel-team@android.com
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2012-05-21 at 21:15 +0200, Ingo Molnar wrote:
-> The one negative effect I mentioned, affine wakeups done by the 
-> scheduler, could still bite us - this has to be measured and 
-> affine wakeups have to be made less prominent if IRQ handlers 
-> start jumping around. We definitely don't want tasks to follow 
-> round-robin IRQs around.
+On Fri, May 18, 2012 at 3:26 PM, Anton Vorontsov
+<anton.vorontsov@linaro.org> wrote:
+> Having automatic updates seems pointless, and even dangerous
+> and thus counter-productive:
+>
+> 1. If we can mount pstore, or read files, we can as well read
+>   /proc/kmsg. So, there's little point in duplicating the
+>   functionality and present the same information but via another
+>   userland ABI;
+>
+> 2. Expecting the kernel to behave sanely after oops/panic is naive.
+>   It might work, but you'd rather not try it. Screwed up kernel
+>   can do rather bad things, like recursive faults[1]; and pstore
+>   rather provoking bad things to happen. It uses:
+>
+>   1. Timers (assumes sane interrupts state);
+>   2. Workqueues and mutexes (assumes scheduler in a sane state);
+>   3. kzalloc (a working slab allocator);
+>
+>   That's too much for a dead kernel, so the debugging facility
+>   itself might just make debugging harder, which is not what
+>   we want.
+>
+> So, let's remove the automatic updates, this keeps things simple
+> and safe.
+>
+> (Maybe for non-oops message types it would make sense to add
+> automatic updates, but so far I don't see any use case for this.
+> Even for tracing, it has its own run-time/normal ABI, so we're
+> only interested in pstore upon next boot, to retrieve what has
+> gone wrong with HW or SW.)
 
-Actually this (ping-ponging around idle cpu's in a socket) happens
-already today, as the affine wakeups use select_idle_sibling() to wake
-up the task on an idle sibling (HT or core sibling) if the cpu on which
-the task is woken-up is busy with something else.
+Hrm. This complicates testing a bit. I need more convincing. :)
 
-But I agree, somehow all these need to work together. For example to
-save power, what we want is the idle core to stay in idle with least
-number of interruptions, with interrupts routed to busy cores, scheduler
-not aggressively waking the tasks up on idle cores etc.
+Systems run with panic_on_oops=0, and plenty of failure paths will
+just kill "current" instead of bringing the entire system down. I
+would much rather allow for the possibility to get oopses when they
+happen than to have to wait a full reboot cycle to "notice" them.
 
-One quick thought is to use the cpufreq governor decisions and if all
-the cpu's in the package are in lower p-states, then we can default for
-power-saving decisions, otherwise if any cpu is at P0, switch for
-performance policy(in terms of irq routing, scheduler wake-up decisions
-etc) dynamically etc.
+-Kees
 
-thanks,
-suresh
-
-
-
+-- 
+Kees Cook
+Chrome OS Security
