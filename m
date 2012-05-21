@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757726Ab2EUJwL (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 May 2012 05:52:11 -0400
-Received: from mailout1.samsung.com ([203.254.224.24]:43472 "EHLO
-	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757684Ab2EUJwG (ORCPT
+	id S932132Ab2EUJwQ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 May 2012 05:52:16 -0400
+Received: from mailout4.samsung.com ([203.254.224.34]:14482 "EHLO
+	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757697Ab2EUJwM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 May 2012 05:52:06 -0400
-X-AuditID: cbfee61a-b7fe76d0000023f5-7a-4fba104431d2
+	Mon, 21 May 2012 05:52:12 -0400
+X-AuditID: cbfee61b-b7faf6d000001f49-73-4fba104518b8
 From: Jonghwa Lee <jonghwa3.lee@samsung.com>
 To: linux-kernel@vger.kernel.org
 Cc: Samuel Oritz <sameo@linux.intel.com>,
@@ -18,534 +18,729 @@ Cc: Samuel Oritz <sameo@linux.intel.com>,
         Chanwoo Choi <cw00.choi@samsung.com>,
         Jonghwa Lee <jonghwa3.lee@samsung.com>,
         Chiwoong Byun <woong.byun@samsung.com>
-Subject: [PATCH v4 2/3] regulator: MAX77686: Add Maxim 77686 regulator driver
-Date: Mon, 21 May 2012 18:51:46 +0900
-Message-id: <1337593907-6615-3-git-send-email-jonghwa3.lee@samsung.com>
+Subject: [PATCH v4 3/3] rtc: MAX77686: Add Maxim 77686 rtc driver
+Date: Mon, 21 May 2012 18:51:47 +0900
+Message-id: <1337593907-6615-4-git-send-email-jonghwa3.lee@samsung.com>
 X-Mailer: git-send-email 1.7.4.1
 In-reply-to: <1337593907-6615-1-git-send-email-jonghwa3.lee@samsung.com>
 References: <1337593907-6615-1-git-send-email-jonghwa3.lee@samsung.com>
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrIJMWRmVeSWpSXmKPExsVy+t9jQV1XgV3+BvOeMllc3jWHzYHR4/Mm
-	uQDGKC6blNSczLLUIn27BK6Mk+unshY8qK04dmE3ewPj8owuRg4OCQETiVM3/boYOYFMMYkL
-	99azgdhCAtMZJb68Fuxi5AKyVzJJNDVuYwdJsAnoSPzfdxPMFhFQkNjc+4wVpIhZ4DOTxPaT
-	81hAEsICvhLPt+1gArFZBFQlriyczwhi8wq4S/xb9JEVYpuCxIJ7b8G2cQp4SCzp3ccMsdld
-	Ytf1Y0wTGHkXMDKsYhRNLUguKE5KzzXUK07MLS7NS9dLzs/dxAj2+DOpHYwrGywOMQpwMCrx
-	8M58utNfiDWxrLgy9xCjBAezkgjv3YdAId6UxMqq1KL8+KLSnNTiQ4zSHCxK4rx2i3f4Cwmk
-	J5akZqemFqQWwWSZODilGhgNirJvyR6ffnWVz6dXoSsZT94r3BHG7jVT86CeJjPrDuOpL3I/
-	V8cl8L26f1zL1vb5lv8TxDk5KhYvZ5Sb4aLlPbez9epS/QLF5bx7osq5C291b4rznPi0b9o5
-	FenkZyndiVzKbo760dE9BXNLn932XrfmReIlDlnnt2YzbtdPl9pn/M2RJ0aJpTgj0VCLuag4
-	EQB72Kdk9AEAAA==
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrMJMWRmVeSWpSXmKPExsVy+t9jQV03gV3+BmeXsVpc3jWHzYHR4/Mm
+	uQDGKC6blNSczLLUIn27BK6MXV3fmAt+TGSsWHO2mbmB8VZZFyMnh4SAicTxS1tZIWwxiQv3
+	1rN1MXJxCAlMZ5TYd7ONEcJZySTxf/8DdpAqNgEdif/7boLZIgIKEpt7n7GCFDELfGaS2H5y
+	HgtIQljAUWLuohdACQ4OFgFViQlvpUHCvALuEjuvbmCE2KYgseDeWzYQm1PAQ2JJ7z5mEFsI
+	qGbX9WNMExh5FzAyrGIUTS1ILihOSs810itOzC0uzUvXS87P3cQI9voz6R2MqxosDjEKcDAq
+	8fAueLPTX4g1say4MvcQowQHs5II792HQCHelMTKqtSi/Pii0pzU4kOM0hwsSuK8T5bs8BcS
+	SE8sSc1OTS1ILYLJMnFwSjUwRrh+WBN75+ke9bU5f9cpJz6+nZfpbtZwYPWxvnmHXNouVUwU
+	eNTvqy35yuS20wL+qX7Wz6rs9c6cDi9y3vbxaepl+0RfbrPTb5QV3N/+Nf6zYrZIpebXM873
+	b59i3XdZQUfu9MWnmT+fXpph8rP/mU4h98U31c8O5F2bvHfz2qKVm+e7mPJfcVJiKc5INNRi
+	LipOBAAvw5F39gEAAA==
 X-TM-AS-MML: No
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add driver for support max77686 regulator.
-MAX77686 provides LDOs[1~26] and BUCKs[1~9]. It support to set or get the
-volatege of regulator on max77686 chip with using regmap.
-
-Changes in patchset v4
-- Remove voltage_map_desc structure and replace minimum voltage and voltage
-  step into regulator_desc.
-- Use only regulator common APIs for regulator_ops.
-  (No more use driver's own funcions)
-
-This patch is based on broonie/regulator/for-next branch.
+Add driver for support max77686 rtc.
+MAX77686 rtc support smpl and wtsr mode. It has two alarm register,
+and can be used for waking system up. It sharing i2c bus, regmap supplies
+the way can get to the its register.
 
 Changes in patchset v3
-- Convert get_voltage to get_voltage_sel
-- Convert set_voltage to set_voltage_sel
-- Implement set_voltage_time_sel
-- Register regulators unconditionally
-- kzalloc -> devm_kzalloc
-- Remove unneccessary printk
-- Keep probing whether pdata exists or not
-- Use regmap API to access PMIC register.
+- Use regmap API to access RTC register.
 
 Signed-off-by: Chiwoong Byun <woong.byun@samsung.com>
 Signed-off-by: Jonghwa Lee <jonghwa3.lee@samsung.com>
-Signed-off-by: Myungjoo Ham <myungjoo.ham@samsung.com>
+Signed-off-by: Myunjoo Ham <myungjoo.ham@samsung.com>
 Signed-off-by: Kyungmin Park <kyungmin.park@samsung.com>
 ---
- drivers/regulator/Kconfig    |    8 +
- drivers/regulator/Makefile   |    1 +
- drivers/regulator/max77686.c |  438 ++++++++++++++++++++++++++++++++++++++++++
- 3 files changed, 447 insertions(+), 0 deletions(-)
- create mode 100644 drivers/regulator/max77686.c
+ drivers/rtc/Kconfig        |   10 +
+ drivers/rtc/Makefile       |    1 +
+ drivers/rtc/rtc-max77686.c |  645 ++++++++++++++++++++++++++++++++++++++++++++
+ 3 files changed, 656 insertions(+), 0 deletions(-)
+ create mode 100644 drivers/rtc/rtc-max77686.c
 
-diff --git a/drivers/regulator/Kconfig b/drivers/regulator/Kconfig
-index 36db5a4..8e2ebad 100644
---- a/drivers/regulator/Kconfig
-+++ b/drivers/regulator/Kconfig
-@@ -195,6 +195,14 @@ config REGULATOR_MAX8998
- 	  via I2C bus. The provided regulator is suitable for S3C6410
- 	  and S5PC1XX chips to control VCC_CORE and VCC_USIM voltages.
+diff --git a/drivers/rtc/Kconfig b/drivers/rtc/Kconfig
+index 8c8377d..a6092a6 100644
+--- a/drivers/rtc/Kconfig
++++ b/drivers/rtc/Kconfig
+@@ -213,6 +213,16 @@ config RTC_DRV_MAX8998
+ 	  This driver can also be built as a module. If so, the module
+ 	  will be called rtc-max8998.
  
-+config REGULATOR_MAX77686
-+	tristate "Maxim 77686 regulator"
++config RTC_DRV_MAX77686
++	tristate "Maxim MAX77686"
 +	depends on MFD_MAX77686
 +	help
-+	  This driver controls a Maxim 77686 regulator
-+	  via I2C bus. The provided regulator is suitable for
-+	  Exynos-4 chips to control VARM and VINT voltages.
++	  If you say yes here you will get support for the
++	  RTC of Maxim MAX77686 PMIC.
 +
- config REGULATOR_PCAP
- 	tristate "Motorola PCAP2 regulator driver"
- 	depends on EZX_PCAP
-diff --git a/drivers/regulator/Makefile b/drivers/regulator/Makefile
-index 94b5274..008931b 100644
---- a/drivers/regulator/Makefile
-+++ b/drivers/regulator/Makefile
-@@ -30,6 +30,7 @@ obj-$(CONFIG_REGULATOR_MAX8925) += max8925-regulator.o
- obj-$(CONFIG_REGULATOR_MAX8952) += max8952.o
- obj-$(CONFIG_REGULATOR_MAX8997) += max8997.o
- obj-$(CONFIG_REGULATOR_MAX8998) += max8998.o
-+obj-$(CONFIG_REGULATOR_MAX77686) += max77686.o
- obj-$(CONFIG_REGULATOR_MC13783) += mc13783-regulator.o
- obj-$(CONFIG_REGULATOR_MC13892) += mc13892-regulator.o
- obj-$(CONFIG_REGULATOR_MC13XXX_CORE) +=  mc13xxx-regulator-core.o
-diff --git a/drivers/regulator/max77686.c b/drivers/regulator/max77686.c
++	  This driver can also be built as a module. If so, the module
++	  will be called rtc-max77686.
++
+ config RTC_DRV_RS5C372
+ 	tristate "Ricoh R2025S/D, RS5C372A/B, RV5C386, RV5C387A"
+ 	help
+diff --git a/drivers/rtc/Makefile b/drivers/rtc/Makefile
+index 727ae77..224b860 100644
+--- a/drivers/rtc/Makefile
++++ b/drivers/rtc/Makefile
+@@ -66,6 +66,7 @@ obj-$(CONFIG_RTC_DRV_MAX6900)	+= rtc-max6900.o
+ obj-$(CONFIG_RTC_DRV_MAX8925)	+= rtc-max8925.o
+ obj-$(CONFIG_RTC_DRV_MAX8998)	+= rtc-max8998.o
+ obj-$(CONFIG_RTC_DRV_MAX6902)	+= rtc-max6902.o
++obj-$(CONFIG_RTC_DRV_MAX77686)	+= rtc-max77686.o
+ obj-$(CONFIG_RTC_DRV_MC13XXX)	+= rtc-mc13xxx.o
+ obj-$(CONFIG_RTC_DRV_MSM6242)	+= rtc-msm6242.o
+ obj-$(CONFIG_RTC_DRV_MPC5121)	+= rtc-mpc5121.o
+diff --git a/drivers/rtc/rtc-max77686.c b/drivers/rtc/rtc-max77686.c
 new file mode 100644
-index 0000000..cb8ec6c
+index 0000000..63da55a
 --- /dev/null
-+++ b/drivers/regulator/max77686.c
-@@ -0,0 +1,438 @@
++++ b/drivers/rtc/rtc-max77686.c
+@@ -0,0 +1,645 @@
 +/*
-+ * max77686.c - Regulator driver for the Maxim 77686
++ * RTC driver for Maxim MAX77686
 + *
-+ * Copyright (C) 2012 Samsung Electronics
-+ * Chiwoong Byun <woong.byun@smasung.com>
-+ * Jonghwa Lee <jonghwa3.lee@samsung.com>
++ * Copyright (C) 2012 Samsung Electronics Co.Ltd
 + *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License as published by
-+ * the Free Software Foundation; either version 2 of the License, or
-+ * (at your option) any later version.
++ *  based on rtc-max8997.c
 + *
-+ * This program is distributed in the hope that it will be useful,
-+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
-+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-+ * GNU General Public License for more details.
++ *  This program is free software; you can redistribute  it and/or modify it
++ *  under  the terms of  the GNU General  Public License as published by the
++ *  Free Software Foundation;  either version 2 of the  License, or (at your
++ *  option) any later version.
 + *
-+ * You should have received a copy of the GNU General Public License
-+ * along with this program; if not, write to the Free Software
-+ * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
-+ *
-+ * This driver is based on max8997.c
 + */
-+#define pr_fmt(fmt) "%s: " fmt, __func__
 +
-+#include <linux/bug.h>
-+#include <linux/delay.h>
-+#include <linux/err.h>
-+#include <linux/gpio.h>
 +#include <linux/slab.h>
++#include <linux/rtc.h>
++#include <linux/delay.h>
++#include <linux/mutex.h>
++#include <linux/module.h>
 +#include <linux/platform_device.h>
-+#include <linux/regulator/driver.h>
-+#include <linux/regulator/machine.h>
-+#include <linux/mfd/max77686.h>
 +#include <linux/mfd/max77686-private.h>
++#include <linux/irqdomain.h>
++#include <linux/regmap.h>
 +
-+#define MAX77686_LDO_MINUV	800000
-+#define MAX77686_LDO_UVSTEP	50000
-+#define MAX77686_LDO_LOW_MINUV	800000
-+#define MAX77686_LDO_LOW_UVSTEP	25000
-+#define MAX77686_BUCK_MINUV	750000
-+#define MAX77686_BUCK_UVSTEP	50000
-+#define MAX77686_DVS_MINUV	600000
-+#define MAX77686_DVS_UVSTEP	12500
++/* RTC Control Register */
++#define BCD_EN_SHIFT			0
++#define BCD_EN_MASK				(1 << BCD_EN_SHIFT)
++#define MODEL24_SHIFT			1
++#define MODEL24_MASK			(1 << MODEL24_SHIFT)
++/* RTC Update Register1 */
++#define RTC_UDR_SHIFT			0
++#define RTC_UDR_MASK			(1 << RTC_UDR_SHIFT)
++#define RTC_RBUDR_SHIFT			4
++#define RTC_RBUDR_MASK			(1 << RTC_RBUDR_SHIFT)
++/* WTSR and SMPL Register */
++#define WTSRT_SHIFT				0
++#define SMPLT_SHIFT				2
++#define WTSR_EN_SHIFT			6
++#define SMPL_EN_SHIFT			7
++#define WTSRT_MASK				(3 << WTSRT_SHIFT)
++#define SMPLT_MASK				(3 << SMPLT_SHIFT)
++#define WTSR_EN_MASK			(1 << WTSR_EN_SHIFT)
++#define SMPL_EN_MASK			(1 << SMPL_EN_SHIFT)
++/* RTC Hour register */
++#define HOUR_PM_SHIFT			6
++#define HOUR_PM_MASK			(1 << HOUR_PM_SHIFT)
++/* RTC Alarm Enable */
++#define ALARM_ENABLE_SHIFT		7
++#define ALARM_ENABLE_MASK		(1 << ALARM_ENABLE_SHIFT)
 +
-+#define MAX77686_OPMODE_SHIFT 6
-+#define MAX77686_OPMODE_BUCK234_SHIFT 4
-+#define MAX77686_OPMODE_MASK 0x3
++#define MAX77686_RTC_UPDATE_DELAY	16
++#undef MAX77686_RTC_WTSR_SMPL
 +
-+#define MAX77686_VSEL_MASK 0x3f
-+#define MAX77686_DVS_VSEL_MASK 0xff
-+
-+#define MAX77686_RAMP_RATE 100
-+
-+#define MAX77686_REGULATORS 35
-+#define MAX77686_LDOS 26
-+
-+struct max77686_data {
-+	struct device *dev;
-+	struct max77686_dev *iodev;
-+	int num_regulators;
-+	struct regulator_dev **rdev;
-+	int ramp_delay; /* in mV/us */
-+
-+	struct max77686_opmode_data *opmode_data;
-+
-+	u8 buck2_vol[8];
-+	u8 buck3_vol[8];
-+	u8 buck4_vol[8];
++enum {
++	RTC_SEC = 0,
++	RTC_MIN,
++	RTC_HOUR,
++	RTC_WEEKDAY,
++	RTC_MONTH,
++	RTC_YEAR,
++	RTC_DATE,
++	RTC_NR_TIME
 +};
 +
-+static int max77686_get_enable_register(int rid, unsigned int *reg,
-+					unsigned int *mask)
++struct max77686_rtc_info {
++	struct device		*dev;
++	struct max77686_dev	*max77686;
++	struct i2c_client	*rtc;
++	struct rtc_device	*rtc_dev;
++	struct mutex		lock;
++
++	struct regmap		*regmap;
++
++	int virq;
++	int rtc_24hr_mode;
++};
++
++enum MAX77686_RTC_OP {
++	MAX77686_RTC_WRITE,
++	MAX77686_RTC_READ,
++};
++
++static inline int max77686_rtc_calculate_wday(u8 shifted)
 +{
-+	switch (rid) {
-+	case MAX77686_LDO1 ... MAX77686_LDO26:
-+		*reg = MAX77686_REG_LDO1CTRL1 + (rid - MAX77686_LDO1);
-+		*mask = MAX77686_OPMODE_MASK << MAX77686_OPMODE_SHIFT;
-+		break;
-+	case MAX77686_BUCK1:
-+		*reg = MAX77686_REG_BUCK1CTRL;
-+		*mask = MAX77686_OPMODE_MASK;
-+		break;
-+	case MAX77686_BUCK2:
-+	case MAX77686_BUCK3:
-+	case MAX77686_BUCK4:
-+		*reg = MAX77686_REG_BUCK2CTRL1 + (rid - MAX77686_BUCK2) * 10;
-+		*mask = MAX77686_OPMODE_MASK << MAX77686_OPMODE_BUCK234_SHIFT;
-+		break;
-+	case MAX77686_BUCK5 ... MAX77686_BUCK9:
-+		*reg = MAX77686_REG_BUCK5CTRL + (rid - MAX77686_BUCK5) * 2;
-+		*mask = MAX77686_OPMODE_MASK;
-+		break;
-+	case MAX77686_EN32KHZ_AP ... MAX77686_P32KH:
-+		*reg = MAX77686_REG_32KHZ;
-+		*mask = 0x01 << (rid - MAX77686_EN32KHZ_AP);
-+		break;
-+	default:
++	int counter = -1;
++	while (shifted) {
++		shifted >>= 1;
++		counter++;
++	}
++	return counter;
++}
++
++static void max77686_rtc_data_to_tm(u8 *data, struct rtc_time *tm,
++				   int rtc_24hr_mode)
++{
++	tm->tm_sec = data[RTC_SEC] & 0x7f;
++	tm->tm_min = data[RTC_MIN] & 0x7f;
++	if (rtc_24hr_mode)
++		tm->tm_hour = data[RTC_HOUR] & 0x1f;
++	else {
++		tm->tm_hour = data[RTC_HOUR] & 0x0f;
++		if (data[RTC_HOUR] & HOUR_PM_MASK)
++			tm->tm_hour += 12;
++	}
++
++	tm->tm_wday = max77686_rtc_calculate_wday(data[RTC_WEEKDAY] & 0x7f);
++	tm->tm_mday = data[RTC_DATE] & 0x1f;
++	tm->tm_mon = (data[RTC_MONTH] & 0x0f) - 1;
++	tm->tm_year = (data[RTC_YEAR] & 0x7f) + 100;
++	tm->tm_yday = 0;
++	tm->tm_isdst = 0;
++}
++
++static int max77686_rtc_tm_to_data(struct rtc_time *tm, u8 *data)
++{
++	data[RTC_SEC] = tm->tm_sec;
++	data[RTC_MIN] = tm->tm_min;
++	data[RTC_HOUR] = tm->tm_hour;
++	data[RTC_WEEKDAY] = 1 << tm->tm_wday;
++	data[RTC_DATE] = tm->tm_mday;
++	data[RTC_MONTH] = tm->tm_mon + 1;
++	data[RTC_YEAR] = tm->tm_year > 100 ? (tm->tm_year - 100) : 0 ;
++
++	if (tm->tm_year < 100) {
++		pr_warn("%s: MAX77686 RTC cannot handle the year %d."
++			"Assume it's 2000.\n", __func__, 1900 + tm->tm_year);
 +		return -EINVAL;
 +	}
-+
 +	return 0;
 +}
 +
-+static int max77686_get_voltage_register(int rid, unsigned int *_reg,
-+					unsigned int *_mask)
++static inline int max77686_rtc_update(struct max77686_rtc_info *info,
++	enum MAX77686_RTC_OP op)
 +{
-+	int reg, mask = MAX77686_VSEL_MASK;
++	int ret;
++	unsigned int data;
 +
-+	switch (rid) {
-+	case MAX77686_LDO1 ... MAX77686_LDO26:
-+		reg = MAX77686_REG_LDO1CTRL1 + (rid - MAX77686_LDO1);
++	switch (op) {
++	case MAX77686_RTC_WRITE:
++		data = 1 << RTC_UDR_SHIFT;
 +		break;
-+	case MAX77686_BUCK1:
-+		reg = MAX77686_REG_BUCK1OUT;
++	case MAX77686_RTC_READ:
++		data = 1 << RTC_RBUDR_SHIFT;
 +		break;
-+	case MAX77686_BUCK2:
-+		reg = MAX77686_REG_BUCK2DVS1;
-+		mask = MAX77686_DVS_VSEL_MASK;
-+		break;
-+	case MAX77686_BUCK3:
-+		reg = MAX77686_REG_BUCK3DVS1;
-+		mask = MAX77686_DVS_VSEL_MASK;
-+		break;
-+	case MAX77686_BUCK4:
-+		reg = MAX77686_REG_BUCK4DVS1;
-+		mask = MAX77686_DVS_VSEL_MASK;
-+		break;
-+	case MAX77686_BUCK5 ... MAX77686_BUCK9:
-+		reg = MAX77686_REG_BUCK5OUT + (rid - MAX77686_BUCK5) * 2;
-+		break;
-+	default:
-+		return -EINVAL;
 +	}
 +
-+	*_reg = reg;
-+	*_mask = mask;
-+
-+	return 0;
-+}
-+
-+static int max77686_set_voltage_time_sel(struct regulator_dev *rdev,
-+			unsigned int old_selector, unsigned int new_selector)
-+{
-+	struct max77686_data *max77686 = rdev_get_drvdata(rdev);
-+	int rid = rdev_get_id(rdev);
-+
-+	switch (rid) {
-+	case MAX77686_BUCK2 ... MAX77686_BUCK4:
-+		if (old_selector < new_selector)
-+			return (DIV_ROUND_UP(rdev->desc->uV_step
-+				* (new_selector - old_selector),
-+					max77686->ramp_delay * 1000));
-+	case MAX77686_BUCK1:
-+	case MAX77686_BUCK5 ... MAX77686_BUCK9:
-+		/* Unconditionally 100 mV/us */
-+		if (old_selector < new_selector)
-+			return (DIV_ROUND_UP(rdev->desc->uV_step
-+				 * (new_selector - old_selector), 100000));
-+	default:
-+		return 0;
-+	}
-+}
-+
-+static struct regulator_ops max77686_ldo_ops = {
-+	.list_voltage		= regulator_list_voltage_linear,
-+	.is_enabled		= regulator_is_enabled_regmap,
-+	.enable			= regulator_enable_regmap,
-+	.disable		= regulator_disable_regmap,
-+	.get_voltage_sel	= regulator_get_voltage_sel_regmap,
-+	.set_voltage_sel	= regulator_set_voltage_sel_regmap,
-+	.set_voltage_time_sel	= max77686_set_voltage_time_sel,
-+};
-+
-+static struct regulator_ops max77686_buck_ops = {
-+	.list_voltage		= regulator_list_voltage_linear,
-+	.is_enabled		= regulator_is_enabled_regmap,
-+	.enable			= regulator_enable_regmap,
-+	.disable		= regulator_disable_regmap,
-+	.get_voltage_sel	= regulator_get_voltage_sel_regmap,
-+	.set_voltage_sel	= regulator_set_voltage_sel_regmap,
-+	.set_voltage_time_sel	= max77686_set_voltage_time_sel,
-+};
-+
-+static struct regulator_ops max77686_fixedvolt_ops = {
-+	.list_voltage		= regulator_list_voltage_linear,
-+	.is_enabled		= regulator_is_enabled_regmap,
-+	.enable			= regulator_enable_regmap,
-+	.disable		= regulator_disable_regmap,
-+};
-+
-+#define regulator_desc_ldo(num)		{		\
-+	.name		= "LDO"#num,			\
-+	.id		= MAX77686_LDO##num,		\
-+	.ops		= &max77686_ldo_ops,		\
-+	.type		= REGULATOR_VOLTAGE,		\
-+	.owner		= THIS_MODULE,			\
-+	.min_uV		= MAX77686_LDO_MINUV,		\
-+	.uV_step	= MAX77686_LDO_UVSTEP,		\
-+	.n_voltages	= MAX77686_VSEL_MASK + 1,	\
-+}
-+#define regulator_desc_ldo_low(num)		{	\
-+	.name		= "LDO"#num,			\
-+	.id		= MAX77686_LDO##num,		\
-+	.ops		= &max77686_ldo_ops,		\
-+	.type		= REGULATOR_VOLTAGE,		\
-+	.owner		= THIS_MODULE,			\
-+	.min_uV		= MAX77686_LDO_LOW_MINUV,	\
-+	.uV_step	= MAX77686_LDO_LOW_UVSTEP,	\
-+	.n_voltages	= MAX77686_VSEL_MASK + 1,	\
-+}
-+#define regulator_desc_buck(num)		{	\
-+	.name		= "BUCK"#num,			\
-+	.id		= MAX77686_BUCK##num,		\
-+	.ops		= &max77686_buck_ops,		\
-+	.type		= REGULATOR_VOLTAGE,		\
-+	.owner		= THIS_MODULE,			\
-+	.min_uV		= MAX77686_BUCK_MINUV,		\
-+	.uV_step	= MAX77686_BUCK_UVSTEP,		\
-+	.n_voltages	= MAX77686_VSEL_MASK + 1,	\
-+}
-+#define regulator_desc_buck_dvs(num)		{	\
-+	.name		= "BUCK"#num,			\
-+	.id		= MAX77686_BUCK##num,		\
-+	.ops		= &max77686_buck_ops,		\
-+	.type		= REGULATOR_VOLTAGE,		\
-+	.owner		= THIS_MODULE,			\
-+	.min_uV		= MAX77686_DVS_MINUV,		\
-+	.uV_step	= MAX77686_DVS_UVSTEP,		\
-+	.n_voltages	= MAX77686_DVS_VSEL_MASK + 1,	\
-+}
-+static struct regulator_desc regulators[] = {
-+	regulator_desc_ldo_low(1),
-+	regulator_desc_ldo_low(2),
-+	regulator_desc_ldo(3),
-+	regulator_desc_ldo(4),
-+	regulator_desc_ldo(5),
-+	regulator_desc_ldo_low(6),
-+	regulator_desc_ldo_low(7),
-+	regulator_desc_ldo_low(8),
-+	regulator_desc_ldo(9),
-+	regulator_desc_ldo(10),
-+	regulator_desc_ldo(11),
-+	regulator_desc_ldo(12),
-+	regulator_desc_ldo(13),
-+	regulator_desc_ldo(14),
-+	regulator_desc_ldo_low(15),
-+	regulator_desc_ldo(16),
-+	regulator_desc_ldo(17),
-+	regulator_desc_ldo(18),
-+	regulator_desc_ldo(19),
-+	regulator_desc_ldo(20),
-+	regulator_desc_ldo(21),
-+	regulator_desc_ldo(22),
-+	regulator_desc_ldo(23),
-+	regulator_desc_ldo(24),
-+	regulator_desc_ldo(25),
-+	regulator_desc_ldo(26),
-+	regulator_desc_buck(1),
-+	regulator_desc_buck_dvs(2),
-+	regulator_desc_buck_dvs(3),
-+	regulator_desc_buck_dvs(4),
-+	regulator_desc_buck(5),
-+	regulator_desc_buck(6),
-+	regulator_desc_buck(7),
-+	regulator_desc_buck(8),
-+	regulator_desc_buck(9),
-+};
-+
-+static __devinit int max77686_pmic_probe(struct platform_device *pdev)
-+{
-+	struct max77686_dev *iodev = dev_get_drvdata(pdev->dev.parent);
-+	struct max77686_platform_data *pdata = dev_get_platdata(iodev->dev);
-+	struct regulator_dev **rdev;
-+	struct max77686_data *max77686;
-+	struct regulator_init_data **init_data;
-+	int i, size;
-+	int ret = 0;
-+	struct regulator_config config;
-+	unsigned int data = 0;
-+
-+	dev_dbg(&pdev->dev, "%s\n", __func__);
-+
-+	max77686 = devm_kzalloc(&pdev->dev, sizeof(struct max77686_data),
-+				GFP_KERNEL);
-+	if (!max77686)
-+		return -ENOMEM;
-+
-+	size = sizeof(struct regulator_dev *) * MAX77686_REGULATORS;
-+	max77686->rdev = devm_kzalloc(&pdev->dev, size, GFP_KERNEL);
-+	if (!max77686->rdev)
-+		return -ENOMEM;
-+
-+	rdev = max77686->rdev;
-+	max77686->dev = &pdev->dev;
-+	max77686->iodev = iodev;
-+	if (pdata)
-+		max77686->num_regulators = pdata->num_regulators;
-+	platform_set_drvdata(pdev, max77686);
-+	init_data = devm_kzalloc(&pdev->dev,
-+				sizeof(struct regulator_init_data *)
-+					 * MAX77686_REGULATORS, GFP_KERNEL);
-+	config.dev = max77686->dev;
-+	config.regmap = iodev->regmap;
-+	config.driver_data = max77686;
-+
-+	if (pdata)
-+		max77686->opmode_data = pdata->opmode_data;
-+
-+	max77686->ramp_delay = MAX77686_RAMP_RATE; /* Set 0x3 for RAMP */
-+	regmap_update_bits(max77686->iodev->regmap,
-+					 MAX77686_REG_BUCK2CTRL1, 0xC0, 0xC0);
-+	regmap_update_bits(max77686->iodev->regmap,
-+					 MAX77686_REG_BUCK3CTRL1, 0xC0, 0xC0);
-+	regmap_update_bits(max77686->iodev->regmap,
-+					 MAX77686_REG_BUCK4CTRL1, 0xC0, 0xC0);
-+
-+	regmap_read(max77686->iodev->regmap, MAX77686_REG_DEVICE_ID, &data);
-+
-+	for (i = 0; i < MAX77686_REGULATORS; i++) {
-+		if (pdata)
-+			init_data[pdata->regulators[i].id] =
-+						 pdata->regulators[i].initdata;
-+
-+		max77686_get_enable_register(regulators[i].id,
-+			&regulators[i].enable_reg, &regulators[i].enable_mask);
-+		max77686_get_voltage_register(regulators[i].id,
-+			&regulators[i].vsel_reg, &regulators[i].vsel_mask);
-+
-+		config.init_data = init_data[i];
-+		rdev[i] = regulator_register(&regulators[i], &config);
-+
-+		if (IS_ERR(rdev[i])) {
-+			ret = PTR_ERR(rdev[i]);
-+			dev_err(max77686->dev,
-+				"regulator init failed for %d\n", i);
-+			rdev[i] = NULL;
-+			goto err;
-+		}
++	ret = regmap_update_bits(info->max77686->rtc_regmap,
++				 MAX77686_RTC_UPDATE0, data, data);
++	if (ret < 0)
++		dev_err(info->dev, "%s: fail to write update reg(ret=%d, data=0x%x)\n",
++				__func__, ret, data);
++	else {
++		/* Minimum 16ms delay required before RTC update. */
++		msleep(MAX77686_RTC_UPDATE_DELAY);
 +	}
 +
-+	for (i = 0; i < 8; i++) {
-+		if (pdata->buck2_voltage[i] > 0)
-+			ret = regulator_map_voltage_linear(
-+					rdev[MAX77686_LDOS+1],
-+					pdata->buck2_voltage[i],
-+					pdata->buck2_voltage[i]
-+					+ MAX77686_DVS_UVSTEP);
-+		/* 1.1V as default for safety */
-+		if (pdata->buck2_voltage[i] <= 0 || ret < 0)
-+			max77686->buck2_vol[i] = 0x28;
-+		else
-+			max77686->buck2_vol[i] = ret;
-+		regmap_write(max77686->iodev->regmap,
-+			 MAX77686_REG_BUCK2DVS1 + i, max77686->buck2_vol[i]);
-+
-+		if (pdata->buck3_voltage[i] > 0)
-+			ret = regulator_map_voltage_linear(
-+					rdev[MAX77686_LDOS+1],
-+					pdata->buck3_voltage[i],
-+					pdata->buck3_voltage[i]
-+					+ MAX77686_DVS_UVSTEP);
-+		/* 1.1V as default for safety */
-+		if (pdata->buck3_voltage[i] <= 0 || ret < 0)
-+			max77686->buck3_vol[i] = 0x28;
-+		else
-+			max77686->buck3_vol[i] = ret;
-+		regmap_write(max77686->iodev->regmap,
-+			 MAX77686_REG_BUCK3DVS1 + i, max77686->buck3_vol[i]);
-+
-+		if (pdata->buck4_voltage[i] > 0)
-+			ret = regulator_map_voltage_linear(
-+					rdev[MAX77686_LDOS+1],
-+					pdata->buck4_voltage[i],
-+					pdata->buck4_voltage[i]
-+					+ MAX77686_DVS_UVSTEP);
-+		/* 1.1V as default for safety */
-+		if (pdata->buck4_voltage[i] <= 0 || ret < 0)
-+			max77686->buck4_vol[i] = 0x28;
-+		else
-+			max77686->buck4_vol[i] = ret;
-+		regmap_write(max77686->iodev->regmap,
-+			 MAX77686_REG_BUCK4DVS1 + i, max77686->buck4_vol[i]);
-+	}
-+
-+	return 0;
-+err:
-+	for (i = 0; i < MAX77686_REGULATORS; i++) {
-+		if (rdev[i])
-+			regulator_unregister(rdev[i]);
-+	}
 +	return ret;
 +}
 +
-+static int __devexit max77686_pmic_remove(struct platform_device *pdev)
++static int max77686_rtc_read_time(struct device *dev, struct rtc_time *tm)
 +{
-+	struct max77686_data *max77686 = platform_get_drvdata(pdev);
-+	struct regulator_dev **rdev = max77686->rdev;
-+	int i;
++	struct max77686_rtc_info *info = dev_get_drvdata(dev);
++	u8 data[RTC_NR_TIME];
++	int ret;
 +
-+	for (i = 0; i < MAX77686_REGULATORS; i++)
-+		if (rdev[i])
-+			regulator_unregister(rdev[i]);
++	mutex_lock(&info->lock);
++
++	ret = max77686_rtc_update(info, MAX77686_RTC_READ);
++	if (ret < 0)
++		goto out;
++
++	ret = regmap_bulk_read(info->max77686->rtc_regmap,
++				MAX77686_RTC_SEC, data, RTC_NR_TIME);
++	if (ret < 0) {
++		dev_err(info->dev, "%s: fail to read time reg(%d)\n", __func__,	ret);
++		goto out;
++	}
++
++	max77686_rtc_data_to_tm(data, tm, info->rtc_24hr_mode);
++
++	ret = rtc_valid_tm(tm);
++
++out:
++	mutex_unlock(&info->lock);
++	return ret;
++}
++
++static int max77686_rtc_set_time(struct device *dev, struct rtc_time *tm)
++{
++	struct max77686_rtc_info *info = dev_get_drvdata(dev);
++	u8 data[RTC_NR_TIME];
++	int ret;
++
++	ret = max77686_rtc_tm_to_data(tm, data);
++	if (ret < 0)
++		return ret;
++
++	mutex_lock(&info->lock);
++
++	ret = regmap_bulk_write(info->max77686->rtc_regmap,
++				 MAX77686_RTC_SEC, data, RTC_NR_TIME);
++	if (ret < 0) {
++		dev_err(info->dev, "%s: fail to write time reg(%d)\n", __func__,
++				ret);
++		goto out;
++	}
++
++	ret = max77686_rtc_update(info, MAX77686_RTC_WRITE);
++
++out:
++	mutex_unlock(&info->lock);
++	return ret;
++}
++
++static int max77686_rtc_read_alarm(struct device *dev, struct rtc_wkalrm *alrm)
++{
++	struct max77686_rtc_info *info = dev_get_drvdata(dev);
++	u8 data[RTC_NR_TIME];
++	unsigned int val;
++	int i, ret;
++
++	mutex_lock(&info->lock);
++
++	ret = max77686_rtc_update(info, MAX77686_RTC_READ);
++	if (ret < 0)
++		goto out;
++
++	ret = regmap_bulk_read(info->max77686->rtc_regmap,
++				 MAX77686_ALARM1_SEC, data, RTC_NR_TIME);
++	if (ret < 0) {
++		dev_err(info->dev, "%s:%d fail to read alarm reg(%d)\n",
++				__func__, __LINE__, ret);
++		goto out;
++	}
++
++	max77686_rtc_data_to_tm(data, &alrm->time, info->rtc_24hr_mode);
++
++	alrm->enabled = 0;
++	for (i = 0; i < RTC_NR_TIME; i++) {
++		if (data[i] & ALARM_ENABLE_MASK) {
++			alrm->enabled = 1;
++			break;
++		}
++	}
++
++	alrm->pending = 0;
++	ret = regmap_read(info->max77686->regmap, MAX77686_REG_STATUS1, &val);
++	if (ret < 0) {
++		dev_err(info->dev, "%s:%d fail to read status1 reg(%d)\n",
++				__func__, __LINE__, ret);
++		goto out;
++	}
++
++	if (val & (1 << 4)) /* RTCA1 */
++		alrm->pending = 1;
++
++out:
++	mutex_unlock(&info->lock);
++	return 0;
++}
++
++static int max77686_rtc_stop_alarm(struct max77686_rtc_info *info)
++{
++	u8 data[RTC_NR_TIME];
++	int ret, i;
++	struct rtc_time tm;
++
++	if (!mutex_is_locked(&info->lock))
++		dev_warn(info->dev, "%s: should have mutex locked\n", __func__);
++
++	ret = max77686_rtc_update(info, MAX77686_RTC_READ);
++	if (ret < 0)
++		goto out;
++
++	ret = regmap_bulk_read(info->max77686->rtc_regmap,
++				 MAX77686_ALARM1_SEC, data, RTC_NR_TIME);
++	if (ret < 0) {
++		dev_err(info->dev, "%s: fail to read alarm reg(%d)\n",
++				__func__, ret);
++		goto out;
++	}
++
++	max77686_rtc_data_to_tm(data, &tm, info->rtc_24hr_mode);
++
++	for (i = 0; i < RTC_NR_TIME; i++)
++		data[i] &= ~ALARM_ENABLE_MASK;
++
++	ret = regmap_bulk_write(info->max77686->rtc_regmap,
++				 MAX77686_ALARM1_SEC, data, RTC_NR_TIME);
++	if (ret < 0) {
++		dev_err(info->dev, "%s: fail to write alarm reg(%d)\n",
++				__func__, ret);
++		goto out;
++	}
++
++	ret = max77686_rtc_update(info, MAX77686_RTC_WRITE);
++out:
++	return ret;
++}
++
++static int max77686_rtc_start_alarm(struct max77686_rtc_info *info)
++{
++	u8 data[RTC_NR_TIME];
++	int ret;
++	struct rtc_time tm;
++
++	if (!mutex_is_locked(&info->lock))
++		dev_warn(info->dev, "%s: should have mutex locked\n", __func__);
++
++	ret = max77686_rtc_update(info, MAX77686_RTC_READ);
++	if (ret < 0)
++		goto out;
++
++	ret = regmap_bulk_read(info->max77686->rtc_regmap,
++				 MAX77686_ALARM1_SEC, data, RTC_NR_TIME);
++	if (ret < 0) {
++		dev_err(info->dev, "%s: fail to read alarm reg(%d)\n",
++				__func__, ret);
++		goto out;
++	}
++
++	max77686_rtc_data_to_tm(data, &tm, info->rtc_24hr_mode);
++
++	data[RTC_SEC] |= (1 << ALARM_ENABLE_SHIFT);
++	data[RTC_MIN] |= (1 << ALARM_ENABLE_SHIFT);
++	data[RTC_HOUR] |= (1 << ALARM_ENABLE_SHIFT);
++	data[RTC_WEEKDAY] &= ~ALARM_ENABLE_MASK;
++	if (data[RTC_MONTH] & 0xf)
++		data[RTC_MONTH] |= (1 << ALARM_ENABLE_SHIFT);
++	if (data[RTC_YEAR] & 0x7f)
++		data[RTC_YEAR] |= (1 << ALARM_ENABLE_SHIFT);
++	if (data[RTC_DATE] & 0x1f)
++		data[RTC_DATE] |= (1 << ALARM_ENABLE_SHIFT);
++
++	ret = regmap_bulk_write(info->max77686->rtc_regmap,
++				 MAX77686_ALARM1_SEC, data, RTC_NR_TIME);
++	if (ret < 0) {
++		dev_err(info->dev, "%s: fail to write alarm reg(%d)\n",
++				__func__, ret);
++		goto out;
++	}
++
++	ret = max77686_rtc_update(info, MAX77686_RTC_WRITE);
++out:
++	return ret;
++}
++
++static int max77686_rtc_set_alarm(struct device *dev, struct rtc_wkalrm *alrm)
++{
++	struct max77686_rtc_info *info = dev_get_drvdata(dev);
++	u8 data[RTC_NR_TIME];
++	int ret;
++
++	ret = max77686_rtc_tm_to_data(&alrm->time, data);
++	if (ret < 0)
++		return ret;
++
++	mutex_lock(&info->lock);
++
++	ret = max77686_rtc_stop_alarm(info);
++	if (ret < 0)
++		goto out;
++
++	ret = regmap_bulk_write(info->max77686->rtc_regmap,
++				 MAX77686_ALARM1_SEC, data, RTC_NR_TIME);
++
++	if (ret < 0) {
++		dev_err(info->dev, "%s: fail to write alarm reg(%d)\n",
++				__func__, ret);
++		goto out;
++	}
++
++	ret = max77686_rtc_update(info, MAX77686_RTC_WRITE);
++	if (ret < 0)
++		goto out;
++
++	if (alrm->enabled)
++		ret = max77686_rtc_start_alarm(info);
++out:
++	mutex_unlock(&info->lock);
++	return ret;
++}
++
++static int max77686_rtc_alarm_irq_enable(struct device *dev,
++					unsigned int enabled)
++{
++	struct max77686_rtc_info *info = dev_get_drvdata(dev);
++	int ret;
++
++	mutex_lock(&info->lock);
++	if (enabled)
++		ret = max77686_rtc_start_alarm(info);
++	else
++		ret = max77686_rtc_stop_alarm(info);
++	mutex_unlock(&info->lock);
++
++	return ret;
++}
++
++static irqreturn_t max77686_rtc_alarm_irq(int irq, void *data)
++{
++	struct max77686_rtc_info *info = data;
++
++	dev_info(info->dev, "%s:irq(%d)\n", __func__, irq);
++
++	rtc_update_irq(info->rtc_dev, 1, RTC_IRQF | RTC_AF);
++
++	return IRQ_HANDLED;
++}
++
++static const struct rtc_class_ops max77686_rtc_ops = {
++	.read_time = max77686_rtc_read_time,
++	.set_time = max77686_rtc_set_time,
++	.read_alarm = max77686_rtc_read_alarm,
++	.set_alarm = max77686_rtc_set_alarm,
++	.alarm_irq_enable = max77686_rtc_alarm_irq_enable,
++};
++
++#ifdef MAX77686_RTC_WTSR_SMPL
++static void max77686_rtc_enable_wtsr(struct max77686_rtc_info *info, bool enable)
++{
++	int ret;
++	unsigned int val, mask;
++
++	if (enable)
++		val = (1 << WTSR_EN_SHIFT) | (3 << WTSRT_SHIFT);
++	else
++		val = 0;
++
++	mask = WTSR_EN_MASK | WTSRT_MASK;
++
++	dev_info(info->dev, "%s: %s WTSR\n", __func__,
++			enable ? "enable" : "disable");
++
++	ret = regmap_update_bits(info->max77686->rtc_regmap,
++				 MAX77686_WTSR_SMPL_CNTL, mask, val);
++	if (ret < 0) {
++		dev_err(info->dev, "%s: fail to update WTSR reg(%d)\n",
++				__func__, ret);
++		return;
++	}
++
++	max77686_rtc_update(info, MAX77686_RTC_WRITE);
++}
++
++static void max77686_rtc_enable_smpl(struct max77686_rtc_info *info, bool enable)
++{
++	int ret;
++	unsigned int val, mask;
++
++	if (enable)
++		val = (1 << SMPL_EN_SHIFT) | (0 << SMPLT_SHIFT);
++	else
++		val = 0;
++
++	mask = SMPL_EN_MASK | SMPLT_MASK;
++
++	dev_info(info->dev, "%s: %s SMPL\n", __func__,
++			enable ? "enable" : "disable");
++
++	ret = regmap_update_bits(info->max77686->rtc_regmap,
++				 MAX77686_WTSR_SMPL_CNTL, mask, val);
++	if (ret < 0) {
++		dev_err(info->dev, "%s: fail to update SMPL reg(%d)\n",
++				__func__, ret);
++		return;
++	}
++
++	max77686_rtc_update(info, MAX77686_RTC_WRITE);
++
++	val = 0;
++	regmap_read(info->max77686->rtc_regmap, MAX77686_WTSR_SMPL_CNTL, &val);
++	pr_info("%s: WTSR_SMPL(0x%02x)\n", __func__, val);
++}
++#endif /* MAX77686_RTC_WTSR_SMPL */
++
++static int max77686_rtc_init_reg(struct max77686_rtc_info *info)
++{
++	u8 data[2];
++	int ret;
++
++	/* Set RTC control register : Binary mode, 24hour mdoe */
++	data[0] = (1 << BCD_EN_SHIFT) | (1 << MODEL24_SHIFT);
++	data[1] = (0 << BCD_EN_SHIFT) | (1 << MODEL24_SHIFT);
++
++	info->rtc_24hr_mode = 1;
++
++	ret = regmap_bulk_write(info->max77686->rtc_regmap, MAX77686_RTC_CONTROLM, data, 2);
++	if (ret < 0) {
++		dev_err(info->dev, "%s: fail to write controlm reg(%d)\n",
++				__func__, ret);
++		return ret;
++	}
++
++	ret = max77686_rtc_update(info, MAX77686_RTC_WRITE);
++	return ret;
++}
++
++static struct regmap_config max77686_rtc_regmap_config = {
++	.reg_bits = 8,
++	.val_bits = 8,
++};
++
++static int __devinit max77686_rtc_probe(struct platform_device *pdev)
++{
++	struct max77686_dev *max77686 = dev_get_drvdata(pdev->dev.parent);
++	struct max77686_rtc_info *info;
++	int ret, virq;
++
++	printk(KERN_INFO "%s\n", __func__);
++
++	info = kzalloc(sizeof(struct max77686_rtc_info), GFP_KERNEL);
++	if (!info)
++		return -ENOMEM;
++
++	mutex_init(&info->lock);
++	info->dev = &pdev->dev;
++	info->max77686 = max77686;
++	info->rtc = max77686->rtc;
++	info->max77686->rtc_regmap = regmap_init_i2c(info->max77686->rtc,
++					 &max77686_rtc_regmap_config);
++	if (IS_ERR(info->max77686->rtc_regmap)) {
++		ret = PTR_ERR(info->max77686->rtc_regmap);
++		dev_err(info->max77686->dev, "Failed to allocate register map: %d\n",
++				ret);
++		kfree(info);
++		return ret;
++	}
++	platform_set_drvdata(pdev, info);
++
++	ret = max77686_rtc_init_reg(info);
++
++	if (ret < 0) {
++		dev_err(&pdev->dev, "Failed to initialize RTC reg:%d\n", ret);
++		goto err_rtc;
++	}
++
++#ifdef MAX77686_RTC_WTSR_SMPL
++	max77686_rtc_enable_wtsr(info, true);
++	max77686_rtc_enable_smpl(info, true);
++#endif
++
++	device_init_wakeup(&pdev->dev, 1);
++
++	info->rtc_dev = rtc_device_register("max77686-rtc", &pdev->dev,
++			&max77686_rtc_ops, THIS_MODULE);
++
++	if (IS_ERR(info->rtc_dev)) {
++		printk(KERN_INFO "%s: fail\n", __func__);
++
++		ret = PTR_ERR(info->rtc_dev);
++		dev_err(&pdev->dev, "Failed to register RTC device: %d\n", ret);
++		if (ret == 0)
++			ret = -EINVAL;
++		goto err_rtc;
++	}
++	virq = irq_create_mapping(max77686->irq_domain, MAX77686_RTCIRQ_RTCA1);
++	if (!virq)
++		goto err_rtc;
++	info->virq = virq;
++
++	ret = request_threaded_irq(virq, NULL, max77686_rtc_alarm_irq, 0,
++			"rtc-alarm0", info);
++	if (ret < 0) {
++		dev_err(&pdev->dev, "Failed to request alarm IRQ: %d: %d\n",
++			info->virq, ret);
++		goto err_rtc;
++	}
++
++	goto out;
++err_rtc:
++	kfree(info);
++	return ret;
++out:
++	return ret;
++}
++
++static int __devexit max77686_rtc_remove(struct platform_device *pdev)
++{
++	struct max77686_rtc_info *info = platform_get_drvdata(pdev);
++
++	if (info) {
++		free_irq(info->virq, info);
++		rtc_device_unregister(info->rtc_dev);
++		kfree(info);
++	}
 +
 +	return 0;
 +}
 +
-+static const struct platform_device_id max77686_pmic_id[] = {
-+	{ "max77686-pmic", 0},
-+	{ },
-+};
-+MODULE_DEVICE_TABLE(platform, max77686_pmic_id);
++static void max77686_rtc_shutdown(struct platform_device *pdev)
++{
++#ifdef MAX77686_RTC_WTSR_SMPL
++	struct max77686_rtc_info *info = platform_get_drvdata(pdev);
++	int i;
++	u8 val = 0;
 +
-+static struct platform_driver max77686_pmic_driver = {
-+	.driver = {
-+		.name = "max77686-pmic",
-+		.owner = THIS_MODULE,
++	for (i = 0; i < 3; i++) {
++		max77686_rtc_enable_wtsr(info, false);
++		regmap_read(info->max77686->rtc_regmap, MAX77686_WTSR_SMPL_CNTL, &val);
++		pr_info("%s: WTSR_SMPL reg(0x%02x)\n", __func__, val);
++		if (val & WTSR_EN_MASK)
++			pr_emerg("%s: fail to disable WTSR\n", __func__);
++		else {
++			pr_info("%s: success to disable WTSR\n", __func__);
++			break;
++		}
++	}
++
++	/* Disable SMPL when power off */
++	max77686_rtc_enable_smpl(info, false);
++#endif /* MAX77686_RTC_WTSR_SMPL */
++}
++
++static const struct platform_device_id rtc_id[] = {
++	{ "max77686-rtc", 0 },
++	{},
++};
++
++static struct platform_driver max77686_rtc_driver = {
++	.driver		= {
++		.name	= "max77686-rtc",
++		.owner	= THIS_MODULE,
 +	},
-+	.probe = max77686_pmic_probe,
-+	.remove = __devexit_p(max77686_pmic_remove),
-+	.id_table = max77686_pmic_id,
++	.probe		= max77686_rtc_probe,
++	.remove		= __devexit_p(max77686_rtc_remove),
++	.shutdown	= max77686_rtc_shutdown,
++	.id_table	= rtc_id,
 +};
 +
-+static int __init max77686_pmic_init(void)
++static int __init max77686_rtc_init(void)
 +{
-+	return platform_driver_register(&max77686_pmic_driver);
++	return platform_driver_register(&max77686_rtc_driver);
 +}
-+subsys_initcall(max77686_pmic_init);
++module_init(max77686_rtc_init);
 +
-+static void __exit max77686_pmic_cleanup(void)
++static void __exit max77686_rtc_exit(void)
 +{
-+	platform_driver_unregister(&max77686_pmic_driver);
++	platform_driver_unregister(&max77686_rtc_driver);
 +}
-+module_exit(max77686_pmic_cleanup);
++module_exit(max77686_rtc_exit);
 +
-+MODULE_DESCRIPTION("MAXIM 77686 Regulator Driver");
-+MODULE_AUTHOR("Chiwoong Byun <woong.byun@samsung.com>");
++MODULE_DESCRIPTION("Maxim MAX77686 RTC driver");
++MODULE_AUTHOR("<woong.byun@samsung.com>");
 +MODULE_LICENSE("GPL");
 -- 
 1.7.4.1
