@@ -1,141 +1,226 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752117Ab2EUFGm (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 May 2012 01:06:42 -0400
-Received: from linux-sh.org ([111.68.239.195]:37869 "EHLO linux-sh.org"
+	id S1752355Ab2EUFHX (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 May 2012 01:07:23 -0400
+Received: from linux-sh.org ([111.68.239.195]:37894 "EHLO linux-sh.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751467Ab2EUFGl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 May 2012 01:06:41 -0400
+	id S1752128Ab2EUFGr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 21 May 2012 01:06:47 -0400
 From: Paul Mundt <lethal@linux-sh.org>
 To: Grant Likely <grant.likely@secretlab.ca>
 Cc: linux-sh@vger.kernel.org, linux-kernel@vger.kernel.org,
         Paul Mundt <lethal@linux-sh.org>
-Subject: [PATCH 1/2] irqdomain: Simple NUMA awareness.
-Date: Mon, 21 May 2012 14:06:31 +0900
-Message-Id: <1337576792-5347-1-git-send-email-lethal@linux-sh.org>
+Subject: [PATCH 2/2] irqdomain: Support for static IRQ mapping and association.
+Date: Mon, 21 May 2012 14:06:32 +0900
+Message-Id: <1337576792-5347-2-git-send-email-lethal@linux-sh.org>
 X-Mailer: git-send-email 1.7.10.207.g0bb2e
+In-Reply-To: <1337576792-5347-1-git-send-email-lethal@linux-sh.org>
+References: <1337576792-5347-1-git-send-email-lethal@linux-sh.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-While common irqdesc allocation is node aware, the irqdomain code is not.
+This adds a new strict mapping API for supporting creation of linux IRQs
+at existing positions within the domain. The new routines are as follows:
 
-Presently we observe a number of regressions/inconsistencies on
-NUMA-capable platforms:
+For dynamic allocation and insertion to specified ranges:
 
-- Platforms using irqdomains with legacy mappings, where the
-  irq_descs are allocated node-local and the irqdomain data
-  structure is not.
+	- irq_create_identity_mapping()
+	- irq_create_strict_mappings()
 
-- Drivers implementing irqdomains will lose node locality
-  regardless of the underlying struct device's node id.
+These will allocate and associate a range of linux IRQs at the specified
+location. This can be used by controllers that have their own static linux IRQ
+definitions to map a hwirq range to, as well as for platforms that wish to
+establish 1:1 identity mapping between linux and hwirq space.
 
-This plugs in NUMA node id proliferation across the various allocation
-callsites by way of_node_to_nid() node lookup. While of_node_to_nid()
-does the right thing for OF-capable platforms it doesn't presently handle
-the non-DT case. This is trivially dealt with by simply wraping in to
-numa_node_id() unconditionally.
+For insertion to specified ranges by platforms that do their own irq_desc
+management:
+
+	- irq_domain_associate()
+	- irq_domain_associate_many()
+
+These in turn call back in to the domain's ->map() routine, for further
+processing by the platform. Disassociation of IRQs get handled through
+irq_dispose_mapping() as normal.
+
+With these in place it should be possible to begin migration of legacy IRQ
+domains to linear ones, without requiring special handling for static vs
+dynamic IRQ definitions in DT vs non-DT paths. This also makes it possible
+for domains with static mappings to adopt whichever tree model best fits
+their needs, rather than simply restricting them to linear revmaps.
 
 Signed-off-by: Paul Mundt <lethal@linux-sh.org>
 ---
- include/linux/of.h     |   16 ++++++++++------
- kernel/irq/irqdomain.c |   13 ++++++++-----
- 2 files changed, 18 insertions(+), 11 deletions(-)
+ include/linux/irqdomain.h |   15 +++++++
+ kernel/irq/irqdomain.c    |   95 +++++++++++++++++++++++++++++++++++++++++++--
+ 2 files changed, 106 insertions(+), 4 deletions(-)
 
-diff --git a/include/linux/of.h b/include/linux/of.h
-index fa7fb1d..8650544 100644
---- a/include/linux/of.h
-+++ b/include/linux/of.h
-@@ -21,7 +21,7 @@
- #include <linux/kref.h>
- #include <linux/mod_devicetable.h>
- #include <linux/spinlock.h>
--
-+#include <linux/topology.h>
- #include <asm/byteorder.h>
- #include <asm/errno.h>
+diff --git a/include/linux/irqdomain.h b/include/linux/irqdomain.h
+index 5abb533..7f8085c 100644
+--- a/include/linux/irqdomain.h
++++ b/include/linux/irqdomain.h
+@@ -144,12 +144,27 @@ static inline struct irq_domain *irq_domain_add_legacy_isa(
  
-@@ -158,11 +158,6 @@ static inline unsigned long of_read_ulong(const __be32 *cell, int size)
+ extern void irq_domain_remove(struct irq_domain *host);
  
- #define OF_BAD_ADDR	((u64)-1)
- 
--#ifndef of_node_to_nid
--static inline int of_node_to_nid(struct device_node *np) { return -1; }
--#define of_node_to_nid of_node_to_nid
--#endif
--
- extern struct device_node *of_find_node_by_name(struct device_node *from,
- 	const char *name);
- #define for_each_node_by_name(dn, name) \
-@@ -351,6 +346,15 @@ static inline int of_machine_is_compatible(const char *compat)
- #define of_match_node(_matches, _node)	NULL
- #endif /* CONFIG_OF */
- 
-+#ifndef of_node_to_nid
-+static inline int of_node_to_nid(struct device_node *np)
++extern int irq_domain_associate(struct irq_domain *domain, unsigned int virq,
++				irq_hw_number_t hwirq);
++extern int irq_domain_associate_many(struct irq_domain *domain,
++				     unsigned int irq_base,
++				     irq_hw_number_t hwirq_base, int count);
+ extern unsigned int irq_create_mapping(struct irq_domain *host,
+ 				       irq_hw_number_t hwirq);
+ extern void irq_dispose_mapping(unsigned int virq);
+ extern unsigned int irq_find_mapping(struct irq_domain *host,
+ 				     irq_hw_number_t hwirq);
+ extern unsigned int irq_create_direct_mapping(struct irq_domain *host);
++extern int irq_create_strict_mappings(struct irq_domain *domain,
++				      unsigned int irq_base,
++				      irq_hw_number_t hwirq_base, int count);
++
++static inline int irq_create_identity_mapping(struct irq_domain *host,
++					      irq_hw_number_t hwirq)
 +{
-+	return numa_node_id();
++	return irq_create_strict_mappings(host, hwirq, hwirq, 1);
 +}
 +
-+#define of_node_to_nid of_node_to_nid
-+#endif
-+
- /**
-  * of_property_read_bool - Findfrom a property
-  * @np:		device node from which the property value is to be read.
+ extern void irq_radix_revmap_insert(struct irq_domain *host, unsigned int virq,
+ 				    irq_hw_number_t hwirq);
+ extern unsigned int irq_radix_revmap_lookup(struct irq_domain *host,
 diff --git a/kernel/irq/irqdomain.c b/kernel/irq/irqdomain.c
-index 41c1564..9e99054 100644
+index 9e99054..048873a 100644
 --- a/kernel/irq/irqdomain.c
 +++ b/kernel/irq/irqdomain.c
-@@ -10,6 +10,7 @@
- #include <linux/mutex.h>
- #include <linux/of.h>
- #include <linux/of_address.h>
-+#include <linux/topology.h>
- #include <linux/seq_file.h>
- #include <linux/slab.h>
- #include <linux/smp.h>
-@@ -45,7 +46,8 @@ static struct irq_domain *irq_domain_alloc(struct device_node *of_node,
+@@ -333,8 +333,19 @@ void irq_set_default_host(struct irq_domain *domain)
+ }
+ EXPORT_SYMBOL_GPL(irq_set_default_host);
+ 
+-static int irq_setup_virq(struct irq_domain *domain, unsigned int virq,
+-			    irq_hw_number_t hwirq)
++/**
++ * irq_domain_associate() - Associate a hardware irq with a linux irq
++ * @domain: domain owning the irq
++ * @virq: linux irq
++ * @hwirq: hardware irq
++ *
++ * This routine establishes a hardware IRQ association with an existing
++ * linux IRQ in the specified domain space. For use by controllers
++ * needing to establish individual or otherwise non-linear IRQ
++ * associations.
++ */
++int irq_domain_associate(struct irq_domain *domain, unsigned int virq,
++			 irq_hw_number_t hwirq)
  {
- 	struct irq_domain *domain;
+ 	struct irq_data *irq_data = irq_get_irq_data(virq);
  
--	domain = kzalloc(sizeof(*domain), GFP_KERNEL);
-+	domain = kzalloc_node(sizeof(*domain), GFP_KERNEL,
-+			      of_node_to_nid(of_node));
- 	if (WARN_ON(!domain))
- 		return NULL;
+@@ -351,6 +362,44 @@ static int irq_setup_virq(struct irq_domain *domain, unsigned int virq,
  
-@@ -229,7 +231,8 @@ struct irq_domain *irq_domain_add_linear(struct device_node *of_node,
- 	struct irq_domain *domain;
- 	unsigned int *revmap;
+ 	return 0;
+ }
++EXPORT_SYMBOL_GPL(irq_domain_associate);
++
++/**
++ * irq_domain_associate_many() - Associate a range of hw irqs with linux irqs
++ * @domain: domain owning the interrupt range
++ * @irq_base: beginning of linux IRQ range
++ * @hwirq_base: beginning of hardware IRQ range
++ * @count: Number of interrupts to associate
++ *
++ * This routine takes care of creating an association between a range of
++ * hardware and linux IRQs using pre-existing IRQ allocations. For use by
++ * controllers that do their own irq_desc management.
++ */
++int irq_domain_associate_many(struct irq_domain *domain, unsigned int irq_base,
++			      irq_hw_number_t hwirq_base, int count)
++{
++	int i, ret;
++
++	for (i = 0; i < count; i++) {
++		ret = irq_domain_associate(domain, irq_base + i,
++					   hwirq_base + i);
++		if (unlikely(ret))
++			goto unmap;
++	}
++
++	return 0;
++
++unmap:
++	while (--i >= 0) {
++		if (domain->ops->unmap)
++			domain->ops->unmap(domain, irq_base + i);
++
++		irq_set_status_flags(irq_base + i, IRQ_NOREQUEST);
++	}
++
++	return ret;
++}
++EXPORT_SYMBOL_GPL(irq_domain_associate_many);
  
--	revmap = kzalloc(sizeof(*revmap) * size, GFP_KERNEL);
-+	revmap = kzalloc_node(sizeof(*revmap) * size, GFP_KERNEL,
-+			      of_node_to_nid(of_node));
- 	if (WARN_ON(!revmap))
- 		return NULL;
+ /**
+  * irq_create_direct_mapping() - Allocate an irq for direct mapping
+@@ -383,7 +432,7 @@ unsigned int irq_create_direct_mapping(struct irq_domain *domain)
+ 	}
+ 	pr_debug("create_direct obtained virq %d\n", virq);
  
-@@ -367,7 +370,7 @@ unsigned int irq_create_direct_mapping(struct irq_domain *domain)
- 	BUG_ON(domain == NULL);
- 	WARN_ON(domain->revmap_type != IRQ_DOMAIN_MAP_NOMAP);
- 
--	virq = irq_alloc_desc_from(1, 0);
-+	virq = irq_alloc_desc_from(1, of_node_to_nid(domain->of_node));
- 	if (!virq) {
- 		pr_debug("create_direct virq allocation failed\n");
+-	if (irq_setup_virq(domain, virq, virq)) {
++	if (irq_domain_associate(domain, virq, virq)) {
+ 		irq_free_desc(virq);
  		return 0;
-@@ -433,9 +436,9 @@ unsigned int irq_create_mapping(struct irq_domain *domain,
- 	hint = hwirq % nr_irqs;
- 	if (hint == 0)
- 		hint++;
--	virq = irq_alloc_desc_from(hint, 0);
-+	virq = irq_alloc_desc_from(hint, of_node_to_nid(domain->of_node));
- 	if (virq <= 0)
--		virq = irq_alloc_desc_from(1, 0);
-+		virq = irq_alloc_desc_from(1, of_node_to_nid(domain->of_node));
- 	if (virq <= 0) {
- 		pr_debug("-> virq allocation failed\n");
+ 	}
+@@ -444,7 +493,7 @@ unsigned int irq_create_mapping(struct irq_domain *domain,
  		return 0;
+ 	}
+ 
+-	if (irq_setup_virq(domain, virq, hwirq)) {
++	if (irq_domain_associate(domain, virq, hwirq)) {
+ 		if (domain->revmap_type != IRQ_DOMAIN_MAP_LEGACY)
+ 			irq_free_desc(virq);
+ 		return 0;
+@@ -457,6 +506,44 @@ unsigned int irq_create_mapping(struct irq_domain *domain,
+ }
+ EXPORT_SYMBOL_GPL(irq_create_mapping);
+ 
++/**
++ * irq_create_strict_mappings() - Map a range of hw irqs to fixed linux irqs
++ * @domain: domain owning the interrupt range
++ * @irq_base: beginning of linux IRQ range
++ * @hwirq_base: beginning of hardware IRQ range
++ * @count: Number of interrupts to map
++ *
++ * This routine is used for allocating and mapping a range of hardware
++ * irqs to linux irqs where the linux irq numbers are at pre-defined
++ * locations. For use by controllers that already have static mappings
++ * to insert in to the domain.
++ *
++ * Non-linear users can use irq_create_identity_mapping() for IRQ-at-a-time
++ * domain insertion.
++ *
++ * 0 is returned upon success, while any failure to establish a static
++ * mapping is treated as an error.
++ */
++int irq_create_strict_mappings(struct irq_domain *domain, unsigned int irq_base,
++			       irq_hw_number_t hwirq_base, int count)
++{
++	int ret;
++
++	ret = irq_alloc_descs(irq_base, irq_base, count,
++			      of_node_to_nid(domain->of_node));
++	if (unlikely(ret < 0))
++		return ret;
++
++	ret = irq_domain_associate_many(domain, irq_base, hwirq_base, count);
++	if (unlikely(ret < 0)) {
++		irq_free_descs(irq_base, count);
++		return ret;
++	}
++
++	return 0;
++}
++EXPORT_SYMBOL_GPL(irq_create_strict_mappings);
++
+ unsigned int irq_create_of_mapping(struct device_node *controller,
+ 				   const u32 *intspec, unsigned int intsize)
+ {
 -- 
 1.7.9.rc0.28.g0e1cf
 
