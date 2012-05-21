@@ -1,138 +1,116 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759418Ab2EUWEm (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 May 2012 18:04:42 -0400
-Received: from ogre.sisk.pl ([193.178.161.156]:57253 "EHLO ogre.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753290Ab2EUWEk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 May 2012 18:04:40 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Huang Ying <ying.huang@intel.com>, Bjorn Helgaas <bhelgaas@google.com>
-Subject: Re: [PATCH -v4 1/2] PCIe: Add runtime PM support to PCIe port
-Date: Tue, 22 May 2012 00:09:39 +0200
-User-Agent: KMail/1.13.6 (Linux/3.4.0+; KDE/4.6.0; x86_64; ; )
-Cc: ming.m.lin@intel.com, linux-kernel@vger.kernel.org,
-        linux-pm@vger.kernel.org, Zheng Yan <zheng.z.yan@intel.com>
-References: <1337305725-10482-1-git-send-email-ying.huang@intel.com> <1337305725-10482-2-git-send-email-ying.huang@intel.com>
-In-Reply-To: <1337305725-10482-2-git-send-email-ying.huang@intel.com>
+	id S1759425Ab2EUWFo (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 May 2012 18:05:44 -0400
+Received: from out02.mta.xmission.com ([166.70.13.232]:42274 "EHLO
+	out02.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753290Ab2EUWFm (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 21 May 2012 18:05:42 -0400
+From: ebiederm@xmission.com (Eric W. Biederman)
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Peter Zijlstra <peterz@infradead.org>
+References: <20120521175009.7bd4948c026d8acc61f26753@canb.auug.org.au>
+Date: Mon, 21 May 2012 16:05:16 -0600
+In-Reply-To: <20120521175009.7bd4948c026d8acc61f26753@canb.auug.org.au>
+	(Stephen Rothwell's message of "Mon, 21 May 2012 17:50:09 +1000")
+Message-ID: <87pq9x6vhf.fsf@xmission.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.3 (gnu/linux)
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-2"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201205220009.40159.rjw@sisk.pl>
+Content-Type: text/plain; charset=us-ascii
+X-XM-SPF: eid=;;;mid=;;;hst=in02.mta.xmission.com;;;ip=208.38.5.102;;;frm=ebiederm@xmission.com;;;spf=neutral
+X-XM-AID: U2FsdGVkX1+/B+K8ThjuD9nJbw4+HeAuahTM8nGxm2E=
+X-SA-Exim-Connect-IP: 208.38.5.102
+X-SA-Exim-Mail-From: ebiederm@xmission.com
+X-Spam-Report: * -1.0 ALL_TRUSTED Passed through trusted hosts only via SMTP
+	*  0.0 TVD_RCVD_IP TVD_RCVD_IP
+	*  0.1 XMSubLong Long Subject
+	*  0.0 T_TM2_M_HEADER_IN_MSG BODY: T_TM2_M_HEADER_IN_MSG
+	* -3.0 BAYES_00 BODY: Bayes spam probability is 0 to 1%
+	*      [score: 0.0000]
+	* -0.0 DCC_CHECK_NEGATIVE Not listed in DCC
+	*      [sa02 1397; Body=1 Fuz1=1 Fuz2=1]
+X-Spam-DCC: XMission; sa02 1397; Body=1 Fuz1=1 Fuz2=1 
+X-Spam-Combo: ;Stephen Rothwell <sfr@canb.auug.org.au>
+X-Spam-Relay-Country: 
+Subject: Re: linux-next: build failure after merge of the userns tree
+X-Spam-Flag: No
+X-SA-Exim-Version: 4.2.1 (built Fri, 06 Aug 2010 16:31:04 -0600)
+X-SA-Exim-Scanned: Yes (on in02.mta.xmission.com)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday, May 18, 2012, Huang Ying wrote:
-> From: "Yan, Zheng" <zheng.z.yan@intel.com>
-> 
-> This patch adds runtime PM support to PCIe port.  This is needed by
-> PCIe D3cold support, where PCIe device without ACPI node may be
-> powered on/off by PCIe port.
-> 
-> Because runtime suspend is broken for some chipsets, a black list is
-> used to disable runtime PM support for these chipsets.
-> 
-> Signed-off-by: Zheng Yan <zheng.z.yan@intel.com>
+Stephen Rothwell <sfr@canb.auug.org.au> writes:
 
-Reviewed-by: Rafael J. Wysocki <rjw@sisk.pl>
+> Hi Eric,
+>
+> After merging the userns tree, today's linux-next build (powerpc
+> ppc64_defconfig) failed like this:
+>
+> kernel/sched/numa.c: In function 'ng_allowed':
+> kernel/sched/numa.c:1270:16: error: 'struct user_struct' has no member named 'user_ns'
+> kernel/sched/numa.c:1270:40: error: 'struct user_struct' has no member named 'user_ns'
+> kernel/sched/numa.c:1278:28: error: 'struct user_struct' has no member named 'user_ns'
+>
+> Caused by commit a2dae61eb839 ("sched/numa: Introduce sys_numa_{t,m}bind
+> ()") from the tip tree interacting with commit d0bd6594e286 ("userns:
+> Deprecate and rename the user_namespace reference in the user_struct")
+> from the userns tree.
+>
+> I applied this merge fix up patch (more may be required):
 
-Thanks,
-Rafael
+The fix is right.
 
+Peter Zijlstra, or Ingo any chance you could add the patch below to your
+tree?
 
+It is just a better idiom to access the user namespace pointer as
+cred->user_ns, instead of cred->user->user_ns and has been for a few
+kernel releases.
+
+Once my usernamespace tree is merged into Linus's tree a little more
+will be needed to build this code with user namespaces enabled, but
+cred->user->user to cred->user_ns is an improvement whichever way
+you look at it.
+
+Otherwise I guess this merge failure will act as a reminder that this
+code needs a few more changes.
+
+> From: Stephen Rothwell <sfr@canb.auug.org.au>
+> Date: Mon, 21 May 2012 17:40:55 +1000
+> Subject: [PATCH] userns: fix up for user_ns move to struct cred
+>
+Reviewed-by: "Eric W. Biederman" <ebiederm@xmission.com>
+> Signed-off-by: Stephen Rothwell <sfr@canb.auug.org.au>
 > ---
->  drivers/pci/pci.c              |   10 ++++++++++
->  drivers/pci/pcie/portdrv_pci.c |   24 ++++++++++++++++++++++++
->  2 files changed, 34 insertions(+)
-> 
-> --- a/drivers/pci/pci.c
-> +++ b/drivers/pci/pci.c
-> @@ -1517,6 +1517,16 @@ static void pci_pme_list_scan(struct wor
->  	if (!list_empty(&pci_pme_list)) {
->  		list_for_each_entry_safe(pme_dev, n, &pci_pme_list, list) {
->  			if (pme_dev->dev->pme_poll) {
-> +				struct pci_dev *bridge;
-> +
-> +				bridge = pme_dev->dev->bus->self;
-> +				/*
-> +				 * If bridge is in low power state, the
-> +				 * configuration space of subordinate devices
-> +				 * may be not accessible
-> +				 */
-> +				if (bridge && bridge->current_state != PCI_D0)
-> +					continue;
->  				pci_pme_wakeup(pme_dev->dev, NULL);
->  			} else {
->  				list_del(&pme_dev->list);
-> --- a/drivers/pci/pcie/portdrv_pci.c
-> +++ b/drivers/pci/pcie/portdrv_pci.c
-> @@ -11,6 +11,7 @@
->  #include <linux/kernel.h>
->  #include <linux/errno.h>
->  #include <linux/pm.h>
-> +#include <linux/pm_runtime.h>
->  #include <linux/init.h>
->  #include <linux/pcieport_if.h>
->  #include <linux/aer.h>
-> @@ -99,6 +100,15 @@ static int pcie_port_resume_noirq(struct
->  	return 0;
->  }
+>  kernel/sched/numa.c |    4 ++--
+>  1 file changed, 2 insertions(+), 2 deletions(-)
+>
+> diff --git a/kernel/sched/numa.c b/kernel/sched/numa.c
+> index 8eb92f7..1149993 100644
+> --- a/kernel/sched/numa.c
+> +++ b/kernel/sched/numa.c
+> @@ -1267,7 +1267,7 @@ static int ng_allowed(struct numa_group *ng, struct task_struct *p)
 >  
-> +#ifdef CONFIG_PM_RUNTIME
-> +static int pcie_port_runtime_pm(struct device *dev)
-> +{
-> +	return 0;
-> +}
-> +#else
-> +#define pcie_port_runtime_pm	NULL
-> +#endif
-> +
->  static const struct dev_pm_ops pcie_portdrv_pm_ops = {
->  	.suspend	= pcie_port_device_suspend,
->  	.resume		= pcie_port_device_resume,
-> @@ -107,6 +117,8 @@ static const struct dev_pm_ops pcie_port
->  	.poweroff	= pcie_port_device_suspend,
->  	.restore	= pcie_port_device_resume,
->  	.resume_noirq	= pcie_port_resume_noirq,
-> +	.runtime_suspend = pcie_port_runtime_pm,
-> +	.runtime_resume = pcie_port_runtime_pm,
->  };
->  
->  #define PCIE_PORTDRV_PM_OPS	(&pcie_portdrv_pm_ops)
-> @@ -117,6 +129,14 @@ static const struct dev_pm_ops pcie_port
->  #endif /* !PM */
->  
->  /*
-> + * PCIe port runtime suspend is broken for some chipsets, so use a
-> + * black list to disable runtime PM for these chipsets.
-> + */
-> +static const struct pci_device_id port_runtime_pm_black_list[] = {
-> +	{ /* end: all zeroes */ }
-> +};
-> +
-> +/*
->   * pcie_portdrv_probe - Probe PCI-Express port devices
->   * @dev: PCI-Express port device being probed
->   *
-> @@ -144,12 +164,16 @@ static int __devinit pcie_portdrv_probe(
->  		return status;
->  
->  	pci_save_state(dev);
-> +	if (!pci_match_id(port_runtime_pm_black_list, dev))
-> +		pm_runtime_put_noidle(&dev->dev);
->  
->  	return 0;
->  }
->  
->  static void pcie_portdrv_remove(struct pci_dev *dev)
->  {
-> +	if (!pci_match_id(port_runtime_pm_black_list, dev))
-> +		pm_runtime_get_noresume(&dev->dev);
->  	pcie_port_device_remove(dev);
->  	pci_disable_device(dev);
->  }
-> 
-> 
-
+>  	rcu_read_lock();
+>  	tcred = __task_cred(p);
+> -	if (cred->user->user_ns == tcred->user->user_ns &&
+> +	if (cred->user_ns == tcred->user_ns &&
+>  	    (cred->uid == tcred->euid &&
+>  	     cred->uid == tcred->suid &&
+>  	     cred->uid == tcred->uid  &&
+> @@ -1275,7 +1275,7 @@ static int ng_allowed(struct numa_group *ng, struct task_struct *p)
+>  	     cred->gid == tcred->sgid &&
+>  	     cred->gid == tcred->gid))
+>  		goto ok;
+> -	if (ns_capable(tcred->user->user_ns, CAP_SYS_PTRACE))
+> +	if (ns_capable(tcred->user_ns, CAP_SYS_PTRACE))
+>  		goto ok;
+>  	rcu_read_unlock();
+>  	return -EPERM;
+> -- 
+> 1.7.10.280.gaa39
