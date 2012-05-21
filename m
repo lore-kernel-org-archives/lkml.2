@@ -1,139 +1,301 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756478Ab2EUJhV (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 May 2012 05:37:21 -0400
-Received: from zene.cmpxchg.org ([85.214.230.12]:37865 "EHLO zene.cmpxchg.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751165Ab2EUJhR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 May 2012 05:37:17 -0400
-Date: Mon, 21 May 2012 11:37:05 +0200
-From: Johannes Weiner <hannes@cmpxchg.org>
-To: Michal Hocko <mhocko@suse.cz>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org,
-        Andrew Morton <akpm@linux-foundation.org>, Mel Gorman <mel@csn.ul.ie>,
-        Minchan Kim <minchan@kernel.org>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Rik van Riel <riel@redhat.com>
-Subject: Re: [PATCH] mm: consider all swapped back pages in used-once logic
-Message-ID: <20120521093705.GM1406@cmpxchg.org>
-References: <1337246033-13719-1-git-send-email-mhocko@suse.cz>
- <20120517195342.GB1800@cmpxchg.org>
- <20120521025149.GA32375@gmail.com>
- <20120521073632.GL1406@cmpxchg.org>
- <20120521085951.GA4687@gmail.com>
+	id S1756634Ab2EUJjn (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 May 2012 05:39:43 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:38891 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751405Ab2EUJjm (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 21 May 2012 05:39:42 -0400
+Date: Mon, 21 May 2012 02:39:00 -0700
+From: tip-bot for Vaibhav Nagarnaik <vnagarnaik@google.com>
+Message-ID: <tip-d69afed55be1016c2bcfcb3e00cd5365d2f557f6@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, vnagarnaik@google.com, hpa@zytor.com,
+        mingo@kernel.org, peterz@infradead.org, dhsharp@google.com,
+        namhyung.kim@lge.com, bp@alien8.de, jolsa@redhat.com,
+        fweisbec@gmail.com, acme@infradead.org, mrubin@google.com,
+        rostedt@goodmis.org, tglx@linutronix.de, asharma@fb.com
+Reply-To: mingo@kernel.org, hpa@zytor.com, vnagarnaik@google.com,
+        linux-kernel@vger.kernel.org, dhsharp@google.com, peterz@infradead.org,
+        namhyung.kim@lge.com, bp@alien8.de, jolsa@redhat.com,
+        fweisbec@gmail.com, rostedt@goodmis.org, acme@infradead.org,
+        mrubin@google.com, tglx@linutronix.de, asharma@fb.com
+In-Reply-To: <1310785241-3799-2-git-send-email-vnagarnaik@google.com>
+References: <1310785241-3799-2-git-send-email-vnagarnaik@google.com>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:perf/core] parse-events:
+  Handle invalid opcode parsing gracefully
+Git-Commit-ID: d69afed55be1016c2bcfcb3e00cd5365d2f557f6
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-In-Reply-To: <20120521085951.GA4687@gmail.com>
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Mon, 21 May 2012 02:39:07 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, May 21, 2012 at 04:59:52PM +0800, Zheng Liu wrote:
-> On Mon, May 21, 2012 at 09:36:32AM +0200, Johannes Weiner wrote:
-> > On Mon, May 21, 2012 at 10:51:49AM +0800, Zheng Liu wrote:
-> > > On Thu, May 17, 2012 at 09:54:25PM +0200, Johannes Weiner wrote:
-> > > > On Thu, May 17, 2012 at 11:13:53AM +0200, Michal Hocko wrote:
-> > > > > [64574746 vmscan: detect mapped file pages used only once] made mapped pages
-> > > > > have another round in inactive list because they might be just short
-> > > > > lived and so we could consider them again next time. This heuristic
-> > > > > helps to reduce pressure on the active list with a streaming IO
-> > > > > worklods.
-> > > > > This patch fixes a regression introduced by this commit for heavy shmem
-> > > > > based workloads because unlike Anon pages, which are excluded from this
-> > > > > heuristic because they are usually long lived, shmem pages are handled
-> > > > > as a regular page cache.
-> > > > > This doesn't work quite well, unfortunately, if the workload is mostly
-> > > > > backed by shmem (in memory database sitting on 80% of memory) with a
-> > > > > streaming IO in the background (backup - up to 20% of memory). Anon
-> > > > > inactive list is full of (dirty) shmem pages when watermarks are
-> > > > > hit. Shmem pages are kept in the inactive list (they are referenced)
-> > > > > in the first round and it is hard to reclaim anything else so we reach
-> > > > > lower scanning priorities very quickly which leads to an excessive swap
-> > > > > out.
-> > > > > 
-> > > > > Let's fix this by excluding all swap backed pages (they tend to be long
-> > > > > lived wrt. the regular page cache anyway) from used-once heuristic and
-> > > > > rather activate them if they are referenced.
-> > > > 
-> > > > Yes, the algorithm only makes sense for file cache, which is easy to
-> > > > reclaim.  Thanks for the fix!
-> > > 
-> > > Hi Johannes,
-> > > 
-> > > Out of curiosity, I notice that, in this patch (64574746), the commit log
-> > > said that this patch aims to reduce the impact of pages used only once.
-> > > Could you please tell why you think these pages will flood the active
-> > > list?  How do you find this problem?
-> > 
-> > Applications that use mmap for large, linear used-once IO.  Reclaim
-> > used to just activate every mapped file page it encountered for the
-> > first time (activate referenced ones, but they all start referenced) .
-> > This resulted in horrible reclaim latency as most pages in memory
-> > where active.
-> 
-> Thanks for your explanation. :-)
-> 
-> > 
-> > > Actually, we met a huge regression in our product system.  This
-> > > application uses mmap/munmap and read/write simultaneously.  Meanwhile
-> > > it wants to keep mapped file pages in memory as much as possible.  But
-> > > this patch causes that mapped file pages are reclaimed frequently.  So I
-> > > want to know whether or not this patch consider this situation.  Thank
-> > > you.
-> > 
-> > Is it because the read()/write() IO is high throughput and pushes
-> > pages through the LRU lists faster than the mmap pages are referenced?
-> 
-> Yes, in this application, one query needs to access mapped file page
-> twice and file page cache twice.  Namely, one query needs to do 4 disk
-> I/Os.  We have used fadvise(2) to reduce file page cache accessing to
-> only once.  For mapped file page, in fact them are accessed only once
-> because in one query the same data is accessed twice.  Thus, one query
-> causes 2 disk I/Os now.  The size of read/write is quite larger than
-> mmap/munmap.  So, as you see, if we can keep mmap/munmap file in memory
-> as much as possible, we will gain the better performance.
+Commit-ID:  d69afed55be1016c2bcfcb3e00cd5365d2f557f6
+Gitweb:     http://git.kernel.org/tip/d69afed55be1016c2bcfcb3e00cd5365d2f557f6
+Author:     Vaibhav Nagarnaik <vnagarnaik@google.com>
+AuthorDate: Fri, 6 Apr 2012 00:48:00 +0200
+Committer:  Frederic Weisbecker <fweisbec@gmail.com>
+CommitDate: Wed, 25 Apr 2012 13:35:28 +0200
 
-You access the same unmapped cache twice, i.e. repeated reads or
-writes against the same file offset?
+parse-events: Handle invalid opcode parsing gracefully
 
-How do you use fadvise?
+If an invalid opcode is encountered, trace-cmd exits with an error.
+Instead it can be treated as a soft error where the event's print format
+is not parsed and its binary data is dumped out.
 
-> > Are the mmap pages executable or shared between tasks?  If so, does
-> > the kernel you are using include '34dbc67 vmscan: promote shared file
-> > mapped pages' and 'c909e99 vmscan: activate executable pages after
-> > first usage'?
-> 
-> Thanks for your advice.  Our application has only one process.  So I
-> think that 34dbc67 is not useful for this application.  We have tried to
-> mmap file with PROT_EXEC flag to use this patch (c909e99).  But it seems
-> that the result is not good as we expected.
+This patch adds a return value to arg_num_eval() function to indicate if
+the parsing was successful. If not, then the error is considered soft
+and the parsing of the offending event fails.
 
-Used-once detection should not apply to executably mapped pages at all
-and just activate the page as before.  So I think there must be more
-going on.
+Cc: Michael Rubin <mrubin@google.com>
+Cc: David Sharp <dhsharp@google.com>
+Signed-off-by: Vaibhav Nagarnaik <vnagarnaik@google.com>
+Link: http://lkml.kernel.org/r/1310785241-3799-2-git-send-email-vnagarnaik@google.com
+Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+Cc: Ingo Molnar <mingo@kernel.org>
+Cc: Thomas Gleixner <tglx@linutronix.de>
+Cc: Peter Zijlstra <peterz@infradead.org>
+Cc: Arnaldo Carvalho de Melo <acme@infradead.org>
+Cc: Steven Rostedt <rostedt@goodmis.org>
+Cc: Borislav Petkov <bp@alien8.de>
+Cc: Jiri Olsa <jolsa@redhat.com>
+Cc: Arun Sharma <asharma@fb.com>
+Cc: Namhyung Kim <namhyung.kim@lge.com>
+Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
+---
+ tools/lib/traceevent/event-parse.c |  125 ++++++++++++++++++++++++------------
+ 1 files changed, 83 insertions(+), 42 deletions(-)
 
-> In addition, another factor also has some impacts for this application.
-> In inactive_file_is_low_global(), it is different between 2.6.18 and
-> upstream kernel.  IMHO, it causes that mapped file pages in active list
-> are moved into inactive list frequently.
-> 
-> Currently, we add a parameter in inactive_file_is_low_global() to adjust
-> this ratio.  Meanwhile we activate every mapped file pages for the first
-> time.  Then the performance gets better, but it still doesn't reach the
-> performance of 2.6.18.
-
-2.6.18 didn't have the active list protection at all and always
-forcibly deactivated pages during reclaim.  Have you tried fully
-reverting to this by making inactive_file_is_low_global() return true
-unconditionally?
-
-Could it be that by accessing your "used-once" unmapped cache twice in
-short succession, you accidentally activate it all?
-
-Thereby having ONLY mapped file pages on the inactive list, adding to
-the pressure on them?
-
-And, by having the wrong pages on the active list, actually benefit
-from the active list not being protected from inactive list cycle
-speed and instead pushed out quickly again?
+diff --git a/tools/lib/traceevent/event-parse.c b/tools/lib/traceevent/event-parse.c
+index 16da20c..ef2c65f 100644
+--- a/tools/lib/traceevent/event-parse.c
++++ b/tools/lib/traceevent/event-parse.c
+@@ -1915,90 +1915,120 @@ eval_type(unsigned long long val, struct print_arg *arg, int pointer)
+ 	return eval_type_str(val, arg->typecast.type, pointer);
+ }
+ 
+-static long long arg_num_eval(struct print_arg *arg)
++static int arg_num_eval(struct print_arg *arg, long long *val)
+ {
+ 	long long left, right;
+-	long long val = 0;
++	int ret = 1;
+ 
+ 	switch (arg->type) {
+ 	case PRINT_ATOM:
+-		val = strtoll(arg->atom.atom, NULL, 0);
++		*val = strtoll(arg->atom.atom, NULL, 0);
+ 		break;
+ 	case PRINT_TYPE:
+-		val = arg_num_eval(arg->typecast.item);
+-		val = eval_type(val, arg, 0);
++		ret = arg_num_eval(arg->typecast.item, val);
++		if (!ret)
++			break;
++		*val = eval_type(*val, arg, 0);
+ 		break;
+ 	case PRINT_OP:
+ 		switch (arg->op.op[0]) {
+ 		case '|':
+-			left = arg_num_eval(arg->op.left);
+-			right = arg_num_eval(arg->op.right);
++			ret = arg_num_eval(arg->op.left, &left);
++			if (!ret)
++				break;
++			ret = arg_num_eval(arg->op.right, &right);
++			if (!ret)
++				break;
+ 			if (arg->op.op[1])
+-				val = left || right;
++				*val = left || right;
+ 			else
+-				val = left | right;
++				*val = left | right;
+ 			break;
+ 		case '&':
+-			left = arg_num_eval(arg->op.left);
+-			right = arg_num_eval(arg->op.right);
++			ret = arg_num_eval(arg->op.left, &left);
++			if (!ret)
++				break;
++			ret = arg_num_eval(arg->op.right, &right);
++			if (!ret)
++				break;
+ 			if (arg->op.op[1])
+-				val = left && right;
++				*val = left && right;
+ 			else
+-				val = left & right;
++				*val = left & right;
+ 			break;
+ 		case '<':
+-			left = arg_num_eval(arg->op.left);
+-			right = arg_num_eval(arg->op.right);
++			ret = arg_num_eval(arg->op.left, &left);
++			if (!ret)
++				break;
++			ret = arg_num_eval(arg->op.right, &right);
++			if (!ret)
++				break;
+ 			switch (arg->op.op[1]) {
+ 			case 0:
+-				val = left < right;
++				*val = left < right;
+ 				break;
+ 			case '<':
+-				val = left << right;
++				*val = left << right;
+ 				break;
+ 			case '=':
+-				val = left <= right;
++				*val = left <= right;
+ 				break;
+ 			default:
+-				die("unknown op '%s'", arg->op.op);
++				do_warning("unknown op '%s'", arg->op.op);
++				ret = 0;
+ 			}
+ 			break;
+ 		case '>':
+-			left = arg_num_eval(arg->op.left);
+-			right = arg_num_eval(arg->op.right);
++			ret = arg_num_eval(arg->op.left, &left);
++			if (!ret)
++				break;
++			ret = arg_num_eval(arg->op.right, &right);
++			if (!ret)
++				break;
+ 			switch (arg->op.op[1]) {
+ 			case 0:
+-				val = left > right;
++				*val = left > right;
+ 				break;
+ 			case '>':
+-				val = left >> right;
++				*val = left >> right;
+ 				break;
+ 			case '=':
+-				val = left >= right;
++				*val = left >= right;
+ 				break;
+ 			default:
+-				die("unknown op '%s'", arg->op.op);
++				do_warning("unknown op '%s'", arg->op.op);
++				ret = 0;
+ 			}
+ 			break;
+ 		case '=':
+-			left = arg_num_eval(arg->op.left);
+-			right = arg_num_eval(arg->op.right);
+-
+-			if (arg->op.op[1] != '=')
+-				die("unknown op '%s'", arg->op.op);
++			ret = arg_num_eval(arg->op.left, &left);
++			if (!ret)
++				break;
++			ret = arg_num_eval(arg->op.right, &right);
++			if (!ret)
++				break;
+ 
+-			val = left == right;
++			if (arg->op.op[1] != '=') {
++				do_warning("unknown op '%s'", arg->op.op);
++				ret = 0;
++			} else
++				*val = left == right;
+ 			break;
+ 		case '!':
+-			left = arg_num_eval(arg->op.left);
+-			right = arg_num_eval(arg->op.right);
++			ret = arg_num_eval(arg->op.left, &left);
++			if (!ret)
++				break;
++			ret = arg_num_eval(arg->op.right, &right);
++			if (!ret)
++				break;
+ 
+ 			switch (arg->op.op[1]) {
+ 			case '=':
+-				val = left != right;
++				*val = left != right;
+ 				break;
+ 			default:
+-				die("unknown op '%s'", arg->op.op);
++				do_warning("unknown op '%s'", arg->op.op);
++				ret = 0;
+ 			}
+ 			break;
+ 		case '-':
+@@ -2006,12 +2036,17 @@ static long long arg_num_eval(struct print_arg *arg)
+ 			if (arg->op.left->type == PRINT_NULL)
+ 				left = 0;
+ 			else
+-				left = arg_num_eval(arg->op.left);
+-			right = arg_num_eval(arg->op.right);
+-			val = left - right;
++				ret = arg_num_eval(arg->op.left, &left);
++			if (!ret)
++				break;
++			ret = arg_num_eval(arg->op.right, &right);
++			if (!ret)
++				break;
++			*val = left - right;
+ 			break;
+ 		default:
+-			die("unknown op '%s'", arg->op.op);
++			do_warning("unknown op '%s'", arg->op.op);
++			ret = 0;
+ 		}
+ 		break;
+ 
+@@ -2020,10 +2055,11 @@ static long long arg_num_eval(struct print_arg *arg)
+ 	case PRINT_STRING:
+ 	case PRINT_BSTRING:
+ 	default:
+-		die("invalid eval type %d", arg->type);
++		do_warning("invalid eval type %d", arg->type);
++		ret = 0;
+ 
+ 	}
+-	return val;
++	return ret;
+ }
+ 
+ static char *arg_eval (struct print_arg *arg)
+@@ -2037,7 +2073,8 @@ static char *arg_eval (struct print_arg *arg)
+ 	case PRINT_TYPE:
+ 		return arg_eval(arg->typecast.item);
+ 	case PRINT_OP:
+-		val = arg_num_eval(arg);
++		if (!arg_num_eval(arg, &val))
++			break;
+ 		sprintf(buf, "%lld", val);
+ 		return buf;
+ 
+@@ -2079,6 +2116,8 @@ process_fields(struct event_format *event, struct print_flag_sym **list, char **
+ 		memset(field, 0, sizeof(*field));
+ 
+ 		value = arg_eval(arg);
++		if (value == NULL)
++			goto out_free;
+ 		field->value = strdup(value);
+ 
+ 		free_arg(arg);
+@@ -2090,6 +2129,8 @@ process_fields(struct event_format *event, struct print_flag_sym **list, char **
+ 			goto out_free;
+ 
+ 		value = arg_eval(arg);
++		if (value == NULL)
++			goto out_free;
+ 		field->str = strdup(value);
+ 		free_arg(arg);
+ 		arg = NULL;
