@@ -1,85 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932287Ab2EUJOp (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 May 2012 05:14:45 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:38439 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757210Ab2EUJOm (ORCPT
+	id S1757431Ab2EUJPT (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 May 2012 05:15:19 -0400
+Received: from haggis.pcug.org.au ([203.10.76.10]:46619 "EHLO
+	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757360Ab2EUJPQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 May 2012 05:14:42 -0400
-Date: Mon, 21 May 2012 02:14:27 -0700
-From: tip-bot for Anna-Maria Gleixner <anna-maria@glx-um.de>
-Message-ID: <tip-21b19710a2fbbec3d81e7cb4d74a8ea4f0acfeea@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
-        tony.luck@intel.com, tglx@linutronix.de, anna-maria@glx-um.de
-Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        tglx@linutronix.de, tony.luck@intel.com, anna-maria@glx-um.de
-In-Reply-To: <20120518163105.547603093@glx-um.de>
-References: <20120518163105.547603093@glx-um.de>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:timers/core] ia64: Use generic time config
-Git-Commit-ID: 21b19710a2fbbec3d81e7cb4d74a8ea4f0acfeea
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
-  to get blacklisted from these emails
-MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Mon, 21 May 2012 02:14:33 -0700 (PDT)
+	Mon, 21 May 2012 05:15:16 -0400
+Date: Mon, 21 May 2012 19:15:08 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Ingo Molnar <mingo@kernel.org>
+Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Peter Zijlstra <peterz@infradead.org>, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: linux-next: build failure after merge of the final tree
+Message-Id: <20120521191508.9a5f6d7ea9e71fc924ba9f64@canb.auug.org.au>
+In-Reply-To: <20120521091257.GF31407@gmail.com>
+References: <20120521185412.aca92107d0a8c4fdd8474e34@canb.auug.org.au>
+	<20120521091257.GF31407@gmail.com>
+X-Mailer: Sylpheed 3.2.0beta7 (GTK+ 2.24.10; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Mon__21_May_2012_19_15_08_+1000_A5aafPaR/DTAefZf"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  21b19710a2fbbec3d81e7cb4d74a8ea4f0acfeea
-Gitweb:     http://git.kernel.org/tip/21b19710a2fbbec3d81e7cb4d74a8ea4f0acfeea
-Author:     Anna-Maria Gleixner <anna-maria@glx-um.de>
-AuthorDate: Fri, 18 May 2012 16:45:48 +0000
-Committer:  Thomas Gleixner <tglx@linutronix.de>
-CommitDate: Mon, 21 May 2012 11:01:42 +0200
+--Signature=_Mon__21_May_2012_19_15_08_+1000_A5aafPaR/DTAefZf
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-ia64: Use generic time config
+Hi Ingo,
 
-Signed-off-by: Anna-Maria Gleixner <anna-maria@glx-um.de>
-Cc: Tony Luck <tony.luck@intel.com>
-Link: http://lkml.kernel.org/r/20120518163105.547603093@glx-um.de
-Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
----
- arch/ia64/Kconfig |    9 ++-------
- 1 files changed, 2 insertions(+), 7 deletions(-)
+On Mon, 21 May 2012 11:12:57 +0200 Ingo Molnar <mingo@kernel.org> wrote:
+>
+> * Stephen Rothwell <sfr@canb.auug.org.au> wrote:
+>=20
+> > After merging the final tree, today's linux-next build (i386 defconfig)
+> > failed like this:
+> >=20
+> > Invalid absolute R_386_32 relocation: jiffies
+>=20
+> Hm, that's our fault: seems like a linker bug fallout, one which=20
+> we fixed in -tip.
+>=20
+> > I am not sure what caused this (it may even been a bad merge=20
+> > on my part).  I have left it broken for today.
+>=20
+> While we've fixed this, to simplify merge window integration of=20
+> linux-next I've excluded tip:x86/trampoline from the linux-next=20
+> branch for now, so this build failure should go away tomorrow.
 
-diff --git a/arch/ia64/Kconfig b/arch/ia64/Kconfig
-index bd72669..9f9d57b 100644
---- a/arch/ia64/Kconfig
-+++ b/arch/ia64/Kconfig
-@@ -33,6 +33,8 @@ config IA64
- 	select ARCH_WANT_OPTIONAL_GPIOLIB
- 	select ARCH_HAVE_NMI_SAFE_CMPXCHG
- 	select GENERIC_IOMAP
-+	select ARCH_CLOCKSOURCE_DATA
-+	select GENERIC_TIME_VSYSCALL
- 	default y
- 	help
- 	  The Itanium Processor Family is Intel's 64-bit successor to
-@@ -88,10 +90,6 @@ config GENERIC_CALIBRATE_DELAY
- 	bool
- 	default y
- 
--config GENERIC_TIME_VSYSCALL
--	bool
--	default y
--
- config HAVE_SETUP_PER_CPU_AREA
- 	def_bool y
- 
-@@ -106,9 +104,6 @@ config EFI
- 	bool
- 	default y
- 
--config ARCH_CLOCKSOURCE_DATA
--	def_bool y
--
- config SCHED_OMIT_FRAME_POINTER
- 	bool
- 	default y
+OK, thanks
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+
+--Signature=_Mon__21_May_2012_19_15_08_+1000_A5aafPaR/DTAefZf
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBCAAGBQJPugecAAoJEECxmPOUX5FEuNMP/RboH1KyTCv+qMB7Jgg4GBAw
+Us75WnmaCYQObglZmtgQ6cOeUkjJ3MKh09fQ2Yle8MYVXHZ9ohrN9qIrKYrARhYs
+dn5NvW9B8qP9rMI3dd/TIor9vVOXmapxHS9FYhNGT9sLe03hD+3kWOkbCw2EP+OX
+pQcfsvspQFc7DH04m+OGREzaaWHQd98iqnQjkq4L4w1Ep7l5+kssFvhSI3xNXUJM
+ShNPv6SdcLyA+b5vp939ahhhL0qoYBK+6t/o5UH5SOFYv4R2rZhs1laWNGUikx/n
+HLKKFVSlDw51WOh2WuVAGAmxlfbk8VlLd74LJc1gSFqA8lbBe6nn4BstMQBjAvrb
+cG2eqy4unpADB5JGSsed9Rer1iSadzbtDjTjPOfIUioP6ELDAcg/Ifd2K8eNlZhO
+di0PFLrPa9M3EJ7WQmgjTTn1nLk1LenTl7zSuDkMmqzGEY0zaKmjNqqVRlRR8gHU
+QSrJkoGJ/zVRI6JA5e9fngDXgAghf2aFVZkb9p8UiUU+i+LXxkdJtl6w0VPaAZLe
+OX1nbFd7SzTdEd6d7DcaUJ4+8OKoBhSiaqr0BnBiYYZNzyjaGSaM/qNGhMxytrpK
+5yKC9J/qiL0LzpPJBqCyZPtROtUX9wUh348rNM6rJeq+uBYLIC5ODNY2Ve0Dish1
+6PFVhoiZu154urYYI7z/
+=wHRN
+-----END PGP SIGNATURE-----
+
+--Signature=_Mon__21_May_2012_19_15_08_+1000_A5aafPaR/DTAefZf--
