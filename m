@@ -1,102 +1,150 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754737Ab2EUPyo (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 May 2012 11:54:44 -0400
-Received: from smtp02.citrix.com ([66.165.176.63]:60650 "EHLO
-	SMTP02.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750817Ab2EUPyn (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 May 2012 11:54:43 -0400
-X-IronPort-AV: E=Sophos;i="4.75,631,1330923600"; 
-   d="scan'208";a="195812786"
-From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-To: xen-devel@lists.xensource.com
-CC: stefano.stabellini@eu.citrix.com, konrad.wilk@oracle.com,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH] xen: do not map the same GSI twice
-Date: Mon, 21 May 2012 16:54:10 +0100
-Message-ID: <1337615650-27911-1-git-send-email-stefano.stabellini@eu.citrix.com>
-X-Mailer: git-send-email 1.7.0.4
+	id S1755566Ab2EUQA7 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 May 2012 12:00:59 -0400
+Received: from tx2ehsobe005.messaging.microsoft.com ([65.55.88.15]:39656 "EHLO
+	tx2outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754383Ab2EUQA4 convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 21 May 2012 12:00:56 -0400
+X-SpamScore: -13
+X-BigFish: VPS-13(zzc89bh936eK146fI1432N98dKzz1202hzzz2dh668h839h93fhd25hf0ah)
+X-Forefront-Antispam-Report: CIP:163.181.249.109;KIP:(null);UIP:(null);IPV:NLI;H:ausb3twp02.amd.com;RD:none;EFVD:NLI
+X-WSS-ID: 0M4DR4I-02-IKS-02
+X-M-MSG: 
+Date: Mon, 21 May 2012 18:00:41 +0200
+From: Borislav Petkov <borislav.petkov@amd.com>
+To: Mauro Carvalho Chehab <mchehab@redhat.com>
+CC: "Luck, Tony" <tony.luck@intel.com>, Ingo Molnar <mingo@kernel.org>,
+        Linux Edac Mailing List <linux-edac@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Aristeu Rozanski <arozansk@redhat.com>,
+        Doug Thompson <norsk5@yahoo.com>, Steven Rostedt <rostedt@goodmis.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Ingo Molnar <mingo@redhat.com>
+Subject: Re: [PATCH v24b] RAS: Add a tracepoint for reporting memory
+ controller events
+Message-ID: <20120521160041.GJ3334@aftab.osrc.amd.com>
+References: <4FB64D5B.1030301@redhat.com>
+ <20120518140521.GM20215@aftab.osrc.amd.com>
+ <4FB65D52.9060108@redhat.com>
+ <20120518164014.GX20215@aftab.osrc.amd.com>
+ <4FB6866E.7090503@redhat.com>
+ <20120518185258.GE20215@aftab.osrc.amd.com>
+ <3908561D78D1C84285E8C5FCA982C28F192F1A33@ORSMSX104.amr.corp.intel.com>
+ <20120518211211.GA26464@aftab.osrc.amd.com>
+ <20120519092618.GC29991@aftab.osrc.amd.com>
+ <4FBA5F59.5000604@redhat.com>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: text/plain; charset="utf-8"
+Content-Disposition: inline
+In-Reply-To: <4FBA5F59.5000604@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Transfer-Encoding: 8BIT
+X-OriginatorOrg: amd.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-PV on HVM guests map GSIs into event channels; at restore time the
-event channels are resumed by restore_pirqs.
-Device drivers might try to register the same GSI again through ACPI at
-restore time, but the GSI has already been mapped and bound by
-restore_pirqs.
-This patch detects these situations and avoid mapping the same GSI
-multiple times.
+On Mon, May 21, 2012 at 12:29:29PM -0300, Mauro Carvalho Chehab wrote:
+> Em 19-05-2012 06:26, Borislav Petkov escreveu:
+> > On Fri, May 18, 2012 at 11:12:11PM +0200, Borislav Petkov wrote:
+> >> On Fri, May 18, 2012 at 07:10:42PM +0000, Luck, Tony wrote:
+> >>>> That's why _each_ _driver_ will have its format and the userspace tools
+> >>>> parsing it will know about it!
+> >>>
+> >>> Sounds like a full employment program for parser writers.
+> >>>
+> >>> There are some interesting fields that should be common to all
+> >>> drivers ... so have twenty parsers that can handle:
+> >>>
+> >>> 	paddr: 0x1234
+> >>> 	PADDR: 0x1234
+> >>> 	Paddr = 0x1234
+> >>> 	Phys = 1234
+> >>> 	addr: 0x1234
+> >>> 	Address: 0x000000001234
+> >>>
+> >>> looks like a lot of make-work ... when the OS can standardize in the ABI
+> >>> that there is a 64-bit binary value that is the physical address of the
+> >>> error (and another 64-bit mask saying which, if any, bits are valid).
+> 
+> The EDAC API works with the address/address mask as 3 values: address page,
+> address offset inside the page and grain.
+> 
+> The values for address page/offset/grain and syndrome are mandatory on the EDAC
+> error calls. Drivers that can't obtain that fill with zero. EDAC prints those
+> values via the current API.
+> 
+> So, passing those values for the tracepoint makes sense.
+> 
+> In order to use a cleaner API, we may add a flags bitfield there, and add a few
+> flags to mark if the address (page, offset, grain) is valid and if the syndrome
+> is valid.
 
-Signed-off-by: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
----
- arch/x86/pci/xen.c   |    4 ++++
- drivers/xen/events.c |    5 +++--
- include/xen/events.h |    3 +++
- 3 files changed, 10 insertions(+), 2 deletions(-)
+This is exactly the issue - we don't want to overcomplicate the
+tracepoint! Simply output the single address value and userspace can cut
+and split and paste it however it wants.
 
-diff --git a/arch/x86/pci/xen.c b/arch/x86/pci/xen.c
-index 7415aa9..56ab749 100644
---- a/arch/x86/pci/xen.c
-+++ b/arch/x86/pci/xen.c
-@@ -64,6 +64,10 @@ static int xen_register_pirq(u32 gsi, int gsi_override, int triggering,
- 	int shareable = 0;
- 	char *name;
- 
-+	irq = xen_irq_from_gsi(gsi);
-+	if (irq > 0)
-+		return irq;
-+
- 	if (set_pirq)
- 		pirq = gsi;
- 
-diff --git a/drivers/xen/events.c b/drivers/xen/events.c
-index 0a8a17c..6908e4c 100644
---- a/drivers/xen/events.c
-+++ b/drivers/xen/events.c
-@@ -611,7 +611,7 @@ static void disable_pirq(struct irq_data *data)
- 	disable_dynirq(data);
- }
- 
--static int find_irq_by_gsi(unsigned gsi)
-+int xen_irq_from_gsi(unsigned gsi)
- {
- 	struct irq_info *info;
- 
-@@ -625,6 +625,7 @@ static int find_irq_by_gsi(unsigned gsi)
- 
- 	return -1;
- }
-+EXPORT_SYMBOL_GPL(xen_irq_from_gsi);
- 
- /*
-  * Do not make any assumptions regarding the relationship between the
-@@ -644,7 +645,7 @@ int xen_bind_pirq_gsi_to_irq(unsigned gsi,
- 
- 	mutex_lock(&irq_mapping_update_lock);
- 
--	irq = find_irq_by_gsi(gsi);
-+	irq = xen_irq_from_gsi(gsi);
- 	if (irq != -1) {
- 		printk(KERN_INFO "xen_map_pirq_gsi: returning irq %d for gsi %u\n",
- 		       irq, gsi);
-diff --git a/include/xen/events.h b/include/xen/events.h
-index 0f77370..b332bd7 100644
---- a/include/xen/events.h
-+++ b/include/xen/events.h
-@@ -103,6 +103,9 @@ int xen_irq_from_pirq(unsigned pirq);
- /* Return the pirq allocated to the irq. */
- int xen_pirq_from_irq(unsigned irq);
- 
-+/* Return the irq allocated to the gsi */
-+int xen_irq_from_gsi (unsigned gsi);
-+
- /* Determine whether to ignore this IRQ if it is passed to a guest. */
- int xen_test_irq_shared(int irq);
- 
+<snip some bullshit which I'm tired of addressing everytime>
+
+> >> For the record, I very much like this reasoning :).
+> > 
+> > On a second thought, filtering out the globally valid fields for all
+> > drivers might require a lot of careful driver auditing.
+> 
+> If you want to explode the driver details, then yes, but the address and
+> syndrome are part of the EDAC internal ABI.
+>
+> Most drivers are capable of getting address and syndrome, for CE.
+> For UE, syndrome is generally not calculated.
+> 
+> Anyway, on _all_ internal ABI calls, when syndrome or address aren't
+> calculated, the drivers pass a value of 0 for them.
+> 
+> So, it is easy to add a logic inside the code that will rise a flag to
+> indicate userspace when those fields are filled or not. All the EDAC
+> core needs to do is to check if the value is 0 or not.
+
+No, we're not going to do that! Adding a bit about the validity of a bit
+is wrong design and is screaming B0RKED.
+
+We're going to have single fields for EDAC-global valid values and leave
+the driver-specific stuff lumped in one char * string.
+
+Then, if a driver cannot specify sindrome or whatever, it simply DOESN'T
+PUT IT IN THE STRING instead of adding validity bits.
+
+[ … ]
+
+> > Which is basically what I'm suggesting for a couple of days now :-)
+> > 
+> >        TP_PROTO(const unsigned int err_type,
+> >                 const unsigned int mc_index,
+> >                 const char *error_msg,
+> >                 const char *label,
+> >                 const char *location,
+> >                 const char *detail)
+> >
+> > and I'm really not sure about err_type - this is an edac-specific define
+> > and it means nothing outside the kernel so its string representation
+> > could very well could be merged with error_msg and we can drop the ( ? :
+> > ) ugliness in the tracepoint definition itself.
+> 
+> All error management systems use a mandatory field for the error severity.
+
+... I'm pretty sure the defines you're exporting are not the same as
+your error management systems require. So some kind of mapping is
+still needed. Which shows that you're going to need to massage that
+information in userspace after all.
+
 -- 
-1.7.2.5
+Regards/Gruss,
+Boris.
+
+Advanced Micro Devices GmbH
+Einsteinring 24, 85609 Dornach
+GM: Alberto Bozzo
+Reg: Dornach, Landkreis Muenchen
+HRB Nr. 43632 WEEE Registernr: 129 19551
 
