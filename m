@@ -1,103 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758815Ab2EUTv4 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 May 2012 15:51:56 -0400
-Received: from mail-wi0-f178.google.com ([209.85.212.178]:35056 "EHLO
-	mail-wi0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755183Ab2EUTvy (ORCPT
+	id S1759054Ab2EUTx3 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 May 2012 15:53:29 -0400
+Received: from araneidae.co.uk ([81.187.94.2]:52139 "EHLO
+	venus.araneidae.co.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758563Ab2EUTx2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 May 2012 15:51:54 -0400
-Date: Mon, 21 May 2012 21:51:49 +0200
-From: Ingo Molnar <mingo@kernel.org>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org, Thomas Gleixner <tglx@linutronix.de>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: [GIT PULL] core/debugobjects changes for v3.5
-Message-ID: <20120521195149.GA6178@gmail.com>
+	Mon, 21 May 2012 15:53:28 -0400
+Date: Mon, 21 May 2012 20:53:21 +0100 (BST)
+From: Michael Abbott <michael@araneidae.co.uk>
+To: David Miller <davem@davemloft.net>
+cc: ben-linux@fluff.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] Implement full reset of DM9000 network device
+In-Reply-To: <20120521.153257.724964822171767587.davem@davemloft.net>
+Message-ID: <alpine.DEB.2.00.1205212052100.27705@venus.araneidae.co.uk>
+References: <alpine.DEB.2.00.1205211344010.26839@venus.araneidae.co.uk> <20120521.153257.724964822171767587.davem@davemloft.net>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Linus,
+On Mon, 21 May 2012, David Miller wrote:
+> From: Michael Abbott <michael@araneidae.co.uk>
+> Date: Mon, 21 May 2012 13:47:53 +0100 (BST)
+> 
+> > A Davicom application note for the DM9000 network device recommends 
+> > performing software reset twice to correctly initialise the device. 
+> > Without this reset some devices fail to initialise correctly on system 
+> > startup.
+> > 
+> > Signed-off-by: Michael Abbott <michael.abbott@diamond.ac.uk>
+> 
+> Please post networking patches to netdev@vger.kernel.org, the networking 
+> developers are not all listening on linux-kernel.
+> 
+> Plus, by properly submitting networking patches to netdev, it will 
+> automatically be queued up and tracked in patchwork:
 
-Please pull the latest core-debugobjects-for-linus git tree from:
-
-   git://git.kernel.org/pub/scm/linux/kernel/git/tip/tip.git core-debugobjects-for-linus
-
-   HEAD: 3340808cf04faad7b87d6c6e13800825e5552b51 debugobjects: Fill_pool() returns void now
-
-Not much happened: it includes a cleanup and an irq latency 
-reduction fixlet.
-
- Thanks,
-
-	Ingo
-
------------------->
-Dan Carpenter (1):
-      debugobjects: Fill_pool() returns void now
-
-Thomas Gleixner (2):
-      debugobjects: Remove unused return value from fill_pool()
-      debugobjects: printk with irqs enabled
-
-
- lib/debugobjects.c |   11 +++++------
- 1 files changed, 5 insertions(+), 6 deletions(-)
-
-diff --git a/lib/debugobjects.c b/lib/debugobjects.c
-index 0ab9ae8..d11808c 100644
---- a/lib/debugobjects.c
-+++ b/lib/debugobjects.c
-@@ -79,30 +79,29 @@ static const char *obj_states[ODEBUG_STATE_MAX] = {
- 	[ODEBUG_STATE_NOTAVAILABLE]	= "not available",
- };
- 
--static int fill_pool(void)
-+static void fill_pool(void)
- {
- 	gfp_t gfp = GFP_ATOMIC | __GFP_NORETRY | __GFP_NOWARN;
- 	struct debug_obj *new;
- 	unsigned long flags;
- 
- 	if (likely(obj_pool_free >= ODEBUG_POOL_MIN_LEVEL))
--		return obj_pool_free;
-+		return;
- 
- 	if (unlikely(!obj_cache))
--		return obj_pool_free;
-+		return;
- 
- 	while (obj_pool_free < ODEBUG_POOL_MIN_LEVEL) {
- 
- 		new = kmem_cache_zalloc(obj_cache, gfp);
- 		if (!new)
--			return obj_pool_free;
-+			return;
- 
- 		raw_spin_lock_irqsave(&pool_lock, flags);
- 		hlist_add_head(&new->node, &obj_pool);
- 		obj_pool_free++;
- 		raw_spin_unlock_irqrestore(&pool_lock, flags);
- 	}
--	return obj_pool_free;
- }
- 
- /*
-@@ -1052,10 +1051,10 @@ static int __init debug_objects_replace_static_objects(void)
- 			cnt++;
- 		}
- 	}
-+	local_irq_enable();
- 
- 	printk(KERN_DEBUG "ODEBUG: %d of %d active objects replaced\n", cnt,
- 	       obj_pool_used);
--	local_irq_enable();
- 	return 0;
- free:
- 	hlist_for_each_entry_safe(obj, node, tmp, &objects, node) {
+Ok, thanks.  I'll resubmit when I'm ready -- it seems the patch isn't 
+enough to solve the issue I'm investigating...
