@@ -1,47 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758947Ab2EUVCs (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 May 2012 17:02:48 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:56774 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758597Ab2EUVCr (ORCPT
+	id S1758658Ab2EUVE3 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 May 2012 17:04:29 -0400
+Received: from mail-gg0-f174.google.com ([209.85.161.174]:59944 "EHLO
+	mail-gg0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752634Ab2EUVE1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 May 2012 17:02:47 -0400
+	Mon, 21 May 2012 17:04:27 -0400
 MIME-Version: 1.0
-In-Reply-To: <20120521181558.GA7829@phenom.dumpdata.com>
-References: <CAJ75kXbC3gqQAaghKo2i1L650dw9-vrFuEwoy4defagoyR8p4Q@mail.gmail.com>
- <20120521181558.GA7829@phenom.dumpdata.com>
-From: William Dauchy <wdauchy@gmail.com>
-Date: Mon, 21 May 2012 23:02:26 +0200
-Message-ID: <CAJ75kXbJXVW6dJDzG7zDuiu=6NnTybM3m97gW507-yzzsa7yoQ@mail.gmail.com>
-Subject: Re: [Xen-devel] swap: don't do discard if no discard option added
-To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Cc: shli@fusionio.com, stable@vger.kernel.org,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        xen-devel@lists.xensource.com, Shaohua Li <shli@kernel.org>,
-        linux-kernel@vger.kernel.org, Ben Hutchings <ben@decadent.org.uk>
-Content-Type: text/plain; charset=ISO-8859-1
+In-Reply-To: <1337631255.13812.36.camel@joe2Laptop>
+References: <1337629490-7446-1-git-send-email-nasirabed+kernel@gmail.com>
+	<1337631255.13812.36.camel@joe2Laptop>
+Date: Mon, 21 May 2012 23:04:27 +0200
+X-Google-Sender-Auth: 36XhLhCY3f6K0bw_uBuYkF-vI0c
+Message-ID: <CAMXkaZEhDaj_qtPp8wu315HD1Nw_nK88cuZ1_jpaWqf8y1qvow@mail.gmail.com>
+Subject: Re: [PATCH] Staging: android: alarm: Renamed pr_alarm to alarm_dbg
+From: Nasir Abed <nasirabed+kernel@gmail.com>
+To: Joe Perches <joe@perches.com>
+Cc: gregkh@linuxfoundation.org, devel@driverdev.osuosl.org,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+Hi Joe,
 
-On Mon, May 21, 2012 at 8:15 PM, Konrad Rzeszutek Wilk
-<konrad.wilk@oracle.com> wrote:
-> So you are asking for 052b198 to be back-ported.
-> I am OK with that but I think Shaohua needs to Ack that and
-> ask Greg to put it on stable@kernel.org
+> Welcome to linux-kernel developing.
+>
+Thanks.
 
-Yes, since I didn't find the official process to propose an
-already-in-tree commit to stable@
-(http://kernel.org/doc/Documentation/stable_kernel_rules.txt), I was
-just asking around, maybe to get Shaohua feedback.
+> It's generally pretty unnecessary to resubmit a variant of
+> a patch that someone else has already submitted.
+>
+My mistake I should have double checked that first.
 
-I guess it meets the requirements to be integrated in stable; tested
-on my side in 3.2.x and 3.3.x and fixing a precise issue.
+> If you want to get your 2nd patch in, that's great, but
+> please consider doing work that isn't just checkpatch
+> cleanups and isn't duplicative of work where you were cc'd.
+>
+That doesn't really sounds encouraging. Greg Kroah-Hartman
+presentation on writing and submitting your (first) patch was my
+inspiration to start helping out. However what you are saying might
+scare away potential new developers.
 
-Regards,
+> diff --git a/drivers/staging/android/alarm.c b/drivers/staging/android/alarm.c
+>
+> Is this done against -next or some other -staging tree?
+>
+I am using: http://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux.git
 
--- 
-William
+Thanks for your feedback, very helpful.
+
+Cheers,
+
+Nasir Abed
