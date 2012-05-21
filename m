@@ -1,104 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752591Ab2EUHwz (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 May 2012 03:52:55 -0400
-Received: from moutng.kundenserver.de ([212.227.17.9]:59124 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750746Ab2EUHwx (ORCPT
+	id S1754316Ab2EUH52 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 May 2012 03:57:28 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:51373 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751374Ab2EUH50 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 May 2012 03:52:53 -0400
-From: Andreas Schallenberg <Andreas.Schallenberg@3alitytechnica.com>
-To: <linus.walleij@stericsson.com>, <grant.likely@secretlab.ca>
-CC: <linux-kernel@vger.kernel.org>,
-        Andreas Schallenberg <Andreas.Schallenberg@3alitytechnica.com>
-Subject: [PATCH-RESEND] GPIO/TCA6424: merge I2C transactions, remove cast
-Date: Mon, 21 May 2012 09:52:43 +0200
-X-Mailer: git-send-email 1.7.3.4
+	Mon, 21 May 2012 03:57:26 -0400
 MIME-Version: 1.0
-Content-Type: text/plain
-X-KSE-AntiSpam-Interceptor-Info: protection disabled
-X-KSE-Antivirus-Interceptor-Info: scan successful
-X-KSE-Antivirus-Info: Clean
-Message-Id: <0LrHzA-1S4duI0urs-013Ke8@mrelayeu.kundenserver.de>
-X-Provags-ID: V02:K0:JV6C32xwtonkZi0Sm6yKAG9+GBYQ6Zsm99OmXoqsPUc
- INprDxWqioI0HA6yAtBUKU3jmEydy0zIjOuhejlJL7toemHbCe
- Zl7P42/DSm3IkWKul5hOwxR+30fG1cPTE7iUVVa2XdyTEl6pwf
- +7DSSoOT8Gwi88HXeki+nryZMJM0YVJ6MIx1gXyJL58mbo+Vky
- wL+6ytCInDJpIbBFpKy+Ql5/Mdg+aYtxx4UBqd8PPMsOndZTTr
- qAcjV4+sa4zVn228A2sILANtDcIq8DMxY24vz4WFl1h3c/ZRaJ
- flGJW9823njJRa+gw/4fmjIDeRlJDBG57yV3CwtgP9y204+YVc
- UCS7uZGi8UBWS6j2j4w9Y2hO0yWjLNZ8fD+BNoMkFNt84oxT7/
- NRBm9Vwm72lzw==
+In-Reply-To: <20120520100015.GC20652@opensource.wolfsonmicro.com>
+References: <1337261967-26004-1-git-send-email-yadi.brar@samsung.com>
+	<1337261967-26004-3-git-send-email-yadi.brar@samsung.com>
+	<20120520100015.GC20652@opensource.wolfsonmicro.com>
+Date: Mon, 21 May 2012 13:27:26 +0530
+Message-ID: <CAKew6eUqqC-jSRoY1e4Q=JnLekuA_geGcCjQr4=6g86nf3LfDA@mail.gmail.com>
+Subject: Re: [PATCH v2 2/2] regulator: Add support for MAX77686.
+From: Yadwinder Singh Brar <yadi.brar01@gmail.com>
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>
+Cc: linux-kernel@vger.kernel.org, linux-samsung-soc@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, Liam Girdwood <lrg@ti.com>,
+        Yadwinder Singh Brar <yadi.brar@samsung.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is a follow-up to "[PATCH v2] Add support for TCA6424":
-- Use 3 byte transfers instead of two separate transfers (2+1 byte)
-- An unnecessary cast removed
+Hi Mark,
 
-Signed-off-by: Andreas Schallenberg <Andreas.Schallenberg@3alitytechnica.com>
+On Sun, May 20, 2012 at 3:30 PM, Mark Brown
+<broonie@opensource.wolfsonmicro.com> wrote:
+> On Thu, May 17, 2012 at 07:09:27PM +0530, Yadwinder Singh Brar wrote:
+>
+> Looks mostly good.  A couple of fairly small things:
+>
+>> +static int max77686_get_voltage_sel(struct regulator_dev *rdev)
+>> +{
+>
+> This looks like it should be regulator_get_voltage_sel_regmap().
+>
+>> +static int max77686_set_voltage_sel(struct regulator_dev *rdev,
+>> +                                     unsigned sel)
+>> +{
+>
+> This looks like it should be regulator_set_voltage_sel_regmap().
+>
 
----
- drivers/gpio/gpio-pca953x.c |   27 ++++++++++++++++-----------
- 1 files changed, 16 insertions(+), 11 deletions(-)
+Yes, We can use  regulator_set_voltage_sel_regmap(), I will replace it.
 
-diff --git a/drivers/gpio/gpio-pca953x.c b/drivers/gpio/gpio-pca953x.c
-index 1c313c7..5eee524 100644
---- a/drivers/gpio/gpio-pca953x.c
-+++ b/drivers/gpio/gpio-pca953x.c
-@@ -98,12 +98,11 @@ static int pca953x_write_reg(struct pca953x_chip *chip, int reg, u32 val)
- 	if (chip->gpio_chip.ngpio <= 8)
- 		ret = i2c_smbus_write_byte_data(chip->client, reg, val);
- 	else if (chip->gpio_chip.ngpio == 24) {
--		ret = i2c_smbus_write_word_data(chip->client,
-+		cpu_to_le32s(&val);
-+		ret = i2c_smbus_write_i2c_block_data(chip->client,
- 						(reg << 2) | REG_ADDR_AI,
--						val & 0xffff);
--		ret = i2c_smbus_write_byte_data(chip->client,
--						(reg << 2) + 2,
--						(val & 0xff0000) >> 16);
-+						3,
-+						(u8 *) &val);
- 	}
- 	else {
- 		switch (chip->chip_type) {
-@@ -135,22 +134,27 @@ static int pca953x_read_reg(struct pca953x_chip *chip, int reg, u32 *val)
- {
- 	int ret;
- 
--	if (chip->gpio_chip.ngpio <= 8)
-+	if (chip->gpio_chip.ngpio <= 8) {
- 		ret = i2c_smbus_read_byte_data(chip->client, reg);
-+		*val = ret;
-+	}
- 	else if (chip->gpio_chip.ngpio == 24) {
--		ret =  i2c_smbus_read_word_data(chip->client, reg << 2);
--		ret |= (i2c_smbus_read_byte_data(chip->client,
--						 (reg << 2) + 2)<<16);
-+		*val = 0;
-+		ret = i2c_smbus_read_i2c_block_data(chip->client,
-+						(reg << 2) | REG_ADDR_AI,
-+						3,
-+						(u8 *) val);
-+		le32_to_cpus(val);
--	}
--	else
-+	} else {
- 		ret = i2c_smbus_read_word_data(chip->client, reg << 1);
-+		*val = ret;
-+	}
- 
- 	if (ret < 0) {
- 		dev_err(&chip->client->dev, "failed reading register\n");
- 		return ret;
- 	}
- 
--	*val = (u32)ret;
- 	return 0;
- }
- 
--- 
-1.7.3.4
+>> +     max77686->ramp_delay = pdata->ramp_delay - 1;
+>> +     max77686_update_reg(i2c, MAX77686_REG_BUCK2CTRL1,
+>> +             RAMP_VALUE, RAMP_MASK);
+>> +     max77686_update_reg(i2c, MAX77686_REG_BUCK3CTRL1,
+>> +             RAMP_VALUE, RAMP_MASK);
+>> +     max77686_update_reg(i2c, MAX77686_REG_BUCK4CTRL1,
+>> +             RAMP_VALUE, RAMP_MASK);
+>
+> This code is unclear because RAMP_VALUE looks like a constant that has
+> nothing to do with ramp_delay when in fact it's actually this:
+>
+>> +#define RAMP_VALUE (max77686->ramp_delay << 6)
+>
+> which isn't constant - this is why I queried this last time.  Just
+> remove the define and write this out directly.  The way the code is
+> written at the minute it looks like ramp_delay is just stored and not
+> referred to unless you go searching around the rest of the driver.
 
+Ok, I will remove it.
+
+Thanks,
+Yadwinder.
