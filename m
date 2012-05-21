@@ -1,94 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754987Ab2EUPmY (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 May 2012 11:42:24 -0400
-Received: from orion.tchmachines.com ([208.76.84.200]:60294 "EHLO
-	orion.tchmachines.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754690Ab2EUPmW (ORCPT
+	id S1755365Ab2EUPnc (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 May 2012 11:43:32 -0400
+Received: from e34.co.us.ibm.com ([32.97.110.152]:54731 "EHLO
+	e34.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752971Ab2EUPn3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 May 2012 11:42:22 -0400
-From: Vlad Zolotarov <vlad@scalemp.com>
-To: Ingo Molnar <mingo@kernel.org>
-Cc: "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>,
-        linux-kernel <linux-kernel@vger.kernel.org>, Shai@scalemp.com,
-        ido@wizery.com
-Subject: Re: [PATCH v4 0/2] Move x86_cpu_to_apicid to the __read_mostly section
-Date: Mon, 21 May 2012 18:42:18 +0300
-Message-ID: <1918812.66k1TLBkOr@vlad>
-Organization: ScaleMP Ltd.
-User-Agent: KMail/4.8.2 (Linux/3.2.0-24-generic; KDE/4.8.2; i686; ; )
-In-Reply-To: <20120521152345.GC7068@gmail.com>
-References: <1744141.b5asW8k6jC@vlad> <20120521152345.GC7068@gmail.com>
-MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
-X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
-X-AntiAbuse: Primary Hostname - orion.tchmachines.com
-X-AntiAbuse: Original Domain - vger.kernel.org
-X-AntiAbuse: Originator/Caller UID/GID - [47 12] / [47 12]
-X-AntiAbuse: Sender Address Domain - scalemp.com
+	Mon, 21 May 2012 11:43:29 -0400
+Subject: Re: [V2 PATCH 9/9] vhost: zerocopy: poll vq in zerocopy callback
+From: Shirley Ma <mashirle@us.ibm.com>
+To: Jason Wang <jasowang@redhat.com>
+Cc: "Michael S. Tsirkin" <mst@redhat.com>, eric.dumazet@gmail.com,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        ebiederm@xmission.com, davem@davemloft.net
+In-Reply-To: <4FB9DB24.2040408@redhat.com>
+References: <20120502033901.11782.13157.stgit@amd-6168-8-1.englab.nay.redhat.com>
+	 <20120502034254.11782.27314.stgit@amd-6168-8-1.englab.nay.redhat.com>
+	 <1337100630.8220.4.camel@oc3660625478.ibm.com> <4FB317C8.90002@redhat.com>
+	 <1337181027.10741.13.camel@oc3660625478.ibm.com>
+	 <20120516151444.GC9934@redhat.com>
+	 <1337189525.10741.24.camel@oc3660625478.ibm.com>
+	 <4FB4677A.8020402@redhat.com>
+	 <1337268862.10741.58.camel@oc3660625478.ibm.com>
+	 <4FB61D57.4030103@redhat.com>
+	 <1337354974.12999.12.camel@oc3660625478.ibm.com>
+	 <4FB9DB24.2040408@redhat.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Mon, 21 May 2012 08:42:52 -0700
+Message-ID: <1337614972.12999.56.camel@oc3660625478.ibm.com>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 (2.28.3-24.el6) 
+Content-Transfer-Encoding: 7bit
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 12052115-1780-0000-0000-000005C21C60
+X-IBM-ISS-SpamDetectors: 
+X-IBM-ISS-DetailInfo: BY=3.00000276; HX=3.00000188; KW=3.00000007;
+ PH=3.00000001; SC=3.00000002; SDB=6.00141129; UDB=6.00032620; UTC=2012-05-21
+ 15:43:26
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Monday, May 21, 2012 17:23:48 Ingo Molnar wrote:
-> * Vlad Zolotarov <vlad@scalemp.com> wrote:
-> > Pls., consider applying this patch series.
-> > 
-> > It contains the following changes:
-> >  - Adds two new macros DEFINE_EARLY_PER_CPU_READ_MOSTLY() and
-> >  
-> >    DECLARE_EARLY_PER_CPU_READ_MOSTLY().
-> >  
-> >  - Adds "read-mostly" qualifier to the following variables in smp.h:
-> >   - cpu_sibling_map
-> >   - cpu_core_map
-> >   - cpu_llc_shared_map
-> >   - cpu_llc_id
-> >   - cpu_number
-> >   - x86_cpu_to_apicid
-> >   - x86_bios_cpu_apicid
-> >   - x86_cpu_to_logical_apicid
-> > 
-> > As long as all the variables above are only written during the
-> > initialization, this change is meant to prevent the false
-> > sharing and improve the performance on large multiprocessor
-> > systems.
+On Mon, 2012-05-21 at 14:05 +0800, Jason Wang wrote:
+> >> - tx polling depends on skb_orphan() which is often called by
+> device
+> >> driver when it place the packet into the queue of the devices
+> instead
+> >> of  when the packets were sent. So it was too early for vhost to be
+> >> notified.
+> > Then do you think it's better to replace with vhost_poll_queue here
+> > instead?
 > 
-> Why have you resent this? The feedback I gave has not been
+> Just like what does this patch do - calling vhost_poll_queue() in 
+> vhost_zerocopy_callback().
+> >> - it only works when the pending DMAs exceeds VHOST_MAX_PEND, it's
+> >> highly possible that guest needs to be notified when the pending
+> >> packets
+> >> isn't so much.
+> > In which situation the guest needs to be notified when there is no
+> TX
+> > besides buffers run out?
 > 
-> addressed:
+> Consider guest call virtqueue_enable_cb_delayed() which means it only 
+> need to be notified when 3/4 of pending buffers ( about 178 buffers 
+> (256-MAX_SKB_FRAGS-2)*3/4 ) were sent by host. So vhost_net would
+> notify 
+> guest when about 60 buffers were pending. Since tx polling is only 
+> enabled when pending packets exceeds VHOST_MAX_PEND 128, so tx work 
+> would not be notified to run and guest would never get the interrupt
+> it 
+> expected to re-enable the queue.
 
-Hmmm... I'm a bit confused. There were two feedbacks/threads: one on "Signed-
-off-by" format and the other where u asked for a justification on a vSMP side. 
+So it seems we still need vhost_enable_notify() in handle_tx when there
+is no tx in zerocopy case.
 
-The signed-off format sounded to me as a clear blocker for a series so I fixed 
-it and respined. I also mentioned it in patch0.
+Do you know which one is more expensive: the cost of vhost_poll_queue()
+in each zerocopy callback or calling vhost_enable_notify()?
 
-The second thread seams like getting to submitting a separate patch with a doc 
-under Documents and vSMP testing results explaining and justifying when and 
-were per-CPU and/or __read_mostly variables should be used. 
+Have you compared the results by removing below code in handle_tx()?
 
-Pls., correct me if I misunderstood u and let me know what should I do next in 
-order to make this patch series accepted.
+-                       if (unlikely(num_pends > VHOST_MAX_PEND)) {
+-                                tx_poll_start(net, sock);
+-                                set_bit(SOCK_ASYNC_NOSPACE, &sock->flags);
+-                                break;
+-                        }
 
-thanks,
-vlad
-
-
-> > Well, a quick tally of percpu variables on a 'make defconfig'
-> > kernel would tell us one way or another?
-> > 
-> > Here there's almost 200 percpu variables active in the 64-bit
-> > x86 defconfig, and a quick random sample suggests that most
-> > are read-mostly.
-> > 
-> > I have no fundamental prefer to either approach, but the
-> > direction taken should be justified explicitly, with numbers,
-> > arguments, etc. - also a short blurb somewhere in the headers
-> > that explains when they should be used, so that others can be
-> > aware of vSMP's special needs here.
 > 
-> Thanks,
-> 
-> 	Ingo
+> And just like what we've discussed, tx polling based adding and 
+> signaling is too early for vhost. 
+
+Thanks
+Shirley
+
