@@ -1,87 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932327Ab2EUSEO (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 May 2012 14:04:14 -0400
-Received: from comal.ext.ti.com ([198.47.26.152]:56209 "EHLO comal.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758547Ab2EURi7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 May 2012 13:38:59 -0400
-Message-ID: <4FBA7D9D.6060202@ti.com>
-Date: Mon, 21 May 2012 23:08:37 +0530
-From: Sekhar Nori <nsekhar@ti.com>
-User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:12.0) Gecko/20120428 Thunderbird/12.0.1
-MIME-Version: 1.0
-To: Marcus Folkesson <marcus.folkesson@gmail.com>
-CC: Kevin Hilman <khilman@ti.com>, Russell King <linux@arm.linux.org.uk>,
-        Nicolas Pitre <nicolas.pitre@linaro.org>,
-        Catalin Marinas <catalin.marinas@arm.com>,
-        <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] ARM: davinci: turn off DDR PHY when entering deep sleep
-References: <marcus.folkesson@gmail.com> <1336672352-23191-1-git-send-email-marcus.folkesson@gmail.com>
-In-Reply-To: <1336672352-23191-1-git-send-email-marcus.folkesson@gmail.com>
+	id S1758868Ab2EURil (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 May 2012 13:38:41 -0400
+Received: from ns.km20343-01.keymachine.de ([84.19.182.79]:41606 "EHLO
+	km20343-01.keymachine.de" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1758415Ab2EURib (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 21 May 2012 13:38:31 -0400
+Message-ID: <1337621908.1621.16.camel@tellur>
+Subject: Re: [PATCH 2/2] iommu/tegra: gart: Reserve iomem resource
+From: Lucas Stach <dev@lynxeye.de>
+To: Thierry Reding <thierry.reding@avionic-design.de>
+Cc: Stephen Warren <swarren@wwwdotorg.org>, Hiroshi DOYU <hdoyu@nvidia.com>,
+        linux-tegra@vger.kernel.org, Joerg Roedel <joerg.roedel@amd.com>,
+        Bharat Nihalani <bnihalani@nvidia.com>,
+        Vandana Salve <vsalve@nvidia.com>, linux-kernel@vger.kernel.org
+Date: Mon, 21 May 2012 19:38:28 +0200
+In-Reply-To: <20120521173124.GB11824@avionic-0098.mockup.avionic-design.de>
+References: <1337019127-6863-1-git-send-email-hdoyu@nvidia.com>
+	 <1337019127-6863-2-git-send-email-hdoyu@nvidia.com>
+	 <20120521141152.GA21513@avionic-0098.mockup.avionic-design.de>
+	 <4FBA702A.1010203@wwwdotorg.org> <1337619935.1621.13.camel@tellur>
+	 <4FBA77E2.4000409@wwwdotorg.org>
+	 <20120521173124.GB11824@avionic-0098.mockup.avionic-design.de>
 Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.4.1 (3.4.1-2.fc17) 
 Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Marcus,
-
-Thanks for the patch.
-
-On 5/10/2012 11:22 PM, Marcus Folkesson wrote:
-> Deepsleep is the most power saving state on the davinci-platform.
-> The DDR PHY consumes about 25mW and should be turned off in this low
-> power state.
+Am Montag, den 21.05.2012, 19:31 +0200 schrieb Thierry Reding:
+> * Stephen Warren wrote:
+> > On 05/21/2012 11:05 AM, Lucas Stach wrote:
+> > > Am Montag, den 21.05.2012, 10:41 -0600 schrieb Stephen Warren:
+> > >> On 05/21/2012 08:11 AM, Thierry Reding wrote:
+> > >>> * Hiroshi DOYU wrote:
+> > >>>> GART Register/Aperture range should be reserved.
+> > >> ...
+> > >>>> diff --git a/drivers/iommu/tegra-gart.c
+> > >>>> b/drivers/iommu/tegra-gart.c
+> > >> ...
+> > >>>> +	if (!devm_request_mem_region(dev, res_remap->start, +
+> > >>>> resource_size(res_remap), dev_name(dev))) { +		dev_err(dev,
+> > >>>> "failed to reserve GART aperture\n"); +		return -EBUSY; +	} +
+> > >>>
+> > >>> I'm not so sure that this is a good idea. If the GART driver
+> > >>> requests the GART aperture, then users of the GART aperture (e.g.
+> > >>> the DRM driver) will no longer be able to use it.
+> > >>
+> > >> Presumably the DRM driver would be obtaining access to parts of the
+> > >> GART aperture through the GART driver, rather than just grabbing the
+> > >> IO region and using it for itself?
+> > > 
+> > > With a TTM-like memory manager the DRM driver will take over the address
+> > > space management of the GART aperture. The GART driver is only used to
+> > > set up the mappings in the IOMMU. The DRM driver is the one that sets
+> > > up/tears down the CPU mappings on demand, so the aperture should be
+> > > claimed in the DRM driver.
+> > 
+> > Even if the DRM driver is managing the aperture, I still think the GART
+> > driver should claim it. The physical address of the aperture is a
+> > property of the GART, so only the GART's resources (and DT node) should
+> > contain a representation of where that aperture is. The DRM driver
+> > should call into the GART driver to find out where the aperture is, and
+> > hence GART is able to claim it without conflict.
 > 
-> Signed-off-by: Marcus Folkesson <marcus.folkesson@gmail.com>
-> ---
->  arch/arm/mach-davinci/include/mach/memory.h |    2 ++
->  arch/arm/mach-davinci/sleep.S               |   10 ++++++++++
->  2 files changed, 12 insertions(+), 0 deletions(-)
-> 
-> diff --git a/arch/arm/mach-davinci/include/mach/memory.h b/arch/arm/mach-davinci/include/mach/memory.h
-> index 7873194..1b1b8ac 100644
-> --- a/arch/arm/mach-davinci/include/mach/memory.h
-> +++ b/arch/arm/mach-davinci/include/mach/memory.h
+> That could be difficult to do. There isn't any API to allow this. I guess if
+> something like that is added it should probably go into the IOMMU framework.
 
-This is moved to arch/arm/mach-davinci/include/mach/ddr2.h in current
-kernel.
+Ah, yes. There already was a plan to add properties for this to the
+IOMMU API. So I'm ok with the GART driver claiming the resources. I will
+try to push the needed API changes forward in the next few days.
 
-> @@ -36,6 +36,8 @@
->  #define DDR2_MCLKSTOPEN_BIT	BIT(30)
->  #define DDR2_LPMODEN_BIT	BIT(31)
->  
-> +#define DDR2_DRPHYC1R_OFFSET 	0xe4
-> +#define DDR_PWRDNEN_BIT 		BIT(6)
->  /*
->   * Increase size of DMA-consistent memory region
->   */
-> diff --git a/arch/arm/mach-davinci/sleep.S b/arch/arm/mach-davinci/sleep.S
-> index 5f1e045..30713b2 100644
-> --- a/arch/arm/mach-davinci/sleep.S
-> +++ b/arch/arm/mach-davinci/sleep.S
-> @@ -57,6 +57,11 @@ ENTRY(davinci_cpu_suspend)
->  
->  	ldmia	r0, {r0-r4}
->  
-> +	/* Turn PHY off */
-> +	ldr	ip, [r0, #DDR2_DRPHYC1R_OFFSET]
-> +	orr	ip, ip, #DDR_PWRDNEN_BIT 	
-> +	str	ip, [r0, #DDR2_DRPHYC1R_OFFSET]
+-- Lucas
 
-Current TRM (section 14.2.13.1) specifies that this bit be set during
-DDR initialization sequence itself (done in UBL or U-Boot/SPL). I am
-checking with folks from the TI design team on whether it can be done
-later on as part of the DeepSleep sequence.
 
-It looks like IOPWRDN bit in VTPIO_CTL also needs to be set for this
-configuration take effect. You probably did not have to do it because
-the bootloader you are using already has this set?
-
-How much testing has this patch undergone? Have you tested it across
-multiple suspend-resume cycles? How much does the power consumed by DDR
-PHY go down by (and which type of DDR)?
-
-Thanks,
-Sekhar
