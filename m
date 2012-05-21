@@ -1,65 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758633Ab2EUUrV (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 May 2012 16:47:21 -0400
-Received: from smtp110.prem.mail.ac4.yahoo.com ([76.13.13.93]:41490 "HELO
-	smtp110.prem.mail.ac4.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1754046Ab2EUUrU (ORCPT
+	id S1758674Ab2EUUuN (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 May 2012 16:50:13 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:46333 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758480Ab2EUUuL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 May 2012 16:47:20 -0400
-X-Yahoo-Newman-Property: ymail-3
-X-YMail-OSG: oefWbKkVM1nVa8HU23.3V1fFRZ65iKGZwFg48ksDwGM5vjI
- mP1YiclGuFnQUE19Xi5sRYOfoh37rIb8IFt5zAvfmJ0qxH39ecsPGH.eL8h4
- qiu3Efg2BdGa1Nl0MmEPLJu5IuB7dR8EZ2cu5YcKh40TzhCByP5eGGQlbUYk
- vKrOAERLZEvcuSTfqcPtJoz2uRW_SfmTiIoCgH1ukB4XcpJwpp1U5fCe7Ahh
- GtrX5d40f.sfIeNFPbANH23npa6EILWMrx5A0zSA7ndKBrjxfef2EZJLHU6f
- 0FpPOtKjOfDc8PRZq9Oz7Eu7Zm00eYunh5dIdf7V8ekyq3r9oOHcOj.Tz1T1
- JcJsvZWVG.io0XL1EHhstsvq3oUwKmr5Hol_S9vGcLleO3LY7RAB4M46TmZ1
- JCPcA8ISIyufbXD4fufSjkZ8LJpwC.3ASUZMe
-X-Yahoo-SMTP: _Dag8S.swBC1p4FJKLCXbs8NQzyse1SYSgnAbY0-
-Date: Mon, 21 May 2012 15:47:16 -0500 (CDT)
-From: Christoph Lameter <cl@linux.com>
-X-X-Sender: cl@router.home
-To: Dave Jones <davej@redhat.com>
-cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Linux Kernel <linux-kernel@vger.kernel.org>, linux-mm@kvack.org,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Stephen Wilson <wilsons@start.ca>, Mel Gorman <mgorman@suse.de>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: 3.4-rc7 numa_policy slab poison.
-In-Reply-To: <20120521203838.GD12123@redhat.com>
-Message-ID: <alpine.DEB.2.00.1205211544340.10940@router.home>
-References: <20120517213120.GA12329@redhat.com> <20120518185851.GA5728@redhat.com> <20120521154709.GA8697@redhat.com> <CA+55aFyqMJ1X08kQwJ7snkYo6MxfVKqFJx7LXBkP_ug4LTCZ=Q@mail.gmail.com> <20120521200118.GA12123@redhat.com> <alpine.DEB.2.00.1205211510480.10940@router.home>
- <20120521202904.GB12123@redhat.com> <alpine.DEB.2.00.1205211535050.10940@router.home> <20120521203838.GD12123@redhat.com>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+	Mon, 21 May 2012 16:50:11 -0400
+Date: Mon, 21 May 2012 13:49:59 -0700
+From: tip-bot for Jarkko Sakkinen <jarkko.sakkinen@intel.com>
+Message-ID: <tip-b2d668da9307c4c163dd603d2bb3cadb10f9fd37@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
+        jarkko.sakkinen@intel.com, tglx@linutronix.de
+Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        tglx@linutronix.de, jarkko.sakkinen@intel.com
+In-Reply-To: <1337622684-6834-1-git-send-email-jarkko.sakkinen@intel.com>
+References: <1337622684-6834-1-git-send-email-jarkko.sakkinen@intel.com>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:x86/urgent] x86, relocs: Build clean fix
+Git-Commit-ID: b2d668da9307c4c163dd603d2bb3cadb10f9fd37
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Mon, 21 May 2012 13:50:04 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 21 May 2012, Dave Jones wrote:
+Commit-ID:  b2d668da9307c4c163dd603d2bb3cadb10f9fd37
+Gitweb:     http://git.kernel.org/tip/b2d668da9307c4c163dd603d2bb3cadb10f9fd37
+Author:     Jarkko Sakkinen <jarkko.sakkinen@intel.com>
+AuthorDate: Mon, 21 May 2012 20:51:24 +0300
+Committer:  H. Peter Anvin <hpa@zytor.com>
+CommitDate: Mon, 21 May 2012 12:19:37 -0700
 
-> On Mon, May 21, 2012 at 03:36:39PM -0500, Christoph Lameter wrote:
->  > On Mon, 21 May 2012, Dave Jones wrote:
->  >
->  > > It does create log files in the current dir with the parameters used.
->  > > You should be able to grep for the pid that caused the actual oops.
->  >
->  > Ugghh. It screws up the colors on my screeen. Lightgrey on white. Is there
->  > any way to get these horrible escape sequences cleared out? If I use
->  > "less" to view the output then there are just the escape sequences
->  > visible.
->
-> Define them to nothing in trinity.h
+x86, relocs: Build clean fix
 
-Dependencies are not correctly set. I had to do a "make clean" to get a
-rebuild done.
+relocs was not cleaned up when "make clean" is issued. This
+patch fixes the issue.
 
-Cannot set them to "" since the compiler then fails the compile. Set to "
-" instead but that looks horrible too.
+Signed-off-by: Jarkko Sakkinen <jarkko.sakkinen@intel.com>
+Link: http://lkml.kernel.org/r/1337622684-6834-1-git-send-email-jarkko.sakkinen@intel.com
+Signed-off-by: H. Peter Anvin <hpa@zytor.com>
+Cc: <stable@vger.kernel.org> v3.4
 
-It still wont trigger with
+---
+ arch/x86/Makefile |    1 +
+ 1 files changed, 1 insertions(+), 0 deletions(-)
 
-	./trinity -c mbind
-
+diff --git a/arch/x86/Makefile b/arch/x86/Makefile
+index 94e91e4..b1c611e 100644
+--- a/arch/x86/Makefile
++++ b/arch/x86/Makefile
+@@ -206,6 +206,7 @@ archclean:
+ 	$(Q)rm -rf $(objtree)/arch/i386
+ 	$(Q)rm -rf $(objtree)/arch/x86_64
+ 	$(Q)$(MAKE) $(clean)=$(boot)
++	$(Q)$(MAKE) $(clean)=arch/x86/tools
+ 
+ define archhelp
+   echo  '* bzImage      - Compressed kernel image (arch/x86/boot/bzImage)'
