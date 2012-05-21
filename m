@@ -1,106 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757705Ab2EUOsi (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 May 2012 10:48:38 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:44074 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756995Ab2EUOsg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 May 2012 10:48:36 -0400
-Date: Mon, 21 May 2012 16:48:13 +0200
-From: Alexander Gordeev <agordeev@redhat.com>
-To: Ingo Molnar <mingo@kernel.org>
-Cc: Arjan van de Ven <arjan@infradead.org>, linux-kernel@vger.kernel.org,
-        x86@kernel.org, Suresh Siddha <suresh.b.siddha@intel.com>,
-        Cyrill Gorcunov <gorcunov@openvz.org>, Yinghai Lu <yinghai@kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: Re: [PATCH 2/3] x86: x2apic/cluster: Make use of lowest priority
- delivery mode
-Message-ID: <20120521144812.GD28930@dhcp-26-207.brq.redhat.com>
-References: <20120518102640.GB31517@dhcp-26-207.brq.redhat.com>
- <20120521082240.GA31407@gmail.com>
- <20120521093648.GC28930@dhcp-26-207.brq.redhat.com>
- <20120521124025.GC17065@gmail.com>
+	id S1758114Ab2EUOsx (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 May 2012 10:48:53 -0400
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:49544 "EHLO
+	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1756263Ab2EUOsw (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 21 May 2012 10:48:52 -0400
+Date: Mon, 21 May 2012 15:48:49 +0100
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Axel Lin <axel.lin@gmail.com>
+Cc: linux-kernel@vger.kernel.org, Graeme Gregory <gg@slimlogic.co.uk>,
+        Liam Girdwood <lrg@ti.com>
+Subject: Re: [PATCH] regulator: palmas: Fix wrong kfree calls
+Message-ID: <20120521144848.GC4063@opensource.wolfsonmicro.com>
+References: <1337604940.11739.1.camel@phoenix>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="aT9PWwzfKXlsBJM1"
 Content-Disposition: inline
-In-Reply-To: <20120521124025.GC17065@gmail.com>
+In-Reply-To: <1337604940.11739.1.camel@phoenix>
+X-Cookie: You dialed 5483.
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, May 21, 2012 at 02:40:26PM +0200, Ingo Molnar wrote:
-> But that is not 'perfectly balanced' in many cases.
-> 
-> When the hardware round-robins the interrupts then each 
-> interrupt will go to a 'cache cold' CPU in essence. This is 
-> pretty much the worst thing possible thing to do in most cases: 
-> while it's "perfectly balanced" in the sense of distributing 
-> cycles evenly between CPUs, each interrupt handler execution 
-> will generate an avalance of cachemisses, for cachelines there 
-> were modified in the previous invocation of the irq.
 
-Absolutely.
+--aT9PWwzfKXlsBJM1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-There are at least two more offenders :) exercising lowest priority + logical
-addressing similarly. So in this regard the patch is nothing new:
+On Mon, May 21, 2012 at 08:55:40PM +0800, Axel Lin wrote:
+> The devm_kzalloc function eliminates the need for manual resource releasing
+> and simplify error handling. Resources allocated by devm_* are freed
+> automatically on driver detach.
 
+Applied, thanks.
 
-static inline unsigned int
-default_cpu_mask_to_apicid(const struct cpumask *cpumask)
-{
-	return cpumask_bits(cpumask)[0] & APIC_ALL_CPUS;
-}
+--aT9PWwzfKXlsBJM1
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
-static unsigned int summit_cpu_mask_to_apicid(const struct cpumask *cpumask)
-{
-	unsigned int round = 0;
-	int cpu, apicid = 0;
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
 
-	/*
-	 * The cpus in the mask must all be on the apic cluster.
-	 */
-	for_each_cpu(cpu, cpumask) {
-		int new_apicid = early_per_cpu(x86_cpu_to_logical_apicid, cpu);
+iQIcBAEBAgAGBQJPulXGAAoJEBus8iNuMP3dKrMP/iFRr5u7Vg/k3Me2TF1TcpTY
+9gWu8JYOfkIOOqUC+k5LAZf+fSy5f5xZU6ec9BxOJ3YGBNIlScz/gO7sMfNr52Gj
+HL2wCzNfgvc28ARTf1BRlzxNa/m+xbku6C893Umy9/8pZnVV0fOlzHxAUKOJT4qx
+w6WMOVpQ61XFxL16UxSaDqCYE6KUB2Z+n+FPRf4orEOVEqgu0qHQKFr5t+KATJzM
+7YApKZDIZ8KZC4oiVF0ZAvak537nGlcuob33RM8EMiZbfzc1NP93E9IMybAMiUvc
+kkwdz79YIP/4xdbk3fLoEwxMPgTrXQbJhF2jFFWJR5NgIr8Ix6XEi716MDxCR0C+
+wZ2SMeGZ2pNyHJ6XfRqgYwcZ3tSwZveI7SfiFt1d6eWWm5SIVPrIMLZApnjl4S7j
+hufkijn2X0ush2GCbFzxMyvlKt/W3qC5ShZKgRe9tgcBOU38d78xMlS2xi+31auX
+Oqr+CmRc8iZ05m7k6wT5hNZUJ85S5D3uhQOSJeMNjfOSC/03eIGAY5ObwJ1OLH6u
+lkwEUNvojDVAPxSbLV0Yi8bqXTxLrV/8t222a6OKH86JVfunzYu0ms11UoHJS2mY
+8GDFQtop/UJJP6gwX4/ZwU3A17jICfHwui4oezBYtyOybkXpKVCNdhmwMsvr5wyp
+zkD+uvsu6QJqidfPh6WP
+=haRw
+-----END PGP SIGNATURE-----
 
-		if (round && APIC_CLUSTER(apicid) != APIC_CLUSTER(new_apicid)) {
-			printk("%s: Not a valid mask!\n", __func__);
-			return BAD_APICID;
-		}
-		apicid |= new_apicid;
-		round++;
-	}
-	return apicid;
-}
-
-> One notable exception is when the CPUs are SMT/Hyperthreading 
-> siblings, in that case they are sharing even the L1 cache, so 
-> there's very little cost to round-robining the IRQs within the 
-> CPU mask.
-> 
-> But AFAICS irqbalanced will spread irqs on wider masks than SMT 
-> sibling boundaries, exposing us to the above performance 
-> problem.
-
-I would speculate it is irqbalanced who should be (in case of x86) cluster-
-agnostic and ask for a mask while the apic layer is just execute or at least
-report what was set. But that is a different topic.
-
-Considering a bigger picture, it appears strange to me that apic is the layer
-to take decision whether to make CPU a target or not. It is especially true
-when one means a particluar cpumask, wants it to be set, but still is not able
-to do that due to the current limitation.
-
-> So I think we need to tread carefully here.
-
-Kernel parameter? IRQ line flag? Totally opposed? :)
-
-> Thanks,
-
-> 
-> 	Ingo
-
--- 
-Regards,
-Alexander Gordeev
-agordeev@redhat.com
+--aT9PWwzfKXlsBJM1--
