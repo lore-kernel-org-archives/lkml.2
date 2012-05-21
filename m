@@ -1,58 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758737Ab2EUSKe (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 May 2012 14:10:34 -0400
-Received: from e37.co.us.ibm.com ([32.97.110.158]:41827 "EHLO
-	e37.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758356Ab2EUSKd (ORCPT
+	id S1758785Ab2EUSKx (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 May 2012 14:10:53 -0400
+Received: from hqemgate03.nvidia.com ([216.228.121.140]:5863 "EHLO
+	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758758Ab2EUSKv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 May 2012 14:10:33 -0400
-Date: Mon, 21 May 2012 11:05:50 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: mingo@elte.hu
-Cc: linux-kernel@vger.kernel.org, josh@joshtriplett.org, laijs@cn.fujitsu.com
-Subject: [GIT PULL rcu/next] More RCU commits for 3.5
-Message-ID: <20120521180550.GA22052@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
+	Mon, 21 May 2012 14:10:51 -0400
+X-PGP-Universal: processed;
+	by hqnvupgp07.nvidia.com on Mon, 21 May 2012 11:09:29 -0700
+From: Laxman Dewangan <ldewangan@nvidia.com>
+To: <grant.likely@secretlab.ca>, <linus.walleij@stericsson.com>
+CC: <linux-kernel@vger.kernel.org>, Laxman Dewangan <ldewangan@nvidia.com>
+Subject: [PATCH RESEND] gpio: fix bits conflict for gpio flags
+Date: Mon, 21 May 2012 23:35:19 +0530
+Message-ID: <1337623519-5193-1-git-send-email-ldewangan@nvidia.com>
+X-Mailer: git-send-email 1.7.1.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 12052118-7408-0000-0000-00000534FABC
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello, Ingo,
+The bit 2 and 3 in GPIO flag are allocated for the
+flag OPEN_DRAIN/OPEN_SOURCE. These bits are reused
+for the flag EXPORT/EXPORT_CHANGEABLE and so creating
+conflict.
+Fix this conflict by assigning bit 4 and 5 for the
+flag EXPORT/EXPORT_CHANGEABLE.
 
-This series has only two minor patches:
+Signed-off-by: Laxman Dewangan <ldewangan@nvidia.com>
+---
+Resending this patch in case of if previous patch lost.
 
-1.	Fix code-style issues involving "else", where if one branch of
-	the "if" statement requires curly brackets, the other branch
-	must also use them.
-2.	Fix strings broken across lines, strings being the exception to
-	the 80-column rule.
+ include/linux/gpio.h |    4 ++--
+ 1 files changed, 2 insertions(+), 2 deletions(-)
 
-All of these have been exposed to -next testing.
-
-These changes are available in the git repository at:
-
-  git://git.kernel.org/pub/scm/linux/kernel/git/paulmck/linux-rcu.git rcu/next
-
-							Thanx, Paul
-
--------------------------->
-Paul E. McKenney (2):
-      rcu: Fix code-style issues involving "else"
-      rcu: Fix broken strings in RCU's source code.
-
- include/linux/rcupdate.h |    3 +--
- kernel/rcutiny_plugin.h  |    3 ++-
- kernel/rcutorture.c      |   36 ++++++++++++++++--------------------
- kernel/rcutree.c         |    7 ++++---
- kernel/rcutree_plugin.h  |   18 ++++++++++--------
- kernel/rcutree_trace.c   |   25 ++++++++++++-------------
- lib/list_debug.c         |    6 ++----
- 7 files changed, 47 insertions(+), 51 deletions(-)
+diff --git a/include/linux/gpio.h b/include/linux/gpio.h
+index f07fc2d..2e31e8b 100644
+--- a/include/linux/gpio.h
++++ b/include/linux/gpio.h
+@@ -22,8 +22,8 @@
+ /* Gpio pin is open source */
+ #define GPIOF_OPEN_SOURCE	(1 << 3)
+ 
+-#define GPIOF_EXPORT		(1 << 2)
+-#define GPIOF_EXPORT_CHANGEABLE	(1 << 3)
++#define GPIOF_EXPORT		(1 << 4)
++#define GPIOF_EXPORT_CHANGEABLE	(1 << 5)
+ #define GPIOF_EXPORT_DIR_FIXED	(GPIOF_EXPORT)
+ #define GPIOF_EXPORT_DIR_CHANGEABLE (GPIOF_EXPORT | GPIOF_EXPORT_CHANGEABLE)
+ 
+-- 
+1.7.1.1
 
