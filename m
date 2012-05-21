@@ -1,73 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756615Ab2EUIWy (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 May 2012 04:22:54 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:22461 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756524Ab2EUIWw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 May 2012 04:22:52 -0400
-Date: Mon, 21 May 2012 10:22:32 +0200
-From: Jiri Olsa <jolsa@redhat.com>
-To: zheng.z.yan@intel.com
-Cc: a.p.zijlstra@chello.nl, mingo@elte.hu, andi@firstfloor.org,
-        eranian@google.com, ming.m.lin@intel.com, gregkh@linuxfoundation.org,
-        linux-kernel@vger.kernel.org, acme@redhat.com
-Subject: Re: [RFC 0/5] perf, tool: uncore related changes
-Message-ID: <20120521082232.GC3591@m.brq.redhat.com>
-References: <1337144403-30841-1-git-send-email-zheng.z.yan@intel.com>
- <1337585813-3349-1-git-send-email-jolsa@redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1337585813-3349-1-git-send-email-jolsa@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1756570Ab2EUIX5 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 May 2012 04:23:57 -0400
+Received: from haggis.pcug.org.au ([203.10.76.10]:41568 "EHLO
+	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756344Ab2EUIXz (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 21 May 2012 04:23:55 -0400
+Date: Mon, 21 May 2012 18:23:43 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Linus <torvalds@linux-foundation.org>
+Subject: linux-next: manual merge of the akpm tree with Linus' tree
+Message-Id: <20120521182343.fc69799fecb065de6192bb06@canb.auug.org.au>
+X-Mailer: Sylpheed 3.2.0beta7 (GTK+ 2.24.10; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Mon__21_May_2012_18_23_43_+1000_BEbVYcF54GU_+R6w"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-missed Arnaldo in CC..
+--Signature=_Mon__21_May_2012_18_23_43_+1000_BEbVYcF54GU_+R6w
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-jirka
+Hi Andrew,
 
-On Mon, May 21, 2012 at 09:36:48AM +0200, Jiri Olsa wrote:
-> hi,
-> this patchset is based on parsing fixies I just sent out
-> and CC-ed you.
-> 
-> I found a way to reuse the event parsing grammar for just
-> term parsing. I had to make some other changes as well:
-> 
->   - we end up with 2 start symbols for event grammar to differentiate
->     between event parsing and terms parsing
-> 
->   - we have now 2 diferent structures with parser arguments
->     for each event parsing and terms parsing
-> 
->   - I kept the reentrant parser.. it's not needed but I think
->     it's better than non reentrant ;)
->     I'm passing yyscanner instead of yylval and yytext as you did,
->     because you can get yylval and yytext out of yyscanner,
->     also I think it's more generic
-> 
->   - added automated tests for terms parsing, but we need automated
->     tests for term aliasing (patch 4/5) .. similar pmu tests as
->     for pmu format parsing
-> 
-> attached patches:
->   1/5 perf, tool: Use data struct for arg passing in event parse function
->   2/5 perf, tool: Make the event parser reentrantable
->   3/5 perf, tool: Add support to reuse event grammar to parse out terms
->   4/5 perf, tool: Add pmu event alias support
->   5/5 perf, tool: Add automated test for pure terms parsing
-> 
-> thanks for comments,
-> jirka
-> ---
->  tools/perf/util/parse-events-test.c |  122 +++++++++++++++++++++++++++-
->  tools/perf/util/parse-events.c      |   71 ++++++++++++++---
->  tools/perf/util/parse-events.h      |   15 +++-
->  tools/perf/util/parse-events.l      |  129 ++++++++++++++++++-----------
->  tools/perf/util/parse-events.y      |   71 ++++++++++++-----
->  tools/perf/util/pmu.c               |  152 +++++++++++++++++++++++++++++++++++
->  tools/perf/util/pmu.h               |   11 +++-
->  7 files changed, 483 insertions(+), 88 deletions(-)
+Today's linux-next merge of the akpm tree got a conflict in
+fs/proc/base.c between commit 30a08bf2d31d ("proc: move fd symlink i_mode
+calculations into tid_fd_revalidate()") from the  tree and commit "proc:
+pass "fd" by value in /proc/*/{fd,fdinfo} code" from the akpm tree.
+
+Just context changes.  I fixed it up (see below) and can carry the fix as
+necessary.
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+
+diff --cc fs/proc/base.c
+index 2308157,c560fc8..0000000
+--- a/fs/proc/base.c
++++ b/fs/proc/base.c
+@@@ -1847,7 -1835,9 +1847,7 @@@ static const struct dentry_operations t
+  static struct dentry *proc_fd_instantiate(struct inode *dir,
+  	struct dentry *dentry, struct task_struct *task, const void *ptr)
+  {
+- 	unsigned fd =3D *(const unsigned *)ptr;
++ 	unsigned fd =3D (unsigned long)ptr;
+ -	struct file *file;
+ -	struct files_struct *files;
+   	struct inode *inode;
+   	struct proc_inode *ei;
+  	struct dentry *error =3D ERR_PTR(-ENOENT);
+
+--Signature=_Mon__21_May_2012_18_23_43_+1000_BEbVYcF54GU_+R6w
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBCAAGBQJPufuQAAoJEECxmPOUX5FE2NIP/3vbeiRUApFImv+7yQvLD7mL
+X/uY5wBMlRcSbdWkCPRkWfU3hN+1NHVijTuw2NRwU88wILVD86cVXIYA7fSAia8Y
+TurE8YJuMoTS/ItCIpET5yMV7x/w4jfAqXpzojQNAMjFceBN8ns8dAQ/5u/8L68S
+m+sDPziMJkJ913wC0kDqGGbLUwDZMS6hzNoHASA7ljQzIPmY6ZZpLiFeibOtSIn4
+UA752KXzrUDyV9/Gn7CZBCfpdHDkAz2a0rqrSDx5HP18v2M6k4D1vwDODLA6Rbo3
+GuGh9MOXptcO9EnQKYnebmcVra/GGxNv/Ind+ATN+xm+pDQInyNzGSx1/yVoq2XC
+j/2+QFk1njoso3+6J5ZOyf6xWUu/LoBHYM5LJGd5neg8xuW4UgCvSV0rWu5s1Zeh
+l2yPkzL/kHOq872/IDkxRSMrJCFvxGr5aR/ocF2WFkQsQiM743WhazF/G6yHhP+x
+olWlCWfupLZzIj4Z/t14WihBWKRU9rQWduZPE3AertZ2ibHTo6Kvp+uoU7QVpeTe
+EWK0r1F3Nnnsmz66ijJOwWHBQYko/HPoP4RZBpQhA2FAxJ8lWJmL8nTf3oa7r96Q
+fBcu5T98F7n4AvXLpiwCbXeIAoONT1k3R21zqhRoDjkTlnZUzCsHopxN505k7K50
+eVQ+504Lc7h91HBMjtie
+=Dthi
+-----END PGP SIGNATURE-----
+
+--Signature=_Mon__21_May_2012_18_23_43_+1000_BEbVYcF54GU_+R6w--
