@@ -1,131 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755533Ab2EUHY7 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 May 2012 03:24:59 -0400
-Received: from mail-wi0-f172.google.com ([209.85.212.172]:53935 "EHLO
-	mail-wi0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750886Ab2EUHY5 (ORCPT
+	id S1753925Ab2EUHaV (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 May 2012 03:30:21 -0400
+Received: from haggis.pcug.org.au ([203.10.76.10]:51143 "EHLO
+	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751609Ab2EUHaU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 May 2012 03:24:57 -0400
-From: Corentin Chary <corentin.chary@gmail.com>
-To: Richard Purdie <rpurdie@rpsys.net>
-Cc: Corentin Chary <corentin.chary@gmail.com>,
-        Keith Packard <keithp@keithp.com>, David Airlie <airlied@linux.ie>,
-        Matthew Garrett <mjg@redhat.com>,
-        Florian Tobias Schandinat <FlorianSchandinat@gmx.de>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Tomi Valkeinen <tomi.valkeinen@ti.com>,
-        Mathieu Poirier <mathieu.poirier@linaro.org>,
-        Dave Airlie <airlied@redhat.com>, Arnd Bergmann <arnd@arndb.de>,
-        Lars-Peter Clausen <lars@metafoo.de>, Axel Lin <axel.lin@gmail.com>,
-        dri-devel@lists.freedesktop.org, linux-kernel@vger.kernel.org,
-        platform-driver-x86@vger.kernel.org, linux-fbdev@vger.kernel.org,
-        patches@opensource.wolfsonmicro.com, linux-omap@vger.kernel.org
-Subject: [PATCH] backlight: initialize  struct backlight_properties properly
-Date: Mon, 21 May 2012 09:24:35 +0200
-Message-Id: <1337585085-4891-1-git-send-email-corentin.chary@gmail.com>
-X-Mailer: git-send-email 1.7.9.5
+	Mon, 21 May 2012 03:30:20 -0400
+Date: Mon, 21 May 2012 17:30:06 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: "Eric W. Biederman" <ebiederm@xmission.com>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Peter Zijlstra <peterz@infradead.org>
+Subject: linux-next: manual merge of the userns tree with the tip tree
+Message-Id: <20120521173006.3c10df123692914ab19497b8@canb.auug.org.au>
+X-Mailer: Sylpheed 3.2.0beta7 (GTK+ 2.24.10; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Mon__21_May_2012_17_30_06_+1000_0ObzOsN__.Fu1Ns9"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-In all these files, the .power field was never correctly initialized.
+--Signature=_Mon__21_May_2012_17_30_06_+1000_0ObzOsN__.Fu1Ns9
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Signed-off-by: Corentin Chary <corentin.chary@gmail.com>
----
- drivers/gpu/drm/i915/intel_panel.c              |    1 +
- drivers/gpu/drm/radeon/radeon_legacy_encoders.c |    1 +
- drivers/platform/x86/toshiba_acpi.c             |    1 +
- drivers/video/backlight/da903x_bl.c             |    1 +
- drivers/video/backlight/pcf50633-backlight.c    |    1 +
- drivers/video/backlight/wm831x_bl.c             |    1 +
- drivers/video/omap2/displays/panel-acx565akm.c  |    1 +
- 7 files changed, 7 insertions(+)
+Hi Eric,
 
-diff --git a/drivers/gpu/drm/i915/intel_panel.c b/drivers/gpu/drm/i915/intel_panel.c
-index 48177ec..ec4a1e0 100644
---- a/drivers/gpu/drm/i915/intel_panel.c
-+++ b/drivers/gpu/drm/i915/intel_panel.c
-@@ -342,6 +342,7 @@ int intel_panel_setup_backlight(struct drm_device *dev)
- 	else
- 		return -ENODEV;
- 
-+	memset(&props, 0, sizeof(props));
- 	props.type = BACKLIGHT_RAW;
- 	props.max_brightness = intel_panel_get_max_backlight(dev);
- 	dev_priv->backlight =
-diff --git a/drivers/gpu/drm/radeon/radeon_legacy_encoders.c b/drivers/gpu/drm/radeon/radeon_legacy_encoders.c
-index 42db254..a0c8222 100644
---- a/drivers/gpu/drm/radeon/radeon_legacy_encoders.c
-+++ b/drivers/gpu/drm/radeon/radeon_legacy_encoders.c
-@@ -369,6 +369,7 @@ void radeon_legacy_backlight_init(struct radeon_encoder *radeon_encoder,
- 		goto error;
- 	}
- 
-+	memset(&props, 0, sizeof(props));
- 	props.max_brightness = MAX_RADEON_LEVEL;
- 	props.type = BACKLIGHT_RAW;
- 	bd = backlight_device_register("radeon_bl", &drm_connector->kdev,
-diff --git a/drivers/platform/x86/toshiba_acpi.c b/drivers/platform/x86/toshiba_acpi.c
-index bde32de..d680bb2 100644
---- a/drivers/platform/x86/toshiba_acpi.c
-+++ b/drivers/platform/x86/toshiba_acpi.c
-@@ -1095,6 +1095,7 @@ static int __devinit toshiba_acpi_setup_backlight(struct toshiba_acpi_dev *dev)
- 	ret = get_tr_backlight_status(dev, &enabled);
- 	dev->tr_backlight_supported = !ret;
- 
-+	memset(&props, 0, sizeof(props));
- 	props.type = BACKLIGHT_PLATFORM;
- 	props.max_brightness = HCI_LCD_BRIGHTNESS_LEVELS - 1;
- 
-diff --git a/drivers/video/backlight/da903x_bl.c b/drivers/video/backlight/da903x_bl.c
-index 30e1968..573c7ec 100644
---- a/drivers/video/backlight/da903x_bl.c
-+++ b/drivers/video/backlight/da903x_bl.c
-@@ -136,6 +136,7 @@ static int da903x_backlight_probe(struct platform_device *pdev)
- 		da903x_write(data->da903x_dev, DA9034_WLED_CONTROL2,
- 				DA9034_WLED_ISET(pdata->output_current));
- 
-+	memset(&props, 0, sizeof(props));
- 	props.type = BACKLIGHT_RAW;
- 	props.max_brightness = max_brightness;
- 	bl = backlight_device_register(pdev->name, data->da903x_dev, data,
-diff --git a/drivers/video/backlight/pcf50633-backlight.c b/drivers/video/backlight/pcf50633-backlight.c
-index c65853c..c092159 100644
---- a/drivers/video/backlight/pcf50633-backlight.c
-+++ b/drivers/video/backlight/pcf50633-backlight.c
-@@ -111,6 +111,7 @@ static int __devinit pcf50633_bl_probe(struct platform_device *pdev)
- 	if (!pcf_bl)
- 		return -ENOMEM;
- 
-+	memset(&bl_props, 0, sizeof(bl_props));
- 	bl_props.type = BACKLIGHT_RAW;
- 	bl_props.max_brightness = 0x3f;
- 	bl_props.power = FB_BLANK_UNBLANK;
-diff --git a/drivers/video/backlight/wm831x_bl.c b/drivers/video/backlight/wm831x_bl.c
-index 5d365de..9e5517a 100644
---- a/drivers/video/backlight/wm831x_bl.c
-+++ b/drivers/video/backlight/wm831x_bl.c
-@@ -194,6 +194,7 @@ static int wm831x_backlight_probe(struct platform_device *pdev)
- 	data->current_brightness = 0;
- 	data->isink_reg = isink_reg;
- 
-+	memset(&props, 0, sizeof(props));
- 	props.type = BACKLIGHT_RAW;
- 	props.max_brightness = max_isel;
- 	bl = backlight_device_register("wm831x", &pdev->dev, data,
-diff --git a/drivers/video/omap2/displays/panel-acx565akm.c b/drivers/video/omap2/displays/panel-acx565akm.c
-index d26f37a..74e7cf0 100644
---- a/drivers/video/omap2/displays/panel-acx565akm.c
-+++ b/drivers/video/omap2/displays/panel-acx565akm.c
-@@ -532,6 +532,7 @@ static int acx_panel_probe(struct omap_dss_device *dssdev)
- 
- 	/*------- Backlight control --------*/
- 
-+	memset(&props, 0, sizeof(props));
- 	props.fb_blank = FB_BLANK_UNBLANK;
- 	props.power = FB_BLANK_UNBLANK;
- 	props.type = BACKLIGHT_RAW;
--- 
-1.7.9.5
+Today's linux-next merge of the userns tree got a conflict in
+include/linux/sched.h between commit 50954a1f450e ("sched/numa: Provide
+sysctl knob to disable numa scheduling and turn it off by default") from
+the tip tree and commit 7b44ab978b77 ("userns: Disassociate user_struct
+from the user_namespace") from the userns tree.
 
+Just context changes.  I fixed it up (see below) and can carry the fix as
+necessary.
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+
+diff --cc include/linux/sched.h
+index 37a7cd8,5fdc1eb..0000000
+--- a/include/linux/sched.h
++++ b/include/linux/sched.h
+@@@ -90,7 -90,7 +90,8 @@@ struct sched_param=20
+  #include <linux/latencytop.h>
+  #include <linux/cred.h>
+  #include <linux/llist.h>
+ +#include <linux/jump_label.h>
++ #include <linux/uidgid.h>
+ =20
+  #include <asm/processor.h>
+ =20
+
+--Signature=_Mon__21_May_2012_17_30_06_+1000_0ObzOsN__.Fu1Ns9
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBCAAGBQJPue7+AAoJEECxmPOUX5FEYxsP/iKCPwt3HdulO57p/qTdnTUq
+gqPDweZYP/lgKb9YGjX+nbACdT/IXfGY1npj/rQXJSkYTZO1CStkQUjdC5DKjeQd
+XoJ7FzqhRoysgqV6JIYcyPMuT7aBKnWDcFNqueF8M4ofcMKQoLxU+g9qSUJOKSmK
+8WbQwqop8TfmyxqCfbHCwierdd18PIdt7F0CLNpSVpNBkdDGj0qTrV5BoI/Pl6yc
+TZCXNDQ7E/byVGx8p8lbu2h0o9GdGqD5WjYdihvfaOiczLSy5NAZmolVDOQy5TAP
+WCHv0/qhg6JGqrtM8DnG7j5XDsoEi/+23re7j+pj50tq2Y6z+lfabYyf3VykAHE5
+AzhzP8wLC4LljxCF+CLmm6EWGavSIn3BCLVniR1Eb06YxzHPpMl3cidzzbWAIa3V
+7O5hi1ggprzV+LwNZQ4i954DlDHjin8/ztghfknmk4l8ouOf6v6MM55dEaAg+ib4
+da0X5QLUm+gH4pjMqBF9O62Jono3VEPaOMT9vf+/AfSKi8h4AeW7ZVLUeLqU3z+5
+x4IDle/5e6qnN3RXZzq/MkP0ImXDeN1BfjHP45QXwOFcBX5iTPmWkuUnFI45dFiO
+7YFaPob2iX64pox2nUf4BllO2Sni2Dq2Dx5pd/h4p5l7GoWeRSi3ixiXNQGhZaAp
+TqWBV85uaKDeQUjle2V/
+=ILbH
+-----END PGP SIGNATURE-----
+
+--Signature=_Mon__21_May_2012_17_30_06_+1000_0ObzOsN__.Fu1Ns9--
