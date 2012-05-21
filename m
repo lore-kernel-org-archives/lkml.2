@@ -1,116 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752273Ab2EUHuU (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 May 2012 03:50:20 -0400
-Received: from haggis.pcug.org.au ([203.10.76.10]:41287 "EHLO
-	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750746Ab2EUHuT (ORCPT
+	id S1752591Ab2EUHwz (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 May 2012 03:52:55 -0400
+Received: from moutng.kundenserver.de ([212.227.17.9]:59124 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750746Ab2EUHwx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 May 2012 03:50:19 -0400
-Date: Mon, 21 May 2012 17:50:09 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: "Eric W. Biederman" <ebiederm@xmission.com>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Peter Zijlstra <peterz@infradead.org>
-Subject: linux-next: build failure after merge of the userns tree
-Message-Id: <20120521175009.7bd4948c026d8acc61f26753@canb.auug.org.au>
-X-Mailer: Sylpheed 3.2.0beta7 (GTK+ 2.24.10; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Mon__21_May_2012_17_50_09_+1000_yOX15ztliT=ENxQW"
+	Mon, 21 May 2012 03:52:53 -0400
+From: Andreas Schallenberg <Andreas.Schallenberg@3alitytechnica.com>
+To: <linus.walleij@stericsson.com>, <grant.likely@secretlab.ca>
+CC: <linux-kernel@vger.kernel.org>,
+        Andreas Schallenberg <Andreas.Schallenberg@3alitytechnica.com>
+Subject: [PATCH-RESEND] GPIO/TCA6424: merge I2C transactions, remove cast
+Date: Mon, 21 May 2012 09:52:43 +0200
+X-Mailer: git-send-email 1.7.3.4
+MIME-Version: 1.0
+Content-Type: text/plain
+X-KSE-AntiSpam-Interceptor-Info: protection disabled
+X-KSE-Antivirus-Interceptor-Info: scan successful
+X-KSE-Antivirus-Info: Clean
+Message-Id: <0LrHzA-1S4duI0urs-013Ke8@mrelayeu.kundenserver.de>
+X-Provags-ID: V02:K0:JV6C32xwtonkZi0Sm6yKAG9+GBYQ6Zsm99OmXoqsPUc
+ INprDxWqioI0HA6yAtBUKU3jmEydy0zIjOuhejlJL7toemHbCe
+ Zl7P42/DSm3IkWKul5hOwxR+30fG1cPTE7iUVVa2XdyTEl6pwf
+ +7DSSoOT8Gwi88HXeki+nryZMJM0YVJ6MIx1gXyJL58mbo+Vky
+ wL+6ytCInDJpIbBFpKy+Ql5/Mdg+aYtxx4UBqd8PPMsOndZTTr
+ qAcjV4+sa4zVn228A2sILANtDcIq8DMxY24vz4WFl1h3c/ZRaJ
+ flGJW9823njJRa+gw/4fmjIDeRlJDBG57yV3CwtgP9y204+YVc
+ UCS7uZGi8UBWS6j2j4w9Y2hO0yWjLNZ8fD+BNoMkFNt84oxT7/
+ NRBm9Vwm72lzw==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Mon__21_May_2012_17_50_09_+1000_yOX15ztliT=ENxQW
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+This is a follow-up to "[PATCH v2] Add support for TCA6424":
+- Use 3 byte transfers instead of two separate transfers (2+1 byte)
+- An unnecessary cast removed
 
-Hi Eric,
+Signed-off-by: Andreas Schallenberg <Andreas.Schallenberg@3alitytechnica.com>
 
-After merging the userns tree, today's linux-next build (powerpc
-ppc64_defconfig) failed like this:
-
-kernel/sched/numa.c: In function 'ng_allowed':
-kernel/sched/numa.c:1270:16: error: 'struct user_struct' has no member name=
-d 'user_ns'
-kernel/sched/numa.c:1270:40: error: 'struct user_struct' has no member name=
-d 'user_ns'
-kernel/sched/numa.c:1278:28: error: 'struct user_struct' has no member name=
-d 'user_ns'
-
-Caused by commit a2dae61eb839 ("sched/numa: Introduce sys_numa_{t,m}bind
-()") from the tip tree interacting with commit d0bd6594e286 ("userns:
-Deprecate and rename the user_namespace reference in the user_struct")
-from the userns tree.
-
-I applied this merge fix up patch (more may be required):
-
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-Date: Mon, 21 May 2012 17:40:55 +1000
-Subject: [PATCH] userns: fix up for user_ns move to struct cred
-
-Signed-off-by: Stephen Rothwell <sfr@canb.auug.org.au>
 ---
- kernel/sched/numa.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ drivers/gpio/gpio-pca953x.c |   27 ++++++++++++++++-----------
+ 1 files changed, 16 insertions(+), 11 deletions(-)
 
-diff --git a/kernel/sched/numa.c b/kernel/sched/numa.c
-index 8eb92f7..1149993 100644
---- a/kernel/sched/numa.c
-+++ b/kernel/sched/numa.c
-@@ -1267,7 +1267,7 @@ static int ng_allowed(struct numa_group *ng, struct t=
-ask_struct *p)
-=20
- 	rcu_read_lock();
- 	tcred =3D __task_cred(p);
--	if (cred->user->user_ns =3D=3D tcred->user->user_ns &&
-+	if (cred->user_ns =3D=3D tcred->user_ns &&
- 	    (cred->uid =3D=3D tcred->euid &&
- 	     cred->uid =3D=3D tcred->suid &&
- 	     cred->uid =3D=3D tcred->uid  &&
-@@ -1275,7 +1275,7 @@ static int ng_allowed(struct numa_group *ng, struct t=
-ask_struct *p)
- 	     cred->gid =3D=3D tcred->sgid &&
- 	     cred->gid =3D=3D tcred->gid))
- 		goto ok;
--	if (ns_capable(tcred->user->user_ns, CAP_SYS_PTRACE))
-+	if (ns_capable(tcred->user_ns, CAP_SYS_PTRACE))
- 		goto ok;
- 	rcu_read_unlock();
- 	return -EPERM;
---=20
-1.7.10.280.gaa39
+diff --git a/drivers/gpio/gpio-pca953x.c b/drivers/gpio/gpio-pca953x.c
+index 1c313c7..5eee524 100644
+--- a/drivers/gpio/gpio-pca953x.c
++++ b/drivers/gpio/gpio-pca953x.c
+@@ -98,12 +98,11 @@ static int pca953x_write_reg(struct pca953x_chip *chip, int reg, u32 val)
+ 	if (chip->gpio_chip.ngpio <= 8)
+ 		ret = i2c_smbus_write_byte_data(chip->client, reg, val);
+ 	else if (chip->gpio_chip.ngpio == 24) {
+-		ret = i2c_smbus_write_word_data(chip->client,
++		cpu_to_le32s(&val);
++		ret = i2c_smbus_write_i2c_block_data(chip->client,
+ 						(reg << 2) | REG_ADDR_AI,
+-						val & 0xffff);
+-		ret = i2c_smbus_write_byte_data(chip->client,
+-						(reg << 2) + 2,
+-						(val & 0xff0000) >> 16);
++						3,
++						(u8 *) &val);
+ 	}
+ 	else {
+ 		switch (chip->chip_type) {
+@@ -135,22 +134,27 @@ static int pca953x_read_reg(struct pca953x_chip *chip, int reg, u32 *val)
+ {
+ 	int ret;
+ 
+-	if (chip->gpio_chip.ngpio <= 8)
++	if (chip->gpio_chip.ngpio <= 8) {
+ 		ret = i2c_smbus_read_byte_data(chip->client, reg);
++		*val = ret;
++	}
+ 	else if (chip->gpio_chip.ngpio == 24) {
+-		ret =  i2c_smbus_read_word_data(chip->client, reg << 2);
+-		ret |= (i2c_smbus_read_byte_data(chip->client,
+-						 (reg << 2) + 2)<<16);
++		*val = 0;
++		ret = i2c_smbus_read_i2c_block_data(chip->client,
++						(reg << 2) | REG_ADDR_AI,
++						3,
++						(u8 *) val);
++		le32_to_cpus(val);
+-	}
+-	else
++	} else {
+ 		ret = i2c_smbus_read_word_data(chip->client, reg << 1);
++		*val = ret;
++	}
+ 
+ 	if (ret < 0) {
+ 		dev_err(&chip->client->dev, "failed reading register\n");
+ 		return ret;
+ 	}
+ 
+-	*val = (u32)ret;
+ 	return 0;
+ }
+ 
+-- 
+1.7.3.4
 
-
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-http://www.canb.auug.org.au/~sfr/
-
---Signature=_Mon__21_May_2012_17_50_09_+1000_yOX15ztliT=ENxQW
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBCAAGBQJPufOxAAoJEECxmPOUX5FE2MwP/0i1/487OfnbtnhCW8CWNYT8
-ZjfpltuXWNRIuBdevrsIjOePSyuM1UF0bvuVNnyzhGedxlYqZtKut/Rn0aGXtVfF
-paOi1SvBU1lFEQkIl6R+VAv0PGuWK3ir4IpyzJkO9OjMK8lMYvkI2pfofvePM6Eo
-OqwmzSpwt/PyozrPb/aCV9/Y6+pUNdYfONkVRm05kyGWdIYkYCBBy8nArPlEIze4
-QXZhJUgEFiHsC8IV1SOklu2JvAWbtdQ1VrzTQz+kgg1QVxzBnVSJVU4nw9nsGrNn
-PlS4xaYPR4mQndy+sk5Vg+IKsgq6n26DJ5mJ+n/c9X1nf6WEBJwbuCu/krvka8vx
-jkJg04lnDpLIs4N/vaLzeVdl/44DDD54T1+mrOeZEQdmihjb/O8j6Ukrp5cVjb0u
-KToQqXXPv5AsZenpQXnpGu+u9LKUtMTF2G2rbrbbnD9InQhUsf9vuQjHVyLgMSdu
-p5RxC44LeS9WaF60EfFz7uFA7tnM2tKMOF9ALQ+DxB4JWIxRrrORjSuEVdgB5kI0
-jVvFjeJM1806dmV5RW39o7p4IRWLK4X2fbWa4Yffn8hc6GaprWnQVb3NjlZT7IfZ
-APZ+1O3tOmNSKVqHfTi7Rf7etm8pdjpnd8dRRBeYczYE5MI0Hkw1sszygZx6D5s6
-uVoip0F8tWiaOJ32iXfC
-=Vkjz
------END PGP SIGNATURE-----
-
---Signature=_Mon__21_May_2012_17_50_09_+1000_yOX15ztliT=ENxQW--
