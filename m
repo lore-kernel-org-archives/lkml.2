@@ -1,79 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755535Ab2EUXqS (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 May 2012 19:46:18 -0400
-Received: from mga11.intel.com ([192.55.52.93]:46534 "EHLO mga11.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752642Ab2EUXqR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 May 2012 19:46:17 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
-   d="scan'208";a="155404721"
-Subject: Re: [PATCH 2/3] x86: x2apic/cluster: Make use of lowest priority
- delivery mode
-From: Suresh Siddha <suresh.b.siddha@intel.com>
-Reply-To: Suresh Siddha <suresh.b.siddha@intel.com>
-To: Alexander Gordeev <agordeev@redhat.com>
-Cc: Yinghai Lu <yinghai@kernel.org>, linux-kernel@vger.kernel.org,
-        x86@kernel.org, Cyrill Gorcunov <gorcunov@openvz.org>
-Date: Mon, 21 May 2012 16:44:39 -0700
-In-Reply-To: <20120521081330.GB28930@dhcp-26-207.brq.redhat.com>
-References: <20120518102640.GB31517@dhcp-26-207.brq.redhat.com>
-	 <CAE9FiQXUM-+KSZ1OcxipRW-3XQED3Csyxs=0ke0hJZR7E_hrhg@mail.gmail.com>
-	 <20120521081330.GB28930@dhcp-26-207.brq.redhat.com>
-Organization: Intel Corp
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.0.3 (3.0.3-1.fc15) 
-Content-Transfer-Encoding: 7bit
-Message-ID: <1337643880.1997.166.camel@sbsiddha-desk.sc.intel.com>
-Mime-Version: 1.0
+	id S1755941Ab2EUXuE (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 May 2012 19:50:04 -0400
+Received: from mailout3.samsung.com ([203.254.224.33]:65141 "EHLO
+	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752657Ab2EUXuB (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 21 May 2012 19:50:01 -0400
+X-AuditID: cbfee61a-b7fe76d0000023f5-19-4fbad4a80a1b
+From: Jingoo Han <jg1.han@samsung.com>
+To: "'Johan Hovold'" <jhovold@gmail.com>
+Cc: "'Andrew Morton'" <akpm@linux-foundation.org>,
+        "'LKML'" <linux-kernel@vger.kernel.org>,
+        "'Richard Purdie'" <rpurdie@rpsys.net>,
+        "'Jingoo Han'" <jg1.han@samsung.com>
+References: <002d01cd3732$e667d7b0$b3378710$%han@samsung.com>
+ <20120521095837.GE21033@localhost>
+In-reply-to: <20120521095837.GE21033@localhost>
+Subject: RE: [PATCH 3/3] backlight: lm3533_bl: use devm_ functions
+Date: Tue, 22 May 2012 08:50:00 +0900
+Message-id: <000401cd37ac$6f4444a0$4dcccde0$%han@samsung.com>
+MIME-version: 1.0
+Content-type: text/plain; charset=us-ascii
+Content-transfer-encoding: 7bit
+X-Mailer: Microsoft Office Outlook 12.0
+Thread-index: Ac03OE6ZvgM3LnEwQKmZ9knl00zDdgAc5CRA
+Content-language: ko
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrDLMWRmVeSWpSXmKPExsVy+t9jAd0VV3b5G7w8K2FxedccNgdGj8+b
+	5AIYo7hsUlJzMstSi/TtErgy7l/9zV5wSaDiz/SjLA2Ms3i7GDk4JARMJNZ+U+li5AQyxSQu
+	3FvP1sXIxSEksIhRYu3jl2wgCSGB2UwSx9dIgthsAmoSX74cZgexRYDsJ71H2EEamAWWMErM
+	efmJEaIhSeJp9x4WEJtTQF9izr9uVhBbWMBJYk3HfLAaFgFViV2PjoIN4hWwlWj9eIoJwhaU
+	+DH5Hlgvs4CWxPqdx5kgbHmJzWveMkMcrS7x6K8uxA1GEl9u/mOEKBGR2PfiHeMERqFZSCbN
+	QjJpFpJJs5C0LGBkWcUomlqQXFCclJ5rqFecmFtcmpeul5yfu4kRHMbPpHYwrmywOMQowMGo
+	xMMbcGmXvxBrYllxZe4hRgkOZiUR3k1tQCHelMTKqtSi/Pii0pzU4kOM0hwsSuK8dot3+AsJ
+	pCeWpGanphakFsFkmTg4pRoYGzRtuR1uXEvaOqNOvOmfUlfVHxcu/0ktk9KuKYU9fvvUTPPG
+	336N9dP/HhIt+aavfOPSziQHrnyWTBmHmWn96/utzFI8GX1tN3RyCFk2rfn/vcfStu+QRa3K
+	8sRvbz2yTt7WEf6XXiLhn3FuspLVUu6aKf8fpqlMlqyt1+OzkBDhEn43L16JpTgj0VCLuag4
+	EQD/l2H1XwIAAA==
+X-TM-AS-MML: No
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2012-05-21 at 10:13 +0200, Alexander Gordeev wrote:
-> On Sat, May 19, 2012 at 01:53:36PM -0700, Yinghai Lu wrote:
-> > > +static void
-> > > +x2apic_cluster_vector_allocation_domain(int cpu, struct cpumask *retmask)
-> > > +{
-> > > +       cpumask_copy(retmask, cpu_possible_mask);
-> > 
-> > why not using per_cpu(cpus_in_cluster, cpu) instead?
+On Mon, May 21, 2012 at 06 6:59:00 PM +0900, Johan Hovol wrote:
+>
+> On Mon, May 21, 2012 at 06:20:01PM +0900, Jingoo Han wrote:
+> > The devm_ functions allocate memory that is released when a driver
+> > detaches. This patch uses devm_kzalloc of these functions.
+> >
+> > Cc: Johan Hovold <jhovold@gmail.com>
+> > Cc: Richard Purdie <rpurdie@rpsys.net>
+> > Signed-off-by: Jingoo Han <jg1.han@samsung.com>
+> > ---
+> >  drivers/video/backlight/lm3533_bl.c |    8 +++-----
+> >  1 files changed, 3 insertions(+), 5 deletions(-)
+> >
+> > diff --git a/drivers/video/backlight/lm3533_bl.c b/drivers/video/backlight/lm3533_bl.c
+> > index 0148227..9f96a6b 100644
+> > --- a/drivers/video/backlight/lm3533_bl.c
+> > +++ b/drivers/video/backlight/lm3533_bl.c
+> > @@ -295,7 +295,7 @@ static int __devinit lm3533_bl_probe(struct platform_device *pdev)
+> >  		return -EINVAL;
+> >  	}
+> >
+> > -	bl = kzalloc(sizeof(*bl), GFP_KERNEL);
+> > +	bl = devm_kzalloc(&pdev->dev, sizeof(*bl), GFP_KERNEL);
+> >  	if (!bl) {
+> >  		dev_err(&pdev->dev,
+> >  				"failed to allocate memory for backlight\n");
+> > @@ -318,7 +318,7 @@ static int __devinit lm3533_bl_probe(struct platform_device *pdev)
+> >  	if (IS_ERR(bd)) {
+> >  		dev_err(&pdev->dev, "failed to register backlight device\n");
+> >  		ret = PTR_ERR(bd);
+> > -		goto err_free;
+> > +		goto err_return;
 > 
-> Because it would lead to suboptimal results when updating IRQ affinity:
-> 
-> int __ioapic_set_affinity(struct irq_data *data, const struct cpumask *mask,
-> 			  unsigned int *dest_id)
-> {
-> 	struct irq_cfg *cfg = data->chip_data;
-> 
-> 	if (!cpumask_intersects(mask, cpu_online_mask))
-> 		return -1;
-> 
-> 	if (assign_irq_vector(data->irq, data->chip_data, mask))
-> 		return -1;
-> 
-> This call ^^^ will update cfg->domain with the value returned by the call to
-> apic->vector_allocation_domain(). If per_cpu(cpus_in_cluster, cpu) is returned
-> as cfg->domain here then all other clusters contained in the 'mask' will not
-> be taken into consideration by the apic->cpu_mask_to_apicid_and() call below.
-> 
-> 	cpumask_copy(data->affinity, mask);
-> 
-> 	*dest_id = apic->cpu_mask_to_apicid_and(mask, cfg->domain);
-> 
-> So we really need to submit all possible CPUs here ^^^ to be able finding the
-> best/heaviest cluster out of the 'mask'.
-> 
+> Why not simply return PTR_ERR(bd) here?
 
-I don't think we need to do anything fancy, like selecting the heaviest
-cluster out of the mask. Something like (cluster membership of first cpu
-in the mask) AND (mask) should be enough.
+Yes, you're right.
+I will send the new patch.
+Thanks.
 
-Also you need some changes in the assign_irq_vector(). Will post my
-previously developed patches as a reference to this thread, while I
-collect some data for this.
+Best regards,
+Jingoo Han
 
-thanks,
-suresh
+> 
+> >  	}
+> >
+> >  	bl->bd = bd;
+> > @@ -348,8 +348,7 @@ err_sysfs_remove:
+> >  	sysfs_remove_group(&bd->dev.kobj, &lm3533_bl_attribute_group);
+> >  err_unregister:
+> >  	backlight_device_unregister(bd);
+> > -err_free:
+> > -	kfree(bl);
+> > +err_return:
+> 
+> No need for this label then.
+> 
+> >
+> >  	return ret;
+> >  }
+> > @@ -367,7 +366,6 @@ static int __devexit lm3533_bl_remove(struct platform_device *pdev)
+> >  	lm3533_ctrlbank_disable(&bl->cb);
+> >  	sysfs_remove_group(&bd->dev.kobj, &lm3533_bl_attribute_group);
+> >  	backlight_device_unregister(bd);
+> > -	kfree(bl);
+> >
+> >  	return 0;
+> >  }
 
