@@ -1,75 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757025Ab2EUIky (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 May 2012 04:40:54 -0400
-Received: from mail-we0-f174.google.com ([74.125.82.174]:33047 "EHLO
-	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756840Ab2EUIkw (ORCPT
+	id S1757093Ab2EUIoa (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 May 2012 04:44:30 -0400
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:35642 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756738Ab2EUIo3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 May 2012 04:40:52 -0400
-Date: Mon, 21 May 2012 10:40:46 +0200
+	Mon, 21 May 2012 04:44:29 -0400
+Date: Mon, 21 May 2012 10:44:22 +0200
 From: Ingo Molnar <mingo@kernel.org>
-To: David Rientjes <rientjes@google.com>
-Cc: hpa@zytor.com, linux-kernel@vger.kernel.org, a.p.zijlstra@chello.nl,
-        torvalds@linux-foundation.org, pjt@google.com, cl@linux.com,
-        riel@redhat.com, bharata.rao@gmail.com, akpm@linux-foundation.org,
-        Lee.Schermerhorn@hp.com, aarcange@redhat.com, danms@us.ibm.com,
-        suresh.b.siddha@intel.com, tglx@linutronix.de,
-        linux-tip-commits@vger.kernel.org
-Subject: Re: [tip:sched/numa] sched/numa: Introduce sys_numa_{t,m}bind()
-Message-ID: <20120521084046.GB31407@gmail.com>
-References: <tip-nf7brf1b88w0ojwuf689xeet@git.kernel.org>
- <alpine.DEB.2.00.1205191922250.24674@chino.kir.corp.google.com>
+To: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: LKML <linux-kernel@vger.kernel.org>, Steven Rostedt <rostedt@goodmis.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Arnaldo Carvalho de Melo <acme@infradead.org>,
+        Borislav Petkov <bp@alien8.de>, Jiri Olsa <jolsa@redhat.com>,
+        Arun Sharma <asharma@fb.com>, Namhyung Kim <namhyung.kim@lge.com>,
+        Michael Rubin <mrubin@google.com>, David Sharp <dhsharp@google.com>,
+        Vaibhav Nagarnaik <vnagarnaik@google.com>,
+        Julia Lawall <julia@diku.dk>, Tom Zanussi <tzanussi@gmail.com>,
+        David Ahern <dsahern@gmail.com>
+Subject: Re: [PATCH 00/15] tools: Unify perf and trace-cmd trace event format
+ parsing v3
+Message-ID: <20120521084422.GC31407@gmail.com>
+References: <1335356819-16710-1-git-send-email-fweisbec@gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <alpine.DEB.2.00.1205191922250.24674@chino.kir.corp.google.com>
+In-Reply-To: <1335356819-16710-1-git-send-email-fweisbec@gmail.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
-* David Rientjes <rientjes@google.com> wrote:
+* Frederic Weisbecker <fweisbec@gmail.com> wrote:
 
-> On Fri, 18 May 2012, tip-bot for Peter Zijlstra wrote:
+> Hi,
 > 
-> > Commit-ID:  3a0fea961b98d1838f35dba51a639d40f4a5589f
-> > Gitweb:     http://git.kernel.org/tip/3a0fea961b98d1838f35dba51a639d40f4a5589f
-> > Author:     Peter Zijlstra <a.p.zijlstra@chello.nl>
-> > AuthorDate: Thu, 8 Mar 2012 17:56:08 +0100
-> > Committer:  Ingo Molnar <mingo@kernel.org>
-> > CommitDate: Fri, 18 May 2012 08:16:27 +0200
-> > 
-> > sched/numa: Introduce sys_numa_{t,m}bind()
-> > 
+> This is essentially a rebase against latest tip:perf/core updates.
+> Mostly due to conflicts against the perf Makefile updates.
 > 
-> This depends on 931ea9d1a6e0 ("rcu: Implement per-domain 
-> single-threaded call_srcu() state machine") from core/rcu.
+> I think we all agree that this library needs improvements but these
+> should rather be done incrementally. The current perf trace event parsing
+> is anyway much backward compared to that library.
+> 
+> Default target is a static library in tools/libtraceevent/libtraceevent.a
+> 
+> This can be pulled from:
+> 
+> git://github.com/fweisbec/tracing.git
+> 	perf/parse-events-4
+> 
+> Thanks.
+> 
+> Julia Lawall (1):
+>   perf/events: Correct size given to memset
+> 
+> Steven Rostedt (10):
+>   perf: Separate out trace-cmd parse-events from perf files
+>   tools/events: Add files to create libtraceevent.a
+>   perf: Build libtraceevent.a
+>   events: Update tools/lib/traceevent to work with perf
+>   perf: Have perf use the new libtraceevent.a library
+>   perf/events: Add flag to produce nsec output
+>   parse-events: Let pevent_free() take a NULL pointer
+>   parse-events: Allow '*' and '/' operations in TP_printk
+>   parse-event: Fix memset pointer size bug in handle
+>   parse-events: Rename struct record to struct pevent_record
+> 
+> Tom Zanussi (1):
+>   perf/events: Add flag/symbol format_flags
+> 
+> Vaibhav Nagarnaik (3):
+>   parse-events: Handle invalid opcode parsing gracefully
+>   parse-events: Handle opcode parsing error
+>   parse-events: Support '+' opcode in print format
+> 
+>  tools/lib/traceevent/Makefile                      |  303 ++
+>  tools/lib/traceevent/event-parse.c                 | 5065 ++++++++++++++++++++
+>  tools/lib/traceevent/event-parse.h                 |  804 ++++
+>  tools/lib/traceevent/event-utils.h                 |   80 +
+>  tools/lib/traceevent/parse-filter.c                | 2262 +++++++++
+>  tools/lib/traceevent/parse-utils.c                 |  110 +
+>  tools/lib/traceevent/trace-seq.c                   |  200 +
+>  tools/perf/Makefile                                |   20 +-
+>  tools/perf/builtin-kmem.c                          |    6 +-
+>  tools/perf/builtin-lock.c                          |   26 +-
+>  tools/perf/builtin-sched.c                         |   42 +-
+>  tools/perf/builtin-script.c                        |    2 +-
+>  .../util/scripting-engines/trace-event-python.c    |   16 +-
+>  tools/perf/util/trace-event-info.c                 |    4 +-
+>  tools/perf/util/trace-event-parse.c                | 3220 +------------
+>  tools/perf/util/trace-event-read.c                 |   44 +-
+>  tools/perf/util/trace-event.h                      |  269 +-
+>  tools/scripts/Makefile.include                     |    1 +
+>  18 files changed, 9161 insertions(+), 3313 deletions(-)
+>  create mode 100644 tools/lib/traceevent/Makefile
+>  create mode 100644 tools/lib/traceevent/event-parse.c
+>  create mode 100644 tools/lib/traceevent/event-parse.h
+>  create mode 100644 tools/lib/traceevent/event-utils.h
+>  create mode 100644 tools/lib/traceevent/parse-filter.c
+>  create mode 100644 tools/lib/traceevent/parse-utils.c
+>  create mode 100644 tools/lib/traceevent/trace-seq.c
 
-Indeed ...
-
-I'll rebase it to a (by that time probably upstream) srcu commit 
-after the merge window, once we have more fixes, have 
-incorporated suggestions, etc. - but it's still essentially an 
-RFC topic: [*]
-
-Fundamentally, do people agree with the 'single home node' 
-approach to begin with? We could turn it into a node mask,
-but that complicates things.
-
-For example if there's a hierarchy of nodes, low latency and 
-high latency ones, then it might be valid to limit to a high 
-level (high latency) node and not specify the lower level node - 
-while the kernel would still know about the lower level nodes as 
-well.
-
-Managing locality in a non-trivial cache hierarchy is hard :-/
-
-Thanks,
+Pulled, thanks a lot Frederic!
 
 	Ingo
-
-[*] I should probably move this to the tip:RFC/sched/numa 
-    branch, to make it clear what the status of the branch is,
-    from the commit notification emails.
