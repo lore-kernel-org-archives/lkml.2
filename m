@@ -1,85 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932577Ab2EUXCK (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 May 2012 19:02:10 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:46684 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932544Ab2EUXCH convert rfc822-to-8bit (ORCPT
+	id S1759484Ab2EUXCw (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 May 2012 19:02:52 -0400
+Received: from out03.mta.xmission.com ([166.70.13.233]:56288 "EHLO
+	out03.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751109Ab2EUXCu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 May 2012 19:02:07 -0400
+	Mon, 21 May 2012 19:02:50 -0400
+From: ebiederm@xmission.com (Eric W. Biederman)
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Peter Zijlstra <peterz@infradead.org>
+References: <20120521173006.3c10df123692914ab19497b8@canb.auug.org.au>
+Date: Mon, 21 May 2012 17:02:39 -0600
+In-Reply-To: <20120521173006.3c10df123692914ab19497b8@canb.auug.org.au>
+	(Stephen Rothwell's message of "Mon, 21 May 2012 17:30:06 +1000")
+Message-ID: <87ipfp6sts.fsf@xmission.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.3 (gnu/linux)
 MIME-Version: 1.0
-In-Reply-To: <20120521081330.GB28930@dhcp-26-207.brq.redhat.com>
-References: <20120518102640.GB31517@dhcp-26-207.brq.redhat.com>
-	<CAE9FiQXUM-+KSZ1OcxipRW-3XQED3Csyxs=0ke0hJZR7E_hrhg@mail.gmail.com>
-	<20120521081330.GB28930@dhcp-26-207.brq.redhat.com>
-Date: Mon, 21 May 2012 16:02:06 -0700
-X-Google-Sender-Auth: uH5KGtchg5eZQj67pP2POz-ltlk
-Message-ID: <CAE9FiQUVJ3YHQfJ5i1fr8VU8-n_Rpd683DZ7M+54JwLk5kL_=g@mail.gmail.com>
-Subject: Re: [PATCH 2/3] x86: x2apic/cluster: Make use of lowest priority
- delivery mode
-From: Yinghai Lu <yinghai@kernel.org>
-To: Alexander Gordeev <agordeev@redhat.com>
-Cc: linux-kernel@vger.kernel.org, x86@kernel.org,
-        Suresh Siddha <suresh.b.siddha@intel.com>,
-        Cyrill Gorcunov <gorcunov@openvz.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+X-XM-SPF: eid=;;;mid=;;;hst=in02.mta.xmission.com;;;ip=208.38.5.102;;;frm=ebiederm@xmission.com;;;spf=neutral
+X-XM-AID: U2FsdGVkX1/xVRxcGU4t3F3VBu5EABFi9VQlhE74j5U=
+X-SA-Exim-Connect-IP: 208.38.5.102
+X-SA-Exim-Mail-From: ebiederm@xmission.com
+X-Spam-Report: * -1.0 ALL_TRUSTED Passed through trusted hosts only via SMTP
+	*  0.0 TVD_RCVD_IP TVD_RCVD_IP
+	*  0.1 XMSubLong Long Subject
+	*  0.0 T_TM2_M_HEADER_IN_MSG BODY: T_TM2_M_HEADER_IN_MSG
+	* -3.0 BAYES_00 BODY: Bayes spam probability is 0 to 1%
+	*      [score: 0.0000]
+	* -0.0 DCC_CHECK_NEGATIVE Not listed in DCC
+	*      [sa06 1397; Body=1 Fuz1=1 Fuz2=1]
+X-Spam-DCC: XMission; sa06 1397; Body=1 Fuz1=1 Fuz2=1 
+X-Spam-Combo: ;Stephen Rothwell <sfr@canb.auug.org.au>
+X-Spam-Relay-Country: 
+Subject: Re: linux-next: manual merge of the userns tree with the tip tree
+X-Spam-Flag: No
+X-SA-Exim-Version: 4.2.1 (built Fri, 06 Aug 2010 16:31:04 -0600)
+X-SA-Exim-Scanned: Yes (on in02.mta.xmission.com)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, May 21, 2012 at 1:13 AM, Alexander Gordeev <agordeev@redhat.com> wrote:
-> On Sat, May 19, 2012 at 01:53:36PM -0700, Yinghai Lu wrote:
->> > +static void
->> > +x2apic_cluster_vector_allocation_domain(int cpu, struct cpumask *retmask)
->> > +{
->> > +       cpumask_copy(retmask, cpu_possible_mask);
->>
->> why not using per_cpu(cpus_in_cluster, cpu) instead?
->
-> Because it would lead to suboptimal results when updating IRQ affinity:
->
-> int __ioapic_set_affinity(struct irq_data *data, const struct cpumask *mask,
->                          unsigned int *dest_id)
-> {
->        struct irq_cfg *cfg = data->chip_data;
->
->        if (!cpumask_intersects(mask, cpu_online_mask))
->                return -1;
->
->        if (assign_irq_vector(data->irq, data->chip_data, mask))
->                return -1;
->
-> This call ^^^ will update cfg->domain with the value returned by the call to
-> apic->vector_allocation_domain(). If per_cpu(cpus_in_cluster, cpu) is returned
-> as cfg->domain here then all other clusters contained in the 'mask' will not
-> be taken into consideration by the apic->cpu_mask_to_apicid_and() call below.
->
->        cpumask_copy(data->affinity, mask);
->
->        *dest_id = apic->cpu_mask_to_apicid_and(mask, cfg->domain);
->
-> So we really need to submit all possible CPUs here ^^^ to be able finding the
-> best/heaviest cluster out of the 'mask'.
+Stephen Rothwell <sfr@canb.auug.org.au> writes:
 
-ok.
-
+> Hi Eric,
 >
->        return 0;
-> }
+> Today's linux-next merge of the userns tree got a conflict in
+> include/linux/sched.h between commit 50954a1f450e ("sched/numa: Provide
+> sysctl knob to disable numa scheduling and turn it off by default") from
+> the tip tree and commit 7b44ab978b77 ("userns: Disassociate user_struct
+> from the user_namespace") from the userns tree.
 >
->
->> also you may add one per cpu var like x86_cpu_to_logical_cluster_apicid.
->
-> Both cpu_mask_to_apicid() and cpu_mask_to_apicid_and() take a cpumask to
-> derive the apicid from. Even though we could cache the value of apicid in
-> 'x86_cpu_to_logical_cluster_apicid' variable, we still would have to unset
-> CPUs which are not in the requested cpumask. That means scanning through the
-> cpumask etc -- exactly what the the patch does now.
+> Just context changes.  I fixed it up (see below) and can carry the fix as
+> necessary.
 
-ok, i got it. thanks for the explanation.
+It looks reasonable.  Thanks.
 
-I was thinking: pick up one for cpumask that user want, and then just
-use all cpus in that cluster as dest cpus.
+Eric
 
-Yinghai
