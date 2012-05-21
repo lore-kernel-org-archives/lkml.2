@@ -1,58 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755635Ab2EUBjP (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 20 May 2012 21:39:15 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:56972 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754727Ab2EUBjO (ORCPT
+	id S1755762Ab2EUBoS (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 20 May 2012 21:44:18 -0400
+Received: from LGEMRELSE7Q.lge.com ([156.147.1.151]:63687 "EHLO
+	LGEMRELSE7Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755164Ab2EUBoR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 20 May 2012 21:39:14 -0400
-Message-ID: <1337564348.4772.3.camel@phoenix>
-Subject: [PATCH 2/2] regulator: ab8500: Let regulator core handle the case
- no delay for setting new voltage if regulator is off
-From: Axel Lin <axel.lin@gmail.com>
-To: linux-kernel@vger.kernel.org
-Cc: Lee Jones <lee.jones@linaro.org>,
-        Linus Walleij <linus.walleij@stericsson.com>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Liam Girdwood <lrg@ti.com>
-Date: Mon, 21 May 2012 09:39:08 +0800
-In-Reply-To: <1337564272.4772.2.camel@phoenix>
-References: <1337564272.4772.2.camel@phoenix>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.2- 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	Sun, 20 May 2012 21:44:17 -0400
+X-AuditID: 9c930197-b7be2ae000000ebb-d0-4fb99dec73fd
+From: Namhyung Kim <namhyung.kim@lge.com>
+To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Mackerras <paulus@samba.org>,
+        Ingo Molnar <mingo@redhat.com>, Namhyung Kim <namhyung@gmail.com>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: [PATCH] perf target: Add cpu flag to sample_type if target has cpu
+Date: Mon, 21 May 2012 10:42:07 +0900
+Message-Id: <1337564527-9367-1-git-send-email-namhyung.kim@lge.com>
+X-Mailer: git-send-email 1.7.10.1
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Axel Lin <axel.lin@gmail.com>
+Add PERF_SAMPLE_CPU flag into attr->sample_type if an user
+specified any of cpu target (either system-wide or cpu list).
+It will show correct values when cpu sort key is given for
+perf top and perf report.
+
+Signed-off-by: Namhyung Kim <namhyung.kim@lge.com>
 ---
- drivers/regulator/ab8500.c |    7 -------
- 1 files changed, 0 insertions(+), 7 deletions(-)
+ tools/perf/builtin-top.c |    3 +++
+ tools/perf/util/evsel.c  |    2 +-
+ 2 files changed, 4 insertions(+), 1 deletion(-)
 
-diff --git a/drivers/regulator/ab8500.c b/drivers/regulator/ab8500.c
-index da883e6..f158074 100644
---- a/drivers/regulator/ab8500.c
-+++ b/drivers/regulator/ab8500.c
-@@ -256,14 +256,7 @@ static int ab8500_regulator_set_voltage_time_sel(struct regulator_dev *rdev,
- 					     unsigned int new_sel)
- {
- 	struct ab8500_regulator_info *info = rdev_get_drvdata(rdev);
--	int ret;
+diff --git a/tools/perf/builtin-top.c b/tools/perf/builtin-top.c
+index ebcd15883ab8..8e3cf429dd18 100644
+--- a/tools/perf/builtin-top.c
++++ b/tools/perf/builtin-top.c
+@@ -900,6 +900,9 @@ static void perf_top__start_counters(struct perf_top *top)
+ 			attr->read_format |= PERF_FORMAT_ID;
+ 		}
  
--	/* If the regulator isn't on, it won't take time here */
--	ret = ab8500_regulator_is_enabled(rdev);
--	if (ret < 0)
--		return ret;
--	if (!ret)
--		return 0;
- 	return info->delay;
- }
++		if (perf_target__has_cpu(&top->target))
++			attr->sample_type |= PERF_SAMPLE_CPU;
++
+ 		if (symbol_conf.use_callchain)
+ 			attr->sample_type |= PERF_SAMPLE_CALLCHAIN;
  
+diff --git a/tools/perf/util/evsel.c b/tools/perf/util/evsel.c
+index d7a2b4b9801d..d26b8fe0abd1 100644
+--- a/tools/perf/util/evsel.c
++++ b/tools/perf/util/evsel.c
+@@ -107,7 +107,7 @@ void perf_evsel__config(struct perf_evsel *evsel, struct perf_record_opts *opts,
+ 	if (opts->call_graph)
+ 		attr->sample_type	|= PERF_SAMPLE_CALLCHAIN;
+ 
+-	if (opts->target.system_wide)
++	if (perf_target__has_cpu(&opts->target))
+ 		attr->sample_type	|= PERF_SAMPLE_CPU;
+ 
+ 	if (opts->period)
 -- 
-1.7.5.4
-
-
+1.7.10.1
 
