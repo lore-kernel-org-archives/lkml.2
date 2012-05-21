@@ -1,71 +1,168 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758805Ab2EUSLC (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 May 2012 14:11:02 -0400
-Received: from e33.co.us.ibm.com ([32.97.110.151]:54788 "EHLO
-	e33.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758368Ab2EUSK7 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 May 2012 14:10:59 -0400
-Message-ID: <4FBA84EF.5040506@linaro.org>
-Date: Mon, 21 May 2012 11:09:51 -0700
-From: John Stultz <john.stultz@linaro.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
+	id S1758859Ab2EUSLV (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 May 2012 14:11:21 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:21537 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754805Ab2EUSLP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 21 May 2012 14:11:15 -0400
+Date: Mon, 21 May 2012 19:34:53 +0200
+From: Oleg Nesterov <oleg@redhat.com>
+To: Rusty Russell <rusty@rustcorp.com.au>, tj@kernel.org
+Cc: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>,
+        akpm@linux-foundation.org, bharrosh@panasas.com,
+        torvalds@linux-foundation.org, linux-kernel@vger.kernel.org
+Subject: UMH_WAIT_EXEC->UMH_WAIT_PROC deadlock
+Message-ID: <20120521173453.GB31803@redhat.com>
+References: <4F6A93F5.1070202@panasas.com> <201203241028.IGJ09825.MtOVFHFJQSLOFO@I-love.SAKURA.ne.jp> <4F6D35F0.2020808@panasas.com> <20120323200028.fadf49f8.akpm@linux-foundation.org> <20120324145308.GA10023@redhat.com> <201205191121.BIF57837.FHFOtMOLJQSOFV@I-love.SAKURA.ne.jp> <87fwau4aag.fsf@rustcorp.com.au>
 MIME-Version: 1.0
-To: Richard Cochran <richardcochran@gmail.com>
-CC: linux-kernel@vger.kernel.org, Thomas Gleixner <tglx@linutronix.de>
-Subject: Re: [PATCH RFC V2 3/6] time: keep track of the pending utc/tai threshold
-References: <cover.1337348892.git.richardcochran@gmail.com> <6777ac8ebc321c67d13fdb8d0a3d826332b60f1f.1337348892.git.richardcochran@gmail.com>
-In-Reply-To: <6777ac8ebc321c67d13fdb8d0a3d826332b60f1f.1337348892.git.richardcochran@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 12052118-2398-0000-0000-000006D23B41
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <87fwau4aag.fsf@rustcorp.com.au>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/18/2012 07:09 AM, Richard Cochran wrote:
-> This patch introduces time keeping variables to track the next
-> mini-epoch between the UTC and TAI timescales. A leap second occurs
-> one second before a mini-epoch. When no leap second is pending, then
-> the epoch is set to the far future, LONG_MAX.
+On 05/21, Rusty Russell wrote:
 >
-> This code will become useful later on for providing correct time
-> surrounding a leap second.
->
-> Signed-off-by: Richard Cochran<richardcochran@gmail.com>
-> ---
->   kernel/time/timekeeping.c |   14 ++++++++++++++
->   1 files changed, 14 insertions(+), 0 deletions(-)
->
-> diff --git a/kernel/time/timekeeping.c b/kernel/time/timekeeping.c
-> index d66b213..ac04de4 100644
-> --- a/kernel/time/timekeeping.c
-> +++ b/kernel/time/timekeeping.c
-> @@ -70,6 +70,19 @@ struct timekeeper {
->   	/* The raw monotonic time for the CLOCK_MONOTONIC_RAW posix clock. */
->   	struct timespec raw_time;
->
-> +	/* The current TAI - UTC offset */
-> +	time_t tai_offset;
-> +	/* The UTC time of the next leap second epoch */
-> +	time_t utc_epoch;
+> I rather like Oleg's "use system wq" patch.  Seems like a net
+> simplification.
 
-How about leap_utc_epoch just to be more clear?
+OK. Lets discuss this patch (attached below).
 
-> +	/* Tracks where we stand with regard to leap the second epoch. */
-> +	enum {
-> +		LEAP_IDLE,
-> +		LEAP_INS_PENDING,
-> +		LEAP_INS_DONE,
-> +		LEAP_DEL_PENDING,
-> +		LEAP_DEL_DONE,
-> +	} leap_state;
-> +
-For continuity,  would it make more sense for these to named closer to 
-the NTP time_state values, or maybe reworked to make use of them?  Not 
-sure if its worth having separate state machines in the timekeeping code 
-and the ntp code, but maybe I'm not seeing a necessary detail here?
+Obviously, I like it too ;) And yes, it looks like a cleanup to me.
+
+But. This change can obviously increase the number of
+__call_usermodehelper()'s running in parallel, and in particular increase
+the number of workqueue threads.
+
+Is it OK?
+
+Another issue is that Tejun dislikes the usage of system_unbound_wq.
+I guess, because WQ_UNBOUND implies WQ_HIGHPRI. Btw, I do not really
+understand why. And, otoh, I don't think that __call_usermodehelper()
+should be bound to any CPU, this would look a bit strange to me.
+
+So, Tejun, what do you think about this patch? Which system_ wq it
+should use if you think it makes sense?
+
+Oleg.
+
+
+------------------------------------------------------------------------
+[PATCH] kmod: kill khelper_wq, fix UMH_WAIT_EXEC->UMH_WAIT_PROC deadlock
+
+A UMH_WAIT_EXEC request can trigger the reqursive UMH_WAIT_PROC
+if kernel_execve(sub_info->path) needs request_module() to load
+the binfmt module.
+
+This leads to deadlock. The worker thread sleeps waiting for
+CLONE_VFORK completion, its child queues another sub_info->work
+and waits for it, but since khelper_wq->max_active == 1 no other
+work can run.
+
+Quiting Tetsuo:
+
+	The easiest example to observe this deadlock is to use
+	a corrupted /sbin/hotplug binary (like shown below).
+
+	# : > /tmp/dummy
+	# chmod 755 /tmp/dummy
+	# echo /tmp/dummy > /proc/sys/kernel/hotplug
+	# modprobe whatever
+
+Kill khelper_wq and use the system wq instead. Workqueues were
+greatly improved, I do not think kmod needs the dedicated wq.
+
+In the scenario above, UMH_WAIT_EXEC succeeds with this patch
+assuming that the number of UMH_WAIT_EXEC requests in flight
+doesn't exceed max_active.
+
+Reported-by: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
+Signed-off-by: Oleg Nesterov <oleg@redhat.com>
+---
+ include/linux/kmod.h |    2 --
+ init/main.c          |    1 -
+ kernel/kmod.c        |   14 +++-----------
+ 3 files changed, 3 insertions(+), 14 deletions(-)
+
+diff --git a/include/linux/kmod.h b/include/linux/kmod.h
+index 9efeae6..eced4e3 100644
+--- a/include/linux/kmod.h
++++ b/include/linux/kmod.h
+@@ -110,8 +110,6 @@ call_usermodehelper(char *path, char **argv, char **envp, int wait)
+ 
+ extern struct ctl_table usermodehelper_table[];
+ 
+-extern void usermodehelper_init(void);
+-
+ extern int usermodehelper_disable(void);
+ extern void usermodehelper_enable(void);
+ extern bool usermodehelper_is_disabled(void);
+diff --git a/init/main.c b/init/main.c
+index ff49a6d..f538aa5 100644
+--- a/init/main.c
++++ b/init/main.c
+@@ -722,7 +722,6 @@ static void __init do_initcalls(void)
+ static void __init do_basic_setup(void)
+ {
+ 	cpuset_init_smp();
+-	usermodehelper_init();
+ 	shmem_init();
+ 	driver_init();
+ 	init_irq_proc();
+diff --git a/kernel/kmod.c b/kernel/kmod.c
+index 3a69031..d1712c0 100644
+--- a/kernel/kmod.c
++++ b/kernel/kmod.c
+@@ -43,8 +43,6 @@
+ 
+ extern int max_threads;
+ 
+-static struct workqueue_struct *khelper_wq;
+-
+ #define CAP_BSET	(void *)1
+ #define CAP_PI		(void *)2
+ 
+@@ -285,7 +283,7 @@ static int wait_for_helper(void *data)
+ 	return 0;
+ }
+ 
+-/* This is run by khelper thread  */
++/* This is run by workqueue thread  */
+ static void __call_usermodehelper(struct work_struct *work)
+ {
+ 	struct subprocess_info *sub_info =
+@@ -494,7 +492,7 @@ pr_crit("UMH: call %16s:%-4d inf=%p w=%d %s\n",
+ 	if (sub_info->path[0] == '\0')
+ 		goto out;
+ 
+-	if (!khelper_wq || usermodehelper_disabled) {
++	if (!system_unbound_wq || usermodehelper_disabled) {
+ 		retval = -EBUSY;
+ 		goto out;
+ 	}
+@@ -502,7 +500,7 @@ pr_crit("UMH: call %16s:%-4d inf=%p w=%d %s\n",
+ 	sub_info->complete = &done;
+ 	sub_info->wait = wait;
+ 
+-	queue_work(khelper_wq, &sub_info->work);
++	queue_work(system_unbound_wq, &sub_info->work);
+ 	if (wait == UMH_NO_WAIT)	/* task has freed sub_info */
+ 		goto unlock;
+ 
+@@ -605,9 +603,3 @@ struct ctl_table usermodehelper_table[] = {
+ 	},
+ 	{ }
+ };
+-
+-void __init usermodehelper_init(void)
+-{
+-	khelper_wq = create_singlethread_workqueue("khelper");
+-	BUG_ON(!khelper_wq);
+-}
+-- 
+1.5.5.1
 
 
