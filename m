@@ -1,306 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755471Ab2EUHiY (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 May 2012 03:38:24 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:43632 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752273Ab2EUHhR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 May 2012 03:37:17 -0400
-From: Jiri Olsa <jolsa@redhat.com>
-To: zheng.z.yan@intel.com
-Cc: a.p.zijlstra@chello.nl, mingo@elte.hu, andi@firstfloor.org,
-        eranian@google.com, jolsa@redhat.com, ming.m.lin@intel.com,
-        gregkh@linuxfoundation.org, linux-kernel@vger.kernel.org
-Subject: [PATCH 4/5] perf, tool: Add pmu event alias support
-Date: Mon, 21 May 2012 09:36:52 +0200
-Message-Id: <1337585813-3349-5-git-send-email-jolsa@redhat.com>
-In-Reply-To: <1337585813-3349-1-git-send-email-jolsa@redhat.com>
-References: <1337144403-30841-1-git-send-email-zheng.z.yan@intel.com>
- <1337585813-3349-1-git-send-email-jolsa@redhat.com>
+	id S1755512Ab2EUHii (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 May 2012 03:38:38 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:37675 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751098Ab2EUHif (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 21 May 2012 03:38:35 -0400
+Date: Mon, 21 May 2012 00:38:19 -0700
+From: tip-bot for Namhyung Kim <namhyung.kim@lge.com>
+Message-ID: <tip-879d77d0cbe20ad1d6099a1e16f03b72c0649828@git.kernel.org>
+Cc: acme@redhat.com, linux-kernel@vger.kernel.org, paulus@samba.org,
+        mingo@redhat.com, hpa@zytor.com, mingo@kernel.org,
+        a.p.zijlstra@chello.nl, torvalds@linux-foundation.org,
+        namhyung.kim@lge.com, namhyung@gmail.com, tglx@linutronix.de
+Reply-To: mingo@kernel.org, hpa@zytor.com, mingo@redhat.com, paulus@samba.org,
+        linux-kernel@vger.kernel.org, acme@redhat.com,
+        torvalds@linux-foundation.org, a.p.zijlstra@chello.nl,
+        namhyung.kim@lge.com, namhyung@gmail.com, tglx@linutronix.de
+In-Reply-To: <1337161549-9870-2-git-send-email-namhyung.kim@lge.com>
+References: <1337161549-9870-2-git-send-email-namhyung.kim@lge.com>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:perf/core] Revert 'perf evlist: Fix creation of cpu map'
+Git-Commit-ID: 879d77d0cbe20ad1d6099a1e16f03b72c0649828
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
+MIME-Version: 1.0
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Mon, 21 May 2012 00:38:24 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Adding support to specify alias term within the event description.
+Commit-ID:  879d77d0cbe20ad1d6099a1e16f03b72c0649828
+Gitweb:     http://git.kernel.org/tip/879d77d0cbe20ad1d6099a1e16f03b72c0649828
+Author:     Namhyung Kim <namhyung.kim@lge.com>
+AuthorDate: Wed, 16 May 2012 18:45:48 +0900
+Committer:  Arnaldo Carvalho de Melo <acme@redhat.com>
+CommitDate: Wed, 16 May 2012 12:12:05 -0300
 
-The definition of pmu event alias is located at:
-  ${sysfs_mount}/bus/event_source/devices/${pmu}/events/
+Revert 'perf evlist: Fix creation of cpu map'
 
-Each file in the 'events' directory defines a event alias. Its contents
-is like:
-  config=1,config1=2
+The commit 55261f46702c ("perf evlist: Fix creation of cpu map") changed
+to create a per-task event when no cpu target is specified. However it
+caused a problem since perf-task do not allow event inheritance due to
+scalability issues so that the result will contain samples only from
+parent, not from its children.
 
-Using pmu event alias, event could be now specified like:
-  uncore/CLOCKTICKS/
+So we should use perf-task-per-cpu events anyway to get the right
+result. Revert it.
 
-Signed-off-by: Zheng Yan <zheng.z.yan@intel.com>
-Signed-off-by: Jiri Olsa <jolsa@redhat.com>
+Reported-by: Linus Torvalds <torvalds@linux-foundation.org>
+Analysed-by: Ingo Molnar <mingo@kernel.org>
+Acked-and-tested-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Signed-off-by: Namhyung Kim <namhyung.kim@lge.com>
+Cc: Ingo Molnar <mingo@redhat.com>
+Cc: Namhyung Kim <namhyung@gmail.com>
+Cc: Paul Mackerras <paulus@samba.org>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Link: http://lkml.kernel.org/r/1337161549-9870-2-git-send-email-namhyung.kim@lge.com
+Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/perf/util/parse-events.c |   10 +++
- tools/perf/util/parse-events.h |    2 +
- tools/perf/util/pmu.c          |  152 ++++++++++++++++++++++++++++++++++++++++
- tools/perf/util/pmu.h          |   11 +++-
- 4 files changed, 174 insertions(+), 1 deletions(-)
+ tools/perf/util/evlist.c |    6 +++---
+ 1 files changed, 3 insertions(+), 3 deletions(-)
 
-diff --git a/tools/perf/util/parse-events.c b/tools/perf/util/parse-events.c
-index 5f7bf0e..3bff80b 100644
---- a/tools/perf/util/parse-events.c
-+++ b/tools/perf/util/parse-events.c
-@@ -706,6 +706,9 @@ int parse_events_add_pmu(struct list_head **list, int *idx,
+diff --git a/tools/perf/util/evlist.c b/tools/perf/util/evlist.c
+index 80bef28..87889f3 100644
+--- a/tools/perf/util/evlist.c
++++ b/tools/perf/util/evlist.c
+@@ -609,10 +609,10 @@ int perf_evlist__create_maps(struct perf_evlist *evlist,
+ 	if (evlist->threads == NULL)
+ 		return -1;
  
- 	memset(&attr, 0, sizeof(attr));
+-	if (perf_target__has_cpu(target))
+-		evlist->cpus = cpu_map__new(target->cpu_list);
+-	else
++	if (perf_target__has_task(target))
+ 		evlist->cpus = cpu_map__dummy_new();
++	else
++		evlist->cpus = cpu_map__new(target->cpu_list);
  
-+	if (perf_pmu__check_alias(pmu, head_config))
-+		return -EINVAL;
-+
- 	/*
- 	 * Configure hardcoded terms first, no need to check
- 	 * return value when called with fail == 0 ;)
-@@ -1148,6 +1151,13 @@ int parse_events__term_str(struct parse_events__term **term,
- 			config, str, 0);
- }
- 
-+int parse_events__term_clone(struct parse_events__term **new,
-+			     struct parse_events__term *term)
-+{
-+	return new_term(new, term->type_val, term->type_term, term->config,
-+			term->val.str, term->val.num);
-+}
-+
- void parse_events__free_terms(struct list_head *terms)
- {
- 	struct parse_events__term *term, *h;
-diff --git a/tools/perf/util/parse-events.h b/tools/perf/util/parse-events.h
-index 9896eda..a2c7168 100644
---- a/tools/perf/util/parse-events.h
-+++ b/tools/perf/util/parse-events.h
-@@ -78,6 +78,8 @@ int parse_events__term_num(struct parse_events__term **_term,
- 			   int type_term, char *config, long num);
- int parse_events__term_str(struct parse_events__term **_term,
- 			   int type_term, char *config, char *str);
-+int parse_events__term_clone(struct parse_events__term **new,
-+			     struct parse_events__term *term);
- void parse_events__free_terms(struct list_head *terms);
- int parse_events_modifier(struct list_head *list, char *str);
- int parse_events_add_tracepoint(struct list_head **list, int *idx,
-diff --git a/tools/perf/util/pmu.c b/tools/perf/util/pmu.c
-index a119a53..9bf61f6 100644
---- a/tools/perf/util/pmu.c
-+++ b/tools/perf/util/pmu.c
-@@ -80,6 +80,130 @@ static int pmu_format(char *name, struct list_head *format)
- 	return 0;
- }
- 
-+static int perf_pmu__new_alias(struct list_head *list, char *name, FILE *file)
-+{
-+	struct perf_pmu__alias *alias;
-+	char buf[256];
-+	int ret;
-+
-+	ret = fread(buf, 1, sizeof(buf), file);
-+	if (ret == 0)
-+		return -EINVAL;
-+	buf[ret] = 0;
-+
-+	alias = malloc(sizeof(*alias));
-+	if (!alias)
-+		return -ENOMEM;
-+
-+	INIT_LIST_HEAD(&alias->terms);
-+	ret = parse_events_terms(&alias->terms, buf);
-+	if (ret) {
-+		free(alias);
-+		return ret;
-+	}
-+
-+	alias->name = strdup(name);
-+	list_add_tail(&alias->list, list);
-+	return 0;
-+}
-+
-+/*
-+ * Process all the sysfs attributes located under the directory
-+ * specified in 'dir' parameter.
-+ */
-+static int pmu_aliases_parse(char *dir, struct list_head *head)
-+{
-+	struct dirent *evt_ent;
-+	DIR *event_dir;
-+	int ret = 0;
-+
-+	event_dir = opendir(dir);
-+	if (!event_dir)
-+		return -EINVAL;
-+
-+	while (!ret && (evt_ent = readdir(event_dir))) {
-+		char path[PATH_MAX];
-+		char *name = evt_ent->d_name;
-+		FILE *file;
-+
-+		if (!strcmp(name, ".") || !strcmp(name, ".."))
-+			continue;
-+
-+		snprintf(path, PATH_MAX, "%s/%s", dir, name);
-+
-+		ret = -EINVAL;
-+		file = fopen(path, "r");
-+		if (!file)
-+			break;
-+		ret = perf_pmu__new_alias(head, name, file);
-+		fclose(file);
-+	}
-+
-+	closedir(event_dir);
-+	return ret;
-+}
-+
-+/*
-+ * Reading the pmu event aliases definition, which should be located at:
-+ * /sys/bus/event_source/devices/<dev>/events as sysfs group attributes.
-+ */
-+static int pmu_aliases(char *name, struct list_head *head)
-+{
-+	struct stat st;
-+	char path[PATH_MAX];
-+	const char *sysfs;
-+
-+	sysfs = sysfs_find_mountpoint();
-+	if (!sysfs)
-+		return -1;
-+
-+	snprintf(path, PATH_MAX,
-+		 "%s/bus/event_source/devices/%s/events", sysfs, name);
-+
-+	if (stat(path, &st) < 0)
-+		return -1;
-+
-+	if (pmu_aliases_parse(path, head))
-+		return -1;
-+
-+	return 0;
-+}
-+
-+static struct perf_pmu__alias *pmu_find_alias(struct list_head *aliases,
-+					struct parse_events__term *term)
-+{
-+	struct perf_pmu__alias *alias;
-+
-+	if (term->type_val != PARSE_EVENTS__TERM_TYPE_STR || term->val.str)
-+		return NULL;
-+
-+	list_for_each_entry(alias, aliases, list) {
-+		if (!strcmp(alias->name, term->config))
-+			return alias;
-+	}
-+
-+	return NULL;
-+}
-+
-+static int pmu_alias_terms(struct perf_pmu__alias *alias,
-+			   struct list_head *terms)
-+{
-+	struct parse_events__term *term, *clone;
-+	LIST_HEAD(list);
-+	int ret;
-+
-+	list_for_each_entry(term, &alias->terms, list) {
-+		ret = parse_events__term_clone(&clone, term);
-+		if (ret) {
-+			parse_events__free_terms(&list);
-+			return ret;
-+		}
-+		list_add_tail(&clone->list, &list);
-+	}
-+	list_splice(&list, terms);
-+	return 0;
-+}
-+
- /*
-  * Reading/parsing the default pmu type value, which should be
-  * located at:
-@@ -118,6 +242,7 @@ static struct perf_pmu *pmu_lookup(char *name)
- {
- 	struct perf_pmu *pmu;
- 	LIST_HEAD(format);
-+	LIST_HEAD(aliases);
- 	__u32 type;
- 
- 	/*
-@@ -135,8 +260,12 @@ static struct perf_pmu *pmu_lookup(char *name)
- 	if (!pmu)
- 		return NULL;
- 
-+	pmu_aliases(name, &aliases);
-+
- 	INIT_LIST_HEAD(&pmu->format);
-+	INIT_LIST_HEAD(&pmu->aliases);
- 	list_splice(&format, &pmu->format);
-+	list_splice(&aliases, &pmu->aliases);
- 	pmu->name = strdup(name);
- 	pmu->type = type;
- 	return pmu;
-@@ -279,6 +408,29 @@ int perf_pmu__config(struct perf_pmu *pmu, struct perf_event_attr *attr,
- 	return pmu_config(&pmu->format, attr, head_terms);
- }
- 
-+/*
-+ * Find alias in the terms list and replace it with the terms
-+ * defined for the alias
-+ */
-+int perf_pmu__check_alias(struct perf_pmu *pmu, struct list_head *head_terms)
-+{
-+	struct parse_events__term *term, *h;
-+	struct perf_pmu__alias *alias;
-+	int ret;
-+
-+	list_for_each_entry_safe(term, h, head_terms, list) {
-+		alias = pmu_find_alias(&pmu->aliases, term);
-+		if (!alias)
-+			continue;
-+		ret = pmu_alias_terms(alias, &term->list);
-+		if (ret)
-+			return ret;
-+		list_del(&term->list);
-+		free(term);
-+	}
-+	return 0;
-+}
-+
- int perf_pmu__new_format(struct list_head *list, char *name,
- 			 int config, unsigned long *bits)
- {
-diff --git a/tools/perf/util/pmu.h b/tools/perf/util/pmu.h
-index 68c0db9..535f2c5 100644
---- a/tools/perf/util/pmu.h
-+++ b/tools/perf/util/pmu.h
-@@ -19,17 +19,26 @@ struct perf_pmu__format {
- 	struct list_head list;
- };
- 
-+struct perf_pmu__alias {
-+	char *name;
-+	struct list_head terms;
-+	struct list_head list;
-+};
-+
- struct perf_pmu {
- 	char *name;
- 	__u32 type;
- 	struct list_head format;
-+	struct list_head aliases;
- 	struct list_head list;
- };
- 
- struct perf_pmu *perf_pmu__find(char *name);
- int perf_pmu__config(struct perf_pmu *pmu, struct perf_event_attr *attr,
- 		     struct list_head *head_terms);
--
-+int perf_pmu__check_alias(struct perf_pmu *pmu, struct list_head *head_terms);
-+struct list_head *perf_pmu__alias(struct perf_pmu *pmu,
-+				struct list_head *head_terms);
- int perf_pmu_wrap(void);
- void perf_pmu_error(struct list_head *list, char *name, char const *msg);
- 
--- 
-1.7.7.6
-
+ 	if (evlist->cpus == NULL)
+ 		goto out_delete_threads;
