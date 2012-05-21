@@ -1,105 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754645Ab2EUTOJ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 May 2012 15:14:09 -0400
-Received: from webmail.solarflare.com ([12.187.104.25]:57193 "EHLO
-	ocex02.SolarFlarecom.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1752634Ab2EUTOG (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 May 2012 15:14:06 -0400
-Message-ID: <1337627640.2979.33.camel@bwh-desktop.uk.solarflarecom.com>
-Subject: Re: [PATCH] xen/netback: calculate correctly the SKB slots.
-From: Ben Hutchings <bhutchings@solarflare.com>
-To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-CC: <xen-devel@lists.xensource.com>, <ian.campbell@citrix.com>,
-        <netdev@vger.kernel.org>, <davem@davemloft.net>,
-        <linux-kernel@vger.kernel.org>,
-        Adnan Misherfi <adnan.misherfi@oracle.com>
-Date: Mon, 21 May 2012 20:14:00 +0100
-In-Reply-To: <1337621793-12486-1-git-send-email-konrad.wilk@oracle.com>
-References: <1337621793-12486-1-git-send-email-konrad.wilk@oracle.com>
-Organization: Solarflare Communications
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3 (3.2.3-1.fc16) 
-Content-Transfer-Encoding: 7bit
+	id S1754462Ab2EUTPH (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 May 2012 15:15:07 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:45178 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752634Ab2EUTPE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 21 May 2012 15:15:04 -0400
+Message-ID: <4FBA93C1.1070308@zytor.com>
+Date: Mon, 21 May 2012 12:13:05 -0700
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:11.0) Gecko/20120329 Thunderbird/11.0.1
 MIME-Version: 1.0
-X-Originating-IP: [10.17.20.137]
-X-TM-AS-Product-Ver: SMEX-10.0.0.1412-6.800.1017-18918.005
-X-TM-AS-Result: No--8.455100-0.000000-31
-X-TM-AS-User-Approved-Sender: Yes
-X-TM-AS-User-Blocked-Sender: No
+To: richard -rw- weinberger <richard.weinberger@gmail.com>
+CC: Eric Paris <netdev@parisplace.org>, Will Drewry <wad@chromium.org>,
+        linux-kernel@vger.kernel.org, linux-security-module@vger.kernel.org,
+        kernel-hardening@lists.openwall.com, mingo@redhat.com, oleg@redhat.com,
+        peterz@infradead.org, rdunlap@xenotime.net, mcgrathr@chromium.org,
+        tglx@linutronix.de, luto@mit.edu, eparis@redhat.com,
+        serge.hallyn@canonical.com, indan@nul.nu, pmoore@redhat.com,
+        akpm@linux-foundation.org, corbet@lwn.net, eric.dumazet@gmail.com,
+        markus@chromium.org, coreyb@linux.vnet.ibm.com, keescook@chromium.org
+Subject: Re: seccomp and ptrace. what is the correct order?
+References: <CACLa4puRJLUd6hAHO6zFYiqa5dFVum8eLmNMk_ef+=r8OGhjRg@mail.gmail.com> <CAFLxGvxtK7Dqw_PDqkMjNYzWyYdqx5CRYLB4+o=S5zHy2CgiTQ@mail.gmail.com>
+In-Reply-To: <CAFLxGvxtK7Dqw_PDqkMjNYzWyYdqx5CRYLB4+o=S5zHy2CgiTQ@mail.gmail.com>
+X-Enigmail-Version: 1.4.1
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2012-05-21 at 13:36 -0400, Konrad Rzeszutek Wilk wrote:
-> From: Adnan Misherfi <adnan.misherfi@oracle.com>
+On 05/21/2012 11:47 AM, richard -rw- weinberger wrote:
+> On Mon, May 21, 2012 at 8:21 PM, Eric Paris <netdev@parisplace.org> wrote:
+>> Is that what we want?  Do we want to do the permission check based on
+>> what a process ask at syscall enter or do we want to do the permission
+>> check based on what the kernel is actually going to do on behalf of
+>> the process?
 > 
-> A programming error cause the calculation of receive SKB slots to be
-> wrong, which caused the RX ring to be erroneously declared full,
-> and the receive queue to be stopped. The problem shows up when two
-> guest running on the same server tries to communicates using large
-> MTUs. Each guest is connected to a bridge with VLAN over bond
-> interface, so traffic from one guest leaves the server on one bridge
-> and comes back to the second guest on the second bridge. This can be
-> reproduces using ping, and one guest as follow:
+> I think we want the latter.
+> A system call emulator like UserModeLinux would benefit from that.
 > 
-> - Create active-back bond (bond0)
-> - Set up VLAN 5 on bond0 (bond0.5)
-> - Create a bridge (br1)
-> - Add bond0.5 to a bridge (br1)
-> - Start a guest and connect it to br1
-> - Set MTU of 9000 across the link
-> 
-> Ping the guest from an external host using packet sizes of 3991, and
-> 4054; ping -s 3991 -c 128 "Guest-IP-Address"
-> 
-> At the beginning ping works fine, but after a while ping packets do
-> not reach the guest because the RX ring becomes full, and the queue
-> get stopped. Once the problem accrued, the only way to get out of it
-> is to reboot the guest, or use xm network-detach/network-attach.
-> 
-> ping works for packets sizes 3990,3992, and many other sizes including
-> 4000,5000,9000, and 1500 ..etc. MTU size of 3991,4054 are the sizes
-> that quickly reproduce this problem.
-> 
-> Signed-off-by: Adnan Misherfi <adnan.misherfi@oracle.com>
-> Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-> ---
->  drivers/net/xen-netback/netback.c |    2 +-
->  1 files changed, 1 insertions(+), 1 deletions(-)
-> 
-> diff --git a/drivers/net/xen-netback/netback.c b/drivers/net/xen-netback/netback.c
-> index 957cf9d..e382e5b 100644
-> --- a/drivers/net/xen-netback/netback.c
-> +++ b/drivers/net/xen-netback/netback.c
-> @@ -212,7 +212,7 @@ unsigned int xenvif_count_skb_slots(struct xenvif *vif, struct sk_buff *skb)
 
-The function name is xen_netbk_count_skb_slots() in net-next.  This
-appears to depend on the series in
-<http://lists.xen.org/archives/html/xen-devel/2012-01/msg00982.html>.
+Are you sure?  This would mean that a seccomp program used by the
+process to intercept its own system calls via SIGSYS would give
+completely different results under UML than under native...
 
->  	int i, copy_off;
->  
->  	count = DIV_ROUND_UP(
-> -			offset_in_page(skb->data)+skb_headlen(skb), PAGE_SIZE);
-> +			offset_in_page(skb->data + skb_headlen(skb)), PAGE_SIZE);
-
-The new version would be equivalent to:
-	count = offset_in_page(skb->data + skb_headlen(skb)) != 0;
-which is not right, as netbk_gop_skb() will use one slot per page.
-
-The real problem is likely that you're not using the same condition to
-stop and wake the queue.  Though it appears you're also missing an
-smp_mb() at the top of xenvif_notify_tx_completion().
-
-Ben.
-
->  	copy_off = skb_headlen(skb) % PAGE_SIZE;
->  
-
--- 
-Ben Hutchings, Staff Engineer, Solarflare
-Not speaking for my employer; that's the marketing department's job.
-They asked us to note that Solarflare product names are trademarked.
+	-hpa
 
