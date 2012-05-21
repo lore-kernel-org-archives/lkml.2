@@ -1,52 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757467Ab2EUXNs (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 May 2012 19:13:48 -0400
-Received: from nat.nue.novell.com ([195.135.221.2]:15529 "EHLO
-	nat.nue.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751109Ab2EUXNr (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 May 2012 19:13:47 -0400
-Message-ID: <4FBACC24.9080603@suse.com>
-Date: Mon, 21 May 2012 16:13:40 -0700
-From: Lee Duncan <lduncan@suse.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120421 Thunderbird/12.0
+	id S1757972Ab2EUXOT (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 May 2012 19:14:19 -0400
+Received: from mga01.intel.com ([192.55.52.88]:47624 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754397Ab2EUXOR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 21 May 2012 19:14:17 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
+   d="scan'208";a="169403981"
+From: Andi Kleen <andi@firstfloor.org>
+To: mingo@kernel.org
+Cc: hpa@zytor.com, linux-kernel@vger.kernel.org, a.p.zijlstra@chello.nl,
+        torvalds@linux-foundation.org, pjt@google.com, cl@linux.com,
+        riel@redhat.com, bharata.rao@gmail.com, akpm@linux-foundation.org,
+        Lee.Schermerhorn@hp.com, aarcange@redhat.com, danms@us.ibm.com,
+        suresh.b.siddha@intel.com, tglx@linutronix.de,
+        linux-tip-commits@vger.kernel.org
+Subject: Re: [tip:sched/numa] mm/mpol: Lazy migrate a process/vma
+References: <tip-pdhg3wh71m4eu8xerantpvln@git.kernel.org>
+Date: Mon, 21 May 2012 16:14:15 -0700
+In-Reply-To: <tip-pdhg3wh71m4eu8xerantpvln@git.kernel.org> (tip-bot for Peter
+	Zijlstra's message of "Fri, 18 May 2012 03:33:08 -0700")
+Message-ID: <m2r4ud86uw.fsf@firstfloor.org>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.3 (gnu/linux)
 MIME-Version: 1.0
-To: linux-scsi@vger.kernel.org
-CC: linux-kernel@vger.kernel.org, kai.makisara@kolumbus.fi, jeffm@suse.com
-Subject: [PATCH v3 0/5] st: increase maximum number of tapes beyond 128
-X-Enigmail-Version: 1.4.1
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch set increases the maximum number of tape drives.  The device
-limit of 128 tape drives was established in 2003 as a significant increase
-from the 8 tape drives allowed previously.
+tip-bot for Peter Zijlstra <a.p.zijlstra@chello.nl> writes:
+> +
+> +	/*
+> +	 * Obtain a more-or-less correct nodemask to find which pages we need
+> +	 * to unmap so that MoF can put them right again.
+> +	 *
+> +	 * Not quite correct for INTERLEAVE, that would need us doing
+> +	 * offset_il_node() from check_pte_entry().
+> +	 *
+> +	 * Also not quite correct for task policies since we don't have a task,
+> +	 * approximate by having @node function as local / task-home-node.
 
-We have seen many Linux sites that, between a large number of tape drives
-and multipathing, are discovering more than 128 devices and are running
-into problems.
+Hmm, so this destroys existing numa policies for already running processes?
 
-This patch set cleans up some st code that made increasing the number
-of drives costly, then actually increases the maximum number from 128
-to 2^17 devices (based on the current code).
+Andrea's original THP had a similar problem, and it caused serious
+performance problems before it was fixed.
 
-This patch set is based off of the scsi git tree.
+I also seem to miss the benchmark numbers justifying all that code.
 
-Jeff Mahoney (5):
-  st: Use static class attributes
-  st: clean up dev cleanup in st_probe
-  st: get rid of scsi_tapes array
-  st: clean up device file creation and removal
-  st: raise device limit
-
- drivers/scsi/st.c |  404 ++++++++++++++++++++++-------------------------------
- drivers/scsi/st.h |    4 +-
- 2 files changed, 169 insertions(+), 239 deletions(-)
+-Andi
 
 -- 
-1.7.9.2
-
+ak@linux.intel.com -- Speaking for myself only
