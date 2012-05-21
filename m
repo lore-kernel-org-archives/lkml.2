@@ -1,47 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759300Ab2EUR6l (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 May 2012 13:58:41 -0400
-Received: from acsinet15.oracle.com ([141.146.126.227]:40426 "EHLO
-	acsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932688Ab2EUR6R (ORCPT
+	id S932808Ab2EUR7q (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 May 2012 13:59:46 -0400
+Received: from rcsinet15.oracle.com ([148.87.113.117]:38899 "EHLO
+	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759351Ab2EURnN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 May 2012 13:58:17 -0400
-Date: Mon, 21 May 2012 13:51:42 -0400
+	Mon, 21 May 2012 13:43:13 -0400
 From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-To: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-Cc: "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] xen: do not map the same GSI twice
-Message-ID: <20120521175142.GA13990@phenom.dumpdata.com>
-References: <1337615650-27911-1-git-send-email-stefano.stabellini@eu.citrix.com>
- <20120521172703.GA9988@phenom.dumpdata.com>
- <alpine.DEB.2.00.1205211846510.26786@kaball-desktop>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.DEB.2.00.1205211846510.26786@kaball-desktop>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
+To: xen-devel@lists.xensource.com, ian.campbell@citrix.com,
+        netdev@vger.kernel.org, davem@davemloft.net,
+        linux-kernel@vger.kernel.org
+Cc: Adnan Misherfi <adnan.misherfi@oracle.com>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Subject: [PATCH] xen/netback: calculate correctly the SKB slots.
+Date: Mon, 21 May 2012 13:36:33 -0400
+Message-Id: <1337621793-12486-1-git-send-email-konrad.wilk@oracle.com>
+X-Mailer: git-send-email 1.7.7.5
+X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, May 21, 2012 at 06:47:44PM +0100, Stefano Stabellini wrote:
-> On Mon, 21 May 2012, Konrad Rzeszutek Wilk wrote:
-> > On Mon, May 21, 2012 at 04:54:10PM +0100, Stefano Stabellini wrote:
-> > > PV on HVM guests map GSIs into event channels; at restore time the
-> > > event channels are resumed by restore_pirqs.
-> > > Device drivers might try to register the same GSI again through ACPI at
-> > > restore time, but the GSI has already been mapped and bound by
-> > > restore_pirqs.
-> > 
-> > Which means... what kind of error do we get without this patch?
-> 
-> Xen would print:
-> 
-> (XEN) irq.c:2235: dom4: pirq 23 or emuirq 28 already mapped
-> 
-> and waste a pirq
+From: Adnan Misherfi <adnan.misherfi@oracle.com>
 
-OK. This sounds like it has been a bug since ..oh forever then?
+A programming error cause the calculation of receive SKB slots to be
+wrong, which caused the RX ring to be erroneously declared full,
+and the receive queue to be stopped. The problem shows up when two
+guest running on the same server tries to communicates using large
+MTUs. Each guest is connected to a bridge with VLAN over bond
+interface, so traffic from one guest leaves the server on one bridge
+and comes back to the second guest on the second bridge. This can be
+reproduces using ping, and one guest as follow:
+
+- Create active-back bond (bond0)
+- Set up VLAN 5 on bond0 (bond0.5)
+- Create a bridge (br1)
+- Add bond0.5 to a bridge (br1)
+- Start a guest and connect it to br1
+- Set MTU of 9000 across the link
+
+Ping the guest from an external host using packet sizes of 3991, and
+4054; ping -s 3991 -c 128 "Guest-IP-Address"
+
+At the beginning ping works fine, but after a while ping packets do
+not reach the guest because the RX ring becomes full, and the queue
+get stopped. Once the problem accrued, the only way to get out of it
+is to reboot the guest, or use xm network-detach/network-attach.
+
+ping works for packets sizes 3990,3992, and many other sizes including
+4000,5000,9000, and 1500 ..etc. MTU size of 3991,4054 are the sizes
+that quickly reproduce this problem.
+
+Signed-off-by: Adnan Misherfi <adnan.misherfi@oracle.com>
+Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+---
+ drivers/net/xen-netback/netback.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
+
+diff --git a/drivers/net/xen-netback/netback.c b/drivers/net/xen-netback/netback.c
+index 957cf9d..e382e5b 100644
+--- a/drivers/net/xen-netback/netback.c
++++ b/drivers/net/xen-netback/netback.c
+@@ -212,7 +212,7 @@ unsigned int xenvif_count_skb_slots(struct xenvif *vif, struct sk_buff *skb)
+ 	int i, copy_off;
+ 
+ 	count = DIV_ROUND_UP(
+-			offset_in_page(skb->data)+skb_headlen(skb), PAGE_SIZE);
++			offset_in_page(skb->data + skb_headlen(skb)), PAGE_SIZE);
+ 
+ 	copy_off = skb_headlen(skb) % PAGE_SIZE;
+ 
+-- 
+1.7.7.5
+
