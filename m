@@ -1,51 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756891Ab2EUNwr (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 May 2012 09:52:47 -0400
-Received: from mail-lpp01m010-f46.google.com ([209.85.215.46]:45689 "EHLO
-	mail-lpp01m010-f46.google.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755863Ab2EUNwq convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 May 2012 09:52:46 -0400
+	id S1757122Ab2EUNyb (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 May 2012 09:54:31 -0400
+Received: from orion.tchmachines.com ([208.76.84.200]:53953 "EHLO
+	orion.tchmachines.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755863Ab2EUNya (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 21 May 2012 09:54:30 -0400
+From: Vlad Zolotarov <vlad@scalemp.com>
+To: Ingo Molnar <mingo@kernel.org>
+Cc: "Shai Fultheim (Shai@ScaleMP.com)" <Shai@scalemp.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
+        Ido Yariv <ido@wizery.com>
+Subject: Re: [PATCH v3 0/2] Move x86_cpu_to_apicid to the __read_mostly section
+Date: Mon, 21 May 2012 16:54:25 +0300
+Message-ID: <1693911.sUneyHzERA@vlad>
+Organization: ScaleMP Ltd.
+User-Agent: KMail/4.8.2 (Linux/3.2.0-24-generic; KDE/4.8.2; i686; ; )
+In-Reply-To: <20120521123246.GB17065@gmail.com>
+References: <1337527148.6093.14.camel@vlad> <9B14D1490DDECA4E974F6B9FC9EBAB317D295F4D11@VMBX108.ihostexchange.net> <20120521123246.GB17065@gmail.com>
 MIME-Version: 1.0
-In-Reply-To: <20120521130451.GK2313@8bytes.org>
-References: <20120518231238.31187.44571.stgit@bhelgaas.mtv.corp.google.com>
- <20120518231832.31187.10630.stgit@bhelgaas.mtv.corp.google.com> <20120521130451.GK2313@8bytes.org>
-From: Bjorn Helgaas <bhelgaas@google.com>
-Date: Mon, 21 May 2012 07:52:24 -0600
-Message-ID: <CAErSpo582Ok9arr+3krKTQdue4i3wQOixVkBbheDX6a3v8xMHw@mail.gmail.com>
-Subject: Re: [PATCH 1/2] resources: set type of new resource returned by __request_region()
-To: Joerg Roedel <joro@8bytes.org>
-Cc: David Woodhouse <dwmw2@infradead.org>, linux-kernel@vger.kernel.org,
-        iommu@lists.linux-foundation.org, Ingo Molnar <mingo@elte.hu>,
-        Suresh Siddha <suresh.b.siddha@intel.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
-X-System-Of-Record: true
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
+X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
+X-AntiAbuse: Primary Hostname - orion.tchmachines.com
+X-AntiAbuse: Original Domain - vger.kernel.org
+X-AntiAbuse: Originator/Caller UID/GID - [47 12] / [47 12]
+X-AntiAbuse: Sender Address Domain - scalemp.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, May 21, 2012 at 7:04 AM, Joerg Roedel <joro@8bytes.org> wrote:
-> On Fri, May 18, 2012 at 05:18:32PM -0600, Bjorn Helgaas wrote:
->> Previously we returned a new struct resource with only IORESOURCE_BUSY
->> set (and possibly IORESOURCE_MUXED or IORESOURCE_EXCLUSIVE), but no
->> MEM/IO/etc. bits set.  The new resource should inherit the type of
->> its parent.
->
-> Should it? What about IORESOURCE_WINDOW for example? Any particular
-> reason for this change to the interface of the __request_region()
-> function?
+On Monday, May 21, 2012 02:32:46 PM Ingo Molnar wrote:
+> * Shai Fultheim (Shai@ScaleMP.com) <Shai@ScaleMP.com> wrote:
+> > Ingo,
+> > 
+> > The reason for this, as you pointed out, is the 'cache line'
+> > size (4096 bytes).  We see significant false sharing is we do
+> > not move this next to each other.
+> 
+> Which write-often variable caused the many cache flushes/fills?
+> cpu_to_apicid is read mostly.
+> 
+> I.e. it might make more sense to identify the frequenty
+> *modified* percpu variables, and move them to a separate
+> section. I *think* most percpu variables are read mostly, so it
+> would be more maintainable in the long run to figure out the
+> frequently modified ones, not the frequently not modified ones.
 
-Yes, I should have explained the connection :)  The next patch prints
-the resource returned from request_mem_region().  Without this
-__request_region() patch, that resource has no type, so %pR can't
-print it correctly.
+I tend to disagree about the general claim that most per-CPU variables are 
+read-mostly: consider the per-CPU data structures used in lock-less algorithms 
+like softnet_data used in a NAPI. I'm not sure what is a more common - read-
+only or not-read-only per-cpu data, but surely there are both...
 
-Good question about IORESOURCE_WINDOW.  Maybe it should inherit only
-the IORESOURCE_TYPE_BITS part (IO/MEM/IRQ/DMA/BUS).  But it seemed
-like it should also inherit PREFETCH, READONLY, CACHEABLE, etc.  Maybe
-we should inherit everything but clear IORESOURCE_WINDOW?  I'm open to
-suggestions here.
+In this specific patch we deal with something that is initialized once in the 
+init time and then used as if it's a constant thus representing a clear 
+"__read_mostly" case. 
 
-Bjorn
+Having said all that I think that the proposed solution, the one using 
+__read_mostly infrastructure, is just ok both in a long run. I also doubt that 
+we are currently facing a need to define an additional "frequently modified" 
+section.
+
+Pls., comment.
+
+thanks,
+vlad
+
+> 
+> Thanks,
+> 
+> 	Ingo
