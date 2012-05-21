@@ -1,175 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932189Ab2EUI6n (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 May 2012 04:58:43 -0400
-Received: from eu1sys200aog101.obsmtp.com ([207.126.144.111]:54507 "EHLO
-	eu1sys200aog101.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755532Ab2EUI6l (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 May 2012 04:58:41 -0400
-From: Arun Murthy <arun.murthy@stericsson.com>
-To: <sameo@linux.intel.com>, <linux-kernel@vger.kernel.org>
-Cc: <linus.walleij@stericsson.com>, <arun.murthy@stericsson.com>
-Subject: [PATCH 1/1] mfd: db8500-prcmu: update hostport_access enable
-Date: Mon, 21 May 2012 14:28:21 +0530
-Message-ID: <1337590701-17056-1-git-send-email-arun.murthy@stericsson.com>
-X-Mailer: git-send-email 1.7.4.3
+	id S932222Ab2EUI6r (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 May 2012 04:58:47 -0400
+Received: from mga03.intel.com ([143.182.124.21]:29672 "EHLO mga03.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755532Ab2EUI6o (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 21 May 2012 04:58:44 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
+   d="scan'208";a="102317487"
+Date: Mon, 21 May 2012 11:08:44 +0200
+From: Samuel Ortiz <sameo@linux.intel.com>
+To: Johan Hovold <jhovold@gmail.com>
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/2] mfd: Add r_select to lm3533 platform data
+Message-ID: <20120521090844.GA12015@sortiz-mobl>
+References: <1337365366-14385-1-git-send-email-jhovold@gmail.com>
+ <20120520131337.GU12015@sortiz-mobl>
+ <20120521084539.GB21033@localhost>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120521084539.GB21033@localhost>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Force the Modem wakeup by asserting the CaWakeReq signal before the
-hostaccess_req/ack ping-pong sequence. The Awake_req signal is de-asserted
-asserted at the same time than the hostaccess_req. Return error on failure
-case so that the client using this can take appropiate steps.
+Hi Johan,
 
-Signed-off-by: Arun Murthy <arun.murthy@stericsson.com>
-Acked-by: Linus Walleij <linus.walleij@stericsson.com>
----
- drivers/mfd/db8500-prcmu.c       |   45 ++++++++++++++++----------------------
- drivers/mfd/dbx500-prcmu-regs.h  |    1 +
- include/linux/mfd/db8500-prcmu.h |    7 ++++-
- include/linux/mfd/dbx500-prcmu.h |    7 ++++-
- 4 files changed, 30 insertions(+), 30 deletions(-)
+On Mon, May 21, 2012 at 10:45:39AM +0200, Johan Hovold wrote:
+> On Sun, May 20, 2012 at 03:13:37PM +0200, Samuel Ortiz wrote:
+> > Hi Johan,
+> > 
+> > On Fri, May 18, 2012 at 08:22:45PM +0200, Johan Hovold wrote:
+> > > Add resistor-select parameter to the platform data.
+> > > 
+> > > Signed-off-by: Johan Hovold <jhovold@gmail.com>
+> > > ---
+> > > 
+> > > Hi Samuel, 
+> > > 
+> > > I believe this one needs to go in through mfd as the iio driver
+> > > destined for staging-next depends on it.
+> > It should go along with the iio driver if there is a build dependency.
+> > No doing so will prevent the tree from being bisectable.
+> 
+> The sub-drivers already depend on mfd to build as this is where the
+> header file resides. 
+I haven't looked at it, but if the iio driver Kconfig entry depends on
+MFD_LM3533, then I can take this change in as no one will be able to build
+your iio driver until the MFD driver is merged.
+Is that the case ?
 
-diff --git a/drivers/mfd/db8500-prcmu.c b/drivers/mfd/db8500-prcmu.c
-index 671c8bc..084d27c 100644
---- a/drivers/mfd/db8500-prcmu.c
-+++ b/drivers/mfd/db8500-prcmu.c
-@@ -2269,10 +2269,10 @@ int prcmu_abb_write(u8 slave, u8 reg, u8 *value, u8 size)
- /**
-  * prcmu_ac_wake_req - should be called whenever ARM wants to wakeup Modem
-  */
--void prcmu_ac_wake_req(void)
-+int prcmu_ac_wake_req(void)
- {
- 	u32 val;
--	u32 status;
-+	int ret = 0;
- 
- 	mutex_lock(&mb0_transfer.ac_wake_lock);
- 
-@@ -2282,39 +2282,32 @@ void prcmu_ac_wake_req(void)
- 
- 	atomic_set(&ac_wake_req_state, 1);
- 
--retry:
--	writel((val | PRCM_HOSTACCESS_REQ_HOSTACCESS_REQ), PRCM_HOSTACCESS_REQ);
-+	/*
-+	 * Force Modem Wake-up before hostaccess_req ping-pong.
-+	 * It prevents Modem to enter in Sleep while acking the hostaccess
-+	 * request. The 31us delay has been calculated by HWI.
-+	 */
-+	val |= PRCM_HOSTACCESS_REQ_WAKE_REQ;
-+	writel(val, PRCM_HOSTACCESS_REQ);
-+
-+	udelay(31);
-+
-+	val |= PRCM_HOSTACCESS_REQ_HOSTACCESS_REQ;
-+	writel(val, PRCM_HOSTACCESS_REQ);
- 
- 	if (!wait_for_completion_timeout(&mb0_transfer.ac_wake_work,
- 			msecs_to_jiffies(5000))) {
-+#if defined(CONFIG_DBX500_PRCMU_DEBUG)
-+		db8500_prcmu_debug_dump(__func__, true, true);
-+#endif
- 		pr_crit("prcmu: %s timed out (5 s) waiting for a reply.\n",
- 			__func__);
--		goto unlock_and_return;
--	}
--
--	/*
--	 * The modem can generate an AC_WAKE_ACK, and then still go to sleep.
--	 * As a workaround, we wait, and then check that the modem is indeed
--	 * awake (in terms of the value of the PRCM_MOD_AWAKE_STATUS
--	 * register, which may not be the whole truth).
--	 */
--	udelay(400);
--	status = (readl(PRCM_MOD_AWAKE_STATUS) & BITS(0, 2));
--	if (status != (PRCM_MOD_AWAKE_STATUS_PRCM_MOD_AAPD_AWAKE |
--			PRCM_MOD_AWAKE_STATUS_PRCM_MOD_COREPD_AWAKE)) {
--		pr_err("prcmu: %s received ack, but modem not awake (0x%X).\n",
--			__func__, status);
--		udelay(1200);
--		writel(val, PRCM_HOSTACCESS_REQ);
--		if (wait_for_completion_timeout(&mb0_transfer.ac_wake_work,
--				msecs_to_jiffies(5000)))
--			goto retry;
--		pr_crit("prcmu: %s timed out (5 s) waiting for AC_SLEEP_ACK.\n",
--			__func__);
-+		ret = -EFAULT;
- 	}
- 
- unlock_and_return:
- 	mutex_unlock(&mb0_transfer.ac_wake_lock);
-+	return ret;
- }
- 
- /**
-diff --git a/drivers/mfd/dbx500-prcmu-regs.h b/drivers/mfd/dbx500-prcmu-regs.h
-index 3a0bf91..23108a6 100644
---- a/drivers/mfd/dbx500-prcmu-regs.h
-+++ b/drivers/mfd/dbx500-prcmu-regs.h
-@@ -106,6 +106,7 @@
- 
- #define PRCM_HOSTACCESS_REQ	(_PRCMU_BASE + 0x334)
- #define PRCM_HOSTACCESS_REQ_HOSTACCESS_REQ 0x1
-+#define PRCM_HOSTACCESS_REQ_WAKE_REQ	BIT(16)
- #define ARM_WAKEUP_MODEM	0x1
- 
- #define PRCM_ARM_IT1_CLR	(_PRCMU_BASE + 0x48C)
-diff --git a/include/linux/mfd/db8500-prcmu.h b/include/linux/mfd/db8500-prcmu.h
-index b3a43b1..b82f6ee 100644
---- a/include/linux/mfd/db8500-prcmu.h
-+++ b/include/linux/mfd/db8500-prcmu.h
-@@ -530,7 +530,7 @@ int db8500_prcmu_stop_temp_sense(void);
- int prcmu_abb_read(u8 slave, u8 reg, u8 *value, u8 size);
- int prcmu_abb_write(u8 slave, u8 reg, u8 *value, u8 size);
- 
--void prcmu_ac_wake_req(void);
-+int prcmu_ac_wake_req(void);
- void prcmu_ac_sleep_req(void);
- void db8500_prcmu_modem_reset(void);
- 
-@@ -680,7 +680,10 @@ static inline int prcmu_abb_write(u8 slave, u8 reg, u8 *value, u8 size)
- 	return -ENOSYS;
- }
- 
--static inline void prcmu_ac_wake_req(void) {}
-+static inline int prcmu_ac_wake_req(void)
-+{
-+	return 0;
-+}
- 
- static inline void prcmu_ac_sleep_req(void) {}
- 
-diff --git a/include/linux/mfd/dbx500-prcmu.h b/include/linux/mfd/dbx500-prcmu.h
-index 5a13f93..5b90e94 100644
---- a/include/linux/mfd/dbx500-prcmu.h
-+++ b/include/linux/mfd/dbx500-prcmu.h
-@@ -345,7 +345,7 @@ static inline u16 prcmu_get_reset_code(void)
- 	return db8500_prcmu_get_reset_code();
- }
- 
--void prcmu_ac_wake_req(void);
-+int prcmu_ac_wake_req(void);
- void prcmu_ac_sleep_req(void);
- static inline void prcmu_modem_reset(void)
- {
-@@ -533,7 +533,10 @@ static inline u16 prcmu_get_reset_code(void)
- 	return 0;
- }
- 
--static inline void prcmu_ac_wake_req(void) {}
-+static inline int prcmu_ac_wake_req(void)
-+{
-+	return 0;
-+}
- 
- static inline void prcmu_ac_sleep_req(void) {}
- 
+Cheers,
+Samuel.
+
 -- 
-1.7.4.3
-
+Intel Open Source Technology Centre
+http://oss.intel.com/
