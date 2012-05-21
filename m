@@ -1,75 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755541Ab2EUMxT (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 May 2012 08:53:19 -0400
-Received: from mail-yx0-f174.google.com ([209.85.213.174]:43761 "EHLO
-	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753118Ab2EUMxS convert rfc822-to-8bit (ORCPT
+	id S1755562Ab2EUMzu (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 May 2012 08:55:50 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:59258 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753781Ab2EUMzt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 May 2012 08:53:18 -0400
-MIME-Version: 1.0
-In-Reply-To: <CAFub=KS1_Bj=b2OVTf33VHtQ7BKY2k3Wd1oGwmVVJNgbexZ=6w@mail.gmail.com>
-References: <CAFub=KS1_Bj=b2OVTf33VHtQ7BKY2k3Wd1oGwmVVJNgbexZ=6w@mail.gmail.com>
-From: "Luis R. Rodriguez" <mcgrof@frijolero.org>
-Date: Mon, 21 May 2012 05:52:55 -0700
-X-Google-Sender-Auth: INKAz3Ye16ffQAHIo0_IzdNYoSA
-Message-ID: <CAB=NE6VFghHT6zvGfW+9-Vsik39A_4Df=U3J1OtFFpM8LKDzvw@mail.gmail.com>
-Subject: Re: [Lf_driver_backport] scripts in compat tree
-To: =?UTF-8?B?T3phbiDDh2HEn2xheWFu?= <ozancag@gmail.com>,
-        linux-kernel@vger.kernel.org, Andy Whitcroft <apw@canonical.com>
-Cc: lf_driver_backport@lists.linux-foundation.org,
-        linux-wireless@vger.kernel.org, linux-bluetooth@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+	Mon, 21 May 2012 08:55:49 -0400
+Message-ID: <1337604940.11739.1.camel@phoenix>
+Subject: [PATCH] regulator: palmas: Fix wrong kfree calls
+From: Axel Lin <axel.lin@gmail.com>
+To: linux-kernel@vger.kernel.org
+Cc: Graeme Gregory <gg@slimlogic.co.uk>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Liam Girdwood <lrg@ti.com>
+Date: Mon, 21 May 2012 20:55:40 +0800
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.2- 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, May 21, 2012 at 5:32 AM, Ozan Çağlayan <ozancag@gmail.com> wrote:
-> Hi,
->
-> I will be working on the GSoC project to prepare compat graphics drivers.
->
-> Looking at the scripts (ckmake and get-compat-kernels) in the compat tree, I
-> see that they are only handling Ubuntu systems. First of all, should they
-> really be distro-aware?
+The devm_kzalloc function eliminates the need for manual resource releasing
+and simplify error handling. Resources allocated by devm_* are freed
+automatically on driver detach.
 
-When I wrote this I posted the patch to lkml [0] for wider review and
-naturally I got the same reaction from folks. I wrote it originally
-with the goal to do something distro-agnostic and in fact it is, its
-just that I haven't figured out a quick way to make this work across
-the board.
+Thus adding kfree calls here will introduce double free bug.
 
-[0] https://lkml.org/lkml/2012/2/7/501
+The memory of desc array and the pointers to the rdev[] are allocated by
+devm_kzalloc call for struct palmas_pmic.
 
-More below.
+struct palmas_pmic {
+        struct palmas *palmas;
+        struct device *dev;
+        struct regulator_desc desc[PALMAS_NUM_REGS];
+        struct regulator_dev *rdev[PALMAS_NUM_REGS];
+        struct mutex mutex;
 
-> Why not to download the tarballs from kernel.org?
-> Isn't it a more generic approach?
+        int smps123;
+        int smps457;
 
-Well kernel.org does not have already built kernels. Ubuntu's PPA
-kernels *are* vanilla kernels, in fact that is why they were put up,
-they are guaranteed to be built on vanilla kernels. We couldn't get a
-more generic approach then. The only thing though is -- the PPA
-kernels obviously have the kernels integrated on .debs. There are a
-few options here:
+        int range[PALMAS_REG_SMPS10];
+};
 
-  1) If Ubuntu can dpkg -x the kernels for us onto tarballs that'd be swell
-  2) We could write our own script to do this with C code that does
-the dpkg -x for us
+Which means we should not call kfree for pmic->rdev and pmic->desc.
 
-There are ways to do 2) suggested in the thread above.
+Signed-off-by: Axel Lin <axel.lin@gmail.com>
+---
+ drivers/regulator/palmas-regulator.c |    7 -------
+ 1 files changed, 0 insertions(+), 7 deletions(-)
 
-> If this makes sense, I'd like to extend those scripts to handle vanilla
-> kernels with a cmdline switch which won't care at all about lsb_release. I
-> will hardcode end-of-life products and parse kernel.org to dynamically
-> detect new versions, download and extract them under /lib/modules if they
-> don't exist in there, etc.
+diff --git a/drivers/regulator/palmas-regulator.c b/drivers/regulator/palmas-regulator.c
+index c4435f6..9b7ca90 100644
+--- a/drivers/regulator/palmas-regulator.c
++++ b/drivers/regulator/palmas-regulator.c
+@@ -775,9 +775,6 @@ static __devinit int palmas_probe(struct platform_device *pdev)
+ err_unregister_regulator:
+ 	while (--id >= 0)
+ 		regulator_unregister(pmic->rdev[id]);
+-	kfree(pmic->rdev);
+-	kfree(pmic->desc);
+-	kfree(pmic);
+ 	return ret;
+ }
+ 
+@@ -788,10 +785,6 @@ static int __devexit palmas_remove(struct platform_device *pdev)
+ 
+ 	for (id = 0; id < PALMAS_NUM_REGS; id++)
+ 		regulator_unregister(pmic->rdev[id]);
+-
+-	kfree(pmic->rdev);
+-	kfree(pmic->desc);
+-	kfree(pmic);
+ 	return 0;
+ }
+ 
+-- 
+1.7.5.4
 
-That'd be amazing!
 
-> I'm waiting for your feedback :)
 
-Thanks!
-
-  Luis
