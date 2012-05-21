@@ -1,43 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758555Ab2EUTj7 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 May 2012 15:39:59 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:54320 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756244Ab2EUTj6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 May 2012 15:39:58 -0400
-From: Hans de Goede <hdegoede@redhat.com>
-To: Jiri Kosina <jkosina@suse.cz>
-Cc: linux-kernel@vger.kernel.org, Hans de Goede <hdegoede@redhat.com>
-Subject: [PATCH] usb-hid-core: Set intfdata to NULL if probe fails
-Date: Mon, 21 May 2012 21:39:36 +0200
-Message-Id: <1337629176-1624-1-git-send-email-hdegoede@redhat.com>
+	id S1758340Ab2EUTju (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 May 2012 15:39:50 -0400
+Received: from smarthost1.greenhost.nl ([195.190.28.78]:47181 "EHLO
+	smarthost1.greenhost.nl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757320Ab2EUTjo (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 21 May 2012 15:39:44 -0400
+X-Greylist: delayed 1123 seconds by postgrey-1.27 at vger.kernel.org; Mon, 21 May 2012 15:39:44 EDT
+Message-ID: <5d6179f59222155b72d9aa9f171e883c.squirrel@webmail.greenhost.nl>
+In-Reply-To: <CAB=4xho2b5fZV_jC15XW3mhOD9Z0QUMnV_UHy-P5EmQWfX59dA@mail.gmail.com>
+References: <CACLa4puRJLUd6hAHO6zFYiqa5dFVum8eLmNMk_ef+=r8OGhjRg@mail.gmail.com>
+    <CAB=4xho2b5fZV_jC15XW3mhOD9Z0QUMnV_UHy-P5EmQWfX59dA@mail.gmail.com>
+Date: Mon, 21 May 2012 21:20:49 +0200
+Subject: Re: seccomp and ptrace. what is the correct order?
+From: "Indan Zupancic" <indan@nul.nu>
+To: "Roland McGrath" <mcgrathr@google.com>
+Cc: "Eric Paris" <netdev@parisplace.org>, "Will Drewry" <wad@chromium.org>,
+        linux-kernel@vger.kernel.org, linux-security-module@vger.kernel.org,
+        kernel-hardening@lists.openwall.com, hpa@zytor.com, mingo@redhat.com,
+        oleg@redhat.com, peterz@infradead.org, rdunlap@xenotime.net,
+        tglx@linutronix.de, luto@mit.edu, eparis@redhat.com,
+        serge.hallyn@canonical.com, pmoore@redhat.com,
+        akpm@linux-foundation.org, corbet@lwn.net, eric.dumazet@gmail.com,
+        markus@chromium.org, coreyb@linux.vnet.ibm.com, keescook@chromium.org
+User-Agent: SquirrelMail/1.4.22
+MIME-Version: 1.0
+Content-Type: text/plain;charset=UTF-8
+Content-Transfer-Encoding: 8bit
+X-Priority: 3 (Normal)
+Importance: Normal
+X-Spam-Score: 0.0
+X-Scan-Signature: dfea3049d3b923820beb462d65569822
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Having a dangling pointer in intfdata is no good, and may actually bite
-other drivers which rely on frameworks which only call dev_set_drvdata
-on the interface's device if no drvdata has been set (which is how I
-found out that usb-hid-core leaves the dangling pointer in there).
+On Mon, May 21, 2012 20:25, Roland McGrath wrote:
+> From a security perspective I think the natural expectation would be that
+> the seccomp check is on the values that will actually be used, without an
+> intervening opportunity to change anything.
 
-Signed-off-by: Hans de Goede <hdegoede@redhat.com>
----
- drivers/hid/usbhid/hid-core.c |    1 +
- 1 file changed, 1 insertion(+)
+Actually, considering a tracer has full control over a traced process,
+it would make most sense from a security perspective to check both the
+traced task's seccomp filter, as well as the one for the ptracer for
+modified system calls (calls where any register poking at all was done).
+Otherwise a task could bypass its own seccomp filter by ptracing a hapless
+victim.
 
-diff --git a/drivers/hid/usbhid/hid-core.c b/drivers/hid/usbhid/hid-core.c
-index 5bf91db..70d760f 100644
---- a/drivers/hid/usbhid/hid-core.c
-+++ b/drivers/hid/usbhid/hid-core.c
-@@ -1296,6 +1296,7 @@ err_free:
- 	kfree(usbhid);
- err:
- 	hid_destroy_device(hid);
-+	usb_set_intfdata(intf, NULL);
- 	return ret;
- }
- 
--- 
-1.7.10
+I mentioned this before, but I forgot why this option was dismissed.
+Probably because ptrace shouldn't have been allowed by the filter in
+the first place.
+
+The current patch does the seccomp check first and ignores any changes
+made via ptrace, just like the old seccomp did. So in that sense nothing
+changed.
+
+Originally the seccomp filter check was in the fast path, so doing it
+after ptrace was tricky. But now it has been moved to the slow tracehook
+path it can easily be checked after the ptrace notification. That would
+change the behaviour SECCOMP_MODE=1 though, but probably nobody cares,
+as it can be argued that that was a security hole anyway (except if
+ptracing a seccomped task was disallowed, in which case moving it to
+the end doesn't change anything anyway).
+
+Another argument for moving it to the end is that it makes debugging
+seccomped tasks a lot easier, because the debugger sees the denied
+system call. With the current patch the tasks would silently die.
+
+Greetings,
+
+Indan
+
 
