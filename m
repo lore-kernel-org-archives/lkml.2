@@ -1,44 +1,132 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758981Ab2EUSuF (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 May 2012 14:50:05 -0400
-Received: from lxorguk.ukuu.org.uk ([81.2.110.251]:53842 "EHLO
-	lxorguk.ukuu.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750894Ab2EUSuE (ORCPT
+	id S1758997Ab2EUSwG (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 May 2012 14:52:06 -0400
+Received: from smtp.snhosting.dk ([87.238.248.203]:64055 "EHLO
+	smtp.domainteam.dk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753274Ab2EUSwD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 May 2012 14:50:04 -0400
-Date: Mon, 21 May 2012 19:52:55 +0100
-From: Alan Cox <alan@lxorguk.ukuu.org.uk>
-To: ivo.welch@gmail.com
-Cc: ivo.welch@anderson.ucla.edu, linux-kernel@vger.kernel.org
-Subject: Re: the easy way to sandbox?
-Message-ID: <20120521195255.5b54f707@pyramind.ukuu.org.uk>
-In-Reply-To: <CAPr7RtUBDn01qDkxvcLO8ZckAtTmCCJk7hCjwH4_XziwXtAS6Q@mail.gmail.com>
-References: <CAPr7RtUBDn01qDkxvcLO8ZckAtTmCCJk7hCjwH4_XziwXtAS6Q@mail.gmail.com>
-X-Mailer: Claws Mail 3.8.0 (GTK+ 2.24.8; x86_64-redhat-linux-gnu)
-Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Mon, 21 May 2012 14:52:03 -0400
+Date: Mon, 21 May 2012 20:52:02 +0200
+From: Sam Ravnborg <sam@ravnborg.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>,
+        netdev <netdev@vger.kernel.org>,
+        "David S. Miller" <davem@davemloft.net>
+Cc: David Miller <davem@davemloft.net>, akpm@linux-foundation.org,
+        sparclinux@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [PATCH] net: drop NET dependency from HAVE_BPF_JIT
+Message-ID: <20120521185202.GA6486@merkur.ravnborg.org>
+References: <20120521.050300.1434374935904126254.davem@davemloft.net> <CA+55aFzag=LfduvHSmE34nEVYOk=MRhUMzK854+icLwthmz5Ng@mail.gmail.com> <20120521182400.GA6043@merkur.ravnborg.org> <CA+55aFymRE-_1qzCA_n3xYbMseQrZsjJWWX74S3jn5Qyf9Efjw@mail.gmail.com> <CA+55aFy4He9X6wQjATaJukzH1FkyhGqnmC4kb+azKuMmjPGbmg@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CA+55aFy4He9X6wQjATaJukzH1FkyhGqnmC4kb+azKuMmjPGbmg@mail.gmail.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 21 May 2012 09:28:13 -0700
-ivo welch <ivo.welch@anderson.ucla.edu> wrote:
+>From 4976b8fc9fd9f876634d6d73e5b808c762e1352a Mon Sep 17 00:00:00 2001
+From: Sam Ravnborg <sam@ravnborg.org>
+Date: Mon, 21 May 2012 20:45:37 +0200
+Subject: [PATCH] net: drop NET dependency from HAVE_BPF_JIT
 
-> Suggestion:  introduce a system call that eliminates access to all
-> real file systems for the current process.  the only permissible
-> interaction would be stdin, stdout, and stderr.
-> 
-> this would make it very simple to write a sandboxed safe fcgi script.
+There is no point having the NET dependency on the select target,
+as it forces all users to depend on NET to tell they support BPF_JIT.
+Move the config option to the bottom of the file - this
+could be a nice place also for future "selectable" config symbols.
 
-No it wouldn't - because of things like ptrace.
+Fix up all users to drop the dependency on NET now that
+it is not required to supress warnings for non-NET builds.
 
-Sandboxing done right is *hard*. SELinux and the other security setups
-can do it. Containers can do interesting stuff in this space. Probably
-the distros sometimes need to package the tools for it better.
+Reported-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Sam Ravnborg <sam@ravnborg.org>
+---
+Did a few "make ARCH=xxx allnoconfig" and no warning were triggered.
 
-Take a look at some of the cloud service code people have published.
+	Sam
 
-Alan
+ arch/arm/Kconfig     |    2 +-
+ arch/powerpc/Kconfig |    2 +-
+ arch/sparc/Kconfig   |    2 +-
+ arch/x86/Kconfig     |    2 +-
+ net/Kconfig          |    7 ++++---
+ 5 files changed, 8 insertions(+), 7 deletions(-)
+
+diff --git a/arch/arm/Kconfig b/arch/arm/Kconfig
+index 36586db..e19ed3f 100644
+--- a/arch/arm/Kconfig
++++ b/arch/arm/Kconfig
+@@ -33,7 +33,7 @@ config ARM
+ 	select GENERIC_IRQ_SHOW
+ 	select CPU_PM if (SUSPEND || CPU_IDLE)
+ 	select GENERIC_PCI_IOMAP
+-	select HAVE_BPF_JIT if NET
++	select HAVE_BPF_JIT
+ 	help
+ 	  The ARM series is a line of low-power-consumption RISC chip designs
+ 	  licensed by ARM Ltd and targeted at embedded applications and
+diff --git a/arch/powerpc/Kconfig b/arch/powerpc/Kconfig
+index feab3ba..73ec039 100644
+--- a/arch/powerpc/Kconfig
++++ b/arch/powerpc/Kconfig
+@@ -141,7 +141,7 @@ config PPC
+ 	select IRQ_FORCED_THREADING
+ 	select HAVE_RCU_TABLE_FREE if SMP
+ 	select HAVE_SYSCALL_TRACEPOINTS
+-	select HAVE_BPF_JIT if (PPC64 && NET)
++	select HAVE_BPF_JIT if PPC64
+ 	select HAVE_ARCH_JUMP_LABEL
+ 	select ARCH_HAVE_NMI_SAFE_CMPXCHG
+ 
+diff --git a/arch/sparc/Kconfig b/arch/sparc/Kconfig
+index 6c49ed2..d176c03 100644
+--- a/arch/sparc/Kconfig
++++ b/arch/sparc/Kconfig
+@@ -30,7 +30,7 @@ config SPARC
+ 	select USE_GENERIC_SMP_HELPERS if SMP
+ 	select GENERIC_PCI_IOMAP
+ 	select HAVE_NMI_WATCHDOG if SPARC64
+-	select HAVE_BPF_JIT if NET
++	select HAVE_BPF_JIT
+ 
+ config SPARC32
+ 	def_bool !64BIT
+diff --git a/arch/x86/Kconfig b/arch/x86/Kconfig
+index c9866b0..25f87bc 100644
+--- a/arch/x86/Kconfig
++++ b/arch/x86/Kconfig
+@@ -77,7 +77,7 @@ config X86
+ 	select GENERIC_CLOCKEVENTS_MIN_ADJUST
+ 	select IRQ_FORCED_THREADING
+ 	select USE_GENERIC_SMP_HELPERS if SMP
+-	select HAVE_BPF_JIT if (X86_64 && NET)
++	select HAVE_BPF_JIT if X86_64
+ 	select CLKEVT_I8253
+ 	select ARCH_HAVE_NMI_SAFE_CMPXCHG
+ 	select GENERIC_IOMAP
+diff --git a/net/Kconfig b/net/Kconfig
+index 1e47bd0..245831b 100644
+--- a/net/Kconfig
++++ b/net/Kconfig
+@@ -246,9 +246,6 @@ config BQL
+ 	select DQL
+ 	default y
+ 
+-config HAVE_BPF_JIT
+-	bool
+-
+ config BPF_JIT
+ 	bool "enable BPF Just In Time compiler"
+ 	depends on HAVE_BPF_JIT
+@@ -340,3 +337,7 @@ source "net/nfc/Kconfig"
+ 
+ 
+ endif   # if NET
++
++# Used by archs to tell that they support BPF_JIT
++config HAVE_BPF_JIT
++	bool
+-- 
+1.6.0.6
+
