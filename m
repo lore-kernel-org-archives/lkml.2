@@ -1,101 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755609Ab2EUHQa (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 May 2012 03:16:30 -0400
-Received: from mail-wg0-f44.google.com ([74.125.82.44]:64818 "EHLO
-	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753075Ab2EUHQ2 (ORCPT
+	id S1755871Ab2EUHTR (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 May 2012 03:19:17 -0400
+Received: from mail19j.g19.rapidsite.net ([204.202.242.58]:37990 "HELO
+	mail19j.g19.rapidsite.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1751741Ab2EUHTP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 May 2012 03:16:28 -0400
-Date: Mon, 21 May 2012 09:16:22 +0200
-From: Ingo Molnar <mingo@kernel.org>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Vincent Guittot <vincent.guittot@linaro.org>,
-        paulmck@linux.vnet.ibm.com, smuckle@quicinc.com, khilman@ti.com,
-        Robin.Randhawa@arm.com, suresh.b.siddha@intel.com,
-        thebigcorporation@gmail.com, venki@google.com,
-        panto@antoniou-consulting.com, mingo@elte.hu, paul.brett@intel.com,
-        pdeschrijver@nvidia.com, pjt@google.com, efault@gmx.de,
-        fweisbec@gmail.com, geoff@infradead.org, rostedt@goodmis.org,
-        tglx@linutronix.de, amit.kucheria@linaro.org,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        linaro-sched-sig@lists.linaro.org,
-        Morten Rasmussen <Morten.Rasmussen@arm.com>,
-        Juri Lelli <juri.lelli@gmail.com>
-Subject: Re: Plumbers: Tweaking scheduler policy micro-conf RFP
-Message-ID: <20120521071622.GA30748@gmail.com>
-References: <CAKfTPtDSDAOAdv0GTDswZeRM7TmACrjok+5kddSaQpvy6_6xWw@mail.gmail.com>
- <CAKfTPtCfiY7A29+e50F+6awd8BjNJjg4=uNN4ReZfdS_4FbpkA@mail.gmail.com>
- <1337084609.27020.156.camel@laptop>
- <CAKfTPtDz1-fR2i5x7AVd8sGZhX2VNtz2rnQC3ePrcHO9MWK3FQ@mail.gmail.com>
- <1337086834.27020.162.camel@laptop>
- <CAKfTPtDrZ-tfC81jnxwpB+DCtmxhU+VfoYbtSBr8MkFt+P8JcA@mail.gmail.com>
- <1337096141.27694.82.camel@twins>
- <1337193010.27694.146.camel@twins>
- <CA+55aFzuygx6L-2hVCMbk5cvEdDp6AUtOGq-wYFn=4yEyebPLw@mail.gmail.com>
- <1337469731.573.154.camel@twins>
+	Mon, 21 May 2012 03:19:15 -0400
+X-Greylist: delayed 400 seconds by postgrey-1.27 at vger.kernel.org; Mon, 21 May 2012 03:19:15 EDT
+thread-index: Ac03IRjHdAdoCkIwQzuESewrgnnynw==
+Thread-Topic: =?iso-8859-1?Q?SHOCKING_SYSTEM.=28and_one_weird_rule=29_Recommends_Advanc?=
+	=?iso-8859-1?Q?ed_Sports_to_you?=
+From: <ronrajan@yahoo.com>
+To: <linux-kernel@vger.kernel.org>
+Subject: =?iso-8859-1?Q?SHOCKING_SYSTEM.=28and_one_weird_rule=29_Recommends_Advanc?=
+	=?iso-8859-1?Q?ed_Sports_to_you?=
+Date: Mon, 21 May 2012 03:12:35 -0400
+Message-ID: <70953839AB394731A27A5F82CBECBFDD@g19.win.smewh.net>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1337469731.573.154.camel@twins>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain
+Content-Transfer-Encoding: 7bit
+X-Mailer: Microsoft CDO for Windows 2000
+Content-Class: urn:content-classes:message
+Importance: normal
+X-MimeOLE: Produced By Microsoft MimeOLE V6.00.3790.4913
+X-Spam: [F=0.3170731707; S=0.200(2010122901); MH=0.650(2012052102)]
+X-MAIL-FROM: <ronrajan@yahoo.com>
+X-SOURCE-IP: [199.239.254.58]
+X-SF-Loop: 1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+>From         :SHOCKING SYSTEM.(and one weird rule)
+Email        :ronrajan@yahoo.com
+Friend Name  :Friend
+Friend Email :linux-kernel@vger.kernel.org
+comment      :
 
-* Peter Zijlstra <peterz@infradead.org> wrote:
 
-> On Sat, 2012-05-19 at 10:08 -0700, Linus Torvalds wrote:
-> > And I
-> > *do* know that the real world simply isn't simple enough that we could
-> > ever do a perfect job, so don't even try - instead aim for
-> > "understandable, maintainable, and gets the main issues roughly
-> > right". 
-> 
-> I think we're in violent agreement on many points and most of 
-> this is based on a mis-understanding. I've argued for exactly 
-> this many times.
+Hi Friend,
 
-it's these pending commits in tip:sched/core:
+Here's a controversial new system revealing
 
-8e7fbcbc22c1 sched: Remove stale power aware scheduling remnants and dysfunctional knobs
-fac536f7e492 Merge branch 'sched/urgent' into sched/core
-13e099d2f77e sched/debug: Fix printing large integers on 32-bit platforms
-e44bc5c5d00e sched/fair: Improve the ->group_imb logic
-556061b00c9f sched/nohz: Fix rq->cpu_load[] calculations
-870a0bb5d636 sched/numa: Don't scale the imbalance
-04f733b4afac sched/fair: Revert sched-domain iteration breakage
-316ad248307f sched/x86: Rewrite set_cpu_sibling_map()
-dd7d8634e619 sched/numa: Fix the new NUMA topology bits
-cb83b629bae0 sched/numa: Rewrite the CONFIG_NUMA sched domain support
-bd939f45da24 sched/fair: Propagate 'struct lb_env' usage into find_busiest_group
-0ce90475dcdb sched/fair: Add some serialization to the sched_domain load-balance walk
-c22402a2f76e sched/fair: Let minimally loaded cpu balance the group
-c82513e51355 sched: Change rq->nr_running to unsigned int
-ad7687dde878 x86/numa: Check for nonsensical topologies on real hw as well
-0acbb440f063 x86/numa: Hard partition cpu topology masks on node boundaries
-94c0dd3278dd x86/numa: Allow specifying node_distance() for numa=fake
-19209bbb8612 x86/sched: Make mwait_usable() heed to "idle=" kernel parameters properly
-489a71b029cd sched: Update documentation and comments
+affiliate marketing's number one rule...
 
-the result of these commits is:
+=======>  http://bit.ly/LarThw
 
- 24 files changed, 417 insertions(+), 975 deletions(-)
+During this revealing presentation, this crazy
+underground affiliate reveals the BRUTAL TRUTH why
+most beginner marketers DON'T make even one cent
+online.
 
-Most of the linecount win is due to the removal of the 
-dysfunctional power scheduling - but even without that commit 
-it's a simplification:
+Ya, you might say it's a bit controversial...
 
- 15 files changed, 415 insertions(+), 481 deletions(-)
+.BUT if you want to discover the truth about
+driving insane amounts of traffic the way the top
+super affiliates do it, and find out the number
+one rule that's been kept from you all along, then
+you need to check out what this guy has to say:
 
-while it lifts the historic limitations of the sched-domains 
-approach and makes the code a whole lot more logical.
+=======>  http://bit.ly/LarThw
 
-Nevertheless I'll wait for Linus to confirm that he agrees 
-violently as well, before sending these bits ;-)
+This WON'T be available forever so my best advice
+is to go check it out right now.
 
-Thanks,
+Ron Rajan
 
-	Ingo
+P.S. If you've been looking for a STEP BY STEP
+system for getting crazy amounts of laser targeted
+traffic, then you'll certainly want to check this
+out.
+
+Just make sure you pay close attention to the
+weird rule he outlines... it's different than most
+have been suggesting, but it works like crazy:
+
+=======>  http://bit.ly/LarThw
+
+
+
+
+
+
+
+
+
+
+
+
+
