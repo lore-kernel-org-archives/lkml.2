@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752647Ab2EUGAy (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 May 2012 02:00:54 -0400
-Received: from mail-wi0-f172.google.com ([209.85.212.172]:63504 "EHLO
+	id S1753482Ab2EUGCF (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 May 2012 02:02:05 -0400
+Received: from mail-wi0-f172.google.com ([209.85.212.172]:37552 "EHLO
 	mail-wi0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752239Ab2EUGAd (ORCPT
+	with ESMTP id S1750746Ab2EUGCC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 May 2012 02:00:33 -0400
+	Mon, 21 May 2012 02:02:02 -0400
 From: Yong Zhang <yong.zhang0@gmail.com>
 To: linux-mips@linux-mips.org, linux-kernel@vger.kernel.org
 Cc: ralf@linux-mips.org, sshtylyov@mvista.com, david.daney@cavium.com
-Subject: [PATCH 1/8] MIPS: Octeon: delay enable irq to ->smp_finish()
-Date: Mon, 21 May 2012 14:00:01 +0800
-Message-Id: <1337580008-7280-2-git-send-email-yong.zhang0@gmail.com>
+Subject: [PATCH 6/8] MIPS: call set_cpu_online() on the uping cpu with irq disabled
+Date: Mon, 21 May 2012 14:00:06 +0800
+Message-Id: <1337580008-7280-7-git-send-email-yong.zhang0@gmail.com>
 X-Mailer: git-send-email 1.7.5.4
 In-Reply-To: <1337580008-7280-1-git-send-email-yong.zhang0@gmail.com>
 References: <1337580008-7280-1-git-send-email-yong.zhang0@gmail.com>
@@ -22,35 +22,39 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Yong Zhang <yong.zhang@windriver.com>
 
-To prepare for smoothing set_cpu_[active|online]() mess up
+To prevent a problem as commit 5fbd036b [sched: Cleanup cpu_active madness]
+and commit 2baab4e9 [sched: Fix select_fallback_rq() vs cpu_active/cpu_online]
+try to resolve, move set_cpu_online() to the brought up CPU and with irq
+disabled.
 
 Signed-off-by: Yong Zhang <yong.zhang0@gmail.com>
-Cc: Ralf Baechle <ralf@linux-mips.org>
 Acked-by: David Daney <david.daney@cavium.com>
 ---
- arch/mips/cavium-octeon/smp.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+ arch/mips/kernel/smp.c |    4 ++--
+ 1 files changed, 2 insertions(+), 2 deletions(-)
 
-diff --git a/arch/mips/cavium-octeon/smp.c b/arch/mips/cavium-octeon/smp.c
-index 97e7ce9..ef9c34a 100644
---- a/arch/mips/cavium-octeon/smp.c
-+++ b/arch/mips/cavium-octeon/smp.c
-@@ -185,7 +185,6 @@ static void __cpuinit octeon_init_secondary(void)
- 	octeon_init_cvmcount();
+diff --git a/arch/mips/kernel/smp.c b/arch/mips/kernel/smp.c
+index 73a268a..042145f 100644
+--- a/arch/mips/kernel/smp.c
++++ b/arch/mips/kernel/smp.c
+@@ -122,6 +122,8 @@ asmlinkage __cpuinit void start_secondary(void)
  
- 	octeon_irq_setup_secondary();
--	raw_local_irq_enable();
+ 	notify_cpu_starting(cpu);
+ 
++	set_cpu_online(cpu, true);
++
+ 	set_cpu_sibling_map(cpu);
+ 
+ 	cpu_set(cpu, cpu_callin_map);
+@@ -249,8 +251,6 @@ int __cpuinit __cpu_up(unsigned int cpu)
+ 	while (!cpu_isset(cpu, cpu_callin_map))
+ 		udelay(100);
+ 
+-	set_cpu_online(cpu, true);
+-
+ 	return 0;
  }
  
- /**
-@@ -233,6 +232,7 @@ static void octeon_smp_finish(void)
- 
- 	/* to generate the first CPU timer interrupt */
- 	write_c0_compare(read_c0_count() + mips_hpt_frequency / HZ);
-+	local_irq_enable();
- }
- 
- /**
 -- 
 1.7.5.4
 
