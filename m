@@ -1,122 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757047Ab2EUU2c (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 May 2012 16:28:32 -0400
-Received: from e9.ny.us.ibm.com ([32.97.182.139]:60444 "EHLO e9.ny.us.ibm.com"
+	id S1758411Ab2EUU3V (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 May 2012 16:29:21 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:7563 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752680Ab2EUU2a (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 May 2012 16:28:30 -0400
-Subject: [PATCH] hugetlb: fix resv_map leak in error path
-To: cl@linux.com
-Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org, aarcange@redhat.com,
-        kosaki.motohiro@jp.fujitsu.com, hughd@google.com, rientjes@google.com,
-        adobriyan@gmail.com, akpm@linux-foundation.org, mel@csn.ul.ie,
-        Dave Hansen <dave@linux.vnet.ibm.com>
-From: Dave Hansen <dave@linux.vnet.ibm.com>
-Date: Mon, 21 May 2012 13:28:14 -0700
-Message-Id: <20120521202814.E01F0FE1@kernel>
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 12052120-7182-0000-0000-00000190D625
+	id S1753949Ab2EUU3T (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 21 May 2012 16:29:19 -0400
+Date: Mon, 21 May 2012 16:29:04 -0400
+From: Dave Jones <davej@redhat.com>
+To: Christoph Lameter <cl@linux.com>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Linux Kernel <linux-kernel@vger.kernel.org>, linux-mm@kvack.org,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Stephen Wilson <wilsons@start.ca>, Mel Gorman <mgorman@suse.de>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: 3.4-rc7 numa_policy slab poison.
+Message-ID: <20120521202904.GB12123@redhat.com>
+Mail-Followup-To: Dave Jones <davej@redhat.com>,
+	Christoph Lameter <cl@linux.com>,
+	Linus Torvalds <torvalds@linux-foundation.org>,
+	Linux Kernel <linux-kernel@vger.kernel.org>, linux-mm@kvack.org,
+	KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+	Stephen Wilson <wilsons@start.ca>, Mel Gorman <mgorman@suse.de>,
+	Andrew Morton <akpm@linux-foundation.org>
+References: <20120517213120.GA12329@redhat.com>
+ <20120518185851.GA5728@redhat.com>
+ <20120521154709.GA8697@redhat.com>
+ <CA+55aFyqMJ1X08kQwJ7snkYo6MxfVKqFJx7LXBkP_ug4LTCZ=Q@mail.gmail.com>
+ <20120521200118.GA12123@redhat.com>
+ <alpine.DEB.2.00.1205211510480.10940@router.home>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <alpine.DEB.2.00.1205211510480.10940@router.home>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Mon, May 21, 2012 at 03:18:38PM -0500, Christoph Lameter wrote:
+ > On Mon, 21 May 2012, Dave Jones wrote:
+ > 
+ > > On Mon, May 21, 2012 at 12:39:19PM -0700, Linus Torvalds wrote:
+ > >
+ > >  > But there's not a lot of recent stuff. The thing that jumps out is Mel
+ > >  > Gorman's recent commit cc9a6c8776615 ("cpuset: mm: reduce large
+ > >  > amounts of memory barrier related damage v3"), which has a whole new
+ > >  > loop with that scary mpol_cond_put() usage. And there's we had
+ > >  > problems with vma merging..
+ > >  >
+ > >  > Dave, how recent is this problem? Have you already tried older kernels?
+ > >
+ > > I tried bisecting, but couldn't find a 'good' kernel.
+ > > I Went back as far as 3.0, before that I kept running into compile failures.
+ > > Newer gcc/binutils really seems to dislike 2.6.x now.
+ > 
+ > Well binary distro kernels are available that allow easy testing. Will try
+ > with what I got here. I have reproduced it with 3.4 so far.
+ >
+ > Its always an mput on a freed memory policy. Slub recovery keeps my system
+ > up at least. I just get the errors dumped to dmesg.
 
-When called for anonymous (non-shared) mappings,
-hugetlb_reserve_pages() does a resv_map_alloc().  It depends on
-code in hugetlbfs's vm_ops->close() to release that allocation.
-
-However, in the mmap() failure path, we do a plain unmap_region()
-without the remove_vma() which actually calls vm_ops->close().
-
-This is a decent fix.  This leak could get reintroduced if
-new code (say, after hugetlb_reserve_pages() in
-hugetlbfs_file_mmap()) decides to return an error.  But, I think
-it would have to unroll the reservation anyway.
-
-This hasn't been extensively tested.  Pretty much compile and
-boot tested along with Christoph's test case:
-
-	http://marc.info/?l=linux-mm&m=133728900729735
-
-Signed-off-by: Dave Hansen <dave@linux.vnet.ibm.com>
-Acked-by: Mel Gorman <mel@csn.ul.ie>
-ecked-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-Reported/tested-by: Christoph Lameter <cl@linux.com>
-
----
-
- linux-2.6.git-dave/mm/hugetlb.c |   28 ++++++++++++++++++++++------
- 1 file changed, 22 insertions(+), 6 deletions(-)
-
-diff -puN mm/hugetlb.c~hugetlb-fix-leak mm/hugetlb.c
---- linux-2.6.git/mm/hugetlb.c~hugetlb-fix-leak	2012-05-21 13:24:38.369857759 -0700
-+++ linux-2.6.git-dave/mm/hugetlb.c	2012-05-21 13:24:38.377857849 -0700
-@@ -2157,6 +2157,15 @@ static void hugetlb_vm_op_open(struct vm
- 		kref_get(&reservations->refs);
- }
+interesting. after it's happened 1-2 times for me, it seems things get really
+corrupted, and I start seeing spinlock errors, and soft lockup messages, then hard lockup.
  
-+static void resv_map_put(struct vm_area_struct *vma)
-+{
-+	struct resv_map *reservations = vma_resv_map(vma);
-+
-+	if (!reservations)
-+		return;
-+	kref_put(&reservations->refs, resv_map_release);
-+}
-+
- static void hugetlb_vm_op_close(struct vm_area_struct *vma)
- {
- 	struct hstate *h = hstate_vma(vma);
-@@ -2173,7 +2182,7 @@ static void hugetlb_vm_op_close(struct v
- 		reserve = (end - start) -
- 			region_count(&reservations->regions, start, end);
- 
--		kref_put(&reservations->refs, resv_map_release);
-+		resv_map_put(vma);
- 
- 		if (reserve) {
- 			hugetlb_acct_memory(h, -reserve);
-@@ -2990,12 +2999,16 @@ int hugetlb_reserve_pages(struct inode *
- 		set_vma_resv_flags(vma, HPAGE_RESV_OWNER);
- 	}
- 
--	if (chg < 0)
--		return chg;
-+	if (chg < 0) {
-+		ret = chg;
-+		goto out_err;
-+	}
- 
- 	/* There must be enough pages in the subpool for the mapping */
--	if (hugepage_subpool_get_pages(spool, chg))
--		return -ENOSPC;
-+	if (hugepage_subpool_get_pages(spool, chg)) {
-+		ret = -ENOSPC;
-+		goto out_err;
-+	}
- 
- 	/*
- 	 * Check enough hugepages are available for the reservation.
-@@ -3004,7 +3017,7 @@ int hugetlb_reserve_pages(struct inode *
- 	ret = hugetlb_acct_memory(h, chg);
- 	if (ret < 0) {
- 		hugepage_subpool_put_pages(spool, chg);
--		return ret;
-+		goto out_err;
- 	}
- 
- 	/*
-@@ -3021,6 +3034,9 @@ int hugetlb_reserve_pages(struct inode *
- 	if (!vma || vma->vm_flags & VM_MAYSHARE)
- 		region_add(&inode->i_mapping->private_list, from, to);
- 	return 0;
-+out_err:
-+	resv_map_put(vma);
-+	return ret;
- }
- 
- void hugetlb_unreserve_pages(struct inode *inode, long offset, long freed)
-diff -puN Documentation/stable_kernel_rules.txt~hugetlb-fix-leak Documentation/stable_kernel_rules.txt
-_
+ > Is there any way to get the trinity tool to stop when the kernel writes
+ > errors to dmesg?
+
+hmm, I added a test a while ago to stop when /proc/sys/kernel/tainted changes,
+but maybe that broke. I'll take a look.  (Of course if you start the tool
+after already tainted, it'll ignore it).
+
+ >  That way I could see the parameters passed to mbind?
+
+It does create log files in the current dir with the parameters used.
+You should be able to grep for the pid that caused the actual oops.
+
+	Dave
 
