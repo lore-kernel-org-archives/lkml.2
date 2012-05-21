@@ -1,181 +1,135 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757255Ab2EUIwE (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 May 2012 04:52:04 -0400
-Received: from mailhub.sw.ru ([195.214.232.25]:33389 "EHLO relay.sw.ru"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757188Ab2EUIv7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 May 2012 04:51:59 -0400
-Subject: [RFC PATCH v2] SUNRPC: protect service sockets lists during per-net
-	shutdown
-To: bfields@fieldses.org
-From: Stanislav Kinsbursky <skinsbursky@parallels.com>
-Cc: linux-nfs@vger.kernel.org, linux-kernel@vger.kernel.org, devel@openvz.org
-Date: Mon, 21 May 2012 12:51:47 +0400
-Message-ID: <20120521085144.8253.31010.stgit@localhost.localdomain>
-In-Reply-To: <20120511114126.8399.2554.stgit@localhost.localdomain>
-References: <20120511114126.8399.2554.stgit@localhost.localdomain>
-User-Agent: StGit/0.16
+	id S1757311Ab2EUIwd (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 May 2012 04:52:33 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:37529 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757169Ab2EUIwa (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 21 May 2012 04:52:30 -0400
+Date: Mon, 21 May 2012 16:59:52 +0800
+From: Zheng Liu <gnehzuil.liu@gmail.com>
+To: Johannes Weiner <hannes@cmpxchg.org>
+Cc: Michal Hocko <mhocko@suse.cz>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org,
+        Andrew Morton <akpm@linux-foundation.org>, Mel Gorman <mel@csn.ul.ie>,
+        Minchan Kim <minchan@kernel.org>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Rik van Riel <riel@redhat.com>
+Subject: Re: [PATCH] mm: consider all swapped back pages in used-once logic
+Message-ID: <20120521085951.GA4687@gmail.com>
+Mail-Followup-To: Johannes Weiner <hannes@cmpxchg.org>,
+	Michal Hocko <mhocko@suse.cz>, linux-mm@kvack.org,
+	linux-kernel@vger.kernel.org,
+	Andrew Morton <akpm@linux-foundation.org>,
+	Mel Gorman <mel@csn.ul.ie>, Minchan Kim <minchan@kernel.org>,
+	KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+	Rik van Riel <riel@redhat.com>
+References: <1337246033-13719-1-git-send-email-mhocko@suse.cz>
+ <20120517195342.GB1800@cmpxchg.org>
+ <20120521025149.GA32375@gmail.com>
+ <20120521073632.GL1406@cmpxchg.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120521073632.GL1406@cmpxchg.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-v2: destruction of currently processing transport added:
-1) Added marking of currently processing transports with XPT_CLOSE on per-net
-shutdown. These transports will be destroy in svc_xprt_enqueue() (instead of
-enqueueing).
-2) newly created temporary transport in svc_recv() will be destroyed, if it's
-"parent" was marked wof currently processing transports ith XPT_CLOSE.
-3) spin_lock(&serv->sv_lock) was replaced by spin_lock_bh() in
-svc_close_net(&serv->sv_lock).
+On Mon, May 21, 2012 at 09:36:32AM +0200, Johannes Weiner wrote:
+> On Mon, May 21, 2012 at 10:51:49AM +0800, Zheng Liu wrote:
+> > On Thu, May 17, 2012 at 09:54:25PM +0200, Johannes Weiner wrote:
+> > > On Thu, May 17, 2012 at 11:13:53AM +0200, Michal Hocko wrote:
+> > > > [64574746 vmscan: detect mapped file pages used only once] made mapped pages
+> > > > have another round in inactive list because they might be just short
+> > > > lived and so we could consider them again next time. This heuristic
+> > > > helps to reduce pressure on the active list with a streaming IO
+> > > > worklods.
+> > > > This patch fixes a regression introduced by this commit for heavy shmem
+> > > > based workloads because unlike Anon pages, which are excluded from this
+> > > > heuristic because they are usually long lived, shmem pages are handled
+> > > > as a regular page cache.
+> > > > This doesn't work quite well, unfortunately, if the workload is mostly
+> > > > backed by shmem (in memory database sitting on 80% of memory) with a
+> > > > streaming IO in the background (backup - up to 20% of memory). Anon
+> > > > inactive list is full of (dirty) shmem pages when watermarks are
+> > > > hit. Shmem pages are kept in the inactive list (they are referenced)
+> > > > in the first round and it is hard to reclaim anything else so we reach
+> > > > lower scanning priorities very quickly which leads to an excessive swap
+> > > > out.
+> > > > 
+> > > > Let's fix this by excluding all swap backed pages (they tend to be long
+> > > > lived wrt. the regular page cache anyway) from used-once heuristic and
+> > > > rather activate them if they are referenced.
+> > > 
+> > > Yes, the algorithm only makes sense for file cache, which is easy to
+> > > reclaim.  Thanks for the fix!
+> > 
+> > Hi Johannes,
+> > 
+> > Out of curiosity, I notice that, in this patch (64574746), the commit log
+> > said that this patch aims to reduce the impact of pages used only once.
+> > Could you please tell why you think these pages will flood the active
+> > list?  How do you find this problem?
+> 
+> Applications that use mmap for large, linear used-once IO.  Reclaim
+> used to just activate every mapped file page it encountered for the
+> first time (activate referenced ones, but they all start referenced) .
+> This resulted in horrible reclaim latency as most pages in memory
+> where active.
 
-Service sv_tempsocks and sv_permsocks lists are accessible by tasks with
-different network namespaces, and thus per-net service destruction must be
-protected.
-These lists are protected by service sv_lock. So lets wrap list munipulations
-with this lock and move tranports destruction outside wrapped area to prevent
-deadlocks.
+Thanks for your explanation. :-)
 
-Signed-off-by: Stanislav Kinsbursky <skinsbursky@parallels.com>
----
- net/sunrpc/svc_xprt.c |   56 ++++++++++++++++++++++++++++++++++++++++++++++---
- 1 files changed, 52 insertions(+), 4 deletions(-)
+> 
+> > Actually, we met a huge regression in our product system.  This
+> > application uses mmap/munmap and read/write simultaneously.  Meanwhile
+> > it wants to keep mapped file pages in memory as much as possible.  But
+> > this patch causes that mapped file pages are reclaimed frequently.  So I
+> > want to know whether or not this patch consider this situation.  Thank
+> > you.
+> 
+> Is it because the read()/write() IO is high throughput and pushes
+> pages through the LRU lists faster than the mmap pages are referenced?
 
-diff --git a/net/sunrpc/svc_xprt.c b/net/sunrpc/svc_xprt.c
-index 37a1f66..947d3cb 100644
---- a/net/sunrpc/svc_xprt.c
-+++ b/net/sunrpc/svc_xprt.c
-@@ -320,6 +320,7 @@ void svc_xprt_enqueue(struct svc_xprt *xprt)
- 	struct svc_pool *pool;
- 	struct svc_rqst	*rqstp;
- 	int cpu;
-+	int destroy = 0;
- 
- 	if (!svc_xprt_has_something_to_do(xprt))
- 		return;
-@@ -338,6 +339,17 @@ void svc_xprt_enqueue(struct svc_xprt *xprt)
- 
- 	pool->sp_stats.packets++;
- 
-+	/*
-+	 * Check transport close flag. It could be marked as closed on per-net
-+	 * service shutdown.
-+	 */
-+	if (test_bit(XPT_CLOSE, &xprt->xpt_flags)) {
-+		/* Don't enqueue transport if it has to be destroyed. */
-+		dprintk("svc: transport %p have to be closed\n", xprt);
-+		destroy++;
-+		goto out_unlock;
-+	}
-+
- 	/* Mark transport as busy. It will remain in this state until
- 	 * the provider calls svc_xprt_received. We update XPT_BUSY
- 	 * atomically because it also guards against trying to enqueue
-@@ -374,6 +386,8 @@ void svc_xprt_enqueue(struct svc_xprt *xprt)
- 
- out_unlock:
- 	spin_unlock_bh(&pool->sp_lock);
-+	if (destroy)
-+		svc_delete_xprt(xprt);
- }
- EXPORT_SYMBOL_GPL(svc_xprt_enqueue);
- 
-@@ -717,6 +731,13 @@ int svc_recv(struct svc_rqst *rqstp, long timeout)
- 			__module_get(newxpt->xpt_class->xcl_owner);
- 			svc_check_conn_limits(xprt->xpt_server);
- 			spin_lock_bh(&serv->sv_lock);
-+			if (test_bit(XPT_CLOSE, &xprt->xpt_flags)) {
-+				dprintk("svc_recv: found XPT_CLOSE on listener\n");
-+				set_bit(XPT_DETACHED, &newxpt->xpt_flags);
-+				spin_unlock_bh(&pool->sp_lock);
-+				svc_delete_xprt(newxpt);
-+				goto out_closed;
-+			}
- 			set_bit(XPT_TEMP, &newxpt->xpt_flags);
- 			list_add(&newxpt->xpt_list, &serv->sv_tempsocks);
- 			serv->sv_tmpcnt++;
-@@ -742,6 +763,7 @@ int svc_recv(struct svc_rqst *rqstp, long timeout)
- 			len = xprt->xpt_ops->xpo_recvfrom(rqstp);
- 		dprintk("svc: got len=%d\n", len);
- 	}
-+out_closed:
- 	svc_xprt_received(xprt);
- 
- 	/* No data, incomplete (TCP) read, or accept() */
-@@ -939,6 +961,7 @@ static void svc_clear_pools(struct svc_serv *serv, struct net *net)
- 	struct svc_pool *pool;
- 	struct svc_xprt *xprt;
- 	struct svc_xprt *tmp;
-+	struct svc_rqst *rqstp;
- 	int i;
- 
- 	for (i = 0; i < serv->sv_nrpools; i++) {
-@@ -950,11 +973,16 @@ static void svc_clear_pools(struct svc_serv *serv, struct net *net)
- 				continue;
- 			list_del_init(&xprt->xpt_ready);
- 		}
-+		list_for_each_entry(rqstp, &pool->sp_all_threads, rq_all) {
-+			if (rqstp->rq_xprt && rqstp->rq_xprt->xpt_net == net)
-+				set_bit(XPT_CLOSE, &rqstp->rq_xprt->xpt_flags);
-+		}
- 		spin_unlock_bh(&pool->sp_lock);
- 	}
- }
- 
--static void svc_clear_list(struct list_head *xprt_list, struct net *net)
-+static void svc_clear_list(struct list_head *xprt_list, struct net *net,
-+			   struct list_head *kill_list)
- {
- 	struct svc_xprt *xprt;
- 	struct svc_xprt *tmp;
-@@ -962,7 +990,8 @@ static void svc_clear_list(struct list_head *xprt_list, struct net *net)
- 	list_for_each_entry_safe(xprt, tmp, xprt_list, xpt_list) {
- 		if (xprt->xpt_net != net)
- 			continue;
--		svc_delete_xprt(xprt);
-+		list_move(&xprt->xpt_list, kill_list);
-+		set_bit(XPT_DETACHED, &xprt->xpt_flags);
- 	}
- 	list_for_each_entry(xprt, xprt_list, xpt_list)
- 		BUG_ON(xprt->xpt_net == net);
-@@ -970,6 +999,15 @@ static void svc_clear_list(struct list_head *xprt_list, struct net *net)
- 
- void svc_close_net(struct svc_serv *serv, struct net *net)
- {
-+	struct svc_xprt *xprt, *tmp;
-+	LIST_HEAD(kill_list);
-+
-+	/*
-+	 * Protect the lists, since they can be by tasks with different network
-+	 * namespace contexts.
-+	 */
-+	spin_lock_bh(&serv->sv_lock);
-+
- 	svc_close_list(&serv->sv_tempsocks, net);
- 	svc_close_list(&serv->sv_permsocks, net);
- 
-@@ -979,8 +1017,18 @@ void svc_close_net(struct svc_serv *serv, struct net *net)
- 	 * svc_xprt_enqueue will not add new entries without taking the
- 	 * sp_lock and checking XPT_BUSY.
- 	 */
--	svc_clear_list(&serv->sv_tempsocks, net);
--	svc_clear_list(&serv->sv_permsocks, net);
-+	svc_clear_list(&serv->sv_tempsocks, net, &kill_list);
-+	svc_clear_list(&serv->sv_permsocks, net, &kill_list);
-+
-+	spin_unlock_bh(&serv->sv_lock);
-+
-+	/*
-+	 * Destroy collected transports.
-+	 * Note: tranports has been marked as XPT_DETACHED on svc_clear_list(),
-+	 * so no need to protect againt list_del() in svc_delete_xprt().
-+	 */
-+	list_for_each_entry_safe(xprt, tmp, &kill_list, xpt_list)
-+		svc_delete_xprt(xprt);
- }
- 
- /*
+Yes, in this application, one query needs to access mapped file page
+twice and file page cache twice.  Namely, one query needs to do 4 disk
+I/Os.  We have used fadvise(2) to reduce file page cache accessing to
+only once.  For mapped file page, in fact them are accessed only once
+because in one query the same data is accessed twice.  Thus, one query
+causes 2 disk I/Os now.  The size of read/write is quite larger than
+mmap/munmap.  So, as you see, if we can keep mmap/munmap file in memory
+as much as possible, we will gain the better performance.
 
+> 
+> Are the mmap pages executable or shared between tasks?  If so, does
+> the kernel you are using include '34dbc67 vmscan: promote shared file
+> mapped pages' and 'c909e99 vmscan: activate executable pages after
+> first usage'?
+
+Thanks for your advice.  Our application has only one process.  So I
+think that 34dbc67 is not useful for this application.  We have tried to
+mmap file with PROT_EXEC flag to use this patch (c909e99).  But it seems
+that the result is not good as we expected.
+
+In addition, another factor also has some impacts for this application.
+In inactive_file_is_low_global(), it is different between 2.6.18 and
+upstream kernel.  IMHO, it causes that mapped file pages in active list
+are moved into inactive list frequently.
+
+Currently, we add a parameter in inactive_file_is_low_global() to adjust
+this ratio.  Meanwhile we activate every mapped file pages for the first
+time.  Then the performance gets better, but it still doesn't reach the
+performance of 2.6.18.
+
+> 
+> All of this is very lame.  I see no way to automatically detect when
+> you really want to keep mapped pages over unmapped ones.  And making
+> this assumption hurt some loads, while not making it now hurts others.
+
+Yeah, as you said, this kind of changes always hurts some loads and
+doesn't hurt others. ;-)
+
+Regards,
+Zheng
