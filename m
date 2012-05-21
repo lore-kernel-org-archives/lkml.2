@@ -1,94 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757582Ab2EUJUK (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 May 2012 05:20:10 -0400
-Received: from mailout3.samsung.com ([203.254.224.33]:57170 "EHLO
-	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757409Ab2EUJUD (ORCPT
+	id S932401Ab2EUJUw (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 May 2012 05:20:52 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:38548 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932325Ab2EUJUv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 May 2012 05:20:03 -0400
-X-AuditID: cbfee61b-b7faf6d000001f49-da-4fba08c1ed6c
-From: Jingoo Han <jg1.han@samsung.com>
-To: "'Andrew Morton'" <akpm@linux-foundation.org>,
-        "'LKML'" <linux-kernel@vger.kernel.org>
-Cc: "'Richard Purdie'" <rpurdie@rpsys.net>,
-        "'Johan Hovold'" <jhovold@gmail.com>,
-        "'Jingoo Han'" <jg1.han@samsung.com>
-Subject: [PATCH 3/3] backlight: lm3533_bl: use devm_ functions
-Date: Mon, 21 May 2012 18:20:01 +0900
-Message-id: <002d01cd3732$e667d7b0$b3378710$%han@samsung.com>
-MIME-version: 1.0
-Content-type: text/plain; charset=us-ascii
-Content-transfer-encoding: 7bit
-X-Mailer: Microsoft Office Outlook 12.0
-Thread-index: Ac03MuZFAb/avBI5R1CWbY6n/+4MYw==
-Content-language: ko
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrCLMWRmVeSWpSXmKPExsVy+t9jQd2DHLv8DZaetrK4vGsOmwOjx+dN
-	cgGMUVw2Kak5mWWpRfp2CVwZfy8uYi54xVPx6+cGxgbG61xdjJwcEgImErN2NDFB2GISF+6t
-	ZwOxhQSmM0ocPWbaxcgFZM9mktjb1MUOkmATUJP48uUwmC0iECHRPGMWM4jNLFAkse7RVTBb
-	WMBOYkLPY1YQm0VAVWLu9r1gcV4BW4kZ27+xQNiCEj8m32OB6NWSWL/zOBOELS+xec1boHoO
-	oIPUJR791YVYpSdxcNNrqBIRiX0v3jFOYBSYhWTSLCSTZiGZNAtJywJGllWMoqkFyQXFSem5
-	RnrFibnFpXnpesn5uZsYwWH5THoH46oGi0OMAhyMSjy8C97s9BdiTSwrrsw9xCjBwawkwnv3
-	IVCINyWxsiq1KD++qDQntfgQozQHi5I475MlO/yFBNITS1KzU1MLUotgskwcnFINjKrrfjDY
-	TBfsLj2/67mmX8ZSl5LvPwN5pPxbz5bfuzDx9f9De+Picl4HWkomn+vxCDwhH/bJoTVyW9y+
-	pD3Gck+vxnuUr/dLnyZeGuyq26y9M4O76Krts5S3S+ZJ2SmxhF5Lyy05n5V/tTac90iZmkeZ
-	2E6FmQsmnD+5mi9mv6f795nSTqLPlViKMxINtZiLihMBYEj1A0cCAAA=
-X-TM-AS-MML: No
+	Mon, 21 May 2012 05:20:51 -0400
+Date: Mon, 21 May 2012 02:20:21 -0700
+From: tip-bot for Anna-Maria Gleixner <anna-maria@glx-um.de>
+Message-ID: <tip-5bf8f6bfc950abe23927e0ff54cdb260d19d608e@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
+        jonas@southpole.se, tglx@linutronix.de, anna-maria@glx-um.de
+Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        tglx@linutronix.de, jonas@southpole.se, anna-maria@glx-um.de
+In-Reply-To: <20120518163106.333611712@glx-um.de>
+References: <20120518163106.333611712@glx-um.de>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:timers/core] openrisc: Use generic time config
+Git-Commit-ID: 5bf8f6bfc950abe23927e0ff54cdb260d19d608e
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
+MIME-Version: 1.0
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Mon, 21 May 2012 02:20:27 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The devm_ functions allocate memory that is released when a driver
-detaches. This patch uses devm_kzalloc of these functions.
+Commit-ID:  5bf8f6bfc950abe23927e0ff54cdb260d19d608e
+Gitweb:     http://git.kernel.org/tip/5bf8f6bfc950abe23927e0ff54cdb260d19d608e
+Author:     Anna-Maria Gleixner <anna-maria@glx-um.de>
+AuthorDate: Fri, 18 May 2012 16:45:51 +0000
+Committer:  Thomas Gleixner <tglx@linutronix.de>
+CommitDate: Mon, 21 May 2012 11:01:43 +0200
 
-Cc: Johan Hovold <jhovold@gmail.com>
-Cc: Richard Purdie <rpurdie@rpsys.net>
-Signed-off-by: Jingoo Han <jg1.han@samsung.com>
+openrisc: Use generic time config
+
+Signed-off-by: Anna-Maria Gleixner <anna-maria@glx-um.de>
+Acked-by: Jonas Bonn <jonas@southpole.se>
+Link: http://lkml.kernel.org/r/20120518163106.333611712@glx-um.de
+Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
 ---
- drivers/video/backlight/lm3533_bl.c |    8 +++-----
- 1 files changed, 3 insertions(+), 5 deletions(-)
+ arch/openrisc/Kconfig |    4 +---
+ 1 files changed, 1 insertions(+), 3 deletions(-)
 
-diff --git a/drivers/video/backlight/lm3533_bl.c b/drivers/video/backlight/lm3533_bl.c
-index 0148227..9f96a6b 100644
---- a/drivers/video/backlight/lm3533_bl.c
-+++ b/drivers/video/backlight/lm3533_bl.c
-@@ -295,7 +295,7 @@ static int __devinit lm3533_bl_probe(struct platform_device *pdev)
- 		return -EINVAL;
- 	}
+diff --git a/arch/openrisc/Kconfig b/arch/openrisc/Kconfig
+index a478719..be04485 100644
+--- a/arch/openrisc/Kconfig
++++ b/arch/openrisc/Kconfig
+@@ -17,6 +17,7 @@ config OPENRISC
+ 	select GENERIC_IOMAP
+ 	select GENERIC_CPU_DEVICES
+ 	select GENERIC_ATOMIC64
++	select GENERIC_CLOCKEVENTS
  
--	bl = kzalloc(sizeof(*bl), GFP_KERNEL);
-+	bl = devm_kzalloc(&pdev->dev, sizeof(*bl), GFP_KERNEL);
- 	if (!bl) {
- 		dev_err(&pdev->dev,
- 				"failed to allocate memory for backlight\n");
-@@ -318,7 +318,7 @@ static int __devinit lm3533_bl_probe(struct platform_device *pdev)
- 	if (IS_ERR(bd)) {
- 		dev_err(&pdev->dev, "failed to register backlight device\n");
- 		ret = PTR_ERR(bd);
--		goto err_free;
-+		goto err_return;
- 	}
+ config MMU
+ 	def_bool y
+@@ -46,9 +47,6 @@ config NO_IOPORT
+ config GENERIC_GPIO
+ 	def_bool y
  
- 	bl->bd = bd;
-@@ -348,8 +348,7 @@ err_sysfs_remove:
- 	sysfs_remove_group(&bd->dev.kobj, &lm3533_bl_attribute_group);
- err_unregister:
- 	backlight_device_unregister(bd);
--err_free:
--	kfree(bl);
-+err_return:
+-config GENERIC_CLOCKEVENTS
+-	def_bool y
+-
+ config TRACE_IRQFLAGS_SUPPORT
+         def_bool y
  
- 	return ret;
- }
-@@ -367,7 +366,6 @@ static int __devexit lm3533_bl_remove(struct platform_device *pdev)
- 	lm3533_ctrlbank_disable(&bl->cb);
- 	sysfs_remove_group(&bd->dev.kobj, &lm3533_bl_attribute_group);
- 	backlight_device_unregister(bd);
--	kfree(bl);
- 
- 	return 0;
- }
--- 
-1.7.1
-
-
