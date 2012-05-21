@@ -1,82 +1,139 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756011Ab2EUJhJ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 May 2012 05:37:09 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:48884 "EHLO mx1.redhat.com"
+	id S1756478Ab2EUJhV (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 May 2012 05:37:21 -0400
+Received: from zene.cmpxchg.org ([85.214.230.12]:37865 "EHLO zene.cmpxchg.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751165Ab2EUJhH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 May 2012 05:37:07 -0400
-Date: Mon, 21 May 2012 11:36:49 +0200
-From: Alexander Gordeev <agordeev@redhat.com>
-To: Ingo Molnar <mingo@kernel.org>
-Cc: linux-kernel@vger.kernel.org, x86@kernel.org,
-        Suresh Siddha <suresh.b.siddha@intel.com>,
-        Cyrill Gorcunov <gorcunov@openvz.org>, Yinghai Lu <yinghai@kernel.org>
-Subject: Re: [PATCH 2/3] x86: x2apic/cluster: Make use of lowest priority
- delivery mode
-Message-ID: <20120521093648.GC28930@dhcp-26-207.brq.redhat.com>
-References: <20120518102640.GB31517@dhcp-26-207.brq.redhat.com>
- <20120521082240.GA31407@gmail.com>
+	id S1751165Ab2EUJhR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 21 May 2012 05:37:17 -0400
+Date: Mon, 21 May 2012 11:37:05 +0200
+From: Johannes Weiner <hannes@cmpxchg.org>
+To: Michal Hocko <mhocko@suse.cz>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org,
+        Andrew Morton <akpm@linux-foundation.org>, Mel Gorman <mel@csn.ul.ie>,
+        Minchan Kim <minchan@kernel.org>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Rik van Riel <riel@redhat.com>
+Subject: Re: [PATCH] mm: consider all swapped back pages in used-once logic
+Message-ID: <20120521093705.GM1406@cmpxchg.org>
+References: <1337246033-13719-1-git-send-email-mhocko@suse.cz>
+ <20120517195342.GB1800@cmpxchg.org>
+ <20120521025149.GA32375@gmail.com>
+ <20120521073632.GL1406@cmpxchg.org>
+ <20120521085951.GA4687@gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20120521082240.GA31407@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20120521085951.GA4687@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, May 21, 2012 at 10:22:40AM +0200, Ingo Molnar wrote:
-> 
-> * Alexander Gordeev <agordeev@redhat.com> wrote:
-> 
-> > Currently x2APIC in logical destination mode delivers 
-> > interrupts to a single CPU, no matter how many CPUs were 
-> > specified in the destination cpumask.
+On Mon, May 21, 2012 at 04:59:52PM +0800, Zheng Liu wrote:
+> On Mon, May 21, 2012 at 09:36:32AM +0200, Johannes Weiner wrote:
+> > On Mon, May 21, 2012 at 10:51:49AM +0800, Zheng Liu wrote:
+> > > On Thu, May 17, 2012 at 09:54:25PM +0200, Johannes Weiner wrote:
+> > > > On Thu, May 17, 2012 at 11:13:53AM +0200, Michal Hocko wrote:
+> > > > > [64574746 vmscan: detect mapped file pages used only once] made mapped pages
+> > > > > have another round in inactive list because they might be just short
+> > > > > lived and so we could consider them again next time. This heuristic
+> > > > > helps to reduce pressure on the active list with a streaming IO
+> > > > > worklods.
+> > > > > This patch fixes a regression introduced by this commit for heavy shmem
+> > > > > based workloads because unlike Anon pages, which are excluded from this
+> > > > > heuristic because they are usually long lived, shmem pages are handled
+> > > > > as a regular page cache.
+> > > > > This doesn't work quite well, unfortunately, if the workload is mostly
+> > > > > backed by shmem (in memory database sitting on 80% of memory) with a
+> > > > > streaming IO in the background (backup - up to 20% of memory). Anon
+> > > > > inactive list is full of (dirty) shmem pages when watermarks are
+> > > > > hit. Shmem pages are kept in the inactive list (they are referenced)
+> > > > > in the first round and it is hard to reclaim anything else so we reach
+> > > > > lower scanning priorities very quickly which leads to an excessive swap
+> > > > > out.
+> > > > > 
+> > > > > Let's fix this by excluding all swap backed pages (they tend to be long
+> > > > > lived wrt. the regular page cache anyway) from used-once heuristic and
+> > > > > rather activate them if they are referenced.
+> > > > 
+> > > > Yes, the algorithm only makes sense for file cache, which is easy to
+> > > > reclaim.  Thanks for the fix!
+> > > 
+> > > Hi Johannes,
+> > > 
+> > > Out of curiosity, I notice that, in this patch (64574746), the commit log
+> > > said that this patch aims to reduce the impact of pages used only once.
+> > > Could you please tell why you think these pages will flood the active
+> > > list?  How do you find this problem?
 > > 
-> > This fix enables delivery of interrupts to multiple CPUs by 
-> > bit-ORing Logical IDs of destination CPUs that have matching 
-> > Cluster ID.
+> > Applications that use mmap for large, linear used-once IO.  Reclaim
+> > used to just activate every mapped file page it encountered for the
+> > first time (activate referenced ones, but they all start referenced) .
+> > This resulted in horrible reclaim latency as most pages in memory
+> > where active.
+> 
+> Thanks for your explanation. :-)
+> 
 > > 
-> > Because only one cluster could be specified in a message 
-> > destination address, the destination cpumask is tried for a 
-> > cluster that contains maximum number of CPUs matching this 
-> > cpumask. The CPUs in this cluster are selected to receive the 
-> > interrupts while all other CPUs (in the cpumask) are ignored.
+> > > Actually, we met a huge regression in our product system.  This
+> > > application uses mmap/munmap and read/write simultaneously.  Meanwhile
+> > > it wants to keep mapped file pages in memory as much as possible.  But
+> > > this patch causes that mapped file pages are reclaimed frequently.  So I
+> > > want to know whether or not this patch consider this situation.  Thank
+> > > you.
+> > 
+> > Is it because the read()/write() IO is high throughput and pushes
+> > pages through the LRU lists faster than the mmap pages are referenced?
 > 
-> I'm wondering how you tested this. AFAICS current irqbalanced 
-> will create masks but on x2apic only the first CPU is targeted 
-> by the kernel.
+> Yes, in this application, one query needs to access mapped file page
+> twice and file page cache twice.  Namely, one query needs to do 4 disk
+> I/Os.  We have used fadvise(2) to reduce file page cache accessing to
+> only once.  For mapped file page, in fact them are accessed only once
+> because in one query the same data is accessed twice.  Thus, one query
+> causes 2 disk I/Os now.  The size of read/write is quite larger than
+> mmap/munmap.  So, as you see, if we can keep mmap/munmap file in memory
+> as much as possible, we will gain the better performance.
 
-Right, that is what this patch is intended to change. So I use:
-'hwclock --test' to generate rtc interruts
-/proc/interrupts to check where/how many interrupts were delevired
-/proc/irq/8/smp_affinity to check how clusters are chosen
+You access the same unmapped cache twice, i.e. repeated reads or
+writes against the same file offset?
 
-> So, in theory, prior the patch you should be seeing irqs go to 
-> only one CPU, while after the patch they are spread out amongst 
-> the CPU. If it's using LowestPrio delivery then we depend on the 
-> hardware doing this for us - how does this work out in practice, 
-> are the target CPUs round-robin-ed, with a new CPU for every new 
-> IRQ delivered?
+How do you use fadvise?
 
-
-That is exactly what I can observe.
-
-As of 'target CPUs round-robin-ed' and 'with a new CPU for every new IRQ
-delivered' -- that is something we can not control as you noted. Nor do we
-care to my understanding.
-
-I can not commit on every h/w out there obviously, but on my PowerEdge M910
-with some half-dozen clusters with six CPU per each, the interrupts are
-perfectly balanced among those ones present in IRTEs.
-
-
-> Thanks,
+> > Are the mmap pages executable or shared between tasks?  If so, does
+> > the kernel you are using include '34dbc67 vmscan: promote shared file
+> > mapped pages' and 'c909e99 vmscan: activate executable pages after
+> > first usage'?
 > 
-> 	Ingo
+> Thanks for your advice.  Our application has only one process.  So I
+> think that 34dbc67 is not useful for this application.  We have tried to
+> mmap file with PROT_EXEC flag to use this patch (c909e99).  But it seems
+> that the result is not good as we expected.
 
--- 
-Regards,
-Alexander Gordeev
-agordeev@redhat.com
+Used-once detection should not apply to executably mapped pages at all
+and just activate the page as before.  So I think there must be more
+going on.
+
+> In addition, another factor also has some impacts for this application.
+> In inactive_file_is_low_global(), it is different between 2.6.18 and
+> upstream kernel.  IMHO, it causes that mapped file pages in active list
+> are moved into inactive list frequently.
+> 
+> Currently, we add a parameter in inactive_file_is_low_global() to adjust
+> this ratio.  Meanwhile we activate every mapped file pages for the first
+> time.  Then the performance gets better, but it still doesn't reach the
+> performance of 2.6.18.
+
+2.6.18 didn't have the active list protection at all and always
+forcibly deactivated pages during reclaim.  Have you tried fully
+reverting to this by making inactive_file_is_low_global() return true
+unconditionally?
+
+Could it be that by accessing your "used-once" unmapped cache twice in
+short succession, you accidentally activate it all?
+
+Thereby having ONLY mapped file pages on the inactive list, adding to
+the pressure on them?
+
+And, by having the wrong pages on the active list, actually benefit
+from the active list not being protected from inactive list cycle
+speed and instead pushed out quickly again?
