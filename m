@@ -1,78 +1,145 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751127Ab2EUEOS (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 May 2012 00:14:18 -0400
-Received: from ozlabs.org ([203.10.76.45]:60859 "EHLO ozlabs.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750726Ab2EUEOQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 May 2012 00:14:16 -0400
-From: Rusty Russell <rusty@rustcorp.com.au>
-To: Thomas Gleixner <tglx@linutronix.de>,
-        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-Cc: LKML <linux-kernel@vger.kernel.org>, linux-arch@vger.kernel.org,
-        Peter Zijlstra <peterz@infradead.org>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Ingo Molnar <mingo@kernel.org>,
-        Nikunj A Dadhania <nikunj@linux.vnet.ibm.com>,
-        Steven Rostedt <rostedt@goodmis.org>
-Subject: Re: [patch 00/18] SMP: Boot and CPU hotplug refactoring - Part 1
-In-Reply-To: <alpine.LFD.2.02.1204201602330.2542@ionos>
-References: <20120420122120.097464672@linutronix.de> <4F916AF3.7020301@linux.vnet.ibm.com> <alpine.LFD.2.02.1204201602330.2542@ionos>
-User-Agent: Notmuch/0.12 (http://notmuchmail.org) Emacs/23.3.1 (i686-pc-linux-gnu)
-Date: Mon, 21 May 2012 11:12:39 +0930
-Message-ID: <871ume48ds.fsf@rustcorp.com.au>
+	id S1751167Ab2EUESM (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 May 2012 00:18:12 -0400
+Received: from exprod5og115.obsmtp.com ([64.18.0.246]:47120 "HELO
+	exprod5og115.obsmtp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1750726Ab2EUESK convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 21 May 2012 00:18:10 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+In-Reply-To: <CACoXjcnpVi6n7__6SgdzYUuMuRkdtZpVGkOiEowFsL8Gq2kC7w@mail.gmail.com>
+References: <1333956052-25319-1-git-send-email-tinamdar@apm.com>
+	<1333956052-25319-2-git-send-email-tinamdar@apm.com>
+	<1333956052-25319-3-git-send-email-tinamdar@apm.com>
+	<1333956052-25319-4-git-send-email-tinamdar@apm.com>
+	<1333956052-25319-5-git-send-email-tinamdar@apm.com>
+	<CA+5PVA4sjX_Dk6ecySG4ZZoM=xhaWu2jGrQ=LtFgxGL88G=-Nw@mail.gmail.com>
+	<CACoXjcnpVi6n7__6SgdzYUuMuRkdtZpVGkOiEowFsL8Gq2kC7w@mail.gmail.com>
+Date: Mon, 21 May 2012 09:48:08 +0530
+Message-ID: <CACoXjck-=q9SBoFrLufs0GbrEcHN0jrHNmKLJ9Uf2-5MnhMD2Q@mail.gmail.com>
+Subject: Re: [V2 5/5] powerpc: kernel: 16650 UART reg-shift support
+From: Tanmay Inamdar <tinamdar@apm.com>
+To: Josh Boyer <jwboyer@gmail.com>
+Cc: benh@kernel.crashing.org, grant.likely@secretlab.ca,
+        linuxppc-dev@lists.ozlabs.org, linux-kernel@vger.kernel.org,
+        devicetree-discuss@lists.ozlabs.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 20 Apr 2012 16:18:04 +0200 (CEST), Thomas Gleixner <tglx@linutronix.de> wrote:
-> On Fri, 20 Apr 2012, Srivatsa S. Bhat wrote:
-> > already done.. Myself and Nikunj had some initial design/ideas on reducing
-> > the duplication in architecture code, related to managing the setting
-> > of the cpu in the online mask, sending out CPU_STARTING notifiers etc
-> > from generic code..
-> 
-> The whole notifier business needs a redesign as well, because we don't
-> have a way to express proper dependencies, we add random notifier
-> points and the teardown path is ass backwards. The whole thing wants
-> to be a tree which can be walked in either direction and from any
-> point. Right now we cut the trunk first and keep the single limb up
-> with a helicopter and start dismantling it.
+On Wed, May 9, 2012 at 10:57 AM, Tanmay Inamdar <tinamdar@apm.com> wrote:
+> On Wed, May 2, 2012 at 7:08 PM, Josh Boyer <jwboyer@gmail.com> wrote:
+>> On Mon, Apr 9, 2012 at 3:20 AM, Tanmay Inamdar <tinamdar@apm.com> wrote:
+>>> In APM8018X SOC, UART register address space has been relocated to 32-bit
+>>> data boundaries for APB bus implementation.
+>>> Current legacy_serial driver ignores the reg-shift property. This patch
+>>> modifies legacy_serial.c and udbg_16550.c to work with above mentioned UARTs.
+>>>
+>>> Signed-off-by: Tanmay Inamdar <tinamdar@apm.com>
+>>> ---
+>>> :100644 100644 8338aef... f5fc106... M  arch/powerpc/include/asm/udbg.h
+>>> :100644 100644 bedd12e... d523b7d... M  arch/powerpc/kernel/legacy_serial.c
+>>> :100644 100644 6837f83... e0cb7dc... M  arch/powerpc/kernel/udbg_16550.c
+>>>  arch/powerpc/include/asm/udbg.h     |    2 +-
+>>>  arch/powerpc/kernel/legacy_serial.c |   16 +++++---
+>>>  arch/powerpc/kernel/udbg_16550.c    |   64 ++++++++++++++++++++++------------
+>>>  3 files changed, 52 insertions(+), 30 deletions(-)
+>>>
+>>> diff --git a/arch/powerpc/include/asm/udbg.h b/arch/powerpc/include/asm/udbg.h
+>>> index 8338aef..f5fc106 100644
+>>> --- a/arch/powerpc/include/asm/udbg.h
+>>> +++ b/arch/powerpc/include/asm/udbg.h
+>>> @@ -29,7 +29,7 @@ extern void udbg_printf(const char *fmt, ...)
+>>>  extern void udbg_progress(char *s, unsigned short hex);
+>>>
+>>>  extern void udbg_init_uart(void __iomem *comport, unsigned int speed,
+>>> -                          unsigned int clock);
+>>> +                          unsigned int clock,  unsigned int regshift);
+>>>  extern unsigned int udbg_probe_uart_speed(void __iomem *comport,
+>>>                                          unsigned int clock);
+>>>
+>>> diff --git a/arch/powerpc/kernel/legacy_serial.c b/arch/powerpc/kernel/legacy_serial.c
+>>> index bedd12e..d523b7d 100644
+>>> --- a/arch/powerpc/kernel/legacy_serial.c
+>>> +++ b/arch/powerpc/kernel/legacy_serial.c
+>>> @@ -33,6 +33,7 @@ static struct legacy_serial_info {
+>>>        unsigned int                    clock;
+>>>        int                             irq_check_parent;
+>>>        phys_addr_t                     taddr;
+>>> +       unsigned int                    regshift;
+>>>  } legacy_serial_infos[MAX_LEGACY_SERIAL_PORTS];
+>>>
+>>>  static struct __initdata of_device_id legacy_serial_parents[] = {
+>>> @@ -42,6 +43,7 @@ static struct __initdata of_device_id legacy_serial_parents[] = {
+>>>        {.compatible = "ibm,opb",},
+>>>        {.compatible = "simple-bus",},
+>>>        {.compatible = "wrs,epld-localbus",},
+>>> +       {.compatible = "apm,apb",},
+>>>        {},
+>>>  };
+>>>
+>>> @@ -163,11 +165,6 @@ static int __init add_legacy_soc_port(struct device_node *np,
+>>>        if (of_get_property(np, "clock-frequency", NULL) == NULL)
+>>>                return -1;
+>>>
+>>> -       /* if reg-shift or offset, don't try to use it */
+>>> -       if ((of_get_property(np, "reg-shift", NULL) != NULL) ||
+>>> -               (of_get_property(np, "reg-offset", NULL) != NULL))
+>>> -               return -1;
+>>> -
+>>
+>> So we explicitly didn't support reg-shift before.  I'm guessing there is
+>> a reason for that, but I don't recall what.  Ben?
+>>
+>> Also, why do you need to use the legacy serial driver at all for this
+>> SOC?  As far as I remember, the OF serial driver should be sufficient.
+>>
+>
+> You are right. There is no need to use legacy serial driver. However I
+> realized that when 40x is selected, 'PPC_UDBG_16550' is by default
+> selected. This enables legacy serial driver.
+>
+> Is it now required to enable 'PPC_UDBG_16550' by default for every SOC
+> that uses 40x processor?
+>
+Josh, Ben,
 
-But there are two ways to do it.  One is to eliminate the need for
-callbacks.  The other is to make a full dependency-based callback
-system.
+Please let me know if you have any comments regarding above question.
 
-Let's try the first before the second.  I implemented a full dep-based
-system for initcalls once, and it was not as nice as I'd hoped.
+>>> +static unsigned int reg_shift;
+>>> +#define ns16550_offset(addr) (addr - (unsigned char *)udbg_comport)
+>>> +
+>>>  static struct NS16550 __iomem *udbg_comport;
+>>>
+>>> +static inline u8 serial_read(unsigned char *addr)
+>>> +{
+>>> +       u32 offset = ns16550_offset(addr) << reg_shift;
+>>> +       return readb(udbg_comport + offset);
+>>> +}
+>>> +
+>>> +static inline void serial_write(unsigned char *addr, char val)
+>>> +{
+>>> +       u32 offset = ns16550_offset(addr) << reg_shift;
+>>> +       writeb(val, udbg_comport + offset);
+>>> +}
+>>> +
+>>
+>> I don't think readb/writeb are correct here.  Why did you switch to
+>> using those instead of sticking with in_8/out_8?
+>>
+>> josh
+>
+> Thanks,
+> Tanmay
+CONFIDENTIALITY NOTICE: This e-mail message, including any attachments, 
+is for the sole use of the intended recipient(s) and contains information 
+that is confidential and proprietary to AppliedMicro Corporation or its subsidiaries. 
+It is to be used solely for the purpose of furthering the parties' business relationship. 
+All unauthorized review, use, disclosure or distribution is prohibited. 
+If you are not the intended recipient, please contact the sender by reply e-mail 
+and destroy all copies of the original message.
 
-> Flat notifiers are not working for this as they do not allow a tree
-> structure and prevent us to do things in parallel.
 
-Not sure whether calling notifiers in parallel is going to be a big win:
-they'll end up fighting over the cpu we're taking down.  But I could be
-wrong.
-
-> That really needs to be completely reworked. There is also a lot of
-> stuff which wants to be moved into the starting/dying CPU
-> context. Right now we kinda do that by trampling on the CPU with a
-> high prio stomper thread, but that's really just a bandaid and steady
-> cause of trouble.
-> 
-> If you look at facilities which use kthreads, then there is lots other
-> setup which does not need a notifier at all, as it can be done in the
-> context of the thread when we have a way to start/park those threads
-> at the right time in the up/down process.
-
-That's a very nice idea.  Should be simpler for kthreads park/unpark
-themselves, rather than having some notifier to kill them.
-
-The original concept of stopping the machine for cpu hotplug and trying
-not to effect any other kernel code has jumped the shark: I think we
-need to look seriously at a complete rewrite where we don't use
-stop_machine.
-
-Cheers,
-Rusty.
