@@ -1,65 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758201Ab2EUOtl (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 May 2012 10:49:41 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:49563 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1757173Ab2EUOtj (ORCPT
+	id S1757936Ab2EUOxX (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 May 2012 10:53:23 -0400
+Received: from oproxy5-pub.bluehost.com ([67.222.38.55]:38275 "HELO
+	oproxy5-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1756245Ab2EUOxV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 May 2012 10:49:39 -0400
-Date: Mon, 21 May 2012 15:49:37 +0100
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Axel Lin <axel.lin@gmail.com>
-Cc: linux-kernel@vger.kernel.org, Lee Jones <lee.jones@linaro.org>,
-        Linus Walleij <linus.walleij@stericsson.com>,
-        Liam Girdwood <lrg@ti.com>
-Subject: Re: [PATCH 1/2] regulator: core: Call set_voltage_time_sel() only
- when the regulator is on
-Message-ID: <20120521144937.GD4063@opensource.wolfsonmicro.com>
-References: <1337564272.4772.2.camel@phoenix>
+	Mon, 21 May 2012 10:53:21 -0400
+Message-ID: <4FBA56E3.9060308@xenotime.net>
+Date: Mon, 21 May 2012 07:53:23 -0700
+From: Randy Dunlap <rdunlap@xenotime.net>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.15) Gecko/20110323 Thunderbird/3.1.9
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="6WlEvdN9Dv0WHSBl"
-Content-Disposition: inline
-In-Reply-To: <1337564272.4772.2.camel@phoenix>
-X-Cookie: You dialed 5483.
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Michal Marek <mmarek@suse.cz>
+CC: LKML <linux-kernel@vger.kernel.org>, linux-kbuild@vger.kernel.org
+Subject: Re: [PATCH 1/3] scripts/patch-kernel: fix typos and compression comment
+References: <4FB9AD3C.3040909@xenotime.net> <4FBA2864.5010700@suse.cz>
+In-Reply-To: <4FBA2864.5010700@suse.cz>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-Identified-User: {1807:box742.bluehost.com:xenotime:xenotime.net} {sentby:smtp auth 50.53.38.135 authed with rdunlap@xenotime.net}
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 05/21/2012 04:35 AM, Michal Marek wrote:
 
---6WlEvdN9Dv0WHSBl
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+> On 21.5.2012 04:49, Randy Dunlap wrote:
+>> From: Randy Dunlap <rdunlap@xenotime.net>
+>>
+>> Fix typo, drop trailing whitespace, and add "xz" to list of
+>> compression types supported.
+>>
+>> Signed-off-by: Randy Dunlap <rdunlap@xenotime.net>
+>> ---
+>>  scripts/patch-kernel |    6 +++---
+>>  1 file changed, 3 insertions(+), 3 deletions(-)
+>>
+>> --- lnx-34-rc7-pk.orig/scripts/patch-kernel
+>> +++ lnx-34-rc7-pk/scripts/patch-kernel
+>> @@ -26,8 +26,8 @@
+>>  #
+>>  #       Nick Holloway <Nick.Holloway@alfie.demon.co.uk>, 2nd January 1995.
+>>  #
+>> -# Added support for handling multiple types of compression. What includes
+>> -# gzip, bzip, bzip2, zip, compress, and plaintext. 
+>> +# Added support for handling multiple types of compression. That includes
+>> +# gzip, bzip, bzip2, zip, compress, xz, and plaintext.
+>>  #
+>>  #       Adam Sulmicki <adam@cfar.umd.edu>, 1st January 1997.
+> 
+> You are editing a changelog entry from time when xz did not exist. Why
+> don't you instead add a note to the usage examples at the beginning of
+> the script, that several compression formats are supported.
 
-On Mon, May 21, 2012 at 09:37:52AM +0800, Axel Lin wrote:
-> If the regulator is not on, it won't take time setting new voltage.
-> So only call set_voltage_time_sel() to get the necessary delay when
-> the regulator is on.
+OK, I'll not edit the changelog entry.  duh.
 
-Applied both, thanks.
+> BTW, are you actually *using* this script? Wow, that would be two
+> confirmed users in this calendar year alone :).
 
---6WlEvdN9Dv0WHSBl
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
+I doubt that anyone is using it successfully with 3.x, but I plan
+to make it useful.
 
-iQIcBAEBAgAGBQJPulX3AAoJEBus8iNuMP3dCJ0QAJuBfxhBmn6ZVrfWR4zfXr8a
-XbI+l1PDmzFOdouLu4rBJu4+rn/IVbYOOrMoHbmVq4Uqo3UwSxhZeAsZ7uUka1V7
-iLlmBstHX3jbBBCxTlDmoT32dnrUy9XEvUvmO3vT27Q9okBJDBZOA04cLePvZ217
-xp1HJLlGl7QD7sISmsm3aakWr+uME01wBf5qtGFT3Td2Abb4GrUIChVgrrLoiCG7
-evjzl96SRFJWmtXbwkY3aSG04kN1HC41kpSh0ICE4MJoTnSEeoffkxO3GCWJDmi4
-tsjXPfzcFHlq58AvPxhpXwmHN4LDZfZHjn/41m92IibG8mmlHd/WCtjVRNxXRnV/
-KlJ3nTdnjZqV2RpalBVcKRdt+FGx4erGZJ2Emlp09c42+GmWFjf1klC0PkcGyG6q
-hp7CelUaxhNHsHPcDrUn/x/OO0HQfhxlIgBSM+bK0svBCo9lDXY9ZQf6BKzlvLtI
-ox8wwS/f/g1AKVykMQEZZ0sQEyeUFWQcPH5utkQY8B4QqbT64RlhoHuzW2fyU+jt
-G2ugfiGHmtuTTTfpjW5gCh9NKiY6y7zytrxqCAAPvPBdEkewi5VsQNQitHGIajk2
-IGaKy/pq6C02brWbDF2TC33hcIV6gguc/JiqjKzcTH+srW2bAaPvBFk9j6ghHE0q
-x7yQByVlPOOrNElurQ6G
-=g8n/
------END PGP SIGNATURE-----
-
---6WlEvdN9Dv0WHSBl--
+-- 
+~Randy
