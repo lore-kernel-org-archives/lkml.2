@@ -1,123 +1,160 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757898Ab2EUKgR (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 May 2012 06:36:17 -0400
-Received: from mga03.intel.com ([143.182.124.21]:14489 "EHLO mga03.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757689Ab2EUKgP convert rfc822-to-8bit (ORCPT
+	id S932372Ab2EUKim (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 May 2012 06:38:42 -0400
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:46438 "EHLO
+	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755168Ab2EUKil (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 May 2012 06:36:15 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
-   d="scan'208";a="102345666"
-From: "Hao, Xudong" <xudong.hao@intel.com>
-To: Avi Kivity <avi@redhat.com>
-CC: Marcelo Tosatti <mtosatti@redhat.com>,
-        Xudong Hao <xudong.hao@linux.intel.com>,
-        "kvm@vger.kernel.org" <kvm@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "Shan, Haitao" <haitao.shan@intel.com>,
-        "Zhang, Xiantao" <xiantao.zhang@intel.com>
-Subject: RE: [PATCH 4/4] Enabling Access bit when doing memory swapping
-Thread-Topic: [PATCH 4/4] Enabling Access bit when doing memory swapping
-Thread-Index: AQHNMwB99DBQcMufFEKPOUTp11XjXpbOThaAgAVNAKD//9ERAIAAp38A
-Date: Mon, 21 May 2012 10:35:58 +0000
-Message-ID: <403610A45A2B5242BD291EDAE8B37D300FDC6E99@SHSMSX102.ccr.corp.intel.com>
-References: <20120516011230.GE14256@hp-xd.sh.intel.com>
- <20120518022241.GA14096@amt.cnet>
- <403610A45A2B5242BD291EDAE8B37D300FDC6BEE@SHSMSX102.ccr.corp.intel.com>
- <4FB9FD68.7000908@redhat.com>
-In-Reply-To: <4FB9FD68.7000908@redhat.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.239.127.40]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Mon, 21 May 2012 06:38:41 -0400
+Date: Mon, 21 May 2012 11:38:38 +0100
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org
+Subject: [GIT PULL] regmap updates for 3.5
+Message-ID: <20120521103837.GA4983@opensource.wolfsonmicro.com>
 MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="azLHFNyN32YCQGCU"
+Content-Disposition: inline
+X-Cookie: You have no real enemies.
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> -----Original Message-----
-> From: Avi Kivity [mailto:avi@redhat.com]
-> Sent: Monday, May 21, 2012 4:32 PM
-> To: Hao, Xudong
-> Cc: Marcelo Tosatti; Xudong Hao; kvm@vger.kernel.org;
-> linux-kernel@vger.kernel.org; Shan, Haitao; Zhang, Xiantao
-> Subject: Re: [PATCH 4/4] Enabling Access bit when doing memory swapping
-> 
-> On 05/21/2012 06:22 AM, Hao, Xudong wrote:
-> > > -----Original Message-----
-> > > From: Marcelo Tosatti [mailto:mtosatti@redhat.com]
-> > > Sent: Friday, May 18, 2012 10:23 AM
-> > > To: Xudong Hao
-> > > Cc: avi@redhat.com; kvm@vger.kernel.org; linux-kernel@vger.kernel.org;
-> > > Shan, Haitao; Zhang, Xiantao; Hao, Xudong
-> > > Subject: Re: [PATCH 4/4] Enabling Access bit when doing memory swapping
-> > >
-> > > On Wed, May 16, 2012 at 09:12:30AM +0800, Xudong Hao wrote:
-> > > > Enabling Access bit when doing memory swapping.
-> > > >
-> > > > Signed-off-by: Haitao Shan <haitao.shan@intel.com>
-> > > > Signed-off-by: Xudong Hao <xudong.hao@intel.com>
-> > > > ---
-> > > >  arch/x86/kvm/mmu.c |   13 +++++++------
-> > > >  arch/x86/kvm/vmx.c |    6 ++++--
-> > > >  2 files changed, 11 insertions(+), 8 deletions(-)
-> > > >
-> > > > diff --git a/arch/x86/kvm/mmu.c b/arch/x86/kvm/mmu.c
-> > > > index ff053ca..5f55f98 100644
-> > > > --- a/arch/x86/kvm/mmu.c
-> > > > +++ b/arch/x86/kvm/mmu.c
-> > > > @@ -1166,7 +1166,8 @@ static int kvm_age_rmapp(struct kvm *kvm,
-> > > unsigned long *rmapp,
-> > > >     int young = 0;
-> > > >
-> > > >     /*
-> > > > -    * Emulate the accessed bit for EPT, by checking if this page has
-> > > > +    * In case of absence of EPT Access and Dirty Bits supports,
-> > > > +    * emulate the accessed bit for EPT, by checking if this page has
-> > > >      * an EPT mapping, and clearing it if it does. On the next access,
-> > > >      * a new EPT mapping will be established.
-> > > >      * This has some overhead, but not as much as the cost of swapping
-> > > > @@ -1179,11 +1180,11 @@ static int kvm_age_rmapp(struct kvm *kvm,
-> > > unsigned long *rmapp,
-> > > >     while (spte) {
-> > > >         int _young;
-> > > >         u64 _spte = *spte;
-> > > > -       BUG_ON(!(_spte & PT_PRESENT_MASK));
-> > > > -       _young = _spte & PT_ACCESSED_MASK;
-> > > > +       BUG_ON(!is_shadow_present_pte(_spte));
-> > > > +       _young = _spte & shadow_accessed_mask;
-> > > >         if (_young) {
-> > > >             young = 1;
-> > > > -           clear_bit(PT_ACCESSED_SHIFT, (unsigned long *)spte);
-> > > > +           *spte &= ~shadow_accessed_mask;
-> > > >         }
-> > >
-> > > Now a dirty bit can be lost. Is there a reason to remove the clear_bit?
-> >
-> > The clear_bit() is called in shadown and EPT A/D mode, because
-> PT_ACCESSED_SHIFT does not make sense for EPT A/D bit, so use the code
-> shadow_accessed_mask to mask the bit for both of them.
-> 
-> That doesn't answer the question.  An atomic operation is now non-atomic.
-> 
-> You can calculate shadow_accessed_bit and keep on using clear_bit(), or
-> switch to cmpxchg64(), but don't just drop the dirty bit here.
-> 
 
-I know your meaning. How about this changes:
+--azLHFNyN32YCQGCU
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-...
-            young = 1;
-+            if (enable_ept_ad_bits)
-+                clear_bit(ffs(shadow_accessed_mask), (unsigned long *)spte);
-            clear_bit(PT_ACCESSED_SHIFT, (unsigned long *)spte);
-...
+The following changes since commit 6560ffd1ccd688152393dc7c35dbdcc33140633b:
 
-> --
-> error compiling committee.c: too many arguments to function
+  regmap: fix possible memory corruption in regmap_bulk_read() (2012-05-09 15:44:11 +0100)
 
+are available in the git repository at:
+
+  git://git.kernel.org/pub/scm/linux/kernel/git/broonie/regmap.git tags/regmap-3.5
+
+for you to fetch changes up to c948ef3ae71c18c1079333b65d6887ceb4577618:
+
+  mfd: palmas PMIC device support Kconfig (2012-05-18 16:54:48 +0100)
+
+----------------------------------------------------------------
+regmap: Updates for 3.5
+
+A surprisingly large series of updates for regmap this time, mostly due
+to all the work Stephen Warren has done to add support for MMIO buses.
+This wasn't really the target for the framework but it turns out that
+there's a reasonable number of cases where it's very helpful to use the
+register cache support to allow the register map to remain available
+while the device is suspended.
+
+- A MMIO bus implementation, contributed by Stephen Warren. Currently this
+  is limited to 32 bit systems and native endian registers.
+- Support for naming register maps, mainly intended for MMIO devices with
+  multiple register banks. This was also contributed by Stephen Warren.
+- Support for register striding, again contributed by Stephen Warren and
+  mainly intended for use with MMIO as typically the registers will be a
+  fixed size but byte addressed.
+- irqdomain support for the generic regmap irq_chip, including support
+  for dynamically allocate interrupt numbers.
+- A function dev_get_regmap() which allows frameworks using regmap to
+  obtain the regmap for a device from the struct device, making life a
+  little simpler for them.
+- Updates to regmap-irq to support more chips (contributed by Graeme
+  Gregory) and to use irqdomains.
+- Support for devices with 24 bit register addresses.
+
+The striding support collided with all the topic branches so the
+branches look a bit messy and eventually I just gave up.  There's also
+the TI Palmas driver and a couple of other isolated MFD patches that
+all depend on new regmap features so are being merged here.
+
+----------------------------------------------------------------
+Ashish Jangam (1):
+      regmap: Converts group operation into single read write operations
+
+Graeme Gregory (3):
+      regmap: add support for non contiguous status to regmap-irq
+      mfd: palmas PMIC device support
+      mfd: palmas PMIC device support Kconfig
+
+Marc Reilly (2):
+      regmap: Add support for device with 24 data bits.
+      regmap: Use pad_bits and reg_bits when determining register format.
+
+Mark Brown (11):
+      Merge branches 'regmap-core', 'regmap-mmio' and 'regmap-naming' into regmap-stride
+      regmap: Cache single values read from the chip
+      regmap: Devices using format_write don't support bulk operations
+      regmap: Implement dev_get_regmap()
+      Merge tag 'regmap-3.4' into regmap-stride
+      mfd: da9052: Fix genirq abuse
+      regmap: Pass back the allocated regmap IRQ controller data
+      Merge branches 'regmap-core', 'regmap-stride', 'regmap-mmio' and 'regmap-irq' into regmap-next
+      regmap: Convert regmap_irq to use irq_domain
+      mfd: wm8994: Update to fully use irq_domain
+      regmap: Fix typo in IRQ register striding
+
+Stephen Warren (10):
+      regmap: introduce explicit bus_context for bus callbacks
+      regmap: introduce fast_io busses, and use a spinlock for them
+      regmap: add MMIO bus support
+      regmap: mmio: convert some error returns to BUG()
+      regmap: mmio: remove some error checks now in the core
+      regmap: validate regmap_raw_read/write val_len
+      regmap: allow regmap instances to be named
+      regmap: fix compilation when !CONFIG_DEBUG_FS
+      regmap: implement register striding
+      regmap: fix compile errors in regmap-irq.c due to stride changes
+
+ drivers/base/regmap/Kconfig           |    3 +
+ drivers/base/regmap/Makefile          |    1 +
+ drivers/base/regmap/internal.h        |   26 +-
+ drivers/base/regmap/regcache-lzo.c    |   11 +-
+ drivers/base/regmap/regcache-rbtree.c |   44 +-
+ drivers/base/regmap/regcache.c        |   34 +-
+ drivers/base/regmap/regmap-debugfs.c  |   18 +-
+ drivers/base/regmap/regmap-i2c.c      |   13 +-
+ drivers/base/regmap/regmap-irq.c      |  184 ++-
+ drivers/base/regmap/regmap-mmio.c     |  224 +++
+ drivers/base/regmap/regmap-spi.c      |   13 +-
+ drivers/base/regmap/regmap.c          |  276 +++-
+ drivers/mfd/Kconfig                   |   13 +
+ drivers/mfd/Makefile                  |    2 +
+ drivers/mfd/da9052-core.c             |    8 +-
+ drivers/mfd/palmas.c                  |  509 +++++++
+ drivers/mfd/wm8994-irq.c              |    6 -
+ include/linux/mfd/da9052/da9052.h     |    1 +
+ include/linux/mfd/palmas.h            | 2620 +++++++++++++++++++++++++++++++++
+ include/linux/mfd/wm8994/core.h       |   12 +-
+ include/linux/regmap.h                |   44 +-
+ 21 files changed, 3872 insertions(+), 190 deletions(-)
+ create mode 100644 drivers/base/regmap/regmap-mmio.c
+ create mode 100644 drivers/mfd/palmas.c
+ create mode 100644 include/linux/mfd/palmas.h
+
+--azLHFNyN32YCQGCU
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBAgAGBQJPuhsjAAoJEBus8iNuMP3daa0P/3Tgcqk5zzSpg64W1QDuv9VH
+JP0qbpR0q/0dOL6mAfOSTxtfVhF8ubVNHqPP/OImePcWiiv4Rrv0ghpl9EiCtbOi
+bxC3LCFkRRgiilOFpd1ppVIHSV2HBwUoLZNsZYPG2v8nhNNaXfY4SNJypn/xRuPA
+9eq1Bz0O1bqFDKZItysl+CaA9mvfvZCzWRlI2YqmQvBwiPNBO5VaiObGMRqGDnoA
+msUWd91J6kKP3uotdvTdcjRKcFFMb0Lp9M3QuoNJHPP6ixiQc+sa3FfT1Ng7/MUU
+hDh0gFSjLrf1ASHSJcl+EN+CieVnRO/sZyQFPvDbnAbGigKZEXoe14+k0CgkKxCX
+5KMlVyNB2RIigXwwiN5Je/jBTNa5+Wq1aSJhQH+vo0rV2nAwyUqyQnw7YW8lpO/K
+1Vr08Q0NSQ5SyZwMdsdc43x49BIfyLKAjGpea2OeESvNmdin6kgQoVA1zYpCI/DT
+bOvSFewVIRzvomiXkY/on/1m4McP341Bcpk5Z3h+lFaaILy7rv+6+kxWASi/PIHU
+SXJjmg6c1fPXaxcCMgJtA0kQN2G4eHgD2fCNINmoGIep1WXJydlgWqaDOZMitWFW
+V/taZdLjw7fhdDhFJvC8uNZ1OqvizK5M2+w0NuN1LjD1LWvyZ7Mpa3BX18X/bRme
+s0rNlKDgkEV+Q6S/Li0j
+=nD2b
+-----END PGP SIGNATURE-----
+
+--azLHFNyN32YCQGCU--
