@@ -1,91 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755582Ab2EUTV6 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 May 2012 15:21:58 -0400
-Received: from mail19d.g19.rapidsite.net ([204.202.242.120]:46021 "EHLO
-	mail19d.g19.rapidsite.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752980Ab2EUTV5 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 May 2012 15:21:57 -0400
-thread-index: Ac03htYiPkiN7MS3RjG0YCwpUQ3l8g==
-Thread-Topic: =?iso-8859-1?Q?SHOCKING_SYSTEM.=28and_one_weird_rule=29_Recommends_Advanc?=
-	=?iso-8859-1?Q?ed_Sports_to_you?=
-From: <ronrajan@yahoo.com>
-To: <linux-kernel@vger.kernel.org>
-Subject: =?iso-8859-1?Q?SHOCKING_SYSTEM.=28and_one_weird_rule=29_Recommends_Advanc?=
-	=?iso-8859-1?Q?ed_Sports_to_you?=
-Date: Mon, 21 May 2012 15:20:52 -0400
-Message-ID: <320A3BE5AA36444EA257055C771739AD@g19.win.smewh.net>
+	id S1755786Ab2EUTXk (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 May 2012 15:23:40 -0400
+Received: from ogre.sisk.pl ([193.178.161.156]:56969 "EHLO ogre.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755190Ab2EUTXj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 21 May 2012 15:23:39 -0400
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Linux PM list <linux-pm@vger.kernel.org>
+Subject: [PATCH] epoll: Fix user space breakage related to EPOLLWAKEUP (was: Re: [-next regression] TCP window full with EPOLLWAKEUP)
+Date: Mon, 21 May 2012 21:28:37 +0200
+User-Agent: KMail/1.13.6 (Linux/3.4.0-rc7+; KDE/4.6.0; x86_64; ; )
+Cc: Jiri Slaby <jslaby@suse.cz>,
+        Arve =?utf-8?q?Hj=C3=B8nnev=C3=A5g?= <arve@android.com>,
+        NeilBrown <neilb@suse.de>, LKML <linux-kernel@vger.kernel.org>,
+        Jiri Slaby <jirislaby@gmail.com>
+References: <4FB81981.3050509@suse.cz> <4FBA4946.8080905@suse.cz> <201205212111.34800.rjw@sisk.pl>
+In-Reply-To: <201205212111.34800.rjw@sisk.pl>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: Text/Plain;
+  charset="utf-8"
 Content-Transfer-Encoding: 7bit
-X-Mailer: Microsoft CDO for Windows 2000
-Content-Class: urn:content-classes:message
-Importance: normal
-X-MimeOLE: Produced By Microsoft MimeOLE V6.00.3790.4913
-X-Spam: [F=0.3170731707; S=0.200(2010122901); MH=0.650(2012052121)]
-X-MAIL-FROM: <ronrajan@yahoo.com>
-X-SOURCE-IP: [199.239.254.58]
-X-SF-Loop: 1
+Message-Id: <201205212128.38157.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->From         :SHOCKING SYSTEM.(and one weird rule)
-Email        :ronrajan@yahoo.com
-Friend Name  :Friend
-Friend Email :linux-kernel@vger.kernel.org
-comment      :
+From: Rafael J. Wysocki <rjw@sisk.pl>
 
+Commit 4d7e30d (epoll: Add a flag, EPOLLWAKEUP, to prevent
+suspend while epoll events are ready) caused some applications to
+malfunction, because they set the bit corresponding to the new
+EPOLLWAKEUP flag in their eventpoll flags and they don't have the
+new CAP_EPOLLWAKEUP capability.
 
-Hi Friend,
+To prevent that from happening, change epoll_ctl() to clear
+EPOLLWAKEUP in epds.events if the caller doesn't have the
+CAP_EPOLLWAKEUP capability instead of failing and returning an
+error code, which allows the affected applications to function
+normally.
 
-Here's a controversial new system revealing
+Reported-and-tested-by: Jiri Slaby <jslaby@suse.cz>
+Signed-off-by: Rafael J. Wysocki <rjw@sisk.pl>
+---
+ fs/eventpoll.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-affiliate marketing's number one rule...
-
-=======>  http://bit.ly/LarThw
-
-During this revealing presentation, this crazy
-underground affiliate reveals the BRUTAL TRUTH why
-most beginner marketers DON'T make even one cent
-online.
-
-Ya, you might say it's a bit controversial...
-
-.BUT if you want to discover the truth about
-driving insane amounts of traffic the way the top
-super affiliates do it, and find out the number
-one rule that's been kept from you all along, then
-you need to check out what this guy has to say:
-
-=======>  http://bit.ly/LarThw
-
-This WON'T be available forever so my best advice
-is to go check it out right now.
-
-Ron Rajan
-
-P.S. If you've been looking for a STEP BY STEP
-system for getting crazy amounts of laser targeted
-traffic, then you'll certainly want to check this
-out.
-
-Just make sure you pay close attention to the
-weird rule he outlines... it's different than most
-have been suggesting, but it works like crazy:
-
-=======>  http://bit.ly/LarThw
-
-
-
-
-
-
-
-
-
-
-
-
-
+Index: linux/fs/eventpoll.c
+===================================================================
+--- linux.orig/fs/eventpoll.c
++++ linux/fs/eventpoll.c
+@@ -1711,7 +1711,7 @@ SYSCALL_DEFINE4(epoll_ctl, int, epfd, in
+ 
+ 	/* Check if EPOLLWAKEUP is allowed */
+ 	if ((epds.events & EPOLLWAKEUP) && !capable(CAP_EPOLLWAKEUP))
+-		goto error_tgt_fput;
++		epds.events &= ~EPOLLWAKEUP;
+ 
+ 	/*
+ 	 * We have to check that the file structure underneath the file descriptor
