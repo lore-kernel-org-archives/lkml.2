@@ -1,97 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757272Ab2EUNz0 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 May 2012 09:55:26 -0400
-Received: from mail-ey0-f174.google.com ([209.85.215.174]:56426 "EHLO
-	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756869Ab2EUNzY (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 May 2012 09:55:24 -0400
-Message-ID: <4FBA4946.8080905@suse.cz>
-Date: Mon, 21 May 2012 15:55:18 +0200
-From: Jiri Slaby <jslaby@suse.cz>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120426 Thunderbird/13.0
-MIME-Version: 1.0
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-CC: =?UTF-8?B?QXJ2ZSBIasO4bm5ldsOlZw==?= <arve@android.com>,
-        NeilBrown <neilb@suse.de>, LKML <linux-kernel@vger.kernel.org>,
-        Jiri Slaby <jirislaby@gmail.com>,
-        Linux PM list <linux-pm@vger.kernel.org>
-Subject: Re: [-next regression] TCP window full with EPOLLWAKEUP
-References: <4FB81981.3050509@suse.cz> <201205201423.08334.rjw@sisk.pl> <201205201453.11794.rjw@sisk.pl> <201205202034.24541.rjw@sisk.pl>
-In-Reply-To: <201205202034.24541.rjw@sisk.pl>
-X-Enigmail-Version: 1.5pre
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+	id S1757259Ab2EUN5U (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 May 2012 09:57:20 -0400
+Received: from mga01.intel.com ([192.55.52.88]:31089 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755616Ab2EUN5T (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 21 May 2012 09:57:19 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
+   d="asc'?scan'208";a="169160708"
+Message-ID: <1337608854.2483.71.camel@sauron.fi.intel.com>
+Subject: Re: [PATCH 1/7] [RFC] UBI: Export next_sqnum()
+From: Artem Bityutskiy <dedekind1@gmail.com>
+Reply-To: dedekind1@gmail.com
+To: Richard Weinberger <richard@nod.at>
+Cc: linux-mtd@lists.infradead.org, tglx@linutronix.de,
+        linux-kernel@vger.kernel.org, Heinz.Egger@linutronix.de,
+        tim.bird@am.sony.com
+Date: Mon, 21 May 2012 17:00:54 +0300
+In-Reply-To: <4FBA4448.20509@nod.at>
+References: <1337101871-31181-1-git-send-email-richard@nod.at>
+	  <1337101871-31181-2-git-send-email-richard@nod.at>
+	 <1337173272.24809.52.camel@sauron.fi.intel.com> <4FBA4448.20509@nod.at>
+Content-Type: multipart/signed; micalg="pgp-sha1"; protocol="application/pgp-signature";
+	boundary="=-ZVmqaDdU6kPZ8Mtmfu2+"
+X-Mailer: Evolution 3.2.3 (3.2.3-3.fc16) 
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/20/2012 08:34 PM, Rafael J. Wysocki wrote:
-> On Sunday, May 20, 2012, Rafael J. Wysocki wrote:
->> On Sunday, May 20, 2012, Rafael J. Wysocki wrote:
->>> On Sunday, May 20, 2012, Jiri Slaby wrote:
->>>> Hi,
->>>>
->>>> a bisection shows that with the following commit from -next:
->>>> commit 4d7e30d98939a0340022ccd49325a3d70f7e0238
->>>> Author: Arve Hjønnevåg <arve@android.com>
->>>> Date:   Tue May 1 21:33:34 2012 +0200
->>>>
->>>>     epoll: Add a flag, EPOLLWAKEUP, to prevent suspend while epoll
->>>> events are ready
->>>>
->>>> ====
->>>>
->>>> one of mono programs I use stops receiving data from the network.
->>>> Wireshark shows that the TCP window of a connection is filled. This
->>>> means the program does not read the data fast enough after requesting
->>>> the data.
->>>>
->>>> If I revert that commit on the top of -next (20120518), everything works
->>>> as expected.
->>>
->>> Hmm.  I suppose that the failing program doesn't set EPOLLWAKEUP by mistake,
->>> does it?
->>
->> If it doesn't, we can assume that epi-ws is always NULL and all of the added
->> overhead comes from the function calls.  So, I wonder if the appended patch
->> makes any difference?
-> 
-> Having thought more about this I have to say this doesn't seem to make much
-> sense, because in that case you'd see some progress, although probably a bit
-> slower than before.
-> 
-> So, I think what happens is that the application tries to set EPOLLWAKEUP,
-> but doesn't have the capability, so the entire operation fails for it, but
-> it doesn't check the return value.
-> 
-> I wonder if the following helps, then.
-> 
-> Thanks,
-> Rafael
-> 
-> 
-> ---
->  fs/eventpoll.c |    2 +-
->  1 file changed, 1 insertion(+), 1 deletion(-)
-> 
-> Index: linux/fs/eventpoll.c
-> ===================================================================
-> --- linux.orig/fs/eventpoll.c
-> +++ linux/fs/eventpoll.c
-> @@ -1711,7 +1711,7 @@ SYSCALL_DEFINE4(epoll_ctl, int, epfd, in
->  
->  	/* Check if EPOLLWAKEUP is allowed */
->  	if ((epds.events & EPOLLWAKEUP) && !capable(CAP_EPOLLWAKEUP))
-> -		goto error_tgt_fput;
-> +		epds.events &= ~EPOLLWAKEUP;
 
-Yes, this fixed the issue.
+--=-ZVmqaDdU6kPZ8Mtmfu2+
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: quoted-printable
 
-thanks,
--- 
-js
-suse labs
+On Mon, 2012-05-21 at 15:34 +0200, Richard Weinberger wrote:
+> > +	/* TODO: Before checking version - check the CRC.
+>=20
+> The CRC covers only the fastmap data, not the super block.
 
+Everything should be protected with CRC.
+
+> >   	for (i =3D 0; i<  nblocks; i++) {
+> > +		/* TODO: you basically perform the scanning here - you should
+> > +		 * share the same code as we use in scan.c: use process_peb().
+> > +		 */
+>=20
+> What exactly do you mean by that?
+> process_eb() will not help much because the fastmap data is written=20
+> "raw" to the flash. (Without any interaction from the WL sub-system)
+
+It still contains EC and VID headers. So you can use the existing code
+for scanning it.
+
+--=20
+Best Regards,
+Artem Bityutskiy
+
+--=-ZVmqaDdU6kPZ8Mtmfu2+
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: This is a digitally signed message part
+Content-Transfer-Encoding: 7bit
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAABAgAGBQJPukqWAAoJECmIfjd9wqK0vGkQAMkOgV6tOpMnivvD8/gCQWNu
+sgvjZ7IkmcdvcJRyemYNGpVHaA/vvwTAjFh3fOnPLB+3dmJoJdGRSTQ0CQt1kYFN
+34US9nCapc82Jq2LapUngJ/AiPfV4QO6NoN25PMcZHTQsNsy8JGWTXbi7pFsS/Q8
+kK8A6mghzQDE08up6q00+NuZrhe8eOmz09GviIod+JIpKVfIU34z7sKcghFdceZw
+GibPxJcFyngBwdFs24gB6rMwUC1mnKZzRxpPv+s/0RBoWoXCZEXe1AWDPhFPoyL2
+79yAQS2XHOe/95mjfweJEVKct5x2Eb9XU7WLSdqz8eum/u7kU7+/gw3YfDrO2nLh
+PYb6MVkxcE5mZBj8/+l7i3EaaF43YKXmWi3kbR2p+JGiK+qmGBQL3sYRVRqagXSW
+B3L2GYc8fzCiIeMY372SuwOhvNeQYT9NMQ1ti+iSmxyLHEW31lePOYDpP9km2Z+V
+EYZkQA6MYXF2/ZgtWCKq3lkDyfBx3HxX7XkznduiV6DAbzwXkSC5f3yltd/Qtycx
+73T6NtSiRoOgMVtaP8S+a7MaKYp5WDGUD1AvwpII4BJ2nA6G6zozYMBZvrt95Zev
+CvdMXLJTvQ2DClbfhG5/CLRwEj5yMvyQ5thNarlGOa/5t3bPuo8xmBIf4zdERj4d
+5AudAdcZLTTgG50ulGBV
+=3/dh
+-----END PGP SIGNATURE-----
+
+--=-ZVmqaDdU6kPZ8Mtmfu2+--
 
