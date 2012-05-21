@@ -1,71 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932378Ab2EUJKP (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 May 2012 05:10:15 -0400
-Received: from haggis.pcug.org.au ([203.10.76.10]:44456 "EHLO
-	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932263Ab2EUJKL (ORCPT
+	id S932393Ab2EUJKc (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 May 2012 05:10:32 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:38374 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932084Ab2EUJK2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 May 2012 05:10:11 -0400
-Date: Mon, 21 May 2012 19:10:07 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Lee Jones <lee.jones@linaro.org>
-Cc: Samuel Ortiz <sameo@linux.intel.com>, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: linux-next: build failure after merge of the mfd tree
-Message-Id: <20120521191007.9347651e88add2e7c247a24f@canb.auug.org.au>
-In-Reply-To: <4FBA0460.1070300@linaro.org>
-References: <20120521134219.6d6396802bd6a097503bac92@canb.auug.org.au>
-	<4FB9F818.4030801@linaro.org>
-	<20120521184005.3b7661ec6468c5878a22615d@canb.auug.org.au>
-	<4FBA0460.1070300@linaro.org>
-X-Mailer: Sylpheed 3.2.0beta7 (GTK+ 2.24.10; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Mon__21_May_2012_19_10_07_+1000_OiW2hqbx4Co=nRmL"
+	Mon, 21 May 2012 05:10:28 -0400
+Date: Mon, 21 May 2012 02:10:16 -0700
+From: tip-bot for Anna-Maria Gleixner <anna-maria@glx-um.de>
+Message-ID: <tip-8d6af9914cacfbb60537cf5c46f9ebfc26ff2440@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
+        hskinnemoen@gmail.com, tglx@linutronix.de, anna-maria@glx-um.de
+Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        hskinnemoen@gmail.com, tglx@linutronix.de, anna-maria@glx-um.de
+In-Reply-To: <20120518163104.889514832@glx-um.de>
+References: <20120518163104.889514832@glx-um.de>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:timers/core] avr32: Use generic time config
+Git-Commit-ID: 8d6af9914cacfbb60537cf5c46f9ebfc26ff2440
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
+MIME-Version: 1.0
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Mon, 21 May 2012 02:10:21 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Mon__21_May_2012_19_10_07_+1000_OiW2hqbx4Co=nRmL
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Commit-ID:  8d6af9914cacfbb60537cf5c46f9ebfc26ff2440
+Gitweb:     http://git.kernel.org/tip/8d6af9914cacfbb60537cf5c46f9ebfc26ff2440
+Author:     Anna-Maria Gleixner <anna-maria@glx-um.de>
+AuthorDate: Fri, 18 May 2012 16:45:45 +0000
+Committer:  Thomas Gleixner <tglx@linutronix.de>
+CommitDate: Mon, 21 May 2012 11:01:41 +0200
 
-Hi Lee,
+avr32: Use generic time config
 
-On Mon, 21 May 2012 10:01:20 +0100 Lee Jones <lee.jones@linaro.org> wrote:
->
-> That seems broken to me.
->=20
-> Why would any of the X86_64 systems be building ab8500-core code?
+Signed-off-by: Anna-Maria Gleixner <anna-maria@glx-um.de>
+Cc: Haavard Skinnemoen <hskinnemoen@gmail.com>
+Link: http://lkml.kernel.org/r/20120518163104.889514832@glx-um.de
+Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
 
-Because the Kconfig allows it to ...
+---
+ arch/avr32/Kconfig |    4 +---
+ 1 files changed, 1 insertions(+), 3 deletions(-)
 
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-
---Signature=_Mon__21_May_2012_19_10_07_+1000_OiW2hqbx4Co=nRmL
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBCAAGBQJPugZvAAoJEECxmPOUX5FEadIQAI2/GXm92bkN9oH3XkrivGwa
-sqmaP1YOcSQKIvEmHKjjRm4iWtB4+uP8uKdHmwC59OjdLostbgh4oenCSX87cTmH
-TjpokTw4+1Ttc75bw2V9WMJnm+qYyz56wi77Ck2QjS8Ziheffmi4u1rM3O5cUtPI
-Dz6MTM3FTCvvCKMfGCgZqxGnwEh0ik6mt4BESnC4Lj8/wN6fz9AOVPJ1NFNBVSed
-UL/NmKj1sCVPHCmaCVRDw5IOOkD/uDtVW5iNOBvgoCOrxAp3A89WdlLOpVenRv0C
-LV+3C7ewjLXlRr9sQTqEHpp449maVOuTQrJnuuvHqU4eNgMuY3rjm+sQ4nJ5QOKd
-+C4ZhSZZPYK18sPQAoeBVBdxejC+CreaDREYFtXxzdQD293aG2WwN2fKZZfw2qYN
-V1Qnrksp/ZGN1o4o4/YK+AZYiastzk0g0tMiGQ4NFOH0qG1Vks1ef/7U9lY20mj+
-6yOHgY2SUmIa/Y/VJ5LZeflf/nSRMEPTwLMZzNd61LxXE6ULZ/K7TeF6gyos0/pv
-O1/NvnAmeTIDJ6vVmWpd6wgK5RIuWKoumldu+sfGYgotgs3hQS8aOIwnXFVexPRo
-EJS4nnVJZLqngRCRiR5xBNmTnLHo5oPGvOLoT3po1SxlP16uhz+2gUXVHZI5JUNH
-VDJGmHEdMkk+aQlZZUSi
-=fI67
------END PGP SIGNATURE-----
-
---Signature=_Mon__21_May_2012_19_10_07_+1000_OiW2hqbx4Co=nRmL--
+diff --git a/arch/avr32/Kconfig b/arch/avr32/Kconfig
+index 3dea7231..0bd13ab 100644
+--- a/arch/avr32/Kconfig
++++ b/arch/avr32/Kconfig
+@@ -12,6 +12,7 @@ config AVR32
+ 	select HARDIRQS_SW_RESEND
+ 	select GENERIC_IRQ_SHOW
+ 	select ARCH_HAVE_NMI_SAFE_CMPXCHG
++	select GENERIC_CLOCKEVENTS
+ 	help
+ 	  AVR32 is a high-performance 32-bit RISC microprocessor core,
+ 	  designed for cost-sensitive embedded applications, with particular
+@@ -35,9 +36,6 @@ config TRACE_IRQFLAGS_SUPPORT
+ config RWSEM_GENERIC_SPINLOCK
+ 	def_bool y
+ 
+-config GENERIC_CLOCKEVENTS
+-	def_bool y
+-
+ config RWSEM_XCHGADD_ALGORITHM
+ 	def_bool n
+ 
