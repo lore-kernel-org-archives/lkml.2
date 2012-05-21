@@ -1,88 +1,173 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752024Ab2EUEzV (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 May 2012 00:55:21 -0400
-Received: from linux-sh.org ([111.68.239.195]:42248 "EHLO linux-sh.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751377Ab2EUEzS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 May 2012 00:55:18 -0400
-Date: Mon, 21 May 2012 13:55:15 +0900
-From: Paul Mundt <lethal@linux-sh.org>
-To: Grant Likely <grant.likely@secretlab.ca>
-Cc: linux-sh@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 6/8] irqdomain: Support identity mapped VIRQ allocation.
-Message-ID: <20120521045515.GD31763@linux-sh.org>
-References: <1337407908-7421-1-git-send-email-lethal@linux-sh.org>
- <1337407908-7421-7-git-send-email-lethal@linux-sh.org>
- <20120519202140.7B0973E03B8@localhost>
+	id S1752091Ab2EUE7n (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 May 2012 00:59:43 -0400
+Received: from e23smtp03.au.ibm.com ([202.81.31.145]:34609 "EHLO
+	e23smtp03.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751377Ab2EUE7m (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 21 May 2012 00:59:42 -0400
+Message-ID: <4FB9CAAB.9050807@linux.vnet.ibm.com>
+Date: Mon, 21 May 2012 10:25:07 +0530
+From: Deepthi Dharwar <deepthi@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:11.0) Gecko/20120329 Thunderbird/11.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120519202140.7B0973E03B8@localhost>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+CC: PowerPC email list <linuxppc-dev@lists.ozlabs.org>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Paul Mackerras <paulus@samba.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Li Zhong <zhong@linux.vnet.ibm.com>
+Subject: Re: [PATCH] cpuidle: (POWER) Replace pseries_notify_cpuidle_add call
+ with a elegant notifier to fix lockdep problem in start_secondary
+References: <4FB64E9A.3060100@linux.vnet.ibm.com> <1337561221.2458.1.camel@pasglop>
+In-Reply-To: <1337561221.2458.1.camel@pasglop>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+x-cbid: 12052018-6102-0000-0000-00000185A6C2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, May 19, 2012 at 02:21:40PM -0600, Grant Likely wrote:
-> On Sat, 19 May 2012 15:11:46 +0900, Paul Mundt <lethal@linux-sh.org> wrote:
-> > This adds a new irq_create_identity_mapping() routine to permit platforms
-> > to utilize 1:1 identity mapping between hardware and linux IRQs for
-> > domain population. The same semantics as irq_create_mapping() apply,
-> > though in this case we only support irqdesc allocation at a static
-> > location, rather than falling back on dynamic lookup.
-> > 
-> How about the following for an API (omitting error checking, and the
-> actual names are up for debate):
-> 
-> int irq_domain_associate_many(struct irq_domain *domain,
-> 				unsigned int irq_base,
-> 				irq_hw_number_t hwirq_base,
-> 				int count)
-> {
-> 	int i;
-> 	for (i = 0; i < count; i++)
-> 		irq_setup_virq(domain, irq_base + i, hwirq_base + i);
-> }
-> int irq_create_strict_mappings(struct irq_domain *domain,
-> 				unsigned int irq_base,
-> 				irq_hw_number_t hwirq_base,
-> 				int count)
-> {
-> 	/* Allows for non-identity, but still static mappings of a
-> 	 * range of irq numbers */
-> 	irq_alloc_descs(irq_base, irq_base, irq_domain_nid(domain->of_node));
-> 	irq_domain_associate_many(domain, irq_base, hwirq, count);
-> 	...
-> }
-> 
-> /* in header */
-> static int irq_create_identity_mapping(struct irq_domain *domain,
-> 					irq_hw_number_t hwirq_base)
-> {
-> 	irq_create_strict_mappings(domain, hwirq_base, hwirq_base, 1);
-> }
-> 
-> That would give the ability to either associated for pre-allocated
-> irq_descs, or strict map for allocating a specific range of irqs.
-> 
-That's cleaner than what I had, so it looks good to me. This is what I've
-implemented in the updated patch.
+Hi Ben,
 
-I've still provided irq_domain_associate() in addition to the _many()
-case to support non-linear association. I'll probably start out by doing
-the sh intc conversion using this API alongside the radix tree, and then
-gradually converting over to having the irqdomain code do all of my irq
-desc management for me.
+On 05/21/2012 06:17 AM, Benjamin Herrenschmidt wrote:
 
-> This is a new API, and I'm not a fan of the irq_default_domain usage
-> so I'd like just drop the above too lines.  My opinion is that if your
-> calling into get a mapping, then the code really should know what
-> domain it is requesting from.  If a default domain really is needed,
-> then there it should be explicit for the caller to find the default
-> domain and then pass that in to this function.
+> On Fri, 2012-05-18 at 18:58 +0530, Deepthi Dharwar wrote:
+>> The following patch is to remove the pseries_notify_add_cpu() call
+>> and replace it by a hot plug notifier.
+>> This would prevent cpuidle resources being
+>> released and allocated each time cpu comes online on pseries.
+>> The earlier design was causing a lockdep problem
+>> in start_secondary as reported on this thread
+>>         -https://lkml.org/lkml/2012/5/17/2
+>>
+>> This applies on 3.4-rc7
+>>
+>> Signed-off-by: Deepthi Dharwar <deepthi@linux.vnet.ibm.com>
+>> ---
 > 
-Yes, agreed. Adding something like irq_get_default_domain() is trivial if
-and when a need arises.
+> Any reason why you don't do cpuidle_disable_device() when the
+> CPU is going offline and cpuidle_enable_device() when it's coming
+> back ?
 
-Updated patches to follow.
+  In the current design disable and enable device are called
+  when the cpu comes online. This is to make sure that we clean up and
+  re-register again. All the counters are reset.
+
+  Not calling cpu disable when cpu goes offline currently, would only
+  retain the counters right now.
+
+  But I could add a offline check and disable the device there, if that
+  results in cleaner design.  I will test and send across the patch with
+  couple more pseries-idle fixes soon.
+
+  Thanks for your review comments !
+
+> I'm applying the patch for now since it fixes a real problem but
+> if the above makes sense, please send a followup fix.
+> 
+> Cheers,
+> Ben.
+> 
+>>  arch/powerpc/include/asm/processor.h            |    2 --
+>>  arch/powerpc/platforms/pseries/processor_idle.c |   25
+>> +++++++++++++++++------
+>>  arch/powerpc/platforms/pseries/smp.c            |    1 -
+>>  3 files changed, 19 insertions(+), 9 deletions(-)
+>>
+>> diff --git a/arch/powerpc/include/asm/processor.h
+>> b/arch/powerpc/include/asm/processor.h
+>> index 8e2d037..c6bc22b 100644
+>> --- a/arch/powerpc/include/asm/processor.h
+>> +++ b/arch/powerpc/include/asm/processor.h
+>> @@ -390,10 +390,8 @@ void cpu_idle_wait(void);
+>>
+>>  #ifdef CONFIG_PSERIES_IDLE
+>>  extern void update_smt_snooze_delay(int snooze);
+>> -extern int pseries_notify_cpuidle_add_cpu(int cpu);
+>>  #else
+>>  static inline void update_smt_snooze_delay(int snooze) {}
+>> -static inline int pseries_notify_cpuidle_add_cpu(int cpu) { return 0; }
+>>  #endif
+>>
+>>  extern void flush_instruction_cache(void);
+>> diff --git a/arch/powerpc/platforms/pseries/processor_idle.c
+>> b/arch/powerpc/platforms/pseries/processor_idle.c
+>> index 41a34bc..d1a7dc0 100644
+>> --- a/arch/powerpc/platforms/pseries/processor_idle.c
+>> +++ b/arch/powerpc/platforms/pseries/processor_idle.c
+>> @@ -11,6 +11,7 @@
+>>  #include <linux/moduleparam.h>
+>>  #include <linux/cpuidle.h>
+>>  #include <linux/cpu.h>
+>> +#include <linux/notifier.h>
+>>
+>>  #include <asm/paca.h>
+>>  #include <asm/reg.h>
+>> @@ -186,17 +187,28 @@ static struct cpuidle_state
+>> shared_states[MAX_IDLE_STATE_COUNT] = {
+>>  		.enter = &shared_cede_loop },
+>>  };
+>>
+>> -int pseries_notify_cpuidle_add_cpu(int cpu)
+>> +static int pseries_cpuidle_add_cpu_notifier(struct notifier_block *n,
+>> +			unsigned long action, void *hcpu)
+>>  {
+>> +	int hotcpu = (unsigned long)hcpu;
+>>  	struct cpuidle_device *dev =
+>> -			per_cpu_ptr(pseries_cpuidle_devices, cpu);
+>> -	if (dev && cpuidle_get_driver()) {
+>> -		cpuidle_disable_device(dev);
+>> -		cpuidle_enable_device(dev);
+>> +			per_cpu_ptr(pseries_cpuidle_devices, hotcpu);
+>> +
+>> +	switch (action & 0xf) {
+>> +	case CPU_ONLINE:
+>> +		if (dev && cpuidle_get_driver()) {
+>> +			cpuidle_disable_device(dev);
+>> +			cpuidle_enable_device(dev);
+>> +		}
+>> +		break;
+>>  	}
+>> -	return 0;
+>> +	return NOTIFY_OK;
+>>  }
+>>
+>> +static struct notifier_block setup_hotplug_notifier = {
+>> +	.notifier_call = pseries_cpuidle_add_cpu_notifier,
+>> +};
+>> +
+>>  /*
+>>   * pseries_cpuidle_driver_init()
+>>   */
+>> @@ -321,6 +333,7 @@ static int __init pseries_processor_idle_init(void)
+>>  		return retval;
+>>  	}
+>>
+>> +	register_cpu_notifier(&setup_hotplug_notifier);
+>>  	printk(KERN_DEBUG "pseries_idle_driver registered\n");
+>>
+>>  	return 0;
+>> diff --git a/arch/powerpc/platforms/pseries/smp.c
+>> b/arch/powerpc/platforms/pseries/smp.c
+>> index e16bb8d..71706bc 100644
+>> --- a/arch/powerpc/platforms/pseries/smp.c
+>> +++ b/arch/powerpc/platforms/pseries/smp.c
+>> @@ -147,7 +147,6 @@ static void __devinit smp_xics_setup_cpu(int cpu)
+>>  	set_cpu_current_state(cpu, CPU_STATE_ONLINE);
+>>  	set_default_offline_state(cpu);
+>>  #endif
+>> -	pseries_notify_cpuidle_add_cpu(cpu);
+>>  }
+>>
+>>  static int __devinit smp_pSeries_kick_cpu(int nr)
+> 
+> 
+> _______________________________________________
+> Linuxppc-dev mailing list
+> Linuxppc-dev@lists.ozlabs.org
+> https://lists.ozlabs.org/listinfo/linuxppc-dev
+> 
+
+
