@@ -1,93 +1,285 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754023Ab2EUGFg (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 May 2012 02:05:36 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:34488 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751546Ab2EUGFf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 May 2012 02:05:35 -0400
-Message-ID: <4FB9DB24.2040408@redhat.com>
-Date: Mon, 21 May 2012 14:05:24 +0800
-From: Jason Wang <jasowang@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
-MIME-Version: 1.0
-To: Shirley Ma <mashirle@us.ibm.com>
-CC: "Michael S. Tsirkin" <mst@redhat.com>, eric.dumazet@gmail.com,
-        netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        ebiederm@xmission.com, davem@davemloft.net
-Subject: Re: [V2 PATCH 9/9] vhost: zerocopy: poll vq in zerocopy callback
-References: <20120502033901.11782.13157.stgit@amd-6168-8-1.englab.nay.redhat.com>  <20120502034254.11782.27314.stgit@amd-6168-8-1.englab.nay.redhat.com>  <1337100630.8220.4.camel@oc3660625478.ibm.com> <4FB317C8.90002@redhat.com>  <1337181027.10741.13.camel@oc3660625478.ibm.com>  <20120516151444.GC9934@redhat.com>  <1337189525.10741.24.camel@oc3660625478.ibm.com>  <4FB4677A.8020402@redhat.com>  <1337268862.10741.58.camel@oc3660625478.ibm.com>  <4FB61D57.4030103@redhat.com> <1337354974.12999.12.camel@oc3660625478.ibm.com>
-In-Reply-To: <1337354974.12999.12.camel@oc3660625478.ibm.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+	id S1754135Ab2EUGGi (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 May 2012 02:06:38 -0400
+Received: from haggis.pcug.org.au ([203.10.76.10]:35146 "EHLO
+	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752563Ab2EUGGg (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 21 May 2012 02:06:36 -0400
+Date: Mon, 21 May 2012 16:06:24 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Greg KH <greg@kroah.com>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Mauro Carvalho Chehab <mchehab@infradead.org>,
+        =?UTF-8?B?IkV6ZXF1aWVsIEdhcmPDrWEi?= <elezegarcia@gmail.com>
+Subject: linux-next: manual merge of the usb tree with the v4l-dvb tree
+Message-Id: <20120521160624.a5e16748fb11670778ea9b3f@canb.auug.org.au>
+X-Mailer: Sylpheed 3.2.0beta7 (GTK+ 2.24.10; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Mon__21_May_2012_16_06_24_+1000_ar2TzHY9+O/oBT1l"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/18/2012 11:29 PM, Shirley Ma wrote:
-> On Fri, 2012-05-18 at 17:58 +0800, Jason Wang wrote:
->> On 05/17/2012 11:34 PM, Shirley Ma wrote:
->>> On Thu, 2012-05-17 at 10:50 +0800, Jason Wang wrote:
->>>> The problem is we may stop the tx queue when there no enough
->> capacity
->>>> to
->>>> place packets, at this moment  we depends on the tx interrupt to
->>>> re-enable the tx queue. So if we didn't poll the vhost during
->>>> callback,
->>>> guest may lose the tx interrupt to re-enable the tx queue which
->> could
->>>> stall the whole tx queue.
->>> VHOST_MAX_PEND should handle the capacity.
->>>
->>> Hasn't the above situation been handled in handle_tx() code?:
->>> ...
->>>                           if (unlikely(num_pends>   VHOST_MAX_PEND)) {
->>>                                   tx_poll_start(net, sock);
->>>
->> set_bit(SOCK_ASYNC_NOSPACE,&sock->flags);
->>>                                   break;
->>>                           }
->>> ...
->>>
->>> Thanks
->>> Shirley
->> It may not help in because:
->>
->> - tx polling depends on skb_orphan() which is often called by device
->> driver when it place the packet into the queue of the devices instead
->> of  when the packets were sent. So it was too early for vhost to be
->> notified.
-> Then do you think it's better to replace with vhost_poll_queue here
-> instead?
+--Signature=_Mon__21_May_2012_16_06_24_+1000_ar2TzHY9+O/oBT1l
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Just like what does this patch do - calling vhost_poll_queue() in 
-vhost_zerocopy_callback().
->> - it only works when the pending DMAs exceeds VHOST_MAX_PEND, it's
->> highly possible that guest needs to be notified when the pending
->> packets
->> isn't so much.
-> In which situation the guest needs to be notified when there is no TX
-> besides buffers run out?
+Hi Greg,
 
-Consider guest call virtqueue_enable_cb_delayed() which means it only 
-need to be notified when 3/4 of pending buffers ( about 178 buffers 
-(256-MAX_SKB_FRAGS-2)*3/4 ) were sent by host. So vhost_net would notify 
-guest when about 60 buffers were pending. Since tx polling is only 
-enabled when pending packets exceeds VHOST_MAX_PEND 128, so tx work 
-would not be notified to run and guest would never get the interrupt it 
-expected to re-enable the queue.
+Today's linux-next merge of the usb tree got a conflict in
+drivers/staging/media/easycap/easycap_main.c between various commits from
+the v4l-dvb tree and commit 5df773120477 ("USB: Staging: media: easycap:
+remove err() usage") from the usb tree.
 
-And just like what we've discussed, tx polling based adding and 
-signaling is too early for vhost.
->> So this piece of code may not help and could be removed and we need
->> to
->> poll the virt-queue during zerocopy callback ( through it could be
->> further optimized but may not be easy).
-> Thanks
-> Shirley
->
-> --
-> To unsubscribe from this list: send the line "unsubscribe netdev" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+I fixed it up (I think - see below) and can carry the fix as necessary.
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
 
+diff --cc drivers/staging/media/easycap/easycap_main.c
+index aed9537,6f83d36..0000000
+--- a/drivers/staging/media/easycap/easycap_main.c
++++ b/drivers/staging/media/easycap/easycap_main.c
+@@@ -3401,176 -3126,6 +3401,175 @@@ static void config_easycap(struct easyc
+  			}
+  		}
+  	}
+ +}
+ +
+ +/*
+ + * This function is called from within easycap_usb_disconnect() and is
+ + * protected by semaphores set and cleared by easycap_usb_disconnect().
+ + * By this stage the device has already been physically unplugged,
+ + * so peasycap->pusb_device is no longer valid.
+ + */
+ +static void easycap_delete(struct kref *pkref)
+ +{
+ +	struct easycap *peasycap;
+ +
+ +	peasycap =3D container_of(pkref, struct easycap, kref);
+ +	if (!peasycap) {
+ +		SAM("ERROR: peasycap is NULL: cannot perform deletions\n");
+ +		return;
+ +	}
+ +
+ +	/* Free video urbs */
+ +	free_video_urbs(peasycap);
+ +
+ +	/* Free video isoc buffers */
+ +	free_isocbuffers(peasycap);
+ +
+ +	/* Free video field buffers */
+ +	free_fieldbuffers(peasycap);
+ +
+ +	/* Free video frame buffers */
+ +	free_framebuffers(peasycap);
+ +
+ +	/* Free audio urbs */
+ +	free_audio_urbs(peasycap);
+ +
+ +	/* Free audio isoc buffers */
+ +	free_audio_buffers(peasycap);
+ +
+ +	free_easycap(peasycap);
+ +
+ +	JOT(4, "ending.\n");
+ +}
+ +
+ +static const struct v4l2_file_operations v4l2_fops =3D {
+ +	.owner		=3D THIS_MODULE,
+ +	.open		=3D easycap_open_noinode,
+ +	.unlocked_ioctl	=3D easycap_unlocked_ioctl,
+ +	.poll		=3D easycap_poll,
+ +	.mmap		=3D easycap_mmap,
+ +};
+ +
+ +static int easycap_register_video(struct easycap *peasycap)
+ +{
+ +	/*
+ +	 * FIXME: This is believed to be harmless,
+ +	 * but may well be unnecessary or wrong.
+ +	 */
+ +	peasycap->video_device.v4l2_dev =3D NULL;
+ +
+ +	strcpy(&peasycap->video_device.name[0], "easycapdc60");
+ +	peasycap->video_device.fops =3D &v4l2_fops;
+ +	peasycap->video_device.minor =3D -1;
+ +	peasycap->video_device.release =3D (void *)(&videodev_release);
+ +
+ +	video_set_drvdata(&(peasycap->video_device), (void *)peasycap);
+ +
+ +	if (0 !=3D (video_register_device(&(peasycap->video_device),
+ +					VFL_TYPE_GRABBER, -1))) {
+- 		err("Not able to register with videodev");
+ +		videodev_release(&(peasycap->video_device));
+ +		return -ENODEV;
+ +	}
+ +
+ +	peasycap->registered_video++;
+ +
+ +	SAM("registered with videodev: %i=3Dminor\n",
+ +	    peasycap->video_device.minor);
+ +	    peasycap->minor =3D peasycap->video_device.minor;
+ +
+ +	return 0;
+ +}
+ +
+ +/*
+ + * When the device is plugged, this function is called three times,
+ + * one for each interface.
+ + */
+ +static int easycap_usb_probe(struct usb_interface *intf,
+ +			    const struct usb_device_id *id)
+ +{
+ +	struct usb_device *usbdev;
+ +	struct usb_host_interface *alt;
+ +	struct usb_endpoint_descriptor *ep;
+ +	struct usb_interface_descriptor *interface;
+ +	struct easycap *peasycap;
+ +	int i, j, rc;
+ +	u8 bInterfaceNumber;
+ +	u8 bInterfaceClass;
+ +	u8 bInterfaceSubClass;
+ +	int okalt[8], isokalt;
+ +	int okepn[8];
+ +	int okmps[8];
+ +	int maxpacketsize;
+ +
+ +	usbdev =3D interface_to_usbdev(intf);
+ +
+ +	alt =3D usb_altnum_to_altsetting(intf, 0);
+ +	if (!alt) {
+ +		SAY("ERROR: usb_host_interface not found\n");
+ +		return -EFAULT;
+ +	}
+ +
+ +	interface =3D &alt->desc;
+ +	if (!interface) {
+ +		SAY("ERROR: intf_descriptor is NULL\n");
+ +		return -EFAULT;
+ +	}
+ +
+ +	/* Get properties of probed interface */
+ +	bInterfaceNumber =3D interface->bInterfaceNumber;
+ +	bInterfaceClass =3D interface->bInterfaceClass;
+ +	bInterfaceSubClass =3D interface->bInterfaceSubClass;
+ +
+ +	JOT(4, "intf[%i]: num_altsetting=3D%i\n",
+ +			bInterfaceNumber, intf->num_altsetting);
+ +	JOT(4, "intf[%i]: cur_altsetting - altsetting=3D%li\n",
+ +		bInterfaceNumber,
+ +		(long int)(intf->cur_altsetting - intf->altsetting));
+ +	JOT(4, "intf[%i]: bInterfaceClass=3D0x%02X bInterfaceSubClass=3D0x%02X\n=
+",
+ +			bInterfaceNumber, bInterfaceClass, bInterfaceSubClass);
+ +
+ +	/*
+ +	 * A new struct easycap is always allocated when interface 0 is probed.
+ +	 * It is not possible here to free any existing struct easycap.
+ +	 * This should have been done by easycap_delete() when the device was
+ +	 * physically unplugged.
+ +	 * The allocated struct easycap is saved for later usage when
+ +	 * interfaces 1 and 2 are probed.
+ +	 */
+ +	if (0 =3D=3D bInterfaceNumber) {
+ +		/*
+ +		 * Alloc structure and save it in a free slot in
+ +		 * easycapdc60_dongle array
+ +		 */
+ +		peasycap =3D alloc_easycap(bInterfaceNumber);
+ +		if (!peasycap)
+ +			return -ENOMEM;
+ +
+ +		/* Perform basic struct initialization */
+ +		init_easycap(peasycap, usbdev, intf, bInterfaceNumber);
+ +
+ +		/* Dynamically fill in the available formats */
+ +		rc =3D easycap_video_fillin_formats();
+ +		if (0 > rc) {
+ +			SAM("ERROR: fillin_formats() rc =3D %i\n", rc);
+ +			return -EFAULT;
+ +		}
+ +		JOM(4, "%i formats available\n", rc);
+ +
+ +		/* Populate easycap.inputset[] */
+ +		rc =3D populate_inputset(peasycap);
+ +		if (rc < 0)
+ +			return rc;
+ +		JOM(4, "finished initialization\n");
+ +	} else {
+ +		peasycap =3D get_easycap(usbdev, bInterfaceNumber);
+ +		if (!peasycap)
+ +			return -ENODEV;
+ +	}
+ +
+ +	config_easycap(peasycap, bInterfaceNumber,
+ +				 bInterfaceClass,
+ +				 bInterfaceSubClass);
+ =20
+  	/*
+  	 * Investigate all altsettings. This is done in detail
+@@@ -3854,9 -3562,33 +3853,12 @@@
+  		JOM(4, "registered device instance: %s\n",
+  			peasycap->v4l2_device.name);
+ =20
+ -		/*
+ -		 * FIXME: This is believed to be harmless,
+ -		 * but may well be unnecessary or wrong.
+ -		 */
+ -		peasycap->video_device.v4l2_dev =3D NULL;
+ -
+ -
+ -		strcpy(&peasycap->video_device.name[0], "easycapdc60");
+ -		peasycap->video_device.fops =3D &v4l2_fops;
+ -		peasycap->video_device.minor =3D -1;
+ -		peasycap->video_device.release =3D (void *)(&videodev_release);
+ -
+ -		video_set_drvdata(&(peasycap->video_device), (void *)peasycap);
+ -
+ -		if (0 !=3D (video_register_device(&(peasycap->video_device),
+ -							VFL_TYPE_GRABBER, -1))) {
+ +		rc =3D easycap_register_video(peasycap);
+- 		if (rc < 0)
+++		if (rc < 0) {
++ 			dev_err(&intf->dev,
++ 				"Not able to register with videodev\n");
+ -			videodev_release(&(peasycap->video_device));
+  			return -ENODEV;
++ 		}
+ -
+ -		peasycap->registered_video++;
+ -		SAM("registered with videodev: %i=3Dminor\n",
+ -						peasycap->video_device.minor);
+ -		peasycap->minor =3D peasycap->video_device.minor;
+ -
+  		break;
+  	}
+  	/* 1: Audio control */
+
+--Signature=_Mon__21_May_2012_16_06_24_+1000_ar2TzHY9+O/oBT1l
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBCAAGBQJPudtgAAoJEECxmPOUX5FE1hYP/jHK5O8h8gsJghOiPMMoX7Fg
+uHLdqJya7wBNRIuam44233cIFNHizW2l4aFjHAJnfiyD+gZ84bd6wosDq89tRsCb
+D/I121tZuSLfGXns69dnJ8YqbLa4UVzl/OsgpIVr6oQFWZzlnZtHf1qxN+F30eJN
+aSIMErDisEJ+QTiKwou1SpNiijMHCqM3ojUsKJ7DeXdu8XI5byEHurEDmNDH9zLC
+hMKjXNv1VW71RdpugNQi8K6lgg521Ur0/YKFrNewmNb6e2yIy2TYcfAVPv+QmobN
++HGA1R4lTCWaVBVBEnZ9h39W/u/ArLA2nkXbABmJk0+7NreYquJzdx3BCV4Pd3pj
++CdOvto6kZxUUur0pXJSTS/Cw6CUDtqV0Hzz2zkty4sW5LgEBv8fR6+nPkKL853P
+0ZD98BOe23TRXCx5e4AWaR3ChGxu+7dV/uyU98Za9zQ19+QYX23gaAH6x3WnI9DV
+cTgdKmjB0qepDS3ivoojvjki2zgMlmEIwbAJceOxOk3oRYmSIeRf+eCfJeK6/7S9
+czDNTWH01E2oNRPoNKbbZsKOw/NUYv9jtkoBWAc6iQyLiPCWPjcv8t6uuBG/ykw3
+Y+bnDTA+I7Hn9QEQulInrv4mXHD8LPQ7WwkM3BNL3MXJjG8GkYz/ipjynFcBzSZ0
+1UXxqqI69Exh6LcdUzjT
+=FSjy
+-----END PGP SIGNATURE-----
+
+--Signature=_Mon__21_May_2012_16_06_24_+1000_ar2TzHY9+O/oBT1l--
