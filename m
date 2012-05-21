@@ -1,71 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754312Ab2EUG2u (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 May 2012 02:28:50 -0400
-Received: from haggis.pcug.org.au ([203.10.76.10]:36382 "EHLO
-	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752469Ab2EUG2s (ORCPT
+	id S1754584Ab2EUGlR (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 May 2012 02:41:17 -0400
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:43096 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751467Ab2EUGlP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 May 2012 02:28:48 -0400
-Date: Mon, 21 May 2012 16:28:39 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Kalle Valo <kvalo@qca.qualcomm.com>
-Cc: Greg KH <greg@kroah.com>, <linux-next@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>,
-        Sarah Sharp <sarah.a.sharp@linux.intel.com>,
-        David Miller <davem@davemloft.net>, <netdev@vger.kernel.org>,
-        "John W. Linville" <linville@tuxdriver.com>
-Subject: Re: linux-next: manual merge of the usb tree with the net-next tree
-Message-Id: <20120521162839.764519ace7369affab78ca1c@canb.auug.org.au>
-In-Reply-To: <4FB9DDD9.8000506@qca.qualcomm.com>
-References: <20120521161008.c0cc00b91642ed7a3875a686@canb.auug.org.au>
-	<4FB9DDD9.8000506@qca.qualcomm.com>
-X-Mailer: Sylpheed 3.2.0beta7 (GTK+ 2.24.10; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Mon__21_May_2012_16_28_39_+1000_eB+.2Wj+lgn3cX7f"
+	Mon, 21 May 2012 02:41:15 -0400
+Date: Mon, 21 May 2012 08:41:07 +0200
+From: Sascha Hauer <s.hauer@pengutronix.de>
+To: Shuah Khan <shuahkhan@gmail.com>
+Cc: Uwe =?iso-8859-15?Q?Kleine-K=F6nig?= 
+	<u.kleine-koenig@pengutronix.de>,
+        Bryan Wu <bryan.wu@canonical.com>, Richard Purdie <rpurdie@rpsys.net>,
+        kernel@pengutronix.de, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] ARM: leds: Add MAX6956 driver
+Message-ID: <20120521064107.GV30400@pengutronix.de>
+References: <1337355945-16421-1-git-send-email-u.kleine-koenig@pengutronix.de>
+ <1337369831.2426.15.camel@lorien2>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-15
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <1337369831.2426.15.camel@lorien2>
+X-Sent-From: Pengutronix Hildesheim
+X-URL: http://www.pengutronix.de/
+X-IRC: #ptxdist @freenode
+X-Accept-Language: de,en
+X-Accept-Content-Type: text/plain
+X-Uptime: 08:30:11 up 190 days, 14:17, 21 users,  load average: 0.22, 0.10,
+ 0.07
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: 2001:6f8:1178:2:21e:67ff:fe11:9c5c
+X-SA-Exim-Mail-From: sha@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Mon__21_May_2012_16_28_39_+1000_eB+.2Wj+lgn3cX7f
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On Fri, May 18, 2012 at 01:37:11PM -0600, Shuah Khan wrote:
+> On Fri, 2012-05-18 at 17:45 +0200, Uwe Kleine-König wrote:
+> > This adds a driver for Maxim's MAX6956 28-Port LED Display Driver and
+> > I/O Expander.
+> 
+> > +static void max6956_gpio_set(struct gpio_chip *chip, unsigned offset, int value)
+> > +{
+> > +	struct max6956_ddata *ddata = ddata_from_gpio_chip(chip);
+> > +
+> > +	regmap_write(ddata->regmap, MAX6956_REG_PORT(offset), !!value);
+> > +}
+> > +
+> > +static const struct gpio_chip max6956_gpio_chip_init __devinitconst = {
+> > +	.label = "max6956",
+> > +	.owner = THIS_MODULE,
+> > +	.request = max6956_gpio_request,
+> > +	.direction_input = max6956_gpio_direction_input,
+> > +	.get = max6956_gpio_get,
+> > +	.direction_output = max6956_gpio_direction_output,
+> > +	.set = max6956_gpio_set,
+> > +	.base = -1,
+> > +	.ngpio = 32,
+> > +	.can_sleep = 1,
+> > +};
+> > +
+> > +static int __devinit max6956_probe(struct i2c_client *client,
+> > +		const struct i2c_device_id *id)
+> > +{
+> > +	struct max6956_ddata *ddata;
+> > +	struct max6956_pdata *pdata = client->dev.platform_data;
+> > +	int ret, i;
+> > +
+> > +	if (!pdata)
+> > +		return -EINVAL;
+> > +
+> > +	ddata = devm_kzalloc(&client->dev, sizeof(*ddata), GFP_KERNEL);
+> 
+> I don't see this memory getting free'ed in error legs and also from
+> max6956_remove().
 
-Hi Kalle,
+/**
+ * devm_kzalloc - Resource-managed kzalloc
+ * @dev: Device to allocate memory for
+ * @size: Allocation size
+ * @gfp: Allocation gfp flags
+ *
+ * Managed kzalloc.  Memory allocated with this function is
+ * automatically freed on driver detach.  Like all other devres
+ * resources, guaranteed alignment is unsigned long long.
+ *
+ * RETURNS:
+ * Pointer to allocated memory on success, NULL on failure.
+ */
 
-On Mon, 21 May 2012 09:16:57 +0300 Kalle Valo <kvalo@qca.qualcomm.com> wrot=
-e:
->
-> Is there anything I should do in ath6kl to handle the issue?
+The same applies to all other devm_* functions.
 
-No, Linus will take care of it when he merges the two trees.
+Sascha
 
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-
---Signature=_Mon__21_May_2012_16_28_39_+1000_eB+.2Wj+lgn3cX7f
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBCAAGBQJPueCXAAoJEECxmPOUX5FEzNoP+wQD3Ieow9qSlde8FZ7cMLEQ
-WlyVfyswjYYMeJIMl5l8f3iOZeThDMVrZ9Ua8pSX82mE1/JaFb/8IVPfJxw6r6CW
-non9vSU6P51xGyWMTeG3v0rPA+nx5NS6q37iFPX1djoqUNQI32aS1tncSXuuSQgf
-wN+F1k8J8UDdvxg1i3jLhbMjiFQQ7Q5Ir/mDbuZY9bI/DK2uXuOFE0sTABWBEQNC
-ObiHasUVNZqiSQUqNWQAdRYgn7HG6C41TPhlFrW8VIFhfqosRxV5DtG6HFjgr2Kj
-0e3SNhnDp028eqe7sMnQV91qwQZGIe7Ka0btyvGo+ZFe6/H/p2fXI84t+7KKEpE1
-ZcKZChTEYEYzw5G79xO+hYKGi4zTOxibEouoMJb9blDjkmF9I5j7IAnbiQimYIpD
-DrS0/FOXfd+YV8gxxVOTdR3cRMAnQ7pST/TEyeLJbCaQawEnt/Dp/ANvXXk1a0jU
-qnsO9MLvCmx4vpvn4Bu3uxR15vrH+KZNuCC5mmFzA0SIgogmwloMGU9f3ptGeR8x
-AektNQPv1qqh50Zs1Ek2hmUCrB1wDLO0yOvSv3Dnbdm6OQuBbJNlWxaMRlhCKz4O
-wO6rtsHi36h6Ur3Lr4te2dCuUfvUzVEyIEKiwx6MD4XAC99qCvAgrm4wUQwsMKnW
-gOuAMrZcevklSyH9PxvO
-=7BEl
------END PGP SIGNATURE-----
-
---Signature=_Mon__21_May_2012_16_28_39_+1000_eB+.2Wj+lgn3cX7f--
+-- 
+Pengutronix e.K.                           |                             |
+Industrial Linux Solutions                 | http://www.pengutronix.de/  |
+Peiner Str. 6-8, 31137 Hildesheim, Germany | Phone: +49-5121-206917-0    |
+Amtsgericht Hildesheim, HRA 2686           | Fax:   +49-5121-206917-5555 |
