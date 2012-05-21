@@ -1,93 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755491Ab2EUHNT (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 May 2012 03:13:19 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:33000 "EHLO mx1.redhat.com"
+	id S1755404Ab2EUHNS (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 May 2012 03:13:18 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:58925 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752401Ab2EUHNR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 May 2012 03:13:17 -0400
+	id S1751011Ab2EUHNO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 21 May 2012 03:13:14 -0400
 From: Jiri Olsa <jolsa@redhat.com>
 To: acme@redhat.com, a.p.zijlstra@chello.nl, mingo@elte.hu, paulus@samba.org,
         cjashfor@linux.vnet.ibm.com, fweisbec@gmail.com
 Cc: linux-kernel@vger.kernel.org, Jiri Olsa <jolsa@redhat.com>
-Subject: [PATCH 2/5] perf, tool: Add support for displaying event parser debug info
-Date: Mon, 21 May 2012 09:12:50 +0200
-Message-Id: <1337584373-2741-3-git-send-email-jolsa@redhat.com>
+Subject: [PATCH 4/5] perf, tool: Separate 'mem:' event scanner bits
+Date: Mon, 21 May 2012 09:12:52 +0200
+Message-Id: <1337584373-2741-5-git-send-email-jolsa@redhat.com>
 In-Reply-To: <1337584373-2741-1-git-send-email-jolsa@redhat.com>
 References: <1337584373-2741-1-git-send-email-jolsa@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Adding PARSER_DEBUG Makefile variable to enable building event
-scanner/parser with debug enabled. This results in verbose
-output right out of the scanner/parser.
+Separating 'mem:' scanner processing, so we can parse out
+modifier specifically and dont clash with other rules.
 
-It's usefull for debuging the event parser. Keeping this only
-for event parser so far.
+This is just precaution for the future, so we dont need to worry
+about the rules clashing where we need to parse out any sub-rule
+of global rules.
 
 Signed-off-by: Jiri Olsa <jolsa@redhat.com>
 ---
- tools/perf/Makefile            |   12 +++++++++---
- tools/perf/util/parse-events.c |    6 ++++++
- 2 files changed, 15 insertions(+), 3 deletions(-)
+ tools/perf/util/parse-events.c |    1 +
+ tools/perf/util/parse-events.l |   25 +++++++++++++++++++++++--
+ 2 files changed, 24 insertions(+), 2 deletions(-)
 
-diff --git a/tools/perf/Makefile b/tools/perf/Makefile
-index 26830c2..e1a8bb4 100644
---- a/tools/perf/Makefile
-+++ b/tools/perf/Makefile
-@@ -83,7 +83,13 @@ ifndef PERF_DEBUG
-   CFLAGS_OPTIMIZE = -O6
- endif
- 
--CFLAGS = -fno-omit-frame-pointer -ggdb3 -Wall -Wextra -std=gnu99 $(CFLAGS_WERROR) $(CFLAGS_OPTIMIZE) -D_FORTIFY_SOURCE=2 $(EXTRA_WARNINGS) $(EXTRA_CFLAGS)
-+ifdef PARSER_DEBUG
-+	PARSER_DEBUG_BISON  := -t
-+	PARSER_DEBUG_FLEX   := -d
-+	PARSER_DEBUG_CFLAGS := -DPARSER_DEBUG
-+endif
-+
-+CFLAGS = -fno-omit-frame-pointer -ggdb3 -Wall -Wextra -std=gnu99 $(CFLAGS_WERROR) $(CFLAGS_OPTIMIZE) -D_FORTIFY_SOURCE=2 $(EXTRA_WARNINGS) $(EXTRA_CFLAGS) $(PARSER_DEBUG_CFLAGS)
- EXTLIBS = -lpthread -lrt -lelf -lm
- ALL_CFLAGS = $(CFLAGS) -D_LARGEFILE64_SOURCE -D_FILE_OFFSET_BITS=64 -D_GNU_SOURCE
- ALL_LDFLAGS = $(LDFLAGS)
-@@ -205,10 +211,10 @@ FLEX = flex
- BISON= bison
- 
- $(OUTPUT)util/parse-events-flex.c: util/parse-events.l
--	$(QUIET_FLEX)$(FLEX) --header-file=$(OUTPUT)util/parse-events-flex.h -t util/parse-events.l > $(OUTPUT)util/parse-events-flex.c
-+	$(QUIET_FLEX)$(FLEX) --header-file=$(OUTPUT)util/parse-events-flex.h $(PARSER_DEBUG_FLEX) -t util/parse-events.l > $(OUTPUT)util/parse-events-flex.c
- 
- $(OUTPUT)util/parse-events-bison.c: util/parse-events.y
--	$(QUIET_BISON)$(BISON) -v util/parse-events.y -d -o $(OUTPUT)util/parse-events-bison.c
-+	$(QUIET_BISON)$(BISON) -v util/parse-events.y -d $(PARSER_DEBUG_BISON) -o $(OUTPUT)util/parse-events-bison.c
- 
- $(OUTPUT)util/pmu-flex.c: util/pmu.l
- 	$(QUIET_FLEX)$(FLEX) --header-file=$(OUTPUT)util/pmu-flex.h -t util/pmu.l > $(OUTPUT)util/pmu-flex.c
 diff --git a/tools/perf/util/parse-events.c b/tools/perf/util/parse-events.c
-index c7fc18a..6704978 100644
+index 4025e18..59324e7 100644
 --- a/tools/perf/util/parse-events.c
 +++ b/tools/perf/util/parse-events.c
-@@ -23,6 +23,9 @@ struct event_symbol {
- 	const char	*alias;
- };
- 
-+#ifdef PARSER_DEBUG
-+extern int parse_events_debug;
-+#endif
- int parse_events_parse(struct list_head *list, struct list_head *list_tmp,
- 		       int *idx);
- 
-@@ -768,6 +771,9 @@ int parse_events(struct perf_evlist *evlist, const char *str, int unset __used)
- 
- 	buffer = parse_events__scan_string(str);
- 
-+#ifdef PARSER_DEBUG
-+	parse_events_debug = 1;
-+#endif
- 	ret = parse_events_parse(&list, &list_tmp, &idx);
+@@ -787,6 +787,7 @@ int parse_events(struct perf_evlist *evlist, const char *str, int unset __used)
  
  	parse_events__flush_buffer(buffer);
+ 	parse_events__delete_buffer(buffer);
++	parse_events_lex_destroy();
+ 
+ 	if (!ret) {
+ 		int entries = idx - evlist->nr_entries;
+diff --git a/tools/perf/util/parse-events.l b/tools/perf/util/parse-events.l
+index 1fcf1bb..331d28a 100644
+--- a/tools/perf/util/parse-events.l
++++ b/tools/perf/util/parse-events.l
+@@ -1,5 +1,6 @@
+ 
+ %option prefix="parse_events_"
++%option stack
+ 
+ %{
+ #include <errno.h>
+@@ -50,6 +51,8 @@ static int term(int type)
+ 
+ %}
+ 
++%x mem
++
+ num_dec		[0-9]+
+ num_hex		0x[a-fA-F0-9]+
+ num_raw_hex	[a-fA-F0-9]+
+@@ -105,13 +108,12 @@ config2			{ return term(PARSE_EVENTS__TERM_TYPE_CONFIG2); }
+ period			{ return term(PARSE_EVENTS__TERM_TYPE_SAMPLE_PERIOD); }
+ branch_type		{ return term(PARSE_EVENTS__TERM_TYPE_BRANCH_SAMPLE_TYPE); }
+ 
+-mem:			{ return PE_PREFIX_MEM; }
++mem:			{ BEGIN(mem); return PE_PREFIX_MEM; }
+ r{num_raw_hex}		{ return raw(); }
+ {num_dec}		{ return value(10); }
+ {num_hex}		{ return value(16); }
+ 
+ {modifier_event}	{ return str(PE_MODIFIER_EVENT); }
+-{modifier_bp}		{ return str(PE_MODIFIER_BP); }
+ {name}			{ return str(PE_NAME); }
+ "/"			{ return '/'; }
+ -			{ return '-'; }
+@@ -119,6 +121,25 @@ r{num_raw_hex}		{ return raw(); }
+ :			{ return ':'; }
+ =			{ return '='; }
+ 
++<mem>{
++{modifier_bp}		{ return str(PE_MODIFIER_BP); }
++:			{ return ':'; }
++{num_dec}		{ return value(10); }
++{num_hex}		{ return value(16); }
++	/*
++	 * We need to separate 'mem:' scanner part, in order to get specific
++	 * modifier bits parsed out. Otherwise we would need to handle PE_NAME
++	 * and we'd need to parse it manually. During the escape from <mem>
++	 * state we need to put the escaping char back, so we dont miss it.
++	 */
++.			{ unput(*parse_events_text); BEGIN(INITIAL); }
++	/*
++	 * We destroy the scanner after reaching EOF,
++	 * but anyway just to be sure get back to INIT state.
++	 */
++<<EOF>>			{ BEGIN(INITIAL); }
++}
++
+ %%
+ 
+ int parse_events_wrap(void)
 -- 
 1.7.7.6
 
