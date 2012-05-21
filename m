@@ -1,85 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757030Ab2EUC32 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 20 May 2012 22:29:28 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:59060 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756271Ab2EUC31 (ORCPT
+	id S1757061Ab2EUCdo (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 20 May 2012 22:33:44 -0400
+Received: from cn.fujitsu.com ([222.73.24.84]:59456 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1755611Ab2EUCdn convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 20 May 2012 22:29:27 -0400
-Date: Sun, 20 May 2012 19:29:21 -0700
-From: Greg KH <gregkh@linuxfoundation.org>
-To: Chanwoo Choi <cw00.choi@samsung.com>
-Cc: broonie@opensource.wolfsonmicro.com, thomas.abraham@linaro.org,
-        grant.likely@secretlab.ca, sameo@linux.intel.com,
-        myungjoo.ham@samsung.com, kyungmin.park@samsung.com,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v3 1/2] mfd: add irq domain support for max8997 interrupts
-Message-ID: <20120521022921.GA13084@kroah.com>
-References: <1337154104-22036-1-git-send-email-cw00.choi@samsung.com>
- <20120518235916.GA14015@kroah.com>
- <4FB97E22.7090604@samsung.com>
+	Sun, 20 May 2012 22:33:43 -0400
+X-IronPort-AV: E=Sophos;i="4.75,628,1330876800"; 
+   d="scan'208";a="4998586"
+Message-ID: <4FB9A92D.7050108@cn.fujitsu.com>
+Date: Mon, 21 May 2012 10:32:13 +0800
+From: Yanfei Zhang <zhangyanfei@cn.fujitsu.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100413 Fedora/3.0.4-2.fc13 Thunderbird/3.0.4
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <4FB97E22.7090604@samsung.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Avi Kivity <avi@redhat.com>
+CC: mtosatti@redhat.com, ebiederm@xmission.com, luto@mit.edu,
+        Joerg Roedel <joerg.roedel@amd.com>, dzickus@redhat.com,
+        paul.gortmaker@windriver.com, ludwig.nussel@suse.de,
+        linux-kernel@vger.kernel.org, kvm@vger.kernel.org,
+        kexec@lists.infradead.org, Greg KH <gregkh@linuxfoundation.org>
+Subject: Re: [PATCH v2 0/5] Export offsets of VMCS fields as note information
+ for kdump
+References: <4FB35C48.30708@cn.fujitsu.com> <4FB92D5A.3060507@redhat.com>
+In-Reply-To: <4FB92D5A.3060507@redhat.com>
+X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2012/05/21 10:32:11,
+	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2012/05/21 10:32:14
+Content-Type: text/plain; charset=GB2312
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, May 21, 2012 at 08:28:34AM +0900, Chanwoo Choi wrote:
-> Hi Greg,
+ÓÚ 2012Äê05ÔÂ21ÈÕ 01:43, Avi Kivity Ð´µÀ:
+> On 05/16/2012 10:50 AM, zhangyanfei wrote:
+>> This patch set exports offsets of VMCS fields as note information for
+>> kdump. We call it VMCSINFO. The purpose of VMCSINFO is to retrieve
+>> runtime state of guest machine image, such as registers, in host
+>> machine's crash dump as VMCS format. The problem is that VMCS internal
+>> is hidden by Intel in its specification. So, we slove this problem
+>> by reverse engineering implemented in this patch set. The VMCSINFO
+>> is exported via sysfs to kexec-tools just like VMCOREINFO.
+>>
+>> Here are two usercases for two features that we want.
+>>
+>> 1) Create guest machine's crash dumpfile from host machine's crash dumpfile
+>>
+>> In general, we want to use this feature on failure analysis for the system
+>> where the processing depends on the communication between host and guest
+>> machines to look into the system from both machines's viewpoints.
+>>
+>> As a concrete situation, consider where there's heartbeat monitoring
+>> feature on the guest machine's side, where we need to determine in
+>> which machine side the cause of heartbeat stop lies. In our actual
+>> experiments, we encountered such situation and we found the cause of
+>> the bug was in host's process schedular so guest machine's vcpu stopped
+>> for a long time and then led to heartbeat stop.
+>>
+>> The module that judges heartbeat stop is on guest machine, so we need
+>> to debug guest machine's data. But if the cause lies in host machine
+>> side, we need to look into host machine's crash dump.
 > 
-> On 05/19/2012 08:59 AM, Greg KH wrote:
+> Do you mean, that a heartbeat failure in the guest lead to host panic?
 > 
-> > On Wed, May 16, 2012 at 04:41:44PM +0900, Chanwoo Choi wrote:
-> >> From: Thomas Abraham <thomas.abraham@linaro.org>
-> >>
-> >> Add irq domain support for max8997 interrupts. The reverse mapping method
-> >> used is linear mapping since the sub-drivers of max8997 such as regulator
-> >> and charger drivers can use the max8997 irq_domain to get the linux irq
-> >> number for max8997 interrupts. All uses of irq_base in platform data and
-> >> max8997 driver private data are removed.
-> >>
-> >> Signed-off-by: Thomas Abraham <thomas.abraham@linaro.org>
-> >> Acked-by: MyungJoo Ham <myungjoo.ham@samsung.com>
-> >> Acked-by: Grant Likely <grant.likely@secretlab.ca>
-> >> Acked-by: Samuel Ortiz <sameo@linux.intel.com>
-> >> Signed-off-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
-> >> 	[Fix two bug which set max8997->irq_domain and correct wrong parameter]
-> >> Signed-off-by: Chanwoo Choi <cw00.choi@samsung.com>
-> >> Signed-off-by: Kyungmin Park <kyungmin.park@samsung.com>
-> > 
-> > Same problem as before, I apply this and it breaks the build with the
-> > following errors:
-> > 
-> > drivers/extcon/extcon-max8997.c: In function â€˜max8997_muic_irq_workâ€™:
-> > drivers/extcon/extcon-max8997.c:350:36: error: â€˜struct max8997_devâ€™ has no member named â€˜irq_baseâ€™
-> > drivers/extcon/extcon-max8997.c: In function â€˜max8997_muic_probeâ€™:
-> > drivers/extcon/extcon-max8997.c:452:35: error: â€˜struct max8997_platform_dataâ€™ has no member named â€˜irq_baseâ€™
-> > drivers/extcon/extcon-max8997.c: In function â€˜max8997_muic_removeâ€™:
-> > drivers/extcon/extcon-max8997.c:514:19: error: â€˜struct max8997_devâ€™ has no member named â€˜irq_baseâ€™
-> > 
-> > Please fix.
+> My expectation is that a problem in the guest will cause the guest to
+> panic and perhaps produce a dump; the host will remain up.
 > 
-> I posted patchset including below two patch. The second patch fix that
-> extcon-max8997 driver use irq_domain instead of irq_base field in
-> 'struct max8997_dev'.
+
+The point is that before our investigation, we didn't know which side 
+leads to this buggy situation. Maybe a bug in host machine or the guest
+machine itself causes a heartbeat failure.
+
+So we want to get both host machine's crash dump and guest machine's
+crash dump *at the same time*. Then we could use userspace tools to
+get guest machine crash dump from host machine's and analyse them
+separately to find which side causes the problem.
+
+>> Without this feature, we first create guest machine's dump and then
+>> create host mahine's, but there's only a short time between two
+>> processings, during which it's unlikely that buggy situation remains.
+>>
+>> So, we think the feature is useful to debug both guest machine's and
+>> host machine's sides at the same time, and expect we can make failure
+>> analysis efficiently.
+>>
+>> Of course, we believe this feature is commonly useful on the situation
+>> where guest machine doesn't work well due to something of host machine's.
+>>
+>> 2) Get offsets of VMCS information on the CPU running on the host machine
+>>
+>> If kdump doesn't work well, then it means we cannot use kvm API to get
+>> register values of guest machine and they are still left on its vmcs
+>> region. In the case, we use crash dump mechanism running outside of
+>> linux kernel, such as sadump, a firmware-based crash dump. Then VMCS
+>> information is then necessary.
 > 
-> Please apply second patch when test this patchset.
+> Shouldn't sadump then expose the VMCS offsets? Perhaps bundling them
+> into its dump file?
+> 
 
-No, you can not break the build at any point in the patch process,
-sorry.
+Firmware-based crash dump doesn't concern the os running on the machine.
+So it will not do any os handling when machine crashes.
 
-Please resend these so the build does not break, but note, you have
-missed the merge window for 3.5, as 3.4 is now out (well, will be in a
-few hours once kernel.org comes back from the dead...)
+Thanks
+Zhang Yanfei
 
-So you will have to wait for 3.5-rc1 to be released before I can apply
-it.
+ 
 
-thanks,
-
-greg k-h
