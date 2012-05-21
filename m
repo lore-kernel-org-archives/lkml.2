@@ -1,72 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751840Ab2EULMX (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 May 2012 07:12:23 -0400
-Received: from orion.tchmachines.com ([208.76.84.200]:46433 "EHLO
-	orion.tchmachines.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751090Ab2EULMW (ORCPT
+	id S1751982Ab2EULRh (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 May 2012 07:17:37 -0400
+Received: from mga03.intel.com ([143.182.124.21]:1224 "EHLO mga03.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751107Ab2EULRf convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 May 2012 07:12:22 -0400
-From: Vlad Zolotarov <vlad@scalemp.com>
-To: Ingo Molnar <mingo@kernel.org>
-Cc: linux-kernel <linux-kernel@vger.kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        "Shai Fultheim (Shai@ScaleMP.com)" <Shai@scalemp.com>,
-        Ido Yariv <ido@wizery.com>
-Subject: Re: [PATCH v3 1/2] x86: Define early read-mostly per-cpu macros
-Date: Mon, 21 May 2012 14:12:18 +0300
-Message-ID: <10387490.kMM6uuuW2C@vlad>
-Organization: ScaleMP Ltd.
-User-Agent: KMail/4.8.2 (Linux/3.2.0-24-generic; KDE/4.8.2; i686; ; )
-In-Reply-To: <20120521084626.GD31407@gmail.com>
-References: <1337527154.6093.15.camel@vlad> <20120521084626.GD31407@gmail.com>
-MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
+	Mon, 21 May 2012 07:17:35 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
+   d="scan'208";a="102356569"
+From: "Hao, Xudong" <xudong.hao@intel.com>
+To: Avi Kivity <avi@redhat.com>
+CC: Marcelo Tosatti <mtosatti@redhat.com>,
+        Xudong Hao <xudong.hao@linux.intel.com>,
+        "kvm@vger.kernel.org" <kvm@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "Shan, Haitao" <haitao.shan@intel.com>,
+        "Zhang, Xiantao" <xiantao.zhang@intel.com>
+Subject: RE: [PATCH 4/4] Enabling Access bit when doing memory swapping
+Thread-Topic: [PATCH 4/4] Enabling Access bit when doing memory swapping
+Thread-Index: AQHNMwB99DBQcMufFEKPOUTp11XjXpbOThaAgAVNAKD//9ERAIAAp38A//9+tICAAIwecA==
+Date: Mon, 21 May 2012 11:17:32 +0000
+Message-ID: <403610A45A2B5242BD291EDAE8B37D300FDC6F2E@SHSMSX102.ccr.corp.intel.com>
+References: <20120516011230.GE14256@hp-xd.sh.intel.com>
+ <20120518022241.GA14096@amt.cnet>
+ <403610A45A2B5242BD291EDAE8B37D300FDC6BEE@SHSMSX102.ccr.corp.intel.com>
+ <4FB9FD68.7000908@redhat.com>
+ <403610A45A2B5242BD291EDAE8B37D300FDC6E99@SHSMSX102.ccr.corp.intel.com>
+ <4FBA1D73.2030600@redhat.com>
+In-Reply-To: <4FBA1D73.2030600@redhat.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.239.127.40]
 Content-Type: text/plain; charset="us-ascii"
-X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
-X-AntiAbuse: Primary Hostname - orion.tchmachines.com
-X-AntiAbuse: Original Domain - vger.kernel.org
-X-AntiAbuse: Originator/Caller UID/GID - [47 12] / [47 12]
-X-AntiAbuse: Sender Address Domain - scalemp.com
+Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Monday, May 21, 2012 10:46:26 AM Ingo Molnar wrote:
-> * Vlad Zolotarov <vlad@scalemp.com> wrote:
-> > Some read-mostly per-cpu data may need to be declared or defined early,
-> > so it can be initialized and accessed before per_cpu areas are
-> > allocated.
-> > 
-> > Only the data that resides in the per_cpu areas should be read-mostly,
-> > as there is little benefit in optimizing cache lines on initialization.
-> > 
-> > Signed-off-by: Vlad Zolotarov <vlad@scalemp.com>
-> > Signed-off-by: Ido Yariv <ido@wizery.com>
-> > Signed-off-by: Shai Fultheim <shai@scalemp.com>
+> -----Original Message-----
+> From: Avi Kivity [mailto:avi@redhat.com]
+> Sent: Monday, May 21, 2012 6:48 PM
+> To: Hao, Xudong
+> Cc: Marcelo Tosatti; Xudong Hao; kvm@vger.kernel.org;
+> linux-kernel@vger.kernel.org; Shan, Haitao; Zhang, Xiantao
+> Subject: Re: [PATCH 4/4] Enabling Access bit when doing memory swapping
 > 
-> That's not a valid signoff chain. If you send me a patch then
-> you should be the last SOB - but as the author you should be the
-> first SOB as well. I edited the two SOBs to be Acked-by's.
+> On 05/21/2012 01:35 PM, Hao, Xudong wrote:
+> > >
+> > > That doesn't answer the question.  An atomic operation is now
+> non-atomic.
+> > >
+> > > You can calculate shadow_accessed_bit and keep on using clear_bit(), or
+> > > switch to cmpxchg64(), but don't just drop the dirty bit here.
+> > >
+> >
+> > I know your meaning. How about this changes:
+> >
+> > ...
+> >             young = 1;
+> > +            if (enable_ept_ad_bits)
+> > +                clear_bit(ffs(shadow_accessed_mask), (unsigned long
+> *)spte);
+> 
+> ffs() returns an off-by-one result, so this needs to be adjusted. 
 
-Thanks, Ingo. I understand. However the "history" of this patch is not as 
-simple as u represent. ;) 
+Yes, it need to decrease 1, I'll send v3 version for patch4, any other comments?
 
-It was originally written by Ido and I just posted it (then I put my SOB at 
-the end of SOB list). But after u noted that it didn't compile on !SMP i 
-reworked it but yet Ido did at least half of the coding, so I put my SOB at 
-the first place (as I was the last one writing the code) and then Ido's as he 
-actually wrote the code in this patch as well and I do wanted to give him a 
-credit.
+> IIRC
+> bsfl is slow, but this shouldn't be a problem here.
+> 
 
-Do u still think changing his (Ido's) SOB to Acked-by was the right thing to 
-do?
-
-Thanks,
-vlad
+I do not know the story...
 
 > 
-> Thanks,
-> 
-> 	Ingo
+> --
+> error compiling committee.c: too many arguments to function
+
