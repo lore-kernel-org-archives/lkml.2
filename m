@@ -1,113 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752770Ab2EUPWQ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 May 2012 11:22:16 -0400
-Received: from mailhub.sw.ru ([195.214.232.25]:10720 "EHLO relay.sw.ru"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752524Ab2EUPWL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 May 2012 11:22:11 -0400
-From: Glauber Costa <glommer@parallels.com>
-To: <linux-kernel@vger.kernel.org>
-Cc: <cgroups@vger.kernel.org>, <linux-mm@kvack.org>,
-        Glauber Costa <glommer@parallels.com>,
-        Christoph Lameter <cl@linux.com>,
-        Pekka Enberg <penberg@cs.helsinki.fi>,
-        David Rientjes <rientjes@google.com>
-Subject: [PATCH] slab+slob: dup name string
-Date: Mon, 21 May 2012 19:18:59 +0400
-Message-Id: <1337613539-29108-1-git-send-email-glommer@parallels.com>
-X-Mailer: git-send-email 1.7.7.6
+	id S1753050Ab2EUPWi (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 May 2012 11:22:38 -0400
+Received: from rcsinet15.oracle.com ([148.87.113.117]:34382 "EHLO
+	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752967Ab2EUPWg (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 21 May 2012 11:22:36 -0400
+Date: Mon, 21 May 2012 18:26:26 +0300
+From: Dan Carpenter <dan.carpenter@oracle.com>
+To: "Justin P. Mattock" <justinmattock@gmail.com>
+Cc: gregkh@linuxfoundation.org, devel@driverdev.osuosl.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH NEXT]staging: "rts_pstor" Fix typos.
+Message-ID: <20120521152626.GE4629@mwanda>
+References: <1337609955-15544-1-git-send-email-justinmattock@gmail.com>
+ <20120521143530.GC4637@mwanda>
+ <4FBA5737.3010209@gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4FBA5737.3010209@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The slub allocator creates a copy of the name string, and
-frees it later. I would like all caches to behave the same,
-whether it is the slab+slob starting to create a copy of it itself,
-or the slub ceasing to.
+On Mon, May 21, 2012 at 07:54:47AM -0700, Justin P. Mattock wrote:
+> On 05/21/2012 07:35 AM, Dan Carpenter wrote:
+> >On Mon, May 21, 2012 at 07:19:15AM -0700, Justin P. Mattock wrote:
+> >>From: "Justin P. Mattock"<justinmattock@gmail.com>
+> >>
+> >>  Signed-off-by: Justin P. Mattock<justinmattock@gmail.com>
+> >   ^
+> >Your scripts are adding an extra space here.i
+> 
+> after git format-patch my signature is in the subject line. pressing
+> enter a few times moves it down. is there a git command for properly
+> aligning this?
 
-This patch creates copies of the name string for slob and slab,
-adopting slub behavior for them all.
+The first line is the subject and then you need to leave the next
+line of the commit blank.
 
-For the slab, we can't really do it before the kmalloc caches are
-up. We need to rely that caches created before the state was set to
-EARLY will never be destroyed.
-
-Signed-off-by: Glauber Costa <glommer@parallels.com>
-CC: Christoph Lameter <cl@linux.com>
-CC: Pekka Enberg <penberg@cs.helsinki.fi>
-CC: David Rientjes <rientjes@google.com>
----
- mm/slab.c |   10 ++++++++--
- mm/slob.c |   12 ++++++++++--
- 2 files changed, 18 insertions(+), 4 deletions(-)
-
-diff --git a/mm/slab.c b/mm/slab.c
-index e901a36..cabd217 100644
---- a/mm/slab.c
-+++ b/mm/slab.c
-@@ -2118,6 +2118,7 @@ static void __kmem_cache_destroy(struct kmem_cache *cachep)
- 			kfree(l3);
- 		}
- 	}
-+	kfree(cachep->name);
- 	kmem_cache_free(&cache_cache, cachep);
- }
- 
-@@ -2526,9 +2527,14 @@ kmem_cache_create (const char *name, size_t size, size_t align,
- 		BUG_ON(ZERO_OR_NULL_PTR(cachep->slabp_cache));
- 	}
- 	cachep->ctor = ctor;
--	cachep->name = name;
- 
--	if (setup_cpu_cache(cachep, gfp)) {
-+	/* Can't do strdup while kmalloc is not up */
-+	if (g_cpucache_up > EARLY)
-+		cachep->name = kstrdup(name, GFP_KERNEL);
-+	else
-+		cachep->name = name;
-+
-+	if (!cachep->name || setup_cpu_cache(cachep, gfp)) {
- 		__kmem_cache_destroy(cachep);
- 		cachep = NULL;
- 		goto oops;
-diff --git a/mm/slob.c b/mm/slob.c
-index 8105be4..8f10d36 100644
---- a/mm/slob.c
-+++ b/mm/slob.c
-@@ -575,7 +575,12 @@ struct kmem_cache *kmem_cache_create(const char *name, size_t size,
- 		GFP_KERNEL, ARCH_KMALLOC_MINALIGN, -1);
- 
- 	if (c) {
--		c->name = name;
-+		c->name = kstrdup(name, GFP_KERNEL);
-+		if (!c->name) {
-+			slob_free(c, sizeof(struct kmem_cache));
-+			c = NULL;
-+			goto out;
-+		}
- 		c->size = size;
- 		if (flags & SLAB_DESTROY_BY_RCU) {
- 			/* leave room for rcu footer at the end of object */
-@@ -589,7 +594,9 @@ struct kmem_cache *kmem_cache_create(const char *name, size_t size,
- 			c->align = ARCH_SLAB_MINALIGN;
- 		if (c->align < align)
- 			c->align = align;
--	} else if (flags & SLAB_PANIC)
-+	}
-+out:
-+	if (!c && (flags & SLAB_PANIC))
- 		panic("Cannot create slab cache %s\n", name);
- 
- 	kmemleak_alloc(c, sizeof(struct kmem_cache), 1, GFP_KERNEL);
-@@ -602,6 +609,7 @@ void kmem_cache_destroy(struct kmem_cache *c)
- 	kmemleak_free(c);
- 	if (c->flags & SLAB_DESTROY_BY_RCU)
- 		rcu_barrier();
-+	kfree(c->name);
- 	slob_free(c, sizeof(struct kmem_cache));
- }
- EXPORT_SYMBOL(kmem_cache_destroy);
--- 
-1.7.7.6
+regards,
+dan carpenter
 
