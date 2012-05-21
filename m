@@ -1,87 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756377Ab2EUTeQ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 May 2012 15:34:16 -0400
-Received: from georges.telenet-ops.be ([195.130.137.68]:41357 "EHLO
-	georges.telenet-ops.be" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754273Ab2EUTeN (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 May 2012 15:34:13 -0400
-Date: Mon, 21 May 2012 21:34:07 +0200 (CEST)
-From: Geert Uytterhoeven <geert@linux-m68k.org>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-cc: Andrew Morton <akpm@linux-foundation.org>, Greg Ungerer <gerg@uclinux.org>,
-        Linux/m68k <linux-m68k@vger.kernel.org>,
-        Linux Kernel Development <linux-kernel@vger.kernel.org>
-Subject: [git pull] m68k updates for 3.5
-Message-ID: <alpine.DEB.2.00.1205212128130.22772@ayla.of.borg>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+	id S1756801Ab2EUTfk (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 May 2012 15:35:40 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:51056 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755126Ab2EUTfi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 21 May 2012 15:35:38 -0400
+Date: Mon, 21 May 2012 16:30:41 -0300
+From: Marcelo Tosatti <mtosatti@redhat.com>
+To: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
+Cc: Gleb Natapov <gleb@redhat.com>, Avi Kivity <avi@redhat.com>,
+        LKML <linux-kernel@vger.kernel.org>, KVM <kvm@vger.kernel.org>
+Subject: Re: [PATCH] KVM: fix async page fault working for readonly mapping
+Message-ID: <20120521193041.GA25940@amt.cnet>
+References: <4FB9E499.2010505@linux.vnet.ibm.com>
+ <20120521080856.GS10209@redhat.com>
+ <4FB9F9B6.50101@linux.vnet.ibm.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4FB9F9B6.50101@linux.vnet.ibm.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-	Hi Linus,
+On Mon, May 21, 2012 at 04:15:50PM +0800, Xiao Guangrong wrote:
+> On 05/21/2012 04:08 PM, Gleb Natapov wrote:
+> 
+> > On Mon, May 21, 2012 at 02:45:45PM +0800, Xiao Guangrong wrote:
+> >> If we map a readonly memory space from host to guest and the page is
+> >> not currently mapped in the host, we will get a fault-pfn and async
+> >> is not allowed, then the vm will crash
+> >>
+> > Why would we want to map a readonly memory space from host to guest?
+> > We may want to do it to support memory semantics on read and mmio on
+> > write, but do not right now unless something changed while I was not
+> > looking.
+> 
+> 
+> Some test cases in kvm-unit-tests and the benchmark i am writing for KVM
+> need map the function on host to guest.
 
-The following changes since commit 76e10d158efb6d4516018846f60c2ab5501900bc:
-  Linus Torvalds (1):
-        Linux 3.4
+Or ROM. Or read-only mappings of IVSHMEM (which don't exist yet).
 
-are available in the git repository at:
-
-  ra.kernel.org:/pub/scm/linux/kernel/git/geert/linux-m68k.git for-linus
-  git://git.kernel.org/pub/scm/linux/kernel/git/geert/linux-m68k.git for-linus
-
-Geert Uytterhoeven (11):
-      m68k: Remove unused MAX_NOINT_IPL definition
-      m68k/amiga: Mark z_dev_present() __init
-      m68k/amiga: Add error checks when registering platform devices
-      m68k/amiga: Use arch_initcall() for registering platform devices
-      m68k/atari: Change VME irq numbers from unsigned long to unsigned int
-      net/ariadne: Improve debug prints
-      scsi/atari: Revive "atascsi=" setup option
-      scsi/atari: Make more functions static
-      m68k: Make sure {read,write}s[bwl]() are always defined
-      m68k/video: Create <asm/vga.h>
-      m68k: Setup CROSS_COMPILE at the top
-
-Kautuk Consul (1):
-      m68k/mm: Port OOM changes to do_page_fault()
-
-Mikael Pettersson (1):
-      m68k: Correct the Atari ALLOWINT definition
-
-The net/ariadne change has been acked by David S. Miller.
-The drivers/usb/musb/musb_io.h change (for {read,write}s[bwl]()) has been
-acked by Felipe Balbi.
-
-Thanks for pulling!
-
- arch/m68k/Makefile                    |   13 ++--
- arch/m68k/amiga/platform.c            |  126 ++++++++++++++++++++++++---------
- arch/m68k/atari/ataints.c             |    4 +-
- arch/m68k/include/asm/atariints.h     |    4 +-
- arch/m68k/include/asm/entry.h         |    6 +-
- arch/m68k/include/asm/io_mm.h         |    7 ++
- arch/m68k/include/asm/vga.h           |   27 +++++++
- arch/m68k/mm/fault.c                  |   42 +++++++++--
- drivers/net/ethernet/amd/ariadne.c    |    8 +-
- drivers/net/ethernet/amd/atarilance.c |   11 +--
- drivers/scsi/atari_scsi.c             |   26 +++++--
- drivers/scsi/atari_scsi.h             |    5 --
- drivers/usb/musb/musb_io.h            |    2 +-
- include/video/vga.h                   |   22 ------
- 14 files changed, 200 insertions(+), 103 deletions(-)
- create mode 100644 arch/m68k/include/asm/vga.h
-
-Gr{oetje,eeting}s,
-
-						Geert
-
---
-Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
-
-In personal conversations with technical people, I call myself a hacker. But
-when I'm talking to journalists I just say "programmer" or something like that.
-							    -- Linus Torvalds
