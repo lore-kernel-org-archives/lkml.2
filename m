@@ -1,62 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932565Ab2EUXQT (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 May 2012 19:16:19 -0400
-Received: from nat.nue.novell.com ([195.135.221.2]:60414 "EHLO
-	nat.nue.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754984Ab2EUXQQ (ORCPT
+	id S1759515Ab2EUXQK (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 May 2012 19:16:10 -0400
+Received: from haggis.pcug.org.au ([203.10.76.10]:56358 "EHLO
+	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754984Ab2EUXQI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 May 2012 19:16:16 -0400
-Message-ID: <4FBACCB9.6040500@suse.com>
-Date: Mon, 21 May 2012 16:16:09 -0700
-From: Lee Duncan <lduncan@suse.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120421 Thunderbird/12.0
-MIME-Version: 1.0
-To: linux-scsi@vger.kernel.org
-CC: linux-kernel@vger.kernel.org, kai.makisara@kolumbus.fi, jeffm@suse.com
-Subject: [PATCH v3 5/5] st: raise device limit
-X-Enigmail-Version: 1.4.1
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	Mon, 21 May 2012 19:16:08 -0400
+Date: Tue, 22 May 2012 09:16:03 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Wim Van Sebroeck <wim@iguana.be>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: linux-next: unable to fetch the watchdog tree
+Message-Id: <20120522091603.3253aa7b0e31c208b1c41e05@canb.auug.org.au>
+X-Mailer: Sylpheed 3.2.0beta7 (GTK+ 2.24.10; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Tue__22_May_2012_09_16_03_+1000_lCrGScxWnvYV7aOw"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Jeff Mahoney <jeffm@suse.com>
+--Signature=_Tue__22_May_2012_09_16_03_+1000_lCrGScxWnvYV7aOw
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-The device limit of 128 tape drives was established in 2003 as a
-significant increase from the 8 tape drives allowed previously.
+Hi Wim,
 
-We're seeing customer sites that between a large number of drives
-and multipath are discovering more than 128 devices and running
-into problems.
+When I have tried to fetch the watchdog tree (from
+git://www.linux-watchdog.org/linux-watchdog-next.git) today and
+yesterday, the "git fetch" get a connection, but after some time (maybe
+immediately) it hangs and I eventually have to kill the "git fetch".
 
-Now that we're not stuck having to store a pointer in array
-and aren't limited by kmalloc failing on higher order allocs we can
-lift the limit to fill the entire minor range based on the number
-of modes.
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
 
-Based on the current code, that's 2^17 devices.
+--Signature=_Tue__22_May_2012_09_16_03_+1000_lCrGScxWnvYV7aOw
+Content-Type: application/pgp-signature
 
-Signed-off-by: Jeff Mahoney <jeffm@suse.com>
-Signed-off-by: Lee Duncan <lduncan@suse.com>
----
- drivers/scsi/st.h |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
 
-diff --git a/drivers/scsi/st.h b/drivers/scsi/st.h
-index 4456735..2092f93 100644
---- a/drivers/scsi/st.h
-+++ b/drivers/scsi/st.h
-@@ -77,7 +77,7 @@ struct st_modedef {
- #define ST_MODE_SHIFT (7 - ST_NBR_MODE_BITS)
- #define ST_MODE_MASK ((ST_NBR_MODES - 1) << ST_MODE_SHIFT)
- 
--#define ST_MAX_TAPES 128
-+#define ST_MAX_TAPES (1 << (20 - (ST_NBR_MODE_BITS + 1)))
- #define ST_MAX_TAPE_ENTRIES  (ST_MAX_TAPES << (ST_NBR_MODE_BITS + 1))
- 
- /* The status related to each partition */
--- 
-1.7.9.2
+iQIcBAEBCAAGBQJPusyzAAoJEECxmPOUX5FEHS4QAIu+ajvsN1qkfbGwMUsj4PA4
+5t+tBb8Upk0Ko2gU3r/33T3yiWHP+PVq0orQ5zpienNbU++FuB7S7sg5We2DO/ni
+UAPJ0maKpR1CmsOwQ/b3mIsEF3duyk+GwFgxwRSsOJPk2cahqUU/Xnx2hz/Cijk6
+YOf2Zt4EV7TBQygpaayukEYQzjh6wlqeEuwjCNzBXP4+HRO/WGp+yoi/OYRtGkeo
+ADldhJli6nm3xbB8iHoj32U/3jUWX6RRXfWu7GHRAvvWx/n5BcnNJQRC32LjhnOZ
+QHA7kZfNMyqZVUlPOGye94hlz8FyBk25SC2HzJ5v0KbjwYvZrA+fwd9TFpnyInYo
+8bVr8jEtLG9kIAZHgvrcy1VU1HIWABMIAGd+9zyt3FEennE2OtyUDMB9HnDo0/m9
+C9dN/v+voeY25jvUbL+FwUzcLdbwwEIc0QnjZFPJ5YLsgQIzob431cm1Bo/o5QJE
+Ak2k02JZPWMtlG4uVfdm9AgtZmy0a0dl3ktvhHme+Vf+SML28xTikt+jsFvsKEGf
+Mpvn7Urq56s/3DYYoLYnxdQvt09IE418m/+QocK5aab++gWsnyZx/nO2kewcqbKC
+SXVJjpU1gULOy0DoNoxviGWvMgv9mOxCPLlt7PMPgjvMMqYR6vf/M/7nP6dL5sf0
+ZH9oRU/Xt/gBlUXaCNzu
+=m194
+-----END PGP SIGNATURE-----
 
+--Signature=_Tue__22_May_2012_09_16_03_+1000_lCrGScxWnvYV7aOw--
