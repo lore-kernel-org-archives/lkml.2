@@ -1,44 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751353Ab2EUPJq (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 May 2012 11:09:46 -0400
-Received: from oproxy9.bluehost.com ([69.89.24.6]:50135 "HELO
-	oproxy9.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1750884Ab2EUPJp (ORCPT
+	id S1751841Ab2EUPO1 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 May 2012 11:14:27 -0400
+Received: from mail-vb0-f46.google.com ([209.85.212.46]:58381 "EHLO
+	mail-vb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750894Ab2EUPOZ convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 May 2012 11:09:45 -0400
-Message-ID: <4FBA5ABD.2070003@xenotime.net>
-Date: Mon, 21 May 2012 08:09:49 -0700
-From: Randy Dunlap <rdunlap@xenotime.net>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.15) Gecko/20110323 Thunderbird/3.1.9
+	Mon, 21 May 2012 11:14:25 -0400
 MIME-Version: 1.0
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-CC: linux-next@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>
-Subject: Re: linux-next: Tree for May 21
-References: <20120521190531.b764b9cd339c883d3434aef8@canb.auug.org.au>
-In-Reply-To: <20120521190531.b764b9cd339c883d3434aef8@canb.auug.org.au>
+In-Reply-To: <Pine.LNX.4.44L0.1205211059510.1725-100000@iolanthe.rowland.org>
+References: <CAF1ivSYmY3d8VonvsX0orsj0fLKXOXsLoG5jSwLs90MoP7=5Dw@mail.gmail.com>
+	<Pine.LNX.4.44L0.1205211059510.1725-100000@iolanthe.rowland.org>
+Date: Mon, 21 May 2012 23:14:24 +0800
+X-Google-Sender-Auth: 6rgcHETp5eA6MRC2GF6ZIRfkugw
+Message-ID: <CAF1ivSajZb_D9nOuA5gYeDgHgbvyqbCueV8+kDyy3DSBs1AumQ@mail.gmail.com>
+Subject: Re: [RFC v2 PATCH 2/4] block: add queue runtime pm callbacks
+From: Lin Ming <ming.m.lin@intel.com>
+To: Alan Stern <stern@rowland.harvard.edu>
+Cc: Jens Axboe <axboe@kernel.dk>, Jeff Moyer <jmoyer@redhat.com>,
+        linux-kernel@vger.kernel.org, linux-pm@vger.kernel.org,
+        linux-scsi@vger.kernel.org
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Identified-User: {1807:box742.bluehost.com:xenotime:xenotime.net} {sentby:smtp auth 50.53.38.135 authed with rdunlap@xenotime.net}
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/21/2012 02:05 AM, Stephen Rothwell wrote:
+On Mon, May 21, 2012 at 11:00 PM, Alan Stern <stern@rowland.harvard.edu> wrote:
+> On Mon, 21 May 2012, Lin Ming wrote:
+>
+>> On Fri, May 18, 2012 at 2:29 AM, Alan Stern <stern@rowland.harvard.edu> wrote:
+>> [snip]
+>> > I may have left some parts out from this brief description.  Hopefully
+>> > you'll be able to figure out the general idea and get it to work.
+>>
+>> All journal threads and flusher thread of the disk need to be freezed
+>> before suspend and thaw after resume.
+>
+> Why?  If any of those threads needs to write something to the disk
+> while the disk is suspended, the disk will simply be resumed.
 
-> Hi all,
-> 
-> Changes since 201205018:
+When tested the patches, I found that kjournald and flusher thread
+frequently resume the disk.
 
-> ----------------------------------------------------------------------------
-> 
-> I have created today's linux-next tree at
-> git://git.kernel.org/pub/scm/linux/kernel/git/next/linux-next.git
-> (patches at http://www.kernel.org/pub/linux/kernel/next/ ).
+I'm not familiar with journal.
+Are the journal threads still need to be in active state when the disk
+is already suspended?
 
-
-no linux-next 20120521 patch file  :(
-
-
--- 
-~Randy
+>
+> Alan Stern
