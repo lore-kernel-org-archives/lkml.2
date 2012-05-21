@@ -1,82 +1,121 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753925Ab2EUHaV (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 May 2012 03:30:21 -0400
-Received: from haggis.pcug.org.au ([203.10.76.10]:51143 "EHLO
-	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751609Ab2EUHaU (ORCPT
+	id S1755459Ab2EUHdS (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 May 2012 03:33:18 -0400
+Received: from mailout2.samsung.com ([203.254.224.25]:54903 "EHLO
+	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750732Ab2EUHdR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 May 2012 03:30:20 -0400
-Date: Mon, 21 May 2012 17:30:06 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: "Eric W. Biederman" <ebiederm@xmission.com>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Peter Zijlstra <peterz@infradead.org>
-Subject: linux-next: manual merge of the userns tree with the tip tree
-Message-Id: <20120521173006.3c10df123692914ab19497b8@canb.auug.org.au>
-X-Mailer: Sylpheed 3.2.0beta7 (GTK+ 2.24.10; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Mon__21_May_2012_17_30_06_+1000_0ObzOsN__.Fu1Ns9"
+	Mon, 21 May 2012 03:33:17 -0400
+MIME-version: 1.0
+Content-transfer-encoding: 8BIT
+Content-type: text/plain; charset=UTF-8
+X-AuditID: cbfee61b-b7faf6d000001f49-e3-4fb9efbb2337
+Message-id: <4FB9EFBB.20306@samsung.com>
+Date: Mon, 21 May 2012 16:33:15 +0900
+From: jonghwa3.lee@samsung.com
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:10.0.2) Gecko/20120216
+ Thunderbird/10.0.2
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>
+Cc: linux-kernel@vger.kernel.org, Alessandro Zummo <a.zummo@towertech.it>,
+        Samuel Oritz <sameo@linux.intel.com>, Liam Girdwood <trg@ti.com>,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        MyungJoo Ham <myungjoo.ham@samsung.com>,
+        Chanwoo Choi <cw00.choi@samsung.com>,
+        Chiwoong Byun <woong.byun@samsung.com>
+Subject: Re: [PATCH 2/3] regulator: MAX77686: Add Maxim 77686 regulator driver
+References: <1337333539-18371-1-git-send-email-jonghwa3.lee@samsung.com>
+ <1337333539-18371-3-git-send-email-jonghwa3.lee@samsung.com>
+ <20120520155616.GB9337@opensource.wolfsonmicro.com>
+In-reply-to: <20120520155616.GB9337@opensource.wolfsonmicro.com>
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrGLMWRmVeSWpSXmKPExsVy+t9jQd3d73f6G9xeZ2RxedccNgdGj8+b
+	5AIYo7hsUlJzMstSi/TtErgy5h7/y1iwQKji8dL/LA2M6/m6GDk5JARMJPa2n2aCsMUkLtxb
+	z9bFyMUhJDCdUaL9yWZmkASvgKDEj8n3WLoYOTiYBeQljlzKBgkzC6hLTJq3iBmivo9JYvOv
+	dSwQ9RoSm6fPYAWxWQRUJfZ8OAoWZxOQk3jb9I0RZI6oQITEr34OEFME6Ibf9ytBxjALbGWS
+	WHztGzNIXFjAT+LycXeI8XsZJW50trOBxDkFHCTWtzJOYBSYheS4WQjHzUJy3AJG5lWMoqkF
+	yQXFSem5RnrFibnFpXnpesn5uZsYwaH3THoH46oGi0OMAhyMSjy8C97s9BdiTSwrrsw9xCjB
+	wawkwnv3IVCINyWxsiq1KD++qDQntfgQozQHi5I475MlO/yFBNITS1KzU1MLUotgskwcnFIN
+	jJMLvxYqi959lWBt5bA4vHi1yPqjErc23/W4snmh2BnlJ0cOn1+6bk+K18O/Rw5+WeHwce/e
+	IsXZ3HNmsatJJExPUDvbU1Eyz6vlC8eiR6cNFzu9uWGnVrXKZMLfyOS/Uq4Tt++N+64RP2Xp
+	/yNXlhdZbq8LqzGuzf9eteqwQpHe9SntvgvYeMOVWIozEg21mIuKEwEh0q9+OQIAAA==
+X-TM-AS-MML: No
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Mon__21_May_2012_17_30_06_+1000_0ObzOsN__.Fu1Ns9
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On 2012년 05월 21일 00:56, Mark Brown wrote:
+Hi, Mark.
 
-Hi Eric,
+> On Fri, May 18, 2012 at 06:32:18PM +0900, Jonghwa Lee wrote:
+> 
+>> Add driver for support max77686 regulator.
+>> MAX77686 provides LDOs[1~26] and BUCKs[1~9]. It support to set or get the
+>> volatege of regulator on max77686 chip with using regmap.
+> 
+> Looks mostly good, a few things below but they're all pretty
+> minor/straghtforward.
+> 
+>> +/* LDO3 ~ 5, 9 ~ 14, 16 ~ 26 (uV) */
+>> +static const struct voltage_map_desc ldo_voltage_map_desc = {
+>> +	.min = 800000,	.max = 3950000,	.step = 50000,	.n_bits = 6,
+>> +};
+> 
+> Should convert all these to use regulator_map_voltage_linear() and
+> regulator_{get,set}_voltage_vsel().
+> 
+>> +	ret = regmap_read(max77686->iodev->regmap, reg, &val);
+>> +
+>> +	if (ret)
+>> +		return ret;
+> 
+>> +	printk(PMIC_DEBUG "id=%d, ret=%d, val=%x, mask=%x, pattern=%x\n",
+>> +		 rdev_get_id(rdev), (val & mask) == pattern,
+>> +		 val, mask, pattern);
+> 
+> dev_dbg() or just remove this (and similarly for the other similar logs).
+> 
+>> +	{
+>> +		.name	= "EN32KHz AP",
+>> +		.id	= MAX77686_EN32KHZ_AP,
+>> +		.ops	= &max77686_fixedvolt_ops,
+>> +		.type	= REGULATOR_VOLTAGE,
+>> +		.owner	= THIS_MODULE,
+>> +	}, {
+>> +		.name	= "EN32KHz CP",
+>> +		.id	= MAX77686_EN32KHZ_CP,
+>> +		.ops	= &max77686_fixedvolt_ops,
+>> +		.type	= REGULATOR_VOLTAGE,
+>> +		.owner	= THIS_MODULE,
+>> +	}, {
+>> +		.name	= "EN32KHz PMIC",
+>> +		.id	= MAX77686_P32KH,
+>> +		.ops	= &max77686_fixedvolt_ops,
+>> +		.type	= REGULATOR_VOLTAGE,
+>> +		.owner	= THIS_MODULE,
+>> +	},
+> 
+> These should be managed via the clock API now we have one.
 
-Today's linux-next merge of the userns tree got a conflict in
-include/linux/sched.h between commit 50954a1f450e ("sched/numa: Provide
-sysctl knob to disable numa scheduling and turn it off by default") from
-the tip tree and commit 7b44ab978b77 ("userns: Disassociate user_struct
-from the user_namespace") from the userns tree.
+>
 
-Just context changes.  I fixed it up (see below) and can carry the fix as
-necessary.
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
+I already updated all your comments except only this one. Could you
+explain more details?
 
-diff --cc include/linux/sched.h
-index 37a7cd8,5fdc1eb..0000000
---- a/include/linux/sched.h
-+++ b/include/linux/sched.h
-@@@ -90,7 -90,7 +90,8 @@@ struct sched_param=20
-  #include <linux/latencytop.h>
-  #include <linux/cred.h>
-  #include <linux/llist.h>
- +#include <linux/jump_label.h>
-+ #include <linux/uidgid.h>
- =20
-  #include <asm/processor.h>
- =20
 
---Signature=_Mon__21_May_2012_17_30_06_+1000_0ObzOsN__.Fu1Ns9
-Content-Type: application/pgp-signature
+>> +	if (!pdata)
+>> +		dev_err(pdev->dev.parent, "No platform init data supplied.\n");
+> 
+> Should be able to carry on without this and register the regulators to
+> allow for diagnostics and powering off unused regulators when we have
+> full constraints.
+> 
+>> +	size = sizeof(struct regulator_dev *) * MAX77686_REGULATORS;
+>> +	max77686->rdev = devm_kzalloc(&pdev->dev, size, GFP_KERNEL);
+>> +	if (!max77686->rdev) {
+>> +		devm_kfree(&pdev->dev, max77686);
+> 
+> Shouldn't need to devm_kfree(), the major point is that this will happen
+> automatically.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
 
-iQIcBAEBCAAGBQJPue7+AAoJEECxmPOUX5FEYxsP/iKCPwt3HdulO57p/qTdnTUq
-gqPDweZYP/lgKb9YGjX+nbACdT/IXfGY1npj/rQXJSkYTZO1CStkQUjdC5DKjeQd
-XoJ7FzqhRoysgqV6JIYcyPMuT7aBKnWDcFNqueF8M4ofcMKQoLxU+g9qSUJOKSmK
-8WbQwqop8TfmyxqCfbHCwierdd18PIdt7F0CLNpSVpNBkdDGj0qTrV5BoI/Pl6yc
-TZCXNDQ7E/byVGx8p8lbu2h0o9GdGqD5WjYdihvfaOiczLSy5NAZmolVDOQy5TAP
-WCHv0/qhg6JGqrtM8DnG7j5XDsoEi/+23re7j+pj50tq2Y6z+lfabYyf3VykAHE5
-AzhzP8wLC4LljxCF+CLmm6EWGavSIn3BCLVniR1Eb06YxzHPpMl3cidzzbWAIa3V
-7O5hi1ggprzV+LwNZQ4i954DlDHjin8/ztghfknmk4l8ouOf6v6MM55dEaAg+ib4
-da0X5QLUm+gH4pjMqBF9O62Jono3VEPaOMT9vf+/AfSKi8h4AeW7ZVLUeLqU3z+5
-x4IDle/5e6qnN3RXZzq/MkP0ImXDeN1BfjHP45QXwOFcBX5iTPmWkuUnFI45dFiO
-7YFaPob2iX64pox2nUf4BllO2Sni2Dq2Dx5pd/h4p5l7GoWeRSi3ixiXNQGhZaAp
-TqWBV85uaKDeQUjle2V/
-=ILbH
------END PGP SIGNATURE-----
-
---Signature=_Mon__21_May_2012_17_30_06_+1000_0ObzOsN__.Fu1Ns9--
+Thanks.
