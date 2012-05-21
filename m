@@ -1,74 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759126Ab2EUVKR (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 May 2012 17:10:17 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:19248 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759104Ab2EUVKP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 May 2012 17:10:15 -0400
-Date: Mon, 21 May 2012 17:09:59 -0400
-From: Dave Jones <davej@redhat.com>
-To: Christoph Lameter <cl@linux.com>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Linux Kernel <linux-kernel@vger.kernel.org>, linux-mm@kvack.org,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Stephen Wilson <wilsons@start.ca>, Mel Gorman <mgorman@suse.de>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: 3.4-rc7 numa_policy slab poison.
-Message-ID: <20120521210959.GF12123@redhat.com>
-Mail-Followup-To: Dave Jones <davej@redhat.com>,
-	Christoph Lameter <cl@linux.com>,
-	Linus Torvalds <torvalds@linux-foundation.org>,
-	Linux Kernel <linux-kernel@vger.kernel.org>, linux-mm@kvack.org,
-	KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-	Stephen Wilson <wilsons@start.ca>, Mel Gorman <mgorman@suse.de>,
-	Andrew Morton <akpm@linux-foundation.org>
-References: <20120517213120.GA12329@redhat.com>
- <20120518185851.GA5728@redhat.com>
- <20120521154709.GA8697@redhat.com>
- <CA+55aFyqMJ1X08kQwJ7snkYo6MxfVKqFJx7LXBkP_ug4LTCZ=Q@mail.gmail.com>
- <20120521200118.GA12123@redhat.com>
- <alpine.DEB.2.00.1205211510480.10940@router.home>
- <20120521202904.GB12123@redhat.com>
- <alpine.DEB.2.00.1205211535050.10940@router.home>
- <20120521203838.GD12123@redhat.com>
- <alpine.DEB.2.00.1205211544340.10940@router.home>
+	id S1759139Ab2EUVMN (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 May 2012 17:12:13 -0400
+Received: from www.linutronix.de ([62.245.132.108]:33533 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759104Ab2EUVML (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 21 May 2012 17:12:11 -0400
+Date: Mon, 21 May 2012 23:12:09 +0200 (CEST)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Ning Jiang <ning.n.jiang@gmail.com>
+cc: rjw@sisk.pl, linux-kernel@vger.kernel.org
+Subject: Re: Add IRQS_PENDING for nested and simple irq handler as well
+In-Reply-To: <CAH3Oq6T-OVj_=kVBdDXxize5v5hovp8FQSDhxCHvF_kcX4QPuA@mail.gmail.com>
+Message-ID: <alpine.LFD.2.02.1205212308590.3231@ionos>
+References: <CAH3Oq6T-OVj_=kVBdDXxize5v5hovp8FQSDhxCHvF_kcX4QPuA@mail.gmail.com>
+User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.DEB.2.00.1205211544340.10940@router.home>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, May 21, 2012 at 03:47:16PM -0500, Christoph Lameter wrote:
- > On Mon, 21 May 2012, Dave Jones wrote:
- > 
- > > On Mon, May 21, 2012 at 03:36:39PM -0500, Christoph Lameter wrote:
- > >  > On Mon, 21 May 2012, Dave Jones wrote:
- > >  >
- > >  > > It does create log files in the current dir with the parameters used.
- > >  > > You should be able to grep for the pid that caused the actual oops.
- > >  >
- > >  > Ugghh. It screws up the colors on my screeen. Lightgrey on white. Is there
- > >  > any way to get these horrible escape sequences cleared out? If I use
- > >  > "less" to view the output then there are just the escape sequences
- > >  > visible.
- > >
- > > Define them to nothing in trinity.h
- > 
- > Dependencies are not correctly set. I had to do a "make clean" to get a
- > rebuild done.
- > 
- > Cannot set them to "" since the compiler then fails the compile. Set to "
- > " instead but that looks horrible too.
- > 
- > It still wont trigger with
- > 
- > 	./trinity -c mbind
+On Tue, 22 May 2012, Ning Jiang wrote:
 
-ok, added a --nocolors option now. Re-pull.
-I'll look at the dependancy problem next. Thanks for the feedback.
+> >From eb72d4c573b482f85b227558deca297d8a8de1df Mon Sep 17 00:00:00 2001
+> From: Ning Jiang <ning.n.jiang@gmail.com>
+> Date: Tue, 22 May 2012 00:19:20 +0800
+> Subject: [PATCH] genirq: Add IRQS_PENDING for nested and simple irq
+> handler as well
+> 
+> Usually nested and simple irq act as second level in interrupt
+> distribution tree, in suspend, we need to keep first level irq
+> functional by irq flag IRQF_NO_SUSPEND and check the 'pending'
+> state in the second level.
+> 
+> More information can be found in the log of commit:
 
-	Dave
+Please provide a proper explanation why you think that handling the
+flag for those interrupts is important as well, rather than refering
+to an explanation of something different.
+ 
+Thanks,
+
+	tglx
