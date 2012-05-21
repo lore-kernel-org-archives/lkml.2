@@ -1,312 +1,266 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756505Ab2EUCYF (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 20 May 2012 22:24:05 -0400
-Received: from LGEMRELSE1Q.lge.com ([156.147.1.111]:49563 "EHLO
-	LGEMRELSE1Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752128Ab2EUCYD (ORCPT
+	id S1756760Ab2EUCZL (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 20 May 2012 22:25:11 -0400
+Received: from www262.sakura.ne.jp ([202.181.97.72]:55714 "EHLO
+	www262.sakura.ne.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755985Ab2EUCZH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 20 May 2012 22:24:03 -0400
-X-AuditID: 9c93016f-b7c3cae000001954-ba-4fb9a73f126b
-From: Minchan Kim <minchan@kernel.org>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Minchan Kim <minchan@kernel.org>,
-        Seth Jennings <sjenning@linux.vnet.ibm.com>,
-        Dan Magenheimer <dan.magenheimer@oracle.com>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Nitin Gupta <ngupta@vflare.org>
-Subject: [PATCH] zsmalloc: use unsigned long instead of void *
-Date: Mon, 21 May 2012 11:23:33 +0900
-Message-Id: <1337567013-4741-1-git-send-email-minchan@kernel.org>
-X-Mailer: git-send-email 1.7.9.5
-X-Brightmail-Tracker: AAAAAA==
+	Sun, 20 May 2012 22:25:07 -0400
+X-Nat-Received: from [202.181.97.72]:64084 [ident-empty]
+	by smtp-proxy.isp with TPROXY id 1337567101.3031
+To: ebiederm@xmission.com
+Cc: sfr@canb.auug.org.au, linux-kernel@vger.kernel.org
+Subject: Re: Please include user-namespace.git in linux-next
+From: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
+References: <m11unyn70b.fsf@fess.ebiederm.org>
+	<m1likyz4mh.fsf@fess.ebiederm.org>
+In-Reply-To: <m1likyz4mh.fsf@fess.ebiederm.org>
+Message-Id: <201205211125.GAF21848.tOFSVFHJLOQFMO@I-love.SAKURA.ne.jp>
+X-Mailer: Winbiff [Version 2.51 PL2]
+X-Accept-Language: ja,en,zh
+Date: Mon, 21 May 2012 11:25:01 +0900
+Mime-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+X-Anti-Virus: Kaspersky Anti-Virus for Linux Mail Server 5.6.44/RELEASE, bases: 20052012 #8068461, status: clean
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-We should use unsigned long as handle instead of void * to avoid any
-confusion. Without this, users may just treat zs_malloc return value as
-a pointer and try to deference it.
+I think something is wrong with commit e1c972b6 "userns: Add negative depends
+on entries to avoid building code that is userns unsafe".
 
-This patch passed compile test(zram, zcache and ramster) and zram is
-tested on qemu.
+With gcc 4.4.6 on CentOS 6.2, "make allnoconfig" where UIDGID_CONVERTED should
+become y is showing
 
-Cc: Seth Jennings <sjenning@linux.vnet.ibm.com>
-Cc: Dan Magenheimer <dan.magenheimer@oracle.com>
-Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Cc: Nitin Gupta <ngupta@vflare.org>
-Signed-off-by: Minchan Kim <minchan@kernel.org>
----
+Symbol: USER_NS [=n]
+Type  : boolean
+Prompt: User namespace (EXPERIMENTAL)
+  Defined at init/Kconfig:880
+  Depends on: NAMESPACES [=y] && EXPERIMENTAL [=n] && UIDGID_CONVERTED [=n]
+  Location:
+    -> General setup
+      -> Namespaces support (NAMESPACES [=y])
+  Selects: UIDGID_STRICT_TYPE_CHECKS [=n]
 
-Nitin, Konrad and I discussed and concluded that we should use 'unsigned long'
-instead of 'void *'.
-Look at the lengthy thread if you have a question.
-http://marc.info/?l=linux-mm&m=133716653118566&w=4
-Watch out! it has number of noises.
+.
+I think this commit meant "!FOO" rather than "FOO = n",
+othwewise there is no way for linux-next-20120518 to enable USER_NS.
+----------------------------------------
+PATCH: user_ns: Fix wrong dependency in UIDGID_CONVERTED.
 
- drivers/staging/zcache/zcache-main.c     |   12 ++++++------
- drivers/staging/zram/zram_drv.c          |   16 ++++++++--------
- drivers/staging/zram/zram_drv.h          |    2 +-
- drivers/staging/zsmalloc/zsmalloc-main.c |   24 ++++++++++++------------
- drivers/staging/zsmalloc/zsmalloc.h      |    8 ++++----
- 5 files changed, 31 insertions(+), 31 deletions(-)
+"depends on FOO = n" should be "depends on !FOO".
 
-diff --git a/drivers/staging/zcache/zcache-main.c b/drivers/staging/zcache/zcache-main.c
-index 2734dac..4c218a7 100644
---- a/drivers/staging/zcache/zcache-main.c
-+++ b/drivers/staging/zcache/zcache-main.c
-@@ -700,7 +700,7 @@ static struct zv_hdr *zv_create(struct zs_pool *pool, uint32_t pool_id,
- 	struct zv_hdr *zv;
- 	u32 size = clen + sizeof(struct zv_hdr);
- 	int chunks = (size + (CHUNK_SIZE - 1)) >> CHUNK_SHIFT;
--	void *handle = NULL;
-+	unsigned long handle = 0;
+Signed-off-by: Tetsuo Handa <penguin-kernel@I-love.SKAURA.ne.jp>
+----------
+diff --git a/init/Kconfig b/init/Kconfig
+index 20f6702..7316ed6 100644
+--- a/init/Kconfig
++++ b/init/Kconfig
+@@ -917,110 +917,110 @@ config UIDGID_CONVERTED
  
- 	BUG_ON(!irqs_disabled());
- 	BUG_ON(chunks >= NCHUNKS);
-@@ -718,10 +718,10 @@ static struct zv_hdr *zv_create(struct zs_pool *pool, uint32_t pool_id,
- 	memcpy((char *)zv + sizeof(struct zv_hdr), cdata, clen);
- 	zs_unmap_object(pool, handle);
- out:
--	return handle;
-+	return (struct zv_hdr *)handle;
- }
+ 	# List of kernel pieces that need user namespace work
+ 	# Features
+-	depends on SYSVIPC = n
+-	depends on IMA = n
+-	depends on EVM = n
+-	depends on KEYS = n
+-	depends on AUDIT = n
+-	depends on AUDITSYSCALL = n
+-	depends on TASKSTATS = n
+-	depends on TRACING = n
+-	depends on FS_POSIX_ACL = n
+-	depends on QUOTA = n
+-	depends on QUOTACTL = n
+-	depends on DEBUG_CREDENTIALS = n
+-	depends on BSD_PROCESS_ACCT = n
+-	depends on DRM = n
+-	depends on PROC_EVENTS = n
++	depends on !SYSVIPC
++	depends on !IMA
++	depends on !EVM
++	depends on !KEYS
++	depends on !AUDIT
++	depends on !AUDITSYSCALL
++	depends on !TASKSTATS
++	depends on !TRACING
++	depends on !FS_POSIX_ACL
++	depends on !QUOTA
++	depends on !QUOTACTL
++	depends on !DEBUG_CREDENTIALS
++	depends on !BSD_PROCESS_ACCT
++	depends on !DRM
++	depends on !PROC_EVENTS
  
--static void zv_free(struct zs_pool *pool, void *handle)
-+static void zv_free(struct zs_pool *pool, unsigned long handle)
- {
- 	unsigned long flags;
- 	struct zv_hdr *zv;
-@@ -743,7 +743,7 @@ static void zv_free(struct zs_pool *pool, void *handle)
- 	local_irq_restore(flags);
- }
+ 	# Networking
+-	depends on NET = n
+-	depends on NET_9P = n
+-	depends on IPX = n
+-	depends on PHONET = n
+-	depends on NET_CLS_FLOW = n
+-	depends on NETFILTER_XT_MATCH_OWNER = n
+-	depends on NETFILTER_XT_MATCH_RECENT = n
+-	depends on NETFILTER_XT_TARGET_LOG = n
+-	depends on NETFILTER_NETLINK_LOG = n
+-	depends on INET = n
+-	depends on IPV6 = n
+-	depends on IP_SCTP = n
+-	depends on AF_RXRPC = n
+-	depends on LLC2 = n
+-	depends on NET_KEY = n
+-	depends on INET_DIAG = n
+-	depends on DNS_RESOLVER = n
+-	depends on AX25 = n
+-	depends on ATALK = n
++	depends on !NET
++	depends on !NET_9P
++	depends on !IPX
++	depends on !PHONET
++	depends on !NET_CLS_FLOW
++	depends on !NETFILTER_XT_MATCH_OWNER
++	depends on !NETFILTER_XT_MATCH_RECENT
++	depends on !NETFILTER_XT_TARGET_LOG
++	depends on !NETFILTER_NETLINK_LOG
++	depends on !INET
++	depends on !IPV6
++	depends on !IP_SCTP
++	depends on !AF_RXRPC
++	depends on !LLC2
++	depends on !NET_KEY
++	depends on !INET_DIAG
++	depends on !DNS_RESOLVER
++	depends on !AX25
++	depends on !ATALK
  
--static void zv_decompress(struct page *page, void *handle)
-+static void zv_decompress(struct page *page, unsigned long handle)
- {
- 	unsigned int clen = PAGE_SIZE;
- 	char *to_va;
-@@ -1247,7 +1247,7 @@ static int zcache_pampd_get_data(char *data, size_t *bufsize, bool raw,
- 	int ret = 0;
+ 	# Filesystems
+-	depends on USB_DEVICEFS = n
+-	depends on USB_GADGETFS = n
+-	depends on USB_FUNCTIONFS = n
+-	depends on DEVTMPFS = n
+-	depends on XENFS = n
+-
+-	depends on 9P_FS = n
+-	depends on ADFS_FS = n
+-	depends on AFFS_FS = n
+-	depends on AFS_FS = n
+-	depends on AUTOFS4_FS = n
+-	depends on BEFS_FS = n
+-	depends on BFS_FS = n
+-	depends on BTRFS_FS = n
+-	depends on CEPH_FS = n
+-	depends on CIFS = n
+-	depends on CODA_FS = n
+-	depends on CONFIGFS_FS = n
+-	depends on CRAMFS = n
+-	depends on DEBUG_FS = n
+-	depends on ECRYPT_FS = n
+-	depends on EFS_FS = n
+-	depends on EXOFS_FS = n
+-	depends on FAT_FS = n
+-	depends on FUSE_FS = n
+-	depends on GFS2_FS = n
+-	depends on HFS_FS = n
+-	depends on HFSPLUS_FS = n
+-	depends on HPFS_FS = n
+-	depends on HUGETLBFS = n
+-	depends on ISO9660_FS = n
+-	depends on JFFS2_FS = n
+-	depends on JFS_FS = n
+-	depends on LOGFS = n
+-	depends on MINIX_FS = n
+-	depends on NCP_FS = n
+-	depends on NFSD = n
+-	depends on NFS_FS = n
+-	depends on NILFS2_FS = n
+-	depends on NTFS_FS = n
+-	depends on OCFS2_FS = n
+-	depends on OMFS_FS = n
+-	depends on QNX4FS_FS = n
+-	depends on QNX6FS_FS = n
+-	depends on REISERFS_FS = n
+-	depends on SQUASHFS = n
+-	depends on SYSV_FS = n
+-	depends on UBIFS_FS = n
+-	depends on UDF_FS = n
+-	depends on UFS_FS = n
+-	depends on VXFS_FS = n
+-	depends on XFS_FS = n
+-
+-	depends on !UML || HOSTFS = n
++	depends on !USB_DEVICEFS
++	depends on !USB_GADGETFS
++	depends on !USB_FUNCTIONFS
++	depends on !DEVTMPFS
++	depends on !XENFS
++
++	depends on !9P_FS
++	depends on !ADFS_FS
++	depends on !AFFS_FS
++	depends on !AFS_FS
++	depends on !AUTOFS4_FS
++	depends on !BEFS_FS
++	depends on !BFS_FS
++	depends on !BTRFS_FS
++	depends on !CEPH_FS
++	depends on !CIFS
++	depends on !CODA_FS
++	depends on !CONFIGFS_FS
++	depends on !CRAMFS
++	depends on !DEBUG_FS
++	depends on !ECRYPT_FS
++	depends on !EFS_FS
++	depends on !EXOFS_FS
++	depends on !FAT_FS
++	depends on !FUSE_FS
++	depends on !GFS2_FS
++	depends on !HFS_FS
++	depends on !HFSPLUS_FS
++	depends on !HPFS_FS
++	depends on !HUGETLBFS
++	depends on !ISO9660_FS
++	depends on !JFFS2_FS
++	depends on !JFS_FS
++	depends on !LOGFS
++	depends on !MINIX_FS
++	depends on !NCP_FS
++	depends on !NFSD
++	depends on !NFS_FS
++	depends on !NILFS2_FS
++	depends on !NTFS_FS
++	depends on !OCFS2_FS
++	depends on !OMFS_FS
++	depends on !QNX4FS_FS
++	depends on !QNX6FS_FS
++	depends on !REISERFS_FS
++	depends on !SQUASHFS
++	depends on !SYSV_FS
++	depends on !UBIFS_FS
++	depends on !UDF_FS
++	depends on !UFS_FS
++	depends on !VXFS_FS
++	depends on !XFS_FS
++
++	depends on !UML || !HOSTFS
  
- 	BUG_ON(is_ephemeral(pool));
--	zv_decompress((struct page *)(data), pampd);
-+	zv_decompress((struct page *)(data), (unsigned long)pampd);
- 	return ret;
- }
+ 	# The rare drivers that won't build
+-	depends on AIRO = n
+-	depends on AIRO_CS = n
+-	depends on TUN = n
+-	depends on INFINIBAND_QIB = n
+-	depends on BLK_DEV_LOOP = n
+-	depends on ANDROID_BINDER_IPC = n
++	depends on !AIRO
++	depends on !AIRO_CS
++	depends on !TUN
++	depends on !INFINIBAND_QIB
++	depends on !BLK_DEV_LOOP
++	depends on !ANDROID_BINDER_IPC
  
-@@ -1282,7 +1282,7 @@ static void zcache_pampd_free(void *pampd, struct tmem_pool *pool,
- 		atomic_dec(&zcache_curr_eph_pampd_count);
- 		BUG_ON(atomic_read(&zcache_curr_eph_pampd_count) < 0);
- 	} else {
--		zv_free(cli->zspool, pampd);
-+		zv_free(cli->zspool, (unsigned long)pampd);
- 		atomic_dec(&zcache_curr_pers_pampd_count);
- 		BUG_ON(atomic_read(&zcache_curr_pers_pampd_count) < 0);
- 	}
-diff --git a/drivers/staging/zram/zram_drv.c b/drivers/staging/zram/zram_drv.c
-index 685d612..abd69d1 100644
---- a/drivers/staging/zram/zram_drv.c
-+++ b/drivers/staging/zram/zram_drv.c
-@@ -135,7 +135,7 @@ static void zram_set_disksize(struct zram *zram, size_t totalram_bytes)
+ 	# Security modules
+-	depends on SECURITY_TOMOYO = n
+-	depends on SECURITY_APPARMOR = n
++	depends on !SECURITY_TOMOYO
++	depends on !SECURITY_APPARMOR
  
- static void zram_free_page(struct zram *zram, size_t index)
- {
--	void *handle = zram->table[index].handle;
-+	unsigned long handle = zram->table[index].handle;
- 
- 	if (unlikely(!handle)) {
- 		/*
-@@ -150,7 +150,7 @@ static void zram_free_page(struct zram *zram, size_t index)
- 	}
- 
- 	if (unlikely(zram_test_flag(zram, index, ZRAM_UNCOMPRESSED))) {
--		__free_page(handle);
-+		__free_page((struct page *)handle);
- 		zram_clear_flag(zram, index, ZRAM_UNCOMPRESSED);
- 		zram_stat_dec(&zram->stats.pages_expand);
- 		goto out;
-@@ -166,7 +166,7 @@ out:
- 			zram->table[index].size);
- 	zram_stat_dec(&zram->stats.pages_stored);
- 
--	zram->table[index].handle = NULL;
-+	zram->table[index].handle = 0;
- 	zram->table[index].size = 0;
- }
- 
-@@ -189,7 +189,7 @@ static void handle_uncompressed_page(struct zram *zram, struct bio_vec *bvec,
- 	unsigned char *user_mem, *cmem;
- 
- 	user_mem = kmap_atomic(page);
--	cmem = kmap_atomic(zram->table[index].handle);
-+	cmem = kmap_atomic((struct page *)zram->table[index].handle);
- 
- 	memcpy(user_mem + bvec->bv_offset, cmem + offset, bvec->bv_len);
- 	kunmap_atomic(cmem);
-@@ -317,7 +317,7 @@ static int zram_bvec_write(struct zram *zram, struct bio_vec *bvec, u32 index,
- 	int ret;
- 	u32 store_offset;
- 	size_t clen;
--	void *handle;
-+	unsigned long handle;
- 	struct zobj_header *zheader;
- 	struct page *page, *page_store;
- 	unsigned char *user_mem, *cmem, *src, *uncmem = NULL;
-@@ -399,7 +399,7 @@ static int zram_bvec_write(struct zram *zram, struct bio_vec *bvec, u32 index,
- 		store_offset = 0;
- 		zram_set_flag(zram, index, ZRAM_UNCOMPRESSED);
- 		zram_stat_inc(&zram->stats.pages_expand);
--		handle = page_store;
-+		handle = (unsigned long)page_store;
- 		src = kmap_atomic(page);
- 		cmem = kmap_atomic(page_store);
- 		goto memstore;
-@@ -592,12 +592,12 @@ void __zram_reset_device(struct zram *zram)
- 
- 	/* Free all pages that are still in this zram device */
- 	for (index = 0; index < zram->disksize >> PAGE_SHIFT; index++) {
--		void *handle = zram->table[index].handle;
-+		unsigned long handle = zram->table[index].handle;
- 		if (!handle)
- 			continue;
- 
- 		if (unlikely(zram_test_flag(zram, index, ZRAM_UNCOMPRESSED)))
--			__free_page(handle);
-+			__free_page((struct page *)handle);
- 		else
- 			zs_free(zram->mem_pool, handle);
- 	}
-diff --git a/drivers/staging/zram/zram_drv.h b/drivers/staging/zram/zram_drv.h
-index fbe8ac9..7a7e256 100644
---- a/drivers/staging/zram/zram_drv.h
-+++ b/drivers/staging/zram/zram_drv.h
-@@ -81,7 +81,7 @@ enum zram_pageflags {
- 
- /* Allocated for each disk page */
- struct table {
--	void *handle;
-+	unsigned long handle;
- 	u16 size;	/* object size (excluding header) */
- 	u8 count;	/* object ref count (not yet used) */
- 	u8 flags;
-diff --git a/drivers/staging/zsmalloc/zsmalloc-main.c b/drivers/staging/zsmalloc/zsmalloc-main.c
-index 4496737..ae10a1a 100644
---- a/drivers/staging/zsmalloc/zsmalloc-main.c
-+++ b/drivers/staging/zsmalloc/zsmalloc-main.c
-@@ -247,10 +247,10 @@ static void *obj_location_to_handle(struct page *page, unsigned long obj_idx)
- }
- 
- /* Decode <page, obj_idx> pair from the given object handle */
--static void obj_handle_to_location(void *handle, struct page **page,
-+static void obj_handle_to_location(unsigned long handle, struct page **page,
- 				unsigned long *obj_idx)
- {
--	unsigned long hval = (unsigned long)handle;
-+	unsigned long hval = handle;
- 
- 	*page = pfn_to_page(hval >> OBJ_INDEX_BITS);
- 	*obj_idx = hval & OBJ_INDEX_MASK;
-@@ -568,12 +568,12 @@ EXPORT_SYMBOL_GPL(zs_destroy_pool);
-  * @size: size of block to allocate
-  *
-  * On success, handle to the allocated object is returned,
-- * otherwise NULL.
-+ * otherwise 0.
-  * Allocation requests with size > ZS_MAX_ALLOC_SIZE will fail.
-  */
--void *zs_malloc(struct zs_pool *pool, size_t size)
-+unsigned long zs_malloc(struct zs_pool *pool, size_t size)
- {
--	void *obj;
-+	unsigned long obj;
- 	struct link_free *link;
- 	int class_idx;
- 	struct size_class *class;
-@@ -582,7 +582,7 @@ void *zs_malloc(struct zs_pool *pool, size_t size)
- 	unsigned long m_objidx, m_offset;
- 
- 	if (unlikely(!size || size > ZS_MAX_ALLOC_SIZE))
--		return NULL;
-+		return 0;
- 
- 	class_idx = get_size_class_index(size);
- 	class = &pool->size_class[class_idx];
-@@ -595,14 +595,14 @@ void *zs_malloc(struct zs_pool *pool, size_t size)
- 		spin_unlock(&class->lock);
- 		first_page = alloc_zspage(class, pool->flags);
- 		if (unlikely(!first_page))
--			return NULL;
-+			return 0;
- 
- 		set_zspage_mapping(first_page, class->index, ZS_EMPTY);
- 		spin_lock(&class->lock);
- 		class->pages_allocated += class->pages_per_zspage;
- 	}
- 
--	obj = first_page->freelist;
-+	obj = (unsigned long)first_page->freelist;
- 	obj_handle_to_location(obj, &m_page, &m_objidx);
- 	m_offset = obj_idx_to_offset(m_page, m_objidx, class->size);
- 
-@@ -621,7 +621,7 @@ void *zs_malloc(struct zs_pool *pool, size_t size)
- }
- EXPORT_SYMBOL_GPL(zs_malloc);
- 
--void zs_free(struct zs_pool *pool, void *obj)
-+void zs_free(struct zs_pool *pool, unsigned long obj)
- {
- 	struct link_free *link;
- 	struct page *first_page, *f_page;
-@@ -648,7 +648,7 @@ void zs_free(struct zs_pool *pool, void *obj)
- 							+ f_offset);
- 	link->next = first_page->freelist;
- 	kunmap_atomic(link);
--	first_page->freelist = obj;
-+	first_page->freelist = (void *)obj;
- 
- 	first_page->inuse--;
- 	fullness = fix_fullness_group(pool, first_page);
-@@ -672,7 +672,7 @@ EXPORT_SYMBOL_GPL(zs_free);
-  * this function. When done with the object, it must be unmapped using
-  * zs_unmap_object
- */
--void *zs_map_object(struct zs_pool *pool, void *handle)
-+void *zs_map_object(struct zs_pool *pool, unsigned long handle)
- {
- 	struct page *page;
- 	unsigned long obj_idx, off;
-@@ -712,7 +712,7 @@ void *zs_map_object(struct zs_pool *pool, void *handle)
- }
- EXPORT_SYMBOL_GPL(zs_map_object);
- 
--void zs_unmap_object(struct zs_pool *pool, void *handle)
-+void zs_unmap_object(struct zs_pool *pool, unsigned long handle)
- {
- 	struct page *page;
- 	unsigned long obj_idx, off;
-diff --git a/drivers/staging/zsmalloc/zsmalloc.h b/drivers/staging/zsmalloc/zsmalloc.h
-index 949384e..485cbb1 100644
---- a/drivers/staging/zsmalloc/zsmalloc.h
-+++ b/drivers/staging/zsmalloc/zsmalloc.h
-@@ -20,11 +20,11 @@ struct zs_pool;
- struct zs_pool *zs_create_pool(const char *name, gfp_t flags);
- void zs_destroy_pool(struct zs_pool *pool);
- 
--void *zs_malloc(struct zs_pool *pool, size_t size);
--void zs_free(struct zs_pool *pool, void *obj);
-+unsigned long zs_malloc(struct zs_pool *pool, size_t size);
-+void zs_free(struct zs_pool *pool, unsigned long obj);
- 
--void *zs_map_object(struct zs_pool *pool, void *handle);
--void zs_unmap_object(struct zs_pool *pool, void *handle);
-+void *zs_map_object(struct zs_pool *pool, unsigned long handle);
-+void zs_unmap_object(struct zs_pool *pool, unsigned long handle);
- 
- u64 zs_get_total_size_bytes(struct zs_pool *pool);
- 
--- 
-1.7.9.5
-
+ config UIDGID_STRICT_TYPE_CHECKS
+ 	bool "Require conversions between uid/gids and their internal representation"
