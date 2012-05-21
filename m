@@ -1,78 +1,195 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754730Ab2EUGmP (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 May 2012 02:42:15 -0400
-Received: from LGEMRELSE6Q.lge.com ([156.147.1.121]:50452 "EHLO
-	LGEMRELSE6Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751467Ab2EUGmO convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 May 2012 02:42:14 -0400
-X-AuditID: 9c930179-b7bb9ae000000ea5-c8-4fb9e3c3be40
-From: Namhyung Kim <namhyung.kim@lge.com>
-To: Ingo Molnar <mingo@kernel.org>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Arnaldo Carvalho de Melo <acme@infradead.org>,
-        Borislav Petkov <bp@alien8.de>, Jiri Olsa <jolsa@redhat.com>,
-        Arun Sharma <asharma@fb.com>, Michael Rubin <mrubin@google.com>,
-        David Sharp <dhsharp@google.com>,
-        Vaibhav Nagarnaik <vnagarnaik@google.com>,
-        Julia Lawall <julia@diku.dk>, Tom Zanussi <tzanussi@gmail.com>,
-        David Ahern <dsahern@gmail.com>
-Subject: Re: [PATCH 00/15] tools: Unify perf and trace-cmd trace event format parsing v3
-References: <1335356819-16710-1-git-send-email-fweisbec@gmail.com>
-	<20120507081424.GE16608@gmail.com>
-Date: Mon, 21 May 2012 15:40:04 +0900
-In-Reply-To: <20120507081424.GE16608@gmail.com> (Ingo Molnar's message of
-	"Mon, 7 May 2012 10:14:24 +0200")
-Message-ID: <87ehqe2g1n.fsf@sejong.aot.lge.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.0.95 (gnu/linux)
+	id S1754854Ab2EUGnJ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 May 2012 02:43:09 -0400
+Received: from cn.fujitsu.com ([222.73.24.84]:56968 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1753895Ab2EUGnH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 21 May 2012 02:43:07 -0400
+X-IronPort-AV: E=Sophos;i="4.75,630,1330876800"; 
+   d="scan'208";a="5000923"
+Message-ID: <4FB9E4CE.8060709@cn.fujitsu.com>
+Date: Mon, 21 May 2012 14:46:38 +0800
+From: Wen Congyang <wency@cn.fujitsu.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100413 Fedora/3.0.4-2.fc13 Thunderbird/3.0.4
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 8BIT
-X-Brightmail-Tracker: AAAAAA==
+To: kvm list <kvm@vger.kernel.org>, qemu-devel <qemu-devel@nongnu.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Avi Kivity <avi@redhat.com>,
+        "Daniel P. Berrange" <berrange@redhat.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Jan Kiszka <jan.kiszka@siemens.com>, Gleb Natapov <gleb@redhat.com>
+Subject: [PATCH] kvm: notify host when guest panicked
+X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2012/05/21 14:41:37,
+	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2012/05/21 14:41:40,
+	Serialize complete at 2012/05/21 14:41:40
+Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi, Ingo
+We can know the guest is panicked when the guest runs on xen.
+But we do not have such feature on kvm.
 
-On Mon, 7 May 2012 10:14:24 +0200, Ingo Molnar wrote:
-> * Frederic Weisbecker <fweisbec@gmail.com> wrote:
->> This is essentially a rebase against latest tip:perf/core updates.
->> Mostly due to conflicts against the perf Makefile updates.
->> 
->> I think we all agree that this library needs improvements but these
->> should rather be done incrementally. The current perf trace event parsing
->> is anyway much backward compared to that library.
->> 
->> Default target is a static library in tools/lib/traceevent/libtraceevent.a
->> 
->> This can be pulled from:
->> 
->> git://github.com/fweisbec/tracing.git
->> 	perf/parse-events-4
->
-> It gives me:
->
-> /home/mingo/tip/tools/lib/traceevent/parse-filter.c: In function ‘create_arg_item’:
-> /home/mingo/tip/tools/lib/traceevent/parse-filter.c:343:9: warning: comparison between ‘enum filter_arg_type’ and ‘enum event_type’ [-Wenum-compare]
-> /home/mingo/tip/tools/lib/traceevent/parse-filter.c:339:2: warning: case value ‘8’ not in enumerated type ‘enum filter_arg_type’ [-Wswitch]
->
-> Had this been in tools/perf/ it would use -Werror already and 
-> you'd have fixed it, not requiring me to unpull these bits :-/
->
-> So can we please make a libevent.so, built sanely within 
-> tools/perf/lib/ or such and distributed together with perf so 
-> that the two can never get out of sync?
->
+Another purpose of this feature is: management app(for example:
+libvirt) can do auto dump when the guest is panicked. If management
+app does not do auto dump, the guest's user can do dump by hand if
+he sees the guest is panicked.
 
-So what are you gonna do with this patchset? If you merge this series,
-I can back-port latest changes on trace-cmd and do my further work like
-'die' removal on it.
+We have three solutions to implement this feature:
+1. use vmcall
+2. use I/O port
+3. use virtio-serial.
 
-Thanks,
-Namhyung
+We have decided to avoid touching hypervisor. The reason why I choose
+choose the I/O port is:
+1. it is easier to implememt
+2. it does not depend any virtual device
+3. it can work when startint the kernel
+
+Signed-off-by: Wen Congyang <wency@cn.fujitsu.com>
+---
+ arch/ia64/include/asm/kvm_para.h    |    5 +++++
+ arch/powerpc/include/asm/kvm_para.h |    5 +++++
+ arch/s390/include/asm/kvm_para.h    |    5 +++++
+ arch/x86/include/asm/kvm_para.h     |    7 +++++++
+ arch/x86/kernel/kvm.c               |   14 ++++++++++++++
+ include/linux/kvm_para.h            |   15 +++++++++++++++
+ 6 files changed, 51 insertions(+), 0 deletions(-)
+
+diff --git a/arch/ia64/include/asm/kvm_para.h b/arch/ia64/include/asm/kvm_para.h
+index 1588aee..a890096 100644
+--- a/arch/ia64/include/asm/kvm_para.h
++++ b/arch/ia64/include/asm/kvm_para.h
+@@ -26,6 +26,11 @@ static inline unsigned int kvm_arch_para_features(void)
+ 	return 0;
+ }
+ 
++static inline unsigned int kvm_arch_pv_features(void)
++{
++	return 0;
++}
++
+ #endif
+ 
+ #endif
+diff --git a/arch/powerpc/include/asm/kvm_para.h b/arch/powerpc/include/asm/kvm_para.h
+index 7b754e7..b5f7c35 100644
+--- a/arch/powerpc/include/asm/kvm_para.h
++++ b/arch/powerpc/include/asm/kvm_para.h
+@@ -206,6 +206,11 @@ static inline unsigned int kvm_arch_para_features(void)
+ 	return r;
+ }
+ 
++static inline unsigned int kvm_arch_pv_features(void)
++{
++	return 0;
++}
++
+ #endif /* __KERNEL__ */
+ 
+ #endif /* __POWERPC_KVM_PARA_H__ */
+diff --git a/arch/s390/include/asm/kvm_para.h b/arch/s390/include/asm/kvm_para.h
+index 6964db2..21a8d18 100644
+--- a/arch/s390/include/asm/kvm_para.h
++++ b/arch/s390/include/asm/kvm_para.h
+@@ -149,6 +149,11 @@ static inline unsigned int kvm_arch_para_features(void)
+ 	return 0;
+ }
+ 
++static inline unsigned int kvm_arch_pv_features(void)
++{
++	return 0;
++}
++
+ #endif
+ 
+ #endif /* __S390_KVM_PARA_H */
+diff --git a/arch/x86/include/asm/kvm_para.h b/arch/x86/include/asm/kvm_para.h
+index 734c376..f66b16e 100644
+--- a/arch/x86/include/asm/kvm_para.h
++++ b/arch/x86/include/asm/kvm_para.h
+@@ -208,6 +208,13 @@ static inline void kvm_disable_steal_time(void)
+ }
+ #endif
+ 
++#ifdef KVM_PV_PORT
++static inline unsigned int kvm_arch_pv_features(void)
++{
++	return inl(KVM_PV_PORT);
++}
++#endif
++
+ #endif /* __KERNEL__ */
+ 
+ #endif /* _ASM_X86_KVM_PARA_H */
+diff --git a/arch/x86/kernel/kvm.c b/arch/x86/kernel/kvm.c
+index b8ba6e4..adfde45 100644
+--- a/arch/x86/kernel/kvm.c
++++ b/arch/x86/kernel/kvm.c
+@@ -335,6 +335,17 @@ static struct notifier_block kvm_pv_reboot_nb = {
+ 	.notifier_call = kvm_pv_reboot_notify,
+ };
+ 
++static int
++kvm_pv_panic_notify(struct notifier_block *nb, unsigned long code, void *unused)
++{
++	outl(KVM_PV_PANICKED, KVM_PV_PORT);
++	return NOTIFY_DONE;
++}
++
++static struct notifier_block kvm_pv_panic_nb = {
++	.notifier_call = kvm_pv_panic_notify,
++};
++
+ static u64 kvm_steal_clock(int cpu)
+ {
+ 	u64 steal;
+@@ -421,6 +432,9 @@ void __init kvm_guest_init(void)
+ 
+ 	paravirt_ops_setup();
+ 	register_reboot_notifier(&kvm_pv_reboot_nb);
++	if (kvm_pv_has_feature(KVM_PV_FEATURE_PANICKED))
++		atomic_notifier_chain_register(&panic_notifier_list,
++			&kvm_pv_panic_nb);
+ 	for (i = 0; i < KVM_TASK_SLEEP_HASHSIZE; i++)
+ 		spin_lock_init(&async_pf_sleepers[i].lock);
+ 	if (kvm_para_has_feature(KVM_FEATURE_ASYNC_PF))
+diff --git a/include/linux/kvm_para.h b/include/linux/kvm_para.h
+index ff476dd..849b0d5 100644
+--- a/include/linux/kvm_para.h
++++ b/include/linux/kvm_para.h
+@@ -20,6 +20,14 @@
+ #define KVM_HC_FEATURES			3
+ #define KVM_HC_PPC_MAP_MAGIC_PAGE	4
+ 
++#define KVM_PV_PORT	(0x505UL)
++
++/* The bit of the value read from KVM_PV_PORT */
++#define KVM_PV_FEATURE_PANICKED	0
++
++/* The value writen to KVM_PV_PORT */
++#define KVM_PV_PANICKED		1
++
+ /*
+  * hypercalls use architecture specific
+  */
+@@ -33,5 +41,12 @@ static inline int kvm_para_has_feature(unsigned int feature)
+ 		return 1;
+ 	return 0;
+ }
++
++static inline int kvm_pv_has_feature(unsigned int feature)
++{
++	if (kvm_arch_pv_features() & (1UL << feature))
++		return 1;
++	return 0;
++}
+ #endif /* __KERNEL__ */
+ #endif /* __LINUX_KVM_PARA_H */
+-- 
+1.7.1
+
