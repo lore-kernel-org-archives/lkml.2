@@ -1,137 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758577Ab2EUUkW (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 May 2012 16:40:22 -0400
-Received: from am1ehsobe004.messaging.microsoft.com ([213.199.154.207]:39964
-	"EHLO am1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1758434Ab2EUUkT convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 May 2012 16:40:19 -0400
-X-Forefront-Antispam-Report: CIP:163.181.249.108;KIP:(null);UIP:(null);IPV:NLI;H:ausb3twp01.amd.com;RD:none;EFVD:NLI
-X-SpamScore: -9
-X-BigFish: VPS-9(zzc89bh1432N98dKzz1202hzzz2dh668h839h93fhd25hf0ah)
-X-WSS-ID: 0M4E430-01-COV-02
-X-M-MSG: 
-Date: Mon, 21 May 2012 22:40:42 +0200
-From: Borislav Petkov <borislav.petkov@amd.com>
-To: Mauro Carvalho Chehab <mchehab@redhat.com>
-CC: "Luck, Tony" <tony.luck@intel.com>, Ingo Molnar <mingo@kernel.org>,
-        Linux Edac Mailing List <linux-edac@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Aristeu Rozanski <arozansk@redhat.com>,
-        Doug Thompson <norsk5@yahoo.com>, Steven Rostedt <rostedt@goodmis.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Ingo Molnar <mingo@redhat.com>
-Subject: Re: [PATCH v24b] RAS: Add a tracepoint for reporting memory
- controller events
-Message-ID: <20120521204042.GA14255@aftab.osrc.amd.com>
-References: <4FB65D52.9060108@redhat.com>
- <20120518164014.GX20215@aftab.osrc.amd.com>
- <4FB6866E.7090503@redhat.com>
- <20120518185258.GE20215@aftab.osrc.amd.com>
- <3908561D78D1C84285E8C5FCA982C28F192F1A33@ORSMSX104.amr.corp.intel.com>
- <20120518211211.GA26464@aftab.osrc.amd.com>
- <20120519092618.GC29991@aftab.osrc.amd.com>
- <4FBA5F59.5000604@redhat.com>
- <20120521160041.GJ3334@aftab.osrc.amd.com>
- <4FBA6FE8.50707@redhat.com>
+	id S1758628Ab2EUUpL (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 May 2012 16:45:11 -0400
+Received: from mail-gh0-f174.google.com ([209.85.160.174]:45024 "EHLO
+	mail-gh0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758480Ab2EUUpJ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 21 May 2012 16:45:09 -0400
+From: Eldad Zack <eldad@fogrefinery.com>
+To: Alexander Viro <viro@zeniv.linux.org.uk>
+Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Eldad Zack <eldad@fogrefinery.com>
+Subject: [PATCH] fs/namei: fix possible uninitialized use of inode
+Date: Mon, 21 May 2012 22:44:18 +0200
+Message-Id: <1337633058-3866-1-git-send-email-eldad@fogrefinery.com>
+X-Mailer: git-send-email 1.7.10
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Disposition: inline
-In-Reply-To: <4FBA6FE8.50707@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-Content-Transfer-Encoding: 8BIT
-X-OriginatorOrg: amd.com
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, May 21, 2012 at 01:40:08PM -0300, Mauro Carvalho Chehab wrote:
-> That's exactly what the latest version of this patch does.
+commit 12f8ad4b0533d9212cb1d5e58ed73d2170114785 introduces a path
+which might lead to uninitialized use.
 
-Really, where is the address field?
+fs/namei.c: In function ‘walk_component’:
+fs/namei.c:1293:6: warning: ‘inode’ may be used uninitialized in this function [-Wuninitialized]
+fs/namei.c:1308:16: note: ‘inode’ was declared here
 
-+       TP_PROTO(const unsigned int err_type,
-+                const unsigned int mc_index,
-+                const char *error_msg,
-+                const char *label,
-+                const char *location,
-+                const char *core_detail,
-+                const char *driver_detail),
+The commit mentioned above removed this:
 
+	*inode = nd->inode;
 
-[ … ]
+And now there's a possible that path looks like this:
+...
+  1147                  dentry = __d_lookup_rcu(parent, name, &seq, nd->inode);
+  1148                  if (!dentry)
+  1149                          goto unlazy;
+...
+  1187  unlazy:
+...
+  1204          if (unlikely(status <= 0)) {
+  1205                  if (status < 0) {
+  1206                          dput(dentry);
+  1207                          return status;
+  1208                  }
+  1209                  if (!d_invalidate(dentry)) {
+  1210                          dput(dentry);
+  1211                          goto need_lookup;
+  1212                  }
+  1213          }
 
-> Huh? Nobody said to add a bit to tell about the validity of another bit.
-> 
-> I'm saying is that a bitfield could be used to indicate that certain integer
-> values (and not bits) are filled or not. Btw, MCE has it: depending on the
-> MCE status registers, reading other registers may be needed to evaluate
-> fully the error.
+So we might return 0 to walk_component, which does this compare right after
+check the return code from do_lookup:
 
-Bullshit, there'll be no bits showing the validity of other fields.
+  1312:		if (!inode) {
 
-> > We're going to have single fields for EDAC-global valid values and leave
-> > the driver-specific stuff lumped in one char * string.
-> > 
-> > Then, if a driver cannot specify sindrome or whatever, it simply DOESN'T
-> > PUT IT IN THE STRING instead of adding validity bits.
-> > 
-> > [ … ]
-> 
-> Parsing strings that can be changed from Kernel versions and drivers is a 
-> maintenance nightmare. Both I and Tony pointed it with different examples.
+Signed-off-by: Eldad Zack <eldad@fogrefinery.com>
+---
+ fs/namei.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-Bullshit, stop making up reasons to prove your point.
-
-> >>> Which is basically what I'm suggesting for a couple of days now :-)
-> >>>
-> >>>        TP_PROTO(const unsigned int err_type,
-> >>>                 const unsigned int mc_index,
-> >>>                 const char *error_msg,
-> >>>                 const char *label,
-> >>>                 const char *location,
-> >>>                 const char *detail)
-> >>>
-> >>> and I'm really not sure about err_type - this is an edac-specific define
-> >>> and it means nothing outside the kernel so its string representation
-> >>> could very well could be merged with error_msg and we can drop the ( ? :
-> >>> ) ugliness in the tracepoint definition itself.
-> >>
-> >> All error management systems use a mandatory field for the error severity.
-> > 
-> > ... I'm pretty sure the defines you're exporting are not the same as
-> > your error management systems require. So some kind of mapping is
-> > still needed. Which shows that you're going to need to massage that
-> > information in userspace after all.
-> 
-> Yes, field mapping is needed at the management systems, but this is not the
-> point. It is not Kernel's task to help mapping fields inside userspace apps,
-> but it is the task of a properly designed API to avoid userspace to guess about
-> what the kernel is reporting.
-> 
-> A printk/sprintk-designed API, as you're proposing, requires userspace to guess
-> what the events mean, with the help of a very careful designed parsing rules
-> that needs to take into account every single EDAC driver (as the (s)printk message
-> message will vary among them), and needs to be reviewed on every single new kernel
-> version, as the (s)printk output can change among different Kernel versions. Even
-> -stable versions might require changing the parsers, as a fixup patch might be
-> changing the (s)printk arguments.
-
-Enough with the crap already - now you're really desperately looking for
-bogus arguments to prove your point.
-
-We're going to have single fields for EDAC-global valid values and leave
-the driver-specific stuff lumped in one char * string.
-
-
+diff --git a/fs/namei.c b/fs/namei.c
+index f9e883c..f77b69b 100644
+--- a/fs/namei.c
++++ b/fs/namei.c
+@@ -1295,7 +1295,7 @@ static inline int should_follow_link(struct inode *inode, int follow)
+ static inline int walk_component(struct nameidata *nd, struct path *path,
+ 		struct qstr *name, int type, int follow)
+ {
+-	struct inode *inode;
++	struct inode *inode = NULL;
+ 	int err;
+ 	/*
+ 	 * "." and ".." are special - ".." especially so because it has
 -- 
-Regards/Gruss,
-Boris.
-
-Advanced Micro Devices GmbH
-Einsteinring 24, 85609 Dornach
-GM: Alberto Bozzo
-Reg: Dornach, Landkreis Muenchen
-HRB Nr. 43632 WEEE Registernr: 129 19551
+1.7.10
 
