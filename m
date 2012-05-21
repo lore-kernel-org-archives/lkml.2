@@ -1,76 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757701Ab2EUOIa (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 May 2012 10:08:30 -0400
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:52203 "EHLO
-	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757153Ab2EUOI2 (ORCPT
+	id S1757928Ab2EUOJG (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 May 2012 10:09:06 -0400
+Received: from stats.peacock.arvixe.com ([174.122.104.67]:48070 "EHLO
+	peacock.arvixe.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1757420Ab2EUOJE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 May 2012 10:08:28 -0400
-Date: Mon, 21 May 2012 16:08:22 +0200
-From: Ingo Molnar <mingo@kernel.org>
-To: Vlad Zolotarov <vlad@scalemp.com>
-Cc: "Shai Fultheim (Shai@ScaleMP.com)" <Shai@scalemp.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
-        Ido Yariv <ido@wizery.com>
-Subject: Re: [PATCH v3 0/2] Move x86_cpu_to_apicid to the __read_mostly
- section
-Message-ID: <20120521140822.GA12976@gmail.com>
-References: <1337527148.6093.14.camel@vlad>
- <9B14D1490DDECA4E974F6B9FC9EBAB317D295F4D11@VMBX108.ihostexchange.net>
- <20120521123246.GB17065@gmail.com>
- <1693911.sUneyHzERA@vlad>
+	Mon, 21 May 2012 10:09:04 -0400
+Message-ID: <5dc3b5b61e2776c46cbd97c82f88c870.squirrel@webmail.firszt.eu>
+In-Reply-To: <alpine.DEB.2.00.1205191905430.24674@chino.kir.corp.google.com>
+References: <1336674232-5410-1-git-send-email-przemo@firszt.eu>
+    <alpine.LNX.2.00.1205111448350.17928@pobox.suse.cz>
+    <alpine.DEB.2.00.1205191905430.24674@chino.kir.corp.google.com>
+Date: Mon, 21 May 2012 15:08:56 +0100
+Subject: Re: [PATCH] HID: wacom: Add LED selector control for Wacom Intuos4
+ WL
+From: "Przemo Firszt" <przemo@firszt.eu>
+To: "David Rientjes" <rientjes@google.com>
+Cc: "Jiri Kosina" <jkosina@suse.cz>, "Przemo Firszt" <przemo@firszt.eu>,
+        pinglinux@gmail.com, linux-kernel@vger.kernel.org,
+        linux-input@vger.kernel.org, linuxwacom-devel@lists.sourceforge.net
+Reply-To: przemo@firszt.eu
+User-Agent: SquirrelMail/1.4.22
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1693911.sUneyHzERA@vlad>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain;charset=iso-8859-2
+Content-Transfer-Encoding: 8bit
+X-Priority: 3 (Normal)
+Importance: Normal
+X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
+X-AntiAbuse: Primary Hostname - peacock.arvixe.com
+X-AntiAbuse: Original Domain - vger.kernel.org
+X-AntiAbuse: Originator/Caller UID/GID - [47 12] / [47 12]
+X-AntiAbuse: Sender Address Domain - firszt.eu
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
-* Vlad Zolotarov <vlad@scalemp.com> wrote:
+Dnia 20 Maja 2012, 3:11 am, N, David Rientjes napisa³(a):
+> On Fri, 11 May 2012, Jiri Kosina wrote:
+>
+>> > Add sysfs attribute to control LED selector on Wacom Intuos4.
+>>
+>> Applied, thanks.
+>>
+>
+> This results in a build failure if you've enabled CONFIG_HID_WACOM without
+> CONFIG_NEW_LEDS, which is required for CONFIG_LEDS_CLASS.
+>
+[..]
+Thanks for catching that!
+-- 
+Regards,
+Przemo Firszt
 
-> On Monday, May 21, 2012 02:32:46 PM Ingo Molnar wrote:
-> > * Shai Fultheim (Shai@ScaleMP.com) <Shai@ScaleMP.com> wrote:
-> > > Ingo,
-> > > 
-> > > The reason for this, as you pointed out, is the 'cache line'
-> > > size (4096 bytes).  We see significant false sharing is we do
-> > > not move this next to each other.
-> > 
-> > Which write-often variable caused the many cache flushes/fills?
-> > cpu_to_apicid is read mostly.
-> > 
-> > I.e. it might make more sense to identify the frequenty 
-> > *modified* percpu variables, and move them to a separate 
-> > section. I *think* most percpu variables are read mostly, so 
-> > it would be more maintainable in the long run to figure out 
-> > the frequently modified ones, not the frequently not 
-> > modified ones.
-> 
-> I tend to disagree about the general claim that most per-CPU 
-> variables are read-mostly: consider the per-CPU data 
-> structures used in lock-less algorithms like softnet_data used 
-> in a NAPI. I'm not sure what is a more common - read- only or 
-> not-read-only per-cpu data, but surely there are both...
-
-Well, a quick tally of percpu variables on a 'make defconfig' 
-kernel would tell us one way or another?
-
-Here there's almost 200 percpu variables active in the 64-bit 
-x86 defconfig, and a quick random sample suggests that most are 
-read-mostly.
-
-I have no fundamental prefer to either approach, but the 
-direction taken should be justified explicitly, with numbers, 
-arguments, etc. - also a short blurb somewhere in the headers 
-that explains when they should be used, so that others can be 
-aware of vSMP's special needs here.
-
-Thanks,
-
-	Ingo
