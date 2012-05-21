@@ -1,65 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755762Ab2EUBoS (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 20 May 2012 21:44:18 -0400
-Received: from LGEMRELSE7Q.lge.com ([156.147.1.151]:63687 "EHLO
-	LGEMRELSE7Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755164Ab2EUBoR (ORCPT
+	id S1756355Ab2EUCGT (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 20 May 2012 22:06:19 -0400
+Received: from haggis.pcug.org.au ([203.10.76.10]:53689 "EHLO
+	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756100Ab2EUCFa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 20 May 2012 21:44:17 -0400
-X-AuditID: 9c930197-b7be2ae000000ebb-d0-4fb99dec73fd
-From: Namhyung Kim <namhyung.kim@lge.com>
-To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Mackerras <paulus@samba.org>,
-        Ingo Molnar <mingo@redhat.com>, Namhyung Kim <namhyung@gmail.com>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: [PATCH] perf target: Add cpu flag to sample_type if target has cpu
-Date: Mon, 21 May 2012 10:42:07 +0900
-Message-Id: <1337564527-9367-1-git-send-email-namhyung.kim@lge.com>
-X-Mailer: git-send-email 1.7.10.1
-X-Brightmail-Tracker: AAAAAA==
+	Sun, 20 May 2012 22:05:30 -0400
+Date: Mon, 21 May 2012 12:05:26 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Roland Dreier <roland@kernel.org>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        linux-kernel@vger.kernel.org, linux-rdma@vger.kernel.org
+Subject: Re: [GIT PULL] please pull infiniband.git
+Message-Id: <20120521120526.fcd34b38fa4d21fdfd28728b@canb.auug.org.au>
+In-Reply-To: <1337562868-9887-1-git-send-email-roland@kernel.org>
+References: <1337562868-9887-1-git-send-email-roland@kernel.org>
+X-Mailer: Sylpheed 3.2.0beta7 (GTK+ 2.24.10; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Mon__21_May_2012_12_05_26_+1000_UCXOZhjpRRIOIcLv"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add PERF_SAMPLE_CPU flag into attr->sample_type if an user
-specified any of cpu target (either system-wide or cpu list).
-It will show correct values when cpu sort key is given for
-perf top and perf report.
+--Signature=_Mon__21_May_2012_12_05_26_+1000_UCXOZhjpRRIOIcLv
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Signed-off-by: Namhyung Kim <namhyung.kim@lge.com>
----
- tools/perf/builtin-top.c |    3 +++
- tools/perf/util/evsel.c  |    2 +-
- 2 files changed, 4 insertions(+), 1 deletion(-)
+Hi Roland,
 
-diff --git a/tools/perf/builtin-top.c b/tools/perf/builtin-top.c
-index ebcd15883ab8..8e3cf429dd18 100644
---- a/tools/perf/builtin-top.c
-+++ b/tools/perf/builtin-top.c
-@@ -900,6 +900,9 @@ static void perf_top__start_counters(struct perf_top *top)
- 			attr->read_format |= PERF_FORMAT_ID;
- 		}
- 
-+		if (perf_target__has_cpu(&top->target))
-+			attr->sample_type |= PERF_SAMPLE_CPU;
-+
- 		if (symbol_conf.use_callchain)
- 			attr->sample_type |= PERF_SAMPLE_CALLCHAIN;
- 
-diff --git a/tools/perf/util/evsel.c b/tools/perf/util/evsel.c
-index d7a2b4b9801d..d26b8fe0abd1 100644
---- a/tools/perf/util/evsel.c
-+++ b/tools/perf/util/evsel.c
-@@ -107,7 +107,7 @@ void perf_evsel__config(struct perf_evsel *evsel, struct perf_record_opts *opts,
- 	if (opts->call_graph)
- 		attr->sample_type	|= PERF_SAMPLE_CALLCHAIN;
- 
--	if (opts->target.system_wide)
-+	if (perf_target__has_cpu(&opts->target))
- 		attr->sample_type	|= PERF_SAMPLE_CPU;
- 
- 	if (opts->period)
--- 
-1.7.10.1
+On Sun, 20 May 2012 18:14:28 -0700 Roland Dreier <roland@kernel.org> wrote:
+>
+> Vipul Pandya (10):
+>       cxgb4: Detect DB FULL events and notify RDMA ULD
+>       cxgb4: Common platform specific changes for DB Drop Recovery
+>       cxgb4: DB Drop Recovery for RDMA and LLD queues
+>       RDMA/cxgb4: Add debugfs RDMA memory stats
+>       RDMA/cxgb4: Add DB Overflow Avoidance
+>       RDMA/cxgb4: Disable interrupts in c4iw_ev_dispatch()
+>       RDMA/cxgb4: DB Drop Recovery for RDMA and LLD queues
+>       RDMA/cxgb4: Use vmalloc() for debugfs QP dump
 
+This commit breaks (at least) powerpc builds and has not bee in linux-next
+before today.
+
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+http://www.canb.auug.org.au/~sfr/
+
+--Signature=_Mon__21_May_2012_12_05_26_+1000_UCXOZhjpRRIOIcLv
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBCAAGBQJPuaLmAAoJEECxmPOUX5FEq8wQAJH1x+jSI+YzUzNui/T8LYPx
+EOETQGAtauFbCIaaPc/BZYWwXmdjbtQlYblaqsQhmvxU6JryJIkPP2Q5XORbrW9y
+sHEQ+5Mga5RGXMh2Cm8u3uRGC123SSjMe3QxZt3Hm+sHcUk/0Knne7t3TuRyhTK6
+vGYz9Nna4Tlpd41L153VhLx6LJ6m+QzTYR3ayKiDPzjTbGiLJ3cmzWg5KwTIQxqI
+ourzs5yQ28jDR1Up02AKkhLRxovBoildYx/IPSwyVEg+8MElYzCx8DpxjDfgFH/F
+6HP5yonln/DtdAzELRgehQFL1xwhF897hgJV7L2B0kuKoulOxcYXI8FC0WrU034R
+yjT2cG/iIbuBJF2KLTWqLiunUl9PyXX75CitqTEo5Svvpo+E0jnW3/Qsziv3Glqa
+x6DauGkJM93vJJ1MwUcRH0JZ/k8JpkUprf2r4cQRiQrEnQOgJ+q6RMCqcvM90o+t
+nPxZaJ4R5rPQYSlxrdvIoVq+XGjNNtBhu2tLTs3xBQceDcGuPMIxrQaVvzLoVSQG
+PU6NGLo0wDyUHEINRItY1rbWRkPa0H8Vp/wtuPkuoBV5YUq4hMMLZVzJDRrLUjyH
+nJlaDyAYkO4/wMQKC4ouI6/EbZAnc95pSVOj4Rj5PjuXPmjVxgC8GSOPbYLSSOu/
+shulFjU2K7wYsAB9fWHX
+=wH7E
+-----END PGP SIGNATURE-----
+
+--Signature=_Mon__21_May_2012_12_05_26_+1000_UCXOZhjpRRIOIcLv--
