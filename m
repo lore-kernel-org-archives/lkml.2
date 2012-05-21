@@ -1,73 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753863Ab2EULqA (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 May 2012 07:46:00 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:30195 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752613Ab2EULp6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 May 2012 07:45:58 -0400
-Date: Mon, 21 May 2012 13:45:31 +0200
-From: Jiri Olsa <jolsa@redhat.com>
-To: Namhyung Kim <namhyung.kim@lge.com>
-Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@redhat.com>,
-        Namhyung Kim <namhyung@gmail.com>, LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 3/5] perf tools: Split out util/symbol-elf.c
-Message-ID: <20120521114531.GB5923@m.brq.redhat.com>
-References: <1336979424-17206-1-git-send-email-namhyung.kim@lge.com>
- <1336979424-17206-4-git-send-email-namhyung.kim@lge.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1336979424-17206-4-git-send-email-namhyung.kim@lge.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1753929Ab2EULqv (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 May 2012 07:46:51 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:50686 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752271Ab2EULqt (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 21 May 2012 07:46:49 -0400
+Message-ID: <1337600801.2615.1.camel@phoenix>
+Subject: [PATCH] regulator: palmas: Use
+ regulator_[list|map]_voltage_linear() for palmas_ops_smps10
+From: Axel Lin <axel.lin@gmail.com>
+To: linux-kernel@vger.kernel.org
+Cc: Graeme Gregory <gg@slimlogic.co.uk>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Liam Girdwood <lrg@ti.com>
+Date: Mon, 21 May 2012 19:46:41 +0800
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.2- 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-hi,
-this one needs rebase to current code, I got some conflicts
+Signed-off-by: Axel Lin <axel.lin@gmail.com>
+---
+ drivers/regulator/palmas-regulator.c |   11 ++++-------
+ 1 files changed, 4 insertions(+), 7 deletions(-)
 
-On Mon, May 14, 2012 at 04:10:22PM +0900, Namhyung Kim wrote:
-> Factor out the dependency of ELF handling into separate
-> symbol-elf.c file. It is a preparation of building a
-> minimalistic version perf tools which doesn't depend on
-> the elfutils.
-> 
-> Signed-off-by: Namhyung Kim <namhyung.kim@lge.com>
-> ---
->  tools/perf/Makefile          |    1 +
->  tools/perf/util/symbol-elf.c |  691 +++++++++++++++++++++++++++++++++++++++++
->  tools/perf/util/symbol.c     |  704 +-----------------------------------------
->  tools/perf/util/symbol.h     |   15 +
->  4 files changed, 715 insertions(+), 696 deletions(-)
->  create mode 100644 tools/perf/util/symbol-elf.c
-> 
-> diff --git a/tools/perf/Makefile b/tools/perf/Makefile
-> index e98e14c88532..7198c6cbc006 100644
-> --- a/tools/perf/Makefile
-> +++ b/tools/perf/Makefile
-> @@ -334,6 +334,7 @@ LIB_OBJS += $(OUTPUT)util/usage.o
->  LIB_OBJS += $(OUTPUT)util/wrapper.o
->  LIB_OBJS += $(OUTPUT)util/sigchain.o
->  LIB_OBJS += $(OUTPUT)util/symbol.o
-> +LIB_OBJS += $(OUTPUT)util/symbol-elf.o
+diff --git a/drivers/regulator/palmas-regulator.c b/drivers/regulator/palmas-regulator.c
+index 9b7ca90..4fd8333 100644
+--- a/drivers/regulator/palmas-regulator.c
++++ b/drivers/regulator/palmas-regulator.c
+@@ -400,19 +400,14 @@ static struct regulator_ops palmas_ops_smps = {
+ 	.map_voltage		= palmas_map_voltage_smps,
+ };
+ 
+-static int palmas_list_voltage_smps10(struct regulator_dev *dev,
+-					unsigned selector)
+-{
+-	return 3750000 + (selector * 1250000);
+-}
+-
+ static struct regulator_ops palmas_ops_smps10 = {
+ 	.is_enabled		= regulator_is_enabled_regmap,
+ 	.enable			= regulator_enable_regmap,
+ 	.disable		= regulator_disable_regmap,
+ 	.get_voltage_sel	= regulator_get_voltage_sel_regmap,
+ 	.set_voltage_sel	= regulator_set_voltage_sel_regmap,
+-	.list_voltage		= palmas_list_voltage_smps10,
++	.list_voltage		= regulator_list_voltage_linear;
++	.map_voltage		= regulator_map_voltage_linear;
+ };
+ 
+ static int palmas_is_enabled_ldo(struct regulator_dev *dev)
+@@ -675,6 +670,8 @@ static __devinit int palmas_probe(struct platform_device *pdev)
+ 			pmic->desc[id].vsel_mask = SMPS10_VSEL;
+ 			pmic->desc[id].enable_reg = PALMAS_SMPS10_STATUS;
+ 			pmic->desc[id].enable_mask = SMPS10_BOOST_EN;
++			pmic->desc[id].min_uV = 3750000;
++			pmic->desc[id].uV_step = 1250000;
+ 		}
+ 
+ 		pmic->desc[id].type = REGULATOR_VOLTAGE;
+-- 
+1.7.5.4
 
-I think I'd like more generic elf interface compiled with either libelf
-or our stuff.. also separated from "other perf related" symbol handling
 
-looks like we need to be able to parse out build ID and symbols from
-symtab or dyntab:
 
-perf_elf__get_buildid(file, buf, len)
-
-perf_elf__get_symbols(file, ..., callback, )
- - calling callback func for each symbol found,
-   the call would then do the perf symbol related stuff
-
-I understand that means much more changes.. so probably what you have now
-is a good start and we can do that later.. just with above goal in mind
-
-thanks,
-jirka
