@@ -1,41 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756837Ab2EUQ2f (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 May 2012 12:28:35 -0400
-Received: from mail-gg0-f174.google.com ([209.85.161.174]:43283 "EHLO
-	mail-gg0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754157Ab2EUQ2e (ORCPT
+	id S1756604Ab2EUQlF (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 May 2012 12:41:05 -0400
+Received: from mail-qa0-f46.google.com ([209.85.216.46]:58245 "EHLO
+	mail-qa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750828Ab2EUQlD convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 May 2012 12:28:34 -0400
+	Mon, 21 May 2012 12:41:03 -0400
 MIME-Version: 1.0
-Reply-To: ivo.welch@gmail.com
-From: ivo welch <ivo.welch@anderson.ucla.edu>
-Date: Mon, 21 May 2012 09:28:13 -0700
-X-Google-Sender-Auth: 0ho6-Y1dtPj_JGBu2d8yI-bgCWE
-Message-ID: <CAPr7RtUBDn01qDkxvcLO8ZckAtTmCCJk7hCjwH4_XziwXtAS6Q@mail.gmail.com>
-Subject: the easy way to sandbox?
-To: linux-kernel@vger.kernel.org
+In-Reply-To: <CA+55aFxQuNg4shK1ySZ2j0B_avYwnEyVWHqn5sOy45piYr5pRg@mail.gmail.com>
+References: <CA+55aFwaobhbBZkE1LTyQJYhk8w8zk-cyOXXuXfPyE=BXzT3PA@mail.gmail.com>
+	<CA+5PVA78ktxSPR=hCG-5isqWjUo_uzEK+TwW9AC08RQnL7ep_w@mail.gmail.com>
+	<CA+55aFxQuNg4shK1ySZ2j0B_avYwnEyVWHqn5sOy45piYr5pRg@mail.gmail.com>
+Date: Mon, 21 May 2012 12:41:02 -0400
+Message-ID: <CA+5PVA44oGRooLbRmkf_VLRVhd5XX8D5mD-BgWMgt3N3zGpKgg@mail.gmail.com>
+Subject: Re: Linux 3.4 released
+From: Josh Boyer <jwboyer@gmail.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: =?ISO-8859-2?Q?Arkadiusz_Mi=B6kiewicz?= <a.miskiewicz@gmail.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
 Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Suggestion:  introduce a system call that eliminates access to all
-real file systems for the current process.  the only permissible
-interaction would be stdin, stdout, and stderr.
+On Mon, May 21, 2012 at 11:20 AM, Linus Torvalds
+<torvalds@linux-foundation.org> wrote:
+> On Mon, May 21, 2012 at 4:38 AM, Josh Boyer <jwboyer@gmail.com> wrote:
+>>
+>> I see patch-3.4 on http://www.kernel.org/pub/linux/kernel/v3.x/ but
+>> I can't find the full tarball release.  Was that skipped or did I miss
+>> it somewhere?
+>
+> My release-script generates both automatically, but it seems to not
+> have shown up. I might have screwed something up, or it might never
+> have made it due to the network trouble we had yesterday, and I didn't
+> check errors from the script.
+>
+> Anyway, I re-did the tar-ball a few minutes ago, and now it seems to be there.
 
-this would make it very simple to write a sandboxed safe fcgi script.
-the script could load all the dynamic libraries and data it wants, and
-then call this no-more-filesystem-access feature (preferably allowable
-without root privileges).  thereafter, even if a hacker takes control
-of the script, not much permanent damage can happen.
 
-right now, it is much more complex to accomplish this---which is why
-sandboxing cgi scripts is not used too often.
+Yep.  Thanks!
 
-sincerely,
-
-/iaw
-
-----
-Ivo Welch (ivo.welch@gmail.com)
+josh
