@@ -1,226 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752355Ab2EUFHX (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 May 2012 01:07:23 -0400
-Received: from linux-sh.org ([111.68.239.195]:37894 "EHLO linux-sh.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752128Ab2EUFGr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 May 2012 01:06:47 -0400
-From: Paul Mundt <lethal@linux-sh.org>
-To: Grant Likely <grant.likely@secretlab.ca>
-Cc: linux-sh@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Paul Mundt <lethal@linux-sh.org>
-Subject: [PATCH 2/2] irqdomain: Support for static IRQ mapping and association.
-Date: Mon, 21 May 2012 14:06:32 +0900
-Message-Id: <1337576792-5347-2-git-send-email-lethal@linux-sh.org>
-X-Mailer: git-send-email 1.7.10.207.g0bb2e
-In-Reply-To: <1337576792-5347-1-git-send-email-lethal@linux-sh.org>
-References: <1337576792-5347-1-git-send-email-lethal@linux-sh.org>
+	id S1752155Ab2EUFVb (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 May 2012 01:21:31 -0400
+Received: from haggis.pcug.org.au ([203.10.76.10]:37574 "EHLO
+	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751467Ab2EUFVa (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 21 May 2012 01:21:30 -0400
+Date: Mon, 21 May 2012 15:21:16 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Alexander Graf <agraf@suse.de>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Christian Borntraeger <borntraeger@de.ibm.com>,
+        Avi Kivity <avi@qumranet.com>, Marcelo Tosatti <mtosatti@redhat.com>,
+        Paul Mackerras <paulus@samba.org>
+Subject: linux-next: manual merge of the kvm-ppc tree with the kvm tree
+Message-Id: <20120521152116.4e0c2e8d908771e6fe88e6f6@canb.auug.org.au>
+X-Mailer: Sylpheed 3.2.0beta7 (GTK+ 2.24.10; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Mon__21_May_2012_15_21_16_+1000_wS=1puE2X70kXgnG"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This adds a new strict mapping API for supporting creation of linux IRQs
-at existing positions within the domain. The new routines are as follows:
+--Signature=_Mon__21_May_2012_15_21_16_+1000_wS=1puE2X70kXgnG
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-For dynamic allocation and insertion to specified ranges:
+Hi Alexander,
 
-	- irq_create_identity_mapping()
-	- irq_create_strict_mappings()
+Today's linux-next merge of the kvm-ppc tree got a conflict in
+include/linux/kvm.h between commit 1526bf9ccf31 ("KVM: s390: add
+capability indicating COW support") from the kvm tree and commit
+6e8fce2c6cd3 ("KVM: PPC: Book3S HV: Make the guest hash table size
+configurable") from the kvm-ppc tree.
 
-These will allocate and associate a range of linux IRQs at the specified
-location. This can be used by controllers that have their own static linux IRQ
-definitions to map a hwirq range to, as well as for platforms that wish to
-establish 1:1 identity mapping between linux and hwirq space.
+I fixed it up (see below) and can carry the fix as necessary.
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
 
-For insertion to specified ranges by platforms that do their own irq_desc
-management:
+diff --cc include/linux/kvm.h
+index 09f2b3a,fcc98df..0000000
+--- a/include/linux/kvm.h
++++ b/include/linux/kvm.h
+@@@ -616,7 -616,7 +616,8 @@@ struct kvm_ppc_smmu_info=20
+  #define KVM_CAP_KVMCLOCK_CTRL 76
+  #define KVM_CAP_SIGNAL_MSI 77
+  #define KVM_CAP_PPC_GET_SMMU_INFO 78
+ -#define KVM_CAP_PPC_ALLOC_HTAB 79
+ +#define KVM_CAP_S390_COW 79
+++#define KVM_CAP_PPC_ALLOC_HTAB 80
+ =20
+  #ifdef KVM_CAP_IRQ_ROUTING
+ =20
 
-	- irq_domain_associate()
-	- irq_domain_associate_many()
+--Signature=_Mon__21_May_2012_15_21_16_+1000_wS=1puE2X70kXgnG
+Content-Type: application/pgp-signature
 
-These in turn call back in to the domain's ->map() routine, for further
-processing by the platform. Disassociation of IRQs get handled through
-irq_dispose_mapping() as normal.
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
 
-With these in place it should be possible to begin migration of legacy IRQ
-domains to linear ones, without requiring special handling for static vs
-dynamic IRQ definitions in DT vs non-DT paths. This also makes it possible
-for domains with static mappings to adopt whichever tree model best fits
-their needs, rather than simply restricting them to linear revmaps.
+iQIbBAEBCAAGBQJPudDMAAoJEECxmPOUX5FEhdQP90GHY4qlMVvzYt2kt5oGeJzE
+sXbN4CIoIb8HEV9k1TuZfHVxW0wtQ5FI+g74G6iC6q8DMkXZ+dmBZKC1VpBGolAc
+q3LcWjtYBnnucIbTvpRPFPNxfRJQIjf9+6neUM1tnOBHhj5oSIuP5rjaw6F8f2vb
+gGI13sHIJFm+CK0/zHN2W919lr+RXibXtQDjVUCpfmdrrLfi0AfnZNEFtPVUiqhG
+GFT8ft7RwBjxD3uuPMFYoG3a3k1F3AcKPRDPHQI69m7fla7oX3T9tE4DaIKid8WE
+bUAUjJPRfFDGjnIhkcd3jzNz5Kq62esJkvB064y8bOZs+WkQ2eRHDKAi+fEQgUcc
+YfhGOoCMo1AV1TAl7ZgVuJy/h2GeSkhJU38aJ8HOlNftb3atJQ2WGcKBQM2D48wo
+B/7xUTU+CGOAjHaPCK8QWKs8UBnf5u8FEPynl2ALmL2uLkemTmS9DR/UI9U5+Js2
+w3SiYvP8a5cDrDsTrnCzwshvNmgWG6oIcE/0OGeGeQ+EEETAcibNNU0U5NYf+vCm
+OafdMM8yi80uoTr7Xt73o8bDEBrez1RWlJO0lLQjV1Irm9C2w3Y3PcbgT3DoNojm
++jzRn1xPsKVFGNosgzoWNHop3jvNthuIguHVqD7qqw2jDOiimv+ToCuDb1fcwguR
+eIR+CDYkvic0WcPdKEE=
+=Nbg4
+-----END PGP SIGNATURE-----
 
-Signed-off-by: Paul Mundt <lethal@linux-sh.org>
----
- include/linux/irqdomain.h |   15 +++++++
- kernel/irq/irqdomain.c    |   95 +++++++++++++++++++++++++++++++++++++++++++--
- 2 files changed, 106 insertions(+), 4 deletions(-)
-
-diff --git a/include/linux/irqdomain.h b/include/linux/irqdomain.h
-index 5abb533..7f8085c 100644
---- a/include/linux/irqdomain.h
-+++ b/include/linux/irqdomain.h
-@@ -144,12 +144,27 @@ static inline struct irq_domain *irq_domain_add_legacy_isa(
- 
- extern void irq_domain_remove(struct irq_domain *host);
- 
-+extern int irq_domain_associate(struct irq_domain *domain, unsigned int virq,
-+				irq_hw_number_t hwirq);
-+extern int irq_domain_associate_many(struct irq_domain *domain,
-+				     unsigned int irq_base,
-+				     irq_hw_number_t hwirq_base, int count);
- extern unsigned int irq_create_mapping(struct irq_domain *host,
- 				       irq_hw_number_t hwirq);
- extern void irq_dispose_mapping(unsigned int virq);
- extern unsigned int irq_find_mapping(struct irq_domain *host,
- 				     irq_hw_number_t hwirq);
- extern unsigned int irq_create_direct_mapping(struct irq_domain *host);
-+extern int irq_create_strict_mappings(struct irq_domain *domain,
-+				      unsigned int irq_base,
-+				      irq_hw_number_t hwirq_base, int count);
-+
-+static inline int irq_create_identity_mapping(struct irq_domain *host,
-+					      irq_hw_number_t hwirq)
-+{
-+	return irq_create_strict_mappings(host, hwirq, hwirq, 1);
-+}
-+
- extern void irq_radix_revmap_insert(struct irq_domain *host, unsigned int virq,
- 				    irq_hw_number_t hwirq);
- extern unsigned int irq_radix_revmap_lookup(struct irq_domain *host,
-diff --git a/kernel/irq/irqdomain.c b/kernel/irq/irqdomain.c
-index 9e99054..048873a 100644
---- a/kernel/irq/irqdomain.c
-+++ b/kernel/irq/irqdomain.c
-@@ -333,8 +333,19 @@ void irq_set_default_host(struct irq_domain *domain)
- }
- EXPORT_SYMBOL_GPL(irq_set_default_host);
- 
--static int irq_setup_virq(struct irq_domain *domain, unsigned int virq,
--			    irq_hw_number_t hwirq)
-+/**
-+ * irq_domain_associate() - Associate a hardware irq with a linux irq
-+ * @domain: domain owning the irq
-+ * @virq: linux irq
-+ * @hwirq: hardware irq
-+ *
-+ * This routine establishes a hardware IRQ association with an existing
-+ * linux IRQ in the specified domain space. For use by controllers
-+ * needing to establish individual or otherwise non-linear IRQ
-+ * associations.
-+ */
-+int irq_domain_associate(struct irq_domain *domain, unsigned int virq,
-+			 irq_hw_number_t hwirq)
- {
- 	struct irq_data *irq_data = irq_get_irq_data(virq);
- 
-@@ -351,6 +362,44 @@ static int irq_setup_virq(struct irq_domain *domain, unsigned int virq,
- 
- 	return 0;
- }
-+EXPORT_SYMBOL_GPL(irq_domain_associate);
-+
-+/**
-+ * irq_domain_associate_many() - Associate a range of hw irqs with linux irqs
-+ * @domain: domain owning the interrupt range
-+ * @irq_base: beginning of linux IRQ range
-+ * @hwirq_base: beginning of hardware IRQ range
-+ * @count: Number of interrupts to associate
-+ *
-+ * This routine takes care of creating an association between a range of
-+ * hardware and linux IRQs using pre-existing IRQ allocations. For use by
-+ * controllers that do their own irq_desc management.
-+ */
-+int irq_domain_associate_many(struct irq_domain *domain, unsigned int irq_base,
-+			      irq_hw_number_t hwirq_base, int count)
-+{
-+	int i, ret;
-+
-+	for (i = 0; i < count; i++) {
-+		ret = irq_domain_associate(domain, irq_base + i,
-+					   hwirq_base + i);
-+		if (unlikely(ret))
-+			goto unmap;
-+	}
-+
-+	return 0;
-+
-+unmap:
-+	while (--i >= 0) {
-+		if (domain->ops->unmap)
-+			domain->ops->unmap(domain, irq_base + i);
-+
-+		irq_set_status_flags(irq_base + i, IRQ_NOREQUEST);
-+	}
-+
-+	return ret;
-+}
-+EXPORT_SYMBOL_GPL(irq_domain_associate_many);
- 
- /**
-  * irq_create_direct_mapping() - Allocate an irq for direct mapping
-@@ -383,7 +432,7 @@ unsigned int irq_create_direct_mapping(struct irq_domain *domain)
- 	}
- 	pr_debug("create_direct obtained virq %d\n", virq);
- 
--	if (irq_setup_virq(domain, virq, virq)) {
-+	if (irq_domain_associate(domain, virq, virq)) {
- 		irq_free_desc(virq);
- 		return 0;
- 	}
-@@ -444,7 +493,7 @@ unsigned int irq_create_mapping(struct irq_domain *domain,
- 		return 0;
- 	}
- 
--	if (irq_setup_virq(domain, virq, hwirq)) {
-+	if (irq_domain_associate(domain, virq, hwirq)) {
- 		if (domain->revmap_type != IRQ_DOMAIN_MAP_LEGACY)
- 			irq_free_desc(virq);
- 		return 0;
-@@ -457,6 +506,44 @@ unsigned int irq_create_mapping(struct irq_domain *domain,
- }
- EXPORT_SYMBOL_GPL(irq_create_mapping);
- 
-+/**
-+ * irq_create_strict_mappings() - Map a range of hw irqs to fixed linux irqs
-+ * @domain: domain owning the interrupt range
-+ * @irq_base: beginning of linux IRQ range
-+ * @hwirq_base: beginning of hardware IRQ range
-+ * @count: Number of interrupts to map
-+ *
-+ * This routine is used for allocating and mapping a range of hardware
-+ * irqs to linux irqs where the linux irq numbers are at pre-defined
-+ * locations. For use by controllers that already have static mappings
-+ * to insert in to the domain.
-+ *
-+ * Non-linear users can use irq_create_identity_mapping() for IRQ-at-a-time
-+ * domain insertion.
-+ *
-+ * 0 is returned upon success, while any failure to establish a static
-+ * mapping is treated as an error.
-+ */
-+int irq_create_strict_mappings(struct irq_domain *domain, unsigned int irq_base,
-+			       irq_hw_number_t hwirq_base, int count)
-+{
-+	int ret;
-+
-+	ret = irq_alloc_descs(irq_base, irq_base, count,
-+			      of_node_to_nid(domain->of_node));
-+	if (unlikely(ret < 0))
-+		return ret;
-+
-+	ret = irq_domain_associate_many(domain, irq_base, hwirq_base, count);
-+	if (unlikely(ret < 0)) {
-+		irq_free_descs(irq_base, count);
-+		return ret;
-+	}
-+
-+	return 0;
-+}
-+EXPORT_SYMBOL_GPL(irq_create_strict_mappings);
-+
- unsigned int irq_create_of_mapping(struct device_node *controller,
- 				   const u32 *intspec, unsigned int intsize)
- {
--- 
-1.7.9.rc0.28.g0e1cf
-
+--Signature=_Mon__21_May_2012_15_21_16_+1000_wS=1puE2X70kXgnG--
