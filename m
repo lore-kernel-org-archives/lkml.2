@@ -1,59 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755419Ab2EUTFb (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 May 2012 15:05:31 -0400
-Received: from nm20-vm0.bullet.mail.bf1.yahoo.com ([98.139.213.165]:21103 "HELO
-	nm20-vm0.bullet.mail.bf1.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1753949Ab2EUTF3 (ORCPT
+	id S1755663Ab2EUTGh (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 May 2012 15:06:37 -0400
+Received: from ogre.sisk.pl ([193.178.161.156]:56934 "EHLO ogre.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753773Ab2EUTGf convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 May 2012 15:05:29 -0400
-X-Yahoo-Newman-Id: 42282.69634.bm@smtp108.mail.bf1.yahoo.com
-X-Yahoo-Newman-Property: ymail-3
-X-YMail-OSG: ZiIyzWsVM1nmQyZQmzpNyYec4IAhsv2bqSQhYH_oUJc0GVc
- wU8pQa3vKRhWX4VntE68SBXn.cDFKZHqh1GumaoFWNc3OakvFRkK1d81HWGc
- 8__2rA1DXIwjFISeqpwg9KeW5ModqOwl.ybKpXCutHUQG.KT92Y2syfI2yIR
- 9lUYWmX9dq8WLWjRC1gZ7ryWJU2ofY7cQY5M4ffJrfQQgDvJvAMq.Ya2lWRr
- HRuNcpE6xv8.qRnA76gWN2HYyUuRqFB5QKmcYVawZ9aNWX.W4_CS4YuRHsH2
- udor28.aC6o26mWDVecvCQuQNQdomcCCabvrMJVOOjZRriRZgonXe1.MiGHj
- CM49gov5A.1xVaVIEmEpHmNei4vWUvpj.hrsFb0igLQa.gzg2Y9itRg_4sPu
- r3MWOMYqEJhBiBRm5.8S_GAY8aZWWxPlSkG.JeRd_r6spBTIT17OsetvJ2Cz
- e6Zfkdi49voMlybEwaBWRcDmPbZGrEbaC8BypomGo8EyIdWw.eMfjv4iW4sC
- 3eW2X2H4-
-X-Yahoo-SMTP: dNW5aIGswBCf1iV6QK8RWrBgWyjShXs-
-From: Jeffrin Jose <ahiliation@yahoo.co.in>
-To: davem@davemloft.net, edumazet@google.com, loke.chetan@gmail.com,
-        herbert@gondor.hengli.com.au
-Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        ahiliation@yahoo.co.in
-Subject: [PATCH 1/4]net:ipv6:fixed a space issue relating to != operator
-Date: Tue, 22 May 2012 00:33:35 +0530
-Message-Id: <1337627015-3278-1-git-send-email-ahiliation@yahoo.co.in>
-X-Mailer: git-send-email 1.7.10
+	Mon, 21 May 2012 15:06:35 -0400
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Jiri Slaby <jslaby@suse.cz>
+Subject: Re: [-next regression] TCP window full with EPOLLWAKEUP
+Date: Mon, 21 May 2012 21:11:34 +0200
+User-Agent: KMail/1.13.6 (Linux/3.4.0-rc7+; KDE/4.6.0; x86_64; ; )
+Cc: Arve =?utf-8?q?Hj=C3=B8nnev=C3=A5g?= <arve@android.com>,
+        NeilBrown <neilb@suse.de>, LKML <linux-kernel@vger.kernel.org>,
+        Jiri Slaby <jirislaby@gmail.com>,
+        Linux PM list <linux-pm@vger.kernel.org>
+References: <4FB81981.3050509@suse.cz> <201205202034.24541.rjw@sisk.pl> <4FBA4946.8080905@suse.cz>
+In-Reply-To: <4FBA4946.8080905@suse.cz>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="utf-8"
+Content-Transfer-Encoding: 8BIT
+Message-Id: <201205212111.34800.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Fixed a space issue relating to != operator
-found by checkpatch.pl tool in net/ipv6/mcast.c
+On Monday, May 21, 2012, Jiri Slaby wrote:
+> On 05/20/2012 08:34 PM, Rafael J. Wysocki wrote:
+> > On Sunday, May 20, 2012, Rafael J. Wysocki wrote:
+> >> On Sunday, May 20, 2012, Rafael J. Wysocki wrote:
+> >>> On Sunday, May 20, 2012, Jiri Slaby wrote:
+> >>>> Hi,
+> >>>>
+> >>>> a bisection shows that with the following commit from -next:
+> >>>> commit 4d7e30d98939a0340022ccd49325a3d70f7e0238
+> >>>> Author: Arve Hjønnevåg <arve@android.com>
+> >>>> Date:   Tue May 1 21:33:34 2012 +0200
+> >>>>
+> >>>>     epoll: Add a flag, EPOLLWAKEUP, to prevent suspend while epoll
+> >>>> events are ready
+> >>>>
+> >>>> ====
+> >>>>
+> >>>> one of mono programs I use stops receiving data from the network.
+> >>>> Wireshark shows that the TCP window of a connection is filled. This
+> >>>> means the program does not read the data fast enough after requesting
+> >>>> the data.
+> >>>>
+> >>>> If I revert that commit on the top of -next (20120518), everything works
+> >>>> as expected.
+> >>>
+> >>> Hmm.  I suppose that the failing program doesn't set EPOLLWAKEUP by mistake,
+> >>> does it?
+> >>
+> >> If it doesn't, we can assume that epi-ws is always NULL and all of the added
+> >> overhead comes from the function calls.  So, I wonder if the appended patch
+> >> makes any difference?
+> > 
+> > Having thought more about this I have to say this doesn't seem to make much
+> > sense, because in that case you'd see some progress, although probably a bit
+> > slower than before.
+> > 
+> > So, I think what happens is that the application tries to set EPOLLWAKEUP,
+> > but doesn't have the capability, so the entire operation fails for it, but
+> > it doesn't check the return value.
+> > 
+> > I wonder if the following helps, then.
+> > 
+> > Thanks,
+> > Rafael
+> > 
+> > 
+> > ---
+> >  fs/eventpoll.c |    2 +-
+> >  1 file changed, 1 insertion(+), 1 deletion(-)
+> > 
+> > Index: linux/fs/eventpoll.c
+> > ===================================================================
+> > --- linux.orig/fs/eventpoll.c
+> > +++ linux/fs/eventpoll.c
+> > @@ -1711,7 +1711,7 @@ SYSCALL_DEFINE4(epoll_ctl, int, epfd, in
+> >  
+> >  	/* Check if EPOLLWAKEUP is allowed */
+> >  	if ((epds.events & EPOLLWAKEUP) && !capable(CAP_EPOLLWAKEUP))
+> > -		goto error_tgt_fput;
+> > +		epds.events &= ~EPOLLWAKEUP;
+> 
+> Yes, this fixed the issue.
 
-Signed-off-by: Jeffrin Jose <ahiliation@yahoo.co.in>
----
- net/ipv6/mcast.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+Cool, thanks for testing!
 
-diff --git a/net/ipv6/mcast.c b/net/ipv6/mcast.c
-index 7dfb89f..8f7eee9 100644
---- a/net/ipv6/mcast.c
-+++ b/net/ipv6/mcast.c
-@@ -214,7 +214,7 @@ int ipv6_sock_mc_drop(struct sock *sk, int ifindex, const struct in6_addr *addr)
- 	spin_lock(&ipv6_sk_mc_lock);
- 	for (lnk = &np->ipv6_mc_list;
- 	     (mc_lst = rcu_dereference_protected(*lnk,
--			lockdep_is_held(&ipv6_sk_mc_lock))) !=NULL ;
-+			lockdep_is_held(&ipv6_sk_mc_lock))) != NULL ;
- 	      lnk = &mc_lst->next) {
- 		if ((ifindex == 0 || mc_lst->ifindex == ifindex) &&
- 		    ipv6_addr_equal(&mc_lst->addr, addr)) {
--- 
-1.7.10
+I'll resend it in a while with a changelog and tags.
 
+Thanks,
+Rafael
