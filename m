@@ -1,119 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758539Ab2EUUad (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 May 2012 16:30:33 -0400
-Received: from e9.ny.us.ibm.com ([32.97.182.139]:60876 "EHLO e9.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758520Ab2EUUab (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 May 2012 16:30:31 -0400
-Subject: [RFC][PATCH 1/2] hugetlb: fix resv_map leak in error path
+	id S1758570Ab2EUUav (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 May 2012 16:30:51 -0400
+Received: from e32.co.us.ibm.com ([32.97.110.150]:43093 "EHLO
+	e32.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758496Ab2EUUa3 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 21 May 2012 16:30:29 -0400
+Subject: [RFC][PATCH 2/2] sparsemem: fix boot when SECTIONS_PER_ROOT is not power-of-2
 To: linux-kernel@vger.kernel.org
 Cc: linux-mm@kvack.org, Dave Hansen <dave@linux.vnet.ibm.com>
 From: Dave Hansen <dave@linux.vnet.ibm.com>
-Date: Mon, 21 May 2012 13:30:22 -0700
-Message-Id: <20120521203022.F7FCE507@kernel>
+Date: Mon, 21 May 2012 13:30:24 -0700
+References: <20120521203022.F7FCE507@kernel>
+In-Reply-To: <20120521203022.F7FCE507@kernel>
+Message-Id: <20120521203024.5526C347@kernel>
 X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 12052120-7182-0000-0000-00000190D701
+x-cbid: 12052120-3270-0000-0000-00000685374E
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
-When called for anonymous (non-shared) mappings,
-hugetlb_reserve_pages() does a resv_map_alloc().  It depends on
-code in hugetlbfs's vm_ops->close() to release that allocation.
+I was getting some interesting oopses at boot after adding a
+field to 'struct mem_section'.  I tracked it down to
+__nr_to_section().  In my case, SECTIONS_PER_ROOT got set to
+73, which leads to an interesting bitmask:
 
-However, in the mmap() failure path, we do a plain unmap_region()
-without the remove_vma() which actually calls vm_ops->close().
+	#define SECTIONS_PER_ROOT       (PAGE_SIZE / sizeof (struct mem_section))
+	...
+	#define SECTION_ROOT_MASK      (SECTIONS_PER_ROOT - 1)
 
-This is a decent fix.  This leak could get reintroduced if
-new code (say, after hugetlb_reserve_pages() in
-hugetlbfs_file_mmap()) decides to return an error.  But, I think
-it would have to unroll the reservation anyway.
+We only use SECTION_ROOT_MASK in one place.  If we replace it
+with some modulo arithmetic, it compiles down to the same thing
+for power-of-2 SECTIONS_PER_ROOT values, but it also actually
+*works* instead of just failing to boot at some random point
+for the other case.
 
-This hasn't been extensively tested.  Pretty much compile and
-boot tested along with Christoph's test case:
+This also adds some requisite comments in the structure for
+future hapless kernel developers, plus a bonus WARN_ON_ONCE()
+just in case they miss the big fat comment.
 
-	http://marc.info/?l=linux-mm&m=133728900729735
+Granted, this patch is not fixing a bug that anyone will really
+hit in practice, but it will surely save future developers a
+headache or two, plus it removes a #define!
 
 Signed-off-by: Dave Hansen <dave@linux.vnet.ibm.com>
-Acked-by: Mel Gorman <mel@csn.ul.ie>
-ecked-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-Reported/tested-by: Christoph Lameter <cl@linux.com>
-
 ---
 
- linux-2.6.git-dave/mm/hugetlb.c |   28 ++++++++++++++++++++++------
- 1 file changed, 22 insertions(+), 6 deletions(-)
+ linux-2.6.git-dave/include/linux/mmzone.h |    9 +++++++--
+ linux-2.6.git-dave/mm/sparse.c            |    5 +++++
+ 2 files changed, 12 insertions(+), 2 deletions(-)
 
-diff -puN mm/hugetlb.c~hugetlb-fix-leak mm/hugetlb.c
---- linux-2.6.git/mm/hugetlb.c~hugetlb-fix-leak	2012-05-21 13:24:38.369857759 -0700
-+++ linux-2.6.git-dave/mm/hugetlb.c	2012-05-21 13:24:38.377857849 -0700
-@@ -2157,6 +2157,15 @@ static void hugetlb_vm_op_open(struct vm
- 		kref_get(&reservations->refs);
- }
+diff -puN include/linux/mmzone.h~sparsemem-fix-boot-when-SECTIONS_PER_ROOT-is-not-power_of_2 include/linux/mmzone.h
+--- linux-2.6.git/include/linux/mmzone.h~sparsemem-fix-boot-when-SECTIONS_PER_ROOT-is-not-power_of_2	2012-05-21 13:29:43.777274223 -0700
++++ linux-2.6.git-dave/include/linux/mmzone.h	2012-05-21 13:29:43.789274356 -0700
+@@ -1018,6 +1018,12 @@ struct mem_section {
+ 	struct page_cgroup *page_cgroup;
+ 	unsigned long pad;
+ #endif
++	/*
++	 * WARNING: Do not put any fields here that could cause
++	 * this structure to become a non-power-of-2 size.
++	 * Operations like pfn_to_page() will end up doing
++	 * division in hot paths for CONFIG_SPARSEMEM_EXTREME.
++	 */
+ };
  
-+static void resv_map_put(struct vm_area_struct *vma)
-+{
-+	struct resv_map *reservations = vma_resv_map(vma);
-+
-+	if (!reservations)
-+		return;
-+	kref_put(&reservations->refs, resv_map_release);
-+}
-+
- static void hugetlb_vm_op_close(struct vm_area_struct *vma)
+ #ifdef CONFIG_SPARSEMEM_EXTREME
+@@ -1028,7 +1034,6 @@ struct mem_section {
+ 
+ #define SECTION_NR_TO_ROOT(sec)	((sec) / SECTIONS_PER_ROOT)
+ #define NR_SECTION_ROOTS	DIV_ROUND_UP(NR_MEM_SECTIONS, SECTIONS_PER_ROOT)
+-#define SECTION_ROOT_MASK	(SECTIONS_PER_ROOT - 1)
+ 
+ #ifdef CONFIG_SPARSEMEM_EXTREME
+ extern struct mem_section *mem_section[NR_SECTION_ROOTS];
+@@ -1040,7 +1045,7 @@ static inline struct mem_section *__nr_t
  {
- 	struct hstate *h = hstate_vma(vma);
-@@ -2173,7 +2182,7 @@ static void hugetlb_vm_op_close(struct v
- 		reserve = (end - start) -
- 			region_count(&reservations->regions, start, end);
- 
--		kref_put(&reservations->refs, resv_map_release);
-+		resv_map_put(vma);
- 
- 		if (reserve) {
- 			hugetlb_acct_memory(h, -reserve);
-@@ -2990,12 +2999,16 @@ int hugetlb_reserve_pages(struct inode *
- 		set_vma_resv_flags(vma, HPAGE_RESV_OWNER);
- 	}
- 
--	if (chg < 0)
--		return chg;
-+	if (chg < 0) {
-+		ret = chg;
-+		goto out_err;
-+	}
- 
- 	/* There must be enough pages in the subpool for the mapping */
--	if (hugepage_subpool_get_pages(spool, chg))
--		return -ENOSPC;
-+	if (hugepage_subpool_get_pages(spool, chg)) {
-+		ret = -ENOSPC;
-+		goto out_err;
-+	}
- 
- 	/*
- 	 * Check enough hugepages are available for the reservation.
-@@ -3004,7 +3017,7 @@ int hugetlb_reserve_pages(struct inode *
- 	ret = hugetlb_acct_memory(h, chg);
- 	if (ret < 0) {
- 		hugepage_subpool_put_pages(spool, chg);
--		return ret;
-+		goto out_err;
- 	}
- 
- 	/*
-@@ -3021,6 +3034,9 @@ int hugetlb_reserve_pages(struct inode *
- 	if (!vma || vma->vm_flags & VM_MAYSHARE)
- 		region_add(&inode->i_mapping->private_list, from, to);
- 	return 0;
-+out_err:
-+	resv_map_put(vma);
-+	return ret;
+ 	if (!mem_section[SECTION_NR_TO_ROOT(nr)])
+ 		return NULL;
+-	return &mem_section[SECTION_NR_TO_ROOT(nr)][nr & SECTION_ROOT_MASK];
++	return &mem_section[SECTION_NR_TO_ROOT(nr)][nr % SECTIONS_PER_ROOT];
  }
+ extern int __section_nr(struct mem_section* ms);
+ extern unsigned long usemap_size(void);
+diff -puN mm/sparse.c~sparsemem-fix-boot-when-SECTIONS_PER_ROOT-is-not-power_of_2 mm/sparse.c
+--- linux-2.6.git/mm/sparse.c~sparsemem-fix-boot-when-SECTIONS_PER_ROOT-is-not-power_of_2	2012-05-21 13:29:43.781274268 -0700
++++ linux-2.6.git-dave/mm/sparse.c	2012-05-21 13:29:43.789274356 -0700
+@@ -63,6 +63,11 @@ static struct mem_section noinline __ini
+ 	unsigned long array_size = SECTIONS_PER_ROOT *
+ 				   sizeof(struct mem_section);
  
- void hugetlb_unreserve_pages(struct inode *inode, long offset, long freed)
-diff -puN Documentation/stable_kernel_rules.txt~hugetlb-fix-leak Documentation/stable_kernel_rules.txt
++	/*
++	 * See note in 'struct mem_section' definition
++	 */
++	WARN_ON_ONCE(!is_power_of_2(sizeof(struct mem_section)));
++
+ 	if (slab_is_available()) {
+ 		if (node_state(nid, N_HIGH_MEMORY))
+ 			section = kmalloc_node(array_size, GFP_KERNEL, nid);
 _
 
