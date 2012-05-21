@@ -1,96 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756095Ab2EUDu5 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 20 May 2012 23:50:57 -0400
-Received: from mga02.intel.com ([134.134.136.20]:5457 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754389Ab2EUDuV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 20 May 2012 23:50:21 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.67,352,1309762800"; 
-   d="scan'208";a="142675171"
-From: Xudong Hao <xudong.hao@intel.com>
-To: avi@redhat.com
-Cc: kvm@vger.kernel.org, linux-kernel@vger.kernel.org,
-        takuya.yoshikawa@gmail.com, xiantao.zhang@intel.com,
-        Xudong Hao <xudong.hao@intel.com>, Haitao Shan <haitao.shan@intel.com>
-Subject: [PATCH v2 4/4] Enabling Access bit when doing memory swapping
-Date: Mon, 21 May 2012 11:54:03 +0800
-Message-Id: <1337572443-22482-4-git-send-email-xudong.hao@intel.com>
-X-Mailer: git-send-email 1.5.6
-In-Reply-To: <1337572443-22482-1-git-send-email-xudong.hao@intel.com>
-References: <1337572443-22482-1-git-send-email-xudong.hao@intel.com>
+	id S1754625Ab2EUDyX (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 20 May 2012 23:54:23 -0400
+Received: from ch1ehsobe006.messaging.microsoft.com ([216.32.181.186]:9384
+	"EHLO ch1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752128Ab2EUDyW (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 20 May 2012 23:54:22 -0400
+X-SpamScore: -3
+X-BigFish: VS-3(zz98dKzz1202hzzz2dh2a8h668h839h944hd25hf0ah)
+X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
+Date: Mon, 21 May 2012 12:13:56 +0800
+From: Shawn Guo <shawn.guo@freescale.com>
+To: Richard Zhao <richard.zhao@freescale.com>
+CC: "Ying-Chun Liu (PaulLiu)" <paul.liu@linaro.org>, <sameo@linux.intel.com>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        <linux-kernel@vger.kernel.org>, <shawn.guo@linaro.org>,
+        Richard Zhao <richard.zhao@linaro.org>,
+        <linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH 2/2] mfd: anatop: permit adata be NULL when access
+ register
+Message-ID: <20120521041355.GF5810@S2100-06.ap.freescale.net>
+References: <1336870794-6351-1-git-send-email-richard.zhao@freescale.com>
+ <1336870794-6351-2-git-send-email-richard.zhao@freescale.com>
+ <20120514035137.GB20367@S2100-06.ap.freescale.net>
+ <20120514080835.GB31985@opensource.wolfsonmicro.com>
+ <4FB0C9D4.2060409@linaro.org>
+ <20120514094357.GF20367@S2100-06.ap.freescale.net>
+ <4FB10821.4000004@linaro.org>
+ <20120514135035.GC29393@b20223-02.ap.freescale.net>
+ <20120518095932.GI30755@b20223-02.ap.freescale.net>
+MIME-Version: 1.0
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+In-Reply-To: <20120518095932.GI30755@b20223-02.ap.freescale.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-OriginatorOrg: freescale.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Enabling Access bit when doing memory swapping.
+On Fri, May 18, 2012 at 05:59:32PM +0800, Richard Zhao wrote:
+> Guys, we need to draw conclusion.
+> I think current patch keep some how compatible with multi-anatop.
+> It's ok.
+> 
+I'm fine with that.
 
-Signed-off-by: Haitao Shan <haitao.shan@intel.com>
-Signed-off-by: Xudong Hao <xudong.hao@intel.com>
----
- arch/x86/kvm/mmu.c |   13 +++++++------
- arch/x86/kvm/vmx.c |    6 ++++--
- 2 files changed, 11 insertions(+), 8 deletions(-)
-
-diff --git a/arch/x86/kvm/mmu.c b/arch/x86/kvm/mmu.c
-index 07424cf..392bdf3 100644
---- a/arch/x86/kvm/mmu.c
-+++ b/arch/x86/kvm/mmu.c
-@@ -1232,7 +1232,8 @@ static int kvm_age_rmapp(struct kvm *kvm, unsigned long *rmapp,
- 	int young = 0;
- 
- 	/*
--	 * Emulate the accessed bit for EPT, by checking if this page has
-+	 * In case of absence of EPT Access and Dirty Bits supports,
-+	 * emulate the accessed bit for EPT, by checking if this page has
- 	 * an EPT mapping, and clearing it if it does. On the next access,
- 	 * a new EPT mapping will be established.
- 	 * This has some overhead, but not as much as the cost of swapping
-@@ -1243,11 +1244,11 @@ static int kvm_age_rmapp(struct kvm *kvm, unsigned long *rmapp,
- 
- 	for (sptep = rmap_get_first(*rmapp, &iter); sptep;
- 	     sptep = rmap_get_next(&iter)) {
--		BUG_ON(!(*sptep & PT_PRESENT_MASK));
-+		BUG_ON(!is_shadow_present_pte(*sptep));
- 
--		if (*sptep & PT_ACCESSED_MASK) {
-+		if (*sptep & shadow_accessed_mask) {
- 			young = 1;
--			clear_bit(PT_ACCESSED_SHIFT, (unsigned long *)sptep);
-+			*sptep &= ~shadow_accessed_mask;
- 		}
- 	}
- 
-@@ -1271,9 +1272,9 @@ static int kvm_test_age_rmapp(struct kvm *kvm, unsigned long *rmapp,
- 
- 	for (sptep = rmap_get_first(*rmapp, &iter); sptep;
- 	     sptep = rmap_get_next(&iter)) {
--		BUG_ON(!(*sptep & PT_PRESENT_MASK));
-+		BUG_ON(!is_shadow_present_pte(*sptep));
- 
--		if (*sptep & PT_ACCESSED_MASK) {
-+		if (*sptep & shadow_accessed_mask) {
- 			young = 1;
- 			break;
- 		}
-diff --git a/arch/x86/kvm/vmx.c b/arch/x86/kvm/vmx.c
-index e8003b6..342ea2e 100644
---- a/arch/x86/kvm/vmx.c
-+++ b/arch/x86/kvm/vmx.c
-@@ -7259,8 +7259,10 @@ static int __init vmx_init(void)
- 	vmx_disable_intercept_for_msr(MSR_IA32_SYSENTER_EIP, false);
- 
- 	if (enable_ept) {
--		kvm_mmu_set_mask_ptes(0ull, 0ull, 0ull, 0ull,
--				VMX_EPT_EXECUTABLE_MASK);
-+		kvm_mmu_set_mask_ptes(0ull,
-+			(enable_ept_ad_bits) ? VMX_EPT_ACCESS_BIT : 0ull,
-+			(enable_ept_ad_bits) ? VMX_EPT_DIRTY_BIT : 0ull,
-+			0ull, VMX_EPT_EXECUTABLE_MASK);
- 		ept_set_mmio_spte_mask();
- 		kvm_enable_tdp();
- 	} else
 -- 
-1.5.6
+Regards,
+Shawn
 
