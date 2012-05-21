@@ -1,84 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755562Ab2EUMzu (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 May 2012 08:55:50 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:59258 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753781Ab2EUMzt (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 May 2012 08:55:49 -0400
-Message-ID: <1337604940.11739.1.camel@phoenix>
-Subject: [PATCH] regulator: palmas: Fix wrong kfree calls
-From: Axel Lin <axel.lin@gmail.com>
-To: linux-kernel@vger.kernel.org
-Cc: Graeme Gregory <gg@slimlogic.co.uk>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Liam Girdwood <lrg@ti.com>
-Date: Mon, 21 May 2012 20:55:40 +0800
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.2- 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	id S1755676Ab2EUM4O (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 May 2012 08:56:14 -0400
+Received: from mga01.intel.com ([192.55.52.88]:42776 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755356Ab2EUM4N (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 21 May 2012 08:56:13 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
+   d="scan'208";a="169137659"
+Date: Mon, 21 May 2012 05:56:10 -0700
+From: Sarah Sharp <sarah.a.sharp@linux.intel.com>
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: Greg KH <greg@kroah.com>, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: linux-next: build failure after merge of the usb tree
+Message-ID: <20120521125610.GB5662@xanatos>
+References: <20120521162216.ca7c437235a2cc1aa54cacc9@canb.auug.org.au>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120521162216.ca7c437235a2cc1aa54cacc9@canb.auug.org.au>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The devm_kzalloc function eliminates the need for manual resource releasing
-and simplify error handling. Resources allocated by devm_* are freed
-automatically on driver detach.
+On Mon, May 21, 2012 at 04:22:16PM +1000, Stephen Rothwell wrote:
+> Hi Greg,
+> 
+> After merging the usb tree, today's linux-next build (powerpc
+> ppc64_defconfig) failed like this:
+> 
+> drivers/usb/core/hub.c: In function 'usb_disable_lpm':
+> drivers/usb/core/hub.c:3394:2: error: implicit declaration of function 'usb_enable_lpm' [-Werror=implicit-function-declaration]
+> drivers/usb/core/hub.c: At top level:
+> drivers/usb/core/hub.c:3424:6: warning: conflicting types for 'usb_enable_lpm' [enabled by default]
+> drivers/usb/core/hub.c:3394:2: note: previous implicit declaration of 'usb_enable_lpm' was here
+> drivers/usb/core/driver.c: In function 'usb_probe_interface':
+> drivers/usb/core/driver.c:339:2: error: implicit declaration of function 'usb_unlocked_disable_lpm' [-Werror=implicit-function-declaration]
+> drivers/usb/core/driver.c:364:3: error: implicit declaration of function 'usb_unlocked_enable_lpm' [-Werror=implicit-function-declaration]
+> drivers/usb/core/message.c: In function 'usb_set_interface':
+> drivers/usb/core/message.c:1314:2: error: implicit declaration of function 'usb_disable_lpm' [-Werror=implicit-function-declaration]
+> drivers/usb/core/message.c:1323:3: error: implicit declaration of function 'usb_enable_lpm' [-Werror=implicit-function-declaration]
+> drivers/usb/core/message.c:1368:2: error: implicit declaration of function 'usb_unlocked_enable_lpm' [-Werror=implicit-function-declaration]
+> 
+> Caused by commit 8306095fd2c1 ("USB: Disable USB 3.0 LPM in critical
+> sections").
 
-Thus adding kfree calls here will introduce double free bug.
+Hi Stephan,
 
-The memory of desc array and the pointers to the rdev[] are allocated by
-devm_kzalloc call for struct palmas_pmic.
+I'm creating a patch (and verifying the other drivers that were touched
+by that commit) right now.  Sorry for the build failures.
 
-struct palmas_pmic {
-        struct palmas *palmas;
-        struct device *dev;
-        struct regulator_desc desc[PALMAS_NUM_REGS];
-        struct regulator_dev *rdev[PALMAS_NUM_REGS];
-        struct mutex mutex;
-
-        int smps123;
-        int smps457;
-
-        int range[PALMAS_REG_SMPS10];
-};
-
-Which means we should not call kfree for pmic->rdev and pmic->desc.
-
-Signed-off-by: Axel Lin <axel.lin@gmail.com>
----
- drivers/regulator/palmas-regulator.c |    7 -------
- 1 files changed, 0 insertions(+), 7 deletions(-)
-
-diff --git a/drivers/regulator/palmas-regulator.c b/drivers/regulator/palmas-regulator.c
-index c4435f6..9b7ca90 100644
---- a/drivers/regulator/palmas-regulator.c
-+++ b/drivers/regulator/palmas-regulator.c
-@@ -775,9 +775,6 @@ static __devinit int palmas_probe(struct platform_device *pdev)
- err_unregister_regulator:
- 	while (--id >= 0)
- 		regulator_unregister(pmic->rdev[id]);
--	kfree(pmic->rdev);
--	kfree(pmic->desc);
--	kfree(pmic);
- 	return ret;
- }
- 
-@@ -788,10 +785,6 @@ static int __devexit palmas_remove(struct platform_device *pdev)
- 
- 	for (id = 0; id < PALMAS_NUM_REGS; id++)
- 		regulator_unregister(pmic->rdev[id]);
--
--	kfree(pmic->rdev);
--	kfree(pmic->desc);
--	kfree(pmic);
- 	return 0;
- }
- 
--- 
-1.7.5.4
-
-
-
+Sarah Sharp
