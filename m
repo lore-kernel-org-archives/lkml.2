@@ -1,98 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755445Ab2EUPrS (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 May 2012 11:47:18 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:25411 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751055Ab2EUPrQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 May 2012 11:47:16 -0400
-Date: Mon, 21 May 2012 11:47:09 -0400
-From: Dave Jones <davej@redhat.com>
-To: Linux Kernel <linux-kernel@vger.kernel.org>, linux-mm@kvack.org
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: Re: 3.4-rc7 numa_policy slab poison.
-Message-ID: <20120521154709.GA8697@redhat.com>
-Mail-Followup-To: Dave Jones <davej@redhat.com>,
-	Linux Kernel <linux-kernel@vger.kernel.org>, linux-mm@kvack.org,
-	Andrew Morton <akpm@linux-foundation.org>,
-	Linus Torvalds <torvalds@linux-foundation.org>
-References: <20120517213120.GA12329@redhat.com>
- <20120518185851.GA5728@redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120518185851.GA5728@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1754095Ab2EUPwx (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 May 2012 11:52:53 -0400
+Received: from mail-lpp01m010-f46.google.com ([209.85.215.46]:50326 "EHLO
+	mail-lpp01m010-f46.google.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752823Ab2EUPww (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 21 May 2012 11:52:52 -0400
+From: Johan Hovold <jhovold@gmail.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Richard Purdie <rpurdie@rpsys.net>, linux-kernel@vger.kernel.org,
+        Johan Hovold <jhovold@gmail.com>
+Subject: [PATCH] leds: lm3533: use devres to manage driver data
+Date: Mon, 21 May 2012 17:52:39 +0200
+Message-Id: <1337615559-5868-1-git-send-email-jhovold@gmail.com>
+X-Mailer: git-send-email 1.7.8.6
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, May 18, 2012 at 02:58:51PM -0400, Dave Jones wrote:
- > On Thu, May 17, 2012 at 05:31:20PM -0400, Dave Jones wrote:
- > 
- >  > =============================================================================
- >  > BUG numa_policy (Not tainted): Poison overwritten
- >  > -----------------------------------------------------------------------------
- >  > 
- >  > INFO: 0xffff880146498250-0xffff880146498250. First byte 0x6a instead of 0x6b
- >  > INFO: Allocated in mpol_new+0xa3/0x140 age=46310 cpu=6 pid=32154
- >  > 	__slab_alloc+0x3d3/0x445
- >  > 	kmem_cache_alloc+0x29d/0x2b0
- >  > 	mpol_new+0xa3/0x140
- >  > 	sys_mbind+0x142/0x620
- >  > 	system_call_fastpath+0x16/0x1b
- >  > INFO: Freed in __mpol_put+0x27/0x30 age=46268 cpu=6 pid=32154
- >  > 	__slab_free+0x2e/0x1de
- >  > 	kmem_cache_free+0x25a/0x260
- >  > 	__mpol_put+0x27/0x30
- >  > 	remove_vma+0x68/0x90
- >  > 	exit_mmap+0x118/0x140
- >  > 	mmput+0x73/0x110
- >  > 	exit_mm+0x108/0x130
- >  > 	do_exit+0x162/0xb90
- >  > 	do_group_exit+0x4f/0xc0
- >  > 	sys_exit_group+0x17/0x20
- >  > 	system_call_fastpath+0x16/0x1b
- >  > INFO: Slab 0xffffea0005192600 objects=27 used=27 fp=0x          (null) flags=0x20000000004080
- >  > INFO: Object 0xffff880146498250 @offset=592 fp=0xffff88014649b9d0
- > 
- > As I can reproduce this fairly easily, I enabled the dynamic debug prints for mempolicy.c,
- > and noticed something odd (but different to the above trace..)
- > 
- > INFO: 0xffff88014649abf0-0xffff88014649abf0. First byte 0x6a instead of 0x6b
- > INFO: Allocated in mpol_new+0xa3/0x140 age=196087 cpu=7 pid=11496
- >  __slab_alloc+0x3d3/0x445
- >  kmem_cache_alloc+0x29d/0x2b0
- >  mpol_new+0xa3/0x140
- >  sys_mbind+0x142/0x620
- >  system_call_fastpath+0x16/0x1b
- > INFO: Freed in __mpol_put+0x27/0x30 age=40838 cpu=7 pid=20824
- >  __slab_free+0x2e/0x1de
- >  kmem_cache_free+0x25a/0x260
- >  __mpol_put+0x27/0x30
- >  mpol_set_shared_policy+0xe6/0x280
- >  shmem_set_policy+0x2a/0x30
- >  shm_set_policy+0x28/0x30
- >  sys_mbind+0x4e7/0x620
- >  system_call_fastpath+0x16/0x1b
- > INFO: Slab 0xffffea0005192600 objects=27 used=27 fp=0x          (null) flags=0x20000000004080
- > INFO: Object 0xffff88014649abf0 @offset=11248 fp=0xffff880146498de0
- > 
- > In this case, it seems the policy was allocated by pid 11496, and freed by a different pid!
- > How is that possible ?  (Does kind of explain why it looks like a double-free though I guess).
- > 
- > debug printout for the relevant pids below, in case it yields further clues..
+Use devres to manage driver data.
 
-Anyone ?  This can be reproduced very quickly by doing..
+Signed-off-by: Johan Hovold <jhovold@gmail.com>
+---
+ drivers/leds/leds-lm3533.c |    7 ++-----
+ 1 files changed, 2 insertions(+), 5 deletions(-)
 
-$ git clone git://git.codemonkey.org.uk/trinity.git
-$ make
-$ ./trinity -q -c mbind
-
-On my 8-core box, it happens within 30 seconds.
-
-If I run this long enough, the box wedges completely, needing a power cycle to reboot.
-
-	Dave
+diff --git a/drivers/leds/leds-lm3533.c b/drivers/leds/leds-lm3533.c
+index 4ef496c..e968470 100644
+--- a/drivers/leds/leds-lm3533.c
++++ b/drivers/leds/leds-lm3533.c
+@@ -632,7 +632,7 @@ static int __devinit lm3533_led_probe(struct platform_device *pdev)
+ 		return -EINVAL;
+ 	}
+ 
+-	led = kzalloc(sizeof(*led), GFP_KERNEL);
++	led = devm_kzalloc(&pdev->dev, sizeof(*led), GFP_KERNEL);
+ 	if (!led)
+ 		return -ENOMEM;
+ 
+@@ -661,7 +661,7 @@ static int __devinit lm3533_led_probe(struct platform_device *pdev)
+ 	ret = led_classdev_register(pdev->dev.parent, &led->cdev);
+ 	if (ret) {
+ 		dev_err(&pdev->dev, "failed to register LED %d\n", pdev->id);
+-		goto err_free;
++		return ret;
+ 	}
+ 
+ 	led->cb.dev = led->cdev.dev;
+@@ -688,8 +688,6 @@ err_sysfs_remove:
+ err_unregister:
+ 	led_classdev_unregister(&led->cdev);
+ 	flush_work_sync(&led->work);
+-err_free:
+-	kfree(led);
+ 
+ 	return ret;
+ }
+@@ -704,7 +702,6 @@ static int __devexit lm3533_led_remove(struct platform_device *pdev)
+ 	sysfs_remove_group(&led->cdev.dev->kobj, &lm3533_led_attribute_group);
+ 	led_classdev_unregister(&led->cdev);
+ 	flush_work_sync(&led->work);
+-	kfree(led);
+ 
+ 	return 0;
+ }
+-- 
+1.7.8.5
 
