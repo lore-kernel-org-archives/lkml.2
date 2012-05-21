@@ -1,137 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757729Ab2EURNc (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 May 2012 13:13:32 -0400
-Received: from arroyo.ext.ti.com ([192.94.94.40]:40086 "EHLO arroyo.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756765Ab2EURMK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 May 2012 13:12:10 -0400
-From: <manjunatha_halli@ti.com>
-To: <linux-media@vger.kernel.org>
-CC: <linux-kernel@vger.kernel.org>, Manjunatha Halli <x0130808@ti.com>
-Subject: [PATCH V7 2/5] New control class and features for FM RX
-Date: Mon, 21 May 2012 12:12:03 -0500
-Message-ID: <1337620326-18593-3-git-send-email-manjunatha_halli@ti.com>
-X-Mailer: git-send-email 1.7.4.1
-In-Reply-To: <1337620326-18593-1-git-send-email-manjunatha_halli@ti.com>
-References: <1337620326-18593-1-git-send-email-manjunatha_halli@ti.com>
+	id S1757427Ab2EUROP (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 May 2012 13:14:15 -0400
+Received: from avon.wwwdotorg.org ([70.85.31.133]:51272 "EHLO
+	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754038Ab2EURON (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 21 May 2012 13:14:13 -0400
+Message-ID: <4FBA77E2.4000409@wwwdotorg.org>
+Date: Mon, 21 May 2012 11:14:10 -0600
+From: Stephen Warren <swarren@wwwdotorg.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
 MIME-Version: 1.0
-Content-Type: text/plain
+To: Lucas Stach <dev@lynxeye.de>
+CC: Thierry Reding <thierry.reding@avionic-design.de>,
+        Hiroshi DOYU <hdoyu@nvidia.com>, linux-tegra@vger.kernel.org,
+        Joerg Roedel <joerg.roedel@amd.com>,
+        Bharat Nihalani <bnihalani@nvidia.com>,
+        Vandana Salve <vsalve@nvidia.com>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 2/2] iommu/tegra: gart: Reserve iomem resource
+References: <1337019127-6863-1-git-send-email-hdoyu@nvidia.com>  <1337019127-6863-2-git-send-email-hdoyu@nvidia.com>  <20120521141152.GA21513@avionic-0098.mockup.avionic-design.de>  <4FBA702A.1010203@wwwdotorg.org> <1337619935.1621.13.camel@tellur>
+In-Reply-To: <1337619935.1621.13.camel@tellur>
+X-Enigmail-Version: 1.5pre
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Manjunatha Halli <x0130808@ti.com>
+On 05/21/2012 11:05 AM, Lucas Stach wrote:
+> Am Montag, den 21.05.2012, 10:41 -0600 schrieb Stephen Warren:
+>> On 05/21/2012 08:11 AM, Thierry Reding wrote:
+>>> * Hiroshi DOYU wrote:
+>>>> GART Register/Aperture range should be reserved.
+>> ...
+>>>> diff --git a/drivers/iommu/tegra-gart.c
+>>>> b/drivers/iommu/tegra-gart.c
+>> ...
+>>>> +	if (!devm_request_mem_region(dev, res_remap->start, +
+>>>> resource_size(res_remap), dev_name(dev))) { +		dev_err(dev,
+>>>> "failed to reserve GART aperture\n"); +		return -EBUSY; +	} +
+>>>
+>>> I'm not so sure that this is a good idea. If the GART driver
+>>> requests the GART aperture, then users of the GART aperture (e.g.
+>>> the DRM driver) will no longer be able to use it.
+>>
+>> Presumably the DRM driver would be obtaining access to parts of the
+>> GART aperture through the GART driver, rather than just grabbing the
+>> IO region and using it for itself?
+> 
+> With a TTM-like memory manager the DRM driver will take over the address
+> space management of the GART aperture. The GART driver is only used to
+> set up the mappings in the IOMMU. The DRM driver is the one that sets
+> up/tears down the CPU mappings on demand, so the aperture should be
+> claimed in the DRM driver.
 
-This patch creates new ctrl class for FM RX and adds new CID's for
-below FM features,
-      1) De-Emphasis filter mode
-      2) RDS Alternate Frequency switch
-
-Acked-by: Hans Verkuil <hans.verkuil@cisco.com>
-Signed-off-by: Manjunatha Halli <x0130808@ti.com>
----
- drivers/media/video/v4l2-ctrls.c |   17 ++++++++++++++---
- include/linux/videodev2.h        |    9 +++++++++
- 2 files changed, 23 insertions(+), 3 deletions(-)
-
-diff --git a/drivers/media/video/v4l2-ctrls.c b/drivers/media/video/v4l2-ctrls.c
-index 18015c0..9d7608e 100644
---- a/drivers/media/video/v4l2-ctrls.c
-+++ b/drivers/media/video/v4l2-ctrls.c
-@@ -243,8 +243,8 @@ const char * const *v4l2_ctrl_get_menu(u32 id)
- 		"Vivid",
- 		NULL
- 	};
--	static const char * const tune_preemphasis[] = {
--		"No Preemphasis",
-+	static const char * const tune_emphasis[] = {
-+		"None",
- 		"50 Microseconds",
- 		"75 Microseconds",
- 		NULL,
-@@ -413,7 +413,9 @@ const char * const *v4l2_ctrl_get_menu(u32 id)
- 	case V4L2_CID_COLORFX:
- 		return colorfx;
- 	case V4L2_CID_TUNE_PREEMPHASIS:
--		return tune_preemphasis;
-+		return tune_emphasis;
-+	case V4L2_CID_TUNE_DEEMPHASIS:
-+		return tune_emphasis;
- 	case V4L2_CID_FLASH_LED_MODE:
- 		return flash_led_mode;
- 	case V4L2_CID_FLASH_STROBE_SOURCE:
-@@ -644,6 +646,12 @@ const char *v4l2_ctrl_get_name(u32 id)
- 	case V4L2_CID_JPEG_COMPRESSION_QUALITY:	return "Compression Quality";
- 	case V4L2_CID_JPEG_ACTIVE_MARKER:	return "Active Markers";
- 
-+	/* FM Radio Receiver control */
-+	/* Keep the order of the 'case's the same as in videodev2.h! */
-+	case V4L2_CID_FM_RX_CLASS:		return "FM Radio Receiver Controls";
-+	case V4L2_CID_RDS_AF_SWITCH:		return "RDS Alternate Frequency Switch";
-+	case V4L2_CID_TUNE_DEEMPHASIS:		return "De-Emphasis";
-+
- 	default:
- 		return NULL;
- 	}
-@@ -688,6 +696,7 @@ void v4l2_ctrl_fill(u32 id, const char **name, enum v4l2_ctrl_type *type,
- 	case V4L2_CID_MPEG_VIDEO_H264_8X8_TRANSFORM:
- 	case V4L2_CID_MPEG_VIDEO_H264_VUI_SAR_ENABLE:
- 	case V4L2_CID_MPEG_VIDEO_MPEG4_QPEL:
-+	case V4L2_CID_RDS_AF_SWITCH:
- 		*type = V4L2_CTRL_TYPE_BOOLEAN;
- 		*min = 0;
- 		*max = *step = 1;
-@@ -733,6 +742,7 @@ void v4l2_ctrl_fill(u32 id, const char **name, enum v4l2_ctrl_type *type,
- 	case V4L2_CID_MPEG_VIDEO_MPEG4_LEVEL:
- 	case V4L2_CID_MPEG_VIDEO_MPEG4_PROFILE:
- 	case V4L2_CID_JPEG_CHROMA_SUBSAMPLING:
-+	case V4L2_CID_TUNE_DEEMPHASIS:
- 		*type = V4L2_CTRL_TYPE_MENU;
- 		break;
- 	case V4L2_CID_RDS_TX_PS_NAME:
-@@ -745,6 +755,7 @@ void v4l2_ctrl_fill(u32 id, const char **name, enum v4l2_ctrl_type *type,
- 	case V4L2_CID_FM_TX_CLASS:
- 	case V4L2_CID_FLASH_CLASS:
- 	case V4L2_CID_JPEG_CLASS:
-+	case V4L2_CID_FM_RX_CLASS:
- 		*type = V4L2_CTRL_TYPE_CTRL_CLASS;
- 		/* You can neither read not write these */
- 		*flags |= V4L2_CTRL_FLAG_READ_ONLY | V4L2_CTRL_FLAG_WRITE_ONLY;
-diff --git a/include/linux/videodev2.h b/include/linux/videodev2.h
-index c9c9a46..eb2da58 100644
---- a/include/linux/videodev2.h
-+++ b/include/linux/videodev2.h
-@@ -1137,6 +1137,7 @@ struct v4l2_ext_controls {
- #define V4L2_CTRL_CLASS_FM_TX 0x009b0000	/* FM Modulator control class */
- #define V4L2_CTRL_CLASS_FLASH 0x009c0000	/* Camera flash controls */
- #define V4L2_CTRL_CLASS_JPEG 0x009d0000		/* JPEG-compression controls */
-+#define V4L2_CTRL_CLASS_FM_RX 0x009e0000	/* FM Receiver control class */
- 
- #define V4L2_CTRL_ID_MASK      	  (0x0fffffff)
- #define V4L2_CTRL_ID2CLASS(id)    ((id) & 0x0fff0000UL)
-@@ -1782,6 +1783,13 @@ enum v4l2_jpeg_chroma_subsampling {
- #define	V4L2_JPEG_ACTIVE_MARKER_DQT		(1 << 17)
- #define	V4L2_JPEG_ACTIVE_MARKER_DHT		(1 << 18)
- 
-+/* FM Receiver class control IDs */
-+#define V4L2_CID_FM_RX_CLASS_BASE		(V4L2_CTRL_CLASS_FM_RX | 0x900)
-+#define V4L2_CID_FM_RX_CLASS			(V4L2_CTRL_CLASS_FM_RX | 1)
-+
-+#define V4L2_CID_RDS_AF_SWITCH			(V4L2_CID_FM_RX_CLASS_BASE + 1)
-+#define V4L2_CID_TUNE_DEEMPHASIS		(V4L2_CID_FM_RX_CLASS_BASE + 2)
-+
- /*
-  *	T U N I N G
-  */
-@@ -1820,6 +1828,7 @@ struct v4l2_modulator {
- #define V4L2_TUNER_CAP_RDS_BLOCK_IO	0x0100
- #define V4L2_TUNER_CAP_RDS_CONTROLS	0x0200
- 
-+
- /*  Flags for the 'rxsubchans' field */
- #define V4L2_TUNER_SUB_MONO		0x0001
- #define V4L2_TUNER_SUB_STEREO		0x0002
--- 
-1.7.4.1
-
+Even if the DRM driver is managing the aperture, I still think the GART
+driver should claim it. The physical address of the aperture is a
+property of the GART, so only the GART's resources (and DT node) should
+contain a representation of where that aperture is. The DRM driver
+should call into the GART driver to find out where the aperture is, and
+hence GART is able to claim it without conflict.
