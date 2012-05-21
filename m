@@ -1,106 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757521Ab2EUJT3 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 May 2012 05:19:29 -0400
-Received: from mailout1.samsung.com ([203.254.224.24]:29164 "EHLO
-	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757409Ab2EUJTY (ORCPT
+	id S932303Ab2EUJTm (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 May 2012 05:19:42 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:38492 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757169Ab2EUJT2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 May 2012 05:19:24 -0400
-X-AuditID: cbfee61a-b7fe76d0000023f5-55-4fba089b5af9
-From: Jingoo Han <jg1.han@samsung.com>
-To: "'Andrew Morton'" <akpm@linux-foundation.org>,
-        "'LKML'" <linux-kernel@vger.kernel.org>
-Cc: "'Richard Purdie'" <rpurdie@rpsys.net>,
-        "'Christian Gmeiner'" <christian.gmeiner@gmail.com>,
-        "'Jingoo Han'" <jg1.han@samsung.com>
-Subject: [PATCH 2/3] backlight: ot200_bl: use devm_ functions
-Date: Mon, 21 May 2012 18:19:22 +0900
-Message-id: <002c01cd3732$cf4d3b10$6de7b130$%han@samsung.com>
-MIME-version: 1.0
-Content-type: text/plain; charset=us-ascii
-Content-transfer-encoding: 7bit
-X-Mailer: Microsoft Office Outlook 12.0
-Thread-index: Ac03Ms7ncW6oyVVORvu5GLcF5syd9Q==
-Content-language: ko
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrCLMWRmVeSWpSXmKPExsVy+t9jQd3ZHLv8DS785ra4vGsOmwOjx+dN
-	cgGMUVw2Kak5mWWpRfp2CVwZk3aeZyn4wldxoyuygXE7TxcjJ4eEgIlE9/SF7BC2mMSFe+vZ
-	uhi5OIQEpjNKbD+ymRXCmc0kMWvzNGaQKjYBNYkvXw6DdYgIREg0z5jFDFLELNDMKLFy+UbG
-	LkYODmEBW4m3ndUgNSwCqhIr595kBbF5gcJfn99jhLAFJX5MvscCYjMLaEms33mcCcKWl9i8
-	5i0zyBgJAXWJR391IVbpSfw6+YodokREYt+Ld4wTGAVmIZk0C8mkWUgmzULSsoCRZRWjaGpB
-	ckFxUnquoV5xYm5xaV66XnJ+7iZGcFg+k9rBuLLB4hCjAAejEg/vzKc7/YVYE8uKK3MPMUpw
-	MCuJ8N59CBTiTUmsrEotyo8vKs1JLT7EKM3BoiTOa7d4h7+QQHpiSWp2ampBahFMlomDU6qB
-	USPg770AmRp/turPJj9YGS6lVOxLkFp7JKh83qftkZ0lUuXKorxneOaYpPs9c3jzOtzn8f3A
-	71/5Ck1tmb0T7KP9WBVsvyjXvGC0qOrb9OUxo2fQqiszd7FPt5GbI1X7YbbxzO8ShoIdcxvE
-	rWuXbp36+vkd4amVFt/mb2n72XDv9wqtm0+OKrEUZyQaajEXFScCAEuUE+xHAgAA
-X-TM-AS-MML: No
+	Mon, 21 May 2012 05:19:28 -0400
+Date: Mon, 21 May 2012 02:18:41 -0700
+From: tip-bot for Anna-Maria Gleixner <anna-maria@glx-um.de>
+Message-ID: <tip-ea5332098e68e2380429ce8025996fad61ca28a6@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
+        dhowells@redhat.com, tglx@linutronix.de, anna-maria@glx-um.de
+Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        dhowells@redhat.com, tglx@linutronix.de, anna-maria@glx-um.de
+In-Reply-To: <20120518163106.201635926@glx-um.de>
+References: <20120518163106.201635926@glx-um.de>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:timers/core] mn10300: Use generic time config
+Git-Commit-ID: ea5332098e68e2380429ce8025996fad61ca28a6
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
+MIME-Version: 1.0
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Mon, 21 May 2012 02:18:46 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The devm_ functions allocate memory that is released when a driver
-detaches. This patch uses devm_kzalloc of these functions
+Commit-ID:  ea5332098e68e2380429ce8025996fad61ca28a6
+Gitweb:     http://git.kernel.org/tip/ea5332098e68e2380429ce8025996fad61ca28a6
+Author:     Anna-Maria Gleixner <anna-maria@glx-um.de>
+AuthorDate: Fri, 18 May 2012 16:45:50 +0000
+Committer:  Thomas Gleixner <tglx@linutronix.de>
+CommitDate: Mon, 21 May 2012 11:01:43 +0200
 
-Cc: Christian Gmeiner <christian.gmeiner@gmail.com>
-Cc: Richard Purdie <rpurdie@rpsys.net>
-Signed-off-by: Jingoo Han <jg1.han@samsung.com>
+mn10300: Use generic time config
+
+Signed-off-by: Anna-Maria Gleixner <anna-maria@glx-um.de>
+Cc: David Howells <dhowells@redhat.com>
+Link: http://lkml.kernel.org/r/20120518163106.201635926@glx-um.de
+Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
 ---
- drivers/video/backlight/ot200_bl.c |   12 ++++--------
- 1 files changed, 4 insertions(+), 8 deletions(-)
+ arch/mn10300/Kconfig |    7 +------
+ 1 files changed, 1 insertions(+), 6 deletions(-)
 
-diff --git a/drivers/video/backlight/ot200_bl.c b/drivers/video/backlight/ot200_bl.c
-index f519d55..ef637ff 100644
---- a/drivers/video/backlight/ot200_bl.c
-+++ b/drivers/video/backlight/ot200_bl.c
-@@ -97,10 +97,10 @@ static int ot200_backlight_probe(struct platform_device *pdev)
- 		goto error_mfgpt_alloc;
- 	}
+diff --git a/arch/mn10300/Kconfig b/arch/mn10300/Kconfig
+index 3aa3de0..7f78057 100644
+--- a/arch/mn10300/Kconfig
++++ b/arch/mn10300/Kconfig
+@@ -6,6 +6,7 @@ config MN10300
+ 	select HAVE_ARCH_TRACEHOOK
+ 	select HAVE_ARCH_KGDB
+ 	select HAVE_NMI_WATCHDOG if MN10300_WD_TIMER
++	select GENERIC_CLOCKEVENTS
  
--	data = kzalloc(sizeof(*data), GFP_KERNEL);
-+	data = devm_kzalloc(&pdev->dev, sizeof(*data), GFP_KERNEL);
- 	if (!data) {
- 		retval = -ENOMEM;
--		goto error_kzalloc;
-+		goto error_devm_kzalloc;
- 	}
+ config AM33_2
+ 	def_bool n
+@@ -42,15 +43,9 @@ config RWSEM_XCHGADD_ALGORITHM
+ config GENERIC_CALIBRATE_DELAY
+ 	def_bool y
  
- 	/* setup gpio */
-@@ -122,16 +122,14 @@ static int ot200_backlight_probe(struct platform_device *pdev)
- 	if (IS_ERR(bl)) {
- 		dev_err(&pdev->dev, "failed to register backlight\n");
- 		retval = PTR_ERR(bl);
--		goto error_backlight_device_register;
-+		goto error_devm_kzalloc;
- 	}
+-config GENERIC_CMOS_UPDATE
+-        def_bool n
+-
+ config GENERIC_HWEIGHT
+ 	def_bool y
  
- 	platform_set_drvdata(pdev, bl);
+-config GENERIC_CLOCKEVENTS
+-	def_bool y
+-
+ config GENERIC_BUG
+ 	def_bool y
  
- 	return 0;
- 
--error_backlight_device_register:
--	kfree(data);
--error_kzalloc:
-+error_devm_kzalloc:
- 	cs5535_mfgpt_free_timer(pwm_timer);
- error_mfgpt_alloc:
- 	gpio_free(GPIO_DIMM);
-@@ -141,7 +139,6 @@ error_mfgpt_alloc:
- static int ot200_backlight_remove(struct platform_device *pdev)
- {
- 	struct backlight_device *bl = platform_get_drvdata(pdev);
--	struct ot200_backlight_data *data = bl_get_data(bl);
- 
- 	backlight_device_unregister(bl);
- 
-@@ -154,7 +151,6 @@ static int ot200_backlight_remove(struct platform_device *pdev)
- 	cs5535_mfgpt_free_timer(pwm_timer);
- 	gpio_free(GPIO_DIMM);
- 
--	kfree(data);
- 	return 0;
- }
- 
--- 
-1.7.1
-
-
