@@ -1,50 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756551Ab2EUQVq (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 May 2012 12:21:46 -0400
-Received: from mail-gg0-f174.google.com ([209.85.161.174]:40186 "EHLO
-	mail-gg0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752628Ab2EUQVp (ORCPT
+	id S1756561Ab2EUQXK (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 May 2012 12:23:10 -0400
+Received: from smtp107.prem.mail.ac4.yahoo.com ([76.13.13.46]:25922 "HELO
+	smtp107.prem.mail.ac4.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1752628Ab2EUQXI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 May 2012 12:21:45 -0400
-Date: Mon, 21 May 2012 13:21:37 -0300
-From: Gustavo Padovan <gustavo@padovan.org>
-To: Minho Ban <mhban@samsung.com>
-Cc: Marcel Holtmann <marcel@holtmann.org>,
-        Johan Hedberg <johan.hedberg@gmail.com>,
-        "David S. Miller" <davem@davemloft.net>,
-        linux-bluetooth@vger.kernel.org, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [RFC/PATCH] Bluetooth: prevent double l2cap_chan_destroy
-Message-ID: <20120521162137.GE16942@joana>
-Mail-Followup-To: Gustavo Padovan <gustavo@padovan.org>,
-	Minho Ban <mhban@samsung.com>,
-	Marcel Holtmann <marcel@holtmann.org>,
-	Johan Hedberg <johan.hedberg@gmail.com>,
-	"David S. Miller" <davem@davemloft.net>,
-	linux-bluetooth@vger.kernel.org, netdev@vger.kernel.org,
-	linux-kernel@vger.kernel.org
-References: <4FB992C8.8090105@samsung.com>
+	Mon, 21 May 2012 12:23:08 -0400
+X-Yahoo-Newman-Property: ymail-3
+X-YMail-OSG: EGai_v0VM1nBhcyxbqJhTQ.lVZ6DIflSoLVpKOifHbuDU2m
+ R7KT3C3E56OFjDunqc8W83s0qXB6n_sHgSH3wbm.DGXkymDo7lEnpHT_3gif
+ bF7FJ6cPCFZ6zICCtzOLlTFVTdh_wlBlpswnDHIO.hACvf0NeuOYdS9eruMM
+ RnRMDz0TUezHlux1V2j.g0QZ44BcQtShBFMlniP92SEMm37Q9GF398jVgpJE
+ NlMq35rcVKD5HuQgRtofeg74fbcUwZu3rPUha4dkqx4yrFtuOaGAZR4WZb1x
+ aK6hBa144hs3cQfOrU.Mqi6TDvURX.5YVcK0replbTp7DUvvmrydYIAaoMZf
+ fh9beHZXdynN2oHBHZ1YW.vshg6vxzE8uuaF7myLEuU404OmZ4tas4fc7s7t
+ 5SRFE0osZP6L94RE6BwhEabBldnzc.dVe2lGnSGjS
+X-Yahoo-SMTP: _Dag8S.swBC1p4FJKLCXbs8NQzyse1SYSgnAbY0-
+Date: Mon, 21 May 2012 11:23:04 -0500 (CDT)
+From: Christoph Lameter <cl@linux.com>
+X-X-Sender: cl@router.home
+To: Mel Gorman <mel@csn.ul.ie>
+cc: Dave Hansen <dave@linux.vnet.ibm.com>, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org, aarcange@redhat.com,
+        kosaki.motohiro@jp.fujitsu.com, hughd@google.com, rientjes@google.com,
+        adobriyan@gmail.com, akpm@linux-foundation.org
+Subject: Re: [RFC][PATCH] hugetlb: fix resv_map leak in error path
+In-Reply-To: <20120521142822.GF28631@csn.ul.ie>
+Message-ID: <alpine.DEB.2.00.1205211122360.30649@router.home>
+References: <20120518184630.FF3307BD@kernel> <20120521142822.GF28631@csn.ul.ie>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4FB992C8.8090105@samsung.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Minho,
+On Mon, 21 May 2012, Mel Gorman wrote:
 
-* Minho Ban <mhban@samsung.com> [2012-05-21 09:56:40 +0900]:
+> > Signed-off-by: Dave Hansen <dave@linux.vnet.ibm.com>
+>
+> Acked-by: Mel Gorman <mel@csn.ul.ie>
 
-> l2cap_sock_kill can be called in l2cap_sock_release and l2cap_sock_close_cb
-> either. This lead l2cap_chan_destroy to be called twice for same channel.
-> To prevent double list_del and double chan_put, chan_destroy should be protected
-> with chan->refcnt and chan_list_lock so that reentrance could be forbidden.
-
-Even if l2cap_sock_kill() is called twice it will call l2cap_chan_destroy()
-only once. If this is not happening we just have a broken piece of code
-somewhere else and not here.
-
-	Gustavo
+Reported/tested-by: Christoph Lameter <cl@linux.com>
