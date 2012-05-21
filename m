@@ -1,42 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756828Ab2EUIb5 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 May 2012 04:31:57 -0400
-Received: from mga11.intel.com ([192.55.52.93]:46152 "EHLO mga11.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755911Ab2EUIbz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 May 2012 04:31:55 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
-   d="scan'208";a="169045734"
-Message-ID: <4FB9FD1D.6000001@intel.com>
-Date: Mon, 21 May 2012 16:30:21 +0800
-From: Alex Shi <alex.shi@intel.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:9.0) Gecko/20111229 Thunderbird/9.0
+	id S1756856Ab2EUIdT (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 May 2012 04:33:19 -0400
+Received: from e28smtp09.in.ibm.com ([122.248.162.9]:60131 "EHLO
+	e28smtp09.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756576Ab2EUIdR (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 21 May 2012 04:33:17 -0400
+Message-ID: <4FB9F9B6.50101@linux.vnet.ibm.com>
+Date: Mon, 21 May 2012 16:15:50 +0800
+From: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
 MIME-Version: 1.0
-To: "H. Peter Anvin" <hpa@zytor.com>
-CC: cl@linux-foundation.org, Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        mgorman@suse.de, Andrew Morton <akpm@linux-foundation.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        linux-mm@vger.kernel.org, Andi Kleen <ak@linux.intel.com>
-Subject: unnecessary tlb flush in mprotect
-Content-Type: text/plain; charset=ISO-8859-1
+To: Gleb Natapov <gleb@redhat.com>
+CC: Avi Kivity <avi@redhat.com>, Marcelo Tosatti <mtosatti@redhat.com>,
+        LKML <linux-kernel@vger.kernel.org>, KVM <kvm@vger.kernel.org>
+Subject: Re: [PATCH] KVM: fix async page fault working for readonly mapping
+References: <4FB9E499.2010505@linux.vnet.ibm.com> <20120521080856.GS10209@redhat.com>
+In-Reply-To: <20120521080856.GS10209@redhat.com>
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
+x-cbid: 12052108-2674-0000-0000-0000048A463A
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-when mprotect just change prots of non-present pages, current mprotect
-still do the tlb flush in check_protection().
-but according to 4.10.2.3 Intel SDM V3A (
-www.intel.com/Assets/ja_JP/PDF/manual/253668.pdf ) at that time, TLB has
-no this lines for this page. So, tlb flush is just waste time. (for cr3
-rewrite, flush all tlb, or invlpg, like a 'nop' in intel cpu)
+On 05/21/2012 04:08 PM, Gleb Natapov wrote:
 
-Do we need to add the pte_present similar check here to prevent the
-unnecessary tlb flushing? I mean, are there real case in word, User like
-to change page prots before assign a physical page to it?
+> On Mon, May 21, 2012 at 02:45:45PM +0800, Xiao Guangrong wrote:
+>> If we map a readonly memory space from host to guest and the page is
+>> not currently mapped in the host, we will get a fault-pfn and async
+>> is not allowed, then the vm will crash
+>>
+> Why would we want to map a readonly memory space from host to guest?
+> We may want to do it to support memory semantics on read and mmio on
+> write, but do not right now unless something changed while I was not
+> looking.
 
 
+Some test cases in kvm-unit-tests and the benchmark i am writing for KVM
+need map the function on host to guest.
 
-Alex Shi
