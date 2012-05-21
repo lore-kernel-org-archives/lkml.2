@@ -1,135 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757311Ab2EUIwd (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 May 2012 04:52:33 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:37529 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757169Ab2EUIwa (ORCPT
+	id S932176Ab2EUIyX (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 May 2012 04:54:23 -0400
+Received: from haggis.pcug.org.au ([203.10.76.10]:43260 "EHLO
+	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932088Ab2EUIyV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 May 2012 04:52:30 -0400
-Date: Mon, 21 May 2012 16:59:52 +0800
-From: Zheng Liu <gnehzuil.liu@gmail.com>
-To: Johannes Weiner <hannes@cmpxchg.org>
-Cc: Michal Hocko <mhocko@suse.cz>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org,
-        Andrew Morton <akpm@linux-foundation.org>, Mel Gorman <mel@csn.ul.ie>,
-        Minchan Kim <minchan@kernel.org>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Rik van Riel <riel@redhat.com>
-Subject: Re: [PATCH] mm: consider all swapped back pages in used-once logic
-Message-ID: <20120521085951.GA4687@gmail.com>
-Mail-Followup-To: Johannes Weiner <hannes@cmpxchg.org>,
-	Michal Hocko <mhocko@suse.cz>, linux-mm@kvack.org,
-	linux-kernel@vger.kernel.org,
-	Andrew Morton <akpm@linux-foundation.org>,
-	Mel Gorman <mel@csn.ul.ie>, Minchan Kim <minchan@kernel.org>,
-	KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-	Rik van Riel <riel@redhat.com>
-References: <1337246033-13719-1-git-send-email-mhocko@suse.cz>
- <20120517195342.GB1800@cmpxchg.org>
- <20120521025149.GA32375@gmail.com>
- <20120521073632.GL1406@cmpxchg.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120521073632.GL1406@cmpxchg.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Mon, 21 May 2012 04:54:21 -0400
+Date: Mon, 21 May 2012 18:54:12 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Peter Zijlstra <peterz@infradead.org>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: linux-next: build failure after merge of the final tree
+Message-Id: <20120521185412.aca92107d0a8c4fdd8474e34@canb.auug.org.au>
+X-Mailer: Sylpheed 3.2.0beta7 (GTK+ 2.24.10; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Mon__21_May_2012_18_54_12_+1000_CDLgI_7T2Vzorbo="
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, May 21, 2012 at 09:36:32AM +0200, Johannes Weiner wrote:
-> On Mon, May 21, 2012 at 10:51:49AM +0800, Zheng Liu wrote:
-> > On Thu, May 17, 2012 at 09:54:25PM +0200, Johannes Weiner wrote:
-> > > On Thu, May 17, 2012 at 11:13:53AM +0200, Michal Hocko wrote:
-> > > > [64574746 vmscan: detect mapped file pages used only once] made mapped pages
-> > > > have another round in inactive list because they might be just short
-> > > > lived and so we could consider them again next time. This heuristic
-> > > > helps to reduce pressure on the active list with a streaming IO
-> > > > worklods.
-> > > > This patch fixes a regression introduced by this commit for heavy shmem
-> > > > based workloads because unlike Anon pages, which are excluded from this
-> > > > heuristic because they are usually long lived, shmem pages are handled
-> > > > as a regular page cache.
-> > > > This doesn't work quite well, unfortunately, if the workload is mostly
-> > > > backed by shmem (in memory database sitting on 80% of memory) with a
-> > > > streaming IO in the background (backup - up to 20% of memory). Anon
-> > > > inactive list is full of (dirty) shmem pages when watermarks are
-> > > > hit. Shmem pages are kept in the inactive list (they are referenced)
-> > > > in the first round and it is hard to reclaim anything else so we reach
-> > > > lower scanning priorities very quickly which leads to an excessive swap
-> > > > out.
-> > > > 
-> > > > Let's fix this by excluding all swap backed pages (they tend to be long
-> > > > lived wrt. the regular page cache anyway) from used-once heuristic and
-> > > > rather activate them if they are referenced.
-> > > 
-> > > Yes, the algorithm only makes sense for file cache, which is easy to
-> > > reclaim.  Thanks for the fix!
-> > 
-> > Hi Johannes,
-> > 
-> > Out of curiosity, I notice that, in this patch (64574746), the commit log
-> > said that this patch aims to reduce the impact of pages used only once.
-> > Could you please tell why you think these pages will flood the active
-> > list?  How do you find this problem?
-> 
-> Applications that use mmap for large, linear used-once IO.  Reclaim
-> used to just activate every mapped file page it encountered for the
-> first time (activate referenced ones, but they all start referenced) .
-> This resulted in horrible reclaim latency as most pages in memory
-> where active.
+--Signature=_Mon__21_May_2012_18_54_12_+1000_CDLgI_7T2Vzorbo=
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Thanks for your explanation. :-)
+Hi all,
 
-> 
-> > Actually, we met a huge regression in our product system.  This
-> > application uses mmap/munmap and read/write simultaneously.  Meanwhile
-> > it wants to keep mapped file pages in memory as much as possible.  But
-> > this patch causes that mapped file pages are reclaimed frequently.  So I
-> > want to know whether or not this patch consider this situation.  Thank
-> > you.
-> 
-> Is it because the read()/write() IO is high throughput and pushes
-> pages through the LRU lists faster than the mmap pages are referenced?
+After merging the final tree, today's linux-next build (i386 defconfig)
+failed like this:
 
-Yes, in this application, one query needs to access mapped file page
-twice and file page cache twice.  Namely, one query needs to do 4 disk
-I/Os.  We have used fadvise(2) to reduce file page cache accessing to
-only once.  For mapped file page, in fact them are accessed only once
-because in one query the same data is accessed twice.  Thus, one query
-causes 2 disk I/Os now.  The size of read/write is quite larger than
-mmap/munmap.  So, as you see, if we can keep mmap/munmap file in memory
-as much as possible, we will gain the better performance.
+Invalid absolute R_386_32 relocation: jiffies
 
-> 
-> Are the mmap pages executable or shared between tasks?  If so, does
-> the kernel you are using include '34dbc67 vmscan: promote shared file
-> mapped pages' and 'c909e99 vmscan: activate executable pages after
-> first usage'?
+I am not sure what caused this (it may even been a bad merge on my
+part).  I have left it broken for today.
 
-Thanks for your advice.  Our application has only one process.  So I
-think that 34dbc67 is not useful for this application.  We have tried to
-mmap file with PROT_EXEC flag to use this patch (c909e99).  But it seems
-that the result is not good as we expected.
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
 
-In addition, another factor also has some impacts for this application.
-In inactive_file_is_low_global(), it is different between 2.6.18 and
-upstream kernel.  IMHO, it causes that mapped file pages in active list
-are moved into inactive list frequently.
+--Signature=_Mon__21_May_2012_18_54_12_+1000_CDLgI_7T2Vzorbo=
+Content-Type: application/pgp-signature
 
-Currently, we add a parameter in inactive_file_is_low_global() to adjust
-this ratio.  Meanwhile we activate every mapped file pages for the first
-time.  Then the performance gets better, but it still doesn't reach the
-performance of 2.6.18.
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
 
-> 
-> All of this is very lame.  I see no way to automatically detect when
-> you really want to keep mapped pages over unmapped ones.  And making
-> this assumption hurt some loads, while not making it now hurts others.
+iQIcBAEBCAAGBQJPugK0AAoJEECxmPOUX5FEdCEQAIrvxVeFN0CiBl3bGFA3Ca+S
+8KgkdTqHiCw7HghAn8nsxWTUl7wm7arTey7BDsW4gQQiHojegJdbMfF+z9kOmiEe
++dGgvlSPAeERiH554K7SZ63xeKhC0JZv24Hzf1smASOCoA54/icUH1QHzghTUoVy
+Tq0H/47fuOe20dz8x5kJcXPH68eDDQmeCcLw0odyDA10bpYifiVdR9LrXxXDJJTA
+5+Cro0xUyKqd7vHxf08C/lJJlc3USieuQKO4Ojo7sWsTM6Orv6nWqrHgWfS5pOvr
+d2uNWJSlH3oLWvLN2N/t8fb+jftktai6Fv51dAC8yKqKlPkvxevuR1g5ticpe7QL
+WvC8yHmNbOHw8rWKMToEHR3inIjsSTHrkBUUr5oGhz6Ddx911r4vzCH6d4lO85mY
+6Zdm2rg1mK7iu2byZj+WI0exCN5jEWMua24Ulyb6xVISXEq6+UyRU1Gpc1G830IL
+3s5vDCvO41IBMaBF+oWg3LglR784DlBI0OYdK4AKbtPILnwFnNkXxCAWfigeAhpF
+A8AHcaMGzh4XXyz0cPQ3/G890F4GhrsESEfN12e6ozHaP/I3zlXwynvUqMJmEOBT
+jwJ2egR3akLIZPx36zugUk9xSZ+8d+sJuEPG3R3S7tZjw62yvBoAXvsVjlBdKJoR
+Ki/ucNNX4v7IR9Xia/ez
+=+IUC
+-----END PGP SIGNATURE-----
 
-Yeah, as you said, this kind of changes always hurts some loads and
-doesn't hurt others. ;-)
-
-Regards,
-Zheng
+--Signature=_Mon__21_May_2012_18_54_12_+1000_CDLgI_7T2Vzorbo=--
