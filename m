@@ -1,47 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751436Ab2EUEia (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 May 2012 00:38:30 -0400
-Received: from beauty.rexursive.com ([150.101.121.179]:49118 "EHLO
-	beauty.rexursive.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750946Ab2EUEi3 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 May 2012 00:38:29 -0400
-Message-ID: <1337575107.1647.56.camel@shrek.rexursive.com>
-Subject: Re: [PATCH]: In kernel hibernation, suspend to both
-From: Bojan Smojver <bojan@rexursive.com>
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-Cc: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
-        Alan Stern <stern@rowland.harvard.edu>,
-        Linux PM list <linux-pm@vger.kernel.org>,
-        Kernel development list <linux-kernel@vger.kernel.org>, bp@alien8.de
-Date: Mon, 21 May 2012 14:38:27 +1000
-In-Reply-To: <1337120605.2543.1.camel@shrek.rexursive.com>
-References: <Pine.LNX.4.44L0.1205132212070.5628-100000@netrider.rowland.org>
-	 <1337039996.1628.9.camel@shrek.rexursive.com>
-	 <4FB269BF.3090801@linux.vnet.ibm.com> <201205151942.36335.rjw@sisk.pl>
-	 <1337120605.2543.1.camel@shrek.rexursive.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.4.1 (3.4.1-2.fc17) 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	id S1751520Ab2EUEqX (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 May 2012 00:46:23 -0400
+Received: from linux-sh.org ([111.68.239.195]:51361 "EHLO linux-sh.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750968Ab2EUEqW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 21 May 2012 00:46:22 -0400
+Date: Mon, 21 May 2012 13:46:18 +0900
+From: Paul Mundt <lethal@linux-sh.org>
+To: Grant Likely <grant.likely@secretlab.ca>
+Cc: linux-sh@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 4/8] irqdomain: Simple NUMA awareness.
+Message-ID: <20120521044618.GC31763@linux-sh.org>
+References: <1337407908-7421-1-git-send-email-lethal@linux-sh.org>
+ <1337407908-7421-5-git-send-email-lethal@linux-sh.org>
+ <20120519184135.8CFBD3E03B8@localhost>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120519184135.8CFBD3E03B8@localhost>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2012-05-16 at 08:23 +1000, Bojan Smojver wrote:
-> On Tue, 2012-05-15 at 19:42 +0200, Rafael J. Wysocki wrote:
-> > which I suppose is what the first Bojan's patch did, right? 
+On Sat, May 19, 2012 at 12:41:35PM -0600, Grant Likely wrote:
+> On Sat, 19 May 2012 15:11:44 +0900, Paul Mundt <lethal@linux-sh.org> wrote:
+> > +static inline int irq_domain_nid(struct device_node *of_node)
+> > +{
+> > +	return of_node ? of_node_to_nid(of_node) : numa_node_id();
+> > +}
+> > +
 > 
-> Correct. No extra notifiers were sent, so whatever hibernation code did
-> was it.
+> I think this logic should just be rolled into of_node_to_nid()
+> directly instead of an irq_domain-specific helper.  PowerPC and Sparc
+> are the only architectures doing anything special with of_node_to_nid
+> at the moment.  I don't think anyone has bothered to define an
+> arch-independent binding for NUMA associations.
 > 
-> That patch is here:
+> Otherwise this patch looks good to me.
 > 
-> http://marc.info/?l=linux-kernel&m=133651588229850&w=2
-
-Now that 3.4 is out, just a ping to have this in the 3.5 queue.
-
--- 
-Bojan
-
+Ok, that sounds fine to me. I've done that in the updated patch. We do
+need to include linux/topology.h for the numa_node_id() definition, but
+that seems to not cause too much trouble. Cross builds for sparc and
+powerpc OF + NUMA platforms seem to hold up at least.
