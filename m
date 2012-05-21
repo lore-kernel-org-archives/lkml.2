@@ -1,88 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752050Ab2EUHg7 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 May 2012 03:36:59 -0400
-Received: from zene.cmpxchg.org ([85.214.230.12]:37766 "EHLO zene.cmpxchg.org"
+	id S1752885Ab2EUHhS (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 May 2012 03:37:18 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:47863 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750732Ab2EUHg6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 May 2012 03:36:58 -0400
-Date: Mon, 21 May 2012 09:36:32 +0200
-From: Johannes Weiner <hannes@cmpxchg.org>
-To: Michal Hocko <mhocko@suse.cz>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org,
-        Andrew Morton <akpm@linux-foundation.org>, Mel Gorman <mel@csn.ul.ie>,
-        Minchan Kim <minchan@kernel.org>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Rik van Riel <riel@redhat.com>
-Subject: Re: [PATCH] mm: consider all swapped back pages in used-once logic
-Message-ID: <20120521073632.GL1406@cmpxchg.org>
-References: <1337246033-13719-1-git-send-email-mhocko@suse.cz>
- <20120517195342.GB1800@cmpxchg.org>
- <20120521025149.GA32375@gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120521025149.GA32375@gmail.com>
+	id S1752210Ab2EUHhQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 21 May 2012 03:37:16 -0400
+From: Jiri Olsa <jolsa@redhat.com>
+To: zheng.z.yan@intel.com
+Cc: a.p.zijlstra@chello.nl, mingo@elte.hu, andi@firstfloor.org,
+        eranian@google.com, jolsa@redhat.com, ming.m.lin@intel.com,
+        gregkh@linuxfoundation.org, linux-kernel@vger.kernel.org
+Subject: [RFC 0/5] perf, tool: uncore related changes
+Date: Mon, 21 May 2012 09:36:48 +0200
+Message-Id: <1337585813-3349-1-git-send-email-jolsa@redhat.com>
+In-Reply-To: <1337144403-30841-1-git-send-email-zheng.z.yan@intel.com>
+References: <1337144403-30841-1-git-send-email-zheng.z.yan@intel.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, May 21, 2012 at 10:51:49AM +0800, Zheng Liu wrote:
-> On Thu, May 17, 2012 at 09:54:25PM +0200, Johannes Weiner wrote:
-> > On Thu, May 17, 2012 at 11:13:53AM +0200, Michal Hocko wrote:
-> > > [64574746 vmscan: detect mapped file pages used only once] made mapped pages
-> > > have another round in inactive list because they might be just short
-> > > lived and so we could consider them again next time. This heuristic
-> > > helps to reduce pressure on the active list with a streaming IO
-> > > worklods.
-> > > This patch fixes a regression introduced by this commit for heavy shmem
-> > > based workloads because unlike Anon pages, which are excluded from this
-> > > heuristic because they are usually long lived, shmem pages are handled
-> > > as a regular page cache.
-> > > This doesn't work quite well, unfortunately, if the workload is mostly
-> > > backed by shmem (in memory database sitting on 80% of memory) with a
-> > > streaming IO in the background (backup - up to 20% of memory). Anon
-> > > inactive list is full of (dirty) shmem pages when watermarks are
-> > > hit. Shmem pages are kept in the inactive list (they are referenced)
-> > > in the first round and it is hard to reclaim anything else so we reach
-> > > lower scanning priorities very quickly which leads to an excessive swap
-> > > out.
-> > > 
-> > > Let's fix this by excluding all swap backed pages (they tend to be long
-> > > lived wrt. the regular page cache anyway) from used-once heuristic and
-> > > rather activate them if they are referenced.
-> > 
-> > Yes, the algorithm only makes sense for file cache, which is easy to
-> > reclaim.  Thanks for the fix!
-> 
-> Hi Johannes,
-> 
-> Out of curiosity, I notice that, in this patch (64574746), the commit log
-> said that this patch aims to reduce the impact of pages used only once.
-> Could you please tell why you think these pages will flood the active
-> list?  How do you find this problem?
+hi,
+this patchset is based on parsing fixies I just sent out
+and CC-ed you.
 
-Applications that use mmap for large, linear used-once IO.  Reclaim
-used to just activate every mapped file page it encountered for the
-first time (activate referenced ones, but they all start referenced) .
-This resulted in horrible reclaim latency as most pages in memory
-where active.
+I found a way to reuse the event parsing grammar for just
+term parsing. I had to make some other changes as well:
 
-> Actually, we met a huge regression in our product system.  This
-> application uses mmap/munmap and read/write simultaneously.  Meanwhile
-> it wants to keep mapped file pages in memory as much as possible.  But
-> this patch causes that mapped file pages are reclaimed frequently.  So I
-> want to know whether or not this patch consider this situation.  Thank
-> you.
+  - we end up with 2 start symbols for event grammar to differentiate
+    between event parsing and terms parsing
 
-Is it because the read()/write() IO is high throughput and pushes
-pages through the LRU lists faster than the mmap pages are referenced?
+  - we have now 2 diferent structures with parser arguments
+    for each event parsing and terms parsing
 
-Are the mmap pages executable or shared between tasks?  If so, does
-the kernel you are using include '34dbc67 vmscan: promote shared file
-mapped pages' and 'c909e99 vmscan: activate executable pages after
-first usage'?
+  - I kept the reentrant parser.. it's not needed but I think
+    it's better than non reentrant ;)
+    I'm passing yyscanner instead of yylval and yytext as you did,
+    because you can get yylval and yytext out of yyscanner,
+    also I think it's more generic
 
-All of this is very lame.  I see no way to automatically detect when
-you really want to keep mapped pages over unmapped ones.  And making
-this assumption hurt some loads, while not making it now hurts others.
+  - added automated tests for terms parsing, but we need automated
+    tests for term aliasing (patch 4/5) .. similar pmu tests as
+    for pmu format parsing
+
+attached patches:
+  1/5 perf, tool: Use data struct for arg passing in event parse function
+  2/5 perf, tool: Make the event parser reentrantable
+  3/5 perf, tool: Add support to reuse event grammar to parse out terms
+  4/5 perf, tool: Add pmu event alias support
+  5/5 perf, tool: Add automated test for pure terms parsing
+
+thanks for comments,
+jirka
+---
+ tools/perf/util/parse-events-test.c |  122 +++++++++++++++++++++++++++-
+ tools/perf/util/parse-events.c      |   71 ++++++++++++++---
+ tools/perf/util/parse-events.h      |   15 +++-
+ tools/perf/util/parse-events.l      |  129 ++++++++++++++++++-----------
+ tools/perf/util/parse-events.y      |   71 ++++++++++++-----
+ tools/perf/util/pmu.c               |  152 +++++++++++++++++++++++++++++++++++
+ tools/perf/util/pmu.h               |   11 +++-
+ 7 files changed, 483 insertions(+), 88 deletions(-)
