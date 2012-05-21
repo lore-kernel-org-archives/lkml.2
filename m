@@ -1,75 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757122Ab2EUNyb (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 May 2012 09:54:31 -0400
-Received: from orion.tchmachines.com ([208.76.84.200]:53953 "EHLO
-	orion.tchmachines.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755863Ab2EUNya (ORCPT
+	id S1757272Ab2EUNz0 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 May 2012 09:55:26 -0400
+Received: from mail-ey0-f174.google.com ([209.85.215.174]:56426 "EHLO
+	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756869Ab2EUNzY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 May 2012 09:54:30 -0400
-From: Vlad Zolotarov <vlad@scalemp.com>
-To: Ingo Molnar <mingo@kernel.org>
-Cc: "Shai Fultheim (Shai@ScaleMP.com)" <Shai@scalemp.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
-        Ido Yariv <ido@wizery.com>
-Subject: Re: [PATCH v3 0/2] Move x86_cpu_to_apicid to the __read_mostly section
-Date: Mon, 21 May 2012 16:54:25 +0300
-Message-ID: <1693911.sUneyHzERA@vlad>
-Organization: ScaleMP Ltd.
-User-Agent: KMail/4.8.2 (Linux/3.2.0-24-generic; KDE/4.8.2; i686; ; )
-In-Reply-To: <20120521123246.GB17065@gmail.com>
-References: <1337527148.6093.14.camel@vlad> <9B14D1490DDECA4E974F6B9FC9EBAB317D295F4D11@VMBX108.ihostexchange.net> <20120521123246.GB17065@gmail.com>
+	Mon, 21 May 2012 09:55:24 -0400
+Message-ID: <4FBA4946.8080905@suse.cz>
+Date: Mon, 21 May 2012 15:55:18 +0200
+From: Jiri Slaby <jslaby@suse.cz>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120426 Thunderbird/13.0
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
-X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
-X-AntiAbuse: Primary Hostname - orion.tchmachines.com
-X-AntiAbuse: Original Domain - vger.kernel.org
-X-AntiAbuse: Originator/Caller UID/GID - [47 12] / [47 12]
-X-AntiAbuse: Sender Address Domain - scalemp.com
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+CC: =?UTF-8?B?QXJ2ZSBIasO4bm5ldsOlZw==?= <arve@android.com>,
+        NeilBrown <neilb@suse.de>, LKML <linux-kernel@vger.kernel.org>,
+        Jiri Slaby <jirislaby@gmail.com>,
+        Linux PM list <linux-pm@vger.kernel.org>
+Subject: Re: [-next regression] TCP window full with EPOLLWAKEUP
+References: <4FB81981.3050509@suse.cz> <201205201423.08334.rjw@sisk.pl> <201205201453.11794.rjw@sisk.pl> <201205202034.24541.rjw@sisk.pl>
+In-Reply-To: <201205202034.24541.rjw@sisk.pl>
+X-Enigmail-Version: 1.5pre
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Monday, May 21, 2012 02:32:46 PM Ingo Molnar wrote:
-> * Shai Fultheim (Shai@ScaleMP.com) <Shai@ScaleMP.com> wrote:
-> > Ingo,
-> > 
-> > The reason for this, as you pointed out, is the 'cache line'
-> > size (4096 bytes).  We see significant false sharing is we do
-> > not move this next to each other.
+On 05/20/2012 08:34 PM, Rafael J. Wysocki wrote:
+> On Sunday, May 20, 2012, Rafael J. Wysocki wrote:
+>> On Sunday, May 20, 2012, Rafael J. Wysocki wrote:
+>>> On Sunday, May 20, 2012, Jiri Slaby wrote:
+>>>> Hi,
+>>>>
+>>>> a bisection shows that with the following commit from -next:
+>>>> commit 4d7e30d98939a0340022ccd49325a3d70f7e0238
+>>>> Author: Arve Hjønnevåg <arve@android.com>
+>>>> Date:   Tue May 1 21:33:34 2012 +0200
+>>>>
+>>>>     epoll: Add a flag, EPOLLWAKEUP, to prevent suspend while epoll
+>>>> events are ready
+>>>>
+>>>> ====
+>>>>
+>>>> one of mono programs I use stops receiving data from the network.
+>>>> Wireshark shows that the TCP window of a connection is filled. This
+>>>> means the program does not read the data fast enough after requesting
+>>>> the data.
+>>>>
+>>>> If I revert that commit on the top of -next (20120518), everything works
+>>>> as expected.
+>>>
+>>> Hmm.  I suppose that the failing program doesn't set EPOLLWAKEUP by mistake,
+>>> does it?
+>>
+>> If it doesn't, we can assume that epi-ws is always NULL and all of the added
+>> overhead comes from the function calls.  So, I wonder if the appended patch
+>> makes any difference?
 > 
-> Which write-often variable caused the many cache flushes/fills?
-> cpu_to_apicid is read mostly.
+> Having thought more about this I have to say this doesn't seem to make much
+> sense, because in that case you'd see some progress, although probably a bit
+> slower than before.
 > 
-> I.e. it might make more sense to identify the frequenty
-> *modified* percpu variables, and move them to a separate
-> section. I *think* most percpu variables are read mostly, so it
-> would be more maintainable in the long run to figure out the
-> frequently modified ones, not the frequently not modified ones.
-
-I tend to disagree about the general claim that most per-CPU variables are 
-read-mostly: consider the per-CPU data structures used in lock-less algorithms 
-like softnet_data used in a NAPI. I'm not sure what is a more common - read-
-only or not-read-only per-cpu data, but surely there are both...
-
-In this specific patch we deal with something that is initialized once in the 
-init time and then used as if it's a constant thus representing a clear 
-"__read_mostly" case. 
-
-Having said all that I think that the proposed solution, the one using 
-__read_mostly infrastructure, is just ok both in a long run. I also doubt that 
-we are currently facing a need to define an additional "frequently modified" 
-section.
-
-Pls., comment.
-
-thanks,
-vlad
-
+> So, I think what happens is that the application tries to set EPOLLWAKEUP,
+> but doesn't have the capability, so the entire operation fails for it, but
+> it doesn't check the return value.
+> 
+> I wonder if the following helps, then.
 > 
 > Thanks,
+> Rafael
 > 
-> 	Ingo
+> 
+> ---
+>  fs/eventpoll.c |    2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
+> 
+> Index: linux/fs/eventpoll.c
+> ===================================================================
+> --- linux.orig/fs/eventpoll.c
+> +++ linux/fs/eventpoll.c
+> @@ -1711,7 +1711,7 @@ SYSCALL_DEFINE4(epoll_ctl, int, epfd, in
+>  
+>  	/* Check if EPOLLWAKEUP is allowed */
+>  	if ((epds.events & EPOLLWAKEUP) && !capable(CAP_EPOLLWAKEUP))
+> -		goto error_tgt_fput;
+> +		epds.events &= ~EPOLLWAKEUP;
+
+Yes, this fixed the issue.
+
+thanks,
+-- 
+js
+suse labs
+
+
