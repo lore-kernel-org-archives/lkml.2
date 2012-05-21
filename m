@@ -1,100 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751821Ab2EUExT (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 May 2012 00:53:19 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:47254 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751374Ab2EUExR convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 May 2012 00:53:17 -0400
+	id S1752024Ab2EUEzV (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 May 2012 00:55:21 -0400
+Received: from linux-sh.org ([111.68.239.195]:42248 "EHLO linux-sh.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751377Ab2EUEzS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 21 May 2012 00:55:18 -0400
+Date: Mon, 21 May 2012 13:55:15 +0900
+From: Paul Mundt <lethal@linux-sh.org>
+To: Grant Likely <grant.likely@secretlab.ca>
+Cc: linux-sh@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 6/8] irqdomain: Support identity mapped VIRQ allocation.
+Message-ID: <20120521045515.GD31763@linux-sh.org>
+References: <1337407908-7421-1-git-send-email-lethal@linux-sh.org>
+ <1337407908-7421-7-git-send-email-lethal@linux-sh.org>
+ <20120519202140.7B0973E03B8@localhost>
 MIME-Version: 1.0
-In-Reply-To: <20120520195126.GA11282@kroah.com>
-References: <20120518045907.GA3397@kroah.com>
-	<CACVXFVPhPmTfdB-pKpz7NpL+N03cxDvPpiFdPWeZcqBNNSffYw@mail.gmail.com>
-	<20120520195126.GA11282@kroah.com>
-Date: Mon, 21 May 2012 12:53:14 +0800
-Message-ID: <CACVXFVPeicEStTqtdO3Jt32JuhP3+_kof7vqgErK_iSDWdt92w@mail.gmail.com>
-Subject: =?UTF-8?Q?Re=3A_Race_condition_between_driver=5Fprobe=5Fdevice_and_d?=
-	=?UTF-8?Q?evice=5Fshutdown=E2=80=8F?=
-From: Ming Lei <ming.lei@canonical.com>
-To: Greg KH <gregkh@linuxfoundation.org>
-Cc: Wedson Almeida Filho <wedsonaf@gmail.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        linux-kernel@vger.kernel.org, Linux PM List <linux-pm@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120519202140.7B0973E03B8@localhost>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Cc pm list because it is related with PM.
+On Sat, May 19, 2012 at 02:21:40PM -0600, Grant Likely wrote:
+> On Sat, 19 May 2012 15:11:46 +0900, Paul Mundt <lethal@linux-sh.org> wrote:
+> > This adds a new irq_create_identity_mapping() routine to permit platforms
+> > to utilize 1:1 identity mapping between hardware and linux IRQs for
+> > domain population. The same semantics as irq_create_mapping() apply,
+> > though in this case we only support irqdesc allocation at a static
+> > location, rather than falling back on dynamic lookup.
+> > 
+> How about the following for an API (omitting error checking, and the
+> actual names are up for debate):
+> 
+> int irq_domain_associate_many(struct irq_domain *domain,
+> 				unsigned int irq_base,
+> 				irq_hw_number_t hwirq_base,
+> 				int count)
+> {
+> 	int i;
+> 	for (i = 0; i < count; i++)
+> 		irq_setup_virq(domain, irq_base + i, hwirq_base + i);
+> }
+> int irq_create_strict_mappings(struct irq_domain *domain,
+> 				unsigned int irq_base,
+> 				irq_hw_number_t hwirq_base,
+> 				int count)
+> {
+> 	/* Allows for non-identity, but still static mappings of a
+> 	 * range of irq numbers */
+> 	irq_alloc_descs(irq_base, irq_base, irq_domain_nid(domain->of_node));
+> 	irq_domain_associate_many(domain, irq_base, hwirq, count);
+> 	...
+> }
+> 
+> /* in header */
+> static int irq_create_identity_mapping(struct irq_domain *domain,
+> 					irq_hw_number_t hwirq_base)
+> {
+> 	irq_create_strict_mappings(domain, hwirq_base, hwirq_base, 1);
+> }
+> 
+> That would give the ability to either associated for pre-allocated
+> irq_descs, or strict map for allocating a specific range of irqs.
+> 
+That's cleaner than what I had, so it looks good to me. This is what I've
+implemented in the updated patch.
 
-Hi Greg,
+I've still provided irq_domain_associate() in addition to the _many()
+case to support non-linear association. I'll probably start out by doing
+the sh intc conversion using this API alongside the radix tree, and then
+gradually converting over to having the irqdomain code do all of my irq
+desc management for me.
 
-On Mon, May 21, 2012 at 3:51 AM, Greg KH <gregkh@linuxfoundation.org> wrote:
+> This is a new API, and I'm not a fan of the irq_default_domain usage
+> so I'd like just drop the above too lines.  My opinion is that if your
+> calling into get a mapping, then the code really should know what
+> domain it is requesting from.  If a default domain really is needed,
+> then there it should be explicit for the caller to find the default
+> domain and then pass that in to this function.
+> 
+Yes, agreed. Adding something like irq_get_default_domain() is trivial if
+and when a need arises.
 
->
-> And how can that happen with a real bus?  Don't we have a lock
-
-The races may be triggered when one device is just probed(triggered
-by plug) or released(triggered by unplug) at the same time of running
-reboot/poweroff.
-
-> somewhere per-bus that should be protecting this type of thing (sorry,
-> can't dig through the code at the moment, on the road...)
-
-device_shutdown is called with only holding reboot_mutex, so I think no
-any protection on dev->driver there.
-
->
-> How come no one has ever hit them in the past 10 years?  What am I
-> missing here?
-
-The window is so small that maybe it is very very difficult to trigger
-the races, :-)
-But looks Wedson is luck enough to observe it.
-
->> Looks the above makes sense to serialize .shutdown with
->> .probe and .release.
->
-> Let me look at the code when I get back in a few days, but I really
-> thought we already had a lock protecting all of this...
-
-Also the previous patch don't cover the .runtime_resume races with
-.probe or .release, so the right fix may be below:
-
-diff --git a/drivers/base/core.c b/drivers/base/core.c
-index 346be8b..cbc8bd2 100644
---- a/drivers/base/core.c
-+++ b/drivers/base/core.c
-@@ -1820,6 +1820,11 @@ void device_shutdown(void)
- 		list_del_init(&dev->kobj.entry);
- 		spin_unlock(&devices_kset->list_lock);
-
-+		/*hold lock[s] to avoid races with .probe/.release*/
-+		if (dev->parent)
-+			device_lock(dev->parent);
-+		device_lock(dev);
-+
- 		/* Don't allow any more runtime suspends */
- 		pm_runtime_get_noresume(dev);
- 		pm_runtime_barrier(dev);
-@@ -1831,6 +1836,9 @@ void device_shutdown(void)
- 			dev_dbg(dev, "shutdown\n");
- 			dev->driver->shutdown(dev);
- 		}
-+		device_unlock(dev);
-+		if (dev->parent)
-+			device_unlock(dev->parent);
- 		put_device(dev);
-
- 		spin_lock(&devices_kset->list_lock);
-
-Another candidate fix is to register a reboot notifier in driver core to prevent
-driver from being bound or unbound from start of reboot/shutdown, but looks
-not easy as the way of holding device locks.
-
-
-Thanks,
---
-Ming Lei
+Updated patches to follow.
