@@ -1,271 +1,167 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756356Ab2EUQnc (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 May 2012 12:43:32 -0400
-Received: from mail-gh0-f174.google.com ([209.85.160.174]:61323 "EHLO
-	mail-gh0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752826Ab2EUQna convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 May 2012 12:43:30 -0400
+	id S1756347Ab2EUQqL (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 May 2012 12:46:11 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:53554 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753191Ab2EUQqJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 21 May 2012 12:46:09 -0400
+Date: Mon, 21 May 2012 19:37:27 +0300
+From: "Michael S. Tsirkin" <mst@redhat.com>
+To: kvm@vger.kernel.org
+Cc: Avi Kivity <avi@redhat.com>, Marcelo Tosatti <mtosatti@redhat.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, x86@kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH] kvm: optimize ISR lookups
+Message-ID: <20120521163727.GA13337@redhat.com>
 MIME-Version: 1.0
-In-Reply-To: <6008DE3C35C7C04D85C2A4C813D36515481E5D29@ORSMSX101.amr.corp.intel.com>
-References: <1336136030-18503-1-git-send-email-benjamin.tissoires@gmail.com>
-	<1336136030-18503-2-git-send-email-benjamin.tissoires@gmail.com>
-	<20120506190146.GA12571@polaris.bitmath.org>
-	<CAN+gG=G9y_0Le-Mja2z68r76nBmz0De95Lc6671EkrrMZRSEHw@mail.gmail.com>
-	<6008DE3C35C7C04D85C2A4C813D36515481E5D29@ORSMSX101.amr.corp.intel.com>
-Date: Mon, 21 May 2012 18:43:29 +0200
-Message-ID: <CAN+gG=G4+Jbcw_KBeV=tVsXaqG--acioA9y2x4YgUsVrmcEwfw@mail.gmail.com>
-Subject: Re: [PATCH 1/5] HID: hid-multitouch: fix wrong protocol detection
-From: Benjamin Tissoires <benjamin.tissoires@gmail.com>
-To: "Drews, Paul" <paul.drews@intel.com>
-Cc: Henrik Rydberg <rydberg@euromail.se>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        Jiri Kosina <jkosina@suse.cz>, Stephane Chatty <chatty@enac.fr>,
-        "linux-input@vger.kernel.org" <linux-input@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Paul,
+We perform ISR lookups twice: during interrupt
+injection and on EOI. Typical workloads only have
+a single bit set there. So we can avoid ISR scans by
+1. counting bits as we set/clear them in ISR
+2. if count is 1, caching the vector number
+3. if count != 1, invalidating the cache
 
-On Fri, May 18, 2012 at 11:14 PM, Drews, Paul <paul.drews@intel.com> wrote:
->
->
->> -----Original Message-----
->> From: linux-kernel-owner@vger.kernel.org [mailto:linux-kernel-
->> owner@vger.kernel.org] On Behalf Of Benjamin Tissoires
->> Sent: Wednesday, May 09, 2012 12:04 PM
->> To: Henrik Rydberg
->> Cc: Dmitry Torokhov; Jiri Kosina; Stephane Chatty; linux-input@vger.kernel.org;
->> linux-kernel@vger.kernel.org
->> Subject: Re: [PATCH 1/5] HID: hid-multitouch: fix wrong protocol detection
->>
->
->> On Sun, May 6, 2012 at 9:01 PM, Henrik Rydberg <rydberg@euromail.se> wrote:
->> > Hi Benjamin,
->> >
->> >> The previous implementation introduced a randomness in the splitting
->> >> of the different touches reported by the device. This version is more
->> >> robust as we don't rely on hi->input->absbit, but on our own structure.
->> >>
->
->> >> +
->> >>  struct mt_device {
->> >>       struct mt_slot curdata; /* placeholder of incoming data */
->> >>       struct mt_class mtclass;        /* our mt device class */
->> >> +     struct mt_fields *fields;       /* temporary placeholder for storing the
->> >> +                                        multitouch fields */
->> >
->> > Why not skip the pointer here?
->>
->> well, the idea was to keep the memory footprint low. As these values
->> are only needed at init, then I freed them once I finished using them.
->> I can of course skip the pointer, but in that case, wouldn't the
->> struct declaration be worthless?
->>
->> >
->
->> >>
->> >> +static void mt_post_parse(struct mt_device *td)
->> >> +{
->> >> +     struct mt_fields *f = td->fields;
->> >> +
->> >> +     if (td->touches_by_report > 0) {
->> >> +             int field_count_per_touch = f->length / td->touches_by_report;
->> >> +             td->last_slot_field = f->usages[field_count_per_touch - 1]->hid;
->> >> +     }
->> >> +}
->> >> +
->
-> It sounds as though:
->
-> () Reviewers are a little uncomfortable with the memory footprint and
->    allocation/free
-> () The patch as it stands relies on the pattern of "usage" values repeating
->    for each touch, and deeming the last one in the repetition pattern to
->    be the last-slot-field marker.
->
-> If this is the case, how about avoiding storing all the slot-field values
-> and just detecting the point of repetition to use the most-recently-seen
-> usage value as the last-slot-field marker.  I have been successfully using
-> the patch below based on this notion.  It took the failure rate from about
-> 1-per-10 boots to 250+ boots with no failures on an Atmel MaXTouch.
-> I don't have others to try it with, including the "buggy" one that led
-> to all this trouble in the first place.
+The real purpose of this is enabling PV EOI
+which needs to quickly validate the vector.
+But non PV guests also benefit.
 
-Thank you very much for this patch. However, Jiri already applied mine
-with the allocation/free mechanism.
+Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
+---
+ arch/x86/kvm/lapic.c |   51 ++++++++++++++++++++++++++++++++++++++++++++++++-
+ arch/x86/kvm/lapic.h |    2 +
+ 2 files changed, 51 insertions(+), 2 deletions(-)
 
-You're idea is good but it has one big problem with Win8 devices:
-As we can have 2 X and 2 Y per touch report, if these dual-X reporting
-or dual-Y reporting is present in the report, we will stop at the
-second X or the second Y seen, which will lead to a buggy touchscreen
-(the first touch won't get it's second coordinate). However, without
-this particularity, the patch would have worked ;-)
-
-If the Win8 norm has came earlier, the initial implementation that
-relies on the collection would have suffice, but some hardware makers
-made a bad use of it, leading us to stop using this, and relying on a
-more brutal approach.
-
-I found a little problem in the patch too:
-
->
-> Patch follows:
-> ==========================================================
-> From 242f6773babe0fc0215764abbeeeff6510f3ca92 Mon Sep 17 00:00:00 2001
-> From: Paul Drews <paul.drews@intel.com>
-> Date: Wed, 16 May 2012 11:15:00 -0700
-> Subject: [PATCH] Repair detection of last slot in multitouch reports
->
-> The logic for detecting the last per-touch slot in a
-> multitouch report erroneously used hid usage values (large
-> numbers such as 0xd0032) as indices into the smaller absbit
-> bitmap (with bit indexes up to 0x3f).  This caused
-> intermittent failures in the configuration of the last-slot
-> value leading to stale x,y coordinates being reported in
-> multi-touch input events.  It also carried the risk of a
-> segmentation fault due to the out-of-range bitmap index.
->
-> This patch takes a different approach of detecting the last
-> per-touch slot:  when the hid usage value wraps around to
-> the first hid usage value we have seen already, we must be
-> looking at the slots for the next touch of a multi-touch
-> report, so the last hid usage value we have seen so far must
-> be the last per-touch value.
->
-> Issue: AIA-446
-> Change-Id: Ic1872998502874298bb60705df9bd2fc70de1738
-> Signed-off-by: Paul Drews <paul.drews@intel.com>
-> ---
->  drivers/hid/hid-multitouch.c |   39 ++++++++++++++++++++++++++-------------
->  1 files changed, 26 insertions(+), 13 deletions(-)
->
-> diff --git a/drivers/hid/hid-multitouch.c b/drivers/hid/hid-multitouch.c
-> index 2e6d187..226f828 100644
-> --- a/drivers/hid/hid-multitouch.c
-> +++ b/drivers/hid/hid-multitouch.c
-> @@ -75,6 +75,9 @@ struct mt_device {
->        struct mt_class mtclass;        /* our mt device class */
->        unsigned last_field_index;      /* last field index of the report */
->        unsigned last_slot_field;       /* the last field of a slot */
-> +       bool last_slot_field_found;     /* last_slot_field has full init */
-> +       unsigned first_slot_field;
-> +       bool first_slot_field_found;    /* for detecting wrap to next touch */
->        __s8 inputmode;         /* InputMode HID feature, -1 if non-existent */
->        __s8 maxcontact_report_id;      /* Maximum Contact Number HID feature,
->                                   -1 if non-existent */
-> @@ -275,11 +278,21 @@ static void set_abs(struct input_dev *input, unsigned int code,
->        input_set_abs_params(input, code, fmin, fmax, fuzz, 0);
->  }
->
-> -static void set_last_slot_field(struct hid_usage *usage, struct mt_device *td,
-> -               struct hid_input *hi)
-> +static void update_last_slot_field(struct hid_usage *usage,
-> +               struct mt_device *td)
->  {
-> -       if (!test_bit(usage->hid, hi->input->absbit))
-> -               td->last_slot_field = usage->hid;
-> +       if (!td->last_slot_field_found) {
-> +               if (td->first_slot_field_found) {
-> +                       if (td->last_slot_field == usage->hid)
-
-I'm sure you wanted to put here:
-                       if (td->first_slot_field == usage->hid)
-
-Cheers,
-Benjamin
-
-> +                               td->last_slot_field_found = true; /* wrapped */
-> +                       else
-> +                               td->last_slot_field = usage->hid;
-> +               } else {
-> +                       td->first_slot_field = usage->hid;
-> +                       td->first_slot_field_found = true;
-> +                       td->last_slot_field = usage->hid;
-> +               }
-> +       }
->  }
->
->  static int mt_input_mapping(struct hid_device *hdev, struct hid_input *hi,
-> @@ -340,7 +353,7 @@ static int mt_input_mapping(struct hid_device *hdev, struct hid_input *hi,
->                                cls->sn_move);
->                        /* touchscreen emulation */
->                        set_abs(hi->input, ABS_X, field, cls->sn_move);
-> -                       set_last_slot_field(usage, td, hi);
-> +                       update_last_slot_field(usage, td);
->                        td->last_field_index = field->index;
->                        return 1;
->                case HID_GD_Y:
-> @@ -350,7 +363,7 @@ static int mt_input_mapping(struct hid_device *hdev, struct hid_input *hi,
->                                cls->sn_move);
->                        /* touchscreen emulation */
->                        set_abs(hi->input, ABS_Y, field, cls->sn_move);
-> -                       set_last_slot_field(usage, td, hi);
-> +                       update_last_slot_field(usage, td);
->                        td->last_field_index = field->index;
->                        return 1;
->                }
-> @@ -359,24 +372,24 @@ static int mt_input_mapping(struct hid_device *hdev, struct hid_input *hi,
->        case HID_UP_DIGITIZER:
->                switch (usage->hid) {
->                case HID_DG_INRANGE:
-> -                       set_last_slot_field(usage, td, hi);
-> +                       update_last_slot_field(usage, td);
->                        td->last_field_index = field->index;
->                        return 1;
->                case HID_DG_CONFIDENCE:
-> -                       set_last_slot_field(usage, td, hi);
-> +                       update_last_slot_field(usage, td);
->                        td->last_field_index = field->index;
->                        return 1;
->                case HID_DG_TIPSWITCH:
->                        hid_map_usage(hi, usage, bit, max, EV_KEY, BTN_TOUCH);
->                        input_set_capability(hi->input, EV_KEY, BTN_TOUCH);
-> -                       set_last_slot_field(usage, td, hi);
-> +                       update_last_slot_field(usage, td);
->                        td->last_field_index = field->index;
->                        return 1;
->                case HID_DG_CONTACTID:
->                        if (!td->maxcontacts)
->                                td->maxcontacts = MT_DEFAULT_MAXCONTACT;
->                        input_mt_init_slots(hi->input, td->maxcontacts);
-> -                       td->last_slot_field = usage->hid;
-> +                       update_last_slot_field(usage, td);
->                        td->last_field_index = field->index;
->                        td->touches_by_report++;
->                        return 1;
-> @@ -385,7 +398,7 @@ static int mt_input_mapping(struct hid_device *hdev, struct hid_input *hi,
->                                        EV_ABS, ABS_MT_TOUCH_MAJOR);
->                        set_abs(hi->input, ABS_MT_TOUCH_MAJOR, field,
->                                cls->sn_width);
-> -                       set_last_slot_field(usage, td, hi);
-> +                       update_last_slot_field(usage, td);
->                        td->last_field_index = field->index;
->                        return 1;
->                case HID_DG_HEIGHT:
-> @@ -395,7 +408,7 @@ static int mt_input_mapping(struct hid_device *hdev, struct hid_input *hi,
->                                cls->sn_height);
->                        input_set_abs_params(hi->input,
->                                        ABS_MT_ORIENTATION, 0, 1, 0, 0);
-> -                       set_last_slot_field(usage, td, hi);
-> +                       update_last_slot_field(usage, td);
->                        td->last_field_index = field->index;
->                        return 1;
->                case HID_DG_TIPPRESSURE:
-> @@ -406,7 +419,7 @@ static int mt_input_mapping(struct hid_device *hdev, struct hid_input *hi,
->                        /* touchscreen emulation */
->                        set_abs(hi->input, ABS_PRESSURE, field,
->                                cls->sn_pressure);
-> -                       set_last_slot_field(usage, td, hi);
-> +                       update_last_slot_field(usage, td);
->                        td->last_field_index = field->index;
->                        return 1;
->                case HID_DG_CONTACTCOUNT:
-> --
-> 1.7.3.4
-> ==========================================================
+diff --git a/arch/x86/kvm/lapic.c b/arch/x86/kvm/lapic.c
+index 93c1574..232950a 100644
+--- a/arch/x86/kvm/lapic.c
++++ b/arch/x86/kvm/lapic.c
+@@ -107,6 +107,16 @@ static inline void apic_clear_vector(int vec, void *bitmap)
+ 	clear_bit(VEC_POS(vec), (bitmap) + REG_POS(vec));
+ }
+ 
++static inline int __apic_test_and_set_vector(int vec, void *bitmap)
++{
++	return __test_and_set_bit(VEC_POS(vec), (bitmap) + REG_POS(vec));
++}
++
++static inline int __apic_test_and_clear_vector(int vec, void *bitmap)
++{
++	return __test_and_clear_bit(VEC_POS(vec), (bitmap) + REG_POS(vec));
++}
++
+ static inline int apic_hw_enabled(struct kvm_lapic *apic)
+ {
+ 	return (apic)->vcpu->arch.apic_base & MSR_IA32_APICBASE_ENABLE;
+@@ -210,6 +220,16 @@ static int find_highest_vector(void *bitmap)
+ 		return fls(word[word_offset << 2]) - 1 + (word_offset << 5);
+ }
+ 
++static u8 count_vectors(void *bitmap)
++{
++	u32 *word = bitmap;
++	int word_offset;
++	u8 count = 0;
++	for (word_offset = 0; word_offset < MAX_APIC_VECTOR >> 5; ++word_offset)
++		count += hweight32(word[word_offset << 2]);
++	return count;
++}
++
+ static inline int apic_test_and_set_irr(int vec, struct kvm_lapic *apic)
+ {
+ 	apic->irr_pending = true;
+@@ -242,6 +262,25 @@ static inline void apic_clear_irr(int vec, struct kvm_lapic *apic)
+ 		apic->irr_pending = true;
+ }
+ 
++static inline void apic_set_isr(int vec, struct kvm_lapic *apic)
++{
++	if (!__apic_test_and_set_vector(vec, apic->regs + APIC_ISR))
++		++apic->isr_count;
++	ASSERT(apic->isr_count > MAX_APIC_VECTOR);
++	if (likely(apic->isr_count == 1))
++		apic->isr_cache = vec;
++	else
++		apic->isr_cache = -1;
++}
++
++static inline void apic_clear_isr(int vec, struct kvm_lapic *apic)
++{
++	if (__apic_test_and_clear_vector(vec, apic->regs + APIC_ISR))
++		--apic->isr_count;
++	ASSERT(apic->isr_count < 0);
++	apic->isr_cache = -1;
++}
++
+ int kvm_lapic_find_highest_irr(struct kvm_vcpu *vcpu)
+ {
+ 	struct kvm_lapic *apic = vcpu->arch.apic;
+@@ -273,6 +312,10 @@ int kvm_apic_set_irq(struct kvm_vcpu *vcpu, struct kvm_lapic_irq *irq)
+ static inline int apic_find_highest_isr(struct kvm_lapic *apic)
+ {
+ 	int result;
++	if (!apic->isr_count)
++		return -1;
++	if (likely(apic->isr_cache != -1))
++		return apic->isr_cache;
+ 
+ 	result = find_highest_vector(apic->regs + APIC_ISR);
+ 	ASSERT(result == -1 || result >= 16);
+@@ -492,7 +535,7 @@ static void apic_set_eoi(struct kvm_lapic *apic)
+ 	if (vector == -1)
+ 		return;
+ 
+-	apic_clear_vector(vector, apic->regs + APIC_ISR);
++	apic_clear_isr(vector, apic);
+ 	apic_update_ppr(apic);
+ 
+ 	if (!(apic_get_reg(apic, APIC_SPIV) & APIC_SPIV_DIRECTED_EOI) &&
+@@ -1081,6 +1124,8 @@ void kvm_lapic_reset(struct kvm_vcpu *vcpu)
+ 		apic_set_reg(apic, APIC_TMR + 0x10 * i, 0);
+ 	}
+ 	apic->irr_pending = false;
++	apic->isr_count = 0;
++	apic->isr_cache = -1;
+ 	update_divide_count(apic);
+ 	atomic_set(&apic->lapic_timer.pending, 0);
+ 	if (kvm_vcpu_is_bsp(vcpu))
+@@ -1248,7 +1293,7 @@ int kvm_get_apic_interrupt(struct kvm_vcpu *vcpu)
+ 	if (vector == -1)
+ 		return -1;
+ 
+-	apic_set_vector(vector, apic->regs + APIC_ISR);
++	apic_set_isr(vector, apic);
+ 	apic_update_ppr(apic);
+ 	apic_clear_irr(vector, apic);
+ 	return vector;
+@@ -1267,6 +1312,8 @@ void kvm_apic_post_state_restore(struct kvm_vcpu *vcpu)
+ 	update_divide_count(apic);
+ 	start_apic_timer(apic);
+ 	apic->irr_pending = true;
++	apic->isr_count = count_vectors(apic->regs + APIC_ISR);
++	apic->isr_cache = -1;
+ 	kvm_make_request(KVM_REQ_EVENT, vcpu);
+ }
+ 
+diff --git a/arch/x86/kvm/lapic.h b/arch/x86/kvm/lapic.h
+index 6f4ce25..9f8deff 100644
+--- a/arch/x86/kvm/lapic.h
++++ b/arch/x86/kvm/lapic.h
+@@ -13,6 +13,8 @@ struct kvm_lapic {
+ 	u32 divide_count;
+ 	struct kvm_vcpu *vcpu;
+ 	bool irr_pending;
++	s16 isr_count;
++	int isr_cache;
+ 	void *regs;
+ 	gpa_t vapic_addr;
+ 	struct page *vapic_page;
+-- 
+MST
