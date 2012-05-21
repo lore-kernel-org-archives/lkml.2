@@ -1,43 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759054Ab2EUTx3 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 May 2012 15:53:29 -0400
-Received: from araneidae.co.uk ([81.187.94.2]:52139 "EHLO
-	venus.araneidae.co.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758563Ab2EUTx2 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 May 2012 15:53:28 -0400
-Date: Mon, 21 May 2012 20:53:21 +0100 (BST)
-From: Michael Abbott <michael@araneidae.co.uk>
-To: David Miller <davem@davemloft.net>
-cc: ben-linux@fluff.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] Implement full reset of DM9000 network device
-In-Reply-To: <20120521.153257.724964822171767587.davem@davemloft.net>
-Message-ID: <alpine.DEB.2.00.1205212052100.27705@venus.araneidae.co.uk>
-References: <alpine.DEB.2.00.1205211344010.26839@venus.araneidae.co.uk> <20120521.153257.724964822171767587.davem@davemloft.net>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	id S932104Ab2EUT61 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 May 2012 15:58:27 -0400
+Received: from mga01.intel.com ([192.55.52.88]:64623 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756333Ab2EUT6Z (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 21 May 2012 15:58:25 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
+   d="scan'208";a="155318449"
+Subject: Re: [PATCH 2/3] x86: x2apic/cluster: Make use of lowest priority
+ delivery mode
+From: Suresh Siddha <suresh.b.siddha@intel.com>
+Reply-To: Suresh Siddha <suresh.b.siddha@intel.com>
+To: Ingo Molnar <mingo@kernel.org>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Alexander Gordeev <agordeev@redhat.com>,
+        Arjan van de Ven <arjan@infradead.org>, linux-kernel@vger.kernel.org,
+        x86@kernel.org, Cyrill Gorcunov <gorcunov@openvz.org>,
+        Yinghai Lu <yinghai@kernel.org>, Peter Zijlstra <peterz@infradead.org>
+Date: Mon, 21 May 2012 12:56:48 -0700
+In-Reply-To: <20120521191546.GA28819@gmail.com>
+References: <20120518102640.GB31517@dhcp-26-207.brq.redhat.com>
+	 <20120521082240.GA31407@gmail.com>
+	 <20120521093648.GC28930@dhcp-26-207.brq.redhat.com>
+	 <20120521124025.GC17065@gmail.com>
+	 <20120521144812.GD28930@dhcp-26-207.brq.redhat.com>
+	 <20120521145904.GA7068@gmail.com>
+	 <CA+55aFxJxfx+OfDiATCCPojVAPew_Hy+2=jx9g4=2_WRvixBFw@mail.gmail.com>
+	 <20120521191546.GA28819@gmail.com>
+Organization: Intel Corp
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.0.3 (3.0.3-1.fc15) 
+Content-Transfer-Encoding: 7bit
+Message-ID: <1337630208.1997.141.camel@sbsiddha-desk.sc.intel.com>
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 21 May 2012, David Miller wrote:
-> From: Michael Abbott <michael@araneidae.co.uk>
-> Date: Mon, 21 May 2012 13:47:53 +0100 (BST)
-> 
-> > A Davicom application note for the DM9000 network device recommends 
-> > performing software reset twice to correctly initialise the device. 
-> > Without this reset some devices fail to initialise correctly on system 
-> > startup.
-> > 
-> > Signed-off-by: Michael Abbott <michael.abbott@diamond.ac.uk>
-> 
-> Please post networking patches to netdev@vger.kernel.org, the networking 
-> developers are not all listening on linux-kernel.
-> 
-> Plus, by properly submitting networking patches to netdev, it will 
-> automatically be queued up and tracked in patchwork:
+On Mon, 2012-05-21 at 21:15 +0200, Ingo Molnar wrote:
+> The one negative effect I mentioned, affine wakeups done by the 
+> scheduler, could still bite us - this has to be measured and 
+> affine wakeups have to be made less prominent if IRQ handlers 
+> start jumping around. We definitely don't want tasks to follow 
+> round-robin IRQs around.
 
-Ok, thanks.  I'll resubmit when I'm ready -- it seems the patch isn't 
-enough to solve the issue I'm investigating...
+Actually this (ping-ponging around idle cpu's in a socket) happens
+already today, as the affine wakeups use select_idle_sibling() to wake
+up the task on an idle sibling (HT or core sibling) if the cpu on which
+the task is woken-up is busy with something else.
+
+But I agree, somehow all these need to work together. For example to
+save power, what we want is the idle core to stay in idle with least
+number of interruptions, with interrupts routed to busy cores, scheduler
+not aggressively waking the tasks up on idle cores etc.
+
+One quick thought is to use the cpufreq governor decisions and if all
+the cpu's in the package are in lower p-states, then we can default for
+power-saving decisions, otherwise if any cpu is at P0, switch for
+performance policy(in terms of irq routing, scheduler wake-up decisions
+etc) dynamically etc.
+
+thanks,
+suresh
+
+
+
