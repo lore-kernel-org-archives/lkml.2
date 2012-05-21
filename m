@@ -1,75 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758340Ab2EUTju (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 May 2012 15:39:50 -0400
-Received: from smarthost1.greenhost.nl ([195.190.28.78]:47181 "EHLO
-	smarthost1.greenhost.nl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757320Ab2EUTjo (ORCPT
+	id S1758952Ab2EUTk2 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 May 2012 15:40:28 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:37980 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757945Ab2EUTkY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 May 2012 15:39:44 -0400
-X-Greylist: delayed 1123 seconds by postgrey-1.27 at vger.kernel.org; Mon, 21 May 2012 15:39:44 EDT
-Message-ID: <5d6179f59222155b72d9aa9f171e883c.squirrel@webmail.greenhost.nl>
-In-Reply-To: <CAB=4xho2b5fZV_jC15XW3mhOD9Z0QUMnV_UHy-P5EmQWfX59dA@mail.gmail.com>
-References: <CACLa4puRJLUd6hAHO6zFYiqa5dFVum8eLmNMk_ef+=r8OGhjRg@mail.gmail.com>
-    <CAB=4xho2b5fZV_jC15XW3mhOD9Z0QUMnV_UHy-P5EmQWfX59dA@mail.gmail.com>
-Date: Mon, 21 May 2012 21:20:49 +0200
-Subject: Re: seccomp and ptrace. what is the correct order?
-From: "Indan Zupancic" <indan@nul.nu>
-To: "Roland McGrath" <mcgrathr@google.com>
-Cc: "Eric Paris" <netdev@parisplace.org>, "Will Drewry" <wad@chromium.org>,
-        linux-kernel@vger.kernel.org, linux-security-module@vger.kernel.org,
-        kernel-hardening@lists.openwall.com, hpa@zytor.com, mingo@redhat.com,
-        oleg@redhat.com, peterz@infradead.org, rdunlap@xenotime.net,
-        tglx@linutronix.de, luto@mit.edu, eparis@redhat.com,
-        serge.hallyn@canonical.com, pmoore@redhat.com,
-        akpm@linux-foundation.org, corbet@lwn.net, eric.dumazet@gmail.com,
-        markus@chromium.org, coreyb@linux.vnet.ibm.com, keescook@chromium.org
-User-Agent: SquirrelMail/1.4.22
+	Mon, 21 May 2012 15:40:24 -0400
+Date: Mon, 21 May 2012 12:40:20 -0700
+From: Kent Overstreet <koverstreet@google.com>
+To: Alan Cox <alan@lxorguk.ukuu.org.uk>
+Cc: Tejun Heo <tj@kernel.org>, linux-bcache@vger.kernel.org,
+        linux-kernel@vger.kernel.org, dm-devel@redhat.com, agk@redhat.com
+Subject: Re: [Bcache v13 07/16] Closures
+Message-ID: <20120521194020.GA20338@google.com>
+References: <cover.1336619038.git.koverstreet@google.com>
+ <82f00ebb4ee0404788c5bd7fbfa1fe4969f28ba1.1336619038.git.koverstreet@google.com>
+ <20120515224137.GA15386@google.com>
+ <20120518062948.GA21163@dhcp-172-18-216-138.mtv.corp.google.com>
+ <20120518110247.08696cec@pyramind.ukuu.org.uk>
 MIME-Version: 1.0
-Content-Type: text/plain;charset=UTF-8
-Content-Transfer-Encoding: 8bit
-X-Priority: 3 (Normal)
-Importance: Normal
-X-Spam-Score: 0.0
-X-Scan-Signature: dfea3049d3b923820beb462d65569822
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120518110247.08696cec@pyramind.ukuu.org.uk>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, May 21, 2012 20:25, Roland McGrath wrote:
-> From a security perspective I think the natural expectation would be that
-> the seccomp check is on the values that will actually be used, without an
-> intervening opportunity to change anything.
+On Fri, May 18, 2012 at 11:02:47AM +0100, Alan Cox wrote:
+> > Well, I can definitely understand your reservations about the code; it's
+> > strange and foreign and complicated. But having beaten my head against
+> > the various problems and difficulties inherent in asynchronous
+> > programming for years - well, having found a way to make it sane to me
+> > it'd be madness to go back.
+> 
+> I think its more of a different paradigm than complicated.
 
-Actually, considering a tracer has full control over a traced process,
-it would make most sense from a security perspective to check both the
-traced task's seccomp filter, as well as the one for the ptracer for
-modified system calls (calls where any register poking at all was done).
-Otherwise a task could bypass its own seccomp filter by ptracing a hapless
-victim.
+Yeah, that's probably apt :) 
 
-I mentioned this before, but I forgot why this option was dismissed.
-Probably because ptrace shouldn't have been allowed by the filter in
-the first place.
+> The big
+> question I'd have to ask is how does it fit with hard real time. That is
+> a big issue given the gradual merging and getting of "hard" real time
+> into the kernel proper.
+> 
+> In some ways it's not that strange either. A look at what happens on some
+> of our kref handling in drivers is very similar but hardcoded.
+> 
+> Is the handling of priority inversion within closures a well understood
+> and solved problem ?
 
-The current patch does the seccomp check first and ignores any changes
-made via ptrace, just like the old seccomp did. So in that sense nothing
-changed.
+Haven't really thought about it (aside from deadlocks which are a
+slightly different issue). AFAICT there shouldn't be much to worry
+about, at least with the way I'm using closures today; scheduling is all
+handled by the existing workqueue code and you have to explicitly say
+which workqueue a function is going to run out of.
 
-Originally the seccomp filter check was in the fast path, so doing it
-after ptrace was tricky. But now it has been moved to the slow tracehook
-path it can easily be checked after the ptrace notification. That would
-change the behaviour SECCOMP_MODE=1 though, but probably nobody cares,
-as it can be argued that that was a security hole anyway (except if
-ptracing a seccomped task was disallowed, in which case moving it to
-the end doesn't change anything anyway).
+There are the wait lists I've implemented but that's mostly just for
+when some thread/closure is waiting on an arbitrary event to become true
+- analagous to wait_event(), in which case you want everything on the
+wait list to to run at once which is all it implements.
 
-Another argument for moving it to the end is that it makes debugging
-seccomped tasks a lot easier, because the debugger sees the denied
-system call. With the current patch the tasks would silently die.
-
-Greetings,
-
-Indan
-
-
+If the closure wait lists ever did end up being used in a situation
+where priorities or priority inversion was more of a concern it wouldn't
+be a huge deal to swap out the implementation for something more
+sophisticated, or just use the existing wait_queue_t.
