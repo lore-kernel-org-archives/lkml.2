@@ -1,108 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758152Ab2EURf2 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 May 2012 13:35:28 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:50306 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754218Ab2EURfZ (ORCPT
+	id S1758930Ab2EURjN (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 May 2012 13:39:13 -0400
+Received: from moutng.kundenserver.de ([212.227.126.171]:63588 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932161Ab2EURi5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 May 2012 13:35:25 -0400
-Date: Mon, 21 May 2012 14:35:12 -0300
-From: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
-To: Greg KH <gregkh@linuxfoundation.org>
-Cc: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, "Eric W. Biederman" <ebiederm@xmission.com>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: Re: [ 13/54] net: In unregister_netdevice_notifier unregister the
- netdevices.
-Message-ID: <20120521173509.GA2919@herton-Z68MA-D2H-B3>
-References: <20120518212656.GA4992@kroah.com>
- <20120518211600.656454343@linuxfoundation.org>
+	Mon, 21 May 2012 13:38:57 -0400
+Date: Mon, 21 May 2012 19:38:49 +0200
+From: Thierry Reding <thierry.reding@avionic-design.de>
+To: Stephen Warren <swarren@wwwdotorg.org>
+Cc: Lucas Stach <dev@lynxeye.de>, Hiroshi DOYU <hdoyu@nvidia.com>,
+        linux-tegra@vger.kernel.org, Joerg Roedel <joerg.roedel@amd.com>,
+        Bharat Nihalani <bnihalani@nvidia.com>,
+        Vandana Salve <vsalve@nvidia.com>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 2/2] iommu/tegra: gart: Reserve iomem resource
+Message-ID: <20120521173849.GA12042@avionic-0098.mockup.avionic-design.de>
+References: <1337019127-6863-1-git-send-email-hdoyu@nvidia.com>
+ <1337019127-6863-2-git-send-email-hdoyu@nvidia.com>
+ <20120521141152.GA21513@avionic-0098.mockup.avionic-design.de>
+ <4FBA702A.1010203@wwwdotorg.org>
+ <1337619935.1621.13.camel@tellur>
+ <4FBA77E2.4000409@wwwdotorg.org>
+ <20120521173124.GB11824@avionic-0098.mockup.avionic-design.de>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="GvXjxJ+pjyke8COw"
 Content-Disposition: inline
-In-Reply-To: <20120518211600.656454343@linuxfoundation.org>
+In-Reply-To: <20120521173124.GB11824@avionic-0098.mockup.avionic-design.de>
 User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Provags-ID: V02:K0:V0OSdhEcXOwseYwSGTvcs3PuEqiIYbiU4T2DdvMCGAc
+ CLPHX6y3ptkwFw0hOGrg4KYMMjpKs71eo50haL9h5qZVP9Z3t8
+ NlZeWgtPerh+Tj/SYhGCk7pkYVkTk5oigsoZP1y99v1Z2PFsY0
+ WooPqO7hxxtfgTCP0Zf7sWH7nkMzaQSHcSCpyoqxxJPNx5MBls
+ JmkG+hdm1tqt8KagxW1TGdPVBlTIcTi2mMcMlnyjg/1xKnU46w
+ ZIDlZfNXfYWnI4o/59L7JBnWYXNZsoxgeMCU87arzgLRjtOJKJ
+ U20OzV5IAI+8Fo6HBbVu3irAwHRFc07ter+USROxgB5ZpqNZVx
+ berpVszhurkyS8WH6HFiJnLLHfOlFmDvUI4oopCgdhWiC4e/dz
+ Gei/nkCUK4TOD67Rno6lXxDtlvs++jgqN0=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, May 18, 2012 at 02:16:12PM -0700, Greg KH wrote:
-> 3.0-stable review patch.  If anyone has any objections, please let me know.
-> 
-> ------------------
-> 
-> 
-> From: "Eric W. Biederman" <ebiederm@xmission.com>
-> 
-> [ Upstream commit 7d3d43dab4e978d8d9ad1acf8af15c9b1c4b0f0f ]
-> 
-> We already synthesize events in register_netdevice_notifier and synthesizing
-> events in unregister_netdevice_notifier allows to us remove the need for
-> special case cleanup code.
-> 
-> This change should be safe as it adds no new cases for existing callers
-> of unregiser_netdevice_notifier to handle.
-> 
-> Signed-off-by: Eric W. Biederman <ebiederm@xmission.com>
-> Signed-off-by: David S. Miller <davem@davemloft.net>
-> Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
-Please also include these two commits in addition to this change, to
-avoid a regression with pktgen:
-commit c57b54684060c8aced64a5b78ff69ff289af97b9
-commit d4b1133558e0d417342d5d2c49e4c35b428ff20d
+--GvXjxJ+pjyke8COw
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-> ---
->  net/core/dev.c |   20 ++++++++++++++++++++
->  1 file changed, 20 insertions(+)
-> 
-> --- a/net/core/dev.c
-> +++ b/net/core/dev.c
-> @@ -1406,14 +1406,34 @@ EXPORT_SYMBOL(register_netdevice_notifie
->   *	register_netdevice_notifier(). The notifier is unlinked into the
->   *	kernel structures and may then be reused. A negative errno code
->   *	is returned on a failure.
-> + *
-> + * 	After unregistering unregister and down device events are synthesized
-> + *	for all devices on the device list to the removed notifier to remove
-> + *	the need for special case cleanup code.
->   */
->  
->  int unregister_netdevice_notifier(struct notifier_block *nb)
->  {
-> +	struct net_device *dev;
-> +	struct net *net;
->  	int err;
->  
->  	rtnl_lock();
->  	err = raw_notifier_chain_unregister(&netdev_chain, nb);
-> +	if (err)
-> +		goto unlock;
-> +
-> +	for_each_net(net) {
-> +		for_each_netdev(net, dev) {
-> +			if (dev->flags & IFF_UP) {
-> +				nb->notifier_call(nb, NETDEV_GOING_DOWN, dev);
-> +				nb->notifier_call(nb, NETDEV_DOWN, dev);
-> +			}
-> +			nb->notifier_call(nb, NETDEV_UNREGISTER, dev);
-> +			nb->notifier_call(nb, NETDEV_UNREGISTER_BATCH, dev);
-> +		}
-> +	}
-> +unlock:
->  	rtnl_unlock();
->  	return err;
->  }
-> 
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe stable" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> 
+* Thierry Reding wrote:
+> * Stephen Warren wrote:
+> > On 05/21/2012 11:05 AM, Lucas Stach wrote:
+> > > Am Montag, den 21.05.2012, 10:41 -0600 schrieb Stephen Warren:
+> > >> On 05/21/2012 08:11 AM, Thierry Reding wrote:
+> > >>> * Hiroshi DOYU wrote:
+> > >>>> GART Register/Aperture range should be reserved.
+> > >> ...
+> > >>>> diff --git a/drivers/iommu/tegra-gart.c
+> > >>>> b/drivers/iommu/tegra-gart.c
+> > >> ...
+> > >>>> +	if (!devm_request_mem_region(dev, res_remap->start, +
+> > >>>> resource_size(res_remap), dev_name(dev))) { +		dev_err(dev,
+> > >>>> "failed to reserve GART aperture\n"); +		return -EBUSY; +	} +
+> > >>>
+> > >>> I'm not so sure that this is a good idea. If the GART driver
+> > >>> requests the GART aperture, then users of the GART aperture (e.g.
+> > >>> the DRM driver) will no longer be able to use it.
+> > >>
+> > >> Presumably the DRM driver would be obtaining access to parts of the
+> > >> GART aperture through the GART driver, rather than just grabbing the
+> > >> IO region and using it for itself?
+> > >=20
+> > > With a TTM-like memory manager the DRM driver will take over the addr=
+ess
+> > > space management of the GART aperture. The GART driver is only used to
+> > > set up the mappings in the IOMMU. The DRM driver is the one that sets
+> > > up/tears down the CPU mappings on demand, so the aperture should be
+> > > claimed in the DRM driver.
+> >=20
+> > Even if the DRM driver is managing the aperture, I still think the GART
+> > driver should claim it. The physical address of the aperture is a
+> > property of the GART, so only the GART's resources (and DT node) should
+> > contain a representation of where that aperture is. The DRM driver
+> > should call into the GART driver to find out where the aperture is, and
+> > hence GART is able to claim it without conflict.
+>=20
+> That could be difficult to do. There isn't any API to allow this. I guess=
+ if
+> something like that is added it should probably go into the IOMMU framewo=
+rk.
 
--- 
-[]'s
-Herton
+Thinking some more about this, even then care needs to be taken to allow on=
+ly
+one user access to the GART aperture. Having the DRM driver request the
+region would automatically prevent any other driver from requesting the same
+memory. This is no longer true if an extra API is used to request the GART
+aperture from the IOMMU. Unless of course some of these restrictions are
+reimplemented in the IOMMU API.
+
+Thierry
+
+--GvXjxJ+pjyke8COw
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.19 (GNU/Linux)
+
+iEYEARECAAYFAk+6fakACgkQZ+BJyKLjJp+OtgCdFH3PS7W7DgiSOtLkGYq7LckM
+FVYAnjNF/ng/KAUXeLHul8T/9wABUu37
+=MNv+
+-----END PGP SIGNATURE-----
+
+--GvXjxJ+pjyke8COw--
