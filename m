@@ -1,48 +1,39 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758795Ab2EUSNk (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 May 2012 14:13:40 -0400
-Received: from mout2.fh-giessen.de ([212.201.18.46]:49885 "EHLO
-	mout2.fh-giessen.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758690Ab2EUSNj (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 May 2012 14:13:39 -0400
-X-Greylist: delayed 543 seconds by postgrey-1.27 at vger.kernel.org; Mon, 21 May 2012 14:13:39 EDT
-Message-ID: <4FBA83AF.8000506@mni.thm.de>
-Date: Mon, 21 May 2012 20:04:31 +0200
-From: Tobias Klausmann <tobias.johannes.klausmann@mni.thm.de>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/15.0 Thunderbird/15.0a1
+	id S1758898Ab2EUSOL (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 May 2012 14:14:11 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:53281 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1758208Ab2EUSOJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 21 May 2012 14:14:09 -0400
+Date: Mon, 21 May 2012 20:12:44 +0200
+From: Oleg Nesterov <oleg@redhat.com>
+To: Rusty Russell <rusty@rustcorp.com.au>, tj@kernel.org
+Cc: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>,
+        akpm@linux-foundation.org, bharrosh@panasas.com,
+        torvalds@linux-foundation.org, linux-kernel@vger.kernel.org
+Subject: Re: UMH_WAIT_EXEC->UMH_WAIT_PROC deadlock
+Message-ID: <20120521181244.GA3668@redhat.com>
+References: <4F6A93F5.1070202@panasas.com> <201203241028.IGJ09825.MtOVFHFJQSLOFO@I-love.SAKURA.ne.jp> <4F6D35F0.2020808@panasas.com> <20120323200028.fadf49f8.akpm@linux-foundation.org> <20120324145308.GA10023@redhat.com> <201205191121.BIF57837.FHFOtMOLJQSOFV@I-love.SAKURA.ne.jp> <87fwau4aag.fsf@rustcorp.com.au> <20120521173453.GB31803@redhat.com>
 MIME-Version: 1.0
-To: linux-kernel@vger.kernel.org
-Subject: Re: Linux 3.4 released
-References: <CA+55aFwaobhbBZkE1LTyQJYhk8w8zk-cyOXXuXfPyE=BXzT3PA@mail.gmail.com> <CA+5PVA78ktxSPR=hCG-5isqWjUo_uzEK+TwW9AC08RQnL7ep_w@mail.gmail.com> <CA+55aFxQuNg4shK1ySZ2j0B_avYwnEyVWHqn5sOy45piYr5pRg@mail.gmail.com> <CA+5PVA44oGRooLbRmkf_VLRVhd5XX8D5mD-BgWMgt3N3zGpKgg@mail.gmail.com>
-In-Reply-To: <CA+5PVA44oGRooLbRmkf_VLRVhd5XX8D5mD-BgWMgt3N3zGpKgg@mail.gmail.com>
-Content-Type: text/plain; charset=windows-1252; format=flowed
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120521173453.GB31803@redhat.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello there, got a build error while compiling linux-3.4:
+forgot to mention...
 
-drivers/scsi/lpfc/lpfc_scsi.c: In function ‘lpfc_bg_setup_bpl’:
-drivers/scsi/lpfc/lpfc_scsi.c:1900:11: error: unused variable ‘rc’ 
-[-Werror=unused-variable]
-drivers/scsi/lpfc/lpfc_scsi.c: In function ‘lpfc_bg_setup_bpl_prot’:
-drivers/scsi/lpfc/lpfc_scsi.c:2037:11: error: unused variable ‘rc’ 
-[-Werror=unused-variable]
-drivers/scsi/lpfc/lpfc_scsi.c: In function ‘lpfc_bg_setup_sgl’:
-drivers/scsi/lpfc/lpfc_scsi.c:2256:11: error: unused variable ‘rc’ 
-[-Werror=unused-variable]
-drivers/scsi/lpfc/lpfc_scsi.c: In function ‘lpfc_bg_setup_sgl_prot’:
-drivers/scsi/lpfc/lpfc_scsi.c:2386:11: error: unused variable ‘rc’ 
-[-Werror=unused-variable]
-cc1: all warnings being treated as errors
+On 05/21, Oleg Nesterov wrote:
+>
+> Another issue is that Tejun dislikes the usage of system_unbound_wq.
+> I guess, because WQ_UNBOUND implies WQ_HIGHPRI. Btw, I do not really
+> understand why. And, otoh, I don't think that __call_usermodehelper()
+> should be bound to any CPU, this would look a bit strange to me.
 
-This is caused by the args defined in the Makefile for the driver:
-ccflags-y += -Werror
+and please note that currently khelper_wq is WQ_UNBOUND anyway.
 
-Thought this might be helpful
+Oleg.
 
-Greetings
-Tobias Klausmann
