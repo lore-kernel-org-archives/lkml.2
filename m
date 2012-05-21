@@ -1,364 +1,131 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753379Ab2EUHjI (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 May 2012 03:39:08 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:2796 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752173Ab2EUHhQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 May 2012 03:37:16 -0400
-From: Jiri Olsa <jolsa@redhat.com>
-To: zheng.z.yan@intel.com
-Cc: a.p.zijlstra@chello.nl, mingo@elte.hu, andi@firstfloor.org,
-        eranian@google.com, jolsa@redhat.com, ming.m.lin@intel.com,
-        gregkh@linuxfoundation.org, linux-kernel@vger.kernel.org
-Subject: [PATCH 2/5] perf, tool: Make the event parser reentrantable
-Date: Mon, 21 May 2012 09:36:50 +0200
-Message-Id: <1337585813-3349-3-git-send-email-jolsa@redhat.com>
-In-Reply-To: <1337585813-3349-1-git-send-email-jolsa@redhat.com>
-References: <1337144403-30841-1-git-send-email-zheng.z.yan@intel.com>
- <1337585813-3349-1-git-send-email-jolsa@redhat.com>
+	id S1752469Ab2EUHj2 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 May 2012 03:39:28 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:37686 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751617Ab2EUHj0 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 21 May 2012 03:39:26 -0400
+Date: Mon, 21 May 2012 00:39:09 -0700
+From: tip-bot for Namhyung Kim <namhyung.kim@lge.com>
+Message-ID: <tip-d1cb9fce92c41454bd594fb0920575fc63301878@git.kernel.org>
+Cc: acme@redhat.com, linux-kernel@vger.kernel.org, paulus@samba.org,
+        mingo@redhat.com, hpa@zytor.com, mingo@kernel.org,
+        a.p.zijlstra@chello.nl, namhyung.kim@lge.com, namhyung@gmail.com,
+        tglx@linutronix.de
+Reply-To: mingo@kernel.org, hpa@zytor.com, mingo@redhat.com, paulus@samba.org,
+        linux-kernel@vger.kernel.org, acme@redhat.com, a.p.zijlstra@chello.nl,
+        namhyung.kim@lge.com, tglx@linutronix.de, namhyung@gmail.com
+In-Reply-To: <1337161549-9870-3-git-send-email-namhyung.kim@lge.com>
+References: <1337161549-9870-3-git-send-email-namhyung.kim@lge.com>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:perf/core] perf target: Add uses_mmap field
+Git-Commit-ID: d1cb9fce92c41454bd594fb0920575fc63301878
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
+MIME-Version: 1.0
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Mon, 21 May 2012 00:39:15 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Making the event parser reentrantable by creating separate
-scanner for each parsing. The scanner is passed to the bison
-as and argument to the lexer.
+Commit-ID:  d1cb9fce92c41454bd594fb0920575fc63301878
+Gitweb:     http://git.kernel.org/tip/d1cb9fce92c41454bd594fb0920575fc63301878
+Author:     Namhyung Kim <namhyung.kim@lge.com>
+AuthorDate: Wed, 16 May 2012 18:45:49 +0900
+Committer:  Arnaldo Carvalho de Melo <acme@redhat.com>
+CommitDate: Thu, 17 May 2012 12:32:54 -0300
 
-Signed-off-by: Zheng Yan <zheng.z.yan@intel.com>
-Signed-off-by: Jiri Olsa <jolsa@redhat.com>
+perf target: Add uses_mmap field
+
+If perf doesn't mmap on event (like perf stat), it should not create
+per-task-per-cpu events. So just use a dummy cpu map to create a
+per-task event for this case.
+
+Signed-off-by: Namhyung Kim <namhyung.kim@lge.com>
+Cc: Ingo Molnar <mingo@redhat.com>
+Cc: Namhyung Kim <namhyung@gmail.com>
+Cc: Paul Mackerras <paulus@samba.org>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Link: http://lkml.kernel.org/r/1337161549-9870-3-git-send-email-namhyung.kim@lge.com
+[ committer note: renamed .need_mmap to .uses_mmap ]
+Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/perf/util/parse-events.c |   35 ++++++++----
- tools/perf/util/parse-events.h |    2 +-
- tools/perf/util/parse-events.l |  116 +++++++++++++++++++++++-----------------
- tools/perf/util/parse-events.y |    9 ++-
- 4 files changed, 98 insertions(+), 64 deletions(-)
+ tools/perf/builtin-record.c |    3 +++
+ tools/perf/builtin-test.c   |    1 +
+ tools/perf/builtin-top.c    |    3 +++
+ tools/perf/util/evlist.c    |    2 ++
+ tools/perf/util/target.h    |    1 +
+ 5 files changed, 10 insertions(+), 0 deletions(-)
 
-diff --git a/tools/perf/util/parse-events.c b/tools/perf/util/parse-events.c
-index 25e5479..64d936b 100644
---- a/tools/perf/util/parse-events.c
-+++ b/tools/perf/util/parse-events.c
-@@ -11,6 +11,7 @@
- #include "cache.h"
- #include "header.h"
- #include "debugfs.h"
-+#include "parse-events-bison.h"
- #include "parse-events-flex.h"
- #include "pmu.h"
+diff --git a/tools/perf/builtin-record.c b/tools/perf/builtin-record.c
+index d19058a..8a3dfac 100644
+--- a/tools/perf/builtin-record.c
++++ b/tools/perf/builtin-record.c
+@@ -754,6 +754,9 @@ static struct perf_record record = {
+ 		.user_freq	     = UINT_MAX,
+ 		.user_interval	     = ULLONG_MAX,
+ 		.freq		     = 1000,
++		.target		     = {
++			.uses_mmap   = true,
++		},
+ 	},
+ 	.write_mode = WRITE_FORCE,
+ 	.file_new   = true,
+diff --git a/tools/perf/builtin-test.c b/tools/perf/builtin-test.c
+index 9d9abbb..4eaa665 100644
+--- a/tools/perf/builtin-test.c
++++ b/tools/perf/builtin-test.c
+@@ -1167,6 +1167,7 @@ static int test__PERF_RECORD(void)
+ 	struct perf_record_opts opts = {
+ 		.target = {
+ 			.uid = UINT_MAX,
++			.uses_mmap = true,
+ 		},
+ 		.no_delay   = true,
+ 		.freq	    = 10,
+diff --git a/tools/perf/builtin-top.c b/tools/perf/builtin-top.c
+index 553560a..3e981a7 100644
+--- a/tools/perf/builtin-top.c
++++ b/tools/perf/builtin-top.c
+@@ -1162,6 +1162,9 @@ int cmd_top(int argc, const char **argv, const char *prefix __used)
+ 		.freq		     = 1000, /* 1 KHz */
+ 		.mmap_pages	     = 128,
+ 		.sym_pcnt_filter     = 5,
++		.target		     = {
++			.uses_mmap   = true,
++		},
+ 	};
+ 	char callchain_default_opt[] = "fractal,0.5,callee";
+ 	const struct option options[] = {
+diff --git a/tools/perf/util/evlist.c b/tools/perf/util/evlist.c
+index 87889f3..4ac5f5a 100644
+--- a/tools/perf/util/evlist.c
++++ b/tools/perf/util/evlist.c
+@@ -611,6 +611,8 @@ int perf_evlist__create_maps(struct perf_evlist *evlist,
  
-@@ -26,7 +27,7 @@ struct event_symbol {
- #ifdef PARSER_DEBUG
- extern int parse_events_debug;
- #endif
--int parse_events_parse(void *data);
-+int parse_events_parse(void *data, void *scanner);
+ 	if (perf_target__has_task(target))
+ 		evlist->cpus = cpu_map__dummy_new();
++	else if (!perf_target__has_cpu(target) && !target->uses_mmap)
++		evlist->cpus = cpu_map__dummy_new();
+ 	else
+ 		evlist->cpus = cpu_map__new(target->cpu_list);
  
- #define CHW(x) .type = PERF_TYPE_HARDWARE, .config = PERF_COUNT_HW_##x
- #define CSW(x) .type = PERF_TYPE_SOFTWARE, .config = PERF_COUNT_SW_##x
-@@ -792,26 +793,38 @@ int parse_events_modifier(struct list_head *list, char *str)
- 	return 0;
- }
+diff --git a/tools/perf/util/target.h b/tools/perf/util/target.h
+index c43f632..a4be857 100644
+--- a/tools/perf/util/target.h
++++ b/tools/perf/util/target.h
+@@ -11,6 +11,7 @@ struct perf_target {
+ 	const char   *uid_str;
+ 	uid_t	     uid;
+ 	bool	     system_wide;
++	bool	     uses_mmap;
+ };
  
--int parse_events(struct perf_evlist *evlist, const char *str, int unset __used)
-+static int parse_events__scanner(const char *str, void *data)
- {
--	struct parse_events_data__events data = {
--		.list = LIST_HEAD_INIT(data.list),
--		.idx  = evlist->nr_entries,
--	};
- 	YY_BUFFER_STATE buffer;
-+	void *scanner;
- 	int ret;
- 
--	buffer = parse_events__scan_string(str);
-+	ret = parse_events_lex_init(&scanner);
-+	if (ret)
-+		return ret;
-+
-+	buffer = parse_events__scan_string(str, scanner);
- 
- #ifdef PARSER_DEBUG
- 	parse_events_debug = 1;
- #endif
--	ret = parse_events_parse(&data);
-+	ret = parse_events_parse(data, scanner);
-+
-+	parse_events__flush_buffer(buffer, scanner);
-+	parse_events__delete_buffer(buffer, scanner);
-+	parse_events_lex_destroy(scanner);
-+	return ret;
-+}
- 
--	parse_events__flush_buffer(buffer);
--	parse_events__delete_buffer(buffer);
--	parse_events_lex_destroy();
-+int parse_events(struct perf_evlist *evlist, const char *str, int unset __used)
-+{
-+	struct parse_events_data__events data = {
-+		.list = LIST_HEAD_INIT(data.list),
-+		.idx  = evlist->nr_entries,
-+	};
-+	int ret;
- 
-+	ret = parse_events__scanner(str, &data);
- 	if (!ret) {
- 		int entries = data.idx - evlist->nr_entries;
- 		perf_evlist__splice_list_tail(evlist, &data.list, entries);
-diff --git a/tools/perf/util/parse-events.h b/tools/perf/util/parse-events.h
-index dc3c83a..fa2b19b 100644
---- a/tools/perf/util/parse-events.h
-+++ b/tools/perf/util/parse-events.h
-@@ -88,7 +88,7 @@ int parse_events_add_pmu(struct list_head **list, int *idx,
- 			 char *pmu , struct list_head *head_config);
- void parse_events_update_lists(struct list_head *list_event,
- 			       struct list_head *list_all);
--void parse_events_error(void *data, char const *msg);
-+void parse_events_error(void *data, void *scanner, char const *msg);
- int parse_events__test(void);
- 
- void print_events(const char *event_glob);
-diff --git a/tools/perf/util/parse-events.l b/tools/perf/util/parse-events.l
-index 618a8e7..329794e 100644
---- a/tools/perf/util/parse-events.l
-+++ b/tools/perf/util/parse-events.l
-@@ -1,4 +1,6 @@
- 
-+%option reentrant
-+%option bison-bridge
- %option prefix="parse_events_"
- %option stack
- 
-@@ -8,7 +10,10 @@
- #include "parse-events-bison.h"
- #include "parse-events.h"
- 
--static int __value(char *str, int base, int token)
-+char *parse_events_get_text(yyscan_t yyscanner);
-+YYSTYPE *parse_events_get_lval(yyscan_t yyscanner);
-+
-+static int __value(YYSTYPE *yylval, char *str, int base, int token)
- {
- 	long num;
- 
-@@ -17,35 +22,48 @@ static int __value(char *str, int base, int token)
- 	if (errno)
- 		return PE_ERROR;
- 
--	parse_events_lval.num = num;
-+	yylval->num = num;
- 	return token;
- }
- 
--static int value(int base)
-+static int value(yyscan_t scanner, int base)
- {
--	return __value(parse_events_text, base, PE_VALUE);
-+	YYSTYPE *yylval = parse_events_get_lval(scanner);
-+	char *text = parse_events_get_text(scanner);
-+
-+	return __value(yylval, text, base, PE_VALUE);
- }
- 
--static int raw(void)
-+static int raw(yyscan_t scanner)
- {
--	return __value(parse_events_text + 1, 16, PE_RAW);
-+	YYSTYPE *yylval = parse_events_get_lval(scanner);
-+	char *text = parse_events_get_text(scanner);
-+
-+	return __value(yylval, text + 1, 16, PE_RAW);
- }
- 
--static int str(int token)
-+static int str(yyscan_t scanner, int token)
- {
--	parse_events_lval.str = strdup(parse_events_text);
-+	YYSTYPE *yylval = parse_events_get_lval(scanner);
-+	char *text = parse_events_get_text(scanner);
-+
-+	yylval->str = strdup(text);
- 	return token;
- }
- 
--static int sym(int type, int config)
-+static int sym(yyscan_t scanner, int type, int config)
- {
--	parse_events_lval.num = (type << 16) + config;
-+	YYSTYPE *yylval = parse_events_get_lval(scanner);
-+
-+	yylval->num = (type << 16) + config;
- 	return PE_VALUE_SYM;
- }
- 
--static int term(int type)
-+static int term(yyscan_t scanner, int type)
- {
--	parse_events_lval.num = type;
-+	YYSTYPE *yylval = parse_events_get_lval(scanner);
-+
-+	yylval->num = type;
- 	return PE_TERM;
- }
- 
-@@ -61,25 +79,25 @@ modifier_event	[ukhpGH]{1,8}
- modifier_bp	[rwx]
- 
- %%
--cpu-cycles|cycles				{ return sym(PERF_TYPE_HARDWARE, PERF_COUNT_HW_CPU_CYCLES); }
--stalled-cycles-frontend|idle-cycles-frontend	{ return sym(PERF_TYPE_HARDWARE, PERF_COUNT_HW_STALLED_CYCLES_FRONTEND); }
--stalled-cycles-backend|idle-cycles-backend	{ return sym(PERF_TYPE_HARDWARE, PERF_COUNT_HW_STALLED_CYCLES_BACKEND); }
--instructions					{ return sym(PERF_TYPE_HARDWARE, PERF_COUNT_HW_INSTRUCTIONS); }
--cache-references				{ return sym(PERF_TYPE_HARDWARE, PERF_COUNT_HW_CACHE_REFERENCES); }
--cache-misses					{ return sym(PERF_TYPE_HARDWARE, PERF_COUNT_HW_CACHE_MISSES); }
--branch-instructions|branches			{ return sym(PERF_TYPE_HARDWARE, PERF_COUNT_HW_BRANCH_INSTRUCTIONS); }
--branch-misses					{ return sym(PERF_TYPE_HARDWARE, PERF_COUNT_HW_BRANCH_MISSES); }
--bus-cycles					{ return sym(PERF_TYPE_HARDWARE, PERF_COUNT_HW_BUS_CYCLES); }
--ref-cycles					{ return sym(PERF_TYPE_HARDWARE, PERF_COUNT_HW_REF_CPU_CYCLES); }
--cpu-clock					{ return sym(PERF_TYPE_SOFTWARE, PERF_COUNT_SW_CPU_CLOCK); }
--task-clock					{ return sym(PERF_TYPE_SOFTWARE, PERF_COUNT_SW_TASK_CLOCK); }
--page-faults|faults				{ return sym(PERF_TYPE_SOFTWARE, PERF_COUNT_SW_PAGE_FAULTS); }
--minor-faults					{ return sym(PERF_TYPE_SOFTWARE, PERF_COUNT_SW_PAGE_FAULTS_MIN); }
--major-faults					{ return sym(PERF_TYPE_SOFTWARE, PERF_COUNT_SW_PAGE_FAULTS_MAJ); }
--context-switches|cs				{ return sym(PERF_TYPE_SOFTWARE, PERF_COUNT_SW_CONTEXT_SWITCHES); }
--cpu-migrations|migrations			{ return sym(PERF_TYPE_SOFTWARE, PERF_COUNT_SW_CPU_MIGRATIONS); }
--alignment-faults				{ return sym(PERF_TYPE_SOFTWARE, PERF_COUNT_SW_ALIGNMENT_FAULTS); }
--emulation-faults				{ return sym(PERF_TYPE_SOFTWARE, PERF_COUNT_SW_EMULATION_FAULTS); }
-+cpu-cycles|cycles				{ return sym(yyscanner, PERF_TYPE_HARDWARE, PERF_COUNT_HW_CPU_CYCLES); }
-+stalled-cycles-frontend|idle-cycles-frontend	{ return sym(yyscanner, PERF_TYPE_HARDWARE, PERF_COUNT_HW_STALLED_CYCLES_FRONTEND); }
-+stalled-cycles-backend|idle-cycles-backend	{ return sym(yyscanner, PERF_TYPE_HARDWARE, PERF_COUNT_HW_STALLED_CYCLES_BACKEND); }
-+instructions					{ return sym(yyscanner, PERF_TYPE_HARDWARE, PERF_COUNT_HW_INSTRUCTIONS); }
-+cache-references				{ return sym(yyscanner, PERF_TYPE_HARDWARE, PERF_COUNT_HW_CACHE_REFERENCES); }
-+cache-misses					{ return sym(yyscanner, PERF_TYPE_HARDWARE, PERF_COUNT_HW_CACHE_MISSES); }
-+branch-instructions|branches			{ return sym(yyscanner, PERF_TYPE_HARDWARE, PERF_COUNT_HW_BRANCH_INSTRUCTIONS); }
-+branch-misses					{ return sym(yyscanner, PERF_TYPE_HARDWARE, PERF_COUNT_HW_BRANCH_MISSES); }
-+bus-cycles					{ return sym(yyscanner, PERF_TYPE_HARDWARE, PERF_COUNT_HW_BUS_CYCLES); }
-+ref-cycles					{ return sym(yyscanner, PERF_TYPE_HARDWARE, PERF_COUNT_HW_REF_CPU_CYCLES); }
-+cpu-clock					{ return sym(yyscanner, PERF_TYPE_SOFTWARE, PERF_COUNT_SW_CPU_CLOCK); }
-+task-clock					{ return sym(yyscanner, PERF_TYPE_SOFTWARE, PERF_COUNT_SW_TASK_CLOCK); }
-+page-faults|faults				{ return sym(yyscanner, PERF_TYPE_SOFTWARE, PERF_COUNT_SW_PAGE_FAULTS); }
-+minor-faults					{ return sym(yyscanner, PERF_TYPE_SOFTWARE, PERF_COUNT_SW_PAGE_FAULTS_MIN); }
-+major-faults					{ return sym(yyscanner, PERF_TYPE_SOFTWARE, PERF_COUNT_SW_PAGE_FAULTS_MAJ); }
-+context-switches|cs				{ return sym(yyscanner, PERF_TYPE_SOFTWARE, PERF_COUNT_SW_CONTEXT_SWITCHES); }
-+cpu-migrations|migrations			{ return sym(yyscanner, PERF_TYPE_SOFTWARE, PERF_COUNT_SW_CPU_MIGRATIONS); }
-+alignment-faults				{ return sym(yyscanner, PERF_TYPE_SOFTWARE, PERF_COUNT_SW_ALIGNMENT_FAULTS); }
-+emulation-faults				{ return sym(yyscanner, PERF_TYPE_SOFTWARE, PERF_COUNT_SW_EMULATION_FAULTS); }
- 
- L1-dcache|l1-d|l1d|L1-data		|
- L1-icache|l1-i|l1i|L1-instruction	|
-@@ -87,14 +105,14 @@ LLC|L2					|
- dTLB|d-tlb|Data-TLB			|
- iTLB|i-tlb|Instruction-TLB		|
- branch|branches|bpu|btb|bpc		|
--node					{ return str(PE_NAME_CACHE_TYPE); }
-+node					{ return str(yyscanner, PE_NAME_CACHE_TYPE); }
- 
- load|loads|read				|
- store|stores|write			|
- prefetch|prefetches			|
- speculative-read|speculative-load	|
- refs|Reference|ops|access		|
--misses|miss				{ return str(PE_NAME_CACHE_OP_RESULT); }
-+misses|miss				{ return str(yyscanner, PE_NAME_CACHE_OP_RESULT); }
- 
- 	/*
- 	 * These are event config hardcoded term names to be specified
-@@ -102,20 +120,20 @@ misses|miss				{ return str(PE_NAME_CACHE_OP_RESULT); }
- 	 * so we can put them here directly. In case the we have a conflict
- 	 * in future, this needs to go into '//' condition block.
- 	 */
--config			{ return term(PARSE_EVENTS__TERM_TYPE_CONFIG); }
--config1			{ return term(PARSE_EVENTS__TERM_TYPE_CONFIG1); }
--config2			{ return term(PARSE_EVENTS__TERM_TYPE_CONFIG2); }
--name			{ return term(PARSE_EVENTS__TERM_TYPE_NAME); }
--period			{ return term(PARSE_EVENTS__TERM_TYPE_SAMPLE_PERIOD); }
--branch_type		{ return term(PARSE_EVENTS__TERM_TYPE_BRANCH_SAMPLE_TYPE); }
-+config			{ return term(yyscanner, PARSE_EVENTS__TERM_TYPE_CONFIG); }
-+config1			{ return term(yyscanner, PARSE_EVENTS__TERM_TYPE_CONFIG1); }
-+config2			{ return term(yyscanner, PARSE_EVENTS__TERM_TYPE_CONFIG2); }
-+name			{ return term(yyscanner, PARSE_EVENTS__TERM_TYPE_NAME); }
-+period			{ return term(yyscanner, PARSE_EVENTS__TERM_TYPE_SAMPLE_PERIOD); }
-+branch_type		{ return term(yyscanner, PARSE_EVENTS__TERM_TYPE_BRANCH_SAMPLE_TYPE); }
- 
- mem:			{ BEGIN(mem); return PE_PREFIX_MEM; }
--r{num_raw_hex}		{ return raw(); }
--{num_dec}		{ return value(10); }
--{num_hex}		{ return value(16); }
-+r{num_raw_hex}		{ return raw(yyscanner); }
-+{num_dec}		{ return value(yyscanner, 10); }
-+{num_hex}		{ return value(yyscanner, 16); }
- 
--{modifier_event}	{ return str(PE_MODIFIER_EVENT); }
--{name}			{ return str(PE_NAME); }
-+{modifier_event}	{ return str(yyscanner, PE_MODIFIER_EVENT); }
-+{name}			{ return str(yyscanner, PE_NAME); }
- "/"			{ return '/'; }
- -			{ return '-'; }
- ,			{ return ','; }
-@@ -123,17 +141,17 @@ r{num_raw_hex}		{ return raw(); }
- =			{ return '='; }
- 
- <mem>{
--{modifier_bp}		{ return str(PE_MODIFIER_BP); }
-+{modifier_bp}		{ return str(yyscanner, PE_MODIFIER_BP); }
- :			{ return ':'; }
--{num_dec}		{ return value(10); }
--{num_hex}		{ return value(16); }
-+{num_dec}		{ return value(yyscanner, 10); }
-+{num_hex}		{ return value(yyscanner, 16); }
- 	/*
- 	 * We need to separate 'mem:' scanner part, in order to get specific
- 	 * modifier bits parsed out. Otherwise we would need to handle PE_NAME
- 	 * and we'd need to parse it manually. During the escape from <mem>
- 	 * state we need to put the escaping char back, so we dont miss it.
- 	 */
--.			{ unput(*parse_events_text); BEGIN(INITIAL); }
-+.			{ unput(*yytext); BEGIN(INITIAL); }
- 	/*
- 	 * We destroy the scanner after reaching EOF,
- 	 * but anyway just to be sure get back to INIT state.
-@@ -143,7 +161,7 @@ r{num_raw_hex}		{ return raw(); }
- 
- %%
- 
--int parse_events_wrap(void)
-+int parse_events_wrap(void *scanner __used)
- {
- 	return 1;
- }
-diff --git a/tools/perf/util/parse-events.y b/tools/perf/util/parse-events.y
-index e533bf7..2a93d5c 100644
---- a/tools/perf/util/parse-events.y
-+++ b/tools/perf/util/parse-events.y
-@@ -1,6 +1,8 @@
--
-+%pure-parser
- %name-prefix "parse_events_"
- %parse-param {void *_data}
-+%parse-param {void *scanner}
-+%lex-param {void* scanner}
- 
- %{
- 
-@@ -11,8 +13,9 @@
- #include "types.h"
- #include "util.h"
- #include "parse-events.h"
-+#include "parse-events-bison.h"
- 
--extern int parse_events_lex (void);
-+extern int parse_events_lex (YYSTYPE* lvalp, void* scanner);
- 
- #define ABORT_ON(val) \
- do { \
-@@ -286,7 +289,7 @@ sep_slash_dc: '/' | ':' |
- 
- %%
- 
--void parse_events_error(void *data __used,
-+void parse_events_error(void *data __used, void *scanner __used,
- 			char const *msg __used)
- {
- }
--- 
-1.7.7.6
-
+ enum perf_target_errno {
