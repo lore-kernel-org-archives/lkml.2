@@ -1,87 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932357Ab2EUJJ7 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 May 2012 05:09:59 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:38356 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932151Ab2EUJJ6 (ORCPT
+	id S932378Ab2EUJKP (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 May 2012 05:10:15 -0400
+Received: from haggis.pcug.org.au ([203.10.76.10]:44456 "EHLO
+	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932263Ab2EUJKL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 May 2012 05:09:58 -0400
-Date: Mon, 21 May 2012 02:09:25 -0700
-From: tip-bot for Anna-Maria Gleixner <anna-maria@glx-um.de>
-Message-ID: <tip-3d92a71a4467681ef6a47e10447d200b52c78af8@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
-        linux@arm.linux.org.uk, tglx@linutronix.de, anna-maria@glx-um.de
-Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        linux@arm.linux.org.uk, tglx@linutronix.de, anna-maria@glx-um.de
-In-Reply-To: <20120518163104.760560327@glx-um.de>
-References: <20120518163104.760560327@glx-um.de>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:timers/core] arm: Use generic time config
-Git-Commit-ID: 3d92a71a4467681ef6a47e10447d200b52c78af8
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
-  to get blacklisted from these emails
-MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Mon, 21 May 2012 02:09:31 -0700 (PDT)
+	Mon, 21 May 2012 05:10:11 -0400
+Date: Mon, 21 May 2012 19:10:07 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Lee Jones <lee.jones@linaro.org>
+Cc: Samuel Ortiz <sameo@linux.intel.com>, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: linux-next: build failure after merge of the mfd tree
+Message-Id: <20120521191007.9347651e88add2e7c247a24f@canb.auug.org.au>
+In-Reply-To: <4FBA0460.1070300@linaro.org>
+References: <20120521134219.6d6396802bd6a097503bac92@canb.auug.org.au>
+	<4FB9F818.4030801@linaro.org>
+	<20120521184005.3b7661ec6468c5878a22615d@canb.auug.org.au>
+	<4FBA0460.1070300@linaro.org>
+X-Mailer: Sylpheed 3.2.0beta7 (GTK+ 2.24.10; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Mon__21_May_2012_19_10_07_+1000_OiW2hqbx4Co=nRmL"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  3d92a71a4467681ef6a47e10447d200b52c78af8
-Gitweb:     http://git.kernel.org/tip/3d92a71a4467681ef6a47e10447d200b52c78af8
-Author:     Anna-Maria Gleixner <anna-maria@glx-um.de>
-AuthorDate: Fri, 18 May 2012 16:45:44 +0000
-Committer:  Thomas Gleixner <tglx@linutronix.de>
-CommitDate: Mon, 21 May 2012 11:01:41 +0200
+--Signature=_Mon__21_May_2012_19_10_07_+1000_OiW2hqbx4Co=nRmL
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-arm: Use generic time config
+Hi Lee,
 
-Signed-off-by: Anna-Maria Gleixner <anna-maria@glx-um.de>
-Cc: Russell King <linux@arm.linux.org.uk>
-Link: http://lkml.kernel.org/r/20120518163104.760560327@glx-um.de
-Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
----
- arch/arm/Kconfig |   18 ++----------------
- 1 files changed, 2 insertions(+), 16 deletions(-)
+On Mon, 21 May 2012 10:01:20 +0100 Lee Jones <lee.jones@linaro.org> wrote:
+>
+> That seems broken to me.
+>=20
+> Why would any of the X86_64 systems be building ab8500-core code?
 
-diff --git a/arch/arm/Kconfig b/arch/arm/Kconfig
-index 36586dba..feccc1d 100644
---- a/arch/arm/Kconfig
-+++ b/arch/arm/Kconfig
-@@ -34,6 +34,8 @@ config ARM
- 	select CPU_PM if (SUSPEND || CPU_IDLE)
- 	select GENERIC_PCI_IOMAP
- 	select HAVE_BPF_JIT if NET
-+	select KTIME_SCALAR
-+	select GENERIC_CLOCKEVENTS_BROADCAST if SMP
- 	help
- 	  The ARM series is a line of low-power-consumption RISC chip designs
- 	  licensed by ARM Ltd and targeted at embedded applications and
-@@ -57,22 +59,6 @@ config SYS_SUPPORTS_APM_EMULATION
- config GENERIC_GPIO
- 	bool
- 
--config ARCH_USES_GETTIMEOFFSET
--	bool
--	default n
--
--config GENERIC_CLOCKEVENTS
--	bool
--
--config GENERIC_CLOCKEVENTS_BROADCAST
--	bool
--	depends on GENERIC_CLOCKEVENTS
--	default y if SMP
--
--config KTIME_SCALAR
--	bool
--	default y
--
- config HAVE_TCM
- 	bool
- 	select GENERIC_ALLOCATOR
+Because the Kconfig allows it to ...
+
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+
+--Signature=_Mon__21_May_2012_19_10_07_+1000_OiW2hqbx4Co=nRmL
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBCAAGBQJPugZvAAoJEECxmPOUX5FEadIQAI2/GXm92bkN9oH3XkrivGwa
+sqmaP1YOcSQKIvEmHKjjRm4iWtB4+uP8uKdHmwC59OjdLostbgh4oenCSX87cTmH
+TjpokTw4+1Ttc75bw2V9WMJnm+qYyz56wi77Ck2QjS8Ziheffmi4u1rM3O5cUtPI
+Dz6MTM3FTCvvCKMfGCgZqxGnwEh0ik6mt4BESnC4Lj8/wN6fz9AOVPJ1NFNBVSed
+UL/NmKj1sCVPHCmaCVRDw5IOOkD/uDtVW5iNOBvgoCOrxAp3A89WdlLOpVenRv0C
+LV+3C7ewjLXlRr9sQTqEHpp449maVOuTQrJnuuvHqU4eNgMuY3rjm+sQ4nJ5QOKd
++C4ZhSZZPYK18sPQAoeBVBdxejC+CreaDREYFtXxzdQD293aG2WwN2fKZZfw2qYN
+V1Qnrksp/ZGN1o4o4/YK+AZYiastzk0g0tMiGQ4NFOH0qG1Vks1ef/7U9lY20mj+
+6yOHgY2SUmIa/Y/VJ5LZeflf/nSRMEPTwLMZzNd61LxXE6ULZ/K7TeF6gyos0/pv
+O1/NvnAmeTIDJ6vVmWpd6wgK5RIuWKoumldu+sfGYgotgs3hQS8aOIwnXFVexPRo
+EJS4nnVJZLqngRCRiR5xBNmTnLHo5oPGvOLoT3po1SxlP16uhz+2gUXVHZI5JUNH
+VDJGmHEdMkk+aQlZZUSi
+=fI67
+-----END PGP SIGNATURE-----
+
+--Signature=_Mon__21_May_2012_19_10_07_+1000_OiW2hqbx4Co=nRmL--
