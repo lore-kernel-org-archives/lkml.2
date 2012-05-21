@@ -1,71 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753929Ab2EULqv (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 May 2012 07:46:51 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:50686 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752271Ab2EULqt (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 May 2012 07:46:49 -0400
-Message-ID: <1337600801.2615.1.camel@phoenix>
-Subject: [PATCH] regulator: palmas: Use
- regulator_[list|map]_voltage_linear() for palmas_ops_smps10
-From: Axel Lin <axel.lin@gmail.com>
+	id S1753905Ab2EULru (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 May 2012 07:47:50 -0400
+Received: from mout.perfora.net ([74.208.4.195]:56456 "EHLO mout.perfora.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751012Ab2EULrt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 21 May 2012 07:47:49 -0400
+X-Sender-Info: <372653604@icpu1825.perfora.net>
+Date: Mon, 21 May 2012 07:47:47 -0400
+Message-Id: <3otCwP-1S4H7K07S5-012JYA@icpu1825.perfora.net>
 To: linux-kernel@vger.kernel.org
-Cc: Graeme Gregory <gg@slimlogic.co.uk>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Liam Girdwood <lrg@ti.com>
-Date: Mon, 21 May 2012 19:46:41 +0800
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.2- 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+Subject: quotation needed FOB price?
+From: Zhon Gen <genzhon@yahoo.com>
+Reply-To: genzhon@yahoo.com
+MIME-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
+X-Provags-ID: V02:K0:DxN41UQC/PtFUceSDjzyZWBie+MvYPVUnQwWrGNNCPq
+ YTgzL1+QJT0ktMV3IevBFWGWvkqebEOi0VGGYxV6SbXIiUT2eT
+ 6iEcbTX1CxAXMpQqs2X/2o52w/sPlSfxXcLw5w81cXe4N/r57c
+ rpgln1yzBPAMLpzB0sVCXs/eNlTzoEB/XGPwr9R+GPAsBBtWkO
+ 1Gca31HMvP73vp2z08iZzuElgJeFgMa5Y3D1nqd8dVVvKbyF9+
+ eLvd2vhBHixh0gkhxffeTZrbLid8PJ2PbkQHWil0L/66KjEqUz
+ /8TxllSE6clgTK5zYe1CJ549V9IfyMA6zSrdCnJovvXAF+7TDi
+ epI3yTHMvrG5iQZ5k7LcMy4YVvFEaTqBfmSRLhaeSyrm2ifGF5
+ ROZ5R45CpuMi24ebQ+FXVP79LYt4OX0Ri8=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Axel Lin <axel.lin@gmail.com>
----
- drivers/regulator/palmas-regulator.c |   11 ++++-------
- 1 files changed, 4 insertions(+), 7 deletions(-)
+Dear seller,
 
-diff --git a/drivers/regulator/palmas-regulator.c b/drivers/regulator/palmas-regulator.c
-index 9b7ca90..4fd8333 100644
---- a/drivers/regulator/palmas-regulator.c
-+++ b/drivers/regulator/palmas-regulator.c
-@@ -400,19 +400,14 @@ static struct regulator_ops palmas_ops_smps = {
- 	.map_voltage		= palmas_map_voltage_smps,
- };
- 
--static int palmas_list_voltage_smps10(struct regulator_dev *dev,
--					unsigned selector)
--{
--	return 3750000 + (selector * 1250000);
--}
--
- static struct regulator_ops palmas_ops_smps10 = {
- 	.is_enabled		= regulator_is_enabled_regmap,
- 	.enable			= regulator_enable_regmap,
- 	.disable		= regulator_disable_regmap,
- 	.get_voltage_sel	= regulator_get_voltage_sel_regmap,
- 	.set_voltage_sel	= regulator_set_voltage_sel_regmap,
--	.list_voltage		= palmas_list_voltage_smps10,
-+	.list_voltage		= regulator_list_voltage_linear;
-+	.map_voltage		= regulator_map_voltage_linear;
- };
- 
- static int palmas_is_enabled_ldo(struct regulator_dev *dev)
-@@ -675,6 +670,8 @@ static __devinit int palmas_probe(struct platform_device *pdev)
- 			pmic->desc[id].vsel_mask = SMPS10_VSEL;
- 			pmic->desc[id].enable_reg = PALMAS_SMPS10_STATUS;
- 			pmic->desc[id].enable_mask = SMPS10_BOOST_EN;
-+			pmic->desc[id].min_uV = 3750000;
-+			pmic->desc[id].uV_step = 1250000;
- 		}
- 
- 		pmic->desc[id].type = REGULATOR_VOLTAGE;
--- 
-1.7.5.4
+We are interested in your product you post in alibab I want to know the price of your product, we are foreign agent, we buy and sell. Kindly get back to me with the specific prices and samples.
 
+Thanks
+
+Company name:Xingbin District Jiahe Wood Processing
+Name:Zhon Gen
 
 
