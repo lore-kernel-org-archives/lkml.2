@@ -1,121 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755459Ab2EUHdS (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 May 2012 03:33:18 -0400
-Received: from mailout2.samsung.com ([203.254.224.25]:54903 "EHLO
-	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750732Ab2EUHdR (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 May 2012 03:33:17 -0400
-MIME-version: 1.0
-Content-transfer-encoding: 8BIT
-Content-type: text/plain; charset=UTF-8
-X-AuditID: cbfee61b-b7faf6d000001f49-e3-4fb9efbb2337
-Message-id: <4FB9EFBB.20306@samsung.com>
-Date: Mon, 21 May 2012 16:33:15 +0900
-From: jonghwa3.lee@samsung.com
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:10.0.2) Gecko/20120216
- Thunderbird/10.0.2
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>
-Cc: linux-kernel@vger.kernel.org, Alessandro Zummo <a.zummo@towertech.it>,
-        Samuel Oritz <sameo@linux.intel.com>, Liam Girdwood <trg@ti.com>,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        MyungJoo Ham <myungjoo.ham@samsung.com>,
-        Chanwoo Choi <cw00.choi@samsung.com>,
-        Chiwoong Byun <woong.byun@samsung.com>
-Subject: Re: [PATCH 2/3] regulator: MAX77686: Add Maxim 77686 regulator driver
-References: <1337333539-18371-1-git-send-email-jonghwa3.lee@samsung.com>
- <1337333539-18371-3-git-send-email-jonghwa3.lee@samsung.com>
- <20120520155616.GB9337@opensource.wolfsonmicro.com>
-In-reply-to: <20120520155616.GB9337@opensource.wolfsonmicro.com>
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrGLMWRmVeSWpSXmKPExsVy+t9jQd3d73f6G9xeZ2RxedccNgdGj8+b
-	5AIYo7hsUlJzMstSi/TtErgy5h7/y1iwQKji8dL/LA2M6/m6GDk5JARMJPa2n2aCsMUkLtxb
-	z9bFyMUhJDCdUaL9yWZmkASvgKDEj8n3WLoYOTiYBeQljlzKBgkzC6hLTJq3iBmivo9JYvOv
-	dSwQ9RoSm6fPYAWxWQRUJfZ8OAoWZxOQk3jb9I0RZI6oQITEr34OEFME6Ibf9ytBxjALbGWS
-	WHztGzNIXFjAT+LycXeI8XsZJW50trOBxDkFHCTWtzJOYBSYheS4WQjHzUJy3AJG5lWMoqkF
-	yQXFSem5RnrFibnFpXnpesn5uZsYwaH3THoH46oGi0OMAhyMSjy8C97s9BdiTSwrrsw9xCjB
-	wawkwnv3IVCINyWxsiq1KD++qDQntfgQozQHi5I475MlO/yFBNITS1KzU1MLUotgskwcnFIN
-	jJMLvxYqi959lWBt5bA4vHi1yPqjErc23/W4snmh2BnlJ0cOn1+6bk+K18O/Rw5+WeHwce/e
-	IsXZ3HNmsatJJExPUDvbU1Eyz6vlC8eiR6cNFzu9uWGnVrXKZMLfyOS/Uq4Tt++N+64RP2Xp
-	/yNXlhdZbq8LqzGuzf9eteqwQpHe9SntvgvYeMOVWIozEg21mIuKEwEh0q9+OQIAAA==
-X-TM-AS-MML: No
+	id S1752050Ab2EUHg7 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 May 2012 03:36:59 -0400
+Received: from zene.cmpxchg.org ([85.214.230.12]:37766 "EHLO zene.cmpxchg.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750732Ab2EUHg6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 21 May 2012 03:36:58 -0400
+Date: Mon, 21 May 2012 09:36:32 +0200
+From: Johannes Weiner <hannes@cmpxchg.org>
+To: Michal Hocko <mhocko@suse.cz>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org,
+        Andrew Morton <akpm@linux-foundation.org>, Mel Gorman <mel@csn.ul.ie>,
+        Minchan Kim <minchan@kernel.org>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Rik van Riel <riel@redhat.com>
+Subject: Re: [PATCH] mm: consider all swapped back pages in used-once logic
+Message-ID: <20120521073632.GL1406@cmpxchg.org>
+References: <1337246033-13719-1-git-send-email-mhocko@suse.cz>
+ <20120517195342.GB1800@cmpxchg.org>
+ <20120521025149.GA32375@gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120521025149.GA32375@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2012년 05월 21일 00:56, Mark Brown wrote:
-Hi, Mark.
+On Mon, May 21, 2012 at 10:51:49AM +0800, Zheng Liu wrote:
+> On Thu, May 17, 2012 at 09:54:25PM +0200, Johannes Weiner wrote:
+> > On Thu, May 17, 2012 at 11:13:53AM +0200, Michal Hocko wrote:
+> > > [64574746 vmscan: detect mapped file pages used only once] made mapped pages
+> > > have another round in inactive list because they might be just short
+> > > lived and so we could consider them again next time. This heuristic
+> > > helps to reduce pressure on the active list with a streaming IO
+> > > worklods.
+> > > This patch fixes a regression introduced by this commit for heavy shmem
+> > > based workloads because unlike Anon pages, which are excluded from this
+> > > heuristic because they are usually long lived, shmem pages are handled
+> > > as a regular page cache.
+> > > This doesn't work quite well, unfortunately, if the workload is mostly
+> > > backed by shmem (in memory database sitting on 80% of memory) with a
+> > > streaming IO in the background (backup - up to 20% of memory). Anon
+> > > inactive list is full of (dirty) shmem pages when watermarks are
+> > > hit. Shmem pages are kept in the inactive list (they are referenced)
+> > > in the first round and it is hard to reclaim anything else so we reach
+> > > lower scanning priorities very quickly which leads to an excessive swap
+> > > out.
+> > > 
+> > > Let's fix this by excluding all swap backed pages (they tend to be long
+> > > lived wrt. the regular page cache anyway) from used-once heuristic and
+> > > rather activate them if they are referenced.
+> > 
+> > Yes, the algorithm only makes sense for file cache, which is easy to
+> > reclaim.  Thanks for the fix!
+> 
+> Hi Johannes,
+> 
+> Out of curiosity, I notice that, in this patch (64574746), the commit log
+> said that this patch aims to reduce the impact of pages used only once.
+> Could you please tell why you think these pages will flood the active
+> list?  How do you find this problem?
 
-> On Fri, May 18, 2012 at 06:32:18PM +0900, Jonghwa Lee wrote:
-> 
->> Add driver for support max77686 regulator.
->> MAX77686 provides LDOs[1~26] and BUCKs[1~9]. It support to set or get the
->> volatege of regulator on max77686 chip with using regmap.
-> 
-> Looks mostly good, a few things below but they're all pretty
-> minor/straghtforward.
-> 
->> +/* LDO3 ~ 5, 9 ~ 14, 16 ~ 26 (uV) */
->> +static const struct voltage_map_desc ldo_voltage_map_desc = {
->> +	.min = 800000,	.max = 3950000,	.step = 50000,	.n_bits = 6,
->> +};
-> 
-> Should convert all these to use regulator_map_voltage_linear() and
-> regulator_{get,set}_voltage_vsel().
-> 
->> +	ret = regmap_read(max77686->iodev->regmap, reg, &val);
->> +
->> +	if (ret)
->> +		return ret;
-> 
->> +	printk(PMIC_DEBUG "id=%d, ret=%d, val=%x, mask=%x, pattern=%x\n",
->> +		 rdev_get_id(rdev), (val & mask) == pattern,
->> +		 val, mask, pattern);
-> 
-> dev_dbg() or just remove this (and similarly for the other similar logs).
-> 
->> +	{
->> +		.name	= "EN32KHz AP",
->> +		.id	= MAX77686_EN32KHZ_AP,
->> +		.ops	= &max77686_fixedvolt_ops,
->> +		.type	= REGULATOR_VOLTAGE,
->> +		.owner	= THIS_MODULE,
->> +	}, {
->> +		.name	= "EN32KHz CP",
->> +		.id	= MAX77686_EN32KHZ_CP,
->> +		.ops	= &max77686_fixedvolt_ops,
->> +		.type	= REGULATOR_VOLTAGE,
->> +		.owner	= THIS_MODULE,
->> +	}, {
->> +		.name	= "EN32KHz PMIC",
->> +		.id	= MAX77686_P32KH,
->> +		.ops	= &max77686_fixedvolt_ops,
->> +		.type	= REGULATOR_VOLTAGE,
->> +		.owner	= THIS_MODULE,
->> +	},
-> 
-> These should be managed via the clock API now we have one.
+Applications that use mmap for large, linear used-once IO.  Reclaim
+used to just activate every mapped file page it encountered for the
+first time (activate referenced ones, but they all start referenced) .
+This resulted in horrible reclaim latency as most pages in memory
+where active.
 
->
+> Actually, we met a huge regression in our product system.  This
+> application uses mmap/munmap and read/write simultaneously.  Meanwhile
+> it wants to keep mapped file pages in memory as much as possible.  But
+> this patch causes that mapped file pages are reclaimed frequently.  So I
+> want to know whether or not this patch consider this situation.  Thank
+> you.
 
-I already updated all your comments except only this one. Could you
-explain more details?
+Is it because the read()/write() IO is high throughput and pushes
+pages through the LRU lists faster than the mmap pages are referenced?
 
+Are the mmap pages executable or shared between tasks?  If so, does
+the kernel you are using include '34dbc67 vmscan: promote shared file
+mapped pages' and 'c909e99 vmscan: activate executable pages after
+first usage'?
 
->> +	if (!pdata)
->> +		dev_err(pdev->dev.parent, "No platform init data supplied.\n");
-> 
-> Should be able to carry on without this and register the regulators to
-> allow for diagnostics and powering off unused regulators when we have
-> full constraints.
-> 
->> +	size = sizeof(struct regulator_dev *) * MAX77686_REGULATORS;
->> +	max77686->rdev = devm_kzalloc(&pdev->dev, size, GFP_KERNEL);
->> +	if (!max77686->rdev) {
->> +		devm_kfree(&pdev->dev, max77686);
-> 
-> Shouldn't need to devm_kfree(), the major point is that this will happen
-> automatically.
-
-
-Thanks.
+All of this is very lame.  I see no way to automatically detect when
+you really want to keep mapped pages over unmapped ones.  And making
+this assumption hurt some loads, while not making it now hurts others.
