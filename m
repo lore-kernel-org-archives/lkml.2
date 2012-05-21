@@ -1,76 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756355Ab2EUCGT (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 20 May 2012 22:06:19 -0400
-Received: from haggis.pcug.org.au ([203.10.76.10]:53689 "EHLO
+	id S1756083Ab2EUCF2 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 20 May 2012 22:05:28 -0400
+Received: from haggis.pcug.org.au ([203.10.76.10]:34766 "EHLO
 	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756100Ab2EUCFa (ORCPT
+	with ESMTP id S1755471Ab2EUCFZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 20 May 2012 22:05:30 -0400
-Date: Mon, 21 May 2012 12:05:26 +1000
+	Sun, 20 May 2012 22:05:25 -0400
+Date: Mon, 21 May 2012 12:05:12 +1000
 From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Roland Dreier <roland@kernel.org>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        linux-kernel@vger.kernel.org, linux-rdma@vger.kernel.org
-Subject: Re: [GIT PULL] please pull infiniband.git
-Message-Id: <20120521120526.fcd34b38fa4d21fdfd28728b@canb.auug.org.au>
-In-Reply-To: <1337562868-9887-1-git-send-email-roland@kernel.org>
-References: <1337562868-9887-1-git-send-email-roland@kernel.org>
+To: Roland Dreier <roland@kernel.org>, linux-rdma@vger.kernel.org
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Vipul Pandya <vipul@chelsio.com>,
+        Steve Wise <swise@opengridcomputing.com>
+Subject: linux-next: build failure after merge of the infiniband tree
+Message-Id: <20120521120512.15f1e9dfc961b05dfee72f79@canb.auug.org.au>
 X-Mailer: Sylpheed 3.2.0beta7 (GTK+ 2.24.10; i486-pc-linux-gnu)
 Mime-Version: 1.0
 Content-Type: multipart/signed; protocol="application/pgp-signature";
  micalg="PGP-SHA256";
- boundary="Signature=_Mon__21_May_2012_12_05_26_+1000_UCXOZhjpRRIOIcLv"
+ boundary="Signature=_Mon__21_May_2012_12_05_12_+1000_6OEbz5KAKzLm8Cb7"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Mon__21_May_2012_12_05_26_+1000_UCXOZhjpRRIOIcLv
+--Signature=_Mon__21_May_2012_12_05_12_+1000_6OEbz5KAKzLm8Cb7
 Content-Type: text/plain; charset=US-ASCII
 Content-Disposition: inline
 Content-Transfer-Encoding: quoted-printable
 
-Hi Roland,
+Hi all,
 
-On Sun, 20 May 2012 18:14:28 -0700 Roland Dreier <roland@kernel.org> wrote:
->
-> Vipul Pandya (10):
->       cxgb4: Detect DB FULL events and notify RDMA ULD
->       cxgb4: Common platform specific changes for DB Drop Recovery
->       cxgb4: DB Drop Recovery for RDMA and LLD queues
->       RDMA/cxgb4: Add debugfs RDMA memory stats
->       RDMA/cxgb4: Add DB Overflow Avoidance
->       RDMA/cxgb4: Disable interrupts in c4iw_ev_dispatch()
->       RDMA/cxgb4: DB Drop Recovery for RDMA and LLD queues
->       RDMA/cxgb4: Use vmalloc() for debugfs QP dump
+After merging the infiniband tree, today's linux-next build (powerpc
+ppc64_defconfig) failed like this:
 
-This commit breaks (at least) powerpc builds and has not bee in linux-next
-before today.
+drivers/infiniband/hw/cxgb4/device.c: In function 'qp_release':
+drivers/infiniband/hw/cxgb4/device.c:124:2: error: implicit declaration of =
+function 'vfree' [-Werror=3Dimplicit-function-declaration]
+drivers/infiniband/hw/cxgb4/device.c: In function 'qp_open':
+drivers/infiniband/hw/cxgb4/device.c:148:2: error: implicit declaration of =
+function 'vmalloc' [-Werror=3Dimplicit-function-declaration]
+drivers/infiniband/hw/cxgb4/device.c:148:11: warning: assignment makes poin=
+ter from integer without a cast [enabled by default]
+
+Caused by commit d716a2a014ad ("RDMA/cxgb4: Use vmalloc() for debugfs QP
+dump").  See Rule 1 in Documentation/SubmitChecklist.
+
+I have used the infiniband tree from next-20120518 for today.
 
 --=20
 Cheers,
 Stephen Rothwell                    sfr@canb.auug.org.au
-http://www.canb.auug.org.au/~sfr/
 
---Signature=_Mon__21_May_2012_12_05_26_+1000_UCXOZhjpRRIOIcLv
+--Signature=_Mon__21_May_2012_12_05_12_+1000_6OEbz5KAKzLm8Cb7
 Content-Type: application/pgp-signature
 
 -----BEGIN PGP SIGNATURE-----
 Version: GnuPG v1.4.12 (GNU/Linux)
 
-iQIcBAEBCAAGBQJPuaLmAAoJEECxmPOUX5FEq8wQAJH1x+jSI+YzUzNui/T8LYPx
-EOETQGAtauFbCIaaPc/BZYWwXmdjbtQlYblaqsQhmvxU6JryJIkPP2Q5XORbrW9y
-sHEQ+5Mga5RGXMh2Cm8u3uRGC123SSjMe3QxZt3Hm+sHcUk/0Knne7t3TuRyhTK6
-vGYz9Nna4Tlpd41L153VhLx6LJ6m+QzTYR3ayKiDPzjTbGiLJ3cmzWg5KwTIQxqI
-ourzs5yQ28jDR1Up02AKkhLRxovBoildYx/IPSwyVEg+8MElYzCx8DpxjDfgFH/F
-6HP5yonln/DtdAzELRgehQFL1xwhF897hgJV7L2B0kuKoulOxcYXI8FC0WrU034R
-yjT2cG/iIbuBJF2KLTWqLiunUl9PyXX75CitqTEo5Svvpo+E0jnW3/Qsziv3Glqa
-x6DauGkJM93vJJ1MwUcRH0JZ/k8JpkUprf2r4cQRiQrEnQOgJ+q6RMCqcvM90o+t
-nPxZaJ4R5rPQYSlxrdvIoVq+XGjNNtBhu2tLTs3xBQceDcGuPMIxrQaVvzLoVSQG
-PU6NGLo0wDyUHEINRItY1rbWRkPa0H8Vp/wtuPkuoBV5YUq4hMMLZVzJDRrLUjyH
-nJlaDyAYkO4/wMQKC4ouI6/EbZAnc95pSVOj4Rj5PjuXPmjVxgC8GSOPbYLSSOu/
-shulFjU2K7wYsAB9fWHX
-=wH7E
+iQIcBAEBCAAGBQJPuaLYAAoJEECxmPOUX5FErDkP/1n7ldDlC+01Fl3FzRK4eyYM
+rE++FDkovHYNa6RJ9fB9AzOkYydaW49Kmq9wN59NK6xQgQzWyr4GB7+uEDbqSeWd
+OeRJoeja0XkMWhFo+sxZErSQCkR8L/Wx63abNtPz0EWYlltXucPgs5kFt6Q6cIx5
+G2jwC1oZFrnYMZls+a/xEoNxB2jz2QgdE/I+JVw04jr45ApXe0UkvyxrgRthuPL2
+6fZKasUARNd6Kzq9fSSecIlTf3H2GvoxLunnHSPNk8IEmUqaVblJF+KV8FgvxVOG
+FoSsxcIlEYpwqjAqIYasKSpu0lP2+Ia69RQLsuHQV5pq90mOnxWldhxZOlrCWmjT
+OAkS8cg5at27HBNWbRSeO3Nqr/Nx6hFJD/nukPa+EkI09BEgIixazPHovXz9Ppvm
+AJXPo7fLpL9J1Axyj1N3ONwFQmuCOEOh+AN5dMVkF04WZSHpcB4CJiRBOhZ/RTO9
+4xEQn/L45SDRHpBwU++6jrPN/+DqvNJHZmaBiPhN8hvjR6r+mxnUQEFkXKcqGfVL
+iOssFZsGpQ5KLZR+LpV1oGX/0Uba9XOz+cuvhJilnZmUdWwXdKkMK6VG6wdlU0cE
+mIhBt8g+WlOyy4PzA9Z2LN0W8UojnIf9xAw0clCuGJztQforpkaAIcJCPir6sj04
+zJM18koJVucwR/0Bv/Gr
+=9kmo
 -----END PGP SIGNATURE-----
 
---Signature=_Mon__21_May_2012_12_05_26_+1000_UCXOZhjpRRIOIcLv--
+--Signature=_Mon__21_May_2012_12_05_12_+1000_6OEbz5KAKzLm8Cb7--
