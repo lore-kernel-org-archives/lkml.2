@@ -1,75 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932161Ab2EUUGr (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 May 2012 16:06:47 -0400
-Received: from mail-lb0-f174.google.com ([209.85.217.174]:59529 "EHLO
-	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750945Ab2EUUGp convert rfc822-to-8bit (ORCPT
+	id S932207Ab2EUULO (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 May 2012 16:11:14 -0400
+Received: from mail3.caviumnetworks.com ([12.108.191.235]:13794 "EHLO
+	mail3.caviumnetworks.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757813Ab2EUULN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 May 2012 16:06:45 -0400
+	Mon, 21 May 2012 16:11:13 -0400
+Message-ID: <4FBAA150.6050308@caviumnetworks.com>
+Date: Mon, 21 May 2012 13:10:56 -0700
+From: Venkat Subbiah <vsubbiah@caviumnetworks.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120424 Thunderbird/12.0
 MIME-Version: 1.0
-In-Reply-To: <CAE9FiQX-Ut3=WfjeKVBBO55NMQTXZdCC2NbsrX=p3MHVWLahtQ@mail.gmail.com>
-References: <1336422606-4244-1-git-send-email-yinghai@kernel.org>
- <CAErSpo6OZYXz-M=C9r154MY7kwC7LRR3ZnQe3pnmVJY2uoWeRw@mail.gmail.com>
- <CAE9FiQXN5z0riswyECKw5OKe+nPUBN2yZ1d4=Asb3kqaj770NA@mail.gmail.com>
- <CAErSpo71805jTs1qVMx+9ghzUub77r47VqpXF0sVOFuDSq6pmg@mail.gmail.com> <CAE9FiQX-Ut3=WfjeKVBBO55NMQTXZdCC2NbsrX=p3MHVWLahtQ@mail.gmail.com>
-From: Bjorn Helgaas <bhelgaas@google.com>
-Date: Mon, 21 May 2012 14:06:23 -0600
-Message-ID: <CAErSpo4zxo+A-uLNCGj1Fe25t2TD+0cjgpdncV9kykTe0pd0CQ@mail.gmail.com>
-Subject: Re: [PATCH 00/21] PCI: use busn_res to replace bus secondary/subordinate
-To: Yinghai Lu <yinghai@kernel.org>
-Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Tony Luck <tony.luck@intel.com>, David Miller <davem@davemloft.net>,
-        x86 <x86@kernel.org>, Dominik Brodowski <linux@dominikbrodowski.net>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-arch@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
-X-System-Of-Record: true
+To: "frank.rowand@am.sony.com" <frank.rowand@am.sony.com>
+CC: "Rowand, Frank" <Frank_Rowand@sonyusa.com>,
+        "tglx@linutronix.de" <tglx@linutronix.de>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-rt-users@vger.kernel.org" <linux-rt-users@vger.kernel.org>
+Subject: Re: [PATCH RT 2/2] fix printk flush of messages
+References: <4FB44EF1.9050809@am.sony.com> <4FB44FD0.4090800@am.sony.com>
+In-Reply-To: <4FB44FD0.4090800@am.sony.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
+X-OriginalArrivalTime: 21 May 2012 20:10:56.0985 (UTC) FILETIME=[D52A5490:01CD378D]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, May 18, 2012 at 10:38 PM, Yinghai Lu <yinghai@kernel.org> wrote:
-> On Fri, May 18, 2012 at 4:32 PM, Bjorn Helgaas <bhelgaas@google.com> wrote:
-
-> looks one of commit author is messed up.
+On 05/16/2012 06:09 PM, Frank Rowand wrote:
+> Updates console-make-rt-friendly.patch
 >
-> http://git.kernel.org/?p=linux/kernel/git/helgaas/pci.git;a=commitdiff;h=b20238f05059818de8edd76cb5523b6bf8e26527
+> #ifdef CONFIG_PREEMPT_RT_FULL, printk() output is never flushed by
+> printk() because:
+So this is an issue for printk() itself and is not just for early_printk()?
+
+
+    # some liberties taken in this pseudo-code to make it easier to follow
+    printk()
+       vprintk()
+          raw_spin_lock(&logbuf_lock)
+             # increment preempt_count():
+             preempt_disable()
+       result = console_trylock_for_printk()
+
+As I read it console_trylock_for_printk() is called from printk() but in 
+code it is called from vprintk()
+>           retval = 0
+>           # lock will always be false, because preempt_count() will be>= 1
+>           lock = ...&&  !preempt_count()
+>           if (lock)
+>              retval = 1
+>           return retval
+>        # result will always be false since lock will always be false
+>        if (result)
+>           console_unlock()
+>              # this is where the printk() output would be flushed
 >
-> author  Bjorn Helgaas <bhelgaas@google.com>
->        Fri, 18 May 2012 17:35:50 +0000 (11:35 -0600)
-> committer       Bjorn Helgaas <bhelgaas@google.com>
->        Fri, 18 May 2012 20:00:35 +0000 (14:00 -0600)
-> Will use them insert/update busn res in pci_bus struct.
 >
-> [bhelgaas: print conflicting entry if insertion fails]
-> Signed-off-by: Yinghai Lu <yinghai@kernel.org>
-> Signed-off-by: Bjorn Helgaas <bhelgaas@google.com>
+> On system boot some printk() output is flushed because register_console()
+> and tty_open() call console_unlock().
 >
-> but if changing it would take you too much time, just leave it as is.
-
-Oops, sorry, I squashed two patches into one (no point in two patches
-that (1) add A and (2) clean up A), and I must have screwed up the
-author then.  I fixed it in my tree.
-
-I also changed the branch name to "for-3.6" to make it more obvious
-that the changes there are targeted for the 3.6 merge window, not for
-3.5.  After Linus pulls my current "next" branch into 3.5-rcX, I'll
-move the for-3.6 stuff to the "next" branch as usual.
-
->> Let me know what series you'd like me to work on next, and send the
->> current patches to the list.
 >
-> Maybe for-pci-res-alloc could be moved forwarded, then
-> for-pci-busn-alloc
-> for-pci-root-bus-hotplug
-> for-pci-for-each-res-addon
+> This change also fixes the problem that was previously fixed by
+> preempt-rt-allow-immediate-magic-sysrq-output-for-preempt_rt_full.patch
+>
+> Signed-off-by: Frank Rowand<frank.rowand@am.sony.com>
+>
+> ---
+>   kernel/printk.c |    2 	1 +	1 -	0 !
+>   1 file changed, 1 insertion(+), 1 deletion(-)
+>
+> Index: b/kernel/printk.c
+> ===================================================================
+> --- a/kernel/printk.c
+> +++ b/kernel/printk.c
+> @@ -847,7 +847,7 @@ static int console_trylock_for_printk(un
+>   	int retval = 0, wake = 0;
+>   #ifdef CONFIG_PREEMPT_RT_FULL
+>   	int lock = !early_boot_irqs_disabled&&  !irqs_disabled_flags(flags)&&
+> -		!preempt_count();
+> +		(preempt_count()<= 1);
+>   #else
+>   	int lock = 1;
+>   #endif
+>
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-rt-users" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+>
 
-OK, just send your current patches to the list so everybody has a
-chance to see them.
-
-Bjorn
