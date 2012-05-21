@@ -1,61 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753872Ab2EUPaU (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 May 2012 11:30:20 -0400
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:60065 "EHLO
-	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753168Ab2EUPaO (ORCPT
+	id S1753597Ab2EUPaS (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 May 2012 11:30:18 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:54873 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753296Ab2EUPaP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 May 2012 11:30:14 -0400
-From: Miklos Szeredi <miklos@szeredi.hu>
-To: viro@ZenIV.linux.org.uk
-Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
-        hch@infradead.org, torvalds@linux-foundation.org, mszeredi@suse.cz
-Subject: [PATCH 04/16] vfs: do_last(): use inode variable
-Date: Mon, 21 May 2012 17:30:08 +0200
-Message-Id: <1337614220-6174-5-git-send-email-miklos@szeredi.hu>
-X-Mailer: git-send-email 1.7.7
-In-Reply-To: <1337614220-6174-1-git-send-email-miklos@szeredi.hu>
-References: <1337614220-6174-1-git-send-email-miklos@szeredi.hu>
+	Mon, 21 May 2012 11:30:15 -0400
+Message-ID: <4FBA5F82.7080003@gmail.com>
+Date: Mon, 21 May 2012 08:30:10 -0700
+From: "Justin P. Mattock" <justinmattock@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
+MIME-Version: 1.0
+To: Dan Carpenter <dan.carpenter@oracle.com>
+CC: gregkh@linuxfoundation.org, devel@driverdev.osuosl.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH NEXT]staging: "rts_pstor" Fix typos.
+References: <1337609955-15544-1-git-send-email-justinmattock@gmail.com> <20120521143530.GC4637@mwanda> <4FBA5737.3010209@gmail.com> <20120521152626.GE4629@mwanda>
+In-Reply-To: <20120521152626.GE4629@mwanda>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Miklos Szeredi <mszeredi@suse.cz>
+On 05/21/2012 08:26 AM, Dan Carpenter wrote:
+> On Mon, May 21, 2012 at 07:54:47AM -0700, Justin P. Mattock wrote:
+>> On 05/21/2012 07:35 AM, Dan Carpenter wrote:
+>>> On Mon, May 21, 2012 at 07:19:15AM -0700, Justin P. Mattock wrote:
+>>>> From: "Justin P. Mattock"<justinmattock@gmail.com>
+>>>>
+>>>>   Signed-off-by: Justin P. Mattock<justinmattock@gmail.com>
+>>>    ^
+>>> Your scripts are adding an extra space here.i
+>>
+>> after git format-patch my signature is in the subject line. pressing
+>> enter a few times moves it down. is there a git command for properly
+>> aligning this?
+>
+> The first line is the subject and then you need to leave the next
+> line of the commit blank.
+>
+> regards,
+> dan carpenter
+>
+>
 
-Use helper variable instead of path->dentry->d_inode before complete_walk().
-This will allow this code to be used in RCU mode.
+ahh.. I know what im doing wrong, im not doing all of this while doing 
+git commit -s -a.  I add the subject etc.. after committing and 
+formatting the patch.
 
-Signed-off-by: Miklos Szeredi <mszeredi@suse.cz>
----
- fs/namei.c |    8 +++++---
- 1 files changed, 5 insertions(+), 3 deletions(-)
-
-diff --git a/fs/namei.c b/fs/namei.c
-index 1b1a83f..1dba4a7 100644
---- a/fs/namei.c
-+++ b/fs/namei.c
-@@ -2360,15 +2360,17 @@ static struct file *do_last(struct nameidata *nd, struct path *path,
- 	if (error)
- 		nd->flags |= LOOKUP_JUMPED;
- 
-+	BUG_ON(nd->flags & LOOKUP_RCU);
-+	inode = path->dentry->d_inode;
- 	error = -ENOENT;
--	if (!path->dentry->d_inode)
-+	if (!inode)
- 		goto exit_dput;
- 
--	if (path->dentry->d_inode->i_op->follow_link)
-+	if (inode->i_op->follow_link)
- 		return NULL;
- 
- 	path_to_nameidata(path, nd);
--	nd->inode = path->dentry->d_inode;
-+	nd->inode = inode;
- 	/* Why this, you ask?  _Now_ we might have grown LOOKUP_JUMPED... */
- 	error = complete_walk(nd);
- 	if (error)
--- 
-1.7.7
-
+Justin P. Mattock
