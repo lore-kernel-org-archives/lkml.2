@@ -1,24 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757519Ab2EUXMg (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 May 2012 19:12:36 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:47823 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752090Ab2EUXMf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 May 2012 19:12:35 -0400
-Message-ID: <4FBACBD5.6080207@zytor.com>
-Date: Mon, 21 May 2012 16:12:21 -0700
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:11.0) Gecko/20120329 Thunderbird/11.0.1
+	id S1757467Ab2EUXNs (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 May 2012 19:13:48 -0400
+Received: from nat.nue.novell.com ([195.135.221.2]:15529 "EHLO
+	nat.nue.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751109Ab2EUXNr (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 21 May 2012 19:13:47 -0400
+Message-ID: <4FBACC24.9080603@suse.com>
+Date: Mon, 21 May 2012 16:13:40 -0700
+From: Lee Duncan <lduncan@suse.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120421 Thunderbird/12.0
 MIME-Version: 1.0
-To: "Michael S. Tsirkin" <mst@redhat.com>
-CC: Thomas Gleixner <tglx@linutronix.de>, kvm@vger.kernel.org,
-        Avi Kivity <avi@redhat.com>, Marcelo Tosatti <mtosatti@redhat.com>,
-        Ingo Molnar <mingo@redhat.com>, x86@kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] kvm: optimize ISR lookups
-References: <20120521163727.GA13337@redhat.com> <alpine.LFD.2.02.1205211940030.3231@ionos> <20120521230623.GO17031@redhat.com>
-In-Reply-To: <20120521230623.GO17031@redhat.com>
+To: linux-scsi@vger.kernel.org
+CC: linux-kernel@vger.kernel.org, kai.makisara@kolumbus.fi, jeffm@suse.com
+Subject: [PATCH v3 0/5] st: increase maximum number of tapes beyond 128
 X-Enigmail-Version: 1.4.1
 Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
@@ -26,38 +22,31 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/21/2012 04:06 PM, Michael S. Tsirkin wrote:
-> 
-> I think the reason is __apic_read which now simply copies the registers
-> out to guest, this code will become less straight-forward if it's not
-> 1:1.
-> 
+This patch set increases the maximum number of tape drives.  The device
+limit of 128 tape drives was established in 2003 as a significant increase
+from the 8 tape drives allowed previously.
 
-It can still be 1:1, just drop the 12 bytes of completely useless
-padding after each 32-bit datum.
+We have seen many Linux sites that, between a large number of tape drives
+and multipathing, are discovering more than 128 devices and are running
+into problems.
 
->> And if you look deeper, then you'll notice that _ALL_ APIC registers
->> are on a 16 byte boundary (thanks Peter for pointing that out).
->>
->> So it's even more silly to have a 1:1 representation instead of
->> implementing the default emulated apic_read/write functions to access
->> (offset >> 2).
->>
->> And of course, that design decision causes lookups to be slow.
-> 
-> Yes, it might be one of the reasons why my patch helps so
-> much: it adds a cache in front of this data structure.
-> 
+This patch set cleans up some st code that made increasing the number
+of drives costly, then actually increases the maximum number from 128
+to 2^17 devices (based on the current code).
 
-Well, *fix the fscking data structure first*.
+This patch set is based off of the scsi git tree.
 
-> 
-> So what you propose is in fact to rework apic registers at least for
-> ISR,IRR,TMR to use a bitmap.
-> I am fine with this suggestion but would like some feedback from kvm
-> maintainers on where they want to go before I spend time on that.
-> 
+Jeff Mahoney (5):
+  st: Use static class attributes
+  st: clean up dev cleanup in st_probe
+  st: get rid of scsi_tapes array
+  st: clean up device file creation and removal
+  st: raise device limit
 
-This should be a 20-minute hack.
+ drivers/scsi/st.c |  404 ++++++++++++++++++++++-------------------------------
+ drivers/scsi/st.h |    4 +-
+ 2 files changed, 169 insertions(+), 239 deletions(-)
 
-	-hpa
+-- 
+1.7.9.2
+
