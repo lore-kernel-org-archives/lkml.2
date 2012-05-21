@@ -1,94 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757782Ab2EUKKS (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 May 2012 06:10:18 -0400
-Received: from eusmtp01.atmel.com ([212.144.249.242]:14829 "EHLO
-	eusmtp01.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756734Ab2EUKKP (ORCPT
+	id S1757822Ab2EUKOk (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 May 2012 06:14:40 -0400
+Received: from relay.ihostexchange.net ([66.46.182.52]:6550 "EHLO
+	relay.ihostexchange.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754637Ab2EUKOj convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 May 2012 06:10:15 -0400
-Message-ID: <4FBA1483.4010008@atmel.com>
-Date: Mon, 21 May 2012 12:10:11 +0200
-From: Nicolas Ferre <nicolas.ferre@atmel.com>
-Organization: atmel
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
+	Mon, 21 May 2012 06:14:39 -0400
+From: "Shai Fultheim (Shai@ScaleMP.com)" <Shai@ScaleMP.com>
+To: Ingo Molnar <mingo@kernel.org>, Vlad Zolotarov <vlad@ScaleMP.com>
+CC: Thomas Gleixner <tglx@linutronix.de>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
+        Ido Yariv <ido@wizery.com>
+Date: Mon, 21 May 2012 06:14:29 -0400
+Subject: RE: [PATCH v3 0/2] Move x86_cpu_to_apicid to the __read_mostly
+ section
+Thread-Topic: [PATCH v3 0/2] Move x86_cpu_to_apicid to the __read_mostly
+ section
+Thread-Index: Ac03MQxb3olu9cELTJaGAnFJ8UMzbQACQ3rw
+Message-ID: <9B14D1490DDECA4E974F6B9FC9EBAB317D295F4D11@VMBX108.ihostexchange.net>
+References: <1337527148.6093.14.camel@vlad>
+ <20120521090638.GE31407@gmail.com>
+In-Reply-To: <20120521090638.GE31407@gmail.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-To: Stephen Rothwell <sfr@canb.auug.org.au>, <linux-next@vger.kernel.org>
-CC: Greg KH <gregkh@linuxfoundation.org>, Arnd Bergmann <arnd@arndb.de>,
-        <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
-        <plagnioj@jcrosoft.com>, <maxime.ripard@free-electrons.com>,
-        <olof@lixom.net>
-Subject: Re: [PATCH] ARM: at91: Add ADC driver to at91sam9260/at91sam9g20
- dtsi files
-References: <4FB3B1F3.6080102@atmel.com> <1337182626-13033-1-git-send-email-nicolas.ferre@atmel.com> <201205161850.54765.arnd@arndb.de> <20120517150601.GA28104@kroah.com> <20120518084446.a7b229074ea215fd7bcd1eb8@canb.auug.org.au>
-In-Reply-To: <20120518084446.a7b229074ea215fd7bcd1eb8@canb.auug.org.au>
-X-Enigmail-Version: 1.5pre
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.159.245.112]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
------BEGIN PGP SIGNED MESSAGE-----
-Hash: SHA1
+Ingo,
 
-On 05/18/2012 12:44 AM, Stephen Rothwell :
-> Hi all,
+The reason for this, as you pointed out, is the 'cache line' size (4096 bytes).  We see significant false sharing is we do not move this next to each other.  
+
+We observed this for x86_cpu_to_apicid only, but per earlier request on this thread we implemented for the other (RO) vars as well.
+
+Regards,
+Shai.
+
+
+--Shai 
+
+
+> -----Original Message-----
+> From: Ingo Molnar [mailto:mingo.kernel.org@gmail.com] On Behalf Of Ingo
+> Molnar
+> Sent: Monday, May 21, 2012 12:07
+> To: Vlad Zolotarov
+> Cc: Thomas Gleixner; linux-kernel; Ingo Molnar; H. Peter Anvin; Shai Fultheim
+> (Shai@ScaleMP.com); Ido Yariv
+> Subject: Re: [PATCH v3 0/2] Move x86_cpu_to_apicid to the __read_mostly
+> section
 > 
-> On Thu, 17 May 2012 08:06:01 -0700 Greg KH
-> <gregkh@linuxfoundation.org> wrote:
->> 
->> On Wed, May 16, 2012 at 06:50:54PM +0000, Arnd Bergmann wrote:
->>> On Wednesday 16 May 2012, Nicolas Ferre wrote:
->>>> Now that the bulk of at91sam9g20-related nodes are located in
->>>> at91sam9260.dtsi, we have to re-create the path to this ADC
->>>> node for SoC specific parts.
->>>> 
->>>> Signed-off-by: Nicolas Ferre <nicolas.ferre@atmel.com>
->>> 
->>> Should we apply this patch in arm-soc so that Greg can drop the
->>> hunk that no longer applies?
->> 
->> It's not a "no longer applies", it's a "this does not merge".
->> The patch is in my tree, unless you want me to revert it, it's
->> going to stay there until it goes to Linus.
 > 
-> Just apply the patch to the arm-soc tree - then the merge
-> resolution becomes "use the arm-soc version".   There is no need
-> for Greg to revert the other patch.
-
-Hi Stephen,
-
-After checking the current status of
-arch/arm/boot/dts/at91sam9g20.dtsi in linux-next, it seems the merge
-resolution has not produced a good result:
-
-The "adc0" node, should only look like:
-
-ahb {
-        apb {
-                adc0: adc@fffe0000 {
-                        atmel,adc-startup-time = <40>;
-                };
-        };
-};
-
-without the redundant code carried by the staging git tree. In short,
-the arm-soc version is the proper one.
-
-Thanks for your help, best regards,
-- -- 
-Nicolas Ferre
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-Comment: Using GnuPG with Mozilla - http://enigmail.mozdev.org/
-
-iQEcBAEBAgAGBQJPuhR7AAoJEAf03oE53VmQW4wH/0lqpqrTujJ/dQ0z5Ku7Xde3
-EKKJm51AIlIadOXiteYH6cw34ISm68cXZWpkbKh3UKiCcJGSJi4VjCrkcJ//CwUL
-B4bZD3A6Y8zLQ+TaQbjMnfzKq2dOBRQ1M1dNoQXwPe83vjV85T4hoKco7LBhGhUI
-l//0aWrcefH9sQynAYRhNE0M6hlfr/Edlia0zHlkVYqE2K5ALxaH6lki2EUzxvJC
-l8qydZ9lum37ebnot09WB2qhIlkRApb50sYbQG4nMwlC3jSblXrPelQvChWLo/yi
-JOPOF7Lcj9fnJmeVGlQknobilgWmRnuVQUbqBG4NjDx71k5WiEywF6ymBa8TJnA=
-=rnQu
------END PGP SIGNATURE-----
+> * Vlad Zolotarov <vlad@scalemp.com> wrote:
+> 
+> > Pls., consider applying this patch series.
+> > It contains the following changes:
+> >  - Adds two new macros DEFINE_EARLY_PER_CPU_READ_MOSTLY() and
+> >    DECLARE_EARLY_PER_CPU_READ_MOSTLY().
+> >  - Adds "read-mostly" qualifier to the following variables in smp.h:
+> >   - cpu_sibling_map
+> >   - cpu_core_map
+> >   - cpu_llc_shared_map
+> >   - cpu_llc_id
+> >   - cpu_number
+> >   - x86_cpu_to_apicid
+> >   - x86_bios_cpu_apicid
+> >   - x86_cpu_to_logical_apicid
+> >
+> > As long as all the variables above are only written during the
+> > initialization, this change is meant to prevent the false
+> > sharing and improve the performance on large multiprocessor
+> > systems.
+> 
+> Mind explaining why it helps performance? Are these percpu
+> variables also accessed from other CPUs, increasing the cost of
+> false sharing of cache-lines?
+> 
+> Or is the problem that the 'cache line' size is 4096 bytes on
+> vSMP, making even singular cache misses expensive and you'd like
+> to move these next to each other?
+> 
+> So it would be nice to see some before/after PMU stats
+> demonstrating the improvement. (perf works on vSMP, right?)
+> 
+> Thanks,
+> 
+> 	Ingo
