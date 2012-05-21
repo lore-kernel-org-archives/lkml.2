@@ -1,81 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757142Ab2EUCoc (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 20 May 2012 22:44:32 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:54722 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755843Ab2EUCoa (ORCPT
+	id S1757171Ab2EUCta (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 20 May 2012 22:49:30 -0400
+Received: from oproxy9.bluehost.com ([69.89.24.6]:38449 "HELO
+	oproxy9.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1756963Ab2EUCt2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 20 May 2012 22:44:30 -0400
-Date: Mon, 21 May 2012 10:51:49 +0800
-From: Zheng Liu <gnehzuil.liu@gmail.com>
-To: Johannes Weiner <hannes@cmpxchg.org>
-Cc: Michal Hocko <mhocko@suse.cz>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org,
-        Andrew Morton <akpm@linux-foundation.org>, Mel Gorman <mel@csn.ul.ie>,
-        Minchan Kim <minchan@kernel.org>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Rik van Riel <riel@redhat.com>
-Subject: Re: [PATCH] mm: consider all swapped back pages in used-once logic
-Message-ID: <20120521025149.GA32375@gmail.com>
-Mail-Followup-To: Johannes Weiner <hannes@cmpxchg.org>,
-	Michal Hocko <mhocko@suse.cz>, linux-mm@kvack.org,
-	linux-kernel@vger.kernel.org,
-	Andrew Morton <akpm@linux-foundation.org>,
-	Mel Gorman <mel@csn.ul.ie>, Minchan Kim <minchan@kernel.org>,
-	KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-	Rik van Riel <riel@redhat.com>
-References: <1337246033-13719-1-git-send-email-mhocko@suse.cz>
- <20120517195342.GB1800@cmpxchg.org>
+	Sun, 20 May 2012 22:49:28 -0400
+Message-ID: <4FB9AD3C.3040909@xenotime.net>
+Date: Sun, 20 May 2012 19:49:32 -0700
+From: Randy Dunlap <rdunlap@xenotime.net>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.15) Gecko/20110323 Thunderbird/3.1.9
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120517195342.GB1800@cmpxchg.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: LKML <linux-kernel@vger.kernel.org>
+CC: linux-kbuild@vger.kernel.org, Michal Marek <mmarek@suse.cz>
+Subject: [PATCH 1/3] scripts/patch-kernel: fix typos and compression comment
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-Identified-User: {1807:box742.bluehost.com:xenotime:xenotime.net} {sentby:smtp auth 50.53.38.135 authed with rdunlap@xenotime.net}
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, May 17, 2012 at 09:54:25PM +0200, Johannes Weiner wrote:
-> On Thu, May 17, 2012 at 11:13:53AM +0200, Michal Hocko wrote:
-> > [64574746 vmscan: detect mapped file pages used only once] made mapped pages
-> > have another round in inactive list because they might be just short
-> > lived and so we could consider them again next time. This heuristic
-> > helps to reduce pressure on the active list with a streaming IO
-> > worklods.
-> > This patch fixes a regression introduced by this commit for heavy shmem
-> > based workloads because unlike Anon pages, which are excluded from this
-> > heuristic because they are usually long lived, shmem pages are handled
-> > as a regular page cache.
-> > This doesn't work quite well, unfortunately, if the workload is mostly
-> > backed by shmem (in memory database sitting on 80% of memory) with a
-> > streaming IO in the background (backup - up to 20% of memory). Anon
-> > inactive list is full of (dirty) shmem pages when watermarks are
-> > hit. Shmem pages are kept in the inactive list (they are referenced)
-> > in the first round and it is hard to reclaim anything else so we reach
-> > lower scanning priorities very quickly which leads to an excessive swap
-> > out.
-> > 
-> > Let's fix this by excluding all swap backed pages (they tend to be long
-> > lived wrt. the regular page cache anyway) from used-once heuristic and
-> > rather activate them if they are referenced.
-> 
-> Yes, the algorithm only makes sense for file cache, which is easy to
-> reclaim.  Thanks for the fix!
+From: Randy Dunlap <rdunlap@xenotime.net>
 
-Hi Johannes,
+Fix typo, drop trailing whitespace, and add "xz" to list of
+compression types supported.
 
-Out of curiosity, I notice that, in this patch (64574746), the commit log
-said that this patch aims to reduce the impact of pages used only once.
-Could you please tell why you think these pages will flood the active
-list?  How do you find this problem?
+Signed-off-by: Randy Dunlap <rdunlap@xenotime.net>
+---
+ scripts/patch-kernel |    6 +++---
+ 1 file changed, 3 insertions(+), 3 deletions(-)
 
-Actually, we met a huge regression in our product system.  This
-application uses mmap/munmap and read/write simultaneously.  Meanwhile
-it wants to keep mapped file pages in memory as much as possible.  But
-this patch causes that mapped file pages are reclaimed frequently.  So I
-want to know whether or not this patch consider this situation.  Thank
-you.
-
-Regards,
-Zheng
+--- lnx-34-rc7-pk.orig/scripts/patch-kernel
++++ lnx-34-rc7-pk/scripts/patch-kernel
+@@ -26,8 +26,8 @@
+ #
+ #       Nick Holloway <Nick.Holloway@alfie.demon.co.uk>, 2nd January 1995.
+ #
+-# Added support for handling multiple types of compression. What includes
+-# gzip, bzip, bzip2, zip, compress, and plaintext. 
++# Added support for handling multiple types of compression. That includes
++# gzip, bzip, bzip2, zip, compress, xz, and plaintext.
+ #
+ #       Adam Sulmicki <adam@cfar.umd.edu>, 1st January 1997.
+ #
+@@ -159,7 +159,7 @@ applyPatch () {
+   fi
+   # Remove backup files
+   find $sourcedir/ '(' -name '*.orig' -o -name '.*.orig' ')' -exec rm -f {} \;
+- 
++
+   return 0;
+ }
+ 
