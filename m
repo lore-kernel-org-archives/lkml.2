@@ -1,133 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932568Ab2EUJgd (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 May 2012 05:36:33 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:39688 "EHLO mx1.redhat.com"
+	id S1756011Ab2EUJhJ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 May 2012 05:37:09 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:48884 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932386Ab2EUJgb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 May 2012 05:36:31 -0400
-Message-ID: <4FBA0C8A.2050003@redhat.com>
-Date: Mon, 21 May 2012 12:36:10 +0300
-From: Avi Kivity <avi@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
+	id S1751165Ab2EUJhH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 21 May 2012 05:37:07 -0400
+Date: Mon, 21 May 2012 11:36:49 +0200
+From: Alexander Gordeev <agordeev@redhat.com>
+To: Ingo Molnar <mingo@kernel.org>
+Cc: linux-kernel@vger.kernel.org, x86@kernel.org,
+        Suresh Siddha <suresh.b.siddha@intel.com>,
+        Cyrill Gorcunov <gorcunov@openvz.org>, Yinghai Lu <yinghai@kernel.org>
+Subject: Re: [PATCH 2/3] x86: x2apic/cluster: Make use of lowest priority
+ delivery mode
+Message-ID: <20120521093648.GC28930@dhcp-26-207.brq.redhat.com>
+References: <20120518102640.GB31517@dhcp-26-207.brq.redhat.com>
+ <20120521082240.GA31407@gmail.com>
 MIME-Version: 1.0
-To: Yanfei Zhang <zhangyanfei@cn.fujitsu.com>
-CC: mtosatti@redhat.com, ebiederm@xmission.com, luto@mit.edu,
-        Joerg Roedel <joerg.roedel@amd.com>, dzickus@redhat.com,
-        paul.gortmaker@windriver.com, ludwig.nussel@suse.de,
-        linux-kernel@vger.kernel.org, kvm@vger.kernel.org,
-        kexec@lists.infradead.org, Greg KH <gregkh@linuxfoundation.org>
-Subject: Re: [PATCH v2 0/5] Export offsets of VMCS fields as note information
- for kdump
-References: <4FB35C48.30708@cn.fujitsu.com> <4FB92D5A.3060507@redhat.com> <4FB9A92D.7050108@cn.fujitsu.com> <4FB9FE08.4050905@redhat.com> <4FBA05F6.8070804@cn.fujitsu.com>
-In-Reply-To: <4FBA05F6.8070804@cn.fujitsu.com>
-Content-Type: text/plain; charset=GB2312
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120521082240.GA31407@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/21/2012 12:08 PM, Yanfei Zhang wrote:
-> 于 2012年05月21日 16:34, Avi Kivity 写道:
-> > On 05/21/2012 05:32 AM, Yanfei Zhang wrote:
-> >> 于 2012年05月21日 01:43, Avi Kivity 写道:
-> >>> On 05/16/2012 10:50 AM, zhangyanfei wrote:
-> >>>> This patch set exports offsets of VMCS fields as note information for
-> >>>> kdump. We call it VMCSINFO. The purpose of VMCSINFO is to retrieve
-> >>>> runtime state of guest machine image, such as registers, in host
-> >>>> machine's crash dump as VMCS format. The problem is that VMCS internal
-> >>>> is hidden by Intel in its specification. So, we slove this problem
-> >>>> by reverse engineering implemented in this patch set. The VMCSINFO
-> >>>> is exported via sysfs to kexec-tools just like VMCOREINFO.
-> >>>>
-> >>>> Here are two usercases for two features that we want.
-> >>>>
-> >>>> 1) Create guest machine's crash dumpfile from host machine's crash dumpfile
-> >>>>
-> >>>> In general, we want to use this feature on failure analysis for the system
-> >>>> where the processing depends on the communication between host and guest
-> >>>> machines to look into the system from both machines's viewpoints.
-> >>>>
-> >>>> As a concrete situation, consider where there's heartbeat monitoring
-> >>>> feature on the guest machine's side, where we need to determine in
-> >>>> which machine side the cause of heartbeat stop lies. In our actual
-> >>>> experiments, we encountered such situation and we found the cause of
-> >>>> the bug was in host's process schedular so guest machine's vcpu stopped
-> >>>> for a long time and then led to heartbeat stop.
-> >>>>
-> >>>> The module that judges heartbeat stop is on guest machine, so we need
-> >>>> to debug guest machine's data. But if the cause lies in host machine
-> >>>> side, we need to look into host machine's crash dump.
-> >>>
-> >>> Do you mean, that a heartbeat failure in the guest lead to host panic?
-> >>>
-> >>> My expectation is that a problem in the guest will cause the guest to
-> >>> panic and perhaps produce a dump; the host will remain up.
-> >>>
-> >>
-> >> The point is that before our investigation, we didn't know which side 
-> >> leads to this buggy situation. Maybe a bug in host machine or the guest
-> >> machine itself causes a heartbeat failure.
+On Mon, May 21, 2012 at 10:22:40AM +0200, Ingo Molnar wrote:
+> 
+> * Alexander Gordeev <agordeev@redhat.com> wrote:
+> 
+> > Currently x2APIC in logical destination mode delivers 
+> > interrupts to a single CPU, no matter how many CPUs were 
+> > specified in the destination cpumask.
 > > 
-> > How can a guest bug cause a host panic?
+> > This fix enables delivery of interrupts to multiple CPUs by 
+> > bit-ORing Logical IDs of destination CPUs that have matching 
+> > Cluster ID.
 > > 
-> >> So we want to get both host machine's crash dump and guest machine's
-> >> crash dump *at the same time*. Then we could use userspace tools to
-> >> get guest machine crash dump from host machine's and analyse them
-> >> separately to find which side causes the problem.
-> >>
-> > 
-> > If the guest caused the problem, there would be no panic; therefore
-> > there was a host bug.
-> > 
->
-> Yes, a guest bug cannot cause a host panic. When heartbeat stops in guest
-> machine, we could trigger the host dump mechanism to work. This is because
-> we want to get the status of both host and guest machine at the same time
-> when heartbeat stops in guest machine. Then we can look for bug reasons
-> from both host machine's and guest machine's views.
+> > Because only one cluster could be specified in a message 
+> > destination address, the destination cpumask is tried for a 
+> > cluster that contains maximum number of CPUs matching this 
+> > cpumask. The CPUs in this cluster are selected to receive the 
+> > interrupts while all other CPUs (in the cpumask) are ignored.
+> 
+> I'm wondering how you tested this. AFAICS current irqbalanced 
+> will create masks but on x2apic only the first CPU is targeted 
+> by the kernel.
 
-That sounds like a bad idea. Can you explain in what situation it makes
-sense for a guest to stop the host (and all other guests running on it)
-rather than just restarting the failed services (on the host or other
-guests)?
+Right, that is what this patch is intended to change. So I use:
+'hwclock --test' to generate rtc interruts
+/proc/interrupts to check where/how many interrupts were delevired
+/proc/irq/8/smp_affinity to check how clusters are chosen
 
-> >>>> Without this feature, we first create guest machine's dump and then
-> >>>> create host mahine's, but there's only a short time between two
-> >>>> processings, during which it's unlikely that buggy situation remains.
-> >>>>
-> >>>> So, we think the feature is useful to debug both guest machine's and
-> >>>> host machine's sides at the same time, and expect we can make failure
-> >>>> analysis efficiently.
-> >>>>
-> >>>> Of course, we believe this feature is commonly useful on the situation
-> >>>> where guest machine doesn't work well due to something of host machine's.
-> >>>>
-> >>>> 2) Get offsets of VMCS information on the CPU running on the host machine
-> >>>>
-> >>>> If kdump doesn't work well, then it means we cannot use kvm API to get
-> >>>> register values of guest machine and they are still left on its vmcs
-> >>>> region. In the case, we use crash dump mechanism running outside of
-> >>>> linux kernel, such as sadump, a firmware-based crash dump. Then VMCS
-> >>>> information is then necessary.
-> >>>
-> >>> Shouldn't sadump then expose the VMCS offsets? Perhaps bundling them
-> >>> into its dump file?
-> >>>
-> >>
-> >> Firmware-based crash dump doesn't concern the os running on the machine.
-> >> So it will not do any os handling when machine crashes.
-> > 
-> > Seems to me the VMCS offsets are OS independent.
-> > 
-> Hmm, you mean we could get VMCS offsets in sadump itself?
-> But I think if we just export VMCS offsets in kernel, we could use the current
-> existing dump tools with no or just very tiny change. I think this could be
-> a more general mechanism than making changes in all kinds of dump tools.
+> So, in theory, prior the patch you should be seeing irqs go to 
+> only one CPU, while after the patch they are spread out amongst 
+> the CPU. If it's using LowestPrio delivery then we depend on the 
+> hardware doing this for us - how does this work out in practice, 
+> are the target CPUs round-robin-ed, with a new CPU for every new 
+> IRQ delivered?
 
-The sadump tool generates a core file with the OS image, right? Can it
-not attach the offsets to a note, just like you propose for kdump?
+
+That is exactly what I can observe.
+
+As of 'target CPUs round-robin-ed' and 'with a new CPU for every new IRQ
+delivered' -- that is something we can not control as you noted. Nor do we
+care to my understanding.
+
+I can not commit on every h/w out there obviously, but on my PowerEdge M910
+with some half-dozen clusters with six CPU per each, the interrupts are
+perfectly balanced among those ones present in IRTEs.
+
+
+> Thanks,
+> 
+> 	Ingo
 
 -- 
-error compiling committee.c: too many arguments to function
-
+Regards,
+Alexander Gordeev
+agordeev@redhat.com
