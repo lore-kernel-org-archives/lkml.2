@@ -1,145 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752208Ab2EUPVn (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 May 2012 11:21:43 -0400
-Received: from charybdis-ext.suse.de ([195.135.221.2]:56358 "EHLO
-	nat.nue.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751484Ab2EUPVl (ORCPT
+	id S1752376Ab2EUPVv (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 May 2012 11:21:51 -0400
+Received: from mail-ey0-f174.google.com ([209.85.215.174]:47288 "EHLO
+	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752282Ab2EUPVs convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 May 2012 11:21:41 -0400
-Subject: Re: [PATCH 2/2] drivers-platform-x86: use
- acpi_video_dmi_promote_vendor()
-From: joeyli <jlee@suse.com>
-To: Corentin Chary <corentin.chary@gmail.com>
-Cc: Len Brown <lenb@kernel.org>, Richard Purdie <rpurdie@rpsys.net>,
-        platform-driver-x86@vger.kernel.org, linux-acpi@vger.kernel.org,
-        Zhang Rui <rui.zhang@intel.com>, Joey Lee <jlee@novell.com>,
-        Matthew Garrett <mjg@redhat.com>,
-        Corentin Chary <corentincj@iksaif.net>, linux-kernel@vger.kernel.org
-In-Reply-To: <1337585027-4828-2-git-send-email-corentin.chary@gmail.com>
-References: <1337585027-4828-1-git-send-email-corentin.chary@gmail.com>
-	 <1337585027-4828-2-git-send-email-corentin.chary@gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Mon, 21 May 2012 23:17:35 +0800
-Message-ID: <1337613455.9751.222.camel@linux-s257.site>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.2 
-Content-Transfer-Encoding: 8bit
+	Mon, 21 May 2012 11:21:48 -0400
+MIME-Version: 1.0
+In-Reply-To: <CAK=WgbaUuCNS_cuk5-VNBXUT+op5m_BxfnwNoT=CtE86zPLt+A@mail.gmail.com>
+References: <1335388200-18504-1-git-send-email-sjur.brandeland@stericsson.com>
+	<CAK=WgbYisX2A-DHZy6-AhFFTR3QuxJ0OcVaz+JcpzJOwxT3eWA@mail.gmail.com>
+	<81C3A93C17462B4BBD7E272753C10579232F20847B@EXDCVYMBSTM005.EQ1STM.local>
+	<CAK=WgbY8RpOfZT5qNtFKOHoE5TD9s7JeqGvXadaXoZ6a7m0r4Q@mail.gmail.com>
+	<CAK=WgbaUuCNS_cuk5-VNBXUT+op5m_BxfnwNoT=CtE86zPLt+A@mail.gmail.com>
+Date: Mon, 21 May 2012 17:21:46 +0200
+Message-ID: <CAJK669bMZ1FKJbG6nh_rpm6EELAPDXQgxzck0JqtJ16TFf-bmA@mail.gmail.com>
+Subject: Re: Remoteproc adaptations for ST-Ericsson modems
+From: =?UTF-8?Q?Sjur_Br=C3=A6ndeland?= <sjurbren@gmail.com>
+To: Ohad Ben-Cohen <ohad@wizery.com>
+Cc: Loic PALLARDY <loic.pallardy@stericsson.com>,
+        Ludovic BARRE <ludovic.barre@stericsson.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Arnd Bergmann <arnd@arndb.de>,
+        Linus Walleij <linus.walleij@linaro.org>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-於 一，2012-05-21 於 09:23 +0200，Corentin Chary 提到：
-> Instead of using directly acpi_video_unregister(), use
-> acpi_video_dmi_promote_vendor() (and make it call
-> acpi_video_unregister() if needed)
-> 
-> Signed-off-by: Corentin Chary <corentin.chary@gmail.com>
-> ---
->  drivers/platform/x86/acer-wmi.c       |   11 ++++-------
->  drivers/platform/x86/apple-gmux.c     |    2 ++
->  drivers/platform/x86/samsung-laptop.c |   22 ++++++++++++----------
->  3 files changed, 18 insertions(+), 17 deletions(-)
-> 
-> diff --git a/drivers/platform/x86/acer-wmi.c b/drivers/platform/x86/acer-wmi.c
-> index c1a3fd8..a3f2f1b 100644
-> --- a/drivers/platform/x86/acer-wmi.c
-> +++ b/drivers/platform/x86/acer-wmi.c
-> @@ -2036,14 +2036,11 @@ static int __init acer_wmi_init(void)
->  
->  	set_quirks();
->  
-> +	if (dmi_check_system(video_vendor_dmi_table))
-> +		acpi_video_dmi_promote_vendor();
->  	if (acpi_video_backlight_support()) {
-> -		if (dmi_check_system(video_vendor_dmi_table)) {
-> -			acpi_video_unregister();
-> -		} else {
-> -			interface->capability &= ~ACER_CAP_BRIGHTNESS;
-> -			pr_info("Brightness must be controlled by "
-> -				"acpi video driver\n");
-> -		}
-> +		interface->capability &= ~ACER_CAP_BRIGHTNESS;
-> +		pr_info("Brightness must be controlled by acpi video driver\n");
->  	}
->  
->  	if (wmi_has_guid(WMID_GUID3)) {
+> Can you please check if the below helps ? this will also protects
+> against premature invocation of rproc_get_by_name().
+
+Sure this works for me. If you like you can add:
+Tested-by: Sjur Brændeland <sjur.brandeland@stericsson.com>
+
+But, are you sure you don't want to do use wait_for_completion_timeout()
+so you don't risk to block the clients if firmware loading fails?
 
 
-Acked-by: Lee, Chun-Yi <jlee@suse.com>
+For reference the crach without this patch looks like this:
+------------[ cut here ]------------
+WARNING: at fs/sysfs/dir.c:508 sysfs_add_one+0xb9/0xd4()
+sysfs: cannot create duplicate filename '/devices/platform/foo.1/firmware/foo'
+Modules linked in: virtio_rpmsg_bus remoteproc virtio_ring virtio
+Call Trace:
+6316f928:  [<6003536e>] warn_slowpath_common+0x86/0xb0
+6316f958:  [<60189e2a>] strcat+0x0/0x28
+6316f978:  [<600354d6>] warn_slowpath_fmt+0x94/0x96
+6316f9a8:  [<6018505a>] ida_get_new_above+0x119/0x1dc
+6316f9c0:  [<60035442>] warn_slowpath_fmt+0x0/0x96
+6316f9d8:  [<60102c49>] sysfs_pathname+0x4f/0x57
+6316f9f8:  [<60102c49>] sysfs_pathname+0x4f/0x57
+6316fa18:  [<60102c49>] sysfs_pathname+0x4f/0x57
+6316fa38:  [<60102c49>] sysfs_pathname+0x4f/0x57
+6316fa58:  [<60103407>] sysfs_add_one+0xb9/0xd4
+6316fa88:  [<6010366e>] create_dir+0x89/0xd9
+6316fae8:  [<60103af6>] sysfs_create_dir+0x141/0x15f
+6316faf8:  [<6018bc35>] vsnprintf+0x212/0x48b
+6316fb08:  [<60185a01>] kobject_get+0x0/0x3a
+6316fb28:  [<60185c87>] kobject_add_internal+0xe1/0x24b
+6316fb68:  [<60186332>] kobject_add+0x110/0x124
+6316fba8:  [<60186222>] kobject_add+0x0/0x124
+6316fbc0:  [<6002c0f7>] unblock_signals+0x0/0x82
+6316fbe8:  [<6002c2b7>] set_signals+0x29/0x3f
+6316fbf0:  [<6002c0f7>] unblock_signals+0x0/0x82
+6316fc18:  [<600a639b>] kmem_cache_alloc+0x9f/0xab
+6316fc38:  [<6019ff09>] get_device_parent+0x1e0/0x210
+6316fc68:  [<601a162d>] device_add+0x11e/0x6dd
+6316fc90:  [<60053f82>] up_read+0x0/0x18
+6316fc98:  [<600502f4>] prepare_to_wait+0x0/0x8d
+6316fcd8:  [<601a879f>] _request_firmware_load+0x40/0x239
+6316fd18:  [<601a93ae>] request_firmware+0xb5/0x107
+6316fd48:  [<6006954a>] try_module_get+0x0/0x20
+6316fd58:  [<6388ecab>] rproc_boot+0x141/0x3e2 [remoteproc]
 
 
-Thanks a lot!
-Joey Lee
-
-> diff --git a/drivers/platform/x86/apple-gmux.c b/drivers/platform/x86/apple-gmux.c
-> index 6dcef4f..39e047d 100644
-> --- a/drivers/platform/x86/apple-gmux.c
-> +++ b/drivers/platform/x86/apple-gmux.c
-> @@ -193,6 +193,7 @@ static int __devinit gmux_probe(struct pnp_dev *pnp,
->  	 * backlight control and supports more levels than other options.
->  	 * Disable the other backlight choices.
->  	 */
-> +	acpi_video_dmi_promote_vendor();
->  	acpi_video_unregister();
->  	apple_bl_unregister();
->  
-> @@ -213,6 +214,7 @@ static void __devexit gmux_remove(struct pnp_dev *pnp)
->  	release_region(gmux_data->iostart, gmux_data->iolen);
->  	kfree(gmux_data);
->  
-> +	acpi_video_dmi_demote_vendor();
->  	acpi_video_register();
->  	apple_bl_register();
->  }
-> diff --git a/drivers/platform/x86/samsung-laptop.c b/drivers/platform/x86/samsung-laptop.c
-> index e2a34b4..2cbccc1 100644
-> --- a/drivers/platform/x86/samsung-laptop.c
-> +++ b/drivers/platform/x86/samsung-laptop.c
-> @@ -26,7 +26,7 @@
->  #include <linux/seq_file.h>
->  #include <linux/debugfs.h>
->  #include <linux/ctype.h>
-> -#if (defined CONFIG_ACPI_VIDEO || defined CONFIG_ACPI_VIDEO_MODULE)
-> +#ifdef CONFIG_ACPI_VIDEO
->  #include <acpi/video.h>
->  #endif
->  
-> @@ -1530,15 +1530,18 @@ static int __init samsung_init(void)
->  	samsung->quirks = quirks;
->  
-> 
-> -#if (defined CONFIG_ACPI_VIDEO || defined CONFIG_ACPI_VIDEO_MODULE)
-> +#ifdef CONFIG_ACPI
-> +	if (samsung->quirks->broken_acpi_video)
-> +		acpi_video_dmi_promote_vendor();
-> +
->  	/* Don't handle backlight here if the acpi video already handle it */
->  	if (acpi_video_backlight_support()) {
-> -		if (samsung->quirks->broken_acpi_video) {
-> -			pr_info("Disabling ACPI video driver\n");
-> -			acpi_video_unregister();
-> -		} else {
-> -			samsung->handle_backlight = false;
-> -		}
-> +		samsung->handle_backlight = false;
-> +	} else if (samsung->quirks->broken_acpi_video) {
-> +		pr_info("Disabling ACPI video driver\n");
-> +#ifdef CONFIG_ACPI_VIDEO
-> +		acpi_video_unregister();
-> +#endif
->  	}
->  #endif
->  
-> @@ -1552,8 +1555,7 @@ static int __init samsung_init(void)
->  
->  #ifdef CONFIG_ACPI
->  	/* Only log that if we are really on a sabi platform */
-> -	if (acpi_video_backlight_support() &&
-> -	    !samsung->quirks->broken_acpi_video)
-> +	if (acpi_video_backlight_support())
->  		pr_info("Backlight controlled by ACPI video driver\n");
->  #endif
->  
-
-
+Regards,
+Sjur
