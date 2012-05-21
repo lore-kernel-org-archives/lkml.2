@@ -1,79 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758106Ab2EUR2m (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 May 2012 13:28:42 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:20636 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758004Ab2EUR2g (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 May 2012 13:28:36 -0400
-Date: Mon, 21 May 2012 19:01:35 +0200
-From: Oleg Nesterov <oleg@redhat.com>
-To: Boaz Harrosh <bharrosh@panasas.com>
-Cc: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>, rusty@rustcorp.com.au,
-        akpm@linux-foundation.org, torvalds@linux-foundation.org,
-        tj@kernel.org, linux-kernel@vger.kernel.org
-Subject: call_usermodehelper && check_hung_uninterruptible_tasks
-Message-ID: <20120521170135.GA31803@redhat.com>
-References: <4F6A93F5.1070202@panasas.com> <201203241028.IGJ09825.MtOVFHFJQSLOFO@I-love.SAKURA.ne.jp> <4F6D35F0.2020808@panasas.com> <20120323200028.fadf49f8.akpm@linux-foundation.org> <20120324145308.GA10023@redhat.com> <201205191121.BIF57837.FHFOtMOLJQSOFV@I-love.SAKURA.ne.jp> <4FB7170F.7070807@panasas.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4FB7170F.7070807@panasas.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+	id S1757998Ab2EUR36 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 May 2012 13:29:58 -0400
+Received: from perches-mx.perches.com ([206.117.179.246]:36510 "EHLO
+	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1757356Ab2EUR35 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 21 May 2012 13:29:57 -0400
+Message-ID: <1337621394.13812.2.camel@joe2Laptop>
+Subject: Re: [tip:x86/urgent] x86, printk: Add missing KERN_CONT to NMI
+ selftest
+From: Joe Perches <joe@perches.com>
+To: mingo@kernel.org, hpa@zytor.com, levinsasha928@gmail.com,
+        linux-kernel@vger.kernel.org, tglx@linutronix.de
+Cc: linux-tip-commits@vger.kernel.org
+Date: Mon, 21 May 2012 10:29:54 -0700
+In-Reply-To: <tip-29d679ffd850ea37a303bb930142be14982611e4@git.kernel.org>
+References: <1336492573-17530-3-git-send-email-levinsasha928@gmail.com>
+	 <tip-29d679ffd850ea37a303bb930142be14982611e4@git.kernel.org>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.2- 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(change subject, add lkml)
+On Mon, 2012-05-21 at 10:25 -0700, tip-bot for Sasha Levin wrote:
+> Commit-ID:  29d679ffd850ea37a303bb930142be14982611e4
+> Gitweb:     http://git.kernel.org/tip/29d679ffd850ea37a303bb930142be14982611e4
+> Author:     Sasha Levin <levinsasha928@gmail.com>
+> AuthorDate: Tue, 8 May 2012 17:56:12 +0200
+> Committer:  H. Peter Anvin <hpa@zytor.com>
+> CommitDate: Mon, 21 May 2012 10:13:04 -0700
+> 
+> x86, printk: Add missing KERN_CONT to NMI selftest
+> 
+> Fix this behaviour:
+> 
+> ----------------
+> | NMI testsuite:
+> --------------------
+>   remote IPI:
+>   ok  |
+> 
+>    local IPI:
+>   ok  |
+> 
+> Revealed due to a new modification to printk().
+> 
+> Signed-off-by: Sasha Levin <levinsasha928@gmail.com>
+> Link: http://lkml.kernel.org/r/1336492573-17530-3-git-send-email-levinsasha928@gmail.com
+> Signed-off-by: H. Peter Anvin <hpa@zytor.com>
+> ---
+>  arch/x86/kernel/nmi_selftest.c |   12 ++++++------
+>  1 files changed, 6 insertions(+), 6 deletions(-)
+> 
+> diff --git a/arch/x86/kernel/nmi_selftest.c b/arch/x86/kernel/nmi_selftest.c
+> index 2c39dcd..9f11dd3 100644
+> --- a/arch/x86/kernel/nmi_selftest.c
+> +++ b/arch/x86/kernel/nmi_selftest.c
+> @@ -117,15 +117,15 @@ static void __init dotest(void (*testcase_fn)(void), int expected)
+>  		unexpected_testcase_failures++;
+>  
+>  		if (nmi_fail == FAILURE)
+> -			printk("FAILED |");
+> +			printk(KERN_CONT "FAILED |");
+>  		else if (nmi_fail == TIMEOUT)
+> -			printk("TIMEOUT|");
+> +			printk(KERN_CONT "TIMEOUT|");
+>  		else
+> -			printk("ERROR  |");
+> +			printk(KERN_CONT "ERROR  |");
+>  		dump_stack();
+>  	} else {
+>  		testcase_successes++;
+> -		printk("  ok  |");
+> +		printk(KERN_CONT "  ok  |");
+>  	}
+>  	testcase_total++;
+>  
+> @@ -150,10 +150,10 @@ void __init nmi_selftest(void)
+>  
+>  	print_testname("remote IPI");
+>  	dotest(remote_ipi, SUCCESS);
+> -	printk("\n");
+> +	printk(KERN_CONT "\n");
+>  	print_testname("local IPI");
+>  	dotest(local_ipi, SUCCESS);
+> -	printk("\n");
+> +	printk(KERN_CONT "\n");
+>  
+>  	cleanup_nmi_testsuite();
 
-On 05/19, Boaz Harrosh wrote:
->
-> On 05/19/2012 05:21 AM, Tetsuo Handa wrote:
->
-> > By the way, when considering whether we want call_usermodehelper_timeout()
-> > or not, maybe we also want to consider below hung check timer topic.
-> >
-> > I noticed that a task waiting for call_usermodehelper(UMH_WAIT_PROC) to return
-> > is subjected to hung check timer. call_usermodehelper(UMH_WAIT_PROC) would
-> > normally return within few seconds, but it can take longer than
-> > hung_task_timeout_secs if the usermode helper is waiting for (e.g.) user's
-> > input. Should hung check timer warn this situation?
-> >
->
->
-> The fix depends on if we want to enable usermodehelper to wait for user-input ?
-> 	we will need to silence the hung check timer
+I believe this change is no longer required.
+Kay's printk modifications have been updated.
 
-tomoyo_load_policy() can use call_usermodehelper(UMH_WAIT_PROC | UMH_KILLABLE),
-this should also silence the hung check.
+It's somewhat useful, but the commit message
+but not the commit subject is untrue.
 
-
-But there is another problem, wait_for_completion/wait_for_completion_killable
-are not freezer-friendly. Perhaps something like the patch below? Just in case,
-it should silence check_hung_uninterruptible_tasks() as well.
-
-Oleg.
-
---- x/kernel/kmod.c
-+++ x/kernel/kmod.c
-@@ -557,7 +557,9 @@ int call_usermodehelper_exec(struct subp
- 		goto unlock;
- 
- 	if (wait & UMH_KILLABLE) {
-+		freezer_do_not_count();
- 		retval = wait_for_completion_killable(&done);
-+		freezer_count();
- 		if (!retval)
- 			goto wait_done;
- 
-@@ -567,7 +569,9 @@ int call_usermodehelper_exec(struct subp
- 		/* fallthrough, umh_complete() was already called */
- 	}
- 
-+	freezer_do_not_count();
- 	wait_for_completion(&done);
-+	freezer_count();
- wait_done:
- 	retval = sub_info->retval;
- out:
 
