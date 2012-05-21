@@ -1,55 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933195Ab2EUSX5 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 May 2012 14:23:57 -0400
-Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:58257 "EHLO
-	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758074Ab2EUSX4 (ORCPT
+	id S933488Ab2EUSYH (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 May 2012 14:24:07 -0400
+Received: from smtp.snhosting.dk ([87.238.248.203]:59830 "EHLO
+	smtp.domainteam.dk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933438Ab2EUSYC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 May 2012 14:23:56 -0400
-Message-ID: <4FBA8829.3010800@jp.fujitsu.com>
-Date: Mon, 21 May 2012 14:23:37 -0400
-From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:12.0) Gecko/20120428 Thunderbird/12.0.1
+	Mon, 21 May 2012 14:24:02 -0400
+Date: Mon, 21 May 2012 20:24:00 +0200
+From: Sam Ravnborg <sam@ravnborg.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: David Miller <davem@davemloft.net>, akpm@linux-foundation.org,
+        sparclinux@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [GIT] Sparc
+Message-ID: <20120521182400.GA6043@merkur.ravnborg.org>
+References: <20120521.050300.1434374935904126254.davem@davemloft.net> <CA+55aFzag=LfduvHSmE34nEVYOk=MRhUMzK854+icLwthmz5Ng@mail.gmail.com>
 MIME-Version: 1.0
-To: dave@linux.vnet.ibm.com
-CC: cl@linux.com, linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        aarcange@redhat.com, kosaki.motohiro@jp.fujitsu.com, hughd@google.com,
-        rientjes@google.com, adobriyan@gmail.com, akpm@linux-foundation.org,
-        mel@csn.ul.ie
-Subject: Re: [RFC][PATCH] hugetlb: fix resv_map leak in error path
-References: <20120518184630.FF3307BD@kernel>
-In-Reply-To: <20120518184630.FF3307BD@kernel>
-Content-Type: text/plain; charset=ISO-2022-JP
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <CA+55aFzag=LfduvHSmE34nEVYOk=MRhUMzK854+icLwthmz5Ng@mail.gmail.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 5/18/2012 2:46 PM, Dave Hansen wrote:
-> When called for anonymous (non-shared) mappings,
-> hugetlb_reserve_pages() does a resv_map_alloc().  It depends on
-> code in hugetlbfs's vm_ops->close() to release that allocation.
+On Mon, May 21, 2012 at 10:37:23AM -0700, Linus Torvalds wrote:
+> On Mon, May 21, 2012 at 2:03 AM, David Miller <davem@davemloft.net> wrote:
+> >
+> > There is going to be a merge conflict between the commit in the
+> > net-next tree that adds the Sparc BPF JIT, and the one in here which
+> > adds arch/sparc/Kbuild.  It should be quite easy to resolve.
 > 
-> However, in the mmap() failure path, we do a plain unmap_region()
-> without the remove_vma() which actually calls vm_ops->close().
+> Ok, so that had a very obvious resolution, and a "cleaner, but scarier" version.
 > 
-> This is a decent fix.  This leak could get reintroduced if
-> new code (say, after hugetlb_reserve_pages() in
-> hugetlbfs_file_mmap()) decides to return an error.  But, I think
-> it would have to unroll the reservation anyway.
-> 
-> This hasn't been extensively tested.  Pretty much compile and
-> boot tested along with Christoph's test case.
-> 
-> Comments?
-> 
-> 
-> Signed-off-by: Dave Hansen <dave@linux.vnet.ibm.com>
-> ---
+> I picked the cleaner but scarier one - the one that should make the
+> BFP JIT be built when you do "make arch/sparc" by putting the net
+> thing into the new arch/sparc/Kbuild file.
+OK.
 
-I don't think this is cleaner fix. but I also think we should fix the leak
-asap. so Let's simple fix first.
+> 
+> I did minimal testing with "make ARCH=sparc" without actually
+> *building* anything, and in the process also fixed the fact that you
+> should not select HAVE_BPF_JIT unless networking is enabled (crappy
+> interface - maybe that "if NET" part really should be in the
+> HAVE_BPF_JIT rules, not in all the architectures?)
 
-Acked-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+HAVE_BPF_JIT is only used to make the BPF_JIT prompt visible.
+And BPF_JIT depends on NET.
 
+So the "if NET" part in the select is redundant but not strictly wrong.
+
+	Sam
