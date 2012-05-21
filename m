@@ -1,77 +1,122 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759454Ab2EUWuT (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 May 2012 18:50:19 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:20060 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754228Ab2EUWuR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 May 2012 18:50:17 -0400
-Date: Tue, 22 May 2012 01:50:12 +0300
-From: "Michael S. Tsirkin" <mst@redhat.com>
-To: Thomas Gleixner <tglx@linutronix.de>
-Cc: kvm@vger.kernel.org, Avi Kivity <avi@redhat.com>,
-        Marcelo Tosatti <mtosatti@redhat.com>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, x86@kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] kvm: optimize ISR lookups
-Message-ID: <20120521225010.GN17031@redhat.com>
-References: <20120521163727.GA13337@redhat.com>
- <alpine.LFD.2.02.1205211940030.3231@ionos>
- <20120521215127.GH17031@redhat.com>
- <alpine.LFD.2.02.1205220012020.3231@ionos>
- <20120521222449.GJ17031@redhat.com>
- <alpine.LFD.2.02.1205220029480.3231@ionos>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.LFD.2.02.1205220029480.3231@ionos>
+	id S932502Ab2EUWuj (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 May 2012 18:50:39 -0400
+Received: from mail-gg0-f174.google.com ([209.85.161.174]:54067 "EHLO
+	mail-gg0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932312Ab2EUWug (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 21 May 2012 18:50:36 -0400
+From: Robert Lee <rob.lee@linaro.org>
+To: kernel@pengutronix.de
+Cc: shawn.guo@linaro.org, u.kleine-koenig@pengutronix.de,
+        richard.zhao@freescale.com, amit.kucheria@linaro.org,
+        daniel.lezcano@linaro.org, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org, linaro-dev@lists.linaro.org,
+        patches@linaro.org, jj@chaosbits.net
+Subject: [PATCH v5 0/7] cleanup imx5 idle, add imx5/6 cpuidle
+Date: Mon, 21 May 2012 17:50:23 -0500
+Message-Id: <1337640630-29176-1-git-send-email-rob.lee@linaro.org>
+X-Mailer: git-send-email 1.7.10
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, May 22, 2012 at 12:44:39AM +0200, Thomas Gleixner wrote:
-> Michael,
-> 
-> On Tue, 22 May 2012, Michael S. Tsirkin wrote:
-> > On Tue, May 22, 2012 at 12:14:18AM +0200, Thomas Gleixner wrote:
-> > > On Tue, 22 May 2012, Michael S. Tsirkin wrote:
-> > > 
-> > > > On Mon, May 21, 2012 at 11:04:25PM +0200, Thomas Gleixner wrote:
-> > > > > > @@ -242,6 +262,25 @@ static inline void apic_clear_irr(int vec, struct kvm_lapic *apic)
-> > > > > >  		apic->irr_pending = true;
-> > > > > >  }
-> > > > > >  
-> > > > > > +static inline void apic_set_isr(int vec, struct kvm_lapic *apic)
-> > > > > > +{
-> > > > > > +	if (!__apic_test_and_set_vector(vec, apic->regs + APIC_ISR))
-> > > > > > +		++apic->isr_count;
-> > > > > > +	ASSERT(apic->isr_count > MAX_APIC_VECTOR);
-> > > > > 
-> > > > > I'm really curious what you observed when defining DEBUG in that file.
-> > > > > 
-> > > > > Clearly you never did.
-> > > > 
-> > > > Sorry :(
-> > > > Yes clearly silly, thanks for pointing this out.
-> > > 
-> > > That's all you have a reply for? That's the least of the problems ....
-> > 
-> > Others are not my fault :)
-> 
-> Interesting. The other changes you added are not your fault?
-> 
-> So you provided a patch which you didn't author completely. You merily
-> added the bogus ASSERTs, right ?
-> 
-> Can you please explain why there is only your SOB on that patch?
-> 
-> Thanks,
-> 
-> 	tglx
+Cleanup up imx5 idle code and enable imx5 low powe idle for imx53.
 
-I authored the patch, sorry if I didn't make it clear:
-the bitmap data-structure that you noted as inefficient
-is part of Linux, I merely keep it as it is upstream.
+Add common imx cpuidle initialization functionality and add a i.MX5 and i.MX6Q
+platform cpuidle implementation.
 
-I'll reply to the original mail, it's easier.
+Based on v3.4 plus recently submitted/accepted MACHINE_INIT late_initcall 
+ patch series: http://www.spinics.net/lists/arm-kernel/msg171620.html and common
+ clock patch series:
+ http://comments.gmane.org/gmane.linux.ports.arm.kernel/161043
+
+v5 changes:
+ * rebase to v3.4 plus common clock patch series
+ * various trivial changes/fixes from v4 submssion
+ * Add separate pm_init patch for imx51 and imx53
+
+v4 changes:
+ * Added several imx5 idle cleanups to series.
+ * Modified imx_io_p2v function to allow common imx5 AIPS2 bus virutal address
+ * Added comment to tzic_wakeup_enable().
+ * Movied imx5 idle code from mm-imx5.c to pm-imx5.c.
+ * Removed unnecessary time consuming code execution that ran on each idle
+   instance.
+ * modified imx5_pm_init to be a late_initcall
+ * added late_initcall to all imx53 MACHINE_START entries.
+ * enabled imx5 low power idle for imx53
+ * rebased cpuidle driver on top of imx5 cleanup changes.
+ * modified cpuidle driver exit time to reflect removal of unnecessary code
+
+http://comments.gmane.org/gmane.linux.linaro.devel/11858
+   
+
+v3 changes:
+ * removed file introduced in v1 no longer needed after v2 [per Shawn Guo]
+ * re-ordered added #includes in alphabetical order [per Shawn Guo]
+ * Remove if(!drv) check to allow handling by stack trace [per Sascha Hauer]
+ * Added missing return value in error meesage [per Shawn Guo]
+ * fixed (void *) casting problem pointed out Sasha Hauer.  Used a different
+   type of casting to properly give warning on improper casting:
+   	arm_pm_idle = (void (*)(void))imx5_idle;
+   Used this casting instead of adding a dummy caller function because
+   adding the dummy function appears to unnecessarily introduce the following
+   additional operations:
+	static void imx5_pm_idle(void)
+	{
+	  a0:	e1a0c00d 	mov	ip, sp
+	  a4:	e92dd800 	push	{fp, ip, lr, pc}
+	  a8:	e24cb004 	sub	fp, ip, #4
+		imx5_idle();
+	  ac:	ebffffd3 	bl	0 <imx5_idle>
+	}
+	  b0:	e89da800 	ldm	sp, {fp, sp, pc}
+
+http://permalink.gmane.org/gmane.linux.linaro.devel/11653
+
+v2 changes:
+ * Removed some unnecessary  spaces [per Jess Juhl]
+ * Added return value for an error message [per Sascha Hauer]
+ * Reworked init scheme to use device tree late_initcall [per Sascha and Shawn]
+ * Moved imx6q and imx5 cpuidle functionality to existing files.
+
+https://lkml.org/lkml/2012/5/1/363
+
+v1 initial submission:
+
+https://lkml.org/lkml/2012/4/16/644
+
+Robert Lee (7):
+  ARM: imx: Modify IMX_IO_P2V macro
+  ARM: imx: Add comments to tzic_enable_waker()
+  ARM: imx: clean and consolidate imx5 suspend and idle code
+  ARM: imx: Enable imx53 low power idle
+  ARM: imx: Add common imx cpuidle init functionality.
+  ARM: imx: Add imx5 cpuidle
+  ARM: imx: Add imx6q cpuidle driver
+
+ arch/arm/mach-imx/clk-imx51-imx53.c       |    2 +-
+ arch/arm/mach-imx/clock-mx51-mx53.c       |    1 +
+ arch/arm/mach-imx/imx53-dt.c              |    1 +
+ arch/arm/mach-imx/mach-imx6q.c            |   19 +++++
+ arch/arm/mach-imx/mach-mx53_ard.c         |    1 +
+ arch/arm/mach-imx/mach-mx53_evk.c         |    1 +
+ arch/arm/mach-imx/mach-mx53_loco.c        |    1 +
+ arch/arm/mach-imx/mach-mx53_smd.c         |    1 +
+ arch/arm/mach-imx/mm-imx5.c               |   26 ++-----
+ arch/arm/mach-imx/pm-imx5.c               |  111 ++++++++++++++++++++++-------
+ arch/arm/plat-mxc/Makefile                |    1 +
+ arch/arm/plat-mxc/cpuidle.c               |   80 +++++++++++++++++++++
+ arch/arm/plat-mxc/include/mach/common.h   |    6 +-
+ arch/arm/plat-mxc/include/mach/cpuidle.h  |   22 ++++++
+ arch/arm/plat-mxc/include/mach/hardware.h |   25 ++++---
+ arch/arm/plat-mxc/tzic.c                  |    4 ++
+ 16 files changed, 243 insertions(+), 59 deletions(-)
+ create mode 100644 arch/arm/plat-mxc/cpuidle.c
+ create mode 100644 arch/arm/plat-mxc/include/mach/cpuidle.h
+
+-- 
+1.7.10
 
