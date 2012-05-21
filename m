@@ -1,131 +1,150 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757500Ab2EURRV (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 May 2012 13:17:21 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:37140 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755344Ab2EURRT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 May 2012 13:17:19 -0400
-Date: Mon, 21 May 2012 13:17:06 -0400
-From: Vivek Goyal <vgoyal@redhat.com>
-To: Kent Overstreet <koverstreet@google.com>
-Cc: NeilBrown <neilb@suse.de>, axboe@kernel.dk, dm-devel@redhat.com,
-        linux-kernel@vger.kernel.org, tj@kernel.org,
-        linux-bcache@vger.kernel.org, linux-fsdevel@vger.kernel.org,
-        agk@redhat.com
-Subject: Re: [dm-devel] [PATCH 12/13] Make generic_make_request handle
- arbitrarily large bios
-Message-ID: <20120521171706.GH23993@redhat.com>
-References: <cover.1337308722.git.koverstreet@google.com>
- <1114e7019b0055fc09a54b59b36398d5c54f5e32.1337308722.git.koverstreet@google.com>
- <20120518180550.0a6cdc34@notabene.brown>
- <20120518081444.GA27205@dhcp-172-18-216-138.mtv.corp.google.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120518081444.GA27205@dhcp-172-18-216-138.mtv.corp.google.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1757778Ab2EURUg (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 May 2012 13:20:36 -0400
+Received: from mail-wg0-f42.google.com ([74.125.82.42]:50911 "EHLO
+	mail-wg0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755344Ab2EURUe (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 21 May 2012 13:20:34 -0400
+From: Ohad Ben-Cohen <ohad@wizery.com>
+To: <iommu@lists.linux-foundation.org>
+Cc: <linux-omap@vger.kernel.org>, Joerg Roedel <Joerg.Roedel@amd.com>,
+        <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
+        Ohad Ben-Cohen <ohad@wizery.com>,
+        Fernando Guzman Lugo <fernando.lugo@ti.com>
+Subject: [PATCH] iommu/core: pass a user-provided token to fault handlers
+Date: Mon, 21 May 2012 20:20:05 +0300
+Message-Id: <1337620805-30217-1-git-send-email-ohad@wizery.com>
+X-Mailer: git-send-email 1.7.5.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, May 18, 2012 at 04:14:44AM -0400, Kent Overstreet wrote:
-> On Fri, May 18, 2012 at 06:05:50PM +1000, NeilBrown wrote:
-> > 
-> > Hi Kent,
-> >  there is lots of good stuff in this series and I certainly hope a lot of it
-> >  can eventually go upstream.
-> > 
-> >  However there is a part of this patch that I don't think is safe:
-> > 
-> > 
-> > > +static void __bio_submit_split(struct closure *cl)
-> > > +{
-> > > +	struct bio_split_hook *s = container_of(cl, struct bio_split_hook, cl);
-> > > +	struct bio *bio = s->bio, *n;
-> > > +
-> > > +	do {
-> > > +		n = bio_split(bio, bio_max_sectors(bio),
-> > > +			      GFP_NOIO, s->q->bio_split);
-> > > +		if (!n)
-> > > +			continue_at(cl, __bio_submit_split, bio_split_wq);
-> > > +
-> > > +		closure_get(cl);
-> > > +		generic_make_request(n);
-> > > +	} while (n != bio);
-> > > +
-> > > +	continue_at(cl, bio_submit_split_done, NULL);
-> > > +}
-> > 
-> > Firstly a small point:  Can bio_split ever return NULL here?  I don't
-> > think it can, so there is no need to test.
-> > But if it can, then calling generic_make_request(NULL) doesn't seem like a
-> > good idea.
-> > 
-> > More significantly though::
-> >   This is called from generic_make_request which can be called recursively and
-> > enforces a tail-recursion semantic.
-> > If that generic_make_request was a recursive call, then the
-> > generic_make_request in __bio_submit_split will not start the request, but
-> > will queue the bio for later handling.  If we then call bio_split again, we
-> > could try to allocation from a mempool while we are holding one entry
-> > allocated from that pool captive.  This can deadlock.
-> > 
-> > i.e. if the original bio is so large that it needs to be split into 3 pieces,
-> > then we will try to allocate the second piece before the first piece has a
-> > chance to be released.  If this happens in enough threads to exhaust the pool
-> > (4 I think), it will deadlock.
-> > 
-> > I realise this sounds like a very unlikely case, but of course they happen.
-> > 
-> > One possible approach might be to count how many splits will be required,
-> > then have an interface to mempools so you can allocate them all at once,
-> > or block and wait.
-> 
-> Yeah, I actually thought of that (I probably should've documented it,
-> though).
-> 
-> That's why the code is checking if bio_split() returned NULL; my verison
-> of bio_split() checks if current->bio_list is non NULL, and if it is it
-> doesn't pass __GFP_WAIT to bio_alloc_bioset().
-> 
-> (I was debating whether bio_split() should do that itself or leave it up
-> to the caller. I tend to think it's too easy to accidentally screw up -
-> and not notice it - so it should be enforced by generic code. Possibly
-> the check should be moved to bio_alloc_bioset(), though.)
-> 
-> If we do get a memory allocation failure, then we just punt to workqueue
-> - continue_at() runs __bio_submit_split from the bio_split workqueue -
-> where we can safely use the mempool.
+Sometimes a single IOMMU user may have to deal with several
+different IOMMU devices (e.g. remoteproc).
 
-May be I am missing something, hence I will ask.  Is punting to workqueue
-will really solve the issue raised by Neil. 
+When an IOMMU fault happens, such users have to regain their
+context in order to deal with the fault.
 
-Due to spliting required, we will be holding some bios in the stack and
-these bios can't be submitted till further allocation from pool happens. So
-will it matter whether we are waiting for allocation in submitting process
-context or in worker thread context.
+Users can't use the private fields of neither the iommu_domain nor
+the IOMMU device, because those are already used by the IOMMU core
+and low level driver (respectively).
 
-IOW, say you have a pool of 2 bios. We allocate 1 bio (say bio A),  and submit
-it for IO (now 1 bio left in pool). Now, bio A needs to be split up, so we
-allocate bio B and submit it (pool is empty now). Now we try to submit bio
-B and this also needs to be split. There are no more free bios so we will
-wait for some to get free but none of the bios (A and B) have actually
-been submitted for IO so nothing will get freed and we have a deadlock
-(This is assuming that memory is tight enough that we are not able to do
-any allocations from the slab backing the mempool).
+This patch just simply allows users to pass a private token (most
+notably their own context pointer) to iommu_set_fault_handler(),
+and then makes sure it is provided back to the users whenever
+an IOMMU fault happens.
 
-biodoc.txt says following.
+The patch also adopts remoteproc to the new fault handling
+interface, but the real functionality using this (recovery of
+remote processors) will only be added later in a subsequent patch
+set.
 
-**************************************************************************
-The caller of bio_alloc is expected to taken certain steps to avoid
-deadlocks, e.g. avoid trying to allocate more memory from the pool while
-already holding memory obtained from the pool.
-[TBD: This is a potential issue, though a rare possibility
- in the bounce bio allocation that happens in the current code, since
- it ends up allocating a second bio from the same pool while
- holding the original bio ]
-**************************************************************************
+Cc: Fernando Guzman Lugo <fernando.lugo@ti.com>
+Signed-off-by: Ohad Ben-Cohen <ohad@wizery.com>
+---
+ drivers/iommu/iommu.c                |    5 ++++-
+ drivers/remoteproc/remoteproc_core.c |    4 ++--
+ include/linux/iommu.h                |   10 ++++++----
+ 3 files changed, 12 insertions(+), 7 deletions(-)
 
-Thanks
-Vivek
+diff --git a/drivers/iommu/iommu.c b/drivers/iommu/iommu.c
+index 2198b2d..8b9ded8 100644
+--- a/drivers/iommu/iommu.c
++++ b/drivers/iommu/iommu.c
+@@ -119,6 +119,7 @@ EXPORT_SYMBOL_GPL(iommu_present);
+  * iommu_set_fault_handler() - set a fault handler for an iommu domain
+  * @domain: iommu domain
+  * @handler: fault handler
++ * @token: user data, will be passed back to the fault handler
+  *
+  * This function should be used by IOMMU users which want to be notified
+  * whenever an IOMMU fault happens.
+@@ -127,11 +128,13 @@ EXPORT_SYMBOL_GPL(iommu_present);
+  * error code otherwise.
+  */
+ void iommu_set_fault_handler(struct iommu_domain *domain,
+-					iommu_fault_handler_t handler)
++					iommu_fault_handler_t handler,
++					void *token)
+ {
+ 	BUG_ON(!domain);
+ 
+ 	domain->handler = handler;
++	domain->handler_token = token;
+ }
+ EXPORT_SYMBOL_GPL(iommu_set_fault_handler);
+ 
+diff --git a/drivers/remoteproc/remoteproc_core.c b/drivers/remoteproc/remoteproc_core.c
+index ee15c68..f71d07e 100644
+--- a/drivers/remoteproc/remoteproc_core.c
++++ b/drivers/remoteproc/remoteproc_core.c
+@@ -78,7 +78,7 @@ typedef int (*rproc_handle_resource_t)(struct rproc *rproc, void *, int avail);
+  * the recovery of the remote processor.
+  */
+ static int rproc_iommu_fault(struct iommu_domain *domain, struct device *dev,
+-		unsigned long iova, int flags)
++		unsigned long iova, int flags, void *token)
+ {
+ 	dev_err(dev, "iommu fault: da 0x%lx flags 0x%x\n", iova, flags);
+ 
+@@ -117,7 +117,7 @@ static int rproc_enable_iommu(struct rproc *rproc)
+ 		return -ENOMEM;
+ 	}
+ 
+-	iommu_set_fault_handler(domain, rproc_iommu_fault);
++	iommu_set_fault_handler(domain, rproc_iommu_fault, rproc);
+ 
+ 	ret = iommu_attach_device(domain, dev);
+ 	if (ret) {
+diff --git a/include/linux/iommu.h b/include/linux/iommu.h
+index d937580..450293f 100644
+--- a/include/linux/iommu.h
++++ b/include/linux/iommu.h
+@@ -35,12 +35,13 @@ struct iommu_domain;
+ #define IOMMU_FAULT_WRITE	0x1
+ 
+ typedef int (*iommu_fault_handler_t)(struct iommu_domain *,
+-				struct device *, unsigned long, int);
++			struct device *, unsigned long, int, void *);
+ 
+ struct iommu_domain {
+ 	struct iommu_ops *ops;
+ 	void *priv;
+ 	iommu_fault_handler_t handler;
++	void *handler_token;
+ };
+ 
+ #define IOMMU_CAP_CACHE_COHERENCY	0x1
+@@ -95,7 +96,7 @@ extern phys_addr_t iommu_iova_to_phys(struct iommu_domain *domain,
+ extern int iommu_domain_has_cap(struct iommu_domain *domain,
+ 				unsigned long cap);
+ extern void iommu_set_fault_handler(struct iommu_domain *domain,
+-					iommu_fault_handler_t handler);
++			iommu_fault_handler_t handler, void *token);
+ extern int iommu_device_group(struct device *dev, unsigned int *groupid);
+ 
+ /**
+@@ -132,7 +133,8 @@ static inline int report_iommu_fault(struct iommu_domain *domain,
+ 	 * invoke it.
+ 	 */
+ 	if (domain->handler)
+-		ret = domain->handler(domain, dev, iova, flags);
++		ret = domain->handler(domain, dev, iova, flags,
++						domain->handler_token);
+ 
+ 	return ret;
+ }
+@@ -191,7 +193,7 @@ static inline int domain_has_cap(struct iommu_domain *domain,
+ }
+ 
+ static inline void iommu_set_fault_handler(struct iommu_domain *domain,
+-					iommu_fault_handler_t handler)
++				iommu_fault_handler_t handler, void *token)
+ {
+ }
+ 
+-- 
+1.7.5.4
+
