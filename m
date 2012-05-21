@@ -1,185 +1,139 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932518Ab2EUXGb (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 May 2012 19:06:31 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:26999 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750760Ab2EUXGa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 May 2012 19:06:30 -0400
-Date: Tue, 22 May 2012 02:06:24 +0300
-From: "Michael S. Tsirkin" <mst@redhat.com>
-To: Thomas Gleixner <tglx@linutronix.de>
-Cc: kvm@vger.kernel.org, Avi Kivity <avi@redhat.com>,
-        Marcelo Tosatti <mtosatti@redhat.com>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, x86@kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] kvm: optimize ISR lookups
-Message-ID: <20120521230623.GO17031@redhat.com>
-References: <20120521163727.GA13337@redhat.com>
- <alpine.LFD.2.02.1205211940030.3231@ionos>
+	id S1758289Ab2EUXGr (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 May 2012 19:06:47 -0400
+Received: from mail.openrapids.net ([64.15.138.104]:52674 "EHLO
+	blackscsi.openrapids.net" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S932507Ab2EUXGo (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 21 May 2012 19:06:44 -0400
+Date: Mon, 21 May 2012 19:06:40 -0400
+From: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
+To: linux-kernel@vger.kernel.org, lttng-dev@lists.lttng.org,
+        rp@svcs.cs.pdx.edu
+Cc: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Lai Jiangshan <laijs@cn.fujitsu.com>,
+        Stephen Hemminger <shemminger@vyatta.com>
+Subject: [RELEASE] Userspace RCU 0.7.0
+Message-ID: <20120521230640.GA18601@Krystal>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <alpine.LFD.2.02.1205211940030.3231@ionos>
+X-Editor: vi
+X-Info: http://www.efficios.com
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, May 21, 2012 at 11:04:25PM +0200, Thomas Gleixner wrote:
-> On Mon, 21 May 2012, Michael S. Tsirkin wrote:
-> 
-> > We perform ISR lookups twice: during interrupt
-> > injection and on EOI. Typical workloads only have
-> > a single bit set there. So we can avoid ISR scans by
-> > 1. counting bits as we set/clear them in ISR
-> > 2. if count is 1, caching the vector number
-> > 3. if count != 1, invalidating the cache
-> > 
-> > The real purpose of this is enabling PV EOI
-> > which needs to quickly validate the vector.
-> > But non PV guests also benefit.
-> > 
-> > Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
-> > ---
-> >  arch/x86/kvm/lapic.c |   51 ++++++++++++++++++++++++++++++++++++++++++++++++-
-> >  arch/x86/kvm/lapic.h |    2 +
-> >  2 files changed, 51 insertions(+), 2 deletions(-)
-> > 
-> > diff --git a/arch/x86/kvm/lapic.c b/arch/x86/kvm/lapic.c
-> > index 93c1574..232950a 100644
-> > --- a/arch/x86/kvm/lapic.c
-> > +++ b/arch/x86/kvm/lapic.c
-> > @@ -107,6 +107,16 @@ static inline void apic_clear_vector(int vec, void *bitmap)
-> >  	clear_bit(VEC_POS(vec), (bitmap) + REG_POS(vec));
-> >  }
-> >  
-> > +static inline int __apic_test_and_set_vector(int vec, void *bitmap)
-> > +{
-> > +	return __test_and_set_bit(VEC_POS(vec), (bitmap) + REG_POS(vec));
-> > +}
-> > +
-> > +static inline int __apic_test_and_clear_vector(int vec, void *bitmap)
-> > +{
-> > +	return __test_and_clear_bit(VEC_POS(vec), (bitmap) + REG_POS(vec));
-> > +}
-> > +
-> >  static inline int apic_hw_enabled(struct kvm_lapic *apic)
-> >  {
-> >  	return (apic)->vcpu->arch.apic_base & MSR_IA32_APICBASE_ENABLE;
-> > @@ -210,6 +220,16 @@ static int find_highest_vector(void *bitmap)
-> >  		return fls(word[word_offset << 2]) - 1 + (word_offset << 5);
-> >  }
-> >  
-> > +static u8 count_vectors(void *bitmap)
-> > +{
-> > +	u32 *word = bitmap;
-> > +	int word_offset;
-> > +	u8 count = 0;
-> > +	for (word_offset = 0; word_offset < MAX_APIC_VECTOR >> 5; ++word_offset)
-> > +		count += hweight32(word[word_offset << 2]);
-> > +	return count;
-> > +}
-> 
-> Why do you need to reimplement bitmap_weight()?
-> 
-> Because your bitmap is not a bitmap,
+liburcu is a LGPLv2.1 userspace RCU (read-copy-update) library. This
+data synchronization library provides read-side access which scales
+linearly with the number of cores. It does so by allowing multiples
+copies of a given data structure to live at the same time, and by
+monitoring the data structure accesses to detect grace periods after
+which memory reclamation is possible.
 
-It's an existing "bitmap". It's not my bitmap :)
-
-> but a set of 32bit registers
-> which have an offset of 4 words each. I really had to twist my brain
-> around this function and the test_and_clr/set ones above just because
-> the name bitmap is so horribly misleading. Add an extra bonus for
-> using void pointers.
-> 
-> Yes, I know, the existing code is full of this, but that's not an
-> excuse to add more of it.
-
-There's no other way to use existing code. If current code
-is reworked to use bitmap.h then my patch can use it too.
+liburcu-cds (cds: concurrent data structures) provides efficient data
+containers based on RCU and lock-free algorithms. Those structures
+include hash tables, queues, stacks, and doubly-linked lists.
 
 
-> This emulation is just silly. Nothing in an emulation where the access
-> to the emulated hardware is implemented with vmexits is requiring a
-> 1:1 memory layout. It's completely irrelevant whether the hardware has
-> an ISR regs offset of 0x10 or not. Nothing prevents the emulation to
-> use a consecutive bitmap for the vector bits instead of reimplementing
-> a boatload of bitmap operations.
-> 
-> The only justification for having the same layout as the actual
-> hardware is when you are going to map the memory into the guest space,
-> which is not the case here.
+* New in this release:
 
-I think the reason is __apic_read which now simply copies the registers
-out to guest, this code will become less straight-forward if it's not
-1:1.
+The major feature added in this release is the RCU Lock-Free Resizable
+Hash Table (API: urcu/rculfhash.h). This hash table scales very well to
+many cores for updates on different keys, is cache-efficient, uses RCU
+for lookups and traversals, provides ordering guarantees for updates vs
+reads, and uniqueness guarantees for uniquify and replace operations vs
+RCU traversals. It automatically resizes when the hash chains become too
+dense. For more information, please refer to the slides of the following
+presentation: http://www.efficios.com/lpc2011-urcu . The source code
+also contains extensive explanation of the hash table architecture.
 
-> And if you look deeper, then you'll notice that _ALL_ APIC registers
-> are on a 16 byte boundary (thanks Peter for pointing that out).
-> 
-> So it's even more silly to have a 1:1 representation instead of
-> implementing the default emulated apic_read/write functions to access
-> (offset >> 2).
-> 
-> And of course, that design decision causes lookups to be slow.
-
-Yes, it might be one of the reasons why my patch helps so
-much: it adds a cache in front of this data structure.
-
-> It's
-> way faster to scan a consecutive bitmap than iterating through eight
-> 32bit words with an offset of 0x10, especially on a 64 bit host.
->
-> >  static inline int apic_test_and_set_irr(int vec, struct kvm_lapic *apic)
-> >  {
-> >  	apic->irr_pending = true;
-> > @@ -242,6 +262,25 @@ static inline void apic_clear_irr(int vec, struct kvm_lapic *apic)
-> >  		apic->irr_pending = true;
-> >  }
-> >  
-> > +static inline void apic_set_isr(int vec, struct kvm_lapic *apic)
-> > +{
-> > +	if (!__apic_test_and_set_vector(vec, apic->regs + APIC_ISR))
-> > +		++apic->isr_count;
-> > +	ASSERT(apic->isr_count > MAX_APIC_VECTOR);
-> 
-> I'm really curious what you observed when defining DEBUG in that file.
-> 
-> Clearly you never did.
-> 
-> > +	if (likely(apic->isr_count == 1))
-> > +		apic->isr_cache = vec;
-> > +	else
-> > +		apic->isr_cache = -1;
-> > +}
-> > +
-> > +static inline void apic_clear_isr(int vec, struct kvm_lapic *apic)
-> > +{
-> > +	if (__apic_test_and_clear_vector(vec, apic->regs + APIC_ISR))
-> > +		--apic->isr_count;
-> > +	ASSERT(apic->isr_count < 0);
-> 
-> Ditto.
-> 
-> >  	result = find_highest_vector(apic->regs + APIC_ISR);
-> >  	ASSERT(result == -1 || result >= 16);
-> 
-> And obviously none of the folks who added this gem bothered to define
-> DEBUG either.
-> 
-> So please instead of working around horrid design decisions and adding
-> more mess to the existing one, can we please cleanup the stuff first
-> and then decide whether it's worth to add the extra magic?
-> 
-> Thanks,
-> 
-> 	tglx
+Also new in this release: a fallback for compilers that do not support
+__thread TLS has been implemented, which should enable support for
+Android, NetBSD, Darwin, and OpenBSD. (Feedback about your experience
+with userspace RCU on those platforms is welcome. Following sufficient
+positive feedback, I will consider adding those to the list of supported
+OS in the README.)
 
 
-So what you propose is in fact to rework apic registers at least for
-ISR,IRR,TMR to use a bitmap.
-I am fine with this suggestion but would like some feedback from kvm
-maintainers on where they want to go before I spend time on that.
+Changelog:
+2012-05-21 Userspace RCU 0.7.0
+        * Cleanup: header comments coding style
+        * Document uatomic operations
+        * Update return value of "set" operations
+        * Fix mremap wrapper for NetBSD 5
+        * Use urcu/tls-compat.h
+        * Implement urcu/tls-compat.h
+        * Add TLS detection m4 macro
+        * document concurrent data structures
+        * documentation: refer to rcu-api.txt
+        * Move API.txt to doc/rcu-api.txt, install in system doc/
+        * rculfhash: document implied memory barriers
+        * rculfhash: Ensure future-proof memory barrier semantic consistency
+        * API cleanup: use "uatomic_*" in cmm_smp_mb__ API
+        * uatomic: add memory barrier API for and/or/add/sub/inc/sub
+        * rculfhash: add runhash.sh test script
+        * rculfhash tests: add missing check
+        * rculfhash: fix: race between replace and del operations
+        * rculfhash: replace unneeded rcu_dereference by CMM_LOAD_SHARED
+        * rculfhash: use do {} while (0) for dbg_printf()
+        * rculfhash: cleanup typo
+        * rculfhash: update API comments
+        * rculfhash: update comments in implementation
+        * rculfhash tests: add long hash chains tests
+        * rculfhash tests: add uniqueness test
+        * rculfhash test: print test name
+        * rculfhash: stress requirement in documentation
+        * rculfhash: fix typo
+        * rculfhash tests: use array of callbacks to modularize
+        * rculfhash tests: modularize tests
+        * rculfhash: document ordering guarantees
+        * rculfhash: document linearizability guarantees
+        * rculfhash: update removal comment
+        * Add missing files to .gitignore
+        * Fix out-of-tree build
+        * rculfhash: check malloc NULL pointer
+        * Fix uatomic sign cast
+        * Remove unused jhash.h file
+        * Fix: use known license text, fix incorrect FSF address
+        * Fix: add missing sched.h include in rculfhash.c
+        * Allow tests to run on architectures without per-cpu call_rcu support
+        * Hash table test: FreeBSD compatibility fix
+        * tests: define _GNU_SOURCE instead of __USE_GNU
+        * RCU lock-free hash table: implement cds_lfht_is_node_deleted()
+        * Define _GNU_SOURCE to access CPU_ZERO() macro in uClibc
+        * Install ChangeLog and README into system's doc
+        * Fix AC_LANG_SOURCE usage: only takes one parameter
+        * Fix autoconf futex check
+        * configure.ac: Use AC_LANG_SOURCE for if else macros
+        * Refresh autoconf files
+        * Update gitignore
+        * rculfhash: add comment about hash seed randomness within test program
+        * readme: state correct GCC dependency for ARM
+        * rculfhash: remove an invocation of bit_reverse_ulong() when adding
+        * rculfhash: remove unneeded conversion
+        * rculfhash: remove unneeded clear_flag()
+        * cds_lfht_replace: add checks for old/new node hash/value match
+        * rculfhash: use node instead of iter argument for deletion
+        * rculfhash: number of logically removed nodes should not appear in API
+        * Document that flags could be represented on 2 bits
+        * Add missing REMOVAL_OWNER_FLAG comment to cds_lfht_node comment
+        * _cds_lfht_del is not used for buckets anymore, remove parameter
+        * rculfhash: Relax atomicity guarantees required by removal operation
+        * remove unneeded "return;"
+        * simplify the deletion for bucket node
+        * Remove unneeded code
+        * Cleanup DEFINE_RCU_FLAVOR()
+        * Add cds_lfht_ prefix to fls_ulong, get_count_order_ulong, get_count_order_u32
+        * Merge RCU Lock-Free Resizable Hash Table
+
+Project website: http://lttng.org/urcu
+Download link: http://lttng.org/files/urcu/
 
 -- 
-MST
+Mathieu Desnoyers
+Operating System Efficiency R&D Consultant
+EfficiOS Inc.
+http://www.efficios.com
