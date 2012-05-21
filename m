@@ -1,83 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757431Ab2EUJPT (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 May 2012 05:15:19 -0400
-Received: from haggis.pcug.org.au ([203.10.76.10]:46619 "EHLO
-	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757360Ab2EUJPQ (ORCPT
+	id S1757437Ab2EUJQ3 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 May 2012 05:16:29 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:38466 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757320Ab2EUJQ1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 May 2012 05:15:16 -0400
-Date: Mon, 21 May 2012 19:15:08 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Ingo Molnar <mingo@kernel.org>
-Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Peter Zijlstra <peterz@infradead.org>, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: linux-next: build failure after merge of the final tree
-Message-Id: <20120521191508.9a5f6d7ea9e71fc924ba9f64@canb.auug.org.au>
-In-Reply-To: <20120521091257.GF31407@gmail.com>
-References: <20120521185412.aca92107d0a8c4fdd8474e34@canb.auug.org.au>
-	<20120521091257.GF31407@gmail.com>
-X-Mailer: Sylpheed 3.2.0beta7 (GTK+ 2.24.10; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Mon__21_May_2012_19_15_08_+1000_A5aafPaR/DTAefZf"
+	Mon, 21 May 2012 05:16:27 -0400
+Date: Mon, 21 May 2012 02:16:09 -0700
+From: tip-bot for Anna-Maria Gleixner <anna-maria@glx-um.de>
+Message-ID: <tip-60a5e4c3d3df6ec9006576935953dde6cf94f02a@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
+        geert@linux-m68k.org, tglx@linutronix.de, anna-maria@glx-um.de
+Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        geert@linux-m68k.org, tglx@linutronix.de, anna-maria@glx-um.de
+In-Reply-To: <20120518163105.808606368@glx-um.de>
+References: <20120518163105.808606368@glx-um.de>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:timers/core] m68k: Use generic time config
+Git-Commit-ID: 60a5e4c3d3df6ec9006576935953dde6cf94f02a
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
+MIME-Version: 1.0
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Mon, 21 May 2012 02:16:15 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Mon__21_May_2012_19_15_08_+1000_A5aafPaR/DTAefZf
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Commit-ID:  60a5e4c3d3df6ec9006576935953dde6cf94f02a
+Gitweb:     http://git.kernel.org/tip/60a5e4c3d3df6ec9006576935953dde6cf94f02a
+Author:     Anna-Maria Gleixner <anna-maria@glx-um.de>
+AuthorDate: Fri, 18 May 2012 16:45:49 +0000
+Committer:  Thomas Gleixner <tglx@linutronix.de>
+CommitDate: Mon, 21 May 2012 11:01:42 +0200
 
-Hi Ingo,
+m68k: Use generic time config
 
-On Mon, 21 May 2012 11:12:57 +0200 Ingo Molnar <mingo@kernel.org> wrote:
->
-> * Stephen Rothwell <sfr@canb.auug.org.au> wrote:
->=20
-> > After merging the final tree, today's linux-next build (i386 defconfig)
-> > failed like this:
-> >=20
-> > Invalid absolute R_386_32 relocation: jiffies
->=20
-> Hm, that's our fault: seems like a linker bug fallout, one which=20
-> we fixed in -tip.
->=20
-> > I am not sure what caused this (it may even been a bad merge=20
-> > on my part).  I have left it broken for today.
->=20
-> While we've fixed this, to simplify merge window integration of=20
-> linux-next I've excluded tip:x86/trampoline from the linux-next=20
-> branch for now, so this build failure should go away tomorrow.
+Signed-off-by: Anna-Maria Gleixner <anna-maria@glx-um.de>
+Cc: Geert Uytterhoeven <geert@linux-m68k.org>
+Link: http://lkml.kernel.org/r/20120518163105.808606368@glx-um.de
+Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+---
+ arch/m68k/Kconfig |    7 +------
+ 1 files changed, 1 insertions(+), 6 deletions(-)
 
-OK, thanks
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-
---Signature=_Mon__21_May_2012_19_15_08_+1000_A5aafPaR/DTAefZf
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBCAAGBQJPugecAAoJEECxmPOUX5FEuNMP/RboH1KyTCv+qMB7Jgg4GBAw
-Us75WnmaCYQObglZmtgQ6cOeUkjJ3MKh09fQ2Yle8MYVXHZ9ohrN9qIrKYrARhYs
-dn5NvW9B8qP9rMI3dd/TIor9vVOXmapxHS9FYhNGT9sLe03hD+3kWOkbCw2EP+OX
-pQcfsvspQFc7DH04m+OGREzaaWHQd98iqnQjkq4L4w1Ep7l5+kssFvhSI3xNXUJM
-ShNPv6SdcLyA+b5vp939ahhhL0qoYBK+6t/o5UH5SOFYv4R2rZhs1laWNGUikx/n
-HLKKFVSlDw51WOh2WuVAGAmxlfbk8VlLd74LJc1gSFqA8lbBe6nn4BstMQBjAvrb
-cG2eqy4unpADB5JGSsed9Rer1iSadzbtDjTjPOfIUioP6ELDAcg/Ifd2K8eNlZhO
-di0PFLrPa9M3EJ7WQmgjTTn1nLk1LenTl7zSuDkMmqzGEY0zaKmjNqqVRlRR8gHU
-QSrJkoGJ/zVRI6JA5e9fngDXgAghf2aFVZkb9p8UiUU+i+LXxkdJtl6w0VPaAZLe
-OX1nbFd7SzTdEd6d7DcaUJ4+8OKoBhSiaqr0BnBiYYZNzyjaGSaM/qNGhMxytrpK
-5yKC9J/qiL0LzpPJBqCyZPtROtUX9wUh348rNM6rJeq+uBYLIC5ODNY2Ve0Dish1
-6PFVhoiZu154urYYI7z/
-=wHRN
------END PGP SIGNATURE-----
-
---Signature=_Mon__21_May_2012_19_15_08_+1000_A5aafPaR/DTAefZf--
+diff --git a/arch/m68k/Kconfig b/arch/m68k/Kconfig
+index d318c60..2f4b0f0 100644
+--- a/arch/m68k/Kconfig
++++ b/arch/m68k/Kconfig
+@@ -8,6 +8,7 @@ config M68K
+ 	select ARCH_HAVE_NMI_SAFE_CMPXCHG if RMW_INSNS
+ 	select GENERIC_CPU_DEVICES
+ 	select FPU if MMU
++	select ARCH_USES_GETTIMEOFFSET if MMU && !COLDFIRE
+ 
+ config RWSEM_GENERIC_SPINLOCK
+ 	bool
+@@ -22,9 +23,6 @@ config ARCH_HAS_ILOG2_U32
+ config ARCH_HAS_ILOG2_U64
+ 	bool
+ 
+-config GENERIC_CLOCKEVENTS
+-	bool
+-
+ config GENERIC_GPIO
+ 	bool
+ 
+@@ -43,9 +41,6 @@ config TIME_LOW_RES
+ 	bool
+ 	default y
+ 
+-config ARCH_USES_GETTIMEOFFSET
+-	def_bool MMU && !COLDFIRE
+-
+ config NO_IOPORT
+ 	def_bool y
+ 
