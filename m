@@ -1,68 +1,37 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753130Ab2EUGA7 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 May 2012 02:00:59 -0400
-Received: from mail-wi0-f178.google.com ([209.85.212.178]:33170 "EHLO
-	mail-wi0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752818Ab2EUGA5 (ORCPT
+	id S1752792Ab2EUGA4 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 May 2012 02:00:56 -0400
+Received: from mail-wg0-f42.google.com ([74.125.82.42]:61789 "EHLO
+	mail-wg0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751226Ab2EUGAW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 May 2012 02:00:57 -0400
-From: Yong Zhang <yong.zhang0@gmail.com>
-To: linux-mips@linux-mips.org, linux-kernel@vger.kernel.org
-Cc: ralf@linux-mips.org, sshtylyov@mvista.com, david.daney@cavium.com
-Subject: [PATCH 2/8] MIPS: BMIPS: delay irq enable to ->smp_finish()
-Date: Mon, 21 May 2012 14:00:02 +0800
-Message-Id: <1337580008-7280-3-git-send-email-yong.zhang0@gmail.com>
-X-Mailer: git-send-email 1.7.5.4
-In-Reply-To: <1337580008-7280-1-git-send-email-yong.zhang0@gmail.com>
-References: <1337580008-7280-1-git-send-email-yong.zhang0@gmail.com>
+	Mon, 21 May 2012 02:00:22 -0400
+Date: Mon, 21 May 2012 09:00:15 +0300
+From: Muli Ben-Yehuda <muli@cs.technion.ac.il>
+To: Shuah Khan <shuahkhan@gmail.com>
+Cc: muli@il.ibm.com, jdmason@kudzu.us, tglx@linutronix.de, mingo@redhat.com,
+        hpa@zytor.com, x86@kernel.org, discuss@x86-64.org,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] x86: kernel/pci-calgary_64.c simple_strtoul cleanup
+Message-ID: <20120521060015.GB19135@tyrion.mulix.org>
+References: <1337556268.3126.5.camel@lorien2>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1337556268.3126.5.camel@lorien2>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Yong Zhang <yong.zhang@windriver.com>
+On Sun, May 20, 2012 at 05:24:28PM -0600, Shuah Khan wrote:
+> Change calgary_parse_options() to call kstrtoul() instead of calling
+> obsoleted simple_strtoul().
+> 
+> Signed-off-by: Shuah Khan <shuahkhan@gmail.com>
 
-To prepare for smoothing set_cpu_[active|online]() mess up
+Acked-by: Muli Ben-Yehuda <muli@cs.technion.ac.il>
 
-Signed-off-by: Yong Zhang <yong.zhang0@gmail.com>
-Cc: Ralf Baechle <ralf@linux-mips.org>
-Acked-by: David Daney <david.daney@cavium.com>
----
- arch/mips/kernel/smp-bmips.c |   14 +++++++-------
- 1 files changed, 7 insertions(+), 7 deletions(-)
-
-diff --git a/arch/mips/kernel/smp-bmips.c b/arch/mips/kernel/smp-bmips.c
-index 3046e29..298b437 100644
---- a/arch/mips/kernel/smp-bmips.c
-+++ b/arch/mips/kernel/smp-bmips.c
-@@ -197,13 +197,6 @@ static void bmips_init_secondary(void)
- 
- 	write_c0_brcm_action(ACTION_CLR_IPI(smp_processor_id(), 0));
- #endif
--
--	/* make sure there won't be a timer interrupt for a little while */
--	write_c0_compare(read_c0_count() + mips_hpt_frequency / HZ);
--
--	irq_enable_hazard();
--	set_c0_status(IE_SW0 | IE_SW1 | IE_IRQ1 | IE_IRQ5 | ST0_IE);
--	irq_enable_hazard();
- }
- 
- /*
-@@ -212,6 +205,13 @@ static void bmips_init_secondary(void)
- static void bmips_smp_finish(void)
- {
- 	pr_info("SMP: CPU%d is running\n", smp_processor_id());
-+
-+	/* make sure there won't be a timer interrupt for a little while */
-+	write_c0_compare(read_c0_count() + mips_hpt_frequency / HZ);
-+
-+	irq_enable_hazard();
-+	set_c0_status(IE_SW0 | IE_SW1 | IE_IRQ1 | IE_IRQ5 | ST0_IE);
-+	irq_enable_hazard();
- }
- 
- /*
--- 
-1.7.5.4
-
+Cheers,
+Muli
