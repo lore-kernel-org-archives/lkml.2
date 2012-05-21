@@ -1,85 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758424Ab2EUUU6 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 May 2012 16:20:58 -0400
-Received: from mail-wg0-f44.google.com ([74.125.82.44]:53572 "EHLO
-	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756222Ab2EUUU5 convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 May 2012 16:20:57 -0400
+	id S1758240Ab2EUUZG (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 May 2012 16:25:06 -0400
+Received: from e9.ny.us.ibm.com ([32.97.182.139]:42439 "EHLO e9.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751950Ab2EUUZE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 21 May 2012 16:25:04 -0400
+Message-ID: <4FBAA499.1070905@linaro.org>
+Date: Mon, 21 May 2012 13:24:57 -0700
+From: John Stultz <john.stultz@linaro.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
 MIME-Version: 1.0
-X-Google-Sender-Delegation: a3at.mail@gmail.com
-In-Reply-To: <CAAW1UO_8N-10gLzKp4gV-P3JGOsk-_QnZiedWjhw3rWe33fKjQ@mail.gmail.com>
-References: <CAAW1UO_8N-10gLzKp4gV-P3JGOsk-_QnZiedWjhw3rWe33fKjQ@mail.gmail.com>
-Date: Tue, 22 May 2012 00:20:56 +0400
-X-Google-Sender-Auth: wFZsmSaMgjwok9vXMk3mWyLf038
-Message-ID: <CAAW1UO_8orU0eUuRy7pBpZAL5GKKvoDmZYAat6m5kOyRhqU5_A@mail.gmail.com>
-Subject: Re: wrong count of CPU usage
-From: Azat Khuzhin <dohardgopro@gmail.com>
-To: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+To: Richard Cochran <richardcochran@gmail.com>
+CC: linux-kernel@vger.kernel.org, Thomas Gleixner <tglx@linutronix.de>
+Subject: Re: [PATCH RFC V2 4/6] time: introduce leap second functional interface
+References: <cover.1337348892.git.richardcochran@gmail.com> <eee0b50afdea829c727d6210afb8299a4cf30981.1337348892.git.richardcochran@gmail.com> <4FBA82DF.9060009@linaro.org> <20120521191844.GC19812@netboy.at.omicron.at>
+In-Reply-To: <20120521191844.GC19812@netboy.at.omicron.at>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 12052120-7182-0000-0000-00000190D357
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Anybody?
+On 05/21/2012 12:18 PM, Richard Cochran wrote:
+> On Mon, May 21, 2012 at 11:01:03AM -0700, John Stultz wrote:
+>> On 05/18/2012 07:09 AM, Richard Cochran wrote:
+>>> +
+>>> +int timekeeping_gettod_status(struct timespec *ts, time_t *offset);
+>>> +
+>>> +void timekeeping_delete_leap_second(void);
+>>> +
+>>> +void timekeeping_finish_leap_second(void);
+>>> +
+>>> +void timekeeping_insert_leap_second(void);
+>>> +
+>>> +#endif
+>> Why not just add these to time.h?
+> This is a private interface only for ntp.c, not for the whole rest of
+> the kernel via time.h.
+Hrm.  I prefer to keep things fairly flat (even having time.h and 
+timex.h bugs me somewhat).  But having such a separation could be 
+useful, but maybe at a slightly more coarse level. Something like 
+timekeeping-internal.h and time.h, splitting all the general accessors 
+away from the non-general.
 
-BTW I restart server and CPU usage counting fine now, as I expected
-But maybe this is a bug in kernel, that after a while it count CPU usage wrong?
+I just don't want to have a ton of stray .h files, but maybe I'm 
+prematurely worrying about it.
 
-On Wed, May 16, 2012 at 6:33 PM, Azat Khuzhin <dohardgopro@gmail.com> wrote:
-> Hi all
+> BTW this highlights the very icky incestuous relationship between
+> ntp.c and timekeeper.c. Probably there should be a comment documenting
+> the (unspoken) locking sequence for ntp_lock and timekeeper.lock.
 >
-> I have machine that have uptime 212 days, kernel version: Linux
-> 2.6.35.14-97.fc14.x86_64 #1 SMP Sat Sep 17 00:15:37 UTC 2011 x86_64
-> x86_64 x86_64 GNU/Linux
-> Before top (1) utility shows some activity per process, as it should
-> be (sort by %CPU column)
->
-> But from some time, no activity in top (1) per process at all
->   PID USER      PR  NI  VIRT  RES  SHR S %CPU %MEM    TIME+  COMMAND
->     1 root      20   0 19420 1548 1240 S  0.0  0.0  17:48.09 init
->     2 root      20   0     0    0    0 S  0.0  0.0   0:09.72 kthreadd
->     3 root      20   0     0    0    0 S  0.0  0.0  20:34.76 ksoftirqd/0
->
-> But load avg > 10
-> top (1) shows some activity on cores (I mean not processes, that
-> created by kernel)
-> top - 09:58:26 up 212 days,  7:06,  8 users,  load average: 13.27, 12.20, 11.37
-> Tasks: 815 total,   9 running, 803 sleeping,   2 stopped,   1 zombie
-> Cpu0  : 47.5%us,  8.0%sy,  0.3%ni, 26.4%id, 16.9%wa,  0.0%hi,  0.9%si,  0.0%st
-> Cpu1  : 39.7%us,  5.2%sy,  0.0%ni, 48.0%id,  6.8%wa,  0.0%hi,  0.3%si,  0.0%st
-> Cpu2  : 29.8%us,  3.1%sy,  0.0%ni, 59.7%id,  7.4%wa,  0.0%hi,  0.0%si,  0.0%st
-> Cpu3  : 15.9%us,  2.8%sy,  0.0%ni, 77.3%id,  3.7%wa,  0.0%hi,  0.3%si,  0.0%st
-> Cpu4  : 39.3%us,  5.2%sy,  0.0%ni, 37.4%id, 17.8%wa,  0.0%hi,  0.3%si,  0.0%st
-> Cpu5  : 29.6%us,  4.0%sy,  0.0%ni, 62.3%id,  3.7%wa,  0.0%hi,  0.3%si,  0.0%st
-> Cpu6  : 20.4%us,  5.0%sy,  0.0%ni, 74.3%id,  0.0%wa,  0.0%hi,  0.3%si,  0.0%st
-> Cpu7  : 17.3%us,  2.8%sy,  0.0%ni, 76.8%id,  3.1%wa,  0.0%hi,  0.0%si,  0.0%st
-> Cpu8  : 32.8%us,  6.5%sy,  0.0%ni, 31.6%id, 29.1%wa,  0.0%hi,  0.0%si,  0.0%st
-> Cpu9  : 27.6%us,  3.1%sy,  0.0%ni, 69.3%id,  0.0%wa,  0.0%hi,  0.0%si,  0.0%st
-> Cpu10 :  6.8%us,  2.5%sy,  0.0%ni, 87.9%id,  2.8%wa,  0.0%hi,  0.0%si,  0.0%st
-> Cpu11 :  8.7%us,  1.9%sy,  0.0%ni, 89.4%id,  0.0%wa,  0.0%hi,  0.0%si,  0.0%st
-> Cpu12 : 27.3%us,  2.8%sy,  0.0%ni, 52.8%id, 17.1%wa,  0.0%hi,  0.0%si,  0.0%st
-> Cpu13 : 18.2%us,  3.7%sy,  0.0%ni, 77.5%id,  0.6%wa,  0.0%hi,  0.0%si,  0.0%st
-> Cpu14 : 21.4%us,  3.8%sy,  0.0%ni, 74.8%id,  0.0%wa,  0.0%hi,  0.0%si,  0.0%st
-> Cpu15 : 10.0%us,  1.9%sy,  0.0%ni, 87.9%id,  0.3%wa,  0.0%hi,  0.0%si,  0.0%st
->
-> So seems like after some time kernel not updating /proc/PID/stat properly
->
-> I wrote shell script (attach), that count CPU usage, and it also shows 0
-> This script base on 14, 15 columns from /proc/PID/stat (as man proc
-> says, that it utime and stime clocks, and /proc/stat summary), but for
-> newly created processes
->
-> Summarize
-> /proc/PID/stat seems not change counters utime, stime
-> /proc/stat updated
->
-> --
-> Azat Khuzhin
+The locking order is pretty straight forward: timekeeper.lock -> 
+ntp_lock.   This only gets messy when you require timekeeping data from 
+the ntp context, but usually we provide the required data via the 
+caller.  But better documentation is always welcome.
 
+thanks
+-john
 
-
--- 
-Azat Khuzhin
