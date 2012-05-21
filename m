@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754052Ab2EUPaY (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 May 2012 11:30:24 -0400
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:60065 "EHLO
+	id S1754283Ab2EUPaf (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 May 2012 11:30:35 -0400
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:43253 "EHLO
 	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753529Ab2EUPaS (ORCPT
+	with ESMTP id S1754084Ab2EUPaa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 May 2012 11:30:18 -0400
+	Mon, 21 May 2012 11:30:30 -0400
 From: Miklos Szeredi <miklos@szeredi.hu>
 To: viro@ZenIV.linux.org.uk
 Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
         hch@infradead.org, torvalds@linux-foundation.org, mszeredi@suse.cz
-Subject: [PATCH 05/16] vfs: make follow_link check RCU safe
-Date: Mon, 21 May 2012 17:30:09 +0200
-Message-Id: <1337614220-6174-6-git-send-email-miklos@szeredi.hu>
+Subject: [PATCH 08/16] vfs: do_last(): only return EISDIR for O_CREAT
+Date: Mon, 21 May 2012 17:30:12 +0200
+Message-Id: <1337614220-6174-9-git-send-email-miklos@szeredi.hu>
 X-Mailer: git-send-email 1.7.7
 In-Reply-To: <1337614220-6174-1-git-send-email-miklos@szeredi.hu>
 References: <1337614220-6174-1-git-send-email-miklos@szeredi.hu>
@@ -23,51 +23,26 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Miklos Szeredi <mszeredi@suse.cz>
 
-This will allow this code to be used in RCU mode.
+This allows this code to be shared between O_CREAT and plain opens.
 
 Signed-off-by: Miklos Szeredi <mszeredi@suse.cz>
 ---
- fs/namei.c |   12 ++++++++++--
- 1 files changed, 10 insertions(+), 2 deletions(-)
+ fs/namei.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
 diff --git a/fs/namei.c b/fs/namei.c
-index 1dba4a7..67bddd6 100644
+index d17a4e4..e3136b7 100644
 --- a/fs/namei.c
 +++ b/fs/namei.c
-@@ -2203,6 +2203,7 @@ static struct file *do_last(struct nameidata *nd, struct path *path,
- 	int acc_mode = op->acc_mode;
- 	struct file *filp;
- 	struct inode *inode;
-+	int symlink_ok = 0;
- 	int error;
- 
- 	nd->flags &= ~LOOKUP_PARENT;
-@@ -2234,7 +2235,6 @@ static struct file *do_last(struct nameidata *nd, struct path *path,
- 	}
- 
- 	if (!(open_flag & O_CREAT)) {
--		int symlink_ok = 0;
- 		if (nd->last.name[nd->last.len])
- 			nd->flags |= LOOKUP_FOLLOW | LOOKUP_DIRECTORY;
- 		if (open_flag & O_PATH && !(nd->flags & LOOKUP_FOLLOW))
-@@ -2366,8 +2366,16 @@ static struct file *do_last(struct nameidata *nd, struct path *path,
- 	if (!inode)
- 		goto exit_dput;
- 
--	if (inode->i_op->follow_link)
-+	if (should_follow_link(inode, !symlink_ok)) {
-+		if (nd->flags & LOOKUP_RCU) {
-+			if (unlikely(unlazy_walk(nd, path->dentry))) {
-+				error = -ECHILD;
-+				goto exit;
-+			}
-+		}
-+		BUG_ON(inode != path->dentry->d_inode);
- 		return NULL;
-+	}
- 
- 	path_to_nameidata(path, nd);
- 	nd->inode = inode;
+@@ -2386,7 +2386,7 @@ static struct file *do_last(struct nameidata *nd, struct path *path,
+ 	if (error)
+ 		return ERR_PTR(error);
+ 	error = -EISDIR;
+-	if (S_ISDIR(nd->inode->i_mode))
++	if ((open_flag & O_CREAT) && S_ISDIR(nd->inode->i_mode))
+ 		goto exit;
+ 	error = -ENOTDIR;
+ 	if ((nd->flags & LOOKUP_DIRECTORY) && !nd->inode->i_op->lookup)
 -- 
 1.7.7
 
