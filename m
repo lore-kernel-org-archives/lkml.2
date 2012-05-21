@@ -1,52 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758146Ab2EUO21 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 May 2012 10:28:27 -0400
-Received: from gir.skynet.ie ([193.1.99.77]:36268 "EHLO gir.skynet.ie"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757992Ab2EUO20 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 May 2012 10:28:26 -0400
-Date: Mon, 21 May 2012 15:28:22 +0100
-From: Mel Gorman <mel@csn.ul.ie>
-To: Dave Hansen <dave@linux.vnet.ibm.com>
-Cc: cl@linux.com, linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        aarcange@redhat.com, kosaki.motohiro@jp.fujitsu.com, hughd@google.com,
-        rientjes@google.com, adobriyan@gmail.com, akpm@linux-foundation.org
-Subject: Re: [RFC][PATCH] hugetlb: fix resv_map leak in error path
-Message-ID: <20120521142822.GF28631@csn.ul.ie>
-References: <20120518184630.FF3307BD@kernel>
+	id S1758122Ab2EUOam (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 May 2012 10:30:42 -0400
+Received: from mail-lpp01m010-f46.google.com ([209.85.215.46]:36473 "EHLO
+	mail-lpp01m010-f46.google.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1757886Ab2EUOal convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 21 May 2012 10:30:41 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-15
-Content-Disposition: inline
-In-Reply-To: <20120518184630.FF3307BD@kernel>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1337610255.10262.17.camel@deadeye>
+References: <1337608943.10262.10.camel@deadeye>
+	<CAFLxGvzdyr08UjHy_85CeHV=bB2nzzTy0JOdgLFx6x3mwOasdw@mail.gmail.com>
+	<1337610255.10262.17.camel@deadeye>
+Date: Mon, 21 May 2012 16:30:39 +0200
+Message-ID: <CAFLxGvx1DPtyTwS43zeOd7UroSi04bz1QPcSwrtxDev=X9YCnQ@mail.gmail.com>
+Subject: Re: Linux 3.2.18
+From: richard -rw- weinberger <richard.weinberger@gmail.com>
+To: Ben Hutchings <ben@decadent.org.uk>
+Cc: linux-kernel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
+        torvalds@linux-foundation.org, stable@vger.kernel.org, lwn@lwn.net
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, May 18, 2012 at 11:46:30AM -0700, Dave Hansen wrote:
-> 
-> When called for anonymous (non-shared) mappings,
-> hugetlb_reserve_pages() does a resv_map_alloc().  It depends on
-> code in hugetlbfs's vm_ops->close() to release that allocation.
-> 
-> However, in the mmap() failure path, we do a plain unmap_region()
-> without the remove_vma() which actually calls vm_ops->close().
-> 
-> This is a decent fix.  This leak could get reintroduced if
-> new code (say, after hugetlb_reserve_pages() in
-> hugetlbfs_file_mmap()) decides to return an error.  But, I think
-> it would have to unroll the reservation anyway.
-> 
-> This hasn't been extensively tested.  Pretty much compile and
-> boot tested along with Christoph's test case.
-> 
-> Comments?
-> 
-> Signed-off-by: Dave Hansen <dave@linux.vnet.ibm.com>
+On Mon, May 21, 2012 at 4:24 PM, Ben Hutchings <ben@decadent.org.uk> wrote:
+> On Mon, 2012-05-21 at 16:18 +0200, richard -rw- weinberger wrote:
+>> On Mon, May 21, 2012 at 4:02 PM, Ben Hutchings <ben@decadent.org.uk> wrote:
+>> > I'm announcing the release of the 3.2.18 kernel.
+>> >
+>> > All users of the 3.2 kernel series should upgrade.
+>>
+>> Should or must?
+>> IOW does it contain security fixes?
+>
+> There are certainly bug fixes in there that look like they close
+> security flaws.  But it's your choice whether and when to upgrade, and
+> you'll have the same warranty (i.e. none) in any case.
+>
 
-Acked-by: Mel Gorman <mel@csn.ul.ie>
+AFAIK that's why Greg always writes "must". :-)
 
 -- 
-Mel Gorman
-SUSE Labs
+Thanks,
+//richard
