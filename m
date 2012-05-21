@@ -1,54 +1,34 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933488Ab2EUSYH (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 May 2012 14:24:07 -0400
-Received: from smtp.snhosting.dk ([87.238.248.203]:59830 "EHLO
-	smtp.domainteam.dk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933438Ab2EUSYC (ORCPT
+	id S1758286Ab2EUSZ1 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 May 2012 14:25:27 -0400
+Received: from mail-qa0-f49.google.com ([209.85.216.49]:38936 "EHLO
+	mail-qa0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750805Ab2EUSZZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 May 2012 14:24:02 -0400
-Date: Mon, 21 May 2012 20:24:00 +0200
-From: Sam Ravnborg <sam@ravnborg.org>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: David Miller <davem@davemloft.net>, akpm@linux-foundation.org,
-        sparclinux@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [GIT] Sparc
-Message-ID: <20120521182400.GA6043@merkur.ravnborg.org>
-References: <20120521.050300.1434374935904126254.davem@davemloft.net> <CA+55aFzag=LfduvHSmE34nEVYOk=MRhUMzK854+icLwthmz5Ng@mail.gmail.com>
+	Mon, 21 May 2012 14:25:25 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <CA+55aFzag=LfduvHSmE34nEVYOk=MRhUMzK854+icLwthmz5Ng@mail.gmail.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <CACLa4puRJLUd6hAHO6zFYiqa5dFVum8eLmNMk_ef+=r8OGhjRg@mail.gmail.com>
+References: <CACLa4puRJLUd6hAHO6zFYiqa5dFVum8eLmNMk_ef+=r8OGhjRg@mail.gmail.com>
+From: Roland McGrath <mcgrathr@google.com>
+Date: Mon, 21 May 2012 11:25:04 -0700
+Message-ID: <CAB=4xho2b5fZV_jC15XW3mhOD9Z0QUMnV_UHy-P5EmQWfX59dA@mail.gmail.com>
+Subject: Re: seccomp and ptrace. what is the correct order?
+To: Eric Paris <netdev@parisplace.org>
+Cc: Will Drewry <wad@chromium.org>, linux-kernel@vger.kernel.org,
+        linux-security-module@vger.kernel.org,
+        kernel-hardening@lists.openwall.com, hpa@zytor.com, mingo@redhat.com,
+        oleg@redhat.com, peterz@infradead.org, rdunlap@xenotime.net,
+        tglx@linutronix.de, luto@mit.edu, eparis@redhat.com,
+        serge.hallyn@canonical.com, indan@nul.nu, pmoore@redhat.com,
+        akpm@linux-foundation.org, corbet@lwn.net, eric.dumazet@gmail.com,
+        markus@chromium.org, coreyb@linux.vnet.ibm.com, keescook@chromium.org
+Content-Type: text/plain; charset=ISO-8859-1
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, May 21, 2012 at 10:37:23AM -0700, Linus Torvalds wrote:
-> On Mon, May 21, 2012 at 2:03 AM, David Miller <davem@davemloft.net> wrote:
-> >
-> > There is going to be a merge conflict between the commit in the
-> > net-next tree that adds the Sparc BPF JIT, and the one in here which
-> > adds arch/sparc/Kbuild.  It should be quite easy to resolve.
-> 
-> Ok, so that had a very obvious resolution, and a "cleaner, but scarier" version.
-> 
-> I picked the cleaner but scarier one - the one that should make the
-> BFP JIT be built when you do "make arch/sparc" by putting the net
-> thing into the new arch/sparc/Kbuild file.
-OK.
-
-> 
-> I did minimal testing with "make ARCH=sparc" without actually
-> *building* anything, and in the process also fixed the fact that you
-> should not select HAVE_BPF_JIT unless networking is enabled (crappy
-> interface - maybe that "if NET" part really should be in the
-> HAVE_BPF_JIT rules, not in all the architectures?)
-
-HAVE_BPF_JIT is only used to make the BPF_JIT prompt visible.
-And BPF_JIT depends on NET.
-
-So the "if NET" part in the select is redundant but not strictly wrong.
-
-	Sam
+>From a security perspective I think the natural expectation would be that
+the seccomp check is on the values that will actually be used, without an
+intervening opportunity to change anything.
