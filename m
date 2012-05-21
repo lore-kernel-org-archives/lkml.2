@@ -1,77 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757571Ab2EUJqF (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 May 2012 05:46:05 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:39057 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756966Ab2EUJqD (ORCPT
+	id S1757615Ab2EUJqI (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 May 2012 05:46:08 -0400
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:33008 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757542Ab2EUJqG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 May 2012 05:46:03 -0400
-Date: Mon, 21 May 2012 02:45:43 -0700
-From: tip-bot for Vaibhav Nagarnaik <vnagarnaik@google.com>
-Message-ID: <tip-a591c73f127505cdbd0aa399a92112a8ddff8730@git.kernel.org>
-Cc: mingo@redhat.com, linux-kernel@vger.kernel.org, vnagarnaik@google.com,
-        hpa@zytor.com, mingo@kernel.org, dhsharp@google.com,
-        fweisbec@gmail.com, rostedt@goodmis.org, chavey@google.com,
-        tglx@linutronix.de, teravest@google.com
-Reply-To: mingo@kernel.org, hpa@zytor.com, vnagarnaik@google.com,
-        linux-kernel@vger.kernel.org, mingo@redhat.com, dhsharp@google.com,
-        fweisbec@gmail.com, rostedt@goodmis.org, chavey@google.com,
-        tglx@linutronix.de, teravest@google.com
-In-Reply-To: <1336066834-1673-1-git-send-email-vnagarnaik@google.com>
-References: <1336066834-1673-1-git-send-email-vnagarnaik@google.com>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/core] tracing: Fix initial buffer_size_kb state
-Git-Commit-ID: a591c73f127505cdbd0aa399a92112a8ddff8730
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
-  to get blacklisted from these emails
+	Mon, 21 May 2012 05:46:06 -0400
+Date: Mon, 21 May 2012 13:46:01 +0400
+From: Cyrill Gorcunov <gorcunov@openvz.org>
+To: Alexander Gordeev <agordeev@redhat.com>
+Cc: linux-kernel@vger.kernel.org, x86@kernel.org,
+        Suresh Siddha <suresh.b.siddha@intel.com>,
+        Yinghai Lu <yinghai@kernel.org>
+Subject: Re: [PATCH 2/3] x86: x2apic/cluster: Make use of lowest priority
+ delivery mode
+Message-ID: <20120521094601.GE7767@moon>
+References: <20120518102640.GB31517@dhcp-26-207.brq.redhat.com>
+ <20120518144153.GD8455@moon>
+ <20120518154236.GA23406@dhcp-26-207.brq.redhat.com>
+ <20120518155119.GG8455@moon>
+ <20120519104725.GA18768@moon>
+ <20120521071135.GA28930@dhcp-26-207.brq.redhat.com>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Mon, 21 May 2012 02:45:48 -0700 (PDT)
+In-Reply-To: <20120521071135.GA28930@dhcp-26-207.brq.redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  a591c73f127505cdbd0aa399a92112a8ddff8730
-Gitweb:     http://git.kernel.org/tip/a591c73f127505cdbd0aa399a92112a8ddff8730
-Author:     Vaibhav Nagarnaik <vnagarnaik@google.com>
-AuthorDate: Thu, 3 May 2012 10:40:34 -0700
-Committer:  Steven Rostedt <rostedt@goodmis.org>
-CommitDate: Sat, 19 May 2012 08:28:50 -0400
+On Mon, May 21, 2012 at 09:11:36AM +0200, Alexander Gordeev wrote:
+> 
+> > p.s. Hope Suresh and Yinghai will take a look too. The thing which bothers
+> > me is that we use LowPrio delivery mode, while there is no lowprio in
+> > x2apic ipi messages and I assume the same should apply to ioapic generated
+> > messages.
+> 
+> My understanding of the specification is LowestPrio is not supported only for
+> IPIs on x2APIC. Can not imagine why IO-APICs need to be limited here. But let's
+> hear what the guys think.
 
-tracing: Fix initial buffer_size_kb state
+True. This limitation applies to IPIs only.
 
-Make sure that the state of buffer_size_kb is initialized correctly and
-returns actual size of the ring buffer.
-
-Link: http://lkml.kernel.org/r/1336066834-1673-1-git-send-email-vnagarnaik@google.com
-
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Ingo Molnar <mingo@redhat.com>
-Cc: Laurent Chavey <chavey@google.com>
-Cc: Justin Teravest <teravest@google.com>
-Cc: David Sharp <dhsharp@google.com>
-Signed-off-by: Vaibhav Nagarnaik <vnagarnaik@google.com>
-Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
----
- kernel/trace/trace.c |    3 ++-
- 1 files changed, 2 insertions(+), 1 deletions(-)
-
-diff --git a/kernel/trace/trace.c b/kernel/trace/trace.c
-index 08a08ba..a44d4c6 100644
---- a/kernel/trace/trace.c
-+++ b/kernel/trace/trace.c
-@@ -5112,7 +5112,8 @@ __init static int tracer_alloc_buffers(void)
- 		max_tr.data[i] = &per_cpu(max_tr_data, i);
- 	}
- 
--	set_buffer_entries(&global_trace, ring_buf_size);
-+	set_buffer_entries(&global_trace,
-+			   ring_buffer_size(global_trace.buffer, 0));
- #ifdef CONFIG_TRACER_MAX_TRACE
- 	set_buffer_entries(&max_tr, 1);
- #endif
+	Cyrill
