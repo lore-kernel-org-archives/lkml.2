@@ -1,50 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757977Ab2EUKte (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 May 2012 06:49:34 -0400
-Received: from mail-ob0-f174.google.com ([209.85.214.174]:42049 "EHLO
-	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757814Ab2EUKtd (ORCPT
+	id S1751653Ab2EUK7y (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 May 2012 06:59:54 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:60501 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750875Ab2EUK7j (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 May 2012 06:49:33 -0400
+	Mon, 21 May 2012 06:59:39 -0400
+Date: Mon, 21 May 2012 19:07:00 +0800
+From: Zheng Liu <gnehzuil.liu@gmail.com>
+To: Johannes Weiner <hannes@cmpxchg.org>
+Cc: Michal Hocko <mhocko@suse.cz>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org,
+        Andrew Morton <akpm@linux-foundation.org>, Mel Gorman <mel@csn.ul.ie>,
+        Minchan Kim <minchan@kernel.org>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Rik van Riel <riel@redhat.com>
+Subject: Re: [PATCH] mm: consider all swapped back pages in used-once logic
+Message-ID: <20120521110659.GA7143@gmail.com>
+Mail-Followup-To: Johannes Weiner <hannes@cmpxchg.org>,
+	Michal Hocko <mhocko@suse.cz>, linux-mm@kvack.org,
+	linux-kernel@vger.kernel.org,
+	Andrew Morton <akpm@linux-foundation.org>,
+	Mel Gorman <mel@csn.ul.ie>, Minchan Kim <minchan@kernel.org>,
+	KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+	Rik van Riel <riel@redhat.com>
+References: <1337246033-13719-1-git-send-email-mhocko@suse.cz>
+ <20120517195342.GB1800@cmpxchg.org>
+ <20120521025149.GA32375@gmail.com>
+ <20120521073632.GL1406@cmpxchg.org>
+ <20120521085951.GA4687@gmail.com>
+ <20120521093705.GM1406@cmpxchg.org>
 MIME-Version: 1.0
-In-Reply-To: <alpine.DEB.2.00.1205201426430.10189@chino.kir.corp.google.com>
-References: <1337507659-14740-1-git-send-email-nasirabed+kernel@gmail.com>
-	<alpine.DEB.2.00.1205201328170.10189@chino.kir.corp.google.com>
-	<1337546284.31503.5.camel@joe2Laptop>
-	<1337547996.31503.8.camel@joe2Laptop>
-	<alpine.DEB.2.00.1205201426430.10189@chino.kir.corp.google.com>
-Date: Mon, 21 May 2012 12:49:33 +0200
-Message-ID: <CAMXkaZE_D7wFZ1PzZgwG8hL7wqvLFaP=M=9OAP08fz7zj2dBUw@mail.gmail.com>
-Subject: Re: [PATCH] Staging: android: alarm: Rename pr_alarm to alarm_dbg
-From: Nasir Abed <nasirabed@gmail.com>
-To: David Rientjes <rientjes@google.com>
-Cc: Joe Perches <joe@perches.com>, gregkh@linuxfoundation.org,
-        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
-        swetland@google.com
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120521093705.GM1406@cmpxchg.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Shouldn't:
-[PATCH] Staging: android: alarm: Rename pr_alarm to alarm_dbg
-Be:
-[PATCH] Staging: android: alarm-dev: Rename pr_alarm to alarm_dbg
+On Mon, May 21, 2012 at 11:37:05AM +0200, Johannes Weiner wrote:
+[snip]
+> > > Is it because the read()/write() IO is high throughput and pushes
+> > > pages through the LRU lists faster than the mmap pages are referenced?
+> > 
+> > Yes, in this application, one query needs to access mapped file page
+> > twice and file page cache twice.  Namely, one query needs to do 4 disk
+> > I/Os.  We have used fadvise(2) to reduce file page cache accessing to
+> > only once.  For mapped file page, in fact them are accessed only once
+> > because in one query the same data is accessed twice.  Thus, one query
+> > causes 2 disk I/Os now.  The size of read/write is quite larger than
+> > mmap/munmap.  So, as you see, if we can keep mmap/munmap file in memory
+> > as much as possible, we will gain the better performance.
+> 
+> You access the same unmapped cache twice, i.e. repeated reads or
+> writes against the same file offset?
 
-Cheers,
+No.  We access the same mapped file twice.
 
-Nasir Abed
+> 
+> How do you use fadvise?
 
+We access the header and content of the file respectively using read/write.
+The header and content are sequentially.  So we use fadivse(2) with
+FADV_WILLNEED flag to do a readahead.
 
-On Sun, May 20, 2012 at 11:26 PM, David Rientjes <rientjes@google.com> wrote:
-> On Sun, 20 May 2012, Joe Perches wrote:
->
->> Rename a macro to make it explicit it's for debugging.
->>
->> Use %s: __func__ instead of embedding function names.
->> Coalesce formats, align arguments.
->>
->> Signed-off-by: Joe Perches <joe@perches.com>
->
-> Acked-by: David Rientjes <rientjes@google.com>
+> > In addition, another factor also has some impacts for this application.
+> > In inactive_file_is_low_global(), it is different between 2.6.18 and
+> > upstream kernel.  IMHO, it causes that mapped file pages in active list
+> > are moved into inactive list frequently.
+> > 
+> > Currently, we add a parameter in inactive_file_is_low_global() to adjust
+> > this ratio.  Meanwhile we activate every mapped file pages for the first
+> > time.  Then the performance gets better, but it still doesn't reach the
+> > performance of 2.6.18.
+> 
+> 2.6.18 didn't have the active list protection at all and always
+> forcibly deactivated pages during reclaim.  Have you tried fully
+> reverting to this by making inactive_file_is_low_global() return true
+> unconditionally?
+
+No, I don't try it.  AFAIK, 2.6.18 didn't protect the active list.  But
+it doesn't always forcibly deactivate the pages.  I remember that in
+2.6.18 kernel we calculate 'mapped_ratio' in shrink_active_list(), and
+then we get 'swap_tendency' according to 'mapped_ratio', 'distress', and
+'sc->swappiness'.  If 'swap_tendency' is not greater than 100.  It
+doesn't reclaim mapped file pages.  By this equation, if the sum of the
+anonymous pages and mapped file pages is not greater than the 50% of
+total pages, we don't deactivate these pages.  Am I missing something?
+
+> Could it be that by accessing your "used-once" unmapped cache twice in
+> short succession, you accidentally activate it all?
+
+It could not happen.  Certainly it is possible to access a file twice at
+the same offset in product system.  That is reason why we use buffered
+IO rather than direct IO.  But in testing system we could not access the
+same file twice at the same offset.
+
+> Thereby having ONLY mapped file pages on the inactive list, adding to
+> the pressure on them?
+> 
+> And, by having the wrong pages on the active list, actually benefit
+> from the active list not being protected from inactive list cycle
+> speed and instead pushed out quickly again?
+
+Sorry, you mean that in 2.6.18 kernel it benefits from the wrong pages
+on the active list, isn't it?
+
+Regards,
+Zheng
