@@ -1,81 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752376Ab2EUPVv (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 May 2012 11:21:51 -0400
-Received: from mail-ey0-f174.google.com ([209.85.215.174]:47288 "EHLO
-	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752282Ab2EUPVs convert rfc822-to-8bit (ORCPT
+	id S1752697Ab2EUPWK (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 May 2012 11:22:10 -0400
+Received: from mail-we0-f174.google.com ([74.125.82.174]:42255 "EHLO
+	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752524Ab2EUPWE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 May 2012 11:21:48 -0400
+	Mon, 21 May 2012 11:22:04 -0400
+Date: Mon, 21 May 2012 17:21:59 +0200
+From: Ingo Molnar <mingo@kernel.org>
+To: Vlad Zolotarov <vlad@scalemp.com>
+Cc: "Shai Fultheim (Shai@ScaleMP.com)" <Shai@scalemp.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
+        Ido Yariv <ido@wizery.com>
+Subject: Re: [PATCH v3 0/2] Move x86_cpu_to_apicid to the __read_mostly
+ section
+Message-ID: <20120521152159.GB7068@gmail.com>
+References: <1337527148.6093.14.camel@vlad>
+ <1693911.sUneyHzERA@vlad>
+ <20120521140822.GA12976@gmail.com>
+ <2213388.vLKcp40cFW@vlad>
 MIME-Version: 1.0
-In-Reply-To: <CAK=WgbaUuCNS_cuk5-VNBXUT+op5m_BxfnwNoT=CtE86zPLt+A@mail.gmail.com>
-References: <1335388200-18504-1-git-send-email-sjur.brandeland@stericsson.com>
-	<CAK=WgbYisX2A-DHZy6-AhFFTR3QuxJ0OcVaz+JcpzJOwxT3eWA@mail.gmail.com>
-	<81C3A93C17462B4BBD7E272753C10579232F20847B@EXDCVYMBSTM005.EQ1STM.local>
-	<CAK=WgbY8RpOfZT5qNtFKOHoE5TD9s7JeqGvXadaXoZ6a7m0r4Q@mail.gmail.com>
-	<CAK=WgbaUuCNS_cuk5-VNBXUT+op5m_BxfnwNoT=CtE86zPLt+A@mail.gmail.com>
-Date: Mon, 21 May 2012 17:21:46 +0200
-Message-ID: <CAJK669bMZ1FKJbG6nh_rpm6EELAPDXQgxzck0JqtJ16TFf-bmA@mail.gmail.com>
-Subject: Re: Remoteproc adaptations for ST-Ericsson modems
-From: =?UTF-8?Q?Sjur_Br=C3=A6ndeland?= <sjurbren@gmail.com>
-To: Ohad Ben-Cohen <ohad@wizery.com>
-Cc: Loic PALLARDY <loic.pallardy@stericsson.com>,
-        Ludovic BARRE <ludovic.barre@stericsson.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Arnd Bergmann <arnd@arndb.de>,
-        Linus Walleij <linus.walleij@linaro.org>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <2213388.vLKcp40cFW@vlad>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> Can you please check if the below helps ? this will also protects
-> against premature invocation of rproc_get_by_name().
 
-Sure this works for me. If you like you can add:
-Tested-by: Sjur Brændeland <sjur.brandeland@stericsson.com>
+* Vlad Zolotarov <vlad@scalemp.com> wrote:
 
-But, are you sure you don't want to do use wait_for_completion_timeout()
-so you don't risk to block the clients if firmware loading fails?
+> On Monday, May 21, 2012 16:08:22 Ingo Molnar wrote:
+> > * Vlad Zolotarov <vlad@scalemp.com> wrote:
+> > > On Monday, May 21, 2012 02:32:46 PM Ingo Molnar wrote:
+> > > > * Shai Fultheim (Shai@ScaleMP.com) <Shai@ScaleMP.com> wrote:
+> > > > > Ingo,
+> > > > > 
+> > > > > The reason for this, as you pointed out, is the 'cache line'
+> > > > > size (4096 bytes).  We see significant false sharing is we do
+> > > > > not move this next to each other.
+> > > > 
+> > > > Which write-often variable caused the many cache flushes/fills?
+> > > > cpu_to_apicid is read mostly.
+> > > > 
+> > > > I.e. it might make more sense to identify the frequenty
+> > > > *modified* percpu variables, and move them to a separate
+> > > > section. I *think* most percpu variables are read mostly, so
+> > > > it would be more maintainable in the long run to figure out
+> > > > the frequently modified ones, not the frequently not
+> > > > modified ones.
+> > > 
+> > > I tend to disagree about the general claim that most per-CPU
+> > > variables are read-mostly: consider the per-CPU data
+> > > structures used in lock-less algorithms like softnet_data used
+> > > in a NAPI. I'm not sure what is a more common - read- only or
+> > > not-read-only per-cpu data, but surely there are both...
+> > 
+> > Well, a quick tally of percpu variables on a 'make defconfig'
+> > kernel would tell us one way or another?
+> > 
+> > Here there's almost 200 percpu variables active in the 64-bit
+> > x86 defconfig, and a quick random sample suggests that most are
+> > read-mostly.
+> > 
+> > I have no fundamental prefer to either approach, but the
+> > direction taken should be justified explicitly, with numbers,
+> > arguments, etc. - also a short blurb somewhere in the headers
+> > that explains when they should be used, so that others can be
+> > aware of vSMP's special needs here.
+> 
+> There must be some misunderstanding - this patch is not a vSMP 
+> Foundation specific as it defines read-mostly variables as 
+> __read_mostly. The motivation for it is just the same as in a 
+> non-vSMP Foundation case. It's true that the performance gain 
+> this patch introduces in the vSMP Foundation is likely to be 
+> more significant than in a native Linux, however even for a 
+> native Linux it would still be a better code as __read_mostly 
+> is not a vSMP Foundation specific paradigm and, again, the 
+> variables modified are a clear read-mostly case.
 
+(Could we please use 'vSMP' as a shortcut?)
 
-For reference the crach without this patch looks like this:
-------------[ cut here ]------------
-WARNING: at fs/sysfs/dir.c:508 sysfs_add_one+0xb9/0xd4()
-sysfs: cannot create duplicate filename '/devices/platform/foo.1/firmware/foo'
-Modules linked in: virtio_rpmsg_bus remoteproc virtio_ring virtio
-Call Trace:
-6316f928:  [<6003536e>] warn_slowpath_common+0x86/0xb0
-6316f958:  [<60189e2a>] strcat+0x0/0x28
-6316f978:  [<600354d6>] warn_slowpath_fmt+0x94/0x96
-6316f9a8:  [<6018505a>] ida_get_new_above+0x119/0x1dc
-6316f9c0:  [<60035442>] warn_slowpath_fmt+0x0/0x96
-6316f9d8:  [<60102c49>] sysfs_pathname+0x4f/0x57
-6316f9f8:  [<60102c49>] sysfs_pathname+0x4f/0x57
-6316fa18:  [<60102c49>] sysfs_pathname+0x4f/0x57
-6316fa38:  [<60102c49>] sysfs_pathname+0x4f/0x57
-6316fa58:  [<60103407>] sysfs_add_one+0xb9/0xd4
-6316fa88:  [<6010366e>] create_dir+0x89/0xd9
-6316fae8:  [<60103af6>] sysfs_create_dir+0x141/0x15f
-6316faf8:  [<6018bc35>] vsnprintf+0x212/0x48b
-6316fb08:  [<60185a01>] kobject_get+0x0/0x3a
-6316fb28:  [<60185c87>] kobject_add_internal+0xe1/0x24b
-6316fb68:  [<60186332>] kobject_add+0x110/0x124
-6316fba8:  [<60186222>] kobject_add+0x0/0x124
-6316fbc0:  [<6002c0f7>] unblock_signals+0x0/0x82
-6316fbe8:  [<6002c2b7>] set_signals+0x29/0x3f
-6316fbf0:  [<6002c0f7>] unblock_signals+0x0/0x82
-6316fc18:  [<600a639b>] kmem_cache_alloc+0x9f/0xab
-6316fc38:  [<6019ff09>] get_device_parent+0x1e0/0x210
-6316fc68:  [<601a162d>] device_add+0x11e/0x6dd
-6316fc90:  [<60053f82>] up_read+0x0/0x18
-6316fc98:  [<600502f4>] prepare_to_wait+0x0/0x8d
-6316fcd8:  [<601a879f>] _request_firmware_load+0x40/0x239
-6316fd18:  [<601a93ae>] request_firmware+0xb5/0x107
-6316fd48:  [<6006954a>] try_module_get+0x0/0x20
-6316fd58:  [<6388ecab>] rproc_boot+0x141/0x3e2 [remoteproc]
+I know that it's not vSMP specific - but the gains are largely 
+concentrated on the vSMP side and in fact I suspect that they 
+are important performance fixes for vSMP, while only 'nice to 
+have' micro-optimizations on other systems, right?
 
+As such it's useful to outline the justification and relevance 
+of the patch.
 
-Regards,
-Sjur
+> So, the explanation u request above would be just the same as 
+> if I would explain when in general __read_mostly should be 
+> used.
+> 
+> I grep'ed the Documentation and haven't found any readme file 
+> with the explicit instructions when __read_mostly qualifier 
+> should be used and u r right we'd better write one.
+
+Furthermore, this is a read_mostly per cpu variable, which is 
+even less obvious than a read_mostly global variable.
+
+> I can create an initial version of such a doc but I think it 
+> would better come as a separate patch.
+
+Sure.
+
+Thanks,
+
+	Ingo
