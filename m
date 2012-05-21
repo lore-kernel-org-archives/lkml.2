@@ -1,15 +1,15 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754832Ab2EUA4o (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 20 May 2012 20:56:44 -0400
-Received: from mailout4.samsung.com ([203.254.224.34]:28812 "EHLO
-	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752848Ab2EUA4m (ORCPT
+	id S1755081Ab2EUA6X (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 20 May 2012 20:58:23 -0400
+Received: from mailout1.samsung.com ([203.254.224.24]:63511 "EHLO
+	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753460Ab2EUA6V (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 20 May 2012 20:56:42 -0400
-X-AuditID: cbfee61b-b7faf6d000001f49-8a-4fb992c969a5
-Message-id: <4FB992C8.8090105@samsung.com>
-Date: Mon, 21 May 2012 09:56:40 +0900
+	Sun, 20 May 2012 20:58:21 -0400
+X-AuditID: cbfee61a-b7fe76d0000023f5-3d-4fb9932cb25a
+Message-id: <4FB9932B.9070101@samsung.com>
+Date: Mon, 21 May 2012 09:58:19 +0900
 From: Minho Ban <mhban@samsung.com>
 User-Agent: Mozilla/5.0 (X11; Linux i686; rv:12.0) Gecko/20120430
  Thunderbird/12.0.1
@@ -20,55 +20,78 @@ Cc: Marcel Holtmann <marcel@holtmann.org>,
         "David S. Miller" <davem@davemloft.net>,
         linux-bluetooth@vger.kernel.org, netdev@vger.kernel.org,
         linux-kernel@vger.kernel.org
-Subject: [RFC/PATCH] Bluetooth: prevent double l2cap_chan_destroy
+Subject: [PATCH] Bluetooth: Fix null pointer dereference in l2cap_chan_send
 Content-type: text/plain; charset=ISO-8859-1
 Content-transfer-encoding: 7bit
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprDLMWRmVeSWpSXmKPExsVy+t9jAd2Tk3b6Gyz5x28x51ofs8XlXXPY
-	LI4tEHNg9vi8SS6AMYrLJiU1J7MstUjfLoErY/WVN8wFtzgqNm3cydLAuJG9i5GTQ0LAROLd
-	ylesELaYxIV769m6GLk4hAQWMUq8PHCHCcJ5yygxf9EqNpAqXgEticV3z4J1sAioSnw40s0I
-	YrMJKEvcfXYLLC4qECbxesohFoh6QYkfk++B2SICmhJTT20B28AscINRYs23V2AJYQFHiS03
-	voEtYBbQkdjfOg3KlpfYvOYt8wRGvllIZs1CUjYLSdkCRuZVjKKpBckFxUnpuUZ6xYm5xaV5
-	6XrJ+bmbGMFh9kx6B+OqBotDjAIcjEo8vAZdO/2FWBPLiitzDzFKcDArifBKZ+3wF+JNSays
-	Si3Kjy8qzUktPsQozcGiJM77ZAlQSiA9sSQ1OzW1ILUIJsvEwSnVwFgjUSPO0GrRdyneWG7N
-	JdGqa/8m3ls93/X5BoPJh39N2f/lnZn2sXNB2ZeOqaRe1WS4Nve44bM5QqpJTDeK/DLNjSWM
-	417/Vf9kPpOlzZTj1hK/KmPbXtXMMJ0Hv9NvXjSexqudcHeZ3/RJVR8/BKWwqc2ate9U9Vue
-	/RPn8Ff+qOe5kPE5wE2JpTgj0VCLuag4EQAKwiG5LwIAAA==
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprNLMWRmVeSWpSXmKPExsVy+t9jAV2dyTv9DXrOclnMudbHbHF51xw2
+	i2MLxByYPT5vkgtgjOKySUnNySxLLdK3S+DK2LppO1PBPtGKeUuXsDcwvhTsYuTkkBAwkfh/
+	+DwzhC0mceHeerYuRi4OIYFFjBL39p8ESwgJvGWU2NfjDGLzCmhJXHz3lB3EZhFQldh0egIb
+	iM0moCxx99ktVhBbVCBM4vWUQywQ9YISPybfA7NFBDQlpp7aAraAWeAGo8Sab6/AEsIC3hJn
+	rywEW8YsoCOxv3UaG4QtL7F5zVvmCYx8s5DMmoWkbBaSsgWMzKsYRVMLkguKk9JzDfWKE3OL
+	S/PS9ZLzczcxgoPsmdQOxpUNFocYBTgYlXh4yxfv8BdiTSwrrsw9xCjBwawkwiudBRTiTUms
+	rEotyo8vKs1JLT7EKM3BoiTOawdSLZCeWJKanZpakFoEk2Xi4JRqYFRo/L+D+1rv/UVO+aa7
+	QiYtzr7z9OrRV49nZZRuc1f89HZN3hHOOiPB3eInLnrs/zxdL173HP91pWnaQr1SUheFvaTl
+	FPreiySsl5NYn1o9MdY3wCYkzfPt+0yFCxnqjlI7nV6z/GJ3POPsajtFbr/0kay2L1Pjpr5s
+	WvJ6WdhHlVmxFgd+LlJiKc5INNRiLipOBAD1avGZLgIAAA==
 X-TM-AS-MML: No
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-l2cap_sock_kill can be called in l2cap_sock_release and l2cap_sock_close_cb
-either. This lead l2cap_chan_destroy to be called twice for same channel.
-To prevent double list_del and double chan_put, chan_destroy should be protected
-with chan->refcnt and chan_list_lock so that reentrance could be forbidden.
+If l2cap_chan_send is called will null conn it will cause kernel Oops.
+This patch checks if conn is valid before entering l2cap_chan_send.
+
+2871 [  177.271861] Unable to handle kernel NULL pointer dereference at virtual address 00000010
+2872 [  177.271867] pgd = eadc0000
+2873 [  177.271870] [00000010] *pgd=6ad03831, *pte=00000000, *ppte=00000000
+2874 [  177.271884] Internal error: Oops: 17 [#1] PREEMPT SMP
+2875 [  177.271891] Modules linked in:
+2876 [  177.271900] CPU: 3    Not tainted  (3.0.15-00019-g097836e #36)
+2877 [  177.271925] PC is at l2cap_chan_send+0x8c/0x6f8
+2878 [  177.271933] LR is at 0xc089d59c
+2879 [  177.271940] pc : [<c0531514>]    lr : [<c089d59c>]    psr: 80000013
+2880 [  177.271943] sp : ddda1d50  ip : 0000035c  fp : ddda1dac
+2881 [  177.271948] r10: 0000035c  r9 : 00000000  r8 : ddda1f3c
+2882 [  177.271954] r7 : ed67ec00  r6 : 00000006  r5 : ed67ec00  r4 : 00000003
+2883 [  177.271959] r3 : ddda1d7c  r2 : 0000035c  r1 : 00000000  r0 : ed67ec00
+2884 [  177.271967] Flags: Nzcv  IRQs on  FIQs on  Mode SVC_32 ISA ARM  Segment user
+2885 [  177.271973] Control: 10c5387d  Table: 6adc004a  DAC: 00000015
+~~~ snip ~~~~~
+3000 [  177.272989] Backtrace:
+3001 [  177.273001] [<c0531488>] (l2cap_chan_send+0x0/0x6f8) from [<c053700c>] (l2cap_sock_sendmsg+0xc0/0x15c)
+3002 [  177.273023] [<c0536f4c>] (l2cap_sock_sendmsg+0x0/0x15c) from [<c0458afc>] (sock_sendmsg+0xcc/0xd4)
+3003 [  177.273035] [<c0458a30>] (sock_sendmsg+0x0/0xd4) from [<c0459558>] (sys_sendto+0xb8/0xdc)
+3004 [  177.273041]  r9:ddda0000 r8:00004040 r7:00000000 r6:ebdf9d40 r5:0004fb00
+3005 [  177.273050] r4:0000035c
+3006 [  177.273059] [<c04594a0>] (sys_sendto+0x0/0xdc) from [<c045959c>] (sys_send+0x20/0x28)
+3007 [  177.273077] [<c045957c>] (sys_send+0x0/0x28) from [<c00431c0>] (ret_fast_syscall+0x0/0x30)
+3008 [  177.273087] Code: e5901004 e24b3030 e51ba050 e590e21c (e5914010)
+3009 [  177.273096] ---[ end trace 29a418305c9cffba ]---
 
 Signed-off-by: Minho Ban <mhban@samsung.com>
 ---
- net/bluetooth/l2cap_core.c |    8 ++++++--
- 1 files changed, 6 insertions(+), 2 deletions(-)
+ net/bluetooth/l2cap_sock.c |    6 ++++--
+ 1 files changed, 4 insertions(+), 2 deletions(-)
 
-diff --git a/net/bluetooth/l2cap_core.c b/net/bluetooth/l2cap_core.c
-index 24f144b..156ca14 100644
---- a/net/bluetooth/l2cap_core.c
-+++ b/net/bluetooth/l2cap_core.c
-@@ -400,10 +400,14 @@ struct l2cap_chan *l2cap_chan_create(void)
- void l2cap_chan_destroy(struct l2cap_chan *chan)
- {
- 	write_lock(&chan_list_lock);
-+	/* Check if channel is valid */
-+	if (!atomic_read(&chan->refcnt)) {
-+		write_unlock(&chan_list_lock);
-+		return;
-+	}
- 	list_del(&chan->global_l);
--	write_unlock(&chan_list_lock);
--
- 	l2cap_chan_put(chan);
-+	write_unlock(&chan_list_lock);
- }
+diff --git a/net/bluetooth/l2cap_sock.c b/net/bluetooth/l2cap_sock.c
+index 3bb1611..98d4541 100644
+--- a/net/bluetooth/l2cap_sock.c
++++ b/net/bluetooth/l2cap_sock.c
+@@ -727,10 +727,12 @@ static int l2cap_sock_sendmsg(struct kiocb *iocb, struct socket *sock, struct ms
+ 	if (msg->msg_flags & MSG_OOB)
+ 		return -EOPNOTSUPP;
  
- void l2cap_chan_set_defaults(struct l2cap_chan *chan)
+-	if (sk->sk_state != BT_CONNECTED)
++	l2cap_chan_lock(chan);
++	if (sk->sk_state != BT_CONNECTED || !chan->conn) {
++		l2cap_chan_unlock(chan);
+ 		return -ENOTCONN;
++	}
+ 
+-	l2cap_chan_lock(chan);
+ 	err = l2cap_chan_send(chan, msg, len, sk->sk_priority);
+ 	l2cap_chan_unlock(chan);
+ 
 -- 
 1.7.5.4
 
