@@ -1,67 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754149Ab2EUPls (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 May 2012 11:41:48 -0400
-Received: from haggis.pcug.org.au ([203.10.76.10]:46238 "EHLO
-	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752094Ab2EUPlq (ORCPT
+	id S1754987Ab2EUPmY (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 May 2012 11:42:24 -0400
+Received: from orion.tchmachines.com ([208.76.84.200]:60294 "EHLO
+	orion.tchmachines.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754690Ab2EUPmW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 May 2012 11:41:46 -0400
-Date: Tue, 22 May 2012 01:41:36 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Randy Dunlap <rdunlap@xenotime.net>
-Cc: linux-next@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>
-Subject: Re: linux-next: Tree for May 21
-Message-Id: <20120522014136.f2b26f8eddab621e8dcf8e22@canb.auug.org.au>
-In-Reply-To: <4FBA5ABD.2070003@xenotime.net>
-References: <20120521190531.b764b9cd339c883d3434aef8@canb.auug.org.au>
-	<4FBA5ABD.2070003@xenotime.net>
-X-Mailer: Sylpheed 3.2.0beta7 (GTK+ 2.24.10; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Tue__22_May_2012_01_41_36_+1000_tGas+ZIZ5frcfcIv"
+	Mon, 21 May 2012 11:42:22 -0400
+From: Vlad Zolotarov <vlad@scalemp.com>
+To: Ingo Molnar <mingo@kernel.org>
+Cc: "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>,
+        linux-kernel <linux-kernel@vger.kernel.org>, Shai@scalemp.com,
+        ido@wizery.com
+Subject: Re: [PATCH v4 0/2] Move x86_cpu_to_apicid to the __read_mostly section
+Date: Mon, 21 May 2012 18:42:18 +0300
+Message-ID: <1918812.66k1TLBkOr@vlad>
+Organization: ScaleMP Ltd.
+User-Agent: KMail/4.8.2 (Linux/3.2.0-24-generic; KDE/4.8.2; i686; ; )
+In-Reply-To: <20120521152345.GC7068@gmail.com>
+References: <1744141.b5asW8k6jC@vlad> <20120521152345.GC7068@gmail.com>
+MIME-Version: 1.0
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
+X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
+X-AntiAbuse: Primary Hostname - orion.tchmachines.com
+X-AntiAbuse: Original Domain - vger.kernel.org
+X-AntiAbuse: Originator/Caller UID/GID - [47 12] / [47 12]
+X-AntiAbuse: Sender Address Domain - scalemp.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Tue__22_May_2012_01_41_36_+1000_tGas+ZIZ5frcfcIv
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On Monday, May 21, 2012 17:23:48 Ingo Molnar wrote:
+> * Vlad Zolotarov <vlad@scalemp.com> wrote:
+> > Pls., consider applying this patch series.
+> > 
+> > It contains the following changes:
+> >  - Adds two new macros DEFINE_EARLY_PER_CPU_READ_MOSTLY() and
+> >  
+> >    DECLARE_EARLY_PER_CPU_READ_MOSTLY().
+> >  
+> >  - Adds "read-mostly" qualifier to the following variables in smp.h:
+> >   - cpu_sibling_map
+> >   - cpu_core_map
+> >   - cpu_llc_shared_map
+> >   - cpu_llc_id
+> >   - cpu_number
+> >   - x86_cpu_to_apicid
+> >   - x86_bios_cpu_apicid
+> >   - x86_cpu_to_logical_apicid
+> > 
+> > As long as all the variables above are only written during the
+> > initialization, this change is meant to prevent the false
+> > sharing and improve the performance on large multiprocessor
+> > systems.
+> 
+> Why have you resent this? The feedback I gave has not been
+> 
+> addressed:
 
-Hi Randy,
+Hmmm... I'm a bit confused. There were two feedbacks/threads: one on "Signed-
+off-by" format and the other where u asked for a justification on a vSMP side. 
 
-On Mon, 21 May 2012 08:09:49 -0700 Randy Dunlap <rdunlap@xenotime.net> wrot=
-e:
->
-> no linux-next 20120521 patch file  :(
+The signed-off format sounded to me as a clear blocker for a series so I fixed 
+it and respined. I also mentioned it in patch0.
 
-It was uploaded (it is scripted) so the mirroring must be broken, I guess.
+The second thread seams like getting to submitting a separate patch with a doc 
+under Documents and vSMP testing results explaining and justifying when and 
+were per-CPU and/or __read_mostly variables should be used. 
 
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
+Pls., correct me if I misunderstood u and let me know what should I do next in 
+order to make this patch series accepted.
 
---Signature=_Tue__22_May_2012_01_41_36_+1000_tGas+ZIZ5frcfcIv
-Content-Type: application/pgp-signature
+thanks,
+vlad
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
 
-iQIcBAEBCAAGBQJPumIwAAoJEECxmPOUX5FEkJcP/1e7jEV37Zl0Wn76H9Nak+7m
-yP+F0uJrxzTjLsht093l5F2UJs4xHQc0qxrbXuLNwf5pT88cLuRI5kUqfaLxYqPH
-ltA3NJdTZNbVFJy8/AaC2wsNApu+zHukQOOJu56D8IKsT9bjf3R3lzTUQerbbyqL
-TlFRGYDRqjsvGSYcKWJgkqTyzUSWCTvtqUXObJwM9WH4rRK9oIaWcvy+zBCwhuVG
-wFXzkqK7VgfdU5mmL8HgcguH/84f4bOzZBaT6zNHqOg5+k2ePnVAgcLNP5Si6016
-6FbwQUXl6Qs0UDVyH4NxTO70raPrmTDD2Ph1ZazyydI6usYOwEIbgMLB4ZQggmGr
-YsYDXc2ccgf56qYkkwaKylEtd8eZtr1toyGgqrUjTxTUbVJmf+4UsLNHFcTeg/If
-c+4FzzN6MTnyu2Vtgo3MSYY9vO8iUjWOQ2Gsc5m+mzAMljTEkwblu/gz6wS7nZWD
-4bs+r1S1VszvB49P/uhBICtQ8hx0Q+lp+pEPEtgKCzLSbNhhjFARsvO+nFcBN2OY
-cwTEPAZyjt91MQ3Ob5N7mCEJiIhmWcmUW6Nv8hNkmS1t4KkGnNJ5SPXc/T3Qc8jO
-zvlfeZNyQLu6DzZxigolgKHSndMZUdeWKY29obhx40CWu4sMvQG/kUzVP4UAExZk
-36QCoXb7n3kK7DPCQtoM
-=YHTI
------END PGP SIGNATURE-----
-
---Signature=_Tue__22_May_2012_01_41_36_+1000_tGas+ZIZ5frcfcIv--
+> > Well, a quick tally of percpu variables on a 'make defconfig'
+> > kernel would tell us one way or another?
+> > 
+> > Here there's almost 200 percpu variables active in the 64-bit
+> > x86 defconfig, and a quick random sample suggests that most
+> > are read-mostly.
+> > 
+> > I have no fundamental prefer to either approach, but the
+> > direction taken should be justified explicitly, with numbers,
+> > arguments, etc. - also a short blurb somewhere in the headers
+> > that explains when they should be used, so that others can be
+> > aware of vSMP's special needs here.
+> 
+> Thanks,
+> 
+> 	Ingo
