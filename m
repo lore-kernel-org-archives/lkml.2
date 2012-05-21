@@ -1,74 +1,185 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759509Ab2EUXFD (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 May 2012 19:05:03 -0400
-Received: from charybdis-ext.suse.de ([195.135.221.2]:9695 "EHLO
-	nat.nue.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750760Ab2EUXFB (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 May 2012 19:05:01 -0400
-Message-ID: <4FBACA14.5090804@suse.com>
-Date: Mon, 21 May 2012 16:04:52 -0700
-From: Lee Duncan <lduncan@suse.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120421 Thunderbird/12.0
+	id S932518Ab2EUXGb (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 May 2012 19:06:31 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:26999 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750760Ab2EUXGa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 21 May 2012 19:06:30 -0400
+Date: Tue, 22 May 2012 02:06:24 +0300
+From: "Michael S. Tsirkin" <mst@redhat.com>
+To: Thomas Gleixner <tglx@linutronix.de>
+Cc: kvm@vger.kernel.org, Avi Kivity <avi@redhat.com>,
+        Marcelo Tosatti <mtosatti@redhat.com>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, x86@kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] kvm: optimize ISR lookups
+Message-ID: <20120521230623.GO17031@redhat.com>
+References: <20120521163727.GA13337@redhat.com>
+ <alpine.LFD.2.02.1205211940030.3231@ionos>
 MIME-Version: 1.0
-To: Matthew Wilcox <matthew@wil.cx>
-CC: linux-scsi@vger.kernel.org, linux-kernel@vger.kernel.org,
-        kai.makisara@kolumbus.fi, jeffm@suse.com
-Subject: Re: [PATCH 1/5] st: Use static class attributes
-References: <4FB476DD.4020107@suse.com> <20120518025146.GB19158@parisc-linux.org>
-In-Reply-To: <20120518025146.GB19158@parisc-linux.org>
-X-Enigmail-Version: 1.4.1
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <alpine.LFD.2.02.1205211940030.3231@ionos>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Jeff would normally reply to this, since it is his patch, but he is
-otherwise occupied right now, so I will respond.
+On Mon, May 21, 2012 at 11:04:25PM +0200, Thomas Gleixner wrote:
+> On Mon, 21 May 2012, Michael S. Tsirkin wrote:
+> 
+> > We perform ISR lookups twice: during interrupt
+> > injection and on EOI. Typical workloads only have
+> > a single bit set there. So we can avoid ISR scans by
+> > 1. counting bits as we set/clear them in ISR
+> > 2. if count is 1, caching the vector number
+> > 3. if count != 1, invalidating the cache
+> > 
+> > The real purpose of this is enabling PV EOI
+> > which needs to quickly validate the vector.
+> > But non PV guests also benefit.
+> > 
+> > Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
+> > ---
+> >  arch/x86/kvm/lapic.c |   51 ++++++++++++++++++++++++++++++++++++++++++++++++-
+> >  arch/x86/kvm/lapic.h |    2 +
+> >  2 files changed, 51 insertions(+), 2 deletions(-)
+> > 
+> > diff --git a/arch/x86/kvm/lapic.c b/arch/x86/kvm/lapic.c
+> > index 93c1574..232950a 100644
+> > --- a/arch/x86/kvm/lapic.c
+> > +++ b/arch/x86/kvm/lapic.c
+> > @@ -107,6 +107,16 @@ static inline void apic_clear_vector(int vec, void *bitmap)
+> >  	clear_bit(VEC_POS(vec), (bitmap) + REG_POS(vec));
+> >  }
+> >  
+> > +static inline int __apic_test_and_set_vector(int vec, void *bitmap)
+> > +{
+> > +	return __test_and_set_bit(VEC_POS(vec), (bitmap) + REG_POS(vec));
+> > +}
+> > +
+> > +static inline int __apic_test_and_clear_vector(int vec, void *bitmap)
+> > +{
+> > +	return __test_and_clear_bit(VEC_POS(vec), (bitmap) + REG_POS(vec));
+> > +}
+> > +
+> >  static inline int apic_hw_enabled(struct kvm_lapic *apic)
+> >  {
+> >  	return (apic)->vcpu->arch.apic_base & MSR_IA32_APICBASE_ENABLE;
+> > @@ -210,6 +220,16 @@ static int find_highest_vector(void *bitmap)
+> >  		return fls(word[word_offset << 2]) - 1 + (word_offset << 5);
+> >  }
+> >  
+> > +static u8 count_vectors(void *bitmap)
+> > +{
+> > +	u32 *word = bitmap;
+> > +	int word_offset;
+> > +	u8 count = 0;
+> > +	for (word_offset = 0; word_offset < MAX_APIC_VECTOR >> 5; ++word_offset)
+> > +		count += hweight32(word[word_offset << 2]);
+> > +	return count;
+> > +}
+> 
+> Why do you need to reimplement bitmap_weight()?
+> 
+> Because your bitmap is not a bitmap,
 
-On 05/17/2012 07:51 PM, Matthew Wilcox wrote:
-> On Wed, May 16, 2012 at 08:56:13PM -0700, Lee Duncan wrote:
->> @@ -84,7 +84,8 @@ static int try_wdio = 1;
->>  static int st_dev_max;
->>  static int st_nr_dev;
->>  
->> -static struct class *st_sysfs_class;
->> +extern struct class st_sysfs_class;
-> 
-> Umm ... 'extern' ...
-> 
->> @@ -4283,6 +4284,11 @@ static void scsi_tape_release(struct kref *kref)
->>  	return;
->>  }
->>  
->> +struct class st_sysfs_class = {
->> +	.name = "scsi_tape",
->> +	.dev_attrs = st_dev_attrs,
->> +};
-> 
-> ... and then you define it?
-> 
-> I think you meant to say "struct class st_sysfs_class;" at the top,
-> and then later:
-> 
-> static struct class st_sysfs_class = {
-> ...
-> 
->> +struct device_attribute st_dev_attrs[] = {
-> 
-> Should also be static
-> 
-> 
+It's an existing "bitmap". It's not my bitmap :)
 
-The compiler (gcc 4.6.2) does not accept a forward declaration that does
-not match the data definition. When I tried your suggestion, the
-compiler complained that the two declarations did not match, but it
-accepted it if both the forward declaration and the data declaration are
-"static".
+> but a set of 32bit registers
+> which have an offset of 4 words each. I really had to twist my brain
+> around this function and the test_and_clr/set ones above just because
+> the name bitmap is so horribly misleading. Add an extra bonus for
+> using void pointers.
+> 
+> Yes, I know, the existing code is full of this, but that's not an
+> excuse to add more of it.
 
-I'll resubmit v3 of the patch set with this change.
+There's no other way to use existing code. If current code
+is reworked to use bitmap.h then my patch can use it too.
+
+
+> This emulation is just silly. Nothing in an emulation where the access
+> to the emulated hardware is implemented with vmexits is requiring a
+> 1:1 memory layout. It's completely irrelevant whether the hardware has
+> an ISR regs offset of 0x10 or not. Nothing prevents the emulation to
+> use a consecutive bitmap for the vector bits instead of reimplementing
+> a boatload of bitmap operations.
+> 
+> The only justification for having the same layout as the actual
+> hardware is when you are going to map the memory into the guest space,
+> which is not the case here.
+
+I think the reason is __apic_read which now simply copies the registers
+out to guest, this code will become less straight-forward if it's not
+1:1.
+
+> And if you look deeper, then you'll notice that _ALL_ APIC registers
+> are on a 16 byte boundary (thanks Peter for pointing that out).
+> 
+> So it's even more silly to have a 1:1 representation instead of
+> implementing the default emulated apic_read/write functions to access
+> (offset >> 2).
+> 
+> And of course, that design decision causes lookups to be slow.
+
+Yes, it might be one of the reasons why my patch helps so
+much: it adds a cache in front of this data structure.
+
+> It's
+> way faster to scan a consecutive bitmap than iterating through eight
+> 32bit words with an offset of 0x10, especially on a 64 bit host.
+>
+> >  static inline int apic_test_and_set_irr(int vec, struct kvm_lapic *apic)
+> >  {
+> >  	apic->irr_pending = true;
+> > @@ -242,6 +262,25 @@ static inline void apic_clear_irr(int vec, struct kvm_lapic *apic)
+> >  		apic->irr_pending = true;
+> >  }
+> >  
+> > +static inline void apic_set_isr(int vec, struct kvm_lapic *apic)
+> > +{
+> > +	if (!__apic_test_and_set_vector(vec, apic->regs + APIC_ISR))
+> > +		++apic->isr_count;
+> > +	ASSERT(apic->isr_count > MAX_APIC_VECTOR);
+> 
+> I'm really curious what you observed when defining DEBUG in that file.
+> 
+> Clearly you never did.
+> 
+> > +	if (likely(apic->isr_count == 1))
+> > +		apic->isr_cache = vec;
+> > +	else
+> > +		apic->isr_cache = -1;
+> > +}
+> > +
+> > +static inline void apic_clear_isr(int vec, struct kvm_lapic *apic)
+> > +{
+> > +	if (__apic_test_and_clear_vector(vec, apic->regs + APIC_ISR))
+> > +		--apic->isr_count;
+> > +	ASSERT(apic->isr_count < 0);
+> 
+> Ditto.
+> 
+> >  	result = find_highest_vector(apic->regs + APIC_ISR);
+> >  	ASSERT(result == -1 || result >= 16);
+> 
+> And obviously none of the folks who added this gem bothered to define
+> DEBUG either.
+> 
+> So please instead of working around horrid design decisions and adding
+> more mess to the existing one, can we please cleanup the stuff first
+> and then decide whether it's worth to add the extra magic?
+> 
+> Thanks,
+> 
+> 	tglx
+
+
+So what you propose is in fact to rework apic registers at least for
+ISR,IRR,TMR to use a bitmap.
+I am fine with this suggestion but would like some feedback from kvm
+maintainers on where they want to go before I spend time on that.
+
 -- 
-Lee Duncan
-SUSE Labs
+MST
