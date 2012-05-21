@@ -1,121 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753044Ab2EUGDJ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 May 2012 02:03:09 -0400
-Received: from LGEMRELSE6Q.lge.com ([156.147.1.121]:54076 "EHLO
-	LGEMRELSE6Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752460Ab2EUGDH (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 May 2012 02:03:07 -0400
-X-AuditID: 9c930179-b7bb9ae000000ea5-76-4fb9da9649cd
-From: Namhyung Kim <namhyung.kim@lge.com>
-To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Mackerras <paulus@samba.org>,
-        Ingo Molnar <mingo@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
-        David Ahern <dsahern@gmail.com>, Stephane Eranian <eranian@google.com>,
-        Jiri Olsa <jolsa@redhat.com>
-Subject: Re: [RFC 0/5] perf tools: Minimalistic build without libelf dependency
-References: <1336979424-17206-1-git-send-email-namhyung.kim@lge.com>
-Date: Mon, 21 May 2012 15:00:55 +0900
-In-Reply-To: <1336979424-17206-1-git-send-email-namhyung.kim@lge.com>
-	(Namhyung Kim's message of "Mon, 14 May 2012 16:10:19 +0900")
-Message-ID: <87mx522huw.fsf@sejong.aot.lge.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.0.95 (gnu/linux)
+	id S1754023Ab2EUGFg (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 May 2012 02:05:36 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:34488 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751546Ab2EUGFf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 21 May 2012 02:05:35 -0400
+Message-ID: <4FB9DB24.2040408@redhat.com>
+Date: Mon, 21 May 2012 14:05:24 +0800
+From: Jason Wang <jasowang@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
 MIME-Version: 1.0
-Content-Type: text/plain
-X-Brightmail-Tracker: AAAAAA==
+To: Shirley Ma <mashirle@us.ibm.com>
+CC: "Michael S. Tsirkin" <mst@redhat.com>, eric.dumazet@gmail.com,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        ebiederm@xmission.com, davem@davemloft.net
+Subject: Re: [V2 PATCH 9/9] vhost: zerocopy: poll vq in zerocopy callback
+References: <20120502033901.11782.13157.stgit@amd-6168-8-1.englab.nay.redhat.com>  <20120502034254.11782.27314.stgit@amd-6168-8-1.englab.nay.redhat.com>  <1337100630.8220.4.camel@oc3660625478.ibm.com> <4FB317C8.90002@redhat.com>  <1337181027.10741.13.camel@oc3660625478.ibm.com>  <20120516151444.GC9934@redhat.com>  <1337189525.10741.24.camel@oc3660625478.ibm.com>  <4FB4677A.8020402@redhat.com>  <1337268862.10741.58.camel@oc3660625478.ibm.com>  <4FB61D57.4030103@redhat.com> <1337354974.12999.12.camel@oc3660625478.ibm.com>
+In-Reply-To: <1337354974.12999.12.camel@oc3660625478.ibm.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi, all
+On 05/18/2012 11:29 PM, Shirley Ma wrote:
+> On Fri, 2012-05-18 at 17:58 +0800, Jason Wang wrote:
+>> On 05/17/2012 11:34 PM, Shirley Ma wrote:
+>>> On Thu, 2012-05-17 at 10:50 +0800, Jason Wang wrote:
+>>>> The problem is we may stop the tx queue when there no enough
+>> capacity
+>>>> to
+>>>> place packets, at this moment  we depends on the tx interrupt to
+>>>> re-enable the tx queue. So if we didn't poll the vhost during
+>>>> callback,
+>>>> guest may lose the tx interrupt to re-enable the tx queue which
+>> could
+>>>> stall the whole tx queue.
+>>> VHOST_MAX_PEND should handle the capacity.
+>>>
+>>> Hasn't the above situation been handled in handle_tx() code?:
+>>> ...
+>>>                           if (unlikely(num_pends>   VHOST_MAX_PEND)) {
+>>>                                   tx_poll_start(net, sock);
+>>>
+>> set_bit(SOCK_ASYNC_NOSPACE,&sock->flags);
+>>>                                   break;
+>>>                           }
+>>> ...
+>>>
+>>> Thanks
+>>> Shirley
+>> It may not help in because:
+>>
+>> - tx polling depends on skb_orphan() which is often called by device
+>> driver when it place the packet into the queue of the devices instead
+>> of  when the packets were sent. So it was too early for vhost to be
+>> notified.
+> Then do you think it's better to replace with vhost_poll_queue here
+> instead?
 
-Any other comments for this?
+Just like what does this patch do - calling vhost_poll_queue() in 
+vhost_zerocopy_callback().
+>> - it only works when the pending DMAs exceeds VHOST_MAX_PEND, it's
+>> highly possible that guest needs to be notified when the pending
+>> packets
+>> isn't so much.
+> In which situation the guest needs to be notified when there is no TX
+> besides buffers run out?
 
+Consider guest call virtqueue_enable_cb_delayed() which means it only 
+need to be notified when 3/4 of pending buffers ( about 178 buffers 
+(256-MAX_SKB_FRAGS-2)*3/4 ) were sent by host. So vhost_net would notify 
+guest when about 60 buffers were pending. Since tx polling is only 
+enabled when pending packets exceeds VHOST_MAX_PEND 128, so tx work 
+would not be notified to run and guest would never get the interrupt it 
+expected to re-enable the queue.
 
-Thanks,
-Namhyung
+And just like what we've discussed, tx polling based adding and 
+signaling is too early for vhost.
+>> So this piece of code may not help and could be removed and we need
+>> to
+>> poll the virt-queue during zerocopy callback ( through it could be
+>> further optimized but may not be easy).
+> Thanks
+> Shirley
+>
+> --
+> To unsubscribe from this list: send the line "unsubscribe netdev" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
 
-
-On Mon, 14 May 2012 16:10:19 +0900, Namhyung Kim wrote:
-> NOTE: This is a RFC patchset and it contains a lot of rough edges
-> and ugly codes.
->
-> Current build procedure of perf tools requires a couple of external
-> libraries. Although most of them are optional, elfutils' libelf is
-> mandatory for resolving symbols and build-id of the binaries being
-> profiled. For some reason, it makes embedded guys' life harder who
-> want to build and run perf tools on their boards.
->
-> This patch set tries to fix the problem by letting the perf could
-> be built without libelf. The initial intent was just providing
-> perf record command to gather performance events interested on the
-> system and copies the data to development box to be used by perf
-> report for analysis.
->
-> However it's changed to have most of perf commands as is because
-> perf can resolve kernel symbols without libelf and many of perf
-> commands deal (mostly) with kernel events - so no need to restrict
-> capability of perf tools. Therefore, the end result is not so
-> minimalistic in fact and only thing it cannot do is "perf probe".
->
-> And then I realized that the perf record needs to know about the
-> build-id's anyway :(. So I implemented a poor man's version of elf
-> parser only for parsing the build-id info.
->
-> To build a minimal perf tools, pass MINIMAL=1 to make. The perf
-> report will not display symbol names:
->
->  # Samples: 988  of event 'cycles'
->  # Event count (approx.): 3726465542
->  #
->  # Overhead  Command      Shared Object                     Symbol
->  # ........  .......  .................  .........................
->  #
->      98.40%  noploop  noploop            [.] 0x000000000000066d   
->       1.35%  noploop  ld-2.15.so         [.] 0x000000000000bab1   
->       0.10%  noploop  [kernel.kallsyms]  [k] native_write_msr_safe
->       0.10%  noploop  [kernel.kallsyms]  [k] scheduler_tick       
->       0.03%  noploop  [kernel.kallsyms]  [k] bad_range            
->       0.01%  noploop  [kernel.kallsyms]  [k] pipe_read            
->
-> But perf buildid-list can show you the build-id's:
->
->  $ ./perf buildid-list
->  ebfc1bdb98999c64d36ddfe394c58df3de6cbcfb [kernel.kallsyms]
->  52f0c5f25b95075e6fd7682763f7c3a779a4e889 /usr/lib64/ld-2.15.so
->  43a7a2b399b6ee2ff29c6bdadbda6bff88712ed4 /home/namhyung/bin/noploop
->
-> So it can be packed using perf archive so copied and analized
-> with full-fledged perf tools on a development machine.
->
-> This patchset is based on commit cb04ff9ac424 ("sched, perf: Use
-> a single callback into the scheduler") and tested on x86_64 and arm.
->
-> Any comments are welcome, thanks.
-> Namhyung
->
->
-> Namhyung Kim (5):
->   perf symbols: Introduce symbol__elf_init()
->   perf symbols: Do not use ELF's symbol binding constants
->   perf tools: Split out util/symbol-elf.c
->   perf tools: Support minimal build
->   perf symbols: Implement poor man's ELF parser
->
->  tools/perf/Makefile                 |   29 ++
->  tools/perf/builtin-buildid-list.c   |    4 +-
->  tools/perf/builtin-top.c            |    5 +-
->  tools/perf/command-list.txt         |    2 +-
->  tools/perf/perf.c                   |    2 +
->  tools/perf/ui/browsers/map.c        |    5 +-
->  tools/perf/util/elf-minimal.h       |  153 ++++++++
->  tools/perf/util/generate-cmdlist.sh |   15 +
->  tools/perf/util/symbol-elf.c        |  691 +++++++++++++++++++++++++++++++++
->  tools/perf/util/symbol-minimal.c    |  258 +++++++++++++
->  tools/perf/util/symbol.c            |  712 ++---------------------------------
->  tools/perf/util/symbol.h            |   20 +
->  12 files changed, 1195 insertions(+), 701 deletions(-)
->  create mode 100644 tools/perf/util/elf-minimal.h
->  create mode 100644 tools/perf/util/symbol-elf.c
->  create mode 100644 tools/perf/util/symbol-minimal.c
