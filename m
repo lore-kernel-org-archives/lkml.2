@@ -1,97 +1,224 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755081Ab2EUA6X (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 20 May 2012 20:58:23 -0400
-Received: from mailout1.samsung.com ([203.254.224.24]:63511 "EHLO
-	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753460Ab2EUA6V (ORCPT
+	id S1754966Ab2EUBOm (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 20 May 2012 21:14:42 -0400
+Received: from na3sys010aog113.obsmtp.com ([74.125.245.94]:39075 "HELO
+	na3sys010aog113.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1754522Ab2EUBOi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 20 May 2012 20:58:21 -0400
-X-AuditID: cbfee61a-b7fe76d0000023f5-3d-4fb9932cb25a
-Message-id: <4FB9932B.9070101@samsung.com>
-Date: Mon, 21 May 2012 09:58:19 +0900
-From: Minho Ban <mhban@samsung.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:12.0) Gecko/20120430
- Thunderbird/12.0.1
-MIME-version: 1.0
-To: Gustavo Padovan <gustavo@padovan.org>
-Cc: Marcel Holtmann <marcel@holtmann.org>,
-        Johan Hedberg <johan.hedberg@gmail.com>,
-        "David S. Miller" <davem@davemloft.net>,
-        linux-bluetooth@vger.kernel.org, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH] Bluetooth: Fix null pointer dereference in l2cap_chan_send
-Content-type: text/plain; charset=ISO-8859-1
-Content-transfer-encoding: 7bit
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprNLMWRmVeSWpSXmKPExsVy+t9jAV2dyTv9DXrOclnMudbHbHF51xw2
-	i2MLxByYPT5vkgtgjOKySUnNySxLLdK3S+DK2LppO1PBPtGKeUuXsDcwvhTsYuTkkBAwkfh/
-	+DwzhC0mceHeerYuRi4OIYFFjBL39p8ESwgJvGWU2NfjDGLzCmhJXHz3lB3EZhFQldh0egIb
-	iM0moCxx99ktVhBbVCBM4vWUQywQ9YISPybfA7NFBDQlpp7aAraAWeAGo8Sab6/AEsIC3hJn
-	rywEW8YsoCOxv3UaG4QtL7F5zVvmCYx8s5DMmoWkbBaSsgWMzKsYRVMLkguKk9JzDfWKE3OL
-	S/PS9ZLzczcxgoPsmdQOxpUNFocYBTgYlXh4yxfv8BdiTSwrrsw9xCjBwawkwiudBRTiTUms
-	rEotyo8vKs1JLT7EKM3BoiTOawdSLZCeWJKanZpakFoEk2Xi4JRqYFRo/L+D+1rv/UVO+aa7
-	QiYtzr7z9OrRV49nZZRuc1f89HZN3hHOOiPB3eInLnrs/zxdL173HP91pWnaQr1SUheFvaTl
-	FPreiySsl5NYn1o9MdY3wCYkzfPt+0yFCxnqjlI7nV6z/GJ3POPsajtFbr/0kay2L1Pjpr5s
-	WvJ6WdhHlVmxFgd+LlJiKc5INNRiLipOBAD1avGZLgIAAA==
-X-TM-AS-MML: No
+	Sun, 20 May 2012 21:14:38 -0400
+From: Roland Dreier <roland@kernel.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org, linux-rdma@vger.kernel.org
+Subject: [GIT PULL] please pull infiniband.git
+Date: Sun, 20 May 2012 18:14:28 -0700
+Message-Id: <1337562868-9887-1-git-send-email-roland@kernel.org>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-If l2cap_chan_send is called will null conn it will cause kernel Oops.
-This patch checks if conn is valid before entering l2cap_chan_send.
+Hi Linus,
 
-2871 [  177.271861] Unable to handle kernel NULL pointer dereference at virtual address 00000010
-2872 [  177.271867] pgd = eadc0000
-2873 [  177.271870] [00000010] *pgd=6ad03831, *pte=00000000, *ppte=00000000
-2874 [  177.271884] Internal error: Oops: 17 [#1] PREEMPT SMP
-2875 [  177.271891] Modules linked in:
-2876 [  177.271900] CPU: 3    Not tainted  (3.0.15-00019-g097836e #36)
-2877 [  177.271925] PC is at l2cap_chan_send+0x8c/0x6f8
-2878 [  177.271933] LR is at 0xc089d59c
-2879 [  177.271940] pc : [<c0531514>]    lr : [<c089d59c>]    psr: 80000013
-2880 [  177.271943] sp : ddda1d50  ip : 0000035c  fp : ddda1dac
-2881 [  177.271948] r10: 0000035c  r9 : 00000000  r8 : ddda1f3c
-2882 [  177.271954] r7 : ed67ec00  r6 : 00000006  r5 : ed67ec00  r4 : 00000003
-2883 [  177.271959] r3 : ddda1d7c  r2 : 0000035c  r1 : 00000000  r0 : ed67ec00
-2884 [  177.271967] Flags: Nzcv  IRQs on  FIQs on  Mode SVC_32 ISA ARM  Segment user
-2885 [  177.271973] Control: 10c5387d  Table: 6adc004a  DAC: 00000015
-~~~ snip ~~~~~
-3000 [  177.272989] Backtrace:
-3001 [  177.273001] [<c0531488>] (l2cap_chan_send+0x0/0x6f8) from [<c053700c>] (l2cap_sock_sendmsg+0xc0/0x15c)
-3002 [  177.273023] [<c0536f4c>] (l2cap_sock_sendmsg+0x0/0x15c) from [<c0458afc>] (sock_sendmsg+0xcc/0xd4)
-3003 [  177.273035] [<c0458a30>] (sock_sendmsg+0x0/0xd4) from [<c0459558>] (sys_sendto+0xb8/0xdc)
-3004 [  177.273041]  r9:ddda0000 r8:00004040 r7:00000000 r6:ebdf9d40 r5:0004fb00
-3005 [  177.273050] r4:0000035c
-3006 [  177.273059] [<c04594a0>] (sys_sendto+0x0/0xdc) from [<c045959c>] (sys_send+0x20/0x28)
-3007 [  177.273077] [<c045957c>] (sys_send+0x0/0x28) from [<c00431c0>] (ret_fast_syscall+0x0/0x30)
-3008 [  177.273087] Code: e5901004 e24b3030 e51ba050 e590e21c (e5914010)
-3009 [  177.273096] ---[ end trace 29a418305c9cffba ]---
+Please pull from
 
-Signed-off-by: Minho Ban <mhban@samsung.com>
----
- net/bluetooth/l2cap_sock.c |    6 ++++--
- 1 files changed, 4 insertions(+), 2 deletions(-)
+    git://git.kernel.org/pub/scm/linux/kernel/git/roland/infiniband.git tags/rdma-for-3.5
 
-diff --git a/net/bluetooth/l2cap_sock.c b/net/bluetooth/l2cap_sock.c
-index 3bb1611..98d4541 100644
---- a/net/bluetooth/l2cap_sock.c
-+++ b/net/bluetooth/l2cap_sock.c
-@@ -727,10 +727,12 @@ static int l2cap_sock_sendmsg(struct kiocb *iocb, struct socket *sock, struct ms
- 	if (msg->msg_flags & MSG_OOB)
- 		return -EOPNOTSUPP;
- 
--	if (sk->sk_state != BT_CONNECTED)
-+	l2cap_chan_lock(chan);
-+	if (sk->sk_state != BT_CONNECTED || !chan->conn) {
-+		l2cap_chan_unlock(chan);
- 		return -ENOTCONN;
-+	}
- 
--	l2cap_chan_lock(chan);
- 	err = l2cap_chan_send(chan, msg, len, sk->sk_priority);
- 	l2cap_chan_unlock(chan);
- 
--- 
-1.7.5.4
+----------------------------------------------------------------
 
+InfiniBand/RDMA changes for the 3.5 merge window:
+ - Add ocrdma hardware driver for Emulex IB-over-Ethernet adapters
+ - Add generic and mlx4 support for "raw" QPs: allow suitably privileged
+   applications to send and receive arbitrary packets directly to/from
+   the hardware
+ - Add "doorbell drop" handling to the cxgb4 driver
+ - A fairly large batch of qib hardware driver changes
+ - A few fixes for lockdep-detected issues
+ - A few other miscellaneous fixes and cleanups
+
+----------------------------------------------------------------
+Dan Carpenter (2):
+      RDMA/ocrdma: Fix check for NULL instead of IS_ERR
+      RDMA/ocrdma: Tiny locking cleanup
+
+Jack Morgenstein (3):
+      mlx4_core: Change bitmap allocator to work in round-robin fashion
+      IB/core: Fix IB_SA_COMP_MASK macro
+      IB/mlx4: Fix mlx4_ib_add() error flow
+
+Jim Cromie (1):
+      IB/ipath: Replace open-coded ARRAY_SIZE with macro
+
+Jim Foraker (2):
+      IB/qib: Fix M_Key lease timeout handling
+      IB/qib: MADs with misset M_Keys should return failure
+
+Mike Marciniszyn (5):
+      IB/ipath: Replace open-coded ARRAY_SIZE with macro
+      MAINTAINERS: Update qib and ipath entries from QLogic to Intel
+      IB/qib: Add prefetch for eager buffers
+      IB/qib: Optimize pio ack buffer allocation
+      IB/qib: Add cache line awareness to qib_qp and qib_devdata structures
+
+Mitko Haralanov (2):
+      IB/qib: Display correct value for number of contexts
+      IB/qib: Fix QLE734X link cycling
+
+Or Gerlitz (4):
+      IB/core: Use qp->usecnt to track multicast attach/detach
+      IB/core: Add raw packet QP type
+      IB/mlx4: Add raw packet QP support
+      IB/iser: Fix error flow in iser ep connection establishment
+
+Oren Duer (1):
+      IB/mlx4: Put priority bits in WQE of IBoE MLX QP
+
+Parav Pandit (3):
+      be2net: Add function to issue mailbox cmd on MQ
+      be2net: Add functionality to support RoCE driver
+      RDMA/ocrdma: Add driver for Emulex OneConnect IBoE RDMA adapter
+
+Roland Dreier (8):
+      IB/uverbs: Make lockdep output more readable
+      IB/uverbs: Lock SRQ / CQ / PD objects in a consistent order
+      RDMA/ocrdma: Fix warnings about uninitialized variables
+      RDMA/ocrdma: Make needlessly global functions/structs static
+      RDMA/ocrdma: Set event's device member in ocrdma_dispatch_ibevent()
+      RDMA/ocrdma: Remove write-only variables
+      RDMA/ocrdma: Fix build with IPV6=n
+      Merge branches 'core', 'cxgb4', 'ipath', 'iser', 'lockdep', 'mlx4', 'nes', 'ocrdma', 'qib' and 'raw-qp' into for-linus
+
+Sasha Levin (1):
+      RDMA/ocrdma: Don't sleep in atomic notifier handler
+
+Sean Hefty (1):
+      RDMA/cma: Fix lockdep false positive recursive locking
+
+Shlomo Pongratz (3):
+      mlx4_core: Add second capabilities flags field
+      IB/mlx4: Replace printk(KERN_yyy...) with pr_yyy(...)
+      IB/mlx4: Increase the number of vectors (EQs) available for ULPs
+
+Steve Wise (3):
+      RDMA/cxgb4: Use dst parameter in import_ep()
+      RDMA/cxgb4: Always wake up waiters in c4iw_peer_abort_intr()
+      RDMA/cxgb4: Drop peer_abort when no endpoint found
+
+Tatyana Nikolova (2):
+      RDMA/nes: Fix for the ORD value of the connecting peer
+      RDMA/nes: Don't call event handler if pointer is NULL
+
+Todd Rimmer (1):
+      IB/qib: Correct ordering of reregister vs. port active events
+
+Vipul Pandya (10):
+      cxgb4: Detect DB FULL events and notify RDMA ULD
+      cxgb4: Common platform specific changes for DB Drop Recovery
+      cxgb4: DB Drop Recovery for RDMA and LLD queues
+      RDMA/cxgb4: Add debugfs RDMA memory stats
+      RDMA/cxgb4: Add DB Overflow Avoidance
+      RDMA/cxgb4: Disable interrupts in c4iw_ev_dispatch()
+      RDMA/cxgb4: DB Drop Recovery for RDMA and LLD queues
+      RDMA/cxgb4: Use vmalloc() for debugfs QP dump
+      RDMA/cxgb4: Remove kfifo usage
+      RDMA/cxgb4: Add query_qp support
+
+Yishai Hadas (1):
+      IB/core: Fix mismatch between locked and pinned pages
+
+ MAINTAINERS                                     |    4 +-
+ drivers/infiniband/Kconfig                      |    1 +
+ drivers/infiniband/Makefile                     |    1 +
+ drivers/infiniband/core/cma.c                   |   42 +-
+ drivers/infiniband/core/umem.c                  |    2 +-
+ drivers/infiniband/core/uverbs_cmd.c            |  108 +-
+ drivers/infiniband/core/verbs.c                 |   15 +-
+ drivers/infiniband/hw/cxgb4/Makefile            |    2 +-
+ drivers/infiniband/hw/cxgb4/cm.c                |   36 +-
+ drivers/infiniband/hw/cxgb4/device.c            |  339 ++-
+ drivers/infiniband/hw/cxgb4/ev.c                |    8 +-
+ drivers/infiniband/hw/cxgb4/id_table.c          |  112 +
+ drivers/infiniband/hw/cxgb4/iw_cxgb4.h          |  134 +-
+ drivers/infiniband/hw/cxgb4/mem.c               |   21 +-
+ drivers/infiniband/hw/cxgb4/provider.c          |   19 +-
+ drivers/infiniband/hw/cxgb4/qp.c                |  105 +-
+ drivers/infiniband/hw/cxgb4/resource.c          |  180 +-
+ drivers/infiniband/hw/cxgb4/t4.h                |   24 +
+ drivers/infiniband/hw/cxgb4/user.h              |    2 +-
+ drivers/infiniband/hw/ipath/ipath_iba6110.c     |    3 +-
+ drivers/infiniband/hw/ipath/ipath_intr.c        |    3 +-
+ drivers/infiniband/hw/mlx4/cq.c                 |   13 +-
+ drivers/infiniband/hw/mlx4/main.c               |  104 +-
+ drivers/infiniband/hw/mlx4/mlx4_ib.h            |    2 +
+ drivers/infiniband/hw/mlx4/mr.c                 |    2 +-
+ drivers/infiniband/hw/mlx4/qp.c                 |   54 +-
+ drivers/infiniband/hw/mlx4/srq.c                |    2 +-
+ drivers/infiniband/hw/nes/nes_cm.c              |    7 +-
+ drivers/infiniband/hw/ocrdma/Kconfig            |    8 +
+ drivers/infiniband/hw/ocrdma/Makefile           |    5 +
+ drivers/infiniband/hw/ocrdma/ocrdma.h           |  393 ++++
+ drivers/infiniband/hw/ocrdma/ocrdma_abi.h       |  134 ++
+ drivers/infiniband/hw/ocrdma/ocrdma_ah.c        |  172 ++
+ drivers/infiniband/hw/ocrdma/ocrdma_ah.h        |   42 +
+ drivers/infiniband/hw/ocrdma/ocrdma_hw.c        | 2640 +++++++++++++++++++++++
+ drivers/infiniband/hw/ocrdma/ocrdma_hw.h        |  132 ++
+ drivers/infiniband/hw/ocrdma/ocrdma_main.c      |  577 +++++
+ drivers/infiniband/hw/ocrdma/ocrdma_sli.h       | 1672 ++++++++++++++
+ drivers/infiniband/hw/ocrdma/ocrdma_verbs.c     | 2537 ++++++++++++++++++++++
+ drivers/infiniband/hw/ocrdma/ocrdma_verbs.h     |   94 +
+ drivers/infiniband/hw/qib/qib.h                 |   35 +-
+ drivers/infiniband/hw/qib/qib_driver.c          |    5 +-
+ drivers/infiniband/hw/qib/qib_iba6120.c         |    1 +
+ drivers/infiniband/hw/qib/qib_iba7220.c         |    1 +
+ drivers/infiniband/hw/qib/qib_iba7322.c         |    3 +-
+ drivers/infiniband/hw/qib/qib_init.c            |    3 +-
+ drivers/infiniband/hw/qib/qib_mad.c             |   63 +-
+ drivers/infiniband/hw/qib/qib_qp.c              |    7 +
+ drivers/infiniband/hw/qib/qib_rc.c              |    4 +-
+ drivers/infiniband/hw/qib/qib_ruc.c             |   12 +-
+ drivers/infiniband/hw/qib/qib_sysfs.c           |    7 +-
+ drivers/infiniband/hw/qib/qib_tx.c              |   25 +-
+ drivers/infiniband/hw/qib/qib_uc.c              |    4 +-
+ drivers/infiniband/hw/qib/qib_ud.c              |   16 +-
+ drivers/infiniband/hw/qib/qib_verbs.h           |  145 +-
+ drivers/infiniband/ulp/iser/iscsi_iser.c        |    5 +-
+ drivers/infiniband/ulp/iser/iser_verbs.c        |    3 +-
+ drivers/net/ethernet/chelsio/cxgb4/cxgb4.h      |   23 +
+ drivers/net/ethernet/chelsio/cxgb4/cxgb4_main.c |  235 +-
+ drivers/net/ethernet/chelsio/cxgb4/cxgb4_uld.h  |   11 +
+ drivers/net/ethernet/chelsio/cxgb4/sge.c        |   22 +-
+ drivers/net/ethernet/chelsio/cxgb4/t4_hw.c      |   62 +-
+ drivers/net/ethernet/chelsio/cxgb4/t4_regs.h    |   53 +
+ drivers/net/ethernet/chelsio/cxgb4/t4fw_api.h   |   15 +
+ drivers/net/ethernet/emulex/benet/Makefile      |    2 +-
+ drivers/net/ethernet/emulex/benet/be.h          |   38 +-
+ drivers/net/ethernet/emulex/benet/be_cmds.c     |   39 +
+ drivers/net/ethernet/emulex/benet/be_cmds.h     |    1 +
+ drivers/net/ethernet/emulex/benet/be_hw.h       |    4 +-
+ drivers/net/ethernet/emulex/benet/be_main.c     |   88 +-
+ drivers/net/ethernet/emulex/benet/be_roce.c     |  182 ++
+ drivers/net/ethernet/emulex/benet/be_roce.h     |   75 +
+ drivers/net/ethernet/mellanox/mlx4/alloc.c      |    3 -
+ drivers/net/ethernet/mellanox/mlx4/fw.c         |   29 +
+ drivers/net/ethernet/mellanox/mlx4/fw.h         |    2 +
+ drivers/net/ethernet/mellanox/mlx4/main.c       |    2 +
+ include/linux/mlx4/device.h                     |    8 +
+ include/linux/mlx4/qp.h                         |    3 +-
+ include/rdma/ib_mad.h                           |    2 +-
+ include/rdma/ib_verbs.h                         |    4 +-
+ 80 files changed, 10546 insertions(+), 447 deletions(-)
+ create mode 100644 drivers/infiniband/hw/cxgb4/id_table.c
+ create mode 100644 drivers/infiniband/hw/ocrdma/Kconfig
+ create mode 100644 drivers/infiniband/hw/ocrdma/Makefile
+ create mode 100644 drivers/infiniband/hw/ocrdma/ocrdma.h
+ create mode 100644 drivers/infiniband/hw/ocrdma/ocrdma_abi.h
+ create mode 100644 drivers/infiniband/hw/ocrdma/ocrdma_ah.c
+ create mode 100644 drivers/infiniband/hw/ocrdma/ocrdma_ah.h
+ create mode 100644 drivers/infiniband/hw/ocrdma/ocrdma_hw.c
+ create mode 100644 drivers/infiniband/hw/ocrdma/ocrdma_hw.h
+ create mode 100644 drivers/infiniband/hw/ocrdma/ocrdma_main.c
+ create mode 100644 drivers/infiniband/hw/ocrdma/ocrdma_sli.h
+ create mode 100644 drivers/infiniband/hw/ocrdma/ocrdma_verbs.c
+ create mode 100644 drivers/infiniband/hw/ocrdma/ocrdma_verbs.h
+ create mode 100644 drivers/net/ethernet/emulex/benet/be_roce.c
+ create mode 100644 drivers/net/ethernet/emulex/benet/be_roce.h
