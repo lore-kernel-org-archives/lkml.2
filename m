@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758257Ab2EUPCJ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 May 2012 11:02:09 -0400
-Received: from orion.tchmachines.com ([208.76.84.200]:57912 "EHLO
+	id S1758304Ab2EUPCM (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 May 2012 11:02:12 -0400
+Received: from orion.tchmachines.com ([208.76.84.200]:57920 "EHLO
 	orion.tchmachines.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750819Ab2EUPCH (ORCPT
+	with ESMTP id S1750819Ab2EUPCK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 May 2012 11:02:07 -0400
+	Mon, 21 May 2012 11:02:10 -0400
 From: Vlad Zolotarov <vlad@scalemp.com>
 To: Ingo Molnar <mingo@kernel.org>, "H. Peter Anvin" <hpa@zytor.com>,
         Thomas Gleixner <tglx@linutronix.de>,
-        linux-kernel <linux-kernel@vger.kernel.org>, Shai@scalemp.com,
-        ido@wizery.com
-Subject: [PATCH v4 0/2] Move x86_cpu_to_apicid to the __read_mostly section
-Date: Mon, 21 May 2012 18:02:04 +0300
-Message-ID: <1744141.b5asW8k6jC@vlad>
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        "Shai Fultheim (Shai@ScaleMP.com)" <Shai@scalemp.com>,
+        Ido Yariv <ido@wizery.com>
+Subject: [PATCH v4 1/2] x86: Define early read-mostly per-cpu macros
+Date: Mon, 21 May 2012 18:02:07 +0300
+Message-ID: <1972433.UjYodaYIUV@vlad>
 Organization: ScaleMP Ltd.
 User-Agent: KMail/4.8.2 (Linux/3.2.0-24-generic; KDE/4.8.2; i686; ; )
 MIME-Version: 1.0
@@ -29,31 +30,70 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Pls., consider applying this patch series.
-It contains the following changes:
- - Adds two new macros DEFINE_EARLY_PER_CPU_READ_MOSTLY() and
-   DECLARE_EARLY_PER_CPU_READ_MOSTLY().
- - Adds "read-mostly" qualifier to the following variables in smp.h:
-  - cpu_sibling_map
-  - cpu_core_map
-  - cpu_llc_shared_map
-  - cpu_llc_id
-  - cpu_number
-  - x86_cpu_to_apicid
-  - x86_bios_cpu_apicid
-  - x86_cpu_to_logical_apicid
+Some read-mostly per-cpu data may need to be declared or defined early,
+so it can be initialized and accessed before per_cpu areas are
+allocated.
 
-As long as all the variables above are only written during the initialization,
-this change is meant to prevent the false sharing and improve the
-performance on large multiprocessor systems.
+Only the data that resides in the per_cpu areas should be read-mostly,
+as there is little benefit in optimizing cache lines on initialization.
 
-v4 changes:
-- Fixed the authors signatures in the patches.
+Signed-off-by: Ido Yariv <ido@wizery.com>
+[ added the missing declarations in a !SMP code ]
+Signed-off-by: Vlad Zolotarov <vlad@scalemp.com>
+Acked-by: Shai Fultheim <shai@scalemp.com>
+---
+ arch/x86/include/asm/percpu.h |   17 +++++++++++++++++
+ 1 files changed, 17 insertions(+), 0 deletions(-)
 
-v3 changes:
-- Added the missing definitions of DEFINE_EARLY_PER_CPU_READ_MOSTLY()
-  and DECLARE_EARLY_PER_CPU_READ_MOSTLY() macros in the !CONFIG_SMP code
-  path in arch/x86/include/asm/percpu.h.
+diff --git a/arch/x86/include/asm/percpu.h b/arch/x86/include/asm/percpu.h
+index 7a11910..8b5c8e0 100644
+--- a/arch/x86/include/asm/percpu.h
++++ b/arch/x86/include/asm/percpu.h
+@@ -555,6 +555,12 @@ DECLARE_PER_CPU(unsigned long, this_cpu_off);
+ 				{ [0 ... NR_CPUS-1] = _initvalue };	\
+ 	__typeof__(_type) *_name##_early_ptr __refdata = _name##_early_map
+ 
++#define DEFINE_EARLY_PER_CPU_READ_MOSTLY(_type, _name, _initvalue)	\
++	DEFINE_PER_CPU_READ_MOSTLY(_type, _name) = _initvalue;		\
++	__typeof__(_type) _name##_early_map[NR_CPUS] __initdata =	\
++				{ [0 ... NR_CPUS-1] = _initvalue };	\
++	__typeof__(_type) *_name##_early_ptr __refdata = _name##_early_map
++
+ #define EXPORT_EARLY_PER_CPU_SYMBOL(_name)			\
+ 	EXPORT_PER_CPU_SYMBOL(_name)
+ 
+@@ -563,6 +569,11 @@ DECLARE_PER_CPU(unsigned long, this_cpu_off);
+ 	extern __typeof__(_type) *_name##_early_ptr;		\
+ 	extern __typeof__(_type)  _name##_early_map[]
+ 
++#define DECLARE_EARLY_PER_CPU_READ_MOSTLY(_type, _name)		\
++	DECLARE_PER_CPU_READ_MOSTLY(_type, _name);		\
++	extern __typeof__(_type) *_name##_early_ptr;		\
++	extern __typeof__(_type)  _name##_early_map[]
++
+ #define	early_per_cpu_ptr(_name) (_name##_early_ptr)
+ #define	early_per_cpu_map(_name, _idx) (_name##_early_map[_idx])
+ #define	early_per_cpu(_name, _cpu) 				\
+@@ -574,12 +585,18 @@ DECLARE_PER_CPU(unsigned long, this_cpu_off);
+ #define	DEFINE_EARLY_PER_CPU(_type, _name, _initvalue)		\
+ 	DEFINE_PER_CPU(_type, _name) = _initvalue
+ 
++#define DEFINE_EARLY_PER_CPU_READ_MOSTLY(_type, _name, _initvalue)	\
++	DEFINE_PER_CPU_READ_MOSTLY(_type, _name) = _initvalue
++
+ #define EXPORT_EARLY_PER_CPU_SYMBOL(_name)			\
+ 	EXPORT_PER_CPU_SYMBOL(_name)
+ 
+ #define DECLARE_EARLY_PER_CPU(_type, _name)			\
+ 	DECLARE_PER_CPU(_type, _name)
+ 
++#define DECLARE_EARLY_PER_CPU_READ_MOSTLY(_type, _name)		\
++	DECLARE_PER_CPU_READ_MOSTLY(_type, _name)
++
+ #define	early_per_cpu(_name, _cpu) per_cpu(_name, _cpu)
+ #define	early_per_cpu_ptr(_name) NULL
+ /* no early_per_cpu_map() */
+-- 
+1.7.5.4
 
-thanks,
-vlad
+
