@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753026Ab2EUPaI (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 May 2012 11:30:08 -0400
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:65374 "EHLO
+	id S1754052Ab2EUPaY (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 May 2012 11:30:24 -0400
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:60065 "EHLO
 	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752100Ab2EUPaC (ORCPT
+	with ESMTP id S1753529Ab2EUPaS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 May 2012 11:30:02 -0400
+	Mon, 21 May 2012 11:30:18 -0400
 From: Miklos Szeredi <miklos@szeredi.hu>
 To: viro@ZenIV.linux.org.uk
 Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
         hch@infradead.org, torvalds@linux-foundation.org, mszeredi@suse.cz
-Subject: [PATCH 01/16] vfs: split do_lookup()
-Date: Mon, 21 May 2012 17:30:05 +0200
-Message-Id: <1337614220-6174-2-git-send-email-miklos@szeredi.hu>
+Subject: [PATCH 05/16] vfs: make follow_link check RCU safe
+Date: Mon, 21 May 2012 17:30:09 +0200
+Message-Id: <1337614220-6174-6-git-send-email-miklos@szeredi.hu>
 X-Mailer: git-send-email 1.7.7
 In-Reply-To: <1337614220-6174-1-git-send-email-miklos@szeredi.hu>
 References: <1337614220-6174-1-git-send-email-miklos@szeredi.hu>
@@ -23,130 +23,51 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Miklos Szeredi <mszeredi@suse.cz>
 
-Split do_lookup() into two functions:
-
-  lookup_fast() - does cached lookup without i_mutex
-  lookup_slow() - does lookup with i_mutex
-
-Both follow managed dentries.
-
-The new functions are needed by atomic_open.
+This will allow this code to be used in RCU mode.
 
 Signed-off-by: Miklos Szeredi <mszeredi@suse.cz>
 ---
- fs/namei.c |   59 +++++++++++++++++++++++++++++++++++++++++++++--------------
- 1 files changed, 45 insertions(+), 14 deletions(-)
+ fs/namei.c |   12 ++++++++++--
+ 1 files changed, 10 insertions(+), 2 deletions(-)
 
 diff --git a/fs/namei.c b/fs/namei.c
-index c427919..b11fcb2 100644
+index 1dba4a7..67bddd6 100644
 --- a/fs/namei.c
 +++ b/fs/namei.c
-@@ -1138,8 +1138,8 @@ static struct dentry *__lookup_hash(struct qstr *name,
-  *  small and for now I'd prefer to have fast path as straight as possible.
-  *  It _is_ time-critical.
-  */
--static int do_lookup(struct nameidata *nd, struct qstr *name,
--			struct path *path, struct inode **inode)
-+static int lookup_fast(struct nameidata *nd, struct qstr *name,
-+		       struct path *path, struct inode **inode)
- {
- 	struct vfsmount *mnt = nd->path.mnt;
- 	struct dentry *dentry, *parent = nd->path.dentry;
-@@ -1208,7 +1208,7 @@ unlazy:
- 			goto need_lookup;
- 		}
+@@ -2203,6 +2203,7 @@ static struct file *do_last(struct nameidata *nd, struct path *path,
+ 	int acc_mode = op->acc_mode;
+ 	struct file *filp;
+ 	struct inode *inode;
++	int symlink_ok = 0;
+ 	int error;
+ 
+ 	nd->flags &= ~LOOKUP_PARENT;
+@@ -2234,7 +2235,6 @@ static struct file *do_last(struct nameidata *nd, struct path *path,
  	}
--done:
-+
- 	path->mnt = mnt;
- 	path->dentry = dentry;
- 	err = follow_managed(path, nd->flags);
-@@ -1222,6 +1222,17 @@ done:
- 	return 0;
  
- need_lookup:
-+	return 1;
-+}
-+
-+/* Fast lookup failed, do it the slow way */
-+static int lookup_slow(struct nameidata *nd, struct qstr *name,
-+		       struct path *path)
-+{
-+	struct dentry *dentry, *parent;
-+	int err;
-+
-+	parent = nd->path.dentry;
- 	BUG_ON(nd->inode != parent->d_inode);
+ 	if (!(open_flag & O_CREAT)) {
+-		int symlink_ok = 0;
+ 		if (nd->last.name[nd->last.len])
+ 			nd->flags |= LOOKUP_FOLLOW | LOOKUP_DIRECTORY;
+ 		if (open_flag & O_PATH && !(nd->flags & LOOKUP_FOLLOW))
+@@ -2366,8 +2366,16 @@ static struct file *do_last(struct nameidata *nd, struct path *path,
+ 	if (!inode)
+ 		goto exit_dput;
  
- 	mutex_lock(&parent->d_inode->i_mutex);
-@@ -1229,7 +1240,16 @@ need_lookup:
- 	mutex_unlock(&parent->d_inode->i_mutex);
- 	if (IS_ERR(dentry))
- 		return PTR_ERR(dentry);
--	goto done;
-+	path->mnt = nd->path.mnt;
-+	path->dentry = dentry;
-+	err = follow_managed(path, nd->flags);
-+	if (unlikely(err < 0)) {
-+		path_put_conditional(path, nd);
-+		return err;
+-	if (inode->i_op->follow_link)
++	if (should_follow_link(inode, !symlink_ok)) {
++		if (nd->flags & LOOKUP_RCU) {
++			if (unlikely(unlazy_walk(nd, path->dentry))) {
++				error = -ECHILD;
++				goto exit;
++			}
++		}
++		BUG_ON(inode != path->dentry->d_inode);
+ 		return NULL;
 +	}
-+	if (err)
-+		nd->flags |= LOOKUP_JUMPED;
-+	return 0;
- }
  
- static inline int may_lookup(struct nameidata *nd)
-@@ -1301,21 +1321,26 @@ static inline int walk_component(struct nameidata *nd, struct path *path,
- 	 */
- 	if (unlikely(type != LAST_NORM))
- 		return handle_dots(nd, type);
--	err = do_lookup(nd, name, path, &inode);
-+	err = lookup_fast(nd, name, path, &inode);
- 	if (unlikely(err)) {
--		terminate_walk(nd);
--		return err;
--	}
--	if (!inode) {
--		path_to_nameidata(path, nd);
--		terminate_walk(nd);
--		return -ENOENT;
-+		if (err < 0)
-+			goto out_err;
-+
-+		err = lookup_slow(nd, name, path);
-+		if (err < 0)
-+			goto out_err;
-+
-+		inode = path->dentry->d_inode;
- 	}
-+	err = -ENOENT;
-+	if (!inode)
-+		goto out_path_put;
-+
- 	if (should_follow_link(inode, follow)) {
- 		if (nd->flags & LOOKUP_RCU) {
- 			if (unlikely(unlazy_walk(nd, path->dentry))) {
--				terminate_walk(nd);
--				return -ECHILD;
-+				err = -ECHILD;
-+				goto out_err;
- 			}
- 		}
- 		BUG_ON(inode != path->dentry->d_inode);
-@@ -1324,6 +1349,12 @@ static inline int walk_component(struct nameidata *nd, struct path *path,
  	path_to_nameidata(path, nd);
  	nd->inode = inode;
- 	return 0;
-+
-+out_path_put:
-+	path_to_nameidata(path, nd);
-+out_err:
-+	terminate_walk(nd);
-+	return err;
- }
- 
- /*
 -- 
 1.7.7
 
