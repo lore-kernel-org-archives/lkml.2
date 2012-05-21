@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932502Ab2EUWuj (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 May 2012 18:50:39 -0400
-Received: from mail-gg0-f174.google.com ([209.85.161.174]:54067 "EHLO
-	mail-gg0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932312Ab2EUWug (ORCPT
+	id S1759472Ab2EUWut (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 May 2012 18:50:49 -0400
+Received: from mail-yx0-f174.google.com ([209.85.213.174]:60928 "EHLO
+	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932560Ab2EUWup (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 May 2012 18:50:36 -0400
+	Mon, 21 May 2012 18:50:45 -0400
 From: Robert Lee <rob.lee@linaro.org>
 To: kernel@pengutronix.de
 Cc: shawn.guo@linaro.org, u.kleine-koenig@pengutronix.de,
@@ -14,109 +14,173 @@ Cc: shawn.guo@linaro.org, u.kleine-koenig@pengutronix.de,
         daniel.lezcano@linaro.org, linux-arm-kernel@lists.infradead.org,
         linux-kernel@vger.kernel.org, linaro-dev@lists.linaro.org,
         patches@linaro.org, jj@chaosbits.net
-Subject: [PATCH v5 0/7] cleanup imx5 idle, add imx5/6 cpuidle
-Date: Mon, 21 May 2012 17:50:23 -0500
-Message-Id: <1337640630-29176-1-git-send-email-rob.lee@linaro.org>
+Subject: [PATCH v5 4/7] ARM: imx: Enable imx53 low power idle
+Date: Mon, 21 May 2012 17:50:27 -0500
+Message-Id: <1337640630-29176-5-git-send-email-rob.lee@linaro.org>
 X-Mailer: git-send-email 1.7.10
+In-Reply-To: <1337640630-29176-1-git-send-email-rob.lee@linaro.org>
+References: <1337640630-29176-1-git-send-email-rob.lee@linaro.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Cleanup up imx5 idle code and enable imx5 low powe idle for imx53.
+Add various functionality needed to enable a imx53 low power idle
+state.  This includes adding the imx53 gpc_dvfs clock and making a
+common imx5_late_init function and initializing all imx53
+ MACHINE_STATE late_init calls to imx5_late_init.
 
-Add common imx cpuidle initialization functionality and add a i.MX5 and i.MX6Q
-platform cpuidle implementation.
+Signed-off-by: Robert Lee <rob.lee@linaro.org>
+---
+ arch/arm/mach-imx/clk-imx51-imx53.c     |    2 +-
+ arch/arm/mach-imx/clock-mx51-mx53.c     |    1 +
+ arch/arm/mach-imx/imx53-dt.c            |    1 +
+ arch/arm/mach-imx/mach-mx53_ard.c       |    1 +
+ arch/arm/mach-imx/mach-mx53_evk.c       |    1 +
+ arch/arm/mach-imx/mach-mx53_loco.c      |    1 +
+ arch/arm/mach-imx/mach-mx53_smd.c       |    1 +
+ arch/arm/mach-imx/mm-imx5.c             |    5 +++++
+ arch/arm/mach-imx/pm-imx5.c             |    5 +++++
+ arch/arm/plat-mxc/include/mach/common.h |    3 +++
+ 10 files changed, 20 insertions(+), 1 deletion(-)
 
-Based on v3.4 plus recently submitted/accepted MACHINE_INIT late_initcall 
- patch series: http://www.spinics.net/lists/arm-kernel/msg171620.html and common
- clock patch series:
- http://comments.gmane.org/gmane.linux.ports.arm.kernel/161043
-
-v5 changes:
- * rebase to v3.4 plus common clock patch series
- * various trivial changes/fixes from v4 submssion
- * Add separate pm_init patch for imx51 and imx53
-
-v4 changes:
- * Added several imx5 idle cleanups to series.
- * Modified imx_io_p2v function to allow common imx5 AIPS2 bus virutal address
- * Added comment to tzic_wakeup_enable().
- * Movied imx5 idle code from mm-imx5.c to pm-imx5.c.
- * Removed unnecessary time consuming code execution that ran on each idle
-   instance.
- * modified imx5_pm_init to be a late_initcall
- * added late_initcall to all imx53 MACHINE_START entries.
- * enabled imx5 low power idle for imx53
- * rebased cpuidle driver on top of imx5 cleanup changes.
- * modified cpuidle driver exit time to reflect removal of unnecessary code
-
-http://comments.gmane.org/gmane.linux.linaro.devel/11858
-   
-
-v3 changes:
- * removed file introduced in v1 no longer needed after v2 [per Shawn Guo]
- * re-ordered added #includes in alphabetical order [per Shawn Guo]
- * Remove if(!drv) check to allow handling by stack trace [per Sascha Hauer]
- * Added missing return value in error meesage [per Shawn Guo]
- * fixed (void *) casting problem pointed out Sasha Hauer.  Used a different
-   type of casting to properly give warning on improper casting:
-   	arm_pm_idle = (void (*)(void))imx5_idle;
-   Used this casting instead of adding a dummy caller function because
-   adding the dummy function appears to unnecessarily introduce the following
-   additional operations:
-	static void imx5_pm_idle(void)
-	{
-	  a0:	e1a0c00d 	mov	ip, sp
-	  a4:	e92dd800 	push	{fp, ip, lr, pc}
-	  a8:	e24cb004 	sub	fp, ip, #4
-		imx5_idle();
-	  ac:	ebffffd3 	bl	0 <imx5_idle>
-	}
-	  b0:	e89da800 	ldm	sp, {fp, sp, pc}
-
-http://permalink.gmane.org/gmane.linux.linaro.devel/11653
-
-v2 changes:
- * Removed some unnecessary  spaces [per Jess Juhl]
- * Added return value for an error message [per Sascha Hauer]
- * Reworked init scheme to use device tree late_initcall [per Sascha and Shawn]
- * Moved imx6q and imx5 cpuidle functionality to existing files.
-
-https://lkml.org/lkml/2012/5/1/363
-
-v1 initial submission:
-
-https://lkml.org/lkml/2012/4/16/644
-
-Robert Lee (7):
-  ARM: imx: Modify IMX_IO_P2V macro
-  ARM: imx: Add comments to tzic_enable_waker()
-  ARM: imx: clean and consolidate imx5 suspend and idle code
-  ARM: imx: Enable imx53 low power idle
-  ARM: imx: Add common imx cpuidle init functionality.
-  ARM: imx: Add imx5 cpuidle
-  ARM: imx: Add imx6q cpuidle driver
-
- arch/arm/mach-imx/clk-imx51-imx53.c       |    2 +-
- arch/arm/mach-imx/clock-mx51-mx53.c       |    1 +
- arch/arm/mach-imx/imx53-dt.c              |    1 +
- arch/arm/mach-imx/mach-imx6q.c            |   19 +++++
- arch/arm/mach-imx/mach-mx53_ard.c         |    1 +
- arch/arm/mach-imx/mach-mx53_evk.c         |    1 +
- arch/arm/mach-imx/mach-mx53_loco.c        |    1 +
- arch/arm/mach-imx/mach-mx53_smd.c         |    1 +
- arch/arm/mach-imx/mm-imx5.c               |   26 ++-----
- arch/arm/mach-imx/pm-imx5.c               |  111 ++++++++++++++++++++++-------
- arch/arm/plat-mxc/Makefile                |    1 +
- arch/arm/plat-mxc/cpuidle.c               |   80 +++++++++++++++++++++
- arch/arm/plat-mxc/include/mach/common.h   |    6 +-
- arch/arm/plat-mxc/include/mach/cpuidle.h  |   22 ++++++
- arch/arm/plat-mxc/include/mach/hardware.h |   25 ++++---
- arch/arm/plat-mxc/tzic.c                  |    4 ++
- 16 files changed, 243 insertions(+), 59 deletions(-)
- create mode 100644 arch/arm/plat-mxc/cpuidle.c
- create mode 100644 arch/arm/plat-mxc/include/mach/cpuidle.h
-
+diff --git a/arch/arm/mach-imx/clk-imx51-imx53.c b/arch/arm/mach-imx/clk-imx51-imx53.c
+index 66633d5..834a87d 100644
+--- a/arch/arm/mach-imx/clk-imx51-imx53.c
++++ b/arch/arm/mach-imx/clk-imx51-imx53.c
+@@ -245,6 +245,7 @@ static void __init mx5_clocks_common_init(unsigned long rate_ckil,
+ 	clk_register_clkdev(clk[dummy], NULL, "imx-keypad");
+ 	clk_register_clkdev(clk[tve_gate], NULL, "imx-tve.0");
+ 	clk_register_clkdev(clk[ipu_di1_gate], "di1", "imx-tve.0");
++	clk_register_clkdev(clk[gpc_dvfs], "gpc_dvfs", NULL);
+ 
+ 	/* Set SDHC parents to be PLL2 */
+ 	clk_set_parent(clk[esdhc_a_sel], clk[pll2_sw]);
+@@ -302,7 +303,6 @@ int __init mx51_clocks_init(unsigned long rate_ckil, unsigned long rate_osc,
+ 	clk_register_clkdev(clk[mx51_mipi], "mipi_hsp", NULL);
+ 	clk_register_clkdev(clk[vpu_gate], NULL, "imx51-vpu.0");
+ 	clk_register_clkdev(clk[fec_gate], NULL, "imx27-fec.0");
+-	clk_register_clkdev(clk[gpc_dvfs], "gpc_dvfs", NULL);
+ 	clk_register_clkdev(clk[ipu_gate], "bus", "imx51-ipu");
+ 	clk_register_clkdev(clk[ipu_di0_gate], "di0", "imx51-ipu");
+ 	clk_register_clkdev(clk[ipu_di1_gate], "di1", "imx51-ipu");
+diff --git a/arch/arm/mach-imx/clock-mx51-mx53.c b/arch/arm/mach-imx/clock-mx51-mx53.c
+index 0847050..decedc6 100644
+--- a/arch/arm/mach-imx/clock-mx51-mx53.c
++++ b/arch/arm/mach-imx/clock-mx51-mx53.c
+@@ -1529,6 +1529,7 @@ static struct clk_lookup mx53_lookups[] = {
+ 	_REGISTER_CLOCK("imx-ssi.1", NULL, ssi2_clk)
+ 	_REGISTER_CLOCK("imx-ssi.2", NULL, ssi3_clk)
+ 	_REGISTER_CLOCK("imx-keypad", NULL, dummy_clk)
++	_REGISTER_CLOCK(NULL, "gpc_dvfs", gpc_dvfs_clk)
+ 	_REGISTER_CLOCK("pata_imx", NULL, pata_clk)
+ 	_REGISTER_CLOCK("imx53-ahci.0", "ahci", sata_clk)
+ 	_REGISTER_CLOCK("imx53-ahci.0", "ahci_phy", ahci_phy_clk)
+diff --git a/arch/arm/mach-imx/imx53-dt.c b/arch/arm/mach-imx/imx53-dt.c
+index 4172279..c502619 100644
+--- a/arch/arm/mach-imx/imx53-dt.c
++++ b/arch/arm/mach-imx/imx53-dt.c
+@@ -125,6 +125,7 @@ DT_MACHINE_START(IMX53_DT, "Freescale i.MX53 (Device Tree Support)")
+ 	.handle_irq	= imx53_handle_irq,
+ 	.timer		= &imx53_timer,
+ 	.init_machine	= imx53_dt_init,
++	.init_late	= imx53_init_late,
+ 	.dt_compat	= imx53_dt_board_compat,
+ 	.restart	= mxc_restart,
+ MACHINE_END
+diff --git a/arch/arm/mach-imx/mach-mx53_ard.c b/arch/arm/mach-imx/mach-mx53_ard.c
+index 0564198..f1e83d6 100644
+--- a/arch/arm/mach-imx/mach-mx53_ard.c
++++ b/arch/arm/mach-imx/mach-mx53_ard.c
+@@ -266,5 +266,6 @@ MACHINE_START(MX53_ARD, "Freescale MX53 ARD Board")
+ 	.handle_irq = imx53_handle_irq,
+ 	.timer = &mx53_ard_timer,
+ 	.init_machine = mx53_ard_board_init,
++	.init_late	= imx53_init_late,
+ 	.restart	= mxc_restart,
+ MACHINE_END
+diff --git a/arch/arm/mach-imx/mach-mx53_evk.c b/arch/arm/mach-imx/mach-mx53_evk.c
+index 5a72188..8387496 100644
+--- a/arch/arm/mach-imx/mach-mx53_evk.c
++++ b/arch/arm/mach-imx/mach-mx53_evk.c
+@@ -174,5 +174,6 @@ MACHINE_START(MX53_EVK, "Freescale MX53 EVK Board")
+ 	.handle_irq = imx53_handle_irq,
+ 	.timer = &mx53_evk_timer,
+ 	.init_machine = mx53_evk_board_init,
++	.init_late	= imx53_init_late,
+ 	.restart	= mxc_restart,
+ MACHINE_END
+diff --git a/arch/arm/mach-imx/mach-mx53_loco.c b/arch/arm/mach-imx/mach-mx53_loco.c
+index 37f67ca..e266f3f 100644
+--- a/arch/arm/mach-imx/mach-mx53_loco.c
++++ b/arch/arm/mach-imx/mach-mx53_loco.c
+@@ -316,5 +316,6 @@ MACHINE_START(MX53_LOCO, "Freescale MX53 LOCO Board")
+ 	.handle_irq = imx53_handle_irq,
+ 	.timer = &mx53_loco_timer,
+ 	.init_machine = mx53_loco_board_init,
++	.init_late	= imx53_init_late,
+ 	.restart	= mxc_restart,
+ MACHINE_END
+diff --git a/arch/arm/mach-imx/mach-mx53_smd.c b/arch/arm/mach-imx/mach-mx53_smd.c
+index 8e972c5..4f4c1b9 100644
+--- a/arch/arm/mach-imx/mach-mx53_smd.c
++++ b/arch/arm/mach-imx/mach-mx53_smd.c
+@@ -163,5 +163,6 @@ MACHINE_START(MX53_SMD, "Freescale MX53 SMD Board")
+ 	.handle_irq = imx53_handle_irq,
+ 	.timer = &mx53_smd_timer,
+ 	.init_machine = mx53_smd_board_init,
++	.init_late	= imx53_init_late,
+ 	.restart	= mxc_restart,
+ MACHINE_END
+diff --git a/arch/arm/mach-imx/mm-imx5.c b/arch/arm/mach-imx/mm-imx5.c
+index ff7fa61..85bc52a 100644
+--- a/arch/arm/mach-imx/mm-imx5.c
++++ b/arch/arm/mach-imx/mm-imx5.c
+@@ -221,3 +221,8 @@ void __init imx51_init_late(void)
+ 	mx51_neon_fixup();
+ 	imx51_pm_init();
+ }
++
++void __init imx53_init_late(void)
++{
++	imx53_pm_init();
++}
+diff --git a/arch/arm/mach-imx/pm-imx5.c b/arch/arm/mach-imx/pm-imx5.c
+index baf9321..b3dcd8e 100644
+--- a/arch/arm/mach-imx/pm-imx5.c
++++ b/arch/arm/mach-imx/pm-imx5.c
+@@ -166,3 +166,8 @@ void __init imx51_pm_init(void)
+ 	if (!ret)
+ 		suspend_set_ops(&mx5_suspend_ops);
+ }
++
++void __init imx53_pm_init(void)
++{
++	imx5_pm_common_init();
++}
+diff --git a/arch/arm/plat-mxc/include/mach/common.h b/arch/arm/plat-mxc/include/mach/common.h
+index f65d068..3314e69 100644
+--- a/arch/arm/plat-mxc/include/mach/common.h
++++ b/arch/arm/plat-mxc/include/mach/common.h
+@@ -54,6 +54,7 @@ extern void imx50_soc_init(void);
+ extern void imx51_soc_init(void);
+ extern void imx53_soc_init(void);
+ extern void imx51_init_late(void);
++extern void imx53_init_late(void);
+ extern void epit_timer_init(struct clk *timer_clk, void __iomem *base, int irq);
+ extern void mxc_timer_init(struct clk *timer_clk, void __iomem *, int);
+ extern int mx1_clocks_init(unsigned long fref);
+@@ -146,9 +147,11 @@ extern void imx6q_clock_map_io(void);
+ #ifdef CONFIG_PM
+ extern void imx6q_pm_init(void);
+ extern void imx51_pm_init(void);
++extern void imx53_pm_init(void);
+ #else
+ static inline void imx6q_pm_init(void) {}
+ static inline void imx51_pm_init(void) {}
++static inline void imx53_pm_init(void) {}
+ #endif
+ 
+ #ifdef CONFIG_NEON
 -- 
 1.7.10
 
