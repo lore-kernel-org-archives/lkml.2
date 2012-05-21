@@ -1,59 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757483Ab2EUJlm (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 May 2012 05:41:42 -0400
-Received: from mail-lb0-f174.google.com ([209.85.217.174]:53279 "EHLO
-	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755168Ab2EUJll (ORCPT
+	id S1757510Ab2EUJmG (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 May 2012 05:42:06 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:38967 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756802Ab2EUJmD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 May 2012 05:41:41 -0400
-Date: Mon, 21 May 2012 11:41:38 +0200
-From: Johan Hovold <jhovold@gmail.com>
-To: Samuel Ortiz <sameo@linux.intel.com>
-Cc: Johan Hovold <jhovold@gmail.com>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/2] mfd: Add r_select to lm3533 platform data
-Message-ID: <20120521094138.GA20694@localhost>
-References: <1337365366-14385-1-git-send-email-jhovold@gmail.com>
- <20120520131337.GU12015@sortiz-mobl>
- <20120521084539.GB21033@localhost>
- <20120521090844.GA12015@sortiz-mobl>
+	Mon, 21 May 2012 05:42:03 -0400
+Date: Mon, 21 May 2012 02:41:32 -0700
+From: tip-bot for Vaibhav Nagarnaik <vnagarnaik@google.com>
+Message-ID: <tip-b48285980de2070948c8ac73629c605ad9202589@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, vnagarnaik@google.com, hpa@zytor.com,
+        mingo@kernel.org, peterz@infradead.org, dhsharp@google.com,
+        namhyung.kim@lge.com, bp@alien8.de, jolsa@redhat.com,
+        fweisbec@gmail.com, acme@infradead.org, mrubin@google.com,
+        rostedt@goodmis.org, tglx@linutronix.de, asharma@fb.com
+Reply-To: mingo@kernel.org, hpa@zytor.com, vnagarnaik@google.com,
+        linux-kernel@vger.kernel.org, dhsharp@google.com, peterz@infradead.org,
+        namhyung.kim@lge.com, bp@alien8.de, jolsa@redhat.com,
+        fweisbec@gmail.com, rostedt@goodmis.org, acme@infradead.org,
+        mrubin@google.com, tglx@linutronix.de, asharma@fb.com
+In-Reply-To: <1310785241-3799-4-git-send-email-vnagarnaik@google.com>
+References: <1310785241-3799-4-git-send-email-vnagarnaik@google.com>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:perf/core] parse-events: Support '+' opcode in print format
+Git-Commit-ID: b48285980de2070948c8ac73629c605ad9202589
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-In-Reply-To: <20120521090844.GA12015@sortiz-mobl>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Mon, 21 May 2012 02:41:37 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, May 21, 2012 at 11:08:44AM +0200, Samuel Ortiz wrote:
-> Hi Johan,
-> 
-> On Mon, May 21, 2012 at 10:45:39AM +0200, Johan Hovold wrote:
-> > On Sun, May 20, 2012 at 03:13:37PM +0200, Samuel Ortiz wrote:
-> > > Hi Johan,
-> > > 
-> > > On Fri, May 18, 2012 at 08:22:45PM +0200, Johan Hovold wrote:
-> > > > Add resistor-select parameter to the platform data.
-> > > > 
-> > > > Signed-off-by: Johan Hovold <jhovold@gmail.com>
-> > > > ---
-> > > > 
-> > > > Hi Samuel, 
-> > > > 
-> > > > I believe this one needs to go in through mfd as the iio driver
-> > > > destined for staging-next depends on it.
-> > > It should go along with the iio driver if there is a build dependency.
-> > > No doing so will prevent the tree from being bisectable.
-> > 
-> > The sub-drivers already depend on mfd to build as this is where the
-> > header file resides. 
-> I haven't looked at it, but if the iio driver Kconfig entry depends on
-> MFD_LM3533, then I can take this change in as no one will be able to build
-> your iio driver until the MFD driver is merged.
-> Is that the case ?
+Commit-ID:  b48285980de2070948c8ac73629c605ad9202589
+Gitweb:     http://git.kernel.org/tip/b48285980de2070948c8ac73629c605ad9202589
+Author:     Vaibhav Nagarnaik <vnagarnaik@google.com>
+AuthorDate: Fri, 6 Apr 2012 00:48:03 +0200
+Committer:  Frederic Weisbecker <fweisbec@gmail.com>
+CommitDate: Wed, 25 Apr 2012 13:35:38 +0200
 
-Yes, it is.
+parse-events: Support '+' opcode in print format
 
-Thanks,
-Johan
+The '+' opcode is not supported in the arguments for the print format.
+This patch adds support for it.
+
+Cc: Michael Rubin <mrubin@google.com>
+Cc: David Sharp <dhsharp@google.com>
+Signed-off-by: Vaibhav Nagarnaik <vnagarnaik@google.com>
+Link: http://lkml.kernel.org/r/1310785241-3799-4-git-send-email-vnagarnaik@google.com
+Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+Cc: Ingo Molnar <mingo@kernel.org>
+Cc: Thomas Gleixner <tglx@linutronix.de>
+Cc: Peter Zijlstra <peterz@infradead.org>
+Cc: Arnaldo Carvalho de Melo <acme@infradead.org>
+Cc: Steven Rostedt <rostedt@goodmis.org>
+Cc: Borislav Petkov <bp@alien8.de>
+Cc: Jiri Olsa <jolsa@redhat.com>
+Cc: Arun Sharma <asharma@fb.com>
+Cc: Namhyung Kim <namhyung.kim@lge.com>
+Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
+---
+ tools/lib/traceevent/event-parse.c |   12 ++++++++++++
+ 1 files changed, 12 insertions(+), 0 deletions(-)
+
+diff --git a/tools/lib/traceevent/event-parse.c b/tools/lib/traceevent/event-parse.c
+index 4d5092f..476626a 100644
+--- a/tools/lib/traceevent/event-parse.c
++++ b/tools/lib/traceevent/event-parse.c
+@@ -2047,6 +2047,18 @@ static int arg_num_eval(struct print_arg *arg, long long *val)
+ 				break;
+ 			*val = left - right;
+ 			break;
++		case '+':
++			if (arg->op.left->type == PRINT_NULL)
++				left = 0;
++			else
++				ret = arg_num_eval(arg->op.left, &left);
++			if (!ret)
++				break;
++			ret = arg_num_eval(arg->op.right, &right);
++			if (!ret)
++				break;
++			*val = left + right;
++			break;
+ 		default:
+ 			do_warning("unknown op '%s'", arg->op.op);
+ 			ret = 0;
