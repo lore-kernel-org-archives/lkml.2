@@ -1,58 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754030Ab2EUHLs (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 May 2012 03:11:48 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:6089 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751741Ab2EUHLr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 May 2012 03:11:47 -0400
-Date: Mon, 21 May 2012 09:11:36 +0200
-From: Alexander Gordeev <agordeev@redhat.com>
-To: Cyrill Gorcunov <gorcunov@openvz.org>
-Cc: linux-kernel@vger.kernel.org, x86@kernel.org,
-        Suresh Siddha <suresh.b.siddha@intel.com>,
-        Yinghai Lu <yinghai@kernel.org>
-Subject: Re: [PATCH 2/3] x86: x2apic/cluster: Make use of lowest priority
- delivery mode
-Message-ID: <20120521071135.GA28930@dhcp-26-207.brq.redhat.com>
-References: <20120518102640.GB31517@dhcp-26-207.brq.redhat.com>
- <20120518144153.GD8455@moon>
- <20120518154236.GA23406@dhcp-26-207.brq.redhat.com>
- <20120518155119.GG8455@moon>
- <20120519104725.GA18768@moon>
+	id S1754213Ab2EUHMe (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 May 2012 03:12:34 -0400
+Received: from alpha.arachsys.com ([91.203.57.7]:49694 "EHLO
+	alpha.arachsys.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751885Ab2EUHMd (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 21 May 2012 03:12:33 -0400
+Date: Mon, 21 May 2012 08:12:26 +0100
+From: Richard Davies <richard.davies@elastichosts.com>
+To: Rik van Riel <riel@redhat.com>
+Cc: KOSAKI Motohiro <kosaki.motohiro@gmail.com>,
+        Satoru Moriya <satoru.moriya@hds.com>,
+        Jerome Marchand <jmarchan@redhat.com>,
+        "jweiner@redhat.com" <jweiner@redhat.com>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "lwoodman@redhat.com" <lwoodman@redhat.com>,
+        "shaohua.li@intel.com" <shaohua.li@intel.com>,
+        "dle-develop@lists.sourceforge.net" 
+	<dle-develop@lists.sourceforge.net>,
+        Seiji Aguchi <seiji.aguchi@hds.com>,
+        Minchan Kim <minchan.kim@gmail.com>
+Subject: Re: [RFC][PATCH] avoid swapping out with swappiness==0
+Message-ID: <20120521071226.GJ29495@alpha.arachsys.com>
+References: <65795E11DBF1E645A09CEC7EAEE94B9CB951A45F@USINDEVS02.corp.hds.com>
+ <20120424082019.GA18395@alpha.arachsys.com>
+ <65795E11DBF1E645A09CEC7EAEE94B9C014649EC4D@USINDEVS02.corp.hds.com>
+ <20120426142643.GA18863@alpha.arachsys.com>
+ <CAHGf_=pcmFrWjfW3eQi_AiemQEm_e=gBZ24s+Hiythmd=J9EUQ@mail.gmail.com>
+ <4FA82C11.2030805@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20120519104725.GA18768@moon>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <4FA82C11.2030805@redhat.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, May 19, 2012 at 02:47:25PM +0400, Cyrill Gorcunov wrote:
-> On Fri, May 18, 2012 at 07:51:19PM +0400, Cyrill Gorcunov wrote:
+Hi Satoru,
 
-> > Ah, you mean io-apic here. I'll try to find some time tonight/tomorrow-morning
-> > for review. Thanks!
-> 
-> Sorry for delay, Alexander. I can only review the code (I've no x2apic
-> testing machine at the moment) and it looks good for me.
-> 
-> Reviewed-by: Cyrill Gorcunov <gorcunov@openvz.org>
+Rik van Riel wrote:
+> KOSAKI Motohiro wrote:
+> > Richard Davies wrote:
+> > >Satoru Moriya wrote:
+> > > > > I have run into problems with heavy swapping with swappiness==0 and
+> > > > > was pointed to this thread (
+> > > > > http://marc.info/?l=linux-mm&m=133522782307215 )
+> > > >
+> > > > Did you test this patch with your workload?
+> > >
+> > > I haven't yet tested this patch. It takes a long time since these are
+> > > production machines, and the bug itself takes several weeks of
+> > > production use to really show up.
+> > >
+> > > Rik van Riel has pointed out a lot of VM tweaks that he put into 3.4:
+> > > http://marc.info/?l=linux-mm&m=133536506926326
+> > >
+> > > My intention is to reboot half of our machines into plain 3.4 once it
+> > > is out, and half onto 3.4 + your patch.
+> > >
+> > > Then we can compare behaviour.
+> > >
+> > > Will your patch apply cleanly on 3.4?
+> >
+> > Note. This patch doesn't solve your issue. This patch mean,
+> > when occuring very few swap io, it change to 0. But you said
+> > you are seeing eager swap io. As Dave already pointed out, your
+> > machine have buffer head issue.
+> >
+> > So, this thread is pointless.
+>
+> Running KVM guests directly off block devices results in a lot
+> of buffer cache.
+>
+> I suspect that this patch will in fact fix Richard's issue.
+>
+> The patch is small, fairly simple and looks like it will fix
+> people's problems. It also makes swappiness=0 behave the way
+> most people seem to imagine it would work.
+>
+> If it works for a few people (test results), I believe we
+> might as well merge it.
+>
+> Yes, for cgroups we may need additional logic, but we can
+> sort that out as we go along.
 
-Thank you, Cyrill.
+Now that 3.4 is out with Rik's fixes, I'm keen to start testing with and
+without this extra patch.
 
-> p.s. Hope Suresh and Yinghai will take a look too. The thing which bothers
-> me is that we use LowPrio delivery mode, while there is no lowprio in
-> x2apic ipi messages and I assume the same should apply to ioapic generated
-> messages.
+Satoru - should I just apply your original patch (most likely), or do you
+need to update for the final released kernel?
 
-My understanding of the specification is LowestPrio is not supported only for
-IPIs on x2APIC. Can not imagine why IO-APICs need to be limited here. But let's
-hear what the guys think.
+Thanks,
 
-
--- 
-Regards,
-Alexander Gordeev
-agordeev@redhat.com
+Richard.
