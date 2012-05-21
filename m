@@ -1,63 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752371Ab2EUFcJ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 May 2012 01:32:09 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:36328 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751934Ab2EUFcH (ORCPT
+	id S1752175Ab2EUGAX (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 May 2012 02:00:23 -0400
+Received: from mail-wi0-f172.google.com ([209.85.212.172]:63504 "EHLO
+	mail-wi0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751144Ab2EUGAW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 May 2012 01:32:07 -0400
-Date: Sun, 20 May 2012 22:32:00 -0700
-From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-To: "Ujfalusi, Peter" <peter.ujfalusi@ti.com>
-Cc: Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Liam Girdwood <lrg@ti.com>, Benoit Cousson <b-cousson@ti.com>,
-        linux-kernel@vger.kernel.org, devicetree-discuss@lists.ozlabs.org
-Subject: Re: [PATCH] Input: twl6040-vibra: Update for device tree support
-Message-ID: <20120521053159.GA30285@core.coreip.homeip.net>
-References: <1337167186-8535-1-git-send-email-peter.ujfalusi@ti.com>
- <20120516193546.GA15920@core.coreip.homeip.net>
- <CAPo=G1zf1XJcoKgCxMn3X09T0LOUG-9aw3iopqC7OPqcuc5hcQ@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <CAPo=G1zf1XJcoKgCxMn3X09T0LOUG-9aw3iopqC7OPqcuc5hcQ@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Mon, 21 May 2012 02:00:22 -0400
+From: Yong Zhang <yong.zhang0@gmail.com>
+To: linux-mips@linux-mips.org, linux-kernel@vger.kernel.org
+Cc: ralf@linux-mips.org, sshtylyov@mvista.com, david.daney@cavium.com
+Subject: [V1 PATCH 0/8] patchset focus on MIPS SMP woes
+Date: Mon, 21 May 2012 14:00:00 +0800
+Message-Id: <1337580008-7280-1-git-send-email-yong.zhang0@gmail.com>
+X-Mailer: git-send-email 1.7.5.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, May 16, 2012 at 10:55:13PM +0300, Ujfalusi, Peter wrote:
-> Hi Dmitry,
-> 
-> On Wed, May 16, 2012 at 10:35 PM, Dmitry Torokhov
-> <dmitry.torokhov@gmail.com> wrote:
-> > So in this case why don't you have parent parse all DT data and
-> > construct instance of pdata for vibra driver to consume?
-> 
-> If there is a need to change the parameters (add new ones for example)
-> for the vibra driver in this way the change in code only need to be
-> done in the vibra driver.
-> If the MFD core would construct the pdata, in this case I would need
-> to modify both the MFD core and vibra driver.
-
-Hmm, I am getting:
-
-  CC      drivers/input/misc/twl6040-vibra.o
-drivers/input/misc/twl6040-vibra.c: In function ‘twl6040_vibra_probe’:
-drivers/input/misc/twl6040-vibra.c:263:9: error: implicit declaration of
-function ‘of_find_node_by_name’ [-Werror=implicit-function-declaration]
-drivers/input/misc/twl6040-vibra.c:263:42: warning: initialization makes
-pointer from integer without a cast [enabled by default]
-cc1: some warnings being treated as errors
-make[1]: *** [drivers/input/misc/twl6040-vibra.o] Error 1
-make: *** [drivers/input/misc/twl6040-vibra.o] Error 2
+Changes from V0:
+  a) Fix grammar and add summary for commit reference; (Sergei Shtylyov)
+  b) Collect Acks
 
 
-it looks like there is no stub for of_find_node_by_name().
+Since commit 5fbd036b [sched: Cleanup cpu_active madness] and
+commit 2baab4e9 [sched: Fix select_fallback_rq() vs cpu_active/cpu_online],
+it's more safe to put notify_cpu_starting() and set_cpu_online() with
+irq disabled, otherwise we will have a typical race condition which
+above two commits try to resolve:
 
-Thanks.
+       CPU1                            CPU2
+__cpu_up();
+    mp_ops->boot_secondary();
+                               start_secondary();
+                                 ->init_secondary();
+                                   local_irq_enable();
+                               <IRQ>
+                               do something;
+                                     wake up softirqd;
+                                     try_to_wake_up();
+                                       select_fallback_rq();
+                                       /* select wrong cpu */
+    set_cpu_online();
+
+
+This patchset fix the above issue as well as set_cpu_online is
+called on the caller cpu.
+
+BTW, I'm only running it on Cavium board because of limited source,
+so if anyone is interested to test it on other board, that's great :)
+
+Yong Zhang (8):
+  MIPS: Octeon: delay enable irq to ->smp_finish()
+  MIPS: BMIPS: delay irq enable to ->smp_finish()
+  MIPS: SMTC: delay irq enable to ->smp_finish()
+  MIPS: Yosemite: delay irq enable to ->smp_finish()
+  MIPS: call ->smp_finish() a little late
+  MIPS: call set_cpu_online() on the uping cpu with irq disabled
+  MIPS: smp: Warn on too early irq enable
+  MIPS: sync-r4k: remove redundant irq operation
+
+ arch/mips/cavium-octeon/smp.c       |    2 +-
+ arch/mips/kernel/smp-bmips.c        |   14 +++++++-------
+ arch/mips/kernel/smp.c              |   12 +++++++++---
+ arch/mips/kernel/smtc.c             |    3 ++-
+ arch/mips/kernel/sync-r4k.c         |    5 -----
+ arch/mips/pmc-sierra/yosemite/smp.c |    2 +-
+ 6 files changed, 20 insertions(+), 18 deletions(-)
 
 -- 
-Dmitry
+1.7.5.4
+
