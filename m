@@ -1,82 +1,120 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752155Ab2EUFVb (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 May 2012 01:21:31 -0400
-Received: from haggis.pcug.org.au ([203.10.76.10]:37574 "EHLO
-	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751467Ab2EUFVa (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 May 2012 01:21:30 -0400
-Date: Mon, 21 May 2012 15:21:16 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Alexander Graf <agraf@suse.de>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Christian Borntraeger <borntraeger@de.ibm.com>,
-        Avi Kivity <avi@qumranet.com>, Marcelo Tosatti <mtosatti@redhat.com>,
-        Paul Mackerras <paulus@samba.org>
-Subject: linux-next: manual merge of the kvm-ppc tree with the kvm tree
-Message-Id: <20120521152116.4e0c2e8d908771e6fe88e6f6@canb.auug.org.au>
-X-Mailer: Sylpheed 3.2.0beta7 (GTK+ 2.24.10; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Mon__21_May_2012_15_21_16_+1000_wS=1puE2X70kXgnG"
+	id S1752455Ab2EUFWy (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 May 2012 01:22:54 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:49693 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751694Ab2EUFWw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 21 May 2012 01:22:52 -0400
+Message-ID: <4FB9D123.9030002@redhat.com>
+Date: Mon, 21 May 2012 13:22:43 +0800
+From: Jason Wang <jasowang@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
+MIME-Version: 1.0
+To: Shirley Ma <mashirle@us.ibm.com>
+CC: "Michael S. Tsirkin" <mst@redhat.com>, eric.dumazet@gmail.com,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        ebiederm@xmission.com, davem@davemloft.net
+Subject: Re: [V2 PATCH 9/9] vhost: zerocopy: poll vq in zerocopy callback
+References: <20120502033901.11782.13157.stgit@amd-6168-8-1.englab.nay.redhat.com>  <20120502034254.11782.27314.stgit@amd-6168-8-1.englab.nay.redhat.com>  <1337100630.8220.4.camel@oc3660625478.ibm.com> <4FB317C8.90002@redhat.com>  <1337181027.10741.13.camel@oc3660625478.ibm.com>  <20120516151444.GC9934@redhat.com>  <1337189525.10741.24.camel@oc3660625478.ibm.com>  <20120516183629.GJ10769@redhat.com> <1337195303.10741.37.camel@oc3660625478.ibm.com>
+In-Reply-To: <1337195303.10741.37.camel@oc3660625478.ibm.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Mon__21_May_2012_15_21_16_+1000_wS=1puE2X70kXgnG
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On 05/17/2012 03:08 AM, Shirley Ma wrote:
+> On Wed, 2012-05-16 at 21:36 +0300, Michael S. Tsirkin wrote:
+>> On Wed, May 16, 2012 at 10:32:05AM -0700, Shirley Ma wrote:
+>>> On Wed, 2012-05-16 at 18:14 +0300, Michael S. Tsirkin wrote:
+>>>> On Wed, May 16, 2012 at 08:10:27AM -0700, Shirley Ma wrote:
+>>>>> On Wed, 2012-05-16 at 10:58 +0800, Jason Wang wrote:
+>>>>>>>>    drivers/vhost/vhost.c |    1 +
+>>>>>>>>    1 files changed, 1 insertions(+), 0 deletions(-)
+>>>>>>>>
+>>>>>>>> diff --git a/drivers/vhost/vhost.c b/drivers/vhost/vhost.c
+>>>>>>>> index 947f00d..7b75fdf 100644
+>>>>>>>> --- a/drivers/vhost/vhost.c
+>>>>>>>> +++ b/drivers/vhost/vhost.c
+>>>>>>>> @@ -1604,6 +1604,7 @@ void vhost_zerocopy_callback(void
+>> *arg)
+>>>>>>>>           struct vhost_ubuf_ref *ubufs = ubuf->arg;
+>>>>>>>>           struct vhost_virtqueue *vq = ubufs->vq;
+>>>>>>>>
+>>>>>>>> +       vhost_poll_queue(&vq->poll);
+>>>>>>>>           /* set len = 1 to mark this desc buffers done DMA
+>> */
+>>>>>>>>           vq->heads[ubuf->desc].len = VHOST_DMA_DONE_LEN;
+>>>>>>>>           kref_put(&ubufs->kref,
+>> vhost_zerocopy_done_signal);
+>>>>>>> Doing so, we might have redundant vhost_poll_queue(). Do you
+>>>> know in
+>>>>>>> which scenario there might be missing of adding and
+>> signaling
+>>>> during
+>>>>>>> zerocopy?
+>>>>>> Yes, as we only do signaling and adding during tx work, if
+>> there's
+>>>> no
+>>>>>> tx
+>>>>>> work when the skb were sent, we may lose the opportunity to
+>> let
+>>>> guest
+>>>>>> know about the completion. It's easy to be reproduced with
+>> netperf
+>>>>>> test.
+>>>>> The reason which host signals guest is to free guest tx buffers,
+>> if
+>>>>> there is no tx work, then it's not necessary to signal the guest
+>>>> unless
+>>>>> guest runs out of memory. The pending buffers will be released
+>>>>> virtio_net device gone.
+>>>>>
+>>>>> What's the behavior of netperf test when you hit this situation?
+>>>>>
+>>>>> Thanks
+>>>>> Shirley
+>>>> IIRC guest networking seems to be lost.
+>>> It seems vhost_enable_notify is missing in somewhere else?
+>>>
+>>> Thanks
+>>> Shirley
+>> Donnu. I see virtio sending packets but they do not get
+>> to tun on host. debugging.
+> I looked at the code, if (zerocopy) check is needed for below code:
+>
+> +	if (zerocopy) {
+>                          num_pends = likely(vq->upend_idx>= vq->done_idx) ?
+>                                      (vq->upend_idx - vq->done_idx) :
+>                                      (vq->upend_idx + UIO_MAXIOV - vq->done_idx);
+>                          if (unlikely(num_pends>  VHOST_MAX_PEND)) {
+>                                  tx_poll_start(net, sock);
+> 				vhost_poll_queue
+>                                  set_bit(SOCK_ASYNC_NOSPACE,&sock->flags);
+>                                  break;
+>                          }
+> +	}
+>                          if (unlikely(vhost_enable_notify(&net->dev, vq))) {
+>                                  vhost_disable_notify(&net->dev, vq);
+>                                  continue;
+>                          }
+>                          break;
 
-Hi Alexander,
+No objection to add this but looks no difference to me as we won't touch 
+upend_idx and done_idx when zercocopy is not used.
 
-Today's linux-next merge of the kvm-ppc tree got a conflict in
-include/linux/kvm.h between commit 1526bf9ccf31 ("KVM: s390: add
-capability indicating COW support") from the kvm tree and commit
-6e8fce2c6cd3 ("KVM: PPC: Book3S HV: Make the guest hash table size
-configurable") from the kvm-ppc tree.
+>
+> Second, whether it's possible the problem comes from tx_poll_start()? In
+> some situation, vhost_poll_wakeup() is not being called?
+>
+> Thanks
+> Shirley
+>
+>
+>
+> --
+> To unsubscribe from this list: send the line "unsubscribe netdev" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
 
-I fixed it up (see below) and can carry the fix as necessary.
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-
-diff --cc include/linux/kvm.h
-index 09f2b3a,fcc98df..0000000
---- a/include/linux/kvm.h
-+++ b/include/linux/kvm.h
-@@@ -616,7 -616,7 +616,8 @@@ struct kvm_ppc_smmu_info=20
-  #define KVM_CAP_KVMCLOCK_CTRL 76
-  #define KVM_CAP_SIGNAL_MSI 77
-  #define KVM_CAP_PPC_GET_SMMU_INFO 78
- -#define KVM_CAP_PPC_ALLOC_HTAB 79
- +#define KVM_CAP_S390_COW 79
-++#define KVM_CAP_PPC_ALLOC_HTAB 80
- =20
-  #ifdef KVM_CAP_IRQ_ROUTING
- =20
-
---Signature=_Mon__21_May_2012_15_21_16_+1000_wS=1puE2X70kXgnG
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIbBAEBCAAGBQJPudDMAAoJEECxmPOUX5FEhdQP90GHY4qlMVvzYt2kt5oGeJzE
-sXbN4CIoIb8HEV9k1TuZfHVxW0wtQ5FI+g74G6iC6q8DMkXZ+dmBZKC1VpBGolAc
-q3LcWjtYBnnucIbTvpRPFPNxfRJQIjf9+6neUM1tnOBHhj5oSIuP5rjaw6F8f2vb
-gGI13sHIJFm+CK0/zHN2W919lr+RXibXtQDjVUCpfmdrrLfi0AfnZNEFtPVUiqhG
-GFT8ft7RwBjxD3uuPMFYoG3a3k1F3AcKPRDPHQI69m7fla7oX3T9tE4DaIKid8WE
-bUAUjJPRfFDGjnIhkcd3jzNz5Kq62esJkvB064y8bOZs+WkQ2eRHDKAi+fEQgUcc
-YfhGOoCMo1AV1TAl7ZgVuJy/h2GeSkhJU38aJ8HOlNftb3atJQ2WGcKBQM2D48wo
-B/7xUTU+CGOAjHaPCK8QWKs8UBnf5u8FEPynl2ALmL2uLkemTmS9DR/UI9U5+Js2
-w3SiYvP8a5cDrDsTrnCzwshvNmgWG6oIcE/0OGeGeQ+EEETAcibNNU0U5NYf+vCm
-OafdMM8yi80uoTr7Xt73o8bDEBrez1RWlJO0lLQjV1Irm9C2w3Y3PcbgT3DoNojm
-+jzRn1xPsKVFGNosgzoWNHop3jvNthuIguHVqD7qqw2jDOiimv+ToCuDb1fcwguR
-eIR+CDYkvic0WcPdKEE=
-=Nbg4
------END PGP SIGNATURE-----
-
---Signature=_Mon__21_May_2012_15_21_16_+1000_wS=1puE2X70kXgnG--
