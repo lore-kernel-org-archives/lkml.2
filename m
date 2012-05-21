@@ -1,76 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756083Ab2EUCF2 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 20 May 2012 22:05:28 -0400
-Received: from haggis.pcug.org.au ([203.10.76.10]:34766 "EHLO
-	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755471Ab2EUCFZ (ORCPT
+	id S1756154Ab2EUCSV (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 20 May 2012 22:18:21 -0400
+Received: from mail-ob0-f174.google.com ([209.85.214.174]:58177 "EHLO
+	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755209Ab2EUCST (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 20 May 2012 22:05:25 -0400
-Date: Mon, 21 May 2012 12:05:12 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Roland Dreier <roland@kernel.org>, linux-rdma@vger.kernel.org
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Vipul Pandya <vipul@chelsio.com>,
-        Steve Wise <swise@opengridcomputing.com>
-Subject: linux-next: build failure after merge of the infiniband tree
-Message-Id: <20120521120512.15f1e9dfc961b05dfee72f79@canb.auug.org.au>
-X-Mailer: Sylpheed 3.2.0beta7 (GTK+ 2.24.10; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Mon__21_May_2012_12_05_12_+1000_6OEbz5KAKzLm8Cb7"
+	Sun, 20 May 2012 22:18:19 -0400
+Message-ID: <4FB9A5E7.2070000@gmail.com>
+Date: Sun, 20 May 2012 21:18:15 -0500
+From: Rob Herring <robherring2@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
+MIME-Version: 1.0
+To: Shawn Guo <shawn.guo@freescale.com>
+CC: Mike Turquette <mturquette@linaro.org>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        "arm@kernel.org" <arm@kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [GIT PULL] DT clk binding support
+References: <4FB80F32.5090309@gmail.com> <20120520030653.GB5810@S2100-06.ap.freescale.net>
+In-Reply-To: <20120520030653.GB5810@S2100-06.ap.freescale.net>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Mon__21_May_2012_12_05_12_+1000_6OEbz5KAKzLm8Cb7
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On 05/19/2012 10:06 PM, Shawn Guo wrote:
+> On Sat, May 19, 2012 at 04:22:58PM -0500, Rob Herring wrote:
+>> Grant Likely (2):
+>>       clk: add DT clock binding support
+> 
+> I just checked your branch and found that a couple of comments that
+> I put on this patch haven't get addressed.  The most notable one would
+> be the "clocks" property of clock consumers.
+> 
+> +==Clock consumers==
+> +
+> +Required properties:
+> +clocks:                List of phandle and clock specifier pairs, one pair
+> +               for each clock input to the device.  Note: if the
+> +               clock provider specifies '0' for #clock-cells, then
+> +               only the phandle portion of the pair will appear.
+> +
+> +Optional properties:
+> +clock-names:   List of clock input name strings sorted in the same
+> +               order as the clocks property.  Consumers drivers
+> +               will use clock-names to match clock input names
+> +               with clocks specifiers.
+> 
+> As I said, any clock in the clock tree except root clock is not only
+> a clock provider but also a consumer.  If you define "clocks" as a
+> required property for clock consumers, you are essentially asking users
+> to either define the whole clock tree in the device tree or stay away
+> from device tree completely.
 
-Hi all,
+So what are you proposing that a clock consumer have? The very
+definition of a clock consumer is that it has a clocks property.
 
-After merging the infiniband tree, today's linux-next build (powerpc
-ppc64_defconfig) failed like this:
+> 
+> Are you sure this is the right thing to do?  If I remember correctly,
+> Grant's position is it should be pretty reasonable to have most of
+> the clock tree defined in clock driver and only define those leaf
+> clocks which are very likely to become the clock providers for other
+> peripherals.
 
-drivers/infiniband/hw/cxgb4/device.c: In function 'qp_release':
-drivers/infiniband/hw/cxgb4/device.c:124:2: error: implicit declaration of =
-function 'vfree' [-Werror=3Dimplicit-function-declaration]
-drivers/infiniband/hw/cxgb4/device.c: In function 'qp_open':
-drivers/infiniband/hw/cxgb4/device.c:148:2: error: implicit declaration of =
-function 'vmalloc' [-Werror=3Dimplicit-function-declaration]
-drivers/infiniband/hw/cxgb4/device.c:148:11: warning: assignment makes poin=
-ter from integer without a cast [enabled by default]
+The minimum is you have to have a provider and consumer. It may be a
+single provider that provides all clocks for a chip. If you don't want a
+provider, then just define a clock-frequency property.
+> 
+> Let me put a terrible example here.  Since clock tree is actually SoC
+> specific, I can reasonably choose to define the entire imx6q clock tree
+> and all the clk lookups for imx6q peripherals in clk-imx6q driver.
+> On imx6q-sabrelite board, the audio codec sgtl5000 uses cko (an imx6q
+> clock available on pad) as the clock source.  That said, I need a board
+> specific clk lookup here, which should be the best user of clock DT
+> bindings.  But sadly, with the current bindings, I can not give the
+> required "clocks" property for sgtl5000 node.
 
-Caused by commit d716a2a014ad ("RDMA/cxgb4: Use vmalloc() for debugfs QP
-dump").  See Rule 1 in Documentation/SubmitChecklist.
+I don't understand your example. For the sgtl5000 on the sabrelite, you
+would provide a phandle and cell entry that is interpreted as the cko
+pin. Is your concern the node itself has to change from board to board?
+That's normal for all bindings. If you have a module, its interrupts
+binding is dependent on the interrupt controller's binding (i.e. a GIC
+has 3 cells and VIC has 1 cell) which can vary.
 
-I have used the infiniband tree from next-20120518 for today.
-
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-
---Signature=_Mon__21_May_2012_12_05_12_+1000_6OEbz5KAKzLm8Cb7
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBCAAGBQJPuaLYAAoJEECxmPOUX5FErDkP/1n7ldDlC+01Fl3FzRK4eyYM
-rE++FDkovHYNa6RJ9fB9AzOkYydaW49Kmq9wN59NK6xQgQzWyr4GB7+uEDbqSeWd
-OeRJoeja0XkMWhFo+sxZErSQCkR8L/Wx63abNtPz0EWYlltXucPgs5kFt6Q6cIx5
-G2jwC1oZFrnYMZls+a/xEoNxB2jz2QgdE/I+JVw04jr45ApXe0UkvyxrgRthuPL2
-6fZKasUARNd6Kzq9fSSecIlTf3H2GvoxLunnHSPNk8IEmUqaVblJF+KV8FgvxVOG
-FoSsxcIlEYpwqjAqIYasKSpu0lP2+Ia69RQLsuHQV5pq90mOnxWldhxZOlrCWmjT
-OAkS8cg5at27HBNWbRSeO3Nqr/Nx6hFJD/nukPa+EkI09BEgIixazPHovXz9Ppvm
-AJXPo7fLpL9J1Axyj1N3ONwFQmuCOEOh+AN5dMVkF04WZSHpcB4CJiRBOhZ/RTO9
-4xEQn/L45SDRHpBwU++6jrPN/+DqvNJHZmaBiPhN8hvjR6r+mxnUQEFkXKcqGfVL
-iOssFZsGpQ5KLZR+LpV1oGX/0Uba9XOz+cuvhJilnZmUdWwXdKkMK6VG6wdlU0cE
-mIhBt8g+WlOyy4PzA9Z2LN0W8UojnIf9xAw0clCuGJztQforpkaAIcJCPir6sj04
-zJM18koJVucwR/0Bv/Gr
-=9kmo
------END PGP SIGNATURE-----
-
---Signature=_Mon__21_May_2012_12_05_12_+1000_6OEbz5KAKzLm8Cb7--
+Rob
