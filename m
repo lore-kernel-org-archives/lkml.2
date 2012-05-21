@@ -1,139 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756209Ab2EUIJQ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 May 2012 04:09:16 -0400
-Received: from eu1sys200aog119.obsmtp.com ([207.126.144.147]:37300 "EHLO
-	eu1sys200aog119.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755312Ab2EUIJB (ORCPT
+	id S1756306Ab2EUIJq (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 May 2012 04:09:46 -0400
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:40010 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754749Ab2EUIJA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 May 2012 04:09:01 -0400
-From: Rabin Vincent <rabin.vincent@stericsson.com>
-To: <gregkh@linuxfoundation.org>
-Cc: <linux-kernel@vger.kernel.org>, <rabin@rab.in>,
-        Rabin Vincent <rabin.vincent@stericsson.com>,
-        Alan Cox <alan@linux.intel.com>
-Subject: [PATCH] vt: fix race in vt_waitactive()
-Date: Mon, 21 May 2012 13:38:42 +0530
-Message-ID: <1337587722-19809-1-git-send-email-rabin.vincent@stericsson.com>
-X-Mailer: git-send-email 1.7.4.3
-In-Reply-To: <20120518180628.GA27021@kroah.com>
-References: <20120518180628.GA27021@kroah.com>
+	Mon, 21 May 2012 04:09:00 -0400
+Message-ID: <4FB9F818.4030801@linaro.org>
+Date: Mon, 21 May 2012 09:08:56 +0100
+From: Lee Jones <lee.jones@linaro.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:11.0) Gecko/20120410 Thunderbird/11.0.1
 MIME-Version: 1.0
-Content-Type: text/plain
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+CC: Samuel Ortiz <sameo@linux.intel.com>, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: linux-next: build failure after merge of the mfd tree
+References: <20120521134219.6d6396802bd6a097503bac92@canb.auug.org.au>
+In-Reply-To: <20120521134219.6d6396802bd6a097503bac92@canb.auug.org.au>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-pm_restore_console() is called from the suspend/resume path, and this
-calls vt_move_to_console(), which calls vt_waitactive().
+Hi Stephen,
 
-There's a race in this path which causes the process which requests the
-suspend to sleep indefinitely waiting for an event which already
-happened:
+> After merging the mfd tree, today's linux-next build (x86_64 allmodconfig)
+> failed like this:
+>
+> In file included from drivers/mfd/ab8500-core.c:21:0:
+> include/linux/mfd/dbx500-prcmu.h:614:19: error: redefinition of 'prcmu_abb_read'
+> include/linux/mfd/db8500-prcmu.h:673:19: note: previous definition of 'prcmu_abb_read' was here
+> include/linux/mfd/dbx500-prcmu.h:619:19: error: redefinition of 'prcmu_abb_write'
+> include/linux/mfd/db8500-prcmu.h:678:19: note: previous definition of 'prcmu_abb_write' was here
+> include/linux/mfd/dbx500-prcmu.h:630:19: error: redefinition of 'prcmu_config_clkout'
+> include/linux/mfd/db8500-prcmu.h:643:19: note: previous definition of 'prcmu_config_clkout' was here
+> include/linux/mfd/dbx500-prcmu.h:692:20: error: redefinition of 'prcmu_ac_wake_req'
+> include/linux/mfd/db8500-prcmu.h:683:20: note: previous definition of 'prcmu_ac_wake_req' was here
+> include/linux/mfd/dbx500-prcmu.h:694:20: error: redefinition of 'prcmu_ac_sleep_req'
+> include/linux/mfd/db8500-prcmu.h:685:20: note: previous definition of 'prcmu_ac_sleep_req' was here
+>
+> Caused (exposed?) by commit d28f1db8187d ("mfd: Remove confusing
+> ab8500-i2c file and merge into ab8500-core").  I assume that this has
+> only had very restricted build testing :-(
 
-P1                                      P2
- vt_move_to_console()
-  set_console()
-    schedule_console_callback()
-  vt_waitactive()
-    check n == fg_console +1
-                                       console_callback()
-                                         switch_screen()
-                                         vt_event_post() // no waiters
+The patch itself has had extensive build and run testing, with DT both 
+enabled and disabled. I'm guessing some other changes may be having and 
+influence here. I'm happy to take a look for you. Can you tell me where 
+I can pull the offending branch from please?
 
-    vt_event_wait() // forever
+Kind regards,
+Lee
 
-Fix the race by ensuring we're registered for the event before we check
-if it's already completed.
-
-Cc: Alan Cox <alan@linux.intel.com>
-Signed-off-by: Rabin Vincent <rabin.vincent@stericsson.com>
----
- drivers/tty/vt/vt_ioctl.c |   47 ++++++++++++++++++++++++++++++++------------
- 1 files changed, 34 insertions(+), 13 deletions(-)
-
-diff --git a/drivers/tty/vt/vt_ioctl.c b/drivers/tty/vt/vt_ioctl.c
-index ede2ef1..1d02e32 100644
---- a/drivers/tty/vt/vt_ioctl.c
-+++ b/drivers/tty/vt/vt_ioctl.c
-@@ -110,16 +110,7 @@ void vt_event_post(unsigned int event, unsigned int old, unsigned int new)
- 		wake_up_interruptible(&vt_event_waitqueue);
- }
- 
--/**
-- *	vt_event_wait		-	wait for an event
-- *	@vw: our event
-- *
-- *	Waits for an event to occur which completes our vt_event_wait
-- *	structure. On return the structure has wv->done set to 1 for success
-- *	or 0 if some event such as a signal ended the wait.
-- */
--
--static void vt_event_wait(struct vt_event_wait *vw)
-+static void __vt_event_queue(struct vt_event_wait *vw)
- {
- 	unsigned long flags;
- 	/* Prepare the event */
-@@ -129,8 +120,18 @@ static void vt_event_wait(struct vt_event_wait *vw)
- 	spin_lock_irqsave(&vt_event_lock, flags);
- 	list_add(&vw->list, &vt_events);
- 	spin_unlock_irqrestore(&vt_event_lock, flags);
-+}
-+
-+static void __vt_event_wait(struct vt_event_wait *vw)
-+{
- 	/* Wait for it to pass */
- 	wait_event_interruptible(vt_event_waitqueue, vw->done);
-+}
-+
-+static void __vt_event_dequeue(struct vt_event_wait *vw)
-+{
-+	unsigned long flags;
-+
- 	/* Dequeue it */
- 	spin_lock_irqsave(&vt_event_lock, flags);
- 	list_del(&vw->list);
-@@ -138,6 +139,22 @@ static void vt_event_wait(struct vt_event_wait *vw)
- }
- 
- /**
-+ *	vt_event_wait		-	wait for an event
-+ *	@vw: our event
-+ *
-+ *	Waits for an event to occur which completes our vt_event_wait
-+ *	structure. On return the structure has wv->done set to 1 for success
-+ *	or 0 if some event such as a signal ended the wait.
-+ */
-+
-+static void vt_event_wait(struct vt_event_wait *vw)
-+{
-+	__vt_event_queue(vw);
-+	__vt_event_wait(vw);
-+	__vt_event_dequeue(vw);
-+}
-+
-+/**
-  *	vt_event_wait_ioctl	-	event ioctl handler
-  *	@arg: argument to ioctl
-  *
-@@ -177,10 +194,14 @@ int vt_waitactive(int n)
- {
- 	struct vt_event_wait vw;
- 	do {
--		if (n == fg_console + 1)
--			break;
- 		vw.event.event = VT_EVENT_SWITCH;
--		vt_event_wait(&vw);
-+		__vt_event_queue(&vw);
-+		if (n == fg_console + 1) {
-+			__vt_event_dequeue(&vw);
-+			break;
-+		}
-+		__vt_event_wait(&vw);
-+		__vt_event_dequeue(&vw);
- 		if (vw.done == 0)
- 			return -EINTR;
- 	} while (vw.event.newev != n);
 -- 
-1.7.4.3
-
+Lee Jones
+Linaro ST-Ericsson Landing Team Lead
+M: +44 77 88 633 515
+Linaro.org │ Open source software for ARM SoCs
+Follow Linaro: Facebook | Twitter | Blog
