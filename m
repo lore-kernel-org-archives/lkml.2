@@ -1,38 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758193Ab2EUOlr (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 May 2012 10:41:47 -0400
-Received: from mail-vc0-f174.google.com ([209.85.220.174]:52769 "EHLO
-	mail-vc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752800Ab2EUOlo convert rfc822-to-8bit (ORCPT
+	id S1756537Ab2EUOsZ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 May 2012 10:48:25 -0400
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:49538 "EHLO
+	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753870Ab2EUOsY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 May 2012 10:41:44 -0400
+	Mon, 21 May 2012 10:48:24 -0400
+Date: Mon, 21 May 2012 15:48:22 +0100
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Axel Lin <axel.lin@gmail.com>
+Cc: linux-kernel@vger.kernel.org, Graeme Gregory <gg@slimlogic.co.uk>,
+        Liam Girdwood <lrg@ti.com>
+Subject: Re: [PATCH] regulator: palmas: Use
+ regulator_[list|map]_voltage_linear() for palmas_ops_smps10
+Message-ID: <20120521144821.GB4063@opensource.wolfsonmicro.com>
+References: <1337600801.2615.1.camel@phoenix>
 MIME-Version: 1.0
-In-Reply-To: <Pine.LNX.4.44L0.1205171346070.1169-100000@iolanthe.rowland.org>
-References: <1337269686-3781-3-git-send-email-ming.m.lin@intel.com>
-	<Pine.LNX.4.44L0.1205171346070.1169-100000@iolanthe.rowland.org>
-Date: Mon, 21 May 2012 22:41:43 +0800
-X-Google-Sender-Auth: iTgGO8HwkUKADaOppTX_dnKtROQ
-Message-ID: <CAF1ivSYmY3d8VonvsX0orsj0fLKXOXsLoG5jSwLs90MoP7=5Dw@mail.gmail.com>
-Subject: Re: [RFC v2 PATCH 2/4] block: add queue runtime pm callbacks
-From: Lin Ming <ming.m.lin@intel.com>
-To: Alan Stern <stern@rowland.harvard.edu>
-Cc: Jens Axboe <axboe@kernel.dk>, Jeff Moyer <jmoyer@redhat.com>,
-        linux-kernel@vger.kernel.org, linux-pm@vger.kernel.org,
-        linux-scsi@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="i0/AhcQY5QxfSsSZ"
+Content-Disposition: inline
+In-Reply-To: <1337600801.2615.1.camel@phoenix>
+X-Cookie: You dialed 5483.
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, May 18, 2012 at 2:29 AM, Alan Stern <stern@rowland.harvard.edu> wrote:
-[snip]
-> I may have left some parts out from this brief description.  Hopefully
-> you'll be able to figure out the general idea and get it to work.
 
-All journal threads and flusher thread of the disk need to be freezed
-before suspend and thaw after resume.
+--i0/AhcQY5QxfSsSZ
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
->
-> Alan Stern
+On Mon, May 21, 2012 at 07:46:41PM +0800, Axel Lin wrote:
+> Signed-off-by: Axel Lin <axel.lin@gmail.com>
+
+Applied, thanks.
+
+--i0/AhcQY5QxfSsSZ
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBAgAGBQJPulWpAAoJEBus8iNuMP3dmjIP/1Xux8sOR5Ux7kCw4HISTOu6
+v9nJZG1Ap7/G0Z9NVuiFgSYiBG2RMVVmsYys6fNKFWmJDuOiojohDRKFclL98vY0
+6aSU/C+ZLjvLlUGXsPpc7B9Ng+KGw7NepfEnf4pLBvHsJ1NGD3lwYwakzdridJ20
+mJibsIXsQ7Yi5Yw5uiaVrv0MBq3e+HWSN2aof/EPP+wiR2MIHP1TF66R6lgDjdCM
+kl8n81fDM9QfKUmlwe3ak5TZ/baGRrt/1Mp5oN8e1kSeS83g2aNRiVN+ohbRMxpk
+updu4Axoix/hqTUYmq+WXx6U6LwXRbgQGYxE85dC20i9G6vlr8OWypcyOrK6lpiq
+XIReGq1jamcbjGqMZYfH0GtAeUlN4q6vF6vBB0OCb0FAFsH2n6gX/qj2LqHElkBl
+bv304zIY14144akTSlhDkqvWvZhKpF2Q9unosoumnPO7/HIMRKU8Rnmkyb57uamz
+ZAyI9RL+BBujiRAofWL0vf5MOYTWsFAEWnYcbEbEUau2tIkTxhnfRnDP4cJr2Z9s
+2UV8A7+bdLJTuIiwnUG8Y6OKoJK4bvJ5LKEyM+aZH6yhZ4SCVcBmmX3uJDCrBHqR
+WW3JkIMK9cP/w45mSWxAfGy76St4jLDVbtvmR6uzoiR4kLGxxeaAvtJ2yuXukct6
+zEnDC40cA96i/p5oAfad
+=qJXt
+-----END PGP SIGNATURE-----
+
+--i0/AhcQY5QxfSsSZ--
