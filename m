@@ -1,58 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757059Ab2EUQwd (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 May 2012 12:52:33 -0400
-Received: from mail.bitdefender.com ([91.199.104.2]:57770 "EHLO
-	mail.bitdefender.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751387Ab2EUQwb convert rfc822-to-8bit (ORCPT
+	id S1757265Ab2EUQ5F (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 May 2012 12:57:05 -0400
+Received: from mail-we0-f174.google.com ([74.125.82.174]:63595 "EHLO
+	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757118Ab2EUQ5D (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 May 2012 12:52:31 -0400
-X-Greylist: delayed 401 seconds by postgrey-1.27 at vger.kernel.org; Mon, 21 May 2012 12:52:31 EDT
-Comment: DomainKeys? See http://antispam.yahoo.com/domainkeys
-X-BitDefender-Spam: No (0)
-X-BitDefender-SpamStamp: Build: [Engines: 2.13.1.14553, Dats: 200504,
- Stamp: 3], Multi: [Enabled], BW: [Enabled], RBL DNSBL: [Enabled,
- Score: 0(0)], APM: [Enabled, Score: 500], SGN: [Enabled], URL:
- [Enabled], URI DNSBL: [Disabled], SQMD: [Enabled, Hits: none, MD5:
- dde69a39aade4a0b2cfc8637504d3d22.fuzzy.fzrbl.org], RTDA: [Disabled,
- Hit: No], total: 0(775)
-X-BitDefender-Scanner: Clean, Agent: BitDefender qmail 3.1.0 on
- elfie.dsd.hq, sigver: 7.42342
-DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws;
-  s=default; d=gmail.com;
-  b=mbN7A+0pHfpolu2nJaHhMd2W4il2zTotUAf/uNc2InIcWPhfLsFhVer/nt0zhw4mWw0T+N2We6mVqlPsaBELCnyJj7BlIeaJqlmH57CfeDtpwS8+8rSSG1uuPgF7JhMJ2UHmqUmzojzsmJYepTJnTCp6R3F0mioxH3YbvRol7/c=  ;
-Date: Mon, 21 May 2012 19:45:48 +0300
-From: Mihai =?UTF-8?B?RG9uyJt1?= <mihai.dontu@gmail.com>
-To: ivo.welch@gmail.com
-Cc: ivo.welch@anderson.ucla.edu, linux-kernel@vger.kernel.org
-Subject: Re: the easy way to sandbox?
-Message-ID: <20120521194548.716cdf8e@mdontu-l>
-In-Reply-To: <CAPr7RtUBDn01qDkxvcLO8ZckAtTmCCJk7hCjwH4_XziwXtAS6Q@mail.gmail.com>
-References: <CAPr7RtUBDn01qDkxvcLO8ZckAtTmCCJk7hCjwH4_XziwXtAS6Q@mail.gmail.com>
-Organization: Home
-Mime-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+	Mon, 21 May 2012 12:57:03 -0400
+MIME-Version: 1.0
+In-Reply-To: <20120521071622.GA30748@gmail.com>
+References: <CAKfTPtDSDAOAdv0GTDswZeRM7TmACrjok+5kddSaQpvy6_6xWw@mail.gmail.com>
+ <CAKfTPtCfiY7A29+e50F+6awd8BjNJjg4=uNN4ReZfdS_4FbpkA@mail.gmail.com>
+ <1337084609.27020.156.camel@laptop> <CAKfTPtDz1-fR2i5x7AVd8sGZhX2VNtz2rnQC3ePrcHO9MWK3FQ@mail.gmail.com>
+ <1337086834.27020.162.camel@laptop> <CAKfTPtDrZ-tfC81jnxwpB+DCtmxhU+VfoYbtSBr8MkFt+P8JcA@mail.gmail.com>
+ <1337096141.27694.82.camel@twins> <1337193010.27694.146.camel@twins>
+ <CA+55aFzuygx6L-2hVCMbk5cvEdDp6AUtOGq-wYFn=4yEyebPLw@mail.gmail.com>
+ <1337469731.573.154.camel@twins> <20120521071622.GA30748@gmail.com>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Mon, 21 May 2012 09:56:42 -0700
+X-Google-Sender-Auth: xxDwxqi_xL3OMiH2jEnQ4cPpVnc
+Message-ID: <CA+55aFxVkJ0Ya8nZAD+pRro+xRCydqcTSFsRcr=MdmgbaqZY4Q@mail.gmail.com>
+Subject: Re: Plumbers: Tweaking scheduler policy micro-conf RFP
+To: Ingo Molnar <mingo@kernel.org>
+Cc: Peter Zijlstra <peterz@infradead.org>,
+        Vincent Guittot <vincent.guittot@linaro.org>,
+        paulmck@linux.vnet.ibm.com, smuckle@quicinc.com, khilman@ti.com,
+        Robin.Randhawa@arm.com, suresh.b.siddha@intel.com,
+        thebigcorporation@gmail.com, venki@google.com,
+        panto@antoniou-consulting.com, mingo@elte.hu, paul.brett@intel.com,
+        pdeschrijver@nvidia.com, pjt@google.com, efault@gmx.de,
+        fweisbec@gmail.com, geoff@infradead.org, rostedt@goodmis.org,
+        tglx@linutronix.de, amit.kucheria@linaro.org,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        linaro-sched-sig@lists.linaro.org,
+        Morten Rasmussen <Morten.Rasmussen@arm.com>,
+        Juri Lelli <juri.lelli@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 21 May 2012 09:28:13 -0700 ivo welch wrote:
-> Suggestion:  introduce a system call that eliminates access to all
-> real file systems for the current process.  the only permissible
-> interaction would be stdin, stdout, and stderr.
-> 
-> this would make it very simple to write a sandboxed safe fcgi script.
-> the script could load all the dynamic libraries and data it wants, and
-> then call this no-more-filesystem-access feature (preferably allowable
-> without root privileges).  thereafter, even if a hacker takes control
-> of the script, not much permanent damage can happen.
-> 
-> right now, it is much more complex to accomplish this---which is why
-> sandboxing cgi scripts is not used too often.
-> 
+On Mon, May 21, 2012 at 12:16 AM, Ingo Molnar <mingo@kernel.org> wrote:
+>
+> Nevertheless I'll wait for Linus to confirm that he agrees
+> violently as well, before sending these bits ;-)
 
-Check this out: http://en.wikipedia.org/wiki/Seccomp
+So as long as people aren't going to do some arch-specific scheduling,
+I don't care. It sounds like I misread what Peter's intentions were.
 
--- 
-Mihai Donțu
+And line count removal is always a good sign.
+
+                  Linus
