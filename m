@@ -1,82 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756145Ab2EUINl (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 May 2012 04:13:41 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:47257 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752063Ab2EUINj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 May 2012 04:13:39 -0400
-Date: Mon, 21 May 2012 10:13:30 +0200
-From: Alexander Gordeev <agordeev@redhat.com>
-To: Yinghai Lu <yinghai@kernel.org>
-Cc: linux-kernel@vger.kernel.org, x86@kernel.org,
-        Suresh Siddha <suresh.b.siddha@intel.com>,
+	id S1756351Ab2EUIOA (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 May 2012 04:14:00 -0400
+Received: from haggis.pcug.org.au ([203.10.76.10]:48550 "EHLO
+	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756213Ab2EUIN4 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 21 May 2012 04:13:56 -0400
+Date: Mon, 21 May 2012 18:13:47 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Cong Wang <xiyou.wangcong@gmail.com>,
         Cyrill Gorcunov <gorcunov@openvz.org>
-Subject: Re: [PATCH 2/3] x86: x2apic/cluster: Make use of lowest priority
- delivery mode
-Message-ID: <20120521081330.GB28930@dhcp-26-207.brq.redhat.com>
-References: <20120518102640.GB31517@dhcp-26-207.brq.redhat.com>
- <CAE9FiQXUM-+KSZ1OcxipRW-3XQED3Csyxs=0ke0hJZR7E_hrhg@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <CAE9FiQXUM-+KSZ1OcxipRW-3XQED3Csyxs=0ke0hJZR7E_hrhg@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Subject: linux-next: manual merge of the akpm tree with Linus' tree
+Message-Id: <20120521181347.51d96de343880746c9b285b4@canb.auug.org.au>
+X-Mailer: Sylpheed 3.2.0beta7 (GTK+ 2.24.10; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Mon__21_May_2012_18_13_47_+1000_7LwTjl.3ia6kKmOP"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, May 19, 2012 at 01:53:36PM -0700, Yinghai Lu wrote:
-> > +static void
-> > +x2apic_cluster_vector_allocation_domain(int cpu, struct cpumask *retmask)
-> > +{
-> > +       cpumask_copy(retmask, cpu_possible_mask);
-> 
-> why not using per_cpu(cpus_in_cluster, cpu) instead?
+--Signature=_Mon__21_May_2012_18_13_47_+1000_7LwTjl.3ia6kKmOP
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Because it would lead to suboptimal results when updating IRQ affinity:
+Hi Andrew,
 
-int __ioapic_set_affinity(struct irq_data *data, const struct cpumask *mask,
-			  unsigned int *dest_id)
-{
-	struct irq_cfg *cfg = data->chip_data;
+Today's linux-next merge of the akpm tree got a conflict in
+fs/proc/base.c between commit eb94cd96e05d ("fs, proc: fix ABBA deadlock
+in case of execution attempt of map_files/ entries") from Linus' tree and
+commit "proc: unify ptrace_may_access() locking code" from the akpm tree.
 
-	if (!cpumask_intersects(mask, cpu_online_mask))
-		return -1;
+I used the version of the conflicting code from Linus' tree.
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
 
-	if (assign_irq_vector(data->irq, data->chip_data, mask))
-		return -1;
+--Signature=_Mon__21_May_2012_18_13_47_+1000_7LwTjl.3ia6kKmOP
+Content-Type: application/pgp-signature
 
-This call ^^^ will update cfg->domain with the value returned by the call to
-apic->vector_allocation_domain(). If per_cpu(cpus_in_cluster, cpu) is returned
-as cfg->domain here then all other clusters contained in the 'mask' will not
-be taken into consideration by the apic->cpu_mask_to_apicid_and() call below.
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
 
-	cpumask_copy(data->affinity, mask);
+iQIcBAEBCAAGBQJPufk7AAoJEECxmPOUX5FErrwP/2PiGWJ9Lb65/+cTt8uGchKy
+F/4hsLPZz7IGYXmaifYsOZrw7LAWNhardCaZJtnI5ruk2kHBrVLLfJMdlSsl3R8C
+7iS4/qNzC7+btJtT7hOrDzrr3t1JyabPDVbb9Xu4wdBYnWX/wClaB7BXa/tux32L
+vGUaGxR8oSDJO7/izAvL3V+50T+gxVKg4R2/ahmQL0jpQ4VIdDiIeQBpcxu8WET7
+IpT9U6dd7N5JyBrQFrUWeUJtstHvGQxQlEM8ueMPztWOvOhBmJU4439NEBQGjfSu
+UPXBQ8FXWur/3TgkrFXiXoltmcMbjJLt1HSxlgBNRhX8yMG49M8yHKIAY8btcCDd
+9XK/bV22JiVVoK0s2jFyY9vkt4R580j4B9Cr94JOtByvgJzI2CDetrZHdBijrEfm
+vQz2sBcEoP6YX9PXzJ57c0FwvEZrvOLpibaVtqaNyaAJMPQuGWVNHiueZCPdWIlJ
+gBkTx/a4MbQcnOFNWJmuQcYno4tIvYk0FC4Y16yNOE7WXDo7xSZK0pK2AiImMzzM
+5YrDnTxY3vIJyIFKZfvGw+A9S2flo7kKdoiH3Y2I3xs61OsxeQ3w3aLd4vPesR+2
+S8xrHH2rpFLyS4K0VJTsWYJ1FySBBL+GzaugVfS20thwLPL1wU7hQ5yQkb9YL3wr
+MneL9g7aPXZE9BPBylLX
+=hmrw
+-----END PGP SIGNATURE-----
 
-	*dest_id = apic->cpu_mask_to_apicid_and(mask, cfg->domain);
-
-So we really need to submit all possible CPUs here ^^^ to be able finding the
-best/heaviest cluster out of the 'mask'.
-
-	return 0;
-}
-
-
-> also you may add one per cpu var like x86_cpu_to_logical_cluster_apicid.
-
-Both cpu_mask_to_apicid() and cpu_mask_to_apicid_and() take a cpumask to
-derive the apicid from. Even though we could cache the value of apicid in
-'x86_cpu_to_logical_cluster_apicid' variable, we still would have to unset
-CPUs which are not in the requested cpumask. That means scanning through the
-cpumask etc -- exactly what the the patch does now.
-
-Or I am missing your point here..
-
-> Yinghai
-
--- 
-Regards,
-Alexander Gordeev
-agordeev@redhat.com
+--Signature=_Mon__21_May_2012_18_13_47_+1000_7LwTjl.3ia6kKmOP--
