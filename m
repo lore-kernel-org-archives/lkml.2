@@ -1,120 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752455Ab2EUFWy (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 May 2012 01:22:54 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:49693 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751694Ab2EUFWw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 May 2012 01:22:52 -0400
-Message-ID: <4FB9D123.9030002@redhat.com>
-Date: Mon, 21 May 2012 13:22:43 +0800
-From: Jason Wang <jasowang@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
+	id S1752371Ab2EUFcJ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 May 2012 01:32:09 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:36328 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751934Ab2EUFcH (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 21 May 2012 01:32:07 -0400
+Date: Sun, 20 May 2012 22:32:00 -0700
+From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+To: "Ujfalusi, Peter" <peter.ujfalusi@ti.com>
+Cc: Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Liam Girdwood <lrg@ti.com>, Benoit Cousson <b-cousson@ti.com>,
+        linux-kernel@vger.kernel.org, devicetree-discuss@lists.ozlabs.org
+Subject: Re: [PATCH] Input: twl6040-vibra: Update for device tree support
+Message-ID: <20120521053159.GA30285@core.coreip.homeip.net>
+References: <1337167186-8535-1-git-send-email-peter.ujfalusi@ti.com>
+ <20120516193546.GA15920@core.coreip.homeip.net>
+ <CAPo=G1zf1XJcoKgCxMn3X09T0LOUG-9aw3iopqC7OPqcuc5hcQ@mail.gmail.com>
 MIME-Version: 1.0
-To: Shirley Ma <mashirle@us.ibm.com>
-CC: "Michael S. Tsirkin" <mst@redhat.com>, eric.dumazet@gmail.com,
-        netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        ebiederm@xmission.com, davem@davemloft.net
-Subject: Re: [V2 PATCH 9/9] vhost: zerocopy: poll vq in zerocopy callback
-References: <20120502033901.11782.13157.stgit@amd-6168-8-1.englab.nay.redhat.com>  <20120502034254.11782.27314.stgit@amd-6168-8-1.englab.nay.redhat.com>  <1337100630.8220.4.camel@oc3660625478.ibm.com> <4FB317C8.90002@redhat.com>  <1337181027.10741.13.camel@oc3660625478.ibm.com>  <20120516151444.GC9934@redhat.com>  <1337189525.10741.24.camel@oc3660625478.ibm.com>  <20120516183629.GJ10769@redhat.com> <1337195303.10741.37.camel@oc3660625478.ibm.com>
-In-Reply-To: <1337195303.10741.37.camel@oc3660625478.ibm.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <CAPo=G1zf1XJcoKgCxMn3X09T0LOUG-9aw3iopqC7OPqcuc5hcQ@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/17/2012 03:08 AM, Shirley Ma wrote:
-> On Wed, 2012-05-16 at 21:36 +0300, Michael S. Tsirkin wrote:
->> On Wed, May 16, 2012 at 10:32:05AM -0700, Shirley Ma wrote:
->>> On Wed, 2012-05-16 at 18:14 +0300, Michael S. Tsirkin wrote:
->>>> On Wed, May 16, 2012 at 08:10:27AM -0700, Shirley Ma wrote:
->>>>> On Wed, 2012-05-16 at 10:58 +0800, Jason Wang wrote:
->>>>>>>>    drivers/vhost/vhost.c |    1 +
->>>>>>>>    1 files changed, 1 insertions(+), 0 deletions(-)
->>>>>>>>
->>>>>>>> diff --git a/drivers/vhost/vhost.c b/drivers/vhost/vhost.c
->>>>>>>> index 947f00d..7b75fdf 100644
->>>>>>>> --- a/drivers/vhost/vhost.c
->>>>>>>> +++ b/drivers/vhost/vhost.c
->>>>>>>> @@ -1604,6 +1604,7 @@ void vhost_zerocopy_callback(void
->> *arg)
->>>>>>>>           struct vhost_ubuf_ref *ubufs = ubuf->arg;
->>>>>>>>           struct vhost_virtqueue *vq = ubufs->vq;
->>>>>>>>
->>>>>>>> +       vhost_poll_queue(&vq->poll);
->>>>>>>>           /* set len = 1 to mark this desc buffers done DMA
->> */
->>>>>>>>           vq->heads[ubuf->desc].len = VHOST_DMA_DONE_LEN;
->>>>>>>>           kref_put(&ubufs->kref,
->> vhost_zerocopy_done_signal);
->>>>>>> Doing so, we might have redundant vhost_poll_queue(). Do you
->>>> know in
->>>>>>> which scenario there might be missing of adding and
->> signaling
->>>> during
->>>>>>> zerocopy?
->>>>>> Yes, as we only do signaling and adding during tx work, if
->> there's
->>>> no
->>>>>> tx
->>>>>> work when the skb were sent, we may lose the opportunity to
->> let
->>>> guest
->>>>>> know about the completion. It's easy to be reproduced with
->> netperf
->>>>>> test.
->>>>> The reason which host signals guest is to free guest tx buffers,
->> if
->>>>> there is no tx work, then it's not necessary to signal the guest
->>>> unless
->>>>> guest runs out of memory. The pending buffers will be released
->>>>> virtio_net device gone.
->>>>>
->>>>> What's the behavior of netperf test when you hit this situation?
->>>>>
->>>>> Thanks
->>>>> Shirley
->>>> IIRC guest networking seems to be lost.
->>> It seems vhost_enable_notify is missing in somewhere else?
->>>
->>> Thanks
->>> Shirley
->> Donnu. I see virtio sending packets but they do not get
->> to tun on host. debugging.
-> I looked at the code, if (zerocopy) check is needed for below code:
->
-> +	if (zerocopy) {
->                          num_pends = likely(vq->upend_idx>= vq->done_idx) ?
->                                      (vq->upend_idx - vq->done_idx) :
->                                      (vq->upend_idx + UIO_MAXIOV - vq->done_idx);
->                          if (unlikely(num_pends>  VHOST_MAX_PEND)) {
->                                  tx_poll_start(net, sock);
-> 				vhost_poll_queue
->                                  set_bit(SOCK_ASYNC_NOSPACE,&sock->flags);
->                                  break;
->                          }
-> +	}
->                          if (unlikely(vhost_enable_notify(&net->dev, vq))) {
->                                  vhost_disable_notify(&net->dev, vq);
->                                  continue;
->                          }
->                          break;
+On Wed, May 16, 2012 at 10:55:13PM +0300, Ujfalusi, Peter wrote:
+> Hi Dmitry,
+> 
+> On Wed, May 16, 2012 at 10:35 PM, Dmitry Torokhov
+> <dmitry.torokhov@gmail.com> wrote:
+> > So in this case why don't you have parent parse all DT data and
+> > construct instance of pdata for vibra driver to consume?
+> 
+> If there is a need to change the parameters (add new ones for example)
+> for the vibra driver in this way the change in code only need to be
+> done in the vibra driver.
+> If the MFD core would construct the pdata, in this case I would need
+> to modify both the MFD core and vibra driver.
 
-No objection to add this but looks no difference to me as we won't touch 
-upend_idx and done_idx when zercocopy is not used.
+Hmm, I am getting:
 
->
-> Second, whether it's possible the problem comes from tx_poll_start()? In
-> some situation, vhost_poll_wakeup() is not being called?
->
-> Thanks
-> Shirley
->
->
->
-> --
-> To unsubscribe from this list: send the line "unsubscribe netdev" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+  CC      drivers/input/misc/twl6040-vibra.o
+drivers/input/misc/twl6040-vibra.c: In function ‘twl6040_vibra_probe’:
+drivers/input/misc/twl6040-vibra.c:263:9: error: implicit declaration of
+function ‘of_find_node_by_name’ [-Werror=implicit-function-declaration]
+drivers/input/misc/twl6040-vibra.c:263:42: warning: initialization makes
+pointer from integer without a cast [enabled by default]
+cc1: some warnings being treated as errors
+make[1]: *** [drivers/input/misc/twl6040-vibra.o] Error 1
+make: *** [drivers/input/misc/twl6040-vibra.o] Error 2
 
+
+it looks like there is no stub for of_find_node_by_name().
+
+Thanks.
+
+-- 
+Dmitry
