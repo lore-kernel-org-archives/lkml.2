@@ -1,69 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752490Ab2EUPXz (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 May 2012 11:23:55 -0400
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:34689 "EHLO
-	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751003Ab2EUPXx (ORCPT
+	id S1752471Ab2EUP1V (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 May 2012 11:27:21 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:58906 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751586Ab2EUP1U (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 May 2012 11:23:53 -0400
-Date: Mon, 21 May 2012 17:23:48 +0200
-From: Ingo Molnar <mingo@kernel.org>
-To: Vlad Zolotarov <vlad@scalemp.com>
-Cc: "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>,
-        linux-kernel <linux-kernel@vger.kernel.org>, Shai@scalemp.com,
-        ido@wizery.com
-Subject: Re: [PATCH v4 0/2] Move x86_cpu_to_apicid to the __read_mostly
- section
-Message-ID: <20120521152345.GC7068@gmail.com>
-References: <1744141.b5asW8k6jC@vlad>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1744141.b5asW8k6jC@vlad>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Mon, 21 May 2012 11:27:20 -0400
+From: "Lee, Chun-Yi" <joeyli.kernel@gmail.com>
+To: dri-devel@lists.freedesktop.org
+Cc: linux-kernel@vger.kernel.org, "Lee, Chun-Yi" <jlee@suse.com>,
+        randy.dunlap@oracle.com, mjg59@srcf.ucam.org, gregkh@suse.de,
+        trenn@suse.de, Valdis.Kletnieks@vt.edu, Dennis.Jansen@web.de,
+        airlied@redhat.com, eric@anholt.net, alexdeucher@gmail.com,
+        bskeggs@redhat.com, chris@chris-wilson.co.uk
+Subject: [PATCH] gpu: schedule gma500 stub driver for feature removal
+Date: Mon, 21 May 2012 23:23:36 +0800
+Message-Id: <1337613816-12953-1-git-send-email-jlee@suse.com>
+X-Mailer: git-send-email 1.6.0.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+In v3.3, the gma500 drm driver moved from staging to drm group by
+Alan Cox's 3abcf41fb patch. the gma500 drm driver should control
+brightness well and don't need gma500 stub driver anymore.
 
-* Vlad Zolotarov <vlad@scalemp.com> wrote:
+So, my plan is remove gma500 stub driver at Dec. 2012.
 
-> Pls., consider applying this patch series.
-> It contains the following changes:
->  - Adds two new macros DEFINE_EARLY_PER_CPU_READ_MOSTLY() and
->    DECLARE_EARLY_PER_CPU_READ_MOSTLY().
->  - Adds "read-mostly" qualifier to the following variables in smp.h:
->   - cpu_sibling_map
->   - cpu_core_map
->   - cpu_llc_shared_map
->   - cpu_llc_id
->   - cpu_number
->   - x86_cpu_to_apicid
->   - x86_bios_cpu_apicid
->   - x86_cpu_to_logical_apicid
-> 
-> As long as all the variables above are only written during the 
-> initialization, this change is meant to prevent the false 
-> sharing and improve the performance on large multiprocessor 
-> systems.
+Cc: randy.dunlap@oracle.com
+Cc: mjg59@srcf.ucam.org
+Cc: gregkh@suse.de
+Cc: trenn@suse.de
+Cc: Valdis.Kletnieks@vt.edu
+Cc: Dennis.Jansen@web.de
+Cc: airlied@redhat.com
+Cc: eric@anholt.net
+Cc: alexdeucher@gmail.com
+Cc: bskeggs@redhat.com
+Cc: chris@chris-wilson.co.uk
+Signed-off-by: Lee, Chun-Yi <jlee@suse.com>
+---
+ Documentation/feature-removal-schedule.txt |   11 +++++++++++
+ 1 files changed, 11 insertions(+), 0 deletions(-)
 
-Why have you resent this? The feedback I gave has not been 
-addressed:
+diff --git a/Documentation/feature-removal-schedule.txt b/Documentation/feature-removal-schedule.txt
+index a0ffac0..219d6f1 100644
+--- a/Documentation/feature-removal-schedule.txt
++++ b/Documentation/feature-removal-schedule.txt
+@@ -524,3 +524,14 @@ Files:	arch/arm/mach-at91/at91cap9.c
+ Why:	The code is not actively maintained and platforms are now hard to find.
+ Who:	Nicolas Ferre <nicolas.ferre@atmel.com>
+ 	Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
++
++----------------------------
++
++What:	Intel GMA500 Stub Driver
++When:	December 2012
++Why:	In v3.3, the gma500 drm driver moved from staging to drm group by
++	Alan Cox's 3abcf41fb patch. the gma500 drm driver should control
++	brightness well and don't need gma500 stub driver anymore.
++
++	So, my plan is remove gma500 stub driver at Dec. 2012.
++Who:	Lee, Chun-Yi <jlee@novell.com>
+-- 
+1.6.0.2
 
-> Well, a quick tally of percpu variables on a 'make defconfig' 
-> kernel would tell us one way or another?
-> 
-> Here there's almost 200 percpu variables active in the 64-bit 
-> x86 defconfig, and a quick random sample suggests that most 
-> are read-mostly.
->
-> I have no fundamental prefer to either approach, but the 
-> direction taken should be justified explicitly, with numbers, 
-> arguments, etc. - also a short blurb somewhere in the headers 
-> that explains when they should be used, so that others can be 
-> aware of vSMP's special needs here.
-
-Thanks,
-
-	Ingo
