@@ -1,112 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755941Ab2EUXuE (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 May 2012 19:50:04 -0400
-Received: from mailout3.samsung.com ([203.254.224.33]:65141 "EHLO
-	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752657Ab2EUXuB (ORCPT
+	id S932934Ab2EUXwo (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 May 2012 19:52:44 -0400
+Received: from mail-gg0-f174.google.com ([209.85.161.174]:51733 "EHLO
+	mail-gg0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932732Ab2EUXwl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 May 2012 19:50:01 -0400
-X-AuditID: cbfee61a-b7fe76d0000023f5-19-4fbad4a80a1b
-From: Jingoo Han <jg1.han@samsung.com>
-To: "'Johan Hovold'" <jhovold@gmail.com>
-Cc: "'Andrew Morton'" <akpm@linux-foundation.org>,
-        "'LKML'" <linux-kernel@vger.kernel.org>,
-        "'Richard Purdie'" <rpurdie@rpsys.net>,
-        "'Jingoo Han'" <jg1.han@samsung.com>
-References: <002d01cd3732$e667d7b0$b3378710$%han@samsung.com>
- <20120521095837.GE21033@localhost>
-In-reply-to: <20120521095837.GE21033@localhost>
-Subject: RE: [PATCH 3/3] backlight: lm3533_bl: use devm_ functions
-Date: Tue, 22 May 2012 08:50:00 +0900
-Message-id: <000401cd37ac$6f4444a0$4dcccde0$%han@samsung.com>
-MIME-version: 1.0
-Content-type: text/plain; charset=us-ascii
-Content-transfer-encoding: 7bit
-X-Mailer: Microsoft Office Outlook 12.0
-Thread-index: Ac03OE6ZvgM3LnEwQKmZ9knl00zDdgAc5CRA
-Content-language: ko
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrDLMWRmVeSWpSXmKPExsVy+t9jAd0VV3b5G7w8K2FxedccNgdGj8+b
-	5AIYo7hsUlJzMstSi/TtErgy7l/9zV5wSaDiz/SjLA2Ms3i7GDk4JARMJNZ+U+li5AQyxSQu
-	3FvP1sXIxSEksIhRYu3jl2wgCSGB2UwSx9dIgthsAmoSX74cZgexRYDsJ71H2EEamAWWMErM
-	efmJEaIhSeJp9x4WEJtTQF9izr9uVhBbWMBJYk3HfLAaFgFViV2PjoIN4hWwlWj9eIoJwhaU
-	+DH5Hlgvs4CWxPqdx5kgbHmJzWveMkMcrS7x6K8uxA1GEl9u/mOEKBGR2PfiHeMERqFZSCbN
-	QjJpFpJJs5C0LGBkWcUomlqQXFCclJ5rqFecmFtcmpeul5yfu4kRHMbPpHYwrmywOMQowMGo
-	xMMbcGmXvxBrYllxZe4hRgkOZiUR3k1tQCHelMTKqtSi/Pii0pzU4kOM0hwsSuK8dot3+AsJ
-	pCeWpGanphakFsFkmTg4pRoYGzRtuR1uXEvaOqNOvOmfUlfVHxcu/0ktk9KuKYU9fvvUTPPG
-	336N9dP/HhIt+aavfOPSziQHrnyWTBmHmWn96/utzFI8GX1tN3RyCFk2rfn/vcfStu+QRa3K
-	8sRvbz2yTt7WEf6XXiLhn3FuspLVUu6aKf8fpqlMlqyt1+OzkBDhEn43L16JpTgj0VCLuag4
-	EQD/l2H1XwIAAA==
-X-TM-AS-MML: No
+	Mon, 21 May 2012 19:52:41 -0400
+Message-ID: <4FBAD545.7060803@gmail.com>
+Date: Mon, 21 May 2012 18:52:37 -0500
+From: Rob Herring <robherring2@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
+MIME-Version: 1.0
+To: Shawn Guo <shawn.guo@linaro.org>
+CC: Shawn Guo <shawn.guo@freescale.com>,
+        Mike Turquette <mturquette@linaro.org>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        "arm@kernel.org" <arm@kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [GIT PULL] DT clk binding support
+References: <4FB80F32.5090309@gmail.com> <20120520030653.GB5810@S2100-06.ap.freescale.net> <4FB9A5E7.2070000@gmail.com> <20120521064901.GE8140@S2101-09.ap.freescale.net> <4FBA89E3.7010106@gmail.com> <20120521232616.GF8140@S2101-09.ap.freescale.net>
+In-Reply-To: <20120521232616.GF8140@S2101-09.ap.freescale.net>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, May 21, 2012 at 06 6:59:00 PM +0900, Johan Hovol wrote:
->
-> On Mon, May 21, 2012 at 06:20:01PM +0900, Jingoo Han wrote:
-> > The devm_ functions allocate memory that is released when a driver
-> > detaches. This patch uses devm_kzalloc of these functions.
-> >
-> > Cc: Johan Hovold <jhovold@gmail.com>
-> > Cc: Richard Purdie <rpurdie@rpsys.net>
-> > Signed-off-by: Jingoo Han <jg1.han@samsung.com>
-> > ---
-> >  drivers/video/backlight/lm3533_bl.c |    8 +++-----
-> >  1 files changed, 3 insertions(+), 5 deletions(-)
-> >
-> > diff --git a/drivers/video/backlight/lm3533_bl.c b/drivers/video/backlight/lm3533_bl.c
-> > index 0148227..9f96a6b 100644
-> > --- a/drivers/video/backlight/lm3533_bl.c
-> > +++ b/drivers/video/backlight/lm3533_bl.c
-> > @@ -295,7 +295,7 @@ static int __devinit lm3533_bl_probe(struct platform_device *pdev)
-> >  		return -EINVAL;
-> >  	}
-> >
-> > -	bl = kzalloc(sizeof(*bl), GFP_KERNEL);
-> > +	bl = devm_kzalloc(&pdev->dev, sizeof(*bl), GFP_KERNEL);
-> >  	if (!bl) {
-> >  		dev_err(&pdev->dev,
-> >  				"failed to allocate memory for backlight\n");
-> > @@ -318,7 +318,7 @@ static int __devinit lm3533_bl_probe(struct platform_device *pdev)
-> >  	if (IS_ERR(bd)) {
-> >  		dev_err(&pdev->dev, "failed to register backlight device\n");
-> >  		ret = PTR_ERR(bd);
-> > -		goto err_free;
-> > +		goto err_return;
-> 
-> Why not simply return PTR_ERR(bd) here?
+On 05/21/2012 06:26 PM, Shawn Guo wrote:
+> On Mon, May 21, 2012 at 01:30:59PM -0500, Rob Herring wrote:
+>>> With the bindings here, I need something like below in device tree to
+>>> replace the clk lookup registration that is currently done in imx6q
+>>> sabrelite specific setup code.  However the problem here is I have cko
+>>> defined in clock driver, and thus I can not give phandle to cko in
+>>> device tree.  What I suggest is for such cases, we could require
+>>> clock-names = "cko" than clocks = <&cko>, and of_clk_get() should also
+>>> be able to find the clock with looking for the clk name.
+>>>
+>>> imx6q-sabrelite.dts:
+>>>
+>>> 	codec: sgtl5000@0a {
+>>> 		compatible = "fsl,sgtl5000";
+>>> 		reg = <0x0a>;
+>>> 		clocks = <&cko>;
+>>> 	};
+>>>
+>>> mach-imx6q.c, imx6q_sabrelite_cko1_setup(): 
+>>>
+>>>         cko1 = clk_get_sys(NULL, "cko1");
+>>>         clk_register_clkdev(cko1, NULL, "0-000a");
+>>>
+>>
+>> What!? This is a terrible abuse/hack of the clock binding and is in no
+>> way what was intended. You cannot use half of the clock binding. You
+>> have to have a provider. The primary binding is a phandle reference.
+>> clock-names is just auxiliary data.
+>>
+> Well, on conversation [1], it seems people agreed that for those huge
+> clock tree, only leaf clocks should be exposed in device tree.  Then
+> please help me understand how we could do that with the current binding
+> design, considering those leaf clocks are consumers of their parent
+> clocks while being provider to the leaf clock the parent clock is not
+> exposed in device tree.
 
-Yes, you're right.
-I will send the new patch.
-Thanks.
+You are mis-interpreting things.
 
-Best regards,
-Jingoo Han
+As Grant states: "This proposed binding is only about one thing:
+attaching clock providers to clock consumers." This means you have to
+have at least a single provider and a single consumer defined in the DT.
 
+By only exposing leaf nodes of the clocks, that means only exposing a
+single DT node for the SOC clocks with a whole bunch of outputs (i.e.
+the leaf clocks). In the imx case, this would be a single node for the
+CCM with the dozens clocks the CCM outputs. In this case you would not
+expose all the individual muxes, gates, and dividers of the CCM in the
+DT. You still have to describe the connection between the CCM and a h/w
+block. I'm not sure what you want here. Based on our prior
+conversations, I thought you wanted to break out every single clock as a
+separate DT node and have generic divider, mux, and gate bindings. Now
+you are arguing for the opposite.
+
+Rob
+
+> Regards,
+> Shawn
 > 
-> >  	}
-> >
-> >  	bl->bd = bd;
-> > @@ -348,8 +348,7 @@ err_sysfs_remove:
-> >  	sysfs_remove_group(&bd->dev.kobj, &lm3533_bl_attribute_group);
-> >  err_unregister:
-> >  	backlight_device_unregister(bd);
-> > -err_free:
-> > -	kfree(bl);
-> > +err_return:
-> 
-> No need for this label then.
-> 
-> >
-> >  	return ret;
-> >  }
-> > @@ -367,7 +366,6 @@ static int __devexit lm3533_bl_remove(struct platform_device *pdev)
-> >  	lm3533_ctrlbank_disable(&bl->cb);
-> >  	sysfs_remove_group(&bd->dev.kobj, &lm3533_bl_attribute_group);
-> >  	backlight_device_unregister(bd);
-> > -	kfree(bl);
-> >
-> >  	return 0;
-> >  }
+> [1] http://thread.gmane.org/gmane.linux.ports.arm.kernel/139414/focus=1216423
 
