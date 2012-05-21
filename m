@@ -1,164 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756286Ab2EUNPh (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 May 2012 09:15:37 -0400
-Received: from 8bytes.org ([85.214.48.195]:35384 "EHLO
-	h2027444.stratoserver.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756195Ab2EUNPg (ORCPT
+	id S1756099Ab2EUNTk (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 May 2012 09:19:40 -0400
+Received: from mail-qc0-f174.google.com ([209.85.216.174]:55418 "EHLO
+	mail-qc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755487Ab2EUNTj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 May 2012 09:15:36 -0400
-Date: Mon, 21 May 2012 15:15:32 +0200
-From: Joerg Roedel <joro@8bytes.org>
-To: Bjorn Helgaas <bhelgaas@google.com>
-Cc: David Woodhouse <dwmw2@infradead.org>, linux-kernel@vger.kernel.org,
-        iommu@lists.linux-foundation.org, Ingo Molnar <mingo@elte.hu>,
-        Suresh Siddha <suresh.b.siddha@intel.com>
-Subject: Re: [PATCH 2/2] iommu: Request IOMMU CSR space
-Message-ID: <20120521131532.GL2313@8bytes.org>
-References: <20120518231238.31187.44571.stgit@bhelgaas.mtv.corp.google.com>
- <20120518231837.31187.29401.stgit@bhelgaas.mtv.corp.google.com>
+	Mon, 21 May 2012 09:19:39 -0400
+Date: Mon, 21 May 2012 15:19:32 +0200
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: Jiri Olsa <jolsa@redhat.com>
+Cc: acme@redhat.com, a.p.zijlstra@chello.nl, mingo@elte.hu, paulus@samba.org,
+        cjashfor@linux.vnet.ibm.com, eranian@google.com, gorcunov@openvz.org,
+        tzanussi@gmail.com, mhiramat@redhat.com, robert.richter@amd.com,
+        fche@redhat.com, linux-kernel@vger.kernel.org,
+        masami.hiramatsu.pt@hitachi.com, drepper@gmail.com, asharma@fb.com
+Subject: Re: [PATCH 04/17] perf: Add ability to attach user stack dump to
+ sample
+Message-ID: <20120521131930.GC23687@somewhere>
+References: <1335958638-5160-1-git-send-email-jolsa@redhat.com>
+ <1335958638-5160-5-git-send-email-jolsa@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20120518231837.31187.29401.stgit@bhelgaas.mtv.corp.google.com>
+In-Reply-To: <1335958638-5160-5-git-send-email-jolsa@redhat.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-DSPAM-Result: Whitelisted
-X-DSPAM-Processed: Mon May 21 15:15:33 2012
-X-DSPAM-Confidence: 0.9993
-X-DSPAM-Probability: 0.0000
-X-DSPAM-Signature: 4fba3ff528384622650627
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, May 18, 2012 at 05:18:37PM -0600, Bjorn Helgaas wrote:
-> Request the IOMMU CSR MMIO region to keep anybody else from claiming it
-> while we're using it.
+On Wed, May 02, 2012 at 01:37:05PM +0200, Jiri Olsa wrote:
+> Introducing new sample_type bit PERF_SAMPLE_STACK. Once set,
+> the sample_stack value determines the stack which is going
+> to be attached.
 > 
-> The bug referenced below is a crash that happened when we assigned an
-> address in the IOMMU CSR area to a PCI BAR.  This patch just changes
-> the IOMMU driver, which only helps when the driver is present, so a
-> BIOS change is also necessary.  But the driver should claim the space
-> it uses in any event.
+> Currently only user level stack is supported, specified by
+> PERF_SAMPLE_STACK_USER bit in sample_stack value. When set,
+> the sample_stack_user value determines the size of the
+> stack dump.
 > 
-> Reference: https://bugzilla.novell.com/show_bug.cgi?id=760440
-> Signed-off-by: Bjorn Helgaas <bhelgaas@google.com>
-
-Looks good.
-
-Reviewed-by: Joerg Roedel <joro@8bytes.org>
-
+> Beeing able to dump parts of the user stack, starting from the
+> stack pointer, will be useful to make a post mortem dwarf CFI
+> based stack unwinding.
+> 
+> Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
+> Signed-off-by: Jiri Olsa <jolsa@redhat.com>
 > ---
->  drivers/iommu/dmar.c        |   41 ++++++++++++++++++++++++++++++++---------
->  include/linux/intel-iommu.h |    2 ++
->  2 files changed, 34 insertions(+), 9 deletions(-)
+>  include/linux/perf_event.h |   20 ++++++++-
+>  kernel/events/core.c       |  103 ++++++++++++++++++++++++++++++++++++++++++++
+>  2 files changed, 122 insertions(+), 1 deletions(-)
 > 
-> diff --git a/drivers/iommu/dmar.c b/drivers/iommu/dmar.c
-> index 35c1e17..e4ac23a 100644
-> --- a/drivers/iommu/dmar.c
-> +++ b/drivers/iommu/dmar.c
-> @@ -581,6 +581,7 @@ int __init detect_intel_iommu(void)
->  int alloc_iommu(struct dmar_drhd_unit *drhd)
->  {
->  	struct intel_iommu *iommu;
-> +	struct resource *res;
->  	int map_size;
->  	u32 ver;
->  	static int iommu_allocated = 0;
-> @@ -599,11 +600,20 @@ int alloc_iommu(struct dmar_drhd_unit *drhd)
->  	iommu->seq_id = iommu_allocated++;
->  	sprintf (iommu->name, "dmar%d", iommu->seq_id);
+> diff --git a/include/linux/perf_event.h b/include/linux/perf_event.h
+> index dcda0f16..2e5f486 100644
+> --- a/include/linux/perf_event.h
+> +++ b/include/linux/perf_event.h
+> @@ -131,8 +131,9 @@ enum perf_event_sample_format {
+>  	PERF_SAMPLE_RAW				= 1U << 10,
+>  	PERF_SAMPLE_BRANCH_STACK		= 1U << 11,
+>  	PERF_SAMPLE_REGS			= 1U << 12,
+> +	PERF_SAMPLE_STACK			= 1U << 13,
 >  
-> -	iommu->reg = ioremap(drhd->reg_base_addr, VTD_PAGE_SIZE);
-> -	if (!iommu->reg) {
-> -		printk(KERN_ERR "IOMMU: can't map the region\n");
-> +	iommu->reg_base = drhd->reg_base_addr;
-> +	iommu->reg_size = VTD_PAGE_SIZE;
-> +	res = request_mem_region(iommu->reg_base, iommu->reg_size, iommu->name);
-> +	if (!res) {
-> +		printk(KERN_ERR "IOMMU: can't request [mem %#010llx-%#010llx]\n",
-> +		       iommu->reg_base, iommu->reg_base + iommu->reg_size - 1);
->  		goto error;
->  	}
-> +
-> +	iommu->reg = ioremap(iommu->reg_base, iommu->reg_size);
-> +	if (!iommu->reg) {
-> +		printk(KERN_ERR "IOMMU: can't map %pR\n", res);
-> +		goto err_release;
-> +	}
->  	iommu->cap = dmar_readq(iommu->reg + DMAR_CAP_REG);
->  	iommu->ecap = dmar_readq(iommu->reg + DMAR_ECAP_REG);
+> -	PERF_SAMPLE_MAX = 1U << 13,		/* non-ABI */
+> +	PERF_SAMPLE_MAX = 1U << 14,		/* non-ABI */
+>  };
 >  
-> @@ -637,17 +647,26 @@ int alloc_iommu(struct dmar_drhd_unit *drhd)
->  	map_size = VTD_PAGE_ALIGN(map_size);
->  	if (map_size > VTD_PAGE_SIZE) {
->  		iounmap(iommu->reg);
-> -		iommu->reg = ioremap(drhd->reg_base_addr, map_size);
-> +		release_mem_region(iommu->reg_base, iommu->reg_size);
-> +		iommu->reg_size = map_size;
-> +		res = request_mem_region(iommu->reg_base, iommu->reg_size,
-> +					 iommu->name);
-> +		if (!res) {
-> +			printk(KERN_ERR "IOMMU: can't request [mem %#010llx-%#010llx]\n",
-> +				iommu->reg_base,
-> +				iommu->reg_base + iommu->reg_size - 1);
-> +			goto error;
-> +		}
-> +		iommu->reg = ioremap(iommu->reg_base, iommu->reg_size);
->  		if (!iommu->reg) {
-> -			printk(KERN_ERR "IOMMU: can't map the region\n");
-> +			printk(KERN_ERR "IOMMU: can't map %pR\n", res);
->  			goto error;
->  		}
->  	}
+>  /*
+> @@ -173,6 +174,15 @@ enum perf_sample_regs {
+>  };
 >  
->  	ver = readl(iommu->reg + DMAR_VER_REG);
-> -	pr_info("IOMMU %d: reg_base_addr %llx ver %d:%d cap %llx ecap %llx\n",
-> -		iommu->seq_id,
-> -		(unsigned long long)drhd->reg_base_addr,
-> +	pr_info("IOMMU %d: %pR ver %d:%d cap %llx ecap %llx\n",
-> +		iommu->seq_id, res,
->  		DMAR_VER_MAJOR(ver), DMAR_VER_MINOR(ver),
->  		(unsigned long long)iommu->cap,
->  		(unsigned long long)iommu->ecap);
-> @@ -659,6 +678,8 @@ int alloc_iommu(struct dmar_drhd_unit *drhd)
->  
->   err_unmap:
->  	iounmap(iommu->reg);
-> + err_release:
-> +	release_mem_region(iommu->reg_base, iommu->reg_size);
->   error:
->  	kfree(iommu);
->  	return -1;
-> @@ -671,8 +692,10 @@ void free_iommu(struct intel_iommu *iommu)
->  
->  	free_dmar_iommu(iommu);
->  
-> -	if (iommu->reg)
-> +	if (iommu->reg) {
->  		iounmap(iommu->reg);
-> +		release_mem_region(iommu->reg_base, iommu->reg_size);
-> +	}
->  	kfree(iommu);
->  }
->  
-> diff --git a/include/linux/intel-iommu.h b/include/linux/intel-iommu.h
-> index e6ca56d..911ded0 100644
-> --- a/include/linux/intel-iommu.h
-> +++ b/include/linux/intel-iommu.h
-> @@ -308,6 +308,8 @@ enum {
->  
->  struct intel_iommu {
->  	void __iomem	*reg; /* Pointer to hardware regs, virtual addr */
-> +	phys_addr_t	reg_base;
-> +	resource_size_t reg_size;
->  	u64		cap;
->  	u64		ecap;
->  	u32		gcmd; /* Holds TE, EAFL. Don't need SRTP, SFL, WBF */
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+>  /*
+> + * Values for sample_stack when PERF_SAMPLE_STACK is set.
+> + * Defines stack dump to be attached to the sample.
+> + */
+> +enum perf_sample_stack {
+> +	PERF_SAMPLE_STACK_USER	= 1U << 0, /* user stack */
+> +	PERF_SAMPLE_STACK_MAX	= 1U << 1, /* non-ABI */
 
+Same problem than with regs, this doesn't allow several stack dumps types
+in a single sample.
+
+> +};
+> +
+> +/*
+>   * The format of the data returned by read() on a perf event fd,
+>   * as specified by attr.read_format:
+>   *
+> @@ -291,6 +301,14 @@ struct perf_event_attr {
+>  	 * See asm/perf_regs.h for details.
+>  	 */
+>  	__u64	sample_regs_user;
+> +
+> +	__u64	sample_stack; /* enum perf_sample_stack */
+> +
+> +	/*
+> +	 * Defines size of the user stack to dump on samples,
+> +	 * for sample_stack PERF_SAMPLE_STACK_USER settings.
+> +	 */
+> +	__u64	sample_stack_user;
+
+Do we need PERF_SAMPLE_STACK when we can already set 0 in sample_stack_user?
