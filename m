@@ -1,41 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758275Ab2EUPAv (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 May 2012 11:00:51 -0400
-Received: from iolanthe.rowland.org ([192.131.102.54]:57581 "HELO
-	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1757507Ab2EUPAu (ORCPT
+	id S1758257Ab2EUPCJ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 May 2012 11:02:09 -0400
+Received: from orion.tchmachines.com ([208.76.84.200]:57912 "EHLO
+	orion.tchmachines.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750819Ab2EUPCH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 May 2012 11:00:50 -0400
-Date: Mon, 21 May 2012 11:00:49 -0400 (EDT)
-From: Alan Stern <stern@rowland.harvard.edu>
-X-X-Sender: stern@iolanthe.rowland.org
-To: Lin Ming <ming.m.lin@intel.com>
-cc: Jens Axboe <axboe@kernel.dk>, Jeff Moyer <jmoyer@redhat.com>,
-        <linux-kernel@vger.kernel.org>, <linux-pm@vger.kernel.org>,
-        <linux-scsi@vger.kernel.org>
-Subject: Re: [RFC v2 PATCH 2/4] block: add queue runtime pm callbacks
-In-Reply-To: <CAF1ivSYmY3d8VonvsX0orsj0fLKXOXsLoG5jSwLs90MoP7=5Dw@mail.gmail.com>
-Message-ID: <Pine.LNX.4.44L0.1205211059510.1725-100000@iolanthe.rowland.org>
+	Mon, 21 May 2012 11:02:07 -0400
+From: Vlad Zolotarov <vlad@scalemp.com>
+To: Ingo Molnar <mingo@kernel.org>, "H. Peter Anvin" <hpa@zytor.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        linux-kernel <linux-kernel@vger.kernel.org>, Shai@scalemp.com,
+        ido@wizery.com
+Subject: [PATCH v4 0/2] Move x86_cpu_to_apicid to the __read_mostly section
+Date: Mon, 21 May 2012 18:02:04 +0300
+Message-ID: <1744141.b5asW8k6jC@vlad>
+Organization: ScaleMP Ltd.
+User-Agent: KMail/4.8.2 (Linux/3.2.0-24-generic; KDE/4.8.2; i686; ; )
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
+X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
+X-AntiAbuse: Primary Hostname - orion.tchmachines.com
+X-AntiAbuse: Original Domain - vger.kernel.org
+X-AntiAbuse: Originator/Caller UID/GID - [47 12] / [47 12]
+X-AntiAbuse: Sender Address Domain - scalemp.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 21 May 2012, Lin Ming wrote:
+Pls., consider applying this patch series.
+It contains the following changes:
+ - Adds two new macros DEFINE_EARLY_PER_CPU_READ_MOSTLY() and
+   DECLARE_EARLY_PER_CPU_READ_MOSTLY().
+ - Adds "read-mostly" qualifier to the following variables in smp.h:
+  - cpu_sibling_map
+  - cpu_core_map
+  - cpu_llc_shared_map
+  - cpu_llc_id
+  - cpu_number
+  - x86_cpu_to_apicid
+  - x86_bios_cpu_apicid
+  - x86_cpu_to_logical_apicid
 
-> On Fri, May 18, 2012 at 2:29 AM, Alan Stern <stern@rowland.harvard.edu> wrote:
-> [snip]
-> > I may have left some parts out from this brief description.  Hopefully
-> > you'll be able to figure out the general idea and get it to work.
-> 
-> All journal threads and flusher thread of the disk need to be freezed
-> before suspend and thaw after resume.
+As long as all the variables above are only written during the initialization,
+this change is meant to prevent the false sharing and improve the
+performance on large multiprocessor systems.
 
-Why?  If any of those threads needs to write something to the disk 
-while the disk is suspended, the disk will simply be resumed.
+v4 changes:
+- Fixed the authors signatures in the patches.
 
-Alan Stern
+v3 changes:
+- Added the missing definitions of DEFINE_EARLY_PER_CPU_READ_MOSTLY()
+  and DECLARE_EARLY_PER_CPU_READ_MOSTLY() macros in the !CONFIG_SMP code
+  path in arch/x86/include/asm/percpu.h.
 
+thanks,
+vlad
