@@ -1,51 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758773Ab2EUSIx (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 May 2012 14:08:53 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:54582 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758454Ab2EUSIv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 May 2012 14:08:51 -0400
-Subject: [GIT PULL]  c6x updates for 3.5
-From: Mark Salter <msalter@redhat.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: linux-kernel <linux-kernel@vger.kernel.org>
-Date: Mon, 21 May 2012 13:31:08 -0400
-Organization: Red Hat, Inc
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 7bit
-Message-ID: <1337621469.15388.1.camel@deneb.redhat.com>
-Mime-Version: 1.0
+	id S1758737Ab2EUSKe (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 May 2012 14:10:34 -0400
+Received: from e37.co.us.ibm.com ([32.97.110.158]:41827 "EHLO
+	e37.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758356Ab2EUSKd (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 21 May 2012 14:10:33 -0400
+Date: Mon, 21 May 2012 11:05:50 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: mingo@elte.hu
+Cc: linux-kernel@vger.kernel.org, josh@joshtriplett.org, laijs@cn.fujitsu.com
+Subject: [GIT PULL rcu/next] More RCU commits for 3.5
+Message-ID: <20120521180550.GA22052@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 12052118-7408-0000-0000-00000534FABC
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The following changes since commit 69964ea4c7b68c9399f7977aa5b9aa6539a6a98a:
+Hello, Ingo,
 
-  Linux 3.4-rc5 (2012-04-29 15:19:10 -0700)
+This series has only two minor patches:
 
-are available in the git repository at:
+1.	Fix code-style issues involving "else", where if one branch of
+	the "if" statement requires curly brackets, the other branch
+	must also use them.
+2.	Fix strings broken across lines, strings being the exception to
+	the 80-column rule.
 
-  git://linux-c6x.org/git/projects/linux-c6x-upstreaming.git tags/for-linus
+All of these have been exposed to -next testing.
 
-for you to fetch changes up to 8ff98b9c993d59d6b396a42266c6d323c8f28cec:
+These changes are available in the git repository at:
 
-  C6X: remove unused config items (2012-05-18 09:59:22 -0400)
+  git://git.kernel.org/pub/scm/linux/kernel/git/paulmck/linux-rcu.git rcu/next
 
-----------------------------------------------------------------
-Clean up some c6x Kconfig items and add support for Elf FDPIC loader.
+							Thanx, Paul
 
-----------------------------------------------------------------
-Mark Salter (3):
-      C6X: change main arch kbuild symbol
-      C6X: add support to build with BINFMT_ELF_FDPIC
-      C6X: remove unused config items
+-------------------------->
+Paul E. McKenney (2):
+      rcu: Fix code-style issues involving "else"
+      rcu: Fix broken strings in RCU's source code.
 
- arch/c6x/Kconfig              |   14 +-------------
- arch/c6x/include/asm/elf.h    |   14 +++++++++++++-
- arch/c6x/include/asm/mmu.h    |    4 ++++
- arch/c6x/include/asm/ptrace.h |    5 +++++
- fs/Kconfig.binfmt             |    2 +-
- 5 files changed, 24 insertions(+), 15 deletions(-)
-
+ include/linux/rcupdate.h |    3 +--
+ kernel/rcutiny_plugin.h  |    3 ++-
+ kernel/rcutorture.c      |   36 ++++++++++++++++--------------------
+ kernel/rcutree.c         |    7 ++++---
+ kernel/rcutree_plugin.h  |   18 ++++++++++--------
+ kernel/rcutree_trace.c   |   25 ++++++++++++-------------
+ lib/list_debug.c         |    6 ++----
+ 7 files changed, 47 insertions(+), 51 deletions(-)
 
