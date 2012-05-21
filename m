@@ -1,71 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932542Ab2EUXCG (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 May 2012 19:02:06 -0400
-Received: from www.linutronix.de ([62.245.132.108]:33977 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757976Ab2EUXCE (ORCPT
+	id S932577Ab2EUXCK (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 May 2012 19:02:10 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:46684 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932544Ab2EUXCH convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 May 2012 19:02:04 -0400
-Date: Tue, 22 May 2012 01:01:57 +0200 (CEST)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: "Michael S. Tsirkin" <mst@redhat.com>
-cc: kvm@vger.kernel.org, Avi Kivity <avi@redhat.com>,
-        Marcelo Tosatti <mtosatti@redhat.com>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, x86@kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] kvm: optimize ISR lookups
-In-Reply-To: <20120521222449.GJ17031@redhat.com>
-Message-ID: <alpine.LFD.2.02.1205220044460.3231@ionos>
-References: <20120521163727.GA13337@redhat.com> <alpine.LFD.2.02.1205211940030.3231@ionos> <20120521215127.GH17031@redhat.com> <alpine.LFD.2.02.1205220012020.3231@ionos> <20120521222449.GJ17031@redhat.com>
-User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
+	Mon, 21 May 2012 19:02:07 -0400
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+In-Reply-To: <20120521081330.GB28930@dhcp-26-207.brq.redhat.com>
+References: <20120518102640.GB31517@dhcp-26-207.brq.redhat.com>
+	<CAE9FiQXUM-+KSZ1OcxipRW-3XQED3Csyxs=0ke0hJZR7E_hrhg@mail.gmail.com>
+	<20120521081330.GB28930@dhcp-26-207.brq.redhat.com>
+Date: Mon, 21 May 2012 16:02:06 -0700
+X-Google-Sender-Auth: uH5KGtchg5eZQj67pP2POz-ltlk
+Message-ID: <CAE9FiQUVJ3YHQfJ5i1fr8VU8-n_Rpd683DZ7M+54JwLk5kL_=g@mail.gmail.com>
+Subject: Re: [PATCH 2/3] x86: x2apic/cluster: Make use of lowest priority
+ delivery mode
+From: Yinghai Lu <yinghai@kernel.org>
+To: Alexander Gordeev <agordeev@redhat.com>
+Cc: linux-kernel@vger.kernel.org, x86@kernel.org,
+        Suresh Siddha <suresh.b.siddha@intel.com>,
+        Cyrill Gorcunov <gorcunov@openvz.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 22 May 2012, Michael S. Tsirkin wrote:
-> On Tue, May 22, 2012 at 12:14:18AM +0200, Thomas Gleixner wrote:
-> > On Tue, 22 May 2012, Michael S. Tsirkin wrote:
-> > 
-> > > On Mon, May 21, 2012 at 11:04:25PM +0200, Thomas Gleixner wrote:
-> > > > > @@ -242,6 +262,25 @@ static inline void apic_clear_irr(int vec, struct kvm_lapic *apic)
-> > > > >  		apic->irr_pending = true;
-> > > > >  }
-> > > > >  
-> > > > > +static inline void apic_set_isr(int vec, struct kvm_lapic *apic)
-> > > > > +{
-> > > > > +	if (!__apic_test_and_set_vector(vec, apic->regs + APIC_ISR))
-> > > > > +		++apic->isr_count;
-> > > > > +	ASSERT(apic->isr_count > MAX_APIC_VECTOR);
-> > > > 
-> > > > I'm really curious what you observed when defining DEBUG in that file.
-> > > > 
-> > > > Clearly you never did.
-> > > 
-> > > Sorry :(
-> > > Yes clearly silly, thanks for pointing this out.
-> > 
-> > That's all you have a reply for? That's the least of the problems ....
-> 
-> Others are not my fault :)
-> 
-> Seriously, if Avi/Marcelo want to rewrite the ISR emulation
+On Mon, May 21, 2012 at 1:13 AM, Alexander Gordeev <agordeev@redhat.com> wrote:
+> On Sat, May 19, 2012 at 01:53:36PM -0700, Yinghai Lu wrote:
+>> > +static void
+>> > +x2apic_cluster_vector_allocation_domain(int cpu, struct cpumask *retmask)
+>> > +{
+>> > +       cpumask_copy(retmask, cpu_possible_mask);
+>>
+>> why not using per_cpu(cpus_in_cluster, cpu) instead?
+>
+> Because it would lead to suboptimal results when updating IRQ affinity:
+>
+> int __ioapic_set_affinity(struct irq_data *data, const struct cpumask *mask,
+>                          unsigned int *dest_id)
+> {
+>        struct irq_cfg *cfg = data->chip_data;
+>
+>        if (!cpumask_intersects(mask, cpu_online_mask))
+>                return -1;
+>
+>        if (assign_irq_vector(data->irq, data->chip_data, mask))
+>                return -1;
+>
+> This call ^^^ will update cfg->domain with the value returned by the call to
+> apic->vector_allocation_domain(). If per_cpu(cpus_in_cluster, cpu) is returned
+> as cfg->domain here then all other clusters contained in the 'mask' will not
+> be taken into consideration by the apic->cpu_mask_to_apicid_and() call below.
+>
+>        cpumask_copy(data->affinity, mask);
+>
+>        *dest_id = apic->cpu_mask_to_apicid_and(mask, cfg->domain);
+>
+> So we really need to submit all possible CPUs here ^^^ to be able finding the
+> best/heaviest cluster out of the 'mask'.
 
-Interesting POV, really.
+ok.
 
-Did you ever notice that the kernel is a collaborative effort and not
-controlled by "Avi/Marcelo"?
+>
+>        return 0;
+> }
+>
+>
+>> also you may add one per cpu var like x86_cpu_to_logical_cluster_apicid.
+>
+> Both cpu_mask_to_apicid() and cpu_mask_to_apicid_and() take a cpumask to
+> derive the apicid from. Even though we could cache the value of apicid in
+> 'x86_cpu_to_logical_cluster_apicid' variable, we still would have to unset
+> CPUs which are not in the requested cpumask. That means scanning through the
+> cpumask etc -- exactly what the the patch does now.
 
-Did you ever notice that arch/x86/kvm is part of arch/x86? 
+ok, i got it. thanks for the explanation.
 
-And if you did, did you notice that there are maintainers responsible
-for that code base?
+I was thinking: pick up one for cpumask that user want, and then just
+use all cpus in that cluster as dest cpus.
 
-Thanks,
-
-	tglx
+Yinghai
