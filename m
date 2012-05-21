@@ -1,85 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754201Ab2EUMIO (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 May 2012 08:08:14 -0400
-Received: from smtp.nokia.com ([147.243.1.47]:31355 "EHLO mgw-sa01.nokia.com"
+	id S1754315Ab2EUMNn (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 May 2012 08:13:43 -0400
+Received: from slimlogic.co.uk ([89.16.172.20]:39477 "EHLO slimlogic.co.uk"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751208Ab2EUMIN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 May 2012 08:08:13 -0400
-Date: Mon, 21 May 2012 15:05:11 +0300
-From: Phil Carmody <ext-phil.2.carmody@nokia.com>
-To: ext Joe Perches <joe@perches.com>
-Cc: linux-kernel@vger.kernel.org, apw@canonical.com
-Subject: Re: [PATCH 1/1] checkpatch: don't fake typedefs with #define
-Message-ID: <20120521120511.GG1197@pcarmody2.research.nokia.com>
-References: <1337259132-28774-1-git-send-email-ext-phil.2.carmody@nokia.com>
- <1337288048.17726.64.camel@joe2Laptop>
- <20120517211641.GC27953@pcarmody2.research.nokia.com>
- <1337289897.8872.8.camel@joe2Laptop>
+	id S1753036Ab2EUMNk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 21 May 2012 08:13:40 -0400
+Message-ID: <4FBA316E.9050005@slimlogic.co.uk>
+Date: Mon, 21 May 2012 13:13:34 +0100
+From: Graeme Gregory <gg@slimlogic.co.uk>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:11.0) Gecko/20120410 Thunderbird/11.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1337289897.8872.8.camel@joe2Laptop>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-Nokia-AV: Clean
+To: Axel Lin <axel.lin@gmail.com>
+CC: linux-kernel@vger.kernel.org,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Liam Girdwood <lrg@ti.com>
+Subject: Re: [PATCH] regulator: palmas: Use regulator_[list|map]_voltage_linear()
+ for palmas_ops_smps10
+References: <1337600801.2615.1.camel@phoenix>
+In-Reply-To: <1337600801.2615.1.camel@phoenix>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 17/05/12 14:24 -0700, ext Joe Perches wrote:
-> On Fri, 2012-05-18 at 00:16 +0300, Phil Carmody wrote:
-> > On 17/05/12 13:54 -0700, ext Joe Perches wrote:
-> > > > +# check for deliberate avoidance of the above anti-typedef rule
-> > > > +		if ($line =~ /#\s*define\s+$Ident\s+$Type\b/) {
-> > > > +			WARN("NEW_TYPEDEFS",
-> > > > +			     "do not fake typedefs using #define\n" . $herecurr);
-> > > > +		}
-> > > > +
-> > > 
-> > > I think the false positive rate is pretty high.
-> > > I used this and don't see too many I'd remove.
-> > > 
-> > > $ git grep -E "#\s*define\s+\w+\s+(struct|unsigned|char|short|int|long|const)\b"
+This is a good improvement I missed.
 
-I hadn't actually run that before, but to be honest, I think
-few of them have much justification. Or at least, were that
-code to be written today by one of the regular contributors,
-it probably wouldn't be written with such a #define. A lot
-do go directly against the advice in Documentation/CodingStyle.
+Acked-by: Graeme Gregory <gg@slimlogic.co.uk>
 
-> > > Got an example you want this to find?
-> > 
-> > Too many. Alas I can't share them.
-> 
-> Too bad.
-> 
-> If all the defines end in _t maybe you could use
-> 	if ($line =~ /^\+\s*#\s*define\s+\w+_t\s+$Type\b/) {
-> etc...
-> 
+On 21/05/12 12:46, Axel Lin wrote:
+> Signed-off-by: Axel Lin <axel.lin@gmail.com>
+> ---
+>  drivers/regulator/palmas-regulator.c |   11 ++++-------
+>  1 files changed, 4 insertions(+), 7 deletions(-)
+>
+> diff --git a/drivers/regulator/palmas-regulator.c b/drivers/regulator/palmas-regulator.c
+> index 9b7ca90..4fd8333 100644
+> --- a/drivers/regulator/palmas-regulator.c
+> +++ b/drivers/regulator/palmas-regulator.c
+> @@ -400,19 +400,14 @@ static struct regulator_ops palmas_ops_smps = {
+>  	.map_voltage		= palmas_map_voltage_smps,
+>  };
+>  
+> -static int palmas_list_voltage_smps10(struct regulator_dev *dev,
+> -					unsigned selector)
+> -{
+> -	return 3750000 + (selector * 1250000);
+> -}
+> -
+>  static struct regulator_ops palmas_ops_smps10 = {
+>  	.is_enabled		= regulator_is_enabled_regmap,
+>  	.enable			= regulator_enable_regmap,
+>  	.disable		= regulator_disable_regmap,
+>  	.get_voltage_sel	= regulator_get_voltage_sel_regmap,
+>  	.set_voltage_sel	= regulator_set_voltage_sel_regmap,
+> -	.list_voltage		= palmas_list_voltage_smps10,
+> +	.list_voltage		= regulator_list_voltage_linear;
+> +	.map_voltage		= regulator_map_voltage_linear;
+>  };
+>  
+>  static int palmas_is_enabled_ldo(struct regulator_dev *dev)
+> @@ -675,6 +670,8 @@ static __devinit int palmas_probe(struct platform_device *pdev)
+>  			pmic->desc[id].vsel_mask = SMPS10_VSEL;
+>  			pmic->desc[id].enable_reg = PALMAS_SMPS10_STATUS;
+>  			pmic->desc[id].enable_mask = SMPS10_BOOST_EN;
+> +			pmic->desc[id].min_uV = 3750000;
+> +			pmic->desc[id].uV_step = 1250000;
+>  		}
+>  
+>  		pmic->desc[id].type = REGULATOR_VOLTAGE;
 
-Well, certainly structs are the majority of the immediate ones I'd
-most like to nail, so how about this:
-
-diff --git a/scripts/checkpatch.pl b/scripts/checkpatch.pl
-index faea0ec..0db7f84 100755
---- a/scripts/checkpatch.pl
-+++ b/scripts/checkpatch.pl
-@@ -2299,6 +2299,12 @@ sub process {
-                             "do not add new typedefs\n" . $herecurr);
-                }
- 
-+# check for deliberate avoidance of the above anti-typedef rule
-+               if ($line =~ /#\s*define\s+$Ident\s+(enum|union|struct)\s+$Ident\b/) {
-+                       WARN("NEW_TYPEDEFS",
-+                            "do not fake typedefs using #define\n" . $herecurr);
-+               }
-+
- # * goes on variable not on type
-                # (char*[ const])
-                while ($line =~ m{(\($NonptrType(\s*(?:$Modifier\b\s*|\*\s*)+)\))}g) {
-
-
--- 
-Phil Carmody
-Tel: +372 5697 1161 
