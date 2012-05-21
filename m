@@ -1,46 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758895Ab2EUSiN (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 May 2012 14:38:13 -0400
-Received: from smtp.snhosting.dk ([87.238.248.203]:10249 "EHLO
-	smtp.domainteam.dk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758585Ab2EUSiL (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 May 2012 14:38:11 -0400
-Date: Mon, 21 May 2012 20:38:07 +0200
-From: Sam Ravnborg <sam@ravnborg.org>
+	id S1758924Ab2EUSix (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 May 2012 14:38:53 -0400
+Received: from mga01.intel.com ([192.55.52.88]:2816 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750842Ab2EUSiw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 21 May 2012 14:38:52 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
+   d="scan'208";a="155288700"
+Subject: Re: [PATCH 2/3] x86: x2apic/cluster: Make use of lowest priority
+ delivery mode
+From: Suresh Siddha <suresh.b.siddha@intel.com>
+Reply-To: Suresh Siddha <suresh.b.siddha@intel.com>
 To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: David Miller <davem@davemloft.net>, akpm@linux-foundation.org,
-        sparclinux@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [GIT] Sparc
-Message-ID: <20120521183807.GA6104@merkur.ravnborg.org>
-References: <20120521.050300.1434374935904126254.davem@davemloft.net> <CA+55aFzag=LfduvHSmE34nEVYOk=MRhUMzK854+icLwthmz5Ng@mail.gmail.com> <20120521182400.GA6043@merkur.ravnborg.org> <CA+55aFymRE-_1qzCA_n3xYbMseQrZsjJWWX74S3jn5Qyf9Efjw@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CA+55aFymRE-_1qzCA_n3xYbMseQrZsjJWWX74S3jn5Qyf9Efjw@mail.gmail.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+Cc: Ingo Molnar <mingo@kernel.org>, Alexander Gordeev <agordeev@redhat.com>,
+        Arjan van de Ven <arjan@infradead.org>, linux-kernel@vger.kernel.org,
+        x86@kernel.org, Cyrill Gorcunov <gorcunov@openvz.org>,
+        Yinghai Lu <yinghai@kernel.org>
+Date: Mon, 21 May 2012 11:37:14 -0700
+In-Reply-To: <CA+55aFx3ogOzGWZvfETgoKqoLzTc7qw6QjmouSLG4JF9aRdjig@mail.gmail.com>
+References: <20120518102640.GB31517@dhcp-26-207.brq.redhat.com>
+	 <20120521082240.GA31407@gmail.com>
+	 <20120521093648.GC28930@dhcp-26-207.brq.redhat.com>
+	 <20120521124025.GC17065@gmail.com>
+	 <20120521144812.GD28930@dhcp-26-207.brq.redhat.com>
+	 <20120521145904.GA7068@gmail.com>
+	 <CA+55aFxJxfx+OfDiATCCPojVAPew_Hy+2=jx9g4=2_WRvixBFw@mail.gmail.com>
+	 <1337623623.1997.115.camel@sbsiddha-desk.sc.intel.com>
+	 <CA+55aFx3ogOzGWZvfETgoKqoLzTc7qw6QjmouSLG4JF9aRdjig@mail.gmail.com>
+Organization: Intel Corp
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.0.3 (3.0.3-1.fc15) 
+Content-Transfer-Encoding: 7bit
+Message-ID: <1337625434.1997.126.camel@sbsiddha-desk.sc.intel.com>
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, May 21, 2012 at 11:28:58AM -0700, Linus Torvalds wrote:
-> On Mon, May 21, 2012 at 11:24 AM, Sam Ravnborg <sam@ravnborg.org> wrote:
+On Mon, 2012-05-21 at 11:18 -0700, Linus Torvalds wrote:
+> On Mon, May 21, 2012 at 11:07 AM, Suresh Siddha
+> <suresh.b.siddha@intel.com> wrote:
 > >
-> > So the "if NET" part in the select is redundant but not strictly wrong.
+> > All the cluster members of a given x2apic cluster belong to the same
+> > package. These x2apic cluster id's are setup by the HW and not by the
+> > SW. And only one cluster (with one or multiple members of that cluster
+> > set) can be specified in the interrupt destination field of the routing
+> > table entry.
 > 
-> It's not redundant.
+> Ok, then the main question ends up being if there are enough cache or
+> power domains within a cluster to still worry about it.
+
+There are 16 members with in a x2apic cluster. With two HT siblings,
+that will still leave 8-cores.
+
 > 
-> Try doing a "make ARCH=sparc allnoconfig" without it. It will warn.
+> For example, you say "package", but that can sometimes mean multiple
+> dies, or even just split caches that are big enough to matter
+> (although I can't think of any such right now on the x86 side - Core2
+> Duo had huge L2's, but they were shared, not split).
+
+Most likely multiple dies or split caches will have different
+cluster-id's. I don't know of any upcoming implementations that will
+have such an implementation supporting x2apic, but will keep an eye.
+
 > 
-> I didn't bother looking at *why* it warns, but all other architectures
-> have the "if NET" part.
+> > Power aware interrupt routing in IVB does this. And the policy of
+> > whether you want the interrupt to be routed to the busy core (to save
+> > power) or an idle core (for minimizing the interruptions on the busy
+> > core) can be selected by the SW (using IA32_ENERGY_PERF_BIAS MSR).
+> 
+> Sounds like we definitely would want to support this at least in the
+> IVB timeframe then.
+> 
+> But I do agree with Ingo that it would be really good to actually see
+> numbers (and no, I don't mean "look here, now the irq's are nicely
+> spread out", but power and/or performance numbers showing that it
+> actually helps something).
 
-I see. This is because HAVE_BPF_JIT depends on NET, so kconfig
-warns if you select HAVE_BPF_JIT without NET enabled.
-The correct fix is obviously to move HAVE_BPF_JIT so it
-does not depend on NET.
+I agree. This is the reason why I held up posting these patches before.
+I can come up with micro-benchmarks that can show some difference but
+the key is to find good workload/benchmark that can show measurable
+difference. Any suggestions?
 
-Sprinkling "if NET" all over is the wrong fix.
+thanks,
+suresh
 
-	Sam
