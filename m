@@ -1,105 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757241Ab2EURFn (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 May 2012 13:05:43 -0400
-Received: from mail-wi0-f202.google.com ([209.85.212.202]:62875 "EHLO
-	mail-wi0-f202.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753163Ab2EURFm (ORCPT
+	id S1757314Ab2EURJa (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 May 2012 13:09:30 -0400
+Received: from avon.wwwdotorg.org ([70.85.31.133]:38403 "EHLO
+	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754367Ab2EURJ3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 May 2012 13:05:42 -0400
-Date: Mon, 21 May 2012 11:05:39 -0600
-From: Bjorn Helgaas <bhelgaas@google.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org, linux-pci@vger.kernel.org
-Subject: [GIT PULL] PCI updates for 3.5 merge window
-Message-ID: <20120521170539.GA13635@google.com>
+	Mon, 21 May 2012 13:09:29 -0400
+Message-ID: <4FBA76C6.9030201@wwwdotorg.org>
+Date: Mon, 21 May 2012 11:09:26 -0600
+From: Stephen Warren <swarren@wwwdotorg.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Dong Aisheng <aisheng.dong@freescale.com>
+CC: Dong Aisheng-B29396 <B29396@freescale.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linus.walleij@stericsson.com" <linus.walleij@stericsson.com>
+Subject: Re: [PATCH RFC v2 2/2] pinctrl: add pinctrl gpio binding support
+References: <1337346755-8761-1-git-send-email-b29396@freescale.com> <1337346755-8761-2-git-send-email-b29396@freescale.com> <4FB6AB9A.4080006@wwwdotorg.org> <20120521123929.GA27055@shlinux2.ap.freescale.net>
+In-Reply-To: <20120521123929.GA27055@shlinux2.ap.freescale.net>
+X-Enigmail-Version: 1.5pre
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus,
+On 05/21/2012 06:39 AM, Dong Aisheng wrote:
+> On Sat, May 19, 2012 at 04:05:46AM +0800, Stephen Warren wrote:
+>> On 05/18/2012 07:12 AM, Dong Aisheng wrote:
+>>> The gpio ranges standard dt binding format is
+>>> <&gpio $gpio_offset $pin_offset $npin>
+>>>
+>>> The core will parse and register the pinctrl gpio ranges
+>>> from device tree.
+...
+>>> +	pinctrl_add_gpio_ranges(pctldev, ranges, nranges);
+>>
+>> I think we should also store ranges somewhere separate in pctldev ...
+>
+> Hmm, i'm not quite understand,
+> What do you mean separate in pctldev?
+> We already save the ranges in pctldev's gpio_ranges list.
+>
+>>> +void pinctrl_dt_remove_gpio_ranges(struct pinctrl_dev *pctldev,
+>>> +				   struct pinctrl_gpio_range *ranges,
+>>> +				   unsigned nranges)
+>>
+>> ... so that this function doesn't need ranges/nranges passed to it; it
+>> can just get them out of pctldec.
+>
+> For remove ranges/nranges, maybe we can use list_for_each_entry_safe
+> plus list_del like:
+> list_for_each_entry_safe(range, tmp, &pctldev->gpio_ranges, node)
+>     list_del(range->node);
 
-Please pull the signed tag "pci-for-3.5" to get these PCI changes for the
-v3.5 merge window.  I'm a newbie, so don't hesitate to help me improve my
-pull requests :)
+If some GPIO ranges are added using pinctrl_dt_add_gpio_ranges() and
+some are added using pinctrl_add_gpio_range(), how will
+pinctrl_dt_remove_gpio_ranges() know which ones to remove, unless
 
-The changes include:
-  - Host bridge cleanups from Yinghai
-  - Disable Bus Master bit on PCI device shutdown (kexec-related)
-  - Stratus ftServer fix
-  - pci_dev_reset() locking fix
-  - IvyBridge graphics erratum workaround
+a) The list of ranges is passed to pinctrl_dt_remove_gpio_ranges() as
+above (but then where does the caller find the list to pass in)
 
-Bjorn
+or:
 
+b) The list of ranges added by pinctrl_dt_add_gpio_ranges() is stored
+separately from the overall gpio_ranges list, so the code knows which
+were added by that API.
 
-The following changes since commit 66f75a5d028beaf67c931435fdc3e7823125730c:
+Perhaps the simplest way to implement this is to add a new Boolean field
+to struct gpio_range that says whether pinctrl_dt_add_gpio_ranges()
+added it, and set it to true/false in  pinctrl_dt_add_gpio_ranges() and
+ pinctrl_add_gpio_ranges().
 
-  Linux 3.4-rc4 (2012-04-21 14:47:52 -0700)
+> I just follow the original way here and if change we may need another
+> patch.
+> 
+>> Or better yet, what if pinctrl_unregister automatically removed any
+>> ranges registered by pinctrl_dt_add_gpio_ranges, so this function
+>> doesn't even need to exist?
+>
+> Yes, it seems this can also work for non-dt registered gpio ranges added by
+> pinctrl_add_gpio_ranges, e.g, remove need pinctrl_remove_gpio_range too,
+> It seems it should be in a separate patch which is not related to gpio ranges
+> binding.
+>
+> Do you want me to work on that patch first for this series to rebase or
+> we can do it later?
 
-are available in the git repository at:
-  git://git.kernel.org/pub/scm/linux/kernel/git/helgaas/pci.git next
-
-Bjorn Helgaas (6):
-      PCI: work around Stratus ftServer broken PCIe hierarchy
-      Merge branch 'topic/yinghai-hostbridge-cleanup' into next
-      MAINTAINERS: update PCI git tree and patchwork
-      Merge branch 'topic/stratus' into next
-      x86/PCI: only check for spinlock being held in SMP kernels
-      microblaze/PCI: fix "io_offset undeclared" error
-
-Chunhe Lan (1):
-      PCI: fix uninitialized variable 'cap_mask'
-
-Khalid Aziz (1):
-      PCI: disable Bus Master on PCI device shutdown
-
-Konrad Rzeszutek Wilk (1):
-      PCI: move mutex locking out of pci_dev_reset function
-
-Wei Yang (1):
-      resources: add resource_overlaps()
-
-Xudong Hao (1):
-      PCI: work around IvyBridge internal graphics FLR erratum
-
-Yinghai Lu (12):
-      PCI: move host bridge-related code to host-bridge.c
-      x86/PCI: fix memleak with get_current_resources()
-      PCI: rename pci_host_bridge() to find_pci_root_bridge()
-      PCI: add generic device into pci_host_bridge struct
-      PCI: add host bridge release support
-      x86/PCI: refactor get_current_resources()
-      x86/PCI: add host bridge resource release for _CRS path
-      x86/PCI: embed name into pci_root_info struct
-      x86/PCI: embed pci_sysdata into pci_root_info on ACPI path
-      x86/PCI: dynamically allocate pci_root_info for native host bridge drivers
-      x86/PCI: merge pcibios_scan_root() and pci_scan_bus_on_node()
-      x86/PCI: fix unused variable warning in amd_bus.c
-
- Documentation/kernel-parameters.txt |    3 +
- MAINTAINERS                         |   10 +--
- arch/microblaze/pci/pci-common.c    |    1 +
- arch/x86/pci/acpi.c                 |  128 ++++++++++++++++-------------
- arch/x86/pci/amd_bus.c              |   91 +++++++++------------
- arch/x86/pci/broadcom_bus.c         |   12 +--
- arch/x86/pci/bus_numa.c             |   69 +++++++++++-----
- arch/x86/pci/bus_numa.h             |   18 +++--
- arch/x86/pci/common.c               |   43 +++++-----
- arch/x86/pci/i386.c                 |    2 +-
- drivers/pci/Makefile                |    2 +-
- drivers/pci/host-bridge.c           |   96 ++++++++++++++++++++++
- drivers/pci/pci-driver.c            |    6 ++
- drivers/pci/pci.c                   |   30 +++++---
- drivers/pci/pcie/portdrv_core.c     |    2 +-
- drivers/pci/probe.c                 |  154 ++++++++++-------------------------
- drivers/pci/quirks.c                |   58 +++++++++++++
- include/asm-generic/pci-bridge.h    |    6 ++
- include/linux/ioport.h              |    7 ++
- include/linux/pci.h                 |    9 ++-
- 20 files changed, 442 insertions(+), 305 deletions(-)
- create mode 100644 drivers/pci/host-bridge.c
+Maybe we should just delete the functions pinctrl_remove_gpio_range()
+and pinctrl_dt_remove_gpio_range() completely. They only remove the gpio
+range from the list in the pctldev, and since the pctldev is being
+unregistered anyway, that doesn't seem very useful. The ranges don't
+need to be free()'d since pinctrl_dt_add_gpio_ranges() allocates them
+using devm_kzalloc() anyway, and in the non-DT case, if they need
+free-ing, the driver already had to do that itself.
