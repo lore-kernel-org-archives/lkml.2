@@ -1,85 +1,135 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932353Ab2EUVtl (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 May 2012 17:49:41 -0400
-Received: from acsinet15.oracle.com ([141.146.126.227]:44906 "EHLO
-	acsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759319Ab2EUVtS (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 May 2012 17:49:18 -0400
-From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-To: linux-kernel@vger.kernel.org, david.vrabel@citrix.com
-Cc: xen-devel@lists.xensource.com,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Subject: [PATCH 2/2] xen/setup: Work properly with 'dom0_mem=X' or with not dom0_mem.
-Date: Mon, 21 May 2012 17:42:42 -0400
-Message-Id: <1337636562-9579-3-git-send-email-konrad.wilk@oracle.com>
-X-Mailer: git-send-email 1.7.7.5
-In-Reply-To: <1337636562-9579-1-git-send-email-konrad.wilk@oracle.com>
-References: <1337636562-9579-1-git-send-email-konrad.wilk@oracle.com>
-X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
+	id S1759367Ab2EUVus (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 May 2012 17:50:48 -0400
+Received: from ogre.sisk.pl ([193.178.161.156]:57217 "EHLO ogre.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1759319Ab2EUVuq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 21 May 2012 17:50:46 -0400
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>, rostedt@goodmis.org
+Subject: Re: [PATCH] ftrace: Disable function tracing during suspend/resume and hibernation, again
+Date: Mon, 21 May 2012 23:55:45 +0200
+User-Agent: KMail/1.13.6 (Linux/3.4.0+; KDE/4.6.0; x86_64; ; )
+Cc: mingo@kernel.org, lenb@kernel.org, pavel@ucw.cz, linux-pm@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+References: <20120521065651.4142.36898.stgit@srivatsabhat.in.ibm.com>
+In-Reply-To: <20120521065651.4142.36898.stgit@srivatsabhat.in.ibm.com>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="utf-8"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201205212355.45929.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-We ignored the X value and ended up populating up to
-max(MAX_DOMAIN_PAGES, last E820_RAM entry).
+On Monday, May 21, 2012, Srivatsa S. Bhat wrote:
+> If function tracing is enabled for some of the low-level suspend/resume
+> functions, it leads to triple fault during resume from suspend, ultimately
+> ending up in a reboot instead of a resume (or a total refusal to come out
+> of suspended state, on some machines).
+> 
+> This issue was explained in more detail in commit f42ac38c59e0a03d (ftrace:
+> disable tracing for suspend to ram). However, the changes made by that commit
+> got reverted by commit cbe2f5a6e84eebb (tracing: allow tracing of
+> suspend/resume & hibernation code again). So, unfortunately since things are
+> not yet robust enough to allow tracing of low-level suspend/resume functions,
+> suspend/resume is still broken when ftrace is enabled.
+> 
+> So fix this by disabling function tracing during suspend/resume & hibernation.
 
-This fixes it by figuring out how many RAM nr_pages the
-hypervisor wanted to provide to us and cap the populate
-hypercalls up to that.
+Steve, any comments?
 
-The end result is (on a 32GB box):
-
--Memory: 31779964k/34603008k available (5831k kernel code, 1351620k absent, 1471424k reserved, 2886k data, 692k init)
--(XEN) memory.c:133:d0 Could not allocate order=0 extent: id=0 memflags=0 (15 of 512)
-+Memory: 31788256k/34032852k available (5831k kernel code, 1351620k absent, 892976k reserved, 2886k data, 692k init)
-
-with dom0_mem=1G
--Memory: 550608k/12890412k available (5831k kernel code, 1351620k absent, 10988184k reserved, 2886k data, 692k init)
-+Memory: 717272k/1049028k available (5831k kernel code, 516k absent, 331240k reserved, 2886k data, 692k init)
-
-[v1: Details added]
-[v2: Redid on 32GB box]
-Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
----
- arch/x86/xen/setup.c |   18 ++++++++++++++++++
- 1 files changed, 18 insertions(+), 0 deletions(-)
-
-diff --git a/arch/x86/xen/setup.c b/arch/x86/xen/setup.c
-index 1ba8dff..23d355c 100644
---- a/arch/x86/xen/setup.c
-+++ b/arch/x86/xen/setup.c
-@@ -182,11 +182,29 @@ static unsigned long __init xen_get_max_pages(void)
- 	 * the current maximum rather than the static maximum. In this
- 	 * case the e820 map provided to us will cover the static
- 	 * maximum region.
-+	 *
-+	 * The dom0_mem=min:X,max:Y tweaks options differently depending
-+	 * on the version, but in general this is what we get:
-+	 *                | XENMEM_maximum_reser  | nr_pages
-+	 * --------------++-----------------------+-------------------
-+	 *  no dom0_mem   | INT_MAX               | max_phys_pfn
-+	 *  =3G           | INT_MAX               | 786432
-+	 *  =max:3G       | 786432                | 786432
-+	 *  =min:1G,max:3G| INT_MAX               | max_phys_fn
-+	 *  =1G,max:3G    | INT_MAX               | 262144
-+	 *  =min:1G,max:3G,2G | INT_MAX           | max_phys_fn
-+	 *
-+	 * The =3G is often used and it lead to us initially setting
-+	 * 786432 and allowing dom0 to balloon up to the max_physical_pfn.
-+	 * This is at odd with the classic XenOClassic so lets emulate
-+	 * the classic behavior.
- 	 */
- 	if (xen_initial_domain()) {
- 		ret = HYPERVISOR_memory_op(XENMEM_maximum_reservation, &domid);
- 		if (ret > 0)
- 			max_pages = ret;
-+		if (ret == -1UL)
-+			max_pages = xen_start_info->nr_pages;
- 	}
- 
- 	return min(max_pages, MAX_DOMAIN_PAGES);
--- 
-1.7.7.5
+> Signed-off-by: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
+> Cc: stable@vger.kernel.org
+> ---
+> 
+>  kernel/power/hibernate.c |    6 ++++++
+>  kernel/power/suspend.c   |    3 +++
+>  2 files changed, 9 insertions(+), 0 deletions(-)
+> 
+> diff --git a/kernel/power/hibernate.c b/kernel/power/hibernate.c
+> index e09dfbf..52a1817 100644
+> --- a/kernel/power/hibernate.c
+> +++ b/kernel/power/hibernate.c
+> @@ -352,6 +352,7 @@ int hibernation_snapshot(int platform_mode)
+>  	}
+>  
+>  	suspend_console();
+> +	ftrace_stop();
+>  	pm_restrict_gfp_mask();
+>  
+>  	error = dpm_suspend(PMSG_FREEZE);
+> @@ -377,6 +378,7 @@ int hibernation_snapshot(int platform_mode)
+>  	if (error || !in_suspend)
+>  		pm_restore_gfp_mask();
+>  
+> +	ftrace_start();
+>  	resume_console();
+>  	dpm_complete(msg);
+>  
+> @@ -479,6 +481,7 @@ int hibernation_restore(int platform_mode)
+>  
+>  	pm_prepare_console();
+>  	suspend_console();
+> +	ftrace_stop();
+>  	pm_restrict_gfp_mask();
+>  	error = dpm_suspend_start(PMSG_QUIESCE);
+>  	if (!error) {
+> @@ -486,6 +489,7 @@ int hibernation_restore(int platform_mode)
+>  		dpm_resume_end(PMSG_RECOVER);
+>  	}
+>  	pm_restore_gfp_mask();
+> +	ftrace_start();
+>  	resume_console();
+>  	pm_restore_console();
+>  	return error;
+> @@ -512,6 +516,7 @@ int hibernation_platform_enter(void)
+>  
+>  	entering_platform_hibernation = true;
+>  	suspend_console();
+> +	ftrace_stop();
+>  	error = dpm_suspend_start(PMSG_HIBERNATE);
+>  	if (error) {
+>  		if (hibernation_ops->recover)
+> @@ -555,6 +560,7 @@ int hibernation_platform_enter(void)
+>   Resume_devices:
+>  	entering_platform_hibernation = false;
+>  	dpm_resume_end(PMSG_RESTORE);
+> +	ftrace_start();
+>  	resume_console();
+>  
+>   Close:
+> diff --git a/kernel/power/suspend.c b/kernel/power/suspend.c
+> index 396d262..c8b7446 100644
+> --- a/kernel/power/suspend.c
+> +++ b/kernel/power/suspend.c
+> @@ -24,6 +24,7 @@
+>  #include <linux/export.h>
+>  #include <linux/suspend.h>
+>  #include <linux/syscore_ops.h>
+> +#include <linux/ftrace.h>
+>  #include <trace/events/power.h>
+>  
+>  #include "power.h"
+> @@ -212,6 +213,7 @@ int suspend_devices_and_enter(suspend_state_t state)
+>  			goto Close;
+>  	}
+>  	suspend_console();
+> +	ftrace_stop();
+>  	suspend_test_start();
+>  	error = dpm_suspend_start(PMSG_SUSPEND);
+>  	if (error) {
+> @@ -231,6 +233,7 @@ int suspend_devices_and_enter(suspend_state_t state)
+>  	suspend_test_start();
+>  	dpm_resume_end(PMSG_RESUME);
+>  	suspend_test_finish("resume devices");
+> +	ftrace_start();
+>  	resume_console();
+>   Close:
+>  	if (suspend_ops->end)
+> 
+> 
+> 
 
