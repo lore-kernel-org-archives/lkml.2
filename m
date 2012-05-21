@@ -1,84 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754825Ab2EUM3I (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 May 2012 08:29:08 -0400
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:45871 "EHLO
-	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754431Ab2EUM3F (ORCPT
+	id S1754899Ab2EUMbp (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 May 2012 08:31:45 -0400
+Received: from va3ehsobe010.messaging.microsoft.com ([216.32.180.30]:37847
+	"EHLO va3outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754431Ab2EUMbo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 May 2012 08:29:05 -0400
-Date: Mon, 21 May 2012 14:28:59 +0200
-From: Ingo Molnar <mingo@kernel.org>
-To: Vlad Zolotarov <vlad@scalemp.com>
-Cc: linux-kernel <linux-kernel@vger.kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        "Shai Fultheim (Shai@ScaleMP.com)" <Shai@scalemp.com>,
-        Ido Yariv <ido@wizery.com>
-Subject: Re: [PATCH v3 1/2] x86: Define early read-mostly per-cpu macros
-Message-ID: <20120521122859.GA17065@gmail.com>
-References: <1337527154.6093.15.camel@vlad>
- <20120521084626.GD31407@gmail.com>
- <10387490.kMM6uuuW2C@vlad>
+	Mon, 21 May 2012 08:31:44 -0400
+X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
+X-SpamScore: 0
+X-BigFish: VS0(zzzz1202hzz8275bhz2dh2a8h668h839hd24he5bhf0ah)
+From: Richard Zhao <richard.zhao@freescale.com>
+To: <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>
+CC: <vinod.koul@intel.com>, <dan.j.williams@intel.com>, <linuxzsc@gmail.com>,
+        <shawn.guo@gmail.com>, <kernel@pengutronix.de>,
+        Richard Zhao <richard.zhao@freescale.com>
+Subject: [PATCH 1/1] dma: imx-sdma: buf_tail should be initialize in prepare function
+Date: Mon, 21 May 2012 20:31:34 +0800
+Message-ID: <1337603494-27464-1-git-send-email-richard.zhao@freescale.com>
+X-Mailer: git-send-email 1.7.5.4
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <10387490.kMM6uuuW2C@vlad>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain
+X-OriginatorOrg: freescale.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+This fix audio underrun issue. When SNDRV_PCM_TRIGGER_STOP
+and SNDRV_PCM_TRIGGER_START, it calls prepare again. buf_tail
+should be reset to zero.
+So move buf_tail initialization into prepare function.
 
-* Vlad Zolotarov <vlad@scalemp.com> wrote:
+Signed-off-by: Richard Zhao <richard.zhao@freescale.com>
+---
+ drivers/dma/imx-sdma.c |    6 ++++--
+ 1 files changed, 4 insertions(+), 2 deletions(-)
 
-> On Monday, May 21, 2012 10:46:26 AM Ingo Molnar wrote:
-> > * Vlad Zolotarov <vlad@scalemp.com> wrote:
-> > > Some read-mostly per-cpu data may need to be declared or defined early,
-> > > so it can be initialized and accessed before per_cpu areas are
-> > > allocated.
-> > > 
-> > > Only the data that resides in the per_cpu areas should be read-mostly,
-> > > as there is little benefit in optimizing cache lines on initialization.
-> > > 
-> > > Signed-off-by: Vlad Zolotarov <vlad@scalemp.com>
-> > > Signed-off-by: Ido Yariv <ido@wizery.com>
-> > > Signed-off-by: Shai Fultheim <shai@scalemp.com>
-> > 
-> > That's not a valid signoff chain. If you send me a patch then
-> > you should be the last SOB - but as the author you should be the
-> > first SOB as well. I edited the two SOBs to be Acked-by's.
-> 
-> Thanks, Ingo. I understand. However the "history" of this 
-> patch is not as simple as u represent. ;)
-> 
-> It was originally written by Ido and I just posted it (then I 
-> put my SOB at the end of SOB list). But after u noted that it 
-> didn't compile on !SMP i reworked it but yet Ido did at least 
-> half of the coding, so I put my SOB at the first place (as I 
-> was the last one writing the code) and then Ido's as he 
-> actually wrote the code in this patch as well and I do wanted 
-> to give him a credit.
+diff --git a/drivers/dma/imx-sdma.c b/drivers/dma/imx-sdma.c
+index a472a29..def08f7 100644
+--- a/drivers/dma/imx-sdma.c
++++ b/drivers/dma/imx-sdma.c
+@@ -814,8 +814,6 @@ static int sdma_request_channel(struct sdma_channel *sdmac)
+ 
+ 	init_completion(&sdmac->done);
+ 
+-	sdmac->buf_tail = 0;
+-
+ 	return 0;
+ out:
+ 
+@@ -924,6 +922,8 @@ static struct dma_async_tx_descriptor *sdma_prep_slave_sg(
+ 
+ 	sdmac->flags = 0;
+ 
++	sdmac->buf_tail = 0;
++
+ 	dev_dbg(sdma->dev, "setting up %d entries for channel %d.\n",
+ 			sg_len, channel);
+ 
+@@ -1024,6 +1024,8 @@ static struct dma_async_tx_descriptor *sdma_prep_dma_cyclic(
+ 
+ 	sdmac->status = DMA_IN_PROGRESS;
+ 
++	sdmac->buf_tail = 0;
++
+ 	sdmac->flags |= IMX_DMA_SG_LOOP;
+ 	sdmac->direction = direction;
+ 	ret = sdma_load_context(sdmac);
+-- 
+1.7.5.4
 
-The proper way to do that is to add a "Originally-From: " tag, 
-or to keep him as the author (and first SOB) and desccribe your 
-own changes as comments between the SOBs:
 
- Signed-off-by: Original Author
- [ cleaned up the code a bit ]
- Signed-off-by: Second Author
- [ restructured it ]
- Signed-off-by: You
-
-> Do u still think changing his (Ido's) SOB to Acked-by was the 
-> right thing to do?
-
-If they agree with it then you can send it to me that way - or 
-the above way, or you can add any extra authors in a copyright 
-notice - but the signoff chain should be a chain, with the 
-primary author as the first SOB and the person sending me the 
-patch being the last SOB.
-
-Thanks,
-
-	Ingo
