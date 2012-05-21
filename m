@@ -1,51 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752915Ab2EUPW2 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 May 2012 11:22:28 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:58944 "EHLO mx1.redhat.com"
+	id S1752770Ab2EUPWQ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 May 2012 11:22:16 -0400
+Received: from mailhub.sw.ru ([195.214.232.25]:10720 "EHLO relay.sw.ru"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752341Ab2EUPW0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 May 2012 11:22:26 -0400
-Date: Mon, 21 May 2012 17:22:13 +0200
-From: Alexander Gordeev <agordeev@redhat.com>
-To: Ingo Molnar <mingo@kernel.org>
-Cc: Arjan van de Ven <arjan@infradead.org>, linux-kernel@vger.kernel.org,
-        x86@kernel.org, Suresh Siddha <suresh.b.siddha@intel.com>,
-        Cyrill Gorcunov <gorcunov@openvz.org>, Yinghai Lu <yinghai@kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: Re: [PATCH 2/3] x86: x2apic/cluster: Make use of lowest priority
- delivery mode
-Message-ID: <20120521152212.GE28930@dhcp-26-207.brq.redhat.com>
-References: <20120518102640.GB31517@dhcp-26-207.brq.redhat.com>
- <20120521082240.GA31407@gmail.com>
- <20120521093648.GC28930@dhcp-26-207.brq.redhat.com>
- <20120521124025.GC17065@gmail.com>
- <20120521144812.GD28930@dhcp-26-207.brq.redhat.com>
- <20120521145904.GA7068@gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120521145904.GA7068@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1752524Ab2EUPWL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 21 May 2012 11:22:11 -0400
+From: Glauber Costa <glommer@parallels.com>
+To: <linux-kernel@vger.kernel.org>
+Cc: <cgroups@vger.kernel.org>, <linux-mm@kvack.org>,
+        Glauber Costa <glommer@parallels.com>,
+        Christoph Lameter <cl@linux.com>,
+        Pekka Enberg <penberg@cs.helsinki.fi>,
+        David Rientjes <rientjes@google.com>
+Subject: [PATCH] slab+slob: dup name string
+Date: Mon, 21 May 2012 19:18:59 +0400
+Message-Id: <1337613539-29108-1-git-send-email-glommer@parallels.com>
+X-Mailer: git-send-email 1.7.7.6
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, May 21, 2012 at 04:59:04PM +0200, Ingo Molnar wrote:
-> 
-> * Alexander Gordeev <agordeev@redhat.com> wrote:
-> Your other two patches looked sensible - will they apply fine 
-> after each other, without the round-robin patch which is still 
-> under discussion, or is there a dependency?
+The slub allocator creates a copy of the name string, and
+frees it later. I would like all caches to behave the same,
+whether it is the slab+slob starting to create a copy of it itself,
+or the slub ceasing to.
 
-1/3 will apply cleanly; not worth worrying though -- whitespace oneliner
-3/3 depends on 2/3 round-robin patch, and doubtful :)
+This patch creates copies of the name string for slob and slab,
+adopting slub behavior for them all.
 
-> Thanks,
-> 
-> 	Ingo
+For the slab, we can't really do it before the kmalloc caches are
+up. We need to rely that caches created before the state was set to
+EARLY will never be destroyed.
 
+Signed-off-by: Glauber Costa <glommer@parallels.com>
+CC: Christoph Lameter <cl@linux.com>
+CC: Pekka Enberg <penberg@cs.helsinki.fi>
+CC: David Rientjes <rientjes@google.com>
+---
+ mm/slab.c |   10 ++++++++--
+ mm/slob.c |   12 ++++++++++--
+ 2 files changed, 18 insertions(+), 4 deletions(-)
+
+diff --git a/mm/slab.c b/mm/slab.c
+index e901a36..cabd217 100644
+--- a/mm/slab.c
++++ b/mm/slab.c
+@@ -2118,6 +2118,7 @@ static void __kmem_cache_destroy(struct kmem_cache *cachep)
+ 			kfree(l3);
+ 		}
+ 	}
++	kfree(cachep->name);
+ 	kmem_cache_free(&cache_cache, cachep);
+ }
+ 
+@@ -2526,9 +2527,14 @@ kmem_cache_create (const char *name, size_t size, size_t align,
+ 		BUG_ON(ZERO_OR_NULL_PTR(cachep->slabp_cache));
+ 	}
+ 	cachep->ctor = ctor;
+-	cachep->name = name;
+ 
+-	if (setup_cpu_cache(cachep, gfp)) {
++	/* Can't do strdup while kmalloc is not up */
++	if (g_cpucache_up > EARLY)
++		cachep->name = kstrdup(name, GFP_KERNEL);
++	else
++		cachep->name = name;
++
++	if (!cachep->name || setup_cpu_cache(cachep, gfp)) {
+ 		__kmem_cache_destroy(cachep);
+ 		cachep = NULL;
+ 		goto oops;
+diff --git a/mm/slob.c b/mm/slob.c
+index 8105be4..8f10d36 100644
+--- a/mm/slob.c
++++ b/mm/slob.c
+@@ -575,7 +575,12 @@ struct kmem_cache *kmem_cache_create(const char *name, size_t size,
+ 		GFP_KERNEL, ARCH_KMALLOC_MINALIGN, -1);
+ 
+ 	if (c) {
+-		c->name = name;
++		c->name = kstrdup(name, GFP_KERNEL);
++		if (!c->name) {
++			slob_free(c, sizeof(struct kmem_cache));
++			c = NULL;
++			goto out;
++		}
+ 		c->size = size;
+ 		if (flags & SLAB_DESTROY_BY_RCU) {
+ 			/* leave room for rcu footer at the end of object */
+@@ -589,7 +594,9 @@ struct kmem_cache *kmem_cache_create(const char *name, size_t size,
+ 			c->align = ARCH_SLAB_MINALIGN;
+ 		if (c->align < align)
+ 			c->align = align;
+-	} else if (flags & SLAB_PANIC)
++	}
++out:
++	if (!c && (flags & SLAB_PANIC))
+ 		panic("Cannot create slab cache %s\n", name);
+ 
+ 	kmemleak_alloc(c, sizeof(struct kmem_cache), 1, GFP_KERNEL);
+@@ -602,6 +609,7 @@ void kmem_cache_destroy(struct kmem_cache *c)
+ 	kmemleak_free(c);
+ 	if (c->flags & SLAB_DESTROY_BY_RCU)
+ 		rcu_barrier();
++	kfree(c->name);
+ 	slob_free(c, sizeof(struct kmem_cache));
+ }
+ EXPORT_SYMBOL(kmem_cache_destroy);
 -- 
-Regards,
-Alexander Gordeev
-agordeev@redhat.com
+1.7.7.6
+
