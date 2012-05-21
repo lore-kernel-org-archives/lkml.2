@@ -1,489 +1,345 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932379Ab2EUWGe (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 May 2012 18:06:34 -0400
-Received: from ogre.sisk.pl ([193.178.161.156]:57266 "EHLO ogre.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753420Ab2EUWGb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 May 2012 18:06:31 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Huang Ying <ying.huang@intel.com>, Bjorn Helgaas <bhelgaas@google.com>
-Subject: Re: [PATCH -v4 2/2] PCIe: Add PCIe runtime D3cold support
-Date: Tue, 22 May 2012 00:11:31 +0200
-User-Agent: KMail/1.13.6 (Linux/3.4.0+; KDE/4.6.0; x86_64; ; )
-Cc: ming.m.lin@intel.com, linux-kernel@vger.kernel.org,
-        linux-pm@vger.kernel.org, Zheng Yan <zheng.z.yan@intel.com>
-References: <1337305725-10482-1-git-send-email-ying.huang@intel.com> <1337305725-10482-3-git-send-email-ying.huang@intel.com>
-In-Reply-To: <1337305725-10482-3-git-send-email-ying.huang@intel.com>
+	id S1759430Ab2EUWIB (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 May 2012 18:08:01 -0400
+Received: from mail-lpp01m010-f46.google.com ([209.85.215.46]:45142 "EHLO
+	mail-lpp01m010-f46.google.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S932077Ab2EUWH7 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 21 May 2012 18:07:59 -0400
+Date: Tue, 22 May 2012 00:07:54 +0200
+From: Johan Hovold <jhovold@gmail.com>
+To: Jonathan Cameron <jic23@kernel.org>
+Cc: Johan Hovold <jhovold@gmail.com>, Jonathan Cameron <jic23@cam.ac.uk>,
+        Rob Landley <rob@landley.net>, Richard Purdie <rpurdie@rpsys.net>,
+        Samuel Ortiz <sameo@linux.intel.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Florian Tobias Schandinat <FlorianSchandinat@gmx.de>,
+        Arnd Bergmann <arnd@arndb.de>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-iio@vger.kernel.org,
+        "Hennerich, Michael" <Michael.Hennerich@analog.com>
+Subject: Re: [PATCH v4] iio: add LM3533 ambient-light-sensor driver
+Message-ID: <20120521220754.GA6659@localhost>
+References: <1337100396-29024-1-git-send-email-jhovold@gmail.com>
+ <1337346461-31220-1-git-send-email-jhovold@gmail.com>
+ <4FB75E57.9020003@kernel.org>
+ <20120521095010.GD21033@localhost>
+ <4FBA6F37.4000609@kernel.org>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-2"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201205220011.31283.rjw@sisk.pl>
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4FBA6F37.4000609@kernel.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday, May 18, 2012, Huang Ying wrote:
-> This patch adds runtime D3cold support to PCIe bus.  D3cold is the
-> deepest power saving state for PCIe devices.  Where the main PCIe link
-> will be powered off totally, so before the PCIe main link is powered
-> on again, you can not access the device, even the configuration space,
-> which is still accessible in D3hot.  Because the main PCIe link is not
-> available, the PCI PM registers can not be used to put device into/out
-> of D3cold state, that will be done by platform logic such as ACPI
-> _PR3.
+On Mon, May 21, 2012 at 05:37:11PM +0100, Jonathan Cameron wrote:
+> Michael cc'd for comments on core support of some stuff that is also
+> in frequency drivers down the end of the email.
 > 
-> To support remote wake up in D3cold, aux power is supplied, and a
-> side-band pin: WAKE# is used to notify remote wake up event, the pin
-> is usually connected to platform logic such as ACPI GPE.  This is
-> quite different with other power saving states, where remote wake up
-> is notified via PME message through the PCIe main link.
-> 
-> PCIe devices in plug-in slot usually has no direct platform logic, for
-> example, there is usually no ACPI _PR3 for them.  The D3cold support
-> for these devices can be done via the PCIe port connected to it.  When
-> power on/off the PCIe port, the corresponding PCIe devices are powered
-> on/off too.  And the remote wake up event from PCIe device will be
-> notified to the corresponding PCIe port.
-> 
-> The PCI subsystem D3cold support and corresponding ACPI platform
-> support is implemented in the patch.  Including the support for PCIe
-> devices in plug-in slot.
-> 
-> For more information about PCIe D3cold and corresponding ACPI support,
-> please refer to:
-> 
-> - PCI Express Base Specification Revision 2.0
-> - Advanced Configuration and Power Interface Specification Revision 5.0
-> 
-> Originally-by: Zheng Yan <zheng.z.yan@intel.com>
-> Signed-off-by: Huang Ying <ying.huang@intel.com>
+> On 05/21/2012 10:50 AM, Johan Hovold wrote:
+> > On Sat, May 19, 2012 at 09:48:23AM +0100, Jonathan Cameron wrote:
+> >> On 05/18/2012 02:07 PM, Johan Hovold wrote:
+> >>> Add sub-driver for the ambient-light-sensor interface on National
+> >>> Semiconductor / TI LM3533 lighting power chips.
+> >>>
+> >>> The sensor interface can be used to control the LEDs and backlights of
+> >>> the chip through defining five light zones and three sets of
+> >>> corresponding brightness target levels.
+> >>>
+> >>> The driver provides raw and mean adc readings along with the current
+> >>> light zone through sysfs. A threshold event can be generated on zone
+> >>> changes.
+> >>
+> >> Hi Johan,
+> >>
+> >> I hate to be a pain with this one, but it's a complex beast and I'd
+> >> really like to get the interface right first time - particularly as
+> >> you are going in after the move out of staging.
+> >>
+> >>
+> >> Queries for you.
+> >> 1) Ordering in the probe function. Normally expect iio_device_register
+> >> to be the last call. Why not here?
+> >> 2) Worth combining enable / disable into one as very similar functions?
+> >> 3) Suspicious code in als_set_input_mode
+> >>
+> >> Naming of the target values.  I think we can make the naming of these
+> >> fit in much better with the normal abi which is going to be all for the
+> >> good in the long run.  They are basically current output channels
+> >> with a controllable set of steps (where we don't have direct control
+> >> of which one we are in).  This is very similar to the frequency controls
+> >> on some of Analog's dds that we have a well defined interface for.
+> >>
+> >> More detail below, but in summary.
+> >>
+> >> out_currentX_currentY_raw for channel X value for zone Y.
+> >>
+> >> Jonathan
+> >>>
+> >>> Signed-off-by: Johan Hovold <jhovold@gmail.com>
+> >>> ---
+> >>>
+> >>> Note that addition of r_select to the platform data probably needs to go
+> >>> in via mfd.
+> >>>
+> >>>
+> >>> v2:
+> >>>  - reimplement using iio
+> >>>  - add sysfs-ABI documentation
+> >>> v3
+> >>>  - use indexed channel
+> >>>  - fix sysfs-ABI documentation typo and style
+> >>>  - replace gain attribute with in_illuminance0_calibscale
+> >>>  - add calibscale to platform data
+> >>>  - fix adc register definitions
+> >>>  - replace to_lm3533_dev_attr macro with inline function
+> >>>  - fix device used for error reporting at irq allocation
+> >>>  - use iio device for error reporting during setup/enable
+> >>>  - rebase on staging-next
+> >>>    - fix header include paths
+> >>>    - use dev_to_iio_dev
+> >>>    - add IIO_CHAN_INFO_RAW to info mask
+> >>>    - use iio_device_{alloc,free}
+> >>> v4
+> >>>  - move to driver/iio/light
+> >>>  - add events/in_illuminance0_threshY_hysteresis attributes
+> >>>  - fix device zone-boundary quirkiness
+> >>>  - clean up attribute handling
+> >>>  - replace calibscale with device-specific r_select attribute
+> >>>
+> >>>
+> >>>  .../ABI/testing/sysfs-bus-iio-light-lm3533-als     |   64 ++
+> >>>  drivers/iio/Kconfig                                |    1 +
+> >>>  drivers/iio/Makefile                               |    1 +
+> >>>  drivers/iio/light/Kconfig                          |   22 +
+> >>>  drivers/iio/light/Makefile                         |    5 +
+> >>>  drivers/iio/light/lm3533-als.c                     |  941 ++++++++++++++++++++
+> >>>  include/linux/mfd/lm3533.h                         |    1 +
+> >>>  7 files changed, 1035 insertions(+), 0 deletions(-)
+> >>>  create mode 100644 Documentation/ABI/testing/sysfs-bus-iio-light-lm3533-als
+> >>>  create mode 100644 drivers/iio/light/Kconfig
+> >>>  create mode 100644 drivers/iio/light/Makefile
+> >>>  create mode 100644 drivers/iio/light/lm3533-als.c
+> >>>
+> >>> diff --git a/Documentation/ABI/testing/sysfs-bus-iio-light-lm3533-als b/Documentation/ABI/testing/sysfs-bus-iio-light-lm3533-als
+> >>> new file mode 100644
+> >>> index 0000000..7ea1770
+> >>> --- /dev/null
+> >>> +++ b/Documentation/ABI/testing/sysfs-bus-iio-light-lm3533-als
+> >>> @@ -0,0 +1,64 @@
+> >>> +What:		/sys/bus/iio/devices/iio:deviceX/r_select
+> >>> +Date:		April 2012
+> >>> +KernelVersion:	3.5
+> >>> +Contact:	Johan Hovold <jhovold@gmail.com>
+> >>> +Description:
+> >>> +		Set the ALS internal pull-down resistor for analog input mode
+> >>> +		(1..127), such that,
+> >>> +
+> >>> +		R_als = 200000 / r_select	(ohm)
+> >>> +
+> >>> +		This setting is ignored in PWM-mode (input is always high
+> >>> +		impedance in PWM-mode).
+> >>> +
+> >>> +What:		/sys/.../events/in_illuminance0_thresh_either_en
+> >>> +Date:		April 2012
+> >>> +KernelVersion:	3.5
+> >>> +Contact:	Johan Hovold <jhovold@gmail.com>
+> >>> +Description:
+> >>> +		Event generated when channel passes one of the four thresholds
+> >>> +		in each direction (rising|falling) and a zone change occurs.
+> >>> +		The corresponding light zone can be read from
+> >>> +		in_illuminance0_zone.
+> >>> +
+> >>> +What:		/sys/.../events/in_illuminance0_threshY_hysteresis
+> >>> +Date:		May 2012
+> >>> +KernelVersion:	3.5
+> >>> +Contact:	Johan Hovold <jhovold@gmail.com>
+> >>> +Description:
+> >>> +		Get the hysteresis for thresholds Y, that is,
+> >>> +
+> >>> +		threshY_hysteresis = threshY_raising - threshY_falling
+> >>> +
+> >>> +What:		/sys/.../events/illuminance_threshY_falling_value
+> >>> +What:		/sys/.../events/illuminance_threshY_raising_value
+> >>> +Date:		April 2012
+> >>> +KernelVersion:	3.5
+> >>> +Contact:	Johan Hovold <jhovold@gmail.com>
+> >>> +Description:
+> >>> +		Specifies the value of threshold that the device is
+> >>> +		comparing against for the events enabled by
+> >>> +		in_illuminance0_thresh_either_en, where Y in 0..3.
+> >>> +
+> >>> +		Note that threshY_falling must be less than or equal to
+> >>> +		threshY_raising.
+> >>> +
+> >>> +		These thresholds correspond to the eight zone-boundary
+> >>> +		registers (boundaryY_{low,high}) and defines the five light
+> >>> +		zones.
+> >>> +
+> >>> +What:		/sys/bus/iio/devices/iio:deviceX/in_illuminance0_zone
+> >>> +Date:		April 2012
+> >>> +KernelVersion:	3.5
+> >>> +Contact:	Johan Hovold <jhovold@gmail.com>
+> >>> +Description:
+> >>> +		Get the current light zone (0..4) as defined by the
+> >>> +		in_illuminance0_threshY_{falling,rising} thresholds.
+> >>> +
+> >>> +What:		/sys/bus/iio/devices/iio:deviceX/targetY_Z
+> >>> +Date:		April 2012
+> >>> +KernelVersion:	3.5
+> >>> +Contact:	Johan Hovold <jhovold@gmail.com>
+> >>> +Description:
+> >>> +		Set the target brightness for ALS-mapper Y in light zone Z
+> >>> +		(0..255), where Y in 1..3 and Z in 0..4.
+> >>
+> >> What are the units of this?
+> > 
+> > The datasheet reads "percent of the full-scale current" (actually depends
+> > somewhat on whether the als is in linear or exponential mode). When the
+> > leds or backlights are in PWM-mode (not the ALS necessarily), these
+> > values are interpreted as a scale factor which is applied to the output
+> > current determined by the PWM-signal.
+> > 
+> > Either way it could indeed be considered a raw output current (which
+> > could be manipulated later by various factors).
+> Fine.... Theoretically if at all possible we'd want the conversion
+> factors to get it to an actual current (in amps) to be available though.
+> (tend to relax that if there are unknowable elements or they aren't
+> specified by board file etc).
 
-Reviewed-by: Rafael J. Wysocki <rjw@sisk.pl>
+Hmmm. I'm starting to get a feeling that we're over-doing this. The ALS
+on the lm3533 isn't a general purpose sensor. It's simply a way to
+control the leds and backlights of that device. So what you do is to 
+determine the full-scale current (max current at maximum brightness 0xff
+in this case -- set in board file). Then the ALS input range is divided
+in 5 zones, and for each zone you set a brightness as a percent of the
+full-scale current. You relly don't care about amps (except for the
+maximum determined by the setup).
 
-Thanks,
-Rafael
+The equation's for determining the current are available in the
+datasheets however, but they depend on which mapping mode (linear or
+exponential) and can also be effected by PWM-input duty cycle etc. For
+this particular device, I really don't see the point in trying to
+determine actual current in amps in all these settings.
 
+Note also that the actual output current cannot be determined in the
+ALS as the required factors are only set/known in the led/backlight
+devices (mapping mode, pwm-mode).
 
-> ---
->  drivers/pci/pci-acpi.c         |   23 +++++++-
->  drivers/pci/pci-driver.c       |    3 +
->  drivers/pci/pci-sysfs.c        |   29 ++++++++++
->  drivers/pci/pci.c              |  110 +++++++++++++++++++++++++++++++++++++----
->  drivers/pci/pci.h              |    1 
->  drivers/pci/pcie/portdrv_pci.c |   44 ++++++++++++++--
->  include/linux/pci.h            |   16 ++++-
->  7 files changed, 205 insertions(+), 21 deletions(-)
+> >> Also arguably is it not the als that this is related to, but rather
+> >> the light source?
+> > 
+> > Well, it would be a raw output, mapping the measured LUX.
+> Fair enough, though I wonder if we are stepping on led / backlight
+> classes stuff with this.
+
+Keeping the target sets and the mapper terminology could still be an
+option. 
+
+ALS input mode is a special mode of the LEDs and backlights which
+overrides the direct current control. It's indeed a special-purpose
+device.
+
+> >> A quick datasheet browse says that these are current targets? If so I
+> >> wonder if we can make that explicit...  Could treat them as 3 output
+> >> channels and have indexed values like we do for frequencies in dds
+> >> devices (where external hardware is controlling them.
+> > 
+> > I think I like this.
+> > 
+> >> Hmm. lets see.
+> >>
+> >> out_currentX_currentY_raw
+> >> (the double naming is a bit clunky but corresponds to frequency devices
+> >> where we have
+> >> out_altvoltageX_frequencyY_raw
+> >>
+> >> Hence we'd treat you 3 mapers as indexed channels 0,1,2 and the zones
+> >> as indexed values they can take 0,1,2,3,4
+> >> out_currentX_raw is not read only and gives you the current for whichever
+> >> zone the device is currently in.
+> > 
+> > I take it you mean "out_currentX_raw is read only".
+> yes. I do indeed. oops.
+> > 
+> >> This may seem convoluted but I'd really rather have something generalizable
+> >> for this if we possibly can.  We'd still need documentation to say what is
+> >> controlling these, but at least they'd fit within our more general abi.
+> >>
+> >> What do you think?
+> > 
+> > I like it. From a user perspective it's mainly a change of names (and
+> > indexes). But conceptually it's perhaps more clear: the als maps it's
+> > input to an output current, which, just like a PWM-signal, could be used
+> > as an input to the LEDs and backlights to determine their outputs.
+> > 
+> > I'd have to modify the LED and backlight interfaces somewhat to reflect
+> > the changed indexes and terminology (e.g. "output channel" rather
+> > than "ALS mapper"). Something like:
+> > 
+> > 	als_en		-- enable als input mode (0,1)
+> > 	als_channel	-- which out_currentX to use as input (0..2) in
+> > 			   als input mode
+> Not entirely sure I'm happy with this. Would rather it was done
+> on a per channel basis, so in_illuminance0_ *
+> From point of view of sensors I don't really care if it is an als or
+> measuring something active (hence inherently not ambient!)
+
+Not sure I understood that. What is it you don't like about it? You need
+to keep in mind what is actually there; three sets of target values per
+zone of which one set is dedicated to the first backlight device. That
+means, that the ALS mapper (or channel if we want to use that
+terminology) needs to be set in the actual devices and not the other way
+round. [ The als_en and als_channel attributes would belong to the
+led/backlight devices. ]
+
+What did you mean by "per channel basis, so in_illuminance0_ *"?
+
+Again it's a special purpose device -- the lm3533 leds and backlights
+are controlled in hw by the on-chip als interface. We can't just use any
+generic iio device for this.
+
+> Silly question but how is the out_current related to the input in als
+> mode?
+
+1. raw adc input is averaged
+2. mean adc input is mapped to zone using zone registers ("thresholds")
+3. zone is mapped to a percentage using ALS mapper registers, that is, 
+   three sets of 8-bit values per zone. Which set is used can be set on
+   a per-device (led, backlight) basis
+4. the percentage is applied to the per-device full-scale current to
+   determine the actual output. How this mapping is done depends on if
+   linear or exponential mapping mode is set (also per-device).
+
+[ And things can get even more complicated if the devices are in
+  PWM-mode, but this is roughly the full picture. ]
+
+And all of the above is done in hw.
+
+So, we're only using out_current channels because it maybe fits iio
+better. For anyone familiar with the lm3533 this may even just confuse
+things. 
+
+There are only the three tables of values that maps a zone to an output
+percentage (e.g. half brightness in zone 2).
+
+> > So to summarise, we get the following new sysfs-entries for the ALS
+> > (where the first set replace targetX_Y):
+> > 
+> > 	out_currentX_currentY_raw	r/w, (0..255), X in 0..2, Y in 0..4
+> > 	out_currentX_raw		ro (0..255), X in 0..2
+> > 
+> > Is there any support in core for the first set or should I simply
+> > rename my target attributes?
+> No support in the core yet for this sort of thing..
+> Michael, any thoughts on this? In a sense it's very similar to
+> out_altvoltageX_frequencyY_raw etc...
+> > 
+> > Thanks,
+> > Johan
 > 
-> --- a/drivers/pci/pci-acpi.c
-> +++ b/drivers/pci/pci-acpi.c
-> @@ -48,6 +48,12 @@ static void pci_acpi_wake_dev(acpi_handl
->  	if (event != ACPI_NOTIFY_DEVICE_WAKE || !pci_dev)
->  		return;
->  
-> +	if (pci_dev->current_state == PCI_D3cold) {
-> +		pci_wakeup_event(pci_dev);
-> +		pm_runtime_resume(&pci_dev->dev);
-> +		return;
-> +	}
-> +
->  	if (!pci_dev->pm_cap || !pci_dev->pme_support
->  	     || pci_check_pme_status(pci_dev)) {
->  		if (pci_dev->pme_poll)
-> @@ -187,10 +193,13 @@ acpi_status pci_acpi_remove_pm_notifier(
->  
->  static pci_power_t acpi_pci_choose_state(struct pci_dev *pdev)
->  {
-> -	int acpi_state;
-> +	int acpi_state, d_max;
->  
-> -	acpi_state = acpi_pm_device_sleep_state(&pdev->dev, NULL,
-> -						ACPI_STATE_D3);
-> +	if (pdev->no_d3cold)
-> +		d_max = ACPI_STATE_D3_HOT;
-> +	else
-> +		d_max = ACPI_STATE_D3_COLD;
-> +	acpi_state = acpi_pm_device_sleep_state(&pdev->dev, NULL, d_max);
->  	if (acpi_state < 0)
->  		return PCI_POWER_ERROR;
->  
-> @@ -297,7 +306,13 @@ static void acpi_pci_propagate_run_wake(
->  
->  static int acpi_pci_run_wake(struct pci_dev *dev, bool enable)
->  {
-> -	if (dev->pme_interrupt)
-> +	/*
-> +	 * Per PCI Express Base Specification Revision 2.0 section
-> +	 * 5.3.3.2 Link Wakeup, platform support is needed for D3cold
-> +	 * waking up to power on the main link even if there is PME
-> +	 * support for D3cold
-> +	 */
-> +	if (dev->pme_interrupt && !dev->runtime_d3cold)
->  		return 0;
->  
->  	if (!acpi_pm_device_run_wake(&dev->dev, enable))
-> --- a/drivers/pci/pci-driver.c
-> +++ b/drivers/pci/pci-driver.c
-> @@ -1013,10 +1013,13 @@ static int pci_pm_runtime_suspend(struct
->  	if (!pm || !pm->runtime_suspend)
->  		return -ENOSYS;
->  
-> +	pci_dev->no_d3cold = false;
->  	error = pm->runtime_suspend(dev);
->  	suspend_report_result(pm->runtime_suspend, error);
->  	if (error)
->  		return error;
-> +	if (!pci_dev->d3cold_allowed)
-> +		pci_dev->no_d3cold = true;
->  
->  	pci_fixup_device(pci_fixup_suspend, pci_dev);
->  
-> --- a/drivers/pci/pci-sysfs.c
-> +++ b/drivers/pci/pci-sysfs.c
-> @@ -27,6 +27,7 @@
->  #include <linux/security.h>
->  #include <linux/pci-aspm.h>
->  #include <linux/slab.h>
-> +#include <linux/pm_runtime.h>
->  #include "pci.h"
->  
->  static int sysfs_initialized;	/* = 0 */
-> @@ -377,6 +378,31 @@ dev_bus_rescan_store(struct device *dev,
->  
->  #endif
->  
-> +#if defined(CONFIG_PM_RUNTIME) && defined(CONFIG_ACPI)
-> +static ssize_t d3cold_allowed_store(struct device *dev,
-> +				    struct device_attribute *attr,
-> +				    const char *buf, size_t count)
-> +{
-> +	struct pci_dev *pdev = to_pci_dev(dev);
-> +	unsigned long val;
-> +
-> +	if (strict_strtoul(buf, 0, &val) < 0)
-> +		return -EINVAL;
-> +
-> +	pdev->d3cold_allowed = !!val;
-> +	pm_runtime_resume(dev);
-> +
-> +	return count;
-> +}
-> +
-> +static ssize_t d3cold_allowed_show(struct device *dev,
-> +				   struct device_attribute *attr, char *buf)
-> +{
-> +	struct pci_dev *pdev = to_pci_dev(dev);
-> +	return sprintf (buf, "%u\n", pdev->d3cold_allowed);
-> +}
-> +#endif
-> +
->  struct device_attribute pci_dev_attrs[] = {
->  	__ATTR_RO(resource),
->  	__ATTR_RO(vendor),
-> @@ -401,6 +427,9 @@ struct device_attribute pci_dev_attrs[]
->  	__ATTR(remove, (S_IWUSR|S_IWGRP), NULL, remove_store),
->  	__ATTR(rescan, (S_IWUSR|S_IWGRP), NULL, dev_rescan_store),
->  #endif
-> +#if defined(CONFIG_PM_RUNTIME) && defined(CONFIG_ACPI)
-> +	__ATTR(d3cold_allowed, 0644, d3cold_allowed_show, d3cold_allowed_store),
-> +#endif
->  	__ATTR_NULL,
->  };
->  
-> --- a/drivers/pci/pci.c
-> +++ b/drivers/pci/pci.c
-> @@ -621,7 +621,8 @@ static int pci_raw_set_power_state(struc
->  		dev_info(&dev->dev, "Refused to change power state, "
->  			"currently in D%d\n", dev->current_state);
->  
-> -	/* According to section 5.4.1 of the "PCI BUS POWER MANAGEMENT
-> +	/*
-> +	 * According to section 5.4.1 of the "PCI BUS POWER MANAGEMENT
->  	 * INTERFACE SPECIFICATION, REV. 1.2", a device transitioning
->  	 * from D3hot to D0 _may_ perform an internal reset, thereby
->  	 * going to "D0 Uninitialized" rather than "D0 Initialized".
-> @@ -653,6 +654,16 @@ void pci_update_current_state(struct pci
->  	if (dev->pm_cap) {
->  		u16 pmcsr;
->  
-> +		/*
-> +		 * Configuration space is not accessible for device in
-> +		 * D3cold, so just keep or set D3cold for safety
-> +		 */
-> +		if (dev->current_state == PCI_D3cold)
-> +			return;
-> +		if (state == PCI_D3cold) {
-> +			dev->current_state = PCI_D3cold;
-> +			return;
-> +		}
->  		pci_read_config_word(dev, dev->pm_cap + PCI_PM_CTRL, &pmcsr);
->  		dev->current_state = (pmcsr & PCI_PM_CTRL_STATE_MASK);
->  	} else {
-> @@ -693,8 +704,50 @@ static int pci_platform_power_transition
->   */
->  static void __pci_start_power_transition(struct pci_dev *dev, pci_power_t state)
->  {
-> -	if (state == PCI_D0)
-> +	if (state == PCI_D0) {
->  		pci_platform_power_transition(dev, PCI_D0);
-> +		/*
-> +		 * Mandatory power management transition delays, see
-> +		 * PCI Express Base Specification Revision 2.0 Section
-> +		 * 6.6.1: Conventional Reset.  Do not delay for
-> +		 * devices powered on/off by corresponding bridge,
-> +		 * because have already delayed for the bridge.
-> +		 */
-> +		if (dev->runtime_d3cold) {
-> +			msleep(dev->d3cold_delay);
-> +			/*
-> +			 * When powering on a bridge from D3cold, the
-> +			 * whole hierarchy may be powered on into
-> +			 * D0uninitialized state, resume them to give
-> +			 * them a chance to suspend again
-> +			 */
-> +			pci_wakeup_bus(dev->subordinate);
-> +		}
-> +	}
-> +}
-> +
-> +/**
-> + * __pci_dev_set_current_state - Set current state of a PCI device
-> + * @dev: Device to handle
-> + * @data: pointer to state to be set
-> + */
-> +static int __pci_dev_set_current_state(struct pci_dev *dev, void *data)
-> +{
-> +	pci_power_t state = *(pci_power_t *)data;
-> +
-> +	dev->current_state = state;
-> +	return 0;
-> +}
-> +
-> +/**
-> + * __pci_bus_set_current_state - Walk given bus and set current state of devices
-> + * @bus: Top bus of the subtree to walk.
-> + * @state: state to be set
-> + */
-> +static void __pci_bus_set_current_state(struct pci_bus *bus, pci_power_t state)
-> +{
-> +	if (bus)
-> +		pci_walk_bus(bus, __pci_dev_set_current_state, &state);
->  }
->  
->  /**
-> @@ -706,8 +759,15 @@ static void __pci_start_power_transition
->   */
->  int __pci_complete_power_transition(struct pci_dev *dev, pci_power_t state)
->  {
-> -	return state >= PCI_D0 ?
-> -			pci_platform_power_transition(dev, state) : -EINVAL;
-> +	int ret;
-> +
-> +	if (state < PCI_D0)
-> +		return -EINVAL;
-> +	ret = pci_platform_power_transition(dev, state);
-> +	/* Power off the bridge may power off the whole hierarchy */
-> +	if (!ret && state == PCI_D3cold)
-> +		__pci_bus_set_current_state(dev->subordinate, PCI_D3cold);
-> +	return ret;
->  }
->  EXPORT_SYMBOL_GPL(__pci_complete_power_transition);
->  
-> @@ -731,8 +791,8 @@ int pci_set_power_state(struct pci_dev *
->  	int error;
->  
->  	/* bound the state we're entering */
-> -	if (state > PCI_D3hot)
-> -		state = PCI_D3hot;
-> +	if (state > PCI_D3cold)
-> +		state = PCI_D3cold;
->  	else if (state < PCI_D0)
->  		state = PCI_D0;
->  	else if ((state == PCI_D1 || state == PCI_D2) && pci_no_d1d2(dev))
-> @@ -747,10 +807,15 @@ int pci_set_power_state(struct pci_dev *
->  
->  	/* This device is quirked not to be put into D3, so
->  	   don't put it in D3 */
-> -	if (state == PCI_D3hot && (dev->dev_flags & PCI_DEV_FLAGS_NO_D3))
-> +	if (state >= PCI_D3hot && (dev->dev_flags & PCI_DEV_FLAGS_NO_D3))
->  		return 0;
->  
-> -	error = pci_raw_set_power_state(dev, state);
-> +	/*
-> +	 * To put device in D3cold, we put device into D3hot in native
-> +	 * way, then put device into D3cold with platform ops
-> +	 */
-> +	error = pci_raw_set_power_state(dev, state > PCI_D3hot ?
-> +					PCI_D3hot : state);
->  
->  	if (!__pci_complete_power_transition(dev, state))
->  		error = 0;
-> @@ -1497,6 +1562,28 @@ void pci_pme_wakeup_bus(struct pci_bus *
->  }
->  
->  /**
-> + * pci_wakeup - Wake up a PCI device
-> + * @dev: Device to handle.
-> + * @ign: ignored parameter
-> + */
-> +static int pci_wakeup(struct pci_dev *pci_dev, void *ign)
-> +{
-> +	pci_wakeup_event(pci_dev);
-> +	pm_request_resume(&pci_dev->dev);
-> +	return 0;
-> +}
-> +
-> +/**
-> + * pci_wakeup_bus - Walk given bus and wake up devices on it
-> + * @bus: Top bus of the subtree to walk.
-> + */
-> +void pci_wakeup_bus(struct pci_bus *bus)
-> +{
-> +	if (bus)
-> +		pci_walk_bus(bus, pci_wakeup, NULL);
-> +}
-> +
-> +/**
->   * pci_pme_capable - check the capability of PCI device to generate PME#
->   * @dev: PCI device to handle.
->   * @state: PCI state from which device will issue PME#.
-> @@ -1790,12 +1877,16 @@ int pci_finish_runtime_suspend(struct pc
->  	if (target_state == PCI_POWER_ERROR)
->  		return -EIO;
->  
-> +	dev->runtime_d3cold = target_state == PCI_D3cold;
-> +
->  	__pci_enable_wake(dev, target_state, true, pci_dev_run_wake(dev));
->  
->  	error = pci_set_power_state(dev, target_state);
->  
-> -	if (error)
-> +	if (error) {
->  		__pci_enable_wake(dev, target_state, true, false);
-> +		dev->runtime_d3cold = false;
-> +	}
->  
->  	return error;
->  }
-> @@ -1865,6 +1956,7 @@ void pci_pm_init(struct pci_dev *dev)
->  
->  	dev->pm_cap = pm;
->  	dev->d3_delay = PCI_PM_D3_WAIT;
-> +	dev->d3cold_delay = PCI_PM_D3COLD_WAIT;
->  
->  	dev->d1_support = false;
->  	dev->d2_support = false;
-> --- a/drivers/pci/pci.h
-> +++ b/drivers/pci/pci.h
-> @@ -70,6 +70,7 @@ extern void pci_update_current_state(str
->  extern void pci_disable_enabled_device(struct pci_dev *dev);
->  extern int pci_finish_runtime_suspend(struct pci_dev *dev);
->  extern int __pci_pme_wakeup(struct pci_dev *dev, void *ign);
-> +extern void pci_wakeup_bus(struct pci_bus *bus);
->  extern void pci_pm_init(struct pci_dev *dev);
->  extern void platform_pci_wakeup_init(struct pci_dev *dev);
->  extern void pci_allocate_cap_save_buffers(struct pci_dev *dev);
-> --- a/drivers/pci/pcie/portdrv_pci.c
-> +++ b/drivers/pci/pcie/portdrv_pci.c
-> @@ -101,12 +101,48 @@ static int pcie_port_resume_noirq(struct
->  }
->  
->  #ifdef CONFIG_PM_RUNTIME
-> -static int pcie_port_runtime_pm(struct device *dev)
-> +struct d3cold_info {
-> +	bool no_d3cold;
-> +	unsigned int d3cold_delay;
-> +};
-> +
-> +static int pci_dev_d3cold_info(struct pci_dev *pdev, void *data)
-> +{
-> +	struct d3cold_info *info = data;
-> +
-> +	info->d3cold_delay = max_t(unsigned int, pdev->d3cold_delay,
-> +				   info->d3cold_delay);
-> +	if (pdev->no_d3cold)
-> +		info->no_d3cold = true;
-> +	return 0;
-> +}
-> +
-> +static int pcie_port_runtime_suspend(struct device *dev)
-> +{
-> +	struct pci_dev *pdev = to_pci_dev(dev);
-> +	struct d3cold_info d3cold_info = {
-> +		.no_d3cold	= false,
-> +		.d3cold_delay	= PCI_PM_D3_WAIT,
-> +	};
-> +
-> +	/*
-> +	 * If any subordinate device disable D3cold, we should not put
-> +	 * the port into D3cold.  The D3cold delay of port should be
-> +	 * the max of that of all subordinate devices.
-> +	 */
-> +	pci_walk_bus(pdev->subordinate, pci_dev_d3cold_info, &d3cold_info);
-> +	pdev->no_d3cold = d3cold_info.no_d3cold;
-> +	pdev->d3cold_delay = d3cold_info.d3cold_delay;
-> +	return 0;
-> +}
-> +
-> +static int pcie_port_runtime_resume(struct device *dev)
->  {
->  	return 0;
->  }
->  #else
-> -#define pcie_port_runtime_pm	NULL
-> +#define pcie_port_runtime_suspend	NULL
-> +#define pcie_port_runtime_resume	NULL
->  #endif
->  
->  static const struct dev_pm_ops pcie_portdrv_pm_ops = {
-> @@ -117,8 +153,8 @@ static const struct dev_pm_ops pcie_port
->  	.poweroff	= pcie_port_device_suspend,
->  	.restore	= pcie_port_device_resume,
->  	.resume_noirq	= pcie_port_resume_noirq,
-> -	.runtime_suspend = pcie_port_runtime_pm,
-> -	.runtime_resume = pcie_port_runtime_pm,
-> +	.runtime_suspend = pcie_port_runtime_suspend,
-> +	.runtime_resume = pcie_port_runtime_resume,
->  };
->  
->  #define PCIE_PORTDRV_PM_OPS	(&pcie_portdrv_pm_ops)
-> --- a/include/linux/pci.h
-> +++ b/include/linux/pci.h
-> @@ -132,9 +132,10 @@ static inline const char *pci_power_name
->  	return pci_power_names[1 + (int) state];
->  }
->  
-> -#define PCI_PM_D2_DELAY	200
-> -#define PCI_PM_D3_WAIT	10
-> -#define PCI_PM_BUS_WAIT	50
-> +#define PCI_PM_D2_DELAY		200
-> +#define PCI_PM_D3_WAIT		10
-> +#define PCI_PM_D3COLD_WAIT	100
-> +#define PCI_PM_BUS_WAIT		50
->  
->  /** The pci_channel state describes connectivity between the CPU and
->   *  the pci device.  If some PCI bus between here and the pci device
-> @@ -278,11 +279,18 @@ struct pci_dev {
->  	unsigned int	pme_poll:1;	/* Poll device's PME status bit */
->  	unsigned int	d1_support:1;	/* Low power state D1 is supported */
->  	unsigned int	d2_support:1;	/* Low power state D2 is supported */
-> -	unsigned int	no_d1d2:1;	/* Only allow D0 and D3 */
-> +	unsigned int	no_d1d2:1;	/* D1 and D2 are forbidden */
-> +	unsigned int	no_d3cold:1;	/* D3cold is forbidden */
-> +	unsigned int	d3cold_allowed:1;	/* D3cold is allowed by user */
->  	unsigned int	mmio_always_on:1;	/* disallow turning off io/mem
->  						   decoding during bar sizing */
->  	unsigned int	wakeup_prepared:1;
-> +	unsigned int	runtime_d3cold:1;	/* whether go through runtime
-> +						   D3cold, not set for devices
-> +						   powered on/off by the
-> +						   corresponding bridge */
->  	unsigned int	d3_delay;	/* D3->D0 transition time in ms */
-> +	unsigned int	d3cold_delay;	/* D3cold->D0 transition time in ms */
->  
->  #ifdef CONFIG_PCIEASPM
->  	struct pcie_link_state	*link_state;	/* ASPM link state. */
-> 
-> 
-
