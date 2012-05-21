@@ -1,76 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932291Ab2EUJNH (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 May 2012 05:13:07 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:38401 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757259Ab2EUJNE (ORCPT
+	id S932364Ab2EUJNN (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 May 2012 05:13:13 -0400
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:35700 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932299Ab2EUJNI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 May 2012 05:13:04 -0400
-Date: Mon, 21 May 2012 02:12:46 -0700
-From: tip-bot for Anna-Maria Gleixner <anna-maria@glx-um.de>
-Message-ID: <tip-5227b636eca4226287e43fc1de1e09a694bcaa34@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
-        jesper.nilsson@axis.com, tglx@linutronix.de, anna-maria@glx-um.de
-Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        jesper.nilsson@axis.com, tglx@linutronix.de, anna-maria@glx-um.de
-In-Reply-To: <20120518163105.286556794@glx-um.de>
-References: <20120518163105.286556794@glx-um.de>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:timers/core] cris: Use generic time config
-Git-Commit-ID: 5227b636eca4226287e43fc1de1e09a694bcaa34
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
-  to get blacklisted from these emails
+	Mon, 21 May 2012 05:13:08 -0400
+Date: Mon, 21 May 2012 11:12:57 +0200
+From: Ingo Molnar <mingo@kernel.org>
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Peter Zijlstra <peterz@infradead.org>, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: linux-next: build failure after merge of the final tree
+Message-ID: <20120521091257.GF31407@gmail.com>
+References: <20120521185412.aca92107d0a8c4fdd8474e34@canb.auug.org.au>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Mon, 21 May 2012 02:12:53 -0700 (PDT)
+In-Reply-To: <20120521185412.aca92107d0a8c4fdd8474e34@canb.auug.org.au>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  5227b636eca4226287e43fc1de1e09a694bcaa34
-Gitweb:     http://git.kernel.org/tip/5227b636eca4226287e43fc1de1e09a694bcaa34
-Author:     Anna-Maria Gleixner <anna-maria@glx-um.de>
-AuthorDate: Fri, 18 May 2012 16:45:46 +0000
-Committer:  Thomas Gleixner <tglx@linutronix.de>
-CommitDate: Mon, 21 May 2012 11:01:42 +0200
 
-cris: Use generic time config
+* Stephen Rothwell <sfr@canb.auug.org.au> wrote:
 
-Signed-off-by: Anna-Maria Gleixner <anna-maria@glx-um.de>
-Cc: Jesper Nilsson <jesper.nilsson@axis.com>
-Link: http://lkml.kernel.org/r/20120518163105.286556794@glx-um.de
-Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
----
- arch/cris/Kconfig |    7 +------
- 1 files changed, 1 insertions(+), 6 deletions(-)
+> Hi all,
+> 
+> After merging the final tree, today's linux-next build (i386 defconfig)
+> failed like this:
+> 
+> Invalid absolute R_386_32 relocation: jiffies
 
-diff --git a/arch/cris/Kconfig b/arch/cris/Kconfig
-index b3abfb0..4a63e7e 100644
---- a/arch/cris/Kconfig
-+++ b/arch/cris/Kconfig
-@@ -13,12 +13,6 @@ config RWSEM_GENERIC_SPINLOCK
- config RWSEM_XCHGADD_ALGORITHM
- 	bool
- 
--config GENERIC_CMOS_UPDATE
--	def_bool y
--
--config ARCH_USES_GETTIMEOFFSET
--	def_bool n
--
- config ARCH_HAS_ILOG2_U32
- 	bool
- 	default n
-@@ -49,6 +43,7 @@ config CRIS
- 	select HAVE_GENERIC_HARDIRQS
- 	select GENERIC_IRQ_SHOW
- 	select GENERIC_IOMAP
-+	select GENERIC_CMOS_UPDATE
- 
- config HZ
- 	int
+Hm, that's our fault: seems like a linker bug fallout, one which 
+we fixed in -tip.
+
+> I am not sure what caused this (it may even been a bad merge 
+> on my part).  I have left it broken for today.
+
+While we've fixed this, to simplify merge window integration of 
+linux-next I've excluded tip:x86/trampoline from the linux-next 
+branch for now, so this build failure should go away tomorrow.
+
+Sorry and thanks,
+
+	Ingo
