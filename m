@@ -1,61 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755994Ab2EUQIp (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 May 2012 12:08:45 -0400
-Received: from mho-02-ewr.mailhop.org ([204.13.248.72]:15261 "EHLO
-	mho-02-ewr.mailhop.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754655Ab2EUQIn (ORCPT
+	id S1755963Ab2EUQMI (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 May 2012 12:12:08 -0400
+Received: from g5t0008.atlanta.hp.com ([15.192.0.45]:26788 "EHLO
+	g5t0008.atlanta.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754564Ab2EUQMG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 May 2012 12:08:43 -0400
-X-Mail-Handler: MailHop Outbound by DynDNS
-X-Originating-IP: 98.234.237.12
-X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/mailhop/outbound_abuse.html for abuse reporting information)
-X-MHO-User: U2FsdGVkX19O+TnMUtO0+P9yKuBV2aK5
-Date: Mon, 21 May 2012 09:08:40 -0700
-From: Tony Lindgren <tony@atomide.com>
-To: Pali =?utf-8?B?Um9ow6Fy?= <pali.rohar@gmail.com>
-Cc: linux-omap@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Lauri Leukkunen <lauri.leukkunen@nokia.com>,
-        Sebastian Reichel <sre@debian.org>,
-        Felipe Contreras <felipe.contreras@nokia.com>,
-        Ameya Palande <ameya.palande@nokia.com>
-Subject: Re: rx51: support for lis3lv02d accelerometer
-Message-ID: <20120521160840.GK17852@atomide.com>
-References: <1621273.5PNGJFOirm@pali>
- <20120509000734.GZ5088@atomide.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
+	Mon, 21 May 2012 12:12:06 -0400
+Message-ID: <1337616723.2558.10.camel@lorien2>
+Subject: Re: [PATCH] ARM: leds: Add MAX6956 driver
+From: Shuah Khan <shuah@fc.hp.com>
+Reply-To: shuah@fc.hp.com
+To: Uwe =?ISO-8859-1?Q?Kleine-K=F6nig?= 
+	<u.kleine-koenig@pengutronix.de>
+Cc: Bryan Wu <bryan.wu@canonical.com>, Richard Purdie <rpurdie@rpsys.net>,
+        kernel@pengutronix.de, linux-kernel@vger.kernel.org,
+        linux-leds@vger.kernel.org
+Date: Mon, 21 May 2012 10:12:03 -0600
+In-Reply-To: <20120521082626.GG3710@pengutronix.de>
+References: <1337355945-16421-1-git-send-email-u.kleine-koenig@pengutronix.de>
+	 <CAK5ve-J8EfvgsO8_RYFub8R1fwBgzkjnq3czECRQzpnpvaXEQw@mail.gmail.com>
+	 <20120521082626.GG3710@pengutronix.de>
+Organization: ISS-VC
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3-0ubuntu6 
 Content-Transfer-Encoding: 8bit
-In-Reply-To: <20120509000734.GZ5088@atomide.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Pali,
+On Mon, 2012-05-21 at 10:26 +0200, Uwe Kleine-König wrote:
 
-* Tony Lindgren <tony@atomide.com> [120508 17:12]:
-> * Pali Rohár <pali.rohar@gmail.com> [120504 08:41]:
-> > Hi!
-> > 
-> > Upstream linux kernel has already driver for lis3lv02d accelerometer
-> > in drivers/misc/lis3lv02d. So now can be added also platform support
-> > for nokia rx51. Patch exists for long time in meego obs repository:
-> > https://build.pub.meego.com/package/view_file?file=linux-2.6-omap-rx51-Platform-support-for-lis3lv02d-acceleromet.patch&package=kernel-adaptation-n900&project=CE%3AAdaptation%3AN900
-> > 
-> > It is possible to include this patch to upstream kernel?
-> 
-> Thanks, applying into board branch with From: Ameya as in the
-> link above.
+> > As Shuah said, no kfree(ddata) here
+> As Sascha said, it would be wrong to add one.
 
-Just noticed that this one is still using OMAP_GPIO_IRQ that
-won't work any longer. Can you please send a fix on top of this
-patch against linux next to fix it?
+Thanks. Didn't realize devm_* take care of free at device detach. I am
+starting to see patches that make this change to other leds drivers.
+Something new to learn. :)
 
-The fix is to use gpio_to_irq() in the related init function
-instead of static OMAP_GPIO_IRQ in the data structure.
+-- Shuah
 
-Regards,
 
-Tony
