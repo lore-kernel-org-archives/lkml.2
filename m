@@ -1,63 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758210Ab2EUO5K (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 May 2012 10:57:10 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:57648 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754479Ab2EUO5G (ORCPT
+	id S1758197Ab2EUO7M (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 May 2012 10:59:12 -0400
+Received: from mail-we0-f174.google.com ([74.125.82.174]:33713 "EHLO
+	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757173Ab2EUO7J (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 May 2012 10:57:06 -0400
-From: "Justin P. Mattock" <justinmattock@gmail.com>
-To: dan.carpenter@oracle.com
-Cc: gregkh@linuxfoundation.org, wei_wang@realsil.com.cn,
-        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
-        "Justin P. Mattock" <justinmattock@gmail.com>
-Subject: [PATCH NEXT V2]staging "rts_pstor" fix some typos while reading through rts_pstor 
-Date: Mon, 21 May 2012 07:56:57 -0700
-Message-Id: <1337612217-16494-1-git-send-email-justinmattock@gmail.com>
-X-Mailer: git-send-email 1.7.5.4
+	Mon, 21 May 2012 10:59:09 -0400
+Date: Mon, 21 May 2012 16:59:04 +0200
+From: Ingo Molnar <mingo@kernel.org>
+To: Alexander Gordeev <agordeev@redhat.com>
+Cc: Arjan van de Ven <arjan@infradead.org>, linux-kernel@vger.kernel.org,
+        x86@kernel.org, Suresh Siddha <suresh.b.siddha@intel.com>,
+        Cyrill Gorcunov <gorcunov@openvz.org>, Yinghai Lu <yinghai@kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: Re: [PATCH 2/3] x86: x2apic/cluster: Make use of lowest priority
+ delivery mode
+Message-ID: <20120521145904.GA7068@gmail.com>
+References: <20120518102640.GB31517@dhcp-26-207.brq.redhat.com>
+ <20120521082240.GA31407@gmail.com>
+ <20120521093648.GC28930@dhcp-26-207.brq.redhat.com>
+ <20120521124025.GC17065@gmail.com>
+ <20120521144812.GD28930@dhcp-26-207.brq.redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120521144812.GD28930@dhcp-26-207.brq.redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: "Justin P. Mattock" <justinmattock@gmail.com>
 
-Signed-off-by: Justin P. Mattock <justinmattock@gmail.com>
+* Alexander Gordeev <agordeev@redhat.com> wrote:
 
----
+> > So I think we need to tread carefully here.
+> 
+> Kernel parameter? IRQ line flag? Totally opposed? :)
 
-The below patch fixes some typos while reading through rts_pstor.
+Undecided and sceptical, because: -ENONUMBERS :-)
 
- drivers/staging/rts_pstor/ms.c |    2 +-
- drivers/staging/rts_pstor/sd.c |    2 +-
- 2 files changed, 2 insertions(+), 2 deletions(-)
+The kernel actually tries to have as much locality as we can 
+hide from the user.
 
-diff --git a/drivers/staging/rts_pstor/ms.c b/drivers/staging/rts_pstor/ms.c
-index 0bf6d95..7cc2b53 100644
---- a/drivers/staging/rts_pstor/ms.c
-+++ b/drivers/staging/rts_pstor/ms.c
-@@ -2488,7 +2488,7 @@ int reset_ms_card(struct rtsx_chip *chip)
- 
- 	if (!CHK_MSPRO(ms_card)) {
- 		/* Build table for the last segment,
--		 * to check if L2P talbe block exist,erasing it
-+		 * to check if L2P table block exists, erasing it
- 		 */
- 		retval = ms_build_l2p_tbl(chip, ms_card->total_block / 512 - 1);
- 		if (retval != STATUS_SUCCESS) {
-diff --git a/drivers/staging/rts_pstor/sd.c b/drivers/staging/rts_pstor/sd.c
-index aab6909..b9474a8 100644
---- a/drivers/staging/rts_pstor/sd.c
-+++ b/drivers/staging/rts_pstor/sd.c
-@@ -1169,7 +1169,7 @@ static int sd_check_switch_mode(struct rtsx_chip *chip, u8 mode,
- 		RTSX_DEBUGP("func_group4_mask = 0x%02x\n", buf[0x07]);
- 	} else {
- 		/* Maximum current consumption, check whether current is acceptable;
--		 * bit[511:496] = 0x0000 means some error happaned.
-+		 * bit[511:496] = 0x0000 means some error happened.
- 		 */
- 		u16 cc = ((u16)buf[0] << 8) | buf[1];
- 		RTSX_DEBUGP("Maximum current consumption: %dmA\n", cc);
--- 
-1.7.5.4
+For example we don't execute tasks for 100 usecs on one CPU, 
+then jump to another CPU and execute 100 usecs there, then to 
+yet another CPU to create an 'absolutely balanced use of CPU 
+resources'. Why? Because the cache-misses would be killing us.
 
+When a device is generating ten thousand irqs a second then 
+round-robining the IRQs is equivalent to switching a CPU every 
+100 usecs.
+
+There's another cost: tasks tend to try to migrate to sources of 
+wakeups. So if an IRQ wakes up a task then we will try to 
+execute the task locally, to have locality of access between the 
+data that the IRQ handler has touched, and the task that makes 
+use of it. Round-robining the IRQ in that situations means that 
+the task either follows the IRQ and round-robins (bad), or that 
+it stays remote to the IRQ data (not good either).
+
+So, I'm sceptical :-/
+
+Your other two patches looked sensible - will they apply fine 
+after each other, without the round-robin patch which is still 
+under discussion, or is there a dependency?
+
+Thanks,
+
+	Ingo
