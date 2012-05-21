@@ -1,60 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759219Ab2EUVTG (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 May 2012 17:19:06 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:31759 "EHLO mx1.redhat.com"
+	id S1759261Ab2EUVTY (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 May 2012 17:19:24 -0400
+Received: from relay1.sgi.com ([192.48.179.29]:57087 "EHLO relay.sgi.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932219Ab2EUVSr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 May 2012 17:18:47 -0400
-From: David Teigland <teigland@redhat.com>
-To: linux-kernel@vger.kernel.org
-Subject: [PATCH 8/8] dlm: NULL dereference on failure in kmem_cache_create()
-Date: Mon, 21 May 2012 16:18:40 -0500
-Message-Id: <1337635120-19969-9-git-send-email-teigland@redhat.com>
+	id S1759238Ab2EUVTV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 21 May 2012 17:19:21 -0400
+Date: Mon, 21 May 2012 16:19:17 -0500
+From: Dimitri Sivanich <sivanich@sgi.com>
+To: Thomas Gleixner <tglx@linutronix.de>
+Cc: Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
+        x86@kernel.org, Suresh Siddha <suresh.b.siddha@intel.com>,
+        Yinghai Lu <yinghai@kernel.org>,
+        Naga Chumbalkar <nagananda.chumbalkar@hp.com>,
+        Jacob Pan <jacob.jun.pan@linux.intel.com>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] x86: check for valid irq_cfg pointer in
+ smp_irq_move_cleanup_interrupt
+Message-ID: <20120521211917.GA25567@sgi.com>
+References: <20120521164959.GE16454@sgi.com>
+ <alpine.LFD.2.02.1205212304580.3231@ionos>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <alpine.LFD.2.02.1205212304580.3231@ionos>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Dan Carpenter <dan.carpenter@oracle.com>
+On Mon, May 21, 2012 at 11:07:04PM +0200, Thomas Gleixner wrote:
+> On Mon, 21 May 2012, Dimitri Sivanich wrote:
+> 
+> > The smp_irq_move_cleanup_interrupt routine should be checking for a valid
+> > irq_cfg pointer prior to accessing it.  It also seems that this should be
+> > done after taking the desc lock.
+> 
+> It seems that you either missed or failed to explain why it should be
+> done _after_ taking the lock.
+> 
+> Changelogs matter, really.
+>
+How about this?
 
-We aren't allowed to pass NULL pointers to kmem_cache_destroy() so if
-both allocations fail, it leads to a NULL dereference.
 
-Signed-off-by: Dan Carpenter <dan.carpenter@oracle.com>
-Signed-off-by: David Teigland <teigland@redhat.com>
+The smp_irq_move_cleanup_interrupt routine should be checking for a valid
+irq_cfg pointer prior to accessing it.
+
+Follow the same protocol shown in irq_set_chip_data(), by taking the desc
+lock before accessing this location.
+
+Signed-off-by: Dimitri Sivanich <sivanich@sgi.com>
 ---
- fs/dlm/memory.c |    8 +++-----
- 1 file changed, 3 insertions(+), 5 deletions(-)
+ arch/x86/kernel/apic/io_apic.c |    5 ++++-
+ 1 file changed, 4 insertions(+), 1 deletion(-)
 
-diff --git a/fs/dlm/memory.c b/fs/dlm/memory.c
-index da64df7..7cd24bc 100644
---- a/fs/dlm/memory.c
-+++ b/fs/dlm/memory.c
-@@ -21,21 +21,19 @@ static struct kmem_cache *rsb_cache;
+Index: linux/arch/x86/kernel/apic/io_apic.c
+===================================================================
+--- linux.orig/arch/x86/kernel/apic/io_apic.c
++++ linux/arch/x86/kernel/apic/io_apic.c
+@@ -2478,9 +2478,12 @@ asmlinkage void smp_irq_move_cleanup_int
+ 		if (!desc)
+ 			continue;
  
- int __init dlm_memory_init(void)
- {
--	int ret = 0;
--
- 	lkb_cache = kmem_cache_create("dlm_lkb", sizeof(struct dlm_lkb),
- 				__alignof__(struct dlm_lkb), 0, NULL);
- 	if (!lkb_cache)
--		ret = -ENOMEM;
-+		return -ENOMEM;
+-		cfg = irq_cfg(irq);
+ 		raw_spin_lock(&desc->lock);
  
- 	rsb_cache = kmem_cache_create("dlm_rsb", sizeof(struct dlm_rsb),
- 				__alignof__(struct dlm_rsb), 0, NULL);
- 	if (!rsb_cache) {
- 		kmem_cache_destroy(lkb_cache);
--		ret = -ENOMEM;
-+		return -ENOMEM;
- 	}
- 
--	return ret;
-+	return 0;
- }
- 
- void dlm_memory_exit(void)
--- 
-1.7.10.1.362.g242cab3
-
++		cfg = irq_cfg(irq);
++		if (!cfg)
++			goto unlock;
++
+ 		/*
+ 		 * Check if the irq migration is in progress. If so, we
+ 		 * haven't received the cleanup request yet for this irq.
