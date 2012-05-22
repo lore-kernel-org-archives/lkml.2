@@ -1,26 +1,32 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760017Ab2EVRkn (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 May 2012 13:40:43 -0400
-Received: from casper.infradead.org ([85.118.1.10]:60447 "EHLO
+	id S1760046Ab2EVRlV (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 May 2012 13:41:21 -0400
+Received: from casper.infradead.org ([85.118.1.10]:60452 "EHLO
 	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755924Ab2EVRkj (ORCPT
+	with ESMTP id S1757166Ab2EVRkm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 May 2012 13:40:39 -0400
+	Tue, 22 May 2012 13:40:42 -0400
 From: Arnaldo Carvalho de Melo <acme@infradead.org>
 To: Ingo Molnar <mingo@kernel.org>
-Cc: linux-kernel@vger.kernel.org, Frederic Weisbecker <fweisbec@gmail.com>,
+Cc: linux-kernel@vger.kernel.org,
+        Arnaldo Carvalho de Melo <acme@infradead.org>,
+        Anshuman Khandual <khandual@linux.vnet.ibm.com>,
+        Corey Ashford <cjashfor@linux.vnet.ibm.com>,
+        David Ahern <dsahern@gmail.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
         Frederic Weisbecker <fweisbec@redhat.com>,
-        Namhyung Kim <namhyung.kim@lge.com>,
+        Jiri Olsa <jolsa@redhat.com>, Mike Galbraith <efault@gmx.de>,
+        Namhyung Kim <namhyung@gmail.com>, Namhyung Kim <namhyung.kim@lge.com>,
+        Paul Mackerras <paulus@samba.org>,
         Peter Zijlstra <peterz@infradead.org>,
+        Stephane Eranian <eranian@google.com>,
         Steven Rostedt <rostedt@goodmis.org>, Tom Zanussi <tzanussi@gmail.com>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>
-Subject: [PATCH 06/19] perf script: Explicitly handle known default print arg type
-Date: Tue, 22 May 2012 14:40:04 -0300
-Message-Id: <1337708407-24522-7-git-send-email-acme@infradead.org>
+        arnaldo.melo@gmail.com, Arnaldo Carvalho de Melo <acme@redhat.com>
+Subject: [GIT PULL 00/19] perf/core improvements and fixes
+Date: Tue, 22 May 2012 14:39:58 -0300
+Message-Id: <1337708407-24522-1-git-send-email-acme@infradead.org>
 X-Mailer: git-send-email 1.7.9.2.358.g22243
-In-Reply-To: <1337708407-24522-1-git-send-email-acme@infradead.org>
-References: <1337708407-24522-1-git-send-email-acme@infradead.org>
 Content-Type: text/plain; charset="UTF-8"
 X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by casper.infradead.org
 	See http://www.infradead.org/rpr.html
@@ -28,61 +34,99 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Frederic Weisbecker <fweisbec@gmail.com>
+Hi Ingo,
 
-Handle the print argument types brought by the new libparsevent in perl
-scripting engine.
+	Please consider pulling,
 
-PRINT_BSTRING and PRINT_DYNAMIC_ARRAY are treated just like strings
-and thus don't require specific processing.
+- Arnaldo
 
-But PRINT_FUNC need specific plugins which are not yet handled, lets
-warn if we meet this case.
+The following changes since commit 73787190d04a34e6da745da893b3ae8bedde418f:
 
-This fixes:
+  Merge branch 'perf/parse-events-4' of git://github.com/fweisbec/tracing into perf/core (2012-05-21 10:42:09 +0200)
 
-     util/scripting-engines/trace-event-perl.c: In function define_event_symbol:
-     util/scripting-engines/trace-event-perl.c:188: error: enumeration value PRINT_BSTRING not handled in switch
-     util/scripting-engines/trace-event-perl.c:188: error: enumeration value PRINT_DYNAMIC_ARRAY not handled in switch
-     util/scripting-engines/trace-event-perl.c:188: error: enumeration value PRINT_FUNC not handled in switch
+are available in the git repository at:
 
-Reported-by: Arnaldo Carvalho de Melo <acme@redhat.com>
-Signed-off-by: Frederic Weisbecker <fweisbec@redhat.com>
-Cc: Frederic Weisbecker <fweisbec@redhat.com>
-Cc: Ingo Molnar <mingo@kernel.org>
-Cc: Namhyung Kim <namhyung.kim@lge.com>
-Cc: Peter Zijlstra <peterz@infradead.org>
-Cc: Steven Rostedt <rostedt@goodmis.org>
-Cc: Tom Zanussi <tzanussi@gmail.com>
-Link: http://lkml.kernel.org/r/1337697049-30251-1-git-send-email-fweisbec@gmail.com
+
+  git://git.kernel.org/pub/scm/linux/kernel/git/acme/linux perf/core
+
+for you to fetch changes up to 26252ea675663d1bc6747125fcaa2b7cc4ed8a03:
+
+  perf evlist: Show event attribute details (2012-05-22 14:30:11 -0300)
+
+----------------------------------------------------------------
+Fixes and improvements for perf/core:
+
+. Fix perf perl script build fallout from libtraceevent conversion,
+  from Frederic Weisbecker.
+
+. Libtraceevent Makefile fixes, from Namhyung Kim
+
+. Pipe mode fixes, from Stephane Eranian
+
+. Event parsing improvements, from Jiri Olsa.
+
+. Endianness fixes, from Jiri Olsa
+
+. Bump the default sampling freq to 4 kHz, requested by Ingo Molnar.
+
+. Show event attribute details, such as the sampling freq, in the
+  'perf evlist' command.
+
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
----
- .../perf/util/scripting-engines/trace-event-perl.c |    4 ++++
- 1 file changed, 4 insertions(+)
 
-diff --git a/tools/perf/util/scripting-engines/trace-event-perl.c b/tools/perf/util/scripting-engines/trace-event-perl.c
-index e30749e..d50658b 100644
---- a/tools/perf/util/scripting-engines/trace-event-perl.c
-+++ b/tools/perf/util/scripting-engines/trace-event-perl.c
-@@ -209,6 +209,8 @@ static void define_event_symbols(struct event *event,
- 		define_symbolic_values(args->symbol.symbols, ev_name,
- 				       cur_field_name);
- 		break;
-+	case PRINT_BSTRING:
-+	case PRINT_DYNAMIC_ARRAY:
- 	case PRINT_STRING:
- 		break;
- 	case PRINT_TYPE:
-@@ -220,7 +222,9 @@ static void define_event_symbols(struct event *event,
- 		define_event_symbols(event, ev_name, args->op.left);
- 		define_event_symbols(event, ev_name, args->op.right);
- 		break;
-+	case PRINT_FUNC:
- 	default:
-+		pr_err("Unsupported print arg type\n");
- 		/* we should warn... */
- 		return;
- 	}
--- 
-1.7.9.2.358.g22243
+----------------------------------------------------------------
+Anshuman Khandual (1):
+      perf record: Fix documentation for branch stack sampling
 
+Arnaldo Carvalho de Melo (2):
+      perf tools: Bump default sample freq to 4 kHz
+      perf evlist: Show event attribute details
+
+Frederic Weisbecker (2):
+      perf script: Explicitly handle known default print arg type
+      perf script: Rename struct event to struct event_format in perl engine
+
+Jiri Olsa (7):
+      perf test: Move parse event automated tests to separated object
+      perf tools: Add support for displaying event parser debug info
+      perf tools: Use allocated list for each parsed event
+      perf tools: Separate 'mem:' event scanner bits
+      perf tools: Add hardcoded name term for pmu events
+      perf tools: Carry perf_event_attr bitfield throught different endians
+      perf tools: Add union u64_swap type for swapping u64 data
+
+Namhyung Kim (3):
+      perf tools: Rename libparsevent to libtraceevent in Makefile
+      perf tools: Always try to build libtraceevent
+      perf target: Add cpu flag to sample_type if target has cpu
+
+Stephane Eranian (4):
+      perf tools: rename HEADER_TRACE_INFO to HEADER_TRACING_DATA
+      perf inject: Fix broken perf inject -b
+      perf tools: Fix piped mode read code
+      perf buildid-list: Work better with pipe mode
+
+ tools/perf/Documentation/perf-evlist.txt           |    8 +
+ tools/perf/Documentation/perf-record.txt           |    2 +-
+ tools/perf/Makefile                                |   37 +-
+ tools/perf/builtin-buildid-list.c                  |    6 +-
+ tools/perf/builtin-evlist.c                        |  103 +++-
+ tools/perf/builtin-inject.c                        |    5 +
+ tools/perf/builtin-record.c                        |    6 +-
+ tools/perf/builtin-test.c                          |  552 +----------------
+ tools/perf/builtin-top.c                           |    5 +-
+ tools/perf/util/build-id.c                         |    2 +
+ tools/perf/util/evsel.c                            |   12 +-
+ tools/perf/util/header.c                           |   10 +-
+ tools/perf/util/header.h                           |    2 +-
+ tools/perf/util/parse-events-test.c                |  625 ++++++++++++++++++++
+ tools/perf/util/parse-events.c                     |   69 ++-
+ tools/perf/util/parse-events.h                     |   20 +-
+ tools/perf/util/parse-events.l                     |   26 +-
+ tools/perf/util/parse-events.y                     |   77 ++-
+ tools/perf/util/pmu.c                              |    4 +-
+ .../perf/util/scripting-engines/trace-event-perl.c |   16 +-
+ tools/perf/util/session.c                          |   68 ++-
+ tools/perf/util/types.h                            |    5 +
+ 22 files changed, 1002 insertions(+), 658 deletions(-)
+ create mode 100644 tools/perf/util/parse-events-test.c
