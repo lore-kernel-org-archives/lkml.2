@@ -1,69 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752404Ab2EVSdh (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 May 2012 14:33:37 -0400
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:55393 "EHLO
-	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751055Ab2EVSdf convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 May 2012 14:33:35 -0400
-MIME-Version: 1.0
-In-Reply-To: <20120522181910.GA28826@kroah.com>
-References: <20120522141717.GA31574@lizard>
-	<20120522181910.GA28826@kroah.com>
-Date: Tue, 22 May 2012 11:33:33 -0700
-X-Google-Sender-Auth: ISM_C33-DRPiRQKshytX-L55oEE
-Message-ID: <CAGXu5jJcHDWOf4Kgnz45CT0ud-zMr2SERL2ogjeJC6n64+pQZA@mail.gmail.com>
-Subject: Re: [PATCH v4 0/16] Merge ram_console into pstore, and more
-From: Kees Cook <keescook@chromium.org>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: Anton Vorontsov <anton.vorontsov@linaro.org>,
-        Colin Cross <ccross@android.com>, Tony Luck <tony.luck@intel.com>,
-        devel@driverdev.osuosl.org, linaro-kernel@lists.linaro.org,
-        Arnd Bergmann <arnd@arndb.de>, patches@linaro.org,
-        Marco Stornelli <marco.stornelli@gmail.com>,
-        Stephen Boyd <sboyd@codeaurora.org>, linux-kernel@vger.kernel.org,
-        arve@android.com, Jesper Juhl <jj@chaosbits.net>,
-        John Stultz <john.stultz@linaro.org>, Shuah Khan <shuahkhan@gmail.com>,
-        Rebecca Schultz Zavin <rebecca@android.com>,
-        WANG Cong <xiyou.wangcong@gmail.com>,
-        Andrew Morton <akpm@linux-foundation.org>, kernel-team@android.com,
-        Thomas Meyer <thomas@m3y3r.de>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
-X-System-Of-Record: true
+	id S1753788Ab2EVSej (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 May 2012 14:34:39 -0400
+Received: from perches-mx.perches.com ([206.117.179.246]:35404 "EHLO
+	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1751374Ab2EVSei (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 May 2012 14:34:38 -0400
+Message-ID: <1337711674.8664.5.camel@joe2Laptop>
+Subject: Re: [PATCH 4/5] netdev/phy: Add driver for Broadcom BCM87XX 10G
+ Ethernet PHYs
+From: Joe Perches <joe@perches.com>
+To: David Daney <david.daney@cavium.com>
+Cc: David Daney <ddaney.cavm@gmail.com>,
+        "devicetree-discuss@lists.ozlabs.org" 
+	<devicetree-discuss@lists.ozlabs.org>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Rob Herring <rob.herring@calxeda.com>,
+        "David S. Miller" <davem@davemloft.net>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-mips@linux-mips.org" <linux-mips@linux-mips.org>,
+        Fleming Andy-AFLEMING <afleming@freescale.com>
+Date: Tue, 22 May 2012 11:34:34 -0700
+In-Reply-To: <4FBBDA70.8020307@cavium.com>
+References: <1337709592-23347-1-git-send-email-ddaney.cavm@gmail.com>
+	 <1337709592-23347-5-git-send-email-ddaney.cavm@gmail.com>
+	 <1337710660.3432.8.camel@joe2Laptop> <4FBBDA70.8020307@cavium.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.2- 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, May 22, 2012 at 11:19 AM, Greg Kroah-Hartman
-<gregkh@linuxfoundation.org> wrote:
-> On Tue, May 22, 2012 at 07:17:17AM -0700, Anton Vorontsov wrote:
->> Hi all,
->>
->> A brand new v4:
->>
->> - Per Kees Cook's comments, the patches no longer remove an automatic
->>   updates feature, but instead make the it configurable; plus disable
->>   it by default (in a separate patch);
->> - Fixed some bugs noticed by Colin Cross;
->> - Documented new continuous ramoops-console log behaviour (also
->>   noticed by Colin Cross).
->
-> In case you were wondering, all of this is going to have to wait for
-> 3.6, as the 3.5 merge window with my trees have been closed.  I'll be
-> able to start accepting patches once 3.5-rc1 is out, so take your time
-> in getting this all working properly, there's no rush here.
+On Tue, 2012-05-22 at 11:26 -0700, David Daney wrote:
+> On 05/22/2012 11:17 AM, Joe Perches wrote:
+> > On Tue, 2012-05-22 at 10:59 -0700, David Daney wrote:
+> >> From: David Daney<david.daney@cavium.com>
+> >
+> > trivia:
+> 
+> As long as we are splitting hairs...
 
-Will the ramoops stuff that was in -next (via -mm) that now landed in
--staging make it sanely into 3.5? Specifically the two patches at the
-top of:
-http://git.kernel.org/?p=linux/kernel/git/kees/linux.git;a=shortlog;h=refs/heads/ramoops
+and zooming in and enhancing...
 
-Thanks,
+> >
+> >> diff --git a/drivers/net/phy/bcm87xx.c b/drivers/net/phy/bcm87xx.c
+> > []
+> >> @@ -0,0 +1,237 @@
+> >
+> >> +static int bcm87xx_of_reg_init(struct phy_device *phydev)
+> >> +{
+> >> +	const __be32 *paddr;
+> >> +	int len, i, ret;
+> >> +
+> >> +	if (!phydev->dev.of_node)
+> >> +		return 0;
+> >> +
+> >> +	paddr = of_get_property(phydev->dev.of_node,
+> >> +				"broadcom,c45-reg-init",&len);
+> >> +	if (!paddr || len<  (4 * sizeof(*paddr)))
+> >> +		return 0;
+> >> +
+> >> +	ret = 0;
+> >> +	len /= sizeof(*paddr);
+> >> +	for (i = 0; i<  len - 3; i += 4) {
+> >> +		u16 devid = be32_to_cpup(paddr + i);
+> >> +		u16 reg = be32_to_cpup(paddr + i + 1);
+> >> +		u16 mask = be32_to_cpup(paddr + i + 2);
+> >> +		u16 val_bits = be32_to_cpup(paddr + i + 3);
+> >> +		int val;
+> >
+> > These might read better as
+> >
+> > 	len /= 4;
+> 
+> Where did the magic value of 4 come from?
 
--Kees
+equivalence to the original for loop
 
--- 
-Kees Cook
-Chrome OS Security
+	for (i = 0; i < len - 3; i += 4) {
+
+> > 	for (i = 0; i<  len; i++) {
+
+> > 		u16 devid	= be32_to_cpu(*paddr++);
+> > 		u16 reg		= be32_to_cpu(*paddr++);
+> > 		u16 mask	= be32_to_cpu(*paddr++);
+> > 		u16 val_bits	= be32_to_cpu(*paddr++);
+> 
+> Is the main problem that they didn't align, or that the index was 
+> explicit instead of implicit?
+
+There's no real problem, it's just that
+i++, be32_to_cpu and *addr++ is a bit
+more common and perhaps more easily read.
+
+The alignment's just a visual nicety.
+
+Ignore it if you choose.
+
+cheers, Joe
+
