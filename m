@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932388Ab2EVFFD (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 May 2012 01:05:03 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:20793 "EHLO mx1.redhat.com"
+	id S932843Ab2EVFFf (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 May 2012 01:05:35 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:32961 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753256Ab2EVFE7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 May 2012 01:04:59 -0400
+	id S932452Ab2EVFFT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 May 2012 01:05:19 -0400
 From: Alex Williamson <alex.williamson@redhat.com>
-Subject: [PATCH v2 00/13] IOMMU Groups + VFIO
+Subject: [PATCH v2 04/13] pci: Add PCI DMA source ID quirk
 To: benh@kernel.crashing.org, aik@ozlabs.ru, david@gibson.dropbear.id.au,
         joerg.roedel@amd.com, dwmw2@infradead.org
 Cc: chrisw@sous-sol.org, agraf@suse.de, benve@cisco.com, aafabbri@cisco.com,
@@ -16,8 +16,10 @@ Cc: chrisw@sous-sol.org, agraf@suse.de, benve@cisco.com, aafabbri@cisco.com,
         iommu@lists.linux-foundation.org, linux-pci@vger.kernel.org,
         linux-kernel@vger.kernel.org, gregkh@linuxfoundation.org,
         bhelgaas@google.com, ddutile@redhat.com, alex.williamson@redhat.com
-Date: Mon, 21 May 2012 23:04:30 -0600
-Message-ID: <20120522043607.5871.11340.stgit@bling.home>
+Date: Mon, 21 May 2012 23:05:01 -0600
+Message-ID: <20120522050501.5871.89639.stgit@bling.home>
+In-Reply-To: <20120522043607.5871.11340.stgit@bling.home>
+References: <20120522043607.5871.11340.stgit@bling.home>
 User-Agent: StGIT/0.14.3
 MIME-Version: 1.0
 Content-Type: text/plain; charset="utf-8"
@@ -26,92 +28,93 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Version 2 incorporating acks and feedback from v1.  The PCI DMA quirk
-and ACS check are reworked, sysfs iommu groups ABI Documentation
-added as well as numerous other fixes, including patches from Alexey
-Kardashevskiy towards supporting POWER usage of VFIO and IOMMU groups.
+DMA transactions are tagged with the source ID of the device making
+the request.  Occasionally hardware screws this up and uses the
+source ID of a different device (often the wrong function number of
+a multifunction device).  A specific Ricoh multifunction device is
+a prime example of this problem and included in this patch.  The
+purpose of this function is that given a pci_dev, return the pci_dev
+to use as the source ID for DMA.  When hardware works correctly,
+this returns the input device.  For the components of the Ricoh
+multifunction device, return the pci_dev for function 0.
 
-This series can be found here on top of 3.4:
+This will be used by IOMMU drivers for determining the boundaries
+of IOMMU groups as multiple devices using the same source ID must
+be contained within the same group.  This can also be used by
+existing streaming DMA paths for the same purpose.
 
-git://github.com/awilliam/linux-vfio.git iommu-group-vfio-20120521
-
-The Qemu tree has also been updated to Qemu 1.1 and can be found here:
-
-git://github.com/awilliam/qemu-vfio.git iommu-group-vfio
-
-I'd really like to make a push to get this in for 3.5, so let's talk
-about how to do that across iommu, pci, and new driver.  Joerg, are
-you sufficiently happy with the IOMMU group concept and code?  We'll
-also need David Woodhouse buyin on the intel-iommu changes in patches
-3 & 6.  Who needs to approve VFIO as a new driver, GregKH?  Bjorn,
-I'd be happy to send the PCI changes as a series for you, but I
-wonder if it makes sense to collect acks for them if you approve and
-bundle them in with the associated code that needs them so you're
-not left with unused code.  Let me know which you prefer.  If there
-are better ways to do it, please let me know.  Thanks,
-
-Alex
-
+Signed-off-by: Alex Williamson <alex.williamson@redhat.com>
 ---
 
-Alex Williamson (13):
-      vfio: Add PCI device driver
-      pci: Misc pci_reg additions
-      pci: Create common pcibios_err_to_errno
-      pci: export pci_user functions for use by other drivers
-      vfio: x86 IOMMU implementation
-      vfio: Add documentation
-      vfio: VFIO core
-      iommu: Make use of DMA quirking and ACS enabled check for groups
-      pci: Add ACS validation utility
-      pci: Add PCI DMA source ID quirk
-      iommu: IOMMU groups for VT-d and AMD-Vi
-      iommu: IOMMU Groups
-      driver core: Add iommu_group tracking to struct device
+ drivers/pci/quirks.c |   40 ++++++++++++++++++++++++++++++++++++++++
+ include/linux/pci.h  |    5 +++++
+ 2 files changed, 45 insertions(+), 0 deletions(-)
 
+diff --git a/drivers/pci/quirks.c b/drivers/pci/quirks.c
+index 4bf7102..a2dd77f 100644
+--- a/drivers/pci/quirks.c
++++ b/drivers/pci/quirks.c
+@@ -3109,3 +3109,43 @@ int pci_dev_specific_reset(struct pci_dev *dev, int probe)
+ 
+ 	return -ENOTTY;
+ }
++
++static struct pci_dev *pci_func_0_dma_source(struct pci_dev *dev)
++{
++	return pci_get_slot(dev->bus, PCI_DEVFN(PCI_SLOT(dev->devfn), 0));
++}
++
++static const struct pci_dev_dma_source {
++	u16 vendor;
++	u16 device;
++	struct pci_dev *(*dma_source)(struct pci_dev *dev);
++} pci_dev_dma_source[] = {
++	/*
++	 * https://bugzilla.redhat.com/show_bug.cgi?id=605888
++	 *
++	 * Some Ricoh devices use the function 0 source ID for DMA on
++	 * other functions of a multifunction device.  The DMA devices
++	 * is therefore function 0, which will have implications of the
++	 * iommu grouping of these devices.
++	 */
++	{ PCI_VENDOR_ID_RICOH, 0xe822, pci_func_0_dma_source },
++	{ PCI_VENDOR_ID_RICOH, 0xe230, pci_func_0_dma_source },
++	{ PCI_VENDOR_ID_RICOH, 0xe832, pci_func_0_dma_source },
++	{ PCI_VENDOR_ID_RICOH, 0xe832, pci_func_0_dma_source },
++	{ 0 }
++};
++
++struct pci_dev *pci_dma_source(struct pci_dev *dev)
++{
++	const struct pci_dev_dma_source *i;
++
++	for (i = pci_dev_dma_source; i->dma_source; i++) {
++		if ((i->vendor == dev->vendor ||
++		     i->vendor == (u16)PCI_ANY_ID) &&
++		    (i->device == dev->device ||
++		     i->device == (u16)PCI_ANY_ID))
++			return i->dma_source(dev);
++	}
++
++	return dev;
++}
+diff --git a/include/linux/pci.h b/include/linux/pci.h
+index e444f5b..02dbfed 100644
+--- a/include/linux/pci.h
++++ b/include/linux/pci.h
+@@ -1479,9 +1479,14 @@ enum pci_fixup_pass {
+ 
+ #ifdef CONFIG_PCI_QUIRKS
+ void pci_fixup_device(enum pci_fixup_pass pass, struct pci_dev *dev);
++struct pci_dev *pci_dma_source(struct pci_dev *dev);
+ #else
+ static inline void pci_fixup_device(enum pci_fixup_pass pass,
+ 				    struct pci_dev *dev) {}
++static inline struct pci_dev *pci_dma_source(struct pci_dev *dev)
++{
++	return dev;
++}
+ #endif
+ 
+ void __iomem *pcim_iomap(struct pci_dev *pdev, int bar, unsigned long maxlen);
 
- .../ABI/testing/sysfs-kernel-iommu_groups          |   14 
- Documentation/ioctl/ioctl-number.txt               |    1 
- Documentation/vfio.txt                             |  315 ++++
- MAINTAINERS                                        |    8 
- drivers/Kconfig                                    |    2 
- drivers/Makefile                                   |    1 
- drivers/iommu/amd_iommu.c                          |   67 +
- drivers/iommu/intel-iommu.c                        |   87 +
- drivers/iommu/iommu.c                              |  578 +++++++-
- drivers/pci/access.c                               |    6 
- drivers/pci/pci.c                                  |   76 +
- drivers/pci/pci.h                                  |    7 
- drivers/pci/quirks.c                               |   69 +
- drivers/vfio/Kconfig                               |   16 
- drivers/vfio/Makefile                              |    3 
- drivers/vfio/pci/Kconfig                           |    8 
- drivers/vfio/pci/Makefile                          |    4 
- drivers/vfio/pci/vfio_pci.c                        |  557 +++++++
- drivers/vfio/pci/vfio_pci_config.c                 | 1522 ++++++++++++++++++++
- drivers/vfio/pci/vfio_pci_intrs.c                  |  724 ++++++++++
- drivers/vfio/pci/vfio_pci_private.h                |   91 +
- drivers/vfio/pci/vfio_pci_rdwr.c                   |  269 ++++
- drivers/vfio/vfio.c                                | 1413 +++++++++++++++++++
- drivers/vfio/vfio_iommu_x86.c                      |  743 ++++++++++
- drivers/xen/xen-pciback/conf_space.c               |    6 
- include/linux/device.h                             |    2 
- include/linux/iommu.h                              |  104 +
- include/linux/pci.h                                |   49 +
- include/linux/pci_regs.h                           |  112 +
- include/linux/vfio.h                               |  444 ++++++
- 30 files changed, 7182 insertions(+), 116 deletions(-)
- create mode 100644 Documentation/ABI/testing/sysfs-kernel-iommu_groups
- create mode 100644 Documentation/vfio.txt
- create mode 100644 drivers/vfio/Kconfig
- create mode 100644 drivers/vfio/Makefile
- create mode 100644 drivers/vfio/pci/Kconfig
- create mode 100644 drivers/vfio/pci/Makefile
- create mode 100644 drivers/vfio/pci/vfio_pci.c
- create mode 100644 drivers/vfio/pci/vfio_pci_config.c
- create mode 100644 drivers/vfio/pci/vfio_pci_intrs.c
- create mode 100644 drivers/vfio/pci/vfio_pci_private.h
- create mode 100644 drivers/vfio/pci/vfio_pci_rdwr.c
- create mode 100644 drivers/vfio/vfio.c
- create mode 100644 drivers/vfio/vfio_iommu_x86.c
- create mode 100644 include/linux/vfio.h
