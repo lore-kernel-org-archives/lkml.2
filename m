@@ -1,128 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759938Ab2EVRVz (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 May 2012 13:21:55 -0400
-Received: from e38.co.us.ibm.com ([32.97.110.159]:58562 "EHLO
-	e38.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759526Ab2EVRVy (ORCPT
+	id S1759955Ab2EVRWA (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 May 2012 13:22:00 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:60419 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759241Ab2EVRV6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 May 2012 13:21:54 -0400
-Date: Tue, 22 May 2012 10:20:50 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: LKML <linux-kernel@vger.kernel.org>, linaro-sched-sig@lists.linaro.org,
-        Alessio Igor Bogani <abogani@kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>, Avi Kivity <avi@redhat.com>,
-        Chris Metcalf <cmetcalf@tilera.com>, Christoph Lameter <cl@linux.com>,
-        Daniel Lezcano <daniel.lezcano@linaro.org>,
-        Geoff Levand <geoff@infradead.org>,
-        Gilad Ben Yossef <gilad@benyossef.com>,
-        Hakan Akkan <hakanakkan@gmail.com>, Ingo Molnar <mingo@kernel.org>,
-        Kevin Hilman <khilman@ti.com>, Max Krasnyansky <maxk@qualcomm.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Stephen Hemminger <shemminger@vyatta.com>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Sven-Thorsten Dietrich <thebigcorporation@gmail.com>,
-        Thomas Gleixner <tglx@linutronix.de>
-Subject: Re: [PATCH 16/41] rcu: Restart the tick on non-responding adaptive
- nohz CPUs
-Message-ID: <20120522172050.GB8087@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <1335830115-14335-1-git-send-email-fweisbec@gmail.com>
- <1335830115-14335-17-git-send-email-fweisbec@gmail.com>
+	Tue, 22 May 2012 13:21:58 -0400
+Date: Tue, 22 May 2012 10:21:50 -0700
+From: Tejun Heo <tj@kernel.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org, Alex Shi <alex.shi@intel.com>
+Subject: [GIT PULL] percpu changes for 3.5-rc1
+Message-ID: <20120522172150.GF14339@google.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1335830115-14335-17-git-send-email-fweisbec@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 12052217-5518-0000-0000-0000049761CC
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, May 01, 2012 at 01:54:50AM +0200, Frederic Weisbecker wrote:
-> When a CPU in adaptive nohz mode doesn't respond to complete
-> a grace period, issue it a specific IPI so that it restarts
-> the tick and chases a quiescent state.
+Hello, Linus.
 
-Hello, Frederic,
+Please pull from the following branch to receive percpu changes for
+3.5-rc1.
 
-I don't understand the need for this patch.  If the CPU is in
-adaptive-tick mode, RCU should see it as being in dyntick-idle mode,
-right?  If so, shouldn't RCU have already recognized the CPU as being
-in an extended quiescent state?
+  git://git.kernel.org/pub/scm/linux/kernel/git/tj/percpu.git for-3.5
 
-Or is this a belt-and-suspenders situation?
+Contains Alex Shi's three patches to remove percpu_xxx() which overlap
+with this_cpu_xxx().  There shouldn't be any functional change.
 
-							Thanx, Paul
+Thanks.
 
-> Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
-> Cc: Alessio Igor Bogani <abogani@kernel.org>
-> Cc: Andrew Morton <akpm@linux-foundation.org>
-> Cc: Avi Kivity <avi@redhat.com>
-> Cc: Chris Metcalf <cmetcalf@tilera.com>
-> Cc: Christoph Lameter <cl@linux.com>
-> Cc: Daniel Lezcano <daniel.lezcano@linaro.org>
-> Cc: Geoff Levand <geoff@infradead.org>
-> Cc: Gilad Ben Yossef <gilad@benyossef.com>
-> Cc: Hakan Akkan <hakanakkan@gmail.com>
-> Cc: Ingo Molnar <mingo@kernel.org>
-> Cc: Kevin Hilman <khilman@ti.com>
-> Cc: Max Krasnyansky <maxk@qualcomm.com>
-> Cc: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
-> Cc: Peter Zijlstra <peterz@infradead.org>
-> Cc: Stephen Hemminger <shemminger@vyatta.com>
-> Cc: Steven Rostedt <rostedt@goodmis.org>
-> Cc: Sven-Thorsten Dietrich <thebigcorporation@gmail.com>
-> Cc: Thomas Gleixner <tglx@linutronix.de>
-> ---
->  kernel/rcutree.c |   17 +++++++++++++++++
->  1 files changed, 17 insertions(+), 0 deletions(-)
-> 
-> diff --git a/kernel/rcutree.c b/kernel/rcutree.c
-> index e141c7e..3fffc26 100644
-> --- a/kernel/rcutree.c
-> +++ b/kernel/rcutree.c
-> @@ -50,6 +50,7 @@
->  #include <linux/wait.h>
->  #include <linux/kthread.h>
->  #include <linux/prefetch.h>
-> +#include <linux/cpuset.h>
-> 
->  #include "rcutree.h"
->  #include <trace/events/rcu.h>
-> @@ -302,6 +303,20 @@ static struct rcu_node *rcu_get_root(struct rcu_state *rsp)
-> 
->  #ifdef CONFIG_SMP
-> 
-> +static void cpuset_update_rcu_cpu(int cpu)
-> +{
-> +#ifdef CONFIG_CPUSETS_NO_HZ
-> +	unsigned long flags;
-> +
-> +	local_irq_save(flags);
-> +
-> +	if (cpuset_cpu_adaptive_nohz(cpu))
-> +		smp_cpuset_update_nohz(cpu);
-> +
-> +	local_irq_restore(flags);
-> +#endif
-> +}
-> +
->  /*
->   * If the specified CPU is offline, tell the caller that it is in
->   * a quiescent state.  Otherwise, whack it with a reschedule IPI.
-> @@ -325,6 +340,8 @@ static int rcu_implicit_offline_qs(struct rcu_data *rdp)
->  		return 1;
->  	}
-> 
-> +	cpuset_update_rcu_cpu(rdp->cpu);
-> +
->  	/*
->  	 * The CPU is online, so send it a reschedule IPI.  This forces
->  	 * it through the scheduler, and (inefficiently) also handles cases
-> -- 
-> 1.7.5.4
-> 
+Alex Shi (3):
+      net: replace percpu_xxx funcs with this_cpu_xxx or __this_cpu_xxx
+      x86: replace percpu_xxx funcs with this_cpu_xxx
+      percpu: remove percpu_xxx() functions
 
+ arch/x86/include/asm/compat.h         |    2 +-
+ arch/x86/include/asm/current.h        |    2 +-
+ arch/x86/include/asm/desc.h           |    1 +
+ arch/x86/include/asm/fpu-internal.h   |    6 ++--
+ arch/x86/include/asm/hardirq.h        |    9 +++--
+ arch/x86/include/asm/irq_regs.h       |    4 +-
+ arch/x86/include/asm/mmu_context.h    |   12 ++++----
+ arch/x86/include/asm/percpu.h         |   24 ++++++--------
+ arch/x86/include/asm/smp.h            |    4 +-
+ arch/x86/include/asm/stackprotector.h |    4 +-
+ arch/x86/include/asm/thread_info.h    |    2 +-
+ arch/x86/include/asm/tlbflush.h       |    4 +-
+ arch/x86/kernel/cpu/common.c          |    2 +-
+ arch/x86/kernel/cpu/mcheck/mce.c      |    4 +-
+ arch/x86/kernel/i387.c                |    2 +-
+ arch/x86/kernel/nmi_selftest.c        |    1 +
+ arch/x86/kernel/paravirt.c            |   12 ++++----
+ arch/x86/kernel/process.c             |    2 +-
+ arch/x86/kernel/process_32.c          |    2 +-
+ arch/x86/kernel/process_64.c          |   10 +++---
+ arch/x86/mm/tlb.c                     |   10 +++---
+ include/linux/percpu.h                |   54 ---------------------------------
+ include/linux/topology.h              |    4 +-
+ net/netfilter/xt_TEE.c                |   12 ++++----
+ net/socket.c                          |    4 +-
+ 25 files changed, 69 insertions(+), 124 deletions(-)
+
+--
+tejun
