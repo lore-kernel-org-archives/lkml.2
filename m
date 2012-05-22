@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758601Ab2EVOPd (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 May 2012 10:15:33 -0400
-Received: from mail-gh0-f174.google.com ([209.85.160.174]:61482 "EHLO
-	mail-gh0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756801Ab2EVOMf (ORCPT
+	id S932088Ab2EVOQB (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 May 2012 10:16:01 -0400
+Received: from mail-yx0-f174.google.com ([209.85.213.174]:45762 "EHLO
+	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757437Ab2EVOMc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 May 2012 10:12:35 -0400
+	Tue, 22 May 2012 10:12:32 -0400
 From: Jeff Layton <jlayton@redhat.com>
 To: viro@ZenIV.linux.org.uk
 Cc: inux-fsdevel@vger.kernel.org, linux-nfs@vger.kernel.org,
         linux-kernel@vger.kernel.org, miklos@szeredi.hu, hch@infradead.org,
         michael.brantley@deshaw.com, pstaubach@exagrid.com
-Subject: [PATCH v2 05/15] vfs: remove user_path_at_empty
-Date: Tue, 22 May 2012 10:12:09 -0400
-Message-Id: <1337695939-2741-6-git-send-email-jlayton@redhat.com>
+Subject: [PATCH v2 03/15] vfs: make fstatat retry on ESTALE errors from getattr call
+Date: Tue, 22 May 2012 10:12:07 -0400
+Message-Id: <1337695939-2741-4-git-send-email-jlayton@redhat.com>
 X-Mailer: git-send-email 1.7.7.6
 In-Reply-To: <1337695939-2741-1-git-send-email-jlayton@redhat.com>
 References: <1337695939-2741-1-git-send-email-jlayton@redhat.com>
@@ -22,57 +22,83 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-...there are no more callers.
-
 Signed-off-by: Jeff Layton <jlayton@redhat.com>
 ---
- fs/namei.c            |   12 +++---------
- include/linux/namei.h |    1 -
- 2 files changed, 3 insertions(+), 10 deletions(-)
+ fs/namei.c         |    2 +-
+ fs/stat.c          |   21 ++++++++++++++++-----
+ include/linux/fs.h |    3 ++-
+ 3 files changed, 19 insertions(+), 7 deletions(-)
 
 diff --git a/fs/namei.c b/fs/namei.c
-index 516be34..f13ba02 100644
+index c63242f..516be34 100644
 --- a/fs/namei.c
 +++ b/fs/namei.c
-@@ -1900,10 +1900,10 @@ int kern_path_at(int dfd, const char *name, unsigned flags, struct path *path)
- 	return err;
- }
- 
--int user_path_at_empty(int dfd, const char __user *name, unsigned flags,
--		 struct path *path, int *empty)
-+int user_path_at(int dfd, const char __user *name, unsigned flags,
-+		 struct path *path)
+@@ -116,7 +116,7 @@
+  * POSIX.1 2.4: an empty pathname is invalid (ENOENT).
+  * PATH_MAX includes the nul terminator --RR.
+  */
+-static char *getname_flags(const char __user *filename, int flags, int *empty)
++char *getname_flags(const char __user *filename, int flags, int *empty)
  {
--	char *tmp = getname_flags(name, flags, empty);
-+	char *tmp = getname_flags(name, flags, NULL);
- 	int err;
- 
- 	if (IS_ERR(tmp)) {
-@@ -1915,12 +1915,6 @@ int user_path_at_empty(int dfd, const char __user *name, unsigned flags,
- 	return err;
- }
- 
--int user_path_at(int dfd, const char __user *name, unsigned flags,
--		 struct path *path)
--{
--	return user_path_at_empty(dfd, name, flags, path, NULL);
--}
--
- static int user_path_parent(int dfd, const char __user *path,
- 			struct nameidata *nd, char **name)
+ 	char *result = __getname(), *err;
+ 	int len;
+diff --git a/fs/stat.c b/fs/stat.c
+index 0cef336..60a8813 100644
+--- a/fs/stat.c
++++ b/fs/stat.c
+@@ -72,9 +72,11 @@ EXPORT_SYMBOL(vfs_fstat);
+ int vfs_fstatat(int dfd, const char __user *filename, struct kstat *stat,
+ 		int flag)
  {
-diff --git a/include/linux/namei.h b/include/linux/namei.h
-index cd95fcb..1ea93d5 100644
---- a/include/linux/namei.h
-+++ b/include/linux/namei.h
-@@ -68,7 +68,6 @@ enum {LAST_NORM, LAST_ROOT, LAST_DOT, LAST_DOTDOT, LAST_BIND};
++	char *name;
+ 	struct path path;
+ 	int error = -EINVAL;
+-	int lookup_flags = 0;
++	unsigned int try = 0;
++	unsigned int lookup_flags = 0;
  
- extern int kern_path_at(int, const char *, unsigned, struct path *);
- extern int user_path_at(int, const char __user *, unsigned, struct path *);
--extern int user_path_at_empty(int, const char __user *, unsigned, struct path *, int *empty);
+ 	if ((flag & ~(AT_SYMLINK_NOFOLLOW | AT_NO_AUTOMOUNT |
+ 		      AT_EMPTY_PATH)) != 0)
+@@ -85,12 +87,21 @@ int vfs_fstatat(int dfd, const char __user *filename, struct kstat *stat,
+ 	if (flag & AT_EMPTY_PATH)
+ 		lookup_flags |= LOOKUP_EMPTY;
  
- #define user_path(name, path) user_path_at(AT_FDCWD, name, LOOKUP_FOLLOW, path)
- #define user_lpath(name, path) user_path_at(AT_FDCWD, name, 0, path)
+-	error = user_path_at(dfd, filename, lookup_flags, &path);
+-	if (error)
++	name = getname_flags(filename, lookup_flags, NULL);
++	if (IS_ERR(name)) {
++		error = PTR_ERR(name);
+ 		goto out;
++	}
++	do {
++		error = kern_path_at(dfd, name, lookup_flags, &path);
++		if (error)
++			break;
+ 
+-	error = vfs_getattr(path.mnt, path.dentry, stat);
+-	path_put(&path);
++		error = vfs_getattr(path.mnt, path.dentry, stat);
++		path_put(&path);
++		lookup_flags |= LOOKUP_REVAL;
++	} while (retry_estale(error, try++));
++	putname(name);
+ out:
+ 	return error;
+ }
+diff --git a/include/linux/fs.h b/include/linux/fs.h
+index 0b8003b..2f92b93 100644
+--- a/include/linux/fs.h
++++ b/include/linux/fs.h
+@@ -2024,7 +2024,8 @@ extern struct file *file_open_root(struct dentry *, struct vfsmount *,
+ extern struct file * dentry_open(struct dentry *, struct vfsmount *, int,
+ 				 const struct cred *);
+ extern int filp_close(struct file *, fl_owner_t id);
+-extern char * getname(const char __user *);
++extern char *getname_flags(const char __user *, int, int *);
++extern char *getname(const char __user *);
+ 
+ /**
+  * retry_estale - determine whether the caller should retry an operation
 -- 
 1.7.7.6
 
