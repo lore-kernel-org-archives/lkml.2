@@ -1,49 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759987Ab2EVR1U (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 May 2012 13:27:20 -0400
-Received: from smtp103.prem.mail.ac4.yahoo.com ([76.13.13.42]:29952 "HELO
-	smtp103.prem.mail.ac4.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1753625Ab2EVR1S (ORCPT
+	id S1759966Ab2EVR2d (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 May 2012 13:28:33 -0400
+Received: from e38.co.us.ibm.com ([32.97.110.159]:39710 "EHLO
+	e38.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751656Ab2EVR2b (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 May 2012 13:27:18 -0400
-X-Yahoo-Newman-Property: ymail-3
-X-YMail-OSG: d.KVMSEVM1k1HwDYlu8mne.08ovWwP3iE9m5Z52qTSLwPz3
- U1e1jT.4R7FVrKHuxuuO9c5lwwETf_3UkEv.2hnFWVwl7Bk.FT4haw0e0gIf
- WzB9fnu1_1xmFjcfjdJfORk.YD8up6ejVn115GuCgtTsuOMLrOZR6hG9ZyAE
- Wk.hIP6yXH7g.TzNcCdplmX7USznSEXw2DDCw8.Vmwf86ZUkIBo_C5pHrcZ9
- R_FpOE_oFiD5tudmDICZhRJ8TObLmc1Wsk9G3TDt6dIExnG5bGTArRzbTNDR
- NPRKegK3W1QG.0broEKQ7dgT7P1yptloyqCRNt1EOr9bV95sVTrBY.FB4yPF
- 37zv6DuCX3Zd.O40SUQRypokZxMDRoy6NHoVWmw39xx8LTuhcp7pxNY65rK.
- L
-X-Yahoo-SMTP: _Dag8S.swBC1p4FJKLCXbs8NQzyse1SYSgnAbY0-
-Date: Tue, 22 May 2012 12:27:14 -0500 (CDT)
-From: Christoph Lameter <cl@linux.com>
-X-X-Sender: cl@router.home
-To: Dave Jones <davej@redhat.com>
-cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Linux Kernel <linux-kernel@vger.kernel.org>, linux-mm@kvack.org,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Stephen Wilson <wilsons@start.ca>, Mel Gorman <mgorman@suse.de>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: 3.4-rc7 numa_policy slab poison.
-In-Reply-To: <20120521210959.GF12123@redhat.com>
-Message-ID: <alpine.DEB.2.00.1205221226330.21828@router.home>
-References: <20120517213120.GA12329@redhat.com> <20120518185851.GA5728@redhat.com> <20120521154709.GA8697@redhat.com> <CA+55aFyqMJ1X08kQwJ7snkYo6MxfVKqFJx7LXBkP_ug4LTCZ=Q@mail.gmail.com> <20120521200118.GA12123@redhat.com> <alpine.DEB.2.00.1205211510480.10940@router.home>
- <20120521202904.GB12123@redhat.com> <alpine.DEB.2.00.1205211535050.10940@router.home> <20120521203838.GD12123@redhat.com> <alpine.DEB.2.00.1205211544340.10940@router.home> <20120521210959.GF12123@redhat.com>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+	Tue, 22 May 2012 13:28:31 -0400
+Date: Tue, 22 May 2012 10:27:14 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: LKML <linux-kernel@vger.kernel.org>, linaro-sched-sig@lists.linaro.org,
+        Alessio Igor Bogani <abogani@kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>, Avi Kivity <avi@redhat.com>,
+        Chris Metcalf <cmetcalf@tilera.com>, Christoph Lameter <cl@linux.com>,
+        Daniel Lezcano <daniel.lezcano@linaro.org>,
+        Geoff Levand <geoff@infradead.org>,
+        Gilad Ben Yossef <gilad@benyossef.com>,
+        Hakan Akkan <hakanakkan@gmail.com>, Ingo Molnar <mingo@kernel.org>,
+        Kevin Hilman <khilman@ti.com>, Max Krasnyansky <maxk@qualcomm.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Stephen Hemminger <shemminger@vyatta.com>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Sven-Thorsten Dietrich <thebigcorporation@gmail.com>,
+        Thomas Gleixner <tglx@linutronix.de>
+Subject: Re: [PATCH 17/41] rcu: Restart tick if we enqueue a callback in a
+ nohz/cpuset CPU
+Message-ID: <20120522172714.GC8087@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <1335830115-14335-1-git-send-email-fweisbec@gmail.com>
+ <1335830115-14335-18-git-send-email-fweisbec@gmail.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1335830115-14335-18-git-send-email-fweisbec@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 12052217-5518-0000-0000-0000049771D0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 21 May 2012, Dave Jones wrote:
+On Tue, May 01, 2012 at 01:54:51AM +0200, Frederic Weisbecker wrote:
+> If we enqueue an rcu callback, we need the CPU tick to stay
+> alive until we take care of those by completing the appropriate
+> grace period.
+> 
+> Thus, when we call_rcu(), send a self IPI that checks rcu_needs_cpu()
+> so that we restore a periodic tick behaviour that can take care of
+> everything.
 
-> ok, added a --nocolors option now. Re-pull.
-> I'll look at the dependancy problem next. Thanks for the feedback.
+Ouch, I hadn't considered RCU callbacks being posted from within an
+extended quiescent state.  I guess I need to make __call_rcu() either
+complain about this or handle it correctly...  It would -usually- be
+harmless, but there is getting to be quite a bit of active machinery
+in the various idle loops, so just assuming that it cannot happen is
+probably getting to be an obsolete assumption.
 
---monochrome you mean?
+							Thanx, Paul
 
--m works for a part of the output but then the color hits again.
+> Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
+> Cc: Alessio Igor Bogani <abogani@kernel.org>
+> Cc: Andrew Morton <akpm@linux-foundation.org>
+> Cc: Avi Kivity <avi@redhat.com>
+> Cc: Chris Metcalf <cmetcalf@tilera.com>
+> Cc: Christoph Lameter <cl@linux.com>
+> Cc: Daniel Lezcano <daniel.lezcano@linaro.org>
+> Cc: Geoff Levand <geoff@infradead.org>
+> Cc: Gilad Ben Yossef <gilad@benyossef.com>
+> Cc: Hakan Akkan <hakanakkan@gmail.com>
+> Cc: Ingo Molnar <mingo@kernel.org>
+> Cc: Kevin Hilman <khilman@ti.com>
+> Cc: Max Krasnyansky <maxk@qualcomm.com>
+> Cc: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+> Cc: Peter Zijlstra <peterz@infradead.org>
+> Cc: Stephen Hemminger <shemminger@vyatta.com>
+> Cc: Steven Rostedt <rostedt@goodmis.org>
+> Cc: Sven-Thorsten Dietrich <thebigcorporation@gmail.com>
+> Cc: Thomas Gleixner <tglx@linutronix.de>
+> ---
+>  kernel/rcutree.c |    7 +++++++
+>  1 files changed, 7 insertions(+), 0 deletions(-)
+> 
+> diff --git a/kernel/rcutree.c b/kernel/rcutree.c
+> index 3fffc26..b8d300c 100644
+> --- a/kernel/rcutree.c
+> +++ b/kernel/rcutree.c
+> @@ -1749,6 +1749,13 @@ __call_rcu(struct rcu_head *head, void (*func)(struct rcu_head *rcu),
+>  	else
+>  		trace_rcu_callback(rsp->name, head, rdp->qlen);
+> 
+> +	/* Restart the timer if needed to handle the callbacks */
+> +	if (cpuset_adaptive_nohz()) {
+> +		/* Make updates on nxtlist visible to self IPI */
+> +		barrier();
+> +		smp_cpuset_update_nohz(smp_processor_id());
+> +	}
+> +
+>  	/* If interrupts were disabled, don't dive into RCU core. */
+>  	if (irqs_disabled_flags(flags)) {
+>  		local_irq_restore(flags);
+> -- 
+> 1.7.5.4
+> 
 
