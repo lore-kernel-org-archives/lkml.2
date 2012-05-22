@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755630Ab2EVFiG (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 May 2012 01:38:06 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:57599 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754725Ab2EVFho (ORCPT
+	id S1755423Ab2EVFiC (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 May 2012 01:38:02 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:56961 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754849Ab2EVFhp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 May 2012 01:37:44 -0400
+	Tue, 22 May 2012 01:37:45 -0400
 From: Olof Johansson <olof@lixom.net>
 To: torvalds@linux-foundation.org
 Cc: arm@kernel.org, linux-kernel@vger.kernel.org,
         linux-arm-kernel@lists.infradead.org, Olof Johansson <olof@lixom.net>
-Subject: =?UTF-8?q?=5BGIT=20PULL=207/8=5D=20arm-soc=3A=20power=20management=20changes?=
-Date: Mon, 21 May 2012 22:35:07 -0700
-Message-Id: <1337664908-17478-8-git-send-email-olof@lixom.net>
+Subject: =?UTF-8?q?=5BGIT=20PULL=208/8=5D=20arm-soc=3A=20board=20specific=20changes?=
+Date: Mon, 21 May 2012 22:35:08 -0700
+Message-Id: <1337664908-17478-9-git-send-email-olof@lixom.net>
 X-Mailer: git-send-email 1.7.10.1.488.g05fbf7a
 In-Reply-To: <1337664908-17478-1-git-send-email-olof@lixom.net>
 References: <1337664908-17478-1-git-send-email-olof@lixom.net>
@@ -24,191 +24,334 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Power management changes here are mostly for the omap platform, but also
-include cpuidle changes for ux500 and suspend/resume code for mmp.
+While we generally attempt to get rid of board specific files and replace
+them with device tree based descriptions, a lot of platforms have not
+come that far:
+
+In shmobile, we add two new board files because their recently started
+effort to add DT support has not proceeded enough to use it for all of
+the important hardware.
+
+In Kirkwood, we are adding support for new boards with a combination of
+DT and board file contents in multiple cases.
+
+pxa/mmp and imx are extending support for existing board files but not
+adding new ones.
+
+Conflicts caused by this branch merge are three add/add conflicts:
+* mach-mmp include file add/add context. Keep both.
+* mach-shmobile add/add context conflicts due to one board being merged
+  through the soc branch, the other here. Keep both, make sure to have
+  a select USE_OF on both in Kconfig.
 
 ----------------------------------------------------------------
 
-The following changes since commit 99d764e237ce06a95dfa718db3baa3dc6b350310:
+The following changes since commit ec98e8b8888dc92aacefc63e41d5237b7fd14ad8:
 
-  Merge tag 'pinctrl' of git://git.kernel.org/pub/scm/linux/kernel/git/arm/arm-soc into HEAD
+  Merge tag 'pm' of git://git.kernel.org/pub/scm/linux/kernel/git/arm/arm-soc into HEAD
 
 are available in the git repository at:
 
-  git://git.kernel.org/pub/scm/linux/kernel/git/arm/arm-soc.git tags/pm
+  git://git.kernel.org/pub/scm/linux/kernel/git/arm/arm-soc.git tags/boards
 
-for you to fetch changes up to ada2e35defe6c6f0a986ec8147e47726fbd0e7b1:
+for you to fetch changes up to 48a5765e5104f1afd22c75c5030af3a6cf24b4c3:
 
-  Merge branch 'next/cpuidle' into next/pm
+  Merge branch 'board-specific' of git://github.com/hzhuang1/linux into next/boards
 
 ----------------------------------------------------------------
 
-Arnd Bergmann (4):
-      Merge branch 'ux500-cpuidle-for-arm-soc' of git://git.kernel.org/.../linusw/linux-stericsson into next/cpuidle
-      Merge branch 'mmp/dt' into next/pm
-      Merge branch 'power' of git://github.com/hzhuang1/linux into next/pm
-      Merge branch 'next/cpuidle' into next/pm
+Alex Gershgorin (1):
+      ARM: i.MX: i.MX35-PDK: Add regulator support
 
-Benoît Cousson (6):
-      ARM: OMAP4: hwmod data: add GPMC
-      ARM: OMAP4: hwmod data: add the Slimbus IP blocks
-      ARM: OMAP4: hwmod data: add McASP
-      ARM: OMAP4: hwmod data: add remaining USB-related IP blocks
-      ARM: OMAP4: hwmod data: add the OCP-WP IP block
-      ARM: OMAP4: hwmod data: add DEBUGSS skeleton
+Ameya Palande (1):
+      ARM: OMAP: rx51: Platform support for lis3lv02d accelerometer
 
-Chao Xie (6):
-      ARM: mmp: move XX_REG definition to addr-map.h
-      ARM: mmp: add PM support for mmp2
-      ARM: mm: proc-mohawk: add suspend resume for mohawk
-      ARM: cache: tauros2: add disable and resume callback
-      ARM: mmp: ttc_dkb: add PMIC support
-      ARM: mmp: add pm support for pxa910
+Arnaud Patard (3):
+      kirkwood/orion: fix orion_gpio_set_blink
+      orion/kirkwood: create a generic function for gpio led blinking
+      kirkwood: Add iconnect support
 
-Daniel Lezcano (1):
-      ARM: ux500: add the cpuidle driver for WFI and ARM retention
+Arnd Bergmann (5):
+      Merge branch 'next/board-samsung' of git://git.kernel.org/.../kgene/linux-samsung into next/boards
+      Merge branch 'board-new' of git://git.kernel.org/.../rafael/renesas into next/boards
+      Merge branch 'kirkwood_boards_for_v3.5' of git://git.infradead.org/users/jcooper/linux into next/boards
+      ARM: shmobile: fix smp build
+      Merge branch 'renesas/board2' into next/boards
 
-Kevin Hilman (7):
-      ARM: OMAP2+: voltage: ensure voltage used is exact voltage from OPP table
-      Merge tag 'topic/twl' into for_3.4/pm/smps-regulator
-      Merge branch 'pm-wip/smps-regulator' into for_3.4/pm/smps-regulator
-      ARM: OMAP3: clock data: replace 3503/3517 flag with AM35x flag for UART4
-      ARM: OMAP3: clock data: treat all AM35x devices the same
-      ARM: OMAP: clock: convert AM3517/3505 detection/flags to AM35xx
-      ARM: OMAP2+: WDTIMER integration: fix !PM boot crash, disarm timer after hwmod reset
+Ashwin Bihari (1):
+      Add MSUB support for the LogicPD OMAP3530 DevKits
 
-Mark A. Greer (1):
-      arm: omap3: clockdomain data: Remove superfluous commas from gfx_sgx_3xxx_wkdeps[]
+Axel Lin (1):
+      ARM: pxa: Use REGULATOR_SUPPLY macro
 
-Ming Lei (1):
-      ARM: OMAP4: hwmod data: introduce fdif(face detect module) hwmod
+Denis Carikli (1):
+      ARM: imx: eukrea_mbimxsd: add backlight and lcd support
 
-Olof Johansson (4):
-      Merge tag 'omap-pm-regulator-for-v3.5' of git://git.kernel.org/.../tmlind/linux-omap into next/pm
-      Merge tag 'omap-devel-hwmod-for-v3.5' of git://git.kernel.org/.../tmlind/linux-omap into next/pm
-      Merge tag 'omap-devel-prcm-for-v3.5' of git://git.kernel.org/.../tmlind/linux-omap into next/pm
-      Merge tag 'omap-devel-hwmod-data-for-v3.5' of git://git.kernel.org/.../tmlind/linux-omap into next/pm
+Eric Bénard (11):
+      ARM: imx: eukrea_cpuimx25: enable workaround ENGcm09152
+      ARM: imx: eukrea_mbimxsd25: add spi controler and spidev support
+      ARM: imx: eukrea_cpuimx25: add watchdog support
+      ARM: imx: eukrea_mbimxsd35: add spi controler and spidev support
+      ARM: imx: eukrea-cpuimx51: remove board
+      ARM: imx: eukrea_cpuimx51sd: add watchdog support
+      ARM: imx: eukrea_mbimxsd: add audio support
+      ARM: imx: eukrea_cpuimx51sd: support rev2 PCB
+      ARM: imx: eukrea_mbimxsd25: don't free twice GPIO_SWITCH1
+      ARM: imx: eukrea_mbimxsd25: use IMX_GPIO_NR
+      ARM: imx: eukrea_mbimxsd rename to eukrea_mbimxsd51
 
-Paul Walmsley (14):
-      ARM: OMAP2+: clockdomains: make {prm,cm}_clkdm common
-      ARM: OMAP4: hwmod data: add HDQ/1-wire
-      ARM: OMAP4: hwmod data: add EMIF1 and 2
-      ARM: OMAP4: hwmod data: add GPU
-      ARM: OMAP4: hwmod data: add some interconnect-related IP blocks
-      ARM: OMAP4: hwmod data: add OCM RAM IP block
-      ARM: OMAP4: hwmod data: add System Control Module
-      ARM: OMAP4: hwmod data: add PRCM and related IP blocks
-      ARM: OMAP3: clock data: add clockdomain for HDQ functional clock
-      Merge branches 'clock_am35xx_cleanup_3.5', 'prm_cm_devel_a_3.5', 'clock_devel_a_3.5' and 'pwrdm_clkdm_cleanup_3.5' into prcm_devel_a_3.5
-      ARM: OMAP2+: HDQ1W: add custom reset function
-      ARM: OMAP2+: hwmod data: add HDQ/1-wire hwmod shared data
-      ARM: OMAP3: hwmod data: add HDQ/1-wire hwmod
-      ARM: OMAP2xxx: hwmod data: add HDQ/1-wire hwmod
+Govindraj.R (1):
+      ARM: OMAP: omap2plus_defconfig: Enable ehci-omap and sms95xx support
 
-Peter Ujfalusi (2):
-      ARM: OMAP3: hwmod_data: Rename the common irq for McBSP ports
-      ARM: OMAP4: hwmod_data: Name the common irq for McBSP ports
+Guennadi Liakhovetski (1):
+      ARM: mach-shmobile: sh7372 CEU supports up to 8188x8188 images
 
-R Sricharan (1):
-      ARM: OMAP4+: Add prm and cm base init function.
+Igor Grinberg (1):
+      ARM: OMAP3: cm-t35: add support for power off
 
-Rajendra Nayak (1):
-      ARM: OMAP3: Fix CM register bit masks
+Jamie Lentin (4):
+      ARM: kirkwood: Basic support for DNS-320 and DNS-325
+      mtd: Add orion_nand devicetree bindings
+      kirkwood: Allow nand to be configured via. devicetree
+      ARM: kirkwood: Define DNS-320/DNS-325 NAND in fdt
+
+Javier Martin (1):
+      ARM i.MX: Visstrim_M10: Add board version detection.
+
+Javier Martinez Canillas (2):
+      ARM: OMAP2+: nand: Make board_onenand_init() visible to board code
+      ARM: OMAP3: igep0020: Add support for Micron NAND Flash storage memory
+
+Kuninori Morimoto (29):
+      ARM: mach-shmobile: mackerel: Add FSI DMAEngine support
+      ARM: mach-shmobile: bonito: make sure static function
+      ARM: mach-shmobile: add armadillo800eva board support.
+      ARM: mach-shmobile: armadillo800eva: add defconfig
+      ARM: mach-shmobile: armadillo800eva: add support LCDC0
+      ARM: mach-shmobile: armadillo800eva: add support gpio_key
+      ARM: mach-shmobile: armadillo800eva: add support sh_eth
+      ARM: mach-shmobile: armadillo800eva: add support ST1232
+      ARM: mach-shmobile: armadillo800eva: add USB function support
+      ARM: mach-shmobile: armadillo800eva: add SDHI0 support
+      ARM: mach-shmobile: armadillo800eva: add SDHI1 support
+      ARM: mach-shmobile: armadillo800eva: add MMCIF support
+      ARM: mach-shmobile: r8a7740: reserve DMA memory for the frame buffer
+      ARM: mach-shmobile: clock-r8a7740: add sh-eth clock
+      ARM: mach-shmobile: armadillo800eva: defconfig update
+      ARM: mach-shmobile: add KZM-A9-GT board support
+      ARM: mach-shmobile: kzm9g: add defconfig
+      ARM: mach-shmobile: kzm9g: add SMSC 9221 support
+      ARM: mach-shmobile: kzm9g: add external USB Host support
+      ARM: mach-shmobile: kzm9g: add LCDC support
+      ARM: mach-shmobile: kzm9g: add ST1232 Touchscreen support
+      ARM: mach-shmobile: pfc-sh73a0: fixup MSEL2CR MSEL18 for I2C-3
+      ARM: mach-shmobile: sh73a0.h: add GPIO_NR
+      ARM: mach-shmobile: kzm9g: correct screen direction
+      ARM: mach-shmobile: kzm9g: add MMCIF support
+      ARM: mach-shmobile: kzm9g: add SDHI support
+      ARM: mach-shmobile: kzm9g: add PCF8757 gpio-key
+      ARM: mach-shmobile: kzm9g: defconfig update
+      ARM: mach-shmobile: kzm9g: enable SMP boot
+
+Magnus Damm (2):
+      ARM: mach-shmobile: Use DT_MACHINE for KZM9G
+      ARM: mach-shmobile: Use DT_MACHINE for armadillo 800 eva
+
+Mans Rullgard (1):
+      ARM: OMAP2+: craneboard: register emac device
+
+Marek Szyprowski (2):
+      ARM: EXYNOS: Add DRM core device support for Universal C210 board
+      ARM: EXYNOS: Add DRM core support for NURI board
+
+Mark Brown (1):
+      ARM: S3C64XX: Hook up new style regulator-regulator supplies on Cragganmore
+
+Mircea Gherzan (1):
+      ARM: OMAP: WiLink platform data for the PandaBoard
+
+Neil Zhang (4):
+      ARM: mmp: add usb device support for PXA910
+      ARM: mmp: add usb device support for ttc dkb
+      ARM: mmp: add usb host support for PXA168
+      ARM: mmp: add usb host support for aspen
+
+Olof Johansson (6):
+      Merge tag 'imx-features-board-20120411-2' of git://git.pengutronix.de/git/imx/linux-2.6 into next/boards
+      Merge branch 'board-specific' of git://github.com/hzhuang1/linux into next/boards
+      Merge tag 'imx-eukrea' of git://git.pengutronix.de/git/imx/linux-2.6 into next/boards
+      Merge tag 'omap-board-for-v3.5' of git://git.kernel.org/.../tmlind/linux-omap into next/boards
+      Merge branch 'board' of git://git.kernel.org/.../rafael/renesas into next/boards
+      Merge branch 'board-specific' of git://github.com/hzhuang1/linux into next/boards
+
+Paul Parsons (6):
+      ARM: pxa: hx4700: Initialize DS1WM clock_rate
+      ARM: pxa: hx4700: Enable ASIC3 GPIO as a wakeup source
+      ARM: pxa: hx4700: Add PCMCIA/CF support
+      ARM: pxa: Add standard UART to hx4700_pin_config[]
+      pcmcia: add driver for hx4700
+      ARM: pxa: hx4700: Add Synaptics NavPoint touchpad
+
+Peter Ujfalusi (3):
+      OMAP4: twl-common: Add twl6030 V1V8, V2V1 SMPS common configuration
+      OMAP: 4430SDP: Use common configuration for V1V8, V2V1 supplies
+      OMAP: omap4panda: Use common configuration for V1V8, V2V1 supplies
+
+Rafael J. Wysocki (3):
+      Merge branch 'renesas-kzm9g' into renesas-board-new
+      Merge branch 'renesas-armadillo800eva' into renesas-board-new
+      Merge branch 'renesas-kzm9g' into renesas-board-new
+
+Ricardo Neri (3):
+      ARM: OMAP: devices: Register platform devices for HDMI audio
+      ARM: OMAP4: board-4430sdp: Register platform device for HDMI audio codec
+      ARM: OMAP4: board-omap4panda: Register platform device for HDMI audio codec
+
+Robert Jarzmik (1):
+      ARM: pxa: mioa701 add camera output enable gpio
+
+Russ Dill (1):
+      ARM: OMAP: Mark Beagleboard-xM MMC bus as 4-bit
+
+Sachin Kamat (5):
+      ARM: EXYNOS: Make BT platform data structure static in mach-origen.c file
+      ARM: EXYNOS: Add DRM device to Origen
+      ARM: EXYNOS: Add DRM device to SMDKV310
+      ARM: EXYNOS: Add MFC device to SMDK4X12
+      ARM: EXYNOS: Add FIMC device to SMDK4X12
 
 Santosh Shilimkar (1):
-      ARM: OMAP2+: powerdomain: Get rid off duplicate pwrdm_clkdm_state_switch() API
+      ARM: OMAP2PLUS: Enable HIGHMEM
 
-Shubhrajyoti D (1):
-      ARM: OMAP4: hwmod data: I2C: add flag for context restore
+Sascha Hauer (1):
+      ARM: pxa: use ioremap to access CPLD
 
-Tarun Kanti DebBarma (1):
-      ARM: OMAP2+: dmtimer: cleanup iclk usage
+Simon Baatz (1):
+      ARM: kirkwood: Add support for RaidSonic IB-NAS6210/6220 using devicetree
 
-Tero Kristo (4):
-      arm: omap3: voltage: fix channel configuration
-      arm: omap3: add common twl configurations for vdd1 and vdd2
-      arm: omap3: twl: add external controllers for core voltage regulators
-      arm: omap4: add common twl configurations for vdd1, vdd2 and vdd3
+Tushar Behera (1):
+      ARM: EXYNOS: Increase framebuffer virtual size for origen
 
-Tony Lindgren (5):
-      Merge tag 'omap-devel-a-for-3.5' of git://git.kernel.org/.../pjw/omap-pending into devel-hwmod
-      Merge branch 'for_3.4/pm/smps-regulator' of git://git.kernel.org/.../khilman/linux-omap-pm into pm-regulator
-      Merge tag 'omap-devel-b-for-3.5' of git://git.kernel.org/.../pjw/omap-pending into devel-prcm
-      ARM: OMAP2420: hwmod data: Add MMC hwmod data for 2420
-      Merge tag 'omap-devel-c-for-3.5' of git://git.kernel.org/.../pjw/omap-pending into devel-hwmod-data
-
-Vaibhav Bedia (1):
-      ARM: OMAP3+: dpll: Configure autoidle mode only if it's supported
-
-Vaibhav Hiremath (2):
-      ARM: OMAP2/3: Add idle_st bits for ST_32KSYNC timer to prcm-common header
-      ARM: OMAP2/3: hwmod data: Add 32k-sync timer data to hwmod database
+Uwe Kleine-König (1):
+      ARM: imx_v4_v5_defconfig: enable adc and touch driver of mc13783
 
 
- arch/arm/Kconfig                                |    2 +-
- arch/arm/mach-mmp/Makefile                      |    5 +
- arch/arm/mach-mmp/include/mach/addr-map.h       |   12 +
- arch/arm/mach-mmp/include/mach/pm-mmp2.h        |   61 +
- arch/arm/mach-mmp/include/mach/pm-pxa910.h      |   77 +
- arch/arm/mach-mmp/include/mach/regs-apbc.h      |    3 -
- arch/arm/mach-mmp/include/mach/regs-apmu.h      |    3 -
- arch/arm/mach-mmp/irq.c                         |   13 +
- arch/arm/mach-mmp/pm-mmp2.c                     |  264 +++
- arch/arm/mach-mmp/pm-pxa910.c                   |  285 ++++
- arch/arm/mach-mmp/ttc_dkb.c                     |   11 +
- arch/arm/mach-omap2/Makefile                    |   13 +-
- arch/arm/mach-omap2/clock.c                     |    2 +-
- arch/arm/mach-omap2/clock3xxx_data.c            |   25 +-
- arch/arm/mach-omap2/clock44xx_data.c            |   11 -
- arch/arm/mach-omap2/clockdomain.c               |    7 +-
- arch/arm/mach-omap2/clockdomain44xx.c           |    6 +
- .../arm/mach-omap2/clockdomains2xxx_3xxx_data.c |   10 -
- arch/arm/mach-omap2/clockdomains3xxx_data.c     |    6 +-
- arch/arm/mach-omap2/clockdomains44xx_data.c     |    2 +
- arch/arm/mach-omap2/clockdomains_common_data.c  |   24 +
- arch/arm/mach-omap2/cm-regbits-34xx.h           |    4 +-
- arch/arm/mach-omap2/cminst44xx.c                |   28 +-
- arch/arm/mach-omap2/common.c                    |    1 +
- arch/arm/mach-omap2/common.h                    |    1 +
- arch/arm/mach-omap2/dpll3xxx.c                  |   23 +-
- arch/arm/mach-omap2/hdq1w.c                     |   72 +
- arch/arm/mach-omap2/io.c                        |   18 -
- arch/arm/mach-omap2/msdi.c                      |   88 +
- arch/arm/mach-omap2/omap_hwmod_2420_data.c      |  112 ++
- arch/arm/mach-omap2/omap_hwmod_2430_data.c      |   47 +
- .../omap_hwmod_2xxx_3xxx_interconnect_data.c    |    9 +
- .../omap_hwmod_2xxx_3xxx_ipblock_data.c         |   22 +
- .../mach-omap2/omap_hwmod_2xxx_ipblock_data.c   |   23 +-
- arch/arm/mach-omap2/omap_hwmod_3xxx_data.c      |   94 +-
- arch/arm/mach-omap2/omap_hwmod_44xx_data.c      | 1516 +++++++++++++++++-
- arch/arm/mach-omap2/omap_hwmod_common_data.h    |    5 +
- arch/arm/mach-omap2/powerdomain.c               |   10 -
- arch/arm/mach-omap2/powerdomain.h               |    1 -
- arch/arm/mach-omap2/prcm-common.h               |   17 +
- arch/arm/mach-omap2/prcm.c                      |    8 +
- arch/arm/mach-omap2/prminst44xx.c               |   27 +-
- arch/arm/mach-omap2/timer.c                     |    7 -
- arch/arm/mach-omap2/twl-common.c                |  147 ++
- arch/arm/mach-omap2/vc3xxx_data.c               |    1 +
- arch/arm/mach-omap2/voltage.c                   |   21 +-
- arch/arm/mach-omap2/wd_timer.c                  |   45 +
- arch/arm/mach-omap2/wd_timer.h                  |    1 +
- arch/arm/mach-ux500/Makefile                    |    1 +
- arch/arm/mach-ux500/cpuidle.c                   |  171 ++
- arch/arm/mm/cache-tauros2.c                     |   24 +
- arch/arm/mm/proc-mohawk.S                       |   35 +
- arch/arm/plat-omap/include/plat/clkdev_omap.h   |    4 +-
- arch/arm/plat-omap/include/plat/dmtimer.h       |    2 +-
- arch/arm/plat-omap/include/plat/hdq1w.h         |   36 +
- arch/arm/plat-omap/include/plat/mmc.h           |    4 +
- arch/arm/plat-omap/include/plat/omap_hwmod.h    |    1 +
- 57 files changed, 3248 insertions(+), 220 deletions(-)
- create mode 100644 arch/arm/mach-mmp/include/mach/pm-mmp2.h
- create mode 100644 arch/arm/mach-mmp/include/mach/pm-pxa910.h
- create mode 100644 arch/arm/mach-mmp/pm-mmp2.c
- create mode 100644 arch/arm/mach-mmp/pm-pxa910.c
- create mode 100644 arch/arm/mach-omap2/clockdomains_common_data.c
- create mode 100644 arch/arm/mach-omap2/hdq1w.c
- create mode 100644 arch/arm/mach-omap2/msdi.c
- create mode 100644 arch/arm/mach-ux500/cpuidle.c
- create mode 100644 arch/arm/plat-omap/include/plat/hdq1w.h
+ .../devicetree/bindings/mtd/orion-nand.txt      |  50 ++
+ arch/arm/boot/dts/kirkwood-dns320.dts           |  64 ++
+ arch/arm/boot/dts/kirkwood-dns325.dts           |  59 ++
+ arch/arm/boot/dts/kirkwood-ib62x0.dts           |  44 ++
+ arch/arm/boot/dts/kirkwood-iconnect.dts         |  26 +
+ arch/arm/boot/dts/kirkwood.dtsi                 |  15 +-
+ arch/arm/boot/dts/r8a7740-armadillo800eva.dts   |  22 +
+ arch/arm/boot/dts/sh73a0-kzm9g.dts              |  22 +
+ arch/arm/configs/armadillo800eva_defconfig      | 142 ++++
+ arch/arm/configs/imx_v4_v5_defconfig            |   4 +-
+ arch/arm/configs/kzm9g_defconfig                | 139 ++++
+ arch/arm/configs/omap2plus_defconfig            |   2 +
+ arch/arm/mach-exynos/Kconfig                    |   9 +
+ arch/arm/mach-exynos/mach-nuri.c                |  33 +
+ arch/arm/mach-exynos/mach-origen.c              |  35 +-
+ arch/arm/mach-exynos/mach-smdk4x12.c            |  16 +
+ arch/arm/mach-exynos/mach-smdkv310.c            |  30 +
+ arch/arm/mach-exynos/mach-universal_c210.c      |  33 +
+ arch/arm/mach-imx/Kconfig                       |  35 +-
+ arch/arm/mach-imx/Makefile                      |   4 +-
+ arch/arm/mach-imx/eukrea_mbimx51-baseboard.c    | 206 -----
+ arch/arm/mach-imx/eukrea_mbimxsd25-baseboard.c  |  51 +-
+ arch/arm/mach-imx/eukrea_mbimxsd35-baseboard.c  |  42 +
+ ...baseboard.c => eukrea_mbimxsd51-baseboard.c} | 120 ++-
+ arch/arm/mach-imx/mach-cpuimx51.c               | 301 -------
+ arch/arm/mach-imx/mach-cpuimx51sd.c             |  50 +-
+ arch/arm/mach-imx/mach-eukrea_cpuimx25.c        |   2 +
+ arch/arm/mach-imx/mach-imx27_visstrim_m10.c     |  55 ++
+ arch/arm/mach-imx/mach-mx35_3ds.c               | 193 +++++
+ arch/arm/mach-kirkwood/Kconfig                  |  22 +
+ arch/arm/mach-kirkwood/Makefile                 |   3 +
+ arch/arm/mach-kirkwood/Makefile.boot            |   4 +
+ arch/arm/mach-kirkwood/board-dnskw.c            | 275 +++++++
+ arch/arm/mach-kirkwood/board-dt.c               |  13 +
+ arch/arm/mach-kirkwood/board-ib62x0.c           | 143 ++++
+ arch/arm/mach-kirkwood/board-iconnect.c         | 165 ++++
+ arch/arm/mach-kirkwood/common.c                 |  12 +
+ arch/arm/mach-kirkwood/common.h                 |  18 +
+ arch/arm/mach-mmp/Kconfig                       |   7 +
+ arch/arm/mach-mmp/aspenite.c                    |  20 +
+ arch/arm/mach-mmp/devices.c                     | 282 +++++++
+ arch/arm/mach-mmp/include/mach/devices.h        |   3 +
+ arch/arm/mach-mmp/include/mach/pxa168.h         |   8 +-
+ arch/arm/mach-mmp/include/mach/pxa910.h         |   3 +
+ arch/arm/mach-mmp/include/mach/regs-usb.h       | 253 ++++++
+ arch/arm/mach-mmp/pxa168.c                      |  20 +-
+ arch/arm/mach-mmp/pxa910.c                      |   2 +-
+ arch/arm/mach-mmp/ttc_dkb.c                     |  37 +
+ arch/arm/mach-omap2/Kconfig                     |   1 +
+ arch/arm/mach-omap2/board-4430sdp.c             |  10 +-
+ arch/arm/mach-omap2/board-am3517crane.c         |   2 +
+ arch/arm/mach-omap2/board-cm-t35.c              |   5 +
+ arch/arm/mach-omap2/board-flash.c               |   4 +-
+ arch/arm/mach-omap2/board-flash.h               |  11 +
+ arch/arm/mach-omap2/board-igep0020.c            |  74 +-
+ arch/arm/mach-omap2/board-omap3beagle.c         |   7 +-
+ arch/arm/mach-omap2/board-omap3logic.c          |  26 +-
+ arch/arm/mach-omap2/board-omap4panda.c          |  24 +-
+ arch/arm/mach-omap2/board-rx51-peripherals.c    |  88 ++-
+ arch/arm/mach-omap2/devices.c                   |  31 +
+ arch/arm/mach-omap2/twl-common.c                |  43 +
+ arch/arm/mach-omap2/twl-common.h                |   2 +
+ arch/arm/mach-orion5x/dns323-setup.c            |  25 +-
+ arch/arm/mach-pxa/balloon3.c                    |   4 +-
+ arch/arm/mach-pxa/cm-x300.c                     |   4 +-
+ arch/arm/mach-pxa/em-x270.c                     |   5 +-
+ arch/arm/mach-pxa/hx4700.c                      |  47 +-
+ arch/arm/mach-pxa/include/mach/mfp-pxa27x.h     |   1 +
+ arch/arm/mach-pxa/include/mach/mioa701.h        |   3 +
+ .../mach-pxa/include/mach/pcm990_baseboard.h    |  68 +-
+ arch/arm/mach-pxa/magician.c                    |   8 +-
+ arch/arm/mach-pxa/mioa701.c                     |   6 +-
+ arch/arm/mach-pxa/palm27x.c                     |   4 +-
+ arch/arm/mach-pxa/pcm990-baseboard.c            |  83 +-
+ arch/arm/mach-pxa/spitz.c                       |   4 +-
+ arch/arm/mach-pxa/stargate2.c                   |   5 +-
+ arch/arm/mach-pxa/vpac270.c                     |   4 +-
+ arch/arm/mach-pxa/z2.c                          |   4 +-
+ arch/arm/mach-s3c64xx/mach-crag6410.c           |  18 +
+ arch/arm/mach-shmobile/Kconfig                  |  18 +-
+ arch/arm/mach-shmobile/Makefile                 |   2 +
+ arch/arm/mach-shmobile/board-ap4evb.c           |   2 +
+ arch/arm/mach-shmobile/board-armadillo800eva.c  | 784 +++++++++++++++++++
+ arch/arm/mach-shmobile/board-bonito.c           |   2 +-
+ arch/arm/mach-shmobile/board-kzm9g.c            | 460 +++++++++++
+ arch/arm/mach-shmobile/board-mackerel.c         |  10 +-
+ arch/arm/mach-shmobile/clock-r8a7740.c          |   3 +
+ arch/arm/mach-shmobile/include/mach/sh73a0.h    |   3 +
+ arch/arm/mach-shmobile/pfc-sh73a0.c             |   4 +-
+ arch/arm/mach-shmobile/platsmp.c                |   3 +-
+ arch/arm/mach-shmobile/setup-r8a7740.c          |   7 +
+ arch/arm/plat-orion/gpio.c                      |  27 +-
+ arch/arm/plat-orion/include/plat/gpio.h         |   2 +
+ drivers/mtd/nand/orion_nand.c                   |  47 +-
+ drivers/pcmcia/Kconfig                          |   2 +-
+ drivers/pcmcia/Makefile                         |   1 +
+ drivers/pcmcia/pxa2xx_hx4700.c                  | 121 +++
+ include/linux/mfd/asic3.h                       |   1 +
+ include/linux/ti_wilink_st.h                    |   2 +
+ 99 files changed, 4393 insertions(+), 823 deletions(-)
+ create mode 100644 Documentation/devicetree/bindings/mtd/orion-nand.txt
+ create mode 100644 arch/arm/boot/dts/kirkwood-dns320.dts
+ create mode 100644 arch/arm/boot/dts/kirkwood-dns325.dts
+ create mode 100644 arch/arm/boot/dts/kirkwood-ib62x0.dts
+ create mode 100644 arch/arm/boot/dts/kirkwood-iconnect.dts
+ create mode 100644 arch/arm/boot/dts/r8a7740-armadillo800eva.dts
+ create mode 100644 arch/arm/boot/dts/sh73a0-kzm9g.dts
+ create mode 100644 arch/arm/configs/armadillo800eva_defconfig
+ create mode 100644 arch/arm/configs/kzm9g_defconfig
+ delete mode 100644 arch/arm/mach-imx/eukrea_mbimx51-baseboard.c
+ rename arch/arm/mach-imx/{eukrea_mbimxsd-baseboard.c => eukrea_mbimxsd51-baseboard.c} (51%)
+ delete mode 100644 arch/arm/mach-imx/mach-cpuimx51.c
+ create mode 100644 arch/arm/mach-kirkwood/board-dnskw.c
+ create mode 100644 arch/arm/mach-kirkwood/board-ib62x0.c
+ create mode 100644 arch/arm/mach-kirkwood/board-iconnect.c
+ create mode 100644 arch/arm/mach-mmp/include/mach/regs-usb.h
+ create mode 100644 arch/arm/mach-shmobile/board-armadillo800eva.c
+ create mode 100644 arch/arm/mach-shmobile/board-kzm9g.c
+ create mode 100644 drivers/pcmcia/pxa2xx_hx4700.c
