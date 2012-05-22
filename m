@@ -1,123 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752097Ab2EVGuv (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 May 2012 02:50:51 -0400
-Received: from haggis.pcug.org.au ([203.10.76.10]:53459 "EHLO
-	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750896Ab2EVGur (ORCPT
+	id S1751939Ab2EVGxO (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 May 2012 02:53:14 -0400
+Received: from mail-gg0-f174.google.com ([209.85.161.174]:65182 "EHLO
+	mail-gg0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750896Ab2EVGxM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 May 2012 02:50:47 -0400
-Date: Tue, 22 May 2012 16:50:35 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>, mingo@redhat.com,
-        a.p.zijlstra@chello.nl, peterz@infradead.org, anton@redhat.com,
-        rostedt@goodmis.org, tglx@linutronix.de, oleg@redhat.com,
-        linux-mm@kvack.org, linux-kernel@vger.kernel.org, hpa@zytor.com,
-        jkenisto@us.ibm.com, andi@firstfloor.org, hch@infradead.org,
-        ananth@in.ibm.com, vda.linux@googlemail.com,
-        masami.hiramatsu.pt@hitachi.com, acme@infradead.org,
-        srikar@linux.vnet.ibm.com, roland@hack.frob.com, mingo@elte.hu,
-        linux-tip-commits@vger.kernel.org
-Subject: Re: [tip:perf/uprobes] uprobes, mm, x86: Add the ability to install
- and remove uprobes breakpoints
-Message-Id: <20120522165035.b2beb151ac9c4efbaf30a3eb@canb.auug.org.au>
-In-Reply-To: <20120521192700.71bfda5f.akpm@linux-foundation.org>
-References: <20120209092642.GE16600@linux.vnet.ibm.com>
-	<tip-2b144498350860b6ee9dc57ff27a93ad488de5dc@git.kernel.org>
-	<20120521143701.74ab2d0b.akpm@linux-foundation.org>
-	<CA+55aFw5ccuvvtyf6iuuw-Finr79ZkPxgCxL5jNvdnX5oMYkgg@mail.gmail.com>
-	<20120521151323.f23bd5e9.akpm@linux-foundation.org>
-	<20120522111618.ca91892dc6027f9a4251235e@canb.auug.org.au>
-	<20120521192700.71bfda5f.akpm@linux-foundation.org>
-X-Mailer: Sylpheed 3.2.0beta7 (GTK+ 2.24.10; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Tue__22_May_2012_16_50_35_+1000_HDfBWxpbPVyapGir"
+	Tue, 22 May 2012 02:53:12 -0400
+MIME-Version: 1.0
+In-Reply-To: <4fbb2ac4.63de440a.589d.78cc@mx.google.com>
+References: <4fbb2ac4.63de440a.589d.78cc@mx.google.com>
+Date: Tue, 22 May 2012 15:53:11 +0900
+X-Google-Sender-Auth: _R85LbcUjmfSjqaGmCu2QWgV_uU
+Message-ID: <CAH9JG2Xq-4J9Vn6d6cxcMNsZ5Y2LLJG9vrVQWEyPHhNd08ek9g@mail.gmail.com>
+Subject: Re: [PATCH v3 0/2] regulator: Add initial suport for max77686
+From: Kyungmin Park <kmpark@infradead.org>
+To: yadi.brar01@gmail.com, "jonghwa3.lee" <jonghwa3.lee@samsung.com>,
+        =?UTF-8?B?7LWc7LCs7Jqw?= <cw00.choi@samsung.com>
+Cc: linux-kernel@vger.kernel.org, linux-samsung-soc@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Liam Girdwood <lrg@ti.com>,
+        Yadwinder Singh Brar <yadi.brar@samsung.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Tue__22_May_2012_16_50_35_+1000_HDfBWxpbPVyapGir
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Hi Mark,
 
-Hi Andrew,
+BTW, do you know that you're reviewing the same device driver patch
+from different person?
+One from Mr. Lee and another from Yadwinder.
 
-On Mon, 21 May 2012 19:27:00 -0700 Andrew Morton <akpm@linux-foundation.org=
-> wrote:
+I wonder how to handle it finally. which one is choose?
+
+Thank you,
+Kyungmin Park
+
+On 5/22/12, yadi.brar01@gmail.com <yadi.brar01@gmail.com> wrote:
+> From: Yadwinder Singh Brar <yadi.brar@samsung.com>
 >
-> On Tue, 22 May 2012 11:16:18 +1000 Stephen Rothwell <sfr@canb.auug.org.au=
-> wrote:
->=20
-> > I have been meaning to talk to you about basing the majority of your
-> > patch series on Linus' tree.  This would give it mush greater stability
-> > and would make the merge resolution my problem (and Linus', of course).
->=20
-> Confused.  None of those conflicts have anything to do with the -mm
-> patches: the only trees involved there are mainline and
-> trees-in-next-other-than-mm.
-
-Right, its a separate issue.  Though I do end up coping with conflicts in
-the -mm tree as I have to rebase it everyday.
-
-> > There will be bits that may need to be based on other work in linux-nex=
-t,
-> > but I suspect that it is not very much.
->=20
-> Well, there are a number of reasons why I base off linux-next.  To see
-> whether others have merged patches which I have merged (and, sometimes,
-> missed later fixes to them).  Explicit fixes against -next material.=20
-> To get visibility into upcoming merge problems.  And so that I and
-> others test -next too.
-
-I guess I see a separation between what you are working on and what you
-are publishing.  You used to publish a reasonable amount of subseries for
-others and most of this I suspect could just be based on Linus' tree.
-Anyway, not a big problem except when I get days like yesterday (when I
-saw some of the conflicts you are noting).
-
-> Basing -mm on next is never a problem (for me).  What is a problem is
-> the mess which happens when people merge things into mainline which are
-> (I assume) either slightly different from what they merged in -next or
-> which never were in -next at all.
-
-Indeed.  Some of what you have seen this time is just last minute updates
-of other trees and bug fixes in Linus' tree.  We had about 2000 (net)
-commits added to linux-next in the past week (800+ over the weekend).
-Some of this has now migrated to Linus' tree already.
-
-> That's guessing - it's a long time since I sat down and worked out exactly
-> what is causing this.
-
-Which is not a trivial problem.  I will run my stats script and see what
-pops out.
-
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-
---Signature=_Tue__22_May_2012_16_50_35_+1000_HDfBWxpbPVyapGir
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBCAAGBQJPuzc7AAoJEECxmPOUX5FEKVAQAJ4BsKg5cmGDKBgIemqS05g4
-KM/e2VCmn4vG3NmtQXw31IFZv0JmKswSb69QyF1oA6oQKjR/XajyXLJpDWmUNVWr
-4p1bVp87zn5VLU+FEHzklX8qiLvfpttq89W521+sihama08it6azjtK0K2fW7NaV
-LJmMpb4+ry9KVsHk/YsfyKm43oiXYQUdbPQuaJ7WdLmeXMnfRnXObZBihr5hbwSg
-29hpL5pl/GsLKKkNJcG0JFBKaueLMXvxilWJHSTgBrpzyzylDtZAdrwJ6frRHo5j
-H6nWlcJUO0ROhP3v12SwqgbX4wtssOuZ29vSdbsGYlqsY9+LgvMpNZps3BFdl8E9
-SdU8CElqiPAK9DsMOD9VPWN4lYJPdkTLEum33V2MMfzzysX/pGsYRE7xoGU7fVNs
-RHYwCsz1tYTrzbYkYoQGZ4mYBi1DWnoe7tQur+zdPimJbJUMyXvVF0hEvIC1VY3l
-TyDZwRPHQsCM9iY389DYNLhA/k5EtPi7sdm5iqnOzgaZmByfSonsAJMho/fjZRb4
-EETU248lkFWuoPUL2Iz4lIjEEkS2ewZI9WdPOqTyg8b0pnTsKsLPeveQkxovPy7R
-Tlj3oVG3dSOjjUmSx0vIiz4Om+W9j6NJY9OFaEvgu9IPLYMjmOkS/HYr+rzC4iQI
-7YKld7fI5PoVDcFeF6up
-=goTK
------END PGP SIGNATURE-----
-
---Signature=_Tue__22_May_2012_16_50_35_+1000_HDfBWxpbPVyapGir--
+> This patch series adds support for max77686 which is a multifunction device
+> which includes regulator (pmic), rtc and charger sub-blocks within it. The
+> support for mfd driver and regulator driver are added by this patch series.
+> This
+> patch series also includes device tree and irqdomain support for mfd and
+> regulator portions.
+>
+> Implemented the required modification, stated in the recieved review
+> comments.
+> changes since v1:
+> -added regmap support.
+> -implemented .get_voltage_sel, .set_voltage_sel and .set_voltage_time_sel
+> after
+>  removing .get_voltage and .set_voltage in regulator driver.
+> -used of_regulator_match() for parsing DT.
+> -added Documentation for Devive Tree binding.
+>
+> changes since v2:
+> -converted to use regulator_get_voltage_sel_regmap,
+>  regulator_set_voltage_sel_regmap, regulator_enable_regmap,
+>  regulator_disable_regmap, regulator_is_enabled_regmap.
+>
+> This patch series is based on mark_regulator/for-next and has been tested
+> on
+> GAIA board.
+>
+> Yadwinder Singh Brar (2):
+>   mfd: Add support for MAX77686.
+>   regulator: Add support for MAX77686.
+>
+>  Documentation/devicetree/bindings/mfd/max77686.txt |   61 +++
+>  drivers/mfd/Kconfig                                |   21 +
+>  drivers/mfd/Makefile                               |    1 +
+>  drivers/mfd/max77686-irq.c                         |  255 +++++++++++++
+>  drivers/mfd/max77686.c                             |  322 ++++++++++++++++
+>  drivers/regulator/Kconfig                          |    9 +
+>  drivers/regulator/Makefile                         |    1 +
+>  drivers/regulator/max77686.c                       |  389
+> ++++++++++++++++++++
+>  include/linux/mfd/max77686-private.h               |  282 ++++++++++++++
+>  include/linux/mfd/max77686.h                       |  100 +++++
+>  10 files changed, 1441 insertions(+), 0 deletions(-)
+>  create mode 100644 Documentation/devicetree/bindings/mfd/max77686.txt
+>  create mode 100644 drivers/mfd/max77686-irq.c
+>  create mode 100644 drivers/mfd/max77686.c
+>  create mode 100644 drivers/regulator/max77686.c
+>  create mode 100644 include/linux/mfd/max77686-private.h
+>  create mode 100644 include/linux/mfd/max77686.h
+>
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-samsung-soc"
+> in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+>
