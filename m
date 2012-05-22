@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932985Ab2EVXEJ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 May 2012 19:04:09 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:35407 "EHLO mx1.redhat.com"
+	id S933014Ab2EVXEW (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 May 2012 19:04:22 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:15765 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932860Ab2EVXEC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 May 2012 19:04:02 -0400
+	id S933001Ab2EVXER (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 May 2012 19:04:17 -0400
 From: David Howells <dhowells@redhat.com>
-Subject: [PATCH 12/23] PGPLIB: Signature parser
+Subject: [PATCH 14/23] KEYS: PGP-based public key signature verification
 To: rusty@rustcorp.com.au, kyle@mcmartin.ca
 Cc: linux-kernel@vger.kernel.org, linux-security-module@vger.kernel.org,
         keyrings@linux-nfs.org, David Howells <dhowells@redhat.com>
-Date: Wed, 23 May 2012 00:03:51 +0100
-Message-ID: <20120522230351.24007.66726.stgit@warthog.procyon.org.uk>
+Date: Wed, 23 May 2012 00:04:07 +0100
+Message-ID: <20120522230407.24007.81121.stgit@warthog.procyon.org.uk>
 In-Reply-To: <20120522230218.24007.3556.stgit@warthog.procyon.org.uk>
 References: <20120522230218.24007.3556.stgit@warthog.procyon.org.uk>
 User-Agent: StGIT/0.14.3
@@ -23,349 +23,377 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Provide some PGP signature parsing helpers:
+Provide handlers for PGP-based public-key algorithm signature verification.
+This does most of the work involved in signature verification as most of it is
+public-key algorithm agnostic.  The public-key verification algorithm itself
+is just the last little bit and is supplied the complete hash data to process.
 
- (1) A function to parse V4 signature subpackets and pass the desired ones to
-     a processor function:
-
-	int pgp_parse_sig_subpkts(const u8 *data, size_t datalen,
-				  struct pgp_parse_sig_context *ctx);
-
- (2) A function to parse out basic signature parameters from any PGP signature
-     such that the algorithms and public key can be selected:
-
-	int pgp_parse_sig_params(const u8 **_data, size_t *_datalen,
-				 struct pgp_sig_parameters *p);
+This requires glue logic putting on top to make use of it - something the next
+patch provides.
 
 Signed-off-by: David Howells <dhowells@redhat.com>
 ---
 
- include/linux/pgp.h                |   24 +++
- security/keys/crypto/pgp_library.c |  282 ++++++++++++++++++++++++++++++++++++
- 2 files changed, 306 insertions(+), 0 deletions(-)
+ security/keys/crypto/Makefile         |    3 
+ security/keys/crypto/pgp_parser.h     |    6 +
+ security/keys/crypto/pgp_pubkey_sig.c |  324 +++++++++++++++++++++++++++++++++
+ 3 files changed, 332 insertions(+), 1 deletions(-)
+ create mode 100644 security/keys/crypto/pgp_pubkey_sig.c
 
 
-diff --git a/include/linux/pgp.h b/include/linux/pgp.h
-index 235270a..ab1a8fa 100644
---- a/include/linux/pgp.h
-+++ b/include/linux/pgp.h
-@@ -228,4 +228,28 @@ struct pgp_parse_pubkey {
- extern int pgp_parse_public_key(const u8 **_data, size_t *_datalen,
- 				struct pgp_parse_pubkey *pk);
+diff --git a/security/keys/crypto/Makefile b/security/keys/crypto/Makefile
+index 3bb2e61..d4ac8ac 100644
+--- a/security/keys/crypto/Makefile
++++ b/security/keys/crypto/Makefile
+@@ -11,4 +11,5 @@ obj-$(CONFIG_PGP_LIBRARY) += pgp_library.o
  
-+struct pgp_parse_sig_context {
-+	unsigned long types_of_interest[128 / BITS_PER_LONG];
-+	int (*process_packet)(struct pgp_parse_sig_context *context,
-+			      enum pgp_sig_subpkt_type type,
-+			      const u8 *data,
-+			      size_t datalen);
-+};
+ obj-$(CONFIG_CRYPTO_KEY_PGP_PARSER) += pgp_parser.o
+ pgp_parser-y := \
+-	pgp_key_parser.o
++	pgp_key_parser.o \
++	pgp_pubkey_sig.o
+diff --git a/security/keys/crypto/pgp_parser.h b/security/keys/crypto/pgp_parser.h
+index 1cda231..a6192ce 100644
+--- a/security/keys/crypto/pgp_parser.h
++++ b/security/keys/crypto/pgp_parser.h
+@@ -21,3 +21,9 @@
+  */
+ extern const
+ struct public_key_algorithm *pgp_public_key_algorithms[PGP_PUBKEY__LAST];
 +
-+extern int pgp_parse_sig_packets(const u8 *data, size_t datalen,
-+				 struct pgp_parse_sig_context *ctx);
-+
-+struct pgp_sig_parameters {
-+	enum pgp_signature_type signature_type : 8;
-+	union {
-+		struct pgp_key_ID issuer;
-+		__be32 issuer32[2];
-+	};
-+	enum pgp_pubkey_algo pubkey_algo : 8;
-+	enum pgp_hash_algo hash_algo : 8;
-+};
-+
-+extern int pgp_parse_sig_params(const u8 **_data, size_t *_datalen,
-+				struct pgp_sig_parameters *p);
-+
- #endif /* _LINUX_PGP_H */
-diff --git a/security/keys/crypto/pgp_library.c b/security/keys/crypto/pgp_library.c
-index b6cf860..ee08b86 100644
---- a/security/keys/crypto/pgp_library.c
-+++ b/security/keys/crypto/pgp_library.c
-@@ -266,3 +266,285 @@ int pgp_parse_public_key(const u8 **_data, size_t *_datalen,
- 	return 0;
- }
- EXPORT_SYMBOL_GPL(pgp_parse_public_key);
-+
-+/**
-+ * pgp_parse_sig_subpkt_header - Parse a PGP V4 signature subpacket header
-+ * @_data: Start of the subpacket (updated to subpacket data)
-+ * @_datalen: Amount of data remaining in buffer (decreased)
-+ * @_type: Where the subpacket type will be returned
-+ *
-+ * Parse a PGP V4 signature subpacket header [RFC 4880: 5.2.3.1].
-+ *
-+ * Returns packet data size on success; non-zero on error.  If successful,
-+ * *_data and *_datalen will have been updated and *_headerlen will be set to
-+ * hold the length of the packet header.
++/*
++ * pgp_pubkey_sig.c
 + */
-+ssize_t pgp_parse_sig_subpkt_header(const u8 **_data, size_t *_datalen,
-+				    enum pgp_sig_subpkt_type *_type)
++extern struct crypto_key_verify_context *pgp_pkey_verify_sig_begin(
++	struct key *crypto_key, const u8 *sigdata, size_t siglen);
+diff --git a/security/keys/crypto/pgp_pubkey_sig.c b/security/keys/crypto/pgp_pubkey_sig.c
+new file mode 100644
+index 0000000..bc02dfa
+--- /dev/null
++++ b/security/keys/crypto/pgp_pubkey_sig.c
+@@ -0,0 +1,324 @@
++/* Handling for PGP public key signature data [RFC 4880]
++ *
++ * Copyright (C) 2011 Red Hat, Inc. All Rights Reserved.
++ * Written by David Howells (dhowells@redhat.com)
++ *
++ * This program is free software; you can redistribute it and/or
++ * modify it under the terms of the GNU General Public Licence
++ * as published by the Free Software Foundation; either version
++ * 2 of the Licence, or (at your option) any later version.
++ */
++
++#define pr_fmt(fmt) "PGPSIG: "fmt
++#include <linux/module.h>
++#include <linux/kernel.h>
++#include <linux/slab.h>
++#include <linux/pgp.h>
++#include "public_key.h"
++#include "pgp_parser.h"
++
++const struct {
++	enum pkey_hash_algo algo : 8;
++} pgp_pubkey_hash[PGP_HASH__LAST] = {
++	[PGP_HASH_MD5].algo		= PKEY_HASH_MD5,
++	[PGP_HASH_SHA1].algo		= PKEY_HASH_SHA1,
++	[PGP_HASH_RIPE_MD_160].algo	= PKEY_HASH_RIPE_MD_160,
++	[PGP_HASH_SHA256].algo		= PKEY_HASH_SHA256,
++	[PGP_HASH_SHA384].algo		= PKEY_HASH_SHA384,
++	[PGP_HASH_SHA512].algo		= PKEY_HASH_SHA512,
++	[PGP_HASH_SHA224].algo		= PKEY_HASH_SHA224,
++};
++
++static int pgp_pkey_verify_sig_add_data(struct crypto_key_verify_context *ctx,
++					const void *data, size_t datalen);
++static int pgp_pkey_verify_sig_end(struct crypto_key_verify_context *ctx,
++				   const u8 *sig, size_t siglen);
++static void pgp_pkey_verify_sig_cancel(struct crypto_key_verify_context *ctx);
++
++struct pgp_pkey_sig_parse_context {
++	struct pgp_parse_context pgp;
++	struct pgp_sig_parameters params;
++};
++
++static int pgp_pkey_parse_signature(struct pgp_parse_context *context,
++				    enum pgp_packet_tag type,
++				    u8 headerlen,
++				    const u8 *data,
++				    size_t datalen)
 +{
-+	enum pgp_sig_subpkt_type type;
-+	const u8 *data = *_data;
-+	size_t size, datalen = *_datalen;
++	struct pgp_pkey_sig_parse_context *ctx =
++		container_of(context, struct pgp_pkey_sig_parse_context, pgp);
 +
-+	pr_devel("-->pgp_parse_sig_subpkt_header(,%zu,,)", datalen);
-+
-+	if (datalen < 2)
-+		goto short_subpacket;
-+
-+	pr_devel("subpkt hdr %02x, %02x\n", data[0], data[1]);
-+
-+	switch (data[0]) {
-+	case 0x00 ... 0xbf:
-+		/* One-byte length */
-+		size = data[0];
-+		data++;
-+		datalen--;
-+		break;
-+	case 0xc0 ... 0xfe:
-+		/* Two-byte length */
-+		if (datalen < 3)
-+			goto short_subpacket;
-+		size = (data[0] - 192) * 256;
-+		size += data[1] + 192;
-+		data += 2;
-+		datalen -= 2;
-+		break;
-+	case 0xff:
-+		if (datalen < 6)
-+			goto short_subpacket;
-+		size  = data[1] << 24;
-+		size |= data[2] << 16;
-+		size |= data[3] << 8;
-+		size |= data[4];
-+		data += 5;
-+		datalen -= 5;
-+		break;
-+	}
-+
-+	/* The type octet is included in the size */
-+	pr_devel("datalen=%zu size=%zu", datalen, size);
-+	if (datalen < size)
-+		goto short_subpacket;
-+	if (size == 0)
-+		goto very_short_subpacket;
-+	if ((int)size < 0)
-+		goto too_big;
-+
-+	type = *data++ & ~PGP_SIG_SUBPKT_TYPE_CRITICAL_MASK;
-+	datalen--;
-+	size--;
-+
-+	*_data = data;
-+	*_datalen = datalen;
-+	*_type = type;
-+	pr_devel("Found subpkt type=%u size=%zd\n", type, size);
-+	return size;
-+
-+very_short_subpacket:
-+	pr_debug("Signature subpacket size can't be zero\n");
-+	return -EBADMSG;
-+short_subpacket:
-+	pr_debug("Attempt to parse short signature subpacket\n");
-+	return -EBADMSG;
-+too_big:
-+	pr_debug("Signature subpacket size >2G\n");
-+	return -EMSGSIZE;
++	return pgp_parse_sig_params(&data, &datalen, &ctx->params);
 +}
 +
-+/**
-+ * pgp_parse_sig_subpkts - Parse a set of PGP V4 signatute subpackets
-+ * @_data: Data to be parsed (updated)
-+ * @_datalen: Amount of data (updated)
-+ * @ctx: Parsing context
++/*
++ * Begin the process of verifying a DSA signature.
 + *
-+ * Parse a set of PGP signature subpackets [RFC 4880: 5.2.3].
++ * This involves allocating the hash into which first the data and then the
++ * metadata will be put, and parsing the signature to check that it matches the
++ * key.
 + */
-+int pgp_parse_sig_subpkts(const u8 *data, size_t datalen,
-+			  struct pgp_parse_sig_context *ctx)
++struct crypto_key_verify_context *pgp_pkey_verify_sig_begin(
++	struct key *crypto_key, const u8 *sigdata, size_t siglen)
 +{
-+	enum pgp_sig_subpkt_type type;
-+	ssize_t pktlen;
++	struct pgp_pkey_sig_parse_context p;
++	struct public_key_signature *sig;
++	struct crypto_shash *tfm;
++	const struct public_key *key = crypto_key->payload.data;
++	size_t digest_size, desc_size;
 +	int ret;
 +
-+	pr_devel("-->pgp_parse_sig_subpkts(,%zu,,)", datalen);
++	kenter("{%d},,%zu", key_serial(crypto_key), siglen);
 +
-+	while (datalen > 2) {
-+		pktlen = pgp_parse_sig_subpkt_header(&data, &datalen, &type);
-+		if (pktlen < 0)
-+			return pktlen;
-+		if (test_bit(type, ctx->types_of_interest)) {
-+			ret = ctx->process_packet(ctx, type, data, pktlen);
-+			if (ret < 0)
-+				return ret;
-+		}
-+		data += pktlen;
-+		datalen -= pktlen;
++	if (!key) {
++		kleave(" = -ENOKEY [no public key]");
++		return ERR_PTR(-ENOKEY);
 +	}
 +
-+	if (datalen != 0) {
-+		pr_debug("Excess octets in signature subpacket stream\n");
-+		return -EBADMSG;
++	p.pgp.types_of_interest = (1 << PGP_PKT_SIGNATURE);
++	p.pgp.process_packet = pgp_pkey_parse_signature;
++	ret = pgp_parse_packets(sigdata, siglen, &p.pgp);
++	if (ret < 0)
++		return ERR_PTR(ret);
++
++	if (p.params.pubkey_algo >= PGP_PUBKEY__LAST ||
++	    !pgp_public_key_algorithms[p.params.pubkey_algo]) {
++		pr_debug("Unsupported public key algorithm %u\n",
++			 p.params.pubkey_algo);
++		return ERR_PTR(-ENOPKG);
 +	}
 +
-+	return 0;
++	if (pgp_public_key_algorithms[p.params.pubkey_algo] != key->algo) {
++		kleave(" = -EKEYREJECTED [wrong pk algo]");
++		return ERR_PTR(-EKEYREJECTED);
++	}
++
++	if (!(key->capabilities & PKEY_CAN_VERIFY)) {
++		kleave(" = -EKEYREJECTED [key can't verify]");
++		return ERR_PTR(-EKEYREJECTED);
++	}
++
++	if (p.params.hash_algo >= PGP_HASH__LAST ||
++	    !pgp_hash_algorithms[p.params.hash_algo]) {
++		pr_debug("Unsupported hash algorithm %u\n",
++			 p.params.hash_algo);
++		return ERR_PTR(-ENOPKG);
++	}
++
++	pr_debug("Signature generated with %s hash\n",
++		 pgp_hash_algorithms[p.params.hash_algo]);
++
++	if (memcmp(&p.params.issuer, key->key_id, 8) != 0) {
++		kleave(" = -ENOKEY [wrong key ID]");
++		return ERR_PTR(-ENOKEY);
++	}
++
++	if (p.params.signature_type != PGP_SIG_BINARY_DOCUMENT_SIG &&
++	    p.params.signature_type != PGP_SIG_STANDALONE_SIG) {
++		/* We don't want to canonicalise */
++		kleave(" = -EOPNOTSUPP [canon]");
++		return ERR_PTR(-EOPNOTSUPP);
++	}
++
++	/* Allocate the hashing algorithm we're going to need and find out how
++	 * big the hash operational data will be.
++	 */
++	tfm = crypto_alloc_shash(pgp_hash_algorithms[p.params.hash_algo], 0, 0);
++	if (IS_ERR(tfm))
++		return PTR_ERR(tfm) == -ENOENT ?
++			ERR_PTR(-ENOPKG) : ERR_CAST(tfm);
++
++	desc_size = crypto_shash_descsize(tfm);
++	digest_size = crypto_shash_digestsize(tfm);
++
++	/* We allocate the hash operational data storage on the end of our
++	 * context data.
++	 */
++	sig = kzalloc(sizeof(*sig) + desc_size + digest_size, GFP_KERNEL);
++	if (!sig) {
++		crypto_free_shash(tfm);
++		return ERR_PTR(-ENOMEM);
++	}
++
++	sig->base.key		= crypto_key;
++	sig->base.add_data	= pgp_pkey_verify_sig_add_data;
++	sig->base.end		= pgp_pkey_verify_sig_end;
++	sig->base.cancel	= pgp_pkey_verify_sig_cancel;
++	sig->pkey_hash_algo	= pgp_pubkey_hash[p.params.hash_algo].algo;
++	sig->digest		= (u8 *)sig + sizeof(*sig) + desc_size;
++	sig->digest_size	= digest_size;
++	sig->hash.tfm		= tfm;
++	sig->hash.flags		= CRYPTO_TFM_REQ_MAY_SLEEP;
++
++	ret = crypto_shash_init(&sig->hash);
++	if (ret < 0) {
++		crypto_free_shash(sig->hash.tfm);
++		kfree(sig);
++		return ERR_PTR(ret);
++	}
++
++	key_get(sig->base.key);
++	kleave(" = %p", sig);
++	return &sig->base;
 +}
-+EXPORT_SYMBOL_GPL(pgp_parse_sig_subpkts);
 +
-+struct pgp_parse_sig_params_ctx {
-+	struct pgp_parse_sig_context base;
-+	struct pgp_sig_parameters *params;
-+	bool got_the_issuer;
++/*
++ * Load data into the hash
++ */
++static int pgp_pkey_verify_sig_add_data(struct crypto_key_verify_context *ctx,
++					const void *data, size_t datalen)
++{
++	struct public_key_signature *sig =
++		container_of(ctx, struct public_key_signature, base);
++
++	return crypto_shash_update(&sig->hash, data, datalen);
++}
++
++struct pgp_pkey_sig_digest_context {
++	struct pgp_parse_context pgp;
++	const struct public_key *key;
++	struct public_key_signature *sig;
 +};
 +
 +/*
-+ * Process a V4 signature subpacket.
++ * Extract required metadata from the signature packet and add what we need to
++ * to the hash.
 + */
-+static int pgp_process_sig_params_subpkt(struct pgp_parse_sig_context *context,
-+					 enum pgp_sig_subpkt_type type,
-+					 const u8 *data,
-+					 size_t datalen)
++static int pgp_pkey_digest_signature(struct pgp_parse_context *context,
++				     enum pgp_packet_tag type,
++				     u8 headerlen,
++				     const u8 *data,
++				     size_t datalen)
 +{
-+	struct pgp_parse_sig_params_ctx *ctx =
-+		container_of(context, struct pgp_parse_sig_params_ctx, base);
++	struct pgp_pkey_sig_digest_context *ctx =
++		container_of(context, struct pgp_pkey_sig_digest_context, pgp);
++	enum pgp_signature_version version;
++	int i;
 +
-+	if (ctx->got_the_issuer) {
-+		pr_debug("V4 signature packet has multiple issuers\n");
++	kenter(",%u,%u,,%zu", type, headerlen, datalen);
++
++	version = *data;
++	if (version == PGP_SIG_VERSION_3) {
++		/* We just include an excerpt of the metadata from a V3
++		 * signature.
++		 */
++		crypto_shash_update(&ctx->sig->hash, data + 1, 5);
++		data += sizeof(struct pgp_signature_v3_packet);
++		datalen -= sizeof(struct pgp_signature_v3_packet);
++	} else if (version == PGP_SIG_VERSION_4) {
++		/* We add the whole metadata header and some of the hashed data
++		 * for a V4 signature, plus a trailer.
++		 */
++		size_t hashedsz, unhashedsz;
++		u8 trailer[6];
++
++		hashedsz = 4 + 2 + (data[4] << 8) + data[5];
++		crypto_shash_update(&ctx->sig->hash, data, hashedsz);
++
++		trailer[0] = version;
++		trailer[1] = 0xffU;
++		trailer[2] = hashedsz >> 24;
++		trailer[3] = hashedsz >> 16;
++		trailer[4] = hashedsz >> 8;
++		trailer[5] = hashedsz;
++
++		crypto_shash_update(&ctx->sig->hash, trailer, 6);
++		data += hashedsz;
++		datalen -= hashedsz;
++
++		unhashedsz = 2 + (data[0] << 8) + data[1];
++		data += unhashedsz;
++		datalen -= unhashedsz;
++	}
++
++	if (datalen <= 2) {
++		kleave(" = -EBADMSG");
 +		return -EBADMSG;
 +	}
 +
-+	if (datalen != 8) {
-+		pr_debug("V4 signature issuer subpkt not 8 long (%zu)\n",
-+			   datalen);
++	/* There's a quick check on the hash available. */
++	ctx->sig->signed_hash_msw[0] = *data++;
++	ctx->sig->signed_hash_msw[1] = *data++;
++	datalen -= 2;
++
++	/* And then the cryptographic data, which we'll need for the
++	 * algorithm.
++	 */
++	for (i = 0; i < ctx->key->algo->n_sig_mpi; i++) {
++		unsigned int remaining = datalen;
++		if (remaining == 0) {
++			pr_debug("short %zu mpi %d\n", datalen, i);
++			return -EBADMSG;
++		}
++		ctx->sig->mpi[i] = mpi_read_from_buffer(data, &remaining);
++		if (!ctx->sig->mpi[i])
++			return -ENOMEM;
++		data += remaining;
++		datalen -= remaining;
++	}
++
++	if (datalen != 0) {
++		kleave(" = -EBADMSG [trailer %zu]", datalen);
 +		return -EBADMSG;
 +	}
 +
-+	memcpy(&ctx->params->issuer, data, 8);
-+	ctx->got_the_issuer = true;
++	kleave(" = 0");
 +	return 0;
 +}
 +
-+/**
-+ * pgp_parse_sig_params - Parse basic parameters from a PGP signature packet
-+ * @_data: Content of packet (updated)
-+ * @_datalen: Length of packet remaining (updated)
-+ * @p: The basic parameters
-+ *
-+ * Parse the basic parameters from a PGP signature packet [RFC 4880: 5.2] that
-+ * are needed to start off a signature verification operation.  The only ones
-+ * actually necessary are the signature type (which affects how the data is
-+ * transformed) and the has algorithm.
-+ *
-+ * We also extract the public key algorithm and the issuer's key ID as we'll
-+ * need those to determine if we actually have the public key available.  If
-+ * not, then we can't verify the signature anyway.
-+ *
-+ * Returns 0 if successful or a negative error code.  *_data and *_datalen are
-+ * updated to point to the 16-bit subset of the hash value and the set of MPIs.
++/*
++ * The data is now all loaded into the hash; load the metadata, finalise the
++ * hash and perform the verification step.
 + */
-+int pgp_parse_sig_params(const u8 **_data, size_t *_datalen,
-+			 struct pgp_sig_parameters *p)
++static int pgp_pkey_verify_sig_end(struct crypto_key_verify_context *ctx,
++				   const u8 *sigdata, size_t siglen)
 +{
-+	enum pgp_signature_version version;
-+	const u8 *data = *_data;
-+	size_t datalen = *_datalen;
++	struct public_key_signature *sig =
++		container_of(ctx, struct public_key_signature, base);
++	const struct public_key *key = sig->base.key->payload.data;
++	struct pgp_pkey_sig_digest_context p;
 +	int ret;
 +
-+	pr_devel("-->pgp_parse_sig_params(,%zu,,)", datalen);
++	kenter("");
 +
-+	if (datalen < 1)
-+		return -EBADMSG;
-+	version = *data;
++	/* Firstly we add metadata, starting with some of the data from the
++	 * signature packet */
++	p.pgp.types_of_interest = (1 << PGP_PKT_SIGNATURE);
++	p.pgp.process_packet = pgp_pkey_digest_signature;
++	p.key = key;
++	p.sig = sig;
++	ret = pgp_parse_packets(sigdata, siglen, &p.pgp);
++	if (ret < 0)
++		goto error_free_ctx;
 +
-+	if (version == PGP_SIG_VERSION_3) {
-+		const struct pgp_signature_v3_packet *v3 = (const void *)data;
++	crypto_shash_final(&sig->hash, sig->digest);
 +
-+		if (datalen < sizeof(*v3)) {
-+			pr_debug("Short V3 signature packet\n");
-+			return -EBADMSG;
-+		}
-+		datalen -= sizeof(*v3);
-+		data += sizeof(*v3);
++	ret = key->algo->verify(key, sig);
 +
-+		/* V3 has everything we need in the header */
-+		p->signature_type = v3->hashed.signature_type;
-+		p->issuer = v3->issuer;
-+		p->pubkey_algo = v3->pubkey_algo;
-+		p->hash_algo = v3->hash_algo;
-+
-+	} else if (version == PGP_SIG_VERSION_4) {
-+		const struct pgp_signature_v4_packet *v4 = (const void *)data;
-+		struct pgp_parse_sig_params_ctx ctx = {
-+			.base.process_packet = pgp_process_sig_params_subpkt,
-+			.params = p,
-+			.got_the_issuer = false,
-+		};
-+		size_t subdatalen;
-+
-+		if (datalen < sizeof(*v4) + 2 + 2 + 2) {
-+			pr_debug("Short V4 signature packet\n");
-+			return -EBADMSG;
-+		}
-+		datalen -= sizeof(*v4);
-+		data += sizeof(*v4);
-+
-+		/* V4 has most things in the header... */
-+		p->signature_type = v4->signature_type;
-+		p->pubkey_algo = v4->pubkey_algo;
-+		p->hash_algo = v4->hash_algo;
-+
-+		/* ... but we have to get the key ID from the subpackets, of
-+		 * which there are two sets. */
-+		__set_bit(PGP_SIG_ISSUER, ctx.base.types_of_interest);
-+
-+		subdatalen  = *data++ << 8;
-+		subdatalen |= *data++;
-+		datalen -= 2;
-+		if (subdatalen) {
-+			/* Hashed subpackets */
-+			pr_devel("hashed data: %zu (after %zu)\n",
-+				 subdatalen, sizeof(*v4));
-+			if (subdatalen > datalen + 2 + 2) {
-+				pr_debug("Short V4 signature packet [hdata]\n");
-+				return -EBADMSG;
-+			}
-+			ret = pgp_parse_sig_subpkts(data, subdatalen,
-+						    &ctx.base);
-+			if (ret < 0)
-+				return ret;
-+			data += subdatalen;
-+			datalen -= subdatalen;
-+		}
-+
-+		subdatalen  = *data++ << 8;
-+		subdatalen |= *data++;
-+		datalen -= 2;
-+		if (subdatalen) {
-+			/* Unhashed subpackets */
-+			pr_devel("unhashed data: %zu\n", subdatalen);
-+			if (subdatalen > datalen + 2) {
-+				pr_debug("Short V4 signature packet [udata]\n");
-+				return -EBADMSG;
-+			}
-+			ret = pgp_parse_sig_subpkts(data, subdatalen,
-+						    &ctx.base);
-+			if (ret < 0)
-+				return ret;
-+			data += subdatalen;
-+			datalen -= subdatalen;
-+		}
-+
-+		if (!ctx.got_the_issuer) {
-+			pr_debug("V4 signature packet lacks issuer\n");
-+			return -EBADMSG;
-+		}
-+	} else {
-+		pr_debug("Signature packet with unhandled version %d\n",
-+			 version);
-+		return -EBADMSG;
-+	}
-+
-+	*_data = data;
-+	*_datalen = datalen;
-+	return 0;
++error_free_ctx:
++	pgp_pkey_verify_sig_cancel(ctx);
++	kleave(" = %d", ret);
++	return ret;
 +}
-+EXPORT_SYMBOL_GPL(pgp_parse_sig_params);
++
++/*
++ * Cancel an in-progress data loading
++ */
++static void pgp_pkey_verify_sig_cancel(struct crypto_key_verify_context *ctx)
++{
++	struct public_key_signature *sig =
++		container_of(ctx, struct public_key_signature, base);
++	int i;
++
++	kenter("");
++
++	/* !!! Do we need to tell the crypto layer to cancel too? */
++	crypto_free_shash(sig->hash.tfm);
++	key_put(sig->base.key);
++	for (i = 0; i < ARRAY_SIZE(sig->mpi); i++)
++		mpi_free(sig->mpi[i]);
++	kfree(sig);
++
++	kleave("");
++}
 
