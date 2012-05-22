@@ -1,90 +1,169 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757371Ab2EVJ2L (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 May 2012 05:28:11 -0400
-Received: from va3ehsobe002.messaging.microsoft.com ([216.32.180.12]:16645
-	"EHLO va3outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753572Ab2EVJ2I (ORCPT
+	id S1757465Ab2EVJ27 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 May 2012 05:28:59 -0400
+Received: from mail-gh0-f174.google.com ([209.85.160.174]:41328 "EHLO
+	mail-gh0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757115Ab2EVJ24 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 May 2012 05:28:08 -0400
-X-Forefront-Antispam-Report: CIP:163.181.249.109;KIP:(null);UIP:(null);IPV:NLI;H:ausb3twp02.amd.com;RD:none;EFVD:NLI
-X-SpamScore: -9
-X-BigFish: VPS-9(zz1432N98dKzz1202hzzz2dh668h839h944hd25hf0ah)
-X-WSS-ID: 0M4F3MN-02-A0H-02
-X-M-MSG: 
-Date: Tue, 22 May 2012 11:28:32 +0200
-From: Borislav Petkov <borislav.petkov@amd.com>
-To: Mauro Carvalho Chehab <mchehab@redhat.com>
-CC: Borislav Petkov <borislav.petkov@amd.com>,
-        "Luck, Tony" <tony.luck@intel.com>, Ingo Molnar <mingo@kernel.org>,
-        Linux Edac Mailing List <linux-edac@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Aristeu Rozanski <arozansk@redhat.com>,
-        Doug Thompson <norsk5@yahoo.com>, Steven Rostedt <rostedt@goodmis.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Ingo Molnar <mingo@redhat.com>
-Subject: Re: [PATCH v24b] RAS: Add a tracepoint for reporting memory
- controller events
-Message-ID: <20120522092832.GC18578@aftab.osrc.amd.com>
-References: <4FB6866E.7090503@redhat.com>
- <20120518185258.GE20215@aftab.osrc.amd.com>
- <3908561D78D1C84285E8C5FCA982C28F192F1A33@ORSMSX104.amr.corp.intel.com>
- <20120518211211.GA26464@aftab.osrc.amd.com>
- <20120519092618.GC29991@aftab.osrc.amd.com>
- <4FBA5F59.5000604@redhat.com>
- <20120521160041.GJ3334@aftab.osrc.amd.com>
- <4FBA6FE8.50707@redhat.com>
- <20120521204042.GA14255@aftab.osrc.amd.com>
- <4FBB0250.20100@redhat.com>
+	Tue, 22 May 2012 05:28:56 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-In-Reply-To: <4FBB0250.20100@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-OriginatorOrg: amd.com
+In-Reply-To: <1337357675.12999.31.camel@oc3660625478.ibm.com>
+References: <1337246456-30909-1-git-send-email-kernelfans@gmail.com>
+	<1337357675.12999.31.camel@oc3660625478.ibm.com>
+Date: Tue, 22 May 2012 17:28:55 +0800
+Message-ID: <CAFgQCTsdXqitVGKm5jQjtC--yvZy6x04zRduJ+_tXqUnkncdog@mail.gmail.com>
+Subject: Re: [RFC:kvm] export host NUMA info to guest & make emulated device
+ NUMA attr
+From: Liu ping fan <kernelfans@gmail.com>
+To: Shirley Ma <mashirle@us.ibm.com>
+Cc: kvm@vger.kernel.org, netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        qemu-devel@nongnu.org, Avi Kivity <avi@redhat.com>,
+        "Michael S. Tsirkin" <mst@redhat.com>,
+        Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>,
+        Rusty Russell <rusty@rustcorp.com.au>,
+        Anthony Liguori <anthony@codemonkey.ws>,
+        Ryan Harper <ryanh@us.ibm.com>, Shirley Ma <xma@us.ibm.com>,
+        Krishna Kumar <krkumar2@in.ibm.com>, Tom Lendacky <toml@us.ibm.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, May 22, 2012 at 12:04:48AM -0300, Mauro Carvalho Chehab wrote:
-> +TRACE_EVENT(mc_event,
-> +
-> +	TP_PROTO(const unsigned int err_type,
-> +		 const unsigned int mc_index,
-> +		 const char *error_msg,
-> +		 const char *label,
-> +		 int layer0,
-> +		 int layer1,
-> +		 int layer2,
+On Sat, May 19, 2012 at 12:14 AM, Shirley Ma <mashirle@us.ibm.com> wrote:
+> On Thu, 2012-05-17 at 17:20 +0800, Liu Ping Fan wrote:
+>> Currently, the guest can not know the NUMA info of the vcpu, which
+>> will
+>> result in performance drawback.
+>>
+>> This is the discovered and experiment by
+>>         Shirley Ma <xma@us.ibm.com>
+>>         Krishna Kumar <krkumar2@in.ibm.com>
+>>         Tom Lendacky <toml@us.ibm.com>
+>> Refer to -
+>> http://www.mail-archive.com/kvm@vger.kernel.org/msg69868.html
+>> we can see the big perfermance gap between NUMA aware and unaware.
+>>
+>> Enlightened by their discovery, I think, we can do more work -- that
+>> is to
+>> export NUMA info of host to guest.
+>
+> There three problems we've found:
+>
+> 1. KVM doesn't support NUMA load balancer. Even there are no other
+> workloads in the system, and the number of vcpus on the guest is smaller
+> than the number of cpus per node, the vcpus could be scheduled on
+> different nodes.
+>
+> Someone is working on in-kernel solution. Andrew Theurer has a working
+> user-space NUMA aware VM balancer, it requires libvirt and cgroups
+> (which is default for RHEL6 systems).
+>
+Interesting, and I found that "sched/numa: Introduce
+sys_numa_{t,m}bind()" committed by Peter and Ingo may help.
+But I think from the guest view, it can not tell whether the two vcpus
+are on the same host node. For example,
+vcpu-a in node-A is not vcpu-b in node-B, the guest lb will be more
+expensive if it pull_task from vcpu-a and
+choose vcpu-b to push.  And my idea is to export such info to guest,
+still working on it.
 
-Those are EDAC-internal layer representation, why are they exported to
-userspace? Userspace needs only the location and label AFAICT.
 
-If you export them to userspace, they need much more meaningful names -
-layer{0,1,2} mean nothing outside of the kernel.
+> 2. The host scheduler is not aware the relationship between guest vCPUs
+> and vhost. So it's possible for host scheduler to schedule per-device
+> vhost thread on the same cpu on which the vCPU kick a TX packet, or
+> schecule vhost thread on different node than the vCPU for; For RX packet
+> it's possible for vhost delivers RX packet on the vCPU running on
+> different node too.
+>
+Yes. I notice this point in your original patch.
 
-> +		 unsigned long pfn,
-> +		 unsigned long offset,
-> +		 unsigned long grain,
+> 3. per-device vhost thread is not scaled.
+>
+What about the scale-ability of per-vm * host_NUMA_NODE? When we make
+advantage of multi-core,  we produce mulit vcpu threads for one VM.
+So what about the emulated device? Is it acceptable to scale to take
+advantage of host NUMA attr.  After all, how many nodes on which the
+VM
+can be run on are the user's control.  It is a balance of
+scale-ability and performance.
 
-Why aren't those a single 'unsigned long address' since they all are
-computed from it?
+> So the problems are in host scheduling and vhost thread scalability. I
+> am not sure how much help from exposing NUMA info from host to guest.
+>
+> Have you tested these patched? How much performance gain here?
+>
+Sorry, not yet.  As you have mentioned, the vhost thread scalability
+is a big problem. So I want to see others' opinion before going on.
 
-> +		 unsigned long syndrome,
-> +		 const char *driver_detail),
-> +
-> +	TP_ARGS(err_type, mc_index, error_msg, label, layer0, layer1, layer2,
-> +		pfn, offset, grain, syndrome, driver_detail),
-> 
-> The address is there using the edac way to represent it (page, offset, grain).
+Thanks and regards,
+pingfan
 
--- 
-Regards/Gruss,
-Boris.
 
-Advanced Micro Devices GmbH
-Einsteinring 24, 85609 Dornach
-GM: Alberto Bozzo
-Reg: Dornach, Landkreis Muenchen
-HRB Nr. 43632 WEEE Registernr: 129 19551
-
+> Thanks
+> Shirley
+>
+>> So here comes the idea:
+>> 1. export host numa info through guest's sched domain to its scheduler
+>>   Export vcpu's NUMA info to guest scheduler(I think mem NUMA problem
+>>   has been handled by host).  So the guest's lb will consider the
+>> cost.
+>>   I am still working on this, and my original idea is to export these
+>> info
+>>   through "static struct sched_domain_topology_level
+>> *sched_domain_topology"
+>>   to guest.
+>>
+>> 2. Do a better emulation of virt mach exported to guest.
+>>   In real world, the devices are limited by kinds of reasons to own
+>> the NUMA
+>>   property. But as to Qemu, the device is emulated by thread, which
+>> inherit
+>>   the NUMA attr in nature.  We can implement the device as components
+>> of many
+>>   logic units, each of the unit is backed by a thread in different
+>> host node.
+>>   Currently, I want to start the work on vhost. But I think, maybe in
+>>   future, the iothread in Qemu can also has such attr.
+>>
+>>
+>> Forgive me, for the limited time, I can not have more better
+>> understand of
+>> vhost/virtio_net drivers. These patches are just draft, _FAR_, _FAR_
+>> from work.
+>> I will do more detail work for them in future.
+>>
+>> To easy the review, the following is the sum up of the 2nd point of
+>> the idea.
+>> As for the 1st point of the idea, it is not reflected in the patches.
+>>
+>> --spread/shrink the vhost_workers over the host nodes as demanded from
+>> Qemu.
+>>   And we can consider each vhost_worker as an independent net logic
+>> device
+>>   embeded in physical device "vhost_net".  At the meanwhile, we spread
+>> vcpu
+>>   threads over the host node.
+>>   The vrings on guest are allocated PAGE_SIZE align separately, so
+>> they can
+>>   will only be mapped into different host node, so vhost_worker in the
+>> same
+>>   node can access it with the least cost. So does the vq on guest.
+>>
+>> --virtio_net driver will changes and talk with the logic device. And
+>> which
+>>   logic device it will talk to is determined by on which vcpu it is
+>> scheduled.
+>>
+>> --the binding of vcpus and vhost_worker is implemented by:
+>>   for call direction, vq-a in the node-A will have a dedicated irq-a.
+>> And
+>>   we set the irq-a's affinity to vcpus in node-A.
+>>   for kick direction, kick register-b trigger different eventfd-b
+>> which wake up
+>>   vhost_worker-b.
+>>
+>>
+>>
+>
