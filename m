@@ -1,46 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758895Ab2EVOwv (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 May 2012 10:52:51 -0400
-Received: from rcsinet15.oracle.com ([148.87.113.117]:42168 "EHLO
-	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755298Ab2EVOwu (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 May 2012 10:52:50 -0400
-Date: Tue, 22 May 2012 17:52:34 +0300
-From: Dan Carpenter <dan.carpenter@oracle.com>
-To: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Ingo Molnar <mingo@kernel.org>, linux-kernel@vger.kernel.org,
-        kernel-janitors@vger.kernel.org
-Subject: [patch] sched/numa: checking for NULL instead of IS_ERR()
-Message-ID: <20120522145233.GA17419@elgon.mountain>
+	id S1758938Ab2EVOw5 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 May 2012 10:52:57 -0400
+Received: from mailhub.sw.ru ([195.214.232.25]:25203 "EHLO relay.sw.ru"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1758912Ab2EVOwz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 May 2012 10:52:55 -0400
+Subject: [PATCH v4] NFS: get client net after idr allocation
+To: Trond.Myklebust@netapp.com
+From: Stanislav Kinsbursky <skinsbursky@parallels.com>
+Cc: linux-nfs@vger.kernel.org, linux-kernel@vger.kernel.org, devel@openvz.org
+Date: Tue, 22 May 2012 18:52:56 +0400
+Message-ID: <20120522145154.20579.17666.stgit@localhost.localdomain>
+In-Reply-To: <1337697906.4269.10.camel@lade.trondhjem.org>
+References: <1337697906.4269.10.camel@lade.trondhjem.org>
+User-Agent: StGit/0.16
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: acsinet21.oracle.com [141.146.126.237]
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-If mpol_new() is called with MPOL_BIND then it can't return a NULL
-pointer.  We should be checking IS_ERR() here.
+Allocation can fail. So instead of put net in case of failure, get net after
+allocation.
 
-Signed-off-by: Dan Carpenter <dan.carpenter@oracle.com>
+Signed-off-by: Stanislav Kinsbursky <skinsbursky@parallels.com>
+---
+ fs/nfs/client.c |    3 ++-
+ 1 files changed, 2 insertions(+), 1 deletions(-)
 
-diff --git a/kernel/sched/numa.c b/kernel/sched/numa.c
-index 1149993..36d27ac 100644
---- a/kernel/sched/numa.c
-+++ b/kernel/sched/numa.c
-@@ -1481,9 +1481,9 @@ SYSCALL_DEFINE4(numa_mbind, unsigned long, addr, unsigned long, len,
+diff --git a/fs/nfs/client.c b/fs/nfs/client.c
+index b59419a..b694971 100644
+--- a/fs/nfs/client.c
++++ b/fs/nfs/client.c
+@@ -172,7 +172,7 @@ static struct nfs_client *nfs_alloc_client(const struct nfs_client_initdata *cl_
+ 	clp->cl_rpcclient = ERR_PTR(-EINVAL);
  
- 	mask = nodemask_of_node(ng->numa_entity.node);
- 	mpol = mpol_new(MPOL_BIND, 0, &mask);
--	if (!mpol) {
-+	if (IS_ERR(mpol)) {
- 		ng_put(ng);
--		return -ENOMEM;
-+		return PTR_ERR(mpol);
- 	}
- 	mpol->flags |= MPOL_MF_LAZY;
- 	mpol->numa_group = ng;
+ 	clp->cl_proto = cl_init->proto;
+-	clp->net = get_net(cl_init->net);
++	clp->net = cl_init->net;
+ 
+ #ifdef CONFIG_NFS_V4
+ 	err = nfs_get_cb_ident_idr(clp, cl_init->minorversion);
+@@ -187,6 +187,7 @@ static struct nfs_client *nfs_alloc_client(const struct nfs_client_initdata *cl_
+ 	clp->cl_minorversion = cl_init->minorversion;
+ 	clp->cl_mvops = nfs_v4_minor_ops[cl_init->minorversion];
+ #endif
++	get_net(clp->net);
+ 	cred = rpc_lookup_machine_cred("*");
+ 	if (!IS_ERR(cred))
+ 		clp->cl_machine_cred = cred;
+
