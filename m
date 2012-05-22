@@ -1,41 +1,127 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755911Ab2EVRpi (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 May 2012 13:45:38 -0400
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:45234 "EHLO
-	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751455Ab2EVRph (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 May 2012 13:45:37 -0400
-Date: Tue, 22 May 2012 21:45:32 +0400
-From: Cyrill Gorcunov <gorcunov@openvz.org>
-To: Suresh Siddha <suresh.b.siddha@intel.com>
-Cc: Ingo Molnar <mingo@kernel.org>, agordeev@redhat.com, yinghai@kernel.org,
-        linux-kernel@vger.kernel.org, x86@kernel.org
-Subject: Re: [PATCH 2/2] x2apic, cluster: use all the members of one cluster
- specified in the smp_affinity mask for the interrupt desintation
-Message-ID: <20120522174532.GD1442@moon>
-References: <1337643880.1997.166.camel@sbsiddha-desk.sc.intel.com>
- <1337644682-19854-1-git-send-email-suresh.b.siddha@intel.com>
- <1337644682-19854-2-git-send-email-suresh.b.siddha@intel.com>
- <20120522070428.GA15738@gmail.com>
- <1337707275.1997.184.camel@sbsiddha-desk.sc.intel.com>
- <20120522173922.GC1442@moon>
- <1337708577.1997.187.camel@sbsiddha-desk.sc.intel.com>
+	id S1756163Ab2EVRsx (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 May 2012 13:48:53 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:1755 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751234Ab2EVRsv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 May 2012 13:48:51 -0400
+Date: Tue, 22 May 2012 19:48:42 +0200
+From: Andrea Arcangeli <aarcange@redhat.com>
+To: Pravin B Shelar <pshelar@nicira.com>
+Cc: cl@linux.com, penberg@kernel.org, mpm@selenic.com,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org, jesse@nicira.com,
+        abhide@nicira.com
+Subject: Re: [PATCH v3] mm: Fix slab->page flags corruption.
+Message-ID: <20120522174842.GB4071@redhat.com>
+References: <1337293069-22443-1-git-send-email-pshelar@nicira.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1337708577.1997.187.camel@sbsiddha-desk.sc.intel.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1337293069-22443-1-git-send-email-pshelar@nicira.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, May 22, 2012 at 10:42:57AM -0700, Suresh Siddha wrote:
-> > x2apic, or the way it resturns apicid now was done by a purpose?
-> 
-> Don't know. Those are very old platforms. Not worth tuning them IMHO.
+On Thu, May 17, 2012 at 03:17:49PM -0700, Pravin B Shelar wrote:
+> diff --git a/mm/swap.c b/mm/swap.c
+> index 8ff73d8..44a0f81 100644
+> --- a/mm/swap.c
+> +++ b/mm/swap.c
+> @@ -82,6 +82,19 @@ static void put_compound_page(struct page *page)
+>  		if (likely(page != page_head &&
+>  			   get_page_unless_zero(page_head))) {
+>  			unsigned long flags;
+> +
+> +			if (PageSlab(page_head)) {
+> +				if (PageTail(page)) {
+> +					/* THP can not break up slab pages, avoid
+> +					 * taking compound_lock(). */
+> +					if (put_page_testzero(page_head))
+> +						VM_BUG_ON(1);
+> +
+> +					atomic_dec(&page->_mapcount);
+> +					goto skip_lock_tail;
+> +				} else
+> +					goto skip_lock;
+> +			}
 
-I see,thanks.
+Some commentary on the fact slab prefers not using atomic ops on the
+page->flags could help here.
 
-	Cyrill
+>  			/*
+>  			 * page_head wasn't a dangling pointer but it
+>  			 * may not be a head page anymore by the time
+> @@ -93,6 +106,7 @@ static void put_compound_page(struct page *page)
+>  				/* __split_huge_page_refcount run before us */
+>  				compound_unlock_irqrestore(page_head, flags);
+>  				VM_BUG_ON(PageHead(page_head));
+
+Hmmm hmmm while reviewing this one, I've been thinking maybe the head
+page after the hugepage split, could have been freed and reallocated
+as order 1 or 2, and legitimately become an head page again.
+
+The whole point of the bug-on is that it cannot be reallocated as a
+THP beause the tail is still there and it's not free yet, but it
+doesn't take into account the head page could be allocated as a
+compound page of a smaller size and maybe the tail is the last subpage
+of the thp.
+
+So there's the risk of a false positive, in an extremely unlikely case
+(the fact slab goes in unmovable pageblocks and thp goes in movable
+further decreases the probability). All production kernels runs with
+VM_BUG_ON disabled so it's a very small concern, but maybe we should
+delete it. It has never triggered, just code reivew. Do you agree?
+
+> +			skip_lock:
+>  				if (put_page_testzero(page_head))
+>  					__put_single_page(page_head);
+>  			out_put_single:
+> @@ -115,6 +129,8 @@ static void put_compound_page(struct page *page)
+>  			VM_BUG_ON(atomic_read(&page_head->_count) <= 0);
+>  			VM_BUG_ON(atomic_read(&page->_count) != 0);
+>  			compound_unlock_irqrestore(page_head, flags);
+> +
+> +			skip_lock_tail:
+>  			if (put_page_testzero(page_head)) {
+>  				if (PageHead(page_head))
+>  					__put_compound_page(page_head);
+> @@ -162,6 +178,15 @@ bool __get_page_tail(struct page *page)
+>  	struct page *page_head = compound_trans_head(page);
+>  
+>  	if (likely(page != page_head && get_page_unless_zero(page_head))) {
+> +
+> +		if (PageSlab(page_head)) {
+> +			if (likely(PageTail(page))) {
+> +				__get_page_tail_foll(page, false);
+> +				return true;
+> +			} else
+> +				goto out;
+> +		}
+> +
+
+A comment here too would be nice.
+
+>  		/*
+>  		 * page_head wasn't a dangling pointer but it
+>  		 * may not be a head page anymore by the time
+> @@ -175,6 +200,8 @@ bool __get_page_tail(struct page *page)
+>  			got = true;
+>  		}
+>  		compound_unlock_irqrestore(page_head, flags);
+> +
+> +		out:
+>  		if (unlikely(!got))
+>  			put_page(page_head);
+
+out could go in the line below. Assuming we don't want to be cleaner
+and use put_page above instead of goto, that would also drop a branch
+probably (the goto place is such a slow path). I'm fine either ways.
+
+It's not the cleanest of the patches but it's clearly a performance
+tweak.
+
+Reviewed-by: Andrea Arcangeli <aarcange@redhat.com>
+
+Thanks,
+Andrea
