@@ -1,93 +1,117 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757115Ab2EVRkJ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 May 2012 13:40:09 -0400
-Received: from mail-wi0-f178.google.com ([209.85.212.178]:33697 "EHLO
-	mail-wi0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753288Ab2EVRkF (ORCPT
+	id S1759981Ab2EVRk2 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 May 2012 13:40:28 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:58708 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753329Ab2EVRkV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 May 2012 13:40:05 -0400
-Date: Tue, 22 May 2012 19:39:53 +0200
-From: Richard Cochran <richardcochran@gmail.com>
-To: John Stultz <john.stultz@linaro.org>
-Cc: linux-kernel@vger.kernel.org, Thomas Gleixner <tglx@linutronix.de>
-Subject: Re: [PATCH RFC V2 3/6] time: keep track of the pending utc/tai
- threshold
-Message-ID: <20120522173953.GA4177@netboy.at.omicron.at>
-References: <cover.1337348892.git.richardcochran@gmail.com>
- <6777ac8ebc321c67d13fdb8d0a3d826332b60f1f.1337348892.git.richardcochran@gmail.com>
- <4FBA84EF.5040506@linaro.org>
- <20120521190815.GA19812@netboy.at.omicron.at>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120521190815.GA19812@netboy.at.omicron.at>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Tue, 22 May 2012 13:40:21 -0400
+From: Arnaldo Carvalho de Melo <acme@infradead.org>
+To: Ingo Molnar <mingo@kernel.org>
+Cc: linux-kernel@vger.kernel.org, Namhyung Kim <namhyung.kim@lge.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Ingo Molnar <mingo@redhat.com>, Namhyung Kim <namhyung@gmail.com>,
+        Paul Mackerras <paulus@samba.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>
+Subject: [PATCH 08/19] perf tools: Rename libparsevent to libtraceevent in Makefile
+Date: Tue, 22 May 2012 14:40:06 -0300
+Message-Id: <1337708407-24522-9-git-send-email-acme@infradead.org>
+X-Mailer: git-send-email 1.7.9.2.358.g22243
+In-Reply-To: <1337708407-24522-1-git-send-email-acme@infradead.org>
+References: <1337708407-24522-1-git-send-email-acme@infradead.org>
+Content-Type: text/plain; charset="UTF-8"
+X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by canuck.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, May 21, 2012 at 09:08:15PM +0200, Richard Cochran wrote:
-> On Mon, May 21, 2012 at 11:09:51AM -0700, John Stultz wrote:
-> > On 05/18/2012 07:09 AM, Richard Cochran wrote:
-> > >+	/* Tracks where we stand with regard to leap the second epoch. */
-> > >+	enum {
-> > >+		LEAP_IDLE,
-> > >+		LEAP_INS_PENDING,
-> > >+		LEAP_INS_DONE,
-> > >+		LEAP_DEL_PENDING,
-> > >+		LEAP_DEL_DONE,
-> > >+	} leap_state;
+From: Namhyung Kim <namhyung.kim@lge.com>
 
-...
+Change some variable names according to new library name.
 
-> I don't think I am explaining this very well. I will try again to make
-> it clear using a table or something later on.
+Signed-off-by: Namhyung Kim <namhyung.kim@lge.com>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Ingo Molnar <mingo@redhat.com>
+Cc: Namhyung Kim <namhyung@gmail.com>
+Cc: Paul Mackerras <paulus@samba.org>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Steven Rostedt <rostedt@goodmis.org>
+Link: http://lkml.kernel.org/r/1337677434-4881-1-git-send-email-namhyung.kim@lge.com
+Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
+---
+ tools/perf/Makefile |   22 +++++++++++-----------
+ 1 file changed, 11 insertions(+), 11 deletions(-)
 
-The following table illustrates what happens around a (fictitious)
-leap second. Imagine a new epoch will occur at UTC time value 10 and
-the new TAI - UTC offset will be 2 seconds. The columns of the table
-show the values of the relevant time variables.
+diff --git a/tools/perf/Makefile b/tools/perf/Makefile
+index b246236..ef75a55 100644
+--- a/tools/perf/Makefile
++++ b/tools/perf/Makefile
+@@ -155,7 +155,7 @@ endif
+ 
+ ### --- END CONFIGURATION SECTION ---
+ 
+-BASIC_CFLAGS = -Iutil/include -Iarch/$(ARCH)/include -I$(OUTPUT)/util -I$(EVENT_PARSE_DIR) -D_LARGEFILE64_SOURCE -D_FILE_OFFSET_BITS=64 -D_GNU_SOURCE
++BASIC_CFLAGS = -Iutil/include -Iarch/$(ARCH)/include -I$(OUTPUT)/util -I$(TRACE_EVENT_DIR) -D_LARGEFILE64_SOURCE -D_FILE_OFFSET_BITS=64 -D_GNU_SOURCE
+ BASIC_LDFLAGS =
+ 
+ # Guard against environment variables
+@@ -184,16 +184,16 @@ $(OUTPUT)python/perf.so: $(PYRF_OBJS) $(PYTHON_EXT_SRCS) $(PYTHON_EXT_DEPS)
+ 
+ SCRIPTS = $(patsubst %.sh,%,$(SCRIPT_SH))
+ 
+-EVENT_PARSE_DIR = ../lib/traceevent/
++TRACE_EVENT_DIR = ../lib/traceevent/
+ 
+ ifeq ("$(origin O)", "command line")
+-	EP_PATH=$(OUTPUT)/
++	TE_PATH=$(OUTPUT)/
+ else
+-	EP_PATH=$(EVENT_PARSE_DIR)/
++	TE_PATH=$(TRACE_EVENT_DIR)/
+ endif
+ 
+-LIBPARSEVENT = $(EP_PATH)libtraceevent.a
+-EP_LIB := -L$(EP_PATH) -ltraceevent
++LIBTRACEEVENT = $(TE_PATH)libtraceevent.a
++TE_LIB := -L$(TE_PATH) -ltraceevent
+ 
+ #
+ # Single 'perf' binary right now:
+@@ -317,7 +317,7 @@ LIB_H += util/cpumap.h
+ LIB_H += util/top.h
+ LIB_H += $(ARCH_INCLUDE)
+ LIB_H += util/cgroup.h
+-LIB_H += $(EVENT_PARSE_DIR)event-parse.h
++LIB_H += $(TRACE_EVENT_DIR)event-parse.h
+ LIB_H += util/target.h
+ 
+ LIB_OBJS += $(OUTPUT)util/abspath.o
+@@ -417,7 +417,7 @@ BUILTIN_OBJS += $(OUTPUT)builtin-kvm.o
+ BUILTIN_OBJS += $(OUTPUT)builtin-test.o
+ BUILTIN_OBJS += $(OUTPUT)builtin-inject.o
+ 
+-PERFLIBS = $(LIB_FILE) $(LIBPARSEVENT)
++PERFLIBS = $(LIB_FILE) $(LIBTRACEEVENT)
+ 
+ # Files needed for the python binding, perf.so
+ # pyrf is just an internal name needed for all those wrappers.
+@@ -826,9 +826,9 @@ $(sort $(dir $(DIRECTORY_DEPS))):
+ $(LIB_FILE): $(LIB_OBJS)
+ 	$(QUIET_AR)$(RM) $@ && $(AR) rcs $@ $(LIB_OBJS)
+ 
+-# libparsevent.a
+-$(LIBPARSEVENT):
+-	make -C $(EVENT_PARSE_DIR) $(COMMAND_O) libtraceevent.a
++# libtraceevent.a
++$(LIBTRACEEVENT):
++	$(MAKE) -C $(TRACE_EVENT_DIR) $(COMMAND_O) libtraceevent.a
+ 
+ help:
+ 	@echo 'Perf make targets:'
+-- 
+1.7.9.2.358.g22243
 
-U:     UTC time
-CODE:  NTP time code
-T:     TAI - UTC offset
-P:     pending (explained below)
-
-   U   CODE    T   P 
- --------------------
-   1   INS     1   1  leap second sheduled
- --------------------
-   2   INS     1   1 
- --------------------
-       ...
- --------------------
-   8   INS     1   1 
- --------------------
-   9   INS     1   1 
- --------------------
-| 10   OOP     1   1  leap second, 1st tick
-|~~~~~~~~~~~~~~~~~~~
-|  9           2   0  leap second, 2nd and subsequent ticks
- --------------------
-  10   WAIT    2   0  new epoch
- --------------------
-  11   WAIT    2   0 
-
-Without adding some extra state, it is impossible to decide if UTC
-time value 10 means OOP or WAIT. With the current tick based
-implementation, this value can appear in the leap second and also in
-the new epoch. A similar problem exists for UTC time value 9. We
-cannot consult the NTP state to figure these out, since that is what
-we are trying to compute in the first place.
-
-The solution I came up with is to add a "leap second pending" flag
-which tracks whether the leap second correction has been applied yet,
-shown in column P. Since the case for deletion is a bit different than
-insertion, there are actually two flags, and together they appear in
-the new enumerated state variable.
-
-So, I hope that explains why this extra state is needed.
-
-Thanks,
-Richard
