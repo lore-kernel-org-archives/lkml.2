@@ -1,123 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756783Ab2EVRkA (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 May 2012 13:40:00 -0400
-Received: from zeniv.linux.org.uk ([195.92.253.2]:47471 "EHLO
-	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753288Ab2EVRj4 (ORCPT
+	id S1757115Ab2EVRkJ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 May 2012 13:40:09 -0400
+Received: from mail-wi0-f178.google.com ([209.85.212.178]:33697 "EHLO
+	mail-wi0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753288Ab2EVRkF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 May 2012 13:39:56 -0400
-Date: Tue, 22 May 2012 18:39:43 +0100
-From: Al Viro <viro@ZenIV.linux.org.uk>
-To: Will Drewry <wad@chromium.org>
-Cc: Indan Zupancic <indan@nul.nu>, Roland McGrath <mcgrathr@google.com>,
-        Eric Paris <netdev@parisplace.org>, linux-kernel@vger.kernel.org,
-        linux-security-module@vger.kernel.org,
-        kernel-hardening@lists.openwall.com, hpa@zytor.com, mingo@redhat.com,
-        oleg@redhat.com, peterz@infradead.org, rdunlap@xenotime.net,
-        tglx@linutronix.de, luto@mit.edu, eparis@redhat.com,
-        serge.hallyn@canonical.com, pmoore@redhat.com,
-        akpm@linux-foundation.org, corbet@lwn.net, eric.dumazet@gmail.com,
-        markus@chromium.org, coreyb@linux.vnet.ibm.com, keescook@chromium.org
-Subject: Re: seccomp and ptrace. what is the correct order?
-Message-ID: <20120522173942.GJ11775@ZenIV.linux.org.uk>
-References: <CACLa4puRJLUd6hAHO6zFYiqa5dFVum8eLmNMk_ef+=r8OGhjRg@mail.gmail.com>
- <CAB=4xho2b5fZV_jC15XW3mhOD9Z0QUMnV_UHy-P5EmQWfX59dA@mail.gmail.com>
- <5d6179f59222155b72d9aa9f171e883c.squirrel@webmail.greenhost.nl>
- <CABqD9hbzatHerMA1Nq57Qn8SKSZzZf=5t6aLumG9ZpAafgX=UQ@mail.gmail.com>
+	Tue, 22 May 2012 13:40:05 -0400
+Date: Tue, 22 May 2012 19:39:53 +0200
+From: Richard Cochran <richardcochran@gmail.com>
+To: John Stultz <john.stultz@linaro.org>
+Cc: linux-kernel@vger.kernel.org, Thomas Gleixner <tglx@linutronix.de>
+Subject: Re: [PATCH RFC V2 3/6] time: keep track of the pending utc/tai
+ threshold
+Message-ID: <20120522173953.GA4177@netboy.at.omicron.at>
+References: <cover.1337348892.git.richardcochran@gmail.com>
+ <6777ac8ebc321c67d13fdb8d0a3d826332b60f1f.1337348892.git.richardcochran@gmail.com>
+ <4FBA84EF.5040506@linaro.org>
+ <20120521190815.GA19812@netboy.at.omicron.at>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <CABqD9hbzatHerMA1Nq57Qn8SKSZzZf=5t6aLumG9ZpAafgX=UQ@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20120521190815.GA19812@netboy.at.omicron.at>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, May 22, 2012 at 11:23:06AM -0500, Will Drewry wrote:
+On Mon, May 21, 2012 at 09:08:15PM +0200, Richard Cochran wrote:
+> On Mon, May 21, 2012 at 11:09:51AM -0700, John Stultz wrote:
+> > On 05/18/2012 07:09 AM, Richard Cochran wrote:
+> > >+	/* Tracks where we stand with regard to leap the second epoch. */
+> > >+	enum {
+> > >+		LEAP_IDLE,
+> > >+		LEAP_INS_PENDING,
+> > >+		LEAP_INS_DONE,
+> > >+		LEAP_DEL_PENDING,
+> > >+		LEAP_DEL_DONE,
+> > >+	} leap_state;
 
-> However(!), if we did move secure_computing() to after ptrace _and_
-> added a check after SECCOMP_RET_TRACE's ptrace_event call, we could
-> ensure the system call was not changed by the tracer.  This would give
-> strong assurances that whatever system call is executed was explicitly
-> allowed by seccomp policy is the one that was executed.
+...
 
-BTW, after grepping around a bit, I have to say that some callers of those
-hooks make very little sense
+> I don't think I am explaining this very well. I will try again to make
+> it clear using a table or something later on.
 
-Exhibit A: sh32 has in do_syscall_trace_enter(regs)
-        secure_computing(regs->regs[0]);
-Syscall number in r0, right?
-	[usual PTRACE_SYSCALL bits]
-        if (unlikely(test_thread_flag(TIF_SYSCALL_TRACEPOINT)))
-                trace_sys_enter(regs, regs->regs[0]);
-Ditto
-        audit_syscall_entry(audit_arch(), regs->regs[3],
-                            regs->regs[4], regs->regs[5],
-                            regs->regs[6], regs->regs[7]);
-Oops - that one says syscall number in r3, first 4 arguments in r4..r7
-        return ret ?: regs->regs[0];
+The following table illustrates what happens around a (fictitious)
+leap second. Imagine a new epoch will occur at UTC time value 10 and
+the new TAI - UTC offset will be 2 seconds. The columns of the table
+show the values of the relevant time variables.
 
-and the caller of that sucker is
-syscall_trace_entry:
-        !                       Yes it is traced.
-        mov     r15, r4
-        mov.l   7f, r11         ! Call do_syscall_trace_enter which notifies
-        jsr     @r11            ! superior (will chomp R[0-7])
-         nop
-        mov.l   r0, @(OFF_R0,r15)       ! Save return value
-        !                       Reload R0-R4 from kernel stack, where the
-        !                       parent may have modified them using
-        !                       ptrace(POKEUSR).  (Note that R0-R2 are
-        !                       used by the system call handler directly
-        !                       from the kernel stack anyway, so don't need
-        !                       to be reloaded here.)  This allows the parent
-        !                       to rewrite system calls and args on the fly.
-        mov.l   @(OFF_R4,r15), r4   ! arg0
-        mov.l   @(OFF_R5,r15), r5  
-        mov.l   @(OFF_R6,r15), r6
-        mov.l   @(OFF_R7,r15), r7   ! arg3
-        mov.l   @(OFF_R3,r15), r3   ! syscall_nr
-        !
-        mov.l   2f, r10                 ! Number of syscalls
-        cmp/hs  r10, r3
-        bf      syscall_call
-[...]
-7:      .long   do_syscall_trace_enter
+U:     UTC time
+CODE:  NTP time code
+T:     TAI - UTC offset
+P:     pending (explained below)
 
-... and syscall_call very clearly picks an index in syscall table from r3.
-Incidentally, r0 is the fifth syscall argument...  So what we have is
-	* b0rken hookups for seccomp and tracepoint
-	* b0rken cancelling of syscalls by ptrace (replacing syscall number
-with -1 would've worked; doing that to the 5th argument - not really)
+   U   CODE    T   P 
+ --------------------
+   1   INS     1   1  leap second sheduled
+ --------------------
+   2   INS     1   1 
+ --------------------
+       ...
+ --------------------
+   8   INS     1   1 
+ --------------------
+   9   INS     1   1 
+ --------------------
+| 10   OOP     1   1  leap second, 1st tick
+|~~~~~~~~~~~~~~~~~~~
+|  9           2   0  leap second, 2nd and subsequent ticks
+ --------------------
+  10   WAIT    2   0  new epoch
+ --------------------
+  11   WAIT    2   0 
 
-Exhibit B: sh64; makes even less sense, but there the assembler glue had
-been too dense for me to get through.  At the very least, seccomp and
-tracepoint are assuming that syscall number is in r9, while audit is
-assuming that it's in r1.  I'm not too inclined to trust audit in this
-case, though.  The _really_ interesting part is that by the look of
-their pt_regs syscall number is stored separately - not in regs->regs[]
-at all.  And the caller
-	* shoves the return value of do_syscall_trace_enter() into regs->regs[2]
-	* picks syscall number from regs->syscall_nr and uses that as index
-in sys_call_table
-	* seems to imply that arguments are in regs->regs[2..7]
-	* code around the (presumable) path leading there seems to imply
-that syscall number comes from the trap number and isn't in regs->regs[]
-at all.  But I might be misreading that assembler.  Easily.
+Without adding some extra state, it is impossible to decide if UTC
+time value 10 means OOP or WAIT. With the current tick based
+implementation, this value can appear in the leap second and also in
+the new epoch. A similar problem exists for UTC time value 9. We
+cannot consult the NTP state to figure these out, since that is what
+we are trying to compute in the first place.
 
-Exhibit C:
-mips is consistent these days, but it has no tracepoint hookup *and* it does
-open-code tracehook_report_syscall_entry(), except for its return value...
-Used to pass the wrong register to seccomp, IIRC.
+The solution I came up with is to add a "leap second pending" flag
+which tracks whether the leap second correction has been applied yet,
+shown in column P. Since the case for deletion is a bit different than
+insertion, there are actually two flags, and together they appear in
+the new enumerated state variable.
 
-We really ought to look into merging those suckers.  It's a source of PITA
-that keeps coming back; what we need is
-	regs_syscall_number(struct pt_regs *)
-	regs_syscall_arg1(struct pt_regs *)
-	...
-	regs_syscall_arg6(struct pt_regs *)
-in addition to existing
-	regs_return_value(struct pt_regs *)
-added on all platforms and made mandatory for new ones.  With that we
-could go a long way towards merging these implementations...
+So, I hope that explains why this extra state is needed.
+
+Thanks,
+Richard
