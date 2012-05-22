@@ -1,113 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760272Ab2EVTYP (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 May 2012 15:24:15 -0400
-Received: from rcsinet15.oracle.com ([148.87.113.117]:47402 "EHLO
-	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755348Ab2EVTYN (ORCPT
+	id S1760279Ab2EVT0t (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 May 2012 15:26:49 -0400
+Received: from mail3.caviumnetworks.com ([12.108.191.235]:2430 "EHLO
+	mail3.caviumnetworks.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751436Ab2EVT0r (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 May 2012 15:24:13 -0400
-Message-ID: <4FBBE7D2.9040105@oracle.com>
-Date: Tue, 22 May 2012 15:24:02 -0400
-From: Adnan Misherfi <adnan.misherfi@oracle.com>
-User-Agent: Thunderbird 2.0.0.21 (X11/20090320)
+	Tue, 22 May 2012 15:26:47 -0400
+Message-ID: <4FBBE83E.9090307@cavium.com>
+Date: Tue, 22 May 2012 12:25:50 -0700
+From: David Daney <david.daney@cavium.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.15) Gecko/20101027 Fedora/3.0.10-1.fc12 Thunderbird/3.0.10
 MIME-Version: 1.0
-To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-CC: Ian Campbell <Ian.Campbell@citrix.com>,
-        Ben Hutchings <bhutchings@solarflare.com>,
-        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
+To: Ben Hutchings <ben@decadent.org.uk>
+CC: David Daney <ddaney.cavm@gmail.com>,
+        "devicetree-discuss@lists.ozlabs.org" 
+	<devicetree-discuss@lists.ozlabs.org>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Rob Herring <rob.herring@calxeda.com>,
+        "David S. Miller" <davem@davemloft.net>,
         "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        "davem@davemloft.net" <davem@davemloft.net>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] xen/netback: calculate correctly the SKB slots.
-References: <1337621793-12486-1-git-send-email-konrad.wilk@oracle.com> <1337627640.2979.33.camel@bwh-desktop.uk.solarflarecom.com> <1337678512.10118.40.camel@zakaz.uk.xensource.com> <20120522180901.GC22488@phenom.dumpdata.com>
-In-Reply-To: <20120522180901.GC22488@phenom.dumpdata.com>
-Content-Type: text/plain; charset=us-ascii; format=flowed
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-mips@linux-mips.org" <linux-mips@linux-mips.org>,
+        Fleming Andy-AFLEMING <afleming@freescale.com>
+Subject: Re: [PATCH 5/5] netdev/phy: Add driver for Cortina cs4321 quad 10G
+ PHY.
+References: <1337709592-23347-1-git-send-email-ddaney.cavm@gmail.com> <1337709592-23347-6-git-send-email-ddaney.cavm@gmail.com> <20120522185032.GR4038@decadent.org.uk>
+In-Reply-To: <20120522185032.GR4038@decadent.org.uk>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
-X-Source-IP: acsinet22.oracle.com [141.146.126.238]
+X-OriginalArrivalTime: 22 May 2012 19:25:51.0178 (UTC) FILETIME=[B2CAB2A0:01CD3850]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 05/22/2012 11:50 AM, Ben Hutchings wrote:
+> On Tue, May 22, 2012 at 10:59:52AM -0700, David Daney wrote:
+> [...]
+>> --- /dev/null
+>> +++ b/drivers/net/phy/cs4321-ucode.h
+>> @@ -0,0 +1,4378 @@
+>> +/*
+>> + *    Copyright (C) 2011 by Cortina Systems, Inc.
+>> + *
+>> + *    This program is free software; you can redistribute it and/or modify
+>> + *    it under the terms of the GNU General Public License as published by
+>> + *    the Free Software Foundation; either version 2 of the License, or
+>> + *    (at your option) any later version.
+>> + *
+>> + *    This program is distributed in the hope that it will be useful,
+>> + *    but WITHOUT ANY WARRANTY; without even the implied warranty of
+>> + *    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+>> + *    GNU General Public License for more details.
+>> + *
+>> + */
+> [...]
+>
+> So where's the real source code for it?
 
+I wish I knew.  The vendor released the array of random numbers as GPL 
+to us. :-(
 
-Konrad Rzeszutek Wilk wrote:
->>>> wrong, which caused the RX ring to be erroneously declared full,
->>>> and the receive queue to be stopped. The problem shows up when two
->>>> guest running on the same server tries to communicates using large
->>>>         
-> .. snip..
->   
->>> The function name is xen_netbk_count_skb_slots() in net-next.  This
->>> appears to depend on the series in
->>> <http://lists.xen.org/archives/html/xen-devel/2012-01/msg00982.html>.
->>>       
->> Yes, I don't think that patchset was intended for prime time just yet.
->> Can this issue be reproduced without it?
->>     
 >
-> It was based on 3.4, but the bug and work to fix this was  done on top of
-> a 3.4 version of netback backported in a 3.0 kernel. Let me double check
-> whether there were some missing patches.
->
->   
->>>>  	int i, copy_off;
->>>>  
->>>>  	count = DIV_ROUND_UP(
->>>> -			offset_in_page(skb->data)+skb_headlen(skb), PAGE_SIZE);
->>>> +			offset_in_page(skb->data + skb_headlen(skb)), PAGE_SIZE);
->>>>         
->>> The new version would be equivalent to:
->>> 	count = offset_in_page(skb->data + skb_headlen(skb)) != 0;
->>> which is not right, as netbk_gop_skb() will use one slot per page.
->>>       
->> Just outside the context of this patch we separately count the frag
->> pages.
->>
->> However I think you are right if skb->data covers > 1 page, since the
->> new version can only ever return 0 or 1. I expect this patch papers over
->> the underlying issue by not stopping often enough, rather than actually
->> fixing the underlying issue.
->>     
->
-> Ah, any thoughts? Have you guys seen this behavior as well?
->   
->>> The real problem is likely that you're not using the same condition to
->>> stop and wake the queue.
->>>       
->> Agreed, it would be useful to see the argument for this patch presented
->> in that light. In particular the relationship between
->> xenvif_rx_schedulable() (used to wake queue) and
->> xen_netbk_must_stop_queue() (used to stop queue).
->>     
->
-> Do you have any debug patches to ... do open-heart surgery on the
-> rings of netback as its hitting the issues Adnan has found?
->
->   
->> As it stands the description describes a setup which can repro the
->> problem but doesn't really analyse what actually happens, nor justify
->> the correctness of the fix.
->>     
->
-> Hm, Adnan - you dug in to this and you got tons of notes. Could you
-> describe what you saw that caused this?
->   
-The problem is that the function xen_netbk_count_skb_slots() returns two 
-different counts for same type packets of same size (ICMP,3991). At the 
-start of the test
-the count is one, later on the count changes to two, soon after the 
-counts becomes two, the condition ring full becomes true, and queue get 
-stopped, and never gets
-started again.There are few point to make here:
-1- It takes less that 128 ping packets to reproduce this
-2- What is interesting here is that it works correct for many packet 
-sizes including 1500,400,500 9000, (3990, but not 3991)
-3- The inconsistent count for the same packet size and type
-4- I do not believe the ring was actually full when it was declared 
-full, I think the consumer pointer was wrong. (vif->rx_req_cons_peek in 
-function xenvif_start_xmit())
-5- After changing the code the count returned from 
-xen_netbk_count_skb_slots() was always consistent, and worked just fine, 
-I let it runs for at least 12 hours.
+> If you won't (or can't) provide source code for the microcode then it
+> should instead be submitted to linux-firmware with a binary
+> redistribution licence, and the driver should load it with
+> request_firmware().
 
+I will attempt to do that.
+
+The .c file contains plenty of other pseudo-random numbers, but those 
+cannot really be considered 'firmware'
+
+David Daney
