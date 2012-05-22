@@ -1,91 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760176Ab2EVTB6 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 May 2012 15:01:58 -0400
-Received: from smtp.citrix.com ([66.165.176.89]:2245 "EHLO SMTP.CITRIX.COM"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751422Ab2EVTB4 convert rfc822-to-8bit (ORCPT
+	id S1760184Ab2EVTEk (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 May 2012 15:04:40 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:64868 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755481Ab2EVTEj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 May 2012 15:01:56 -0400
-X-IronPort-AV: E=Sophos;i="4.75,639,1330923600"; 
-   d="scan'208";a="25454196"
-From: Simon Graham <simon.graham@citrix.com>
-To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Ian Campbell <Ian.Campbell@citrix.com>
-CC: Ben Hutchings <bhutchings@solarflare.com>,
-        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        "davem@davemloft.net" <davem@davemloft.net>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Adnan Misherfi <adnan.misherfi@oracle.com>
-Date: Tue, 22 May 2012 15:01:55 -0400
-Subject: RE: [PATCH] xen/netback: calculate correctly the SKB slots.
-Thread-Topic: [PATCH] xen/netback: calculate correctly the SKB slots.
-Thread-Index: Ac04R1Jcx53s8R3GT8WvvLLHEJX+PAABU+Tw
-Message-ID: <F02ED76F3FCF8C468AD22A7618C05BBBB18DBFFE61@FTLPMAILBOX01.citrite.net>
-References: <1337621793-12486-1-git-send-email-konrad.wilk@oracle.com>
- <1337627640.2979.33.camel@bwh-desktop.uk.solarflarecom.com>
- <1337678512.10118.40.camel@zakaz.uk.xensource.com>
- <20120522180901.GC22488@phenom.dumpdata.com>
-In-Reply-To: <20120522180901.GC22488@phenom.dumpdata.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Tue, 22 May 2012 15:04:39 -0400
+Date: Tue, 22 May 2012 12:04:33 -0700
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: Kees Cook <keescook@chromium.org>
+Cc: devel@driverdev.osuosl.org, Tony Luck <tony.luck@intel.com>,
+        Arnd Bergmann <arnd@arndb.de>, patches@linaro.org,
+        Marco Stornelli <marco.stornelli@gmail.com>,
+        Stephen Boyd <sboyd@codeaurora.org>, linux-kernel@vger.kernel.org,
+        Anton Vorontsov <anton.vorontsov@linaro.org>, arve@android.com,
+        linaro-kernel@lists.linaro.org, John Stultz <john.stultz@linaro.org>,
+        Shuah Khan <shuahkhan@gmail.com>, Jesper Juhl <jj@chaosbits.net>,
+        Colin Cross <ccross@android.com>,
+        Rebecca Schultz Zavin <rebecca@android.com>,
+        WANG Cong <xiyou.wangcong@gmail.com>,
+        Andrew Morton <akpm@linux-foundation.org>, kernel-team@android.com,
+        Thomas Meyer <thomas@m3y3r.de>
+Subject: Re: [PATCH v4 0/16] Merge ram_console into pstore, and more
+Message-ID: <20120522190433.GA29404@kroah.com>
+References: <20120522141717.GA31574@lizard>
+ <20120522181910.GA28826@kroah.com>
+ <CAGXu5jJcHDWOf4Kgnz45CT0ud-zMr2SERL2ogjeJC6n64+pQZA@mail.gmail.com>
 MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <CAGXu5jJcHDWOf4Kgnz45CT0ud-zMr2SERL2ogjeJC6n64+pQZA@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Tue, May 22, 2012 at 11:33:33AM -0700, Kees Cook wrote:
+> On Tue, May 22, 2012 at 11:19 AM, Greg Kroah-Hartman
+> <gregkh@linuxfoundation.org> wrote:
+> > On Tue, May 22, 2012 at 07:17:17AM -0700, Anton Vorontsov wrote:
+> >> Hi all,
+> >>
+> >> A brand new v4:
+> >>
+> >> - Per Kees Cook's comments, the patches no longer remove an automatic
+> >>   updates feature, but instead make the it configurable; plus disable
+> >>   it by default (in a separate patch);
+> >> - Fixed some bugs noticed by Colin Cross;
+> >> - Documented new continuous ramoops-console log behaviour (also
+> >>   noticed by Colin Cross).
 > >
-> > > >  	int i, copy_off;
-> > > >
-> > > >  	count = DIV_ROUND_UP(
-> > > > -			offset_in_page(skb->data)+skb_headlen(skb),
-> PAGE_SIZE);
-> > > > +			offset_in_page(skb->data + skb_headlen(skb)),
-> PAGE_SIZE);
-> > >
-> > > The new version would be equivalent to:
-> > > 	count = offset_in_page(skb->data + skb_headlen(skb)) != 0;
-> > > which is not right, as netbk_gop_skb() will use one slot per page.
-> >
-> > Just outside the context of this patch we separately count the frag
-> > pages.
-> >
-> > However I think you are right if skb->data covers > 1 page, since the
-> > new version can only ever return 0 or 1. I expect this patch papers
-> over
-> > the underlying issue by not stopping often enough, rather than
-> actually
-> > fixing the underlying issue.
+> > In case you were wondering, all of this is going to have to wait for
+> > 3.6, as the 3.5 merge window with my trees have been closed.  I'll be
+> > able to start accepting patches once 3.5-rc1 is out, so take your time
+> > in getting this all working properly, there's no rush here.
 > 
-> Ah, any thoughts? Have you guys seen this behavior as well?
+> Will the ramoops stuff that was in -next (via -mm) that now landed in
+> -staging make it sanely into 3.5? Specifically the two patches at the
+> top of:
+> http://git.kernel.org/?p=linux/kernel/git/kees/linux.git;a=shortlog;h=refs/heads/ramoops
 
-We ran into this same problem and the fix we've been running with for a while now (been meaning to submit it!) is:
+Anything that was in staging and linux-next already, yes, will go in for
+3.5, I've already sent Linus the pull request for that.
 
-diff --git a/drivers/net/xen-netback/netback.c b/drivers/net/xen-netback/netback.c
-index c2669b8..7925bd3 100644
---- a/drivers/net/xen-netback/netback.c
-+++ b/drivers/net/xen-netback/netback.c
-@@ -312,8 +312,7 @@ unsigned int xen_netbk_count_skb_slots(struct xenvif *vif, struct sk_buff *skb)
-        unsigned int count;
-        int i, copy_off;
+Is that a problem?
 
--       count = DIV_ROUND_UP(
--                       offset_in_page(skb->data)+skb_headlen(skb), PAGE_SIZE);
-+       count = DIV_ROUND_UP(skb_headlen(skb), PAGE_SIZE);
+thanks,
 
-        copy_off = skb_headlen(skb) % PAGE_SIZE;
-
-The rationale for this is that if the header spanned a page boundary, you would calculate that it needs 2 slots for the header BUT netback_gop_skb copies the header into the start of the page so only needs one slot (and only decrements the count of inuse entries by 1).
-
-We found this running with a VIF bridged to a USB 3G Modem where skb->data started near the end of a page so the header would always span the page boundary.
-
-It was very easy to get the VIF to stop processing frames with the old code and we have not seen any problems since applying this patch.
-
-Simon
-
+greg k-h
