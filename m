@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760372Ab2EVXeL (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 May 2012 19:34:11 -0400
-Received: from mail160.messagelabs.com ([216.82.253.99]:47214 "EHLO
-	mail160.messagelabs.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755575Ab2EVXeJ (ORCPT
+	id S964873Ab2EVXqX (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 May 2012 19:46:23 -0400
+Received: from mail127.messagelabs.com ([216.82.250.115]:65287 "EHLO
+	mail127.messagelabs.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933887Ab2EVXqO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 May 2012 19:34:09 -0400
+	Tue, 22 May 2012 19:46:14 -0400
 X-Env-Sender: hartleys@visionengravers.com
-X-Msg-Ref: server-14.tower-160.messagelabs.com!1337729632!7239704!12
-X-Originating-IP: [216.166.12.31]
+X-Msg-Ref: server-6.tower-127.messagelabs.com!1337730373!6297040!1
+X-Originating-IP: [216.166.12.99]
 X-StarScan-Version: 6.5.10; banners=-,-,-
 X-VirusChecked: Checked
 From: H Hartley Sweeten <hartleys@visionengravers.com>
 To: Linux Kernel <linux-kernel@vger.kernel.org>
-Subject: [PATCH] staging: comedi: remove this_board macro in the dt282x driver
-Date: Tue, 22 May 2012 16:33:51 -0700
+Subject: [PATCH] staging: comedi: remove boardtype macro in the ni_atmio16d driver
+Date: Tue, 22 May 2012 16:46:07 -0700
 User-Agent: KMail/1.9.9
 CC: <devel@driverdev.osuosl.org>, <abbotti@mev.co.uk>,
         <fmhess@users.sourceforge.net>, <gregkh@linuxfoundation.org>
@@ -23,12 +23,12 @@ MIME-Version: 1.0
 Content-Type: text/plain; charset="utf-8"
 Content-Transfer-Encoding: 7bit
 Content-Disposition: inline
-Message-ID: <201205221633.52239.hartleys@visionengravers.com>
+Message-ID: <201205221646.07717.hartleys@visionengravers.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The 'this_board' macro depends on having a local variable with
+The 'boardtype' macro depends on having a local variable with
 a magic name. The CodingStyle document suggests not doing this
 to avoid confusion. Remove the macro and use the comedi_board()
 inline helper to get the dev->board_ptr information.
@@ -40,69 +40,54 @@ Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
 
-diff --git a/drivers/staging/comedi/drivers/dt282x.c b/drivers/staging/comedi/drivers/dt282x.c
-index 736d8fa..eefda3c 100644
---- a/drivers/staging/comedi/drivers/dt282x.c
-+++ b/drivers/staging/comedi/drivers/dt282x.c
-@@ -221,8 +221,6 @@ struct dt282x_board {
- 	int dabits;
+diff --git a/drivers/staging/comedi/drivers/ni_atmio16d.c b/drivers/staging/comedi/drivers/ni_atmio16d.c
+index 4f61453..a0890ee 100644
+--- a/drivers/staging/comedi/drivers/ni_atmio16d.c
++++ b/drivers/staging/comedi/drivers/ni_atmio16d.c
+@@ -110,8 +110,6 @@ struct atmio16_board_t {
+ 	int has_8255;
  };
  
--#define this_board ((const struct dt282x_board *)dev->board_ptr)
+-#define boardtype ((const struct atmio16_board_t *)dev->board_ptr)
 -
- struct dt282x_private {
- 	int ad_2scomp;		/* we have 2's comp jumper set  */
- 	int da0_2scomp;		/* same, for DAC0               */
-@@ -580,6 +578,7 @@ static int dt282x_ai_insn_read(struct comedi_device *dev,
- static int dt282x_ai_cmdtest(struct comedi_device *dev,
- 			     struct comedi_subdevice *s, struct comedi_cmd *cmd)
+ /* range structs */
+ static const struct comedi_lrange range_atmio16d_ai_10_bipolar = { 4, {
+ 								       BIP_RANGE
+@@ -693,6 +691,7 @@ static int atmio16d_dio_insn_config(struct comedi_device *dev,
+ static int atmio16d_attach(struct comedi_device *dev,
+ 			   struct comedi_devconfig *it)
  {
-+	const struct dt282x_board *board = comedi_board(dev);
- 	int err = 0;
- 	int tmp;
- 
-@@ -658,8 +657,8 @@ static int dt282x_ai_cmdtest(struct comedi_device *dev,
- 		cmd->convert_arg = SLOWEST_TIMER;
- 		err++;
- 	}
--	if (cmd->convert_arg < this_board->ai_speed) {
--		cmd->convert_arg = this_board->ai_speed;
-+	if (cmd->convert_arg < board->ai_speed) {
-+		cmd->convert_arg = board->ai_speed;
- 		err++;
- 	}
- 	if (cmd->scan_end_arg != cmd->chanlist_len) {
-@@ -694,6 +693,7 @@ static int dt282x_ai_cmdtest(struct comedi_device *dev,
- 
- static int dt282x_ai_cmd(struct comedi_device *dev, struct comedi_subdevice *s)
- {
-+	const struct dt282x_board *board = comedi_board(dev);
- 	struct comedi_cmd *cmd = &s->async->cmd;
- 	int timer;
- 
-@@ -706,8 +706,8 @@ static int dt282x_ai_cmd(struct comedi_device *dev, struct comedi_subdevice *s)
- 
- 	dt282x_disable_dma(dev);
- 
--	if (cmd->convert_arg < this_board->ai_speed)
--		cmd->convert_arg = this_board->ai_speed;
-+	if (cmd->convert_arg < board->ai_speed)
-+		cmd->convert_arg = board->ai_speed;
- 	timer = dt282x_ns_to_timer(&cmd->convert_arg, TRIG_ROUND_NEAREST);
- 	outw(timer, dev->iobase + DT2821_TMRCTR);
- 
-@@ -1176,12 +1176,13 @@ static int dt282x_grab_dma(struct comedi_device *dev, int dma1, int dma2)
-  */
- static int dt282x_attach(struct comedi_device *dev, struct comedi_devconfig *it)
- {
-+	const struct dt282x_board *board = comedi_board(dev);
- 	int i, irq;
- 	int ret;
- 	struct comedi_subdevice *s;
++	const struct atmio16_board_t *board = comedi_board(dev);
+ 	unsigned int irq;
  	unsigned long iobase;
+ 	int ret;
+@@ -708,8 +707,7 @@ static int atmio16d_attach(struct comedi_device *dev,
+ 	}
+ 	dev->iobase = iobase;
  
--	dev->board_name = this_board->name;
+-	/* board name */
+-	dev->board_name = boardtype->name;
 +	dev->board_name = board->name;
  
- 	iobase = it->options[opt_iobase];
- 	if (!iobase)
+ 	ret = alloc_subdevices(dev, 4);
+ 	if (ret < 0)
+@@ -811,7 +809,7 @@ static int atmio16d_attach(struct comedi_device *dev,
+ 
+ 	/* 8255 subdevice */
+ 	s++;
+-	if (boardtype->has_8255)
++	if (board->has_8255)
+ 		subdev_8255_init(dev, s, NULL, dev->iobase);
+ 	else
+ 		s->type = COMEDI_SUBD_UNUSED;
+@@ -831,7 +829,9 @@ static int atmio16d_attach(struct comedi_device *dev,
+ 
+ static void atmio16d_detach(struct comedi_device *dev)
+ {
+-	if (dev->subdevices && boardtype->has_8255)
++	const struct atmio16_board_t *board = comedi_board(dev);
++
++	if (dev->subdevices && board->has_8255)
+ 		subdev_8255_cleanup(dev, dev->subdevices + 3);
+ 	if (dev->irq)
+ 		free_irq(dev->irq, dev);
