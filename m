@@ -1,60 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932541Ab2EVUTk (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 May 2012 16:19:40 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:24453 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932296Ab2EVUTi (ORCPT
+	id S932513Ab2EVUVM (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 May 2012 16:21:12 -0400
+Received: from smtp03.smtpout.orange.fr ([80.12.242.125]:21623 "EHLO
+	smtp.smtpout.orange.fr" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932445Ab2EVUVK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 May 2012 16:19:38 -0400
-X-Authority-Analysis: v=2.0 cv=OMylLFmB c=1 sm=0 a=ZycB6UtQUfgMyuk2+PxD7w==:17 a=XQbtiDEiEegA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=meVymXHHAAAA:8 a=ayC55rCoAAAA:8 a=VwQbUJbxAAAA:8 a=H7cGWkg75BcMNXqhGxwA:9 a=PUjeQqilurYA:10 a=ZycB6UtQUfgMyuk2+PxD7w==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 74.67.80.29
-Message-ID: <1337717976.13348.117.camel@gandalf.stny.rr.com>
-Subject: [ANNOUNCE] 3.0.32-rt52
-From: Steven Rostedt <rostedt@goodmis.org>
-To: LKML <linux-kernel@vger.kernel.org>, RT <linux-rt-users@vger.kernel.org>
-Cc: Thomas Gleixner <tglx@linutronix.de>, Carsten Emde <C.Emde@osadl.org>,
-        John Kacur <jkacur@redhat.com>
-Date: Tue, 22 May 2012 16:19:36 -0400
-Content-Type: text/plain; charset="ISO-8859-15"
-X-Mailer: Evolution 3.2.2-1 
+	Tue, 22 May 2012 16:21:10 -0400
+From: "Yann E. MORIN" <yann.morin.1998@free.fr>
+Organization: BZH lan
+To: linux-kbuild@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: kconfig-frontends-3.4.0-0 released
+Date: Tue, 22 May 2012 22:21:05 +0200
+User-Agent: KMail/1.13.5 (Linux/3.4.0-treguer; KDE/4.4.5; x86_64; ; )
+Cc: "Yann E. MORIN" <yann.morin.1998@free.fr>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="utf-8"
 Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+Message-Id: <201205222221.05548.yann.morin.1998@free.fr>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hello All!
 
-Dear RT Folks,
+I'm pleased to announce the release of kconfig-frontends 3.4.0-0!
+Go download it there:
+    http://ymorin.is-a-geek.org/download/kconfig-frontends/kconfig-frontends-3.4.0-0.tar.xz
+    http://ymorin.is-a-geek.org/download/kconfig-frontends/kconfig-frontends-3.4.0-0.tar.bz2
 
-I'm pleased to announce the 3.0.32-rt52 stable release.
+The kconfig-frontends package provides the kconfig parser, as well as all the
+kconfig frontends and utilities, packaged using the traditional autotools, so
+the kconfig infrastructure is easy to deploy, either locally or system-wide.
 
+What's new since 3.3.0-0:
+  - all programs are intalled with the 'kconfig-' prefix by default
+  - the kconfig documentation has been added
+  - the parser's headers are isntalled into their own sub-dir
+  - some side utilities have been added from the Linux kernel tree:
+    - kconfig-diff      show differences between two .config files
+    - kconfig-gettext   prepare catalog of options strings for L10n
+    - kconfig-merge     merge .config fragments
+    - kconfig-tweak     get and set .config optiond from the command line
 
-This release is just an update to the new stable 3.0.32 version
-and no RT specific changes have been made.
+Thank you to Arnout Vandecappelle and Peter Kjellerstedt for their patches in
+this release cycle. :-)
 
+As a reminder, the home for kconfig-frontends is:
+  http://ymorin.is-a-geek.org/projects/kconfig-frontends
 
-You can get this release via the git tree at:
+And the repository can be browsed or hg-cloned from:
+  http://ymorin.is-a-geek.org/hg/kconfig-frontends
 
-  git://git.kernel.org/pub/scm/linux/kernel/git/rt/linux-stable-rt.git
+kconfig-frontends is not meant to replace the in-tree Linux kconfig, but
+really targets third-party projects that want an easy path to following the
+evolution of kconfig, without the burden to manually synchronise from the
+Linux kernel source tree.
 
-  Head SHA1: 63166b1a384148473180f7bef83e71409e38de14
+Any comment, any feedback, any patch is welcome! ;-)
 
+Regards,
+Yann E. MORIN.
 
-Or to build 3.0.32-rt52 directly, the following patches should be applied:
-
-  http://www.kernel.org/pub/linux/kernel/v3.0/linux-3.0.tar.xz
-
-  http://www.kernel.org/pub/linux/kernel/v3.0/patch-3.0.32.xz
-
-  http://www.kernel.org/pub/linux/kernel/projects/rt/3.0/patch-3.0.32-rt52.patch.xz
-
-
-
-Enjoy,
-
--- Steve
-
-
-
+-- 
+.-----------------.--------------------.------------------.--------------------.
+|  Yann E. MORIN  | Real-Time Embedded | /"\ ASCII RIBBON | Erics' conspiracy: |
+| +33 662 376 056 | Software  Designer | \ / CAMPAIGN     |  ___               |
+| +33 223 225 172 `------------.-------:  X  AGAINST      |  \e/  There is no  |
+| http://ymorin.is-a-geek.org/ | _/*\_ | / \ HTML MAIL    |   v   conspiracy.  |
+'------------------------------^-------^------------------^--------------------'
