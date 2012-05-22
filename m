@@ -1,95 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756411Ab2EVQkj (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 May 2012 12:40:39 -0400
-Received: from www.linutronix.de ([62.245.132.108]:39235 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756226Ab2EVQkZ (ORCPT
+	id S1759700Ab2EVQk4 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 May 2012 12:40:56 -0400
+Received: from avon.wwwdotorg.org ([70.85.31.133]:47034 "EHLO
+	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757362Ab2EVQkx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 May 2012 12:40:25 -0400
-Date: Tue, 22 May 2012 18:40:21 +0200 (CEST)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Steven Rostedt <rostedt@goodmis.org>
-cc: LKML <linux-kernel@vger.kernel.org>, RT <linux-rt-users@vger.kernel.org>,
-        Clark Williams <williams@redhat.com>,
-        Peter Zijlstra <peterz@infradead.org>
-Subject: Re: [RFC][PATCH RT] rwsem_rt: Another (more sane) approach to mulit
- reader rt locks
-In-Reply-To: <1337701801.13348.56.camel@gandalf.stny.rr.com>
-Message-ID: <alpine.LFD.2.02.1205221803290.3231@ionos>
-References: <1337090625.14207.304.camel@gandalf.stny.rr.com>  <alpine.LFD.2.02.1205221553400.3231@ionos> <1337701801.13348.56.camel@gandalf.stny.rr.com>
-User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
+	Tue, 22 May 2012 12:40:53 -0400
+Message-ID: <4FBBC192.7030900@wwwdotorg.org>
+Date: Tue, 22 May 2012 10:40:50 -0600
+From: Stephen Warren <swarren@wwwdotorg.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+To: Laxman Dewangan <ldewangan@nvidia.com>
+CC: swarren@nvidia.com, olof@lixom.net, linux@arm.linux.org.uk,
+        linux-kernel@vger.kernel.org, linux-tegra@vger.kernel.org
+Subject: Re: [PATCH 2/2] ARM: dt: tegra: cardhu: register core regulator tps65911
+References: <1337691917-15040-1-git-send-email-ldewangan@nvidia.com> <1337691917-15040-2-git-send-email-ldewangan@nvidia.com>
+In-Reply-To: <1337691917-15040-2-git-send-email-ldewangan@nvidia.com>
+X-Enigmail-Version: 1.5pre
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 22 May 2012, Steven Rostedt wrote:
-> On Tue, 2012-05-22 at 17:26 +0200, Thomas Gleixner wrote:
-> > On Tue, 15 May 2012, Steven Rostedt wrote:
-> > > +struct rw_semaphore {
-> > > +	int			initialized;
-> > > +	struct __rw_semaphore	lock[NR_CPUS];
-> > 
-> > So that will blow up every rw_semaphore user by
-> > 
-> >    NR_CPUS * sizeof(struct __rw_semaphore)
-> > 
-> > With lockdep off thats: NR_CPUS * 48
-> > 
-> > With lockdep on thats:  NR_CPUS * 128 + NR_CPUS * 8 (__key)
-> > 
-> > So for NR_CPUS=64 that's 3072 or 8704 Bytes.
-> 
-> For a box that has 64 CPUS, 8k should be nothing (even for every task).
-> But then again, NR_CPUS is compile time option. It would be nice if we
-> could make NR_CPUS just what was actually available :-/
+On 05/22/2012 07:05 AM, Laxman Dewangan wrote:
+> Add device info for the PMIC device tps65911 in tegra-cardhu
+> dts file. This device supports the multiple regulator rails,
+> gpio, interrupts.
 
-We are talking about inodes not tasks. My 32 core machine has
+FYI, patch 1 in this series looks fine. Some comments below though:
 
- ext4_inode_cache  1997489
- xfs_inode          838780
+> diff --git a/arch/arm/boot/dts/tegra-cardhu.dts b/arch/arm/boot/dts/tegra-cardhu.dts
 
-and those are not my largest filesytem. So I pretty much care whether
-my inode cache eats 20 GB or 2 GB of RAM. And so does every one else
-with a machine with large filesystems. 
+> +		tps65911: tps65911@2d {
+> +			compatible = "ti,tps65911";
+> +			reg = <0x2d>;
+> +
+> +			#gpio-cells = <2>;
+> +			gpio-controller;
+> +
+> +			regulators {
 
-Even if I compile the kernel with NR_CPUS=32 then it's still 11GB
-vs. 2GB.
+Please add the following properties here:
 
-> > So we trade massive memory waste for how much performance? 
-> 
-> We could always make this an option. I may be able to also do linker
-> tricks to make it a boot time option where the memory is allocated in
-> sections that can be freed if the option is not enabled. Just a thought,
-> I know this is making it more complex than necessary.
+	#address-cells = <1>;
+	#size-cells = <0>;
 
-Oh yes, we all know your affinity to the most complex solutions. :)
+> +				vdd1_reg: vdd1 {
 
-> > We really need numbers for various scenarios. There are applications
-> > which are pretty mmap heavy and it would really surprise me when
-> > taking NR_CPUS locks in one go is not going to cause a massive
-> > overhead.
-> 
-> Well, it doesn't take NR_CPUS locks, it takes possible_cpus() locks,
-> which may be much smaller. As a compiled time NR_CPUS=64 running on a
-> box with just 4 cpus will do a loop of 4 and not 64.
+This node name should be "regulator", since nodes are generally named
+after the class of object they represent. Since all the nodes will then
+have the same name, you'll need to add a unit address ("@nnnn") to the
+node name.
 
-Then let's talk about 32 cores, which is what I have and not really an
-exotic machine anymore. 
- 
-> I'm all for benchmarks. But right now, making all readers pass through a
-> single mutex is a huge bottle neck for a lot of loads. Yes, they are
-> mostly Java loads, but for some strange reason, our customers seems to
-> like to run Java on our RT kernel :-p
+Nitpicky, but the labels might be more logical as reg_vdd1 rather than
+vdd1_reg, but not a big deal.
 
-I'm well aware that mmap_sem is a PITA but replacing one nightmare
-with the next one is not the best approach.
+So, please replace the line above with:
 
-Thanks,
+	reg_vdd1: regulator@0 {
+		reg = <0>;
 
-	tglx
+> +					regulator-name = "vdd1";
+> +					regulator-min-microvolt = < 600000>;
+> +					regulator-max-microvolt = <1500000>;
+> +					regulator-always-on;
+> +					regulator-boot-on;
+> +				};
+> +
+> +				vdd2_reg: vdd2 {
+
+And similarly, that would become:
+
+	reg_vdd2: regulator@1 {
+		reg = <1>;
+
+etc.
