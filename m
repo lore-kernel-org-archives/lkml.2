@@ -1,41 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760440Ab2EVUxJ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 May 2012 16:53:09 -0400
-Received: from shards.monkeyblade.net ([198.137.202.13]:50873 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753013Ab2EVUxG (ORCPT
+	id S932663Ab2EVUxu (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 May 2012 16:53:50 -0400
+Received: from mail-vb0-f46.google.com ([209.85.212.46]:35608 "EHLO
+	mail-vb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932326Ab2EVUxs convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 May 2012 16:53:06 -0400
-Date: Tue, 22 May 2012 16:50:47 -0400 (EDT)
-Message-Id: <20120522.165047.1026251950879022093.davem@davemloft.net>
-To: marmarek@invisiblethingslab.com
-Cc: Ian.Campbell@citrix.com, xen-devel@lists.xen.org,
-        virtualization@lists.linux-foundation.org, konrad.wilk@oracle.com,
-        jeremy@goop.org, netdev@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH RESENT] xen: do not disable netfront in dom0
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <20120522204742.29E8A626@duch.mimuw.edu.pl>
-References: <20120522194319.GA2691@phenom.dumpdata.com>
-	<20120522204742.29E8A626@duch.mimuw.edu.pl>
-X-Mailer: Mew version 6.5 on Emacs 24.0.95 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.6 (shards.monkeyblade.net [198.137.202.13]); Tue, 22 May 2012 13:50:51 -0700 (PDT)
+	Tue, 22 May 2012 16:53:48 -0400
+MIME-Version: 1.0
+In-Reply-To: <4FBB0DB7.3040909@cn.fujitsu.com>
+References: <4FB35C48.30708@cn.fujitsu.com>
+	<CAG7+5M2nc3qPAS-GvX=YoVKqwdwSGdesoBQ6nsksHp2LFfzYcQ@mail.gmail.com>
+	<4FBB0DB7.3040909@cn.fujitsu.com>
+Date: Tue, 22 May 2012 13:53:47 -0700
+Message-ID: <CAG7+5M3UZBevahU2T0+kESs4kn2Sbbg2fs_itKpVQ_Z8c9od3g@mail.gmail.com>
+Subject: Re: [PATCH v2 0/5] Export offsets of VMCS fields as note information
+ for kdump
+From: Eric Northup <digitaleric@google.com>
+To: Yanfei Zhang <zhangyanfei@cn.fujitsu.com>
+Cc: Avi Kivity <avi@redhat.com>, mtosatti@redhat.com, ebiederm@xmission.com,
+        luto@mit.edu, Joerg Roedel <joerg.roedel@amd.com>, dzickus@redhat.com,
+        paul.gortmaker@windriver.com, ludwig.nussel@suse.de,
+        linux-kernel@vger.kernel.org, kvm@vger.kernel.org,
+        kexec@lists.infradead.org, Greg KH <gregkh@linuxfoundation.org>
+Content-Type: text/plain; charset=GB2312
+Content-Transfer-Encoding: 8BIT
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Marek Marczykowski <marmarek@invisiblethingslab.com>
-Date: Sun, 20 May 2012 13:45:10 +0200
+On Mon, May 21, 2012 at 8:53 PM, Yanfei Zhang
+<zhangyanfei@cn.fujitsu.com> wrote:
+> 于 2012年05月22日 02:58, Eric Northup 写道:
+[...]
+>> So you can have the VMCS offset dumping be a manually-loaded module.
+>> Build a database mapping from (CPUID, microcode revision) -> (VMCSINFO).
+>> There's no need for anything beyond the (CPUID, microcode revision) to
+>> be put in the kdump, since your offline processing of a kdump can then
+>> look up the rest.
+[...]
+>
+> We have considered this way, but there are two issues:
+> 1) vmx resource is unique for a single cpu, and it's risky to grab it forcibly
+> on the environment where kvm module is used, in particular on customer's environment.
+> To do this safely, kvm support is needed.
 
-> Netfront driver can be also useful in dom0, eg when all NICs are assigned to
-> some domU (aka driver domain). Then using netback in domU and netfront in dom0
-> is the only way to get network access in dom0.
-> 
-> Signed-off-by: Marek Marczykowski <marmarek@invisiblethingslab.com>
-> Acked-by: Ian Campbell <ian.campbell@citrix.com>
-> Acked-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-
-Applied, thanks.
+It's not risky: you just have to make sure that no one else is going
+to use the VMCS on your CPU while you're running.  You can disable
+preemption and then save the old VMCS pointer from the CPU (see the
+VMPTRST instructions).  Load your temporary VMCS pointer, discover
+the fields, then restore the original VMCS pointer.  Then re-enable
+preemption and you're done.
