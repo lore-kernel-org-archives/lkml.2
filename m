@@ -1,87 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756145Ab2EVVbx (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 May 2012 17:31:53 -0400
-Received: from www.linutronix.de ([62.245.132.108]:40615 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751570Ab2EVVbw (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 May 2012 17:31:52 -0400
-Date: Tue, 22 May 2012 23:31:43 +0200 (CEST)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Peter Zijlstra <peterz@infradead.org>
-cc: Gilad Ben-Yossef <gilad@benyossef.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        LKML <linux-kernel@vger.kernel.org>, linaro-sched-sig@lists.linaro.org,
-        Alessio Igor Bogani <abogani@kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>, Avi Kivity <avi@redhat.com>,
-        Chris Metcalf <cmetcalf@tilera.com>, Christoph Lameter <cl@linux.com>,
-        Daniel Lezcano <daniel.lezcano@linaro.org>,
-        Geoff Levand <geoff@infradead.org>, Ingo Molnar <mingo@kernel.org>,
-        Max Krasnyansky <maxk@qualcomm.com>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Stephen Hemminger <shemminger@vyatta.com>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Sven-Thorsten Dietrich <thebigcorporation@gmail.com>,
-        Zen Lin <zen@openhuawei.org>
-Subject: Re: [RFC][PATCH 00/32] Nohz cpusets v2 (adaptive tickless kernel)
-In-Reply-To: <1332861025.16159.236.camel@twins>
-Message-ID: <alpine.LFD.2.02.1205222327080.3231@ionos>
-References: <1332338318-5958-1-git-send-email-fweisbec@gmail.com>  <CAOtvUMf0Zp9C-jT=ymEo6oyxnsgkvSiGDUs5V_56v4Ai2QyBJQ@mail.gmail.com> <1332861025.16159.236.camel@twins>
-User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
+	id S1756281Ab2EVVil (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 May 2012 17:38:41 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:59761 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752892Ab2EVVij (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 May 2012 17:38:39 -0400
+Message-ID: <4FBC0733.8030106@zytor.com>
+Date: Tue, 22 May 2012 14:37:55 -0700
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+To: Will Drewry <wad@chromium.org>
+CC: Al Viro <viro@zeniv.linux.org.uk>, Indan Zupancic <indan@nul.nu>,
+        Roland McGrath <mcgrathr@google.com>,
+        Eric Paris <netdev@parisplace.org>, linux-kernel@vger.kernel.org,
+        linux-security-module@vger.kernel.org,
+        kernel-hardening@lists.openwall.com, mingo@redhat.com, oleg@redhat.com,
+        peterz@infradead.org, rdunlap@xenotime.net, tglx@linutronix.de,
+        luto@mit.edu, eparis@redhat.com, serge.hallyn@canonical.com,
+        pmoore@redhat.com, akpm@linux-foundation.org, corbet@lwn.net,
+        eric.dumazet@gmail.com, markus@chromium.org, coreyb@linux.vnet.ibm.com,
+        keescook@chromium.org
+Subject: Re: seccomp and ptrace. what is the correct order?
+References: <CACLa4puRJLUd6hAHO6zFYiqa5dFVum8eLmNMk_ef+=r8OGhjRg@mail.gmail.com> <CAB=4xho2b5fZV_jC15XW3mhOD9Z0QUMnV_UHy-P5EmQWfX59dA@mail.gmail.com> <5d6179f59222155b72d9aa9f171e883c.squirrel@webmail.greenhost.nl> <CABqD9hbzatHerMA1Nq57Qn8SKSZzZf=5t6aLumG9ZpAafgX=UQ@mail.gmail.com> <20120522173942.GJ11775@ZenIV.linux.org.uk> <CABqD9hbwnp-Kob0-Uc9L=qgJfS88po=RHNPkhQFcSf4RTrFCmQ@mail.gmail.com> <4FBBF84A.4070308@zytor.com> <CABqD9haSh=Tof9n2m8PHBaoqac1kcUZq-f5BcjDBv++5APGTCg@mail.gmail.com> <4FBC0078.7010002@zytor.com> <CABqD9haL4pZHJOODh88=HVAJo8DBDJtQAJtSf_L-+518kgEqwg@mail.gmail.com>
+In-Reply-To: <CABqD9haL4pZHJOODh88=HVAJo8DBDJtQAJtSf_L-+518kgEqwg@mail.gmail.com>
+X-Enigmail-Version: 1.4.1
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 27 Mar 2012, Peter Zijlstra wrote:
-
-> On Tue, 2012-03-27 at 17:02 +0200, Gilad Ben-Yossef wrote:
-> > 
-> > In my case, I also had to disable the clocksource watchdog, but only
-> > because TSC is not stable on my VM.
-> > This is really not a nohz/cpuset problem. 
+On 05/22/2012 02:14 PM, Will Drewry wrote:
+>>
+>> I suspect the construction of those inlines can be improved.
 > 
-> No but that thing is annoying, I ran afoul of it too the other day.
+> Seems likely - or just my use of them :)
 > 
-> Thomas, would you object to a means of turning that thing off? And if
-> not, do you have a preference as to what particular means
-> (sysctl/sysfs/etc..) ?
 
-We have the commandline option "tsc=reliable" already. That disables
-the stupid watchdog. Handle with care.
+One thing that could make the code worse is if you are in a flow where
+the state of the TS_COMPAT flag is known but gcc doesn't know that.  I
+don't have an easy answer for that.
 
-To take it a level further, use the patch below :)
+	-hpa
 
-Thanks,
-
-	tglx
-
------------->
-x86: Add tsc=perfect option which enforces sched_clock_stable
-    
-The sched_clock dance with updating local clocks can be avoided even
-if the CPU does not have all the magic features.
-    
-Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
-
-diff --git a/arch/x86/kernel/tsc.c b/arch/x86/kernel/tsc.c
-index 590900c..dc8ecc3 100644
---- a/arch/x86/kernel/tsc.c
-+++ b/arch/x86/kernel/tsc.c
-@@ -109,6 +109,10 @@ static int __init tsc_setup(char *str)
- {
- 	if (!strcmp(str, "reliable"))
- 		tsc_clocksource_reliable = 1;
-+	if (!strcmp(str, "perfect")) {
-+		tsc_clocksource_reliable = 1;
-+		sched_clock_stable = 1;
-+	}
- 	if (!strncmp(str, "noirqtime", 9))
- 		no_sched_irq_time = 1;
- 	return 1;
- 
