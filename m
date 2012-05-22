@@ -1,71 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757483Ab2EVOJp (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 May 2012 10:09:45 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:13996 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757224Ab2EVOJm (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 May 2012 10:09:42 -0400
-X-Authority-Analysis: v=2.0 cv=ae7jbGUt c=1 sm=0 a=ZycB6UtQUfgMyuk2+PxD7w==:17 a=XQbtiDEiEegA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=meVymXHHAAAA:8 a=ayC55rCoAAAA:8 a=Bum8_tTBk6x6Qg0GSOwA:9 a=U5KCuCZG6v3dvqQlKuEA:7 a=PUjeQqilurYA:10 a=ZycB6UtQUfgMyuk2+PxD7w==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 74.67.80.29
-Message-ID: <1337695780.13348.41.camel@gandalf.stny.rr.com>
-Subject: Re: NMI vs #PF clash
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Avi Kivity <avi@redhat.com>
-Cc: linux-kernel <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@elte.hu>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>,
-        Paul Turner <pjt@google.com>, Peter Zijlstra <peterz@infradead.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
-Date: Tue, 22 May 2012 10:09:40 -0400
-In-Reply-To: <4FBB986F.5030306@redhat.com>
-References: <4FBB8C40.6080304@redhat.com>
-	 <1337693441.13348.36.camel@gandalf.stny.rr.com>
-	 <4FBB986F.5030306@redhat.com>
-Content-Type: text/plain; charset="ISO-8859-15"
-X-Mailer: Evolution 3.2.2-1 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	id S1756980Ab2EVOLO (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 May 2012 10:11:14 -0400
+Received: from mailhub.sw.ru ([195.214.232.25]:28968 "EHLO relay.sw.ru"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752271Ab2EVOLN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 May 2012 10:11:13 -0400
+From: Glauber Costa <glommer@parallels.com>
+To: <linux-kernel@vger.kernel.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>, <cgroups@vger.kernel.org>,
+        <linux-mm@kvack.org>, Glauber Costa <glommer@parallels.com>,
+        Christoph Lameter <cl@linux.com>,
+        Pekka Enberg <penberg@cs.helsinki.fi>,
+        David Rientjes <rientjes@google.com>
+Subject: [PATCH] slab: move FULL state transition to an initcall
+Date: Tue, 22 May 2012 18:07:59 +0400
+Message-Id: <1337695679-10178-1-git-send-email-glommer@parallels.com>
+X-Mailer: git-send-email 1.7.7.6
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2012-05-22 at 16:45 +0300, Avi Kivity wrote:
+During kmem_cache_init_late(), we transition to the LATE state,
+and after some more work, to the FULL state, its last state
 
-> I thought the whole thing was started by someone adding a
-> vmalloc_sync_all() to prevent this scenario, and Linus wanting to
-> fix NMI instead.  But maybe I'm confusing two threads.
+This is quite different from slub, that will only transition to
+its last state (SYSFS), in a (late)initcall, after a lot more of
+the kernel is ready.
 
-No, you are rightfully confused.
+This means that in slab, we have no way to taking actions dependent
+on the initialization of other pieces of the kernel that are supposed
+to start way after kmem_init_late(), such as cgroups initialization.
 
-That was the case that started the thread and created the eventual code
-that we have. But Mathieu Desnoyers brought this up not to just solve
-the page fault issue for perf, but also to handle page faults for his
-own ring buffer and as a nice side effect, fixing breakpoints, which is
-critical to be able to modify text without the use of stop machine.
+To achieve more consistency in this behavior, that patch only
+transitions to the LATE state in kmem_init_late. In my analysis,
+setup_cpu_cache() should be happy to test for >= LATE, instead of
+== FULL. It also has passed some tests I've made.
 
-But the answer was to modify perf to not need to use vmalloc'd data from
-NMI context. Or at least never do it where a page fault could happen.
+We then only mark FULL state after the reap timers are in place,
+meaning that no further setup is expected.
 
-The motivation for me to allow faults in NMI context was for
-breakpoints, as it was required to remove stop machine from the function
-tracer.
+Signed-off-by: Glauber Costa <glommer@parallels.com>
+CC: Christoph Lameter <cl@linux.com>
+CC: Pekka Enberg <penberg@cs.helsinki.fi>
+CC: David Rientjes <rientjes@google.com>
+---
+ mm/slab.c |    8 ++++----
+ 1 files changed, 4 insertions(+), 4 deletions(-)
 
-> 
-> > Now if we want to handle page faults from NMI context, we could do some
-> > tricks to have the NMI detect that it interrupted a page fault before it
-> > read the cr2 and in that case, save off the cr2 register, and restore it
-> > before returning.
-> > 
-> > Or we could just have the NMI always restore the cr2 register.
-> 
-> IMO that's best.
-
-OK, I can whip up a patch, but I wont push that in till 3.6.
-
--- Steve
-
+diff --git a/mm/slab.c b/mm/slab.c
+index 58e5c9c..bd351a0 100644
+--- a/mm/slab.c
++++ b/mm/slab.c
+@@ -1741,9 +1741,6 @@ void __init kmem_cache_init_late(void)
+ 			BUG();
+ 	mutex_unlock(&cache_chain_mutex);
+ 
+-	/* Done! */
+-	g_cpucache_up = FULL;
+-
+ 	/*
+ 	 * Register a cpu startup notifier callback that initializes
+ 	 * cpu_cache_get for all new cpus
+@@ -1773,6 +1770,9 @@ static int __init cpucache_init(void)
+ 	 */
+ 	for_each_online_cpu(cpu)
+ 		start_cpu_timer(cpu);
++
++	/* Done! */
++	g_cpucache_up = FULL;
+ 	return 0;
+ }
+ __initcall(cpucache_init);
+@@ -2260,7 +2260,7 @@ static size_t calculate_slab_order(struct kmem_cache *cachep,
+ 
+ static int __init_refok setup_cpu_cache(struct kmem_cache *cachep, gfp_t gfp)
+ {
+-	if (g_cpucache_up == FULL)
++	if (g_cpucache_up >= LATE)
+ 		return enable_cpucache(cachep, gfp);
+ 
+ 	if (g_cpucache_up == NONE) {
+-- 
+1.7.7.6
 
