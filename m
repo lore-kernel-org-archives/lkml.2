@@ -1,62 +1,209 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933126Ab2EVXFc (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 May 2012 19:05:32 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:54454 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933114Ab2EVXF0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 May 2012 19:05:26 -0400
-From: David Howells <dhowells@redhat.com>
-Subject: [PATCH 23/23] MODSIGN: Panic the kernel if FIPS is enabled upon
- module signing failure
-To: rusty@rustcorp.com.au, kyle@mcmartin.ca
-Cc: linux-kernel@vger.kernel.org, linux-security-module@vger.kernel.org,
-        keyrings@linux-nfs.org, David Howells <dhowells@redhat.com>
-Date: Wed, 23 May 2012 00:05:18 +0100
-Message-ID: <20120522230518.24007.93525.stgit@warthog.procyon.org.uk>
-In-Reply-To: <20120522230218.24007.3556.stgit@warthog.procyon.org.uk>
-References: <20120522230218.24007.3556.stgit@warthog.procyon.org.uk>
-User-Agent: StGIT/0.14.3
+	id S1760393Ab2EVXFs (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 May 2012 19:05:48 -0400
+Received: from e38.co.us.ibm.com ([32.97.110.159]:50757 "EHLO
+	e38.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1760258Ab2EVXFl (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 May 2012 19:05:41 -0400
+Date: Tue, 22 May 2012 16:04:56 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: LKML <linux-kernel@vger.kernel.org>, linaro-sched-sig@lists.linaro.org,
+        Alessio Igor Bogani <abogani@kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>, Avi Kivity <avi@redhat.com>,
+        Chris Metcalf <cmetcalf@tilera.com>, Christoph Lameter <cl@linux.com>,
+        Daniel Lezcano <daniel.lezcano@linaro.org>,
+        Geoff Levand <geoff@infradead.org>,
+        Gilad Ben Yossef <gilad@benyossef.com>,
+        Hakan Akkan <hakanakkan@gmail.com>, Ingo Molnar <mingo@kernel.org>,
+        Kevin Hilman <khilman@ti.com>, Max Krasnyansky <maxk@qualcomm.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Stephen Hemminger <shemminger@vyatta.com>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Sven-Thorsten Dietrich <thebigcorporation@gmail.com>,
+        Thomas Gleixner <tglx@linutronix.de>
+Subject: Re: [PATCH 39/41] rcu: Switch to extended quiescent state in
+ userspace from nohz cpuset
+Message-ID: <20120522230456.GA29291@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <1335830115-14335-1-git-send-email-fweisbec@gmail.com>
+ <1335830115-14335-40-git-send-email-fweisbec@gmail.com>
+ <20120522183630.GF8087@linux.vnet.ibm.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120522183630.GF8087@linux.vnet.ibm.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 12052223-5518-0000-0000-00000499D134
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-If module signing fails when the kernel is running with FIPS enabled then the
-kernel should panic lest the crypto layer be compromised.  Possibly a panic
-shouldn't happen on cases like ENOMEM.
+On Tue, May 22, 2012 at 11:36:30AM -0700, Paul E. McKenney wrote:
+> On Tue, May 01, 2012 at 01:55:13AM +0200, Frederic Weisbecker wrote:
+> > When we switch to adaptive nohz mode and we run in userspace,
+> > we can still receive IPIs from the RCU core if a grace period
+> > has been started by another CPU because we need to take part
+> > of its completion.
+> > 
+> > However running in userspace is similar to that of running in
+> > idle because we don't make use of RCU there, thus we can be
+> > considered as running in RCU extended quiescent state. The
+> > benefit when running into that mode is that we are not
+> > anymore disturbed by needless IPIs coming from the RCU core.
+> > 
+> > To perform this, we just to use the RCU extended quiescent state
+> > APIs on the following points:
+> > 
+> > - kernel exit or tick stop in userspace: here we switch to extended
+> > quiescent state because we run in userspace without the tick.
+> > 
+> > - kernel entry or tick restart: here we exit the extended quiescent
+> > state because either we enter the kernel and we may make use of RCU
+> > read side critical section anytime, or we need the timer tick for some
+> > reason and that takes care of RCU grace period in a traditional way.
+> 
+> One FIXME question below.
 
-Reported-by: Stephan Mueller <stephan.mueller@atsec.com>
-Signed-off-by: David Howells <dhowells@redhat.com>
----
+And I found out one reason: WARN_ON_ONCE(rcu_is_cpu_idle()) works only
+if CONFIG_PROVE_RCU.  I am fixing this.
 
- kernel/module-verify.c |    5 +++++
- 1 files changed, 5 insertions(+), 0 deletions(-)
+							Thanx, Paul
 
-
-diff --git a/kernel/module-verify.c b/kernel/module-verify.c
-index f989fee..9baecc6 100644
---- a/kernel/module-verify.c
-+++ b/kernel/module-verify.c
-@@ -19,6 +19,7 @@
- #include <linux/sched.h>
- #include <linux/modsign.h>
- #include <linux/moduleparam.h>
-+#include <linux/fips.h>
- #include <keys/crypto-type.h>
- #include "module-verify.h"
- 
-@@ -109,6 +110,10 @@ int module_verify(const void *data, size_t size, bool *_gpgsig_ok)
- 
- 	pr_devel("module_verify_signature() = %d\n", ret);
- 
-+        if (ret < 0 && fips_enabled)
-+                panic("Module verification failed with error %d in FIPS mode\n",
-+                      ret);
-+
- 	switch (ret) {
- 	case 0:			/* Good signature */
- 		*_gpgsig_ok = true;
+> > Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
+> > Cc: Alessio Igor Bogani <abogani@kernel.org>
+> > Cc: Andrew Morton <akpm@linux-foundation.org>
+> > Cc: Avi Kivity <avi@redhat.com>
+> > Cc: Chris Metcalf <cmetcalf@tilera.com>
+> > Cc: Christoph Lameter <cl@linux.com>
+> > Cc: Daniel Lezcano <daniel.lezcano@linaro.org>
+> > Cc: Geoff Levand <geoff@infradead.org>
+> > Cc: Gilad Ben Yossef <gilad@benyossef.com>
+> > Cc: Hakan Akkan <hakanakkan@gmail.com>
+> > Cc: Ingo Molnar <mingo@kernel.org>
+> > Cc: Kevin Hilman <khilman@ti.com>
+> > Cc: Max Krasnyansky <maxk@qualcomm.com>
+> > Cc: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+> > Cc: Peter Zijlstra <peterz@infradead.org>
+> > Cc: Stephen Hemminger <shemminger@vyatta.com>
+> > Cc: Steven Rostedt <rostedt@goodmis.org>
+> > Cc: Sven-Thorsten Dietrich <thebigcorporation@gmail.com>
+> > Cc: Thomas Gleixner <tglx@linutronix.de>
+> > ---
+> >  include/linux/tick.h     |    3 +++
+> >  kernel/time/tick-sched.c |   27 +++++++++++++++++++++++++--
+> >  2 files changed, 28 insertions(+), 2 deletions(-)
+> > 
+> > diff --git a/include/linux/tick.h b/include/linux/tick.h
+> > index 3c31d6e..e2a49ad 100644
+> > --- a/include/linux/tick.h
+> > +++ b/include/linux/tick.h
+> > @@ -153,6 +153,8 @@ static inline u64 get_cpu_iowait_time_us(int cpu, u64 *unused) { return -1; }
+> >  # endif /* !NO_HZ */
+> > 
+> >  #ifdef CONFIG_CPUSETS_NO_HZ
+> > +DECLARE_PER_CPU(int, nohz_task_ext_qs);
+> > +
+> >  extern void tick_nohz_enter_kernel(void);
+> >  extern void tick_nohz_exit_kernel(void);
+> >  extern void tick_nohz_enter_exception(struct pt_regs *regs);
+> > @@ -160,6 +162,7 @@ extern void tick_nohz_exit_exception(struct pt_regs *regs);
+> >  extern void tick_nohz_check_adaptive(void);
+> >  extern void tick_nohz_pre_schedule(void);
+> >  extern void tick_nohz_post_schedule(void);
+> > +extern void tick_nohz_cpu_exit_qs(void);
+> >  extern bool tick_nohz_account_tick(void);
+> >  extern void tick_nohz_flush_current_times(bool restart_tick);
+> >  #else /* !CPUSETS_NO_HZ */
+> > diff --git a/kernel/time/tick-sched.c b/kernel/time/tick-sched.c
+> > index 8217409..b15ab5e 100644
+> > --- a/kernel/time/tick-sched.c
+> > +++ b/kernel/time/tick-sched.c
+> > @@ -565,10 +565,13 @@ static void tick_nohz_cpuset_stop_tick(struct tick_sched *ts)
+> > 
+> >  	if (!was_stopped && ts->tick_stopped) {
+> >  		WARN_ON_ONCE(ts->saved_jiffies_whence != JIFFIES_SAVED_NONE);
+> > -		if (user)
+> > +		if (user) {
+> >  			ts->saved_jiffies_whence = JIFFIES_SAVED_USER;
+> > -		else if (!current->mm)
+> > +			__get_cpu_var(nohz_task_ext_qs) = 1;
+> > +			rcu_user_enter_irq();
+> > +		} else if (!current->mm) {
+> >  			ts->saved_jiffies_whence = JIFFIES_SAVED_SYS;
+> > +		}
+> > 
+> >  		ts->saved_jiffies = jiffies;
+> >  		set_thread_flag(TIF_NOHZ);
+> > @@ -899,6 +902,8 @@ void tick_check_idle(int cpu)
+> >  }
+> > 
+> >  #ifdef CONFIG_CPUSETS_NO_HZ
+> > +DEFINE_PER_CPU(int, nohz_task_ext_qs);
+> > +
+> >  void tick_nohz_exit_kernel(void)
+> >  {
+> >  	unsigned long flags;
+> > @@ -922,6 +927,9 @@ void tick_nohz_exit_kernel(void)
+> >  	ts->saved_jiffies = jiffies;
+> >  	ts->saved_jiffies_whence = JIFFIES_SAVED_USER;
+> > 
+> > +	__get_cpu_var(nohz_task_ext_qs) = 1;
+> > +	rcu_user_enter();
+> > +
+> >  	local_irq_restore(flags);
+> >  }
+> > 
+> > @@ -940,6 +948,11 @@ void tick_nohz_enter_kernel(void)
+> >  		return;
+> >  	}
+> > 
+> > +	if (__get_cpu_var(nohz_task_ext_qs) == 1) {
+> > +		__get_cpu_var(nohz_task_ext_qs) = 0;
+> > +		rcu_user_exit();
+> > +	}
+> > +
+> >  	WARN_ON_ONCE(ts->saved_jiffies_whence != JIFFIES_SAVED_USER);
+> > 
+> >  	delta_jiffies = jiffies - ts->saved_jiffies;
+> > @@ -951,6 +964,14 @@ void tick_nohz_enter_kernel(void)
+> >  	local_irq_restore(flags);
+> >  }
+> > 
+> > +void tick_nohz_cpu_exit_qs(void)
+> > +{
+> > +	if (__get_cpu_var(nohz_task_ext_qs)) {
+> > +		rcu_user_exit_irq();
+> > +		__get_cpu_var(nohz_task_ext_qs) = 0;
+> > +	}
+> > +}
+> > +
+> >  void tick_nohz_enter_exception(struct pt_regs *regs)
+> >  {
+> >  	if (user_mode(regs))
+> > @@ -986,6 +1007,7 @@ static void tick_nohz_restart_adaptive(void)
+> >  	tick_nohz_flush_current_times(true);
+> >  	tick_nohz_restart_sched_tick();
+> >  	clear_thread_flag(TIF_NOHZ);
+> > +	tick_nohz_cpu_exit_qs();
+> >  }
+> > 
+> >  void tick_nohz_check_adaptive(void)
+> > @@ -1023,6 +1045,7 @@ void tick_nohz_pre_schedule(void)
+> >  	if (ts->tick_stopped) {
+> >  		tick_nohz_flush_current_times(true);
+> >  		clear_thread_flag(TIF_NOHZ);
+> > +		/* FIXME: warn if we are in RCU idle mode */
+> 
+> This would be WARN_ON_ONCE(rcu_is_cpu_idle()) or some such, correct?
+> 
+> >  	}
+> >  }
+> > 
+> > -- 
+> > 1.7.5.4
+> > 
 
