@@ -1,65 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759618Ab2EVBwK (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 May 2012 21:52:10 -0400
-Received: from 50-56-35-84.static.cloud-ips.com ([50.56.35.84]:59644 "EHLO
-	mail.hallyn.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932193Ab2EVBv5 (ORCPT
+	id S1759625Ab2EVBwT (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 May 2012 21:52:19 -0400
+Received: from mail-wg0-f44.google.com ([74.125.82.44]:53127 "EHLO
+	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759620Ab2EVBwM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 May 2012 21:51:57 -0400
-Date: Tue, 22 May 2012 01:54:26 +0000
-From: "Serge E. Hallyn" <serge@hallyn.com>
-To: Li Zefan <lizefan@huawei.com>
-Cc: Serge Hallyn <serge.hallyn@canonical.com>,
-        containers@lists.linux-foundation.org, mtosatti@redhat.com,
-        linux-kernel@vger.kernel.org, tj@kernel.org, cgroups@vger.kernel.org,
-        Amos Kong <akong@redhat.com>
-Subject: Re: [PATCH] cgroup: fix device deny of DEV_ALL
-Message-ID: <20120522015426.GA10344@mail.hallyn.com>
-References: <CAFeW=pZ8Y7ycxjxro7zBMqdtaCOYs4RmoxtDrsN8+mqLhOL--g@mail.gmail.com>
- <20120518081912.16779.21065.stgit@t>
- <20120521140324.GA5091@sergelap>
- <4FBADF1A.6040303@huawei.com>
+	Mon, 21 May 2012 21:52:12 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4FBADF1A.6040303@huawei.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <20120522011152.GA18115@redhat.com>
+References: <20120522011152.GA18115@redhat.com>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Mon, 21 May 2012 18:51:51 -0700
+X-Google-Sender-Auth: 0cYX4pwoA9bIWPZMuLxWYnSu3c0
+Message-ID: <CA+55aFwimihFb=JTFMraAhYFSwR6bBt_Pmwfx0wLybUDq1JQ0w@mail.gmail.com>
+Subject: Re: 3.4+ dcache BUG.
+To: Dave Jones <davej@redhat.com>, Linux Kernel <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Quoting Li Zefan (lizefan@huawei.com):
-> Serge Hallyn wrote:
-> 
-> > Quoting Amos Kong (akong@redhat.com):
-> >> @ mount -t cgroup -o devices none /cgroup
-> >> @ mkdir /cgroups/devices
-> >> @ ls -l /dev/dm-3
-> >>  brw-rw----. 1 root disk 253, 3 Oct 14 19:03 /dev/dm-3
-> >> @ echo 'b 253:3 rw' > devices.deny
-> >> but I can still write it by 'dd if=/dev/zero of=/dev/dm-3'
-> >>
-> >> In devcgroup_create(), we create a new whitelist, and add first
-> >> entry which type is 'DEV_ALL'. Execute "# echo 'b 253:3 rw' >
-> >> devices.deny", dev_whitelist_rm() will update access of first
-> >> entry to 1(m), but type of first entry is still 'DEV_ALL'.
-> > 
-> > Hi,
-> > 
-> > thanks.  You raise a good point, but I think it needs some discussion.
-> > 
-> > What happens right now is that if you have the 'a *:* rwm' entry and do
-> > echo 'b 253:3 rw' > devices.deny, then when you next cat devices.list you
-> > will still see the 'a *:* rwm' entry.  So there should be no confusion
-> > over why the dd succeeds.  You didn't remove the entry, because there
-> > was no match echoed into devices.deny.
-> 
-> 
-> No, you'll see the entry has been changed to 'a *:* m', so I think we
-> should at least fix this.
+On Mon, May 21, 2012 at 6:11 PM, Dave Jones <davej@redhat.com> wrote:
+> Just hit this. Probably related to todays dcache changes ?
 
-Yikes.  Agreed.  That's a bug.
+Almost certainly. Except:
 
-thanks,
--serge
+> I'm not sure why, but the dcache.c line numbers don't match up..
+> This kernel was v3.3-rc7-14528-g29db10d which looked like..
+
+You seem to not have fetched any tags lately (so it says "3.3-rc7 +
+14528 commits" instead of something more relevant), and I can't make
+sense of that SHA1 either (29db10d) either.
+
+You probably have other changes in your tree as well, explaining the
+SHA1 that I don't recognize?
+
+But that line number does match the BUG_ON() in d_free() of the
+pre-careful name lookup dcache.c, so it's all sane apart from the odd
+versions you have.
+
+What was the load you used, btw? Considering that this hits the
+d_free() BUG_ON(), I have a good guess about what is going on, and I
+suspect that we *used* to be protected by the pointless d_unhashed()
+check in fs/dcache.c.
+
+I say "pointless", because it *should* be pointless. But your
+backtrace is intriguing, since it says:
+
+  sys_close -> filp_close -> fput -> dput -> d_kill -> d_free
+
+and the only way you get from d_put to d_kill is through an unhashed dentry.
+
+But the people who unhash the dentries *should* have either
+
+ (a) happened after umount, when nobody can possibly actually match on
+that dentry
+
+OR
+
+ (b) done the proper dentry sequence number dance to make sure we never use it.
+
+that's why the d_unhashed() check got removed as "unnecessary". But
+clearly I screwed it up.
+
+What was the load that triggered this? Just a regular kernel compile?
+I see the "comm: cc1" there, and I'm a bit surprised, since I ran
+those patches here locally a *lot*. Is this perhaps some low-memory
+scenario?
+
+Anyway, thinking more about it, I'm starting to see why my thinking
+about sequence counts was buggy. I think that happens is:
+
+ - RCU lookup races with __d_drop
+
+ - __d_drop unhashes the dentry, and does a "write_seqcount_barrier()"
+
+ - the RCU lookup saw the old dentry pointer (that we unhashed), but
+by the time it loaded the sequence number off it, it's the new
+sequence number after the barrier.
+
+ - so now all the sequence numbers check out ok, but we have a unhashed dentry
+
+and I was just wrong about the d_unhashed() check being unnecessary
+due to the sequence numbers.
+
+I'll revert commit 8c01a529b861.
+
+                      Linus
