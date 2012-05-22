@@ -1,119 +1,31 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756165Ab2EVNr7 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 May 2012 09:47:59 -0400
-Received: from acsinet15.oracle.com ([141.146.126.227]:30699 "EHLO
-	acsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751529Ab2EVNr6 convert rfc822-to-8bit (ORCPT
+	id S1756134Ab2EVNu1 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 May 2012 09:50:27 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:58612 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752977Ab2EVNu0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 May 2012 09:47:58 -0400
-Subject: Re: [PATCH] NFS: init client before declaration
-Mime-Version: 1.0 (Apple Message framework v1278)
-Content-Type: text/plain; charset=us-ascii
-From: Chuck Lever <chuck.lever@oracle.com>
-In-Reply-To: <20120522124018.338.20817.stgit@localhost.localdomain>
-Date: Tue, 22 May 2012 09:47:51 -0400
-Cc: Stanislav Kinsbursky <skinsbursky@parallels.com>,
-        Linux NFS Mailing List <linux-nfs@vger.kernel.org>,
-        LKML Kernel <linux-kernel@vger.kernel.org>, devel@openvz.org
-Content-Transfer-Encoding: 8BIT
-Message-Id: <61DE1B95-38CC-4821-BF64-5A6B2EC18538@oracle.com>
-References: <20120522124018.338.20817.stgit@localhost.localdomain>
-To: Trond Myklebust <Trond.Myklebust@netapp.com>
-X-Mailer: Apple Mail (2.1278)
-X-Source-IP: acsinet22.oracle.com [141.146.126.238]
+	Tue, 22 May 2012 09:50:26 -0400
+MIME-Version: 1.0
+In-Reply-To: <CANQmPXh+0LECyLJ-MrDBZf2ZwLv5BJk0+DCFgPzqSChrFV=2WA@mail.gmail.com>
+References: <j2MgV-2Qe-9@gated-at.bofh.it>
+	<4FB8B2E6.5010601@onlinehome.de>
+	<CAJd=RBDY3Vd8EYFz=n6smFK2EhypgHpvyC_eG1QyE3Us-Y8-qg@mail.gmail.com>
+	<CANQmPXh+0LECyLJ-MrDBZf2ZwLv5BJk0+DCFgPzqSChrFV=2WA@mail.gmail.com>
+Date: Tue, 22 May 2012 21:50:24 +0800
+Message-ID: <CAJd=RBDbqMHcmKdFVJEEq8LSQP1+Dfo7ancWhTV4uR2fO9k+Jg@mail.gmail.com>
+Subject: Re: BFS 420: cleanup in tick handling
+From: Hillf Danton <dhillf@gmail.com>
+To: Chen <hi3766691@gmail.com>, LKML <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Tue, May 22, 2012 at 9:45 PM, Chen <hi3766691@gmail.com> wrote:
+> Actually the lowest deadline task selection algorithm now BFS used is O(n).
+> I have already had an idea to enhance the lowest deadline task selection
+> algorithm to O(1)
 
-On May 22, 2012, at 8:40 AM, Stanislav Kinsbursky wrote:
-
-> Client have to be initialized prior to adding it to per-net clients list,
-> because otherwise there are races, shown below:
-> 
-> CPU#0					CPU#1
-> _____					_____
-> 
-> nfs_get_client
-> nfs_alloc_client
-> list_add(..., nfs_client_list)
-> 					rpc_fill_super
-> 					rpc_pipefs_event
-> 					nfs_get_client_for_event
-> 					__rpc_pipefs_event
-> 					(clp->cl_rpcclient is uninitialized)
-> 					BUG()
-> init_client
-> clp->cl_rpcclient = ...
-> 
-> 
-> Signed-off-by: Stanislav Kinsbursky <skinsbursky@parallels.com>
-
-This patch collides pretty hard with the server trunking detection work.  If you agree this needs to be fixed, the best thing we can do, I guess, is take this patch and drop patch 11, 12, and 13 from my recent patch set, and I'll try to rework for 3.6.
-
-> ---
-> fs/nfs/client.c |   22 ++++++++++++----------
-> 1 files changed, 12 insertions(+), 10 deletions(-)
-> 
-> diff --git a/fs/nfs/client.c b/fs/nfs/client.c
-> index ae29d4f..9bf4702 100644
-> --- a/fs/nfs/client.c
-> +++ b/fs/nfs/client.c
-> @@ -525,7 +525,7 @@ nfs_get_client(const struct nfs_client_initdata *cl_init,
-> 		cl_init->hostname ?: "", cl_init->rpc_ops->version);
-> 
-> 	/* see if the client already exists */
-> -	do {
-> +	while (1) {
-> 		spin_lock(&nn->nfs_client_lock);
-> 
-> 		clp = nfs_match_client(cl_init);
-> @@ -537,10 +537,18 @@ nfs_get_client(const struct nfs_client_initdata *cl_init,
-> 		spin_unlock(&nn->nfs_client_lock);
-> 
-> 		new = nfs_alloc_client(cl_init);
-> -	} while (!IS_ERR(new));
-> +		if (IS_ERR(new)) {
-> +			dprintk("--> nfs_get_client() = %ld [failed]\n", PTR_ERR(new));
-> +			return new;
-> +		}
-> 
-> -	dprintk("--> nfs_get_client() = %ld [failed]\n", PTR_ERR(new));
-> -	return new;
-> +		error = cl_init->rpc_ops->init_client(new, timeparms, ip_addr,
-> +						      authflavour, noresvport);
-> +		if (error < 0) {
-> +			nfs_put_client(new);
-> +			return ERR_PTR(error);
-> +		}
-> +	}
-> 
-> 	/* install a new client and return with it unready */
-> install_client:
-> @@ -548,12 +556,6 @@ install_client:
-> 	list_add(&clp->cl_share_link, &nn->nfs_client_list);
-> 	spin_unlock(&nn->nfs_client_lock);
-> 
-> -	error = cl_init->rpc_ops->init_client(clp, timeparms, ip_addr,
-> -					      authflavour, noresvport);
-> -	if (error < 0) {
-> -		nfs_put_client(clp);
-> -		return ERR_PTR(error);
-> -	}
-> 	dprintk("--> nfs_get_client() = %p [new]\n", clp);
-> 	return clp;
-> 
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-nfs" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-
--- 
-Chuck Lever
-chuck[dot]lever[at]oracle[dot]com
-
-
-
-
+Would you please announce it on LKML?
