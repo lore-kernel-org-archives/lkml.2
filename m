@@ -1,60 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757730Ab2EVK1d (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 May 2012 06:27:33 -0400
-Received: from smtp-out-056.synserver.de ([212.40.185.56]:1051 "EHLO
-	smtp-out-051.synserver.de" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751871Ab2EVK1c (ORCPT
+	id S1757863Ab2EVK2c (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 May 2012 06:28:32 -0400
+Received: from LGEMRELSE7Q.lge.com ([156.147.1.151]:46570 "EHLO
+	LGEMRELSE7Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753328Ab2EVK2b (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 May 2012 06:27:32 -0400
-X-SynServer-TrustedSrc: 1
-X-SynServer-AuthUser: lars@metafoo.de
-X-SynServer-PPID: 25475
-Message-ID: <4FBB6AC7.8040303@metafoo.de>
-Date: Tue, 22 May 2012 12:30:31 +0200
-From: Lars-Peter Clausen <lars@metafoo.de>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.4) Gecko/20120510 Icedove/10.0.4
+	Tue, 22 May 2012 06:28:31 -0400
+X-AuditID: 9c930197-b7be2ae000000ebb-1b-4fbb6a4cf238
+From: Namhyung Kim <namhyung.kim@lge.com>
+To: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Jiri Olsa <jolsa@redhat.com>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@redhat.com>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 5/5] perf symbols: Implement poor man's ELF parser
+References: <1336979424-17206-1-git-send-email-namhyung.kim@lge.com>
+	<1336979424-17206-6-git-send-email-namhyung.kim@lge.com>
+	<20120521114739.GC5923@m.brq.redhat.com>
+	<1337673178.9698.0.camel@twins>
+Date: Tue, 22 May 2012 19:26:27 +0900
+In-Reply-To: <1337673178.9698.0.camel@twins> (Peter Zijlstra's message of
+	"Tue, 22 May 2012 09:52:58 +0200")
+Message-ID: <87sjes1pgs.fsf@sejong.aot.lge.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.0.95 (gnu/linux)
 MIME-Version: 1.0
-To: Pritesh Raithatha <praithatha@nvidia.com>
-CC: cbouatmailru@gmail.com, axel.lin@gmail.com, cabarnes@indesign-llc.com,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] gpio-charger: use cansleep version of gpio_set_value
-References: <1337676604-22836-1-git-send-email-praithatha@nvidia.com>
-In-Reply-To: <1337676604-22836-1-git-send-email-praithatha@nvidia.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/22/2012 10:50 AM, Pritesh Raithatha wrote:
-> Context of gpio_charger_get_property is sleepable so we should
-> use gpio_set_value_cansleep instead of gpio_set_value.
-> 
-> It will remove WARN_ON incase of using gpio from i2c-to-gpio
-> expander like pca953x.
-> 
-> Signed-off-by: Pritesh Raithatha <praithatha@nvidia.com>
+Hi,
 
-Looks good,
+On Tue, 22 May 2012 09:52:58 +0200, Peter Zijlstra wrote:
+> On Mon, 2012-05-21 at 13:47 +0200, Jiri Olsa wrote:
+>> I can see all this exported in:
+>> 
+>> [jolsa@dhcp-26-214 perf]$ rpm -qf /usr/include/elf.h
+>> glibc-headers-2.14.90-24.fc16.6.x86_64
+>> 
+>> so maybe we dont need to add our own, since glic-headers
+>> seems crutial anyway ;) 
+>
+> There's people building perf against uclibc and such, not sure they
+> carry it.
 
-Acked-by: Lars-Peter Clausen <lars@metafoo.de>
+I've checked uclibc and it provides elf.h also. It seems bionic does too.
+(do we care?)
 
-> ---
->  drivers/power/gpio-charger.c |    2 +-
->  1 files changed, 1 insertions(+), 1 deletions(-)
-> 
-> diff --git a/drivers/power/gpio-charger.c b/drivers/power/gpio-charger.c
-> index 8672c91..cb2aa31 100644
-> --- a/drivers/power/gpio-charger.c
-> +++ b/drivers/power/gpio-charger.c
-> @@ -54,7 +54,7 @@ static int gpio_charger_get_property(struct power_supply *psy,
->  
->  	switch (psp) {
->  	case POWER_SUPPLY_PROP_ONLINE:
-> -		val->intval = gpio_get_value(pdata->gpio);
-> +		val->intval = gpio_get_value_cansleep(pdata->gpio);
->  		val->intval ^= pdata->gpio_active_low;
->  		break;
->  	default:
-
+Thanks,
+Namhyung
