@@ -1,59 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932598Ab2EVAe6 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 May 2012 20:34:58 -0400
-Received: from szxga01-in.huawei.com ([58.251.152.64]:49659 "EHLO
-	szxga01-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752657Ab2EVAe5 (ORCPT
+	id S932635Ab2EVAf1 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 May 2012 20:35:27 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:51343 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756800Ab2EVAfZ convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 May 2012 20:34:57 -0400
-Date: Tue, 22 May 2012 08:34:34 +0800
-From: Li Zefan <lizefan@huawei.com>
-Subject: Re: [PATCH] cgroup: fix device deny of DEV_ALL
-In-reply-to: <20120521140324.GA5091@sergelap>
-X-Originating-IP: [10.166.88.128]
-To: Serge Hallyn <serge.hallyn@canonical.com>
-Cc: Amos Kong <akong@redhat.com>, containers@lists.linux-foundation.org,
-        mtosatti@redhat.com, linux-kernel@vger.kernel.org,
-        cgroups@vger.kernel.org, tj@kernel.org
-Message-id: <4FBADF1A.6040303@huawei.com>
-MIME-version: 1.0
-Content-type: text/plain; charset=ISO-8859-1
-Content-transfer-encoding: 7BIT
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:11.0) Gecko/20120312
- Thunderbird/11.0
-X-CFilter-Loop: Reflected
-References: <CAFeW=pZ8Y7ycxjxro7zBMqdtaCOYs4RmoxtDrsN8+mqLhOL--g@mail.gmail.com>
- <20120518081912.16779.21065.stgit@t> <20120521140324.GA5091@sergelap>
+	Mon, 21 May 2012 20:35:25 -0400
+MIME-Version: 1.0
+In-Reply-To: <Pine.LNX.4.44L0.1205211426040.1725-100000@iolanthe.rowland.org>
+References: <CACVXFVPeicEStTqtdO3Jt32JuhP3+_kof7vqgErK_iSDWdt92w@mail.gmail.com>
+	<Pine.LNX.4.44L0.1205211426040.1725-100000@iolanthe.rowland.org>
+Date: Tue, 22 May 2012 08:35:21 +0800
+Message-ID: <CACVXFVMCaYPWMiWeKa7tz=Xmi4PLez-3=1rnVPODYvSXBG4Y2Q@mail.gmail.com>
+Subject: =?UTF-8?Q?Re=3A_Race_condition_between_driver=5Fprobe=5Fdevice_and_d?=
+	=?UTF-8?Q?evice=5Fshutdown=E2=80=8F?=
+From: Ming Lei <ming.lei@canonical.com>
+To: Alan Stern <stern@rowland.harvard.edu>
+Cc: Greg KH <gregkh@linuxfoundation.org>,
+        Wedson Almeida Filho <wedsonaf@gmail.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        linux-kernel@vger.kernel.org, Linux PM List <linux-pm@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Serge Hallyn wrote:
+On Tue, May 22, 2012 at 2:29 AM, Alan Stern <stern@rowland.harvard.edu> wrote:
+> On Mon, 21 May 2012, Ming Lei wrote:
+>> Another candidate fix is to register a reboot notifier in driver core to prevent
+>> driver from being bound or unbound from start of reboot/shutdown, but looks
+>> not easy as the way of holding device locks.
+>
+> I'd guess it was done this way so that the shutdown task wouldn't have
+> to wait for a buggy driver that didn't want to release the device lock
+> (or that crashed while holding the lock).
 
-> Quoting Amos Kong (akong@redhat.com):
->> @ mount -t cgroup -o devices none /cgroup
->> @ mkdir /cgroups/devices
->> @ ls -l /dev/dm-3
->>  brw-rw----. 1 root disk 253, 3 Oct 14 19:03 /dev/dm-3
->> @ echo 'b 253:3 rw' > devices.deny
->> but I can still write it by 'dd if=/dev/zero of=/dev/dm-3'
->>
->> In devcgroup_create(), we create a new whitelist, and add first
->> entry which type is 'DEV_ALL'. Execute "# echo 'b 253:3 rw' >
->> devices.deny", dev_whitelist_rm() will update access of first
->> entry to 1(m), but type of first entry is still 'DEV_ALL'.
-> 
-> Hi,
-> 
-> thanks.  You raise a good point, but I think it needs some discussion.
-> 
-> What happens right now is that if you have the 'a *:* rwm' entry and do
-> echo 'b 253:3 rw' > devices.deny, then when you next cat devices.list you
-> will still see the 'a *:* rwm' entry.  So there should be no confusion
-> over why the dd succeeds.  You didn't remove the entry, because there
-> was no match echoed into devices.deny.
+Maybe, so I understand you agree on adding the device lock as did
+in the patch, don't I?
 
+Also we can add below line before acquiring device lock to help
+toubleshoot buggy driver.
 
-No, you'll see the entry has been changed to 'a *:* m', so I think we
-should at least fix this.
+               dev_dbg(dev, "acquiring device lock for shutdown\n");
+
+>
+> It's not clear that the reboot notifier approach would work.  What
+> about probes that had already started when notifier was called?
+
+Looks holding device lock is still needed in the notifier callback for
+handling the case if reboot notifier approach is taken.
+
+IMO, the way of holding device lock is better than reboot notifier approach.
+
+Thanks,
+--
+Ming Lei
