@@ -1,79 +1,119 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756132Ab2EVKXs (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 May 2012 06:23:48 -0400
-Received: from bedivere.hansenpartnership.com ([66.63.167.143]:47923 "EHLO
-	bedivere.hansenpartnership.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751850Ab2EVKXq (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 May 2012 06:23:46 -0400
-Message-ID: <1337682220.2932.7.camel@dabdike.int.hansenpartnership.com>
-Subject: Re: v3.4 will not compile
-From: James Bottomley <James.Bottomley@HansenPartnership.com>
-To: David Rientjes <rientjes@google.com>
-Cc: James Borum <james.borum@gmail.com>,
-        Alexander Viro <viro@zeniv.linux.org.uk>,
-        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org
-Date: Tue, 22 May 2012 11:23:40 +0100
-In-Reply-To: <alpine.DEB.2.00.1205212038100.13522@chino.kir.corp.google.com>
-References: <CAGFGw3m_aTYv7hGYVQAajoQJ5nD7jE8iO9VdjFtQZcA72kKPew@mail.gmail.com>
-	 <alpine.DEB.2.00.1205212038100.13522@chino.kir.corp.google.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3 
+	id S1757593Ab2EVKZR (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 May 2012 06:25:17 -0400
+Received: from mailhub.sw.ru ([195.214.232.25]:20882 "EHLO relay.sw.ru"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754200Ab2EVKZP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 May 2012 06:25:15 -0400
+Subject: [PATCH] NFSd: fix locking in nfsd_forget_delegations()
+To: bfields@fieldses.org
+From: Stanislav Kinsbursky <skinsbursky@parallels.com>
+Cc: linux-nfs@vger.kernel.org, linux-kernel@vger.kernel.org, devel@openvz.org
+Date: Tue, 22 May 2012 14:25:14 +0400
+Message-ID: <20120522102444.6988.45434.stgit@localhost.localdomain>
+User-Agent: StGit/0.16
+MIME-Version: 1.0
+Content-Type: text/plain; charset="utf-8"
 Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2012-05-21 at 20:39 -0700, David Rientjes wrote:
-> On Mon, 21 May 2012, James Borum wrote:
-> 
-> > fs/built-in.o: In function `gfs2_lock':
-> > file.c:(.text+0x3d7689): undefined reference to `dlm_posix_lock'
-> > file.c:(.text+0x3d76c8): undefined reference to `dlm_posix_unlock'
-> > file.c:(.text+0x3d76e8): undefined reference to `dlm_posix_get'
-> > fs/built-in.o: In function `gdlm_cancel':
-> > lock_dlm.c:(.text+0x3e9e75): undefined reference to `dlm_unlock'
-> > fs/built-in.o: In function `gdlm_lock':
-> > lock_dlm.c:(.text+0x3ea082): undefined reference to `dlm_lock'
-> > fs/built-in.o: In function `gdlm_unmount':
-> > lock_dlm.c:(.text+0x3ea60e): undefined reference to `dlm_release_lockspace'
-> > fs/built-in.o: In function `control_unlock':
-> > lock_dlm.c:(.text+0x3ea7dd): undefined reference to `dlm_unlock'
-> > fs/built-in.o: In function `sync_lock':
-> > lock_dlm.c:(.text+0x3ea920): undefined reference to `dlm_lock'
-> > fs/built-in.o: In function `gdlm_put_lock':
-> > lock_dlm.c:(.text+0x3eb1fc): undefined reference to `dlm_unlock'
-> > fs/built-in.o: In function `gdlm_mount':
-> > lock_dlm.c:(.text+0x3eb5ad): undefined reference to `dlm_new_lockspace'
-> > lock_dlm.c:(.text+0x3eb869): undefined reference to `dlm_unlock'
-> > lock_dlm.c:(.text+0x3eb8d1): undefined reference to `dlm_release_lockspace'
-> > make: *** [.tmp_vmlinux1] Error 1
-> 
-> I'm suspecting you have CONFIG_DLM=m while CONFIG_GFS2_FS=y.  Seems like 
-> we'll need to require CONFIG_DLM to be built-in in such a configuration?
-> 
-> Signed-off-by: David Rientjes <rientjes@google.com>
-> ---
-> diff --git a/fs/gfs2/Kconfig b/fs/gfs2/Kconfig
-> --- a/fs/gfs2/Kconfig
-> +++ b/fs/gfs2/Kconfig
-> @@ -26,7 +26,7 @@ config GFS2_FS
->  config GFS2_FS_LOCKING_DLM
->  	bool "GFS2 DLM locking"
->  	depends on (GFS2_FS!=n) && NET && INET && (IPV6 || IPV6=n) && \
-> -		HOTPLUG && DLM && CONFIGFS_FS && SYSFS
-> +		HOTPLUG && (DLM=y) && CONFIGFS_FS && SYSFS
+This patch adds recall_lock hold to nfsd_forget_delegations() to protect
+nfsd_process_n_delegations() call.
+Also, looks like it would be better to collect delegations to some local
+on-stack list, and then unhash collected list. This split allows to simplify
+locking, because delegation traversing is protected by recall_lock, when
+delegation unhash is protected by client_mutex.
 
-No, that's not it.  The problem is that DLM can't be a module if GFS_FS
-is built in because GFS needs to use DLM functions (so DLM can be a
-module as long GFS_FS is)
+Signed-off-by: Stanislav Kinsbursky <skinsbursky@parallels.com>
+---
+ fs/nfsd/nfs4state.c |   32 ++++++++++++++++++++++++--------
+ 1 files changed, 24 insertions(+), 8 deletions(-)
 
-so this should be
-
-&& (DLM=y || (DLM=m && GFS_FS=m))
-
-James
-
+diff --git a/fs/nfsd/nfs4state.c b/fs/nfsd/nfs4state.c
+index 21266c7..f004e61 100644
+--- a/fs/nfsd/nfs4state.c
++++ b/fs/nfsd/nfs4state.c
+@@ -2597,7 +2597,7 @@ out:
+ 	return ret;
+ }
+ 
+-static void nfsd_break_one_deleg(struct nfs4_delegation *dp)
++static void nfsd_break_one_deleg(struct nfs4_delegation *dp, void *data)
+ {
+ 	/* We're assuming the state code never drops its reference
+ 	 * without first removing the lease.  Since we're in this lease
+@@ -2633,7 +2633,7 @@ static void nfsd_break_deleg_cb(struct file_lock *fl)
+ 	spin_lock(&recall_lock);
+ 	fp->fi_had_conflict = true;
+ 	list_for_each_entry(dp, &fp->fi_delegations, dl_perfile)
+-		nfsd_break_one_deleg(dp);
++		nfsd_break_one_deleg(dp, NULL);
+ 	spin_unlock(&recall_lock);
+ }
+ 
+@@ -4694,7 +4694,7 @@ void nfsd_forget_openowners(u64 num)
+ 	printk(KERN_INFO "NFSD: Forgot %d open owners", count);
+ }
+ 
+-int nfsd_process_n_delegations(u64 num, void (*deleg_func)(struct nfs4_delegation *))
++int nfsd_process_n_delegations(u64 num, void (*deleg_func)(struct nfs4_delegation *, void *), void *data)
+ {
+ 	int i, count = 0;
+ 	struct nfs4_file *fp, *fnext;
+@@ -4703,7 +4703,7 @@ int nfsd_process_n_delegations(u64 num, void (*deleg_func)(struct nfs4_delegatio
+ 	for (i = 0; i < FILE_HASH_SIZE; i++) {
+ 		list_for_each_entry_safe(fp, fnext, &file_hashtbl[i], fi_hash) {
+ 			list_for_each_entry_safe(dp, dnext, &fp->fi_delegations, dl_perfile) {
+-				deleg_func(dp);
++				deleg_func(dp, data);
+ 				if (++count == num)
+ 					return count;
+ 			}
+@@ -4713,15 +4713,31 @@ int nfsd_process_n_delegations(u64 num, void (*deleg_func)(struct nfs4_delegatio
+ 	return count;
+ }
+ 
++/* Called under the recall_lock spinlock. */
++static void
++collect_delegation(struct nfs4_delegation *dp, void *data)
++{
++	struct list_head *list = data;
++
++	list_move(&dp->dl_perfile, list);
++}
++
+ void nfsd_forget_delegations(u64 num)
+ {
+ 	unsigned int count;
++	struct nfs4_delegation *dp, *dnext;
++	LIST_HEAD(unhash_list);
+ 
+-	nfs4_lock_state();
+-	count = nfsd_process_n_delegations(num, unhash_delegation);
+-	nfs4_unlock_state();
++	spin_lock(&recall_lock);
++	count = nfsd_process_n_delegations(num, collect_delegation, &unhash_list);
++	spin_unlock(&recall_lock);
+ 
+ 	printk(KERN_INFO "NFSD: Forgot %d delegations", count);
++
++	nfs4_lock_state();
++	list_for_each_entry_safe(dp, dnext, &unhash_list, dl_perfile)
++		unhash_delegation(dp);
++	nfs4_unlock_state();
+ }
+ 
+ void nfsd_recall_delegations(u64 num)
+@@ -4730,7 +4746,7 @@ void nfsd_recall_delegations(u64 num)
+ 
+ 	nfs4_lock_state();
+ 	spin_lock(&recall_lock);
+-	count = nfsd_process_n_delegations(num, nfsd_break_one_deleg);
++	count = nfsd_process_n_delegations(num, nfsd_break_one_deleg, NULL);
+ 	spin_unlock(&recall_lock);
+ 	nfs4_unlock_state();
+ 
 
