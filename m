@@ -1,50 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756889Ab2EVVrm (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 May 2012 17:47:42 -0400
-Received: from mga01.intel.com ([192.55.52.88]:40810 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752348Ab2EVVrl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 May 2012 17:47:41 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
-   d="scan'208";a="155844952"
-Date: Tue, 22 May 2012 23:57:43 +0200
-From: Samuel Ortiz <sameo@linux.intel.com>
-To: Jonghwa Lee <jonghwa3.lee@samsung.com>
-Cc: linux-kernel@vger.kernel.org,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Liam Gridwodd <lrg@ti.com>, Alessandro Zummo <a.zummo@towertech.it>,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        MyungJoo Ham <myungjoo.ham@samsung.com>,
-        Chanwoo Choi <cw00.choi@samsung.com>,
-        Chiwoong Byun <woong.byun@samsung.com>
-Subject: Re: [PATCH v4 1/3] mfd: MAX77686: Add Maxim 77686 mfd driver
-Message-ID: <20120522215743.GF10210@sortiz-mobl>
-References: <1337593907-6615-1-git-send-email-jonghwa3.lee@samsung.com>
- <1337593907-6615-2-git-send-email-jonghwa3.lee@samsung.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1337593907-6615-2-git-send-email-jonghwa3.lee@samsung.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1757381Ab2EVVu4 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 May 2012 17:50:56 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:4908 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752782Ab2EVVuz (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 May 2012 17:50:55 -0400
+X-Authority-Analysis: v=2.0 cv=D8PF24tj c=1 sm=0 a=ZycB6UtQUfgMyuk2+PxD7w==:17 a=XQbtiDEiEegA:10 a=xF3DEj1R0Q8A:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=meVymXHHAAAA:8 a=ayC55rCoAAAA:8 a=nNH1UW0TvuUlUF5Xe2IA:9 a=PUjeQqilurYA:10 a=ZycB6UtQUfgMyuk2+PxD7w==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 74.67.80.29
+Message-ID: <1337723451.13348.121.camel@gandalf.stny.rr.com>
+Subject: Re: [RFC][PATCH 00/32] Nohz cpusets v2 (adaptive tickless kernel)
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Thomas Gleixner <tglx@linutronix.de>
+Cc: Peter Zijlstra <peterz@infradead.org>,
+        Gilad Ben-Yossef <gilad@benyossef.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        LKML <linux-kernel@vger.kernel.org>, linaro-sched-sig@lists.linaro.org,
+        Alessio Igor Bogani <abogani@kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>, Avi Kivity <avi@redhat.com>,
+        Chris Metcalf <cmetcalf@tilera.com>, Christoph Lameter <cl@linux.com>,
+        Daniel Lezcano <daniel.lezcano@linaro.org>,
+        Geoff Levand <geoff@infradead.org>, Ingo Molnar <mingo@kernel.org>,
+        Max Krasnyansky <maxk@qualcomm.com>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Stephen Hemminger <shemminger@vyatta.com>,
+        Sven-Thorsten Dietrich <thebigcorporation@gmail.com>,
+        Zen Lin <zen@openhuawei.org>
+Date: Tue, 22 May 2012 17:50:51 -0400
+In-Reply-To: <alpine.LFD.2.02.1205222327080.3231@ionos>
+References: <1332338318-5958-1-git-send-email-fweisbec@gmail.com>
+	  <CAOtvUMf0Zp9C-jT=ymEo6oyxnsgkvSiGDUs5V_56v4Ai2QyBJQ@mail.gmail.com>
+	 <1332861025.16159.236.camel@twins>
+	 <alpine.LFD.2.02.1205222327080.3231@ionos>
+Content-Type: text/plain; charset="ISO-8859-15"
+X-Mailer: Evolution 3.2.2-1 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Jongwha,
+On Tue, 2012-05-22 at 23:31 +0200, Thomas Gleixner wrote:
 
-On Mon, May 21, 2012 at 06:51:45PM +0900, Jonghwa Lee wrote:
-> This patch is device driver for MAX77686 chip.
-> MAX77686 is PMIC and includes regulator and rtc on it.
-> This driver is core of MAX77686 chip, so provides common support for accessing
-> on-chip devices. It uses irq_domain to manage irq and regmap to read/write data
-> to its register with i2c bus.
-I'll try to push this one after rc1, or as a late merge window pull request.
+> diff --git a/arch/x86/kernel/tsc.c b/arch/x86/kernel/tsc.c
+> index 590900c..dc8ecc3 100644
+> --- a/arch/x86/kernel/tsc.c
+> +++ b/arch/x86/kernel/tsc.c
+> @@ -109,6 +109,10 @@ static int __init tsc_setup(char *str)
+>  {
+>  	if (!strcmp(str, "reliable"))
+>  		tsc_clocksource_reliable = 1;
+> +	if (!strcmp(str, "perfect")) {
+> +		tsc_clocksource_reliable = 1;
+> +		sched_clock_stable = 1;
+> +	}
 
-Cheers,
-Samuel.
+	else if(!strcmp(str, "pony")) {
+		tsc_clocksource_reliable = 1;
+		sched_clock_stable = 1;
+		tsc_perfect_smp_synchronization = 1;
+	}
 
--- 
-Intel Open Source Technology Centre
-http://oss.intel.com/
+-- Steve
+
+>  	if (!strncmp(str, "noirqtime", 9))
+>  		no_sched_irq_time = 1;
+>  	return 1;
+>  
+
+
