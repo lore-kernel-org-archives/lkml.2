@@ -1,49 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759131Ab2EVPCK (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 May 2012 11:02:10 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:38557 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759098Ab2EVPCH (ORCPT
+	id S1758958Ab2EVPDq (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 May 2012 11:03:46 -0400
+Received: from relay.parallels.com ([195.214.232.42]:34265 "EHLO
+	relay.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756246Ab2EVPDp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 May 2012 11:02:07 -0400
-Date: Tue, 22 May 2012 08:02:02 -0700
-From: Greg KH <gregkh@linuxfoundation.org>
-To: Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org, linux-usb@vger.kernel.org
-Subject: Re: [GIT PATCH] USB patches for 3.5-rc1
-Message-ID: <20120522150202.GA20157@kroah.com>
-References: <20120522131655.GA15349@kroah.com>
+	Tue, 22 May 2012 11:03:45 -0400
+Message-ID: <4FBBAAC9.2090403@parallels.com>
+Date: Tue, 22 May 2012 19:03:37 +0400
+From: Stanislav Kinsbursky <skinsbursky@parallels.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120522131655.GA15349@kroah.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: "Myklebust, Trond" <Trond.Myklebust@netapp.com>
+CC: "linux-nfs@vger.kernel.org" <linux-nfs@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "devel@openvz.org" <devel@openvz.org>
+Subject: Re: [PATCH] NFS: init client before declaration
+References: <20120522124018.338.20817.stgit@localhost.localdomain> <1337696984.4269.4.camel@lade.trondhjem.org>
+In-Reply-To: <1337696984.4269.4.camel@lade.trondhjem.org>
+Content-Type: text/plain; charset="UTF-8"; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, May 22, 2012 at 06:16:55AM -0700, Greg KH wrote:
-> The following changes since commit 36be50515fe2aef61533b516fa2576a2c7fe7664:
-> 
->   Linux 3.4-rc7 (2012-05-12 18:37:47 -0700)
-> 
-> are available in the git repository at:
-> 
->   git://git.kernel.org/pub/scm/linux/kernel/git/gregkh/usb.git/ tags/usb-3.5-rc1
-> 
-> for you to fetch changes up to 36be50515fe2aef61533b516fa2576a2c7fe7664:
-> 
->   Linux 3.4-rc7 (2012-05-12 18:37:47 -0700)
+On 22.05.2012 18:29, Myklebust, Trond wrote:
+> On Tue, 2012-05-22 at 16:40 +0400, Stanislav Kinsbursky wrote:
+>> Client have to be initialized prior to adding it to per-net clients list,
+>> because otherwise there are races, shown below:
+>>
+>> CPU#0					CPU#1
+>> _____					_____
+>>
+>> nfs_get_client
+>> nfs_alloc_client
+>> list_add(..., nfs_client_list)
+>> 					rpc_fill_super
+>> 					rpc_pipefs_event
+>> 					nfs_get_client_for_event
+>> 					__rpc_pipefs_event
+>> 					(clp->cl_rpcclient is uninitialized)
+>> 					BUG()
+>> init_client
+>> clp->cl_rpcclient = ...
+>>
+>
+> Why not simply change nfs_get_client_for_event() so that it doesn't
+> touch nfs_clients that have clp->cl_cons_state!=NFS_CS_READY?
+>
+> That should ensure that it doesn't touch nfs_clients that failed to
+> initialise and/or are still in the process of being initialised.
+>
 
-Ah crap, I put these tags on the wrong branch, so none of them will
-work, sorry about that.  Let me go fix them and resend them.
+It looks like in this case we will have another races:
 
-And here I was wondering why 'git requestpull' wasn't showing the
-diffstat, I was thinking it was just due to me using the git version of
-git...
+CPU#0						CPU#1
+_____						_____
 
-sorry,
+nfs4_init_client
+nfs_idmap_new
+nfs_idmap_register
+rpc_get_sb_net (fail - no pipefs)
+  					rpc_fill_super
+  					rpc_pipefs_event
+  					nfs_get_client_for_event
+					(skip client - NFS_CS_READY is not set)
+nfs_mark_client_ready(NFS_CS_READY)
 
-greg k-h
+
+And we are having client without idmap pipe...
+
+
+> Cheers
+>    Trond
+>
+
+
+-- 
+Best regards,
+Stanislav Kinsbursky
