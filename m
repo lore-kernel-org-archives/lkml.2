@@ -1,56 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932120Ab2EVRSe (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 May 2012 13:18:34 -0400
-Received: from smtp102.prem.mail.ac4.yahoo.com ([76.13.13.41]:48118 "HELO
-	smtp102.prem.mail.ac4.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1755444Ab2EVRSc (ORCPT
+	id S1759928Ab2EVRTP (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 May 2012 13:19:15 -0400
+Received: from avon.wwwdotorg.org ([70.85.31.133]:35181 "EHLO
+	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753979Ab2EVRTO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 May 2012 13:18:32 -0400
-X-Yahoo-Newman-Property: ymail-3
-X-YMail-OSG: UdXpC5cVM1nBOkCKXdz885rs6kXGzFnGXNR3ONbghbpbSg7
- VOVsRP1xjOtFnQYjfArCurMgA97Hgtk7jR24kmSGnbplJ.LwLzstX_n4CbHh
- Izg4CIRNBuRKVdxMR8Nv28H1.oXWDrslW_bRqWLzDKXYNMRGZzCw5AyFdgec
- AVDYxI6F1ZdZn_vA5e7JCJGJPAIc4.mVlC0lQzU1_HmVLs0mITwBIo77AJ4W
- 0ei72NDlphBmdH.stwTyiRe8OgqDu02Yw1NVwVPN48DCGKrwUBM2_hdWKHFz
- PfCc7tPvRySNOT.paqaQX4FMS8uY9pxF3V3Uec_tmbtOcLSDcwrU3xMoY3T0
- hhawRWnnIBRPU2Zsu_gYarf5GvRTYMVF57mTyEHECIGrEzOynHTxP5msrYZw
- H
-X-Yahoo-SMTP: _Dag8S.swBC1p4FJKLCXbs8NQzyse1SYSgnAbY0-
-Date: Tue, 22 May 2012 12:18:29 -0500 (CDT)
-From: Christoph Lameter <cl@linux.com>
-X-X-Sender: cl@router.home
-To: Glauber Costa <glommer@parallels.com>
-cc: linux-kernel@vger.kernel.org, cgroups@vger.kernel.org, linux-mm@kvack.org,
-        Pekka Enberg <penberg@cs.helsinki.fi>,
-        David Rientjes <rientjes@google.com>
-Subject: Re: [PATCH v2] slab+slob: dup name string
-In-Reply-To: <4FBBB059.1060903@parallels.com>
-Message-ID: <alpine.DEB.2.00.1205221216590.17721@router.home>
-References: <1337680298-11929-1-git-send-email-glommer@parallels.com> <alpine.DEB.2.00.1205220857380.17600@router.home> <4FBBB059.1060903@parallels.com>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+	Tue, 22 May 2012 13:19:14 -0400
+Message-ID: <4FBBCA8F.3050903@wwwdotorg.org>
+Date: Tue, 22 May 2012 11:19:11 -0600
+From: Stephen Warren <swarren@wwwdotorg.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+To: Laxman Dewangan <ldewangan@nvidia.com>
+CC: Stephen Warren <swarren@nvidia.com>, "olof@lixom.net" <olof@lixom.net>,
+        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>
+Subject: Re: [PATCH 2/2] ARM: dt: tegra: cardhu: register core regulator tps65911
+References: <1337691917-15040-1-git-send-email-ldewangan@nvidia.com> <1337691917-15040-2-git-send-email-ldewangan@nvidia.com> <4FBBC192.7030900@wwwdotorg.org> <4FBBC830.2060802@nvidia.com>
+In-Reply-To: <4FBBC830.2060802@nvidia.com>
+X-Enigmail-Version: 1.5pre
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 22 May 2012, Glauber Costa wrote:
+On 05/22/2012 11:09 AM, Laxman Dewangan wrote:
+> On Tuesday 22 May 2012 10:10 PM, Stephen Warren wrote:
+>> On 05/22/2012 07:05 AM, Laxman Dewangan wrote:
+>>> Add device info for the PMIC device tps65911 in tegra-cardhu
+>>> dts file. This device supports the multiple regulator rails,
+>>> gpio, interrupts.
+>> FYI, patch 1 in this series looks fine. Some comments below though:
+>>
+>>> diff --git a/arch/arm/boot/dts/tegra-cardhu.dts
+>>> b/arch/arm/boot/dts/tegra-cardhu.dts
+>>> +        tps65911: tps65911@2d {
+>>> +            compatible = "ti,tps65911";
+>>> +            reg =<0x2d>;
+>>> +
+>>> +            #gpio-cells =<2>;
+>>> +            gpio-controller;
+>>> +
+>>> +            regulators {
+>>
+>> Please add the following properties here:
+>>
+>>     #address-cells =<1>;
+>>     #size-cells =<0>;
+>>
+>>> +                vdd1_reg: vdd1 {
+>>
+>> This node name should be "regulator", since nodes are generally named
+>> after the class of object they represent. Since all the nodes will then
+>> have the same name, you'll need to add a unit address ("@nnnn") to the
+>> node name.
+> 
+> Nop, we can not do it. The node name should match with the name
+> mentioned in driver otherwise the regulator node search will fail
+> Following is the excerpt of the code:
 
-> On 05/22/2012 05:58 PM, Christoph Lameter wrote:
-> > On Tue, 22 May 2012, Glauber Costa wrote:
-> >
-> > > [ v2: Also dup string for early caches, requested by David Rientjes ]
-> >
-> > kstrdups that early could cause additional issues. Its better to leave
-> > things as they were.
-> >
->
-> For me is really all the same. But note that before those kstrdups, we do a
-> bunch of kmallocs as well already. (ex:
+Hmm. That seems wrong. I thought I had seen at least some regulator
+bindings where these nodes included a name property so that the nodes
+didn't need any particular name.
 
-We check carefully and make sure those caches are present before doing
-these kmallocs. See the slab bootup code. A kstrdup may take a variously
-sized string and explode because the required kmalloc cache is not
-present.
+Olof, what are your thoughts here - do we need to fix the code so the
+node names aren't relevant? IIRC, we have had to change some other
+bindings due to the same issue.
 
+...
+>> Nitpicky, but the labels might be more logical as reg_vdd1 rather than
+>> vdd1_reg, but not a big deal.
+>>
+>> So, please replace the line above with:
+>>
+>>     reg_vdd1: regulator@0 {
+>>         reg =<0>;
+>>
+> 
+> Why do we really require the reg at all?
+> I dont think any usage of doing this.
+
+I guess if these regulators are enabled at boot and always on, we don't
+even need the labels for now; we could add labels later as/when drivers
+begin to dynamically control the regulators.
