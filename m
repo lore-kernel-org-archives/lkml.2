@@ -1,55 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758824Ab2EVOpF (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 May 2012 10:45:05 -0400
-Received: from mail-ey0-f174.google.com ([209.85.215.174]:65534 "EHLO
-	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755487Ab2EVOpC convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 May 2012 10:45:02 -0400
+	id S1758871Ab2EVOpL (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 May 2012 10:45:11 -0400
+Received: from mx2.netapp.com ([216.240.18.37]:42833 "EHLO mx2.netapp.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1758724Ab2EVOpH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 May 2012 10:45:07 -0400
+X-IronPort-AV: E=Sophos;i="4.75,637,1330934400"; 
+   d="scan'208";a="649427330"
+From: "Myklebust, Trond" <Trond.Myklebust@netapp.com>
+To: Stanislav Kinsbursky <skinsbursky@parallels.com>
+CC: "bfields@fieldses.org" <bfields@fieldses.org>,
+        "linux-nfs@vger.kernel.org" <linux-nfs@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "devel@openvz.org" <devel@openvz.org>
+Subject: Re: [PATCH v3] NFS: put net on idr allocation failure
+Thread-Topic: [PATCH v3] NFS: put net on idr allocation failure
+Thread-Index: AQHNN/FpgjfuYDvE0UGXu8PQk8QqApbWVlWAgAABGYCAAAD8AA==
+Date: Tue, 22 May 2012 14:45:06 +0000
+Message-ID: <1337697906.4269.10.camel@lade.trondhjem.org>
+References: <20120522073709.20602.33027.stgit@localhost.localdomain>
+	  <20120522080307.21303.60025.stgit@localhost.localdomain>
+	 <1337697459.4269.7.camel@lade.trondhjem.org>
+	 <4FBBA59F.2050001@parallels.com>
+In-Reply-To: <4FBBA59F.2050001@parallels.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.104.60.115]
+Content-Type: text/plain; charset="utf-8"
+Content-ID: <63F0A0F1E3FF9E4E96BB851668AF4913@tahoe.netapp.com>
 MIME-Version: 1.0
-In-Reply-To: <20120522092552.GB21999@opensource.wolfsonmicro.com>
-References: <CAOMZO5A-05jTYpEEPfnJvWpby1YJ1M7=KPn=zahbQrQOgbjR4g@mail.gmail.com>
-	<201205221053.21792.marc@cpdesign.com.au>
-	<20120522092552.GB21999@opensource.wolfsonmicro.com>
-Date: Tue, 22 May 2012 11:45:01 -0300
-Message-ID: <CAOMZO5BvQ7gpye53=+egExfzX_hJLN9AiR2QY3cbEiDSb=9XJQ@mail.gmail.com>
-Subject: Re: mc13xxx-core: kernel hangs after 'regmap_read'
-From: Fabio Estevam <festevam@gmail.com>
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>
-Cc: Marc Reilly <marc@cpdesign.com.au>, Samuel Ortiz <sameo@linux.intel.com>,
-        Sascha Hauer <kernel@pengutronix.de>,
-        =?UTF-8?Q?Philippe_R=C3=A9tornaz?= <philippe.retornaz@epfl.ch>,
-        linux-kernel <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by nfs id q4MEjKLn017775
 
-On Tue, May 22, 2012 at 6:25 AM, Mark Brown
-<broonie@opensource.wolfsonmicro.com> wrote:
-> On Tue, May 22, 2012 at 10:53:21AM +1000, Marc Reilly wrote:
->
->> It was a new format which introduced a padding bit. I wonder if Mark Brown can
->> comment on whether any other devices are using it successfully. (Sorry I can't
->> offer more insights there).
->
-> It's only this chip that's doing so. Â I'd suggest putting a scope on it
-> and having a look at the formatted data.
+On Tue, 2012-05-22 at 18:41 +0400, Stanislav Kinsbursky wrote:
+> On 22.05.2012 18:37, Myklebust, Trond wrote:
+> > On Tue, 2012-05-22 at 12:03 +0400, Stanislav Kinsbursky wrote:
+> >> Signed-off-by: Stanislav Kinsbursky<skinsbursky@parallels.com>
+> >> ---
+> >>   fs/nfs/client.c |    4 +++-
+> >>   1 files changed, 3 insertions(+), 1 deletions(-)
+> >>
+> >> diff --git a/fs/nfs/client.c b/fs/nfs/client.c
+> >> index 44cd70f..ae29d4f 100644
+> >> --- a/fs/nfs/client.c
+> >> +++ b/fs/nfs/client.c
+> >> @@ -176,8 +176,10 @@ static struct nfs_client *nfs_alloc_client(const struct nfs_client_initdata *cl_
+> >>
+> >>   #ifdef CONFIG_NFS_V4
+> >>   	err = nfs_get_cb_ident_idr(clp, cl_init->minorversion);
+> >> -	if (err)
+> >> +	if (err) {
+> >> +		put_net(clp->net);
+> >>   		goto error_cleanup;
+> >> +	}
+> >>
+> >>   	spin_lock_init(&clp->cl_lock);
+> >>   	INIT_DELAYED_WORK(&clp->cl_renewd, nfs4_renew_state);
+> >>
+> >
+> > Let's just move the actual get_net() call to the end of the function.
+> >
+> 
+> Ok. But it will look a bit strange, like this:
+> 
+> clp->net = net;
+> ...
+> nfs_get_cb_ident_idr
+> ...
+> get_net(clp->net)
+> 
+> Or I can pass net to nfs_get_cb_ident_idr() as a parameter.
+> Which solution is more preferable&?
 
-As I don't have a way to access the SPI pins via scope I did a
+Just put the get_net() at the end. It doesn't matter if it looks a bit
+odd: the intent is still obvious.
 
-git checkout  91b5e7411, which corresponds to the following commit:
+-- 
+Trond Myklebust
+Linux NFS client maintainer
 
-commit 91b5e741184ea9836cd7d7509e4f9b6eefa27df2
-Author: Marc Reilly <marc@cpdesign.com.au>
-Date:   Sun Apr 1 16:41:37 2012 +1000
+NetApp
+Trond.Myklebust@netapp.com
+www.netapp.com
 
-    mfd: Use regmap for the mc13xxx-core register access
-
-,and now at least it does not silently hang and gives me a regmap failure:
-
-spi_imx imx31-cspi.1: master is unqueued, this is deprecated
-mc13xxx spi1.1: Failed to initialize register map: -22
-mc13xxx: probe of spi1.1 failed with error -22
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
