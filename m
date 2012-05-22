@@ -1,99 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757496Ab2EVJdZ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 May 2012 05:33:25 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:49167 "EHLO mx1.redhat.com"
+	id S1757481Ab2EVJgS (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 May 2012 05:36:18 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:13926 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753334Ab2EVJdY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 May 2012 05:33:24 -0400
-Message-ID: <4FBB5D4C.9090804@redhat.com>
-Date: Tue, 22 May 2012 11:33:00 +0200
-From: Hans de Goede <hdegoede@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120425 Thunderbird/12.0
+	id S1757318Ab2EVJgQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 May 2012 05:36:16 -0400
+Date: Tue, 22 May 2012 11:36:08 +0200
+From: Alexander Gordeev <agordeev@redhat.com>
+To: Yinghai Lu <yinghai@kernel.org>
+Cc: linux-kernel@vger.kernel.org, x86@kernel.org,
+        Suresh Siddha <suresh.b.siddha@intel.com>,
+        Cyrill Gorcunov <gorcunov@openvz.org>
+Subject: Re: [PATCH 2/3] x86: x2apic/cluster: Make use of lowest priority
+ delivery mode
+Message-ID: <20120522093608.GA8382@dhcp-26-207.brq.redhat.com>
+References: <20120518102640.GB31517@dhcp-26-207.brq.redhat.com>
+ <CAE9FiQXUM-+KSZ1OcxipRW-3XQED3Csyxs=0ke0hJZR7E_hrhg@mail.gmail.com>
+ <20120521081330.GB28930@dhcp-26-207.brq.redhat.com>
+ <CAE9FiQUVJ3YHQfJ5i1fr8VU8-n_Rpd683DZ7M+54JwLk5kL_=g@mail.gmail.com>
+ <CAE9FiQUA_hSA4wH6Sm93+yVty6X=Dq8UGinC7PNRcFcbpB3MpQ@mail.gmail.com>
 MIME-Version: 1.0
-To: Jiri Slaby <jslaby@suse.cz>
-CC: Jiri Kosina <jkosina@suse.cz>, linux-kernel@vger.kernel.org,
-        USB list <linux-usb@vger.kernel.org>
-Subject: Re: [PATCH] usb-hid-core: Set intfdata to NULL if probe fails
-References: <1337629176-1624-1-git-send-email-hdegoede@redhat.com> <4FBB469B.50801@suse.cz> <4FBB49CE.9020408@redhat.com> <4FBB4E51.6020607@suse.cz>
-In-Reply-To: <4FBB4E51.6020607@suse.cz>
-Content-Type: text/plain; charset=ISO-8859-2; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <CAE9FiQUA_hSA4wH6Sm93+yVty6X=Dq8UGinC7PNRcFcbpB3MpQ@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On Mon, May 21, 2012 at 04:33:03PM -0700, Yinghai Lu wrote:
+> >>        *dest_id = apic->cpu_mask_to_apicid_and(mask, cfg->domain);
+> >>
+> >> So we really need to submit all possible CPUs here ^^^ to be able finding the
+> >> best/heaviest cluster out of the 'mask'.
+> >
+> > ok.
+> 
+> Maybe you can not simply to change that to possible_cpu_mask.
+> 
+> otherwise assign_irq_vector will try to get same vector for all cpus
+> for one irq.
+> 
+> then will make x2apic cluster mode will one support 224 irqs instead.
 
-On 05/22/2012 10:29 AM, Jiri Slaby wrote:
-> On 05/22/2012 10:09 AM, Hans de Goede wrote:
->> Hi,
->>
->> On 05/22/2012 09:56 AM, Jiri Slaby wrote:
->>> On 05/21/2012 09:39 PM, Hans de Goede wrote:
->>>> other drivers which rely on frameworks which only call dev_set_drvdata
->>>> on the interface's device if no drvdata has been set
->>>
->>> This looks very broken as it relies on an undocumented behavior.
->>
->> I don't see how expecting intfdata to be NULL when an USB driver's
->> probe function gets called is broken, esp. since most
->> USB drivers will unconditionally set intfdata to something from
->> their probe functions, so it seems reasonable to assume that it is
->> not pointing to anything before probe gets called.
->
-> As you can see, it is not.
+I am curious if we broke this threshold since the current design was introduced
+in 2006? Not without an opposition from some notable maintainers ;)
 
-Notice I used the word "reasoanble" I still believe it is reasonable
-to expect intfdata to be NULL. intfdata is just an alias for dev_drvdata,
-and if no driver is bound to a device what should its drvdata be?
+> so you need to make vector_allocation_domain() to be less cpu set.
 
-So we have:
-1) A device which does not have a driver bound
-2) A potential drivers probe method being called (which will only
-    happen if 1. is true)
-3) That probe method expecting drvdata to be NULL since no driver is
-    bound
+Yeah, reserving a vector for dozens of CPUs while up to eight will actually use
+it seems an overkill. On the other hand, vector_allocation_domain() has been
+either all-CPUs or single-CPU so far.
 
-Surprise surprise (not). If no driver is bound what else can drvdata
-be but NULL, anything else would be a reminisce of a previous driver,
-and thus very likely a dangling pointer.
+May be it is time to bring some intelligence here?
 
->> it should
->> be NULL when their probe gets called.
->
-> No, this is not documented anywhere as far as I can see. And many
-> drivers just don't do that. The same for PCI and likely other buses
-> (like HID).
+I.e. if we move cluster selection from cpu_mask_to_apicid{,_and}() to
+vector_allocation_domain() ...
 
-Well on driver unbind the USB core explictly sets intfdata to NULL,
-which to me clearly signals intent that intfdata should be NULL when
-no driver is bound.
+	void vector_allocation_domain(int cpu,
+				      const struct cpumask *cpumask,
+				      struct cpumask *retmask);
 
-The usb code does not do clear intfdata on probe fail, I don't know why,
-likely because it expects a failed probe to not set it in the first
-place! But it probably is a very good idea to make the USB core set
-intfdata to NULL after a failed probe to ensure that it is NULL
-when no driver is bound, independent of driver behavior.
+... then it seems nicely fits into __ioapic_set_affinity(). Have to ensure it,
+though.
 
->> I cannot believe we are
->> even having this discussion, are you really trying to argue
->> that leaving intfdata as a dangling pointer, rather then setting
->> it to NULL (*) is better???
->
-> No, the patch looks correct. But you are expecting something which is
-> not still guaranteed.
+> 
+> Yinghai
 
-Well then lets work towards making it guaranteed, since I still believe
-the following holds true:
-1) drvdata is for a driver to store a pointer to driver specific data
-2) If no driver is bound, there is no driver specific data associated with
-    the device
-3) Thus logically drvdata should be NULL if no driver is bound.
-
-I'll do a patch for the USB-core to ensure that intfdata gets set to NULL
-on probe failure.
-
+-- 
 Regards,
-
-Hans
+Alexander Gordeev
+agordeev@redhat.com
