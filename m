@@ -1,71 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758417Ab2EVLQN (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 May 2012 07:16:13 -0400
-Received: from hqemgate04.nvidia.com ([216.228.121.35]:5344 "EHLO
-	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758219Ab2EVLQM convert rfc822-to-8bit (ORCPT
+	id S1758493Ab2EVLVz (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 May 2012 07:21:55 -0400
+Received: from e28smtp05.in.ibm.com ([122.248.162.5]:40707 "EHLO
+	e28smtp05.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758351Ab2EVLVy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 May 2012 07:16:12 -0400
-X-PGP-Universal: processed;
-	by hqnvupgp08.nvidia.com on Tue, 22 May 2012 04:16:05 -0700
-Date: Tue, 22 May 2012 14:15:32 +0300
-From: Peter De Schrijver <pdeschrijver@nvidia.com>
-To: "Turquette, Mike" <mturquette@ti.com>
-CC: Prashant Gaikwad <pgaikwad@nvidia.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: Re: Clock register in early init
-Message-ID: <20120522111532.GH8730@tbergstrom-lnx.Nvidia.com>
-References: <1337227884.2066.9.camel@pgaikwad-dt2>
- <20120517062131.GA9305@gmail.com>
- <1337316517.22560.19.camel@pgaikwad-dt2>
- <20120518112104.GL20304@tbergstrom-lnx.Nvidia.com>
- <CAJOA=zM_o1Nqw55xxFvw6KssM50Q+7yyo41rUSH2Aoo1neTMjg@mail.gmail.com>
- <20120521084642.GV20304@tbergstrom-lnx.Nvidia.com>
- <CAJOA=zNoj1nZ+zVURfhziqFem4F7_Y_B8s=Gp1Aptr0hgfj6Xw@mail.gmail.com>
+	Tue, 22 May 2012 07:21:54 -0400
+Message-ID: <4FBB7419.8090909@linux.vnet.ibm.com>
+Date: Tue, 22 May 2012 16:40:17 +0530
+From: Anshuman Khandual <khandual@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:11.0) Gecko/20120411 Thunderbird/11.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset="iso-8859-1"
-Content-Disposition: inline
-Content-Transfer-Encoding: 8BIT
-In-Reply-To: <CAJOA=zNoj1nZ+zVURfhziqFem4F7_Y_B8s=Gp1Aptr0hgfj6Xw@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: linux-kernel@vger.kernel.org, eranian@google.com,
+        Arnaldo Carvalho de Melo <arnaldo.melo@gmail.com>
+Subject: [PATCH] perf, x86: Optimal way of reading LBR entries inside Intel
+ PMU interrupt handler
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+x-cbid: 12052211-8256-0000-0000-000002981116
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, May 21, 2012 at 08:05:57PM +0200, Turquette, Mike wrote:
-> On Mon, May 21, 2012 at 1:46 AM, Peter De Schrijver
-> <pdeschrijver@nvidia.com> wrote:
-> >>
-> >> On OMAP I think the only "gotcha" is setting up the timer.  One
-> >> solution is to open code the register reads and the rate calculation
-> >> in the timer code.  That is ugly... but it works.
-> >>
-> >> > Which advantages do you see in dynamically allocating all this?
-> >> >
-> >>
-> >> There are many but I'll name a couple.  The most significant point is
-> >> that we can avoid exposing the definition of struct clk if we
-> >> dynamically allocate stuff.  One can use struct clk_hw_init to
-> >> statically initialize data, or instead rely on direct calls to
-> >> clk_register with a bunch of parameters.
-> >>
-> >
-> > Which means if you make a mistake in specifying parents for example, it will
-> > only fail at runtime, possibly before any console is active. With static
-> > initialization, this will fail at compiletime. Much easier to debug.
-> >
-> 
-> Is this really a problem?  Once you have good data it does not change.
->  Debugging bad data when introducing a new chip is just a fact of
-> life.  Static versus dynamic is irrelevant here.
-> 
+perf, x86: Optimal way of reading LBR entries inside Intel PMU interrupt handler
 
-I think it is a problem yes, especially when the tree becomes more
-complicated.
+	We read LBR entries even if no event has requested for it either explicitly
+	through branch sampling or implicitly through precise IP. This patch would
+	fix this potential unnecessary read by moving the intel_pmu_lbr_read function.
 
-Cheers,
+Signed-off-by: Anshuman Khandual <khandual@linux.vnet.ibm.com>
+---
+ arch/x86/kernel/cpu/perf_event_intel.c |   12 +++++++++---
+ 1 file changed, 9 insertions(+), 3 deletions(-)
 
-Peter.
+diff --git a/arch/x86/kernel/cpu/perf_event_intel.c b/arch/x86/kernel/cpu/perf_event_intel.c
+index 26b3e2f..c50da47 100644
+--- a/arch/x86/kernel/cpu/perf_event_intel.c
++++ b/arch/x86/kernel/cpu/perf_event_intel.c
+@@ -1026,6 +1026,7 @@ static int intel_pmu_handle_irq(struct pt_regs *regs)
+ 	int bit, loops;
+ 	u64 status;
+ 	int handled;
++	int lbr_read;
+ 
+ 	perf_sample_data_init(&data, 0);
+ 
+@@ -1061,16 +1062,16 @@ again:
+ 
+ 	inc_irq_stat(apic_perf_irqs);
+ 
+-	intel_pmu_lbr_read();
+-
+ 	/*
+ 	 * PEBS overflow sets bit 62 in the global status register
+ 	 */
+ 	if (__test_and_clear_bit(62, (unsigned long *)&status)) {
+ 		handled++;
++		intel_pmu_lbr_read();
+ 		x86_pmu.drain_pebs(regs);
+ 	}
+ 
++	lbr_read = 0;
+ 	for_each_set_bit(bit, (unsigned long *)&status, X86_PMC_IDX_MAX) {
+ 		struct perf_event *event = cpuc->events[bit];
+ 
+@@ -1084,8 +1085,13 @@ again:
+ 
+ 		data.period = event->hw.last_period;
+ 
+-		if (has_branch_stack(event))
++		if (has_branch_stack(event)) {
++			if(lbr_read == 0) {
++				intel_pmu_lbr_read();
++				lbr_read = 1;
++			}
+ 			data.br_stack = &cpuc->lbr_stack;
++		}
+ 
+ 		if (perf_event_overflow(event, &data, regs))
+ 			x86_pmu_stop(event, 0);
+
