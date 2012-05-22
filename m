@@ -1,51 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754134Ab2EVRi7 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 May 2012 13:38:59 -0400
-Received: from mail-vb0-f46.google.com ([209.85.212.46]:64944 "EHLO
-	mail-vb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751671Ab2EVRi6 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 May 2012 13:38:58 -0400
+	id S1755281Ab2EVRjJ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 May 2012 13:39:09 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:46974 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751747Ab2EVRjE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 May 2012 13:39:04 -0400
+Date: Tue, 22 May 2012 13:38:49 -0400
+From: Dave Jones <davej@redhat.com>
+To: Christoph Lameter <cl@linux.com>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Linux Kernel <linux-kernel@vger.kernel.org>, linux-mm@kvack.org,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Stephen Wilson <wilsons@start.ca>, Mel Gorman <mgorman@suse.de>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: 3.4-rc7 numa_policy slab poison.
+Message-ID: <20120522173849.GA13590@redhat.com>
+Mail-Followup-To: Dave Jones <davej@redhat.com>,
+	Christoph Lameter <cl@linux.com>,
+	Linus Torvalds <torvalds@linux-foundation.org>,
+	Linux Kernel <linux-kernel@vger.kernel.org>, linux-mm@kvack.org,
+	KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+	Stephen Wilson <wilsons@start.ca>, Mel Gorman <mgorman@suse.de>,
+	Andrew Morton <akpm@linux-foundation.org>
+References: <20120521154709.GA8697@redhat.com>
+ <CA+55aFyqMJ1X08kQwJ7snkYo6MxfVKqFJx7LXBkP_ug4LTCZ=Q@mail.gmail.com>
+ <20120521200118.GA12123@redhat.com>
+ <alpine.DEB.2.00.1205211510480.10940@router.home>
+ <20120521202904.GB12123@redhat.com>
+ <alpine.DEB.2.00.1205211535050.10940@router.home>
+ <20120521203838.GD12123@redhat.com>
+ <alpine.DEB.2.00.1205211544340.10940@router.home>
+ <20120521210959.GF12123@redhat.com>
+ <alpine.DEB.2.00.1205221226330.21828@router.home>
 MIME-Version: 1.0
-In-Reply-To: <1337705285.3361.229.camel@edumazet-glaptop>
-References: <87r4ujno34.fsf@tucsk.pomaz.szeredi.hu>
-	<1337278363.3403.39.camel@edumazet-glaptop>
-	<87zk90s0em.fsf@tucsk.pomaz.szeredi.hu>
-	<1337701259.3361.208.camel@edumazet-glaptop>
-	<87mx50rz34.fsf@tucsk.pomaz.szeredi.hu>
-	<CAGK4HS9cGnOcoLAL1pggWvMG1B40rWyqc3BHsddUvnii4EvTcQ@mail.gmail.com>
-	<1337705285.3361.229.camel@edumazet-glaptop>
-Date: Tue, 22 May 2012 10:38:57 -0700
-Message-ID: <CAGK4HS8b2GSub02ShhofCrYQ1XnOT7Rrjm3KcOhCFFkUF1QqBA@mail.gmail.com>
-Subject: Re: tcp timestamp issues with google servers
-From: Vijay Subramanian <subramanian.vijay@gmail.com>
-To: Eric Dumazet <eric.dumazet@gmail.com>
-Cc: Miklos Szeredi <miklos@szeredi.hu>, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <alpine.DEB.2.00.1205221226330.21828@router.home>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->> Maybe tcptraceroute[1] can help you figure this out.
->>
->> [1] http://michael.toren.net/code/tcptraceroute/
->
->
-> The transparent proxy can intercept TCP connections to port 80/443, and
-> let ICMP being NATed by the box.
+On Tue, May 22, 2012 at 12:27:14PM -0500, Christoph Lameter wrote:
+ > On Mon, 21 May 2012, Dave Jones wrote:
+ > 
+ > > ok, added a --nocolors option now. Re-pull.
+ > > I'll look at the dependancy problem next. Thanks for the feedback.
+ > 
+ > --monochrome you mean?
 
-Just to be clear..tcptraceroute uses TCP SYN packets to trace the
-route instead of using ICMP packets used by vanilla traceroute
-precisely because
-of the issue you raised.
-The idea is that if the connection is getting terminated at a
-middlebox, the trace will end there. Otherwise, the trace route will
-end
-at destination (google in this case). This avoids the problems of ICMP
-and TCP flows being treated differently by the middlebox.
-Is this approach workable?
+yes, sorry. I changed it shortly after sending that email.
+I was having serious conniptions over the use of color/colour.
 
-Thanks,
-Vijay
+ > -m works for a part of the output but then the color hits again.
+
+Fixed. I forgot to change the getopt string
+
+	Dave
