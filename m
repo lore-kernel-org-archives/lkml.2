@@ -1,92 +1,144 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752367Ab2EVHBO (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 May 2012 03:01:14 -0400
-Received: from LGEMRELSE6Q.lge.com ([156.147.1.121]:59414 "EHLO
-	LGEMRELSE6Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751894Ab2EVHBN (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 May 2012 03:01:13 -0400
-X-AuditID: 9c930179-b7bb9ae000000ea5-b7-4fbb39b696fb
-Message-ID: <4FBB39BA.3000601@kernel.org>
-Date: Tue, 22 May 2012 16:01:14 +0900
-From: Minchan Kim <minchan@kernel.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
+	id S1752563Ab2EVHBi (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 May 2012 03:01:38 -0400
+Received: from cn.fujitsu.com ([222.73.24.84]:62781 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1751278Ab2EVHBh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 May 2012 03:01:37 -0400
+X-IronPort-AV: E=Sophos;i="4.75,637,1330876800"; 
+   d="scan'208";a="5009893"
+Message-ID: <4FBB3AA7.5070307@cn.fujitsu.com>
+Date: Tue, 22 May 2012 15:05:11 +0800
+From: Wen Congyang <wency@cn.fujitsu.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100413 Fedora/3.0.4-2.fc13 Thunderbird/3.0.4
 MIME-Version: 1.0
-Newsgroups: gmane.linux.kernel.mm,gmane.linux.ports.arm.kernel,gmane.linux.kernel
-To: Marek Szyprowski <m.szyprowski@samsung.com>
-CC: linux-arm-kernel@lists.infradead.org, linaro-mm-sig@lists.linaro.org,
-        linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        Arnd Bergmann <arnd@arndb.de>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        Chunsang Jeong <chunsang.jeong@linaro.org>,
-        Krishna Reddy <vdumpa@nvidia.com>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Hiroshi Doyu <hdoyu@nvidia.com>, Subash Patel <subashrp@gmail.com>
-Subject: Re: [PATCHv2 2/4] mm: vmalloc: export find_vm_area() function
-References: <1337252085-22039-1-git-send-email-m.szyprowski@samsung.com> <1337252085-22039-3-git-send-email-m.szyprowski@samsung.com>
-In-Reply-To: <1337252085-22039-3-git-send-email-m.szyprowski@samsung.com>
-Content-Type: text/plain; charset=UTF-8
+To: rob@landley.net, tglx@linutronix.de, Ingo Molnar <mingo@redhat.com>,
+        x86@kernel.org,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: [PATCH 2/2] x86: reimplement mem boot option
+References: <4FBB3A23.50102@cn.fujitsu.com>
+In-Reply-To: <4FBB3A23.50102@cn.fujitsu.com>
+X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2012/05/22 15:00:05,
+	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2012/05/22 15:00:09,
+	Serialize complete at 2012/05/22 15:00:09
 Content-Transfer-Encoding: 7bit
-X-Brightmail-Tracker: AAAAAA==
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/17/2012 07:54 PM, Marek Szyprowski wrote:
+The boot option "mem=" specifies the total memory that the system can
+use. But we implement it as max_addr.
 
-> find_vm_area() function is usefull for other core subsystems (like
-> dma-mapping) to get access to vm_area internals.
-> 
-> Signed-off-by: Marek Szyprowski <m.szyprowski@samsung.com>
-> Reviewed-by: Kyungmin Park <kyungmin.park@samsung.com>
+The x86 system can be booted by EFI. If the user specify the boot
+option "add_efi_memmap", we add all memory map from EFI, but we
+donot handle the memory map according to the boot option "mem=".
 
+This patch reimplement the boot option "mem=", and handle the memory
+map after calling efi_init().
 
-We can't know how you want to use this function.
-It would be better to fold this patch into [4/4].
+Signed-off-by: Wen Congyang <wency@cn.fujitsu.com>
+---
+ arch/x86/include/asm/e820.h |    1 +
+ arch/x86/kernel/e820.c      |   36 +++++++++++++++++++++++++++++++-----
+ arch/x86/kernel/setup.c     |    1 +
+ 3 files changed, 33 insertions(+), 5 deletions(-)
 
-> ---
->  include/linux/vmalloc.h |    1 +
->  mm/vmalloc.c            |   10 +++++++++-
->  2 files changed, 10 insertions(+), 1 deletion(-)
-> 
-> diff --git a/include/linux/vmalloc.h b/include/linux/vmalloc.h
-> index 2e28f4d..6071e91 100644
-> --- a/include/linux/vmalloc.h
-> +++ b/include/linux/vmalloc.h
-> @@ -93,6 +93,7 @@ extern struct vm_struct *__get_vm_area_caller(unsigned long size,
->  					unsigned long start, unsigned long end,
->  					const void *caller);
->  extern struct vm_struct *remove_vm_area(const void *addr);
-> +extern struct vm_struct *find_vm_area(const void *addr);
->  
->  extern int map_vm_area(struct vm_struct *area, pgprot_t prot,
->  			struct page ***pages);
-> diff --git a/mm/vmalloc.c b/mm/vmalloc.c
-> index 8bc7f3ef..8cb7f22 100644
-> --- a/mm/vmalloc.c
-> +++ b/mm/vmalloc.c
-> @@ -1402,7 +1402,15 @@ struct vm_struct *get_vm_area_caller(unsigned long size, unsigned long flags,
->  						-1, GFP_KERNEL, caller);
->  }
->  
-> -static struct vm_struct *find_vm_area(const void *addr)
-> +/**
-> + *	find_vm_area  -  find a continuous kernel virtual area
-> + *	@addr:		base address
-> + *
-> + *	Search for the kernel VM area starting at @addr, and return it.
-> + *	It is up to the caller to do all required locking to keep the returned
-> + *	pointer valid.
-> + */
-> +struct vm_struct *find_vm_area(const void *addr)
->  {
->  	struct vmap_area *va;
->  
-
-
-
+diff --git a/arch/x86/include/asm/e820.h b/arch/x86/include/asm/e820.h
+index 3778256..d1bb772 100644
+--- a/arch/x86/include/asm/e820.h
++++ b/arch/x86/include/asm/e820.h
+@@ -127,6 +127,7 @@ extern void e820_reserve_resources(void);
+ extern void e820_reserve_resources_late(void);
+ extern void setup_memory_map(void);
+ extern char *default_machine_specific_memory_setup(void);
++extern void set_memlimit(void);
+ 
+ /*
+  * Returns true iff the specified range [s,e) is completely contained inside
+diff --git a/arch/x86/kernel/e820.c b/arch/x86/kernel/e820.c
+index 2a6bec7..0148944 100644
+--- a/arch/x86/kernel/e820.c
++++ b/arch/x86/kernel/e820.c
+@@ -48,6 +48,7 @@ unsigned long pci_mem_start = 0xaeedbabe;
+ EXPORT_SYMBOL(pci_mem_start);
+ #endif
+ static u64 max_addr = ~0ULL;
++static u64 mem_limit = ~0ULL;
+ 
+ /*
+  * This function checks if any part of the range <start,end> is mapped
+@@ -824,8 +825,6 @@ static int userdef __initdata;
+ /* "mem=nopentium" disables the 4MB page tables. */
+ static int __init parse_memopt(char *p)
+ {
+-	u64 mem_size;
+-
+ 	if (!p)
+ 		return -EINVAL;
+ 
+@@ -840,16 +839,43 @@ static int __init parse_memopt(char *p)
+ 	}
+ 
+ 	userdef = 1;
+-	mem_size = memparse(p, &p);
++	mem_limit = memparse(p, &p);
+ 	/* don't remove all of memory when handling "mem={invalid}" param */
+-	if (mem_size == 0)
++	if (mem_limit == 0)
+ 		return -EINVAL;
+-	e820_remove_range(mem_size, ULLONG_MAX - mem_size, E820_RAM, 1);
+ 
+ 	return 0;
+ }
+ early_param("mem", parse_memopt);
+ 
++void __init set_memlimit(void)
++{
++	u64 total_size = 0;
++	int i;
++
++	if (mem_limit == ~0ULL)
++		return;
++
++	for (i = 0; i < e820.nr_map; i++) {
++		struct e820entry *ei = &e820.map[i];
++
++		if (ei->type != E820_RAM)
++			continue;
++
++		if (total_size >= mem_limit) {
++			memset(ei, 0, sizeof(struct e820entry));
++			continue;
++		}
++
++		if (mem_limit - total_size <= ei->size)
++			ei->size = mem_limit - total_size;
++
++		total_size += ei->size;
++	}
++
++	sanitize_e820_map(e820.map, ARRAY_SIZE(e820.map), &e820.nr_map);
++}
++
+ static int __init parse_memmax_opt(char *p)
+ {
+ 	char *oldp;
+diff --git a/arch/x86/kernel/setup.c b/arch/x86/kernel/setup.c
+index 1a29015..7938fae 100644
+--- a/arch/x86/kernel/setup.c
++++ b/arch/x86/kernel/setup.c
+@@ -823,6 +823,7 @@ void __init setup_arch(char **cmdline_p)
+ 
+ 	if (efi_enabled)
+ 		efi_init();
++	set_memlimit();
+ 
+ 	dmi_scan_machine();
+ 
 -- 
-Kind regards,
-Minchan Kim
+1.7.1
+
