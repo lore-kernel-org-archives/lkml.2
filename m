@@ -1,53 +1,202 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752752Ab2EVLyP (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 May 2012 07:54:15 -0400
-Received: from nbd.name ([46.4.11.11]:33780 "EHLO nbd.name"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750852Ab2EVLyO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 May 2012 07:54:14 -0400
-Message-ID: <4FBB7E47.7060500@openwrt.org>
-Date: Tue, 22 May 2012 13:53:43 +0200
-From: John Crispin <blogic@openwrt.org>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.24) Gecko/20111114 Icedove/3.1.16
+	id S1753125Ab2EVL6N (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 May 2012 07:58:13 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:36390 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750974Ab2EVL6L (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 May 2012 07:58:11 -0400
+Date: Tue, 22 May 2012 04:56:38 -0700
+From: Anton Vorontsov <anton.vorontsov@linaro.org>
+To: Lee Jones <lee.jones@linaro.org>
+Cc: Linus Walleij <linus.walleij@linaro.org>, linux-kernel@vger.kernel.org,
+        Karl Komierowski <karl.komierowski@stericsson.com>,
+        Arun Murthy <arun.murthy@stericsson.com>
+Subject: Re: [PATCH 1/3] power/ab8500_charger: harden platform data check
+Message-ID: <20120522115638.GA19506@lizard>
+References: <1334304949-18301-1-git-send-email-linus.walleij@stericsson.com>
+ <CACRpkdaM=OecD=M_J9X9shYKQkWO03mhb2BFxCWOeocr8_m=DQ@mail.gmail.com>
+ <4F9C1CF5.3050706@linaro.org>
+ <20120505120835.GA26976@lizard>
+ <4FBB79D5.7030108@linaro.org>
 MIME-Version: 1.0
-To: Jiri Kosina <jkosina@suse.cz>
-CC: Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Masanari Iida <standby24x7@gmail.com>,
-        Ralf Baechle <ralf@linux-mips.org>
-Subject: Re: linux-next: manual merge of the trivial tree with the  tree
-References: <20120522145432.aa4d97df7f08af54229f1338@canb.auug.org.au> <alpine.LNX.2.00.1205221115390.16396@pobox.suse.cz>
-In-Reply-To: <alpine.LNX.2.00.1205221115390.16396@pobox.suse.cz>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <4FBB79D5.7030108@linaro.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 22/05/12 11:16, Jiri Kosina wrote:
-> On Tue, 22 May 2012, Stephen Rothwell wrote:
->
->> Hi Jiri,
->>
->> Today's linux-next merge of the trivial tree got a conflict in
->> arch/mips/lantiq/xway/gpio_ebu.c arch/mips/lantiq/xway/gpio_stp.c between
->> commit 5238f7bc3566 ("GPIO: MIPS: lantiq: move gpio-stp and gpio-ebu to
->> the subsystem folder") from the  tree and commit 6997991ab0db ("mips: Fix
->> printk typos in arc/mips") from the trivial tree.
->>
->> The typos fixed in the latter probably need to be applied to the renamed
->> files drivers/gpio/gpio-mm-lantiq.c and drivers/gpio/gpio-stp-xway.c
->> (resp).
->>
->> I have removed the old versions.
-> I will probably keep this trivial conflict for Linus to resolve. Thanks,
->
+Hi Lee,
 
-Hi,
+On Tue, May 22, 2012 at 12:34:45PM +0100, Lee Jones wrote:
+> Hi Anton,
+> 
+> I see that this didn't make it into any of the v3.4-rc:s, hence v3.4
+> was released broken. Do you know when they're likely to make it into
+> Mainline?
 
-I'll try to resolve this and have the MIPS/Lantiq specifc parts flow via
-Ralfs tree if no one minds
+You probably should have told me that you needed these patches in
+v3.4, because neither Linus' nor yours patch description did not
+tell that these were urgent fixes (and not some stuff you'd just
+like to have for the future).
 
-Thanks,
-John
+But now I see that ab8500 mfd core driver in v3.4 seem to register
+the charger and stuff w/o platform data already, so we'd need
+at least 'Harden platform data check' patches back-ported into
+-stable.
 
+Now once Linus Torvalds pull battery tree, I'll ask Greg KH to
+cherry-pick the patches into -stable.
+
+Thanks!
+
+> 
+> Kind regards,
+> Lee
+> 
+> >- - - -
+> >commit 2aac3de19b72608f474c90034185c2be4908728f
+> >Author: Lee Jones<lee.jones@linaro.org>
+> >Date:   Sat May 5 04:38:19 2012 -0700
+> >
+> >     ab8500: Clean up probe routines
+> >
+> >     These patches clean up some ugliness and brings the variable
+> >     initialisation formatting more into line with other drivers.
+> >
+> >     Signed-off-by: Lee Jones<lee.jones@linaro.org>
+> >     Signed-off-by: Anton Vorontsov<anton.vorontsov@linaro.org>
+> >
+> >diff --git a/drivers/power/ab8500_btemp.c b/drivers/power/ab8500_btemp.c
+> >index e266f03..bba3cca 100644
+> >--- a/drivers/power/ab8500_btemp.c
+> >+++ b/drivers/power/ab8500_btemp.c
+> >@@ -964,10 +964,15 @@ static int __devinit ab8500_btemp_probe(struct platform_device *pdev)
+> >  {
+> >  	int irq, i, ret = 0;
+> >  	u8 val;
+> >-	struct abx500_bm_plat_data *plat_data;
+> >+	struct abx500_bm_plat_data *plat_data = pdev->dev.platform_data;
+> >+	struct ab8500_btemp *di;
+> >+
+> >+	if (!plat_data) {
+> >+		dev_err(&pdev->dev, "No platform data\n");
+> >+		return -EINVAL;
+> >+	}
+> >
+> >-	struct ab8500_btemp *di =
+> >-		kzalloc(sizeof(struct ab8500_btemp), GFP_KERNEL);
+> >+	di = kzalloc(sizeof(*di), GFP_KERNEL);
+> >  	if (!di)
+> >  		return -ENOMEM;
+> >
+> >@@ -977,13 +982,12 @@ static int __devinit ab8500_btemp_probe(struct platform_device *pdev)
+> >  	di->gpadc = ab8500_gpadc_get("ab8500-gpadc.0");
+> >
+> >  	/* get btemp specific platform data */
+> >-	plat_data = pdev->dev.platform_data;
+> >-	if (!plat_data || !plat_data->btemp) {
+> >+	di->pdata = plat_data->btemp;
+> >+	if (!di->pdata) {
+> >  		dev_err(di->dev, "no btemp platform data supplied\n");
+> >  		ret = -EINVAL;
+> >  		goto free_device_info;
+> >  	}
+> >-	di->pdata = plat_data->btemp;
+> >
+> >  	/* get battery specific platform data */
+> >  	di->bat = plat_data->battery;
+> >diff --git a/drivers/power/ab8500_charger.c b/drivers/power/ab8500_charger.c
+> >index 79dc584..d2303d0 100644
+> >--- a/drivers/power/ab8500_charger.c
+> >+++ b/drivers/power/ab8500_charger.c
+> >@@ -2534,10 +2534,15 @@ static int __devexit ab8500_charger_remove(struct platform_device *pdev)
+> >  static int __devinit ab8500_charger_probe(struct platform_device *pdev)
+> >  {
+> >  	int irq, i, charger_status, ret = 0;
+> >-	struct abx500_bm_plat_data *plat_data;
+> >+	struct abx500_bm_plat_data *plat_data = pdev->dev.platform_data;
+> >+	struct ab8500_charger *di;
+> >
+> >-	struct ab8500_charger *di =
+> >-		kzalloc(sizeof(struct ab8500_charger), GFP_KERNEL);
+> >+	if (!plat_data) {
+> >+		dev_err(&pdev->dev, "No platform data\n");
+> >+		return -EINVAL;
+> >+	}
+> >+
+> >+	di = kzalloc(sizeof(*di), GFP_KERNEL);
+> >  	if (!di)
+> >  		return -ENOMEM;
+> >
+> >@@ -2550,13 +2555,12 @@ static int __devinit ab8500_charger_probe(struct platform_device *pdev)
+> >  	spin_lock_init(&di->usb_state.usb_lock);
+> >
+> >  	/* get charger specific platform data */
+> >-	plat_data = pdev->dev.platform_data;
+> >-	if (!plat_data || !plat_data->charger) {
+> >+	di->pdata = plat_data->charger;
+> >+	if (!di->pdata) {
+> >  		dev_err(di->dev, "no charger platform data supplied\n");
+> >  		ret = -EINVAL;
+> >  		goto free_device_info;
+> >  	}
+> >-	di->pdata = plat_data->charger;
+> >
+> >  	/* get battery specific platform data */
+> >  	di->bat = plat_data->battery;
+> >diff --git a/drivers/power/ab8500_fg.c b/drivers/power/ab8500_fg.c
+> >index 0ebea39..bf02225 100644
+> >--- a/drivers/power/ab8500_fg.c
+> >+++ b/drivers/power/ab8500_fg.c
+> >@@ -2446,10 +2446,15 @@ static int __devinit ab8500_fg_probe(struct platform_device *pdev)
+> >  {
+> >  	int i, irq;
+> >  	int ret = 0;
+> >-	struct abx500_bm_plat_data *plat_data;
+> >+	struct abx500_bm_plat_data *plat_data = pdev->dev.platform_data;
+> >+	struct ab8500_fg *di;
+> >+
+> >+	if (!plat_data) {
+> >+		dev_err(&pdev->dev, "No platform data\n");
+> >+		return -EINVAL;
+> >+	}
+> >
+> >-	struct ab8500_fg *di =
+> >-		kzalloc(sizeof(struct ab8500_fg), GFP_KERNEL);
+> >+	di = kzalloc(sizeof(*di), GFP_KERNEL);
+> >  	if (!di)
+> >  		return -ENOMEM;
+> >
+> >@@ -2461,13 +2466,12 @@ static int __devinit ab8500_fg_probe(struct platform_device *pdev)
+> >  	di->gpadc = ab8500_gpadc_get("ab8500-gpadc.0");
+> >
+> >  	/* get fg specific platform data */
+> >-	plat_data = pdev->dev.platform_data;
+> >-	if (!plat_data || !plat_data->fg) {
+> >+	di->pdata = plat_data->fg;
+> >+	if (!di->pdata) {
+> >  		dev_err(di->dev, "no fg platform data supplied\n");
+> >  		ret = -EINVAL;
+> >  		goto free_device_info;
+> >  	}
+> >-	di->pdata = plat_data->fg;
+> >
+> >  	/* get battery specific platform data */
+> >  	di->bat = plat_data->battery;
+> 
+> 
+> -- 
+> Lee Jones
+> Linaro ST-Ericsson Landing Team Lead
+> M: +44 77 88 633 515
+> Linaro.org │ Open source software for ARM SoCs
+> Follow Linaro: Facebook | Twitter | Blog
+
+-- 
+Anton Vorontsov
+Email: cbouatmailru@gmail.com
