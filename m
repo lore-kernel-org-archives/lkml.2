@@ -1,84 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760390Ab2EVULE (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 May 2012 16:11:04 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:47916 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760263Ab2EVULB (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 May 2012 16:11:01 -0400
-Date: Tue, 22 May 2012 13:10:59 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Tomasz Stanislawski <t.stanislaws@samsung.com>
-Cc: paul.gortmaker@windriver.com,
-        "=?UTF-8?Q?'=EB=B0=95=EA=B2=BD=EB=AF=BC'?=" 
-	<kyungmin.park@samsung.com>,
-        amwang@redhat.com, dri-devel@lists.freedesktop.org,
-        "'???/Mobile S/W Platform Lab.(???)/E3(??)/????'" 
-	<inki.dae@samsung.com>,
-        prashanth.g@samsung.com, Marek Szyprowski <m.szyprowski@samsung.com>,
-        "linux-media@vger.kernel.org" <linux-media@vger.kernel.org>,
-        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
-        Rob Clark <rob@ti.com>, Dave Airlie <airlied@redhat.com>,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        Andy Whitcroft <apw@shadowen.org>,
-        Johannes Weiner <hannes@cmpxchg.org>
-Subject: Re: [PATCH v3] scatterlist: add sg_alloc_table_from_pages function
-Message-Id: <20120522131059.415a881c.akpm@linux-foundation.org>
-In-Reply-To: <4FBA4ACE.4080602@samsung.com>
-References: <4FA8EC69.8010805@samsung.com>
-	<20120517165614.d5e6e4b6.akpm@linux-foundation.org>
-	<4FBA4ACE.4080602@samsung.com>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	id S932459Ab2EVULr (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 May 2012 16:11:47 -0400
+Received: from a.ns.miles-group.at ([95.130.255.143]:47834 "EHLO radon.swed.at"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1760372Ab2EVULq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 May 2012 16:11:46 -0400
+MIME-Version: 1.0
+Content-Type: text/plain;
+ charset=UTF-8
 Content-Transfer-Encoding: 7bit
+Date: Tue, 22 May 2012 22:11:43 +0200
+From: Richard Weinberger <richard@nod.at>
+To: Shmulik Ladkani <shmulik.ladkani@gmail.com>
+Cc: <linux-mtd@lists.infradead.org>, <dedekind1@gmail.com>,
+        <linux-kernel@vger.kernel.org>, <Heinz.Egger@linutronix.de>,
+        <tim.bird@am.sony.com>, <tglx@linutronix.de>
+Subject: Re: [PATCH] [RFC] UBI: Implement Fastmap support
+In-Reply-To: <20120522211809.53bd6444@halley>
+References: <1337608916-49771-1-git-send-email-richard@nod.at>
+ <1337608916-49771-2-git-send-email-richard@nod.at>
+ <20120522180119.2c2a10a8@pixies.home.jungo.com> <4FBBC4EE.4040802@nod.at>
+ <20120522211809.53bd6444@halley>
+Message-ID: <b3d5919d0b35bb559b7dc115bc9e2720@radon2.swed.at>
+User-Agent: RoundCube Webmail
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 21 May 2012 16:01:50 +0200
-Tomasz Stanislawski <t.stanislaws@samsung.com> wrote:
-
-> >> +int sg_alloc_table_from_pages(struct sg_table *sgt,
-> >> +	struct page **pages, unsigned int n_pages,
-> >> +	unsigned long offset, unsigned long size,
-> >> +	gfp_t gfp_mask)
-> > 
-> > I guess a 32-bit n_pages is OK.  A 16TB IO seems enough ;)
-> > 
+On Tue, 22 May 2012 21:18:09 +0300, Shmulik Ladkani
+<shmulik.ladkani@gmail.com> wrote:
+> Hi Richard,
 > 
-> Do you think that 'unsigned long' for offset is too big?
-> 
-> Ad n_pages. Assuming that Moore's law holds it will take
-> circa 25 years before the limit of 16 TB is reached :) for
-> high-end scatterlist operations.
-> Or I can change the type of n_pages to 'unsigned long' now at
-> no cost :).
+> On Tue, 22 May 2012 18:55:10 +0200 Richard Weinberger <richard@nod.at> wrote:
+>> >> diff --git a/drivers/mtd/ubi/build.c b/drivers/mtd/ubi/build.c
+>> >> index 2c5ed5c..ef5d7b7 100644
+>> >> --- a/drivers/mtd/ubi/build.c
+>> >> +++ b/drivers/mtd/ubi/build.c
+>> >> @@ -144,6 +144,16 @@ int ubi_volume_notify(struct ubi_device *ubi, struct ubi_volume *vol, int ntype)
+>> >>
+>> >>   	ubi_do_get_device_info(ubi,&nt.di);
+>> >>   	ubi_do_get_volume_info(ubi, vol,&nt.vi);
+>> >> +
+>> >> +	switch (ntype) {
+>> >> +	case UBI_VOLUME_ADDED:
+>> >> +	case UBI_VOLUME_REMOVED:
+>> >> +	case UBI_VOLUME_RESIZED:
+>> >> +	case UBI_VOLUME_RENAMED:
+>> >> +		if (ubi_update_fastmap(ubi))
+>> >> +			ubi_err("Unable to update fastmap!");
+>> >
+>> > In the error case, what are the consequences leaving the older on-flash
+>> > fastmap? Shouldn't it be invalidated?
+>>
 
-By then it will be Someone Else's Problem ;)
+After thinking a bit more about this case I think the best we can to is
+switching to read-only mode if ubi_update_fastmap()
+fails.
 
-> >> +{
-> >> +	unsigned int chunks;
-> >> +	unsigned int i;
-> > 
-> > erk, please choose a different name for this.  When a C programmer sees
-> > "i", he very much assumes it has type "int".  Making it unsigned causes
-> > surprise.
-> > 
-> > And don't rename it to "u"!  Let's give it a nice meaningful name.  pageno?
-> > 
-> 
-> The problem is that 'i' is  a natural name for a loop counter.
-
-It's also the natural name for an integer.  If a C programmer sees "i",
-he thinks "int".  It's a Fortran thing ;)
-
-> AFAIK, in the kernel code developers try to avoid Hungarian notation.
-> A name of a variable should reflect its purpose, not its type.
-> I can change the name of 'i' to 'pageno' and 'j' to 'pageno2' (?)
-> but I think it will make the code less reliable.
-
-Well, one could do something radical such as using "p".
-
-
+Thanks,
+//richard
