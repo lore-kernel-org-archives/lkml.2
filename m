@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758817Ab2EVOUz (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 May 2012 10:20:55 -0400
+	id S1758837Ab2EVOWv (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 May 2012 10:22:51 -0400
 Received: from mail-pz0-f46.google.com ([209.85.210.46]:33962 "EHLO
 	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758722Ab2EVOUx (ORCPT
+	with ESMTP id S1758668Ab2EVOUe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 May 2012 10:20:53 -0400
+	Tue, 22 May 2012 10:20:34 -0400
 From: Anton Vorontsov <anton.vorontsov@linaro.org>
 To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
         Kees Cook <keescook@chromium.org>, Colin Cross <ccross@android.com>,
@@ -21,9 +21,9 @@ Cc: Arnd Bergmann <arnd@arndb.de>, John Stultz <john.stultz@linaro.org>,
         WANG Cong <xiyou.wangcong@gmail.com>, linux-kernel@vger.kernel.org,
         devel@driverdev.osuosl.org, linaro-kernel@lists.linaro.org,
         patches@linaro.org, kernel-team@android.com
-Subject: [PATCH 13/16] staging/android: Remove ram_console driver
-Date: Tue, 22 May 2012 07:17:56 -0700
-Message-Id: <1337696279-8994-13-git-send-email-anton.vorontsov@linaro.org>
+Subject: [PATCH 08/16] pstore/ram: Factor dmesg przs initialization out of probe()
+Date: Tue, 22 May 2012 07:17:51 -0700
+Message-Id: <1337696279-8994-8-git-send-email-anton.vorontsov@linaro.org>
 X-Mailer: git-send-email 1.7.9.2
 In-Reply-To: <20120522141717.GA31574@lizard>
 References: <20120522141717.GA31574@lizard>
@@ -31,231 +31,172 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-All the functionality is now supported by pstore and pstore_ram drivers.
+This will help make code clearer when we'll add support for other
+message types.
+
+This also makes probe() much shorter and understandable, plus
+makes mem/record size checking a bit easier.
+
+Implementation detail: we now use a paddr pointer, this will
+be used for allocating persistent ram zones for other message
+types.
 
 Signed-off-by: Anton Vorontsov <anton.vorontsov@linaro.org>
-Acked-by: Kees Cook <keescook@chromium.org>
-Acked-by: Colin Cross <ccross@android.com>
 ---
- drivers/staging/android/Kconfig       |    5 -
- drivers/staging/android/Makefile      |    1 -
- drivers/staging/android/ram_console.c |  179 ---------------------------------
- 3 files changed, 185 deletions(-)
- delete mode 100644 drivers/staging/android/ram_console.c
+ fs/pstore/ram.c |  105 ++++++++++++++++++++++++++++++++++---------------------
+ 1 file changed, 66 insertions(+), 39 deletions(-)
 
-diff --git a/drivers/staging/android/Kconfig b/drivers/staging/android/Kconfig
-index 63f9822..df42c6b 100644
---- a/drivers/staging/android/Kconfig
-+++ b/drivers/staging/android/Kconfig
-@@ -25,11 +25,6 @@ config ANDROID_LOGGER
- 	tristate "Android log driver"
- 	default n
+diff --git a/fs/pstore/ram.c b/fs/pstore/ram.c
+index cdaeda9..9785c84 100644
+--- a/fs/pstore/ram.c
++++ b/fs/pstore/ram.c
+@@ -203,13 +203,67 @@ static struct ramoops_context oops_cxt = {
+ 	},
+ };
  
--config ANDROID_RAM_CONSOLE
--	bool "Android RAM buffer console"
--	depends on !S390 && !UML && HAVE_MEMBLOCK && PSTORE_RAM=y
--	default n
--
- config ANDROID_TIMED_OUTPUT
- 	bool "Timed output class driver"
- 	default y
-diff --git a/drivers/staging/android/Makefile b/drivers/staging/android/Makefile
-index 4677e7b..5f3ef2e 100644
---- a/drivers/staging/android/Makefile
-+++ b/drivers/staging/android/Makefile
-@@ -1,7 +1,6 @@
- obj-$(CONFIG_ANDROID_BINDER_IPC)	+= binder.o
- obj-$(CONFIG_ASHMEM)			+= ashmem.o
- obj-$(CONFIG_ANDROID_LOGGER)		+= logger.o
--obj-$(CONFIG_ANDROID_RAM_CONSOLE)	+= ram_console.o
- obj-$(CONFIG_ANDROID_TIMED_OUTPUT)	+= timed_output.o
- obj-$(CONFIG_ANDROID_TIMED_GPIO)	+= timed_gpio.o
- obj-$(CONFIG_ANDROID_LOW_MEMORY_KILLER)	+= lowmemorykiller.o
-diff --git a/drivers/staging/android/ram_console.c b/drivers/staging/android/ram_console.c
-deleted file mode 100644
-index 82323bb..0000000
---- a/drivers/staging/android/ram_console.c
-+++ /dev/null
-@@ -1,179 +0,0 @@
--/* drivers/android/ram_console.c
-- *
-- * Copyright (C) 2007-2008 Google, Inc.
-- *
-- * This software is licensed under the terms of the GNU General Public
-- * License version 2, as published by the Free Software Foundation, and
-- * may be copied, distributed, and modified under those terms.
-- *
-- * This program is distributed in the hope that it will be useful,
-- * but WITHOUT ANY WARRANTY; without even the implied warranty of
-- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-- * GNU General Public License for more details.
-- *
-- */
--
--#include <linux/console.h>
--#include <linux/init.h>
--#include <linux/module.h>
--#include <linux/platform_device.h>
--#include <linux/proc_fs.h>
--#include <linux/string.h>
--#include <linux/uaccess.h>
--#include <linux/io.h>
--#include <linux/pstore_ram.h>
--#include "ram_console.h"
--
--static struct persistent_ram_zone *ram_console_zone;
--static const char *bootinfo;
--static size_t bootinfo_size;
--
--static void
--ram_console_write(struct console *console, const char *s, unsigned int count)
--{
--	struct persistent_ram_zone *prz = console->data;
--	persistent_ram_write(prz, s, count);
--}
--
--static struct console ram_console = {
--	.name	= "ram",
--	.write	= ram_console_write,
--	.flags	= CON_PRINTBUFFER | CON_ENABLED | CON_ANYTIME,
--	.index	= -1,
--};
--
--void ram_console_enable_console(int enabled)
--{
--	if (enabled)
--		ram_console.flags |= CON_ENABLED;
--	else
--		ram_console.flags &= ~CON_ENABLED;
--}
--
--static int __init ram_console_probe(struct platform_device *pdev)
--{
--	struct ram_console_platform_data *pdata = pdev->dev.platform_data;
--	struct persistent_ram_zone *prz;
--
--	prz = persistent_ram_init_ringbuffer(&pdev->dev, true);
--	if (IS_ERR(prz))
--		return PTR_ERR(prz);
--
--
--	if (pdata) {
--		bootinfo = kstrdup(pdata->bootinfo, GFP_KERNEL);
--		if (bootinfo)
--			bootinfo_size = strlen(bootinfo);
++static void ramoops_free_przs(struct ramoops_context *cxt)
++{
++	int i;
++
++	if (!cxt->przs)
++		return;
++
++	for (i = 0; cxt->przs[i]; i++)
++		persistent_ram_free(cxt->przs[i]);
++	kfree(cxt->przs);
++}
++
++static int ramoops_init_przs(struct device *dev, struct ramoops_context *cxt,
++			      phys_addr_t *paddr, size_t dump_mem_sz)
++{
++	int err = -ENOMEM;
++	int i;
++
++	if (!cxt->record_size)
++		return 0;
++
++	cxt->max_dump_count = dump_mem_sz / cxt->record_size;
++	if (!cxt->max_dump_count)
++		return -ENOMEM;
++
++	cxt->przs = kzalloc(sizeof(*cxt->przs) * cxt->max_dump_count,
++			     GFP_KERNEL);
++	if (!cxt->przs) {
++		dev_err(dev, "failed to initialize a prz array for dumps\n");
++		return -ENOMEM;
++	}
++
++	for (i = 0; i < cxt->max_dump_count; i++) {
++		size_t sz = cxt->record_size;
++
++		cxt->przs[i] = persistent_ram_new(*paddr, sz, cxt->ecc);
++		if (IS_ERR(cxt->przs[i])) {
++			err = PTR_ERR(cxt->przs[i]);
++			dev_err(dev, "failed to request mem region (0x%zx@0x%llx): %d\n",
++				sz, (unsigned long long)*paddr, err);
++			goto fail_prz;
++		}
++		*paddr += sz;
++	}
++
++	cxt->max_count += cxt->max_dump_count;
++
++	return 0;
++fail_prz:
++	ramoops_free_przs(cxt);
++	return err;
++}
++
+ static int __init ramoops_probe(struct platform_device *pdev)
+ {
+ 	struct device *dev = &pdev->dev;
+ 	struct ramoops_platform_data *pdata = pdev->dev.platform_data;
+ 	struct ramoops_context *cxt = &oops_cxt;
++	size_t dump_mem_sz;
++	phys_addr_t paddr;
+ 	int err = -EINVAL;
+-	int i;
+ 
+ 	/* Only a single ramoops area allowed at a time, so fail extra
+ 	 * probes.
+@@ -226,22 +280,7 @@ static int __init ramoops_probe(struct platform_device *pdev)
+ 	pdata->mem_size = rounddown_pow_of_two(pdata->mem_size);
+ 	pdata->record_size = rounddown_pow_of_two(pdata->record_size);
+ 
+-	/* Check for the minimum memory size */
+-	if (pdata->mem_size < MIN_MEM_SIZE &&
+-			pdata->record_size < MIN_MEM_SIZE) {
+-		pr_err("memory size too small, minimum is %lu\n",
+-			MIN_MEM_SIZE);
+-		goto fail_out;
 -	}
 -
--	ram_console_zone = prz;
--	ram_console.data = prz;
--
--	register_console(&ram_console);
--
--	return 0;
--}
--
--static struct platform_driver ram_console_driver = {
--	.driver		= {
--		.name	= "ram_console",
--	},
--};
--
--static int __init ram_console_module_init(void)
--{
--	return platform_driver_probe(&ram_console_driver, ram_console_probe);
--}
--
--#ifndef CONFIG_PRINTK
--#define dmesg_restrict	0
--#endif
--
--static ssize_t ram_console_read_old(struct file *file, char __user *buf,
--				    size_t len, loff_t *offset)
--{
--	loff_t pos = *offset;
--	ssize_t count;
--	struct persistent_ram_zone *prz = ram_console_zone;
--	size_t old_log_size = persistent_ram_old_size(prz);
--	const char *old_log = persistent_ram_old(prz);
--	char *str;
--	int ret;
--
--	if (dmesg_restrict && !capable(CAP_SYSLOG))
--		return -EPERM;
--
--	/* Main last_kmsg log */
--	if (pos < old_log_size) {
--		count = min(len, (size_t)(old_log_size - pos));
--		if (copy_to_user(buf, old_log + pos, count))
--			return -EFAULT;
--		goto out;
+-	if (pdata->mem_size < pdata->record_size) {
+-		pr_err("The memory size must be larger than the "
+-			"records size\n");
+-		goto fail_out;
 -	}
 -
--	/* ECC correction notice */
--	pos -= old_log_size;
--	count = persistent_ram_ecc_string(prz, NULL, 0);
--	if (pos < count) {
--		str = kmalloc(count, GFP_KERNEL);
--		if (!str)
--			return -ENOMEM;
--		persistent_ram_ecc_string(prz, str, count + 1);
--		count = min(len, (size_t)(count - pos));
--		ret = copy_to_user(buf, str + pos, count);
--		kfree(str);
--		if (ret)
--			return -EFAULT;
--		goto out;
+-	cxt->max_count = pdata->mem_size / pdata->record_size;
+-	cxt->max_dump_count = cxt->max_count;
++	cxt->max_count = 0;
+ 	cxt->count = 0;
+ 	cxt->size = pdata->mem_size;
+ 	cxt->phys_addr = pdata->mem_address;
+@@ -249,24 +288,14 @@ static int __init ramoops_probe(struct platform_device *pdev)
+ 	cxt->dump_oops = pdata->dump_oops;
+ 	cxt->ecc = pdata->ecc;
+ 
+-	cxt->przs = kzalloc(sizeof(*cxt->przs) * cxt->max_dump_count, GFP_KERNEL);
+-	if (!cxt->przs) {
+-		err = -ENOMEM;
+-		dev_err(dev, "failed to initialize a prz array\n");
+-		goto fail_out;
 -	}
 -
--	/* Boot info passed through pdata */
--	pos -= count;
--	if (pos < bootinfo_size) {
--		count = min(len, (size_t)(bootinfo_size - pos));
--		if (copy_to_user(buf, bootinfo + pos, count))
--			return -EFAULT;
--		goto out;
--	}
--
--	/* EOF */
--	return 0;
--
--out:
--	*offset += count;
--	return count;
--}
--
--static const struct file_operations ram_console_file_ops = {
--	.owner = THIS_MODULE,
--	.read = ram_console_read_old,
--};
--
--static int __init ram_console_late_init(void)
--{
--	struct proc_dir_entry *entry;
--	struct persistent_ram_zone *prz = ram_console_zone;
--
--	if (!prz)
--		return 0;
--
--	if (persistent_ram_old_size(prz) == 0)
--		return 0;
--
--	entry = create_proc_entry("last_kmsg", S_IFREG | S_IRUGO, NULL);
--	if (!entry) {
--		printk(KERN_ERR "ram_console: failed to create proc entry\n");
--		persistent_ram_free_old(prz);
--		return 0;
--	}
--
--	entry->proc_fops = &ram_console_file_ops;
--	entry->size = persistent_ram_old_size(prz) +
--		persistent_ram_ecc_string(prz, NULL, 0) +
--		bootinfo_size;
--
--	return 0;
--}
--
--late_initcall(ram_console_late_init);
--postcore_initcall(ram_console_module_init);
+-	for (i = 0; i < cxt->max_dump_count; i++) {
+-		size_t sz = cxt->record_size;
+-		phys_addr_t start = cxt->phys_addr + sz * i;
++	paddr = cxt->phys_addr;
+ 
+-		cxt->przs[i] = persistent_ram_new(start, sz, cxt->ecc);
+-		if (IS_ERR(cxt->przs[i])) {
+-			err = PTR_ERR(cxt->przs[i]);
+-			dev_err(dev, "failed to request mem region (0x%zx@0x%llx): %d\n",
+-				sz, (unsigned long long)start, err);
+-			goto fail_przs;
+-		}
++	dump_mem_sz = cxt->size;
++	err = ramoops_init_przs(dev, cxt, &paddr, dump_mem_sz);
++	if (err) {
++		pr_err("memory size too small, minimum is %lu\n",
++			cxt->record_size);
++		goto fail_count;
+ 	}
+ 
+ 	cxt->pstore.data = cxt;
+@@ -279,7 +308,7 @@ static int __init ramoops_probe(struct platform_device *pdev)
+ 	}
+ 
+ 	err = pstore_register(&cxt->pstore);
+-	if (err) {
++	if (err || !cxt->max_count) {
+ 		pr_err("registering with pstore failed\n");
+ 		goto fail_buf;
+ 	}
+@@ -306,10 +335,8 @@ fail_clear:
+ 	cxt->pstore.bufsize = 0;
+ 	cxt->max_count = 0;
+ 	cxt->max_dump_count = 0;
+-fail_przs:
+-	for (i = 0; cxt->przs[i]; i++)
+-		persistent_ram_free(cxt->przs[i]);
+-	kfree(cxt->przs);
++fail_count:
++	ramoops_free_przs(cxt);
+ fail_out:
+ 	return err;
+ }
 -- 
 1.7.9.2
 
