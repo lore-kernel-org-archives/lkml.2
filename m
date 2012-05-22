@@ -1,63 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756902Ab2EVJGD (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 May 2012 05:06:03 -0400
-Received: from LGEMRELSE1Q.lge.com ([156.147.1.111]:47070 "EHLO
-	LGEMRELSE1Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755965Ab2EVJGA (ORCPT
+	id S1757011Ab2EVJGR (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 May 2012 05:06:17 -0400
+Received: from mailout-de.gmx.net ([213.165.64.22]:41100 "HELO
+	mailout-de.gmx.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1755965Ab2EVJGO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 May 2012 05:06:00 -0400
-X-AuditID: 9c93016f-b7c3cae000001954-00-4fbb56f4abf9
-From: Namhyung Kim <namhyung.kim@lge.com>
-To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Mackerras <paulus@samba.org>,
-        Ingo Molnar <mingo@redhat.com>, Namhyung Kim <namhyung@gmail.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Steven Rostedt <rostedt@goodmis.org>
-Subject: [PATCH 2/2] perf tools: Always try to build libtraceevent
-Date: Tue, 22 May 2012 18:03:54 +0900
-Message-Id: <1337677434-4881-2-git-send-email-namhyung.kim@lge.com>
-X-Mailer: git-send-email 1.7.10.1
-In-Reply-To: <1337677434-4881-1-git-send-email-namhyung.kim@lge.com>
-References: <1337677434-4881-1-git-send-email-namhyung.kim@lge.com>
-X-Brightmail-Tracker: AAAAAA==
+	Tue, 22 May 2012 05:06:14 -0400
+X-Authenticated: #14349625
+X-Provags-ID: V01U2FsdGVkX19TT/oFs51TF+oQqOvpXzLkXyuRG23ByAjbTmAI6C
+	Wmxx7dv4zBsZ1i
+Message-ID: <1337677564.5446.11.camel@marge.simpson.net>
+Subject: Re: [PATCH 1/2] sched: readd FAIR_SLEEPERS feature
+From: Mike Galbraith <efault@gmx.de>
+To: Christian Ehrhardt <ehrhardt@linux.vnet.ibm.com>
+Cc: Martin Schwidefsky <schwidefsky@de.ibm.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Ingo Molnar <mingo@kernel.org>, linux-kernel@vger.kernel.org,
+        Heiko Carstens <heiko.carstens@de.ibm.com>
+Date: Tue, 22 May 2012 11:06:04 +0200
+In-Reply-To: <4FBB3C3B.3090202@linux.vnet.ibm.com>
+References: <1337615137-55111-1-git-send-email-schwidefsky@de.ibm.com>
+	 <1337615137-55111-2-git-send-email-schwidefsky@de.ibm.com>
+	 <4FBB3C3B.3090202@linux.vnet.ibm.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
+X-Y-GMX-Trusted: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Although perf depends on the libtraceevent, it cannot know
-when it needs to be rebuilt. So just try to rebuild it
-always in order to make sure we use the latest version.
+On Tue, 2012-05-22 at 09:11 +0200, Christian Ehrhardt wrote: 
+> 
+> On 05/21/2012 05:45 PM, Martin Schwidefsky wrote:
+> [...]
+> > --- a/kernel/sched/features.h
+> > +++ b/kernel/sched/features.h
+> > @@ -1,3 +1,12 @@
+> > +#ifdef CONFIG_SCHED_FAIR_SLEEPERS
+> > +/*
+> > + * Disregards a certain amount of sleep time (sched_latency_ns) and
+> > + * considers the task to be running during that period. This gives it
+> > + * a service deficit on wakeup, allowing it to run sooner.
+> > + */
+> > +SCHED_FEAT(FAIR_SLEEPERS, false)
+> > +#endif
+> > +
+> >   /*
+> >    * Only give sleepers 50% of their service deficit. This allows
+> >    * them to run sooner, but does not allow tons of sleepers to
+> 
+> This would be right for s390, but a change to every other architecture.
+> As far as I know s390 had custom patches in any distribution supported 
+> on s390 to set the default to false (like in your patch), but the 
+> upstream default for every other architecture was true.
+> 
+> I think the patch could look like this to make all happy:
+> ...
+> +#ifndef CONFIG_S390
+> + SCHED_FEAT(FAIR_SLEEPERS, true)
+> +#else
+> +SCHED_FEAT(FAIR_SLEEPERS, false)
+> ...
 
-While at it, silence annoying directory change messages.
+Um, yeah, default off is a non-starter.. until someone comes up with a
+less annoying preemption model that is.
 
-Signed-off-by: Namhyung Kim <namhyung.kim@lge.com>
----
- tools/perf/Makefile |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
-
-diff --git a/tools/perf/Makefile b/tools/perf/Makefile
-index 022845e51937..a3d2324b9cd7 100644
---- a/tools/perf/Makefile
-+++ b/tools/perf/Makefile
-@@ -821,7 +821,7 @@ $(LIB_FILE): $(LIB_OBJS)
- 
- # libtraceevent.a
- $(LIBTRACEEVENT):
--	$(MAKE) -C $(TRACE_EVENT_DIR) $(COMMAND_O) libtraceevent.a
-+	$(QUIET_SUBDIR0)$(TRACE_EVENT_DIR) $(QUIET_SUBDIR1) $(COMMAND_O) libtraceevent.a
- 
- help:
- 	@echo 'Perf make targets:'
-@@ -969,6 +969,6 @@ clean:
- 	$(RM) $(OUTPUT)util/*-{bison,flex}*
- 	$(python-clean)
- 
--.PHONY: all install clean strip
-+.PHONY: all install clean strip $(LIBTRACEEVENT)
- .PHONY: shell_compatibility_test please_set_SHELL_PATH_to_a_more_modern_shell
- .PHONY: .FORCE-PERF-VERSION-FILE TAGS tags cscope .FORCE-PERF-CFLAGS
--- 
-1.7.10.1
+-Mike
 
