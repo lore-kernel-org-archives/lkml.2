@@ -1,69 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932401Ab2EVUEo (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 May 2012 16:04:44 -0400
-Received: from smtp02.citrix.com ([66.165.176.63]:22152 "EHLO
-	SMTP02.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753265Ab2EVUEm convert rfc822-to-8bit (ORCPT
+	id S932430Ab2EVUEz (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 May 2012 16:04:55 -0400
+Received: from mail-qa0-f49.google.com ([209.85.216.49]:64140 "EHLO
+	mail-qa0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932320Ab2EVUEn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 May 2012 16:04:42 -0400
-X-IronPort-AV: E=Sophos;i="4.75,640,1330923600"; 
-   d="scan'208";a="196081411"
-From: Simon Graham <simon.graham@citrix.com>
-To: Ian Campbell <Ian.Campbell@citrix.com>
-CC: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Ben Hutchings <bhutchings@solarflare.com>,
-        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        "davem@davemloft.net" <davem@davemloft.net>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Adnan Misherfi <adnan.misherfi@oracle.com>
-Date: Tue, 22 May 2012 16:03:22 -0400
-Subject: RE: [PATCH] xen/netback: calculate correctly the SKB slots.
-Thread-Topic: [PATCH] xen/netback: calculate correctly the SKB slots.
-Thread-Index: Ac04UR7Us5DWyIPJQzKGsXSNCB5BEQABL6/g
-Message-ID: <F02ED76F3FCF8C468AD22A7618C05BBBB18DBFFEA4@FTLPMAILBOX01.citrite.net>
-References: <1337621793-12486-1-git-send-email-konrad.wilk@oracle.com>
-	 <1337627640.2979.33.camel@bwh-desktop.uk.solarflarecom.com>
-	 <1337678512.10118.40.camel@zakaz.uk.xensource.com>
-	 <20120522180901.GC22488@phenom.dumpdata.com>
-	 <F02ED76F3FCF8C468AD22A7618C05BBBB18DBFFE61@FTLPMAILBOX01.citrite.net>
- <1337714930.3991.1.camel@dagon.hellion.org.uk>
-In-Reply-To: <1337714930.3991.1.camel@dagon.hellion.org.uk>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Tue, 22 May 2012 16:04:43 -0400
+Message-ID: <4FBBF158.2040001@pobox.com>
+Date: Tue, 22 May 2012 16:04:40 -0400
+From: Jeff Garzik <jgarzik@pobox.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
 MIME-Version: 1.0
+To: Andi Kleen <andi@firstfloor.org>
+CC: linux-ide@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Andi Kleen <ak@linux.intel.com>, alan@linux.intel.com
+Subject: Re: [PATCH] ata_generic: Skip is_intel_ider() check when ata_generic=1
+ is set
+References: <1336754003-31487-1-git-send-email-andi@firstfloor.org>
+In-Reply-To: <1336754003-31487-1-git-send-email-andi@firstfloor.org>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> 
-> That sounds very plausible indeed!
-> 
-> Please can format this as a commit message and resend with a
-> Signed-off-by.
-> 
+On 05/11/2012 12:33 PM, Andi Kleen wrote:
+> From: Andi Kleen<ak@linux.intel.com>
+>
+> When ata_generic_ide=1 is set don't do the is_intel_ider() magic
+> check. We found at least one box who needed that.
+>
+> Cc: alan@linux.intel.com
+> Signed-off-by: Andi Kleen<ak@linux.intel.com>
+> ---
+>   drivers/ata/ata_generic.c |    2 +-
+>   1 files changed, 1 insertions(+), 1 deletions(-)
 
-Will do
-Simon
+applied
 
-> many thanks,
-> Ian.
-> 
-> >
-> > We found this running with a VIF bridged to a USB 3G Modem where
-> > skb->data started near the end of a page so the header would always
-> > span the page boundary.
-> >
-> > It was very easy to get the VIF to stop processing frames with the old
-> > code and we have not seen any problems since applying this patch.
-> >
-> > Simon
-> >
-> 
 
