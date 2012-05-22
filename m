@@ -1,47 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758073Ab2EVKqs (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 May 2012 06:46:48 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:45169 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752616Ab2EVKqr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 May 2012 06:46:47 -0400
-Message-ID: <4FBB6E8B.8020200@redhat.com>
-Date: Tue, 22 May 2012 13:46:35 +0300
-From: Avi Kivity <avi@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
+	id S1758094Ab2EVKsL (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 May 2012 06:48:11 -0400
+Received: from mail-lb0-f174.google.com ([209.85.217.174]:56822 "EHLO
+	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757916Ab2EVKsK (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 May 2012 06:48:10 -0400
+Date: Tue, 22 May 2012 12:48:06 +0200
+From: Johan Hovold <jhovold@gmail.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Richard Purdie <rpurdie@rpsys.net>, Daniel Jeong <daniel.jeong@ti.com>,
+        linux-kernel@vger.kernel.org, Wolfram Sang <w.sang@pengutronix.de>,
+        Geon Si Jeong <gshark.jeong@gmail.com>
+Subject: Re: [PATCH 1/1 v1] leds: Add LED driver for lm3556 chip
+Message-ID: <20120522104806.GD7323@localhost>
+References: <1333936855-8807-1-git-send-email-gshark.jeong@gmail.com>
+ <1333936855-8807-2-git-send-email-gshark.jeong@gmail.com>
+ <20120515184330.GB5654@localhost>
 MIME-Version: 1.0
-To: Thomas Gleixner <tglx@linutronix.de>
-CC: "Michael S. Tsirkin" <mst@redhat.com>, kvm@vger.kernel.org,
-        Marcelo Tosatti <mtosatti@redhat.com>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, x86@kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] kvm: optimize ISR lookups
-References: <20120521163727.GA13337@redhat.com> <alpine.LFD.2.02.1205211940030.3231@ionos> <20120521215127.GH17031@redhat.com> <alpine.LFD.2.02.1205220012020.3231@ionos> <20120521222449.GJ17031@redhat.com> <alpine.LFD.2.02.1205220044460.3231@ionos>
-In-Reply-To: <alpine.LFD.2.02.1205220044460.3231@ionos>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120515184330.GB5654@localhost>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/22/2012 02:01 AM, Thomas Gleixner wrote:
+On Tue, May 15, 2012 at 08:43:30PM +0200, Johan Hovold wrote:
+> On Mon, Apr 09, 2012 at 11:00:55AM +0900, Geon Si Jeong wrote:
+> > It is a simple driver for LM3556 Chip(Texas Instruments)
+> > LM3556 :
+> > The LM3556 is a 4 MHz fixed-frequency synchronous boost
+> > converter plus 1.5A constant current driver for a high-current white LED.
+> > Datasheet: www.national.com/ds/LM/LM3556.pdf
 > > 
-> > Others are not my fault :)
+> > Tested on OMAP4430
 > > 
-> > Seriously, if Avi/Marcelo want to rewrite the ISR emulation
->
-> Interesting POV, really.
->
-> Did you ever notice that the kernel is a collaborative effort and not
-> controlled by "Avi/Marcelo"?
->
-> Did you ever notice that arch/x86/kvm is part of arch/x86? 
+> > Signed-off-by: Geon Si Jeong <gshark.jeong@gmail.com>
+> 
+> [...]
+> 
+> > +/* i2c access*/
+> > +static int lm3556_read_reg(struct i2c_client *client, u8 reg, u8 * val)
+> > +{
+> > +	int ret;
+> > +
+> > +	ret = i2c_smbus_read_byte_data(client, reg);
+> > +	if (ret < 0) {
+> > +		dev_err(&client->dev, "i2c reading fail at 0x%02x error %d\n",
+> > +			reg, ret);
+> > +		return ret;
+> > +	}
+> > +	*val = ret & 0xff;
+> > +	return ret;
+> > +}
+> > +
+> > +static int lm3556_write_reg(struct i2c_client *client, u8 reg, u8 val)
+> > +{
+> > +	int ret = 0;
+> > +
+> > +	ret = i2c_smbus_write_byte_data(client, reg, val);
+> > +
+> > +	if (ret < 0)
+> > +		dev_err(&client->dev, "i2c writting fail at 0x%02x\n", reg);
+> > +	return ret;
+> > +}
+> > +
+> > +static int lm3556_write_bits(struct i2c_client *client,
+> > +			     u8 reg, u8 val, u8 mask, u8 shift)
+> > +{
+> > +	int ret;
+> > +	u8 reg_val;
+> > +	struct lm3556_chip_data *chip = i2c_get_clientdata(client);
+> > +
+> > +	mutex_lock(&chip->lock);
+> > +	ret = lm3556_read_reg(client, reg, &reg_val);
+> > +	if (ret < 0)
+> > +		goto out;
+> > +	reg_val &= (~(mask << shift));
+> > +	reg_val |= ((val & mask) << shift);
+> > +	ret = lm3556_write_reg(client, reg, reg_val);
+> > +out:
+> > +	mutex_unlock(&chip->lock);
+> > +	return ret;
+> > +}
+> 
+> The register io-locking above is broken. You need to protect both 
+> write_reg and write_bits using the mutex (but you must restructure
+> your code because write_bits currently calls write_reg). This is
+> required to avoid register corruption due to concurrent write_reg and
+> write_bits.
+> 
+> As has been suggested elsewhere, you could consider using regmap.
 
-This is silly.  Most of the time the kernel is advanced by incremental
-patches.  Sometimes it is advanced by minor or major refactoring.  It is
-never advanced by personal attacks on contributors.
+Andrew, just wanted to remind you that this driver is still in your
+tree. Do you want to drop it or should someone else fix the locking?
 
--- 
-error compiling committee.c: too many arguments to function
-
+Johan
