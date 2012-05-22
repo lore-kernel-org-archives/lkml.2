@@ -1,86 +1,171 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932636Ab2EVAEE (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 May 2012 20:04:04 -0400
-Received: from out03.mta.xmission.com ([166.70.13.233]:60422 "EHLO
-	out03.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754511Ab2EVAD7 (ORCPT
+	id S932706Ab2EVAH7 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 May 2012 20:07:59 -0400
+Received: from mailout1.samsung.com ([203.254.224.24]:37196 "EHLO
+	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751993Ab2EVAH4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 May 2012 20:03:59 -0400
-From: ebiederm@xmission.com (Eric W. Biederman)
-To: "Kok\, Auke-jan H" <auke-jan.h.kok@intel.com>
-Cc: Serge Hallyn <serge.hallyn@canonical.com>,
-        linux-security-module@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Eric Paris <eparis@redhat.com>
-References: <1337284200-1838-1-git-send-email-auke-jan.h.kok@intel.com>
-	<87havchd14.fsf@xmission.com>
-	<CABsxX9J+KVSbxVahg-iVsfeNDEM_H8+MrcBBejjCZFrcNCxwtA@mail.gmail.com>
-Date: Mon, 21 May 2012 18:03:48 -0600
-In-Reply-To: <CABsxX9J+KVSbxVahg-iVsfeNDEM_H8+MrcBBejjCZFrcNCxwtA@mail.gmail.com>
-	(Auke-jan H. Kok's message of "Sat, 19 May 2012 11:39:14 -0700")
-Message-ID: <87d35x6pzv.fsf@xmission.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.3 (gnu/linux)
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-X-XM-SPF: eid=;;;mid=;;;hst=in02.mta.xmission.com;;;ip=208.38.5.102;;;frm=ebiederm@xmission.com;;;spf=neutral
-X-XM-AID: U2FsdGVkX1+oZkIchzozp82XDZN13C5lQAQuap/kuHU=
-X-SA-Exim-Connect-IP: 208.38.5.102
-X-SA-Exim-Mail-From: ebiederm@xmission.com
-X-Spam-Report: * -1.0 ALL_TRUSTED Passed through trusted hosts only via SMTP
-	*  0.0 TVD_RCVD_IP TVD_RCVD_IP
-	*  0.0 T_TM2_M_HEADER_IN_MSG BODY: T_TM2_M_HEADER_IN_MSG
-	* -3.0 BAYES_00 BODY: Bayes spam probability is 0 to 1%
-	*      [score: 0.0038]
-	* -0.0 DCC_CHECK_NEGATIVE Not listed in DCC
-	*      [sa06 1397; Body=1 Fuz1=1 Fuz2=1]
-	*  0.0 T_XMDrugObfuBody_08 obfuscated drug references
-	*  0.0 T_TooManySym_01 4+ unique symbols in subject
-	*  0.0 T_TooManySym_02 5+ unique symbols in subject
-X-Spam-DCC: XMission; sa06 1397; Body=1 Fuz1=1 Fuz2=1 
-X-Spam-Combo: ;"Kok\, Auke-jan H" <auke-jan.h.kok@intel.com>
-X-Spam-Relay-Country: 
-Subject: Re: [PATCH] Trace event for capable().
-X-Spam-Flag: No
-X-SA-Exim-Version: 4.2.1 (built Fri, 06 Aug 2010 16:31:04 -0600)
-X-SA-Exim-Scanned: Yes (on in02.mta.xmission.com)
+	Mon, 21 May 2012 20:07:56 -0400
+X-AuditID: cbfee61a-b7fe76d0000023f5-e3-4fbad8c38575
+From: Jingoo Han <jg1.han@samsung.com>
+To: "'Corentin Chary'" <corentin.chary@gmail.com>,
+        "'Richard Purdie'" <rpurdie@rpsys.net>,
+        "'Andrew Morton'" <akpm@linux-foundation.org>,
+        "'LKML'" <linux-kernel@vger.kernel.org>
+Cc: "'Keith Packard'" <keithp@keithp.com>, "'David Airlie'" <airlied@linux.ie>,
+        "'Matthew Garrett'" <mjg@redhat.com>,
+        "'Florian Tobias Schandinat'" <FlorianSchandinat@gmx.de>,
+        "'Mark Brown'" <broonie@opensource.wolfsonmicro.com>,
+        "'Tomi Valkeinen'" <tomi.valkeinen@ti.com>,
+        "'Mathieu Poirier'" <mathieu.poirier@linaro.org>,
+        "'Dave Airlie'" <airlied@redhat.com>,
+        "'Arnd Bergmann'" <arnd@arndb.de>,
+        "'Lars-Peter Clausen'" <lars@metafoo.de>,
+        "'Axel Lin'" <axel.lin@gmail.com>, dri-devel@lists.freedesktop.org,
+        linux-kernel@vger.kernel.org, platform-driver-x86@vger.kernel.org,
+        linux-fbdev@vger.kernel.org, patches@opensource.wolfsonmicro.com,
+        linux-omap@vger.kernel.org, "'Jingoo Han'" <jg1.han@samsung.com>
+References: <1337585085-4891-1-git-send-email-corentin.chary@gmail.com>
+In-reply-to: <1337585085-4891-1-git-send-email-corentin.chary@gmail.com>
+Subject: Re: [PATCH] backlight: initialize  struct backlight_properties properly
+Date: Tue, 22 May 2012 09:07:31 +0900
+Message-id: <000601cd37ae$e1ae8300$a50b8900$%han@samsung.com>
+MIME-version: 1.0
+Content-type: text/plain; charset=us-ascii
+Content-transfer-encoding: 7bit
+X-Mailer: Microsoft Office Outlook 12.0
+Thread-index: Ac03IuhW2vpfqdghS5yAJ2nhDIs+HQAi05cA
+Content-language: ko
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrDLMWRmVeSWpSXmKPExsVy+t9jQd3DN3b5G/xepGtxou8Dq8XlXXPY
+	LGYv6WexWL3nBbMDi8fnTXIBjFFcNimpOZllqUX6dglcGROX7mIrOKda8fvoevYGxlvyXYyc
+	HBICJhJvrh1ngbDFJC7cW8/WxcjFISQwnVHifNNxZgjnF6PEw1U7warYBNQkvnw5zA5iiwis
+	Z5Q4O7UCpIhZYB+rxLO5+9hAEkIC7hLPHvWzgticAh4SN851gsWFBQIk7l1/DhTn4GARUJVo
+	+l4LEuYVsJWYuL+VHcIWlPgx+R7YLmYBLYn1O48zQdjyEpvXvGUGaZUQUJd49FcX4gQjiRNn
+	XkCViEjse/GOcQKj0Cwkk2YhmTQLyaRZSFoWMLKsYhRNLUguKE5KzzXUK07MLS7NS9dLzs/d
+	xAgO82dSOxhXNlgcYhTgYFTi4Q24tMtfiDWxrLgy9xCjBAezkgjvpjagEG9KYmVValF+fFFp
+	TmrxIUZpDhYlcV67xTv8hQTSE0tSs1NTC1KLYLJMHJxSDYwZ2k0HbRoM17y/vPfpMYnUk8dX
+	8R5r+fPpV9w3oXandW7Pi2catzs6V2u8n/TPV+CihcbmSYFv45Y6XzG8LdHsmrxOOULQe75F
+	9Z3rdlbhMSuTPCuY3yR+9c4+F/W/abptvFF6wapgA+lD6R8Nww8dP3nFxKNj3n6hVQHTA/10
+	Zt6fqsqpVqXEUpyRaKjFXFScCAAn4mWzbwIAAA==
+X-TM-AS-MML: No
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-"Kok, Auke-jan H" <auke-jan.h.kok@intel.com> writes:
+On Mon, May 21, 2012 at 04:25 PM +0000, Corentin Chary wrote:
 
-> On Fri, May 18, 2012 at 11:59 PM, Eric W. Biederman
-> <ebiederm@xmission.com> wrote:
->> Auke Kok <auke-jan.h.kok@intel.com> writes:
->>
->> > Add a simple trace event for capable().
->> >
->> > There's been a lot of discussion around capable(), and there
->> > are plenty of tools to help reduce capabilities' usage from
->> > userspace. A major gap however is that it's almost impossible
->> > to see or verify which bits are requested from either userspace
->> > or in the kernel.
->> >
->> > This patch adds a minimal tracer that will print out which
->> > CAPs are requested and whether the request was granted.
->>
->> A small comment assigned from the other issues.
->>
->> current->pid for anything going to userspace is broken,
->> and in fact current->pid should be killed on of these days.
->>
->> Which pid namespace is your tracer running in?
->
-> init - I currently have no need for namespaces myself at all, and, as I replied
-> to Serge and Eric already - I'll see if I can fis up the tracer with their
-> suggestions.
+> 
+> In all these files, the .power field was never correctly initialized.
+> 
+> Signed-off-by: Corentin Chary <corentin.chary@gmail.com>
 
-Thanks.
+It looks good.
 
-A quick read of perf_event_open shows that the syscall is allowed by
-unprivileged users in any context if sysctl_perf_event_paranoid is
-set properly.  So it looks like the perf code needs to handle namespaces
-properly if we are going to be reporting namespaced values like uid
-and pids.  Even if no one cares today what about next week?
+Best regards,
+Jingoo Han
 
-Eric
+> ---
+>  drivers/gpu/drm/i915/intel_panel.c              |    1 +
+>  drivers/gpu/drm/radeon/radeon_legacy_encoders.c |    1 +
+>  drivers/platform/x86/toshiba_acpi.c             |    1 +
+>  drivers/video/backlight/da903x_bl.c             |    1 +
+>  drivers/video/backlight/pcf50633-backlight.c    |    1 +
+>  drivers/video/backlight/wm831x_bl.c             |    1 +
+>  drivers/video/omap2/displays/panel-acx565akm.c  |    1 +
+>  7 files changed, 7 insertions(+)
+> 
+> diff --git a/drivers/gpu/drm/i915/intel_panel.c b/drivers/gpu/drm/i915/intel_panel.c
+> index 48177ec..ec4a1e0 100644
+> --- a/drivers/gpu/drm/i915/intel_panel.c
+> +++ b/drivers/gpu/drm/i915/intel_panel.c
+> @@ -342,6 +342,7 @@ int intel_panel_setup_backlight(struct drm_device *dev)
+>  	else
+>  		return -ENODEV;
+> 
+> +	memset(&props, 0, sizeof(props));
+>  	props.type = BACKLIGHT_RAW;
+>  	props.max_brightness = intel_panel_get_max_backlight(dev);
+>  	dev_priv->backlight =
+> diff --git a/drivers/gpu/drm/radeon/radeon_legacy_encoders.c
+> b/drivers/gpu/drm/radeon/radeon_legacy_encoders.c
+> index 42db254..a0c8222 100644
+> --- a/drivers/gpu/drm/radeon/radeon_legacy_encoders.c
+> +++ b/drivers/gpu/drm/radeon/radeon_legacy_encoders.c
+> @@ -369,6 +369,7 @@ void radeon_legacy_backlight_init(struct radeon_encoder *radeon_encoder,
+>  		goto error;
+>  	}
+> 
+> +	memset(&props, 0, sizeof(props));
+>  	props.max_brightness = MAX_RADEON_LEVEL;
+>  	props.type = BACKLIGHT_RAW;
+>  	bd = backlight_device_register("radeon_bl", &drm_connector->kdev,
+> diff --git a/drivers/platform/x86/toshiba_acpi.c b/drivers/platform/x86/toshiba_acpi.c
+> index bde32de..d680bb2 100644
+> --- a/drivers/platform/x86/toshiba_acpi.c
+> +++ b/drivers/platform/x86/toshiba_acpi.c
+> @@ -1095,6 +1095,7 @@ static int __devinit toshiba_acpi_setup_backlight(struct toshiba_acpi_dev *dev)
+>  	ret = get_tr_backlight_status(dev, &enabled);
+>  	dev->tr_backlight_supported = !ret;
+> 
+> +	memset(&props, 0, sizeof(props));
+>  	props.type = BACKLIGHT_PLATFORM;
+>  	props.max_brightness = HCI_LCD_BRIGHTNESS_LEVELS - 1;
+> 
+> diff --git a/drivers/video/backlight/da903x_bl.c b/drivers/video/backlight/da903x_bl.c
+> index 30e1968..573c7ec 100644
+> --- a/drivers/video/backlight/da903x_bl.c
+> +++ b/drivers/video/backlight/da903x_bl.c
+> @@ -136,6 +136,7 @@ static int da903x_backlight_probe(struct platform_device *pdev)
+>  		da903x_write(data->da903x_dev, DA9034_WLED_CONTROL2,
+>  				DA9034_WLED_ISET(pdata->output_current));
+> 
+> +	memset(&props, 0, sizeof(props));
+>  	props.type = BACKLIGHT_RAW;
+>  	props.max_brightness = max_brightness;
+>  	bl = backlight_device_register(pdev->name, data->da903x_dev, data,
+> diff --git a/drivers/video/backlight/pcf50633-backlight.c b/drivers/video/backlight/pcf50633-backlight.c
+> index c65853c..c092159 100644
+> --- a/drivers/video/backlight/pcf50633-backlight.c
+> +++ b/drivers/video/backlight/pcf50633-backlight.c
+> @@ -111,6 +111,7 @@ static int __devinit pcf50633_bl_probe(struct platform_device *pdev)
+>  	if (!pcf_bl)
+>  		return -ENOMEM;
+> 
+> +	memset(&bl_props, 0, sizeof(bl_props));
+>  	bl_props.type = BACKLIGHT_RAW;
+>  	bl_props.max_brightness = 0x3f;
+>  	bl_props.power = FB_BLANK_UNBLANK;
+> diff --git a/drivers/video/backlight/wm831x_bl.c b/drivers/video/backlight/wm831x_bl.c
+> index 5d365de..9e5517a 100644
+> --- a/drivers/video/backlight/wm831x_bl.c
+> +++ b/drivers/video/backlight/wm831x_bl.c
+> @@ -194,6 +194,7 @@ static int wm831x_backlight_probe(struct platform_device *pdev)
+>  	data->current_brightness = 0;
+>  	data->isink_reg = isink_reg;
+> 
+> +	memset(&props, 0, sizeof(props));
+>  	props.type = BACKLIGHT_RAW;
+>  	props.max_brightness = max_isel;
+>  	bl = backlight_device_register("wm831x", &pdev->dev, data,
+> diff --git a/drivers/video/omap2/displays/panel-acx565akm.c b/drivers/video/omap2/displays/panel-
+> acx565akm.c
+> index d26f37a..74e7cf0 100644
+> --- a/drivers/video/omap2/displays/panel-acx565akm.c
+> +++ b/drivers/video/omap2/displays/panel-acx565akm.c
+> @@ -532,6 +532,7 @@ static int acx_panel_probe(struct omap_dss_device *dssdev)
+> 
+>  	/*------- Backlight control --------*/
+> 
+> +	memset(&props, 0, sizeof(props));
+>  	props.fb_blank = FB_BLANK_UNBLANK;
+>  	props.power = FB_BLANK_UNBLANK;
+>  	props.type = BACKLIGHT_RAW;
+> --
+> 1.7.9.5
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-fbdev" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+
