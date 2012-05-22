@@ -1,44 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756589Ab2EVN6N (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 May 2012 09:58:13 -0400
-Received: from smtp102.prem.mail.ac4.yahoo.com ([76.13.13.41]:24756 "HELO
-	smtp102.prem.mail.ac4.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1752977Ab2EVN6M (ORCPT
+	id S1756546Ab2EVOAQ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 May 2012 10:00:16 -0400
+Received: from hqemgate04.nvidia.com ([216.228.121.35]:18892 "EHLO
+	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753047Ab2EVOAO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 May 2012 09:58:12 -0400
-X-Yahoo-Newman-Property: ymail-3
-X-YMail-OSG: 23SZJlUVM1mp5.zHNJrFiuYHby0I8JTSkIud94895_UAez_
- bmGmKVR_hlnOw7NBD.zOcXzYv0ezTQE3Hun6PHxgej10tPO9h.TXo2IOcpcT
- HniMJu0lb2bujKdDfUK0eLQ5nNqZh47TnedWguih0Pma9oo7.FrF1yp2iHKY
- 3UIIgqKtUqrjH917M2g1kKjHoftMV5id42iE0AMtQ12iv5b8UTdPxUtIvYj9
- K15M8iDHKDfNv_u6Npy0eqVvt8N1esngViiuALYA3PZwMXzPESmW.bkcSSWZ
- DWfC31u1tFJZ5Kz7PIAONcts3LFDoQ5Y_J2tii2EeyHQ.KwpIZvF55ALS1FM
- Mu.pRQD1iDZ8OpN0Q1Pgd5HEt8sTQ7iN4nVPTUZavmd1hJ_wolwOZ.pV3jyj
- sJ2yGfeXa9Bwm.4unGXyQ1QLz3zpJHanPjsk-
-X-Yahoo-SMTP: _Dag8S.swBC1p4FJKLCXbs8NQzyse1SYSgnAbY0-
-Date: Tue, 22 May 2012 08:58:08 -0500 (CDT)
-From: Christoph Lameter <cl@linux.com>
-X-X-Sender: cl@router.home
-To: Glauber Costa <glommer@parallels.com>
-cc: linux-kernel@vger.kernel.org, cgroups@vger.kernel.org, linux-mm@kvack.org,
-        Pekka Enberg <penberg@cs.helsinki.fi>,
-        David Rientjes <rientjes@google.com>
-Subject: Re: [PATCH v2] slab+slob: dup name string
-In-Reply-To: <1337680298-11929-1-git-send-email-glommer@parallels.com>
-Message-ID: <alpine.DEB.2.00.1205220857380.17600@router.home>
-References: <1337680298-11929-1-git-send-email-glommer@parallels.com>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+	Tue, 22 May 2012 10:00:14 -0400
+X-PGP-Universal: processed;
+	by hqnvupgp06.nvidia.com on Tue, 22 May 2012 06:58:45 -0700
+Date: Tue, 22 May 2012 16:58:13 +0300
+From: Peter De Schrijver <pdeschrijver@nvidia.com>
+To: Saravana Kannan <skannan@codeaurora.org>
+CC: Mike Turquette <mturquette@linaro.org>,
+        Arnd Bergman <arnd.bergmann@linaro.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Paul Walmsley <paul@pwsan.com>, Sascha Hauer <s.hauer@pengutronix.de>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Shawn Guo <shawn.guo@freescale.com>,
+        Stephen Warren <swarren@wwwdotorg.org>, Andrew Lunn <andrew@lunn.ch>,
+        Russell King <linux@arm.linux.org.uk>,
+        Linus Walleij <linus.walleij@stericsson.com>,
+        Stephen Boyd <sboyd@codeaurora.org>,
+        "linux-arm-msm@vger.kernel.org" <linux-arm-msm@vger.kernel.org>,
+        Magnus Damm <magnus.damm@gmail.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Rob Herring <rob.herring@calxeda.com>,
+        Richard Zhao <richard.zhao@linaro.org>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Deepak Saxena <dsaxena@linaro.org>,
+        Amit Kucheria <amit.kucheria@linaro.org>,
+        Jamie Iles <jamie@jamieiles.com>,
+        Jeremy Kerr <jeremy.kerr@canonical.com>,
+        Thomas Gleixner <tglx@linutronix.de>
+Subject: Re: [PATCH] clk: Fix race conditions between clk_set_parent() and
+ clk_enable()
+Message-ID: <20120522135813.GL8730@tbergstrom-lnx.Nvidia.com>
+References: <1336798797-8724-1-git-send-email-skannan@codeaurora.org>
+ <4FB29E7C.7010606@codeaurora.org>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+In-Reply-To: <4FB29E7C.7010606@codeaurora.org>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 22 May 2012, Glauber Costa wrote:
+On Tue, May 15, 2012 at 08:20:44PM +0200, Saravana Kannan wrote:
+> On 05/11/2012 09:59 PM, Saravana Kannan wrote:
+> > Without this patch, the following race conditions are possible.
+> >
+> > Race condition 1:
+> > * clk-A has two parents - clk-X and clk-Y.
+> > * All three are disabled and clk-X is current parent.
+> > * Thread A: clk_set_parent(clk-A, clk-Y).
+> > * Thread A:<snip execution flow>
+> > * Thread A: Grabs enable lock.
+> > * Thread A: Sees enable count of clk-A is 0, so doesn't enable clk-Y.
+> > * Thread A: Releases enable lock.
+> > * Thread B: Calls clk_enable(clk-A), which in turn enables clk-X.
+> > * Thread A: Switches clk-A's parent to clk-Y in hardware.
+> >
+> > clk-A is now enabled in software, but not clocking in hardware.
+> >
+> > Race condition 2:
+> > * clk-A has two parents - clk-X and clk-Y.
+> > * All three are disabled and clk-X is current parent.
+> > * Thread A: clk_set_parent(clk-A, clk-Y).
+> > * Thread A:<snip execution flow>
+> > * Thread A: Switches parent in hardware to clk-Y.
+> > * Thread A: Grabs enable lock.
+> > * Thread A: Sees enable count of clk-A is 0, so doesn't disable clk-X.
+> > * Thread A: Releases enable lock.
+> > * Thread B: Calls clk_enable(clk-A)
+> > * Thread B: Software state still says parent is clk-X.
+> > * Thread B: So, enables clk-X and then itself.
+> > * Thread A: Updates parent in software state to clk-Y.
+> >
 
-> [ v2: Also dup string for early caches, requested by David Rientjes ]
+This looks correct to me. Is there any usecase where enabling/disabling a
+clock would require sleeping but changing the parent would not?
 
-kstrdups that early could cause additional issues. Its better to leave
-things as they were.
+Cheers,
 
+Peter.
