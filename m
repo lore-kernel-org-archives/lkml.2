@@ -1,94 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758697Ab2EVOzT (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 May 2012 10:55:19 -0400
-Received: from mail-yw0-f46.google.com ([209.85.213.46]:63771 "EHLO
-	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751964Ab2EVOzR convert rfc822-to-8bit (ORCPT
+	id S1758919Ab2EVOze (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 May 2012 10:55:34 -0400
+Received: from out5-smtp.messagingengine.com ([66.111.4.29]:37528 "EHLO
+	out5-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755094Ab2EVOzc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 May 2012 10:55:17 -0400
+	Tue, 22 May 2012 10:55:32 -0400
+X-Greylist: delayed 674 seconds by postgrey-1.27 at vger.kernel.org; Tue, 22 May 2012 10:55:32 EDT
+X-Sasl-enc: T8Jbunbvtu3Gbf5odvu3OSf929P2LTgKCTLFby7iPv5N 1337697857
+Message-ID: <4FBBA63F.2050501@fastmail.fm>
+Date: Tue, 22 May 2012 15:44:15 +0100
+From: Jack Stone <jwjstone@fastmail.fm>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
 MIME-Version: 1.0
-In-Reply-To: <20120522144443.GD4629@phenom.ffwll.local>
-References: <CAJJYPd=JQdzepw818ZP6OmKK4v38--T+ruKBOG_wn2pUmnVaSw@mail.gmail.com>
-	<20120522123058.GB4629@phenom.ffwll.local>
-	<CAJJYPdmcJYT1VTnqbkbybut-_NqpFYsuEEzDb9LO-E+ss=wz-g@mail.gmail.com>
-	<20120522144443.GD4629@phenom.ffwll.local>
-Date: Tue, 22 May 2012 16:55:16 +0200
-Message-ID: <CAJJYPdmimcz45qdT0W-iLTyY-U2qCe4fa4+e19adrjMtwd2Ywg@mail.gmail.com>
-Subject: Re: Regression on GMA965 - display seems to have slow jump changes in brightness
-From: Zdenek Kabelac <zdenek.kabelac@gmail.com>
-To: Zdenek Kabelac <zdenek.kabelac@gmail.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        intel-gfx@lists.freedesktop.org
-Cc: daniel@ffwll.ch
+To: Alan Cox <alan@lxorguk.ukuu.org.uk>
+CC: gregkh@linuxfoundation.org, alan@linux.intel.com,
+        linux-serial@vger.kernel.org,
+        Linux Kernel <linux-kernel@vger.kernel.org>, deathonfuneral@gmail.com
+Subject: Re: struct tty_flip_buffer replacement in newer kernels
+References: <CAMMxdh1Ak2LWeL=3qxTmvfR43E=wSHz5OmSj_irMubz0aK+TgA@mail.gmail.com> <4FBB8742.7050504@fastmail.fm> <20120522151033.33ef577a@pyramind.ukuu.org.uk>
+In-Reply-To: <20120522151033.33ef577a@pyramind.ukuu.org.uk>
+X-Enigmail-Version: 1.4.1
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2012/5/22 Daniel Vetter <daniel@ffwll.ch>:
-> On Tue, May 22, 2012 at 04:36:30PM +0200, Zdenek Kabelac wrote:
->> 2012/5/22 Daniel Vetter <daniel@ffwll.ch>:
->> > On Tue, May 22, 2012 at 02:08:46PM +0200, Zdenek Kabelac wrote:
->> >> Hi
->> >>
->> >> I've updated to 3.4 kernel, and now I'm noticing slight changes in
->> >> brightness on colorful images.
->> >> It seems the change is mostly visibly on  'darker' images i.e. it's
->> >> not really visible on white background.
->> >>
->> >> When I reboot back to 3.3  kernel - brightness changes are gone - so I
->> >> do not suspect hw fault of my T61 display.
->> >> I guess once in past there has been already such bug, so this problem
->> >> seems to me like reintroducing the same
->> >> problem again.
->> >>
->> >> xorg-x11-server-Xorg-1.12.1-1.fc18.x86_64
->> >> with SNA intel driver build from git repo.
->> >> T61, 965GM
->> >>
->> >> Is this a know issue ?
->> >> Is bisect needed ?
->> >
->> > You're the first one to report things, so a bisect would be highly
->> > appreciated. Also I'm a bit confused about what you mean by 'changing
->> > brightness'. Can you please try to explain this a bit more?
->> >
->>
->> I've some default gnome picture like this one:
->> https://lh6.googleusercontent.com/-96ZhFbfLX_M/ThHsm0ZxBgI/AAAAAAAAFQQ/3ApjzYgulso/s400/gnome-3-login-screen.png
->>
->> When I watch the picture for some period of time  I'm noticing slight
->> changes in the picture brightness looking like small change in LUT
->> table or something like that.
->> If the picture is white I'm not noticing any change.
->> (Initially I've thought my display dies - but reboot to 3.3 fixed the
->> issue immediately).
->
-> "for some period", does that mean it takes you a while to notice the
-> changes (because they're tiny), or are the changes happend just rather slowly?
->
+[Re-adding original poster an LKML after I accidentally dropped them.
+ Sorry about that]
 
-Deviation in picture is not huge - but gets noticeable by my eyes and
-it's annoying,
-it's like several seconds between each minor change.
+On 05/22/2012 03:10 PM, Alan Cox wrote:
+>> I'm newbie, working under existed serial driver, adapting it for 2.6.32.
+>> During the compilation I have had several problems, which I
+>> succesfully solved except this one:
+>> error: 'struct tty_struct' has no member named 'flip'
+>> In particular, cound you advice correct replacement of "tty->flip.count"
+> 
+> Your driver shouldn't be looking in those areas. There isn't a correct
+> replacement. You will need to update it to use the flip buffers properly
+> not poke its nose in places it shouldn't have.
+> 
+> Perhaps the best thing would be to post a link to the driver ?
+> 
+> Alan
 
-If I've monotone background in i.e. text editor  the change is
-practically not visibible,
-but if watch some digicam photos full screen they are quite obvious.
-
-Not sure if that has any influence (not tested without)  I'm using
-some icc profile
-('xcalib') to get away from blue of IBM display.
-
->> Is there any suspecting patch for this chipset I should try to revert ?
->
-> Tbh I have no idea. If there's no changes when the picture is white, it
-> can't be the backlight, we haven't frobbed around with the gamma stuff and
-> temporal dithering is disabled, too. If you can bisect this it would
-> greatly help.
-
-ok, I'll play this game in the evening if there is nothing obvious.
-
-Zdenek
