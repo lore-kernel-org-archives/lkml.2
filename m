@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932261Ab2EVOVS (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 May 2012 10:21:18 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:45273 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932132Ab2EVOVN (ORCPT
+	id S1758817Ab2EVOUz (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 May 2012 10:20:55 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:33962 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758722Ab2EVOUx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 May 2012 10:21:13 -0400
+	Tue, 22 May 2012 10:20:53 -0400
 From: Anton Vorontsov <anton.vorontsov@linaro.org>
 To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
         Kees Cook <keescook@chromium.org>, Colin Cross <ccross@android.com>,
@@ -21,9 +21,9 @@ Cc: Arnd Bergmann <arnd@arndb.de>, John Stultz <john.stultz@linaro.org>,
         WANG Cong <xiyou.wangcong@gmail.com>, linux-kernel@vger.kernel.org,
         devel@driverdev.osuosl.org, linaro-kernel@lists.linaro.org,
         patches@linaro.org, kernel-team@android.com
-Subject: [PATCH 15/16] pstore/platform: Make automatic updates interval configurable
-Date: Tue, 22 May 2012 07:17:58 -0700
-Message-Id: <1337696279-8994-15-git-send-email-anton.vorontsov@linaro.org>
+Subject: [PATCH 13/16] staging/android: Remove ram_console driver
+Date: Tue, 22 May 2012 07:17:56 -0700
+Message-Id: <1337696279-8994-13-git-send-email-anton.vorontsov@linaro.org>
 X-Mailer: git-send-email 1.7.9.2
 In-Reply-To: <20120522141717.GA31574@lizard>
 References: <20120522141717.GA31574@lizard>
@@ -31,60 +31,231 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-There is no behavioural change, the default value is still 60 seconds.
+All the functionality is now supported by pstore and pstore_ram drivers.
 
 Signed-off-by: Anton Vorontsov <anton.vorontsov@linaro.org>
+Acked-by: Kees Cook <keescook@chromium.org>
+Acked-by: Colin Cross <ccross@android.com>
 ---
- fs/pstore/platform.c |   15 +++++++++++----
- 1 file changed, 11 insertions(+), 4 deletions(-)
+ drivers/staging/android/Kconfig       |    5 -
+ drivers/staging/android/Makefile      |    1 -
+ drivers/staging/android/ram_console.c |  179 ---------------------------------
+ 3 files changed, 185 deletions(-)
+ delete mode 100644 drivers/staging/android/ram_console.c
 
-diff --git a/fs/pstore/platform.c b/fs/pstore/platform.c
-index a3f6d96..4f49bb4 100644
---- a/fs/pstore/platform.c
-+++ b/fs/pstore/platform.c
-@@ -31,6 +31,7 @@
- #include <linux/slab.h>
- #include <linux/uaccess.h>
- #include <linux/hardirq.h>
-+#include <linux/jiffies.h>
- #include <linux/workqueue.h>
+diff --git a/drivers/staging/android/Kconfig b/drivers/staging/android/Kconfig
+index 63f9822..df42c6b 100644
+--- a/drivers/staging/android/Kconfig
++++ b/drivers/staging/android/Kconfig
+@@ -25,11 +25,6 @@ config ANDROID_LOGGER
+ 	tristate "Android log driver"
+ 	default n
  
- #include "internal.h"
-@@ -40,7 +41,10 @@
-  * whether the system is actually still running well enough
-  * to let someone see the entry
-  */
--#define	PSTORE_INTERVAL	(60 * HZ)
-+static int pstore_update_ms = 60000;
-+module_param_named(update_ms, pstore_update_ms, int, 0600);
-+MODULE_PARM_DESC(update_ms, "milliseconds before pstore updates its content "
-+		 "(default is 60000; -1 means runtime updates are disabled)");
- 
- static int pstore_new_entry;
- 
-@@ -227,8 +231,11 @@ int pstore_register(struct pstore_info *psi)
- 	kmsg_dump_register(&pstore_dumper);
- 	pstore_register_console();
- 
--	pstore_timer.expires = jiffies + PSTORE_INTERVAL;
--	add_timer(&pstore_timer);
-+	if (pstore_update_ms >= 0) {
-+		pstore_timer.expires = jiffies +
-+			msecs_to_jiffies(pstore_update_ms);
-+		add_timer(&pstore_timer);
-+	}
- 
- 	return 0;
- }
-@@ -287,7 +294,7 @@ static void pstore_timefunc(unsigned long dummy)
- 		schedule_work(&pstore_work);
- 	}
- 
--	mod_timer(&pstore_timer, jiffies + PSTORE_INTERVAL);
-+	mod_timer(&pstore_timer, jiffies + msecs_to_jiffies(pstore_update_ms));
- }
- 
- module_param(backend, charp, 0444);
+-config ANDROID_RAM_CONSOLE
+-	bool "Android RAM buffer console"
+-	depends on !S390 && !UML && HAVE_MEMBLOCK && PSTORE_RAM=y
+-	default n
+-
+ config ANDROID_TIMED_OUTPUT
+ 	bool "Timed output class driver"
+ 	default y
+diff --git a/drivers/staging/android/Makefile b/drivers/staging/android/Makefile
+index 4677e7b..5f3ef2e 100644
+--- a/drivers/staging/android/Makefile
++++ b/drivers/staging/android/Makefile
+@@ -1,7 +1,6 @@
+ obj-$(CONFIG_ANDROID_BINDER_IPC)	+= binder.o
+ obj-$(CONFIG_ASHMEM)			+= ashmem.o
+ obj-$(CONFIG_ANDROID_LOGGER)		+= logger.o
+-obj-$(CONFIG_ANDROID_RAM_CONSOLE)	+= ram_console.o
+ obj-$(CONFIG_ANDROID_TIMED_OUTPUT)	+= timed_output.o
+ obj-$(CONFIG_ANDROID_TIMED_GPIO)	+= timed_gpio.o
+ obj-$(CONFIG_ANDROID_LOW_MEMORY_KILLER)	+= lowmemorykiller.o
+diff --git a/drivers/staging/android/ram_console.c b/drivers/staging/android/ram_console.c
+deleted file mode 100644
+index 82323bb..0000000
+--- a/drivers/staging/android/ram_console.c
++++ /dev/null
+@@ -1,179 +0,0 @@
+-/* drivers/android/ram_console.c
+- *
+- * Copyright (C) 2007-2008 Google, Inc.
+- *
+- * This software is licensed under the terms of the GNU General Public
+- * License version 2, as published by the Free Software Foundation, and
+- * may be copied, distributed, and modified under those terms.
+- *
+- * This program is distributed in the hope that it will be useful,
+- * but WITHOUT ANY WARRANTY; without even the implied warranty of
+- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+- * GNU General Public License for more details.
+- *
+- */
+-
+-#include <linux/console.h>
+-#include <linux/init.h>
+-#include <linux/module.h>
+-#include <linux/platform_device.h>
+-#include <linux/proc_fs.h>
+-#include <linux/string.h>
+-#include <linux/uaccess.h>
+-#include <linux/io.h>
+-#include <linux/pstore_ram.h>
+-#include "ram_console.h"
+-
+-static struct persistent_ram_zone *ram_console_zone;
+-static const char *bootinfo;
+-static size_t bootinfo_size;
+-
+-static void
+-ram_console_write(struct console *console, const char *s, unsigned int count)
+-{
+-	struct persistent_ram_zone *prz = console->data;
+-	persistent_ram_write(prz, s, count);
+-}
+-
+-static struct console ram_console = {
+-	.name	= "ram",
+-	.write	= ram_console_write,
+-	.flags	= CON_PRINTBUFFER | CON_ENABLED | CON_ANYTIME,
+-	.index	= -1,
+-};
+-
+-void ram_console_enable_console(int enabled)
+-{
+-	if (enabled)
+-		ram_console.flags |= CON_ENABLED;
+-	else
+-		ram_console.flags &= ~CON_ENABLED;
+-}
+-
+-static int __init ram_console_probe(struct platform_device *pdev)
+-{
+-	struct ram_console_platform_data *pdata = pdev->dev.platform_data;
+-	struct persistent_ram_zone *prz;
+-
+-	prz = persistent_ram_init_ringbuffer(&pdev->dev, true);
+-	if (IS_ERR(prz))
+-		return PTR_ERR(prz);
+-
+-
+-	if (pdata) {
+-		bootinfo = kstrdup(pdata->bootinfo, GFP_KERNEL);
+-		if (bootinfo)
+-			bootinfo_size = strlen(bootinfo);
+-	}
+-
+-	ram_console_zone = prz;
+-	ram_console.data = prz;
+-
+-	register_console(&ram_console);
+-
+-	return 0;
+-}
+-
+-static struct platform_driver ram_console_driver = {
+-	.driver		= {
+-		.name	= "ram_console",
+-	},
+-};
+-
+-static int __init ram_console_module_init(void)
+-{
+-	return platform_driver_probe(&ram_console_driver, ram_console_probe);
+-}
+-
+-#ifndef CONFIG_PRINTK
+-#define dmesg_restrict	0
+-#endif
+-
+-static ssize_t ram_console_read_old(struct file *file, char __user *buf,
+-				    size_t len, loff_t *offset)
+-{
+-	loff_t pos = *offset;
+-	ssize_t count;
+-	struct persistent_ram_zone *prz = ram_console_zone;
+-	size_t old_log_size = persistent_ram_old_size(prz);
+-	const char *old_log = persistent_ram_old(prz);
+-	char *str;
+-	int ret;
+-
+-	if (dmesg_restrict && !capable(CAP_SYSLOG))
+-		return -EPERM;
+-
+-	/* Main last_kmsg log */
+-	if (pos < old_log_size) {
+-		count = min(len, (size_t)(old_log_size - pos));
+-		if (copy_to_user(buf, old_log + pos, count))
+-			return -EFAULT;
+-		goto out;
+-	}
+-
+-	/* ECC correction notice */
+-	pos -= old_log_size;
+-	count = persistent_ram_ecc_string(prz, NULL, 0);
+-	if (pos < count) {
+-		str = kmalloc(count, GFP_KERNEL);
+-		if (!str)
+-			return -ENOMEM;
+-		persistent_ram_ecc_string(prz, str, count + 1);
+-		count = min(len, (size_t)(count - pos));
+-		ret = copy_to_user(buf, str + pos, count);
+-		kfree(str);
+-		if (ret)
+-			return -EFAULT;
+-		goto out;
+-	}
+-
+-	/* Boot info passed through pdata */
+-	pos -= count;
+-	if (pos < bootinfo_size) {
+-		count = min(len, (size_t)(bootinfo_size - pos));
+-		if (copy_to_user(buf, bootinfo + pos, count))
+-			return -EFAULT;
+-		goto out;
+-	}
+-
+-	/* EOF */
+-	return 0;
+-
+-out:
+-	*offset += count;
+-	return count;
+-}
+-
+-static const struct file_operations ram_console_file_ops = {
+-	.owner = THIS_MODULE,
+-	.read = ram_console_read_old,
+-};
+-
+-static int __init ram_console_late_init(void)
+-{
+-	struct proc_dir_entry *entry;
+-	struct persistent_ram_zone *prz = ram_console_zone;
+-
+-	if (!prz)
+-		return 0;
+-
+-	if (persistent_ram_old_size(prz) == 0)
+-		return 0;
+-
+-	entry = create_proc_entry("last_kmsg", S_IFREG | S_IRUGO, NULL);
+-	if (!entry) {
+-		printk(KERN_ERR "ram_console: failed to create proc entry\n");
+-		persistent_ram_free_old(prz);
+-		return 0;
+-	}
+-
+-	entry->proc_fops = &ram_console_file_ops;
+-	entry->size = persistent_ram_old_size(prz) +
+-		persistent_ram_ecc_string(prz, NULL, 0) +
+-		bootinfo_size;
+-
+-	return 0;
+-}
+-
+-late_initcall(ram_console_late_init);
+-postcore_initcall(ram_console_module_init);
 -- 
 1.7.9.2
 
