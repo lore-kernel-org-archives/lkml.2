@@ -1,108 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760038Ab2EVSHK (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 May 2012 14:07:10 -0400
-Received: from na3sys009aog102.obsmtp.com ([74.125.149.69]:57121 "EHLO
-	na3sys009aog102.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755172Ab2EVSHH (ORCPT
+	id S1760109Ab2EVSIK (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 May 2012 14:08:10 -0400
+Received: from rcsinet15.oracle.com ([148.87.113.117]:41608 "EHLO
+	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753359Ab2EVSIF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 May 2012 14:07:07 -0400
+	Tue, 22 May 2012 14:08:05 -0400
+Date: Tue, 22 May 2012 14:01:21 -0400
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+To: Ben Hutchings <bhutchings@solarflare.com>
+Cc: xen-devel@lists.xensource.com, ian.campbell@citrix.com,
+        netdev@vger.kernel.org, davem@davemloft.net,
+        linux-kernel@vger.kernel.org,
+        Adnan Misherfi <adnan.misherfi@oracle.com>
+Subject: Re: [PATCH] xen/netback: calculate correctly the SKB slots.
+Message-ID: <20120522180121.GB22488@phenom.dumpdata.com>
+References: <1337621793-12486-1-git-send-email-konrad.wilk@oracle.com>
+ <1337627640.2979.33.camel@bwh-desktop.uk.solarflarecom.com>
 MIME-Version: 1.0
-In-Reply-To: <20120522135813.GL8730@tbergstrom-lnx.Nvidia.com>
-References: <1336798797-8724-1-git-send-email-skannan@codeaurora.org>
- <4FB29E7C.7010606@codeaurora.org> <20120522135813.GL8730@tbergstrom-lnx.Nvidia.com>
-From: "Turquette, Mike" <mturquette@ti.com>
-Date: Tue, 22 May 2012 11:06:45 -0700
-Message-ID: <CAJOA=zOcEQc70gg+4U2jNaNRTB5YeyOwgsL12YWNoviQ5qFjaQ@mail.gmail.com>
-Subject: Re: [PATCH] clk: Fix race conditions between clk_set_parent() and clk_enable()
-To: Peter De Schrijver <pdeschrijver@nvidia.com>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>
-Cc: Saravana Kannan <skannan@codeaurora.org>, Andrew Lunn <andrew@lunn.ch>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Jamie Iles <jamie@jamieiles.com>,
-        Jeremy Kerr <jeremy.kerr@canonical.com>,
-        Magnus Damm <magnus.damm@gmail.com>,
-        Deepak Saxena <dsaxena@linaro.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Arnd Bergman <arnd.bergmann@linaro.org>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        "linux-arm-msm@vger.kernel.org" <linux-arm-msm@vger.kernel.org>,
-        Sascha Hauer <s.hauer@pengutronix.de>,
-        Rob Herring <rob.herring@calxeda.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Richard Zhao <richard.zhao@linaro.org>,
-        Shawn Guo <shawn.guo@freescale.com>, Paul Walmsley <paul@pwsan.com>,
-        Linus Walleij <linus.walleij@stericsson.com>,
-        Stephen Boyd <sboyd@codeaurora.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Amit Kucheria <amit.kucheria@linaro.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1337627640.2979.33.camel@bwh-desktop.uk.solarflarecom.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, May 22, 2012 at 6:58 AM, Peter De Schrijver
-<pdeschrijver@nvidia.com> wrote:
-> On Tue, May 15, 2012 at 08:20:44PM +0200, Saravana Kannan wrote:
->> On 05/11/2012 09:59 PM, Saravana Kannan wrote:
->> > Without this patch, the following race conditions are possible.
->> >
->> > Race condition 1:
->> > * clk-A has two parents - clk-X and clk-Y.
->> > * All three are disabled and clk-X is current parent.
->> > * Thread A: clk_set_parent(clk-A, clk-Y).
->> > * Thread A:<snip execution flow>
->> > * Thread A: Grabs enable lock.
->> > * Thread A: Sees enable count of clk-A is 0, so doesn't enable clk-Y.
->> > * Thread A: Releases enable lock.
->> > * Thread B: Calls clk_enable(clk-A), which in turn enables clk-X.
->> > * Thread A: Switches clk-A's parent to clk-Y in hardware.
->> >
->> > clk-A is now enabled in software, but not clocking in hardware.
->> >
->> > Race condition 2:
->> > * clk-A has two parents - clk-X and clk-Y.
->> > * All three are disabled and clk-X is current parent.
->> > * Thread A: clk_set_parent(clk-A, clk-Y).
->> > * Thread A:<snip execution flow>
->> > * Thread A: Switches parent in hardware to clk-Y.
->> > * Thread A: Grabs enable lock.
->> > * Thread A: Sees enable count of clk-A is 0, so doesn't disable clk-X.
->> > * Thread A: Releases enable lock.
->> > * Thread B: Calls clk_enable(clk-A)
->> > * Thread B: Software state still says parent is clk-X.
->> > * Thread B: So, enables clk-X and then itself.
->> > * Thread A: Updates parent in software state to clk-Y.
->> >
->
-> This looks correct to me. Is there any usecase where enabling/disabling a
-> clock would require sleeping but changing the parent would not?
->
+On Mon, May 21, 2012 at 08:14:00PM +0100, Ben Hutchings wrote:
+> On Mon, 2012-05-21 at 13:36 -0400, Konrad Rzeszutek Wilk wrote:
+> > From: Adnan Misherfi <adnan.misherfi@oracle.com>
+> > 
+> > A programming error cause the calculation of receive SKB slots to be
+> > wrong, which caused the RX ring to be erroneously declared full,
+> > and the receive queue to be stopped. The problem shows up when two
+> > guest running on the same server tries to communicates using large
+> > MTUs. Each guest is connected to a bridge with VLAN over bond
+> > interface, so traffic from one guest leaves the server on one bridge
+> > and comes back to the second guest on the second bridge. This can be
+> > reproduces using ping, and one guest as follow:
+> > 
+> > - Create active-back bond (bond0)
+> > - Set up VLAN 5 on bond0 (bond0.5)
+> > - Create a bridge (br1)
+> > - Add bond0.5 to a bridge (br1)
+> > - Start a guest and connect it to br1
+> > - Set MTU of 9000 across the link
+> > 
+> > Ping the guest from an external host using packet sizes of 3991, and
+> > 4054; ping -s 3991 -c 128 "Guest-IP-Address"
+> > 
+> > At the beginning ping works fine, but after a while ping packets do
+> > not reach the guest because the RX ring becomes full, and the queue
+> > get stopped. Once the problem accrued, the only way to get out of it
+> > is to reboot the guest, or use xm network-detach/network-attach.
+> > 
+> > ping works for packets sizes 3990,3992, and many other sizes including
+> > 4000,5000,9000, and 1500 ..etc. MTU size of 3991,4054 are the sizes
+> > that quickly reproduce this problem.
+> > 
+> > Signed-off-by: Adnan Misherfi <adnan.misherfi@oracle.com>
+> > Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+> > ---
+> >  drivers/net/xen-netback/netback.c |    2 +-
+> >  1 files changed, 1 insertions(+), 1 deletions(-)
+> > 
+> > diff --git a/drivers/net/xen-netback/netback.c b/drivers/net/xen-netback/netback.c
+> > index 957cf9d..e382e5b 100644
+> > --- a/drivers/net/xen-netback/netback.c
+> > +++ b/drivers/net/xen-netback/netback.c
+> > @@ -212,7 +212,7 @@ unsigned int xenvif_count_skb_slots(struct xenvif *vif, struct sk_buff *skb)
+> 
+> The function name is xen_netbk_count_skb_slots() in net-next.  This
+> appears to depend on the series in
+> <http://lists.xen.org/archives/html/xen-devel/2012-01/msg00982.html>.
 
-clk_enable & clk_disable must never sleep.  clk_prepare and
-clk_unprepare may sleep.
+Ah, this was based off 3.4.
 
-This patch would require the WM831x clock driver to set
-CLK_SET_PARENT_GATE for the clkout mux.  The latest version of this
-driver sent out by Mark does not do this and I imagine that is because
-the hardware has no requirement for the mux clock to gate while
-switching parents.  Holding the spinlock across the .set_parent
-callback breaks this driver since .set_parent results in an i2c
-transaction.
+> 
+> >  	int i, copy_off;
+> >  
+> >  	count = DIV_ROUND_UP(
+> > -			offset_in_page(skb->data)+skb_headlen(skb), PAGE_SIZE);
+> > +			offset_in_page(skb->data + skb_headlen(skb)), PAGE_SIZE);
+> 
+> The new version would be equivalent to:
+> 	count = offset_in_page(skb->data + skb_headlen(skb)) != 0;
+> which is not right, as netbk_gop_skb() will use one slot per page.
+> 
+> The real problem is likely that you're not using the same condition to
+> stop and wake the queue.  Though it appears you're also missing an
 
-Mark, do you have an opinion on the requirements that this patch
-imposes on your driver?
-
-Regards,
-Mike
-
-> Cheers,
->
-> Peter.
->
-> _______________________________________________
-> linux-arm-kernel mailing list
-> linux-arm-kernel@lists.infradead.org
-> http://lists.infradead.org/mailman/listinfo/linux-arm-kernel
+Hmm..
+> smp_mb() at the top of xenvif_notify_tx_completion().
+> 
+> Ben.
+> 
+> >  	copy_off = skb_headlen(skb) % PAGE_SIZE;
+> >  
+> 
+> -- 
+> Ben Hutchings, Staff Engineer, Solarflare
+> Not speaking for my employer; that's the marketing department's job.
+> They asked us to note that Solarflare product names are trademarked.
