@@ -1,85 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756359Ab2EVIZw (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 May 2012 04:25:52 -0400
-Received: from haggis.pcug.org.au ([203.10.76.10]:43593 "EHLO
-	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752881Ab2EVIZr (ORCPT
+	id S1756146Ab2EVIZu (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 May 2012 04:25:50 -0400
+Received: from mail-lb0-f174.google.com ([209.85.217.174]:47372 "EHLO
+	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752167Ab2EVIZq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 May 2012 04:25:47 -0400
-Date: Tue, 22 May 2012 18:25:42 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Ingo Molnar <mingo@kernel.org>
-Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Peter Zijlstra <peterz@infradead.org>, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: linux-next: build failure after merge of the final tree
-Message-Id: <20120522182542.655b939d96a8eb67390abb9a@canb.auug.org.au>
-In-Reply-To: <20120521091257.GF31407@gmail.com>
-References: <20120521185412.aca92107d0a8c4fdd8474e34@canb.auug.org.au>
-	<20120521091257.GF31407@gmail.com>
-X-Mailer: Sylpheed 3.2.0beta7 (GTK+ 2.24.10; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Tue__22_May_2012_18_25_42_+1000_nN+Zq4L5_19BZt1y"
+	Tue, 22 May 2012 04:25:46 -0400
+Date: Tue, 22 May 2012 10:25:42 +0200
+From: Johan Hovold <jhovold@gmail.com>
+To: Jingoo Han <jg1.han@samsung.com>
+Cc: "'Andrew Morton'" <akpm@linux-foundation.org>,
+        "'LKML'" <linux-kernel@vger.kernel.org>,
+        "'Richard Purdie'" <rpurdie@rpsys.net>,
+        "'Johan Hovold'" <jhovold@gmail.com>
+Subject: Re: [PATCH v2 3/3] backlight: lm3533_bl: use devm_ functions
+Message-ID: <20120522082542.GA7323@localhost>
+References: <002d01cd3732$e667d7b0$b3378710$%han@samsung.com>
+ <000501cd37ae$161bf2e0$4253d8a0$%han@samsung.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <000501cd37ae$161bf2e0$4253d8a0$%han@samsung.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Tue__22_May_2012_18_25_42_+1000_nN+Zq4L5_19BZt1y
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On Tue, May 22, 2012 at 09:01:49AM +0900, Jingoo Han wrote:
+> The devm_ functions allocate memory that is released when a driver
+> detaches. This patch uses devm_kzalloc of these functions.
+> 
+> Cc: Johan Hovold <jhovold@gmail.com>
+> Cc: Richard Purdie <rpurdie@rpsys.net>
+> Signed-off-by: Jingoo Han <jg1.han@samsung.com>
 
-Hi Ingo,
+Acked-by: Johan Hovold <jhovold@gmail.com>
 
-On Mon, 21 May 2012 11:12:57 +0200 Ingo Molnar <mingo@kernel.org> wrote:
->
-> * Stephen Rothwell <sfr@canb.auug.org.au> wrote:
->=20
-> > Hi all,
-> >=20
-> > After merging the final tree, today's linux-next build (i386 defconfig)
-> > failed like this:
-> >=20
-> > Invalid absolute R_386_32 relocation: jiffies
->=20
-> Hm, that's our fault: seems like a linker bug fallout, one which=20
-> we fixed in -tip.
->=20
-> > I am not sure what caused this (it may even been a bad merge=20
-> > on my part).  I have left it broken for today.
->=20
-> While we've fixed this, to simplify merge window integration of=20
-> linux-next I've excluded tip:x86/trampoline from the linux-next=20
-> branch for now, so this build failure should go away tomorrow.
+Thanks,
+Johan
 
-Weirdly, I still got the same error today.  Any ideas?
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-
---Signature=_Tue__22_May_2012_18_25_42_+1000_nN+Zq4L5_19BZt1y
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBCAAGBQJPu02GAAoJEECxmPOUX5FEcRcP/0geJlUURq8i4tABPnSxztmb
-+K/7REdeoIBCAckCrXU/GOflnNMTlf5hGG1gVGDPjBol6uUow6eeIAhbcvELUYUp
-0xjw/rsIb83m7bLIFDt0IGY8i9Vl4wZBj3QyEQSgZlDOf4TqIaqS4oyR1GYQl6Mh
-rMVu+Nr6ALSWue9a2xuSmVgRYnfrgZEGlcedZALTJ+PeWdCPiZxTEQd37ERnlBWh
-JJcZjNqC/JDNn9f0aTb36cygGMGrHFLqdv8lkJb86n2GPuzSWRrXOg/ZkKDdqDMA
-ZZq9GqMa9xZfwbeV8msyeBBruS1uNNhK+RHQT5qPXRm3K3h4dJvGTuS5pignrTiq
-5RXUHGgX8x1GHSQE2M17+sSWC9SNLY7SJa1/1eKl4rHJC6a4NK/ng+u0IdxJ8QRq
-K1V9y2jzU6XIyZIZxuZG7AEezPbmevKPfxd/n+UAa8xTWvoZvQg/xbmW0IKLpyV/
-f/BJCxEMm+Mj/7BMRmeMSSY3PwSWSZurqLYC3Q75saz8Q2L7DknUgbnncKOwj3WW
-ZWrZzRzJ3QMj84Bxdh23S2SjC66mpteb80xrOD5Fw4wyNWBCC7MvOMMvKAt9Rl94
-8Y4ONGrS7xJDSiAGKBIi8uLmLXS87kZn6J4j/5GzLFqB6QjAVYGnOuYFwoPbmeTn
-7QkNJPHg9zz0mDg6rpg0
-=Fmky
------END PGP SIGNATURE-----
-
---Signature=_Tue__22_May_2012_18_25_42_+1000_nN+Zq4L5_19BZt1y--
+> ---
+>  drivers/video/backlight/lm3533_bl.c |    8 ++------
+>  1 files changed, 2 insertions(+), 6 deletions(-)
+> 
+> diff --git a/drivers/video/backlight/lm3533_bl.c b/drivers/video/backlight/lm3533_bl.c
+> index 0148227..d916ffe 100644
+> --- a/drivers/video/backlight/lm3533_bl.c
+> +++ b/drivers/video/backlight/lm3533_bl.c
+> @@ -295,7 +295,7 @@ static int __devinit lm3533_bl_probe(struct platform_device *pdev)
+>  		return -EINVAL;
+>  	}
+>  
+> -	bl = kzalloc(sizeof(*bl), GFP_KERNEL);
+> +	bl = devm_kzalloc(&pdev->dev, sizeof(*bl), GFP_KERNEL);
+>  	if (!bl) {
+>  		dev_err(&pdev->dev,
+>  				"failed to allocate memory for backlight\n");
+> @@ -317,8 +317,7 @@ static int __devinit lm3533_bl_probe(struct platform_device *pdev)
+>  						&lm3533_bl_ops, &props);
+>  	if (IS_ERR(bd)) {
+>  		dev_err(&pdev->dev, "failed to register backlight device\n");
+> -		ret = PTR_ERR(bd);
+> -		goto err_free;
+> +		return PTR_ERR(bd);
+>  	}
+>  
+>  	bl->bd = bd;
+> @@ -348,8 +347,6 @@ err_sysfs_remove:
+>  	sysfs_remove_group(&bd->dev.kobj, &lm3533_bl_attribute_group);
+>  err_unregister:
+>  	backlight_device_unregister(bd);
+> -err_free:
+> -	kfree(bl);
+>  
+>  	return ret;
+>  }
+> @@ -367,7 +364,6 @@ static int __devexit lm3533_bl_remove(struct platform_device *pdev)
+>  	lm3533_ctrlbank_disable(&bl->cb);
+>  	sysfs_remove_group(&bd->dev.kobj, &lm3533_bl_attribute_group);
+>  	backlight_device_unregister(bd);
+> -	kfree(bl);
+>  
+>  	return 0;
+>  }
