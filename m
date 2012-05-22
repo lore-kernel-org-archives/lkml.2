@@ -1,204 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753949Ab2EVShT (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 May 2012 14:37:19 -0400
-Received: from e39.co.us.ibm.com ([32.97.110.160]:47243 "EHLO
-	e39.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751764Ab2EVShQ (ORCPT
+	id S1754697Ab2EVSiA (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 May 2012 14:38:00 -0400
+Received: from acsinet15.oracle.com ([141.146.126.227]:44490 "EHLO
+	acsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752617Ab2EVSh7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 May 2012 14:37:16 -0400
-Date: Tue, 22 May 2012 11:36:30 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: LKML <linux-kernel@vger.kernel.org>, linaro-sched-sig@lists.linaro.org,
-        Alessio Igor Bogani <abogani@kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>, Avi Kivity <avi@redhat.com>,
-        Chris Metcalf <cmetcalf@tilera.com>, Christoph Lameter <cl@linux.com>,
-        Daniel Lezcano <daniel.lezcano@linaro.org>,
-        Geoff Levand <geoff@infradead.org>,
-        Gilad Ben Yossef <gilad@benyossef.com>,
-        Hakan Akkan <hakanakkan@gmail.com>, Ingo Molnar <mingo@kernel.org>,
-        Kevin Hilman <khilman@ti.com>, Max Krasnyansky <maxk@qualcomm.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Stephen Hemminger <shemminger@vyatta.com>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Sven-Thorsten Dietrich <thebigcorporation@gmail.com>,
-        Thomas Gleixner <tglx@linutronix.de>
-Subject: Re: [PATCH 39/41] rcu: Switch to extended quiescent state in
- userspace from nohz cpuset
-Message-ID: <20120522183630.GF8087@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <1335830115-14335-1-git-send-email-fweisbec@gmail.com>
- <1335830115-14335-40-git-send-email-fweisbec@gmail.com>
+	Tue, 22 May 2012 14:37:59 -0400
+Date: Tue, 22 May 2012 14:31:19 -0400
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+To: Seth Jennings <sjenning@linux.vnet.ibm.com>
+Cc: Minchan Kim <minchan@kernel.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Dan Magenheimer <dan.magenheimer@oracle.com>,
+        Nitin Gupta <ngupta@vflare.org>
+Subject: Re: [PATCH] zsmalloc: use unsigned long instead of void *
+Message-ID: <20120522183119.GA24107@phenom.dumpdata.com>
+References: <1337567013-4741-1-git-send-email-minchan@kernel.org>
+ <4FBA4EE2.8050308@linux.vnet.ibm.com>
+ <4FBB97B2.6050408@linux.vnet.ibm.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1335830115-14335-40-git-send-email-fweisbec@gmail.com>
+In-Reply-To: <4FBB97B2.6050408@linux.vnet.ibm.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 12052218-4242-0000-0000-000001BEEB44
+X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, May 01, 2012 at 01:55:13AM +0200, Frederic Weisbecker wrote:
-> When we switch to adaptive nohz mode and we run in userspace,
-> we can still receive IPIs from the RCU core if a grace period
-> has been started by another CPU because we need to take part
-> of its completion.
+On Tue, May 22, 2012 at 08:42:10AM -0500, Seth Jennings wrote:
+> On 05/21/2012 09:19 AM, Seth Jennings wrote:
 > 
-> However running in userspace is similar to that of running in
-> idle because we don't make use of RCU there, thus we can be
-> considered as running in RCU extended quiescent state. The
-> benefit when running into that mode is that we are not
-> anymore disturbed by needless IPIs coming from the RCU core.
+> > On 05/20/2012 09:23 PM, Minchan Kim wrote:
+> > 
+> >> We should use unsigned long as handle instead of void * to avoid any
+> >> confusion. Without this, users may just treat zs_malloc return value as
+> >> a pointer and try to deference it.
+> > 
+> > 
+> > I wouldn't have agreed with you about the need for this change as people
+> > should understand a void * to be the address of some data with unknown
+> > structure.
+> > 
+> > However, I recently discussed with Dan regarding his RAMster project
+> > where he assumed that the void * would be an address, and as such,
+> > 4-byte aligned.  So he has masked two bits into the two LSBs of the
+> > handle for RAMster, which doesn't work with zsmalloc since the handle is
+> > not an address.
+> > 
+> > So really we do need to convey as explicitly as possible to the user
+> > that the handle is an _opaque_ value about which no assumption can be made.
 > 
-> To perform this, we just to use the RCU extended quiescent state
-> APIs on the following points:
 > 
-> - kernel exit or tick stop in userspace: here we switch to extended
-> quiescent state because we run in userspace without the tick.
-> 
-> - kernel entry or tick restart: here we exit the extended quiescent
-> state because either we enter the kernel and we may make use of RCU
-> read side critical section anytime, or we need the timer tick for some
-> reason and that takes care of RCU grace period in a traditional way.
+> Wasn't really clear here.  All that to say, I think we do need this patch.
 
-One FIXME question below.
+That sounds like an Acked-by ?
 
-							Thanx, Paul
-
-> Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
-> Cc: Alessio Igor Bogani <abogani@kernel.org>
-> Cc: Andrew Morton <akpm@linux-foundation.org>
-> Cc: Avi Kivity <avi@redhat.com>
-> Cc: Chris Metcalf <cmetcalf@tilera.com>
-> Cc: Christoph Lameter <cl@linux.com>
-> Cc: Daniel Lezcano <daniel.lezcano@linaro.org>
-> Cc: Geoff Levand <geoff@infradead.org>
-> Cc: Gilad Ben Yossef <gilad@benyossef.com>
-> Cc: Hakan Akkan <hakanakkan@gmail.com>
-> Cc: Ingo Molnar <mingo@kernel.org>
-> Cc: Kevin Hilman <khilman@ti.com>
-> Cc: Max Krasnyansky <maxk@qualcomm.com>
-> Cc: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
-> Cc: Peter Zijlstra <peterz@infradead.org>
-> Cc: Stephen Hemminger <shemminger@vyatta.com>
-> Cc: Steven Rostedt <rostedt@goodmis.org>
-> Cc: Sven-Thorsten Dietrich <thebigcorporation@gmail.com>
-> Cc: Thomas Gleixner <tglx@linutronix.de>
-> ---
->  include/linux/tick.h     |    3 +++
->  kernel/time/tick-sched.c |   27 +++++++++++++++++++++++++--
->  2 files changed, 28 insertions(+), 2 deletions(-)
 > 
-> diff --git a/include/linux/tick.h b/include/linux/tick.h
-> index 3c31d6e..e2a49ad 100644
-> --- a/include/linux/tick.h
-> +++ b/include/linux/tick.h
-> @@ -153,6 +153,8 @@ static inline u64 get_cpu_iowait_time_us(int cpu, u64 *unused) { return -1; }
->  # endif /* !NO_HZ */
-> 
->  #ifdef CONFIG_CPUSETS_NO_HZ
-> +DECLARE_PER_CPU(int, nohz_task_ext_qs);
-> +
->  extern void tick_nohz_enter_kernel(void);
->  extern void tick_nohz_exit_kernel(void);
->  extern void tick_nohz_enter_exception(struct pt_regs *regs);
-> @@ -160,6 +162,7 @@ extern void tick_nohz_exit_exception(struct pt_regs *regs);
->  extern void tick_nohz_check_adaptive(void);
->  extern void tick_nohz_pre_schedule(void);
->  extern void tick_nohz_post_schedule(void);
-> +extern void tick_nohz_cpu_exit_qs(void);
->  extern bool tick_nohz_account_tick(void);
->  extern void tick_nohz_flush_current_times(bool restart_tick);
->  #else /* !CPUSETS_NO_HZ */
-> diff --git a/kernel/time/tick-sched.c b/kernel/time/tick-sched.c
-> index 8217409..b15ab5e 100644
-> --- a/kernel/time/tick-sched.c
-> +++ b/kernel/time/tick-sched.c
-> @@ -565,10 +565,13 @@ static void tick_nohz_cpuset_stop_tick(struct tick_sched *ts)
-> 
->  	if (!was_stopped && ts->tick_stopped) {
->  		WARN_ON_ONCE(ts->saved_jiffies_whence != JIFFIES_SAVED_NONE);
-> -		if (user)
-> +		if (user) {
->  			ts->saved_jiffies_whence = JIFFIES_SAVED_USER;
-> -		else if (!current->mm)
-> +			__get_cpu_var(nohz_task_ext_qs) = 1;
-> +			rcu_user_enter_irq();
-> +		} else if (!current->mm) {
->  			ts->saved_jiffies_whence = JIFFIES_SAVED_SYS;
-> +		}
-> 
->  		ts->saved_jiffies = jiffies;
->  		set_thread_flag(TIF_NOHZ);
-> @@ -899,6 +902,8 @@ void tick_check_idle(int cpu)
->  }
-> 
->  #ifdef CONFIG_CPUSETS_NO_HZ
-> +DEFINE_PER_CPU(int, nohz_task_ext_qs);
-> +
->  void tick_nohz_exit_kernel(void)
->  {
->  	unsigned long flags;
-> @@ -922,6 +927,9 @@ void tick_nohz_exit_kernel(void)
->  	ts->saved_jiffies = jiffies;
->  	ts->saved_jiffies_whence = JIFFIES_SAVED_USER;
-> 
-> +	__get_cpu_var(nohz_task_ext_qs) = 1;
-> +	rcu_user_enter();
-> +
->  	local_irq_restore(flags);
->  }
-> 
-> @@ -940,6 +948,11 @@ void tick_nohz_enter_kernel(void)
->  		return;
->  	}
-> 
-> +	if (__get_cpu_var(nohz_task_ext_qs) == 1) {
-> +		__get_cpu_var(nohz_task_ext_qs) = 0;
-> +		rcu_user_exit();
-> +	}
-> +
->  	WARN_ON_ONCE(ts->saved_jiffies_whence != JIFFIES_SAVED_USER);
-> 
->  	delta_jiffies = jiffies - ts->saved_jiffies;
-> @@ -951,6 +964,14 @@ void tick_nohz_enter_kernel(void)
->  	local_irq_restore(flags);
->  }
-> 
-> +void tick_nohz_cpu_exit_qs(void)
-> +{
-> +	if (__get_cpu_var(nohz_task_ext_qs)) {
-> +		rcu_user_exit_irq();
-> +		__get_cpu_var(nohz_task_ext_qs) = 0;
-> +	}
-> +}
-> +
->  void tick_nohz_enter_exception(struct pt_regs *regs)
->  {
->  	if (user_mode(regs))
-> @@ -986,6 +1007,7 @@ static void tick_nohz_restart_adaptive(void)
->  	tick_nohz_flush_current_times(true);
->  	tick_nohz_restart_sched_tick();
->  	clear_thread_flag(TIF_NOHZ);
-> +	tick_nohz_cpu_exit_qs();
->  }
-> 
->  void tick_nohz_check_adaptive(void)
-> @@ -1023,6 +1045,7 @@ void tick_nohz_pre_schedule(void)
->  	if (ts->tick_stopped) {
->  		tick_nohz_flush_current_times(true);
->  		clear_thread_flag(TIF_NOHZ);
-> +		/* FIXME: warn if we are in RCU idle mode */
-
-This would be WARN_ON_ONCE(rcu_is_cpu_idle()) or some such, correct?
-
->  	}
->  }
-> 
-> -- 
-> 1.7.5.4
-> 
-
+> Thanks,
+> Seth
