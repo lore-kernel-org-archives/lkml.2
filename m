@@ -1,55 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759452Ab2EVPZh (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 May 2012 11:25:37 -0400
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:49501 "EHLO
-	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757122Ab2EVPZe (ORCPT
+	id S1759422Ab2EVP0n (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 May 2012 11:26:43 -0400
+Received: from www.linutronix.de ([62.245.132.108]:38670 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753614Ab2EVP0l (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 May 2012 11:25:34 -0400
+	Tue, 22 May 2012 11:26:41 -0400
+Date: Tue, 22 May 2012 17:26:38 +0200 (CEST)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Steven Rostedt <rostedt@goodmis.org>
+cc: LKML <linux-kernel@vger.kernel.org>, RT <linux-rt-users@vger.kernel.org>,
+        Clark Williams <williams@redhat.com>,
+        Peter Zijlstra <peterz@infradead.org>
+Subject: Re: [RFC][PATCH RT] rwsem_rt: Another (more sane) approach to mulit
+ reader rt locks
+In-Reply-To: <1337090625.14207.304.camel@gandalf.stny.rr.com>
+Message-ID: <alpine.LFD.2.02.1205221553400.3231@ionos>
+References: <1337090625.14207.304.camel@gandalf.stny.rr.com>
+User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
 MIME-Version: 1.0
-In-Reply-To: <1337696279-8994-2-git-send-email-anton.vorontsov@linaro.org>
-References: <20120522141717.GA31574@lizard>
-	<1337696279-8994-2-git-send-email-anton.vorontsov@linaro.org>
-Date: Tue, 22 May 2012 08:25:33 -0700
-X-Google-Sender-Auth: V_jspfimw_PAv6svj57YUlctCNE
-Message-ID: <CAGXu5jJ49LxeNgznWzW-Lb77jqUWkQLtUm855ExPhsZS7PowgQ@mail.gmail.com>
-Subject: Re: [PATCH 02/16] pstore/ram: Should update old dmesg buffer before reading
-From: Kees Cook <keescook@chromium.org>
-To: Anton Vorontsov <anton.vorontsov@linaro.org>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Colin Cross <ccross@android.com>, Tony Luck <tony.luck@intel.com>,
-        Arnd Bergmann <arnd@arndb.de>, John Stultz <john.stultz@linaro.org>,
-        Shuah Khan <shuahkhan@gmail.com>, arve@android.com,
-        Rebecca Schultz Zavin <rebecca@android.com>,
-        Jesper Juhl <jj@chaosbits.net>, Randy Dunlap <rdunlap@xenotime.net>,
-        Stephen Boyd <sboyd@codeaurora.org>, Thomas Meyer <thomas@m3y3r.de>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Marco Stornelli <marco.stornelli@gmail.com>,
-        WANG Cong <xiyou.wangcong@gmail.com>, linux-kernel@vger.kernel.org,
-        devel@driverdev.osuosl.org, linaro-kernel@lists.linaro.org,
-        patches@linaro.org, kernel-team@android.com
-Content-Type: text/plain; charset=ISO-8859-1
-X-System-Of-Record: true
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, May 22, 2012 at 7:17 AM, Anton Vorontsov
-<anton.vorontsov@linaro.org> wrote:
-> Without the update, we'll only see the new dmesg buffer after the
-> reboot, but previously we could see it right away. Making an oops
-> visible in pstore filesystem before reboot is a somewhat dubious
-> feature, but removing it wasn't an intentional change, so let's
-> restore it.
->
-> For this we have to make persistent_ram_save_old() safe for calling
-> multiple times, and also extern it.
->
-> Signed-off-by: Anton Vorontsov <anton.vorontsov@linaro.org>
+On Tue, 15 May 2012, Steven Rostedt wrote:
+> +struct rw_semaphore {
+> +	int			initialized;
+> +	struct __rw_semaphore	lock[NR_CPUS];
 
-Acked-by: Kees Cook <keescook@chromium.org>
+So that will blow up every rw_semaphore user by
 
--- 
-Kees Cook
-Chrome OS Security
+   NR_CPUS * sizeof(struct __rw_semaphore)
+
+With lockdep off thats: NR_CPUS * 48
+
+With lockdep on thats:  NR_CPUS * 128 + NR_CPUS * 8 (__key)
+
+So for NR_CPUS=64 that's 3072 or 8704 Bytes.
+
+That'll make e.g. XFS happy. xfs_inode has two rw_sems.
+
+sizeof(xfs_inode) in mainline is:  856 bytes
+
+sizeof(xfs_inode) on RT is:       1028 bytes
+
+But with your change it would goto (NR_CPUS = 64):
+
+    1028 - 96 + 2 * 3072 =        7076 bytes
+
+That's almost an order of magnitude!
+
+NFS has an rwsem in the inode as well, and ext4 has two.
+
+So we trade massive memory waste for how much performance? 
+
+We really need numbers for various scenarios. There are applications
+which are pretty mmap heavy and it would really surprise me when
+taking NR_CPUS locks in one go is not going to cause a massive
+overhead.
+
+Thanks,
+
+	tglx
