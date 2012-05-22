@@ -1,56 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755561Ab2EVVbV (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 May 2012 17:31:21 -0400
-Received: from mga03.intel.com ([143.182.124.21]:18080 "EHLO mga03.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751436Ab2EVVbT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 May 2012 17:31:19 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
-   d="scan'208";a="146446765"
-Date: Tue, 22 May 2012 23:40:24 +0200
-From: Samuel Ortiz <sameo@linux.intel.com>
-To: Grant Likely <grant.likely@secretlab.ca>
-Cc: Seth Heasley <seth.heasley@intel.com>, linux-kernel@vger.kernel.org,
-        James Ralston <james.d.ralston@intel.com>
-Subject: Re: [PATCH 3/3] lpc_sch: Add Intel Centerton Multifunction Device
- support
-Message-ID: <20120522214024.GC10210@sortiz-mobl>
-References: <1334696962-3642-1-git-send-email-seth.heasley@intel.com>
- <20120509140111.GD1794@sortiz-mobl>
- <CACxGe6tJry45w8_czwoXTA-Lo=uLO8HiuETWPebBQ0_z6cnASA@mail.gmail.com>
+	id S1756145Ab2EVVbx (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 May 2012 17:31:53 -0400
+Received: from www.linutronix.de ([62.245.132.108]:40615 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751570Ab2EVVbw (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 May 2012 17:31:52 -0400
+Date: Tue, 22 May 2012 23:31:43 +0200 (CEST)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Peter Zijlstra <peterz@infradead.org>
+cc: Gilad Ben-Yossef <gilad@benyossef.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        LKML <linux-kernel@vger.kernel.org>, linaro-sched-sig@lists.linaro.org,
+        Alessio Igor Bogani <abogani@kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>, Avi Kivity <avi@redhat.com>,
+        Chris Metcalf <cmetcalf@tilera.com>, Christoph Lameter <cl@linux.com>,
+        Daniel Lezcano <daniel.lezcano@linaro.org>,
+        Geoff Levand <geoff@infradead.org>, Ingo Molnar <mingo@kernel.org>,
+        Max Krasnyansky <maxk@qualcomm.com>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Stephen Hemminger <shemminger@vyatta.com>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Sven-Thorsten Dietrich <thebigcorporation@gmail.com>,
+        Zen Lin <zen@openhuawei.org>
+Subject: Re: [RFC][PATCH 00/32] Nohz cpusets v2 (adaptive tickless kernel)
+In-Reply-To: <1332861025.16159.236.camel@twins>
+Message-ID: <alpine.LFD.2.02.1205222327080.3231@ionos>
+References: <1332338318-5958-1-git-send-email-fweisbec@gmail.com>  <CAOtvUMf0Zp9C-jT=ymEo6oyxnsgkvSiGDUs5V_56v4Ai2QyBJQ@mail.gmail.com> <1332861025.16159.236.camel@twins>
+User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <CACxGe6tJry45w8_czwoXTA-Lo=uLO8HiuETWPebBQ0_z6cnASA@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Grant,
+On Tue, 27 Mar 2012, Peter Zijlstra wrote:
 
-On Fri, May 18, 2012 at 04:44:45PM -0600, Grant Likely wrote:
-> On Wed, May 9, 2012 at 8:01 AM, Samuel Ortiz <sameo@linux.intel.com> wrote:
-> > Hi Seth,
-> >
-> > On Tue, Apr 17, 2012 at 02:09:22PM -0700, Seth Heasley wrote:
-> >> This patch adds the Intel Centerton processor DeviceID for the Integrated Legacy Block.  The ILB provides GPIO, SMBus, and Watchdog functionality. The ILB DeviceID is defined in include/linux/pci_ids.h.
-> >>
-> > Patch applied to my for-next branch, after removing this chunk (That should be
-> > part of your watchdog driver submission):
+> On Tue, 2012-03-27 at 17:02 +0200, Gilad Ben-Yossef wrote:
+> > 
+> > In my case, I also had to disable the clocksource watchdog, but only
+> > because TSC is not stable on my VM.
+> > This is really not a nohz/cpuset problem. 
 > 
-> Hi Samuel,
+> No but that thing is annoying, I ran afoul of it too the other day.
 > 
-> Have you applied the gpio patch also [patch 2/3]?  It also depends on
-> the pci device id, so it best go via your tree with the other two.
-Yes, it's on my for-next branch.
+> Thomas, would you object to a means of turning that thing off? And if
+> not, do you have a preference as to what particular means
+> (sysctl/sysfs/etc..) ?
 
-Cheers,
-Samuel.
+We have the commandline option "tsc=reliable" already. That disables
+the stupid watchdog. Handle with care.
 
--- 
-Intel Open Source Technology Centre
-http://oss.intel.com/
+To take it a level further, use the patch below :)
+
+Thanks,
+
+	tglx
+
+------------>
+x86: Add tsc=perfect option which enforces sched_clock_stable
+    
+The sched_clock dance with updating local clocks can be avoided even
+if the CPU does not have all the magic features.
+    
+Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+
+diff --git a/arch/x86/kernel/tsc.c b/arch/x86/kernel/tsc.c
+index 590900c..dc8ecc3 100644
+--- a/arch/x86/kernel/tsc.c
++++ b/arch/x86/kernel/tsc.c
+@@ -109,6 +109,10 @@ static int __init tsc_setup(char *str)
+ {
+ 	if (!strcmp(str, "reliable"))
+ 		tsc_clocksource_reliable = 1;
++	if (!strcmp(str, "perfect")) {
++		tsc_clocksource_reliable = 1;
++		sched_clock_stable = 1;
++	}
+ 	if (!strncmp(str, "noirqtime", 9))
+ 		no_sched_irq_time = 1;
+ 	return 1;
+ 
