@@ -1,322 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751456Ab2EVGPq (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 May 2012 02:15:46 -0400
-Received: from hqemgate03.nvidia.com ([216.228.121.140]:13820 "EHLO
-	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750708Ab2EVGPp (ORCPT
+	id S1750981Ab2EVGS5 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 May 2012 02:18:57 -0400
+Received: from e23smtp01.au.ibm.com ([202.81.31.143]:50323 "EHLO
+	e23smtp01.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750766Ab2EVGS4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 May 2012 02:15:45 -0400
-X-PGP-Universal: processed;
-	by hqnvupgp05.nvidia.com on Mon, 21 May 2012 23:15:44 -0700
-Message-ID: <4FBB2F0D.7070105@nvidia.com>
-Date: Tue, 22 May 2012 11:45:41 +0530
-From: Varun Wadekar <vwadekar@nvidia.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686 on x86_64; rv:12.0) Gecko/20120428 Thunderbird/12.0.1
+	Tue, 22 May 2012 02:18:56 -0400
+Message-ID: <4FBB2E38.60804@linux.vnet.ibm.com>
+Date: Tue, 22 May 2012 11:42:08 +0530
+From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120424 Thunderbird/12.0
 MIME-Version: 1.0
-To: <linux-kernel@vger.kernel.org>
-CC: Varun Wadekar <vwadekar@nvidia.com>
-Subject: VMALLOC_END change: commit 0536bdf33faff4d940ac094c77998cfac368cfff
- upstream
-References: <4FB49D1F.8030007@nvidia.com>
-In-Reply-To: <4FB49D1F.8030007@nvidia.com>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+To: Steven Rostedt <rostedt@goodmis.org>
+CC: "Rafael J. Wysocki" <rjw@sisk.pl>, mingo@kernel.org, lenb@kernel.org,
+        pavel@ucw.cz, linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] ftrace: Disable function tracing during suspend/resume
+ and hibernation, again
+References: <20120521065651.4142.36898.stgit@srivatsabhat.in.ibm.com> <201205212355.45929.rjw@sisk.pl> <1337638586.13348.7.camel@gandalf.stny.rr.com>
+In-Reply-To: <1337638586.13348.7.camel@gandalf.stny.rr.com>
+Content-Type: text/plain; charset=ISO-8859-15
 Content-Transfer-Encoding: 7bit
+x-cbid: 12052120-1618-0000-0000-000001A47CFF
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 05/22/2012 03:46 AM, Steven Rostedt wrote:
 
-Hi,
+> On Mon, 2012-05-21 at 23:55 +0200, Rafael J. Wysocki wrote:
+>> On Monday, May 21, 2012, Srivatsa S. Bhat wrote:
+>>> If function tracing is enabled for some of the low-level suspend/resume
+>>> functions, it leads to triple fault during resume from suspend, ultimately
+>>> ending up in a reboot instead of a resume (or a total refusal to come out
+>>> of suspended state, on some machines).
+>>>
+>>> This issue was explained in more detail in commit f42ac38c59e0a03d (ftrace:
+>>> disable tracing for suspend to ram). However, the changes made by that commit
+>>> got reverted by commit cbe2f5a6e84eebb (tracing: allow tracing of
+>>> suspend/resume & hibernation code again). So, unfortunately since things are
+>>> not yet robust enough to allow tracing of low-level suspend/resume functions,
+>>> suspend/resume is still broken when ftrace is enabled.
+>>>
+>>> So fix this by disabling function tracing during suspend/resume & hibernation.
+>>
+>> Steve, any comments?
+> 
+> I was actually the one to recommend this solution ;-)
+> 
 
-With commit 0536bdf33faff4d940ac094c77998cfac368cfff we now have static 
-mappings inside the vmalloc range. I am using this change on Tegra in my 
-downstream kernel with Android. I see that with static mappings from 
-0xFB000000-0xFF000000 I get the following crashes when I boot my device.
 
-<snip>
+And I am grateful to you for that :-)
 
-[  345.059841] Unable to handle kernel paging request at virtual address 
-90011000
-[  345.067063] pgd = ebc34000
-[  345.069793] [90011000] *pgd=00000000
-[  345.073383] Internal error: Oops: 5 [#1] PREEMPT SMP ARM
-[  345.078685] Modules linked in: bcmdhd cfg80211 inv_mpu_ak8975 
-inv_mpu_kxtf9 mpu3050
-[  345.086380] CPU: 0    Tainted: G        W     
-(3.4.0-rc1-05660-g0d4b175 #1)
-[  345.093351] PC is at vmap_page_range_noflush+0xf0/0x200
-[  345.098569] LR is at vmap_page_range+0x14/0x50
-[  345.103005] pc : [<c01091c8>]    lr : [<c01092ec>]    psr: 80000013
-[  345.103009] sp : ebc41e38  ip : fe000fff  fp : 00002000
-[  345.114472] r10: c0a78480  r9 : 90011000  r8 : c096e2ac
-[  345.119685] r7 : 90011000  r6 : 00000000  r5 : fe000000  r4 : 00000000
-[  345.126198] r3 : 50011452  r2 : f385c400  r1 : fe000fff  r0 : f385c400
-[  345.132713] Flags: Nzcv  IRQs on  FIQs on  Mode SVC_32  ISA ARM  
-Segment user
-[  345.139835] Control: 10c5387d  Table: abc3404a  DAC: 00000015
+> But that said, I actually do have some.
+> 
+>>
+>>> Signed-off-by: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
+>>> Cc: stable@vger.kernel.org
+>>> ---
+>>>
+>>>  kernel/power/hibernate.c |    6 ++++++
+>>>  kernel/power/suspend.c   |    3 +++
+>>>  2 files changed, 9 insertions(+), 0 deletions(-)
+>>>
+>>> diff --git a/kernel/power/hibernate.c b/kernel/power/hibernate.c
+>>> index e09dfbf..52a1817 100644
+>>> --- a/kernel/power/hibernate.c
+>>> +++ b/kernel/power/hibernate.c
+>>> @@ -352,6 +352,7 @@ int hibernation_snapshot(int platform_mode)
+>>>  	}
+>>>  
+>>>  	suspend_console();
+>>> +	ftrace_stop();
+> 
+> 
+> Is this a point of no return?
+> 
 
-<snip>
 
-<snip>
+Yes, especially as far as userspace is concerned.
 
-[  736.834629] Unable to handle kernel paging request at virtual address 
-94711780
-[  736.842284] pgd = eb938000
-[  736.845093] [94711780] *pgd=00000000
-[  736.848687] Internal error: Oops: 5 [#1] PREEMPT SMP ARM
-[  736.853994] Modules linked in: bcmdhd cfg80211 inv_mpu_ak8975 
-inv_mpu_kxtf9 mpu3050
-[  736.861691] CPU: 0    Tainted: G        W     
-(3.4.0-rc3-06429-g666edc3-dirty #1)
-[  736.869186] PC is at vmap_page_range_noflush+0xf0/0x200
-[  736.874404] LR is at pcpu_alloc+0x64c/0xa7c
-[  736.878581] pc : [<c01077c8>]    lr : [<c00f84f8>]    psr: 80000013
-[  736.878585] sp : f3627e58  ip : fefe0fff  fp : 00000000
-[  736.890046] r10: c0a71a40  r9 : 94711780  r8 : c09682ac
-[  736.895259] r7 : 94711780  r6 : 00000000  r5 : fefe0000  r4 : 00000000
-[  736.901773] r3 : 54711452  r2 : f344e1c0  r1 : fefe0fff  r0 : f344e1c0
-[  736.908289] Flags: Nzcv  IRQs on  FIQs on  Mode SVC_32  ISA ARM  
-Segment user
-[  736.915409] Control: 10c5387d  Table: ab93804a  DAC: 00000015
-[  736.921142]
-[  736.921144] PC: 0xc0107748:
-[  736.925406] 7748  e1a03a83 e2432001 e1520001 e59d2010 31a00003 
-e58d0000 e3520000 0a00003e
-[  736.933629] 7768  e5923000 e3530000 0a00004a e7e82655 e3c37eff 
-e3c7700f e24774c0 e0977102
-[  736.941856] 7788  0a000035 e59d001c e3a04000 e0800106 e58d0004 
-ea000007 e1a0100b e2855a01
-[  736.950081] 77a8  ebfc5df0 e59d2000 e2866001 e2844004 e1520005 
-0a000020 e59d2004 e0879004
-[  736.958302] 77c8  e7971004 e1a00009 e7923004 e2512000 1a00002b 
-e3530000 0a000024 e59ab000
-[  736.966528] 77e8  e3e0c441 e5981000 e155000c e06b3003 e59dc008 
-e1a01621 e1a03143 e023139c
-[  736.974751] 7808  e59d100c e181b603 8affffe2 e1a0000b e2855a01 
-ebfc4dbd e3a02b02 e1a00009
-[  736.982977] 7828  e1a0100b ebfc5dcf e59d2000 e2866001 e2844004 
-e1520005 1affffde e59d3000
-[  736.991199]
-[  736.991200] LR: 0xc00f8478:
-[  736.995464] 8478  e59dc054 e58de010 e1a03603 e58d4044 e1a04003 
-e58dc03c e58d302c e28b2001
-[  737.003692] 8498  e3a01004 e59d000c eb05aab4 e5973000 e1a01004 
-e1500003 e1a0b000 2a00009e
-[  737.011916] 84b8  e5953038 e303ec10 e5952010 e34ce0a0 e595003c 
-e793310b e596c010 e790010b
-[  737.020142] 84d8  e023a392 e59e2000 e59de010 e3822c02 e08cc00e 
-e08c0000 e0883103 eb003e6c
-[  737.028365] 84f8  e3500000 aaffffe4 e59d8040 e1a04006 e59d9010 
-e3e06000 e59da00c e58d8010
-[  737.036590] 8518  e59d802c ea000007 e15b0006 0a00000e e595303c 
-e5940010 e7933106 e0800009
-[  737.044810] 8538  e0800003 eb003c61 e2862001 e3a01004 e1a0000a 
-eb05aa89 e5973000 e1a01008
-[  737.053035] 8558  e1500003 e1a06000 3affffee e59f3398 e59d8010 
-e5933000 e3130002 0a0000b5
-[  737.061263]
-[  737.061264] SP: 0xf3627dd8:
-[  737.065528] 7dd8  f655d090 00000003 00000001 ffffffff 00000000 
-c09eda80 f6af8200 00000002
-[  737.073754] 7df8  c09ee440 c01077c8 80000013 ffffffff f3627e44 
-c000ec98 f344e1c0 fefe0fff
-[  737.081975] 7e18  f344e1c0 54711452 00000000 fefe0000 00000000 
-94711780 c09682ac 94711780
-[  737.090197] 7e38  c0a71a40 00000000 fefe0fff f3627e58 c00f84f8 
-c01077c8 80000013 ffffffff
-[  737.098421] 7e58  fefe1000 f344e1c0 38e38e39 0000065f c0007fb8 
-fefe1000 fefe0fff f344e1c0
-[  737.106646] 7e78  c0a6d180 00001000 c096125c eb8ce500 c0960ae4 
-f344e1c0 c065e874 00000000
-[  737.114870] 7e98  00000000 c00f84f8 f67d3bb8 00000001 f67d3bdc 
-c0960230 00000000 f3627ef0
-[  737.123092] 7eb8  f344e1c0 00000000 00000001 00000000 00000008 
-00001000 00000001 00000001
-[  737.131316]
-[  737.131318] IP: 0xfefe0f7f:
-[  737.135582] 0f7c  ******** ******** ******** ******** ******** 
-******** ******** ********
-[  737.143821] 0f9c  ******** ******** ******** ******** ******** 
-******** ******** ********
-[  737.152050] 0fbc  ******** ******** ******** ******** ******** 
-******** ******** ********
-[  737.160278] 0fdc  ******** ******** ******** ******** ******** 
-******** ******** ********
-[  737.168501] 0ffc  ******** ******** ******** ******** ******** 
-******** ******** ********
-[  737.176725] 101c  ******** ******** ******** ******** ******** 
-******** ******** ********
-[  737.184950] 103c  ******** ******** ******** ******** ******** 
-******** ******** ********
-[  737.193173] 105c  ******** ******** ******** ******** ******** 
-******** ******** ********
-[  737.201397] 107c  ******** ******** ******** ******** ******** 
-******** ******** ********
-[  737.209623]
-[  737.209626] R0: 0xf344e140:
-[  737.213889] e140  00000000 00000018 0000000c 00000000 00000000 
-00000000 ebdc6ac0 ea984ac0
-[  737.222115] e160  ee371580 f2764ac0 e68b1040 ee2a7040 ebdc6040 
-eba6d040 f3c74580 f3dc4040
-[  737.230339] e180  f3561580 f686c580 f344e184 00000000 00000000 
-726d7410 32706c5f 656b6177
-[  737.238561] e1a0  7570635f 00000031 00000000 00000000 00000000 
-00000000 00000000 00000000
-[  737.246784] e1c0  c164907c 00000000 00000000 00000000 00000000 
-00000000 00000000 00000000
-[  737.255006] e1e0  c1649058 00000000 00000000 00000000 00000000 
-00000000 00000000 00000000
-[  737.263229] e200  c1649034 00000000 00000000 00000000 00000000 
-00000000 00000000 00000000
-[  737.271454] e220  c1649010 00000000 00000000 00000000 00000000 
-00000000 00000000 00000000
-[  737.279682]
-[  737.279684] R1: 0xfefe0f7f:
-[  737.283946] 0f7c  ******** ******** ******** ******** ******** 
-******** ******** ********
-[  737.292173] 0f9c  ******** ******** ******** ******** ******** 
-******** ******** ********
-[  737.300397] 0fbc  ******** ******** ******** ******** ******** 
-******** ******** ********
-[  737.308619] 0fdc  ******** ******** ******** ******** ******** 
-******** ******** ********
-[  737.316844] 0ffc  ******** ******** ******** ******** ******** 
-******** ******** ********
-[  737.325070] 101c  ******** ******** ******** ******** ******** 
-******** ******** ********
-[  737.333299] 103c  ******** ******** ******** ******** ******** 
-******** ******** ********
-[  737.341520] 105c  ******** ******** ******** ******** ******** 
-******** ******** ********
-[  737.349743] 107c  ******** ******** ******** ******** ******** 
-******** ******** ********
-[  737.357969]
-[  737.357971] R2: 0xf344e140:
-[  737.362232] e140  00000000 00000018 0000000c 00000000 00000000 
-00000000 ebdc6ac0 ea984ac0
-[  737.370457] e160  ee371580 f2764ac0 e68b1040 ee2a7040 ebdc6040 
-eba6d040 f3c74580 f3dc4040
-[  737.378681] e180  f3561580 f686c580 f344e184 00000000 00000000 
-726d7410 32706c5f 656b6177
-[  737.386904] e1a0  7570635f 00000031 00000000 00000000 00000000 
-00000000 00000000 00000000
-[  737.395126] e1c0  c164907c 00000000 00000000 00000000 00000000 
-00000000 00000000 00000000
-[  737.403349] e1e0  c1649058 00000000 00000000 00000000 00000000 
-00000000 00000000 00000000
-[  737.411571] e200  c1649034 00000000 00000000 00000000 00000000 
-00000000 00000000 00000000
-[  737.419796] e220  c1649010 00000000 00000000 00000000 00000000 
-00000000 00000000 00000000
-[  737.428023]
-[  737.428025] R5: 0xfefdff80:
-[  737.432290] ff80  ******** ******** ******** ******** ******** 
-******** ******** ********
-[  737.440513] ffa0  ******** ******** ******** ******** ******** 
-******** ******** ********
-[  737.448739] ffc0  ******** ******** ******** ******** ******** 
-******** ******** ********
-[  737.456960] ffe0  ******** ******** ******** ******** ******** 
-******** ******** ********
-[  737.465188] 0000  ******** ******** ******** ******** ******** 
-******** ******** ********
-[  737.473413] 0020  ******** ******** ******** ******** ******** 
-******** ******** ********
-[  737.481640] 0040  ******** ******** ******** ******** ******** 
-******** ******** ********
-[  737.489866] 0060  ******** ******** ******** ******** ******** 
-******** ******** ********
-[  737.498093]
-[  737.498095] R8: 0xc096822c:
-[  737.502359] 822c  c064e0e4 c0336950 c064e0ec c0336e8c c064e0f4 
-c0336f1c c064e0fc c0337218
-[  737.510581] 824c  c064e104 c0473a74 c064e110 c0473adc c064e118 
-c0473b9c c064e120 c0473bd4
-[  737.518806] 826c  c064e128 c0473efc c064e130 c0473f64 c064e138 
-c0474024 c064e140 c047405c
-[  737.527032] 828c  c064e148 c04ce1d4 c064e150 c04ce82c c064e158 
-c04ce848 c064e160 00000001
-[  737.535253] 82ac  80000000 000000c0 00000000 00000000 c0932000 
-00000002 00200000 00000000
-[  737.543477] 82cc  00000000 00000000 00000000 00000078 00000078 
-00000078 00000000 c065fa30
-[  737.551701] 82ec  00000000 00000400 00400000 00000000 00000000 
-00000000 c0968304 c0968304
-[  737.559925] 830c  00000000 00000000 00000000 00000000 00000000 
-00000000 00000000 00000000
-[  737.568152]
-[  737.568154] R10: 0xc0a719c0:
-[  737.572504] 19c0  00000000 00000000 00000000 00000000 00000000 
-00000000 00000000 00000000
-[  737.580728] 19e0  00000000 00000000 00000000 00000000 00000000 
-00000000 00000000 00000000
-[  737.588951] 1a00  00000000 00000000 f6ffb000 000000af 00000000 
-00000000 00000000 00000000
-[  737.597175] 1a20  00000000 00000000 00000000 00000000 00000000 
-00000000 00000000 00000000
-[  737.605397] 1a40  c1029000 00000000 00000000 00000000 0003fe00 
-0003eb00 f7000000 00000000
-[  737.613624] 1a60  00000000 00000000 00000000 00000000 00000000 
-00000000 00000000 00000000
-[  737.621851] 1a80  00000000 00000000 00102160 00000000 c09b8eb8 
-c0959a90 c0933df4 00000000
-[  737.630075] 1aa0  00000000 00000000 00000000 00000000 00000000 
-00000000 00000000 00000000
-[  737.638309] Process zygote (pid: 1495, stack limit = 0xf36262f0)
-[  737.644301] Stack: (0xf3627e58 to 0xf3628000)
-[  737.648649] 
-7e40:                                                       fefe1000 
-f344e1c0
-[  737.656814] 7e60: 38e38e39 0000065f c0007fb8 fefe1000 fefe0fff 
-f344e1c0 c0a6d180 00001000
-[  737.664976] 7e80: c096125c eb8ce500 c0960ae4 f344e1c0 c065e874 
-00000000 00000000 c00f84f8
-[  737.673138] 7ea0: f67d3bb8 00000001 f67d3bdc c0960230 00000000 
-f3627ef0 f344e1c0 00000000
-[  737.681300] 7ec0: 00000001 00000000 00000008 00001000 00000001 
-00000001 00000000 ec009280
-[  737.689464] 7ee0: 00000050 c0960230 00000001 00000001 00000000 
-ec009280 f681b150 eba047c0
-[  737.697627] 7f00: ebdde0c0 f5c87ac0 f5cb6010 f5cb6000 f3626000 
-00000000 f3627f2c c007995c
-[  737.705791] 7f20: c09ab648 ebdde0c0 00000000 c00a7a44 bed4986c 
-ee769400 f67d3bb8 000001fd
-[  737.713954] 7f40: 00000000 00000000 f67d3bb8 f655fb88 00000000 
-c000f2c4 f3626000 00000000
-[  737.722119] 7f60: 00000000 c0120e9c 00000000 c0120f78 bed4986c 
-000001fd f3627f88 000001fd
-[  737.730281] 7f80: f67d3bb8 c0120f94 f681b150 f655d668 00000000 
-bed4986c bed498cf 00000015
-[  737.738443] 7fa0: 00000027 c000f100 bed4986c bed498cf bed4986c 
-000001fd bed4986c 00000000
-[  737.746607] 7fc0: bed4986c bed498cf 00000015 00000027 0000272c 
-0000272c 00000000 00000000
-[  737.754769] 7fe0: bed498c0 bed49860 b6f055a7 b6eebae8 60000010 
-bed4986c ff5b5b5b ff5b5b5b
-[  737.762966] [<c01077c8>] (vmap_page_range_noflush+0xf0/0x200) from 
-[<c00f84f8>] (pcpu_alloc+0x64c/0xa7c)
-[  737.772450] [<c00f84f8>] (pcpu_alloc+0x64c/0xa7c) from [<c007995c>] 
-(cpuacct_create+0x64/0x94)
-[  737.781067] [<c007995c>] (cpuacct_create+0x64/0x94) from [<c00a7a44>] 
-(cgroup_mkdir+0xf8/0x380)
-[  737.789768] [<c00a7a44>] (cgroup_mkdir+0xf8/0x380) from [<c0120e9c>] 
-(vfs_mkdir+0x94/0xd8)
-[  737.798024] [<c0120e9c>] (vfs_mkdir+0x94/0xd8) from [<c0120f94>] 
-(sys_mkdirat+0xb4/0xc4)
-[  737.806115] [<c0120f94>] (sys_mkdirat+0xb4/0xc4) from [<c000f100>] 
-(ret_fast_syscall+0x0/0x30)
-[  737.814714] Code: e1520005 0a000020 e59d2004 e0879004 (e7971004)
+> This probably isn't a problem, but I'm being a little paranoid. As
+> ftrace_stop/start() is just an on off switch, anyplace that calls
+> ftrace_start() will enable function tracing again. Ftrace_start() is
+> called by tracing_start() which is called when
+> the /sys/kernel/debug/tracing/trace file is opened and then closed. If
+> the close happens while the suspend is starting, it possibly can start
+> function tracing again.
+> 
+> But this race would have to be done by the user, which should have full
+> control as they are in the process of suspending the machine. But they
+> may do it by accident.
+> 
 
-<snip>
 
-Now if I change my static mappings from 0xFA000000-0xFE000000, then I 
-never see these crashes. I thought if the virtual page mappings are 
-getting over-written somehow or maybe vmalloc space is getting exhausted 
-due to which we see the crashes. But I did not find any proof to support 
-this theory.
+Luckily, at all these places, all the userspace processes (and the freezable
+kernel threads) are already frozen. So nobody will be running at this point
+to open/close the trace file.
 
-Can some one shed some light, why this would be seen?
+So there is no problem right?
 
-Thanks.
+(Of course, the non-freezable kernel threads might be running at this point,
+but IIUC, they can't trigger ftrace_start() from some other internal path..)
+
+Regards,
+Srivatsa S. Bhat
 
