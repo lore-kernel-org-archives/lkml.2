@@ -1,171 +1,142 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932706Ab2EVAH7 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 May 2012 20:07:59 -0400
-Received: from mailout1.samsung.com ([203.254.224.24]:37196 "EHLO
-	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751993Ab2EVAH4 (ORCPT
+	id S932739Ab2EVAIe (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 May 2012 20:08:34 -0400
+Received: from mail-we0-f174.google.com ([74.125.82.174]:34915 "EHLO
+	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932253Ab2EVAIc convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 May 2012 20:07:56 -0400
-X-AuditID: cbfee61a-b7fe76d0000023f5-e3-4fbad8c38575
-From: Jingoo Han <jg1.han@samsung.com>
-To: "'Corentin Chary'" <corentin.chary@gmail.com>,
-        "'Richard Purdie'" <rpurdie@rpsys.net>,
-        "'Andrew Morton'" <akpm@linux-foundation.org>,
-        "'LKML'" <linux-kernel@vger.kernel.org>
-Cc: "'Keith Packard'" <keithp@keithp.com>, "'David Airlie'" <airlied@linux.ie>,
-        "'Matthew Garrett'" <mjg@redhat.com>,
-        "'Florian Tobias Schandinat'" <FlorianSchandinat@gmx.de>,
-        "'Mark Brown'" <broonie@opensource.wolfsonmicro.com>,
-        "'Tomi Valkeinen'" <tomi.valkeinen@ti.com>,
-        "'Mathieu Poirier'" <mathieu.poirier@linaro.org>,
-        "'Dave Airlie'" <airlied@redhat.com>,
-        "'Arnd Bergmann'" <arnd@arndb.de>,
-        "'Lars-Peter Clausen'" <lars@metafoo.de>,
-        "'Axel Lin'" <axel.lin@gmail.com>, dri-devel@lists.freedesktop.org,
-        linux-kernel@vger.kernel.org, platform-driver-x86@vger.kernel.org,
-        linux-fbdev@vger.kernel.org, patches@opensource.wolfsonmicro.com,
-        linux-omap@vger.kernel.org, "'Jingoo Han'" <jg1.han@samsung.com>
-References: <1337585085-4891-1-git-send-email-corentin.chary@gmail.com>
-In-reply-to: <1337585085-4891-1-git-send-email-corentin.chary@gmail.com>
-Subject: Re: [PATCH] backlight: initialize  struct backlight_properties properly
-Date: Tue, 22 May 2012 09:07:31 +0900
-Message-id: <000601cd37ae$e1ae8300$a50b8900$%han@samsung.com>
-MIME-version: 1.0
-Content-type: text/plain; charset=us-ascii
-Content-transfer-encoding: 7bit
-X-Mailer: Microsoft Office Outlook 12.0
-Thread-index: Ac03IuhW2vpfqdghS5yAJ2nhDIs+HQAi05cA
-Content-language: ko
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrDLMWRmVeSWpSXmKPExsVy+t9jQd3DN3b5G/xepGtxou8Dq8XlXXPY
-	LGYv6WexWL3nBbMDi8fnTXIBjFFcNimpOZllqUX6dglcGROX7mIrOKda8fvoevYGxlvyXYyc
-	HBICJhJvrh1ngbDFJC7cW8/WxcjFISQwnVHifNNxZgjnF6PEw1U7warYBNQkvnw5zA5iiwis
-	Z5Q4O7UCpIhZYB+rxLO5+9hAEkIC7hLPHvWzgticAh4SN851gsWFBQIk7l1/DhTn4GARUJVo
-	+l4LEuYVsJWYuL+VHcIWlPgx+R7YLmYBLYn1O48zQdjyEpvXvGUGaZUQUJd49FcX4gQjiRNn
-	XkCViEjse/GOcQKj0Cwkk2YhmTQLyaRZSFoWMLKsYhRNLUguKE5KzzXUK07MLS7NS9dLzs/d
-	xAgO82dSOxhXNlgcYhTgYFTi4Q24tMtfiDWxrLgy9xCjBAezkgjvpjagEG9KYmVValF+fFFp
-	TmrxIUZpDhYlcV67xTv8hQTSE0tSs1NTC1KLYLJMHJxSDYwZ2k0HbRoM17y/vPfpMYnUk8dX
-	8R5r+fPpV9w3oXandW7Pi2catzs6V2u8n/TPV+CihcbmSYFv45Y6XzG8LdHsmrxOOULQe75F
-	9Z3rdlbhMSuTPCuY3yR+9c4+F/W/abptvFF6wapgA+lD6R8Nww8dP3nFxKNj3n6hVQHTA/10
-	Zt6fqsqpVqXEUpyRaKjFXFScCAAn4mWzbwIAAA==
-X-TM-AS-MML: No
+	Mon, 21 May 2012 20:08:32 -0400
+MIME-Version: 1.0
+In-Reply-To: <alpine.LSU.2.00.1205120505560.28861@eggly.anvils>
+References: <alpine.LSU.2.00.1205120447380.28861@eggly.anvils>
+	<alpine.LSU.2.00.1205120505560.28861@eggly.anvils>
+Date: Mon, 21 May 2012 17:08:29 -0700
+X-Google-Sender-Auth: QNXI5dNPEA2hExzCV4LQhnB2Kdc
+Message-ID: <CANcMJZByO1Ovog_BhrnXzk-1L_Oues4cFLMMib901o_Pa=xy5w@mail.gmail.com>
+Subject: Re: [PATCH 5/10] mm/fs: route MADV_REMOVE to FALLOC_FL_PUNCH_HOLE
+From: john stultz <johnstul@us.ibm.com>
+To: Hugh Dickins <hughd@google.com>,
+        =?ISO-8859-1?Q?Arve_Hj=F8nnev=E5g?= <arve@android.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Christoph Hellwig <hch@infradead.org>, Cong Wang <amwang@redhat.com>,
+        Al Viro <viro@zeniv.linux.org.uk>, Colin Cross <ccross@android.com>,
+        John Stulz <john.stulz@linaro.org>,
+        Greg Kroah-Hartman <gregkh@linux-foundation.org>,
+        "Theodore Ts'o" <tytso@mit.edu>, Andreas Dilger <adilger@dilger.ca>,
+        Mark Fasheh <mfasheh@suse.de>, Joel Becker <jlbec@evilplan.org>,
+        Dave Chinner <david@fromorbit.com>, Ben Myers <bpm@sgi.com>,
+        Michael Kerrisk <mtk.manpages@gmail.com>, linux-mm@kvack.org,
+        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, May 21, 2012 at 04:25 PM +0000, Corentin Chary wrote:
+On Sat, May 12, 2012 at 5:13 AM, Hugh Dickins <hughd@google.com> wrote:
+> Now tmpfs supports hole-punching via fallocate(), switch madvise_remove()
+> to use do_fallocate() instead of vmtruncate_range(): which extends
+> madvise(,,MADV_REMOVE) support from tmpfs to ext4, ocfs2 and xfs.
+>
+> There is one more user of vmtruncate_range() in our tree, staging/android's
+> ashmem_shrink(): convert it to use do_fallocate() too (but if its unpinned
+> areas are already unmapped - I don't know - then it would do better to use
+> shmem_truncate_range() directly).
 
-> 
-> In all these files, the .power field was never correctly initialized.
-> 
-> Signed-off-by: Corentin Chary <corentin.chary@gmail.com>
+I suspect shmem_truncate_range directly would be the right approach,
+but am not totally sure.
+Arve: Any thoughts?
 
-It looks good.
+Hugh: Do you have a git tree with this set available somewhere?  I was
+working on my own tmpfs support for FALLOC_FL_PUNCH_HOLE, along with
+my volatile range work, so I'd like to rebase on top of your work
+here.
 
-Best regards,
-Jingoo Han
+thanks
+-john
 
+
+>
+> Based-on-patch-by: Cong Wang <amwang@redhat.com>
+> Signed-off-by: Hugh Dickins <hughd@google.com>
 > ---
->  drivers/gpu/drm/i915/intel_panel.c              |    1 +
->  drivers/gpu/drm/radeon/radeon_legacy_encoders.c |    1 +
->  drivers/platform/x86/toshiba_acpi.c             |    1 +
->  drivers/video/backlight/da903x_bl.c             |    1 +
->  drivers/video/backlight/pcf50633-backlight.c    |    1 +
->  drivers/video/backlight/wm831x_bl.c             |    1 +
->  drivers/video/omap2/displays/panel-acx565akm.c  |    1 +
->  7 files changed, 7 insertions(+)
-> 
-> diff --git a/drivers/gpu/drm/i915/intel_panel.c b/drivers/gpu/drm/i915/intel_panel.c
-> index 48177ec..ec4a1e0 100644
-> --- a/drivers/gpu/drm/i915/intel_panel.c
-> +++ b/drivers/gpu/drm/i915/intel_panel.c
-> @@ -342,6 +342,7 @@ int intel_panel_setup_backlight(struct drm_device *dev)
->  	else
->  		return -ENODEV;
-> 
-> +	memset(&props, 0, sizeof(props));
->  	props.type = BACKLIGHT_RAW;
->  	props.max_brightness = intel_panel_get_max_backlight(dev);
->  	dev_priv->backlight =
-> diff --git a/drivers/gpu/drm/radeon/radeon_legacy_encoders.c
-> b/drivers/gpu/drm/radeon/radeon_legacy_encoders.c
-> index 42db254..a0c8222 100644
-> --- a/drivers/gpu/drm/radeon/radeon_legacy_encoders.c
-> +++ b/drivers/gpu/drm/radeon/radeon_legacy_encoders.c
-> @@ -369,6 +369,7 @@ void radeon_legacy_backlight_init(struct radeon_encoder *radeon_encoder,
->  		goto error;
->  	}
-> 
-> +	memset(&props, 0, sizeof(props));
->  	props.max_brightness = MAX_RADEON_LEVEL;
->  	props.type = BACKLIGHT_RAW;
->  	bd = backlight_device_register("radeon_bl", &drm_connector->kdev,
-> diff --git a/drivers/platform/x86/toshiba_acpi.c b/drivers/platform/x86/toshiba_acpi.c
-> index bde32de..d680bb2 100644
-> --- a/drivers/platform/x86/toshiba_acpi.c
-> +++ b/drivers/platform/x86/toshiba_acpi.c
-> @@ -1095,6 +1095,7 @@ static int __devinit toshiba_acpi_setup_backlight(struct toshiba_acpi_dev *dev)
->  	ret = get_tr_backlight_status(dev, &enabled);
->  	dev->tr_backlight_supported = !ret;
-> 
-> +	memset(&props, 0, sizeof(props));
->  	props.type = BACKLIGHT_PLATFORM;
->  	props.max_brightness = HCI_LCD_BRIGHTNESS_LEVELS - 1;
-> 
-> diff --git a/drivers/video/backlight/da903x_bl.c b/drivers/video/backlight/da903x_bl.c
-> index 30e1968..573c7ec 100644
-> --- a/drivers/video/backlight/da903x_bl.c
-> +++ b/drivers/video/backlight/da903x_bl.c
-> @@ -136,6 +136,7 @@ static int da903x_backlight_probe(struct platform_device *pdev)
->  		da903x_write(data->da903x_dev, DA9034_WLED_CONTROL2,
->  				DA9034_WLED_ISET(pdata->output_current));
-> 
-> +	memset(&props, 0, sizeof(props));
->  	props.type = BACKLIGHT_RAW;
->  	props.max_brightness = max_brightness;
->  	bl = backlight_device_register(pdev->name, data->da903x_dev, data,
-> diff --git a/drivers/video/backlight/pcf50633-backlight.c b/drivers/video/backlight/pcf50633-backlight.c
-> index c65853c..c092159 100644
-> --- a/drivers/video/backlight/pcf50633-backlight.c
-> +++ b/drivers/video/backlight/pcf50633-backlight.c
-> @@ -111,6 +111,7 @@ static int __devinit pcf50633_bl_probe(struct platform_device *pdev)
->  	if (!pcf_bl)
->  		return -ENOMEM;
-> 
-> +	memset(&bl_props, 0, sizeof(bl_props));
->  	bl_props.type = BACKLIGHT_RAW;
->  	bl_props.max_brightness = 0x3f;
->  	bl_props.power = FB_BLANK_UNBLANK;
-> diff --git a/drivers/video/backlight/wm831x_bl.c b/drivers/video/backlight/wm831x_bl.c
-> index 5d365de..9e5517a 100644
-> --- a/drivers/video/backlight/wm831x_bl.c
-> +++ b/drivers/video/backlight/wm831x_bl.c
-> @@ -194,6 +194,7 @@ static int wm831x_backlight_probe(struct platform_device *pdev)
->  	data->current_brightness = 0;
->  	data->isink_reg = isink_reg;
-> 
-> +	memset(&props, 0, sizeof(props));
->  	props.type = BACKLIGHT_RAW;
->  	props.max_brightness = max_isel;
->  	bl = backlight_device_register("wm831x", &pdev->dev, data,
-> diff --git a/drivers/video/omap2/displays/panel-acx565akm.c b/drivers/video/omap2/displays/panel-
-> acx565akm.c
-> index d26f37a..74e7cf0 100644
-> --- a/drivers/video/omap2/displays/panel-acx565akm.c
-> +++ b/drivers/video/omap2/displays/panel-acx565akm.c
-> @@ -532,6 +532,7 @@ static int acx_panel_probe(struct omap_dss_device *dssdev)
-> 
->  	/*------- Backlight control --------*/
-> 
-> +	memset(&props, 0, sizeof(props));
->  	props.fb_blank = FB_BLANK_UNBLANK;
->  	props.power = FB_BLANK_UNBLANK;
->  	props.type = BACKLIGHT_RAW;
+>  drivers/staging/android/ashmem.c |    8 +++++---
+>  mm/madvise.c                     |   15 +++++++--------
+>  2 files changed, 12 insertions(+), 11 deletions(-)
+>
+> --- 3045N.orig/drivers/staging/android/ashmem.c 2012-05-05 10:42:33.564056626 -0700
+> +++ 3045N/drivers/staging/android/ashmem.c      2012-05-05 10:46:25.692062478 -0700
+> @@ -19,6 +19,7 @@
+>  #include <linux/module.h>
+>  #include <linux/file.h>
+>  #include <linux/fs.h>
+> +#include <linux/falloc.h>
+>  #include <linux/miscdevice.h>
+>  #include <linux/security.h>
+>  #include <linux/mm.h>
+> @@ -363,11 +364,12 @@ static int ashmem_shrink(struct shrinker
+>
+>        mutex_lock(&ashmem_mutex);
+>        list_for_each_entry_safe(range, next, &ashmem_lru_list, lru) {
+> -               struct inode *inode = range->asma->file->f_dentry->d_inode;
+>                loff_t start = range->pgstart * PAGE_SIZE;
+> -               loff_t end = (range->pgend + 1) * PAGE_SIZE - 1;
+> +               loff_t end = (range->pgend + 1) * PAGE_SIZE;
+>
+> -               vmtruncate_range(inode, start, end);
+> +               do_fallocate(range->asma->file,
+> +                               FALLOC_FL_PUNCH_HOLE | FALLOC_FL_KEEP_SIZE,
+> +                               start, end - start);
+>                range->purged = ASHMEM_WAS_PURGED;
+>                lru_del(range);
+>
+> --- 3045N.orig/mm/madvise.c     2012-05-05 10:42:33.572056784 -0700
+> +++ 3045N/mm/madvise.c  2012-05-05 10:46:25.692062478 -0700
+> @@ -11,8 +11,10 @@
+>  #include <linux/mempolicy.h>
+>  #include <linux/page-isolation.h>
+>  #include <linux/hugetlb.h>
+> +#include <linux/falloc.h>
+>  #include <linux/sched.h>
+>  #include <linux/ksm.h>
+> +#include <linux/fs.h>
+>
+>  /*
+>  * Any behaviour which results in changes to the vma->vm_flags needs to
+> @@ -200,8 +202,7 @@ static long madvise_remove(struct vm_are
+>                                struct vm_area_struct **prev,
+>                                unsigned long start, unsigned long end)
+>  {
+> -       struct address_space *mapping;
+> -       loff_t offset, endoff;
+> +       loff_t offset;
+>        int error;
+>
+>        *prev = NULL;   /* tell sys_madvise we drop mmap_sem */
+> @@ -217,16 +218,14 @@ static long madvise_remove(struct vm_are
+>        if ((vma->vm_flags & (VM_SHARED|VM_WRITE)) != (VM_SHARED|VM_WRITE))
+>                return -EACCES;
+>
+> -       mapping = vma->vm_file->f_mapping;
+> -
+>        offset = (loff_t)(start - vma->vm_start)
+>                        + ((loff_t)vma->vm_pgoff << PAGE_SHIFT);
+> -       endoff = (loff_t)(end - vma->vm_start - 1)
+> -                       + ((loff_t)vma->vm_pgoff << PAGE_SHIFT);
+>
+> -       /* vmtruncate_range needs to take i_mutex */
+> +       /* filesystem's fallocate may need to take i_mutex */
+>        up_read(&current->mm->mmap_sem);
+> -       error = vmtruncate_range(mapping->host, offset, endoff);
+> +       error = do_fallocate(vma->vm_file,
+> +                               FALLOC_FL_PUNCH_HOLE | FALLOC_FL_KEEP_SIZE,
+> +                               offset, end - start);
+>        down_read(&current->mm->mmap_sem);
+>        return error;
+>  }
 > --
-> 1.7.9.5
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-fbdev" in
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
 > the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
