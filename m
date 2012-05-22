@@ -1,55 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932734Ab2EVVTs (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 May 2012 17:19:48 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:15671 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932477Ab2EVVTo (ORCPT
+	id S1753350Ab2EVV2i (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 May 2012 17:28:38 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:48553 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751625Ab2EVV2h (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 May 2012 17:19:44 -0400
-X-Authority-Analysis: v=2.0 cv=cssZYiEi c=1 sm=0 a=ZycB6UtQUfgMyuk2+PxD7w==:17 a=XQbtiDEiEegA:10 a=wom5GMh1gUkA:10 a=iZIf2Kua5wEA:10 a=5SG0PmZfjMsA:10 a=kj9zAlcOel0A:10 a=meVymXHHAAAA:8 a=ayC55rCoAAAA:8 a=ANUXcTrbAAAA:8 a=Z_TYFZcxmql5NrnISFkA:9 a=CjuIK1q_8ugA:10 a=ZycB6UtQUfgMyuk2+PxD7w==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 74.67.80.29
-Date: Tue, 22 May 2012 17:19:41 -0400
-From: Steven Rostedt <rostedt@goodmis.org>
-To: "Yann E. MORIN" <yann.morin.1998@free.fr>
-Cc: linux-kbuild@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: kconfig-frontends-3.4.0-0 released
-Message-ID: <20120522211941.GA30024@home.goodmis.org>
-References: <201205222221.05548.yann.morin.1998@free.fr>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <201205222221.05548.yann.morin.1998@free.fr>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Tue, 22 May 2012 17:28:37 -0400
+Date: Tue, 22 May 2012 14:28:35 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Christoph Lameter <cl@linux.com>
+Cc: Dave Hansen <dave@linux.vnet.ibm.com>, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org, aarcange@redhat.com,
+        kosaki.motohiro@jp.fujitsu.com, hughd@google.com, rientjes@google.com,
+        adobriyan@gmail.com, mel@csn.ul.ie, stable@vger.kernel.org
+Subject: Re: [PATCH] hugetlb: fix resv_map leak in error path
+Message-Id: <20120522142835.50b86ddc.akpm@linux-foundation.org>
+In-Reply-To: <alpine.DEB.2.00.1205221603290.21828@router.home>
+References: <20120521202814.E01F0FE1@kernel>
+	<20120522134558.49255899.akpm@linux-foundation.org>
+	<alpine.DEB.2.00.1205221603290.21828@router.home>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, May 22, 2012 at 10:21:05PM +0200, Yann E. MORIN wrote:
-> Hello All!
-> 
-> I'm pleased to announce the release of kconfig-frontends 3.4.0-0!
-> Go download it there:
->     http://ymorin.is-a-geek.org/download/kconfig-frontends/kconfig-frontends-3.4.0-0.tar.xz
->     http://ymorin.is-a-geek.org/download/kconfig-frontends/kconfig-frontends-3.4.0-0.tar.bz2
-> 
-> The kconfig-frontends package provides the kconfig parser, as well as all the
-> kconfig frontends and utilities, packaged using the traditional autotools, so
-> the kconfig infrastructure is easy to deploy, either locally or system-wide.
-> 
-> What's new since 3.3.0-0:
->   - all programs are intalled with the 'kconfig-' prefix by default
->   - the kconfig documentation has been added
->   - the parser's headers are isntalled into their own sub-dir
->   - some side utilities have been added from the Linux kernel tree:
->     - kconfig-diff      show differences between two .config files
+On Tue, 22 May 2012 16:05:02 -0500 (CDT)
+Christoph Lameter <cl@linux.com> wrote:
 
-I'm curious, how is this different than scripts/diffconfig ?
-
--- Steve
-
->     - kconfig-gettext   prepare catalog of options strings for L10n
->     - kconfig-merge     merge .config fragments
->     - kconfig-tweak     get and set .config optiond from the command line
+> > How far back does this bug go?  The patch applies to 3.4 but gets
+> > rejects in 3.3 and earlier.
 > 
+> The earliest that I have seen it on was 2.6.32. I have rediffed the patch
+> against 2.6.32 and 3.2.0.
+
+Great, thanks.  I did
+
+: From: Dave Hansen <dave@linux.vnet.ibm.com>
+: Subject: hugetlb: fix resv_map leak in error path
+: 
+: When called for anonymous (non-shared) mappings, hugetlb_reserve_pages()
+: does a resv_map_alloc().  It depends on code in hugetlbfs's
+: vm_ops->close() to release that allocation.
+: 
+: However, in the mmap() failure path, we do a plain unmap_region() without
+: the remove_vma() which actually calls vm_ops->close().
+: 
+: This is a decent fix.  This leak could get reintroduced if new code (say,
+: after hugetlb_reserve_pages() in hugetlbfs_file_mmap()) decides to return
+: an error.  But, I think it would have to unroll the reservation anyway.
+: 
+: Christoph's test case:
+: 
+: 	http://marc.info/?l=linux-mm&m=133728900729735
+: 
+: This patch applies to 3.4 and later.  A version for earlier kernels is at
+: https://lkml.org/lkml/2012/5/22/418.
+: 
+: Signed-off-by: Dave Hansen <dave@linux.vnet.ibm.com>
+: Acked-by: Mel Gorman <mel@csn.ul.ie>
+: Acked-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+: Reported-by: Christoph Lameter <cl@linux.com>
+: Tested-by: Christoph Lameter <cl@linux.com>
+: Cc: Andrea Arcangeli <aarcange@redhat.com>
+: Cc: <stable@vger.kernel.org>	[2.6.32+]
+
