@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932863Ab2EVXCw (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 May 2012 19:02:52 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:52698 "EHLO mx1.redhat.com"
+	id S1758248Ab2EVXDA (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 May 2012 19:03:00 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:12126 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932839Ab2EVXCt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 May 2012 19:02:49 -0400
+	id S1751529Ab2EVXC5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 May 2012 19:02:57 -0400
 From: David Howells <dhowells@redhat.com>
-Subject: [PATCH 03/23] KEYS: Announce key type (un)registration
+Subject: [PATCH 04/23] KEYS: Reorganise keys Makefile
 To: rusty@rustcorp.com.au, kyle@mcmartin.ca
 Cc: linux-kernel@vger.kernel.org, linux-security-module@vger.kernel.org,
         keyrings@linux-nfs.org, David Howells <dhowells@redhat.com>
-Date: Wed, 23 May 2012 00:02:41 +0100
-Message-ID: <20120522230241.24007.38025.stgit@warthog.procyon.org.uk>
+Date: Wed, 23 May 2012 00:02:48 +0100
+Message-ID: <20120522230248.24007.77847.stgit@warthog.procyon.org.uk>
 In-Reply-To: <20120522230218.24007.3556.stgit@warthog.procyon.org.uk>
 References: <20120522230218.24007.3556.stgit@warthog.procyon.org.uk>
 User-Agent: StGIT/0.14.3
@@ -23,59 +23,44 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Announce the (un)registration of a key type in the core key code rather than
-in the callers.
+Reorganise the keys directory Makefile to put all the core bits together and
+the type-specific bits after.
 
 Signed-off-by: David Howells <dhowells@redhat.com>
 ---
 
- net/dns_resolver/dns_key.c |    5 -----
- security/keys/key.c        |    3 +++
- 2 files changed, 3 insertions(+), 5 deletions(-)
+ security/keys/Makefile |   12 +++++++++---
+ 1 files changed, 9 insertions(+), 3 deletions(-)
 
 
-diff --git a/net/dns_resolver/dns_key.c b/net/dns_resolver/dns_key.c
-index c73bba3..14b2c3d 100644
---- a/net/dns_resolver/dns_key.c
-+++ b/net/dns_resolver/dns_key.c
-@@ -249,9 +249,6 @@ static int __init init_dns_resolver(void)
- 	struct key *keyring;
- 	int ret;
+diff --git a/security/keys/Makefile b/security/keys/Makefile
+index a56f1ff..504aaa0 100644
+--- a/security/keys/Makefile
++++ b/security/keys/Makefile
+@@ -2,6 +2,9 @@
+ # Makefile for key management
+ #
  
--	printk(KERN_NOTICE "Registering the %s key type\n",
--	       key_type_dns_resolver.name);
++#
++# Core
++#
+ obj-y := \
+ 	gc.o \
+ 	key.o \
+@@ -12,9 +15,12 @@ obj-y := \
+ 	request_key.o \
+ 	request_key_auth.o \
+ 	user_defined.o
 -
- 	/* create an override credential set with a special thread keyring in
- 	 * which DNS requests are cached
- 	 *
-@@ -301,8 +298,6 @@ static void __exit exit_dns_resolver(void)
- 	key_revoke(dns_resolver_cache->thread_keyring);
- 	unregister_key_type(&key_type_dns_resolver);
- 	put_cred(dns_resolver_cache);
--	printk(KERN_NOTICE "Unregistered %s key type\n",
--	       key_type_dns_resolver.name);
- }
- 
- module_init(init_dns_resolver)
-diff --git a/security/keys/key.c b/security/keys/key.c
-index 06783cf..dc62894 100644
---- a/security/keys/key.c
-+++ b/security/keys/key.c
-@@ -980,6 +980,8 @@ int register_key_type(struct key_type *ktype)
- 
- 	/* store the type */
- 	list_add(&ktype->link, &key_types_list);
+-obj-$(CONFIG_TRUSTED_KEYS) += trusted.o
+-obj-$(CONFIG_ENCRYPTED_KEYS) += encrypted-keys/
+ obj-$(CONFIG_KEYS_COMPAT) += compat.o
+ obj-$(CONFIG_PROC_FS) += proc.o
+ obj-$(CONFIG_SYSCTL) += sysctl.o
 +
-+	pr_notice("Key type %s registered\n", ktype->name);
- 	ret = 0;
- 
- out:
-@@ -1002,6 +1004,7 @@ void unregister_key_type(struct key_type *ktype)
- 	list_del_init(&ktype->link);
- 	downgrade_write(&key_types_sem);
- 	key_gc_keytype(ktype);
-+	pr_notice("Key type %s unregistered\n", ktype->name);
- 	up_read(&key_types_sem);
- }
- EXPORT_SYMBOL(unregister_key_type);
++#
++# Key types
++#
++obj-$(CONFIG_TRUSTED_KEYS) += trusted.o
++obj-$(CONFIG_ENCRYPTED_KEYS) += encrypted-keys/
 
