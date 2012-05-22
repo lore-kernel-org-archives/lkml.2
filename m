@@ -1,65 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757840Ab2EVR7h (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 May 2012 13:59:37 -0400
-Received: from smtp101.prem.mail.ac4.yahoo.com ([76.13.13.40]:44093 "HELO
-	smtp101.prem.mail.ac4.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1755444Ab2EVR7g (ORCPT
+	id S1760060Ab2EVSAB (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 May 2012 14:00:01 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:36311 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758578Ab2EVR75 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 May 2012 13:59:36 -0400
-X-Yahoo-Newman-Property: ymail-3
-X-YMail-OSG: EzUZiXIVM1mhWUT68A2PQxko.yVk3huUnKTvxZjFg7KgJ5q
- ss58cTKNPUnVRzAiMw29kfbaZ_SExKht6Vy.F47dNVYs7qZx0RlCqdYNcjG6
- apfXZVtbUVEn2xhhjuipCUr7eOriEuXNw5AVw2xUl6fN2UJx64KSBuriKK.K
- xLwH6zYZoscI0aFficrqiN6kmJzQAGGnlFy4YbuKcb95FhYemBi1n2HoZiYz
- 5oE62b1R6gdobPrxLNAA8WA7dkoj1U8mcTMjD7cTXxAVLsYPgy34Txy2sb_r
- tcB5fbPS3GpXXQuTnSQnC9fKjWt_5.mRcBEQBYKMS1KLY0XwGEN.WuywVY5D
- Una7atcGyT4JkxkckyHW53RwABxxLPZamBa7_Sc1tALvQ5j51_AQdK0O02ZH
- R
-X-Yahoo-SMTP: _Dag8S.swBC1p4FJKLCXbs8NQzyse1SYSgnAbY0-
-Date: Tue, 22 May 2012 12:59:32 -0500 (CDT)
-From: Christoph Lameter <cl@linux.com>
-X-X-Sender: cl@router.home
-To: Dave Jones <davej@redhat.com>
-cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Linux Kernel <linux-kernel@vger.kernel.org>, linux-mm@kvack.org,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Stephen Wilson <wilsons@start.ca>, Mel Gorman <mgorman@suse.de>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: 3.4-rc7 numa_policy slab poison.
-In-Reply-To: <20120522173849.GA13590@redhat.com>
-Message-ID: <alpine.DEB.2.00.1205221257520.21828@router.home>
-References: <20120521154709.GA8697@redhat.com> <CA+55aFyqMJ1X08kQwJ7snkYo6MxfVKqFJx7LXBkP_ug4LTCZ=Q@mail.gmail.com> <20120521200118.GA12123@redhat.com> <alpine.DEB.2.00.1205211510480.10940@router.home> <20120521202904.GB12123@redhat.com>
- <alpine.DEB.2.00.1205211535050.10940@router.home> <20120521203838.GD12123@redhat.com> <alpine.DEB.2.00.1205211544340.10940@router.home> <20120521210959.GF12123@redhat.com> <alpine.DEB.2.00.1205221226330.21828@router.home>
- <20120522173849.GA13590@redhat.com>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	Tue, 22 May 2012 13:59:57 -0400
+From: David Daney <ddaney.cavm@gmail.com>
+To: devicetree-discuss@lists.ozlabs.org,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Rob Herring <rob.herring@calxeda.com>,
+        "David S. Miller" <davem@davemloft.net>, netdev@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org, linux-mips@linux-mips.org,
+        Andy Fleming <afleming@freescale.com>,
+        David Daney <david.daney@cavium.com>
+Subject: [PATCH 2/5] netdev/phy/of: Handle IEEE802.3 clause 45 Ethernet PHYs in of_mdiobus_register()
+Date: Tue, 22 May 2012 10:59:49 -0700
+Message-Id: <1337709592-23347-3-git-send-email-ddaney.cavm@gmail.com>
+X-Mailer: git-send-email 1.7.2.3
+In-Reply-To: <1337709592-23347-1-git-send-email-ddaney.cavm@gmail.com>
+References: <1337709592-23347-1-git-send-email-ddaney.cavm@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 22 May 2012, Dave Jones wrote:
+From: David Daney <david.daney@cavium.com>
 
-> On Tue, May 22, 2012 at 12:27:14PM -0500, Christoph Lameter wrote:
->  > On Mon, 21 May 2012, Dave Jones wrote:
->  >
->  > > ok, added a --nocolors option now. Re-pull.
->  > > I'll look at the dependancy problem next. Thanks for the feedback.
->  >
->  > --monochrome you mean?
->
-> yes, sorry. I changed it shortly after sending that email.
-> I was having serious conniptions over the use of color/colour.
->
->  > -m works for a part of the output but then the color hits again.
->
-> Fixed. I forgot to change the getopt string
+Define two new "compatible" values for Ethernet
+PHYs. "ethernet-phy-ieee802.3-c22" and "ethernet-phy-ieee802.3-c45"
+are used to indicate a PHY uses the corresponding protocol.
 
-Ok got momochrome output running but it does not trigger when outputting
-to the console.
+If a PHY is "compatible" with "ethernet-phy-ieee802.3-c45", we
+indicate this so that get_phy_device() can properly probe the device.
 
-When I switch console output off I get an immediate oops and the system
-hangs (slub resiliency/debug off).
+If get_phy_device() fails, it was probably due to failing the probe of
+the PHY identifier registers.  Since we have the device tree telling
+us the PHY exists, go ahead and add it anyhow with a phy_id of zero.
+There may be a driver match based on the "compatible" property.
 
+Signed-off-by: David Daney <david.daney@cavium.com>
+---
+ Documentation/devicetree/bindings/net/phy.txt |   12 +++++++++++-
+ drivers/of/of_mdio.c                          |   14 +++++++++++---
+ 2 files changed, 22 insertions(+), 4 deletions(-)
+
+diff --git a/Documentation/devicetree/bindings/net/phy.txt b/Documentation/devicetree/bindings/net/phy.txt
+index bb8c742..7cd18fb 100644
+--- a/Documentation/devicetree/bindings/net/phy.txt
++++ b/Documentation/devicetree/bindings/net/phy.txt
+@@ -14,10 +14,20 @@ Required properties:
+  - linux,phandle :  phandle for this node; likely referenced by an
+    ethernet controller node.
+ 
++Optional Properties:
++
++- compatible: Compatible list, may contain
++  "ethernet-phy-ieee802.3-c22" or "ethernet-phy-ieee802.3-c45" for
++  PHYs that implement IEEE802.3 clause 22 or IEEE802.3 clause 45
++  specifications. If neither of these are specified, the default is to
++  assume clause 22. The compatible list may also contain other
++  elements.
++
+ Example:
+ 
+ ethernet-phy@0 {
+-	linux,phandle = <2452000>
++	compatible = "ethernet-phy-ieee802.3-c22";
++	linux,phandle = <2452000>;
+ 	interrupt-parent = <40000>;
+ 	interrupts = <35 1>;
+ 	reg = <0>;
+diff --git a/drivers/of/of_mdio.c b/drivers/of/of_mdio.c
+index 2574abd..0f08aaf 100644
+--- a/drivers/of/of_mdio.c
++++ b/drivers/of/of_mdio.c
+@@ -79,11 +79,19 @@ int of_mdiobus_register(struct mii_bus *mdio, struct device_node *np)
+ 				mdio->irq[addr] = PHY_POLL;
+ 		}
+ 
++		if (of_device_is_compatible(child,
++					    "ethernet-phy-ieee802.3-c45"))
++			addr |= MII_ADDR_C45;
++
+ 		phy = get_phy_device(mdio, addr);
+ 		if (!phy || IS_ERR(phy)) {
+-			dev_err(&mdio->dev, "error probing PHY at address %i\n",
+-				addr);
+-			continue;
++			phy = phy_device_create(mdio, addr, 0, NULL);
++			if (!phy || IS_ERR(phy)) {
++				dev_err(&mdio->dev,
++					"error creating PHY at address %i\n",
++					addr);
++				continue;
++			}
+ 		}
+ 
+ 		/* Associate the OF node with the device structure so it
+-- 
+1.7.2.3
 
