@@ -1,39 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760190Ab2EVTHe (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 May 2012 15:07:34 -0400
-Received: from shards.monkeyblade.net ([198.137.202.13]:49954 "EHLO
+	id S1760193Ab2EVTIg (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 May 2012 15:08:36 -0400
+Received: from shards.monkeyblade.net ([198.137.202.13]:49960 "EHLO
 	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755481Ab2EVTHc (ORCPT
+	with ESMTP id S1751374Ab2EVTIe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 May 2012 15:07:32 -0400
-Date: Tue, 22 May 2012 15:05:25 -0400 (EDT)
-Message-Id: <20120522.150525.1965961563976193101.davem@davemloft.net>
-To: sfr@canb.auug.org.au
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: linux-next: build failure after merge of the final tree
+	Tue, 22 May 2012 15:08:34 -0400
+Date: Tue, 22 May 2012 15:07:24 -0400 (EDT)
+Message-Id: <20120522.150724.1070224867657733210.davem@davemloft.net>
+To: tglx@linutronix.de
+Cc: sam@ravnborg.org, sparclinux@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] sparc32: use the common implementation of
+ alloc_thread_info_node()
 From: David Miller <davem@davemloft.net>
-In-Reply-To: <20120522182010.f93a38e575ed34e88de5b787@canb.auug.org.au>
-References: <20120522182010.f93a38e575ed34e88de5b787@canb.auug.org.au>
+In-Reply-To: <alpine.LFD.2.02.1205221909540.3231@ionos>
+References: <20120522151123.GA10058@merkur.ravnborg.org>
+	<alpine.LFD.2.02.1205221909540.3231@ionos>
 X-Mailer: Mew version 6.5 on Emacs 24.0.95 / Mule 6.0 (HANACHIRUSATO)
 Mime-Version: 1.0
 Content-Type: Text/Plain; charset=us-ascii
 Content-Transfer-Encoding: 7bit
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.6 (shards.monkeyblade.net [198.137.202.13]); Tue, 22 May 2012 12:05:26 -0700 (PDT)
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.6 (shards.monkeyblade.net [198.137.202.13]); Tue, 22 May 2012 12:07:26 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-Date: Tue, 22 May 2012 18:20:10 +1000
+From: Thomas Gleixner <tglx@linutronix.de>
+Date: Tue, 22 May 2012 19:10:51 +0200 (CEST)
 
-> After merging the final tree, today's linux-next build (sparc32 defconfig)
-> failed like this:
+> On Tue, 22 May 2012, Sam Ravnborg wrote:
 > 
-> arch/sparc/kernel/time_32.c: In function 'timer_interrupt':
-> arch/sparc/kernel/time_32.c:105:3: error: invalid use of undefined type 'struct clock_event_device'
- ...
-> I have no idea what caused this, I did not get this yesterday.  I have
-> left this build broken for today.
+>> >From 52d8a6d1b81a19e693a09df90275600f44293f43 Mon Sep 17 00:00:00 2001
+>> From: Sam Ravnborg <sam@ravnborg.org>
+>> Date: Tue, 22 May 2012 16:39:00 +0200
+>> Subject: [PATCH] sparc32: use the common implementation of alloc_thread_info_node()
+>> 
+>> With sun4c removed we can fall-back to the common implementation.
+>> 
+>> Signed-off-by: Sam Ravnborg <sam@ravnborg.org>
+> 
+> Acked-by: Thomas Gleixner <tglx@linutronix.de>
 
-It builds cleanly in Linus's tree, and I have no local changes in sparc-next.
+Applied, thanks everyone.
