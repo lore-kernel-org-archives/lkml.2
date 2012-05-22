@@ -1,41 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757869Ab2EVWmj (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 May 2012 18:42:39 -0400
+	id S932714Ab2EVWnD (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 May 2012 18:43:03 -0400
 Received: from mail-pz0-f46.google.com ([209.85.210.46]:52182 "EHLO
 	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755801Ab2EVWmh (ORCPT
+	with ESMTP id S932438Ab2EVWnA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 May 2012 18:42:37 -0400
-Date: Tue, 22 May 2012 15:42:35 -0700 (PDT)
-From: David Rientjes <rientjes@google.com>
-X-X-Sender: rientjes@chino.kir.corp.google.com
-To: "Du, ChangbinX" <changbinx.du@intel.com>
-cc: "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
-        Sergei Shtylyov <sshtylyov@mvista.com>,
-        "mina86@mina86.com" <mina86@mina86.com>,
-        "Fleming, Matt" <matt.fleming@intel.com>,
-        "balbi@ti.com" <balbi@ti.com>, "hpa@zytor.com" <hpa@zytor.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>
-Subject: Re: [PATCH v3] testusb: add path /dev/bus/usb to default search
- paths of usbfs
-In-Reply-To: <0C18FE92A7765D4EB9EE5D38D86A563A063A7C@SHSMSX101.ccr.corp.intel.com>
-Message-ID: <alpine.DEB.2.00.1205221542240.18325@chino.kir.corp.google.com>
-References: <0C18FE92A7765D4EB9EE5D38D86A563A063A7C@SHSMSX101.ccr.corp.intel.com>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+	Tue, 22 May 2012 18:43:00 -0400
+Date: Tue, 22 May 2012 15:42:55 -0700
+From: Tejun Heo <tejun@google.com>
+To: Kent Overstreet <koverstreet@google.com>
+Cc: linux-bcache@vger.kernel.org, linux-kernel@vger.kernel.org,
+        dm-devel@redhat.com, agk@redhat.com
+Subject: Re: [Bcache v13 14/16] bcache: Request, io and allocation code
+Message-ID: <20120522224255.GM14339@google.com>
+References: <cover.1336619038.git.koverstreet@google.com>
+ <9ea33658f2a71b3b9bd2ec10bee959bef146f23c.1336619038.git.koverstreet@google.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <9ea33658f2a71b3b9bd2ec10bee959bef146f23c.1336619038.git.koverstreet@google.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 22 May 2012, Du, ChangbinX wrote:
+On Wed, May 09, 2012 at 11:11:25PM -0400, Kent Overstreet wrote:
+> +int submit_bbio_split(struct bio *bio, struct cache_set *c,
+> +		      struct bkey *k, unsigned ptr)
+> +{
+> +	struct closure *cl = bio->bi_private;
+> +	struct bbio *b;
+> +	struct bio *n;
+> +	unsigned sectors_done = 0;
+> +
+> +	closure_get(cl);
+> +
+> +	bio->bi_sector	= PTR_OFFSET(k, ptr);
+> +	bio->bi_bdev	= PTR_CACHE(c, k, ptr)->bdev;
+> +
+> +	do {
+> +		n = bio_split_get(bio, bio_max_sectors(bio), c);
+> +		if (!n) {
+> +			closure_put(cl);
+> +			return -ENOMEM;
+> +		}
+> +
+> +		b = container_of(n, struct bbio, bio);
+> +
+> +		bkey_copy_single_ptr(&b->key, k, ptr);
+> +		SET_KEY_SIZE(&b->key, KEY_SIZE(k) - sectors_done);
+> +		SET_PTR_OFFSET(&b->key, 0, PTR_OFFSET(k, ptr) + sectors_done);
+> +
+> +		b->submit_time_us = local_clock_us();
+> +		generic_make_request(n);
+> +	} while (n != bio);
+> +
+> +	return 0;
+> +}
 
-> As real device-nodes managed by udev whose nodes lived in /dev/bus/usb
-> are mostly used today, let testusb tool use that directory as one default
-> path make tool be more convenient to use.
-> 
-> Signed-off-by: Du Changbin <changbinx.du@intel.com>
+Hmmm... where is @sectors_done updated?
 
-Acked-by: David Rientjes <rientjes@google.com>
+Thanks.
+
+-- 
+tejun
