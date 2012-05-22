@@ -1,118 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755332Ab2EVQgG (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 May 2012 12:36:06 -0400
-Received: from ns1.pc-advies.be ([83.149.101.17]:52780 "EHLO
-	spo001.leaseweb.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1753288Ab2EVQgE (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 May 2012 12:36:04 -0400
-Date: Tue, 22 May 2012 18:35:59 +0200
-From: Wim Van Sebroeck <wim@iguana.be>
-To: Guenter Roeck <guenter@roeck-us.net>
-Cc: Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Aaron Sierra <asierra@xes-inc.com>,
-        Samuel Ortiz <sameo@linux.intel.com>,
-        Randy Dunlap <rdunlap@xenotime.net>, linux-watchdog@vger.kernel.org,
-        Jean Delvare <khali@linux-fr.org>
-Subject: Re: linux-next: manual merge of the watchdog tree with the mfd tree
-Message-ID: <20120522163559.GD3074@spo001.leaseweb.com>
-References: <20120518152348.1e5070cdc16cfdf00682546d@canb.auug.org.au> <20120518083234.GW3074@spo001.leaseweb.com> <6.2.5.6.2.20120518181141.028c8090@roeck-us.net>
-Mime-Version: 1.0
+	id S1755550Ab2EVQhi (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 May 2012 12:37:38 -0400
+Received: from mga09.intel.com ([134.134.136.24]:31311 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751455Ab2EVQhg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 May 2012 12:37:36 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.67,352,1309762800"; 
+   d="scan'208";a="143382469"
+Date: Tue, 22 May 2012 09:37:35 -0700
+From: Andi Kleen <ak@linux.intel.com>
+To: Alex Shi <alex.shi@intel.com>
+Cc: "H. Peter Anvin" <hpa@zytor.com>, cl@linux-foundation.org,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>, mgorman@suse.de,
+        Andrew Morton <akpm@linux-foundation.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        linux-mm@vger.kernel.org
+Subject: Re: unnecessary tlb flush in mprotect
+Message-ID: <20120522163735.GB1906@tassilo.jf.intel.com>
+References: <4FB9FD1D.6000001@intel.com>
+ <4FBAE71F.5000801@intel.com>
+MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <6.2.5.6.2.20120518181141.028c8090@roeck-us.net>
-User-Agent: Mutt/1.4.1i
+In-Reply-To: <4FBAE71F.5000801@intel.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Guenter,
+On Tue, May 22, 2012 at 09:08:47AM +0800, Alex Shi wrote:
+> On 05/21/2012 04:30 PM, Alex Shi wrote:
+> 
+> > when mprotect just change prots of non-present pages, current mprotect
+> > still do the tlb flush in check_protection().
+> > but according to 4.10.2.3 Intel SDM V3A (
+> > www.intel.com/Assets/ja_JP/PDF/manual/253668.pdf ) at that time, TLB has
+> > no this lines for this page. So, tlb flush is just waste time. (for cr3
+> > rewrite, flush all tlb, or invlpg, like a 'nop' in intel cpu)
+> > 
+> > Do we need to add the pte_present similar check here to prevent the
+> > unnecessary tlb flushing? I mean, are there real case in word, User like
+> > to change page prots before assign a physical page to it?
+> > 
+> 
+> 
+> Any comments from linux-mm emailing list?
 
-> >> Today's linux-next merge of the watchdog tree got a conflict in
-> >> drivers/watchdog/iTCO_wdt.c between commit 887c8ec7219f ("watchdog:
-> >> Convert iTCO_wdt driver to mfd model") from the  tree and commit
-> >> c3614aa19d3e ("watchdog: iTCO_wdt.c: fix printk format warnings") from
-> >> the watchdog tree.
-> >>
-> >> I fixed it up (see below) and can carry the fix as necessary.
-> >
-> >Thanks for fixing this up.
-> >
-> >But I'm a bit surprised: I wasn't Cc'ed about this patch to Convert
-> >the iTCO_wdt driver to the mfd model...
-> Oh my. Kind of embarrassing to forget one of the maintainers in all 
-> the discussions which tree this patch set should go through. Even 
-> though I didn't much of the code, my sign-off is there, and I should 
-> have made sure that you are on the Cc: list. Sorry for that, and I 
-> owe you a beer or two if we ever meet in person.
+I would be careful with TLB optimizations if it's not a clear performance
+wins. A lot of these interactions are tricky and it's very easy to break
+things in subtle and hard to debug ways.
 
-The maintainer and the writer of the driver: that's at least two beers indeed :-).
-
-> Hope you are ok with the changes - the patch set already missed the 
-> last commit window because of the which-tree-to-use issue, and it 
-> would be sad to miss another one. And Jean is really waiting for it 
-> to go in to be able to push some related patches which need the gpio driver.
-
-I'm OK with it (although this means I can't go ahead yet with a watchdog core
-conversion of the iTCO_wdt driver), except for the comile warning that the patch
-introduces (as reported by Randy).
-
-The original driver printed addresses as %04lx, this new driver uses %04llx but
-doesn't typecast the values correctly. See message from Randy below.
-Wether or not %04lx or %04llx is the best to use is off-course another question.
-I don't think we have a clear standard yet, but I'm fine with either one of them.
-
-Kind regards,
-Wim.
----
-Date: Mon, 14 May 2012 13:15:20 -0700
-From: Randy Dunlap <rdunlap@xenotime.net>
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-CC: linux-next@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>, 
- Wim Van Sebroeck <wim@iguana.be>,
- linux-watchdog@vger.kernel.org
-Subject: [PATCH -next] wdt: fix iTCO printk format warnings
-
-From: Randy Dunlap <rdunlap@xenotime.net>
-
-Fix printk format warnings:
-
-drivers/watchdog/iTCO_wdt.c:577:3: warning: format '%04llx' expects type 'long long unsigned int', but argument 2 has type 'resource_size_t'
-drivers/watchdog/iTCO_wdt.c:594:3: warning: format '%04llx' expects type 'long long unsigned int', but argument 2 has type 'resource_size_t'
-drivers/watchdog/iTCO_wdt.c:600:2: warning: format '%04llx' expects type 'long long unsigned int', but argument 4 has type 'resource_size_t'
-
-Signed-off-by: Randy Dunlap <rdunlap@xenotime.net>
-Cc:	Wim Van Sebroeck <wim@iguana.be>
----
- drivers/watchdog/iTCO_wdt.c |    6 +++---
- 1 file changed, 3 insertions(+), 3 deletions(-)
-
---- linux-next-20120514.orig/drivers/watchdog/iTCO_wdt.c
-+++ linux-next-20120514/drivers/watchdog/iTCO_wdt.c
-@@ -575,7 +575,7 @@ static int __devinit iTCO_wdt_probe(stru
- 	if (!request_region(iTCO_wdt_private.smi_res->start,
- 			resource_size(iTCO_wdt_private.smi_res), dev->name)) {
- 		pr_err("I/O address 0x%04llx already in use, device disabled\n",
--		       SMI_EN);
-+		       (u64)SMI_EN);
- 		ret = -EBUSY;
- 		goto unmap_gcs;
- 	}
-@@ -592,13 +592,13 @@ static int __devinit iTCO_wdt_probe(stru
- 	if (!request_region(iTCO_wdt_private.tco_res->start,
- 			resource_size(iTCO_wdt_private.tco_res), dev->name)) {
- 		pr_err("I/O address 0x%04llx already in use, device disabled\n",
--		       TCOBASE);
-+		       (u64)TCOBASE);
- 		ret = -EBUSY;
- 		goto unreg_smi;
- 	}
- 
- 	pr_info("Found a %s TCO device (Version=%d, TCOBASE=0x%04llx)\n",
--		ich_info->name, ich_info->iTCO_version, TCOBASE);
-+		ich_info->name, ich_info->iTCO_version, (u64)TCOBASE);
- 
- 	/* Clear out the (probably old) status */
- 	outw(0x0008, TCO1_STS);	/* Clear the Time Out Status bit */
-
+-Andi
+-- 
+ak@linux.intel.com -- Speaking for myself only
