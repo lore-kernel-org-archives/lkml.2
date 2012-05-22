@@ -1,62 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932459Ab2EVULr (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 May 2012 16:11:47 -0400
-Received: from a.ns.miles-group.at ([95.130.255.143]:47834 "EHLO radon.swed.at"
+	id S932452Ab2EVURr (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 May 2012 16:17:47 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:39864 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1760372Ab2EVULq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 May 2012 16:11:46 -0400
+	id S1753440Ab2EVURp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 May 2012 16:17:45 -0400
+Date: Tue, 22 May 2012 16:17:42 -0400
+From: David Teigland <teigland@redhat.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org, swhiteho@redhat.com
+Subject: [GIT PULL] dlm updates for 3.5
+Message-ID: <20120522201742.GD15059@redhat.com>
 MIME-Version: 1.0
-Content-Type: text/plain;
- charset=UTF-8
-Content-Transfer-Encoding: 7bit
-Date: Tue, 22 May 2012 22:11:43 +0200
-From: Richard Weinberger <richard@nod.at>
-To: Shmulik Ladkani <shmulik.ladkani@gmail.com>
-Cc: <linux-mtd@lists.infradead.org>, <dedekind1@gmail.com>,
-        <linux-kernel@vger.kernel.org>, <Heinz.Egger@linutronix.de>,
-        <tim.bird@am.sony.com>, <tglx@linutronix.de>
-Subject: Re: [PATCH] [RFC] UBI: Implement Fastmap support
-In-Reply-To: <20120522211809.53bd6444@halley>
-References: <1337608916-49771-1-git-send-email-richard@nod.at>
- <1337608916-49771-2-git-send-email-richard@nod.at>
- <20120522180119.2c2a10a8@pixies.home.jungo.com> <4FBBC4EE.4040802@nod.at>
- <20120522211809.53bd6444@halley>
-Message-ID: <b3d5919d0b35bb559b7dc115bc9e2720@radon2.swed.at>
-User-Agent: RoundCube Webmail
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.20 (2009-12-10)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 22 May 2012 21:18:09 +0300, Shmulik Ladkani
-<shmulik.ladkani@gmail.com> wrote:
-> Hi Richard,
-> 
-> On Tue, 22 May 2012 18:55:10 +0200 Richard Weinberger <richard@nod.at> wrote:
->> >> diff --git a/drivers/mtd/ubi/build.c b/drivers/mtd/ubi/build.c
->> >> index 2c5ed5c..ef5d7b7 100644
->> >> --- a/drivers/mtd/ubi/build.c
->> >> +++ b/drivers/mtd/ubi/build.c
->> >> @@ -144,6 +144,16 @@ int ubi_volume_notify(struct ubi_device *ubi, struct ubi_volume *vol, int ntype)
->> >>
->> >>   	ubi_do_get_device_info(ubi,&nt.di);
->> >>   	ubi_do_get_volume_info(ubi, vol,&nt.vi);
->> >> +
->> >> +	switch (ntype) {
->> >> +	case UBI_VOLUME_ADDED:
->> >> +	case UBI_VOLUME_REMOVED:
->> >> +	case UBI_VOLUME_RESIZED:
->> >> +	case UBI_VOLUME_RENAMED:
->> >> +		if (ubi_update_fastmap(ubi))
->> >> +			ubi_err("Unable to update fastmap!");
->> >
->> > In the error case, what are the consequences leaving the older on-flash
->> > fastmap? Shouldn't it be invalidated?
->>
+Hi Linus,
 
-After thinking a bit more about this case I think the best we can to is
-switching to read-only mode if ubi_update_fastmap()
-fails.
+Please pull dlm updates from tag:
+
+git://git.kernel.org/pub/scm/linux/kernel/git/teigland/linux-dlm.git dlm-3.5
+
+This set includes some minor fixes and improvements.
+The one large patch addresses the special "nodir" mode,
+which has been a long neglected proof of concept, but
+with these fixes seems to be quite usable.  It allows
+the resource master to be assigned statically instead of
+dynamically, which can improve performance if there is
+little locality and most resources are shared.
 
 Thanks,
-//richard
+Dave
+
+Dan Carpenter (1):
+      dlm: NULL dereference on failure in kmem_cache_create()
+
+David Teigland (7):
+      dlm: prevent connections during shutdown
+      dlm: fix waiter recovery
+      dlm: limit rcom debug messages
+      dlm: avoid unnecessary search in search_rsb
+      dlm: improve error and debug messages
+      dlm: fixes for nodir mode
+      gfs2: fix recovery during unmount
+
+ fs/dlm/ast.c          |    3 +-
+ fs/dlm/dlm_internal.h |   16 +-
+ fs/dlm/lock.c         |  541 +++++++++++++++++++++++++++++++++----------------
+ fs/dlm/lock.h         |    7 +-
+ fs/dlm/lockspace.c    |   20 ++
+ fs/dlm/lowcomms.c     |   28 ++-
+ fs/dlm/memory.c       |    8 +-
+ fs/dlm/rcom.c         |   61 +++---
+ fs/dlm/recover.c      |   73 ++++---
+ fs/dlm/recoverd.c     |   15 +-
+ fs/dlm/requestqueue.c |   43 ++--
+ fs/gfs2/incore.h      |    1 -
+ fs/gfs2/lock_dlm.c    |    2 -
+ fs/gfs2/ops_fstype.c  |    7 +-
+ fs/gfs2/sys.c         |   10 +-
+ include/linux/dlm.h   |    1 -
+ 16 files changed, 538 insertions(+), 298 deletions(-)
