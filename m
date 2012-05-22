@@ -1,101 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759602Ab2EVA4d (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 May 2012 20:56:33 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:36762 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751045Ab2EVA43 (ORCPT
+	id S932729Ab2EVBAm (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 May 2012 21:00:42 -0400
+Received: from mail-qc0-f174.google.com ([209.85.216.174]:36846 "EHLO
+	mail-qc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932093Ab2EVBAl convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 May 2012 20:56:29 -0400
-From: Marc Reilly <marc@cpdesign.com.au>
-Reply-To: marc@cpdesign.com.au
-Organization: Creative Product Design
-To: Fabio Estevam <festevam@gmail.com>
-Subject: Re: mc13xxx-core: kernel hangs after 'regmap_read'
-Date: Tue, 22 May 2012 10:53:21 +1000
-User-Agent: KMail/1.13.6 (Linux/2.6.37.6-0.11-desktop; KDE/4.6.0; x86_64; ; )
-Cc: Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Samuel Ortiz <sameo@linux.intel.com>,
-        Sascha Hauer <kernel@pengutronix.de>,
-        Philippe =?utf-8?q?R=C3=A9tornaz?= <philippe.retornaz@epfl.ch>,
-        "linux-kernel" <linux-kernel@vger.kernel.org>
-References: <CAOMZO5A-05jTYpEEPfnJvWpby1YJ1M7=KPn=zahbQrQOgbjR4g@mail.gmail.com>
-In-Reply-To: <CAOMZO5A-05jTYpEEPfnJvWpby1YJ1M7=KPn=zahbQrQOgbjR4g@mail.gmail.com>
+	Mon, 21 May 2012 21:00:41 -0400
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="utf-8"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201205221053.21792.marc@cpdesign.com.au>
+In-Reply-To: <4FBA76C6.9030201@wwwdotorg.org>
+References: <1337346755-8761-1-git-send-email-b29396@freescale.com>
+	<1337346755-8761-2-git-send-email-b29396@freescale.com>
+	<4FB6AB9A.4080006@wwwdotorg.org>
+	<20120521123929.GA27055@shlinux2.ap.freescale.net>
+	<4FBA76C6.9030201@wwwdotorg.org>
+Date: Tue, 22 May 2012 09:00:40 +0800
+Message-ID: <CAA+hA=RzX9EsFbPWqgoAm-4-Rv-0tQ1s2rQ0+DtSE3Mxu36ShA@mail.gmail.com>
+Subject: Re: [PATCH RFC v2 2/2] pinctrl: add pinctrl gpio binding support
+From: Dong Aisheng <dongas86@gmail.com>
+To: Stephen Warren <swarren@wwwdotorg.org>
+Cc: Dong Aisheng <aisheng.dong@freescale.com>,
+        Dong Aisheng-B29396 <B29396@freescale.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linus.walleij@stericsson.com" <linus.walleij@stericsson.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Fabio,
+On Tue, May 22, 2012 at 1:09 AM, Stephen Warren <swarren@wwwdotorg.org> wrote:
+> On 05/21/2012 06:39 AM, Dong Aisheng wrote:
+>> On Sat, May 19, 2012 at 04:05:46AM +0800, Stephen Warren wrote:
+>>> On 05/18/2012 07:12 AM, Dong Aisheng wrote:
+>>>> The gpio ranges standard dt binding format is
+>>>> <&gpio $gpio_offset $pin_offset $npin>
+>>>>
+>>>> The core will parse and register the pinctrl gpio ranges
+>>>> from device tree.
+> ...
+>>>> +   pinctrl_add_gpio_ranges(pctldev, ranges, nranges);
+>>>
+>>> I think we should also store ranges somewhere separate in pctldev ...
+>>
+>> Hmm, i'm not quite understand,
+>> What do you mean separate in pctldev?
+>> We already save the ranges in pctldev's gpio_ranges list.
+>>
+>>>> +void pinctrl_dt_remove_gpio_ranges(struct pinctrl_dev *pctldev,
+>>>> +                              struct pinctrl_gpio_range *ranges,
+>>>> +                              unsigned nranges)
+>>>
+>>> ... so that this function doesn't need ranges/nranges passed to it; it
+>>> can just get them out of pctldec.
+>>
+>> For remove ranges/nranges, maybe we can use list_for_each_entry_safe
+>> plus list_del like:
+>> list_for_each_entry_safe(range, tmp, &pctldev->gpio_ranges, node)
+>>     list_del(range->node);
+>
+> If some GPIO ranges are added using pinctrl_dt_add_gpio_ranges() and
+> some are added using pinctrl_add_gpio_range(), how will
+> pinctrl_dt_remove_gpio_ranges() know which ones to remove, unless
+>
+Yes, you're right.
 
-On Tuesday, May 22, 2012 02:06:55 AM Fabio Estevam wrote:
-> Hi Marc,
-> 
-> I am running linux-next 3.4.0-next-20120521 on a mx31pdk board that
-> has a mc13783 PMIC connected to SPI.
-> 
-> I am getting a kernel hang after 'regmap_read' inside mc13xxx_reg_read
-> function.
-> 
-> Does it work fine for you on your mx35 board? Am I missing any recent
-> patch?
+> a) The list of ranges is passed to pinctrl_dt_remove_gpio_ranges() as
+> above (but then where does the caller find the list to pass in)
+>
+> or:
+>
+> b) The list of ranges added by pinctrl_dt_add_gpio_ranges() is stored
+> separately from the overall gpio_ranges list, so the code knows which
+> were added by that API.
+>
+> Perhaps the simplest way to implement this is to add a new Boolean field
+> to struct gpio_range that says whether pinctrl_dt_add_gpio_ranges()
+> added it, and set it to true/false in  pinctrl_dt_add_gpio_ranges() and
+>  pinctrl_add_gpio_ranges().
+>
+Maybe we should not allow people to use pinctrl_add_gpio_ranges for dt
+and i can not see it helps too much.
+Then we do not have two case.
 
-I tested linux-next/next-20120521, no extra patches. I got build errors for 
-something to do with usb udc, and start-up panic for the nand driver. 
-Disabling both of these got me to a login. Then:
+>> I just follow the original way here and if change we may need another
+>> patch.
+>>
+>>> Or better yet, what if pinctrl_unregister automatically removed any
+>>> ranges registered by pinctrl_dt_add_gpio_ranges, so this function
+>>> doesn't even need to exist?
+>>
+>> Yes, it seems this can also work for non-dt registered gpio ranges added by
+>> pinctrl_add_gpio_ranges, e.g, remove need pinctrl_remove_gpio_range too,
+>> It seems it should be in a separate patch which is not related to gpio ranges
+>> binding.
+>>
+>> Do you want me to work on that patch first for this series to rebase or
+>> we can do it later?
+>
+> Maybe we should just delete the functions pinctrl_remove_gpio_range()
+> and pinctrl_dt_remove_gpio_range() completely. They only remove the gpio
+> range from the list in the pctldev, and since the pctldev is being
+> unregistered anyway, that doesn't seem very useful. The ranges don't
+> need to be free()'d since pinctrl_dt_add_gpio_ranges() allocates them
+> using devm_kzalloc() anyway, and in the non-DT case, if they need
+> free-ing, the driver already had to do that itself.
+>
+Yes, i agree with this one.
+I will re-order the patch series to remove pinctrl_remove_gpio_range first.
 
-mount -t debugfs none /sys/kernel/debug
-cat /sys/kernel/debug/regmap/0-0008/registers
-
-00: 004cc0
-01: ffffff
-02: 185cc0
-03: 000005
-04: ffffff
-05: 00401c
-06: 000200
-07: 0045d0
-08: 000000
-09: 000005
-0a: 00147a
-0b: 000000
-0c: 000000
-0d: 0b0040
-0e: 000000
-0f: 400032
-10: 000000
-11: 000000
-12: 000001
-13: 000000
-14: 013326
-15: 01ffff
-...
-
-Which looks correct.
-
-
-> 
-> My understanding is that you have only tested i2c connection with this
-> PMIC. Is this correct?
-That's correct. I don't have any SPI connected hardware to test with. Shawn 
-tested SPI operation for an earlier version of the patch series, but that was 
-before the regmap changes.
-
-
-> Any ideas on how to solve this issue is appreciated.
-My first suspicion is with the regmap register format of the mc13xxx for SPI. 
-It was a new format which introduced a padding bit. I wonder if Mark Brown can 
-comment on whether any other devices are using it successfully. (Sorry I can't 
-offer more insights there).
-
-Does your crash occur during mc13xxx_spi_probe? does mc13xxx_common_init() get 
-called?
-
-
-Cheers,
-Marc
-
+Regards
+Dong Aisheng
