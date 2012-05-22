@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755286Ab2EVHhD (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 May 2012 03:37:03 -0400
-Received: from mailhub.sw.ru ([195.214.232.25]:39820 "EHLO relay.sw.ru"
+	id S1754970Ab2EVHhM (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 May 2012 03:37:12 -0400
+Received: from mailhub.sw.ru ([195.214.232.25]:39580 "EHLO relay.sw.ru"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754751Ab2EVHg7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 May 2012 03:36:59 -0400
-Subject: [PATCH v2 09/12] NFS; callback per-net usage counting introduced
+	id S1754751Ab2EVHhG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 May 2012 03:37:06 -0400
+Subject: [PATCH v2 10/12] NFS: add debug messages to callback down function
 To: bfields@fieldses.org
 From: Stanislav Kinsbursky <skinsbursky@parallels.com>
 Cc: linux-nfs@vger.kernel.org, Trond.Myklebust@netapp.com,
         linux-kernel@vger.kernel.org, devel@openvz.org
-Date: Tue, 22 May 2012 11:36:54 +0400
-Message-ID: <20120522073654.20602.38599.stgit@localhost.localdomain>
+Date: Tue, 22 May 2012 11:37:02 +0400
+Message-ID: <20120522073701.20602.40146.stgit@localhost.localdomain>
 In-Reply-To: <20120522073320.20602.87130.stgit@localhost.localdomain>
 References: <20120522073320.20602.87130.stgit@localhost.localdomain>
 User-Agent: StGit/0.16
@@ -23,76 +23,23 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch also introduces refcount-aware nfs_callback_down_net() wrapper for
-svc_shutdown_net().
-
 Signed-off-by: Stanislav Kinsbursky <skinsbursky@parallels.com>
 ---
- fs/nfs/callback.c |   19 +++++++++++++++++--
- fs/nfs/netns.h    |    1 +
- 2 files changed, 18 insertions(+), 2 deletions(-)
+ fs/nfs/callback.c |    2 ++
+ 1 files changed, 2 insertions(+), 0 deletions(-)
 
 diff --git a/fs/nfs/callback.c b/fs/nfs/callback.c
-index d25085f..dbedd7e 100644
+index dbedd7e..2db796a 100644
 --- a/fs/nfs/callback.c
 +++ b/fs/nfs/callback.c
-@@ -285,10 +285,25 @@ static int nfs_callback_start_svc(int minorversion, struct rpc_xprt *xprt,
- 	return 0;
- }
- 
-+static void nfs_callback_down_net(u32 minorversion, struct svc_serv *serv, struct net *net)
-+{
-+	struct nfs_net *nn = net_generic(net, nfs_net_id);
-+
-+	if (--nn->cb_users[minorversion])
-+		return;
-+
-+	dprintk("NFS: destroy per-net callback data; net=%p\n", net);
-+	svc_shutdown_net(serv, net);
-+}
-+
- static int nfs_callback_up_net(int minorversion, struct svc_serv *serv, struct net *net)
- {
-+	struct nfs_net *nn = net_generic(net, nfs_net_id);
- 	int ret;
- 
-+	if (nn->cb_users[minorversion]++)
-+		return 0;
-+
- 	dprintk("NFS: create per-net callback data; net=%p\n", net);
- 
- 	ret = svc_bind(serv, net);
-@@ -391,7 +406,7 @@ err_create:
- 	return ret;
- 
- err_start:
--	svc_shutdown_net(serv, net);
-+	nfs_callback_down_net(minorversion, serv, net);
- 	dprintk("NFS: Couldn't create server thread; err = %d\n", ret);
- 	goto err_net;
- }
-@@ -404,10 +419,10 @@ void nfs_callback_down(int minorversion, struct net *net)
- 	struct nfs_callback_data *cb_info = &nfs_callback_info[minorversion];
- 
- 	mutex_lock(&nfs_callback_mutex);
-+	nfs_callback_down_net(minorversion, cb_info->serv, net);
+@@ -423,7 +423,9 @@ void nfs_callback_down(int minorversion, struct net *net)
  	cb_info->users--;
  	if (cb_info->users == 0 && cb_info->task != NULL) {
  		kthread_stop(cb_info->task);
--		svc_shutdown_net(cb_info->serv, net);
++		dprintk("nfs_callback_down: service stopped\n");
  		svc_exit_thread(cb_info->rqst);
++		dprintk("nfs_callback_down: service destroyed\n");
  		cb_info->serv = NULL;
  		cb_info->rqst = NULL;
-diff --git a/fs/nfs/netns.h b/fs/nfs/netns.h
-index bd72a55..db3e495 100644
---- a/fs/nfs/netns.h
-+++ b/fs/nfs/netns.h
-@@ -20,6 +20,7 @@ struct nfs_net {
- 	struct idr cb_ident_idr; /* Protected by nfs_client_lock */
- 	unsigned short nfs_callback_tcpport;
- 	unsigned short nfs_callback_tcpport6;
-+	int cb_users[NFS4_MAX_MINOR_VERSION + 1];
- #endif
- 	spinlock_t nfs_client_lock;
- };
+ 		cb_info->task = NULL;
 
