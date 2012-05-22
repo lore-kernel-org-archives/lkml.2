@@ -1,203 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759756Ab2EVDfq (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 May 2012 23:35:46 -0400
-Received: from mailout3.samsung.com ([203.254.224.33]:65372 "EHLO
-	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751749Ab2EVDfo (ORCPT
+	id S1759787Ab2EVDfx (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 May 2012 23:35:53 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:53890 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759759Ab2EVDfu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 May 2012 23:35:44 -0400
-X-AuditID: cbfee61a-b7fe76d0000023f5-20-4fbb098fcecc
-From: Seungwon Jeon <tgih.jun@samsung.com>
-To: "'Subhash Jadavani'" <subhashj@codeaurora.org>
-Cc: linux-mmc@vger.kernel.org, "'Chris Ball'" <cjb@laptop.org>,
-        merez@codeaurora.org, linux-kernel@vger.kernel.org
-References: <009d01cd3411$0febc350$2fc349f0$%jun@samsung.com>
- <4FBA273B.6010106@codeaurora.org>
-In-reply-to: <4FBA273B.6010106@codeaurora.org>
-Subject: RE: [PATCH v6 1/3] mmc: core: Add packed command feature of eMMC4.5
-Date: Tue, 22 May 2012 12:35:43 +0900
-Message-id: <006501cd37cb$f7894670$e69bd350$%jun@samsung.com>
-MIME-version: 1.0
-Content-type: text/plain; charset=utf-8
-Content-transfer-encoding: 7bit
-X-Mailer: Microsoft Office Outlook 12.0
-Thread-index: Ac03RTSyiKwgDH0pSOODJtGjl+rf/QAZA+Zg
-Content-language: ko
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrLLMWRmVeSWpSXmKPExsVy+t9jAd1+zt3+Bn2XVCwu75rDZnHkfz+j
-	A5PH501yAYxRXDYpqTmZZalF+nYJXBlvPk5gLjhlVLG8t4+1gXGXehcjB4eEgIlE7yLJLkZO
-	IFNM4sK99WxdjFwcQgKLGCXatj9ihXD+MErsvTCdFaSKTUBL4u+bN8wgtoiAgcSJ+dfB4swC
-	RRKn/24EiwsJJEq0rdzJDrKAU0BPYtM2H5CwsICPxMyvK8HCLAKqEkevcIKEeQVsJe5PXcgI
-	YQtK/Jh8jwWkhFlAXWLKlFyI4fISm9e8ZYa4WF3i0V9diP1GEpMXPmWEKBGR2PfiHeMERqFZ
-	SAbNQhg0C8mgWUg6FjCyrGIUTS1ILihOSs811CtOzC0uzUvXS87P3cQIDuRnUjsYVzZYHGIU
-	4GBU4uHtYN7tL8SaWFZcmXuIUYKDWUmEd1PbLn8h3pTEyqrUovz4otKc1OJDjNIcLErivHaL
-	d/gLCaQnlqRmp6YWpBbBZJk4OKUaGBl14l+I+P6RM/s2g2vFYdbgViEvVpb5PyJebF2zs/eb
-	Yfwqmd+TlmcFsL8MdNNpWWXcvsSB23nT9/K/r8oOf49jT9jnGeGqd2+S55fKgBg3le/FUlH/
-	ZL5ZJJzWu5y7eq68cfnVRwr/j3xetvJH3f2ESU9+BTrd23CD5/fXX9FFRT/tZvOaCSuxFGck
-	GmoxFxUnAgCR11BdYAIAAA==
-X-TM-AS-MML: No
+	Mon, 21 May 2012 23:35:50 -0400
+Message-ID: <4FBB0991.9070307@gmail.com>
+Date: Mon, 21 May 2012 21:35:45 -0600
+From: David Ahern <dsahern@gmail.com>
+User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.7; rv:12.0) Gecko/20120428 Thunderbird/12.0.1
+MIME-Version: 1.0
+To: Jiri Olsa <jolsa@redhat.com>
+CC: acme@redhat.com, a.p.zijlstra@chello.nl, mingo@elte.hu, paulus@samba.org,
+        cjashfor@linux.vnet.ibm.com, fweisbec@gmail.com,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 4/7] perf, tool: Handle endianity swap on sample_id_all
+ header data
+References: <1337151548-2396-1-git-send-email-jolsa@redhat.com> <1337151548-2396-5-git-send-email-jolsa@redhat.com>
+In-Reply-To: <1337151548-2396-5-git-send-email-jolsa@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Subhash Jadavani <subhashj@codeaurora.org> wrote:
-> Hi Seungwon,
-> 
-> Sorry for commenting on this late. I have one comment below. Please
-> check if it makes sense or not.
-> 
-> On 5/17/2012 3:10 PM, Seungwon Jeon wrote:
-> > This patch adds packed command feature of eMMC4.5.
-> > The maximum number for packing read(or write) is offered
-> > and exception event relevant to packed command which is
-> > used for error handling is enabled. If host wants to use
-> > this feature, MMC_CAP2_PACKED_CMD should be set.
-> >
-> > Signed-off-by: Seungwon Jeon<tgih.jun@samsung.com>
-> > ---
-> >   drivers/mmc/core/mmc.c   |   24 ++++++++++++++++++++++++
-> >   include/linux/mmc/card.h |    3 +++
-> >   include/linux/mmc/host.h |    4 ++++
-> >   include/linux/mmc/mmc.h  |   15 +++++++++++++++
-> >   4 files changed, 46 insertions(+), 0 deletions(-)
-> >
-> > diff --git a/drivers/mmc/core/mmc.c b/drivers/mmc/core/mmc.c
-> > index 2f0e11c..8310ce8 100644
-> > --- a/drivers/mmc/core/mmc.c
-> > +++ b/drivers/mmc/core/mmc.c
-> > @@ -516,6 +516,11 @@ static int mmc_read_ext_csd(struct mmc_card *card, u8 *ext_csd)
-> >   		} else {
-> >   			card->ext_csd.data_tag_unit_size = 0;
-> >   		}
-> > +
-> > +		card->ext_csd.max_packed_writes =
-> > +			ext_csd[EXT_CSD_MAX_PACKED_WRITES];
-> > +		card->ext_csd.max_packed_reads =
-> > +			ext_csd[EXT_CSD_MAX_PACKED_READS];
-> >   	}
-> >
-> >   out:
-> > @@ -1244,6 +1249,25 @@ static int mmc_init_card(struct mmc_host *host, u32 ocr,
-> >   		}
-> >   	}
-> >
-> > +	if ((host->caps2&  MMC_CAP2_PACKED_CMD)&&
-> > +			(card->ext_csd.max_packed_writes>  0)&&
-> > +			(card->ext_csd.max_packed_reads>  0)) {
-> why both max_packed_reads and max_packed_writes need to be non-zero to
-> enable the write packing event? What if write packing is not supported
-> by card and only read packing is supported? Shouldn't we still make the
-> read packing work?
-I have not experienced that case. But it seems like possible actually.
-Spec doesn't mention two should be satisfied for packed command.
-I'll apply your comment.
+On 5/16/12 12:59 AM, Jiri Olsa wrote:
+> Adding endianity swapping for event header attached via sample_id_all.
+>
+> Currently we dont do that and it's causing wrong data to be read when
+> running report on architecture with different endianity than the record.
+>
+> Note, running following to test perf endianity handling:
+> test 1)
+>    - origin system:
+>      # perf record -a -- sleep 10 (any perf record will do)
+>      # perf report>  report.origin
+>      # perf archive perf.data
+>
+>    - copy the perf.data, report.origin and perf.data.tar.bz2
+>      to a target system and run:
+>      # tar xjvf perf.data.tar.bz2 -C ~/.debug
+>      # perf report>  report.target
+>      # diff -u report.origin report.target
+>
+>    - the diff should produce no output
+>      (besides some white space stuff and possibly different
+>       date/TZ output)
+>
+> test 2)
+>    - origin system:
+>      # perf record -ag -fo /tmp/perf.data -- sleep 1
+>    - mount origin system root to the target system on /mnt/origin
+>    - target system:
+>      # perf script --symfs /mnt/origin -I -i /mnt/origin/tmp/perf.data \
+>       --kallsyms /mnt/origin/proc/kallsyms
+>    - complete perf.data header is displayed
+>
+> Signed-off-by: Jiri Olsa<jolsa@redhat.com>
 
-Best regards,
-Seungwon Jeon
-> 
-> I would suggest to change it like this:
->      if (  (host->caps2 & MMC_CAP2_PACKED_WR &&
-> card->ext_csd.max_packed_writes > 0) ||
->             (host->caps2 & MMC_CAP2_PACKED_RD &&
-> card->ext_csd.max_packed_reads > 0)
-> > +		err = mmc_switch(card, EXT_CSD_CMD_SET_NORMAL,
-> > +				EXT_CSD_EXP_EVENTS_CTRL,
-> > +				EXT_CSD_PACKED_EVENT_EN,
-> > +				card->ext_csd.generic_cmd6_time);
-> > +		if (err&&  err != -EBADMSG)
-> > +			goto free_card;
-> > +		if (err) {
-> > +			pr_warning("%s: Enabling packed event failed\n",
-> > +					mmc_hostname(card->host));
-> > +			card->ext_csd.packed_event_en = 0;
-> > +			err = 0;
-> > +		} else {
-> > +			card->ext_csd.packed_event_en = 1;
-> > +		}
-> > +	}
-> > +
-> >   	if (!oldcard)
-> >   		host->card = card;
-> >
-> > diff --git a/include/linux/mmc/card.h b/include/linux/mmc/card.h
-> > index d76513b..4aeb4e9 100644
-> > --- a/include/linux/mmc/card.h
-> > +++ b/include/linux/mmc/card.h
-> > @@ -53,6 +53,9 @@ struct mmc_ext_csd {
-> >   	u8			part_config;
-> >   	u8			cache_ctrl;
-> >   	u8			rst_n_function;
-> > +	u8			max_packed_writes;
-> > +	u8			max_packed_reads;
-> > +	u8			packed_event_en;
-> >   	unsigned int		part_time;		/* Units: ms */
-> >   	unsigned int		sa_timeout;		/* Units: 100ns */
-> >   	unsigned int		generic_cmd6_time;	/* Units: 10ms */
-> > diff --git a/include/linux/mmc/host.h b/include/linux/mmc/host.h
-> > index 0707d22..9d0d946 100644
-> > --- a/include/linux/mmc/host.h
-> > +++ b/include/linux/mmc/host.h
-> > @@ -238,6 +238,10 @@ struct mmc_host {
-> >   #define MMC_CAP2_BROKEN_VOLTAGE	(1<<  7)	/* Use the broken voltage */
-> >   #define MMC_CAP2_DETECT_ON_ERR	(1<<  8)	/* On I/O err check card removal */
-> >   #define MMC_CAP2_HC_ERASE_SZ	(1<<  9)	/* High-capacity erase size */
-> > +#define MMC_CAP2_PACKED_RD	(1<<  10)	/* Allow packed read */
-> > +#define MMC_CAP2_PACKED_WR	(1<<  11)	/* Allow packed write */
-> > +#define MMC_CAP2_PACKED_CMD	(MMC_CAP2_PACKED_RD | \
-> > +				 MMC_CAP2_PACKED_WR) /* Allow packed commands */
-> >
-> >   	mmc_pm_flag_t		pm_caps;	/* supported pm features */
-> >   	unsigned int        power_notify_type;
-> > diff --git a/include/linux/mmc/mmc.h b/include/linux/mmc/mmc.h
-> > index d425cab..254901a 100644
-> > --- a/include/linux/mmc/mmc.h
-> > +++ b/include/linux/mmc/mmc.h
-> > @@ -139,6 +139,7 @@ static inline bool mmc_op_multi(u32 opcode)
-> >   #define R1_CURRENT_STATE(x)	((x&  0x00001E00)>>  9)	/* sx, b (4 bits) */
-> >   #define R1_READY_FOR_DATA	(1<<  8)	/* sx, a */
-> >   #define R1_SWITCH_ERROR		(1<<  7)	/* sx, c */
-> > +#define R1_EXP_EVENT		(1<<  6)	/* sr, a */
-> >   #define R1_APP_CMD		(1<<  5)	/* sr, c */
-> >
-> >   #define R1_STATE_IDLE	0
-> > @@ -274,6 +275,10 @@ struct _mmc_csd {
-> >   #define EXT_CSD_FLUSH_CACHE		32      /* W */
-> >   #define EXT_CSD_CACHE_CTRL		33      /* R/W */
-> >   #define EXT_CSD_POWER_OFF_NOTIFICATION	34	/* R/W */
-> > +#define EXT_CSD_PACKED_FAILURE_INDEX	35	/* RO */
-> > +#define EXT_CSD_PACKED_CMD_STATUS	36	/* RO */
-> > +#define EXT_CSD_EXP_EVENTS_STATUS	54	/* RO, 2 bytes */
-> > +#define EXT_CSD_EXP_EVENTS_CTRL	56	/* R/W, 2 bytes */
-> >   #define EXT_CSD_DATA_SECTOR_SIZE	61	/* R */
-> >   #define EXT_CSD_GP_SIZE_MULT		143	/* R/W */
-> >   #define EXT_CSD_PARTITION_ATTRIBUTE	156	/* R/W */
-> > @@ -318,6 +323,8 @@ struct _mmc_csd {
-> >   #define EXT_CSD_CACHE_SIZE		249	/* RO, 4 bytes */
-> >   #define EXT_CSD_TAG_UNIT_SIZE		498	/* RO */
-> >   #define EXT_CSD_DATA_TAG_SUPPORT	499	/* RO */
-> > +#define EXT_CSD_MAX_PACKED_WRITES	500	/* RO */
-> > +#define EXT_CSD_MAX_PACKED_READS	501	/* RO */
-> >   #define EXT_CSD_HPI_FEATURES		503	/* RO */
-> >
-> >   /*
-> > @@ -377,6 +384,14 @@ struct _mmc_csd {
-> >   #define EXT_CSD_PWR_CL_4BIT_MASK	0x0F	/* 8 bit PWR CLS */
-> >   #define EXT_CSD_PWR_CL_8BIT_SHIFT	4
-> >   #define EXT_CSD_PWR_CL_4BIT_SHIFT	0
-> > +
-> > +#define EXT_CSD_PACKED_EVENT_EN	(1<<  3)
-> > +
-> > +#define EXT_CSD_PACKED_FAILURE	(1<<  3)
-> > +
-> > +#define EXT_CSD_PACKED_GENERIC_ERROR	(1<<  0)
-> > +#define EXT_CSD_PACKED_INDEXED_ERROR	(1<<  1)
-> > +
-> >   /*
-> >    * MMC_SWITCH access modes
-> >    */
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-mmc" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+The code change is fine, but the commit message could use some 
+additions: for example, what does the current output look like and how 
+does the patch change it.
 
+For example, perf is currently able to process 32-bit PPC samples on 
+32-bit and 64-bit x86 -- that's the use case I have and it works. So an 
+example of the affects of this patch for the commit log would be helpful.
+
+Code wise:
+Reviewed-by and Tested-by: David Ahern <dsahern@gmail.com>
