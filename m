@@ -1,85 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759975Ab2EVR0v (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 May 2012 13:26:51 -0400
-Received: from out03.mta.xmission.com ([166.70.13.233]:34821 "EHLO
-	out03.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751656Ab2EVR0s (ORCPT
+	id S1759987Ab2EVR1U (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 May 2012 13:27:20 -0400
+Received: from smtp103.prem.mail.ac4.yahoo.com ([76.13.13.42]:29952 "HELO
+	smtp103.prem.mail.ac4.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1753625Ab2EVR1S (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 May 2012 13:26:48 -0400
-From: ebiederm@xmission.com (Eric W. Biederman)
-To: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
-Cc: sfr@canb.auug.org.au, linux-kernel@vger.kernel.org
-References: <m11unyn70b.fsf@fess.ebiederm.org>
-	<m1likyz4mh.fsf@fess.ebiederm.org>
-	<201205211125.GAF21848.tOFSVFHJLOQFMO@I-love.SAKURA.ne.jp>
-Date: Tue, 22 May 2012 11:26:37 -0600
-In-Reply-To: <201205211125.GAF21848.tOFSVFHJLOQFMO@I-love.SAKURA.ne.jp>
-	(Tetsuo Handa's message of "Mon, 21 May 2012 11:25:01 +0900")
-Message-ID: <87ipfoxh2q.fsf@xmission.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.3 (gnu/linux)
+	Tue, 22 May 2012 13:27:18 -0400
+X-Yahoo-Newman-Property: ymail-3
+X-YMail-OSG: d.KVMSEVM1k1HwDYlu8mne.08ovWwP3iE9m5Z52qTSLwPz3
+ U1e1jT.4R7FVrKHuxuuO9c5lwwETf_3UkEv.2hnFWVwl7Bk.FT4haw0e0gIf
+ WzB9fnu1_1xmFjcfjdJfORk.YD8up6ejVn115GuCgtTsuOMLrOZR6hG9ZyAE
+ Wk.hIP6yXH7g.TzNcCdplmX7USznSEXw2DDCw8.Vmwf86ZUkIBo_C5pHrcZ9
+ R_FpOE_oFiD5tudmDICZhRJ8TObLmc1Wsk9G3TDt6dIExnG5bGTArRzbTNDR
+ NPRKegK3W1QG.0broEKQ7dgT7P1yptloyqCRNt1EOr9bV95sVTrBY.FB4yPF
+ 37zv6DuCX3Zd.O40SUQRypokZxMDRoy6NHoVWmw39xx8LTuhcp7pxNY65rK.
+ L
+X-Yahoo-SMTP: _Dag8S.swBC1p4FJKLCXbs8NQzyse1SYSgnAbY0-
+Date: Tue, 22 May 2012 12:27:14 -0500 (CDT)
+From: Christoph Lameter <cl@linux.com>
+X-X-Sender: cl@router.home
+To: Dave Jones <davej@redhat.com>
+cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Linux Kernel <linux-kernel@vger.kernel.org>, linux-mm@kvack.org,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Stephen Wilson <wilsons@start.ca>, Mel Gorman <mgorman@suse.de>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: 3.4-rc7 numa_policy slab poison.
+In-Reply-To: <20120521210959.GF12123@redhat.com>
+Message-ID: <alpine.DEB.2.00.1205221226330.21828@router.home>
+References: <20120517213120.GA12329@redhat.com> <20120518185851.GA5728@redhat.com> <20120521154709.GA8697@redhat.com> <CA+55aFyqMJ1X08kQwJ7snkYo6MxfVKqFJx7LXBkP_ug4LTCZ=Q@mail.gmail.com> <20120521200118.GA12123@redhat.com> <alpine.DEB.2.00.1205211510480.10940@router.home>
+ <20120521202904.GB12123@redhat.com> <alpine.DEB.2.00.1205211535050.10940@router.home> <20120521203838.GD12123@redhat.com> <alpine.DEB.2.00.1205211544340.10940@router.home> <20120521210959.GF12123@redhat.com>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-X-XM-SPF: eid=;;;mid=;;;hst=in01.mta.xmission.com;;;ip=208.38.5.102;;;frm=ebiederm@xmission.com;;;spf=neutral
-X-XM-AID: U2FsdGVkX18nMuMoJNElarZi4PsNK0daIVaHLcjVW6Q=
-X-SA-Exim-Connect-IP: 208.38.5.102
-X-SA-Exim-Mail-From: ebiederm@xmission.com
-X-Spam-Report: * -1.0 ALL_TRUSTED Passed through trusted hosts only via SMTP
-	*  0.0 TVD_RCVD_IP TVD_RCVD_IP
-	*  0.0 T_TM2_M_HEADER_IN_MSG BODY: T_TM2_M_HEADER_IN_MSG
-	*  0.8 BAYES_50 BODY: Bayes spam probability is 40 to 60%
-	*      [score: 0.4733]
-	* -0.0 DCC_CHECK_NEGATIVE Not listed in DCC
-	*      [sa04 1397; Body=1 Fuz1=1 Fuz2=1]
-	*  2.2 XMSubMetaSxObfu_03 Obfuscated Sexy Noun-People
-	*  1.6 XMSubMetaSx_00 1+ Sexy Words
-X-Spam-DCC: XMission; sa04 1397; Body=1 Fuz1=1 Fuz2=1 
-X-Spam-Combo: ***;Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
-X-Spam-Relay-Country: 
-Subject: Re: Please include user-namespace.git in linux-next
-X-Spam-Flag: No
-X-SA-Exim-Version: 4.2.1 (built Fri, 06 Aug 2010 16:31:04 -0600)
-X-SA-Exim-Scanned: Yes (on in01.mta.xmission.com)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp> writes:
+On Mon, 21 May 2012, Dave Jones wrote:
 
-> I think something is wrong with commit e1c972b6 "userns: Add negative depends
-> on entries to avoid building code that is userns unsafe".
+> ok, added a --nocolors option now. Re-pull.
+> I'll look at the dependancy problem next. Thanks for the feedback.
 
-My apologies for the delayed reply.
+--monochrome you mean?
 
-> With gcc 4.4.6 on CentOS 6.2, "make allnoconfig" where UIDGID_CONVERTED should
-> become y is showing
->
-> Symbol: USER_NS [=n]
-> Type  : boolean
-> Prompt: User namespace (EXPERIMENTAL)
->   Defined at init/Kconfig:880
->   Depends on: NAMESPACES [=y] && EXPERIMENTAL [=n] && UIDGID_CONVERTED [=n]
->   Location:
->     -> General setup
->       -> Namespaces support (NAMESPACES [=y])
->   Selects: UIDGID_STRICT_TYPE_CHECKS [=n]
->
-> .
-> I think this commit meant "!FOO" rather than "FOO = n",
-> othwewise there is no way for linux-next-20120518 to enable USER_NS.
-> ----------------------------------------
-> PATCH: user_ns: Fix wrong dependency in UIDGID_CONVERTED.
+-m works for a part of the output but then the color hits again.
 
-It turns out to be more subtle than that. The issue is that I have
-"depends on USB_DEVICEFS = n" and then USB_DEVICEFS was removed.
-
-"depends on FOO = n" is the only way I found that will succeed when in
-verifying that FOO is neither enabled nor modular.  "depends on !FOO"
-appears to succeed when FOO = m which is not at all what I want.
-
-After both trees are merged I will have to remove that
-"depends on USB_DEVICEFS = n" dependency.
-
-I can't see any possible way to do hand this before then.
-
-Eric
