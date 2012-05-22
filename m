@@ -1,76 +1,153 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753568Ab2EVHWm (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 May 2012 03:22:42 -0400
-Received: from bedivere.hansenpartnership.com ([66.63.167.143]:47612 "EHLO
-	bedivere.hansenpartnership.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752971Ab2EVHV4 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 May 2012 03:21:56 -0400
-Message-ID: <1337671311.16400.12.camel@dabdike.int.hansenpartnership.com>
-Subject: Re: [GIT PULL] First round of SCSI updates for the 3.4+ merge window
-From: James Bottomley <James.Bottomley@HansenPartnership.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        linux-scsi <linux-scsi@vger.kernel.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>
-Date: Tue, 22 May 2012 08:21:51 +0100
-In-Reply-To: <CA+55aFz__YrXffza1bEzwrPu+-ETswUcg3F31Gjrj3OPbRyTZw@mail.gmail.com>
-References: <1337599819.3042.7.camel@dabdike.int.hansenpartnership.com>
-	 <CA+55aFz__YrXffza1bEzwrPu+-ETswUcg3F31Gjrj3OPbRyTZw@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	id S1753331Ab2EVHWj (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 May 2012 03:22:39 -0400
+Received: from mga14.intel.com ([143.182.124.37]:49152 "EHLO mga14.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752889Ab2EVHVy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 May 2012 03:21:54 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
+   d="scan'208";a="146128131"
+From: Lin Ming <ming.m.lin@intel.com>
+To: Jens Axboe <axboe@kernel.dk>, Alan Stern <stern@rowland.harvard.edu>
+Cc: linux-kernel@vger.kernel.org, linux-pm@vger.kernel.org,
+        linux-scsi@vger.kernel.org
+Subject: [RFC PATCH v3 1/4] block: add a flag to identify PM request
+Date: Tue, 22 May 2012 15:21:29 +0800
+Message-Id: <1337671292-15583-2-git-send-email-ming.m.lin@intel.com>
+X-Mailer: git-send-email 1.7.2.5
+In-Reply-To: <1337671292-15583-1-git-send-email-ming.m.lin@intel.com>
+References: <1337671292-15583-1-git-send-email-ming.m.lin@intel.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2012-05-21 at 17:52 -0700, Linus Torvalds wrote:
-> On Mon, May 21, 2012 at 4:30 AM, James Bottomley
-> <James.Bottomley@hansenpartnership.com> wrote:
-> > The patch contains the usual assortment of driver updates (be2iscsi,
-> > bfa, bnx2i, fcoe, hpsa, isci, lpfc, megaraid, mpt2sas, pm8001, sg) plus
-> > an assortment of other changes and fixes.  Also new is the fact that the
-> > isci update is delivered as a git merge (with signed tag).
-> 
-> Interesting. For some reason the 'gpg --verify' phase says that your
-> key has expired. Yet when I look at the key itself, it says it is
-> valid until 2016. I don't quite know why gpg thinks the thing is
-> expired when verifying the message.
+Add a flag REQ_PM to identify the request is PM related.
+As an example, modify scsi code to use this flag.
 
-You probably need to do a gpg --refresh
+Signed-off-by: Lin Ming <ming.m.lin@intel.com>
+---
+ drivers/scsi/scsi_lib.c    |   25 ++++++++++++++++++++++---
+ drivers/scsi/sd.c          |    9 +++++----
+ include/linux/blk_types.h  |    2 ++
+ include/scsi/scsi_device.h |    4 ++++
+ 4 files changed, 33 insertions(+), 7 deletions(-)
 
-I use the subkeys method for signing, so I have my master key (which
-expires in 2016) in one of Greg's GPG devices, but I have signing and an
-encryption subkeys which are short lived (currently expire in Oct 2012).
-If you do a gpg --list-keys 'James Bottomley' you'll see this:
-
-pub   2048R/214854D6 2011-09-23 [expires: 2016-09-27]
-uid                  James Bottomley
-<James.Bottomley@HansenPartnership.com>
-uid                  James Bottomley <JBottomley@Parallels.com>
-uid                  James Bottomley <jejb@kernel.org>
-uid                  [jpeg image of size 5254]
-sub   2048R/0D77E313 2011-09-23 [expires: 2012-10-25]
-sub   2048R/2C5CBD0C 2011-10-27 [expires: 2012-10-25]
-
-The 2048R/2C5CBD0C is my signature one.  I have to update the expiry of
-them every six months, so you probably haven't done a refresh since I
-did the update.
-
-I do it this way so that I don't have to carry my master key with me
-when travelling (or if I do, I don't have to use it except for signing
-other keys, since the GPG devices are a bit cumbersome), so if something
-goes wrong, I can revoke my subkey and just generate a new one (without
-having to get everyone's signature again).
-
-> But everything else looks fine. Somebody with more gpg-fu than me
-> might be able to clarify what is going on..
-
-Hope the above helps (would rather not have had to become a gpg advanced
-user, but there you go ...)
-
-James
-
+diff --git a/drivers/scsi/scsi_lib.c b/drivers/scsi/scsi_lib.c
+index 5dfd749..db4a40d 100644
+--- a/drivers/scsi/scsi_lib.c
++++ b/drivers/scsi/scsi_lib.c
+@@ -256,10 +256,10 @@ int scsi_execute(struct scsi_device *sdev, const unsigned char *cmd,
+ EXPORT_SYMBOL(scsi_execute);
+ 
+ 
+-int scsi_execute_req(struct scsi_device *sdev, const unsigned char *cmd,
++static int __scsi_execute_req(struct scsi_device *sdev, const unsigned char *cmd,
+ 		     int data_direction, void *buffer, unsigned bufflen,
+ 		     struct scsi_sense_hdr *sshdr, int timeout, int retries,
+-		     int *resid)
++		     int *resid, int flags)
+ {
+ 	char *sense = NULL;
+ 	int result;
+@@ -270,15 +270,34 @@ int scsi_execute_req(struct scsi_device *sdev, const unsigned char *cmd,
+ 			return DRIVER_ERROR << 24;
+ 	}
+ 	result = scsi_execute(sdev, cmd, data_direction, buffer, bufflen,
+-			      sense, timeout, retries, 0, resid);
++			      sense, timeout, retries, flags, resid);
+ 	if (sshdr)
+ 		scsi_normalize_sense(sense, SCSI_SENSE_BUFFERSIZE, sshdr);
+ 
+ 	kfree(sense);
+ 	return result;
+ }
++
++int scsi_execute_req(struct scsi_device *sdev, const unsigned char *cmd,
++		     int data_direction, void *buffer, unsigned bufflen,
++		     struct scsi_sense_hdr *sshdr, int timeout, int retries,
++		     int *resid)
++{
++	return __scsi_execute_req(sdev, cmd, data_direction, buffer, bufflen,
++			      sshdr, timeout, retries, resid, 0);
++}
+ EXPORT_SYMBOL(scsi_execute_req);
+ 
++int scsi_execute_req_flag(struct scsi_device *sdev, const unsigned char *cmd,
++		     int data_direction, void *buffer, unsigned bufflen,
++		     struct scsi_sense_hdr *sshdr, int timeout, int retries,
++		     int *resid, int flags)
++{
++	return __scsi_execute_req(sdev, cmd, data_direction, buffer, bufflen,
++			      sshdr, timeout, retries, resid, flags);
++}
++EXPORT_SYMBOL(scsi_execute_req_flag);
++
+ /*
+  * Function:    scsi_init_cmd_errh()
+  *
+diff --git a/drivers/scsi/sd.c b/drivers/scsi/sd.c
+index 5ba5c2a..1205a8b 100644
+--- a/drivers/scsi/sd.c
++++ b/drivers/scsi/sd.c
+@@ -1269,8 +1269,9 @@ static int sd_sync_cache(struct scsi_disk *sdkp)
+ 		 * Leave the rest of the command zero to indicate
+ 		 * flush everything.
+ 		 */
+-		res = scsi_execute_req(sdp, cmd, DMA_NONE, NULL, 0, &sshdr,
+-				       SD_FLUSH_TIMEOUT, SD_MAX_RETRIES, NULL);
++		res = scsi_execute_req_flag(sdp, cmd, DMA_NONE, NULL, 0, &sshdr,
++				       SD_FLUSH_TIMEOUT, SD_MAX_RETRIES, NULL,
++				       REQ_PM);
+ 		if (res == 0)
+ 			break;
+ 	}
+@@ -2812,8 +2813,8 @@ static int sd_start_stop_device(struct scsi_disk *sdkp, int start)
+ 	if (!scsi_device_online(sdp))
+ 		return -ENODEV;
+ 
+-	res = scsi_execute_req(sdp, cmd, DMA_NONE, NULL, 0, &sshdr,
+-			       SD_TIMEOUT, SD_MAX_RETRIES, NULL);
++	res = scsi_execute_req_flag(sdp, cmd, DMA_NONE, NULL, 0, &sshdr,
++			       SD_TIMEOUT, SD_MAX_RETRIES, NULL, REQ_PM);
+ 	if (res) {
+ 		sd_printk(KERN_WARNING, sdkp, "START_STOP FAILED\n");
+ 		sd_print_result(sdkp, res);
+diff --git a/include/linux/blk_types.h b/include/linux/blk_types.h
+index 4053cbd..a75f854 100644
+--- a/include/linux/blk_types.h
++++ b/include/linux/blk_types.h
+@@ -150,6 +150,7 @@ enum rq_flag_bits {
+ 	__REQ_FLUSH_SEQ,	/* request for flush sequence */
+ 	__REQ_IO_STAT,		/* account I/O stat */
+ 	__REQ_MIXED_MERGE,	/* merge of different types, fail separately */
++	__REQ_PM,		/* runtime pm request */
+ 	__REQ_NR_BITS,		/* stops here */
+ };
+ 
+@@ -191,5 +192,6 @@ enum rq_flag_bits {
+ #define REQ_IO_STAT		(1 << __REQ_IO_STAT)
+ #define REQ_MIXED_MERGE		(1 << __REQ_MIXED_MERGE)
+ #define REQ_SECURE		(1 << __REQ_SECURE)
++#define REQ_PM			(1 << __REQ_PM)
+ 
+ #endif /* __LINUX_BLK_TYPES_H */
+diff --git a/include/scsi/scsi_device.h b/include/scsi/scsi_device.h
+index 6efb2e1..7735b46 100644
+--- a/include/scsi/scsi_device.h
++++ b/include/scsi/scsi_device.h
+@@ -387,6 +387,10 @@ extern int scsi_execute_req(struct scsi_device *sdev, const unsigned char *cmd,
+ 			    int data_direction, void *buffer, unsigned bufflen,
+ 			    struct scsi_sense_hdr *, int timeout, int retries,
+ 			    int *resid);
++extern int scsi_execute_req_flag(struct scsi_device *sdev, const unsigned char *cmd,
++			    int data_direction, void *buffer, unsigned bufflen,
++			    struct scsi_sense_hdr *, int timeout, int retries,
++			    int *resid, int flags);
+ 
+ #ifdef CONFIG_PM_RUNTIME
+ extern int scsi_autopm_get_device(struct scsi_device *);
+-- 
+1.7.2.5
 
