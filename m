@@ -1,18 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933085Ab2EVXFA (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 May 2012 19:05:00 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:21950 "EHLO mx1.redhat.com"
+	id S933102Ab2EVXFO (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 May 2012 19:05:14 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:8752 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932977Ab2EVXE4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 May 2012 19:04:56 -0400
+	id S932977Ab2EVXFF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 May 2012 19:05:05 -0400
 From: David Howells <dhowells@redhat.com>
-Subject: [PATCH 19/23] MODSIGN: Sign modules during the build process
+Subject: [PATCH 20/23] MODSIGN: Provide module signing public keys to the
+ kernel
 To: rusty@rustcorp.com.au, kyle@mcmartin.ca
 Cc: linux-kernel@vger.kernel.org, linux-security-module@vger.kernel.org,
         keyrings@linux-nfs.org, David Howells <dhowells@redhat.com>
-Date: Wed, 23 May 2012 00:04:47 +0100
-Message-ID: <20120522230447.24007.11074.stgit@warthog.procyon.org.uk>
+Date: Wed, 23 May 2012 00:04:54 +0100
+Message-ID: <20120522230454.24007.24902.stgit@warthog.procyon.org.uk>
 In-Reply-To: <20120522230218.24007.3556.stgit@warthog.procyon.org.uk>
 References: <20120522230218.24007.3556.stgit@warthog.procyon.org.uk>
 User-Agent: StGIT/0.14.3
@@ -23,182 +24,148 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-If CONFIG_MODULE_SIG is set, then this patch will cause the module to get a
-signature installed.  The following steps will occur:
+Include a PGP keyring containing the public keys required to perform module
+verification in the kernel image during build and create a special keyring
+during boot which is then populated with keys of crypto type holding the public
+keys found in the PGP keyring.
 
- (1) The module will be linked to foo.ko.unsigned instead of foo.ko
+These can be seen by root:
 
- (2) The module will be stripped using both "strip -x -g" and "eu-strip" to
-     ensure minimal size for inclusion in an initramfs.
+[root@andromeda ~]# cat /proc/keys
+07ad4ee0 I-----     1 perm 3f010000     0     0 crypto    modsign.0: RSA 87b9b3bd []
+15c7f8c3 I-----     1 perm 1f030000     0     0 keyring   .module_sign: 1/4
+...
 
- (3) The signature will be generated on the stripped module.
-
- (4) The signature will be appended to the module, along with the payload
-     size, the signature size and a magic string.
-
-Step (3) requires private and public keys to be available.  By default these
-are expected to be found in PGP keyring files called modsign.sec (the secret
-key) and modsign.pub (the public key) in the build root.
-
-If the secret key is not found then signing will be skipped and the unsigned
-module from (1) will just be copied to foo.ko.
-
-If signing occurs, lines like the following will be seen:
-
-	LD [M]  fs/foo/foo.ko.unsigned
-	STRIP [M] fs/foo/foo.ko.stripped
-	SIGN [M] fs/foo/foo.ko
-
-will appear in the build log.  If the signature step will be skipped and the
-following will be seen:
-
-	LD [M]  fs/foo/foo.ko.unsigned
-	STRIP [M] fs/foo/foo.ko.stripped
-	NO SIGN [M] fs/foo/foo.ko
-
-NOTE!  After the signature step, the signed module must not be passed through
-strip.  The unstripped, unsigned module is still available at the name on the
-LD [M] line.  This restriction may affect packaging tools (such as rpmbuild)
-and initramfs composition tools.
-
-Note that I do not agree with this method of attaching signatures to modules.
+It is probably worth permitting root to invalidate these keys, resulting in
+their removal and preventing further modules from being loaded with that key.
 
 Signed-off-by: David Howells <dhowells@redhat.com>
 ---
 
- scripts/Makefile.modpost |   98 ++++++++++++++++++++++++++++++++++++++++++++++
- 1 files changed, 97 insertions(+), 1 deletions(-)
+ kernel/Makefile         |    3 ++
+ kernel/modsign-pubkey.c |   74 +++++++++++++++++++++++++++++++++++++++++++++++
+ kernel/module-verify.h  |   14 +++++++++
+ 3 files changed, 91 insertions(+), 0 deletions(-)
+ create mode 100644 kernel/modsign-pubkey.c
+ create mode 100644 kernel/module-verify.h
 
 
-diff --git a/scripts/Makefile.modpost b/scripts/Makefile.modpost
-index 08dce14..bb761ab 100644
---- a/scripts/Makefile.modpost
-+++ b/scripts/Makefile.modpost
-@@ -14,7 +14,8 @@
- # 3)  create one <module>.mod.c file pr. module
- # 4)  create one Module.symvers file with CRC for all exported symbols
- # 5) compile all <module>.mod.c files
--# 6) final link of the module to a <module.ko> file
-+# 6) final link of the module to a <module.ko> (or <module.unsigned>) file
-+# 7) signs the modules to a <module.ko> file
- 
- # Step 3 is used to place certain information in the module's ELF
- # section, including information such as:
-@@ -32,6 +33,8 @@
- # Step 4 is solely used to allow module versioning in external modules,
- # where the CRC of each module is retrieved from the Module.symvers file.
- 
-+# Step 7 is dependent on CONFIG_MODULE_SIG being enabled.
+diff --git a/kernel/Makefile b/kernel/Makefile
+index cb41b95..bde66b6 100644
+--- a/kernel/Makefile
++++ b/kernel/Makefile
+@@ -51,6 +51,7 @@ obj-$(CONFIG_DEBUG_SPINLOCK) += spinlock.o
+ obj-$(CONFIG_PROVE_LOCKING) += spinlock.o
+ obj-$(CONFIG_UID16) += uid16.o
+ obj-$(CONFIG_MODULES) += module.o
++obj-$(CONFIG_MODULE_SIG) += modsign-pubkey.o
+ obj-$(CONFIG_KALLSYMS) += kallsyms.o
+ obj-$(CONFIG_BSD_PROCESS_ACCT) += acct.o
+ obj-$(CONFIG_KEXEC) += kexec.o
+@@ -127,3 +128,5 @@ quiet_cmd_timeconst  = TIMEC   $@
+ targets += timeconst.h
+ $(obj)/timeconst.h: $(src)/timeconst.pl FORCE
+ 	$(call if_changed,timeconst)
 +
- # KBUILD_MODPOST_WARN can be set to avoid error out in case of undefined
- # symbols in the final module linking stage
- # KBUILD_MODPOST_NOFINAL can be set to skip the final link of modules.
-@@ -116,6 +119,7 @@ $(modules:.ko=.mod.o): %.mod.o: %.mod.c FORCE
- targets += $(modules:.ko=.mod.o)
- 
- # Step 6), final link of the modules
-+ifneq ($(CONFIG_MODULE_SIG),y)
- quiet_cmd_ld_ko_o = LD [M]  $@
-       cmd_ld_ko_o = $(LD) -r $(LDFLAGS)                                 \
-                              $(KBUILD_LDFLAGS_MODULE) $(LDFLAGS_MODULE) \
-@@ -125,7 +129,99 @@ $(modules): %.ko :%.o %.mod.o FORCE
- 	$(call if_changed,ld_ko_o)
- 
- targets += $(modules)
-+else
-+quiet_cmd_ld_ko_unsigned_o = LD [M]  $@
-+      cmd_ld_ko_unsigned_o =						\
-+		$(LD) -r $(LDFLAGS)					\
-+			 $(KBUILD_LDFLAGS_MODULE) $(LDFLAGS_MODULE)	\
-+			 -o $@ $(filter-out FORCE,$^)			\
-+		$(if $(AFTER_LINK),; $(AFTER_LINK))
++kernel/modsign-pubkey.o: modsign.pub
+diff --git a/kernel/modsign-pubkey.c b/kernel/modsign-pubkey.c
+new file mode 100644
+index 0000000..163b6f0
+--- /dev/null
++++ b/kernel/modsign-pubkey.c
+@@ -0,0 +1,74 @@
++/* Public keys for module signature verification
++ *
++ * Copyright (C) 2011 Red Hat, Inc. All Rights Reserved.
++ * Written by David Howells (dhowells@redhat.com)
++ *
++ * This program is free software; you can redistribute it and/or
++ * modify it under the terms of the GNU General Public Licence
++ * as published by the Free Software Foundation; either version
++ * 2 of the Licence, or (at your option) any later version.
++ */
 +
-+$(modules:.ko=.ko.unsigned): %.ko.unsigned :%.o %.mod.o FORCE
-+	$(call if_changed,ld_ko_unsigned_o)
++#include <linux/kernel.h>
++#include <linux/sched.h>
++#include <linux/cred.h>
++#include <keys/crypto-type.h>
++#include "module-verify.h"
 +
-+targets += $(modules:.ko=.ko.unsigned)
++struct key *modsign_keyring;
 +
-+# Step 7), sign the modules
-+MODSECKEY = ./modsign.sec
-+MODPUBKEY = ./modsign.pub
-+KEYFLAGS = --no-default-keyring --secret-keyring $(MODSECKEY) --keyring $(MODPUBKEY) --no-default-keyring --homedir . --no-options --no-auto-check-trustdb --no-permission-warning
++extern __initdata const u8 modsign_public_keys[];
++extern __initdata const u8 modsign_public_keys_end[];
++asm(".section .init.data,\"aw\"\n"
++    "modsign_public_keys:\n"
++    ".incbin \"modsign.pub\"\n"
++    "modsign_public_keys_end:"
++    );
 +
-+ifdef CONFIG_MODULE_SIG_SHA1
-+KEYFLAGS += --digest-algo=SHA1
-+else
-+ifdef CONFIG_MODULE_SIG_SHA224
-+KEYFLAGS += --digest-algo=SHA224
-+else
-+ifdef CONFIG_MODULE_SIG_SHA256
-+KEYFLAGS += --digest-algo=SHA256
-+else
-+ifdef CONFIG_MODULE_SIG_SHA384
-+KEYFLAGS += --digest-algo=SHA384
-+else
-+ifdef CONFIG_MODULE_SIG_SHA512
-+KEYFLAGS += --digest-algo=SHA512
-+else
-+endif
-+endif
-+endif
-+endif
-+endif
++/*
++ * We need to make sure ccache doesn't cache the .o file as it doesn't notice
++ * if modsign.pub changes.
++ */
++static __initdata const char annoy_ccache[] = __TIME__ "foo";
 +
-+ifdef MODKEYNAME
-+KEYFLAGS += --default-key $(MODKEYNAME)
-+endif
++/*
++ * Load the compiled-in keys
++ */
++static __init int module_verify_init(void)
++{
++	pr_notice("Initialise module verification\n");
 +
-+ifeq ($(wildcard $(MODSECKEY))+$(wildcard $(MODPUBKEY)),$(MODSECKEY)+$(MODPUBKEY))
-+ifeq ($(KBUILD_SRC),)
-+	# no O= is being used
-+	SCRIPTS_DIR := scripts
-+else
-+	SCRIPTS_DIR := $(KBUILD_SRC)/scripts
-+endif
-+SIGN_MODULES := 1
-+else
-+SIGN_MODULES := 0
-+endif
++	modsign_keyring = key_alloc(&key_type_keyring, ".module_sign",
++				    0, 0, current_cred(),
++				    (KEY_POS_ALL & ~KEY_POS_SETATTR) |
++				    KEY_USR_VIEW | KEY_USR_READ,
++				    KEY_ALLOC_NOT_IN_QUOTA);
++	if (IS_ERR(modsign_keyring))
++		panic("Can't allocate module signing keyring\n");
 +
-+# only sign if it's an in-tree module
-+ifneq ($(KBUILD_EXTMOD),)
-+SIGN_MODULES := 0
-+endif
++	if (key_instantiate_and_link(modsign_keyring, NULL, 0, NULL, NULL) < 0)
++		panic("Can't instantiate module signing keyring\n");
 +
-+# We strip the module as best we can - note that using both strip and eu-strip
-+# results in a smaller module than using either alone.
-+quiet_cmd_sign_ko_stripped_ko_unsigned = STRIP [M] $@
-+      cmd_sign_ko_stripped_ko_unsigned = \
-+		cp $< $@ && \
-+		strip -x -g $@ && \
-+		eu-strip $@
++	return 0;
++}
 +
-+ifeq ($(SIGN_MODULES),1)
-+KEYRING_DEP := modsign.sec modsign.pub
-+quiet_cmd_sign_ko_ko_stripped = SIGN [M] $@
-+      cmd_sign_ko_ko_stripped = \
-+		rm -f $<.sig && \
-+		gpg --batch --no-greeting $(KEYFLAGS) -b $< && \
-+		stat -c @%-8s@ $< >$@.trailer && \
-+		stat -c @%-8s@ $<.sig >>$@.trailer && \
-+		echo -n "This Is A Crypto Signed Module" >>$@.trailer && \
-+		cat $< $<.sig $@.trailer >$@
-+else
-+KEYRING_DEP :=
-+quiet_cmd_sign_ko_ko_unsigned = NO SIGN [M] $@
-+      cmd_sign_ko_ko_unsigned = \
-+		cp $< $@
-+endif
++/*
++ * Must be initialised before we try and load the keys into the keyring.
++ */
++device_initcall(module_verify_init);
 +
-+$(modules): %.ko :%.ko.stripped $(KEYRING_DEP) FORCE
-+	$(call if_changed,sign_ko_ko_stripped)
++/*
++ * Load the compiled-in keys
++ */
++static __init int modsign_pubkey_init(void)
++{
++	pr_notice("Load module verification keys\n");
 +
-+$(patsubst %.ko,%.ko.stripped,$(modules)): %.ko.stripped :%.ko.unsigned FORCE
-+	$(call if_changed,sign_ko_stripped_ko_unsigned)
- 
-+targets += $(modules)
-+endif
- 
- # Add FORCE to the prequisites of a target to force it to be always rebuilt.
- # ---------------------------------------------------------------------------
++	if (preload_pgp_keys(modsign_public_keys,
++			     modsign_public_keys_end - modsign_public_keys,
++			     modsign_keyring, "modsign.") < 0)
++		panic("Can't load module signing keys\n");
++
++	return 0;
++}
++late_initcall(modsign_pubkey_init);
+diff --git a/kernel/module-verify.h b/kernel/module-verify.h
+new file mode 100644
+index 0000000..2f6cc16
+--- /dev/null
++++ b/kernel/module-verify.h
+@@ -0,0 +1,14 @@
++/* Module verification definitions
++ *
++ * Copyright (C) 2004, 2012 Red Hat, Inc. All Rights Reserved.
++ * Written by David Howells (dhowells@redhat.com)
++ *
++ * This program is free software; you can redistribute it and/or
++ * modify it under the terms of the GNU General Public Licence
++ * as published by the Free Software Foundation; either version
++ * 2 of the Licence, or (at your option) any later version.
++ */
++
++#ifdef CONFIG_MODULE_SIG
++extern struct key *modsign_keyring;
++#endif
 
