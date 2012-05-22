@@ -1,135 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760217Ab2EVTRI (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 May 2012 15:17:08 -0400
-Received: from mail-wg0-f74.google.com ([74.125.82.74]:60328 "EHLO
-	mail-wg0-f74.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752823Ab2EVTRF (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 May 2012 15:17:05 -0400
-From: Sameer Nanda <snanda@chromium.org>
-To: len.brown@intel.com, pavel@ucw.cz, rjw@sisk.pl, gregkh@linuxfoundation.org
-Cc: linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Sameer Nanda <snanda@chromium.org>,
-        Steven Rostedt <rostedt@goodmis.org>
-Subject: [PATCH] power: add knob for printing device resume times
-Date: Tue, 22 May 2012 12:16:45 -0700
-Message-Id: <1337714205-18038-1-git-send-email-snanda@chromium.org>
-X-Mailer: git-send-email 1.7.7.3
-In-Reply-To: <1337365643-29261-1-git-send-email-snanda@chromium.org>
-References: <1337365643-29261-1-git-send-email-snanda@chromium.org>
+	id S1760235Ab2EVTSA (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 May 2012 15:18:00 -0400
+Received: from smtp1.it.da.ut.ee ([193.40.5.66]:32858 "EHLO smtp1.it.da.ut.ee"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750929Ab2EVTR6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 May 2012 15:17:58 -0400
+Date: Tue, 22 May 2012 22:17:57 +0300 (EEST)
+From: Meelis Roos <mroos@linux.ee>
+To: David Miller <davem@davemloft.net>
+cc: linux-kernel@vger.kernel.org
+Subject: Re: 3.4.0-02580-g72c04af regression on sparc64 - partitions not
+ recognized
+In-Reply-To: <20120522.151217.278388169416093561.davem@davemloft.net>
+Message-ID: <alpine.SOC.1.00.1205222217070.27144@math.ut.ee>
+References: <alpine.SOC.1.00.1205221200050.9585@math.ut.ee> <20120522.151217.278388169416093561.davem@davemloft.net>
+User-Agent: Alpine 1.00 (SOC 882 2007-12-20)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Added a new knob called /sys/powe/pm_print_times. Setting it to 1
-enables printing of time taken by devices to suspend and resume.
-Setting it to 0 disables this printing (unless overridden by
-initcall_debug kernel command line option).
+> > Just tested 3.4.0-02580-g72c04af on about 10 machines. While most of 
+> > them work (including 3 different sparc64 machines with real scsi disks), 
+> > Sun Netra X1 with pata_ali and IDE disk consistently fails to boot. sda 
+> > is recognized but no partitions. 3.3.0 works fine, as did something 
+> > around 3.4-rc7 (plain 3.4 not tested yet). No other IDE machines tested 
+> > yet since I have none with remote console at the moment.
+> 
+> 3.4-rc7 until 72c04af is about 3500 changes, we'll need to narrow this
+> down further.
+> 
+> I would first check to make sure that 3.4.0-final doesn't have the
+> problem.
+> 
+> If 3.4.0-final is OK, start bisecting from v3.4.0 until 72c04af.  One
+> possibility could be the sparc64 NOBOOTMEM conversion that went into
+> the merge window.
 
-Signed-off-by: Sameer Nanda <snanda@chromium.org>
-cc: Greg KH <gregkh@linuxfoundation.org>
-cc: Rafael J. Wysocki <rjw@sisk.pl>
-cc: Steven Rostedt <rostedt@goodmis.org>
----
- drivers/base/power/main.c  |    4 ++--
- drivers/base/power/power.h |   11 +++++++++++
- kernel/power/main.c        |   34 ++++++++++++++++++++++++++++++++++
- 3 files changed, 47 insertions(+), 2 deletions(-)
+Meanwhile tested that 3.4 was OK and started bisecting. It will take 
+time because I can access the system only some iterations per day.
 
-diff --git a/drivers/base/power/main.c b/drivers/base/power/main.c
-index b462c0e..ca8b2b5 100644
---- a/drivers/base/power/main.c
-+++ b/drivers/base/power/main.c
-@@ -166,7 +166,7 @@ static ktime_t initcall_debug_start(struct device *dev)
- {
- 	ktime_t calltime = ktime_set(0, 0);
- 
--	if (initcall_debug) {
-+	if (pm_print_times) {
- 		pr_info("calling  %s+ @ %i, parent: %s\n",
- 			dev_name(dev), task_pid_nr(current),
- 			dev->parent ? dev_name(dev->parent) : "none");
-@@ -181,7 +181,7 @@ static void initcall_debug_report(struct device *dev, ktime_t calltime,
- {
- 	ktime_t delta, rettime;
- 
--	if (initcall_debug) {
-+	if (pm_print_times) {
- 		rettime = ktime_get();
- 		delta = ktime_sub(rettime, calltime);
- 		pr_info("call %s+ returned %d after %Ld usecs\n", dev_name(dev),
-diff --git a/drivers/base/power/power.h b/drivers/base/power/power.h
-index eeb4bff..12c77b7 100644
---- a/drivers/base/power/power.h
-+++ b/drivers/base/power/power.h
-@@ -85,3 +85,14 @@ static inline int pm_qos_sysfs_add(struct device *dev) { return 0; }
- static inline void pm_qos_sysfs_remove(struct device *dev) {}
- 
- #endif
-+
-+#ifdef CONFIG_PM_DEBUG
-+
-+extern int pm_print_times_enabled;
-+#define pm_print_times (initcall_debug || pm_print_times_enabled)
-+
-+#else /* CONFIG_PM_DEBUG */
-+
-+#define pm_print_times initcall_debug
-+
-+#endif /* CONFIG_PM_DEBUG */
-diff --git a/kernel/power/main.c b/kernel/power/main.c
-index 1c12581..602f617 100644
---- a/kernel/power/main.c
-+++ b/kernel/power/main.c
-@@ -132,6 +132,39 @@ static ssize_t pm_test_store(struct kobject *kobj, struct kobj_attribute *attr,
- }
- 
- power_attr(pm_test);
-+
-+/*
-+ *	pm_print_times: print time taken by devices to suspend and resume.
-+ *
-+ *	show() returns whether printing of suspend and resume times is enabled.
-+ *
-+ *	store() accepts 0 or 1.  O disables printing and 1 enables it.
-+ */
-+int pm_print_times_enabled;
-+
-+static ssize_t pm_print_times_show(struct kobject *kobj,
-+				   struct kobj_attribute *attr, char *buf)
-+{
-+	return sprintf(buf, "%d\n", pm_print_times_enabled);
-+}
-+
-+static ssize_t pm_print_times_store(struct kobject *kobj,
-+				    struct kobj_attribute *attr,
-+				    const char *buf, size_t n)
-+{
-+	unsigned long val;
-+
-+	if (kstrtoul(buf, 10, &val))
-+		return -EINVAL;
-+
-+	if (val > 1)
-+		return -EINVAL;
-+
-+	pm_print_times_enabled = val;
-+	return n;
-+}
-+
-+power_attr(pm_print_times);
- #endif /* CONFIG_PM_DEBUG */
- 
- #ifdef CONFIG_DEBUG_FS
-@@ -411,6 +444,7 @@ static struct attribute * g[] = {
- 	&wakeup_count_attr.attr,
- #ifdef CONFIG_PM_DEBUG
- 	&pm_test_attr.attr,
-+	&pm_print_times_attr.attr,
- #endif
- #endif
- 	NULL,
 -- 
-1.7.7.3
-
+Meelis Roos (mroos@linux.ee)
