@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932714Ab2EVWnD (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 May 2012 18:43:03 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:52182 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932438Ab2EVWnA (ORCPT
+	id S1758034Ab2EVWoJ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 May 2012 18:44:09 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:37576 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753360Ab2EVWoH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 May 2012 18:43:00 -0400
-Date: Tue, 22 May 2012 15:42:55 -0700
-From: Tejun Heo <tejun@google.com>
+	Tue, 22 May 2012 18:44:07 -0400
+Date: Tue, 22 May 2012 15:44:02 -0700
+From: Tejun Heo <tj@kernel.org>
 To: Kent Overstreet <koverstreet@google.com>
 Cc: linux-bcache@vger.kernel.org, linux-kernel@vger.kernel.org,
         dm-devel@redhat.com, agk@redhat.com
 Subject: Re: [Bcache v13 14/16] bcache: Request, io and allocation code
-Message-ID: <20120522224255.GM14339@google.com>
+Message-ID: <20120522224402.GN14339@google.com>
 References: <cover.1336619038.git.koverstreet@google.com>
  <9ea33658f2a71b3b9bd2ec10bee959bef146f23c.1336619038.git.koverstreet@google.com>
 MIME-Version: 1.0
@@ -59,7 +59,7 @@ On Wed, May 09, 2012 at 11:11:25PM -0400, Kent Overstreet wrote:
 > +	return 0;
 > +}
 
-Hmmm... where is @sectors_done updated?
+Where is @sectors_done updated?
 
 Thanks.
 
