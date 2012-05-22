@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758778Ab2EVOW1 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 May 2012 10:22:27 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:33962 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758692Ab2EVOUh (ORCPT
+	id S1758666Ab2EVOUd (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 May 2012 10:20:33 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:60941 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752889Ab2EVOUa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 May 2012 10:20:37 -0400
+	Tue, 22 May 2012 10:20:30 -0400
 From: Anton Vorontsov <anton.vorontsov@linaro.org>
 To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
         Kees Cook <keescook@chromium.org>, Colin Cross <ccross@android.com>,
@@ -21,9 +21,9 @@ Cc: Arnd Bergmann <arnd@arndb.de>, John Stultz <john.stultz@linaro.org>,
         WANG Cong <xiyou.wangcong@gmail.com>, linux-kernel@vger.kernel.org,
         devel@driverdev.osuosl.org, linaro-kernel@lists.linaro.org,
         patches@linaro.org, kernel-team@android.com
-Subject: [PATCH 09/16] pstore/ram: Factor ramoops_get_dump_prz() out of ramoops_pstore_read()
-Date: Tue, 22 May 2012 07:17:52 -0700
-Message-Id: <1337696279-8994-9-git-send-email-anton.vorontsov@linaro.org>
+Subject: [PATCH 07/16] pstore/ram: Introduce ramoops_context.max_dump_count
+Date: Tue, 22 May 2012 07:17:50 -0700
+Message-Id: <1337696279-8994-7-git-send-email-anton.vorontsov@linaro.org>
 X-Mailer: git-send-email 1.7.9.2
 In-Reply-To: <20120522141717.GA31574@lizard>
 References: <20120522141717.GA31574@lizard>
@@ -31,66 +31,96 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This will help make code clearer when we'll add support for other
-message types.
-
-The patch also changes return value from -EINVAL to 0 in case of
-end-of-records. The exact value doesn't matter for pstore (it should
-be just <= 0), but 0 feels more correct.
+So far it is the same as max_count, but this will change when
+we'll add support for other message types (e.g. console, mce,
+tracing).
 
 Signed-off-by: Anton Vorontsov <anton.vorontsov@linaro.org>
 ---
- fs/pstore/ram.c |   28 ++++++++++++++++++++++------
- 1 file changed, 22 insertions(+), 6 deletions(-)
+ fs/pstore/ram.c |   15 +++++++++------
+ 1 file changed, 9 insertions(+), 6 deletions(-)
 
 diff --git a/fs/pstore/ram.c b/fs/pstore/ram.c
-index 9785c84..6dc9e96 100644
+index 453030f..cdaeda9 100644
 --- a/fs/pstore/ram.c
 +++ b/fs/pstore/ram.c
-@@ -86,6 +86,24 @@ static int ramoops_pstore_open(struct pstore_info *psi)
- 	return 0;
- }
- 
-+static struct persistent_ram_zone *
-+ramoops_get_dump_prz(u64 id, enum pstore_type_id *type,
-+		     struct ramoops_context *cxt)
-+{
-+	struct persistent_ram_zone *prz;
-+
-+	if (id > cxt->max_dump_count)
-+		return NULL;
-+
-+	prz = cxt->przs[id];
-+	if (!persistent_ram_old_size(prz))
-+		return NULL;
-+
-+	*type = PSTORE_TYPE_DMESG;
-+
-+	return prz;
-+}
-+
- static ssize_t ramoops_pstore_read(u64 *id, enum pstore_type_id *type,
- 				   struct timespec *time,
- 				   char **buf,
-@@ -95,14 +113,12 @@ static ssize_t ramoops_pstore_read(u64 *id, enum pstore_type_id *type,
+@@ -70,6 +70,7 @@ struct ramoops_context {
+ 	bool ecc;
+ 	unsigned int count;
+ 	unsigned int max_count;
++	unsigned int max_dump_count;
+ 	unsigned int read_count;
+ 	struct pstore_info pstore;
+ };
+@@ -94,7 +95,7 @@ static ssize_t ramoops_pstore_read(u64 *id, enum pstore_type_id *type,
  	struct ramoops_context *cxt = psi->data;
  	struct persistent_ram_zone *prz;
  
--	if (cxt->read_count >= cxt->max_dump_count)
--		return -EINVAL;
--
- 	*id = cxt->read_count++;
--	prz = cxt->przs[*id];
+-	if (cxt->read_count >= cxt->max_count)
++	if (cxt->read_count >= cxt->max_dump_count)
+ 		return -EINVAL;
  
--	/* Only supports dmesg output so far. */
--	*type = PSTORE_TYPE_DMESG;
-+	prz = ramoops_get_dump_prz(*id, type, cxt);
-+	if (!prz)
-+		return 0;
-+
- 	/* TODO(kees): Bogus time for the moment. */
- 	time->tv_sec = 0;
- 	time->tv_nsec = 0;
+ 	*id = cxt->read_count++;
+@@ -172,7 +173,7 @@ static int ramoops_pstore_write(enum pstore_type_id type,
+ 		size = prz->buffer_size - hlen;
+ 	persistent_ram_write(prz, cxt->pstore.buf, size);
+ 
+-	cxt->count = (cxt->count + 1) % cxt->max_count;
++	cxt->count = (cxt->count + 1) % cxt->max_dump_count;
+ 
+ 	return 0;
+ }
+@@ -182,7 +183,7 @@ static int ramoops_pstore_erase(enum pstore_type_id type, u64 id,
+ {
+ 	struct ramoops_context *cxt = psi->data;
+ 
+-	if (id >= cxt->max_count)
++	if (id >= cxt->max_dump_count)
+ 		return -EINVAL;
+ 
+ 	persistent_ram_free_old(cxt->przs[id]);
+@@ -213,7 +214,7 @@ static int __init ramoops_probe(struct platform_device *pdev)
+ 	/* Only a single ramoops area allowed at a time, so fail extra
+ 	 * probes.
+ 	 */
+-	if (cxt->max_count)
++	if (cxt->max_dump_count)
+ 		goto fail_out;
+ 
+ 	if (!pdata->mem_size || !pdata->record_size) {
+@@ -240,6 +241,7 @@ static int __init ramoops_probe(struct platform_device *pdev)
+ 	}
+ 
+ 	cxt->max_count = pdata->mem_size / pdata->record_size;
++	cxt->max_dump_count = cxt->max_count;
+ 	cxt->count = 0;
+ 	cxt->size = pdata->mem_size;
+ 	cxt->phys_addr = pdata->mem_address;
+@@ -247,14 +249,14 @@ static int __init ramoops_probe(struct platform_device *pdev)
+ 	cxt->dump_oops = pdata->dump_oops;
+ 	cxt->ecc = pdata->ecc;
+ 
+-	cxt->przs = kzalloc(sizeof(*cxt->przs) * cxt->max_count, GFP_KERNEL);
++	cxt->przs = kzalloc(sizeof(*cxt->przs) * cxt->max_dump_count, GFP_KERNEL);
+ 	if (!cxt->przs) {
+ 		err = -ENOMEM;
+ 		dev_err(dev, "failed to initialize a prz array\n");
+ 		goto fail_out;
+ 	}
+ 
+-	for (i = 0; i < cxt->max_count; i++) {
++	for (i = 0; i < cxt->max_dump_count; i++) {
+ 		size_t sz = cxt->record_size;
+ 		phys_addr_t start = cxt->phys_addr + sz * i;
+ 
+@@ -303,6 +305,7 @@ fail_buf:
+ fail_clear:
+ 	cxt->pstore.bufsize = 0;
+ 	cxt->max_count = 0;
++	cxt->max_dump_count = 0;
+ fail_przs:
+ 	for (i = 0; cxt->przs[i]; i++)
+ 		persistent_ram_free(cxt->przs[i]);
 -- 
 1.7.9.2
 
