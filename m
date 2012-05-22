@@ -1,100 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758094Ab2EVKsL (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 May 2012 06:48:11 -0400
-Received: from mail-lb0-f174.google.com ([209.85.217.174]:56822 "EHLO
-	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757916Ab2EVKsK (ORCPT
+	id S1758126Ab2EVKxU (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 May 2012 06:53:20 -0400
+Received: from s15943758.onlinehome-server.info ([217.160.130.188]:47510 "EHLO
+	mail.x86-64.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757923Ab2EVKxT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 May 2012 06:48:10 -0400
-Date: Tue, 22 May 2012 12:48:06 +0200
-From: Johan Hovold <jhovold@gmail.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Richard Purdie <rpurdie@rpsys.net>, Daniel Jeong <daniel.jeong@ti.com>,
-        linux-kernel@vger.kernel.org, Wolfram Sang <w.sang@pengutronix.de>,
-        Geon Si Jeong <gshark.jeong@gmail.com>
-Subject: Re: [PATCH 1/1 v1] leds: Add LED driver for lm3556 chip
-Message-ID: <20120522104806.GD7323@localhost>
-References: <1333936855-8807-1-git-send-email-gshark.jeong@gmail.com>
- <1333936855-8807-2-git-send-email-gshark.jeong@gmail.com>
- <20120515184330.GB5654@localhost>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120515184330.GB5654@localhost>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Tue, 22 May 2012 06:53:19 -0400
+From: Borislav Petkov <bp@amd64.org>
+To: Ingo Molnar <mingo@kernel.org>
+Cc: Frank Arnold <frank.arnold@amd.com>, X86-ML <x86@kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Borislav Petkov <borislav.petkov@amd.com>
+Subject: [PATCH 1/2] x86, bitops: Move BIT_64 for a wider use
+Date: Tue, 22 May 2012 12:53:45 +0200
+Message-Id: <1337684026-19740-1-git-send-email-bp@amd64.org>
+X-Mailer: git-send-email 1.7.9.3.362.g71319
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, May 15, 2012 at 08:43:30PM +0200, Johan Hovold wrote:
-> On Mon, Apr 09, 2012 at 11:00:55AM +0900, Geon Si Jeong wrote:
-> > It is a simple driver for LM3556 Chip(Texas Instruments)
-> > LM3556 :
-> > The LM3556 is a 4 MHz fixed-frequency synchronous boost
-> > converter plus 1.5A constant current driver for a high-current white LED.
-> > Datasheet: www.national.com/ds/LM/LM3556.pdf
-> > 
-> > Tested on OMAP4430
-> > 
-> > Signed-off-by: Geon Si Jeong <gshark.jeong@gmail.com>
-> 
-> [...]
-> 
-> > +/* i2c access*/
-> > +static int lm3556_read_reg(struct i2c_client *client, u8 reg, u8 * val)
-> > +{
-> > +	int ret;
-> > +
-> > +	ret = i2c_smbus_read_byte_data(client, reg);
-> > +	if (ret < 0) {
-> > +		dev_err(&client->dev, "i2c reading fail at 0x%02x error %d\n",
-> > +			reg, ret);
-> > +		return ret;
-> > +	}
-> > +	*val = ret & 0xff;
-> > +	return ret;
-> > +}
-> > +
-> > +static int lm3556_write_reg(struct i2c_client *client, u8 reg, u8 val)
-> > +{
-> > +	int ret = 0;
-> > +
-> > +	ret = i2c_smbus_write_byte_data(client, reg, val);
-> > +
-> > +	if (ret < 0)
-> > +		dev_err(&client->dev, "i2c writting fail at 0x%02x\n", reg);
-> > +	return ret;
-> > +}
-> > +
-> > +static int lm3556_write_bits(struct i2c_client *client,
-> > +			     u8 reg, u8 val, u8 mask, u8 shift)
-> > +{
-> > +	int ret;
-> > +	u8 reg_val;
-> > +	struct lm3556_chip_data *chip = i2c_get_clientdata(client);
-> > +
-> > +	mutex_lock(&chip->lock);
-> > +	ret = lm3556_read_reg(client, reg, &reg_val);
-> > +	if (ret < 0)
-> > +		goto out;
-> > +	reg_val &= (~(mask << shift));
-> > +	reg_val |= ((val & mask) << shift);
-> > +	ret = lm3556_write_reg(client, reg, reg_val);
-> > +out:
-> > +	mutex_unlock(&chip->lock);
-> > +	return ret;
-> > +}
-> 
-> The register io-locking above is broken. You need to protect both 
-> write_reg and write_bits using the mutex (but you must restructure
-> your code because write_bits currently calls write_reg). This is
-> required to avoid register corruption due to concurrent write_reg and
-> write_bits.
-> 
-> As has been suggested elsewhere, you could consider using regmap.
+From: Borislav Petkov <borislav.petkov@amd.com>
 
-Andrew, just wanted to remind you that this driver is still in your
-tree. Do you want to drop it or should someone else fix the locking?
+Needed for shifting 64-bit values on 32-bit, like MSR values, for
+example.
 
-Johan
+Signed-off-by: Borislav Petkov <borislav.petkov@amd.com>
+---
+ arch/x86/include/asm/bitops.h |    2 ++
+ drivers/edac/mce_amd.h        |    2 --
+ 2 files changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/arch/x86/include/asm/bitops.h b/arch/x86/include/asm/bitops.h
+index b97596e2b68c..a6983b277220 100644
+--- a/arch/x86/include/asm/bitops.h
++++ b/arch/x86/include/asm/bitops.h
+@@ -15,6 +15,8 @@
+ #include <linux/compiler.h>
+ #include <asm/alternative.h>
+ 
++#define BIT_64(n)			(U64_C(1) << (n))
++
+ /*
+  * These have to be done with inline assembly: that way the bit-setting
+  * is guaranteed to be atomic. All bit operations return 0 if the bit
+diff --git a/drivers/edac/mce_amd.h b/drivers/edac/mce_amd.h
+index c6074c5cd1ef..8c87a5e87057 100644
+--- a/drivers/edac/mce_amd.h
++++ b/drivers/edac/mce_amd.h
+@@ -5,8 +5,6 @@
+ 
+ #include <asm/mce.h>
+ 
+-#define BIT_64(n)			(U64_C(1) << (n))
+-
+ #define EC(x)				((x) & 0xffff)
+ #define XEC(x, mask)			(((x) >> 16) & mask)
+ 
+-- 
+1.7.9.3.362.g71319
+
