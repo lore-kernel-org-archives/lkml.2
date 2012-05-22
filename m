@@ -1,66 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760160Ab2EVS1l (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 May 2012 14:27:41 -0400
-Received: from avon.wwwdotorg.org ([70.85.31.133]:56174 "EHLO
-	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759947Ab2EVS1j (ORCPT
+	id S1752404Ab2EVSdh (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 May 2012 14:33:37 -0400
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:55393 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751055Ab2EVSdf convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 May 2012 14:27:39 -0400
-Message-ID: <4FBBDA97.6000006@wwwdotorg.org>
-Date: Tue, 22 May 2012 12:27:35 -0600
-From: Stephen Warren <swarren@wwwdotorg.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
+	Tue, 22 May 2012 14:33:35 -0400
 MIME-Version: 1.0
-To: Laxman Dewangan <ldewangan@nvidia.com>
-CC: Stephen Warren <swarren@nvidia.com>, "olof@lixom.net" <olof@lixom.net>,
-        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>
-Subject: Re: [PATCH 2/2] ARM: dt: tegra: cardhu: register core regulator tps65911
-References: <1337691917-15040-1-git-send-email-ldewangan@nvidia.com> <1337691917-15040-2-git-send-email-ldewangan@nvidia.com> <4FBBC192.7030900@wwwdotorg.org> <4FBBC830.2060802@nvidia.com> <4FBBCA8F.3050903@wwwdotorg.org> <4FBBD33C.8020802@nvidia.com>
-In-Reply-To: <4FBBD33C.8020802@nvidia.com>
-X-Enigmail-Version: 1.5pre
+In-Reply-To: <20120522181910.GA28826@kroah.com>
+References: <20120522141717.GA31574@lizard>
+	<20120522181910.GA28826@kroah.com>
+Date: Tue, 22 May 2012 11:33:33 -0700
+X-Google-Sender-Auth: ISM_C33-DRPiRQKshytX-L55oEE
+Message-ID: <CAGXu5jJcHDWOf4Kgnz45CT0ud-zMr2SERL2ogjeJC6n64+pQZA@mail.gmail.com>
+Subject: Re: [PATCH v4 0/16] Merge ram_console into pstore, and more
+From: Kees Cook <keescook@chromium.org>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: Anton Vorontsov <anton.vorontsov@linaro.org>,
+        Colin Cross <ccross@android.com>, Tony Luck <tony.luck@intel.com>,
+        devel@driverdev.osuosl.org, linaro-kernel@lists.linaro.org,
+        Arnd Bergmann <arnd@arndb.de>, patches@linaro.org,
+        Marco Stornelli <marco.stornelli@gmail.com>,
+        Stephen Boyd <sboyd@codeaurora.org>, linux-kernel@vger.kernel.org,
+        arve@android.com, Jesper Juhl <jj@chaosbits.net>,
+        John Stultz <john.stultz@linaro.org>, Shuah Khan <shuahkhan@gmail.com>,
+        Rebecca Schultz Zavin <rebecca@android.com>,
+        WANG Cong <xiyou.wangcong@gmail.com>,
+        Andrew Morton <akpm@linux-foundation.org>, kernel-team@android.com,
+        Thomas Meyer <thomas@m3y3r.de>
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Transfer-Encoding: 8BIT
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/22/2012 11:56 AM, Laxman Dewangan wrote:
-> On Tuesday 22 May 2012 10:49 PM, Stephen Warren wrote:
->> On 05/22/2012 11:09 AM, Laxman Dewangan wrote:
->>> On Tuesday 22 May 2012 10:10 PM, Stephen Warren wrote:
->>>> On 05/22/2012 07:05 AM, Laxman Dewangan wrote:
->>>>> Add device info for the PMIC device tps65911 in tegra-cardhu
->>>>> dts file. This device supports the multiple regulator rails,
->>>>> gpio, interrupts.
-...
->>>> Nitpicky, but the labels might be more logical as reg_vdd1 rather than
->>>> vdd1_reg, but not a big deal.
->>>>
->>>> So, please replace the line above with:
->>>>
->>>>      reg_vdd1: regulator@0 {
->>>>          reg = <0>;
->>>
->>> Why do we really require the reg at all?
->>> I dont think any usage of doing this.
+On Tue, May 22, 2012 at 11:19 AM, Greg Kroah-Hartman
+<gregkh@linuxfoundation.org> wrote:
+> On Tue, May 22, 2012 at 07:17:17AM -0700, Anton Vorontsov wrote:
+>> Hi all,
+>>
+>> A brand new v4:
+>>
+>> - Per Kees Cook's comments, the patches no longer remove an automatic
+>>   updates feature, but instead make the it configurable; plus disable
+>>   it by default (in a separate patch);
+>> - Fixed some bugs noticed by Colin Cross;
+>> - Documented new continuous ramoops-console log behaviour (also
+>>   noticed by Colin Cross).
+>
+> In case you were wondering, all of this is going to have to wait for
+> 3.6, as the 3.5 merge window with my trees have been closed.  I'll be
+> able to start accepting patches once 3.5-rc1 is out, so take your time
+> in getting this all working properly, there's no rush here.
 
-Oh, perhaps you meant the reg property not "reg_" in the label name?
+Will the ramoops stuff that was in -next (via -mm) that now landed in
+-staging make it sanely into 3.5? Specifically the two patches at the
+top of:
+http://git.kernel.org/?p=linux/kernel/git/kees/linux.git;a=shortlog;h=refs/heads/ramoops
 
-It is required because the parent node has #address-cells and
-#size-cells and because the node name itself has a unit address ("@nnn").
+Thanks,
 
->> I guess if these regulators are enabled at boot and always on, we don't
->> even need the labels for now; we could add labels later as/when drivers
->> begin to dynamically control the regulators.
-> 
-> I think we should provide the label here whether it is always on or not.
-> The driver who uses the rails will not aware that rail is always on or not.
-> Second thing is that this gives uniformity and whenever any consumer get
-> added, we will not touch this part, only will be change in the driver
-> specific part.
+-Kees
 
-Yes, if drivers are referring to these nodes, you do need the label.
+-- 
+Kees Cook
+Chrome OS Security
