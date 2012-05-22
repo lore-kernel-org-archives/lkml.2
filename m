@@ -1,72 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758671Ab2EVOhx (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 May 2012 10:37:53 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:3114 "EHLO mx1.redhat.com"
+	id S1758749Ab2EVOhz (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 May 2012 10:37:55 -0400
+Received: from mx2.netapp.com ([216.240.18.37]:12201 "EHLO mx2.netapp.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751061Ab2EVOhv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 May 2012 10:37:51 -0400
-Message-ID: <4FBBA4A2.2070501@redhat.com>
-Date: Tue, 22 May 2012 17:37:22 +0300
-From: Avi Kivity <avi@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
+	id S1757968Ab2EVOhx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 May 2012 10:37:53 -0400
+X-IronPort-AV: E=Sophos;i="4.75,639,1330934400"; 
+   d="scan'208";a="649424025"
+From: "Myklebust, Trond" <Trond.Myklebust@netapp.com>
+To: Stanislav Kinsbursky <skinsbursky@parallels.com>
+CC: "bfields@fieldses.org" <bfields@fieldses.org>,
+        "linux-nfs@vger.kernel.org" <linux-nfs@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "devel@openvz.org" <devel@openvz.org>
+Subject: Re: [PATCH v3] NFS: put net on idr allocation failure
+Thread-Topic: [PATCH v3] NFS: put net on idr allocation failure
+Thread-Index: AQHNN/FpgjfuYDvE0UGXu8PQk8QqApbWVlWA
+Date: Tue, 22 May 2012 14:37:41 +0000
+Message-ID: <1337697459.4269.7.camel@lade.trondhjem.org>
+References: <20120522073709.20602.33027.stgit@localhost.localdomain>
+	 <20120522080307.21303.60025.stgit@localhost.localdomain>
+In-Reply-To: <20120522080307.21303.60025.stgit@localhost.localdomain>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.104.60.115]
+Content-Type: text/plain; charset="utf-8"
+Content-ID: <FCE5AE40A55B884181C7A59C08221083@tahoe.netapp.com>
 MIME-Version: 1.0
-To: Steven Rostedt <rostedt@goodmis.org>
-CC: linux-kernel <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@elte.hu>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>,
-        Paul Turner <pjt@google.com>, Peter Zijlstra <peterz@infradead.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
-Subject: Re: NMI vs #PF clash
-References: <4FBB8C40.6080304@redhat.com>   <1337693441.13348.36.camel@gandalf.stny.rr.com>   <4FBB986F.5030306@redhat.com>  <1337695780.13348.41.camel@gandalf.stny.rr.com>  <4FBBA094.3090703@redhat.com> <1337696825.13348.44.camel@gandalf.stny.rr.com>
-In-Reply-To: <1337696825.13348.44.camel@gandalf.stny.rr.com>
-Content-Type: text/plain; charset=ISO-8859-15
-Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by nfs id q4MEbxim017738
 
-On 05/22/2012 05:27 PM, Steven Rostedt wrote:
-> On Tue, 2012-05-22 at 17:20 +0300, Avi Kivity wrote:
->> On 05/22/2012 05:09 PM, Steven Rostedt wrote:
->> >> > 
->> >> > Or we could just have the NMI always restore the cr2 register.
->> >> 
->> >> IMO that's best.
->> > 
->> > OK, I can whip up a patch, but I wont push that in till 3.6.
->> > 
->> 
->> Thanks.  Something I've noticed is that writing cr2 is slow, so you may
->> want to write it only if it has changed (which should be very rare).
->> 
+On Tue, 2012-05-22 at 12:03 +0400, Stanislav Kinsbursky wrote:
+> Signed-off-by: Stanislav Kinsbursky <skinsbursky@parallels.com>
+> ---
+>  fs/nfs/client.c |    4 +++-
+>  1 files changed, 3 insertions(+), 1 deletions(-)
 > 
-> Is reading it fast? Then we could do a two reads and only write when
-> needed.
-
-The upside is 70 cycles on one machine, see d3edefc0035669.
-
-
-> 
-> Something like this pseudo assembly
+> diff --git a/fs/nfs/client.c b/fs/nfs/client.c
+> index 44cd70f..ae29d4f 100644
+> --- a/fs/nfs/client.c
+> +++ b/fs/nfs/client.c
+> @@ -176,8 +176,10 @@ static struct nfs_client *nfs_alloc_client(const struct nfs_client_initdata *cl_
 >  
-> 	mov cr2, rax
-> 	push rax
-> 
-> 	call do_nmi
-> 
-> 	pop rax
-> 	mov cr2, rbx
-> 	cmp rax, rbx
-> 	be skip
-> 	mov rax, cr2
-> skip:
+>  #ifdef CONFIG_NFS_V4
+>  	err = nfs_get_cb_ident_idr(clp, cl_init->minorversion);
+> -	if (err)
+> +	if (err) {
+> +		put_net(clp->net);
+>  		goto error_cleanup;
+> +	}
+>  
+>  	spin_lock_init(&clp->cl_lock);
+>  	INIT_DELAYED_WORK(&clp->cl_renewd, nfs4_renew_state);
 > 
 
-
-Yes, provided no exceptions can happen at those points.
-
+Let's just move the actual get_net() call to the end of the function.
 
 -- 
-error compiling committee.c: too many arguments to function
+Trond Myklebust
+Linux NFS client maintainer
+
+NetApp
+Trond.Myklebust@netapp.com
+www.netapp.com
+
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
