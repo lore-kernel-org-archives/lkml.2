@@ -1,41 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932879Ab2EVFGJ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 May 2012 01:06:09 -0400
-Received: from mail-qc0-f174.google.com ([209.85.216.174]:49289 "EHLO
-	mail-qc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932276Ab2EVFF7 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 May 2012 01:05:59 -0400
+	id S932902Ab2EVFGV (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 May 2012 01:06:21 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:8389 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932276Ab2EVFGR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 May 2012 01:06:17 -0400
+From: Alex Williamson <alex.williamson@redhat.com>
+Subject: [PATCH v2 11/13] pci: Create common pcibios_err_to_errno
+To: benh@kernel.crashing.org, aik@ozlabs.ru, david@gibson.dropbear.id.au,
+        joerg.roedel@amd.com, dwmw2@infradead.org
+Cc: chrisw@sous-sol.org, agraf@suse.de, benve@cisco.com, aafabbri@cisco.com,
+        B08248@freescale.com, B07421@freescale.com, avi@redhat.com,
+        konrad.wilk@oracle.com, kvm@vger.kernel.org, qemu-devel@nongnu.org,
+        iommu@lists.linux-foundation.org, linux-pci@vger.kernel.org,
+        linux-kernel@vger.kernel.org, gregkh@linuxfoundation.org,
+        bhelgaas@google.com, ddutile@redhat.com, alex.williamson@redhat.com
+Date: Mon, 21 May 2012 23:05:51 -0600
+Message-ID: <20120522050550.5871.80143.stgit@bling.home>
+In-Reply-To: <20120522043607.5871.11340.stgit@bling.home>
+References: <20120522043607.5871.11340.stgit@bling.home>
+User-Agent: StGIT/0.14.3
 MIME-Version: 1.0
-In-Reply-To: <13429.1335863601@redhat.com>
-References: <4F7AFD55.8080500@gentoo.org>
-	<CABCEB8nkwhthkA+ge0Ts3bB8s2-GhPi7+XvteYZcDDW_WTk-Ew@mail.gmail.com>
-	<13429.1335863601@redhat.com>
-Date: Tue, 22 May 2012 10:35:58 +0530
-Message-ID: <CABCEB8mdEAZu7wari+pHy=7eKWO2kYYWZuSiyDGNPbObMPXD5g@mail.gmail.com>
-Subject: Re: [PATCH] fs: cachefiles: Add support for large files in filesystem caching
-From: Suresh Jayaraman <sureshjayaram@gmail.com>
-To: David Howells <dhowells@redhat.com>
-Cc: justin <jlec@gentoo.org>, linux-cachefs@redhat.com,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello David,
+For returning errors out to non-PCI code.  Re-name xen's version.
 
-This patch doesn't seem to have made it to linux-next (for May 21),
-yet. Could you kindly re-check?
+Signed-off-by: Alex Williamson <alex.williamson@redhat.com>
+Acked-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+---
 
-Thanks
-Suresh
+ drivers/xen/xen-pciback/conf_space.c |    6 +++---
+ include/linux/pci.h                  |   26 ++++++++++++++++++++++++++
+ 2 files changed, 29 insertions(+), 3 deletions(-)
 
+diff --git a/drivers/xen/xen-pciback/conf_space.c b/drivers/xen/xen-pciback/conf_space.c
+index 30d7be0..46ae0f9 100644
+--- a/drivers/xen/xen-pciback/conf_space.c
++++ b/drivers/xen/xen-pciback/conf_space.c
+@@ -124,7 +124,7 @@ static inline u32 merge_value(u32 val, u32 new_val, u32 new_val_mask,
+ 	return val;
+ }
+ 
+-static int pcibios_err_to_errno(int err)
++static int xen_pcibios_err_to_errno(int err)
+ {
+ 	switch (err) {
+ 	case PCIBIOS_SUCCESSFUL:
+@@ -202,7 +202,7 @@ out:
+ 		       pci_name(dev), size, offset, value);
+ 
+ 	*ret_val = value;
+-	return pcibios_err_to_errno(err);
++	return xen_pcibios_err_to_errno(err);
+ }
+ 
+ int xen_pcibk_config_write(struct pci_dev *dev, int offset, int size, u32 value)
+@@ -290,7 +290,7 @@ int xen_pcibk_config_write(struct pci_dev *dev, int offset, int size, u32 value)
+ 		}
+ 	}
+ 
+-	return pcibios_err_to_errno(err);
++	return xen_pcibios_err_to_errno(err);
+ }
+ 
+ void xen_pcibk_config_free_dyn_fields(struct pci_dev *dev)
+diff --git a/include/linux/pci.h b/include/linux/pci.h
+index 0cf57d5..b0f79b3 100644
+--- a/include/linux/pci.h
++++ b/include/linux/pci.h
+@@ -467,6 +467,32 @@ static inline bool pci_dev_msi_enabled(struct pci_dev *pci_dev) { return false;
+ #define PCIBIOS_SET_FAILED		0x88
+ #define PCIBIOS_BUFFER_TOO_SMALL	0x89
+ 
++/*
++ * Translate above to generic errno for passing back through non-pci.
++ */
++static inline int pcibios_err_to_errno(int err)
++{
++	if (err <= PCIBIOS_SUCCESSFUL)
++		return err; /* Assume already errno */
++
++	switch (err) {
++	case PCIBIOS_FUNC_NOT_SUPPORTED:
++		return -ENOENT;
++	case PCIBIOS_BAD_VENDOR_ID:
++		return -EINVAL;
++	case PCIBIOS_DEVICE_NOT_FOUND:
++		return -ENODEV;
++	case PCIBIOS_BAD_REGISTER_NUMBER:
++		return -EFAULT;
++	case PCIBIOS_SET_FAILED:
++		return -EIO;
++	case PCIBIOS_BUFFER_TOO_SMALL:
++		return -ENOSPC;
++	}
++
++	return -ENOTTY;
++}
++
+ /* Low-level architecture-dependent routines */
+ 
+ struct pci_ops {
 
-
-On Tue, May 1, 2012 at 2:43 PM, David Howells <dhowells@redhat.com> wrote:
->
-> I've added Justin's patch to my queue.
->
-> David
