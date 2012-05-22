@@ -1,184 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755090Ab2EVHkh (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 May 2012 03:40:37 -0400
-Received: from mailout1.w1.samsung.com ([210.118.77.11]:35818 "EHLO
-	mailout1.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754401Ab2EVHke (ORCPT
+	id S1754682Ab2EVHod (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 May 2012 03:44:33 -0400
+Received: from haggis.pcug.org.au ([203.10.76.10]:52693 "EHLO
+	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752979Ab2EVHob (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 May 2012 03:40:34 -0400
-Date: Tue, 22 May 2012 09:40:17 +0200
-From: Marek Szyprowski <m.szyprowski@samsung.com>
-Subject: [GIT PULL] CMA and ARM DMA-mapping updates for v3.5
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        Arnd Bergmann <arnd@arndb.de>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Russell King <linux@arm.linux.org.uk>, linaro-mm-sig@lists.linaro.org,
-        Marek Szyprowski <m.szyprowski@samsung.com>,
-        Michal Nazarewicz <mina86@mina86.com>,
-        Kyungmin Park <kyungmin.park@samsung.com>
-Message-id: <1337672417-10065-1-git-send-email-m.szyprowski@samsung.com>
-MIME-version: 1.0
-X-Mailer: git-send-email 1.7.10
-Content-type: TEXT/PLAIN
-Content-transfer-encoding: 7BIT
+	Tue, 22 May 2012 03:44:31 -0400
+Date: Tue, 22 May 2012 17:44:26 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: "Eric W. Biederman" <ebiederm@xmission.com>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Linus <torvalds@linux-foundation.org>
+Subject: linux-next: manual merge of the userns tree with Linus' tree
+Message-Id: <20120522174426.1cd39ec7841e7545bb340cdd@canb.auug.org.au>
+X-Mailer: Sylpheed 3.2.0beta7 (GTK+ 2.24.10; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Tue__22_May_2012_17_44_26_+1000_7fMVAfz+rPOestkl"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus,
+--Signature=_Tue__22_May_2012_17_44_26_+1000_7fMVAfz+rPOestkl
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-I would like to ask for pulling Contiguous Memory Allocator (CMA) and
-ARM DMA-mapping framework updates for v3.5.
+Hi Eric,
 
-The following changes since commit 76e10d158efb6d4516018846f60c2ab5501900bc:
+Today's linux-next merge of the userns tree got a conflict in fs/stat.c
+between commit a52dd971f947 ("vfs: de-crapify "cp_new_stat()" function")
+from Linus' tree and commit a7c1938e22c0 ("userns: Convert stat to return
+values mapped from kuids and kgids") from the userns tree.
 
-  Linux 3.4 (2012-05-20 15:29:13 -0700)
+Just context changes.  I fixed it up (see below) and can carry the fix as
+necessary.
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
 
-with the top-most commit 0f51596bd39a5c928307ffcffc9ba07f90f42a8b
+diff --cc fs/stat.c
+index 0cef336,31acca5..0000000
+--- a/fs/stat.c
++++ b/fs/stat.c
+@@@ -224,9 -215,17 +224,9 @@@ static int cp_new_stat(struct kstat *st
+  	tmp.st_nlink =3D stat->nlink;
+  	if (tmp.st_nlink !=3D stat->nlink)
+  		return -EOVERFLOW;
+- 	SET_UID(tmp.st_uid, stat->uid);
+- 	SET_GID(tmp.st_gid, stat->gid);
++ 	SET_UID(tmp.st_uid, from_kuid_munged(current_user_ns(), stat->uid));
++ 	SET_GID(tmp.st_gid, from_kgid_munged(current_user_ns(), stat->gid));
+ -#if BITS_PER_LONG =3D=3D 32
+ -	tmp.st_rdev =3D old_encode_dev(stat->rdev);
+ -#else
+ -	tmp.st_rdev =3D new_encode_dev(stat->rdev);
+ -#endif
+ -#if BITS_PER_LONG =3D=3D 32
+ -	if (stat->size > MAX_NON_LFS)
+ -		return -EOVERFLOW;
+ -#endif=09
+ +	tmp.st_rdev =3D encode_dev(stat->rdev);
+  	tmp.st_size =3D stat->size;
+  	tmp.st_atime =3D stat->atime.tv_sec;
+  	tmp.st_mtime =3D stat->mtime.tv_sec;
 
-  Merge branch 'for-next-arm-dma' into for-linus
+--Signature=_Tue__22_May_2012_17_44_26_+1000_7fMVAfz+rPOestkl
+Content-Type: application/pgp-signature
 
-are available in the git repository at:
-  git://git.linaro.org/people/mszyprowski/linux-dma-mapping.git for-linus
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
 
+iQIcBAEBCAAGBQJPu0PaAAoJEECxmPOUX5FEq7IQAIbmJaKVKcMB8n3yTlVun6fk
+7Dxh/69skF8J9oPHCMQNzy+4+QI8j8LcBrHq2rWGOUEXJnReohGMMV3WUvGlo+fr
+5F9Bib/WddJT4+Yym+c99fVmMfGHQigPNCRYhZJMUf+2bZGd8Nb5uwaO/xZnXjzn
+1VhOCd1djtaphdzCokhKwcXUkF62y5sm8Pqn5Nyzk/wm/Y5NzFuVr4VV+gxDAIQv
+XCMp82vp/yAtJ2x9iJ5/8R69q3aWaFMgVlva2MNP+wqMLjl5CTA4cVWFAFkNPBMt
+oNCX3e13XS2s8FZH7scxUM5tdgnglM6qnaRzMLBTzx6mWYltEbbDfHsdxGG7aXSI
+84zMx5QcpUGlRHmUA5ABDUjAubhcwf5wqsUHCZ31qMrENLYyqogJfXe+03CMeJFZ
+wudxagQc/t3sj6qATaME3V6CLiYJn3IUtZvKQ8DD79kbEea5W4NSxz7TyC++bGCL
+otdDhNG7c0ken/qU4NLqsjLZb0kCQ03zHuz9zeAuW9vDE/HLcAG7MESzhoyg5crU
+2zowKC+vCw/r0Cfd4Eiv7g3yMfMO8yOdEvtffhmDxa3+8yUNe7sZkt4gxw/GccNL
+q6bN6TC7dsRaFKU9Y86SFsG/Xy9tFxtIxxm/GBT4JCTiXGLGYV/5YyCdwPPG8rhg
+/QkySZr5z/mgkYytM35F
+=Jqiu
+-----END PGP SIGNATURE-----
 
-These patches contains 2 major updates for DMA mapping subsystem (mainly
-for ARM architecture). First one is Contiguous Memory Allocator (CMA)
-which makes it possible for device drivers to allocate big contiguous
-chunks of memory after the system has booted. 
-
-The main difference from the similar frameworks is the fact that CMA
-allows to transparently reuse memory region reserved for the big chunk
-allocation as a system memory, so no memory is wasted when no big chunk
-is allocated. Once the alloc request is issued, the framework migrates
-system pages to create a space for the required big chunk of physically
-contiguous memory.
-
-For more information one can refer to nice LWN articles:
-'A reworked contiguous memory allocator': http://lwn.net/Articles/447405/
-'CMA and ARM': http://lwn.net/Articles/450286/
-'A deep dive into CMA': http://lwn.net/Articles/486301/
-and the following thread with the patches and links to all previous versions:
-https://lkml.org/lkml/2012/4/3/204
-
-The main client for this new framework is ARM DMA-mapping subsystem.
-
-The second part provides a complete redesign in ARM DMA-mapping
-subsystem. The core implementation has been changed to use common struct
-dma_map_ops based infrastructure with the recent updates for new dma
-attributes merged in v3.4-rc2. This allows to use more than one
-implementation of dma-mapping calls and change/select them on the struct
-device basis. The first client of this new infractructure is dmabounce
-implementation which has been completely cut out of the core, common
-code.
-
-The last patch of this redesign update introduces a new, experimental
-implementation of dma-mapping calls on top of generic IOMMU framework.
-This lets ARM sub-platform to transparently use IOMMU for DMA-mapping
-calls if one provides required IOMMU hardware.
-
-For more information please refer to the following thread:
-http://www.spinics.net/lists/arm-kernel/msg175729.html
-
-The last patch merges changes from both updates and provides a
-resolution for the conflicts which cannot be avoided when patches have
-been applied on the same files (mainly arch/arm/mm/dma-mapping.c).
-
-Thanks!
-
-Best regards
-Marek Szyprowski
-Samsung Poland R&D Center
-
-
-Patch summary:
-
-Marek Szyprowski (17):
-      common: add dma_mmap_from_coherent() function
-      ARM: dma-mapping: use dma_mmap_from_coherent()
-      ARM: dma-mapping: use pr_* instread of printk
-      ARM: dma-mapping: introduce DMA_ERROR_CODE constant
-      ARM: dma-mapping: remove offset parameter to prepare for generic dma_ops
-      ARM: dma-mapping: use asm-generic/dma-mapping-common.h
-      ARM: dma-mapping: implement dma sg methods on top of any generic dma ops
-      ARM: dma-mapping: move all dma bounce code to separate dma ops structure
-      ARM: dma-mapping: remove redundant code and do the cleanup
-      ARM: dma-mapping: use alloc, mmap, free from dma_ops
-      ARM: dma-mapping: add support for IOMMU mapper
-      mm: extract reclaim code from __alloc_pages_direct_reclaim()
-      mm: trigger page reclaim in alloc_contig_range() to stabilise watermarks
-      drivers: add Contiguous Memory Allocator
-      X86: integrate CMA with DMA-mapping subsystem
-      ARM: integrate CMA with DMA-mapping subsystem
-      Merge branch 'for-next-arm-dma' into for-linus
-
-Mel Gorman (1):
-      mm: Serialize access to min_free_kbytes
-
-Michal Nazarewicz (9):
-      mm: page_alloc: remove trailing whitespace
-      mm: compaction: introduce isolate_migratepages_range()
-      mm: compaction: introduce map_pages()
-      mm: compaction: introduce isolate_freepages_range()
-      mm: compaction: export some of the functions
-      mm: page_alloc: introduce alloc_contig_range()
-      mm: page_alloc: change fallbacks array handling
-      mm: mmzone: MIGRATE_CMA migration type added
-      mm: page_isolation: MIGRATE_CMA isolation functions added
-
-Minchan Kim (1):
-      cma: fix migration mode
-
-Vitaly Andrianov (1):
-      ARM: dma-mapping: use PMD size for section unmap
-
- Documentation/kernel-parameters.txt   |    9 +
- arch/Kconfig                          |    3 +
- arch/arm/Kconfig                      |   11 +
- arch/arm/common/dmabounce.c           |   84 ++-
- arch/arm/include/asm/device.h         |    4 +
- arch/arm/include/asm/dma-contiguous.h |   15 +
- arch/arm/include/asm/dma-iommu.h      |   34 +
- arch/arm/include/asm/dma-mapping.h    |  407 +++--------
- arch/arm/include/asm/mach/map.h       |    1 +
- arch/arm/kernel/setup.c               |    9 +-
- arch/arm/mm/dma-mapping.c             | 1348 ++++++++++++++++++++++++++++-----
- arch/arm/mm/init.c                    |   23 +-
- arch/arm/mm/mm.h                      |    3 +
- arch/arm/mm/mmu.c                     |   31 +-
- arch/arm/mm/vmregion.h                |    2 +-
- arch/x86/Kconfig                      |    1 +
- arch/x86/include/asm/dma-contiguous.h |   13 +
- arch/x86/include/asm/dma-mapping.h    |    5 +
- arch/x86/kernel/pci-dma.c             |   18 +-
- arch/x86/kernel/pci-nommu.c           |    8 +-
- arch/x86/kernel/setup.c               |    2 +
- drivers/base/Kconfig                  |   89 +++
- drivers/base/Makefile                 |    1 +
- drivers/base/dma-coherent.c           |   42 +
- drivers/base/dma-contiguous.c         |  401 ++++++++++
- include/asm-generic/dma-coherent.h    |    4 +-
- include/asm-generic/dma-contiguous.h  |   28 +
- include/linux/device.h                |    4 +
- include/linux/dma-contiguous.h        |  110 +++
- include/linux/gfp.h                   |   12 +
- include/linux/mmzone.h                |   47 +-
- include/linux/page-isolation.h        |   18 +-
- mm/Kconfig                            |    2 +-
- mm/Makefile                           |    3 +-
- mm/compaction.c                       |  418 +++++++----
- mm/internal.h                         |   33 +
- mm/memory-failure.c                   |    2 +-
- mm/memory_hotplug.c                   |    6 +-
- mm/page_alloc.c                       |  409 +++++++++--
- mm/page_isolation.c                   |   15 +-
- mm/vmstat.c                           |    3 +
- 41 files changed, 2898 insertions(+), 780 deletions(-)
- create mode 100644 arch/arm/include/asm/dma-contiguous.h
- create mode 100644 arch/arm/include/asm/dma-iommu.h
- create mode 100644 arch/x86/include/asm/dma-contiguous.h
- create mode 100644 drivers/base/dma-contiguous.c
- create mode 100644 include/asm-generic/dma-contiguous.h
- create mode 100644 include/linux/dma-contiguous.h
+--Signature=_Tue__22_May_2012_17_44_26_+1000_7fMVAfz+rPOestkl--
