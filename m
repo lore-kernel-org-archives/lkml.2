@@ -1,91 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754299Ab2EVNaq (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 May 2012 09:30:46 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:28827 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751860Ab2EVNao (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 May 2012 09:30:44 -0400
-X-Authority-Analysis: v=2.0 cv=ae7jbGUt c=1 sm=0 a=ZycB6UtQUfgMyuk2+PxD7w==:17 a=XQbtiDEiEegA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=meVymXHHAAAA:8 a=ayC55rCoAAAA:8 a=zCH6jB1A-232fqpeKNgA:9 a=8ZgFc_Zevw9XLIMe6rYA:7 a=PUjeQqilurYA:10 a=ZycB6UtQUfgMyuk2+PxD7w==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 74.67.80.29
-Message-ID: <1337693441.13348.36.camel@gandalf.stny.rr.com>
-Subject: Re: NMI vs #PF clash
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Avi Kivity <avi@redhat.com>
-Cc: linux-kernel <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@elte.hu>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>,
-        Paul Turner <pjt@google.com>, Peter Zijlstra <peterz@infradead.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
-Date: Tue, 22 May 2012 09:30:41 -0400
-In-Reply-To: <4FBB8C40.6080304@redhat.com>
-References: <4FBB8C40.6080304@redhat.com>
-Content-Type: text/plain; charset="ISO-8859-15"
-X-Mailer: Evolution 3.2.2-1 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	id S1754957Ab2EVNeM (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 May 2012 09:34:12 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:31484 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751246Ab2EVNeK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 May 2012 09:34:10 -0400
+Date: Tue, 22 May 2012 09:33:56 -0400
+From: Don Zickus <dzickus@redhat.com>
+To: Feng Tang <feng.tang@intel.com>
+Cc: Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <peterz@infradead.org>,
+        x86@kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH]x86, reboot: Fix a warning message triggered by
+ stop_other_cpus()
+Message-ID: <20120522133356.GW32472@redhat.com>
+References: <20120522105233.725be041@feng-i7>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120522105233.725be041@feng-i7>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2012-05-22 at 15:53 +0300, Avi Kivity wrote:
-> The recent changes to NMI allow exceptions to take place in NMI
-> handlers, but I think that a #PF (say, due to access to vmalloc space)
-> is still problematic.  Consider the sequence
+On Tue, May 22, 2012 at 10:52:33AM +0800, Feng Tang wrote:
 > 
->   #PF  (cr2 set by processor)
->     NMI
->       ...
->       #PF (cr2 clobbered)
->         do_page_fault()
->         IRET
->       ...
->       IRET
->     do_page_fault()
->       address = read_cr2()
+> The root cause seems to be the default_send_IPI_mask_allbutself_phys()
+> takes quiet some time (I measured it could be several ms) to complete
+> sending NMIs to all the other 23 CPUs, and for HZ=250/1000 system, the
 
-This is still problematic. But the "allow faults in NMI" wasn't written
-for page faults, although they wont totally crash the system like they
-use to. If a NMI triggers during a page fault routine before the reading
-of the cr2, and it takes a page fault, then yes, this will corrupt the
-cr2 and cause unpredictable results (not good)
+I sent Ingo a patch (which he took in), that reverts this path to interrupts
+again (and NMIs as a fallback if it fails).  The problem will still exist
+I assume though I don't know if it changes the timing characteristics.
 
-That said, we still should not be having page faults in NMI. The fault
-handling was to allow breakpoints in the NMI code, which should not be a
-problem here. There is code to handle nested breakpoints because of
-NMIs.
-
-The only time I found #PF useful in NMIs was for debugging. Having a
-stack dump of all tasks (sysrq-t) when the NMI watchdog detects a
-deadlock can be very useful. But stack traces can trigger page faults,
-and before this fault handling in NMI code went in, I could not get a
-full task state dump from NMI context. This was due to the first page
-fault happening by a stack dump would enable NMIs, and as the state of
-all tasks dumping out to the serial port took a long time, another NMI
-would come in and corrupt the NMI stack leading to a system hang or
-triple fault reboot. Never letting the task dump to finish.
-
-This code now alleviates that problem.
-
->  
-> The last line reads the overwritten cr2 value.
+> time is long enough for a timer interrupt to happen, which will in
+> turn trigger to kick load balance to a stopped CPU and cause this
+> warning in native_smp_send_reschedule().
 > 
-> I vaguely remember some discussion about this back in the day, but I
-> can't find anything in the code to save/restore cr2 in the NMI handler. 
-> Did I miss it?  Or perhaps the page fault handler ignores the incorrect
-> cr2 and IRETs, to fault back immediately?
-> 
+> So disabling the local irq before stop_other_cpu() can fix this
+> problem (tested 25 times reboot ok), and it is fine as there should
+> be nobody caring the timer interrupt in such reboot stage.
 
-Now if we want to handle page faults from NMI context, we could do some
-tricks to have the NMI detect that it interrupted a page fault before it
-read the cr2 and in that case, save off the cr2 register, and restore it
-before returning.
+It seems to be fine.  I just do not know enough about the load balancing
+the timer interrupt does to know if this is the right way to go or not.
 
-Or we could just have the NMI always restore the cr2 register.
+So from the shutdown cpu perspective, you are just blocking the interrupt
+from occurring while we shutdown the other cpus, which prevents the load
+balancer from running and seeing cpus disappear beneath it.  Sounds
+reasonable.
 
--- Steve
+Though on the other hand the same interrupt on another cpu might spit out
+the same warning as cpus disappear without notification if it tries to
+reschedule.  Probably rare and the window is probably small as the cpus
+would probably all 'stop' rather quickly.
 
+I don't know.  I guess it is ok.
 
+Cheers,
+Don
