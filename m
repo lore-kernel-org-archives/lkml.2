@@ -1,127 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756163Ab2EVRsx (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 May 2012 13:48:53 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:1755 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751234Ab2EVRsv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 May 2012 13:48:51 -0400
-Date: Tue, 22 May 2012 19:48:42 +0200
-From: Andrea Arcangeli <aarcange@redhat.com>
-To: Pravin B Shelar <pshelar@nicira.com>
-Cc: cl@linux.com, penberg@kernel.org, mpm@selenic.com,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org, jesse@nicira.com,
-        abhide@nicira.com
-Subject: Re: [PATCH v3] mm: Fix slab->page flags corruption.
-Message-ID: <20120522174842.GB4071@redhat.com>
-References: <1337293069-22443-1-git-send-email-pshelar@nicira.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1337293069-22443-1-git-send-email-pshelar@nicira.com>
+	id S1756297Ab2EVRuv (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 May 2012 13:50:51 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:23455 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751246Ab2EVRut (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 May 2012 13:50:49 -0400
+X-Authority-Analysis: v=2.0 cv=ae7jbGUt c=1 sm=0 a=ZycB6UtQUfgMyuk2+PxD7w==:17 a=XQbtiDEiEegA:10 a=huzqtivG31QA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=meVymXHHAAAA:8 a=ayC55rCoAAAA:8 a=o_nbX5Dwvd3lauVb7isA:9 a=uf3DrvMXGZTwqSl8kbcA:7 a=PUjeQqilurYA:10 a=ZycB6UtQUfgMyuk2+PxD7w==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 74.67.80.29
+Message-ID: <1337709048.13348.112.camel@gandalf.stny.rr.com>
+Subject: Re: [RFC][PATCH RT] rwsem_rt: Another (more sane) approach to mulit
+ reader rt locks
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Thomas Gleixner <tglx@linutronix.de>
+Cc: LKML <linux-kernel@vger.kernel.org>, RT <linux-rt-users@vger.kernel.org>,
+        Clark Williams <williams@redhat.com>,
+        Peter Zijlstra <peterz@infradead.org>
+Date: Tue, 22 May 2012 13:50:48 -0400
+In-Reply-To: <alpine.LFD.2.02.1205221906250.3231@ionos>
+References: <1337090625.14207.304.camel@gandalf.stny.rr.com>
+	   <alpine.LFD.2.02.1205221553400.3231@ionos>
+	  <1337701801.13348.56.camel@gandalf.stny.rr.com>
+	  <alpine.LFD.2.02.1205221803290.3231@ionos>
+	 <1337705539.13348.81.camel@gandalf.stny.rr.com>
+	 <alpine.LFD.2.02.1205221906250.3231@ionos>
+Content-Type: text/plain; charset="ISO-8859-15"
+X-Mailer: Evolution 3.2.2-1 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, May 17, 2012 at 03:17:49PM -0700, Pravin B Shelar wrote:
-> diff --git a/mm/swap.c b/mm/swap.c
-> index 8ff73d8..44a0f81 100644
-> --- a/mm/swap.c
-> +++ b/mm/swap.c
-> @@ -82,6 +82,19 @@ static void put_compound_page(struct page *page)
->  		if (likely(page != page_head &&
->  			   get_page_unless_zero(page_head))) {
->  			unsigned long flags;
-> +
-> +			if (PageSlab(page_head)) {
-> +				if (PageTail(page)) {
-> +					/* THP can not break up slab pages, avoid
-> +					 * taking compound_lock(). */
-> +					if (put_page_testzero(page_head))
-> +						VM_BUG_ON(1);
-> +
-> +					atomic_dec(&page->_mapcount);
-> +					goto skip_lock_tail;
-> +				} else
-> +					goto skip_lock;
-> +			}
+On Tue, 2012-05-22 at 19:07 +0200, Thomas Gleixner wrote:
+> On Tue, 22 May 2012, Steven Rostedt wrote:
+> 
+> > On Tue, 2012-05-22 at 18:40 +0200, Thomas Gleixner wrote:
+> > 
+> > > > I'm all for benchmarks. But right now, making all readers pass through a
+> > > > single mutex is a huge bottle neck for a lot of loads. Yes, they are
+> > > > mostly Java loads, but for some strange reason, our customers seems to
+> > > > like to run Java on our RT kernel :-p
+> > > 
+> > > I'm well aware that mmap_sem is a PITA but replacing one nightmare
+> > > with the next one is not the best approach.
+> > 
+> > Perhaps we could just change the mmap_sem to use this approach. Create a
+> > new type of rwsem/lock for -rt that we can be picky about.
+> > 
+> > Yeah, mmap_sem is a real PITA and it would be nice to have a solution
+> > that can be used until we can convert it to an RCU lock.
+> 
+> That still wants to be verified with numbers on a machine with at
+> least 32 cores and workloads which are mmap heavy. And before we don't
+> have such numbers we can really stop arguing about that solution.
+> 
 
-Some commentary on the fact slab prefers not using atomic ops on the
-page->flags could help here.
+Agreed. I now have to find those that complained before, and see how
+this patch can help. We need the patch to get the numbers (otherwise
+it's a chicken vs egg deal).
 
->  			/*
->  			 * page_head wasn't a dangling pointer but it
->  			 * may not be a head page anymore by the time
-> @@ -93,6 +106,7 @@ static void put_compound_page(struct page *page)
->  				/* __split_huge_page_refcount run before us */
->  				compound_unlock_irqrestore(page_head, flags);
->  				VM_BUG_ON(PageHead(page_head));
+I'd also like to see what problems would happen from taking all cpu
+reader locks for a given writer.
 
-Hmmm hmmm while reviewing this one, I've been thinking maybe the head
-page after the hugepage split, could have been freed and reallocated
-as order 1 or 2, and legitimately become an head page again.
+I never said that this code must be merged. I want to see the numbers
+too before we decide anything. I'll still clean up the patch and
+hopefully we can get others to test it out and give their feedback.
 
-The whole point of the bug-on is that it cannot be reallocated as a
-THP beause the tail is still there and it's not free yet, but it
-doesn't take into account the head page could be allocated as a
-compound page of a smaller size and maybe the tail is the last subpage
-of the thp.
+Otherwise we're just hand waving back and forth at each other and it's
+not fair because you have bigger hands that I do ;-)
 
-So there's the risk of a false positive, in an extremely unlikely case
-(the fact slab goes in unmovable pageblocks and thp goes in movable
-further decreases the probability). All production kernels runs with
-VM_BUG_ON disabled so it's a very small concern, but maybe we should
-delete it. It has never triggered, just code reivew. Do you agree?
+-- Steve
 
-> +			skip_lock:
->  				if (put_page_testzero(page_head))
->  					__put_single_page(page_head);
->  			out_put_single:
-> @@ -115,6 +129,8 @@ static void put_compound_page(struct page *page)
->  			VM_BUG_ON(atomic_read(&page_head->_count) <= 0);
->  			VM_BUG_ON(atomic_read(&page->_count) != 0);
->  			compound_unlock_irqrestore(page_head, flags);
-> +
-> +			skip_lock_tail:
->  			if (put_page_testzero(page_head)) {
->  				if (PageHead(page_head))
->  					__put_compound_page(page_head);
-> @@ -162,6 +178,15 @@ bool __get_page_tail(struct page *page)
->  	struct page *page_head = compound_trans_head(page);
->  
->  	if (likely(page != page_head && get_page_unless_zero(page_head))) {
-> +
-> +		if (PageSlab(page_head)) {
-> +			if (likely(PageTail(page))) {
-> +				__get_page_tail_foll(page, false);
-> +				return true;
-> +			} else
-> +				goto out;
-> +		}
-> +
+PS. Whatever the outcome, I did say that I will *not* be porting this to
+any of the stable releases, as it is a new 'feature' and not a true bug
+fix.
 
-A comment here too would be nice.
 
->  		/*
->  		 * page_head wasn't a dangling pointer but it
->  		 * may not be a head page anymore by the time
-> @@ -175,6 +200,8 @@ bool __get_page_tail(struct page *page)
->  			got = true;
->  		}
->  		compound_unlock_irqrestore(page_head, flags);
-> +
-> +		out:
->  		if (unlikely(!got))
->  			put_page(page_head);
-
-out could go in the line below. Assuming we don't want to be cleaner
-and use put_page above instead of goto, that would also drop a branch
-probably (the goto place is such a slow path). I'm fine either ways.
-
-It's not the cleanest of the patches but it's clearly a performance
-tweak.
-
-Reviewed-by: Andrea Arcangeli <aarcange@redhat.com>
-
-Thanks,
-Andrea
