@@ -1,117 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751369Ab2EVGVn (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 May 2012 02:21:43 -0400
-Received: from mail-qa0-f46.google.com ([209.85.216.46]:44060 "EHLO
-	mail-qa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750838Ab2EVGVm (ORCPT
+	id S1751805Ab2EVGul (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 May 2012 02:50:41 -0400
+Received: from mga03.intel.com ([143.182.124.21]:41129 "EHLO mga03.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750896Ab2EVGuj convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 May 2012 02:21:42 -0400
-Date: Tue, 22 May 2012 14:21:27 +0800
-From: Yong Zhang <yong.zhang0@gmail.com>
-To: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-Cc: linux-mips@linux-mips.org, linux-kernel@vger.kernel.org,
-        ralf@linux-mips.org, sshtylyov@mvista.com, david.daney@cavium.com
-Subject: Re: [PATCH 6/8] MIPS: call set_cpu_online() on the uping cpu with
- irq disabled
-Message-ID: <20120522062126.GB12098@zhy>
-Reply-To: Yong Zhang <yong.zhang0@gmail.com>
-References: <1337580008-7280-1-git-send-email-yong.zhang0@gmail.com>
- <1337580008-7280-7-git-send-email-yong.zhang0@gmail.com>
- <4FBA1B54.3@linux.vnet.ibm.com>
+	Tue, 22 May 2012 02:50:39 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
+   d="scan'208";a="102740015"
+From: "Du, ChangbinX" <changbinx.du@intel.com>
+To: "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
+        David Rientjes <rientjes@google.com>
+CC: Sergei Shtylyov <sshtylyov@mvista.com>,
+        "mina86@mina86.com" <mina86@mina86.com>,
+        "Fleming, Matt" <matt.fleming@intel.com>,
+        "balbi@ti.com" <balbi@ti.com>, "hpa@zytor.com" <hpa@zytor.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>
+Subject: [PATCH v3] testusb: add path /dev/bus/usb to default search paths
+ of usbfs
+Thread-Topic: [PATCH v3] testusb: add path /dev/bus/usb to default search
+ paths of usbfs
+Thread-Index: AQHNN+cp9BusCFthtkWJbyjs7xMVXw==
+Date: Tue, 22 May 2012 06:50:24 +0000
+Message-ID: <0C18FE92A7765D4EB9EE5D38D86A563A063A7C@SHSMSX101.ccr.corp.intel.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.239.127.40]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <4FBA1B54.3@linux.vnet.ibm.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, May 21, 2012 at 04:09:16PM +0530, Srivatsa S. Bhat wrote:
-> On 05/21/2012 11:30 AM, Yong Zhang wrote:
-> 
-> > From: Yong Zhang <yong.zhang@windriver.com>
-> > 
-> > To prevent a problem as commit 5fbd036b [sched: Cleanup cpu_active madness]
-> > and commit 2baab4e9 [sched: Fix select_fallback_rq() vs cpu_active/cpu_online]
-> > try to resolve, move set_cpu_online() to the brought up CPU and with irq
-> > disabled.
-> > 
-> > Signed-off-by: Yong Zhang <yong.zhang0@gmail.com>
-> > Acked-by: David Daney <david.daney@cavium.com>
-> > ---
-> >  arch/mips/kernel/smp.c |    4 ++--
-> >  1 files changed, 2 insertions(+), 2 deletions(-)
-> > 
-> > diff --git a/arch/mips/kernel/smp.c b/arch/mips/kernel/smp.c
-> > index 73a268a..042145f 100644
-> > --- a/arch/mips/kernel/smp.c
-> > +++ b/arch/mips/kernel/smp.c
-> > @@ -122,6 +122,8 @@ asmlinkage __cpuinit void start_secondary(void)
-> > 
-> >  	notify_cpu_starting(cpu);
-> > 
-> > +	set_cpu_online(cpu, true);
-> > +
-> 
-> 
-> You will also need to use ipi_call_lock/unlock() around this.
-> See how x86 does it. (MIPS also selects USE_GENERIC_SMP_HELPERS).
+As real device-nodes managed by udev whose nodes lived in /dev/bus/usb
+are mostly used today, let testusb tool use that directory as one default
+path make tool be more convenient to use.
 
-Hmm... But look at the comments in arch/x86/kernel/smpboot.c::start_secondary()
+Signed-off-by: Du Changbin <changbinx.du@intel.com>
+---
+ tools/usb/testusb.c |    4 +++-
+ 1 file changed, 3 insertions(+), 1 deletion(-)
 
-start_secondary()
-{
-	...
-        /*   
-         * We need to hold call_lock, so there is no inconsistency
-         * between the time smp_call_function() determines number of
-         * IPI recipients, and the time when the determination is made
-         * for which cpus receive the IPI. Holding this
-         * lock helps us to not include this cpu in a currently in progress
-         * smp_call_function().
-         *
-         * We need to hold vector_lock so there the set of online cpus
-         * does not change while we are assigning vectors to cpus.  Holding
-         * this lock ensures we don't half assign or remove an irq from a cpu.
-         */
-        ipi_call_lock();
-        lock_vector_lock();
-        set_cpu_online(smp_processor_id(), true);
-        unlock_vector_lock();
-        ipi_call_unlock();
-
-	...
-}
-
-which ipi_call_lock()/ipi_call_unlock() is to pretect race with concurrent 
-smp_call_function(), but it seems that is already broken, because
-
-1) The comments is alread there before we switch to generic smp helper(commit
-   3b16cf87), and at that time the comments is true because
-   smp_call_function_interrupt() doesn't test if a cpu should handle the
-   IPI interrupt.
-   But in the gereric smp helper, we have checked if a cpu should handle the IPI
-   in generic_smp_call_function_interrupt():
-   	if (!cpumask_test_cpu(cpu, data->cpumask))
-		continue;
-
-2) call_function.lock used in smp_call_function_many() is just to protect
-   call_function.queue and &data->refs, cpu_online_mask is outside of the
-   lock. And I don't think it's necessary to protect cpu_online_mask,
-   because data->cpumask is pre-calculate and even if a cpu is brougt up
-   when calling arch_send_call_function_ipi_mask(), it's harmless because
-   validation test in generic_smp_call_function_interrupt() will take care
-   of it.
-
-3) For cpu down issue, stop_machine() will guarantee that no concurrent
-   smp_call_fuction() is processing.
-
-So it seems ipi_call_lock()/ipi_call_unlock() is not needed and could be
-removed IMHO.
-Or am I missing something?
-
-Thanks,
-Yong
+diff --git a/tools/usb/testusb.c b/tools/usb/testusb.c
+index 6e0f567..0aac3ff 100644
+--- a/tools/usb/testusb.c
++++ b/tools/usb/testusb.c
+@@ -358,9 +358,11 @@ static const char *usbfs_dir_find(void)
+ {
+ 	static char usbfs_path_0[] = "/dev/usb/devices";
+ 	static char usbfs_path_1[] = "/proc/bus/usb/devices";
++	/* real device-nodes managed by udev */
++	static char udev_usb_path[] = "/dev/bus/usb/";
+ 
+ 	static char *const usbfs_paths[] = {
+-		usbfs_path_0, usbfs_path_1
++		usbfs_path_0, usbfs_path_1, udev_usb_path,
+ 	};
+ 
+ 	static char *const *
+-- 
+1.7.9.5
 
