@@ -1,150 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757998Ab2EVWFi (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 May 2012 18:05:38 -0400
-Received: from mail.windriver.com ([147.11.1.11]:37629 "EHLO
-	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752348Ab2EVWFh (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 May 2012 18:05:37 -0400
-Date: Tue, 22 May 2012 18:05:33 -0400
-From: Paul Gortmaker <paul.gortmaker@windriver.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-CC: <linux-kernel@vger.kernel.org>
-Subject: [GIT PULL] Delete MCA support
-Message-ID: <20120522220533.GA1781@windriver.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S932320Ab2EVWFx (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 May 2012 18:05:53 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:41956 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1758062Ab2EVWFv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 May 2012 18:05:51 -0400
+From: Hans de Goede <hdegoede@redhat.com>
+To: linux-kernel@vger.kernel.org
+Cc: Jiri Slaby <jslaby@suse.cz>, Jiri Kosina <jkosina@suse.cz>,
+        USB list <linux-usb@vger.kernel.org>,
+        Hans de Goede <hdegoede@redhat.com>
+Subject: [PATCH] device-core: Ensure drvdata = NULL when no driver is bound
+Date: Wed, 23 May 2012 00:09:34 +0200
+Message-Id: <1337724574-2193-1-git-send-email-hdegoede@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Linus,
+1) drvdata is for a driver to store a pointer to driver specific data
+2) If no driver is bound, there is no driver specific data associated with
+   the device
+3) Thus logically drvdata should be NULL if no driver is bound.
 
-Aside from adding some Acked-by lines, these four commits to delete
-the MCA support remain unchanged since last week's RFC.
+But many drivers don't clear drvdata on device_release, or set drvdata
+early on in probe and leave it set on probe error. Both of which results
+in a dangling pointer in drvdata.
 
-DaveM requested the MCA net driver deletion for net-next independently,
-so that net-next commit (which you already have) became the baseline
-for my "delete-mca" branch, and remains so for this pull.
+This patch enforce for drvdata to be NULL after device_release or on probe
+failure.
 
-A test merge against today's tree was seamless and automatic.
-
-My original text from the 0/5 RFC is below, should you want to use it
-as part of a merge commit description:
-
----------
-It was good that we could support MCA machines back in the day, but
-realistically, nobody is using them anymore.  They were limited to
-386-sx 16MHz CPU and some 486 class machines and never more than 64MB
-of RAM.  Even the enthusiast hobbyist community seems to have dried up
-close to ten years ago, based on what you can find searching various
-websites dedicated to the relatively short lived hardware.
-
-So lets remove the support relating to CONFIG_MCA.  There is no point
-carrying this forward, wasting cycles doing routine maintenance on it;
-wasting allyesconfig build time on validating it, wasting I/O on
-git grep'ping over it, and so on.
----------
-
-Please pull the below to finalize the MCA removal for v3.5.
-
-Thanks,
-Paul
+Signed-off-by: Hans de Goede <hdegoede@redhat.com>
 ---
+ drivers/base/dd.c |    2 ++
+ 1 file changed, 2 insertions(+)
 
-The following changes since commit a5e371f61ad33c07b28e7c9b60c78d71fdd34e2a:
+diff --git a/drivers/base/dd.c b/drivers/base/dd.c
+index 1b1cbb5..9a1e970 100644
+--- a/drivers/base/dd.c
++++ b/drivers/base/dd.c
+@@ -283,6 +283,7 @@ probe_failed:
+ 	devres_release_all(dev);
+ 	driver_sysfs_remove(dev);
+ 	dev->driver = NULL;
++	dev_set_drvdata(dev, NULL);
+ 
+ 	if (ret == -EPROBE_DEFER) {
+ 		/* Driver requested deferred probing */
+@@ -487,6 +488,7 @@ static void __device_release_driver(struct device *dev)
+ 			drv->remove(dev);
+ 		devres_release_all(dev);
+ 		dev->driver = NULL;
++		dev_set_drvdata(dev, NULL);
+ 		klist_remove(&dev->p->knode_driver);
+ 		if (dev->bus)
+ 			blocking_notifier_call_chain(&dev->bus->p->bus_notifier,
+-- 
+1.7.10
 
-  drivers/net: delete all code/drivers depending on CONFIG_MCA (2012-05-17 16:37:41 -0400)
-
-are available in the git repository at:
-
-  git://git.kernel.org/pub/scm/linux/kernel/git/paulg/linux.git delete-mca
-
-for you to fetch changes up to bb8187d35f820671d6dd76700d77a6b55f95e2c5:
-
-  MCA: delete all remaining traces of microchannel bus support. (2012-05-17 19:06:13 -0400)
-
-----------------------------------------------------------------
-Paul Gortmaker (4):
-      arm: remove ability to select CONFIG_MCA
-      serial: delete the MCA specific 8250 support.
-      scsi: delete the MCA specific drivers and driver code
-      MCA: delete all remaining traces of microchannel bus support.
-
- Documentation/00-INDEX                  |    2 -
- Documentation/DocBook/Makefile          |    2 +-
- Documentation/DocBook/kernel-api.tmpl   |   13 -
- Documentation/DocBook/mcabook.tmpl      |  107 --
- Documentation/devices.txt               |    8 +-
- Documentation/eisa.txt                  |    2 +-
- Documentation/kernel-parameters.txt     |    1 -
- Documentation/mca.txt                   |  313 ----
- Documentation/scsi/00-INDEX             |    2 -
- Documentation/scsi/ibmmca.txt           | 1402 ------------------
- Documentation/scsi/scsi-parameters.txt  |    6 -
- Documentation/scsi/scsi_mid_low_api.txt |    2 +-
- Documentation/serial/stallion.txt       |   22 +-
- MAINTAINERS                             |   13 -
- arch/arm/Kconfig                        |    8 -
- arch/frv/include/asm/processor.h        |    1 -
- arch/x86/Kconfig                        |   10 -
- arch/x86/include/asm/mca.h              |   43 -
- arch/x86/include/asm/mca_dma.h          |  201 ---
- arch/x86/include/asm/mpspec.h           |    2 +-
- arch/x86/include/asm/mpspec_def.h       |    3 +-
- arch/x86/kernel/Makefile                |    1 -
- arch/x86/kernel/acpi/boot.c             |    2 +-
- arch/x86/kernel/apic/io_apic.c          |   17 +-
- arch/x86/kernel/mca_32.c                |  476 ------
- arch/x86/kernel/mpparse.c               |   11 +-
- arch/x86/kernel/nmi.c                   |   12 -
- arch/x86/kernel/setup.c                 |    8 -
- arch/x86/kernel/time.c                  |    6 -
- arch/x86/kernel/traps.c                 |    4 -
- drivers/Makefile                        |    1 -
- drivers/mca/Kconfig                     |   14 -
- drivers/mca/Makefile                    |    7 -
- drivers/mca/mca-bus.c                   |  169 ---
- drivers/mca/mca-device.c                |  218 ---
- drivers/mca/mca-driver.c                |   63 -
- drivers/mca/mca-legacy.c                |  329 -----
- drivers/mca/mca-proc.c                  |  249 ----
- drivers/message/i2o/i2o_proc.c          |   13 -
- drivers/scsi/Kconfig                    |   83 --
- drivers/scsi/Makefile                   |    2 -
- drivers/scsi/aha1542.c                  |   66 +-
- drivers/scsi/fd_mcs.c                   | 1354 ------------------
- drivers/scsi/ibmmca.c                   | 2379 -------------------------------
- drivers/scsi/sim710.c                   |  124 +--
- drivers/tty/serial/8250/8250_mca.c      |   61 -
- drivers/tty/serial/8250/Kconfig         |    9 -
- drivers/tty/serial/8250/Makefile        |    1 -
- include/linux/i2o-dev.h                 |    2 +-
- include/linux/mca-legacy.h              |   66 -
- include/linux/mca.h                     |  148 --
- include/linux/serial.h                  |    2 -
- include/linux/serial_8250.h             |    1 -
- scripts/kconfig/mconf.c                 |    2 +-
- scripts/kconfig/nconf.c                 |    2 +-
- 55 files changed, 32 insertions(+), 8033 deletions(-)
- delete mode 100644 Documentation/DocBook/mcabook.tmpl
- delete mode 100644 Documentation/mca.txt
- delete mode 100644 Documentation/scsi/ibmmca.txt
- delete mode 100644 arch/x86/include/asm/mca.h
- delete mode 100644 arch/x86/include/asm/mca_dma.h
- delete mode 100644 arch/x86/kernel/mca_32.c
- delete mode 100644 drivers/mca/Kconfig
- delete mode 100644 drivers/mca/Makefile
- delete mode 100644 drivers/mca/mca-bus.c
- delete mode 100644 drivers/mca/mca-device.c
- delete mode 100644 drivers/mca/mca-driver.c
- delete mode 100644 drivers/mca/mca-legacy.c
- delete mode 100644 drivers/mca/mca-proc.c
- delete mode 100644 drivers/scsi/fd_mcs.c
- delete mode 100644 drivers/scsi/ibmmca.c
- delete mode 100644 drivers/tty/serial/8250/8250_mca.c
- delete mode 100644 include/linux/mca-legacy.h
- delete mode 100644 include/linux/mca.h
