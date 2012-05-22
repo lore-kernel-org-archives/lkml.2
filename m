@@ -1,82 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758958Ab2EVPDq (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 May 2012 11:03:46 -0400
-Received: from relay.parallels.com ([195.214.232.42]:34265 "EHLO
-	relay.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756246Ab2EVPDp (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 May 2012 11:03:45 -0400
-Message-ID: <4FBBAAC9.2090403@parallels.com>
-Date: Tue, 22 May 2012 19:03:37 +0400
-From: Stanislav Kinsbursky <skinsbursky@parallels.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
+	id S1759027Ab2EVPGQ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 May 2012 11:06:16 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:54249 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756671Ab2EVPGO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 May 2012 11:06:14 -0400
+Date: Tue, 22 May 2012 11:06:06 -0400
+From: Vivek Goyal <vgoyal@redhat.com>
+To: Tao Ma <tm@tao.ma>
+Cc: linux-kernel@vger.kernel.org, Tejun Heo <tj@kernel.org>
+Subject: Re: [RFC] block/throttle: Add IO throttled information in blkcg.
+Message-ID: <20120522150606.GH3045@redhat.com>
+References: <1337674236-2896-1-git-send-email-tm@tao.ma>
+ <20120522111111.GE3045@redhat.com>
+ <4FBBA63B.1090401@tao.ma>
 MIME-Version: 1.0
-To: "Myklebust, Trond" <Trond.Myklebust@netapp.com>
-CC: "linux-nfs@vger.kernel.org" <linux-nfs@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "devel@openvz.org" <devel@openvz.org>
-Subject: Re: [PATCH] NFS: init client before declaration
-References: <20120522124018.338.20817.stgit@localhost.localdomain> <1337696984.4269.4.camel@lade.trondhjem.org>
-In-Reply-To: <1337696984.4269.4.camel@lade.trondhjem.org>
-Content-Type: text/plain; charset="UTF-8"; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4FBBA63B.1090401@tao.ma>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 22.05.2012 18:29, Myklebust, Trond wrote:
-> On Tue, 2012-05-22 at 16:40 +0400, Stanislav Kinsbursky wrote:
->> Client have to be initialized prior to adding it to per-net clients list,
->> because otherwise there are races, shown below:
->>
->> CPU#0					CPU#1
->> _____					_____
->>
->> nfs_get_client
->> nfs_alloc_client
->> list_add(..., nfs_client_list)
->> 					rpc_fill_super
->> 					rpc_pipefs_event
->> 					nfs_get_client_for_event
->> 					__rpc_pipefs_event
->> 					(clp->cl_rpcclient is uninitialized)
->> 					BUG()
->> init_client
->> clp->cl_rpcclient = ...
->>
->
-> Why not simply change nfs_get_client_for_event() so that it doesn't
-> touch nfs_clients that have clp->cl_cons_state!=NFS_CS_READY?
->
-> That should ensure that it doesn't touch nfs_clients that failed to
-> initialise and/or are still in the process of being initialised.
->
+On Tue, May 22, 2012 at 10:44:11PM +0800, Tao Ma wrote:
+> Hi Vivek,
+> 	Thanks for the quick response.
+> On 05/22/2012 07:11 PM, Vivek Goyal wrote:
+> > On Tue, May 22, 2012 at 04:10:36PM +0800, Tao Ma wrote:
+> >> From: Tao Ma <boyu.mt@taobao.com>
+> >>
+> >> Currently, if the IO is throttled by io-throttle, the SA has no idea of
+> >> the situation and can't report it to the real application user about
+> >> that he/she has to do something. So this patch adds a new interface
+> >> named blkio.throttle.io_throttled which indicates how many IOs are
+> >> currently throttled.
+> > 
+> > If the only purpose is to know whether IOs are being throttled, why
+> > not just scan for the rules and see if respective device has any
+> > throttling rules or not.
+> Sorry, but setting a throttling rules doesn't mean the IOs are
+> throttled, right? So scanning doesn't work here IMHO.
 
-It looks like in this case we will have another races:
+It means IOs will be throttled if you cross a certain rate. But yes, it
+does not give any information that if at time T if there are any bios
+throttled in the queue or not.
 
-CPU#0						CPU#1
-_____						_____
+> > 
+> > Even if you introduce this interface, you will end up scanning for
+> > throttled ios against that particular device. And if IO is not happening
+> > at that moment or if IO rate is not exceeding the rate limit, there
+> > might not be any throttled ios and one might get misled.
+> Oh, no actually in a *clound computing* environment, it is really
+> useful, not misled. So let me describe it in more detail. Our product
+> system will limit every instance to an approximate number at first, and
+> then watch out the IOs being throttled. If these numbers is high, it can:
+> 1) Shout loudly to the application programmer about the abuse if he
+> sends out too much IO requests.
+> 2) If it is not too much and some other instances are not active, adjust
+> the throttled ratio so that this instance can work much faster.
 
-nfs4_init_client
-nfs_idmap_new
-nfs_idmap_register
-rpc_get_sb_net (fail - no pipefs)
-  					rpc_fill_super
-  					rpc_pipefs_event
-  					nfs_get_client_for_event
-					(skip client - NFS_CS_READY is not set)
-nfs_mark_client_ready(NFS_CS_READY)
+Ok, so you want to use this more as "congestion" parameter which tells at
+a given moment how busy the queue is, or in this instance how many IOs
+are backlogged in a cgroup due to throttling limits.
 
+I guess, it is not a bad idea to export this stat then. Will
+"blkio.throttle.queued" be a better name to reflect that how many bios
+are currently queued in throttling layer of request queue.
 
-And we are having client without idmap pipe...
-
-
-> Cheers
->    Trond
->
-
-
--- 
-Best regards,
-Stanislav Kinsbursky
+Thanks
+Vivek
