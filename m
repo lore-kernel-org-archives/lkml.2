@@ -1,86 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756980Ab2EVOLO (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 May 2012 10:11:14 -0400
-Received: from mailhub.sw.ru ([195.214.232.25]:28968 "EHLO relay.sw.ru"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752271Ab2EVOLN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 May 2012 10:11:13 -0400
-From: Glauber Costa <glommer@parallels.com>
-To: <linux-kernel@vger.kernel.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>, <cgroups@vger.kernel.org>,
-        <linux-mm@kvack.org>, Glauber Costa <glommer@parallels.com>,
-        Christoph Lameter <cl@linux.com>,
-        Pekka Enberg <penberg@cs.helsinki.fi>,
-        David Rientjes <rientjes@google.com>
-Subject: [PATCH] slab: move FULL state transition to an initcall
-Date: Tue, 22 May 2012 18:07:59 +0400
-Message-Id: <1337695679-10178-1-git-send-email-glommer@parallels.com>
-X-Mailer: git-send-email 1.7.7.6
+	id S1757224Ab2EVOLn (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 May 2012 10:11:43 -0400
+Received: from iolanthe.rowland.org ([192.131.102.54]:45983 "HELO
+	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1755444Ab2EVOLm (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 May 2012 10:11:42 -0400
+Date: Tue, 22 May 2012 10:11:41 -0400 (EDT)
+From: Alan Stern <stern@rowland.harvard.edu>
+X-X-Sender: stern@iolanthe.rowland.org
+To: Ming Lei <ming.lei@canonical.com>
+cc: Greg KH <gregkh@linuxfoundation.org>,
+        Wedson Almeida Filho <wedsonaf@gmail.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        <linux-kernel@vger.kernel.org>,
+        Linux PM List <linux-pm@vger.kernel.org>
+Subject: =?UTF-8?Q?Re=3A_Race_condition_between_driver=5Fprobe=5Fdevice_and_d?=
+ =?UTF-8?Q?evice=5Fshutdown=E2=80=8F?=
+In-Reply-To: <CACVXFVMCaYPWMiWeKa7tz=Xmi4PLez-3=1rnVPODYvSXBG4Y2Q@mail.gmail.com>
+Message-ID: <Pine.LNX.4.44L0.1205221008530.2100-100000@iolanthe.rowland.org>
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-During kmem_cache_init_late(), we transition to the LATE state,
-and after some more work, to the FULL state, its last state
+On Tue, 22 May 2012, Ming Lei wrote:
 
-This is quite different from slub, that will only transition to
-its last state (SYSFS), in a (late)initcall, after a lot more of
-the kernel is ready.
+> On Tue, May 22, 2012 at 2:29 AM, Alan Stern <stern@rowland.harvard.edu> wrote:
+> > On Mon, 21 May 2012, Ming Lei wrote:
+> >> Another candidate fix is to register a reboot notifier in driver core to prevent
+> >> driver from being bound or unbound from start of reboot/shutdown, but looks
+> >> not easy as the way of holding device locks.
+> >
+> > I'd guess it was done this way so that the shutdown task wouldn't have
+> > to wait for a buggy driver that didn't want to release the device lock
+> > (or that crashed while holding the lock).
+> 
+> Maybe, so I understand you agree on adding the device lock as did
+> in the patch, don't I?
 
-This means that in slab, we have no way to taking actions dependent
-on the initialization of other pieces of the kernel that are supposed
-to start way after kmem_init_late(), such as cgroups initialization.
+I don't know.  It depends on the intention behind the shutdown 
+callback.  Maybe each driver is supposed to be responsible for doing 
+its own locking.
 
-To achieve more consistency in this behavior, that patch only
-transitions to the LATE state in kmem_init_late. In my analysis,
-setup_cpu_cache() should be happy to test for >= LATE, instead of
-== FULL. It also has passed some tests I've made.
+Do you think that a buggy driver should be able to prevent the system 
+from shutting down?
 
-We then only mark FULL state after the reap timers are in place,
-meaning that no further setup is expected.
+> Also we can add below line before acquiring device lock to help
+> toubleshoot buggy driver.
+> 
+>                dev_dbg(dev, "acquiring device lock for shutdown\n");
+> 
+> >
+> > It's not clear that the reboot notifier approach would work.  What
+> > about probes that had already started when notifier was called?
+> 
+> Looks holding device lock is still needed in the notifier callback for
+> handling the case if reboot notifier approach is taken.
+> 
+> IMO, the way of holding device lock is better than reboot notifier approach.
 
-Signed-off-by: Glauber Costa <glommer@parallels.com>
-CC: Christoph Lameter <cl@linux.com>
-CC: Pekka Enberg <penberg@cs.helsinki.fi>
-CC: David Rientjes <rientjes@google.com>
----
- mm/slab.c |    8 ++++----
- 1 files changed, 4 insertions(+), 4 deletions(-)
+Yes, it is better.  The question is, is it right?
 
-diff --git a/mm/slab.c b/mm/slab.c
-index 58e5c9c..bd351a0 100644
---- a/mm/slab.c
-+++ b/mm/slab.c
-@@ -1741,9 +1741,6 @@ void __init kmem_cache_init_late(void)
- 			BUG();
- 	mutex_unlock(&cache_chain_mutex);
- 
--	/* Done! */
--	g_cpucache_up = FULL;
--
- 	/*
- 	 * Register a cpu startup notifier callback that initializes
- 	 * cpu_cache_get for all new cpus
-@@ -1773,6 +1770,9 @@ static int __init cpucache_init(void)
- 	 */
- 	for_each_online_cpu(cpu)
- 		start_cpu_timer(cpu);
-+
-+	/* Done! */
-+	g_cpucache_up = FULL;
- 	return 0;
- }
- __initcall(cpucache_init);
-@@ -2260,7 +2260,7 @@ static size_t calculate_slab_order(struct kmem_cache *cachep,
- 
- static int __init_refok setup_cpu_cache(struct kmem_cache *cachep, gfp_t gfp)
- {
--	if (g_cpucache_up == FULL)
-+	if (g_cpucache_up >= LATE)
- 		return enable_cpucache(cachep, gfp);
- 
- 	if (g_cpucache_up == NONE) {
--- 
-1.7.7.6
+Alan Stern
 
