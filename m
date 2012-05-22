@@ -1,159 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757585Ab2EVJtn (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 May 2012 05:49:43 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:55404 "EHLO mx2.suse.de"
+	id S1757555Ab2EVJuh (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 May 2012 05:50:37 -0400
+Received: from mga02.intel.com ([134.134.136.20]:48937 "EHLO mga02.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755873Ab2EVJtl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 May 2012 05:49:41 -0400
-Date: Tue, 22 May 2012 11:49:35 +0200 (CEST)
-From: Jiri Kosina <jkosina@suse.cz>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org
-Subject: [GIT] HID
-Message-ID: <alpine.LNX.2.00.1205221142570.16396@pobox.suse.cz>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+	id S1751247Ab2EVJuf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 May 2012 05:50:35 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.67,351,1309762800"; 
+   d="scan'208";a="146852262"
+Message-ID: <4FBB6105.2060808@intel.com>
+Date: Tue, 22 May 2012 17:48:53 +0800
+From: "kun.jiang" <kunx.jiang@intel.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.28) Gecko/20120313 Thunderbird/3.1.20
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=ISO-8859-15
-Content-Transfer-Encoding: 8BIT
+To: netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+CC: davem@davemloft.net, yanmin_zhang@linux.intel.com
+Subject: [PATCH] ipv4: fix the rcu race between free_fib_info and ip_route_output_slow
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Linus,
+From: Yanmin Zhang <yanmin_zhang@linux.intel.com>
 
-please pull from 'for-linus' branch at
+We hit a kernel OOPS.
 
-  git://git.kernel.org/pub/scm/linux/kernel/git/jikos/hid.git for-linus
+<3>[23898.789643] BUG: sleeping function called from invalid context at
+/data/buildbot/workdir/ics/hardware/intel/linux-2.6/arch/x86/mm/fault.c:1103
+<3>[23898.862215] in_atomic(): 0, irqs_disabled(): 0, pid: 10526, name:
+Thread-6683
+<4>[23898.967805] HSU serial 0000:00:05.1: 0000:00:05.2:HSU serial prevented me
+to suspend...
+<4>[23899.258526] Pid: 10526, comm: Thread-6683 Tainted: G        W
+3.0.8-137685-ge7742f9 #1
+<4>[23899.357404] HSU serial 0000:00:05.1: 0000:00:05.2:HSU serial prevented me
+to suspend...
+<4>[23899.904225] Call Trace:
+<4>[23899.989209]  [<c1227f50>] ? pgtable_bad+0x130/0x130
+<4>[23900.000416]  [<c1238c2a>] __might_sleep+0x10a/0x110
+<4>[23900.007357]  [<c1228021>] do_page_fault+0xd1/0x3c0
+<4>[23900.013764]  [<c18e9ba9>] ? restore_all+0xf/0xf
+<4>[23900.024024]  [<c17c007b>] ? napi_complete+0x8b/0x690
+<4>[23900.029297]  [<c1227f50>] ? pgtable_bad+0x130/0x130
+<4>[23900.123739]  [<c1227f50>] ? pgtable_bad+0x130/0x130
+<4>[23900.128955]  [<c18ea0c3>] error_code+0x5f/0x64
+<4>[23900.133466]  [<c1227f50>] ? pgtable_bad+0x130/0x130
+<4>[23900.138450]  [<c17f6298>] ? __ip_route_output_key+0x698/0x7c0
+<4>[23900.144312]  [<c17f5f8d>] ? __ip_route_output_key+0x38d/0x7c0
+<4>[23900.150730]  [<c17f63df>] ip_route_output_flow+0x1f/0x60
+<4>[23900.156261]  [<c181de58>] ip4_datagram_connect+0x188/0x2b0
+<4>[23900.161960]  [<c18e981f>] ? _raw_spin_unlock_bh+0x1f/0x30
+<4>[23900.167834]  [<c18298d6>] inet_dgram_connect+0x36/0x80
+<4>[23900.173224]  [<c14f9e88>] ? _copy_from_user+0x48/0x140
+<4>[23900.178817]  [<c17ab9da>] sys_connect+0x9a/0xd0
+<4>[23900.183538]  [<c132e93c>] ? alloc_file+0xdc/0x240
+<4>[23900.189111]  [<c123925d>] ? sub_preempt_count+0x3d/0x50
 
-to receive updates for HID subsystem.
+In function free_fib_info, we don't reset nexthop_nh->nh_dev to NULL before releasing
+nh_dev. kfree_rcu(fi, rcu) would release the whole area.
 
-Apart from various driver updates and added support for a number of new 
-devices (mostly multitouch ones, but not limited to), there is one change 
-that is worth pointing out explicitly: creation of HID device groups and 
-proper autoloading of hid-multitouch, implemented by Henrik Rydberg.
+Signed-off-by: Yanmin Zhang <yanmin_zhang@linux.intel.com>
+Signed-off-by: Kun Jiang <kunx.jiang@intel.com>
+---
+ net/ipv4/fib_semantics.c |    1 -
+ 1 files changed, 0 insertions(+), 1 deletions(-)
 
-Thanks.
-
-Alexey Kaminsky (1):
-      HID: apple: Add Apple wireless keyboard 2011 ANSI PID
-
-Benedikt Bergenthal (1):
-      HID: hid-apple: fix a tab width style issue
-
-Benjamin Tissoires (1):
-      HID: hid-multitouch: fix wrong protocol detection
-
-David Herrmann (1):
-      HID: wiimote: Fix IR data parser
-
-David Rientjes (1):
-      HID: wacom: fix build breakage without CONFIG_LEDS_CLASS
-
-Havard Skinnemoen (1):
-      HID: hiddev: Use vzalloc to allocate hiddev_list
-
-Henrik Rydberg (10):
-      HID: hid-hyperv: Do not use hid_parse_report() directly
-      HID: hid-logitech: Collect report descriptors before sending
-      HID: Handle driver-specific device descriptor in core
-      HID: Add device group to modalias
-      HID: Scan the device for group info before adding it
-      HID: Allow bus wildcard matching
-      HID: Create a generic device group
-      HID: hid-multitouch: Switch to device groups
-      HID: Create a common generic driver
-      HID: hid-multitouch: Only match MT interfaces
-
-Jiri Kosina (8):
-      HID: tivo: fix support for bluetooth version of tivo Slide
-      HID: multitouch: Add support for Baanto touchscreen
-      HID: hid-lg4ff: remove unused label in !LEDS_CLASS case
-      HID: add Kconfig text to HID_BATTERY_STRENGTH
-      HID: hidraw: add proper error handling to raw event reporting
-      HID: fix return value of hidraw_report_event() when !CONFIG_HIDRAW
-      HID: multitouch: MT interface matching for Baanto
-      HID: explain the signed/unsigned handling in hid_add_field()
-
-Jonathan Nieder (1):
-      HID: logitech: read all 32 bits of report type bitfield
-
-Josenivaldo Benito Junior (1):
-      HID: Aureal Remote Control Device Driver
-
-K. Y. Srinivasan (1):
-      HID: hyperv: Set the hid drvdata correctly
-
-Michal Malý (3):
-      HID: hid-lg: Allow for custom device-specific properties to be stored in priv drvdata
-      HID: lg4ff: Remove sysfs iface before deallocating memory
-      HID: lg4ff: Take advantage of private driver data
-
-Nikolai Kondrashov (4):
-      HID: hid-input: Add digitizer tilt usage support
-      HID: waltop: Add support for Sirius tablet
-      HID: uclogic: Add support for UC-Logic TWHL850
-      HID: waltop: Extend barrel button fix
-
-Oliver Neukum (1):
-      HID: usbhid: fix error handling of not enough bandwidth
-
-Przemo Firszt (11):
-      HID: wacom: Remove CONFIG_HID_WACOM_POWER_SUPPLY option
-      HID: wacom: Change HID_WACOM option description.
-      HID: wacom: Refactor battery/ac reporting for Graphire
-      HID: wacom: Add battery/ac reporting for Intuos4 WL
-      HID: wacom: Fix HID_WACOM self-dependency
-      HID: wacom: Add module description
-      HID: wacom: Add tilt reporting for Intuos4 WL
-      HID: wacom: Add LED selector control for Wacom Intuos4 WL
-      HID: wacom: Move Graphire raport header check.
-      HID: wacom: Add speed setting for Intuos4 WL
-      HID: wacom: Unify speed setting
-
-Simon Haggett (1):
-      HID: usbhid: Check HID report descriptor contents after device reset
-
-Simon Wood (2):
-      HID: hid-lg4ff: Add support for G27 LEDs
-      HID: hid-lg4ff: Update Comments
-
-srinivas pandruvada (1):
-      HID: handle logical min/max signedness properly in parser
-
- Documentation/ABI/testing/sysfs-driver-wacom |    8 +
- drivers/hid/Kconfig                          |   34 ++-
- drivers/hid/Makefile                         |    3 +
- drivers/hid/hid-apple.c                      |    5 +-
- drivers/hid/hid-aureal.c                     |   54 +++++
- drivers/hid/hid-core.c                       |  316 +++++++++++++++++---------
- drivers/hid/hid-generic.c                    |   53 +++++
- drivers/hid/hid-hyperv.c                     |   15 +-
- drivers/hid/hid-ids.h                        |    8 +
- drivers/hid/hid-input.c                      |   36 ++--
- drivers/hid/hid-lg.c                         |   55 +++--
- drivers/hid/hid-lg.h                         |    5 +
- drivers/hid/hid-lg4ff.c                      |  258 +++++++++++++++++-----
- drivers/hid/hid-logitech-dj.c                |   76 +++----
- drivers/hid/hid-multitouch.c                 |  233 ++++++++++++--------
- drivers/hid/hid-uclogic.c                    |  141 ++++++++++++
- drivers/hid/hid-wacom.c                      |  302 ++++++++++++++++++-------
- drivers/hid/hid-waltop.c                     |  230 ++++++++++++++++---
- drivers/hid/hid-wiimote-core.c               |   16 +-
- drivers/hid/hidraw.c                         |   19 +-
- drivers/hid/usbhid/hid-core.c                |   81 +++++--
- drivers/hid/usbhid/hid-quirks.c              |    1 +
- drivers/hid/usbhid/hiddev.c                  |    9 +-
- drivers/hid/usbhid/usbhid.h                  |    1 +
- include/linux/hid.h                          |   36 ++--
- include/linux/hidraw.h                       |    4 +-
- include/linux/mod_devicetable.h              |    4 +-
- net/bluetooth/hidp/core.c                    |   27 +--
- scripts/mod/file2alias.c                     |    5 +-
- 29 files changed, 1468 insertions(+), 567 deletions(-)
- create mode 100644 drivers/hid/hid-aureal.c
- create mode 100644 drivers/hid/hid-generic.c
-
+diff --git a/net/ipv4/fib_semantics.c b/net/ipv4/fib_semantics.c
+index 5063fa3..68ea013 100644
+--- a/net/ipv4/fib_semantics.c
++++ b/net/ipv4/fib_semantics.c
+@@ -159,7 +159,6 @@ void free_fib_info(struct fib_info *fi)
+ 	change_nexthops(fi) {
+ 		if (nexthop_nh->nh_dev)
+ 			dev_put(nexthop_nh->nh_dev);
+-		nexthop_nh->nh_dev = NULL;
+ 	} endfor_nexthops(fi);
+ 	fib_info_cnt--;
+ 	release_net(fi->fib_net);
 -- 
-Jiri Kosina
-SUSE Labs
+1.7.1
