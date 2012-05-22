@@ -1,67 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756256Ab2EVNz1 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 May 2012 09:55:27 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:37213 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751993Ab2EVNzZ (ORCPT
+	id S1756478Ab2EVN4w (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 May 2012 09:56:52 -0400
+Received: from smtp104.prem.mail.ac4.yahoo.com ([76.13.13.43]:20174 "HELO
+	smtp104.prem.mail.ac4.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1753047Ab2EVN4u (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 May 2012 09:55:25 -0400
-Date: Tue, 22 May 2012 06:55:17 -0700
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: Johan Hovold <jhovold@gmail.com>
-Cc: Jonathan Cameron <jic23@kernel.org>, Jonathan Cameron <jic23@cam.ac.uk>,
-        Rob Landley <rob@landley.net>, Richard Purdie <rpurdie@rpsys.net>,
-        Samuel Ortiz <sameo@linux.intel.com>,
-        Florian Tobias Schandinat <FlorianSchandinat@gmx.de>,
-        Arnd Bergmann <arnd@arndb.de>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-iio@vger.kernel.org
-Subject: Re: [PATCH v5] iio: add LM3533 ambient-light-sensor driver
-Message-ID: <20120522135517.GA16039@kroah.com>
-References: <1337346461-31220-1-git-send-email-jhovold@gmail.com>
- <1337602686-28007-1-git-send-email-jhovold@gmail.com>
- <4FBB5A13.4060301@kernel.org>
- <20120522094020.GC7323@localhost>
+	Tue, 22 May 2012 09:56:50 -0400
+X-Yahoo-Newman-Property: ymail-3
+X-YMail-OSG: 4wUCOxgVM1nko0U1gZA5ZpibRjQ9SzMuO9ysPyo91HkJXeB
+ 90lvlV.9qsg5tNaKmfzZnIL1OrGZv6HLMyW0O4Zs_TwJiujLUDpUkixxKjqL
+ vXkuFrjPu3n8_C6xXLB1w9Y7lsFFopiw1Ue88.zgIPcLQ58tGwH3btiNIpKf
+ IBgXEncJRpknnQ3vcuz52nzWy9RpbGvo8jYWWURvX1AYg3htCZro7_0rOdk8
+ lOt6s.j4WJdTWODtLetdtkMDuHHqT9QBzPvYxj6OHkwiuGJoZgE5fgrFzsm0
+ RiLaQZUTzERKs.6p5.Srld_DxLghMyVitytLQFCS6EQZwpjvT2ZLBfadY.b8
+ oWaoeF4dMKoPfYFxVghygC3pea5_Vl9ZfKlNYWiVdcnaBcroS2D4yG4zmZJH
+ 56ciCqvKibAYSOb0HURYrqZVwstaIgiOqOW8E
+X-Yahoo-SMTP: _Dag8S.swBC1p4FJKLCXbs8NQzyse1SYSgnAbY0-
+Date: Tue, 22 May 2012 08:56:47 -0500 (CDT)
+From: Christoph Lameter <cl@linux.com>
+X-X-Sender: cl@router.home
+To: David Rientjes <rientjes@google.com>
+cc: Glauber Costa <glommer@parallels.com>, linux-kernel@vger.kernel.org,
+        cgroups@vger.kernel.org, linux-mm@kvack.org,
+        Pekka Enberg <penberg@cs.helsinki.fi>
+Subject: Re: [PATCH] slab+slob: dup name string
+In-Reply-To: <alpine.DEB.2.00.1205212018230.13522@chino.kir.corp.google.com>
+Message-ID: <alpine.DEB.2.00.1205220855470.17600@router.home>
+References: <1337613539-29108-1-git-send-email-glommer@parallels.com> <alpine.DEB.2.00.1205212018230.13522@chino.kir.corp.google.com>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120522094020.GC7323@localhost>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, May 22, 2012 at 11:40:20AM +0200, Johan Hovold wrote:
-> On Tue, May 22, 2012 at 10:19:15AM +0100, Jonathan Cameron wrote:
-> > On 5/21/2012 1:18 PM, Johan Hovold wrote:
-> > > Add sub-driver for the ambient-light-sensor interface on National
-> > > Semiconductor / TI LM3533 lighting power chips.
-> > >
-> > > The sensor interface can be used to control the LEDs and backlights of
-> > > the chip through defining five light zones and three sets of
-> > > corresponding output-current values.
-> > >
-> > > The driver provides raw and mean adc readings along with the current
-> > > light zone through sysfs. A threshold event can be generated on zone
-> > > changes. The ALS-control output values can be set per zone for the three
-> > > current output channels.
-> > There are a few bits of documentation I'd rather were in
-> > sysfs-bus-iio but we can move them any time.
-> > 
-> > I haven't compile tested as no machine availability till this evening.
-> > Please do one last sanity check against staging-next.
-> 
-> Tested against staging-next of today (c3c6cc91b0ae7b).
-> 
-> Greg, any chance you can pick this one up for 3.5?
+On Mon, 21 May 2012, David Rientjes wrote:
 
-No, the merge window for 3.5 closed last week, sorry.  Now is the time
-for me (and the other subsystem maintainers) to merge my trees with
-Linus.  I'll pick this driver up when 3.5-rc1 is out.
+> This doesn't work if you kmem_cache_destroy() a cache that was created
+> when g_cpucache_cpu <= EARLY, the kfree() will explode.  That never
+> happens for any existing cache created in kmem_cache_init(), but this
+> would introduce the first roadblock in doing so.  So you'll need some
+> magic to determine whether the cache was allocated statically and suppress
+> the kfree() in such a case.
 
-thanks,
+Nope. Only slab management caches will be created that early. The patch is
+fine as is.
 
-greg k-h
+
