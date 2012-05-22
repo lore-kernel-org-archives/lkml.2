@@ -1,99 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932749Ab2EVBEU (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 May 2012 21:04:20 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:6690 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932084Ab2EVBET (ORCPT
+	id S932718Ab2EVBKs (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 May 2012 21:10:48 -0400
+Received: from LGEMRELSE1Q.lge.com ([156.147.1.111]:52525 "EHLO
+	LGEMRELSE1Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751936Ab2EVBK2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 May 2012 21:04:19 -0400
-X-Authority-Analysis: v=2.0 cv=D8PF24tj c=1 sm=0 a=ZycB6UtQUfgMyuk2+PxD7w==:17 a=XQbtiDEiEegA:10 a=jy51kqRoUrIA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=meVymXHHAAAA:8 a=ayC55rCoAAAA:8 a=js3BcyrTZknK6NlHJmMA:9 a=S4lHzMzErPNU3OejnD4A:7 a=PUjeQqilurYA:10 a=jeBq3FmKZ4MA:10 a=ZycB6UtQUfgMyuk2+PxD7w==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 74.67.80.29
-Message-ID: <1337648657.13348.26.camel@gandalf.stny.rr.com>
-Subject: [PATCH] sysctl: Suppress kmemleak messages
-From: Steven Rostedt <rostedt@goodmis.org>
-To: LKML <linux-kernel@vger.kernel.org>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Catalin Marinas <catalin.marinas@arm.com>
-Date: Mon, 21 May 2012 21:04:17 -0400
-Content-Type: text/plain; charset="ISO-8859-15"
-X-Mailer: Evolution 3.2.2-1 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	Mon, 21 May 2012 21:10:28 -0400
+X-AuditID: 9c93016f-b7c3cae000001954-a4-4fbae7809016
+From: Namhyung Kim <namhyung.kim@lge.com>
+To: Jiri Olsa <jolsa@redhat.com>
+Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@redhat.com>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 5/5] perf symbols: Implement poor man's ELF parser
+References: <1336979424-17206-1-git-send-email-namhyung.kim@lge.com>
+	<1336979424-17206-6-git-send-email-namhyung.kim@lge.com>
+	<20120521114739.GC5923@m.brq.redhat.com>
+Date: Tue, 22 May 2012 10:08:21 +0900
+In-Reply-To: <20120521114739.GC5923@m.brq.redhat.com> (Jiri Olsa's message of
+	"Mon, 21 May 2012 13:47:39 +0200")
+Message-ID: <87wr4510qi.fsf@sejong.aot.lge.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.0.95 (gnu/linux)
+MIME-Version: 1.0
+Content-Type: text/plain
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Not sure who the owner is of kernel/sysctl.c, so I'm just sending this
-patch to you :-)
+Hi, again
 
-The register_sysctl_table() is a strange function, as it makes internal
-allocations (a header) to register a sysctl_table. This header is a
-handle to the table that is created, and can be used to unregister the
-table. But if the table is permanent and never unregistered, the header
-acts the same as a static variable.
+On Mon, 21 May 2012 13:47:39 +0200, Jiri Olsa wrote:
+> On Mon, May 14, 2012 at 04:10:24PM +0900, Namhyung Kim wrote:
+>> Implement minimalistic elf parser for getting build-id.
+>> A couple of structs needed are copied from elf.h and
+>> the parser only looks for PT_NOTE program header to
+>> check build-id.
+>> ---
+>>  tools/perf/util/elf-minimal.h    |  153 ++++++++++++++++++++++++
+>>  tools/perf/util/symbol-minimal.c |  244 ++++++++++++++++++++++++++++++++++++--
+>>  2 files changed, 388 insertions(+), 9 deletions(-)
+>>  create mode 100644 tools/perf/util/elf-minimal.h
+>> 
+>> diff --git a/tools/perf/util/elf-minimal.h b/tools/perf/util/elf-minimal.h
+>> new file mode 100644
+>> index 000000000000..26540b5718a1
+>> --- /dev/null
+>> +++ b/tools/perf/util/elf-minimal.h
+>> @@ -0,0 +1,153 @@
+>> +/*
+>> + * Minimal ELF definitions for parsing build-id.
+>> + */
+>> +/* This file defines standard ELF types, structures, and macros.
+>> +   Copyright (C) 1995-2003,2004,2005,2006,2007,2008,2009,2010,2011
+>> +	Free Software Foundation, Inc.
+>> +   This file is part of the GNU C Library.
+>> +
+>> +   The GNU C Library is free software; you can redistribute it and/or
+>> +   modify it under the terms of the GNU Lesser General Public
+>> +   License as published by the Free Software Foundation; either
+>> +   version 2.1 of the License, or (at your option) any later version.
+>> +
+>> +   The GNU C Library is distributed in the hope that it will be useful,
+>> +   but WITHOUT ANY WARRANTY; without even the implied warranty of
+>> +   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+>> +   Lesser General Public License for more details.
+>> +
+>> +   You should have received a copy of the GNU Lesser General Public
+>> +   License along with the GNU C Library; if not, write to the Free
+>> +   Software Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA
+>> +   02111-1307 USA.  */
+>
+> I can see all this exported in:
+>
+> [jolsa@dhcp-26-214 perf]$ rpm -qf /usr/include/elf.h
+> glibc-headers-2.14.90-24.fc16.6.x86_64
+>
+> so maybe we dont need to add our own, since glic-headers
+> seems crutial anyway ;)
+>
 
-Unfortunately, this allocation of memory that is never expected to be
-freed, fools kmemleak in thinking that we have leaked memory. For those
-sysctl tables that are never unregistered, and have no pointer
-referencing them, kmemleak will think that these are memory leaks:
+Thanks for pointing it out. Actually I wanted to be independent to glibc
+either, but it seems we tied to it tightly already. Will remove it.
 
-unreferenced object 0xffff880079fb9d40 (size 192):
-  comm "swapper/0", pid 0, jiffies 4294667316 (age 12614.152s)
-  hex dump (first 32 bytes):
-    00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00  ................
-    00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00  ................
-  backtrace:
-    [<ffffffff8146b590>] kmemleak_alloc+0x73/0x98
-    [<ffffffff8110a935>] kmemleak_alloc_recursive.constprop.42+0x16/0x18
-    [<ffffffff8110b852>] __kmalloc+0x107/0x153
-    [<ffffffff8116fa72>] kzalloc.constprop.8+0xe/0x10
-    [<ffffffff811703c9>] __register_sysctl_paths+0xe1/0x160
-    [<ffffffff81170463>] register_sysctl_paths+0x1b/0x1d
-    [<ffffffff8117047d>] register_sysctl_table+0x18/0x1a
-    [<ffffffff81afb0a1>] sysctl_init+0x10/0x14
-    [<ffffffff81b05a6f>] proc_sys_init+0x2f/0x31
-    [<ffffffff81b0584c>] proc_root_init+0xa5/0xa7
-    [<ffffffff81ae5b7e>] start_kernel+0x3d0/0x40a
-    [<ffffffff81ae52a7>] x86_64_start_reservations+0xae/0xb2
-    [<ffffffff81ae53ad>] x86_64_start_kernel+0x102/0x111
-    [<ffffffffffffffff>] 0xffffffffffffffff
-
-
-The sysctl_base_table used by sysctl itself is one such instance that
-registers the table to never be unregistered.
-
-Use kmemleak_not_leak() to suppress the kmemleak false positive.
-
-[ applied against 3.4 ]
-
-Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
-
-diff --git a/kernel/sysctl.c b/kernel/sysctl.c
-index 4ab1187..ad115bc 100644
---- a/kernel/sysctl.c
-+++ b/kernel/sysctl.c
-@@ -30,6 +30,7 @@
- #include <linux/security.h>
- #include <linux/ctype.h>
- #include <linux/kmemcheck.h>
-+#include <linux/kmemleak.h>
- #include <linux/fs.h>
- #include <linux/init.h>
- #include <linux/kernel.h>
-@@ -1551,7 +1552,10 @@ static struct ctl_table dev_table[] = {
- 
- int __init sysctl_init(void)
- {
--	register_sysctl_table(sysctl_base_table);
-+	struct ctl_table_header *hdr;
-+
-+	hdr = register_sysctl_table(sysctl_base_table);
-+	kmemleak_not_leak(hdr);
- 	return 0;
- }
- 
-
-
+Thanks,
+Namhyung
