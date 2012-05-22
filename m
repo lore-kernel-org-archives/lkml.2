@@ -1,83 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758337Ab2EVWLe (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 May 2012 18:11:34 -0400
-Received: from smtp03.smtpout.orange.fr ([80.12.242.125]:60865 "EHLO
-	smtp.smtpout.orange.fr" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755826Ab2EVWLc (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 May 2012 18:11:32 -0400
-From: "Yann E. MORIN" <yann.morin.1998@free.fr>
-Organization: BZH lan
-To: Steven Rostedt <rostedt@goodmis.org>
-Subject: Re: kconfig-frontends-3.4.0-0 released
-Date: Wed, 23 May 2012 00:11:28 +0200
-User-Agent: KMail/1.13.5 (Linux/3.4.0-treguer; KDE/4.4.5; x86_64; ; )
-Cc: linux-kbuild@vger.kernel.org, linux-kernel@vger.kernel.org
-References: <201205222221.05548.yann.morin.1998@free.fr> <20120522211941.GA30024@home.goodmis.org>
-In-Reply-To: <20120522211941.GA30024@home.goodmis.org>
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
+	id S1758253Ab2EVWMV (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 May 2012 18:12:21 -0400
+Received: from perches-mx.perches.com ([206.117.179.246]:49607 "EHLO
+	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1755517Ab2EVWMT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 May 2012 18:12:19 -0400
+Message-ID: <1337724736.11918.8.camel@joe2Laptop>
+Subject: Re: [GIT PATCH] driver core patches for 3.5-rc1 - try 2
+From: Joe Perches <joe@perches.com>
+To: Greg KH <gregkh@linuxfoundation.org>
+Cc: Kay Sievers <kay@vrfy.org>, Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        linux-kernel@vger.kernel.org
+Date: Tue, 22 May 2012 15:12:16 -0700
+In-Reply-To: <20120522220534.GC12705@kroah.com>
+References: <1337723927.9270.15.camel@joe2Laptop>
+	 <20120522220534.GC12705@kroah.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.2- 
 Content-Transfer-Encoding: 7bit
-Message-Id: <201205230011.29257.yann.morin.1998@free.fr>
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Steven, All,
+(adding lkml and not editing Greg's reply)
 
-On Tuesday 22 May 2012 23:19:41 Steven Rostedt wrote:
-> >   - some side utilities have been added from the Linux kernel tree:
-> >     - kconfig-diff      show differences between two .config files
+On Tue, 2012-05-22 at 15:05 -0700, Greg KH wrote:
+> On Tue, May 22, 2012 at 02:58:47PM -0700, Joe Perches wrote:
+> > While there are several things I like about the
+> > printk modifications, (binary header, delta time,
+> > slightly better partial message deinterleaving,
+> > global msg_id, kmsg is ok too), I am concerned
+> > about the utility and expectations for the new
+> > [v]printk_emit functions.
+> > 
+> > I think it is not really ready to be merged
+> > at this time.
+> > 
+> > The commit sequencing was unclean.
 > 
-> I'm curious, how is this different than scripts/diffconfig ?
+> Yes, but the build was never broken, the system always worked, and the
+> end result was agreed apon by everyone as a nice addition.
+> 
+> > The original commit originally required KERN_CONT
+> > and it was modified by another commit to return
+> > to the current behavior.
+> > 
+> > What really are the expectations and true use-cases
+> > for [v]printk_emit?
+> 
+> What's wrong with the existing use case?  Since when do we write
+> use-cases for kernel functions?
 
-It's exactly the same.
+When it's a generic function that appears to be used
+to attach additional data to message logging,
+and it takes up buffer space and currently reduces
+the number of dev_<foo> messages in dmesg without
+adding value.
 
-The kconfig-frontends package is created by extracting the needed files from
-the linux kernel. So, kconfig-diff is exactly scripts/diffconfig. Also, it's
-what the line just above says: "added _from_ the Linux kernel tree" ;-)
+What's it for and who's going to use it and more
+importantly, why?
 
-But the kconfig toolss in the linux tree are not using a common naming
-scheme. For example we have:
-    scripts/config
-    scripts/diffconfig
-    scripts/kconfig/merge_config.sh
-    scripts/kconfig/kxgettext
-    scripts/kconfig/conf
-    scripts/kconfig/mconf
+I do not want to link human readable messaging with
+machine parsing of binary data.  I'm not sure it's
+useful and possibly sets expectations for immutability.
 
-So, kconfig-frontends tries to use a meaningful naming scheme for all the
-programs it installs. Some are renamed, and they all get prefixed by default
-with 'kconfig-' (although that can be overriden at ./configure time with
---program-prefix=...).
+> > How is it really better that what is available now?
+> > 
+> > Perhaps it would be better to respin all the
+> > printk modifications without adding [v]printk_emit
+> > and have the [v]printk_emit bits debated a bit more.
+> 
+> I'm always glad to review patches, but to just propose something that
+> works to be reverted without a patch to replace the functionality, isn't
+> ok.
 
-In the package, the file scripts/kernel2kfrontends.list has the
-correspondence for what comes from the linux tree, and how it's named in
-the kconfig-frontends tree. For example, we have:
-    scripts/config                      -->  utils/tweak
-    scripts/diffconfig                  -->  utils/diff
-    scripts/kconfig/merge_config.sh     -->  utils/merge
-    scripts/kconfig/kxgettext.c         -->  utils/gettext.c
+It hasn't been committed yet in anything other than
+-next.
 
-The script scripts/ksync.sh (in kconfig-frontends) uses that file to
-automatically sync from a linux tree.
+Lots of stuff gets committed there and later removed
+and hits Linus' mainline tree.
 
-There is virtually zero code written in the package (except for a few patches
-required for the packaging), so the behavior is exactly the same as if using
-the corresponding kconfig tools from the kernel.
-
-Please note, however, that this is only the second release of
-kconfig-frontends, and that things can still be improved upon! ;-)
-
-Regards,
-Yann E. MORIN.
-
--- 
-.-----------------.--------------------.------------------.--------------------.
-|  Yann E. MORIN  | Real-Time Embedded | /"\ ASCII RIBBON | Erics' conspiracy: |
-| +33 662 376 056 | Software  Designer | \ / CAMPAIGN     |  ___               |
-| +33 223 225 172 `------------.-------:  X  AGAINST      |  \e/  There is no  |
-| http://ymorin.is-a-geek.org/ | _/*\_ | / \ HTML MAIL    |   v   conspiracy.  |
-'------------------------------^-------^------------------^--------------------'
