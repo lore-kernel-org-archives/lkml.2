@@ -1,24 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756831Ab2EVMGi (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 May 2012 08:06:38 -0400
+	id S1755825Ab2EVMGf (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 May 2012 08:06:35 -0400
 Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:13129 "EHLO
 	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753013Ab2EVMGf (ORCPT
+	with ESMTP id S1753013Ab2EVMGb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 May 2012 08:06:35 -0400
-X-Authority-Analysis: v=2.0 cv=OMylLFmB c=1 sm=0 a=ZycB6UtQUfgMyuk2+PxD7w==:17 a=XQbtiDEiEegA:10 a=Ciwy3NGCPMMA:10 a=ojS1ScDp60wA:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=meVymXHHAAAA:8 a=ayC55rCoAAAA:8 a=20KFwNOVAAAA:8 a=VwQbUJbxAAAA:8 a=pFGuiOkWf-wGog64chIA:9 a=QEXdDO2ut3YA:10 a=jEp0ucaQiEUA:10 a=jeBq3FmKZ4MA:10 a=6bIXAmp0VbN4VSASsO0A:9 a=ZycB6UtQUfgMyuk2+PxD7w==:117
+	Tue, 22 May 2012 08:06:31 -0400
+X-Authority-Analysis: v=2.0 cv=OMylLFmB c=1 sm=0 a=ZycB6UtQUfgMyuk2+PxD7w==:17 a=XQbtiDEiEegA:10 a=Ciwy3NGCPMMA:10 a=pfqmd9XoVUcA:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=meVymXHHAAAA:8 a=ayC55rCoAAAA:8 a=20KFwNOVAAAA:8 a=wWU3qhqnOSgc2wo17lcA:9 a=aWRuADsPgT1MXMToN8AA:7 a=QEXdDO2ut3YA:10 a=jEp0ucaQiEUA:10 a=jeBq3FmKZ4MA:10 a=upfMwAWJQWFWvjUzpC4A:9 a=ZycB6UtQUfgMyuk2+PxD7w==:117
 X-Cloudmark-Score: 0
 X-Originating-IP: 74.67.80.29
-Message-Id: <20120522120632.110648349@goodmis.org>
+Message-Id: <20120522120629.880061783@goodmis.org>
 User-Agent: quilt/0.60-1
-Date: Tue, 22 May 2012 08:05:39 -0400
+Date: Tue, 22 May 2012 08:05:32 -0400
 From: Steven Rostedt <rostedt@goodmis.org>
 To: linux-kernel@vger.kernel.org
 Cc: Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [PATCH 8/8] ktest: Add README to explain what is in the examples directory
+Subject: [PATCH 1/8] ktest: Fix kernelrevision with POST_BUILD
 References: <20120522120531.460108326@goodmis.org>
-Content-Disposition: inline; filename=0008-ktest-Add-README-to-explain-what-is-in-the-examples-.patch
+Content-Disposition: inline; filename=0001-ktest-Fix-kernelrevision-with-POST_BUILD.patch
 Content-Type: multipart/signed; micalg="pgp-sha1"; protocol="application/pgp-signature"; boundary="00GvhwF7k39YY"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -30,57 +30,86 @@ Content-Transfer-Encoding: quoted-printable
 
 From: Steven Rostedt <srostedt@redhat.com>
 
-Add a README that explains what the different example configs in the
-ktest example directory are about.
+The PRE_BUILD and POST_BUILD options of ktest are added to allow the
+user to add temporary patch to the system and remove it on builds. This
+is sometimes use to take a change from another git branch and add it to
+a series without the fix so that this series can be tested, when an
+unrelated bug exists in the series.
+
+The problem comes when a tagged commit is being used. For example, if
+v3.2 is being tested, and we add a patch to it, the kernelrelease for
+that commit will be 3.2.0+, but without the patch the version will be
+3.2.0. This can cause problems when the kernelrelease is determined for
+creating the /lib/modules directory. The kernel booting has the '+' but
+the module directory will not, and the modules will be missing for that
+boot, and may not allow the kernel to succeed.
+
+The fix is to put the creation of the kernelrelease in the POST_BUILD
+logic, before it applies the POST_BUILD operation. The POST_BUILD is
+where the patch may be removed, removing the '+' from the kernelrelease.
+
+The calculation of the kernelrelease will also stay in its current
+location but will be ignored if it was already calculated previously.
 
 Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
 ---
- tools/testing/ktest/examples/README |   32 ++++++++++++++++++++++++++++++++
- 1 file changed, 32 insertions(+)
- create mode 100644 tools/testing/ktest/examples/README
+ tools/testing/ktest/ktest.pl |   11 +++++++++++
+ 1 file changed, 11 insertions(+)
 
-diff --git a/tools/testing/ktest/examples/README b/tools/testing/ktest/exam=
-ples/README
-new file mode 100644
-index 0000000..a12d295
---- /dev/null
-+++ b/tools/testing/ktest/examples/README
-@@ -0,0 +1,32 @@
-+This directory contains example configs to use ktest for various tasks.
-+The configs still need to be customized for your environment, but it
-+is broken up by task which makes it easier to understand how to set up
-+ktest.
+diff --git a/tools/testing/ktest/ktest.pl b/tools/testing/ktest/ktest.pl
+index 4915408..50b6726 100755
+--- a/tools/testing/ktest/ktest.pl
++++ b/tools/testing/ktest/ktest.pl
+@@ -66,6 +66,7 @@ my %default =3D (
+=20
+ my $ktest_config;
+ my $version;
++my $have_version =3D 0;
+ my $machine;
+ my $ssh_user;
+ my $tmpdir;
+@@ -1702,10 +1703,12 @@ sub install {
+=20
+ sub get_version {
+     # get the release name
++    return if ($have_version);
+     doprint "$make kernelrelease ... ";
+     $version =3D `$make kernelrelease | tail -1`;
+     chomp($version);
+     doprint "$version\n";
++    $have_version =3D 1;
+ }
+=20
+ sub start_monitor_and_boot {
+@@ -1828,6 +1831,9 @@ sub build {
+     my $save_no_reboot =3D $no_reboot;
+     $no_reboot =3D 1;
+=20
++    # Calculate a new version from here.
++    $have_version =3D 0;
 +
-+The configs are based off of real working configs but have been modified
-+and commented to show more generic use cases that are more helpful for
-+developers.
+     if (defined($pre_build)) {
+ 	my $ret =3D run_command $pre_build;
+ 	if (!$ret && defined($pre_build_die) &&
+@@ -1887,6 +1893,9 @@ sub build {
+     undef $redirect;
+=20
+     if (defined($post_build)) {
++	# Because a post build may change the kernel version
++	# do it now.
++	get_version;
+ 	my $ret =3D run_command $post_build;
+ 	if (!$ret && defined($post_build_die) &&
+ 	    $post_build_die) {
+@@ -3474,6 +3483,8 @@ for (my $i =3D 1; $i <=3D $opt{"NUM_TESTS"}; $i++) {
+     $no_reboot =3D 1;
+     $reboot_success =3D 0;
+=20
++    $have_version =3D 0;
 +
-+crosstests.conf - this config shows an example of testing a git repo again=
-st
-+    lots of different architectures. It only does build tests, but makes
-+    it easy to compile test different archs. You can download the arch
-+    cross compilers from:
-+  http://kernel.org/pub/tools/crosstool/files/bin/x86_64/
-+
-+test.conf - A generic example of a config. This is based on an actual conf=
-ig
-+     used to perform real testing.
-+
-+kvm.conf - A example of a config that is used to test a virtual guest runn=
-ing
-+     on a host.
-+
-+snowball.conf - An example config that was used to demo ktest.pl against
-+     a snowball ARM board.
-+
-+include/  -  The include directory holds default configs that can be
-+    included into other configs. This is a real use example that shows how
-+    to reuse configs for various machines or set ups. The files here
-+    are included by other config files, where the other config files define
-+    options and variables that will make the included config work for the
-+    given environment.
-+
-+
+     $iteration =3D $i;
+=20
+     my $makecmd =3D set_test_option("MAKE_CMD", $i);
 --=20
 1.7.10
 
@@ -93,19 +122,19 @@ Content-Description: This is a digitally signed message part
 -----BEGIN PGP SIGNATURE-----
 Version: GnuPG v1.4.12 (GNU/Linux)
 
-iQIcBAABAgAGBQJPu4FIAAoJEIy3vGnGbaoAppAQAJiyfxXeYAPL1hIT6JeAvLg+
-ca4bEmUWRc17IyCp/gjDxtuaW/NrccgIy9NW2V4Mq0/uqKMYyi2Z+2JzN2UBYF65
-KokRAtwE+3Qc0sAbInwQ0mXyDT6wyGq4qq7wN/JULEp8A0z6mw85P2yNNwvFSFf/
-62qdLmYJ+GxFSCdiIclSFemwRhlyr3PWUi0FojU+47Ur0d2mlTZ1hcnQk/V+18BY
-UHjT97aVt+jxZIP0uowW4R4iJPjEfZGU/FmIAJ+46QIDgbsUGb/ZZfEPbkgw0+Hj
-3ppT1abJKK+0R1fr1ZWRFEpu6KT9c2K8H7EysAbc0S57t4XD40RxtypiUF1ECjLJ
-0yhGngZpXjLFb64ILFpigPhecEYmkbgeSIfL928uh+1WkUlNVw/yRZP5RwcG9hf5
-nH07aA2H9GWB8xmL9WSRQ6iIARWjmT1qY3p22jEvJ4ttrcdUkH5CvZIdzCt4GxkC
-AiKkafTjzB2j1tpV4AWZh6an4RJNAHEO6DzIvDHhwqMXX2voi52BX0LjnZHPB/ES
-k42HiDjuyt0bFIYgxmz9AyI78sI4qvjYReFqoaz4RgSLtOR7qWWqjx4nw380n5R+
-aBCjsOlnRgAq3OYZ6fKxtM6G0+HkPuCrZ5KIG6NF6tut3VXUDiTpEupNeLsaEFxx
-17Kg3CEdJ8P6YHpGQuo0
-=Bhgc
+iQIcBAABAgAGBQJPu4FFAAoJEIy3vGnGbaoAyz4P/Ag8joWX9m8m0RyofmZ1QeCb
+T+mJzIsSTAvokCYrqimy3JXJ4OBu69qYhZH3rxd0KaWNcFO4wZB9gJcMH47O63xu
+XzAW45X2wQCFCV1jY6bFKqJXF0ze1vDHFeN2Dsf4Ereb5jhRU25m1b/52R9qqtea
+lTWo8sSUkDiVc86gR7lGIYjfldLV/k2W3Xg7t6sFaIpLj6Bn/ayn9l+yqTJ3FxWk
+KiP/8ZnQBm3EVkcwM5/8Egovwvpd3KghImQeatpwruS3rl+JH7mTf+iVGMzRaI6B
+6H7/a69XBlvhvdNj+h81pd3qLsgZH+GEgI8wcVH7T6c8ENA0KS2tD6w/ucFAAQJ3
+NMR2a65HPyB9nx9Swii1DjoCem+MmU3z6xoHGaTH5pGhD5a5EOg6HGeXi8s8nzYP
+wKSVDGUq32y1zcX5umTDV9jodYIusKq9bdMJlR6pARL+G/p08G0q69287pkD6eqH
+bBwKJEPpjFJwTVMI+NzN+qzroCkTL6nHWqU0oTkEPl/7s2mXQTa/autqVUkzO2S8
+TYbRm/nnnzSc2wCXu7niaWxi9d98Uv14U/FB3As9ao6Afs4g9FqmCSZdHyIxFaY1
+R933Rs455rElnyKgS3uwrbZCZ3xgwuujZGs+V+AnHqN3RNQpbTKLLIYt+De5vN8v
+RTgwIqDsDGaJn3sjrSL5
+=Vbym
 -----END PGP SIGNATURE-----
 
 --00GvhwF7k39YY--
