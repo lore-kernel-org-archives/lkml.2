@@ -1,85 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757379Ab2EVWwb (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 May 2012 18:52:31 -0400
-Received: from haggis.pcug.org.au ([203.10.76.10]:56707 "EHLO
-	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754181Ab2EVWwa (ORCPT
+	id S1756368Ab2EVW6h (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 May 2012 18:58:37 -0400
+Received: from mail131.messagelabs.com ([216.82.242.99]:12078 "EHLO
+	mail131.messagelabs.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753499Ab2EVW6g (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 May 2012 18:52:30 -0400
-Date: Wed, 23 May 2012 08:52:26 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Samuel Ortiz <sameo@linux.intel.com>
-Cc: Lee Jones <lee.jones@linaro.org>, Linus Walleij <linus.walleij@linaro.org>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        linux-next@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: linux-next: build failure after merge of the mfd tree
-Message-Id: <20120523085226.7ffe604b626a2d96084ee682@canb.auug.org.au>
-In-Reply-To: <20120522224214.GG10210@sortiz-mobl>
-References: <20120521134219.6d6396802bd6a097503bac92@canb.auug.org.au>
-	<4FB9F818.4030801@linaro.org>
-	<20120521184005.3b7661ec6468c5878a22615d@canb.auug.org.au>
-	<4FBA0460.1070300@linaro.org>
-	<20120521191007.9347651e88add2e7c247a24f@canb.auug.org.au>
-	<4FBA08A4.6030706@linaro.org>
-	<20120521095427.GA30045@sirena.org.uk>
-	<4FBA18C7.4030800@linaro.org>
-	<20120522224214.GG10210@sortiz-mobl>
-X-Mailer: Sylpheed 3.2.0beta7 (GTK+ 2.24.10; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Wed__23_May_2012_08_52_26_+1000_3mFUAkmld=s7q7hC"
+	Tue, 22 May 2012 18:58:36 -0400
+X-Env-Sender: hartleys@visionengravers.com
+X-Msg-Ref: server-3.tower-131.messagelabs.com!1337727513!21301591!6
+X-Originating-IP: [216.166.12.31]
+X-StarScan-Version: 6.5.10; banners=-,-,-
+X-VirusChecked: Checked
+From: H Hartley Sweeten <hartleys@visionengravers.com>
+To: Linux Kernel <linux-kernel@vger.kernel.org>
+Subject: [PATCH] staging: comedi: remove thisboard macro in the comedi_test driver
+Date: Tue, 22 May 2012 15:58:28 -0700
+User-Agent: KMail/1.9.9
+CC: <devel@driverdev.osuosl.org>, <abbotti@mev.co.uk>,
+        <fmhess@users.sourceforge.net>, <gregkh@linuxfoundation.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
+Content-Disposition: inline
+Message-ID: <201205221558.28768.hartleys@visionengravers.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Wed__23_May_2012_08_52_26_+1000_3mFUAkmld=s7q7hC
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+The 'thisboard' macro depends on having a local variable with
+a magic name. The CodingStyle document suggests not doing this
+to avoid confusion. Remove the macro and use the comedi_board()
+inline helper to get the dev->board_ptr information.
 
-Hi Samuel,
+Signed-off-by: H Hartley Sweeten <hsweeten@visionengravers.com>
+Cc: Ian Abbott <abbotti@mev.co.uk>
+Cc: Mori Hess <fmhess@users.sourceforge.net>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
-On Wed, 23 May 2012 00:42:14 +0200 Samuel Ortiz <sameo@linux.intel.com> wro=
-te:
->
-> I would appreciate if we could have a fix for this one sooner than later =
-as
-> I'm planning to send my pull request by the end of this week.
+---
 
-Just so you know, nothing you have added to your tree since May 11 has
-been in linux-next due to 3 separate build problems.  As far as I can see
-the same will be true today due to the problem you were discussing here.
-
-You quickest way forward may be to either revert commit d28f1db8187d
-("mfd: Remove confusing ab8500-i2c file and merge into ab8500-core") (if
-possible) or make the building of drivers/mfd/ab8500-core.c depend on
-some platform where it is clear it will build.
-
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-
---Signature=_Wed__23_May_2012_08_52_26_+1000_3mFUAkmld=s7q7hC
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBCAAGBQJPvBiqAAoJEECxmPOUX5FEgF8P/0nnRxj4iOvrnOj7O+u7+wl8
-TnPBSGxfRSBezCIn+0R9NxDQGNOWnChtHwD8C5Cx18upeVzw7XYYXfq9Cl8G7FmU
-zKRHbkveqz98nF3REkkf9EFMKK1goOp2Vmh4auvY2otUprT2PrybryP15XRPANSO
-hgn7DH77gAOAap2MmZvxgAHXQLSgu2G6HwyOnw/qvCPj49rGrPhtaphi2spTSajO
-eL2jyTbsYsJvfeAW1LgwBEVnv8s+FH6nu+87ZtBEV30P+lYTOM3QLmNPZZloh7Ew
-H653WyFRj3RSE8mO9aqoDkOOPGIJnCyFBqOJdQP9MjF+n/GggxDCg4raSZM3UJns
-0OSobKbQyxxuynR44Ni41YUOabI1OV529xq5MWHlksdEpw93jYO6Ua0Xo29nvtTk
-m1rteZiIKpXUHgeus9iM84fe9oCMu1B5tE0vDcZ/p/fW1IlcRCYnfSDEWHzL7DLR
-WF465bau6kateylsHSNyOUCvXN9w5zyhinbnNh/B8M4hLouIsfSEyHDrNuHsrbxH
-RRCXGUD9wO4EzRws0CIolzL+ybshtMlryWRO0TyoVKTdoPNdx48MRDrgPajTdCHz
-mgFJIiHepdRI6i83r2mYO6H+FhcR9mEzNFJgTar0pL52fhzZKoG8R1A3RdHkeo8N
-Vs7ESIXN9iCV27Lh5kki
-=RXQx
------END PGP SIGNATURE-----
-
---Signature=_Wed__23_May_2012_08_52_26_+1000_3mFUAkmld=s7q7hC--
+diff --git a/drivers/staging/comedi/drivers/comedi_test.c b/drivers/staging/comedi/drivers/comedi_test.c
+index 873e374..9f3c3d5 100644
+--- a/drivers/staging/comedi/drivers/comedi_test.c
++++ b/drivers/staging/comedi/drivers/comedi_test.c
+@@ -67,8 +67,6 @@ struct waveform_board {
+ 
+ #define N_CHANS 8
+ 
+-#define thisboard ((const struct waveform_board *)dev->board_ptr)
+-
+ /* Data unique to this driver */
+ struct waveform_private {
+ 	struct timer_list timer;
+@@ -429,12 +427,13 @@ static int waveform_ao_insn_write(struct comedi_device *dev,
+ static int waveform_attach(struct comedi_device *dev,
+ 			   struct comedi_devconfig *it)
+ {
++	const struct waveform_board *board = comedi_board(dev);
+ 	struct comedi_subdevice *s;
+ 	int amplitude = it->options[0];
+ 	int period = it->options[1];
+ 	int i;
+ 
+-	dev->board_name = thisboard->name;
++	dev->board_name = board->name;
+ 
+ 	if (alloc_private(dev, sizeof(struct waveform_private)) < 0)
+ 		return -ENOMEM;
+@@ -457,8 +456,8 @@ static int waveform_attach(struct comedi_device *dev,
+ 	/* analog input subdevice */
+ 	s->type = COMEDI_SUBD_AI;
+ 	s->subdev_flags = SDF_READABLE | SDF_GROUND | SDF_CMD_READ;
+-	s->n_chan = thisboard->ai_chans;
+-	s->maxdata = (1 << thisboard->ai_bits) - 1;
++	s->n_chan = board->ai_chans;
++	s->maxdata = (1 << board->ai_bits) - 1;
+ 	s->range_table = &waveform_ai_ranges;
+ 	s->len_chanlist = s->n_chan * 2;
+ 	s->insn_read = waveform_ai_insn_read;
+@@ -471,8 +470,8 @@ static int waveform_attach(struct comedi_device *dev,
+ 	/* analog output subdevice (loopback) */
+ 	s->type = COMEDI_SUBD_AO;
+ 	s->subdev_flags = SDF_WRITEABLE | SDF_GROUND;
+-	s->n_chan = thisboard->ai_chans;
+-	s->maxdata = (1 << thisboard->ai_bits) - 1;
++	s->n_chan = board->ai_chans;
++	s->maxdata = (1 << board->ai_bits) - 1;
+ 	s->range_table = &waveform_ai_ranges;
+ 	s->len_chanlist = s->n_chan * 2;
+ 	s->insn_write = waveform_ao_insn_write;
