@@ -1,104 +1,118 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932246Ab2EVQ0q (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 May 2012 12:26:46 -0400
-Received: from mail-lpp01m010-f46.google.com ([209.85.215.46]:34182 "EHLO
-	mail-lpp01m010-f46.google.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754556Ab2EVQ0n convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 May 2012 12:26:43 -0400
-MIME-Version: 1.0
-In-Reply-To: <CABqD9hbzatHerMA1Nq57Qn8SKSZzZf=5t6aLumG9ZpAafgX=UQ@mail.gmail.com>
-References: <CACLa4puRJLUd6hAHO6zFYiqa5dFVum8eLmNMk_ef+=r8OGhjRg@mail.gmail.com>
-	<CAB=4xho2b5fZV_jC15XW3mhOD9Z0QUMnV_UHy-P5EmQWfX59dA@mail.gmail.com>
-	<5d6179f59222155b72d9aa9f171e883c.squirrel@webmail.greenhost.nl>
-	<CABqD9hbzatHerMA1Nq57Qn8SKSZzZf=5t6aLumG9ZpAafgX=UQ@mail.gmail.com>
-Date: Tue, 22 May 2012 11:26:41 -0500
-Message-ID: <CABqD9hayWsPP0mHBcES8UJ9iPFHoOpyy7HCYPbUnMXEuHZCPBw@mail.gmail.com>
-Subject: Re: seccomp and ptrace. what is the correct order?
-From: Will Drewry <wad@chromium.org>
-To: Indan Zupancic <indan@nul.nu>
-Cc: Roland McGrath <mcgrathr@google.com>, Eric Paris <netdev@parisplace.org>,
-        linux-kernel@vger.kernel.org, linux-security-module@vger.kernel.org,
-        kernel-hardening@lists.openwall.com, hpa@zytor.com, mingo@redhat.com,
-        oleg@redhat.com, peterz@infradead.org, rdunlap@xenotime.net,
-        tglx@linutronix.de, luto@mit.edu, eparis@redhat.com,
-        serge.hallyn@canonical.com, pmoore@redhat.com,
-        akpm@linux-foundation.org, corbet@lwn.net, eric.dumazet@gmail.com,
-        markus@chromium.org, coreyb@linux.vnet.ibm.com, keescook@chromium.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	id S1755332Ab2EVQgG (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 May 2012 12:36:06 -0400
+Received: from ns1.pc-advies.be ([83.149.101.17]:52780 "EHLO
+	spo001.leaseweb.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1753288Ab2EVQgE (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 May 2012 12:36:04 -0400
+Date: Tue, 22 May 2012 18:35:59 +0200
+From: Wim Van Sebroeck <wim@iguana.be>
+To: Guenter Roeck <guenter@roeck-us.net>
+Cc: Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Aaron Sierra <asierra@xes-inc.com>,
+        Samuel Ortiz <sameo@linux.intel.com>,
+        Randy Dunlap <rdunlap@xenotime.net>, linux-watchdog@vger.kernel.org,
+        Jean Delvare <khali@linux-fr.org>
+Subject: Re: linux-next: manual merge of the watchdog tree with the mfd tree
+Message-ID: <20120522163559.GD3074@spo001.leaseweb.com>
+References: <20120518152348.1e5070cdc16cfdf00682546d@canb.auug.org.au> <20120518083234.GW3074@spo001.leaseweb.com> <6.2.5.6.2.20120518181141.028c8090@roeck-us.net>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <6.2.5.6.2.20120518181141.028c8090@roeck-us.net>
+User-Agent: Mutt/1.4.1i
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, May 22, 2012 at 11:23 AM, Will Drewry <wad@chromium.org> wrote:
-> On Mon, May 21, 2012 at 2:20 PM, Indan Zupancic <indan@nul.nu> wrote:
->> On Mon, May 21, 2012 20:25, Roland McGrath wrote:
->>> From a security perspective I think the natural expectation would be that
->>> the seccomp check is on the values that will actually be used, without an
->>> intervening opportunity to change anything.
->>
->> Actually, considering a tracer has full control over a traced process,
->> it would make most sense from a security perspective to check both the
->> traced task's seccomp filter, as well as the one for the ptracer for
->> modified system calls (calls where any register poking at all was done).
->> Otherwise a task could bypass its own seccomp filter by ptracing a hapless
->> victim.
->>
->> I mentioned this before, but I forgot why this option was dismissed.
->> Probably because ptrace shouldn't have been allowed by the filter in
->> the first place.
->>
->> The current patch does the seccomp check first and ignores any changes
->> made via ptrace, just like the old seccomp did. So in that sense nothing
->> changed.
->>
->> Originally the seccomp filter check was in the fast path, so doing it
->> after ptrace was tricky. But now it has been moved to the slow tracehook
->> path it can easily be checked after the ptrace notification. That would
->> change the behaviour SECCOMP_MODE=1 though, but probably nobody cares,
->> as it can be argued that that was a security hole anyway (except if
->> ptracing a seccomped task was disallowed, in which case moving it to
->> the end doesn't change anything anyway).
->>
->> Another argument for moving it to the end is that it makes debugging
->> seccomped tasks a lot easier, because the debugger sees the denied
->> system call. With the current patch the tasks would silently die.
->
-> I don't see this as a strict bypass because an successful attack would require:
-> - the ability to fork/clone _and_ call ptrace (which would otherwise
-> be blocked by the BPF if the user of the bpf cares)
-> - the ability to compromise a process with ptrace abilities for a
-> sandboxed process -- which means that a privilege escalation (in a
-> word) has already occurred.
->
-> However(!), if we did move secure_computing() to after ptrace _and_
-> added a check after SECCOMP_RET_TRACE's ptrace_event call, we could
-> ensure the system call was not changed by the tracer.  This would give
-> strong assurances that whatever system call is executed was explicitly
-> allowed by seccomp policy is the one that was executed.
->
-> I'm open to either leaving things alone (since it isn't horrible) or
+Hi Guenter,
 
-Let me rephrase :)  The current behavior makes sense for an inwardly
-focused system. seccomp mode=1 and mode=2 are about the behavior of
-the task they apply to.  In that regard, both modes block (or can
-block) ptrace, which means that there is no way for them to exploit
-this -- they are operating correctly.
+> >> Today's linux-next merge of the watchdog tree got a conflict in
+> >> drivers/watchdog/iTCO_wdt.c between commit 887c8ec7219f ("watchdog:
+> >> Convert iTCO_wdt driver to mfd model") from the  tree and commit
+> >> c3614aa19d3e ("watchdog: iTCO_wdt.c: fix printk format warnings") from
+> >> the watchdog tree.
+> >>
+> >> I fixed it up (see below) and can carry the fix as necessary.
+> >
+> >Thanks for fixing this up.
+> >
+> >But I'm a bit surprised: I wasn't Cc'ed about this patch to Convert
+> >the iTCO_wdt driver to the mfd model...
+> Oh my. Kind of embarrassing to forget one of the maintainers in all 
+> the discussions which tree this patch set should go through. Even 
+> though I didn't much of the code, my sign-off is there, and I should 
+> have made sure that you are on the Cc: list. Sorry for that, and I 
+> owe you a beer or two if we ever meet in person.
 
-The discussion we're having now is if that is the desirable behavior.
-Do we want seccomp to be a system call contract between userspace and
-the kernel for the task no matter what, or do we want it to be a
-system call contract between the specific task's code and the kernel
-(thereby allowing a tracer to make things act totally differently).
+The maintainer and the writer of the driver: that's at least two beers indeed :-).
 
-> making the change to tighten things up. Is the mode=1 behavior change
-> acceptable?  I assumed it wouldn't be, but perhaps I shouldn't have
-> made that assumption.
->
-> Regardless, I will go ahead and make patches and test them for both,
-> so they are on-hand regardless.
->
-> thanks!
-> will
+> Hope you are ok with the changes - the patch set already missed the 
+> last commit window because of the which-tree-to-use issue, and it 
+> would be sad to miss another one. And Jean is really waiting for it 
+> to go in to be able to push some related patches which need the gpio driver.
+
+I'm OK with it (although this means I can't go ahead yet with a watchdog core
+conversion of the iTCO_wdt driver), except for the comile warning that the patch
+introduces (as reported by Randy).
+
+The original driver printed addresses as %04lx, this new driver uses %04llx but
+doesn't typecast the values correctly. See message from Randy below.
+Wether or not %04lx or %04llx is the best to use is off-course another question.
+I don't think we have a clear standard yet, but I'm fine with either one of them.
+
+Kind regards,
+Wim.
+---
+Date: Mon, 14 May 2012 13:15:20 -0700
+From: Randy Dunlap <rdunlap@xenotime.net>
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+CC: linux-next@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>, 
+ Wim Van Sebroeck <wim@iguana.be>,
+ linux-watchdog@vger.kernel.org
+Subject: [PATCH -next] wdt: fix iTCO printk format warnings
+
+From: Randy Dunlap <rdunlap@xenotime.net>
+
+Fix printk format warnings:
+
+drivers/watchdog/iTCO_wdt.c:577:3: warning: format '%04llx' expects type 'long long unsigned int', but argument 2 has type 'resource_size_t'
+drivers/watchdog/iTCO_wdt.c:594:3: warning: format '%04llx' expects type 'long long unsigned int', but argument 2 has type 'resource_size_t'
+drivers/watchdog/iTCO_wdt.c:600:2: warning: format '%04llx' expects type 'long long unsigned int', but argument 4 has type 'resource_size_t'
+
+Signed-off-by: Randy Dunlap <rdunlap@xenotime.net>
+Cc:	Wim Van Sebroeck <wim@iguana.be>
+---
+ drivers/watchdog/iTCO_wdt.c |    6 +++---
+ 1 file changed, 3 insertions(+), 3 deletions(-)
+
+--- linux-next-20120514.orig/drivers/watchdog/iTCO_wdt.c
++++ linux-next-20120514/drivers/watchdog/iTCO_wdt.c
+@@ -575,7 +575,7 @@ static int __devinit iTCO_wdt_probe(stru
+ 	if (!request_region(iTCO_wdt_private.smi_res->start,
+ 			resource_size(iTCO_wdt_private.smi_res), dev->name)) {
+ 		pr_err("I/O address 0x%04llx already in use, device disabled\n",
+-		       SMI_EN);
++		       (u64)SMI_EN);
+ 		ret = -EBUSY;
+ 		goto unmap_gcs;
+ 	}
+@@ -592,13 +592,13 @@ static int __devinit iTCO_wdt_probe(stru
+ 	if (!request_region(iTCO_wdt_private.tco_res->start,
+ 			resource_size(iTCO_wdt_private.tco_res), dev->name)) {
+ 		pr_err("I/O address 0x%04llx already in use, device disabled\n",
+-		       TCOBASE);
++		       (u64)TCOBASE);
+ 		ret = -EBUSY;
+ 		goto unreg_smi;
+ 	}
+ 
+ 	pr_info("Found a %s TCO device (Version=%d, TCOBASE=0x%04llx)\n",
+-		ich_info->name, ich_info->iTCO_version, TCOBASE);
++		ich_info->name, ich_info->iTCO_version, (u64)TCOBASE);
+ 
+ 	/* Clear out the (probably old) status */
+ 	outw(0x0008, TCO1_STS);	/* Clear the Time Out Status bit */
+
