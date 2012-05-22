@@ -1,103 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932414Ab2EVUJF (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 May 2012 16:09:05 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:56504 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932320Ab2EVUJD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 May 2012 16:09:03 -0400
-Date: Tue, 22 May 2012 16:08:59 -0400
-From: Vivek Goyal <vgoyal@redhat.com>
-To: Tao Ma <tm@tao.ma>
-Cc: linux-kernel@vger.kernel.org, Tejun Heo <tj@kernel.org>
-Subject: Re: [RFC] block/throttle: Add IO throttled information in blkcg.
-Message-ID: <20120522200859.GA10211@redhat.com>
-References: <1337674236-2896-1-git-send-email-tm@tao.ma>
- <20120522111111.GE3045@redhat.com>
- <4FBBA63B.1090401@tao.ma>
- <20120522150606.GH3045@redhat.com>
- <4FBBAD6F.6020004@tao.ma>
+	id S932423Ab2EVUKO (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 May 2012 16:10:14 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:48097 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932320Ab2EVUKL convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 May 2012 16:10:11 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4FBBAD6F.6020004@tao.ma>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <4FBBECC2.10503@gmail.com>
+References: <1336773923-17866-1-git-send-email-ddaney.cavm@gmail.com>
+ <1336773923-17866-2-git-send-email-ddaney.cavm@gmail.com> <20120520055436.13AF03E03B8@localhost>
+ <20120520060802.03CE73E03B8@localhost> <4FBBECC2.10503@gmail.com>
+From: Grant Likely <grant.likely@secretlab.ca>
+Date: Tue, 22 May 2012 14:09:50 -0600
+X-Google-Sender-Auth: AeK5M32u5cJp1fo89-ZlN26c9Lc
+Message-ID: <CACxGe6tYQVfPRtXxmYF2OPYcEFu+x4-_uzFta9f3mwu=xUrt=g@mail.gmail.com>
+Subject: Re: [PATCH 1/3] of: Add prefix parameter to of_modalias_node().
+To: David Daney <ddaney.cavm@gmail.com>
+Cc: "devicetree-discuss@lists.ozlabs.org" 
+	<devicetree-discuss@lists.ozlabs.org>,
+        Rob Herring <rob.herring@calxeda.com>,
+        "spi-devel-general@lists.sourceforge.net" 
+	<spi-devel-general@lists.sourceforge.net>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-mips@linux-mips.org" <linux-mips@linux-mips.org>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
+        Liam Girdwood <lrg@ti.com>, Tabi Timur-B04825 <B04825@freescale.com>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Jaroslav Kysela <perex@perex.cz>, Takashi Iwai <tiwai@suse.de>,
+        "alsa-devel@alsa-project.org" <alsa-devel@alsa-project.org>,
+        "linuxppc-dev@lists.ozlabs.org" <linuxppc-dev@lists.ozlabs.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, May 22, 2012 at 11:14:55PM +0800, Tao Ma wrote:
-> On 05/22/2012 11:06 PM, Vivek Goyal wrote:
-> > On Tue, May 22, 2012 at 10:44:11PM +0800, Tao Ma wrote:
-> >> Hi Vivek,
-> >> 	Thanks for the quick response.
-> >> On 05/22/2012 07:11 PM, Vivek Goyal wrote:
-> >>> On Tue, May 22, 2012 at 04:10:36PM +0800, Tao Ma wrote:
-> >>>> From: Tao Ma <boyu.mt@taobao.com>
-> >>>>
-> >>>> Currently, if the IO is throttled by io-throttle, the SA has no idea of
-> >>>> the situation and can't report it to the real application user about
-> >>>> that he/she has to do something. So this patch adds a new interface
-> >>>> named blkio.throttle.io_throttled which indicates how many IOs are
-> >>>> currently throttled.
-> >>>
-> >>> If the only purpose is to know whether IOs are being throttled, why
-> >>> not just scan for the rules and see if respective device has any
-> >>> throttling rules or not.
-> >> Sorry, but setting a throttling rules doesn't mean the IOs are
-> >> throttled, right? So scanning doesn't work here IMHO.
-> > 
-> > It means IOs will be throttled if you cross a certain rate. But yes, it
-> > does not give any information that if at time T if there are any bios
-> > throttled in the queue or not.
-> > 
-> >>>
-> >>> Even if you introduce this interface, you will end up scanning for
-> >>> throttled ios against that particular device. And if IO is not happening
-> >>> at that moment or if IO rate is not exceeding the rate limit, there
-> >>> might not be any throttled ios and one might get misled.
-> >> Oh, no actually in a *clound computing* environment, it is really
-> >> useful, not misled. So let me describe it in more detail. Our product
-> >> system will limit every instance to an approximate number at first, and
-> >> then watch out the IOs being throttled. If these numbers is high, it can:
-> >> 1) Shout loudly to the application programmer about the abuse if he
-> >> sends out too much IO requests.
-> >> 2) If it is not too much and some other instances are not active, adjust
-> >> the throttled ratio so that this instance can work much faster.
-> > 
-> > Ok, so you want to use this more as "congestion" parameter which tells at
-> > a given moment how busy the queue is, or in this instance how many IOs
-> > are backlogged in a cgroup due to throttling limits.
-> yeah, with this information the daemon can adjust these limits
-> automatically.
+On Tue, May 22, 2012 at 1:45 PM, David Daney <ddaney.cavm@gmail.com> wrote:
+> On 05/19/2012 11:08 PM, Grant Likely wrote:
+>>
+>> On Sat, 19 May 2012 23:54:36 -0600, Grant
+>> Likely<grant.likely@secretlab.ca>  wrote:
+>>>
+>>> On Fri, 11 May 2012 15:05:21 -0700, David Daney<ddaney.cavm@gmail.com>
+>>>  wrote:
+>>>>
+>>>> From: David Daney<david.daney@cavium.com>
+>>>>
+>>>> When generating MODALIASes, it is convenient to add things like "spi:"
+>>>> or "i2c:" to the front of the strings.  This allows the standard
+>>>> modprobe to find the right driver when automatically populating bus
+>>>> children from the device tree structure.
+>>>>
+>>>> Add a prefix parameter, and adjust callers.  For
+>>>> of_register_spi_devices() use the "spi:" prefix.
+>>>>
+>>>> Signed-off-by: David Daney<david.daney@cavium.com>
+>>>
+>>>
+>>> Applied, thanks.  Some notes below...
+>>
+>>
+>> Wait... why is this necessary?
+>
+>
+> Because in of_register_spi_devices() in of_spi.c, you do:
+>
+>        request_module(spi->modalias);
+>
+> The string passed to request_module() must have the "spi:" prefix.
 
-I am hoping that this daemon will monitor the file for long periods and
-will not reach to bursty traffic from application.
+How about modifying the call to request_module() to include the prefix
+also?  I think that would be a simpler change overall.  Would that
+work?
 
-> > 
-> > I guess, it is not a bad idea to export this stat then. Will
-> > "blkio.throttle.queued" be a better name to reflect that how many bios
-> > are currently queued in throttling layer of request queue.
-> I have thought of this name at the very first time. But there is also
-> another one named "blkio.queued" which indicated the IOs being queued in
-> the scheduler. I don't want the user to be confused and that's the
-> reason I use "blkio.throttle.io_throttled".
-
-Actually it is blkio.io_queued which shows number of requests queued in
-CFQ in that cgroup.
-
-CFQ and throttling are two different policies and they have separate
-files in cgroup. Ideally blkio.io_queued should have been
-blkio.cfq.io_queued but initially it did not occur to me that I should
-qualify these files with policy name.
-
-Later when throttling policy came along, then I qualified new files with
-policy name. blkio.throttle.*.
-
-In summary, blkio.io_queued gives stats of io queued at CFQ level. So it
-makes sense to create blkio.throttle.io_queued which tells how many
-bios are currently throttled and queued in throttling layer in this
-request queue from this cgroup.
-
-Thanks
-Vivek
+g.
