@@ -1,61 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758309Ab2EVRD2 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 May 2012 13:03:28 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:62433 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754657Ab2EVRD0 (ORCPT
+	id S1756129Ab2EVRHu (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 May 2012 13:07:50 -0400
+Received: from www.linutronix.de ([62.245.132.108]:39404 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750826Ab2EVRHt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 May 2012 13:03:26 -0400
-Date: Tue, 22 May 2012 10:03:20 -0700
-From: Tejun Heo <tj@kernel.org>
-To: =?iso-8859-1?Q?J=F6rg-Volker?= Peetz <jvpeetz@web.de>
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: Linux 3.4 released
-Message-ID: <20120522170320.GD14339@google.com>
-References: <CA+55aFwaobhbBZkE1LTyQJYhk8w8zk-cyOXXuXfPyE=BXzT3PA@mail.gmail.com>
- <4FBBB11D.7020904@web.de>
- <20120522155345.GC14339@google.com>
- <4FBBC461.4060008@web.de>
+	Tue, 22 May 2012 13:07:49 -0400
+Date: Tue, 22 May 2012 19:07:46 +0200 (CEST)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Steven Rostedt <rostedt@goodmis.org>
+cc: LKML <linux-kernel@vger.kernel.org>, RT <linux-rt-users@vger.kernel.org>,
+        Clark Williams <williams@redhat.com>,
+        Peter Zijlstra <peterz@infradead.org>
+Subject: Re: [RFC][PATCH RT] rwsem_rt: Another (more sane) approach to mulit
+ reader rt locks
+In-Reply-To: <1337705539.13348.81.camel@gandalf.stny.rr.com>
+Message-ID: <alpine.LFD.2.02.1205221906250.3231@ionos>
+References: <1337090625.14207.304.camel@gandalf.stny.rr.com>   <alpine.LFD.2.02.1205221553400.3231@ionos>  <1337701801.13348.56.camel@gandalf.stny.rr.com>  <alpine.LFD.2.02.1205221803290.3231@ionos> <1337705539.13348.81.camel@gandalf.stny.rr.com>
+User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <4FBBC461.4060008@web.de>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, May 22, 2012 at 06:52:49PM +0200, Jörg-Volker Peetz wrote:
-> I tried the above patch but was not able to see a line beginning with "XXX", not
-> on the text-console nor in any log-file. After the hard-lock, I can see only the
-> console-screen which now changed slightly:
+On Tue, 22 May 2012, Steven Rostedt wrote:
+
+> On Tue, 2012-05-22 at 18:40 +0200, Thomas Gleixner wrote:
 > 
-> BUG: Unable to handle kernel NULL pointer dereference at 0000000000000008
-> IP: [<ffffffff8103ed60>] delayed_work_timer_fn+0x30/0x60
+> > > I'm all for benchmarks. But right now, making all readers pass through a
+> > > single mutex is a huge bottle neck for a lot of loads. Yes, they are
+> > > mostly Java loads, but for some strange reason, our customers seems to
+> > > like to run Java on our RT kernel :-p
+> > 
+> > I'm well aware that mmap_sem is a PITA but replacing one nightmare
+> > with the next one is not the best approach.
+> 
+> Perhaps we could just change the mmap_sem to use this approach. Create a
+> new type of rwsem/lock for -rt that we can be picky about.
+> 
+> Yeah, mmap_sem is a real PITA and it would be nice to have a solution
+> that can be used until we can convert it to an RCU lock.
 
-Oh, &cwq->wq is at offset 8 so cwq should have been -8.  Maybe I'm
-just confused.  Can you please try the following instead?
+That still wants to be verified with numbers on a machine with at
+least 32 cores and workloads which are mmap heavy. And before we don't
+have such numbers we can really stop arguing about that solution.
 
-diff --git a/kernel/workqueue.c b/kernel/workqueue.c
-index 5abf42f..14babfe 100644
---- a/kernel/workqueue.c
-+++ b/kernel/workqueue.c
-@@ -1096,10 +1096,16 @@ queue_work_on(int cpu, struct workqueue_struct *wq, struct work_struct *work)
- }
- EXPORT_SYMBOL_GPL(queue_work_on);
- 
-+#include <linux/uaccess.h>
- static void delayed_work_timer_fn(unsigned long __data)
- {
- 	struct delayed_work *dwork = (struct delayed_work *)__data;
- 	struct cpu_workqueue_struct *cwq = get_work_cwq(&dwork->work);
-+	unsigned long v;
-+
-+	if (probe_kernel_read(&v, &cwq->wq, sizeof(v)))
-+		printk("XXX delayed_work_timer_fn: cwq %p, fn=%pf\n",
-+		       cwq, dwork->work.func);
- 
- 	__queue_work(smp_processor_id(), cwq->wq, &dwork->work);
- }
+Thanks,
+
+	tglx
