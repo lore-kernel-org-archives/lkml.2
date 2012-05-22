@@ -1,26 +1,28 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757190Ab2EVCmR (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 May 2012 22:42:17 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:36118 "EHLO
+	id S932336Ab2EVCoo (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 May 2012 22:44:44 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:34644 "EHLO
 	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755379Ab2EVCmQ (ORCPT
+	with ESMTP id S1757048Ab2EVCom (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 May 2012 22:42:16 -0400
-Date: Mon, 21 May 2012 19:42:13 -0700 (PDT)
+	Mon, 21 May 2012 22:44:42 -0400
+Date: Mon, 21 May 2012 19:44:40 -0700 (PDT)
 From: David Rientjes <rientjes@google.com>
 X-X-Sender: rientjes@chino.kir.corp.google.com
-To: Ingo Molnar <mingo@kernel.org>
-cc: hpa@zytor.com, linux-kernel@vger.kernel.org, a.p.zijlstra@chello.nl,
-        torvalds@linux-foundation.org, pjt@google.com, cl@linux.com,
-        riel@redhat.com, bharata.rao@gmail.com, akpm@linux-foundation.org,
-        Lee.Schermerhorn@hp.com, aarcange@redhat.com, danms@us.ibm.com,
-        suresh.b.siddha@intel.com, tglx@linutronix.de,
-        linux-tip-commits@vger.kernel.org
-Subject: Re: [tip:sched/numa] sched/numa: Introduce sys_numa_{t,m}bind()
-In-Reply-To: <alpine.DEB.2.00.1205211914100.13682@chino.kir.corp.google.com>
-Message-ID: <alpine.DEB.2.00.1205211932350.13682@chino.kir.corp.google.com>
-References: <tip-nf7brf1b88w0ojwuf689xeet@git.kernel.org> <alpine.DEB.2.00.1205191922250.24674@chino.kir.corp.google.com> <20120521084046.GB31407@gmail.com> <alpine.DEB.2.00.1205211914100.13682@chino.kir.corp.google.com>
+To: Michael Neuling <mikey@neuling.org>
+cc: Stephen Rothwell <sfr@canb.auug.org.au>,
+        LKML <linux-kernel@vger.kernel.org>, linux-next@vger.kernel.org,
+        ppc-dev <linuxppc-dev@lists.ozlabs.org>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Lee Schermerhorn <lee.schermerhorn@hp.com>,
+        Linus <torvalds@linux-foundation.org>
+Subject: Re: linux-next: PowerPC boot failures in next-20120521
+In-Reply-To: <2246.1337654423@neuling.org>
+Message-ID: <alpine.DEB.2.00.1205211942540.29814@chino.kir.corp.google.com>
+References: <20120522114051.0c9db9a7c2d660bc9e0e1be2@canb.auug.org.au> <328.1337652722@neuling.org> <alpine.DEB.2.00.1205211924390.13682@chino.kir.corp.google.com> <2182.1337654352@neuling.org> <2246.1337654423@neuling.org>
 User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
 Content-Type: TEXT/PLAIN; charset=US-ASCII
@@ -28,32 +30,20 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 21 May 2012, David Rientjes wrote:
+On Tue, 22 May 2012, Michael Neuling wrote:
 
-> [    0.602181] divide error: 0000 [#1] SMP 
-> [    0.606159] CPU 0 
-> [    0.608003] Modules linked in:
-> [    0.611266] 
-> [    0.612767] Pid: 1, comm: swapper/0 Not tainted 3.4.0 #1
-> [    0.620912] RIP: 0010:[<ffffffff810af9ab>]  [<ffffffff810af9ab>] update_sd_lb_stats+0x38b/0x740
+> > > > Trying David's patch just posted doesn't fix it.
+> > > > 
+> > > 
+> > > Hmm, what does CONFIG_DEBUG_VM say?
+> > 
+> > No set.
+> 
+> Sorry, should have read "Not set"
+> 
 
-This is 
+I mean if it's set, what does it emit to the kernel log with my patch 
+applied?
 
-4ec4412e kernel/sched/fair.c 3876)      if (local_group) {
-bd939f45 kernel/sched/fair.c 3877)              if (env->idle != CPU_NEWLY_IDLE) {
-04f733b4 kernel/sched/fair.c 3878)                      if (balance_cpu != env->dst_cpu) {
-4ec4412e kernel/sched/fair.c 3879)                              *balance = 0;
-4ec4412e kernel/sched/fair.c 3880)                              return;
-4ec4412e kernel/sched/fair.c 3881)                      }
-bd939f45 kernel/sched/fair.c 3882)                      update_group_power(env->sd, env->dst_cpu);
-4ec4412e kernel/sched/fair.c 3883)              } else if (time_after_eq(jiffies, group->sgp->next_update))
-bd939f45 kernel/sched/fair.c 3884)                      update_group_power(env->sd, env->dst_cpu);
-1e3c88bd kernel/sched_fair.c 3885)      }
-1e3c88bd kernel/sched_fair.c 3886) 
-1e3c88bd kernel/sched_fair.c 3887)      /* Adjust by relative CPU power of the group */
-9c3f75cb kernel/sched_fair.c 3888)      sgs->avg_load = (sgs->group_load*SCHED_POWER_SCALE) / group->sgp->power;
-
-the divide of group->sgp->power.  This doesn't happen when reverting back 
-to sched/urgent at 30b4e9eb783d ("sched: Fix KVM and ia64 boot crash due 
-to sched_groups circular linked list assumption").  Let me know if you'd 
-like a bisect if the problem isn't immediately obvious.
+I made CONFIG_DEBUG_VM catch !node_online(node) about six months ago, so I 
+was thinking it would have caught this if either you or Stephen enable it.
