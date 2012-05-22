@@ -1,64 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759612Ab2EVBVx (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 May 2012 21:21:53 -0400
-Received: from mail160.messagelabs.com ([216.82.253.99]:58657 "EHLO
-	mail160.messagelabs.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757212Ab2EVBVv convert rfc822-to-8bit (ORCPT
+	id S1759574Ab2EVBcN (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 May 2012 21:32:13 -0400
+Received: from mga14.intel.com ([143.182.124.37]:41058 "EHLO mga14.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753780Ab2EVBcM convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 May 2012 21:21:51 -0400
-X-Env-Sender: hartleys@visionengravers.com
-X-Msg-Ref: server-15.tower-160.messagelabs.com!1337649710!7135203!1
-X-Originating-IP: [216.166.12.98]
-X-StarScan-Version: 6.5.10; banners=-,-,-
-X-VirusChecked: Checked
-From: H Hartley Sweeten <hartleys@visionengravers.com>
-To: Linux Kernel <linux-kernel@vger.kernel.org>
-Subject: [PATCH] staging: comedi: s626: base_addr is a void __iomem *
-Date: Mon, 21 May 2012 18:21:39 -0700
-User-Agent: KMail/1.9.9
-CC: <devel@driverdev.osuosl.org>, <abbotti@mev.co.uk>,
-        <fmhess@users.sourceforge.net>, <gregkh@linuxfoundation.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
+	Mon, 21 May 2012 21:32:12 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
+   d="scan'208";a="102646569"
+From: "Du, ChangbinX" <changbinx.du@intel.com>
+To: "'gregkh@linuxfoundation.org'" <gregkh@linuxfoundation.org>
+CC: "'Sergei Shtylyov'" <sshtylyov@mvista.com>,
+        "'mina86@mina86.com'" <mina86@mina86.com>,
+        "Fleming, Matt" <matt.fleming@intel.com>,
+        "'balbi@ti.com'" <balbi@ti.com>, "'hpa@zytor.com'" <hpa@zytor.com>,
+        "'linux-kernel@vger.kernel.org'" <linux-kernel@vger.kernel.org>,
+        "'linux-usb@vger.kernel.org'" <linux-usb@vger.kernel.org>
+Subject: [Resend PATCH v2] testusb: add path /dev/bus/usb to default search
+ paths of usbfs
+Thread-Topic: [Resend PATCH v2] testusb: add path /dev/bus/usb to default
+ search paths of usbfs
+Thread-Index: AQHNN7qyG7Zv5VtpIkaxHOeRBAtVMw==
+Date: Tue, 22 May 2012 01:32:05 +0000
+Message-ID: <0C18FE92A7765D4EB9EE5D38D86A563A06388E@SHSMSX101.ccr.corp.intel.com>
+References: <0C18FE92A7765D4EB9EE5D38D86A563A062E6C@SHSMSX101.ccr.corp.intel.com>
+In-Reply-To: <0C18FE92A7765D4EB9EE5D38D86A563A062E6C@SHSMSX101.ccr.corp.intel.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.239.127.40]
+Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 8BIT
-Content-Disposition: inline
-Message-ID: <201205211821.40209.hartleys@visionengravers.com>
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The base_addr variable in struct s626_private is an ioremap'ed pci
-resource and should be void __iomem * not a void *.
+As real device-nodes managed by udev whose nodes lived in /dev/bus/usb are mostly used today, let testusb tool use that directory as one default path make tool be more convenient to use.
 
-This quiets a lot of sparse warings for the writel and readl calls
-like:
-
-warning: incorrect type in argument 1 (different address spaces)
-   expected void const volatile [noderef] <asn:2>*addr
-   got void *<noident>
-
-warning: incorrect type in argument 2 (different address spaces)
-   expected void volatile [noderef] <asn:2>*addr
-   got void *
-
-Signed-off-by: H Hartley Sweeten <hsweeten@visionengravers.com>
-Cc: Ian Abbott <abbotti@mev.co.uk>
-Cc: Mori Hess <fmhess@users.sourceforge.net>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
+Signed-off-by: Du Changbin <changbinx.du@intel.com>
 ---
+ tools/usb/testusb.c |    5 +++++
+ 1 file changed, 5 insertions(+)
 
-diff --git a/drivers/staging/comedi/drivers/s626.c b/drivers/staging/comedi/drivers/s626.c
-index 7beb8f6..2354586 100644
---- a/drivers/staging/comedi/drivers/s626.c
-+++ b/drivers/staging/comedi/drivers/s626.c
-@@ -120,7 +120,7 @@ static const struct s626_board s626_boards[] = {
+diff --git a/tools/usb/testusb.c b/tools/usb/testusb.c index 6e0f567..82d7c59 100644
+--- a/tools/usb/testusb.c
++++ b/tools/usb/testusb.c
+@@ -358,6 +358,7 @@ static const char *usbfs_dir_find(void)  {
+ 	static char usbfs_path_0[] = "/dev/usb/devices";
+ 	static char usbfs_path_1[] = "/proc/bus/usb/devices";
++	static char udev_usb_path[] = "/dev/bus/usb";
  
- struct s626_private {
- 	struct pci_dev *pdev;
--	void *base_addr;
-+	void __iomem *base_addr;
- 	int got_regions;
- 	short allocatedBuf;
- 	uint8_t ai_cmd_running;	/*  ai_cmd is running */
+ 	static char *const usbfs_paths[] = {
+ 		usbfs_path_0, usbfs_path_1
+@@ -376,6 +377,10 @@ static const char *usbfs_dir_find(void)
+ 		}
+ 	} while (++it != end);
+ 
++	/* real device-nodes managed by udev */
++	if (access(udev_usb_path, F_OK) == 0)
++		return udev_usb_path;
++
+ 	return NULL;
+ }
+ 
+--
+1.7.9.5
+
