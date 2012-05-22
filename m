@@ -1,42 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756930Ab2EVCk0 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 May 2012 22:40:26 -0400
-Received: from ozlabs.org ([203.10.76.45]:43432 "EHLO ozlabs.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751770Ab2EVCkY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 May 2012 22:40:24 -0400
-From: Michael Neuling <mikey@neuling.org>
-To: David Rientjes <rientjes@google.com>
-cc: Stephen Rothwell <sfr@canb.auug.org.au>,
-        LKML <linux-kernel@vger.kernel.org>, linux-next@vger.kernel.org,
-        ppc-dev <linuxppc-dev@lists.ozlabs.org>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Lee Schermerhorn <lee.schermerhorn@hp.com>,
-        Linus <torvalds@linux-foundation.org>
-Subject: Re: linux-next: PowerPC boot failures in next-20120521
-In-reply-to: <2182.1337654352@neuling.org>
-References: <20120522114051.0c9db9a7c2d660bc9e0e1be2@canb.auug.org.au> <328.1337652722@neuling.org> <alpine.DEB.2.00.1205211924390.13682@chino.kir.corp.google.com> <2182.1337654352@neuling.org>
-Comments: In-reply-to Michael Neuling <mikey@neuling.org>
-   message dated "Tue, 22 May 2012 12:39:12 +1000."
-X-Mailer: MH-E 8.2; nmh 1.3; GNU Emacs 23.3.1
-Date: Tue, 22 May 2012 12:40:23 +1000
-Message-ID: <2246.1337654423@neuling.org>
+	id S1757127Ab2EVClG (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 May 2012 22:41:06 -0400
+Received: from relay3.sgi.com ([192.48.152.1]:34036 "EHLO relay.sgi.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1755626Ab2EVClE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 21 May 2012 22:41:04 -0400
+Date: Mon, 21 May 2012 21:41:01 -0500
+From: Dimitri Sivanich <sivanich@sgi.com>
+To: Suresh Siddha <suresh.b.siddha@intel.com>
+Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, x86@kernel.org,
+        Yinghai Lu <yinghai@kernel.org>,
+        Naga Chumbalkar <nagananda.chumbalkar@hp.com>,
+        Jacob Pan <jacob.jun.pan@linux.intel.com>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] x86: check for valid irq_cfg pointer in
+ smp_irq_move_cleanup_interrupt
+Message-ID: <20120522024101.GA30298@sgi.com>
+References: <20120521164959.GE16454@sgi.com>
+ <1337634353.1997.144.camel@sbsiddha-desk.sc.intel.com>
+ <20120521210901.GA25326@sgi.com>
+ <1337634639.1997.148.camel@sbsiddha-desk.sc.intel.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1337634639.1997.148.camel@sbsiddha-desk.sc.intel.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Michael Neuling <mikey@neuling.org> wrote:
-
-> > > Trying David's patch just posted doesn't fix it.
+On Mon, May 21, 2012 at 02:10:39PM -0700, Suresh Siddha wrote:
+> On Mon, 2012-05-21 at 16:09 -0500, Dimitri Sivanich wrote:
+> > On Mon, May 21, 2012 at 02:05:53PM -0700, Suresh Siddha wrote:
+> > > On Mon, 2012-05-21 at 11:49 -0500, Dimitri Sivanich wrote:
+> > > > The smp_irq_move_cleanup_interrupt routine should be checking for a valid
+> > > > irq_cfg pointer prior to accessing it.  It also seems that this should be
+> > > > done after taking the desc lock.
 > > > 
+> > > I think these changes are correct. Did you see any crashes during module
+> > > unload etc?
 > > 
-> > Hmm, what does CONFIG_DEBUG_VM say?
+> > Yes, we have seen these on occasion during boot.
 > 
-> No set.
+> During boot or shutdown?
+> 
+Early on in boot, on rare occasions.
 
-Sorry, should have read "Not set"
+Easiest to reproduce doing module repeated module loads/unloads.
 
-mikey
+> Review of the code shows that this can trigger during module unload
+> which can call destroy_irq() etc and can trigger the crash if there is a
+> parallel irq migration related cleanup.
+> 
+> Unsuccessful module loads can also call destroy_irq() but I doubt that
+> is what happening here.
+> 
+> thanks,
+> suresh
+> 
