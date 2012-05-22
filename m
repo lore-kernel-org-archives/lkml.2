@@ -1,158 +1,173 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932129Ab2EVLct (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 May 2012 07:32:49 -0400
-Received: from thoth.sbs.de ([192.35.17.2]:20120 "EHLO thoth.sbs.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757770Ab2EVLcs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 May 2012 07:32:48 -0400
-Message-ID: <4FBB794A.5060504@siemens.com>
-Date: Tue, 22 May 2012 08:32:26 -0300
-From: Jan Kiszka <jan.kiszka@siemens.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); de; rv:1.8.1.12) Gecko/20080226 SUSE/2.0.0.12-1.1 Thunderbird/2.0.0.12 Mnenhy/0.7.5.666
+	id S1758531Ab2EVLev (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 May 2012 07:34:51 -0400
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:42158 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758166Ab2EVLeu (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 May 2012 07:34:50 -0400
+Message-ID: <4FBB79D5.7030108@linaro.org>
+Date: Tue, 22 May 2012 12:34:45 +0100
+From: Lee Jones <lee.jones@linaro.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:11.0) Gecko/20120410 Thunderbird/11.0.1
 MIME-Version: 1.0
-To: Wen Congyang <wency@cn.fujitsu.com>
-CC: kvm list <kvm@vger.kernel.org>, qemu-devel <qemu-devel@nongnu.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Avi Kivity <avi@redhat.com>,
-        "Daniel P. Berrange" <berrange@redhat.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Gleb Natapov <gleb@redhat.com>
-Subject: Re: [PATCH 3/3] deal with guest panicked event
-References: <4FB9E4CE.8060709@cn.fujitsu.com> <4FB9E5CB.2020208@cn.fujitsu.com>
-In-Reply-To: <4FB9E5CB.2020208@cn.fujitsu.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+To: Anton Vorontsov <cbouatmailru@gmail.com>
+CC: Linus Walleij <linus.walleij@linaro.org>, linux-kernel@vger.kernel.org,
+        Karl Komierowski <karl.komierowski@stericsson.com>,
+        Arun Murthy <arun.murthy@stericsson.com>
+Subject: Re: [PATCH 1/3] power/ab8500_charger: harden platform data check
+References: <1334304949-18301-1-git-send-email-linus.walleij@stericsson.com> <CACRpkdaM=OecD=M_J9X9shYKQkWO03mhb2BFxCWOeocr8_m=DQ@mail.gmail.com> <4F9C1CF5.3050706@linaro.org> <20120505120835.GA26976@lizard>
+In-Reply-To: <20120505120835.GA26976@lizard>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2012-05-21 03:50, Wen Congyang wrote:
-> When the guest is panicked, it will write 0x1 to the port 0x505. So if
-> qemu reads 0x1 from this port, we can do the folloing three things
-> according to the parameter -onpanic:
-> 1. emit QEVENT_GUEST_PANICKED only
-> 2. emit QEVENT_GUEST_PANICKED and pause VM
-> 3. emit QEVENT_GUEST_PANICKED and quit VM
-> 
-> Note: if we emit QEVENT_GUEST_PANICKED only, and the management
-> application does not receive this event(the management may not
-> run when the event is emitted), the management won't know the
-> guest is panicked.
-> 
-> Signed-off-by: Wen Congyang <wency@cn.fujitsu.com>
-> ---
->  kvm-all.c        |   84 ++++++++++++++++++++++++++++++++++++++++++++++++++++++
->  kvm-stub.c       |    9 ++++++
->  kvm.h            |    3 ++
->  monitor.c        |    3 ++
->  monitor.h        |    1 +
->  qapi-schema.json |    6 +++-
->  qemu-options.hx  |   14 +++++++++
->  qmp.c            |    3 +-
->  vl.c             |   17 ++++++++++-
->  9 files changed, 137 insertions(+), 3 deletions(-)
-> 
-> diff --git a/kvm-all.c b/kvm-all.c
-> index 9b73ccf..b5b0531 100644
-> --- a/kvm-all.c
-> +++ b/kvm-all.c
-> @@ -19,6 +19,7 @@
->  #include <stdarg.h>
->  
->  #include <linux/kvm.h>
-> +#include <linux/kvm_para.h>
->  
->  #include "qemu-common.h"
->  #include "qemu-barrier.h"
-> @@ -29,6 +30,8 @@
->  #include "bswap.h"
->  #include "memory.h"
->  #include "exec-memory.h"
-> +#include "iorange.h"
-> +#include "qemu-objects.h"
->  
->  /* This check must be after config-host.h is included */
->  #ifdef CONFIG_EVENTFD
-> @@ -1707,3 +1710,84 @@ int kvm_on_sigbus(int code, void *addr)
->  {
->      return kvm_arch_on_sigbus(code, addr);
->  }
-> +
-> +/* Possible values for action parameter. */
-> +#define PANICKED_REPORT 1   /* emit QEVENT_GUEST_PANICKED only */
-> +#define PANICKED_PAUSE  2   /* emit QEVENT_GUEST_PANICKED and pause VM */
-> +#define PANICKED_QUIT   3   /* emit QEVENT_GUEST_PANICKED and quit VM */
-> +
-> +static int panicked_action = PANICKED_REPORT;
-> +
-> +static void kvm_pv_port_read(IORange *iorange, uint64_t offset, unsigned width,
-> +                             uint64_t *data)
-> +{
-> +    *data = (1 << KVM_PV_FEATURE_PANICKED);
-> +}
-> +
-> +static void panicked_mon_event(const char *action)
-> +{
-> +    QObject *data;
-> +
-> +    data = qobject_from_jsonf("{ 'action': %s }", action);
-> +    monitor_protocol_event(QEVENT_GUEST_PANICKED, data);
-> +    qobject_decref(data);
-> +}
-> +
-> +static void panicked_perform_action(void)
-> +{
-> +    switch(panicked_action) {
-> +    case PANICKED_REPORT:
-> +        panicked_mon_event("report");
-> +        break;
-> +
-> +    case PANICKED_PAUSE:
-> +        panicked_mon_event("pause");
-> +        vm_stop(RUN_STATE_GUEST_PANICKED);
-> +        break;
-> +
-> +    case PANICKED_QUIT:
-> +        panicked_mon_event("quit");
-> +        exit(0);
-> +        break;
-> +    }
-> +}
-> +
-> +static void kvm_pv_port_write(IORange *iorange, uint64_t offset, unsigned width,
-> +                              uint64_t data)
-> +{
-> +    if (data == KVM_PV_PANICKED)
-> +        panicked_perform_action();
-> +}
-> +
-> +static void kvm_pv_port_destructor(IORange *iorange)
-> +{
-> +    g_free(iorange);
-> +}
-> +
-> +static IORangeOps pv_io_range_ops = {
-> +    .read = kvm_pv_port_read,
-> +    .write = kvm_pv_port_write,
-> +    .destructor = kvm_pv_port_destructor,
-> +};
-> +
-> +void kvm_pv_port_init(void)
-> +{
-> +    IORange *pv_io_range = g_malloc(sizeof(IORange));
-> +
-> +    iorange_init(pv_io_range, &pv_io_range_ops, 0x505, 1);
-> +    ioport_register(pv_io_range);
+Hi Anton,
 
-Not sure if the discussion about the PV channel already settled, but if
-PIO is the way to go, please model this as a proper QEMU device (e.g.
-"panic", implemented in hw/kvm/panic.c), not just an open-coded PIO range.
+I see that this didn't make it into any of the v3.4-rc:s, hence v3.4 was 
+released broken. Do you know when they're likely to make it into Mainline?
 
-Jan
+Kind regards,
+Lee
 
-PS: checkpatch.pl...
+> - - - -
+> commit 2aac3de19b72608f474c90034185c2be4908728f
+> Author: Lee Jones<lee.jones@linaro.org>
+> Date:   Sat May 5 04:38:19 2012 -0700
+>
+>      ab8500: Clean up probe routines
+>
+>      These patches clean up some ugliness and brings the variable
+>      initialisation formatting more into line with other drivers.
+>
+>      Signed-off-by: Lee Jones<lee.jones@linaro.org>
+>      Signed-off-by: Anton Vorontsov<anton.vorontsov@linaro.org>
+>
+> diff --git a/drivers/power/ab8500_btemp.c b/drivers/power/ab8500_btemp.c
+> index e266f03..bba3cca 100644
+> --- a/drivers/power/ab8500_btemp.c
+> +++ b/drivers/power/ab8500_btemp.c
+> @@ -964,10 +964,15 @@ static int __devinit ab8500_btemp_probe(struct platform_device *pdev)
+>   {
+>   	int irq, i, ret = 0;
+>   	u8 val;
+> -	struct abx500_bm_plat_data *plat_data;
+> +	struct abx500_bm_plat_data *plat_data = pdev->dev.platform_data;
+> +	struct ab8500_btemp *di;
+> +
+> +	if (!plat_data) {
+> +		dev_err(&pdev->dev, "No platform data\n");
+> +		return -EINVAL;
+> +	}
+>
+> -	struct ab8500_btemp *di =
+> -		kzalloc(sizeof(struct ab8500_btemp), GFP_KERNEL);
+> +	di = kzalloc(sizeof(*di), GFP_KERNEL);
+>   	if (!di)
+>   		return -ENOMEM;
+>
+> @@ -977,13 +982,12 @@ static int __devinit ab8500_btemp_probe(struct platform_device *pdev)
+>   	di->gpadc = ab8500_gpadc_get("ab8500-gpadc.0");
+>
+>   	/* get btemp specific platform data */
+> -	plat_data = pdev->dev.platform_data;
+> -	if (!plat_data || !plat_data->btemp) {
+> +	di->pdata = plat_data->btemp;
+> +	if (!di->pdata) {
+>   		dev_err(di->dev, "no btemp platform data supplied\n");
+>   		ret = -EINVAL;
+>   		goto free_device_info;
+>   	}
+> -	di->pdata = plat_data->btemp;
+>
+>   	/* get battery specific platform data */
+>   	di->bat = plat_data->battery;
+> diff --git a/drivers/power/ab8500_charger.c b/drivers/power/ab8500_charger.c
+> index 79dc584..d2303d0 100644
+> --- a/drivers/power/ab8500_charger.c
+> +++ b/drivers/power/ab8500_charger.c
+> @@ -2534,10 +2534,15 @@ static int __devexit ab8500_charger_remove(struct platform_device *pdev)
+>   static int __devinit ab8500_charger_probe(struct platform_device *pdev)
+>   {
+>   	int irq, i, charger_status, ret = 0;
+> -	struct abx500_bm_plat_data *plat_data;
+> +	struct abx500_bm_plat_data *plat_data = pdev->dev.platform_data;
+> +	struct ab8500_charger *di;
+>
+> -	struct ab8500_charger *di =
+> -		kzalloc(sizeof(struct ab8500_charger), GFP_KERNEL);
+> +	if (!plat_data) {
+> +		dev_err(&pdev->dev, "No platform data\n");
+> +		return -EINVAL;
+> +	}
+> +
+> +	di = kzalloc(sizeof(*di), GFP_KERNEL);
+>   	if (!di)
+>   		return -ENOMEM;
+>
+> @@ -2550,13 +2555,12 @@ static int __devinit ab8500_charger_probe(struct platform_device *pdev)
+>   	spin_lock_init(&di->usb_state.usb_lock);
+>
+>   	/* get charger specific platform data */
+> -	plat_data = pdev->dev.platform_data;
+> -	if (!plat_data || !plat_data->charger) {
+> +	di->pdata = plat_data->charger;
+> +	if (!di->pdata) {
+>   		dev_err(di->dev, "no charger platform data supplied\n");
+>   		ret = -EINVAL;
+>   		goto free_device_info;
+>   	}
+> -	di->pdata = plat_data->charger;
+>
+>   	/* get battery specific platform data */
+>   	di->bat = plat_data->battery;
+> diff --git a/drivers/power/ab8500_fg.c b/drivers/power/ab8500_fg.c
+> index 0ebea39..bf02225 100644
+> --- a/drivers/power/ab8500_fg.c
+> +++ b/drivers/power/ab8500_fg.c
+> @@ -2446,10 +2446,15 @@ static int __devinit ab8500_fg_probe(struct platform_device *pdev)
+>   {
+>   	int i, irq;
+>   	int ret = 0;
+> -	struct abx500_bm_plat_data *plat_data;
+> +	struct abx500_bm_plat_data *plat_data = pdev->dev.platform_data;
+> +	struct ab8500_fg *di;
+> +
+> +	if (!plat_data) {
+> +		dev_err(&pdev->dev, "No platform data\n");
+> +		return -EINVAL;
+> +	}
+>
+> -	struct ab8500_fg *di =
+> -		kzalloc(sizeof(struct ab8500_fg), GFP_KERNEL);
+> +	di = kzalloc(sizeof(*di), GFP_KERNEL);
+>   	if (!di)
+>   		return -ENOMEM;
+>
+> @@ -2461,13 +2466,12 @@ static int __devinit ab8500_fg_probe(struct platform_device *pdev)
+>   	di->gpadc = ab8500_gpadc_get("ab8500-gpadc.0");
+>
+>   	/* get fg specific platform data */
+> -	plat_data = pdev->dev.platform_data;
+> -	if (!plat_data || !plat_data->fg) {
+> +	di->pdata = plat_data->fg;
+> +	if (!di->pdata) {
+>   		dev_err(di->dev, "no fg platform data supplied\n");
+>   		ret = -EINVAL;
+>   		goto free_device_info;
+>   	}
+> -	di->pdata = plat_data->fg;
+>
+>   	/* get battery specific platform data */
+>   	di->bat = plat_data->battery;
+
 
 -- 
-Siemens AG, Corporate Technology, CT T DE IT 1
-Corporate Competence Center Embedded Linux
+Lee Jones
+Linaro ST-Ericsson Landing Team Lead
+M: +44 77 88 633 515
+Linaro.org │ Open source software for ARM SoCs
+Follow Linaro: Facebook | Twitter | Blog
