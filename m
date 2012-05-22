@@ -1,70 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759476Ab2EVP3l (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 May 2012 11:29:41 -0400
-Received: from relay.parallels.com ([195.214.232.42]:44181 "EHLO
-	relay.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753007Ab2EVP3j (ORCPT
+	id S1759555Ab2EVP3r (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 May 2012 11:29:47 -0400
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:44201 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753007Ab2EVP3o (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 May 2012 11:29:39 -0400
-Message-ID: <4FBBB0DB.6050708@parallels.com>
-Date: Tue, 22 May 2012 19:29:31 +0400
-From: Stanislav Kinsbursky <skinsbursky@parallels.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
+	Tue, 22 May 2012 11:29:44 -0400
 MIME-Version: 1.0
-To: "Myklebust, Trond" <Trond.Myklebust@netapp.com>
-CC: "linux-nfs@vger.kernel.org" <linux-nfs@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "devel@openvz.org" <devel@openvz.org>
-Subject: Re: [PATCH] NFS: init client before declaration
-References: <20120522124018.338.20817.stgit@localhost.localdomain>  <1337696984.4269.4.camel@lade.trondhjem.org> <1337698816.4269.15.camel@lade.trondhjem.org>
-In-Reply-To: <1337698816.4269.15.camel@lade.trondhjem.org>
-Content-Type: text/plain; charset="UTF-8"; format=flowed
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <1337696279-8994-8-git-send-email-anton.vorontsov@linaro.org>
+References: <20120522141717.GA31574@lizard>
+	<1337696279-8994-8-git-send-email-anton.vorontsov@linaro.org>
+Date: Tue, 22 May 2012 08:29:43 -0700
+X-Google-Sender-Auth: 2gTpSVneC4txFAngpdeQW6lUhDY
+Message-ID: <CAGXu5j+E+C8hzLTtvqiPV0Gaih=2jV6vDPe+rDzehCoGzinhFA@mail.gmail.com>
+Subject: Re: [PATCH 08/16] pstore/ram: Factor dmesg przs initialization out of probe()
+From: Kees Cook <keescook@chromium.org>
+To: Anton Vorontsov <anton.vorontsov@linaro.org>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Colin Cross <ccross@android.com>, Tony Luck <tony.luck@intel.com>,
+        Arnd Bergmann <arnd@arndb.de>, John Stultz <john.stultz@linaro.org>,
+        Shuah Khan <shuahkhan@gmail.com>, arve@android.com,
+        Rebecca Schultz Zavin <rebecca@android.com>,
+        Jesper Juhl <jj@chaosbits.net>, Randy Dunlap <rdunlap@xenotime.net>,
+        Stephen Boyd <sboyd@codeaurora.org>, Thomas Meyer <thomas@m3y3r.de>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Marco Stornelli <marco.stornelli@gmail.com>,
+        WANG Cong <xiyou.wangcong@gmail.com>, linux-kernel@vger.kernel.org,
+        devel@driverdev.osuosl.org, linaro-kernel@lists.linaro.org,
+        patches@linaro.org, kernel-team@android.com
+Content-Type: text/plain; charset=ISO-8859-1
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 22.05.2012 19:00, Myklebust, Trond wrote:
-> On Tue, 2012-05-22 at 10:29 -0400, Trond Myklebust wrote:
->> On Tue, 2012-05-22 at 16:40 +0400, Stanislav Kinsbursky wrote:
->>> Client have to be initialized prior to adding it to per-net clients list,
->>> because otherwise there are races, shown below:
->>>
->>> CPU#0					CPU#1
->>> _____					_____
->>>
->>> nfs_get_client
->>> nfs_alloc_client
->>> list_add(..., nfs_client_list)
->>> 					rpc_fill_super
->>> 					rpc_pipefs_event
->>> 					nfs_get_client_for_event
->>> 					__rpc_pipefs_event
->>> 					(clp->cl_rpcclient is uninitialized)
->>> 					BUG()
->>> init_client
->>> clp->cl_rpcclient = ...
->>>
->>
->> Why not simply change nfs_get_client_for_event() so that it doesn't
->> touch nfs_clients that have clp->cl_cons_state!=NFS_CS_READY?
->>
->> That should ensure that it doesn't touch nfs_clients that failed to
->> initialise and/or are still in the process of being initialised.
+On Tue, May 22, 2012 at 7:17 AM, Anton Vorontsov
+<anton.vorontsov@linaro.org> wrote:
+> This will help make code clearer when we'll add support for other
+> message types.
 >
-> ...actually, come to think of it. Why not just add a helper function
-> "bool nfs_client_active(const struct nfs_client *clp)" to
-> fs/nfs/client.c that does a call to
-> 	wait_event_killable(nfs_client_active_wq, clp->cl_cons_state<  NFS_CS_INITING);
-> and checks the resulting value of clp->cl_cons_state?
+> This also makes probe() much shorter and understandable, plus
+> makes mem/record size checking a bit easier.
 >
+> Implementation detail: we now use a paddr pointer, this will
+> be used for allocating persistent ram zones for other message
+> types.
+>
+> Signed-off-by: Anton Vorontsov <anton.vorontsov@linaro.org>
 
-Sorry, but I don't understand the idea...
-Where are you proposing to call this function?
-In __rpc_pipefs_event() prior to dentries creatios?
-
+Acked-by: Kees Cook <keescook@chromium.org>
 
 -- 
-Best regards,
-Stanislav Kinsbursky
+Kees Cook
+Chrome OS Security
