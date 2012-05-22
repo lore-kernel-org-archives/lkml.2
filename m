@@ -1,124 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758708Ab2EVObD (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 May 2012 10:31:03 -0400
-Received: from mail-gg0-f174.google.com ([209.85.161.174]:36976 "EHLO
-	mail-gg0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753040Ab2EVObA (ORCPT
+	id S1758122Ab2EVOgd (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 May 2012 10:36:33 -0400
+Received: from mail-ob0-f174.google.com ([209.85.214.174]:45149 "EHLO
+	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751061Ab2EVOgb convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 May 2012 10:31:00 -0400
-From: fweisbec@gmail.com
-To: Arnaldo Carvalho de Melo <acme@redhat.com>, Ingo Molnar <mingo@kernel.org>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Namhyung Kim <namhyung.kim@lge.com>,
-        Steven Rostedt <rostedt@goodmis.org>, Tom Zanussi <tzanussi@gmail.com>,
-        Frederic Weisbecker <fweisbec@redhat.com>
-Subject: [PATCH 2/2] perf: Rename struct event to struct event_format in perl engine
-Date: Tue, 22 May 2012 16:30:49 +0200
-Message-Id: <1337697049-30251-2-git-send-email-fweisbec@gmail.com>
-X-Mailer: git-send-email 1.7.5.4
-In-Reply-To: <1337697049-30251-1-git-send-email-fweisbec@gmail.com>
-References: <1337697049-30251-1-git-send-email-fweisbec@gmail.com>
+	Tue, 22 May 2012 10:36:31 -0400
+MIME-Version: 1.0
+In-Reply-To: <20120522123058.GB4629@phenom.ffwll.local>
+References: <CAJJYPd=JQdzepw818ZP6OmKK4v38--T+ruKBOG_wn2pUmnVaSw@mail.gmail.com>
+	<20120522123058.GB4629@phenom.ffwll.local>
+Date: Tue, 22 May 2012 16:36:30 +0200
+Message-ID: <CAJJYPdmcJYT1VTnqbkbybut-_NqpFYsuEEzDb9LO-E+ss=wz-g@mail.gmail.com>
+Subject: Re: Regression on GMA965 - display seems to have slow jump changes in brightness
+From: Zdenek Kabelac <zdenek.kabelac@gmail.com>
+To: Zdenek Kabelac <zdenek.kabelac@gmail.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        intel-gfx@lists.freedesktop.org
+Cc: daniel@ffwll.ch
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Frederic Weisbecker <fweisbec@gmail.com>
+2012/5/22 Daniel Vetter <daniel@ffwll.ch>:
+> On Tue, May 22, 2012 at 02:08:46PM +0200, Zdenek Kabelac wrote:
+>> Hi
+>>
+>> I've updated to 3.4 kernel, and now I'm noticing slight changes in
+>> brightness on colorful images.
+>> It seems the change is mostly visibly on  'darker' images i.e. it's
+>> not really visible on white background.
+>>
+>> When I reboot back to 3.3  kernel - brightness changes are gone - so I
+>> do not suspect hw fault of my T61 display.
+>> I guess once in past there has been already such bug, so this problem
+>> seems to me like reintroducing the same
+>> problem again.
+>>
+>> xorg-x11-server-Xorg-1.12.1-1.fc18.x86_64
+>> with SNA intel driver build from git repo.
+>> T61, 965GM
+>>
+>> Is this a know issue ?
+>> Is bisect needed ?
+>
+> You're the first one to report things, so a bisect would be highly
+> appreciated. Also I'm a bit confused about what you mean by 'changing
+> brightness'. Can you please try to explain this a bit more?
+>
 
-While migrating to the libtraceevent, the perl scripting engine
-missed this structure rename.
+I've some default gnome picture like this one:
+https://lh6.googleusercontent.com/-96ZhFbfLX_M/ThHsm0ZxBgI/AAAAAAAAFQQ/3ApjzYgulso/s400/gnome-3-login-screen.png
 
-This fixes:
+When I watch the picture for some period of time  I'm noticing slight
+changes in the picture brightness looking like small change in LUT
+table or something like that.
+If the picture is white I'm not noticing any change.
+(Initially I've thought my display dies - but reboot to 3.3 fixed the
+issue immediately).
 
-     util/scripting-engines/trace-event-perl.c: In function "find_cache_event":
-     util/scripting-engines/trace-event-perl.c:244: error: assignment from incompatible pointer type
-     util/scripting-engines/trace-event-perl.c:248: error: dereferencing pointer to incomplete type
-     util/scripting-engines/trace-event-perl.c:248: error: dereferencing pointer to incomplete type
-     util/scripting-engines/trace-event-perl.c:250: error: dereferencing pointer to incomplete type
-     util/scripting-engines/trace-event-perl.c: In function "perl_process_tracepoint":
-     util/scripting-engines/trace-event-perl.c:286: error: dereferencing pointer to incomplete type
-     util/scripting-engines/trace-event-perl.c:286: error: dereferencing pointer to incomplete type
-     util/scripting-engines/trace-event-perl.c:307: error: dereferencing pointer to incomplete type
-     util/scripting-engines/trace-event-perl.c: In function "perl_generate_script":
-     util/scripting-engines/trace-event-perl.c:498: error: passing argument 1 of "trace_find_next_event" from incompatible pointer type
-     util/scripting-engines/../trace-event.h:56: note: expected "struct event_format *" but argument is of type "struct event *"
-     util/scripting-engines/trace-event-perl.c:498: error: assignment from incompatible pointer type
-     util/scripting-engines/trace-event-perl.c:499: error: dereferencing pointer to incomplete type
-     util/scripting-engines/trace-event-perl.c:499: error: dereferencing pointer to incomplete type
-     util/scripting-engines/trace-event-perl.c:513: error: dereferencing pointer to incomplete type
-     util/scripting-engines/trace-event-perl.c:532: error: dereferencing pointer to incomplete type
-     util/scripting-engines/trace-event-perl.c:556: error: dereferencing pointer to incomplete type
-     util/scripting-engines/trace-event-perl.c:569: error: dereferencing pointer to incomplete type
-     util/scripting-engines/trace-event-perl.c:570: error: dereferencing pointer to incomplete type
-     util/scripting-engines/trace-event-perl.c:579: error: dereferencing pointer to incomplete type
-     util/scripting-engines/trace-event-perl.c:580: error: dereferencing pointer to incomplete type
+Is there any suspecting patch for this chipset I should try to revert ?
 
-Reported-by: Arnaldo Carvalho de Melo <acme@redhat.com>
-Cc: Ingo Molnar <mingo@kernel.org>
-Cc: Peter Zijlstra <peterz@infradead.org>
-Cc: Namhyung Kim <namhyung.kim@lge.com>
-Cc: Steven Rostedt <rostedt@goodmis.org>
-Cc: Tom Zanussi <tzanussi@gmail.com>
-Signed-off-by: Frederic Weisbecker <fweisbec@redhat.com>
----
- .../perf/util/scripting-engines/trace-event-perl.c |   12 ++++++------
- 1 files changed, 6 insertions(+), 6 deletions(-)
-
-diff --git a/tools/perf/util/scripting-engines/trace-event-perl.c b/tools/perf/util/scripting-engines/trace-event-perl.c
-index d50658b..4c1b3d7 100644
---- a/tools/perf/util/scripting-engines/trace-event-perl.c
-+++ b/tools/perf/util/scripting-engines/trace-event-perl.c
-@@ -56,7 +56,7 @@ INTERP my_perl;
- #define FTRACE_MAX_EVENT				\
- 	((1 << (sizeof(unsigned short) * 8)) - 1)
- 
--struct event *events[FTRACE_MAX_EVENT];
-+struct event_format *events[FTRACE_MAX_EVENT];
- 
- extern struct scripting_context *scripting_context;
- 
-@@ -181,7 +181,7 @@ static void define_flag_field(const char *ev_name,
- 	LEAVE;
- }
- 
--static void define_event_symbols(struct event *event,
-+static void define_event_symbols(struct event_format *event,
- 				 const char *ev_name,
- 				 struct print_arg *args)
- {
-@@ -233,10 +233,10 @@ static void define_event_symbols(struct event *event,
- 		define_event_symbols(event, ev_name, args->next);
- }
- 
--static inline struct event *find_cache_event(int type)
-+static inline struct event_format *find_cache_event(int type)
- {
- 	static char ev_name[256];
--	struct event *event;
-+	struct event_format *event;
- 
- 	if (events[type])
- 		return events[type];
-@@ -262,7 +262,7 @@ static void perl_process_tracepoint(union perf_event *pevent __unused,
- 	static char handler[256];
- 	unsigned long long val;
- 	unsigned long s, ns;
--	struct event *event;
-+	struct event_format *event;
- 	int type;
- 	int pid;
- 	int cpu = sample->cpu;
-@@ -450,7 +450,7 @@ static int perl_stop_script(void)
- 
- static int perl_generate_script(const char *outfile)
- {
--	struct event *event = NULL;
-+	struct event_format *event = NULL;
- 	struct format_field *f;
- 	char fname[PATH_MAX];
- 	int not_first, count;
--- 
-1.7.5.4
-
+Zdenek
