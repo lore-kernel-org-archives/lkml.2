@@ -1,97 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932538Ab2EVFT4 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 May 2012 01:19:56 -0400
-Received: from mga03.intel.com ([143.182.124.21]:30192 "EHLO mga03.intel.com"
+	id S1754043Ab2EVFbP (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 May 2012 01:31:15 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:14716 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753802Ab2EVFTz convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 May 2012 01:19:55 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
-   d="scan'208";a="102714788"
-From: "Du, ChangbinX" <changbinx.du@intel.com>
-To: David Rientjes <rientjes@google.com>
-CC: "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
-        Sergei Shtylyov <sshtylyov@mvista.com>,
-        "mina86@mina86.com" <mina86@mina86.com>,
-        "Fleming, Matt" <matt.fleming@intel.com>,
-        "balbi@ti.com" <balbi@ti.com>, "hpa@zytor.com" <hpa@zytor.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>
-Subject: RE: [Resend PATCH v2] testusb: add path /dev/bus/usb to default
- search paths of usbfs
-Thread-Topic: [Resend PATCH v2] testusb: add path /dev/bus/usb to default
- search paths of usbfs
-Thread-Index: AQHNN7qyG7Zv5VtpIkaxHOeRBAtVM5bUgnMAgACkjhD//4G3AIAAnEsw
-Date: Tue, 22 May 2012 05:19:51 +0000
-Message-ID: <0C18FE92A7765D4EB9EE5D38D86A563A063A4C@SHSMSX101.ccr.corp.intel.com>
-References: <0C18FE92A7765D4EB9EE5D38D86A563A062E6C@SHSMSX101.ccr.corp.intel.com>
- <0C18FE92A7765D4EB9EE5D38D86A563A06388E@SHSMSX101.ccr.corp.intel.com>
- <alpine.DEB.2.00.1205211839180.20916@chino.kir.corp.google.com>
- <0C18FE92A7765D4EB9EE5D38D86A563A063A1A@SHSMSX101.ccr.corp.intel.com>
- <alpine.DEB.2.00.1205212055140.2666@chino.kir.corp.google.com>
-In-Reply-To: <alpine.DEB.2.00.1205212055140.2666@chino.kir.corp.google.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.239.127.40]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	id S1753528Ab2EVFbN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 May 2012 01:31:13 -0400
+Date: Tue, 22 May 2012 08:31:10 +0300
+From: Gleb Natapov <gleb@redhat.com>
+To: Marcelo Tosatti <mtosatti@redhat.com>
+Cc: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>,
+        Avi Kivity <avi@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
+        KVM <kvm@vger.kernel.org>
+Subject: Re: [PATCH] KVM: fix async page fault working for readonly mapping
+Message-ID: <20120522053110.GT10209@redhat.com>
+References: <4FB9E499.2010505@linux.vnet.ibm.com>
+ <20120521080856.GS10209@redhat.com>
+ <4FB9F9B6.50101@linux.vnet.ibm.com>
+ <20120521193041.GA25940@amt.cnet>
 MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120521193041.GA25940@amt.cnet>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> On Tue, 22 May 2012, Du, ChangbinX wrote:
+On Mon, May 21, 2012 at 04:30:41PM -0300, Marcelo Tosatti wrote:
+> On Mon, May 21, 2012 at 04:15:50PM +0800, Xiao Guangrong wrote:
+> > On 05/21/2012 04:08 PM, Gleb Natapov wrote:
+> > 
+> > > On Mon, May 21, 2012 at 02:45:45PM +0800, Xiao Guangrong wrote:
+> > >> If we map a readonly memory space from host to guest and the page is
+> > >> not currently mapped in the host, we will get a fault-pfn and async
+> > >> is not allowed, then the vm will crash
+> > >>
+> > > Why would we want to map a readonly memory space from host to guest?
+> > > We may want to do it to support memory semantics on read and mmio on
+> > > write, but do not right now unless something changed while I was not
+> > > looking.
+> > 
+> > 
+> > Some test cases in kvm-unit-tests and the benchmark i am writing for KVM
+> > need map the function on host to guest.
 > 
-> > > diff --git a/tools/usb/testusb.c b/tools/usb/testusb.c index
-> > > 6e0f567..82d7c59 100644
-> > > --- a/tools/usb/testusb.c
-> > > +++ b/tools/usb/testusb.c
-> > > @@ -358,6 +358,7 @@ static const char *usbfs_dir_find(void)  {
-> > >  	static char usbfs_path_0[] = "/dev/usb/devices";
-> > >  	static char usbfs_path_1[] = "/proc/bus/usb/devices";
-> > > +	static char udev_usb_path[] = "/dev/bus/usb";
-> > >
-> > >  	static char *const usbfs_paths[] = {
-> > >  		usbfs_path_0, usbfs_path_1
-> > > @@ -376,6 +377,10 @@ static const char *usbfs_dir_find(void)
-> > >  		}
-> > >  	} while (++it != end);
-> > >
-> > > +	/* real device-nodes managed by udev */
-> > > +	if (access(udev_usb_path, F_OK) == 0)
-> > > +		return udev_usb_path;
-> > > +
-> > >  	return NULL;
-> > >  }
-> > >
-> >
-> > Two issues with this: F_OK only guarantees that the path exists, it
-> > does not guarantee that it is readable like this function guarantees
-> > for usbfs_paths, and access() shouldn't be used because of its
-> > security implications, you're better off using open() and testing for fd.
-> >
-> > Hello, David. I think this function doesn't need check the permission.
-> > What this function need do is to find the usbfs mount point. If the
-> > path exists but cannot read, we cannot report as it's not exits. And
-> > when we read files, open() will return an error and user can check if
-> > it's need to upgrade his access right.
-> >
-> 
-> Your email client doesn't seem to be quoting messages correctly :)
-> 
-> Anyway, this patch is inconsistent with the rest of the function.  The other two
-> paths are checked with open(O_RDONLY) followed by a close() to address my
-> second comment and we certainly wouldn't want to return a path that exists by
-> is unreadable: we'd want to fallback to one of the other possibilities.  So if
-> anybody is going to extend this in the future like you have, it would be possible
-> to return /dev/bus/usb even though we can't read it.  That's a bad result.
-> 
-> Please consider doing it the proper way: by doing open(O_RDONLY), close()
-> instead of access() -- if you don't understand why, read access(2) -- and in an
-> extendable way.
+> Or ROM. Or read-only mappings of IVSHMEM (which don't exist yet).
+True. KVM should ignore writes to such areas, not kill a guest. Is this
+how the code works today?
 
-I see. Thanks for your comments. I will correct and resend it again.
+--
+			Gleb.
