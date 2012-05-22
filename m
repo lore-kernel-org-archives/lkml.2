@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755200Ab2EVHgz (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 May 2012 03:36:55 -0400
-Received: from mailhub.sw.ru ([195.214.232.25]:38859 "EHLO relay.sw.ru"
+	id S1755286Ab2EVHhD (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 May 2012 03:37:03 -0400
+Received: from mailhub.sw.ru ([195.214.232.25]:39820 "EHLO relay.sw.ru"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754955Ab2EVHgv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 May 2012 03:36:51 -0400
-Subject: [PATCH v2 08/12] NFS: make nfs_callback_tcpport6 per network context
+	id S1754751Ab2EVHg7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 May 2012 03:36:59 -0400
+Subject: [PATCH v2 09/12] NFS; callback per-net usage counting introduced
 To: bfields@fieldses.org
 From: Stanislav Kinsbursky <skinsbursky@parallels.com>
 Cc: linux-nfs@vger.kernel.org, Trond.Myklebust@netapp.com,
         linux-kernel@vger.kernel.org, devel@openvz.org
-Date: Tue, 22 May 2012 11:36:46 +0400
-Message-ID: <20120522073646.20602.94202.stgit@localhost.localdomain>
+Date: Tue, 22 May 2012 11:36:54 +0400
+Message-ID: <20120522073654.20602.38599.stgit@localhost.localdomain>
 In-Reply-To: <20120522073320.20602.87130.stgit@localhost.localdomain>
 References: <20120522073320.20602.87130.stgit@localhost.localdomain>
 User-Agent: StGit/0.16
@@ -23,72 +23,76 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+This patch also introduces refcount-aware nfs_callback_down_net() wrapper for
+svc_shutdown_net().
+
 Signed-off-by: Stanislav Kinsbursky <skinsbursky@parallels.com>
 ---
- fs/nfs/callback.c  |    5 ++---
- fs/nfs/callback.h  |    1 -
- fs/nfs/netns.h     |    1 +
- fs/nfs/nfs4state.c |    2 +-
- 4 files changed, 4 insertions(+), 5 deletions(-)
+ fs/nfs/callback.c |   19 +++++++++++++++++--
+ fs/nfs/netns.h    |    1 +
+ 2 files changed, 18 insertions(+), 2 deletions(-)
 
 diff --git a/fs/nfs/callback.c b/fs/nfs/callback.c
-index 9380184..d25085f 100644
+index d25085f..dbedd7e 100644
 --- a/fs/nfs/callback.c
 +++ b/fs/nfs/callback.c
-@@ -40,7 +40,6 @@ static DEFINE_MUTEX(nfs_callback_mutex);
- static struct svc_program nfs4_callback_program;
- 
- unsigned int nfs_callback_set_tcpport;
--unsigned short nfs_callback_tcpport6;
- #define NFS_CALLBACK_MAXPORTNR (65535U)
- 
- static int param_set_portnr(const char *val, const struct kernel_param *kp)
-@@ -80,9 +79,9 @@ static int nfs4_callback_up_net(struct svc_serv *serv, struct net *net)
- 	ret = svc_create_xprt(serv, "tcp", net, PF_INET6,
- 				nfs_callback_set_tcpport, SVC_SOCK_ANONYMOUS);
- 	if (ret > 0) {
--		nfs_callback_tcpport6 = ret;
-+		nn->nfs_callback_tcpport6 = ret;
- 		dprintk("NFS: Callback listener port = %u (af %u, net %p)\n",
--				nfs_callback_tcpport6, PF_INET6, net);
-+				nn->nfs_callback_tcpport6, PF_INET6, net);
- 	} else if (ret != -EAFNOSUPPORT)
- 		goto out_err;
+@@ -285,10 +285,25 @@ static int nfs_callback_start_svc(int minorversion, struct rpc_xprt *xprt,
  	return 0;
-diff --git a/fs/nfs/callback.h b/fs/nfs/callback.h
-index 8006959..86b5671 100644
---- a/fs/nfs/callback.h
-+++ b/fs/nfs/callback.h
-@@ -208,6 +208,5 @@ extern int nfs4_set_callback_sessionid(struct nfs_client *clp);
- #define NFS41_BC_MAX_CALLBACKS 1
+ }
  
- extern unsigned int nfs_callback_set_tcpport;
--extern unsigned short nfs_callback_tcpport6;
++static void nfs_callback_down_net(u32 minorversion, struct svc_serv *serv, struct net *net)
++{
++	struct nfs_net *nn = net_generic(net, nfs_net_id);
++
++	if (--nn->cb_users[minorversion])
++		return;
++
++	dprintk("NFS: destroy per-net callback data; net=%p\n", net);
++	svc_shutdown_net(serv, net);
++}
++
+ static int nfs_callback_up_net(int minorversion, struct svc_serv *serv, struct net *net)
+ {
++	struct nfs_net *nn = net_generic(net, nfs_net_id);
+ 	int ret;
  
- #endif /* __LINUX_FS_NFS_CALLBACK_H */
++	if (nn->cb_users[minorversion]++)
++		return 0;
++
+ 	dprintk("NFS: create per-net callback data; net=%p\n", net);
+ 
+ 	ret = svc_bind(serv, net);
+@@ -391,7 +406,7 @@ err_create:
+ 	return ret;
+ 
+ err_start:
+-	svc_shutdown_net(serv, net);
++	nfs_callback_down_net(minorversion, serv, net);
+ 	dprintk("NFS: Couldn't create server thread; err = %d\n", ret);
+ 	goto err_net;
+ }
+@@ -404,10 +419,10 @@ void nfs_callback_down(int minorversion, struct net *net)
+ 	struct nfs_callback_data *cb_info = &nfs_callback_info[minorversion];
+ 
+ 	mutex_lock(&nfs_callback_mutex);
++	nfs_callback_down_net(minorversion, cb_info->serv, net);
+ 	cb_info->users--;
+ 	if (cb_info->users == 0 && cb_info->task != NULL) {
+ 		kthread_stop(cb_info->task);
+-		svc_shutdown_net(cb_info->serv, net);
+ 		svc_exit_thread(cb_info->rqst);
+ 		cb_info->serv = NULL;
+ 		cb_info->rqst = NULL;
 diff --git a/fs/nfs/netns.h b/fs/nfs/netns.h
-index 8e4e8f8..bd72a55 100644
+index bd72a55..db3e495 100644
 --- a/fs/nfs/netns.h
 +++ b/fs/nfs/netns.h
-@@ -19,6 +19,7 @@ struct nfs_net {
- #ifdef CONFIG_NFS_V4
+@@ -20,6 +20,7 @@ struct nfs_net {
  	struct idr cb_ident_idr; /* Protected by nfs_client_lock */
  	unsigned short nfs_callback_tcpport;
-+	unsigned short nfs_callback_tcpport6;
+ 	unsigned short nfs_callback_tcpport6;
++	int cb_users[NFS4_MAX_MINOR_VERSION + 1];
  #endif
  	spinlock_t nfs_client_lock;
  };
-diff --git a/fs/nfs/nfs4state.c b/fs/nfs/nfs4state.c
-index 5d68b3b..bee4bc1 100644
---- a/fs/nfs/nfs4state.c
-+++ b/fs/nfs/nfs4state.c
-@@ -79,7 +79,7 @@ int nfs4_init_clientid(struct nfs_client *clp, struct rpc_cred *cred)
- 		goto do_confirm;
- 	port = nn->nfs_callback_tcpport;
- 	if (clp->cl_addr.ss_family == AF_INET6)
--		port = nfs_callback_tcpport6;
-+		port = nn->nfs_callback_tcpport6;
- 
- 	status = nfs4_proc_setclientid(clp, NFS4_CALLBACK, port, cred, &clid);
- 	if (status != 0)
 
