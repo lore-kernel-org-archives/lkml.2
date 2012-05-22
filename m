@@ -1,87 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756121Ab2EVWeA (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 May 2012 18:34:00 -0400
-Received: from mail.linux-iscsi.org ([67.23.28.174]:50861 "EHLO
-	linux-iscsi.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751748Ab2EVWd6 (ORCPT
+	id S1756982Ab2EVWep (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 May 2012 18:34:45 -0400
+Received: from haggis.pcug.org.au ([203.10.76.10]:37670 "EHLO
+	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755668Ab2EVWeo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 May 2012 18:33:58 -0400
-Subject: [GIT PULL] sbp-target merge for v3.5-rc1
-From: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: target-devel <target-devel@vger.kernel.org>,
-        linux1394-devel <linux1394-devel@lists.sourceforge.net>,
-        linux-scsi <linux-scsi@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>, Chris Boot <bootc@bootc.net>,
-        Stefan Richter <stefanr@s5r6.in-berlin.de>,
-        Clemens Ladisch <clemens@ladisch.de>, Andy Grover <agrover@redhat.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Tue, 22 May 2012 15:33:49 -0700
-Message-ID: <1337726029.22481.116.camel@haakon2.linux-iscsi.org>
+	Tue, 22 May 2012 18:34:44 -0400
+Date: Wed, 23 May 2012 08:34:37 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Tejun Heo <tj@kernel.org>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: linux-next: bad commit in the cgroup tree
+Message-Id: <20120523083437.e4d3f7ed9b11aae3c51dc2ae@canb.auug.org.au>
+X-Mailer: Sylpheed 3.2.0beta7 (GTK+ 2.24.10; i486-pc-linux-gnu)
 Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
-Content-Transfer-Encoding: 7bit
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Wed__23_May_2012_08_34_37_+1000_g_TXWXYo88cXB1TG"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus,
+--Signature=_Wed__23_May_2012_08_34_37_+1000_g_TXWXYo88cXB1TG
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Here is the next pull request for Chris Boot's new Serial Block Protocol
-(sbp) target driver for IEEE-1394 (FireWire) hardware.  This code also
-has been in linux-next for a number of weeks, and is ready for an
-initial merge.
+Hi Tejun,
 
-Please pull from:
+The top commit of the cgroup tree (e4968362bd46 "WIP") should not be in
+linux-next.  In fact it looks like you committed your quilt series by
+accident.
 
-  git://git.kernel.org/pub/scm/linux/kernel/git/nab/target-pending.git sbp-target-merge
+I will use the cgroup tree from next-20120522 for today.
 
-The FireWire SBP-2 Target is a driver for using an IEEE-1394 connection
-as a SCSI transport. This module uses the SCSI Target framework to
-expose LUNs to other machines attached to a FireWire bus, in effect
-acting as a FireWire hard disk similar to FireWire Target Disk mode
-on many Apple computers.
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
 
-Also included are the two drivers/firewire/ patches required by
-sbp-target to access fw_request fabric speed needed for mgt_agent
-TCODE_WRITE_BLOCK_REQUEST ops, and exporting fw_card kref logic used
-when creating/destroying active session references to individual
-endpoints.
+--Signature=_Wed__23_May_2012_08_34_37_+1000_g_TXWXYo88cXB1TG
+Content-Type: application/pgp-signature
 
-A credit goes to Chris in being able to get this code up and running so
-quickly w/o any target core changes, and special thanks goes out to
-Stefan Richter + Clemens Ladisch + Andy Grover for their help in getting
-this driver ready for mainline.  Also, one of Chris's goals was to be
-able to connect sbp-target to a PowerPC based MacOS-X based client, that
-he accomplished along the way in this obligatory screenshot:
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
 
-http://linux-iscsi.org/wiki/File:Linux-fireware-target-bootc-macosx.png
+iQIcBAEBCAAGBQJPvBR9AAoJEECxmPOUX5FEL4UP/2XCWPFySMBwOk8z9kLd4Nk4
+FhaJNkuCvwx3x03dbfFlAMxwr5UTlVeerQa003HuoJ1aqRAtL7xAjTnLoZgDRp12
+mwlXNT3aQ/HvKsSfQnnSq0eeLmsAqBOQqXmVJJP3VOAg6S4bthIGA25Zw3q5LD7+
+3CYwUmMkPlhNg1sMxnMDwIafJmTI06J/euHjlN3MNvmXaclm5fQvUrJ6I44Jar/I
+wdFVLummwE6ctxb7DQfMIZxnH5jOuH4AbY0TWBWy5gKOEWuORCuOaW+R6QXC5KQv
+5+ZzWbP76vaI/AahHpvVA4w1nhzjViAezsbcpsMnS5dctA+Rw6OrlMR6S6EdPnF8
+YLP3HLT09slSlRxaYJuLtCqHQtREtQHz5MZMglZ2TrR4SNg7KS7Ebc4KS3itfZa7
+RS/w8ot71JhpS95s8/c56ZDr4w+1Q12gNj2mysxRiaftb4Qo8jLxkCugvrKB9bPG
++mAEA8/7CuOP+3Sfuiq4sxyOD8fh+hdO1vT6zUc18ky87qZemuBHGFgIJf9COLVJ
+x9VVF47V7eXBNMAh3uuUba2w6hf0wPSE3UrhLHUZJkVAUcxmFP3eVbjEvF57gL97
+aTQ8sTIUtBiQw/Bh7fqXMTP0XBXPuVEyZvAMvm8al8KGO60+XhMk8wSEPPTQuv0B
+ILOTKsQrGvn9JogSkbhu
+=XNIj
+-----END PGP SIGNATURE-----
 
-Great work Chris + linux-1394 team !!
-
---nab
-
-Chris Boot (3):
-  firewire: Add function to get speed from opaque struct fw_request
-  firewire: Move fw_card kref functions into linux/firewire.h
-  sbp-target: Initial merge of firewire/ieee-1394 target mode support
-
- MAINTAINERS                         |    9 +
- drivers/firewire/core-card.c        |    1 +
- drivers/firewire/core-transaction.c |    9 +
- drivers/firewire/core.h             |   15 -
- drivers/target/Kconfig              |    1 +
- drivers/target/Makefile             |    1 +
- drivers/target/sbp/Kconfig          |   11 +
- drivers/target/sbp/Makefile         |    1 +
- drivers/target/sbp/sbp_target.c     | 2621 +++++++++++++++++++++++++++++++++++
- drivers/target/sbp/sbp_target.h     |  251 ++++
- include/linux/firewire.h            |   15 +
- 11 files changed, 2920 insertions(+), 15 deletions(-)
- create mode 100644 drivers/target/sbp/Kconfig
- create mode 100644 drivers/target/sbp/Makefile
- create mode 100644 drivers/target/sbp/sbp_target.c
- create mode 100644 drivers/target/sbp/sbp_target.h
-
-
+--Signature=_Wed__23_May_2012_08_34_37_+1000_g_TXWXYo88cXB1TG--
