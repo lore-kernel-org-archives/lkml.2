@@ -1,67 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758122Ab2EVOgd (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 May 2012 10:36:33 -0400
-Received: from mail-ob0-f174.google.com ([209.85.214.174]:45149 "EHLO
-	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751061Ab2EVOgb convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 May 2012 10:36:31 -0400
+	id S1758671Ab2EVOhx (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 May 2012 10:37:53 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:3114 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751061Ab2EVOhv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 May 2012 10:37:51 -0400
+Message-ID: <4FBBA4A2.2070501@redhat.com>
+Date: Tue, 22 May 2012 17:37:22 +0300
+From: Avi Kivity <avi@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
 MIME-Version: 1.0
-In-Reply-To: <20120522123058.GB4629@phenom.ffwll.local>
-References: <CAJJYPd=JQdzepw818ZP6OmKK4v38--T+ruKBOG_wn2pUmnVaSw@mail.gmail.com>
-	<20120522123058.GB4629@phenom.ffwll.local>
-Date: Tue, 22 May 2012 16:36:30 +0200
-Message-ID: <CAJJYPdmcJYT1VTnqbkbybut-_NqpFYsuEEzDb9LO-E+ss=wz-g@mail.gmail.com>
-Subject: Re: Regression on GMA965 - display seems to have slow jump changes in brightness
-From: Zdenek Kabelac <zdenek.kabelac@gmail.com>
-To: Zdenek Kabelac <zdenek.kabelac@gmail.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        intel-gfx@lists.freedesktop.org
-Cc: daniel@ffwll.ch
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+To: Steven Rostedt <rostedt@goodmis.org>
+CC: linux-kernel <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@elte.hu>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>,
+        Paul Turner <pjt@google.com>, Peter Zijlstra <peterz@infradead.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
+Subject: Re: NMI vs #PF clash
+References: <4FBB8C40.6080304@redhat.com>   <1337693441.13348.36.camel@gandalf.stny.rr.com>   <4FBB986F.5030306@redhat.com>  <1337695780.13348.41.camel@gandalf.stny.rr.com>  <4FBBA094.3090703@redhat.com> <1337696825.13348.44.camel@gandalf.stny.rr.com>
+In-Reply-To: <1337696825.13348.44.camel@gandalf.stny.rr.com>
+Content-Type: text/plain; charset=ISO-8859-15
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2012/5/22 Daniel Vetter <daniel@ffwll.ch>:
-> On Tue, May 22, 2012 at 02:08:46PM +0200, Zdenek Kabelac wrote:
->> Hi
->>
->> I've updated to 3.4 kernel, and now I'm noticing slight changes in
->> brightness on colorful images.
->> It seems the change is mostly visibly on  'darker' images i.e. it's
->> not really visible on white background.
->>
->> When I reboot back to 3.3  kernel - brightness changes are gone - so I
->> do not suspect hw fault of my T61 display.
->> I guess once in past there has been already such bug, so this problem
->> seems to me like reintroducing the same
->> problem again.
->>
->> xorg-x11-server-Xorg-1.12.1-1.fc18.x86_64
->> with SNA intel driver build from git repo.
->> T61, 965GM
->>
->> Is this a know issue ?
->> Is bisect needed ?
->
-> You're the first one to report things, so a bisect would be highly
-> appreciated. Also I'm a bit confused about what you mean by 'changing
-> brightness'. Can you please try to explain this a bit more?
->
+On 05/22/2012 05:27 PM, Steven Rostedt wrote:
+> On Tue, 2012-05-22 at 17:20 +0300, Avi Kivity wrote:
+>> On 05/22/2012 05:09 PM, Steven Rostedt wrote:
+>> >> > 
+>> >> > Or we could just have the NMI always restore the cr2 register.
+>> >> 
+>> >> IMO that's best.
+>> > 
+>> > OK, I can whip up a patch, but I wont push that in till 3.6.
+>> > 
+>> 
+>> Thanks.  Something I've noticed is that writing cr2 is slow, so you may
+>> want to write it only if it has changed (which should be very rare).
+>> 
+> 
+> Is reading it fast? Then we could do a two reads and only write when
+> needed.
 
-I've some default gnome picture like this one:
-https://lh6.googleusercontent.com/-96ZhFbfLX_M/ThHsm0ZxBgI/AAAAAAAAFQQ/3ApjzYgulso/s400/gnome-3-login-screen.png
+The upside is 70 cycles on one machine, see d3edefc0035669.
 
-When I watch the picture for some period of time  I'm noticing slight
-changes in the picture brightness looking like small change in LUT
-table or something like that.
-If the picture is white I'm not noticing any change.
-(Initially I've thought my display dies - but reboot to 3.3 fixed the
-issue immediately).
 
-Is there any suspecting patch for this chipset I should try to revert ?
+> 
+> Something like this pseudo assembly
+>  
+> 	mov cr2, rax
+> 	push rax
+> 
+> 	call do_nmi
+> 
+> 	pop rax
+> 	mov cr2, rbx
+> 	cmp rax, rbx
+> 	be skip
+> 	mov rax, cr2
+> skip:
+> 
 
-Zdenek
+
+Yes, provided no exceptions can happen at those points.
+
+
+-- 
+error compiling committee.c: too many arguments to function
