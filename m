@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759459Ab2EVPh7 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 May 2012 11:37:59 -0400
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:46155 "EHLO
+	id S1759501Ab2EVPkC (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 May 2012 11:40:02 -0400
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:63740 "EHLO
 	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755239Ab2EVPh5 (ORCPT
+	with ESMTP id S1751297Ab2EVPkA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 May 2012 11:37:57 -0400
+	Tue, 22 May 2012 11:40:00 -0400
 MIME-Version: 1.0
-In-Reply-To: <1337696279-8994-10-git-send-email-anton.vorontsov@linaro.org>
+In-Reply-To: <1337696279-8994-15-git-send-email-anton.vorontsov@linaro.org>
 References: <20120522141717.GA31574@lizard>
-	<1337696279-8994-10-git-send-email-anton.vorontsov@linaro.org>
-Date: Tue, 22 May 2012 08:37:56 -0700
-X-Google-Sender-Auth: 80xb7RFoljo0q1b1TNPhZx21p4w
-Message-ID: <CAGXu5j+WB5VwG40MfBd+OhJ6exCTVDgEmO79B8yR3eFOH8f6hg@mail.gmail.com>
-Subject: Re: [PATCH 10/16] pstore/ram: Add console messages handling
+	<1337696279-8994-15-git-send-email-anton.vorontsov@linaro.org>
+Date: Tue, 22 May 2012 08:39:58 -0700
+X-Google-Sender-Auth: PZafTBvXHduORwysUxPlCewMuxE
+Message-ID: <CAGXu5j+VH9wtW0XT5Nwo8fKWU4-wc1SSj_+YcfKyUsx09cznZw@mail.gmail.com>
+Subject: Re: [PATCH 15/16] pstore/platform: Make automatic updates interval configurable
 From: Kees Cook <keescook@chromium.org>
 To: Anton Vorontsov <anton.vorontsov@linaro.org>
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
@@ -37,9 +37,7 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 On Tue, May 22, 2012 at 7:17 AM, Anton Vorontsov
 <anton.vorontsov@linaro.org> wrote:
-> The console log size is configurable via ramoops.console_size
-> module option, and the log itself is available via
-> <pstore-mount>/console-ramoops file.
+> There is no behavioural change, the default value is still 60 seconds.
 >
 > Signed-off-by: Anton Vorontsov <anton.vorontsov@linaro.org>
 
