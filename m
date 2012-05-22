@@ -1,179 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753827Ab2EVMzG (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 May 2012 08:55:06 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:47969 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752103Ab2EVMzD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 May 2012 08:55:03 -0400
-Date: Tue, 22 May 2012 15:54:56 +0300
-From: "Michael S. Tsirkin" <mst@redhat.com>
-To: kvm@vger.kernel.org
-Cc: Avi Kivity <avi@redhat.com>, Marcelo Tosatti <mtosatti@redhat.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, x86@kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCHv2] kvm: optimize ISR lookups
-Message-ID: <20120522125456.GA4337@redhat.com>
+	id S1755050Ab2EVMzQ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 May 2012 08:55:16 -0400
+Received: from smtp0.epfl.ch ([128.178.224.219]:38696 "HELO smtp0.epfl.ch"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
+	id S1753052Ab2EVMzN convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 May 2012 08:55:13 -0400
+X-Greylist: delayed 399 seconds by postgrey-1.27 at vger.kernel.org; Tue, 22 May 2012 08:55:13 EDT
+From: Philippe =?ISO-8859-1?Q?R=E9tornaz?= <philippe.retornaz@epfl.ch>
+To: Fabio Estevam <festevam@gmail.com>
+Cc: Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Marc Reilly <marc@cpdesign.com.au>,
+        Samuel Ortiz <sameo@linux.intel.com>,
+        Sascha Hauer <kernel@pengutronix.de>,
+        linux-kernel <linux-kernel@vger.kernel.org>
+Subject: Re: mc13xxx-core: kernel hangs after 'regmap_read'
+Date: Tue, 22 May 2012 14:48:28 +0200
+Message-ID: <2220592.xdm62UZBs9@laptop>
+Organization: EPFL - STI - LSRO1
+User-Agent: KMail/4.8.3 (Linux/3.3.5-2.fc16.x86_64; KDE/4.8.3; x86_64; ; )
+In-Reply-To: <CAOMZO5DJUXna-zn98Zs0exin+THQhB3SG9To5N-QEEcDYrmXRA@mail.gmail.com>
+References: <CAOMZO5A-05jTYpEEPfnJvWpby1YJ1M7=KPn=zahbQrQOgbjR4g@mail.gmail.com> <20120522092552.GB21999@opensource.wolfsonmicro.com> <CAOMZO5DJUXna-zn98Zs0exin+THQhB3SG9To5N-QEEcDYrmXRA@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset="iso-8859-1"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-We perform ISR lookups twice: during interrupt
-injection and on EOI. Typical workloads only have
-a single bit set there. So we can avoid ISR scans by
-1. counting bits as we set/clear them in ISR
-2. if count is 1, caching the vector number
-3. if count != 1, invalidating the cache
+Le mardi 22 mai 2012 08:40:30 Fabio Estevam a écrit :
+> Hi Philippe,
+> 
+> On Tue, May 22, 2012 at 6:25 AM, Mark Brown
+> 
+> <broonie@opensource.wolfsonmicro.com> wrote:
+> > It's only this chip that's doing so.  I'd suggest putting a scope on it
+> > and having a look at the formatted data.
+> 
+> Does mx31-moboard allow you to put the scope on the SPI lines
+> connected to the mc13783?
 
-The real purpose of this is enabling PV EOI
-which needs to quickly validate the vector.
-But non PV guests might also benefit.
+Yes, I have access to MISO/MOSI/CLK, but not CS on mx31moboard.
+BTW, mx31-ads give access to the full SPI bus, but I never booted it.
 
-Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
----
+I cannot debug this right now, but I should be able to do it on friday.
 
-I am well aware of Thomas and Peter's suggestion of reworking APIC
-register handling in kvm instead of adding a cache like this patch does.
+Regards,
 
-This revision does *not* address that comment yet: it only corrects a
-bug in the original patch.
+Philippe
 
-Posting in this form for ease of testing.
-
-Changes from v1:
-	replace ASSERT by BUG_ON, correcting inverted logic
-
- arch/x86/kvm/lapic.c |   51 ++++++++++++++++++++++++++++++++++++++++++++++++-
- arch/x86/kvm/lapic.h |    2 +
- 2 files changed, 51 insertions(+), 2 deletions(-)
-
-diff --git a/arch/x86/kvm/lapic.c b/arch/x86/kvm/lapic.c
-index 93c1574..0d2985d 100644
---- a/arch/x86/kvm/lapic.c
-+++ b/arch/x86/kvm/lapic.c
-@@ -107,6 +107,16 @@ static inline void apic_clear_vector(int vec, void *bitmap)
- 	clear_bit(VEC_POS(vec), (bitmap) + REG_POS(vec));
- }
- 
-+static inline int __apic_test_and_set_vector(int vec, void *bitmap)
-+{
-+	return __test_and_set_bit(VEC_POS(vec), (bitmap) + REG_POS(vec));
-+}
-+
-+static inline int __apic_test_and_clear_vector(int vec, void *bitmap)
-+{
-+	return __test_and_clear_bit(VEC_POS(vec), (bitmap) + REG_POS(vec));
-+}
-+
- static inline int apic_hw_enabled(struct kvm_lapic *apic)
- {
- 	return (apic)->vcpu->arch.apic_base & MSR_IA32_APICBASE_ENABLE;
-@@ -210,6 +220,16 @@ static int find_highest_vector(void *bitmap)
- 		return fls(word[word_offset << 2]) - 1 + (word_offset << 5);
- }
- 
-+static u8 count_vectors(void *bitmap)
-+{
-+	u32 *word = bitmap;
-+	int word_offset;
-+	u8 count = 0;
-+	for (word_offset = 0; word_offset < MAX_APIC_VECTOR >> 5; ++word_offset)
-+		count += hweight32(word[word_offset << 2]);
-+	return count;
-+}
-+
- static inline int apic_test_and_set_irr(int vec, struct kvm_lapic *apic)
- {
- 	apic->irr_pending = true;
-@@ -242,6 +262,25 @@ static inline void apic_clear_irr(int vec, struct kvm_lapic *apic)
- 		apic->irr_pending = true;
- }
- 
-+static inline void apic_set_isr(int vec, struct kvm_lapic *apic)
-+{
-+	if (!__apic_test_and_set_vector(vec, apic->regs + APIC_ISR))
-+		++apic->isr_count;
-+	BUG_ON(apic->isr_count > MAX_APIC_VECTOR);
-+	if (likely(apic->isr_count == 1))
-+		apic->isr_cache = vec;
-+	else
-+		apic->isr_cache = -1;
-+}
-+
-+static inline void apic_clear_isr(int vec, struct kvm_lapic *apic)
-+{
-+	if (__apic_test_and_clear_vector(vec, apic->regs + APIC_ISR))
-+		--apic->isr_count;
-+	BUG_ON(apic->isr_count < 0);
-+	apic->isr_cache = -1;
-+}
-+
- int kvm_lapic_find_highest_irr(struct kvm_vcpu *vcpu)
- {
- 	struct kvm_lapic *apic = vcpu->arch.apic;
-@@ -273,6 +312,10 @@ int kvm_apic_set_irq(struct kvm_vcpu *vcpu, struct kvm_lapic_irq *irq)
- static inline int apic_find_highest_isr(struct kvm_lapic *apic)
- {
- 	int result;
-+	if (!apic->isr_count)
-+		return -1;
-+	if (likely(apic->isr_cache != -1))
-+		return apic->isr_cache;
- 
- 	result = find_highest_vector(apic->regs + APIC_ISR);
- 	ASSERT(result == -1 || result >= 16);
-@@ -492,7 +535,7 @@ static void apic_set_eoi(struct kvm_lapic *apic)
- 	if (vector == -1)
- 		return;
- 
--	apic_clear_vector(vector, apic->regs + APIC_ISR);
-+	apic_clear_isr(vector, apic);
- 	apic_update_ppr(apic);
- 
- 	if (!(apic_get_reg(apic, APIC_SPIV) & APIC_SPIV_DIRECTED_EOI) &&
-@@ -1081,6 +1124,8 @@ void kvm_lapic_reset(struct kvm_vcpu *vcpu)
- 		apic_set_reg(apic, APIC_TMR + 0x10 * i, 0);
- 	}
- 	apic->irr_pending = false;
-+	apic->isr_count = 0;
-+	apic->isr_cache = -1;
- 	update_divide_count(apic);
- 	atomic_set(&apic->lapic_timer.pending, 0);
- 	if (kvm_vcpu_is_bsp(vcpu))
-@@ -1248,7 +1293,7 @@ int kvm_get_apic_interrupt(struct kvm_vcpu *vcpu)
- 	if (vector == -1)
- 		return -1;
- 
--	apic_set_vector(vector, apic->regs + APIC_ISR);
-+	apic_set_isr(vector, apic);
- 	apic_update_ppr(apic);
- 	apic_clear_irr(vector, apic);
- 	return vector;
-@@ -1267,6 +1312,8 @@ void kvm_apic_post_state_restore(struct kvm_vcpu *vcpu)
- 	update_divide_count(apic);
- 	start_apic_timer(apic);
- 	apic->irr_pending = true;
-+	apic->isr_count = count_vectors(apic->regs + APIC_ISR);
-+	apic->isr_cache = -1;
- 	kvm_make_request(KVM_REQ_EVENT, vcpu);
- }
- 
-diff --git a/arch/x86/kvm/lapic.h b/arch/x86/kvm/lapic.h
-index 6f4ce25..9f8deff 100644
---- a/arch/x86/kvm/lapic.h
-+++ b/arch/x86/kvm/lapic.h
-@@ -13,6 +13,8 @@ struct kvm_lapic {
- 	u32 divide_count;
- 	struct kvm_vcpu *vcpu;
- 	bool irr_pending;
-+	s16 isr_count;
-+	int isr_cache;
- 	void *regs;
- 	gpa_t vapic_addr;
- 	struct page *vapic_page;
--- 
-MST
