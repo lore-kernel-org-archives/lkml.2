@@ -1,101 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932279Ab2EVRe5 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 May 2012 13:34:57 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:46319 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751638Ab2EVRez (ORCPT
+	id S1753048Ab2EVRhi (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 May 2012 13:37:38 -0400
+Received: from na3sys009aog126.obsmtp.com ([74.125.149.155]:52360 "EHLO
+	na3sys009aog126.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751298Ab2EVRhh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 May 2012 13:34:55 -0400
-Date: Tue, 22 May 2012 10:34:50 -0700
-From: Tejun Heo <tj@kernel.org>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org, Li Zefan <lizefan@huawei.com>,
-        containers@lists.linux-foundation.org, cgroups@vger.kernel.org
-Subject: [GIT PULL] cgroup changes for 3.5-rc1
-Message-ID: <20120522173450.GG14339@google.com>
+	Tue, 22 May 2012 13:37:37 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <20120522120851.GI8730@tbergstrom-lnx.Nvidia.com>
+References: <1337227884.2066.9.camel@pgaikwad-dt2> <20120517062131.GA9305@gmail.com>
+ <1337316517.22560.19.camel@pgaikwad-dt2> <20120518112104.GL20304@tbergstrom-lnx.Nvidia.com>
+ <CAJOA=zM_o1Nqw55xxFvw6KssM50Q+7yyo41rUSH2Aoo1neTMjg@mail.gmail.com>
+ <20120521084642.GV20304@tbergstrom-lnx.Nvidia.com> <4FBB5A72.2080101@codethink.co.uk>
+ <20120522120851.GI8730@tbergstrom-lnx.Nvidia.com>
+From: "Turquette, Mike" <mturquette@ti.com>
+Date: Tue, 22 May 2012 10:37:15 -0700
+Message-ID: <CAJOA=zNic19Eyq-RJpj_pM94wpqY7co0dtKu1O+27B-wZMm=MA@mail.gmail.com>
+Subject: Re: Clock register in early init
+To: Peter De Schrijver <pdeschrijver@nvidia.com>
+Cc: Ben Dooks <ben.dooks@codethink.co.uk>,
+        Prashant Gaikwad <pgaikwad@nvidia.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello, Linus.
+On Tue, May 22, 2012 at 5:08 AM, Peter De Schrijver
+<pdeschrijver@nvidia.com> wrote:
+>> We had at-least that on the older Samsung parts and they where still
+>> growing. I would suggest that in a multi-kernel image situation the
+>> more data that can be discarded after init-time the better.
+>>
+>> Also, __initdata gets gathered into one place so there's no possibility
+>> of page fragmentation there. If you mean fragmentation of the memory
+>> map, then allocate the size of all the clocks you know of at init time
+>> in one go.
+>>
+>
+> That would work, except that clocks are needed before kmalloc is available.
+>
 
-Please pull from the following branch to receive cgroup changes for
-3.5-rc1.
+Is static initialization the only way to solve this problem?  What
+about using the bootmem allocator for early init clocks?
 
-  git://git.kernel.org/pub/scm/linux/kernel/git/tj/cgroup.git for-3.5
+Regards,
+Mike
 
-cgroup file type addition / removal is updated so that file types are
-added and removed instead of individual files so that dynamic file
-type addition / removal can be implemented by cgroup and used by
-controllers.  blkio controller changes which will come through block
-tree are dependent on this.  Other changes include res_counter cleanup
-and disallowing kthread / PF_THREAD_BOUND threads to be attached to
-non-root cgroups.
-
-There's a reported bug with the file type addition / removal handling
-which can lead to oops on cgroup umount.  The issue is being looked
-into.  It shouldn't cause problems for most setups and isn't a
-security concern.
-
-Merging with mainline causes a conflict in
-feature-removal-schedule.txt.  Simple append collision which can be
-trivially resolved.
-
-Thanks.
-
-Frederic Weisbecker (2):
-      res_counter: Merge res_counter_charge and res_counter_charge_nofail
-      res_counter: Account max_usage when calling res_counter_charge_nofail()
-
-Glauber Costa (2):
-      cgroup: pass struct mem_cgroup instead of struct cgroup to socket memcg
-      cgroup: get rid of populate for memcg
-
-Mike Galbraith (1):
-      cgroups: disallow attaching kthreadd or PF_THREAD_BOUND threads
-
-Tejun Heo (16):
-      cgroup: deprecate remount option changes
-      cgroup: move cgroup_clear_directory() call out of cgroup_populate_dir()
-      cgroup: build list of all cgroups under a given cgroupfs_root
-      cgroup: implement cgroup_add_cftypes() and friends
-      cgroup: merge cft_release_agent cftype array into the base files array
-      cgroup: relocate cftype and cgroup_subsys definitions in controllers
-      cgroup: convert all non-memcg controllers to the new cftype interface
-      memcg: always create memsw files if CONFIG_CGROUP_MEM_RES_CTLR_SWAP
-      cgroup: convert memcg controller to the new cftype interface
-      cgroup: remove cgroup_add_file[s]()
-      cgroup: relocate __d_cgrp() and __d_cft()
-      cgroup: introduce struct cfent
-      cgroup: implement cgroup_rm_cftypes()
-      cgroup: use negative bias on css->refcnt to block css_tryget()
-      cgroup: make css->refcnt clearing on cgroup removal optional
-      cgroup: remove cgroup_subsys->populate()
-
- Documentation/cgroups/resource_counter.txt |    4 +-
- Documentation/feature-removal-schedule.txt |    9 +
- block/blk-cgroup.c                         |   45 +--
- include/linux/cgroup.h                     |   81 +++--
- include/linux/res_counter.h                |    2 +-
- include/net/sock.h                         |   12 +-
- include/net/tcp_memcontrol.h               |    4 +-
- kernel/cgroup.c                            |  564 +++++++++++++++++++++-------
- kernel/cgroup_freezer.c                    |   11 +-
- kernel/cpuset.c                            |   31 +-
- kernel/res_counter.c                       |   71 ++--
- kernel/sched/core.c                        |   16 +-
- mm/memcontrol.c                            |  115 +++---
- net/core/netprio_cgroup.c                  |   30 +-
- net/core/sock.c                            |   10 +-
- net/ipv4/tcp_memcontrol.c                  |   77 ++--
- net/sched/cls_cgroup.c                     |   31 +-
- security/device_cgroup.c                   |   10 +-
- 18 files changed, 685 insertions(+), 438 deletions(-)
-
---
-tejun
+> Cheers,
+>
+> Peter.
