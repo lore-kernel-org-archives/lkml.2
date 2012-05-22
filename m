@@ -1,47 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756281Ab2EVVil (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 May 2012 17:38:41 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:59761 "EHLO mail.zytor.com"
+	id S1755986Ab2EVVlM (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 May 2012 17:41:12 -0400
+Received: from mga01.intel.com ([192.55.52.88]:27807 "EHLO mga01.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752892Ab2EVVij (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 May 2012 17:38:39 -0400
-Message-ID: <4FBC0733.8030106@zytor.com>
-Date: Tue, 22 May 2012 14:37:55 -0700
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
+	id S1750917Ab2EVVlL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 May 2012 17:41:11 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
+   d="scan'208";a="155842497"
+Date: Tue, 22 May 2012 23:51:13 +0200
+From: Samuel Ortiz <sameo@linux.intel.com>
+To: Laxman Dewangan <ldewangan@nvidia.com>
+Cc: grant.likely@secretlab.ca, linus.walleij@stericsson.com,
+        broonie@opensource.wolfsonmicro.com, lrg@slimlogic.co.uk,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 0/3] mfd: tps65910: dt: cleanups in device node parsing
+Message-ID: <20120522215113.GD10210@sortiz-mobl>
+References: <1337373103-23933-1-git-send-email-ldewangan@nvidia.com>
 MIME-Version: 1.0
-To: Will Drewry <wad@chromium.org>
-CC: Al Viro <viro@zeniv.linux.org.uk>, Indan Zupancic <indan@nul.nu>,
-        Roland McGrath <mcgrathr@google.com>,
-        Eric Paris <netdev@parisplace.org>, linux-kernel@vger.kernel.org,
-        linux-security-module@vger.kernel.org,
-        kernel-hardening@lists.openwall.com, mingo@redhat.com, oleg@redhat.com,
-        peterz@infradead.org, rdunlap@xenotime.net, tglx@linutronix.de,
-        luto@mit.edu, eparis@redhat.com, serge.hallyn@canonical.com,
-        pmoore@redhat.com, akpm@linux-foundation.org, corbet@lwn.net,
-        eric.dumazet@gmail.com, markus@chromium.org, coreyb@linux.vnet.ibm.com,
-        keescook@chromium.org
-Subject: Re: seccomp and ptrace. what is the correct order?
-References: <CACLa4puRJLUd6hAHO6zFYiqa5dFVum8eLmNMk_ef+=r8OGhjRg@mail.gmail.com> <CAB=4xho2b5fZV_jC15XW3mhOD9Z0QUMnV_UHy-P5EmQWfX59dA@mail.gmail.com> <5d6179f59222155b72d9aa9f171e883c.squirrel@webmail.greenhost.nl> <CABqD9hbzatHerMA1Nq57Qn8SKSZzZf=5t6aLumG9ZpAafgX=UQ@mail.gmail.com> <20120522173942.GJ11775@ZenIV.linux.org.uk> <CABqD9hbwnp-Kob0-Uc9L=qgJfS88po=RHNPkhQFcSf4RTrFCmQ@mail.gmail.com> <4FBBF84A.4070308@zytor.com> <CABqD9haSh=Tof9n2m8PHBaoqac1kcUZq-f5BcjDBv++5APGTCg@mail.gmail.com> <4FBC0078.7010002@zytor.com> <CABqD9haL4pZHJOODh88=HVAJo8DBDJtQAJtSf_L-+518kgEqwg@mail.gmail.com>
-In-Reply-To: <CABqD9haL4pZHJOODh88=HVAJo8DBDJtQAJtSf_L-+518kgEqwg@mail.gmail.com>
-X-Enigmail-Version: 1.4.1
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1337373103-23933-1-git-send-email-ldewangan@nvidia.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/22/2012 02:14 PM, Will Drewry wrote:
->>
->> I suspect the construction of those inlines can be improved.
+Hi Laxman,
+
+On Sat, May 19, 2012 at 02:01:40AM +0530, Laxman Dewangan wrote:
+> In this patch series organizing the processing of device node locally specific
+> to driver.
+> - The gpio specific processing is moved to gpio driver.
+> - Core will only process the non-subdevices information.
+> - Also keep the allocated pointer for device node in to global structure
+>   so that sub devices can use this.
 > 
-> Seems likely - or just my use of them :)
-> 
+> This patch series is generated on-top of Samuel's mfd subsystem tree.
+Thanks, all 3 patches applied.
 
-One thing that could make the code worse is if you are in a flow where
-the state of the TS_COMPAT flag is known but gcc doesn't know that.  I
-don't have an easy answer for that.
+Cheers,
+Samuel.
 
-	-hpa
-
+-- 
+Intel Open Source Technology Centre
+http://oss.intel.com/
