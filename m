@@ -1,119 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757593Ab2EVKZR (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 May 2012 06:25:17 -0400
-Received: from mailhub.sw.ru ([195.214.232.25]:20882 "EHLO relay.sw.ru"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754200Ab2EVKZP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 May 2012 06:25:15 -0400
-Subject: [PATCH] NFSd: fix locking in nfsd_forget_delegations()
-To: bfields@fieldses.org
-From: Stanislav Kinsbursky <skinsbursky@parallels.com>
-Cc: linux-nfs@vger.kernel.org, linux-kernel@vger.kernel.org, devel@openvz.org
-Date: Tue, 22 May 2012 14:25:14 +0400
-Message-ID: <20120522102444.6988.45434.stgit@localhost.localdomain>
-User-Agent: StGit/0.16
+	id S1757730Ab2EVK1d (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 May 2012 06:27:33 -0400
+Received: from smtp-out-056.synserver.de ([212.40.185.56]:1051 "EHLO
+	smtp-out-051.synserver.de" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751871Ab2EVK1c (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 May 2012 06:27:32 -0400
+X-SynServer-TrustedSrc: 1
+X-SynServer-AuthUser: lars@metafoo.de
+X-SynServer-PPID: 25475
+Message-ID: <4FBB6AC7.8040303@metafoo.de>
+Date: Tue, 22 May 2012 12:30:31 +0200
+From: Lars-Peter Clausen <lars@metafoo.de>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.4) Gecko/20120510 Icedove/10.0.4
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
+To: Pritesh Raithatha <praithatha@nvidia.com>
+CC: cbouatmailru@gmail.com, axel.lin@gmail.com, cabarnes@indesign-llc.com,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] gpio-charger: use cansleep version of gpio_set_value
+References: <1337676604-22836-1-git-send-email-praithatha@nvidia.com>
+In-Reply-To: <1337676604-22836-1-git-send-email-praithatha@nvidia.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch adds recall_lock hold to nfsd_forget_delegations() to protect
-nfsd_process_n_delegations() call.
-Also, looks like it would be better to collect delegations to some local
-on-stack list, and then unhash collected list. This split allows to simplify
-locking, because delegation traversing is protected by recall_lock, when
-delegation unhash is protected by client_mutex.
+On 05/22/2012 10:50 AM, Pritesh Raithatha wrote:
+> Context of gpio_charger_get_property is sleepable so we should
+> use gpio_set_value_cansleep instead of gpio_set_value.
+> 
+> It will remove WARN_ON incase of using gpio from i2c-to-gpio
+> expander like pca953x.
+> 
+> Signed-off-by: Pritesh Raithatha <praithatha@nvidia.com>
 
-Signed-off-by: Stanislav Kinsbursky <skinsbursky@parallels.com>
----
- fs/nfsd/nfs4state.c |   32 ++++++++++++++++++++++++--------
- 1 files changed, 24 insertions(+), 8 deletions(-)
+Looks good,
 
-diff --git a/fs/nfsd/nfs4state.c b/fs/nfsd/nfs4state.c
-index 21266c7..f004e61 100644
---- a/fs/nfsd/nfs4state.c
-+++ b/fs/nfsd/nfs4state.c
-@@ -2597,7 +2597,7 @@ out:
- 	return ret;
- }
- 
--static void nfsd_break_one_deleg(struct nfs4_delegation *dp)
-+static void nfsd_break_one_deleg(struct nfs4_delegation *dp, void *data)
- {
- 	/* We're assuming the state code never drops its reference
- 	 * without first removing the lease.  Since we're in this lease
-@@ -2633,7 +2633,7 @@ static void nfsd_break_deleg_cb(struct file_lock *fl)
- 	spin_lock(&recall_lock);
- 	fp->fi_had_conflict = true;
- 	list_for_each_entry(dp, &fp->fi_delegations, dl_perfile)
--		nfsd_break_one_deleg(dp);
-+		nfsd_break_one_deleg(dp, NULL);
- 	spin_unlock(&recall_lock);
- }
- 
-@@ -4694,7 +4694,7 @@ void nfsd_forget_openowners(u64 num)
- 	printk(KERN_INFO "NFSD: Forgot %d open owners", count);
- }
- 
--int nfsd_process_n_delegations(u64 num, void (*deleg_func)(struct nfs4_delegation *))
-+int nfsd_process_n_delegations(u64 num, void (*deleg_func)(struct nfs4_delegation *, void *), void *data)
- {
- 	int i, count = 0;
- 	struct nfs4_file *fp, *fnext;
-@@ -4703,7 +4703,7 @@ int nfsd_process_n_delegations(u64 num, void (*deleg_func)(struct nfs4_delegatio
- 	for (i = 0; i < FILE_HASH_SIZE; i++) {
- 		list_for_each_entry_safe(fp, fnext, &file_hashtbl[i], fi_hash) {
- 			list_for_each_entry_safe(dp, dnext, &fp->fi_delegations, dl_perfile) {
--				deleg_func(dp);
-+				deleg_func(dp, data);
- 				if (++count == num)
- 					return count;
- 			}
-@@ -4713,15 +4713,31 @@ int nfsd_process_n_delegations(u64 num, void (*deleg_func)(struct nfs4_delegatio
- 	return count;
- }
- 
-+/* Called under the recall_lock spinlock. */
-+static void
-+collect_delegation(struct nfs4_delegation *dp, void *data)
-+{
-+	struct list_head *list = data;
-+
-+	list_move(&dp->dl_perfile, list);
-+}
-+
- void nfsd_forget_delegations(u64 num)
- {
- 	unsigned int count;
-+	struct nfs4_delegation *dp, *dnext;
-+	LIST_HEAD(unhash_list);
- 
--	nfs4_lock_state();
--	count = nfsd_process_n_delegations(num, unhash_delegation);
--	nfs4_unlock_state();
-+	spin_lock(&recall_lock);
-+	count = nfsd_process_n_delegations(num, collect_delegation, &unhash_list);
-+	spin_unlock(&recall_lock);
- 
- 	printk(KERN_INFO "NFSD: Forgot %d delegations", count);
-+
-+	nfs4_lock_state();
-+	list_for_each_entry_safe(dp, dnext, &unhash_list, dl_perfile)
-+		unhash_delegation(dp);
-+	nfs4_unlock_state();
- }
- 
- void nfsd_recall_delegations(u64 num)
-@@ -4730,7 +4746,7 @@ void nfsd_recall_delegations(u64 num)
- 
- 	nfs4_lock_state();
- 	spin_lock(&recall_lock);
--	count = nfsd_process_n_delegations(num, nfsd_break_one_deleg);
-+	count = nfsd_process_n_delegations(num, nfsd_break_one_deleg, NULL);
- 	spin_unlock(&recall_lock);
- 	nfs4_unlock_state();
- 
+Acked-by: Lars-Peter Clausen <lars@metafoo.de>
+
+> ---
+>  drivers/power/gpio-charger.c |    2 +-
+>  1 files changed, 1 insertions(+), 1 deletions(-)
+> 
+> diff --git a/drivers/power/gpio-charger.c b/drivers/power/gpio-charger.c
+> index 8672c91..cb2aa31 100644
+> --- a/drivers/power/gpio-charger.c
+> +++ b/drivers/power/gpio-charger.c
+> @@ -54,7 +54,7 @@ static int gpio_charger_get_property(struct power_supply *psy,
+>  
+>  	switch (psp) {
+>  	case POWER_SUPPLY_PROP_ONLINE:
+> -		val->intval = gpio_get_value(pdata->gpio);
+> +		val->intval = gpio_get_value_cansleep(pdata->gpio);
+>  		val->intval ^= pdata->gpio_active_low;
+>  		break;
+>  	default:
 
