@@ -1,86 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760152Ab2EVS07 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 May 2012 14:26:59 -0400
-Received: from mail3.caviumnetworks.com ([12.108.191.235]:17642 "EHLO
-	mail3.caviumnetworks.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751227Ab2EVS06 (ORCPT
+	id S1760160Ab2EVS1l (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 May 2012 14:27:41 -0400
+Received: from avon.wwwdotorg.org ([70.85.31.133]:56174 "EHLO
+	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759947Ab2EVS1j (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 May 2012 14:26:58 -0400
-Message-ID: <4FBBDA70.8020307@cavium.com>
-Date: Tue, 22 May 2012 11:26:56 -0700
-From: David Daney <david.daney@cavium.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.15) Gecko/20101027 Fedora/3.0.10-1.fc12 Thunderbird/3.0.10
+	Tue, 22 May 2012 14:27:39 -0400
+Message-ID: <4FBBDA97.6000006@wwwdotorg.org>
+Date: Tue, 22 May 2012 12:27:35 -0600
+From: Stephen Warren <swarren@wwwdotorg.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
 MIME-Version: 1.0
-To: Joe Perches <joe@perches.com>
-CC: David Daney <ddaney.cavm@gmail.com>,
-        "devicetree-discuss@lists.ozlabs.org" 
-	<devicetree-discuss@lists.ozlabs.org>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Rob Herring <rob.herring@calxeda.com>,
-        "David S. Miller" <davem@davemloft.net>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+To: Laxman Dewangan <ldewangan@nvidia.com>
+CC: Stephen Warren <swarren@nvidia.com>, "olof@lixom.net" <olof@lixom.net>,
+        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-mips@linux-mips.org" <linux-mips@linux-mips.org>,
-        Fleming Andy-AFLEMING <afleming@freescale.com>
-Subject: Re: [PATCH 4/5] netdev/phy: Add driver for Broadcom BCM87XX 10G Ethernet
- PHYs
-References: <1337709592-23347-1-git-send-email-ddaney.cavm@gmail.com>	 <1337709592-23347-5-git-send-email-ddaney.cavm@gmail.com> <1337710660.3432.8.camel@joe2Laptop>
-In-Reply-To: <1337710660.3432.8.camel@joe2Laptop>
-Content-Type: text/plain; charset=UTF-8; format=flowed
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>
+Subject: Re: [PATCH 2/2] ARM: dt: tegra: cardhu: register core regulator tps65911
+References: <1337691917-15040-1-git-send-email-ldewangan@nvidia.com> <1337691917-15040-2-git-send-email-ldewangan@nvidia.com> <4FBBC192.7030900@wwwdotorg.org> <4FBBC830.2060802@nvidia.com> <4FBBCA8F.3050903@wwwdotorg.org> <4FBBD33C.8020802@nvidia.com>
+In-Reply-To: <4FBBD33C.8020802@nvidia.com>
+X-Enigmail-Version: 1.5pre
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-X-OriginalArrivalTime: 22 May 2012 18:26:56.0986 (UTC) FILETIME=[783FCBA0:01CD3848]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/22/2012 11:17 AM, Joe Perches wrote:
-> On Tue, 2012-05-22 at 10:59 -0700, David Daney wrote:
->> From: David Daney<david.daney@cavium.com>
->
-> trivia:
+On 05/22/2012 11:56 AM, Laxman Dewangan wrote:
+> On Tuesday 22 May 2012 10:49 PM, Stephen Warren wrote:
+>> On 05/22/2012 11:09 AM, Laxman Dewangan wrote:
+>>> On Tuesday 22 May 2012 10:10 PM, Stephen Warren wrote:
+>>>> On 05/22/2012 07:05 AM, Laxman Dewangan wrote:
+>>>>> Add device info for the PMIC device tps65911 in tegra-cardhu
+>>>>> dts file. This device supports the multiple regulator rails,
+>>>>> gpio, interrupts.
+...
+>>>> Nitpicky, but the labels might be more logical as reg_vdd1 rather than
+>>>> vdd1_reg, but not a big deal.
+>>>>
+>>>> So, please replace the line above with:
+>>>>
+>>>>      reg_vdd1: regulator@0 {
+>>>>          reg = <0>;
+>>>
+>>> Why do we really require the reg at all?
+>>> I dont think any usage of doing this.
 
-As long as we are splitting hairs...
+Oh, perhaps you meant the reg property not "reg_" in the label name?
 
->
->> diff --git a/drivers/net/phy/bcm87xx.c b/drivers/net/phy/bcm87xx.c
-> []
->> @@ -0,0 +1,237 @@
->
->> +static int bcm87xx_of_reg_init(struct phy_device *phydev)
->> +{
->> +	const __be32 *paddr;
->> +	int len, i, ret;
->> +
->> +	if (!phydev->dev.of_node)
->> +		return 0;
->> +
->> +	paddr = of_get_property(phydev->dev.of_node,
->> +				"broadcom,c45-reg-init",&len);
->> +	if (!paddr || len<  (4 * sizeof(*paddr)))
->> +		return 0;
->> +
->> +	ret = 0;
->> +	len /= sizeof(*paddr);
->> +	for (i = 0; i<  len - 3; i += 4) {
->> +		u16 devid = be32_to_cpup(paddr + i);
->> +		u16 reg = be32_to_cpup(paddr + i + 1);
->> +		u16 mask = be32_to_cpup(paddr + i + 2);
->> +		u16 val_bits = be32_to_cpup(paddr + i + 3);
->> +		int val;
->
-> These might read better as
->
-> 	len /= 4;
+It is required because the parent node has #address-cells and
+#size-cells and because the node name itself has a unit address ("@nnn").
 
-Where did the magic value of 4 come from?
+>> I guess if these regulators are enabled at boot and always on, we don't
+>> even need the labels for now; we could add labels later as/when drivers
+>> begin to dynamically control the regulators.
+> 
+> I think we should provide the label here whether it is always on or not.
+> The driver who uses the rails will not aware that rail is always on or not.
+> Second thing is that this gives uniformity and whenever any consumer get
+> added, we will not touch this part, only will be change in the driver
+> specific part.
 
-> 	for (i = 0; i<  len; i++) {
-> 		u16 devid	= be32_to_cpu(*paddr++);
-> 		u16 reg		= be32_to_cpu(*paddr++);
-> 		u16 mask	= be32_to_cpu(*paddr++);
-> 		u16 val_bits	= be32_to_cpu(*paddr++);
-
-Is the main problem that they didn't align, or that the index was 
-explicit instead of implicit?
-
+Yes, if drivers are referring to these nodes, you do need the label.
