@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759492Ab2EVP1K (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 May 2012 11:27:10 -0400
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:65375 "EHLO
+	id S1759513Ab2EVP1n (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 May 2012 11:27:43 -0400
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:46935 "EHLO
 	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751964Ab2EVP1E (ORCPT
+	with ESMTP id S1759248Ab2EVP1l (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 May 2012 11:27:04 -0400
+	Tue, 22 May 2012 11:27:41 -0400
 MIME-Version: 1.0
-In-Reply-To: <1337696279-8994-5-git-send-email-anton.vorontsov@linaro.org>
+In-Reply-To: <1337696279-8994-7-git-send-email-anton.vorontsov@linaro.org>
 References: <20120522141717.GA31574@lizard>
-	<1337696279-8994-5-git-send-email-anton.vorontsov@linaro.org>
-Date: Tue, 22 May 2012 08:27:03 -0700
-X-Google-Sender-Auth: la7-3Ys9tvJ2tLzKLG0Lj_Gi0HY
-Message-ID: <CAGXu5jLA243m3vsLMYRM3FOrzPYc6FwgqRVQcJQ1fyirs0nqTA@mail.gmail.com>
-Subject: Re: [PATCH 05/16] pstore/ram: Should zap persistent zone on unlink
+	<1337696279-8994-7-git-send-email-anton.vorontsov@linaro.org>
+Date: Tue, 22 May 2012 08:27:40 -0700
+X-Google-Sender-Auth: cQkidhJyNfvysQgHmauy6DIAUck
+Message-ID: <CAGXu5jJ+bMN85R=3bBAwAaRxcoZKL1kFRPkHGtLEX26qAZkUcg@mail.gmail.com>
+Subject: Re: [PATCH 07/16] pstore/ram: Introduce ramoops_context.max_dump_count
 From: Kees Cook <keescook@chromium.org>
 To: Anton Vorontsov <anton.vorontsov@linaro.org>
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
@@ -37,9 +37,10 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 On Tue, May 22, 2012 at 7:17 AM, Anton Vorontsov
 <anton.vorontsov@linaro.org> wrote:
-> Otherwise, unlinked file will reappear on the next boot.
+> So far it is the same as max_count, but this will change when
+> we'll add support for other message types (e.g. console, mce,
+> tracing).
 >
-> Reported-by: Kees Cook <keescook@chromium.org>
 > Signed-off-by: Anton Vorontsov <anton.vorontsov@linaro.org>
 
 Acked-by: Kees Cook <keescook@chromium.org>
