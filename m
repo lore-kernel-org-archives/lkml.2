@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964873Ab2EVXqX (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 May 2012 19:46:23 -0400
-Received: from mail127.messagelabs.com ([216.82.250.115]:65287 "EHLO
-	mail127.messagelabs.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933887Ab2EVXqO (ORCPT
+	id S933652Ab2EVXwM (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 May 2012 19:52:12 -0400
+Received: from mail132.messagelabs.com ([216.82.242.115]:39055 "EHLO
+	mail132.messagelabs.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756868Ab2EVXwJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 May 2012 19:46:14 -0400
+	Tue, 22 May 2012 19:52:09 -0400
 X-Env-Sender: hartleys@visionengravers.com
-X-Msg-Ref: server-6.tower-127.messagelabs.com!1337730373!6297040!1
-X-Originating-IP: [216.166.12.99]
+X-Msg-Ref: server-12.tower-132.messagelabs.com!1337730724!12419210!2
+X-Originating-IP: [216.166.12.72]
 X-StarScan-Version: 6.5.10; banners=-,-,-
 X-VirusChecked: Checked
 From: H Hartley Sweeten <hartleys@visionengravers.com>
 To: Linux Kernel <linux-kernel@vger.kernel.org>
-Subject: [PATCH] staging: comedi: remove boardtype macro in the ni_atmio16d driver
-Date: Tue, 22 May 2012 16:46:07 -0700
+Subject: [PATCH] staging: comedi: remove this_board macro in the pcl711 driver
+Date: Tue, 22 May 2012 16:52:00 -0700
 User-Agent: KMail/1.9.9
 CC: <devel@driverdev.osuosl.org>, <abbotti@mev.co.uk>,
         <fmhess@users.sourceforge.net>, <gregkh@linuxfoundation.org>
@@ -23,12 +23,12 @@ MIME-Version: 1.0
 Content-Type: text/plain; charset="utf-8"
 Content-Transfer-Encoding: 7bit
 Content-Disposition: inline
-Message-ID: <201205221646.07717.hartleys@visionengravers.com>
+Message-ID: <201205221652.01131.hartleys@visionengravers.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The 'boardtype' macro depends on having a local variable with
+The 'this_board' macro depends on having a local variable with
 a magic name. The CodingStyle document suggests not doing this
 to avoid confusion. Remove the macro and use the comedi_board()
 inline helper to get the dev->board_ptr information.
@@ -40,54 +40,120 @@ Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
 
-diff --git a/drivers/staging/comedi/drivers/ni_atmio16d.c b/drivers/staging/comedi/drivers/ni_atmio16d.c
-index 4f61453..a0890ee 100644
---- a/drivers/staging/comedi/drivers/ni_atmio16d.c
-+++ b/drivers/staging/comedi/drivers/ni_atmio16d.c
-@@ -110,8 +110,6 @@ struct atmio16_board_t {
- 	int has_8255;
+diff --git a/drivers/staging/comedi/drivers/pcl711.c b/drivers/staging/comedi/drivers/pcl711.c
+index 2e7753f..e943b52 100644
+--- a/drivers/staging/comedi/drivers/pcl711.c
++++ b/drivers/staging/comedi/drivers/pcl711.c
+@@ -148,8 +148,6 @@ struct pcl711_board {
+ 	const struct comedi_lrange *ai_range_type;
  };
  
--#define boardtype ((const struct atmio16_board_t *)dev->board_ptr)
+-#define this_board ((const struct pcl711_board *)dev->board_ptr)
 -
- /* range structs */
- static const struct comedi_lrange range_atmio16d_ai_10_bipolar = { 4, {
- 								       BIP_RANGE
-@@ -693,6 +691,7 @@ static int atmio16d_dio_insn_config(struct comedi_device *dev,
- static int atmio16d_attach(struct comedi_device *dev,
- 			   struct comedi_devconfig *it)
- {
-+	const struct atmio16_board_t *board = comedi_board(dev);
- 	unsigned int irq;
- 	unsigned long iobase;
- 	int ret;
-@@ -708,8 +707,7 @@ static int atmio16d_attach(struct comedi_device *dev,
- 	}
- 	dev->iobase = iobase;
+ struct pcl711_private {
  
--	/* board name */
--	dev->board_name = boardtype->name;
+ 	int board;
+@@ -169,6 +167,7 @@ static irqreturn_t pcl711_interrupt(int irq, void *d)
+ 	int lo, hi;
+ 	int data;
+ 	struct comedi_device *dev = d;
++	const struct pcl711_board *board = comedi_board(dev);
+ 	struct comedi_subdevice *s = dev->subdevices + 0;
+ 
+ 	if (!dev->attached) {
+@@ -184,7 +183,7 @@ static irqreturn_t pcl711_interrupt(int irq, void *d)
+ 
+ 	/* FIXME! Nothing else sets ntrig! */
+ 	if (!(--devpriv->ntrig)) {
+-		if (this_board->is_8112)
++		if (board->is_8112)
+ 			outb(1, dev->iobase + PCL711_MODE);
+ 		else
+ 			outb(0, dev->iobase + PCL711_MODE);
+@@ -197,13 +196,14 @@ static irqreturn_t pcl711_interrupt(int irq, void *d)
+ 
+ static void pcl711_set_changain(struct comedi_device *dev, int chan)
+ {
++	const struct pcl711_board *board = comedi_board(dev);
+ 	int chan_register;
+ 
+ 	outb(CR_RANGE(chan), dev->iobase + PCL711_GAIN);
+ 
+ 	chan_register = CR_CHAN(chan);
+ 
+-	if (this_board->is_8112) {
++	if (board->is_8112) {
+ 
+ 		/*
+ 		 *  Set the correct channel.  The two channel banks are switched
+@@ -225,6 +225,7 @@ static void pcl711_set_changain(struct comedi_device *dev, int chan)
+ static int pcl711_ai_insn(struct comedi_device *dev, struct comedi_subdevice *s,
+ 			  struct comedi_insn *insn, unsigned int *data)
+ {
++	const struct pcl711_board *board = comedi_board(dev);
+ 	int i, n;
+ 	int hi, lo;
+ 
+@@ -237,7 +238,7 @@ static int pcl711_ai_insn(struct comedi_device *dev, struct comedi_subdevice *s,
+ 		 */
+ 		outb(1, dev->iobase + PCL711_MODE);
+ 
+-		if (!this_board->is_8112)
++		if (!board->is_8112)
+ 			outb(0, dev->iobase + PCL711_SOFTTRIG);
+ 
+ 		i = PCL711_TIMEOUT;
+@@ -481,6 +482,7 @@ static int pcl711_do_insn_bits(struct comedi_device *dev,
+ 
+ static int pcl711_attach(struct comedi_device *dev, struct comedi_devconfig *it)
+ {
++	const struct pcl711_board *board = comedi_board(dev);
+ 	int ret;
+ 	unsigned long iobase;
+ 	unsigned int irq;
+@@ -498,12 +500,11 @@ static int pcl711_attach(struct comedi_device *dev, struct comedi_devconfig *it)
+ 
+ 	/* there should be a sanity check here */
+ 
+-	/* set up some name stuff */
+-	dev->board_name = this_board->name;
 +	dev->board_name = board->name;
  
- 	ret = alloc_subdevices(dev, 4);
- 	if (ret < 0)
-@@ -811,7 +809,7 @@ static int atmio16d_attach(struct comedi_device *dev,
+ 	/* grab our IRQ */
+ 	irq = it->options[1];
+-	if (irq > this_board->maxirq) {
++	if (irq > board->maxirq) {
+ 		printk(KERN_ERR "irq out of range\n");
+ 		return -EINVAL;
+ 	}
+@@ -529,10 +530,10 @@ static int pcl711_attach(struct comedi_device *dev, struct comedi_devconfig *it)
+ 	/* AI subdevice */
+ 	s->type = COMEDI_SUBD_AI;
+ 	s->subdev_flags = SDF_READABLE | SDF_GROUND;
+-	s->n_chan = this_board->n_aichan;
++	s->n_chan = board->n_aichan;
+ 	s->maxdata = 0xfff;
+ 	s->len_chanlist = 1;
+-	s->range_table = this_board->ai_range_type;
++	s->range_table = board->ai_range_type;
+ 	s->insn_read = pcl711_ai_insn;
+ 	if (irq) {
+ 		dev->read_subdev = s;
+@@ -545,7 +546,7 @@ static int pcl711_attach(struct comedi_device *dev, struct comedi_devconfig *it)
+ 	/* AO subdevice */
+ 	s->type = COMEDI_SUBD_AO;
+ 	s->subdev_flags = SDF_WRITABLE;
+-	s->n_chan = this_board->n_aochan;
++	s->n_chan = board->n_aochan;
+ 	s->maxdata = 0xfff;
+ 	s->len_chanlist = 1;
+ 	s->range_table = &range_bipolar5;
+@@ -577,7 +578,7 @@ static int pcl711_attach(struct comedi_device *dev, struct comedi_devconfig *it)
+ 	   this is the "base value" for the mode register, which is
+ 	   used for the irq on the PCL711
+ 	 */
+-	if (this_board->is_pcl711b)
++	if (board->is_pcl711b)
+ 		devpriv->mode = (dev->irq << 4);
  
- 	/* 8255 subdevice */
- 	s++;
--	if (boardtype->has_8255)
-+	if (board->has_8255)
- 		subdev_8255_init(dev, s, NULL, dev->iobase);
- 	else
- 		s->type = COMEDI_SUBD_UNUSED;
-@@ -831,7 +829,9 @@ static int atmio16d_attach(struct comedi_device *dev,
- 
- static void atmio16d_detach(struct comedi_device *dev)
- {
--	if (dev->subdevices && boardtype->has_8255)
-+	const struct atmio16_board_t *board = comedi_board(dev);
-+
-+	if (dev->subdevices && board->has_8255)
- 		subdev_8255_cleanup(dev, dev->subdevices + 3);
- 	if (dev->irq)
- 		free_irq(dev->irq, dev);
+ 	/* clear DAC */
