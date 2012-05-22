@@ -1,45 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932707Ab2EVAU4 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 May 2012 20:20:56 -0400
-Received: from mga01.intel.com ([192.55.52.88]:31217 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932084Ab2EVAUy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 May 2012 20:20:54 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
-   d="scan'208";a="169430363"
-Subject: Re: [PATCH 3/3][RFC] x86: x2apic/cluster: Do not handle cpumask
- allocation errors
-From: Suresh Siddha <suresh.b.siddha@intel.com>
-Reply-To: Suresh Siddha <suresh.b.siddha@intel.com>
-To: Alexander Gordeev <agordeev@redhat.com>
-Cc: linux-kernel@vger.kernel.org, x86@kernel.org,
-        Cyrill Gorcunov <gorcunov@openvz.org>, Yinghai Lu <yinghai@kernel.org>
-Date: Mon, 21 May 2012 17:19:18 -0700
-In-Reply-To: <20120518102659.GC31517@dhcp-26-207.brq.redhat.com>
-References: <20120518102659.GC31517@dhcp-26-207.brq.redhat.com>
-Organization: Intel Corp
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.0.3 (3.0.3-1.fc15) 
-Content-Transfer-Encoding: 7bit
-Message-ID: <1337645958.1997.172.camel@sbsiddha-desk.sc.intel.com>
-Mime-Version: 1.0
+	id S1759560Ab2EVAWv (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 May 2012 20:22:51 -0400
+Received: from LGEMRELSE1Q.lge.com ([156.147.1.111]:51092 "EHLO
+	LGEMRELSE1Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755245Ab2EVAWu (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 21 May 2012 20:22:50 -0400
+X-AuditID: 9c93016f-b7c3cae000001954-3a-4fbadc56f032
+From: Namhyung Kim <namhyung.kim@lge.com>
+To: David Ahern <dsahern@gmail.com>
+Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@redhat.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Stephane Eranian <eranian@google.com>, Jiri Olsa <jolsa@redhat.com>
+Subject: Re: [RFC 0/5] perf tools: Minimalistic build without libelf dependency
+References: <1336979424-17206-1-git-send-email-namhyung.kim@lge.com>
+	<87mx522huw.fsf@sejong.aot.lge.com> <4FBA5937.2050701@gmail.com>
+Date: Tue, 22 May 2012 09:20:42 +0900
+In-Reply-To: <4FBA5937.2050701@gmail.com> (David Ahern's message of "Mon, 21
+	May 2012 09:03:19 -0600")
+Message-ID: <87aa112hid.fsf@sejong.aot.lge.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.0.95 (gnu/linux)
+MIME-Version: 1.0
+Content-Type: text/plain
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2012-05-18 at 12:26 +0200, Alexander Gordeev wrote:
-> With this fix allocations of cpumasks are assumed always successfull
-> and possible failures result in BUG().
+Hi, David
 
-BUG check for memory allocation failures in IPI path is not a good idea.
-We will be using IPI's to flush TLB's before we evict the pages for
-recovering from low-memory conditions.  We need to provide a clean fall
-back path.
+On Mon, 21 May 2012 09:03:19 -0600, David Ahern wrote:
+> One idea that has been proposed is to make perf configurable - to pick
+> and choose which pieces you want built-in. For example for target
+> systems only compile in record command. It seems like that part should
+> be done first and would potentially handle a lot of these changes.
+>
 
-So NAK.
+Yeah, I remember Arnaldo said about the menuconfig-like configuration
+interface. But I'd like to finish this minimal build patchset first
+since the configuration change can require much work on where I'm not
+familiar with and I doubt the users care about it much.
 
-thanks,
-suresh
-
+Anyway, thanks for the comment.
+Namhyung
