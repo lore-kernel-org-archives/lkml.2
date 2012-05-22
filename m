@@ -1,78 +1,180 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756105Ab2EVKGJ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 May 2012 06:06:09 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:33041 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752085Ab2EVKGA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 May 2012 06:06:00 -0400
-Message-ID: <4FBB64F7.5090801@redhat.com>
-Date: Tue, 22 May 2012 18:05:43 +0800
-From: Jason Wang <jasowang@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
-MIME-Version: 1.0
-To: Shirley Ma <mashirle@us.ibm.com>
-CC: "Michael S. Tsirkin" <mst@redhat.com>, eric.dumazet@gmail.com,
-        netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        ebiederm@xmission.com, davem@davemloft.net
-Subject: Re: [V2 PATCH 9/9] vhost: zerocopy: poll vq in zerocopy callback
-References: <20120502033901.11782.13157.stgit@amd-6168-8-1.englab.nay.redhat.com>  <20120502034254.11782.27314.stgit@amd-6168-8-1.englab.nay.redhat.com>  <1337100630.8220.4.camel@oc3660625478.ibm.com> <4FB317C8.90002@redhat.com>  <1337181027.10741.13.camel@oc3660625478.ibm.com>  <20120516151444.GC9934@redhat.com>  <1337189525.10741.24.camel@oc3660625478.ibm.com>  <4FB4677A.8020402@redhat.com>  <1337268862.10741.58.camel@oc3660625478.ibm.com>  <4FB61D57.4030103@redhat.com>  <1337354974.12999.12.camel@oc3660625478.ibm.com>  <4FB9DB24.2040408@redhat.com> <1337614972.12999.56.camel@oc3660625478.ibm.com>
-In-Reply-To: <1337614972.12999.56.camel@oc3660625478.ibm.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+	id S1755225Ab2EVKGG (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 May 2012 06:06:06 -0400
+Received: from mail-lpp01m010-f46.google.com ([209.85.215.46]:45863 "EHLO
+	mail-lpp01m010-f46.google.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751859Ab2EVKF7 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 May 2012 06:05:59 -0400
+From: Johan Hovold <jhovold@gmail.com>
+To: Richard Purdie <rpurdie@rpsys.net>,
+        Andrew Morton <akpm@linux-foundation.org>
+Cc: Rob Landley <rob@landley.net>,
+        Florian Tobias Schandinat <FlorianSchandinat@gmx.de>,
+        linux-doc@vger.kernel.org, linux-fbdev@vger.kernel.org,
+        Jonathan Cameron <jic23@kernel.org>, linux-kernel@vger.kernel.org,
+        Johan Hovold <jhovold@gmail.com>
+Subject: [PATCH 2/2] backlight: lm3533: replace als attribute with als_channel and als_en
+Date: Tue, 22 May 2012 12:05:08 +0200
+Message-Id: <1337681108-13838-2-git-send-email-jhovold@gmail.com>
+X-Mailer: git-send-email 1.7.8.6
+In-Reply-To: <1337681108-13838-1-git-send-email-jhovold@gmail.com>
+References: <1337681108-13838-1-git-send-email-jhovold@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/21/2012 11:42 PM, Shirley Ma wrote:
-> On Mon, 2012-05-21 at 14:05 +0800, Jason Wang wrote:
->>>> - tx polling depends on skb_orphan() which is often called by
->> device
->>>> driver when it place the packet into the queue of the devices
->> instead
->>>> of  when the packets were sent. So it was too early for vhost to be
->>>> notified.
->>> Then do you think it's better to replace with vhost_poll_queue here
->>> instead?
->> Just like what does this patch do - calling vhost_poll_queue() in
->> vhost_zerocopy_callback().
->>>> - it only works when the pending DMAs exceeds VHOST_MAX_PEND, it's
->>>> highly possible that guest needs to be notified when the pending
->>>> packets
->>>> isn't so much.
->>> In which situation the guest needs to be notified when there is no
->> TX
->>> besides buffers run out?
->> Consider guest call virtqueue_enable_cb_delayed() which means it only
->> need to be notified when 3/4 of pending buffers ( about 178 buffers
->> (256-MAX_SKB_FRAGS-2)*3/4 ) were sent by host. So vhost_net would
->> notify
->> guest when about 60 buffers were pending. Since tx polling is only
->> enabled when pending packets exceeds VHOST_MAX_PEND 128, so tx work
->> would not be notified to run and guest would never get the interrupt
->> it
->> expected to re-enable the queue.
-> So it seems we still need vhost_enable_notify() in handle_tx when there
-> is no tx in zerocopy case.
->
-> Do you know which one is more expensive: the cost of vhost_poll_queue()
-> in each zerocopy callback or calling vhost_enable_notify()?
+Replace the als attribute with two separate attributes for selecting ALS
+channel and enabling ALS-current-control mode.
 
-Didn't follow here, do you mean vhost_signal() here?
->
-> Have you compared the results by removing below code in handle_tx()?
->
-> -                       if (unlikely(num_pends>  VHOST_MAX_PEND)) {
-> -                                tx_poll_start(net, sock);
-> -                                set_bit(SOCK_ASYNC_NOSPACE,&sock->flags);
-> -                                break;
-> -                        }
+This change is needed to reflect changes made to the ALS sub-driver
+which now uses 0-indexed current output channels (rather than 1-indexed
+ALS-mapper target sets).
 
-I remember I've done some basic test when I send this patch, there's no 
-much increasing of cpu utilization. Would double check this again.
->> And just like what we've discussed, tx polling based adding and
->> signaling is too early for vhost.
-> Thanks
-> Shirley
->
+Signed-off-by: Johan Hovold <jhovold@gmail.com>
+---
+ .../testing/sysfs-class-backlight-driver-lm3533    |   19 +++++---
+ drivers/video/backlight/lm3533_bl.c                |   48 ++++++++++----------
+ 2 files changed, 37 insertions(+), 30 deletions(-)
+
+diff --git a/Documentation/ABI/testing/sysfs-class-backlight-driver-lm3533 b/Documentation/ABI/testing/sysfs-class-backlight-driver-lm3533
+index ea91f71..77cf7ac 100644
+--- a/Documentation/ABI/testing/sysfs-class-backlight-driver-lm3533
++++ b/Documentation/ABI/testing/sysfs-class-backlight-driver-lm3533
+@@ -1,13 +1,20 @@
+-What:		/sys/class/backlight/<backlight>/als
+-Date:		April 2012
++What:		/sys/class/backlight/<backlight>/als_channel
++Date:		May 2012
+ KernelVersion:	3.5
+ Contact:	Johan Hovold <jhovold@gmail.com>
+ Description:
+-		Set the ALS-control mode (0..2), where
++		Get the ALS output channel used as input in
++		ALS-current-control mode (0, 1), where
++
++		0 - out_current0 (backlight 0)
++		1 - out_current1 (backlight 1)
+ 
+-		0 - disabled
+-		1 - ALS-mapper 1 (backlight 0)
+-		2 - ALS-mapper 2 (backlight 1)
++What:		/sys/class/backlight/<backlight>/als_en
++Date:		May 2012
++KernelVersion:	3.5
++Contact:	Johan Hovold <jhovold@gmail.com>
++Description:
++		Enable ALS-current-control mode (0, 1).
+ 
+ What:		/sys/class/backlight/<backlight>/id
+ Date:		April 2012
+diff --git a/drivers/video/backlight/lm3533_bl.c b/drivers/video/backlight/lm3533_bl.c
+index d916ffe..18dca0c 100644
+--- a/drivers/video/backlight/lm3533_bl.c
++++ b/drivers/video/backlight/lm3533_bl.c
+@@ -79,55 +79,52 @@ static ssize_t show_id(struct device *dev,
+ 	return scnprintf(buf, PAGE_SIZE, "%d\n", bl->id);
+ }
+ 
+-/*
+- * ALS-control setting:
+- *
+- *   0 - ALS disabled
+- *   1 - ALS-mapper 1 (backlight 0)
+- *   2 - ALS-mapper 2 (backlight 1)
+- */
+-static ssize_t show_als(struct device *dev,
++static ssize_t show_als_channel(struct device *dev,
++				struct device_attribute *attr, char *buf)
++{
++	struct lm3533_bl *bl = dev_get_drvdata(dev);
++	unsigned channel = lm3533_bl_get_ctrlbank_id(bl);
++
++	return scnprintf(buf, PAGE_SIZE, "%u\n", channel);
++}
++
++static ssize_t show_als_en(struct device *dev,
+ 				struct device_attribute *attr, char *buf)
+ {
+ 	struct lm3533_bl *bl = dev_get_drvdata(dev);
+ 	int ctrlbank = lm3533_bl_get_ctrlbank_id(bl);
+ 	u8 val;
+ 	u8 mask;
+-	int als;
++	bool enable;
+ 	int ret;
+ 
+ 	ret = lm3533_read(bl->lm3533, LM3533_REG_CTRLBANK_AB_BCONF, &val);
+ 	if (ret)
+ 		return ret;
+ 
+-	mask = 2 * ctrlbank;
+-	als = val & mask;
+-	if (als)
+-		als = ctrlbank + 1;
++	mask = 1 << (2 * ctrlbank);
++	enable = val & mask;
+ 
+-	return scnprintf(buf, PAGE_SIZE, "%d\n", als);
++	return scnprintf(buf, PAGE_SIZE, "%d\n", enable);
+ }
+ 
+-static ssize_t store_als(struct device *dev,
++static ssize_t store_als_en(struct device *dev,
+ 					struct device_attribute *attr,
+ 					const char *buf, size_t len)
+ {
+ 	struct lm3533_bl *bl = dev_get_drvdata(dev);
+ 	int ctrlbank = lm3533_bl_get_ctrlbank_id(bl);
+-	int als;
++	int enable;
+ 	u8 val;
+ 	u8 mask;
+ 	int ret;
+ 
+-	if (kstrtoint(buf, 0, &als))
+-		return -EINVAL;
+-
+-	if (als != 0 && (als != ctrlbank + 1))
++	if (kstrtoint(buf, 0, &enable))
+ 		return -EINVAL;
+ 
+ 	mask = 1 << (2 * ctrlbank);
+ 
+-	if (als)
++	if (enable)
+ 		val = mask;
+ 	else
+ 		val = 0;
+@@ -224,13 +221,15 @@ static ssize_t store_pwm(struct device *dev,
+ 	return len;
+ }
+ 
+-static LM3533_ATTR_RW(als);
++static LM3533_ATTR_RO(als_channel);
++static LM3533_ATTR_RW(als_en);
+ static LM3533_ATTR_RO(id);
+ static LM3533_ATTR_RW(linear);
+ static LM3533_ATTR_RW(pwm);
+ 
+ static struct attribute *lm3533_bl_attributes[] = {
+-	&dev_attr_als.attr,
++	&dev_attr_als_channel.attr,
++	&dev_attr_als_en.attr,
+ 	&dev_attr_id.attr,
+ 	&dev_attr_linear.attr,
+ 	&dev_attr_pwm.attr,
+@@ -244,7 +243,8 @@ static umode_t lm3533_bl_attr_is_visible(struct kobject *kobj,
+ 	struct lm3533_bl *bl = dev_get_drvdata(dev);
+ 	umode_t mode = attr->mode;
+ 
+-	if (attr == &dev_attr_als.attr) {
++	if (attr == &dev_attr_als_channel.attr ||
++					attr == &dev_attr_als_en.attr) {
+ 		if (!bl->lm3533->have_als)
+ 			mode = 0;
+ 	}
+-- 
+1.7.8.5
 
