@@ -1,64 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759588Ab2EVAzs (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 May 2012 20:55:48 -0400
-Received: from mail132.messagelabs.com ([216.82.242.115]:54214 "EHLO
-	mail132.messagelabs.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751045Ab2EVAzr convert rfc822-to-8bit (ORCPT
+	id S1759602Ab2EVA4d (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 May 2012 20:56:33 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:36762 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751045Ab2EVA43 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 May 2012 20:55:47 -0400
-X-Env-Sender: hartleys@visionengravers.com
-X-Msg-Ref: server-11.tower-132.messagelabs.com!1337648145!12307814!1
-X-Originating-IP: [216.166.12.32]
-X-StarScan-Version: 6.5.10; banners=-,-,-
-X-VirusChecked: Checked
-From: H Hartley Sweeten <hartleys@visionengravers.com>
-To: Linux Kernel <linux-kernel@vger.kernel.org>
-Subject: [PATCH] staging: comedi: icp_multi: io_addr is a void __iomem *
-Date: Mon, 21 May 2012 17:55:33 -0700
-User-Agent: KMail/1.9.9
-CC: <devel@driverdev.osuosl.org>, <abbotti@mev.co.uk>,
-        <fmhess@users.sourceforge.net>, <gregkh@linuxfoundation.org>
+	Mon, 21 May 2012 20:56:29 -0400
+From: Marc Reilly <marc@cpdesign.com.au>
+Reply-To: marc@cpdesign.com.au
+Organization: Creative Product Design
+To: Fabio Estevam <festevam@gmail.com>
+Subject: Re: mc13xxx-core: kernel hangs after 'regmap_read'
+Date: Tue, 22 May 2012 10:53:21 +1000
+User-Agent: KMail/1.13.6 (Linux/2.6.37.6-0.11-desktop; KDE/4.6.0; x86_64; ; )
+Cc: Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Samuel Ortiz <sameo@linux.intel.com>,
+        Sascha Hauer <kernel@pengutronix.de>,
+        Philippe =?utf-8?q?R=C3=A9tornaz?= <philippe.retornaz@epfl.ch>,
+        "linux-kernel" <linux-kernel@vger.kernel.org>
+References: <CAOMZO5A-05jTYpEEPfnJvWpby1YJ1M7=KPn=zahbQrQOgbjR4g@mail.gmail.com>
+In-Reply-To: <CAOMZO5A-05jTYpEEPfnJvWpby1YJ1M7=KPn=zahbQrQOgbjR4g@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 8BIT
-Content-Disposition: inline
-Message-ID: <201205211755.34024.hartleys@visionengravers.com>
+Content-Type: Text/Plain;
+  charset="utf-8"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201205221053.21792.marc@cpdesign.com.au>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The io_addr variable in struct dt3k_private is an ioremap'ed pci
-resource and should be void __iomem * not a void *.
+Hi Fabio,
 
-This quiets a lot of sparse warings for the writew and readw calls
-like:
+On Tuesday, May 22, 2012 02:06:55 AM Fabio Estevam wrote:
+> Hi Marc,
+> 
+> I am running linux-next 3.4.0-next-20120521 on a mx31pdk board that
+> has a mc13783 PMIC connected to SPI.
+> 
+> I am getting a kernel hang after 'regmap_read' inside mc13xxx_reg_read
+> function.
+> 
+> Does it work fine for you on your mx35 board? Am I missing any recent
+> patch?
 
-warning: incorrect type in argument 1 (different address spaces)
-   expected void const volatile [noderef] <asn:2>*addr
-   got void *<noident>
+I tested linux-next/next-20120521, no extra patches. I got build errors for 
+something to do with usb udc, and start-up panic for the nand driver. 
+Disabling both of these got me to a login. Then:
 
-warning: incorrect type in argument 2 (different address spaces)
-   expected void volatile [noderef] <asn:2>*addr
-   got void *
+mount -t debugfs none /sys/kernel/debug
+cat /sys/kernel/debug/regmap/0-0008/registers
 
-Signed-off-by: H Hartley Sweeten <hsweeten@visionengravers.com>
-Cc: Ian Abbott <abbotti@mev.co.uk>
-Cc: Mori Hess <fmhess@users.sourceforge.net>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+00: 004cc0
+01: ffffff
+02: 185cc0
+03: 000005
+04: ffffff
+05: 00401c
+06: 000200
+07: 0045d0
+08: 000000
+09: 000005
+0a: 00147a
+0b: 000000
+0c: 000000
+0d: 0b0040
+0e: 000000
+0f: 400032
+10: 000000
+11: 000000
+12: 000001
+13: 000000
+14: 013326
+15: 01ffff
+...
 
----
+Which looks correct.
 
-diff --git a/drivers/staging/comedi/drivers/icp_multi.c b/drivers/staging/comedi/drivers/icp_multi.c
-index fdc596f..f870d3d 100644
---- a/drivers/staging/comedi/drivers/icp_multi.c
-+++ b/drivers/staging/comedi/drivers/icp_multi.c
-@@ -148,7 +148,7 @@ struct boardtype {
- struct icp_multi_private {
- 	struct pcilst_struct *card;	/*  pointer to card */
- 	char valid;		/*  card is usable */
--	void *io_addr;		/*  Pointer to mapped io address */
-+	void __iomem *io_addr;		/*  Pointer to mapped io address */
- 	resource_size_t phys_iobase;	/*  Physical io address */
- 	unsigned int AdcCmdStatus;	/*  ADC Command/Status register */
- 	unsigned int DacCmdStatus;	/*  DAC Command/Status register */
+
+> 
+> My understanding is that you have only tested i2c connection with this
+> PMIC. Is this correct?
+That's correct. I don't have any SPI connected hardware to test with. Shawn 
+tested SPI operation for an earlier version of the patch series, but that was 
+before the regmap changes.
+
+
+> Any ideas on how to solve this issue is appreciated.
+My first suspicion is with the regmap register format of the mc13xxx for SPI. 
+It was a new format which introduced a padding bit. I wonder if Mark Brown can 
+comment on whether any other devices are using it successfully. (Sorry I can't 
+offer more insights there).
+
+Does your crash occur during mc13xxx_spi_probe? does mc13xxx_common_init() get 
+called?
+
+
+Cheers,
+Marc
+
