@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965265Ab2EVXzz (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 May 2012 19:55:55 -0400
-Received: from mail209.messagelabs.com ([216.82.255.3]:49498 "EHLO
-	mail209.messagelabs.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932839Ab2EVXzx (ORCPT
+	id S933297Ab2EWAAX (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 May 2012 20:00:23 -0400
+Received: from mail160.messagelabs.com ([216.82.253.99]:19821 "EHLO
+	mail160.messagelabs.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932839Ab2EWAAV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 May 2012 19:55:53 -0400
+	Tue, 22 May 2012 20:00:21 -0400
 X-Env-Sender: hartleys@visionengravers.com
-X-Msg-Ref: server-5.tower-209.messagelabs.com!1337730952!6390713!1
+X-Msg-Ref: server-15.tower-160.messagelabs.com!1337731207!7247697!16
 X-Originating-IP: [216.166.12.97]
 X-StarScan-Version: 6.5.10; banners=-,-,-
 X-VirusChecked: Checked
 From: H Hartley Sweeten <hartleys@visionengravers.com>
 To: Linux Kernel <linux-kernel@vger.kernel.org>
-Subject: [PATCH] staging: comedi: remove this_board macro in the pcl724 driver
-Date: Tue, 22 May 2012 16:55:37 -0700
+Subject: [PATCH] staging: comedi: remove this_board macro in the pcl726 driver
+Date: Tue, 22 May 2012 16:59:57 -0700
 User-Agent: KMail/1.9.9
 CC: <devel@driverdev.osuosl.org>, <abbotti@mev.co.uk>,
         <fmhess@users.sourceforge.net>, <gregkh@linuxfoundation.org>
@@ -23,7 +23,7 @@ MIME-Version: 1.0
 Content-Type: text/plain; charset="utf-8"
 Content-Transfer-Encoding: 7bit
 Content-Disposition: inline
-Message-ID: <201205221655.37737.hartleys@visionengravers.com>
+Message-ID: <201205221659.58115.hartleys@visionengravers.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -40,95 +40,145 @@ Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
 
-diff --git a/drivers/staging/comedi/drivers/pcl724.c b/drivers/staging/comedi/drivers/pcl724.c
-index 1f66fe1..4136a03 100644
---- a/drivers/staging/comedi/drivers/pcl724.c
-+++ b/drivers/staging/comedi/drivers/pcl724.c
-@@ -67,8 +67,6 @@ struct pcl724_board {
- 	char is_pet48;
+diff --git a/drivers/staging/comedi/drivers/pcl726.c b/drivers/staging/comedi/drivers/pcl726.c
+index d25c30c..e9449bb 100644
+--- a/drivers/staging/comedi/drivers/pcl726.c
++++ b/drivers/staging/comedi/drivers/pcl726.c
+@@ -145,8 +145,6 @@ static const struct pcl726_board boardtypes[] = {
+ 	 &rangelist_728[0],},
  };
  
--#define this_board ((const struct pcl724_board *)dev->board_ptr)
+-#define this_board ((const struct pcl726_board *)dev->board_ptr)
 -
- static int subdev_8255_cb(int dir, int port, int data, unsigned long arg)
- {
- 	unsigned long iobase = arg;
-@@ -100,6 +98,7 @@ static int subdev_8255mapped_cb(int dir, int port, int data,
+ struct pcl726_private {
  
- static int pcl724_attach(struct comedi_device *dev, struct comedi_devconfig *it)
+ 	int bipolar[12];
+@@ -197,11 +195,13 @@ static int pcl726_di_insn_bits(struct comedi_device *dev,
+ 			       struct comedi_subdevice *s,
+ 			       struct comedi_insn *insn, unsigned int *data)
  {
-+	const struct pcl724_board *board = comedi_board(dev);
++	const struct pcl726_board *board = comedi_board(dev);
++
+ 	if (insn->n != 2)
+ 		return -EINVAL;
+ 
+-	data[1] = inb(dev->iobase + this_board->di_lo) |
+-	    (inb(dev->iobase + this_board->di_hi) << 8);
++	data[1] = inb(dev->iobase + board->di_lo) |
++	    (inb(dev->iobase + board->di_hi) << 8);
+ 
+ 	return 2;
+ }
+@@ -210,6 +210,8 @@ static int pcl726_do_insn_bits(struct comedi_device *dev,
+ 			       struct comedi_subdevice *s,
+ 			       struct comedi_insn *insn, unsigned int *data)
+ {
++	const struct pcl726_board *board = comedi_board(dev);
++
+ 	if (insn->n != 2)
+ 		return -EINVAL;
+ 
+@@ -218,9 +220,9 @@ static int pcl726_do_insn_bits(struct comedi_device *dev,
+ 		s->state |= data[0] & data[1];
+ 	}
+ 	if (data[1] & 0x00ff)
+-		outb(s->state & 0xff, dev->iobase + this_board->do_lo);
++		outb(s->state & 0xff, dev->iobase + board->do_lo);
+ 	if (data[1] & 0xff00)
+-		outb((s->state >> 8), dev->iobase + this_board->do_hi);
++		outb((s->state >> 8), dev->iobase + board->do_hi);
+ 
+ 	data[1] = s->state;
+ 
+@@ -229,6 +231,7 @@ static int pcl726_do_insn_bits(struct comedi_device *dev,
+ 
+ static int pcl726_attach(struct comedi_device *dev, struct comedi_devconfig *it)
+ {
++	const struct pcl726_board *board = comedi_board(dev);
+ 	struct comedi_subdevice *s;
  	unsigned long iobase;
  	unsigned int iorange;
- 	int ret, i, n_subdevices;
-@@ -108,12 +107,12 @@ static int pcl724_attach(struct comedi_device *dev, struct comedi_devconfig *it)
+@@ -238,9 +241,9 @@ static int pcl726_attach(struct comedi_device *dev, struct comedi_devconfig *it)
  #endif
  
  	iobase = it->options[0];
 -	iorange = this_board->io_range;
--	if ((this_board->can_have96) && ((it->options[1] == 1)
 +	iorange = board->io_range;
-+	if ((board->can_have96) && ((it->options[1] == 1)
- 					 || (it->options[1] == 96)))
- 		iorange = PCL722_96_SIZE; /* PCL-724 in 96 DIO configuration */
- 	printk(KERN_INFO "comedi%d: pcl724: board=%s, 0x%03lx ", dev->minor,
+ 	printk(KERN_WARNING "comedi%d: pcl726: board=%s, 0x%03lx ", dev->minor,
 -	       this_board->name, iobase);
 +	       board->name, iobase);
- 	if (!request_region(iobase, iorange, "pcl724")) {
- 		printk("I/O port conflict\n");
+ 	if (!request_region(iobase, iorange, "pcl726")) {
+ 		printk(KERN_WARNING "I/O port conflict\n");
  		return -EIO;
-@@ -121,14 +120,14 @@ static int pcl724_attach(struct comedi_device *dev, struct comedi_devconfig *it)
+@@ -248,7 +251,7 @@ static int pcl726_attach(struct comedi_device *dev, struct comedi_devconfig *it)
  
  	dev->iobase = iobase;
  
 -	dev->board_name = this_board->name;
 +	dev->board_name = board->name;
  
- #ifdef PCL724_IRQ
- 	irq = 0;
--	if (this_board->IRQbits != 0) {	/* board support IRQ */
-+	if (board->IRQbits != 0) {	/* board support IRQ */
- 		irq = it->options[1];
- 		if (irq) {	/* we want to use IRQ */
--			if (((1 << irq) & this_board->IRQbits) == 0) {
-+			if (((1 << irq) & board->IRQbits) == 0) {
- 				printk(KERN_WARNING
- 				       ", IRQ %u is out of allowed range, "
- 				       "DISABLING IT", irq);
-@@ -152,8 +151,8 @@ static int pcl724_attach(struct comedi_device *dev, struct comedi_devconfig *it)
+ 	ret = alloc_private(dev, sizeof(struct pcl726_private));
+ 	if (ret < 0)
+@@ -297,23 +300,23 @@ static int pcl726_attach(struct comedi_device *dev, struct comedi_devconfig *it)
+ 	/* ao */
+ 	s->type = COMEDI_SUBD_AO;
+ 	s->subdev_flags = SDF_WRITABLE | SDF_GROUND;
+-	s->n_chan = this_board->n_aochan;
++	s->n_chan = board->n_aochan;
+ 	s->maxdata = 0xfff;
+ 	s->len_chanlist = 1;
+ 	s->insn_write = pcl726_ao_insn;
+ 	s->insn_read = pcl726_ao_insn_read;
+ 	s->range_table_list = devpriv->rangelist;
+-	for (i = 0; i < this_board->n_aochan; i++) {
++	for (i = 0; i < board->n_aochan; i++) {
+ 		int j;
  
- 	printk("\n");
+ 		j = it->options[2 + 1];
+-		if ((j < 0) || (j >= this_board->num_of_ranges)) {
++		if ((j < 0) || (j >= board->num_of_ranges)) {
+ 			printk
+ 			    ("Invalid range for channel %d! Must be 0<=%d<%d\n",
+-			     i, j, this_board->num_of_ranges - 1);
++			     i, j, board->num_of_ranges - 1);
+ 			j = 0;
+ 		}
+-		devpriv->rangelist[i] = this_board->range_type_list[j];
++		devpriv->rangelist[i] = board->range_type_list[j];
+ 		if (devpriv->rangelist[i]->range[0].min ==
+ 		    -devpriv->rangelist[i]->range[0].max)
+ 			devpriv->bipolar[i] = 1;	/* bipolar range */
+@@ -321,7 +324,7 @@ static int pcl726_attach(struct comedi_device *dev, struct comedi_devconfig *it)
  
--	n_subdevices = this_board->numofports;
--	if ((this_board->can_have96) && ((it->options[1] == 1)
-+	n_subdevices = board->numofports;
-+	if ((board->can_have96) && ((it->options[1] == 1)
- 					 || (it->options[1] == 96)))
- 		n_subdevices = 4;	/*  PCL-724 in 96 DIO configuration */
+ 	s = dev->subdevices + 1;
+ 	/* di */
+-	if (!this_board->have_dio) {
++	if (!board->have_dio) {
+ 		s->type = COMEDI_SUBD_UNUSED;
+ 	} else {
+ 		s->type = COMEDI_SUBD_DI;
+@@ -335,7 +338,7 @@ static int pcl726_attach(struct comedi_device *dev, struct comedi_devconfig *it)
  
-@@ -162,7 +161,7 @@ static int pcl724_attach(struct comedi_device *dev, struct comedi_devconfig *it)
- 		return ret;
+ 	s = dev->subdevices + 2;
+ 	/* do */
+-	if (!this_board->have_dio) {
++	if (!board->have_dio) {
+ 		s->type = COMEDI_SUBD_UNUSED;
+ 	} else {
+ 		s->type = COMEDI_SUBD_DO;
+@@ -352,12 +355,14 @@ static int pcl726_attach(struct comedi_device *dev, struct comedi_devconfig *it)
  
- 	for (i = 0; i < dev->n_subdevices; i++) {
--		if (this_board->is_pet48) {
-+		if (board->is_pet48) {
- 			subdev_8255_init(dev, dev->subdevices + i,
- 					 subdev_8255mapped_cb,
- 					 (unsigned long)(dev->iobase +
-@@ -179,6 +178,7 @@ static int pcl724_attach(struct comedi_device *dev, struct comedi_devconfig *it)
- 
- static void pcl724_detach(struct comedi_device *dev)
+ static void pcl726_detach(struct comedi_device *dev)
  {
-+	const struct pcl724_board *board = comedi_board(dev);
- 	int i;
- 
- 	for (i = 0; i < dev->n_subdevices; i++)
-@@ -187,7 +187,7 @@ static void pcl724_detach(struct comedi_device *dev)
++	const struct pcl726_board *board = comedi_board(dev);
++
+ #ifdef ACL6126_IRQ
  	if (dev->irq)
  		free_irq(dev->irq, dev);
  #endif
--	release_region(dev->iobase, this_board->io_range);
-+	release_region(dev->iobase, board->io_range);
+ 	if (dev->iobase)
+-		release_region(dev->iobase, this_board->io_range);
++		release_region(dev->iobase, board->io_range);
  }
  
- static const struct pcl724_board boardtypes[] = {
+ static struct comedi_driver pcl726_driver = {
