@@ -1,87 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758219Ab2EVOn0 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 May 2012 10:43:26 -0400
-Received: from mail-wg0-f42.google.com ([74.125.82.42]:55519 "EHLO
-	mail-wg0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754139Ab2EVOnZ (ORCPT
+	id S1758845Ab2EVOoW (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 May 2012 10:44:22 -0400
+Received: from oproxy7-pub.bluehost.com ([67.222.55.9]:37095 "HELO
+	oproxy7-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1757763Ab2EVOoU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 May 2012 10:43:25 -0400
-Date: Tue, 22 May 2012 16:44:43 +0200
-From: Daniel Vetter <daniel@ffwll.ch>
-To: Zdenek Kabelac <zdenek.kabelac@gmail.com>
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        intel-gfx@lists.freedesktop.org, daniel@ffwll.ch
-Subject: Re: Regression on GMA965 - display seems to have slow jump changes
- in brightness
-Message-ID: <20120522144443.GD4629@phenom.ffwll.local>
-Mail-Followup-To: Zdenek Kabelac <zdenek.kabelac@gmail.com>,
-	Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-	intel-gfx@lists.freedesktop.org
-References: <CAJJYPd=JQdzepw818ZP6OmKK4v38--T+ruKBOG_wn2pUmnVaSw@mail.gmail.com>
- <20120522123058.GB4629@phenom.ffwll.local>
- <CAJJYPdmcJYT1VTnqbkbybut-_NqpFYsuEEzDb9LO-E+ss=wz-g@mail.gmail.com>
+	Tue, 22 May 2012 10:44:20 -0400
+Message-ID: <4FBBA63B.1090401@tao.ma>
+Date: Tue, 22 May 2012 22:44:11 +0800
+From: Tao Ma <tm@tao.ma>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <CAJJYPdmcJYT1VTnqbkbybut-_NqpFYsuEEzDb9LO-E+ss=wz-g@mail.gmail.com>
-X-Operating-System: Linux phenom 3.4.0-rc6+
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Vivek Goyal <vgoyal@redhat.com>
+CC: linux-kernel@vger.kernel.org, Tejun Heo <tj@kernel.org>
+Subject: Re: [RFC] block/throttle: Add IO throttled information in blkcg.
+References: <1337674236-2896-1-git-send-email-tm@tao.ma> <20120522111111.GE3045@redhat.com>
+In-Reply-To: <20120522111111.GE3045@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-Identified-User: {1390:box585.bluehost.com:colyli:tao.ma} {sentby:smtp auth 111.193.1.250 authed with tm@tao.ma}
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, May 22, 2012 at 04:36:30PM +0200, Zdenek Kabelac wrote:
-> 2012/5/22 Daniel Vetter <daniel@ffwll.ch>:
-> > On Tue, May 22, 2012 at 02:08:46PM +0200, Zdenek Kabelac wrote:
-> >> Hi
-> >>
-> >> I've updated to 3.4 kernel, and now I'm noticing slight changes in
-> >> brightness on colorful images.
-> >> It seems the change is mostly visibly on  'darker' images i.e. it's
-> >> not really visible on white background.
-> >>
-> >> When I reboot back to 3.3  kernel - brightness changes are gone - so I
-> >> do not suspect hw fault of my T61 display.
-> >> I guess once in past there has been already such bug, so this problem
-> >> seems to me like reintroducing the same
-> >> problem again.
-> >>
-> >> xorg-x11-server-Xorg-1.12.1-1.fc18.x86_64
-> >> with SNA intel driver build from git repo.
-> >> T61, 965GM
-> >>
-> >> Is this a know issue ?
-> >> Is bisect needed ?
-> >
-> > You're the first one to report things, so a bisect would be highly
-> > appreciated. Also I'm a bit confused about what you mean by 'changing
-> > brightness'. Can you please try to explain this a bit more?
-> >
+Hi Vivek,
+	Thanks for the quick response.
+On 05/22/2012 07:11 PM, Vivek Goyal wrote:
+> On Tue, May 22, 2012 at 04:10:36PM +0800, Tao Ma wrote:
+>> From: Tao Ma <boyu.mt@taobao.com>
+>>
+>> Currently, if the IO is throttled by io-throttle, the SA has no idea of
+>> the situation and can't report it to the real application user about
+>> that he/she has to do something. So this patch adds a new interface
+>> named blkio.throttle.io_throttled which indicates how many IOs are
+>> currently throttled.
 > 
-> I've some default gnome picture like this one:
-> https://lh6.googleusercontent.com/-96ZhFbfLX_M/ThHsm0ZxBgI/AAAAAAAAFQQ/3ApjzYgulso/s400/gnome-3-login-screen.png
+> If the only purpose is to know whether IOs are being throttled, why
+> not just scan for the rules and see if respective device has any
+> throttling rules or not.
+Sorry, but setting a throttling rules doesn't mean the IOs are
+throttled, right? So scanning doesn't work here IMHO.
 > 
-> When I watch the picture for some period of time  I'm noticing slight
-> changes in the picture brightness looking like small change in LUT
-> table or something like that.
-> If the picture is white I'm not noticing any change.
-> (Initially I've thought my display dies - but reboot to 3.3 fixed the
-> issue immediately).
+> Even if you introduce this interface, you will end up scanning for
+> throttled ios against that particular device. And if IO is not happening
+> at that moment or if IO rate is not exceeding the rate limit, there
+> might not be any throttled ios and one might get misled.
+Oh, no actually in a *clound computing* environment, it is really
+useful, not misled. So let me describe it in more detail. Our product
+system will limit every instance to an approximate number at first, and
+then watch out the IOs being throttled. If these numbers is high, it can:
+1) Shout loudly to the application programmer about the abuse if he
+sends out too much IO requests.
+2) If it is not too much and some other instances are not active, adjust
+the throttled ratio so that this instance can work much faster.
 
-"for some period", does that mean it takes you a while to notice the
-changes (because they're tiny), or are the changes happend just rather slowly?
+All these 2 needs to know the throttled status for the cgroup and a
+negative feedback is really useful for the elastic control of IO cgroups.
+> 
+> So for your purpose a better interface sounds like scanning for throttling
+> rules instead of this new interface.
+Sorry, as I have said above, I don't know how to get the current status
+of the throttled IOs.
+> 
+>>
+>> I am not sure whether it is OK to add this information to the generic
+>> blkcg since it is only io-throttle related, but I don't find a way to
+>> only store it into the blkcg io-throttle. And that's the reason this
+>> is only a RFC. Any suggestions? Thanks.
+> 
+> Tejun has changed the code in this area and new code will allow you to
+> introduce this file in blk-throttle.c. All that code is sitting in Jens's
+> block tree.
+Oh, cool, I will check that. Thanks.
 
-> Is there any suspecting patch for this chipset I should try to revert ?
-
-Tbh I have no idea. If there's no changes when the picture is white, it
-can't be the backlight, we haven't frobbed around with the gamma stuff and
-temporal dithering is disabled, too. If you can bisect this it would
-greatly help.
-
-Thanks, Daniel
--- 
-Daniel Vetter
-Mail: daniel@ffwll.ch
-Mobile: +41 (0)79 365 57 48
+Thanks
+Tao
