@@ -1,135 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932093Ab2EVWcQ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 May 2012 18:32:16 -0400
-Received: from mga11.intel.com ([192.55.52.93]:12847 "EHLO mga11.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751748Ab2EVWcM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 May 2012 18:32:12 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
-   d="scan'208";a="155863319"
-Date: Wed, 23 May 2012 00:42:14 +0200
-From: Samuel Ortiz <sameo@linux.intel.com>
-To: Lee Jones <lee.jones@linaro.org>, Linus Walleij <linus.walleij@linaro.org>
-Cc: Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: linux-next: build failure after merge of the mfd tree
-Message-ID: <20120522224214.GG10210@sortiz-mobl>
-References: <20120521134219.6d6396802bd6a097503bac92@canb.auug.org.au>
- <4FB9F818.4030801@linaro.org>
- <20120521184005.3b7661ec6468c5878a22615d@canb.auug.org.au>
- <4FBA0460.1070300@linaro.org>
- <20120521191007.9347651e88add2e7c247a24f@canb.auug.org.au>
- <4FBA08A4.6030706@linaro.org>
- <20120521095427.GA30045@sirena.org.uk>
- <4FBA18C7.4030800@linaro.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4FBA18C7.4030800@linaro.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1756121Ab2EVWeA (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 May 2012 18:34:00 -0400
+Received: from mail.linux-iscsi.org ([67.23.28.174]:50861 "EHLO
+	linux-iscsi.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751748Ab2EVWd6 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 May 2012 18:33:58 -0400
+Subject: [GIT PULL] sbp-target merge for v3.5-rc1
+From: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: target-devel <target-devel@vger.kernel.org>,
+        linux1394-devel <linux1394-devel@lists.sourceforge.net>,
+        linux-scsi <linux-scsi@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>, Chris Boot <bootc@bootc.net>,
+        Stefan Richter <stefanr@s5r6.in-berlin.de>,
+        Clemens Ladisch <clemens@ladisch.de>, Andy Grover <agrover@redhat.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Tue, 22 May 2012 15:33:49 -0700
+Message-ID: <1337726029.22481.116.camel@haakon2.linux-iscsi.org>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Lee,
+Hi Linus,
 
-On Mon, May 21, 2012 at 11:28:23AM +0100, Lee Jones wrote:
-> When CONFIG_AB8500_CORE is set, building ab8500-core.c and
-> !(CONFIG_UX500_SOC_DB8500 | CONFIG_MFD_DB8500_PRCMU), both
-> db8500-prcmu.h and dbx500-prcmu.h take it upon themselves to _both_
-> create 'return 0' inline functions for the following:
-> 
-> prcmu_abb_read()
-> prcmu_abb_write()
-> prcmu_config_clkout()
-> prcmu_ac_wake_req()
-> prcmu_ac_sleep_req()
-> 
-> I think we need a Kconfig rule to prevent this from happening, but
-> I'm not sure what the correct logic would be. 
-Do you want the above routines to be NOOPs when !CONFIG_MFD_DB8500_PRCMU or
-when !CONFIG_UX500_SOC_DB8500 ? It would make more sense to define them as
-NOOP when !CONFIG_MFD_DB8500_PRCMU and remove all those definitions from
-dbx500-prmcu.h
-But I may be missing some of your architecture dependencies.
+Here is the next pull request for Chris Boot's new Serial Block Protocol
+(sbp) target driver for IEEE-1394 (FireWire) hardware.  This code also
+has been in linux-next for a number of weeks, and is ready for an
+initial merge.
 
-Something like that:
+Please pull from:
 
-diff --git a/include/linux/mfd/dbx500-prcmu.h b/include/linux/mfd/dbx500-prcmu.h
-index d7674eb..8515547 100644
---- a/include/linux/mfd/dbx500-prcmu.h
-+++ b/include/linux/mfd/dbx500-prcmu.h
-@@ -366,12 +366,8 @@ static inline void prcmu_get_abb_event_buffer(void __iomem **buf)
- 		db8500_prcmu_get_abb_event_buffer(buf);
- }
- 
--int prcmu_abb_read(u8 slave, u8 reg, u8 *value, u8 size);
--int prcmu_abb_write(u8 slave, u8 reg, u8 *value, u8 size);
- int prcmu_abb_write_masked(u8 slave, u8 reg, u8 *value, u8 *mask, u8 size);
- 
--int prcmu_config_clkout(u8 clkout, u8 source, u8 div);
--
- static inline int prcmu_request_clock(u8 clock, bool enable)
- {
- 	if (cpu_is_u5500())
-@@ -447,8 +443,6 @@ static inline u16 prcmu_get_reset_code(void)
- 		return db8500_prcmu_get_reset_code();
- }
- 
--void prcmu_ac_wake_req(void);
--void prcmu_ac_sleep_req(void);
- static inline void prcmu_modem_reset(void)
- {
- 	if (cpu_is_u5500())
-@@ -611,27 +605,12 @@ static inline void prcmu_enable_wakeups(u32 wakeups) {}
- 
- static inline void prcmu_disable_wakeups(void) {}
- 
--static inline int prcmu_abb_read(u8 slave, u8 reg, u8 *value, u8 size)
--{
--	return -ENOSYS;
--}
--
--static inline int prcmu_abb_write(u8 slave, u8 reg, u8 *value, u8 size)
--{
--	return -ENOSYS;
--}
--
- static inline int prcmu_abb_write_masked(u8 slave, u8 reg, u8 *value, u8 *mask,
- 	u8 size)
- {
- 	return -ENOSYS;
- }
- 
--static inline int prcmu_config_clkout(u8 clkout, u8 source, u8 div)
--{
--	return 0;
--}
--
- static inline int prcmu_request_clock(u8 clock, bool enable)
- {
- 	return 0;
-@@ -689,10 +668,6 @@ static inline u16 prcmu_get_reset_code(void)
- 	return 0;
- }
- 
--static inline void prcmu_ac_wake_req(void) {}
--
--static inline void prcmu_ac_sleep_req(void) {}
--
- static inline void prcmu_modem_reset(void) {}
- 
- static inline bool prcmu_is_ac_wake_requested(void)
+  git://git.kernel.org/pub/scm/linux/kernel/git/nab/target-pending.git sbp-target-merge
 
-I would appreciate if we could have a fix for this one sooner than later as
-I'm planning to send my pull request by the end of this week.
+The FireWire SBP-2 Target is a driver for using an IEEE-1394 connection
+as a SCSI transport. This module uses the SCSI Target framework to
+expose LUNs to other machines attached to a FireWire bus, in effect
+acting as a FireWire hard disk similar to FireWire Target Disk mode
+on many Apple computers.
 
-Cheers,
-Samuel.
+Also included are the two drivers/firewire/ patches required by
+sbp-target to access fw_request fabric speed needed for mgt_agent
+TCODE_WRITE_BLOCK_REQUEST ops, and exporting fw_card kref logic used
+when creating/destroying active session references to individual
+endpoints.
 
--- 
-Intel Open Source Technology Centre
-http://oss.intel.com/
+A credit goes to Chris in being able to get this code up and running so
+quickly w/o any target core changes, and special thanks goes out to
+Stefan Richter + Clemens Ladisch + Andy Grover for their help in getting
+this driver ready for mainline.  Also, one of Chris's goals was to be
+able to connect sbp-target to a PowerPC based MacOS-X based client, that
+he accomplished along the way in this obligatory screenshot:
+
+http://linux-iscsi.org/wiki/File:Linux-fireware-target-bootc-macosx.png
+
+Great work Chris + linux-1394 team !!
+
+--nab
+
+Chris Boot (3):
+  firewire: Add function to get speed from opaque struct fw_request
+  firewire: Move fw_card kref functions into linux/firewire.h
+  sbp-target: Initial merge of firewire/ieee-1394 target mode support
+
+ MAINTAINERS                         |    9 +
+ drivers/firewire/core-card.c        |    1 +
+ drivers/firewire/core-transaction.c |    9 +
+ drivers/firewire/core.h             |   15 -
+ drivers/target/Kconfig              |    1 +
+ drivers/target/Makefile             |    1 +
+ drivers/target/sbp/Kconfig          |   11 +
+ drivers/target/sbp/Makefile         |    1 +
+ drivers/target/sbp/sbp_target.c     | 2621 +++++++++++++++++++++++++++++++++++
+ drivers/target/sbp/sbp_target.h     |  251 ++++
+ include/linux/firewire.h            |   15 +
+ 11 files changed, 2920 insertions(+), 15 deletions(-)
+ create mode 100644 drivers/target/sbp/Kconfig
+ create mode 100644 drivers/target/sbp/Makefile
+ create mode 100644 drivers/target/sbp/sbp_target.c
+ create mode 100644 drivers/target/sbp/sbp_target.h
+
+
