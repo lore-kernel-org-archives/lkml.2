@@ -1,42 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751687Ab2EVEUi (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 May 2012 00:20:38 -0400
-Received: from mail.cfia.or.cr ([190.0.226.202]:34466 "EHLO cfia.or.cr"
-	rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1751379Ab2EVEUg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 May 2012 00:20:36 -0400
-Cc: recipient list not shown:;
-Message-ID: <63746.41.138.171.124.1337658512.squirrel@antiguowebmail.cfia.or.cr>
-Date: Mon, 21 May 2012 21:48:32 -0600 (CST)
-Subject: YOUR MAILBOX MAY BE DELETED (Mailbox Quota Exceeded)
-From: "Admin HelpDesk" <helpdeskwebmaintaaindet@admin.in.th>
-Reply-To: helpdeskwebmaintaaindet@admin.in.th
-User-Agent: SquirrelMail/1.4.6
+	id S1752322Ab2EVEZr (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 May 2012 00:25:47 -0400
+Received: from mail-wi0-f172.google.com ([209.85.212.172]:53205 "EHLO
+	mail-wi0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751375Ab2EVEZp (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 May 2012 00:25:45 -0400
+Date: Tue, 22 May 2012 06:25:34 +0200
+From: Richard Cochran <richardcochran@gmail.com>
+To: John Stultz <john.stultz@linaro.org>
+Cc: linux-kernel@vger.kernel.org, Thomas Gleixner <tglx@linutronix.de>
+Subject: Re: [PATCH RFC V2 4/6] time: introduce leap second functional
+ interface
+Message-ID: <20120522042534.GA2184@netboy.at.omicron.at>
+References: <cover.1337348892.git.richardcochran@gmail.com>
+ <eee0b50afdea829c727d6210afb8299a4cf30981.1337348892.git.richardcochran@gmail.com>
+ <4FBA82DF.9060009@linaro.org>
+ <20120521191844.GC19812@netboy.at.omicron.at>
+ <4FBAA499.1070905@linaro.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
-X-Priority: 3 (Normal)
-Importance: Normal
-To: unlisted-recipients:; (no To-header on input)
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4FBAA499.1070905@linaro.org>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-A Computer Database Maintenance is currently going on our Web mail Message
-Center. Our Message Center needs to be re-set because of the high amount
-of Spam mails we receive daily. As we also suspect some improper
-activities on your mail box so it would not be hack by someone A
-Quarantine Maintenance will help us prevent this everyday dilemma. To
-re-validate your mailbox Please the link below
+On Mon, May 21, 2012 at 01:24:57PM -0700, John Stultz wrote:
+> On 05/21/2012 12:18 PM, Richard Cochran wrote:
+> Hrm.  I prefer to keep things fairly flat (even having time.h and
+> timex.h bugs me somewhat).  But having such a separation could be
+> useful, but maybe at a slightly more coarse level. Something like
+> timekeeping-internal.h and time.h, splitting all the general
+> accessors away from the non-general.
 
-https://docs.google.com/spreadsheet/viewform?formkey=dGt5cmhVTWdVUV8zVXNKMzJlejd4ZVE6MQ
+Yes, time.h is full of stuff not really for public use. When compiling
+on an atom netbook as I do, it gets really noticeable and annoying
+when you tweak some private prototype, and then the whole darn kernel
+rebuilds.
 
-Failure to re-validate your mailbox will render your e-mail in-active
-from our database.
+> The locking order is pretty straight forward: timekeeper.lock ->
+> ntp_lock.   This only gets messy when you require timekeeping data
+> from the ntp context, but usually we provide the required data via
+> the caller.  But better documentation is always welcome.
 
-Thanks
-System Administrator.
+The icky part is the fact that ntp would need access to timekeeper
+state while holding ntp_lock.
 
-
-
+Richard
