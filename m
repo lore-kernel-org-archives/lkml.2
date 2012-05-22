@@ -1,94 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757384Ab2EVCup (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 May 2012 22:50:45 -0400
-Received: from mailout3.samsung.com ([203.254.224.33]:48625 "EHLO
-	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932438Ab2EVCuc (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 May 2012 22:50:32 -0400
-X-AuditID: cbfee61a-b7fe76d0000023f5-9f-4fbafef61c31
-Message-id: <4FBAFEF5.2000207@samsung.com>
-Date: Tue, 22 May 2012 11:50:29 +0900
-From: Minho Ban <mhban@samsung.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:12.0) Gecko/20120430
- Thunderbird/12.0.1
-MIME-version: 1.0
-To: Gustavo Padovan <gustavo@padovan.org>,
-        Marcel Holtmann <marcel@holtmann.org>,
-        Johan Hedberg <johan.hedberg@gmail.com>,
-        "David S. Miller" <davem@davemloft.net>,
-        linux-bluetooth@vger.kernel.org, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [RFC/PATCH] Bluetooth: prevent double l2cap_chan_destroy
-References: <4FB992C8.8090105@samsung.com> <20120521162137.GE16942@joana>
-In-reply-to: <20120521162137.GE16942@joana>
-Content-type: text/plain; charset=ISO-8859-1
-Content-transfer-encoding: 7bit
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrGLMWRmVeSWpSXmKPExsVy+t9jQd1v/3b5G9zYKGox51ofs8XlXXPY
-	LI4tEHNg9vi8SS6AMYrLJiU1J7MstUjfLoEro/nhGtaCY/wV92+/ZWpgvMvdxcjJISFgIrHq
-	4WY2CFtM4sK99UA2F4eQwHRGibcH7zCDJIQE3jJKXJ1Y0cXIwcEroCXReLsYJMwioCoxc9MS
-	sBI2AWWJu89usYLYogJhEq+nHGIBsXkFBCV+TL7HAjJTRKCRSaL5Uz8jSEJYwFWicfMWFoj5
-	nhLbbj8Gi3MKaEvs2HIebBCzgI7E/tZpbBC2vMTmNW+ZJzDyz0IydxaSsllIyhYwMq9iFE0t
-	SC4oTkrPNdQrTswtLs1L10vOz93ECA69Z1I7GFc2WBxiFOBgVOLhvfB9l78Qa2JZcWXuIUYJ
-	DmYlEd5NbUAh3pTEyqrUovz4otKc1OJDjNIcLErivHaLd/gLCaQnlqRmp6YWpBbBZJk4OKUa
-	GKP2+L9sTXvLt97xYVVg+KmTj0Tf82+9ueXW8fnh73fFSQeXBwrJX93W6V33UlHoupXf059z
-	I+NKnwf8m3Fp/s5Lf156xC0O6J5Qde2nVKzFB0ODHTs/dK/tOSYjnCXzxn56oLeeUKrHMZVj
-	dhUPOleoVbf8U9JVbTj8SfmT346NBnF/Jl5e9FaJpTgj0VCLuag4EQCvGuo/OQIAAA==
-X-TM-AS-MML: No
+	id S932869Ab2EVCvq (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 May 2012 22:51:46 -0400
+Received: from ozlabs.org ([203.10.76.45]:54623 "EHLO ozlabs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932849Ab2EVCvm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 21 May 2012 22:51:42 -0400
+From: Michael Neuling <mikey@neuling.org>
+To: David Rientjes <rientjes@google.com>
+cc: Stephen Rothwell <sfr@canb.auug.org.au>,
+        LKML <linux-kernel@vger.kernel.org>, linux-next@vger.kernel.org,
+        ppc-dev <linuxppc-dev@lists.ozlabs.org>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Lee Schermerhorn <lee.schermerhorn@hp.com>,
+        Linus <torvalds@linux-foundation.org>
+Subject: Re: linux-next: PowerPC boot failures in next-20120521
+In-reply-to: <alpine.DEB.2.00.1205211942540.29814@chino.kir.corp.google.com>
+References: <20120522114051.0c9db9a7c2d660bc9e0e1be2@canb.auug.org.au> <328.1337652722@neuling.org> <alpine.DEB.2.00.1205211924390.13682@chino.kir.corp.google.com> <2182.1337654352@neuling.org> <2246.1337654423@neuling.org> <alpine.DEB.2.00.1205211942540.29814@chino.kir.corp.google.com>
+Comments: In-reply-to David Rientjes <rientjes@google.com>
+   message dated "Mon, 21 May 2012 19:44:40 -0700."
+X-Mailer: MH-E 8.2; nmh 1.3; GNU Emacs 23.3.1
+Date: Tue, 22 May 2012 12:51:40 +1000
+Message-ID: <3120.1337655100@neuling.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/22/2012 01:21 AM, Gustavo Padovan wrote:
-> Hi Minho,
+David Rientjes <rientjes@google.com> wrote:
+
+> On Tue, 22 May 2012, Michael Neuling wrote:
 > 
-> * Minho Ban <mhban@samsung.com> [2012-05-21 09:56:40 +0900]:
+> > > > > Trying David's patch just posted doesn't fix it.
+> > > > > 
+> > > > 
+> > > > Hmm, what does CONFIG_DEBUG_VM say?
+> > > 
+> > > No set.
+> > 
+> > Sorry, should have read "Not set"
+> > 
 > 
->> l2cap_sock_kill can be called in l2cap_sock_release and l2cap_sock_close_cb
->> either. This lead l2cap_chan_destroy to be called twice for same channel.
->> To prevent double list_del and double chan_put, chan_destroy should be protected
->> with chan->refcnt and chan_list_lock so that reentrance could be forbidden.
+> I mean if it's set, what does it emit to the kernel log with my patch 
+> applied?
 > 
-> Even if l2cap_sock_kill() is called twice it will call l2cap_chan_destroy()
-> only once. If this is not happening we just have a broken piece of code
-> somewhere else and not here.
-> 
-> 	Gustavo
-> 
+> I made CONFIG_DEBUG_VM catch !node_online(node) about six months ago, so I 
+> was thinking it would have caught this if either you or Stephen enable it.
 
-Thanks for comment but I could not found any suitable code in l2cap_sock_kill that 
-can make l2cap_chan_destroy to be called just once. sock flag test is not enough to 
-do it.
+Sorry, got it... CONFIG_DEBUG_VM enabled below...
 
-I agree this path should not be the fix. Testing chan->refcnt is nonsense because 
-chan might have been freed already. So I looked for another point,
+pid_max: default: 32768 minimum: 301
+Dentry cache hash table entries: 262144 (order: 5, 2097152 bytes)
+Inode-cache hash table entries: 131072 (order: 4, 1048576 bytes)
+Mount-cache hash table entries: 4096
+Initializing cgroup subsys cpuacct
+Initializing cgroup subsys devices
+Initializing cgroup subsys freezer
+POWER7 performance monitor hardware support registered
+------------[ cut here ]------------
+kernel BUG at /scratch/mikey/src/linux-next/include/linux/gfp.h:318!
+Oops: Exception in kernel mode, sig: 5 [#1]
+SMP NR_CPUS=1024 NUMA pSeries
+Modules linked in:
+NIP: c000000000199164 LR: c0000000001993e0 CTR: c0000000000b6b70
+REGS: c00000007e583830 TRAP: 0700   Tainted: G        W     (3.4.0-rc6-mikey)
+MSR: 9000000000029032 <SF,HV,EE,ME,IR,DR,RI>  CR: 28004028  XER: 02000000
+SOFTE: 1
+CFAR: c0000000001993c4
+TASK = c00000007e560000[1] 'swapper/0' THREAD: c00000007e580000 CPU: 0
+GPR00: 0000000000000001 c00000007e583ab0 c000000000c035a0 00000000000012d0 
+GPR04: 0000000000000000 0000000000000001 c000000000e14900 0005055500000001 
+GPR08: 0000000000000001 00000000000012d0 c000000000c6f398 0000000000000001 
+GPR12: 0000000028004022 c00000000ff20000 0000000000000000 0000000000000000 
+GPR16: 0000000000000000 0000000000000000 0000000000001380 0000000000000000 
+GPR20: 0000000000000001 c000000000e14900 c000000000e148f0 0000000000210d00 
+GPR24: 0000000000000001 00000000000000d0 00000000000002aa 0000000000000000 
+GPR28: 00000000000000d0 0000000000000001 c000000000b58fc8 c00000007e021200 
+NIP [c000000000199164] .new_slab+0xb4/0x440
+LR [c0000000001993e0] .new_slab+0x330/0x440
+Call Trace:
+[c00000007e583ab0] [c0000000001993e0] .new_slab+0x330/0x440 (unreliable)
+[c00000007e583b60] [c00000000072ce84] .__slab_alloc+0x3bc/0x52c
+[c00000007e583ca0] [c000000000199b08] .kmem_cache_alloc_node_trace+0x98/0x280
+[c00000007e583d60] [c000000000a5a440] .numa_init+0x9c/0x188
+[c00000007e583e00] [c00000000000aa30] .do_one_initcall+0x60/0x1e0
+[c00000007e583ec0] [c000000000a40b60] .kernel_init+0x128/0x294
+[c00000007e583f90] [c000000000020788] .kernel_thread+0x54/0x70
+Instruction dump:
+7b5b8402 7f6407b4 7c1ce378 7d29e038 7b990020 61291200 79230020 419202b8 
+2b9d00ff 78840020 38000001 409d0240 <0b000000> e95e8140 792977e2 7bab1f24 
+---[ end trace 31fd0ba7d8756002 ]---
 
-@@ -1343,10 +1343,10 @@ static void l2cap_conn_del(struct hci_conn *hcon, int err)
-                l2cap_chan_lock(chan);
- 
-                l2cap_chan_del(chan, err);
-+               chan->ops->close(chan->data);
- 
-                l2cap_chan_unlock(chan);
- 
--               chan->ops->close(chan->data);
-                l2cap_chan_put(chan);
-        }
 
-close callback must locate within chan_lock unless it can be scheduled to other thread 
-which may wait for chan_lock in l2cap_sock_shutdown and this lead to duplicate sock_kill.
-
- static void l2cap_sock_kill(struct sock *sk)
- {
--       if (!sock_flag(sk, SOCK_ZAPPED) || sk->sk_socket)
-+       if (!sock_flag(sk, SOCK_ZAPPED) || sock_flag(sk, SOCK_DEAD) ||
-+                       sk->sk_socket)
-                return;
- 
-        BT_DBG("sk %p state %s", sk, state_to_string(sk->sk_state));
-
-Duplicate sock_kill may happen anyway, need test SOCK_DEAD if chan_destroy is already called.
-
-Regards,
-Minho Ban
