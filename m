@@ -1,300 +1,332 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758496Ab2EVWMl (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 May 2012 18:12:41 -0400
-Received: from mail-yx0-f174.google.com ([209.85.213.174]:41341 "EHLO
-	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755158Ab2EVWMj convert rfc822-to-8bit (ORCPT
+	id S932390Ab2EVWNK (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 May 2012 18:13:10 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:63407 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758079Ab2EVWNH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 May 2012 18:12:39 -0400
+	Tue, 22 May 2012 18:13:07 -0400
+Date: Tue, 22 May 2012 15:12:59 -0700
+From: Tejun Heo <tejun@google.com>
+To: Kent Overstreet <koverstreet@google.com>
+Cc: linux-bcache@vger.kernel.org, linux-kernel@vger.kernel.org,
+        dm-devel@redhat.com, agk@redhat.com
+Subject: Re: [Bcache v13 11/16] bcache: Core btree code
+Message-ID: <20120522221259.GJ14339@google.com>
+References: <cover.1336619038.git.koverstreet@google.com>
+ <7f1de39b6d7040b3fe271500776f4b985b21ea82.1336619038.git.koverstreet@google.com>
 MIME-Version: 1.0
-In-Reply-To: <4FB86BD7.6030304@shikadi.net>
-References: <4F892952.6020409@shikadi.net>
-	<4FB86BD7.6030304@shikadi.net>
-Date: Tue, 22 May 2012 15:12:38 -0700
-Message-ID: <CAF8JNh+fUShE5WMDcOyLfZoU3b06zWB5i43cUJaaA-ELBPgb8Q@mail.gmail.com>
-Subject: Re: [Linuxwacom-devel] [PATCH] Input: wacom - add support for the
- DTI-520 graphics tablet
-From: Ping Cheng <pinglinux@gmail.com>
-To: Adam Nielsen <a.nielsen@shikadi.net>
-Cc: LKML Mailinglist <linux-kernel@vger.kernel.org>,
-        linuxwacom-devel@lists.sourceforge.net,
-        linux-input <linux-input@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <7f1de39b6d7040b3fe271500776f4b985b21ea82.1336619038.git.koverstreet@google.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, May 19, 2012 at 8:58 PM, Adam Nielsen <a.nielsen@shikadi.net> wrote:
-> Add support for the two interfaces provided by the Wacom DTI-520 tablet.  This
-> allows both the tablet itself as well as the hardware buttons to be seen by the
-> kernel.
->
-> Signed-off-by: Adam Nielsen <a.nielsen@shikadi.net>
-> ---
-> Hi all,
->
-> I'm resending this and CC'ing the linuxwacom-devel list as suggested.  There
-> are no changes since the previous post.  This is the kernel code that makes the
-> tablet appear as an input device.
+Hello, Kent.
 
-I don't have the device to test this patch. Just to share my comments
-(inline) based on the code itself. I am cc'ing linux-input, where this
-patch normally goes.
+On Wed, May 09, 2012 at 11:10:48PM -0400, Kent Overstreet wrote:
+> +#define BKEY_PADDED(key)					\
+> +	union { struct bkey key; uint64_t key ## _pad[8]; }
 
-Ping
+What does the '8' mean?  And why does struct bbio use 3 instead?  Does
+this have to be a macro?  Can't we have struct bkey_padded (or
+whatever)?
 
->
-> Cheers,
-> Adam.
->
->  drivers/input/tablet/wacom_sys.c |   13 +++++
->  drivers/input/tablet/wacom_wac.c |  113 +++++++++++++++++++++++++++++++++++++-
->  drivers/input/tablet/wacom_wac.h |    3 +
->  3 files changed, 128 insertions(+), 1 deletion(-)
->
-> diff --git a/drivers/input/tablet/wacom_sys.c b/drivers/input/tablet/wacom_sys.c
-> index 0d26921..5d1e35d 100644
-> --- a/drivers/input/tablet/wacom_sys.c
-> +++ b/drivers/input/tablet/wacom_sys.c
-> @@ -459,6 +459,19 @@ static int wacom_retrieve_hid_descriptor(struct usb_interface *intf,
->        features->y_fuzz = 4;
->        features->pressure_fuzz = 0;
->        features->distance_fuzz = 0;
-> +       features->x_phy = 0;
-> +       features->y_phy = 0;
+> +struct io {
+> +	/* Used to track sequential IO so it can be skipped */
+> +	struct hlist_node	hash;
+> +	struct list_head	lru;
 > +
-> +       /* DTI devices have two interfaces */
-> +       if (features->type == WACOM_DTI) {
-> +               if (interface->desc.bInterfaceNumber == 0) {
-> +                       /* digitizer */
-> +               } else {
-> +                       /* buttons */
-> +                       features->device_type = 0;
-> +                       features->pktlen = WACOM_PKGLEN_DTIBTN;
-> +               }
-> +       }
->
->        /*
->         * The wireless device HID is basic and layout conflicts with
-> diff --git a/drivers/input/tablet/wacom_wac.c b/drivers/input/tablet/wacom_wac.c
-> index cecd35c..f0ada18 100644
-> --- a/drivers/input/tablet/wacom_wac.c
-> +++ b/drivers/input/tablet/wacom_wac.c
-> @@ -1073,6 +1073,80 @@ static int wacom_wireless_irq(struct wacom_wac *wacom, size_t len)
->        return 0;
->  }
->
-> +static int wacom_dti_pen(struct wacom_wac *wacom)
+> +	unsigned long		jiffies;
+> +	unsigned		sequential;
+> +	sector_t		last;
+> +};
+
+I don't think bcache can have struct io. :P
+
+> +struct dirty_io {
+> +	struct closure		cl;
+> +	struct cached_dev	*d;
+> +	struct bio		bio;
+> +};
+> +
+> +struct dirty {
+> +	struct rb_node		node;
+> +	BKEY_PADDED(key);
+> +	struct dirty_io		*io;
+> +};
+...
+> +struct cache {
+
+Nor these and so on.
+
+> +/* Bkey fields: all units are in sectors */
+> +
+> +#define KEY_FIELD(name, field, offset, size)				\
+> +	BITMASK(name, struct bkey, field, offset, size)
+> +
+> +#define PTR_FIELD(name, offset, size)					\
+> +	static inline uint64_t name(const struct bkey *k, unsigned i)	\
+> +	{ return (k->ptr[i] >> offset) & ~(((uint64_t) ~0) << size); }	\
+> +									\
+> +	static inline void SET_##name(struct bkey *k, unsigned i, uint64_t v)\
+> +	{								\
+> +		k->ptr[i] &= ~(~((uint64_t) ~0 << size) << offset);	\
+> +		k->ptr[i] |= v << offset;				\
+> +	}
+> +
+> +KEY_FIELD(KEY_PTRS,	header, 60, 3)
+> +KEY_FIELD(HEADER_SIZE,	header, 58, 2)
+> +KEY_FIELD(KEY_CSUM,	header, 56, 2)
+> +KEY_FIELD(KEY_PINNED,	header, 55, 1)
+> +KEY_FIELD(KEY_DIRTY,	header, 36, 1)
+> +
+> +KEY_FIELD(KEY_SIZE,	header, 20, 16)
+> +KEY_FIELD(KEY_DEV,	header, 0,  20)
+> +
+> +KEY_FIELD(KEY_SECTOR,	key,	16, 47)
+> +KEY_FIELD(KEY_SNAPSHOT,	key,	0,  16)
+> +
+> +PTR_FIELD(PTR_DEV,		51, 12)
+> +PTR_FIELD(PTR_OFFSET,		8,  43)
+> +PTR_FIELD(PTR_GEN,		0,  8)
+
+So, apart from the the macros, key is 64bit containing the backend
+device and extent offset and size with the ptr fields somehow point to
+cache.  Am I understanding it correctly?  If right, I'm *tiny* bit
+apprehensive about using only 43bits for offset.  While the block 9
+bits means 52bit addressing, the 9 bit block size is now there mostly
+to work as buffer between memory bitness growth and storage device
+size growth so that we have 9 bit buffer as storage device reaches
+ulong addressing limit.  Probably those days are far out enough.
+
+> +void btree_read_done(struct closure *cl)
 > +{
-> +       struct wacom_features *features = &wacom->features;
-> +       char *data = wacom->data;
-> +       struct input_dev *input = wacom->input;
-> +       int pressure;
-> +       bool prox = data[1] & 0x40;
+> +	struct btree *b = container_of(cl, struct btree, io.cl);
+> +	struct bset *i = b->sets[0].data;
+> +	struct btree_iter *iter = b->c->fill_iter;
+> +	const char *err = "bad btree header";
+> +	BUG_ON(b->nsets || b->written);
 > +
-> +       if (data[0] != WACOM_REPORT_PENABLED) {
-> +               dbg("wacom_dti_pen: received unknown report #%d", data[0]);
-> +               return 0;
-> +       }
+> +	bbio_free(b->bio, b->c);
+> +	b->bio = NULL;
 > +
-> +       input_report_key(input, wacom->tool[0], prox);
+> +	mutex_lock(&b->c->fill_lock);
+> +	iter->used = 0;
+> +
+> +	if (btree_node_io_error(b) ||
+> +	    !i->seq)
+> +		goto err;
+> +
+> +	for (;
+> +	     b->written < btree_blocks(b) && i->seq == b->sets[0].data->seq;
+> +	     i = write_block(b)) {
+> +		err = "unsupported bset version";
+> +		if (i->version > BCACHE_BSET_VERSION)
+> +			goto err;
+> +
+> +		err = "bad btree header";
+> +		if (b->written + set_blocks(i, b->c) > btree_blocks(b))
+> +			goto err;
+> +
+> +		err = "bad magic";
+> +		if (i->magic != bset_magic(b->c))
+> +			goto err;
+> +
+> +		err = "bad checksum";
+> +		switch (i->version) {
+> +		case 0:
+> +			if (i->csum != csum_set(i))
+> +				goto err;
+> +			break;
+> +		case BCACHE_BSET_VERSION:
+> +			if (i->csum != btree_csum_set(b, i))
+> +				goto err;
+> +			break;
+> +		}
+> +
+> +		err = "empty set";
+> +		if (i != b->sets[0].data && !i->keys)
+> +			goto err;
+> +
+> +		btree_iter_push(iter, i->start, end(i));
+> +
+> +		b->written += set_blocks(i, b->c);
+> +	}
+> +
+> +	err = "corrupted btree";
+> +	for (i = write_block(b);
+> +	     index(i, b) < btree_blocks(b);
+> +	     i = ((void *) i) + block_bytes(b->c))
+> +		if (i->seq == b->sets[0].data->seq)
+> +			goto err;
+> +
+> +	btree_sort_and_fix_extents(b, iter);
+> +
+> +	i = b->sets[0].data;
+> +	err = "short btree key";
+> +	if (b->sets[0].size &&
+> +	    bkey_cmp(&b->key, &b->sets[0].end) < 0)
+> +		goto err;
+> +
+> +	if (b->written < btree_blocks(b))
+> +		bset_init_next(b);
+> +
+> +	if (0) {
+> +err:		set_btree_node_io_error(b);
+> +		cache_set_error(b->c, "%s at bucket %lu, block %zu, %u keys",
+> +				err, PTR_BUCKET_NR(b->c, &b->key, 0),
+> +				index(i, b), i->keys);
+> +	}
 
-The line above should  be after the if statement below. Otherwise
-wacom->tool can be uninitialized.
+Please don't do that.  Just define out: label, move error specific
+path to the end of the function and jump to out at the end of that.
 
 > +
-> +       if (prox) {
-> +               wacom->tool[0] = BTN_TOOL_PEN;
-> +               wacom->id[0] = STYLUS_DEVICE_ID;
-> +       }
-> +       if (wacom->id[0]) {
-> +               input_report_key(input, BTN_STYLUS, data[7] & 0x01);
-> +               input_report_key(input, BTN_STYLUS2, data[7] & 0x02);
-> +               input_report_abs(input, ABS_X, be16_to_cpup((__be16 *)&data[2]));
-> +               input_report_abs(input, ABS_Y, be16_to_cpup((__be16 *)&data[4]));
-> +               pressure = (data[6] << 1) | ((data[7] & 0x80) >> 7);
-> +               if (pressure < 0)
-> +                       pressure = features->pressure_max + pressure + 1;
-> +               input_report_abs(input, ABS_PRESSURE, pressure);
-
-Need tp post wacom->id[0] through ABS_MISC here.
-
+> +	mutex_unlock(&b->c->fill_lock);
 > +
-> +               return 1;
-> +       }
+> +	spin_lock(&b->c->btree_read_time_lock);
+> +	time_stats_update(&b->c->btree_read_time, b->io_start_time);
+> +	spin_unlock(&b->c->btree_read_time_lock);
 > +
-> +       if (!prox)
-> +               wacom->id[0] = 0;
-
-This short if block should be inside the long if block above.
-
+> +	smp_wmb(); /* read_done is our write lock */
+> +	set_btree_node_read_done(b);
 > +
-> +       return 0;
+> +	closure_return(cl);
 > +}
 > +
-> +static int wacom_dti_pad(struct wacom_wac *wacom)
+> +static void btree_read_resubmit(struct closure *cl)
 > +{
-> +       char *data = wacom->data;
-> +       struct input_dev *input = wacom->input;
+> +	struct btree *b = container_of(cl, struct btree, io.cl);
 > +
-> +       if (data[0] == WACOM_REPORT_DTIBTN) {
-> +               input_report_key(input, BTN_3, data[1] & 0x01); /* up */
-> +               input_report_key(input, BTN_4, data[1] & 0x02); /* down */
-> +               input_report_key(input, BTN_0, data[1] & 0x04); /* L */
-> +               input_report_key(input, BTN_2, data[1] & 0x08); /* R */
-> +               input_report_key(input, BTN_1, data[1] & 0x10); /* both Ctrl */
-
-Looks like we could define default vaules for those buttons.
-
-> +
-> +               /* Buttons along the top of the display */
-> +               input_report_key(input, BTN_7, data[2] & 0x01);
-> +               input_report_key(input, BTN_5, data[2] & 0x02);
-> +               input_report_key(input, BTN_6, data[2] & 0x04);
-> +               input_report_key(input, BTN_8, data[2] & 0x08);
-> +               input_report_key(input, BTN_9, data[2] & 0x10);
-> +
-> +               return 1;
-> +       }
-> +
-> +       dbg("wacom_dti_pad: received unknown report #%d", data[0]);
-> +       return 0;
+> +	submit_bbio_split(b->bio, b->c, &b->key, 0);
+> +	continue_at(&b->io.cl, btree_read_done, system_wq);
 > +}
-> +
-> +static int wacom_dti_irq(struct wacom_wac *wacom, size_t len)
+
+I suppose submit_bbio_split() can't fail here somehow unlike from
+btree_read() path?  If so, please add a comment to explain and maybe
+WARN_ON_ONCE() on failure.  Subtlety to comment ratio is *way* off.
+
+> +static struct btree *mca_bucket_alloc(struct cache_set *c,
+> +				      struct bkey *k, gfp_t gfp)
 > +{
-> +       if (len == WACOM_PKGLEN_GRAPHIRE)
-> +               return wacom_dti_pen(wacom);
-> +       else if (len == WACOM_PKGLEN_DTIBTN)
-> +               return wacom_dti_pad(wacom);
+> +	struct btree *b = kzalloc(sizeof(struct btree), gfp);
+> +	if (!b)
+> +		return NULL;
 > +
-> +       return 0;
+> +	init_rwsem(&b->lock);
+> +	INIT_LIST_HEAD(&b->list);
+> +	INIT_DELAYED_WORK(&b->work, btree_write_work);
+> +	b->c = c;
+> +	closure_init_unlocked(&b->io);
+> +
+> +	mca_data_alloc(b, k, gfp);
+> +	return b->sets[0].data ? b : NULL;
 > +}
-> +
->  void wacom_wac_irq(struct wacom_wac *wacom_wac, size_t len)
->  {
->        bool sync;
-> @@ -1127,6 +1201,10 @@ void wacom_wac_irq(struct wacom_wac *wacom_wac, size_t len)
->                sync = wacom_wireless_irq(wacom_wac, len);
->                break;
->
-> +       case WACOM_DTI:
-> +               sync = wacom_dti_irq(wacom_wac, len);
-> +               break;
-> +
->        default:
->                sync = false;
->                break;
-> @@ -1241,7 +1319,7 @@ void wacom_setup_input_capabilities(struct input_dev *input_dev,
->                /* penabled devices have fixed resolution for each model */
->                input_abs_set_res(input_dev, ABS_X, features->x_resolution);
->                input_abs_set_res(input_dev, ABS_Y, features->y_resolution);
-> -       } else {
-> +       } else if ((features->x_phy > 0) && (features->y_phy > 0)) {
->                input_abs_set_res(input_dev, ABS_X,
->                        wacom_calculate_touch_res(features->x_max,
->                                                features->x_phy));
-> @@ -1404,6 +1482,35 @@ void wacom_setup_input_capabilities(struct input_dev *input_dev,
->                __set_bit(INPUT_PROP_DIRECT, input_dev->propbit);
->                break;
->
-> +       case WACOM_DTI:
-> +               __clear_bit(ABS_MISC, input_dev->absbit);
 
-Why do we clear ABS_MISC for pen tool?
+mca_data_alloc() failure path seems like a resource leak but it isn't
+because mca_data_alloc() puts it in free list.  Is the extra level of
+caching necessary?  How is it different from sl?b allocator cache?
+And either way, comments please.
 
-> +               switch (features->device_type) {
-> +               case BTN_TOOL_PEN:
-> +                       __set_bit(BTN_TOOL_PEN, input_dev->keybit);
-> +                       __set_bit(BTN_STYLUS, input_dev->keybit);
-> +                       __set_bit(BTN_STYLUS2, input_dev->keybit);
+> +static int mca_reap(struct btree *b, struct closure *cl)
+> +{
+> +	lockdep_assert_held(&b->c->bucket_lock);
 > +
-> +                       __set_bit(INPUT_PROP_DIRECT, input_dev->propbit);
-> +                       break;
+> +	if (!down_write_trylock(&b->lock))
+> +		return -1;
 > +
-> +               case 0:
-> +                       __set_bit(BTN_0, input_dev->keybit);
-> +                       __set_bit(BTN_1, input_dev->keybit);
-> +                       __set_bit(BTN_2, input_dev->keybit);
-> +                       __set_bit(BTN_3, input_dev->keybit);
-> +                       __set_bit(BTN_4, input_dev->keybit);
+> +	BUG_ON(btree_node_dirty(b) && !b->sets[0].data);
 > +
-> +                       __set_bit(BTN_5, input_dev->keybit);
-> +                       __set_bit(BTN_6, input_dev->keybit);
-> +                       __set_bit(BTN_7, input_dev->keybit);
-> +                       __set_bit(BTN_8, input_dev->keybit);
-> +                       __set_bit(BTN_9, input_dev->keybit);
+> +	if (cl && btree_node_dirty(b))
+> +		btree_write(b, true, NULL);
 > +
-> +                       __clear_bit(BTN_TOUCH, input_dev->keybit);
+> +	if (cl)
+> +		closure_wait_event_async(&b->io.wait, cl,
+> +			 atomic_read(&b->io.cl.remaining) == -1);
+> +
+> +	if (btree_node_dirty(b) ||
+> +	    atomic_read(&b->io.cl.remaining) != -1 ||
+> +	    work_pending(&b->work.work)) {
+> +		rw_unlock(true, b);
+> +		return -EAGAIN;
+> +	}
+> +
+> +	return 0;
+> +}
 
-This interface does not support ABS_X and ABS_Y either, right? Do we
-need a tool type for this button box?
+Mixing -1 and -EAGAIN returns usually isn't a good idea.
 
-> +                       break;
-> +               }
-> +               break;
+> +static struct btree *alloc_bucket(struct cache_set *c, struct bkey *k,
+> +				  int level, struct closure *cl)
+> +{
+> +	struct btree *b, *i;
+> +	unsigned page_order = ilog2(KEY_SIZE(k) / PAGE_SECTORS ?: 1);
 > +
->        case PTU:
->                __set_bit(BTN_STYLUS2, input_dev->keybit);
->                /* fall through */
-> @@ -1566,6 +1673,9 @@ static const struct wacom_features wacom_features_0x38 =
->  static const struct wacom_features wacom_features_0x39 =
->        { "Wacom DTU710",         WACOM_PKGLEN_GRAPHIRE,  34080, 27660,  511,
->          0, PL, WACOM_PL_RES, WACOM_PL_RES };
-> +static const struct wacom_features wacom_features_0x3A =
-> +       { "Wacom DTI520UB/L",     WACOM_PKGLEN_GRAPHIRE,   6282,  4762,  511,
-> +         0, WACOM_DTI, WACOM_PL_RES, WACOM_PL_RES };
->  static const struct wacom_features wacom_features_0xC4 =
->        { "Wacom DTF521",         WACOM_PKGLEN_GRAPHIRE,   6282,  4762,  511,
->          0, PL, WACOM_PL_RES, WACOM_PL_RES };
-> @@ -1780,6 +1890,7 @@ const struct usb_device_id wacom_ids[] = {
->        { USB_DEVICE_WACOM(0x37) },
->        { USB_DEVICE_WACOM(0x38) },
->        { USB_DEVICE_WACOM(0x39) },
-> +       { USB_DEVICE_WACOM(0x3A) },
->        { USB_DEVICE_WACOM(0xC4) },
->        { USB_DEVICE_WACOM(0xC0) },
->        { USB_DEVICE_WACOM(0xC2) },
-> diff --git a/drivers/input/tablet/wacom_wac.h b/drivers/input/tablet/wacom_wac.h
-> index ba5a334..008aa12 100644
-> --- a/drivers/input/tablet/wacom_wac.h
-> +++ b/drivers/input/tablet/wacom_wac.h
-> @@ -15,6 +15,7 @@
->  #define WACOM_PKGLEN_MAX       64
->
->  /* packet length for individual models */
-> +#define WACOM_PKGLEN_DTIBTN     3
->  #define WACOM_PKGLEN_PENPRTN    7
->  #define WACOM_PKGLEN_GRAPHIRE   8
->  #define WACOM_PKGLEN_BBFUN      9
-> @@ -35,6 +36,7 @@
->
->  /* wacom data packet report IDs */
->  #define WACOM_REPORT_PENABLED          2
-> +#define WACOM_REPORT_DTIBTN            4
->  #define WACOM_REPORT_INTUOSREAD                5
->  #define WACOM_REPORT_INTUOSWRITE       6
->  #define WACOM_REPORT_INTUOSPAD         12
-> @@ -72,6 +74,7 @@ enum {
->        WACOM_MO,
->        TABLETPC,
->        TABLETPC2FG,
-> +       WACOM_DTI,
->        MAX_TYPE
->  };
->
-> -- 1.7.10
->
->
-> ------------------------------------------------------------------------------
-> Live Security Virtual Conference
-> Exclusive live event will cover all the ways today's security and
-> threat landscape has changed and how IT managers can respond. Discussions
-> will include endpoint security, mobile security and the latest in malware
-> threats. http://www.accelacomm.com/jaw/sfrnl04242012/114/50122263/
-> _______________________________________________
-> Linuxwacom-devel mailing list
-> Linuxwacom-devel@lists.sourceforge.net
-> https://lists.sourceforge.net/lists/listinfo/linuxwacom-devel
+> +	lockdep_assert_held(&c->bucket_lock);
+> +retry:
+> +	if (find_bucket(c, k))
+> +		return NULL;
+> +
+> +	/* btree_free() doesn't free memory; it sticks the node on the end of
+> +	 * the list. Check if there's any freed nodes there:
+> +	 */
+> +	list_for_each_entry(b, &c->btree_cache_freeable, list)
+> +		if (page_order <= b->page_order &&
+> +		    !b->key.ptr[0] &&
+> +		    !mca_reap(b, NULL))
+> +			goto out;
+> +
+> +	/* We never free struct btree itself, just the memory that holds the on
+> +	 * disk node. Check the freed list before allocating a new one:
+> +	 */
+> +	list_for_each_entry(b, &c->btree_cache_freed, list)
+> +		if (!mca_reap(b, NULL)) {
+> +			mca_data_alloc(b, k, __GFP_NOWARN|GFP_NOIO);
+> +			if (!b->sets[0].data) {
+> +				rw_unlock(true, b);
+> +				goto err;
+> +			} else
+> +				goto out;
+> +		}
+> +
+> +	b = mca_bucket_alloc(c, k, __GFP_NOWARN|GFP_NOIO);
+> +	if (!b)
+> +		goto err;
+> +
+> +	BUG_ON(!down_write_trylock(&b->lock));
+> +out:
+> +	BUG_ON(!closure_is_unlocked(&b->io.cl));
+> +
+> +	bkey_copy(&b->key, k);
+> +	list_move(&b->list, &c->btree_cache);
+> +	hlist_del_init_rcu(&b->hash);
+> +	hlist_add_head_rcu(&b->hash, hash_bucket(c, k));
+> +	lock_set_subclass(&b->lock.dep_map, level + 1, _THIS_IP_);
+> +
+> +	b->flags	= 0;
+> +	b->level	= level;
+> +	b->written	= 0;
+> +	b->nsets	= 0;
+> +	for (int i = 0; i < MAX_BSETS; i++)
+> +		b->sets[i].size = 0;
+> +	for (int i = 1; i < MAX_BSETS; i++)
+> +		b->sets[i].data = NULL;
+
+Why separate loops?
+
+> +
+> +	return b;
+> +err:
+> +	if (current->bio_list)
+> +		return ERR_PTR(-EAGAIN);
+
+What does this test do?
+
+Thanks.
+
+-- 
+tejun
