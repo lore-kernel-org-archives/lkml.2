@@ -1,62 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760307Ab2EVTbG (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 May 2012 15:31:06 -0400
-Received: from smtp.eu.citrix.com ([62.200.22.115]:54984 "EHLO
-	SMTP.EU.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752823Ab2EVTbE (ORCPT
+	id S1760319Ab2EVTlF (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 May 2012 15:41:05 -0400
+Received: from shards.monkeyblade.net ([198.137.202.13]:50274 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753253Ab2EVTlD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 May 2012 15:31:04 -0400
-X-IronPort-AV: E=Sophos;i="4.75,639,1330905600"; 
-   d="scan'208";a="12611983"
-Message-ID: <1337715028.3991.2.camel@dagon.hellion.org.uk>
+	Tue, 22 May 2012 15:41:03 -0400
+Date: Tue, 22 May 2012 15:38:47 -0400 (EDT)
+Message-Id: <20120522.153847.2107186222464601466.davem@davemloft.net>
+To: Ian.Campbell@citrix.com
+Cc: marmarek@invisiblethingslab.com, jeremy@goop.org, konrad.wilk@oracle.com,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        virtualization@lists.linux-foundation.org, xen-devel@lists.xen.org
 Subject: Re: [Xen-devel] [PATCH] xen: do not disable netfront in dom0
-From: Ian Campbell <Ian.Campbell@citrix.com>
-To: David Miller <davem@davemloft.net>
-CC: "marmarek@invisiblethingslab.com" <marmarek@invisiblethingslab.com>,
-        "jeremy@goop.org" <jeremy@goop.org>,
-        "konrad.wilk@oracle.com" <konrad.wilk@oracle.com>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "virtualization@lists.linux-foundation.org" 
-	<virtualization@lists.linux-foundation.org>,
-        "xen-devel@lists.xen.org" <xen-devel@lists.xen.org>
-Date: Tue, 22 May 2012 20:30:28 +0100
-In-Reply-To: <20120522.151354.2131168749992255398.davem@davemloft.net>
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <1337715028.3991.2.camel@dagon.hellion.org.uk>
 References: <20120522130558.D828E6C7@duch.mimuw.edu.pl>
-	 <20120522.151354.2131168749992255398.davem@davemloft.net>
-Organization: Citrix Systems, Inc.
-Content-Type: text/plain; charset="ISO-8859-1"
-X-Mailer: Evolution 3.2.2-1 
+	<20120522.151354.2131168749992255398.davem@davemloft.net>
+	<1337715028.3991.2.camel@dagon.hellion.org.uk>
+X-Mailer: Mew version 6.5 on Emacs 24.0.95 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
 Content-Transfer-Encoding: 7bit
-MIME-Version: 1.0
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.6 (shards.monkeyblade.net [198.137.202.13]); Tue, 22 May 2012 12:38:49 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2012-05-22 at 20:13 +0100, David Miller wrote:
-> From: Marek Marczykowski <marmarek@invisiblethingslab.com>
-> Date: Sun, 20 May 2012 13:45:10 +0200
+From: Ian Campbell <Ian.Campbell@citrix.com>
+Date: Tue, 22 May 2012 20:30:28 +0100
+
+> On Tue, 2012-05-22 at 20:13 +0100, David Miller wrote:
+>> From: Marek Marczykowski <marmarek@invisiblethingslab.com>
+>> Date: Sun, 20 May 2012 13:45:10 +0200
+>> 
+>> > Netfront driver can be also useful in dom0, eg when all NICs are assigned to
+>> > some domU (aka driver domain). Then using netback in domU and netfront in dom0
+>> > is the only way to get network access in dom0.
+>> > 
+>> > Signed-off-by: Marek Marczykowski <marmarek@invisiblethingslab.com>
+>> 
+>> Someone please review this and I can merge it in via the 'net' tree if
+>> it looks OK to XEN folks.
 > 
-> > Netfront driver can be also useful in dom0, eg when all NICs are assigned to
-> > some domU (aka driver domain). Then using netback in domU and netfront in dom0
-> > is the only way to get network access in dom0.
-> > 
-> > Signed-off-by: Marek Marczykowski <marmarek@invisiblethingslab.com>
+> Konrad is "Xen folks" and has acked it already but FWIW:
 > 
-> Someone please review this and I can merge it in via the 'net' tree if
-> it looks OK to XEN folks.
+> Acked-by: Ian Campbell <ian.campbell@citrix.com>
 
-Konrad is "Xen folks" and has acked it already but FWIW:
-
-Acked-by: Ian Campbell <ian.campbell@citrix.com>
-
-Ian.
-
-> 
-> _______________________________________________
-> Xen-devel mailing list
-> Xen-devel@lists.xen.org
-> http://lists.xen.org/xen-devel
-
-
+Ok, but this patch doesn't appply cleanly at all to Linus's
+current tree nor my 'net' tree (which are equal right now).
