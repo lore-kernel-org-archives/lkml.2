@@ -1,82 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759695Ab2EVCRR (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 May 2012 22:17:17 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:50192 "EHLO
-	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1759673Ab2EVCRO (ORCPT
+	id S1759652Ab2EVCTZ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 May 2012 22:19:25 -0400
+Received: from mailbackup.inode.at ([213.229.60.24]:41281 "EHLO
+	mailbackup.inode.at" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753290Ab2EVCTY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 May 2012 22:17:14 -0400
-Message-ID: <1337653025.11796.2.camel@deadeye>
-Subject: Re: [3.0.y, 3.2.y, 3.3.y] Re: [PATCH 05/10] hpsa: Fix problem with
- MSA2xxx devices
-From: Ben Hutchings <ben@decadent.org.uk>
-To: Jonathan Nieder <jrnieder@gmail.com>
-Cc: stable@vger.kernel.org, "Stephen M. Cameron" <scameron@beardog.cce.hp.com>,
-        Steven Williamson <steven.williamson@dialogue.net>,
-        james.bottomley@hansenpartnership.com, linux-scsi@vger.kernel.org,
-        linux-kernel@vger.kernel.org, mikem@beardog.cce.hp.com,
-        stephenmcameron@gmail.com, thenzl@redhat.com, scott.teel@hp.com,
-        akpm@linux-foundation.org
-Date: Tue, 22 May 2012 03:17:05 +0100
-In-Reply-To: <20120520094735.GA14683@burratino>
-References: <20120119200042.17835.93058.stgit@beardog.cce.hp.com>
-	 <20120119200104.17835.29536.stgit@beardog.cce.hp.com>
-	 <20120520094735.GA14683@burratino>
-Content-Type: multipart/signed; micalg="pgp-sha512";
-	protocol="application/pgp-signature"; boundary="=-J/CWpTE1vatgI4/Vx2YS"
-X-Mailer: Evolution 3.2.2-1+b1 
-Mime-Version: 1.0
-X-SA-Exim-Connect-IP: 192.168.4.185
-X-SA-Exim-Mail-From: ben@decadent.org.uk
-X-SA-Exim-Scanned: No (on shadbolt.decadent.org.uk); SAEximRunCond expanded to false
+	Mon, 21 May 2012 22:19:24 -0400
+Message-ID: <4FBAF76B.8060704@reinelt.co.at>
+Date: Tue, 22 May 2012 04:18:19 +0200
+From: Michael Reinelt <michael@reinelt.co.at>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; de-AT; rv:1.8.0.7) Gecko/20061013 Thunderbird/1.5.0.7 Mnenhy/0.7.4.666
+MIME-Version: 1.0
+To: lkml <linux-kernel@vger.kernel.org>
+Subject: Re: MTRR cleanup does not kick in
+References: <4F6430F7.70207@reinelt.co.at>
+In-Reply-To: <4F6430F7.70207@reinelt.co.at>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hello all,
 
---=-J/CWpTE1vatgI4/Vx2YS
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: quoted-printable
+may I draw your attention again to this issue?
 
-On Sun, 2012-05-20 at 04:47 -0500, Jonathan Nieder wrote:
-> Hi Greg and Ben,
->=20
-> Please consider
->=20
->   9bc3711cbb67 [SCSI] hpsa: Fix problem with MSA2xxx devices
->=20
-> for application to next week's 3.0.y, 3.2.y, and 3.3.y trees.
-[...]
+I just run linux-3.4.0, seems to have still this problem (where I am not sure if this is a problem at all)
 
-Added to the queue for 3.2.y, thanks.
+regards, Michael
 
-Ben.
+Am 2012-03-17 07:36, schrieb Michael Reinelt:
+> Hi there,
+>
+> I am (again) suffering from:
+> kernel: mtrr: no more MTRRs available
+> kernel: [drm] MTRR allocation failed.  Graphics performance may suffer.
+>
+> kernel is vanilla 3.2.11
+>
+> I know that this *used* to work, but I had to specify mtrr_gran_size=16M mtrr_chunk_size=128M on the kernel command line.
+>
+> Now, with the current kernel, I could not find *any* MTRR cleanup debug messages at all.
+>
+> I debugged a bit, and probably found the cause:
+>
+> arch/x86/kernel/cpu/mtrr/cleanup.c:mtrr_need_cleanup(void)
+>
+> /* Check if we only had WB and UC */
+> if (num[MTRR_TYPE_WRBACK] + num[MTRR_TYPE_UNCACHABLE] !=
+>     num_var_ranges - num[MTRR_NUM_TYPES])
+>     return 0;
+>
+> This one kicks in, and disables the MTRR cleanup, resulting in all 10 MTRR registers in use, and no more MTRRs 
+> available for DRM.
+>
+> I disabled this check, and now the MTRR cleaner works fine, even finding a optimal value for my system with only 9 
+> registers, leaving one available for DRM.
+>
+>
+> maybe the mtrr_need_cleanup() function should take nr_mtrr_spare_reg into account?
+>
+>
+>
+>
+> regards, Michael
+>
+> PS please keep me on CC as I'm not subscribed. thanks!
+>
 
---=20
-Ben Hutchings
-You can't have everything.  Where would you put it?
+-- 
+Michael Reinelt<michael@reinelt.co.at>
+http://home.pages.at/reinelt
+GPG-Key 0xDF13BA50
+ICQ #288386781
 
---=-J/CWpTE1vatgI4/Vx2YS
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: This is a digitally signed message part
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIVAwUAT7r3Iee/yOyVhhEJAQpStA//V5ab8dHTLGGUFxokIMYLHgK+ofMmhvXi
-1IH5CHNPyITgcphXMQQAd0Lp5Vz6IMWta8vY5ikniukqIrzBM1EDS+zMUDW958EK
-nLlSNGO8Q91+psAheiWiFJTiquPuv/kEIDoHEJDv+lEDAjPqKC6bKOYRSyPtjt//
-Cy9jzoBlGEMPafnvnbwdQMq9reDZOd2jObFmnQ9kZJlb/VAmEvu9q3UPYhxboUyF
-I7xGMttxsF4+s9ErZWoTbMITXFAsxToocMhkjUhK8e3Tz9xLfql9+6Y0PbUBhuYR
-5G2ofovOJuHCuEZ0AeXTNYiZrznXOKI1MCX5CO+8JWkY8MSLdYghMA9xp5b9PKKU
-oSKciYFwzfSugBCwjOfRzRBLjpckxDy8VJd4MRj0NYY3KacgIX3Lvm2Qjs/oUELY
-RwkCsJKVLLSrlj7tEs05sACWZ//dbs/Iiw6IQSZ7K+TbueFunHOKSfvl/tbNHhVt
-WL6m7oO5o+RLn0QHYiLp4oCthTAEAixPrfUjtw7t42R1ZOBsVQn6jIKujkKbuVE0
-0mBOhJ5NUnK8zjYc0RoP/LDHZ7ZZd3O/8cqssf1EIcShbBdB8ntTedzrai2/6kRM
-au+9u2XXDIFLJt1l1b8rRz0/ngnDAdhDf/MNXZFl3kjCsYG07HNGY5TkzS9zLxN4
-HSYnkYEAYHE=
-=rDAL
------END PGP SIGNATURE-----
-
---=-J/CWpTE1vatgI4/Vx2YS--
