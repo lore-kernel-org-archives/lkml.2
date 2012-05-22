@@ -1,55 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753048Ab2EVRhi (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 May 2012 13:37:38 -0400
-Received: from na3sys009aog126.obsmtp.com ([74.125.149.155]:52360 "EHLO
-	na3sys009aog126.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751298Ab2EVRhh (ORCPT
+	id S1754134Ab2EVRi7 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 May 2012 13:38:59 -0400
+Received: from mail-vb0-f46.google.com ([209.85.212.46]:64944 "EHLO
+	mail-vb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751671Ab2EVRi6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 May 2012 13:37:37 -0400
+	Tue, 22 May 2012 13:38:58 -0400
 MIME-Version: 1.0
-In-Reply-To: <20120522120851.GI8730@tbergstrom-lnx.Nvidia.com>
-References: <1337227884.2066.9.camel@pgaikwad-dt2> <20120517062131.GA9305@gmail.com>
- <1337316517.22560.19.camel@pgaikwad-dt2> <20120518112104.GL20304@tbergstrom-lnx.Nvidia.com>
- <CAJOA=zM_o1Nqw55xxFvw6KssM50Q+7yyo41rUSH2Aoo1neTMjg@mail.gmail.com>
- <20120521084642.GV20304@tbergstrom-lnx.Nvidia.com> <4FBB5A72.2080101@codethink.co.uk>
- <20120522120851.GI8730@tbergstrom-lnx.Nvidia.com>
-From: "Turquette, Mike" <mturquette@ti.com>
-Date: Tue, 22 May 2012 10:37:15 -0700
-Message-ID: <CAJOA=zNic19Eyq-RJpj_pM94wpqY7co0dtKu1O+27B-wZMm=MA@mail.gmail.com>
-Subject: Re: Clock register in early init
-To: Peter De Schrijver <pdeschrijver@nvidia.com>
-Cc: Ben Dooks <ben.dooks@codethink.co.uk>,
-        Prashant Gaikwad <pgaikwad@nvidia.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
+In-Reply-To: <1337705285.3361.229.camel@edumazet-glaptop>
+References: <87r4ujno34.fsf@tucsk.pomaz.szeredi.hu>
+	<1337278363.3403.39.camel@edumazet-glaptop>
+	<87zk90s0em.fsf@tucsk.pomaz.szeredi.hu>
+	<1337701259.3361.208.camel@edumazet-glaptop>
+	<87mx50rz34.fsf@tucsk.pomaz.szeredi.hu>
+	<CAGK4HS9cGnOcoLAL1pggWvMG1B40rWyqc3BHsddUvnii4EvTcQ@mail.gmail.com>
+	<1337705285.3361.229.camel@edumazet-glaptop>
+Date: Tue, 22 May 2012 10:38:57 -0700
+Message-ID: <CAGK4HS8b2GSub02ShhofCrYQ1XnOT7Rrjm3KcOhCFFkUF1QqBA@mail.gmail.com>
+Subject: Re: tcp timestamp issues with google servers
+From: Vijay Subramanian <subramanian.vijay@gmail.com>
+To: Eric Dumazet <eric.dumazet@gmail.com>
+Cc: Miklos Szeredi <miklos@szeredi.hu>, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
 Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, May 22, 2012 at 5:08 AM, Peter De Schrijver
-<pdeschrijver@nvidia.com> wrote:
->> We had at-least that on the older Samsung parts and they where still
->> growing. I would suggest that in a multi-kernel image situation the
->> more data that can be discarded after init-time the better.
+>> Maybe tcptraceroute[1] can help you figure this out.
 >>
->> Also, __initdata gets gathered into one place so there's no possibility
->> of page fragmentation there. If you mean fragmentation of the memory
->> map, then allocate the size of all the clocks you know of at init time
->> in one go.
->>
+>> [1] http://michael.toren.net/code/tcptraceroute/
 >
-> That would work, except that clocks are needed before kmalloc is available.
 >
+> The transparent proxy can intercept TCP connections to port 80/443, and
+> let ICMP being NATed by the box.
 
-Is static initialization the only way to solve this problem?  What
-about using the bootmem allocator for early init clocks?
+Just to be clear..tcptraceroute uses TCP SYN packets to trace the
+route instead of using ICMP packets used by vanilla traceroute
+precisely because
+of the issue you raised.
+The idea is that if the connection is getting terminated at a
+middlebox, the trace will end there. Otherwise, the trace route will
+end
+at destination (google in this case). This avoids the problems of ICMP
+and TCP flows being treated differently by the middlebox.
+Is this approach workable?
 
-Regards,
-Mike
-
-> Cheers,
->
-> Peter.
+Thanks,
+Vijay
