@@ -1,139 +1,128 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760363Ab2EVTxO (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 May 2012 15:53:14 -0400
-Received: from rcsinet15.oracle.com ([148.87.113.117]:48215 "EHLO
-	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750989Ab2EVTxN (ORCPT
+	id S932312Ab2EVT4Q (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 May 2012 15:56:16 -0400
+Received: from ogre.sisk.pl ([193.178.161.156]:59498 "EHLO ogre.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751301Ab2EVT4O convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 May 2012 15:53:13 -0400
-Date: Tue, 22 May 2012 15:46:39 -0400
-From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>,
-        linux-kernel@vger.kernel.org
-Cc: xen-devel@lists.xensource.com
-Subject: [GIT PULL] (xen) stable/for-linus-3.5-rc0-tag
-Message-ID: <20120522194639.GA2820@phenom.dumpdata.com>
+	Tue, 22 May 2012 15:56:14 -0400
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Subject: [GIT PULL] Power management updates for 3.5
+Date: Tue, 22 May 2012 22:01:15 +0200
+User-Agent: KMail/1.13.6 (Linux/3.4.0+; KDE/4.6.0; x86_64; ; )
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        Linux PM list <linux-pm@vger.kernel.org>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="rwEMma7ioTxnRzrJ"
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
+Content-Type: text/plain;
+  charset="utf-8"
+Content-Transfer-Encoding: 8BIT
+Message-Id: <201205222201.15304.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hi Linus,
 
---rwEMma7ioTxnRzrJ
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+Please pull power management updates for 3.5 since commit
+d48b97b403d23f6df0b990cee652bdf9a52337a3:
 
-Hey Linus,
+  Linux 3.4-rc6
 
-Please git pull the following tag:
+with top-most commit 8714c8d74d313c3ba27bf9c2aaacb1ad71c644f8
 
-git://git.kernel.org/pub/scm/linux/kernel/git/konrad/xen.git stable/for-linus-3.5-rc0-tag
+  epoll: Fix user space breakage related to EPOLLWAKEUP
 
-which has:
- * support for 'perf' running. Perf depends on APIC ops to send IPIs, not SMP ops.
-   Re-using the existing SMP ops and also adding code to deal IRQ_WORKER vector makes it work.
- * enhancements to the self-ballooning code
- * fix to auto-balloon the initial domain to the original boot-up size (it would
-   return to the hypervisor around 1GB of memory that overlapped PCI and non-E820 RAM regions -
-   this brings it back).
- * move some of the debugfs code dealing with printing u32 arrays to the generic code-base.
- * allow fronted modules to unload with grants in usage and lazily free them
- * further disintegrate the XenBus and initial domain coupling - so that there can be
-   a separate XenBus domain - and the concept of initial domain shrinks even further.
- * perf improvements in the M2P calls to utilize the batching of PTEs.
- * bug-fixes
+from the git repository at:
 
-Please pull!
+  git://git.kernel.org/pub/scm/linux/kernel/git/rafael/linux-pm.git pm-for-3.5
 
-Ben Guthro (1):
-      xen: implement apic ipi interface
+Included are:
 
-Dan Carpenter (1):
-      hvc_xen: NULL dereference on allocation failure
+* Implementation of opportunistic suspend (autosleep) and user space interface
+  for manipulating wakeup sources.
 
-Daniel De Graaf (1):
-      xenbus: Add support for xenbus backend in stub domain
+* Hibernate updates from Bojan Smojver and Minho Ban.
 
-David Vrabel (1):
-      xen/setup: update VA mapping when releasing memory during setup
+* Updates of the runtime PM core and generic PM domains framework related to
+  PM QoS.
 
-Jan Beulich (1):
-      xen/gnttab: add deferred freeing logic
+* Assorted fixes.
 
-Jana Saout (1):
-      xen: Add selfballoning memory reservation tunable.
-
-Konrad Rzeszutek Wilk (9):
-      xen/p2m: Move code around to allow for better re-usage.
-      xen/p2m: Allow alloc_p2m_middle to call reserve_brk depending on argument
-      xen/p2m: Collapse early_alloc_p2m_middle redundant checks.
-      xen/p2m: An early bootup variant of set_phys_to_machine
-      xen/setup: Only print "Freeing XXX-YYY pfn range: Z pages freed" if Z > 0
-      xen/setup: Populate freed MFNs from non-RAM E820 entries and gaps to E820 RAM
-      xen/setup: Combine the two hypercall functions - since they are quite similar.
-      xen/acpi/sleep: Enable ACPI sleep via the __acpi_os_prepare_sleep
-      xen/smp: unbind irqworkX when unplugging vCPUs.
-
-Lin Ming (1):
-      xen: implement IRQ_WORK_VECTOR handler
-
-Srivatsa Vaddagiri (1):
-      debugfs: Add support to print u32 array in debugfs
-
-Stefano Stabellini (2):
-      xen: enter/exit lazy_mmu_mode around m2p_override calls
-      xen: do not map the same GSI twice in PVHVM guests.
-
- arch/x86/include/asm/xen/events.h       |    1 +
- arch/x86/include/asm/xen/page.h         |    1 +
- arch/x86/pci/xen.c                      |    4 +
- arch/x86/xen/debugfs.c                  |  104 -------------------
- arch/x86/xen/debugfs.h                  |    4 -
- arch/x86/xen/enlighten.c                |   13 ++-
- arch/x86/xen/mmu.c                      |   23 ----
- arch/x86/xen/p2m.c                      |  104 +++++++++++--------
- arch/x86/xen/setup.c                    |  171 ++++++++++++++++++++++++++-----
- arch/x86/xen/smp.c                      |  112 +++++++++++++++++++-
- arch/x86/xen/smp.h                      |   12 ++
- arch/x86/xen/spinlock.c                 |   12 +-
- arch/x86/xen/xen-ops.h                  |    1 -
- drivers/tty/hvc/hvc_xen.c               |    4 +-
- drivers/xen/Makefile                    |    2 +-
- drivers/xen/acpi.c                      |   62 +++++++++++
- drivers/xen/events.c                    |    5 +-
- drivers/xen/grant-table.c               |  125 +++++++++++++++++++++--
- drivers/xen/xen-selfballoon.c           |   34 ++++++-
- drivers/xen/xenbus/xenbus_comms.c       |    6 +
- drivers/xen/xenbus/xenbus_comms.h       |    1 +
- drivers/xen/xenbus/xenbus_dev_backend.c |   51 +++++++++
- fs/debugfs/file.c                       |  128 +++++++++++++++++++++++
- include/linux/debugfs.h                 |   11 ++
- include/xen/acpi.h                      |   58 +++++++++++
- include/xen/events.h                    |    3 +
- include/xen/grant_table.h               |    2 +
- include/xen/xenbus_dev.h                |    3 +
- 28 files changed, 829 insertions(+), 228 deletions(-)
+Thanks!
 
 
---rwEMma7ioTxnRzrJ
-Content-Type: application/pgp-signature
+ Documentation/ABI/testing/sysfs-devices-power  |   35 +++-
+ Documentation/ABI/testing/sysfs-power          |   59 ++++++
+ Documentation/kernel-parameters.txt            |    2 +
+ Documentation/power/suspend-and-cpuhotplug.txt |    2 +-
+ drivers/base/power/domain.c                    |  176 ++++++++++++----
+ drivers/base/power/domain_governor.c           |  166 ++++++++++++----
+ drivers/base/power/main.c                      |   10 +
+ drivers/base/power/qos.c                       |   19 +-
+ drivers/base/power/runtime.c                   |  103 +---------
+ drivers/base/power/sysfs.c                     |   54 +++++-
+ drivers/base/power/wakeup.c                    |  174 +++++++++++-----
+ drivers/devfreq/governor_performance.c         |    7 +
+ drivers/devfreq/governor_powersave.c           |    7 +
+ fs/eventpoll.c                                 |   90 ++++++++-
+ include/linux/capability.h                     |    5 +-
+ include/linux/eventpoll.h                      |   12 +
+ include/linux/pm.h                             |    2 -
+ include/linux/pm_domain.h                      |   13 +-
+ include/linux/pm_runtime.h                     |    3 -
+ include/linux/pm_wakeup.h                      |   15 +-
+ include/linux/suspend.h                        |   14 ++-
+ include/trace/events/power.h                   |   34 +++
+ kernel/power/Kconfig                           |   27 +++
+ kernel/power/Makefile                          |    2 +
+ kernel/power/autosleep.c                       |  127 ++++++++++++
+ kernel/power/hibernate.c                       |   13 ++
+ kernel/power/main.c                            |  160 +++++++++++++--
+ kernel/power/power.h                           |   27 +++
+ kernel/power/swap.c                            |   62 ++++--
+ kernel/power/wakelock.c                        |  259 ++++++++++++++++++++++++
+ 30 files changed, 1359 insertions(+), 320 deletions(-)
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
+---------------
 
-iQEcBAEBAgAGBQJPu+0bAAoJEFjIrFwIi8fJYLsH/jOwAs53oFrx167doN/IPahE
-DjTDH+hlMfCrp+8Q1VHxUh+EWWW38KEReVvgjlXXGJV93v411MlKaIN1bs9scnEC
-lIQlYuUO6HZ5KvrYY6qAxea75ff2vXoIjnGx77DhaIjRJnMWEdeU20pwcY5cmLWf
-RwKAsfttHSdT36ohdz09vQB1osr4tBN7VUrqPL1Bp5uVbef1qpWBnM8f/JU+xyQC
-vcJhEbyssVKtshCYcWY4SPRokthkH+q0SFz7dpZTRikY9s9h2Hl3I8gytl+siCps
-FGSxg/q7i0MXLq5/VN4yTPkU24ij5li7eFhc1w3n0Mzxs/NMWNUMOrTOG9FPUcc=
-=KHZQ
------END PGP SIGNATURE-----
+Arve Hjønnevåg (3):
+      PM / Sleep: Add wakeup_source_activate and wakeup_source_deactivate tracepoints
+      epoll: Add a flag, EPOLLWAKEUP, to prevent suspend while epoll events are ready
+      PM / Sleep: Fix a mistake in a conditional in autosleep_store()
 
---rwEMma7ioTxnRzrJ--
+Bojan Smojver (1):
+      PM / Hibernate: Hibernate/thaw fixes/improvements
+
+Huang Ying (1):
+      PM / Domains: Fix link checking when add subdomain
+
+Marcos Paulo de Souza (1):
+      PM / Documentation: suspend-and-cpuhotplug.txt: Fix typo
+
+Minho Ban (1):
+      PM / Hibernate: Use get_gendisk to verify partition if resume_file is integer format
+
+Rafael J. Wysocki (17):
+      PM / Sleep: Look for wakeup events in later stages of device suspend
+      PM / Sleep: Use wait queue to signal "no wakeup events in progress"
+      PM / Sleep: Change wakeup source statistics to follow Android
+      PM / Sleep: Implement opportunistic sleep, v2
+      PM / Sleep: Add "prevent autosleep time" statistics to wakeup sources
+      PM / Sleep: Add user space interface for manipulating wakeup sources, v3
+      PM / Domains: Rework default device stop governor function, v2
+      PM / Domains: Rework default domain power off governor function, v2
+      PM / Runtime: Remove device fields related to suspend time, v2
+      PM / QoS: Create device constraints objects on notifier registration
+      PM / Domains: Make device removal more straightforward
+      PM / Domains: Cache device stop and domain power off governor results, v3
+      PM / Sleep: Make the limit of user space wakeup sources configurable
+      PM / Sleep: User space wakeup sources garbage collector Kconfig option
+      PM / Domains: Fix computation of maximum domain off time
+      PM / Domains: Make it possible to add devices to inactive domains
+      epoll: Fix user space breakage related to EPOLLWAKEUP
+
+Xiaoguang Chen (1):
+      PM: devfreq: init performance/powersave governor
+
