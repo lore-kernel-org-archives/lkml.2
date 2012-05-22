@@ -1,56 +1,37 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759555Ab2EVP3r (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 May 2012 11:29:47 -0400
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:44201 "EHLO
-	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753007Ab2EVP3o (ORCPT
+	id S1759579Ab2EVP37 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 May 2012 11:29:59 -0400
+Received: from ns1.pc-advies.be ([83.149.101.17]:52699 "EHLO
+	spo001.leaseweb.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1754254Ab2EVP3p (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 May 2012 11:29:44 -0400
-MIME-Version: 1.0
-In-Reply-To: <1337696279-8994-8-git-send-email-anton.vorontsov@linaro.org>
-References: <20120522141717.GA31574@lizard>
-	<1337696279-8994-8-git-send-email-anton.vorontsov@linaro.org>
-Date: Tue, 22 May 2012 08:29:43 -0700
-X-Google-Sender-Auth: 2gTpSVneC4txFAngpdeQW6lUhDY
-Message-ID: <CAGXu5j+E+C8hzLTtvqiPV0Gaih=2jV6vDPe+rDzehCoGzinhFA@mail.gmail.com>
-Subject: Re: [PATCH 08/16] pstore/ram: Factor dmesg przs initialization out of probe()
-From: Kees Cook <keescook@chromium.org>
-To: Anton Vorontsov <anton.vorontsov@linaro.org>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Colin Cross <ccross@android.com>, Tony Luck <tony.luck@intel.com>,
-        Arnd Bergmann <arnd@arndb.de>, John Stultz <john.stultz@linaro.org>,
-        Shuah Khan <shuahkhan@gmail.com>, arve@android.com,
-        Rebecca Schultz Zavin <rebecca@android.com>,
-        Jesper Juhl <jj@chaosbits.net>, Randy Dunlap <rdunlap@xenotime.net>,
-        Stephen Boyd <sboyd@codeaurora.org>, Thomas Meyer <thomas@m3y3r.de>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Marco Stornelli <marco.stornelli@gmail.com>,
-        WANG Cong <xiyou.wangcong@gmail.com>, linux-kernel@vger.kernel.org,
-        devel@driverdev.osuosl.org, linaro-kernel@lists.linaro.org,
-        patches@linaro.org, kernel-team@android.com
-Content-Type: text/plain; charset=ISO-8859-1
-X-System-Of-Record: true
+	Tue, 22 May 2012 11:29:45 -0400
+Date: Tue, 22 May 2012 17:29:43 +0200
+From: Wim Van Sebroeck <wim@iguana.be>
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: linux-next: unable to fetch the watchdog tree
+Message-ID: <20120522152943.GC3074@spo001.leaseweb.com>
+References: <20120522091603.3253aa7b0e31c208b1c41e05@canb.auug.org.au>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120522091603.3253aa7b0e31c208b1c41e05@canb.auug.org.au>
+User-Agent: Mutt/1.4.1i
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, May 22, 2012 at 7:17 AM, Anton Vorontsov
-<anton.vorontsov@linaro.org> wrote:
-> This will help make code clearer when we'll add support for other
-> message types.
->
-> This also makes probe() much shorter and understandable, plus
-> makes mem/record size checking a bit easier.
->
-> Implementation detail: we now use a paddr pointer, this will
-> be used for allocating persistent ram zones for other message
-> types.
->
-> Signed-off-by: Anton Vorontsov <anton.vorontsov@linaro.org>
+Hi Stephen,
 
-Acked-by: Kees Cook <keescook@chromium.org>
+> When I have tried to fetch the watchdog tree (from
+> git://www.linux-watchdog.org/linux-watchdog-next.git) today and
+> yesterday, the "git fetch" get a connection, but after some time (maybe
+> immediately) it hangs and I eventually have to kill the "git fetch".
 
--- 
-Kees Cook
-Chrome OS Security
+Something went wrong with the git daemon. It has been restarted.
+
+Thanks,
+Wim.
+
