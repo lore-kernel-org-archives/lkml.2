@@ -1,124 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757305Ab2EVJV5 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 May 2012 05:21:57 -0400
-Received: from smtp.eu.citrix.com ([62.200.22.115]:28772 "EHLO
-	SMTP.EU.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756557Ab2EVJVz (ORCPT
+	id S1757345Ab2EVJW1 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 May 2012 05:22:27 -0400
+Received: from mail-yw0-f46.google.com ([209.85.213.46]:48211 "EHLO
+	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757169Ab2EVJWZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 May 2012 05:21:55 -0400
-X-IronPort-AV: E=Sophos;i="4.75,637,1330905600"; 
-   d="scan'208";a="12598025"
-Message-ID: <1337678512.10118.40.camel@zakaz.uk.xensource.com>
-Subject: Re: [PATCH] xen/netback: calculate correctly the SKB slots.
-From: Ian Campbell <Ian.Campbell@citrix.com>
-To: Ben Hutchings <bhutchings@solarflare.com>
-CC: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        "davem@davemloft.net" <davem@davemloft.net>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Adnan Misherfi <adnan.misherfi@oracle.com>
-Date: Tue, 22 May 2012 10:21:52 +0100
-In-Reply-To: <1337627640.2979.33.camel@bwh-desktop.uk.solarflarecom.com>
-References: <1337621793-12486-1-git-send-email-konrad.wilk@oracle.com>
-	 <1337627640.2979.33.camel@bwh-desktop.uk.solarflarecom.com>
-Organization: Citrix Systems, Inc.
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.2-1 
-Content-Transfer-Encoding: 7bit
+	Tue, 22 May 2012 05:22:25 -0400
 MIME-Version: 1.0
+X-Originating-IP: [109.186.15.47]
+In-Reply-To: <4FBB5908.4010505@stericsson.com>
+References: <1330589497-4139-1-git-send-email-ohad@wizery.com>
+ <1330589497-4139-2-git-send-email-ohad@wizery.com> <4F6354E4.8030704@monstr.eu>
+ <CAK=Wgbbbi4GnuHedSh6cR1LhkZr8c9q6i=_TLSL252LpPB8Xsw@mail.gmail.com>
+ <CAK=WgbYeQr5ZwTSBo+ZJUzN7fQ--0QbC8HSjrGT-Geycs4SKcg@mail.gmail.com>
+ <CAHTX3d+=QTZo994jct6+pPqsCniG0B2a_9q6fLdGjvcbZ7qj_A@mail.gmail.com>
+ <CAK=WgbahzGHmvszw6HBgihN4NcPA8ceaQCNSOk_FC61bToxBXQ@mail.gmail.com>
+ <CAHTX3dK8rDomYqWvBX1ay200AmM1dBCYD3nJ2UYbzC_SSFankw@mail.gmail.com> <4FBB5908.4010505@stericsson.com>
+From: Ohad Ben-Cohen <ohad@wizery.com>
+Date: Tue, 22 May 2012 12:22:05 +0300
+Message-ID: <CAK=WgbYKMh8oifeC-A9LYq8GV_Nb7L8wc198YZujGEsp9mmvsw@mail.gmail.com>
+Subject: Re: [PATCH 1/7] remoteproc: resource table overhaul
+To: frq09524 <ludovic.barre@stericsson.com>
+Cc: Michal Simek <monstr@monstr.eu>,
+        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Brian Swetland <swetland@google.com>,
+        Iliyan Malchev <malchev@google.com>, Arnd Bergmann <arnd@arndb.de>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Rusty Russell <rusty@rustcorp.com.au>, Mark Grosen <mgrosen@ti.com>,
+        John Williams <john.williams@petalogix.com>,
+        Loic PALLARDY <loic.pallardy@stericsson.com>,
+        Omar Ramirez Luna <omar.luna@linaro.org>,
+        Guzman Lugo Fernando <fernando.lugo@ti.com>,
+        Anna Suman <s-anna@ti.com>, Clark Rob <rob@ti.com>,
+        Stephen Boyd <sboyd@codeaurora.org>,
+        Saravana Kannan <skannan@codeaurora.org>,
+        David Brown <davidb@codeaurora.org>,
+        Kieran Bingham <kieranbingham@gmail.com>,
+        Tony Lindgren <tony@atomide.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2012-05-21 at 20:14 +0100, Ben Hutchings wrote:
-> On Mon, 2012-05-21 at 13:36 -0400, Konrad Rzeszutek Wilk wrote:
-> > From: Adnan Misherfi <adnan.misherfi@oracle.com>
-> > 
-> > A programming error cause the calculation of receive SKB slots to be
-> > wrong, which caused the RX ring to be erroneously declared full,
-> > and the receive queue to be stopped. The problem shows up when two
-> > guest running on the same server tries to communicates using large
-> > MTUs. Each guest is connected to a bridge with VLAN over bond
-> > interface, so traffic from one guest leaves the server on one bridge
-> > and comes back to the second guest on the second bridge. This can be
-> > reproduces using ping, and one guest as follow:
-> > 
-> > - Create active-back bond (bond0)
-> > - Set up VLAN 5 on bond0 (bond0.5)
-> > - Create a bridge (br1)
-> > - Add bond0.5 to a bridge (br1)
-> > - Start a guest and connect it to br1
-> > - Set MTU of 9000 across the link
-> > 
-> > Ping the guest from an external host using packet sizes of 3991, and
-> > 4054; ping -s 3991 -c 128 "Guest-IP-Address"
-> > 
-> > At the beginning ping works fine, but after a while ping packets do
-> > not reach the guest because the RX ring becomes full, and the queue
-> > get stopped. Once the problem accrued, the only way to get out of it
-> > is to reboot the guest, or use xm network-detach/network-attach.
-> > 
-> > ping works for packets sizes 3990,3992, and many other sizes including
-> > 4000,5000,9000, and 1500 ..etc. MTU size of 3991,4054 are the sizes
-> > that quickly reproduce this problem.
-> > 
-> > Signed-off-by: Adnan Misherfi <adnan.misherfi@oracle.com>
-> > Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-> > ---
-> >  drivers/net/xen-netback/netback.c |    2 +-
-> >  1 files changed, 1 insertions(+), 1 deletions(-)
-> > 
-> > diff --git a/drivers/net/xen-netback/netback.c b/drivers/net/xen-netback/netback.c
-> > index 957cf9d..e382e5b 100644
-> > --- a/drivers/net/xen-netback/netback.c
-> > +++ b/drivers/net/xen-netback/netback.c
-> > @@ -212,7 +212,7 @@ unsigned int xenvif_count_skb_slots(struct xenvif *vif, struct sk_buff *skb)
-> 
-> The function name is xen_netbk_count_skb_slots() in net-next.  This
-> appears to depend on the series in
-> <http://lists.xen.org/archives/html/xen-devel/2012-01/msg00982.html>.
+Hi Ludovic,
 
-Yes, I don't think that patchset was intended for prime time just yet.
-Can this issue be reproduced without it?
+On Tue, May 22, 2012 at 12:14 PM, frq09524 <ludovic.barre@stericsson.com> wrote:
+> Ohad, for alignment I can take the latest branch of kernel.org (remoteproc)
+> branch for-next?
 
-> >  	int i, copy_off;
-> >  
-> >  	count = DIV_ROUND_UP(
-> > -			offset_in_page(skb->data)+skb_headlen(skb), PAGE_SIZE);
-> > +			offset_in_page(skb->data + skb_headlen(skb)), PAGE_SIZE);
-> 
-> The new version would be equivalent to:
-> 	count = offset_in_page(skb->data + skb_headlen(skb)) != 0;
-> which is not right, as netbk_gop_skb() will use one slot per page.
+Sure, it's pretty much updated sans a few simple changes.
 
-Just outside the context of this patch we separately count the frag
-pages.
-
-However I think you are right if skb->data covers > 1 page, since the
-new version can only ever return 0 or 1. I expect this patch papers over
-the underlying issue by not stopping often enough, rather than actually
-fixing the underlying issue.
-
-> The real problem is likely that you're not using the same condition to
-> stop and wake the queue.
-
-Agreed, it would be useful to see the argument for this patch presented
-in that light. In particular the relationship between
-xenvif_rx_schedulable() (used to wake queue) and
-xen_netbk_must_stop_queue() (used to stop queue).
-
-As it stands the description describes a setup which can repro the
-problem but doesn't really analyse what actually happens, nor justify
-the correctness of the fix.
-
->   Though it appears you're also missing an
-> smp_mb() at the top of xenvif_notify_tx_completion().
-
-I think the necessary barrier is in RING_PUSH_RESPONSES_AND_CHECK_NOTIFY
-which is just prior to the single callsite of this function.
-
-Ian.
-
-
+Thanks,
+Ohad.
