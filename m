@@ -1,67 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756607Ab2EVItx (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 May 2012 04:49:53 -0400
-Received: from www.linutronix.de ([62.245.132.108]:36568 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755965Ab2EVItu (ORCPT
+	id S1756653Ab2EVIwV (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 May 2012 04:52:21 -0400
+Received: from hqemgate03.nvidia.com ([216.228.121.140]:7873 "EHLO
+	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753163Ab2EVIwT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 May 2012 04:49:50 -0400
-Date: Tue, 22 May 2012 10:49:48 +0200 (CEST)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Ning Jiang <ning.n.jiang@gmail.com>
-cc: rjw@sisk.pl, linux-kernel@vger.kernel.org
-Subject: Re: Add IRQS_PENDING for nested and simple irq handler as well
-In-Reply-To: <CAH3Oq6S64c9ttsAStn05FTkg+VC0o27Ad4DhHs=b4E7AKjWdjA@mail.gmail.com>
-Message-ID: <alpine.LFD.2.02.1205221048140.3231@ionos>
-References: <CAH3Oq6T-OVj_=kVBdDXxize5v5hovp8FQSDhxCHvF_kcX4QPuA@mail.gmail.com> <alpine.LFD.2.02.1205212308590.3231@ionos> <CAH3Oq6S64c9ttsAStn05FTkg+VC0o27Ad4DhHs=b4E7AKjWdjA@mail.gmail.com>
-User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
+	Tue, 22 May 2012 04:52:19 -0400
+X-PGP-Universal: processed;
+	by hqnvupgp05.nvidia.com on Tue, 22 May 2012 01:52:16 -0700
+From: Pritesh Raithatha <praithatha@nvidia.com>
+To: <cbouatmailru@gmail.com>, <axel.lin@gmail.com>, <lars@metafoo.de>,
+        <cabarnes@indesign-llc.com>
+CC: <linux-kernel@vger.kernel.org>, <praithatha@nvidia.com>
+Subject: [PATCH] gpio-charger: use cansleep version of gpio_set_value
+Date: Tue, 22 May 2012 14:20:04 +0530
+Message-ID: <1337676604-22836-1-git-send-email-praithatha@nvidia.com>
+X-Mailer: git-send-email 1.7.1
+X-NVConfidentiality: public
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 22 May 2012, Ning Jiang wrote:
+Context of gpio_charger_get_property is sleepable so we should
+use gpio_set_value_cansleep instead of gpio_set_value.
 
-Please do not top post.
+It will remove WARN_ON incase of using gpio from i2c-to-gpio
+expander like pca953x.
 
-> Sorry that I do not make myself clear.
-> 
-> First, we should keep all the handle_*_irq behave in pretty much the
-> same way even just for the beauty of it. Every interrupt disabled in
-> suspend operation needs the ability to abort suspend if there is a
-> pending irq.
-> 
-> Second, let's take look at a example:
-> 
->               |
->        +---------+
->         |   INTC  |
->        +---------+
->                   |  GPIO_IRQ
->             +------------+
->              | gpio-exp  |
->             +------------+
->                |            |
->    GPIO0_IRQ  GPIO1_IRQ
-> 
-> In the above diagram, gpio expander has irq number GPIO_IRQ, it is
-> connected with two sub GPIO pins, GPIO0 and GPIO1.
-> 
-> During suspend, normally we want to set IRQF_NO_SUSPEND for GPIO_IRQ
-> so that gpio expander driver can handle the sub irq GPIO0_IRQ and
-> GPIO1_IRQ, and these two irqs themselves are handled by simple or
-> nested irq in some drivers(typically gpio and mfd driver), if they are
-> disabled during suspend, we want them to be able to abort suspend too.
+Signed-off-by: Pritesh Raithatha <praithatha@nvidia.com>
+---
+ drivers/power/gpio-charger.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-Ok, that makes a lot of sense and should be part of the changelog, so
-we know in a year from now why we did this change. Care to resend with
-a fixed up changelog ?
+diff --git a/drivers/power/gpio-charger.c b/drivers/power/gpio-charger.c
+index 8672c91..cb2aa31 100644
+--- a/drivers/power/gpio-charger.c
++++ b/drivers/power/gpio-charger.c
+@@ -54,7 +54,7 @@ static int gpio_charger_get_property(struct power_supply *psy,
+ 
+ 	switch (psp) {
+ 	case POWER_SUPPLY_PROP_ONLINE:
+-		val->intval = gpio_get_value(pdata->gpio);
++		val->intval = gpio_get_value_cansleep(pdata->gpio);
+ 		val->intval ^= pdata->gpio_active_low;
+ 		break;
+ 	default:
+-- 
+1.7.1
 
-Thanks,
-
-	tglx
