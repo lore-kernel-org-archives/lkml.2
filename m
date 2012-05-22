@@ -1,42 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932385Ab2EVVGE (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 May 2012 17:06:04 -0400
-Received: from e06smtp13.uk.ibm.com ([195.75.94.109]:47941 "EHLO
-	e06smtp13.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756306Ab2EVVGB (ORCPT
+	id S932637Ab2EVVHV (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 May 2012 17:07:21 -0400
+Received: from zeniv.linux.org.uk ([195.92.253.2]:56205 "EHLO
+	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932173Ab2EVVHT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 May 2012 17:06:01 -0400
-Message-ID: <4FBBFFB5.3010605@de.ibm.com>
-Date: Tue, 22 May 2012 23:05:57 +0200
-From: Christian Borntraeger <borntraeger@de.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
+	Tue, 22 May 2012 17:07:19 -0400
+Date: Tue, 22 May 2012 22:07:05 +0100
+From: Al Viro <viro@ZenIV.linux.org.uk>
+To: Will Drewry <wad@chromium.org>
+Cc: "H. Peter Anvin" <hpa@zytor.com>, Indan Zupancic <indan@nul.nu>,
+        Roland McGrath <mcgrathr@google.com>,
+        Eric Paris <netdev@parisplace.org>, linux-kernel@vger.kernel.org,
+        linux-security-module@vger.kernel.org,
+        kernel-hardening@lists.openwall.com, mingo@redhat.com, oleg@redhat.com,
+        peterz@infradead.org, rdunlap@xenotime.net, tglx@linutronix.de,
+        luto@mit.edu, eparis@redhat.com, serge.hallyn@canonical.com,
+        pmoore@redhat.com, akpm@linux-foundation.org, corbet@lwn.net,
+        eric.dumazet@gmail.com, markus@chromium.org, coreyb@linux.vnet.ibm.com,
+        keescook@chromium.org
+Subject: Re: seccomp and ptrace. what is the correct order?
+Message-ID: <20120522210704.GK11775@ZenIV.linux.org.uk>
+References: <CACLa4puRJLUd6hAHO6zFYiqa5dFVum8eLmNMk_ef+=r8OGhjRg@mail.gmail.com>
+ <CAB=4xho2b5fZV_jC15XW3mhOD9Z0QUMnV_UHy-P5EmQWfX59dA@mail.gmail.com>
+ <5d6179f59222155b72d9aa9f171e883c.squirrel@webmail.greenhost.nl>
+ <CABqD9hbzatHerMA1Nq57Qn8SKSZzZf=5t6aLumG9ZpAafgX=UQ@mail.gmail.com>
+ <20120522173942.GJ11775@ZenIV.linux.org.uk>
+ <CABqD9hbwnp-Kob0-Uc9L=qgJfS88po=RHNPkhQFcSf4RTrFCmQ@mail.gmail.com>
+ <4FBBF84A.4070308@zytor.com>
+ <CABqD9haSh=Tof9n2m8PHBaoqac1kcUZq-f5BcjDBv++5APGTCg@mail.gmail.com>
 MIME-Version: 1.0
-To: Avi Kivity <avi@redhat.com>, Marcelo Tosatti <mtosatti@redhat.com>,
-        KVM list <kvm@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-CC: Oleg Nesterov <oleg@redhat.com>
-Subject: qemu core dump and filtering guest pages
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-x-cbid: 12052221-2966-0000-0000-0000042972F0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CABqD9haSh=Tof9n2m8PHBaoqac1kcUZq-f5BcjDBv++5APGTCg@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Folks,
+On Tue, May 22, 2012 at 03:48:40PM -0500, Will Drewry wrote:
+> On Tue, May 22, 2012 at 3:34 PM, H. Peter Anvin <hpa@zytor.com> wrote:
+> > The proposed patch seems to duplicate the functionality in
+> > <asm/syscall.h>. ?Those macros also try to do the right thing in the
+> > presence of compat.
+> 
+> That was my first thought too, so I ran a few simple tests.  gcc isn't
+> smart enough to not add ~344 bytes of code to get the number and
+> arguments for the x86/kernel/ptrace.c case I included (in the
+> naive-est of integrations).  But I don't know that it justifies the
+> extra patchwork or enforcing shared code across arches.
+> 
+> Regardless, the syscall entry + trace code can use some attention
+> across the architectures. I don't know that
+> one-more-layer-of-abstraction is the right answer (rather than just
+> fixing the code). The biggest benefit would be having one-true
+> syscall_trace_entry slow path. That said, the fast paths will be
+> forever divergent so the opportunity for bugs like the ones pointed
+> out will still be there.
 
-today we discussed the situation of a qemu crash (with coredump) and big guests.
-Quite often the guest pages are not needed but make the core file pretty big.
+FWIW, I'd prefer to have all that done inside __audit_syscall_entry(),
+with
+        context->arch       = syscall_get_arch(current, regs);
+        context->major      = syscall_get_nr(current, regs);
+	syscall_get_arguments(current, regs, 0, 4, context->argv);
+done instead of initializations from arguments we are doing there now.
+I seriously doubt that it would lead to worse code than what we currently
+have.  If nothing else, we won't be passing that pile of arguments around.
 
-The most appealing proposal that we had was to adopt the core file code in the 
-kernel to have an option for discarding guest pages (e.g. /proc/sys/core_guest).
-do_corefile would have a callback into the kvm module that could use its memory 
-slot infrastructure to decide if this page should be saved or not.
-
-Would you consider such a change be ok? Any better idea?
-Thanks
-
-Christian
-
-
+And yes, asm/syscall.h stuff is probably the right approach here.  For
+biarch ones syscall_get_arguments() is saner than doing them one by one...
