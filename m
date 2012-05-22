@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760060Ab2EVSAB (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 May 2012 14:00:01 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:36311 "EHLO
+	id S1760075Ab2EVSAF (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 May 2012 14:00:05 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:59025 "EHLO
 	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758578Ab2EVR75 (ORCPT
+	with ESMTP id S1758598Ab2EVR75 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 22 May 2012 13:59:57 -0400
 From: David Daney <ddaney.cavm@gmail.com>
@@ -15,89 +15,56 @@ To: devicetree-discuss@lists.ozlabs.org,
 Cc: linux-kernel@vger.kernel.org, linux-mips@linux-mips.org,
         Andy Fleming <afleming@freescale.com>,
         David Daney <david.daney@cavium.com>
-Subject: [PATCH 2/5] netdev/phy/of: Handle IEEE802.3 clause 45 Ethernet PHYs in of_mdiobus_register()
-Date: Tue, 22 May 2012 10:59:49 -0700
-Message-Id: <1337709592-23347-3-git-send-email-ddaney.cavm@gmail.com>
+Subject: [PATCH 0/5] netdev/phy: 10G PHY support.
+Date: Tue, 22 May 2012 10:59:47 -0700
+Message-Id: <1337709592-23347-1-git-send-email-ddaney.cavm@gmail.com>
 X-Mailer: git-send-email 1.7.2.3
-In-Reply-To: <1337709592-23347-1-git-send-email-ddaney.cavm@gmail.com>
-References: <1337709592-23347-1-git-send-email-ddaney.cavm@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: David Daney <david.daney@cavium.com>
 
-Define two new "compatible" values for Ethernet
-PHYs. "ethernet-phy-ieee802.3-c22" and "ethernet-phy-ieee802.3-c45"
-are used to indicate a PHY uses the corresponding protocol.
+The existing PHY driver infrastructure supports IEEE 802.3 Clause 22
+PHYs used with 10/100/1000MB Ethernet.  For 10G Ethernet, many PHYs
+use 802.3 Clause 45.  These patches attempt to add core support for
+this as well as drivers for several different 10G PHY devices.
 
-If a PHY is "compatible" with "ethernet-phy-ieee802.3-c45", we
-indicate this so that get_phy_device() can properly probe the device.
+This is reworked from patches I send about 9 months ago:
 
-If get_phy_device() fails, it was probably due to failing the probe of
-the PHY identifier registers.  Since we have the device tree telling
-us the PHY exists, go ahead and add it anyhow with a phy_id of zero.
-There may be a driver match based on the "compatible" property.
+http://marc.info/?l=linux-netdev&m=131844282403852
 
-Signed-off-by: David Daney <david.daney@cavium.com>
----
- Documentation/devicetree/bindings/net/phy.txt |   12 +++++++++++-
- drivers/of/of_mdio.c                          |   14 +++++++++++---
- 2 files changed, 22 insertions(+), 4 deletions(-)
+Several of the patches have device tree bindings in them, so the
+device tree people get to enjoy them too.
 
-diff --git a/Documentation/devicetree/bindings/net/phy.txt b/Documentation/devicetree/bindings/net/phy.txt
-index bb8c742..7cd18fb 100644
---- a/Documentation/devicetree/bindings/net/phy.txt
-+++ b/Documentation/devicetree/bindings/net/phy.txt
-@@ -14,10 +14,20 @@ Required properties:
-  - linux,phandle :  phandle for this node; likely referenced by an
-    ethernet controller node.
- 
-+Optional Properties:
-+
-+- compatible: Compatible list, may contain
-+  "ethernet-phy-ieee802.3-c22" or "ethernet-phy-ieee802.3-c45" for
-+  PHYs that implement IEEE802.3 clause 22 or IEEE802.3 clause 45
-+  specifications. If neither of these are specified, the default is to
-+  assume clause 22. The compatible list may also contain other
-+  elements.
-+
- Example:
- 
- ethernet-phy@0 {
--	linux,phandle = <2452000>
-+	compatible = "ethernet-phy-ieee802.3-c22";
-+	linux,phandle = <2452000>;
- 	interrupt-parent = <40000>;
- 	interrupts = <35 1>;
- 	reg = <0>;
-diff --git a/drivers/of/of_mdio.c b/drivers/of/of_mdio.c
-index 2574abd..0f08aaf 100644
---- a/drivers/of/of_mdio.c
-+++ b/drivers/of/of_mdio.c
-@@ -79,11 +79,19 @@ int of_mdiobus_register(struct mii_bus *mdio, struct device_node *np)
- 				mdio->irq[addr] = PHY_POLL;
- 		}
- 
-+		if (of_device_is_compatible(child,
-+					    "ethernet-phy-ieee802.3-c45"))
-+			addr |= MII_ADDR_C45;
-+
- 		phy = get_phy_device(mdio, addr);
- 		if (!phy || IS_ERR(phy)) {
--			dev_err(&mdio->dev, "error probing PHY at address %i\n",
--				addr);
--			continue;
-+			phy = phy_device_create(mdio, addr, 0, NULL);
-+			if (!phy || IS_ERR(phy)) {
-+				dev_err(&mdio->dev,
-+					"error creating PHY at address %i\n",
-+					addr);
-+				continue;
-+			}
- 		}
- 
- 		/* Associate the OF node with the device structure so it
+
+David Daney (5):
+  netdev/phy: Handle IEEE802.3 clause 45 Ethernet PHYs
+  netdev/phy/of: Handle IEEE802.3 clause 45 Ethernet PHYs in
+    of_mdiobus_register()
+  netdev/phy/of: Add more methods for binding PHY devices to drivers.
+  netdev/phy: Add driver for Broadcom BCM87XX 10G Ethernet PHYs
+  netdev/phy: Add driver for Cortina cs4321 quad 10G PHY.
+
+ .../devicetree/bindings/net/broadcom-bcm87xx.txt   |   29 +
+ .../devicetree/bindings/net/cortina-cs4321.txt     |   27 +
+ Documentation/devicetree/bindings/net/phy.txt      |   12 +-
+ drivers/net/phy/Kconfig                            |   11 +
+ drivers/net/phy/Makefile                           |    2 +
+ drivers/net/phy/bcm87xx.c                          |  237 ++
+ drivers/net/phy/cs4321-ucode.h                     | 4378 ++++++++++++++++++++
+ drivers/net/phy/cs4321.c                           | 1147 +++++
+ drivers/net/phy/mdio_bus.c                         |    7 +
+ drivers/net/phy/phy_device.c                       |  110 +-
+ drivers/of/of_mdio.c                               |   14 +-
+ include/linux/phy.h                                |   32 +-
+ 12 files changed, 5993 insertions(+), 13 deletions(-)
+ create mode 100644 Documentation/devicetree/bindings/net/broadcom-bcm87xx.txt
+ create mode 100644 Documentation/devicetree/bindings/net/cortina-cs4321.txt
+ create mode 100644 drivers/net/phy/bcm87xx.c
+ create mode 100644 drivers/net/phy/cs4321-ucode.h
+ create mode 100644 drivers/net/phy/cs4321.c
+
 -- 
 1.7.2.3
 
