@@ -1,82 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759670Ab2EVCRL (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 May 2012 22:17:11 -0400
-Received: from mga09.intel.com ([134.134.136.24]:5177 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759654Ab2EVCRI convert rfc822-to-8bit (ORCPT
+	id S1759695Ab2EVCRR (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 May 2012 22:17:17 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:50192 "EHLO
+	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1759673Ab2EVCRO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 May 2012 22:17:08 -0400
-MIME-Version: 1.0
-In-Reply-To: <87d35x6pzv.fsf@xmission.com>
-References: <1337284200-1838-1-git-send-email-auke-jan.h.kok@intel.com>
-	<87havchd14.fsf@xmission.com>
-	<CABsxX9J+KVSbxVahg-iVsfeNDEM_H8+MrcBBejjCZFrcNCxwtA@mail.gmail.com>
-	<87d35x6pzv.fsf@xmission.com>
-Date: Tue, 22 May 2012 02:17:06 +0000
-Message-ID: <CABsxX9JC0vDkxOOwBrzZ10=ZJHfmPL-1+MakZ1PP15htvvQfCA@mail.gmail.com>
-Subject: Re: [PATCH] Trace event for capable().
-From: "Kok, Auke-jan H" <auke-jan.h.kok@intel.com>
-To: "Eric W. Biederman" <ebiederm@xmission.com>
-Cc: Serge Hallyn <serge.hallyn@canonical.com>,
-        linux-security-module@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Eric Paris <eparis@redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	Mon, 21 May 2012 22:17:14 -0400
+Message-ID: <1337653025.11796.2.camel@deadeye>
+Subject: Re: [3.0.y, 3.2.y, 3.3.y] Re: [PATCH 05/10] hpsa: Fix problem with
+ MSA2xxx devices
+From: Ben Hutchings <ben@decadent.org.uk>
+To: Jonathan Nieder <jrnieder@gmail.com>
+Cc: stable@vger.kernel.org, "Stephen M. Cameron" <scameron@beardog.cce.hp.com>,
+        Steven Williamson <steven.williamson@dialogue.net>,
+        james.bottomley@hansenpartnership.com, linux-scsi@vger.kernel.org,
+        linux-kernel@vger.kernel.org, mikem@beardog.cce.hp.com,
+        stephenmcameron@gmail.com, thenzl@redhat.com, scott.teel@hp.com,
+        akpm@linux-foundation.org
+Date: Tue, 22 May 2012 03:17:05 +0100
+In-Reply-To: <20120520094735.GA14683@burratino>
+References: <20120119200042.17835.93058.stgit@beardog.cce.hp.com>
+	 <20120119200104.17835.29536.stgit@beardog.cce.hp.com>
+	 <20120520094735.GA14683@burratino>
+Content-Type: multipart/signed; micalg="pgp-sha512";
+	protocol="application/pgp-signature"; boundary="=-J/CWpTE1vatgI4/Vx2YS"
+X-Mailer: Evolution 3.2.2-1+b1 
+Mime-Version: 1.0
+X-SA-Exim-Connect-IP: 192.168.4.185
+X-SA-Exim-Mail-From: ben@decadent.org.uk
+X-SA-Exim-Scanned: No (on shadbolt.decadent.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, May 22, 2012 at 12:03 AM, Eric W. Biederman
-<ebiederm@xmission.com> wrote:
-> "Kok, Auke-jan H" <auke-jan.h.kok@intel.com> writes:
->
->> On Fri, May 18, 2012 at 11:59 PM, Eric W. Biederman
->> <ebiederm@xmission.com> wrote:
->>> Auke Kok <auke-jan.h.kok@intel.com> writes:
->>>
->>> > Add a simple trace event for capable().
->>> >
->>> > There's been a lot of discussion around capable(), and there
->>> > are plenty of tools to help reduce capabilities' usage from
->>> > userspace. A major gap however is that it's almost impossible
->>> > to see or verify which bits are requested from either userspace
->>> > or in the kernel.
->>> >
->>> > This patch adds a minimal tracer that will print out which
->>> > CAPs are requested and whether the request was granted.
->>>
->>> A small comment assigned from the other issues.
->>>
->>> current->pid for anything going to userspace is broken,
->>> and in fact current->pid should be killed on of these days.
->>>
->>> Which pid namespace is your tracer running in?
->>
->> init - I currently have no need for namespaces myself at all, and, as I replied
->> to Serge and Eric already - I'll see if I can fis up the tracer with their
->> suggestions.
->
-> Thanks.
->
-> A quick read of perf_event_open shows that the syscall is allowed by
-> unprivileged users in any context if sysctl_perf_event_paranoid is
-> set properly.  So it looks like the perf code needs to handle namespaces
-> properly if we are going to be reporting namespaced values like uid
-> and pids.  Even if no one cares today what about next week?
 
-I thought about dropping current->pid from this patch entirely and referring
-to the comm+pid combination that is already printed in the event log.
+--=-J/CWpTE1vatgI4/Vx2YS
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: quoted-printable
 
-That avoids the issue entirely on one side, and defers the problem with
-namespaces entirely to the perf code, where it should probably be solved
-in a consistend way anyway.
+On Sun, 2012-05-20 at 04:47 -0500, Jonathan Nieder wrote:
+> Hi Greg and Ben,
+>=20
+> Please consider
+>=20
+>   9bc3711cbb67 [SCSI] hpsa: Fix problem with MSA2xxx devices
+>=20
+> for application to next week's 3.0.y, 3.2.y, and 3.3.y trees.
+[...]
 
-Would that be an appropriate solution, or do you think it's preferable to
-fix the trace event to properly annotate namespaces? I'm slanting towards
-just dropping current->pid from this patch for now.
+Added to the queue for 3.2.y, thanks.
 
-Auke
+Ben.
 
->
-> Eric
+--=20
+Ben Hutchings
+You can't have everything.  Where would you put it?
+
+--=-J/CWpTE1vatgI4/Vx2YS
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: This is a digitally signed message part
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIVAwUAT7r3Iee/yOyVhhEJAQpStA//V5ab8dHTLGGUFxokIMYLHgK+ofMmhvXi
+1IH5CHNPyITgcphXMQQAd0Lp5Vz6IMWta8vY5ikniukqIrzBM1EDS+zMUDW958EK
+nLlSNGO8Q91+psAheiWiFJTiquPuv/kEIDoHEJDv+lEDAjPqKC6bKOYRSyPtjt//
+Cy9jzoBlGEMPafnvnbwdQMq9reDZOd2jObFmnQ9kZJlb/VAmEvu9q3UPYhxboUyF
+I7xGMttxsF4+s9ErZWoTbMITXFAsxToocMhkjUhK8e3Tz9xLfql9+6Y0PbUBhuYR
+5G2ofovOJuHCuEZ0AeXTNYiZrznXOKI1MCX5CO+8JWkY8MSLdYghMA9xp5b9PKKU
+oSKciYFwzfSugBCwjOfRzRBLjpckxDy8VJd4MRj0NYY3KacgIX3Lvm2Qjs/oUELY
+RwkCsJKVLLSrlj7tEs05sACWZ//dbs/Iiw6IQSZ7K+TbueFunHOKSfvl/tbNHhVt
+WL6m7oO5o+RLn0QHYiLp4oCthTAEAixPrfUjtw7t42R1ZOBsVQn6jIKujkKbuVE0
+0mBOhJ5NUnK8zjYc0RoP/LDHZ7ZZd3O/8cqssf1EIcShbBdB8ntTedzrai2/6kRM
+au+9u2XXDIFLJt1l1b8rRz0/ngnDAdhDf/MNXZFl3kjCsYG07HNGY5TkzS9zLxN4
+HSYnkYEAYHE=
+=rDAL
+-----END PGP SIGNATURE-----
+
+--=-J/CWpTE1vatgI4/Vx2YS--
