@@ -1,95 +1,39 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757146Ab2EVMkv (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 May 2012 08:40:51 -0400
-Received: from mailhub.sw.ru ([195.214.232.25]:20319 "EHLO relay.sw.ru"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753360Ab2EVMku (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 May 2012 08:40:50 -0400
-Subject: [PATCH] NFS: init client before declaration
-To: Trond.Myklebust@netapp.com
-From: Stanislav Kinsbursky <skinsbursky@parallels.com>
-Cc: linux-nfs@vger.kernel.org, linux-kernel@vger.kernel.org, devel@openvz.org
-Date: Tue, 22 May 2012 16:40:49 +0400
-Message-ID: <20120522124018.338.20817.stgit@localhost.localdomain>
-User-Agent: StGit/0.16
+	id S1757895Ab2EVMmw (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 May 2012 08:42:52 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:53177 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751498Ab2EVMmv (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 May 2012 08:42:51 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <4FB8B2E6.5010601@onlinehome.de>
+References: <j2MgV-2Qe-9@gated-at.bofh.it>
+	<4FB8B2E6.5010601@onlinehome.de>
+Date: Tue, 22 May 2012 20:42:50 +0800
+Message-ID: <CAJd=RBDY3Vd8EYFz=n6smFK2EhypgHpvyC_eG1QyE3Us-Y8-qg@mail.gmail.com>
+Subject: Re: BFS 420: cleanup in tick handling
+From: Hillf Danton <dhillf@gmail.com>
+To: Martin <marogge@onlinehome.de>
+Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Client have to be initialized prior to adding it to per-net clients list,
-because otherwise there are races, shown below:
+Hi Martin
 
-CPU#0					CPU#1
-_____					_____
+On Sun, May 20, 2012 at 5:01 PM, Martin <marogge@onlinehome.de> wrote:
+> Hillf, I noticed you posting a few patches to BFS recently. Just wanted to
+> make you aware that there is a certain erm communication issue between the
 
-nfs_get_client
-nfs_alloc_client
-list_add(..., nfs_client_list)
-					rpc_fill_super
-					rpc_pipefs_event
-					nfs_get_client_for_event
-					__rpc_pipefs_event
-					(clp->cl_rpcclient is uninitialized)
-					BUG()
-init_client
-clp->cl_rpcclient = ...
+Would you please feel free to elaborate on the issue, btw?
+I'd stop posting, yes?
 
+> kernel maintainers and the author of BFS. Since he is busy in real life you
+> should contact him directly or cc him. See tail -1
 
-Signed-off-by: Stanislav Kinsbursky <skinsbursky@parallels.com>
----
- fs/nfs/client.c |   22 ++++++++++++----------
- 1 files changed, 12 insertions(+), 10 deletions(-)
+Fine, lets disturb less.
 
-diff --git a/fs/nfs/client.c b/fs/nfs/client.c
-index ae29d4f..9bf4702 100644
---- a/fs/nfs/client.c
-+++ b/fs/nfs/client.c
-@@ -525,7 +525,7 @@ nfs_get_client(const struct nfs_client_initdata *cl_init,
- 		cl_init->hostname ?: "", cl_init->rpc_ops->version);
- 
- 	/* see if the client already exists */
--	do {
-+	while (1) {
- 		spin_lock(&nn->nfs_client_lock);
- 
- 		clp = nfs_match_client(cl_init);
-@@ -537,10 +537,18 @@ nfs_get_client(const struct nfs_client_initdata *cl_init,
- 		spin_unlock(&nn->nfs_client_lock);
- 
- 		new = nfs_alloc_client(cl_init);
--	} while (!IS_ERR(new));
-+		if (IS_ERR(new)) {
-+			dprintk("--> nfs_get_client() = %ld [failed]\n", PTR_ERR(new));
-+			return new;
-+		}
- 
--	dprintk("--> nfs_get_client() = %ld [failed]\n", PTR_ERR(new));
--	return new;
-+		error = cl_init->rpc_ops->init_client(new, timeparms, ip_addr,
-+						      authflavour, noresvport);
-+		if (error < 0) {
-+			nfs_put_client(new);
-+			return ERR_PTR(error);
-+		}
-+	}
- 
- 	/* install a new client and return with it unready */
- install_client:
-@@ -548,12 +556,6 @@ install_client:
- 	list_add(&clp->cl_share_link, &nn->nfs_client_list);
- 	spin_unlock(&nn->nfs_client_lock);
- 
--	error = cl_init->rpc_ops->init_client(clp, timeparms, ip_addr,
--					      authflavour, noresvport);
--	if (error < 0) {
--		nfs_put_client(clp);
--		return ERR_PTR(error);
--	}
- 	dprintk("--> nfs_get_client() = %p [new]\n", clp);
- 	return clp;
- 
-
+> Documentation/scheduler/sched-BFS.txt for email.
