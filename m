@@ -1,32 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760046Ab2EVRlV (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 May 2012 13:41:21 -0400
-Received: from casper.infradead.org ([85.118.1.10]:60452 "EHLO
+	id S1760052Ab2EVRlm (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 May 2012 13:41:42 -0400
+Received: from casper.infradead.org ([85.118.1.10]:60451 "EHLO
 	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757166Ab2EVRkm (ORCPT
+	with ESMTP id S1756034Ab2EVRkl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 May 2012 13:40:42 -0400
+	Tue, 22 May 2012 13:40:41 -0400
 From: Arnaldo Carvalho de Melo <acme@infradead.org>
 To: Ingo Molnar <mingo@kernel.org>
-Cc: linux-kernel@vger.kernel.org,
-        Arnaldo Carvalho de Melo <acme@infradead.org>,
-        Anshuman Khandual <khandual@linux.vnet.ibm.com>,
+Cc: linux-kernel@vger.kernel.org, Jiri Olsa <jolsa@redhat.com>,
         Corey Ashford <cjashfor@linux.vnet.ibm.com>,
-        David Ahern <dsahern@gmail.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Frederic Weisbecker <fweisbec@redhat.com>,
-        Jiri Olsa <jolsa@redhat.com>, Mike Galbraith <efault@gmx.de>,
-        Namhyung Kim <namhyung@gmail.com>, Namhyung Kim <namhyung.kim@lge.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>, Ingo Molnar <mingo@elte.hu>,
         Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Stephane Eranian <eranian@google.com>,
-        Steven Rostedt <rostedt@goodmis.org>, Tom Zanussi <tzanussi@gmail.com>,
-        arnaldo.melo@gmail.com, Arnaldo Carvalho de Melo <acme@redhat.com>
-Subject: [GIT PULL 00/19] perf/core improvements and fixes
-Date: Tue, 22 May 2012 14:39:58 -0300
-Message-Id: <1337708407-24522-1-git-send-email-acme@infradead.org>
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>
+Subject: [PATCH 04/19] perf tools: Separate 'mem:' event scanner bits
+Date: Tue, 22 May 2012 14:40:02 -0300
+Message-Id: <1337708407-24522-5-git-send-email-acme@infradead.org>
 X-Mailer: git-send-email 1.7.9.2.358.g22243
+In-Reply-To: <1337708407-24522-1-git-send-email-acme@infradead.org>
+References: <1337708407-24522-1-git-send-email-acme@infradead.org>
 Content-Type: text/plain; charset="UTF-8"
 X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by casper.infradead.org
 	See http://www.infradead.org/rpr.html
@@ -34,99 +28,101 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Ingo,
+From: Jiri Olsa <jolsa@redhat.com>
 
-	Please consider pulling,
+Separating 'mem:' scanner processing, so we can parse out modifier
+specifically and dont clash with other rules.
 
-- Arnaldo
+This is just precaution for the future, so we dont need to worry about
+the rules clashing where we need to parse out any sub-rule of global
+rules.
 
-The following changes since commit 73787190d04a34e6da745da893b3ae8bedde418f:
-
-  Merge branch 'perf/parse-events-4' of git://github.com/fweisbec/tracing into perf/core (2012-05-21 10:42:09 +0200)
-
-are available in the git repository at:
-
-
-  git://git.kernel.org/pub/scm/linux/kernel/git/acme/linux perf/core
-
-for you to fetch changes up to 26252ea675663d1bc6747125fcaa2b7cc4ed8a03:
-
-  perf evlist: Show event attribute details (2012-05-22 14:30:11 -0300)
-
-----------------------------------------------------------------
-Fixes and improvements for perf/core:
-
-. Fix perf perl script build fallout from libtraceevent conversion,
-  from Frederic Weisbecker.
-
-. Libtraceevent Makefile fixes, from Namhyung Kim
-
-. Pipe mode fixes, from Stephane Eranian
-
-. Event parsing improvements, from Jiri Olsa.
-
-. Endianness fixes, from Jiri Olsa
-
-. Bump the default sampling freq to 4 kHz, requested by Ingo Molnar.
-
-. Show event attribute details, such as the sampling freq, in the
-  'perf evlist' command.
-
+Signed-off-by: Jiri Olsa <jolsa@redhat.com>
+Cc: Corey Ashford <cjashfor@linux.vnet.ibm.com>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Ingo Molnar <mingo@elte.hu>
+Cc: Paul Mackerras <paulus@samba.org>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Link: http://lkml.kernel.org/r/1337584373-2741-5-git-send-email-jolsa@redhat.com
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
+---
+ tools/perf/util/parse-events.c |    1 +
+ tools/perf/util/parse-events.l |   25 +++++++++++++++++++++++--
+ 2 files changed, 24 insertions(+), 2 deletions(-)
 
-----------------------------------------------------------------
-Anshuman Khandual (1):
-      perf record: Fix documentation for branch stack sampling
+diff --git a/tools/perf/util/parse-events.c b/tools/perf/util/parse-events.c
+index 4025e18..59324e7 100644
+--- a/tools/perf/util/parse-events.c
++++ b/tools/perf/util/parse-events.c
+@@ -787,6 +787,7 @@ int parse_events(struct perf_evlist *evlist, const char *str, int unset __used)
+ 
+ 	parse_events__flush_buffer(buffer);
+ 	parse_events__delete_buffer(buffer);
++	parse_events_lex_destroy();
+ 
+ 	if (!ret) {
+ 		int entries = idx - evlist->nr_entries;
+diff --git a/tools/perf/util/parse-events.l b/tools/perf/util/parse-events.l
+index 1fcf1bb..331d28a 100644
+--- a/tools/perf/util/parse-events.l
++++ b/tools/perf/util/parse-events.l
+@@ -1,5 +1,6 @@
+ 
+ %option prefix="parse_events_"
++%option stack
+ 
+ %{
+ #include <errno.h>
+@@ -50,6 +51,8 @@ static int term(int type)
+ 
+ %}
+ 
++%x mem
++
+ num_dec		[0-9]+
+ num_hex		0x[a-fA-F0-9]+
+ num_raw_hex	[a-fA-F0-9]+
+@@ -105,13 +108,12 @@ config2			{ return term(PARSE_EVENTS__TERM_TYPE_CONFIG2); }
+ period			{ return term(PARSE_EVENTS__TERM_TYPE_SAMPLE_PERIOD); }
+ branch_type		{ return term(PARSE_EVENTS__TERM_TYPE_BRANCH_SAMPLE_TYPE); }
+ 
+-mem:			{ return PE_PREFIX_MEM; }
++mem:			{ BEGIN(mem); return PE_PREFIX_MEM; }
+ r{num_raw_hex}		{ return raw(); }
+ {num_dec}		{ return value(10); }
+ {num_hex}		{ return value(16); }
+ 
+ {modifier_event}	{ return str(PE_MODIFIER_EVENT); }
+-{modifier_bp}		{ return str(PE_MODIFIER_BP); }
+ {name}			{ return str(PE_NAME); }
+ "/"			{ return '/'; }
+ -			{ return '-'; }
+@@ -119,6 +121,25 @@ r{num_raw_hex}		{ return raw(); }
+ :			{ return ':'; }
+ =			{ return '='; }
+ 
++<mem>{
++{modifier_bp}		{ return str(PE_MODIFIER_BP); }
++:			{ return ':'; }
++{num_dec}		{ return value(10); }
++{num_hex}		{ return value(16); }
++	/*
++	 * We need to separate 'mem:' scanner part, in order to get specific
++	 * modifier bits parsed out. Otherwise we would need to handle PE_NAME
++	 * and we'd need to parse it manually. During the escape from <mem>
++	 * state we need to put the escaping char back, so we dont miss it.
++	 */
++.			{ unput(*parse_events_text); BEGIN(INITIAL); }
++	/*
++	 * We destroy the scanner after reaching EOF,
++	 * but anyway just to be sure get back to INIT state.
++	 */
++<<EOF>>			{ BEGIN(INITIAL); }
++}
++
+ %%
+ 
+ int parse_events_wrap(void)
+-- 
+1.7.9.2.358.g22243
 
-Arnaldo Carvalho de Melo (2):
-      perf tools: Bump default sample freq to 4 kHz
-      perf evlist: Show event attribute details
-
-Frederic Weisbecker (2):
-      perf script: Explicitly handle known default print arg type
-      perf script: Rename struct event to struct event_format in perl engine
-
-Jiri Olsa (7):
-      perf test: Move parse event automated tests to separated object
-      perf tools: Add support for displaying event parser debug info
-      perf tools: Use allocated list for each parsed event
-      perf tools: Separate 'mem:' event scanner bits
-      perf tools: Add hardcoded name term for pmu events
-      perf tools: Carry perf_event_attr bitfield throught different endians
-      perf tools: Add union u64_swap type for swapping u64 data
-
-Namhyung Kim (3):
-      perf tools: Rename libparsevent to libtraceevent in Makefile
-      perf tools: Always try to build libtraceevent
-      perf target: Add cpu flag to sample_type if target has cpu
-
-Stephane Eranian (4):
-      perf tools: rename HEADER_TRACE_INFO to HEADER_TRACING_DATA
-      perf inject: Fix broken perf inject -b
-      perf tools: Fix piped mode read code
-      perf buildid-list: Work better with pipe mode
-
- tools/perf/Documentation/perf-evlist.txt           |    8 +
- tools/perf/Documentation/perf-record.txt           |    2 +-
- tools/perf/Makefile                                |   37 +-
- tools/perf/builtin-buildid-list.c                  |    6 +-
- tools/perf/builtin-evlist.c                        |  103 +++-
- tools/perf/builtin-inject.c                        |    5 +
- tools/perf/builtin-record.c                        |    6 +-
- tools/perf/builtin-test.c                          |  552 +----------------
- tools/perf/builtin-top.c                           |    5 +-
- tools/perf/util/build-id.c                         |    2 +
- tools/perf/util/evsel.c                            |   12 +-
- tools/perf/util/header.c                           |   10 +-
- tools/perf/util/header.h                           |    2 +-
- tools/perf/util/parse-events-test.c                |  625 ++++++++++++++++++++
- tools/perf/util/parse-events.c                     |   69 ++-
- tools/perf/util/parse-events.h                     |   20 +-
- tools/perf/util/parse-events.l                     |   26 +-
- tools/perf/util/parse-events.y                     |   77 ++-
- tools/perf/util/pmu.c                              |    4 +-
- .../perf/util/scripting-engines/trace-event-perl.c |   16 +-
- tools/perf/util/session.c                          |   68 ++-
- tools/perf/util/types.h                            |    5 +
- 22 files changed, 1002 insertions(+), 658 deletions(-)
- create mode 100644 tools/perf/util/parse-events-test.c
