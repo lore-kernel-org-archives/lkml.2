@@ -1,95 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757986Ab2EVDET (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 May 2012 23:04:19 -0400
-Received: from haggis.pcug.org.au ([203.10.76.10]:46409 "EHLO
-	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757589Ab2EVDEA (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 May 2012 23:04:00 -0400
-Date: Tue, 22 May 2012 13:03:54 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: David Rientjes <rientjes@google.com>
-Cc: LKML <linux-kernel@vger.kernel.org>, linux-next@vger.kernel.org,
-        ppc-dev <linuxppc-dev@lists.ozlabs.org>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Lee Schermerhorn <lee.schermerhorn@hp.com>,
-        Linus <torvalds@linux-foundation.org>
-Subject: Re: linux-next: PowerPC boot failures in next-20120521
-Message-Id: <20120522130354.fdb335eb294f4206b4b2fed5@canb.auug.org.au>
-In-Reply-To: <alpine.DEB.2.00.1205211846120.20916@chino.kir.corp.google.com>
-References: <20120522114051.0c9db9a7c2d660bc9e0e1be2@canb.auug.org.au>
-	<alpine.DEB.2.00.1205211846120.20916@chino.kir.corp.google.com>
-X-Mailer: Sylpheed 3.2.0beta7 (GTK+ 2.24.10; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Tue__22_May_2012_13_03_54_+1000_haxAE.AciyWA7TxE"
+	id S1757309Ab2EVDFB (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 May 2012 23:05:01 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:47905 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753231Ab2EVDE7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 21 May 2012 23:04:59 -0400
+Message-ID: <4FBB0250.20100@redhat.com>
+Date: Tue, 22 May 2012 00:04:48 -0300
+From: Mauro Carvalho Chehab <mchehab@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
+MIME-Version: 1.0
+To: Borislav Petkov <borislav.petkov@amd.com>
+CC: "Luck, Tony" <tony.luck@intel.com>, Ingo Molnar <mingo@kernel.org>,
+        Linux Edac Mailing List <linux-edac@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Aristeu Rozanski <arozansk@redhat.com>,
+        Doug Thompson <norsk5@yahoo.com>, Steven Rostedt <rostedt@goodmis.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Ingo Molnar <mingo@redhat.com>
+Subject: Re: [PATCH v24b] RAS: Add a tracepoint for reporting memory controller
+ events
+References: <4FB65D52.9060108@redhat.com> <20120518164014.GX20215@aftab.osrc.amd.com> <4FB6866E.7090503@redhat.com> <20120518185258.GE20215@aftab.osrc.amd.com> <3908561D78D1C84285E8C5FCA982C28F192F1A33@ORSMSX104.amr.corp.intel.com> <20120518211211.GA26464@aftab.osrc.amd.com> <20120519092618.GC29991@aftab.osrc.amd.com> <4FBA5F59.5000604@redhat.com> <20120521160041.GJ3334@aftab.osrc.amd.com> <4FBA6FE8.50707@redhat.com> <20120521204042.GA14255@aftab.osrc.amd.com>
+In-Reply-To: <20120521204042.GA14255@aftab.osrc.amd.com>
+X-Enigmail-Version: 1.4.1
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Tue__22_May_2012_13_03_54_+1000_haxAE.AciyWA7TxE
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+<offensive comments skipped>
 
-Hi David,
+Em 21-05-2012 17:40, Borislav Petkov escreveu:
+> On Mon, May 21, 2012 at 01:40:08PM -0300, Mauro Carvalho Chehab wrote:
+>> That's exactly what the latest version of this patch does.
+> 
+> Really, where is the address field?
+> 
+> +       TP_PROTO(const unsigned int err_type,
+> +                const unsigned int mc_index,
+> +                const char *error_msg,
+> +                const char *label,
+> +                const char *location,
+> +                const char *core_detail,
+> +                const char *driver_detail),
+> 
+> 
+> [ … ]
 
-On Mon, 21 May 2012 18:53:37 -0700 (PDT) David Rientjes <rientjes@google.co=
-m> wrote:
->
-> Yeah, it's sched/numa since that's what introduced numa_init().  It does=
-=20
-> for_each_node() for each node and does a kmalloc_node() even though that=
-=20
-> node may not be online.  Slub ends up passing this node to the page=20
-> allocator through alloc_pages_exact_node().  CONFIG_DEBUG_VM would have=20
-> caught this and your config confirms its not enabled.
->=20
-> sched/numa either needs a memory hotplug notifier or it needs to pass=20
-> NUMA_NO_NODE for nodes that aren't online.  Until we get the former, the=
-=20
-> following should fix it.
->=20
->=20
-> sched, numa: Allocate node_queue on any node for offline nodes
->=20
-> struct node_queue must be allocated with NUMA_NO_NODE for nodes that are=
-=20
-> not (yet) online, otherwise the page allocator has a bad zonelist.
->=20
-> Signed-off-by: David Rientjes <rientjes@google.com>
+The above is not the latest version of it. The latest version is:
+	http://www.spinics.net/lists/kernel/msg1343822.html
 
-Thanks, that fixes it.
+The definition there is:
 
-Tested-by: Stephen Rothwell <sfr@canb.auug.org.au>
++/*
++ * Default error mechanisms for Memory Controller errors (CE and UE)
++ */
++TRACE_EVENT(mc_event,
++
++	TP_PROTO(const unsigned int err_type,
++		 const unsigned int mc_index,
++		 const char *error_msg,
++		 const char *label,
++		 int layer0,
++		 int layer1,
++		 int layer2,
++		 unsigned long pfn,
++		 unsigned long offset,
++		 unsigned long grain,
++		 unsigned long syndrome,
++		 const char *driver_detail),
++
++	TP_ARGS(err_type, mc_index, error_msg, label, layer0, layer1, layer2,
++		pfn, offset, grain, syndrome, driver_detail),
 
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
+The address is there using the edac way to represent it (page, offset, grain). 
 
---Signature=_Tue__22_May_2012_13_03_54_+1000_haxAE.AciyWA7TxE
-Content-Type: application/pgp-signature
+> We're going to have single fields for EDAC-global valid values and leave
+> the driver-specific stuff lumped in one char * string.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
+That's exactly what I said. 
 
-iQIcBAEBCAAGBQJPuwIaAAoJEECxmPOUX5FEoj8P/izwzpFzKBIxDEt4t+Nx8b5a
-KEHdgnB0XA7jd6W5O5cr+QikpYBqoZso1iSzO72bLcDgG3hSiX2yuXexFNCerVfI
-nKFZtsbyZ2G5NhZKaQFdglMtTpAraUBVoJevEF3bB/miijBgK4cnDgwVpX0mKlFd
-QL3SBgEoUVBF7Qdy8HQD204fqO015ykQyTn6flsWA/S7eVEQ07eOhsFCY5NhwDHb
-V8h++WCvdrdSd/HyiIlgJMM3SOIjcd0SrbklIaR0wk2mAXyj7Tvz96WOwad4WR4Z
-SMt3DityCY6oS/QR1Bd5zcNTDz8FKd8adPM8JyyGSx9AwLu6tSAf8toEadncRLTp
-LdMm+aoysJCX9fEJNwC9n8w14ubTSyvP0135MZythF3RW27yKuOgaJ5P3BgGhn/I
-8ZpukpHLfMlWWT2jrSCJt63fjyCi4++SSFk7lZPHZTvgNns/LQjBeVkwZH3IJUux
-NXzqpGFlgrjpiS/mYRZyL6tY9Z71cI141PUPPfPUwBLi8F2So9dAHRM6krsKjvY4
-9FMzW+ax5Slnt1Q/7+ajcODC+UFfYDAtanwszAdKYfTRQxTIj9Gnmx8WhdBkFdz9
-UtKsxXe5yyo2t4s/kyPX3aOIRmzZYp6xgcRpkLblcXf6mNVd2vGj/ozR7KNTSH/2
-JinIuO9RyoOq4VwvtALM
-=BcqL
------END PGP SIGNATURE-----
+See above. driver_detail is a char string, with
+the driver specific stuff. The EDAC global values are represented as-is
+without being converted to integers.
 
---Signature=_Tue__22_May_2012_13_03_54_+1000_haxAE.AciyWA7TxE--
+Regards,
+Mauro
