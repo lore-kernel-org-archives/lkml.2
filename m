@@ -1,109 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760090Ab2EVSGo (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 May 2012 14:06:44 -0400
-Received: from e36.co.us.ibm.com ([32.97.110.154]:39312 "EHLO
-	e36.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760036Ab2EVSGn (ORCPT
+	id S1760038Ab2EVSHK (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 May 2012 14:07:10 -0400
+Received: from na3sys009aog102.obsmtp.com ([74.125.149.69]:57121 "EHLO
+	na3sys009aog102.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755172Ab2EVSHH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 May 2012 14:06:43 -0400
-Message-ID: <4FBBD591.1000103@linaro.org>
-Date: Tue, 22 May 2012 11:06:09 -0700
-From: John Stultz <john.stultz@linaro.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
+	Tue, 22 May 2012 14:07:07 -0400
 MIME-Version: 1.0
-To: Richard Cochran <richardcochran@gmail.com>
-CC: linux-kernel@vger.kernel.org, Thomas Gleixner <tglx@linutronix.de>
-Subject: Re: [PATCH RFC V2 3/6] time: keep track of the pending utc/tai threshold
-References: <cover.1337348892.git.richardcochran@gmail.com> <6777ac8ebc321c67d13fdb8d0a3d826332b60f1f.1337348892.git.richardcochran@gmail.com> <4FBA84EF.5040506@linaro.org> <20120521190815.GA19812@netboy.at.omicron.at> <20120522173953.GA4177@netboy.at.omicron.at>
-In-Reply-To: <20120522173953.GA4177@netboy.at.omicron.at>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 12052218-7606-0000-0000-00000089BD15
+In-Reply-To: <20120522135813.GL8730@tbergstrom-lnx.Nvidia.com>
+References: <1336798797-8724-1-git-send-email-skannan@codeaurora.org>
+ <4FB29E7C.7010606@codeaurora.org> <20120522135813.GL8730@tbergstrom-lnx.Nvidia.com>
+From: "Turquette, Mike" <mturquette@ti.com>
+Date: Tue, 22 May 2012 11:06:45 -0700
+Message-ID: <CAJOA=zOcEQc70gg+4U2jNaNRTB5YeyOwgsL12YWNoviQ5qFjaQ@mail.gmail.com>
+Subject: Re: [PATCH] clk: Fix race conditions between clk_set_parent() and clk_enable()
+To: Peter De Schrijver <pdeschrijver@nvidia.com>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>
+Cc: Saravana Kannan <skannan@codeaurora.org>, Andrew Lunn <andrew@lunn.ch>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Jamie Iles <jamie@jamieiles.com>,
+        Jeremy Kerr <jeremy.kerr@canonical.com>,
+        Magnus Damm <magnus.damm@gmail.com>,
+        Deepak Saxena <dsaxena@linaro.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Arnd Bergman <arnd.bergmann@linaro.org>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        "linux-arm-msm@vger.kernel.org" <linux-arm-msm@vger.kernel.org>,
+        Sascha Hauer <s.hauer@pengutronix.de>,
+        Rob Herring <rob.herring@calxeda.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Richard Zhao <richard.zhao@linaro.org>,
+        Shawn Guo <shawn.guo@freescale.com>, Paul Walmsley <paul@pwsan.com>,
+        Linus Walleij <linus.walleij@stericsson.com>,
+        Stephen Boyd <sboyd@codeaurora.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Amit Kucheria <amit.kucheria@linaro.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/22/2012 10:39 AM, Richard Cochran wrote:
-> On Mon, May 21, 2012 at 09:08:15PM +0200, Richard Cochran wrote:
->> On Mon, May 21, 2012 at 11:09:51AM -0700, John Stultz wrote:
->>> On 05/18/2012 07:09 AM, Richard Cochran wrote:
->>>> +	/* Tracks where we stand with regard to leap the second epoch. */
->>>> +	enum {
->>>> +		LEAP_IDLE,
->>>> +		LEAP_INS_PENDING,
->>>> +		LEAP_INS_DONE,
->>>> +		LEAP_DEL_PENDING,
->>>> +		LEAP_DEL_DONE,
->>>> +	} leap_state;
-> ...
+On Tue, May 22, 2012 at 6:58 AM, Peter De Schrijver
+<pdeschrijver@nvidia.com> wrote:
+> On Tue, May 15, 2012 at 08:20:44PM +0200, Saravana Kannan wrote:
+>> On 05/11/2012 09:59 PM, Saravana Kannan wrote:
+>> > Without this patch, the following race conditions are possible.
+>> >
+>> > Race condition 1:
+>> > * clk-A has two parents - clk-X and clk-Y.
+>> > * All three are disabled and clk-X is current parent.
+>> > * Thread A: clk_set_parent(clk-A, clk-Y).
+>> > * Thread A:<snip execution flow>
+>> > * Thread A: Grabs enable lock.
+>> > * Thread A: Sees enable count of clk-A is 0, so doesn't enable clk-Y.
+>> > * Thread A: Releases enable lock.
+>> > * Thread B: Calls clk_enable(clk-A), which in turn enables clk-X.
+>> > * Thread A: Switches clk-A's parent to clk-Y in hardware.
+>> >
+>> > clk-A is now enabled in software, but not clocking in hardware.
+>> >
+>> > Race condition 2:
+>> > * clk-A has two parents - clk-X and clk-Y.
+>> > * All three are disabled and clk-X is current parent.
+>> > * Thread A: clk_set_parent(clk-A, clk-Y).
+>> > * Thread A:<snip execution flow>
+>> > * Thread A: Switches parent in hardware to clk-Y.
+>> > * Thread A: Grabs enable lock.
+>> > * Thread A: Sees enable count of clk-A is 0, so doesn't disable clk-X.
+>> > * Thread A: Releases enable lock.
+>> > * Thread B: Calls clk_enable(clk-A)
+>> > * Thread B: Software state still says parent is clk-X.
+>> > * Thread B: So, enables clk-X and then itself.
+>> > * Thread A: Updates parent in software state to clk-Y.
+>> >
 >
->> I don't think I am explaining this very well. I will try again to make
->> it clear using a table or something later on.
-> The following table illustrates what happens around a (fictitious)
-> leap second. Imagine a new epoch will occur at UTC time value 10 and
-> the new TAI - UTC offset will be 2 seconds. The columns of the table
-> show the values of the relevant time variables.
+> This looks correct to me. Is there any usecase where enabling/disabling a
+> clock would require sleeping but changing the parent would not?
 >
-> U:     UTC time
-> CODE:  NTP time code
-> T:     TAI - UTC offset
-> P:     pending (explained below)
+
+clk_enable & clk_disable must never sleep.  clk_prepare and
+clk_unprepare may sleep.
+
+This patch would require the WM831x clock driver to set
+CLK_SET_PARENT_GATE for the clkout mux.  The latest version of this
+driver sent out by Mark does not do this and I imagine that is because
+the hardware has no requirement for the mux clock to gate while
+switching parents.  Holding the spinlock across the .set_parent
+callback breaks this driver since .set_parent results in an i2c
+transaction.
+
+Mark, do you have an opinion on the requirements that this patch
+imposes on your driver?
+
+Regards,
+Mike
+
+> Cheers,
 >
->     U   CODE    T   P
->   --------------------
->     1   INS     1   1  leap second sheduled
->   --------------------
->     2   INS     1   1
->   --------------------
->         ...
->   --------------------
->     8   INS     1   1
->   --------------------
->     9   INS     1   1
->   --------------------
-> | 10   OOP     1   1  leap second, 1st tick
-> |~~~~~~~~~~~~~~~~~~~
-> |  9           2   0  leap second, 2nd and subsequent ticks
->   --------------------
->    10   WAIT    2   0  new epoch
->   --------------------
->    11   WAIT    2   0
-
-Not sure I'm still following.
-
-It seems currently we have:
-
-    U   CODE    T
-  ----------------
-    9   INS     1
-  ----------------
-   10   INS     1     pre tick, post leap second edge (this is the technically incorrect interval)
-  ~~~~~~~~~~~~~~~~
-    9   OOP     2     post tick, post leap second edge
-  ----------------
-   10   WAIT    2     new epoch
-
-
-If you're trying to correct the pre-tick, post leap second edge, the above provides all you need.
-
-In the adjtimex code, all you have to do is:
-
-
-if (unlikely(CODE == INS&&  U == 10))
-
-	/*note, we're not modifying state here, just returning corrected local values*/
-
-	return (U-1, OOP, T+1);
-
-return (U,CODE, T);
-
-
-Since when the tick triggers, we'll move the CODE state appropriately.
-
-Or am I still missing something?
-
-thanks
--john
-
+> Peter.
+>
+> _______________________________________________
+> linux-arm-kernel mailing list
+> linux-arm-kernel@lists.infradead.org
+> http://lists.infradead.org/mailman/listinfo/linux-arm-kernel
