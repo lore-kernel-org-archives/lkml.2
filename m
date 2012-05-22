@@ -1,52 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752322Ab2EVEZr (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 May 2012 00:25:47 -0400
-Received: from mail-wi0-f172.google.com ([209.85.212.172]:53205 "EHLO
-	mail-wi0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751375Ab2EVEZp (ORCPT
+	id S1752526Ab2EVE0x (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 May 2012 00:26:53 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:35752 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751983Ab2EVE0v (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 May 2012 00:25:45 -0400
-Date: Tue, 22 May 2012 06:25:34 +0200
-From: Richard Cochran <richardcochran@gmail.com>
-To: John Stultz <john.stultz@linaro.org>
-Cc: linux-kernel@vger.kernel.org, Thomas Gleixner <tglx@linutronix.de>
-Subject: Re: [PATCH RFC V2 4/6] time: introduce leap second functional
- interface
-Message-ID: <20120522042534.GA2184@netboy.at.omicron.at>
-References: <cover.1337348892.git.richardcochran@gmail.com>
- <eee0b50afdea829c727d6210afb8299a4cf30981.1337348892.git.richardcochran@gmail.com>
- <4FBA82DF.9060009@linaro.org>
- <20120521191844.GC19812@netboy.at.omicron.at>
- <4FBAA499.1070905@linaro.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4FBAA499.1070905@linaro.org>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Tue, 22 May 2012 00:26:51 -0400
+Message-ID: <1337660802.3814.0.camel@phoenix>
+Subject: [PATCH v2] regulator: palmas: Use
+ regulator_[list|map]_voltage_linear() for palmas_ops_smps10
+From: Axel Lin <axel.lin@gmail.com>
+To: linux-kernel@vger.kernel.org
+Cc: Graeme Gregory <gg@slimlogic.co.uk>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Liam Girdwood <lrg@ti.com>
+Date: Tue, 22 May 2012 12:26:42 +0800
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.2- 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, May 21, 2012 at 01:24:57PM -0700, John Stultz wrote:
-> On 05/21/2012 12:18 PM, Richard Cochran wrote:
-> Hrm.  I prefer to keep things fairly flat (even having time.h and
-> timex.h bugs me somewhat).  But having such a separation could be
-> useful, but maybe at a slightly more coarse level. Something like
-> timekeeping-internal.h and time.h, splitting all the general
-> accessors away from the non-general.
+Signed-off-by: Axel Lin <axel.lin@gmail.com>
+Acked-by: Graeme Gregory <gg@slimlogic.co.uk>
+---
+V2: trivial typo fix
 
-Yes, time.h is full of stuff not really for public use. When compiling
-on an atom netbook as I do, it gets really noticeable and annoying
-when you tweak some private prototype, and then the whole darn kernel
-rebuilds.
+ drivers/regulator/palmas-regulator.c |   11 ++++-------
+ 1 files changed, 4 insertions(+), 7 deletions(-)
 
-> The locking order is pretty straight forward: timekeeper.lock ->
-> ntp_lock.   This only gets messy when you require timekeeping data
-> from the ntp context, but usually we provide the required data via
-> the caller.  But better documentation is always welcome.
+diff --git a/drivers/regulator/palmas-regulator.c b/drivers/regulator/palmas-regulator.c
+index 9b7ca90..4fd8333 100644
+--- a/drivers/regulator/palmas-regulator.c
++++ b/drivers/regulator/palmas-regulator.c
+@@ -400,19 +400,14 @@ static struct regulator_ops palmas_ops_smps = {
+ 	.map_voltage		= palmas_map_voltage_smps,
+ };
+ 
+-static int palmas_list_voltage_smps10(struct regulator_dev *dev,
+-					unsigned selector)
+-{
+-	return 3750000 + (selector * 1250000);
+-}
+-
+ static struct regulator_ops palmas_ops_smps10 = {
+ 	.is_enabled		= regulator_is_enabled_regmap,
+ 	.enable			= regulator_enable_regmap,
+ 	.disable		= regulator_disable_regmap,
+ 	.get_voltage_sel	= regulator_get_voltage_sel_regmap,
+ 	.set_voltage_sel	= regulator_set_voltage_sel_regmap,
+-	.list_voltage		= palmas_list_voltage_smps10,
++	.list_voltage		= regulator_list_voltage_linear,
++	.map_voltage		= regulator_map_voltage_linear,
+ };
+ 
+ static int palmas_is_enabled_ldo(struct regulator_dev *dev)
+@@ -675,6 +670,8 @@ static __devinit int palmas_probe(struct platform_device *pdev)
+ 			pmic->desc[id].vsel_mask = SMPS10_VSEL;
+ 			pmic->desc[id].enable_reg = PALMAS_SMPS10_STATUS;
+ 			pmic->desc[id].enable_mask = SMPS10_BOOST_EN;
++			pmic->desc[id].min_uV = 3750000;
++			pmic->desc[id].uV_step = 1250000;
+ 		}
+ 
+ 		pmic->desc[id].type = REGULATOR_VOLTAGE;
+-- 
+1.7.5.4
 
-The icky part is the fact that ntp would need access to timekeeper
-state while holding ntp_lock.
 
-Richard
+
