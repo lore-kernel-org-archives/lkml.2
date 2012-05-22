@@ -1,51 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754164Ab2EVFhg (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 May 2012 01:37:36 -0400
+	id S1754457Ab2EVFhi (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 May 2012 01:37:38 -0400
 Received: from mail-pz0-f46.google.com ([209.85.210.46]:57599 "EHLO
 	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753265Ab2EVFhe (ORCPT
+	with ESMTP id S1754185Ab2EVFhg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 May 2012 01:37:34 -0400
+	Tue, 22 May 2012 01:37:36 -0400
 From: Olof Johansson <olof@lixom.net>
 To: torvalds@linux-foundation.org
 Cc: arm@kernel.org, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org
-Subject: [GIT PULL 0/8] First batch of arm-soc branches for 3.5
-Date: Mon, 21 May 2012 22:35:00 -0700
-Message-Id: <1337664908-17478-1-git-send-email-olof@lixom.net>
+        linux-arm-kernel@lists.infradead.org, Olof Johansson <olof@lixom.net>
+Subject: [GIT PULL 1/8] arm-soc: updates for MAINTAINERS file
+Date: Mon, 21 May 2012 22:35:01 -0700
+Message-Id: <1337664908-17478-2-git-send-email-olof@lixom.net>
 X-Mailer: git-send-email 1.7.10.1.488.g05fbf7a
+In-Reply-To: <1337664908-17478-1-git-send-email-olof@lixom.net>
+References: <1337664908-17478-1-git-send-email-olof@lixom.net>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Linus,
+This is a collection of updates to the MAINTAINERS file, separated out
+mostly to give an overview of what has changed regarding who does what.
 
-These are the first 8 pull requests for arm-soc for the 3.5 merge window,
-containing roughly half of our queued up changes.
+In particular, at91, orion and prima2 platforms and drivers are updated
+in this batch.
 
-Descriptions of each branch are in the corresponding request.
+----------------------------------------------------------------
 
-A few things to note:
+The following changes since commit 471368557a734c6c486ee757952c902b36e7fd01:
 
-* For reference I have pushed a merge-resolved branch against 47136855
-  for every tag, to be found at resolved/<tagname>.
+  Merge branch 'irq-core-for-linus' of git://git.kernel.org/pub/scm/linux/kernel/git/tip/tip
 
-* There will be a conflict with the staging tree in two of the at91
-  device tree files (at91sam9260.dtsi and at91sam9g20.dtsi). The
-  version in arm-soc is the correct one (see
-  http://marc.info/?l=linux-arm-kernel&m=133734654114734&w=2 for history).
+are available in the git repository at:
 
-* If you pull the staging tree before the 4th branch (device tree
-  conversions), please also be aware of an automatic merge resolution error
-  discovered in -next (see pull request for details, same thread as above).
+  git://git.kernel.org/pub/scm/linux/kernel/git/arm/arm-soc.git tags/maintainers
 
-* The 4th branch (device tree conversions) contains 4 patches that is
-  also going through the embedded i2c tree. Wolfram agreed earlier that
-  we could merge these through arm-soc so they are included here.
+for you to fetch changes up to 47ac3e44cfd253a227734ed375435566ffddc173:
+
+  MAINTAINER: add some drivers upstreamed in CSR SIRFPRIMA2
+
+----------------------------------------------------------------
+
+Arnd Bergmann (1):
+      Merge tag 'at91-3.5-maintainers' of git://github.com/at91linux/linux-at91 into next/maintainers
+
+Barry Song (1):
+      MAINTAINER: add some drivers upstreamed in CSR SIRFPRIMA2
+
+Josh Wu (2):
+      MAINTAINERS: add entry for Atmel isi driver
+      MAINTAINERS: add entry for Atmel touch screen ADC controller driver
+
+Nicolas Ferre (3):
+      MAINTAINERS: add entry for Atmel DMA driver
+      MAINTAINERS: add entry for Atmel timer counter (TC)
+      MAINTAINERS: remove non-responding web link for atmel_usba driver
+
+Nicolas Pitre (1):
+      maintainership update for the Marvell Orion family of SOCs
 
 
-Thanks!
-
--Olof
-
+ MAINTAINERS | 43 +++++++++++++++++++++++++++++++++++++------
+ 1 file changed, 37 insertions(+), 6 deletions(-)
