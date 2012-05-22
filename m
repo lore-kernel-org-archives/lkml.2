@@ -1,76 +1,124 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757275Ab2EVJUl (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 May 2012 05:20:41 -0400
-Received: from ducie-dc1.codethink.co.uk ([37.128.190.40]:42567 "EHLO
-	ducie-dc1.codethink.co.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757073Ab2EVJUk (ORCPT
+	id S1757305Ab2EVJV5 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 May 2012 05:21:57 -0400
+Received: from smtp.eu.citrix.com ([62.200.22.115]:28772 "EHLO
+	SMTP.EU.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756557Ab2EVJVz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 May 2012 05:20:40 -0400
-Message-ID: <4FBB5A72.2080101@codethink.co.uk>
-Date: Tue, 22 May 2012 10:20:50 +0100
-From: Ben Dooks <ben.dooks@codethink.co.uk>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.4) Gecko/20120510 Icedove/10.0.4
-MIME-Version: 1.0
-To: Peter De Schrijver <pdeschrijver@nvidia.com>
-CC: "Turquette, Mike" <mturquette@ti.com>,
-        Prashant Gaikwad <pgaikwad@nvidia.com>,
+	Tue, 22 May 2012 05:21:55 -0400
+X-IronPort-AV: E=Sophos;i="4.75,637,1330905600"; 
+   d="scan'208";a="12598025"
+Message-ID: <1337678512.10118.40.camel@zakaz.uk.xensource.com>
+Subject: Re: [PATCH] xen/netback: calculate correctly the SKB slots.
+From: Ian Campbell <Ian.Campbell@citrix.com>
+To: Ben Hutchings <bhutchings@solarflare.com>
+CC: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        "davem@davemloft.net" <davem@davemloft.net>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: Re: Clock register in early init
-References: <1337227884.2066.9.camel@pgaikwad-dt2> <20120517062131.GA9305@gmail.com> <1337316517.22560.19.camel@pgaikwad-dt2> <20120518112104.GL20304@tbergstrom-lnx.Nvidia.com> <CAJOA=zM_o1Nqw55xxFvw6KssM50Q+7yyo41rUSH2Aoo1neTMjg@mail.gmail.com> <20120521084642.GV20304@tbergstrom-lnx.Nvidia.com>
-In-Reply-To: <20120521084642.GV20304@tbergstrom-lnx.Nvidia.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+        Adnan Misherfi <adnan.misherfi@oracle.com>
+Date: Tue, 22 May 2012 10:21:52 +0100
+In-Reply-To: <1337627640.2979.33.camel@bwh-desktop.uk.solarflarecom.com>
+References: <1337621793-12486-1-git-send-email-konrad.wilk@oracle.com>
+	 <1337627640.2979.33.camel@bwh-desktop.uk.solarflarecom.com>
+Organization: Citrix Systems, Inc.
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.2-1 
 Content-Transfer-Encoding: 7bit
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 21/05/12 09:46, Peter De Schrijver wrote:
->>
->> On OMAP I think the only "gotcha" is setting up the timer.  One
->> solution is to open code the register reads and the rate calculation
->> in the timer code.  That is ugly... but it works.
->>
->>> Which advantages do you see in dynamically allocating all this?
->>>
->>
->> There are many but I'll name a couple.  The most significant point is
->> that we can avoid exposing the definition of struct clk if we
->> dynamically allocate stuff.  One can use struct clk_hw_init to
->> statically initialize data, or instead rely on direct calls to
->> clk_register with a bunch of parameters.
->>
->
-> Which means if you make a mistake in specifying parents for example, it will
-> only fail at runtime, possibly before any console is active. With static
-> initialization, this will fail at compiletime. Much easier to debug.
->
->> Another point is that copying the data at registration-time makes
->> __initdata possible.  I haven't done the math yet to see if this
->> really makes a difference.  However if we start doing single zImage's
->> with multiple different ARM SoCs then this could recover some pages.
->>
->
-> On the other hand most clock structures are small, so there will be internal
-> fragmentation. Also the arrays of parent clock pointers can be shared between
-> different clocks. We have about 70 muxes in Tegra30 and 12 different parent
-> arrays.
+On Mon, 2012-05-21 at 20:14 +0100, Ben Hutchings wrote:
+> On Mon, 2012-05-21 at 13:36 -0400, Konrad Rzeszutek Wilk wrote:
+> > From: Adnan Misherfi <adnan.misherfi@oracle.com>
+> > 
+> > A programming error cause the calculation of receive SKB slots to be
+> > wrong, which caused the RX ring to be erroneously declared full,
+> > and the receive queue to be stopped. The problem shows up when two
+> > guest running on the same server tries to communicates using large
+> > MTUs. Each guest is connected to a bridge with VLAN over bond
+> > interface, so traffic from one guest leaves the server on one bridge
+> > and comes back to the second guest on the second bridge. This can be
+> > reproduces using ping, and one guest as follow:
+> > 
+> > - Create active-back bond (bond0)
+> > - Set up VLAN 5 on bond0 (bond0.5)
+> > - Create a bridge (br1)
+> > - Add bond0.5 to a bridge (br1)
+> > - Start a guest and connect it to br1
+> > - Set MTU of 9000 across the link
+> > 
+> > Ping the guest from an external host using packet sizes of 3991, and
+> > 4054; ping -s 3991 -c 128 "Guest-IP-Address"
+> > 
+> > At the beginning ping works fine, but after a while ping packets do
+> > not reach the guest because the RX ring becomes full, and the queue
+> > get stopped. Once the problem accrued, the only way to get out of it
+> > is to reboot the guest, or use xm network-detach/network-attach.
+> > 
+> > ping works for packets sizes 3990,3992, and many other sizes including
+> > 4000,5000,9000, and 1500 ..etc. MTU size of 3991,4054 are the sizes
+> > that quickly reproduce this problem.
+> > 
+> > Signed-off-by: Adnan Misherfi <adnan.misherfi@oracle.com>
+> > Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+> > ---
+> >  drivers/net/xen-netback/netback.c |    2 +-
+> >  1 files changed, 1 insertions(+), 1 deletions(-)
+> > 
+> > diff --git a/drivers/net/xen-netback/netback.c b/drivers/net/xen-netback/netback.c
+> > index 957cf9d..e382e5b 100644
+> > --- a/drivers/net/xen-netback/netback.c
+> > +++ b/drivers/net/xen-netback/netback.c
+> > @@ -212,7 +212,7 @@ unsigned int xenvif_count_skb_slots(struct xenvif *vif, struct sk_buff *skb)
+> 
+> The function name is xen_netbk_count_skb_slots() in net-next.  This
+> appears to depend on the series in
+> <http://lists.xen.org/archives/html/xen-devel/2012-01/msg00982.html>.
 
-We had at-least that on the older Samsung parts and they where still
-growing. I would suggest that in a multi-kernel image situation the
-more data that can be discarded after init-time the better.
+Yes, I don't think that patchset was intended for prime time just yet.
+Can this issue be reproduced without it?
 
-Also, __initdata gets gathered into one place so there's no possibility
-of page fragmentation there. If you mean fragmentation of the memory
-map, then allocate the size of all the clocks you know of at init time
-in one go.
+> >  	int i, copy_off;
+> >  
+> >  	count = DIV_ROUND_UP(
+> > -			offset_in_page(skb->data)+skb_headlen(skb), PAGE_SIZE);
+> > +			offset_in_page(skb->data + skb_headlen(skb)), PAGE_SIZE);
+> 
+> The new version would be equivalent to:
+> 	count = offset_in_page(skb->data + skb_headlen(skb)) != 0;
+> which is not right, as netbk_gop_skb() will use one slot per page.
 
-It would possible even be useful to have construction code that took
-some brief details of the clocks and constructed the list/tree of clocks
-at start time.
+Just outside the context of this patch we separately count the frag
+pages.
 
--- 
-Ben Dooks				http://www.codethink.co.uk/
-Senior Engineer				Codethink - Providing Genius
+However I think you are right if skb->data covers > 1 page, since the
+new version can only ever return 0 or 1. I expect this patch papers over
+the underlying issue by not stopping often enough, rather than actually
+fixing the underlying issue.
+
+> The real problem is likely that you're not using the same condition to
+> stop and wake the queue.
+
+Agreed, it would be useful to see the argument for this patch presented
+in that light. In particular the relationship between
+xenvif_rx_schedulable() (used to wake queue) and
+xen_netbk_must_stop_queue() (used to stop queue).
+
+As it stands the description describes a setup which can repro the
+problem but doesn't really analyse what actually happens, nor justify
+the correctness of the fix.
+
+>   Though it appears you're also missing an
+> smp_mb() at the top of xenvif_notify_tx_completion().
+
+I think the necessary barrier is in RING_PUSH_RESPONSES_AND_CHECK_NOTIFY
+which is just prior to the single callsite of this function.
+
+Ian.
+
+
