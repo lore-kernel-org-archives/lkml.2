@@ -1,97 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759551Ab2EVACR (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 May 2012 20:02:17 -0400
-Received: from mailout2.samsung.com ([203.254.224.25]:9707 "EHLO
-	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753638Ab2EVACO (ORCPT
+	id S932636Ab2EVAEE (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 May 2012 20:04:04 -0400
+Received: from out03.mta.xmission.com ([166.70.13.233]:60422 "EHLO
+	out03.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754511Ab2EVAD7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 May 2012 20:02:14 -0400
-X-AuditID: cbfee61b-b7faf6d000001f49-b8-4fbad76d6e4a
-From: Jingoo Han <jg1.han@samsung.com>
-To: "'Andrew Morton'" <akpm@linux-foundation.org>,
-        "'LKML'" <linux-kernel@vger.kernel.org>
-Cc: "'Richard Purdie'" <rpurdie@rpsys.net>,
-        "'Johan Hovold'" <jhovold@gmail.com>,
-        "'Jingoo Han'" <jg1.han@samsung.com>
-References: <002d01cd3732$e667d7b0$b3378710$%han@samsung.com>
-In-reply-to: <002d01cd3732$e667d7b0$b3378710$%han@samsung.com>
-Subject: [PATCH v2 3/3] backlight: lm3533_bl: use devm_ functions
-Date: Tue, 22 May 2012 09:01:49 +0900
-Message-id: <000501cd37ae$161bf2e0$4253d8a0$%han@samsung.com>
-MIME-version: 1.0
-Content-type: text/plain; charset=us-ascii
-Content-transfer-encoding: 7bit
-X-Mailer: Microsoft Office Outlook 12.0
-Thread-index: Ac03MuZFAb/avBI5R1CWbY6n/+4MYwAexp+Q
-Content-language: ko
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrDLMWRmVeSWpSXmKPExsVy+t9jQd2867v8DY5NZLK4vGsOmwOjx+dN
-	cgGMUVw2Kak5mWWpRfp2CVwZxxdKFjTwVmy6MoG9gfEZVxcjJ4eEgInE684P7BC2mMSFe+vZ
-	uhi5OIQEpjNKzDi6nBnCmc0kcWPBERaQKjYBNYkvXw6DdYgIREg0z5jFDGIzCxRJrHt0FcwW
-	ErCVWPyvA6yeU8BO4kTPBlYQW1jAUeL82ZlgNSwCqhKb525lA7F5gervPz3PDGELSvyYfI8F
-	YqaWxPqdx5kgbHmJzWveAtVwAF2qLvHory7ECUYSp7aeZIMoEZHY9+Id4wRGoVlIJs1CMmkW
-	kkmzkLQsYGRZxSiaWpBcUJyUnmukV5yYW1yal66XnJ+7iREcxs+kdzCuarA4xCjAwajEwxtw
-	aZe/EGtiWXFl7iFGCQ5mJRHeTW1AId6UxMqq1KL8+KLSnNTiQ4zSHCxK4rxPluzwFxJITyxJ
-	zU5NLUgtgskycXBKNTCuuVqz52j6kbP8byb9nn2OrUMm7rC1rMWuvVWZ8hd//uAz+Lc88Uj/
-	uzsTlrNMWlEeIHtn21OVf1VrLSdeW3Ljo/ac2bylj038pc7yfZwWKbx29Rfj6rkudQYJ27u8
-	fnfpuv4JLV/i13XuVQR/wn5OXYZbmxdP2vKrSzBQWPx2az+nYM6EBH5bJZbijERDLeai4kQA
-	E3VKtV8CAAA=
-X-TM-AS-MML: No
+	Mon, 21 May 2012 20:03:59 -0400
+From: ebiederm@xmission.com (Eric W. Biederman)
+To: "Kok\, Auke-jan H" <auke-jan.h.kok@intel.com>
+Cc: Serge Hallyn <serge.hallyn@canonical.com>,
+        linux-security-module@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Eric Paris <eparis@redhat.com>
+References: <1337284200-1838-1-git-send-email-auke-jan.h.kok@intel.com>
+	<87havchd14.fsf@xmission.com>
+	<CABsxX9J+KVSbxVahg-iVsfeNDEM_H8+MrcBBejjCZFrcNCxwtA@mail.gmail.com>
+Date: Mon, 21 May 2012 18:03:48 -0600
+In-Reply-To: <CABsxX9J+KVSbxVahg-iVsfeNDEM_H8+MrcBBejjCZFrcNCxwtA@mail.gmail.com>
+	(Auke-jan H. Kok's message of "Sat, 19 May 2012 11:39:14 -0700")
+Message-ID: <87d35x6pzv.fsf@xmission.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.3 (gnu/linux)
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+X-XM-SPF: eid=;;;mid=;;;hst=in02.mta.xmission.com;;;ip=208.38.5.102;;;frm=ebiederm@xmission.com;;;spf=neutral
+X-XM-AID: U2FsdGVkX1+oZkIchzozp82XDZN13C5lQAQuap/kuHU=
+X-SA-Exim-Connect-IP: 208.38.5.102
+X-SA-Exim-Mail-From: ebiederm@xmission.com
+X-Spam-Report: * -1.0 ALL_TRUSTED Passed through trusted hosts only via SMTP
+	*  0.0 TVD_RCVD_IP TVD_RCVD_IP
+	*  0.0 T_TM2_M_HEADER_IN_MSG BODY: T_TM2_M_HEADER_IN_MSG
+	* -3.0 BAYES_00 BODY: Bayes spam probability is 0 to 1%
+	*      [score: 0.0038]
+	* -0.0 DCC_CHECK_NEGATIVE Not listed in DCC
+	*      [sa06 1397; Body=1 Fuz1=1 Fuz2=1]
+	*  0.0 T_XMDrugObfuBody_08 obfuscated drug references
+	*  0.0 T_TooManySym_01 4+ unique symbols in subject
+	*  0.0 T_TooManySym_02 5+ unique symbols in subject
+X-Spam-DCC: XMission; sa06 1397; Body=1 Fuz1=1 Fuz2=1 
+X-Spam-Combo: ;"Kok\, Auke-jan H" <auke-jan.h.kok@intel.com>
+X-Spam-Relay-Country: 
+Subject: Re: [PATCH] Trace event for capable().
+X-Spam-Flag: No
+X-SA-Exim-Version: 4.2.1 (built Fri, 06 Aug 2010 16:31:04 -0600)
+X-SA-Exim-Scanned: Yes (on in02.mta.xmission.com)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The devm_ functions allocate memory that is released when a driver
-detaches. This patch uses devm_kzalloc of these functions.
+"Kok, Auke-jan H" <auke-jan.h.kok@intel.com> writes:
 
-Cc: Johan Hovold <jhovold@gmail.com>
-Cc: Richard Purdie <rpurdie@rpsys.net>
-Signed-off-by: Jingoo Han <jg1.han@samsung.com>
----
- drivers/video/backlight/lm3533_bl.c |    8 ++------
- 1 files changed, 2 insertions(+), 6 deletions(-)
+> On Fri, May 18, 2012 at 11:59 PM, Eric W. Biederman
+> <ebiederm@xmission.com> wrote:
+>> Auke Kok <auke-jan.h.kok@intel.com> writes:
+>>
+>> > Add a simple trace event for capable().
+>> >
+>> > There's been a lot of discussion around capable(), and there
+>> > are plenty of tools to help reduce capabilities' usage from
+>> > userspace. A major gap however is that it's almost impossible
+>> > to see or verify which bits are requested from either userspace
+>> > or in the kernel.
+>> >
+>> > This patch adds a minimal tracer that will print out which
+>> > CAPs are requested and whether the request was granted.
+>>
+>> A small comment assigned from the other issues.
+>>
+>> current->pid for anything going to userspace is broken,
+>> and in fact current->pid should be killed on of these days.
+>>
+>> Which pid namespace is your tracer running in?
+>
+> init - I currently have no need for namespaces myself at all, and, as I replied
+> to Serge and Eric already - I'll see if I can fis up the tracer with their
+> suggestions.
 
-diff --git a/drivers/video/backlight/lm3533_bl.c b/drivers/video/backlight/lm3533_bl.c
-index 0148227..d916ffe 100644
---- a/drivers/video/backlight/lm3533_bl.c
-+++ b/drivers/video/backlight/lm3533_bl.c
-@@ -295,7 +295,7 @@ static int __devinit lm3533_bl_probe(struct platform_device *pdev)
- 		return -EINVAL;
- 	}
- 
--	bl = kzalloc(sizeof(*bl), GFP_KERNEL);
-+	bl = devm_kzalloc(&pdev->dev, sizeof(*bl), GFP_KERNEL);
- 	if (!bl) {
- 		dev_err(&pdev->dev,
- 				"failed to allocate memory for backlight\n");
-@@ -317,8 +317,7 @@ static int __devinit lm3533_bl_probe(struct platform_device *pdev)
- 						&lm3533_bl_ops, &props);
- 	if (IS_ERR(bd)) {
- 		dev_err(&pdev->dev, "failed to register backlight device\n");
--		ret = PTR_ERR(bd);
--		goto err_free;
-+		return PTR_ERR(bd);
- 	}
- 
- 	bl->bd = bd;
-@@ -348,8 +347,6 @@ err_sysfs_remove:
- 	sysfs_remove_group(&bd->dev.kobj, &lm3533_bl_attribute_group);
- err_unregister:
- 	backlight_device_unregister(bd);
--err_free:
--	kfree(bl);
- 
- 	return ret;
- }
-@@ -367,7 +364,6 @@ static int __devexit lm3533_bl_remove(struct platform_device *pdev)
- 	lm3533_ctrlbank_disable(&bl->cb);
- 	sysfs_remove_group(&bd->dev.kobj, &lm3533_bl_attribute_group);
- 	backlight_device_unregister(bd);
--	kfree(bl);
- 
- 	return 0;
- }
--- 
-1.7.1
+Thanks.
 
+A quick read of perf_event_open shows that the syscall is allowed by
+unprivileged users in any context if sysctl_perf_event_paranoid is
+set properly.  So it looks like the perf code needs to handle namespaces
+properly if we are going to be reporting namespaced values like uid
+and pids.  Even if no one cares today what about next week?
 
+Eric
