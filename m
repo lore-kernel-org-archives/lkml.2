@@ -1,79 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757502Ab2EVWts (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 May 2012 18:49:48 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:37668 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751505Ab2EVWtq (ORCPT
+	id S932630Ab2EVWvV (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 May 2012 18:51:21 -0400
+Received: from mail132.messagelabs.com ([216.82.242.115]:16614 "EHLO
+	mail132.messagelabs.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751505Ab2EVWvU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 May 2012 18:49:46 -0400
-Message-ID: <4FBC1807.4050402@gmail.com>
-Date: Tue, 22 May 2012 15:49:43 -0700
-From: David Daney <ddaney.cavm@gmail.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.15) Gecko/20101027 Fedora/3.0.10-1.fc12 Thunderbird/3.0.10
+	Tue, 22 May 2012 18:51:20 -0400
+X-Env-Sender: hartleys@visionengravers.com
+X-Msg-Ref: server-4.tower-132.messagelabs.com!1337727077!12408316!3
+X-Originating-IP: [216.166.12.178]
+X-StarScan-Version: 6.5.10; banners=-,-,-
+X-VirusChecked: Checked
+From: H Hartley Sweeten <hartleys@visionengravers.com>
+To: Linux Kernel <linux-kernel@vger.kernel.org>
+Subject: [PATCH] staging: comedi: remove thisboard macro in the aio_iiro_16 driver
+Date: Tue, 22 May 2012 15:51:14 -0700
+User-Agent: KMail/1.9.9
+CC: <devel@driverdev.osuosl.org>, <abbotti@mev.co.uk>,
+        <fmhess@users.sourceforge.net>, <gregkh@linuxfoundation.org>
 MIME-Version: 1.0
-To: Grant Likely <grant.likely@secretlab.ca>
-CC: "devicetree-discuss@lists.ozlabs.org" 
-	<devicetree-discuss@lists.ozlabs.org>,
-        Rob Herring <rob.herring@calxeda.com>,
-        "spi-devel-general@lists.sourceforge.net" 
-	<spi-devel-general@lists.sourceforge.net>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-mips@linux-mips.org" <linux-mips@linux-mips.org>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
-        Liam Girdwood <lrg@ti.com>, Tabi Timur-B04825 <B04825@freescale.com>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Jaroslav Kysela <perex@perex.cz>, Takashi Iwai <tiwai@suse.de>,
-        "alsa-devel@alsa-project.org" <alsa-devel@alsa-project.org>,
-        "linuxppc-dev@lists.ozlabs.org" <linuxppc-dev@lists.ozlabs.org>
-Subject: Re: [PATCH 1/3] of: Add prefix parameter to of_modalias_node().
-References: <1336773923-17866-1-git-send-email-ddaney.cavm@gmail.com> <1336773923-17866-2-git-send-email-ddaney.cavm@gmail.com> <20120520055436.13AF03E03B8@localhost> <20120520060802.03CE73E03B8@localhost> <4FBBECC2.10503@gmail.com> <CACxGe6tYQVfPRtXxmYF2OPYcEFu+x4-_uzFta9f3mwu=xUrt=g@mail.gmail.com>
-In-Reply-To: <CACxGe6tYQVfPRtXxmYF2OPYcEFu+x4-_uzFta9f3mwu=xUrt=g@mail.gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Type: text/plain; charset="utf-8"
 Content-Transfer-Encoding: 7bit
+Content-Disposition: inline
+Message-ID: <201205221551.14999.hartleys@visionengravers.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/22/2012 01:09 PM, Grant Likely wrote:
-> On Tue, May 22, 2012 at 1:45 PM, David Daney<ddaney.cavm@gmail.com>  wrote:
->> On 05/19/2012 11:08 PM, Grant Likely wrote:
->>>
->>> On Sat, 19 May 2012 23:54:36 -0600, Grant
->>> Likely<grant.likely@secretlab.ca>    wrote:
->>>>
->>>> On Fri, 11 May 2012 15:05:21 -0700, David Daney<ddaney.cavm@gmail.com>
->>>>   wrote:
->>>>>
->>>>> From: David Daney<david.daney@cavium.com>
->>>>>
->>>>> When generating MODALIASes, it is convenient to add things like "spi:"
->>>>> or "i2c:" to the front of the strings.  This allows the standard
->>>>> modprobe to find the right driver when automatically populating bus
->>>>> children from the device tree structure.
->>>>>
->>>>> Add a prefix parameter, and adjust callers.  For
->>>>> of_register_spi_devices() use the "spi:" prefix.
->>>>>
->>>>> Signed-off-by: David Daney<david.daney@cavium.com>
->>>>
->>>>
->>>> Applied, thanks.  Some notes below...
->>>
->>>
->>> Wait... why is this necessary?
->>
->>
->> Because in of_register_spi_devices() in of_spi.c, you do:
->>
->>         request_module(spi->modalias);
->>
->> The string passed to request_module() must have the "spi:" prefix.
->
-> How about modifying the call to request_module() to include the prefix
-> also?  I think that would be a simpler change overall.  Would that
-> work?
+The 'thisboard' macro depends on having a local variable with
+a magic name. The CodingStyle document suggests not doing this
+to avoid confusion. Remove the macro and use the comedi_board()
+inline helper to get the dev->board_ptr information.
 
-It seems to.  I just sent such a patch in a new thread.
+Signed-off-by: H Hartley Sweeten <hsweeten@visionengravers.com>
+Cc: Ian Abbott <abbotti@mev.co.uk>
+Cc: Mori Hess <fmhess@users.sourceforge.net>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
-David Daney
+---
+
+diff --git a/drivers/staging/comedi/drivers/aio_iiro_16.c b/drivers/staging/comedi/drivers/aio_iiro_16.c
+index 04f6f94..5c1548b 100644
+--- a/drivers/staging/comedi/drivers/aio_iiro_16.c
++++ b/drivers/staging/comedi/drivers/aio_iiro_16.c
+@@ -57,8 +57,6 @@ static const struct aio_iiro_16_board aio_iiro_16_boards[] = {
+ 	 .do_ = 16},
+ };
+ 
+-#define	thisboard	((const struct aio_iiro_16_board *) dev->board_ptr)
+-
+ struct aio_iiro_16_private {
+ 	int data;
+ 	struct pci_dev *pci_dev;
+@@ -106,12 +104,13 @@ static int aio_iiro_16_dio_insn_bits_read(struct comedi_device *dev,
+ static int aio_iiro_16_attach(struct comedi_device *dev,
+ 			      struct comedi_devconfig *it)
+ {
++	const struct aio_iiro_16_board *board = comedi_board(dev);
+ 	int iobase;
+ 	struct comedi_subdevice *s;
+ 
+ 	printk(KERN_INFO "comedi%d: aio_iiro_16: ", dev->minor);
+ 
+-	dev->board_name = thisboard->name;
++	dev->board_name = board->name;
+ 
+ 	iobase = it->options[0];
+ 
