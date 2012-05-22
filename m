@@ -1,47 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757932Ab2EVKaR (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 May 2012 06:30:17 -0400
-Received: from mail-lb0-f174.google.com ([209.85.217.174]:44523 "EHLO
-	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757826Ab2EVKaO (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 May 2012 06:30:14 -0400
-From: Johan Hovold <jhovold@gmail.com>
-To: Jonathan Cameron <jic23@kernel.org>
-Cc: linux-kernel@vger.kernel.org,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-iio@vger.kernel.org, Johan Hovold <jhovold@gmail.com>
-Subject: [PATCH] staging:iio: remove num_interrupt_lines from documentation
-Date: Tue, 22 May 2012 12:30:02 +0200
-Message-Id: <1337682602-15105-1-git-send-email-jhovold@gmail.com>
-X-Mailer: git-send-email 1.7.8.6
+	id S1757989Ab2EVKaW (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 May 2012 06:30:22 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:33222 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757826Ab2EVKaS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 May 2012 06:30:18 -0400
+Message-ID: <4FBB6A99.4040503@redhat.com>
+Date: Tue, 22 May 2012 07:29:45 -0300
+From: Mauro Carvalho Chehab <mchehab@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
+MIME-Version: 1.0
+To: Jiri Kosina <jkosina@suse.cz>
+CC: Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org, David Mackey <tdmackey@twitter.com>,
+        Vinson Lee <vlee@twitter.com>
+Subject: Re: linux-next: manual merge of the edac tree with the trivial tree
+References: <20120518160603.0eddece830f829d3b8570ac7@canb.auug.org.au> <alpine.LNX.2.00.1205221055340.16396@pobox.suse.cz>
+In-Reply-To: <alpine.LNX.2.00.1205221055340.16396@pobox.suse.cz>
+X-Enigmail-Version: 1.4.1
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit 5aa9618896e0ba49 ("staging:iio: remove broken support for
-multiple event interfaces.") removed the num_interrupt_lines field from
-struct iio_info but the documentation was never updated.
+Em 22-05-2012 05:55, Jiri Kosina escreveu:
+> On Fri, 18 May 2012, Stephen Rothwell wrote:
+> 
+>> Hi Mauro,
+>>
+>> Today's linux-next merge of the edac tree got a conflict in
+>> drivers/edac/edac_core.h between commit 15ed103a9800 ("edac: Fix spelling
+>> errors") from the trivial tree and commit 90b40d5cadba ("edac: Remove the
+>> legacy EDAC ABI") from the edac tree.
+>>
+>> One of the comments fixed by the former is removed by the latter, so I
+>> did that.
+> 
+> On Fri, 18 May 2012, Stephen Rothwell wrote:
+> 
+>> Hi Mauro,
+>>
+>> Today's linux-next merge of the edac tree got a conflict in
+>> drivers/edac/edac_device.c between commit 15ed103a9800 ("edac: Fix
+>> spelling errors") from the trivial tree and commit b9e889c84229 ("edac:
+>> rewrite edac_align_ptr()") from the edac tree.
+>>
+>> One of the comments fixed by the former is removed by the latter, so I
+>> did that.
+> 
+> I have dropped both hunks, so the conflict should be gone. Thanks.
 
-Signed-off-by: Johan Hovold <jhovold@gmail.com>
----
- drivers/staging/iio/Documentation/device.txt |    2 --
- 1 files changed, 0 insertions(+), 2 deletions(-)
-
-diff --git a/drivers/staging/iio/Documentation/device.txt b/drivers/staging/iio/Documentation/device.txt
-index 0338c7c..f03fbd3 100644
---- a/drivers/staging/iio/Documentation/device.txt
-+++ b/drivers/staging/iio/Documentation/device.txt
-@@ -29,8 +29,6 @@ Then fill in the following:
- 	* info->driver_module:
- 		Set to THIS_MODULE. Used to ensure correct ownership
- 		of various resources allocate by the core.
--	* info->num_interrupt_lines:
--		Number of event triggering hardware lines the device has.
- 	* info->event_attrs:
- 		Attributes used to enable / disable hardware events.
- 	* info->attrs:
--- 
-1.7.8.5
-
+Thanks!
+Mauro
