@@ -1,66 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932713Ab2EVBMh (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 May 2012 21:12:37 -0400
-Received: from mail-qc0-f174.google.com ([209.85.216.174]:35425 "EHLO
-	mail-qc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932264Ab2EVBMf (ORCPT
+	id S1759569Ab2EVBQX (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 May 2012 21:16:23 -0400
+Received: from haggis.pcug.org.au ([203.10.76.10]:35362 "EHLO
+	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752211Ab2EVBQW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 May 2012 21:12:35 -0400
-MIME-Version: 1.0
-In-Reply-To: <4FBA773D.4050200@wwwdotorg.org>
-References: <1337346755-8761-1-git-send-email-b29396@freescale.com>
-	<1337346755-8761-2-git-send-email-b29396@freescale.com>
-	<4FB6AB9A.4080006@wwwdotorg.org>
-	<20120521123929.GA27055@shlinux2.ap.freescale.net>
-	<4FBA773D.4050200@wwwdotorg.org>
-Date: Tue, 22 May 2012 09:12:35 +0800
-Message-ID: <CAA+hA=RzZYCHO6mgJFWqPg9Dg+u6GfeMEcaPyTpi0YzBMuY73g@mail.gmail.com>
-Subject: Re: [PATCH RFC v2 2/2] pinctrl: add pinctrl gpio binding support
-From: Dong Aisheng <dongas86@gmail.com>
-To: Stephen Warren <swarren@wwwdotorg.org>
-Cc: Dong Aisheng <aisheng.dong@freescale.com>,
-        Dong Aisheng-B29396 <B29396@freescale.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linus.walleij@stericsson.com" <linus.walleij@stericsson.com>
-Content-Type: text/plain; charset=ISO-8859-1
+	Mon, 21 May 2012 21:16:22 -0400
+Date: Tue, 22 May 2012 11:16:18 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>, mingo@redhat.com,
+        a.p.zijlstra@chello.nl, peterz@infradead.org, anton@redhat.com,
+        rostedt@goodmis.org, tglx@linutronix.de, oleg@redhat.com,
+        linux-mm@kvack.org, linux-kernel@vger.kernel.org, hpa@zytor.com,
+        jkenisto@us.ibm.com, andi@firstfloor.org, hch@infradead.org,
+        ananth@in.ibm.com, vda.linux@googlemail.com,
+        masami.hiramatsu.pt@hitachi.com, acme@infradead.org,
+        srikar@linux.vnet.ibm.com, roland@hack.frob.com, mingo@elte.hu,
+        linux-tip-commits@vger.kernel.org
+Subject: Re: [tip:perf/uprobes] uprobes, mm, x86: Add the ability to install
+ and remove uprobes breakpoints
+Message-Id: <20120522111618.ca91892dc6027f9a4251235e@canb.auug.org.au>
+In-Reply-To: <20120521151323.f23bd5e9.akpm@linux-foundation.org>
+References: <20120209092642.GE16600@linux.vnet.ibm.com>
+	<tip-2b144498350860b6ee9dc57ff27a93ad488de5dc@git.kernel.org>
+	<20120521143701.74ab2d0b.akpm@linux-foundation.org>
+	<CA+55aFw5ccuvvtyf6iuuw-Finr79ZkPxgCxL5jNvdnX5oMYkgg@mail.gmail.com>
+	<20120521151323.f23bd5e9.akpm@linux-foundation.org>
+X-Mailer: Sylpheed 3.2.0beta7 (GTK+ 2.24.10; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Tue__22_May_2012_11_16_18_+1000_PqBwzZLlCk.6SKeC"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, May 22, 2012 at 1:11 AM, Stephen Warren <swarren@wwwdotorg.org> wrote:
-> On 05/21/2012 06:39 AM, Dong Aisheng wrote:
->> On Sat, May 19, 2012 at 04:05:46AM +0800, Stephen Warren wrote:
->>> On 05/18/2012 07:12 AM, Dong Aisheng wrote:
->>>> The gpio ranges standard dt binding format is
->>>> <&gpio $gpio_offset $pin_offset $npin>
->>>>
->>>> The core will parse and register the pinctrl gpio ranges
->>>> from device tree.
-> ...
->>> Do you need to xxx_get(ranges[i].gc) to prevent it going away, and put()
->>> it when removing the ranges?
->>
->> How would you suggest to implement xxx_get(ranges[i].gc)?
->> Since the parameter is a struct gpiochip, my first sense is that it may be
->> provided by gpio subsystem, but i did not find such a function.
->> Looking at gpio subsystem, i also can't see it should provide such function.
->>
->> I wonder if we need to implement it, if gpiochip is gone way,
->> the error will be detected in the higher gpio layer and will not pass
->> down to pinctrl.
->
-> Yes, it looks like we should add new APIs for this; we need to
-> try_module_get() on the module containing the GPIO chip so it doesn't
-> disappear, similar to what gpio_request() does.
-yes, i checked the gpio request code.
-It looks to me try_module_get is just ok like:
-if (!try_module_get(ranges[i].gc.owner))
-    goto done;
-Will add it.
-Thanks for the info.
+--Signature=_Tue__22_May_2012_11_16_18_+1000_PqBwzZLlCk.6SKeC
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Regards
-Dong Aisheng
+Hi Andrew,
+
+On Mon, 21 May 2012 15:13:23 -0700 Andrew Morton <akpm@linux-foundation.org=
+> wrote:
+>
+> On Mon, 21 May 2012 15:00:28 -0700
+> Linus Torvalds <torvalds@linux-foundation.org> wrote:
+>=20
+> > On Mon, May 21, 2012 at 2:37 PM, Andrew Morton
+> > <akpm@linux-foundation.org> wrote:
+> > >
+> > > hm, we seem to have conflicting commits between mainline and linux-ne=
+xt.
+> > > During the merge window. __Again. __Nobody knows why this happens.
+> >=20
+> > I didn't have my trivial cleanup branches in linux-next, I'm afraid.
+>=20
+> Well, it's a broader issue than that.  I often see a large number of
+> rejects when syncing mainline with linux-next during the merge window.=20
+> Right now:
+
+Some of that is because your patch series is based on the end of
+linux-next and part way through the merge window only some of that has
+been merged by Linus.  Also some of it gets rebased before Linus is asked
+to pull (a real pain) - there hasn't been much of that (yet) this merge
+window (but its early days :-().  Also, sometimes Linus' merge
+resolutions are different to mine.
+
+I have been meaning to talk to you about basing the majority of your
+patch series on Linus' tree.  This would give it mush greater stability
+and would make the merge resolution my problem (and Linus', of course).
+
+There will be bits that may need to be based on other work in linux-next,
+but I suspect that it is not very much.
+
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+
+--Signature=_Tue__22_May_2012_11_16_18_+1000_PqBwzZLlCk.6SKeC
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBCAAGBQJPuujiAAoJEECxmPOUX5FEX7IQAKKLCtkopURcEh/15SA6cg5M
+XT8R8NlyQyoMEF4PSR4k3I3Fcj7xfw/Z5hWASOh0Z2BGdtE1le/lAlM4xvzs5qYw
+1OHUfQOs21Xpnhrsa2LlAvQ28KCZWsXWIHlBO+2nc/A2iyjzUupzlPuFrAAl69S5
+uhArUAMOzvSRE2RKcoiSQKIZT2A/EKq9+v47vsq3JA7lL9qDIOsRkjvCqUNI/kgd
+RBYCFuSMwRzxc6Vo96WlzheleFu7Zo2SBtHbg5EJdVFMzUlcNZvcIB869o/ZMDSF
+VOQziCXLdT7uKwPN12OlWeZhyIDDOnV822VAy4cIJupMg3iK5JmGZOWJeS0PunE1
+qqacPgm8kIz+4qhjoLiYdeoyVxN7NO3VVSl4HK8LHqBLvNza7XuvvJnLDjCZyTG1
+wVub1nvYn9rankVENt56KGT0HItciAtzBJlEpLyXtEJOQ7JjXUuSl1utv7Ny6BvT
+ufZkkO4ld6/v1XJqBOFvrI8MiblNnm7BEY9c8vwZ+S3whjH1TW43UQMH3MKRYNby
+DNXPOa+16YIB4KTAsB3GE2f4ZBWaCqCd4TBduzADFP9Keuix7r+cMcKEJjJmqJDL
+N5W3h2JncH3NKfBSM8xPQTHJosD8+cSYaoCoh1r4HPlrDGYYsl2DuFzFV53cL5ez
+UrGQVE1uRIWk06VpVH9S
+=W5v5
+-----END PGP SIGNATURE-----
+
+--Signature=_Tue__22_May_2012_11_16_18_+1000_PqBwzZLlCk.6SKeC--
