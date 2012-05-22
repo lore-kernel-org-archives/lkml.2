@@ -1,47 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754070Ab2EVFeI (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 May 2012 01:34:08 -0400
-Received: from mail-qc0-f174.google.com ([209.85.216.174]:41781 "EHLO
-	mail-qc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753056Ab2EVFeG (ORCPT
+	id S1754164Ab2EVFhg (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 May 2012 01:37:36 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:57599 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753265Ab2EVFhe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 May 2012 01:34:06 -0400
-Date: Tue, 22 May 2012 13:33:54 +0800
-From: Yong Zhang <yong.zhang0@gmail.com>
-To: Sergei Shtylyov <sshtylyov@mvista.com>
-Cc: linux-mips@linux-mips.org, linux-kernel@vger.kernel.org,
-        ralf@linux-mips.org, david.daney@cavium.com
-Subject: Re: [PATCH 6/8] MIPS: call set_cpu_online() on the uping cpu with
- irq disabled
-Message-ID: <20120522053354.GA12098@zhy>
-Reply-To: Yong Zhang <yong.zhang0@gmail.com>
-References: <1337580008-7280-1-git-send-email-yong.zhang0@gmail.com>
- <1337580008-7280-7-git-send-email-yong.zhang0@gmail.com>
- <4FBA1961.2050504@mvista.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <4FBA1961.2050504@mvista.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Tue, 22 May 2012 01:37:34 -0400
+From: Olof Johansson <olof@lixom.net>
+To: torvalds@linux-foundation.org
+Cc: arm@kernel.org, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org
+Subject: [GIT PULL 0/8] First batch of arm-soc branches for 3.5
+Date: Mon, 21 May 2012 22:35:00 -0700
+Message-Id: <1337664908-17478-1-git-send-email-olof@lixom.net>
+X-Mailer: git-send-email 1.7.10.1.488.g05fbf7a
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, May 21, 2012 at 02:30:57PM +0400, Sergei Shtylyov wrote:
-> Hello.
-> 
-> On 21-05-2012 10:00, Yong Zhang wrote:
-> 
-> >From: Yong Zhang<yong.zhang@windriver.com>
-> 
-> >To prevent a problem as commit 5fbd036b [sched: Cleanup cpu_active madness]
-> >and commit 2baab4e9 [sched: Fix select_fallback_rq() vs cpu_active/cpu_online]
-> >try to resolve, move set_cpu_online() to the brought up CPU and with irq
->                                                ^^^^^^^^^^
->    Now the same change in the subject please.
+Linus,
 
-Ah, yes, forgot that.
+These are the first 8 pull requests for arm-soc for the 3.5 merge window,
+containing roughly half of our queued up changes.
 
-Thanks,
-Yong
+Descriptions of each branch are in the corresponding request.
+
+A few things to note:
+
+* For reference I have pushed a merge-resolved branch against 47136855
+  for every tag, to be found at resolved/<tagname>.
+
+* There will be a conflict with the staging tree in two of the at91
+  device tree files (at91sam9260.dtsi and at91sam9g20.dtsi). The
+  version in arm-soc is the correct one (see
+  http://marc.info/?l=linux-arm-kernel&m=133734654114734&w=2 for history).
+
+* If you pull the staging tree before the 4th branch (device tree
+  conversions), please also be aware of an automatic merge resolution error
+  discovered in -next (see pull request for details, same thread as above).
+
+* The 4th branch (device tree conversions) contains 4 patches that is
+  also going through the embedded i2c tree. Wolfram agreed earlier that
+  we could merge these through arm-soc so they are included here.
+
+
+Thanks!
+
+-Olof
+
