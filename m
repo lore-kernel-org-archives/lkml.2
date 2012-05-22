@@ -1,53 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753826Ab2EVFOt (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 May 2012 01:14:49 -0400
-Received: from mail-ob0-f174.google.com ([209.85.214.174]:61322 "EHLO
-	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753614Ab2EVFOs (ORCPT
+	id S932538Ab2EVFT4 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 May 2012 01:19:56 -0400
+Received: from mga03.intel.com ([143.182.124.21]:30192 "EHLO mga03.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753802Ab2EVFTz convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 May 2012 01:14:48 -0400
+	Tue, 22 May 2012 01:19:55 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
+   d="scan'208";a="102714788"
+From: "Du, ChangbinX" <changbinx.du@intel.com>
+To: David Rientjes <rientjes@google.com>
+CC: "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
+        Sergei Shtylyov <sshtylyov@mvista.com>,
+        "mina86@mina86.com" <mina86@mina86.com>,
+        "Fleming, Matt" <matt.fleming@intel.com>,
+        "balbi@ti.com" <balbi@ti.com>, "hpa@zytor.com" <hpa@zytor.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>
+Subject: RE: [Resend PATCH v2] testusb: add path /dev/bus/usb to default
+ search paths of usbfs
+Thread-Topic: [Resend PATCH v2] testusb: add path /dev/bus/usb to default
+ search paths of usbfs
+Thread-Index: AQHNN7qyG7Zv5VtpIkaxHOeRBAtVM5bUgnMAgACkjhD//4G3AIAAnEsw
+Date: Tue, 22 May 2012 05:19:51 +0000
+Message-ID: <0C18FE92A7765D4EB9EE5D38D86A563A063A4C@SHSMSX101.ccr.corp.intel.com>
+References: <0C18FE92A7765D4EB9EE5D38D86A563A062E6C@SHSMSX101.ccr.corp.intel.com>
+ <0C18FE92A7765D4EB9EE5D38D86A563A06388E@SHSMSX101.ccr.corp.intel.com>
+ <alpine.DEB.2.00.1205211839180.20916@chino.kir.corp.google.com>
+ <0C18FE92A7765D4EB9EE5D38D86A563A063A1A@SHSMSX101.ccr.corp.intel.com>
+ <alpine.DEB.2.00.1205212055140.2666@chino.kir.corp.google.com>
+In-Reply-To: <alpine.DEB.2.00.1205212055140.2666@chino.kir.corp.google.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.239.127.40]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-In-Reply-To: <CANQmPXhN92i9E8HqxE7pqz=kOwtn5Mz0crW37H6qs+XD420Yuw@mail.gmail.com>
-References: <CAKfTPtDSDAOAdv0GTDswZeRM7TmACrjok+5kddSaQpvy6_6xWw@mail.gmail.com>
-	<CAKfTPtCfiY7A29+e50F+6awd8BjNJjg4=uNN4ReZfdS_4FbpkA@mail.gmail.com>
-	<1337084609.27020.156.camel@laptop>
-	<CAKfTPtDz1-fR2i5x7AVd8sGZhX2VNtz2rnQC3ePrcHO9MWK3FQ@mail.gmail.com>
-	<1337086834.27020.162.camel@laptop>
-	<CAKfTPtDrZ-tfC81jnxwpB+DCtmxhU+VfoYbtSBr8MkFt+P8JcA@mail.gmail.com>
-	<1337096141.27694.82.camel@twins>
-	<1337193010.27694.146.camel@twins>
-	<CA+55aFzuygx6L-2hVCMbk5cvEdDp6AUtOGq-wYFn=4yEyebPLw@mail.gmail.com>
-	<1337468148.573.139.camel@twins>
-	<CANQmPXhN92i9E8HqxE7pqz=kOwtn5Mz0crW37H6qs+XD420Yuw@mail.gmail.com>
-Date: Tue, 22 May 2012 13:14:47 +0800
-Message-ID: <CANQmPXjiqtDE_4ZmNrtrb9qjB=gyv=NiPr3pdaHFirSs0T3ptQ@mail.gmail.com>
-Subject: Re: Plumbers: Tweaking scheduler policy micro-conf RFP
-From: Chen <hi3766691@gmail.com>
-To: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@kernel.org>,
-        Vincent Guittot <vincent.guittot@linaro.org>,
-        torvalds@linux-foundation.org
-Cc: linux-kernel@vger.kernel.org, mou Chen <hi3766691@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, May 22, 2012 at 10:38 AM, Chen <hi3766691@gmail.com> wrote:
-> Still you are just trying to said that your code is not bloated?
-> Up to over 500K for a cpu scheduler. Laughing
+> On Tue, 22 May 2012, Du, ChangbinX wrote:
+> 
+> > > diff --git a/tools/usb/testusb.c b/tools/usb/testusb.c index
+> > > 6e0f567..82d7c59 100644
+> > > --- a/tools/usb/testusb.c
+> > > +++ b/tools/usb/testusb.c
+> > > @@ -358,6 +358,7 @@ static const char *usbfs_dir_find(void)  {
+> > >  	static char usbfs_path_0[] = "/dev/usb/devices";
+> > >  	static char usbfs_path_1[] = "/proc/bus/usb/devices";
+> > > +	static char udev_usb_path[] = "/dev/bus/usb";
+> > >
+> > >  	static char *const usbfs_paths[] = {
+> > >  		usbfs_path_0, usbfs_path_1
+> > > @@ -376,6 +377,10 @@ static const char *usbfs_dir_find(void)
+> > >  		}
+> > >  	} while (++it != end);
+> > >
+> > > +	/* real device-nodes managed by udev */
+> > > +	if (access(udev_usb_path, F_OK) == 0)
+> > > +		return udev_usb_path;
+> > > +
+> > >  	return NULL;
+> > >  }
+> > >
+> >
+> > Two issues with this: F_OK only guarantees that the path exists, it
+> > does not guarantee that it is readable like this function guarantees
+> > for usbfs_paths, and access() shouldn't be used because of its
+> > security implications, you're better off using open() and testing for fd.
+> >
+> > Hello, David. I think this function doesn't need check the permission.
+> > What this function need do is to find the usbfs mount point. If the
+> > path exists but cannot read, we cannot report as it's not exits. And
+> > when we read files, open() will return an error and user can check if
+> > it's need to upgrade his access right.
+> >
+> 
+> Your email client doesn't seem to be quoting messages correctly :)
+> 
+> Anyway, this patch is inconsistent with the rest of the function.  The other two
+> paths are checked with open(O_RDONLY) followed by a close() to address my
+> second comment and we certainly wouldn't want to return a path that exists by
+> is unreadable: we'd want to fallback to one of the other possibilities.  So if
+> anybody is going to extend this in the future like you have, it would be possible
+> to return /dev/bus/usb even though we can't read it.  That's a bad result.
+> 
+> Please consider doing it the proper way: by doing open(O_RDONLY), close()
+> instead of access() -- if you don't understand why, read access(2) -- and in an
+> extendable way.
 
-So please stop increasing the size of cpu scheduler's code. Users
-can't benefit anything from that. Also the interactivity problem of
-scheduler is still exist though it improves a lot already.
-
-It is better to stop bloating. Isn't ?
-
-Also I m quite agree with Linus. The model of the scheduler now is
-complex and there are many *UNNECESSARY* code. I CAN'T REALLY BENEFIT
-ANYTHING. I just make my kernel with -j2 and the music is already
-sucking![Intel E7500, 2.9GHZ, two core]. It can show that how the
-interactivity problem is serious with mainline cpu scheduler. I know
-it is not all the fault of mainline cpu scheduler but it is still a
-big interactivity problem with it. [me think that Peter is proud of
-his insane-box-supporting stuff]
+I see. Thanks for your comments. I will correct and resend it again.
