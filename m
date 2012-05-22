@@ -1,83 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758493Ab2EVLVz (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 May 2012 07:21:55 -0400
-Received: from e28smtp05.in.ibm.com ([122.248.162.5]:40707 "EHLO
-	e28smtp05.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758351Ab2EVLVy (ORCPT
+	id S1758523Ab2EVL2K (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 May 2012 07:28:10 -0400
+Received: from haggis.pcug.org.au ([203.10.76.10]:34824 "EHLO
+	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758353Ab2EVL2I (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 May 2012 07:21:54 -0400
-Message-ID: <4FBB7419.8090909@linux.vnet.ibm.com>
-Date: Tue, 22 May 2012 16:40:17 +0530
-From: Anshuman Khandual <khandual@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:11.0) Gecko/20120411 Thunderbird/11.0.1
-MIME-Version: 1.0
-To: linux-kernel@vger.kernel.org, eranian@google.com,
-        Arnaldo Carvalho de Melo <arnaldo.melo@gmail.com>
-Subject: [PATCH] perf, x86: Optimal way of reading LBR entries inside Intel
- PMU interrupt handler
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-x-cbid: 12052211-8256-0000-0000-000002981116
+	Tue, 22 May 2012 07:28:08 -0400
+Date: Tue, 22 May 2012 21:28:03 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: linux-next@vger.kernel.org
+Cc: LKML <linux-kernel@vger.kernel.org>
+Subject: Re: linux-next: Tree for May 2
+Message-Id: <20120522212803.b0f3ceca6601c95468856306@canb.auug.org.au>
+In-Reply-To: <20120522183037.75ec03c9d8881ec188e7f787@canb.auug.org.au>
+References: <20120522183037.75ec03c9d8881ec188e7f787@canb.auug.org.au>
+X-Mailer: Sylpheed 3.2.0beta7 (GTK+ 2.24.10; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Tue__22_May_2012_21_28_03_+1000_hA9.IpT9RjM2HnqE"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-perf, x86: Optimal way of reading LBR entries inside Intel PMU interrupt handler
+--Signature=_Tue__22_May_2012_21_28_03_+1000_hA9.IpT9RjM2HnqE
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-	We read LBR entries even if no event has requested for it either explicitly
-	through branch sampling or implicitly through precise IP. This patch would
-	fix this potential unnecessary read by moving the intel_pmu_lbr_read function.
+On Tue, 22 May 2012 18:30:37 +1000 Stephen Rothwell <sfr@canb.auug.org.au> =
+wrote:
+>
+> Hi all,
+>=20
+> Changes since 201205018:
 
-Signed-off-by: Anshuman Khandual <khandual@linux.vnet.ibm.com>
----
- arch/x86/kernel/cpu/perf_event_intel.c |   12 +++++++++---
- 1 file changed, 9 insertions(+), 3 deletions(-)
+Just in case you are as confused as I was, it should have been:
 
-diff --git a/arch/x86/kernel/cpu/perf_event_intel.c b/arch/x86/kernel/cpu/perf_event_intel.c
-index 26b3e2f..c50da47 100644
---- a/arch/x86/kernel/cpu/perf_event_intel.c
-+++ b/arch/x86/kernel/cpu/perf_event_intel.c
-@@ -1026,6 +1026,7 @@ static int intel_pmu_handle_irq(struct pt_regs *regs)
- 	int bit, loops;
- 	u64 status;
- 	int handled;
-+	int lbr_read;
- 
- 	perf_sample_data_init(&data, 0);
- 
-@@ -1061,16 +1062,16 @@ again:
- 
- 	inc_irq_stat(apic_perf_irqs);
- 
--	intel_pmu_lbr_read();
--
- 	/*
- 	 * PEBS overflow sets bit 62 in the global status register
- 	 */
- 	if (__test_and_clear_bit(62, (unsigned long *)&status)) {
- 		handled++;
-+		intel_pmu_lbr_read();
- 		x86_pmu.drain_pebs(regs);
- 	}
- 
-+	lbr_read = 0;
- 	for_each_set_bit(bit, (unsigned long *)&status, X86_PMC_IDX_MAX) {
- 		struct perf_event *event = cpuc->events[bit];
- 
-@@ -1084,8 +1085,13 @@ again:
- 
- 		data.period = event->hw.last_period;
- 
--		if (has_branch_stack(event))
-+		if (has_branch_stack(event)) {
-+			if(lbr_read == 0) {
-+				intel_pmu_lbr_read();
-+				lbr_read = 1;
-+			}
- 			data.br_stack = &cpuc->lbr_stack;
-+		}
- 
- 		if (perf_event_overflow(event, &data, regs))
- 			x86_pmu_stop(event, 0);
+Subject: linux-next: Tree for May 22
 
+Changes since 20120521:
+
+:-)
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+
+--Signature=_Tue__22_May_2012_21_28_03_+1000_hA9.IpT9RjM2HnqE
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBCAAGBQJPu3hDAAoJEECxmPOUX5FE1X8P/iPxIg+kCu9skhnETUxYT1Yn
+TAtpNC4Yhg85u1vs3nC241iYFUj0Re/1Km20aDWWQa1R02Hwy7zhAvlA/TKHLQtr
+wX9+Hyzg6PtJYM2I+oQxTAGceRL7dhcJDveYHf1gApIHLuxISdTcBzT7c7qLQRKx
+uNXpa2mbIPhWSpgUZn6el1hzfjjQeZxursIW/rCn5iLoabWzme4xbffdczdQSwqz
+yEXFxy8lRixZCQhtRTexiL+LWiWtKWDlfNuzRxE6CPejRTkoV7q8wpsAqSau5y8d
+eqnSgY1BRe0CU6LLlUtYGPOR1u5mUjO0azxBCkcT6DEUkT3kz4zi0B9CtT+zKumT
+fbI03LplMKuv85bzp8H81DVF9iPPTExWIUCDtsTCwxSS+oLQ+VLAR/WER1syptVu
+uHBdsRLcKwHPmZkTV4zERX5hs7sLKHel4BtOgxWeCwfMWR+bkLQRTrluraSMRF3M
+i5XQ/xlcJdOWCUCkLv8PZTIEdsi6omJNSah9WlLIVk0xjVfOgT1soI52OO2dQFkq
+kVUXJ4RF9HeD1N8cgR19zGon/oNMTpr3d6cvSLNRjKL87CkaN002yncsHVtoJ4n4
+QRz0aO8uM9xOvJtvnB+hrsS2E0TR2NfQykL3JbnbMtWrj1jySypvSTryJvGYM1Ew
+BJO41Hak7GnxYbmiqCgQ
+=gMzA
+-----END PGP SIGNATURE-----
+
+--Signature=_Tue__22_May_2012_21_28_03_+1000_hA9.IpT9RjM2HnqE--
