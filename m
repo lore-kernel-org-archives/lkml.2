@@ -1,108 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932155Ab2EVPXB (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 May 2012 11:23:01 -0400
-Received: from mail.openrapids.net ([64.15.138.104]:54443 "EHLO
-	blackscsi.openrapids.net" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1758847Ab2EVPW7 (ORCPT
+	id S1759256Ab2EVPYN (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 May 2012 11:24:13 -0400
+Received: from one.firstfloor.org ([213.235.205.2]:42938 "EHLO
+	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753614Ab2EVPYK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 May 2012 11:22:59 -0400
-Date: Tue, 22 May 2012 11:22:55 -0400
-From: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: Avi Kivity <avi@redhat.com>, linux-kernel <linux-kernel@vger.kernel.org>,
-        Ingo Molnar <mingo@elte.hu>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>,
-        Paul Turner <pjt@google.com>, Peter Zijlstra <peterz@infradead.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>
-Subject: Re: NMI vs #PF clash
-Message-ID: <20120522152255.GB25697@Krystal>
-References: <4FBB8C40.6080304@redhat.com> <1337693441.13348.36.camel@gandalf.stny.rr.com> <4FBB986F.5030306@redhat.com> <1337695780.13348.41.camel@gandalf.stny.rr.com> <4FBBA094.3090703@redhat.com> <1337696825.13348.44.camel@gandalf.stny.rr.com> <4FBBA4A2.2070501@redhat.com> <1337698229.13348.46.camel@gandalf.stny.rr.com>
-MIME-Version: 1.0
+	Tue, 22 May 2012 11:24:10 -0400
+Date: Tue, 22 May 2012 17:24:04 +0200
+From: Andi Kleen <andi@firstfloor.org>
+To: Joe Korty <joe.korty@ccur.com>
+Cc: Andi Kleen <andi@firstfloor.org>, "stasn77@gmail.com" <stasn77@gmail.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] port jRCU from 3.3 to 3.4
+Message-ID: <20120522152404.GW27374@one.firstfloor.org>
+References: <20120521184528.GA4145@tsunami.ccur.com> <m2vcjp87mf.fsf@firstfloor.org> <20120522133858.GA17487@tsunami.ccur.com>
+Mime-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1337698229.13348.46.camel@gandalf.stny.rr.com>
-X-Editor: vi
-X-Info: http://www.efficios.com
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <20120522133858.GA17487@tsunami.ccur.com>
+User-Agent: Mutt/1.4.2.2i
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Steven Rostedt (rostedt@goodmis.org) wrote:
-> On Tue, 2012-05-22 at 17:37 +0300, Avi Kivity wrote:
-> > > 
-> > > 
-> > > Is reading it fast? Then we could do a two reads and only write when
-> > > needed.
+On Tue, May 22, 2012 at 09:38:58AM -0400, Joe Korty wrote:
+> On Mon, May 21, 2012 at 06:57:44PM -0400, Andi Kleen wrote:
+> > Joe Korty <joe.korty@ccur.com> writes:
+> > > + *
+> > > + * jRCU assumes that the frames are large enough that architecture barrier
+> > > + * operations performed in one frame have fully completed by the start of
+> > > + * the next.  This period is presumed to be in the tens of microseconds, so
+> > > + * it may not be wise to run jRCU at a frame rate under 100 usecs.
 > > 
-> > The upside is 70 cycles on one machine, see d3edefc0035669.
+> > This sounds like a very dangerous assumption.
 > 
-> Thanks
-> 
-> > 
-> > 
-> > > 
-> > > Something like this pseudo assembly
-> > >  
-> > > 	mov cr2, rax
-> > > 	push rax
-> > > 
-> > > 	call do_nmi
-> > > 
-> > > 	pop rax
-> > > 	mov cr2, rbx
-> > > 	cmp rax, rbx
-> > > 	be skip
-> > > 	mov rax, cr2
-> > > skip:
-> > > 
-> > 
-> > 
-> > Yes, provided no exceptions can happen at those points.
-> 
-> Yes, exceptions can only happen in the do_nmi area. There should not be
-> any breakpoints or page faults in the assembly code of the NMI handler.
-> 
-> Now another NMI may come in at any point here, but it will detect that
-> it is nested and return without doing anything (but telling this NMI to
-> repeat itself).
+> Yeah, I may have to go to a spin lock.  Easy to do, but
+> I didn't want the serialization that results.  I figured
+> that with a frame rate of 20 - 1000 Hz it wasn't necessary.
 
-That should take care of cr2. Those are faraway memories, but I think we
-should be careful about pdg_offset too. If we look at x86-64
-vmalloc_fault(), we notice that it uses the current task struct:
+I think you have to. Relying on timing like this is just a ticking
+time bomb.
 
-        WARN_ON_ONCE(in_nmi()); <--- we should take that as a hint ;)
-
-        /*
-         * Copy kernel mappings over when needed. This can also
-         * happen within a race in page table update. In the later
-         * case just flush:
-         */
-        pgd = pgd_offset(current->active_mm, address);
-
-x86-32 does not have this problem, since it reads the cr3 register to
-get the pgd_addr.
-
-x86-64 using the current task can be an issue if the NMI nests over the
-scheduler execution.
-
-A few years ago, I posted this patch
-http://www.gossamer-threads.com/lists/linux/kernel/1249694?do=post_view_threaded
-that tried to fix this by reading cr3 on x86_64. However, after reports
-that it caused some x86_64 machines to fail to boot, I removed this
-patch from the LTTng patchset. So there was certainly something I missed
-back then.
-
-Just food for thoughts,
-
-Thanks,
-
-Mathieu
-
+-Andi
 -- 
-Mathieu Desnoyers
-Operating System Efficiency R&D Consultant
-EfficiOS Inc.
-http://www.efficios.com
+ak@linux.intel.com -- Speaking for myself only.
