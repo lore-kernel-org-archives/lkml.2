@@ -1,357 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760086Ab2EVSBb (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 May 2012 14:01:31 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:65022 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759290Ab2EVR75 (ORCPT
+	id S1759990Ab2EVSGc (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 May 2012 14:06:32 -0400
+Received: from mail-yx0-f174.google.com ([209.85.213.174]:53729 "EHLO
+	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751928Ab2EVSGa convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 May 2012 13:59:57 -0400
-From: David Daney <ddaney.cavm@gmail.com>
-To: devicetree-discuss@lists.ozlabs.org,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Rob Herring <rob.herring@calxeda.com>,
-        "David S. Miller" <davem@davemloft.net>, netdev@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, linux-mips@linux-mips.org,
-        Andy Fleming <afleming@freescale.com>,
-        David Daney <david.daney@cavium.com>
-Subject: [PATCH 4/5] netdev/phy: Add driver for Broadcom BCM87XX 10G Ethernet PHYs
-Date: Tue, 22 May 2012 10:59:51 -0700
-Message-Id: <1337709592-23347-5-git-send-email-ddaney.cavm@gmail.com>
-X-Mailer: git-send-email 1.7.2.3
-In-Reply-To: <1337709592-23347-1-git-send-email-ddaney.cavm@gmail.com>
-References: <1337709592-23347-1-git-send-email-ddaney.cavm@gmail.com>
+	Tue, 22 May 2012 14:06:30 -0400
+MIME-Version: 1.0
+In-Reply-To: <1337696279-8994-3-git-send-email-anton.vorontsov@linaro.org>
+References: <20120522141717.GA31574@lizard>
+	<1337696279-8994-3-git-send-email-anton.vorontsov@linaro.org>
+Date: Tue, 22 May 2012 11:06:29 -0700
+X-Google-Sender-Auth: FKa3h0RumqOvrZfV_jRBKCTqfiI
+Message-ID: <CAMbhsRQPYzXregvvgQZD1dV_m4tgx0hQqnYPyaO3mV0hRpc5JQ@mail.gmail.com>
+Subject: Re: [PATCH 03/16] pstore/ram_core: Do not reset restored zone's
+ position and size
+From: Colin Cross <ccross@android.com>
+To: Anton Vorontsov <anton.vorontsov@linaro.org>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Kees Cook <keescook@chromium.org>, Tony Luck <tony.luck@intel.com>,
+        Arnd Bergmann <arnd@arndb.de>, John Stultz <john.stultz@linaro.org>,
+        Shuah Khan <shuahkhan@gmail.com>, arve@android.com,
+        Rebecca Schultz Zavin <rebecca@android.com>,
+        Jesper Juhl <jj@chaosbits.net>, Randy Dunlap <rdunlap@xenotime.net>,
+        Stephen Boyd <sboyd@codeaurora.org>, Thomas Meyer <thomas@m3y3r.de>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Marco Stornelli <marco.stornelli@gmail.com>,
+        WANG Cong <xiyou.wangcong@gmail.com>, linux-kernel@vger.kernel.org,
+        devel@driverdev.osuosl.org, linaro-kernel@lists.linaro.org,
+        patches@linaro.org, kernel-team@android.com
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: David Daney <david.daney@cavium.com>
+On Tue, May 22, 2012 at 7:17 AM, Anton Vorontsov
+<anton.vorontsov@linaro.org> wrote:
+> Otherwise, the files will survive just one reboot, and on a subsequent
+> boot they will disappear.
+>
+> Also, as noticed by Colin Cross, this also causes an interesting behavior
+> change in the console logging. Before this change, the console log would
+> show only the messages from the last reboot.  After this change, the
+> console log will have logs from multiple boots appended to each other.
+>
+> Now to get the only most recent messages we can do:
+>
+>        tac ramoops-console | sed '/^Linux version.*(.*@.*)/ q' | tac
 
-Add a driver for BCM8706 and BCM8727 devices.  These are a 10Gig PHYs
-which use MII_ADDR_C45 addressing.  They are always 10G full duplex, so
-there is no autonegotiation.  All we do is report link state and send
-interrupts when it changes.
+Lots of problems with this.
+"Linux version ..." is not the first line in the console log on my
+devices, there are messages before it that shouldn't be dropped by
+automated logs collectors using this regexp.
+There is a timestamp before "Linux version", so the regexp never matches.
+There is often no newline at the end of the old log, so if "Linux
+version" was the first line in the log, it would still not get
+matched.
 
-If the PHY has a device tree of_node associated with it, the
-"broadcom,c45-reg-init" property is used to supply register
-initialization values when config_init() is called.
+Relying on the first line in the log to not change seems likely to
+cause problems for scripts in the future.  Why not separate them where
+the code knows for sure that the old log is ending and the new log is
+starting?
 
-Signed-off-by: David Daney <david.daney@cavium.com>
----
- .../devicetree/bindings/net/broadcom-bcm87xx.txt   |   29 +++
- drivers/net/phy/Kconfig                            |    5 +
- drivers/net/phy/Makefile                           |    1 +
- drivers/net/phy/bcm87xx.c                          |  237 ++++++++++++++++++++
- 4 files changed, 272 insertions(+), 0 deletions(-)
- create mode 100644 Documentation/devicetree/bindings/net/broadcom-bcm87xx.txt
- create mode 100644 drivers/net/phy/bcm87xx.c
-
-diff --git a/Documentation/devicetree/bindings/net/broadcom-bcm87xx.txt b/Documentation/devicetree/bindings/net/broadcom-bcm87xx.txt
-new file mode 100644
-index 0000000..7c86d5e
---- /dev/null
-+++ b/Documentation/devicetree/bindings/net/broadcom-bcm87xx.txt
-@@ -0,0 +1,29 @@
-+The Broadcom BCM87XX devices are a family of 10G Ethernet PHYs.  They
-+have these bindings in addition to the standard PHY bindings.
-+
-+Compatible: Should contain "broadcom,bcm8706" or "broadcom,bcm8727" and
-+            "ethernet-phy-ieee802.3-c45"
-+
-+Optional Properties:
-+
-+- broadcom,c45-reg-init : one of more sets of 4 cells.  The first cell
-+  is the MDIO Manageable Device (MMD) address, the second a register
-+  address within the MMD, the third cell contains a mask to be ANDed
-+  with the existing register value, and the fourth cell is ORed with
-+  he result to yield the new register value.  If the third cell has a
-+  value of zero, no read of the existing value is performed.
-+
-+Example:
-+
-+	ethernet-phy@5 {
-+		reg = <5>;
-+		compatible = "broadcom,bcm8706", "ethernet-phy-ieee802.3-c45";
-+		interrupt-parent = <&gpio>;
-+		interrupts = <12 8>; /* Pin 12, active low */
-+		/*
-+		 * Set PMD Digital Control Register for
-+		 * GPIO[1] Tx/Rx
-+		 * GPIO[0] R64 Sync Acquired
-+		 */
-+		broadcom,c45-reg-init = <1 0xc808 0xff8f 0x70>;
-+	};
-diff --git a/drivers/net/phy/Kconfig b/drivers/net/phy/Kconfig
-index 32e9be0..9e36c8f 100644
---- a/drivers/net/phy/Kconfig
-+++ b/drivers/net/phy/Kconfig
-@@ -67,6 +67,11 @@ config BCM63XX_PHY
- 	---help---
- 	  Currently supports the 6348 and 6358 PHYs.
- 
-+config BCM87XX_PHY
-+	tristate "Driver for Broadcom BCM8706 and BCM8727 PHYs"
-+	help
-+	  Currently supports the BCM8706 and BCM8727 10G Ethernet PHYs.
-+
- config ICPLUS_PHY
- 	tristate "Drivers for ICPlus PHYs"
- 	---help---
-diff --git a/drivers/net/phy/Makefile b/drivers/net/phy/Makefile
-index f51af68..6d2dc6c 100644
---- a/drivers/net/phy/Makefile
-+++ b/drivers/net/phy/Makefile
-@@ -12,6 +12,7 @@ obj-$(CONFIG_SMSC_PHY)		+= smsc.o
- obj-$(CONFIG_VITESSE_PHY)	+= vitesse.o
- obj-$(CONFIG_BROADCOM_PHY)	+= broadcom.o
- obj-$(CONFIG_BCM63XX_PHY)	+= bcm63xx.o
-+obj-$(CONFIG_BCM87XX_PHY)	+= bcm87xx.o
- obj-$(CONFIG_ICPLUS_PHY)	+= icplus.o
- obj-$(CONFIG_REALTEK_PHY)	+= realtek.o
- obj-$(CONFIG_LSI_ET1011C_PHY)	+= et1011c.o
-diff --git a/drivers/net/phy/bcm87xx.c b/drivers/net/phy/bcm87xx.c
-new file mode 100644
-index 0000000..6883c7c
---- /dev/null
-+++ b/drivers/net/phy/bcm87xx.c
-@@ -0,0 +1,237 @@
-+/*
-+ * This file is subject to the terms and conditions of the GNU General Public
-+ * License.  See the file "COPYING" in the main directory of this archive
-+ * for more details.
-+ *
-+ * Copyright (C) 2011 - 2012 Cavium, Inc.
-+ */
-+
-+#include <linux/module.h>
-+#include <linux/phy.h>
-+#include <linux/of.h>
-+
-+#define PHY_ID_BCM8706	0x0143bdc1
-+#define PHY_ID_BCM8727	0x0143bff0
-+
-+#define BCM87XX_PMD_RX_SIGNAL_DETECT	(MII_ADDR_C45 | 0x1000a)
-+#define BCM87XX_10GBASER_PCS_STATUS	(MII_ADDR_C45 | 0x30020)
-+#define BCM87XX_XGXS_LANE_STATUS	(MII_ADDR_C45 | 0x40018)
-+
-+#define BCM87XX_LASI_CONTROL (MII_ADDR_C45 | 0x39002)
-+#define BCM87XX_LASI_STATUS (MII_ADDR_C45 | 0x39005)
-+
-+#if IS_ENABLED(CONFIG_OF_MDIO)
-+/*
-+ * Set and/or override some configuration registers based on the
-+ * marvell,reg-init property stored in the of_node for the phydev.
-+ *
-+ * broadcom,c45-reg-init = <devid reg mask value>,...;
-+ *
-+ * There may be one or more sets of <devid reg mask value>:
-+ *
-+ * devid: which sub-device to use.
-+ * reg: the register.
-+ * mask: if non-zero, ANDed with existing register value.
-+ * value: ORed with the masked value and written to the regiser.
-+ *
-+ */
-+static int bcm87xx_of_reg_init(struct phy_device *phydev)
-+{
-+	const __be32 *paddr;
-+	int len, i, ret;
-+
-+	if (!phydev->dev.of_node)
-+		return 0;
-+
-+	paddr = of_get_property(phydev->dev.of_node,
-+				"broadcom,c45-reg-init", &len);
-+	if (!paddr || len < (4 * sizeof(*paddr)))
-+		return 0;
-+
-+	ret = 0;
-+	len /= sizeof(*paddr);
-+	for (i = 0; i < len - 3; i += 4) {
-+		u16 devid = be32_to_cpup(paddr + i);
-+		u16 reg = be32_to_cpup(paddr + i + 1);
-+		u16 mask = be32_to_cpup(paddr + i + 2);
-+		u16 val_bits = be32_to_cpup(paddr + i + 3);
-+		int val;
-+		u32 regnum = MII_ADDR_C45 | (devid << 16) | reg;
-+		val = 0;
-+		if (mask) {
-+			val = phy_read(phydev, regnum);
-+			if (val < 0) {
-+				ret = val;
-+				goto err;
-+			}
-+			val &= mask;
-+		}
-+		val |= val_bits;
-+
-+		ret = phy_write(phydev, regnum, val);
-+		if (ret < 0)
-+			goto err;
-+	}
-+err:
-+	return ret;
-+}
-+#else
-+static int bcm87xx_of_reg_init(struct phy_device *phydev)
-+{
-+	return 0;
-+}
-+#endif /* CONFIG_OF_MDIO */
-+
-+static int bcm87xx_config_init(struct phy_device *phydev)
-+{
-+	phydev->supported = SUPPORTED_10000baseR_FEC;
-+	phydev->advertising = ADVERTISED_10000baseR_FEC;
-+	phydev->state = PHY_NOLINK;
-+
-+	bcm87xx_of_reg_init(phydev);
-+
-+	return 0;
-+}
-+
-+static int bcm87xx_config_aneg(struct phy_device *phydev)
-+{
-+	return -EINVAL;
-+}
-+
-+static int bcm87xx_read_status(struct phy_device *phydev)
-+{
-+	int rx_signal_detect;
-+	int pcs_status;
-+	int xgxs_lane_status;
-+
-+	rx_signal_detect = phy_read(phydev, BCM87XX_PMD_RX_SIGNAL_DETECT);
-+	if (rx_signal_detect < 0)
-+		return rx_signal_detect;
-+
-+	if ((rx_signal_detect & 1) == 0)
-+		goto no_link;
-+
-+	pcs_status = phy_read(phydev, BCM87XX_10GBASER_PCS_STATUS);
-+	if (pcs_status < 0)
-+		return pcs_status;
-+
-+	if ((pcs_status & 1) == 0)
-+		goto no_link;
-+
-+	xgxs_lane_status = phy_read(phydev, BCM87XX_XGXS_LANE_STATUS);
-+	if (xgxs_lane_status < 0)
-+		return xgxs_lane_status;
-+
-+	if ((xgxs_lane_status & 0x1000) == 0)
-+		goto no_link;
-+
-+	phydev->speed = 10000;
-+	phydev->link = 1;
-+	phydev->duplex = 1;
-+	return 0;
-+
-+no_link:
-+	phydev->link = 0;
-+	return 0;
-+}
-+
-+static int bcm87xx_config_intr(struct phy_device *phydev)
-+{
-+	int reg, err;
-+
-+	reg = phy_read(phydev, BCM87XX_LASI_CONTROL);
-+
-+	if (reg < 0)
-+		return reg;
-+
-+	if (phydev->interrupts == PHY_INTERRUPT_ENABLED)
-+		reg |= 1;
-+	else
-+		reg &= ~1;
-+
-+	err = phy_write(phydev, BCM87XX_LASI_CONTROL, reg);
-+	return err;
-+}
-+
-+static int bcm87xx_did_interrupt(struct phy_device *phydev)
-+{
-+	int reg;
-+
-+	reg = phy_read(phydev, BCM87XX_LASI_STATUS);
-+
-+	if (reg < 0) {
-+		dev_err(&phydev->dev,
-+			"Error: Read of BCM87XX_LASI_STATUS failed: %d\n", reg);
-+		return 0;
-+	}
-+	return (reg & 1) != 0;
-+}
-+
-+static int bcm87xx_ack_interrupt(struct phy_device *phydev)
-+{
-+	/* Reading the LASI status clears it. */
-+	bcm87xx_did_interrupt(phydev);
-+	return 0;
-+}
-+
-+static int bcm8706_match_phy_device(struct phy_device *phydev)
-+{
-+	return phydev->c45_ids.device_ids[4] == PHY_ID_BCM8706;
-+}
-+
-+static int bcm8727_match_phy_device(struct phy_device *phydev)
-+{
-+	return phydev->c45_ids.device_ids[4] == PHY_ID_BCM8727;
-+}
-+
-+static struct phy_driver bcm8706_driver = {
-+	.phy_id		= PHY_ID_BCM8706,
-+	.phy_id_mask	= 0xffffffff,
-+	.name		= "Broadcom BCM8706",
-+	.flags		= PHY_HAS_INTERRUPT,
-+	.config_init	= bcm87xx_config_init,
-+	.config_aneg	= bcm87xx_config_aneg,
-+	.read_status	= bcm87xx_read_status,
-+	.ack_interrupt	= bcm87xx_ack_interrupt,
-+	.config_intr	= bcm87xx_config_intr,
-+	.did_interrupt	= bcm87xx_did_interrupt,
-+	.match_phy_device = bcm8706_match_phy_device,
-+	.driver		= { .owner = THIS_MODULE },
-+};
-+
-+static struct phy_driver bcm8727_driver = {
-+	.phy_id		= PHY_ID_BCM8727,
-+	.phy_id_mask	= 0xffffffff,
-+	.name		= "Broadcom BCM8727",
-+	.flags		= PHY_HAS_INTERRUPT,
-+	.config_init	= bcm87xx_config_init,
-+	.config_aneg	= bcm87xx_config_aneg,
-+	.read_status	= bcm87xx_read_status,
-+	.ack_interrupt	= bcm87xx_ack_interrupt,
-+	.config_intr	= bcm87xx_config_intr,
-+	.did_interrupt	= bcm87xx_did_interrupt,
-+	.match_phy_device = bcm8727_match_phy_device,
-+	.driver		= { .owner = THIS_MODULE },
-+};
-+
-+static int __init bcm87xx_init(void)
-+{
-+	int ret;
-+
-+	ret = phy_driver_register(&bcm8706_driver);
-+	if (ret)
-+		goto err;
-+
-+	ret = phy_driver_register(&bcm8727_driver);
-+err:
-+	return ret;
-+}
-+module_init(bcm87xx_init);
-+
-+static void __exit bcm87xx_exit(void)
-+{
-+	phy_driver_unregister(&bcm8706_driver);
-+	phy_driver_unregister(&bcm8727_driver);
-+}
-+module_exit(bcm87xx_exit);
-+
--- 
-1.7.2.3
-
+> Signed-off-by: Anton Vorontsov <anton.vorontsov@linaro.org>
+> ---
+>  fs/pstore/ram_core.c |    1 +
+>  1 file changed, 1 insertion(+)
+>
+> diff --git a/fs/pstore/ram_core.c b/fs/pstore/ram_core.c
+> index 235513c..f6650d1 100644
+> --- a/fs/pstore/ram_core.c
+> +++ b/fs/pstore/ram_core.c
+> @@ -406,6 +406,7 @@ static int __init persistent_ram_post_init(struct persistent_ram_zone *prz, bool
+>                                " size %zu, start %zu\n",
+>                               buffer_size(prz), buffer_start(prz));
+>                        persistent_ram_save_old(prz);
+> +                       return 0;
+>                }
+>        } else {
+>                pr_info("persistent_ram: no valid data in buffer"
+> --
+> 1.7.9.2
+>
