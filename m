@@ -1,97 +1,357 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760115Ab2EVSBv (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 May 2012 14:01:51 -0400
-Received: from hqemgate03.nvidia.com ([216.228.121.140]:11544 "EHLO
-	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759243Ab2EVSBq (ORCPT
+	id S1760086Ab2EVSBb (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 May 2012 14:01:31 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:65022 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759290Ab2EVR75 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 May 2012 14:01:46 -0400
-X-PGP-Universal: processed;
-	by hqnvupgp08.nvidia.com on Tue, 22 May 2012 11:01:46 -0700
-Message-ID: <4FBBD33C.8020802@nvidia.com>
-Date: Tue, 22 May 2012 23:26:12 +0530
-From: Laxman Dewangan <ldewangan@nvidia.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101208 Thunderbird/3.1.7
-MIME-Version: 1.0
-To: Stephen Warren <swarren@wwwdotorg.org>
-CC: Stephen Warren <swarren@nvidia.com>, "olof@lixom.net" <olof@lixom.net>,
-        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>
-Subject: Re: [PATCH 2/2] ARM: dt: tegra: cardhu: register core regulator tps65911
-References: <1337691917-15040-1-git-send-email-ldewangan@nvidia.com> <1337691917-15040-2-git-send-email-ldewangan@nvidia.com> <4FBBC192.7030900@wwwdotorg.org> <4FBBC830.2060802@nvidia.com> <4FBBCA8F.3050903@wwwdotorg.org>
-In-Reply-To: <4FBBCA8F.3050903@wwwdotorg.org>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
+	Tue, 22 May 2012 13:59:57 -0400
+From: David Daney <ddaney.cavm@gmail.com>
+To: devicetree-discuss@lists.ozlabs.org,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Rob Herring <rob.herring@calxeda.com>,
+        "David S. Miller" <davem@davemloft.net>, netdev@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org, linux-mips@linux-mips.org,
+        Andy Fleming <afleming@freescale.com>,
+        David Daney <david.daney@cavium.com>
+Subject: [PATCH 4/5] netdev/phy: Add driver for Broadcom BCM87XX 10G Ethernet PHYs
+Date: Tue, 22 May 2012 10:59:51 -0700
+Message-Id: <1337709592-23347-5-git-send-email-ddaney.cavm@gmail.com>
+X-Mailer: git-send-email 1.7.2.3
+In-Reply-To: <1337709592-23347-1-git-send-email-ddaney.cavm@gmail.com>
+References: <1337709592-23347-1-git-send-email-ddaney.cavm@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday 22 May 2012 10:49 PM, Stephen Warren wrote:
-> On 05/22/2012 11:09 AM, Laxman Dewangan wrote:
->> On Tuesday 22 May 2012 10:10 PM, Stephen Warren wrote:
->>> On 05/22/2012 07:05 AM, Laxman Dewangan wrote:
->>>> Add device info for the PMIC device tps65911 in tegra-cardhu
->>>> dts file. This device supports the multiple regulator rails,
->>>> gpio, interrupts.
->>> FYI, patch 1 in this series looks fine. Some comments below though:
->>>
->>>> diff --git a/arch/arm/boot/dts/tegra-cardhu.dts
->>>> b/arch/arm/boot/dts/tegra-cardhu.dts
->>>> +        tps65911: tps65911@2d {
->>>> +            compatible = "ti,tps65911";
->>>> +            reg =<0x2d>;
->>>> +
->>>> +            #gpio-cells =<2>;
->>>> +            gpio-controller;
->>>> +
->>>> +            regulators {
->>> Please add the following properties here:
->>>
->>>      #address-cells =<1>;
->>>      #size-cells =<0>;
->>>
->>>> +                vdd1_reg: vdd1 {
->>> This node name should be "regulator", since nodes are generally named
->>> after the class of object they represent. Since all the nodes will then
->>> have the same name, you'll need to add a unit address ("@nnnn") to the
->>> node name.
->> Nop, we can not do it. The node name should match with the name
->> mentioned in driver otherwise the regulator node search will fail
->> Following is the excerpt of the code:
-> Hmm. That seems wrong. I thought I had seen at least some regulator
-> bindings where these nodes included a name property so that the nodes
-> didn't need any particular name.
-It is only applicable for the fixed regulators or the device supports 
-only one regulator or each regulator have their own compatibility and 
-the matching is done by compatibility, not by node name.
+From: David Daney <david.daney@cavium.com>
 
+Add a driver for BCM8706 and BCM8727 devices.  These are a 10Gig PHYs
+which use MII_ADDR_C45 addressing.  They are always 10G full duplex, so
+there is no autonegotiation.  All we do is report link state and send
+interrupts when it changes.
 
-> Olof, what are your thoughts here - do we need to fix the code so the
-> node names aren't relevant? IIRC, we have had to change some other
-> bindings due to the same issue.
->
-> ...
->>> Nitpicky, but the labels might be more logical as reg_vdd1 rather than
->>> vdd1_reg, but not a big deal.
->>>
->>> So, please replace the line above with:
->>>
->>>      reg_vdd1: regulator@0 {
->>>          reg =<0>;
->>>
->> Why do we really require the reg at all?
->> I dont think any usage of doing this.
-> I guess if these regulators are enabled at boot and always on, we don't
-> even need the labels for now; we could add labels later as/when drivers
-> begin to dynamically control the regulators.
+If the PHY has a device tree of_node associated with it, the
+"broadcom,c45-reg-init" property is used to supply register
+initialization values when config_init() is called.
 
-I think we should provide the label here whether it is always on or not.
-The driver who uses the rails will not aware that rail is always on or not.
-Second thing is that this gives uniformity and whenever any consumer get 
-added, we will not touch this part, only will be change in the driver 
-specific part.
+Signed-off-by: David Daney <david.daney@cavium.com>
+---
+ .../devicetree/bindings/net/broadcom-bcm87xx.txt   |   29 +++
+ drivers/net/phy/Kconfig                            |    5 +
+ drivers/net/phy/Makefile                           |    1 +
+ drivers/net/phy/bcm87xx.c                          |  237 ++++++++++++++++++++
+ 4 files changed, 272 insertions(+), 0 deletions(-)
+ create mode 100644 Documentation/devicetree/bindings/net/broadcom-bcm87xx.txt
+ create mode 100644 drivers/net/phy/bcm87xx.c
 
+diff --git a/Documentation/devicetree/bindings/net/broadcom-bcm87xx.txt b/Documentation/devicetree/bindings/net/broadcom-bcm87xx.txt
+new file mode 100644
+index 0000000..7c86d5e
+--- /dev/null
++++ b/Documentation/devicetree/bindings/net/broadcom-bcm87xx.txt
+@@ -0,0 +1,29 @@
++The Broadcom BCM87XX devices are a family of 10G Ethernet PHYs.  They
++have these bindings in addition to the standard PHY bindings.
++
++Compatible: Should contain "broadcom,bcm8706" or "broadcom,bcm8727" and
++            "ethernet-phy-ieee802.3-c45"
++
++Optional Properties:
++
++- broadcom,c45-reg-init : one of more sets of 4 cells.  The first cell
++  is the MDIO Manageable Device (MMD) address, the second a register
++  address within the MMD, the third cell contains a mask to be ANDed
++  with the existing register value, and the fourth cell is ORed with
++  he result to yield the new register value.  If the third cell has a
++  value of zero, no read of the existing value is performed.
++
++Example:
++
++	ethernet-phy@5 {
++		reg = <5>;
++		compatible = "broadcom,bcm8706", "ethernet-phy-ieee802.3-c45";
++		interrupt-parent = <&gpio>;
++		interrupts = <12 8>; /* Pin 12, active low */
++		/*
++		 * Set PMD Digital Control Register for
++		 * GPIO[1] Tx/Rx
++		 * GPIO[0] R64 Sync Acquired
++		 */
++		broadcom,c45-reg-init = <1 0xc808 0xff8f 0x70>;
++	};
+diff --git a/drivers/net/phy/Kconfig b/drivers/net/phy/Kconfig
+index 32e9be0..9e36c8f 100644
+--- a/drivers/net/phy/Kconfig
++++ b/drivers/net/phy/Kconfig
+@@ -67,6 +67,11 @@ config BCM63XX_PHY
+ 	---help---
+ 	  Currently supports the 6348 and 6358 PHYs.
+ 
++config BCM87XX_PHY
++	tristate "Driver for Broadcom BCM8706 and BCM8727 PHYs"
++	help
++	  Currently supports the BCM8706 and BCM8727 10G Ethernet PHYs.
++
+ config ICPLUS_PHY
+ 	tristate "Drivers for ICPlus PHYs"
+ 	---help---
+diff --git a/drivers/net/phy/Makefile b/drivers/net/phy/Makefile
+index f51af68..6d2dc6c 100644
+--- a/drivers/net/phy/Makefile
++++ b/drivers/net/phy/Makefile
+@@ -12,6 +12,7 @@ obj-$(CONFIG_SMSC_PHY)		+= smsc.o
+ obj-$(CONFIG_VITESSE_PHY)	+= vitesse.o
+ obj-$(CONFIG_BROADCOM_PHY)	+= broadcom.o
+ obj-$(CONFIG_BCM63XX_PHY)	+= bcm63xx.o
++obj-$(CONFIG_BCM87XX_PHY)	+= bcm87xx.o
+ obj-$(CONFIG_ICPLUS_PHY)	+= icplus.o
+ obj-$(CONFIG_REALTEK_PHY)	+= realtek.o
+ obj-$(CONFIG_LSI_ET1011C_PHY)	+= et1011c.o
+diff --git a/drivers/net/phy/bcm87xx.c b/drivers/net/phy/bcm87xx.c
+new file mode 100644
+index 0000000..6883c7c
+--- /dev/null
++++ b/drivers/net/phy/bcm87xx.c
+@@ -0,0 +1,237 @@
++/*
++ * This file is subject to the terms and conditions of the GNU General Public
++ * License.  See the file "COPYING" in the main directory of this archive
++ * for more details.
++ *
++ * Copyright (C) 2011 - 2012 Cavium, Inc.
++ */
++
++#include <linux/module.h>
++#include <linux/phy.h>
++#include <linux/of.h>
++
++#define PHY_ID_BCM8706	0x0143bdc1
++#define PHY_ID_BCM8727	0x0143bff0
++
++#define BCM87XX_PMD_RX_SIGNAL_DETECT	(MII_ADDR_C45 | 0x1000a)
++#define BCM87XX_10GBASER_PCS_STATUS	(MII_ADDR_C45 | 0x30020)
++#define BCM87XX_XGXS_LANE_STATUS	(MII_ADDR_C45 | 0x40018)
++
++#define BCM87XX_LASI_CONTROL (MII_ADDR_C45 | 0x39002)
++#define BCM87XX_LASI_STATUS (MII_ADDR_C45 | 0x39005)
++
++#if IS_ENABLED(CONFIG_OF_MDIO)
++/*
++ * Set and/or override some configuration registers based on the
++ * marvell,reg-init property stored in the of_node for the phydev.
++ *
++ * broadcom,c45-reg-init = <devid reg mask value>,...;
++ *
++ * There may be one or more sets of <devid reg mask value>:
++ *
++ * devid: which sub-device to use.
++ * reg: the register.
++ * mask: if non-zero, ANDed with existing register value.
++ * value: ORed with the masked value and written to the regiser.
++ *
++ */
++static int bcm87xx_of_reg_init(struct phy_device *phydev)
++{
++	const __be32 *paddr;
++	int len, i, ret;
++
++	if (!phydev->dev.of_node)
++		return 0;
++
++	paddr = of_get_property(phydev->dev.of_node,
++				"broadcom,c45-reg-init", &len);
++	if (!paddr || len < (4 * sizeof(*paddr)))
++		return 0;
++
++	ret = 0;
++	len /= sizeof(*paddr);
++	for (i = 0; i < len - 3; i += 4) {
++		u16 devid = be32_to_cpup(paddr + i);
++		u16 reg = be32_to_cpup(paddr + i + 1);
++		u16 mask = be32_to_cpup(paddr + i + 2);
++		u16 val_bits = be32_to_cpup(paddr + i + 3);
++		int val;
++		u32 regnum = MII_ADDR_C45 | (devid << 16) | reg;
++		val = 0;
++		if (mask) {
++			val = phy_read(phydev, regnum);
++			if (val < 0) {
++				ret = val;
++				goto err;
++			}
++			val &= mask;
++		}
++		val |= val_bits;
++
++		ret = phy_write(phydev, regnum, val);
++		if (ret < 0)
++			goto err;
++	}
++err:
++	return ret;
++}
++#else
++static int bcm87xx_of_reg_init(struct phy_device *phydev)
++{
++	return 0;
++}
++#endif /* CONFIG_OF_MDIO */
++
++static int bcm87xx_config_init(struct phy_device *phydev)
++{
++	phydev->supported = SUPPORTED_10000baseR_FEC;
++	phydev->advertising = ADVERTISED_10000baseR_FEC;
++	phydev->state = PHY_NOLINK;
++
++	bcm87xx_of_reg_init(phydev);
++
++	return 0;
++}
++
++static int bcm87xx_config_aneg(struct phy_device *phydev)
++{
++	return -EINVAL;
++}
++
++static int bcm87xx_read_status(struct phy_device *phydev)
++{
++	int rx_signal_detect;
++	int pcs_status;
++	int xgxs_lane_status;
++
++	rx_signal_detect = phy_read(phydev, BCM87XX_PMD_RX_SIGNAL_DETECT);
++	if (rx_signal_detect < 0)
++		return rx_signal_detect;
++
++	if ((rx_signal_detect & 1) == 0)
++		goto no_link;
++
++	pcs_status = phy_read(phydev, BCM87XX_10GBASER_PCS_STATUS);
++	if (pcs_status < 0)
++		return pcs_status;
++
++	if ((pcs_status & 1) == 0)
++		goto no_link;
++
++	xgxs_lane_status = phy_read(phydev, BCM87XX_XGXS_LANE_STATUS);
++	if (xgxs_lane_status < 0)
++		return xgxs_lane_status;
++
++	if ((xgxs_lane_status & 0x1000) == 0)
++		goto no_link;
++
++	phydev->speed = 10000;
++	phydev->link = 1;
++	phydev->duplex = 1;
++	return 0;
++
++no_link:
++	phydev->link = 0;
++	return 0;
++}
++
++static int bcm87xx_config_intr(struct phy_device *phydev)
++{
++	int reg, err;
++
++	reg = phy_read(phydev, BCM87XX_LASI_CONTROL);
++
++	if (reg < 0)
++		return reg;
++
++	if (phydev->interrupts == PHY_INTERRUPT_ENABLED)
++		reg |= 1;
++	else
++		reg &= ~1;
++
++	err = phy_write(phydev, BCM87XX_LASI_CONTROL, reg);
++	return err;
++}
++
++static int bcm87xx_did_interrupt(struct phy_device *phydev)
++{
++	int reg;
++
++	reg = phy_read(phydev, BCM87XX_LASI_STATUS);
++
++	if (reg < 0) {
++		dev_err(&phydev->dev,
++			"Error: Read of BCM87XX_LASI_STATUS failed: %d\n", reg);
++		return 0;
++	}
++	return (reg & 1) != 0;
++}
++
++static int bcm87xx_ack_interrupt(struct phy_device *phydev)
++{
++	/* Reading the LASI status clears it. */
++	bcm87xx_did_interrupt(phydev);
++	return 0;
++}
++
++static int bcm8706_match_phy_device(struct phy_device *phydev)
++{
++	return phydev->c45_ids.device_ids[4] == PHY_ID_BCM8706;
++}
++
++static int bcm8727_match_phy_device(struct phy_device *phydev)
++{
++	return phydev->c45_ids.device_ids[4] == PHY_ID_BCM8727;
++}
++
++static struct phy_driver bcm8706_driver = {
++	.phy_id		= PHY_ID_BCM8706,
++	.phy_id_mask	= 0xffffffff,
++	.name		= "Broadcom BCM8706",
++	.flags		= PHY_HAS_INTERRUPT,
++	.config_init	= bcm87xx_config_init,
++	.config_aneg	= bcm87xx_config_aneg,
++	.read_status	= bcm87xx_read_status,
++	.ack_interrupt	= bcm87xx_ack_interrupt,
++	.config_intr	= bcm87xx_config_intr,
++	.did_interrupt	= bcm87xx_did_interrupt,
++	.match_phy_device = bcm8706_match_phy_device,
++	.driver		= { .owner = THIS_MODULE },
++};
++
++static struct phy_driver bcm8727_driver = {
++	.phy_id		= PHY_ID_BCM8727,
++	.phy_id_mask	= 0xffffffff,
++	.name		= "Broadcom BCM8727",
++	.flags		= PHY_HAS_INTERRUPT,
++	.config_init	= bcm87xx_config_init,
++	.config_aneg	= bcm87xx_config_aneg,
++	.read_status	= bcm87xx_read_status,
++	.ack_interrupt	= bcm87xx_ack_interrupt,
++	.config_intr	= bcm87xx_config_intr,
++	.did_interrupt	= bcm87xx_did_interrupt,
++	.match_phy_device = bcm8727_match_phy_device,
++	.driver		= { .owner = THIS_MODULE },
++};
++
++static int __init bcm87xx_init(void)
++{
++	int ret;
++
++	ret = phy_driver_register(&bcm8706_driver);
++	if (ret)
++		goto err;
++
++	ret = phy_driver_register(&bcm8727_driver);
++err:
++	return ret;
++}
++module_init(bcm87xx_init);
++
++static void __exit bcm87xx_exit(void)
++{
++	phy_driver_unregister(&bcm8706_driver);
++	phy_driver_unregister(&bcm8727_driver);
++}
++module_exit(bcm87xx_exit);
++
+-- 
+1.7.2.3
 
