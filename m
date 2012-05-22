@@ -1,92 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756368Ab2EVW6h (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 May 2012 18:58:37 -0400
-Received: from mail131.messagelabs.com ([216.82.242.99]:12078 "EHLO
-	mail131.messagelabs.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753499Ab2EVW6g (ORCPT
+	id S1756282Ab2EVXCN (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 May 2012 19:02:13 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:57998 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751748Ab2EVXCL convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 May 2012 18:58:36 -0400
-X-Env-Sender: hartleys@visionengravers.com
-X-Msg-Ref: server-3.tower-131.messagelabs.com!1337727513!21301591!6
-X-Originating-IP: [216.166.12.31]
-X-StarScan-Version: 6.5.10; banners=-,-,-
-X-VirusChecked: Checked
-From: H Hartley Sweeten <hartleys@visionengravers.com>
-To: Linux Kernel <linux-kernel@vger.kernel.org>
-Subject: [PATCH] staging: comedi: remove thisboard macro in the comedi_test driver
-Date: Tue, 22 May 2012 15:58:28 -0700
-User-Agent: KMail/1.9.9
-CC: <devel@driverdev.osuosl.org>, <abbotti@mev.co.uk>,
-        <fmhess@users.sourceforge.net>, <gregkh@linuxfoundation.org>
+	Tue, 22 May 2012 19:02:11 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
-Content-Disposition: inline
-Message-ID: <201205221558.28768.hartleys@visionengravers.com>
+In-Reply-To: <4FBC1807.4050402@gmail.com>
+References: <1336773923-17866-1-git-send-email-ddaney.cavm@gmail.com>
+ <1336773923-17866-2-git-send-email-ddaney.cavm@gmail.com> <20120520055436.13AF03E03B8@localhost>
+ <20120520060802.03CE73E03B8@localhost> <4FBBECC2.10503@gmail.com>
+ <CACxGe6tYQVfPRtXxmYF2OPYcEFu+x4-_uzFta9f3mwu=xUrt=g@mail.gmail.com> <4FBC1807.4050402@gmail.com>
+From: Grant Likely <grant.likely@secretlab.ca>
+Date: Tue, 22 May 2012 17:01:51 -0600
+X-Google-Sender-Auth: VJ0DlmJCvobI3s5mjMIFbn7aKyk
+Message-ID: <CACxGe6sY++3jreWbQ4jvmmkbeUitMgYYd-oa4x+_49OMyV7O+Q@mail.gmail.com>
+Subject: Re: [PATCH 1/3] of: Add prefix parameter to of_modalias_node().
+To: David Daney <ddaney.cavm@gmail.com>
+Cc: "devicetree-discuss@lists.ozlabs.org" 
+	<devicetree-discuss@lists.ozlabs.org>,
+        Rob Herring <rob.herring@calxeda.com>,
+        "spi-devel-general@lists.sourceforge.net" 
+	<spi-devel-general@lists.sourceforge.net>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-mips@linux-mips.org" <linux-mips@linux-mips.org>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
+        Liam Girdwood <lrg@ti.com>, Tabi Timur-B04825 <B04825@freescale.com>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Jaroslav Kysela <perex@perex.cz>, Takashi Iwai <tiwai@suse.de>,
+        "alsa-devel@alsa-project.org" <alsa-devel@alsa-project.org>,
+        "linuxppc-dev@lists.ozlabs.org" <linuxppc-dev@lists.ozlabs.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The 'thisboard' macro depends on having a local variable with
-a magic name. The CodingStyle document suggests not doing this
-to avoid confusion. Remove the macro and use the comedi_board()
-inline helper to get the dev->board_ptr information.
+Cool, thanks.
 
-Signed-off-by: H Hartley Sweeten <hsweeten@visionengravers.com>
-Cc: Ian Abbott <abbotti@mev.co.uk>
-Cc: Mori Hess <fmhess@users.sourceforge.net>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+g.
 
----
+On Tue, May 22, 2012 at 4:49 PM, David Daney <ddaney.cavm@gmail.com> wrote:
+> On 05/22/2012 01:09 PM, Grant Likely wrote:
+>>
+>> On Tue, May 22, 2012 at 1:45 PM, David Daney<ddaney.cavm@gmail.com>
+>>  wrote:
+>>>
+>>> On 05/19/2012 11:08 PM, Grant Likely wrote:
+>>>>
+>>>>
+>>>> On Sat, 19 May 2012 23:54:36 -0600, Grant
+>>>> Likely<grant.likely@secretlab.ca>    wrote:
+>>>>>
+>>>>>
+>>>>> On Fri, 11 May 2012 15:05:21 -0700, David Daney<ddaney.cavm@gmail.com>
+>>>>>  wrote:
+>>>>>>
+>>>>>>
+>>>>>> From: David Daney<david.daney@cavium.com>
+>>>>>>
+>>>>>> When generating MODALIASes, it is convenient to add things like "spi:"
+>>>>>> or "i2c:" to the front of the strings.  This allows the standard
+>>>>>> modprobe to find the right driver when automatically populating bus
+>>>>>> children from the device tree structure.
+>>>>>>
+>>>>>> Add a prefix parameter, and adjust callers.  For
+>>>>>> of_register_spi_devices() use the "spi:" prefix.
+>>>>>>
+>>>>>> Signed-off-by: David Daney<david.daney@cavium.com>
+>>>>>
+>>>>>
+>>>>>
+>>>>> Applied, thanks.  Some notes below...
+>>>>
+>>>>
+>>>>
+>>>> Wait... why is this necessary?
+>>>
+>>>
+>>>
+>>> Because in of_register_spi_devices() in of_spi.c, you do:
+>>>
+>>>        request_module(spi->modalias);
+>>>
+>>> The string passed to request_module() must have the "spi:" prefix.
+>>
+>>
+>> How about modifying the call to request_module() to include the prefix
+>> also?  I think that would be a simpler change overall.  Would that
+>> work?
+>
+>
+> It seems to.  I just sent such a patch in a new thread.
+>
+> David Daney
 
-diff --git a/drivers/staging/comedi/drivers/comedi_test.c b/drivers/staging/comedi/drivers/comedi_test.c
-index 873e374..9f3c3d5 100644
---- a/drivers/staging/comedi/drivers/comedi_test.c
-+++ b/drivers/staging/comedi/drivers/comedi_test.c
-@@ -67,8 +67,6 @@ struct waveform_board {
- 
- #define N_CHANS 8
- 
--#define thisboard ((const struct waveform_board *)dev->board_ptr)
--
- /* Data unique to this driver */
- struct waveform_private {
- 	struct timer_list timer;
-@@ -429,12 +427,13 @@ static int waveform_ao_insn_write(struct comedi_device *dev,
- static int waveform_attach(struct comedi_device *dev,
- 			   struct comedi_devconfig *it)
- {
-+	const struct waveform_board *board = comedi_board(dev);
- 	struct comedi_subdevice *s;
- 	int amplitude = it->options[0];
- 	int period = it->options[1];
- 	int i;
- 
--	dev->board_name = thisboard->name;
-+	dev->board_name = board->name;
- 
- 	if (alloc_private(dev, sizeof(struct waveform_private)) < 0)
- 		return -ENOMEM;
-@@ -457,8 +456,8 @@ static int waveform_attach(struct comedi_device *dev,
- 	/* analog input subdevice */
- 	s->type = COMEDI_SUBD_AI;
- 	s->subdev_flags = SDF_READABLE | SDF_GROUND | SDF_CMD_READ;
--	s->n_chan = thisboard->ai_chans;
--	s->maxdata = (1 << thisboard->ai_bits) - 1;
-+	s->n_chan = board->ai_chans;
-+	s->maxdata = (1 << board->ai_bits) - 1;
- 	s->range_table = &waveform_ai_ranges;
- 	s->len_chanlist = s->n_chan * 2;
- 	s->insn_read = waveform_ai_insn_read;
-@@ -471,8 +470,8 @@ static int waveform_attach(struct comedi_device *dev,
- 	/* analog output subdevice (loopback) */
- 	s->type = COMEDI_SUBD_AO;
- 	s->subdev_flags = SDF_WRITEABLE | SDF_GROUND;
--	s->n_chan = thisboard->ai_chans;
--	s->maxdata = (1 << thisboard->ai_bits) - 1;
-+	s->n_chan = board->ai_chans;
-+	s->maxdata = (1 << board->ai_bits) - 1;
- 	s->range_table = &waveform_ai_ranges;
- 	s->len_chanlist = s->n_chan * 2;
- 	s->insn_write = waveform_ao_insn_write;
+
+
+-- 
+Grant Likely, B.Sc., P.Eng.
+Secret Lab Technologies Ltd.
