@@ -1,87 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759990Ab2EVSGc (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 May 2012 14:06:32 -0400
-Received: from mail-yx0-f174.google.com ([209.85.213.174]:53729 "EHLO
-	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751928Ab2EVSGa convert rfc822-to-8bit (ORCPT
+	id S1760090Ab2EVSGo (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 May 2012 14:06:44 -0400
+Received: from e36.co.us.ibm.com ([32.97.110.154]:39312 "EHLO
+	e36.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1760036Ab2EVSGn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 May 2012 14:06:30 -0400
+	Tue, 22 May 2012 14:06:43 -0400
+Message-ID: <4FBBD591.1000103@linaro.org>
+Date: Tue, 22 May 2012 11:06:09 -0700
+From: John Stultz <john.stultz@linaro.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
 MIME-Version: 1.0
-In-Reply-To: <1337696279-8994-3-git-send-email-anton.vorontsov@linaro.org>
-References: <20120522141717.GA31574@lizard>
-	<1337696279-8994-3-git-send-email-anton.vorontsov@linaro.org>
-Date: Tue, 22 May 2012 11:06:29 -0700
-X-Google-Sender-Auth: FKa3h0RumqOvrZfV_jRBKCTqfiI
-Message-ID: <CAMbhsRQPYzXregvvgQZD1dV_m4tgx0hQqnYPyaO3mV0hRpc5JQ@mail.gmail.com>
-Subject: Re: [PATCH 03/16] pstore/ram_core: Do not reset restored zone's
- position and size
-From: Colin Cross <ccross@android.com>
-To: Anton Vorontsov <anton.vorontsov@linaro.org>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Kees Cook <keescook@chromium.org>, Tony Luck <tony.luck@intel.com>,
-        Arnd Bergmann <arnd@arndb.de>, John Stultz <john.stultz@linaro.org>,
-        Shuah Khan <shuahkhan@gmail.com>, arve@android.com,
-        Rebecca Schultz Zavin <rebecca@android.com>,
-        Jesper Juhl <jj@chaosbits.net>, Randy Dunlap <rdunlap@xenotime.net>,
-        Stephen Boyd <sboyd@codeaurora.org>, Thomas Meyer <thomas@m3y3r.de>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Marco Stornelli <marco.stornelli@gmail.com>,
-        WANG Cong <xiyou.wangcong@gmail.com>, linux-kernel@vger.kernel.org,
-        devel@driverdev.osuosl.org, linaro-kernel@lists.linaro.org,
-        patches@linaro.org, kernel-team@android.com
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
-X-System-Of-Record: true
+To: Richard Cochran <richardcochran@gmail.com>
+CC: linux-kernel@vger.kernel.org, Thomas Gleixner <tglx@linutronix.de>
+Subject: Re: [PATCH RFC V2 3/6] time: keep track of the pending utc/tai threshold
+References: <cover.1337348892.git.richardcochran@gmail.com> <6777ac8ebc321c67d13fdb8d0a3d826332b60f1f.1337348892.git.richardcochran@gmail.com> <4FBA84EF.5040506@linaro.org> <20120521190815.GA19812@netboy.at.omicron.at> <20120522173953.GA4177@netboy.at.omicron.at>
+In-Reply-To: <20120522173953.GA4177@netboy.at.omicron.at>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 12052218-7606-0000-0000-00000089BD15
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, May 22, 2012 at 7:17 AM, Anton Vorontsov
-<anton.vorontsov@linaro.org> wrote:
-> Otherwise, the files will survive just one reboot, and on a subsequent
-> boot they will disappear.
+On 05/22/2012 10:39 AM, Richard Cochran wrote:
+> On Mon, May 21, 2012 at 09:08:15PM +0200, Richard Cochran wrote:
+>> On Mon, May 21, 2012 at 11:09:51AM -0700, John Stultz wrote:
+>>> On 05/18/2012 07:09 AM, Richard Cochran wrote:
+>>>> +	/* Tracks where we stand with regard to leap the second epoch. */
+>>>> +	enum {
+>>>> +		LEAP_IDLE,
+>>>> +		LEAP_INS_PENDING,
+>>>> +		LEAP_INS_DONE,
+>>>> +		LEAP_DEL_PENDING,
+>>>> +		LEAP_DEL_DONE,
+>>>> +	} leap_state;
+> ...
 >
-> Also, as noticed by Colin Cross, this also causes an interesting behavior
-> change in the console logging. Before this change, the console log would
-> show only the messages from the last reboot.  After this change, the
-> console log will have logs from multiple boots appended to each other.
+>> I don't think I am explaining this very well. I will try again to make
+>> it clear using a table or something later on.
+> The following table illustrates what happens around a (fictitious)
+> leap second. Imagine a new epoch will occur at UTC time value 10 and
+> the new TAI - UTC offset will be 2 seconds. The columns of the table
+> show the values of the relevant time variables.
 >
-> Now to get the only most recent messages we can do:
+> U:     UTC time
+> CODE:  NTP time code
+> T:     TAI - UTC offset
+> P:     pending (explained below)
 >
->        tac ramoops-console | sed '/^Linux version.*(.*@.*)/ q' | tac
+>     U   CODE    T   P
+>   --------------------
+>     1   INS     1   1  leap second sheduled
+>   --------------------
+>     2   INS     1   1
+>   --------------------
+>         ...
+>   --------------------
+>     8   INS     1   1
+>   --------------------
+>     9   INS     1   1
+>   --------------------
+> | 10   OOP     1   1  leap second, 1st tick
+> |~~~~~~~~~~~~~~~~~~~
+> |  9           2   0  leap second, 2nd and subsequent ticks
+>   --------------------
+>    10   WAIT    2   0  new epoch
+>   --------------------
+>    11   WAIT    2   0
 
-Lots of problems with this.
-"Linux version ..." is not the first line in the console log on my
-devices, there are messages before it that shouldn't be dropped by
-automated logs collectors using this regexp.
-There is a timestamp before "Linux version", so the regexp never matches.
-There is often no newline at the end of the old log, so if "Linux
-version" was the first line in the log, it would still not get
-matched.
+Not sure I'm still following.
 
-Relying on the first line in the log to not change seems likely to
-cause problems for scripts in the future.  Why not separate them where
-the code knows for sure that the old log is ending and the new log is
-starting?
+It seems currently we have:
 
-> Signed-off-by: Anton Vorontsov <anton.vorontsov@linaro.org>
-> ---
->  fs/pstore/ram_core.c |    1 +
->  1 file changed, 1 insertion(+)
->
-> diff --git a/fs/pstore/ram_core.c b/fs/pstore/ram_core.c
-> index 235513c..f6650d1 100644
-> --- a/fs/pstore/ram_core.c
-> +++ b/fs/pstore/ram_core.c
-> @@ -406,6 +406,7 @@ static int __init persistent_ram_post_init(struct persistent_ram_zone *prz, bool
->                                " size %zu, start %zu\n",
->                               buffer_size(prz), buffer_start(prz));
->                        persistent_ram_save_old(prz);
-> +                       return 0;
->                }
->        } else {
->                pr_info("persistent_ram: no valid data in buffer"
-> --
-> 1.7.9.2
->
+    U   CODE    T
+  ----------------
+    9   INS     1
+  ----------------
+   10   INS     1     pre tick, post leap second edge (this is the technically incorrect interval)
+  ~~~~~~~~~~~~~~~~
+    9   OOP     2     post tick, post leap second edge
+  ----------------
+   10   WAIT    2     new epoch
+
+
+If you're trying to correct the pre-tick, post leap second edge, the above provides all you need.
+
+In the adjtimex code, all you have to do is:
+
+
+if (unlikely(CODE == INS&&  U == 10))
+
+	/*note, we're not modifying state here, just returning corrected local values*/
+
+	return (U-1, OOP, T+1);
+
+return (U,CODE, T);
+
+
+Since when the tick triggers, we'll move the CODE state appropriately.
+
+Or am I still missing something?
+
+thanks
+-john
+
