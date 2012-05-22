@@ -1,68 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755246Ab2EVSqH (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 May 2012 14:46:07 -0400
-Received: from e7.ny.us.ibm.com ([32.97.182.137]:35144 "EHLO e7.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752762Ab2EVSqF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 May 2012 14:46:05 -0400
-Message-ID: <4FBBDED6.7030600@linux.vnet.ibm.com>
-Date: Tue, 22 May 2012 13:45:42 -0500
-From: Seth Jennings <sjenning@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
-MIME-Version: 1.0
-To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-CC: Minchan Kim <minchan@kernel.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Dan Magenheimer <dan.magenheimer@oracle.com>,
-        Nitin Gupta <ngupta@vflare.org>
-Subject: Re: [PATCH] zsmalloc: use unsigned long instead of void *
-References: <1337567013-4741-1-git-send-email-minchan@kernel.org> <4FBA4EE2.8050308@linux.vnet.ibm.com> <4FBB97B2.6050408@linux.vnet.ibm.com> <20120522183119.GA24107@phenom.dumpdata.com>
-In-Reply-To: <20120522183119.GA24107@phenom.dumpdata.com>
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1755762Ab2EVSrN (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 May 2012 14:47:13 -0400
+Received: from he.sipsolutions.net ([78.46.109.217]:40446 "EHLO
+	sipsolutions.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751302Ab2EVSrL (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 May 2012 14:47:11 -0400
+Message-ID: <1337712399.4470.5.camel@jlt3.sipsolutions.net>
+Subject: Re: [PATCH] rfkill: Add handling when rfkill's type is
+ RFKILL_TYPE_ALL.
+From: Johannes Berg <johannes@sipsolutions.net>
+To: Alex Hung <alex.hung@canonical.com>
+Cc: linville@tuxdriver.com, davem@davemloft.net,
+        linux-wireless@vger.kernel.org, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Date: Tue, 22 May 2012 20:46:39 +0200
+In-Reply-To: <1337589439-14605-1-git-send-email-alex.hung@canonical.com>
+References: <1337589439-14605-1-git-send-email-alex.hung@canonical.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.2-1+b1 
 Content-Transfer-Encoding: 7bit
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 12052218-5806-0000-0000-00001576D7A5
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/22/2012 01:31 PM, Konrad Rzeszutek Wilk wrote:
-
-> On Tue, May 22, 2012 at 08:42:10AM -0500, Seth Jennings wrote:
->> On 05/21/2012 09:19 AM, Seth Jennings wrote:
->>
->>> On 05/20/2012 09:23 PM, Minchan Kim wrote:
->>>
->>>> We should use unsigned long as handle instead of void * to avoid any
->>>> confusion. Without this, users may just treat zs_malloc return value as
->>>> a pointer and try to deference it.
->>>
->>>
->>> I wouldn't have agreed with you about the need for this change as people
->>> should understand a void * to be the address of some data with unknown
->>> structure.
->>>
->>> However, I recently discussed with Dan regarding his RAMster project
->>> where he assumed that the void * would be an address, and as such,
->>> 4-byte aligned.  So he has masked two bits into the two LSBs of the
->>> handle for RAMster, which doesn't work with zsmalloc since the handle is
->>> not an address.
->>>
->>> So really we do need to convey as explicitly as possible to the user
->>> that the handle is an _opaque_ value about which no assumption can be made.
->>
->>
->> Wasn't really clear here.  All that to say, I think we do need this patch.
+On Mon, 2012-05-21 at 16:37 +0800, Alex Hung wrote:
+> This rfkill type is supposed to be able to toggles the status of all wireless
+> devices; however, no wireless devices will register itself with type 
+> RFKILL_TYPE_ALL and thus it was previously ignored in __rfkill_switch_all.
 > 
-> That sounds like an Acked-by ?
+> Signed-off-by: Alex Hung <alex.hung@canonical.com>
+> ---
+>  net/rfkill/core.c |    2 +-
+>  1 files changed, 1 insertions(+), 1 deletions(-)
+> 
+> diff --git a/net/rfkill/core.c b/net/rfkill/core.c
+> index 5be1957..84dd71a 100644
+> --- a/net/rfkill/core.c
+> +++ b/net/rfkill/core.c
+> @@ -324,7 +324,7 @@ static void __rfkill_switch_all(const enum rfkill_type type, bool blocked)
+>  
+>  	rfkill_global_states[type].cur = blocked;
+>  	list_for_each_entry(rfkill, &rfkill_list, node) {
+> -		if (rfkill->type != type)
+> +		if (rfkill->type != type && type != RFKILL_TYPE_ALL)
+>  			continue;
 
+Sorry, I accidentally replied to this in private and then Alex replied
+but it all got lost.
 
-Almost. I still need to know what the base is so I can apply the
-patchset and at least build it before I add my Ack.
+He said he was going to change the eeepc use KEY_RFKILL instead of
+KEY_WLAN to switch all types...
 
-Thanks,
-Seth
+So I guess what this change really does is make __rfkill_switch_all() be
+able to not only switch all devices of a given type, but also be able to
+switch all devices of all types.
+
+Alex, can you please rewrite the commit log to make that clearer?
+
+johannes
 
