@@ -1,53 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758035Ab2EVWCE (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 May 2012 18:02:04 -0400
-Received: from perches-mx.perches.com ([206.117.179.246]:42887 "EHLO
-	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1754348Ab2EVWCD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 May 2012 18:02:03 -0400
-Message-ID: <1337724118.11918.2.camel@joe2Laptop>
-Subject: Re: [GIT PATCH] driver core patches for 3.5-rc1 - try 2
-From: Joe Perches <joe@perches.com>
-To: Greg KH <gregkh@linuxfoundation.org>, Kay Sievers <kay@vrfy.org>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        linux-kernel@vger.kernel.org
-Date: Tue, 22 May 2012 15:01:58 -0700
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.2- 
+	id S1757677Ab2EVWEv (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 May 2012 18:04:51 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:27064 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751168Ab2EVWEu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 May 2012 18:04:50 -0400
+Message-ID: <4FBC0E66.809@redhat.com>
+Date: Wed, 23 May 2012 00:08:38 +0200
+From: Hans de Goede <hdegoede@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120425 Thunderbird/12.0
+MIME-Version: 1.0
+To: Jiri Kosina <jkosina@suse.cz>
+CC: Jiri Slaby <jslaby@suse.cz>, linux-kernel@vger.kernel.org,
+        USB list <linux-usb@vger.kernel.org>
+Subject: Re: [PATCH] usb-hid-core: Set intfdata to NULL if probe fails
+References: <1337629176-1624-1-git-send-email-hdegoede@redhat.com> <4FBB469B.50801@suse.cz> <4FBB49CE.9020408@redhat.com> <4FBB4E51.6020607@suse.cz> <4FBB5D4C.9090804@redhat.com> <alpine.LNX.2.00.1205230000070.30445@pobox.suse.cz>
+In-Reply-To: <alpine.LNX.2.00.1205230000070.30445@pobox.suse.cz>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(resending cc'ing lkml)
-(Also, apologies about no in-reply-to, lkml.org is down)
+Hi,
 
-While there are several things I like about the
-printk modifications, (binary header, delta time,
-slightly better partial message deinterleaving,
-global msg_id, kmsg is ok too), I am concerned
-about the utility and expectations for the new
-[v]printk_emit functions.
+On 05/23/2012 12:00 AM, Jiri Kosina wrote:
+> On Tue, 22 May 2012, Hans de Goede wrote:
+>
+>> Well then lets work towards making it guaranteed, since I still believe
+>> the following holds true:
+>> 1) drvdata is for a driver to store a pointer to driver specific data
+>> 2) If no driver is bound, there is no driver specific data associated with
+>>     the device
+>> 3) Thus logically drvdata should be NULL if no driver is bound.
+>>
+>> I'll do a patch for the USB-core to ensure that intfdata gets set to NULL
+>> on probe failure.
+>
+> Hans,
+>
+> I believe this is a good thing per se, but shouldn't this rather be done
+> in driver core, to guarantee that this hold across all buses?
 
-I think it is not really ready to be merged
-at this time.
+Alan Stern said exactly the same thing :)
 
-The commit sequencing was unclean.
+And I've just finished a patch doing exactly that. I'll send it to the
+list right after this email.
 
-The original commit originally required KERN_CONT
-and it was modified by another commit to return
-to the current behavior.
+Regards,
 
-What really are the expectations and true use-cases
-for [v]printk_emit?
-
-How is it really better that what is available now?
-
-Perhaps it would be better to respin all the
-printk modifications without adding [v]printk_emit
-and have the [v]printk_emit bits debated a bit more.
-
-
+Hans
