@@ -1,207 +1,130 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753177Ab2EVMDJ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 May 2012 08:03:09 -0400
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:55614 "EHLO
-	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751035Ab2EVMDH (ORCPT
+	id S1753656Ab2EVME6 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 May 2012 08:04:58 -0400
+Received: from casper.infradead.org ([85.118.1.10]:54094 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751570Ab2EVME4 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 May 2012 08:03:07 -0400
-Message-ID: <4FBB8076.7010709@linaro.org>
-Date: Tue, 22 May 2012 13:03:02 +0100
-From: Lee Jones <lee.jones@linaro.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:11.0) Gecko/20120410 Thunderbird/11.0.1
-MIME-Version: 1.0
-To: Anton Vorontsov <anton.vorontsov@linaro.org>
-CC: Linus Walleij <linus.walleij@linaro.org>, linux-kernel@vger.kernel.org,
-        Karl Komierowski <karl.komierowski@stericsson.com>,
-        Arun Murthy <arun.murthy@stericsson.com>
-Subject: Re: [PATCH 1/3] power/ab8500_charger: harden platform data check
-References: <1334304949-18301-1-git-send-email-linus.walleij@stericsson.com> <CACRpkdaM=OecD=M_J9X9shYKQkWO03mhb2BFxCWOeocr8_m=DQ@mail.gmail.com> <4F9C1CF5.3050706@linaro.org> <20120505120835.GA26976@lizard> <4FBB79D5.7030108@linaro.org> <20120522115638.GA19506@lizard>
-In-Reply-To: <20120522115638.GA19506@lizard>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 8bit
+	Tue, 22 May 2012 08:04:56 -0400
+Message-ID: <1337688268.9698.29.camel@twins>
+Subject: Re: [tip:sched/numa] sched/numa: Introduce sys_numa_{t,m}bind()
+From: Peter Zijlstra <a.p.zijlstra@chello.nl>
+To: David Rientjes <rientjes@google.com>
+Cc: Ingo Molnar <mingo@kernel.org>, hpa@zytor.com,
+        linux-kernel@vger.kernel.org, torvalds@linux-foundation.org,
+        pjt@google.com, cl@linux.com, riel@redhat.com, bharata.rao@gmail.com,
+        akpm@linux-foundation.org, Lee.Schermerhorn@hp.com,
+        aarcange@redhat.com, danms@us.ibm.com, suresh.b.siddha@intel.com,
+        tglx@linutronix.de, linux-tip-commits@vger.kernel.org
+Date: Tue, 22 May 2012 14:04:28 +0200
+In-Reply-To: <alpine.DEB.2.00.1205211932350.13682@chino.kir.corp.google.com>
+References: <tip-nf7brf1b88w0ojwuf689xeet@git.kernel.org>
+	 <alpine.DEB.2.00.1205191922250.24674@chino.kir.corp.google.com>
+	 <20120521084046.GB31407@gmail.com>
+	 <alpine.DEB.2.00.1205211914100.13682@chino.kir.corp.google.com>
+	 <alpine.DEB.2.00.1205211932350.13682@chino.kir.corp.google.com>
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
+X-Mailer: Evolution 3.2.2- 
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Anton,
-
-> On Tue, May 22, 2012 at 12:34:45PM +0100, Lee Jones wrote:
->> Hi Anton,
->>
->> I see that this didn't make it into any of the v3.4-rc:s, hence v3.4
->> was released broken. Do you know when they're likely to make it into
->> Mainline?
->
-> You probably should have told me that you needed these patches in
-> v3.4, because neither Linus' nor yours patch description did not
-> tell that these were urgent fixes (and not some stuff you'd just
-> like to have for the future).
-
-Ah, I see. I'm sorry this wasn't communicated clearly enough.
-
-> But now I see that ab8500 mfd core driver in v3.4 seem to register
-> the charger and stuff w/o platform data already, so we'd need
-> at least 'Harden platform data check' patches back-ported into
-> -stable.
-
-Right.
-
-> Now once Linus Torvalds pull battery tree, I'll ask Greg KH to
-> cherry-pick the patches into -stable.
-
-Thanks Anton.
-
-Are these queued up for the v3.5 merge window also?
-
-Kind regards,
-Lee
-
->>> - - - -
->>> commit 2aac3de19b72608f474c90034185c2be4908728f
->>> Author: Lee Jones<lee.jones@linaro.org>
->>> Date:   Sat May 5 04:38:19 2012 -0700
->>>
->>>      ab8500: Clean up probe routines
->>>
->>>      These patches clean up some ugliness and brings the variable
->>>      initialisation formatting more into line with other drivers.
->>>
->>>      Signed-off-by: Lee Jones<lee.jones@linaro.org>
->>>      Signed-off-by: Anton Vorontsov<anton.vorontsov@linaro.org>
->>>
->>> diff --git a/drivers/power/ab8500_btemp.c b/drivers/power/ab8500_btemp.c
->>> index e266f03..bba3cca 100644
->>> --- a/drivers/power/ab8500_btemp.c
->>> +++ b/drivers/power/ab8500_btemp.c
->>> @@ -964,10 +964,15 @@ static int __devinit ab8500_btemp_probe(struct platform_device *pdev)
->>>   {
->>>   	int irq, i, ret = 0;
->>>   	u8 val;
->>> -	struct abx500_bm_plat_data *plat_data;
->>> +	struct abx500_bm_plat_data *plat_data = pdev->dev.platform_data;
->>> +	struct ab8500_btemp *di;
->>> +
->>> +	if (!plat_data) {
->>> +		dev_err(&pdev->dev, "No platform data\n");
->>> +		return -EINVAL;
->>> +	}
->>>
->>> -	struct ab8500_btemp *di =
->>> -		kzalloc(sizeof(struct ab8500_btemp), GFP_KERNEL);
->>> +	di = kzalloc(sizeof(*di), GFP_KERNEL);
->>>   	if (!di)
->>>   		return -ENOMEM;
->>>
->>> @@ -977,13 +982,12 @@ static int __devinit ab8500_btemp_probe(struct platform_device *pdev)
->>>   	di->gpadc = ab8500_gpadc_get("ab8500-gpadc.0");
->>>
->>>   	/* get btemp specific platform data */
->>> -	plat_data = pdev->dev.platform_data;
->>> -	if (!plat_data || !plat_data->btemp) {
->>> +	di->pdata = plat_data->btemp;
->>> +	if (!di->pdata) {
->>>   		dev_err(di->dev, "no btemp platform data supplied\n");
->>>   		ret = -EINVAL;
->>>   		goto free_device_info;
->>>   	}
->>> -	di->pdata = plat_data->btemp;
->>>
->>>   	/* get battery specific platform data */
->>>   	di->bat = plat_data->battery;
->>> diff --git a/drivers/power/ab8500_charger.c b/drivers/power/ab8500_charger.c
->>> index 79dc584..d2303d0 100644
->>> --- a/drivers/power/ab8500_charger.c
->>> +++ b/drivers/power/ab8500_charger.c
->>> @@ -2534,10 +2534,15 @@ static int __devexit ab8500_charger_remove(struct platform_device *pdev)
->>>   static int __devinit ab8500_charger_probe(struct platform_device *pdev)
->>>   {
->>>   	int irq, i, charger_status, ret = 0;
->>> -	struct abx500_bm_plat_data *plat_data;
->>> +	struct abx500_bm_plat_data *plat_data = pdev->dev.platform_data;
->>> +	struct ab8500_charger *di;
->>>
->>> -	struct ab8500_charger *di =
->>> -		kzalloc(sizeof(struct ab8500_charger), GFP_KERNEL);
->>> +	if (!plat_data) {
->>> +		dev_err(&pdev->dev, "No platform data\n");
->>> +		return -EINVAL;
->>> +	}
->>> +
->>> +	di = kzalloc(sizeof(*di), GFP_KERNEL);
->>>   	if (!di)
->>>   		return -ENOMEM;
->>>
->>> @@ -2550,13 +2555,12 @@ static int __devinit ab8500_charger_probe(struct platform_device *pdev)
->>>   	spin_lock_init(&di->usb_state.usb_lock);
->>>
->>>   	/* get charger specific platform data */
->>> -	plat_data = pdev->dev.platform_data;
->>> -	if (!plat_data || !plat_data->charger) {
->>> +	di->pdata = plat_data->charger;
->>> +	if (!di->pdata) {
->>>   		dev_err(di->dev, "no charger platform data supplied\n");
->>>   		ret = -EINVAL;
->>>   		goto free_device_info;
->>>   	}
->>> -	di->pdata = plat_data->charger;
->>>
->>>   	/* get battery specific platform data */
->>>   	di->bat = plat_data->battery;
->>> diff --git a/drivers/power/ab8500_fg.c b/drivers/power/ab8500_fg.c
->>> index 0ebea39..bf02225 100644
->>> --- a/drivers/power/ab8500_fg.c
->>> +++ b/drivers/power/ab8500_fg.c
->>> @@ -2446,10 +2446,15 @@ static int __devinit ab8500_fg_probe(struct platform_device *pdev)
->>>   {
->>>   	int i, irq;
->>>   	int ret = 0;
->>> -	struct abx500_bm_plat_data *plat_data;
->>> +	struct abx500_bm_plat_data *plat_data = pdev->dev.platform_data;
->>> +	struct ab8500_fg *di;
->>> +
->>> +	if (!plat_data) {
->>> +		dev_err(&pdev->dev, "No platform data\n");
->>> +		return -EINVAL;
->>> +	}
->>>
->>> -	struct ab8500_fg *di =
->>> -		kzalloc(sizeof(struct ab8500_fg), GFP_KERNEL);
->>> +	di = kzalloc(sizeof(*di), GFP_KERNEL);
->>>   	if (!di)
->>>   		return -ENOMEM;
->>>
->>> @@ -2461,13 +2466,12 @@ static int __devinit ab8500_fg_probe(struct platform_device *pdev)
->>>   	di->gpadc = ab8500_gpadc_get("ab8500-gpadc.0");
->>>
->>>   	/* get fg specific platform data */
->>> -	plat_data = pdev->dev.platform_data;
->>> -	if (!plat_data || !plat_data->fg) {
->>> +	di->pdata = plat_data->fg;
->>> +	if (!di->pdata) {
->>>   		dev_err(di->dev, "no fg platform data supplied\n");
->>>   		ret = -EINVAL;
->>>   		goto free_device_info;
->>>   	}
->>> -	di->pdata = plat_data->fg;
->>>
->>>   	/* get battery specific platform data */
->>>   	di->bat = plat_data->battery;
->>
->>
->> --
->> Lee Jones
->> Linaro ST-Ericsson Landing Team Lead
->> M: +44 77 88 633 515
->> Linaro.org │ Open source software for ARM SoCs
->> Follow Linaro: Facebook | Twitter | Blog
->
+On Mon, 2012-05-21 at 19:42 -0700, David Rientjes wrote:
+> On Mon, 21 May 2012, David Rientjes wrote:
+> 
+> > [    0.602181] divide error: 0000 [#1] SMP 
+> > [    0.606159] CPU 0 
+> > [    0.608003] Modules linked in:
+> > [    0.611266] 
+> > [    0.612767] Pid: 1, comm: swapper/0 Not tainted 3.4.0 #1
+> > [    0.620912] RIP: 0010:[<ffffffff810af9ab>]  [<ffffffff810af9ab>] update_sd_lb_stats+0x38b/0x740
+> 
+> This is 
+> 
+> 4ec4412e kernel/sched/fair.c 3876)      if (local_group) {
+> bd939f45 kernel/sched/fair.c 3877)              if (env->idle != CPU_NEWLY_IDLE) {
+> 04f733b4 kernel/sched/fair.c 3878)                      if (balance_cpu != env->dst_cpu) {
+> 4ec4412e kernel/sched/fair.c 3879)                              *balance = 0;
+> 4ec4412e kernel/sched/fair.c 3880)                              return;
+> 4ec4412e kernel/sched/fair.c 3881)                      }
+> bd939f45 kernel/sched/fair.c 3882)                      update_group_power(env->sd, env->dst_cpu);
+> 4ec4412e kernel/sched/fair.c 3883)              } else if (time_after_eq(jiffies, group->sgp->next_update))
+> bd939f45 kernel/sched/fair.c 3884)                      update_group_power(env->sd, env->dst_cpu);
+> 1e3c88bd kernel/sched_fair.c 3885)      }
+> 1e3c88bd kernel/sched_fair.c 3886) 
+> 1e3c88bd kernel/sched_fair.c 3887)      /* Adjust by relative CPU power of the group */
+> 9c3f75cb kernel/sched_fair.c 3888)      sgs->avg_load = (sgs->group_load*SCHED_POWER_SCALE) / group->sgp->power;
+> 
+> the divide of group->sgp->power.  This doesn't happen when reverting back 
+> to sched/urgent at 30b4e9eb783d ("sched: Fix KVM and ia64 boot crash due 
+> to sched_groups circular linked list assumption").  Let me know if you'd 
+> like a bisect if the problem isn't immediately obvious.
 
 
--- 
-Lee Jones
-Linaro ST-Ericsson Landing Team Lead
-M: +44 77 88 633 515
-Linaro.org │ Open source software for ARM SoCs
-Follow Linaro: Facebook | Twitter | Blog
+I'm fairly sure you'll hit cb83b629b with your bisect (I've got one more
+report on this).
+
+So the code in build_sched_domains() initializes the group->sgp->power
+stuff through init_sched_groups_power(), which ends up calling
+update_cpu_power() for every individual cpu and update_group_power() for
+groups.
+
+Now update_cpu_power() should ensure ->power isn't ever 0 -- it sets it
+to 1 in that case, update_group_power() computes a straight sum of
+power, which being assumed are all >0 should also result in >0.
+
+Only after we initialize the power in build_sched_domains() do we
+install the domains, so we should never hit the above.
+
+Now clearly we do so there's a hole somewhere.. let me carefully read
+all that.
+
+The below appears to contain a bug, not sure its the one you're
+triggering, but who knows. Lemme stare more.
+
+---
+Subject: sched: Make sure to not re-read variables after validation
+
+We could re-read rq->rt_avg after we validated it was smaller than
+total, invalidating the check and resulting in an unintended negative.
+
+Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
+---
+ kernel/sched/fair.c |   15 +++++++++++----
+ 1 file changed, 11 insertions(+), 4 deletions(-)
+
+diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
+index de49ed5..54dca4d 100644
+--- a/kernel/sched/fair.c
++++ b/kernel/sched/fair.c
+@@ -3697,15 +3697,22 @@ unsigned long __weak arch_scale_smt_power(struct sched_domain *sd, int cpu)
+ unsigned long scale_rt_power(int cpu)
+ {
+ 	struct rq *rq = cpu_rq(cpu);
+-	u64 total, available;
++	u64 total, available, age_stamp, avg;
+ 
+-	total = sched_avg_period() + (rq->clock - rq->age_stamp);
++	/*
++	 * Since we're reading these variables without serialization make sure
++	 * we read them once before doing sanity checks on them.
++	 */
++	age_stamp = ACCESS_ONCE(rq->age_stamp);
++	avg = ACCESS_ONCE(rq->rt_avg);
++
++	total = sched_avg_period() + (rq->clock - age_stamp);
+ 
+-	if (unlikely(total < rq->rt_avg)) {
++	if (unlikely(total < avg)) {
+ 		/* Ensures that power won't end up being negative */
+ 		available = 0;
+ 	} else {
+-		available = total - rq->rt_avg;
++		available = total - avg;
+ 	}
+ 
+ 	if (unlikely((s64)total < SCHED_POWER_SCALE))
+
