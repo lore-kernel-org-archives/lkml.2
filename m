@@ -1,66 +1,116 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932679Ab2EVWle (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 May 2012 18:41:34 -0400
-Received: from fold.natur.cuni.cz ([195.113.57.32]:56779 "HELO
-	fold.natur.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1753360Ab2EVWlb (ORCPT
+	id S1757708Ab2EVWli (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 May 2012 18:41:38 -0400
+Received: from mail131.messagelabs.com ([216.82.242.99]:45003 "EHLO
+	mail131.messagelabs.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753360Ab2EVWlg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 May 2012 18:41:31 -0400
-Message-ID: <4FBC1618.5010408@fold.natur.cuni.cz>
-Date: Wed, 23 May 2012 00:41:28 +0200
-From: Martin Mokrejs <mmokrejs@fold.natur.cuni.cz>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120517 Firefox/12.0 SeaMonkey/2.9.1
+	Tue, 22 May 2012 18:41:36 -0400
+X-Env-Sender: hartleys@visionengravers.com
+X-Msg-Ref: server-2.tower-131.messagelabs.com!1337726494!24257584!4
+X-Originating-IP: [216.166.12.97]
+X-StarScan-Version: 6.5.10; banners=-,-,-
+X-VirusChecked: Checked
+From: H Hartley Sweeten <hartleys@visionengravers.com>
+To: Linux Kernel <linux-kernel@vger.kernel.org>
+Subject: [PATCH] staging: comedi: remove thisboard macro in the adq12b driver
+Date: Tue, 22 May 2012 15:41:29 -0700
+User-Agent: KMail/1.9.9
+CC: <devel@driverdev.osuosl.org>, <abbotti@mev.co.uk>,
+        <fmhess@users.sourceforge.net>, <gregkh@linuxfoundation.org>
 MIME-Version: 1.0
-To: Andrew Morton <akpm@linux-foundation.org>
-CC: LKML <linux-kernel@vger.kernel.org>, khlebnikov@openvz.org,
-        markus@trippelsdorf.de, hughd@google.com,
-        kamezawa.hiroyu@jp.fujitsu.com, oleg@redhat.com
-Subject: 3.4-rc7: BUG: Bad rss-counter state mm:ffff88040b56f800 idx:1 val:-59
-X-Enigmail-Version: 1.5pre
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset="utf-8"
 Content-Transfer-Encoding: 7bit
+Content-Disposition: inline
+Message-ID: <201205221541.29400.hartleys@visionengravers.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Andrew,
-  while shutting down my laptop (Dell Vostro 3550 with 16GB RAM, core i7) with 3.4-rc7 I got:
+The 'thisboard' macro depends on having a local variable with
+a magic name. The CodingStyle document suggests not doing this
+to avoid confusion. Remove the macro and use the comedi_board()
+inline helper to get the dev->board_ptr information.
 
-May 23 00:07:54 vostro kernel: [352687.968267] BUG: Bad rss-counter state mm:ffff88040b56f800 idx:1 val:-59
-May 23 00:07:54 vostro kernel: [352687.968312] BUG: Bad rss-counter state mm:ffff88040b56f800 idx:2 val:59
-May 23 00:07:55 vostro acpid: exiting
-May 23 00:07:55 vostro syslog-ng[2838]: syslog-ng shutting down; version='3.3.4'
+Signed-off-by: H Hartley Sweeten <hsweeten@visionengravers.com>
+Cc: Ian Abbott <abbotti@mev.co.uk>
+Cc: Mori Hess <fmhess@users.sourceforge.net>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
-  I found by Google the below thread and thought that maybe it is related?
-http://comments.gmane.org/gmane.linux.kernel.mm/76459
+---
 
-  Please forward this to the right person and Cc: me if I should provide more details (some lines form dmesg?).
-I am a plain user and it is time to sleep here.
-
-Actually, searching /var/log/messages backwards gives me few more hits on previous shutdowns:
-
-May 14 18:36:11 vostro kernel: [548780.511951] xhci_hcd 0000:0b:00.0: Cached old ring, 1 ring cached
-May 14 18:36:11 vostro kernel: [548780.511953] xhci_hcd 0000:0b:00.0: Cached old ring, 2 rings cached
-May 14 18:36:11 vostro kernel: [548780.512034] xhci_hcd 0000:0b:00.0: // Ding dong!
-May 14 18:36:11 vostro kernel: [548780.512042] xhci_hcd 0000:0b:00.0: get port status, actual port 0 status  = 0x2a0
-May 14 18:36:11 vostro kernel: [548780.512043] xhci_hcd 0000:0b:00.0: Get port status returned 0x2a0
-May 14 18:36:11 vostro kernel: [548780.536242] BUG: Bad rss-counter state mm:ffff88040bf760c0 idx:1 val:-1
-May 14 18:36:11 vostro kernel: [548780.536245] BUG: Bad rss-counter state mm:ffff88040bf760c0 idx:2 val:1
-May 14 18:36:11 vostro kernel: [548780.551350] xhci_hcd 0000:0b:00.0: get port status, actual port 0 status  = 0x2a0
-May 14 18:36:11 vostro kernel: [548780.551363] xhci_hcd 0000:0b:00.0: Get port status returned 0x2a0
-May 14 18:36:11 vostro kernel: [548780.591424] xhci_hcd 0000:0b:00.0: get port status, actual port 0 status  = 0x2a0
-May 14 18:36:11 vostro kernel: [548780.591427] xhci_hcd 0000:0b:00.0: Get port status returned 0x2a0
-May 14 18:36:11 vostro kernel: [548780.631208] xhci_hcd 0000:0b:00.0: get port status, actual port 0 status  = 0x2a0
-May 14 18:36:11 vostro kernel: [548780.631217] xhci_hcd 0000:0b:00.0: Get port status returned 0x2a0
-May 14 18:36:11 vostro kernel: [548780.671254] xhci_hcd 0000:0b:00.0: get port status, actual port 0 status  = 0x2a0
-May 14 18:36:11 vostro kernel: [548780.671256] xhci_hcd 0000:0b:00.0: Get port status returned 0x2a0
-May 14 18:36:11 vostro kernel: [548780.671259] hub 4-0:1.0: debounce: port 1: total 100ms stable 100ms status 0x2a0
-May 14 18:36:11 vostro kernel: [548781.093467] BUG: Bad rss-counter state mm:ffff88040954ec40 idx:1 val:-1
-May 14 18:36:11 vostro kernel: [548781.093470] BUG: Bad rss-counter state mm:ffff88040954ec40 idx:2 val:1
-
-My older logs show it appeared first in 3.4.0-rc6. Or is it that because I changed my .config
-at that time? Can't say at the moment. What type of config variable should I look for?
-
-Best regards,
-Martin
+diff --git a/drivers/staging/comedi/drivers/adq12b.c b/drivers/staging/comedi/drivers/adq12b.c
+index 7d585a1..1da2989 100644
+--- a/drivers/staging/comedi/drivers/adq12b.c
++++ b/drivers/staging/comedi/drivers/adq12b.c
+@@ -125,8 +125,6 @@ struct adq12b_board {
+ 	int do_chans;
+ };
+ 
+-#define thisboard ((const struct adq12b_board *)dev->board_ptr)
+-
+ struct adq12b_private {
+ 	int unipolar;		/* option 2 of comedi_config (1 is iobase) */
+ 	int differential;	/* option 3 of comedi_config */
+@@ -222,6 +220,7 @@ static int adq12b_do_insn_bits(struct comedi_device *dev,
+ 
+ static int adq12b_attach(struct comedi_device *dev, struct comedi_devconfig *it)
+ {
++	const struct adq12b_board *board = comedi_board(dev);
+ 	struct comedi_subdevice *s;
+ 	unsigned long iobase;
+ 	int unipolar, differential;
+@@ -250,11 +249,7 @@ static int adq12b_attach(struct comedi_device *dev, struct comedi_devconfig *it)
+ 	}
+ 	dev->iobase = iobase;
+ 
+-/*
+- * Initialize dev->board_name.  Note that we can use the "thisboard"
+- * macro now, since we just initialized it in the last line.
+- */
+-	dev->board_name = thisboard->name;
++	dev->board_name = board->name;
+ 
+ /*
+  * Allocate the private structure area.  alloc_private() is a
+@@ -284,10 +279,10 @@ static int adq12b_attach(struct comedi_device *dev, struct comedi_devconfig *it)
+ 	s->type = COMEDI_SUBD_AI;
+ 	if (differential) {
+ 		s->subdev_flags = SDF_READABLE | SDF_GROUND | SDF_DIFF;
+-		s->n_chan = thisboard->ai_diff_chans;
++		s->n_chan = board->ai_diff_chans;
+ 	} else {
+ 		s->subdev_flags = SDF_READABLE | SDF_GROUND;
+-		s->n_chan = thisboard->ai_se_chans;
++		s->n_chan = board->ai_se_chans;
+ 	}
+ 
+ 	if (unipolar)
+@@ -295,7 +290,7 @@ static int adq12b_attach(struct comedi_device *dev, struct comedi_devconfig *it)
+ 	else
+ 		s->range_table = &range_adq12b_ai_bipolar;
+ 
+-	s->maxdata = (1 << thisboard->ai_bits) - 1;
++	s->maxdata = (1 << board->ai_bits) - 1;
+ 
+ 	s->len_chanlist = 4;	/* This is the maximum chanlist length that
+ 				   the board can handle */
+@@ -305,7 +300,7 @@ static int adq12b_attach(struct comedi_device *dev, struct comedi_devconfig *it)
+ 	/* digital input subdevice */
+ 	s->type = COMEDI_SUBD_DI;
+ 	s->subdev_flags = SDF_READABLE;
+-	s->n_chan = thisboard->di_chans;
++	s->n_chan = board->di_chans;
+ 	s->maxdata = 1;
+ 	s->range_table = &range_digital;
+ 	s->insn_bits = adq12b_di_insn_bits;
+@@ -314,7 +309,7 @@ static int adq12b_attach(struct comedi_device *dev, struct comedi_devconfig *it)
+ 	/* digital output subdevice */
+ 	s->type = COMEDI_SUBD_DO;
+ 	s->subdev_flags = SDF_WRITABLE;
+-	s->n_chan = thisboard->do_chans;
++	s->n_chan = board->do_chans;
+ 	s->maxdata = 1;
+ 	s->range_table = &range_digital;
+ 	s->insn_bits = adq12b_do_insn_bits;
