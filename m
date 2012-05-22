@@ -1,357 +1,291 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755423Ab2EVFiC (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 May 2012 01:38:02 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:56961 "EHLO
+	id S1755522Ab2EVFin (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 May 2012 01:38:43 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:43213 "EHLO
 	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754849Ab2EVFhp (ORCPT
+	with ESMTP id S1754606Ab2EVFhn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 May 2012 01:37:45 -0400
+	Tue, 22 May 2012 01:37:43 -0400
 From: Olof Johansson <olof@lixom.net>
 To: torvalds@linux-foundation.org
 Cc: arm@kernel.org, linux-kernel@vger.kernel.org,
         linux-arm-kernel@lists.infradead.org, Olof Johansson <olof@lixom.net>
-Subject: =?UTF-8?q?=5BGIT=20PULL=208/8=5D=20arm-soc=3A=20board=20specific=20changes?=
-Date: Mon, 21 May 2012 22:35:08 -0700
-Message-Id: <1337664908-17478-9-git-send-email-olof@lixom.net>
+Subject: [GIT PULL 6/8] arm-soc: soc-specific pinctrl changes
+Date: Mon, 21 May 2012 22:35:06 -0700
+Message-Id: <1337664908-17478-7-git-send-email-olof@lixom.net>
 X-Mailer: git-send-email 1.7.10.1.488.g05fbf7a
 In-Reply-To: <1337664908-17478-1-git-send-email-olof@lixom.net>
 References: <1337664908-17478-1-git-send-email-olof@lixom.net>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-While we generally attempt to get rid of board specific files and replace
-them with device tree based descriptions, a lot of platforms have not
-come that far:
+With this, five platforms are moving to the relatively new pinctrl
+subsystem for their pin management, replacing the older soc specific
+in-kernel interfaces with common code.
 
-In shmobile, we add two new board files because their recently started
-effort to add DT support has not proceeded enough to use it for all of
-the important hardware.
+There is quite a bit of net addition of code for each platform being
+added to the pinctrl subsystem. but the payback comes later when adding
+new boards can be done by only providing new device trees instead.
 
-In Kirkwood, we are adding support for new boards with a combination of
-DT and board file contents in multiple cases.
 
-pxa/mmp and imx are extending support for existing board files but not
-adding new ones.
-
-Conflicts caused by this branch merge are three add/add conflicts:
-* mach-mmp include file add/add context. Keep both.
-* mach-shmobile add/add context conflicts due to one board being merged
-  through the soc branch, the other here. Keep both, make sure to have
-  a select USE_OF on both in Kconfig.
+Merge conflicts from this branch:
+* add/remove context conflict in ux500 Makefile. Delete u5500 files,
+  keep mop500-msp.
+* remove/remove context conflict in board-mop500.c dealing with i2c and
+  pinmux setup. Both sides of the conflict should be removed.
 
 ----------------------------------------------------------------
 
-The following changes since commit ec98e8b8888dc92aacefc63e41d5237b7fd14ad8:
+The following changes since commit 6e7e7311a85042150257384de1cc5b69ebaa56a9:
 
-  Merge tag 'pm' of git://git.kernel.org/pub/scm/linux/kernel/git/arm/arm-soc into HEAD
+  Merge tag 'soc' of git://git.kernel.org/pub/scm/linux/kernel/git/arm/arm-soc into HEAD
 
 are available in the git repository at:
 
-  git://git.kernel.org/pub/scm/linux/kernel/git/arm/arm-soc.git tags/boards
+  git://git.kernel.org/pub/scm/linux/kernel/git/arm/arm-soc.git tags/pinctrl
 
-for you to fetch changes up to 48a5765e5104f1afd22c75c5030af3a6cf24b4c3:
+for you to fetch changes up to f3f08dcb9965f42378851ce888fb7539607712e6:
 
-  Merge branch 'board-specific' of git://github.com/hzhuang1/linux into next/boards
+  Merge branch 'imx/pinctrl' into next/pinctrl
 
 ----------------------------------------------------------------
 
-Alex Gershgorin (1):
-      ARM: i.MX: i.MX35-PDK: Add regulator support
+Arnd Bergmann (6):
+      Merge branch 'spear/pinctrl' into next/pinctrl
+      Merge branch 'ux500-gpio-pins-for-arm-soc' of git://git.kernel.org/.../linusw/linux-stericsson into next/gpio
+      pinctrl/nomadik: !CONFIG_OF build error
+      Merge branches 'depends/pinctrl/devel' and 'depends/rmk/clkdev' into spear/pinctrl
+      Merge branch 'spear/pinctrl' into next/pinctrl
+      ARM: nomadik: enable PINCTRL_NOMADIK where needed
 
-Ameya Palande (1):
-      ARM: OMAP: rx51: Platform support for lis3lv02d accelerometer
+Barry Song (1):
+      ARM: PRIMA2: select PINCTRL and PINCTRL_SIRF in Kconfig
 
-Arnaud Patard (3):
-      kirkwood/orion: fix orion_gpio_set_blink
-      orion/kirkwood: create a generic function for gpio led blinking
-      kirkwood: Add iconnect support
+Dong Aisheng (3):
+      ARM: imx: enable pinctrl dummy states
+      ARM: imx6q: switch to use pinctrl subsystem
+      mmc: sdhci-imx-esdhc: adopt pinctrl support
 
-Arnd Bergmann (5):
-      Merge branch 'next/board-samsung' of git://git.kernel.org/.../kgene/linux-samsung into next/boards
-      Merge branch 'board-new' of git://git.kernel.org/.../rafael/renesas into next/boards
-      Merge branch 'kirkwood_boards_for_v3.5' of git://git.infradead.org/users/jcooper/linux into next/boards
-      ARM: shmobile: fix smp build
-      Merge branch 'renesas/board2' into next/boards
+Lee Jones (2):
+      drivers/gpio: gpio-nomadik: Apply Device Tree bindings
+      drivers/gpio: gpio-nomadik: Add support for irqdomains
 
-Ashwin Bihari (1):
-      Add MSUB support for the LogicPD OMAP3530 DevKits
+Linus Walleij (17):
+      gpio/nomadik: use ioremap() instead of static mappings
+      plat-nomadik: new sleep mode pincfg macros
+      ARM: ux500: remove a bunch of internal pull-ups
+      ARM: ux500: update pin handling
+      Merge tag 'pinctrl-mergebase-20120418' into HEAD
+      gpio: move the Nomadik GPIO driver to pinctrl
+      pinctrl/nomadik: basic Nomadik pinctrl interface
+      pinctrl/nomadik: break out single GPIO debug function
+      pinctrl/nomadik: reuse GPIO debug function for pins
+      pinctrl/nomadik: implement pin multiplexing
+      pinctrl/nomadik: implement pin configuration
+      pinctrl: add sleep state definition
+      ARM: ux500: switch over to Nomadik pinctrl driver
+      ARM: ux500: delete custom pin control system
+      ARM: ux500: switch to using pinctrl for uart0
+      ARM: ux500: alter MSP registration to return a device pointer
+      ARM: ux500: switch MSP to using pinctrl for pins
 
-Axel Lin (1):
-      ARM: pxa: Use REGULATOR_SUPPLY macro
+Ola Lilja (1):
+      ARM: ux500: Add support for MSP I2S-devices
 
-Denis Carikli (1):
-      ARM: imx: eukrea_mbimxsd: add backlight and lcd support
+Olof Johansson (5):
+      Merge tag 'pinctrl-mergebase-20120418' of git://git.kernel.org/.../linusw/linux-pinctrl into next/pinctrl
+      Merge branch 'for-3.5/gpio-pinmux' of git://git.kernel.org/.../swarren/linux-tegra into next/pinctrl
+      Merge branch 'imx/pinctrl/for-3.5' of git://git.linaro.org/people/shawnguo/linux-2.6 into next/pinctrl
+      Merge tag 'ux500-gpio-pins-for-3.5' of git://git.kernel.org/.../linusw/linux-stericsson into next/pinctrl
+      Merge branch 'imx/pinctrl' into next/pinctrl
 
-Eric Bénard (11):
-      ARM: imx: eukrea_cpuimx25: enable workaround ENGcm09152
-      ARM: imx: eukrea_mbimxsd25: add spi controler and spidev support
-      ARM: imx: eukrea_cpuimx25: add watchdog support
-      ARM: imx: eukrea_mbimxsd35: add spi controler and spidev support
-      ARM: imx: eukrea-cpuimx51: remove board
-      ARM: imx: eukrea_cpuimx51sd: add watchdog support
-      ARM: imx: eukrea_mbimxsd: add audio support
-      ARM: imx: eukrea_cpuimx51sd: support rev2 PCB
-      ARM: imx: eukrea_mbimxsd25: don't free twice GPIO_SWITCH1
-      ARM: imx: eukrea_mbimxsd25: use IMX_GPIO_NR
-      ARM: imx: eukrea_mbimxsd rename to eukrea_mbimxsd51
+Rabin Vincent (5):
+      gpio/nomadik: don't set SLPM to 1 for non-wakeup pins
+      gpio/nomadik: cache [rf]w?imsc
+      gpio/nomadik: fix spurious interrupts with SKE
+      gpio/nomadik: support low EMI mode
+      ARM: ux500: implement pin API
 
-Govindraj.R (1):
-      ARM: OMAP: omap2plus_defconfig: Enable ehci-omap and sms95xx support
+Shawn Guo (15):
+      ARM: mxs: enable pinctrl dummy states
+      tty: serial: imx: adopt pinctrl support
+      net: fec: adopt pinctrl support
+      can: flexcan: adopt pinctrl support
+      i2c: imx: adopt pinctrl support
+      spi/imx: adopt pinctrl support
+      serial: amba-pl011: adopt pinctrl support
+      serial: mxs-auart: adopt pinctrl support
+      mmc: mxs-mmc: adopt pinctrl support
+      mtd: nand: gpmi: adopt pinctrl support
+      i2c: mxs: adopt pinctrl support
+      ASoC: mxs-saif: adopt pinctrl support
+      video: mxsfb: adopt pinctrl support
+      ARM: mxs: enable pinctrl support
+      mtd: nand: gpmi: fix compile error caused by pinctrl call
 
-Guennadi Liakhovetski (1):
-      ARM: mach-shmobile: sh7372 CEU supports up to 8188x8188 images
+Stephen Warren (12):
+      usb: ehci-tegra: Add vbus_gpio to platform data
+      ARM: tegra: Remove VBUS_GPIO handling from board files
+      gpio: tegra: configure pins during irq_set_type
+      ARM: tegra: seaboard: Don't gpio_request() ISL29018_IRQ
+      gpio: tegra: Hide tegra_gpio_enable/disable()
+      ARM: tegra: Switch to new pinctrl driver
+      ARM: tegra: Remove pre-pinctrl pinmux driver
+      ARM: dt: tegra cardhu: add pinmux to device tree
+      ARM: dt: tegra20: add pinmux to device tree
+      pinctrl: tegra: refactor probe handling
+      pinctrl: tegra: debugfs enhancements
+      pinctrl: tegra: error reporting cleanup
 
-Igor Grinberg (1):
-      ARM: OMAP3: cm-t35: add support for power off
-
-Jamie Lentin (4):
-      ARM: kirkwood: Basic support for DNS-320 and DNS-325
-      mtd: Add orion_nand devicetree bindings
-      kirkwood: Allow nand to be configured via. devicetree
-      ARM: kirkwood: Define DNS-320/DNS-325 NAND in fdt
-
-Javier Martin (1):
-      ARM i.MX: Visstrim_M10: Add board version detection.
-
-Javier Martinez Canillas (2):
-      ARM: OMAP2+: nand: Make board_onenand_init() visible to board code
-      ARM: OMAP3: igep0020: Add support for Micron NAND Flash storage memory
-
-Kuninori Morimoto (29):
-      ARM: mach-shmobile: mackerel: Add FSI DMAEngine support
-      ARM: mach-shmobile: bonito: make sure static function
-      ARM: mach-shmobile: add armadillo800eva board support.
-      ARM: mach-shmobile: armadillo800eva: add defconfig
-      ARM: mach-shmobile: armadillo800eva: add support LCDC0
-      ARM: mach-shmobile: armadillo800eva: add support gpio_key
-      ARM: mach-shmobile: armadillo800eva: add support sh_eth
-      ARM: mach-shmobile: armadillo800eva: add support ST1232
-      ARM: mach-shmobile: armadillo800eva: add USB function support
-      ARM: mach-shmobile: armadillo800eva: add SDHI0 support
-      ARM: mach-shmobile: armadillo800eva: add SDHI1 support
-      ARM: mach-shmobile: armadillo800eva: add MMCIF support
-      ARM: mach-shmobile: r8a7740: reserve DMA memory for the frame buffer
-      ARM: mach-shmobile: clock-r8a7740: add sh-eth clock
-      ARM: mach-shmobile: armadillo800eva: defconfig update
-      ARM: mach-shmobile: add KZM-A9-GT board support
-      ARM: mach-shmobile: kzm9g: add defconfig
-      ARM: mach-shmobile: kzm9g: add SMSC 9221 support
-      ARM: mach-shmobile: kzm9g: add external USB Host support
-      ARM: mach-shmobile: kzm9g: add LCDC support
-      ARM: mach-shmobile: kzm9g: add ST1232 Touchscreen support
-      ARM: mach-shmobile: pfc-sh73a0: fixup MSEL2CR MSEL18 for I2C-3
-      ARM: mach-shmobile: sh73a0.h: add GPIO_NR
-      ARM: mach-shmobile: kzm9g: correct screen direction
-      ARM: mach-shmobile: kzm9g: add MMCIF support
-      ARM: mach-shmobile: kzm9g: add SDHI support
-      ARM: mach-shmobile: kzm9g: add PCF8757 gpio-key
-      ARM: mach-shmobile: kzm9g: defconfig update
-      ARM: mach-shmobile: kzm9g: enable SMP boot
-
-Magnus Damm (2):
-      ARM: mach-shmobile: Use DT_MACHINE for KZM9G
-      ARM: mach-shmobile: Use DT_MACHINE for armadillo 800 eva
-
-Mans Rullgard (1):
-      ARM: OMAP2+: craneboard: register emac device
-
-Marek Szyprowski (2):
-      ARM: EXYNOS: Add DRM core device support for Universal C210 board
-      ARM: EXYNOS: Add DRM core support for NURI board
-
-Mark Brown (1):
-      ARM: S3C64XX: Hook up new style regulator-regulator supplies on Cragganmore
-
-Mircea Gherzan (1):
-      ARM: OMAP: WiLink platform data for the PandaBoard
-
-Neil Zhang (4):
-      ARM: mmp: add usb device support for PXA910
-      ARM: mmp: add usb device support for ttc dkb
-      ARM: mmp: add usb host support for PXA168
-      ARM: mmp: add usb host support for aspen
-
-Olof Johansson (6):
-      Merge tag 'imx-features-board-20120411-2' of git://git.pengutronix.de/git/imx/linux-2.6 into next/boards
-      Merge branch 'board-specific' of git://github.com/hzhuang1/linux into next/boards
-      Merge tag 'imx-eukrea' of git://git.pengutronix.de/git/imx/linux-2.6 into next/boards
-      Merge tag 'omap-board-for-v3.5' of git://git.kernel.org/.../tmlind/linux-omap into next/boards
-      Merge branch 'board' of git://git.kernel.org/.../rafael/renesas into next/boards
-      Merge branch 'board-specific' of git://github.com/hzhuang1/linux into next/boards
-
-Paul Parsons (6):
-      ARM: pxa: hx4700: Initialize DS1WM clock_rate
-      ARM: pxa: hx4700: Enable ASIC3 GPIO as a wakeup source
-      ARM: pxa: hx4700: Add PCMCIA/CF support
-      ARM: pxa: Add standard UART to hx4700_pin_config[]
-      pcmcia: add driver for hx4700
-      ARM: pxa: hx4700: Add Synaptics NavPoint touchpad
-
-Peter Ujfalusi (3):
-      OMAP4: twl-common: Add twl6030 V1V8, V2V1 SMPS common configuration
-      OMAP: 4430SDP: Use common configuration for V1V8, V2V1 supplies
-      OMAP: omap4panda: Use common configuration for V1V8, V2V1 supplies
-
-Rafael J. Wysocki (3):
-      Merge branch 'renesas-kzm9g' into renesas-board-new
-      Merge branch 'renesas-armadillo800eva' into renesas-board-new
-      Merge branch 'renesas-kzm9g' into renesas-board-new
-
-Ricardo Neri (3):
-      ARM: OMAP: devices: Register platform devices for HDMI audio
-      ARM: OMAP4: board-4430sdp: Register platform device for HDMI audio codec
-      ARM: OMAP4: board-omap4panda: Register platform device for HDMI audio codec
-
-Robert Jarzmik (1):
-      ARM: pxa: mioa701 add camera output enable gpio
-
-Russ Dill (1):
-      ARM: OMAP: Mark Beagleboard-xM MMC bus as 4-bit
-
-Sachin Kamat (5):
-      ARM: EXYNOS: Make BT platform data structure static in mach-origen.c file
-      ARM: EXYNOS: Add DRM device to Origen
-      ARM: EXYNOS: Add DRM device to SMDKV310
-      ARM: EXYNOS: Add MFC device to SMDK4X12
-      ARM: EXYNOS: Add FIMC device to SMDK4X12
-
-Santosh Shilimkar (1):
-      ARM: OMAP2PLUS: Enable HIGHMEM
-
-Sascha Hauer (1):
-      ARM: pxa: use ioremap to access CPLD
-
-Simon Baatz (1):
-      ARM: kirkwood: Add support for RaidSonic IB-NAS6210/6220 using devicetree
-
-Tushar Behera (1):
-      ARM: EXYNOS: Increase framebuffer virtual size for origen
-
-Uwe Kleine-König (1):
-      ARM: imx_v4_v5_defconfig: enable adc and touch driver of mc13783
+Viresh Kumar (4):
+      pinctrl: Add SPEAr pinctrl drivers
+      pinctrl: Add SPEAr3xx pinctrl drivers
+      SPEAr: Remove existing padmux support for SPEAr
+      SPEAr3xx: Add pinctrl support for boards
 
 
- .../devicetree/bindings/mtd/orion-nand.txt      |  50 ++
- arch/arm/boot/dts/kirkwood-dns320.dts           |  64 ++
- arch/arm/boot/dts/kirkwood-dns325.dts           |  59 ++
- arch/arm/boot/dts/kirkwood-ib62x0.dts           |  44 ++
- arch/arm/boot/dts/kirkwood-iconnect.dts         |  26 +
- arch/arm/boot/dts/kirkwood.dtsi                 |  15 +-
- arch/arm/boot/dts/r8a7740-armadillo800eva.dts   |  22 +
- arch/arm/boot/dts/sh73a0-kzm9g.dts              |  22 +
- arch/arm/configs/armadillo800eva_defconfig      | 142 ++++
- arch/arm/configs/imx_v4_v5_defconfig            |   4 +-
- arch/arm/configs/kzm9g_defconfig                | 139 ++++
- arch/arm/configs/omap2plus_defconfig            |   2 +
- arch/arm/mach-exynos/Kconfig                    |   9 +
- arch/arm/mach-exynos/mach-nuri.c                |  33 +
- arch/arm/mach-exynos/mach-origen.c              |  35 +-
- arch/arm/mach-exynos/mach-smdk4x12.c            |  16 +
- arch/arm/mach-exynos/mach-smdkv310.c            |  30 +
- arch/arm/mach-exynos/mach-universal_c210.c      |  33 +
- arch/arm/mach-imx/Kconfig                       |  35 +-
- arch/arm/mach-imx/Makefile                      |   4 +-
- arch/arm/mach-imx/eukrea_mbimx51-baseboard.c    | 206 -----
- arch/arm/mach-imx/eukrea_mbimxsd25-baseboard.c  |  51 +-
- arch/arm/mach-imx/eukrea_mbimxsd35-baseboard.c  |  42 +
- ...baseboard.c => eukrea_mbimxsd51-baseboard.c} | 120 ++-
- arch/arm/mach-imx/mach-cpuimx51.c               | 301 -------
- arch/arm/mach-imx/mach-cpuimx51sd.c             |  50 +-
- arch/arm/mach-imx/mach-eukrea_cpuimx25.c        |   2 +
- arch/arm/mach-imx/mach-imx27_visstrim_m10.c     |  55 ++
- arch/arm/mach-imx/mach-mx35_3ds.c               | 193 +++++
- arch/arm/mach-kirkwood/Kconfig                  |  22 +
- arch/arm/mach-kirkwood/Makefile                 |   3 +
- arch/arm/mach-kirkwood/Makefile.boot            |   4 +
- arch/arm/mach-kirkwood/board-dnskw.c            | 275 +++++++
- arch/arm/mach-kirkwood/board-dt.c               |  13 +
- arch/arm/mach-kirkwood/board-ib62x0.c           | 143 ++++
- arch/arm/mach-kirkwood/board-iconnect.c         | 165 ++++
- arch/arm/mach-kirkwood/common.c                 |  12 +
- arch/arm/mach-kirkwood/common.h                 |  18 +
- arch/arm/mach-mmp/Kconfig                       |   7 +
- arch/arm/mach-mmp/aspenite.c                    |  20 +
- arch/arm/mach-mmp/devices.c                     | 282 +++++++
- arch/arm/mach-mmp/include/mach/devices.h        |   3 +
- arch/arm/mach-mmp/include/mach/pxa168.h         |   8 +-
- arch/arm/mach-mmp/include/mach/pxa910.h         |   3 +
- arch/arm/mach-mmp/include/mach/regs-usb.h       | 253 ++++++
- arch/arm/mach-mmp/pxa168.c                      |  20 +-
- arch/arm/mach-mmp/pxa910.c                      |   2 +-
- arch/arm/mach-mmp/ttc_dkb.c                     |  37 +
- arch/arm/mach-omap2/Kconfig                     |   1 +
- arch/arm/mach-omap2/board-4430sdp.c             |  10 +-
- arch/arm/mach-omap2/board-am3517crane.c         |   2 +
- arch/arm/mach-omap2/board-cm-t35.c              |   5 +
- arch/arm/mach-omap2/board-flash.c               |   4 +-
- arch/arm/mach-omap2/board-flash.h               |  11 +
- arch/arm/mach-omap2/board-igep0020.c            |  74 +-
- arch/arm/mach-omap2/board-omap3beagle.c         |   7 +-
- arch/arm/mach-omap2/board-omap3logic.c          |  26 +-
- arch/arm/mach-omap2/board-omap4panda.c          |  24 +-
- arch/arm/mach-omap2/board-rx51-peripherals.c    |  88 ++-
- arch/arm/mach-omap2/devices.c                   |  31 +
- arch/arm/mach-omap2/twl-common.c                |  43 +
- arch/arm/mach-omap2/twl-common.h                |   2 +
- arch/arm/mach-orion5x/dns323-setup.c            |  25 +-
- arch/arm/mach-pxa/balloon3.c                    |   4 +-
- arch/arm/mach-pxa/cm-x300.c                     |   4 +-
- arch/arm/mach-pxa/em-x270.c                     |   5 +-
- arch/arm/mach-pxa/hx4700.c                      |  47 +-
- arch/arm/mach-pxa/include/mach/mfp-pxa27x.h     |   1 +
- arch/arm/mach-pxa/include/mach/mioa701.h        |   3 +
- .../mach-pxa/include/mach/pcm990_baseboard.h    |  68 +-
- arch/arm/mach-pxa/magician.c                    |   8 +-
- arch/arm/mach-pxa/mioa701.c                     |   6 +-
- arch/arm/mach-pxa/palm27x.c                     |   4 +-
- arch/arm/mach-pxa/pcm990-baseboard.c            |  83 +-
- arch/arm/mach-pxa/spitz.c                       |   4 +-
- arch/arm/mach-pxa/stargate2.c                   |   5 +-
- arch/arm/mach-pxa/vpac270.c                     |   4 +-
- arch/arm/mach-pxa/z2.c                          |   4 +-
- arch/arm/mach-s3c64xx/mach-crag6410.c           |  18 +
- arch/arm/mach-shmobile/Kconfig                  |  18 +-
- arch/arm/mach-shmobile/Makefile                 |   2 +
- arch/arm/mach-shmobile/board-ap4evb.c           |   2 +
- arch/arm/mach-shmobile/board-armadillo800eva.c  | 784 +++++++++++++++++++
- arch/arm/mach-shmobile/board-bonito.c           |   2 +-
- arch/arm/mach-shmobile/board-kzm9g.c            | 460 +++++++++++
- arch/arm/mach-shmobile/board-mackerel.c         |  10 +-
- arch/arm/mach-shmobile/clock-r8a7740.c          |   3 +
- arch/arm/mach-shmobile/include/mach/sh73a0.h    |   3 +
- arch/arm/mach-shmobile/pfc-sh73a0.c             |   4 +-
- arch/arm/mach-shmobile/platsmp.c                |   3 +-
- arch/arm/mach-shmobile/setup-r8a7740.c          |   7 +
- arch/arm/plat-orion/gpio.c                      |  27 +-
- arch/arm/plat-orion/include/plat/gpio.h         |   2 +
- drivers/mtd/nand/orion_nand.c                   |  47 +-
- drivers/pcmcia/Kconfig                          |   2 +-
- drivers/pcmcia/Makefile                         |   1 +
- drivers/pcmcia/pxa2xx_hx4700.c                  | 121 +++
- include/linux/mfd/asic3.h                       |   1 +
- include/linux/ti_wilink_st.h                    |   2 +
- 99 files changed, 4393 insertions(+), 823 deletions(-)
- create mode 100644 Documentation/devicetree/bindings/mtd/orion-nand.txt
- create mode 100644 arch/arm/boot/dts/kirkwood-dns320.dts
- create mode 100644 arch/arm/boot/dts/kirkwood-dns325.dts
- create mode 100644 arch/arm/boot/dts/kirkwood-ib62x0.dts
- create mode 100644 arch/arm/boot/dts/kirkwood-iconnect.dts
- create mode 100644 arch/arm/boot/dts/r8a7740-armadillo800eva.dts
- create mode 100644 arch/arm/boot/dts/sh73a0-kzm9g.dts
- create mode 100644 arch/arm/configs/armadillo800eva_defconfig
- create mode 100644 arch/arm/configs/kzm9g_defconfig
- delete mode 100644 arch/arm/mach-imx/eukrea_mbimx51-baseboard.c
- rename arch/arm/mach-imx/{eukrea_mbimxsd-baseboard.c => eukrea_mbimxsd51-baseboard.c} (51%)
- delete mode 100644 arch/arm/mach-imx/mach-cpuimx51.c
- create mode 100644 arch/arm/mach-kirkwood/board-dnskw.c
- create mode 100644 arch/arm/mach-kirkwood/board-ib62x0.c
- create mode 100644 arch/arm/mach-kirkwood/board-iconnect.c
- create mode 100644 arch/arm/mach-mmp/include/mach/regs-usb.h
- create mode 100644 arch/arm/mach-shmobile/board-armadillo800eva.c
- create mode 100644 arch/arm/mach-shmobile/board-kzm9g.c
- create mode 100644 drivers/pcmcia/pxa2xx_hx4700.c
+ .../bindings/pinctrl/pinctrl_spear.txt          |  108 +
+ MAINTAINERS                                     |   23 +-
+ arch/arm/Kconfig                                |    4 +
+ arch/arm/boot/dts/spear300-evb.dts              |   38 +
+ arch/arm/boot/dts/spear300.dtsi                 |    5 +
+ arch/arm/boot/dts/spear310-evb.dts              |   61 +
+ arch/arm/boot/dts/spear310.dtsi                 |    5 +
+ arch/arm/boot/dts/spear320-evb.dts              |   61 +
+ arch/arm/boot/dts/spear320.dtsi                 |    7 +-
+ arch/arm/boot/dts/tegra-cardhu.dts              |   44 +
+ arch/arm/boot/dts/tegra-harmony.dts             |  224 ++
+ arch/arm/boot/dts/tegra-paz00.dts               |  220 ++
+ arch/arm/boot/dts/tegra-seaboard.dts            |  243 ++
+ arch/arm/boot/dts/tegra-trimslice.dts           |  230 ++
+ arch/arm/boot/dts/tegra-ventana.dts             |  230 ++
+ arch/arm/configs/nhk8815_defconfig              |    1 +
+ arch/arm/mach-imx/Kconfig                       |    2 +
+ arch/arm/mach-imx/imx51-dt.c                    |    3 +
+ arch/arm/mach-imx/imx53-dt.c                    |    3 +
+ arch/arm/mach-imx/mach-imx6q.c                  |    7 +
+ arch/arm/mach-imx/mm-imx1.c                     |    2 +
+ arch/arm/mach-imx/mm-imx21.c                    |    2 +
+ arch/arm/mach-imx/mm-imx25.c                    |    2 +
+ arch/arm/mach-imx/mm-imx27.c                    |    2 +
+ arch/arm/mach-imx/mm-imx3.c                     |    2 +
+ arch/arm/mach-imx/mm-imx5.c                     |    2 +
+ arch/arm/mach-mxs/Kconfig                       |    2 +
+ arch/arm/mach-mxs/include/mach/common.h         |    2 +
+ arch/arm/mach-mxs/mach-apx4devkit.c             |    2 +
+ arch/arm/mach-mxs/mach-m28evk.c                 |    2 +
+ arch/arm/mach-mxs/mach-mx23evk.c                |    2 +
+ arch/arm/mach-mxs/mach-mx28evk.c                |    2 +
+ arch/arm/mach-mxs/mach-stmp378x_devb.c          |    2 +
+ arch/arm/mach-mxs/mach-tx28.c                   |    2 +
+ arch/arm/mach-mxs/mm.c                          |   11 +
+ arch/arm/mach-nomadik/Kconfig                   |    1 +
+ arch/arm/mach-spear3xx/Kconfig                  |    3 +
+ arch/arm/mach-spear3xx/include/mach/generic.h   |  128 -
+ arch/arm/mach-spear3xx/spear300.c               |  389 +-
+ arch/arm/mach-spear3xx/spear310.c               |  161 +-
+ arch/arm/mach-spear3xx/spear320.c               |  403 +-
+ arch/arm/mach-spear3xx/spear3xx.c               |  425 ---
+ arch/arm/mach-tegra/Makefile                    |    3 -
+ arch/arm/mach-tegra/board-dt-tegra20.c          |   31 -
+ arch/arm/mach-tegra/board-harmony-pinmux.c      |  266 +-
+ arch/arm/mach-tegra/board-paz00-pinmux.c        |  263 +-
+ arch/arm/mach-tegra/board-pinmux.c              |  105 +-
+ arch/arm/mach-tegra/board-pinmux.h              |   40 +-
+ arch/arm/mach-tegra/board-seaboard-pinmux.c     |  346 +-
+ arch/arm/mach-tegra/board-seaboard.c            |   21 +-
+ arch/arm/mach-tegra/board-trimslice-pinmux.c    |  264 +-
+ arch/arm/mach-tegra/board-trimslice.c           |   15 +-
+ arch/arm/mach-tegra/devices.c                   |    5 +-
+ arch/arm/mach-tegra/include/mach/gpio-tegra.h   |    9 -
+ .../mach-tegra/include/mach/pinmux-tegra20.h    |  184 -
+ .../mach-tegra/include/mach/pinmux-tegra30.h    |  320 --
+ arch/arm/mach-tegra/include/mach/pinmux.h       |  302 --
+ arch/arm/mach-tegra/pinmux-tegra20-tables.c     |  244 --
+ arch/arm/mach-tegra/pinmux-tegra30-tables.c     |  376 --
+ arch/arm/mach-tegra/pinmux.c                    |  987 -----
+ arch/arm/mach-tegra/usb_phy.c                   |    1 -
+ arch/arm/mach-ux500/Kconfig                     |    3 +
+ arch/arm/mach-ux500/Makefile                    |    3 +-
+ arch/arm/mach-ux500/board-mop500-msp.c          |  267 ++
+ arch/arm/mach-ux500/board-mop500-msp.h          |   14 +
+ arch/arm/mach-ux500/board-mop500-pins.c         |  733 ++--
+ arch/arm/mach-ux500/board-mop500.c              |   99 +-
+ arch/arm/mach-ux500/board-mop500.h              |   10 +-
+ arch/arm/mach-ux500/clock.c                     |    8 +-
+ arch/arm/mach-ux500/cpu-db8500.c                |    1 +
+ arch/arm/mach-ux500/cpu.c                       |   12 +
+ arch/arm/mach-ux500/devices-common.h            |   12 +
+ arch/arm/mach-ux500/devices-db8500.h            |   10 -
+ arch/arm/mach-ux500/include/mach/msp.h          |   29 +
+ arch/arm/mach-ux500/pins-db8500.h               |   72 +-
+ .../plat-nomadik/include/plat/gpio-nomadik.h    |    8 +
+ arch/arm/plat-nomadik/include/plat/pincfg.h     |   32 +
+ arch/arm/plat-spear/Kconfig                     |    1 +
+ arch/arm/plat-spear/Makefile                    |    2 +-
+ arch/arm/plat-spear/include/plat/padmux.h       |   92 -
+ arch/arm/plat-spear/padmux.c                    |  164 -
+ drivers/gpio/Makefile                           |    1 -
+ drivers/gpio/gpio-tegra.c                       |   39 +-
+ drivers/i2c/busses/i2c-imx.c                    |    8 +
+ drivers/i2c/busses/i2c-mxs.c                    |    6 +
+ drivers/mmc/host/mxs-mmc.c                      |    8 +
+ drivers/mmc/host/sdhci-esdhc-imx.c              |    9 +
+ drivers/mmc/host/sdhci-tegra.c                  |   24 +-
+ drivers/mtd/nand/gpmi-nand/gpmi-nand.c          |    9 +
+ drivers/net/can/flexcan.c                       |    6 +
+ drivers/net/ethernet/freescale/fec.c            |    9 +
+ drivers/pinctrl/Kconfig                         |   12 +
+ drivers/pinctrl/Makefile                        |    4 +
+ drivers/pinctrl/pinctrl-nomadik-db8500.c        |  857 +++++
+ .../pinctrl-nomadik.c}                          |  857 ++++-
+ drivers/pinctrl/pinctrl-nomadik.h               |   77 +
+ drivers/pinctrl/pinctrl-tegra.c                 |  236 +-
+ drivers/pinctrl/pinctrl-tegra.h                 |   23 +-
+ drivers/pinctrl/pinctrl-tegra20.c               |   40 +-
+ drivers/pinctrl/pinctrl-tegra30.c               |   40 +-
+ drivers/pinctrl/spear/Kconfig                   |   34 +
+ drivers/pinctrl/spear/Makefile                  |    7 +
+ drivers/pinctrl/spear/pinctrl-spear.c           |  354 ++
+ drivers/pinctrl/spear/pinctrl-spear.h           |  142 +
+ drivers/pinctrl/spear/pinctrl-spear300.c        |  708 ++++
+ drivers/pinctrl/spear/pinctrl-spear310.c        |  431 +++
+ drivers/pinctrl/spear/pinctrl-spear320.c        | 3468 ++++++++++++++++++
+ drivers/pinctrl/spear/pinctrl-spear3xx.c        |  588 +++
+ drivers/pinctrl/spear/pinctrl-spear3xx.h        |   92 +
+ drivers/spi/spi-imx.c                           |    8 +
+ drivers/tty/serial/amba-pl011.c                 |    8 +
+ drivers/tty/serial/imx.c                        |    8 +
+ drivers/tty/serial/mxs-auart.c                  |    8 +
+ drivers/usb/host/ehci-tegra.c                   |   13 +-
+ drivers/video/mxsfb.c                           |    9 +
+ include/linux/pinctrl/pinctrl-state.h           |   13 +
+ include/linux/platform_data/tegra_usb.h         |    1 +
+ sound/soc/mxs/mxs-saif.c                        |    8 +
+ 118 files changed, 10999 insertions(+), 5588 deletions(-)
+ create mode 100644 Documentation/devicetree/bindings/pinctrl/pinctrl_spear.txt
+ delete mode 100644 arch/arm/mach-tegra/include/mach/pinmux-tegra20.h
+ delete mode 100644 arch/arm/mach-tegra/include/mach/pinmux-tegra30.h
+ delete mode 100644 arch/arm/mach-tegra/include/mach/pinmux.h
+ delete mode 100644 arch/arm/mach-tegra/pinmux-tegra20-tables.c
+ delete mode 100644 arch/arm/mach-tegra/pinmux-tegra30-tables.c
+ delete mode 100644 arch/arm/mach-tegra/pinmux.c
+ create mode 100644 arch/arm/mach-ux500/board-mop500-msp.c
+ create mode 100644 arch/arm/mach-ux500/board-mop500-msp.h
+ create mode 100644 arch/arm/mach-ux500/include/mach/msp.h
+ delete mode 100644 arch/arm/plat-spear/include/plat/padmux.h
+ delete mode 100644 arch/arm/plat-spear/padmux.c
+ create mode 100644 drivers/pinctrl/pinctrl-nomadik-db8500.c
+ rename drivers/{gpio/gpio-nomadik.c => pinctrl/pinctrl-nomadik.c} (56%)
+ create mode 100644 drivers/pinctrl/pinctrl-nomadik.h
+ create mode 100644 drivers/pinctrl/spear/Kconfig
+ create mode 100644 drivers/pinctrl/spear/Makefile
+ create mode 100644 drivers/pinctrl/spear/pinctrl-spear.c
+ create mode 100644 drivers/pinctrl/spear/pinctrl-spear.h
+ create mode 100644 drivers/pinctrl/spear/pinctrl-spear300.c
+ create mode 100644 drivers/pinctrl/spear/pinctrl-spear310.c
+ create mode 100644 drivers/pinctrl/spear/pinctrl-spear320.c
+ create mode 100644 drivers/pinctrl/spear/pinctrl-spear3xx.c
+ create mode 100644 drivers/pinctrl/spear/pinctrl-spear3xx.h
