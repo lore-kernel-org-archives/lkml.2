@@ -1,23 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756129Ab2EVRHu (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 May 2012 13:07:50 -0400
-Received: from www.linutronix.de ([62.245.132.108]:39404 "EHLO
+	id S1758213Ab2EVRK4 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 May 2012 13:10:56 -0400
+Received: from www.linutronix.de ([62.245.132.108]:39424 "EHLO
 	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750826Ab2EVRHt (ORCPT
+	with ESMTP id S1751572Ab2EVRKz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 May 2012 13:07:49 -0400
-Date: Tue, 22 May 2012 19:07:46 +0200 (CEST)
+	Tue, 22 May 2012 13:10:55 -0400
+Date: Tue, 22 May 2012 19:10:51 +0200 (CEST)
 From: Thomas Gleixner <tglx@linutronix.de>
-To: Steven Rostedt <rostedt@goodmis.org>
-cc: LKML <linux-kernel@vger.kernel.org>, RT <linux-rt-users@vger.kernel.org>,
-        Clark Williams <williams@redhat.com>,
-        Peter Zijlstra <peterz@infradead.org>
-Subject: Re: [RFC][PATCH RT] rwsem_rt: Another (more sane) approach to mulit
- reader rt locks
-In-Reply-To: <1337705539.13348.81.camel@gandalf.stny.rr.com>
-Message-ID: <alpine.LFD.2.02.1205221906250.3231@ionos>
-References: <1337090625.14207.304.camel@gandalf.stny.rr.com>   <alpine.LFD.2.02.1205221553400.3231@ionos>  <1337701801.13348.56.camel@gandalf.stny.rr.com>  <alpine.LFD.2.02.1205221803290.3231@ionos> <1337705539.13348.81.camel@gandalf.stny.rr.com>
+To: Sam Ravnborg <sam@ravnborg.org>
+cc: "David S. Miller" <davem@davemloft.net>,
+        sparclinux <sparclinux@vger.kernel.org>,
+        lkml <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] sparc32: use the common implementation of
+ alloc_thread_info_node()
+In-Reply-To: <20120522151123.GA10058@merkur.ravnborg.org>
+Message-ID: <alpine.LFD.2.02.1205221909540.3231@ionos>
+References: <20120522151123.GA10058@merkur.ravnborg.org>
 User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
 MIME-Version: 1.0
 Content-Type: TEXT/PLAIN; charset=US-ASCII
@@ -28,28 +28,28 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 22 May 2012, Steven Rostedt wrote:
+On Tue, 22 May 2012, Sam Ravnborg wrote:
 
-> On Tue, 2012-05-22 at 18:40 +0200, Thomas Gleixner wrote:
+> >From 52d8a6d1b81a19e693a09df90275600f44293f43 Mon Sep 17 00:00:00 2001
+> From: Sam Ravnborg <sam@ravnborg.org>
+> Date: Tue, 22 May 2012 16:39:00 +0200
+> Subject: [PATCH] sparc32: use the common implementation of alloc_thread_info_node()
 > 
-> > > I'm all for benchmarks. But right now, making all readers pass through a
-> > > single mutex is a huge bottle neck for a lot of loads. Yes, they are
-> > > mostly Java loads, but for some strange reason, our customers seems to
-> > > like to run Java on our RT kernel :-p
-> > 
-> > I'm well aware that mmap_sem is a PITA but replacing one nightmare
-> > with the next one is not the best approach.
+> With sun4c removed we can fall-back to the common implementation.
 > 
-> Perhaps we could just change the mmap_sem to use this approach. Create a
-> new type of rwsem/lock for -rt that we can be picky about.
+> Signed-off-by: Sam Ravnborg <sam@ravnborg.org>
+
+Acked-by: Thomas Gleixner <tglx@linutronix.de>
+
+> ---
 > 
-> Yeah, mmap_sem is a real PITA and it would be nice to have a solution
-> that can be used until we can convert it to an RCU lock.
+> This is not a "real" bug but I would like it applied anyway.
+> Thomas Gleixner <tglx@linutronix.de> consolidated all
+> alloc_thread_info_node() implmentations but sparc32 was
+> left out due to sun4c weirdness.
+> 
+> With sun4c gone we can align with the rest of the world.
+> (and I promised Thomas to follow-up on this when his patch-set was merged).
 
-That still wants to be verified with numbers on a machine with at
-least 32 cores and workloads which are mmap heavy. And before we don't
-have such numbers we can really stop arguing about that solution.
+Thanks!
 
-Thanks,
-
-	tglx
