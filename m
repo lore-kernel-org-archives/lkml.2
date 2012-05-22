@@ -1,57 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757008Ab2EVJrS (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 May 2012 05:47:18 -0400
-Received: from mx2.parallels.com ([64.131.90.16]:37968 "EHLO mx2.parallels.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750932Ab2EVJrQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 May 2012 05:47:16 -0400
-Message-ID: <4FBB6028.3020307@parallels.com>
-Date: Tue, 22 May 2012 13:45:12 +0400
-From: Glauber Costa <glommer@parallels.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.1) Gecko/20120216 Thunderbird/10.0.1
+	id S1757369Ab2EVJt0 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 May 2012 05:49:26 -0400
+Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:47729 "EHLO
+	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750793Ab2EVJtY (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 May 2012 05:49:24 -0400
+Date: Tue, 22 May 2012 10:47:57 +0100
+From: Catalin Marinas <catalin.marinas@arm.com>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [PATCH] sysctl: Suppress kmemleak messages
+Message-ID: <20120522094757.GA28761@arm.com>
+References: <1337648657.13348.26.camel@gandalf.stny.rr.com>
 MIME-Version: 1.0
-To: David Rientjes <rientjes@google.com>
-CC: <linux-kernel@vger.kernel.org>, <cgroups@vger.kernel.org>,
-        <linux-mm@kvack.org>, Christoph Lameter <cl@linux.com>,
-        Pekka Enberg <penberg@cs.helsinki.fi>
-Subject: Re: [PATCH] slab+slob: dup name string
-References: <1337613539-29108-1-git-send-email-glommer@parallels.com> <alpine.DEB.2.00.1205212018230.13522@chino.kir.corp.google.com>
-In-Reply-To: <alpine.DEB.2.00.1205212018230.13522@chino.kir.corp.google.com>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1337648657.13348.26.camel@gandalf.stny.rr.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/22/2012 07:22 AM, David Rientjes wrote:
->> -	if (setup_cpu_cache(cachep, gfp)) {
->> >  +	/* Can't do strdup while kmalloc is not up */
->> >  +	if (g_cpucache_up>  EARLY)
->> >  +		cachep->name = kstrdup(name, GFP_KERNEL);
->> >  +	else
->> >  +		cachep->name = name;
->> >  +
->> >  +	if (!cachep->name || setup_cpu_cache(cachep, gfp)) {
->> >    		__kmem_cache_destroy(cachep);
->> >    		cachep = NULL;
->> >    		goto oops;
-> This doesn't work if you kmem_cache_destroy() a cache that was created
-> when g_cpucache_cpu<= EARLY, the kfree() will explode.  That never
-> happens for any existing cache created in kmem_cache_init(), but this
-> would introduce the first roadblock in doing so.  So you'll need some
-> magic to determine whether the cache was allocated statically and suppress
-> the kfree() in such a case.
+On Tue, May 22, 2012 at 02:04:17AM +0100, Steven Rostedt wrote:
+> Not sure who the owner is of kernel/sysctl.c, so I'm just sending this
+> patch to you :-)
+> 
+> The register_sysctl_table() is a strange function, as it makes internal
+> allocations (a header) to register a sysctl_table. This header is a
+> handle to the table that is created, and can be used to unregister the
+> table. But if the table is permanent and never unregistered, the header
+> acts the same as a static variable.
+> 
+> Unfortunately, this allocation of memory that is never expected to be
+> freed, fools kmemleak in thinking that we have leaked memory. For those
+> sysctl tables that are never unregistered, and have no pointer
+> referencing them, kmemleak will think that these are memory leaks:
+> 
+> unreferenced object 0xffff880079fb9d40 (size 192):
+>   comm "swapper/0", pid 0, jiffies 4294667316 (age 12614.152s)
+>   hex dump (first 32 bytes):
+>     00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00  ................
+>     00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00  ................
+>   backtrace:
+>     [<ffffffff8146b590>] kmemleak_alloc+0x73/0x98
+>     [<ffffffff8110a935>] kmemleak_alloc_recursive.constprop.42+0x16/0x18
+>     [<ffffffff8110b852>] __kmalloc+0x107/0x153
+>     [<ffffffff8116fa72>] kzalloc.constprop.8+0xe/0x10
+>     [<ffffffff811703c9>] __register_sysctl_paths+0xe1/0x160
+>     [<ffffffff81170463>] register_sysctl_paths+0x1b/0x1d
+>     [<ffffffff8117047d>] register_sysctl_table+0x18/0x1a
+>     [<ffffffff81afb0a1>] sysctl_init+0x10/0x14
+>     [<ffffffff81b05a6f>] proc_sys_init+0x2f/0x31
+>     [<ffffffff81b0584c>] proc_root_init+0xa5/0xa7
+>     [<ffffffff81ae5b7e>] start_kernel+0x3d0/0x40a
+>     [<ffffffff81ae52a7>] x86_64_start_reservations+0xae/0xb2
+>     [<ffffffff81ae53ad>] x86_64_start_kernel+0x102/0x111
+>     [<ffffffffffffffff>] 0xffffffffffffffff
+> 
+> 
+> The sysctl_base_table used by sysctl itself is one such instance that
+> registers the table to never be unregistered.
+> 
+> Use kmemleak_not_leak() to suppress the kmemleak false positive.
+> 
+> [ applied against 3.4 ]
+> 
+> Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
 
-David,
+FWIW,
 
-I tried to do something like I was doing for the memcg caches: after 
-creation of the kmalloc + cache_cache, I loop through them and duplicate 
-the name. So instead of conditionally freeing the late caches - that 
-could cause consistency headaches in the future - kfree'ing the name 
-string will just work for all of them. I will send it shortly.
+Acked-by: Catalin Marinas <catalin.marinas@arm.com>
 
-Cristoph, I am dropping your ack since this change is quite significant. 
-If you agree with it, would you ack it again?
+(for the use of the kmemleak API :))
 
-Thanks.
+-- 
+Catalin
