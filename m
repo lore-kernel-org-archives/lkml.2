@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933102Ab2EVXFO (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 May 2012 19:05:14 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:8752 "EHLO mx1.redhat.com"
+	id S933112Ab2EVXFY (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 May 2012 19:05:24 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:32797 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932977Ab2EVXFF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 May 2012 19:05:05 -0400
+	id S932977Ab2EVXFT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 May 2012 19:05:19 -0400
 From: David Howells <dhowells@redhat.com>
-Subject: [PATCH 20/23] MODSIGN: Provide module signing public keys to the
- kernel
+Subject: [PATCH 22/23] MODSIGN: Automatically generate module signing keys if
+ missing
 To: rusty@rustcorp.com.au, kyle@mcmartin.ca
 Cc: linux-kernel@vger.kernel.org, linux-security-module@vger.kernel.org,
         keyrings@linux-nfs.org, David Howells <dhowells@redhat.com>
-Date: Wed, 23 May 2012 00:04:54 +0100
-Message-ID: <20120522230454.24007.24902.stgit@warthog.procyon.org.uk>
+Date: Wed, 23 May 2012 00:05:10 +0100
+Message-ID: <20120522230510.24007.47244.stgit@warthog.procyon.org.uk>
 In-Reply-To: <20120522230218.24007.3556.stgit@warthog.procyon.org.uk>
 References: <20120522230218.24007.3556.stgit@warthog.procyon.org.uk>
 User-Agent: StGIT/0.14.3
@@ -24,148 +24,69 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Include a PGP keyring containing the public keys required to perform module
-verification in the kernel image during build and create a special keyring
-during boot which is then populated with keys of crypto type holding the public
-keys found in the PGP keyring.
+Automatically generate keys for module signing if they're absent so that
+allyesconfig doesn't break.  The builder should consider generating their own
+keyrings, however, so that the keys are appropriately named and any extra keys
+required get imported.
 
-These can be seen by root:
-
-[root@andromeda ~]# cat /proc/keys
-07ad4ee0 I-----     1 perm 3f010000     0     0 crypto    modsign.0: RSA 87b9b3bd []
-15c7f8c3 I-----     1 perm 1f030000     0     0 keyring   .module_sign: 1/4
-...
-
-It is probably worth permitting root to invalidate these keys, resulting in
-their removal and preventing further modules from being loaded with that key.
+Also change the names of the keyring files to modsign.pub and modsign.sec so
+that they are then a more obvious what they're about and add a dependency for
+the signing rules on the keyring files so that the signatures get regenerated
+if the keyrings change.
 
 Signed-off-by: David Howells <dhowells@redhat.com>
 ---
 
- kernel/Makefile         |    3 ++
- kernel/modsign-pubkey.c |   74 +++++++++++++++++++++++++++++++++++++++++++++++
- kernel/module-verify.h  |   14 +++++++++
- 3 files changed, 91 insertions(+), 0 deletions(-)
- create mode 100644 kernel/modsign-pubkey.c
- create mode 100644 kernel/module-verify.h
+ kernel/Makefile |   39 +++++++++++++++++++++++++++++++++++++++
+ 1 files changed, 39 insertions(+), 0 deletions(-)
 
 
 diff --git a/kernel/Makefile b/kernel/Makefile
-index cb41b95..bde66b6 100644
+index 28f0ec4..d8139bb 100644
 --- a/kernel/Makefile
 +++ b/kernel/Makefile
-@@ -51,6 +51,7 @@ obj-$(CONFIG_DEBUG_SPINLOCK) += spinlock.o
- obj-$(CONFIG_PROVE_LOCKING) += spinlock.o
- obj-$(CONFIG_UID16) += uid16.o
- obj-$(CONFIG_MODULES) += module.o
-+obj-$(CONFIG_MODULE_SIG) += modsign-pubkey.o
- obj-$(CONFIG_KALLSYMS) += kallsyms.o
- obj-$(CONFIG_BSD_PROCESS_ACCT) += acct.o
- obj-$(CONFIG_KEXEC) += kexec.o
-@@ -127,3 +128,5 @@ quiet_cmd_timeconst  = TIMEC   $@
- targets += timeconst.h
+@@ -129,4 +129,43 @@ targets += timeconst.h
  $(obj)/timeconst.h: $(src)/timeconst.pl FORCE
  	$(call if_changed,timeconst)
+ 
++###############################################################################
++#
++# If module signing is requested, say by allyesconfig, but a key has not been
++# supplied, then one will need to be generated to make sure the build does not
++# fail and that the kernel may be used afterwards.
++#
++###############################################################################
++ifeq ($(CONFIG_MODULE_SIG),y)
+ kernel/modsign-pubkey.o: modsign.pub
 +
-+kernel/modsign-pubkey.o: modsign.pub
-diff --git a/kernel/modsign-pubkey.c b/kernel/modsign-pubkey.c
-new file mode 100644
-index 0000000..163b6f0
---- /dev/null
-+++ b/kernel/modsign-pubkey.c
-@@ -0,0 +1,74 @@
-+/* Public keys for module signature verification
-+ *
-+ * Copyright (C) 2011 Red Hat, Inc. All Rights Reserved.
-+ * Written by David Howells (dhowells@redhat.com)
-+ *
-+ * This program is free software; you can redistribute it and/or
-+ * modify it under the terms of the GNU General Public Licence
-+ * as published by the Free Software Foundation; either version
-+ * 2 of the Licence, or (at your option) any later version.
-+ */
++modsign.pub modsign.sec: genkey
++	@echo "###"
++	@echo "### Now generating a PGP key pair to be used for signing modules."
++	@echo "###"
++	@echo "### If this takes a long time, you might wish to run rngd in the"
++	@echo "### background to keep the supply of entropy topped up.  It"
++	@echo "### needs to be run as root, and should use a hardware random"
++	@echo "### number generator if one is available, eg:"
++	@echo "###"
++	@echo "###     rngd -r /dev/hwrandom"
++	@echo "###"
++	gpg --homedir . --batch --gen-key genkey
++	@echo "###"
++	@echo "### Key pair generated."
++	@echo "###"
++	rm -f pubring.gpg secring.gpg trustdb.gpg
 +
-+#include <linux/kernel.h>
-+#include <linux/sched.h>
-+#include <linux/cred.h>
-+#include <keys/crypto-type.h>
-+#include "module-verify.h"
++genkey:
++	echo "%pubring modsign.pub" >genkey
++	echo "%secring modsign.sec" >>genkey
++	echo "%no-protection: yes" >> genkey
++	echo "%transient-key: yes" >>genkey
++	echo "Key-Type: RSA" >>genkey
++	echo "Key-Length: 4096" >>genkey
++	echo "Name-Real: Sample kernel key" >>genkey
++	echo "Name-Comment: Sample kernel module signing key" >>genkey
++	echo "%commit" >>genkey
 +
-+struct key *modsign_keyring;
-+
-+extern __initdata const u8 modsign_public_keys[];
-+extern __initdata const u8 modsign_public_keys_end[];
-+asm(".section .init.data,\"aw\"\n"
-+    "modsign_public_keys:\n"
-+    ".incbin \"modsign.pub\"\n"
-+    "modsign_public_keys_end:"
-+    );
-+
-+/*
-+ * We need to make sure ccache doesn't cache the .o file as it doesn't notice
-+ * if modsign.pub changes.
-+ */
-+static __initdata const char annoy_ccache[] = __TIME__ "foo";
-+
-+/*
-+ * Load the compiled-in keys
-+ */
-+static __init int module_verify_init(void)
-+{
-+	pr_notice("Initialise module verification\n");
-+
-+	modsign_keyring = key_alloc(&key_type_keyring, ".module_sign",
-+				    0, 0, current_cred(),
-+				    (KEY_POS_ALL & ~KEY_POS_SETATTR) |
-+				    KEY_USR_VIEW | KEY_USR_READ,
-+				    KEY_ALLOC_NOT_IN_QUOTA);
-+	if (IS_ERR(modsign_keyring))
-+		panic("Can't allocate module signing keyring\n");
-+
-+	if (key_instantiate_and_link(modsign_keyring, NULL, 0, NULL, NULL) < 0)
-+		panic("Can't instantiate module signing keyring\n");
-+
-+	return 0;
-+}
-+
-+/*
-+ * Must be initialised before we try and load the keys into the keyring.
-+ */
-+device_initcall(module_verify_init);
-+
-+/*
-+ * Load the compiled-in keys
-+ */
-+static __init int modsign_pubkey_init(void)
-+{
-+	pr_notice("Load module verification keys\n");
-+
-+	if (preload_pgp_keys(modsign_public_keys,
-+			     modsign_public_keys_end - modsign_public_keys,
-+			     modsign_keyring, "modsign.") < 0)
-+		panic("Can't load module signing keys\n");
-+
-+	return 0;
-+}
-+late_initcall(modsign_pubkey_init);
-diff --git a/kernel/module-verify.h b/kernel/module-verify.h
-new file mode 100644
-index 0000000..2f6cc16
---- /dev/null
-+++ b/kernel/module-verify.h
-@@ -0,0 +1,14 @@
-+/* Module verification definitions
-+ *
-+ * Copyright (C) 2004, 2012 Red Hat, Inc. All Rights Reserved.
-+ * Written by David Howells (dhowells@redhat.com)
-+ *
-+ * This program is free software; you can redistribute it and/or
-+ * modify it under the terms of the GNU General Public Licence
-+ * as published by the Free Software Foundation; either version
-+ * 2 of the Licence, or (at your option) any later version.
-+ */
-+
-+#ifdef CONFIG_MODULE_SIG
-+extern struct key *modsign_keyring;
-+#endif
++endif
++CLEAN_FILES += modsign.pub modsign.sec genkey random_seed
 
