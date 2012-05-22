@@ -1,159 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753765Ab2EVHWo (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 May 2012 03:22:44 -0400
-Received: from mga14.intel.com ([143.182.124.37]:49152 "EHLO mga14.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752921Ab2EVHV4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1753568Ab2EVHWm (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 May 2012 03:22:42 -0400
+Received: from bedivere.hansenpartnership.com ([66.63.167.143]:47612 "EHLO
+	bedivere.hansenpartnership.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752971Ab2EVHV4 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 22 May 2012 03:21:56 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
-   d="scan'208";a="146128136"
-From: Lin Ming <ming.m.lin@intel.com>
-To: Jens Axboe <axboe@kernel.dk>, Alan Stern <stern@rowland.harvard.edu>
-Cc: linux-kernel@vger.kernel.org, linux-pm@vger.kernel.org,
-        linux-scsi@vger.kernel.org
-Subject: [RFC PATCH v3 2/4] block: add runtime pm helpers
-Date: Tue, 22 May 2012 15:21:30 +0800
-Message-Id: <1337671292-15583-3-git-send-email-ming.m.lin@intel.com>
-X-Mailer: git-send-email 1.7.2.5
-In-Reply-To: <1337671292-15583-1-git-send-email-ming.m.lin@intel.com>
-References: <1337671292-15583-1-git-send-email-ming.m.lin@intel.com>
+Message-ID: <1337671311.16400.12.camel@dabdike.int.hansenpartnership.com>
+Subject: Re: [GIT PULL] First round of SCSI updates for the 3.4+ merge window
+From: James Bottomley <James.Bottomley@HansenPartnership.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        linux-scsi <linux-scsi@vger.kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>
+Date: Tue, 22 May 2012 08:21:51 +0100
+In-Reply-To: <CA+55aFz__YrXffza1bEzwrPu+-ETswUcg3F31Gjrj3OPbRyTZw@mail.gmail.com>
+References: <1337599819.3042.7.camel@dabdike.int.hansenpartnership.com>
+	 <CA+55aFz__YrXffza1bEzwrPu+-ETswUcg3F31Gjrj3OPbRyTZw@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add runtime pm helper functions:
+On Mon, 2012-05-21 at 17:52 -0700, Linus Torvalds wrote:
+> On Mon, May 21, 2012 at 4:30 AM, James Bottomley
+> <James.Bottomley@hansenpartnership.com> wrote:
+> > The patch contains the usual assortment of driver updates (be2iscsi,
+> > bfa, bnx2i, fcoe, hpsa, isci, lpfc, megaraid, mpt2sas, pm8001, sg) plus
+> > an assortment of other changes and fixes.  Also new is the fact that the
+> > isci update is delivered as a git merge (with signed tag).
+> 
+> Interesting. For some reason the 'gpg --verify' phase says that your
+> key has expired. Yet when I look at the key itself, it says it is
+> valid until 2016. I don't quite know why gpg thinks the thing is
+> expired when verifying the message.
 
-blk_pm_runtime_init()
-blk_pre_runtime_suspend()
-blk_post_runtime_suspend()
-blk_pre_runtime_resume()
-blk_post_runtime_suspend()
+You probably need to do a gpg --refresh
 
-Signed-off-by: Lin Ming <ming.m.lin@intel.com>
----
- block/blk-core.c       |   61 ++++++++++++++++++++++++++++++++++++++++++++++++
- include/linux/blkdev.h |   13 ++++++++++
- 2 files changed, 74 insertions(+), 0 deletions(-)
+I use the subkeys method for signing, so I have my master key (which
+expires in 2016) in one of Greg's GPG devices, but I have signing and an
+encryption subkeys which are short lived (currently expire in Oct 2012).
+If you do a gpg --list-keys 'James Bottomley' you'll see this:
 
-diff --git a/block/blk-core.c b/block/blk-core.c
-index 1f61b74..2d8e38e 100644
---- a/block/blk-core.c
-+++ b/block/blk-core.c
-@@ -29,6 +29,7 @@
- #include <linux/fault-inject.h>
- #include <linux/list_sort.h>
- #include <linux/delay.h>
-+#include <linux/pm_runtime.h>
- 
- #define CREATE_TRACE_POINTS
- #include <trace/events/block.h>
-@@ -2887,6 +2888,66 @@ void blk_finish_plug(struct blk_plug *plug)
- }
- EXPORT_SYMBOL(blk_finish_plug);
- 
-+void blk_pm_runtime_init(struct request_queue *q, struct device *dev)
-+{
-+	q->dev = dev;
-+	q->rpm_status = RPM_ACTIVE;
-+
-+	pm_runtime_use_autosuspend(q->dev);
-+	pm_runtime_mark_last_busy(q->dev);
-+	pm_runtime_autosuspend(q->dev);
-+}
-+EXPORT_SYMBOL(blk_pm_runtime_init);
-+
-+int blk_pre_runtime_suspend(struct request_queue *q)
-+{
-+	int ret = 0;
-+
-+	spin_lock_irq(q->queue_lock);
-+	if (q->nr_pending)
-+		ret = -EBUSY;
-+	else
-+		q->rpm_status = RPM_SUSPENDING;
-+	spin_unlock_irq(q->queue_lock);
-+	return ret;
-+}
-+EXPORT_SYMBOL(blk_pre_runtime_suspend);
-+
-+void blk_post_runtime_suspend(struct request_queue *q, int err)
-+{
-+	spin_lock_irq(q->queue_lock);
-+	if (!err)
-+		q->rpm_status = RPM_SUSPENDED;
-+	else {
-+		q->rpm_status = RPM_ACTIVE;
-+		pm_runtime_mark_last_busy(q->dev);
-+	}
-+	spin_unlock_irq(q->queue_lock);
-+}
-+EXPORT_SYMBOL(blk_post_runtime_suspend);
-+
-+void blk_pre_runtime_resume(struct request_queue *q)
-+{
-+	spin_lock_irq(q->queue_lock);
-+	q->rpm_status = RPM_RESUMING;
-+	spin_unlock_irq(q->queue_lock);
-+}
-+EXPORT_SYMBOL(blk_pre_runtime_resume);
-+
-+void blk_post_runtime_resume(struct request_queue *q, int err)
-+{
-+	spin_lock_irq(q->queue_lock);
-+	if (!err) {
-+		q->rpm_status = RPM_ACTIVE;
-+		__blk_run_queue(q);
-+		pm_runtime_mark_last_busy(q->dev);
-+		pm_request_autosuspend(q->dev);
-+	} else
-+		q->rpm_status = RPM_SUSPENDED;
-+	spin_unlock_irq(q->queue_lock);
-+}
-+EXPORT_SYMBOL(blk_post_runtime_resume);
-+
- int __init blk_dev_init(void)
- {
- 	BUILD_BUG_ON(__REQ_NR_BITS > 8 *
-diff --git a/include/linux/blkdev.h b/include/linux/blkdev.h
-index 4d4ac24..cb0c4fc 100644
---- a/include/linux/blkdev.h
-+++ b/include/linux/blkdev.h
-@@ -339,6 +339,9 @@ struct request_queue {
- 	 */
- 	struct kobject kobj;
- 
-+	struct device		*dev;
-+	int			rpm_status;
-+
- 	/*
- 	 * queue settings
- 	 */
-@@ -346,6 +349,7 @@ struct request_queue {
- 	unsigned int		nr_congestion_on;
- 	unsigned int		nr_congestion_off;
- 	unsigned int		nr_batching;
-+	unsigned int		nr_pending;
- 
- 	unsigned int		dma_drain_size;
- 	void			*dma_drain_buffer;
-@@ -875,6 +879,15 @@ struct request_queue *blk_alloc_queue_node(gfp_t, int);
- extern void blk_put_queue(struct request_queue *);
- 
- /*
-+ * block layer runtime pm functions
-+ */
-+extern void blk_pm_runtime_init(struct request_queue *q, struct device *dev);
-+extern int blk_pre_runtime_suspend(struct request_queue *q);
-+extern void blk_post_runtime_suspend(struct request_queue *q, int err);
-+extern void blk_pre_runtime_resume(struct request_queue *q);
-+extern void blk_post_runtime_resume(struct request_queue *q, int err);
-+
-+/*
-  * blk_plug permits building a queue of related requests by holding the I/O
-  * fragments for a short period. This allows merging of sequential requests
-  * into single larger request. As the requests are moved from a per-task list to
--- 
-1.7.2.5
+pub   2048R/214854D6 2011-09-23 [expires: 2016-09-27]
+uid                  James Bottomley
+<James.Bottomley@HansenPartnership.com>
+uid                  James Bottomley <JBottomley@Parallels.com>
+uid                  James Bottomley <jejb@kernel.org>
+uid                  [jpeg image of size 5254]
+sub   2048R/0D77E313 2011-09-23 [expires: 2012-10-25]
+sub   2048R/2C5CBD0C 2011-10-27 [expires: 2012-10-25]
+
+The 2048R/2C5CBD0C is my signature one.  I have to update the expiry of
+them every six months, so you probably haven't done a refresh since I
+did the update.
+
+I do it this way so that I don't have to carry my master key with me
+when travelling (or if I do, I don't have to use it except for signing
+other keys, since the GPG devices are a bit cumbersome), so if something
+goes wrong, I can revoke my subkey and just generate a new one (without
+having to get everyone's signature again).
+
+> But everything else looks fine. Somebody with more gpg-fu than me
+> might be able to clarify what is going on..
+
+Hope the above helps (would rather not have had to become a gpg advanced
+user, but there you go ...)
+
+James
+
 
