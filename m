@@ -1,93 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758711Ab2EVOXa (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 May 2012 10:23:30 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:60941 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758137Ab2EVOUJ (ORCPT
+	id S1757782Ab2EVO1K (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 May 2012 10:27:10 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:6726 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756799Ab2EVO1H (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 May 2012 10:20:09 -0400
-From: Anton Vorontsov <anton.vorontsov@linaro.org>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Kees Cook <keescook@chromium.org>, Colin Cross <ccross@android.com>,
-        Tony Luck <tony.luck@intel.com>
-Cc: Arnd Bergmann <arnd@arndb.de>, John Stultz <john.stultz@linaro.org>,
-        Shuah Khan <shuahkhan@gmail.com>, arve@android.com,
-        Rebecca Schultz Zavin <rebecca@android.com>,
-        Jesper Juhl <jj@chaosbits.net>, Randy Dunlap <rdunlap@xenotime.net>,
-        Stephen Boyd <sboyd@codeaurora.org>, Thomas Meyer <thomas@m3y3r.de>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Marco Stornelli <marco.stornelli@gmail.com>,
-        WANG Cong <xiyou.wangcong@gmail.com>, linux-kernel@vger.kernel.org,
-        devel@driverdev.osuosl.org, linaro-kernel@lists.linaro.org,
-        patches@linaro.org, kernel-team@android.com
-Subject: [PATCH 04/16] pstore/ram_core: Factor persistent_ram_zap() out of post_init()
-Date: Tue, 22 May 2012 07:17:47 -0700
-Message-Id: <1337696279-8994-4-git-send-email-anton.vorontsov@linaro.org>
-X-Mailer: git-send-email 1.7.9.2
-In-Reply-To: <20120522141717.GA31574@lizard>
-References: <20120522141717.GA31574@lizard>
+	Tue, 22 May 2012 10:27:07 -0400
+X-Authority-Analysis: v=2.0 cv=OMylLFmB c=1 sm=0 a=ZycB6UtQUfgMyuk2+PxD7w==:17 a=XQbtiDEiEegA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=meVymXHHAAAA:8 a=ayC55rCoAAAA:8 a=3hYSaSxgt1UkCRPdqzsA:9 a=PUjeQqilurYA:10 a=ZycB6UtQUfgMyuk2+PxD7w==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 74.67.80.29
+Message-ID: <1337696825.13348.44.camel@gandalf.stny.rr.com>
+Subject: Re: NMI vs #PF clash
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Avi Kivity <avi@redhat.com>
+Cc: linux-kernel <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@elte.hu>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>,
+        Paul Turner <pjt@google.com>, Peter Zijlstra <peterz@infradead.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
+Date: Tue, 22 May 2012 10:27:05 -0400
+In-Reply-To: <4FBBA094.3090703@redhat.com>
+References: <4FBB8C40.6080304@redhat.com>
+	  <1337693441.13348.36.camel@gandalf.stny.rr.com>
+	  <4FBB986F.5030306@redhat.com>
+	 <1337695780.13348.41.camel@gandalf.stny.rr.com>
+	 <4FBBA094.3090703@redhat.com>
+Content-Type: text/plain; charset="ISO-8859-15"
+X-Mailer: Evolution 3.2.2-1 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-A handy function that we will use outside of ram_core soon. But
-so far just factor it out and start using it in post_init().
+On Tue, 2012-05-22 at 17:20 +0300, Avi Kivity wrote:
+> On 05/22/2012 05:09 PM, Steven Rostedt wrote:
+> >> > 
+> >> > Or we could just have the NMI always restore the cr2 register.
+> >> 
+> >> IMO that's best.
+> > 
+> > OK, I can whip up a patch, but I wont push that in till 3.6.
+> > 
+> 
+> Thanks.  Something I've noticed is that writing cr2 is slow, so you may
+> want to write it only if it has changed (which should be very rare).
+> 
 
-Signed-off-by: Anton Vorontsov <anton.vorontsov@linaro.org>
----
- fs/pstore/ram_core.c       |   11 ++++++++---
- include/linux/pstore_ram.h |    1 +
- 2 files changed, 9 insertions(+), 3 deletions(-)
+Is reading it fast? Then we could do a two reads and only write when
+needed.
 
-diff --git a/fs/pstore/ram_core.c b/fs/pstore/ram_core.c
-index f6650d1..c5fbdbb 100644
---- a/fs/pstore/ram_core.c
-+++ b/fs/pstore/ram_core.c
-@@ -320,6 +320,13 @@ void persistent_ram_free_old(struct persistent_ram_zone *prz)
- 	prz->old_log_size = 0;
- }
+Something like this pseudo assembly
  
-+void persistent_ram_zap(struct persistent_ram_zone *prz)
-+{
-+	atomic_set(&prz->buffer->start, 0);
-+	atomic_set(&prz->buffer->size, 0);
-+	persistent_ram_update_header_ecc(prz);
-+}
-+
- static void *persistent_ram_vmap(phys_addr_t start, size_t size)
- {
- 	struct page **pages;
-@@ -414,8 +421,7 @@ static int __init persistent_ram_post_init(struct persistent_ram_zone *prz, bool
- 	}
- 
- 	prz->buffer->sig = PERSISTENT_RAM_SIG;
--	atomic_set(&prz->buffer->start, 0);
--	atomic_set(&prz->buffer->size, 0);
-+	persistent_ram_zap(prz);
- 
- 	return 0;
- }
-@@ -450,7 +456,6 @@ struct persistent_ram_zone * __init persistent_ram_new(phys_addr_t start,
- 		goto err;
- 
- 	persistent_ram_post_init(prz, ecc);
--	persistent_ram_update_header_ecc(prz);
- 
- 	return prz;
- err:
-diff --git a/include/linux/pstore_ram.h b/include/linux/pstore_ram.h
-index 4491e8f..3b823d4 100644
---- a/include/linux/pstore_ram.h
-+++ b/include/linux/pstore_ram.h
-@@ -69,6 +69,7 @@ struct persistent_ram_zone * __init persistent_ram_new(phys_addr_t start,
- 						       size_t size,
- 						       bool ecc);
- void persistent_ram_free(struct persistent_ram_zone *prz);
-+void persistent_ram_zap(struct persistent_ram_zone *prz);
- struct persistent_ram_zone *persistent_ram_init_ringbuffer(struct device *dev,
- 		bool ecc);
- 
--- 
-1.7.9.2
+	mov cr2, rax
+	push rax
+
+	call do_nmi
+
+	pop rax
+	mov cr2, rbx
+	cmp rax, rbx
+	be skip
+	mov rax, cr2
+skip:
+
+
+-- Steve
+
+
 
