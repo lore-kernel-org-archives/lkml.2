@@ -1,61 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756713Ab2EVJBT (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 May 2012 05:01:19 -0400
-Received: from casper.infradead.org ([85.118.1.10]:51335 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754944Ab2EVJBR convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 May 2012 05:01:17 -0400
-Message-ID: <1337677268.9698.6.camel@twins>
-Subject: Re: [PATCH 0/2] RFC: readd fair sleepers for server systems
-From: Peter Zijlstra <a.p.zijlstra@chello.nl>
-To: Martin Schwidefsky <schwidefsky@de.ibm.com>
-Cc: Ingo Molnar <mingo@kernel.org>, Mike Galbraith <efault@gmx.de>,
-        linux-kernel@vger.kernel.org,
-        Heiko Carstens <heiko.carstens@de.ibm.com>,
-        Christian Ehrhardt <ehrhardt@linux.vnet.ibm.com>
-Date: Tue, 22 May 2012 11:01:08 +0200
-In-Reply-To: <1337615137-55111-1-git-send-email-schwidefsky@de.ibm.com>
-References: <1337615137-55111-1-git-send-email-schwidefsky@de.ibm.com>
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
-X-Mailer: Evolution 3.2.2- 
-Mime-Version: 1.0
+	id S1756874Ab2EVJBe (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 May 2012 05:01:34 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:52788 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756757Ab2EVJB0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 May 2012 05:01:26 -0400
+Date: Tue, 22 May 2012 11:01:18 +0200 (CEST)
+From: Jiri Kosina <jkosina@suse.cz>
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        John Crispin <blogic@openwrt.org>, Ralf Baechle <ralf@linux-mips.org>,
+        Masanari Iida <standby24x7@gmail.com>
+Subject: Re: linux-next: manual merge of the trivial tree with the mips
+ tree
+In-Reply-To: <20120522145041.67536df96e34135fd802fd2b@canb.auug.org.au>
+Message-ID: <alpine.LNX.2.00.1205221101020.16396@pobox.suse.cz>
+References: <20120522145041.67536df96e34135fd802fd2b@canb.auug.org.au>
+User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2012-05-21 at 17:45 +0200, Martin Schwidefsky wrote:
-> our performance team found a performance degradation with a recent
-> distribution update in regard to fair sleepers (or the lack of fair
-> sleepers). On s390 we used to run with fair sleepers disabled.
+On Tue, 22 May 2012, Stephen Rothwell wrote:
 
-This change was made a very long time ago.. tell your people to mind
-what upstream does if they want us to mind them.
-
-Also, reports like this make me want to make /debug/sched_features a
-patch in tip/out-of-tree so that its never available outside
-development.
-
-> We see the performance degradation with our network benchmark and fair
-> sleepers enabled, the largest hit is on virtual connections:
+> Hi Jiri,
 > 
-> VM guest Hipersockets 
->    Throughput degrades up to 18% 
->    CPU load/cost increase up to 17%
-> VM stream 
->    Throughput degrades up to 15% 
->    CPU load/cost increase up to 22%
-> LPAR Hipersockets
->    Throughput degrades up to 27% 
->    CPU load/cost increase up to 20%
+> Today's linux-next merge of the trivial tree got a conflict in
+> arch/mips/pci/pci-lantiq.c between commit 57c8cb8f2429 ("MIPS: pci:
+> convert lantiq driver to OF") from the mips tree and commit 6997991ab0db
+> ("mips: Fix printk typos in arc/mips") from the trivial tree.
+> 
+> The former did the fix from the latter as a side effect so I used that.
 
-Why is this, is this some weird interaction with your hypervisor?
+I have dropped the hunk from trivial.git to avoid the unnecessary 
+conflict, thanks.
 
-> In short, we want the fair sleepers tunable back. I understand that on
-> x86 we want to avoid the cost of a branch on the hot path in place_entity,
-> therefore add a compile time config option for the fair sleeper control.
-
-I'm very much not liking this... this makes s390 schedule completely
-different from all the other architectures.
+-- 
+Jiri Kosina
+SUSE Labs
