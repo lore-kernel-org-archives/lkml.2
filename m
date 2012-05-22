@@ -1,78 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758845Ab2EVOoW (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 May 2012 10:44:22 -0400
-Received: from oproxy7-pub.bluehost.com ([67.222.55.9]:37095 "HELO
-	oproxy7-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1757763Ab2EVOoU (ORCPT
+	id S1758824Ab2EVOpF (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 May 2012 10:45:05 -0400
+Received: from mail-ey0-f174.google.com ([209.85.215.174]:65534 "EHLO
+	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755487Ab2EVOpC convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 May 2012 10:44:20 -0400
-Message-ID: <4FBBA63B.1090401@tao.ma>
-Date: Tue, 22 May 2012 22:44:11 +0800
-From: Tao Ma <tm@tao.ma>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
+	Tue, 22 May 2012 10:45:02 -0400
 MIME-Version: 1.0
-To: Vivek Goyal <vgoyal@redhat.com>
-CC: linux-kernel@vger.kernel.org, Tejun Heo <tj@kernel.org>
-Subject: Re: [RFC] block/throttle: Add IO throttled information in blkcg.
-References: <1337674236-2896-1-git-send-email-tm@tao.ma> <20120522111111.GE3045@redhat.com>
-In-Reply-To: <20120522111111.GE3045@redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Identified-User: {1390:box585.bluehost.com:colyli:tao.ma} {sentby:smtp auth 111.193.1.250 authed with tm@tao.ma}
+In-Reply-To: <20120522092552.GB21999@opensource.wolfsonmicro.com>
+References: <CAOMZO5A-05jTYpEEPfnJvWpby1YJ1M7=KPn=zahbQrQOgbjR4g@mail.gmail.com>
+	<201205221053.21792.marc@cpdesign.com.au>
+	<20120522092552.GB21999@opensource.wolfsonmicro.com>
+Date: Tue, 22 May 2012 11:45:01 -0300
+Message-ID: <CAOMZO5BvQ7gpye53=+egExfzX_hJLN9AiR2QY3cbEiDSb=9XJQ@mail.gmail.com>
+Subject: Re: mc13xxx-core: kernel hangs after 'regmap_read'
+From: Fabio Estevam <festevam@gmail.com>
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>
+Cc: Marc Reilly <marc@cpdesign.com.au>, Samuel Ortiz <sameo@linux.intel.com>,
+        Sascha Hauer <kernel@pengutronix.de>,
+        =?UTF-8?Q?Philippe_R=C3=A9tornaz?= <philippe.retornaz@epfl.ch>,
+        linux-kernel <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Vivek,
-	Thanks for the quick response.
-On 05/22/2012 07:11 PM, Vivek Goyal wrote:
-> On Tue, May 22, 2012 at 04:10:36PM +0800, Tao Ma wrote:
->> From: Tao Ma <boyu.mt@taobao.com>
->>
->> Currently, if the IO is throttled by io-throttle, the SA has no idea of
->> the situation and can't report it to the real application user about
->> that he/she has to do something. So this patch adds a new interface
->> named blkio.throttle.io_throttled which indicates how many IOs are
->> currently throttled.
-> 
-> If the only purpose is to know whether IOs are being throttled, why
-> not just scan for the rules and see if respective device has any
-> throttling rules or not.
-Sorry, but setting a throttling rules doesn't mean the IOs are
-throttled, right? So scanning doesn't work here IMHO.
-> 
-> Even if you introduce this interface, you will end up scanning for
-> throttled ios against that particular device. And if IO is not happening
-> at that moment or if IO rate is not exceeding the rate limit, there
-> might not be any throttled ios and one might get misled.
-Oh, no actually in a *clound computing* environment, it is really
-useful, not misled. So let me describe it in more detail. Our product
-system will limit every instance to an approximate number at first, and
-then watch out the IOs being throttled. If these numbers is high, it can:
-1) Shout loudly to the application programmer about the abuse if he
-sends out too much IO requests.
-2) If it is not too much and some other instances are not active, adjust
-the throttled ratio so that this instance can work much faster.
+On Tue, May 22, 2012 at 6:25 AM, Mark Brown
+<broonie@opensource.wolfsonmicro.com> wrote:
+> On Tue, May 22, 2012 at 10:53:21AM +1000, Marc Reilly wrote:
+>
+>> It was a new format which introduced a padding bit. I wonder if Mark Brown can
+>> comment on whether any other devices are using it successfully. (Sorry I can't
+>> offer more insights there).
+>
+> It's only this chip that's doing so.  I'd suggest putting a scope on it
+> and having a look at the formatted data.
 
-All these 2 needs to know the throttled status for the cgroup and a
-negative feedback is really useful for the elastic control of IO cgroups.
-> 
-> So for your purpose a better interface sounds like scanning for throttling
-> rules instead of this new interface.
-Sorry, as I have said above, I don't know how to get the current status
-of the throttled IOs.
-> 
->>
->> I am not sure whether it is OK to add this information to the generic
->> blkcg since it is only io-throttle related, but I don't find a way to
->> only store it into the blkcg io-throttle. And that's the reason this
->> is only a RFC. Any suggestions? Thanks.
-> 
-> Tejun has changed the code in this area and new code will allow you to
-> introduce this file in blk-throttle.c. All that code is sitting in Jens's
-> block tree.
-Oh, cool, I will check that. Thanks.
+As I don't have a way to access the SPI pins via scope I did a
 
-Thanks
-Tao
+git checkout  91b5e7411, which corresponds to the following commit:
+
+commit 91b5e741184ea9836cd7d7509e4f9b6eefa27df2
+Author: Marc Reilly <marc@cpdesign.com.au>
+Date:   Sun Apr 1 16:41:37 2012 +1000
+
+    mfd: Use regmap for the mc13xxx-core register access
+
+,and now at least it does not silently hang and gives me a regmap failure:
+
+spi_imx imx31-cspi.1: master is unqueued, this is deprecated
+mc13xxx spi1.1: Failed to initialize register map: -22
+mc13xxx: probe of spi1.1 failed with error -22
