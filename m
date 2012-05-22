@@ -1,76 +1,149 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759875Ab2EVP4Y (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 May 2012 11:56:24 -0400
-Received: from iolanthe.rowland.org ([192.131.102.54]:46079 "HELO
-	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1759856Ab2EVP4V (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 May 2012 11:56:21 -0400
-Date: Tue, 22 May 2012 11:56:20 -0400 (EDT)
-From: Alan Stern <stern@rowland.harvard.edu>
-X-X-Sender: stern@iolanthe.rowland.org
-To: Lin Ming <ming.m.lin@intel.com>
-cc: Jens Axboe <axboe@kernel.dk>, Jeff Moyer <jmoyer@redhat.com>,
-        <linux-kernel@vger.kernel.org>, <linux-pm@vger.kernel.org>,
-        <linux-scsi@vger.kernel.org>
-Subject: Re: [RFC v2 PATCH 2/4] block: add queue runtime pm callbacks
-In-Reply-To: <CAF1ivSYVznOU43XT9_5d-EMNp1TQwBiYfG=PL6J1KPdmQx9pgw@mail.gmail.com>
-Message-ID: <Pine.LNX.4.44L0.1205221142570.2100-100000@iolanthe.rowland.org>
+	id S1759839Ab2EVP5h (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 May 2012 11:57:37 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:52431 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754720Ab2EVP5f (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 May 2012 11:57:35 -0400
+Date: Tue, 22 May 2012 17:57:28 +0200
+From: Michal Hocko <mhocko@suse.cz>
+To: linux-mm@kvack.org
+Cc: cgroups@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Johannes Weiner <hannes@cmpxchg.org>,
+        Balbir Singh <bsingharora@gmail.com>, Ying Han <yinghan@google.com>,
+        Hugh Dickins <hughd@google.com>, Glauber Costa <glommer@parallels.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>,
+        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>,
+        Konstantin Khlebnikov <khlebnikov@openvz.org>,
+        Tejun Heo <tj@kernel.org>, David Rientjes <rientjes@google.com>,
+        "Kirill A. Shutemov" <kirill@shutemov.name>
+Subject: memcg-devel git tree updated to 3.4
+Message-ID: <20120522155728.GE1663@tiehlicka.suse.cz>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 22 May 2012, Lin Ming wrote:
+Hi,
+JFYI I have just pushed memcg patch queue rebased on top of v3.4.
+You can find it at a usual place:
+	git@github.com:mstsxfx/memcg-devel.git in since-3.4 branch
 
-> > (Or maybe it would be easier to make q->rpm_status be a pointer to
-> > q->dev->power.rpm_status.  That way, if CONFIG_PM_RUNTIME isn't enabled
-> > or block_runtime_pm_init() hasn't been called, you can have
-> > q->rpm_status simply point to a static value that is permanently set to
-> > RPM_ACTIVE.)
-> 
-> I think we need q->rpm_status.
-> Block layer check ->rpm_status and client driver set this status.
+I hope I haven't forgotten about anything (there quite some patches that
+are sitting in mmotm but I haven't seen them in linux-next - statistics
+cleanup by Johannes and lruvec cleanup by Hugh - and I will push them as
+soon as they appear there).
 
-No, the client driver should not have to set any status values.  The 
-client driver should do as little as possible.
+Current shortlog on top of v3.4:
 
-> And the status is synchronized with queue's spin lock.
+Aneesh Kumar K.V (15):
+      hugetlb: rename max_hstate to hugetlb_max_hstate
+      hugetlbfs: don't use ERR_PTR with VM_FAULT* values
+      hugetlbfs: add an inline helper for finding hstate index
+      hugetlb: use mmu_gather instead of a temporary linked list for accumulating pages
+      hugetlb: avoid taking i_mmap_mutex in unmap_single_vma() for hugetlb
+      hugetlb: simplify migrate_huge_page()
+      memcg: add HugeTLB extension
+      hugetlb: add charge/uncharge calls for HugeTLB alloc/free
+      memcg: track resource index in cftype private
+      hugetlbfs: add memcg control files for hugetlbfs
+      memcg: use scnprintf instead of sprintf
+      hugetlbfs: add a list for tracking in-use HugeTLB pages
+      memcg: move HugeTLB resource count to parent cgroup on memcg removal
+      hugetlb: migrate memcg info from oldpage to new page during migration
+      memcg: add memory controller documentation for hugetlb management
 
-Right, and the client driver should not need to acquire the queue's 
-lock.
+David Rientjes (4):
+      mm, thp: remove unnecessary ret variable
+      mm, thp: allow fallback when pte_alloc_one() fails for huge pmd
+      thp, memcg: split hugepage for memcg oom on cow
+      mm, thp: drop page_table_lock to uncharge memcg pages
 
-> If we use q->dev->power.rpm_status then how to sync it between block
-> layer and client driver?
-> Do you mean block layer will need to acquire q->dev->power.lock?
+Hugh Dickins (6):
+      memcg: fix page migration to reset_owner
+      memcg: fix GPF when cgroup removal races with last exit
+      memcg swap: mem_cgroup_move_swap_account never needs fixup
+      memcg swap: use mem_cgroup_uncharge_swap()
+      mm/memcg: scanning_global_lru means mem_cgroup_disabled
+      mm/memcg: move reclaim_stat into lruvec
 
-That's not what I mean.
+Johannes Weiner (3):
+      kernel: cgroup: push rcu read locking from css_is_ancestor() to callsite
+      mm: memcg: count pte references from every member of the reclaimed hierarchy
+      Documentation: memcg: future proof hierarchical statistics documentation
 
-What synchronization are you concerned about?  The most important race 
-seems to be when a new request is added to the queue at the same time 
-as a runtime suspend begins.
+KAMEZAWA Hiroyuki (2):
+      memcg: clear pc->mem_cgorup if necessary.
+      memcg: fix/change behavior of shared anon at moving task
 
-If q->dev->power.rpm_status has already been set to RPM_SUSPENDING or
-RPM_SUSPENDED when the request is submitted, the block layer should
-call pm_runtime_request_resume().  Thus if the suspend succeeds, the
-device will be resumed immediately afterward.  And if the suspend
-fails, the new request will be handled as usual (note that the
-block_*_runtime_* routines might need to kick-start the queue to get it
-going again).
+Kirill A. Shutemov (4):
+      memcg: mark more functions/variables as static
+      memcg: remove unused variable
+      memcg: mark stat field of mem_cgroup struct as __percpu
+      memcg: remove redundant parentheses
 
-Alternatively, if q->dev->power.rpm_status is still equal to RPM_ACTIVE 
-when the request is submitted, the block layer will simply accept the 
-request.  If the request is still on the queue when 
-block_pre_runtime_suspend is called, it will return -EBUSY and the 
-suspend will fail.
+Konstantin Khlebnikov (18):
+      mm: push lru index into shrink_[in]active_list()
+      mm: mark mm-inline functions as __always_inline
+      mm: remove lru type checks from __isolate_lru_page()
+      mm/memcg: kill mem_cgroup_lru_del()
+      mm/memcg: use vm_swappiness from target memory cgroup
+      mm: correctly synchronize rss-counters at exit/exec
+      mm/vmscan: store "priority" in struct scan_control
+      mm: add link from struct lruvec to struct zone
+      mm/vmscan: push lruvec pointer into isolate_lru_pages()
+      mm/vmscan: push zone pointer into shrink_page_list()
+      mm/vmscan: remove update_isolated_counts()
+      mm/vmscan: push lruvec pointer into putback_inactive_pages()
+      mm/vmscan: replace zone_nr_lru_pages() with get_lruvec_size()
+      mm/vmscan: push lruvec pointer into inactive_list_is_low()
+      mm/vmscan: push lruvec pointer into shrink_list()
+      mm/vmscan: push lruvec pointer into get_scan_count()
+      mm/vmscan: push lruvec pointer into should_continue_reclaim()
+      mm/vmscan: kill struct mem_cgroup_zone
 
-The only synchronization needed to make this work is that the
-block_{pre,post}_runtime_suspend routines need to hold the queue's lock 
-while checking to see if any requests are in the queue.  You'd expect 
-that anyway.
+Mel Gorman (2):
+      mm: vmscan: remove lumpy reclaim
+      mm: vmscan: remove reclaim_mode_t
 
-Alan Stern
+Rik van Riel (1):
+      mm: remove swap token code
 
+Sha Zhengju (2):
+      memcg: make threshold index in the right position
+      memcg: revise the position of threshold index while unregistering event
+
+Tejun Heo (15):
+      cgroup: deprecate remount option changes
+      cgroup: move cgroup_clear_directory() call out of cgroup_populate_dir()
+      cgroup: build list of all cgroups under a given cgroupfs_root
+      cgroup: implement cgroup_add_cftypes() and friends
+      cgroup: merge cft_release_agent cftype array into the base files array
+      cgroup: relocate cftype and cgroup_subsys definitions in controllers
+      cgroup: convert all non-memcg controllers to the new cftype interface
+      memcg: always create memsw files if CONFIG_CGROUP_MEM_RES_CTLR_SWAP
+      cgroup: convert memcg controller to the new cftype interface
+      cgroup: remove cgroup_add_file[s]()
+      cgroup: relocate __d_cgrp() and __d_cft()
+      cgroup: introduce struct cfent
+      cgroup: implement cgroup_rm_cftypes()
+      cgroup: use negative bias on css->refcnt to block css_tryget()
+      cgroup: make css->refcnt clearing on cgroup removal optional
+
+Ying Han (2):
+      mm: rename is_mlocked_vma() to mlocked_vma_newpage()
+      memcg: add mlock statistic in memory.stat
+
+-- 
+Michal Hocko
+SUSE Labs
+SUSE LINUX s.r.o.
+Lihovarska 1060/12
+190 00 Praha 9    
+Czech Republic
