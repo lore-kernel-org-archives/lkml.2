@@ -1,88 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756546Ab2EVOAQ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 May 2012 10:00:16 -0400
-Received: from hqemgate04.nvidia.com ([216.228.121.35]:18892 "EHLO
-	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753047Ab2EVOAO (ORCPT
+	id S1756300Ab2EVOEP (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 May 2012 10:04:15 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:40531 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752889Ab2EVOEO convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 May 2012 10:00:14 -0400
-X-PGP-Universal: processed;
-	by hqnvupgp06.nvidia.com on Tue, 22 May 2012 06:58:45 -0700
-Date: Tue, 22 May 2012 16:58:13 +0300
-From: Peter De Schrijver <pdeschrijver@nvidia.com>
-To: Saravana Kannan <skannan@codeaurora.org>
-CC: Mike Turquette <mturquette@linaro.org>,
-        Arnd Bergman <arnd.bergmann@linaro.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Paul Walmsley <paul@pwsan.com>, Sascha Hauer <s.hauer@pengutronix.de>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Shawn Guo <shawn.guo@freescale.com>,
-        Stephen Warren <swarren@wwwdotorg.org>, Andrew Lunn <andrew@lunn.ch>,
-        Russell King <linux@arm.linux.org.uk>,
-        Linus Walleij <linus.walleij@stericsson.com>,
-        Stephen Boyd <sboyd@codeaurora.org>,
-        "linux-arm-msm@vger.kernel.org" <linux-arm-msm@vger.kernel.org>,
-        Magnus Damm <magnus.damm@gmail.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Rob Herring <rob.herring@calxeda.com>,
-        Richard Zhao <richard.zhao@linaro.org>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Deepak Saxena <dsaxena@linaro.org>,
-        Amit Kucheria <amit.kucheria@linaro.org>,
-        Jamie Iles <jamie@jamieiles.com>,
-        Jeremy Kerr <jeremy.kerr@canonical.com>,
-        Thomas Gleixner <tglx@linutronix.de>
-Subject: Re: [PATCH] clk: Fix race conditions between clk_set_parent() and
- clk_enable()
-Message-ID: <20120522135813.GL8730@tbergstrom-lnx.Nvidia.com>
-References: <1336798797-8724-1-git-send-email-skannan@codeaurora.org>
- <4FB29E7C.7010606@codeaurora.org>
+	Tue, 22 May 2012 10:04:14 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-In-Reply-To: <4FB29E7C.7010606@codeaurora.org>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <CANQmPXhYMbDG7Wiaiwbr3J+Fft3FnaS=RM2t=FSRN-hYDSbMzw@mail.gmail.com>
+References: <j2MgV-2Qe-9@gated-at.bofh.it>
+	<4FB8B2E6.5010601@onlinehome.de>
+	<CAJd=RBDY3Vd8EYFz=n6smFK2EhypgHpvyC_eG1QyE3Us-Y8-qg@mail.gmail.com>
+	<CANQmPXh+0LECyLJ-MrDBZf2ZwLv5BJk0+DCFgPzqSChrFV=2WA@mail.gmail.com>
+	<CAJd=RBDbqMHcmKdFVJEEq8LSQP1+Dfo7ancWhTV4uR2fO9k+Jg@mail.gmail.com>
+	<CANQmPXhYMbDG7Wiaiwbr3J+Fft3FnaS=RM2t=FSRN-hYDSbMzw@mail.gmail.com>
+Date: Tue, 22 May 2012 22:04:13 +0800
+Message-ID: <CAJd=RBA79ygaWxigMfLZkNjURg2r0DwrzKzRZytzHDMQE2XoNA@mail.gmail.com>
+Subject: Re: BFS 420: cleanup in tick handling
+From: Hillf Danton <dhillf@gmail.com>
+To: Chen <hi3766691@gmail.com>, LKML <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, May 15, 2012 at 08:20:44PM +0200, Saravana Kannan wrote:
-> On 05/11/2012 09:59 PM, Saravana Kannan wrote:
-> > Without this patch, the following race conditions are possible.
-> >
-> > Race condition 1:
-> > * clk-A has two parents - clk-X and clk-Y.
-> > * All three are disabled and clk-X is current parent.
-> > * Thread A: clk_set_parent(clk-A, clk-Y).
-> > * Thread A:<snip execution flow>
-> > * Thread A: Grabs enable lock.
-> > * Thread A: Sees enable count of clk-A is 0, so doesn't enable clk-Y.
-> > * Thread A: Releases enable lock.
-> > * Thread B: Calls clk_enable(clk-A), which in turn enables clk-X.
-> > * Thread A: Switches clk-A's parent to clk-Y in hardware.
-> >
-> > clk-A is now enabled in software, but not clocking in hardware.
-> >
-> > Race condition 2:
-> > * clk-A has two parents - clk-X and clk-Y.
-> > * All three are disabled and clk-X is current parent.
-> > * Thread A: clk_set_parent(clk-A, clk-Y).
-> > * Thread A:<snip execution flow>
-> > * Thread A: Switches parent in hardware to clk-Y.
-> > * Thread A: Grabs enable lock.
-> > * Thread A: Sees enable count of clk-A is 0, so doesn't disable clk-X.
-> > * Thread A: Releases enable lock.
-> > * Thread B: Calls clk_enable(clk-A)
-> > * Thread B: Software state still says parent is clk-X.
-> > * Thread B: So, enables clk-X and then itself.
-> > * Thread A: Updates parent in software state to clk-Y.
-> >
+On Tue, May 22, 2012 at 10:00 PM, Chen <hi3766691@gmail.com> wrote:
+>
+> 在 2012-5-22 下午9:50，"Hillf Danton" <dhillf@gmail.com>写道：
+>>
+>> On Tue, May 22, 2012 at 9:45 PM, Chen <hi3766691@gmail.com> wrote:
+>> > Actually the lowest deadline task selection algorithm now BFS used is
+>> > O(n).
+>> > I have already had an idea to enhance the lowest deadline task selection
+>> > algorithm to O(1)
+>>
+>> Would you please announce it on LKML?
+>
+> First of all let me talk how to do it .We can use 40 list_head instead of
+> the single list for time sharing scheduling policy.
+> Then for task selection we will select the task from these 40
+> list_head(actually not 40, just decide by next_sched_bit), then make a
+> comparsion of these tasks(actually in the worse case we just need to do 40
+> times of comparsion) and pick the lowest task. If a task wake, it would be
+> the first node of (queue + p->prio). If a task run out of its timeslice, it
+> will become the last node of(queue + p->prio). This is a concept of BFS
+> deadline presort algorithm and the time complexity is O(1)
 
-This looks correct to me. Is there any usecase where enabling/disabling a
-clock would require sleeping but changing the parent would not?
-
-Cheers,
-
-Peter.
+Thank you for shedding light, I will study it soon.
