@@ -1,69 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759955Ab2EVRWA (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 May 2012 13:22:00 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:60419 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759241Ab2EVRV6 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 May 2012 13:21:58 -0400
-Date: Tue, 22 May 2012 10:21:50 -0700
-From: Tejun Heo <tj@kernel.org>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org, Alex Shi <alex.shi@intel.com>
-Subject: [GIT PULL] percpu changes for 3.5-rc1
-Message-ID: <20120522172150.GF14339@google.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1759961Ab2EVRWv (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 May 2012 13:22:51 -0400
+Received: from mga14.intel.com ([143.182.124.37]:45632 "EHLO mga14.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751747Ab2EVRWt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 May 2012 13:22:49 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
+   d="scan'208";a="102949844"
+Subject: Re: [PATCH 2/2] x2apic, cluster: use all the members of one cluster
+ specified in the smp_affinity mask for the interrupt desintation
+From: Suresh Siddha <suresh.b.siddha@intel.com>
+Reply-To: Suresh Siddha <suresh.b.siddha@intel.com>
+To: Ingo Molnar <mingo@kernel.org>
+Cc: agordeev@redhat.com, yinghai@kernel.org, linux-kernel@vger.kernel.org,
+        x86@kernel.org, gorcunov@openvz.org
+Date: Tue, 22 May 2012 10:21:15 -0700
+In-Reply-To: <20120522070428.GA15738@gmail.com>
+References: <1337643880.1997.166.camel@sbsiddha-desk.sc.intel.com>
+	 <1337644682-19854-1-git-send-email-suresh.b.siddha@intel.com>
+	 <1337644682-19854-2-git-send-email-suresh.b.siddha@intel.com>
+	 <20120522070428.GA15738@gmail.com>
+Organization: Intel Corp
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.0.3 (3.0.3-1.fc15) 
+Content-Transfer-Encoding: 7bit
+Message-ID: <1337707275.1997.184.camel@sbsiddha-desk.sc.intel.com>
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello, Linus.
+On Tue, 2012-05-22 at 09:04 +0200, Ingo Molnar wrote:
+> * Suresh Siddha <suresh.b.siddha@intel.com> wrote:
+> 
+> > If the HW implements round-robin interrupt delivery, this 
+> > enables multiple cpu's (which are part of the user specified 
+> > interrupt smp_affinity mask and belong to the same x2apic 
+> > cluster) to service the interrupt.
+> 
+> Could/should we do something similar for regular APICs as well? 
+> They too support masks and LowestPrio delivery - and doing that 
+> will increase test coverage rather significantly.
 
-Please pull from the following branch to receive percpu changes for
-3.5-rc1.
+Existing logical flat xapic mode already takes advantage of this today.
+And that apic driver allows multiple cpu's to be set in the destination
+field allowing round-robin/power-aware interrupt delivery etc depending
+on the platform capabilities etc.
 
-  git://git.kernel.org/pub/scm/linux/kernel/git/tj/percpu.git for-3.5
+So most of the laptops with 8 or less logical cpu's should take
+advantage of this today.
 
-Contains Alex Shi's three patches to remove percpu_xxx() which overlap
-with this_cpu_xxx().  There shouldn't be any functional change.
+For bigger platforms, we use physical xapic mode. Some older kernels
+used xapic cluster mode, which allows 4 members in a cluster. With two
+HT siblings, that will leave room for only 2 cores. So the benefit will
+be limited. And on the multi-socket platforms, x2apic/vt-d will be
+available and used for various other reasons too (virtualization etc).
 
-Thanks.
+x2apic is available on desktop/laptop models too.
 
-Alex Shi (3):
-      net: replace percpu_xxx funcs with this_cpu_xxx or __this_cpu_xxx
-      x86: replace percpu_xxx funcs with this_cpu_xxx
-      percpu: remove percpu_xxx() functions
+So for legacy xapic, we can use logical flat mode to take advantage of
+these HW modes.
 
- arch/x86/include/asm/compat.h         |    2 +-
- arch/x86/include/asm/current.h        |    2 +-
- arch/x86/include/asm/desc.h           |    1 +
- arch/x86/include/asm/fpu-internal.h   |    6 ++--
- arch/x86/include/asm/hardirq.h        |    9 +++--
- arch/x86/include/asm/irq_regs.h       |    4 +-
- arch/x86/include/asm/mmu_context.h    |   12 ++++----
- arch/x86/include/asm/percpu.h         |   24 ++++++--------
- arch/x86/include/asm/smp.h            |    4 +-
- arch/x86/include/asm/stackprotector.h |    4 +-
- arch/x86/include/asm/thread_info.h    |    2 +-
- arch/x86/include/asm/tlbflush.h       |    4 +-
- arch/x86/kernel/cpu/common.c          |    2 +-
- arch/x86/kernel/cpu/mcheck/mce.c      |    4 +-
- arch/x86/kernel/i387.c                |    2 +-
- arch/x86/kernel/nmi_selftest.c        |    1 +
- arch/x86/kernel/paravirt.c            |   12 ++++----
- arch/x86/kernel/process.c             |    2 +-
- arch/x86/kernel/process_32.c          |    2 +-
- arch/x86/kernel/process_64.c          |   10 +++---
- arch/x86/mm/tlb.c                     |   10 +++---
- include/linux/percpu.h                |   54 ---------------------------------
- include/linux/topology.h              |    4 +-
- net/netfilter/xt_TEE.c                |   12 ++++----
- net/socket.c                          |    4 +-
- 25 files changed, 69 insertions(+), 124 deletions(-)
+thanks,
+suresh 
 
---
-tejun
+
+
