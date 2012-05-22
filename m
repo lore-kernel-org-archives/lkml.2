@@ -1,121 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758264Ab2EVK6y (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 May 2012 06:58:54 -0400
-Received: from comal.ext.ti.com ([198.47.26.152]:47265 "EHLO comal.ext.ti.com"
+	id S1758270Ab2EVK7d (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 May 2012 06:59:33 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:6344 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757978Ab2EVK6x convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 May 2012 06:58:53 -0400
-From: "Jeong, Daniel" <Daniel.Jeong@ti.com>
-To: Johan Hovold <jhovold@gmail.com>,
-        Andrew Morton <akpm@linux-foundation.org>
-CC: Richard Purdie <rpurdie@rpsys.net>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Wolfram Sang <w.sang@pengutronix.de>,
-        Geon Si Jeong <gshark.jeong@gmail.com>
-Subject: RE: [PATCH 1/1 v1] leds: Add LED driver for lm3556 chip
-Thread-Topic: [PATCH 1/1 v1] leds: Add LED driver for lm3556 chip
-Thread-Index: AQHNMsqjjif8xaDo/0SWR5gWZAVw15bVJQsAgACHX/A=
-Date: Tue, 22 May 2012 10:58:33 +0000
-Message-ID: <F0866C1C5ECEAF4CB380B619BD733BEAB2B0@DQHE02.ent.ti.com>
-References: <1333936855-8807-1-git-send-email-gshark.jeong@gmail.com>
- <1333936855-8807-2-git-send-email-gshark.jeong@gmail.com>
- <20120515184330.GB5654@localhost> <20120522104806.GD7323@localhost>
-In-Reply-To: <20120522104806.GD7323@localhost>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [172.16.34.32]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	id S1757978Ab2EVK7c (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 May 2012 06:59:32 -0400
+Message-ID: <4FBB7185.6040105@redhat.com>
+Date: Tue, 22 May 2012 13:59:17 +0300
+From: Avi Kivity <avi@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
 MIME-Version: 1.0
+To: Thomas Gleixner <tglx@linutronix.de>
+CC: "Michael S. Tsirkin" <mst@redhat.com>, kvm@vger.kernel.org,
+        Marcelo Tosatti <mtosatti@redhat.com>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, x86@kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] kvm: optimize ISR lookups
+References: <20120521163727.GA13337@redhat.com> <alpine.LFD.2.02.1205211940030.3231@ionos>
+In-Reply-To: <alpine.LFD.2.02.1205211940030.3231@ionos>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Andrew and Johan. 
-
-Please drop it from current tree.
-It will be replaced to "regmap"  and patched soon. 
-
-Regards,
-Daniel Jeong
-
------Original Message-----
-From: Johan Hovold [mailto:jhovold@gmail.com] 
-Sent: Tuesday, May 22, 2012 7:48 PM
-To: Andrew Morton
-Cc: Richard Purdie; Jeong, Daniel; linux-kernel@vger.kernel.org; Wolfram Sang; Geon Si Jeong
-Subject: Re: [PATCH 1/1 v1] leds: Add LED driver for lm3556 chip
-
-On Tue, May 15, 2012 at 08:43:30PM +0200, Johan Hovold wrote:
-> On Mon, Apr 09, 2012 at 11:00:55AM +0900, Geon Si Jeong wrote:
-> > It is a simple driver for LM3556 Chip(Texas Instruments)
-> > LM3556 :
-> > The LM3556 is a 4 MHz fixed-frequency synchronous boost converter 
-> > plus 1.5A constant current driver for a high-current white LED.
-> > Datasheet: www.national.com/ds/LM/LM3556.pdf
-> > 
-> > Tested on OMAP4430
-> > 
-> > Signed-off-by: Geon Si Jeong <gshark.jeong@gmail.com>
-> 
-> [...]
-> 
-> > +/* i2c access*/
-> > +static int lm3556_read_reg(struct i2c_client *client, u8 reg, u8 * 
-> > +val) {
-> > +	int ret;
-> > +
-> > +	ret = i2c_smbus_read_byte_data(client, reg);
-> > +	if (ret < 0) {
-> > +		dev_err(&client->dev, "i2c reading fail at 0x%02x error %d\n",
-> > +			reg, ret);
-> > +		return ret;
-> > +	}
-> > +	*val = ret & 0xff;
-> > +	return ret;
+On 05/22/2012 12:04 AM, Thomas Gleixner wrote:
+> >  
+> > +static u8 count_vectors(void *bitmap)
+> > +{
+> > +	u32 *word = bitmap;
+> > +	int word_offset;
+> > +	u8 count = 0;
+> > +	for (word_offset = 0; word_offset < MAX_APIC_VECTOR >> 5; ++word_offset)
+> > +		count += hweight32(word[word_offset << 2]);
+> > +	return count;
 > > +}
-> > +
-> > +static int lm3556_write_reg(struct i2c_client *client, u8 reg, u8 
-> > +val) {
-> > +	int ret = 0;
-> > +
-> > +	ret = i2c_smbus_write_byte_data(client, reg, val);
-> > +
-> > +	if (ret < 0)
-> > +		dev_err(&client->dev, "i2c writting fail at 0x%02x\n", reg);
-> > +	return ret;
-> > +}
-> > +
-> > +static int lm3556_write_bits(struct i2c_client *client,
-> > +			     u8 reg, u8 val, u8 mask, u8 shift) {
-> > +	int ret;
-> > +	u8 reg_val;
-> > +	struct lm3556_chip_data *chip = i2c_get_clientdata(client);
-> > +
-> > +	mutex_lock(&chip->lock);
-> > +	ret = lm3556_read_reg(client, reg, &reg_val);
-> > +	if (ret < 0)
-> > +		goto out;
-> > +	reg_val &= (~(mask << shift));
-> > +	reg_val |= ((val & mask) << shift);
-> > +	ret = lm3556_write_reg(client, reg, reg_val);
-> > +out:
-> > +	mutex_unlock(&chip->lock);
-> > +	return ret;
-> > +}
-> 
-> The register io-locking above is broken. You need to protect both 
-> write_reg and write_bits using the mutex (but you must restructure 
-> your code because write_bits currently calls write_reg). This is 
-> required to avoid register corruption due to concurrent write_reg and 
-> write_bits.
-> 
-> As has been suggested elsewhere, you could consider using regmap.
+>
+> Why do you need to reimplement bitmap_weight()?
+>
+> Because your bitmap is not a bitmap, but a set of 32bit registers
+> which have an offset of 4 words each. I really had to twist my brain
+> around this function and the test_and_clr/set ones above just because
+> the name bitmap is so horribly misleading. Add an extra bonus for
+> using void pointers.
+>
+> Yes, I know, the existing code is full of this, but that's not an
+> excuse to add more of it.
+>
+> This emulation is just silly. Nothing in an emulation where the access
+> to the emulated hardware is implemented with vmexits is requiring a
+> 1:1 memory layout. It's completely irrelevant whether the hardware has
+> an ISR regs offset of 0x10 or not. Nothing prevents the emulation to
+> use a consecutive bitmap for the vector bits instead of reimplementing
+> a boatload of bitmap operations.
+>
+> The only justification for having the same layout as the actual
+> hardware is when you are going to map the memory into the guest space,
+> which is not the case here.
+>
+>
 
-Andrew, just wanted to remind you that this driver is still in your tree. Do you want to drop it or should someone else fix the locking?
+The APIC page is in fact mapped  to the hardware (not the guest, but vmx
+microcode does access it).  Only one register, the TPR, is ever used. 
+It's possible to re-layout the data structure so that the TPR stays in
+the same place while everything else becomes contiguous, but we'll have
+to do it again if the hardware starts mapping more registers.
 
-Johan
+-- 
+error compiling committee.c: too many arguments to function
+
