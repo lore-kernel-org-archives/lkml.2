@@ -1,81 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756196Ab2EVNun (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 May 2012 09:50:43 -0400
-Received: from www.linutronix.de ([62.245.132.108]:37894 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753405Ab2EVNul (ORCPT
+	id S1755727Ab2EVNwN (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 May 2012 09:52:13 -0400
+Received: from mail-ob0-f174.google.com ([209.85.214.174]:34910 "EHLO
+	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750896Ab2EVNwM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 May 2012 09:50:41 -0400
-Date: Tue, 22 May 2012 15:50:38 +0200 (CEST)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Yong Zhang <yong.zhang0@gmail.com>
-cc: Christophe Huriaux <c.huriaux@gmail.com>,
-        Uwe Kleine-Koenig <u.kleine-koenig@pengutronix.de>,
-        linux-rt-users <linux-rt-users@vger.kernel.org>,
-        Steven Rostedt <rostedt@goodmis.org>, Andreas Mohr <andi@lisas.de>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v2] genirq: don't sync irq thread if current happen to
- be the very irq thread
-In-Reply-To: <20120520121926.GA24585@zhy>
-Message-ID: <alpine.LFD.2.02.1205221548010.3231@ionos>
-References: <CAEOomG9NEoQKqp=pMx0NpzGaFpHBimALwhemnZL4F-8g7XURkA@mail.gmail.com> <20120509174931.GB31844@pengutronix.de> <CAEOomG9FZD9TEQZZKhCrNrq8SNXi3otWB2mDX69i3tWh5YQenw@mail.gmail.com> <20120520052731.GA3864@zhy> <20120520121926.GA24585@zhy>
-User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
+	Tue, 22 May 2012 09:52:12 -0400
+Message-ID: <4FBB9A08.2050803@gmail.com>
+Date: Tue, 22 May 2012 08:52:08 -0500
+From: Rob Herring <robherring2@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+To: Stephen Boyd <sboyd@codeaurora.org>
+CC: Shawn Guo <shawn.guo@linaro.org>, Mike Turquette <mturquette@linaro.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        "arm@kernel.org" <arm@kernel.org>, Shawn Guo <shawn.guo@freescale.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Saravana Kannan <skannan@codeaurora.org>
+Subject: Re: [GIT PULL] DT clk binding support
+References: <4FB80F32.5090309@gmail.com> <20120520030653.GB5810@S2100-06.ap.freescale.net> <4FB9A5E7.2070000@gmail.com> <20120521064901.GE8140@S2101-09.ap.freescale.net> <4FBA89E3.7010106@gmail.com> <20120521232616.GF8140@S2101-09.ap.freescale.net> <4FBAD545.7060803@gmail.com> <20120522021535.GG8140@S2101-09.ap.freescale.net> <4FBB134D.6050409@codeaurora.org>
+In-Reply-To: <4FBB134D.6050409@codeaurora.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 20 May 2012, Yong Zhang wrote:
-> On Sun, May 20, 2012 at 01:27:31PM +0800, Yong Zhang wrote:
-> > --- a/kernel/irq/manage.c
-> > +++ b/kernel/irq/manage.c
-> > @@ -41,6 +41,7 @@ early_param("threadirqs", setup_forced_irqthreads);
-> >  void synchronize_irq(unsigned int irq)
-> >  {
-> >  	struct irq_desc *desc = irq_to_desc(irq);
-> > +	struct irqaction *action = desc->action;
+On 05/21/2012 11:17 PM, Stephen Boyd wrote:
+> On 05/21/12 19:15, Shawn Guo wrote:
+>> On Mon, May 21, 2012 at 06:52:37PM -0500, Rob Herring wrote:
+>>> As Grant states: "This proposed binding is only about one thing:
+>>> attaching clock providers to clock consumers." This means you have to
+>>> have at least a single provider and a single consumer defined in the DT.
+>>>
+>> I just read through Grant's comments over again.  I agree with the
+>> statement which implicitly requires the clk provider defined in DT.
+>> However, for some case, this provider in DT is just a skeleton which
+>> is backed by clock driver where the provider is actually defined.
+>>
+>> Looking at Grant's comment below, the second option is also to match
+>> the clock in driver just using name.  The only difference to my
+>> proposal is the name here is given by the argument of phandle pointing
+>> to that skeleton provider node.
+>>
+>> I'm fine with that.  So go ahead with your bindings.
+>>
 > 
-> Bad time for dereferencing *action.
+> Can we do what the regulator framework has done and have a common
+> binding of <connection_name>-clk = <&phandle>? Something like:
+> 
+>     core-clk = <&uart3_clk>
+> 
+> and then have clk_get() use the of node of the device passed in to find
+> a property named %s-clk and find the clock with the matching phandle.
 
-You meant dereferencing *desc :)
- 
->  	/*
->  	 * We made sure that no hardirq handler is running. Now verify
->  	 * that no threaded handlers are active.
-> +	 * But for theaded irq, we don't sync if current happens to be
-> +	 * the irq thread; otherwise we could deadlock.
->  	 */
-> +	action = desc->action;
+Sigh... That is what we had in previous versions from over a year ago
+and we moved away from that approach. The current binding has been
+reviewed multiple times in the last 6 months...
 
-And dereferencing action w/o being protected by desc->lock is buggy.
+The current approach is aligned with how interrupts are handled (with
+the addition of a phandle). I think not having per clock property names
+is easier to parse and easier to document.
 
-+	while (action) {
-> +		if (action->thread && action->thread == current)
-> +			return;
-> +		action = action->next;
-> +	}
-> +
+> This looks like it's trying to cover both the end consumers (uart uses
+> uart3_clk) and the internal clock tree consumers (a crystal oscillator
+> connects to a PLL or a mux has multiple parents). We can certainly use
+> these bindings for muxes and internal parent-child relationships but I
+> would prefer we use different bindings for consumer bindings that match
+> what regulators do today.
 
-Aside of that I really do not like that change. It'll hide real
-deadlocks when disable_irq() is called from the interrupt handler.
+The binding supports either defining every last internal clock or just
+the leaf clocks. I took the former route on highbank since I don't have
+a lot of clocks. If I was doing imx or omap for example, I'd probably
+just define all the clock controller outputs.
 
-Also this will not cure all problems of that MMC driver on RT or with
-forced threaded interrupts.
-
-Assume that tasklet code runs from the softirq thread so it will
-schedule when desc->threads_active > 0. This will trigger a
-"scheduling while atomic" warning.
-
-The irq_enable/disable dance in that driver is amazing. I have no time
-at the moment to grok the logic behind this, but it bet this can be
-done way simpler and less horrible.
-
-Thanks,
-
-	tglx
-
+Rob
