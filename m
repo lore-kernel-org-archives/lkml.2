@@ -1,84 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932767Ab2EVWqq (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 May 2012 18:46:46 -0400
-Received: from haggis.pcug.org.au ([203.10.76.10]:58424 "EHLO
-	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932074Ab2EVWqo (ORCPT
+	id S932784Ab2EVWr2 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 May 2012 18:47:28 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:56802 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753360Ab2EVWr0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 May 2012 18:46:44 -0400
-Date: Wed, 23 May 2012 08:46:39 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Guenter Roeck <guenter@roeck-us.net>
-Cc: Wim Van Sebroeck <wim@iguana.be>, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Aaron Sierra <asierra@xes-inc.com>,
-        Samuel Ortiz <sameo@linux.intel.com>,
-        Randy Dunlap <rdunlap@xenotime.net>, linux-watchdog@vger.kernel.org,
-        Jean Delvare <khali@linux-fr.org>
-Subject: Re: linux-next: manual merge of the watchdog tree with the mfd tree
-Message-Id: <20120523084639.bbc57455a6527c9cb983fb2d@canb.auug.org.au>
-In-Reply-To: <6.2.5.6.2.20120522153050.0284ee38@roeck-us.net>
-References: <20120518152348.1e5070cdc16cfdf00682546d@canb.auug.org.au>
-	<20120518083234.GW3074@spo001.leaseweb.com>
-	<6.2.5.6.2.20120518181141.028c8090@roeck-us.net>
-	<20120522163559.GD3074@spo001.leaseweb.com>
-	<6.2.5.6.2.20120522153050.0284ee38@roeck-us.net>
-X-Mailer: Sylpheed 3.2.0beta7 (GTK+ 2.24.10; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Wed__23_May_2012_08_46_39_+1000_4Myc+6Vdin_Vg/d9"
+	Tue, 22 May 2012 18:47:26 -0400
+From: David Daney <ddaney.cavm@gmail.com>
+To: Grant Likely <grant.likely@secretlab.ca>,
+        Rob Herring <rob.herring@calxeda.com>,
+        spi-devel-general@lists.sourceforge.net
+Cc: linux-kernel@vger.kernel.org, David Daney <david.daney@cavium.com>
+Subject: of/spi: Supply proper "spi:" modalias prefixes.
+Date: Tue, 22 May 2012 15:47:19 -0700
+Message-Id: <1337726839-7710-1-git-send-email-ddaney.cavm@gmail.com>
+X-Mailer: git-send-email 1.7.2.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Wed__23_May_2012_08_46_39_+1000_4Myc+6Vdin_Vg/d9
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+From: David Daney <david.daney@cavium.com>
 
-Hi guys,
+To get modprobe to automatically load the proper modules, we need to
+prefix things with "spi:".  Partially based on Grant Likely's suggestions.
 
-On Tue, 22 May 2012 15:37:04 -0700 Guenter Roeck <guenter@roeck-us.net> wro=
-te:
->
-> >I don't think we have a clear standard yet, but I'm fine with either=20
-> >one of them.
->=20
-> Me too, though %04lx and typecast to long should really be sufficient.
->=20
-> I'd guess the change was made because resource_size_t is sometimes a long
-> and sometimes a long long, depending on the platform. I hit that=20
-> problem a couple of times myself.
+Signed-off-by: David Daney <david.daney@cavium.com>
+---
+ drivers/of/of_spi.c |    6 +++++-
+ drivers/spi/spi.c   |    2 +-
+ 2 files changed, 6 insertions(+), 2 deletions(-)
 
-Exactly.  Since resource_size_t can be either 32 bit or 64 bit on 32 bit
-platforms, you must print it as %llx and cast it to u64 always to
-prevent these warnings.  If you cast it to (unsigned) long you could
-possibly truncate the value.
-
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-
---Signature=_Wed__23_May_2012_08_46_39_+1000_4Myc+6Vdin_Vg/d9
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBCAAGBQJPvBdPAAoJEECxmPOUX5FESgoP/1PSMgkC4kj2PiU2JDVuNwq9
-jEap/xPlLSk1C2R0F0UPrELjOkxE1M1eQda2Q51ym6dDhZ91THQEU1dQxhu3lsGN
-dCcNX2Ndc66hfQiM7hpOKl3qtappwXoUNsXbSzFa52puZWRxFCXLMm3L4sBrThz8
-vxZKYP3UojTsN5XEca0D9Avoeupc2Gb/aJkp1mUxCYNMLcHtKmJX/UXTTGT9FXMf
-EoUby6GOjgZXBvqI0k7HjeC+EGzZ0LtjC3QJ1snMBw10Nrlfv8q19Z1h1S+yQNmR
-JCxI8xTHuZjnSmbYCgdBVVqoRASXcy1Qj1fZRcuOlEs3nzQZ8gwit/+pLi/g4ucX
-OcuQnH7J6aXRUnyx+ZLx75zQ9sEyNMmYTUIQ5fEH6KDkvXcyZokejhs9mSxuqoed
-643kMU5IDjgNmhL8QdgTeKEPYXdOjXyCS3Er1RzrPW0dfAX3pQRNVr1LthveSVjk
-wVUmN8WNSJXD6Rxo+FhGaI5yyCgKOKLO+pLdeh+XycC3gNo3ChHcASLdxrH4UuQq
-8v8XPjFnwBa32ZjBgp9cnpArTARwn1QEMM99SlFBcqr5huumLtquVADkV9JfsiFs
-/x3A0Bu4UeN/NS9M6FwDsyFOlcWvBu3FYGORTTQQY4gOOwtPmlnZEqF9CxaRIL7f
-pnLs4PvM0GKoPhS9jsk4
-=yoln
------END PGP SIGNATURE-----
-
---Signature=_Wed__23_May_2012_08_46_39_+1000_4Myc+6Vdin_Vg/d9--
+diff --git a/drivers/of/of_spi.c b/drivers/of/of_spi.c
+index 6dbc074..3486d2d 100644
+--- a/drivers/of/of_spi.c
++++ b/drivers/of/of_spi.c
+@@ -25,6 +25,7 @@ void of_register_spi_devices(struct spi_master *master)
+ 	struct spi_device *spi;
+ 	struct device_node *nc;
+ 	const __be32 *prop;
++	char request_module_modalias[SPI_NAME_SIZE + 4];
+ 	int rc;
+ 	int len;
+ 
+@@ -86,7 +87,10 @@ void of_register_spi_devices(struct spi_master *master)
+ 		spi->dev.of_node = nc;
+ 
+ 		/* Register the new device */
+-		request_module(spi->modalias);
++		snprintf(request_module_modalias,
++			 sizeof(request_module_modalias),
++			 "%s%s", SPI_MODULE_PREFIX, spi->modalias);
++		request_module(request_module_modalias);
+ 		rc = spi_add_device(spi);
+ 		if (rc) {
+ 			dev_err(&master->dev, "spi_device register error %s\n",
+diff --git a/drivers/spi/spi.c b/drivers/spi/spi.c
+index 3d8f662..da8aac7 100644
+--- a/drivers/spi/spi.c
++++ b/drivers/spi/spi.c
+@@ -51,7 +51,7 @@ modalias_show(struct device *dev, struct device_attribute *a, char *buf)
+ {
+ 	const struct spi_device	*spi = to_spi_device(dev);
+ 
+-	return sprintf(buf, "%s\n", spi->modalias);
++	return sprintf(buf, "%s%s\n", SPI_MODULE_PREFIX, spi->modalias);
+ }
+ 
+ static struct device_attribute spi_dev_attrs[] = {
