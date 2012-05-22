@@ -1,51 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756300Ab2EVOEP (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 May 2012 10:04:15 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:40531 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752889Ab2EVOEO convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 May 2012 10:04:14 -0400
+	id S1756784Ab2EVOFZ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 May 2012 10:05:25 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:14575 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754737Ab2EVOFY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 May 2012 10:05:24 -0400
+Date: Tue, 22 May 2012 17:05:20 +0300
+From: "Michael S. Tsirkin" <mst@redhat.com>
+To: x86@kernel.org, kvm@vger.kernel.org
+Cc: Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
+        Avi Kivity <avi@redhat.com>, Marcelo Tosatti <mtosatti@redhat.com>,
+        gleb@redhat.com, Linus Torvalds <torvalds@linux-foundation.org>,
+        linux-kernel@vger.kernel.org, Thomas Gleixner <tglx@linutronix.de>
+Subject: [PATCHv5 0/5] apic: eoi optimization support
+Message-ID: <cover.1337695416.git.mst@redhat.com>
 MIME-Version: 1.0
-In-Reply-To: <CANQmPXhYMbDG7Wiaiwbr3J+Fft3FnaS=RM2t=FSRN-hYDSbMzw@mail.gmail.com>
-References: <j2MgV-2Qe-9@gated-at.bofh.it>
-	<4FB8B2E6.5010601@onlinehome.de>
-	<CAJd=RBDY3Vd8EYFz=n6smFK2EhypgHpvyC_eG1QyE3Us-Y8-qg@mail.gmail.com>
-	<CANQmPXh+0LECyLJ-MrDBZf2ZwLv5BJk0+DCFgPzqSChrFV=2WA@mail.gmail.com>
-	<CAJd=RBDbqMHcmKdFVJEEq8LSQP1+Dfo7ancWhTV4uR2fO9k+Jg@mail.gmail.com>
-	<CANQmPXhYMbDG7Wiaiwbr3J+Fft3FnaS=RM2t=FSRN-hYDSbMzw@mail.gmail.com>
-Date: Tue, 22 May 2012 22:04:13 +0800
-Message-ID: <CAJd=RBA79ygaWxigMfLZkNjURg2r0DwrzKzRZytzHDMQE2XoNA@mail.gmail.com>
-Subject: Re: BFS 420: cleanup in tick handling
-From: Hillf Danton <dhillf@gmail.com>
-To: Chen <hi3766691@gmail.com>, LKML <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+X-Mutt-Fcc: =sent
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, May 22, 2012 at 10:00 PM, Chen <hi3766691@gmail.com> wrote:
->
-> 在 2012-5-22 下午9:50，"Hillf Danton" <dhillf@gmail.com>写道：
->>
->> On Tue, May 22, 2012 at 9:45 PM, Chen <hi3766691@gmail.com> wrote:
->> > Actually the lowest deadline task selection algorithm now BFS used is
->> > O(n).
->> > I have already had an idea to enhance the lowest deadline task selection
->> > algorithm to O(1)
->>
->> Would you please announce it on LKML?
->
-> First of all let me talk how to do it .We can use 40 list_head instead of
-> the single list for time sharing scheduling policy.
-> Then for task selection we will select the task from these 40
-> list_head(actually not 40, just decide by next_sched_bit), then make a
-> comparsion of these tasks(actually in the worse case we just need to do 40
-> times of comparsion) and pick the lowest task. If a task wake, it would be
-> the first node of (queue + p->prio). If a task run out of its timeslice, it
-> will become the last node of(queue + p->prio). This is a concept of BFS
-> deadline presort algorithm and the time complexity is O(1)
+I'm looking at reducing the interrupt overhead for virtualized guests:
+some workloads spend a large part of their time processing interrupts.
 
-Thank you for shedding light, I will study it soon.
+On kvm, an EOI write from the guest causes an expensive exit to host; we
+avoid this using shared memory.
+
+The patches work fine on my boxes. See individual patches
+for perf tests. You need to patch qemu to whitelist the kvm feature.
+qemu patch was sent separately.
+
+The patches are against a merge of kvm.git (for apic announce bits) and
+tip.git master. The last patch in the series, supplying the host
+part, also depends on the ISR optimization patch that I sent previously:
+changes to optimization would require reworking this last patch
+in the series.
+
+The rest of the patchset has not changed since v2.
+
+Thanks,
+MST
+
+Changes from v4:
+	Turn off PV EOI on each exit. Turn it back on when safe.
+		Suggested by Avi.
+	Address bug with nested interrupts pointed out by Marcelo.
+
+Changes from v3:
+	Address review comments by Marcelo:
+		Multiple cosmetic changes eoi -> pv_eoi
+		Added multiple comments
+Changes from v2:
+	Kill guest with GP on an illegal MSR value
+	Add documentation
+
+Changes from v1:
+	Add host side patch to series
+	Remove kvm-specific __test_and_clear_bit, document
+	that x86 one does what we want already
+	Clear msr on cpu unplug
+
+Michael S. Tsirkin (5):
+  kvm_para: guest side for eoi avoidance
+  x86/bitops: note on __test_and_clear_bit atomicity
+  kvm: eoi msi documentation
+  kvm: only sync when attention bits set
+  kvm: host side for eoi optimization
+
+ Documentation/virtual/kvm/msr.txt |   32 +++++++++
+ arch/x86/include/asm/bitops.h     |   13 +++-
+ arch/x86/include/asm/kvm_host.h   |   12 +++
+ arch/x86/include/asm/kvm_para.h   |    7 ++
+ arch/x86/kernel/kvm.c             |   51 +++++++++++++-
+ arch/x86/kvm/cpuid.c              |    1 +
+ arch/x86/kvm/lapic.c              |  135 +++++++++++++++++++++++++++++++++++-
+ arch/x86/kvm/lapic.h              |    2 +
+ arch/x86/kvm/trace.h              |   34 +++++++++
+ arch/x86/kvm/x86.c                |    8 ++-
+ 10 files changed, 285 insertions(+), 10 deletions(-)
+
+-- 
+MST
