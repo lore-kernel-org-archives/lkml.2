@@ -1,66 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751324Ab2EVEOh (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 May 2012 00:14:37 -0400
-Received: from haggis.pcug.org.au ([203.10.76.10]:60625 "EHLO
-	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750784Ab2EVEOg (ORCPT
+	id S1751454Ab2EVERT (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 May 2012 00:17:19 -0400
+Received: from wolverine02.qualcomm.com ([199.106.114.251]:19493 "EHLO
+	wolverine02.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750963Ab2EVERS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 May 2012 00:14:36 -0400
-Date: Tue, 22 May 2012 14:14:33 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Samuel Ortiz <sameo@linux.intel.com>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Rhyland Klein <rklein@nvidia.com>, Axel Lin <axel.lin@gmail.com>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>
-Subject: linux-next: manual merge of the mfd tree with Linus' tree
-Message-Id: <20120522141433.586338919f5dc802f06bd5c4@canb.auug.org.au>
-X-Mailer: Sylpheed 3.2.0beta7 (GTK+ 2.24.10; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Tue__22_May_2012_14_14_33_+1000_oKwfM+yPbb7gTuYv"
+	Tue, 22 May 2012 00:17:18 -0400
+X-IronPort-AV: E=McAfee;i="5400,1158,6718"; a="191052199"
+Message-ID: <4FBB134D.6050409@codeaurora.org>
+Date: Mon, 21 May 2012 21:17:17 -0700
+From: Stephen Boyd <sboyd@codeaurora.org>
+User-Agent: Mozilla/5.0 (X11; Linux i686 on x86_64; rv:12.0) Gecko/20120428 Thunderbird/12.0.1
+MIME-Version: 1.0
+To: Shawn Guo <shawn.guo@linaro.org>
+CC: Rob Herring <robherring2@gmail.com>,
+        Mike Turquette <mturquette@linaro.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        "arm@kernel.org" <arm@kernel.org>, Shawn Guo <shawn.guo@freescale.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Saravana Kannan <skannan@codeaurora.org>
+Subject: Re: [GIT PULL] DT clk binding support
+References: <4FB80F32.5090309@gmail.com> <20120520030653.GB5810@S2100-06.ap.freescale.net> <4FB9A5E7.2070000@gmail.com> <20120521064901.GE8140@S2101-09.ap.freescale.net> <4FBA89E3.7010106@gmail.com> <20120521232616.GF8140@S2101-09.ap.freescale.net> <4FBAD545.7060803@gmail.com> <20120522021535.GG8140@S2101-09.ap.freescale.net>
+In-Reply-To: <20120522021535.GG8140@S2101-09.ap.freescale.net>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Tue__22_May_2012_14_14_33_+1000_oKwfM+yPbb7gTuYv
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On 05/21/12 19:15, Shawn Guo wrote:
+> On Mon, May 21, 2012 at 06:52:37PM -0500, Rob Herring wrote:
+>> As Grant states: "This proposed binding is only about one thing:
+>> attaching clock providers to clock consumers." This means you have to
+>> have at least a single provider and a single consumer defined in the DT.
+>>
+> I just read through Grant's comments over again.  I agree with the
+> statement which implicitly requires the clk provider defined in DT.
+> However, for some case, this provider in DT is just a skeleton which
+> is backed by clock driver where the provider is actually defined.
+>
+> Looking at Grant's comment below, the second option is also to match
+> the clock in driver just using name.  The only difference to my
+> proposal is the name here is given by the argument of phandle pointing
+> to that skeleton provider node.
+>
+> I'm fine with that.  So go ahead with your bindings.
+>
 
-Hi Samuel,
+Can we do what the regulator framework has done and have a common
+binding of <connection_name>-clk = <&phandle>? Something like:
 
-Today's linux-next merge of the mfd tree got a conflict in
-drivers/regulator/tps65910-regulator.c between commit a40a9c436b62
-("regulator: tps65910: Use generic regmap enable/disable operations")
-from Linus' tree and commit 3f7e82759c69 ("mfd: Commonize tps65910 regmap
-access through header") from the mfd tree.
+    core-clk = <&uart3_clk>
 
-The former removes the routines that the latter updates, so I did that.
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
+and then have clk_get() use the of node of the device passed in to find
+a property named %s-clk and find the clock with the matching phandle.
 
---Signature=_Tue__22_May_2012_14_14_33_+1000_oKwfM+yPbb7gTuYv
-Content-Type: application/pgp-signature
+This looks like it's trying to cover both the end consumers (uart uses
+uart3_clk) and the internal clock tree consumers (a crystal oscillator
+connects to a PLL or a mux has multiple parents). We can certainly use
+these bindings for muxes and internal parent-child relationships but I
+would prefer we use different bindings for consumer bindings that match
+what regulators do today.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
+-- 
+Sent by an employee of the Qualcomm Innovation Center, Inc.
+The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
 
-iQIcBAEBCAAGBQJPuxKpAAoJEECxmPOUX5FEn+oP/j+PiUiJol64HgBDC85/DE0q
-8fPqofsdENAt9QLnCRlJRD4n5EEBYvxeiuEKgfp14YhofuEn7GUBZte+61kfogYP
-/FzRPCt2qKr8o0nm9z20lEPq5Ea9KKYCEjlQpryyZaX9yjSJiKSSr0g+DvGtcbh7
-pJGr/TEXJQ7NkySNDzyZVm/m4BhaFckNhw31INWgAkoXtbqLemRDUDHrrNGV7Mjr
-VTlV2LBCMKhd5chqfatlSsdauMmfdcVWdmKpLZDoDsjZpLPIxwX0C/CKz4N+WcmP
-czZr32UV5hFNMoRMUZDTZCX7U3M/bL8QXEJgU4DRG8rI/q1zFmWEx9qqok4/k9zB
-zD9/UM0dP3fF1M5Mgksxtz9oGeknY+4i9gr2xGkOHoLETSy7+86bjDQ31uAaGY56
-bjVg4NYFqZBo1GSf1sanMvSEVqm9/YfzcwPVKm/pNfo4bcmYvP1EUhV8wyDr1wt9
-3YWkj6u0H06llt4p2cTYIbNQCPuT0PKtjRrj1U6IsZo2lmO94Da05hx90wIXVAgZ
-SZoYMDrKungnrsnpzk5mRd3nG7nEeI2pOCcA2DxjR/1oqrGlq4y8aRGVW91bWeXB
-5sCUHCzO3goOHC48pjPbCYJc4GaWPC1U3UMErnV2N1vCfTAVtWAXi7O5hfad6JC0
-llVL8rtKDZ44wkEXrela
-=PzPn
------END PGP SIGNATURE-----
-
---Signature=_Tue__22_May_2012_14_14_33_+1000_oKwfM+yPbb7gTuYv--
