@@ -1,61 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754957Ab2EVNeM (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 May 2012 09:34:12 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:31484 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751246Ab2EVNeK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 May 2012 09:34:10 -0400
-Date: Tue, 22 May 2012 09:33:56 -0400
-From: Don Zickus <dzickus@redhat.com>
-To: Feng Tang <feng.tang@intel.com>
-Cc: Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <peterz@infradead.org>,
-        x86@kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH]x86, reboot: Fix a warning message triggered by
- stop_other_cpus()
-Message-ID: <20120522133356.GW32472@redhat.com>
-References: <20120522105233.725be041@feng-i7>
+	id S1754752Ab2EVNjN (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 May 2012 09:39:13 -0400
+Received: from flusers.ccur.com ([173.221.59.2]:45420 "EHLO gamx.iccur.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1752184Ab2EVNjL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 May 2012 09:39:11 -0400
+Date: Tue, 22 May 2012 09:38:58 -0400
+From: Joe Korty <joe.korty@ccur.com>
+To: Andi Kleen <andi@firstfloor.org>
+Cc: "stasn77@gmail.com" <stasn77@gmail.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] port jRCU from 3.3 to 3.4
+Message-ID: <20120522133858.GA17487@tsunami.ccur.com>
+Reply-To: Joe Korty <joe.korty@ccur.com>
+References: <20120521184528.GA4145@tsunami.ccur.com>
+ <m2vcjp87mf.fsf@firstfloor.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20120522105233.725be041@feng-i7>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <m2vcjp87mf.fsf@firstfloor.org>
+User-Agent: Mutt/1.5.20 (2009-12-10)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, May 22, 2012 at 10:52:33AM +0800, Feng Tang wrote:
+On Mon, May 21, 2012 at 06:57:44PM -0400, Andi Kleen wrote:
+> Joe Korty <joe.korty@ccur.com> writes:
+> > + *
+> > + * jRCU assumes that the frames are large enough that architecture barrier
+> > + * operations performed in one frame have fully completed by the start of
+> > + * the next.  This period is presumed to be in the tens of microseconds, so
+> > + * it may not be wise to run jRCU at a frame rate under 100 usecs.
 > 
-> The root cause seems to be the default_send_IPI_mask_allbutself_phys()
-> takes quiet some time (I measured it could be several ms) to complete
-> sending NMIs to all the other 23 CPUs, and for HZ=250/1000 system, the
+> This sounds like a very dangerous assumption.
 
-I sent Ingo a patch (which he took in), that reverts this path to interrupts
-again (and NMIs as a fallback if it fails).  The problem will still exist
-I assume though I don't know if it changes the timing characteristics.
+Yeah, I may have to go to a spin lock.  Easy to do, but
+I didn't want the serialization that results.  I figured
+that with a frame rate of 20 - 1000 Hz it wasn't necessary.
 
-> time is long enough for a timer interrupt to happen, which will in
-> turn trigger to kick load balance to a stopped CPU and cause this
-> warning in native_smp_send_reschedule().
-> 
-> So disabling the local irq before stop_other_cpu() can fix this
-> problem (tested 25 times reboot ok), and it is fine as there should
-> be nobody caring the timer interrupt in such reboot stage.
+And of course I may not have fully understood all the
+nuances of barriers and the memory model.  After all,
+spin locks work using pretty much the same techniques and
+they don't suffer from any need to delay.
 
-It seems to be fine.  I just do not know enough about the load balancing
-the timer interrupt does to know if this is the right way to go or not.
-
-So from the shutdown cpu perspective, you are just blocking the interrupt
-from occurring while we shutdown the other cpus, which prevents the load
-balancer from running and seeing cpus disappear beneath it.  Sounds
-reasonable.
-
-Though on the other hand the same interrupt on another cpu might spit out
-the same warning as cpus disappear without notification if it tries to
-reschedule.  Probably rare and the window is probably small as the cpus
-would probably all 'stop' rather quickly.
-
-I don't know.  I guess it is ok.
-
-Cheers,
-Don
+Joe
