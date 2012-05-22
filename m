@@ -1,163 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758688Ab2EVOUf (ORCPT <rfc822;w@1wt.eu>);
+	id S1758719Ab2EVOUl (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 May 2012 10:20:41 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:42576 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756683Ab2EVOUf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 22 May 2012 10:20:35 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:60941 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758416Ab2EVOUR (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 May 2012 10:20:17 -0400
-From: Anton Vorontsov <anton.vorontsov@linaro.org>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Kees Cook <keescook@chromium.org>, Colin Cross <ccross@android.com>,
-        Tony Luck <tony.luck@intel.com>
-Cc: Arnd Bergmann <arnd@arndb.de>, John Stultz <john.stultz@linaro.org>,
-        Shuah Khan <shuahkhan@gmail.com>, arve@android.com,
-        Rebecca Schultz Zavin <rebecca@android.com>,
-        Jesper Juhl <jj@chaosbits.net>, Randy Dunlap <rdunlap@xenotime.net>,
-        Stephen Boyd <sboyd@codeaurora.org>, Thomas Meyer <thomas@m3y3r.de>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Marco Stornelli <marco.stornelli@gmail.com>,
-        WANG Cong <xiyou.wangcong@gmail.com>, linux-kernel@vger.kernel.org,
-        devel@driverdev.osuosl.org, linaro-kernel@lists.linaro.org,
-        patches@linaro.org, kernel-team@android.com
-Subject: [PATCH 06/16] pstore: Add console log messages support
-Date: Tue, 22 May 2012 07:17:49 -0700
-Message-Id: <1337696279-8994-6-git-send-email-anton.vorontsov@linaro.org>
-X-Mailer: git-send-email 1.7.9.2
-In-Reply-To: <20120522141717.GA31574@lizard>
-References: <20120522141717.GA31574@lizard>
+Message-ID: <4FBBA094.3090703@redhat.com>
+Date: Tue, 22 May 2012 17:20:04 +0300
+From: Avi Kivity <avi@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
+MIME-Version: 1.0
+To: Steven Rostedt <rostedt@goodmis.org>
+CC: linux-kernel <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@elte.hu>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>,
+        Paul Turner <pjt@google.com>, Peter Zijlstra <peterz@infradead.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
+Subject: Re: NMI vs #PF clash
+References: <4FBB8C40.6080304@redhat.com>  <1337693441.13348.36.camel@gandalf.stny.rr.com>  <4FBB986F.5030306@redhat.com> <1337695780.13348.41.camel@gandalf.stny.rr.com>
+In-Reply-To: <1337695780.13348.41.camel@gandalf.stny.rr.com>
+Content-Type: text/plain; charset=ISO-8859-15
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Pstore doesn't support logging kernel messages in run-time, it only
-dumps dmesg when kernel oopses/panics. This makes pstore useless for
-debugging hangs caused by HW issues or improper use of HW (e.g.
-weird device inserted -> driver tried to write a reserved bits ->
-SoC hanged. In that case we don't get any messages in the pstore.
+On 05/22/2012 05:09 PM, Steven Rostedt wrote:
+>> > 
+>> > Or we could just have the NMI always restore the cr2 register.
+>> 
+>> IMO that's best.
+> 
+> OK, I can whip up a patch, but I wont push that in till 3.6.
+> 
 
-Therefore, let's add a runtime logging support: PSTORE_TYPE_CONSOLE.
+Thanks.  Something I've noticed is that writing cr2 is slow, so you may
+want to write it only if it has changed (which should be very rare).
 
-Signed-off-by: Anton Vorontsov <anton.vorontsov@linaro.org>
-Acked-by: Kees Cook <keescook@chromium.org>
-Acked-by: Colin Cross <ccross@android.com>
----
- fs/pstore/Kconfig      |    7 +++++++
- fs/pstore/inode.c      |    3 +++
- fs/pstore/platform.c   |   33 +++++++++++++++++++++++++++++++++
- include/linux/pstore.h |    1 +
- 4 files changed, 44 insertions(+)
 
-diff --git a/fs/pstore/Kconfig b/fs/pstore/Kconfig
-index 23ade26..d044de6 100644
---- a/fs/pstore/Kconfig
-+++ b/fs/pstore/Kconfig
-@@ -12,6 +12,13 @@ config PSTORE
- 	   If you don't have a platform persistent store driver,
- 	   say N.
- 
-+config PSTORE_CONSOLE
-+	bool "Log kernel console messages"
-+	depends on PSTORE
-+	help
-+	  When the option is enabled, pstore will log all kernel
-+	  messages, even if no oops or panic happened.
-+
- config PSTORE_RAM
- 	tristate "Log panic/oops to a RAM buffer"
- 	depends on PSTORE
-diff --git a/fs/pstore/inode.c b/fs/pstore/inode.c
-index 49b40ea..fda1331 100644
---- a/fs/pstore/inode.c
-+++ b/fs/pstore/inode.c
-@@ -212,6 +212,9 @@ int pstore_mkfile(enum pstore_type_id type, char *psname, u64 id,
- 	case PSTORE_TYPE_DMESG:
- 		sprintf(name, "dmesg-%s-%lld", psname, id);
- 		break;
-+	case PSTORE_TYPE_CONSOLE:
-+		sprintf(name, "console-%s", psname);
-+		break;
- 	case PSTORE_TYPE_MCE:
- 		sprintf(name, "mce-%s-%lld", psname, id);
- 		break;
-diff --git a/fs/pstore/platform.c b/fs/pstore/platform.c
-index 82c585f..a3f6d96 100644
---- a/fs/pstore/platform.c
-+++ b/fs/pstore/platform.c
-@@ -1,6 +1,7 @@
- /*
-  * Persistent Storage - platform driver interface parts.
-  *
-+ * Copyright (C) 2007-2008 Google, Inc.
-  * Copyright (C) 2010 Intel Corporation <tony.luck@intel.com>
-  *
-  *  This program is free software; you can redistribute it and/or modify
-@@ -22,6 +23,7 @@
- #include <linux/errno.h>
- #include <linux/init.h>
- #include <linux/kmsg_dump.h>
-+#include <linux/console.h>
- #include <linux/module.h>
- #include <linux/pstore.h>
- #include <linux/string.h>
-@@ -156,6 +158,36 @@ static struct kmsg_dumper pstore_dumper = {
- 	.dump = pstore_dump,
- };
- 
-+#ifdef CONFIG_PSTORE_CONSOLE
-+static void pstore_console_write(struct console *con, const char *s, unsigned c)
-+{
-+	const char *e = s + c;
-+
-+	while (s < e) {
-+		if (c > psinfo->bufsize)
-+			c = psinfo->bufsize;
-+		memcpy(psinfo->buf, s, c);
-+		psinfo->write(PSTORE_TYPE_CONSOLE, 0, NULL, 0, c, psinfo);
-+		s += c;
-+		c = e - s;
-+	}
-+}
-+
-+static struct console pstore_console = {
-+	.name	= "pstore",
-+	.write	= pstore_console_write,
-+	.flags	= CON_PRINTBUFFER | CON_ENABLED | CON_ANYTIME,
-+	.index	= -1,
-+};
-+
-+static void pstore_register_console(void)
-+{
-+	register_console(&pstore_console);
-+}
-+#else
-+static void pstore_register_console(void) {}
-+#endif
-+
- /*
-  * platform specific persistent storage driver registers with
-  * us here. If pstore is already mounted, call the platform
-@@ -193,6 +225,7 @@ int pstore_register(struct pstore_info *psi)
- 		pstore_get_records(0);
- 
- 	kmsg_dump_register(&pstore_dumper);
-+	pstore_register_console();
- 
- 	pstore_timer.expires = jiffies + PSTORE_INTERVAL;
- 	add_timer(&pstore_timer);
-diff --git a/include/linux/pstore.h b/include/linux/pstore.h
-index e1461e1..1bd014b 100644
---- a/include/linux/pstore.h
-+++ b/include/linux/pstore.h
-@@ -29,6 +29,7 @@
- enum pstore_type_id {
- 	PSTORE_TYPE_DMESG	= 0,
- 	PSTORE_TYPE_MCE		= 1,
-+	PSTORE_TYPE_CONSOLE	= 2,
- 	PSTORE_TYPE_UNKNOWN	= 255
- };
- 
 -- 
-1.7.9.2
-
+error compiling committee.c: too many arguments to function
