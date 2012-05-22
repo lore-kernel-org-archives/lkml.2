@@ -1,76 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757391Ab2EVDD3 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 May 2012 23:03:29 -0400
-Received: from ozlabs.org ([203.10.76.45]:48759 "EHLO ozlabs.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752889Ab2EVDD0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 May 2012 23:03:26 -0400
-From: Rusty Russell <rusty@rustcorp.com.au>
-To: Thomas Gleixner <tglx@linutronix.de>
-Cc: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
-        LKML <linux-kernel@vger.kernel.org>, linux-arch@vger.kernel.org,
+	id S1757986Ab2EVDET (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 May 2012 23:04:19 -0400
+Received: from haggis.pcug.org.au ([203.10.76.10]:46409 "EHLO
+	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757589Ab2EVDEA (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 21 May 2012 23:04:00 -0400
+Date: Tue, 22 May 2012 13:03:54 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: David Rientjes <rientjes@google.com>
+Cc: LKML <linux-kernel@vger.kernel.org>, linux-next@vger.kernel.org,
+        ppc-dev <linuxppc-dev@lists.ozlabs.org>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
+        "H. Peter Anvin" <hpa@zytor.com>,
         Peter Zijlstra <peterz@infradead.org>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Ingo Molnar <mingo@kernel.org>,
-        Nikunj A Dadhania <nikunj@linux.vnet.ibm.com>,
-        Steven Rostedt <rostedt@goodmis.org>
-Subject: Re: [patch 00/18] SMP: Boot and CPU hotplug refactoring - Part 1
-In-Reply-To: <alpine.LFD.2.02.1205211013440.3231@ionos>
-References: <20120420122120.097464672@linutronix.de> <4F916AF3.7020301@linux.vnet.ibm.com> <alpine.LFD.2.02.1204201602330.2542@ionos> <871ume48ds.fsf@rustcorp.com.au> <alpine.LFD.2.02.1205211013440.3231@ionos>
-User-Agent: Notmuch/0.12 (http://notmuchmail.org) Emacs/23.3.1 (i686-pc-linux-gnu)
-Date: Tue, 22 May 2012 10:23:47 +0930
-Message-ID: <87mx512fz8.fsf@rustcorp.com.au>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+        Lee Schermerhorn <lee.schermerhorn@hp.com>,
+        Linus <torvalds@linux-foundation.org>
+Subject: Re: linux-next: PowerPC boot failures in next-20120521
+Message-Id: <20120522130354.fdb335eb294f4206b4b2fed5@canb.auug.org.au>
+In-Reply-To: <alpine.DEB.2.00.1205211846120.20916@chino.kir.corp.google.com>
+References: <20120522114051.0c9db9a7c2d660bc9e0e1be2@canb.auug.org.au>
+	<alpine.DEB.2.00.1205211846120.20916@chino.kir.corp.google.com>
+X-Mailer: Sylpheed 3.2.0beta7 (GTK+ 2.24.10; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Tue__22_May_2012_13_03_54_+1000_haxAE.AciyWA7TxE"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 21 May 2012 10:25:21 +0200 (CEST), Thomas Gleixner <tglx@linutronix.de> wrote:
-> On Mon, 21 May 2012, Rusty Russell wrote:
-> 
-> > On Fri, 20 Apr 2012 16:18:04 +0200 (CEST), Thomas Gleixner <tglx@linutronix.de> wrote:
-> > > On Fri, 20 Apr 2012, Srivatsa S. Bhat wrote:
-> > > The whole notifier business needs a redesign as well, because we don't
-> > > have a way to express proper dependencies, we add random notifier
-> > > points and the teardown path is ass backwards. The whole thing wants
-> > > to be a tree which can be walked in either direction and from any
-> > > point. Right now we cut the trunk first and keep the single limb up
-> > > with a helicopter and start dismantling it.
-> > 
-> > But there are two ways to do it.  One is to eliminate the need for
-> > callbacks.  The other is to make a full dependency-based callback
-> 
-> What do you mean with fully eliminating the need for callbacks. Do you
-> want to put the necessary bringup/shutdown function calls just in the
-> core code so we get rid of the notifiers or do you have something
-> different in mind ?
+--Signature=_Tue__22_May_2012_13_03_54_+1000_haxAE.AciyWA7TxE
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Eliminate is probably too hard, but with park/unpark I can see it
-getting less common.  Maybe few enough that we can simplify.
+Hi David,
 
-> > Not sure whether calling notifiers in parallel is going to be a big win:
-> > they'll end up fighting over the cpu we're taking down.  But I could be
-> > wrong.
-> 
-> I'm not going to aim for parallel in the first place. That was just an
-> idea and if we chose the right implementation then parallelism can be
-> added later.
+On Mon, 21 May 2012 18:53:37 -0700 (PDT) David Rientjes <rientjes@google.co=
+m> wrote:
+>
+> Yeah, it's sched/numa since that's what introduced numa_init().  It does=
+=20
+> for_each_node() for each node and does a kmalloc_node() even though that=
+=20
+> node may not be online.  Slub ends up passing this node to the page=20
+> allocator through alloc_pages_exact_node().  CONFIG_DEBUG_VM would have=20
+> caught this and your config confirms its not enabled.
+>=20
+> sched/numa either needs a memory hotplug notifier or it needs to pass=20
+> NUMA_NO_NODE for nodes that aren't online.  Until we get the former, the=
+=20
+> following should fix it.
+>=20
+>=20
+> sched, numa: Allocate node_queue on any node for offline nodes
+>=20
+> struct node_queue must be allocated with NUMA_NO_NODE for nodes that are=
+=20
+> not (yet) online, otherwise the page allocator has a bad zonelist.
+>=20
+> Signed-off-by: David Rientjes <rientjes@google.com>
 
-Parallel CPUs going offline/online is probably a bigger win.  Both for
-suspend/resume and powersaving.
+Thanks, that fixes it.
 
-> > The original concept of stopping the machine for cpu hotplug and trying
-> > not to effect any other kernel code has jumped the shark: I think we
-> > need to look seriously at a complete rewrite where we don't use
-> > stop_machine.
-> 
-> Yep. Working on it. :)
+Tested-by: Stephen Rothwell <sfr@canb.auug.org.au>
 
-I thought you might be :)
-
-I'd love to review once you've got something.
-
+--=20
 Cheers,
-Rusty.
+Stephen Rothwell                    sfr@canb.auug.org.au
+
+--Signature=_Tue__22_May_2012_13_03_54_+1000_haxAE.AciyWA7TxE
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBCAAGBQJPuwIaAAoJEECxmPOUX5FEoj8P/izwzpFzKBIxDEt4t+Nx8b5a
+KEHdgnB0XA7jd6W5O5cr+QikpYBqoZso1iSzO72bLcDgG3hSiX2yuXexFNCerVfI
+nKFZtsbyZ2G5NhZKaQFdglMtTpAraUBVoJevEF3bB/miijBgK4cnDgwVpX0mKlFd
+QL3SBgEoUVBF7Qdy8HQD204fqO015ykQyTn6flsWA/S7eVEQ07eOhsFCY5NhwDHb
+V8h++WCvdrdSd/HyiIlgJMM3SOIjcd0SrbklIaR0wk2mAXyj7Tvz96WOwad4WR4Z
+SMt3DityCY6oS/QR1Bd5zcNTDz8FKd8adPM8JyyGSx9AwLu6tSAf8toEadncRLTp
+LdMm+aoysJCX9fEJNwC9n8w14ubTSyvP0135MZythF3RW27yKuOgaJ5P3BgGhn/I
+8ZpukpHLfMlWWT2jrSCJt63fjyCi4++SSFk7lZPHZTvgNns/LQjBeVkwZH3IJUux
+NXzqpGFlgrjpiS/mYRZyL6tY9Z71cI141PUPPfPUwBLi8F2So9dAHRM6krsKjvY4
+9FMzW+ax5Slnt1Q/7+ajcODC+UFfYDAtanwszAdKYfTRQxTIj9Gnmx8WhdBkFdz9
+UtKsxXe5yyo2t4s/kyPX3aOIRmzZYp6xgcRpkLblcXf6mNVd2vGj/ozR7KNTSH/2
+JinIuO9RyoOq4VwvtALM
+=BcqL
+-----END PGP SIGNATURE-----
+
+--Signature=_Tue__22_May_2012_13_03_54_+1000_haxAE.AciyWA7TxE--
