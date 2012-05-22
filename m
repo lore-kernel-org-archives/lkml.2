@@ -1,83 +1,149 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757555Ab2EVJuh (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 May 2012 05:50:37 -0400
-Received: from mga02.intel.com ([134.134.136.20]:48937 "EHLO mga02.intel.com"
+	id S1751513Ab2EVJ4F (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 May 2012 05:56:05 -0400
+Received: from mailhub.sw.ru ([195.214.232.25]:5405 "EHLO relay.sw.ru"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751247Ab2EVJuf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 May 2012 05:50:35 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.67,351,1309762800"; 
-   d="scan'208";a="146852262"
-Message-ID: <4FBB6105.2060808@intel.com>
-Date: Tue, 22 May 2012 17:48:53 +0800
-From: "kun.jiang" <kunx.jiang@intel.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.28) Gecko/20120313 Thunderbird/3.1.20
-MIME-Version: 1.0
-To: netdev@vger.kernel.org, linux-kernel@vger.kernel.org
-CC: davem@davemloft.net, yanmin_zhang@linux.intel.com
-Subject: [PATCH] ipv4: fix the rcu race between free_fib_info and ip_route_output_slow
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	id S1751849Ab2EVJ4D (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 May 2012 05:56:03 -0400
+From: Glauber Costa <glommer@parallels.com>
+To: <linux-kernel@vger.kernel.org>
+Cc: <cgroups@vger.kernel.org>, <linux-mm@kvack.org>,
+        Glauber Costa <glommer@parallels.com>,
+        Christoph Lameter <cl@linux.com>,
+        Pekka Enberg <penberg@cs.helsinki.fi>,
+        David Rientjes <rientjes@google.com>
+Subject: [PATCH v2] slab+slob: dup name string
+Date: Tue, 22 May 2012 13:51:38 +0400
+Message-Id: <1337680298-11929-1-git-send-email-glommer@parallels.com>
+X-Mailer: git-send-email 1.7.7.6
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Yanmin Zhang <yanmin_zhang@linux.intel.com>
+The slub allocator creates a copy of the name string, and
+frees it later. I would like all caches to behave the same,
+whether it is the slab+slob starting to create a copy of it itself,
+or the slub ceasing to.
 
-We hit a kernel OOPS.
+This patch creates copies of the name string for slob and slab,
+adopting slub behavior for them all.
 
-<3>[23898.789643] BUG: sleeping function called from invalid context at
-/data/buildbot/workdir/ics/hardware/intel/linux-2.6/arch/x86/mm/fault.c:1103
-<3>[23898.862215] in_atomic(): 0, irqs_disabled(): 0, pid: 10526, name:
-Thread-6683
-<4>[23898.967805] HSU serial 0000:00:05.1: 0000:00:05.2:HSU serial prevented me
-to suspend...
-<4>[23899.258526] Pid: 10526, comm: Thread-6683 Tainted: G        W
-3.0.8-137685-ge7742f9 #1
-<4>[23899.357404] HSU serial 0000:00:05.1: 0000:00:05.2:HSU serial prevented me
-to suspend...
-<4>[23899.904225] Call Trace:
-<4>[23899.989209]  [<c1227f50>] ? pgtable_bad+0x130/0x130
-<4>[23900.000416]  [<c1238c2a>] __might_sleep+0x10a/0x110
-<4>[23900.007357]  [<c1228021>] do_page_fault+0xd1/0x3c0
-<4>[23900.013764]  [<c18e9ba9>] ? restore_all+0xf/0xf
-<4>[23900.024024]  [<c17c007b>] ? napi_complete+0x8b/0x690
-<4>[23900.029297]  [<c1227f50>] ? pgtable_bad+0x130/0x130
-<4>[23900.123739]  [<c1227f50>] ? pgtable_bad+0x130/0x130
-<4>[23900.128955]  [<c18ea0c3>] error_code+0x5f/0x64
-<4>[23900.133466]  [<c1227f50>] ? pgtable_bad+0x130/0x130
-<4>[23900.138450]  [<c17f6298>] ? __ip_route_output_key+0x698/0x7c0
-<4>[23900.144312]  [<c17f5f8d>] ? __ip_route_output_key+0x38d/0x7c0
-<4>[23900.150730]  [<c17f63df>] ip_route_output_flow+0x1f/0x60
-<4>[23900.156261]  [<c181de58>] ip4_datagram_connect+0x188/0x2b0
-<4>[23900.161960]  [<c18e981f>] ? _raw_spin_unlock_bh+0x1f/0x30
-<4>[23900.167834]  [<c18298d6>] inet_dgram_connect+0x36/0x80
-<4>[23900.173224]  [<c14f9e88>] ? _copy_from_user+0x48/0x140
-<4>[23900.178817]  [<c17ab9da>] sys_connect+0x9a/0xd0
-<4>[23900.183538]  [<c132e93c>] ? alloc_file+0xdc/0x240
-<4>[23900.189111]  [<c123925d>] ? sub_preempt_count+0x3d/0x50
+For the slab, we can't really do it before the kmalloc caches are
+up. So we manually do it before the end of EARLY phase, and conditionally
+do it for the caches created afterwards.
 
-In function free_fib_info, we don't reset nexthop_nh->nh_dev to NULL before releasing
-nh_dev. kfree_rcu(fi, rcu) would release the whole area.
+[ v2: Also dup string for early caches, requested by David Rientjes ]
 
-Signed-off-by: Yanmin Zhang <yanmin_zhang@linux.intel.com>
-Signed-off-by: Kun Jiang <kunx.jiang@intel.com>
+Signed-off-by: Glauber Costa <glommer@parallels.com>
+CC: Christoph Lameter <cl@linux.com>
+CC: Pekka Enberg <penberg@cs.helsinki.fi>
+CC: David Rientjes <rientjes@google.com>
 ---
- net/ipv4/fib_semantics.c |    1 -
- 1 files changed, 0 insertions(+), 1 deletions(-)
+ mm/slab.c |   37 +++++++++++++++++++++++++++++++++++--
+ mm/slob.c |   12 ++++++++++--
+ 2 files changed, 45 insertions(+), 4 deletions(-)
 
-diff --git a/net/ipv4/fib_semantics.c b/net/ipv4/fib_semantics.c
-index 5063fa3..68ea013 100644
---- a/net/ipv4/fib_semantics.c
-+++ b/net/ipv4/fib_semantics.c
-@@ -159,7 +159,6 @@ void free_fib_info(struct fib_info *fi)
- 	change_nexthops(fi) {
- 		if (nexthop_nh->nh_dev)
- 			dev_put(nexthop_nh->nh_dev);
--		nexthop_nh->nh_dev = NULL;
- 	} endfor_nexthops(fi);
- 	fib_info_cnt--;
- 	release_net(fi->fib_net);
+diff --git a/mm/slab.c b/mm/slab.c
+index e901a36..fe05f8bf 100644
+--- a/mm/slab.c
++++ b/mm/slab.c
+@@ -1676,6 +1676,33 @@ void __init kmem_cache_init(void)
+ 		}
+ 	}
+ 
++	/*
++	 * create a copy of all the name strings for early caches. This is
++	 * so deleting those caches will work in a consistent way. We don't
++	 * expect allocation failures this early in the process, just make sure
++	 * they didn't happen.
++	 */
++	sizes = malloc_sizes;
++
++	while (sizes->cs_size != ULONG_MAX) {
++		struct kmem_cache *cachep;
++
++		cachep = sizes->cs_cachep;
++		if (cachep) {
++			cachep->name = kstrdup(cachep->name, GFP_NOWAIT);
++			BUG_ON(!cachep->name);
++		}
++
++		cachep = sizes->cs_dmacachep;
++		if (cachep) {
++			cachep->name = kstrdup(cachep->name, GFP_NOWAIT);
++			BUG_ON(!cachep->name);
++		}
++		sizes++;
++	}
++
++	cache_cache.name = kstrdup(cache_cache.name, GFP_NOWAIT);
++	BUG_ON(!cache_cache.name);
+ 	g_cpucache_up = EARLY;
+ }
+ 
+@@ -2118,6 +2145,7 @@ static void __kmem_cache_destroy(struct kmem_cache *cachep)
+ 			kfree(l3);
+ 		}
+ 	}
++	kfree(cachep->name);
+ 	kmem_cache_free(&cache_cache, cachep);
+ }
+ 
+@@ -2526,9 +2554,14 @@ kmem_cache_create (const char *name, size_t size, size_t align,
+ 		BUG_ON(ZERO_OR_NULL_PTR(cachep->slabp_cache));
+ 	}
+ 	cachep->ctor = ctor;
+-	cachep->name = name;
+ 
+-	if (setup_cpu_cache(cachep, gfp)) {
++	/* Can't do strdup while kmalloc is not up */
++	if (slab_is_available())
++		cachep->name = kstrdup(name, GFP_KERNEL);
++	else
++		cachep->name = name;
++
++	if (!cachep->name || setup_cpu_cache(cachep, gfp)) {
+ 		__kmem_cache_destroy(cachep);
+ 		cachep = NULL;
+ 		goto oops;
+diff --git a/mm/slob.c b/mm/slob.c
+index 8105be4..8f10d36 100644
+--- a/mm/slob.c
++++ b/mm/slob.c
+@@ -575,7 +575,12 @@ struct kmem_cache *kmem_cache_create(const char *name, size_t size,
+ 		GFP_KERNEL, ARCH_KMALLOC_MINALIGN, -1);
+ 
+ 	if (c) {
+-		c->name = name;
++		c->name = kstrdup(name, GFP_KERNEL);
++		if (!c->name) {
++			slob_free(c, sizeof(struct kmem_cache));
++			c = NULL;
++			goto out;
++		}
+ 		c->size = size;
+ 		if (flags & SLAB_DESTROY_BY_RCU) {
+ 			/* leave room for rcu footer at the end of object */
+@@ -589,7 +594,9 @@ struct kmem_cache *kmem_cache_create(const char *name, size_t size,
+ 			c->align = ARCH_SLAB_MINALIGN;
+ 		if (c->align < align)
+ 			c->align = align;
+-	} else if (flags & SLAB_PANIC)
++	}
++out:
++	if (!c && (flags & SLAB_PANIC))
+ 		panic("Cannot create slab cache %s\n", name);
+ 
+ 	kmemleak_alloc(c, sizeof(struct kmem_cache), 1, GFP_KERNEL);
+@@ -602,6 +609,7 @@ void kmem_cache_destroy(struct kmem_cache *c)
+ 	kmemleak_free(c);
+ 	if (c->flags & SLAB_DESTROY_BY_RCU)
+ 		rcu_barrier();
++	kfree(c->name);
+ 	slob_free(c, sizeof(struct kmem_cache));
+ }
+ EXPORT_SYMBOL(kmem_cache_destroy);
 -- 
-1.7.1
+1.7.7.6
+
