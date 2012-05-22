@@ -1,94 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755810Ab2EVIT6 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 May 2012 04:19:58 -0400
-Received: from mga09.intel.com ([134.134.136.24]:57203 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752921Ab2EVIT4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 May 2012 04:19:56 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.67,352,1309762800"; 
-   d="asc'?scan'208";a="143216726"
-Message-ID: <1337675012.2483.134.camel@sauron.fi.intel.com>
-Subject: Re: [PATCH 1/7] [RFC] UBI: Export next_sqnum()
-From: Artem Bityutskiy <dedekind1@gmail.com>
-Reply-To: dedekind1@gmail.com
-To: Richard Weinberger <richard@nod.at>
-Cc: linux-mtd@lists.infradead.org, tglx@linutronix.de,
-        linux-kernel@vger.kernel.org, Heinz.Egger@linutronix.de,
-        tim.bird@am.sony.com
-Date: Tue, 22 May 2012 11:23:32 +0300
-In-Reply-To: <4FBA4E52.8090807@nod.at>
-References: <1337101871-31181-1-git-send-email-richard@nod.at>
-	   <1337101871-31181-2-git-send-email-richard@nod.at>
-	  <1337173272.24809.52.camel@sauron.fi.intel.com> <4FBA4448.20509@nod.at>
-	 <1337608854.2483.71.camel@sauron.fi.intel.com> <4FBA4E52.8090807@nod.at>
-Content-Type: multipart/signed; micalg="pgp-sha1"; protocol="application/pgp-signature";
-	boundary="=-TdXLqYx0T3LghYwGMbZS"
-X-Mailer: Evolution 3.2.3 (3.2.3-3.fc16) 
+	id S1756068Ab2EVIVF (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 May 2012 04:21:05 -0400
+Received: from haggis.pcug.org.au ([203.10.76.10]:33157 "EHLO
+	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755878Ab2EVIUQ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 May 2012 04:20:16 -0400
+Date: Tue, 22 May 2012 18:20:10 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: "David S. Miller" <davem@davemloft.net>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: linux-next: build failure after merge of the final tree
+Message-Id: <20120522182010.f93a38e575ed34e88de5b787@canb.auug.org.au>
+X-Mailer: Sylpheed 3.2.0beta7 (GTK+ 2.24.10; i486-pc-linux-gnu)
 Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Tue__22_May_2012_18_20_10_+1000_QVze=VO6dbtv85c7"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
---=-TdXLqYx0T3LghYwGMbZS
-Content-Type: text/plain; charset="UTF-8"
+--Signature=_Tue__22_May_2012_18_20_10_+1000_QVze=VO6dbtv85c7
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
 Content-Transfer-Encoding: quoted-printable
 
-On Mon, 2012-05-21 at 16:16 +0200, Richard Weinberger wrote:
-> > It still contains EC and VID headers. So you can use the existing code
-> > for scanning it.
->=20
-> I use already ubi_io_read_vid_hdr() and ubi_io_read_ec_hdr() what should=
-=20
-> I reuse?
+Hi all,
 
-As I wrote: 'process_eb()'. Now it is named 'scan_peb()' after the
-renames.
+After merging the final tree, today's linux-next build (sparc32 defconfig)
+failed like this:
 
-It does all the work to scan PEB headers. Create a _separate_ 'struct
-ubi_attach_info' run 'scan_peb()' for each PEB of the fastmap. Check for
-errors, and sanity (all headers are there, no errors, etc, may be an
-extra self-check function would be appropriate here). Then go through
-the resulting fastmap volume attach info, read and process the fastmap
-_contents_. Of course you need the second (real) attach info for the
-data you read from the fastmep. This is what I call "reuse the existing"
-code.
+arch/sparc/kernel/time_32.c: In function 'timer_interrupt':
+arch/sparc/kernel/time_32.c:105:3: error: invalid use of undefined type 'st=
+ruct clock_event_device'
+arch/sparc/kernel/time_32.c: At top level:
+arch/sparc/kernel/time_32.c:111:17: error: 'enum clock_event_mode' declared=
+ inside parameter list [-Werror]
+arch/sparc/kernel/time_32.c:111:17: error: its scope is only this definitio=
+n or declaration, which is probably not what you want [-Werror]
+arch/sparc/kernel/time_32.c:110:53: error: parameter 1 ('mode') has incompl=
+ete type
+arch/sparc/kernel/time_32.c:110:13: error: function declaration isn't a pro=
+totype [-Werror=3Dstrict-prototypes]
+arch/sparc/kernel/time_32.c: In function 'timer_ce_set_mode':
+arch/sparc/kernel/time_32.c:114:8: error: 'CLOCK_EVT_MODE_PERIODIC' undecla=
+red (first use in this function)
+arch/sparc/kernel/time_32.c:114:8: note: each undeclared identifier is repo=
+rted only once for each function it appears in
+arch/sparc/kernel/time_32.c:115:8: error: 'CLOCK_EVT_MODE_RESUME' undeclare=
+d (first use in this function)
+arch/sparc/kernel/time_32.c:118:8: error: 'CLOCK_EVT_MODE_SHUTDOWN' undecla=
+red (first use in this function)
+arch/sparc/kernel/time_32.c: In function 'setup_timer_ce':
+arch/sparc/kernel/time_32.c:133:4: error: dereferencing pointer to incomple=
+te type
+arch/sparc/kernel/time_32.c:134:4: error: dereferencing pointer to incomple=
+te type
+arch/sparc/kernel/time_32.c:135:4: error: dereferencing pointer to incomple=
+te type
+arch/sparc/kernel/time_32.c:135:17: error: 'CLOCK_EVT_FEAT_PERIODIC' undecl=
+ared (first use in this function)
+arch/sparc/kernel/time_32.c:136:4: error: dereferencing pointer to incomple=
+te type
+arch/sparc/kernel/time_32.c:137:4: error: dereferencing pointer to incomple=
+te type
+arch/sparc/kernel/time_32.c:138:4: error: dereferencing pointer to incomple=
+te type
+arch/sparc/kernel/time_32.c:139:4: error: dereferencing pointer to incomple=
+te type
+arch/sparc/kernel/time_32.c:139:2: error: implicit declaration of function =
+'div_sc' [-Werror=3Dimplicit-function-declaration]
+arch/sparc/kernel/time_32.c:140:26: error: dereferencing pointer to incompl=
+ete type
+arch/sparc/kernel/time_32.c:141:2: error: implicit declaration of function =
+'clockevents_register_device' [-Werror=3Dimplicit-function-declaration]
 
-How does this sound to you?
-
-> Also checking the image sequence would make sense.
-
-Yes, you should check everything. If you reuse the code, you will get
-this automatically, no?
-
+I have no idea what caused this, I did not get this yesterday.  I have
+left this build broken for today.
 --=20
-Best Regards,
-Artem Bityutskiy
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
 
---=-TdXLqYx0T3LghYwGMbZS
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: This is a digitally signed message part
-Content-Transfer-Encoding: 7bit
+--Signature=_Tue__22_May_2012_18_20_10_+1000_QVze=VO6dbtv85c7
+Content-Type: application/pgp-signature
 
 -----BEGIN PGP SIGNATURE-----
 Version: GnuPG v1.4.12 (GNU/Linux)
 
-iQIcBAABAgAGBQJPu00EAAoJECmIfjd9wqK05zwP/R1/T6PVHezeQQ95GNpuCr2p
-C/feBkPc12fHJuiPXUXKjAaGGVRdrZ481lPvoyDbrg4Hjg1tTXxWk25xg0FiAvUW
-O/x42aJGT3x65FoyR63ztNvBTKC3CSYAM2WwS09rmtksCYe8FI/JPCqfV8Y9HbBz
-Gx/eqcUyGuFG9eWdtmyMyhwJLQGzxS4x8z6TZzk9ibH1UiZVe6OGELZ+e7gw3DR0
-LOicWx4W6wJXe1wRI7+W/QnwDdFV2gHvB3XO9zWVtvf6hQrgj0xZJHaoQeo7sopq
-0tbCw/KaQjZL9uEmUCrThRxaLgd6ecCPiPQF6w11n7SjkUbW4R75gmI0lIxRAzAa
-brp7bAG3SLfVGCKvo7LKAzBFg21zVwOrMYihD+e3EfQSG1rTmJ8hLUElrwPO2enf
-z2AhyKPctAlbdJzYpnMCfk68vJL7X58nf0RTHksP0cykzxgJiTvomHasxH7DeHdQ
-8jSBQjS+c3KB00+4yIAw6rITX8oqAldNEp5zTQ5BhwymT9rWRmJXxpHeH09daUZf
-3s0lvhhW7s5l5zaieZjggugf73Qloi6HHI6g3IdZqpyUDypj0ErfZ7YJNGEFv4yV
-O7Z88IP4dliuV2KaQ2tg69TWS7bOAJ1RRtj7tNiMTcmANSvCh2bxP6nolOOFLVC4
-D9+7EOdMf7PCI5iWplHy
-=+RF9
+iQIcBAEBCAAGBQJPu0w6AAoJEECxmPOUX5FEQcIP/2LqXcoQ455Y/1F4tWzrnIkD
+C6/hW3hPbxqJyzn6EGVjFML5/4VjbgHVERO1Uk4EE5yVsTJnuEFl+fB4taYnUDEj
+5WA7255MFLaYokBVzqZYMSkKQo7hCCWPqRVp3BGReckoxhScGFSF5yVom3xHXjC9
+6ryU1jwF7Nti8Y8gPnUKHdq97oKtfYuJqwkv6PFGit/WLAZKGh7MYK6vFZDKEEp1
++4fu6GXFNJuSfHbSvDlj+z+qtKX9cMSw2pIOBLZd0sBFJ+/u/7s3jjQykIyvN0j8
+GtA4MdEB5iXwxHTuqKN4uhRP4I91tMv3jtzBIpQ3MtCfMyoM3o8T4TB64fxyTgqL
+NTUvhs+2s2kByOypCvzzXUza4vaChOhbEpXtdVro0iNUvDbKi+vOnxsL4Nc/1Q2a
+YgeQURXYXcDzr+YDzMcR3Yb7txbVo5SLKjm/yZrRx3ChlBC19seTKuMiziF2ROja
+5FJAsK6MN0G3Mq83t3oH7H2JHOD49fKjQPPHJIBQwO+/bnYewxRcS31MB2Ha6q2G
+2cj2aY/nezjBM6gWOOOt+9GM4RIwN+Fx/vvcUOiTbdyDr//C8Bxr2fy9fmLLaOC0
+WuG0hqtjh50EaGEptgWIm1nFrGfTrmWv2uNr+Z4kYiKhF6y/h8UUwN3z4yjOUC94
+o6ENkBnldQR2fmE0DIde
+=HIpd
 -----END PGP SIGNATURE-----
 
---=-TdXLqYx0T3LghYwGMbZS--
-
+--Signature=_Tue__22_May_2012_18_20_10_+1000_QVze=VO6dbtv85c7--
