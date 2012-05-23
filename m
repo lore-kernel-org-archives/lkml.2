@@ -1,66 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933560Ab2EWO7O (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 May 2012 10:59:14 -0400
-Received: from nat28.tlf.novell.com ([130.57.49.28]:53219 "EHLO
-	nat28.tlf.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756730Ab2EWO7N convert rfc822-to-8bit (ORCPT
-	<rfc822;groupwise-linux-kernel@vger.kernel.org:17:1>);
-	Wed, 23 May 2012 10:59:13 -0400
-Message-Id: <4FBD157602000078000858F7@nat28.tlf.novell.com>
-X-Mailer: Novell GroupWise Internet Agent 12.0.0 
-Date: Wed, 23 May 2012 15:51:02 +0100
-From: "Jan Beulich" <JBeulich@suse.com>
-To: "Alex Shi" <alex.shi@intel.com>
-Cc: <borislav.petkov@amd.com>, <arnd@arndb.de>, <a.p.zijlstra@chello.nl>,
-        <akinobu.mita@gmail.com>, <eric.dumazet@gmail.com>,
-        <fweisbec@gmail.com>, <rostedt@goodmis.org>, <hughd@google.com>,
-        <jeremy@goop.org>, <len.brown@intel.com>, <tony.luck@intel.com>,
-        <yongjie.ren@intel.com>, <kamezawa.hiroyu@jp.fujitsu.com>,
-        <seto.hidetoshi@jp.fujitsu.com>, <penberg@kernel.org>,
-        <yinghai@kernel.org>, <tglx@linutronix.de>,
-        <akpm@linux-foundation.org>, <ak@linux.intel.com>, <luto@mit.edu>,
-        <avi@redhat.com>, <dhowells@redhat.com>, <mingo@redhat.com>,
-        <riel@redhat.com>, <cpw@sgi.com>, <steiner@sgi.com>,
-        <linux-kernel@vger.kernel.org>, <viro@zeniv.linux.org.uk>,
-        <hpa@zytor.com>
-Subject: Re: [PATCH v7 2/8] x86/flush_tlb: try flush_tlb_single one by
- one in flush_tlb_range
-References: <1337782555-8088-1-git-send-email-alex.shi@intel.com>
- <1337782555-8088-3-git-send-email-alex.shi@intel.com>
-In-Reply-To: <1337782555-8088-3-git-send-email-alex.shi@intel.com>
+	id S933617Ab2EWO7g (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 May 2012 10:59:36 -0400
+Received: from mail-gg0-f174.google.com ([209.85.161.174]:63709 "EHLO
+	mail-gg0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933562Ab2EWO7d (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 23 May 2012 10:59:33 -0400
+Message-ID: <1337785166.12699.3.camel@phoenix>
+Subject: [PATCH 1/2] regulator: wm8350: Convert wm8350_dcdc_ops to
+ regulator_list_voltage_linear
+From: Axel Lin <axel.lin@gmail.com>
+To: linux-kernel@vger.kernel.org
+Cc: Liam Girdwood <lrg@ti.com>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>
+Date: Wed, 23 May 2012 22:59:26 +0800
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.2- 
+Content-Transfer-Encoding: 7bit
 Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 8BIT
-Content-Disposition: inline
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->>> On 23.05.12 at 16:15, Alex Shi <alex.shi@intel.com> wrote:
-> @@ -1269,11 +1270,11 @@ static void xen_flush_tlb_others(const struct cpumask *cpus,
->  	cpumask_and(to_cpumask(args->mask), cpus, cpu_online_mask);
->  	cpumask_clear_cpu(smp_processor_id(), to_cpumask(args->mask));
->  
-> -	if (va == TLB_FLUSH_ALL) {
-> +	if (start == TLB_FLUSH_ALL) {
->  		args->op.cmd = MMUEXT_TLB_FLUSH_MULTI;
->  	} else {
->  		args->op.cmd = MMUEXT_INVLPG_MULTI;
-> -		args->op.arg1.linear_addr = va;
-> +		args->op.arg1.linear_addr = start;
->  	}
->  
->  	MULTI_mmuext_op(mcs.mc, &args->op, 1, NULL, DOMID_SELF);
+Signed-off-by: Axel Lin <axel.lin@gmail.com>
+---
+ drivers/regulator/wm8350-regulator.c |   18 +++++++++---------
+ 1 files changed, 9 insertions(+), 9 deletions(-)
 
-Unless there is an implicit assumption that 'start' and 'end' are on
-the same page (which I doubt, as then it would be pointless to
-add 'end' here), this one is definitely wrong - you'd either have
-to issue multiple MMUEXT_INVLPG_MULTI-s, or you'd have to
-also use MMUEXT_TLB_FLUSH_MULTI for the multi-page case.
+diff --git a/drivers/regulator/wm8350-regulator.c b/drivers/regulator/wm8350-regulator.c
+index 94e550d..6d143a918 100644
+--- a/drivers/regulator/wm8350-regulator.c
++++ b/drivers/regulator/wm8350-regulator.c
+@@ -433,14 +433,6 @@ static int wm8350_dcdc_get_voltage_sel(struct regulator_dev *rdev)
+ 	return wm8350_reg_read(wm8350, volt_reg) & WM8350_DC1_VSEL_MASK;
+ }
+ 
+-static int wm8350_dcdc_list_voltage(struct regulator_dev *rdev,
+-				    unsigned selector)
+-{
+-	if (selector > WM8350_DCDC_MAX_VSEL)
+-		return -EINVAL;
+-	return wm8350_dcdc_val_to_mvolts(selector) * 1000;
+-}
+-
+ static int wm8350_dcdc_set_suspend_voltage(struct regulator_dev *rdev, int uV)
+ {
+ 	struct wm8350 *wm8350 = rdev_get_drvdata(rdev);
+@@ -1226,7 +1218,7 @@ static int wm8350_ldo_is_enabled(struct regulator_dev *rdev)
+ static struct regulator_ops wm8350_dcdc_ops = {
+ 	.set_voltage = wm8350_dcdc_set_voltage,
+ 	.get_voltage_sel = wm8350_dcdc_get_voltage_sel,
+-	.list_voltage = wm8350_dcdc_list_voltage,
++	.list_voltage = regulator_list_voltage_linear,
+ 	.enable = wm8350_dcdc_enable,
+ 	.disable = wm8350_dcdc_disable,
+ 	.get_mode = wm8350_dcdc_get_mode,
+@@ -1277,6 +1269,8 @@ static const struct regulator_desc wm8350_reg[NUM_WM8350_REGULATORS] = {
+ 		.irq = WM8350_IRQ_UV_DC1,
+ 		.type = REGULATOR_VOLTAGE,
+ 		.n_voltages = WM8350_DCDC_MAX_VSEL + 1,
++		.min_uV = 850000,
++		.uV_step = 25000,
+ 		.owner = THIS_MODULE,
+ 	},
+ 	{
+@@ -1294,6 +1288,8 @@ static const struct regulator_desc wm8350_reg[NUM_WM8350_REGULATORS] = {
+ 		.irq = WM8350_IRQ_UV_DC3,
+ 		.type = REGULATOR_VOLTAGE,
+ 		.n_voltages = WM8350_DCDC_MAX_VSEL + 1,
++		.min_uV = 850000,
++		.uV_step = 25000,
+ 		.owner = THIS_MODULE,
+ 	},
+ 	{
+@@ -1303,6 +1299,8 @@ static const struct regulator_desc wm8350_reg[NUM_WM8350_REGULATORS] = {
+ 		.irq = WM8350_IRQ_UV_DC4,
+ 		.type = REGULATOR_VOLTAGE,
+ 		.n_voltages = WM8350_DCDC_MAX_VSEL + 1,
++		.min_uV = 850000,
++		.uV_step = 25000,
+ 		.owner = THIS_MODULE,
+ 	},
+ 	{
+@@ -1320,6 +1318,8 @@ static const struct regulator_desc wm8350_reg[NUM_WM8350_REGULATORS] = {
+ 		.irq = WM8350_IRQ_UV_DC6,
+ 		.type = REGULATOR_VOLTAGE,
+ 		.n_voltages = WM8350_DCDC_MAX_VSEL + 1,
++		.min_uV = 850000,
++		.uV_step = 25000,
+ 		.owner = THIS_MODULE,
+ 	},
+ 	{
+-- 
+1.7.5.4
 
-The same would appear to apply to the UV case, albeit I don't
-know enough about that code to be certain.
 
-Jan
 
