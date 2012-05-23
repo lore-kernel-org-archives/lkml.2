@@ -1,88 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752276Ab2EWWUP (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 May 2012 18:20:15 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:60716 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750739Ab2EWWUM (ORCPT
+	id S1752054Ab2EWWWu (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 May 2012 18:22:50 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:64612 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750739Ab2EWWWs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 May 2012 18:20:12 -0400
-Date: Wed, 23 May 2012 15:20:11 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Nathan Zimmer <nzimmer@sgi.com>
-Cc: Hugh Dickins <hughd@google.com>, Nick Piggin <npiggin@gmail.com>,
-        Christoph Lameter <cl@linux.com>,
-        Lee Schermerhorn <lee.schermerhorn@hp.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        "stable@vger.kernel.org" <stable@vger.kernel.org>
-Subject: Re: [PATCH] tmpfs not interleaving properly
-Message-Id: <20120523152011.3b581761.akpm@linux-foundation.org>
-In-Reply-To: <74F10842A85F514CA8D8C487E74474BB2C1597@P-EXMB1-DC21.corp.sgi.com>
-References: <74F10842A85F514CA8D8C487E74474BB2C1597@P-EXMB1-DC21.corp.sgi.com>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Wed, 23 May 2012 18:22:48 -0400
+Date: Wed, 23 May 2012 15:22:42 -0700
+From: Tejun Heo <tj@kernel.org>
+To: Sasha Levin <levinsasha928@gmail.com>
+Cc: Li Zefan <lizefan@huawei.com>, containers@lists.linux-foundation.org,
+        cgroups@vger.kernel.org, linux-kernel@vger.kernel.org,
+        fweisbec@gmail.com, rni@google.com, ctalbott@google.com,
+        Vivek Goyal <vgoyal@redhat.com>, Johannes Weiner <hannes@cmpxchg.org>,
+        Michal Hocko <mhocko@suse.cz>, Balbir Singh <bsingharora@gmail.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Subject: Re: [PATCH 2/2] cgroup: make css->refcnt clearing on cgroup removal
+ optional
+Message-ID: <20120523222242.GD3933@htj.dyndns.org>
+References: <20120330223423.GJ28934@google.com>
+ <20120330223606.GK28934@google.com>
+ <4F77B6BA.4070207@huawei.com>
+ <20120401185430.GA9230@dhcp-172-17-108-109.mtv.corp.google.com>
+ <CA+1xoqe5hMuxzCRhMy7J0XchDk2ZnuxOHJKikROk1-ReAzcT6g@mail.gmail.com>
+ <20120518175548.GM19388@google.com>
+ <CA+1xoqfr5aaGbxoX3YKrJHXTjU9fWSbX_xbuEOU=4K7kMay6XQ@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CA+1xoqfr5aaGbxoX3YKrJHXTjU9fWSbX_xbuEOU=4K7kMay6XQ@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 23 May 2012 13:28:21 +0000
-Nathan Zimmer <nzimmer@sgi.com> wrote:
+Hello, Sasha.
 
-> 
-> When tmpfs has the memory policy interleaved it always starts allocating at each file at node 0.
-> When there are many small files the lower nodes fill up disproportionately.
-> My proposed solution is to start a file at a randomly chosen node.
-> 
-> ...
->
-> --- a/include/linux/shmem_fs.h
-> +++ b/include/linux/shmem_fs.h
-> @@ -17,6 +17,7 @@ struct shmem_inode_info {
->  		char		*symlink;	/* unswappable short symlink */
->  	};
->  	struct shared_policy	policy;		/* NUMA memory alloc policy */
-> +	int			node_offset;	/* bias for interleaved nodes */
->  	struct list_head	swaplist;	/* chain of maybes on swap */
->  	struct list_head	xattr_list;	/* list of shmem_xattr */
->  	struct inode		vfs_inode;
-> diff --git a/mm/shmem.c b/mm/shmem.c
-> index f99ff3e..58ef512 100644
-> --- a/mm/shmem.c
-> +++ b/mm/shmem.c
-> @@ -819,7 +819,7 @@ static struct page *shmem_alloc_page(gfp_t gfp,
->  
->  	/* Create a pseudo vma that just contains the policy */
->  	pvma.vm_start = 0;
-> -	pvma.vm_pgoff = index;
-> +	pvma.vm_pgoff = index + info->node_offset;
->  	pvma.vm_ops = NULL;
->  	pvma.vm_policy = mpol_shared_policy_lookup(&info->policy, index);
->  
-> @@ -1153,6 +1153,7 @@ static struct inode *shmem_get_inode(struct super_block *sb, const struct inode
->  			inode->i_fop = &shmem_file_operations;
->  			mpol_shared_policy_init(&info->policy,
->  						 shmem_get_sbmpol(sbinfo));
-> +			info->node_offset = node_random(&node_online_map);
->  			break;
->  		case S_IFDIR:
->  			inc_nlink(inode);
+Does the following patch fix the problem you're seeing?
 
-The patch seems a bit arbitrary and hacky.  It would have helped if you
-had fully described how it works, and why this implementation was
-chosen.
+Thanks.
 
-- Why alter (actually, lie about!) the offset-into-file?  Could we
-  have similarly perturbed the address arg to alloc_page_vma() to do
-  the spreading?
+---
+ kernel/cgroup.c |   17 ++++++++++++++---
+ 1 file changed, 14 insertions(+), 3 deletions(-)
 
-- The patch is dependent upon MPOL_INTERLEAVE being in effect, isn't
-  it?  How do we guarantee that it is in force here?
-
-- We look up the policy via mpol_shared_policy_lookup() using the
-  unperturbed index.  Why?  Should we be using index+info->node_offset
-  there?
-
-
+diff --git a/kernel/cgroup.c b/kernel/cgroup.c
+index ad8eae5..7cf9669 100644
+--- a/kernel/cgroup.c
++++ b/kernel/cgroup.c
+@@ -896,10 +896,13 @@ static void cgroup_diput(struct dentry *dentry, struct inode *inode)
+ 		mutex_unlock(&cgroup_mutex);
+ 
+ 		/*
+-		 * Drop the active superblock reference that we took when we
+-		 * created the cgroup
++		 * We want to drop the active superblock reference that we
++		 * took when we created the cgroup after all dentry refs
++		 * are gone - kill_sb gets mighty unhappy otherwise.  Set
++		 * dentry->d_fsdata to cgroup_diput() to tell
++		 * cgroup_d_release() to call deactivate_super().
+ 		 */
+-		deactivate_super(cgrp->root->sb);
++		dentry->d_fsdata = cgroup_diput;
+ 
+ 		/*
+ 		 * if we're getting rid of the cgroup, refcount should ensure
+@@ -925,6 +928,13 @@ static int cgroup_delete(const struct dentry *d)
+ 	return 1;
+ }
+ 
++static void cgroup_d_release(struct dentry *dentry)
++{
++	/* did cgroup_diput() tell me to deactivate super? */
++	if (dentry->d_fsdata == cgroup_diput)
++		deactivate_super(dentry->d_sb);
++}
++
+ static void remove_dir(struct dentry *d)
+ {
+ 	struct dentry *parent = dget(d->d_parent);
+@@ -1532,6 +1542,7 @@ static int cgroup_get_rootdir(struct super_block *sb)
+ 	static const struct dentry_operations cgroup_dops = {
+ 		.d_iput = cgroup_diput,
+ 		.d_delete = cgroup_delete,
++		.d_release = cgroup_d_release,
+ 	};
+ 
+ 	struct inode *inode =
