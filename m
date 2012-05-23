@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758607Ab2EWAy6 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 May 2012 20:54:58 -0400
-Received: from mail160.messagelabs.com ([216.82.253.99]:24459 "EHLO
-	mail160.messagelabs.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756837Ab2EWAy5 (ORCPT
+	id S933006Ab2EWA7W (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 May 2012 20:59:22 -0400
+Received: from mail127.messagelabs.com ([216.82.250.115]:5783 "EHLO
+	mail127.messagelabs.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756837Ab2EWA7T (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 May 2012 20:54:57 -0400
+	Tue, 22 May 2012 20:59:19 -0400
 X-Env-Sender: hartleys@visionengravers.com
-X-Msg-Ref: server-3.tower-160.messagelabs.com!1337734495!7234196!1
-X-Originating-IP: [216.166.12.178]
+X-Msg-Ref: server-9.tower-127.messagelabs.com!1337734758!6299641!1
+X-Originating-IP: [216.166.12.32]
 X-StarScan-Version: 6.5.10; banners=-,-,-
 X-VirusChecked: Checked
 From: H Hartley Sweeten <hartleys@visionengravers.com>
 To: Linux Kernel <linux-kernel@vger.kernel.org>
-Subject: [PATCH] staging: comedi: remove this_board macro in the poc driver
-Date: Tue, 22 May 2012 17:54:46 -0700
+Subject: [PATCH] staging: comedi: remove this_board macro in the rti800 driver
+Date: Tue, 22 May 2012 17:59:07 -0700
 User-Agent: KMail/1.9.9
 CC: <devel@driverdev.osuosl.org>, <abbotti@mev.co.uk>,
         <fmhess@users.sourceforge.net>, <gregkh@linuxfoundation.org>
@@ -23,7 +23,7 @@ MIME-Version: 1.0
 Content-Type: text/plain; charset="utf-8"
 Content-Transfer-Encoding: 7bit
 Content-Disposition: inline
-Message-ID: <201205221754.47349.hartleys@visionengravers.com>
+Message-ID: <201205221759.08150.hartleys@visionengravers.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -40,82 +40,42 @@ Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
 
-diff --git a/drivers/staging/comedi/drivers/poc.c b/drivers/staging/comedi/drivers/poc.c
-index e712048..95e348f 100644
---- a/drivers/staging/comedi/drivers/poc.c
-+++ b/drivers/staging/comedi/drivers/poc.c
-@@ -57,8 +57,6 @@ struct boarddef_struct {
- 	const struct comedi_lrange *range;
+diff --git a/drivers/staging/comedi/drivers/rti800.c b/drivers/staging/comedi/drivers/rti800.c
+index f0eb52a..04a2368 100644
+--- a/drivers/staging/comedi/drivers/rti800.c
++++ b/drivers/staging/comedi/drivers/rti800.c
+@@ -138,8 +138,6 @@ struct rti800_board {
+ 	int has_ao;
  };
  
--#define this_board ((const struct boarddef_struct *)dev->board_ptr)
+-#define this_board ((const struct rti800_board *)dev->board_ptr)
 -
- static int readback_insn(struct comedi_device *dev, struct comedi_subdevice *s,
- 			 struct comedi_insn *insn, unsigned int *data)
- {
-@@ -137,22 +135,23 @@ static int pcl734_insn_bits(struct comedi_device *dev,
+ static irqreturn_t rti800_interrupt(int irq, void *dev);
  
- static int poc_attach(struct comedi_device *dev, struct comedi_devconfig *it)
+ struct rti800_private {
+@@ -309,6 +307,7 @@ static int rti800_do_insn_bits(struct comedi_device *dev,
+ 
+ static int rti800_attach(struct comedi_device *dev, struct comedi_devconfig *it)
  {
-+	const struct boarddef_struct *board = comedi_board(dev);
- 	struct comedi_subdevice *s;
++	const struct rti800_board *board = comedi_board(dev);
+ 	unsigned int irq;
  	unsigned long iobase;
- 	unsigned int iosize;
- 
- 	iobase = it->options[0];
- 	printk(KERN_INFO "comedi%d: poc: using %s iobase 0x%lx\n", dev->minor,
--	       this_board->name, iobase);
-+	       board->name, iobase);
+ 	int ret;
+@@ -347,7 +346,7 @@ static int rti800_attach(struct comedi_device *dev, struct comedi_devconfig *it)
+ 		printk(KERN_INFO "( no irq )\n");
+ 	}
  
 -	dev->board_name = this_board->name;
 +	dev->board_name = board->name;
  
- 	if (iobase == 0) {
- 		printk(KERN_ERR "io base address required\n");
- 		return -EINVAL;
+ 	ret = alloc_subdevices(dev, 4);
+ 	if (ret < 0)
+@@ -386,7 +385,7 @@ static int rti800_attach(struct comedi_device *dev, struct comedi_devconfig *it)
  	}
  
--	iosize = this_board->iosize;
-+	iosize = board->iosize;
- 	/* check if io addresses are available */
- 	if (!request_region(iobase, iosize, "dac02")) {
- 		printk(KERN_ERR "I/O port conflict: failed to allocate ports "
-@@ -163,18 +162,18 @@ static int poc_attach(struct comedi_device *dev, struct comedi_devconfig *it)
- 
- 	if (alloc_subdevices(dev, 1) < 0)
- 		return -ENOMEM;
--	if (alloc_private(dev, sizeof(unsigned int) * this_board->n_chan) < 0)
-+	if (alloc_private(dev, sizeof(unsigned int) * board->n_chan) < 0)
- 		return -ENOMEM;
- 
- 	/* analog output subdevice */
- 	s = dev->subdevices + 0;
--	s->type = this_board->type;
--	s->n_chan = this_board->n_chan;
--	s->maxdata = (1 << this_board->n_bits) - 1;
--	s->range_table = this_board->range;
--	s->insn_write = this_board->winsn;
--	s->insn_read = this_board->rinsn;
--	s->insn_bits = this_board->insnbits;
-+	s->type = board->type;
-+	s->n_chan = board->n_chan;
-+	s->maxdata = (1 << board->n_bits) - 1;
-+	s->range_table = board->range;
-+	s->insn_write = board->winsn;
-+	s->insn_read = board->rinsn;
-+	s->insn_bits = board->insnbits;
- 	if (s->type == COMEDI_SUBD_AO || s->type == COMEDI_SUBD_DO)
+ 	s++;
+-	if (this_board->has_ao) {
++	if (board->has_ao) {
+ 		/* ao subdevice (only on rti815) */
+ 		s->type = COMEDI_SUBD_AO;
  		s->subdev_flags = SDF_WRITABLE;
- 
-@@ -183,8 +182,10 @@ static int poc_attach(struct comedi_device *dev, struct comedi_devconfig *it)
- 
- static void poc_detach(struct comedi_device *dev)
- {
-+	const struct boarddef_struct *board = comedi_board(dev);
-+
- 	if (dev->iobase)
--		release_region(dev->iobase, this_board->iosize);
-+		release_region(dev->iobase, board->iosize);
- }
- 
- static const struct boarddef_struct boards[] = {
