@@ -1,159 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933694Ab2EWPXu (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 May 2012 11:23:50 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:50893 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932597Ab2EWPXr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 May 2012 11:23:47 -0400
-Message-ID: <1337786613.18720.5.camel@marge.simpson.net>
-Subject: [PATCH v3] clockevents: Per cpu tick skew boot option
-From: Mike Galbraith <mgalbraith@suse.de>
-To: paulmck@linux.vnet.ibm.com
-Cc: Thomas Gleixner <tglx@linutronix.de>, LKML <linux-kernel@vger.kernel.org>
-Date: Wed, 23 May 2012 17:23:33 +0200
-In-Reply-To: <20120510181607.GA14329@linux.vnet.ibm.com>
-References: <1336309127.7351.13.camel@marge.simpson.net>
-	 <alpine.LFD.2.02.1205072115000.6271@ionos>
-	 <1336447221.7364.2.camel@marge.simpson.net>
-	 <alpine.LFD.2.02.1205081143510.6271@ionos>
-	 <1336472458.21924.78.camel@marge.simpson.net>
-	 <20120510181607.GA14329@linux.vnet.ibm.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	id S1760381Ab2EWPYT (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 May 2012 11:24:19 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:40876 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752007Ab2EWPYR (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 23 May 2012 11:24:17 -0400
+Date: Wed, 23 May 2012 08:23:59 -0700
+From: tip-bot for Namhyung Kim <namhyung.kim@lge.com>
+Message-ID: <tip-e33387fc2748ac78fd577dee2c914fc3ea0ba0cd@git.kernel.org>
+Cc: acme@redhat.com, linux-kernel@vger.kernel.org, paulus@samba.org,
+        mingo@redhat.com, hpa@zytor.com, mingo@kernel.org,
+        a.p.zijlstra@chello.nl, namhyung.kim@lge.com, namhyung@gmail.com,
+        fweisbec@gmail.com, rostedt@goodmis.org, tglx@linutronix.de
+Reply-To: mingo@kernel.org, hpa@zytor.com, mingo@redhat.com, paulus@samba.org,
+        linux-kernel@vger.kernel.org, acme@redhat.com, a.p.zijlstra@chello.nl,
+        namhyung.kim@lge.com, namhyung@gmail.com, fweisbec@gmail.com,
+        rostedt@goodmis.org, tglx@linutronix.de
+In-Reply-To: <1337677434-4881-2-git-send-email-namhyung.kim@lge.com>
+References: <1337677434-4881-2-git-send-email-namhyung.kim@lge.com>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:perf/core] perf tools: Always try to build libtraceevent
+Git-Commit-ID: e33387fc2748ac78fd577dee2c914fc3ea0ba0cd
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
+MIME-Version: 1.0
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Wed, 23 May 2012 08:24:05 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2012-05-10 at 11:16 -0700, Paul E. McKenney wrote:
+Commit-ID:  e33387fc2748ac78fd577dee2c914fc3ea0ba0cd
+Gitweb:     http://git.kernel.org/tip/e33387fc2748ac78fd577dee2c914fc3ea0ba0cd
+Author:     Namhyung Kim <namhyung.kim@lge.com>
+AuthorDate: Tue, 22 May 2012 18:03:54 +0900
+Committer:  Arnaldo Carvalho de Melo <acme@redhat.com>
+CommitDate: Tue, 22 May 2012 12:35:29 -0300
 
-> > --- a/Documentation/kernel-parameters.txt
-> > +++ b/Documentation/kernel-parameters.txt
-> > @@ -2426,6 +2426,15 @@ bytes respectively. Such letter suffixes
-> > 
-> >  	sched_debug	[KNL] Enables verbose scheduler debug messages.
-> > 
-> > +	skew_tick=	[KNL] Offset the periodic timer tick per cpu to mitigate
-> > +			xtime_lock contention on larger systems, and/or RCU lock
-> > +			contention on all systems with CONFIG_MAXSMP set.
-> 
-> Suggest instead:
-> 
-> 			contention on systems with large CONFIG_RCU_FANOUT
-> 			values.
-> 
-> > +			Format: { "0" | "1" }
-> > +			0 -- disable. (may be 1 via CONFIG_CMDLINE="skew_tick=1"
-> 
-> Suggest simply:
-> 
-> 			0 -- disable (default for typical kernel builds).
-> 
-> With these changes:
-> 
-> Acked-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+perf tools: Always try to build libtraceevent
 
-Hunted down round-tuit.
+Although perf depends on the libtraceevent, it cannot know when it needs
+to be rebuilt. So just try to rebuild it always in order to make sure we
+use the latest version.
 
-clockevents: Per cpu tick skew boot option
+While at it, silence annoying directory change messages.
 
-Quoting removal commit af5ab277ded04bd9bc6b048c5a2f0e7d70ef0867
-Historically, Linux has tried to make the regular timer tick on the
-various CPUs not happen at the same time, to avoid contention on
-xtime_lock.
-    
-Nowadays, with the tickless kernel, this contention no longer happens
-since time keeping and updating are done differently. In addition,
-this skew is actually hurting power consumption in a measurable way on
-many-core systems.
-End quote
-
-Problems:
-- Contrary to the above, all systems do encounter contention on
-  xtime_lock and RCU structure locks when the tick is synchronized.
-
-- Large systems and moderate sized RT systems suffer intolerable
-  jitter with the tick synchronized.
-
-- Fully utilized systems reap no power saving benefit, but do
-  suffer from synchronized tick lock contention.
-
-- 0209f649 rcu: limit rcu_node leaf-level fanout
-  This patch was born to combat lock contention which testing showed
-  to have been _induced by_ skew removal.  Skew the tick, contention
-  disappeared virtually completely.  Measured latency on 48 core box
-  was >330us.  Revert, amd restore skew, it dropped back to ~70us.
-  We absorbed a 400% latency increase to combat induced contention.
-
-Let the user decide whether power consumption or jitter is the
-more important consideration for their machines.
-
-Signed-off-by: Mike Galbraith <mgalbraith@suse.de>
-Acked-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
-
+Signed-off-by: Namhyung Kim <namhyung.kim@lge.com>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Ingo Molnar <mingo@redhat.com>
+Cc: Namhyung Kim <namhyung@gmail.com>
+Cc: Paul Mackerras <paulus@samba.org>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Steven Rostedt <rostedt@goodmis.org>
+Link: http://lkml.kernel.org/r/1337677434-4881-2-git-send-email-namhyung.kim@lge.com
+Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- Documentation/kernel-parameters.txt |    9 +++++++++
- kernel/time/tick-sched.c            |   19 +++++++++++++++++++
- 2 files changed, 28 insertions(+)
+ tools/perf/Makefile |    4 ++--
+ 1 files changed, 2 insertions(+), 2 deletions(-)
 
---- a/Documentation/kernel-parameters.txt
-+++ b/Documentation/kernel-parameters.txt
-@@ -2426,6 +2426,15 @@ bytes respectively. Such letter suffixes
+diff --git a/tools/perf/Makefile b/tools/perf/Makefile
+index ef75a55..1d3d513 100644
+--- a/tools/perf/Makefile
++++ b/tools/perf/Makefile
+@@ -828,7 +828,7 @@ $(LIB_FILE): $(LIB_OBJS)
  
- 	sched_debug	[KNL] Enables verbose scheduler debug messages.
+ # libtraceevent.a
+ $(LIBTRACEEVENT):
+-	$(MAKE) -C $(TRACE_EVENT_DIR) $(COMMAND_O) libtraceevent.a
++	$(QUIET_SUBDIR0)$(TRACE_EVENT_DIR) $(QUIET_SUBDIR1) $(COMMAND_O) libtraceevent.a
  
-+	skew_tick=	[KNL] Offset the periodic timer tick per cpu to mitigate
-+			xtime_lock contention on larger systems, and/or RCU lock
-+			contention on systems with large CONFIG_RCU_FANOUT values.
-+			Format: { "0" | "1" }
-+			0 -- disable (default for typical kernel builds).
-+			1 -- enable.
-+			Note: increases power consumption, thus should only be
-+			enabled if running jitter sensitive (HPC/RT) workloads.
-+
- 	security=	[SECURITY] Choose a security module to enable at boot.
- 			If this boot parameter is not specified, only the first
- 			security module asking for security registration will be
---- a/kernel/time/tick-sched.c
-+++ b/kernel/time/tick-sched.c
-@@ -814,6 +814,8 @@ static enum hrtimer_restart tick_sched_t
- 	return HRTIMER_RESTART;
- }
+ help:
+ 	@echo 'Perf make targets:'
+@@ -976,6 +976,6 @@ clean:
+ 	$(RM) $(OUTPUT)util/*-{bison,flex}*
+ 	$(python-clean)
  
-+static int sched_skew_tick;
-+
- /**
-  * tick_setup_sched_timer - setup the tick emulation timer
-  */
-@@ -831,6 +833,14 @@ void tick_setup_sched_timer(void)
- 	/* Get the next period (per cpu) */
- 	hrtimer_set_expires(&ts->sched_timer, tick_init_jiffy_update());
- 
-+	/* Offset the tick to avert xtime_lock contention. */
-+	if (sched_skew_tick) {
-+		u64 offset = ktime_to_ns(tick_period) >> 1;
-+		do_div(offset, num_possible_cpus());
-+		offset *= smp_processor_id();
-+		hrtimer_add_expires_ns(&ts->sched_timer, offset);
-+	}
-+
- 	for (;;) {
- 		hrtimer_forward(&ts->sched_timer, now, tick_period);
- 		hrtimer_start_expires(&ts->sched_timer,
-@@ -910,3 +920,12 @@ int tick_check_oneshot_change(int allow_
- 	tick_nohz_switch_to_nohz();
- 	return 0;
- }
-+
-+static int __init skew_tick(char *str)
-+{
-+	get_option(&str, &sched_skew_tick);
-+
-+	return 0;
-+}
-+early_param("skew_tick", skew_tick);
-+
-
-
+-.PHONY: all install clean strip
++.PHONY: all install clean strip $(LIBTRACEEVENT)
+ .PHONY: shell_compatibility_test please_set_SHELL_PATH_to_a_more_modern_shell
+ .PHONY: .FORCE-PERF-VERSION-FILE TAGS tags cscope .FORCE-PERF-CFLAGS
