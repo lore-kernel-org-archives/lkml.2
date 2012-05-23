@@ -1,100 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760582Ab2EWQxZ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 May 2012 12:53:25 -0400
-Received: from mail131.messagelabs.com ([216.82.242.99]:60557 "EHLO
-	mail131.messagelabs.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757150Ab2EWQxV convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 May 2012 12:53:21 -0400
-X-Env-Sender: hartleys@visionengravers.com
-X-Msg-Ref: server-6.tower-131.messagelabs.com!1337791983!13482753!30
-X-Originating-IP: [216.166.12.32]
-X-StarScan-Version: 6.5.10; banners=-,-,-
-X-VirusChecked: Checked
-From: H Hartley Sweeten <hartleys@visionengravers.com>
-To: Ian Abbott <abbotti@mev.co.uk>
-CC: Ian Abbott <ian.abbott@mev.co.uk>,
-        Dan Carpenter <dan.carpenter@oracle.com>,
-        Linux Kernel <linux-kernel@vger.kernel.org>,
-        "devel@driverdev.osuosl.org" <devel@driverdev.osuosl.org>,
-        "fmhess@users.sourceforge.net" <fmhess@users.sourceforge.net>,
-        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>
-Date: Wed, 23 May 2012 11:53:07 -0500
-Subject: RE: [PATCH] staging: comedi: remove this_board macro in the s526
- driver
-Thread-Topic: [PATCH] staging: comedi: remove this_board macro in the s526
- driver
-Thread-Index: Ac05A+qN553rAJP7RX6EqU6TxvIEpwAAFF4w
-Message-ID: <ADE657CA350FB648AAC2C43247A983F0020698BAC905@AUSP01VMBX24.collaborationhost.net>
-References: <201205221820.10770.hartleys@visionengravers.com>
- <20120523054849.GK4637@mwanda> <4FBCAB50.5000907@mev.co.uk>
- <ADE657CA350FB648AAC2C43247A983F0020698BAC8D8@AUSP01VMBX24.collaborationhost.net>
- <4FBD14E5.2090806@mev.co.uk>
-In-Reply-To: <4FBD14E5.2090806@mev.co.uk>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	id S1760564Ab2EWQy2 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 May 2012 12:54:28 -0400
+Received: from mail.skyhub.de ([78.46.96.112]:39575 "EHLO mail.skyhub.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751145Ab2EWQyZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 23 May 2012 12:54:25 -0400
+Date: Wed, 23 May 2012 18:54:23 +0200
+From: Borislav Petkov <bp@alien8.de>
+To: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Borislav Petkov <borislav.petkov@amd.com>, mingo@kernel.org, hpa@zytor.com,
+        linux-kernel@vger.kernel.org, akpm@linux-foundation.org,
+        frank.arnold@amd.com, torvalds@linux-foundation.org,
+        tglx@linutronix.de, linux-tip-commits@vger.kernel.org
+Subject: Re: [tip:x86/mce] x86/mce: Fix 32-bit build
+Message-ID: <20120523165423.GC18284@liondog.tnic>
+Mail-Followup-To: Borislav Petkov <bp@alien8.de>,
+	Peter Zijlstra <a.p.zijlstra@chello.nl>,
+	Borislav Petkov <borislav.petkov@amd.com>, mingo@kernel.org,
+	hpa@zytor.com, linux-kernel@vger.kernel.org,
+	akpm@linux-foundation.org, frank.arnold@amd.com,
+	torvalds@linux-foundation.org, tglx@linutronix.de,
+	linux-tip-commits@vger.kernel.org
+References: <1337684026-19740-2-git-send-email-bp@amd64.org>
+ <tip-80f033610fb968e75f5d470233d8d0260d7a72ed@git.kernel.org>
+ <1337789898.9783.19.camel@laptop>
+ <20120523162335.GO14757@aftab.osrc.amd.com>
+ <1337790667.9783.29.camel@laptop>
+ <20120523164404.GA18284@liondog.tnic>
+ <1337791605.9783.31.camel@laptop>
 MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <1337791605.9783.31.camel@laptop>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday, May 23, 2012 9:49 AM, Ian Abbott wrote:
-> On 2012-05-23 17:28, H Hartley Sweeten wrote:
->> Side-note on the boardinfo stuff.
->>
->> I wonder if it makes sense to create a common boardinfo struct
->> and modify the comedi_driver struct a bit. Something like:
->>
->> struct comedi_boardinfo {
->> 	const char *name;
->> 	unsigned short	vendor;
->> 	unsigned short device;
->> 	void *private;
->> };
->>
->> struct comedi_driver {
->> 	struct comedi_driver *next;
->>
->> 	const char *driver_name;
->> 	struct module *module;
->> 	int (*attach) (struct comedi_device *, struct comedi_devconfig *);
->> 	void (*detach) (struct comedi_device *);
->> 	int (*attach_pci) (struct comedi_device *, struct pci_dev *);
->> 	int (*attach_usb) (struct comedi_device *, struct usb_interface *);
->>
->> 	u32 num_boards;
->> 	struct comedi_boardinfo *board;
->> };
->>
->> This would allow comedi_recognize() to walk the boardinfo
->> to find the match without all the ugly casts. It should also
->> allow creating a common comedi_find_pcidev() for all the
->> comedi pci drivers to use when probing for the board_ptr.
->>
->> This would create a bit of churn but I think it would be a
->> lot cleaner in the end.
->>
->> What do you think?
->
-> Please don't do this yet.  We might want to implement auto configuration 
-> for device types that have no concept of vendor ID or product ID, such 
-> as PCMCIA, platform devices, SPI devices etc., either by adding extra 
-> attach_xxx hooks to struct comedi_driver for the more common bus types, 
-> or a more generic attach_generic hook for the less common bus types.
+On Wed, May 23, 2012 at 06:46:45PM +0200, Peter Zijlstra wrote:
+> On Wed, 2012-05-23 at 18:44 +0200, Borislav Petkov wrote:
 > 
-> Also, it would waste space in the ISA-only drivers.
+> > FWIW, I can change it if you feel too strongly about it, I don't really
+> > care that much.
+> 
+> I don't care much at the moment, I might if I'm ever forced to actually
+> read the MCE code, but until that time I'll crawl back into my
+> corner :-)
 
-OK. I'll hold off on doing anything like this.
+Well, our job is to make it as unreadable as possible until that time
+comes.
 
-But, I think we would actually save space in all the drivers. I just need
-to think about it a bit more.
+:-)
 
-Regards,
-Hartley
-
+-- 
+Regards/Gruss,
+    Boris.
