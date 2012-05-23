@@ -1,145 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758100Ab2EWJVh (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 May 2012 05:21:37 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:50998 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750981Ab2EWJVe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 May 2012 05:21:34 -0400
-Date: Wed, 23 May 2012 11:21:13 +0200
-From: Jan Kara <jack@suse.cz>
-To: Akinobu Mita <akinobu.mita@gmail.com>
-Cc: linux-kernel@vger.kernel.org, akpm@linux-foundation.org,
-        Anders Larsen <al@alarsen.net>, Alasdair Kergon <agk@redhat.com>,
-        dm-devel@redhat.com, linux-fsdevel@vger.kernel.org,
-        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
-        linux-media@vger.kernel.org, Mark Fasheh <mfasheh@suse.com>,
-        Joel Becker <jlbec@evilplan.org>, ocfs2-devel@oss.oracle.com,
-        Jan Kara <jack@suse.cz>, linux-ext4@vger.kernel.org,
-        Andreas Dilger <adilger.kernel@dilger.ca>,
-        "Theodore Ts'o" <tytso@mit.edu>
-Subject: Re: [PATCH 01/10] string: introduce memweight
-Message-ID: <20120523092113.GG10452@quack.suse.cz>
-References: <1337520203-29147-1-git-send-email-akinobu.mita@gmail.com>
+	id S1757443Ab2EWJWS (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 May 2012 05:22:18 -0400
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:65107 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751868Ab2EWJWQ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 23 May 2012 05:22:16 -0400
+Message-ID: <4FBCAC42.3020907@linaro.org>
+Date: Wed, 23 May 2012 10:22:10 +0100
+From: Lee Jones <lee.jones@linaro.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:11.0) Gecko/20120410 Thunderbird/11.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1337520203-29147-1-git-send-email-akinobu.mita@gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Samuel Ortiz <sameo@linux.intel.com>
+CC: Linus Walleij <linus.walleij@linaro.org>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: [SOLUTION]  linux-next: build failure after merge of the mfd tree
+References: <20120521134219.6d6396802bd6a097503bac92@canb.auug.org.au> <4FB9F818.4030801@linaro.org> <20120521184005.3b7661ec6468c5878a22615d@canb.auug.org.au> <4FBA0460.1070300@linaro.org> <20120521191007.9347651e88add2e7c247a24f@canb.auug.org.au> <4FBA08A4.6030706@linaro.org> <20120521095427.GA30045@sirena.org.uk> <4FBA18C7.4030800@linaro.org> <20120522224214.GG10210@sortiz-mobl>
+In-Reply-To: <20120522224214.GG10210@sortiz-mobl>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun 20-05-12 22:23:14, Akinobu Mita wrote:
-> memweight() is the function that counts the total number of bits set
-> in memory area.  The memory area doesn't need to be aligned to
-> long-word boundary unlike bitmap_weight().
-  Thanks for the patch. I have some comments below.
+Hi Samuel,
 
-> Signed-off-by: Akinobu Mita <akinobu.mita@gmail.com>
-> Cc: Anders Larsen <al@alarsen.net>
-> Cc: Alasdair Kergon <agk@redhat.com>
-> Cc: dm-devel@redhat.com
-> Cc: linux-fsdevel@vger.kernel.org
-> Cc: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
-> Cc: linux-media@vger.kernel.org
-> Cc: Mark Fasheh <mfasheh@suse.com>
-> Cc: Joel Becker <jlbec@evilplan.org>
-> Cc: ocfs2-devel@oss.oracle.com
-> Cc: Jan Kara <jack@suse.cz>
-> Cc: linux-ext4@vger.kernel.org
-> Cc: Andrew Morton <akpm@linux-foundation.org>
-> Cc: Andreas Dilger <adilger.kernel@dilger.ca>
-> Cc: "Theodore Ts'o" <tytso@mit.edu>
-> ---
->  include/linux/string.h |    3 +++
->  lib/string.c           |   37 +++++++++++++++++++++++++++++++++++++
->  2 files changed, 40 insertions(+), 0 deletions(-)
-> 
-> diff --git a/include/linux/string.h b/include/linux/string.h
-> index e033564..ffe0442 100644
-> --- a/include/linux/string.h
-> +++ b/include/linux/string.h
-> @@ -145,4 +145,7 @@ static inline bool strstarts(const char *str, const char *prefix)
->  	return strncmp(str, prefix, strlen(prefix)) == 0;
->  }
->  #endif
-> +
-> +extern size_t memweight(const void *ptr, size_t bytes);
-> +
->  #endif /* _LINUX_STRING_H_ */
-> diff --git a/lib/string.c b/lib/string.c
-> index e5878de..c8b92a0 100644
-> --- a/lib/string.c
-> +++ b/lib/string.c
-> @@ -26,6 +26,7 @@
->  #include <linux/export.h>
->  #include <linux/bug.h>
->  #include <linux/errno.h>
-> +#include <linux/bitmap.h>
->  
->  #ifndef __HAVE_ARCH_STRNICMP
->  /**
-> @@ -824,3 +825,39 @@ void *memchr_inv(const void *start, int c, size_t bytes)
->  	return check_bytes8(start, value, bytes % 8);
->  }
->  EXPORT_SYMBOL(memchr_inv);
-> +
-> +/**
-> + * memweight - count the total number of bits set in memory area
-> + * @ptr: pointer to the start of the area
-> + * @bytes: the size of the area
-> + */
-> +size_t memweight(const void *ptr, size_t bytes)
-> +{
-> +	size_t w = 0;
-> +	size_t longs;
-> +	union {
-> +		const void *ptr;
-> +		const unsigned char *b;
-> +		unsigned long address;
-> +	} bitmap;
-  Ugh, this is ugly and mostly unnecessary. Just use "const unsigned char
-*bitmap".
+This should sort you out.
 
-> +
-> +	for (bitmap.ptr = ptr; bytes > 0 && bitmap.address % sizeof(long);
-> +			bytes--, bitmap.address++)
-> +		w += hweight8(*bitmap.b);
-  This can be:
-	count = ((unsigned long)bitmap) % sizeof(long);
-	while (count--) {
-		w += hweight(*bitmap);
-		bitmap++;
-		bytes--;
-	}
-> +
-> +	for (longs = bytes / sizeof(long); longs > 0; ) {
-> +		size_t bits = min_t(size_t, INT_MAX & ~(BITS_PER_LONG - 1),
-> +					longs * BITS_PER_LONG);
-  I find it highly unlikely that someone would have such a large bitmap
-(256 MB or more on 32-bit). Also the condition as you wrote it can just
-overflow so it won't have the desired effect. Just do
-	BUG_ON(longs >= ULONG_MAX / BITS_PER_LONG);
-and remove the loop completely. If someone comes with such a huge bitmap,
-the code can be modified easily (after really closely inspecting whether
-such a huge bitmap is really well justified).
+The old code protected under 'AB8500_I2C_CORE' depended on 'MFD_DB8500_PRCMU'.
 
-> +
-> +		w += bitmap_weight(bitmap.ptr, bits);
-> +		bytes -= bits / BITS_PER_BYTE;
-> +		bitmap.address += bits / BITS_PER_BYTE;
-> +		longs -= bits / BITS_PER_LONG;
-> +	}
-> +
-> +	for (; bytes > 0; bytes--, bitmap.address++)
-> +		w += hweight8(*bitmap.b);
-> +
-> +	return w;
-> +}
-> +EXPORT_SYMBOL(memweight);
+From: Lee Jones <lee.jones@linaro.org>
+Date: Wed, 23 May 2012 10:08:51 +0100
+Subject: [PATCH] MFD: Assign MFD_DB8500_PRCMU dependency for building ab8500-core
 
-									Honza
+A recent move to eliminate excess historical baggage from ab8500 core
+code resulting in errors when building with x86_64 allmodconfig:
+
+In file included from drivers/mfd/ab8500-core.c:21:0:
+include/linux/mfd/dbx500-prcmu.h:614:19: error: redefinition of 'prcmu_abb_read'
+include/linux/mfd/db8500-prcmu.h:673:19: note: previous definition of 'prcmu_abb_read' was here
+include/linux/mfd/dbx500-prcmu.h:619:19: error: redefinition of 'prcmu_abb_write'
+include/linux/mfd/db8500-prcmu.h:678:19: note: previous definition of 'prcmu_abb_write' was here
+include/linux/mfd/dbx500-prcmu.h:630:19: error: redefinition of 'prcmu_config_clkout'
+include/linux/mfd/db8500-prcmu.h:643:19: note: previous definition of 'prcmu_config_clkout' was here
+include/linux/mfd/dbx500-prcmu.h:692:20: error: redefinition of 'prcmu_ac_wake_req'
+include/linux/mfd/db8500-prcmu.h:683:20: note: previous definition of 'prcmu_ac_wake_req' was here
+include/linux/mfd/dbx500-prcmu.h:694:20: error: redefinition of 'prcmu_ac_sleep_req'
+include/linux/mfd/db8500-prcmu.h:685:20: note: previous definition of 'prcmu_ac_sleep_req' was here
+
+Problem:
+When CONFIG_AB8500_CORE is set, building ab8500-core.c and
+!(CONFIG_UX500_SOC_DB8500 | CONFIG_MFD_DB8500_PRCMU), both db8500-prcmu.h
+and dbx500-prcmu.h take it upon themselves to _both_ create 'return 0'
+inline functions for the following:
+
+prcmu_abb_read()
+prcmu_abb_write()
+prcmu_config_clkout()
+prcmu_ac_wake_req()
+prcmu_ac_sleep_req()
+
+Solution:
+Depend on MFD_DB8500_PRCMU, which in turn depends on UX500_SOC_DB8500.
+
+Reported-By: Stephen Rothwell <sfr@canb.auug.org.au>
+Signed-off-by: Lee Jones <lee.jones@linaro.org>
+---
+ drivers/mfd/Kconfig |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/drivers/mfd/Kconfig b/drivers/mfd/Kconfig
+index 9846424..43e6142 100644
+--- a/drivers/mfd/Kconfig
++++ b/drivers/mfd/Kconfig
+@@ -683,7 +683,7 @@ config EZX_PCAP
+ 
+ config AB8500_CORE
+ 	bool "ST-Ericsson AB8500 Mixed Signal Power Management chip"
+-	depends on GENERIC_HARDIRQS && ABX500_CORE
++	depends on GENERIC_HARDIRQS && ABX500_CORE && MFD_DB8500_PRCMU
+ 	select MFD_CORE
+ 	help
+ 	  Select this option to enable access to AB8500 power management
 -- 
-Jan Kara <jack@suse.cz>
-SUSE Labs, CR
+1.7.9.5
