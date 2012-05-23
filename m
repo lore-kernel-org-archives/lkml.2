@@ -1,53 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760850Ab2EWVwv (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 May 2012 17:52:51 -0400
-Received: from mail209.messagelabs.com ([216.82.255.3]:32779 "EHLO
-	mail209.messagelabs.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752880Ab2EWVwt convert rfc822-to-8bit (ORCPT
+	id S1760857Ab2EWVyT (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 May 2012 17:54:19 -0400
+Received: from mail-gg0-f174.google.com ([209.85.161.174]:49320 "EHLO
+	mail-gg0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754397Ab2EWVyR convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 May 2012 17:52:49 -0400
-X-Env-Sender: hartleys@visionengravers.com
-X-Msg-Ref: server-14.tower-209.messagelabs.com!1337809968!6481603!1
-X-Originating-IP: [216.166.12.98]
-X-StarScan-Version: 6.5.10; banners=-,-,-
-X-VirusChecked: Checked
-From: H Hartley Sweeten <hartleys@visionengravers.com>
-To: Dan Carpenter <dan.carpenter@oracle.com>
-CC: Linux Kernel <linux-kernel@vger.kernel.org>,
-        "devel@driverdev.osuosl.org" <devel@driverdev.osuosl.org>,
-        "fmhess@users.sourceforge.net" <fmhess@users.sourceforge.net>,
-        "abbotti@mev.co.uk" <abbotti@mev.co.uk>,
-        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>
-Date: Wed, 23 May 2012 16:52:47 -0500
-Subject: RE: [PATCH] staging: comedi: adl_pci7296: factor out the PCI device
- code
-Thread-Topic: [PATCH] staging: comedi: adl_pci7296: factor out the PCI
- device code
-Thread-Index: Ac05LKmQA/1PINKsSi2UlsV7GQhINAAAYLpA
-Message-ID: <ADE657CA350FB648AAC2C43247A983F0020698BACAD5@AUSP01VMBX24.collaborationhost.net>
-References: <201205231428.48061.hartleys@visionengravers.com>
- <20120523214354.GQ4637@mwanda>
-In-Reply-To: <20120523214354.GQ4637@mwanda>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Wed, 23 May 2012 17:54:17 -0400
+Date: Wed, 23 May 2012 16:53:59 -0500
+From: Jonathan Nieder <jrnieder@gmail.com>
+To: Anders =?utf-8?Q?Bostr=C3=B6m?= <anders@netinsight.net>
+Cc: linux-kernel@vger.kernel.org,
+        =?utf-8?B?TGVzxYJhdyBLb3BlxIc=?= <leslaw.kopec@nasza-klasa.pl>,
+        Aman Gupta <aman@tmm1.net>, Doug Smythies <dsmythies@telus.net>
+Subject: Re: [3.2.16 -> 3.2.17 regression] High reported CPU load when idle
+Message-ID: <20120523215359.GA19798@burratino>
+References: <20120523.144057.899060240318474097.anders@netinsight.net>
 MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8BIT
+In-Reply-To: <20120523.144057.899060240318474097.anders@netinsight.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday, May 23, 2012 2:44 PM, Dan Carpenter wrote:
-> Hartley, you're doing a great job with all these patches, but it's
-> going to be weeks before the merge window closes.  We're going to
-> end up getting confused with all the patches floating around.
+Hi Anders,
 
-I guess I should wait until the merge window closes and Greg starts
-taking patches into the staging tree before continuing...
+Anders Boström wrote[1]:
 
-Regards,
-Hartley
+> Starting with 3.2.17-1, the CPU load accounting is broken when the
+> computer is idle. The CPU load is reported as >0.50 when
+> idle. 3.2.16-1 don't suffer from this problem.
+>
+> Suspected patch is the upstream patch
+> "sched: Fix nohz load accounting -- again!"
+> commit 5e2d50da11f0e6ec3ce8fe658d7c83b0b4346c68 to 3.2 and
+> originating from c308b56b5398779cd3da0f62ab26b0453494c3d4 .
+>
+> See also:
+>
+> https://bugs.launchpad.net/unity/+bug/991370
+> https://lkml.org/lkml/2012/5/22/310
+> https://bugzilla.redhat.com/show_bug.cgi?id=822877
+> https://bbs.archlinux.org/viewtopic.php?id=141289
+
+Thanks for writing.
+
+If I understand correctly, the load average calculation both before
+and after that commit is broken, in different ways.
+
+I'm cc-ing Lesław Kopeć, Aman Gupta, and Doug Smythies who worked
+on the above change[2].  I recommend pulling Thomas Gleixner
+<tglx@linutronix.de> into the conversation once you have a better
+idea of what's going on or a new change to recommend.  If you'd like
+to also track this on a bugtracker, http://bugzilla.kernel.org/,
+product Process Management, component Scheduler might be a good place.
+
+Aside from that, I can't really offer much to help you, but others
+on linux-kernel might.
+
+Hope that helps,
+Jonathan
+
+[1] http://bugs.debian.org/674153
+[2] http://thread.gmane.org/gmane.linux.kernel/1249223/focus=1262319
+[3] http://thread.gmane.org/gmane.linux.kernel/1291870/focus=1292058
