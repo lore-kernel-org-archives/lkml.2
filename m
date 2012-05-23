@@ -1,57 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933763Ab2EWRjL (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 May 2012 13:39:11 -0400
-Received: from rcsinet15.oracle.com ([148.87.113.117]:18811 "EHLO
-	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760616Ab2EWRjJ (ORCPT
+	id S933773Ab2EWRov (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 May 2012 13:44:51 -0400
+Received: from shards.monkeyblade.net ([198.137.202.13]:60456 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1760655Ab2EWRou (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 May 2012 13:39:09 -0400
-Date: Wed, 23 May 2012 13:32:32 -0400
-From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-To: David Vrabel <david.vrabel@citrix.com>
-Cc: linux-kernel@vger.kernel.org, xen-devel@lists.xensource.com
-Subject: Re: [Xen-devel] [PATCH] fixes to stable/for-linus-3.5
-Message-ID: <20120523173232.GA25974@phenom.dumpdata.com>
-References: <1337636562-9579-1-git-send-email-konrad.wilk@oracle.com>
- <4FBD0A19.30701@citrix.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4FBD0A19.30701@citrix.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
+	Wed, 23 May 2012 13:44:50 -0400
+Date: Wed, 23 May 2012 13:41:34 -0400 (EDT)
+Message-Id: <20120523.134134.1083024931902332575.davem@davemloft.net>
+To: michel@digirati.com.br
+Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org, kuznet@ms2.inr.ac.ru,
+        jmorris@namei.org, yoshfuji@linux-ipv6.org, kaber@trash.net,
+        edumazet@google.com, jpirko@redhat.com, mirq-linux@rere.qmqm.pl,
+        bhutchings@solarflare.com
+Subject: Re: [PATCH 1/1] net: add dev_loopback_xmit() to avoid duplicate
+ code
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <1337782819.2779.20.camel@Thor>
+References: <1337782819.2779.20.camel@Thor>
+X-Mailer: Mew version 6.4 on Emacs 23.3 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.6 (shards.monkeyblade.net [198.137.202.13]); Wed, 23 May 2012 10:41:39 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, May 23, 2012 at 05:02:33PM +0100, David Vrabel wrote:
-> On 21/05/12 22:42, Konrad Rzeszutek Wilk wrote:
-> > 
-> > The autoballoon one would try to balloon up to E820_MAX when
-> > there were no dom0_mem=.. argument.
-> 
-> I don't see this behaviour and looking at the code I don't see how it
-> could.  The autoballoon code only populates pages that were released so
-> it won't go above xen_start_info->nr_pages.
 
-You are right. The ballooning up seems to be done by some other piece
-of code.
-> 
-> Do you have any logs showing the problem behaviour?
+I'm getting really tired of saying this.
 
-I did. Let me re-run it and send it along.
+As I announced several days ago, it is absolutely not appropriate
+to submit patches other than bug fixes at this time because we are
+in the merge window and the net-next tree is frozen.
 
-> 
-> > The patch fixes it, and
-> > is also makes the dom0_mem=1G case work better (I think?). The
-> > other solution would be to use the current_reservation patch
-> > I posted a while back to work-around when no dom0_mem= argument
-> > is used.
-> 
-> David
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+And even once I do announce here that the net-next tree is open
+once more, and patches like this one are appropriate, you must
+indicate in the subject line which of the 'net' or 'net-next'
+tree you are targetting your patch at.
+
+Please pay attention to what's going on, and what state the networking
+development trees are in, before submitting changes.
