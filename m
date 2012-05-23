@@ -1,185 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756161Ab2EWNwT (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 May 2012 09:52:19 -0400
-Received: from mail-qc0-f174.google.com ([209.85.216.174]:33876 "EHLO
-	mail-qc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751899Ab2EWNwR (ORCPT
+	id S1757593Ab2EWNxd (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 May 2012 09:53:33 -0400
+Received: from smtp108.prem.mail.ac4.yahoo.com ([76.13.13.47]:40357 "HELO
+	smtp108.prem.mail.ac4.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1752642Ab2EWNxc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 May 2012 09:52:17 -0400
-Date: Wed, 23 May 2012 15:52:09 +0200
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Cc: LKML <linux-kernel@vger.kernel.org>, linaro-sched-sig@lists.linaro.org,
-        Alessio Igor Bogani <abogani@kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>, Avi Kivity <avi@redhat.com>,
-        Chris Metcalf <cmetcalf@tilera.com>, Christoph Lameter <cl@linux.com>,
-        Daniel Lezcano <daniel.lezcano@linaro.org>,
-        Geoff Levand <geoff@infradead.org>,
-        Gilad Ben Yossef <gilad@benyossef.com>,
-        Hakan Akkan <hakanakkan@gmail.com>, Ingo Molnar <mingo@kernel.org>,
-        Kevin Hilman <khilman@ti.com>, Max Krasnyansky <maxk@qualcomm.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Stephen Hemminger <shemminger@vyatta.com>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Sven-Thorsten Dietrich <thebigcorporation@gmail.com>,
-        Thomas Gleixner <tglx@linutronix.de>
-Subject: Re: [PATCH 11/41] nohz/cpuset: Don't turn off the tick if rcu needs
- it
-Message-ID: <20120523135205.GB1663@somewhere>
-References: <1335830115-14335-1-git-send-email-fweisbec@gmail.com>
- <1335830115-14335-12-git-send-email-fweisbec@gmail.com>
- <20120522171658.GA8087@linux.vnet.ibm.com>
+	Wed, 23 May 2012 09:53:32 -0400
+X-Yahoo-Newman-Property: ymail-3
+X-YMail-OSG: GXyqLFIVM1kUXGDK4BEukqxTzMJhjPZtMcpqkQ8GzOGm15r
+ O2Y62X1JOdDhpPzlJp3VQHFf0kVGPYtQV0PIVw3LOgGPhRGCzgG3GPqZLyQJ
+ 2TZwihwos5OrKa_UYKmptgNVev286JpS8Z51EZ784xMp8BPqYWmBFZbO800h
+ iuIrESG81yAWim3K_xf8PLaS2q.9Z_A8cKFd8qup_Q2y8yYwqw4t8L4EKmPS
+ CeOQ2sZz8R7TBbr.3411GzngHlAoiEgjt8EilWGCY1JKq10QZ9YSp_HK3dsF
+ fi9TAn55kNTEXMy5xtOQJtwwpSrsHuUWWCYguISQzsDg8DNM6ZOiyx_d5aek
+ 73vPRztBD.o9h42nErGQu.wxifTCxerQ2d4qTtdeNZINPBrpl8VsIoB01vc_
+ X
+X-Yahoo-SMTP: _Dag8S.swBC1p4FJKLCXbs8NQzyse1SYSgnAbY0-
+Date: Wed, 23 May 2012 08:53:29 -0500 (CDT)
+From: Christoph Lameter <cl@linux.com>
+X-X-Sender: cl@router.home
+To: David Rientjes <rientjes@google.com>
+cc: Glauber Costa <glommer@parallels.com>, linux-kernel@vger.kernel.org,
+        cgroups@vger.kernel.org, linux-mm@kvack.org,
+        Pekka Enberg <penberg@cs.helsinki.fi>
+Subject: Re: [PATCH v2] slab+slob: dup name string
+In-Reply-To: <alpine.DEB.2.00.1205222048380.28165@chino.kir.corp.google.com>
+Message-ID: <alpine.DEB.2.00.1205230849410.29893@router.home>
+References: <1337680298-11929-1-git-send-email-glommer@parallels.com> <alpine.DEB.2.00.1205220857380.17600@router.home> <alpine.DEB.2.00.1205222048380.28165@chino.kir.corp.google.com>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120522171658.GA8087@linux.vnet.ibm.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, May 22, 2012 at 10:16:58AM -0700, Paul E. McKenney wrote:
-> On Tue, May 01, 2012 at 01:54:45AM +0200, Frederic Weisbecker wrote:
-> > If RCU is waiting for the current CPU to complete a grace
-> > period, don't turn off the tick. Unlike dynctik-idle, we
-> > are not necessarily going to enter into rcu extended quiescent
-> > state, so we may need to keep the tick to note current CPU's
-> > quiescent states.
-> > 
-> > [added build fix from Zen Lin]
-> 
-> Hello, Frederic,
-> 
-> One question below -- why not rcu_needs_cpu() instead of rcu_pending()?
-> 
-> 							Thanx, Paul
-> 
-> > Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
-> > Cc: Alessio Igor Bogani <abogani@kernel.org>
-> > Cc: Andrew Morton <akpm@linux-foundation.org>
-> > Cc: Avi Kivity <avi@redhat.com>
-> > Cc: Chris Metcalf <cmetcalf@tilera.com>
-> > Cc: Christoph Lameter <cl@linux.com>
-> > Cc: Daniel Lezcano <daniel.lezcano@linaro.org>
-> > Cc: Geoff Levand <geoff@infradead.org>
-> > Cc: Gilad Ben Yossef <gilad@benyossef.com>
-> > Cc: Hakan Akkan <hakanakkan@gmail.com>
-> > Cc: Ingo Molnar <mingo@kernel.org>
-> > Cc: Kevin Hilman <khilman@ti.com>
-> > Cc: Max Krasnyansky <maxk@qualcomm.com>
-> > Cc: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
-> > Cc: Peter Zijlstra <peterz@infradead.org>
-> > Cc: Stephen Hemminger <shemminger@vyatta.com>
-> > Cc: Steven Rostedt <rostedt@goodmis.org>
-> > Cc: Sven-Thorsten Dietrich <thebigcorporation@gmail.com>
-> > Cc: Thomas Gleixner <tglx@linutronix.de>
-> > ---
-> >  include/linux/rcupdate.h |    1 +
-> >  kernel/rcutree.c         |    3 +--
-> >  kernel/time/tick-sched.c |   22 ++++++++++++++++++----
-> >  3 files changed, 20 insertions(+), 6 deletions(-)
-> > 
-> > diff --git a/include/linux/rcupdate.h b/include/linux/rcupdate.h
-> > index 81c04f4..e06639e 100644
-> > --- a/include/linux/rcupdate.h
-> > +++ b/include/linux/rcupdate.h
-> > @@ -184,6 +184,7 @@ static inline int rcu_preempt_depth(void)
-> >  extern void rcu_sched_qs(int cpu);
-> >  extern void rcu_bh_qs(int cpu);
-> >  extern void rcu_check_callbacks(int cpu, int user);
-> > +extern int rcu_pending(int cpu);
-> >  struct notifier_block;
-> >  extern void rcu_idle_enter(void);
-> >  extern void rcu_idle_exit(void);
-> > diff --git a/kernel/rcutree.c b/kernel/rcutree.c
-> > index 6c4a672..e141c7e 100644
-> > --- a/kernel/rcutree.c
-> > +++ b/kernel/rcutree.c
-> > @@ -212,7 +212,6 @@ int rcu_cpu_stall_suppress __read_mostly;
-> >  module_param(rcu_cpu_stall_suppress, int, 0644);
-> > 
-> >  static void force_quiescent_state(struct rcu_state *rsp, int relaxed);
-> > -static int rcu_pending(int cpu);
-> > 
-> >  /*
-> >   * Return the number of RCU-sched batches processed thus far for debug & stats.
-> > @@ -1915,7 +1914,7 @@ static int __rcu_pending(struct rcu_state *rsp, struct rcu_data *rdp)
-> >   * by the current CPU, returning 1 if so.  This function is part of the
-> >   * RCU implementation; it is -not- an exported member of the RCU API.
-> >   */
-> > -static int rcu_pending(int cpu)
-> > +int rcu_pending(int cpu)
-> >  {
-> >  	return __rcu_pending(&rcu_sched_state, &per_cpu(rcu_sched_data, cpu)) ||
-> >  	       __rcu_pending(&rcu_bh_state, &per_cpu(rcu_bh_data, cpu)) ||
-> > diff --git a/kernel/time/tick-sched.c b/kernel/time/tick-sched.c
-> > index 43fa7ac..4f99766 100644
-> > --- a/kernel/time/tick-sched.c
-> > +++ b/kernel/time/tick-sched.c
-> > @@ -506,9 +506,21 @@ void tick_nohz_idle_enter(void)
-> >  	local_irq_enable();
-> >  }
-> > 
-> > +#ifdef CONFIG_CPUSETS_NO_HZ
-> > +static bool can_stop_adaptive_tick(void)
-> > +{
-> > +	if (!sched_can_stop_tick())
-> > +		return false;
-> > +
-> > +	/* Is there a grace period to complete ? */
-> > +	if (rcu_pending(smp_processor_id()))
-> 
-> You lost me on this one.  Why can't this be rcu_needs_cpu()?
+On Tue, 22 May 2012, David Rientjes wrote:
 
-We already have an rcu_needs_cpu() check in tick_nohz_stop_sched_tick()
-that prevents the tick to shut down if the CPU has local callbacks to handle.
+> On Tue, 22 May 2012, Christoph Lameter wrote:
+>
+> > > [ v2: Also dup string for early caches, requested by David Rientjes ]
+> >
+> > kstrdups that early could cause additional issues. Its better to leave
+> > things as they were.
+> >
+>
+> No, it's not, there's no reason to prevent caches created before
+> g_cpucache_up <= EARLY to be destroyed because it makes a patch easier to
+> implement and then leave that little gotcha as an undocumented treasure
+> for someone to find when they try it later on.
 
-The rcu_pending() check is there in case some other CPU is waiting for the
-current one to help completing a grace period, by reporting a quiescent state
-for example. This happens because we may stop the tick in the kernel, not only
-userspace. And if we are in the kernel, we still need to be part of the global
-state machine.
+g_cpucache_up <= EARLY is slab bootstrap code and the system is in a
+pretty fragile state. Plus the the kmalloc logic *depends* on these
+caches being present. Removing those is not a good idea. The other caches
+that are created at that point are needed to create more caches.
 
-> 
-> > +		return false;
-> > +
-> > +	return true;
-> > +}
-> > +
-> >  static void tick_nohz_cpuset_stop_tick(struct tick_sched *ts)
-> >  {
-> > -#ifdef CONFIG_CPUSETS_NO_HZ
-> >  	int cpu = smp_processor_id();
-> > 
-> >  	if (!cpuset_adaptive_nohz() || is_idle_task(current))
-> > @@ -517,12 +529,14 @@ static void tick_nohz_cpuset_stop_tick(struct tick_sched *ts)
-> >  	if (!ts->tick_stopped && ts->nohz_mode == NOHZ_MODE_INACTIVE)
-> >  		return;
-> > 
-> > -	if (!sched_can_stop_tick())
-> > +	if (!can_stop_adaptive_tick())
-> >  		return;
-> > 
-> >  	tick_nohz_stop_sched_tick(ts, ktime_get(), cpu);
-> > -#endif
-> >  }
-> > +#else
-> > +static void tick_nohz_cpuset_stop_tick(struct tick_sched *ts) { }
-> > +#endif
-> > 
-> >  /**
-> >   * tick_nohz_irq_exit - update next tick event from interrupt exit
-> > @@ -852,7 +866,7 @@ void tick_nohz_check_adaptive(void)
-> >  	struct tick_sched *ts = &__get_cpu_var(tick_cpu_sched);
-> > 
-> >  	if (ts->tick_stopped && !is_idle_task(current)) {
-> > -		if (!sched_can_stop_tick())
-> > +		if (!can_stop_adaptive_tick())
-> >  			tick_nohz_restart_sched_tick();
-> >  	}
-> >  }
-> > -- 
-> > 1.7.5.4
-> > 
-> 
+There is no reason to remove these caches.
+
+> This is much easier to do, just statically allocate the const char *'s
+> needed for the boot caches and then set their ->name's manually in
+> kmem_cache_init() and then avoid the kfree() in kmem_cache_destroy() if
+> the name is between &boot_cache_name[0] and &boot_cache_name[n].
+
+Yeah that is already occurring for some of the boot caches.
+
