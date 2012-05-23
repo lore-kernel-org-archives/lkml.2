@@ -1,47 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754827Ab2EWG1s (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 May 2012 02:27:48 -0400
-Received: from mail-ee0-f46.google.com ([74.125.83.46]:34224 "EHLO
-	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751205Ab2EWG1q (ORCPT
+	id S1755187Ab2EWGcr (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 May 2012 02:32:47 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:36820 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752313Ab2EWGcp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 May 2012 02:27:46 -0400
-Subject: Re: [PATCH] ipv4: fix the rcu race between free_fib_info and
- ip_route_output_slow
-From: Eric Dumazet <eric.dumazet@gmail.com>
-To: Yanmin Zhang <yanmin_zhang@linux.intel.com>
-Cc: David Miller <davem@davemloft.net>, kunx.jiang@intel.com,
-        netdev@vger.kernel.org, linux-kernel@vger.kernel.org
-In-Reply-To: <1337753757.14538.190.camel@ymzhang.sh.intel.com>
-References: <4FBB6105.2060808@intel.com>
-	 <20120522.151554.106838106733194160.davem@davemloft.net>
-	 <1337742123.14538.175.camel@ymzhang.sh.intel.com>
-	 <20120522.232310.911242148705021745.davem@davemloft.net>
-	 <1337747829.3361.1599.camel@edumazet-glaptop>
-	 <1337748897.14538.184.camel@ymzhang.sh.intel.com>
-	 <1337749339.3361.1655.camel@edumazet-glaptop>
-	 <1337753757.14538.190.camel@ymzhang.sh.intel.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Wed, 23 May 2012 08:27:39 +0200
-Message-ID: <1337754459.3361.1850.camel@edumazet-glaptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
-Content-Transfer-Encoding: 7bit
+	Wed, 23 May 2012 02:32:45 -0400
+From: Liu Ping Fan <kernelfans@gmail.com>
+To: kvm@vger.kernel.org, linux-kernel@vger.kernel.org, qemu-devel@nongnu.org
+Cc: Ingo Molnar <mingo@redhat.com>, Peter Zijlstra <peterz@infradead.org>,
+        Avi Kivity <avi@redhat.com>, Anthony Liguori <anthony@codemonkey.ws>
+Subject: [RFC] kvm: export host NUMA info to guest's scheduler
+Date: Wed, 23 May 2012 14:32:27 +0800
+Message-Id: <1337754751-9018-1-git-send-email-kernelfans@gmail.com>
+X-Mailer: git-send-email 1.7.4.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2012-05-23 at 14:15 +0800, Yanmin Zhang wrote:
+Currently, the guest can not know the NUMA info of the vcpu, which will
+result in performance drawback. For example:
+  Supposing vcpu-a on nodeA, vcpu-b on nodeB, when load balance,
+the tasks' pull and push between these vcpus will cost more. But
+unfortunately, currently, the guest is just blind to this.
 
-> 
-> Besides fi->fib_dev here, we need check fi->fib_hash, fi->fib_lhash,
-> and nexthop_nh->nh_hash.
+So here is the idea to solve it.
+  Export host numa info through guest's sched domain to its scheduler.
+  So the guest's lb will consider the cost.
 
-No, its not needed.
+These patches include:
+For guest:
+  0001-sched-add-virt-sched-domain-for-the-guest.patch
+  0002-sched-add-virt-domain-device-s-driver.patch
+For host:
+  0001-kvm-collect-vcpus-numa-info-for-guest-s-scheduler.patch  
+  0001-Qemu-add-virt-sched-domain-device.patch
 
-I am sending a patch, because I feel this area is too complex for non
-netdev guys.
 
+Please give some comments and suggestion.
 
+Thanks and regards,
+pingfan
 
