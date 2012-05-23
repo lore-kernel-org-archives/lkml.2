@@ -1,56 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754417Ab2EWXrg (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 May 2012 19:47:36 -0400
-Received: from zeniv.linux.org.uk ([195.92.253.2]:55781 "EHLO
-	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753919Ab2EWXrf (ORCPT
+	id S1754825Ab2EWXrx (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 May 2012 19:47:53 -0400
+Received: from mail-vc0-f174.google.com ([209.85.220.174]:36588 "EHLO
+	mail-vc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754558Ab2EWXrv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 May 2012 19:47:35 -0400
-Date: Thu, 24 May 2012 00:47:30 +0100
-From: Al Viro <viro@ZenIV.linux.org.uk>
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-Cc: Randy Dunlap <rdunlap@xenotime.net>, linux-next@vger.kernel.org,
-        LKML <linux-kernel@vger.kernel.org>,
-        Richard Weinberger <richard@nod.at>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: linux-next: Tree for May 23 (uml)
-Message-ID: <20120523234730.GP11775@ZenIV.linux.org.uk>
-References: <20120523170740.ae058d8d5468d471eb948c39@canb.auug.org.au>
- <4FBD090E.5020901@xenotime.net>
- <20120523181917.GN11775@ZenIV.linux.org.uk>
- <20120523193707.GO11775@ZenIV.linux.org.uk>
- <20120524091306.e6f6b17d7240b29a124b44c3@canb.auug.org.au>
+	Wed, 23 May 2012 19:47:51 -0400
+Message-ID: <4FBD7724.1050503@garzik.org>
+Date: Wed, 23 May 2012 19:47:48 -0400
+From: Jeff Garzik <jeff@garzik.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120524091306.e6f6b17d7240b29a124b44c3@canb.auug.org.au>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Linus Torvalds <torvalds@linux-foundation.org>
+CC: Andrew Morton <akpm@linux-foundation.org>, linux-ide@vger.kernel.org,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [git patches] libata updates for 3.5
+References: <20120523192826.GA4447@havoc.gtf.org> <CA+55aFyTDK50z7sCfRD_nzAKmWpjABxRx1f=j8i9jUUXNgHjzg@mail.gmail.com> <4FBD5826.3070004@garzik.org> <CA+55aFwb-cMTuEFaOW=zwLyk_J8eeLkUs-D0DRO7r-9t7k5crQ@mail.gmail.com>
+In-Reply-To: <CA+55aFwb-cMTuEFaOW=zwLyk_J8eeLkUs-D0DRO7r-9t7k5crQ@mail.gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, May 24, 2012 at 09:13:06AM +1000, Stephen Rothwell wrote:
-> > 2)
-> > 	Cherry-picked these guys into signal.git, along with the rest
-> > of signal prereqs for them.  Merge with next/akpm-base yields a couple
-> > of trivial conflicts in kernel/fork.c (with
-> > 	sched, mm: Rework sched_{fork,exec} node assignment
-> > removing INIT_LIST_HEAD right next to the place where we add one; conflict
-> > resolution being just keep the one Oleg adds and remove the one Peter removes)
-> > and in kernel/irq/manage.c (with
-> > 	genirq: Be more informative on irq type mismatch
-> > changing a couple of printks in there; conflict resolution: just remove
-> > exit_irq_thread() in merged variant).  That's for-next-variant2.  With that
-> > variant we get 5 more duplicates with next/akpm, obviously.
-> > 
-> > Stephen, which way would you prefer it handled?
-> 
-> So variant2 sits on top of variant1 and you are intending to push the
-> work in variant2 in this merge window anyway?   In that case variant2
-> makes sense.  The number of small conflicts don't matter to much (up to a
-> point anyway :-)).  Also, these cherry-picks are out of Andrew's tree,
-> right (so they are already in linuc-next)?  In which case I would
-> probably go with variant2.
+On 05/23/2012 06:28 PM, Linus Torvalds wrote:
+> On Wed, May 23, 2012 at 2:35 PM, Jeff Garzik<jeff@garzik.org>  wrote:
+>>
+>> hmmm, can you try again?  The output of
+>>
+>> http://git.kernel.org/?p=linux/kernel/git/jgarzik/libata-dev.git;a=summary
+>>
+>> and
+>>
+>> http://git.kernel.org/?p=linux/kernel/git/jgarzik/libata-dev.git;a=tag;h=4560c1c455fb87ba3013967d6ed5d0b1d18cc109
+>>
+>> looks correct, so I think there was a mirroring delay.
+>
+> No. Look closers.
+>
+> You've created a tag called "tag/upstream-linus", and that's the one
+> you asked me to pull.
+>
+> But looking at gitweb, there is *also* a tag called just
+> "upstream-linus", and that's the one you probably *meant* me to pull.
+>
+> If you had asked me to pull "tags/upstream-linus" (note: "tags/" vs
+> "tag/"), that would have indicated that it's in the "tags" namespace
+> and I would have gotten the one you meant.
+>
+> I'd suggest you delete the old confused "tag/upstream-linus" tag (aka
+> "tags/tag/upstream-linus").
 
-Fine by me...  Pushed into for-next, should be on git.kernel.org shortly...
+Bogus tag/upstream-linus deleted, and push script updated.  This is the 
+head of the new output:
+
+Please pull 2fff27512600f9ad91335577e485a8552edb0abf from
+git://git.kernel.org/pub/scm/linux/kernel/git/jgarzik/libata-dev.git 
+tags/upstream-linus
+
