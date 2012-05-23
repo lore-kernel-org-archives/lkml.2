@@ -1,37 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933712Ab2EWP6I (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 May 2012 11:58:08 -0400
-Received: from mail-we0-f174.google.com ([74.125.82.174]:53640 "EHLO
-	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933645Ab2EWP6G (ORCPT
+	id S933736Ab2EWP60 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 May 2012 11:58:26 -0400
+Received: from oproxy6-pub.bluehost.com ([67.222.54.6]:60485 "HELO
+	oproxy6-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S933662Ab2EWP6G (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 23 May 2012 11:58:06 -0400
+Message-ID: <4FBD090E.5020901@xenotime.net>
+Date: Wed, 23 May 2012 08:58:06 -0700
+From: Randy Dunlap <rdunlap@xenotime.net>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.15) Gecko/20110323 Thunderbird/3.1.9
 MIME-Version: 1.0
-In-Reply-To: <1337754877-19759-3-git-send-email-yinghai@kernel.org>
-References: <1337754877-19759-1-git-send-email-yinghai@kernel.org> <1337754877-19759-3-git-send-email-yinghai@kernel.org>
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Wed, 23 May 2012 08:57:41 -0700
-X-Google-Sender-Auth: _jbEBN2rfa8aSlAcP0JPZnOgT8k
-Message-ID: <CA+55aFzd1BWqidt95qZLc1x_YU=WeGS=mKUOMvO_3omOhc_5VA@mail.gmail.com>
-Subject: Re: [PATCH 02/11] PCI: Try to allocate mem64 above 4G at first
-To: Yinghai Lu <yinghai@kernel.org>
-Cc: Bjorn Helgaas <bhelgaas@google.com>,
-        Andrew Morton <akpm@linux-foundation.org>, linux-pci@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+CC: linux-next@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
+        Richard Weinberger <richard@nod.at>
+Subject: Re: linux-next: Tree for May 23 (uml)
+References: <20120523170740.ae058d8d5468d471eb948c39@canb.auug.org.au>
+In-Reply-To: <20120523170740.ae058d8d5468d471eb948c39@canb.auug.org.au>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
+X-Identified-User: {1807:box742.bluehost.com:xenotime:xenotime.net} {sentby:smtp auth 50.53.38.135 authed with rdunlap@xenotime.net}
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, May 22, 2012 at 11:34 PM, Yinghai Lu <yinghai@kernel.org> wrote:
-> and will fall back to below 4g if it can not find any above 4g.
+On 05/23/2012 12:07 AM, Stephen Rothwell wrote:
 
-Has this been tested on 32-bit machines without PAE? There might be
-things that just happen to work because their allocations were always
-done bottom-up.
+> Hi all,
+> 
+> Changes since 20120522:
 
-Or do we have something else that protects us from the "oops, we can't
-actually *map* those pages"?
 
-                       Linus
+
+uml defconfig on x86_64:
+
+arch/um/kernel/process.c: In function 'interrupt_end':
+arch/um/kernel/process.c:122:14: error: 'struct task_struct' has no member named 'replacement_session_keyring'
+arch/um/kernel/process.c:123:4: error: implicit declaration of function 'key_replace_session_keyring'
+
+-- 
+
+~Randy
