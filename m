@@ -1,157 +1,118 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965293Ab2EWQCz (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 May 2012 12:02:55 -0400
-Received: from mail-lb0-f174.google.com ([209.85.217.174]:58222 "EHLO
-	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965178Ab2EWQCw convert rfc822-to-8bit (ORCPT
+	id S1760419Ab2EWQFt (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 May 2012 12:05:49 -0400
+Received: from e31.co.us.ibm.com ([32.97.110.149]:51280 "EHLO
+	e31.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752042Ab2EWQFr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 May 2012 12:02:52 -0400
+	Wed, 23 May 2012 12:05:47 -0400
+Date: Wed, 23 May 2012 09:01:21 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: LKML <linux-kernel@vger.kernel.org>, linaro-sched-sig@lists.linaro.org,
+        Alessio Igor Bogani <abogani@kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>, Avi Kivity <avi@redhat.com>,
+        Chris Metcalf <cmetcalf@tilera.com>, Christoph Lameter <cl@linux.com>,
+        Daniel Lezcano <daniel.lezcano@linaro.org>,
+        Geoff Levand <geoff@infradead.org>,
+        Gilad Ben Yossef <gilad@benyossef.com>,
+        Hakan Akkan <hakanakkan@gmail.com>, Ingo Molnar <mingo@kernel.org>,
+        Kevin Hilman <khilman@ti.com>, Max Krasnyansky <maxk@qualcomm.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Stephen Hemminger <shemminger@vyatta.com>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Sven-Thorsten Dietrich <thebigcorporation@gmail.com>,
+        Thomas Gleixner <tglx@linutronix.de>
+Subject: Re: [PATCH 17/41] rcu: Restart tick if we enqueue a callback in a
+ nohz/cpuset CPU
+Message-ID: <20120523160121.GC2402@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <1335830115-14335-1-git-send-email-fweisbec@gmail.com>
+ <1335830115-14335-18-git-send-email-fweisbec@gmail.com>
+ <20120522172714.GC8087@linux.vnet.ibm.com>
+ <20120523140010.GD1663@somewhere>
 MIME-Version: 1.0
-In-Reply-To: <CAH3Oq6T905+3fkF43NAMMFvJvq7dsk_so6T2vQ8ZJrA5xiU3YA@mail.gmail.com>
-References: <CAH3Oq6T-OVj_=kVBdDXxize5v5hovp8FQSDhxCHvF_kcX4QPuA@mail.gmail.com>
-	<alpine.LFD.2.02.1205212308590.3231@ionos>
-	<CAH3Oq6S64c9ttsAStn05FTkg+VC0o27Ad4DhHs=b4E7AKjWdjA@mail.gmail.com>
-	<alpine.LFD.2.02.1205221048140.3231@ionos>
-	<CAH3Oq6T905+3fkF43NAMMFvJvq7dsk_so6T2vQ8ZJrA5xiU3YA@mail.gmail.com>
-Date: Thu, 24 May 2012 00:02:49 +0800
-Message-ID: <CAH3Oq6QW-ku2EdCGrc9yHnYBdwYfNOkkCmgdpkq_d-FdrK-sng@mail.gmail.com>
-Subject: Re: Add IRQS_PENDING for nested and simple irq handler as well
-From: Ning Jiang <ning.n.jiang@gmail.com>
-To: Thomas Gleixner <tglx@linutronix.de>
-Cc: rjw@sisk.pl, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120523140010.GD1663@somewhere>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 12052316-7282-0000-0000-00000946649D
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2012/5/22 Ning Jiang <ning.n.jiang@gmail.com>:
-> 2012/5/22 Thomas Gleixner <tglx@linutronix.de>:
->> On Tue, 22 May 2012, Ning Jiang wrote:
->>
->> Please do not top post.
->>
->>> Sorry that I do not make myself clear.
->>>
->>> First, we should keep all the handle_*_irq behave in pretty much the
->>> same way even just for the beauty of it. Every interrupt disabled in
->>> suspend operation needs the ability to abort suspend if there is a
->>> pending irq.
->>>
->>> Second, let's take look at a example:
->>>
->>>               |
->>>        +---------+
->>>         |   INTC  |
->>>        +---------+
->>>                   |  GPIO_IRQ
->>>             +------------+
->>>              | gpio-exp  |
->>>             +------------+
->>>                |            |
->>>    GPIO0_IRQ  GPIO1_IRQ
->>>
->>> In the above diagram, gpio expander has irq number GPIO_IRQ, it is
->>> connected with two sub GPIO pins, GPIO0 and GPIO1.
->>>
->>> During suspend, normally we want to set IRQF_NO_SUSPEND for GPIO_IRQ
->>> so that gpio expander driver can handle the sub irq GPIO0_IRQ and
->>> GPIO1_IRQ, and these two irqs themselves are handled by simple or
->>> nested irq in some drivers(typically gpio and mfd driver), if they are
->>> disabled during suspend, we want them to be able to abort suspend too.
->>
->> Ok, that makes a lot of sense and should be part of the changelog, so
->> we know in a year from now why we did this change. Care to resend with
->> a fixed up changelog ?
->>
->> Thanks,
->>
->>        tglx
->
-> Thanks for your guidance on commit changelog. It's really helpful.
-> Here is the comments formatted patch, please help to review.
->
->
-> From 40c31a11049726761fe5c7c629200f48950d4229 Mon Sep 17 00:00:00 2001
-> From: Ning Jiang <ning.n.jiang@gmail.com>
-> Date: Tue, 22 May 2012 00:19:20 +0800
-> Subject: [PATCH] genirq: Add IRQS_PENDING for nested and simple irq
-> handler as well
->
-> We should keep all the handle_*_irq behave in pretty much the same
-> way even just for the beauty of it. Every interrupt disabled in
-> suspend operation needs the ability to abort suspend if there is a
-> pending irq.
->
-> Let's take look at an example:
->
->            |
->       +---------+
->       |   INTC  |
->       +---------+
->               | GPIO_IRQ
->            +------------+
->            |  gpio-exp  |
->            +------------+
->              |        |
->         GPIO0_IRQ  GPIO1_IRQ
->
-> In the above diagram, gpio expander has irq number GPIO_IRQ, it is
-> connected with two sub GPIO pins, GPIO0 and GPIO1.
->
-> During suspend, normally we want to set IRQF_NO_SUSPEND for GPIO_IRQ
-> so that gpio expander driver can handle the sub irq GPIO0_IRQ and
-> GPIO1_IRQ, and these two irqs themselves can further be handled by
-> simple or nested irq in some drivers(typically gpio and mfd driver).
-> If they are disabled during suspend and used as wakeup sources, we
-> want them to be able to abort suspend too.
->
-> Set IRQS_PENDING flag in handle_nested_irq() and handle_simple_irq()
-> when the irq is disabled will make check_wakeup_irqs() check for irqs
-> like GPIO0_IRQ and GPIO1_IRQ to abort suspend.
->
-> Signed-off-by: Ning Jiang <ning.n.jiang@gmail.com>
-> ---
->  kernel/irq/chip.c |    8 ++++++--
->  1 files changed, 6 insertions(+), 2 deletions(-)
->
-> diff --git a/kernel/irq/chip.c b/kernel/irq/chip.c
-> index 741f836..5bec667 100644
-> --- a/kernel/irq/chip.c
-> +++ b/kernel/irq/chip.c
-> @@ -275,8 +275,10 @@ void handle_nested_irq(unsigned int irq)
->        kstat_incr_irqs_this_cpu(irq, desc);
->
->        action = desc->action;
-> -       if (unlikely(!action || irqd_irq_disabled(&desc->irq_data)))
-> +       if (unlikely(!action || irqd_irq_disabled(&desc->irq_data))) {
-> +               desc->istate |= IRQS_PENDING;
->                goto out_unlock;
-> +       }
->
->        irqd_set(&desc->irq_data, IRQD_IRQ_INPROGRESS);
->        raw_spin_unlock_irq(&desc->lock);
-> @@ -324,8 +326,10 @@ handle_simple_irq(unsigned int irq, struct irq_desc *desc)
->        desc->istate &= ~(IRQS_REPLAY | IRQS_WAITING);
->        kstat_incr_irqs_this_cpu(irq, desc);
->
-> -       if (unlikely(!desc->action || irqd_irq_disabled(&desc->irq_data)))
-> +       if (unlikely(!desc->action || irqd_irq_disabled(&desc->irq_data))) {
-> +               desc->istate |= IRQS_PENDING;
->                goto out_unlock;
-> +       }
->
->        handle_irq_event(desc);
->
-> --
-> 1.7.1
->
-> Thanks,
-> Ning
+On Wed, May 23, 2012 at 04:00:15PM +0200, Frederic Weisbecker wrote:
+> On Tue, May 22, 2012 at 10:27:14AM -0700, Paul E. McKenney wrote:
+> > On Tue, May 01, 2012 at 01:54:51AM +0200, Frederic Weisbecker wrote:
+> > > If we enqueue an rcu callback, we need the CPU tick to stay
+> > > alive until we take care of those by completing the appropriate
+> > > grace period.
+> > > 
+> > > Thus, when we call_rcu(), send a self IPI that checks rcu_needs_cpu()
+> > > so that we restore a periodic tick behaviour that can take care of
+> > > everything.
+> > 
+> > Ouch, I hadn't considered RCU callbacks being posted from within an
+> > extended quiescent state.  I guess I need to make __call_rcu() either
+> > complain about this or handle it correctly...  It would -usually- be
+> > harmless, but there is getting to be quite a bit of active machinery
+> > in the various idle loops, so just assuming that it cannot happen is
+> > probably getting to be an obsolete assumption.
+> 
+> May be first provide some detection to warn in such case. And if it happens
+> to warn too much perhaps you can allow that?
 
-Hi Thomas,
-Is there any problem to merge this patch?
+Heh.  It is just as simple to allow it as it is to warn about it, so
+I am just transitioning immediately to allowing it.
 
-Thanks,
-Ning
+							Thanx, Paul
+
+> > > Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
+> > > Cc: Alessio Igor Bogani <abogani@kernel.org>
+> > > Cc: Andrew Morton <akpm@linux-foundation.org>
+> > > Cc: Avi Kivity <avi@redhat.com>
+> > > Cc: Chris Metcalf <cmetcalf@tilera.com>
+> > > Cc: Christoph Lameter <cl@linux.com>
+> > > Cc: Daniel Lezcano <daniel.lezcano@linaro.org>
+> > > Cc: Geoff Levand <geoff@infradead.org>
+> > > Cc: Gilad Ben Yossef <gilad@benyossef.com>
+> > > Cc: Hakan Akkan <hakanakkan@gmail.com>
+> > > Cc: Ingo Molnar <mingo@kernel.org>
+> > > Cc: Kevin Hilman <khilman@ti.com>
+> > > Cc: Max Krasnyansky <maxk@qualcomm.com>
+> > > Cc: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+> > > Cc: Peter Zijlstra <peterz@infradead.org>
+> > > Cc: Stephen Hemminger <shemminger@vyatta.com>
+> > > Cc: Steven Rostedt <rostedt@goodmis.org>
+> > > Cc: Sven-Thorsten Dietrich <thebigcorporation@gmail.com>
+> > > Cc: Thomas Gleixner <tglx@linutronix.de>
+> > > ---
+> > >  kernel/rcutree.c |    7 +++++++
+> > >  1 files changed, 7 insertions(+), 0 deletions(-)
+> > > 
+> > > diff --git a/kernel/rcutree.c b/kernel/rcutree.c
+> > > index 3fffc26..b8d300c 100644
+> > > --- a/kernel/rcutree.c
+> > > +++ b/kernel/rcutree.c
+> > > @@ -1749,6 +1749,13 @@ __call_rcu(struct rcu_head *head, void (*func)(struct rcu_head *rcu),
+> > >  	else
+> > >  		trace_rcu_callback(rsp->name, head, rdp->qlen);
+> > > 
+> > > +	/* Restart the timer if needed to handle the callbacks */
+> > > +	if (cpuset_adaptive_nohz()) {
+> > > +		/* Make updates on nxtlist visible to self IPI */
+> > > +		barrier();
+> > > +		smp_cpuset_update_nohz(smp_processor_id());
+> > > +	}
+> > > +
+> > >  	/* If interrupts were disabled, don't dive into RCU core. */
+> > >  	if (irqs_disabled_flags(flags)) {
+> > >  		local_irq_restore(flags);
+> > > -- 
+> > > 1.7.5.4
+> > > 
+> > 
+> 
+
