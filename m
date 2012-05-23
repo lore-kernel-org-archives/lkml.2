@@ -1,98 +1,128 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751037Ab2EWEIg (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 May 2012 00:08:36 -0400
-Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:39351 "EHLO
-	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750735Ab2EWEIf (ORCPT
+	id S1751209Ab2EWEQW (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 May 2012 00:16:22 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:49692 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751134Ab2EWEQV convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 May 2012 00:08:35 -0400
-X-SecurityPolicyCheck: OK by SHieldMailChecker v1.7.4
-Message-ID: <4FBC6234.50804@jp.fujitsu.com>
-Date: Wed, 23 May 2012 13:06:12 +0900
-From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.0; rv:12.0) Gecko/20120428 Thunderbird/12.0.1
+	Wed, 23 May 2012 00:16:21 -0400
 MIME-Version: 1.0
-To: Rob Landley <rob@landley.net>
-CC: Wen Congyang <wency@cn.fujitsu.com>, tglx@linutronix.de,
-        Ingo Molnar <mingo@redhat.com>, x86@kernel.org,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 1/2] x86: add max_addr boot option
-References: <4FBB3A23.50102@cn.fujitsu.com> <4FBBEE49.2020806@landley.net>
-In-Reply-To: <4FBBEE49.2020806@landley.net>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <4FBC3FF0.5080408@samsung.com>
+References: <y@samsung.com>
+	<4fbb2ada.63de440a.589d.78e2@mx.google.com>
+	<4FBC3FF0.5080408@samsung.com>
+Date: Wed, 23 May 2012 09:46:19 +0530
+Message-ID: <CAKew6eW2eGrBnzSGsr3N_dXSixXv-bkBo7xkbC-o9DNnwBhcuw@mail.gmail.com>
+Subject: Re: [PATCH v3 2/2] regulator: Add support for MAX77686.
+From: Yadwinder Singh Brar <yadi.brar01@gmail.com>
+To: jonghwa3.lee@samsung.com
+Cc: linux-kernel@vger.kernel.org, linux-samsung-soc@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Liam Girdwood <lrg@ti.com>,
+        Yadwinder Singh Brar <yadi.brar@samsung.com>,
+        Kyungmin Park <kmpark@infradead.org>,
+        Samuel Ortiz <sameo@linux.intel.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(2012/05/23 4:51), Rob Landley wrote:
+(adding Kyungmin Park and Samuel Ortiz)
 
-> On 05/22/2012 02:02 AM, Wen Congyang wrote:
->> If we only want to use node0, we can specify the max_addr. The boot
->> option "mem=" can do the same thing now. But the boot option "mem="
->> means the total memory used by the system. If we tell the user
->> that the boot option "mem=" can do this, it will confuse the user.
->> So we need an new boot option "max_addr" on x86 platform.
-> 
-> I didn't follow that reasoning at all.  Care to try again?
-> 
-> (mem= can do this, but telling users that would confuse them?  What?)
-> 
+Hi,
 
+Yes, It happened unintentionally. I didn't know about your patch
+before submitting
+the initial version of my patches. I agree with you, I will review
+your patches and
+will try to incorporate extra features from your patches.
 
-Kernel doc says
+On Wed, May 23, 2012 at 7:10 AM,  <jonghwa3.lee@samsung.com> wrote:
+> Hi, Yadwinder,
+> As you know, both of us, recently, had competition for one driver
+> whether you intend or not. And now, i think it is time to stop this and
+> to find appropriate goal. From now on, i won't update this driver no
+> more. I recommend you to review my patch and apply feature that you can
+> apply. And also check comments that i wrote below.
+>
+> On 2012년 05월 22일 14:57, yadi.brar01@gmail.com wrote:
+>
+>> From: Yadwinder Singh Brar <yadi.brar@samsung.com>
+>>
+>> Add support for PMIC/regulator portion of MAX77686 multifunction device.
+>> MAX77686 provides LDOs[1-26] and BUCKs[1-9]. This is initial release of driv
+>> which supports setting and getting the voltage of a regulator with I2C
+>> interface.
 
-mem=nn[KMG]             [KNL,BOOT] Force usage of a specific amount of memory
-                        Amount of memory to be used when the kernel is not able
-                        to see the whole system memory or for test.
-                        [X86-32] Use together with memmap= to avoid physical
-                        address space collisions. Without memmap= PCI devices
-                        could be placed at addresses belonging to unused RAM.
+>> +     return DIV_ROUND_UP(rdev->desc->uV_step *
+>> +                         abs(new_sel - old_sel),
+>> +                         100);
+>> +}
+>> +
+>
+>
+> Does LDO also need waiting for voltage change? I afraid it's not.
+>
 
-max_addr=nn[KMG]        [KNL,BOOT,ia64] All physical memory greater
-                        than or equal to this physical address is ignored.
+Yes, according to technical reference manual which I have, ramp rate for
+LDOs is also 100mV/us.
 
-And, now, on x86+e820, mem= option works as max_addr= option.
+>> +
+>> +     if (pdata->ramp_delay < MAX77686_RAMP_RATE_13MV ||
+>> +             pdata->ramp_delay > MAX77686_RAMP_RATE_100MV)
+>> +             pdata->ramp_delay = MAX77686_RAMP_RATE_27MV;    /* default */
 
-This caused some troubles in our customer sometimes. In many server, address
-range 3G-4g are reserved for PCI.
+If pdata doesn't have proper ramp_delay, it will get value
+MAX77686_RAMP_RATE_27MV.
 
-This is my host's dmesg.
-==
-BIOS-provided physical RAM map:
- BIOS-e820: 0000000000000000 - 000000000009e800 (usable)
- BIOS-e820: 000000000009e800 - 00000000000a0000 (reserved)
- BIOS-e820: 00000000000ce000 - 00000000000d0000 (reserved)
- BIOS-e820: 00000000000e0000 - 0000000000100000 (reserved)
- BIOS-e820: 0000000000100000 - 00000000bfee0000 (usable)
- BIOS-e820: 00000000bfee0000 - 00000000bfee7000 (ACPI data)
- BIOS-e820: 00000000bfee7000 - 00000000bff00000 (ACPI NVS)
- BIOS-e820: 00000000bff00000 - 00000000bff80000 (usable)
- BIOS-e820: 00000000bff80000 - 00000000c0000000 (reserved)
- BIOS-e820: 00000000e0000000 - 00000000f0000000 (reserved)
- BIOS-e820: 00000000fe000000 - 00000000fed00000 (reserved)
- BIOS-e820: 00000000fee00000 - 00000000fef00000 (reserved)
- BIOS-e820: 00000000ffb00000 - 0000000100000000 (reserved)
- BIOS-e820: 0000000100000000 - 0000000640000000 (usable)
-==
+>> +
+>> +     max77686->ramp_delay = pdata->ramp_delay - 1;
+>
+>
+> I think it is better to check pdata->ramp_delay is available.
+> If pdata doesn't have ramp_delay member it might be error.
+>
 
-So, if customer sets mem=10G, the system will boot with 9G memory.
-I think this is a bug and mem= should see 'amount of memory'.
+Yes, we have taken care of this case above before setting value of
+max77686->ramp_delay.
 
-For users who want to hide memory in higher address, I think
-max_addr= option is suitable.
+>> +     max77686_update_reg(i2c, MAX77686_REG_BUCK2CTRL1,
+>> +             max77686->ramp_delay << 6, RAMP_MASK);
+>> +     max77686_update_reg(i2c, MAX77686_REG_BUCK3CTRL1,
+>> +             max77686->ramp_delay << 6, RAMP_MASK);
+>> +     max77686_update_reg(i2c, MAX77686_REG_BUCK4CTRL1,
+>> +             max77686->ramp_delay << 6, RAMP_MASK);
+>> +
+>
+>
+> Why do you use i2c client still? If you registered regmap you can use
+> its API. I recommend you to use regmap_update_bits() directly.
+>
+>
+
+Yes, we are using regmap_update_bits().  max77686_update_reg() is just
+a wrapper over it.
+
+>> +     platform_set_drvdata(pdev, max77686);
+>> +
+
+>
+> MAX77686 has crystal oscillator in it. And original version of this
+> driver which was written by Chiwoon Byun, registers it as a regulator.
+> As Mark says, we have to change it to use generic clock API. Where do
+> you think should we put them into? In my opinion, it is proper that just
+> leave them in regulator driver because this driver is almost core of
+> PMIC. I already applied generic API in my local repository but i
+> couldn't test yet. Because it crashed with SOC's private clock API.
+> Anyway if you register 32khz clock with generic API ,DEFINE_CLK_GATE()
+> will help you out which defined in linux/clk-private.h.
+>
+
+Yes, I was also thinking about where to put it. I am not sure whether this
+is a proper place to put them. Anyway I will again think about it.
 
 Thanks,
--Kame
-
-
-
-
-
-
-
-
-
-
-
+Yadwinder.
