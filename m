@@ -1,63 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751492Ab2EWERa (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 May 2012 00:17:30 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:48994 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750725Ab2EWER2 convert rfc822-to-8bit (ORCPT
+	id S1751578Ab2EWESH (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 May 2012 00:18:07 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:37355 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751173Ab2EWESF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 May 2012 00:17:28 -0400
+	Wed, 23 May 2012 00:18:05 -0400
+Date: Tue, 22 May 2012 21:17:56 -0700 (PDT)
+From: David Rientjes <rientjes@google.com>
+X-X-Sender: rientjes@chino.kir.corp.google.com
+To: Ingo Molnar <mingo@elte.hu>, "H. Peter Anvin" <hpa@zytor.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Peter Zijlstra <peterz@infradead.org>
+cc: Stephen Rothwell <sfr@canb.auug.org.au>, linux-kernel@vger.kernel.org,
+        linux-next@vger.kernel.org, linuxppc-dev@lists.ozlabs.org,
+        Lee Schermerhorn <lee.schermerhorn@hp.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: [patch] sched, numa: Allocate node_queue on any node for offline
+ nodes
+In-Reply-To: <20120522130354.fdb335eb294f4206b4b2fed5@canb.auug.org.au>
+Message-ID: <alpine.DEB.2.00.1205222116160.32649@chino.kir.corp.google.com>
+References: <20120522114051.0c9db9a7c2d660bc9e0e1be2@canb.auug.org.au> <alpine.DEB.2.00.1205211846120.20916@chino.kir.corp.google.com> <20120522130354.fdb335eb294f4206b4b2fed5@canb.auug.org.au>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-In-Reply-To: <4FBC4255.4040307@samsung.com>
-References: <y@samsung.com>
-	<4fbb2ada.63de440a.589d.78e2@mx.google.com>
-	<4FBC4255.4040307@samsung.com>
-Date: Wed, 23 May 2012 09:47:28 +0530
-Message-ID: <CAKew6eVXhg9RscZFM1_go3bjvvn_99zqaDRQ1ZjG_BUWCYR0YQ@mail.gmail.com>
-Subject: Re: [PATCH v3 2/2] regulator: Add support for MAX77686.
-From: Yadwinder Singh Brar <yadi.brar01@gmail.com>
-To: jonghwa3.lee@samsung.com
-Cc: linux-kernel@vger.kernel.org, linux-samsung-soc@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Liam Girdwood <lrg@ti.com>,
-        Yadwinder Singh Brar <yadi.brar@samsung.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+struct node_queue must be allocated with NUMA_NO_NODE for nodes that are 
+not (yet) online, otherwise the page allocator has a bad zonelist and 
+results in an early crash.
 
-On Wed, May 23, 2012 at 7:20 AM,  <jonghwa3.lee@samsung.com> wrote:
-> Hi, again.
-> On 2012년 05월 22일 14:57, yadi.brar01@gmail.com wrote:
->
->
->> +static __devinit int max77686_pmic_probe(struct platform_device *pdev)
->> +{
->
->> +
->> +     for (i = 0; i < pdata->num_regulators; i++) {
->> +             config.dev = max77686->dev;
->> +             config.init_data = pdata->regulators[i].init_data;
->> +             config.driver_data = max77686;
->> +             config.regmap = iodev->regmap;
->> +
->> +             rdev[i] = regulator_register(&regulators[i], &config);
->
->
-> I'm sorry that i missed one. You have to register all regulators
-> unconditionally. Mark brown commented about this to my former patch.
->
-> 'No, you should unconditionally register all regulators the device
-> physically has.  This is useful for debug and simplifies the code.'
->                                                - from Mark Brown
->
+Tested-by: Stephen Rothwell <sfr@canb.auug.org.au>
+Signed-off-by: David Rientjes <rientjes@google.com>
+---
+ kernel/sched/numa.c |    3 ++-
+ 1 files changed, 2 insertions(+), 1 deletions(-)
 
-Yes, we are registering all regulators here.
-As pdata->num_regulators will be equal to ARRAY_SIZE(regulators)
-
-Thanks,
-Yadwinder.
+diff --git a/kernel/sched/numa.c b/kernel/sched/numa.c
+--- a/kernel/sched/numa.c
++++ b/kernel/sched/numa.c
+@@ -885,7 +885,8 @@ static __init int numa_init(void)
+ 
+ 	for_each_node(node) {
+ 		struct node_queue *nq = kmalloc_node(sizeof(*nq),
+-				GFP_KERNEL | __GFP_ZERO, node);
++				GFP_KERNEL | __GFP_ZERO,
++				node_online(node) ? node : NUMA_NO_NODE);
+ 		BUG_ON(!nq);
+ 
+ 		spin_lock_init(&nq->lock);
