@@ -1,82 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754960Ab2EWQ3n (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 May 2012 12:29:43 -0400
-Received: from e8.ny.us.ibm.com ([32.97.182.138]:57021 "EHLO e8.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751369Ab2EWQ3m (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 May 2012 12:29:42 -0400
-Date: Wed, 23 May 2012 09:28:46 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: LKML <linux-kernel@vger.kernel.org>, linaro-sched-sig@lists.linaro.org,
-        Alessio Igor Bogani <abogani@kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>, Avi Kivity <avi@redhat.com>,
-        Chris Metcalf <cmetcalf@tilera.com>, Christoph Lameter <cl@linux.com>,
-        Daniel Lezcano <daniel.lezcano@linaro.org>,
-        Geoff Levand <geoff@infradead.org>,
-        Gilad Ben Yossef <gilad@benyossef.com>,
-        Hakan Akkan <hakanakkan@gmail.com>, Ingo Molnar <mingo@kernel.org>,
-        Kevin Hilman <khilman@ti.com>, Max Krasnyansky <maxk@qualcomm.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Stephen Hemminger <shemminger@vyatta.com>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Sven-Thorsten Dietrich <thebigcorporation@gmail.com>,
-        Thomas Gleixner <tglx@linutronix.de>
-Subject: Re: [PATCH 37/41] rcu: New rcu_user_enter() and rcu_user_exit() APIs
-Message-ID: <20120523162846.GF2402@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <1335830115-14335-1-git-send-email-fweisbec@gmail.com>
- <1335830115-14335-38-git-send-email-fweisbec@gmail.com>
- <20120522182306.GD8087@linux.vnet.ibm.com>
- <20120523142213.GF1663@somewhere>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120523142213.GF1663@somewhere>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 12052316-9360-0000-0000-0000069D91D8
+	id S1756339Ab2EWQ3r (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 May 2012 12:29:47 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:41528 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751369Ab2EWQ3o (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 23 May 2012 12:29:44 -0400
+Subject: Re: [tip:x86/mce] x86/bitops: Move BIT_64() for a wider use
+From: Peter Zijlstra <a.p.zijlstra@chello.nl>
+To: Borislav Petkov <borislav.petkov@amd.com>
+Cc: "H. Peter Anvin" <hpa@zytor.com>, mingo@kernel.org,
+        linux-kernel@vger.kernel.org, frank.arnold@amd.com,
+        akpm@linux-foundation.org, torvalds@linux-foundation.org,
+        tglx@linutronix.de, linux-tip-commits@vger.kernel.org
+In-Reply-To: <20120523161932.GN14757@aftab.osrc.amd.com>
+References: <1337684026-19740-1-git-send-email-bp@amd64.org>
+	 <tip-e8f380e00840f694599e6ab42806639f7de26f11@git.kernel.org>
+	 <1337789429.9783.16.camel@laptop> <4FBD0C47.70600@zytor.com>
+	 <20120523161932.GN14757@aftab.osrc.amd.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Wed, 23 May 2012 18:29:31 +0200
+Message-ID: <1337790571.9783.28.camel@laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.2 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, May 23, 2012 at 04:22:17PM +0200, Frederic Weisbecker wrote:
-> On Tue, May 22, 2012 at 11:23:06AM -0700, Paul E. McKenney wrote:
-> > On Tue, May 01, 2012 at 01:55:11AM +0200, Frederic Weisbecker wrote:
-> > > These two APIs are provided to help the implementation
-> > > of an adaptive tickless kernel (cf: nohz cpusets). We need
-> > > to run into RCU extended quiescent state when we are in
-> > > userland so that a tickless CPU is not involved in the
-> > > global RCU state machine and can shutdown its tick safely.
+On Wed, 2012-05-23 at 18:19 +0200, Borislav Petkov wrote:
+> On Wed, May 23, 2012 at 09:11:51AM -0700, H. Peter Anvin wrote:
+> > On 05/23/2012 09:10 AM, Peter Zijlstra wrote:
+> > > On Wed, 2012-05-23 at 09:07 -0700, tip-bot for Borislav Petkov wrote:
+> > >> +#define BIT_64(n)                      (U64_C(1) << (n))
 > > > 
-> > > These APIs are called from syscall and exception entry/exit
-> > > points and can't be called from interrupt.
+> > > Because writing 1ULL << n is too much work? 
 > > > 
-> > > They are essentially the same than rcu_idle_enter() and
-> > > rcu_idle_exit() minus the checks that ensure the CPU is
-> > > running the idle task.
 > > 
-> > This looks reasonably sane.  There are a few nits like missing comment
-> > headers for functions and the need for tracing, but I can handle that
-> > when I pull it in.  I am happy to do that pretty much any time, but not
-> > before the API stabilizes.  ;-)
-> > 
-> > So let me know when it is ready for -rcu.
+> > Because writing 1ULL << n is broken in anything that needs to be used in
+> > assembly, for example.
 > 
-> Ok. So would you be willing to host this specific part in -rcu? I don't
-> know if these APIs are welcome upstream if they have no upstream users
-> yet. OTOH it would be easier for me if I don't need to include these patches
-> in my endless rebases.
+> Actually we need a BIT() macro that works both
+> on 32- and 64-bit. But that won't be that easy:
+> http://lkml.indiana.edu/hypermail/linux/kernel/1010.1/02335.html
 > 
-> Another solution is to host that in some seperate tree. In yours or in -tip.
-> Ingo seemed to be willing to host this patchset.
-> 
-> What do you think?
-> 
-> I believe I need to rebase against your latest changes though.
+> And it should return UL for shift values < 32 and ULL otherwise.
 
-Indeed, there has been a bit of churn in this area from RCU_FAST_NO_HZ.
+If I remember my type rules correctly you'll get something like that
+with:
 
-							Thanx, Paul
+#define BIT(n)	({ typeof(n) __n = (n); (__n < 32) ? (1UL << __n) : (1ULL << __n); })
+
+That said, having it do this might be unexpected, also hpa mentioned
+something about assembly magics which will obviously not work with the
+above either.
+
+Anyway, ignore me, I just thought the BIT_64() thing looked funny, but
+apparently there's good reasons for it.
 
