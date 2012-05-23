@@ -1,70 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760760Ab2EWSks (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 May 2012 14:40:48 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:57038 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753046Ab2EWSkq (ORCPT
+	id S933791Ab2EWSr1 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 May 2012 14:47:27 -0400
+Received: from acsinet15.oracle.com ([141.146.126.227]:51432 "EHLO
+	acsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759782Ab2EWSrZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 May 2012 14:40:46 -0400
+	Wed, 23 May 2012 14:47:25 -0400
+Date: Wed, 23 May 2012 21:51:09 +0300
+From: Dan Carpenter <dan.carpenter@oracle.com>
+To: H Hartley Sweeten <hartleys@visionengravers.com>
+Cc: Linux Kernel <linux-kernel@vger.kernel.org>,
+        "devel@driverdev.osuosl.org" <devel@driverdev.osuosl.org>,
+        "fmhess@users.sourceforge.net" <fmhess@users.sourceforge.net>,
+        "abbotti@mev.co.uk" <abbotti@mev.co.uk>,
+        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>
+Subject: Re: [PATCH] staging: comedi: remove this_board macro in the s526
+ driver
+Message-ID: <20120523185109.GO4629@mwanda>
+References: <201205221820.10770.hartleys@visionengravers.com>
+ <20120523054849.GK4637@mwanda>
+ <ADE657CA350FB648AAC2C43247A983F0020698BAC8A9@AUSP01VMBX24.collaborationhost.net>
 MIME-Version: 1.0
-In-Reply-To: <CAE9FiQXx_x9M5ncLk4DyL8heYQTcsHZt2JofFMjPfUd4mympeA@mail.gmail.com>
-References: <1337754877-19759-1-git-send-email-yinghai@kernel.org>
-	<1337754877-19759-3-git-send-email-yinghai@kernel.org>
-	<CA+55aFzd1BWqidt95qZLc1x_YU=WeGS=mKUOMvO_3omOhc_5VA@mail.gmail.com>
-	<CAE9FiQXx_x9M5ncLk4DyL8heYQTcsHZt2JofFMjPfUd4mympeA@mail.gmail.com>
-Date: Wed, 23 May 2012 11:40:46 -0700
-X-Google-Sender-Auth: YNaPIbN-6NWegaEFDD4CEzFZK1o
-Message-ID: <CAE9FiQX=ECg5BmKm7B2ua_rZ6bOsceeHNsfFQRWBbNZx+8sBfw@mail.gmail.com>
-Subject: Re: [PATCH 02/11] PCI: Try to allocate mem64 above 4G at first
-From: Yinghai Lu <yinghai@kernel.org>
-To: Linus Torvalds <torvalds@linux-foundation.org>,
-        Steven Newbury <steve@snewbury.org.uk>,
-        "H. Peter Anvin" <hpa@zytor.com>
-Cc: Bjorn Helgaas <bhelgaas@google.com>,
-        Andrew Morton <akpm@linux-foundation.org>, linux-pci@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <ADE657CA350FB648AAC2C43247A983F0020698BAC8A9@AUSP01VMBX24.collaborationhost.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: acsinet21.oracle.com [141.146.126.237]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, May 23, 2012 at 10:30 AM, Yinghai Lu <yinghai@kernel.org> wrote:
-> On Wed, May 23, 2012 at 8:57 AM, Linus Torvalds
-> <torvalds@linux-foundation.org> wrote:
->> On Tue, May 22, 2012 at 11:34 PM, Yinghai Lu <yinghai@kernel.org> wrote:
->>> and will fall back to below 4g if it can not find any above 4g.
->>
->> Has this been tested on 32-bit machines without PAE? There might be
->> things that just happen to work because their allocations were always
->> done bottom-up.
->
-> Good point. that problem should be addressed at first before this patch.
+On Wed, May 23, 2012 at 11:06:39AM -0500, H Hartley Sweeten wrote:
+> On Tuesday, May 22, 2012 10:49 PM, Dan Carpenter wrote:
+> > On Tue, May 22, 2012 at 06:20:10PM -0700, H Hartley Sweeten wrote:
+> >> The 'thisboard' macro depends on having a local variable with
+> >> a magic name. The CodingStyle document suggests not doing this
+> >> to avoid confusion. Remove the macro and use the comedi_board()
+> >> inline helper to get the dev->board_ptr information.
+> >> 
+> >> Signed-off-by: H Hartley Sweeten <hsweeten@visionengravers.com>
+> >> Cc: Ian Abbott <abbotti@mev.co.uk>
+> >> Cc: Mori Hess <fmhess@users.sourceforge.net>
+> >> Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+> >> 
+> >> ---
+> >> @@ -769,13 +765,7 @@ static int s526_attach(struct comedi_device *dev, struct comedi_devconfig *it)
+> >>  	}
+> >>  	***/
+> >>  
+> >> -/*
+> >> - * Initialize dev->board_name.  Note that we can use the "thisboard"
+> >> - * macro now, since we just initialized it in the last line.
+> >> - */
+> >> -	dev->board_ptr = &s526_boards[0];
+> >
+> > Was this intended?  Most of the boards have auto probing so the
+> > ->board_ptr gets set automatically.  We already called
+> > comedi_board() so I wonder if the autoprobed board is the same as
+> > the &s526_boards[0];?  NULL pointer perhaps?  I don't know.
+> 
+> Yes, removing the line was intended. Sorry I didn't mention it in the
+> commit message.
+> 
+> The dev->board_ptr will already be set by comedi_device_attach()
+> before the drivers attach() method is called.
+> 
+> I think the author of this driver misunderstood the skel driver and
+> thought this was needed in order to simulate a "probe". See this
+> comment in the skel.c driver:
+> 
+> /*
+>  * If you can probe the device to determine what device in a series
+>  * it is, this is the place to do it.  Otherwise, dev->board_ptr
+>  * should already be initialized.
+>  */
+> 	/* dev->board_ptr = skel_probe(dev, it); */
+> 
 
-Just checked code for 32bit machines without PAE.
+Heh.  Yeah.  I saw you removed a bunch of these comments and this
+was the only one that wasn't commented so I wondered.
 
-when X86_PAE is not set, phys_addr_t aka resource_size_t will be 32bit.
-so in drivers/pci/bus.c::pci_bus_alloc_resource_fit()
-will have bottom to 0.
-    resource_size_t bottom = PCIBIOS_MAX_MEM_32 + 1ULL;
-also in arch/x86/kernel/setup.c::setup_arch()
-   iomem_resource.end = (1ULL << boot_cpu_data.x86_phys_bits) - 1;
-will have iomem_resource.end to 0xffffffff
+Ian already explained how the probing works.  Looks good.
 
-when X86_PAE is set, but CPU does not support PAE.
-phys_addr_t aka resource_size_t will be 32bit.
-so in drivers/pci/bus.c::pci_bus_alloc_resource_fit()
-will have bottom to 4g.
-    resource_size_t bottom = PCIBIOS_MAX_MEM_32 + 1ULL;
-but
-in arch/x86/kernel/setup.c::setup_arch()
-   iomem_resource.end = (1ULL << boot_cpu_data.x86_phys_bits) - 1;
-will have iomem_resource.end to 0xffffffff, because x86_phys_bits is 32 when PAE
-is not detected in arch/x86/kernel/cpu/common.c::get_cpu_cap.
-that mean first try will fail, so it will go to second try with bottom to 0.
+regards,
+dan carpenter
 
-so both case are safe with this patch.
 
-Thanks
-
-Yinghai
