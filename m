@@ -1,75 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933325Ab2EWBoy (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 May 2012 21:44:54 -0400
-Received: from mail-yx0-f174.google.com ([209.85.213.174]:59661 "EHLO
-	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933148Ab2EWBov convert rfc822-to-8bit (ORCPT
+	id S964858Ab2EWBrt (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 May 2012 21:47:49 -0400
+Received: from LGEMRELSE6Q.lge.com ([156.147.1.121]:49985 "EHLO
+	LGEMRELSE6Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933052Ab2EWBrJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 May 2012 21:44:51 -0400
+	Tue, 22 May 2012 21:47:09 -0400
+X-AuditID: 9c930179-b7bb9ae000000ea5-c5-4fbc419aaa10
+To: undisclosed-recipients:;
+Message-ID: <4FBC41A2.1080402@kernel.org>
+Date: Wed, 23 May 2012 10:47:14 +0900
+From: Minchan Kim <minchan@kernel.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
 MIME-Version: 1.0
-In-Reply-To: <20120522224255.GM14339@google.com>
-References: <cover.1336619038.git.koverstreet@google.com>
-	<9ea33658f2a71b3b9bd2ec10bee959bef146f23c.1336619038.git.koverstreet@google.com>
-	<20120522224255.GM14339@google.com>
-Date: Tue, 22 May 2012 18:44:50 -0700
-Message-ID: <CAH+dOx+=XuLzrDqyigAghCT=c6O1HJdd-SMHUw-XpK0NeY8PnA@mail.gmail.com>
-Subject: Re: [Bcache v13 14/16] bcache: Request, io and allocation code
-From: Kent Overstreet <koverstreet@google.com>
-To: Tejun Heo <tejun@google.com>
-Cc: linux-bcache@vger.kernel.org, linux-kernel@vger.kernel.org,
-        dm-devel@redhat.com, agk@redhat.com
+Newsgroups: gmane.linux.kernel.mm,gmane.linux.kernel
+CC: Seth Jennings <sjenning@linux.vnet.ibm.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Dan Magenheimer <dan.magenheimer@oracle.com>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Nitin Gupta <ngupta@vflare.org>
+Subject: Re: [PATCH] zsmalloc: use unsigned long instead of void *
+References: <1337567013-4741-1-git-send-email-minchan@kernel.org> <4FBA4EE2.8050308@linux.vnet.ibm.com> <4FBC2916.5000305@kernel.org>
+In-Reply-To: <4FBC2916.5000305@kernel.org>
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
-X-System-Of-Record: true
+Content-Transfer-Encoding: 7bit
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I'm gonna grovel through the code history, but that looks to me like dead code.
+On 05/23/2012 09:02 AM, Minchan Kim wrote:
 
-On Tue, May 22, 2012 at 3:42 PM, Tejun Heo <tejun@google.com> wrote:
-> On Wed, May 09, 2012 at 11:11:25PM -0400, Kent Overstreet wrote:
->> +int submit_bbio_split(struct bio *bio, struct cache_set *c,
->> +                   struct bkey *k, unsigned ptr)
->> +{
->> +     struct closure *cl = bio->bi_private;
->> +     struct bbio *b;
->> +     struct bio *n;
->> +     unsigned sectors_done = 0;
->> +
->> +     closure_get(cl);
->> +
->> +     bio->bi_sector  = PTR_OFFSET(k, ptr);
->> +     bio->bi_bdev    = PTR_CACHE(c, k, ptr)->bdev;
->> +
->> +     do {
->> +             n = bio_split_get(bio, bio_max_sectors(bio), c);
->> +             if (!n) {
->> +                     closure_put(cl);
->> +                     return -ENOMEM;
->> +             }
->> +
->> +             b = container_of(n, struct bbio, bio);
->> +
->> +             bkey_copy_single_ptr(&b->key, k, ptr);
->> +             SET_KEY_SIZE(&b->key, KEY_SIZE(k) - sectors_done);
->> +             SET_PTR_OFFSET(&b->key, 0, PTR_OFFSET(k, ptr) + sectors_done);
->> +
->> +             b->submit_time_us = local_clock_us();
->> +             generic_make_request(n);
->> +     } while (n != bio);
->> +
->> +     return 0;
->> +}
->
-> Hmmm... where is @sectors_done updated?
->
-> Thanks.
->
-> --
-> tejun
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-bcache" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Maybe I will resend next spin based on v3.4 today
+> I hope it doesn't hurt you.
+
+
+I didn't based v2 patches on v3.4 because mainline tree doesn't have lots of staging patchset.
+So it's not a good idea to apply staging patchset in mainline. I believe linux-next is good candidate
+for it so I sent v2 patches against next-20120522.
+
+Thanks.
+
+-- 
+Kind regards,
+Minchan Kim
