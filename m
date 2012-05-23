@@ -1,134 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754767Ab2EWJDT (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 May 2012 05:03:19 -0400
-Received: from e23smtp02.au.ibm.com ([202.81.31.144]:43842 "EHLO
-	e23smtp02.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752141Ab2EWJDR (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 May 2012 05:03:17 -0400
-Message-ID: <4FBCA555.5020303@linux.vnet.ibm.com>
-Date: Wed, 23 May 2012 16:52:37 +0800
-From: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
-MIME-Version: 1.0
-To: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
-CC: Avi Kivity <avi@redhat.com>, Marcelo Tosatti <mtosatti@redhat.com>,
-        LKML <linux-kernel@vger.kernel.org>, KVM <kvm@vger.kernel.org>
-Subject: [PATCH v5 2/9] KVM: MMU: abstract spte write-protect
-References: <4FBCA4FB.8050501@linux.vnet.ibm.com>
-In-Reply-To: <4FBCA4FB.8050501@linux.vnet.ibm.com>
-Content-Type: text/plain; charset=UTF-8
+	id S1755523Ab2EWJEI (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 May 2012 05:04:08 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:27367 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752390Ab2EWJEE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 23 May 2012 05:04:04 -0400
+Message-ID: <1337763839.2225.11.camel@perseus.themaw.net>
+Subject: Re: [PATCH] autofs4 - fix get_next_positive_subdir()
+From: Ian Kent <ikent@redhat.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        linux-fsdevel <linux-fsdevel@vger.kernel.org>
+Date: Wed, 23 May 2012 17:03:59 +0800
+In-Reply-To: <1337758248.2225.9.camel@perseus.themaw.net>
+References: <20120523024950.3905.89811.stgit@perseus.themaw.net>
+	 <CA+55aFwCESHx0d+ZEe-zi3PS6mkMaMng75Dnfit93cTwhb5gSg@mail.gmail.com>
+	 <1337757721.2225.8.camel@perseus.themaw.net>
+	 <1337758248.2225.9.camel@perseus.themaw.net>
+Content-Type: text/plain; charset="UTF-8"
 Content-Transfer-Encoding: 7bit
-x-cbid: 12052222-5490-0000-0000-0000017173DC
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Introduce a common function to abstract spte write-protect to
-cleanup the code
+On Wed, 2012-05-23 at 15:30 +0800, Ian Kent wrote:
+> On Wed, 2012-05-23 at 15:22 +0800, Ian Kent wrote:
+> > On Tue, 2012-05-22 at 19:53 -0700, Linus Torvalds wrote:
+> > > On Tue, May 22, 2012 at 7:49 PM, Ian Kent <ikent@redhat.com> wrote:
+> > > >
+> > > > The locking for the list traversal in get_next_positive_subdir() is
+> > > > wrong, so fix it.
+> > > 
+> > > As an explanation, this kind of thing is totally useless. It doesn't
+> > > actually give any information at all. It's like saying "change
+> > > locking"
+> > > 
+> > > What happened, and why? Why is the new nested spinlock ok and won't
+> > > deadlock against other nested users? Wazzup?
+> > 
+> > It's good that you questioned this Linus.
+> > 
+> > Looking again at dput() I think the traversal still isn't quite right.
+> > 
+> > For a start the test for d_count 0 or positive and hashed can never be
+> 
+> Correction, that second check is actually !(positive and hashed) in the
+> code.
+> 
+> > true since the point of the change was to take the d_lock of the
+> > d_subdirs dentry for the traversal.
 
-Signed-off-by: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
----
- arch/x86/kvm/mmu.c |   58 +++++++++++++++++++++++++++------------------------
- 1 files changed, 31 insertions(+), 27 deletions(-)
+That's not right, ignore this.
 
-diff --git a/arch/x86/kvm/mmu.c b/arch/x86/kvm/mmu.c
-index ddbf89f..337ff0a 100644
---- a/arch/x86/kvm/mmu.c
-+++ b/arch/x86/kvm/mmu.c
-@@ -1051,36 +1051,48 @@ static void drop_spte(struct kvm *kvm, u64 *sptep)
- 		rmap_remove(kvm, sptep);
- }
+> > 
+> > I'll need to work on this some more, thanks.
+> > Ian
+> 
 
-+/* Return true if the spte is dropped. */
-+static bool spte_write_protect(struct kvm *kvm, u64 *sptep, bool *flush)
-+{
-+	u64 spte = *sptep;
-+
-+	if (!is_writable_pte(spte))
-+		return false;
-+
-+	rmap_printk("rmap_write_protect: spte %p %llx\n", sptep, *sptep);
-+
-+	*flush |= true;
-+	if (is_large_pte(spte)) {
-+		WARN_ON(page_header(__pa(sptep))->role.level ==
-+		       PT_PAGE_TABLE_LEVEL);
-+		drop_spte(kvm, sptep);
-+		--kvm->stat.lpages;
-+		return true;
-+	}
-+
-+	spte = spte & ~PT_WRITABLE_MASK;
-+	mmu_spte_update(sptep, spte);
-+	return false;
-+}
-+
- static bool
- __rmap_write_protect(struct kvm *kvm, unsigned long *rmapp, int level)
- {
- 	u64 *sptep;
- 	struct rmap_iterator iter;
--	bool write_protected = false;
-+	bool flush = false;
-
- 	for (sptep = rmap_get_first(*rmapp, &iter); sptep;) {
- 		BUG_ON(!(*sptep & PT_PRESENT_MASK));
--		rmap_printk("rmap_write_protect: spte %p %llx\n", sptep, *sptep);
--
--		if (!is_writable_pte(*sptep)) {
--			sptep = rmap_get_next(&iter);
--			continue;
--		}
--
--		if (level == PT_PAGE_TABLE_LEVEL) {
--			mmu_spte_update(sptep, *sptep & ~PT_WRITABLE_MASK);
--			sptep = rmap_get_next(&iter);
--		} else {
--			BUG_ON(!is_large_pte(*sptep));
--			drop_spte(kvm, sptep);
--			--kvm->stat.lpages;
-+		if (spte_write_protect(kvm, sptep, &flush)) {
- 			sptep = rmap_get_first(*rmapp, &iter);
-+			continue;
- 		}
-
--		write_protected = true;
-+		sptep = rmap_get_next(&iter);
- 	}
-
--	return write_protected;
-+	return flush;
- }
-
- /**
-@@ -3887,6 +3899,7 @@ int kvm_mmu_setup(struct kvm_vcpu *vcpu)
- void kvm_mmu_slot_remove_write_access(struct kvm *kvm, int slot)
- {
- 	struct kvm_mmu_page *sp;
-+	bool flush = false;
-
- 	list_for_each_entry(sp, &kvm->arch.active_mmu_pages, link) {
- 		int i;
-@@ -3901,16 +3914,7 @@ void kvm_mmu_slot_remove_write_access(struct kvm *kvm, int slot)
- 			      !is_last_spte(pt[i], sp->role.level))
- 				continue;
-
--			if (is_large_pte(pt[i])) {
--				drop_spte(kvm, &pt[i]);
--				--kvm->stat.lpages;
--				continue;
--			}
--
--			/* avoid RMW */
--			if (is_writable_pte(pt[i]))
--				mmu_spte_update(&pt[i],
--						pt[i] & ~PT_WRITABLE_MASK);
-+			spte_write_protect(kvm, &pt[i], &flush);
- 		}
- 	}
- 	kvm_flush_remote_tlbs(kvm);
--- 
-1.7.7.6
 
