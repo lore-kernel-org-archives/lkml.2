@@ -1,73 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760327Ab2EWOW1 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 May 2012 10:22:27 -0400
-Received: from mail-qc0-f174.google.com ([209.85.216.174]:64465 "EHLO
-	mail-qc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750915Ab2EWOWZ (ORCPT
+	id S933487Ab2EWOXe (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 May 2012 10:23:34 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:2439 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754149Ab2EWOXc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 May 2012 10:22:25 -0400
-Date: Wed, 23 May 2012 16:22:17 +0200
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Cc: LKML <linux-kernel@vger.kernel.org>, linaro-sched-sig@lists.linaro.org,
-        Alessio Igor Bogani <abogani@kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>, Avi Kivity <avi@redhat.com>,
-        Chris Metcalf <cmetcalf@tilera.com>, Christoph Lameter <cl@linux.com>,
-        Daniel Lezcano <daniel.lezcano@linaro.org>,
-        Geoff Levand <geoff@infradead.org>,
-        Gilad Ben Yossef <gilad@benyossef.com>,
-        Hakan Akkan <hakanakkan@gmail.com>, Ingo Molnar <mingo@kernel.org>,
-        Kevin Hilman <khilman@ti.com>, Max Krasnyansky <maxk@qualcomm.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Stephen Hemminger <shemminger@vyatta.com>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Sven-Thorsten Dietrich <thebigcorporation@gmail.com>,
-        Thomas Gleixner <tglx@linutronix.de>
-Subject: Re: [PATCH 37/41] rcu: New rcu_user_enter() and rcu_user_exit() APIs
-Message-ID: <20120523142213.GF1663@somewhere>
-References: <1335830115-14335-1-git-send-email-fweisbec@gmail.com>
- <1335830115-14335-38-git-send-email-fweisbec@gmail.com>
- <20120522182306.GD8087@linux.vnet.ibm.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120522182306.GD8087@linux.vnet.ibm.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Wed, 23 May 2012 10:23:32 -0400
+X-Authority-Analysis: v=2.0 cv=D8PF24tj c=1 sm=0 a=ZycB6UtQUfgMyuk2+PxD7w==:17 a=XQbtiDEiEegA:10 a=0qJ8DHEiPTkA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=meVymXHHAAAA:8 a=ayC55rCoAAAA:8 a=VwQbUJbxAAAA:8 a=0azM3ZO7AAAA:8 a=68eEZQRoAAAA:8 a=ASB4Q_33QhIFIoUxRUEA:9 a=PUjeQqilurYA:10 a=BGWj8ct6lkoA:10 a=7YLhZ6jOsBkA:10 a=jeBq3FmKZ4MA:10 a=ZycB6UtQUfgMyuk2+PxD7w==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 74.67.80.29
+Message-ID: <1337783010.13348.157.camel@gandalf.stny.rr.com>
+Subject: [GIT PULL] ktest: trivial spelling fixes
+From: Steven Rostedt <rostedt@goodmis.org>
+To: LKML <linux-kernel@vger.kernel.org>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Jesper Juhl <jj@chaosbits.net>, Randy Dunlap <rdunlap@xenotime.net>
+Date: Wed, 23 May 2012 10:23:30 -0400
+Content-Type: text/plain; charset="ISO-8859-15"
+X-Mailer: Evolution 3.2.2-1 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, May 22, 2012 at 11:23:06AM -0700, Paul E. McKenney wrote:
-> On Tue, May 01, 2012 at 01:55:11AM +0200, Frederic Weisbecker wrote:
-> > These two APIs are provided to help the implementation
-> > of an adaptive tickless kernel (cf: nohz cpusets). We need
-> > to run into RCU extended quiescent state when we are in
-> > userland so that a tickless CPU is not involved in the
-> > global RCU state machine and can shutdown its tick safely.
-> > 
-> > These APIs are called from syscall and exception entry/exit
-> > points and can't be called from interrupt.
-> > 
-> > They are essentially the same than rcu_idle_enter() and
-> > rcu_idle_exit() minus the checks that ensure the CPU is
-> > running the idle task.
-> 
-> This looks reasonably sane.  There are a few nits like missing comment
-> headers for functions and the need for tracing, but I can handle that
-> when I pull it in.  I am happy to do that pretty much any time, but not
-> before the API stabilizes.  ;-)
-> 
-> So let me know when it is ready for -rcu.
 
-Ok. So would you be willing to host this specific part in -rcu? I don't
-know if these APIs are welcome upstream if they have no upstream users
-yet. OTOH it would be easier for me if I don't need to include these patches
-in my endless rebases.
+Linus,
 
-Another solution is to host that in some seperate tree. In yours or in -tip.
-Ingo seemed to be willing to host this patchset.
+I promised Jesper that I would push this for 3.5, but forgot to add it
+to my queue. It's just a spelling fix, but it should go in regardless to
+hide my inability to get words in the English language correct.
 
-What do you think?
+Please pull the latest ktest-v3.5-spelling tree, which can be found at:
 
-I believe I need to rebase against your latest changes though.
+  git://git.kernel.org/pub/scm/linux/kernel/git/rostedt/linux-ktest.git
+ktest-v3.5-spelling
+
+Head SHA1: 96d240a2d276bcf6d46163deb7d40c89ac3124a6
+
+
+Jesper Juhl (1):
+      ktest: Change singular "paranthesis" to plural "parentheses"
+
+----
+ tools/testing/ktest/sample.conf |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+---------------------------
+commit 11c38b7575c2f4624d8e199c50cec2ba0d58a753
+Author: Jesper Juhl <jj@chaosbits.net>
+Date:   Mon Apr 16 19:40:24 2012 +0200
+
+    ktest: Change singular "paranthesis" to plural "parentheses"
+    
+    Acked-by: Randy Dunlap <rdunlap@xenotime.net>
+    Signed-off-by: Jesper Juhl <jj@chaosbits.net>
+    Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+
+diff --git a/tools/testing/ktest/sample.conf b/tools/testing/ktest/sample.conf
+index 0e8191b..cf362b3 100644
+--- a/tools/testing/ktest/sample.conf
++++ b/tools/testing/ktest/sample.conf
+@@ -158,7 +158,7 @@
+ #
+ # TEST_START IF (DEFINED ALL_TESTS || ${MYTEST} == boottest) && ${MACHINE} == gandalf
+ #
+-# Notice the use of paranthesis. Without any paranthesis the above would be
++# Notice the use of parentheses. Without any parentheses the above would be
+ # processed the same as:
+ #
+ # TEST_START IF DEFINED ALL_TESTS || (${MYTEST} == boottest && ${MACHINE} == gandalf)
+
+
