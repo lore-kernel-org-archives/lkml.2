@@ -1,46 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757192Ab2EWP4M (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 May 2012 11:56:12 -0400
-Received: from perches-mx.perches.com ([206.117.179.246]:56719 "EHLO
-	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1751876Ab2EWP4K (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 May 2012 11:56:10 -0400
-Message-ID: <1337788569.1734.19.camel@joe2Laptop>
-Subject: Re: Plumbers: Tweaking scheduler policy micro-conf RFP
-From: Joe Perches <joe@perches.com>
-To: Ingo Molnar <mingo@kernel.org>
-Cc: Chen <hi3766691@gmail.com>, Peter Zijlstra <peterz@infradead.org>,
-        Vincent Guittot <vincent.guittot@linaro.org>,
-        torvalds@linux-foundation.org, linux-kernel@vger.kernel.org
-Date: Wed, 23 May 2012 08:56:09 -0700
-In-Reply-To: <20120523155003.GA8202@gmail.com>
-References: <CAKfTPtDz1-fR2i5x7AVd8sGZhX2VNtz2rnQC3ePrcHO9MWK3FQ@mail.gmail.com>
-	 <1337086834.27020.162.camel@laptop>
-	 <CAKfTPtDrZ-tfC81jnxwpB+DCtmxhU+VfoYbtSBr8MkFt+P8JcA@mail.gmail.com>
-	 <1337096141.27694.82.camel@twins> <1337193010.27694.146.camel@twins>
-	 <CA+55aFzuygx6L-2hVCMbk5cvEdDp6AUtOGq-wYFn=4yEyebPLw@mail.gmail.com>
-	 <1337468148.573.139.camel@twins>
-	 <CANQmPXhN92i9E8HqxE7pqz=kOwtn5Mz0crW37H6qs+XD420Yuw@mail.gmail.com>
-	 <20120523150359.GB26974@gmail.com> <1337787838.1734.15.camel@joe2Laptop>
-	 <20120523155003.GA8202@gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.2- 
+	id S964837Ab2EWP4U (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 May 2012 11:56:20 -0400
+Received: from e39.co.us.ibm.com ([32.97.110.160]:38100 "EHLO
+	e39.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758484Ab2EWP4S (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 23 May 2012 11:56:18 -0400
+Message-ID: <4FBD00DA.5080308@linux.vnet.ibm.com>
+Date: Wed, 23 May 2012 08:23:06 -0700
+From: Dave Hansen <dave@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
+MIME-Version: 1.0
+To: Peter Zijlstra <peterz@infradead.org>
+CC: Liu ping fan <kernelfans@gmail.com>, kvm@vger.kernel.org,
+        linux-kernel@vger.kernel.org, qemu-devel@nongnu.org,
+        Ingo Molnar <mingo@redhat.com>, Avi Kivity <avi@redhat.com>,
+        Anthony Liguori <anthony@codemonkey.ws>
+Subject: Re: [PATCH 1/2] sched: add virt sched domain for the guest
+References: <1337754751-9018-1-git-send-email-kernelfans@gmail.com>  <1337754751-9018-2-git-send-email-kernelfans@gmail.com>  <1337759644.9698.49.camel@twins>  <CAFgQCTvhVs8-onz3huovYe=StOYJe2pJO-nka_7KogSju6AttQ@mail.gmail.com>  <1337761402.9698.62.camel@twins>  <CAFgQCTt+cmUWUB6GvE=Ki5ikC1P7YA_sGrvgUKKJ6c3VuqCsAg@mail.gmail.com> <1337762914.9698.65.camel@twins>
+In-Reply-To: <1337762914.9698.65.camel@twins>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 12052315-4242-0000-0000-000001C19A35
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2012-05-23 at 17:50 +0200, Ingo Molnar wrote:
-> * Joe Perches <joe@perches.com> wrote:
-> > In a 1000 cpu config, there also an extra 500+ bytes per cpu
-> > in printk (I don't think that's particularly important btw)
-> A 1000 cpu piece of hardware will have a terabyte of RAM or 
-> more. 0.5K per CPU is reasonable.
+On 05/23/2012 01:48 AM, Peter Zijlstra wrote:
+> On Wed, 2012-05-23 at 16:34 +0800, Liu ping fan wrote:
+>> > so we need to migrate some of vcpus from node-B to node-A, or to
+>> > node-C.
+> This is absolutely broken, you cannot do that.
+> 
+> A guest task might want to be node affine, it looks at the topology sets
+> a cpu affinity mask and expects to stay on that node.
+> 
+> But then you come along, and flip one of those cpus to another node. The
+> guest task will now run on another node and get remote memory accesses.
 
-That's not fundamentally true, but it's not
-particularly important right now either.
-
-cheers, Joe
+Insane, sure.  But, if the node has physically gone away, what do we do?
+ I think we've got to either kill the guest, or let it run somewhere
+suboptimal.  Sounds like you're advocating killing it. ;)
 
