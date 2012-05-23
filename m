@@ -1,65 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760523Ab2EWUE7 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 May 2012 16:04:59 -0400
-Received: from mail-we0-f174.google.com ([74.125.82.174]:56195 "EHLO
-	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751660Ab2EWUE6 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 May 2012 16:04:58 -0400
-Date: Wed, 23 May 2012 22:04:51 +0200
-From: Ingo Molnar <mingo@kernel.org>
-To: Josh Boyer <jwboyer@gmail.com>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        linux-kernel@vger.kernel.org, Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Arnaldo Carvalho de Melo <acme@infradead.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [GIT PULL] perf fix
-Message-ID: <20120523200451.GA19288@gmail.com>
-References: <20120523185054.GA17700@gmail.com>
- <CA+5PVA5m5U67mt8mXH_i_2Zu7OuVWiHfR82kBwqJm5ey4R26sg@mail.gmail.com>
+	id S1760579Ab2EWUKL (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 May 2012 16:10:11 -0400
+Received: from e8.ny.us.ibm.com ([32.97.182.138]:56892 "EHLO e8.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756684Ab2EWUKJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 23 May 2012 16:10:09 -0400
+Message-ID: <4FBD4402.7060509@linux.vnet.ibm.com>
+Date: Wed, 23 May 2012 15:09:38 -0500
+From: Seth Jennings <sjenning@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <CA+5PVA5m5U67mt8mXH_i_2Zu7OuVWiHfR82kBwqJm5ey4R26sg@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Minchan Kim <minchan@kernel.org>
+CC: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        Nitin Gupta <ngupta@vflare.org>
+Subject: Re: [PATCH 2/2 v2] zram: clean up handle
+References: <1337737402-16543-1-git-send-email-minchan@kernel.org> <1337737402-16543-2-git-send-email-minchan@kernel.org>
+In-Reply-To: <1337737402-16543-2-git-send-email-minchan@kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 12052320-9360-0000-0000-0000069FAB8E
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 05/22/2012 08:43 PM, Minchan Kim wrote:
 
-* Josh Boyer <jwboyer@gmail.com> wrote:
-
-> On Wed, May 23, 2012 at 2:50 PM, Ingo Molnar <mingo@kernel.org> wrote:
-> > Linus,
-> >
-> > Please pull the latest perf-urgent-for-linus git tree from:
-> >
-> >   git://git.kernel.org/pub/scm/linux/kernel/git/tip/tip.git perf-urgent-for-linus
-> >
-> >   HEAD: 5bcdf5e4fee3c45e1281c25e4941f2163cb28c65 perf/x86: Update event scheduling constraints for AMD family 15h models
-> >
-> > Leftover AMD PMU driver fix fix from the end of the v3.4
-> > stabilization cycle.
+> zram's handle variable can store handle of zsmalloc in case of
+> compressing efficiently. Otherwise, it stores point of page descriptor.
+> This patch clean up the mess by union struct.
 > 
-> Perf doesn't even build in Linus' current tree.
-
-Yes, that's a regression in some build environments. (it builds 
-fine in our environments, that's why it wasn't noticed.)
-
-> [...]  You might want to include
+> changelog
+>   * from v1
+> 	- none(new add in v2)
 > 
-> http://git.kernel.org/?p=linux/kernel/git/tip/tip.git;a=commitdiff;h=8784eb7497b928de33a715e26da2bd51d424bec1
-> 
-> with your pull request.
+> Cc: Nitin Gupta <ngupta@vflare.org>
+> Cc: Seth Jennings <sjenning@linux.vnet.ibm.com>
+> Signed-off-by: Minchan Kim <minchan@kernel.org>
 
-I sent that (and other fixes) to Linus too, earlier today.
 
-This pull request you replied to is the v3.4 era fixes tree, 
-with one remaining fix in it.
+Not sure if the BUILD_BUG is completely needed since it's pretty well
+assumed that sizeof(unsigned long) == sizeof(void *) but it does provide
+some safety is someone tries to change the type of handle.
+
+Acked-by: <sjenning@linux.vnet.ibm.com>
 
 Thanks,
+Seth
 
-	Ingo
