@@ -1,51 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756910Ab2EWHln (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 May 2012 03:41:43 -0400
-Received: from mail-ey0-f174.google.com ([209.85.215.174]:57292 "EHLO
-	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755623Ab2EWHlm (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 May 2012 03:41:42 -0400
-Subject: Re: [PATCH] ipv4: fix the rcu race between free_fib_info and
- ip_route_output_slow
-From: Eric Dumazet <eric.dumazet@gmail.com>
-To: Yanmin Zhang <yanmin_zhang@linux.intel.com>
-Cc: David Miller <davem@davemloft.net>, kunx.jiang@intel.com,
-        netdev@vger.kernel.org, linux-kernel@vger.kernel.org
-In-Reply-To: <1337758775.3361.2056.camel@edumazet-glaptop>
-References: <4FBB6105.2060808@intel.com>
-	 <20120522.151554.106838106733194160.davem@davemloft.net>
-	 <1337742123.14538.175.camel@ymzhang.sh.intel.com>
-	 <20120522.232310.911242148705021745.davem@davemloft.net>
-	 <1337747829.3361.1599.camel@edumazet-glaptop>
-	 <1337748897.14538.184.camel@ymzhang.sh.intel.com>
-	 <1337749339.3361.1655.camel@edumazet-glaptop>
-	 <1337753757.14538.190.camel@ymzhang.sh.intel.com>
-	 <1337754459.3361.1850.camel@edumazet-glaptop>
-	 <1337755623.14538.194.camel@ymzhang.sh.intel.com>
-	 <1337756138.3361.1922.camel@edumazet-glaptop>
-	 <1337757238.3361.1965.camel@edumazet-glaptop>
-	 <1337757862.14538.199.camel@ymzhang.sh.intel.com>
-	 <1337758775.3361.2056.camel@edumazet-glaptop>
-Content-Type: text/plain; charset="UTF-8"
-Date: Wed, 23 May 2012 09:41:34 +0200
-Message-ID: <1337758894.3361.2064.camel@edumazet-glaptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
+	id S932317Ab2EWHnJ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 May 2012 03:43:09 -0400
+Received: from a.ns.miles-group.at ([95.130.255.143]:47834 "EHLO radon.swed.at"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755014Ab2EWHnH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 23 May 2012 03:43:07 -0400
+Message-ID: <4FBC9507.9070200@nod.at>
+Date: Wed, 23 May 2012 09:43:03 +0200
+From: Richard Weinberger <richard@nod.at>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:12.0) Gecko/20120421 Thunderbird/12.0
+MIME-Version: 1.0
+To: Shmulik Ladkani <shmulik.ladkani@gmail.com>
+CC: linux-mtd@lists.infradead.org, dedekind1@gmail.com,
+        linux-kernel@vger.kernel.org, Heinz.Egger@linutronix.de,
+        tim.bird@am.sony.com, tglx@linutronix.de
+Subject: Re: [PATCH] [RFC] UBI: Implement Fastmap support
+References: <1337608916-49771-1-git-send-email-richard@nod.at> <1337608916-49771-2-git-send-email-richard@nod.at> <20120522180119.2c2a10a8@pixies.home.jungo.com> <4FBBC4EE.4040802@nod.at> <20120522211809.53bd6444@halley> <2423212898cfc1c21343bff32e776dbd@radon2.swed.at> <20120523091856.4e9217a2@pixies.home.jungo.com>
+In-Reply-To: <20120523091856.4e9217a2@pixies.home.jungo.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2012-05-23 at 09:39 +0200, Eric Dumazet wrote:
+On 23.05.2012 08:18, Shmulik Ladkani wrote:
+>> It removes a PEB from the free rb-tree.
+>> ubi->lookuptbl[pnum] does not matter at this time.
+>
+> For practical matters, you are correct.
+> Design wise, it is bit inconsistent and confusing.
+>
+> On one hand, you claim above that 'ubi->lookuptbl' holds the WL entries
+> known to WL subsystem - that is, lookuptbl is a data structure used and
+> maintained by the WL subsystem.
+> OTOH, when a PEB is removed from hands of WL (by a ubi_wl_get_fm_peb
+> call), you keep its WL entry assigned in ubi->lookuptbl.
+>
+> I'll rethink this, see if there's a potential trouble here.
 
-> spinlock is needed mainly because of ip_fib_check_default(), but this
-> could be changed to use RCU as well. 
-> 
-> (readers use RCU, writers already hold RTNL -> no more fib_info_lock )
+If I remove the PEB from ubi->lookuptbl I'll have to reread the EC 
+header upon ubi_wl_put_fm_peb().
+Otherwise it's EC value is lost.
 
-Since its not a fast path and hash table can be resized, its probably
-not worth the pain.
+>>> However 'ubi_wl_put_fm_peb' creates a 'ubi_wl_entry' if not found in
+>>> the lookuptbl.
+>> Currently fastmap "fixes" ubi->lookuptbl on demand. Is this a problem?
+>
+> I guess not.
+>
+> The only problem, as previously noted, is the failure to create a new
+> 'ubi_wl_entry' when the PEB needs to be returned to WL subsystem.
 
+I think I can return them to the lookuptbl while attaching.
 
+Stay tuned, I'll release v7 today or tomorrow.
+
+Thanks,
+//richard
