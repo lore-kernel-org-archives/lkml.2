@@ -1,60 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753207Ab2EWQhO (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 May 2012 12:37:14 -0400
-Received: from mail19e.g19.rapidsite.net ([204.202.242.20]:32110 "HELO
-	mail19e.g19.rapidsite.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1751520Ab2EWQhM (ORCPT
+	id S1754213Ab2EWQlR (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 May 2012 12:41:17 -0400
+Received: from mail-we0-f174.google.com ([74.125.82.174]:40165 "EHLO
+	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752094Ab2EWQlP convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 May 2012 12:37:12 -0400
-thread-index: Ac05Ak23VdRijC1tToWkxHkY9FVSRw==
-Thread-Topic: [Training] Here's how to profit $600 a day Recommends Advanced Sports to you
-From: <christian@aol.com>
-To: <linux-kernel@vger.kernel.org>
-Subject: [Training] Here's how to profit $600 a day Recommends Advanced Sports to you
-Date: Wed, 23 May 2012 12:37:12 -0400
-Message-ID: <18A7934E4E1A4C618312C4F173746D94@g19.win.smewh.net>
+	Wed, 23 May 2012 12:41:15 -0400
 MIME-Version: 1.0
-Content-Type: text/plain
-Content-Transfer-Encoding: 7bit
-X-Mailer: Microsoft CDO for Windows 2000
-Content-Class: urn:content-classes:message
-Importance: normal
-X-MimeOLE: Produced By Microsoft MimeOLE V6.00.3790.4913
-X-Spam: [F=0.2000000000; S=0.200(2010122901); MH=0.500(2012052314)]
-X-MAIL-FROM: <christian@aol.com>
-X-SOURCE-IP: [199.239.254.58]
-X-SF-Loop: 1
+In-Reply-To: <CA+55aFyyEhYcoh2gugVJELfW+dGrLbrow=ZoXsPs3kxft7Tu4g@mail.gmail.com>
+References: <20120521170539.GA13635@google.com>
+	<CA+55aFyyEhYcoh2gugVJELfW+dGrLbrow=ZoXsPs3kxft7Tu4g@mail.gmail.com>
+Date: Wed, 23 May 2012 09:41:13 -0700
+Message-ID: <CA+8MBbJ00Kgycu-7v6vofQYst_Cujoiu78_Ke5RqM6Bx=-+F1g@mail.gmail.com>
+Subject: Re: [GIT PULL] PCI updates for 3.5 merge window
+From: Tony Luck <tony.luck@gmail.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Bjorn Helgaas <bhelgaas@google.com>, linux-kernel@vger.kernel.org,
+        linux-pci@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->From         :[Training] Here's how to profit $600 a day
-Email        :christian@aol.com
-Friend Name  :Friend
-Friend Email :linux-kernel@vger.kernel.org
-comment      :
+On Mon, May 21, 2012 at 4:26 PM, Linus Torvalds
+<torvalds@linux-foundation.org> wrote:
+> Looks fine, except please actually mention the tag itself on the repo
+> pull line. IOW, not like this:
+>
+>>  git://git.kernel.org/pub/scm/linux/kernel/git/helgaas/pci.git next
+>
+> but simply
+>
+>  git://git.kernel.org/pub/scm/linux/kernel/git/helgaas/pci.git tags/pci-for-3.5
 
-Hey,
+git request-pull seems to look for branches before tags when generating
+this text.  It just did exactly the same thing for me (since the tag I created
+also pointed to my "next" branch).
 
-I've got a treat for you today.
+This would seem to be the common case for people following the rules
+and sending you stuff in the merge window that they have had cooking
+in linux-next.  Can "request-pull" be smarter - or is their some magic I should
+be using on the "git request-pull" command line that will tell it that I really
+mean the tag and not the branch?
 
-You're about to receive INSTANT
-ACCESS to some free training on
-how you can profit up to $600 a day
+Or is "smarter" already in a newer version of git - I have:
 
-=> http://www.bank-blogging.com/?code=4fbce89b05ddc 
+$ git --version
+git version 1.7.9.5
 
-
-There is no cost. 
-
-Talk Soon,
-
-Christian
-
-
-
-=> http://www.bank-blogging.com/?code=4fbce89b05ddc 
-
-
-
+-Tony
