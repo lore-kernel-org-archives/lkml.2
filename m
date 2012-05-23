@@ -1,70 +1,239 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753605Ab2EWX2o (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 May 2012 19:28:44 -0400
-Received: from avon.wwwdotorg.org ([70.85.31.133]:53901 "EHLO
-	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751118Ab2EWX2n (ORCPT
+	id S1753472Ab2EWXc5 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 May 2012 19:32:57 -0400
+Received: from va3ehsobe002.messaging.microsoft.com ([216.32.180.12]:53021
+	"EHLO va3outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750941Ab2EWXcz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 May 2012 19:28:43 -0400
-Message-ID: <4FBD72A7.907@wwwdotorg.org>
-Date: Wed, 23 May 2012 17:28:39 -0600
-From: Stephen Warren <swarren@wwwdotorg.org>
+	Wed, 23 May 2012 19:32:55 -0400
+X-Forefront-Antispam-Report: CIP:160.33.194.229;KIP:(null);UIP:(null);IPV:NLI;H:usculsndmail02v.am.sony.com;RD:mail02.sonyusa.com;EFVD:NLI
+X-SpamScore: 0
+X-BigFish: VPS0(zzzz1202hzz8275bh8275dhz2fh2a8h668h839hd25hf0ah)
+Message-ID: <4FBD73CF.2000306@am.sony.com>
+Date: Wed, 23 May 2012 16:33:35 -0700
+From: Tim Bird <tim.bird@am.sony.com>
 User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
 MIME-Version: 1.0
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>
-CC: linux-kernel@vger.kernel.org, Stephen Warren <swarren@nvidia.com>
-Subject: Re: [PATCH 1/2] regmap: allow busses to request formatting with specific
- endianness
-References: <1337812434-7609-1-git-send-email-swarren@wwwdotorg.org> <20120523231641.GA5361@opensource.wolfsonmicro.com>
-In-Reply-To: <20120523231641.GA5361@opensource.wolfsonmicro.com>
-X-Enigmail-Version: 1.5pre
-Content-Type: text/plain; charset=ISO-8859-1
+To: <eric.dumazet@gmail.com>, Paul Gortmaker <paul.gortmaker@windriver.com>,
+        David Miller <davem@davemloft.net>,
+        linux kernel <linux-kernel@vger.kernel.org>, <netdev@vger.kernel.org>
+Subject: Re: [PATCH v2] mm: add a low limit to alloc_large_system_hash
+Content-Type: text/plain; charset="ISO-8859-1"
 Content-Transfer-Encoding: 7bit
+X-OriginatorOrg: am.sony.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/23/2012 05:16 PM, Mark Brown wrote:
-> On Wed, May 23, 2012 at 04:33:53PM -0600, Stephen Warren wrote:
-> 
->> I'm not 100% sure if this is the approach you had in mind.
->> However, anything more all-encompassing would require separating
->> the concepts of endianness and
-> 
-> I wouldn't do this on the bus in the first instance, I'd do it on
-> the device - it's pretty much orthogonal to the bus what the device
-> wants and it's perfectly plausible that a device on another bus
-> might've made unusual endiannness choices.  Otherwise it's pretty
-> much what I was thinking of.
-> 
-> For MMIO I'd expect that a large proportion of devices on platform
-> buses would pick native endianness.
+This patch seems to have fallen in the cracks:
 
-I did briefly consider making this a property of regmap_config rather
-than regmap_bus, but as you say, it'd mean every MMIO user would have
-to specify the endianness value.
+https://lkml.org/lkml/2012/2/27/20
 
-Also, it doesn't seem right for a device to be able to specify
-register formatting endianness for MMIO; presumably we'd always want
-that native.
+The last message on the thread was an ACK by David Miller, and
+the question "Who wants to take this?"
+  -- Tim
 
-Perhaps the solution is to have two fields; one for address formatting
-(the endianness of which regmap-mmio.c will error-check is "native",
-like it error-checks other fields) and a second for value
-formatting/parsing, which I can see a device might want to influence
-(e.g. to fix a byte swap in HW).
+[message and patch follow]
 
-I suppose we could avoid every device having to specify the endianness
-by introducing a fourth "DEFAULT" value == 0, and having the bus
-define what default means - that way, I wouldn't have to edit any
-drivers due to adding the regmap_bus field.
+UDP stack needs a minimum hash size value for proper operation and also
+uses alloc_large_system_hash() for proper NUMA distribution of its hash
+tables and automatic sizing depending on available system memory.
 
->> serialization that are coupled together in functions like 
->> regmap_format_4_12_write, and I'm not sure how that would work
->> conceptually.
-> 
-> Anything using format_write() can be ignored, it's already lost
-> large chunks of functionality just from that.  Non-integer byte
-> sizes cause issues.
+On some low memory situations, udp_table_init() must ignore the
+alloc_large_system_hash() result and reallocs a bigger memory area.
+
+As we cannot easily free old hash table, we leak it and kmemleak can
+issue a warning.
+
+This patch adds a low limit parameter to alloc_large_system_hash() to
+solve this problem.
+
+We then specify UDP_HTABLE_SIZE_MIN for UDP/UDPLite hash table
+allocation.
+
+Reported-by: Mark Asselstine <mark.asselstine@windriver.com>
+Reported-by: Tim Bird <tim.bird@am.sony.com>
+Signed-off-by: Eric Dumazet <eric.dumazet@gmail.com>
+Cc: Paul Gortmaker <paul.gortmaker@windriver.com>
+---
+V2: no 16 minimum value for pid hash
+ fs/dcache.c             |    2 ++
+ fs/inode.c              |    2 ++
+ include/linux/bootmem.h |    3 ++-
+ kernel/pid.c            |    3 ++-
+ mm/page_alloc.c         |    7 +++++--
+ net/ipv4/route.c        |    1 +
+ net/ipv4/tcp.c          |    2 ++
+ net/ipv4/udp.c          |   30 ++++++++++--------------------
+ 8 files changed, 26 insertions(+), 24 deletions(-)
+diff --git a/fs/dcache.c b/fs/dcache.c
+index fe19ac1..ef5e72e 100644
+--- a/fs/dcache.c
++++ b/fs/dcache.c
+@@ -2984,6 +2984,7 @@ static void __init dcache_init_early(void)
+ 					HASH_EARLY,
+ 					&d_hash_shift,
+ 					&d_hash_mask,
++					0,
+ 					0);
+
+ 	for (loop = 0; loop < (1U << d_hash_shift); loop++)
+@@ -3014,6 +3015,7 @@ static void __init dcache_init(void)
+ 					0,
+ 					&d_hash_shift,
+ 					&d_hash_mask,
++					0,
+ 					0);
+
+ 	for (loop = 0; loop < (1U << d_hash_shift); loop++)
+diff --git a/fs/inode.c b/fs/inode.c
+index d3ebdbe..7acee4c 100644
+--- a/fs/inode.c
++++ b/fs/inode.c
+@@ -1667,6 +1667,7 @@ void __init inode_init_early(void)
+ 					HASH_EARLY,
+ 					&i_hash_shift,
+ 					&i_hash_mask,
++					0,
+ 					0);
+
+ 	for (loop = 0; loop < (1U << i_hash_shift); loop++)
+@@ -1697,6 +1698,7 @@ void __init inode_init(void)
+ 					0,
+ 					&i_hash_shift,
+ 					&i_hash_mask,
++					0,
+ 					0);
+
+ 	for (loop = 0; loop < (1U << i_hash_shift); loop++)
+diff --git a/include/linux/bootmem.h b/include/linux/bootmem.h
+index 66d3e95..1a0cd27 100644
+--- a/include/linux/bootmem.h
++++ b/include/linux/bootmem.h
+@@ -154,7 +154,8 @@ extern void *alloc_large_system_hash(const char *tablename,
+ 				     int flags,
+ 				     unsigned int *_hash_shift,
+ 				     unsigned int *_hash_mask,
+-				     unsigned long limit);
++				     unsigned long low_limit,
++				     unsigned long high_limit);
+
+ #define HASH_EARLY	0x00000001	/* Allocating during early boot? */
+ #define HASH_SMALL	0x00000002	/* sub-page allocation allowed, min
+diff --git a/kernel/pid.c b/kernel/pid.c
+index 9f08dfa..e86b291 100644
+--- a/kernel/pid.c
++++ b/kernel/pid.c
+@@ -547,7 +547,8 @@ void __init pidhash_init(void)
+
+ 	pid_hash = alloc_large_system_hash("PID", sizeof(*pid_hash), 0, 18,
+ 					   HASH_EARLY | HASH_SMALL,
+-					   &pidhash_shift, NULL, 4096);
++					   &pidhash_shift, NULL,
++					   0, 4096);
+ 	pidhash_size = 1U << pidhash_shift;
+
+ 	for (i = 0; i < pidhash_size; i++)
+diff --git a/mm/page_alloc.c b/mm/page_alloc.c
+index a13ded1..b9afccb 100644
+--- a/mm/page_alloc.c
++++ b/mm/page_alloc.c
+@@ -5198,9 +5198,10 @@ void *__init alloc_large_system_hash(const char *tablename,
+ 				     int flags,
+ 				     unsigned int *_hash_shift,
+ 				     unsigned int *_hash_mask,
+-				     unsigned long limit)
++				     unsigned long low_limit,
++				     unsigned long high_limit)
+ {
+-	unsigned long long max = limit;
++	unsigned long long max = high_limit;
+ 	unsigned long log2qty, size;
+ 	void *table = NULL;
+
+@@ -5238,6 +5239,8 @@ void *__init alloc_large_system_hash(const char *tablename,
+ 	}
+ 	max = min(max, 0x80000000ULL);
+
++	if (numentries < low_limit)
++		numentries = low_limit;
+ 	if (numentries > max)
+ 		numentries = max;
+
+diff --git a/net/ipv4/route.c b/net/ipv4/route.c
+index bcacf54..0a41e38 100644
+--- a/net/ipv4/route.c
++++ b/net/ipv4/route.c
+@@ -3475,6 +3475,7 @@ int __init ip_rt_init(void)
+ 					0,
+ 					&rt_hash_log,
+ 					&rt_hash_mask,
++					0,
+ 					rhash_entries ? 0 : 512 * 1024);
+ 	memset(rt_hash_table, 0, (rt_hash_mask + 1) * sizeof(struct rt_hash_bucket));
+ 	rt_hash_lock_init();
+diff --git a/net/ipv4/tcp.c b/net/ipv4/tcp.c
+index 22ef5f9..e61a498 100644
+--- a/net/ipv4/tcp.c
++++ b/net/ipv4/tcp.c
+@@ -3267,6 +3267,7 @@ void __init tcp_init(void)
+ 					0,
+ 					NULL,
+ 					&tcp_hashinfo.ehash_mask,
++					0,
+ 					thash_entries ? 0 : 512 * 1024);
+ 	for (i = 0; i <= tcp_hashinfo.ehash_mask; i++) {
+ 		INIT_HLIST_NULLS_HEAD(&tcp_hashinfo.ehash[i].chain, i);
+@@ -3283,6 +3284,7 @@ void __init tcp_init(void)
+ 					0,
+ 					&tcp_hashinfo.bhash_size,
+ 					NULL,
++					0,
+ 					64 * 1024);
+ 	tcp_hashinfo.bhash_size = 1U << tcp_hashinfo.bhash_size;
+ 	for (i = 0; i < tcp_hashinfo.bhash_size; i++) {
+diff --git a/net/ipv4/udp.c b/net/ipv4/udp.c
+index 5d075b5..dc68ed2 100644
+--- a/net/ipv4/udp.c
++++ b/net/ipv4/udp.c
+@@ -2182,26 +2182,16 @@ void __init udp_table_init(struct udp_table *table, const char *name)
+ {
+ 	unsigned int i;
+
+-	if (!CONFIG_BASE_SMALL)
+-		table->hash = alloc_large_system_hash(name,
+-			2 * sizeof(struct udp_hslot),
+-			uhash_entries,
+-			21, /* one slot per 2 MB */
+-			0,
+-			&table->log,
+-			&table->mask,
+-			64 * 1024);
+-	/*
+-	 * Make sure hash table has the minimum size
+-	 */
+-	if (CONFIG_BASE_SMALL || table->mask < UDP_HTABLE_SIZE_MIN - 1) {
+-		table->hash = kmalloc(UDP_HTABLE_SIZE_MIN *
+-				      2 * sizeof(struct udp_hslot), GFP_KERNEL);
+-		if (!table->hash)
+-			panic(name);
+-		table->log = ilog2(UDP_HTABLE_SIZE_MIN);
+-		table->mask = UDP_HTABLE_SIZE_MIN - 1;
+-	}
++	table->hash = alloc_large_system_hash(name,
++					      2 * sizeof(struct udp_hslot),
++					      uhash_entries,
++					      21, /* one slot per 2 MB */
++					      0,
++					      &table->log,
++					      &table->mask,
++					      UDP_HTABLE_SIZE_MIN,
++					      64 * 1024);
++
+ 	table->hash2 = table->hash + (table->mask + 1);
+ 	for (i = 0; i <= table->mask; i++) {
+ 		INIT_HLIST_NULLS_HEAD(&table->hash[i].head, i);
+
+
 
