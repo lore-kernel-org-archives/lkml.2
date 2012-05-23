@@ -1,197 +1,146 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759064Ab2EWOcI (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 May 2012 10:32:08 -0400
-Received: from mail-qc0-f174.google.com ([209.85.216.174]:65338 "EHLO
-	mail-qc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755188Ab2EWOcF (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 May 2012 10:32:05 -0400
-Date: Wed, 23 May 2012 16:31:55 +0200
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Cc: LKML <linux-kernel@vger.kernel.org>, linaro-sched-sig@lists.linaro.org,
-        Alessio Igor Bogani <abogani@kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>, Avi Kivity <avi@redhat.com>,
-        Chris Metcalf <cmetcalf@tilera.com>, Christoph Lameter <cl@linux.com>,
-        Daniel Lezcano <daniel.lezcano@linaro.org>,
-        Geoff Levand <geoff@infradead.org>,
-        Gilad Ben Yossef <gilad@benyossef.com>,
-        Hakan Akkan <hakanakkan@gmail.com>, Ingo Molnar <mingo@kernel.org>,
-        Kevin Hilman <khilman@ti.com>, Max Krasnyansky <maxk@qualcomm.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Stephen Hemminger <shemminger@vyatta.com>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Sven-Thorsten Dietrich <thebigcorporation@gmail.com>,
-        Thomas Gleixner <tglx@linutronix.de>
-Subject: Re: [PATCH 38/41] rcu: New rcu_user_enter_irq() and
- rcu_user_exit_irq() APIs
-Message-ID: <20120523143144.GG1663@somewhere>
-References: <1335830115-14335-1-git-send-email-fweisbec@gmail.com>
- <1335830115-14335-39-git-send-email-fweisbec@gmail.com>
- <20120522183352.GE8087@linux.vnet.ibm.com>
+	id S932926Ab2EWOdO (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 May 2012 10:33:14 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:17128 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755923Ab2EWOdM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 23 May 2012 10:33:12 -0400
+Date: Wed, 23 May 2012 10:33:05 -0400
+From: Josh Boyer <jwboyer@redhat.com>
+To: Steven Rostedt <srostedt@redhat.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Ingo Molnar <mingo@redhat.com>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: Perf build failure in v3.4-4842-g61011677
+Message-ID: <20120523143304.GF1143@zod.bos.redhat.com>
+References: <20120523141359.GE1143@zod.bos.redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20120522183352.GE8087@linux.vnet.ibm.com>
+In-Reply-To: <20120523141359.GE1143@zod.bos.redhat.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, May 22, 2012 at 11:33:52AM -0700, Paul E. McKenney wrote:
-> On Tue, May 01, 2012 at 01:55:12AM +0200, Frederic Weisbecker wrote:
-> > A CPU running in adaptive tickless mode wants to enter into
-> > RCU extended quiescent state while running in userspace. This
-> > way we can shut down the tick that is usually needed on each
-> > CPU for the needs of RCU.
-> > 
-> > Typically, RCU enters the extended quiescent state when we resume
-> > to userspace through a syscall or exception exit, this is done
-> > using rcu_user_enter(). Then RCU exit this state by calling
-> > rcu_user_exit() from syscall or exception entry.
-> > 
-> > However there are two other points where we may want to enter
-> > or exit this state. Some remote CPU may require a tickless CPU
-> > to restart its tick for any reason and send it an IPI for
-> > this purpose. As we restart the tick, we don't want to resume
-> > from the IPI in RCU extended quiescent state anymore.
-> > Similarly we may stop the tick from an interrupt in userspace and
-> > we need to be able to enter RCU extended quiescent state when we
-> > resume from this interrupt to userspace.
-> > 
-> > To these ends, we provide two new APIs:
-> > 
-> > - rcu_user_enter_irq(). This must be called from a non-nesting
-> > interrupt betwenn rcu_irq_enter() and rcu_irq_exit().
-> > After the irq calls rcu_irq_exit(), we'll run into RCU extended
-> > quiescent state.
-> > 
-> > - rcu_user_exit_irq(). This must be called from a non-nesting
-> > interrupt, interrupting an RCU extended quiescent state, and
-> > between rcu_irq_enter() and rcu_irq_exit(). After the irq calls
-> > rcu_irq_exit(), we'll prevent from resuming the RCU extended
-> > quiescent.
+On Wed, May 23, 2012 at 10:13:59AM -0400, Josh Boyer wrote:
+> Building Linus' latest tree as of this morning results in perf being
+> very unhappy.  The build machine is running Fedora 17, so gcc 4.7.  The
+> gtk2 missing errors are fine as far as I'm concerned, but the rest of
+> the errors seem like things that might want fixing?
 > 
-> In both cases, the IRQ handler must correspond to an interrupt from
-> task/thread/process/whatever level, so that it is illegal to call
-> these from an interrupt handler that was invoked from within another
-> interrupt.  Right?
+> josh
+> 
+> + make -j8 -C tools/perf -s V=1 WERROR=0 HAVE_CPLUS_DEMANGLE=1
 
-Indeed.
+<snip>
 
-> 
-> A couple more questions and comments below.
-> 
-> 							Thanx, Paul
-> 
-> > Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
-> > Cc: Alessio Igor Bogani <abogani@kernel.org>
-> > Cc: Andrew Morton <akpm@linux-foundation.org>
-> > Cc: Avi Kivity <avi@redhat.com>
-> > Cc: Chris Metcalf <cmetcalf@tilera.com>
-> > Cc: Christoph Lameter <cl@linux.com>
-> > Cc: Daniel Lezcano <daniel.lezcano@linaro.org>
-> > Cc: Geoff Levand <geoff@infradead.org>
-> > Cc: Gilad Ben Yossef <gilad@benyossef.com>
-> > Cc: Hakan Akkan <hakanakkan@gmail.com>
-> > Cc: Ingo Molnar <mingo@kernel.org>
-> > Cc: Kevin Hilman <khilman@ti.com>
-> > Cc: Max Krasnyansky <maxk@qualcomm.com>
-> > Cc: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
-> > Cc: Peter Zijlstra <peterz@infradead.org>
-> > Cc: Stephen Hemminger <shemminger@vyatta.com>
-> > Cc: Steven Rostedt <rostedt@goodmis.org>
-> > Cc: Sven-Thorsten Dietrich <thebigcorporation@gmail.com>
-> > Cc: Thomas Gleixner <tglx@linutronix.de>
-> > ---
-> >  include/linux/rcupdate.h |    2 ++
-> >  kernel/rcutree.c         |   24 ++++++++++++++++++++++++
-> >  2 files changed, 26 insertions(+), 0 deletions(-)
-> > 
-> > diff --git a/include/linux/rcupdate.h b/include/linux/rcupdate.h
-> > index 6539290..3cf1d51 100644
-> > --- a/include/linux/rcupdate.h
-> > +++ b/include/linux/rcupdate.h
-> > @@ -194,6 +194,8 @@ extern void rcu_irq_exit(void);
-> >  #ifdef CONFIG_CPUSETS_NO_HZ
-> >  void rcu_user_enter(void);
-> >  void rcu_user_exit(void);
-> > +void rcu_user_enter_irq(void);
-> > +void rcu_user_exit_irq(void);
-> >  #endif
-> > 
-> >  /*
-> > diff --git a/kernel/rcutree.c b/kernel/rcutree.c
-> > index cba1332..2adc5a0 100644
-> > --- a/kernel/rcutree.c
-> > +++ b/kernel/rcutree.c
-> > @@ -429,6 +429,18 @@ void rcu_user_enter(void)
-> >  	__rcu_idle_enter();
-> >  }
-> > 
-> > +void rcu_user_enter_irq(void)
-> 
-> It took me a bit to correctly parse the name, which goes something
-> like RCU adaptive-tick user enter while in an IRQ handler.  A header
-> comment would help.  (I can supply one when it is time for this to
-> go into -rcu.)
+> util/scripting-engines/trace-event-perl.c: In function
+> 'define_event_symbols':
+> util/scripting-engines/trace-event-perl.c:188:2: warning: enumeration
+> value 'PRINT_BSTRING' not handled in switch [-Wswitch-enum]
+> util/scripting-engines/trace-event-perl.c:188:2: warning: enumeration
+> value 'PRINT_DYNAMIC_ARRAY' not handled in switch [-Wswitch-enum]
+> util/scripting-engines/trace-event-perl.c:188:2: warning: enumeration
+> value 'PRINT_FUNC' not handled in switch [-Wswitch-enum]
+> util/scripting-engines/trace-event-perl.c: In function
+> 'find_cache_event':
+> util/scripting-engines/trace-event-perl.c:240:23: warning: assignment
+> from incompatible pointer type [enabled by default]
+> util/scripting-engines/trace-event-perl.c:244:34: error: dereferencing
+> pointer to incomplete type
+> util/scripting-engines/trace-event-perl.c:244:49: error: dereferencing
+> pointer to incomplete type
+> util/scripting-engines/trace-event-perl.c:246:44: error: dereferencing
+> pointer to incomplete type
 
-Sure. I must confess I haven't focused on comments for now but this
-will need some before getting merged anywhere.
+<snip>
 
+OK, seems Steven fixed the trace-event-python.c file with commit
+aaf045f7233, but missed the perl one.  This patch seems to fixup the
+errors.
 
-> 
-> > +{
-> > +	unsigned long flags;
-> > +	struct rcu_dynticks *rdtp;
-> > +
-> > +	local_irq_save(flags);
-> > +	rdtp = &__get_cpu_var(rcu_dynticks);
-> > +	WARN_ON_ONCE(rdtp->dynticks_nesting == 1);
-> > +	rdtp->dynticks_nesting = 1;
-> > +	local_irq_restore(flags);
-> > +}
-> > +
-> >  /**
-> >   * rcu_irq_exit - inform RCU that current CPU is exiting irq towards idle
-> >   *
-> > @@ -543,6 +555,18 @@ void rcu_user_exit(void)
-> >  	local_irq_restore(flags);
-> >  }
-> > 
-> > +void rcu_user_exit_irq(void)
-> > +{
-> > +	unsigned long flags;
-> > +	struct rcu_dynticks *rdtp;
-> > +
-> > +	local_irq_save(flags);
-> > +	rdtp = &__get_cpu_var(rcu_dynticks);
-> > +	WARN_ON_ONCE(rdtp->dynticks_nesting == 0);
-> 
-> For symmetry, wouldn't this be as follows?
-> 
-> 	WARN_ON_ONCE(rdtp->dynticks_nesting >= LLONG_MAX / 4);
-> 
-> In other words, complain if the task is trying to exit RCU-idle state when
-> it has already exited from RCU-idle state?
+josh
 
-May be yeah. Note this was done before your patch
-"rcu: Allow nesting of rcu_idle_enter() and rcu_idle_exit()" so I may need
-to rebase and check my patch is still correct on top of yours.
+-----
 
+From: Josh Boyer <jwboyer@redhat.com>
+Subject: [PATCH] perf: Fix trace-event-perl.c build
+
+Commit aaf045f7233 (perf: Have perf use the new libtraceevent.a library)
+converted the trace-event-python.c scripting engine but missed the
+trace-event-perl.c file.  Fix it up to use the event_format structure
+and clean up a few enum warnings from GCC.
+
+Signed-off-by: Josh Boyer <jwboyer@redhat.com>
+
+---
+
+diff --git a/tools/perf/util/scripting-engines/trace-event-perl.c b/tools/perf/util/scripting-engines/trace-event-perl.c
+index e30749e..b1ac27b 100644
+--- a/tools/perf/util/scripting-engines/trace-event-perl.c
++++ b/tools/perf/util/scripting-engines/trace-event-perl.c
+@@ -56,7 +56,7 @@ INTERP my_perl;
+ #define FTRACE_MAX_EVENT				\
+ 	((1 << (sizeof(unsigned short) * 8)) - 1)
+ 
+-struct event *events[FTRACE_MAX_EVENT];
++struct event_format *events[FTRACE_MAX_EVENT];
+ 
+ extern struct scripting_context *scripting_context;
+ 
+@@ -181,7 +181,7 @@ static void define_flag_field(const char *ev_name,
+ 	LEAVE;
+ }
+ 
+-static void define_event_symbols(struct event *event,
++static void define_event_symbols(struct event_format *event,
+ 				 const char *ev_name,
+ 				 struct print_arg *args)
+ {
+@@ -221,6 +221,9 @@ static void define_event_symbols(struct event *event,
+ 		define_event_symbols(event, ev_name, args->op.right);
+ 		break;
+ 	default:
++	case PRINT_BSTRING:
++	case PRINT_DYNAMIC_ARRAY:
++	case PRINT_FUNC:
+ 		/* we should warn... */
+ 		return;
+ 	}
+@@ -229,10 +232,10 @@ static void define_event_symbols(struct event *event,
+ 		define_event_symbols(event, ev_name, args->next);
+ }
+ 
+-static inline struct event *find_cache_event(int type)
++static inline struct event_format *find_cache_event(int type)
+ {
+ 	static char ev_name[256];
+-	struct event *event;
++	struct event_format *event;
+ 
+ 	if (events[type])
+ 		return events[type];
+@@ -258,7 +261,7 @@ static void perl_process_tracepoint(union perf_event *pevent __unused,
+ 	static char handler[256];
+ 	unsigned long long val;
+ 	unsigned long s, ns;
+-	struct event *event;
++	struct event_format *event;
+ 	int type;
+ 	int pid;
+ 	int cpu = sample->cpu;
+@@ -446,7 +449,7 @@ static int perl_stop_script(void)
+ 
+ static int perl_generate_script(const char *outfile)
+ {
+-	struct event *event = NULL;
++	struct event_format *event = NULL;
+ 	struct format_field *f;
+ 	char fname[PATH_MAX];
+ 	int not_first, count;
 > 
-> Of course, it had better not be zero as well.  Or negative, for that
-> matter.
 > 
-> > +	rdtp->dynticks_nesting = (LLONG_MAX / 2) + 1;
-> > +	local_irq_restore(flags);
-> > +}
-> > +
-> >  /**
-> >   * rcu_irq_enter - inform RCU that current CPU is entering irq away from idle
-> >   *
-> > -- 
-> > 1.7.5.4
-> > 
 > 
