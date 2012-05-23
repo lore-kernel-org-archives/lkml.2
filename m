@@ -1,80 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965127Ab2EWPEf (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 May 2012 11:04:35 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:19830 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933658Ab2EWPD6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 May 2012 11:03:58 -0400
-Message-ID: <4FBCFC4A.7070303@redhat.com>
-Date: Wed, 23 May 2012 18:03:38 +0300
-From: Avi Kivity <avi@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
-MIME-Version: 1.0
-To: Ingo Molnar <mingo@kernel.org>
-CC: Thomas Gleixner <tglx@linutronix.de>,
-        "Michael S. Tsirkin" <mst@redhat.com>, kvm@vger.kernel.org,
-        Marcelo Tosatti <mtosatti@redhat.com>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, x86@kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] kvm: optimize ISR lookups
-References: <20120521163727.GA13337@redhat.com> <alpine.LFD.2.02.1205211940030.3231@ionos> <20120521215127.GH17031@redhat.com> <alpine.LFD.2.02.1205220012020.3231@ionos> <20120521222449.GJ17031@redhat.com> <alpine.LFD.2.02.1205220044460.3231@ionos> <4FBB6E8B.8020200@redhat.com> <20120523144846.GA26974@gmail.com>
-In-Reply-To: <20120523144846.GA26974@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	id S933665Ab2EWPEz (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 May 2012 11:04:55 -0400
+Received: from nat28.tlf.novell.com ([130.57.49.28]:37949 "EHLO
+	nat28.tlf.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932533Ab2EWPEx convert rfc822-to-8bit (ORCPT
+	<rfc822;groupwise-linux-kernel@vger.kernel.org:17:1>);
+	Wed, 23 May 2012 11:04:53 -0400
+Message-Id: <4FBD18D20200007800085951@nat28.tlf.novell.com>
+X-Mailer: Novell GroupWise Internet Agent 12.0.0 
+Date: Wed, 23 May 2012 16:05:22 +0100
+From: "Jan Beulich" <JBeulich@suse.com>
+To: "Alex Shi" <alex.shi@intel.com>
+Cc: <borislav.petkov@amd.com>, <arnd@arndb.de>, <a.p.zijlstra@chello.nl>,
+        <akinobu.mita@gmail.com>, <eric.dumazet@gmail.com>,
+        <fweisbec@gmail.com>, <rostedt@goodmis.org>, <hughd@google.com>,
+        <jeremy@goop.org>, <len.brown@intel.com>, <tony.luck@intel.com>,
+        <yongjie.ren@intel.com>, <kamezawa.hiroyu@jp.fujitsu.com>,
+        <seto.hidetoshi@jp.fujitsu.com>, <penberg@kernel.org>,
+        <yinghai@kernel.org>, <tglx@linutronix.de>,
+        <akpm@linux-foundation.org>, <ak@linux.intel.com>, <luto@mit.edu>,
+        <avi@redhat.com>, <dhowells@redhat.com>, <mingo@redhat.com>,
+        <riel@redhat.com>, <cpw@sgi.com>, <steiner@sgi.com>,
+        <linux-kernel@vger.kernel.org>, <viro@zeniv.linux.org.uk>,
+        <hpa@zytor.com>
+Subject: Re: [PATCH v7 8/8] x86/tlb: just do tlb flush on one of
+ siblings of SMT
+References: <1337782555-8088-1-git-send-email-alex.shi@intel.com>
+ <1337782555-8088-9-git-send-email-alex.shi@intel.com>
+In-Reply-To: <1337782555-8088-9-git-send-email-alex.shi@intel.com>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 8BIT
+Content-Disposition: inline
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/23/2012 05:48 PM, Ingo Molnar wrote:
->> 
->> This is silly.  Most of the time the kernel is advanced by 
->> incremental patches.  Sometimes it is advanced by minor or 
->> major refactoring.  It is never advanced by personal attacks 
->> on contributors.
-> 
-> Thomas wasn't so much doing a personal attack, it was pointing 
-> out stupidity and then it was mocking the repeated stupidity. He 
-> very politely explained his point of view (with which I agree), 
+>>> On 23.05.12 at 16:15, Alex Shi <alex.shi@intel.com> wrote:
+> +	/* doing flush on both siblings of SMT is just wasting time */
+> +	cpumask_copy(&flush_mask, cpumask);
+> +	if (likely(smp_num_siblings > 1)) {
+> +		rand = jiffies;
+> +		/* See "Numerical Recipes in C", second edition, p. 284 */
+> +		rand = rand * 1664525L + 1013904223L;
+> +		rand &= 0x1;
+> +
+> +		for_each_cpu(cpu, &flush_mask) {
+> +			sblmask = cpu_sibling_mask(cpu);
+> +			if (cpumask_subset(sblmask, &flush_mask)) {
+> +				if (rand == 0)
+> +					cpu_clear(cpu, flush_mask);
+> +				else
+> +					cpu_clear(cpumask_next(cpu, sblmask),
+> +								flush_mask);
+> +			}
+> +		}
+> +	}
+> +
 
-I guess we disagree on what is polite or not.  Mocking, for example,
-isn't part of it in my book.
+There is no comment or anything else indicating that this is
+suitable for dual-thread CPUs only - when there are more than
+2 threads per core, the intended effect won't be achieved. I'd
+recommend making the logic generic from the beginning, but if
+that doesn't seem feasible to you, at least a comment stating
+the limitation should be added imo.
 
-> and then you guys pressed the issue and there's just so many 
-> hours in the merge window, so you asked to be flamed ...
+Jan
 
-There is a theory that flaming is a necessary part of kernel
-development, but not all maintainers and developers agree with it.
-Unfortunately many influential maintainers do.
-
-> 
-> Avi, if you cannot be brought to properly reject incomplete 
-> patches going in the wrong direction then others maintainers 
-> interested in the code will do it.
-
-I happen not to think this is going in the wrong direction, and I
-explained why.
-
-> 
-> If you start to consistently require from KVM contributors 
-> "incremental updates" in the right direction, not piling crap on 
-> crap, then such incidents won't happen. This isn't the first 
-> such incident but there's hope that it might be the last one.
-
-Feel free to point out, politely, when such things happen.  Even if you
-don't think it will work for some reason, please try it out as an
-experiment.
-
-> The rule in arch/x86/ (and many other subsystems) is very 
-> simple: we don't speed up crappy code. If you want to speed it 
-> up then make it clean first, *then* is it suited for speedups. 
-> Crappy code is fragile and bound to introduce bugs, and crappy 
-> code leads to continued increased maintenance overhead, so 
-> crappy code is basically under a perpetual code freeze until 
-> it's uncrapped.
-
-I agree with this as a general principle, but as it happens this
-particular bit cannot be uncrapped due to hardware constraints.
-
--- 
-error compiling committee.c: too many arguments to function
