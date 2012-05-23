@@ -1,64 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755320Ab2EWQXP (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 May 2012 12:23:15 -0400
-Received: from va3ehsobe001.messaging.microsoft.com ([216.32.180.11]:40756
-	"EHLO va3outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751351Ab2EWQXN (ORCPT
+	id S1754255Ab2EWQ2Q (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 May 2012 12:28:16 -0400
+Received: from e39.co.us.ibm.com ([32.97.110.160]:60568 "EHLO
+	e39.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751351Ab2EWQ2P (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 May 2012 12:23:13 -0400
-X-Forefront-Antispam-Report: CIP:163.181.249.109;KIP:(null);UIP:(null);IPV:NLI;H:ausb3twp02.amd.com;RD:none;EFVD:NLI
-X-SpamScore: -12
-X-BigFish: VPS-12(zz936eK1432N98dKzz1202hzzz2dh668h839h944hd25hf0ah)
-X-WSS-ID: 0M4HHIG-02-AL4-02
-X-M-MSG: 
-Date: Wed, 23 May 2012 18:23:35 +0200
-From: Borislav Petkov <borislav.petkov@amd.com>
-To: Peter Zijlstra <a.p.zijlstra@chello.nl>
-CC: <mingo@kernel.org>, <hpa@zytor.com>, <linux-kernel@vger.kernel.org>,
-        <akpm@linux-foundation.org>, <frank.arnold@amd.com>,
-        <torvalds@linux-foundation.org>, <tglx@linutronix.de>,
-        <linux-tip-commits@vger.kernel.org>
-Subject: Re: [tip:x86/mce] x86/mce: Fix 32-bit build
-Message-ID: <20120523162335.GO14757@aftab.osrc.amd.com>
-References: <1337684026-19740-2-git-send-email-bp@amd64.org>
- <tip-80f033610fb968e75f5d470233d8d0260d7a72ed@git.kernel.org>
- <1337789898.9783.19.camel@laptop>
+	Wed, 23 May 2012 12:28:15 -0400
+Date: Wed, 23 May 2012 09:27:39 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: LKML <linux-kernel@vger.kernel.org>, linaro-sched-sig@lists.linaro.org,
+        Alessio Igor Bogani <abogani@kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>, Avi Kivity <avi@redhat.com>,
+        Chris Metcalf <cmetcalf@tilera.com>, Christoph Lameter <cl@linux.com>,
+        Daniel Lezcano <daniel.lezcano@linaro.org>,
+        Geoff Levand <geoff@infradead.org>,
+        Gilad Ben Yossef <gilad@benyossef.com>,
+        Hakan Akkan <hakanakkan@gmail.com>, Ingo Molnar <mingo@kernel.org>,
+        Kevin Hilman <khilman@ti.com>, Max Krasnyansky <maxk@qualcomm.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Stephen Hemminger <shemminger@vyatta.com>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Sven-Thorsten Dietrich <thebigcorporation@gmail.com>,
+        Thomas Gleixner <tglx@linutronix.de>
+Subject: Re: [PATCH 11/41] nohz/cpuset: Don't turn off the tick if rcu needs
+ it
+Message-ID: <20120523162739.GE2402@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <1335830115-14335-1-git-send-email-fweisbec@gmail.com>
+ <1335830115-14335-12-git-send-email-fweisbec@gmail.com>
+ <20120522171658.GA8087@linux.vnet.ibm.com>
+ <20120523135205.GB1663@somewhere>
+ <20120523151537.GA2402@linux.vnet.ibm.com>
+ <20120523160629.GJ1663@somewhere>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1337789898.9783.19.camel@laptop>
+In-Reply-To: <20120523160629.GJ1663@somewhere>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-OriginatorOrg: amd.com
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 12052316-4242-0000-0000-000001C1CD93
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, May 23, 2012 at 06:18:18PM +0200, Peter Zijlstra wrote:
-> On Wed, 2012-05-23 at 09:08 -0700, tip-bot for Borislav Petkov wrote:
-> > +                                if (val & BIT_64(62)) {
-> > +                                       val &= ~BIT_64(62);
-> > +                                       wrmsrl(msrs[i], val);
-> >                                  } 
+On Wed, May 23, 2012 at 06:06:33PM +0200, Frederic Weisbecker wrote:
+> On Wed, May 23, 2012 at 08:15:42AM -0700, Paul E. McKenney wrote:
+> > On Wed, May 23, 2012 at 03:52:09PM +0200, Frederic Weisbecker wrote:
+> > > > > +#ifdef CONFIG_CPUSETS_NO_HZ
+> > > > > +static bool can_stop_adaptive_tick(void)
+> > > > > +{
+> > > > > +	if (!sched_can_stop_tick())
+> > > > > +		return false;
+> > > > > +
+> > > > > +	/* Is there a grace period to complete ? */
+> > > > > +	if (rcu_pending(smp_processor_id()))
+> > > > 
+> > > > You lost me on this one.  Why can't this be rcu_needs_cpu()?
+> > > 
+> > > We already have an rcu_needs_cpu() check in tick_nohz_stop_sched_tick()
+> > > that prevents the tick to shut down if the CPU has local callbacks to handle.
+> > > 
+> > > The rcu_pending() check is there in case some other CPU is waiting for the
+> > > current one to help completing a grace period, by reporting a quiescent state
+> > > for example. This happens because we may stop the tick in the kernel, not only
+> > > userspace. And if we are in the kernel, we still need to be part of the global
+> > > state machine.
+> > 
+> > Ah!  But RCU will notice that the CPU is in dyntick-idle mode, and will
+> > therefore take any needed quiescent-state action on that CPU's behalf.
+> > So there should be no need to call rcu_pending() anywhere outside of the
+> > RCU core code.
 > 
-> Wouldn't it be much better to name those things, BIT(62), BIT(18) etc.
-> aren't very descriptive at all.
-> 
-> MCE_MISC_COUNTER_PRESENT is much more descriptive than BIT(62).
+> No. If the tick is stopped and we are in the kernel, we may be using RCU
+> anytime, so we need to be part of the RCU core.
 
-I know but I have the exact bit name from the BKDG in the comment above
-- CntP - and this is used only at one place - here - so no need for the
-defines, IMHO.
+OK, so the only problem is if we spend a long time CPU-bound in the kernel,
+where "long" is milliseconds or tens of milliseconds.  In that case, the
+RCU core will notice that the CPU has not responded but is not idle, for
+example, in rcu_implicit_dynticks_qs().  It can take action at this point
+to get the offending CPU to pay attention to RCU.
 
-But yeah, I see your point too.
-
--- 
-Regards/Gruss,
-Boris.
-
-Advanced Micro Devices GmbH
-Einsteinring 24, 85609 Dornach
-GM: Alberto Bozzo
-Reg: Dornach, Landkreis Muenchen
-HRB Nr. 43632 WEEE Registernr: 129 19551
+Does this make sense, or am I still missing something?
 
