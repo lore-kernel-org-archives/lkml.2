@@ -1,146 +1,171 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760634Ab2EWRSs (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 May 2012 13:18:48 -0400
-Received: from e38.co.us.ibm.com ([32.97.110.159]:42154 "EHLO
-	e38.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760592Ab2EWRSr (ORCPT
+	id S1760644Ab2EWRUQ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 May 2012 13:20:16 -0400
+Received: from e28smtp03.in.ibm.com ([122.248.162.3]:32910 "EHLO
+	e28smtp03.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1760592Ab2EWRUN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 May 2012 13:18:47 -0400
-Date: Wed, 23 May 2012 09:15:14 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: LKML <linux-kernel@vger.kernel.org>, linaro-sched-sig@lists.linaro.org,
-        Alessio Igor Bogani <abogani@kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>, Avi Kivity <avi@redhat.com>,
-        Chris Metcalf <cmetcalf@tilera.com>, Christoph Lameter <cl@linux.com>,
-        Daniel Lezcano <daniel.lezcano@linaro.org>,
-        Geoff Levand <geoff@infradead.org>,
-        Gilad Ben Yossef <gilad@benyossef.com>,
-        Hakan Akkan <hakanakkan@gmail.com>, Ingo Molnar <mingo@kernel.org>,
-        Kevin Hilman <khilman@ti.com>, Max Krasnyansky <maxk@qualcomm.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Stephen Hemminger <shemminger@vyatta.com>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Sven-Thorsten Dietrich <thebigcorporation@gmail.com>,
-        Thomas Gleixner <tglx@linutronix.de>
-Subject: Re: [PATCH 17/41] rcu: Restart tick if we enqueue a callback in a
- nohz/cpuset CPU
-Message-ID: <20120523161514.GD2402@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <1335830115-14335-1-git-send-email-fweisbec@gmail.com>
- <1335830115-14335-18-git-send-email-fweisbec@gmail.com>
- <20120522172714.GC8087@linux.vnet.ibm.com>
- <20120522173047.GA8160@linux.vnet.ibm.com>
- <20120523140331.GE1663@somewhere>
+	Wed, 23 May 2012 13:20:13 -0400
+Message-ID: <4FBCA5E5.4080402@linux.vnet.ibm.com>
+Date: Wed, 23 May 2012 16:55:01 +0800
+From: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120523140331.GE1663@somewhere>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 12052317-5518-0000-0000-0000049F95E1
+To: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
+CC: Avi Kivity <avi@redhat.com>, Marcelo Tosatti <mtosatti@redhat.com>,
+        LKML <linux-kernel@vger.kernel.org>, KVM <kvm@vger.kernel.org>
+Subject: [PATCH v5 5/9] KVM: MMU: introduce SPTE_MMU_WRITEABLE bit
+References: <4FBCA4FB.8050501@linux.vnet.ibm.com>
+In-Reply-To: <4FBCA4FB.8050501@linux.vnet.ibm.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
+x-cbid: 12052317-3864-0000-0000-0000030677F4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, May 23, 2012 at 04:03:36PM +0200, Frederic Weisbecker wrote:
-> On Tue, May 22, 2012 at 10:30:47AM -0700, Paul E. McKenney wrote:
-> > On Tue, May 22, 2012 at 10:27:14AM -0700, Paul E. McKenney wrote:
-> > > On Tue, May 01, 2012 at 01:54:51AM +0200, Frederic Weisbecker wrote:
-> > > > If we enqueue an rcu callback, we need the CPU tick to stay
-> > > > alive until we take care of those by completing the appropriate
-> > > > grace period.
-> > > > 
-> > > > Thus, when we call_rcu(), send a self IPI that checks rcu_needs_cpu()
-> > > > so that we restore a periodic tick behaviour that can take care of
-> > > > everything.
-> > > 
-> > > Ouch, I hadn't considered RCU callbacks being posted from within an
-> > > extended quiescent state.  I guess I need to make __call_rcu() either
-> > > complain about this or handle it correctly...  It would -usually- be
-> > > harmless, but there is getting to be quite a bit of active machinery
-> > > in the various idle loops, so just assuming that it cannot happen is
-> > > probably getting to be an obsolete assumption.
-> > 
-> > Adaptive ticks does restart the tick upon entering the kernel, correct?
-> 
-> No, it keeps the tick down. The tick is restarted only if it's needed:
-> when more than one task are on the runqueue, a posix cpu timer is running,
-> a CPU needs the current one to report a quiescent state, etc...
+This bit indicates whether the spte can be writable on MMU, that means
+the corresponding gpte is writable and the corresponding gfn is not
+protected by shadow page protection
 
-Ah, I didn't realize that you didn't restart the tick upon entry to the
-kernel.  So this is why you need the IPI -- because there is no tick, if
-the system call runs for a long time, RCU is not guaranteed to make any
-progress on that CPU.
+Signed-off-by: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
+---
+ arch/x86/kvm/mmu.c |   43 +++++++++++++++++++++++++++++--------------
+ 1 files changed, 29 insertions(+), 14 deletions(-)
 
-In the common case, this will not be a problem because system calls
-normally spend a short amount of time in the kernel, so normally RCU's
-dyntick-idle detection will handle this case.  The exception to this
-rule is when there is a long CPU-bound code path in the kernel, where
-"long" means many milliseconds.  In this exception case, this CPU needs
-to be interrupted or whatever is needed to force the CPU to progress
-through RCU.
+diff --git a/arch/x86/kvm/mmu.c b/arch/x86/kvm/mmu.c
+index 4810992..bd837f3 100644
+--- a/arch/x86/kvm/mmu.c
++++ b/arch/x86/kvm/mmu.c
+@@ -145,7 +145,8 @@ module_param(dbg, bool, 0644);
+ #define CREATE_TRACE_POINTS
+ #include "mmutrace.h"
 
-							Thanx, Paul
+-#define SPTE_HOST_WRITEABLE (1ULL << PT_FIRST_AVAIL_BITS_SHIFT)
++#define SPTE_HOST_WRITEABLE	(1ULL << PT_FIRST_AVAIL_BITS_SHIFT)
++#define SPTE_MMU_WRITEABLE	(1ULL << (PT_FIRST_AVAIL_BITS_SHIFT + 1))
 
-> > If so, wouldn't the return to userspace cause adaptive tick to automatically
-> > handle a callback posted from within the kernel?
-> > 
-> > (And yes, I still need to handle the possibility of callbacks being posted
-> > from the idle loop, but that is a different extended quiescent state.)
-> > 
-> > 							Thanx, Paul
-> > 
-> > > > Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
-> > > > Cc: Alessio Igor Bogani <abogani@kernel.org>
-> > > > Cc: Andrew Morton <akpm@linux-foundation.org>
-> > > > Cc: Avi Kivity <avi@redhat.com>
-> > > > Cc: Chris Metcalf <cmetcalf@tilera.com>
-> > > > Cc: Christoph Lameter <cl@linux.com>
-> > > > Cc: Daniel Lezcano <daniel.lezcano@linaro.org>
-> > > > Cc: Geoff Levand <geoff@infradead.org>
-> > > > Cc: Gilad Ben Yossef <gilad@benyossef.com>
-> > > > Cc: Hakan Akkan <hakanakkan@gmail.com>
-> > > > Cc: Ingo Molnar <mingo@kernel.org>
-> > > > Cc: Kevin Hilman <khilman@ti.com>
-> > > > Cc: Max Krasnyansky <maxk@qualcomm.com>
-> > > > Cc: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
-> > > > Cc: Peter Zijlstra <peterz@infradead.org>
-> > > > Cc: Stephen Hemminger <shemminger@vyatta.com>
-> > > > Cc: Steven Rostedt <rostedt@goodmis.org>
-> > > > Cc: Sven-Thorsten Dietrich <thebigcorporation@gmail.com>
-> > > > Cc: Thomas Gleixner <tglx@linutronix.de>
-> > > > ---
-> > > >  kernel/rcutree.c |    7 +++++++
-> > > >  1 files changed, 7 insertions(+), 0 deletions(-)
-> > > > 
-> > > > diff --git a/kernel/rcutree.c b/kernel/rcutree.c
-> > > > index 3fffc26..b8d300c 100644
-> > > > --- a/kernel/rcutree.c
-> > > > +++ b/kernel/rcutree.c
-> > > > @@ -1749,6 +1749,13 @@ __call_rcu(struct rcu_head *head, void (*func)(struct rcu_head *rcu),
-> > > >  	else
-> > > >  		trace_rcu_callback(rsp->name, head, rdp->qlen);
-> > > > 
-> > > > +	/* Restart the timer if needed to handle the callbacks */
-> > > > +	if (cpuset_adaptive_nohz()) {
-> > > > +		/* Make updates on nxtlist visible to self IPI */
-> > > > +		barrier();
-> > > > +		smp_cpuset_update_nohz(smp_processor_id());
-> > > > +	}
-> > > > +
-> > > >  	/* If interrupts were disabled, don't dive into RCU core. */
-> > > >  	if (irqs_disabled_flags(flags)) {
-> > > >  		local_irq_restore(flags);
-> > > > -- 
-> > > > 1.7.5.4
-> > > > 
-> > 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
-> 
+ #define SHADOW_PT_INDEX(addr, level) PT64_INDEX(addr, level)
+
+@@ -1065,32 +1066,45 @@ static void drop_spte(struct kvm *kvm, u64 *sptep)
+ 		rmap_remove(kvm, sptep);
+ }
+
++static bool spte_can_be_writable(u64 spte)
++{
++	u64 mask = SPTE_HOST_WRITEABLE | SPTE_MMU_WRITEABLE;
++
++	return (spte & mask) == mask;
++}
++
+ /* Return true if the spte is dropped. */
+-static bool spte_write_protect(struct kvm *kvm, u64 *sptep, bool *flush)
++static bool
++spte_write_protect(struct kvm *kvm, u64 *sptep, bool *flush, bool pt_protect)
+ {
+ 	u64 spte = *sptep;
+
+-	if (!is_writable_pte(spte))
++	if (!is_writable_pte(spte) &&
++	      !(pt_protect && spte_can_be_writable(spte)))
+ 		return false;
+
+ 	rmap_printk("rmap_write_protect: spte %p %llx\n", sptep, *sptep);
+
+-	*flush |= true;
+ 	if (is_large_pte(spte)) {
+ 		WARN_ON(page_header(__pa(sptep))->role.level ==
+ 		       PT_PAGE_TABLE_LEVEL);
++
++		*flush |= true;
+ 		drop_spte(kvm, sptep);
+ 		--kvm->stat.lpages;
+ 		return true;
+ 	}
+
++	if (pt_protect)
++		spte &= ~SPTE_MMU_WRITEABLE;
+ 	spte = spte & ~PT_WRITABLE_MASK;
+-	mmu_spte_update(sptep, spte);
++
++	*flush = mmu_spte_update(sptep, spte);
+ 	return false;
+ }
+
+-static bool
+-__rmap_write_protect(struct kvm *kvm, unsigned long *rmapp, int level)
++static bool __rmap_write_protect(struct kvm *kvm, unsigned long *rmapp,
++				 int level, bool pt_protect)
+ {
+ 	u64 *sptep;
+ 	struct rmap_iterator iter;
+@@ -1098,7 +1112,7 @@ __rmap_write_protect(struct kvm *kvm, unsigned long *rmapp, int level)
+
+ 	for (sptep = rmap_get_first(*rmapp, &iter); sptep;) {
+ 		BUG_ON(!(*sptep & PT_PRESENT_MASK));
+-		if (spte_write_protect(kvm, sptep, &flush)) {
++		if (spte_write_protect(kvm, sptep, &flush, pt_protect)) {
+ 			sptep = rmap_get_first(*rmapp, &iter);
+ 			continue;
+ 		}
+@@ -1127,7 +1141,7 @@ void kvm_mmu_write_protect_pt_masked(struct kvm *kvm,
+
+ 	while (mask) {
+ 		rmapp = &slot->rmap[gfn_offset + __ffs(mask)];
+-		__rmap_write_protect(kvm, rmapp, PT_PAGE_TABLE_LEVEL);
++		__rmap_write_protect(kvm, rmapp, PT_PAGE_TABLE_LEVEL, false);
+
+ 		/* clear the first set bit */
+ 		mask &= mask - 1;
+@@ -1146,7 +1160,7 @@ static bool rmap_write_protect(struct kvm *kvm, u64 gfn)
+ 	for (i = PT_PAGE_TABLE_LEVEL;
+ 	     i < PT_PAGE_TABLE_LEVEL + KVM_NR_PAGE_SIZES; ++i) {
+ 		rmapp = __gfn_to_rmap(gfn, i, slot);
+-		write_protected |= __rmap_write_protect(kvm, rmapp, i);
++		write_protected |= __rmap_write_protect(kvm, rmapp, i, true);
+ 	}
+
+ 	return write_protected;
+@@ -2284,8 +2298,10 @@ static int set_spte(struct kvm_vcpu *vcpu, u64 *sptep,
+ 		spte |= shadow_x_mask;
+ 	else
+ 		spte |= shadow_nx_mask;
++
+ 	if (pte_access & ACC_USER_MASK)
+ 		spte |= shadow_user_mask;
++
+ 	if (level > PT_PAGE_TABLE_LEVEL)
+ 		spte |= PT_PAGE_SIZE_MASK;
+ 	if (tdp_enabled)
+@@ -2310,7 +2326,7 @@ static int set_spte(struct kvm_vcpu *vcpu, u64 *sptep,
+ 			goto done;
+ 		}
+
+-		spte |= PT_WRITABLE_MASK;
++		spte |= PT_WRITABLE_MASK | SPTE_MMU_WRITEABLE;
+
+ 		if (!vcpu->arch.mmu.direct_map
+ 		    && !(pte_access & ACC_WRITE_MASK)) {
+@@ -2339,8 +2355,7 @@ static int set_spte(struct kvm_vcpu *vcpu, u64 *sptep,
+ 				 __func__, gfn);
+ 			ret = 1;
+ 			pte_access &= ~ACC_WRITE_MASK;
+-			if (is_writable_pte(spte))
+-				spte &= ~PT_WRITABLE_MASK;
++			spte &= ~(PT_WRITABLE_MASK | SPTE_MMU_WRITEABLE);
+ 		}
+ 	}
+
+@@ -3921,7 +3936,7 @@ void kvm_mmu_slot_remove_write_access(struct kvm *kvm, int slot)
+ 			      !is_last_spte(pt[i], sp->role.level))
+ 				continue;
+
+-			spte_write_protect(kvm, &pt[i], &flush);
++			spte_write_protect(kvm, &pt[i], &flush, false);
+ 		}
+ 	}
+ 	kvm_flush_remote_tlbs(kvm);
+-- 
+1.7.7.6
 
