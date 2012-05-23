@@ -1,69 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757854Ab2EWJSS (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 May 2012 05:18:18 -0400
-Received: from mail.mev.co.uk ([62.49.15.74]:60708 "EHLO mail.mev.co.uk"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753457Ab2EWJSQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 May 2012 05:18:16 -0400
-Message-ID: <4FBCAB50.5000907@mev.co.uk>
-Date: Wed, 23 May 2012 10:18:08 +0100
-From: Ian Abbott <abbotti@mev.co.uk>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120516 Thunderbird/12.0.1
+	id S1758070Ab2EWJSY (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 May 2012 05:18:24 -0400
+Received: from hqemgate04.nvidia.com ([216.228.121.35]:6454 "EHLO
+	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753457Ab2EWJST (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 23 May 2012 05:18:19 -0400
+X-PGP-Universal: processed;
+	by hqnvupgp06.nvidia.com on Wed, 23 May 2012 02:16:50 -0700
+Date: Wed, 23 May 2012 12:16:17 +0300
+From: Peter De Schrijver <pdeschrijver@nvidia.com>
+To: "Turquette, Mike" <mturquette@ti.com>
+CC: Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Saravana Kannan <skannan@codeaurora.org>, Andrew Lunn <andrew@lunn.ch>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Jamie Iles <jamie@jamieiles.com>,
+        Jeremy Kerr <jeremy.kerr@canonical.com>,
+        Magnus Damm <magnus.damm@gmail.com>,
+        Deepak Saxena <dsaxena@linaro.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Arnd Bergman <arnd.bergmann@linaro.org>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        "linux-arm-msm@vger.kernel.org" <linux-arm-msm@vger.kernel.org>,
+        Sascha Hauer <s.hauer@pengutronix.de>,
+        Rob Herring <rob.herring@calxeda.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Richard Zhao <richard.zhao@linaro.org>,
+        Shawn Guo <shawn.guo@freescale.com>, Paul Walmsley <paul@pwsan.com>,
+        Linus Walleij <linus.walleij@stericsson.com>,
+        Stephen Boyd <sboyd@codeaurora.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Amit Kucheria <amit.kucheria@linaro.org>
+Subject: Re: [PATCH] clk: Fix race conditions between clk_set_parent() and
+ clk_enable()
+Message-ID: <20120523091617.GZ8730@tbergstrom-lnx.Nvidia.com>
+References: <1336798797-8724-1-git-send-email-skannan@codeaurora.org>
+ <4FB29E7C.7010606@codeaurora.org>
+ <20120522135813.GL8730@tbergstrom-lnx.Nvidia.com>
+ <CAJOA=zOcEQc70gg+4U2jNaNRTB5YeyOwgsL12YWNoviQ5qFjaQ@mail.gmail.com>
 MIME-Version: 1.0
-To: Dan Carpenter <dan.carpenter@oracle.com>
-CC: H Hartley Sweeten <hartleys@visionengravers.com>,
-        Linux Kernel <linux-kernel@vger.kernel.org>,
-        "devel@driverdev.osuosl.org" <devel@driverdev.osuosl.org>,
-        "fmhess@users.sourceforge.net" <fmhess@users.sourceforge.net>,
-        Ian Abbott <ian.abbott@mev.co.uk>,
-        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>
-Subject: Re: [PATCH] staging: comedi: remove this_board macro in the s526
- driver
-References: <201205221820.10770.hartleys@visionengravers.com> <20120523054849.GK4637@mwanda>
-In-Reply-To: <20120523054849.GK4637@mwanda>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+In-Reply-To: <CAJOA=zOcEQc70gg+4U2jNaNRTB5YeyOwgsL12YWNoviQ5qFjaQ@mail.gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2012-05-23 06:48, Dan Carpenter wrote:
-> On Tue, May 22, 2012 at 06:20:10PM -0700, H Hartley Sweeten wrote:
->> The 'thisboard' macro depends on having a local variable with
->> a magic name. The CodingStyle document suggests not doing this
->> to avoid confusion. Remove the macro and use the comedi_board()
->> inline helper to get the dev->board_ptr information.
->>
->> Signed-off-by: H Hartley Sweeten<hsweeten@visionengravers.com>
->> Cc: Ian Abbott<abbotti@mev.co.uk>
->> Cc: Mori Hess<fmhess@users.sourceforge.net>
->> Cc: Greg Kroah-Hartman<gregkh@linuxfoundation.org>
->>
->> ---
->> @@ -769,13 +765,7 @@ static int s526_attach(struct comedi_device *dev, struct comedi_devconfig *it)
->>   	}
->>   	***/
->>
->> -/*
->> - * Initialize dev->board_name.  Note that we can use the "thisboard"
->> - * macro now, since we just initialized it in the last line.
->> - */
->> -	dev->board_ptr =&s526_boards[0];
->
-> Was this intended?  Most of the boards have auto probing so the
-> ->board_ptr gets set automatically.  We already called
-> comedi_board() so I wonder if the autoprobed board is the same as
-> the&s526_boards[0];?  NULL pointer perhaps?  I don't know.
+On Tue, May 22, 2012 at 08:06:45PM +0200, Turquette, Mike wrote:
+> On Tue, May 22, 2012 at 6:58 AM, Peter De Schrijver
+> <pdeschrijver@nvidia.com> wrote:
+> > On Tue, May 15, 2012 at 08:20:44PM +0200, Saravana Kannan wrote:
+> >> On 05/11/2012 09:59 PM, Saravana Kannan wrote:
+> >> > Without this patch, the following race conditions are possible.
+> >> >
+> >> > Race condition 1:
+> >> > * clk-A has two parents - clk-X and clk-Y.
+> >> > * All three are disabled and clk-X is current parent.
+> >> > * Thread A: clk_set_parent(clk-A, clk-Y).
+> >> > * Thread A:<snip execution flow>
+> >> > * Thread A: Grabs enable lock.
+> >> > * Thread A: Sees enable count of clk-A is 0, so doesn't enable clk-Y.
+> >> > * Thread A: Releases enable lock.
+> >> > * Thread B: Calls clk_enable(clk-A), which in turn enables clk-X.
+> >> > * Thread A: Switches clk-A's parent to clk-Y in hardware.
+> >> >
+> >> > clk-A is now enabled in software, but not clocking in hardware.
+> >> >
+> >> > Race condition 2:
+> >> > * clk-A has two parents - clk-X and clk-Y.
+> >> > * All three are disabled and clk-X is current parent.
+> >> > * Thread A: clk_set_parent(clk-A, clk-Y).
+> >> > * Thread A:<snip execution flow>
+> >> > * Thread A: Switches parent in hardware to clk-Y.
+> >> > * Thread A: Grabs enable lock.
+> >> > * Thread A: Sees enable count of clk-A is 0, so doesn't disable clk-X.
+> >> > * Thread A: Releases enable lock.
+> >> > * Thread B: Calls clk_enable(clk-A)
+> >> > * Thread B: Software state still says parent is clk-X.
+> >> > * Thread B: So, enables clk-X and then itself.
+> >> > * Thread A: Updates parent in software state to clk-Y.
+> >> >
+> >
+> > This looks correct to me. Is there any usecase where enabling/disabling a
+> > clock would require sleeping but changing the parent would not?
+> >
+> 
+> clk_enable & clk_disable must never sleep.  clk_prepare and
+> clk_unprepare may sleep.
+> 
 
-If .num_names in struct comedi_driver is non-zero, the core comedi 
-module will set dev->board_ptr to something non-NULL and meaningful to 
-the driver before it calls the driver's ->attach() method.  (This is 
-done by the comedi_recognize() function.)  The driver can change 
-dev->board_ptr to something else if it wants.  In this case, 
-dev->board_ptr will already be set to &s526_boards[0] so there is no 
-point setting it again.
+In that case the clock is actually enabled in clk_prepare and disabled in
+clk_unprepare I guess (and clk_enable/clk_disable are dummy functions)?
 
--- 
--=( Ian Abbott @ MEV Ltd.    E-mail: <abbotti@mev.co.uk>        )=-
--=( Tel: +44 (0)161 477 1898   FAX: +44 (0)161 718 3587         )=-
+What I'm trying to say is that I don't think there are clocks which can be
+enabled/disabled using non blocking operations, but where a parent change
+would require a blocking operation.
+
+Cheers,
+
+Peter.
