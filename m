@@ -1,203 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933251Ab2EWBnq (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 May 2012 21:43:46 -0400
-Received: from LGEMRELSE1Q.lge.com ([156.147.1.111]:62795 "EHLO
-	LGEMRELSE1Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760410Ab2EWBnp (ORCPT
+	id S933309Ab2EWBnt (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 May 2012 21:43:49 -0400
+Received: from mail-yx0-f174.google.com ([209.85.213.174]:35461 "EHLO
+	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1760421Ab2EWBnr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 May 2012 21:43:45 -0400
-X-AuditID: 9c93016f-b7c3cae000001954-e4-4fbc40cf9aa0
-From: Minchan Kim <minchan@kernel.org>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        Minchan Kim <minchan@kernel.org>, Nitin Gupta <ngupta@vflare.org>,
-        Seth Jennings <sjenning@linux.vnet.ibm.com>
-Subject: [PATCH 2/2 v2] zram: clean up handle
-Date: Wed, 23 May 2012 10:43:22 +0900
-Message-Id: <1337737402-16543-2-git-send-email-minchan@kernel.org>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1337737402-16543-1-git-send-email-minchan@kernel.org>
-References: <1337737402-16543-1-git-send-email-minchan@kernel.org>
-X-Brightmail-Tracker: AAAAAA==
+	Tue, 22 May 2012 21:43:47 -0400
+Date: Tue, 22 May 2012 22:43:17 -0300
+From: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+To: Namhyung Kim <namhyung.kim@lge.com>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Mackerras <paulus@samba.org>,
+        Ingo Molnar <mingo@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Steven Rostedt <rostedt@goodmis.org>
+Subject: Re: [PATCH 2/2] perf tools: Always try to build libtraceevent
+Message-ID: <20120523014317.GE19247@infradead.org>
+References: <1337677434-4881-1-git-send-email-namhyung.kim@lge.com>
+ <1337677434-4881-2-git-send-email-namhyung.kim@lge.com>
+ <20120522153648.GD19247@infradead.org>
+ <87k4031yy4.fsf@sejong.aot.lge.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <87k4031yy4.fsf@sejong.aot.lge.com>
+X-Url: http://acmel.wordpress.com
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-zram's handle variable can store handle of zsmalloc in case of
-compressing efficiently. Otherwise, it stores point of page descriptor.
-This patch clean up the mess by union struct.
+Em Wed, May 23, 2012 at 10:13:55AM +0900, Namhyung Kim escreveu:
+> Hi,
+> 
+> On Tue, 22 May 2012 12:36:48 -0300, Arnaldo Carvalho de Melo wrote:
+> > Em Tue, May 22, 2012 at 06:03:54PM +0900, Namhyung Kim escreveu:
+> >> While at it, silence annoying directory change messages.
+> >
+> > Applied, have you seen these?
+> >
+> > make[1]: Entering directory `/home/git/linux/tools/lib/traceevent'
+> > make[2]: warning: jobserver unavailable: using -j1.  Add `+' to parent make rule.
+> > make[2]: `libtraceevent.a' is up to date.
+> 
+> Yes, but I didn't know how to handle them properly. And the first line
+> looks like a bug of QUIET_SUBDIR stuff. Did you build it out of the
+> kernel tree?
 
-changelog
-  * from v1
-	- none(new add in v2)
+I always use:
 
-Cc: Nitin Gupta <ngupta@vflare.org>
-Cc: Seth Jennings <sjenning@linux.vnet.ibm.com>
-Signed-off-by: Minchan Kim <minchan@kernel.org>
----
- drivers/staging/zram/zram_drv.c |   77 ++++++++++++++++++++-------------------
- drivers/staging/zram/zram_drv.h |    5 ++-
- 2 files changed, 44 insertions(+), 38 deletions(-)
+[acme@sandy linux]$ make -j8 -C tools/perf/ O=/home/git/build/perf install
 
-diff --git a/drivers/staging/zram/zram_drv.c b/drivers/staging/zram/zram_drv.c
-index abd69d1..ceab5ca 100644
---- a/drivers/staging/zram/zram_drv.c
-+++ b/drivers/staging/zram/zram_drv.c
-@@ -150,7 +150,7 @@ static void zram_free_page(struct zram *zram, size_t index)
- 	}
- 
- 	if (unlikely(zram_test_flag(zram, index, ZRAM_UNCOMPRESSED))) {
--		__free_page((struct page *)handle);
-+		__free_page(zram->table[index].page);
- 		zram_clear_flag(zram, index, ZRAM_UNCOMPRESSED);
- 		zram_stat_dec(&zram->stats.pages_expand);
- 		goto out;
-@@ -189,7 +189,7 @@ static void handle_uncompressed_page(struct zram *zram, struct bio_vec *bvec,
- 	unsigned char *user_mem, *cmem;
- 
- 	user_mem = kmap_atomic(page);
--	cmem = kmap_atomic((struct page *)zram->table[index].handle);
-+	cmem = kmap_atomic(zram->table[index].page);
- 
- 	memcpy(user_mem + bvec->bv_offset, cmem + offset, bvec->bv_len);
- 	kunmap_atomic(cmem);
-@@ -315,7 +315,6 @@ static int zram_bvec_write(struct zram *zram, struct bio_vec *bvec, u32 index,
- 			   int offset)
- {
- 	int ret;
--	u32 store_offset;
- 	size_t clen;
- 	unsigned long handle;
- 	struct zobj_header *zheader;
-@@ -396,25 +395,33 @@ static int zram_bvec_write(struct zram *zram, struct bio_vec *bvec, u32 index,
- 			goto out;
- 		}
- 
--		store_offset = 0;
--		zram_set_flag(zram, index, ZRAM_UNCOMPRESSED);
--		zram_stat_inc(&zram->stats.pages_expand);
--		handle = (unsigned long)page_store;
- 		src = kmap_atomic(page);
- 		cmem = kmap_atomic(page_store);
--		goto memstore;
--	}
-+		memcpy(cmem, src, clen);
-+		kunmap_atomic(cmem);
-+		kunmap_atomic(src);
- 
--	handle = zs_malloc(zram->mem_pool, clen + sizeof(*zheader));
--	if (!handle) {
--		pr_info("Error allocating memory for compressed "
--			"page: %u, size=%zu\n", index, clen);
--		ret = -ENOMEM;
--		goto out;
--	}
--	cmem = zs_map_object(zram->mem_pool, handle);
-+		zram->table[index].page = page_store;
-+		zram->table[index].size = PAGE_SIZE;
-+
-+		zram_set_flag(zram, index, ZRAM_UNCOMPRESSED);
-+		zram_stat_inc(&zram->stats.pages_expand);
-+	} else {
-+		handle = zs_malloc(zram->mem_pool, clen + sizeof(*zheader));
-+		if (!handle) {
-+			pr_info("Error allocating memory for "
-+				"compressed page: %u, size=%zu\n", index, clen);
-+			ret = -ENOMEM;
-+			goto out;
-+		}
-+
-+		zram->table[index].handle = handle;
-+		zram->table[index].size = clen;
- 
--memstore:
-+		cmem = zs_map_object(zram->mem_pool, handle);
-+		memcpy(cmem, src, clen);
-+		zs_unmap_object(zram->mem_pool, handle);
-+	}
- #if 0
- 	/* Back-reference needed for memory defragmentation */
- 	if (!zram_test_flag(zram, index, ZRAM_UNCOMPRESSED)) {
-@@ -424,18 +431,6 @@ memstore:
- 	}
- #endif
- 
--	memcpy(cmem, src, clen);
--
--	if (unlikely(zram_test_flag(zram, index, ZRAM_UNCOMPRESSED))) {
--		kunmap_atomic(cmem);
--		kunmap_atomic(src);
--	} else {
--		zs_unmap_object(zram->mem_pool, handle);
--	}
--
--	zram->table[index].handle = handle;
--	zram->table[index].size = clen;
--
- 	/* Update stats */
- 	zram_stat64_add(zram, &zram->stats.compr_size, clen);
- 	zram_stat_inc(&zram->stats.pages_stored);
-@@ -580,6 +575,8 @@ error:
- void __zram_reset_device(struct zram *zram)
- {
- 	size_t index;
-+	unsigned long handle;
-+	struct page *page;
- 
- 	zram->init_done = 0;
- 
-@@ -592,14 +589,17 @@ void __zram_reset_device(struct zram *zram)
- 
- 	/* Free all pages that are still in this zram device */
- 	for (index = 0; index < zram->disksize >> PAGE_SHIFT; index++) {
--		unsigned long handle = zram->table[index].handle;
--		if (!handle)
--			continue;
--
--		if (unlikely(zram_test_flag(zram, index, ZRAM_UNCOMPRESSED)))
--			__free_page((struct page *)handle);
--		else
-+		if (unlikely(zram_test_flag(zram, index, ZRAM_UNCOMPRESSED))) {
-+			page = zram->table[index].page;
-+			if (!page)
-+				continue;
-+			__free_page(page);
-+		} else {
-+			handle = zram->table[index].handle;
-+			if (!handle)
-+				continue;
- 			zs_free(zram->mem_pool, handle);
-+		}
- 	}
- 
- 	vfree(zram->table);
-@@ -788,6 +788,9 @@ static int __init zram_init(void)
- {
- 	int ret, dev_id;
- 
-+	BUILD_BUG_ON(sizeof(((struct table *)0)->page) !=
-+		sizeof(((struct table *)0)->handle));
-+
- 	if (num_devices > max_num_devices) {
- 		pr_warning("Invalid value for num_devices: %u\n",
- 				num_devices);
-diff --git a/drivers/staging/zram/zram_drv.h b/drivers/staging/zram/zram_drv.h
-index 7a7e256..54d082f 100644
---- a/drivers/staging/zram/zram_drv.h
-+++ b/drivers/staging/zram/zram_drv.h
-@@ -81,7 +81,10 @@ enum zram_pageflags {
- 
- /* Allocated for each disk page */
- struct table {
--	unsigned long handle;
-+	union {
-+		unsigned long handle; /* compressible */
-+		struct page *page; /* incompressible */
-+	};
- 	u16 size;	/* object size (excluding header) */
- 	u8 count;	/* object ref count (not yet used) */
- 	u8 flags;
--- 
-1.7.9.5
-
+- Arnaldo
