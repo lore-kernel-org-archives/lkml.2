@@ -1,70 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755616Ab2EWNGr (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 May 2012 09:06:47 -0400
-Received: from mail-lpp01m010-f46.google.com ([209.85.215.46]:56234 "EHLO
-	mail-lpp01m010-f46.google.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750747Ab2EWNGq (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 May 2012 09:06:46 -0400
+	id S1759698Ab2EWNOV (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 May 2012 09:14:21 -0400
+Received: from mms3.broadcom.com ([216.31.210.19]:3148 "EHLO MMS3.broadcom.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751911Ab2EWNOU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 23 May 2012 09:14:20 -0400
+X-Server-Uuid: B730DE51-FC43-4C83-941F-F1F78A914BDD
+From: "Arend van Spriel" <arend@broadcom.com>
+To: "Greg Kroah-Hartman" <gregkh@linuxfoundation.org>
+cc: linux-kernel@vger.kernel.org, "Arend van Spriel" <arend@broadcom.com>
+Subject: [PATCH for-3.6] debugfs: change parameter check in
+ debugfs_remove() functions
+Date: Wed, 23 May 2012 15:13:07 +0200
+Message-ID: <1337778788-7069-1-git-send-email-arend@broadcom.com>
+X-Mailer: git-send-email 1.7.9.5
 MIME-Version: 1.0
-In-Reply-To: <1337761273.9698.60.camel@twins>
-References: <1337081295-10303-1-git-send-email-eranian@google.com>
-	<1337081295-10303-5-git-send-email-eranian@google.com>
-	<4FB32032.3000509@gmail.com>
-	<CABPqkBQyZfSczhAROdH8p0_asy=c2AJho4Kv9wRYabaLNKkURA@mail.gmail.com>
-	<4FB67DE5.8050000@gmail.com>
-	<20120518171911.GH2636@infradead.org>
-	<1337708035.9698.44.camel@twins>
-	<CABPqkBTQ=K-=qkgzC0TZPi1xyHtqT6QQroRg-7o0k8rFmjH_Bw@mail.gmail.com>
-	<1337761273.9698.60.camel@twins>
-Date: Wed, 23 May 2012 15:06:44 +0200
-Message-ID: <CABPqkBQm2oKzTES8VSai-O9G9Ag1TzZZznR2wEHeWouRY3ZrXQ@mail.gmail.com>
-Subject: Re: [PATCH v2 4/5] perf record: add meta-data support for pipe-mode
-From: Stephane Eranian <eranian@google.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Arnaldo Carvalho de Melo <acme@redhat.com>,
-        David Ahern <dsahern@gmail.com>, linux-kernel@vger.kernel.org,
-        mingo@elte.hu
-Content-Type: text/plain; charset=UTF-8
-X-System-Of-Record: true
+X-WSS-ID: 63A23D483E037182399-01-01
+Content-Type: text/plain
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, May 23, 2012 at 10:21 AM, Peter Zijlstra <peterz@infradead.org> wrote:
-> On Tue, 2012-05-22 at 19:51 +0200, Stephane Eranian wrote:
->> The problem is that the headers as they are written to the file need
->> seeking in the file to update the offset table. That is NOT possible when
->> you operate in pipe mode.
->
-> I know that, I said as much. But it is quite possible to multiplex
-> streams without the need for seeking, look at these MKV containers that
-> contain video, multiple-audio and multiple-subtitle tracks.
->
-> The fact is, whomever wrote that pipe mode took a bonghit before
-> touching the keyboard. They didn't even ask if we could reserve a range
-> for userspace events, let alone consider if it was a good idea to begin
-> with.
-You're probably right, but the fact of the matter is, it's there now and
-we have lots of perf.data piling up all over the place. So you need
-to maintain compatibility with those. In my patch, I am just extending
-what's already there. I was not trying to rewrite the whole pipe mode + meta
-data logic (though I have done some of that already in the past).
+The dentry parameter in debugfs_remove() and debugfs_remove_recursive()
+is checked being a NULL pointer. To make cleanup by callers easier this
+check is extended using the IS_ERR_OR_NULL macro instead because the
+debugfs_create_... functions can return a ERR_PTR() value.
 
-Clearly pipe-mode was an after thought, but it is useful, I know people who
-use it. Obviously I use it, otherwise I would not necessarily have spent the
-time fixing the meta-data headers.
+Signed-off-by: Arend van Spriel <arend@broadcom.com>
+---
+I was adding the check in driver code before calling the recursive remove,
+but considered it might be a better idea to do it in debugfs itself.
 
-But I think, for the time being, my patch addresses an issue and does
-not prevent us for discussing a new file format for perf record, I have nothing
-against that.
+No rush so I target to include it in v3.6. The patch is based on v3.4 tag.
+
+Gr. AvS
+---
+ fs/debugfs/inode.c |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/fs/debugfs/inode.c b/fs/debugfs/inode.c
+index b80bc84..0de5e26 100644
+--- a/fs/debugfs/inode.c
++++ b/fs/debugfs/inode.c
+@@ -498,7 +498,7 @@ void debugfs_remove(struct dentry *dentry)
+ 	struct dentry *parent;
+ 	int ret;
+ 
+-	if (!dentry)
++	if (IS_ERR_OR_NULL(dentry))
+ 		return;
+ 
+ 	parent = dentry->d_parent;
+@@ -530,7 +530,7 @@ void debugfs_remove_recursive(struct dentry *dentry)
+ 	struct dentry *child;
+ 	struct dentry *parent;
+ 
+-	if (!dentry)
++	if (IS_ERR_OR_NULL(dentry))
+ 		return;
+ 
+ 	parent = dentry->d_parent;
+-- 
+1.7.9.5
 
 
->
-> If we ever manage to get splice() working you can't keep that pipe mode
-> working anyway.
->
-> Pushing everything over a single stream isn't a scalable solution anyway
-> in the same way that writing everything into the one file isn't the best
-> thing and would ideally be replaced as well.
