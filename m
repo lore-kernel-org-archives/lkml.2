@@ -1,81 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758637Ab2EWJcO (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 May 2012 05:32:14 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:35528 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1758537Ab2EWJcL (ORCPT
+	id S1758576Ab2EWJdP (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 May 2012 05:33:15 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:12561 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756227Ab2EWJdN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 May 2012 05:32:11 -0400
-Date: Wed, 23 May 2012 10:32:08 +0100
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: David Rientjes <rientjes@google.com>
-Cc: Randy Dunlap <rdunlap@xenotime.net>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [patch -linus] regmap: REMAP_IRQ should select IRQ_DOMAIN itself
-Message-ID: <20120523093208.GB4085@opensource.wolfsonmicro.com>
-References: <20120522183037.75ec03c9d8881ec188e7f787@canb.auug.org.au>
- <4FBBAF1B.1070702@xenotime.net>
- <alpine.DEB.2.00.1205222339030.9290@chino.kir.corp.google.com>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="0ntfKIWw70PvrIHh"
-Content-Disposition: inline
-In-Reply-To: <alpine.DEB.2.00.1205222339030.9290@chino.kir.corp.google.com>
-X-Cookie: You dialed 5483.
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Wed, 23 May 2012 05:33:13 -0400
+X-Authority-Analysis: v=2.0 cv=D8PF24tj c=1 sm=0 a=ZycB6UtQUfgMyuk2+PxD7w==:17 a=XQbtiDEiEegA:10 a=Nj6rVgaf4WgA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=meVymXHHAAAA:8 a=ayC55rCoAAAA:8 a=vfm2v0D5heuxT9GPvB0A:9 a=PUjeQqilurYA:10 a=ZycB6UtQUfgMyuk2+PxD7w==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 74.67.80.29
+Message-ID: <1337765592.13348.143.camel@gandalf.stny.rr.com>
+Subject: Re: [PATCH v2 3/3] trace-cmd: setting plugin to 'nop' clears data
+ before it's recorded
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Mark Asselstine <mark.asselstine@windriver.com>
+Cc: linux-kernel@vger.kernel.org, asselsm@gmail.com
+Date: Wed, 23 May 2012 05:33:12 -0400
+In-Reply-To: <1333899525-6436-1-git-send-email-mark.asselstine@windriver.com>
+References: <1333715093.23090.2.camel@pippen.local.home>
+	 <1333899525-6436-1-git-send-email-mark.asselstine@windriver.com>
+Content-Type: text/plain; charset="ISO-8859-15"
+X-Mailer: Evolution 3.2.2-1 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Sun, 2012-04-08 at 11:38 -0400, Mark Asselstine wrote:
+> commit e09a5db1a929ab668c273b87c4f0a32b81e1c21a
+> [trace-cmd: Add trace-cmd record --date option]
+> 
+> moved the call to disable_all() in trace_record() from after record_data()
+> to before it. Unfortunately disable_all() sets 'nop' in 'current_tracer'
+> which has the side affect of clearing 'trace', thus all the latency tracer
+> reports are empty/useless. Here we make disable_all() optionally call
+> set_plugin() thus, where we need to, we can delay the disabling of the tracer
+> until we have had a chance to capture 'trace'. We have added this delayed
+> behavior to trace_record() to fix the latency reports, for all other calls to
+> disable_all() we continue to have set_plugin() called.
+> 
 
---0ntfKIWw70PvrIHh
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Just letting you know that I just pushed your changes to my repo. Sorry
+for being late, I got side-tracked, and forgot about your changes.
 
-On Tue, May 22, 2012 at 11:57:30PM -0700, David Rientjes wrote:
+-- Steve
 
-> regmap: REMAP_IRQ should select IRQ_DOMAIN itself
->=20
-> CONFIG_REGMAP_IRQ relies on CONFIG_IRQ_DOMAIN since 4af8be67fd99 ("regmap=
-:=20
-> Convert regmap_irq to use irq_domain").
->=20
-> Instead of ensuring all options that select REGMAP_IRQ also select=20
-> IRQ_DOMAIN, just make the former select the latter itself.
 
-The reason we're selecting things from the users is that multi-level
-selects have never seemed to be terribly robust, they've been a
-noticable source of breakage with this sort of randconfig stuff in the
-past which is painful and annoying, especially given the strange fixes
-that tend to come from randconfig reports.
-
-That said a "select X if Y" construct doesn't ever seem to have this
-problem...  I'm just sending a patch doing that now.
-
---0ntfKIWw70PvrIHh
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBAgAGBQJPvK6EAAoJEBus8iNuMP3d/eAQAJn6ZsGjkDYX48Vyk/H0okFH
-Sue2UdeK7sfZUwfaWtMkHo+XVgJuznM7ZmOSsjWsNw+zgGi0TiY6ULGxaQdXljna
-Mv51vh6rLV+uTmEeLKroHmGdwVdzDF1k4PTVgGSJjHKTEXj2dsc5zBhzsrWFwmnV
-bthpyrQDV4za6oMUj9J0H0hFRhf3fOKPHLTt1m2olYYTvIWLhYFxxYJa8AVcPfGw
-7IRPqpUyTmyHtgsdCno/Ap/baA05bkzeuscZBbsntQFWc0yNx4iPQg4XuzvvS2n0
-kLqOdJvlZUncTYW6LJg74xeG1NVdNH2HoINUviZg2XNnjrR9VnnBveC3IwGkxspb
-akMu85pLliE4Ql+t5vFmlMwtgZvzIwGHaNdxuYioQYM14hBPJ02glCN8c7e5AbiA
-cvp52f5L82kAtEBDYGV+enNBskWUNnHgqUgbtO9gj46CWUoE+/KpEW7AbdNRwniq
-7r2F/DV1zJogA97Grz+sX037DyPXrLK8bepMS7zPBsinRgFGc8x8fqPQ5UGw9oyx
-ZS4CDmxcxRUMBTuqjPDY6uJ9dsBJ3ToppB73jNpwdXeCwB0ninYmcEt+r2TR7Iag
-9ZYJ5DkIZciReduhTeb25RsLe71D/a7vmtdH01ISJx0NQPb8OztLOFtLJjTNXOOJ
-1pomSRQty+aOm3q+Rz9I
-=xCl9
------END PGP SIGNATURE-----
-
---0ntfKIWw70PvrIHh--
