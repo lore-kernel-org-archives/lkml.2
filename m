@@ -1,198 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964879Ab2EWPA4 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 May 2012 11:00:56 -0400
-Received: from e9.ny.us.ibm.com ([32.97.182.139]:53191 "EHLO e9.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933609Ab2EWPAx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 May 2012 11:00:53 -0400
-Message-ID: <4FBCF99F.4070409@linux.vnet.ibm.com>
-Date: Wed, 23 May 2012 09:52:15 -0500
-From: Andrew Theurer <habanero@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:11.0) Gecko/20120412 Thunderbird/11.0.1
-MIME-Version: 1.0
-To: Liu ping fan <kernelfans@gmail.com>
-CC: Shirley Ma <mashirle@us.ibm.com>, kvm@vger.kernel.org,
-        netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        qemu-devel@nongnu.org, Avi Kivity <avi@redhat.com>,
-        "Michael S. Tsirkin" <mst@redhat.com>,
-        Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>,
-        Rusty Russell <rusty@rustcorp.com.au>,
-        Anthony Liguori <anthony@codemonkey.ws>,
-        Ryan Harper <ryanh@us.ibm.com>, Shirley Ma <xma@us.ibm.com>,
-        Krishna Kumar <krkumar2@in.ibm.com>, Tom Lendacky <toml@us.ibm.com>
-Subject: Re: [RFC:kvm] export host NUMA info to guest & make emulated device
- NUMA attr
-References: <1337246456-30909-1-git-send-email-kernelfans@gmail.com> <1337357675.12999.31.camel@oc3660625478.ibm.com> <CAFgQCTsdXqitVGKm5jQjtC--yvZy6x04zRduJ+_tXqUnkncdog@mail.gmail.com>
-In-Reply-To: <CAFgQCTsdXqitVGKm5jQjtC--yvZy6x04zRduJ+_tXqUnkncdog@mail.gmail.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
+	id S965007Ab2EWPB0 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 May 2012 11:01:26 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:33298 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S964860Ab2EWPBZ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 23 May 2012 11:01:25 -0400
+Message-ID: <1337785274.12699.5.camel@phoenix>
+Subject: [PATCH 2/2] regulator: wm8350: Convert wm8350_dcdc_ops to
+ set_voltage_sel and regulator_map_voltage_linear
+From: Axel Lin <axel.lin@gmail.com>
+To: linux-kernel@vger.kernel.org
+Cc: Liam Girdwood <lrg@ti.com>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>
+Date: Wed, 23 May 2012 23:01:14 +0800
+In-Reply-To: <1337785166.12699.3.camel@phoenix>
+References: <1337785166.12699.3.camel@phoenix>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.2- 
 Content-Transfer-Encoding: 7bit
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 12052315-7182-0000-0000-00000195483B
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/22/2012 04:28 AM, Liu ping fan wrote:
-> On Sat, May 19, 2012 at 12:14 AM, Shirley Ma<mashirle@us.ibm.com>  wrote:
->> On Thu, 2012-05-17 at 17:20 +0800, Liu Ping Fan wrote:
->>> Currently, the guest can not know the NUMA info of the vcpu, which
->>> will
->>> result in performance drawback.
->>>
->>> This is the discovered and experiment by
->>>          Shirley Ma<xma@us.ibm.com>
->>>          Krishna Kumar<krkumar2@in.ibm.com>
->>>          Tom Lendacky<toml@us.ibm.com>
->>> Refer to -
->>> http://www.mail-archive.com/kvm@vger.kernel.org/msg69868.html
->>> we can see the big perfermance gap between NUMA aware and unaware.
->>>
->>> Enlightened by their discovery, I think, we can do more work -- that
->>> is to
->>> export NUMA info of host to guest.
->>
->> There three problems we've found:
->>
->> 1. KVM doesn't support NUMA load balancer. Even there are no other
->> workloads in the system, and the number of vcpus on the guest is smaller
->> than the number of cpus per node, the vcpus could be scheduled on
->> different nodes.
->>
->> Someone is working on in-kernel solution. Andrew Theurer has a working
->> user-space NUMA aware VM balancer, it requires libvirt and cgroups
->> (which is default for RHEL6 systems).
->>
-> Interesting, and I found that "sched/numa: Introduce
-> sys_numa_{t,m}bind()" committed by Peter and Ingo may help.
-> But I think from the guest view, it can not tell whether the two vcpus
-> are on the same host node. For example,
-> vcpu-a in node-A is not vcpu-b in node-B, the guest lb will be more
-> expensive if it pull_task from vcpu-a and
-> choose vcpu-b to push.  And my idea is to export such info to guest,
-> still working on it.
+Signed-off-by: Axel Lin <axel.lin@gmail.com>
+---
+ drivers/regulator/wm8350-regulator.c |   30 ++++++------------------------
+ 1 files changed, 6 insertions(+), 24 deletions(-)
 
-The long term solution is to two-fold:
-1) Guests that are quite large (in that they cannot fit in a host NUMA 
-node) must have static mulit-node NUMA topology implemented by Qemu. 
-That is here today, but we do not do it automatically, which is probably 
-going to be a VM management responsibility.
-2) Host scheduler and NUMA code must be enhanced to get better placement 
-of Qemu memory and threads.  For single-node vNUMA guests, this is easy, 
-put it all in one node.  For mulit-node vNUMA guests, the host must 
-understand that some Qemu memory belongs with certain vCPU threads 
-(which make up one of the guests vNUMA nodes), and then place that 
-memory/threads in a specific host node (and continue for other 
-memory/threads for each Qemu vNUMA node).
+diff --git a/drivers/regulator/wm8350-regulator.c b/drivers/regulator/wm8350-regulator.c
+index 6d143a918..3f451e8 100644
+--- a/drivers/regulator/wm8350-regulator.c
++++ b/drivers/regulator/wm8350-regulator.c
+@@ -125,11 +125,6 @@ static inline unsigned int wm8350_ldo_mvolts_to_val(int mV)
+ 		return ((mV - 1800) / 100) + 16;
+ }
+ 
+-static inline int wm8350_dcdc_val_to_mvolts(unsigned int val)
+-{
+-	return (val * 25) + 850;
+-}
+-
+ static inline unsigned int wm8350_dcdc_mvolts_to_val(int mV)
+ {
+ 	return (mV - 850) / 25;
+@@ -359,25 +354,13 @@ int wm8350_isink_set_flash(struct wm8350 *wm8350, int isink, u16 mode,
+ }
+ EXPORT_SYMBOL_GPL(wm8350_isink_set_flash);
+ 
+-static int wm8350_dcdc_set_voltage(struct regulator_dev *rdev, int min_uV,
+-				   int max_uV, unsigned *selector)
++static int wm8350_dcdc_set_voltage_sel(struct regulator_dev *rdev,
++				       unsigned selector)
+ {
+ 	struct wm8350 *wm8350 = rdev_get_drvdata(rdev);
+-	int volt_reg, dcdc = rdev_get_id(rdev), mV,
+-		min_mV = min_uV / 1000, max_mV = max_uV / 1000;
++	int volt_reg, dcdc = rdev_get_id(rdev);
+ 	u16 val;
+ 
+-	if (min_mV < 850 || min_mV > 4025)
+-		return -EINVAL;
+-	if (max_mV < 850 || max_mV > 4025)
+-		return -EINVAL;
+-
+-	/* step size is 25mV */
+-	mV = (min_mV - 826) / 25;
+-	if (wm8350_dcdc_val_to_mvolts(mV) > max_mV)
+-		return -EINVAL;
+-	BUG_ON(wm8350_dcdc_val_to_mvolts(mV) < min_mV);
+-
+ 	switch (dcdc) {
+ 	case WM8350_DCDC_1:
+ 		volt_reg = WM8350_DCDC1_CONTROL;
+@@ -397,11 +380,9 @@ static int wm8350_dcdc_set_voltage(struct regulator_dev *rdev, int min_uV,
+ 		return -EINVAL;
+ 	}
+ 
+-	*selector = mV;
+-
+ 	/* all DCDCs have same mV bits */
+ 	val = wm8350_reg_read(wm8350, volt_reg) & ~WM8350_DC1_VSEL_MASK;
+-	wm8350_reg_write(wm8350, volt_reg, val | mV);
++	wm8350_reg_write(wm8350, volt_reg, val | selector);
+ 	return 0;
+ }
+ 
+@@ -1216,9 +1197,10 @@ static int wm8350_ldo_is_enabled(struct regulator_dev *rdev)
+ }
+ 
+ static struct regulator_ops wm8350_dcdc_ops = {
+-	.set_voltage = wm8350_dcdc_set_voltage,
++	.set_voltage_sel = wm8350_dcdc_set_voltage_sel,
+ 	.get_voltage_sel = wm8350_dcdc_get_voltage_sel,
+ 	.list_voltage = regulator_list_voltage_linear,
++	.map_voltage = regulator_map_voltage_linear,
+ 	.enable = wm8350_dcdc_enable,
+ 	.disable = wm8350_dcdc_disable,
+ 	.get_mode = wm8350_dcdc_get_mode,
+-- 
+1.7.5.4
 
-Note that even if a guest's memory/threads for a vNUMA node are 
-relocated to another host node (which will be necessary) the NUMA 
-characteristics of guest are still maintained (as all those vCPUs and 
-memory are still "close" to each other).
 
-The problem with exposing the host's NUMA info directly to the guest is 
-that (1) vCPUs will get relocated, so their topology info in the guest 
-will have to change over time. IMO that is a bad idea.  We have a hard 
-enough time getting applications to work with a static NUMA info.  To 
-get applications to react to changing NUMA topology is not going to turn 
-out well. (2) Every single guest would have to have the same number of 
-NUMA nodes defined as the host.  That is overkill, especially for small 
-guests.
->
->
->> 2. The host scheduler is not aware the relationship between guest vCPUs
->> and vhost. So it's possible for host scheduler to schedule per-device
->> vhost thread on the same cpu on which the vCPU kick a TX packet, or
->> schecule vhost thread on different node than the vCPU for; For RX packet
->> it's possible for vhost delivers RX packet on the vCPU running on
->> different node too.
->>
-> Yes. I notice this point in your original patch.
->
->> 3. per-device vhost thread is not scaled.
->>
-> What about the scale-ability of per-vm * host_NUMA_NODE? When we make
-> advantage of multi-core,  we produce mulit vcpu threads for one VM.
-> So what about the emulated device? Is it acceptable to scale to take
-> advantage of host NUMA attr.  After all, how many nodes on which the
-> VM
-> can be run on are the user's control.  It is a balance of
-> scale-ability and performance.
->
->> So the problems are in host scheduling and vhost thread scalability. I
->> am not sure how much help from exposing NUMA info from host to guest.
->>
->> Have you tested these patched? How much performance gain here?
->>
-> Sorry, not yet.  As you have mentioned, the vhost thread scalability
-> is a big problem. So I want to see others' opinion before going on.
->
-> Thanks and regards,
-> pingfan
->
->
->> Thanks
->> Shirley
->>
->>> So here comes the idea:
->>> 1. export host numa info through guest's sched domain to its scheduler
->>>    Export vcpu's NUMA info to guest scheduler(I think mem NUMA problem
->>>    has been handled by host).  So the guest's lb will consider the
->>> cost.
->>>    I am still working on this, and my original idea is to export these
->>> info
->>>    through "static struct sched_domain_topology_level
->>> *sched_domain_topology"
->>>    to guest.
->>>
->>> 2. Do a better emulation of virt mach exported to guest.
->>>    In real world, the devices are limited by kinds of reasons to own
->>> the NUMA
->>>    property. But as to Qemu, the device is emulated by thread, which
->>> inherit
->>>    the NUMA attr in nature.  We can implement the device as components
->>> of many
->>>    logic units, each of the unit is backed by a thread in different
->>> host node.
->>>    Currently, I want to start the work on vhost. But I think, maybe in
->>>    future, the iothread in Qemu can also has such attr.
->>>
->>>
->>> Forgive me, for the limited time, I can not have more better
->>> understand of
->>> vhost/virtio_net drivers. These patches are just draft, _FAR_, _FAR_
->>> from work.
->>> I will do more detail work for them in future.
->>>
->>> To easy the review, the following is the sum up of the 2nd point of
->>> the idea.
->>> As for the 1st point of the idea, it is not reflected in the patches.
->>>
->>> --spread/shrink the vhost_workers over the host nodes as demanded from
->>> Qemu.
->>>    And we can consider each vhost_worker as an independent net logic
->>> device
->>>    embeded in physical device "vhost_net".  At the meanwhile, we spread
->>> vcpu
->>>    threads over the host node.
->>>    The vrings on guest are allocated PAGE_SIZE align separately, so
->>> they can
->>>    will only be mapped into different host node, so vhost_worker in the
->>> same
->>>    node can access it with the least cost. So does the vq on guest.
->>>
->>> --virtio_net driver will changes and talk with the logic device. And
->>> which
->>>    logic device it will talk to is determined by on which vcpu it is
->>> scheduled.
->>>
->>> --the binding of vcpus and vhost_worker is implemented by:
->>>    for call direction, vq-a in the node-A will have a dedicated irq-a.
->>> And
->>>    we set the irq-a's affinity to vcpus in node-A.
->>>    for kick direction, kick register-b trigger different eventfd-b
->>> which wake up
->>>    vhost_worker-b.
->>>
--Andrew Theurer
 
