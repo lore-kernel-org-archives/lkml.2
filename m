@@ -1,47 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759728Ab2EWOz1 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 May 2012 10:55:27 -0400
-Received: from ns1.pc-advies.be ([83.149.101.17]:53948 "EHLO
-	spo001.leaseweb.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1758805Ab2EWOzY (ORCPT
+	id S1759785Ab2EWO60 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 May 2012 10:58:26 -0400
+Received: from iolanthe.rowland.org ([192.131.102.54]:51760 "HELO
+	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1754640Ab2EWO6Y (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 May 2012 10:55:24 -0400
-Date: Wed, 23 May 2012 16:55:13 +0200
-From: Wim Van Sebroeck <wim@iguana.be>
-To: Samuel Ortiz <sameo@linux.intel.com>
-Cc: Guenter Roeck <guenter@roeck-us.net>,
-        Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Aaron Sierra <asierra@xes-inc.com>,
-        Randy Dunlap <rdunlap@xenotime.net>, linux-watchdog@vger.kernel.org,
-        Jean Delvare <khali@linux-fr.org>
-Subject: Re: linux-next: manual merge of the watchdog tree with the mfd tree
-Message-ID: <20120523145513.GJ3074@spo001.leaseweb.com>
-References: <20120518152348.1e5070cdc16cfdf00682546d@canb.auug.org.au> <20120518083234.GW3074@spo001.leaseweb.com> <6.2.5.6.2.20120518181141.028c8090@roeck-us.net> <20120522163559.GD3074@spo001.leaseweb.com> <6.2.5.6.2.20120522153050.0284ee38@roeck-us.net> <20120523054430.GH3074@spo001.leaseweb.com> <20120523142658.GD23600@sortiz-mobl>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120523142658.GD23600@sortiz-mobl>
-User-Agent: Mutt/1.4.1i
+	Wed, 23 May 2012 10:58:24 -0400
+Date: Wed, 23 May 2012 10:58:24 -0400 (EDT)
+From: Alan Stern <stern@rowland.harvard.edu>
+X-X-Sender: stern@iolanthe.rowland.org
+To: Lin Ming <ming.m.lin@intel.com>
+cc: Jens Axboe <axboe@kernel.dk>, Jeff Moyer <jmoyer@redhat.com>,
+        <linux-kernel@vger.kernel.org>, <linux-pm@vger.kernel.org>,
+        <linux-scsi@vger.kernel.org>
+Subject: Re: [RFC v2 PATCH 2/4] block: add queue runtime pm callbacks
+In-Reply-To: <CAF1ivSa_hYFu2JXLUOv2k+AhqUZWUvY-uzmocQKh_RUJJUP5Ag@mail.gmail.com>
+Message-ID: <Pine.LNX.4.44L0.1205231054150.1566-100000@iolanthe.rowland.org>
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Sam,
+On Wed, 23 May 2012, Lin Ming wrote:
 
-> > Since %04llx with a typecast to u64 is the way to go (Thanks Stephen and Randy)...
-> > 
-> > > How do we make sure that Randy's patch makes it upstream ? The iTCO 
-> > > patch is currently in Sam's tree.
-> > 
-> > Can you carry Randy's patch/fix (since it fixes the change introduced by the iTCO_wdt mfd patch)?
-> > If not then I will apply the patch later on once the iTCO_wdt mfd patch is mainstream.
-> > 
-> I'd appreciate if you could take it. I'm trying to avoid taking more patches
-> at this moment.
+> Let's consider below code.
+> 
+> @@ -587,6 +591,11 @@ void __elv_add_request(struct request_queue *q,
+> struct request *rq, int where)
+>  {
+>        trace_block_rq_insert(q, rq);
+> 
+> +       if (!(rq->cmd_flags & REQ_PM))
+> +               if (q->nr_pending++ == 0 && (q->rpm_status == RPM_SUSPENDED ||
+> +                               q->rpm_status == RPM_SUSPENDING) && q->dev)
+> +                       pm_request_resume(q->dev);
+> +
+>        rq->q = q;
+> 
+>        if (rq->cmd_flags & REQ_SOFTBARRIER) {
+> 
+> Block layer reads runtime status and pm core writes this status.
+> PM core uses dev->power.lock to protect this status.
+> 
+> I was thinking will it have problem if block layer does not acquire
+> dev->power.lock?
+> From your explanation below, it seems does not have problem.
 
-No problem. I'll take it then.
+I don't think it's a problem, because all you're doing is reading 
+dev->power.rpm_status -- you're not writing it.
 
-Kind regards,
-Wim.
+On the other hand, there's nothing really wrong with keeping your own
+local copy of rpm_status.  You could think of it as being the queue's
+status as opposed to the device's status.  (Also, some people might
+argue that dev->power.rpm_status is supposed to be private to the
+runtime PM core and shouldn't be used by other code.)
+
+Alan Stern
 
