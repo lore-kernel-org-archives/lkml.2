@@ -1,56 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760589Ab2EWQ6M (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 May 2012 12:58:12 -0400
-Received: from mail-we0-f174.google.com ([74.125.82.174]:45948 "EHLO
-	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751145Ab2EWQ6K (ORCPT
+	id S1760575Ab2EWRB6 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 May 2012 13:01:58 -0400
+Received: from mga01.intel.com ([192.55.52.88]:57974 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751145Ab2EWRB4 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 May 2012 12:58:10 -0400
+	Wed, 23 May 2012 13:01:56 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
+   d="scan'208";a="156211798"
+From: "Luck, Tony" <tony.luck@intel.com>
+To: Thomas Gleixner <tglx@linutronix.de>,
+        Chen Gong <gong.chen@linux.intel.com>
+CC: "bp@amd64.org" <bp@amd64.org>, "x86@kernel.org" <x86@kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Peter Zijlstra <peterz@infradead.org>
+Subject: RE: [PATCH] x86: auto poll/interrupt mode switch for CMC to stop
+ CMC storm
+Thread-Topic: [PATCH] x86: auto poll/interrupt mode switch for CMC to stop
+ CMC storm
+Thread-Index: AQHNOIwYcjpXeEEfSUqwVYn22Q7zo5bXnJGA///5EsA=
+Date: Wed, 23 May 2012 17:01:54 +0000
+Message-ID: <3908561D78D1C84285E8C5FCA982C28F192F2DD6@ORSMSX104.amr.corp.intel.com>
+References: <1337740341-26711-1-git-send-email-gong.chen@linux.intel.com>
+ <alpine.LFD.2.02.1205230859190.3231@ionos>
+In-Reply-To: <alpine.LFD.2.02.1205230859190.3231@ionos>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.22.254.139]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-In-Reply-To: <20120523165303.GB18284@liondog.tnic>
-References: <1337684026-19740-1-git-send-email-bp@amd64.org>
- <tip-e8f380e00840f694599e6ab42806639f7de26f11@git.kernel.org>
- <1337789429.9783.16.camel@laptop> <4FBD0C47.70600@zytor.com>
- <20120523161932.GN14757@aftab.osrc.amd.com> <1337790571.9783.28.camel@laptop>
- <4FBD10D5.6080602@zytor.com> <20120523165303.GB18284@liondog.tnic>
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Wed, 23 May 2012 09:57:47 -0700
-X-Google-Sender-Auth: -ktiQsvFB-o-3Mz5F_4QaJKQ0uM
-Message-ID: <CA+55aFx_e6hS0F++kkNj9uDr-qtr-DE_R25Owb80DyZN+xixDA@mail.gmail.com>
-Subject: Re: [tip:x86/mce] x86/bitops: Move BIT_64() for a wider use
-To: Borislav Petkov <bp@alien8.de>, "H. Peter Anvin" <hpa@zytor.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Borislav Petkov <borislav.petkov@amd.com>, mingo@kernel.org,
-        linux-kernel@vger.kernel.org, frank.arnold@amd.com,
-        akpm@linux-foundation.org, torvalds@linux-foundation.org,
-        tglx@linutronix.de, linux-tip-commits@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, May 23, 2012 at 9:53 AM, Borislav Petkov <bp@alien8.de> wrote:
->
-> How about the following completely untested chunk:
+> What's the point of doing this work? Why can't we just do that on the
+> CPU which got hit by the MCE storm and leave the others alone? They
+> either detect it themself or are just not affected. 
 
-No, you can't do that. All standard C operations will return *one*
-type. That very much includes the ternary ?: operator.
+CMCI gets broadcast to all threads on a socket. So
+if one cpu has a problem, many cpus have a problem :-(
+Some machine check banks are local to a thread/core,
+so we need to make sure that the CMCI gets taken by
+someone who can actually see the bank with the problem.
+The others are collateral damage - but this means there
+is even more reason to do something about a CMCI storm
+as the effects are not localized.
 
-The *only* ways I know of to get two types are
+> What's wrong with doing that strictly per cpu and avoid the whole
+> global state horror?
 
- - C preprocessor stuff, ie
+Is that less of a horror? We'd have some cpus polling and some
+taking CMCI (in somewhat arbitrary and ever changing combinations).
+I'm not sure which is less bad.
 
-     #define BIT(x)  __BIT_##x
-
-   and then just enumerate all the 64 cases. This is portable, but it gets old.
-
- - using __builtin_choose_expr(), which actually allows the two
-expressions to have different types, but requires a very strict
-compile-time constant (ie you cannot rely on the optimizer making it a
-constant - because it needs to choose the expression before the
-optimizer runs)
-
-There might be some other magic gcc extension, of course.
-
-                 Linus
+-Tony
