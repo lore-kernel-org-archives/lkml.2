@@ -1,68 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933619Ab2EWPDn (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 May 2012 11:03:43 -0400
-Received: from moutng.kundenserver.de ([212.227.126.171]:55976 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932164Ab2EWPDk (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 May 2012 11:03:40 -0400
-Date: Wed, 23 May 2012 17:03:33 +0200 (CEST)
-From: Guennadi Liakhovetski <g.liakhovetski@gmx.de>
-X-X-Sender: lyakh@axis700.grange
-To: Stephen Warren <swarren@wwwdotorg.org>
-cc: Linus Walleij <linus.walleij@linaro.org>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] pinctrl: add a pinctrl_mux_group_selected() function
-In-Reply-To: <4FBCF9F0.1010901@wwwdotorg.org>
-Message-ID: <Pine.LNX.4.64.1205231659310.21980@axis700.grange>
-References: <Pine.LNX.4.64.1205230020210.11851@axis700.grange>
- <4FBCF9F0.1010901@wwwdotorg.org>
+	id S933653Ab2EWPD5 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 May 2012 11:03:57 -0400
+Received: from mx2.parallels.com ([64.131.90.16]:36409 "EHLO mx2.parallels.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932164Ab2EWPDz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 23 May 2012 11:03:55 -0400
+Message-ID: <4FBCFBE0.2080803@parallels.com>
+Date: Wed, 23 May 2012 19:01:52 +0400
+From: Glauber Costa <glommer@parallels.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.1) Gecko/20120216 Thunderbird/10.0.1
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Provags-ID: V02:K0:L9vEzoRL+6KpT7qBK5anfXGUEIQO1So3XTP0bC4A78N
- eyfXh3oyDYBppl0VgSkRkO7ooG8wmH+Muxcygc9GqHgwvjW/GH
- Xg2WuJ3DnkVdHHziYOaHgUy39LWLaHIpc1Ru6IBF/NoEE6SLGc
- +a5E3Z34gaQ0miEIrdoFdBQmCOJG6YpKoFPOR30H/SkqJTg8AB
- OXew8v6wvYGlYQZqgIUYZSQcFRv+6/nci+DgmzEp6AEwu1mug/
- sCeEVe0TG7VeNmqHGw3yi3f8qVZCwQSoR4ORi3Ajr2F/QFkBdx
- FtAcJa1xo+kpjbkFR3Al+fIlU84NHp2BPGS+qhpp64XJsWfewa
- 9xewbDzsgnm0jlaWN/mqd21Yse9d6YdJPzm86m9P9zXhKHeRyP
- R6QzlpwyaKcPw==
+To: Christoph Lameter <cl@linux.com>
+CC: James Bottomley <James.Bottomley@HansenPartnership.com>,
+        David Rientjes <rientjes@google.com>, <linux-kernel@vger.kernel.org>,
+        <cgroups@vger.kernel.org>, <linux-mm@kvack.org>,
+        Pekka Enberg <penberg@cs.helsinki.fi>
+Subject: Re: [PATCH] slab+slob: dup name string
+References: <1337613539-29108-1-git-send-email-glommer@parallels.com> <alpine.DEB.2.00.1205212018230.13522@chino.kir.corp.google.com> <alpine.DEB.2.00.1205220855470.17600@router.home> <4FBBAE95.6080608@parallels.com> <alpine.DEB.2.00.1205221216050.17721@router.home> <alpine.DEB.2.00.1205221529340.18325@chino.kir.corp.google.com> <1337773595.3013.15.camel@dabdike.int.hansenpartnership.com> <4FBCD328.6060406@parallels.com> <1337775878.3013.16.camel@dabdike.int.hansenpartnership.com> <alpine.DEB.2.00.1205230947490.30940@router.home>
+In-Reply-To: <alpine.DEB.2.00.1205230947490.30940@router.home>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 23 May 2012, Stephen Warren wrote:
+On 05/23/2012 06:48 PM, Christoph Lameter wrote:
+> On Wed, 23 May 2012, James Bottomley wrote:
+>
+>>>> So, why not simply patch slab to rely on the string lifetime being the
+>>>> cache lifetime (or beyond) and therefore not having it take a copy?
+>
+> Well thats they way it was for a long time. There must be some reason that
+> someone started to add this copying business....  Pekka?
+>
 
-> On 05/22/2012 04:23 PM, Guennadi Liakhovetski wrote:
-> > This patch adds a new function to allow clients to verify, whether a
-> > certain group is selected in the currently active setting or not.
-> > 
-> > Signed-off-by: Guennadi Liakhovetski <g.liakhovetski@gmx.de>
-> > ---
-> > 
-> > Maybe there is already a way to do this without adding a new function, I 
-> > haven't found one, hence this patch.
-> 
-> This function doesn't currently exist because it breaks the pinctrl
-> conceptual model, which is that devices ask pinctrl for certain settings
-> whenever they need them, rather than information flowing the other way.
+ From git:
 
-Well, yes, we could tra to ask for each thinkable configuration and see 
-which one(s) succeed, but that doesn't seem very optimal either, even if 
-we only have 3 possibilities for now.
+commit 84c1cf62465e2fb0a692620dcfeb52323ab03d48
+Author: Pekka Enberg <penberg@kernel.org>
+Date:   Tue Sep 14 23:21:12 2010 +0300
 
-> What's the use case for this new functionality?
+SLUB: Fix merged slab cache names
 
-It's MMC. MMC interfaces can use 1, 4, or 8 data lines, depending on the 
-board configuration. The board knows, that it has, say, only 4 data lines 
-routed to the interface, so, it specifies the respective pinctrl 
-configuration as default. Now in the driver we have to know how many 
-data-lines are connected.
+As explained by Linus "I'm Proud to be an American" Torvalds:
 
-Thanks
-Guennadi
----
-Guennadi Liakhovetski, Ph.D.
-Freelance Open-Source Software Developer
-http://www.open-technology.de/
+Looking at the merging code, I actually think it's totally
+buggy. If you have something like this:
+
+  - load module A: create slab cache A
+
+  - load module B: create slab cache B that can merge with A
+
+  - unload module A
+
+  - "cat /proc/slabinfo": BOOM. Oops.
+
+exactly because the name is not handled correctly, and you'll have
+module B holding open a slab cache that has a name pointer that points
+to module A that no longer exists.
+
+So if I understand it correctly, this is mostly because the name string 
+outlives the cache in the slub case, because of merging ?
