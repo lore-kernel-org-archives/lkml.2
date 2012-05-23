@@ -1,65 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760802Ab2EWUvz (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 May 2012 16:51:55 -0400
-Received: from e38.co.us.ibm.com ([32.97.110.159]:56411 "EHLO
-	e38.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758761Ab2EWUvy (ORCPT
+	id S1760790Ab2EWUwy (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 May 2012 16:52:54 -0400
+Received: from acsinet15.oracle.com ([141.146.126.227]:21098 "EHLO
+	acsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758666Ab2EWUwx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 May 2012 16:51:54 -0400
-Message-ID: <4FBD4DDF.5080905@linux.vnet.ibm.com>
-Date: Wed, 23 May 2012 15:51:43 -0500
-From: Seth Jennings <sjenning@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
-MIME-Version: 1.0
+	Wed, 23 May 2012 16:52:53 -0400
+Date: Wed, 23 May 2012 16:46:12 -0400
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
 To: Minchan Kim <minchan@kernel.org>
-CC: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Nitin Gupta <ngupta@vflare.org>,
-        Dan Magenheimer <dan.magenheimer@oracle.com>,
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
         linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        Russell King <linux@arm.linux.org.uk>,
-        Ralf Baechle <ralf@linux-mips.org>, Paul Mundt <lethal@linux-sh.org>,
-        Guan Xuetao <gxt@mprc.pku.edu.cn>,
-        Chen Liqin <liqin.chen@sunplusct.com>
-Subject: Re: [PATCH v2 1/3] zsmalloc: support zsmalloc to ARM, MIPS, SUPERH
-References: <1337133919-4182-1-git-send-email-minchan@kernel.org>
-In-Reply-To: <1337133919-4182-1-git-send-email-minchan@kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 12052320-5518-0000-0000-000004A1111D
+        Seth Jennings <sjenning@linux.vnet.ibm.com>,
+        Dan Magenheimer <dan.magenheimer@oracle.com>,
+        Nitin Gupta <ngupta@vflare.org>
+Subject: Re: [PATCH 1/2 v2] zsmalloc: zsmalloc: use unsigned long instead of
+ void *
+Message-ID: <20120523204611.GA1991@phenom.dumpdata.com>
+References: <1337737402-16543-1-git-send-email-minchan@kernel.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1337737402-16543-1-git-send-email-minchan@kernel.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/15/2012 09:05 PM, Minchan Kim wrote:
-
-> zsmalloc uses set_pte and __flush_tlb_one for performance but
-> many architecture don't support it. so this patch removes
-> set_pte and __flush_tlb_one which are x86 dependency.
-> Instead of it, use local_flush_tlb_kernel_range which are available
-> by more architectures. It would be better than supporting only x86
-> and last patch in series will enable again with supporting
-> local_flush_tlb_kernel_range in x86.
+On Wed, May 23, 2012 at 10:43:21AM +0900, Minchan Kim wrote:
+> We should use unsigned long as handle instead of void * to avoid any
+> confusion. Without this, users may just treat zs_malloc return value as
+> a pointer and try to deference it.
 > 
-> About local_flush_tlb_kernel_range,
-> If architecture is very smart, it could flush only tlb entries related to vaddr.
-> If architecture is smart, it could flush only tlb entries related to a CPU.
-> If architecture is _NOT_ smart, it could flush all entries of all CPUs.
-> So, it would be best to support both portability and performance.
+> This patch passed compile test(zram, zcache and ramster) and zram is
+> tested on qemu.
 > 
-> Cc: Russell King <linux@arm.linux.org.uk>
-> Cc: Ralf Baechle <ralf@linux-mips.org>
-> Cc: Paul Mundt <lethal@linux-sh.org>
-> Cc: Guan Xuetao <gxt@mprc.pku.edu.cn>
-> Cc: Chen Liqin <liqin.chen@sunplusct.com>
-> Signed-off-by: Minchan Kim <minchan@kernel.org>
+> changelog
+>   * from v1
+>  	- change zcache's zv_create return value
+>         - baesd on next-20120522
+> 
+> Cc: Seth Jennings <sjenning@linux.vnet.ibm.com>
+> Cc: Dan Magenheimer <dan.magenheimer@oracle.com>
+> Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
 
-
-For the zsmalloc changes:
-
-Acked-by: Seth Jennings <sjenning@linux.vnet.ibm.com>
-
-Thanks,
-Seth
-
+Acked-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
