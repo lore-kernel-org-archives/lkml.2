@@ -1,91 +1,133 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760787Ab2EWTpi (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 May 2012 15:45:38 -0400
-Received: from li42-95.members.linode.com ([209.123.162.95]:52880 "EHLO
-	li42-95.members.linode.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753141Ab2EWTpg (ORCPT
+	id S965237Ab2EWT4X (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 May 2012 15:56:23 -0400
+Received: from science.horizon.com ([71.41.210.146]:58408 "HELO
+	science.horizon.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1760790Ab2EWT4V (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 May 2012 15:45:36 -0400
-From: Pantelis Antoniou <panto@antoniou-consulting.com>
-To: linux-kernel@vger.kernel.org
-Cc: linux@arm.linux.org.uk, Russ.Dill@ti.com, mporter@ti.com,
-        stable@vger.kernel.org, linux-arm-kernel@lists.arm.linux.org.uk,
-        Pantelis Antoniou <panto@antoniou-consulting.com>
-Subject: [PATCH] [ARM] Unconditional call to smp_cross_call on UP crashes
-Date: Thu, 24 May 2012 19:38:21 +0000
-Message-Id: <1337888301-10308-1-git-send-email-panto@antoniou-consulting.com>
-X-Mailer: git-send-email 1.7.1
+	Wed, 23 May 2012 15:56:21 -0400
+Date: 23 May 2012 15:56:19 -0400
+Message-ID: <20120523195619.2925.qmail@science.horizon.com>
+From: "George Spelvin" <linux@horizon.com>
+To: dmitry.torokhov@gmail.com, dtor@mail.ru, linux-input@vger.kernel.org
+Subject: [PATCH v2] Input: atkbd - make repeat period more accurate.
+Cc: linux-kernel@vger.kernel.org, linux@horizon.com
+In-Reply-To: <20120311224128.23283.qmail@science.horizon.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-omap2plus_defconfig builds with SMP & SMP_ON_UP set.
-On beagle (which is UP) is_smp() returns false and we don't call
-smp_init_cpus which in turn does not initialize smp_cross_call which
-remains NULL.
+This replaces some inaccurate lookup tables with an exact
+computation.  Although the diff adds source comments,
+it shrinks binary size.  (By only 50 bytes, but hey.)
 
-When issuing a reboot we OOPS with a NULL dereference on stop smp_call.
+AT keyboard repeat rates are multiples of 1/240 second
+expressed in a 0.2.3 bit floating point format.  That
+is, possible values are ({8..15} << {0..3}) / 240 s.
 
-Fixed by checking is_smp in smp_send_stop()
+In addition to a slightly inaccurate lookup table, the
+old code would round up to the next repeat period.
+E.g. to get a period of 9/60 = 0.15 seconds, you had to
+ask for no more than 149 ms; if you asked for 150, it
+would round up to 167.  The new code rounds to nearest.
 
-Restarting system.
-Unable to handle kernel NULL pointer dereference at virtual address 00000000
-pgd = dda50000
-[00000000] *pgd=9e723831, *pte=00000000, *ppte=00000000
-Internal error: Oops: 80000007 [#1] SMP ARM
-Modules linked in:
-CPU: 0    Not tainted  (3.4.0-00001-gb15b046 #30)
-PC is at 0x0
-LR is at smp_send_stop+0x4c/0xe8
-pc : [<00000000>]    lr : [<c00188cc>]    psr: 60000013
-sp : de7b5e70  ip : 00000000  fp : 00000001
-r10: 00000000  r9 : de7b4000  r8 : c07263d0
-r7 : 00000000  r6 : c06e1294  r5 : 000f4240  r4 : de7b5e74
-r3 : 00000000  r2 : 00000000  r1 : 00000006  r0 : de7b5e74
-Flags: nZCv  IRQs on  FIQs on  Mode SVC_32  ISA ARM  Segment user
-Control: 10c5387d  Table: 9da50019  DAC: 00000015
-Process reboot (pid: 2229, stack limit = 0xde7b42f8)
-Stack: (0xde7b5e70 to 0xde7b6000)
-5e60:                                     00000000 00000000 00000000 01234567
-5e80: de7b4000 c001475c 4321fedc c0052570 0000003e 00000000 c081db78 0000003e
-5ea0: 00000001 00000002 00000002 c00891f0 00000002 dd5ba0ac 00000002 00000000
-5ec0: dd5ba0ac de7b4000 c009eef4 de7b4000 c00f44dc de7b4000 c00f44dc 00000000
-5ee0: c0c94d24 de7b4000 00000000 00000000 00000002 00000002 00000000 c00891f0
-5f00: 00000002 00000000 00000000 c011286c 00000000 dd5ba060 60000013 00000000
-5f20: dd688d8c 00000000 de7b4000 c06e20f8 dec14760 dec14750 de7b4000 c06e20f8
-5f40: 00011f10 c01128a0 00000002 00000000 c011286c c00fa014 dd8c3180 de7b4000
-5f60: c0013380 de508bc0 00000001 60000010 00000001 ef000000 00000001 c0089bfc
-5f80: 00000000 00000001 00000004 00000058 00000000 00000001 00000004 00000058
-5fa0: c0013428 c0013260 00000000 00000001 fee1dead 28121969 01234567 00000000
-5fc0: 00000000 00000001 00000004 00000058 00000001 00000001 00000000 00000001
-5fe0: b6e76200 beba4c90 00009210 b6e76218 60000010 fee1dead 00000000 00000000
-[<c00188cc>] (smp_send_stop+0x4c/0xe8) from [<c001475c>] (machine_restart+0xc/0x54)
-[<c001475c>] (machine_restart+0xc/0x54) from [<c0052570>] (sys_reboot+0x140/0x204)
-[<c0052570>] (sys_reboot+0x140/0x204) from [<c0013260>] (ret_fast_syscall+0x0/0x3c)
-Code: bad PC value
----[ end trace f5035e8726d1f51b ]---
+User-visible changes to the repeat periods reported by EVIOCGREP:
 
-Signed-off-by: Pantelis Antoniou <panto@antoniou-consulting.com>
+Old	 37	109	116	149	182	232
+Exact	 37.50	108.33	116.66	150.00	183.33	233.33
+New	 38	108	117	150	183	233
+
+Old	270	303	370	435	470
+Exact	266.66	300.00	366.66	433.33	466.66
+New	267	300	367	433	467
+
+This does not bother utilities like kbdrate(8).
+
+Signed-off-by: George Spelvin <linux@horizon.com>
 ---
- arch/arm/kernel/smp.c |    4 ++++
- 1 files changed, 4 insertions(+), 0 deletions(-)
+ drivers/input/keyboard/atkbd.c |   47 +++++++++++++++++++++++++++++++----------------
+ 1 file changed, 31 insertions(+), 16 deletions(-)
 
-diff --git a/arch/arm/kernel/smp.c b/arch/arm/kernel/smp.c
-index 8f46446..2a61335 100644
---- a/arch/arm/kernel/smp.c
-+++ b/arch/arm/kernel/smp.c
-@@ -588,6 +588,10 @@ void smp_send_stop(void)
- 	unsigned long timeout;
- 	struct cpumask mask;
+Now that I've tweaked it (v1 had an error in rounding near exponent
+range boundaries), I think it's ready for merging upstream.
+
+Dmitry, you seem to be the one constant name in all recent changes to
+this file, so I'm sending it to you directly as well as linux-input.
+
+
+One possible bug I observed in the code that calls this:
+
+Users of the KDKBDREP ioctl seem to assume that it returns the actual
+values set, but I'm not sure it really works that way; I don't think
+the command to change the parameters makes its way through the event
+queue and atkbd's schedule_delayed_work() to actually set dev->rep[]
+to the rounded values before kbd_rate_helper returns them to userspace.
+
+If desired, the fix that's most obvious to me would be to split this
+function in two: perform the conversion to a command byte synchronously,
+and only defer the actual ps2_command().
+
+diff --git a/drivers/input/keyboard/atkbd.c b/drivers/input/keyboard/atkbd.c
+index e05a2e7..3181b86 100644
+--- a/drivers/input/keyboard/atkbd.c
++++ b/drivers/input/keyboard/atkbd.c
+@@ -524,27 +524,42 @@ out:
+ 	return IRQ_HANDLED;
+ }
  
-+	/* make sure we don't bother if not SMP */
-+	if (!is_smp())
-+		return;
++/*
++ * AT keyboard repeat rates are set using a 2-bit initial repeat delay
++ * (250, 500, 750 or 1000 ms), and a 5-bit repeat period.  The latter
++ * is a 0.2.3-bit floating-point number (no sign, 2-bit exponent, and
++ * 3-bit mantissa), encoding a value from 8/240 to 120/240 of second.
++ *
++ * Given the requested delay and period in milliseconds, round to the
++ * nearest representable value, and convert the rounded values back to
++ * milliseconds to report the chosen values.
++ */
+ static int atkbd_set_repeat_rate(struct atkbd *atkbd)
+ {
+-	const short period[32] =
+-		{ 33,  37,  42,  46,  50,  54,  58,  63,  67,  75,  83,  92, 100, 109, 116, 125,
+-		 133, 149, 167, 182, 200, 217, 232, 250, 270, 303, 333, 370, 400, 435, 470, 500 };
+-	const short delay[4] =
+-		{ 250, 500, 750, 1000 };
+-
+ 	struct input_dev *dev = atkbd->dev;
+ 	unsigned char param;
+-	int i = 0, j = 0;
+-
+-	while (i < ARRAY_SIZE(period) - 1 && period[i] < dev->rep[REP_PERIOD])
+-		i++;
+-	dev->rep[REP_PERIOD] = period[i];
+-
+-	while (j < ARRAY_SIZE(delay) - 1 && delay[j] < dev->rep[REP_DELAY])
+-		j++;
+-	dev->rep[REP_DELAY] = delay[j];
++	unsigned exp = 3;	/* Period exponent */
++	int period;		/* Period mantissa */
++	int delay = clamp(dev->rep[REP_DELAY], 125, 1000);
 +
- 	cpumask_copy(&mask, cpu_online_mask);
- 	cpumask_clear_cpu(smp_processor_id(), &mask);
- 	smp_cross_call(&mask, IPI_CPU_STOP);
--- 
-1.7.1
-
++	/* AT kbd delay is {1..4} * 250 ms.  Round to 2 bits. */
++	delay = (delay + 125) / 250u;
++	/* Store actual value back */
++	dev->rep[REP_DELAY] = delay * 250;
++
++	/* AT kbd period is ({8..15} << {0..3}) / 240 s. */
++	period = clamp(dev->rep[REP_PERIOD], 33, 500);
++	/* Get correct exponent.  Split is at 258.333 ms */
++	while (period < 259) {
++		period <<= 1;
++		exp--;
++	}
++	/* Convert from 259..516 ms to 8..15 30ths of a second */
++	period = (period * 3 + 50) / 100u;
++	/* Store actual value back.  x * 1000 / 240 = x * 25 / 6 */
++	dev->rep[REP_PERIOD] = ((period << exp) * 25 + 3) / 6u;
+ 
+-	param = i | (j << 5);
++	param = (delay - 1) << 5 | exp << 3 | (period - 8);
+ 	return ps2_command(&atkbd->ps2dev, &param, ATKBD_CMD_SETREP);
+ }
+ 
