@@ -1,90 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752054Ab2EWWWu (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 May 2012 18:22:50 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:64612 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750739Ab2EWWWs (ORCPT
+	id S1752619Ab2EWWXH (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 May 2012 18:23:07 -0400
+Received: from na3sys009aog122.obsmtp.com ([74.125.149.147]:49576 "EHLO
+	na3sys009aog122.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751527Ab2EWWXF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 May 2012 18:22:48 -0400
-Date: Wed, 23 May 2012 15:22:42 -0700
-From: Tejun Heo <tj@kernel.org>
-To: Sasha Levin <levinsasha928@gmail.com>
-Cc: Li Zefan <lizefan@huawei.com>, containers@lists.linux-foundation.org,
-        cgroups@vger.kernel.org, linux-kernel@vger.kernel.org,
-        fweisbec@gmail.com, rni@google.com, ctalbott@google.com,
-        Vivek Goyal <vgoyal@redhat.com>, Johannes Weiner <hannes@cmpxchg.org>,
-        Michal Hocko <mhocko@suse.cz>, Balbir Singh <bsingharora@gmail.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Subject: Re: [PATCH 2/2] cgroup: make css->refcnt clearing on cgroup removal
- optional
-Message-ID: <20120523222242.GD3933@htj.dyndns.org>
-References: <20120330223423.GJ28934@google.com>
- <20120330223606.GK28934@google.com>
- <4F77B6BA.4070207@huawei.com>
- <20120401185430.GA9230@dhcp-172-17-108-109.mtv.corp.google.com>
- <CA+1xoqe5hMuxzCRhMy7J0XchDk2ZnuxOHJKikROk1-ReAzcT6g@mail.gmail.com>
- <20120518175548.GM19388@google.com>
- <CA+1xoqfr5aaGbxoX3YKrJHXTjU9fWSbX_xbuEOU=4K7kMay6XQ@mail.gmail.com>
+	Wed, 23 May 2012 18:23:05 -0400
+From: Kevin Hilman <khilman@ti.com>
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+Cc: Linux PM list <linux-pm@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>, Len Brown <lenb@kernel.org>,
+        Colin Cross <ccross@android.com>, Magnus Damm <magnus.damm@gmail.com>,
+        Arjan van de Ven <arjan@linux.intel.com>,
+        Santosh Shilimkar <santosh.shilimkar@ti.com>
+Subject: Re: [Update 2x][RFC][PATCH 2/2] PM / Domains: Add preliminary cpuidle support
+Organization: Texas Instruments, Inc.
+References: <201205092340.26561.rjw@sisk.pl> <201205092343.11050.rjw@sisk.pl>
+	<201205122140.07928.rjw@sisk.pl> <201205162229.38252.rjw@sisk.pl>
+Date: Wed, 23 May 2012 15:23:00 -0700
+Message-ID: <87sjeqzge3.fsf@ti.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.3 (gnu/linux)
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CA+1xoqfr5aaGbxoX3YKrJHXTjU9fWSbX_xbuEOU=4K7kMay6XQ@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello, Sasha.
+Hi Rafael,
 
-Does the following patch fix the problem you're seeing?
+"Rafael J. Wysocki" <rjw@sisk.pl> writes:
 
-Thanks.
+> From: Rafael J. Wysocki <rjw@sisk.pl>
+>
+> On some systems there are CPU cores located in the same power
+> domains as I/O devices.  Then, power can only be removed from the
+> domain if all I/O devices in it are not in use and the CPU core
+> is idle.  Add preliminary support for that to the generic PM domains
+> framework.
+>
+> First, the platform is expected to provide a cpuidle driver with one
+> extra state designated for use with the generic PM domains code.
+> This state should be initially disabled and its exit_latency value
+> should be set to whatever time is needed to bring up the CPU core
+> itself after restoring power to it, not including the domain's
+> power on latency.  Its .enter() callback should point to a procedure
+> that will remove power from the domain containing the CPU core at
+> the end of the CPU power transition.
+>
+> The remaining characteristics of the extra cpuidle state, referred to
+> as the "domain" cpuidle state below, (e.g. power usage, target
+> residency) should be populated in accordance with the properties of
+> the hardware.
+>
+> Next, the platform should execute genpd_attach_cpuidle() on the PM
+> domain containing the CPU core.  That will cause the generic PM
+> domains framework to treat that domain in a special way such that:
+>
+>  * When all devices in the domain have been suspended and it is about
+>    to be turned off, the states of the devices will be saved, but
+>    power will not be removed from the domain.  Instead, the "domain"
+>    cpuidle state will be enabled so that power can be removed from
+>    the domain when the CPU core is idle and the state has been chosen
+>    as the target by the cpuidle governor.
+>
+>  * When the first I/O device in the domain is resumed and
+>    __pm_genpd_poweron(() is called for the first time after
+>    power has been removed from the domain, the "domain" cpuidle
+>    state will be disabled to avoid subsequent surprise power removals
+>    via cpuidle.
 
----
- kernel/cgroup.c |   17 ++++++++++++++---
- 1 file changed, 14 insertions(+), 3 deletions(-)
+This looks like a good approach.  I like that it keeps a pretty clean
+separation between CPUidle and PM domains.
 
-diff --git a/kernel/cgroup.c b/kernel/cgroup.c
-index ad8eae5..7cf9669 100644
---- a/kernel/cgroup.c
-+++ b/kernel/cgroup.c
-@@ -896,10 +896,13 @@ static void cgroup_diput(struct dentry *dentry, struct inode *inode)
- 		mutex_unlock(&cgroup_mutex);
- 
- 		/*
--		 * Drop the active superblock reference that we took when we
--		 * created the cgroup
-+		 * We want to drop the active superblock reference that we
-+		 * took when we created the cgroup after all dentry refs
-+		 * are gone - kill_sb gets mighty unhappy otherwise.  Set
-+		 * dentry->d_fsdata to cgroup_diput() to tell
-+		 * cgroup_d_release() to call deactivate_super().
- 		 */
--		deactivate_super(cgrp->root->sb);
-+		dentry->d_fsdata = cgroup_diput;
- 
- 		/*
- 		 * if we're getting rid of the cgroup, refcount should ensure
-@@ -925,6 +928,13 @@ static int cgroup_delete(const struct dentry *d)
- 	return 1;
- }
- 
-+static void cgroup_d_release(struct dentry *dentry)
-+{
-+	/* did cgroup_diput() tell me to deactivate super? */
-+	if (dentry->d_fsdata == cgroup_diput)
-+		deactivate_super(dentry->d_sb);
-+}
-+
- static void remove_dir(struct dentry *d)
- {
- 	struct dentry *parent = dget(d->d_parent);
-@@ -1532,6 +1542,7 @@ static int cgroup_get_rootdir(struct super_block *sb)
- 	static const struct dentry_operations cgroup_dops = {
- 		.d_iput = cgroup_diput,
- 		.d_delete = cgroup_delete,
-+		.d_release = cgroup_d_release,
- 	};
- 
- 	struct inode *inode =
+My only comment would be that the recalc of the exit_latency should be
+described a bit more.  Specifically, I'm not sure why it's adjused at
+every genpd poweron.  At first I thought it was just supposed to be
+adjusted upon attach, then adjusted back on detatch, but with the recalc
+also in every poweron, I'm a little confused.  Care to clarify?
+
+Thanks,
+
+Kevin
