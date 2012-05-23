@@ -1,103 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752702Ab2EWFdb (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 May 2012 01:33:31 -0400
-Received: from mailout1.samsung.com ([203.254.224.24]:56033 "EHLO
-	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751559Ab2EWFda (ORCPT
+	id S1752798Ab2EWFeG (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 May 2012 01:34:06 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:48762 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751559Ab2EWFeD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 May 2012 01:33:30 -0400
-MIME-version: 1.0
-Content-transfer-encoding: 8BIT
-Content-type: text/plain; charset=UTF-8
-X-AuditID: cbfee61a-b7fe76d0000023f5-e6-4fbc76a8d548
-Message-id: <4FBC76A8.2070004@samsung.com>
-Date: Wed, 23 May 2012 14:33:28 +0900
-From: jonghwa3.lee@samsung.com
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:10.0.2) Gecko/20120216
- Thunderbird/10.0.2
-To: Yadwinder Singh Brar <yadi.brar01@gmail.com>
-Cc: linux-kernel@vger.kernel.org, linux-samsung-soc@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Liam Girdwood <lrg@ti.com>,
-        Yadwinder Singh Brar <yadi.brar@samsung.com>,
-        Kyungmin Park <kmpark@infradead.org>,
-        Samuel Ortiz <sameo@linux.intel.com>
-Subject: Re: [PATCH v3 2/2] regulator: Add support for MAX77686.
-References: <y@samsung.com> <4fbb2ada.63de440a.589d.78e2@mx.google.com>
- <4FBC3FF0.5080408@samsung.com>
- <CAKew6eW2eGrBnzSGsr3N_dXSixXv-bkBo7xkbC-o9DNnwBhcuw@mail.gmail.com>
- <4FBC6A2D.6040408@samsung.com>
- <CAKew6eUew+=f-dGjJZD7Wy8Xt2f4smEhkYh=CUhx6Y_EMByFFw@mail.gmail.com>
-In-reply-to: <CAKew6eUew+=f-dGjJZD7Wy8Xt2f4smEhkYh=CUhx6Y_EMByFFw@mail.gmail.com>
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrLLMWRmVeSWpSXmKPExsVy+t9jAd0VZXv8DTp+qllc3jWHzWLG+X1M
-	DkwenzfJBTBGcdmkpOZklqUW6dslcGX0nz7MWvCRv2LOjcoGxvM8XYycHBICJhLrLqxkgbDF
-	JC7cW8/WxcjFISSwiFHiQvtzJpAEr4CgxI/J94CKODiYBeQljlzKBgkzC6hLTJq3iBmi/i2j
-	xMlz+5kh6rUkrj8+wghiswioSnyYNB8sziYgJ/G26RsjyBxRgQiJX/0cIGERAQOJiUvmsYLM
-	YRbYySTx7NkdsF5hAQeJ2WunM0IsmM4ksXjGPHaQBKdAsET702PMExgFZiG5bxbCfbOQ3LeA
-	kXkVo2hqQXJBcVJ6rqFecWJucWleul5yfu4mRnAgPpPawbiyweIQowAHoxIP7w+3Pf5CrIll
-	xZW5hxglOJiVRHjXT9/tL8SbklhZlVqUH19UmpNafIhRmoNFSZzXbvEOfyGB9MSS1OzU1ILU
-	IpgsEwenVAPjVr2cTpcfN+9vvNny1vBoslnTe7F/6pfPSdx39e8P+LI++sKSLyc0lfTz/FYf
-	2VMwV1Euf/nqe3aT12Q+z/PRrTm35PuhJ1L8yXdP6M06t6+aq+aZXMDzHWutnl5mzprV6bjo
-	xuxJ85xtp08qar08syP+2ofgNCHrHWdXubPFGEZ/sXbpuO68SYmlOCPRUIu5qDgRAOQem8ZA	AgAA
-X-TM-AS-MML: No
+	Wed, 23 May 2012 01:34:03 -0400
+Date: Wed, 23 May 2012 01:34:03 -0400
+From: Kent Overstreet <koverstreet@google.com>
+To: Tejun Heo <tj@kernel.org>
+Cc: Tejun Heo <tejun@google.com>, linux-bcache@vger.kernel.org,
+        linux-kernel@vger.kernel.org, dm-devel@redhat.com, agk@redhat.com
+Subject: Re: [Bcache v13 11/16] bcache: Core btree code
+Message-ID: <20120523053403.GB14312@dhcp-172-18-216-138.mtv.corp.google.com>
+References: <cover.1336619038.git.koverstreet@google.com>
+ <7f1de39b6d7040b3fe271500776f4b985b21ea82.1336619038.git.koverstreet@google.com>
+ <20120522221259.GJ14339@google.com>
+ <20120523034546.GB607@dhcp-172-18-216-138.mtv.corp.google.com>
+ <20120523052054.GB29976@dhcp-172-17-108-109.mtv.corp.google.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120523052054.GB29976@dhcp-172-17-108-109.mtv.corp.google.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2012년 05월 23일 14:23, Yadwinder Singh Brar wrote:
+On Tue, May 22, 2012 at 10:20:54PM -0700, Tejun Heo wrote:
+> Hmmm... I would prefer it to be defined explicitly as union.  It's
+> rather easy to define it incorrectly (ie. using struct bkey) and then
+> pass it around expecting it to have the pad.
 
-> On Wed, May 23, 2012 at 10:10 AM,  <jonghwa3.lee@samsung.com> wrote:
->> On 2012년 05월 23일 13:16, Yadwinder Singh Brar wrote:
->>
->>>>> +     max77686_update_reg(i2c, MAX77686_REG_BUCK2CTRL1,
->>>>> +             max77686->ramp_delay << 6, RAMP_MASK);
->>>>> +     max77686_update_reg(i2c, MAX77686_REG_BUCK3CTRL1,
->>>>> +             max77686->ramp_delay << 6, RAMP_MASK);
->>>>> +     max77686_update_reg(i2c, MAX77686_REG_BUCK4CTRL1,
->>>>> +             max77686->ramp_delay << 6, RAMP_MASK);
->>>>> +
->>>>
->>>>
->>>> Why do you use i2c client still? If you registered regmap you can use
->>>> its API. I recommend you to use regmap_update_bits() directly.
->>>>
->>>>
->>>
->>> Yes, we are using regmap_update_bits().  max77686_update_reg() is just
->>> a wrapper over it.
->>>
->>
->>
->> Yes, i know what you mean. However it doesn't need max77686_update_reg()
->> any more since it uses regmap API. Why don't you just pass iodev->regmap
->> to regmap_update_bits(). It is clear that there is no reason for using
->> i2c client as a medium. Please check regulator and mfd driver of my
->> previous patch.
->>
+Thing is, things don't expect the pad - bkeys are normally just in a big
+chunk of memory concatenated together, and the same functions have to
+work both with those and with bare bkeys the code occasionally
+manipulates.
+
+> It doesn't have to be full bcache.  e.g. words starting with cache can
+> simply have 'b' in front and others can use things like bc_ or
+> whatever.
+
+Ok, that sounds quite reasonable.
+
 > 
-> I agree with you we can use directly  regmap API. But I preferred
-> max77686_update_reg() because its a common practice to use
-> common read/write API which we define in mfd driver to access
-> that particular mfd device from other drivers.
+> > > So, apart from the the macros, key is 64bit containing the backend
+> > > device and extent offset and size with the ptr fields somehow point to
+> > > cache.  Am I understanding it correctly?  If right, I'm *tiny* bit
+> > > apprehensive about using only 43bits for offset.  While the block 9
+> > > bits means 52bit addressing, the 9 bit block size is now there mostly
+> > > to work as buffer between memory bitness growth and storage device
+> > > size growth so that we have 9 bit buffer as storage device reaches
+> > > ulong addressing limit.  Probably those days are far out enough.
+> > 
+> > You're exactly right. I had similar thoughts about the offset size,
+> > but... it'll last until we have 8 exabyte cache devices, and I can't
 > 
-> Regards,
-> Yadwinder.
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+> I'm a bit confused.  Cache device or cached device?  Isn't the key
+> dev:offset:size of the cached device?
+
+No - bkey->key is the offset on the cached device, PTR_OFFSET is on the
+cache.
+
+Confusing, I know. Any ideas for better terminology?
+
 > 
+> > > mca_data_alloc() failure path seems like a resource leak but it isn't
+> > > because mca_data_alloc() puts it in free list.  Is the extra level of
+> > > caching necessary?  How is it different from sl?b allocator cache?
+> > > And either way, comments please.
+> > 
+> > This btree in memory cache code is probably the nastiest, subtlest,
+> > trickiest code in bcache. I have some cleanups in a branch somewhere as
+> > part of some other work that I need to finish off.
+> > 
+> > The btree_cache_freed list isn't for caching - we never free struct
+> > btrees except on shutdown, to simplify the code. It doesn't cost much
+> > memory since the memory usage is dominated by the buffers struct btree
+> > points to, and those are freed when necessary.
+> 
+> Out of curiosity, how does not freeing make the code simpler?  Is it
+> something synchronization related?
 
+Yeah - looking up btree nodes in the in memory cache involves checking a
+lockless hash table (i.e. using hlist_for_each_rcu()).
 
-I inform you my mfd driver has been confirmed by Samuel Oritz and there
-is no mfd private API. This situation looks unusual that we registers
-mfd driver and regulator driver separately. But how should we do? For
-corporation , i'm asking you to consider my suggestion.
+It would be fairly trivial to free them with kfree_rcu(), but I'd have
+to go through and make sure there aren't any other places where there
+could be dangling references - i.e. io related stuff. And I wouldn't be
+able to delete any code - I need the btree_cache_freed list anyways so I
+can preallocate a reserve at startup.
 
-Thanks.
+I all the changes I've made based on your review feedback so far up -
+git://evilpiepirate.org/~kent/linux-bcache.git bcache-3.3-dev
 
-
-Thanks.
+Kent Overstreet (7):
+      Document some things and incorporate some review feedback
+      bcache: Fix a bug in submit_bbio_split()
+      bcache: sprint_string_list() -> snprint_string_list()
+      Add human-readable units modifier to vsnprintf()
+      bcache: Kill hprint()
+      bcache: Review feedback
+      bcache: Kill popcount()
