@@ -1,82 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757606Ab2EWJQg (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 May 2012 05:16:36 -0400
-Received: from orion.tchmachines.com ([208.76.84.200]:52609 "EHLO
-	orion.tchmachines.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755275Ab2EWJQe (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 May 2012 05:16:34 -0400
-From: Vlad Zolotarov <vlad@scalemp.com>
-To: Ingo Molnar <mingo@kernel.org>
-Cc: "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>,
-        linux-kernel <linux-kernel@vger.kernel.org>, Shai@scalemp.com,
-        ido@wizery.com
-Subject: Re: [PATCH v4 0/2] Move x86_cpu_to_apicid to the __read_mostly section
-Date: Wed, 23 May 2012 12:16:29 +0300
-Message-ID: <1415723.ntIHEoaamI@vlad>
-Organization: ScaleMP Ltd.
-User-Agent: KMail/4.8.2 (Linux/3.2.0-24-generic; KDE/4.8.2; i686; ; )
-In-Reply-To: <5555210.ryZGheQWJb@vlad>
-References: <1744141.b5asW8k6jC@vlad> <20120521201958.GB10848@gmail.com> <5555210.ryZGheQWJb@vlad>
+	id S1757854Ab2EWJSS (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 May 2012 05:18:18 -0400
+Received: from mail.mev.co.uk ([62.49.15.74]:60708 "EHLO mail.mev.co.uk"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753457Ab2EWJSQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 23 May 2012 05:18:16 -0400
+Message-ID: <4FBCAB50.5000907@mev.co.uk>
+Date: Wed, 23 May 2012 10:18:08 +0100
+From: Ian Abbott <abbotti@mev.co.uk>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120516 Thunderbird/12.0.1
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
-X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
-X-AntiAbuse: Primary Hostname - orion.tchmachines.com
-X-AntiAbuse: Original Domain - vger.kernel.org
-X-AntiAbuse: Originator/Caller UID/GID - [47 12] / [47 12]
-X-AntiAbuse: Sender Address Domain - scalemp.com
+To: Dan Carpenter <dan.carpenter@oracle.com>
+CC: H Hartley Sweeten <hartleys@visionengravers.com>,
+        Linux Kernel <linux-kernel@vger.kernel.org>,
+        "devel@driverdev.osuosl.org" <devel@driverdev.osuosl.org>,
+        "fmhess@users.sourceforge.net" <fmhess@users.sourceforge.net>,
+        Ian Abbott <ian.abbott@mev.co.uk>,
+        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>
+Subject: Re: [PATCH] staging: comedi: remove this_board macro in the s526
+ driver
+References: <201205221820.10770.hartleys@visionengravers.com> <20120523054849.GK4637@mwanda>
+In-Reply-To: <20120523054849.GK4637@mwanda>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday, May 22, 2012 18:55:41 Vlad Zolotarov wrote:
-> > > I have no fundamental prefer to either approach, but the
-> > > direction taken should be justified explicitly, with numbers,
-> > > arguments, etc. - also a short blurb somewhere in the headers
-> > > that explains when they should be used, so that others can be
-> > > aware of vSMP's special needs here.
-> > 
-> > I.e. *numbers* are needed: roughly how many percpu variables in
-> > a defconfig of one type versus the other type. This settles the
-> > question whether we want to identify read-mostly or
-> > write-frequently variables, to address this particular problem
-> > ...
-> 
+On 2012-05-23 06:48, Dan Carpenter wrote:
+> On Tue, May 22, 2012 at 06:20:10PM -0700, H Hartley Sweeten wrote:
+>> The 'thisboard' macro depends on having a local variable with
+>> a magic name. The CodingStyle document suggests not doing this
+>> to avoid confusion. Remove the macro and use the comedi_board()
+>> inline helper to get the dev->board_ptr information.
+>>
+>> Signed-off-by: H Hartley Sweeten<hsweeten@visionengravers.com>
+>> Cc: Ian Abbott<abbotti@mev.co.uk>
+>> Cc: Mori Hess<fmhess@users.sourceforge.net>
+>> Cc: Greg Kroah-Hartman<gregkh@linuxfoundation.org>
+>>
+>> ---
+>> @@ -769,13 +765,7 @@ static int s526_attach(struct comedi_device *dev, struct comedi_devconfig *it)
+>>   	}
+>>   	***/
+>>
+>> -/*
+>> - * Initialize dev->board_name.  Note that we can use the "thisboard"
+>> - * macro now, since we just initialized it in the last line.
+>> - */
+>> -	dev->board_ptr =&s526_boards[0];
+>
+> Was this intended?  Most of the boards have auto probing so the
+> ->board_ptr gets set automatically.  We already called
+> comedi_board() so I wonder if the autoprobed board is the same as
+> the&s526_boards[0];?  NULL pointer perhaps?  I don't know.
 
-Ingo, here is the proposal to the patch (series) description:
+If .num_names in struct comedi_driver is non-zero, the core comedi 
+module will set dev->board_ptr to something non-NULL and meaningful to 
+the driver before it calls the driver's ->attach() method.  (This is 
+done by the comedi_recognize() function.)  The driver can change 
+dev->board_ptr to something else if it wants.  In this case, 
+dev->board_ptr will already be set to &s526_boards[0] so there is no 
+point setting it again.
 
-------------------------------------------------------------------------------------------------
-Added "read-mostly" qualifier to the following variables in smp.h:
- - cpu_sibling_map
- - cpu_core_map
- - cpu_llc_shared_map
- - cpu_llc_id
- - cpu_number
- - x86_cpu_to_apicid
- - x86_bios_cpu_apicid
- - x86_cpu_to_logical_apicid
-
-As long as all the variables above are only written during the initialization,
-this change is meant to prevent the false sharing. More specifically, on vSMP 
-Foundation platform x86_cpu_to_apicid shared the same internode_cache_line 
-with frequently written lapic_events.
-
->From the analysis of the first 33 per_cpu variables  out of 219 (memories they 
-describe, to be more specific) the 8 have read_mostly nature 
-(tlb_vector_offset, cpu_loops_per_jiffy, xen_debug_irq, etc.) and 25 are 
-frequently written (irq_stack_union, gdt_page, exception_stacks, idt_desc, 
-etc.). Assuming that the spread of the rest of the per_cpu variables is 
-similar, identifying the read mostly memories will make more sense in terms of 
-long-term code maintenance comparing to identifying frequently written 
-memories.
----------------------------------------------------------------------------------------------------
-
-Pls., tell me if the above looks satisfactory to u in light of all your 
-previous remarks.
-
-If yes - I'll respin the series with the description above.
-
-thanks,
-vlad
+-- 
+-=( Ian Abbott @ MEV Ltd.    E-mail: <abbotti@mev.co.uk>        )=-
+-=( Tel: +44 (0)161 477 1898   FAX: +44 (0)161 718 3587         )=-
