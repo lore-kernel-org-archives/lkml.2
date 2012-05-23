@@ -1,132 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753109Ab2EWMaL (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 May 2012 08:30:11 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:37388 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750880Ab2EWMaI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 May 2012 08:30:08 -0400
-Date: Wed, 23 May 2012 14:29:54 +0200
-From: Jan Kara <jack@suse.cz>
-To: Akinobu Mita <akinobu.mita@gmail.com>
-Cc: Jan Kara <jack@suse.cz>, linux-kernel@vger.kernel.org,
-        akpm@linux-foundation.org, Anders Larsen <al@alarsen.net>,
-        Alasdair Kergon <agk@redhat.com>, dm-devel@redhat.com,
-        linux-fsdevel@vger.kernel.org,
-        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
-        linux-media@vger.kernel.org, Mark Fasheh <mfasheh@suse.com>,
-        Joel Becker <jlbec@evilplan.org>, ocfs2-devel@oss.oracle.com,
-        linux-ext4@vger.kernel.org, Andreas Dilger <adilger.kernel@dilger.ca>,
-        "Theodore Ts'o" <tytso@mit.edu>
-Subject: Re: [PATCH 01/10] string: introduce memweight
-Message-ID: <20120523122954.GA17135@quack.suse.cz>
-References: <1337520203-29147-1-git-send-email-akinobu.mita@gmail.com>
- <20120523092113.GG10452@quack.suse.cz>
- <CAC5umyi=ridqRZGGh0+_xw0-GCN+69B33Qz82-9x4dVODGGx6w@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <CAC5umyi=ridqRZGGh0+_xw0-GCN+69B33Qz82-9x4dVODGGx6w@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1752095Ab2EWMcO (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 May 2012 08:32:14 -0400
+Received: from mail-we0-f174.google.com ([74.125.82.174]:44873 "EHLO
+	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750963Ab2EWMcM (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 23 May 2012 08:32:12 -0400
+From: Peter Korsgaard <jacmet@sunsite.dk>
+To: herbert@gondor.hengli.com.au, nicolas.ferre@atmel.com, jamie@jamieiles.com,
+        linux-kernel@vger.kernel.org, GPontis@z9.com
+Cc: Peter Korsgaard <jacmet@sunsite.dk>, stable@vger.kernel.org
+Subject: [PATCH] hw_random: atmel-rng: fix data valid check
+Date: Wed, 23 May 2012 14:31:57 +0200
+Message-Id: <1337776317-25679-1-git-send-email-jacmet@sunsite.dk>
+X-Mailer: git-send-email 1.7.10
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed 23-05-12 21:12:18, Akinobu Mita wrote:
-> 2012/5/23 Jan Kara <jack@suse.cz>:
-> > On Sun 20-05-12 22:23:14, Akinobu Mita wrote:
-> >> memweight() is the function that counts the total number of bits set
-> >> in memory area.  The memory area doesn't need to be aligned to
-> >> long-word boundary unlike bitmap_weight().
-> >  Thanks for the patch. I have some comments below.
-> 
-> Thanks for the review.
-> 
-> >> @@ -824,3 +825,39 @@ void *memchr_inv(const void *start, int c, size_t bytes)
-> >>       return check_bytes8(start, value, bytes % 8);
-> >>  }
-> >>  EXPORT_SYMBOL(memchr_inv);
-> >> +
-> >> +/**
-> >> + * memweight - count the total number of bits set in memory area
-> >> + * @ptr: pointer to the start of the area
-> >> + * @bytes: the size of the area
-> >> + */
-> >> +size_t memweight(const void *ptr, size_t bytes)
-> >> +{
-> >> +     size_t w = 0;
-> >> +     size_t longs;
-> >> +     union {
-> >> +             const void *ptr;
-> >> +             const unsigned char *b;
-> >> +             unsigned long address;
-> >> +     } bitmap;
-> >  Ugh, this is ugly and mostly unnecessary. Just use "const unsigned char
-> > *bitmap".
-> >
-> >> +
-> >> +     for (bitmap.ptr = ptr; bytes > 0 && bitmap.address % sizeof(long);
-> >> +                     bytes--, bitmap.address++)
-> >> +             w += hweight8(*bitmap.b);
-> >  This can be:
-> >        count = ((unsigned long)bitmap) % sizeof(long);
-> 
-> The count should be the size of unaligned area and it can be greater than
-> bytes. So
-> 
->         count = min(bytes,
->                     sizeof(long) - ((unsigned long)bitmap) % sizeof(long));
-  You are right, I didn't quite think this through.
+Brown paper bag: Data valid is LSB of the ISR (status register), and NOT
+of ODATA (current random data word)!
+
+With this, rngtest is a lot happier. Before:
+
+rngtest 3
+Copyright (c) 2004 by Henrique de Moraes Holschuh
+This is free software; see the source for copying conditions.  There is NO warr.
+
+rngtest: starting FIPS tests...
+rngtest: bits received from input: 20000032
+rngtest: FIPS 140-2 successes: 3
+rngtest: FIPS 140-2 failures: 997
+rngtest: FIPS 140-2(2001-10-10) Monobit: 604
+rngtest: FIPS 140-2(2001-10-10) Poker: 996
+rngtest: FIPS 140-2(2001-10-10) Runs: 36
+rngtest: FIPS 140-2(2001-10-10) Long run: 0
+rngtest: FIPS 140-2(2001-10-10) Continuous run: 117
+rngtest: input channel speed: (min=622.371; avg=23682.481; max=28224.350)Kibitss
+rngtest: FIPS tests speed: (min=12.361; avg=12.718; max=12.861)Mibits/s
+rngtest: Program run time: 2331696 microsecondsx
+
+After:
+rngtest 3
+Copyright (c) 2004 by Henrique de Moraes Holschuh
+This is free software; see the source for copying conditions.  There is NO warr.
+
+rngtest: starting FIPS tests...
+rngtest: bits received from input: 20000032
+rngtest: FIPS 140-2 successes: 999
+rngtest: FIPS 140-2 failures: 1
+rngtest: FIPS 140-2(2001-10-10) Monobit: 0
+rngtest: FIPS 140-2(2001-10-10) Poker: 0
+rngtest: FIPS 140-2(2001-10-10) Runs: 1
+rngtest: FIPS 140-2(2001-10-10) Long run: 0
+rngtest: FIPS 140-2(2001-10-10) Continuous run: 0
+rngtest: input channel speed: (min=777.363; avg=43588.270; max=47870.711)Kibitss
+rngtest: FIPS tests speed: (min=11.943; avg=12.716; max=12.844)Mibits/s
+rngtest: Program run time: 1955282 microseconds
+
+Cc: stable@vger.kernel.org
+Signed-off-by: Peter Korsgaard <jacmet@sunsite.dk>
+Reported-by: George Pontis <GPontis@z9.com>
+---
+ drivers/char/hw_random/atmel-rng.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/drivers/char/hw_random/atmel-rng.c b/drivers/char/hw_random/atmel-rng.c
+index f518b99..d7ab920 100644
+--- a/drivers/char/hw_random/atmel-rng.c
++++ b/drivers/char/hw_random/atmel-rng.c
+@@ -34,7 +34,7 @@ static int atmel_trng_read(struct hwrng *rng, void *buf, size_t max,
+ 	u32 *data = buf;
  
-> >        while (count--) {
-> >                w += hweight(*bitmap);
-> >                bitmap++;
-> >                bytes--;
-> >        }
-> >> +
-> >> +     for (longs = bytes / sizeof(long); longs > 0; ) {
-> >> +             size_t bits = min_t(size_t, INT_MAX & ~(BITS_PER_LONG - 1),
-> >> +                                     longs * BITS_PER_LONG);
-> >  I find it highly unlikely that someone would have such a large bitmap
-> > (256 MB or more on 32-bit). Also the condition as you wrote it can just
-> > overflow so it won't have the desired effect. Just do
-> >        BUG_ON(longs >= ULONG_MAX / BITS_PER_LONG);
-> 
-> The bits argument of bitmap_weight() is int type. So this should be
-> 
->         BUG_ON(longs >= INT_MAX / BITS_PER_LONG);
-  OK, I didn't check and thought it's size_t.
-
-> > and remove the loop completely. If someone comes with such a huge bitmap,
-> > the code can be modified easily (after really closely inspecting whether
-> > such a huge bitmap is really well justified).
-> 
-> size_t memweight(const void *ptr, size_t bytes)
-> {
-> 	size_t w = 0;
-> 	size_t longs;
-> 	const unsigned char *bitmap = ptr;
-> 
-> 	for (; bytes > 0 && ((unsigned long)bitmap) % sizeof(long);
-> 			bytes--, bitmap++)
-> 		w += hweight8(*bitmap);
-> 
-> 	longs = bytes / sizeof(long);
-> 	BUG_ON(longs >= INT_MAX / BITS_PER_LONG);
-> 	w += bitmap_weight((unsigned long *)bitmap, longs * BITS_PER_LONG);
-> 	bytes -= longs * sizeof(long);
-> 	bitmap += longs * sizeof(long);
-> 
-> 	for (; bytes > 0; bytes--, bitmap++)
-> 		w += hweight8(*bitmap);
-> 
-> 	return w;
-> }
-  Yup, this looks much more readable. Thanks!
-
-								Honza
-  
+ 	/* data ready? */
+-	if (readl(trng->base + TRNG_ODATA) & 1) {
++	if (readl(trng->base + TRNG_ISR) & 1) {
+ 		*data = readl(trng->base + TRNG_ODATA);
+ 		return 4;
+ 	} else
 -- 
-Jan Kara <jack@suse.cz>
-SUSE Labs, CR
+1.7.10
+
