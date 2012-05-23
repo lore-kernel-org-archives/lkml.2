@@ -1,77 +1,37 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933633Ab2EWP55 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 May 2012 11:57:57 -0400
-Received: from mail-qa0-f49.google.com ([209.85.216.49]:61222 "EHLO
-	mail-qa0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932252Ab2EWP54 (ORCPT
+	id S933712Ab2EWP6I (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 May 2012 11:58:08 -0400
+Received: from mail-we0-f174.google.com ([74.125.82.174]:53640 "EHLO
+	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933645Ab2EWP6G (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 May 2012 11:57:56 -0400
-Date: Wed, 23 May 2012 17:57:48 +0200
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Cc: LKML <linux-kernel@vger.kernel.org>, linaro-sched-sig@lists.linaro.org,
-        Alessio Igor Bogani <abogani@kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>, Avi Kivity <avi@redhat.com>,
-        Chris Metcalf <cmetcalf@tilera.com>, Christoph Lameter <cl@linux.com>,
-        Daniel Lezcano <daniel.lezcano@linaro.org>,
-        Geoff Levand <geoff@infradead.org>,
-        Gilad Ben Yossef <gilad@benyossef.com>,
-        Hakan Akkan <hakanakkan@gmail.com>, Ingo Molnar <mingo@kernel.org>,
-        Kevin Hilman <khilman@ti.com>, Max Krasnyansky <maxk@qualcomm.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Stephen Hemminger <shemminger@vyatta.com>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Sven-Thorsten Dietrich <thebigcorporation@gmail.com>,
-        Thomas Gleixner <tglx@linutronix.de>
-Subject: Re: [PATCH 16/41] rcu: Restart the tick on non-responding adaptive
- nohz CPUs
-Message-ID: <20120523155738.GI1663@somewhere>
-References: <1335830115-14335-1-git-send-email-fweisbec@gmail.com>
- <1335830115-14335-17-git-send-email-fweisbec@gmail.com>
- <20120522172050.GB8087@linux.vnet.ibm.com>
- <20120523135717.GC1663@somewhere>
- <20120523152009.GB2402@linux.vnet.ibm.com>
+	Wed, 23 May 2012 11:58:06 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120523152009.GB2402@linux.vnet.ibm.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1337754877-19759-3-git-send-email-yinghai@kernel.org>
+References: <1337754877-19759-1-git-send-email-yinghai@kernel.org> <1337754877-19759-3-git-send-email-yinghai@kernel.org>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Wed, 23 May 2012 08:57:41 -0700
+X-Google-Sender-Auth: _jbEBN2rfa8aSlAcP0JPZnOgT8k
+Message-ID: <CA+55aFzd1BWqidt95qZLc1x_YU=WeGS=mKUOMvO_3omOhc_5VA@mail.gmail.com>
+Subject: Re: [PATCH 02/11] PCI: Try to allocate mem64 above 4G at first
+To: Yinghai Lu <yinghai@kernel.org>
+Cc: Bjorn Helgaas <bhelgaas@google.com>,
+        Andrew Morton <akpm@linux-foundation.org>, linux-pci@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, May 23, 2012 at 08:20:09AM -0700, Paul E. McKenney wrote:
-> On Wed, May 23, 2012 at 03:57:24PM +0200, Frederic Weisbecker wrote:
-> > On Tue, May 22, 2012 at 10:20:50AM -0700, Paul E. McKenney wrote:
-> > > On Tue, May 01, 2012 at 01:54:50AM +0200, Frederic Weisbecker wrote:
-> > > > When a CPU in adaptive nohz mode doesn't respond to complete
-> > > > a grace period, issue it a specific IPI so that it restarts
-> > > > the tick and chases a quiescent state.
-> > > 
-> > > Hello, Frederic,
-> > > 
-> > > I don't understand the need for this patch.  If the CPU is in
-> > > adaptive-tick mode, RCU should see it as being in dyntick-idle mode,
-> > > right?  If so, shouldn't RCU have already recognized the CPU as being
-> > > in an extended quiescent state?
-> > > 
-> > > Or is this a belt-and-suspenders situation?
-> > > 
-> > > 							Thanx, Paul
-> > 
-> > If the tickless CPU is in userspace, it is in extended quiescent state. But
-> > not if it runs tickless in the kernel. In this case we need to send it an IPI
-> > so that it restarts the tick after checking rcu_pending().
-> 
-> But if it has registered itself with RCU as idle, for example, by calling
-> rcu_user_enter(), then RCU will be ignoring that CPU, posting quiescent
-> states as needed on its behalf.  So I still don't understand the need
-> for this patch.
+On Tue, May 22, 2012 at 11:34 PM, Yinghai Lu <yinghai@kernel.org> wrote:
+> and will fall back to below 4g if it can not find any above 4g.
 
-Indeed if we are going to stop the tick and enter extended quiescent state,
-we can ignore this check. I can optimize that.
+Has this been tested on 32-bit machines without PAE? There might be
+things that just happen to work because their allocations were always
+done bottom-up.
 
-But if we try to stop the tick in the kernel, which means we can still meet
-RCU read side critical sections, we need to prevent from stopping the tick
-if there is a global grace period to complete.
+Or do we have something else that protects us from the "oops, we can't
+actually *map* those pages"?
+
+                       Linus
