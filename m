@@ -1,46 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932168Ab2EWHPn (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 May 2012 03:15:43 -0400
-Received: from mail-vb0-f46.google.com ([209.85.212.46]:64947 "EHLO
-	mail-vb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752552Ab2EWHPl (ORCPT
+	id S1756482Ab2EWHTs (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 May 2012 03:19:48 -0400
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:57208 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753917Ab2EWHTq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 May 2012 03:15:41 -0400
-MIME-Version: 1.0
-In-Reply-To: <20120523063218.GB11860@linux-sh.org>
-References: <20120509143926.27521.20342.sendpatchset@w520>
-	<20120509143934.27521.46553.sendpatchset@w520>
-	<20120523063218.GB11860@linux-sh.org>
-Date: Wed, 23 May 2012 16:15:39 +0900
-Message-ID: <CANqRtoS09YTyL5UWhtp8Tp4A4w-TkVE8E5vUW2LM-Pxjd6uMuA@mail.gmail.com>
-Subject: Re: [PATCH 01/03] clockevents: Make clockevents_config() a global symbol
-From: Magnus Damm <magnus.damm@gmail.com>
-To: Paul Mundt <lethal@linux-sh.org>
-Cc: linux-kernel@vger.kernel.org, arnd@arndb.de, horms@verge.net.au,
-        linux-sh@vger.kernel.org, johnstul@us.ibm.com, rjw@sisk.pl,
-        gregkh@linuxfoundation.org, olof@lixom.net, tglx@linutronix.de
-Content-Type: text/plain; charset=ISO-8859-1
+	Wed, 23 May 2012 03:19:46 -0400
+From: Sasha Levin <levinsasha928@gmail.com>
+To: akpm@linux-foundation.org, n-horiguchi@ah.jp.nec.com
+Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        Sasha Levin <levinsasha928@gmail.com>
+Subject: [PATCH] mm: fix NULL ptr deref when walking hugepages
+Date: Wed, 23 May 2012 09:20:43 +0200
+Message-Id: <1337757643-18302-1-git-send-email-levinsasha928@gmail.com>
+X-Mailer: git-send-email 1.7.8.6
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, May 23, 2012 at 3:32 PM, Paul Mundt <lethal@linux-sh.org> wrote:
-> On Wed, May 09, 2012 at 11:39:34PM +0900, Magnus Damm wrote:
->> From: Magnus Damm <damm@opensource.se>
->>
->> Make clockevents_config() into a global symbol to allow it
->> to be used by compiled-in clockevent drivers. This is needed
->> by drivers that want to update the timer frequency after
->> registration time.
->>
->> Signed-off-by: Magnus Damm <damm@opensource.se>
->
-> Any update on this?
+A missing vlidation of the value returned by find_vma() could cause a NULL ptr
+dereference when walking the pagetable.
 
-Thanks, not from my side at least. I intend to resend the same series
-later this week unless it gets picked up before that.
+This is triggerable from usermode by a simple user by trying to read a
+page info out of /proc/pid/pagemap which doesn't exist.
 
-Cheers,
+Introduced by commit 025c5b24 ("thp: optimize away unnecessary page table
+locking").
 
-/ magnus
+Signed-off-by: Sasha Levin <levinsasha928@gmail.com>
+---
+ fs/proc/task_mmu.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
+
+diff --git a/fs/proc/task_mmu.c b/fs/proc/task_mmu.c
+index 3e564f0..885830b 100644
+--- a/fs/proc/task_mmu.c
++++ b/fs/proc/task_mmu.c
+@@ -820,7 +820,7 @@ static int pagemap_pte_range(pmd_t *pmd, unsigned long addr, unsigned long end,
+ 
+ 	/* find the first VMA at or above 'addr' */
+ 	vma = find_vma(walk->mm, addr);
+-	if (pmd_trans_huge_lock(pmd, vma) == 1) {
++	if (vma && pmd_trans_huge_lock(pmd, vma) == 1) {
+ 		for (; addr != end; addr += PAGE_SIZE) {
+ 			unsigned long offset;
+ 
+-- 
+1.7.8.6
+
