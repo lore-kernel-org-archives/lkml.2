@@ -1,65 +1,145 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755315Ab2EWJUh (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 May 2012 05:20:37 -0400
-Received: from hqemgate04.nvidia.com ([216.228.121.35]:6776 "EHLO
-	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750895Ab2EWJUg (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 May 2012 05:20:36 -0400
-X-PGP-Universal: processed;
-	by hqnvupgp07.nvidia.com on Wed, 23 May 2012 02:19:04 -0700
-Date: Wed, 23 May 2012 12:19:54 +0300
-From: Peter De Schrijver <pdeschrijver@nvidia.com>
-To: "Turquette, Mike" <mturquette@ti.com>
-CC: Ben Dooks <ben.dooks@codethink.co.uk>,
-        Prashant Gaikwad <pgaikwad@nvidia.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: Re: Clock register in early init
-Message-ID: <20120523091954.GA8730@tbergstrom-lnx.Nvidia.com>
-References: <1337227884.2066.9.camel@pgaikwad-dt2>
- <20120517062131.GA9305@gmail.com>
- <1337316517.22560.19.camel@pgaikwad-dt2>
- <20120518112104.GL20304@tbergstrom-lnx.Nvidia.com>
- <CAJOA=zM_o1Nqw55xxFvw6KssM50Q+7yyo41rUSH2Aoo1neTMjg@mail.gmail.com>
- <20120521084642.GV20304@tbergstrom-lnx.Nvidia.com>
- <4FBB5A72.2080101@codethink.co.uk>
- <20120522120851.GI8730@tbergstrom-lnx.Nvidia.com>
- <CAJOA=zNic19Eyq-RJpj_pM94wpqY7co0dtKu1O+27B-wZMm=MA@mail.gmail.com>
+	id S1758100Ab2EWJVh (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 May 2012 05:21:37 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:50998 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750981Ab2EWJVe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 23 May 2012 05:21:34 -0400
+Date: Wed, 23 May 2012 11:21:13 +0200
+From: Jan Kara <jack@suse.cz>
+To: Akinobu Mita <akinobu.mita@gmail.com>
+Cc: linux-kernel@vger.kernel.org, akpm@linux-foundation.org,
+        Anders Larsen <al@alarsen.net>, Alasdair Kergon <agk@redhat.com>,
+        dm-devel@redhat.com, linux-fsdevel@vger.kernel.org,
+        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
+        linux-media@vger.kernel.org, Mark Fasheh <mfasheh@suse.com>,
+        Joel Becker <jlbec@evilplan.org>, ocfs2-devel@oss.oracle.com,
+        Jan Kara <jack@suse.cz>, linux-ext4@vger.kernel.org,
+        Andreas Dilger <adilger.kernel@dilger.ca>,
+        "Theodore Ts'o" <tytso@mit.edu>
+Subject: Re: [PATCH 01/10] string: introduce memweight
+Message-ID: <20120523092113.GG10452@quack.suse.cz>
+References: <1337520203-29147-1-git-send-email-akinobu.mita@gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <CAJOA=zNic19Eyq-RJpj_pM94wpqY7co0dtKu1O+27B-wZMm=MA@mail.gmail.com>
+In-Reply-To: <1337520203-29147-1-git-send-email-akinobu.mita@gmail.com>
 User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, May 22, 2012 at 07:37:15PM +0200, Turquette, Mike wrote:
-> On Tue, May 22, 2012 at 5:08 AM, Peter De Schrijver
-> <pdeschrijver@nvidia.com> wrote:
-> >> We had at-least that on the older Samsung parts and they where still
-> >> growing. I would suggest that in a multi-kernel image situation the
-> >> more data that can be discarded after init-time the better.
-> >>
-> >> Also, __initdata gets gathered into one place so there's no possibility
-> >> of page fragmentation there. If you mean fragmentation of the memory
-> >> map, then allocate the size of all the clocks you know of at init time
-> >> in one go.
-> >>
-> >
-> > That would work, except that clocks are needed before kmalloc is available.
-> >
+On Sun 20-05-12 22:23:14, Akinobu Mita wrote:
+> memweight() is the function that counts the total number of bits set
+> in memory area.  The memory area doesn't need to be aligned to
+> long-word boundary unlike bitmap_weight().
+  Thanks for the patch. I have some comments below.
+
+> Signed-off-by: Akinobu Mita <akinobu.mita@gmail.com>
+> Cc: Anders Larsen <al@alarsen.net>
+> Cc: Alasdair Kergon <agk@redhat.com>
+> Cc: dm-devel@redhat.com
+> Cc: linux-fsdevel@vger.kernel.org
+> Cc: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
+> Cc: linux-media@vger.kernel.org
+> Cc: Mark Fasheh <mfasheh@suse.com>
+> Cc: Joel Becker <jlbec@evilplan.org>
+> Cc: ocfs2-devel@oss.oracle.com
+> Cc: Jan Kara <jack@suse.cz>
+> Cc: linux-ext4@vger.kernel.org
+> Cc: Andrew Morton <akpm@linux-foundation.org>
+> Cc: Andreas Dilger <adilger.kernel@dilger.ca>
+> Cc: "Theodore Ts'o" <tytso@mit.edu>
+> ---
+>  include/linux/string.h |    3 +++
+>  lib/string.c           |   37 +++++++++++++++++++++++++++++++++++++
+>  2 files changed, 40 insertions(+), 0 deletions(-)
 > 
-> Is static initialization the only way to solve this problem?  What
-> about using the bootmem allocator for early init clocks?
-> 
+> diff --git a/include/linux/string.h b/include/linux/string.h
+> index e033564..ffe0442 100644
+> --- a/include/linux/string.h
+> +++ b/include/linux/string.h
+> @@ -145,4 +145,7 @@ static inline bool strstarts(const char *str, const char *prefix)
+>  	return strncmp(str, prefix, strlen(prefix)) == 0;
+>  }
+>  #endif
+> +
+> +extern size_t memweight(const void *ptr, size_t bytes);
+> +
+>  #endif /* _LINUX_STRING_H_ */
+> diff --git a/lib/string.c b/lib/string.c
+> index e5878de..c8b92a0 100644
+> --- a/lib/string.c
+> +++ b/lib/string.c
+> @@ -26,6 +26,7 @@
+>  #include <linux/export.h>
+>  #include <linux/bug.h>
+>  #include <linux/errno.h>
+> +#include <linux/bitmap.h>
+>  
+>  #ifndef __HAVE_ARCH_STRNICMP
+>  /**
+> @@ -824,3 +825,39 @@ void *memchr_inv(const void *start, int c, size_t bytes)
+>  	return check_bytes8(start, value, bytes % 8);
+>  }
+>  EXPORT_SYMBOL(memchr_inv);
+> +
+> +/**
+> + * memweight - count the total number of bits set in memory area
+> + * @ptr: pointer to the start of the area
+> + * @bytes: the size of the area
+> + */
+> +size_t memweight(const void *ptr, size_t bytes)
+> +{
+> +	size_t w = 0;
+> +	size_t longs;
+> +	union {
+> +		const void *ptr;
+> +		const unsigned char *b;
+> +		unsigned long address;
+> +	} bitmap;
+  Ugh, this is ugly and mostly unnecessary. Just use "const unsigned char
+*bitmap".
 
-If it can be handled inside the framework somehow. I would want to avoid
-having several places where clocks inside the same SoC are initialized.
+> +
+> +	for (bitmap.ptr = ptr; bytes > 0 && bitmap.address % sizeof(long);
+> +			bytes--, bitmap.address++)
+> +		w += hweight8(*bitmap.b);
+  This can be:
+	count = ((unsigned long)bitmap) % sizeof(long);
+	while (count--) {
+		w += hweight(*bitmap);
+		bitmap++;
+		bytes--;
+	}
+> +
+> +	for (longs = bytes / sizeof(long); longs > 0; ) {
+> +		size_t bits = min_t(size_t, INT_MAX & ~(BITS_PER_LONG - 1),
+> +					longs * BITS_PER_LONG);
+  I find it highly unlikely that someone would have such a large bitmap
+(256 MB or more on 32-bit). Also the condition as you wrote it can just
+overflow so it won't have the desired effect. Just do
+	BUG_ON(longs >= ULONG_MAX / BITS_PER_LONG);
+and remove the loop completely. If someone comes with such a huge bitmap,
+the code can be modified easily (after really closely inspecting whether
+such a huge bitmap is really well justified).
 
-Cheers,
+> +
+> +		w += bitmap_weight(bitmap.ptr, bits);
+> +		bytes -= bits / BITS_PER_BYTE;
+> +		bitmap.address += bits / BITS_PER_BYTE;
+> +		longs -= bits / BITS_PER_LONG;
+> +	}
+> +
+> +	for (; bytes > 0; bytes--, bitmap.address++)
+> +		w += hweight8(*bitmap.b);
+> +
+> +	return w;
+> +}
+> +EXPORT_SYMBOL(memweight);
 
-Peter.
+									Honza
+-- 
+Jan Kara <jack@suse.cz>
+SUSE Labs, CR
