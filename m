@@ -1,63 +1,176 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754525Ab2EWGEh (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 May 2012 02:04:37 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:55765 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751205Ab2EWGEg (ORCPT
+	id S1754611Ab2EWGH4 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 May 2012 02:07:56 -0400
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:49968 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751619Ab2EWGHy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 May 2012 02:04:36 -0400
-Date: Wed, 23 May 2012 02:04:35 -0400
-From: Kent Overstreet <koverstreet@google.com>
-To: Joe Perches <joe@perches.com>
-Cc: Tejun Heo <tejun@google.com>, linux-bcache@vger.kernel.org,
-        linux-kernel@vger.kernel.org, dm-devel@redhat.com, agk@redhat.com
-Subject: Re: [PATCH] Add human-readable units modifier to vsnprintf()
-Message-ID: <20120523060435.GD14312@dhcp-172-18-216-138.mtv.corp.google.com>
-References: <cover.1336619038.git.koverstreet@google.com>
- <c3f0ca2a499f532253d4c16a30837d43e237266a.1336619038.git.koverstreet@google.com>
- <20120522211706.GH14339@google.com>
- <20120523031214.GA607@dhcp-172-18-216-138.mtv.corp.google.com>
- <1337744190.13111.33.camel@joe2Laptop>
- <20120523045023.GE607@dhcp-172-18-216-138.mtv.corp.google.com>
- <1337749848.13111.40.camel@joe2Laptop>
- <20120523052236.GA14312@dhcp-172-18-216-138.mtv.corp.google.com>
- <1337751760.13111.47.camel@joe2Laptop>
+	Wed, 23 May 2012 02:07:54 -0400
+Message-ID: <4FBC7EAE.4040805@openvz.org>
+Date: Wed, 23 May 2012 10:07:42 +0400
+From: Konstantin Khlebnikov <khlebnikov@openvz.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.2) Gecko/20120217 Firefox/10.0.2 Iceape/2.7.2
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1337751760.13111.47.camel@joe2Laptop>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Andrew Morton <akpm@linux-foundation.org>
+CC: Martin Mokrejs <mmokrejs@fold.natur.cuni.cz>,
+        LKML <linux-kernel@vger.kernel.org>,
+        "markus@trippelsdorf.de" <markus@trippelsdorf.de>,
+        "hughd@google.com" <hughd@google.com>,
+        "kamezawa.hiroyu@jp.fujitsu.com" <kamezawa.hiroyu@jp.fujitsu.com>,
+        "oleg@redhat.com" <oleg@redhat.com>, Michal Hocko <mhocko@suse.cz>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>
+Subject: Re: 3.4-rc7: BUG: Bad rss-counter state mm:ffff88040b56f800 idx:1
+ val:-59
+References: <4FBC1618.5010408@fold.natur.cuni.cz> <20120522162835.c193c8e0.akpm@linux-foundation.org>
+In-Reply-To: <20120522162835.c193c8e0.akpm@linux-foundation.org>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, May 22, 2012 at 10:42:40PM -0700, Joe Perches wrote:
-> > Yeah, I already ran into that. I was looking through the gcc docs to see
-> > if there was a way to add modifiers (how is it done for the other kernel
-> > specific format strings?) but I haven't found anything yet
-> 
-> It's done via %p extensions.
-> gcc doesn't care as long as the %p argument is a pointer.
+Andrew Morton wrote:
+> On Wed, 23 May 2012 00:41:28 +0200
+> Martin Mokrejs<mmokrejs@fold.natur.cuni.cz>  wrote:
+>
+>> Hi Andrew,
+>>    while shutting down my laptop (Dell Vostro 3550 with 16GB RAM, core i7) with 3.4-rc7 I got:
+>>
+>> May 23 00:07:54 vostro kernel: [352687.968267] BUG: Bad rss-counter state mm:ffff88040b56f800 idx:1 val:-59
+>> May 23 00:07:54 vostro kernel: [352687.968312] BUG: Bad rss-counter state mm:ffff88040b56f800 idx:2 val:59
+>> May 23 00:07:55 vostro acpid: exiting
+>> May 23 00:07:55 vostro syslog-ng[2838]: syslog-ng shutting down; version='3.3.4'
+>>
+>>    I found by Google the below thread and thought that maybe it is related?
+>> http://comments.gmane.org/gmane.linux.kernel.mm/76459
+>>
+>> ...
+>>
+>
+>
+> Well hopefully the below will fix this?
+>
+> I notice that I don't have this tagged for -stable backporting.  That
+> seems wrong.  Konstantin, do we know for how long this bug has been in
+> there?
 
-Ahh
+It there for years, by itself it is mostly harmless.
+This warning was added in c3f0327f8e9d7a503f0d64573c311eddd61f197d
+so only v3.4 has this, I thought this fix will be there before release.
 
-> 
-> > > It's also possible
-> > > to confuse it with printf's own 'h' / 
-> > > integer precision use.
-> > 
-> > Well, that's annoying. Any suggestions?
-> 
-> I gave you one already.
+>
+>
+>
+> From: Konstantin Khlebnikov<khlebnikov@openvz.org>
+> Subject: mm: correctly synchronize rss-counters at exit/exec
+>
+> mm->rss_stat counters have per-task delta: task->rss_stat.  Before
+> changing task->mm pointer the kernel must flush this delta with
+> sync_mm_rss().
+>
+> do_exit() already calls sync_mm_rss() to flush the rss-counters before
+> committing the rss statistics into task->signal->maxrss, taskstats, audit
+> and other stuff.  Unfortunately the kernel does this before calling
+> mm_release(), which can call put_user() for processing
+> task->clear_child_tid.  So at this point we can trigger page-faults and
+> task->rss_stat becomes non-zero again.  As a result mm->rss_stat becomes
+> inconsistent and check_mm() will print something like this:
+>
+> | BUG: Bad rss-counter state mm:ffff88020813c380 idx:1 val:-1
+> | BUG: Bad rss-counter state mm:ffff88020813c380 idx:2 val:1
+>
+> This patch moves sync_mm_rss() into mm_release(), and moves mm_release()
+> out of do_exit() and calls it earlier.  After mm_release() there should be
+> no pagefaults.
+>
+> [akpm@linux-foundation.org: tweak comment]
+> Signed-off-by: Konstantin Khlebnikov<khlebnikov@openvz.org>
+> Reported-by: Markus Trippelsdorf<markus@trippelsdorf.de>
+> Cc: Hugh Dickins<hughd@google.com>
+> Cc: KAMEZAWA Hiroyuki<kamezawa.hiroyu@jp.fujitsu.com>
+> Cc: Oleg Nesterov<oleg@redhat.com>
+> Signed-off-by: Andrew Morton<akpm@linux-foundation.org>
+> ---
+>
+>   fs/exec.c     |    1 -
+>   kernel/exit.c |   13 ++++++++-----
+>   kernel/fork.c |    8 ++++++++
+>   3 files changed, 16 insertions(+), 6 deletions(-)
+>
+> diff -puN fs/exec.c~mm-correctly-synchronize-rss-counters-at-exit-exec fs/exec.c
+> --- a/fs/exec.c~mm-correctly-synchronize-rss-counters-at-exit-exec
+> +++ a/fs/exec.c
+> @@ -823,7 +823,6 @@ static int exec_mmap(struct mm_struct *m
+>   	/* Notify parent that we're no longer interested in the old VM */
+>   	tsk = current;
+>   	old_mm = current->mm;
+> -	sync_mm_rss(old_mm);
+>   	mm_release(tsk, old_mm);
+>
+>   	if (old_mm) {
+> diff -puN kernel/exit.c~mm-correctly-synchronize-rss-counters-at-exit-exec kernel/exit.c
+> --- a/kernel/exit.c~mm-correctly-synchronize-rss-counters-at-exit-exec
+> +++ a/kernel/exit.c
+> @@ -423,6 +423,7 @@ void daemonize(const char *name, ...)
+>   	 * user space pages.  We don't need them, and if we didn't close them
+>   	 * they would be locked into memory.
+>   	 */
+> +	mm_release(current, current->mm);
+>   	exit_mm(current);
+>   	/*
+>   	 * We don't want to get frozen, in case system-wide hibernation
+> @@ -640,7 +641,6 @@ static void exit_mm(struct task_struct *
+>   	struct mm_struct *mm = tsk->mm;
+>   	struct core_state *core_state;
+>
+> -	mm_release(tsk, mm);
+>   	if (!mm)
+>   		return;
+>   	/*
+> @@ -959,9 +959,13 @@ void do_exit(long code)
+>   				preempt_count());
+>
+>   	acct_update_integrals(tsk);
+> -	/* sync mm's RSS info before statistics gathering */
+> -	if (tsk->mm)
+> -		sync_mm_rss(tsk->mm);
+> +
+> +	/* Set exit_code before complete_vfork_done() in mm_release() */
+> +	tsk->exit_code = code;
+> +
+> +	/* Release mm and sync mm's RSS info before statistics gathering */
+> +	mm_release(tsk, tsk->mm);
+> +
+>   	group_dead = atomic_dec_and_test(&tsk->signal->live);
+>   	if (group_dead) {
+>   		hrtimer_cancel(&tsk->signal->real_timer);
+> @@ -974,7 +978,6 @@ void do_exit(long code)
+>   		tty_audit_exit();
+>   	audit_free(tsk);
+>
+> -	tsk->exit_code = code;
+>   	taskstats_exit(tsk, group_dead);
+>
+>   	exit_mm(tsk);
+> diff -puN kernel/fork.c~mm-correctly-synchronize-rss-counters-at-exit-exec kernel/fork.c
+> --- a/kernel/fork.c~mm-correctly-synchronize-rss-counters-at-exit-exec
+> +++ a/kernel/fork.c
+> @@ -809,6 +809,14 @@ void mm_release(struct task_struct *tsk,
+>   		}
+>   		tsk->clear_child_tid = NULL;
+>   	}
+> +
+> +	/*
+> +	 * Final rss-counter synchronization. After this point there must be
+> +	 * no pagefaults into this mm from the current context.  Otherwise
+> +	 * mm->rss_stat will be inconsistent.
+> +	 */
+> +	if (mm)
+> +		sync_mm_rss(mm);
+>   }
+>
+>   /*
+> _
+>
 
-Missed the reason for your suggestion :)
-
-> 
-> Use a new lib/vsprintf.c %p pointer extension like 
-> "%pD" or "%pH" and use a pointer to the type as the
-> argument.
-
-Only trouble is we lose the existing method of specifying the type of
-the integer. New flag character would make much more sense... if gcc
-could be persuaded.
