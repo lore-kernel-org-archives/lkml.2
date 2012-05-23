@@ -1,51 +1,206 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756245Ab2EWHOH (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 May 2012 03:14:07 -0400
-Received: from mail-ey0-f174.google.com ([209.85.215.174]:36499 "EHLO
-	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751493Ab2EWHOF (ORCPT
+	id S1756392Ab2EWHPJ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 May 2012 03:15:09 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:59239 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752813Ab2EWHPG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 May 2012 03:14:05 -0400
-Subject: Re: [PATCH] ipv4: fix the rcu race between free_fib_info and
- ip_route_output_slow
-From: Eric Dumazet <eric.dumazet@gmail.com>
-To: Yanmin Zhang <yanmin_zhang@linux.intel.com>
-Cc: David Miller <davem@davemloft.net>, kunx.jiang@intel.com,
-        netdev@vger.kernel.org, linux-kernel@vger.kernel.org
-In-Reply-To: <1337756138.3361.1922.camel@edumazet-glaptop>
-References: <4FBB6105.2060808@intel.com>
-	 <20120522.151554.106838106733194160.davem@davemloft.net>
-	 <1337742123.14538.175.camel@ymzhang.sh.intel.com>
-	 <20120522.232310.911242148705021745.davem@davemloft.net>
-	 <1337747829.3361.1599.camel@edumazet-glaptop>
-	 <1337748897.14538.184.camel@ymzhang.sh.intel.com>
-	 <1337749339.3361.1655.camel@edumazet-glaptop>
-	 <1337753757.14538.190.camel@ymzhang.sh.intel.com>
-	 <1337754459.3361.1850.camel@edumazet-glaptop>
-	 <1337755623.14538.194.camel@ymzhang.sh.intel.com>
-	 <1337756138.3361.1922.camel@edumazet-glaptop>
-Content-Type: text/plain; charset="UTF-8"
-Date: Wed, 23 May 2012 09:13:58 +0200
-Message-ID: <1337757238.3361.1965.camel@edumazet-glaptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
-Content-Transfer-Encoding: 7bit
+	Wed, 23 May 2012 03:15:06 -0400
+Date: Wed, 23 May 2012 00:15:03 -0700 (PDT)
+From: David Rientjes <rientjes@google.com>
+X-X-Sender: rientjes@chino.kir.corp.google.com
+To: Andrew Morton <akpm@linux-foundation.org>
+cc: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Dave Jones <davej@redhat.com>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org
+Subject: [patch v2] mm, oom: normalize oom scores to oom_score_adj scale only
+ for userspace
+In-Reply-To: <20120517145022.a99f41e8.akpm@linux-foundation.org>
+Message-ID: <alpine.DEB.2.00.1205230014450.9290@chino.kir.corp.google.com>
+References: <20120426193551.GA24968@redhat.com> <alpine.DEB.2.00.1204261437470.28376@chino.kir.corp.google.com> <alpine.DEB.2.00.1205031513400.1631@chino.kir.corp.google.com> <20120503222949.GA13762@redhat.com> <alpine.DEB.2.00.1205171432250.6951@chino.kir.corp.google.com>
+ <20120517145022.a99f41e8.akpm@linux-foundation.org>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2012-05-23 at 08:55 +0200, Eric Dumazet wrote:
+The oom_score_adj scale ranges from -1000 to 1000 and represents the
+proportion of memory available to the process at allocation time.  This
+means an oom_score_adj value of 300, for example, will bias a process as
+though it was using an extra 30.0% of available memory and a value of
+-350 will discount 35.0% of available memory from its usage.
 
-> Please hold on, I'll send a v2
+The oom killer badness heuristic also uses this scale to report the oom
+score for each eligible process in determining the "best" process to
+kill.  Thus, it can only differentiate each process's memory usage by
+0.1% of system RAM.
 
-I believe your patch should be fine, if you move back the
-fib_info_cnt--;
+On large systems, this can end up being a large amount of memory: 256MB
+on 256GB systems, for example.
 
-So only do the dev_put() in free_fib_info_rcu().
+This can be fixed by having the badness heuristic to use the actual
+memory usage in scoring threads and then normalizing it to the
+oom_score_adj scale for userspace.  This results in better comparison
+between eligible threads for kill and no change from the userspace
+perspective.
 
-No need to clear nh_dev to NULL since we are freeing fi at the end of
-function.
+Suggested-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+Tested-by: Dave Jones <davej@redhat.com>
+Signed-off-by: David Rientjes <rientjes@google.com>
+---
+ fs/proc/base.c      |    5 +++--
+ include/linux/oom.h |    5 +++--
+ mm/oom_kill.c       |   44 ++++++++++++++++----------------------------
+ 3 files changed, 22 insertions(+), 32 deletions(-)
 
-
-
+diff --git a/fs/proc/base.c b/fs/proc/base.c
+--- a/fs/proc/base.c
++++ b/fs/proc/base.c
+@@ -410,12 +410,13 @@ static const struct file_operations proc_lstats_operations = {
+ 
+ static int proc_oom_score(struct task_struct *task, char *buffer)
+ {
++	unsigned long totalpages = totalram_pages + total_swap_pages;
+ 	unsigned long points = 0;
+ 
+ 	read_lock(&tasklist_lock);
+ 	if (pid_alive(task))
+-		points = oom_badness(task, NULL, NULL,
+-					totalram_pages + total_swap_pages);
++		points = oom_badness(task, NULL, NULL, totalpages) *
++						1000 / totalpages;
+ 	read_unlock(&tasklist_lock);
+ 	return sprintf(buffer, "%lu\n", points);
+ }
+diff --git a/include/linux/oom.h b/include/linux/oom.h
+--- a/include/linux/oom.h
++++ b/include/linux/oom.h
+@@ -43,8 +43,9 @@ enum oom_constraint {
+ extern void compare_swap_oom_score_adj(int old_val, int new_val);
+ extern int test_set_oom_score_adj(int new_val);
+ 
+-extern unsigned int oom_badness(struct task_struct *p, struct mem_cgroup *memcg,
+-			const nodemask_t *nodemask, unsigned long totalpages);
++extern unsigned long oom_badness(struct task_struct *p,
++		struct mem_cgroup *memcg, const nodemask_t *nodemask,
++		unsigned long totalpages);
+ extern int try_set_zonelist_oom(struct zonelist *zonelist, gfp_t gfp_flags);
+ extern void clear_zonelist_oom(struct zonelist *zonelist, gfp_t gfp_flags);
+ 
+diff --git a/mm/oom_kill.c b/mm/oom_kill.c
+--- a/mm/oom_kill.c
++++ b/mm/oom_kill.c
+@@ -180,10 +180,10 @@ static bool oom_unkillable_task(struct task_struct *p,
+  * predictable as possible.  The goal is to return the highest value for the
+  * task consuming the most memory to avoid subsequent oom failures.
+  */
+-unsigned int oom_badness(struct task_struct *p, struct mem_cgroup *memcg,
+-		      const nodemask_t *nodemask, unsigned long totalpages)
++unsigned long oom_badness(struct task_struct *p, struct mem_cgroup *memcg,
++			  const nodemask_t *nodemask, unsigned long totalpages)
+ {
+-	long points;
++	unsigned long points;
+ 
+ 	if (oom_unkillable_task(p, memcg, nodemask))
+ 		return 0;
+@@ -198,21 +198,11 @@ unsigned int oom_badness(struct task_struct *p, struct mem_cgroup *memcg,
+ 	}
+ 
+ 	/*
+-	 * The memory controller may have a limit of 0 bytes, so avoid a divide
+-	 * by zero, if necessary.
+-	 */
+-	if (!totalpages)
+-		totalpages = 1;
+-
+-	/*
+ 	 * The baseline for the badness score is the proportion of RAM that each
+ 	 * task's rss, pagetable and swap space use.
+ 	 */
+-	points = get_mm_rss(p->mm) + p->mm->nr_ptes;
+-	points += get_mm_counter(p->mm, MM_SWAPENTS);
+-
+-	points *= 1000;
+-	points /= totalpages;
++	points = get_mm_rss(p->mm) + p->mm->nr_ptes +
++		 get_mm_counter(p->mm, MM_SWAPENTS);
+ 	task_unlock(p);
+ 
+ 	/*
+@@ -220,23 +210,20 @@ unsigned int oom_badness(struct task_struct *p, struct mem_cgroup *memcg,
+ 	 * implementation used by LSMs.
+ 	 */
+ 	if (has_capability_noaudit(p, CAP_SYS_ADMIN))
+-		points -= 30;
++		points -= 30 * totalpages / 1000;
+ 
+ 	/*
+ 	 * /proc/pid/oom_score_adj ranges from -1000 to +1000 such that it may
+ 	 * either completely disable oom killing or always prefer a certain
+ 	 * task.
+ 	 */
+-	points += p->signal->oom_score_adj;
++	points += p->signal->oom_score_adj * totalpages / 1000;
+ 
+ 	/*
+-	 * Never return 0 for an eligible task that may be killed since it's
+-	 * possible that no single user task uses more than 0.1% of memory and
+-	 * no single admin tasks uses more than 3.0%.
++	 * Never return 0 for an eligible task regardless of the root bonus and
++	 * oom_score_adj (oom_score_adj can't be OOM_SCORE_ADJ_MIN here).
+ 	 */
+-	if (points <= 0)
+-		return 1;
+-	return (points < 1000) ? points : 1000;
++	return points ? points : 1;
+ }
+ 
+ /*
+@@ -314,7 +301,7 @@ static struct task_struct *select_bad_process(unsigned int *ppoints,
+ {
+ 	struct task_struct *g, *p;
+ 	struct task_struct *chosen = NULL;
+-	*ppoints = 0;
++	unsigned long chosen_points = 0;
+ 
+ 	do_each_thread(g, p) {
+ 		unsigned int points;
+@@ -354,7 +341,7 @@ static struct task_struct *select_bad_process(unsigned int *ppoints,
+ 			 */
+ 			if (p == current) {
+ 				chosen = p;
+-				*ppoints = 1000;
++				chosen_points = ULONG_MAX;
+ 			} else if (!force_kill) {
+ 				/*
+ 				 * If this task is not being ptraced on exit,
+@@ -367,12 +354,13 @@ static struct task_struct *select_bad_process(unsigned int *ppoints,
+ 		}
+ 
+ 		points = oom_badness(p, memcg, nodemask, totalpages);
+-		if (points > *ppoints) {
++		if (points > chosen_points) {
+ 			chosen = p;
+-			*ppoints = points;
++			chosen_points = points;
+ 		}
+ 	} while_each_thread(g, p);
+ 
++	*ppoints = chosen_points * 1000 / totalpages;
+ 	return chosen;
+ }
+ 
+@@ -572,7 +560,7 @@ void mem_cgroup_out_of_memory(struct mem_cgroup *memcg, gfp_t gfp_mask,
+ 	}
+ 
+ 	check_panic_on_oom(CONSTRAINT_MEMCG, gfp_mask, order, NULL);
+-	limit = mem_cgroup_get_limit(memcg) >> PAGE_SHIFT;
++	limit = mem_cgroup_get_limit(memcg) >> PAGE_SHIFT ? : 1;
+ 	read_lock(&tasklist_lock);
+ 	p = select_bad_process(&points, limit, memcg, NULL, false);
+ 	if (p && PTR_ERR(p) != -1UL)
