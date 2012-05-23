@@ -1,66 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965138Ab2EWGex (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 May 2012 02:34:53 -0400
-Received: from acsinet15.oracle.com ([141.146.126.227]:34436 "EHLO
-	acsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755052Ab2EWGev (ORCPT
+	id S1753768Ab2EWGnm (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 May 2012 02:43:42 -0400
+Received: from mail-ey0-f174.google.com ([209.85.215.174]:48170 "EHLO
+	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750892Ab2EWGnl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 May 2012 02:34:51 -0400
-From: Yinghai Lu <yinghai@kernel.org>
-To: Bjorn Helgaas <bhelgaas@google.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Yinghai Lu <ying6hai@kernel.org>
-Subject: [PATCH 00/11] PCI: resource allocation related
-Date: Tue, 22 May 2012 23:34:26 -0700
-Message-Id: <1337754877-19759-1-git-send-email-yinghai@kernel.org>
-X-Mailer: git-send-email 1.7.7
-X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
+	Wed, 23 May 2012 02:43:41 -0400
+Subject: Re: [PATCH] ipv4: fix the rcu race between free_fib_info and
+ ip_route_output_slow
+From: Eric Dumazet <eric.dumazet@gmail.com>
+To: Yanmin Zhang <yanmin_zhang@linux.intel.com>
+Cc: David Miller <davem@davemloft.net>, kunx.jiang@intel.com,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+In-Reply-To: <1337755038.3361.1878.camel@edumazet-glaptop>
+References: <4FBB6105.2060808@intel.com>
+	 <20120522.151554.106838106733194160.davem@davemloft.net>
+	 <1337742123.14538.175.camel@ymzhang.sh.intel.com>
+	 <20120522.232310.911242148705021745.davem@davemloft.net>
+	 <1337747829.3361.1599.camel@edumazet-glaptop>
+	 <1337748897.14538.184.camel@ymzhang.sh.intel.com>
+	 <1337749339.3361.1655.camel@edumazet-glaptop>
+	 <1337755038.3361.1878.camel@edumazet-glaptop>
+Content-Type: text/plain; charset="UTF-8"
+Date: Wed, 23 May 2012 08:43:33 +0200
+Message-ID: <1337755413.3361.1896.camel@edumazet-glaptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Yinghai Lu <ying6hai@kernel.org>
+On Wed, 2012-05-23 at 08:37 +0200, Eric Dumazet wrote:
+> From: Eric Dumazet <edumazet@google.com>
 
-This patchset will try to make allocation to find suitable assignement.
-1. will try to assign 64 bit resource above 4g at first.
-2. will find space that is matched with needed size
-3. will put resource in right location to leave more big alignment with left blank resource
-4. will try option rom BAR as optional resources.
+> diff --git a/net/ipv4/route.c b/net/ipv4/route.c
+> index ffcb3b0..b56b91e 100644
+> --- a/net/ipv4/route.c
+> +++ b/net/ipv4/route.c
+> @@ -2127,7 +2127,7 @@ static int __mkroute_input(struct sk_buff *skb,
+>  	u32 itag;
+>  
+>  	/* get a working reference to the output device */
+> -	out_dev = __in_dev_get_rcu(FIB_RES_DEV(*res));
+> +	out_dev = __in_dev_get_rcu(rcu_dereference(FIB_RES_DEV(*res)));
 
-Could be found:
-	git://git.kernel.org/pub/scm/linux/kernel/git/yinghai/linux-yinghai.git for-pci-res-alloc
+This part might need additional fix (if FIB_RES_DEV(*res) is NULL),
+because __in_dev_get_rcu() could crash dereferencing NULL pointer.
 
-and it is based on pci for-3.6 branch.
 
-Thanks
 
-Yinghai Lu
 
-Yinghai Lu (11):
-  PCI: Should add children device res to fail list
-  PCI: Try to allocate mem64 above 4G at first
-  intel-gtt: Read 64bit for gmar_bus_addr
-  PCI: Make sure assign same align with large size resource at first
-  resources: Split out __allocate_resource()
-  resource: make find_resource could return just fit resource
-  PCI: Don't allocate small resource in big empty space.
-  resource: only return range with needed align
-  PCI: Add is_pci_iov_resource_idx()
-  PCI: Sort unassigned resources with correct alignment
-  PCI: Treat ROM resource as optional during assigning.
 
- drivers/char/agp/intel-gtt.c |   14 ++++--
- drivers/pci/bus.c            |   38 +++++++++++---
- drivers/pci/setup-bus.c      |   78 ++++++++++++++++++-----------
- drivers/pci/setup-res.c      |   28 +++++++----
- include/linux/ioport.h       |    8 +++
- include/linux/pci.h          |   23 ++++++++
- kernel/resource.c            |  114 ++++++++++++++++++++++++++++++++++++++---
- 7 files changed, 243 insertions(+), 60 deletions(-)
 
--- 
-1.7.7
 
