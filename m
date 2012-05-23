@@ -1,98 +1,193 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758221Ab2EWAjf (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 May 2012 20:39:35 -0400
-Received: from mail131.messagelabs.com ([216.82.242.99]:5621 "EHLO
-	mail131.messagelabs.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752235Ab2EWAje (ORCPT
+	id S933273Ab2EWAjo (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 May 2012 20:39:44 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:6180 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752235Ab2EWAji (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 May 2012 20:39:34 -0400
-X-Env-Sender: hartleys@visionengravers.com
-X-Msg-Ref: server-6.tower-131.messagelabs.com!1337733573!13412355!2
-X-Originating-IP: [216.166.12.72]
-X-StarScan-Version: 6.5.10; banners=-,-,-
-X-VirusChecked: Checked
-From: H Hartley Sweeten <hartleys@visionengravers.com>
-To: Linux Kernel <linux-kernel@vger.kernel.org>
-Subject: [PATCH] staging: comedi: remove this_board macro in the pcmad driver
-Date: Tue, 22 May 2012 17:39:22 -0700
-User-Agent: KMail/1.9.9
-CC: <devel@driverdev.osuosl.org>, <abbotti@mev.co.uk>,
-        <fmhess@users.sourceforge.net>, <gregkh@linuxfoundation.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
+	Tue, 22 May 2012 20:39:38 -0400
+X-Authority-Analysis: v=2.0 cv=D8PF24tj c=1 sm=0 a=ZycB6UtQUfgMyuk2+PxD7w==:17 a=XQbtiDEiEegA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=meVymXHHAAAA:8 a=ayC55rCoAAAA:8 a=I21yznq-B6Y38OGxoyoA:9 a=vlEEBiu4gVfvJgIWYDMA:7 a=PUjeQqilurYA:10 a=jeBq3FmKZ4MA:10 a=cK_KYy3NRiW2m4Pd:21 a=vxwn3eC9U5vWuEkc:21 a=ZycB6UtQUfgMyuk2+PxD7w==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 74.67.80.29
+Message-ID: <1337733575.13348.134.camel@gandalf.stny.rr.com>
+Subject: Re: NMI vs #PF clash
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Avi Kivity <avi@redhat.com>, linux-kernel <linux-kernel@vger.kernel.org>,
+        Ingo Molnar <mingo@elte.hu>, "H. Peter Anvin" <hpa@zytor.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Paul Turner <pjt@google.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
+Date: Tue, 22 May 2012 20:39:35 -0400
+In-Reply-To: <CA+55aFwx3QjNB2ckQfsThhDn7=Bm1d=n0Ai8zawbpLKBKgugGg@mail.gmail.com>
+References: <4FBB8C40.6080304@redhat.com>
+	 <1337693441.13348.36.camel@gandalf.stny.rr.com>
+	 <4FBB986F.5030306@redhat.com>
+	 <1337695780.13348.41.camel@gandalf.stny.rr.com>
+	 <4FBBA094.3090703@redhat.com>
+	 <1337696825.13348.44.camel@gandalf.stny.rr.com>
+	 <CA+55aFwx3QjNB2ckQfsThhDn7=Bm1d=n0Ai8zawbpLKBKgugGg@mail.gmail.com>
+Content-Type: text/plain; charset="ISO-8859-15"
+X-Mailer: Evolution 3.2.2-1 
 Content-Transfer-Encoding: 7bit
-Content-Disposition: inline
-Message-ID: <201205221739.22746.hartleys@visionengravers.com>
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The 'this_board' macro depends on having a local variable with
-a magic name. The CodingStyle document suggests not doing this
-to avoid confusion. Remove the macro and use the comedi_board()
-inline helper to get the dev->board_ptr information.
+On Tue, 2012-05-22 at 08:33 -0700, Linus Torvalds wrote:
+> On Tue, May 22, 2012 at 7:27 AM, Steven Rostedt <rostedt@goodmis.org> wrote:
+> >
+> > Is reading it fast? Then we could do a two reads and only write when
+> > needed.
+> 
+> Even better: we could do nothing at all.
+> 
+> We could just say: let's make sure that any #PF case that can happen
+> in #NMI can also be re-done with arbitrary 'error_code' and 'struct
+> regs' contents.
+> 
+> At that point, what could happen is
+>  - #PF
+>   - NMI
+>    - #PF
+>     - read cr2 for NMI fault
+>     - handle the NMI #PF
+>     - return from #PF
+>   - return from #NMI
+>   - read cr2 for original #PF fault - but get the NMI cr2 again
+>   - hande the #PF again (this should be a no-op now)
 
-Signed-off-by: H Hartley Sweeten <hsweeten@visionengravers.com>
-Cc: Ian Abbott <abbotti@mev.co.uk>
-Cc: Mori Hess <fmhess@users.sourceforge.net>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+I tested this by forcing all NMIs to have a page fault, and then running
+perf against hackbench to see what breaks. This doesn't work because the
+cr2 contains where the fault happened.
 
----
+If the NMI faulting address was in kernel space, the page fault it
+interrupted will think the user task is trying to access kernel memory
+and fault.
 
-diff --git a/drivers/staging/comedi/drivers/pcmad.c b/drivers/staging/comedi/drivers/pcmad.c
-index 1ec7d5c..2ec0b2e 100644
---- a/drivers/staging/comedi/drivers/pcmad.c
-+++ b/drivers/staging/comedi/drivers/pcmad.c
-@@ -58,8 +58,6 @@ struct pcmad_board_struct {
- 	int n_ai_bits;
- };
+Basically, the address will not be valid for the user task and this will
+make the task take a SEGFAULT.
+
+I had the NMI fault on the address 0x12348, but had a exception table to
+handle it.
+
+hackbench[2236]: segfault at 12348 ip 0000003054a091c4 sp 00007fff22c6e840 error 4 in ld-2.12.2.so[3054a00000+1e000]
+
+With the below patch, the faulting NMIs don't seem to be harming anything.
+
+
+>   - return from #PF
+>  - instruction restart causes new #PF
+>   - now we do the original page fault
+> 
+> So one option is to just make sure that the few cases (just the
+> vmalloc area?) that NMI can trigger are all ok to be re-done with
+> other state.
+> 
+> I note that right now we have
+> 
+>         if (unlikely(fault_in_kernel_space(address))) {
+>                 if (!(error_code & (PF_RSVD | PF_USER | PF_PROT))) {
+>                         if (vmalloc_fault(address) >= 0)
+>                                 return;
+> 
+> and that the error_code check means that the retried NMI #PF would not
+> go through that. But maybe we don't even need that check?
+> 
+> That error_code thing seems to literally be the only thing that keeps
+> us from just re-doing the vmalloc_fault() silently.
+
+Avi, you want to test this?
+
+-- Steve
+
+Index: linux-trace.git/arch/x86/kernel/entry_64.S
+===================================================================
+--- linux-trace.git.orig/arch/x86/kernel/entry_64.S
++++ linux-trace.git/arch/x86/kernel/entry_64.S
+@@ -1586,7 +1586,7 @@ ENTRY(nmi)
+ 	 * Check the special variable on the stack to see if NMIs are
+ 	 * executing.
+ 	 */
+-	cmpl $1, -8(%rsp)
++	cmpl $1, -16(%rsp)
+ 	je nested_nmi
  
--#define this_board ((const struct pcmad_board_struct *)(dev->board_ptr))
--
- struct pcmad_priv_struct {
- 	int differential;
- 	int twos_comp;
-@@ -72,6 +70,7 @@ static int pcmad_ai_insn_read(struct comedi_device *dev,
- 			      struct comedi_subdevice *s,
- 			      struct comedi_insn *insn, unsigned int *data)
- {
-+	const struct pcmad_board_struct *board = comedi_board(dev);
- 	int i;
- 	int chan;
- 	int n;
-@@ -89,7 +88,7 @@ static int pcmad_ai_insn_read(struct comedi_device *dev,
- 		data[n] |= (inb(dev->iobase + PCMAD_MSB) << 8);
+ 	/*
+@@ -1615,7 +1615,7 @@ nested_nmi:
  
- 		if (devpriv->twos_comp)
--			data[n] ^= (1 << (this_board->n_ai_bits - 1));
-+			data[n] ^= (1 << (board->n_ai_bits - 1));
- 	}
+ 1:
+ 	/* Set up the interrupted NMIs stack to jump to repeat_nmi */
+-	leaq -6*8(%rsp), %rdx
++	leaq -7*8(%rsp), %rdx
+ 	movq %rdx, %rsp
+ 	CFI_ADJUST_CFA_OFFSET 6*8
+ 	pushq_cfi $__KERNEL_DS
+@@ -1625,7 +1625,7 @@ nested_nmi:
+ 	pushq_cfi $repeat_nmi
  
- 	return n;
-@@ -104,6 +103,7 @@ static int pcmad_ai_insn_read(struct comedi_device *dev,
-  */
- static int pcmad_attach(struct comedi_device *dev, struct comedi_devconfig *it)
- {
-+	const struct pcmad_board_struct *board = comedi_board(dev);
- 	int ret;
- 	struct comedi_subdevice *s;
- 	unsigned long iobase;
-@@ -125,7 +125,7 @@ static int pcmad_attach(struct comedi_device *dev, struct comedi_devconfig *it)
- 	if (ret < 0)
- 		return ret;
+ 	/* Put stack back */
+-	addq $(11*8), %rsp
++	addq $(12*8), %rsp
+ 	CFI_ADJUST_CFA_OFFSET -11*8
  
--	dev->board_name = this_board->name;
-+	dev->board_name = board->name;
+ nested_nmi_out:
+@@ -1650,6 +1650,8 @@ first_nmi:
+ 	 * +-------------------------+
+ 	 * | temp storage for rdx    |
+ 	 * +-------------------------+
++	 * | saved cr2               |
++	 * +-------------------------+
+ 	 * | NMI executing variable  |
+ 	 * +-------------------------+
+ 	 * | Saved SS                |
+@@ -1672,8 +1674,20 @@ first_nmi:
+ 	 * to the repeat_nmi. The original stack frame and the temp storage
+ 	 * is also used by nested NMIs and can not be trusted on exit.
+ 	 */
++
++	/*
++	 * Save off the CR2 register. If we take a page fault in the NMI then
++	 * it could corrupt the CR2 value. If the NMI preempts a page fault
++	 * handler before it was able to read the CR2 register, and then the
++	 * NMI itself takes a page fault, the page fault that was preempted
++	 * will read the information from the NMI page fault and not the
++	 * origin fault. Save it off and restore it if it changes.
++	 */
++	movq %cr2, %rdx
++	pushq_cfi %rdx
++
+ 	/* Do not pop rdx, nested NMIs will corrupt that part of the stack */
+-	movq (%rsp), %rdx
++	movq 8(%rsp), %rdx
+ 	CFI_RESTORE rdx
  
- 	s = dev->subdevices + 0;
- 	s->type = COMEDI_SUBD_AI;
-@@ -133,7 +133,7 @@ static int pcmad_attach(struct comedi_device *dev, struct comedi_devconfig *it)
- 	s->n_chan = 16;		/* XXX */
- 	s->len_chanlist = 1;
- 	s->insn_read = pcmad_ai_insn_read;
--	s->maxdata = (1 << this_board->n_ai_bits) - 1;
-+	s->maxdata = (1 << board->n_ai_bits) - 1;
- 	s->range_table = &range_unknown;
+ 	/* Leave room for the "in NMI" variable. */
+@@ -1682,7 +1696,7 @@ first_nmi:
  
- 	return 0;
+ 	/* Copy the stack frame to the Saved frame */
+ 	.rept 5
+-	pushq_cfi 6*8(%rsp)
++	pushq_cfi 7*8(%rsp)
+ 	.endr
+ 	CFI_DEF_CFA_OFFSET SS+8-RIP
+ 
+@@ -1734,6 +1748,13 @@ end_repeat_nmi:
+ nmi_swapgs:
+ 	SWAPGS_UNSAFE_STACK
+ nmi_restore:
++	/* Test if the cr2 reg changed */
++	movq ORIG_RAX-R15+(12*8)(%rsp), %rdx
++	movq %cr2, %rcx
++	cmp %rdx, %rcx
++	je 1f
++	movq %rdx, %cr2
++1:
+ 	RESTORE_ALL 8
+ 	/* Clear the NMI executing stack variable */
+ 	movq $0, 10*8(%rsp)
+
+
