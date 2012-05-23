@@ -1,64 +1,317 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753540Ab2EWQTN (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 May 2012 12:19:13 -0400
-Received: from db3ehsobe003.messaging.microsoft.com ([213.199.154.141]:27302
-	"EHLO db3outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750914Ab2EWQTK (ORCPT
+	id S1754610Ab2EWQUm (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 May 2012 12:20:42 -0400
+Received: from e28smtp07.in.ibm.com ([122.248.162.7]:53138 "EHLO
+	e28smtp07.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753913Ab2EWQUk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 May 2012 12:19:10 -0400
-X-SpamScore: -14
-X-BigFish: VPS-14(zzbb2dI9371I936eK1432N98dKzz1202hzzz2dh668h839h944hd25hf0ah)
-X-Forefront-Antispam-Report: CIP:163.181.249.108;KIP:(null);UIP:(null);IPV:NLI;H:ausb3twp01.amd.com;RD:none;EFVD:NLI
-X-WSS-ID: 0M4HHBR-01-FPG-02
-X-M-MSG: 
-Date: Wed, 23 May 2012 18:19:32 +0200
-From: Borislav Petkov <borislav.petkov@amd.com>
-To: "H. Peter Anvin" <hpa@zytor.com>
-CC: Peter Zijlstra <a.p.zijlstra@chello.nl>, <mingo@kernel.org>,
-        <linux-kernel@vger.kernel.org>, <frank.arnold@amd.com>,
-        <akpm@linux-foundation.org>, <torvalds@linux-foundation.org>,
-        <tglx@linutronix.de>, <linux-tip-commits@vger.kernel.org>
-Subject: Re: [tip:x86/mce] x86/bitops: Move BIT_64() for a wider use
-Message-ID: <20120523161932.GN14757@aftab.osrc.amd.com>
-References: <1337684026-19740-1-git-send-email-bp@amd64.org>
- <tip-e8f380e00840f694599e6ab42806639f7de26f11@git.kernel.org>
- <1337789429.9783.16.camel@laptop>
- <4FBD0C47.70600@zytor.com>
+	Wed, 23 May 2012 12:20:40 -0400
+Message-ID: <4FBCA60F.5040701@linux.vnet.ibm.com>
+Date: Wed, 23 May 2012 16:55:43 +0800
+From: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-In-Reply-To: <4FBD0C47.70600@zytor.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-OriginatorOrg: amd.com
+To: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
+CC: Avi Kivity <avi@redhat.com>, Marcelo Tosatti <mtosatti@redhat.com>,
+        LKML <linux-kernel@vger.kernel.org>, KVM <kvm@vger.kernel.org>
+Subject: [PATCH v5 6/9] KVM: MMU: fast path of handling guest page fault
+References: <4FBCA4FB.8050501@linux.vnet.ibm.com>
+In-Reply-To: <4FBCA4FB.8050501@linux.vnet.ibm.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
+x-cbid: 12052316-8878-0000-0000-000002A39F86
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, May 23, 2012 at 09:11:51AM -0700, H. Peter Anvin wrote:
-> On 05/23/2012 09:10 AM, Peter Zijlstra wrote:
-> > On Wed, 2012-05-23 at 09:07 -0700, tip-bot for Borislav Petkov wrote:
-> >> +#define BIT_64(n)                      (U64_C(1) << (n))
-> > 
-> > Because writing 1ULL << n is too much work? 
-> > 
-> 
-> Because writing 1ULL << n is broken in anything that needs to be used in
-> assembly, for example.
+If the the present bit of page fault error code is set, it indicates
+the shadow page is populated on all levels, it means what we do is
+only modify the access bit which can be done out of mmu-lock
 
-Actually we need a BIT() macro that works both
-on 32- and 64-bit. But that won't be that easy:
-http://lkml.indiana.edu/hypermail/linux/kernel/1010.1/02335.html
+Currently, in order to simplify the code, we only fix the page fault
+caused by write-protect on the fast path
 
-And it should return UL for shift values < 32 and ULL otherwise.
+Signed-off-by: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
+---
+ arch/x86/kvm/mmu.c         |  189 +++++++++++++++++++++++++++++++++++++++-----
+ arch/x86/kvm/paging_tmpl.h |    3 +
+ 2 files changed, 173 insertions(+), 19 deletions(-)
+
+diff --git a/arch/x86/kvm/mmu.c b/arch/x86/kvm/mmu.c
+index bd837f3..aded056 100644
+--- a/arch/x86/kvm/mmu.c
++++ b/arch/x86/kvm/mmu.c
+@@ -445,8 +445,27 @@ static bool __check_direct_spte_mmio_pf(u64 spte)
+ }
+ #endif
+
++static bool spte_can_be_writable(u64 spte)
++{
++	u64 mask = SPTE_HOST_WRITEABLE | SPTE_MMU_WRITEABLE;
++
++	return (spte & mask) == mask;
++}
++
++static bool spte_can_lockless_update(u64 spte)
++{
++	return  !is_writable_pte(spte) && spte_can_be_writable(spte);
++}
++
+ static bool spte_has_volatile_bits(u64 spte)
+ {
++	/*
++	 * Always atomicly update spte if it can be updated
++	 * out of mmu-lock.
++	 */
++	if (spte_can_lockless_update(spte))
++		return true;
++
+ 	if (!shadow_accessed_mask)
+ 		return false;
+
+@@ -488,7 +507,7 @@ static void mmu_spte_set(u64 *sptep, u64 new_spte)
+  */
+ static bool mmu_spte_update(u64 *sptep, u64 new_spte)
+ {
+-	u64 mask, old_spte = *sptep;
++	u64 old_spte = *sptep;
+ 	bool ret = false;
+
+ 	WARN_ON(!is_rmap_spte(new_spte));
+@@ -498,13 +517,7 @@ static bool mmu_spte_update(u64 *sptep, u64 new_spte)
+ 		return ret;
+ 	}
+
+-	new_spte |= old_spte & shadow_dirty_mask;
+-
+-	mask = shadow_accessed_mask;
+-	if (is_writable_pte(old_spte))
+-		mask |= shadow_dirty_mask;
+-
+-	if (!spte_has_volatile_bits(old_spte) || (new_spte & mask) == mask)
++	if (!spte_has_volatile_bits(old_spte))
+ 		__update_clear_spte_fast(sptep, new_spte);
+ 	else
+ 		old_spte = __update_clear_spte_slow(sptep, new_spte);
+@@ -1066,13 +1079,6 @@ static void drop_spte(struct kvm *kvm, u64 *sptep)
+ 		rmap_remove(kvm, sptep);
+ }
+
+-static bool spte_can_be_writable(u64 spte)
+-{
+-	u64 mask = SPTE_HOST_WRITEABLE | SPTE_MMU_WRITEABLE;
+-
+-	return (spte & mask) == mask;
+-}
+-
+ /* Return true if the spte is dropped. */
+ static bool
+ spte_write_protect(struct kvm *kvm, u64 *sptep, bool *flush, bool pt_protect)
+@@ -2661,18 +2667,157 @@ exit:
+ 	return ret;
+ }
+
++static bool page_fault_can_be_fast(struct kvm_vcpu *vcpu, gfn_t gfn,
++				   u32 error_code)
++{
++	/*
++	 * #PF can be fast only if the shadow page table is present and it
++	 * is caused by write-protect, that means we just need change the
++	 * W bit of the spte which can be done out of mmu-lock.
++	 */
++	if (!(error_code & PFERR_PRESENT_MASK) ||
++	      !(error_code & PFERR_WRITE_MASK))
++		return false;
++
++	return true;
++}
++
++static bool
++fast_pf_fix_indirect_spte(struct kvm_vcpu *vcpu, struct kvm_mmu_page *sp,
++			  u64 *sptep, u64 spte, gfn_t gfn)
++{
++	pfn_t pfn;
++	bool ret = false;
++
++	/*
++	 * For the indirect spte, it is hard to get a stable gfn since
++	 * we just use a cmpxchg to avoid all the races which is not
++	 * enough to avoid the ABA problem: the host can arbitrarily
++	 * change spte and the mapping from gfn to pfn.
++	 *
++	 * What we do is call gfn_to_pfn_atomic to bind the gfn and the
++	 * pfn because after the call:
++	 * - we have held the refcount of pfn that means the pfn can not
++	 *   be freed and be reused for another gfn.
++	 * - the pfn is writable that means it can not be shared by different
++	 *   gfn.
++	 */
++	pfn = gfn_to_pfn_atomic(vcpu->kvm, gfn);
++
++	/* The host page is swapped out or merged. */
++	if (mmu_invalid_pfn(pfn))
++		goto exit;
++
++	ret = true;
++
++	if (pfn != spte_to_pfn(spte))
++		goto exit;
++
++	if (cmpxchg64(sptep, spte, spte | PT_WRITABLE_MASK) == spte)
++		mark_page_dirty(vcpu->kvm, gfn);
++
++exit:
++	kvm_release_pfn_clean(pfn);
++	return ret;
++}
++
++static bool
++fast_pf_fix_direct_spte(struct kvm_vcpu *vcpu, struct kvm_mmu_page *sp,
++			u64 *sptep, u64 spte)
++{
++	gfn_t gfn;
++
++	WARN_ON(!sp->role.direct);
++
++	/*
++	 * The gfn of direct spte is stable since it is calculated
++	 * by sp->gfn.
++	 */
++	gfn = kvm_mmu_page_get_gfn(sp, sptep - sp->spt);
++
++	if (cmpxchg64(sptep, spte, spte | PT_WRITABLE_MASK) == spte)
++		mark_page_dirty(vcpu->kvm, gfn);
++
++	return true;
++}
++
++/*
++ * Return value:
++ * - true: let the vcpu to access on the same address again.
++ * - false: let the real page fault path to fix it.
++ */
++static bool fast_page_fault(struct kvm_vcpu *vcpu, gva_t gva, gfn_t gfn,
++			    int level, u32 error_code)
++{
++	struct kvm_shadow_walk_iterator iterator;
++	struct kvm_mmu_page *sp;
++	bool ret = false;
++	u64 spte = 0ull;
++
++	if (!page_fault_can_be_fast(vcpu, gfn, error_code))
++		return false;
++
++	walk_shadow_page_lockless_begin(vcpu);
++	for_each_shadow_entry_lockless(vcpu, gva, iterator, spte)
++		if (!is_shadow_present_pte(spte) || iterator.level < level)
++			break;
++
++	/*
++	 * If the mapping has been changed, let the vcpu fault on the
++	 * same address again.
++	 */
++	if (!is_rmap_spte(spte)) {
++		ret = true;
++		goto exit;
++	}
++
++	if (!is_last_spte(spte, level))
++		goto exit;
++
++	/*
++	 * Check if it is a spurious fault caused by TLB lazily flushed.
++	 *
++	 * Need not check the access of upper level table entries since
++	 * they are always ACC_ALL.
++	 */
++	 if (is_writable_pte(spte)) {
++		ret = true;
++		goto exit;
++	}
++
++	/*
++	 * Currently, to simplify the code, only the spte write-protected
++	 * by dirty-log can be fast fixed.
++	 */
++	if (!spte_can_be_writable(spte))
++		goto exit;
++
++	sp = page_header(__pa(iterator.sptep));
++
++	if (sp->role.direct)
++		ret = fast_pf_fix_direct_spte(vcpu, sp, iterator.sptep, spte);
++	else
++		ret = fast_pf_fix_indirect_spte(vcpu, sp, iterator.sptep,
++						spte, gfn);
++
++exit:
++	walk_shadow_page_lockless_end(vcpu);
++
++	return ret;
++}
++
+ static bool try_async_pf(struct kvm_vcpu *vcpu, bool prefault, gfn_t gfn,
+ 			 gva_t gva, pfn_t *pfn, bool write, bool *writable);
+
+-static int nonpaging_map(struct kvm_vcpu *vcpu, gva_t v, int write, gfn_t gfn,
+-			 bool prefault)
++static int nonpaging_map(struct kvm_vcpu *vcpu, gva_t v, u32 error_code,
++			 gfn_t gfn, bool prefault)
+ {
+ 	int r;
+ 	int level;
+ 	int force_pt_level;
+ 	pfn_t pfn;
+ 	unsigned long mmu_seq;
+-	bool map_writable;
++	bool map_writable, write = error_code & PFERR_WRITE_MASK;
+
+ 	force_pt_level = mapping_level_dirty_bitmap(vcpu, gfn);
+ 	if (likely(!force_pt_level)) {
+@@ -2689,6 +2834,9 @@ static int nonpaging_map(struct kvm_vcpu *vcpu, gva_t v, int write, gfn_t gfn,
+ 	} else
+ 		level = PT_PAGE_TABLE_LEVEL;
+
++	if (fast_page_fault(vcpu, v, gfn, level, error_code))
++		return 0;
++
+ 	mmu_seq = vcpu->kvm->mmu_notifier_seq;
+ 	smp_rmb();
+
+@@ -3077,7 +3225,7 @@ static int nonpaging_page_fault(struct kvm_vcpu *vcpu, gva_t gva,
+ 	gfn = gva >> PAGE_SHIFT;
+
+ 	return nonpaging_map(vcpu, gva & PAGE_MASK,
+-			     error_code & PFERR_WRITE_MASK, gfn, prefault);
++			     error_code, gfn, prefault);
+ }
+
+ static int kvm_arch_setup_async_pf(struct kvm_vcpu *vcpu, gva_t gva, gfn_t gfn)
+@@ -3157,6 +3305,9 @@ static int tdp_page_fault(struct kvm_vcpu *vcpu, gva_t gpa, u32 error_code,
+ 	} else
+ 		level = PT_PAGE_TABLE_LEVEL;
+
++	if (fast_page_fault(vcpu, gpa, gfn, level, error_code))
++		return 0;
++
+ 	mmu_seq = vcpu->kvm->mmu_notifier_seq;
+ 	smp_rmb();
+
+diff --git a/arch/x86/kvm/paging_tmpl.h b/arch/x86/kvm/paging_tmpl.h
+index 34f9709..6127326 100644
+--- a/arch/x86/kvm/paging_tmpl.h
++++ b/arch/x86/kvm/paging_tmpl.h
+@@ -617,6 +617,9 @@ static int FNAME(page_fault)(struct kvm_vcpu *vcpu, gva_t addr, u32 error_code,
+ 		walker.gfn = walker.gfn & ~(KVM_PAGES_PER_HPAGE(level) - 1);
+ 	}
+
++	if (fast_page_fault(vcpu, addr, walker.gfn, level, error_code))
++		return 0;
++
+ 	mmu_seq = vcpu->kvm->mmu_notifier_seq;
+ 	smp_rmb();
 
 -- 
-Regards/Gruss,
-Boris.
-
-Advanced Micro Devices GmbH
-Einsteinring 24, 85609 Dornach
-GM: Alberto Bozzo
-Reg: Dornach, Landkreis Muenchen
-HRB Nr. 43632 WEEE Registernr: 129 19551
+1.7.7.6
 
