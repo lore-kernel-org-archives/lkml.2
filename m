@@ -1,86 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752207Ab2EWEvX (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 May 2012 00:51:23 -0400
-Received: from na3sys009aog135.obsmtp.com ([74.125.149.84]:45487 "EHLO
-	na3sys009aog135.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751990Ab2EWEvW convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 May 2012 00:51:22 -0400
-MIME-Version: 1.0
-In-Reply-To: <CAJ6a13aJwesHw0frCV+EfvYaep09cZGcu_PopuHzye1HS2tgvg@mail.gmail.com>
-References: <1335462041-4949-1-git-send-email-j-keerthy@ti.com>
-	<87397by2h9.fsf@ti.com>
-	<CAJ6a13aJwesHw0frCV+EfvYaep09cZGcu_PopuHzye1HS2tgvg@mail.gmail.com>
-Date: Wed, 23 May 2012 10:21:19 +0530
-Message-ID: <CAJ6a13YLogA7M=rzSJAW6fHZOujFY0Crfdz9Sc5qL0mt8kX9CA@mail.gmail.com>
-Subject: Re: [PATCH V3 00/10] PM: Create the AVS(Adaptive Voltage Scaling)
-From: "J, KEERTHY" <j-keerthy@ti.com>
-To: "Rafael J. Wysocki" <rjw@sisk.pl>, Kevin Hilman <khilman@ti.com>,
-        greg@kroah.com
-Cc: linux-omap@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org, linux-pm@lists.linux-foundation.org,
-        j-pihet@ti.com
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	id S1752170Ab2EWEyJ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 May 2012 00:54:09 -0400
+Received: from mga14.intel.com ([143.182.124.37]:2761 "EHLO mga14.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751175Ab2EWEyH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 23 May 2012 00:54:07 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
+   d="scan'208";a="146589648"
+Message-ID: <1337748897.14538.184.camel@ymzhang.sh.intel.com>
+Subject: Re: [PATCH] ipv4: fix the rcu race between free_fib_info and
+ ip_route_output_slow
+From: Yanmin Zhang <yanmin_zhang@linux.intel.com>
+To: Eric Dumazet <eric.dumazet@gmail.com>
+Cc: David Miller <davem@davemloft.net>, kunx.jiang@intel.com,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+Date: Wed, 23 May 2012 12:54:57 +0800
+In-Reply-To: <1337747829.3361.1599.camel@edumazet-glaptop>
+References: <4FBB6105.2060808@intel.com>
+	 <20120522.151554.106838106733194160.davem@davemloft.net>
+	 <1337742123.14538.175.camel@ymzhang.sh.intel.com>
+	 <20120522.232310.911242148705021745.davem@davemloft.net>
+	 <1337747829.3361.1599.camel@edumazet-glaptop>
+Organization: MCG
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.2- 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, May 15, 2012 at 11:16 AM, J, KEERTHY <j-keerthy@ti.com> wrote:
-> On Tue, May 8, 2012 at 5:21 AM, Kevin Hilman <khilman@ti.com> wrote:
->> Rafael,
->>
->> Keerthy <j-keerthy@ti.com> writes:
->>
->>> From: J Keerthy <j-keerthy@ti.com>
->>>
->>> AVS(Adaptive Voltage Scaling) is a power management technique which
->>> controls the operating voltage of a device in order to optimize (i.e. reduce)
->>> its power consumption. The voltage is adapted depending on static factors
->>> (chip manufacturing process) and dynamic factors (temperature
->>> depending performance).
->>> The TI AVS solution is named Smartreflex.
->>>
->>> To that end, create the AVS driver in drivers/power/avs and
->>> move the OMAP SmartReflex code to the new directory. The
->>> class driver is still retained in the mach-omap2 directory.
->>
->> How should we handle this for upstream?
->>
->> It does a bunch of cleanup under arch/arm then does the move to
->> drivers/power the end.  To avoid conflicts with other OMAP core changes,
->> I would suggest we take this through the OMAP tree.
->>
->> With your ack, I'd be glad to take it.
->
-> Hello Rafael,
->
-> A gentle ping on this series.
+On Wed, 2012-05-23 at 06:37 +0200, Eric Dumazet wrote:
+> On Tue, 2012-05-22 at 23:23 -0400, David Miller wrote:
+> > From: Yanmin Zhang <yanmin_zhang@linux.intel.com>
+> > Date: Wed, 23 May 2012 11:02:03 +0800
+> > 
+> > > 1) Why does free_fib_info call call_rcu instead of releasing fi directly?
+> > > I assume other cpu might be accessing it. nexthop_nh->nh_dev is in fi.
+> > > If other cpu are accessing it, here resetting to NULL would cause other
+> > > cpu panic.
+> > 
+> > Because fib trie lookups are done with RCU locking, therefore we must
+> > use RCU freeing to release the object.
+> > 
+> > What I was trying to impart to you is that removing the NULL
+> > assignment is wrong and that an alternative fix is warranted (hint:
+> > consider moving something into the RCU release).
+> > --
+> 
+> Its more than that I'm afraid.
+> 
+> fi->fib_dev (aka fib_nh[0].nh_dev) need full RCU protection.
+The new patch posted at https://lkml.org/lkml/2012/5/22/558 does move the
+resetting to RCU protection.
 
-Hi Greg,
+> 
+> Also the "fib_info_cnt--;" must stay in free_fib_info() (so that it is
+> protected by RTNL)
+We would move "fib_info_cnt--;" back to free_fib_info.
 
-This series has Kevin's comments incorporated.
-
-Kevin,
-
-Can i have your Ack for this series?
-
->
->>
->> Thanks,
->>
->> Kevin
->>
->
->
->
-> --
-> Regards and Thanks,
-> Keerthy
+Thanks,
+Yanmin
 
 
-
--- 
-Regards and Thanks,
-Keerthy
