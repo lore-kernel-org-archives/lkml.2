@@ -1,79 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964897Ab2EWDIv (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 May 2012 23:08:51 -0400
-Received: from haggis.pcug.org.au ([203.10.76.10]:51654 "EHLO
-	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754090Ab2EWDIu (ORCPT
+	id S965039Ab2EWDJm (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 May 2012 23:09:42 -0400
+Received: from e28smtp04.in.ibm.com ([122.248.162.4]:58691 "EHLO
+	e28smtp04.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933520Ab2EWDJZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 May 2012 23:08:50 -0400
-Date: Wed, 23 May 2012 13:08:46 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Paul Gortmaker <paul.gortmaker@windriver.com>
-Cc: <linux-next@vger.kernel.org>, <linux-kernel@vger.kernel.org>
-Subject: Re: linux-next: triage for May 22, 2012
-Message-Id: <20120523130846.24ba704d48f4e1ee25de4852@canb.auug.org.au>
-In-Reply-To: <20120523010457.GA4816@windriver.com>
-References: <20120523010457.GA4816@windriver.com>
-X-Mailer: Sylpheed 3.2.0beta7 (GTK+ 2.24.10; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Wed__23_May_2012_13_08_46_+1000_zaWsiy8mtiH_Qgix"
+	Tue, 22 May 2012 23:09:25 -0400
+Message-ID: <4FBC54DC.5060301@linux.vnet.ibm.com>
+Date: Wed, 23 May 2012 11:09:16 +0800
+From: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
+MIME-Version: 1.0
+To: Avi Kivity <avi@redhat.com>
+CC: Gleb Natapov <gleb@redhat.com>, Marcelo Tosatti <mtosatti@redhat.com>,
+        LKML <linux-kernel@vger.kernel.org>, KVM <kvm@vger.kernel.org>
+Subject: Re: [PATCH] KVM: fix async page fault working for readonly mapping
+References: <4FB9E499.2010505@linux.vnet.ibm.com> <20120521080856.GS10209@redhat.com> <4FB9F9B6.50101@linux.vnet.ibm.com> <20120521193041.GA25940@amt.cnet> <20120522053110.GT10209@redhat.com> <4FBBA263.6070600@redhat.com>
+In-Reply-To: <4FBBA263.6070600@redhat.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
+x-cbid: 12052303-5564-0000-0000-000002E21416
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Wed__23_May_2012_13_08_46_+1000_zaWsiy8mtiH_Qgix
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On 05/22/2012 10:27 PM, Avi Kivity wrote:
 
-Hi Paul,
+> On 05/22/2012 08:31 AM, Gleb Natapov wrote:
+>> On Mon, May 21, 2012 at 04:30:41PM -0300, Marcelo Tosatti wrote:
+>>> On Mon, May 21, 2012 at 04:15:50PM +0800, Xiao Guangrong wrote:
+>>>> On 05/21/2012 04:08 PM, Gleb Natapov wrote:
+>>>>
+>>>>> On Mon, May 21, 2012 at 02:45:45PM +0800, Xiao Guangrong wrote:
+>>>>>> If we map a readonly memory space from host to guest and the page is
+>>>>>> not currently mapped in the host, we will get a fault-pfn and async
+>>>>>> is not allowed, then the vm will crash
+>>>>>>
+>>>>> Why would we want to map a readonly memory space from host to guest?
+>>>>> We may want to do it to support memory semantics on read and mmio on
+>>>>> write, but do not right now unless something changed while I was not
+>>>>> looking.
+>>>>
+>>>>
+>>>> Some test cases in kvm-unit-tests and the benchmark i am writing for KVM
+>>>> need map the function on host to guest.
+>>>
+>>> Or ROM. Or read-only mappings of IVSHMEM (which don't exist yet).
+>> True. KVM should ignore writes to such areas, not kill a guest. Is this
+>> how the code works today?
+>>
+> 
+> Right now qemu maps ROM as RAM.  There is no way to tell kvm that
+> something is ROM (or ROMD).
+> 
+> There are two options for that:
+> - mprotect() the ROM, and teach kvm about read-only areas (this patch);
+> but that doesn't work if we have a read-only and a writable alias of the
+> same area
+> - add a flag indicating that an area is ROM or ROMD
+> 
+> I prefer the latter, because of the alias issue.
+> 
 
-On Tue, 22 May 2012 21:04:57 -0400 Paul Gortmaker <paul.gortmaker@windriver=
-.com> wrote:
->
-> sparc:defconfig
-> 	when:	May 22
-> 	why:	sparc/kernel/time_32.c: inval use undef type 'struct clock_event_de=
-vice'
-> 	ref:	http://kisskb.ellerman.id.au/kisskb/buildresult/6243021/=09
 
-A bad merge in my tree - will be fixed today.
+I agree.
 
-> sparc:allnoconfig
-> 	when:	May 22
-> 	why:	arch/sparc/kernel/time_32.c: invalid use of undef 'struct clock_eve=
-nt_device'
-> 	ref:	http://kisskb.ellerman.id.au/kisskb/buildresult/6348424/
+Will post a new patch to do it if other guys do not object it. :)
 
-Ditto
-
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-http://www.canb.auug.org.au/~sfr/
-
---Signature=_Wed__23_May_2012_13_08_46_+1000_zaWsiy8mtiH_Qgix
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBCAAGBQJPvFS+AAoJEECxmPOUX5FEfIEP/1XPHSXWJm0qQOLm+707w8iL
-Zjpq/wooIsEg5ch9JaecWqQ/v8m/sZonwEOMMsFylogcxk8lzj8+UDU4e+KiwTYu
-jQhrYOM7TrmFnYtP9Kr0SE0zSUZ5ZfwR06FSSeBYxe6YCVKvH2+6P2WRfxiIjPNa
-wk2Dv2aA1ESLoVjRWyDaNzDI4jTAkaF7RUpgJpJU4P4yIoE4XfufuxlIfRMFI6gV
-nPtWGyuIiI3PFu5s3AE6Ex+jRweddlF6K2IZZZFJ55Yi1Na5bEbD7HpVpcTYx8+N
-wmGGMF8QOUW4EjYkrQbzJxcMch0uCo9RI7EMmhDB5XiN/ovkoOcOuM/Kx8eHw4kF
-duRaDT8N+fYE++T6D9GqHHmNOhpOUAFGxRMqIfDgdt6+HXfla5mDmia6NZnRw5hm
-WsgJpfGl7pbQK+cgvv67JfAzIV8oaAXQ2CqGuETE3W5Rl4OBQaiQ2uFrsnKIoiHs
-v9gV8JPttf185dCBupqOTP8lnZyTguRXNnAYZibR44jkmNLlg27EGOBhSY8sUph2
-bWhKeCn91QURLixjlLE1jxwRlSsXJ6s1kIpRqynRsJasJntgowAD6QCb5n2ER2ab
-j2EHuio/zrc8i+4nrAFgVy7Q0DoSSCw71u8lKTatMt33AUc5EtHMdRtSbL0LhdIR
-W/is62q9u3nfqPn24lcJ
-=zgc2
------END PGP SIGNATURE-----
-
---Signature=_Wed__23_May_2012_13_08_46_+1000_zaWsiy8mtiH_Qgix--
