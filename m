@@ -1,52 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759867Ab2EWLhx (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 May 2012 07:37:53 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:14548 "EHLO mx1.redhat.com"
+	id S1759839Ab2EWLqc (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 May 2012 07:46:32 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:53151 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756045Ab2EWLhw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 May 2012 07:37:52 -0400
-Message-ID: <4FBCCC09.3020605@redhat.com>
-Date: Wed, 23 May 2012 14:37:45 +0300
-From: Avi Kivity <avi@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
-MIME-Version: 1.0
-To: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
-CC: Marcelo Tosatti <mtosatti@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
-        KVM <kvm@vger.kernel.org>
-Subject: Re: [PATCH v5 0/9] KVM: fast page fault
-References: <4FBCA4FB.8050501@linux.vnet.ibm.com>
-In-Reply-To: <4FBCA4FB.8050501@linux.vnet.ibm.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+	id S1752577Ab2EWLqb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 23 May 2012 07:46:31 -0400
+From: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+To: Sasha Levin <levinsasha928@gmail.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org
+Subject: Re: [PATCH] mm: fix NULL ptr deref when walking hugepages
+Date: Wed, 23 May 2012 07:46:21 -0400
+Message-Id: <1337773581-14372-1-git-send-email-n-horiguchi@ah.jp.nec.com>
+In-Reply-To: <1337757643-18302-1-git-send-email-levinsasha928@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/23/2012 11:51 AM, Xiao Guangrong wrote:
-> Changlog:
-> This are some changes from Marcelo's review:
-> - drop SPTE_WRITE_PROTECT bit, now, only one bit is needed to do
->   lockless update.
+On Wed, May 23, 2012 at 09:20:43AM +0200, Sasha Levin wrote:
+> A missing vlidation of the value returned by find_vma() could cause a NULL ptr
+> dereference when walking the pagetable.
 > 
-> - always atomicly update spte if it can be updated out of mmu-lock.
+> This is triggerable from usermode by a simple user by trying to read a
+> page info out of /proc/pid/pagemap which doesn't exist.
 > 
-> - flod the judgement of tlb flush into mmu_spte_update(), make the
->   code easilyer audited.
+> Introduced by commit 025c5b24 ("thp: optimize away unnecessary page table
+> locking").
 > 
-> Performance result:
-> - autoest migration test (smp2.Fedora.16.64.migrate.with_autotest.dbench.unix):
->                                                    before     after
-> smp2.Fedora.16.64.migrate.unix                        93      91    +2.1%
-> smp2.Fedora.16.64.migrate.with_autotest.dbench.unix   218     188   +13.7%
+> Signed-off-by: Sasha Levin <levinsasha928@gmail.com>
+> ---
+>  fs/proc/task_mmu.c |    2 +-
+>  1 files changed, 1 insertions(+), 1 deletions(-)
 > 
-> - the benchmark attached is used to measure the resuming time
->   after dirty-log
->                             before            after
-> Run 10 times, Avg time:   512466818 ns.      269231261 ns   +47.5%
+> diff --git a/fs/proc/task_mmu.c b/fs/proc/task_mmu.c
+> index 3e564f0..885830b 100644
+> --- a/fs/proc/task_mmu.c
+> +++ b/fs/proc/task_mmu.c
+> @@ -820,7 +820,7 @@ static int pagemap_pte_range(pmd_t *pmd, unsigned long addr, unsigned long end,
+>  
+>  	/* find the first VMA at or above 'addr' */
+>  	vma = find_vma(walk->mm, addr);
+> -	if (pmd_trans_huge_lock(pmd, vma) == 1) {
+> +	if (vma && pmd_trans_huge_lock(pmd, vma) == 1) {
+>  		for (; addr != end; addr += PAGE_SIZE) {
+>  			unsigned long offset;
+>  
+> -- 
 
-Still scary (esp. indirect sptes), but looks pretty good.
+Thank you. I have no objection.
 
-
--- 
-error compiling committee.c: too many arguments to function
+Reviewed-by: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
