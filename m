@@ -1,74 +1,122 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754491Ab2EWFzM (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 May 2012 01:55:12 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:57841 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751205Ab2EWFzK (ORCPT
+	id S1752990Ab2EWGBq (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 May 2012 02:01:46 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:56882 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751619Ab2EWGBo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 May 2012 01:55:10 -0400
-Date: Tue, 22 May 2012 22:55:01 -0700
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: Minchan Kim <minchan@kernel.org>
-Cc: Seth Jennings <sjenning@linux.vnet.ibm.com>, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org, Andrew Morton <akpm@linux-foundation.org>,
-        Dan Magenheimer <dan.magenheimer@oracle.com>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Nitin Gupta <ngupta@vflare.org>
-Subject: Re: [PATCH] zsmalloc: use unsigned long instead of void *
-Message-ID: <20120523055501.GA18748@kroah.com>
-References: <1337567013-4741-1-git-send-email-minchan@kernel.org>
- <4FBA4EE2.8050308@linux.vnet.ibm.com>
- <4FBC2916.5000305@kernel.org>
+	Wed, 23 May 2012 02:01:44 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4FBC2916.5000305@kernel.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1337651931-5301-1-git-send-email-ming.lei@canonical.com>
+References: <1337651931-5301-1-git-send-email-ming.lei@canonical.com>
+Date: Wed, 23 May 2012 14:01:41 +0800
+Message-ID: <CACVXFVP290dwgJVhgMf9girR9h0yU_mjxcN2Po0u1c1y4=QL0w@mail.gmail.com>
+Subject: Re: [PATCH] tty: tty_mutex: fix lockdep warning in tty_lock_pair(v1)
+From: Ming Lei <ming.lei@canonical.com>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: linux-kernel@vger.kernel.org, Ming Lei <ming.lei@canonical.com>,
+        Alan Cox <alan@linux.intel.com>, Arnd Bergmann <arnd@arndb.de>,
+        Peter Zijlstra <peterz@infradead.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, May 23, 2012 at 09:02:30AM +0900, Minchan Kim wrote:
-> On 05/21/2012 11:19 PM, Seth Jennings wrote:
-> 
-> > On 05/20/2012 09:23 PM, Minchan Kim wrote:
-> > 
-> >> We should use unsigned long as handle instead of void * to avoid any
-> >> confusion. Without this, users may just treat zs_malloc return value as
-> >> a pointer and try to deference it.
-> > 
-> > 
-> > I wouldn't have agreed with you about the need for this change as people
-> > should understand a void * to be the address of some data with unknown
-> > structure.
-> > 
-> > However, I recently discussed with Dan regarding his RAMster project
-> > where he assumed that the void * would be an address, and as such,
-> > 4-byte aligned.  So he has masked two bits into the two LSBs of the
-> > handle for RAMster, which doesn't work with zsmalloc since the handle is
-> > not an address.
-> > 
-> > So really we do need to convey as explicitly as possible to the user
-> > that the handle is an _opaque_ value about which no assumption can be made.
-> > 
-> > Also, I wanted to test this but is doesn't apply cleanly on
-> > zsmalloc-main.c on v3.4 or what I have as your latest patch series.
-> > What is the base for this patch?
-> 
-> 
-> It's based on next-20120518.
-> I have always used linux-next tree for staging.
-> Greg, What's the convenient tree for you?
+Hi,
 
-linux-next is fine.
+On Tue, May 22, 2012 at 9:58 AM, Ming Lei <ming.lei@canonical.com> wrote:
+> Commit d29f3ef39be4eec0362b985305fc526d9be318cf(tty_lock:
+> Localise the lock) introduces tty_lock_pair, in which
+> may cause lockdep warning because two locks with same lock
+> class are to be acquired one after another.
+>
+> This patch uses mutex_lock_nested annotation to avoid
+> the warning as suggested by Peter.
 
-But note, I'm ignoring all patches for the next 2 weeks, especially
-staging patches, as this is the merge window time, and I can't apply
-anything to my trees, sorry.
+Sorry, please ignore the patch because it misses the change on
+tty_unlock_pair, and the correct one should be [1].
 
-After 3.5-rc1 is out, then I will look at new stuff like this again.
+Even though the patch is applied, there is still one related problem about
+mixing tty_lock_pair with tty_unlock and tty_lock. If tty locks are
+held by calling
+tty_lock_pair, then deadlock warning between legacy_mutex/1 and legacy_mutex
+may be triggered if tty_unlock(tty) and tty_lock(tty) are called later
+when tty < tty2,
+see tty_ldisc_release() in tty_release().
 
-thanks,
 
-greg k-h
+Thanks,
+--
+Ming Lei
+
+
+[1],
+---
+ drivers/tty/tty_mutex.c |   28 +++++++++++++++++++++-------
+ 1 file changed, 21 insertions(+), 7 deletions(-)
+
+diff --git a/drivers/tty/tty_mutex.c b/drivers/tty/tty_mutex.c
+index 69adc80..c7f4523 100644
+--- a/drivers/tty/tty_mutex.c
++++ b/drivers/tty/tty_mutex.c
+@@ -10,7 +10,8 @@
+  * Getting the big tty mutex.
+  */
+
+-void __lockfunc tty_lock(struct tty_struct *tty)
++static void __lockfunc tty_lock_nested(struct tty_struct *tty,
++		int subclass)
+ {
+ 	if (tty->magic != TTY_MAGIC) {
+ 		printk(KERN_ERR "L Bad %p\n", tty);
+@@ -18,7 +19,12 @@ void __lockfunc tty_lock(struct tty_struct *tty)
+ 		return;
+ 	}
+ 	tty_kref_get(tty);
+-	mutex_lock(&tty->legacy_mutex);
++	mutex_lock_nested(&tty->legacy_mutex, subclass);
++}
++
++void __lockfunc tty_lock(struct tty_struct *tty)
++{
++	tty_lock_nested(tty, 0);
+ }
+ EXPORT_SYMBOL(tty_lock);
+
+@@ -43,11 +49,14 @@ void __lockfunc tty_lock_pair(struct tty_struct *tty,
+ {
+ 	if (tty < tty2) {
+ 		tty_lock(tty);
+-		tty_lock(tty2);
++		tty_lock_nested(tty2, SINGLE_DEPTH_NESTING);
+ 	} else {
+-		if (tty2 && tty2 != tty)
++		int nested = 0;
++		if (tty2 && tty2 != tty) {
+ 			tty_lock(tty2);
+-		tty_lock(tty);
++			nested = SINGLE_DEPTH_NESTING;
++		}
++		tty_lock_nested(tty, nested);
+ 	}
+ }
+ EXPORT_SYMBOL(tty_lock_pair);
+@@ -55,8 +64,13 @@ EXPORT_SYMBOL(tty_lock_pair);
+ void __lockfunc tty_unlock_pair(struct tty_struct *tty,
+ 						struct tty_struct *tty2)
+ {
+-	tty_unlock(tty);
+-	if (tty2 && tty2 != tty)
++	if (tty < tty2) {
+ 		tty_unlock(tty2);
++		tty_unlock(tty);
++	} else {
++		tty_unlock(tty);
++		if (tty2 && tty2 != tty)
++			tty_unlock(tty2);
++	}
+ }
+ EXPORT_SYMBOL(tty_unlock_pair);
+-- 
+1.7.9.5
