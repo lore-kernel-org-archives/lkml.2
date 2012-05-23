@@ -1,68 +1,116 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759980Ab2EWONP (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 May 2012 10:13:15 -0400
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:54565 "EHLO
-	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750915Ab2EWONO (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 May 2012 10:13:14 -0400
-Message-ID: <1337782454.20792.63.camel@lappy>
-Subject: GPF in numa_vma_unlink
-From: Sasha Levin <levinsasha928@gmail.com>
-To: a.p.zijlstra@chello.nl, mingo@kernel.org
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Dave Jones <davej@redhat.com>
-Date: Wed, 23 May 2012 16:14:14 +0200
-Content-Type: text/plain; charset="us-ascii"
-X-Mailer: Evolution 3.2.3 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	id S1760233Ab2EWOOJ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 May 2012 10:14:09 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:5857 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755309Ab2EWOOG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 23 May 2012 10:14:06 -0400
+Date: Wed, 23 May 2012 10:13:59 -0400
+From: Josh Boyer <jwboyer@redhat.com>
+To: Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@redhat.com>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+Cc: linux-kernel@vger.kernel.org
+Subject: Perf build failure in v3.4-4842-g61011677
+Message-ID: <20120523141359.GE1143@zod.bos.redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi all,
+Building Linus' latest tree as of this morning results in perf being
+very unhappy.  The build machine is running Fedora 17, so gcc 4.7.  The
+gtk2 missing errors are fine as far as I'm concerned, but the rest of
+the errors seem like things that might want fixing?
 
-During fuzzing with trinity inside a KVM tools guest, using latest linux-next, I've stumbled on the following:
+josh
 
-[ 4112.424701] general protection fault: 0000 [#2] PREEMPT SMP DEBUG_PAGEALLOC
-[ 4112.427171] CPU 4 
-[ 4112.427171] Pid: 20586, comm: trinity Tainted: G      D W    3.4.0-next-20120523-sasha-00004-gaf4dba1 #269  
-[ 4112.434521] RIP: 0010:[<ffffffff81098350>]  [<ffffffff81098350>] __ticket_spin_lock+0x30/0x30
-[ 4112.434521] RSP: 0018:ffff88003d513d40  EFLAGS: 00010286
-[ 4112.434521] RAX: ffff88003dee3000 RBX: 6b6b6b6b6b6b6b6b RCX: 0000000000000000
-[ 4112.434521] RDX: 0000000000000000 RSI: 0000000000000000 RDI: 6b6b6b6b6b6b6b6b
-[ 4112.434521] RBP: ffff88003d513d58 R08: 0000000000000000 R09: 0000000000000000
-[ 4112.434521] R10: 0000000000000000 R11: 0000000000000001 R12: 6b6b6b6b6b6b6b83
-[ 4112.434521] R13: ffff88003dee37e8 R14: ffff88003d05a0a8 R15: 0000000000000034
-[ 4112.434521] FS:  00007f5fc2781700(0000) GS:ffff880041800000(0000) knlGS:0000000000000000
-[ 4112.434521] CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
-[ 4112.434521] CR2: 00007fd0463ddefc CR3: 0000000003e1c000 CR4: 00000000000406e0
-[ 4112.434521] DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
-[ 4112.434521] DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
-[ 4112.434521] Process trinity (pid: 20586, threadinfo ffff88003d512000, task ffff88003dee3000)
-[ 4112.434521] Stack:
-[ 4112.434521]  ffffffff81976ecd 6b6b6b6b6b6b6b6b 6b6b6b6b6b6b6b83 ffff88003d513d88
-[ 4112.434521]  ffffffff82f695f3 ffffffff8112b27a 0000000000000034 6b6b6b6b6b6b6b6b
-[ 4112.434521]  ffff88003f9f7980 ffff88003d513da8 ffffffff8112b27a ffff8800097e43f0
-[ 4112.434521] Call Trace:
-[ 4112.434521]  [<ffffffff81976ecd>] ? do_raw_spin_trylock+0x2d/0x60
-[ 4112.434521]  [<ffffffff82f695f3>] _raw_spin_lock+0x43/0x70
-[ 4112.434521]  [<ffffffff8112b27a>] ? numa_vma_unlink+0x2a/0x90
-[ 4112.434521]  [<ffffffff8112b27a>] numa_vma_unlink+0x2a/0x90
-[ 4112.434521]  [<ffffffff8120f491>] vma_put_policy+0x11/0x30
-[ 4112.434521]  [<ffffffff811f7642>] remove_vma+0x62/0x80
-[ 4112.434521]  [<ffffffff811f777d>] exit_mmap+0x11d/0x170
-[ 4112.434521]  [<ffffffff810cf719>] mmput+0x89/0xe0
-[ 4112.434521]  [<ffffffff810d5f7b>] exit_mm+0x11b/0x130
-[ 4112.434521]  [<ffffffff82f6a159>] ? _raw_spin_unlock_irq+0x59/0x80
-[ 4112.434521]  [<ffffffff810d8933>] do_exit+0x263/0x510
-[ 4112.434521]  [<ffffffff810d8c81>] do_group_exit+0xa1/0xe0
-[ 4112.434521]  [<ffffffff810d8cd2>] sys_exit_group+0x12/0x20
-[ 4112.434521]  [<ffffffff82f6b1b9>] system_call_fastpath+0x16/0x1b
-[ 4112.434521] Code: 00 48 89 e5 f0 0f c1 07 89 c2 c1 ea 10 66 39 c2 74 13 66 0f 1f 84 00 00 00 00 00 f3 90 0f b7 07 66 39 d0 75 f6 c9 c3 0f 1f 40 00 <8b> 17 55 89 d1 31 c0 c1 e9 10 48 89 e5 66 39 ca 75 14 8d 8a 00 
-[ 4112.434521] RIP  [<ffffffff81098350>] __ticket_spin_lock+0x30/0x30
-[ 4112.434521]  RSP <ffff88003d513d40>
-[ 4113.313776] ---[ end trace 6d450e935ee18981 ]---
++ make -j8 -C tools/perf -s V=1 WERROR=0 HAVE_CPLUS_DEMANGLE=1
+prefix=/usr all
+Package gtk+-2.0 was not found in the pkg-config search path.
+Perhaps you should add the directory containing `gtk+-2.0.pc'
+to the PKG_CONFIG_PATH environment variable
+No package 'gtk+-2.0' found
+Makefile:515: GTK2 not found, disables GTK2 support. Please install
+gtk2-devel or libgtk2.0-dev
+PERF_VERSION = 3.5.0-0.rc0.git4.1.fc18.x86_64
+Package gtk+-2.0 was not found in the pkg-config search path.
+Perhaps you should add the directory containing `gtk+-2.0.pc'
+to the PKG_CONFIG_PATH environment variable
+No package 'gtk+-2.0' found
+Makefile:515: GTK2 not found, disables GTK2 support. Please install
+gtk2-devel or libgtk2.0-dev
+    * new build flags or prefix
+make[1]: warning: jobserver unavailable: using -j1.  Add `+' to parent
+make rule.
+util/scripting-engines/trace-event-perl.c: In function
+'define_event_symbols':
+util/scripting-engines/trace-event-perl.c:188:2: warning: enumeration
+value 'PRINT_BSTRING' not handled in switch [-Wswitch-enum]
+util/scripting-engines/trace-event-perl.c:188:2: warning: enumeration
+value 'PRINT_DYNAMIC_ARRAY' not handled in switch [-Wswitch-enum]
+util/scripting-engines/trace-event-perl.c:188:2: warning: enumeration
+value 'PRINT_FUNC' not handled in switch [-Wswitch-enum]
+util/scripting-engines/trace-event-perl.c: In function
+'find_cache_event':
+util/scripting-engines/trace-event-perl.c:240:23: warning: assignment
+from incompatible pointer type [enabled by default]
+util/scripting-engines/trace-event-perl.c:244:34: error: dereferencing
+pointer to incomplete type
+util/scripting-engines/trace-event-perl.c:244:49: error: dereferencing
+pointer to incomplete type
+util/scripting-engines/trace-event-perl.c:246:44: error: dereferencing
+pointer to incomplete type
+util/scripting-engines/trace-event-perl.c: In function
+'perl_process_tracepoint':
+util/scripting-engines/trace-event-perl.c:282:34: error: dereferencing
+pointer to incomplete type
+util/scripting-engines/trace-event-perl.c:282:49: error: dereferencing
+pointer to incomplete type
+util/scripting-engines/trace-event-perl.c:303:20: error: dereferencing
+pointer to incomplete type
+util/scripting-engines/trace-event-perl.c: In function
+'perl_generate_script':
+util/scripting-engines/trace-event-perl.c:494:2: warning: passing
+argument 1 of 'trace_find_next_event' from incompatible pointer type
+[enabled by default]
+In file included from util/scripting-engines/trace-event-perl.c:32:0:
+util/scripting-engines/../trace-event.h:56:22: note: expected 'struct
+event_format *' but argument is of type 'struct event *'
+util/scripting-engines/trace-event-perl.c:494:16: warning: assignment
+from incompatible pointer type [enabled by default]
+util/scripting-engines/trace-event-perl.c:495:40: error: dereferencing
+pointer to incomplete type
+util/scripting-engines/trace-event-perl.c:495:55: error: dereferencing
+pointer to incomplete type
+util/scripting-engines/trace-event-perl.c:509:17: error: dereferencing
+pointer to incomplete type
+util/scripting-engines/trace-event-perl.c:528:17: error: dereferencing
+pointer to incomplete type
+util/scripting-engines/trace-event-perl.c:552:17: error: dereferencing
+pointer to incomplete type
+util/scripting-engines/trace-event-perl.c:565:37: error: dereferencing
+pointer to incomplete type
+util/scripting-engines/trace-event-perl.c:566:11: error: dereferencing
+pointer to incomplete type
+util/scripting-engines/trace-event-perl.c:575:37: error: dereferencing
+pointer to incomplete type
+util/scripting-engines/trace-event-perl.c:576:11: error: dereferencing
+pointer to incomplete type
+make: *** [util/scripting-engines/trace-event-perl.o] Error 1
+make: *** Waiting for unfinished jobs....
+/home/jwboyer/kernel/kernel-3.4.fc18/linux-3.5.0-0.rc0.git4.1.fc18.x86_64/tools/lib/traceevent/parse-filter.c:
+In function 'create_arg_item':
+/home/jwboyer/kernel/kernel-3.4.fc18/linux-3.5.0-0.rc0.git4.1.fc18.x86_64/tools/lib/traceevent/parse-filter.c:343:9:
+warning: comparison between 'enum filter_arg_type' and 'enum event_type'
+[-Wenum-compare]
+/home/jwboyer/kernel/kernel-3.4.fc18/linux-3.5.0-0.rc0.git4.1.fc18.x86_64/tools/lib/traceevent/parse-filter.c:339:2:
+warning: case value '8' not in enumerated type 'enum filter_arg_type'
+[-Wswitch]
+error: Bad exit status from /var/tmp/rpm-tmp.WBR9jG (%build)
+
+
 
