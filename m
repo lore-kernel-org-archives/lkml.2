@@ -1,65 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933574Ab2EWGTp (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 May 2012 02:19:45 -0400
-Received: from hqemgate03.nvidia.com ([216.228.121.140]:5463 "EHLO
-	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755104Ab2EWGTH (ORCPT
+	id S1755218Ab2EWGWX (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 May 2012 02:22:23 -0400
+Received: from out5-smtp.messagingengine.com ([66.111.4.29]:47831 "EHLO
+	out5-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752293Ab2EWGWV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 May 2012 02:19:07 -0400
-X-PGP-Universal: processed;
-	by hqnvupgp05.nvidia.com on Tue, 22 May 2012 23:18:45 -0700
-From: Laxman Dewangan <ldewangan@nvidia.com>
-To: <swarren@nvidia.com>, <olof@lixom.net>
-CC: <linux-kernel@vger.kernel.org>, <linux@arm.linux.org.uk>,
-        <linux-arm-kernel@lists.infradead.org>, <linux-tegra@vger.kernel.org>,
-        <broonie@opensource.wolfsonmicro.com>,
-        Laxman Dewangan <ldewangan@nvidia.com>
-Subject: [PATCH V2 1/2] ARM: tegra: config: enable TPS65910 drivers
-Date: Wed, 23 May 2012 11:42:53 +0530
-Message-ID: <1337753574-32699-1-git-send-email-ldewangan@nvidia.com>
-X-Mailer: git-send-email 1.7.1.1
+	Wed, 23 May 2012 02:22:21 -0400
+X-Sasl-enc: IhWUssAIXfWZczpPHHAPEL2uRtUxarGrpoFNI4fBAuMt 1337754139
+Date: Tue, 22 May 2012 23:22:17 -0700
+From: Greg KH <greg@kroah.com>
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Mauro Carvalho Chehab <mchehab@infradead.org>,
+        =?iso-8859-1?Q?=22Ezequiel_Garc=EDa=22?= <elezegarcia@gmail.com>
+Subject: Re: linux-next: manual merge of the usb tree with the v4l-dvb tree
+Message-ID: <20120523062217.GA19896@kroah.com>
+References: <20120521160624.a5e16748fb11670778ea9b3f@canb.auug.org.au>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120521160624.a5e16748fb11670778ea9b3f@canb.auug.org.au>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Enable TPS65910 mfd, gpio and regulator drivers.
-This is the PMIC module for Tegra30 based cardhu
-platform.
+On Mon, May 21, 2012 at 04:06:24PM +1000, Stephen Rothwell wrote:
+> Hi Greg,
+> 
+> Today's linux-next merge of the usb tree got a conflict in
+> drivers/staging/media/easycap/easycap_main.c between various commits from
+> the v4l-dvb tree and commit 5df773120477 ("USB: Staging: media: easycap:
+> remove err() usage") from the usb tree.
+> 
+> I fixed it up (I think - see below) and can carry the fix as necessary.
 
-Signed-off-by: Laxman Dewangan <ldewangan@nvidia.com>
----
-No change from V1.
+This looks correct, thanks.
 
- arch/arm/configs/tegra_defconfig |    3 +++
- 1 files changed, 3 insertions(+), 0 deletions(-)
-
-diff --git a/arch/arm/configs/tegra_defconfig b/arch/arm/configs/tegra_defconfig
-index 1198dd6..26ad2b4 100644
---- a/arch/arm/configs/tegra_defconfig
-+++ b/arch/arm/configs/tegra_defconfig
-@@ -106,16 +106,19 @@ CONFIG_I2C=y
- CONFIG_I2C_TEGRA=y
- CONFIG_SPI=y
- CONFIG_SPI_TEGRA=y
-+CONFIG_GPIO_TPS65910=y
- CONFIG_POWER_SUPPLY=y
- CONFIG_BATTERY_SBS=y
- CONFIG_SENSORS_LM90=y
- CONFIG_MFD_TPS6586X=y
-+CONFIG_MFD_TPS65910=y
- CONFIG_REGULATOR=y
- CONFIG_REGULATOR_FIXED_VOLTAGE=y
- CONFIG_REGULATOR_VIRTUAL_CONSUMER=y
- CONFIG_REGULATOR_GPIO=y
- CONFIG_REGULATOR_TPS62360=y
- CONFIG_REGULATOR_TPS6586X=y
-+CONFIG_REGULATOR_TPS65910=y
- CONFIG_SOUND=y
- CONFIG_SND=y
- # CONFIG_SND_SUPPORT_OLD_API is not set
--- 
-1.7.1.1
-
+greg k-h
