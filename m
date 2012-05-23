@@ -1,72 +1,125 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760807Ab2EWVAG (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 May 2012 17:00:06 -0400
-Received: from iolanthe.rowland.org ([192.131.102.54]:48662 "HELO
-	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1753183Ab2EWVAE (ORCPT
+	id S1760823Ab2EWVG3 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 May 2012 17:06:29 -0400
+Received: from straum.hexapodia.org ([207.7.131.186]:48420 "EHLO
+	straum.hexapodia.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753777Ab2EWVG1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 May 2012 17:00:04 -0400
-Date: Wed, 23 May 2012 17:00:03 -0400 (EDT)
-From: Alan Stern <stern@rowland.harvard.edu>
-X-X-Sender: stern@iolanthe.rowland.org
-To: David Miller <davem@davemloft.net>
-cc: mroos@linux.ee, <linux-kernel@vger.kernel.org>,
-        <linux-scsi@vger.kernel.org>, <dan.j.williams@intel.com>,
-        <JBottomley@Parallels.com>
-Subject: Re: 3.4.0-02580-g72c04af regression on sparc64 - partitions not
- recognized
-In-Reply-To: <20120523.140451.386112705611304887.davem@davemloft.net>
-Message-ID: <Pine.LNX.4.44L0.1205231657540.1248-100000@iolanthe.rowland.org>
+	Wed, 23 May 2012 17:06:27 -0400
+X-Greylist: delayed 450 seconds by postgrey-1.27 at vger.kernel.org; Wed, 23 May 2012 17:06:27 EDT
+Date: Wed, 23 May 2012 13:58:57 -0700
+From: Andy Isaacson <adi@hexapodia.org>
+To: linux-kernel@vger.kernel.org
+Cc: Alexey Dobriyan <adobriyan@gmail.com>
+Subject: setreuid() results in unreadable /proc/self/fdinfo/
+Message-ID: <20120523205857.GA22643@hexapodia.org>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+X-Old-GPG-Fingerprint: 1914 0645 FD53 C18E EEEF C402 4A69 B1F3 68D2 A63F
+X-GPG-Fingerprint: A5FC 6141 F76D B6B1 C81F  0FB7 AFA0 A45F ED3D 116D
+X-GPG-Key-URL: http://web.hexapodia.org/~adi/gpg.txt
+X-Domestic-Surveillance: money launder bomb tax evasion
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 23 May 2012, David Miller wrote:
+The enclosed testcase shows that after using setreuid to permanently
+give up root privs, the process loses its ability to open
+/proc/self/fdinfo (as well as some but not all other entries in
+/proc/self/).
 
-> From: Meelis Roos <mroos@linux.ee>
-> Date: Wed, 23 May 2012 19:46:46 +0300 (EEST)
-> 
-> CC:'ing interested parties.
-> 
-> >> > Just tested 3.4.0-02580-g72c04af on about 10 machines. While most of 
-> >> > them work (including 3 different sparc64 machines with real scsi disks), 
-> >> > Sun Netra X1 with pata_ali and IDE disk consistently fails to boot. sda 
-> >> > is recognized but no partitions. 3.3.0 works fine, as did something 
-> >> > around 3.4-rc7 (plain 3.4 not tested yet). No other IDE machines tested 
-> >> > yet since I have none with remote console at the moment.
-> >> 
-> >> If 3.4.0-final is OK, start bisecting from v3.4.0 until 72c04af.  One
-> >> possibility could be the sparc64 NOBOOTMEM conversion that went into
-> >> the merge window.
-> > 
-> > Bisecting leads to this commit:
-> > 
-> > a7a20d103994fd760766e6c9d494daa569cbfe06 is the first bad commit
-> > commit a7a20d103994fd760766e6c9d494daa569cbfe06
-> > Author: Dan Williams <dan.j.williams@intel.com>
-> > Date:   Thu Mar 22 17:05:11 2012 -0700
-> > 
-> >     [SCSI] sd: limit the scope of the async probe domain
-> >     
-> >     sd injects and synchronizes probe work on the global kernel-wide domain.
-> >     This runs into conflict with PM that wants to perform resume actions in
-> >     async context:
+This seems to fail only with threads -- a singlethreaded program does
+not show the same failure.  The failure is the same if the setreuid is
+done in the parent thread (before pthread_create) or in the child
+thread.
 
+This testcase shows the same behavior on RHEL5 and on
+3.4.0-rc4-00095-g95f7147.
+
+This was originally found in Java code using the jsvc project.
+
+A similar discussion happened 3.5 years ago (!) in
+http://lkml.indiana.edu/hypermail/linux/kernel/0808.0/3350.html
+(CCing Alexey.)
+
+% cc -O2 -Wall setuid-proc-self-fd.c -o setuid-proc-self-fd -lpthread
+% sudo ./setuid-proc-self-fd
+uid = 0 euid = 0
+uid = 1000 euid = 1000
+main created thread, waiting.
+/proc/self/fdinfo: Permission denied
+delaying 100 seconds.
 ...
+% sudo ls -ld /proc/`pidof setuid-proc-self-fd`{,/task/*}{,/fdinfo}
+dr-xr-xr-x 7 andy root 0 May 23 13:43 /proc/31640
+dr-x------ 2 root root 0 May 23 13:43 /proc/31640/fdinfo
+dr-xr-xr-x 5 andy root 0 May 23 13:44 /proc/31640/task/31640
+dr-x------ 2 root root 0 May 23 13:44 /proc/31640/task/31640/fdinfo
+dr-xr-xr-x 5 andy root 0 May 23 13:44 /proc/31640/task/31641
+dr-x------ 2 root root 0 May 23 13:44 /proc/31640/task/31641/fdinfo
 
-> >     Provide a 'scsi_sd_probe_domain' so that async probe actions actions can
-> >     be flushed without regard for the state of PM, and allow for the resume
-> >     path to handle devices that have transitioned from SDEV_QUIESCE to
-> >     SDEV_DEL prior to resume.
 
-Does reverting just the part of the commit that touches scsi_lib.c make 
-any difference?
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <errno.h>
+#include <stdarg.h>
 
-If not, does leaving that part in and reverting all the rest of the 
-commit make any difference?
+#include <unistd.h>
+#include <fcntl.h>
 
-Alan Stern
+#include <pthread.h>
 
+void die(char *fmt, ...)
+    __attribute__((noreturn))
+    __attribute__((format(printf, 1, 2)));
+
+void die(char *fmt, ...)
+{
+    va_list ap;
+
+    va_start(ap, fmt);
+    vfprintf(stderr, fmt, ap);
+    va_end(ap);
+    exit(1);
+}
+
+void *do_child(void *arg)
+{
+    int fd;
+
+    if((fd = open("/proc/self/fdinfo", O_RDONLY|O_DIRECTORY)) == -1) {
+	fprintf(stderr, "/proc/self/fdinfo: %s\n", strerror(errno));
+	fprintf(stderr, "delaying 100 seconds.\n");
+	sleep(100);
+    }
+
+    printf("fd = %d\n", fd);
+    fflush(stdout);
+
+    return 0;
+}
+
+int main(int argc, char **argv)
+{
+    pthread_t t;
+
+    printf("uid = %d euid = %d\n", (int)getuid(), (int)geteuid());
+    setreuid(1000,1000);
+    printf("uid = %d euid = %d\n", (int)getuid(), (int)geteuid());
+
+    pthread_create(&t, 0, do_child, 0);
+
+    printf("main created thread, waiting.\n");
+
+    pthread_join(t, 0);
+
+    printf("main exiting.\n");
+
+    return 0;
+}
+
+-andy
