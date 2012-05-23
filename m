@@ -1,97 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760524Ab2EWQqw (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 May 2012 12:46:52 -0400
-Received: from smtp1.it.da.ut.ee ([193.40.5.66]:48225 "EHLO smtp1.it.da.ut.ee"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932740Ab2EWQqs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 May 2012 12:46:48 -0400
-Date: Wed, 23 May 2012 19:46:46 +0300 (EEST)
-From: Meelis Roos <mroos@linux.ee>
-To: David Miller <davem@davemloft.net>
-cc: linux-kernel@vger.kernel.org
-Subject: Re: 3.4.0-02580-g72c04af regression on sparc64 - partitions not
- recognized
-In-Reply-To: <20120522.151217.278388169416093561.davem@davemloft.net>
-Message-ID: <alpine.SOC.1.00.1205231945480.12326@math.ut.ee>
-References: <alpine.SOC.1.00.1205221200050.9585@math.ut.ee> <20120522.151217.278388169416093561.davem@davemloft.net>
-User-Agent: Alpine 1.00 (SOC 882 2007-12-20)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	id S932928Ab2EWQrB (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 May 2012 12:47:01 -0400
+Received: from casper.infradead.org ([85.118.1.10]:54028 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932085Ab2EWQq5 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 23 May 2012 12:46:57 -0400
+Subject: Re: [tip:x86/mce] x86/mce: Fix 32-bit build
+From: Peter Zijlstra <a.p.zijlstra@chello.nl>
+To: Borislav Petkov <bp@alien8.de>
+Cc: Borislav Petkov <borislav.petkov@amd.com>, mingo@kernel.org, hpa@zytor.com,
+        linux-kernel@vger.kernel.org, akpm@linux-foundation.org,
+        frank.arnold@amd.com, torvalds@linux-foundation.org,
+        tglx@linutronix.de, linux-tip-commits@vger.kernel.org
+In-Reply-To: <20120523164404.GA18284@liondog.tnic>
+References: <1337684026-19740-2-git-send-email-bp@amd64.org>
+	 <tip-80f033610fb968e75f5d470233d8d0260d7a72ed@git.kernel.org>
+	 <1337789898.9783.19.camel@laptop>
+	 <20120523162335.GO14757@aftab.osrc.amd.com>
+	 <1337790667.9783.29.camel@laptop>  <20120523164404.GA18284@liondog.tnic>
+Content-Type: text/plain; charset="UTF-8"
+Date: Wed, 23 May 2012 18:46:45 +0200
+Message-ID: <1337791605.9783.31.camel@laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.2 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> > Just tested 3.4.0-02580-g72c04af on about 10 machines. While most of 
-> > them work (including 3 different sparc64 machines with real scsi disks), 
-> > Sun Netra X1 with pata_ali and IDE disk consistently fails to boot. sda 
-> > is recognized but no partitions. 3.3.0 works fine, as did something 
-> > around 3.4-rc7 (plain 3.4 not tested yet). No other IDE machines tested 
-> > yet since I have none with remote console at the moment.
-> 
-> If 3.4.0-final is OK, start bisecting from v3.4.0 until 72c04af.  One
-> possibility could be the sparc64 NOBOOTMEM conversion that went into
-> the merge window.
+On Wed, 2012-05-23 at 18:44 +0200, Borislav Petkov wrote:
 
-Bisecting leads to this commit:
+> FWIW, I can change it if you feel too strongly about it, I don't really
+> care that much.
 
-a7a20d103994fd760766e6c9d494daa569cbfe06 is the first bad commit
-commit a7a20d103994fd760766e6c9d494daa569cbfe06
-Author: Dan Williams <dan.j.williams@intel.com>
-Date:   Thu Mar 22 17:05:11 2012 -0700
+I don't care much at the moment, I might if I'm ever forced to actually
+read the MCE code, but until that time I'll crawl back into my
+corner :-)
 
-    [SCSI] sd: limit the scope of the async probe domain
-    
-    sd injects and synchronizes probe work on the global kernel-wide domain.
-    This runs into conflict with PM that wants to perform resume actions in
-    async context:
-    
-    [  494.237079] INFO: task kworker/u:3:554 blocked for more than 120 seconds.
-    [  494.294396] "echo 0 > /proc/sys/kernel/hung_task_timeout_secs" disables this message.
-    [  494.360809] kworker/u:3     D 0000000000000000     0   554      2 0x00000000
-    [  494.420739]  ffff88012e4d3af0 0000000000000046 ffff88013200c160 ffff88012e4d3fd8
-    [  494.484392]  ffff88012e4d3fd8 0000000000012500 ffff8801394ea0b0 ffff88013200c160
-    [  494.548038]  ffff88012e4d3ae0 00000000000001e3 ffffffff81a249e0 ffff8801321c5398
-    [  494.611685] Call Trace:
-    [  494.632649]  [<ffffffff8149dd25>] schedule+0x5a/0x5c
-    [  494.674687]  [<ffffffff8104b968>] async_synchronize_cookie_domain+0xb6/0x112
-    [  494.734177]  [<ffffffff810461ff>] ? __init_waitqueue_head+0x50/0x50
-    [  494.787134]  [<ffffffff8131a224>] ? scsi_remove_target+0x48/0x48
-    [  494.837900]  [<ffffffff8104b9d9>] async_synchronize_cookie+0x15/0x17
-    [  494.891567]  [<ffffffff8104ba49>] async_synchronize_full+0x54/0x70  <-- here we wait for async contexts to complete
-    [  494.943783]  [<ffffffff8104b9f5>] ? async_synchronize_full_domain+0x1a/0x1a
-    [  495.002547]  [<ffffffffa00114b1>] sd_remove+0x2c/0xa2 [sd_mod]
-    [  495.051861]  [<ffffffff812fe94f>] __device_release_driver+0x86/0xcf
-    [  495.104807]  [<ffffffff812fe9bd>] device_release_driver+0x25/0x32  <-- here we take device_lock()
-    
-    [  853.511341] INFO: task kworker/u:4:549 blocked for more than 120 seconds.
-    [  853.568693] "echo 0 > /proc/sys/kernel/hung_task_timeout_secs" disables this message.
-    [  853.635119] kworker/u:4     D ffff88013097b5d0     0   549      2 0x00000000
-    [  853.695129]  ffff880132773c40 0000000000000046 ffff880130790000 ffff880132773fd8
-    [  853.758990]  ffff880132773fd8 0000000000012500 ffff88013288a0b0 ffff880130790000
-    [  853.822796]  0000000000000246 0000000000000040 ffff88013097b5c8 ffff880130790000
-    [  853.886633] Call Trace:
-    [  853.907631]  [<ffffffff8149dd25>] schedule+0x5a/0x5c
-    [  853.949670]  [<ffffffff8149cc44>] __mutex_lock_common+0x220/0x351
-    [  854.001225]  [<ffffffff81304bd7>] ? device_resume+0x58/0x1c4
-    [  854.049082]  [<ffffffff81304bd7>] ? device_resume+0x58/0x1c4
-    [  854.097011]  [<ffffffff8149ce48>] mutex_lock_nested+0x2f/0x36   <-- here we wait for device_lock()
-    [  854.145591]  [<ffffffff81304bd7>] device_resume+0x58/0x1c4
-    [  854.192066]  [<ffffffff81304d61>] async_resume+0x1e/0x45
-    [  854.237019]  [<ffffffff8104bc93>] async_run_entry_fn+0xc6/0x173  <-- ...while running in async context
-    
-    Provide a 'scsi_sd_probe_domain' so that async probe actions actions can
-    be flushed without regard for the state of PM, and allow for the resume
-    path to handle devices that have transitioned from SDEV_QUIESCE to
-    SDEV_DEL prior to resume.
-    
-    Acked-by: Alan Stern <stern@rowland.harvard.edu>
-    [alan: uplevel scsi_sd_probe_domain, clarify scsi_device_resume]
-    Signed-off-by: Dan Williams <dan.j.williams@intel.com>
-    [jejb: remove unneeded config guards in include file]
-    Signed-off-by: James Bottomley <JBottomley@Parallels.com>
-
-:040000 040000 4e59ccb852f261f97701a245e637a690dfce9d20 fc73ca0da1288a7f30b81a8593ddad2146d7bfb5 M      drivers
-
--- 
-Meelis Roos (mroos@linux.ee)
