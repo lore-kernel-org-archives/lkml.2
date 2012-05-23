@@ -1,15 +1,15 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760419Ab2EWQFt (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 May 2012 12:05:49 -0400
-Received: from e31.co.us.ibm.com ([32.97.110.149]:51280 "EHLO
-	e31.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752042Ab2EWQFr (ORCPT
+	id S1760501Ab2EWQGq (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 May 2012 12:06:46 -0400
+Received: from mail-qa0-f49.google.com ([209.85.216.49]:57687 "EHLO
+	mail-qa0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755188Ab2EWQGo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 May 2012 12:05:47 -0400
-Date: Wed, 23 May 2012 09:01:21 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Frederic Weisbecker <fweisbec@gmail.com>
+	Wed, 23 May 2012 12:06:44 -0400
+Date: Wed, 23 May 2012 18:06:33 +0200
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
 Cc: LKML <linux-kernel@vger.kernel.org>, linaro-sched-sig@lists.linaro.org,
         Alessio Igor Bogani <abogani@kernel.org>,
         Andrew Morton <akpm@linux-foundation.org>, Avi Kivity <avi@redhat.com>,
@@ -24,95 +24,50 @@ Cc: LKML <linux-kernel@vger.kernel.org>, linaro-sched-sig@lists.linaro.org,
         Steven Rostedt <rostedt@goodmis.org>,
         Sven-Thorsten Dietrich <thebigcorporation@gmail.com>,
         Thomas Gleixner <tglx@linutronix.de>
-Subject: Re: [PATCH 17/41] rcu: Restart tick if we enqueue a callback in a
- nohz/cpuset CPU
-Message-ID: <20120523160121.GC2402@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
+Subject: Re: [PATCH 11/41] nohz/cpuset: Don't turn off the tick if rcu needs
+ it
+Message-ID: <20120523160629.GJ1663@somewhere>
 References: <1335830115-14335-1-git-send-email-fweisbec@gmail.com>
- <1335830115-14335-18-git-send-email-fweisbec@gmail.com>
- <20120522172714.GC8087@linux.vnet.ibm.com>
- <20120523140010.GD1663@somewhere>
+ <1335830115-14335-12-git-send-email-fweisbec@gmail.com>
+ <20120522171658.GA8087@linux.vnet.ibm.com>
+ <20120523135205.GB1663@somewhere>
+ <20120523151537.GA2402@linux.vnet.ibm.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20120523140010.GD1663@somewhere>
+In-Reply-To: <20120523151537.GA2402@linux.vnet.ibm.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 12052316-7282-0000-0000-00000946649D
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, May 23, 2012 at 04:00:15PM +0200, Frederic Weisbecker wrote:
-> On Tue, May 22, 2012 at 10:27:14AM -0700, Paul E. McKenney wrote:
-> > On Tue, May 01, 2012 at 01:54:51AM +0200, Frederic Weisbecker wrote:
-> > > If we enqueue an rcu callback, we need the CPU tick to stay
-> > > alive until we take care of those by completing the appropriate
-> > > grace period.
+On Wed, May 23, 2012 at 08:15:42AM -0700, Paul E. McKenney wrote:
+> On Wed, May 23, 2012 at 03:52:09PM +0200, Frederic Weisbecker wrote:
+> > > > +#ifdef CONFIG_CPUSETS_NO_HZ
+> > > > +static bool can_stop_adaptive_tick(void)
+> > > > +{
+> > > > +	if (!sched_can_stop_tick())
+> > > > +		return false;
+> > > > +
+> > > > +	/* Is there a grace period to complete ? */
+> > > > +	if (rcu_pending(smp_processor_id()))
 > > > 
-> > > Thus, when we call_rcu(), send a self IPI that checks rcu_needs_cpu()
-> > > so that we restore a periodic tick behaviour that can take care of
-> > > everything.
+> > > You lost me on this one.  Why can't this be rcu_needs_cpu()?
 > > 
-> > Ouch, I hadn't considered RCU callbacks being posted from within an
-> > extended quiescent state.  I guess I need to make __call_rcu() either
-> > complain about this or handle it correctly...  It would -usually- be
-> > harmless, but there is getting to be quite a bit of active machinery
-> > in the various idle loops, so just assuming that it cannot happen is
-> > probably getting to be an obsolete assumption.
-> 
-> May be first provide some detection to warn in such case. And if it happens
-> to warn too much perhaps you can allow that?
-
-Heh.  It is just as simple to allow it as it is to warn about it, so
-I am just transitioning immediately to allowing it.
-
-							Thanx, Paul
-
-> > > Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
-> > > Cc: Alessio Igor Bogani <abogani@kernel.org>
-> > > Cc: Andrew Morton <akpm@linux-foundation.org>
-> > > Cc: Avi Kivity <avi@redhat.com>
-> > > Cc: Chris Metcalf <cmetcalf@tilera.com>
-> > > Cc: Christoph Lameter <cl@linux.com>
-> > > Cc: Daniel Lezcano <daniel.lezcano@linaro.org>
-> > > Cc: Geoff Levand <geoff@infradead.org>
-> > > Cc: Gilad Ben Yossef <gilad@benyossef.com>
-> > > Cc: Hakan Akkan <hakanakkan@gmail.com>
-> > > Cc: Ingo Molnar <mingo@kernel.org>
-> > > Cc: Kevin Hilman <khilman@ti.com>
-> > > Cc: Max Krasnyansky <maxk@qualcomm.com>
-> > > Cc: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
-> > > Cc: Peter Zijlstra <peterz@infradead.org>
-> > > Cc: Stephen Hemminger <shemminger@vyatta.com>
-> > > Cc: Steven Rostedt <rostedt@goodmis.org>
-> > > Cc: Sven-Thorsten Dietrich <thebigcorporation@gmail.com>
-> > > Cc: Thomas Gleixner <tglx@linutronix.de>
-> > > ---
-> > >  kernel/rcutree.c |    7 +++++++
-> > >  1 files changed, 7 insertions(+), 0 deletions(-)
-> > > 
-> > > diff --git a/kernel/rcutree.c b/kernel/rcutree.c
-> > > index 3fffc26..b8d300c 100644
-> > > --- a/kernel/rcutree.c
-> > > +++ b/kernel/rcutree.c
-> > > @@ -1749,6 +1749,13 @@ __call_rcu(struct rcu_head *head, void (*func)(struct rcu_head *rcu),
-> > >  	else
-> > >  		trace_rcu_callback(rsp->name, head, rdp->qlen);
-> > > 
-> > > +	/* Restart the timer if needed to handle the callbacks */
-> > > +	if (cpuset_adaptive_nohz()) {
-> > > +		/* Make updates on nxtlist visible to self IPI */
-> > > +		barrier();
-> > > +		smp_cpuset_update_nohz(smp_processor_id());
-> > > +	}
-> > > +
-> > >  	/* If interrupts were disabled, don't dive into RCU core. */
-> > >  	if (irqs_disabled_flags(flags)) {
-> > >  		local_irq_restore(flags);
-> > > -- 
-> > > 1.7.5.4
-> > > 
+> > We already have an rcu_needs_cpu() check in tick_nohz_stop_sched_tick()
+> > that prevents the tick to shut down if the CPU has local callbacks to handle.
 > > 
+> > The rcu_pending() check is there in case some other CPU is waiting for the
+> > current one to help completing a grace period, by reporting a quiescent state
+> > for example. This happens because we may stop the tick in the kernel, not only
+> > userspace. And if we are in the kernel, we still need to be part of the global
+> > state machine.
 > 
+> Ah!  But RCU will notice that the CPU is in dyntick-idle mode, and will
+> therefore take any needed quiescent-state action on that CPU's behalf.
+> So there should be no need to call rcu_pending() anywhere outside of the
+> RCU core code.
 
+
+No. If the tick is stopped and we are in the kernel, we may be using RCU
+anytime, so we need to be part of the RCU core.
