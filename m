@@ -1,107 +1,188 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753720Ab2EWCVi (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 May 2012 22:21:38 -0400
-Received: from oproxy5-pub.bluehost.com ([67.222.38.55]:56501 "HELO
-	oproxy5-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1750974Ab2EWCVg (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 May 2012 22:21:36 -0400
-Message-ID: <4FBC49AB.1060702@tao.ma>
-Date: Wed, 23 May 2012 10:21:31 +0800
-From: Tao Ma <tm@tao.ma>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
-MIME-Version: 1.0
-To: Vivek Goyal <vgoyal@redhat.com>
-CC: linux-kernel@vger.kernel.org, Tejun Heo <tj@kernel.org>
-Subject: Re: [RFC] block/throttle: Add IO throttled information in blkcg.
-References: <1337674236-2896-1-git-send-email-tm@tao.ma> <20120522111111.GE3045@redhat.com> <4FBBA63B.1090401@tao.ma> <20120522150606.GH3045@redhat.com> <4FBBAD6F.6020004@tao.ma> <20120522200859.GA10211@redhat.com>
-In-Reply-To: <20120522200859.GA10211@redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Identified-User: {1390:box585.bluehost.com:colyli:tao.ma} {sentby:smtp auth 182.92.247.2 authed with tm@tao.ma}
+	id S1755304Ab2EWCbD (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 May 2012 22:31:03 -0400
+Received: from mga01.intel.com ([192.55.52.88]:64989 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753279Ab2EWCbB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 May 2012 22:31:01 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
+   d="scan'208";a="170087299"
+From: Chen Gong <gong.chen@linux.intel.com>
+To: tony.luck@intel.com, bp@amd64.org
+Cc: x86@kernel.org, linux-kernel@vger.kernel.org,
+        Chen Gong <gong.chen@linux.intel.com>
+Subject: [PATCH] x86: auto poll/interrupt mode switch for CMC to stop CMC storm
+Date: Wed, 23 May 2012 10:32:21 +0800
+Message-Id: <1337740341-26711-1-git-send-email-gong.chen@linux.intel.com>
+X-Mailer: git-send-email 1.7.10
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/23/2012 04:08 AM, Vivek Goyal wrote:
-> On Tue, May 22, 2012 at 11:14:55PM +0800, Tao Ma wrote:
->> On 05/22/2012 11:06 PM, Vivek Goyal wrote:
->>> On Tue, May 22, 2012 at 10:44:11PM +0800, Tao Ma wrote:
->>>> Hi Vivek,
->>>> 	Thanks for the quick response.
->>>> On 05/22/2012 07:11 PM, Vivek Goyal wrote:
->>>>> On Tue, May 22, 2012 at 04:10:36PM +0800, Tao Ma wrote:
->>>>>> From: Tao Ma <boyu.mt@taobao.com>
->>>>>>
->>>>>> Currently, if the IO is throttled by io-throttle, the SA has no idea of
->>>>>> the situation and can't report it to the real application user about
->>>>>> that he/she has to do something. So this patch adds a new interface
->>>>>> named blkio.throttle.io_throttled which indicates how many IOs are
->>>>>> currently throttled.
->>>>>
->>>>> If the only purpose is to know whether IOs are being throttled, why
->>>>> not just scan for the rules and see if respective device has any
->>>>> throttling rules or not.
->>>> Sorry, but setting a throttling rules doesn't mean the IOs are
->>>> throttled, right? So scanning doesn't work here IMHO.
->>>
->>> It means IOs will be throttled if you cross a certain rate. But yes, it
->>> does not give any information that if at time T if there are any bios
->>> throttled in the queue or not.
->>>
->>>>>
->>>>> Even if you introduce this interface, you will end up scanning for
->>>>> throttled ios against that particular device. And if IO is not happening
->>>>> at that moment or if IO rate is not exceeding the rate limit, there
->>>>> might not be any throttled ios and one might get misled.
->>>> Oh, no actually in a *clound computing* environment, it is really
->>>> useful, not misled. So let me describe it in more detail. Our product
->>>> system will limit every instance to an approximate number at first, and
->>>> then watch out the IOs being throttled. If these numbers is high, it can:
->>>> 1) Shout loudly to the application programmer about the abuse if he
->>>> sends out too much IO requests.
->>>> 2) If it is not too much and some other instances are not active, adjust
->>>> the throttled ratio so that this instance can work much faster.
->>>
->>> Ok, so you want to use this more as "congestion" parameter which tells at
->>> a given moment how busy the queue is, or in this instance how many IOs
->>> are backlogged in a cgroup due to throttling limits.
->> yeah, with this information the daemon can adjust these limits
->> automatically.
-> 
-> I am hoping that this daemon will monitor the file for long periods and
-> will not reach to bursty traffic from application.
-> 
->>>
->>> I guess, it is not a bad idea to export this stat then. Will
->>> "blkio.throttle.queued" be a better name to reflect that how many bios
->>> are currently queued in throttling layer of request queue.
->> I have thought of this name at the very first time. But there is also
->> another one named "blkio.queued" which indicated the IOs being queued in
->> the scheduler. I don't want the user to be confused and that's the
->> reason I use "blkio.throttle.io_throttled".
-> 
-> Actually it is blkio.io_queued which shows number of requests queued in
-> CFQ in that cgroup.
-> 
-> CFQ and throttling are two different policies and they have separate
-> files in cgroup. Ideally blkio.io_queued should have been
-> blkio.cfq.io_queued but initially it did not occur to me that I should
-> qualify these files with policy name.
-> 
-> Later when throttling policy came along, then I qualified new files with
-> policy name. blkio.throttle.*.
-> 
-> In summary, blkio.io_queued gives stats of io queued at CFQ level. So it
-> makes sense to create blkio.throttle.io_queued which tells how many
-> bios are currently throttled and queued in throttling layer in this
-> request queue from this cgroup.
-OK, I am fine with any name actually. ;) I will use it in the v2.
+This idea is inspired from IA64 implementation. It is like
+NAPI for network stack. When CMCI is too many to handle,
+this interrupt can be disabled and then poll mode will take
+over the events handle. When no more events happen in the
+system, CMC interrupt can be enabled automatically.
 
-Thanks
-Tao
-> 
-> Thanks
-> Vivek
+Signed-off-by: Chen Gong <gong.chen@linux.intel.com>
+---
+ arch/x86/kernel/cpu/mcheck/mce.c |   83 +++++++++++++++++++++++++++++++++++++-
+ 1 file changed, 81 insertions(+), 2 deletions(-)
+
+diff --git a/arch/x86/kernel/cpu/mcheck/mce.c b/arch/x86/kernel/cpu/mcheck/mce.c
+index d086a09..6334f0d 100644
+--- a/arch/x86/kernel/cpu/mcheck/mce.c
++++ b/arch/x86/kernel/cpu/mcheck/mce.c
+@@ -92,6 +92,7 @@ static char			*mce_helper_argv[2] = { mce_helper, NULL };
+ 
+ static DECLARE_WAIT_QUEUE_HEAD(mce_chrdev_wait);
+ 
++static DEFINE_PER_CPU(struct timer_list, mce_timer);
+ static DEFINE_PER_CPU(struct mce, mces_seen);
+ static int			cpu_missing;
+ 
+@@ -100,8 +101,28 @@ DEFINE_PER_CPU(mce_banks_t, mce_poll_banks) = {
+ 	[0 ... BITS_TO_LONGS(MAX_NR_BANKS)-1] = ~0UL
+ };
+ 
++#define CMC_POLL_INTERVAL	(1 * 30)
++#define CMC_STORM		5
++static DEFINE_PER_CPU(int, cmci_storm_warning);
++static DEFINE_PER_CPU(unsigned long, first_cmci_jiffie);
++static DEFINE_SPINLOCK(cmc_poll_lock);
++
++/*
++ * This variable tells whether we are in cmci-storm-happened mode.
++ * Start with this in the wrong state so we won't play w/ timers
++ * before the system is ready.
++ */
++static int cmci_storm_detected = 1;
++
+ static DEFINE_PER_CPU(struct work_struct, mce_work);
+ 
++static void mce_disable_cmci(void *data);
++static void mce_enable_ce(void *all);
++static void cmc_disable_keventd(struct work_struct *dummy);
++static void cmc_enable_keventd(struct work_struct *dummy);
++
++static DECLARE_WORK(cmc_disable_work, cmc_disable_keventd);
++static DECLARE_WORK(cmc_enable_work, cmc_enable_keventd);
+ /*
+  * CPU/chipset specific EDAC code can register a notifier call here to print
+  * MCE errors in a human-readable form.
+@@ -582,6 +603,37 @@ void machine_check_poll(enum mcp_flags flags, mce_banks_t *b)
+ {
+ 	struct mce m;
+ 	int i;
++	unsigned long flag;
++
++	spin_lock_irqsave(&cmc_poll_lock, flag);
++	if (cmci_storm_detected == 0) {
++		unsigned long now = jiffies;
++		int *count = &__get_cpu_var(cmci_storm_warning);
++		unsigned long *history = &__get_cpu_var(first_cmci_jiffie);
++
++		if (time_before_eq(now, *history + HZ))
++			(*count)++;
++		else {
++			*count = 0;
++			*history = now;
++		}
++
++		if (*count >= CMC_STORM) {
++			cmci_storm_detected = 1;
++			/* If we're being hit with CMC interrupts, we won't
++			 * ever execute the schedule_work() below.  Need to
++			 * disable CMC interrupts on this processor now.
++			 */
++			mce_disable_cmci(NULL);
++			if (!work_pending(&cmc_disable_work))
++				schedule_work(&cmc_disable_work);
++			spin_unlock_irqrestore(&cmc_poll_lock, flag);
++			printk(KERN_WARNING "WARNING: Switching to polling "\
++				"CMC handler; error records may be lost\n");
++			goto out;
++		}
++	}
++	spin_unlock_irqrestore(&cmc_poll_lock, flag);
+ 
+ 	percpu_inc(mce_poll_count);
+ 
+@@ -628,6 +680,7 @@ void machine_check_poll(enum mcp_flags flags, mce_banks_t *b)
+ 		mce_wrmsrl(MSR_IA32_MCx_STATUS(i), 0);
+ 	}
+ 
++out:
+ 	/*
+ 	 * Don't clear MCG_STATUS here because it's only defined for
+ 	 * exceptions.
+@@ -1199,6 +1252,20 @@ static void mce_process_work(struct work_struct *dummy)
+ 		memory_failure(pfn, MCE_VECTOR, 0);
+ }
+ 
++static void cmc_disable_keventd(struct work_struct *dummy)
++{
++	struct timer_list *t = __this_cpu_ptr(&mce_timer);
++
++	on_each_cpu(mce_disable_cmci, NULL, 0);
++	mod_timer(t, jiffies + CMC_POLL_INTERVAL * HZ);
++}
++
++static void cmc_enable_keventd(struct work_struct *dummy)
++{
++	/* don't re-initiate timer */
++	on_each_cpu(mce_enable_ce, NULL, 0);
++}
++
+ #ifdef CONFIG_X86_MCE_INTEL
+ /***
+  * mce_log_therm_throt_event - Logs the thermal throttling event to mcelog
+@@ -1232,12 +1299,12 @@ void mce_log_therm_throt_event(__u64 status)
+ static int check_interval = 5 * 60; /* 5 minutes */
+ 
+ static DEFINE_PER_CPU(int, mce_next_interval); /* in jiffies */
+-static DEFINE_PER_CPU(struct timer_list, mce_timer);
+ 
+ static void mce_start_timer(unsigned long data)
+ {
+ 	struct timer_list *t = &per_cpu(mce_timer, data);
+ 	int *n;
++	unsigned long flags;
+ 
+ 	WARN_ON(smp_processor_id() != data);
+ 
+@@ -1253,8 +1320,19 @@ static void mce_start_timer(unsigned long data)
+ 	n = &__get_cpu_var(mce_next_interval);
+ 	if (mce_notify_irq())
+ 		*n = max(*n/2, HZ/100);
+-	else
++	else {
+ 		*n = min(*n*2, (int)round_jiffies_relative(check_interval*HZ));
++		/* if no CMC event, switch out of polling mode */
++		spin_lock_irqsave(&cmc_poll_lock, flags);
++		if (cmci_storm_detected == 1) {
++			printk(KERN_WARNING "Returning to interrupt driven "\
++					"CMC handler\n");
++			if (!work_pending(&cmc_enable_work))
++				schedule_work(&cmc_enable_work);
++			cmci_storm_detected = 0;
++		}
++		spin_unlock_irqrestore(&cmc_poll_lock, flags);
++	}
+ 
+ 	t->expires = jiffies + *n;
+ 	add_timer_on(t, smp_processor_id());
+@@ -1547,6 +1625,7 @@ void __cpuinit mcheck_cpu_init(struct cpuinfo_x86 *c)
+ 	__mcheck_cpu_init_generic();
+ 	__mcheck_cpu_init_vendor(c);
+ 	__mcheck_cpu_init_timer();
++	cmci_storm_detected = 0;
+ 	INIT_WORK(&__get_cpu_var(mce_work), mce_process_work);
+ 	init_irq_work(&__get_cpu_var(mce_irq_work), &mce_irq_work_cb);
+ }
+-- 
+1.7.10
 
