@@ -1,177 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760906Ab2EWVim (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 May 2012 17:38:42 -0400
-Received: from mail127.messagelabs.com ([216.82.250.115]:30655 "EHLO
-	mail127.messagelabs.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759462Ab2EWVil (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1760854Ab2EWVil (ORCPT <rfc822;w@1wt.eu>);
 	Wed, 23 May 2012 17:38:41 -0400
-X-Env-Sender: hartleys@visionengravers.com
-X-Msg-Ref: server-7.tower-127.messagelabs.com!1337809120!6397854!1
-X-Originating-IP: [216.166.12.69]
-X-StarScan-Version: 6.5.10; banners=-,-,-
-X-VirusChecked: Checked
-From: H Hartley Sweeten <hartleys@visionengravers.com>
-To: Linux Kernel <linux-kernel@vger.kernel.org>
-Subject: [PATCH] staging: comedi: adl_pci7432: factor out the PCI device code
-Date: Wed, 23 May 2012 14:38:33 -0700
-User-Agent: KMail/1.9.9
-CC: <devel@driverdev.osuosl.org>, <abbotti@mev.co.uk>,
-        <fmhess@users.sourceforge.net>, <gregkh@linuxfoundation.org>
+Received: from mail2.gnudd.com ([213.203.150.91]:47067 "EHLO mail.gnudd.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752880Ab2EWVij (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 23 May 2012 17:38:39 -0400
+Date: Wed, 23 May 2012 23:22:27 +0200
+From: Alessandro Rubini <rubini@gnudd.com>
+To: x86@kernel.org
+Cc: Giancarlo Asnaghi <giancarlo.asnaghi@st.com>, linux-kernel@vger.kernel.org
+Subject: [PATCH] x86/pci: sta2x11: fix a compiler warning
+Message-ID: <20120523212227.GA10118@mail.gnudd.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Message-ID: <201205231438.34289.hartleys@visionengravers.com>
+Organization: GnuDD, Device Drivers, Embedded Systems, Courses
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Factor out the code that finds a matching PCI device from attach
-function. This allows reducing the indent level of the remaining
-code in the attach function.
+alias asnaghi Giancarlo Asnaghi <giancarlo.asnaghi@st.com>
+dma_ops, because it doesn't want the "attrs" argument.  Add a wrapper,
+like other users of the function already do.
 
-Signed-off-by: H Hartley Sweeten <hsweeten@visionengravers.com>
-Cc: Ian Abbott <abbotti@mev.co.uk>
-Cc: Mori Hess <fmhess@users.sourceforge.net>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
+Signed-off-by: Alessandro Rubini <rubini@gnudd.com>
+Acked-by: Giancarlo Asnaghi <giancarlo.asnaghi@st.com>
 ---
 
-diff --git a/drivers/staging/comedi/drivers/adl_pci7432.c b/drivers/staging/comedi/drivers/adl_pci7432.c
-index 9cbfb61..7317a06 100644
---- a/drivers/staging/comedi/drivers/adl_pci7432.c
-+++ b/drivers/staging/comedi/drivers/adl_pci7432.c
-@@ -89,18 +89,39 @@ static int adl_pci7432_di_insn_bits(struct comedi_device *dev,
- 	return 2;
+Actually, we may instead add "args" to the exported functions in
+lib/swiotlb.  This would then remove a few other similar wrappers that
+do nothing.  If it's considered useful, I can propose a patch for that.
+arch/unicore32/mm/dma-swiotlb.c is especially interesting in this
+respect, because it only has the two wrappers.
+
+ arch/x86/pci/sta2x11-fixup.c |    9 ++++++++-
+ 1 files changed, 8 insertions(+), 1 deletions(-)
+
+diff --git a/arch/x86/pci/sta2x11-fixup.c b/arch/x86/pci/sta2x11-fixup.c
+index e06334b..1ab70dc 100644
+--- a/arch/x86/pci/sta2x11-fixup.c
++++ b/arch/x86/pci/sta2x11-fixup.c
+@@ -181,10 +181,17 @@ static void *sta2x11_swiotlb_alloc_coherent(struct device *dev,
+ 	return vaddr;
  }
  
-+static struct pci_dev *adl_pci7432_find_pci(struct comedi_device *dev,
-+					    struct comedi_devconfig *it)
++static void sta2x11_swiotlb_free_coherent(struct device *dev, size_t size,
++					  void *vaddr, dma_addr_t dma_addr,
++					  struct dma_attrs *attrs)
 +{
-+	struct pci_dev *pcidev = NULL;
-+	int bus = it->options[0];
-+	int slot = it->options[1];
-+
-+	for_each_pci_dev(pcidev) {
-+		if (pcidev->vendor != PCI_VENDOR_ID_ADLINK ||
-+		    pcidev->device != PCI_DEVICE_ID_PCI7432)
-+			continue;
-+		if (bus || slot) {
-+			/* requested particular bus/slot */
-+			if (pcidev->bus->number != bus ||
-+			    PCI_SLOT(pcidev->devfn) != slot)
-+				continue;
-+		}
-+		return pcidev;
-+	}
-+	printk(KERN_ERR
-+		"comedi%d: no supported board found! (req. bus/slot : %d/%d)\n",
-+	       dev->minor, bus, slot);
-+	return NULL;
++	swiotlb_free_coherent(dev, size, vaddr, dma_addr);
 +}
 +
- static int adl_pci7432_attach(struct comedi_device *dev,
- 			      struct comedi_devconfig *it)
- {
--	struct pci_dev *pcidev = NULL;
- 	struct comedi_subdevice *s;
--	int bus, slot;
- 
- 	printk(KERN_INFO "comedi%d: attach adl_pci7432\n", dev->minor);
- 
- 	dev->board_name = "pci7432";
--	bus = it->options[0];
--	slot = it->options[1];
- 
- 	if (alloc_private(dev, sizeof(struct adl_pci7432_private)) < 0)
- 		return -ENOMEM;
-@@ -108,57 +129,40 @@ static int adl_pci7432_attach(struct comedi_device *dev,
- 	if (alloc_subdevices(dev, 2) < 0)
- 		return -ENOMEM;
- 
--	for_each_pci_dev(pcidev) {
--		if (pcidev->vendor == PCI_VENDOR_ID_ADLINK &&
--		    pcidev->device == PCI_DEVICE_ID_PCI7432) {
--			if (bus || slot) {
--				/* requested particular bus/slot */
--				if (pcidev->bus->number != bus
--				    || PCI_SLOT(pcidev->devfn) != slot) {
--					continue;
--				}
--			}
--			devpriv->pci_dev = pcidev;
--			if (comedi_pci_enable(pcidev, "adl_pci7432") < 0) {
--				printk(KERN_ERR "comedi%d: Failed to enable PCI device and request regions\n",
--				     dev->minor);
--				return -EIO;
--			}
--			dev->iobase = pci_resource_start(pcidev, 2);
--			printk(KERN_INFO "comedi: base addr %4lx\n",
--				dev->iobase);
-+	devpriv->pci_dev = adl_pci7432_find_pci(dev, it);
-+	if (!devpriv->pci_dev)
-+		return -EIO;
- 
--			s = dev->subdevices + 0;
--			s->type = COMEDI_SUBD_DI;
--			s->subdev_flags =
--			    SDF_READABLE | SDF_GROUND | SDF_COMMON;
--			s->n_chan = 32;
--			s->maxdata = 1;
--			s->len_chanlist = 32;
--			s->io_bits = 0x00000000;
--			s->range_table = &range_digital;
--			s->insn_bits = adl_pci7432_di_insn_bits;
-+	if (comedi_pci_enable(devpriv->pci_dev, "adl_pci7432") < 0) {
-+		printk(KERN_ERR "comedi%d: Failed to enable PCI device and request regions\n",
-+			dev->minor);
-+		return -EIO;
-+	}
-+	dev->iobase = pci_resource_start(devpriv->pci_dev, 2);
-+	printk(KERN_INFO "comedi: base addr %4lx\n", dev->iobase);
- 
--			s = dev->subdevices + 1;
--			s->type = COMEDI_SUBD_DO;
--			s->subdev_flags =
--			    SDF_WRITABLE | SDF_GROUND | SDF_COMMON;
--			s->n_chan = 32;
--			s->maxdata = 1;
--			s->len_chanlist = 32;
--			s->io_bits = 0xffffffff;
--			s->range_table = &range_digital;
--			s->insn_bits = adl_pci7432_do_insn_bits;
-+	s = dev->subdevices + 0;
-+	s->type = COMEDI_SUBD_DI;
-+	s->subdev_flags = SDF_READABLE | SDF_GROUND | SDF_COMMON;
-+	s->n_chan = 32;
-+	s->maxdata = 1;
-+	s->len_chanlist = 32;
-+	s->io_bits = 0x00000000;
-+	s->range_table = &range_digital;
-+	s->insn_bits = adl_pci7432_di_insn_bits;
- 
--			printk(KERN_DEBUG "comedi%d: adl_pci7432 attached\n",
--				dev->minor);
--			return 1;
--		}
--	}
-+	s = dev->subdevices + 1;
-+	s->type = COMEDI_SUBD_DO;
-+	s->subdev_flags = SDF_WRITABLE | SDF_GROUND | SDF_COMMON;
-+	s->n_chan = 32;
-+	s->maxdata = 1;
-+	s->len_chanlist = 32;
-+	s->io_bits = 0xffffffff;
-+	s->range_table = &range_digital;
-+	s->insn_bits = adl_pci7432_do_insn_bits;
- 
--	printk(KERN_ERR "comedi%d: no supported board found! (req. bus/slot : %d/%d)\n",
--	       dev->minor, bus, slot);
--	return -EIO;
-+	printk(KERN_DEBUG "comedi%d: adl_pci7432 attached\n", dev->minor);
-+	return 0;
- }
- 
- static void adl_pci7432_detach(struct comedi_device *dev)
+ /* We have our own dma_ops: the same as swiotlb but from alloc (above) */
+ static struct dma_map_ops sta2x11_dma_ops = {
+ 	.alloc = sta2x11_swiotlb_alloc_coherent,
+-	.free = swiotlb_free_coherent,
++	.free = sta2x11_swiotlb_free_coherent,
+ 	.map_page = swiotlb_map_page,
+ 	.unmap_page = swiotlb_unmap_page,
+ 	.map_sg = swiotlb_map_sg_attrs,
+-- 
+1.7.7.2
