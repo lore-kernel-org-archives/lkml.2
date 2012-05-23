@@ -1,50 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933644Ab2EWPOk (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 May 2012 11:14:40 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:4670 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753572Ab2EWPOi (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 May 2012 11:14:38 -0400
-X-Authority-Analysis: v=2.0 cv=ae7jbGUt c=1 sm=0 a=ZycB6UtQUfgMyuk2+PxD7w==:17 a=XQbtiDEiEegA:10 a=_2gBi4Ny9w4A:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=meVymXHHAAAA:8 a=ayC55rCoAAAA:8 a=OA39FpFkUs2GtTTHs2IA:9 a=PUjeQqilurYA:10 a=ZycB6UtQUfgMyuk2+PxD7w==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 74.67.80.29
-Message-ID: <1337786077.13348.161.camel@gandalf.stny.rr.com>
-Subject: Re: [3.4-rc3] Thread overran stack, or stack corrupted
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Dave Jones <davej@redhat.com>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Linux Kernel <linux-kernel@vger.kernel.org>
-Date: Wed, 23 May 2012 11:14:37 -0400
-In-Reply-To: <20120523150540.GA2016@redhat.com>
-References: <1334720611.28106.25.camel@gandalf.stny.rr.com>
-	 <20120418035004.GA31465@redhat.com>
-	 <1334721441.28106.28.camel@gandalf.stny.rr.com>
-	 <20120418040632.GB31465@redhat.com>
-	 <1334722164.28106.31.camel@gandalf.stny.rr.com>
-	 <20120418135815.GA10798@redhat.com>
-	 <1334760965.28106.39.camel@gandalf.stny.rr.com>
-	 <20120418153002.GB17558@redhat.com>
-	 <1334767425.28106.43.camel@gandalf.stny.rr.com>
-	 <1337783828.13348.158.camel@gandalf.stny.rr.com>
-	 <20120523150540.GA2016@redhat.com>
-Content-Type: text/plain; charset="ISO-8859-15"
-X-Mailer: Evolution 3.2.2-1 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	id S964860Ab2EWPPq (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 May 2012 11:15:46 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:55071 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1759845Ab2EWPPp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 23 May 2012 11:15:45 -0400
+Date: Wed, 23 May 2012 11:15:38 -0400
+From: Vivek Goyal <vgoyal@redhat.com>
+To: Tejun Heo <tejun@google.com>
+Cc: Kent Overstreet <koverstreet@google.com>, linux-bcache@vger.kernel.org,
+        agk@redhat.com, linux-kernel@vger.kernel.org, dm-devel@redhat.com
+Subject: Re: [dm-devel] [Bcache v13 09/16] Bcache: generic utility code
+Message-ID: <20120523151538.GJ14943@redhat.com>
+References: <cover.1336619038.git.koverstreet@google.com>
+ <c3f0ca2a499f532253d4c16a30837d43e237266a.1336619038.git.koverstreet@google.com>
+ <20120522211706.GH14339@google.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120522211706.GH14339@google.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2012-05-23 at 11:05 -0400, Dave Jones wrote:
+On Tue, May 22, 2012 at 02:17:06PM -0700, Tejun Heo wrote:
+> Hello, Kent.
+> 
+> I've been reading the code and am still very far from understanding
+> the whole thing but here are general impressions upto this point.
+> 
+> * I started reading from get_bucket(), mostly because I wasn't sure
+>   where to start.  It would be very helpful to the reviewers and
+>   future participants if there's a design doc and more comments (much
+>   more).  The code is on the big side and the problem is exacerbated
+>   by use of somewhat unconventional constructs and conventions and
+>   lack of documentation and comments.
 
-> But! Linus' current tree seems to have working tracing on that box.
-> Don't break it again! ;-)
+I totally agreed. There is a lot going on and design doc is going to 
+help a lot while reviewing.
 
-You could install ktest and run a reverse bisect to find out what fixed
-it ;-)
+> * Too many smart macros.  Macros suck.  Smart ones double suck.
 
--- Steve
+I had the same impression when I tried to read the code last. Too many
+macros and it makes reading code really difficult.
 
+[..]
+> * Somewhat related to the above, I'm not a fan of super-verbose
+>   symbols but I *hope* that the variable names were just a tiny bit
+>   more descriptive.  At least, the ones used as arguments.
 
+Another thing is that keep variable names consistent. Last time I looked,
+same name "c" was being used to represent cached_dev or cache_set or 
+something else too. If we keep variable name same to represent same
+data structure, it becomes easier to read the code. I was totally lost
+and always had to go back to figure out what "c" is representing, what
+"d" is representing etc.
+
+Thanks
+Vivek
