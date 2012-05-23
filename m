@@ -1,24 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933481Ab2EWN5G (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 May 2012 09:57:06 -0400
+	id S1760125Ab2EWN5g (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 May 2012 09:57:36 -0400
 Received: from smtp3.mundo-r.com ([212.51.32.191]:50434 "EHLO
 	smtp4.mundo-r.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1759275Ab2EWNyx (ORCPT
+	with ESMTP id S1755225Ab2EWNyw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 May 2012 09:54:53 -0400
+	Wed, 23 May 2012 09:54:52 -0400
 X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: Av0EAJHrvE9bdWOb/2dsb2JhbABDtDOBB4IWAQUnUhBRVwYBEogSukuQTwOVHI9wgmw
+X-IronPort-Anti-Spam-Result: Av0EAJHrvE9bdWOb/2dsb2JhbABDtDOBB4IWAQUnUhBRVwYBEogSukuQTwOVHIkehlKCbA
 X-IronPort-AV: E=Sophos;i="4.75,645,1330902000"; 
-   d="scan'208";a="518630130"
+   d="scan'208";a="518630125"
 From: Samuel Iglesias Gonsalvez <siglesias@igalia.com>
 To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
         Dan Carpenter <dan.carpenter@oracle.com>
 Cc: Samuel Iglesias Gonsalvez <siglesias@igalia.com>,
         devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
-Subject: [PATCH 5/8] Staging: ipack/bridges/tpci200: check if the remove function is available
-Date: Wed, 23 May 2012 15:54:44 +0200
-Message-Id: <1337781287-28628-6-git-send-email-siglesias@igalia.com>
+Subject: [PATCH 3/8] Staging: ipack/bridges/tpci200: tpci200_slot_unmap_space() should return 0 if succeed.
+Date: Wed, 23 May 2012 15:54:42 +0200
+Message-Id: <1337781287-28628-4-git-send-email-siglesias@igalia.com>
 X-Mailer: git-send-email 1.7.10
 In-Reply-To: <1337781287-28628-1-git-send-email-siglesias@igalia.com>
 References: <1337781287-28628-1-git-send-email-siglesias@igalia.com>
@@ -26,27 +26,65 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-To avoid a dereference of a NULL pointer, the availability of the function is
-checked before its use.
+tpci200_slot_unmap_space() should return 0 if the operation was properly done. If
+not, the caller will think that something wrong happened.
 
 Signed-off-by: Samuel Iglesias Gonsalvez <siglesias@igalia.com>
 ---
- drivers/staging/ipack/bridges/tpci200.c |    2 ++
- 1 file changed, 2 insertions(+)
+ drivers/staging/ipack/bridges/tpci200.c |   21 +++++++--------------
+ 1 file changed, 7 insertions(+), 14 deletions(-)
 
 diff --git a/drivers/staging/ipack/bridges/tpci200.c b/drivers/staging/ipack/bridges/tpci200.c
-index 0c2a50a..ee26d9a 100644
+index 75ed600..85560c7 100644
 --- a/drivers/staging/ipack/bridges/tpci200.c
 +++ b/drivers/staging/ipack/bridges/tpci200.c
-@@ -764,6 +764,8 @@ out:
- static void tpci200_slot_remove(struct tpci200_slot *slot)
- {
- 	if ((slot->dev == NULL) ||
-+	    (slot->dev->driver == NULL) ||
-+	    (slot->dev->driver->ops == NULL) ||
- 	    (slot->dev->driver->ops->remove == NULL))
- 		return;
+@@ -551,20 +551,15 @@ out:
  
+ static int tpci200_slot_unmap_space(struct ipack_device *dev, int space)
+ {
+-	int res;
+ 	struct ipack_addr_space *virt_addr_space;
+ 	struct tpci200_board *tpci200;
+ 
+ 	tpci200 = check_slot(dev);
+-	if (tpci200 == NULL) {
+-		res = -EINVAL;
+-		goto out;
+-	}
++	if (tpci200 == NULL)
++		return -EINVAL;
+ 
+-	if (mutex_lock_interruptible(&tpci200->mutex)) {
+-		res = -ERESTARTSYS;
+-		goto out;
+-	}
++	if (mutex_lock_interruptible(&tpci200->mutex))
++		return -ERESTARTSYS;
+ 
+ 	switch (space) {
+ 	case IPACK_IO_SPACE:
+@@ -594,9 +589,8 @@ static int tpci200_slot_unmap_space(struct ipack_device *dev, int space)
+ 	default:
+ 		pr_err("Slot [%d:%d] space number %d doesn't exist !\n",
+ 		       dev->bus_nr, dev->slot, space);
+-		res = -EINVAL;
+-		goto out_unlock;
+-		break;
++		mutex_unlock(&tpci200->mutex);
++		return -EINVAL;
+ 	}
+ 
+ 	iounmap(virt_addr_space->address);
+@@ -605,8 +599,7 @@ static int tpci200_slot_unmap_space(struct ipack_device *dev, int space)
+ 	virt_addr_space->size = 0;
+ out_unlock:
+ 	mutex_unlock(&tpci200->mutex);
+-out:
+-	return res;
++	return 0;
+ }
+ 
+ static int tpci200_slot_unregister(struct ipack_device *dev)
 -- 
 1.7.10
 
