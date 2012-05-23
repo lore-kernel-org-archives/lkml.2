@@ -1,134 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932632Ab2EWNb3 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 May 2012 09:31:29 -0400
-Received: from mga03.intel.com ([143.182.124.21]:24560 "EHLO mga03.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755854Ab2EWNb1 convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 May 2012 09:31:27 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
-   d="scan'208";a="146756789"
-From: "Hao, Xudong" <xudong.hao@intel.com>
-To: "avi@redhat.com" <avi@redhat.com>
-CC: "kvm@vger.kernel.org" <kvm@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "mtosatti@redhat.com" <mtosatti@redhat.com>,
-        "takuya.yoshikawa@gmail.com" <takuya.yoshikawa@gmail.com>,
-        "Zhang, Xiantao" <xiantao.zhang@intel.com>,
-        "Shan, Haitao" <haitao.shan@intel.com>
-Subject: RE: [PATCH v3 4/4] Enabling Access bit when doing memory swapping
-Thread-Topic: [PATCH v3 4/4] Enabling Access bit when doing memory swapping
-Thread-Index: AQHNN8m33b6njSgvbECbKWBAN0OYjpbXYMXA
-Date: Wed, 23 May 2012 13:31:23 +0000
-Message-ID: <403610A45A2B5242BD291EDAE8B37D300FDC8918@SHSMSX102.ccr.corp.intel.com>
-References: <1337656995-24964-1-git-send-email-xudong.hao@intel.com>
-In-Reply-To: <1337656995-24964-1-git-send-email-xudong.hao@intel.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.239.127.40]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
-MIME-Version: 1.0
+	id S1759895Ab2EWNcq (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 May 2012 09:32:46 -0400
+Received: from ms01.sssup.it ([193.205.80.99]:59907 "EHLO sssup.it"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1759718Ab2EWNco (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 23 May 2012 09:32:44 -0400
+Message-ID: <1337779944.27368.94.camel@Solace>
+Subject: Re: [PATCH] sched/rt: fix SCHED_RR across cgroups
+From: Dario Faggioli <raistlin@linux.it>
+To: Colin Cross <ccross@android.com>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, linux-kernel@vger.kernel.org,
+        Ingo Molnar <mingo@kernel.org>, Steven Rostedt <rostedt@goodmis.org>,
+        Thomas Gleixner <tglx@linutronix.de>, Hillf Danton <dhillf@gmail.com>
+Date: Wed, 23 May 2012 15:32:24 +0200
+In-Reply-To: <CAMbhsRQYgOQA7NB-mdMDi8GxtTaZDQhED2J2X9YmyiYjAzXx4w@mail.gmail.com>
+References: <1337229266-15798-1-git-send-email-ccross@android.com>
+	 <1337331395.573.3.camel@twins>
+	 <CAMbhsRQYeM8b167HVge11kVtniWKEukN+xGMvcMDf5+UOOc8_w@mail.gmail.com>
+	 <1337366237.573.106.camel@twins>
+	 <CAMbhsRRnweLW_J+aBUsSbBh_Rp-PzVFap1FaRV1t9G0o9fZZAw@mail.gmail.com>
+	 <1337433062.7075.9.camel@Abyss>
+	 <CAMbhsRQYgOQA7NB-mdMDi8GxtTaZDQhED2J2X9YmyiYjAzXx4w@mail.gmail.com>
+Content-Type: multipart/signed; micalg="pgp-sha1"; protocol="application/pgp-signature";
+	boundary="=-WuQboxs6F99tTFSJXM3E"
+X-Mailer: Evolution 3.2.2-1+b1 
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi, Avi
 
-Will these patches be accepted if no other comments?
+--=-WuQboxs6F99tTFSJXM3E
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: quoted-printable
 
-Thanks,
--Xudong
+On Sat, 2012-05-19 at 13:37 -0700, Colin Cross wrote:
+> > I would say it is. That's what you get because of putting task1 and
+> > cgroup at the same level in the "hierarchy". I'm curious, what kind of
+> > behaviour were you expecting?
+>=20
+> That behavior matches exactly with scheduling of normal tasks and
+> cgroups with default cpu.shares, but doesn't match too well with what
+> I can see of the posix SCHED_RR description, which suggests all the
+> SCHED_RR threads go into a single queue.  I was just curious if the
+> behavior my patch restored was correct, since it can't be adjusted by
+> tweaking any parameters like cpu.shares.
+>=20
+Again, I really think it is the intended behaviour, and yes, real-time
+group scheduling "breaks" the POSIX specification of the SCHED_{FIFO,RR}
+policies intentionally (and _proudly_, as Peter would say it, am I
+wrong? :-P).
+
+Dario
+
+--=20
+<<This happens because I choose it to happen!>> (Raistlin Majere)
+-----------------------------------------------------------------
+Dario Faggioli, Ph.D, http://retis.sssup.it/people/faggioli
+Senior Software Engineer, Citrix Systems R&D Ltd., Cambridge (UK)
 
 
-> -----Original Message-----
-> From: Hao, Xudong
-> Sent: Tuesday, May 22, 2012 11:23 AM
-> To: avi@redhat.com
-> Cc: kvm@vger.kernel.org; linux-kernel@vger.kernel.org; mtosatti@redhat.com;
-> takuya.yoshikawa@gmail.com; Zhang, Xiantao; Hao, Xudong; Shan, Haitao
-> Subject: [PATCH v3 4/4] Enabling Access bit when doing memory swapping
-> 
-> <Re-send>
-> 
-> Enabling Access bit when doing memory swapping.
-> 
-> Changes from v2:
-> -Still using claer_bit() function to make sure it's atomic operation.
-> 
-> Signed-off-by: Haitao Shan <haitao.shan@intel.com>
-> Signed-off-by: Xudong Hao <xudong.hao@intel.com>
-> ---
->  arch/x86/kvm/mmu.c |   14 ++++++++------
->  arch/x86/kvm/vmx.c |    6 ++++--
->  2 files changed, 12 insertions(+), 8 deletions(-)
-> 
-> diff --git a/arch/x86/kvm/mmu.c b/arch/x86/kvm/mmu.c
-> index 72102e0..c2fef8e 100644
-> --- a/arch/x86/kvm/mmu.c
-> +++ b/arch/x86/kvm/mmu.c
-> @@ -1242,7 +1242,8 @@ static int kvm_age_rmapp(struct kvm *kvm,
-> unsigned long *rmapp,
->  	int young = 0;
-> 
->  	/*
-> -	 * Emulate the accessed bit for EPT, by checking if this page has
-> +	 * In case of absence of EPT Access and Dirty Bits supports,
-> +	 * emulate the accessed bit for EPT, by checking if this page has
->  	 * an EPT mapping, and clearing it if it does. On the next access,
->  	 * a new EPT mapping will be established.
->  	 * This has some overhead, but not as much as the cost of swapping
-> @@ -1253,11 +1254,12 @@ static int kvm_age_rmapp(struct kvm *kvm,
-> unsigned long *rmapp,
-> 
->  	for (sptep = rmap_get_first(*rmapp, &iter); sptep;
->  	     sptep = rmap_get_next(&iter)) {
-> -		BUG_ON(!(*sptep & PT_PRESENT_MASK));
-> +		BUG_ON(!is_shadow_present_pte(*sptep));
-> 
-> -		if (*sptep & PT_ACCESSED_MASK) {
-> +		if (*sptep & shadow_accessed_mask) {
->  			young = 1;
-> -			clear_bit(PT_ACCESSED_SHIFT, (unsigned long *)sptep);
-> +			clear_bit((ffs(shadow_accessed_mask) - 1),
-> +				 (unsigned long *)sptep);
->  		}
->  	}
-> 
-> @@ -1281,9 +1283,9 @@ static int kvm_test_age_rmapp(struct kvm *kvm,
-> unsigned long *rmapp,
-> 
->  	for (sptep = rmap_get_first(*rmapp, &iter); sptep;
->  	     sptep = rmap_get_next(&iter)) {
-> -		BUG_ON(!(*sptep & PT_PRESENT_MASK));
-> +		BUG_ON(!is_shadow_present_pte(*sptep));
-> 
-> -		if (*sptep & PT_ACCESSED_MASK) {
-> +		if (*sptep & shadow_accessed_mask) {
->  			young = 1;
->  			break;
->  		}
-> diff --git a/arch/x86/kvm/vmx.c b/arch/x86/kvm/vmx.c
-> index 32eb588..ea6390e 100644
-> --- a/arch/x86/kvm/vmx.c
-> +++ b/arch/x86/kvm/vmx.c
-> @@ -7275,8 +7275,10 @@ static int __init vmx_init(void)
->  	vmx_disable_intercept_for_msr(MSR_IA32_SYSENTER_EIP, false);
-> 
->  	if (enable_ept) {
-> -		kvm_mmu_set_mask_ptes(0ull, 0ull, 0ull, 0ull,
-> -				VMX_EPT_EXECUTABLE_MASK);
-> +		kvm_mmu_set_mask_ptes(0ull,
-> +			(enable_ept_ad_bits) ? VMX_EPT_ACCESS_BIT : 0ull,
-> +			(enable_ept_ad_bits) ? VMX_EPT_DIRTY_BIT : 0ull,
-> +			0ull, VMX_EPT_EXECUTABLE_MASK);
->  		ept_set_mmio_spte_mask();
->  		kvm_enable_tdp();
->  	} else
-> --
-> 1.5.6
+--=-WuQboxs6F99tTFSJXM3E
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: This is a digitally signed message part
+Content-Transfer-Encoding: 7bit
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iEYEABECAAYFAk+85ugACgkQk4XaBE3IOsRcKwCeMXa8PZEIRblI1J5IpgLTCbT4
+ZxgAn3LlICgHW7Oe+ryICGEgSPAujCmG
+=nmYa
+-----END PGP SIGNATURE-----
+
+--=-WuQboxs6F99tTFSJXM3E--
 
