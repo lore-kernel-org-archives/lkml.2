@@ -1,93 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965230Ab2EWP3Q (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 May 2012 11:29:16 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:30690 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933709Ab2EWP3M (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 May 2012 11:29:12 -0400
-Date: Wed, 23 May 2012 18:16:05 +0300
-From: "Michael S. Tsirkin" <mst@redhat.com>
-To: Andrew Theurer <habanero@linux.vnet.ibm.com>
-Cc: Liu ping fan <kernelfans@gmail.com>, Shirley Ma <mashirle@us.ibm.com>,
-        kvm@vger.kernel.org, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, qemu-devel@nongnu.org,
-        Avi Kivity <avi@redhat.com>,
-        Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>,
-        Rusty Russell <rusty@rustcorp.com.au>,
-        Anthony Liguori <anthony@codemonkey.ws>,
-        Ryan Harper <ryanh@us.ibm.com>, Shirley Ma <xma@us.ibm.com>,
-        Krishna Kumar <krkumar2@in.ibm.com>, Tom Lendacky <toml@us.ibm.com>
-Subject: Re: [RFC:kvm] export host NUMA info to guest & make emulated device
- NUMA attr
-Message-ID: <20120523151604.GB30542@redhat.com>
-References: <1337246456-30909-1-git-send-email-kernelfans@gmail.com>
- <1337357675.12999.31.camel@oc3660625478.ibm.com>
- <CAFgQCTsdXqitVGKm5jQjtC--yvZy6x04zRduJ+_tXqUnkncdog@mail.gmail.com>
- <4FBCF99F.4070409@linux.vnet.ibm.com>
+	id S965254Ab2EWP31 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 May 2012 11:29:27 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:40979 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S965236Ab2EWP3Y (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 23 May 2012 11:29:24 -0400
+Date: Wed, 23 May 2012 08:29:01 -0700
+From: tip-bot for Stephane Eranian <eranian@google.com>
+Message-ID: <tip-1a1ed1ba6778a5bc5702cebe276ab080a0b78115@git.kernel.org>
+Cc: acme@redhat.com, linux-kernel@vger.kernel.org, eranian@google.com,
+        hpa@zytor.com, mingo@kernel.org, peterz@infradead.org,
+        dsahern@gmail.com, tglx@linutronix.de, mingo@elte.hu
+Reply-To: mingo@kernel.org, hpa@zytor.com, eranian@google.com,
+        linux-kernel@vger.kernel.org, acme@redhat.com, peterz@infradead.org,
+        dsahern@gmail.com, tglx@linutronix.de, mingo@elte.hu
+In-Reply-To: <1337081295-10303-2-git-send-email-eranian@google.com>
+References: <1337081295-10303-2-git-send-email-eranian@google.com>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:perf/core] perf inject: Fix broken perf inject -b
+Git-Commit-ID: 1a1ed1ba6778a5bc5702cebe276ab080a0b78115
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-In-Reply-To: <4FBCF99F.4070409@linux.vnet.ibm.com>
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Wed, 23 May 2012 08:29:07 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, May 23, 2012 at 09:52:15AM -0500, Andrew Theurer wrote:
-> On 05/22/2012 04:28 AM, Liu ping fan wrote:
-> >On Sat, May 19, 2012 at 12:14 AM, Shirley Ma<mashirle@us.ibm.com>  wrote:
-> >>On Thu, 2012-05-17 at 17:20 +0800, Liu Ping Fan wrote:
-> >>>Currently, the guest can not know the NUMA info of the vcpu, which
-> >>>will
-> >>>result in performance drawback.
-> >>>
-> >>>This is the discovered and experiment by
-> >>>         Shirley Ma<xma@us.ibm.com>
-> >>>         Krishna Kumar<krkumar2@in.ibm.com>
-> >>>         Tom Lendacky<toml@us.ibm.com>
-> >>>Refer to -
-> >>>http://www.mail-archive.com/kvm@vger.kernel.org/msg69868.html
-> >>>we can see the big perfermance gap between NUMA aware and unaware.
-> >>>
-> >>>Enlightened by their discovery, I think, we can do more work -- that
-> >>>is to
-> >>>export NUMA info of host to guest.
-> >>
-> >>There three problems we've found:
-> >>
-> >>1. KVM doesn't support NUMA load balancer. Even there are no other
-> >>workloads in the system, and the number of vcpus on the guest is smaller
-> >>than the number of cpus per node, the vcpus could be scheduled on
-> >>different nodes.
-> >>
-> >>Someone is working on in-kernel solution. Andrew Theurer has a working
-> >>user-space NUMA aware VM balancer, it requires libvirt and cgroups
-> >>(which is default for RHEL6 systems).
-> >>
-> >Interesting, and I found that "sched/numa: Introduce
-> >sys_numa_{t,m}bind()" committed by Peter and Ingo may help.
-> >But I think from the guest view, it can not tell whether the two vcpus
-> >are on the same host node. For example,
-> >vcpu-a in node-A is not vcpu-b in node-B, the guest lb will be more
-> >expensive if it pull_task from vcpu-a and
-> >choose vcpu-b to push.  And my idea is to export such info to guest,
-> >still working on it.
-> 
-> The long term solution is to two-fold:
-> 1) Guests that are quite large (in that they cannot fit in a host
-> NUMA node) must have static mulit-node NUMA topology implemented by
-> Qemu. That is here today, but we do not do it automatically, which
-> is probably going to be a VM management responsibility.
-> 2) Host scheduler and NUMA code must be enhanced to get better
-> placement of Qemu memory and threads.  For single-node vNUMA guests,
-> this is easy, put it all in one node.  For mulit-node vNUMA guests,
-> the host must understand that some Qemu memory belongs with certain
-> vCPU threads (which make up one of the guests vNUMA nodes), and then
-> place that memory/threads in a specific host node (and continue for
-> other memory/threads for each Qemu vNUMA node).
+Commit-ID:  1a1ed1ba6778a5bc5702cebe276ab080a0b78115
+Gitweb:     http://git.kernel.org/tip/1a1ed1ba6778a5bc5702cebe276ab080a0b78115
+Author:     Stephane Eranian <eranian@google.com>
+AuthorDate: Tue, 15 May 2012 13:28:11 +0200
+Committer:  Arnaldo Carvalho de Melo <acme@redhat.com>
+CommitDate: Tue, 22 May 2012 12:59:28 -0300
 
-And for IO, we need multiqueue devices such that each
-node can have its own queue in its local memory.
+perf inject: Fix broken perf inject -b
 
--- 
-MST
+perf inject -b was broken. It would not inject any build_id into the
+stream. Furthermore, it would strip samples from the stream.
+
+The reason was a missing initialization of the event attribute
+structure. The perf_tool.tool.attr() callback was pointing to a simple
+repipe. But there was no initialization of the internal data structures
+to keep track of events and event ids. That later caused event id
+lookups to fail, and sample would get removed.
+
+The patch simply adds back the call to perf_event__process_attr() to
+initialize the evlist structure and now build_ids are again injected.
+
+Signed-off-by: Stephane Eranian <eranian@google.com>
+Cc: David Ahern <dsahern@gmail.com>
+Cc: Ingo Molnar <mingo@elte.hu>
+Cc: Peter Zijlstra <peterz@infradead.org>
+Link: http://lkml.kernel.org/r/1337081295-10303-2-git-send-email-eranian@google.com
+Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
+---
+ tools/perf/builtin-inject.c |    5 +++++
+ 1 files changed, 5 insertions(+), 0 deletions(-)
+
+diff --git a/tools/perf/builtin-inject.c b/tools/perf/builtin-inject.c
+index 09c1061..3beab48 100644
+--- a/tools/perf/builtin-inject.c
++++ b/tools/perf/builtin-inject.c
+@@ -60,6 +60,11 @@ static int perf_event__repipe_tracing_data_synth(union perf_event *event,
+ static int perf_event__repipe_attr(union perf_event *event,
+ 				   struct perf_evlist **pevlist __used)
+ {
++	int ret;
++	ret = perf_event__process_attr(event, pevlist);
++	if (ret)
++		return ret;
++
+ 	return perf_event__repipe_synth(NULL, event, NULL);
+ }
+ 
