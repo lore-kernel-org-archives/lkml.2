@@ -1,51 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760522Ab2EWQOW (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 May 2012 12:14:22 -0400
-Received: from oproxy5-pub.bluehost.com ([67.222.38.55]:41718 "HELO
-	oproxy5-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1751924Ab2EWQOV (ORCPT
+	id S1753126Ab2EWQSc (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 May 2012 12:18:32 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:38332 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750914Ab2EWQSb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 May 2012 12:14:21 -0400
-Message-ID: <4FBD0CDD.6010003@xenotime.net>
-Date: Wed, 23 May 2012 09:14:21 -0700
-From: Randy Dunlap <rdunlap@xenotime.net>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.15) Gecko/20110323 Thunderbird/3.1.9
-MIME-Version: 1.0
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-CC: linux-next@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
-        linux-acpi@vger.kernel.org, Len Brown <lenb@kernel.org>
-Subject: [PATCH -next] acpi: fix acpi_bus.h warnings when ACPI is not enabled
-References: <20120523170740.ae058d8d5468d471eb948c39@canb.auug.org.au>
-In-Reply-To: <20120523170740.ae058d8d5468d471eb948c39@canb.auug.org.au>
-Content-Type: text/plain; charset=UTF-8
+	Wed, 23 May 2012 12:18:31 -0400
+Subject: Re: [tip:x86/mce] x86/mce: Fix 32-bit build
+From: Peter Zijlstra <a.p.zijlstra@chello.nl>
+To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        akpm@linux-foundation.org, frank.arnold@amd.com,
+        torvalds@linux-foundation.org, tglx@linutronix.de,
+        borislav.petkov@amd.com
+Cc: linux-tip-commits@vger.kernel.org
+In-Reply-To: <tip-80f033610fb968e75f5d470233d8d0260d7a72ed@git.kernel.org>
+References: <1337684026-19740-2-git-send-email-bp@amd64.org>
+	 <tip-80f033610fb968e75f5d470233d8d0260d7a72ed@git.kernel.org>
+Content-Type: text/plain; charset="UTF-8"
+Date: Wed, 23 May 2012 18:18:18 +0200
+Message-ID: <1337789898.9783.19.camel@laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.2 
 Content-Transfer-Encoding: 7bit
-X-Identified-User: {1807:box742.bluehost.com:xenotime:xenotime.net} {sentby:smtp auth 50.53.38.135 authed with rdunlap@xenotime.net}
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Randy Dunlap <rdunlap@xenotime.net>
+On Wed, 2012-05-23 at 09:08 -0700, tip-bot for Borislav Petkov wrote:
+> +                                if (val & BIT_64(62)) {
+> +                                       val &= ~BIT_64(62);
+> +                                       wrmsrl(msrs[i], val);
+>                                  } 
 
-Fix header file warnings when CONFIG_ACPI is not enabled:
+Wouldn't it be much better to name those things, BIT(62), BIT(18) etc.
+aren't very descriptive at all.
 
-include/acpi/acpi_bus.h:443:42: warning: 'struct acpi_bus_type' declared inside parameter list
-include/acpi/acpi_bus.h:443:42: warning: its scope is only this definition or declaration, which is probably not what you want
-include/acpi/acpi_bus.h:444:44: warning: 'struct acpi_bus_type' declared inside parameter list
+MCE_MISC_COUNTER_PRESENT is much more descriptive than BIT(62).
 
-Signed-off-by: Randy Dunlap <rdunlap@xenotime.net>
----
- include/acpi/acpi_bus.h |    2 ++
- 1 file changed, 2 insertions(+)
-
---- linux-next-20120523.orig/include/acpi/acpi_bus.h
-+++ linux-next-20120523/include/acpi/acpi_bus.h
-@@ -440,6 +440,8 @@ static inline int acpi_pm_device_sleep_w
- 
- #else	/* CONFIG_ACPI */
- 
-+struct acpi_bus_type;
-+
- static int register_acpi_bus_type(struct acpi_bus_type *bus) { return 0; }
- static int unregister_acpi_bus_type(struct acpi_bus_type *bus) { return 0; }
- 
