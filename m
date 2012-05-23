@@ -1,118 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933625Ab2EWOyQ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 May 2012 10:54:16 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:25235 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932290Ab2EWOyL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 May 2012 10:54:11 -0400
-Date: Wed, 23 May 2012 16:52:39 +0200
-From: Oleg Nesterov <oleg@redhat.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: "Eric W. Biederman" <ebiederm@xmission.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Pavel Emelyanov <xemul@parallels.com>,
-        Cyrill Gorcunov <gorcunov@openvz.org>,
-        Louis Rilling <louis.rilling@kerlabs.com>,
-        Mike Galbraith <efault@gmx.de>
-Subject: Re: [PATCH] pidns: Guarantee that the pidns init will be the last
-	pidns process reaped. v2
-Message-ID: <20120523145239.GA20378@redhat.com>
-References: <8762c87rrd.fsf_-_@xmission.com> <20120516183920.GA19975@redhat.com> <878vgrsv7q.fsf@xmission.com> <20120517170015.GA12436@redhat.com> <87d3628oqa.fsf@xmission.com> <20120518123911.GA417@redhat.com> <87zk95kper.fsf@xmission.com> <20120521124414.GA20391@redhat.com> <87d35x5ank.fsf_-_@xmission.com> <20120522122315.c3f2118c.akpm@linux-foundation.org>
-MIME-Version: 1.0
+	id S1759728Ab2EWOz1 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 May 2012 10:55:27 -0400
+Received: from ns1.pc-advies.be ([83.149.101.17]:53948 "EHLO
+	spo001.leaseweb.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1758805Ab2EWOzY (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 23 May 2012 10:55:24 -0400
+Date: Wed, 23 May 2012 16:55:13 +0200
+From: Wim Van Sebroeck <wim@iguana.be>
+To: Samuel Ortiz <sameo@linux.intel.com>
+Cc: Guenter Roeck <guenter@roeck-us.net>,
+        Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Aaron Sierra <asierra@xes-inc.com>,
+        Randy Dunlap <rdunlap@xenotime.net>, linux-watchdog@vger.kernel.org,
+        Jean Delvare <khali@linux-fr.org>
+Subject: Re: linux-next: manual merge of the watchdog tree with the mfd tree
+Message-ID: <20120523145513.GJ3074@spo001.leaseweb.com>
+References: <20120518152348.1e5070cdc16cfdf00682546d@canb.auug.org.au> <20120518083234.GW3074@spo001.leaseweb.com> <6.2.5.6.2.20120518181141.028c8090@roeck-us.net> <20120522163559.GD3074@spo001.leaseweb.com> <6.2.5.6.2.20120522153050.0284ee38@roeck-us.net> <20120523054430.GH3074@spo001.leaseweb.com> <20120523142658.GD23600@sortiz-mobl>
+Mime-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20120522122315.c3f2118c.akpm@linux-foundation.org>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <20120523142658.GD23600@sortiz-mobl>
+User-Agent: Mutt/1.4.1i
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/22, Andrew Morton wrote:
->
-> On Mon, 21 May 2012 18:20:31 -0600
-> ebiederm@xmission.com (Eric W. Biederman) wrote:
->
-> > +		/* If we are the last child process in a pid namespace
->
-> like this:
-> 		/*
-> 		 * If ...
->
-> > +		 * to be reaped notify the child_reaper.
->
-> s/reaped/reaped,/
->
-> More seriously, it isn't a very good comment.  It tells us "what" the
-> code is doing (which is pretty obvious from reading it), but it didn't
-> tell us "why" it is doing this.  Why do PID namespaces need special
-> handling here?  What's the backstory??
+Hi Sam,
 
-Well, this is documented in the changelog but I agree, this needs some
-documentation.
+> > Since %04llx with a typecast to u64 is the way to go (Thanks Stephen and Randy)...
+> > 
+> > > How do we make sure that Randy's patch makes it upstream ? The iTCO 
+> > > patch is currently in Sam's tree.
+> > 
+> > Can you carry Randy's patch/fix (since it fixes the change introduced by the iTCO_wdt mfd patch)?
+> > If not then I will apply the patch later on once the iTCO_wdt mfd patch is mainstream.
+> > 
+> I'd appreciate if you could take it. I'm trying to avoid taking more patches
+> at this moment.
 
-Perhaps zap_pid_ns_processes() should document that it waits for the
-stealth EXIT_DEAD tasks, and __unhash_process() can simply say
-"see zap_pid_ns_processes()".
+No problem. I'll take it then.
 
-> > @@ -189,6 +189,17 @@ void zap_pid_ns_processes(struct pid_namespace *pid_ns)
-> >  		rc = sys_wait4(-1, NULL, __WALL, NULL);
-> >  	} while (rc != -ECHILD);
-> >
-> > +	read_lock(&tasklist_lock);
-> > +	for (;;) {
-> > +		__set_current_state(TASK_UNINTERRUPTIBLE);
-> > +		if (list_empty(&current->children))
-> > +			break;
-> > +		read_unlock(&tasklist_lock);
-> > +		schedule();
-> > +		read_lock(&tasklist_lock);
-> > +	}
-> > +	read_unlock(&tasklist_lock);
->
-> Well.
->
-> a) This loop can leave the thread in state TASK_UNINTERRUPTIBLE,
->    which looks wrong.
-
-OOPS. You fixed this in *-fix.patch, thanks.
-
-> b) Given that the waking side is also testing list_empty(), I think
->    you might need set_current_state() here, with the barrier.  So that
->    this thread gets the correct view of the list_head wrt the waker's
->    view.
-
-We rely on tasklist_lock, note that the waking side takes it for writing.
-
-> c) Did we really need to bang on tasklist_lock so many times?  There
->    doesn't seem a nicer way of structuring this :(
-
-See above.
-
-We do not really need tasklist_lock to wait for list_empty(children),
-we could add a couple of barriers or use wait_event(wait_chldexit).
-But the explicit usage of tasklist makes the code more understandable,
-this this way we obviously can't race with the child doing release_task(),
-say, we can't return before the last detach_pid(PIDTYPE_PID).
-
-As for re-structuring, I'd suggest
-
-	for (;;) {
-		bool need_wait = false;
-
-		read_lock(&tasklist_lock);
-		if (!list_empty(&current->children)) {
-			__set_current_state(TASK_UNINTERRUPTIBLE);
-			need_wait = true;
-		}
-		read_unlock(&tasklist_lock);
-
-		if (!need_wait)
-			break;
-		schedule();
-	}
-
-but this is subjective.
-
-Oleg.
+Kind regards,
+Wim.
 
