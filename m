@@ -1,83 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759758Ab2EWNQG (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 May 2012 09:16:06 -0400
-Received: from palinux.external.hp.com ([192.25.206.14]:45411 "EHLO
-	mail.parisc-linux.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752201Ab2EWNQE (ORCPT
+	id S932363Ab2EWNTY (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 May 2012 09:19:24 -0400
+Received: from rcsinet15.oracle.com ([148.87.113.117]:43240 "EHLO
+	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750747Ab2EWNTX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 May 2012 09:16:04 -0400
-Date: Wed, 23 May 2012 07:16:00 -0600
-From: Matthew Wilcox <matthew@wil.cx>
-To: Akinobu Mita <akinobu.mita@gmail.com>
-Cc: Jan Kara <jack@suse.cz>, linux-kernel@vger.kernel.org,
-        akpm@linux-foundation.org, Anders Larsen <al@alarsen.net>,
-        Alasdair Kergon <agk@redhat.com>, dm-devel@redhat.com,
-        linux-fsdevel@vger.kernel.org,
-        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
-        linux-media@vger.kernel.org, Mark Fasheh <mfasheh@suse.com>,
-        Joel Becker <jlbec@evilplan.org>, ocfs2-devel@oss.oracle.com,
-        linux-ext4@vger.kernel.org, Andreas Dilger <adilger.kernel@dilger.ca>,
-        "Theodore Ts'o" <tytso@mit.edu>
-Subject: Re: [PATCH 01/10] string: introduce memweight
-Message-ID: <20120523131559.GA7064@parisc-linux.org>
-References: <1337520203-29147-1-git-send-email-akinobu.mita@gmail.com> <20120523092113.GG10452@quack.suse.cz> <CAC5umyi=ridqRZGGh0+_xw0-GCN+69B33Qz82-9x4dVODGGx6w@mail.gmail.com>
+	Wed, 23 May 2012 09:19:23 -0400
+Date: Wed, 23 May 2012 09:12:42 -0400
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+To: Simon Graham <simon.graham@citrix.com>
+Cc: Ian Campbell <Ian.Campbell@citrix.com>,
+        Ben Hutchings <bhutchings@solarflare.com>,
+        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        "davem@davemloft.net" <davem@davemloft.net>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Adnan Misherfi <adnan.misherfi@oracle.com>
+Subject: Re: [PATCH] xen/netback: calculate correctly the SKB slots.
+Message-ID: <20120523131242.GA15406@phenom.dumpdata.com>
+References: <1337621793-12486-1-git-send-email-konrad.wilk@oracle.com>
+ <1337627640.2979.33.camel@bwh-desktop.uk.solarflarecom.com>
+ <1337678512.10118.40.camel@zakaz.uk.xensource.com>
+ <20120522180901.GC22488@phenom.dumpdata.com>
+ <F02ED76F3FCF8C468AD22A7618C05BBBB18DBFFE61@FTLPMAILBOX01.citrite.net>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <CAC5umyi=ridqRZGGh0+_xw0-GCN+69B33Qz82-9x4dVODGGx6w@mail.gmail.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <F02ED76F3FCF8C468AD22A7618C05BBBB18DBFFE61@FTLPMAILBOX01.citrite.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: acsinet21.oracle.com [141.146.126.237]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, May 23, 2012 at 09:12:18PM +0900, Akinobu Mita wrote:
-> size_t memweight(const void *ptr, size_t bytes)
-
-Why should this return size_t instead of unsigned long?
-
-> {
-> 	size_t w = 0;
-> 	size_t longs;
-> 	const unsigned char *bitmap = ptr;
+On Tue, May 22, 2012 at 03:01:55PM -0400, Simon Graham wrote:
+> > >
+> > > > >  	int i, copy_off;
+> > > > >
+> > > > >  	count = DIV_ROUND_UP(
+> > > > > -			offset_in_page(skb->data)+skb_headlen(skb),
+> > PAGE_SIZE);
+> > > > > +			offset_in_page(skb->data + skb_headlen(skb)),
+> > PAGE_SIZE);
+> > > >
+> > > > The new version would be equivalent to:
+> > > > 	count = offset_in_page(skb->data + skb_headlen(skb)) != 0;
+> > > > which is not right, as netbk_gop_skb() will use one slot per page.
+> > >
+> > > Just outside the context of this patch we separately count the frag
+> > > pages.
+> > >
+> > > However I think you are right if skb->data covers > 1 page, since the
+> > > new version can only ever return 0 or 1. I expect this patch papers
+> > over
+> > > the underlying issue by not stopping often enough, rather than
+> > actually
+> > > fixing the underlying issue.
+> > 
+> > Ah, any thoughts? Have you guys seen this behavior as well?
 > 
-> 	for (; bytes > 0 && ((unsigned long)bitmap) % sizeof(long);
-> 			bytes--, bitmap++)
-> 		w += hweight8(*bitmap);
-> 
-> 	longs = bytes / sizeof(long);
-> 	BUG_ON(longs >= INT_MAX / BITS_PER_LONG);
-> 	w += bitmap_weight((unsigned long *)bitmap, longs * BITS_PER_LONG);
-> 	bytes -= longs * sizeof(long);
-> 	bitmap += longs * sizeof(long);
-> 
-> 	for (; bytes > 0; bytes--, bitmap++)
-> 		w += hweight8(*bitmap);
-> 
-> 	return w;
-> }
+> We ran into this same problem and the fix we've been running with for a while now (been meaning to submit it!) is:
 
-bitmap_weight copes with a bitmask that isn't a multiple of BITS_PER_LONG
-in size already.  So I think this can be done as:
-
-unsigned long memweight(const void *s, size_t n)
-{
-	const unsigned char *ptr = s;
-	unsigned long r = 0;
-
-	while (n > 0 && (unsigned long)ptr % sizeof(long)) {
-		r += hweight8(*ptr);
-		n--;
-		ptr++;
-	}
-
-	BUG_ON(n >= INT_MAX / 8)
-
-	return r + bitmap_weight((unsigned long *)ptr, n * 8);
-}
-
--- 
-Matthew Wilcox				Intel Open Source Technology Centre
-"Bill, look, we understand that you're interested in selling us this
-operating system, but compare it to ours.  We can't possibly take such
-a retrograde step."
+Where is the patchqueue of the patches? Is it only on the src.rpm or
+is it in some nice mercurial tree? Asking b/c if we run into other trouble
+it would be also time-saving for us (and I presume other companies
+too) to check that. Thanks!
