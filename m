@@ -1,65 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933785Ab2EWRxp (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 May 2012 13:53:45 -0400
-Received: from acsinet15.oracle.com ([141.146.126.227]:46181 "EHLO
-	acsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933646Ab2EWRxm (ORCPT
+	id S933801Ab2EWRyW (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 May 2012 13:54:22 -0400
+Received: from rcsinet15.oracle.com ([148.87.113.117]:35172 "EHLO
+	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1760654Ab2EWRxl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 May 2012 13:53:42 -0400
+	Wed, 23 May 2012 13:53:41 -0400
 From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
 To: linux-kernel@vger.kernel.org, xen-devel@lists.xensource.com
-Subject: [PATCH] bug-fixes to hvc-xen driver in v3.4 (and earlier).
-Date: Wed, 23 May 2012 13:46:58 -0400
-Message-Id: <1337795222-29946-1-git-send-email-konrad.wilk@oracle.com>
+Subject: [PATCH 4/4] xen/events: Add WARN_ON when quick lookup found invalid type.
+Date: Wed, 23 May 2012 13:47:02 -0400
+Message-Id: <1337795222-29946-5-git-send-email-konrad.wilk@oracle.com>
 X-Mailer: git-send-email 1.7.7.5
-X-Source-IP: acsinet22.oracle.com [141.146.126.238]
+In-Reply-To: <1337795222-29946-1-git-send-email-konrad.wilk@oracle.com>
+References: <1337795222-29946-1-git-send-email-konrad.wilk@oracle.com>
+X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Three of the patches could be squashed in one, but it makes more sense
-to review them as three. These patches fix the case of an PVHVM
-guest not being able to resume propely b/c of hitting:
+All of the bind_XYZ_to_irq do a quick lookup to see if the
+event exists. And if they that value is returned instead of
+initialized. This patch adds an extra logic to check that the
+type returned is the proper one and we can use it to find
+drivers that are doing something naught.
 
- 142         BUG_ON(info->type != IRQT_UNBOUND && info->type != type);
+Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+---
+ drivers/xen/events.c |   11 +++++++++--
+ 1 files changed, 9 insertions(+), 2 deletions(-)
 
-(in events.c) and also adds a WARN to catch situations like these.
+diff --git a/drivers/xen/events.c b/drivers/xen/events.c
+index faae2f9..093851b 100644
+--- a/drivers/xen/events.c
++++ b/drivers/xen/events.c
+@@ -827,6 +827,9 @@ int bind_evtchn_to_irq(unsigned int evtchn)
+ 					      handle_edge_irq, "event");
+ 
+ 		xen_irq_info_evtchn_init(irq, evtchn);
++	} else {
++		struct irq_info *info = info_for_irq(irq);
++		WARN_ON(info && info->type != IRQT_EVTCHN);
+ 	}
+ 
+ out:
+@@ -862,8 +865,10 @@ static int bind_ipi_to_irq(unsigned int ipi, unsigned int cpu)
+ 		xen_irq_info_ipi_init(cpu, irq, evtchn, ipi);
+ 
+ 		bind_evtchn_to_cpu(evtchn, cpu);
++	} else {
++		struct irq_info *info = info_for_irq(irq);
++		WARN_ON(info && info->type != IRQT_IPI);
+ 	}
+-
+  out:
+ 	mutex_unlock(&irq_mapping_update_lock);
+ 	return irq;
+@@ -939,8 +944,10 @@ int bind_virq_to_irq(unsigned int virq, unsigned int cpu)
+ 		xen_irq_info_virq_init(cpu, irq, evtchn, virq);
+ 
+ 		bind_evtchn_to_cpu(evtchn, cpu);
++	} else {
++		struct irq_info *info = info_for_irq(irq);
++		WARN_ON(info && info->type != IRQT_VIRQ);
+ 	}
+-
+ out:
+ 	mutex_unlock(&irq_mapping_update_lock);
+ 
+-- 
+1.7.7.5
 
-The reason for this is that the Xen python toolstack does not
-setup HVM_PARAM_CONSOLE_EVTCHN parameter, so we would use the
-default value (0).. and ended up using the same IRQ line as the
-xen-platform-pci driver. Huh? Note: the 'xl' toolstack _does_
-set it.
-
-The reason is that the when the xen-platform-pci starts, it requests
-an PIRQ, and the info structure in events.c is filled as such:
-
- info->type = IRQT_PIRQ
- info->events = 0
- info->irq = 28
- evtchn_to_irq[0] = 28
-
-And when xen_hvc_init is called during bootup, it figures out the
-event from HVM_PARAM_CONSOLE_EVTCHN as zero, and plugs them in:
-
- 532                 info->irq = bind_evtchn_to_irq(info->evtchn);
-
-getting IRQ 28 as bind_evtchn_to_irq does a quick lookup:
-
- 818         irq = evtchn_to_irq[evtchn];
-
-and gives an already used IRQ line.
-
-When we suspend the guest (xm save), then try to resume, we call
-xen_console_resume, which does:
-
-301         if (info != NULL && info->irq)
-302                 rebind_evtchn_irq(info->evtchn, info->irq);
-
-and that triggers the BUG_ON mentioned above (b/c the type
-we want is IRQT_EVTCHN and the type info->type is IRQT_PIRQ).
-
- drivers/tty/hvc/hvc_xen.c |   24 +++++++++++-------------
- drivers/xen/events.c      |   11 +++++++++--
- 2 files changed, 20 insertions(+), 15 deletions(-)
