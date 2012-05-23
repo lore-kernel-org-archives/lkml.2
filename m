@@ -1,116 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933146Ab2EWCFw (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 May 2012 22:05:52 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:60630 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932977Ab2EWCFu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 May 2012 22:05:50 -0400
-Date: Tue, 22 May 2012 22:02:47 -0400
-From: Dave Jones <davej@redhat.com>
-To: Ming Lei <tom.leiming@gmail.com>
-Cc: Linux Kernel <linux-kernel@vger.kernel.org>,
-        Alan Cox <alan@linux.intel.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Subject: Re: 3.4+ tty lockdep trace
-Message-ID: <20120523020247.GA5653@redhat.com>
-Mail-Followup-To: Dave Jones <davej@redhat.com>,
-	Ming Lei <tom.leiming@gmail.com>,
-	Linux Kernel <linux-kernel@vger.kernel.org>,
-	Alan Cox <alan@linux.intel.com>,
-	Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-References: <20120523002645.GA3490@redhat.com>
- <CACVXFVMz_GKHXpzbqt24yY=fHJ6uYZPOcSnKNFHrvbdpWxc7tw@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CACVXFVMz_GKHXpzbqt24yY=fHJ6uYZPOcSnKNFHrvbdpWxc7tw@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S933167Ab2EWCIY (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 May 2012 22:08:24 -0400
+Received: from haggis.pcug.org.au ([203.10.76.10]:41788 "EHLO
+	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933025Ab2EWCIX (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 May 2012 22:08:23 -0400
+Date: Wed, 23 May 2012 12:08:17 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: David Miller <davem@davemloft.net>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: linux-next: build failure after merge of the final tree
+Message-Id: <20120523120817.07529208f2efb9abf3222240@canb.auug.org.au>
+In-Reply-To: <20120522.150525.1965961563976193101.davem@davemloft.net>
+References: <20120522182010.f93a38e575ed34e88de5b787@canb.auug.org.au>
+	<20120522.150525.1965961563976193101.davem@davemloft.net>
+X-Mailer: Sylpheed 3.2.0beta7 (GTK+ 2.24.10; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Wed__23_May_2012_12_08_17_+1000_9DV9eBwsJW8wyGzI"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-A different one. This time with devpts. (With the patch Ming Lei pointed to on top of Linus current)
+--Signature=_Wed__23_May_2012_12_08_17_+1000_9DV9eBwsJW8wyGzI
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-	Dave
+Hi Dave,
 
- ======================================================
- [ INFO: possible circular locking dependency detected ]
- 3.4.0+ #25 Not tainted
- -------------------------------------------------------
- sshd/632 is trying to acquire lock:
-  (devpts_mutex){+.+.+.}, at: [<ffffffff813b9846>] pty_close+0x156/0x180
- 
- but task is already holding lock:
-  (&tty->legacy_mutex){+.+.+.}, at: [<ffffffff81656cb2>] tty_lock_nested+0x42/0x90
- 
- which lock already depends on the new lock.
- 
- 
- the existing dependency chain (in reverse order) is:
- 
- -> #1 (&tty->legacy_mutex){+.+.+.}:
-        [<ffffffff810b51e2>] lock_acquire+0x92/0x1f0
-        [<ffffffff816534f1>] mutex_lock_nested+0x71/0x3b0
-        [<ffffffff81656cb2>] tty_lock_nested+0x42/0x90
-        [<ffffffff81656d10>] tty_lock+0x10/0x20
-        [<ffffffff813afe8f>] tty_init_dev+0x6f/0x140
-        [<ffffffff813b9946>] ptmx_open+0xa6/0x180
-        [<ffffffff811aa2fb>] chrdev_open+0x9b/0x1b0
-        [<ffffffff811a289b>] __dentry_open+0x26b/0x380
-        [<ffffffff811a3d64>] nameidata_to_filp+0x74/0x80
-        [<ffffffff811b5af8>] do_last+0x468/0x900
-        [<ffffffff811b60a2>] path_openat+0xd2/0x3f0
-        [<ffffffff811b64e1>] do_filp_open+0x41/0xa0
-        [<ffffffff811a3e5d>] do_sys_open+0xed/0x1c0
-        [<ffffffff811a3f51>] sys_open+0x21/0x30
-        [<ffffffff8165e6d2>] system_call_fastpath+0x16/0x1b
- 
- -> #0 (devpts_mutex){+.+.+.}:
-        [<ffffffff810b43ae>] __lock_acquire+0x132e/0x1aa0
-        [<ffffffff810b51e2>] lock_acquire+0x92/0x1f0
-        [<ffffffff816534f1>] mutex_lock_nested+0x71/0x3b0
-        [<ffffffff813b9846>] pty_close+0x156/0x180
-        [<ffffffff813b0203>] tty_release+0x183/0x5d0
-        [<ffffffff811a765c>] fput+0x12c/0x300
-        [<ffffffff811a23a9>] filp_close+0x69/0xa0
-        [<ffffffff811a2f2d>] sys_close+0xad/0x1a0
-        [<ffffffff8165e6d2>] system_call_fastpath+0x16/0x1b
- 
- other info that might help us debug this:
- 
-  Possible unsafe locking scenario:
- 
-        CPU0                    CPU1
-        ----                    ----
-   lock(&tty->legacy_mutex);
-                                lock(devpts_mutex);
-                                lock(&tty->legacy_mutex);
-   lock(devpts_mutex);
- 
-  *** DEADLOCK ***
- 
- 1 lock held by sshd/632:
-  #0:  (&tty->legacy_mutex){+.+.+.}, at: [<ffffffff81656cb2>] tty_lock_nested+0x42/0x90
- 
- stack backtrace:
- Pid: 632, comm: sshd Not tainted 3.4.0+ #25
- Call Trace:
-  [<ffffffff8164a64a>] print_circular_bug+0x1fb/0x20c
-  [<ffffffff810b43ae>] __lock_acquire+0x132e/0x1aa0
-  [<ffffffff810b51e2>] lock_acquire+0x92/0x1f0
-  [<ffffffff813b9846>] ? pty_close+0x156/0x180
-  [<ffffffff816534f1>] mutex_lock_nested+0x71/0x3b0
-  [<ffffffff813b9846>] ? pty_close+0x156/0x180
-  [<ffffffff8165a70d>] ? sub_preempt_count+0x6d/0xd0
-  [<ffffffff813b9846>] ? pty_close+0x156/0x180
-  [<ffffffff81656bd2>] ? _raw_spin_unlock_irqrestore+0x42/0x80
-  [<ffffffff8107d9c3>] ? __wake_up+0x53/0x70
-  [<ffffffff813b9846>] pty_close+0x156/0x180
-  [<ffffffff813b0203>] tty_release+0x183/0x5d0
-  [<ffffffff811c5670>] ? vfsmount_lock_local_unlock_cpu+0x70/0x70
-  [<ffffffff811a765c>] fput+0x12c/0x300
-  [<ffffffff811a23a9>] filp_close+0x69/0xa0
-  [<ffffffff811a2f2d>] sys_close+0xad/0x1a0
-  [<ffffffff8165e6d2>] system_call_fastpath+0x16/0x1b
+On Tue, 22 May 2012 15:05:25 -0400 (EDT) David Miller <davem@davemloft.net>=
+ wrote:
+>
+> From: Stephen Rothwell <sfr@canb.auug.org.au>
+> Date: Tue, 22 May 2012 18:20:10 +1000
+>=20
+> > After merging the final tree, today's linux-next build (sparc32 defconf=
+ig)
+> > failed like this:
+> >=20
+> > arch/sparc/kernel/time_32.c: In function 'timer_interrupt':
+> > arch/sparc/kernel/time_32.c:105:3: error: invalid use of undefined type=
+ 'struct clock_event_device'
+>  ...
+> > I have no idea what caused this, I did not get this yesterday.  I have
+> > left this build broken for today.
+>=20
+> It builds cleanly in Linus's tree, and I have no local changes in sparc-n=
+ext.
 
+I bisected it down to my merge of the tip tree (commit 26b38c5887 in
+next-20120522).  I only enable GENERIC_CLOCKEVENTS for sparc64 - I missed
+a subtle interaction between commit 62f082830d63 ("sparc32: generic
+clockevent support") from the sparc-next tree and commit ded1cc5cfc3b
+("sparc: Use: generic time config") from the tip tree.
+
+I will fix this up in linux-next today.  Sorry for the noise.
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+
+--Signature=_Wed__23_May_2012_12_08_17_+1000_9DV9eBwsJW8wyGzI
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBCAAGBQJPvEaRAAoJEECxmPOUX5FEK3wP/3SRXiCTj8eJovLYzCCeVJ8Q
+cRcOhmdeOK6aZ5/o2U/1gPIQfKmgiA1Jj0KJpPicWQZpbIViZt4BZvA9rdT1WQ9E
+SV2CeeMMfcgUuzCcesCxxnItn8Qisv4HR+2xggUnmcZEK2s2MT7zoCSNqCqq/Pbu
+RiZoydBd45slmySiR92fRsXaqjXmq2HDcoZlLLD4Naj0oJ0XgOz3UnA2DpZgkiGA
+zJiCFHyAzFeEgo8Q7qO1tPEFbwt3hqx9PQIYnPSxWWd3W63wwM/yifpmDS5m1iIA
+LjaQYYDQEacm2npl09nnzJo4KUsqLxdqFRbRapKAAcvsL440QpLv/Ji7ExlfNm+s
+WtobDKiXU7hA65Qvyxy3Zwdyd33INuGO7p2vWg5VcLU2Dq/1747r1RiqaMkLvCWG
+GqTidZPhXEFxD9fv1e+Cudk9g/GrF3cWft4xhHyR2AhmWo8S4kBr/SEKWENXiBG/
+YCyZ10zSNMQbiLypmi71bhrI/FnP6ZYxo3chZFpkt3G3vfDOFisXh70xFXIEBNv1
+Yv+pjRWXQMtBpL/jLU6K9qbGxyy/rdLU9riuoM6OBqNReQyuReSd2YlzXiJacjOg
+ehdt/4T40bqFmDhK6Yx3ykq6jDTQrYlzFtFwLY2Wd6cjApwfTaCHquKbOYQWw0um
+kvAQvfH+PwAxrcIRSct+
+=ijvA
+-----END PGP SIGNATURE-----
+
+--Signature=_Wed__23_May_2012_12_08_17_+1000_9DV9eBwsJW8wyGzI--
