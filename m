@@ -1,53 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754213Ab2EWQlR (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 May 2012 12:41:17 -0400
-Received: from mail-we0-f174.google.com ([74.125.82.174]:40165 "EHLO
-	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752094Ab2EWQlP convert rfc822-to-8bit (ORCPT
+	id S1755791Ab2EWQld (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 May 2012 12:41:33 -0400
+Received: from mail-wg0-f42.google.com ([74.125.82.42]:46312 "EHLO
+	mail-wg0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753993Ab2EWQlb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 May 2012 12:41:15 -0400
+	Wed, 23 May 2012 12:41:31 -0400
 MIME-Version: 1.0
-In-Reply-To: <CA+55aFyyEhYcoh2gugVJELfW+dGrLbrow=ZoXsPs3kxft7Tu4g@mail.gmail.com>
-References: <20120521170539.GA13635@google.com>
-	<CA+55aFyyEhYcoh2gugVJELfW+dGrLbrow=ZoXsPs3kxft7Tu4g@mail.gmail.com>
-Date: Wed, 23 May 2012 09:41:13 -0700
-Message-ID: <CA+8MBbJ00Kgycu-7v6vofQYst_Cujoiu78_Ke5RqM6Bx=-+F1g@mail.gmail.com>
-Subject: Re: [GIT PULL] PCI updates for 3.5 merge window
-From: Tony Luck <tony.luck@gmail.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Bjorn Helgaas <bhelgaas@google.com>, linux-kernel@vger.kernel.org,
-        linux-pci@vger.kernel.org
+In-Reply-To: <20120523161932.GN14757@aftab.osrc.amd.com>
+References: <1337684026-19740-1-git-send-email-bp@amd64.org>
+ <tip-e8f380e00840f694599e6ab42806639f7de26f11@git.kernel.org>
+ <1337789429.9783.16.camel@laptop> <4FBD0C47.70600@zytor.com> <20120523161932.GN14757@aftab.osrc.amd.com>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Wed, 23 May 2012 09:40:40 -0700
+X-Google-Sender-Auth: 0gk9LUAurcgnfmGYqa1xPh89eXY
+Message-ID: <CA+55aFx9pgAQEFuNyANpHA6OcBL8LyHwknPUOb4=ysjYd4cnwQ@mail.gmail.com>
+Subject: Re: [tip:x86/mce] x86/bitops: Move BIT_64() for a wider use
+To: Borislav Petkov <borislav.petkov@amd.com>
+Cc: "H. Peter Anvin" <hpa@zytor.com>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        mingo@kernel.org, linux-kernel@vger.kernel.org, frank.arnold@amd.com,
+        akpm@linux-foundation.org, tglx@linutronix.de,
+        linux-tip-commits@vger.kernel.org
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, May 21, 2012 at 4:26 PM, Linus Torvalds
-<torvalds@linux-foundation.org> wrote:
-> Looks fine, except please actually mention the tag itself on the repo
-> pull line. IOW, not like this:
+On Wed, May 23, 2012 at 9:19 AM, Borislav Petkov
+<borislav.petkov@amd.com> wrote:
 >
->>  git://git.kernel.org/pub/scm/linux/kernel/git/helgaas/pci.git next
->
-> but simply
->
->  git://git.kernel.org/pub/scm/linux/kernel/git/helgaas/pci.git tags/pci-for-3.5
+> Actually we need a BIT() macro that works both
+> on 32- and 64-bit. But that won't be that easy:
 
-git request-pull seems to look for branches before tags when generating
-this text.  It just did exactly the same thing for me (since the tag I created
-also pointed to my "next" branch).
+We could use __builtin_choose_expr(), but that *only* works with constants.
 
-This would seem to be the common case for people following the rules
-and sending you stuff in the merge window that they have had cooking
-in linux-next.  Can "request-pull" be smarter - or is their some magic I should
-be using on the "git request-pull" command line that will tell it that I really
-mean the tag and not the branch?
+So we could do this:
 
-Or is "smarter" already in a newer version of git - I have:
+  static inline unsigned long bit(unsigned int x)
+  {
+      return 1ul << x;
+  }
 
-$ git --version
-git version 1.7.9.5
+  static inline u64 bit64(unsigned int x)
+  {
+      return 1ull << x;
+  }
 
--Tony
+  #define BIT(x) \
+    __builtin_choose_expr((x) < 8*sizeof(unsigned long), bit(x), bit64(x))
+
+but then you *have* to use a plain constant for the BIT() macro.
+Anything else will error out in a big way. Non-constant users would
+have to be modified to use bit() and bit64() instead.
+
+And no, I tested. You apparently can't do
+
+  #define __is_longlongshift(x) \
+        (__builtin_constant_p(x) && (x) < 8*(sizeof(long)))
+
+because while that is a compile-time constant expression, it's not
+"constant enough" for __builtin_choose_expr().
+
+                   Linus
