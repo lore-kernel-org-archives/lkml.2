@@ -1,53 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760745Ab2EWSTY (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 May 2012 14:19:24 -0400
-Received: from zeniv.linux.org.uk ([195.92.253.2]:39005 "EHLO
-	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760650Ab2EWSTX (ORCPT
+	id S1760752Ab2EWSWW (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 May 2012 14:22:22 -0400
+Received: from mail-wi0-f170.google.com ([209.85.212.170]:40724 "EHLO
+	mail-wi0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756860Ab2EWSWU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 May 2012 14:19:23 -0400
-Date: Wed, 23 May 2012 19:19:17 +0100
-From: Al Viro <viro@ZenIV.linux.org.uk>
-To: Randy Dunlap <rdunlap@xenotime.net>
-Cc: Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
-        LKML <linux-kernel@vger.kernel.org>,
-        Richard Weinberger <richard@nod.at>
-Subject: Re: linux-next: Tree for May 23 (uml)
-Message-ID: <20120523181917.GN11775@ZenIV.linux.org.uk>
-References: <20120523170740.ae058d8d5468d471eb948c39@canb.auug.org.au>
- <4FBD090E.5020901@xenotime.net>
+	Wed, 23 May 2012 14:22:20 -0400
+From: Pali =?ISO-8859-1?Q?Roh=E1r?= <pali.rohar@gmail.com>
+To: Tony Lindgren <tony@atomide.com>
+Cc: linux-omap@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Lauri Leukkunen <lauri.leukkunen@nokia.com>,
+        Sebastian Reichel <sre@debian.org>,
+        Felipe Contreras <felipe.contreras@nokia.com>,
+        Ameya Palande <ameya.palande@nokia.com>
+Subject: Re: rx51: support for lis3lv02d accelerometer
+Date: Wed, 23 May 2012 20:22:16 +0200
+Message-ID: <11538481.hbXYTSlcIX@pali>
+User-Agent: KMail/4.8.3 (Linux/3.2.0-24-generic; KDE/4.8.3; x86_64; ; )
+In-Reply-To: <20120521160840.GK17852@atomide.com>
+References: <1621273.5PNGJFOirm@pali> <20120509000734.GZ5088@atomide.com> <20120521160840.GK17852@atomide.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4FBD090E.5020901@xenotime.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: multipart/signed; boundary="nextPart3592334.xWMB20p7sQ"; micalg="pgp-sha1"; protocol="application/pgp-signature"
+Content-Transfer-Encoding: quoted-printable
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, May 23, 2012 at 08:58:06AM -0700, Randy Dunlap wrote:
-> On 05/23/2012 12:07 AM, Stephen Rothwell wrote:
-> 
-> > Hi all,
-> > 
-> > Changes since 20120522:
-> 
-> 
-> 
-> uml defconfig on x86_64:
-> 
-> arch/um/kernel/process.c: In function 'interrupt_end':
-> arch/um/kernel/process.c:122:14: error: 'struct task_struct' has no member named 'replacement_session_keyring'
-> arch/um/kernel/process.c:123:4: error: implicit declaration of function 'key_replace_session_keyring'
 
-Grr...  That's a conflict between uml gaining TIF_NOTIFY_RESUME (needed
-prereq to task_work_add() series) and patch in said series doing away
-with explicit calls of key_replace_session_keyring().  Fixup is to remove
-those two lines in arch/um/process.c, same as done on other architectures
-by "keys: kill the dummy key_replace_session_keyring()" (commit c1cb001).
+--nextPart3592334.xWMB20p7sQ
+Content-Transfer-Encoding: quoted-printable
+Content-Type: text/plain; charset="utf-8"
 
-Not an issue for mainline merge, since task_work_add patchset goes later,
-but I think I'll have to cherry-pick that series into signal.git.  And
-probably reorder it a bit, moving the calls into tracehook_notify_resume()
-first, with "kill the dummy..." commit removing just that single call.
+On Monday 21 May 2012 09:08:40 Tony Lindgren wrote:
+> Hi Pali,
+>=20
+> * Tony Lindgren <tony@atomide.com> [120508 17:12]:
+> > * Pali Roh=C3=A1r <pali.rohar@gmail.com> [120504 08:41]:
+> > > Hi!
+> > >=20
+> > > Upstream linux kernel has already driver for lis3lv02d
+> > > accelerometer in drivers/misc/lis3lv02d. So now can be
+> > > added also platform support for nokia rx51. Patch exists
+> > > for long time in meego obs repository:
+> > > https://build.pub.meego.com/package/view_file?file=3Dlinux-2
+> > > .6-omap-rx51-Platform-support-for-lis3lv02d-acceleromet.pat
+> > > ch&package=3Dkernel-adaptation-n900&project=3DCE%3AAdaptation%3
+> > > AN900
+> > >=20
+> > > It is possible to include this patch to upstream kernel?
+> >=20
+> > Thanks, applying into board branch with From: Ameya as in the
+> > link above.
+>=20
+> Just noticed that this one is still using OMAP_GPIO_IRQ that
+> won't work any longer. Can you please send a fix on top of this
+> patch against linux next to fix it?
+>=20
+> The fix is to use gpio_to_irq() in the related init function
+> instead of static OMAP_GPIO_IRQ in the data structure.
+>=20
+> Regards,
+>=20
+> Tony
+
+Sorry, but now I do not have time for it. Tony, if fix is simple=20
+can you do it?
+
+--=20
+Pali Roh=C3=A1r
+pali.rohar@gmail.com
+--nextPart3592334.xWMB20p7sQ
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: This is a digitally signed message part.
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iEYEABECAAYFAk+9KtgACgkQi/DJPQPkQ1KWCwCgmPFRogLGUTQ2HT4xkGGPMyRE
+UeYAnR7VYnoLyofdqafEiglDah7laShk
+=ysU0
+-----END PGP SIGNATURE-----
+
+--nextPart3592334.xWMB20p7sQ--
+
