@@ -1,41 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933303Ab2EWKJt (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 May 2012 06:09:49 -0400
-Received: from www.linutronix.de ([62.245.132.108]:43304 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751409Ab2EWKJp (ORCPT
+	id S933352Ab2EWKLE (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 May 2012 06:11:04 -0400
+Received: from s15943758.onlinehome-server.info ([217.160.130.188]:55828 "EHLO
+	mail.x86-64.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751409Ab2EWKLC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 May 2012 06:09:45 -0400
-Date: Wed, 23 May 2012 12:09:37 +0200 (CEST)
-From: Thomas Gleixner <tglx@linutronix.de>
+	Wed, 23 May 2012 06:11:02 -0400
+Date: Wed, 23 May 2012 12:11:33 +0200
+From: Borislav Petkov <bp@amd64.org>
 To: Chen Gong <gong.chen@linux.intel.com>
-cc: Tony Luck <tony.luck@intel.com>, bp@amd64.org, x86@kernel.org,
-        LKML <linux-kernel@vger.kernel.org>,
-        Peter Zijlstra <peterz@infradead.org>
-Subject: Re: [PATCH] x86: auto poll/interrupt mode switch for CMC to stop
- CMC storm
-In-Reply-To: <1337740341-26711-1-git-send-email-gong.chen@linux.intel.com>
-Message-ID: <alpine.LFD.2.02.1205230859190.3231@ionos>
+Cc: tony.luck@intel.com, bp@amd64.org, x86@kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] x86: auto poll/interrupt mode switch for CMC to stop CMC
+ storm
+Message-ID: <20120523101133.GA13637@aftab.osrc.amd.com>
 References: <1337740341-26711-1-git-send-email-gong.chen@linux.intel.com>
-User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1337740341-26711-1-git-send-email-gong.chen@linux.intel.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 23 May 2012, Chen Gong wrote:
-
+On Wed, May 23, 2012 at 10:32:21AM +0800, Chen Gong wrote:
 > This idea is inspired from IA64 implementation. It is like
 > NAPI for network stack. When CMCI is too many to handle,
 > this interrupt can be disabled and then poll mode will take
 > over the events handle. When no more events happen in the
 > system, CMC interrupt can be enabled automatically.
-
+> 
+> Signed-off-by: Chen Gong <gong.chen@linux.intel.com>
+> ---
+>  arch/x86/kernel/cpu/mcheck/mce.c |   83 +++++++++++++++++++++++++++++++++++++-
+>  1 file changed, 81 insertions(+), 2 deletions(-)
+> 
+> diff --git a/arch/x86/kernel/cpu/mcheck/mce.c b/arch/x86/kernel/cpu/mcheck/mce.c
+> index d086a09..6334f0d 100644
+> --- a/arch/x86/kernel/cpu/mcheck/mce.c
+> +++ b/arch/x86/kernel/cpu/mcheck/mce.c
+> @@ -92,6 +92,7 @@ static char			*mce_helper_argv[2] = { mce_helper, NULL };
+>  
+>  static DECLARE_WAIT_QUEUE_HEAD(mce_chrdev_wait);
+>  
+> +static DEFINE_PER_CPU(struct timer_list, mce_timer);
+>  static DEFINE_PER_CPU(struct mce, mces_seen);
+>  static int			cpu_missing;
+>  
+> @@ -100,8 +101,28 @@ DEFINE_PER_CPU(mce_banks_t, mce_poll_banks) = {
+>  	[0 ... BITS_TO_LONGS(MAX_NR_BANKS)-1] = ~0UL
+>  };
+>  
+> +#define CMC_POLL_INTERVAL	(1 * 30)
+> +#define CMC_STORM		5
+> +static DEFINE_PER_CPU(int, cmci_storm_warning);
+> +static DEFINE_PER_CPU(unsigned long, first_cmci_jiffie);
+> +static DEFINE_SPINLOCK(cmc_poll_lock);
+> +
+> +/*
+> + * This variable tells whether we are in cmci-storm-happened mode.
+> + * Start with this in the wrong state so we won't play w/ timers
+> + * before the system is ready.
+> + */
+> +static int cmci_storm_detected = 1;
+> +
+>  static DEFINE_PER_CPU(struct work_struct, mce_work);
+>  
+> +static void mce_disable_cmci(void *data);
+> +static void mce_enable_ce(void *all);
+> +static void cmc_disable_keventd(struct work_struct *dummy);
+> +static void cmc_enable_keventd(struct work_struct *dummy);
+> +
+> +static DECLARE_WORK(cmc_disable_work, cmc_disable_keventd);
+> +static DECLARE_WORK(cmc_enable_work, cmc_enable_keventd);
 >  /*
 >   * CPU/chipset specific EDAC code can register a notifier call here to print
 >   * MCE errors in a human-readable form.
@@ -53,10 +92,6 @@ On Wed, 23 May 2012, Chen Gong wrote:
 > +
 > +		if (time_before_eq(now, *history + HZ))
 > +			(*count)++;
-
-So that means if you get more than 5 mces per second you switch to
-polling mode and risk losing data. How was this number chosen?
-
 > +		else {
 > +			*count = 0;
 > +			*history = now;
@@ -64,11 +99,6 @@ polling mode and risk losing data. How was this number chosen?
 > +
 > +		if (*count >= CMC_STORM) {
 > +			cmci_storm_detected = 1;
-
-So this variable is global and does what? Signalling all the per cpu
-poll timers to check for silence. How is that supposed to work? See
-below.
-
 > +			/* If we're being hit with CMC interrupts, we won't
 > +			 * ever execute the schedule_work() below.  Need to
 > +			 * disable CMC interrupts on this processor now.
@@ -76,14 +106,58 @@ below.
 > +			mce_disable_cmci(NULL);
 > +			if (!work_pending(&cmc_disable_work))
 > +				schedule_work(&cmc_disable_work);
-
-What's the point of doing this work? Why can't we just do that on the
-CPU which got hit by the MCE storm and leave the others alone? They
-either detect it themself or are just not affected. 
-
 > +			spin_unlock_irqrestore(&cmc_poll_lock, flag);
 > +			printk(KERN_WARNING "WARNING: Switching to polling "\
 > +				"CMC handler; error records may be lost\n");
+> +			goto out;
+> +		}
+> +	}
+> +	spin_unlock_irqrestore(&cmc_poll_lock, flag);
+>  
+>  	percpu_inc(mce_poll_count);
+>  
+> @@ -628,6 +680,7 @@ void machine_check_poll(enum mcp_flags flags, mce_banks_t *b)
+>  		mce_wrmsrl(MSR_IA32_MCx_STATUS(i), 0);
+>  	}
+>  
+> +out:
+>  	/*
+>  	 * Don't clear MCG_STATUS here because it's only defined for
+>  	 * exceptions.
+> @@ -1199,6 +1252,20 @@ static void mce_process_work(struct work_struct *dummy)
+>  		memory_failure(pfn, MCE_VECTOR, 0);
+>  }
+>  
+> +static void cmc_disable_keventd(struct work_struct *dummy)
+> +{
+> +	struct timer_list *t = __this_cpu_ptr(&mce_timer);
+> +
+> +	on_each_cpu(mce_disable_cmci, NULL, 0);
+> +	mod_timer(t, jiffies + CMC_POLL_INTERVAL * HZ);
+> +}
+> +
+> +static void cmc_enable_keventd(struct work_struct *dummy)
+> +{
+> +	/* don't re-initiate timer */
+> +	on_each_cpu(mce_enable_ce, NULL, 0);
+> +}
+> +
+>  #ifdef CONFIG_X86_MCE_INTEL
+>  /***
+>   * mce_log_therm_throt_event - Logs the thermal throttling event to mcelog
+> @@ -1232,12 +1299,12 @@ void mce_log_therm_throt_event(__u64 status)
+>  static int check_interval = 5 * 60; /* 5 minutes */
+>  
+>  static DEFINE_PER_CPU(int, mce_next_interval); /* in jiffies */
+> -static DEFINE_PER_CPU(struct timer_list, mce_timer);
+>  
+>  static void mce_start_timer(unsigned long data)
+>  {
+>  	struct timer_list *t = &per_cpu(mce_timer, data);
+>  	int *n;
+> +	unsigned long flags;
+>  
+>  	WARN_ON(smp_processor_id() != data);
 >  
 > @@ -1253,8 +1320,19 @@ static void mce_start_timer(unsigned long data)
 >  	n = &__get_cpu_var(mce_next_interval);
@@ -103,33 +177,32 @@ either detect it themself or are just not affected.
 > +		}
 > +		spin_unlock_irqrestore(&cmc_poll_lock, flags);
 > +	}
+>  
+>  	t->expires = jiffies + *n;
+>  	add_timer_on(t, smp_processor_id());
+> @@ -1547,6 +1625,7 @@ void __cpuinit mcheck_cpu_init(struct cpuinfo_x86 *c)
+>  	__mcheck_cpu_init_generic();
+>  	__mcheck_cpu_init_vendor(c);
+>  	__mcheck_cpu_init_timer();
+> +	cmci_storm_detected = 0;
+>  	INIT_WORK(&__get_cpu_var(mce_work), mce_process_work);
+>  	init_irq_work(&__get_cpu_var(mce_irq_work), &mce_irq_work_cb);
 
-This is really brilliant.
+This whole CMCI thing is Intel-specific so why don't you add it to
+<arch/x86/kernel/cpu/mcheck/mce_intel.c> where the rest of the CMCI
+stuff is?
 
-CPU0                                 CPU1
-lock(poll_lock);
-cmci_storm_detected = 1
-mce_disable_cmci();
-schedule_work(disable_work);
-unlock(poll_lock);          
-			             mce_timer runs
-                                       lock(poll_lock);
-                                       if (cmci_storm_detected) {
-                                          schedule_work(cmc_enable_work);
-                                       	  cmci_storm_detected = 0;
-                                       }
-				       unlock(poll_lock);
-.....
+You need only a hook in machine_check_poll() which runs on Intel only
+and does the whole temporary CMCI toggling.
 
-disable_work()                       enable_work()
-   on_each_cpu(mce_disable_cmci);       on_each_cpu(mce_enable_cmci);
+Thanks.
 
-The approach for this polling mode is horribly broken. You are mixing
-global and per cpu states, how is that supposed to work reliably?
+-- 
+Regards/Gruss,
+Boris.
 
-What's wrong with doing that strictly per cpu and avoid the whole
-global state horror?
-
-Thanks,
-
-	tglx
+Advanced Micro Devices GmbH
+Einsteinring 24, 85609 Dornach
+GM: Alberto Bozzo
+Reg: Dornach, Landkreis Muenchen
+HRB Nr. 43632 WEEE Registernr: 129 19551
