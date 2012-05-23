@@ -1,66 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756435Ab2EWHjF (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 May 2012 03:39:05 -0400
-Received: from mail-wi0-f178.google.com ([209.85.212.178]:39497 "EHLO
-	mail-wi0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755014Ab2EWHjD (ORCPT
+	id S1756843Ab2EWHjl (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 May 2012 03:39:41 -0400
+Received: from mail-ee0-f46.google.com ([74.125.83.46]:48966 "EHLO
+	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755320Ab2EWHjj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 May 2012 03:39:03 -0400
-Date: Wed, 23 May 2012 09:38:57 +0200
-From: Ingo Molnar <mingo@kernel.org>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org, "H. Peter Anvin" <hpa@zytor.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: [GIT PULL] x86/cpu change for v3.5
-Message-ID: <20120523073857.GA9112@gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Wed, 23 May 2012 03:39:39 -0400
+Subject: Re: [PATCH] ipv4: fix the rcu race between free_fib_info and
+ ip_route_output_slow
+From: Eric Dumazet <eric.dumazet@gmail.com>
+To: Yanmin Zhang <yanmin_zhang@linux.intel.com>
+Cc: David Miller <davem@davemloft.net>, kunx.jiang@intel.com,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+In-Reply-To: <1337757862.14538.199.camel@ymzhang.sh.intel.com>
+References: <4FBB6105.2060808@intel.com>
+	 <20120522.151554.106838106733194160.davem@davemloft.net>
+	 <1337742123.14538.175.camel@ymzhang.sh.intel.com>
+	 <20120522.232310.911242148705021745.davem@davemloft.net>
+	 <1337747829.3361.1599.camel@edumazet-glaptop>
+	 <1337748897.14538.184.camel@ymzhang.sh.intel.com>
+	 <1337749339.3361.1655.camel@edumazet-glaptop>
+	 <1337753757.14538.190.camel@ymzhang.sh.intel.com>
+	 <1337754459.3361.1850.camel@edumazet-glaptop>
+	 <1337755623.14538.194.camel@ymzhang.sh.intel.com>
+	 <1337756138.3361.1922.camel@edumazet-glaptop>
+	 <1337757238.3361.1965.camel@edumazet-glaptop>
+	 <1337757862.14538.199.camel@ymzhang.sh.intel.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Wed, 23 May 2012 09:39:34 +0200
+Message-ID: <1337758775.3361.2056.camel@edumazet-glaptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Linus,
+On Wed, 2012-05-23 at 15:24 +0800, Yanmin Zhang wrote:
+> On Wed, 2012-05-23 at 09:13 +0200, Eric Dumazet wrote:
+> > On Wed, 2012-05-23 at 08:55 +0200, Eric Dumazet wrote:
+> > 
+> > > Please hold on, I'll send a v2
+> > 
+> > I believe your patch should be fine, if you move back the
+> > fib_info_cnt--;
+> > 
+> > So only do the dev_put() in free_fib_info_rcu().
+> We would do so in a new patch.
+> 
+> > 
+> > No need to clear nh_dev to NULL since we are freeing fi at the end of
+> > function.
+> David suggests to reset it to NULL to detect other potential
+> race conditions.
+> 
 
-Please pull the latest x86-cpu-for-linus git tree from:
+Yes but no.
 
-   git://git.kernel.org/pub/scm/linux/kernel/git/tip/tip.git x86-cpu-for-linus
+Users are in a RCU read lock and we should not change nh_dev to NULL
+while they are running.
 
-   HEAD: ddc5681ed33a279fdc188e98e71f0c539f08c6e6 x86/cache_info: Fix setup of l2/l3 ids
+Thats what I tried to do (David message gave me this wrong hint) but it
+came to a dead issue.
 
- Thanks,
+Only after a grace period we can :
+	dev_put() all involved net_devices
+	kfree(fi)
 
-	Ingo
+> Besides above suggestions, how do you think about:
+> 
+> fib_create_info=>fib_find_info, but fib_find_info is not protected by
+> fib_info_lock. See the codes:
+> 
+> fib_create_info()
+> {
+> 	...
+> link_it:
+>         ofi = fib_find_info(fi);
+>         if (ofi) {
+>                 fi->fib_dead = 1;
+>                 free_fib_info(fi);
+>                 ofi->fib_treeref++;
+>                 return ofi;
+>         }
+>         fi->fib_treeref++;
+>         atomic_inc(&fi->fib_clntref);
+>         spin_lock_bh(&fib_info_lock);
+> 
+> 	...
+> }
+> 
+> I plan to change it to hold fib_info_lock before calling fib_find_info. Is
+> it ok for you?
 
------------------->
-Shai Fultheim (1):
-      x86/cache_info: Fix setup of l2/l3 ids
+Its not needed we hold RTNL mutex.
+
+spinlock is needed mainly because of ip_fib_check_default(), but this
+could be changed to use RCU as well. 
+
+(readers use RCU, writers already hold RTNL -> no more fib_info_lock )
 
 
- arch/x86/kernel/cpu/intel_cacheinfo.c | 4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
 
-diff --git a/arch/x86/kernel/cpu/intel_cacheinfo.c b/arch/x86/kernel/cpu/intel_cacheinfo.c
-index b8f3653..9a7c90d 100644
---- a/arch/x86/kernel/cpu/intel_cacheinfo.c
-+++ b/arch/x86/kernel/cpu/intel_cacheinfo.c
-@@ -615,14 +615,14 @@ unsigned int __cpuinit init_intel_cacheinfo(struct cpuinfo_x86 *c)
- 					new_l2 = this_leaf.size/1024;
- 					num_threads_sharing = 1 + this_leaf.eax.split.num_threads_sharing;
- 					index_msb = get_count_order(num_threads_sharing);
--					l2_id = c->apicid >> index_msb;
-+					l2_id = c->apicid & ~((1 << index_msb) - 1);
- 					break;
- 				case 3:
- 					new_l3 = this_leaf.size/1024;
- 					num_threads_sharing = 1 + this_leaf.eax.split.num_threads_sharing;
- 					index_msb = get_count_order(
- 							num_threads_sharing);
--					l3_id = c->apicid >> index_msb;
-+					l3_id = c->apicid & ~((1 << index_msb) - 1);
- 					break;
- 				default:
- 					break;
