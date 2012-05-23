@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965527Ab2EWTdb (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 May 2012 15:33:31 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:25973 "EHLO mx1.redhat.com"
+	id S965556Ab2EWTdm (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 May 2012 15:33:42 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:53443 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S965504Ab2EWTdW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 May 2012 15:33:22 -0400
+	id S965504Ab2EWTdf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 23 May 2012 15:33:35 -0400
 From: Jiri Olsa <jolsa@redhat.com>
 To: acme@redhat.com, a.p.zijlstra@chello.nl, mingo@elte.hu, paulus@samba.org,
         cjashfor@linux.vnet.ibm.com, fweisbec@gmail.com
@@ -14,131 +14,221 @@ Cc: eranian@google.com, gorcunov@openvz.org, tzanussi@gmail.com,
         linux-kernel@vger.kernel.org, masami.hiramatsu.pt@hitachi.com,
         drepper@gmail.com, asharma@fb.com, benjamin.redelings@nescent.org,
         Jiri Olsa <jolsa@redhat.com>
-Subject: [PATCH 11/16] perf, tool: Add libunwind dependency for dwarf cfi unwinding
-Date: Wed, 23 May 2012 21:32:10 +0200
-Message-Id: <1337801535-12865-12-git-send-email-jolsa@redhat.com>
+Subject: [PATCH 14/16] perf, tool: Support for dwarf mode callchain on perf record
+Date: Wed, 23 May 2012 21:32:13 +0200
+Message-Id: <1337801535-12865-15-git-send-email-jolsa@redhat.com>
 In-Reply-To: <1337801535-12865-1-git-send-email-jolsa@redhat.com>
 References: <1337801535-12865-1-git-send-email-jolsa@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Adding libunwind to be linked with perf if available. It's required
-for the to get dwarf cfi unwinding support.
+This patch enables perf to use the dwarf unwind code.
 
-Also building perf with the dwarf call frame informations by default,
-so that we can unwind callchains in perf itself.
+It extends the perf record '-g' option with following arguments:
+  'fp'           - provides framepointer based user
+                   stack backtrace
+  'dwarf[,size]' - provides dwarf (libunwind) based user stack
+                   backtrace. The size specifies the size of the
+                   user stack dump. If ommited it is 8192 by default.
 
-Adding LIBUNWIND_DIR Makefile variable allowing user to specify
-the directory with libunwind to be linked. This is used for
-debug purposes.
+If libunwind is found during the perf build, then the 'dwarf'
+argument becomes available for record command. The 'fp' stays as
+default option in any case.
+
+Examples: (perf compiled with libunwind)
+
+   perf record -g dwarf ls
+      - provides dwarf unwind with 8192 as stack dump size
+
+   perf record -g dwarf,4096 ls
+      - provides dwarf unwind with 4096 as stack dump size
+
+   perf record -g -- ls
+   perf record -g fp ls
+      - provides frame pointer unwind
 
 Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
 Signed-off-by: Jiri Olsa <jolsa@redhat.com>
 ---
- tools/perf/Makefile                 |   27 ++++++++++++++++++++++++++-
- tools/perf/config/feature-tests.mak |   25 +++++++++++++++++++++++++
- 2 files changed, 51 insertions(+), 1 deletions(-)
+ tools/perf/builtin-record.c |   86 ++++++++++++++++++++++++++++++++++++++++++-
+ tools/perf/perf.h           |    9 ++++-
+ tools/perf/util/evsel.c     |   13 ++++++-
+ 3 files changed, 104 insertions(+), 4 deletions(-)
 
-diff --git a/tools/perf/Makefile b/tools/perf/Makefile
-index 44b99bb..acc4421 100644
---- a/tools/perf/Makefile
-+++ b/tools/perf/Makefile
-@@ -59,6 +59,7 @@ AR = $(CROSS_COMPILE)ar
- ifeq ($(ARCH),i386)
- 	ARCH := x86
- 	NO_PERF_REGS_DEFS := 0
-+	LIBUNWIND_LIBS = -lunwind -lunwind-x86
- endif
- ifeq ($(ARCH),x86_64)
- 	ARCH := x86
-@@ -72,6 +73,7 @@ ifeq ($(ARCH),x86_64)
- 		ARCH_INCLUDE = ../../arch/x86/lib/memcpy_64.S ../../arch/x86/lib/memset_64.S
- 	endif
- 	NO_PERF_REGS_DEFS := 0
-+	LIBUNWIND_LIBS = -lunwind -lunwind-x86_64
- endif
+diff --git a/tools/perf/builtin-record.c b/tools/perf/builtin-record.c
+index e5cb084..8479bf0 100644
+--- a/tools/perf/builtin-record.c
++++ b/tools/perf/builtin-record.c
+@@ -31,6 +31,15 @@
+ #include <sched.h>
+ #include <sys/mman.h>
  
- # Treat warnings as errors unless directed not to
-@@ -92,7 +94,7 @@ ifdef PARSER_DEBUG
- 	PARSER_DEBUG_CFLAGS := -DPARSER_DEBUG
- endif
- 
--CFLAGS = -fno-omit-frame-pointer -ggdb3 -Wall -Wextra -std=gnu99 $(CFLAGS_WERROR) $(CFLAGS_OPTIMIZE) -D_FORTIFY_SOURCE=2 $(EXTRA_WARNINGS) $(EXTRA_CFLAGS) $(PARSER_DEBUG_CFLAGS)
-+CFLAGS = -fno-omit-frame-pointer -ggdb3 -funwind-tables -Wall -Wextra -std=gnu99 $(CFLAGS_WERROR) $(CFLAGS_OPTIMIZE) -D_FORTIFY_SOURCE=2 $(EXTRA_WARNINGS) $(EXTRA_CFLAGS) $(PARSER_DEBUG_CFLAGS)
- EXTLIBS = -lpthread -lrt -lelf -lm
- ALL_CFLAGS = $(CFLAGS) -D_LARGEFILE64_SOURCE -D_FILE_OFFSET_BITS=64 -D_GNU_SOURCE
- ALL_LDFLAGS = $(LDFLAGS)
-@@ -458,6 +460,21 @@ ifneq ($(call try-cc,$(SOURCE_DWARF),$(FLAGS_DWARF)),y)
- endif # Dwarf support
- endif # NO_DWARF
- 
-+ifndef NO_LIBUNWIND
-+# for linking with debug library, run like:
-+# make DEBUG=1 LIBUNWIND_DIR=/opt/libunwind/
-+ifdef LIBUNWIND_DIR
-+	LIBUNWIND_CFLAGS  := -I$(LIBUNWIND_DIR)/include
-+	LIBUNWIND_LDFLAGS := -L$(LIBUNWIND_DIR)/lib
-+endif
++#define CALLCHAIN_HELP "do call-graph (stack chain/backtrace) recording: "
 +
-+FLAGS_UNWIND=$(LIBUNWIND_CFLAGS) $(ALL_CFLAGS) $(LIBUNWIND_LDFLAGS) $(ALL_LDFLAGS) $(EXTLIBS) $(LIBUNWIND_LIBS)
-+ifneq ($(call try-cc,$(SOURCE_LIBUNWIND),$(FLAGS_UNWIND)),y)
-+	msg := $(warning No libunwind found. Please install libunwind >= 0.99);
-+	NO_LIBUNWIND := 1
-+endif # Libunwind support
-+endif # NO_LIBUNWIND
++#ifdef NO_LIBUNWIND_SUPPORT
++static char callchain_help[] = CALLCHAIN_HELP "[fp]";
++#else
++static unsigned long default_stack_dump_size = 8192;
++static char callchain_help[] = CALLCHAIN_HELP "[fp] dwarf";
++#endif
 +
- -include arch/$(ARCH)/Makefile
- 
- ifneq ($(OUTPUT),)
-@@ -489,6 +506,14 @@ else
- endif # PERF_HAVE_DWARF_REGS
- endif # NO_DWARF
- 
-+ifdef NO_LIBUNWIND
-+	BASIC_CFLAGS += -DNO_LIBUNWIND_SUPPORT
-+else
-+	EXTLIBS += $(LIBUNWIND_LIBS)
-+	BASIC_CFLAGS := $(LIBUNWIND_CFLAGS) $(BASIC_CFLAGS)
-+	BASIC_LDFLAGS := $(LIBUNWIND_LDFLAGS) $(BASIC_LDFLAGS)
-+endif
-+
- ifdef NO_NEWT
- 	BASIC_CFLAGS += -DNO_NEWT_SUPPORT
- else
-diff --git a/tools/perf/config/feature-tests.mak b/tools/perf/config/feature-tests.mak
-index d9084e0..51cd201 100644
---- a/tools/perf/config/feature-tests.mak
-+++ b/tools/perf/config/feature-tests.mak
-@@ -141,3 +141,28 @@ int main(void)
- 	return 0;
+ enum write_mode_t {
+ 	WRITE_FORCE,
+ 	WRITE_APPEND
+@@ -732,6 +741,78 @@ error:
+ 	return ret;
  }
- endef
-+
-+ifndef NO_LIBUNWIND
-+define SOURCE_LIBUNWIND
-+#include <libunwind.h>
-+#include <stdlib.h>
-+
-+extern int UNW_OBJ(dwarf_search_unwind_table) (unw_addr_space_t as,
-+                                      unw_word_t ip,
-+                                      unw_dyn_info_t *di,
-+                                      unw_proc_info_t *pi,
-+                                      int need_unwind_info, void *arg);
-+
-+
-+#define dwarf_search_unwind_table UNW_OBJ(dwarf_search_unwind_table)
-+
-+int main(void)
+ 
++static int
++parse_callchain_opt(const struct option *opt __used, const char *arg,
++		    int unset)
 +{
-+	unw_addr_space_t addr_space;
-+	addr_space = unw_create_addr_space(NULL, 0);
-+	unw_init_remote(NULL, addr_space, NULL);
-+	dwarf_search_unwind_table(addr_space, 0, NULL, NULL, 0, NULL);
-+	return 0;
++	struct perf_record *rec = (struct perf_record *)opt->value;
++	char *tok, *name, *saveptr = NULL;
++	char buf[20];
++	int ret = -1;
++
++	/* --no-call-graph */
++	if (unset)
++		return 0;
++
++	/* We specified default option if none is provided. */
++	BUG_ON(!arg);
++
++	/* We need buffer that we know we can write to. */
++	snprintf(buf, 20, "%s", arg);
++
++	tok = strtok_r((char *)buf, ",", &saveptr);
++	name = tok ? : (char *)buf;
++
++	do {
++		/* Framepointer style */
++		if (!strncmp(name, "fp", sizeof("fp"))) {
++			if (!strtok_r(NULL, ",", &saveptr)) {
++				rec->opts.call_graph = CALLCHAIN_FP;
++				ret = 0;
++			} else
++				pr_err("callchain: No more arguments "
++				       "needed for -g fp\n");
++			break;
++
++#ifndef NO_LIBUNWIND_SUPPORT
++		/* Dwarf style */
++		} else if (!strncmp(name, "dwarf", sizeof("dwarf"))) {
++			ret = 0;
++			rec->opts.call_graph = CALLCHAIN_DWARF;
++			rec->opts.stack_dump_size = default_stack_dump_size;
++
++			tok = strtok_r(NULL, ",", &saveptr);
++			if (tok) {
++				char *endptr;
++				unsigned long size;
++
++				size = strtoul(tok, &endptr, 0);
++				if (*endptr) {
++					pr_err("callchain: Incorrect stack "
++					       "dump size: %s\n", tok);
++					ret = -1;
++				}
++
++				rec->opts.stack_dump_size = size;
++			}
++
++			pr_debug("callchain: stack dump size %lu\n",
++				 rec->opts.stack_dump_size);
++#endif
++		} else {
++			pr_err("callchain: Unknown -g option "
++			       "value: %s\n", name);
++			break;
++		}
++
++	} while (0);
++
++	if (!ret)
++		pr_debug("callchain: type %d\n", rec->opts.call_graph);
++
++	return ret;
 +}
-+endef
-+endif
++
+ static const char * const record_usage[] = {
+ 	"perf record [<options>] [<command>]",
+ 	"perf record [<options>] -- <command> [<options>]",
+@@ -803,8 +884,9 @@ const struct option record_options[] = {
+ 		     "number of mmap data pages"),
+ 	OPT_BOOLEAN(0, "group", &record.opts.group,
+ 		    "put the counters into a counter group"),
+-	OPT_BOOLEAN('g', "call-graph", &record.opts.call_graph,
+-		    "do call-graph (stack chain/backtrace) recording"),
++	OPT_CALLBACK_DEFAULT('g', "call-graph", &record, "mode,dump_size",
++			     callchain_help, &parse_callchain_opt,
++			     "fp"),
+ 	OPT_INCR('v', "verbose", &verbose,
+ 		    "be more verbose (show counter open errors, etc)"),
+ 	OPT_BOOLEAN('q', "quiet", &quiet, "don't print any message"),
+diff --git a/tools/perf/perf.h b/tools/perf/perf.h
+index 14f1034..2cd9c15 100644
+--- a/tools/perf/perf.h
++++ b/tools/perf/perf.h
+@@ -209,9 +209,15 @@ void pthread__unblock_sigwinch(void);
+ 
+ #include "util/target.h"
+ 
++enum perf_call_graph_mode {
++	CALLCHAIN_NONE,
++	CALLCHAIN_FP,
++	CALLCHAIN_DWARF
++};
++
+ struct perf_record_opts {
+ 	struct perf_target target;
+-	bool	     call_graph;
++	int	     call_graph;
+ 	bool	     group;
+ 	bool	     inherit_stat;
+ 	bool	     no_delay;
+@@ -230,6 +236,7 @@ struct perf_record_opts {
+ 	int	     branch_stack;
+ 	u64	     default_interval;
+ 	u64	     user_interval;
++	unsigned long stack_dump_size;
+ };
+ 
+ #endif
+diff --git a/tools/perf/util/evsel.c b/tools/perf/util/evsel.c
+index 8d21d2c..520d4b2 100644
+--- a/tools/perf/util/evsel.c
++++ b/tools/perf/util/evsel.c
+@@ -16,6 +16,7 @@
+ #include "cpumap.h"
+ #include "thread_map.h"
+ #include "target.h"
++#include "perf_regs.h"
+ 
+ #define FD(e, x, y) (*(int *)xyarray__entry(e->fd, x, y))
+ #define GROUP_FD(group_fd, cpu) (*(int *)xyarray__entry(group_fd, cpu, 0))
+@@ -106,9 +107,19 @@ void perf_evsel__config(struct perf_evsel *evsel, struct perf_record_opts *opts,
+ 		attr->mmap_data = track;
+ 	}
+ 
+-	if (opts->call_graph)
++	if (opts->call_graph) {
+ 		attr->sample_type	|= PERF_SAMPLE_CALLCHAIN;
+ 
++		if (opts->call_graph == CALLCHAIN_DWARF) {
++			attr->sample_type |= PERF_SAMPLE_REGS|PERF_SAMPLE_STACK;
++			attr->sample_regs = PERF_SAMPLE_REGS_USER;
++			attr->sample_regs_user = PERF_REGS_MASK;
++			attr->sample_stack = PERF_SAMPLE_STACK_USER;
++			attr->sample_stack_user = opts->stack_dump_size;
++			attr->exclude_user_callchain = 1;
++		}
++	}
++
+ 	if (perf_target__has_cpu(&opts->target))
+ 		attr->sample_type	|= PERF_SAMPLE_CPU;
+ 
 -- 
 1.7.7.6
 
