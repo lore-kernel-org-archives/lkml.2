@@ -1,120 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753565Ab2EWXN1 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 May 2012 19:13:27 -0400
-Received: from haggis.pcug.org.au ([203.10.76.10]:55755 "EHLO
-	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752097Ab2EWXNZ (ORCPT
+	id S1753907Ab2EWXQr (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 May 2012 19:16:47 -0400
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:54370 "EHLO
+	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751734Ab2EWXQq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 May 2012 19:13:25 -0400
-Date: Thu, 24 May 2012 09:13:06 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Al Viro <viro@ZenIV.linux.org.uk>
-Cc: Randy Dunlap <rdunlap@xenotime.net>, linux-next@vger.kernel.org,
-        LKML <linux-kernel@vger.kernel.org>,
-        Richard Weinberger <richard@nod.at>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: linux-next: Tree for May 23 (uml)
-Message-Id: <20120524091306.e6f6b17d7240b29a124b44c3@canb.auug.org.au>
-In-Reply-To: <20120523193707.GO11775@ZenIV.linux.org.uk>
-References: <20120523170740.ae058d8d5468d471eb948c39@canb.auug.org.au>
-	<4FBD090E.5020901@xenotime.net>
-	<20120523181917.GN11775@ZenIV.linux.org.uk>
-	<20120523193707.GO11775@ZenIV.linux.org.uk>
-X-Mailer: Sylpheed 3.2.0beta7 (GTK+ 2.24.10; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Thu__24_May_2012_09_13_06_+1000_ndfER3QhT=Zd29XE"
+	Wed, 23 May 2012 19:16:46 -0400
+Date: Thu, 24 May 2012 00:16:42 +0100
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Stephen Warren <swarren@wwwdotorg.org>
+Cc: linux-kernel@vger.kernel.org, Stephen Warren <swarren@nvidia.com>
+Subject: Re: [PATCH 1/2] regmap: allow busses to request formatting with
+ specific endianness
+Message-ID: <20120523231641.GA5361@opensource.wolfsonmicro.com>
+References: <1337812434-7609-1-git-send-email-swarren@wwwdotorg.org>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="MGYHOYXEY6WxJCY8"
+Content-Disposition: inline
+In-Reply-To: <1337812434-7609-1-git-send-email-swarren@wwwdotorg.org>
+X-Cookie: You will get what you deserve.
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Thu__24_May_2012_09_13_06_+1000_ndfER3QhT=Zd29XE
-Content-Type: text/plain; charset=US-ASCII
+
+--MGYHOYXEY6WxJCY8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
 
-Hi Al,
+On Wed, May 23, 2012 at 04:33:53PM -0600, Stephen Warren wrote:
 
-On Wed, 23 May 2012 20:37:07 +0100 Al Viro <viro@ZenIV.linux.org.uk> wrote:
->
-> On Wed, May 23, 2012 at 07:19:17PM +0100, Al Viro wrote:
->=20
-> > Grr...  That's a conflict between uml gaining TIF_NOTIFY_RESUME (needed
-> > prereq to task_work_add() series) and patch in said series doing away
-> > with explicit calls of key_replace_session_keyring().  Fixup is to remo=
-ve
-> > those two lines in arch/um/process.c, same as done on other architectur=
-es
-> > by "keys: kill the dummy key_replace_session_keyring()" (commit c1cb001=
-).
-> >=20
-> > Not an issue for mainline merge, since task_work_add patchset goes late=
-r,
-> > but I think I'll have to cherry-pick that series into signal.git.  And
-> > probably reorder it a bit, moving the calls into tracehook_notify_resum=
-e()
-> > first, with "kill the dummy..." commit removing just that single call.
->=20
-> Hmm...  Two solutions, take your pick:
->=20
-> 1)
-> 	I think the minimal solution is this: I add the "move
-> key_replace_session_keyring() into tracehook_notify_resume()" into signal=
-.git
-> for-next, which yields one conflict with next/akpm.  With conflict resolu=
-tion
-> being "take tracehook_notify_resume() from next/akpm".  I've put that
-> into for-next-variant1
->=20
-> 2)
-> 	Cherry-picked these guys into signal.git, along with the rest
-> of signal prereqs for them.  Merge with next/akpm-base yields a couple
-> of trivial conflicts in kernel/fork.c (with
-> 	sched, mm: Rework sched_{fork,exec} node assignment
-> removing INIT_LIST_HEAD right next to the place where we add one; conflict
-> resolution being just keep the one Oleg adds and remove the one Peter rem=
-oves)
-> and in kernel/irq/manage.c (with
-> 	genirq: Be more informative on irq type mismatch
-> changing a couple of printks in there; conflict resolution: just remove
-> exit_irq_thread() in merged variant).  That's for-next-variant2.  With th=
-at
-> variant we get 5 more duplicates with next/akpm, obviously.
->=20
-> Stephen, which way would you prefer it handled?
+> I'm not 100% sure if this is the approach you had in mind. However, anything
+> more all-encompassing would require separating the concepts of endianness and
 
-So variant2 sits on top of variant1 and you are intending to push the
-work in variant2 in this merge window anyway?   In that case variant2
-makes sense.  The number of small conflicts don't matter to much (up to a
-point anyway :-)).  Also, these cherry-picks are out of Andrew's tree,
-right (so they are already in linuc-next)?  In which case I would
-probably go with variant2.
+I wouldn't do this on the bus in the first instance, I'd do it on the
+device - it's pretty much orthogonal to the bus what the device wants
+and it's perfectly plausible that a device on another bus might've made
+unusual endiannness choices.  Otherwise it's pretty much what I was
+thinking of.
 
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
+For MMIO I'd expect that a large proportion of devices on platform buses
+would pick native endianness.
 
---Signature=_Thu__24_May_2012_09_13_06_+1000_ndfER3QhT=Zd29XE
-Content-Type: application/pgp-signature
+> serialization that are coupled together in functions like
+> regmap_format_4_12_write, and I'm not sure how that would work conceptually.
+
+Anything using format_write() can be ignored, it's already lost large
+chunks of functionality just from that.  Non-integer byte sizes cause
+issues.
+
+--MGYHOYXEY6WxJCY8
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
 -----BEGIN PGP SIGNATURE-----
 Version: GnuPG v1.4.12 (GNU/Linux)
 
-iQIcBAEBCAAGBQJPvW8CAAoJEECxmPOUX5FEgy4P/3isNazl8ZGNZng2y3ao2qXT
-RWe7tjNyOQVY62naA93sKWkHs0DZZ2bokaCyxE6lkC5sZ6lZSvQrP9n4XFwUQsZn
-6AGrextDlAgkHdTb/839hljmswTwRrZLSAt3aqFrk24l3LbFtOxMhXKG8GPLM1Vi
-6AiKnt3o8CFbBKs2d1ugM07eW/gf1/oSC51VKBl4tumqKRCjynj4eLbPE2JfDp2p
-VlDF+7DJqewbAj67lny4o7IAyErX0mr6NlF4BpzyBlk1bsf2IZSw/yXfU5yTrsF5
-e/nseJlcMulo6z75aCmutyUVLxvsTT2Txboa81RGlzjqwufsQoMNvfpzqe5EbGd/
-Kkqi2/pPWkSD5GyzHeNgcyuiy4mde9Kz9upNpoIoxcmm8ExWg3Ssidoa2OHPmj1z
-3gMMjfvsdpNPsrPnpK7/RZZ0kmkBYyuETtESPGCXd76g8tHMM8adVi4Y2MXh/lxE
-j9J8os+D5qihBQrYjSUiRAnMNBRbaWjGTUt0QcPLMLb0P775MR/4H5yQNzjG5zz1
-54VnsfVPcbR7KcTDE53M7cYqdV5J1hAib2zQ00XznQBrrxgDZ7sgX7JyxGLxONat
-za9FBiFF8bd6sELn/BAmbolwMGQ5VJ+vgSbnBeBkrk7OVBbYd4+utjA1WksyLQvH
-NHEzaS3pQYLioMSiZWSP
-=QDMK
+iQIcBAEBAgAGBQJPvW/TAAoJEBus8iNuMP3dPmcP/AqvWoceK//vXtziHEfuC2ud
+xFTRyDedIICNi97h6lvBGrfDxcJIbIT3LxworLV35Ufaf8KpXw+vTTGLRov9/DBn
+efuJ/xcjYrvP74z1IWeF0ioOVQojcnrpw48pooYvmyi07kGRR74/4kpkEJUcbNl1
+CmHcBh0WoAK1DuU9XTcGZC0SO12fvHY7hEzHk98nT4HPYLjIEzWlAZ+QXlUWsYxI
+ggmQ8xqdzKtWbOWqBuvcmp/jGcwAXjLNkqoBgCp1HcEw/SGj5ctpTXVCIR1RGNbL
+6HvDRs9w3aiDMiCWmVL8IF+m9LuhBGw5tU0XD0bOtR9fAfTJFNO352eeyVqHpGkO
+Gwc31YKS3Ydp/wWRyf1+FkTREB8d7weTnp8kDnSf7BieAC/ubNFlnFL4rXa9fK8k
+iReft77utULfA0MFclg1Y/lqa/EUpF12d5WWj/DPzppCQ0j95GbzPLI5GF9Icd4c
+NbVpdnCelKltBpgvaK86itt8TpQ9qVhykIiBAjDUQsvUpL1lr71uKOZAiZG/Q5p/
+ufhOT+26BdpsZxddFPmUCD9UFmJCpl/JZkSqE53CX1W1MEiMrjrQPdTY0INYxhih
+zpPHrBVn/C7iV4+flUCP1SMB4A1Q0RjIfqfdfH1JpLgSAPfOwiXCYHRh3z0QB8xw
+ogTplIXwvBBTVZPfa1SV
+=c2+y
 -----END PGP SIGNATURE-----
 
---Signature=_Thu__24_May_2012_09_13_06_+1000_ndfER3QhT=Zd29XE--
+--MGYHOYXEY6WxJCY8--
