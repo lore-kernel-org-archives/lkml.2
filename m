@@ -1,64 +1,38 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760854Ab2EWVil (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 May 2012 17:38:41 -0400
-Received: from mail2.gnudd.com ([213.203.150.91]:47067 "EHLO mail.gnudd.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752880Ab2EWVij (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 May 2012 17:38:39 -0400
-Date: Wed, 23 May 2012 23:22:27 +0200
-From: Alessandro Rubini <rubini@gnudd.com>
-To: x86@kernel.org
-Cc: Giancarlo Asnaghi <giancarlo.asnaghi@st.com>, linux-kernel@vger.kernel.org
-Subject: [PATCH] x86/pci: sta2x11: fix a compiler warning
-Message-ID: <20120523212227.GA10118@mail.gnudd.com>
+	id S932972Ab2EWVkX (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 May 2012 17:40:23 -0400
+Received: from acsinet15.oracle.com ([141.146.126.227]:50100 "EHLO
+	acsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754473Ab2EWVkW (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 23 May 2012 17:40:22 -0400
+Date: Thu, 24 May 2012 00:43:54 +0300
+From: Dan Carpenter <dan.carpenter@oracle.com>
+To: H Hartley Sweeten <hartleys@visionengravers.com>
+Cc: Linux Kernel <linux-kernel@vger.kernel.org>, devel@driverdev.osuosl.org,
+        fmhess@users.sourceforge.net, abbotti@mev.co.uk,
+        gregkh@linuxfoundation.org
+Subject: Re: [PATCH] staging: comedi: adl_pci7296: factor out the PCI device
+ code
+Message-ID: <20120523214354.GQ4637@mwanda>
+References: <201205231428.48061.hartleys@visionengravers.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Organization: GnuDD, Device Drivers, Embedded Systems, Courses
+In-Reply-To: <201205231428.48061.hartleys@visionengravers.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-alias asnaghi Giancarlo Asnaghi <giancarlo.asnaghi@st.com>
-dma_ops, because it doesn't want the "attrs" argument.  Add a wrapper,
-like other users of the function already do.
+Hartley, you're doing a great job with all these patches, but it's
+going to be weeks before the merge window closes.  We're going to
+end up getting confused with all the patches floating around.
 
-Signed-off-by: Alessandro Rubini <rubini@gnudd.com>
-Acked-by: Giancarlo Asnaghi <giancarlo.asnaghi@st.com>
----
+Do you think you could maybe put up a git tree with the current
+stuff so people know when they're stepping on each other's toes?
 
-Actually, we may instead add "args" to the exported functions in
-lib/swiotlb.  This would then remove a few other similar wrappers that
-do nothing.  If it's considered useful, I can propose a patch for that.
-arch/unicore32/mm/dma-swiotlb.c is especially interesting in this
-respect, because it only has the two wrappers.
-
- arch/x86/pci/sta2x11-fixup.c |    9 ++++++++-
- 1 files changed, 8 insertions(+), 1 deletions(-)
-
-diff --git a/arch/x86/pci/sta2x11-fixup.c b/arch/x86/pci/sta2x11-fixup.c
-index e06334b..1ab70dc 100644
---- a/arch/x86/pci/sta2x11-fixup.c
-+++ b/arch/x86/pci/sta2x11-fixup.c
-@@ -181,10 +181,17 @@ static void *sta2x11_swiotlb_alloc_coherent(struct device *dev,
- 	return vaddr;
- }
- 
-+static void sta2x11_swiotlb_free_coherent(struct device *dev, size_t size,
-+					  void *vaddr, dma_addr_t dma_addr,
-+					  struct dma_attrs *attrs)
-+{
-+	swiotlb_free_coherent(dev, size, vaddr, dma_addr);
-+}
-+
- /* We have our own dma_ops: the same as swiotlb but from alloc (above) */
- static struct dma_map_ops sta2x11_dma_ops = {
- 	.alloc = sta2x11_swiotlb_alloc_coherent,
--	.free = swiotlb_free_coherent,
-+	.free = sta2x11_swiotlb_free_coherent,
- 	.map_page = swiotlb_map_page,
- 	.unmap_page = swiotlb_unmap_page,
- 	.map_sg = swiotlb_map_sg_attrs,
--- 
-1.7.7.2
+regards,
+dan carpenter
