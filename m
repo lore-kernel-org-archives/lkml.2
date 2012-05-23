@@ -1,37 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759311Ab2EWDt1 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 May 2012 23:49:27 -0400
-Received: from shards.monkeyblade.net ([198.137.202.13]:54041 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758841Ab2EWDtZ (ORCPT
+	id S1759412Ab2EWDz5 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 May 2012 23:55:57 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:54705 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752889Ab2EWDzz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 May 2012 23:49:25 -0400
-Date: Tue, 22 May 2012 23:49:20 -0400 (EDT)
-Message-Id: <20120522.234920.1047532847473945281.davem@davemloft.net>
-To: yanmin_zhang@linux.intel.com
-Cc: kunx.jiang@intel.com, netdev@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] ipv4: fix the rcu race between free_fib_info and
- ip_route_output_slow
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <1337743841.14538.178.camel@ymzhang.sh.intel.com>
-References: <1337742123.14538.175.camel@ymzhang.sh.intel.com>
-	<20120522.232310.911242148705021745.davem@davemloft.net>
-	<1337743841.14538.178.camel@ymzhang.sh.intel.com>
-X-Mailer: Mew version 6.5 on Emacs 24.0.95 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.6 (shards.monkeyblade.net [198.137.202.13]); Tue, 22 May 2012 20:49:24 -0700 (PDT)
+	Tue, 22 May 2012 23:55:55 -0400
+Date: Tue, 22 May 2012 20:55:53 -0700 (PDT)
+From: David Rientjes <rientjes@google.com>
+X-X-Sender: rientjes@chino.kir.corp.google.com
+To: Christoph Lameter <cl@linux.com>
+cc: Glauber Costa <glommer@parallels.com>, linux-kernel@vger.kernel.org,
+        cgroups@vger.kernel.org, linux-mm@kvack.org,
+        Pekka Enberg <penberg@cs.helsinki.fi>
+Subject: Re: [PATCH v2] slab+slob: dup name string
+In-Reply-To: <alpine.DEB.2.00.1205220857380.17600@router.home>
+Message-ID: <alpine.DEB.2.00.1205222048380.28165@chino.kir.corp.google.com>
+References: <1337680298-11929-1-git-send-email-glommer@parallels.com> <alpine.DEB.2.00.1205220857380.17600@router.home>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Yanmin Zhang <yanmin_zhang@linux.intel.com>
-Date: Wed, 23 May 2012 11:30:41 +0800
+On Tue, 22 May 2012, Christoph Lameter wrote:
 
-> How about the new patch posted in the end of previous reply? It does move the
-> the resetting to RCU release.
-> https://lkml.org/lkml/2012/5/22/558?
+> > [ v2: Also dup string for early caches, requested by David Rientjes ]
+> 
+> kstrdups that early could cause additional issues. Its better to leave
+> things as they were.
+> 
 
-If you test it and submit it formally I'll probably apply it.
+No, it's not, there's no reason to prevent caches created before 
+g_cpucache_up <= EARLY to be destroyed because it makes a patch easier to 
+implement and then leave that little gotcha as an undocumented treasure 
+for someone to find when they try it later on.
+
+I hate consistency patches like this because it could potentially fail a 
+kmem_cache_create() from a sufficiently long cache name when it wouldn't 
+have before, but I'm not really concerned since kmem_cache_create() will 
+naturally be followed by kmem_cache_alloc() which is more likely to cause 
+the oom anyway.  But it's just another waste of memory for consistency 
+sake.
+
+This is much easier to do, just statically allocate the const char *'s 
+needed for the boot caches and then set their ->name's manually in 
+kmem_cache_init() and then avoid the kfree() in kmem_cache_destroy() if 
+the name is between &boot_cache_name[0] and &boot_cache_name[n].
