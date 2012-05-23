@@ -1,33 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759225Ab2EWKMH (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 May 2012 06:12:07 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:47685 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751409Ab2EWKME (ORCPT
+	id S933364Ab2EWKNc (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 May 2012 06:13:32 -0400
+Received: from smtp3.mundo-r.com ([212.51.32.191]:60028 "EHLO
+	smtp4.mundo-r.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751409Ab2EWKNa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 May 2012 06:12:04 -0400
-MIME-Version: 1.0
-Date: Wed, 23 May 2012 15:42:03 +0530
-Message-ID: <CAHdPZaPiiXzj2+oeHRa1KrGVrESfxpxpiXOkNPyKWd-oQCbszg@mail.gmail.com>
-Subject: question about the failure of eisa_root_register in drivers/eisa/pci_eisa.c
-From: "devendra.aaru" <devendra.aaru@gmail.com>
-To: Arnaud Lacombe <lacombar@gmail.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+	Wed, 23 May 2012 06:13:30 -0400
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: AoUJAJm3vE9bdWOb/2dsb2JhbABDhS+mVCKICIEHghYBBSMEUhALGgImAgJXBoglqAKSdIEmjhWBFAOeOoZSgmw
+X-IronPort-AV: E=Sophos;i="4.75,644,1330902000"; 
+   d="scan'208";a="518530307"
+Message-ID: <1337768001.3666.6.camel@fourier.local.igalia.com>
+Subject: Re: [PATCH 3/4] Staging: ipack/bridges/tpci200: remove
+ TPCI200_SHORTNAME constant
+From: Samuel Iglesias =?ISO-8859-1?Q?Gons=E1lvez?= 
+	<siglesias@igalia.com>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
+Date: Wed, 23 May 2012 12:13:21 +0200
+In-Reply-To: <20120519003724.GA10111@kroah.com>
+References: <1337332208-26057-1-git-send-email-siglesias@igalia.com>
+	 <1337332208-26057-3-git-send-email-siglesias@igalia.com>
+	 <20120519003724.GA10111@kroah.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.2-1+b1 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello ,
+On Fri, 2012-05-18 at 17:37 -0700, Greg Kroah-Hartman wrote:
+[...]
+> >  	if (dev->slot >= TPCI200_NB_SLOT) {
+> > -		pr_info("Slot [%s %d:%d] doesn't exist! Last tpci200 slot is %d.\n",
+> > -			TPCI200_SHORTNAME, dev->bus_nr, dev->slot,
+> > -			TPCI200_NB_SLOT-1);
+> > +		pr_info("Slot [%d:%d] doesn't exist! Last tpci200 slot is %d.\n",
+> > +			dev->bus_nr, dev->slot, TPCI200_NB_SLOT-1);
+> 
+> All of these should really be dev_err() calls, right?
+> 
+> You should have no pr_* calls at all in any driver, and probably none in
+> the ipack core as well, care to fix them all up?
 
-   If the eisa_root_register fails, the function just returns rather
-than calling the pci_disable_device and return. so we need to use the
-pci_disable_device and return.
+Yes, I will fix it in the next bunch of patches. I don't forget it.
 
-
-Please suggest me if i am wrong.
+By the way, sometime ago, you suggested me to use the ics interface for
+giving the bus number if there is no HW boundary of the number of them.
+However, I searched the source code and I didn't find any reference to
+the ics interface. Can you tell me where is it declared?
 
 Thanks,
-Devendra.
+
+Sam 
+
