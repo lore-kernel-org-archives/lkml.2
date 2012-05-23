@@ -1,150 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964844Ab2EWKlt (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 May 2012 06:41:49 -0400
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:39568 "EHLO
-	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758923Ab2EWKkj (ORCPT
+	id S933395Ab2EWKmJ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 May 2012 06:42:09 -0400
+Received: from smtp3.mundo-r.com ([212.51.32.191]:49017 "EHLO
+	smtp4.mundo-r.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1757395Ab2EWKmE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 May 2012 06:40:39 -0400
-Message-Id: <20120523104031.079339134@openvz.org>
-User-Agent: quilt/0.48-1
-Date: Wed, 23 May 2012 14:25:46 +0400
-From: Cyrill Gorcunov <gorcunov@openvz.org>
-To: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Pavel Emelyanov <xemul@parallels.com>,
-        James Bottomley <jbottomley@parallels.com>, ebiederm@xmission.com,
-        tj@kernel.org, skinsbursky@openvz.org,
-        Cyrill Gorcunov <gorcunov@openvz.org>
-Subject: [rfc v2 5/7] fs, epoll: Add procfs fdinfo helper
-References: <20120523102541.382837149@openvz.org>
-Content-Disposition: inline; filename=seq-fdinfo-eventpoll-4
+	Wed, 23 May 2012 06:42:04 -0400
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: AoQJAOa9vE9bdWOb/2dsb2JhbABDhS+mViKICYEHghUBAQUjVhALGCoCAlcGiCWncZJ1iw+ELIEUA6UMgmw
+X-IronPort-AV: E=Sophos;i="4.75,644,1330902000"; 
+   d="asc'?scan'208";a="518546134"
+Message-ID: <1337769731.3666.8.camel@fourier.local.igalia.com>
+Subject: Re: [PATCH 2/3] Staging: ipack: fix failure registering an ipack
+ device
+From: Samuel Iglesias =?ISO-8859-1?Q?Gons=E1lvez?= 
+	<siglesias@igalia.com>
+To: Dan Carpenter <dan.carpenter@oracle.com>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
+Date: Wed, 23 May 2012 12:42:11 +0200
+In-Reply-To: <20120523104115.GL4637@mwanda>
+References: <1337764395-23200-1-git-send-email-siglesias@igalia.com>
+	 <1337764395-23200-2-git-send-email-siglesias@igalia.com>
+	 <20120523104115.GL4637@mwanda>
+Content-Type: multipart/signed; micalg="pgp-sha1"; protocol="application/pgp-signature";
+	boundary="=-HqFLMZdbBPSpfqaSuO9Z"
+X-Mailer: Evolution 3.2.2-1+b1 
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This allow us to print out eventpoll target file descriptor,
-events and data, the /proc/pid/fdinfo/fd consists of
 
- | pos:	0
- | flags:	02
- | tfd:        5 events:       1d data: ffffffffffffffff
+--=-HqFLMZdbBPSpfqaSuO9Z
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: quoted-printable
 
-This feature is CONFIG_CHECKPOINT_RESTORE only.
+On Wed, 2012-05-23 at 13:41 +0300, Dan Carpenter wrote:
+> On Wed, May 23, 2012 at 11:13:14AM +0200, Samuel Iglesias Gonsalvez wrote=
+:
+> > Trying to install an ipack device it always failed in the match() funct=
+ion. This
+> > patch fixes all the bugs present there.
+> >=20
+>=20
+> This looks like part of it is undoing stuff introduced in
+> [patch 1/3]?  I was going to ask what the stuff was in 1/3 and then
+> it got removed which makes me wonder why even more.  Could you write
+> something about why in your changelog?  Or if it's not needed then
+> remove it from the first patch.
+>=20
+> Really it would be easier to review if you broke it up into one
+> patch per bug, with a description of what the bugs were instead of
+> "patch fixes all the bugs present there".
+>=20
+> Some of these changes don't seem necessary.  It feels like you were
+> debugging and then when you got match() to work you just committed
+> all the changes instead of only the lines which are needed.
+>=20
 
-Signed-off-by: Cyrill Gorcunov <gorcunov@openvz.org>
-CC: Andrew Morton <akpm@linux-foundation.org>
-CC: Pavel Emelyanov <xemul@parallels.com>
-CC: James Bottomley <jbottomley@parallels.com>
----
- fs/eventpoll.c |   81 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++
- 1 file changed, 81 insertions(+)
+Yes, you are right. I will work again on these patches.
 
-Index: linux-2.6.git/fs/eventpoll.c
-===================================================================
---- linux-2.6.git.orig/fs/eventpoll.c
-+++ linux-2.6.git/fs/eventpoll.c
-@@ -37,6 +37,8 @@
- #include <asm/io.h>
- #include <asm/mman.h>
- #include <linux/atomic.h>
-+#include <linux/proc_fs.h>
-+#include <linux/seq_file.h>
- 
- /*
-  * LOCKING:
-@@ -1815,6 +1817,83 @@ SYSCALL_DEFINE6(epoll_pwait, int, epfd,
- 
- #endif /* HAVE_SET_RESTORE_SIGMASK */
- 
-+#if defined(CONFIG_PROC_FS) && defined(CONFIG_CHECKPOINT_RESTORE)
-+
-+struct epitem_fdinfo {
-+	struct epoll_event	ev;
-+	int			fd;
-+};
-+
-+static struct epitem_fdinfo *
-+seq_lookup_fdinfo(struct proc_fdinfo_extra *extra, struct eventpoll *ep, loff_t num)
-+{
-+	struct epitem_fdinfo *fdinfo = extra->priv;
-+	struct epitem *epi = NULL;
-+	struct rb_node *rbp;
-+
-+	mutex_lock(&ep->mtx);
-+	for (rbp = rb_first(&ep->rbr); rbp; rbp = rb_next(rbp)) {
-+		if (num-- == 0) {
-+			epi = rb_entry(rbp, struct epitem, rbn);
-+			fdinfo->fd = epi->ffd.fd;
-+			fdinfo->ev = epi->event;
-+			break;
-+		}
-+	}
-+	mutex_unlock(&ep->mtx);
-+
-+	return epi ? fdinfo : NULL;
-+}
-+
-+static void *seq_start(struct seq_file *m, loff_t *pos)
-+{
-+	struct proc_fdinfo_extra *extra = m->private;
-+	struct eventpoll *ep = extra->f_file->private_data;
-+
-+	return seq_lookup_fdinfo(extra, ep, *pos);
-+}
-+
-+static void seq_stop(struct seq_file *m, void *v) { }
-+
-+static void *seq_next(struct seq_file *m, void *p, loff_t *pos)
-+{
-+	struct proc_fdinfo_extra *extra = m->private;
-+	struct eventpoll *ep = extra->f_file->private_data;
-+	++*pos;
-+	return (void *)seq_lookup_fdinfo(extra, ep, *pos);
-+}
-+
-+static int seq_show(struct seq_file *m, void *v)
-+{
-+	struct epitem_fdinfo *fdinfo = v;
-+	seq_printf(m, "tfd: %8d events: %8x data: %16llx\n",
-+		   fdinfo->fd, fdinfo->ev.events,
-+		   (long long)fdinfo->ev.data);
-+	return 0;
-+}
-+
-+static const struct seq_operations ep_fdinfo_ops = {
-+	.start		= seq_start,
-+	.next		= seq_next,
-+	.stop		= seq_stop,
-+	.show		= seq_show,
-+};
-+
-+static struct proc_fdinfo_driver ep_fdinfo = {
-+	.name		= "eventpoll",
-+	.ops		= &ep_fdinfo_ops,
-+	.probe		= is_file_epoll,
-+	.priv_size	= sizeof(struct epitem_fdinfo),
-+};
-+
-+static int __init ep_register_fdinfo_driver(void)
-+{
-+	return proc_register_fdinfo_driver(&ep_fdinfo);
-+}
-+#else
-+static void ep_register_fdinfo_driver(void) { }
-+#endif /* CONFIG_PROC_FS && CONFIG_CHECKPOINT_RESTORE */
-+
- static int __init eventpoll_init(void)
- {
- 	struct sysinfo si;
-@@ -1847,6 +1926,8 @@ static int __init eventpoll_init(void)
- 	pwq_cache = kmem_cache_create("eventpoll_pwq",
- 			sizeof(struct eppoll_entry), 0, SLAB_PANIC, NULL);
- 
-+	ep_register_fdinfo_driver();
-+
- 	return 0;
- }
- fs_initcall(eventpoll_init);
+Thanks,
+
+Sam
+
+
+--=-HqFLMZdbBPSpfqaSuO9Z
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: This is a digitally signed message part
+Content-Transfer-Encoding: 7bit
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iEYEABECAAYFAk+8vwMACgkQWrfbyfmd9eJ5PQCgrTpvUOeCPkPmdjdPWKBORmeI
+2V4AoICCQBsW7gdAS/lanaSt43Hvfa/b
+=i5kp
+-----END PGP SIGNATURE-----
+
+--=-HqFLMZdbBPSpfqaSuO9Z--
 
