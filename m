@@ -1,68 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933400Ab2EWAk6 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 May 2012 20:40:58 -0400
-Received: from wolverine01.qualcomm.com ([199.106.114.254]:59779 "EHLO
-	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756924Ab2EWAkx (ORCPT
+	id S933387Ab2EWAnO (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 May 2012 20:43:14 -0400
+Received: from mail132.messagelabs.com ([216.82.242.115]:40138 "EHLO
+	mail132.messagelabs.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752235Ab2EWAnK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 May 2012 20:40:53 -0400
-X-IronPort-AV: E=McAfee;i="5400,1158,6719"; a="193718732"
-Date: Tue, 22 May 2012 19:40:50 -0500
-From: Richard Kuo <rkuo@codeaurora.org>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org, linux-hexagon@vger.kernel.org
-Subject: [GIT PULL] Hexagon:  misc cleanup
-Message-ID: <20120523004049.GA4269@codeaurora.org>
+	Tue, 22 May 2012 20:43:10 -0400
+X-Env-Sender: hartleys@visionengravers.com
+X-Msg-Ref: server-2.tower-132.messagelabs.com!1337733788!12411570!2
+X-Originating-IP: [216.166.12.180]
+X-StarScan-Version: 6.5.10; banners=-,-,-
+X-VirusChecked: Checked
+From: H Hartley Sweeten <hartleys@visionengravers.com>
+To: Linux Kernel <linux-kernel@vger.kernel.org>
+Subject: [PATCH] staging: comedi: remove thisboard macro in the pcmda12 driver
+Date: Tue, 22 May 2012 17:42:55 -0700
+User-Agent: KMail/1.9.9
+CC: <devel@driverdev.osuosl.org>, <abbotti@mev.co.uk>,
+        <fmhess@users.sourceforge.net>, <gregkh@linuxfoundation.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
 Content-Disposition: inline
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Message-ID: <201205221742.55668.hartleys@visionengravers.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Linus,
+The 'thisboard' macro depends on having a local variable with
+a magic name. The CodingStyle document suggests not doing this
+to avoid confusion. Remove the macro and use the comedi_board()
+inline helper to get the dev->board_ptr information.
 
-Please pull the following changes for the Hexagon architecture from: 
+Signed-off-by: H Hartley Sweeten <hsweeten@visionengravers.com>
+Cc: Ian Abbott <abbotti@mev.co.uk>
+Cc: Mori Hess <fmhess@users.sourceforge.net>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
-  git://git.kernel.org/pub/scm/linux/kernel/git/rkuo/linux-hexagon-kernel.git for-linus
+---
 
-These are mostly cleanups and feedback remaining from the original
-upstreaming.
-
-
-Thanks,
-Richard Kuo
-
-
-
------------------->
-Jesper Juhl (1):
-      Remove unneeded include of version.h from arch/hexagon/include/asm/spinlock_types.h
-
-Julia Lawall (1):
-      arch/hexagon/kernel/dma.c: make function static
-
-Kautuk Consul (1):
-      hexagon/mm/vm_fault.c: Port OOM changes to do_page_fault
-
-Richard Kuo (1):
-      various Kconfig cleanup and old platform build code removal
-
-Thomas Meyer (1):
-      Hexagon: Use resource_size function
-
- arch/hexagon/Kconfig                      |   21 ++++-----------------
- arch/hexagon/Makefile                     |    5 -----
- arch/hexagon/include/asm/spinlock_types.h |    2 --
- arch/hexagon/kernel/dma.c                 |    2 +-
- arch/hexagon/kernel/time.c                |    6 ++----
- arch/hexagon/mm/vm_fault.c                |   22 +++++++++++++++++-----
- 6 files changed, 24 insertions(+), 34 deletions(-)
-
-
--- 
-
-Sent by an employee of the Qualcomm Innovation Center, Inc.
-The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
+diff --git a/drivers/staging/comedi/drivers/pcmda12.c b/drivers/staging/comedi/drivers/pcmda12.c
+index 4786148..f49c66a 100644
+--- a/drivers/staging/comedi/drivers/pcmda12.c
++++ b/drivers/staging/comedi/drivers/pcmda12.c
+@@ -80,11 +80,6 @@ static const struct comedi_lrange pcmda12_ranges = {
+ 	 }
+ };
+ 
+-/*
+- * Useful for shorthand access to the particular board structure
+- */
+-#define thisboard ((const struct pcmda12_board *)dev->board_ptr)
+-
+ struct pcmda12_private {
+ 
+ 	unsigned int ao_readback[CHANS];
+@@ -167,6 +162,7 @@ static int ao_rinsn(struct comedi_device *dev, struct comedi_subdevice *s,
+ static int pcmda12_attach(struct comedi_device *dev,
+ 			  struct comedi_devconfig *it)
+ {
++	const struct pcmda12_board *board = comedi_board(dev);
+ 	struct comedi_subdevice *s;
+ 	unsigned long iobase;
+ 
+@@ -181,11 +177,7 @@ static int pcmda12_attach(struct comedi_device *dev,
+ 	}
+ 	dev->iobase = iobase;
+ 
+-/*
+- * Initialize dev->board_name.  Note that we can use the "thisboard"
+- * macro now, since we just initialized it in the last line.
+- */
+-	dev->board_name = thisboard->name;
++	dev->board_name = board->name;
+ 
+ /*
+  * Allocate the private structure area.  alloc_private() is a
