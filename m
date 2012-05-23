@@ -1,98 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932840Ab2EWGiR (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 May 2012 02:38:17 -0400
-Received: from rcsinet15.oracle.com ([148.87.113.117]:32494 "EHLO
-	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965143Ab2EWGez (ORCPT
+	id S965138Ab2EWGex (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 May 2012 02:34:53 -0400
+Received: from acsinet15.oracle.com ([141.146.126.227]:34436 "EHLO
+	acsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755052Ab2EWGev (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 May 2012 02:34:55 -0400
+	Wed, 23 May 2012 02:34:51 -0400
 From: Yinghai Lu <yinghai@kernel.org>
 To: Bjorn Helgaas <bhelgaas@google.com>
 Cc: Andrew Morton <akpm@linux-foundation.org>,
         Linus Torvalds <torvalds@linux-foundation.org>,
         linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Yinghai Lu <yinghai@kernel.org>
-Subject: [PATCH 05/11] resources: Split out __allocate_resource()
-Date: Tue, 22 May 2012 23:34:31 -0700
-Message-Id: <1337754877-19759-6-git-send-email-yinghai@kernel.org>
+        Yinghai Lu <ying6hai@kernel.org>
+Subject: [PATCH 00/11] PCI: resource allocation related
+Date: Tue, 22 May 2012 23:34:26 -0700
+Message-Id: <1337754877-19759-1-git-send-email-yinghai@kernel.org>
 X-Mailer: git-send-email 1.7.7
-In-Reply-To: <1337754877-19759-1-git-send-email-yinghai@kernel.org>
-References: <1337754877-19759-1-git-send-email-yinghai@kernel.org>
-X-Source-IP: acsinet21.oracle.com [141.146.126.237]
+X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-It will take bool lock, so we could use it in other functions that
-hold the resource lock.
+From: Yinghai Lu <ying6hai@kernel.org>
 
-Signed-off-by: Yinghai Lu <yinghai@kernel.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>
----
- kernel/resource.c |   26 +++++++++++++++++++++-----
- 1 files changed, 21 insertions(+), 5 deletions(-)
+This patchset will try to make allocation to find suitable assignement.
+1. will try to assign 64 bit resource above 4g at first.
+2. will find space that is matched with needed size
+3. will put resource in right location to leave more big alignment with left blank resource
+4. will try option rom BAR as optional resources.
 
-diff --git a/kernel/resource.c b/kernel/resource.c
-index 51ade23..41d7050 100644
---- a/kernel/resource.c
-+++ b/kernel/resource.c
-@@ -521,14 +521,14 @@ out:
-  * @alignf: alignment function, optional, called if not NULL
-  * @alignf_data: arbitrary data to pass to the @alignf function
-  */
--int allocate_resource(struct resource *root, struct resource *new,
-+static int __allocate_resource(struct resource *root, struct resource *new,
- 		      resource_size_t size, resource_size_t min,
- 		      resource_size_t max, resource_size_t align,
- 		      resource_size_t (*alignf)(void *,
- 						const struct resource *,
- 						resource_size_t,
- 						resource_size_t),
--		      void *alignf_data)
-+		      void *alignf_data, bool lock)
- {
- 	int err;
- 	struct resource_constraint constraint;
-@@ -542,19 +542,35 @@ int allocate_resource(struct resource *root, struct resource *new,
- 	constraint.alignf = alignf;
- 	constraint.alignf_data = alignf_data;
- 
--	if ( new->parent ) {
-+	if (new->parent && lock) {
- 		/* resource is already allocated, try reallocating with
- 		   the new constraints */
- 		return reallocate_resource(root, new, size, &constraint);
- 	}
- 
--	write_lock(&resource_lock);
-+	if (lock)
-+		write_lock(&resource_lock);
- 	err = find_resource(root, new, size, &constraint);
- 	if (err >= 0 && __request_resource(root, new))
- 		err = -EBUSY;
--	write_unlock(&resource_lock);
-+	if (lock)
-+		write_unlock(&resource_lock);
- 	return err;
- }
-+int allocate_resource(struct resource *root, struct resource *new,
-+		      resource_size_t size, resource_size_t min,
-+		      resource_size_t max, resource_size_t align,
-+		      resource_size_t (*alignf)(void *,
-+						const struct resource *,
-+						resource_size_t,
-+						resource_size_t),
-+		      void *alignf_data)
-+{
-+	bool lock = true;
-+
-+	return __allocate_resource(root, new, size, min, max, align,
-+				   alignf, alignf_data, lock);
-+}
- 
- EXPORT_SYMBOL(allocate_resource);
- 
+Could be found:
+	git://git.kernel.org/pub/scm/linux/kernel/git/yinghai/linux-yinghai.git for-pci-res-alloc
+
+and it is based on pci for-3.6 branch.
+
+Thanks
+
+Yinghai Lu
+
+Yinghai Lu (11):
+  PCI: Should add children device res to fail list
+  PCI: Try to allocate mem64 above 4G at first
+  intel-gtt: Read 64bit for gmar_bus_addr
+  PCI: Make sure assign same align with large size resource at first
+  resources: Split out __allocate_resource()
+  resource: make find_resource could return just fit resource
+  PCI: Don't allocate small resource in big empty space.
+  resource: only return range with needed align
+  PCI: Add is_pci_iov_resource_idx()
+  PCI: Sort unassigned resources with correct alignment
+  PCI: Treat ROM resource as optional during assigning.
+
+ drivers/char/agp/intel-gtt.c |   14 ++++--
+ drivers/pci/bus.c            |   38 +++++++++++---
+ drivers/pci/setup-bus.c      |   78 ++++++++++++++++++-----------
+ drivers/pci/setup-res.c      |   28 +++++++----
+ include/linux/ioport.h       |    8 +++
+ include/linux/pci.h          |   23 ++++++++
+ kernel/resource.c            |  114 ++++++++++++++++++++++++++++++++++++++---
+ 7 files changed, 243 insertions(+), 60 deletions(-)
+
 -- 
 1.7.7
 
