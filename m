@@ -1,60 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933727Ab2EWP3N (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 May 2012 11:29:13 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:30790 "EHLO mx1.redhat.com"
+	id S965230Ab2EWP3Q (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 May 2012 11:29:16 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:30690 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751505Ab2EWP3L (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 May 2012 11:29:11 -0400
-Date: Wed, 23 May 2012 17:28:55 +0200
-From: Jiri Olsa <jolsa@redhat.com>
-To: Stephane Eranian <eranian@google.com>
-Cc: zheng.z.yan@intel.com, a.p.zijlstra@chello.nl, mingo@elte.hu,
-        andi@firstfloor.org, ming.m.lin@intel.com, gregkh@linuxfoundation.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [RFC 0/5] perf, tool: uncore related changes
-Message-ID: <20120523152855.GC5742@m.brq.redhat.com>
-References: <1337144403-30841-1-git-send-email-zheng.z.yan@intel.com>
- <1337585813-3349-1-git-send-email-jolsa@redhat.com>
- <CABPqkBTRzcuiwNAvpxt_N7AaddX9GAuGBS0+hWT78GiNqd-i2A@mail.gmail.com>
- <20120523151612.GA8019@m.brq.redhat.com>
- <CABPqkBRw_YALNuRfTOsmEqT7omtFJ1FLYVDip_nrdP=0qULCbw@mail.gmail.com>
+	id S933709Ab2EWP3M (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 23 May 2012 11:29:12 -0400
+Date: Wed, 23 May 2012 18:16:05 +0300
+From: "Michael S. Tsirkin" <mst@redhat.com>
+To: Andrew Theurer <habanero@linux.vnet.ibm.com>
+Cc: Liu ping fan <kernelfans@gmail.com>, Shirley Ma <mashirle@us.ibm.com>,
+        kvm@vger.kernel.org, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org, qemu-devel@nongnu.org,
+        Avi Kivity <avi@redhat.com>,
+        Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>,
+        Rusty Russell <rusty@rustcorp.com.au>,
+        Anthony Liguori <anthony@codemonkey.ws>,
+        Ryan Harper <ryanh@us.ibm.com>, Shirley Ma <xma@us.ibm.com>,
+        Krishna Kumar <krkumar2@in.ibm.com>, Tom Lendacky <toml@us.ibm.com>
+Subject: Re: [RFC:kvm] export host NUMA info to guest & make emulated device
+ NUMA attr
+Message-ID: <20120523151604.GB30542@redhat.com>
+References: <1337246456-30909-1-git-send-email-kernelfans@gmail.com>
+ <1337357675.12999.31.camel@oc3660625478.ibm.com>
+ <CAFgQCTsdXqitVGKm5jQjtC--yvZy6x04zRduJ+_tXqUnkncdog@mail.gmail.com>
+ <4FBCF99F.4070409@linux.vnet.ibm.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <CABPqkBRw_YALNuRfTOsmEqT7omtFJ1FLYVDip_nrdP=0qULCbw@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <4FBCF99F.4070409@linux.vnet.ibm.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, May 23, 2012 at 05:21:11PM +0200, Stephane Eranian wrote:
-> On Wed, May 23, 2012 at 5:16 PM, Jiri Olsa <jolsa@redhat.com> wrote:
-> > On Wed, May 23, 2012 at 04:53:13PM +0200, Stephane Eranian wrote:
-> >> Jiri,
+On Wed, May 23, 2012 at 09:52:15AM -0500, Andrew Theurer wrote:
+> On 05/22/2012 04:28 AM, Liu ping fan wrote:
+> >On Sat, May 19, 2012 at 12:14 AM, Shirley Ma<mashirle@us.ibm.com>  wrote:
+> >>On Thu, 2012-05-17 at 17:20 +0800, Liu Ping Fan wrote:
+> >>>Currently, the guest can not know the NUMA info of the vcpu, which
+> >>>will
+> >>>result in performance drawback.
+> >>>
+> >>>This is the discovered and experiment by
+> >>>         Shirley Ma<xma@us.ibm.com>
+> >>>         Krishna Kumar<krkumar2@in.ibm.com>
+> >>>         Tom Lendacky<toml@us.ibm.com>
+> >>>Refer to -
+> >>>http://www.mail-archive.com/kvm@vger.kernel.org/msg69868.html
+> >>>we can see the big perfermance gap between NUMA aware and unaware.
+> >>>
+> >>>Enlightened by their discovery, I think, we can do more work -- that
+> >>>is to
+> >>>export NUMA info of host to guest.
 > >>
-> >> Is there a way with the current parser to have a syntax as follows:
+> >>There three problems we've found:
 > >>
-> >>  perf stat -e cpu/event=cycles,edge/ ...
+> >>1. KVM doesn't support NUMA load balancer. Even there are no other
+> >>workloads in the system, and the number of vcpus on the guest is smaller
+> >>than the number of cpus per node, the vcpus could be scheduled on
+> >>different nodes.
 > >>
-> >> In other words, avoid juggling between -e cycles and the -e
-> >> cpu/event=.../ syntax?
-> >
-> Also with this new syntax, how am I supposed to request precise sampling?
+> >>Someone is working on in-kernel solution. Andrew Theurer has a working
+> >>user-space NUMA aware VM balancer, it requires libvirt and cgroups
+> >>(which is default for RHEL6 systems).
+> >>
+> >Interesting, and I found that "sched/numa: Introduce
+> >sys_numa_{t,m}bind()" committed by Peter and Ingo may help.
+> >But I think from the guest view, it can not tell whether the two vcpus
+> >are on the same host node. For example,
+> >vcpu-a in node-A is not vcpu-b in node-B, the guest lb will be more
+> >expensive if it pull_task from vcpu-a and
+> >choose vcpu-b to push.  And my idea is to export such info to guest,
+> >still working on it.
 > 
->    perf stat -e cpu/event=cycles,edge,precise=1/
-if 'precise' is one of your pmu format terms you can use it like that
+> The long term solution is to two-fold:
+> 1) Guests that are quite large (in that they cannot fit in a host
+> NUMA node) must have static mulit-node NUMA topology implemented by
+> Qemu. That is here today, but we do not do it automatically, which
+> is probably going to be a VM management responsibility.
+> 2) Host scheduler and NUMA code must be enhanced to get better
+> placement of Qemu memory and threads.  For single-node vNUMA guests,
+> this is easy, put it all in one node.  For mulit-node vNUMA guests,
+> the host must understand that some Qemu memory belongs with certain
+> vCPU threads (which make up one of the guests vNUMA nodes), and then
+> place that memory/threads in a specific host node (and continue for
+> other memory/threads for each Qemu vNUMA node).
 
-but 'precise' stayed in the event modifier, so:
+And for IO, we need multiqueue devices such that each
+node can have its own queue in its local memory.
 
-perf stat -e cpu/event=cycles,edge/pp..
-
-
-> 
-> > I think it's possible.. so far we have the cpu/event=../ term in use for number
-> > assignment. We could do string translation to appropriate values.. I'll check
-> >
-> > added to my todo list ;)
-> >
-> > jirka
+-- 
+MST
