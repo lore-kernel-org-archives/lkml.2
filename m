@@ -1,56 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933631Ab2EWPIc (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 May 2012 11:08:32 -0400
-Received: from mga14.intel.com ([143.182.124.37]:44721 "EHLO mga14.intel.com"
+	id S1759890Ab2EWPK0 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 May 2012 11:10:26 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:20905 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932304Ab2EWPIa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 May 2012 11:08:30 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
-   d="scan'208";a="146790568"
-From: Maciej Sosnowski <maciej.sosnowski@intel.com>
-Subject: [PATCH] dca: check against empty dca_domains list before unregister
-	provider
-To: dan.j.williams@intel.com
-Cc: jiang.liu@huawei.com, chenkeping@huawei.com, linux-kernel@vger.kernel.org,
-        netdev@vger.kernel.org, linux-pci@vger.kernel.org
-Date: Wed, 23 May 2012 17:27:07 +0200
-Message-ID: <20120523152707.31683.81714.stgit@linux.site>
-User-Agent: StGIT/0.13
+	id S1753771Ab2EWPKY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 23 May 2012 11:10:24 -0400
+Message-ID: <4FBCFDD1.5050405@redhat.com>
+Date: Wed, 23 May 2012 18:10:09 +0300
+From: Avi Kivity <avi@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
+To: Thomas Gleixner <tglx@linutronix.de>
+CC: "Michael S. Tsirkin" <mst@redhat.com>, kvm@vger.kernel.org,
+        Marcelo Tosatti <mtosatti@redhat.com>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, x86@kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] kvm: optimize ISR lookups
+References: <20120521163727.GA13337@redhat.com> <alpine.LFD.2.02.1205211940030.3231@ionos> <4FBB7185.6040105@redhat.com> <alpine.LFD.2.02.1205221919260.3231@ionos>
+In-Reply-To: <alpine.LFD.2.02.1205221919260.3231@ionos>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When providers get blocked unregister_dca_providers() is called ending up
-with dca_providers and dca_domain lists emptied. Dca should be prevented from
-trying to unregister any provider if dca_domain list is found empty.
+On 05/22/2012 08:26 PM, Thomas Gleixner wrote:
+> On Tue, 22 May 2012, Avi Kivity wrote:
+>> On 05/22/2012 12:04 AM, Thomas Gleixner wrote:
+>> > The only justification for having the same layout as the actual
+>> > hardware is when you are going to map the memory into the guest space,
+>> > which is not the case here.
+>>
+>> The APIC page is in fact mapped  to the hardware (not the guest, but vmx
+>> microcode does access it).  Only one register, the TPR, is ever used. 
+>> It's possible to re-layout the data structure so that the TPR stays in
+>> the same place while everything else becomes contiguous, but we'll have
+>> to do it again if the hardware starts mapping more registers.
+> 
+> I would avoid that by having a compressed version which reflects the
+> SW state and the mapped one which allows the vmx microcode to fiddle
+> with the TPR. If you need more registers in the HW page then you don't
+> have to worry about the layout and just have a proper accessor for
+> that.
 
-Reported-by: Jiang Liu <jiang.liu@huawei.com>
-Tested-by: Gaohuai Han <hangaohuai@huawei.com>
-Signed-off-by: Maciej Sosnowski <maciej.sosnowski@intel.com>
----
+That works, but replaces one problem with another: now we have two
+sources for the same data, and need to juggle between them depending on
+register number (either synchronizing in both directions, or special
+casing); so you're simplifying one thing at the expense of the other.
+If the microcode starts accessing more registers, then having two
+layouts becomes even uglier.
 
- drivers/dca/dca-core.c |    5 +++++
- 1 files changed, 5 insertions(+), 0 deletions(-)
-
-diff --git a/drivers/dca/dca-core.c b/drivers/dca/dca-core.c
-index bc6f5fa..819dfda 100644
---- a/drivers/dca/dca-core.c
-+++ b/drivers/dca/dca-core.c
-@@ -420,6 +420,11 @@ void unregister_dca_provider(struct dca_
- 
- 	raw_spin_lock_irqsave(&dca_lock, flags);
- 
-+	if (list_empty(&dca_domains)) {
-+		raw_spin_unlock_irqrestore(&dca_lock, flags);
-+		return;
-+	}
-+
- 	list_del(&dca->node);
- 
- 	pci_rc = dca_pci_rc_from_dev(dev);
-
+-- 
+error compiling committee.c: too many arguments to function
