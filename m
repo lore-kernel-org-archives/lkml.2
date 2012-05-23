@@ -1,57 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933118Ab2EWUv3 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 May 2012 16:51:29 -0400
-Received: from mail-gh0-f174.google.com ([209.85.160.174]:61134 "EHLO
-	mail-gh0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753183Ab2EWUv2 convert rfc822-to-8bit (ORCPT
+	id S1760802Ab2EWUvz (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 May 2012 16:51:55 -0400
+Received: from e38.co.us.ibm.com ([32.97.110.159]:56411 "EHLO
+	e38.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758761Ab2EWUvy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 May 2012 16:51:28 -0400
+	Wed, 23 May 2012 16:51:54 -0400
+Message-ID: <4FBD4DDF.5080905@linux.vnet.ibm.com>
+Date: Wed, 23 May 2012 15:51:43 -0500
+From: Seth Jennings <sjenning@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
 MIME-Version: 1.0
-In-Reply-To: <20120523181917.GN11775@ZenIV.linux.org.uk>
-References: <20120523170740.ae058d8d5468d471eb948c39@canb.auug.org.au>
-	<4FBD090E.5020901@xenotime.net>
-	<20120523181917.GN11775@ZenIV.linux.org.uk>
-Date: Wed, 23 May 2012 22:51:26 +0200
-X-Google-Sender-Auth: JUBH8uYZWvbjvQcPuo4vA1xntZw
-Message-ID: <CAMuHMdVVtMwuXULhK3dHexdSex+7JSj=Vk9z8fWohfMvrOuCWQ@mail.gmail.com>
-Subject: Re: linux-next: Tree for May 23 (uml)
-From: Geert Uytterhoeven <geert@linux-m68k.org>
-To: Al Viro <viro@zeniv.linux.org.uk>
-Cc: Randy Dunlap <rdunlap@xenotime.net>,
-        Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
-        LKML <linux-kernel@vger.kernel.org>,
-        Richard Weinberger <richard@nod.at>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+To: Minchan Kim <minchan@kernel.org>
+CC: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Nitin Gupta <ngupta@vflare.org>,
+        Dan Magenheimer <dan.magenheimer@oracle.com>,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        Russell King <linux@arm.linux.org.uk>,
+        Ralf Baechle <ralf@linux-mips.org>, Paul Mundt <lethal@linux-sh.org>,
+        Guan Xuetao <gxt@mprc.pku.edu.cn>,
+        Chen Liqin <liqin.chen@sunplusct.com>
+Subject: Re: [PATCH v2 1/3] zsmalloc: support zsmalloc to ARM, MIPS, SUPERH
+References: <1337133919-4182-1-git-send-email-minchan@kernel.org>
+In-Reply-To: <1337133919-4182-1-git-send-email-minchan@kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 12052320-5518-0000-0000-000004A1111D
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, May 23, 2012 at 8:19 PM, Al Viro <viro@zeniv.linux.org.uk> wrote:
->> uml defconfig on x86_64:
->>
->> arch/um/kernel/process.c: In function 'interrupt_end':
->> arch/um/kernel/process.c:122:14: error: 'struct task_struct' has no member named 'replacement_session_keyring'
->> arch/um/kernel/process.c:123:4: error: implicit declaration of function 'key_replace_session_keyring'
->
-> Grr...  That's a conflict between uml gaining TIF_NOTIFY_RESUME (needed
-> prereq to task_work_add() series) and patch in said series doing away
-> with explicit calls of key_replace_session_keyring().  Fixup is to remove
-> those two lines in arch/um/process.c, same as done on other architectures
-> by "keys: kill the dummy key_replace_session_keyring()" (commit c1cb001).
+On 05/15/2012 09:05 PM, Minchan Kim wrote:
 
-JFYI, also on m68k:
+> zsmalloc uses set_pte and __flush_tlb_one for performance but
+> many architecture don't support it. so this patch removes
+> set_pte and __flush_tlb_one which are x86 dependency.
+> Instead of it, use local_flush_tlb_kernel_range which are available
+> by more architectures. It would be better than supporting only x86
+> and last patch in series will enable again with supporting
+> local_flush_tlb_kernel_range in x86.
+> 
+> About local_flush_tlb_kernel_range,
+> If architecture is very smart, it could flush only tlb entries related to vaddr.
+> If architecture is smart, it could flush only tlb entries related to a CPU.
+> If architecture is _NOT_ smart, it could flush all entries of all CPUs.
+> So, it would be best to support both portability and performance.
+> 
+> Cc: Russell King <linux@arm.linux.org.uk>
+> Cc: Ralf Baechle <ralf@linux-mips.org>
+> Cc: Paul Mundt <lethal@linux-sh.org>
+> Cc: Guan Xuetao <gxt@mprc.pku.edu.cn>
+> Cc: Chen Liqin <liqin.chen@sunplusct.com>
+> Signed-off-by: Minchan Kim <minchan@kernel.org>
 
-http://kisskb.ellerman.id.au/kisskb/buildresult/6353103/
 
-Gr{oetje,eeting}s,
+For the zsmalloc changes:
 
-                        Geert
+Acked-by: Seth Jennings <sjenning@linux.vnet.ibm.com>
 
---
-Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
+Thanks,
+Seth
 
-In personal conversations with technical people, I call myself a hacker. But
-when I'm talking to journalists I just say "programmer" or something like that.
-                                -- Linus Torvalds
