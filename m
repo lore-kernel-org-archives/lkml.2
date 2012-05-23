@@ -1,67 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752170Ab2EWEyJ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 May 2012 00:54:09 -0400
-Received: from mga14.intel.com ([143.182.124.37]:2761 "EHLO mga14.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751175Ab2EWEyH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 May 2012 00:54:07 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
-   d="scan'208";a="146589648"
-Message-ID: <1337748897.14538.184.camel@ymzhang.sh.intel.com>
-Subject: Re: [PATCH] ipv4: fix the rcu race between free_fib_info and
- ip_route_output_slow
-From: Yanmin Zhang <yanmin_zhang@linux.intel.com>
-To: Eric Dumazet <eric.dumazet@gmail.com>
-Cc: David Miller <davem@davemloft.net>, kunx.jiang@intel.com,
-        netdev@vger.kernel.org, linux-kernel@vger.kernel.org
-Date: Wed, 23 May 2012 12:54:57 +0800
-In-Reply-To: <1337747829.3361.1599.camel@edumazet-glaptop>
-References: <4FBB6105.2060808@intel.com>
-	 <20120522.151554.106838106733194160.davem@davemloft.net>
-	 <1337742123.14538.175.camel@ymzhang.sh.intel.com>
-	 <20120522.232310.911242148705021745.davem@davemloft.net>
-	 <1337747829.3361.1599.camel@edumazet-glaptop>
-Organization: MCG
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.2- 
-Content-Transfer-Encoding: 7bit
+	id S1752229Ab2EWFCM (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 May 2012 01:02:12 -0400
+Received: from einhorn.in-berlin.de ([192.109.42.8]:36746 "EHLO
+	einhorn.in-berlin.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751250Ab2EWFCL (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 23 May 2012 01:02:11 -0400
+X-Envelope-From: stefanr@s5r6.in-berlin.de
+Date: Wed, 23 May 2012 07:01:47 +0200
+From: Stefan Richter <stefanr@s5r6.in-berlin.de>
+To: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        target-devel <target-devel@vger.kernel.org>,
+        linux1394-devel <linux1394-devel@lists.sourceforge.net>,
+        linux-scsi <linux-scsi@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>, Chris Boot <bootc@bootc.net>,
+        Clemens Ladisch <clemens@ladisch.de>, Andy Grover <agrover@redhat.com>
+Subject: Re: [GIT PULL] sbp-target merge for v3.5-rc1
+Message-ID: <20120523070147.5e871477@stein>
+In-Reply-To: <1337726029.22481.116.camel@haakon2.linux-iscsi.org>
+References: <1337726029.22481.116.camel@haakon2.linux-iscsi.org>
+X-Mailer: Claws Mail 3.8.0 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
 Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2012-05-23 at 06:37 +0200, Eric Dumazet wrote:
-> On Tue, 2012-05-22 at 23:23 -0400, David Miller wrote:
-> > From: Yanmin Zhang <yanmin_zhang@linux.intel.com>
-> > Date: Wed, 23 May 2012 11:02:03 +0800
-> > 
-> > > 1) Why does free_fib_info call call_rcu instead of releasing fi directly?
-> > > I assume other cpu might be accessing it. nexthop_nh->nh_dev is in fi.
-> > > If other cpu are accessing it, here resetting to NULL would cause other
-> > > cpu panic.
-> > 
-> > Because fib trie lookups are done with RCU locking, therefore we must
-> > use RCU freeing to release the object.
-> > 
-> > What I was trying to impart to you is that removing the NULL
-> > assignment is wrong and that an alternative fix is warranted (hint:
-> > consider moving something into the RCU release).
-> > --
+On May 22 Nicholas A. Bellinger wrote:
+[...]
+>   git://git.kernel.org/pub/scm/linux/kernel/git/nab/target-pending.git sbp-target-merge
+[...]
+> Chris Boot (3):
+>   firewire: Add function to get speed from opaque struct fw_request
+>   firewire: Move fw_card kref functions into linux/firewire.h
+>   sbp-target: Initial merge of firewire/ieee-1394 target mode support
 > 
-> Its more than that I'm afraid.
-> 
-> fi->fib_dev (aka fib_nh[0].nh_dev) need full RCU protection.
-The new patch posted at https://lkml.org/lkml/2012/5/22/558 does move the
-resetting to RCU protection.
+>  MAINTAINERS                         |    9 +
+>  drivers/firewire/core-card.c        |    1 +
+>  drivers/firewire/core-transaction.c |    9 +
+>  drivers/firewire/core.h             |   15 -
+>  drivers/target/Kconfig              |    1 +
+>  drivers/target/Makefile             |    1 +
+>  drivers/target/sbp/Kconfig          |   11 +
+>  drivers/target/sbp/Makefile         |    1 +
+>  drivers/target/sbp/sbp_target.c     | 2621 +++++++++++++++++++++++++++++++++++
+>  drivers/target/sbp/sbp_target.h     |  251 ++++
+>  include/linux/firewire.h            |   15 +
+[...]
 
-> 
-> Also the "fib_info_cnt--;" must stay in free_fib_info() (so that it is
-> protected by RTNL)
-We would move "fib_info_cnt--;" back to free_fib_info.
-
-Thanks,
-Yanmin
-
-
+As noted in the changelogs:
+Acked-by: Stefan Richter <stefanr@s5r6.in-berlin.de>
+-- 
+Stefan Richter
+-=====-===-- -=-= =-===
+http://arcgraph.de/sr/
