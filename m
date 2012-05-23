@@ -1,74 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933827Ab2EWSKq (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 May 2012 14:10:46 -0400
-Received: from perches-mx.perches.com ([206.117.179.246]:60581 "EHLO
-	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1760669Ab2EWSKp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 May 2012 14:10:45 -0400
-Message-ID: <1337796643.6910.6.camel@joe2Laptop>
-Subject: Re: [RFC PATCH] dynamic_debug: Remove __used attribute from metadata
-From: Joe Perches <joe@perches.com>
-To: Jim Cromie <jim.cromie@gmail.com>
-Cc: Jason Baron <jbaron@redhat.com>, linux-kernel@vger.kernel.org,
-        Greg Kroah-Hartman <gregkh@suse.de>
-Date: Wed, 23 May 2012 11:10:43 -0700
-In-Reply-To: <CAJfuBxw4F-nsEwn6Nh2swo+j4xJprTb_e5o4tOjuJSqqEeCUhA@mail.gmail.com>
-References: <1337284958.17726.51.camel@joe2Laptop>
-	 <CAJfuBxw4F-nsEwn6Nh2swo+j4xJprTb_e5o4tOjuJSqqEeCUhA@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.2- 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	id S1760732Ab2EWSQj (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 May 2012 14:16:39 -0400
+Received: from relay1.sgi.com ([192.48.179.29]:48826 "EHLO relay.sgi.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756860Ab2EWSQi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 23 May 2012 14:16:38 -0400
+Date: Wed, 23 May 2012 13:16:36 -0500
+From: Dimitri Sivanich <sivanich@sgi.com>
+To: Thomas Gleixner <tglx@linutronix.de>
+Cc: Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
+        x86@kernel.org, Suresh Siddha <suresh.b.siddha@intel.com>,
+        Yinghai Lu <yinghai@kernel.org>,
+        Naga Chumbalkar <nagananda.chumbalkar@hp.com>,
+        Jacob Pan <jacob.jun.pan@linux.intel.com>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] x86: check for valid irq_cfg pointer in
+ smp_irq_move_cleanup_interrupt
+Message-ID: <20120523181636.GA2032@sgi.com>
+References: <20120521164959.GE16454@sgi.com>
+ <alpine.LFD.2.02.1205212304580.3231@ionos>
+ <20120521211917.GA25567@sgi.com>
+ <alpine.LFD.2.02.1205212324260.3231@ionos>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <alpine.LFD.2.02.1205212324260.3231@ionos>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2012-05-23 at 12:00 -0600, Jim Cromie wrote:
-> On Thu, May 17, 2012 at 2:02 PM, Joe Perches <joe@perches.com> wrote:
-> > The __used attribute in the declaration of the
-> > dynamic_debug metadata stops the compiler from
-> > optimizing and eliminating constant tests and
-> > the metadata declaration used in things like:
-> >
-> >   #define DEBUG_LEVEL 0
-> >   if (DEBUG_LEVEL > 1)
-> >        pr_debug("foo...");
-> >
-> > This is a common construct for debugging macros
-> > with a constant "level" test.
-> >
-> > When dynamic_debug is not configured, this is
-> > pr_debug and format string is eliminated unless
-> > DEBUG_LEVEL is greater than 1.
-> >
-> > Remove the unnecessary __used attribute so the
-> > even the dynamic_debug use of pr_debug can be
-> > appropriately optimized away completely.
-> >
+On Mon, May 21, 2012 at 11:34:32PM +0200, Thomas Gleixner wrote:
+> Don't misunderstand me. The patch is correct, just the explanation
+> sucks.
 > 
-> 
-> Im a bit puzzled - the __used attr is in the
-> #if defined(CONFIG_DYNAMIC_DEBUG) branch.
+Hopefully this explanation is descriptive enough.
 
-Correct, the optimization is for CONFIG_DYNAMIC_DEBUG
-enabled.
 
-> If its not config'd, the METADATA is not compiled,
-> and this should have no effect.
-> Did you mean enabled instead of configured ?
 
-Nope.
+A NULL pointer dereference can occur in smp_irq_move_cleanup_interrupt() if
+we haven't yet setup the irq_cfg pointer in the irq_desc.irq_data.chip_data.
 
-	if (0)
-		dynamic_pr_debug("foo %u\n", bar);
+In create_irq_nr() there is a window where we have set vector_irq in
+__assign_irq_vector(), but not yet called irq_set_chip_data() to set the
+irq_cfg pointer.
 
-will not be optimized away completely because
-dynamic_pr_debug uses
-	DEFINE_DYNAMIC_DEBUG_METADATA(descriptor, fmt);
-and that DEFINE includes __used
+Should an IRQ_MOVE_CLEANUP_VECTOR hit the cpu in question during this time,
+smp_irq_move_cleanup_interrupt() will attempt to process the aforementioned
+irq, but panic when accessing irq_cfg.
 
-so even though the compiler knows that the branch
-can not be taken, it still declares the known
-unnecessary metadata.
+Only continue processing the irq if irq_cfg is non-NULL.
 
+Signed-off-by: Dimitri Sivanich <sivanich@sgi.com>
+---
+ arch/x86/kernel/apic/io_apic.c |    5 ++++-
+ 1 file changed, 4 insertions(+), 1 deletion(-)
+
+Index: linux/arch/x86/kernel/apic/io_apic.c
+===================================================================
+--- linux.orig/arch/x86/kernel/apic/io_apic.c
++++ linux/arch/x86/kernel/apic/io_apic.c
+@@ -2478,9 +2478,12 @@ asmlinkage void smp_irq_move_cleanup_int
+ 		if (!desc)
+ 			continue;
+ 
+-		cfg = irq_cfg(irq);
+ 		raw_spin_lock(&desc->lock);
+ 
++		cfg = irq_cfg(irq);
++		if (!cfg)
++			goto unlock;
++
+ 		/*
+ 		 * Check if the irq migration is in progress. If so, we
+ 		 * haven't received the cleanup request yet for this irq.
