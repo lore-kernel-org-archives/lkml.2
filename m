@@ -1,95 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933562Ab2EWPuM (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 May 2012 11:50:12 -0400
-Received: from mail-wg0-f44.google.com ([74.125.82.44]:36326 "EHLO
-	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753360Ab2EWPuJ (ORCPT
+	id S932764Ab2EWPwE (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 May 2012 11:52:04 -0400
+Received: from mail-wi0-f172.google.com ([209.85.212.172]:50083 "EHLO
+	mail-wi0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750989Ab2EWPwB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 May 2012 11:50:09 -0400
-Date: Wed, 23 May 2012 17:50:03 +0200
-From: Ingo Molnar <mingo@kernel.org>
-To: Joe Perches <joe@perches.com>
-Cc: Chen <hi3766691@gmail.com>, Peter Zijlstra <peterz@infradead.org>,
-        Vincent Guittot <vincent.guittot@linaro.org>,
-        torvalds@linux-foundation.org, linux-kernel@vger.kernel.org
-Subject: Re: Plumbers: Tweaking scheduler policy micro-conf RFP
-Message-ID: <20120523155003.GA8202@gmail.com>
-References: <CAKfTPtDz1-fR2i5x7AVd8sGZhX2VNtz2rnQC3ePrcHO9MWK3FQ@mail.gmail.com>
- <1337086834.27020.162.camel@laptop>
- <CAKfTPtDrZ-tfC81jnxwpB+DCtmxhU+VfoYbtSBr8MkFt+P8JcA@mail.gmail.com>
- <1337096141.27694.82.camel@twins>
- <1337193010.27694.146.camel@twins>
- <CA+55aFzuygx6L-2hVCMbk5cvEdDp6AUtOGq-wYFn=4yEyebPLw@mail.gmail.com>
- <1337468148.573.139.camel@twins>
- <CANQmPXhN92i9E8HqxE7pqz=kOwtn5Mz0crW37H6qs+XD420Yuw@mail.gmail.com>
- <20120523150359.GB26974@gmail.com>
- <1337787838.1734.15.camel@joe2Laptop>
+	Wed, 23 May 2012 11:52:01 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1337787838.1734.15.camel@joe2Laptop>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20120523093208.GB4085@opensource.wolfsonmicro.com>
+References: <20120522183037.75ec03c9d8881ec188e7f787@canb.auug.org.au>
+ <4FBBAF1B.1070702@xenotime.net> <alpine.DEB.2.00.1205222339030.9290@chino.kir.corp.google.com>
+ <20120523093208.GB4085@opensource.wolfsonmicro.com>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Wed, 23 May 2012 08:51:39 -0700
+X-Google-Sender-Auth: mnEdi2I23x4Rz1Gzb0uJeHHfH8Q
+Message-ID: <CA+55aFynyjrHUCh48aXSQpZpboQM7MCCtMHvxBxCf+gDoCVWXg@mail.gmail.com>
+Subject: Re: [patch -linus] regmap: REMAP_IRQ should select IRQ_DOMAIN itself
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>
+Cc: David Rientjes <rientjes@google.com>, Randy Dunlap <rdunlap@xenotime.net>,
+        Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Wed, May 23, 2012 at 2:32 AM, Mark Brown
+<broonie@opensource.wolfsonmicro.com> wrote:
+>
+> The reason we're selecting things from the users is that multi-level
+> selects have never seemed to be terribly robust, they've been a
+> noticable source of breakage with this sort of randconfig stuff in the
+> past which is painful and annoying, especially given the strange fixes
+> that tend to come from randconfig reports.
 
-* Joe Perches <joe@perches.com> wrote:
+Multi-level pure selects *should* work correctly. So you can select
+stuff that then in turn selects other stuff - and that should all be
+fine.
 
-> On Wed, 2012-05-23 at 17:03 +0200, Ingo Molnar wrote:
-> > * Chen <hi3766691@gmail.com> wrote:
-> > 
-> > > Still you are just trying to said that your code is not bloated?
-> > > Up to over 500K for a cpu scheduler. Laughing
-> > 
-> > Where did you get that 500K from? You are off from the truth 
-> > almost by an order of magnitude.
-> > 
-> > Here's the scheduler size on Linus's latest tree, on 64-bit 
-> > defconfig's:
-> > 
-> >  $ size kernel/sched/built-in.o 
-> >    text	   data	    bss	    dec	    hex	filename
-> >   83611	  10404	   2524	  96539	  1791b	kernel/sched/built-in.o
-> > 
-> > That's SMP+NUMA, i.e. everything included.
-> > 
-> > The !NUMA !SMP UP scheduler, if you are on a size starved 
-> > ultra-embedded device, is even smaller, just 22K:
-> > 
-> >  $ size kernel/sched/built-in.o 
-> >    text	   data	    bss	    dec	    hex	filename
-> >   19882	   2218	    148	  22248	   56e8	kernel/sched/built-in.o
-> 
-> Here's an allyesconfig x86-32
+It's *dependencies* that do not work.
 
-allyesconfig includes a whole lot of debugging code so it's a 
-pretty meaningless size test.
+So if you "select" something that depends on something else, you need
+to make sure that you select all those dependencies (and because
+recursive selects work, you have to check the entire *chain* of
+selects to see the dependencies).
 
-> $ size kernel/sched/built-in.o
->    text	   data	    bss	    dec	    hex	filename
->  213892	  10856	  65832	 290580	  46f14	kernel/sched/built-in.o
-> 
-> But that's not the only sched related code.
-> 
-> In a 1000 cpu config, there also an extra 500+ bytes per cpu
-> in printk (I don't think that's particularly important btw)
+This is one reason why "select" is generally much more friendly than
+"depends on". In general, we should strive to
 
-A 1000 cpu piece of hardware will have a terabyte of RAM or 
-more. 0.5K per CPU is reasonable.
+ - only make "depends on" for really *major* subsystems (like the
+whole architecture, or something like networking), or on "pure user
+helper variables" like the "You do want to see network drivers from
+vendor Xyz" kind things.
 
-> kernel/printk.c adds:
-> 
-> static DEFINE_PER_CPU(char [PRINTK_BUF_SIZE], printk_sched_buf);
-> 
-> Maybe #ifdefing this when !CONFIG_PRINTK would reduce size
-> a little in a few cases.  I've attached a trivial suggested patch.
+  This way "depends on" doesn't get too complicated: either it's
+really big deals ("this works only on ARM") or it's high-level pure UI
+stuff ("I won't bother to ask about fifteen different 3com cards,
+because the user already said he isn't interested in 3com networking")
 
-That might make sense for the ultra-embedded.
+ - use select for "the small details" - ie a driver should "select"
+the helper stuff it needs and that people shouldn't need to even know
+about (like random encryption engines etc).
 
-Still 500K is an obviously nonsensical number.
+but obviously there's a lot of gray areas in between, and then usually
+it becomes an issue of "what are things that are sane to ask users".
 
-Thanks,
+But in general, a simple "select" is actually the *easiest* and most
+straightforward thing, especially if the thing you are selecting
+itself does not have any "depends on".
 
-	Ingo
+                   Linus
