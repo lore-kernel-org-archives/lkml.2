@@ -1,94 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964988Ab2EWCnN (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 May 2012 22:43:13 -0400
-Received: from mga03.intel.com ([143.182.124.21]:50778 "EHLO mga03.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751850Ab2EWCnK convert rfc822-to-8bit (ORCPT
+	id S965010Ab2EWCnh (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 May 2012 22:43:37 -0400
+Received: from LGEMRELSE1Q.lge.com ([156.147.1.111]:49362 "EHLO
+	LGEMRELSE1Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933518Ab2EWCjF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 May 2012 22:43:10 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
-   d="scan'208";a="146555362"
-From: "Du, ChangbinX" <changbinx.du@intel.com>
-To: Michal Nazarewicz <mina86@mina86.com>,
-        "'gregkh@linuxfoundation.org'" <gregkh@linuxfoundation.org>
-CC: "'David Rientjes'" <rientjes@google.com>,
-        "'Sergei Shtylyov'" <sshtylyov@mvista.com>,
-        "Fleming, Matt" <matt.fleming@intel.com>,
-        "'balbi@ti.com'" <balbi@ti.com>, "'hpa@zytor.com'" <hpa@zytor.com>,
-        "'linux-kernel@vger.kernel.org'" <linux-kernel@vger.kernel.org>,
-        "'linux-usb@vger.kernel.org'" <linux-usb@vger.kernel.org>
-Subject: [PATCH v2] testusb: expose looping forever option "l" to user
-Thread-Topic: [PATCH v2] testusb: expose looping forever option "l" to user
-Thread-Index: AQHNOI3HlZBaw4PBIUqH35T9UAv+PQ==
-Date: Wed, 23 May 2012 02:43:05 +0000
-Message-ID: <0C18FE92A7765D4EB9EE5D38D86A563A063D03@SHSMSX101.ccr.corp.intel.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.239.127.40]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
-MIME-Version: 1.0
+	Tue, 22 May 2012 22:39:05 -0400
+X-AuditID: 9c93016f-b7c3cae000001954-7f-4fbc4dc54b1a
+From: Namhyung Kim <namhyung.kim@lge.com>
+To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Mackerras <paulus@samba.org>,
+        Ingo Molnar <mingo@redhat.com>, Namhyung Kim <namhyung@gmail.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Stefan Hajnoczi <stefanha@linux.vnet.ibm.com>,
+        Avi Kivity <avi@redhat.com>
+Subject: [PATCH 05/22] lib/traceevent: Allow expressions in __print_symbolic() fields
+Date: Wed, 23 May 2012 11:36:42 +0900
+Message-Id: <1337740619-27925-6-git-send-email-namhyung.kim@lge.com>
+X-Mailer: git-send-email 1.7.10.1
+In-Reply-To: <1337740619-27925-1-git-send-email-namhyung.kim@lge.com>
+References: <1337740619-27925-1-git-send-email-namhyung.kim@lge.com>
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The testusb.c tool has support for looping forever implemented, which
-may be useful for stress test, yet it is not exposed to the user, so
-even though the code is there, it cannot be used.  This commit adds
-"l" to the set of options handled by the application which enables
-the feature.
+From: Stefan Hajnoczi <stefanha@linux.vnet.ibm.com>
 
-Also, I collate help information for each command line option to make
-it easier to use for novice.
+The __print_symbolic() function takes a sequence of key-value pairs for
+pretty-printing a constant.  The new kvm:kvm_exit print fmt uses the
+expression:
 
-Signed-off-by: Du Changbin <changbinx.du@intel.com>
+  __print_symbolic(..., { 0x040 + 1, "DB excp" }, ...)
+
+Currently only atoms are supported and this print fmt fails to parse.
+This patch adds support for expressions instead of just atoms so that
+0x040 + 1 is parsed successfully.
+
+Link: http://lkml.kernel.org/r/1315131959-7452-1-git-send-email-stefanha@linux.vnet.ibm.com
+
+Signed-off-by: Stefan Hajnoczi <stefanha@linux.vnet.ibm.com>
+Cc: Avi Kivity <avi@redhat.com>
+Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+Signed-off-by: Namhyung Kim <namhyung.kim@lge.com>
 ---
- tools/usb/testusb.c |   21 ++++++++++++++++-----
- 1 file changed, 16 insertions(+), 5 deletions(-)
+ tools/lib/traceevent/event-parse.c |    7 +++++++
+ 1 file changed, 7 insertions(+)
 
-diff --git a/tools/usb/testusb.c b/tools/usb/testusb.c
-index 0aac3ff..7a7adf3 100644
---- a/tools/usb/testusb.c
-+++ b/tools/usb/testusb.c
-@@ -422,7 +422,7 @@ int main (int argc, char **argv)
- 	/* for easy use when hotplugging */
- 	device = getenv ("DEVICE");
+diff --git a/tools/lib/traceevent/event-parse.c b/tools/lib/traceevent/event-parse.c
+index 9216aef78394..59534e299590 100644
+--- a/tools/lib/traceevent/event-parse.c
++++ b/tools/lib/traceevent/event-parse.c
+@@ -2124,6 +2124,13 @@ process_fields(struct event_format *event, struct print_flag_sym **list, char **
  
--	while ((c = getopt (argc, argv, "D:aA:c:g:hns:t:v:")) != EOF)
-+	while ((c = getopt (argc, argv, "D:aA:c:g:hlns:t:v:")) != EOF)
- 	switch (c) {
- 	case 'D':	/* device, if only one */
- 		device = optarg;
-@@ -465,10 +465,21 @@ int main (int argc, char **argv)
- 	case 'h':
- 	default:
- usage:
--		fprintf (stderr, "usage: %s [-n] [-D dev | -a | -A usbfs-dir]\n"
--			"\t[-c iterations]  [-t testnum]\n"
--			"\t[-s packetsize] [-g sglen] [-v vary]\n",
--			argv [0]);
-+		fprintf (stderr,
-+			"usage: %s [options]\n"
-+			"Options:\n"
-+			"\t-D dev		only test specific device\n"
-+			"\t-A usbfs-dir\n"
-+			"\t-a		test all recognized devices\n"
-+			"\t-l		loop forever(for stress test)\n"
-+			"\t-t testnum	only run specified case\n"
-+			"\t-n		no test running, show devices to be tested\n"
-+			"Case arguments:\n"
-+			"\t-c iterations	default 1000\n"
-+			"\t-s packetsize	default 512\n"
-+			"\t-g sglen	default 32\n"
-+			"\t-v vary		default 512\n",
-+			argv[0]);
- 		return 1;
- 	}
- 	if (optind != argc)
+ 		free_token(token);
+ 		type = process_arg(event, arg, &token);
++
++		if (type == EVENT_OP)
++			type = process_op(event, arg, &token);
++
++		if (type == EVENT_ERROR)
++			goto out_free;
++
+ 		if (test_type_token(type, token, EVENT_DELIM, ","))
+ 			goto out_free;
+ 
 -- 
-1.7.9.5
+1.7.10.1
 
