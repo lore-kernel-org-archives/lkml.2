@@ -1,40 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759263Ab2EWKOM (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 May 2012 06:14:12 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:53662 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751409Ab2EWKOK convert rfc822-to-8bit (ORCPT
+	id S1759385Ab2EWKQY (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 May 2012 06:16:24 -0400
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:40250 "EHLO
+	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755559Ab2EWKQX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 May 2012 06:14:10 -0400
-Message-ID: <1337768040.9698.66.camel@twins>
-Subject: Re: [PATCH 1/2] sched: add virt sched domain for the guest
-From: Peter Zijlstra <peterz@infradead.org>
-To: Liu ping fan <kernelfans@gmail.com>
-Cc: kvm@vger.kernel.org, linux-kernel@vger.kernel.org, qemu-devel@nongnu.org,
-        Ingo Molnar <mingo@redhat.com>, Avi Kivity <avi@redhat.com>,
-        Anthony Liguori <anthony@codemonkey.ws>
-Date: Wed, 23 May 2012 12:14:00 +0200
-In-Reply-To: <CAFgQCTuzuscs8piDms3t8HyBTsFSfNiVf1JcDQ=UX8PQpUiU3w@mail.gmail.com>
-References: <1337754751-9018-1-git-send-email-kernelfans@gmail.com>
-	 <1337754751-9018-2-git-send-email-kernelfans@gmail.com>
-	 <1337759644.9698.49.camel@twins>
-	 <CAFgQCTvhVs8-onz3huovYe=StOYJe2pJO-nka_7KogSju6AttQ@mail.gmail.com>
-	 <1337761402.9698.62.camel@twins>
-	 <CAFgQCTt+cmUWUB6GvE=Ki5ikC1P7YA_sGrvgUKKJ6c3VuqCsAg@mail.gmail.com>
-	 <1337762914.9698.65.camel@twins>
-	 <CAFgQCTuzuscs8piDms3t8HyBTsFSfNiVf1JcDQ=UX8PQpUiU3w@mail.gmail.com>
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
-X-Mailer: Evolution 3.2.2- 
-Mime-Version: 1.0
+	Wed, 23 May 2012 06:16:23 -0400
+Date: Wed, 23 May 2012 11:16:20 +0100
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Axel Lin <axel.lin@gmail.com>
+Cc: linux-kernel@vger.kernel.org, Graeme Gregory <gg@slimlogic.co.uk>,
+        Liam Girdwood <lrg@ti.com>
+Subject: Re: [PATCH v2] regulator: palmas: Use
+ regulator_[list|map]_voltage_linear() for palmas_ops_smps10
+Message-ID: <20120523101620.GH4085@opensource.wolfsonmicro.com>
+References: <1337660802.3814.0.camel@phoenix>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="AzNpbZlgThVzWita"
+Content-Disposition: inline
+In-Reply-To: <1337660802.3814.0.camel@phoenix>
+X-Cookie: You dialed 5483.
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2012-05-23 at 17:58 +0800, Liu ping fan wrote:
-> > Please go do something else, I'll do this.
-> 
-OK so that was to say never, as in dynamic cpu:node relations aren't
-going to happen. but tip/sched/numa contain the bits needed to make
-vnuma work.
+
+--AzNpbZlgThVzWita
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+
+On Tue, May 22, 2012 at 12:26:42PM +0800, Axel Lin wrote:
+> Signed-off-by: Axel Lin <axel.lin@gmail.com>
+> Acked-by: Graeme Gregory <gg@slimlogic.co.uk>
+
+Applied, thanks.
+
+--AzNpbZlgThVzWita
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBAgAGBQJPvLjtAAoJEBus8iNuMP3dgloP/iAX1gxpP7o9gatV5HFNwZ3M
+/gtjNEoKpWcjJpQvYkIIk0PuJ959WIGtX5b2UKfWlNFjpOrcFzsNU4unw7i4WCmY
+wdzJqtxHYJzHyY1UKoUjQoGEihkq1xruzqme6gcvlOS2sWmi+85QSd/fOsDE9o9t
+st9cqW/NMQoEvIjRJP6DSwBMOkSxQximOePSW/Oh8NU66ODUadKQ4D/saAsCjWYc
+N/O3ixH4X6b0UJHMQ3pEH6JgM5aelgQ7U1Lc2vL0bGmIfP83oTk20c3NxLCAL2My
+mfTKY/6l+jckAs6jXK1J88TNgn8/eKYH/WMTYg2gNGzyUxASsqcAuf8XH/I6fbRF
+TaSnuo02dpy0ErSuHvyILFkdGmCCACUOH+a6VG2dND2H6YIll1vSJ2szMThYqS37
+751J5SUtIlLJspB1uNrw5uzipL66g/l6A1Tmlv4iYC1mlxfEduWuxNdhLye/3WWS
+7sSna3Mz9dn/N8sjkr+U0SuFQaEvCoF4AO51fgWRudSH/6on5DbptnZThR5KSR42
+DyTh9ofz5wOqzkoLrcpxbnqD2Q5xUet68qmxQF8YYUz50fZEh6KBpoCvUVVXFjRE
+TJvS/GRt7xHdgPeshoydQxJQObdingZZLGchDUqwT9r+6eicD6+Tiht4NWNi8ejh
+vOTU5M+ySci8sD30kk9d
+=RCNR
+-----END PGP SIGNATURE-----
+
+--AzNpbZlgThVzWita--
