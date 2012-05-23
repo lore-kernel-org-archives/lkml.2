@@ -1,19 +1,17 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760741Ab2EWSJx (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 May 2012 14:09:53 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:45791 "EHLO mx1.redhat.com"
+	id S1760728Ab2EWSJw (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 May 2012 14:09:52 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:19282 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1760659Ab2EWSJv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1760655Ab2EWSJv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 23 May 2012 14:09:51 -0400
 From: Matthew Garrett <mjg@redhat.com>
 To: linux-kernel@vger.kernel.org
 Cc: x86@kernel.org, matt.fleming@intel.com, Matthew Garrett <mjg@redhat.com>
-Subject: [PATCH 2/3] x86: Allow early PCI quirks to trigger on bus 1
-Date: Wed, 23 May 2012 14:08:45 -0400
-Message-Id: <1337796526-3649-2-git-send-email-mjg@redhat.com>
-In-Reply-To: <1337796526-3649-1-git-send-email-mjg@redhat.com>
-References: <1337796526-3649-1-git-send-email-mjg@redhat.com>
+Subject: [PATCH 1/3] x86: Expand EFI GOP handle search
+Date: Wed, 23 May 2012 14:08:44 -0400
+Message-Id: <1337796526-3649-1-git-send-email-mjg@redhat.com>
 X-SA-Do-Not-Run: Yes
 X-SA-Exim-Connect-IP: 66.187.233.206
 X-SA-Exim-Mail-From: mjg@redhat.com
@@ -22,81 +20,92 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The early PCI quirks code currently only scans bus 0. Extend it to bus 1
-in order to allow us to add a quirk for broken Apple firmware, and make
-sure that the vendor-generic chipset quirks are only run on bus 0.
+Some UEFI implementations provide multiple GOP handles, with one acting
+as a splitter device to handle the case of multiple outputs being present.
+The downside of this approach is that the console splitter device may
+report an inaccurate stride value. We currently get around this by looking
+for a device that implements the PCI IO protocol. However, this fails on
+some devices - the GOP may be attached to the display device rather than
+the GPU. We can handle that scenario by looking for a handle with an EDID
+protocol attached to it.
 
 Signed-off-by: Matthew Garrett <mjg@redhat.com>
+Cc: Matt Fleming <matt.fleming@intel.com>
 ---
- arch/x86/kernel/early-quirks.c |   31 +++++++++++++++++++------------
- 1 file changed, 19 insertions(+), 12 deletions(-)
+ arch/x86/boot/compressed/eboot.c |   27 ++++++++++++++++-----------
+ include/linux/efi.h              |    3 +++
+ 2 files changed, 19 insertions(+), 11 deletions(-)
 
-diff --git a/arch/x86/kernel/early-quirks.c b/arch/x86/kernel/early-quirks.c
-index 3755ef4..dcf4bcf 100644
---- a/arch/x86/kernel/early-quirks.c
-+++ b/arch/x86/kernel/early-quirks.c
-@@ -48,6 +48,10 @@ static void __init fix_hypertransport_config(int num, int slot, int func)
- static void __init via_bugs(int  num, int slot, int func)
- {
- #ifdef CONFIG_GART_IOMMU
-+	/* Only match on the root bus */
-+	if (num > 0)
-+		return;
+diff --git a/arch/x86/boot/compressed/eboot.c b/arch/x86/boot/compressed/eboot.c
+index 0cdfc0d..781d9f5 100644
+--- a/arch/x86/boot/compressed/eboot.c
++++ b/arch/x86/boot/compressed/eboot.c
+@@ -257,7 +257,8 @@ static efi_status_t setup_gop(struct screen_info *si, efi_guid_t *proto,
+ 	for (i = 0; i < nr_gops; i++) {
+ 		struct efi_graphics_output_mode_info *info;
+ 		efi_guid_t pciio_proto = EFI_PCI_IO_PROTOCOL_GUID;
+-		void *pciio;
++		efi_guid_t edid_proto = EFI_EDID_DISCOVERED_GUID;
++		void *pciio, *edid;
+ 		void *h = gop_handle[i];
+ 
+ 		status = efi_call_phys3(sys_table->boottime->handle_protocol,
+@@ -268,16 +269,20 @@ static efi_status_t setup_gop(struct screen_info *si, efi_guid_t *proto,
+ 		efi_call_phys3(sys_table->boottime->handle_protocol,
+ 			       h, &pciio_proto, &pciio);
+ 
++		efi_call_phys3(sys_table->boottime->handle_protocol,
++			       h, &edid_proto, &edid);
 +
- 	if ((max_pfn > MAX_DMA32_PFN ||  force_iommu) &&
- 	    !gart_iommu_aperture_allowed) {
- 		printk(KERN_INFO
-@@ -72,6 +76,10 @@ static void __init nvidia_bugs(int num, int slot, int func)
- {
- #ifdef CONFIG_ACPI
- #ifdef CONFIG_X86_IO_APIC
-+	/* Only match on the root bus */
-+	if (num > 0)
-+		return;
+ 		status = efi_call_phys4(gop->query_mode, gop,
+ 					gop->mode->mode, &size, &info);
+-		if (status == EFI_SUCCESS && (!first_gop || pciio)) {
++		if (status == EFI_SUCCESS && (!first_gop || pciio || edid)) {
+ 			/*
+-			 * Apple provide GOPs that are not backed by
+-			 * real hardware (they're used to handle
+-			 * multiple displays). The workaround is to
+-			 * search for a GOP implementing the PCIIO
+-			 * protocol, and if one isn't found, to just
+-			 * fallback to the first GOP.
++			 * Some vendors provide GOPs that are not
++			 * backed by real hardware (they're used to
++			 * handle multiple displays). The workaround
++			 * is to search for a GOP implementing the
++			 * PCIIO or EDID discovered protocol, and if
++			 * one isn't found, to just fallback to the
++			 * first GOP.
+ 			 */
+ 			width = info->horizontal_resolution;
+ 			height = info->vertical_resolution;
+@@ -288,10 +293,10 @@ static efi_status_t setup_gop(struct screen_info *si, efi_guid_t *proto,
+ 			pixels_per_scan_line = info->pixels_per_scan_line;
+ 
+ 			/*
+-			 * Once we've found a GOP supporting PCIIO,
+-			 * don't bother looking any further.
++			 * Once we've found a GOP supporting PCIIO or
++			 * EDID, don't bother looking any further.
+ 			 */
+-			if (pciio)
++			if (pciio || edid)
+ 				break;
+ 
+ 			first_gop = gop;
+diff --git a/include/linux/efi.h b/include/linux/efi.h
+index ec45ccd..f6fd2ff 100644
+--- a/include/linux/efi.h
++++ b/include/linux/efi.h
+@@ -312,6 +312,9 @@ typedef efi_status_t efi_query_capsule_caps_t(efi_capsule_header_t **capsules,
+ #define EFI_FILE_SYSTEM_GUID \
+     EFI_GUID(  0x964e5b22, 0x6459, 0x11d2, 0x8e, 0x39, 0x00, 0xa0, 0xc9, 0x69, 0x72, 0x3b )
+ 
++#define EFI_EDID_DISCOVERED_GUID \
++    EFI_GUID(  0x1c0c34f6, 0xd380, 0x41fa, 0xa0, 0x49, 0x8a, 0xd0, 0x6c, 0x1a, 0x66, 0xaa )
 +
- 	/*
- 	 * All timer overrides on Nvidia are
- 	 * wrong unless HPET is enabled.
-@@ -205,10 +213,7 @@ struct chipset {
- };
- 
- /*
-- * Only works for devices on the root bus. If you add any devices
-- * not on bus 0 readd another loop level in early_quirks(). But
-- * be careful because at least the Nvidia quirk here relies on
-- * only matching on bus 0.
-+ * Only works for devices on the root bus and bus 1.
-  */
- static struct chipset early_qrk[] __initdata = {
- 	{ PCI_VENDOR_ID_NVIDIA, PCI_ANY_ID,
-@@ -276,17 +281,19 @@ static int __init check_dev_quirk(int num, int slot, int func)
- 
- void __init early_quirks(void)
- {
--	int slot, func;
-+	int bus, slot, func;
- 
- 	if (!early_pci_allowed())
- 		return;
- 
- 	/* Poor man's PCI discovery */
--	/* Only scan the root bus */
--	for (slot = 0; slot < 32; slot++)
--		for (func = 0; func < 8; func++) {
--			/* Only probe function 0 on single fn devices */
--			if (check_dev_quirk(0, slot, func))
--				break;
--		}
-+	/* Apple Broadcom quirk is on bus 1 */
-+	for (bus = 0; bus < 2; bus++) {
-+		for (slot = 0; slot < 32; slot++)
-+			for (func = 0; func < 8; func++) {
-+				/* Only probe function 0 on single fn devices */
-+				if (check_dev_quirk(bus, slot, func))
-+					break;
-+			}
-+	}
- }
+ typedef struct {
+ 	efi_guid_t guid;
+ 	u64 table;
 -- 
 1.7.10.2
 
