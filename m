@@ -1,132 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760861Ab2EWVwN (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 May 2012 17:52:13 -0400
-Received: from fieldses.org ([174.143.236.118]:58279 "EHLO fieldses.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1760814Ab2EWVwL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 May 2012 17:52:11 -0400
-Date: Wed, 23 May 2012 17:52:10 -0400
-From: "J. Bruce Fields" <bfields@fieldses.org>
-To: Stanislav Kinsbursky <skinsbursky@parallels.com>
-Cc: linux-nfs@vger.kernel.org, linux-kernel@vger.kernel.org, devel@openvz.org
-Subject: Re: [PATCH] NFSd: set nfsd_serv to NULL after service destruction
-Message-ID: <20120523215210.GA15910@fieldses.org>
-References: <20120518152314.15569.21878.stgit@localhost.localdomain>
+	id S1760850Ab2EWVwv (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 May 2012 17:52:51 -0400
+Received: from mail209.messagelabs.com ([216.82.255.3]:32779 "EHLO
+	mail209.messagelabs.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752880Ab2EWVwt convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 23 May 2012 17:52:49 -0400
+X-Env-Sender: hartleys@visionengravers.com
+X-Msg-Ref: server-14.tower-209.messagelabs.com!1337809968!6481603!1
+X-Originating-IP: [216.166.12.98]
+X-StarScan-Version: 6.5.10; banners=-,-,-
+X-VirusChecked: Checked
+From: H Hartley Sweeten <hartleys@visionengravers.com>
+To: Dan Carpenter <dan.carpenter@oracle.com>
+CC: Linux Kernel <linux-kernel@vger.kernel.org>,
+        "devel@driverdev.osuosl.org" <devel@driverdev.osuosl.org>,
+        "fmhess@users.sourceforge.net" <fmhess@users.sourceforge.net>,
+        "abbotti@mev.co.uk" <abbotti@mev.co.uk>,
+        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>
+Date: Wed, 23 May 2012 16:52:47 -0500
+Subject: RE: [PATCH] staging: comedi: adl_pci7296: factor out the PCI device
+ code
+Thread-Topic: [PATCH] staging: comedi: adl_pci7296: factor out the PCI
+ device code
+Thread-Index: Ac05LKmQA/1PINKsSi2UlsV7GQhINAAAYLpA
+Message-ID: <ADE657CA350FB648AAC2C43247A983F0020698BACAD5@AUSP01VMBX24.collaborationhost.net>
+References: <201205231428.48061.hartleys@visionengravers.com>
+ <20120523214354.GQ4637@mwanda>
+In-Reply-To: <20120523214354.GQ4637@mwanda>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120518152314.15569.21878.stgit@localhost.localdomain>
-User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, May 18, 2012 at 07:26:02PM +0400, Stanislav Kinsbursky wrote:
-> Otherwise we will get NULL pointer dereference after
-> svc_shutdown_net->sv_shutdown (nfsd_last_thread) call.
-> This looks safe, because all such operations (svc_destroy) are performed with
-> nfsd_mutex being held.
-> 
-> Signed-off-by: Stanislav Kinsbursky <skinsbursky@parallels.com>
-> ---
->  fs/nfsd/nfsctl.c |    4 ++--
->  fs/nfsd/nfsd.h   |    6 ++++++
->  fs/nfsd/nfssvc.c |   10 ++++------
->  3 files changed, 12 insertions(+), 8 deletions(-)
-> 
-> diff --git a/fs/nfsd/nfsctl.c b/fs/nfsd/nfsctl.c
-> index c55298e..82cca1e 100644
-> --- a/fs/nfsd/nfsctl.c
-> +++ b/fs/nfsd/nfsctl.c
-> @@ -675,7 +675,7 @@ static ssize_t __write_ports_addfd(char *buf)
->  	if (err < 0) {
->  		if (nfsd_serv->sv_nrthreads == 1)
->  			svc_shutdown_net(nfsd_serv, net);
-> -		svc_destroy(nfsd_serv);
-> +		nfsd_destroy();
+On Wednesday, May 23, 2012 2:44 PM, Dan Carpenter wrote:
+> Hartley, you're doing a great job with all these patches, but it's
+> going to be weeks before the merge window closes.  We're going to
+> end up getting confused with all the patches floating around.
 
-The server could still be running here.  We don't want to set nfsd_serv
-to NULL.
+I guess I should wait until the merge window closes and Greg starts
+taking patches into the staging tree before continuing...
 
---b.
-
->  		return err;
->  	}
->  
-> @@ -746,7 +746,7 @@ out_close:
->  out_err:
->  	if (nfsd_serv->sv_nrthreads == 1)
->  		svc_shutdown_net(nfsd_serv, net);
-> -	svc_destroy(nfsd_serv);
-> +	nfsd_destroy();
->  	return err;
->  }
->  
-> diff --git a/fs/nfsd/nfsd.h b/fs/nfsd/nfsd.h
-> index 1671429..35db369 100644
-> --- a/fs/nfsd/nfsd.h
-> +++ b/fs/nfsd/nfsd.h
-> @@ -73,6 +73,12 @@ int		nfsd_nrpools(void);
->  int		nfsd_get_nrthreads(int n, int *);
->  int		nfsd_set_nrthreads(int n, int *);
->  
-> +static inline void nfsd_destroy(void)
-> +{
-> +	svc_destroy(nfsd_serv);
-> +	nfsd_serv = NULL;
-> +}
-> +
->  #if defined(CONFIG_NFSD_V2_ACL) || defined(CONFIG_NFSD_V3_ACL)
->  #ifdef CONFIG_NFSD_V2_ACL
->  extern struct svc_version nfsd_acl_version2;
-> diff --git a/fs/nfsd/nfssvc.c b/fs/nfsd/nfssvc.c
-> index ee709fc..ab89fe0 100644
-> --- a/fs/nfsd/nfssvc.c
-> +++ b/fs/nfsd/nfssvc.c
-> @@ -254,8 +254,6 @@ static void nfsd_shutdown(void)
->  
->  static void nfsd_last_thread(struct svc_serv *serv, struct net *net)
->  {
-> -	/* When last nfsd thread exits we need to do some clean-up */
-> -	nfsd_serv = NULL;
->  	nfsd_shutdown();
->  
->  	svc_rpcb_cleanup(serv, net);
-> @@ -348,7 +346,7 @@ int nfsd_create_serv(void)
->  
->  	error = svc_bind(nfsd_serv, current->nsproxy->net_ns);
->  	if (error < 0) {
-> -		svc_destroy(nfsd_serv);
-> +		nfsd_destroy();
->  		return error;
->  	}
->  
-> @@ -430,7 +428,7 @@ int nfsd_set_nrthreads(int n, int *nthreads)
->  
->  	if (nfsd_serv->sv_nrthreads == 1)
->  		svc_shutdown_net(nfsd_serv, net);
-> -	svc_destroy(nfsd_serv);
-> +	nfsd_destroy();
->  
->  	return err;
->  }
-> @@ -480,7 +478,7 @@ out_shutdown:
->  out_destroy:
->  	if (nfsd_serv->sv_nrthreads == 1)
->  		svc_shutdown_net(nfsd_serv, net);
-> -	svc_destroy(nfsd_serv);		/* Release server */
-> +	nfsd_destroy();		/* Release server */
->  out:
->  	mutex_unlock(&nfsd_mutex);
->  	return error;
-> @@ -684,7 +682,7 @@ int nfsd_pool_stats_release(struct inode *inode, struct file *file)
->  	/* this function really, really should have been called svc_put() */
->  	if (nfsd_serv->sv_nrthreads == 1)
->  		svc_shutdown_net(nfsd_serv, net);
-> -	svc_destroy(nfsd_serv);
-> +	nfsd_destroy();
->  	mutex_unlock(&nfsd_mutex);
->  	return ret;
->  }
-> 
+Regards,
+Hartley
