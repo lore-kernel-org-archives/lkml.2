@@ -1,569 +1,132 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933920Ab2EWVsl (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 May 2012 17:48:41 -0400
-Received: from mail-wg0-f44.google.com ([74.125.82.44]:51227 "EHLO
-	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756359Ab2EWVoV (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 May 2012 17:44:21 -0400
-From: Juri Lelli <juri.lelli@gmail.com>
-To: peterz@infradead.org, tglx@linutronix.de
-Cc: mingo@redhat.com, rostedt@goodmis.org, oleg@redhat.com, fweisbec@gmail.com,
-        darren@dvhart.com, johan.eker@ericsson.com, p.faure@akatech.ch,
-        linux-kernel@vger.kernel.org, claudio@evidence.eu.com,
-        michael@amarulasolutions.com, fchecconi@gmail.com,
-        tommaso.cucinotta@sssup.it, juri.lelli@gmail.com,
-        nicola.manica@disi.unitn.it, luca.abeni@unitn.it,
-        dhaval.giani@gmail.com, hgu1972@gmail.com, paulmck@linux.vnet.ibm.com,
-        raistlin@linux.it, insop.song@ericsson.com, liming.wang@windriver.com,
-        jkacur@redhat.com, harald.gustafsson@ericsson.com
-Subject: [PATCH 01/15] math128: Introduce various 128bit primitives
-Date: Wed, 23 May 2012 23:42:41 +0200
-Message-Id: <1337809375-24295-2-git-send-email-juri.lelli@gmail.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1337809375-24295-1-git-send-email-juri.lelli@gmail.com>
-References: <1337809375-24295-1-git-send-email-juri.lelli@gmail.com>
+	id S1760861Ab2EWVwN (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 May 2012 17:52:13 -0400
+Received: from fieldses.org ([174.143.236.118]:58279 "EHLO fieldses.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1760814Ab2EWVwL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 23 May 2012 17:52:11 -0400
+Date: Wed, 23 May 2012 17:52:10 -0400
+From: "J. Bruce Fields" <bfields@fieldses.org>
+To: Stanislav Kinsbursky <skinsbursky@parallels.com>
+Cc: linux-nfs@vger.kernel.org, linux-kernel@vger.kernel.org, devel@openvz.org
+Subject: Re: [PATCH] NFSd: set nfsd_serv to NULL after service destruction
+Message-ID: <20120523215210.GA15910@fieldses.org>
+References: <20120518152314.15569.21878.stgit@localhost.localdomain>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120518152314.15569.21878.stgit@localhost.localdomain>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Peter Zijlstra <a.p.zijlstra@chello.nl>
+On Fri, May 18, 2012 at 07:26:02PM +0400, Stanislav Kinsbursky wrote:
+> Otherwise we will get NULL pointer dereference after
+> svc_shutdown_net->sv_shutdown (nfsd_last_thread) call.
+> This looks safe, because all such operations (svc_destroy) are performed with
+> nfsd_mutex being held.
+> 
+> Signed-off-by: Stanislav Kinsbursky <skinsbursky@parallels.com>
+> ---
+>  fs/nfsd/nfsctl.c |    4 ++--
+>  fs/nfsd/nfsd.h   |    6 ++++++
+>  fs/nfsd/nfssvc.c |   10 ++++------
+>  3 files changed, 12 insertions(+), 8 deletions(-)
+> 
+> diff --git a/fs/nfsd/nfsctl.c b/fs/nfsd/nfsctl.c
+> index c55298e..82cca1e 100644
+> --- a/fs/nfsd/nfsctl.c
+> +++ b/fs/nfsd/nfsctl.c
+> @@ -675,7 +675,7 @@ static ssize_t __write_ports_addfd(char *buf)
+>  	if (err < 0) {
+>  		if (nfsd_serv->sv_nrthreads == 1)
+>  			svc_shutdown_net(nfsd_serv, net);
+> -		svc_destroy(nfsd_serv);
+> +		nfsd_destroy();
 
-Grow rudimentary u128 support without relying on gcc/libgcc.
+The server could still be running here.  We don't want to set nfsd_serv
+to NULL.
 
-Cc: Ingo Molnar <mingo@kernel.org>
-Cc: Thomas Gleixner <tglx@linutronix.de>
-Cc: Andrew Morton <akpm@linux-foundation.org>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>
-Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Link: http://lkml.kernel.org/n/tip-pppjsy9fz2v57x98hsts2cj3@git.kernel.org
----
- arch/alpha/include/asm/Kbuild      |    1 +
- arch/arm/include/asm/Kbuild        |    1 +
- arch/avr32/include/asm/Kbuild      |    1 +
- arch/blackfin/include/asm/Kbuild   |    1 +
- arch/c6x/include/asm/Kbuild        |    1 +
- arch/cris/include/asm/Kbuild       |    1 +
- arch/frv/include/asm/Kbuild        |    1 +
- arch/h8300/include/asm/Kbuild      |    1 +
- arch/hexagon/include/asm/Kbuild    |    1 +
- arch/ia64/include/asm/Kbuild       |    1 +
- arch/m32r/include/asm/Kbuild       |    1 +
- arch/m68k/include/asm/Kbuild       |    1 +
- arch/microblaze/include/asm/Kbuild |    1 +
- arch/mips/include/asm/Kbuild       |    1 +
- arch/mn10300/include/asm/Kbuild    |    1 +
- arch/openrisc/include/asm/Kbuild   |    1 +
- arch/parisc/include/asm/Kbuild     |    1 +
- arch/powerpc/include/asm/Kbuild    |    1 +
- arch/s390/include/asm/Kbuild       |    1 +
- arch/score/include/asm/Kbuild      |    1 +
- arch/sh/include/asm/Kbuild         |    1 +
- arch/sparc/include/asm/Kbuild      |    1 +
- arch/tile/include/asm/Kbuild       |    1 +
- arch/um/include/asm/Kbuild         |    1 +
- arch/unicore32/include/asm/Kbuild  |    1 +
- arch/x86/include/asm/Kbuild        |    1 +
- arch/xtensa/include/asm/Kbuild     |    1 +
- include/asm-generic/math128.h      |    4 +
- include/linux/math128.h            |  180 ++++++++++++++++++++++++++++++++++++
- lib/Makefile                       |    2 +-
- lib/math128.c                      |   40 ++++++++
- 31 files changed, 252 insertions(+), 1 deletion(-)
- create mode 100644 include/asm-generic/math128.h
- create mode 100644 include/linux/math128.h
- create mode 100644 lib/math128.c
+--b.
 
-diff --git a/arch/alpha/include/asm/Kbuild b/arch/alpha/include/asm/Kbuild
-index e423def..f8f9bed 100644
---- a/arch/alpha/include/asm/Kbuild
-+++ b/arch/alpha/include/asm/Kbuild
-@@ -8,3 +8,4 @@ header-y += pal.h
- header-y += reg.h
- header-y += regdef.h
- header-y += sysinfo.h
-+generic-y += math128.h
-diff --git a/arch/arm/include/asm/Kbuild b/arch/arm/include/asm/Kbuild
-index 960abce..a55a259 100644
---- a/arch/arm/include/asm/Kbuild
-+++ b/arch/arm/include/asm/Kbuild
-@@ -18,3 +18,4 @@ generic-y += resource.h
- generic-y += sections.h
- generic-y += siginfo.h
- generic-y += sizes.h
-+generic-y += math128.h
-diff --git a/arch/avr32/include/asm/Kbuild b/arch/avr32/include/asm/Kbuild
-index 3136628..6c8e565 100644
---- a/arch/avr32/include/asm/Kbuild
-+++ b/arch/avr32/include/asm/Kbuild
-@@ -1,3 +1,4 @@
- include include/asm-generic/Kbuild.asm
- 
- header-y	+= cachectl.h
-+generic-y += math128.h
-diff --git a/arch/blackfin/include/asm/Kbuild b/arch/blackfin/include/asm/Kbuild
-index 5a0625a..6836e68 100644
---- a/arch/blackfin/include/asm/Kbuild
-+++ b/arch/blackfin/include/asm/Kbuild
-@@ -47,3 +47,4 @@ generic-y += xor.h
- header-y += bfin_sport.h
- header-y += cachectl.h
- header-y += fixed_code.h
-+generic-y += math128.h
-diff --git a/arch/c6x/include/asm/Kbuild b/arch/c6x/include/asm/Kbuild
-index 3af601e..0f84f29 100644
---- a/arch/c6x/include/asm/Kbuild
-+++ b/arch/c6x/include/asm/Kbuild
-@@ -51,3 +51,4 @@ generic-y += types.h
- generic-y += ucontext.h
- generic-y += user.h
- generic-y += vga.h
-+generic-y += math128.h
-diff --git a/arch/cris/include/asm/Kbuild b/arch/cris/include/asm/Kbuild
-index 956eea2..6f7f36c 100644
---- a/arch/cris/include/asm/Kbuild
-+++ b/arch/cris/include/asm/Kbuild
-@@ -8,3 +8,4 @@ header-y += etraxgpio.h
- header-y += rs485.h
- header-y += rtc.h
- header-y += sync_serial.h
-+generic-y += math128.h
-diff --git a/arch/frv/include/asm/Kbuild b/arch/frv/include/asm/Kbuild
-index 5be6663..8430351 100644
---- a/arch/frv/include/asm/Kbuild
-+++ b/arch/frv/include/asm/Kbuild
-@@ -2,3 +2,4 @@ include include/asm-generic/Kbuild.asm
- 
- header-y += registers.h
- header-y += termios.h
-+generic-y += math128.h
-diff --git a/arch/h8300/include/asm/Kbuild b/arch/h8300/include/asm/Kbuild
-index c68e168..a58a669 100644
---- a/arch/h8300/include/asm/Kbuild
-+++ b/arch/h8300/include/asm/Kbuild
-@@ -1 +1,2 @@
- include include/asm-generic/Kbuild.asm
-+generic-y += math128.h
-diff --git a/arch/hexagon/include/asm/Kbuild b/arch/hexagon/include/asm/Kbuild
-index 9aa17f1..df1203f 100644
---- a/arch/hexagon/include/asm/Kbuild
-+++ b/arch/hexagon/include/asm/Kbuild
-@@ -56,3 +56,4 @@ generic-y += types.h
- generic-y += ucontext.h
- generic-y += unaligned.h
- generic-y += xor.h
-+generic-y += math128.h
-diff --git a/arch/ia64/include/asm/Kbuild b/arch/ia64/include/asm/Kbuild
-index 241d1c5..e95a5dc 100644
---- a/arch/ia64/include/asm/Kbuild
-+++ b/arch/ia64/include/asm/Kbuild
-@@ -12,3 +12,4 @@ header-y += ptrace_offsets.h
- header-y += rse.h
- header-y += ucontext.h
- header-y += ustack.h
-+generic-y += math128.h
-diff --git a/arch/m32r/include/asm/Kbuild b/arch/m32r/include/asm/Kbuild
-index c68e168..a58a669 100644
---- a/arch/m32r/include/asm/Kbuild
-+++ b/arch/m32r/include/asm/Kbuild
-@@ -1 +1,2 @@
- include include/asm-generic/Kbuild.asm
-+generic-y += math128.h
-diff --git a/arch/m68k/include/asm/Kbuild b/arch/m68k/include/asm/Kbuild
-index 1a922fa..1c2a318 100644
---- a/arch/m68k/include/asm/Kbuild
-+++ b/arch/m68k/include/asm/Kbuild
-@@ -1,2 +1,3 @@
- include include/asm-generic/Kbuild.asm
- header-y += cachectl.h
-+generic-y += math128.h
-diff --git a/arch/microblaze/include/asm/Kbuild b/arch/microblaze/include/asm/Kbuild
-index db5294c..6faf1fe 100644
---- a/arch/microblaze/include/asm/Kbuild
-+++ b/arch/microblaze/include/asm/Kbuild
-@@ -1,3 +1,4 @@
- include include/asm-generic/Kbuild.asm
- 
- header-y  += elf.h
-+generic-y += math128.h
-diff --git a/arch/mips/include/asm/Kbuild b/arch/mips/include/asm/Kbuild
-index f53f9ca..c1e9992 100644
---- a/arch/mips/include/asm/Kbuild
-+++ b/arch/mips/include/asm/Kbuild
-@@ -3,3 +3,4 @@ include include/asm-generic/Kbuild.asm
- header-y += cachectl.h
- header-y += sgidefs.h
- header-y += sysmips.h
-+generic-y += math128.h
-diff --git a/arch/mn10300/include/asm/Kbuild b/arch/mn10300/include/asm/Kbuild
-index c68e168..a58a669 100644
---- a/arch/mn10300/include/asm/Kbuild
-+++ b/arch/mn10300/include/asm/Kbuild
-@@ -1 +1,2 @@
- include include/asm-generic/Kbuild.asm
-+generic-y += math128.h
-diff --git a/arch/openrisc/include/asm/Kbuild b/arch/openrisc/include/asm/Kbuild
-index c936483..c707d4b 100644
---- a/arch/openrisc/include/asm/Kbuild
-+++ b/arch/openrisc/include/asm/Kbuild
-@@ -66,3 +66,4 @@ generic-y += topology.h
- generic-y += types.h
- generic-y += ucontext.h
- generic-y += user.h
-+generic-y += math128.h
-diff --git a/arch/parisc/include/asm/Kbuild b/arch/parisc/include/asm/Kbuild
-index 19a434f..0663c2b 100644
---- a/arch/parisc/include/asm/Kbuild
-+++ b/arch/parisc/include/asm/Kbuild
-@@ -1,3 +1,4 @@
- include include/asm-generic/Kbuild.asm
- 
- header-y += pdc.h
-+generic-y += math128.h
-diff --git a/arch/powerpc/include/asm/Kbuild b/arch/powerpc/include/asm/Kbuild
-index 7e313f1..8565e89 100644
---- a/arch/powerpc/include/asm/Kbuild
-+++ b/arch/powerpc/include/asm/Kbuild
-@@ -36,3 +36,4 @@ header-y += ucontext.h
- header-y += unistd.h
- 
- generic-y += rwsem.h
-+generic-y += math128.h
-diff --git a/arch/s390/include/asm/Kbuild b/arch/s390/include/asm/Kbuild
-index 287d7bb..7947b7a 100644
---- a/arch/s390/include/asm/Kbuild
-+++ b/arch/s390/include/asm/Kbuild
-@@ -13,3 +13,4 @@ header-y += tape390.h
- header-y += ucontext.h
- header-y += vtoc.h
- header-y += zcrypt.h
-+generic-y += math128.h
-diff --git a/arch/score/include/asm/Kbuild b/arch/score/include/asm/Kbuild
-index b367abd..dba713d 100644
---- a/arch/score/include/asm/Kbuild
-+++ b/arch/score/include/asm/Kbuild
-@@ -1,3 +1,4 @@
- include include/asm-generic/Kbuild.asm
- 
- header-y +=
-+generic-y += math128.h
-diff --git a/arch/sh/include/asm/Kbuild b/arch/sh/include/asm/Kbuild
-index 7beb423..84af798 100644
---- a/arch/sh/include/asm/Kbuild
-+++ b/arch/sh/include/asm/Kbuild
-@@ -9,3 +9,4 @@ header-y += ptrace_32.h
- header-y += ptrace_64.h
- header-y += unistd_32.h
- header-y += unistd_64.h
-+generic-y += math128.h
-diff --git a/arch/sparc/include/asm/Kbuild b/arch/sparc/include/asm/Kbuild
-index 2c2e388..e153f78 100644
---- a/arch/sparc/include/asm/Kbuild
-+++ b/arch/sparc/include/asm/Kbuild
-@@ -21,3 +21,4 @@ generic-y += div64.h
- generic-y += local64.h
- generic-y += irq_regs.h
- generic-y += local.h
-+generic-y += math128.h
-diff --git a/arch/tile/include/asm/Kbuild b/arch/tile/include/asm/Kbuild
-index 0bb4264..0c1257f 100644
---- a/arch/tile/include/asm/Kbuild
-+++ b/arch/tile/include/asm/Kbuild
-@@ -42,3 +42,4 @@ generic-y += termios.h
- generic-y += types.h
- generic-y += ucontext.h
- generic-y += xor.h
-+generic-y += math128.h
-diff --git a/arch/um/include/asm/Kbuild b/arch/um/include/asm/Kbuild
-index fff2435..7644899 100644
---- a/arch/um/include/asm/Kbuild
-+++ b/arch/um/include/asm/Kbuild
-@@ -2,3 +2,4 @@ generic-y += bug.h cputime.h device.h emergency-restart.h futex.h hardirq.h
- generic-y += hw_irq.h irq_regs.h kdebug.h percpu.h sections.h topology.h xor.h
- generic-y += ftrace.h pci.h io.h param.h delay.h mutex.h current.h exec.h
- generic-y += switch_to.h
-+generic-y += math128.h
-diff --git a/arch/unicore32/include/asm/Kbuild b/arch/unicore32/include/asm/Kbuild
-index 34b789b..56e1880 100644
---- a/arch/unicore32/include/asm/Kbuild
-+++ b/arch/unicore32/include/asm/Kbuild
-@@ -58,3 +58,4 @@ generic-y += unaligned.h
- generic-y += user.h
- generic-y += vga.h
- generic-y += xor.h
-+generic-y += math128.h
-diff --git a/arch/x86/include/asm/Kbuild b/arch/x86/include/asm/Kbuild
-index f9c0d3b..86441b9 100644
---- a/arch/x86/include/asm/Kbuild
-+++ b/arch/x86/include/asm/Kbuild
-@@ -26,3 +26,4 @@ header-y += vsyscall.h
- genhdr-y += unistd_32.h
- genhdr-y += unistd_64.h
- genhdr-y += unistd_x32.h
-+generic-y += math128.h
-diff --git a/arch/xtensa/include/asm/Kbuild b/arch/xtensa/include/asm/Kbuild
-index c68e168..a58a669 100644
---- a/arch/xtensa/include/asm/Kbuild
-+++ b/arch/xtensa/include/asm/Kbuild
-@@ -1 +1,2 @@
- include include/asm-generic/Kbuild.asm
-+generic-y += math128.h
-diff --git a/include/asm-generic/math128.h b/include/asm-generic/math128.h
-new file mode 100644
-index 0000000..3582691
---- /dev/null
-+++ b/include/asm-generic/math128.h
-@@ -0,0 +1,4 @@
-+#ifndef _ASM_GENERIC_MATH128_H
-+#define _ASM_GENERIC_MATH128_H
-+
-+#endif /*_ASM_GENERIC_MATH128_H */
-diff --git a/include/linux/math128.h b/include/linux/math128.h
-new file mode 100644
-index 0000000..5b0eef6
---- /dev/null
-+++ b/include/linux/math128.h
-@@ -0,0 +1,180 @@
-+#ifndef _LINUX_MATH128_H
-+#define _LINUX_MATH128_H
-+
-+#include <linux/types.h>
-+
-+typedef union {
-+	struct {
-+#if __BYTE_ORDER__  == __ORDER_LITTLE_ENDIAN__
-+		u64 lo, hi;
-+#else
-+		u64 hi, lo;
-+#endif
-+	};
-+#ifdef __SIZEOF_INT128__ /* gcc-4.6+ */
-+	unsigned __int128 val;
-+#endif
-+} u128;
-+
-+#define U128_INIT(_hi, _lo) (u128){{ .hi = (_hi), .lo = (_lo) }}
-+
-+#include <asm/math128.h>
-+
-+/*
-+ * Make usage of __int128 dependent on arch code so they can
-+ * judge if gcc is doing the right thing for them and can over-ride
-+ * any funnies.
-+ */
-+
-+#ifndef ARCH_HAS_INT128
-+
-+#ifndef add_u128
-+static inline u128 add_u128(u128 a, u128 b)
-+{
-+	a.hi += b.hi;
-+	a.lo += b.lo;
-+	if (a.lo < b.lo)
-+		a.hi++;
-+
-+	return a;
-+}
-+#endif /* add_u128 */
-+
-+#ifndef mul_u64_u64
-+extern u128 mul_u64_u64(u64 a, u64 b);
-+#endif
-+
-+#ifndef mul_u64_u32_shr
-+static inline u64 mul_u64_u32_shr(u64 a, u32 mul, unsigned int shift)
-+{
-+	u32 ah, al;
-+	u64 t1, t2;
-+
-+	ah = a >> 32;
-+	al = a;
-+
-+	t1 = ((u64)al * mul) >> shift;
-+	t2 = ((u64)ah * mul) << (32 - shift);
-+
-+	return t1 + t2;
-+}
-+#endif /* mul_u64_u32_shr */
-+
-+#ifndef shl_u128
-+static inline u128 shl_u128(u128 x, unsigned int n)
-+{
-+	u128 res;
-+
-+	if (!n)
-+		return x;
-+
-+	if (n < 64) {
-+		res.hi = x.hi << n;
-+		res.hi |= x.lo >> (64 - n);
-+		res.lo = x.lo << n;
-+	} else {
-+		res.lo = 0;
-+		res.hi = x.lo << (n - 64);
-+	}
-+
-+	return res;
-+}
-+#endif /* shl_u128 */
-+
-+#ifndef shr_u128
-+static inline u128 shr_u128(u128 x, unsigned int n)
-+{
-+	u128 res;
-+
-+	if (!n)
-+		return x;
-+
-+	if (n < 64) {
-+		res.lo = x.lo >> n;
-+		res.lo |= x.hi << (64 - n);
-+		res.hi = x.hi >> n;
-+	} else {
-+		res.hi = 0;
-+		res.lo = x.hi >> (n - 64);
-+	}
-+
-+	return res;
-+}
-+#endif /* shr_u128 */
-+
-+#ifndef cmp_u128
-+static inline int cmp_u128(u128 a, u128 b)
-+{
-+	if (a.hi > b.hi)
-+		return 1;
-+	if (a.hi < b.hi)
-+		return -1;
-+	if (a.lo > b.lo)
-+		return 1;
-+	if (a.lo < b.lo)
-+		return -1;
-+
-+	return 0;
-+}
-+#endif /* cmp_u128 */
-+
-+#else /* ARCH_HAS_INT128 */
-+
-+#ifndef add_u128
-+static inline u128 add_u128(u128 a, u128 b)
-+{
-+	a.val += b.val;
-+	return a;
-+}
-+#endif /* add_u128 */
-+
-+#ifndef mul_u64_u64
-+static inline u128 mul_u64_u64(u64 a, u64 b)
-+{
-+	u128 res;
-+
-+	res.val = a;
-+	res.val *= b;
-+
-+	return res;
-+}
-+#define mul_u64_u64 mul_u64_u64
-+#endif
-+
-+#ifndef mul_u64_u32_shr
-+static inline u64 mul_u64_u32_shr(u64 a, u32 mul, unsigned int shift)
-+{
-+	return (u64)(((unsigned __int128)a * mul) >> shift);
-+}
-+#endif /* mul_u64_u32_shr */
-+
-+#ifndef shl_u128
-+static inline u128 shl_u128(u128 x, unsigned int n)
-+{
-+	x.val <<= n;
-+	return x;
-+}
-+#endif /* shl_u128 */
-+
-+#ifndef shr_u128
-+static inline u128 shr_u128(u128 x, unsigned int n)
-+{
-+	x.val >>= n;
-+	return x;
-+}
-+#endif /* shr_u128 */
-+
-+#ifndef cmp_u128
-+static inline int cmp_u128(u128 a, u128 b)
-+{
-+	if (a.val < b.val)
-+		return -1;
-+	if (a.val > b.val)
-+		return 1;
-+	return 0;
-+}
-+#endif /* cmp_u128 */
-+
-+#endif /* ARCH_HAS_INT128 */
-+
-+#endif /* _LINUX_MATH128_H */
-diff --git a/lib/Makefile b/lib/Makefile
-index 74290c9..08014b4 100644
---- a/lib/Makefile
-+++ b/lib/Makefile
-@@ -12,7 +12,7 @@ lib-y := ctype.o string.o vsprintf.o cmdline.o \
- 	 idr.o int_sqrt.o extable.o prio_tree.o \
- 	 sha1.o md5.o irq_regs.o reciprocal_div.o argv_split.o \
- 	 proportions.o prio_heap.o ratelimit.o show_mem.o \
--	 is_single_threaded.o plist.o decompress.o
-+	 is_single_threaded.o plist.o decompress.o math128.o
- 
- lib-$(CONFIG_MMU) += ioremap.o
- lib-$(CONFIG_SMP) += cpumask.o
-diff --git a/lib/math128.c b/lib/math128.c
-new file mode 100644
-index 0000000..55b123a
---- /dev/null
-+++ b/lib/math128.c
-@@ -0,0 +1,40 @@
-+#include <linux/math128.h>
-+
-+#ifndef mul_u64_u64
-+/*
-+ * a * b = (ah * 2^32 + al) * (bh * 2^32 + bl) =
-+ *   ah*bh * 2^64 + (ah*bl + bh*al) * 2^32 + al*bl
-+ */
-+u128 mul_u64_u64(u64 a, u64 b)
-+{
-+	u128 t1, t2, t3, t4;
-+	u32 ah, al;
-+	u32 bh, bl;
-+
-+	ah = a >> 32;
-+	al = a;
-+
-+	bh = b >> 32;
-+	bl = b;
-+
-+	t1.lo = 0;
-+	t1.hi = (u64)ah * bh;
-+
-+	t2.lo = (u64)ah * bl;
-+	t2.hi = t2.lo >> 32;
-+	t2.lo <<= 32;
-+
-+	t3.lo = (u64)al * bh;
-+	t3.hi = t3.lo >> 32;
-+	t3.lo <<= 32;
-+
-+	t4.lo = (u64)al * bl;
-+	t4.hi = 0;
-+
-+	t1 = add_u128(t1, t2);
-+	t1 = add_u128(t1, t3);
-+	t1 = add_u128(t1, t4);
-+
-+	return t1;
-+}
-+#endif /* mul_u64_u64 */
--- 
-1.7.9.5
-
+>  		return err;
+>  	}
+>  
+> @@ -746,7 +746,7 @@ out_close:
+>  out_err:
+>  	if (nfsd_serv->sv_nrthreads == 1)
+>  		svc_shutdown_net(nfsd_serv, net);
+> -	svc_destroy(nfsd_serv);
+> +	nfsd_destroy();
+>  	return err;
+>  }
+>  
+> diff --git a/fs/nfsd/nfsd.h b/fs/nfsd/nfsd.h
+> index 1671429..35db369 100644
+> --- a/fs/nfsd/nfsd.h
+> +++ b/fs/nfsd/nfsd.h
+> @@ -73,6 +73,12 @@ int		nfsd_nrpools(void);
+>  int		nfsd_get_nrthreads(int n, int *);
+>  int		nfsd_set_nrthreads(int n, int *);
+>  
+> +static inline void nfsd_destroy(void)
+> +{
+> +	svc_destroy(nfsd_serv);
+> +	nfsd_serv = NULL;
+> +}
+> +
+>  #if defined(CONFIG_NFSD_V2_ACL) || defined(CONFIG_NFSD_V3_ACL)
+>  #ifdef CONFIG_NFSD_V2_ACL
+>  extern struct svc_version nfsd_acl_version2;
+> diff --git a/fs/nfsd/nfssvc.c b/fs/nfsd/nfssvc.c
+> index ee709fc..ab89fe0 100644
+> --- a/fs/nfsd/nfssvc.c
+> +++ b/fs/nfsd/nfssvc.c
+> @@ -254,8 +254,6 @@ static void nfsd_shutdown(void)
+>  
+>  static void nfsd_last_thread(struct svc_serv *serv, struct net *net)
+>  {
+> -	/* When last nfsd thread exits we need to do some clean-up */
+> -	nfsd_serv = NULL;
+>  	nfsd_shutdown();
+>  
+>  	svc_rpcb_cleanup(serv, net);
+> @@ -348,7 +346,7 @@ int nfsd_create_serv(void)
+>  
+>  	error = svc_bind(nfsd_serv, current->nsproxy->net_ns);
+>  	if (error < 0) {
+> -		svc_destroy(nfsd_serv);
+> +		nfsd_destroy();
+>  		return error;
+>  	}
+>  
+> @@ -430,7 +428,7 @@ int nfsd_set_nrthreads(int n, int *nthreads)
+>  
+>  	if (nfsd_serv->sv_nrthreads == 1)
+>  		svc_shutdown_net(nfsd_serv, net);
+> -	svc_destroy(nfsd_serv);
+> +	nfsd_destroy();
+>  
+>  	return err;
+>  }
+> @@ -480,7 +478,7 @@ out_shutdown:
+>  out_destroy:
+>  	if (nfsd_serv->sv_nrthreads == 1)
+>  		svc_shutdown_net(nfsd_serv, net);
+> -	svc_destroy(nfsd_serv);		/* Release server */
+> +	nfsd_destroy();		/* Release server */
+>  out:
+>  	mutex_unlock(&nfsd_mutex);
+>  	return error;
+> @@ -684,7 +682,7 @@ int nfsd_pool_stats_release(struct inode *inode, struct file *file)
+>  	/* this function really, really should have been called svc_put() */
+>  	if (nfsd_serv->sv_nrthreads == 1)
+>  		svc_shutdown_net(nfsd_serv, net);
+> -	svc_destroy(nfsd_serv);
+> +	nfsd_destroy();
+>  	mutex_unlock(&nfsd_mutex);
+>  	return ret;
+>  }
+> 
