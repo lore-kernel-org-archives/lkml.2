@@ -1,61 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758658Ab2EWOek (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 May 2012 10:34:40 -0400
-Received: from mga01.intel.com ([192.55.52.88]:9702 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753206Ab2EWOei (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 May 2012 10:34:38 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
-   d="scan'208";a="156132941"
-Date: Wed, 23 May 2012 16:34:34 +0200
-From: Samuel Ortiz <sameo@linux.intel.com>
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-Cc: Lee Jones <lee.jones@linaro.org>, Linus Walleij <linus.walleij@linaro.org>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        linux-next@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: linux-next: build failure after merge of the mfd tree
-Message-ID: <20120523143434.GE23600@sortiz-mobl>
-References: <20120521134219.6d6396802bd6a097503bac92@canb.auug.org.au>
- <4FB9F818.4030801@linaro.org>
- <20120521184005.3b7661ec6468c5878a22615d@canb.auug.org.au>
- <4FBA0460.1070300@linaro.org>
- <20120521191007.9347651e88add2e7c247a24f@canb.auug.org.au>
- <4FBA08A4.6030706@linaro.org>
- <20120521095427.GA30045@sirena.org.uk>
- <4FBA18C7.4030800@linaro.org>
- <20120522224214.GG10210@sortiz-mobl>
- <20120523085226.7ffe604b626a2d96084ee682@canb.auug.org.au>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120523085226.7ffe604b626a2d96084ee682@canb.auug.org.au>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1757706Ab2EWOhL (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 May 2012 10:37:11 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:7232 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753206Ab2EWOhJ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 23 May 2012 10:37:09 -0400
+X-Authority-Analysis: v=2.0 cv=cssZYiEi c=1 sm=0 a=ZycB6UtQUfgMyuk2+PxD7w==:17 a=XQbtiDEiEegA:10 a=_2gBi4Ny9w4A:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=meVymXHHAAAA:8 a=ayC55rCoAAAA:8 a=bcXUtIwdAAAA:8 a=HHRUVK1QaZg66wTMDnoA:9 a=PUjeQqilurYA:10 a=ZycB6UtQUfgMyuk2+PxD7w==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 74.67.80.29
+Message-ID: <1337783828.13348.158.camel@gandalf.stny.rr.com>
+Subject: Re: [3.4-rc3] Thread overran stack, or stack corrupted
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Dave Jones <davej@redhat.com>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Linux Kernel <linux-kernel@vger.kernel.org>
+Date: Wed, 23 May 2012 10:37:08 -0400
+In-Reply-To: <1334767425.28106.43.camel@gandalf.stny.rr.com>
+References: <CA+55aFzWzhxaVHuPY_oB5PVhw2Gxiwr46vyHCHEsU0o-HFikTw@mail.gmail.com>
+	 <20120418022705.GA23877@home.goodmis.org>
+	 <20120418031557.GA29828@redhat.com>
+	 <1334720611.28106.25.camel@gandalf.stny.rr.com>
+	 <20120418035004.GA31465@redhat.com>
+	 <1334721441.28106.28.camel@gandalf.stny.rr.com>
+	 <20120418040632.GB31465@redhat.com>
+	 <1334722164.28106.31.camel@gandalf.stny.rr.com>
+	 <20120418135815.GA10798@redhat.com>
+	 <1334760965.28106.39.camel@gandalf.stny.rr.com>
+	 <20120418153002.GB17558@redhat.com>
+	 <1334767425.28106.43.camel@gandalf.stny.rr.com>
+Content-Type: text/plain; charset="ISO-8859-15"
+X-Mailer: Evolution 3.2.2-1 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Stephen,
-
-On Wed, May 23, 2012 at 08:52:26AM +1000, Stephen Rothwell wrote:
-> Hi Samuel,
+On Wed, 2012-04-18 at 12:43 -0400, Steven Rostedt wrote:
+> On Wed, 2012-04-18 at 11:30 -0400, Dave Jones wrote:
+> > On Wed, Apr 18, 2012 at 10:56:05AM -0400, Steven Rostedt wrote:
+> >  > On Wed, 2012-04-18 at 09:58 -0400, Dave Jones wrote:
+> >  > 
+> >  > >  > OK, function tracing is broken on your box. Could you send me your full
+> >  > >  > config and I'll take a look at it tomorrow. Bed time for me now ;-)
+> >  > > 
+> >  > > http://fpaste.org/b8PN/raw/
+> >  > 
+> >  > Hmm, I had no problems with this config. But that wasn't on my Xeon. I'm
+> >  > compiling for that box now.
+> >  > 
+> >  > Could you also paste your full dmesg.
+> > 
+> > Oh, I guess it's this..
+> > 
+> > "PEBS disabled due to CPU errata."
+> > 
+> > Crap. Never even noticed that before.
 > 
-> On Wed, 23 May 2012 00:42:14 +0200 Samuel Ortiz <sameo@linux.intel.com> wrote:
-> >
-> > I would appreciate if we could have a fix for this one sooner than later as
-> > I'm planning to send my pull request by the end of this week.
+> Yeah, but that shouldn't stop the function tracer from working.
 > 
-> Just so you know, nothing you have added to your tree since May 11 has
-> been in linux-next due to 3 separate build problems.  As far as I can see
-> the same will be true today due to the problem you were discussing here.
-I applied a fix for this one, and a couple of other commits for 2 more build
-failures. The mfd tree should build fine now.
-Sorry for the delay.
 
-Cheers,
-Samuel.
+Hi Dave,
 
--- 
-Intel Open Source Technology Centre
-http://oss.intel.com/
+Have we ever figured out why this wasn't working? Did it start working
+on newer kernels?
+
+-- Steve
+
+
