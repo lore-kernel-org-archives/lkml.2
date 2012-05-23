@@ -1,39 +1,119 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758993Ab2EWMLJ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 May 2012 08:11:09 -0400
-Received: from mail.neamt.djc.ro ([91.195.62.8]:64800 "EHLO mail.iasi.djc.ro"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756755Ab2EWMLE convert rfc822-to-8bit (ORCPT
+	id S1759688Ab2EWMMV (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 May 2012 08:12:21 -0400
+Received: from mail-yw0-f46.google.com ([209.85.213.46]:43459 "EHLO
+	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751454Ab2EWMMT convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 May 2012 08:11:04 -0400
-Date: Wed, 23 May 2012 14:30:08 +0300
-Message-Id: <201205231430.AA181469418@mail.iasi.djc.ro>
-Mime-Version: 1.0
+	Wed, 23 May 2012 08:12:19 -0400
+MIME-Version: 1.0
+In-Reply-To: <20120523092113.GG10452@quack.suse.cz>
+References: <1337520203-29147-1-git-send-email-akinobu.mita@gmail.com>
+	<20120523092113.GG10452@quack.suse.cz>
+Date: Wed, 23 May 2012 21:12:18 +0900
+Message-ID: <CAC5umyi=ridqRZGGh0+_xw0-GCN+69B33Qz82-9x4dVODGGx6w@mail.gmail.com>
+Subject: Re: [PATCH 01/10] string: introduce memweight
+From: Akinobu Mita <akinobu.mita@gmail.com>
+To: Jan Kara <jack@suse.cz>
+Cc: linux-kernel@vger.kernel.org, akpm@linux-foundation.org,
+        Anders Larsen <al@alarsen.net>, Alasdair Kergon <agk@redhat.com>,
+        dm-devel@redhat.com, linux-fsdevel@vger.kernel.org,
+        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
+        linux-media@vger.kernel.org, Mark Fasheh <mfasheh@suse.com>,
+        Joel Becker <jlbec@evilplan.org>, ocfs2-devel@oss.oracle.com,
+        linux-ext4@vger.kernel.org, Andreas Dilger <adilger.kernel@dilger.ca>,
+        "Theodore Ts'o" <tytso@mit.edu>
 Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 8BIT
-From: "Larsen Palfreyman" <palarsen@hotmail.co.uk>
-Reply-To: <palarsen@hotmail.co.uk>
-To: <mglarsen01@hotmail.com>
-Subject: Re: prosz&#281; ponownie potwierdzi&#263;
-X-Mailer: <IMail v8.05>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+2012/5/23 Jan Kara <jack@suse.cz>:
+> On Sun 20-05-12 22:23:14, Akinobu Mita wrote:
+>> memweight() is the function that counts the total number of bits set
+>> in memory area.  The memory area doesn't need to be aligned to
+>> long-word boundary unlike bitmap_weight().
+>  Thanks for the patch. I have some comments below.
 
-Drogi Przyjacielu,
+Thanks for the review.
 
-Ja chcia&#322;bym wiedzie&#263;, czy nadal chcesz mi doradza&#263; Bankowi do drutu 
-(transfer) w £12,780,000 milionów funtów do twojego konta za ciebie a ja 
-dla akcj&#281;. Prosz&#281; B&#281;d&#281; zachwycony, je&#347;li mo&#380;na wróci&#263; do mnie pilnie 
-tak, &#380;e mog&#281; doradzi&#263; na co obok zrobi&#263; w uzyskaniu tego transferu 
-pieni&#281;dzy na koncie natychmiast.
+>> @@ -824,3 +825,39 @@ void *memchr_inv(const void *start, int c, size_t bytes)
+>>       return check_bytes8(start, value, bytes % 8);
+>>  }
+>>  EXPORT_SYMBOL(memchr_inv);
+>> +
+>> +/**
+>> + * memweight - count the total number of bits set in memory area
+>> + * @ptr: pointer to the start of the area
+>> + * @bytes: the size of the area
+>> + */
+>> +size_t memweight(const void *ptr, size_t bytes)
+>> +{
+>> +     size_t w = 0;
+>> +     size_t longs;
+>> +     union {
+>> +             const void *ptr;
+>> +             const unsigned char *b;
+>> +             unsigned long address;
+>> +     } bitmap;
+>  Ugh, this is ugly and mostly unnecessary. Just use "const unsigned char
+> *bitmap".
+>
+>> +
+>> +     for (bitmap.ptr = ptr; bytes > 0 && bitmap.address % sizeof(long);
+>> +                     bytes--, bitmap.address++)
+>> +             w += hweight8(*bitmap.b);
+>  This can be:
+>        count = ((unsigned long)bitmap) % sizeof(long);
 
-Chc&#281;, &#380;eby&#347; potwierdzi&#263; swój aktualny adres i numer telefonu do mnie, 
-aby umo&#380;liwi&#263; nam podj&#261;&#263; szybkie i skontaktuj si&#281; ze mn&#261; poprzez mój 
-adres e-mail w ten sposób: mrpalarsen@mynet.com
+The count should be the size of unaligned area and it can be greater than
+bytes. So
 
-Z powa&#380;aniem,
-Larsen Palfreyman
+        count = min(bytes,
+                    sizeof(long) - ((unsigned long)bitmap) % sizeof(long));
 
+>        while (count--) {
+>                w += hweight(*bitmap);
+>                bitmap++;
+>                bytes--;
+>        }
+>> +
+>> +     for (longs = bytes / sizeof(long); longs > 0; ) {
+>> +             size_t bits = min_t(size_t, INT_MAX & ~(BITS_PER_LONG - 1),
+>> +                                     longs * BITS_PER_LONG);
+>  I find it highly unlikely that someone would have such a large bitmap
+> (256 MB or more on 32-bit). Also the condition as you wrote it can just
+> overflow so it won't have the desired effect. Just do
+>        BUG_ON(longs >= ULONG_MAX / BITS_PER_LONG);
+
+The bits argument of bitmap_weight() is int type. So this should be
+
+        BUG_ON(longs >= INT_MAX / BITS_PER_LONG);
+
+> and remove the loop completely. If someone comes with such a huge bitmap,
+> the code can be modified easily (after really closely inspecting whether
+> such a huge bitmap is really well justified).
+
+size_t memweight(const void *ptr, size_t bytes)
+{
+	size_t w = 0;
+	size_t longs;
+	const unsigned char *bitmap = ptr;
+
+	for (; bytes > 0 && ((unsigned long)bitmap) % sizeof(long);
+			bytes--, bitmap++)
+		w += hweight8(*bitmap);
+
+	longs = bytes / sizeof(long);
+	BUG_ON(longs >= INT_MAX / BITS_PER_LONG);
+	w += bitmap_weight((unsigned long *)bitmap, longs * BITS_PER_LONG);
+	bytes -= longs * sizeof(long);
+	bitmap += longs * sizeof(long);
+
+	for (; bytes > 0; bytes--, bitmap++)
+		w += hweight8(*bitmap);
+
+	return w;
+}
