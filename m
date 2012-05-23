@@ -1,111 +1,125 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932886Ab2EWBfh (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 May 2012 21:35:37 -0400
-Received: from sting.hengli.com.au ([178.18.18.71]:43511 "EHLO
-	fornost.hengli.com.au" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751661Ab2EWBff (ORCPT
+	id S1759286Ab2EWBip (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 May 2012 21:38:45 -0400
+Received: from wolverine01.qualcomm.com ([199.106.114.254]:36352 "EHLO
+	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754165Ab2EWBio (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 May 2012 21:35:35 -0400
-Date: Wed, 23 May 2012 11:35:28 +1000
-From: Herbert Xu <herbert@gondor.hengli.com.au>
-To: Linus Torvalds <torvalds@linux-foundation.org>,
-        "David S. Miller" <davem@davemloft.net>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Linux Crypto Mailing List <linux-crypto@vger.kernel.org>
-Subject: Crypto Update for 3.5
-Message-ID: <20120523013528.GA20781@gondor.apana.org.au>
-References: <20100521104404.GA29530@gondor.apana.org.au>
- <20100804140448.GA4042@gondor.apana.org.au>
- <20101024061625.GA23715@gondor.apana.org.au>
- <20110106000157.GA16089@gondor.apana.org.au>
- <20110315145940.GA15373@gondor.apana.org.au>
- <20110520235409.GA1722@gondor.apana.org.au>
- <20110724011752.GA14373@gondor.apana.org.au>
- <20111031040952.GA19659@gondor.apana.org.au>
- <20120106041250.GA7759@gondor.apana.org.au>
- <20120320032736.GA21367@gondor.apana.org.au>
+	Tue, 22 May 2012 21:38:44 -0400
+X-IronPort-AV: E=McAfee;i="5400,1158,6719"; a="193731512"
+Message-ID: <49cd509b59c8172c880b0c8a50c0f02c.squirrel@www.codeaurora.org>
+In-Reply-To: <4FBB9A08.2050803@gmail.com>
+References: <4FB80F32.5090309@gmail.com>
+    <20120520030653.GB5810@S2100-06.ap.freescale.net>
+    <4FB9A5E7.2070000@gmail.com>
+    <20120521064901.GE8140@S2101-09.ap.freescale.net>
+    <4FBA89E3.7010106@gmail.com>
+    <20120521232616.GF8140@S2101-09.ap.freescale.net>
+    <4FBAD545.7060803@gmail.com>
+    <20120522021535.GG8140@S2101-09.ap.freescale.net>
+    <4FBB134D.6050409@codeaurora.org> <4FBB9A08.2050803@gmail.com>
+Date: Tue, 22 May 2012 18:38:44 -0700 (PDT)
+Subject: Re: [GIT PULL] DT clk binding support
+From: "Saravana Kannan" <skannan@codeaurora.org>
+To: "Rob Herring" <robherring2@gmail.com>
+Cc: "Stephen Boyd" <sboyd@codeaurora.org>, "Shawn Guo" <shawn.guo@linaro.org>,
+        "Mike Turquette" <mturquette@linaro.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "Grant Likely" <grant.likely@secretlab.ca>,
+        "arm@kernel.org" <arm@kernel.org>,
+        "Shawn Guo" <shawn.guo@freescale.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "Saravana Kannan" <skannan@codeaurora.org>
+User-Agent: SquirrelMail/1.4.17
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120320032736.GA21367@gondor.apana.org.au>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
+X-Priority: 3 (Normal)
+Importance: Normal
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus:
 
-Here is the crypto update for 3.5:
+On Tue, May 22, 2012 6:52 am, Rob Herring wrote:
+> On 05/21/2012 11:17 PM, Stephen Boyd wrote:
+>> On 05/21/12 19:15, Shawn Guo wrote:
+>>> On Mon, May 21, 2012 at 06:52:37PM -0500, Rob Herring wrote:
+>>>> As Grant states: "This proposed binding is only about one thing:
+>>>> attaching clock providers to clock consumers." This means you have to
+>>>> have at least a single provider and a single consumer defined in the
+>>>> DT.
+>>>>
+>>> I just read through Grant's comments over again.  I agree with the
+>>> statement which implicitly requires the clk provider defined in DT.
+>>> However, for some case, this provider in DT is just a skeleton which
+>>> is backed by clock driver where the provider is actually defined.
+>>>
+>>> Looking at Grant's comment below, the second option is also to match
+>>> the clock in driver just using name.  The only difference to my
+>>> proposal is the name here is given by the argument of phandle pointing
+>>> to that skeleton provider node.
+>>>
+>>> I'm fine with that.  So go ahead with your bindings.
+>>>
+>>
+>> Can we do what the regulator framework has done and have a common
+>> binding of <connection_name>-clk = <&phandle>? Something like:
+>>
+>>     core-clk = <&uart3_clk>
+>>
+>> and then have clk_get() use the of node of the device passed in to find
+>> a property named %s-clk and find the clock with the matching phandle.
+>
+> Sigh... That is what we had in previous versions from over a year ago
+> and we moved away from that approach. The current binding has been
+> reviewed multiple times in the last 6 months...
+>
+> The current approach is aligned with how interrupts are handled (with
+> the addition of a phandle). I think not having per clock property names
+> is easier to parse and easier to document.
+>
+>> This looks like it's trying to cover both the end consumers (uart uses
+>> uart3_clk) and the internal clock tree consumers (a crystal oscillator
+>> connects to a PLL or a mux has multiple parents). We can certainly use
+>> these bindings for muxes and internal parent-child relationships but I
+>> would prefer we use different bindings for consumer bindings that match
+>> what regulators do today.
+>
+> The binding supports either defining every last internal clock or just
+> the leaf clocks. I took the former route on highbank since I don't have
+> a lot of clocks. If I was doing imx or omap for example, I'd probably
+> just define all the clock controller outputs.
+>
 
-* New cipher/hash driver for ARM ux500.
-* Code clean-up for aesni-intel.
-* Misc fixes.
+If only the leaf nodes are defined in DT, then how is the clock platform
+driver implementer supposed to instantiate the rest of the tree and
+connect it up with the partial list of clocks in DT? So, they have to
+switch back and forth between DT and the .c file which defines the rest
+and make sure the parent<->child names match?
 
+To me it looks that it might better to decouple the description of the
+clock HW from the mapping of a clock leaf to a consumer device. If we just
+use a string to identify the clock that's consumed by a device, we can
+achieve this decoupling at a clean boundary -- clock consumers devices
+(UART) vs clock producer devices (clock controller in the SoC, in a PMIC,
+audio codec, etc).
 
-Please pull from
+With the decoupling, we don't have the inconsistency of having some of the
+clocks of a clock producer device incompletely defined in DT and the rest
+of the clocks of the same clock producer device hard coded in the kernel.
+So, you either put your entire clock tree in the SoC in the DT or put all
+of it in the kernel but you aren't forced to put just some of them in the
+DT just to get DT working. I see no benefit in defining only some of the
+clocks in DT -- it just adds more confusion in the clock tree definition.
+What am I missing?
 
-git://git.kernel.org/pub/scm/linux/kernel/git/herbert/crypto-2.6.git
-
-
-Andreas Westin (5):
-      crypto: ux500 - Add driver for CRYP hardware
-      crypto: ux500 - Add driver for HASH hardware
-      mach-ux500: crypto - core support for CRYP/HASH module.
-      crypto: ux500 - Update DMA handling for 3.4
-      crypto: ux500 - Cleanup hardware identification
-
-Borislav Petkov (1):
-      crypto, xor: Sanitize checksumming function selection output
-
-Julia Lawall (2):
-      crypto: crypto4xx - move up err_request_irq label
-      hwrng: omap - use devm_request_and_ioremap
-
-Jussi Kivilinna (2):
-      crypto: aesni-intel - use crypto_[un]register_algs
-      crypto: aesni-intel - move more common code to ablk_init_common
-
-Nicolas Ferre (1):
-      hwrng: Kconfig - modify default state for atmel-rng driver
-
-Shengzhou Liu (1):
-      crypto: caam - add backward compatible string sec4.0
-
- arch/arm/mach-ux500/board-mop500.c              |   48 
- arch/arm/mach-ux500/clock.c                     |   18 
- arch/arm/mach-ux500/devices-common.h            |   54 
- arch/arm/mach-ux500/devices-db8500.c            |    3 
- arch/arm/mach-ux500/devices-db8500.h            |    4 
- arch/arm/mach-ux500/include/mach/crypto-ux500.h |   22 
- arch/arm/mach-ux500/include/mach/devices.h      |    3 
- arch/arm/mach-ux500/include/mach/hardware.h     |    3 
- arch/x86/crypto/aesni-intel_glue.c              |  827 +++------
- crypto/xor.c                                    |    5 
- drivers/char/hw_random/Kconfig                  |    2 
- drivers/char/hw_random/omap-rng.c               |   22 
- drivers/crypto/Kconfig                          |   11 
- drivers/crypto/Makefile                         |    1 
- drivers/crypto/amcc/crypto4xx_core.c            |    2 
- drivers/crypto/caam/caamalg.c                   |   14 
- drivers/crypto/caam/ctrl.c                      |   16 
- drivers/crypto/ux500/Kconfig                    |   30 
- drivers/crypto/ux500/Makefile                   |    8 
- drivers/crypto/ux500/cryp/Makefile              |   13 
- drivers/crypto/ux500/cryp/cryp.c                |  401 ++++
- drivers/crypto/ux500/cryp/cryp.h                |  308 +++
- drivers/crypto/ux500/cryp/cryp_core.c           | 1790 +++++++++++++++++++++
- drivers/crypto/ux500/cryp/cryp_irq.c            |   45 
- drivers/crypto/ux500/cryp/cryp_irq.h            |   31 
- drivers/crypto/ux500/cryp/cryp_irqp.h           |  125 +
- drivers/crypto/ux500/cryp/cryp_p.h              |  125 +
- drivers/crypto/ux500/hash/Makefile              |   11 
- drivers/crypto/ux500/hash/hash_alg.h            |  395 ++++
- drivers/crypto/ux500/hash/hash_core.c           | 2031 +++++++++++++++++++++++-
- 30 files changed, 5819 insertions(+), 549 deletions(-)
- 
 Thanks,
+Saravana
+
 -- 
-Email: Herbert Xu <herbert@gondor.apana.org.au>
-Home Page: http://gondor.apana.org.au/~herbert/
-PGP Key: http://gondor.apana.org.au/~herbert/pubkey.txt
+Sent by an employee of the Qualcomm Innovation Center, Inc.
+The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
+
