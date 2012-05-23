@@ -1,114 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964865Ab2EWOSK (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 May 2012 10:18:10 -0400
-Received: from mga01.intel.com ([192.55.52.88]:19066 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933534Ab2EWOSI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 May 2012 10:18:08 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
-   d="scan'208";a="156127218"
-From: Alex Shi <alex.shi@intel.com>
-To: tglx@linutronix.de, mingo@redhat.com, hpa@zytor.com, arnd@arndb.de,
-        rostedt@goodmis.org, fweisbec@gmail.com
-Cc: jeremy@goop.org, seto.hidetoshi@jp.fujitsu.com, borislav.petkov@amd.com,
-        alex.shi@intel.com, tony.luck@intel.com, luto@mit.edu, riel@redhat.com,
-        avi@redhat.com, len.brown@intel.com, dhowells@redhat.com,
-        yinghai@kernel.org, ak@linux.intel.com, jbeulich@suse.com,
-        akpm@linux-foundation.org, eric.dumazet@gmail.com,
-        akinobu.mita@gmail.com, cpw@sgi.com, steiner@sgi.com,
-        penberg@kernel.org, a.p.zijlstra@chello.nl, hughd@google.com,
-        kamezawa.hiroyu@jp.fujitsu.com, viro@zeniv.linux.org.uk,
-        linux-kernel@vger.kernel.org, yongjie.ren@intel.com
-Subject: [PATCH v7 8/8] x86/tlb: just do tlb flush on one of siblings of SMT
-Date: Wed, 23 May 2012 22:15:55 +0800
-Message-Id: <1337782555-8088-9-git-send-email-alex.shi@intel.com>
-X-Mailer: git-send-email 1.7.5.4
-In-Reply-To: <1337782555-8088-1-git-send-email-alex.shi@intel.com>
-References: <1337782555-8088-1-git-send-email-alex.shi@intel.com>
+	id S933580Ab2EWOSR (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 May 2012 10:18:17 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:56512 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S964867Ab2EWOSL convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 23 May 2012 10:18:11 -0400
+MIME-Version: 1.0
+In-Reply-To: <20120523084945.GA4085@opensource.wolfsonmicro.com>
+References: <CAOMZO5A-05jTYpEEPfnJvWpby1YJ1M7=KPn=zahbQrQOgbjR4g@mail.gmail.com>
+	<201205221053.21792.marc@cpdesign.com.au>
+	<CAOMZO5BCcFOktp9mqDCpnrVhbK6pwO1R3ZdiKPfawb=KLjzzWw@mail.gmail.com>
+	<CAOMZO5DKsrXJoSSacwYFoHUw6pPWLWQnC3gS=6=3k6nvf6tggw@mail.gmail.com>
+	<20120523084945.GA4085@opensource.wolfsonmicro.com>
+Date: Wed, 23 May 2012 11:18:10 -0300
+Message-ID: <CAOMZO5DKLO5B7vbMKmXLfmR0zgVX5bVcxK22khTt=X71bL5tOQ@mail.gmail.com>
+Subject: Re: mc13xxx-core: kernel hangs after 'regmap_read'
+From: Fabio Estevam <festevam@gmail.com>
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>
+Cc: marc@cpdesign.com.au, Samuel Ortiz <sameo@linux.intel.com>,
+        Sascha Hauer <kernel@pengutronix.de>,
+        =?UTF-8?Q?Philippe_R=C3=A9tornaz?= <philippe.retornaz@epfl.ch>,
+        linux-kernel <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-According to Intel's SDM, flush tlb on both of siblings of SMT is
-just wasting time, no any benefit and hurt performance. Because SMT
-siblings share the all levels TLB and page structure caches.
+Mark,
 
-Random flush sibling can make mulitiple thread run more balance.
-Here rand calculated from jiffies, that is a bit less heavy than
-random32()(save 2/3 time on my NHM EP, and 1/2 on my SNB EP)
+On Wed, May 23, 2012 at 5:49 AM, Mark Brown
+<broonie@opensource.wolfsonmicro.com> wrote:
 
-The patched tested with my macro benchmark munmap, that sent
-to lkml before. http://lkml.org/lkml/2012/5/17/59
+> You shouldn't be setting bits_per_word at all, that'll corrupt the data
+> that regmap has formatted.  Does removing that alone resolve the issue?
 
-On my 2P * 4 cores * HT NHM EP machine, munmap system call speed
-increased 10~15%, while average random memory access speed on other
-LCPUs increase 12%.
+Removing only the line that sets bits_per_word:
 
-On my 2P * 8 cores * HT SNB EP machine, munmap system call speed
-increased 10~13%, while average random memory access speed on other
-LCPUs increase 4~20%.
+--- a/drivers/mfd/mc13xxx-spi.c
++++ b/drivers/mfd/mc13xxx-spi.c
+@@ -73,7 +73,6 @@ static int mc13xxx_spi_probe(struct spi_device *spi)
 
-Signed-off-by: Alex Shi <alex.shi@intel.com>
----
- arch/x86/mm/tlb.c |   30 +++++++++++++++++++++++++++---
- 1 files changed, 27 insertions(+), 3 deletions(-)
+        dev_set_drvdata(&spi->dev, mc13xxx);
+        spi->mode = SPI_MODE_0 | SPI_CS_HIGH;
+-       spi->bits_per_word = 32;
 
-diff --git a/arch/x86/mm/tlb.c b/arch/x86/mm/tlb.c
-index 0232e24..bc0a6fc 100644
---- a/arch/x86/mm/tlb.c
-+++ b/arch/x86/mm/tlb.c
-@@ -85,22 +85,46 @@ void native_flush_tlb_others(const struct cpumask *cpumask,
- 				 struct mm_struct *mm, unsigned long start,
- 				 unsigned long end)
- {
-+	int cpu;
-+	unsigned long rand;
- 	struct flush_tlb_info info;
-+	cpumask_t flush_mask, *sblmask;
-+
- 	info.flush_mm = mm;
- 	info.flush_start = start;
- 	info.flush_end = end;
- 
-+	/* doing flush on both siblings of SMT is just wasting time */
-+	cpumask_copy(&flush_mask, cpumask);
-+	if (likely(smp_num_siblings > 1)) {
-+		rand = jiffies;
-+		/* See "Numerical Recipes in C", second edition, p. 284 */
-+		rand = rand * 1664525L + 1013904223L;
-+		rand &= 0x1;
-+
-+		for_each_cpu(cpu, &flush_mask) {
-+			sblmask = cpu_sibling_mask(cpu);
-+			if (cpumask_subset(sblmask, &flush_mask)) {
-+				if (rand == 0)
-+					cpu_clear(cpu, flush_mask);
-+				else
-+					cpu_clear(cpumask_next(cpu, sblmask),
-+								flush_mask);
-+			}
-+		}
-+	}
-+
- 	if (is_uv_system()) {
- 		unsigned int cpu;
- 
- 		cpu = smp_processor_id();
--		cpumask = uv_flush_tlb_others(cpumask, mm, start, end, cpu);
-+		cpumask = uv_flush_tlb_others(&flush_mask, mm, start, end, cpu);
- 		if (cpumask)
--			smp_call_function_many(cpumask, flush_tlb_func,
-+			smp_call_function_many(&flush_mask, flush_tlb_func,
- 								&info, 1);
- 		return;
- 	}
--	smp_call_function_many(cpumask, flush_tlb_func, &info, 1);
-+	smp_call_function_many(&flush_mask, flush_tlb_func, &info, 1);
- }
- 
- void flush_tlb_current_task(void)
--- 
-1.7.5.4
+        mc13xxx->dev = &spi->dev;
+        mutex_init(&mc13xxx->lock);
 
+
+, does allow the kernel to boot, but the mx13xxx driver is not probed anymore:
+
+spi_imx imx31-cspi.1: master is unqueued, this is deprecated
+spi_imx imx31-cspi.1: probed
+spi_imx imx31-cspi.0: master is unqueued, this is deprecated
+l4f00242t03 spi0.0: l4f00242t03_probe: Unable to get the IO regulator
+spi spi0.0: Driver l4f00242t03 requests probe deferral
+spi_imx imx31-cspi.0: probed
+
+Also, on the previous raw spi access version we had:
+
+#define MC13XXX_REGOFFSET_SHIFT 25
+int mc13xxx_reg_read(struct mc13xxx *mc13xxx, unsigned int offset, u32 *val)
+{
+	struct spi_transfer t;
+	struct spi_message m;
+	int ret;
+
+	BUG_ON(!mutex_is_locked(&mc13xxx->lock));
+
+	if (offset > MC13XXX_NUMREGS)
+		return -EINVAL;
+
+	*val = offset << MC13XXX_REGOFFSET_SHIFT;
+....
+
+,would the spi regmap access take into account this
+MC13XXX_REGOFFSET_SHIFT operation?
+
+I haven't been able to see it in the regmap spi access.
