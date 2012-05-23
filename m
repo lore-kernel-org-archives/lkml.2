@@ -1,121 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760553Ab2EWQwN (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 May 2012 12:52:13 -0400
-Received: from e32.co.us.ibm.com ([32.97.110.150]:34435 "EHLO
-	e32.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753003Ab2EWQwL (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 May 2012 12:52:11 -0400
-Message-ID: <4FBD1545.4070408@linaro.org>
-Date: Wed, 23 May 2012 09:50:13 -0700
-From: John Stultz <john.stultz@linaro.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
+	id S1760556Ab2EWQxL (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 May 2012 12:53:11 -0400
+Received: from mail.skyhub.de ([78.46.96.112]:51550 "EHLO mail.skyhub.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753003Ab2EWQxH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 23 May 2012 12:53:07 -0400
+Date: Wed, 23 May 2012 18:53:03 +0200
+From: Borislav Petkov <bp@alien8.de>
+To: "H. Peter Anvin" <hpa@zytor.com>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Borislav Petkov <borislav.petkov@amd.com>, mingo@kernel.org,
+        linux-kernel@vger.kernel.org, frank.arnold@amd.com,
+        akpm@linux-foundation.org, torvalds@linux-foundation.org,
+        tglx@linutronix.de, linux-tip-commits@vger.kernel.org
+Subject: Re: [tip:x86/mce] x86/bitops: Move BIT_64() for a wider use
+Message-ID: <20120523165303.GB18284@liondog.tnic>
+Mail-Followup-To: Borislav Petkov <bp@alien8.de>,
+	"H. Peter Anvin" <hpa@zytor.com>,
+	Peter Zijlstra <a.p.zijlstra@chello.nl>,
+	Borislav Petkov <borislav.petkov@amd.com>, mingo@kernel.org,
+	linux-kernel@vger.kernel.org, frank.arnold@amd.com,
+	akpm@linux-foundation.org, torvalds@linux-foundation.org,
+	tglx@linutronix.de, linux-tip-commits@vger.kernel.org
+References: <1337684026-19740-1-git-send-email-bp@amd64.org>
+ <tip-e8f380e00840f694599e6ab42806639f7de26f11@git.kernel.org>
+ <1337789429.9783.16.camel@laptop>
+ <4FBD0C47.70600@zytor.com>
+ <20120523161932.GN14757@aftab.osrc.amd.com>
+ <1337790571.9783.28.camel@laptop>
+ <4FBD10D5.6080602@zytor.com>
 MIME-Version: 1.0
-To: Richard Cochran <richardcochran@gmail.com>
-CC: linux-kernel@vger.kernel.org, Thomas Gleixner <tglx@linutronix.de>
-Subject: Re: [PATCH RFC V2 3/6] time: keep track of the pending utc/tai threshold
-References: <cover.1337348892.git.richardcochran@gmail.com> <6777ac8ebc321c67d13fdb8d0a3d826332b60f1f.1337348892.git.richardcochran@gmail.com> <4FBA84EF.5040506@linaro.org> <20120521190815.GA19812@netboy.at.omicron.at> <20120522173953.GA4177@netboy.at.omicron.at> <4FBBD591.1000103@linaro.org> <20120523082916.GA15627@localhost.localdomain>
-In-Reply-To: <20120523082916.GA15627@localhost.localdomain>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 12052316-3270-0000-0000-00000696001C
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <4FBD10D5.6080602@zytor.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/23/2012 01:29 AM, Richard Cochran wrote:
-> On Tue, May 22, 2012 at 11:06:09AM -0700, John Stultz wrote:
->> It seems currently we have:
->>
->>     U   CODE    T
->>   ----------------
->>     9   INS     1
->>   ----------------
->>    10   INS     1     pre tick, post leap second edge (this is the technically incorrect interval)
->>   ~~~~~~~~~~~~~~~~
->>     9   OOP     2     post tick, post leap second edge
->>   ----------------
->>    10   WAIT    2     new epoch
->>
->>
->> If you're trying to correct the pre-tick, post leap second edge, the above provides all you need.
->>
->> In the adjtimex code, all you have to do is:
->>
->>
->> if (unlikely(CODE == INS&&   U == 10))
->>
->> 	/*note, we're not modifying state here, just returning corrected local values*/
->>
->> 	return (U-1, OOP, T+1);
->>
->> return (U,CODE, T);
-> Okay, if you want it that way, then you will have to add the other
-> cases. For example:
->
-> 	switch (code) {
-> 	case INS:
-> 		if (U == epoch) {
-> 			U--;
-> 			T++;
-> 			code = OOP;
-> 		}
-> 		break;
-> 	case OOP:
-> 		if (U == epoch) {
-epoch + 1 here, right?
-> 			code = WAIT;
-> 		}
-> 		break;
-> 	case DEL:
-> 		if (U == epoch - 1) {
-> 			U++;
-> 			T--;
-> 			code = WAIT;
-> 		}
-> 		break;
-> 	default:
-> 		break;
-> 	}
-> 	return (U, code, T);
->
-> This is beginning to look a lot like the code in my patch. However,
-> your approach is somewhat simpler, because it assumes the tick will
-> never miss a second overflow.
+On Wed, May 23, 2012 at 09:31:17AM -0700, H. Peter Anvin wrote:
+> >>
+> >> Actually we need a BIT() macro that works both
+> >> on 32- and 64-bit. But that won't be that easy:
+> >> http://lkml.indiana.edu/hypermail/linux/kernel/1010.1/02335.html
+> >>
+> >> And it should return UL for shift values < 32 and ULL otherwise.
+> > 
+> 
+> Why do you want that behavior?  That seems bizarre...
 
-I'm a little unclear on the above, because it looks like you're 
-modifying the state from the reader.
+I forgot to say "on 32-bit" above. So the sentence should've been:
 
+"And it should return UL for shift values < 32 and ULL otherwise on
+32-bit."
 
->> Since when the tick triggers, we'll move the CODE state appropriately.
->>
->> Or am I still missing something?
-> Considering the tickless options, is it safe to assume that the CODE
-> state update will never be an entire second too late?  If so, then
-> I'll rework the patch as above. If not, then I think the patch I
-> posted already handles all the cases.
->
+How about the following completely untested chunk:
 
-I still don't think it matters. If we know the when next leap second is 
-supposed to be, if the time_state is INS, then we can still handle 
-things without extra state.
+#ifdef CONFIG_64BIT
+#define BIT(nr)		(UC_64(1) << (nr))
+#else
+#define BIT(nr)	\
+({ \
+	unsigned _shift = (nr);	\
+ 	((_shift > 32) ? (U64_C(1) << _shift) : (U32_C(1) << _shift)); \
+})
+#endif
 
-if (unlikely(CODE == INS&&   U == next_leap))
-	return (U-1, OOP, T+1);
+Ok? Too ugly? It still changes the return type of unsigned long to ULL
+for shift values >= 32 and probably Linus doesn't want that...
 
-if (unlikely(CODE == INS&&   U == next_leap + 1))
-	return (U-1, WAIT, T+1);
+Hmm.
 
-if (unlikely(CODE == DEL&&   U == next_leap - 1))
-	return (U+1, WAIT, T-1);
-
-
-So even if we somehow sleep for two seconds over the leap second, and then an application hits the read critical section before the timer interrupt comes in the update the state, we can still provide correct state transition in the reader.
-
-Thus the only additional state you might need over what we already have is the next_leap value.
-
-thanks
--john
-
+-- 
+Regards/Gruss,
+    Boris.
