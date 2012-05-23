@@ -1,64 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760716Ab2EWRsw (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 May 2012 13:48:52 -0400
-Received: from mail-wg0-f44.google.com ([74.125.82.44]:37805 "EHLO
-	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760671Ab2EWRsv (ORCPT
+	id S933740Ab2EWRxm (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 May 2012 13:53:42 -0400
+Received: from rcsinet15.oracle.com ([148.87.113.117]:35160 "EHLO
+	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752872Ab2EWRxk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 May 2012 13:48:51 -0400
-Date: Wed, 23 May 2012 19:48:44 +0200
-From: Ingo Molnar <mingo@kernel.org>
-To: "H. Peter Anvin" <hpa@zytor.com>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        linux-kernel@vger.kernel.org, Thomas Gleixner <tglx@linutronix.de>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [GIT PULL] x86/urgent fixes for v3.5
-Message-ID: <20120523174844.GA3373@gmail.com>
-References: <20120523113432.GA12142@gmail.com>
- <CA+55aFzCDKK56CRXWXrPPtok84KJY4BbORcT3GfEH8xmOfgP6g@mail.gmail.com>
- <4FBD1AC8.7020602@zytor.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4FBD1AC8.7020602@zytor.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Wed, 23 May 2012 13:53:40 -0400
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+To: linux-kernel@vger.kernel.org, xen-devel@lists.xensource.com
+Subject: [PATCH 3/4] xen/hvc: Check HVM_PARAM_CONSOLE_[EVTCHN|PFN] for correctness.
+Date: Wed, 23 May 2012 13:47:01 -0400
+Message-Id: <1337795222-29946-4-git-send-email-konrad.wilk@oracle.com>
+X-Mailer: git-send-email 1.7.7.5
+In-Reply-To: <1337795222-29946-1-git-send-email-konrad.wilk@oracle.com>
+References: <1337795222-29946-1-git-send-email-konrad.wilk@oracle.com>
+X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+We need to make sure that those parameters are setup to be correct.
+As such the value of 0 is deemed invalid and we find that we
+bail out. The hypervisor sets by default all of them to be zero
+and when the hypercall is done does a simple:
 
-* H. Peter Anvin <hpa@zytor.com> wrote:
+ a.value = d->arch.hvm_domain.params[a.index];
 
-> On 05/23/2012 10:07 AM, Linus Torvalds wrote:
-> > On Wed, May 23, 2012 at 4:34 AM, Ingo Molnar <mingo@kernel.org> wrote:
-> >>
-> >> Sasha Levin (1):
-> >>      x86, printk: Add missing KERN_CONT to NMI selftest
-> > 
-> > Why? This seems to be garbage.
-> > 
-> 
-> This was added to the urgent branch earlier (but it wasn't 
-> worth pushing late in rc) but apparently a more underlying bug 
-> was fixed in the meantime.
-> 
-> It didn't seem worth removing since the KERN_CONT should 
-> really be there anyway.
+Which means that if the Xen toolstack forgot to setup the proper
+HVM_PARAM_CONSOLE_EVTCHN, we would get the default value of 0
+and use that.
 
-I'm not sure it should be there: if there's no KERN_ prefix in a 
-printk, and the previous printk from this context did not end 
-with \n, then the KERN_CONT should be implicit.
+CC: stable@kernel.org
+Fixes-Oracle-Bug: 14091238
+Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+---
+ drivers/tty/hvc/hvc_xen.c |    4 ++--
+ 1 files changed, 2 insertions(+), 2 deletions(-)
 
-KERN_CONT is really special, for rare cases where you want to 
-explicitly avoid the <> priority field or to construct it.
+diff --git a/drivers/tty/hvc/hvc_xen.c b/drivers/tty/hvc/hvc_xen.c
+index 3277f0e..5fb1cb9 100644
+--- a/drivers/tty/hvc/hvc_xen.c
++++ b/drivers/tty/hvc/hvc_xen.c
+@@ -216,12 +216,12 @@ static int xen_hvm_console_init(void)
+ 		return 0;
+ 
+ 	r = hvm_get_parameter(HVM_PARAM_CONSOLE_EVTCHN, &v);
+-	if (r < 0)
++	if (r < 0 || v == 0)
+ 		goto err;
+ 	info->evtchn = v;
+ 	v = 0;
+ 	r = hvm_get_parameter(HVM_PARAM_CONSOLE_PFN, &v);
+-	if (r < 0)
++	if (r < 0 || v == 0)
+ 		goto err;
+ 	mfn = v;
+ 	info->intf = ioremap(mfn << PAGE_SHIFT, PAGE_SIZE);
+-- 
+1.7.7.5
 
-Or at least that's how I understand this area, it might have 
-been updated meanwhile - Linus?
-
-Also, we can rebase the whole branch and get rid of this one and 
-of the merge commit it has.
-
-Thanks,
-
-	Ingo
