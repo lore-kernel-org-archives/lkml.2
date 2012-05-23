@@ -1,78 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932884Ab2EWN1d (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 May 2012 09:27:33 -0400
-Received: from na3sys009aog101.obsmtp.com ([74.125.149.67]:32898 "EHLO
-	na3sys009aog101.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932524Ab2EWN1b (ORCPT
+	id S932950Ab2EWN2Z (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 May 2012 09:28:25 -0400
+Received: from relay2.sgi.com ([192.48.179.30]:59881 "EHLO relay.sgi.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S932207Ab2EWN2Y convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 May 2012 09:27:31 -0400
+	Wed, 23 May 2012 09:28:24 -0400
+From: Nathan Zimmer <nzimmer@sgi.com>
+To: Hugh Dickins <hughd@google.com>, Nick Piggin <npiggin@gmail.com>,
+        Christoph Lameter <cl@linux.com>,
+        Lee Schermerhorn <lee.schermerhorn@hp.com>,
+        "akpm@linux-foundation.org" <akpm@linux-foundation.org>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        "stable@vger.kernel.org" <stable@vger.kernel.org>
+Subject: [PATCH] tmpfs not interleaving properly
+Thread-Topic: [PATCH] tmpfs not interleaving properly
+Thread-Index: Ac0znpEud/UKP154QuCbsU7dRS4hWwEtfrPg
+Date: Wed, 23 May 2012 13:28:21 +0000
+Message-ID: <74F10842A85F514CA8D8C487E74474BB2C1597@P-EXMB1-DC21.corp.sgi.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [128.162.233.156]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-In-Reply-To: <87pqadgqd5.fsf@ti.com>
-References: <1335462041-4949-1-git-send-email-j-keerthy@ti.com>
- <20120426191159.GA9415@sirena.org.uk> <CAJ6a13a6WN9h1QZynpEOf-R6RXwWBZ2eOPkTeNc15JX_YfAz_w@mail.gmail.com>
- <20120427175657.GP18260@opensource.wolfsonmicro.com> <87397o3n4y.fsf@ti.com>
- <331ABD5ECB02734CA317220B2BBEABC13E9B1A67@DBDE01.ent.ti.com>
- <87mx5jy2li.fsf@ti.com> <331ABD5ECB02734CA317220B2BBEABC13E9B6681@DBDE01.ent.ti.com>
- <EF62F09C0797D947AD4180A1043C0DF73C40BCE1@DLEE10.ent.ti.com>
- <87lil2jp2z.fsf@ti.com> <EF62F09C0797D947AD4180A1043C0DF73C40C247@DLEE10.ent.ti.com>
- <87pqadgqd5.fsf@ti.com>
-From: "Menon, Nishanth" <nm@ti.com>
-Date: Wed, 23 May 2012 08:27:06 -0500
-Message-ID: <CAOMWX4cjzLYuPmA-k=Z_pc5uw=CCViPjRYqs4VTyLX6T8HhtcA@mail.gmail.com>
-Subject: Re: [linux-pm] [PATCH V3 00/10] PM: Create the AVS(Adaptive Voltage Scaling)
-To: Kevin Hilman <khilman@ti.com>
-Cc: "Woodruff, Richard" <r-woodruff2@ti.com>, "J, KEERTHY" <j-keerthy@ti.com>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "AnilKumar, Chimata" <anilkumar@ti.com>,
-        "linux-pm@lists.linux-foundation.org" 
-	<linux-pm@lists.linux-foundation.org>,
-        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
-        "Pihet-XID, Jean" <j-pihet@ti.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, May 9, 2012 at 1:29 PM, Kevin Hilman <khilman@ti.com> wrote:
-> "Woodruff, Richard" <r-woodruff2@ti.com> writes:
->
->>> From: Hilman, Kevin
->>> Sent: Tuesday, May 08, 2012 5:17 PM
->>
->>> A basic OMAP AVS driver has been in mainline for a long time, yet we
->>> have not seen support submitted for all of these features.
->>
->> 1.5/3.5 is a feature.
->
-> And I'm still waiting for it to be submitted upstream.
->
->> ABB is requirement for a production useable driver. Higher speed rated
->> OMAP4 and all OMAP5 added these to be useable.
->
-> ditto
->
->> Yes this is effort. Point of mentioning is to raise awareness of need.
->
-> I'm well aware of the need.
->
->> Yet to be added feature has different meaning than functional gap.
->
-> And both need to be submitted upstream.
 
-SR 1.5: http://marc.info/?l=linux-omap&m=129933897910785&w=2
-ABB: http://marc.info/?l=linux-omap&m=130939399209099&w=2
+When tmpfs has the memory policy interleaved it always starts allocating at each file at node 0.
+When there are many small files the lower nodes fill up disproportionately.
+My proposed solution is to start a file at a randomly chosen node.
 
-I am not sure what you mean "need to be submitted upstream"?
-
-Just tired of seeing things perpetually change without considering
-even how to handle features that are mandatory for SoC even with code
-posted upstream to show exactly what it takes.. I think you do mean
-merged upstream in this context.
+Cc: Christoph Lameter <cl@linux.com>
+Cc: Nick Piggin <npiggin@gmail.com>
+Cc: Hugh Dickins <hughd@google.com>
+Cc: Lee Schermerhorn <lee.schermerhorn@hp.com>
+Cc: stable@vger.kernel.org
+Signed-off-by: Nathan T Zimmer <nzimmer@sgi.com>
 
 
-Regards,
-Nishanth Menon
+diff --git a/include/linux/shmem_fs.h b/include/linux/shmem_fs.h index 79ab255..38eda26 100644
+--- a/include/linux/shmem_fs.h
++++ b/include/linux/shmem_fs.h
+@@ -17,6 +17,7 @@ struct shmem_inode_info {
+ 		char		*symlink;	/* unswappable short symlink */
+ 	};
+ 	struct shared_policy	policy;		/* NUMA memory alloc policy */
++	int			node_offset;	/* bias for interleaved nodes */
+ 	struct list_head	swaplist;	/* chain of maybes on swap */
+ 	struct list_head	xattr_list;	/* list of shmem_xattr */
+ 	struct inode		vfs_inode;
+diff --git a/mm/shmem.c b/mm/shmem.c
+index f99ff3e..58ef512 100644
+--- a/mm/shmem.c
++++ b/mm/shmem.c
+@@ -819,7 +819,7 @@ static struct page *shmem_alloc_page(gfp_t gfp,
+ 
+ 	/* Create a pseudo vma that just contains the policy */
+ 	pvma.vm_start = 0;
+-	pvma.vm_pgoff = index;
++	pvma.vm_pgoff = index + info->node_offset;
+ 	pvma.vm_ops = NULL;
+ 	pvma.vm_policy = mpol_shared_policy_lookup(&info->policy, index);
+ 
+@@ -1153,6 +1153,7 @@ static struct inode *shmem_get_inode(struct super_block *sb, const struct inode
+ 			inode->i_fop = &shmem_file_operations;
+ 			mpol_shared_policy_init(&info->policy,
+ 						 shmem_get_sbmpol(sbinfo));
++			info->node_offset = node_random(&node_online_map);
+ 			break;
+ 		case S_IFDIR:
+ 			inc_nlink(inode);
+
+
