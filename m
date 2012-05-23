@@ -1,50 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933505Ab2EWOVk (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 May 2012 10:21:40 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:47377 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932304Ab2EWOVh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 May 2012 10:21:37 -0400
-Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
-	Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
-	Kingdom.
-	Registered in England and Wales under Company Registration No. 3798903
-From: David Howells <dhowells@redhat.com>
-In-Reply-To: <87obpfxdpr.fsf@rustcorp.com.au>
-References: <87obpfxdpr.fsf@rustcorp.com.au> <20120522230218.24007.3556.stgit@warthog.procyon.org.uk>
-To: Rusty Russell <rusty@rustcorp.com.au>
-Cc: dhowells@redhat.com, kyle@mcmartin.ca, linux-kernel@vger.kernel.org,
-        linux-security-module@vger.kernel.org, keyrings@linux-nfs.org
-Subject: Re: [PATCH 00/23] Crypto keys and module signing
-Date: Wed, 23 May 2012 15:20:47 +0100
-Message-ID: <7474.1337782847@redhat.com>
+	id S1760327Ab2EWOW1 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 May 2012 10:22:27 -0400
+Received: from mail-qc0-f174.google.com ([209.85.216.174]:64465 "EHLO
+	mail-qc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750915Ab2EWOWZ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 23 May 2012 10:22:25 -0400
+Date: Wed, 23 May 2012 16:22:17 +0200
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Cc: LKML <linux-kernel@vger.kernel.org>, linaro-sched-sig@lists.linaro.org,
+        Alessio Igor Bogani <abogani@kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>, Avi Kivity <avi@redhat.com>,
+        Chris Metcalf <cmetcalf@tilera.com>, Christoph Lameter <cl@linux.com>,
+        Daniel Lezcano <daniel.lezcano@linaro.org>,
+        Geoff Levand <geoff@infradead.org>,
+        Gilad Ben Yossef <gilad@benyossef.com>,
+        Hakan Akkan <hakanakkan@gmail.com>, Ingo Molnar <mingo@kernel.org>,
+        Kevin Hilman <khilman@ti.com>, Max Krasnyansky <maxk@qualcomm.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Stephen Hemminger <shemminger@vyatta.com>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Sven-Thorsten Dietrich <thebigcorporation@gmail.com>,
+        Thomas Gleixner <tglx@linutronix.de>
+Subject: Re: [PATCH 37/41] rcu: New rcu_user_enter() and rcu_user_exit() APIs
+Message-ID: <20120523142213.GF1663@somewhere>
+References: <1335830115-14335-1-git-send-email-fweisbec@gmail.com>
+ <1335830115-14335-38-git-send-email-fweisbec@gmail.com>
+ <20120522182306.GD8087@linux.vnet.ibm.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120522182306.GD8087@linux.vnet.ibm.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Rusty Russell <rusty@rustcorp.com.au> wrote:
+On Tue, May 22, 2012 at 11:23:06AM -0700, Paul E. McKenney wrote:
+> On Tue, May 01, 2012 at 01:55:11AM +0200, Frederic Weisbecker wrote:
+> > These two APIs are provided to help the implementation
+> > of an adaptive tickless kernel (cf: nohz cpusets). We need
+> > to run into RCU extended quiescent state when we are in
+> > userland so that a tickless CPU is not involved in the
+> > global RCU state machine and can shutdown its tick safely.
+> > 
+> > These APIs are called from syscall and exception entry/exit
+> > points and can't be called from interrupt.
+> > 
+> > They are essentially the same than rcu_idle_enter() and
+> > rcu_idle_exit() minus the checks that ensure the CPU is
+> > running the idle task.
+> 
+> This looks reasonably sane.  There are a few nits like missing comment
+> headers for functions and the need for tracing, but I can handle that
+> when I pull it in.  I am happy to do that pretty much any time, but not
+> before the API stabilizes.  ;-)
+> 
+> So let me know when it is ready for -rcu.
 
->         That's pretty weird.  Why not put the "@This Is A Crypto Signed
-> Module\n" before the signature?  Then module-size is implied: everything
-> before that signature.  The signature size is implied: everything after
-> that signature.
+Ok. So would you be willing to host this specific part in -rcu? I don't
+know if these APIs are welcome upstream if they have no upstream users
+yet. OTOH it would be easier for me if I don't need to include these patches
+in my endless rebases.
 
-This makes it simpler.  No scanning required.  The magic number can only be in
-one place and you can find it by dead reckoning.
+Another solution is to host that in some seperate tree. In yours or in -tip.
+Ingo seemed to be willing to host this patchset.
 
->         In fact, I'd modify this slightly, to allow multiple signatures.
-> This would work nicely with a deterministic strip.  Find the signatures
-> backward, and truncate as they fail.
+What do you think?
 
-Why would you want multiple signatures?  That just complicates things.  If
-you're in FIPS mode, you probably have to panic if any of them fail.
-
-I suppose I may as well punt the signature detection and removal to userspace
-and pass the signature as an argument to init_module() as Dmitry suggested.
-Then the signature need not be in the file at all (he wants to use an xattr or
-hardware, I think).  mkinitrd and rpmbuild/kernel spec have to be changed to
-accommodate enablement of these patches, so why not module-init-tools, dracut
-and busybox whilst we're at it?
-
-David
+I believe I need to rebase against your latest changes though.
