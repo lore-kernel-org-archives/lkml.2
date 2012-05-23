@@ -1,85 +1,153 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752517Ab2EWFO3 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 May 2012 01:14:29 -0400
-Received: from haggis.pcug.org.au ([203.10.76.10]:52740 "EHLO
-	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751250Ab2EWFO2 (ORCPT
+	id S1752609Ab2EWFVB (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 May 2012 01:21:01 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:40065 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751175Ab2EWFU7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 May 2012 01:14:28 -0400
-Date: Wed, 23 May 2012 15:14:05 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Al Viro <viro@ZenIV.linux.org.uk>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [git pull] signals, the first series
-Message-Id: <20120523151405.f264a88ca4edf8d22c08c86c@canb.auug.org.au>
-In-Reply-To: <20120522180635.93ba83a63481b2364bd8f425@canb.auug.org.au>
-References: <20120522043525.GI11775@ZenIV.linux.org.uk>
-	<20120522180635.93ba83a63481b2364bd8f425@canb.auug.org.au>
-X-Mailer: Sylpheed 3.2.0beta7 (GTK+ 2.24.10; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Wed__23_May_2012_15_14_05_+1000_LFEKdtMYsdkeZlVb"
+	Wed, 23 May 2012 01:20:59 -0400
+Date: Tue, 22 May 2012 22:20:54 -0700
+From: Tejun Heo <tj@kernel.org>
+To: Kent Overstreet <koverstreet@google.com>
+Cc: Tejun Heo <tejun@google.com>, linux-bcache@vger.kernel.org,
+        linux-kernel@vger.kernel.org, dm-devel@redhat.com, agk@redhat.com
+Subject: Re: [Bcache v13 11/16] bcache: Core btree code
+Message-ID: <20120523052054.GB29976@dhcp-172-17-108-109.mtv.corp.google.com>
+References: <cover.1336619038.git.koverstreet@google.com>
+ <7f1de39b6d7040b3fe271500776f4b985b21ea82.1336619038.git.koverstreet@google.com>
+ <20120522221259.GJ14339@google.com>
+ <20120523034546.GB607@dhcp-172-18-216-138.mtv.corp.google.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120523034546.GB607@dhcp-172-18-216-138.mtv.corp.google.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Wed__23_May_2012_15_14_05_+1000_LFEKdtMYsdkeZlVb
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Hello,
 
-Hi Al,
+On Tue, May 22, 2012 at 11:45:49PM -0400, Kent Overstreet wrote:
+> > What does the '8' mean?  And why does struct bbio use 3 instead?  Does
+> > this have to be a macro?  Can't we have struct bkey_padded (or
+> > whatever)?
+> 
+> Struct bbio uses 3 because it only ever carries around a single pointer
+> (i.e. the pointer it's doing io to/from). I'll document that.
+> 
+> The 8 here is kind of arbitrary, it should be a constant defined
+> somewhere - it's just a nice round number so it doesn't overflow, means
+> it can fit 6 pointers.
+> 
+> It's a macro because it's used for embedding them in various structs -
+> that way the pad can be in an anonymous union. Doesn't work the way
+> you'd want for bkey_paddeds that are declared on the stack - I never
+> found a solution I liked.
 
-On Tue, 22 May 2012 18:06:35 +1000 Stephen Rothwell <sfr@canb.auug.org.au> =
-wrote:
->
-> On Tue, 22 May 2012 05:35:25 +0100 Al Viro <viro@ZenIV.linux.org.uk> wrot=
-e:
-> >
-> > 	This is just the first part of the queue (about a half of it);
-> > assorted fixes all over the place in signals' handling.  This one ends
-> > with all sigsuspend() implementations switched to generic one
-> > (->saved_sigmask-based), a bunch of assorted old buglets fixed and most
-> > of the missing bits of NOTIFY_RESUME hookup in place (two more sit in
-> > arm and um trees resp. and there's a couple of broken ones that need
-> > obvious fixes - parisc and avr32 check TIF_NOTIFY_RESUME only on one of
-> > two codepaths; that'll go in the next series).  Please, pull from
-> > git://git.kernel.org/pub/scm/linux/kernel/git/viro/signal.git for-linus
->=20
-> I am pretty sure that none of this has been in linux-next ... I have no
-> idea what sort of conflicts it will produce with the rest of the code in
-> there or what issues that giving it some time in linux-next may discover.
+Hmmm... I would prefer it to be defined explicitly as union.  It's
+rather easy to define it incorrectly (ie. using struct bkey) and then
+pass it around expecting it to have the pad.
 
-OK, it seem that most of this has been in Andrew's tree for a while,
-sorry about that.
+> > > +struct io {
+> > > +	/* Used to track sequential IO so it can be skipped */
+> > > +	struct hlist_node	hash;
+> > > +	struct list_head	lru;
+> > > +
+> > > +	unsigned long		jiffies;
+> > > +	unsigned		sequential;
+> > > +	sector_t		last;
+> > > +};
+> > 
+> > I don't think bcache can have struct io. :P
+> 
+> Is your complaint that there's a struct io somewhere else, or just the
+> potential namespace clash in the future? Regardless, I can change it.
 
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
+The latter.
 
---Signature=_Wed__23_May_2012_15_14_05_+1000_LFEKdtMYsdkeZlVb
-Content-Type: application/pgp-signature
+> > > +struct dirty_io {
+> > > +	struct closure		cl;
+> > > +	struct cached_dev	*d;
+> > > +	struct bio		bio;
+> > > +};
+> > > +
+> > > +struct dirty {
+> > > +	struct rb_node		node;
+> > > +	BKEY_PADDED(key);
+> > > +	struct dirty_io		*io;
+> > > +};
+> > ...
+> > > +struct cache {
+> > 
+> > Nor these and so on.
+> 
+> You want me to prefix all my struct names with bcache_? Blech.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
+It doesn't have to be full bcache.  e.g. words starting with cache can
+simply have 'b' in front and others can use things like bc_ or
+whatever.
 
-iQIcBAEBCAAGBQJPvHIdAAoJEECxmPOUX5FEkoIP/R1mYajJTzf7z4Z3gbsnGfOV
-EdMOxU3jmNtz8YhvaImibln5zWf2wB7c9xVYvhiwMIrw8ikvwRkPY4B+qSAyiedt
-bcmnL5QTnm+06k7BYn1C/Q5Go68/M5e2HijlOzUfrD2tzY5iGc/l8QMCM1rAhr64
-QmZQf8x39YJpzIguvSn3Bs9mEDpc4UMKKS2j6BuemHOzIZQvGYy9bhjRVw3fVfFj
-UNIl43JImHOYs4SbXngflNIKVOapA2NIYasTdGGPb9sPbOxyFyZ1miIBKBYfZ+Ik
-M6l6PPgMRgiX+BywHULJTjR+ut6u8gWY6fe2cAOBtdToAi5Zm3ZRQHZqxEj7WVyq
-MDlhvsVNknNE1dJsMcBvCKSS/OrhBUljQVJ3DxifmEtuA3+3wkkwK7E6p3yk7XPk
-keFk3ZSmXyrp3OG+sqzXaLBkHQvx2LtlTTGVU9hMBWTlynCixBM8eQv/nr19uL5G
-lJGwO+XgKZwJG8IqychgJhbyyGGVl5f4Y+Nyyz8mgV2bEaon4XE98KFR6Aok12ZA
-riyAe3RMn2ETNDGW8LWEYIOvX02OSRmwUUNmvoT503uU6ABitun/Yq73PTPIUTOp
-iuvm1USXIIntkjDD6hnTs6XWLMFxpUG9X7r8LAxa4JCKQFRywBtHjCKMaM020KCP
-XQdFIkz4M3NK8YykPaj4
-=GoYJ
------END PGP SIGNATURE-----
+> > So, apart from the the macros, key is 64bit containing the backend
+> > device and extent offset and size with the ptr fields somehow point to
+> > cache.  Am I understanding it correctly?  If right, I'm *tiny* bit
+> > apprehensive about using only 43bits for offset.  While the block 9
+> > bits means 52bit addressing, the 9 bit block size is now there mostly
+> > to work as buffer between memory bitness growth and storage device
+> > size growth so that we have 9 bit buffer as storage device reaches
+> > ulong addressing limit.  Probably those days are far out enough.
+> 
+> You're exactly right. I had similar thoughts about the offset size,
+> but... it'll last until we have 8 exabyte cache devices, and I can't
 
---Signature=_Wed__23_May_2012_15_14_05_+1000_LFEKdtMYsdkeZlVb--
+I'm a bit confused.  Cache device or cached device?  Isn't the key
+dev:offset:size of the cached device?
+
+> > mca_data_alloc() failure path seems like a resource leak but it isn't
+> > because mca_data_alloc() puts it in free list.  Is the extra level of
+> > caching necessary?  How is it different from sl?b allocator cache?
+> > And either way, comments please.
+> 
+> This btree in memory cache code is probably the nastiest, subtlest,
+> trickiest code in bcache. I have some cleanups in a branch somewhere as
+> part of some other work that I need to finish off.
+> 
+> The btree_cache_freed list isn't for caching - we never free struct
+> btrees except on shutdown, to simplify the code. It doesn't cost much
+> memory since the memory usage is dominated by the buffers struct btree
+> points to, and those are freed when necessary.
+
+Out of curiosity, how does not freeing make the code simpler?  Is it
+something synchronization related?
+
+> btree_cache_freeable is a small cache for the buffers struct btree
+> points to (the btree node as it exists on disk + the bset tree). We have
+> that because high order page allocations can be expensive, and it's
+> quite common to delete and allocate btree nodes in quick succession -
+> but it should never grow past 2 or 3 nodes.
+> 
+> I'm adding all this to where the lists are defined, in struct cache_set.
+
+Great.
+
+> > > +	b->flags	= 0;
+> > > +	b->level	= level;
+> > > +	b->written	= 0;
+> > > +	b->nsets	= 0;
+> > > +	for (int i = 0; i < MAX_BSETS; i++)
+> > > +		b->sets[i].size = 0;
+> > > +	for (int i = 1; i < MAX_BSETS; i++)
+> > > +		b->sets[i].data = NULL;
+> > 
+> > Why separate loops?
+> 
+> Sceond loop starts at 1, because b->sets[0]->data points to the memory
+> we have allocated. I suppose that merits a comment.
+
+Ah, okay.
+
+Thanks.
+
+-- 
+tejun
