@@ -1,57 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755171Ab2EWGMl (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 May 2012 02:12:41 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:41946 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755014Ab2EWGMk (ORCPT
+	id S1755340Ab2EWGMw (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 May 2012 02:12:52 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:56923 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755183Ab2EWGMt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 May 2012 02:12:40 -0400
-Date: Tue, 22 May 2012 23:12:16 -0700
-From: Greg KH <gregkh@linuxfoundation.org>
-To: Joe Perches <joe@perches.com>
-Cc: Kay Sievers <kay@vrfy.org>, Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [GIT PATCH] driver core patches for 3.5-rc1 - try 2
-Message-ID: <20120523061216.GA19584@kroah.com>
-References: <1337723927.9270.15.camel@joe2Laptop>
- <20120522220534.GC12705@kroah.com>
- <1337724736.11918.8.camel@joe2Laptop>
+	Wed, 23 May 2012 02:12:49 -0400
+Message-ID: <4FBC7FD9.9080307@canonical.com>
+Date: Wed, 23 May 2012 14:12:41 +0800
+From: Alex Hung <alex.hung@canonical.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1337724736.11918.8.camel@joe2Laptop>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Johannes Berg <johannes@sipsolutions.net>
+CC: linville@tuxdriver.com, davem@davemloft.net,
+        linux-wireless@vger.kernel.org, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] rfkill: Add handling when rfkill's type is RFKILL_TYPE_ALL.
+References: <1337589439-14605-1-git-send-email-alex.hung@canonical.com> <1337712399.4470.5.camel@jlt3.sipsolutions.net>
+In-Reply-To: <1337712399.4470.5.camel@jlt3.sipsolutions.net>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, May 22, 2012 at 03:12:16PM -0700, Joe Perches wrote:
-> On Tue, 2012-05-22 at 15:05 -0700, Greg KH wrote:
-> > On Tue, May 22, 2012 at 02:58:47PM -0700, Joe Perches wrote:
-> > > How is it really better that what is available now?
-> > > 
-> > > Perhaps it would be better to respin all the
-> > > printk modifications without adding [v]printk_emit
-> > > and have the [v]printk_emit bits debated a bit more.
-> > 
-> > I'm always glad to review patches, but to just propose something that
-> > works to be reverted without a patch to replace the functionality, isn't
-> > ok.
-> 
-> It hasn't been committed yet in anything other than
-> -next.
-> 
-> Lots of stuff gets committed there and later removed
-> and hits Linus' mainline tree.
+On 05/23/2012 02:46 AM, Johannes Berg wrote:
+> On Mon, 2012-05-21 at 16:37 +0800, Alex Hung wrote:
+>> This rfkill type is supposed to be able to toggles the status of all wireless
+>> devices; however, no wireless devices will register itself with type
+>> RFKILL_TYPE_ALL and thus it was previously ignored in __rfkill_switch_all.
+>>
+>> Signed-off-by: Alex Hung<alex.hung@canonical.com>
+>> ---
+>>   net/rfkill/core.c |    2 +-
+>>   1 files changed, 1 insertions(+), 1 deletions(-)
+>>
+>> diff --git a/net/rfkill/core.c b/net/rfkill/core.c
+>> index 5be1957..84dd71a 100644
+>> --- a/net/rfkill/core.c
+>> +++ b/net/rfkill/core.c
+>> @@ -324,7 +324,7 @@ static void __rfkill_switch_all(const enum rfkill_type type, bool blocked)
+>>
+>>   	rfkill_global_states[type].cur = blocked;
+>>   	list_for_each_entry(rfkill,&rfkill_list, node) {
+>> -		if (rfkill->type != type)
+>> +		if (rfkill->type != type&&  type != RFKILL_TYPE_ALL)
+>>   			continue;
+>
+> Sorry, I accidentally replied to this in private and then Alex replied
+> but it all got lost.
+>
+> He said he was going to change the eeepc use KEY_RFKILL instead of
+> KEY_WLAN to switch all types...
+>
+> So I guess what this change really does is make __rfkill_switch_all() be
+> able to not only switch all devices of a given type, but also be able to
+> switch all devices of all types.
+>
+> Alex, can you please rewrite the commit log to make that clearer?
+>
+> johannes
+>
 
-Sorry, but as people are "downstream" for me, I do not rebase my trees,
-unless something really bad happened (i.e. I messed up the tree).  So
-this will not happen, sorry.
+Thanks for your feedback, I re-wrote the comments to clarify the changes 
+and re-submitted.
 
-Also, the patches are all in Linus's tree now, so the point is moot.
-
-thanks,
-
-greg k-h
+Cheers,
+Alex Hung
