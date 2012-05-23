@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965515Ab2EWTd1 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 May 2012 15:33:27 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:19981 "EHLO mx1.redhat.com"
+	id S934004Ab2EWTfl (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 May 2012 15:35:41 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:50518 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S965353Ab2EWTdY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 May 2012 15:33:24 -0400
+	id S965380Ab2EWTdF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 23 May 2012 15:33:05 -0400
 From: Jiri Olsa <jolsa@redhat.com>
 To: acme@redhat.com, a.p.zijlstra@chello.nl, mingo@elte.hu, paulus@samba.org,
         cjashfor@linux.vnet.ibm.com, fweisbec@gmail.com
@@ -14,222 +14,191 @@ Cc: eranian@google.com, gorcunov@openvz.org, tzanussi@gmail.com,
         linux-kernel@vger.kernel.org, masami.hiramatsu.pt@hitachi.com,
         drepper@gmail.com, asharma@fb.com, benjamin.redelings@nescent.org,
         Jiri Olsa <jolsa@redhat.com>
-Subject: [PATCH 10/16] perf, tool: Add interface to arch registers sets
-Date: Wed, 23 May 2012 21:32:09 +0200
-Message-Id: <1337801535-12865-11-git-send-email-jolsa@redhat.com>
+Subject: [PATCH 07/16] perf, tool: Add interface to read DSO image data
+Date: Wed, 23 May 2012 21:32:06 +0200
+Message-Id: <1337801535-12865-8-git-send-email-jolsa@redhat.com>
 In-Reply-To: <1337801535-12865-1-git-send-email-jolsa@redhat.com>
 References: <1337801535-12865-1-git-send-email-jolsa@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Adding header files to access unified API for arch registers.
+Adding following interface for DSO object to allow
+reading of DSO image data:
 
-In addition adding a way to obtain register name based on the
-API ID value.
+  dso__data_fd
+    - opens DSO and returns file descriptor
+      Binary types are used to locate/open DSO in following order:
+        DSO_BINARY_TYPE__BUILD_ID_CACHE
+        DSO_BINARY_TYPE__SYSTEM_PATH_DSO
+      In other word we first try to open DSO build-id path,
+      and if that fails we try to open DSO system path.
 
-Also adding PERF_REGS_MASK macro with mask definition of
-all current arch registers (will be used in unwind patches).
+  dso__data_read_offset
+    - reads DSO data from specified offset
+
+  dso__data_read_addr
+    - reads DSO data from specified addres/map.
 
 Signed-off-by: Jiri Olsa <jolsa@redhat.com>
 ---
- tools/perf/Makefile                     |   13 ++++-
- tools/perf/arch/x86/include/perf_regs.h |  108 +++++++++++++++++++++++++++++++
- tools/perf/util/perf_regs.h             |   19 ++++++
- 3 files changed, 139 insertions(+), 1 deletions(-)
- create mode 100644 tools/perf/arch/x86/include/perf_regs.h
- create mode 100644 tools/perf/util/perf_regs.h
+ tools/perf/util/symbol.c |  107 ++++++++++++++++++++++++++++++++++++++++++++++
+ tools/perf/util/symbol.h |    8 +++
+ 2 files changed, 115 insertions(+), 0 deletions(-)
 
-diff --git a/tools/perf/Makefile b/tools/perf/Makefile
-index cf5c71e..44b99bb 100644
---- a/tools/perf/Makefile
-+++ b/tools/perf/Makefile
-@@ -50,13 +50,15 @@ ARCH ?= $(shell echo $(uname_M) | sed -e s/i.86/i386/ -e s/sun4u/sparc64/ \
- 				  -e s/s390x/s390/ -e s/parisc64/parisc/ \
- 				  -e s/ppc.*/powerpc/ -e s/mips.*/mips/ \
- 				  -e s/sh[234].*/sh/ )
-+NO_PERF_REGS_DEFS := 1
+diff --git a/tools/perf/util/symbol.c b/tools/perf/util/symbol.c
+index 5736fda..041ffa5 100644
+--- a/tools/perf/util/symbol.c
++++ b/tools/perf/util/symbol.c
+@@ -64,6 +64,14 @@ static enum dso_binary_type binary_type_symtab[] = {
  
- CC = $(CROSS_COMPILE)gcc
- AR = $(CROSS_COMPILE)ar
+ #define DSO_BINARY_TYPE__SYMTAB_CNT sizeof(binary_type_symtab)
  
- # Additional ARCH settings for x86
- ifeq ($(ARCH),i386)
--        ARCH := x86
-+	ARCH := x86
-+	NO_PERF_REGS_DEFS := 0
- endif
- ifeq ($(ARCH),x86_64)
- 	ARCH := x86
-@@ -69,6 +71,7 @@ ifeq ($(ARCH),x86_64)
- 		ARCH_CFLAGS := -DARCH_X86_64
- 		ARCH_INCLUDE = ../../arch/x86/lib/memcpy_64.S ../../arch/x86/lib/memset_64.S
- 	endif
-+	NO_PERF_REGS_DEFS := 0
- endif
- 
- # Treat warnings as errors unless directed not to
-@@ -320,6 +323,7 @@ LIB_H += util/cgroup.h
- LIB_H += $(TRACE_EVENT_DIR)event-parse.h
- LIB_H += util/target.h
- LIB_H += util/vdso.h
-+LIB_H += util/perf_regs.h
- 
- LIB_OBJS += $(OUTPUT)util/abspath.o
- LIB_OBJS += $(OUTPUT)util/alias.o
-@@ -665,6 +669,13 @@ else
- 	endif
- endif
- 
-+ifeq ($(NO_PERF_REGS_DEFS),0)
-+	ifeq ($(ARCH),x86)
-+		LIB_H += arch/x86/include/perf_regs.h
-+	endif
-+else
-+	BASIC_CFLAGS += -DNO_PERF_REGS_DEFS
-+endif
- 
- ifdef NO_STRLCPY
- 	BASIC_CFLAGS += -DNO_STRLCPY
-diff --git a/tools/perf/arch/x86/include/perf_regs.h b/tools/perf/arch/x86/include/perf_regs.h
-new file mode 100644
-index 0000000..d6070ec
---- /dev/null
-+++ b/tools/perf/arch/x86/include/perf_regs.h
-@@ -0,0 +1,108 @@
-+#ifndef ARCH_PERF_REGS_H
-+#define ARCH_PERF_REGS_H
++static enum dso_binary_type binary_type_data[] = {
++	DSO_BINARY_TYPE__BUILD_ID_CACHE,
++	DSO_BINARY_TYPE__SYSTEM_PATH_DSO,
++	DSO_BINARY_TYPE__NOT_FOUND,
++};
 +
-+#include <stdlib.h>
-+#include "../../util/types.h"
++#define DSO_BINARY_TYPE__DATA_CNT sizeof(binary_type_data)
 +
-+#ifdef ARCH_X86_64
-+#include "../../../../../arch/x86/include/asm/perf_regs_64.h"
+ int dso__name_len(const struct dso *dso)
+ {
+ 	if (!dso)
+@@ -335,6 +343,7 @@ struct dso *dso__new(const char *name)
+ 		for (i = 0; i < MAP__NR_TYPES; ++i)
+ 			dso->symbols[i] = dso->symbol_names[i] = RB_ROOT;
+ 		dso->symtab_type = DSO_BINARY_TYPE__NOT_FOUND;
++		dso->data_type   = DSO_BINARY_TYPE__NOT_FOUND;
+ 		dso->loaded = 0;
+ 		dso->sorted_by_name = 0;
+ 		dso->has_build_id = 0;
+@@ -2830,3 +2839,101 @@ struct map *dso__new_map(const char *name)
+ 
+ 	return map;
+ }
 +
-+#define PERF_REGS_MASK ((1 << PERF_X86_64_REG_MAX) - 1)
-+#define PERF_REG_IP PERF_X86_64_REG_RIP
-+#define PERF_REG_SP PERF_X86_64_REG_RSP
-+
-+static inline const char *perf_reg_name(int id)
++static int open_dso(struct dso *dso, struct machine *machine)
 +{
-+	switch (id) {
-+	case PERF_X86_64_REG_RAX:
-+		return "RAX";
-+	case PERF_X86_64_REG_RBX:
-+		return "RBX";
-+	case PERF_X86_64_REG_RCX:
-+		return "RCX";
-+	case PERF_X86_64_REG_RDX:
-+		return "RDX";
-+	case PERF_X86_64_REG_RSI:
-+		return "RSI";
-+	case PERF_X86_64_REG_RDI:
-+		return "RDI";
-+	case PERF_X86_64_REG_R8:
-+		return "R8";
-+	case PERF_X86_64_REG_R9:
-+		return "R9";
-+	case PERF_X86_64_REG_R10:
-+		return "R10";
-+	case PERF_X86_64_REG_R11:
-+		return "R11";
-+	case PERF_X86_64_REG_R12:
-+		return "R12";
-+	case PERF_X86_64_REG_R13:
-+		return "R13";
-+	case PERF_X86_64_REG_R14:
-+		return "R14";
-+	case PERF_X86_64_REG_R15:
-+		return "R15";
-+	case PERF_X86_64_REG_RBP:
-+		return "RBP";
-+	case PERF_X86_64_REG_RSP:
-+		return "RSP";
-+	case PERF_X86_64_REG_RIP:
-+		return "RIP";
-+	case PERF_X86_64_REG_FLAGS:
-+		return "FLAGS";
-+	case PERF_X86_64_REG_CS:
-+		return "CS";
-+	case PERF_X86_64_REG_SS:
-+		return "SS";
-+	default:
-+		return NULL;
-+	}
-+	return NULL;
-+}
-+#else
-+#include "../../../../../arch/x86/include/asm/perf_regs_32.h"
++	char *root_dir = (char *) "";
++	char *name;
++	int fd;
 +
-+#define PERF_REGS_MASK ((1 << PERF_X86_32_REG_MAX) - 1)
-+#define PERF_REG_IP PERF_X86_32_REG_EIP
-+#define PERF_REG_SP PERF_X86_32_REG_ESP
++	name = malloc(PATH_MAX);
++	if (!name)
++		return -ENOMEM;
 +
-+static inline const char *perf_reg_name(int id)
-+{
-+	switch (id) {
-+	case PERF_X86_32_REG_EAX:
-+		return "EAX";
-+	case PERF_X86_32_REG_EBX:
-+		return "EBX";
-+	case PERF_X86_32_REG_ECX:
-+		return "ECX";
-+	case PERF_X86_32_REG_EDX:
-+		return "EDX";
-+	case PERF_X86_32_REG_ESI:
-+		return "ESI";
-+	case PERF_X86_32_REG_EDI:
-+		return "EDI";
-+	case PERF_X86_32_REG_EBP:
-+		return "EBP";
-+	case PERF_X86_32_REG_ESP:
-+		return "ESP";
-+	case PERF_X86_32_REG_EIP:
-+		return "EIP";
-+	case PERF_X86_32_REG_FLAGS:
-+		return "FLAGS";
-+	case PERF_X86_32_REG_CS:
-+		return "CS";
-+	case PERF_X86_32_REG_DS:
-+		return "DS";
-+	case PERF_X86_32_REG_ES:
-+		return "ES";
-+	case PERF_X86_32_REG_FS:
-+		return "FS";
-+	case PERF_X86_32_REG_GS:
-+		return "GS";
-+	default:
-+		return NULL;
-+	}
-+	return NULL;
-+}
-+#endif /* ARCH_X86_64 */
-+#endif /* ARCH_PERF_REGS_H */
-diff --git a/tools/perf/util/perf_regs.h b/tools/perf/util/perf_regs.h
-new file mode 100644
-index 0000000..d65cbf9
---- /dev/null
-+++ b/tools/perf/util/perf_regs.h
-@@ -0,0 +1,19 @@
-+#ifndef __PERF_REGS_H
-+#define __PERF_REGS_H
++	if (machine)
++		root_dir = machine->root_dir;
 +
-+#ifndef NO_PERF_REGS_DEFS
-+#include <perf_regs.h>
-+#else
-+#define PERF_REGS_MASK	0
++	if (dso__binary_type_file(dso, dso->data_type,
++				  root_dir, name, PATH_MAX))
++		return -EINVAL;
 +
-+static inline const char *perf_reg_name(int id __used)
-+{
-+	return NULL;
++	fd = open(name, O_RDONLY);
++	free(name);
++	return fd;
 +}
 +
-+static inline unsigned long perf_reg_version(void)
++int dso__data_fd(struct dso *dso, struct machine *machine)
++{
++	int i = 0;
++
++	if (dso->data_type != DSO_BINARY_TYPE__NOT_FOUND)
++		return open_dso(dso, machine);
++
++	do {
++		int fd;
++
++		dso->data_type = binary_type_data[i++];
++
++		fd = open_dso(dso, machine);
++		if (fd >= 0)
++			return fd;
++
++	} while (dso->data_type != DSO_BINARY_TYPE__NOT_FOUND);
++
++	return -EINVAL;
++}
++
++static ssize_t dso_cache_read(struct dso *dso __used, u64 offset __used,
++			      u8 *data __used, ssize_t size __used)
++{
++	return -EINVAL;
++}
++
++static int dso_cache_add(struct dso *dso __used, u64 offset __used,
++			 u8 *data __used, ssize_t size __used)
 +{
 +	return 0;
 +}
-+#endif /* NO_PERF_REGS_DEFS */
-+#endif /* __PERF_REGS_H */
++
++static ssize_t read_dso_data(struct dso *dso, struct machine *machine,
++		     u64 offset, u8 *data, ssize_t size)
++{
++	ssize_t rsize = -1;
++	int fd;
++
++	fd = dso__data_fd(dso, machine);
++	if (fd < 0)
++		return -1;
++
++	do {
++		if (-1 == lseek(fd, offset, SEEK_SET))
++			break;
++
++		rsize = read(fd, data, size);
++		if (-1 == rsize)
++			break;
++
++		if (dso_cache_add(dso, offset, data, size))
++			pr_err("Failed to add data int dso cache.");
++
++	} while (0);
++
++	close(fd);
++	return rsize;
++}
++
++ssize_t dso__data_read_offset(struct dso *dso, struct machine *machine,
++			      u64 offset, u8 *data, ssize_t size)
++{
++	if (dso_cache_read(dso, offset, data, size))
++		return read_dso_data(dso, machine, offset, data, size);
++	return 0;
++}
++
++ssize_t dso__data_read_addr(struct dso *dso, struct map *map,
++			    struct machine *machine, u64 addr,
++			    u8 *data, ssize_t size)
++{
++	u64 offset = map->map_ip(map, addr);
++	return dso__data_read_offset(dso, machine, offset, data, size);
++}
+diff --git a/tools/perf/util/symbol.h b/tools/perf/util/symbol.h
+index ba13790..32da5e6 100644
+--- a/tools/perf/util/symbol.h
++++ b/tools/perf/util/symbol.h
+@@ -180,6 +180,7 @@ struct dso {
+ 	struct rb_root	 symbol_names[MAP__NR_TYPES];
+ 	enum dso_kernel_type	kernel;
+ 	enum dso_binary_type	symtab_type;
++	enum dso_binary_type	data_type;
+ 	u8		 adjust_symbols:1;
+ 	u8		 has_build_id:1;
+ 	u8		 hit:1;
+@@ -275,4 +276,11 @@ size_t machine__fprintf_vmlinux_path(struct machine *machine, FILE *fp);
+ 
+ int dso__binary_type_file(struct dso *dso, enum dso_binary_type type,
+ 			  char *root_dir, char *file, size_t size);
++
++int dso__data_fd(struct dso *dso, struct machine *machine);
++ssize_t dso__data_read_offset(struct dso *dso, struct machine *machine,
++			      u64 offset, u8 *data, ssize_t size);
++ssize_t dso__data_read_addr(struct dso *dso, struct map *map,
++			    struct machine *machine, u64 addr,
++			    u8 *data, ssize_t size);
+ #endif /* __PERF_SYMBOL */
 -- 
 1.7.7.6
 
