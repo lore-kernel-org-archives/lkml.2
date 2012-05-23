@@ -1,50 +1,134 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754457Ab2EWI7v (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 May 2012 04:59:51 -0400
-Received: from smtp.fireflyinternet.com ([109.228.6.236]:13896 "EHLO
-	fireflyinternet.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751051Ab2EWI7s (ORCPT
+	id S1754767Ab2EWJDT (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 May 2012 05:03:19 -0400
+Received: from e23smtp02.au.ibm.com ([202.81.31.144]:43842 "EHLO
+	e23smtp02.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752141Ab2EWJDR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 May 2012 04:59:48 -0400
-X-Default-Received-SPF: pass (skip=forwardok (res=PASS)) x-ip-name=78.156.66.37;
-From: Chris Wilson <chris@chris-wilson.co.uk>
-Subject: Re: Regression on GMA965 - display seems to have slow jump changes in brightness
-To: Zdenek Kabelac <zdenek.kabelac@gmail.com>,
-        Sean Paul <seanpaul@chromium.org>
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        intel-gfx@lists.freedesktop.org, daniel@ffwll.ch,
-        jbarnes@virtuousgeek.org
-In-Reply-To: <CAJJYPdnoEu6QGuACUn0e10TG3XQQsaM5AqfbhqRbH6pwUQoVwg@mail.gmail.com>
-References: <CAJJYPd=JQdzepw818ZP6OmKK4v38--T+ruKBOG_wn2pUmnVaSw@mail.gmail.com> <20120522123058.GB4629@phenom.ffwll.local> <CAJJYPdmcJYT1VTnqbkbybut-_NqpFYsuEEzDb9LO-E+ss=wz-g@mail.gmail.com> <20120522144443.GD4629@phenom.ffwll.local> <CAJJYPdmimcz45qdT0W-iLTyY-U2qCe4fa4+e19adrjMtwd2Ywg@mail.gmail.com> <CAJJYPdkhSOXZeCJN9MDHTgd1hg07zo1ZDXkwwASJ74NojQ=dyQ@mail.gmail.com> <CAOw6vbKOss-h8A2yRRunCKv7RUnD6QV4Pj1Rg8+2YC5qBKL8pQ@mail.gmail.com> <CAJJYPdnoEu6QGuACUn0e10TG3XQQsaM5AqfbhqRbH6pwUQoVwg@mail.gmail.com>
-Date: Wed, 23 May 2012 09:59:23 +0100
-X-Originating-IP: 78.156.66.37
-Message-ID: <1337763574_198483@CP5-2952>
+	Wed, 23 May 2012 05:03:17 -0400
+Message-ID: <4FBCA555.5020303@linux.vnet.ibm.com>
+Date: Wed, 23 May 2012 16:52:37 +0800
+From: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
+MIME-Version: 1.0
+To: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
+CC: Avi Kivity <avi@redhat.com>, Marcelo Tosatti <mtosatti@redhat.com>,
+        LKML <linux-kernel@vger.kernel.org>, KVM <kvm@vger.kernel.org>
+Subject: [PATCH v5 2/9] KVM: MMU: abstract spte write-protect
+References: <4FBCA4FB.8050501@linux.vnet.ibm.com>
+In-Reply-To: <4FBCA4FB.8050501@linux.vnet.ibm.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
+x-cbid: 12052222-5490-0000-0000-0000017173DC
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 23 May 2012 08:59:07 +0200, Zdenek Kabelac <zdenek.kabelac@gmail.com> wrote:
-> 2012/5/23 Sean Paul <seanpaul@chromium.org>:
-> > Hmm, seems like your display doesn't like to be downclocked, or rather
-> > you don't like it to be downclocked :) The reason this patch triggered
-> > it is because it does a better job of finding a compatible clock. You
-> > can disable lvds downclocking on the kernel command line by setting
-> > i915.lvds_downclock=0
-> >
-> 
-> Hmm I've been using i915.lvds_downclock=1 on grub command line, and
-> haven't noticed any visible problems with 3.3 kernel. So I'd rather
-> ask if the problematic patch isn't doing downclocking in a wrong way?
-> Or maybe detection that downclocking is not supported properly is not
-> correct now ?
+Introduce a common function to abstract spte write-protect to
+cleanup the code
 
-It is more likely that we did not detect a downclock mode before now and
-so this is the first time that is being used in anger. (There should be
-some telltales in drm.debug dmesg) If you are really, really brave you
-can try http://cgit.freedesktop.org/~ickle/linux-2.6/log/?h=fastboot
-which only triggers the downclock on a vblank.
--Chris
+Signed-off-by: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
+---
+ arch/x86/kvm/mmu.c |   58 +++++++++++++++++++++++++++------------------------
+ 1 files changed, 31 insertions(+), 27 deletions(-)
 
+diff --git a/arch/x86/kvm/mmu.c b/arch/x86/kvm/mmu.c
+index ddbf89f..337ff0a 100644
+--- a/arch/x86/kvm/mmu.c
++++ b/arch/x86/kvm/mmu.c
+@@ -1051,36 +1051,48 @@ static void drop_spte(struct kvm *kvm, u64 *sptep)
+ 		rmap_remove(kvm, sptep);
+ }
+
++/* Return true if the spte is dropped. */
++static bool spte_write_protect(struct kvm *kvm, u64 *sptep, bool *flush)
++{
++	u64 spte = *sptep;
++
++	if (!is_writable_pte(spte))
++		return false;
++
++	rmap_printk("rmap_write_protect: spte %p %llx\n", sptep, *sptep);
++
++	*flush |= true;
++	if (is_large_pte(spte)) {
++		WARN_ON(page_header(__pa(sptep))->role.level ==
++		       PT_PAGE_TABLE_LEVEL);
++		drop_spte(kvm, sptep);
++		--kvm->stat.lpages;
++		return true;
++	}
++
++	spte = spte & ~PT_WRITABLE_MASK;
++	mmu_spte_update(sptep, spte);
++	return false;
++}
++
+ static bool
+ __rmap_write_protect(struct kvm *kvm, unsigned long *rmapp, int level)
+ {
+ 	u64 *sptep;
+ 	struct rmap_iterator iter;
+-	bool write_protected = false;
++	bool flush = false;
+
+ 	for (sptep = rmap_get_first(*rmapp, &iter); sptep;) {
+ 		BUG_ON(!(*sptep & PT_PRESENT_MASK));
+-		rmap_printk("rmap_write_protect: spte %p %llx\n", sptep, *sptep);
+-
+-		if (!is_writable_pte(*sptep)) {
+-			sptep = rmap_get_next(&iter);
+-			continue;
+-		}
+-
+-		if (level == PT_PAGE_TABLE_LEVEL) {
+-			mmu_spte_update(sptep, *sptep & ~PT_WRITABLE_MASK);
+-			sptep = rmap_get_next(&iter);
+-		} else {
+-			BUG_ON(!is_large_pte(*sptep));
+-			drop_spte(kvm, sptep);
+-			--kvm->stat.lpages;
++		if (spte_write_protect(kvm, sptep, &flush)) {
+ 			sptep = rmap_get_first(*rmapp, &iter);
++			continue;
+ 		}
+
+-		write_protected = true;
++		sptep = rmap_get_next(&iter);
+ 	}
+
+-	return write_protected;
++	return flush;
+ }
+
+ /**
+@@ -3887,6 +3899,7 @@ int kvm_mmu_setup(struct kvm_vcpu *vcpu)
+ void kvm_mmu_slot_remove_write_access(struct kvm *kvm, int slot)
+ {
+ 	struct kvm_mmu_page *sp;
++	bool flush = false;
+
+ 	list_for_each_entry(sp, &kvm->arch.active_mmu_pages, link) {
+ 		int i;
+@@ -3901,16 +3914,7 @@ void kvm_mmu_slot_remove_write_access(struct kvm *kvm, int slot)
+ 			      !is_last_spte(pt[i], sp->role.level))
+ 				continue;
+
+-			if (is_large_pte(pt[i])) {
+-				drop_spte(kvm, &pt[i]);
+-				--kvm->stat.lpages;
+-				continue;
+-			}
+-
+-			/* avoid RMW */
+-			if (is_writable_pte(pt[i]))
+-				mmu_spte_update(&pt[i],
+-						pt[i] & ~PT_WRITABLE_MASK);
++			spte_write_protect(kvm, &pt[i], &flush);
+ 		}
+ 	}
+ 	kvm_flush_remote_tlbs(kvm);
 -- 
-Chris Wilson, Intel Open Source Technology Centre
+1.7.7.6
+
