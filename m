@@ -1,44 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757278Ab2EWIK2 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 May 2012 04:10:28 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:58044 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755407Ab2EWIKW convert rfc822-to-8bit (ORCPT
+	id S933169Ab2EWIKs (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 May 2012 04:10:48 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:57253 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757182Ab2EWIKo convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 May 2012 04:10:22 -0400
-Message-ID: <1337760613.9698.52.camel@twins>
-Subject: Re: [PATCH v2 4/5] perf record: add meta-data support for pipe-mode
-From: Peter Zijlstra <peterz@infradead.org>
-To: Arnaldo Carvalho de Melo <acme@redhat.com>
-Cc: Namhyung Kim <namhyung.kim@lge.com>, Stephane Eranian <eranian@google.com>,
-        David Ahern <dsahern@gmail.com>, linux-kernel@vger.kernel.org,
-        mingo@kernel.org
-Date: Wed, 23 May 2012 10:10:13 +0200
-In-Reply-To: <20120523010157.GB19962@infradead.org>
-References: <1337081295-10303-1-git-send-email-eranian@google.com>
-	 <1337081295-10303-5-git-send-email-eranian@google.com>
-	 <4FB32032.3000509@gmail.com>
-	 <CABPqkBQyZfSczhAROdH8p0_asy=c2AJho4Kv9wRYabaLNKkURA@mail.gmail.com>
-	 <4FB67DE5.8050000@gmail.com> <20120518171911.GH2636@infradead.org>
-	 <1337708035.9698.44.camel@twins>
-	 <CABPqkBTQ=K-=qkgzC0TZPi1xyHtqT6QQroRg-7o0k8rFmjH_Bw@mail.gmail.com>
-	 <87obpf209z.fsf@sejong.aot.lge.com> <20120523010157.GB19962@infradead.org>
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
-X-Mailer: Evolution 3.2.2- 
-Mime-Version: 1.0
+	Wed, 23 May 2012 04:10:44 -0400
+MIME-Version: 1.0
+In-Reply-To: <1337759644.9698.49.camel@twins>
+References: <1337754751-9018-1-git-send-email-kernelfans@gmail.com>
+	<1337754751-9018-2-git-send-email-kernelfans@gmail.com>
+	<1337759644.9698.49.camel@twins>
+Date: Wed, 23 May 2012 16:10:43 +0800
+Message-ID: <CAFgQCTvhVs8-onz3huovYe=StOYJe2pJO-nka_7KogSju6AttQ@mail.gmail.com>
+Subject: Re: [PATCH 1/2] sched: add virt sched domain for the guest
+From: Liu ping fan <kernelfans@gmail.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: kvm@vger.kernel.org, linux-kernel@vger.kernel.org, qemu-devel@nongnu.org,
+        Ingo Molnar <mingo@redhat.com>, Avi Kivity <avi@redhat.com>,
+        Anthony Liguori <anthony@codemonkey.ws>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2012-05-22 at 22:01 -0300, Arnaldo Carvalho de Melo wrote:
-> 
-> 
-> But at the same time I don't think reusing the existing mechanism is
-> such a big problem as Peter makes of it :-\ 
+On Wed, May 23, 2012 at 3:54 PM, Peter Zijlstra <peterz@infradead.org> wrote:
+> On Wed, 2012-05-23 at 14:32 +0800, Liu Ping Fan wrote:
+>> From: Liu Ping Fan <pingfank@linux.vnet.ibm.com>
+>>
+>> The guest's scheduler can not see the numa info on the host and
+>> this will result to the following scene:
+>>   Supposing vcpu-a on nodeA, vcpu-b on nodeB, when load balance,
+>> the tasks' pull and push between these vcpus will cost more. But
+>> unfortunately, currently, the guest is just blind to this.
+>>
+>> This patch want to export the host numa info to the guest, and help
+>> guest to rebuild its sched domain based on host's info.
+>
+> Hell no, we're not going to export sched domains, if kvm/qemu wants this
+> its all in sysfs.
+>
+> The whole sched_domain stuff is a big enough pain as it is, exporting
+> this and making it a sodding API is the worst thing ever.
+>
+> Whatever brainfart made you think this is needed anyway? sysfs contains
+> the host topology, qemu can already create whatever guest topology you
+> want (see the -smp and -numa arguments), so what gives?
 
-Probably not, but just know that I'll not take any such abuse into
-consideration when adding new record types.
+I think -numa option will be used to emulate the special virtual
+machine to customer, and do not necessary map to host topology.
+And even we map them exactly with -numa option, the movement of vcpu
+threads among host nodes will break the topology initialized by -numa
+option.
+So give the guest a opportunity to adjust its topology?
 
-That pipe mess is ill-designed and I don't care about it.
+Thanks and regards,
+pingfan
