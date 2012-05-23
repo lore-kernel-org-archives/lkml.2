@@ -1,39 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759903Ab2EWPCm (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 May 2012 11:02:42 -0400
-Received: from iolanthe.rowland.org ([192.131.102.54]:51767 "HELO
-	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1752042Ab2EWPCk (ORCPT
+	id S933619Ab2EWPDn (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 May 2012 11:03:43 -0400
+Received: from moutng.kundenserver.de ([212.227.126.171]:55976 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932164Ab2EWPDk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 May 2012 11:02:40 -0400
-Date: Wed, 23 May 2012 11:02:39 -0400 (EDT)
-From: Alan Stern <stern@rowland.harvard.edu>
-X-X-Sender: stern@iolanthe.rowland.org
-To: Lin Ming <ming.m.lin@intel.com>
-cc: Jens Axboe <axboe@kernel.dk>, <linux-kernel@vger.kernel.org>,
-        <linux-pm@vger.kernel.org>, <linux-scsi@vger.kernel.org>
-Subject: Re: [RFC PATCH v3 1/4] block: add a flag to identify PM request
-In-Reply-To: <1337671292-15583-2-git-send-email-ming.m.lin@intel.com>
-Message-ID: <Pine.LNX.4.44L0.1205231058400.1566-100000@iolanthe.rowland.org>
+	Wed, 23 May 2012 11:03:40 -0400
+Date: Wed, 23 May 2012 17:03:33 +0200 (CEST)
+From: Guennadi Liakhovetski <g.liakhovetski@gmx.de>
+X-X-Sender: lyakh@axis700.grange
+To: Stephen Warren <swarren@wwwdotorg.org>
+cc: Linus Walleij <linus.walleij@linaro.org>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] pinctrl: add a pinctrl_mux_group_selected() function
+In-Reply-To: <4FBCF9F0.1010901@wwwdotorg.org>
+Message-ID: <Pine.LNX.4.64.1205231659310.21980@axis700.grange>
+References: <Pine.LNX.4.64.1205230020210.11851@axis700.grange>
+ <4FBCF9F0.1010901@wwwdotorg.org>
 MIME-Version: 1.0
 Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Provags-ID: V02:K0:L9vEzoRL+6KpT7qBK5anfXGUEIQO1So3XTP0bC4A78N
+ eyfXh3oyDYBppl0VgSkRkO7ooG8wmH+Muxcygc9GqHgwvjW/GH
+ Xg2WuJ3DnkVdHHziYOaHgUy39LWLaHIpc1Ru6IBF/NoEE6SLGc
+ +a5E3Z34gaQ0miEIrdoFdBQmCOJG6YpKoFPOR30H/SkqJTg8AB
+ OXew8v6wvYGlYQZqgIUYZSQcFRv+6/nci+DgmzEp6AEwu1mug/
+ sCeEVe0TG7VeNmqHGw3yi3f8qVZCwQSoR4ORi3Ajr2F/QFkBdx
+ FtAcJa1xo+kpjbkFR3Al+fIlU84NHp2BPGS+qhpp64XJsWfewa
+ 9xewbDzsgnm0jlaWN/mqd21Yse9d6YdJPzm86m9P9zXhKHeRyP
+ R6QzlpwyaKcPw==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 22 May 2012, Lin Ming wrote:
+On Wed, 23 May 2012, Stephen Warren wrote:
 
-> Add a flag REQ_PM to identify the request is PM related.
-> As an example, modify scsi code to use this flag.
+> On 05/22/2012 04:23 PM, Guennadi Liakhovetski wrote:
+> > This patch adds a new function to allow clients to verify, whether a
+> > certain group is selected in the currently active setting or not.
+> > 
+> > Signed-off-by: Guennadi Liakhovetski <g.liakhovetski@gmx.de>
+> > ---
+> > 
+> > Maybe there is already a way to do this without adding a new function, I 
+> > haven't found one, hence this patch.
+> 
+> This function doesn't currently exist because it breaks the pinctrl
+> conceptual model, which is that devices ask pinctrl for certain settings
+> whenever they need them, rather than information flowing the other way.
 
-Don't forget to check up on the SCSI error handler.  If I'm not
-mistaken, the libata drivers use it during suspend and resume.  Also,
-the error handler will run if one of the REQ_PM commands encounters an
-error.
+Well, yes, we could tra to ask for each thinkable configuration and see 
+which one(s) succeed, but that doesn't seem very optimal either, even if 
+we only have 3 possibilities for now.
 
-Therefore it seems likely that every request submitted by the error 
-handler needs to have REQ_PM set.
+> What's the use case for this new functionality?
 
-Alan Stern
+It's MMC. MMC interfaces can use 1, 4, or 8 data lines, depending on the 
+board configuration. The board knows, that it has, say, only 4 data lines 
+routed to the interface, so, it specifies the respective pinctrl 
+configuration as default. Now in the driver we have to know how many 
+data-lines are connected.
 
+Thanks
+Guennadi
+---
+Guennadi Liakhovetski, Ph.D.
+Freelance Open-Source Software Developer
+http://www.open-technology.de/
