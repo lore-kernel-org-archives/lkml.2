@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933546Ab2EWCjI (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 May 2012 22:39:08 -0400
-Received: from LGEMRELSE1Q.lge.com ([156.147.1.111]:43911 "EHLO
+	id S933571Ab2EWCjM (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 May 2012 22:39:12 -0400
+Received: from LGEMRELSE1Q.lge.com ([156.147.1.111]:49362 "EHLO
 	LGEMRELSE1Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933514Ab2EWCjE (ORCPT
+	with ESMTP id S933514Ab2EWCjJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 May 2012 22:39:04 -0400
-X-AuditID: 9c93016f-b7c3cae000001954-77-4fbc4dc5cf43
+	Tue, 22 May 2012 22:39:09 -0400
+X-AuditID: 9c93016f-b7c3cae000001954-cd-4fbc4dc9f533
 From: Namhyung Kim <namhyung.kim@lge.com>
 To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
 Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Mackerras <paulus@samba.org>,
@@ -15,10 +15,12 @@ Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Mackerras <paulus@samba.org>,
         LKML <linux-kernel@vger.kernel.org>,
         Steven Rostedt <rostedt@goodmis.org>,
         Frederic Weisbecker <fweisbec@gmail.com>,
-        Steven Rostedt <srostedt@redhat.com>
-Subject: [PATCH 04/22] lib/traceevent: Fix %pM print format arg handling
-Date: Wed, 23 May 2012 11:36:41 +0900
-Message-Id: <1337740619-27925-5-git-send-email-namhyung.kim@lge.com>
+        Ingo Molnar <mingo@kernel.org>,
+        Arnaldo Carvalho de Melo <acme@infradead.org>,
+        Borislav Petkov <bp@alien8.de>, David Ahern <dsahern@gmail.com>
+Subject: [PATCH 12/22] lib/traceevent: Fix a possibly wrong memory dereference
+Date: Wed, 23 May 2012 11:36:49 +0900
+Message-Id: <1337740619-27925-13-git-send-email-namhyung.kim@lge.com>
 X-Mailer: git-send-email 1.7.10.1
 In-Reply-To: <1337740619-27925-1-git-send-email-namhyung.kim@lge.com>
 References: <1337740619-27925-1-git-send-email-namhyung.kim@lge.com>
@@ -27,33 +29,36 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Steven Rostedt <srostedt@redhat.com>
+If set_op_prio() failed, the token will be freed at out_free,
+then arg->op.op would turn out to be a dangle pointer. After
+returning EVENT_ERROR from process_op(), free_arg() will be
+called and then it will finally see the dangling pointer.
 
-When %pM is used, the arg value must be a 6 byte character that
-will be printed as a 6 byte MAC address. But the code does a break
-over the main code which updates the current processing arg to point
-to the next arg. If there are other print arguments after a %pM,
-they will be off by one. The next arg will still be processing the
-%pM arg.
+Link: http://lkml.kernel.org/r/1333940074-19052-8-git-send-email-namhyung.kim@lge.com
 
-Reported-by: Johannes Berg <johannes.berg@intel.com>
-Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
 Signed-off-by: Namhyung Kim <namhyung.kim@lge.com>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Ingo Molnar <mingo@kernel.org>
+Cc: Arnaldo Carvalho de Melo <acme@infradead.org>
+Cc: Borislav Petkov <bp@alien8.de>
+Cc: David Ahern <dsahern@gmail.com>
+Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
 ---
- tools/lib/traceevent/event-parse.c |    1 +
- 1 file changed, 1 insertion(+)
+ tools/lib/traceevent/event-parse.c |    2 ++
+ 1 file changed, 2 insertions(+)
 
 diff --git a/tools/lib/traceevent/event-parse.c b/tools/lib/traceevent/event-parse.c
-index 4dc0313b4a50..9216aef78394 100644
+index 6a8e3169ac68..865d0f268274 100644
 --- a/tools/lib/traceevent/event-parse.c
 +++ b/tools/lib/traceevent/event-parse.c
-@@ -3761,6 +3761,7 @@ static void pretty_print(struct trace_seq *s, void *data, int size, struct event
- 				} else if (*(ptr+1) == 'M' || *(ptr+1) == 'm') {
- 					print_mac_arg(s, *(ptr+1), data, size, event, arg);
- 					ptr++;
-+					arg = arg->next;
- 					break;
- 				}
+@@ -1747,6 +1747,8 @@ process_op(struct event_format *event, struct print_arg *arg, char **tok)
+ 
+ 		if (set_op_prio(arg) == -1) {
+ 			event->flags |= EVENT_FL_FAILED;
++			/* arg->op.op (= token) will be freed at out_free */
++			arg->op.op = NULL;
+ 			goto out_free;
+ 		}
  
 -- 
 1.7.10.1
