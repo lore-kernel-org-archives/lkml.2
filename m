@@ -1,63 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933041Ab2EWN2h (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 May 2012 09:28:37 -0400
-Received: from mail-vb0-f46.google.com ([209.85.212.46]:37384 "EHLO
-	mail-vb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932173Ab2EWN2f convert rfc822-to-8bit (ORCPT
+	id S1759837Ab2EWN3X (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 May 2012 09:29:23 -0400
+Received: from mail-yw0-f46.google.com ([209.85.213.46]:51588 "EHLO
+	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756098Ab2EWN3V (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 May 2012 09:28:35 -0400
+	Wed, 23 May 2012 09:29:21 -0400
+Date: Wed, 23 May 2012 06:29:12 -0700
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: Arend van Spriel <arend@broadcom.com>
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: [PATCH for-3.6] debugfs: change parameter check in
+ debugfs_remove() functions
+Message-ID: <20120523132912.GA23310@kroah.com>
+References: <1337778788-7069-1-git-send-email-arend@broadcom.com>
 MIME-Version: 1.0
-In-Reply-To: <CANQmPXhYMbDG7Wiaiwbr3J+Fft3FnaS=RM2t=FSRN-hYDSbMzw@mail.gmail.com>
-References: <j2MgV-2Qe-9@gated-at.bofh.it>
-	<4FB8B2E6.5010601@onlinehome.de>
-	<CAJd=RBDY3Vd8EYFz=n6smFK2EhypgHpvyC_eG1QyE3Us-Y8-qg@mail.gmail.com>
-	<CANQmPXh+0LECyLJ-MrDBZf2ZwLv5BJk0+DCFgPzqSChrFV=2WA@mail.gmail.com>
-	<CAJd=RBDbqMHcmKdFVJEEq8LSQP1+Dfo7ancWhTV4uR2fO9k+Jg@mail.gmail.com>
-	<CANQmPXhYMbDG7Wiaiwbr3J+Fft3FnaS=RM2t=FSRN-hYDSbMzw@mail.gmail.com>
-Date: Wed, 23 May 2012 21:28:33 +0800
-Message-ID: <CAJd=RBA++ayxZ807Lbm=ACPhFMWgtnBn2R-FLh1=zVVC2kNhGQ@mail.gmail.com>
-Subject: Re: BFS 420: cleanup in tick handling
-From: Hillf Danton <dhillf@gmail.com>
-To: Chen <hi3766691@gmail.com>, LKML <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1337778788-7069-1-git-send-email-arend@broadcom.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, May 22, 2012 at 10:00 PM, Chen <hi3766691@gmail.com> wrote:
->
-> 在 2012-5-22 下午9:50，"Hillf Danton" <dhillf@gmail.com>写道：
->>
->> On Tue, May 22, 2012 at 9:45 PM, Chen <hi3766691@gmail.com> wrote:
->> > Actually the lowest deadline task selection algorithm now BFS used is
->> > O(n).
->> > I have already had an idea to enhance the lowest deadline task selection
->> > algorithm to O(1)
->>
->> Would you please announce it on LKML?
->
-> First of all let me talk how to do it .We can use 40 list_head instead of
-> the single list for time sharing scheduling policy.
-> Then for task selection we will select the task from these 40
-> list_head(actually not 40, just decide by next_sched_bit), then make a
-> comparsion of these tasks(actually in the worse case we just need to do 40
-> times of comparsion) and pick the lowest task.
+On Wed, May 23, 2012 at 03:13:07PM +0200, Arend van Spriel wrote:
+> The dentry parameter in debugfs_remove() and debugfs_remove_recursive()
+> is checked being a NULL pointer. To make cleanup by callers easier this
+> check is extended using the IS_ERR_OR_NULL macro instead because the
+> debugfs_create_... functions can return a ERR_PTR() value.
+> 
+> Signed-off-by: Arend van Spriel <arend@broadcom.com>
+> ---
+> I was adding the check in driver code before calling the recursive remove,
+> but considered it might be a better idea to do it in debugfs itself.
 
-If task is selected from one of the 40 lists by comparing deadline, then it is
-not fair scheduling, since no chance to select tasks on other lists.
+Yes, nice change, thanks.
 
-Plus you have to comparing CPUs allowed with a given CPU, that said,
-O(1) is impossible, right?
+I'll queue it up after 3.5-rc1 is out.
 
-> If a task wake, it would be
-> the first node of (queue + p->prio). If a task run out of its timeslice, it
-> will become the last node of(queue + p->prio). This is a concept of BFS
-> deadline presort algorithm and the time complexity is O(1)
+thanks,
 
-On other hand, I dont think O(1) is important, simply because if it is O(1)
-when dequeuing, it is not O(1) at all when enqueuing.
-
-btw, you spend time maintaining RIFS, why?
--hd
+greg k-h
