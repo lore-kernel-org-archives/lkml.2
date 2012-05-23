@@ -1,86 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760752Ab2EWSWW (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 May 2012 14:22:22 -0400
-Received: from mail-wi0-f170.google.com ([209.85.212.170]:40724 "EHLO
-	mail-wi0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756860Ab2EWSWU (ORCPT
+	id S1760757Ab2EWSZE (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 May 2012 14:25:04 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:59226 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1760655Ab2EWSZC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 May 2012 14:22:20 -0400
-From: Pali =?ISO-8859-1?Q?Roh=E1r?= <pali.rohar@gmail.com>
-To: Tony Lindgren <tony@atomide.com>
-Cc: linux-omap@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Lauri Leukkunen <lauri.leukkunen@nokia.com>,
-        Sebastian Reichel <sre@debian.org>,
-        Felipe Contreras <felipe.contreras@nokia.com>,
-        Ameya Palande <ameya.palande@nokia.com>
-Subject: Re: rx51: support for lis3lv02d accelerometer
-Date: Wed, 23 May 2012 20:22:16 +0200
-Message-ID: <11538481.hbXYTSlcIX@pali>
-User-Agent: KMail/4.8.3 (Linux/3.2.0-24-generic; KDE/4.8.3; x86_64; ; )
-In-Reply-To: <20120521160840.GK17852@atomide.com>
-References: <1621273.5PNGJFOirm@pali> <20120509000734.GZ5088@atomide.com> <20120521160840.GK17852@atomide.com>
+	Wed, 23 May 2012 14:25:02 -0400
+Date: Wed, 23 May 2012 11:24:57 -0700
+From: Tejun Heo <tj@kernel.org>
+To: =?iso-8859-1?Q?J=F6rg-Volker?= Peetz <jvpeetz@web.de>
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: Linux 3.4 released
+Message-ID: <20120523182457.GD18143@google.com>
+References: <CA+55aFwaobhbBZkE1LTyQJYhk8w8zk-cyOXXuXfPyE=BXzT3PA@mail.gmail.com>
+ <4FBBB11D.7020904@web.de>
+ <20120522155345.GC14339@google.com>
+ <4FBBC461.4060008@web.de>
+ <20120522170320.GD14339@google.com>
+ <jpglns$1uj$1@dough.gmane.org>
+ <CAOS58YPMh_hbJ4a49j4p9H68n8U1LzMUuaxmHx57gVTkmfxF6A@mail.gmail.com>
+ <4FBBEDF2.8060803@web.de>
 MIME-Version: 1.0
-Content-Type: multipart/signed; boundary="nextPart3592334.xWMB20p7sQ"; micalg="pgp-sha1"; protocol="application/pgp-signature"
-Content-Transfer-Encoding: quoted-printable
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <4FBBEDF2.8060803@web.de>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hello, Jörg-Volker.
 
---nextPart3592334.xWMB20p7sQ
-Content-Transfer-Encoding: quoted-printable
-Content-Type: text/plain; charset="utf-8"
+Please always use reply-to-all.
 
-On Monday 21 May 2012 09:08:40 Tony Lindgren wrote:
-> Hi Pali,
->=20
-> * Tony Lindgren <tony@atomide.com> [120508 17:12]:
-> > * Pali Roh=C3=A1r <pali.rohar@gmail.com> [120504 08:41]:
-> > > Hi!
-> > >=20
-> > > Upstream linux kernel has already driver for lis3lv02d
-> > > accelerometer in drivers/misc/lis3lv02d. So now can be
-> > > added also platform support for nokia rx51. Patch exists
-> > > for long time in meego obs repository:
-> > > https://build.pub.meego.com/package/view_file?file=3Dlinux-2
-> > > .6-omap-rx51-Platform-support-for-lis3lv02d-acceleromet.pat
-> > > ch&package=3Dkernel-adaptation-n900&project=3DCE%3AAdaptation%3
-> > > AN900
-> > >=20
-> > > It is possible to include this patch to upstream kernel?
-> >=20
-> > Thanks, applying into board branch with From: Ameya as in the
-> > link above.
->=20
-> Just noticed that this one is still using OMAP_GPIO_IRQ that
-> won't work any longer. Can you please send a fix on top of this
-> patch against linux next to fix it?
->=20
-> The fix is to use gpio_to_irq() in the related init function
-> instead of static OMAP_GPIO_IRQ in the data structure.
->=20
-> Regards,
->=20
-> Tony
+On Tue, May 22, 2012 at 09:50:10PM +0200, Jörg-Volker Peetz wrote:
+> no, changing to  printk(KERN_CRIT "XXX: ...", ...)  in kernel/workqueue.c didn't
+> print anything I could read. Would it appear before the "panic screen"? But I'm
+> not able to scroll back.
+> The Panic screen starts with
 
-Sorry, but now I do not have time for it. Tony, if fix is simple=20
-can you do it?
+It should appear right above BUG:.  Can you please try the following
+instead?
 
---=20
-Pali Roh=C3=A1r
-pali.rohar@gmail.com
---nextPart3592334.xWMB20p7sQ
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: This is a digitally signed message part.
+Thanks.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iEYEABECAAYFAk+9KtgACgkQi/DJPQPkQ1KWCwCgmPFRogLGUTQ2HT4xkGGPMyRE
-UeYAnR7VYnoLyofdqafEiglDah7laShk
-=ysU0
------END PGP SIGNATURE-----
-
---nextPart3592334.xWMB20p7sQ--
-
+diff --git a/kernel/workqueue.c b/kernel/workqueue.c
+index 5abf42f..57c33ef 100644
+--- a/kernel/workqueue.c
++++ b/kernel/workqueue.c
+@@ -1096,10 +1096,18 @@ queue_work_on(int cpu, struct workqueue_struct *wq, struct work_struct *work)
+ }
+ EXPORT_SYMBOL_GPL(queue_work_on);
+ 
++#include <linux/uaccess.h>
+ static void delayed_work_timer_fn(unsigned long __data)
+ {
+ 	struct delayed_work *dwork = (struct delayed_work *)__data;
+ 	struct cpu_workqueue_struct *cwq = get_work_cwq(&dwork->work);
++	unsigned long v;
++
++	if (probe_kernel_read(&v, &cwq->wq, sizeof(v))) {
++		printk(KERN_CRIT "XXX delayed_work_timer_fn: cwq %p, fn=%pf\n",
++		       cwq, dwork->work.func);
++		return;
++	}
+ 
+ 	__queue_work(smp_processor_id(), cwq->wq, &dwork->work);
+ }
