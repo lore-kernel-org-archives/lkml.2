@@ -1,49 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754197Ab2EWXqH (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 May 2012 19:46:07 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:48036 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752469Ab2EWXqE (ORCPT
+	id S1754417Ab2EWXrg (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 May 2012 19:47:36 -0400
+Received: from zeniv.linux.org.uk ([195.92.253.2]:55781 "EHLO
+	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753919Ab2EWXrf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 May 2012 19:46:04 -0400
+	Wed, 23 May 2012 19:47:35 -0400
+Date: Thu, 24 May 2012 00:47:30 +0100
+From: Al Viro <viro@ZenIV.linux.org.uk>
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: Randy Dunlap <rdunlap@xenotime.net>, linux-next@vger.kernel.org,
+        LKML <linux-kernel@vger.kernel.org>,
+        Richard Weinberger <richard@nod.at>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: linux-next: Tree for May 23 (uml)
+Message-ID: <20120523234730.GP11775@ZenIV.linux.org.uk>
+References: <20120523170740.ae058d8d5468d471eb948c39@canb.auug.org.au>
+ <4FBD090E.5020901@xenotime.net>
+ <20120523181917.GN11775@ZenIV.linux.org.uk>
+ <20120523193707.GO11775@ZenIV.linux.org.uk>
+ <20120524091306.e6f6b17d7240b29a124b44c3@canb.auug.org.au>
 MIME-Version: 1.0
-In-Reply-To: <20120523093857.GC4085@opensource.wolfsonmicro.com>
-References: <1331275160-31757-1-git-send-email-tomoya.rohm@gmail.com>
-	<1332158459-14880-1-git-send-email-tomoya.rohm@gmail.com>
-	<20120321160913.GF3226@opensource.wolfsonmicro.com>
-	<CANKRQnjoGN=uvej8B1BxPHAx7NQtOORD9yJRPUc134DrVmPzNg@mail.gmail.com>
-	<20120326154009.GA17506@sirena.org.uk>
-	<CANKRQnhn=ALR0ucv5gnvwnxwxBQX4ajm9Jo5qC0fL-EFjDdoZg@mail.gmail.com>
-	<20120523093857.GC4085@opensource.wolfsonmicro.com>
-Date: Thu, 24 May 2012 08:46:03 +0900
-Message-ID: <CANKRQnhNWC2F6zKgBMJY7HnipJbA5p-=6Lz4uGZqBKNQ688Z3w@mail.gmail.com>
-Subject: Re: [PATCH v5] sound/soc/lapis: add platform driver for ML7213
-From: Tomoya MORINAGA <tomoya.rohm@gmail.com>
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>
-Cc: Liam Girdwood <lrg@ti.com>, Jaroslav Kysela <perex@perex.cz>,
-        Takashi Iwai <tiwai@suse.de>, lars@metafoo.de,
-        alsa-devel@alsa-project.org, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120524091306.e6f6b17d7240b29a124b44c3@canb.auug.org.au>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, May 23, 2012 at 6:41 PM, Mark Brown
-<broonie@opensource.wolfsonmicro.com> wrote:
->> > So, I just said to the SPEAr guys that I really want to see support for
->> > non-cyclic dmaengine added to the helper library rather than open
->> > coding. ?We're seeing lots of platforms moving to dmaengine (as well as
->
->> What is going on this ?
->> Let me know this status.
->
-> Nobody seems to be working on it as far as I can tell, I've certainly
-> not seen any patches.
+On Thu, May 24, 2012 at 09:13:06AM +1000, Stephen Rothwell wrote:
+> > 2)
+> > 	Cherry-picked these guys into signal.git, along with the rest
+> > of signal prereqs for them.  Merge with next/akpm-base yields a couple
+> > of trivial conflicts in kernel/fork.c (with
+> > 	sched, mm: Rework sched_{fork,exec} node assignment
+> > removing INIT_LIST_HEAD right next to the place where we add one; conflict
+> > resolution being just keep the one Oleg adds and remove the one Peter removes)
+> > and in kernel/irq/manage.c (with
+> > 	genirq: Be more informative on irq type mismatch
+> > changing a couple of printks in there; conflict resolution: just remove
+> > exit_irq_thread() in merged variant).  That's for-next-variant2.  With that
+> > variant we get 5 more duplicates with next/akpm, obviously.
+> > 
+> > Stephen, which way would you prefer it handled?
+> 
+> So variant2 sits on top of variant1 and you are intending to push the
+> work in variant2 in this merge window anyway?   In that case variant2
+> makes sense.  The number of small conflicts don't matter to much (up to a
+> point anyway :-)).  Also, these cherry-picks are out of Andrew's tree,
+> right (so they are already in linuc-next)?  In which case I would
+> probably go with variant2.
 
-If so, could you accept current platform/machine driver ?
-
-thanks in advance.
--- 
-ROHM Co., Ltd.
-tomoya
+Fine by me...  Pushed into for-next, should be on git.kernel.org shortly...
