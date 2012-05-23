@@ -1,92 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933960Ab2EWT5w (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 May 2012 15:57:52 -0400
-Received: from li42-95.members.linode.com ([209.123.162.95]:34148 "EHLO
-	li42-95.members.linode.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S933873Ab2EWT5u (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 May 2012 15:57:50 -0400
-From: Pantelis Antoniou <panto@antoniou-consulting.com>
-To: linux-kernel@vger.kernel.org
-Cc: linux@arm.linux.org.uk, Russ.Dill@ti.com, mporter@ti.com,
-        stable@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        Pantelis Antoniou <panto@antoniou-consulting.com>
-Subject: [PATCH] [ARM] Unconditional call to smp_cross_call on UP crashes
-Date: Thu, 24 May 2012 19:50:24 +0000
-Message-Id: <1337889024-10416-1-git-send-email-panto@antoniou-consulting.com>
-X-Mailer: git-send-email 1.7.1
+	id S933971Ab2EWUCb (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 May 2012 16:02:31 -0400
+Received: from relay3.sgi.com ([192.48.152.1]:45272 "EHLO relay.sgi.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S933873Ab2EWUCa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 23 May 2012 16:02:30 -0400
+Date: Wed, 23 May 2012 15:02:26 -0500
+From: Dimitri Sivanich <sivanich@sgi.com>
+To: Suresh Siddha <suresh.b.siddha@intel.com>
+Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, x86@kernel.org,
+        Yinghai Lu <yinghai@kernel.org>,
+        Naga Chumbalkar <nagananda.chumbalkar@hp.com>,
+        Jacob Pan <jacob.jun.pan@linux.intel.com>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] x86: check for valid irq_cfg pointer in
+ smp_irq_move_cleanup_interrupt
+Message-ID: <20120523200226.GA6936@sgi.com>
+References: <20120521164959.GE16454@sgi.com>
+ <alpine.LFD.2.02.1205212304580.3231@ionos>
+ <20120521211917.GA25567@sgi.com>
+ <alpine.LFD.2.02.1205212324260.3231@ionos>
+ <20120523181636.GA2032@sgi.com>
+ <20120523190414.GA5263@sgi.com>
+ <1337801086.1997.197.camel@sbsiddha-desk.sc.intel.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1337801086.1997.197.camel@sbsiddha-desk.sc.intel.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-omap2plus_defconfig builds with SMP & SMP_ON_UP set.
-On beagle (which is UP) is_smp() returns false and we don't call
-smp_init_cpus which in turn does not initialize smp_cross_call which
-remains NULL.
+On Wed, May 23, 2012 at 12:24:46PM -0700, Suresh Siddha wrote:
+> On Wed, 2012-05-23 at 14:04 -0500, Dimitri Sivanich wrote:
+> > On Wed, May 23, 2012 at 01:16:36PM -0500, Dimitri Sivanich wrote:
+> > > In create_irq_nr() there is a window where we have set vector_irq in
+> > > __assign_irq_vector(), but not yet called irq_set_chip_data() to set the
+> > > irq_cfg pointer.
+> 
+> Ha. Now I understand how it can happen during boot/module load time.
+> Thanks.
+> 
+> > BTW - is there a reason why we're calling irq_set_chip_data() in create_irq_nr()
+> > rather than in __assign_irq_vector() for the case where irq_cfg is NULL?
+> 
+> assign_irq_vector() is also for setting up vectors during irq migration.
+> So may be we could have done the irq_set_chip_data() in create_irq_nr()
+> itself before calling assign_irq_vector(). Anyways, this change can't
+> help in case of destroy irq path which can also lead to the same issue
+> of de-referencing null pointer.
+> 
+> Also, it will be nice if you can refer to this destroy irq path in your
+> changelog.
+> 
+> Acked-by: Suresh Siddha <suresh.b.siddha@intel.com>
 
-When issuing a reboot we OOPS with a NULL dereference on stop smp_call.
+OK.  Hopefully this covers it.
 
-Fixed by checking is_smp in smp_send_stop()
 
-Restarting system.
-Unable to handle kernel NULL pointer dereference at virtual address 00000000
-pgd = dda50000
-[00000000] *pgd=9e723831, *pte=00000000, *ppte=00000000
-Internal error: Oops: 80000007 [#1] SMP ARM
-Modules linked in:
-CPU: 0    Not tainted  (3.4.0-00001-gb15b046 #30)
-PC is at 0x0
-LR is at smp_send_stop+0x4c/0xe8
-pc : [<00000000>]    lr : [<c00188cc>]    psr: 60000013
-sp : de7b5e70  ip : 00000000  fp : 00000001
-r10: 00000000  r9 : de7b4000  r8 : c07263d0
-r7 : 00000000  r6 : c06e1294  r5 : 000f4240  r4 : de7b5e74
-r3 : 00000000  r2 : 00000000  r1 : 00000006  r0 : de7b5e74
-Flags: nZCv  IRQs on  FIQs on  Mode SVC_32  ISA ARM  Segment user
-Control: 10c5387d  Table: 9da50019  DAC: 00000015
-Process reboot (pid: 2229, stack limit = 0xde7b42f8)
-Stack: (0xde7b5e70 to 0xde7b6000)
-5e60:                                     00000000 00000000 00000000 01234567
-5e80: de7b4000 c001475c 4321fedc c0052570 0000003e 00000000 c081db78 0000003e
-5ea0: 00000001 00000002 00000002 c00891f0 00000002 dd5ba0ac 00000002 00000000
-5ec0: dd5ba0ac de7b4000 c009eef4 de7b4000 c00f44dc de7b4000 c00f44dc 00000000
-5ee0: c0c94d24 de7b4000 00000000 00000000 00000002 00000002 00000000 c00891f0
-5f00: 00000002 00000000 00000000 c011286c 00000000 dd5ba060 60000013 00000000
-5f20: dd688d8c 00000000 de7b4000 c06e20f8 dec14760 dec14750 de7b4000 c06e20f8
-5f40: 00011f10 c01128a0 00000002 00000000 c011286c c00fa014 dd8c3180 de7b4000
-5f60: c0013380 de508bc0 00000001 60000010 00000001 ef000000 00000001 c0089bfc
-5f80: 00000000 00000001 00000004 00000058 00000000 00000001 00000004 00000058
-5fa0: c0013428 c0013260 00000000 00000001 fee1dead 28121969 01234567 00000000
-5fc0: 00000000 00000001 00000004 00000058 00000001 00000001 00000000 00000001
-5fe0: b6e76200 beba4c90 00009210 b6e76218 60000010 fee1dead 00000000 00000000
-[<c00188cc>] (smp_send_stop+0x4c/0xe8) from [<c001475c>] (machine_restart+0xc/0x54)
-[<c001475c>] (machine_restart+0xc/0x54) from [<c0052570>] (sys_reboot+0x140/0x204)
-[<c0052570>] (sys_reboot+0x140/0x204) from [<c0013260>] (ret_fast_syscall+0x0/0x3c)
-Code: bad PC value
----[ end trace f5035e8726d1f51b ]---
 
-Signed-off-by: Pantelis Antoniou <panto@antoniou-consulting.com>
-Cc: stable@vger.kernel.org
+A NULL pointer dereference can occur in smp_irq_move_cleanup_interrupt() if
+we haven't yet setup the irq_cfg pointer in the irq_desc.irq_data.chip_data.
+
+In create_irq_nr() there is a window where we have set vector_irq in
+__assign_irq_vector(), but not yet called irq_set_chip_data() to set the
+irq_cfg pointer.
+
+Should an IRQ_MOVE_CLEANUP_VECTOR hit the cpu in question during this time,
+smp_irq_move_cleanup_interrupt() will attempt to process the aforementioned
+irq, but panic when accessing irq_cfg.
+
+There is also a window in destroy_irq() where we've cleared the irq_cfg
+pointer in free_irq_cfg(), but have not yet called irq_free_desc().  Note
+that we have cleared vector_irq in __clear_irq_vector() prior to free_irq_cfg(),
+but smp_irq_move_cleanup_interrupt() might've already referenced the irq_desc.
+
+Only continue processing the irq if irq_cfg is non-NULL.
+
+Signed-off-by: Dimitri Sivanich <sivanich@sgi.com>
 ---
- arch/arm/kernel/smp.c |    4 ++++
- 1 files changed, 4 insertions(+), 0 deletions(-)
+ arch/x86/kernel/apic/io_apic.c |    5 ++++-
+ 1 file changed, 4 insertions(+), 1 deletion(-)
 
-diff --git a/arch/arm/kernel/smp.c b/arch/arm/kernel/smp.c
-index 8f46446..2a61335 100644
---- a/arch/arm/kernel/smp.c
-+++ b/arch/arm/kernel/smp.c
-@@ -588,6 +588,10 @@ void smp_send_stop(void)
- 	unsigned long timeout;
- 	struct cpumask mask;
+Index: linux/arch/x86/kernel/apic/io_apic.c
+===================================================================
+--- linux.orig/arch/x86/kernel/apic/io_apic.c
++++ linux/arch/x86/kernel/apic/io_apic.c
+@@ -2478,9 +2478,12 @@ asmlinkage void smp_irq_move_cleanup_int
+ 		if (!desc)
+ 			continue;
  
-+	/* make sure we don't bother if not SMP */
-+	if (!is_smp())
-+		return;
+-		cfg = irq_cfg(irq);
+ 		raw_spin_lock(&desc->lock);
+ 
++		cfg = irq_cfg(irq);
++		if (!cfg)
++			goto unlock;
 +
- 	cpumask_copy(&mask, cpu_online_mask);
- 	cpumask_clear_cpu(smp_processor_id(), &mask);
- 	smp_cross_call(&mask, IPI_CPU_STOP);
--- 
-1.7.1
-
+ 		/*
+ 		 * Check if the irq migration is in progress. If so, we
+ 		 * haven't received the cleanup request yet for this irq.
