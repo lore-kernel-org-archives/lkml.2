@@ -1,64 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965101Ab2EWPEM (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 May 2012 11:04:12 -0400
-Received: from mail-ee0-f46.google.com ([74.125.83.46]:61283 "EHLO
-	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S964888Ab2EWPEF (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 May 2012 11:04:05 -0400
-Date: Wed, 23 May 2012 17:03:59 +0200
-From: Ingo Molnar <mingo@kernel.org>
-To: Chen <hi3766691@gmail.com>
-Cc: Peter Zijlstra <peterz@infradead.org>,
-        Vincent Guittot <vincent.guittot@linaro.org>,
-        torvalds@linux-foundation.org, linux-kernel@vger.kernel.org
-Subject: Re: Plumbers: Tweaking scheduler policy micro-conf RFP
-Message-ID: <20120523150359.GB26974@gmail.com>
-References: <CAKfTPtCfiY7A29+e50F+6awd8BjNJjg4=uNN4ReZfdS_4FbpkA@mail.gmail.com>
- <1337084609.27020.156.camel@laptop>
- <CAKfTPtDz1-fR2i5x7AVd8sGZhX2VNtz2rnQC3ePrcHO9MWK3FQ@mail.gmail.com>
- <1337086834.27020.162.camel@laptop>
- <CAKfTPtDrZ-tfC81jnxwpB+DCtmxhU+VfoYbtSBr8MkFt+P8JcA@mail.gmail.com>
- <1337096141.27694.82.camel@twins>
- <1337193010.27694.146.camel@twins>
- <CA+55aFzuygx6L-2hVCMbk5cvEdDp6AUtOGq-wYFn=4yEyebPLw@mail.gmail.com>
- <1337468148.573.139.camel@twins>
- <CANQmPXhN92i9E8HqxE7pqz=kOwtn5Mz0crW37H6qs+XD420Yuw@mail.gmail.com>
+	id S965127Ab2EWPEf (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 May 2012 11:04:35 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:19830 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S933658Ab2EWPD6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 23 May 2012 11:03:58 -0400
+Message-ID: <4FBCFC4A.7070303@redhat.com>
+Date: Wed, 23 May 2012 18:03:38 +0300
+From: Avi Kivity <avi@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CANQmPXhN92i9E8HqxE7pqz=kOwtn5Mz0crW37H6qs+XD420Yuw@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Ingo Molnar <mingo@kernel.org>
+CC: Thomas Gleixner <tglx@linutronix.de>,
+        "Michael S. Tsirkin" <mst@redhat.com>, kvm@vger.kernel.org,
+        Marcelo Tosatti <mtosatti@redhat.com>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, x86@kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] kvm: optimize ISR lookups
+References: <20120521163727.GA13337@redhat.com> <alpine.LFD.2.02.1205211940030.3231@ionos> <20120521215127.GH17031@redhat.com> <alpine.LFD.2.02.1205220012020.3231@ionos> <20120521222449.GJ17031@redhat.com> <alpine.LFD.2.02.1205220044460.3231@ionos> <4FBB6E8B.8020200@redhat.com> <20120523144846.GA26974@gmail.com>
+In-Reply-To: <20120523144846.GA26974@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 05/23/2012 05:48 PM, Ingo Molnar wrote:
+>> 
+>> This is silly.  Most of the time the kernel is advanced by 
+>> incremental patches.  Sometimes it is advanced by minor or 
+>> major refactoring.  It is never advanced by personal attacks 
+>> on contributors.
+> 
+> Thomas wasn't so much doing a personal attack, it was pointing 
+> out stupidity and then it was mocking the repeated stupidity. He 
+> very politely explained his point of view (with which I agree), 
 
-* Chen <hi3766691@gmail.com> wrote:
+I guess we disagree on what is polite or not.  Mocking, for example,
+isn't part of it in my book.
 
-> Still you are just trying to said that your code is not bloated?
-> Up to over 500K for a cpu scheduler. Laughing
+> and then you guys pressed the issue and there's just so many 
+> hours in the merge window, so you asked to be flamed ...
 
-Where did you get that 500K from? You are off from the truth 
-almost by an order of magnitude.
+There is a theory that flaming is a necessary part of kernel
+development, but not all maintainers and developers agree with it.
+Unfortunately many influential maintainers do.
 
-Here's the scheduler size on Linus's latest tree, on 64-bit 
-defconfig's:
+> 
+> Avi, if you cannot be brought to properly reject incomplete 
+> patches going in the wrong direction then others maintainers 
+> interested in the code will do it.
 
- $ size kernel/sched/built-in.o 
-   text	   data	    bss	    dec	    hex	filename
-  83611	  10404	   2524	  96539	  1791b	kernel/sched/built-in.o
+I happen not to think this is going in the wrong direction, and I
+explained why.
 
-That's SMP+NUMA, i.e. everything included.
+> 
+> If you start to consistently require from KVM contributors 
+> "incremental updates" in the right direction, not piling crap on 
+> crap, then such incidents won't happen. This isn't the first 
+> such incident but there's hope that it might be the last one.
 
-The !NUMA !SMP UP scheduler, if you are on a size starved 
-ultra-embedded device, is even smaller, just 22K:
+Feel free to point out, politely, when such things happen.  Even if you
+don't think it will work for some reason, please try it out as an
+experiment.
 
- $ size kernel/sched/built-in.o 
-   text	   data	    bss	    dec	    hex	filename
-  19882	   2218	    148	  22248	   56e8	kernel/sched/built-in.o
+> The rule in arch/x86/ (and many other subsystems) is very 
+> simple: we don't speed up crappy code. If you want to speed it 
+> up then make it clean first, *then* is it suited for speedups. 
+> Crappy code is fragile and bound to introduce bugs, and crappy 
+> code leads to continued increased maintenance overhead, so 
+> crappy code is basically under a perpetual code freeze until 
+> it's uncrapped.
 
-Thanks,
+I agree with this as a general principle, but as it happens this
+particular bit cannot be uncrapped due to hardware constraints.
 
-	Ingo
+-- 
+error compiling committee.c: too many arguments to function
