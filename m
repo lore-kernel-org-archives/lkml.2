@@ -1,46 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753870Ab2EWXYq (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 May 2012 19:24:46 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:12788 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751845Ab2EWXYp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 May 2012 19:24:45 -0400
-Date: Thu, 24 May 2012 01:24:42 +0200
-From: Andrea Arcangeli <aarcange@redhat.com>
-To: ethan zhao <ethan.kernel@gmail.com>
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: Huge memory takes too long time to initialize on 4TB memory ?
-Message-ID: <20120523232441.GC4071@redhat.com>
-References: <CABawtvN4Cwm3iFBB9hkDREHgtVYTni93TQ4SqezyLMtVAqhqVA@mail.gmail.com>
+	id S1753967Ab2EWX0E (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 May 2012 19:26:04 -0400
+Received: from www.linutronix.de ([62.245.132.108]:47285 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751845Ab2EWX0C (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 23 May 2012 19:26:02 -0400
+Date: Thu, 24 May 2012 01:25:56 +0200 (CEST)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Alessandro Rubini <rubini@gnudd.com>
+cc: x86@kernel.org, Giancarlo Asnaghi <giancarlo.asnaghi@st.com>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH V2] x86/pci: sta2x11: fix a compiler warning
+In-Reply-To: <20120523212821.GA10425@mail.gnudd.com>
+Message-ID: <alpine.LFD.2.02.1205240123380.3231@ionos>
+References: <20120523212821.GA10425@mail.gnudd.com>
+User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CABawtvN4Cwm3iFBB9hkDREHgtVYTni93TQ4SqezyLMtVAqhqVA@mail.gmail.com>
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On Wed, 23 May 2012, Alessandro Rubini wrote:
 
-On Wed, May 23, 2012 at 10:36:01AM +0800, ethan zhao wrote:
-> Hi, aarcange
+> swiotlb_free_coherent(), exported by lib/swiotlb.b, cannot be used in
+> dma_ops, because it doesn't want the "attrs" argument.  Add a wrapper,
+> like other users of the function already do.
 > 
->    When I boot kernel 2.6.39-100.6.1.el6uek.x86_64(actually 3.0.26)on a 4TB
-> machine, got following call trace,
-> That shows huge memory take too long time to initialize ? any help ?, I
-> compared the huge_memory.c code between 3.0.26 and the current 3.2.x, no
-> change.
+> Signed-off-by: Alessandro Rubini <rubini@gnudd.com>
+> Acked-by: Giancarlo Asnaghi <giancarlo.asnaghi@st.com>
+> ---
 > 
-> Pid: 1, comm: swapper Not tainted 2.6.39-100.6.1.el6uek.x86_64 #1 Oracle
-> Corporation  Sun Fire X4800 M2 /
-> RIP: 0010:[<ffffffff814fb2d9>]  [<ffffffff814fb2d9>]
-> _raw_spin_unlock_irqrestore+**0x19/0x30
+> [V2: same patch, message fixed (sorry, I made a mess in the editor)]
+> 
+> Actually, we may instead add "args" to the exported functions in
+> lib/swiotlb.  This would then remove a few other similar wrappers that
+> do nothing.  If it's considered useful, I can propose a patch for that.
 
-Could you reproduce it with an upstream (or with RHEL) kernel? It may
-be reproducible upstream, but it looks like some kind of memory
-corruption or zone dangling pointer so it's hard to tell if it's
-upstraem too or not, by just reading the oops.
+Yes please. Do nothing wrappers are harmful espcially if they get
+common.
 
 Thanks,
-Andrea
+
+	tglx
