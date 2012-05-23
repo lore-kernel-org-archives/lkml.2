@@ -1,29 +1,29 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965201Ab2EWPWk (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 May 2012 11:22:40 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:40851 "EHLO
+	id S1760251Ab2EWPXd (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 May 2012 11:23:33 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:40862 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932597Ab2EWPWi (ORCPT
+	with ESMTP id S1756885Ab2EWPXa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 May 2012 11:22:38 -0400
-Date: Wed, 23 May 2012 08:22:18 -0700
-From: tip-bot for Frederic Weisbecker <fweisbec@gmail.com>
-Message-ID: <tip-8784eb7497b928de33a715e26da2bd51d424bec1@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, acme@redhat.com, hpa@zytor.com,
-        mingo@kernel.org, tzanussi@gmail.com, peterz@infradead.org,
-        namhyung.kim@lge.com, fweisbec@gmail.com, rostedt@goodmis.org,
-        fweisbec@redhat.com, tglx@linutronix.de
-Reply-To: mingo@kernel.org, hpa@zytor.com, acme@redhat.com,
-        linux-kernel@vger.kernel.org, tzanussi@gmail.com, peterz@infradead.org,
-        namhyung.kim@lge.com, fweisbec@gmail.com, rostedt@goodmis.org,
-        fweisbec@redhat.com, tglx@linutronix.de
-In-Reply-To: <1337697049-30251-2-git-send-email-fweisbec@gmail.com>
-References: <1337697049-30251-2-git-send-email-fweisbec@gmail.com>
+	Wed, 23 May 2012 11:23:30 -0400
+Date: Wed, 23 May 2012 08:23:09 -0700
+From: tip-bot for Namhyung Kim <namhyung.kim@lge.com>
+Message-ID: <tip-59f3bea53bfe2f395d548906fa39d01df620f0ac@git.kernel.org>
+Cc: acme@redhat.com, linux-kernel@vger.kernel.org, paulus@samba.org,
+        mingo@redhat.com, hpa@zytor.com, mingo@kernel.org,
+        a.p.zijlstra@chello.nl, namhyung.kim@lge.com, namhyung@gmail.com,
+        fweisbec@gmail.com, rostedt@goodmis.org, tglx@linutronix.de
+Reply-To: mingo@kernel.org, hpa@zytor.com, mingo@redhat.com, paulus@samba.org,
+        linux-kernel@vger.kernel.org, acme@redhat.com, a.p.zijlstra@chello.nl,
+        namhyung.kim@lge.com, namhyung@gmail.com, fweisbec@gmail.com,
+        rostedt@goodmis.org, tglx@linutronix.de
+In-Reply-To: <1337677434-4881-1-git-send-email-namhyung.kim@lge.com>
+References: <1337677434-4881-1-git-send-email-namhyung.kim@lge.com>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/core] perf script:
-  Rename struct event to struct event_format in perl engine
-Git-Commit-ID: 8784eb7497b928de33a715e26da2bd51d424bec1
+Subject: [tip:perf/core] perf tools:
+  Rename libparsevent to libtraceevent in Makefile
+Git-Commit-ID: 59f3bea53bfe2f395d548906fa39d01df620f0ac
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -32,112 +32,98 @@ MIME-Version: 1.0
 Content-Transfer-Encoding: 8bit
 Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Wed, 23 May 2012 08:22:24 -0700 (PDT)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Wed, 23 May 2012 08:23:15 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  8784eb7497b928de33a715e26da2bd51d424bec1
-Gitweb:     http://git.kernel.org/tip/8784eb7497b928de33a715e26da2bd51d424bec1
-Author:     Frederic Weisbecker <fweisbec@gmail.com>
-AuthorDate: Tue, 22 May 2012 16:30:49 +0200
+Commit-ID:  59f3bea53bfe2f395d548906fa39d01df620f0ac
+Gitweb:     http://git.kernel.org/tip/59f3bea53bfe2f395d548906fa39d01df620f0ac
+Author:     Namhyung Kim <namhyung.kim@lge.com>
+AuthorDate: Tue, 22 May 2012 18:03:53 +0900
 Committer:  Arnaldo Carvalho de Melo <acme@redhat.com>
-CommitDate: Tue, 22 May 2012 12:32:29 -0300
+CommitDate: Tue, 22 May 2012 12:34:52 -0300
 
-perf script: Rename struct event to struct event_format in perl engine
+perf tools: Rename libparsevent to libtraceevent in Makefile
 
-While migrating to the libtraceevent, the perl scripting engine
-missed this structure rename.
+Change some variable names according to new library name.
 
-This fixes:
-
-     util/scripting-engines/trace-event-perl.c: In function "find_cache_event":
-     util/scripting-engines/trace-event-perl.c:244: error: assignment from incompatible pointer type
-     util/scripting-engines/trace-event-perl.c:248: error: dereferencing pointer to incomplete type
-     util/scripting-engines/trace-event-perl.c:248: error: dereferencing pointer to incomplete type
-     util/scripting-engines/trace-event-perl.c:250: error: dereferencing pointer to incomplete type
-     util/scripting-engines/trace-event-perl.c: In function "perl_process_tracepoint":
-     util/scripting-engines/trace-event-perl.c:286: error: dereferencing pointer to incomplete type
-     util/scripting-engines/trace-event-perl.c:286: error: dereferencing pointer to incomplete type
-     util/scripting-engines/trace-event-perl.c:307: error: dereferencing pointer to incomplete type
-     util/scripting-engines/trace-event-perl.c: In function "perl_generate_script":
-     util/scripting-engines/trace-event-perl.c:498: error: passing argument 1 of "trace_find_next_event" from incompatible pointer type
-     util/scripting-engines/../trace-event.h:56: note: expected "struct event_format *" but argument is of type "struct event *"
-     util/scripting-engines/trace-event-perl.c:498: error: assignment from incompatible pointer type
-     util/scripting-engines/trace-event-perl.c:499: error: dereferencing pointer to incomplete type
-     util/scripting-engines/trace-event-perl.c:499: error: dereferencing pointer to incomplete type
-     util/scripting-engines/trace-event-perl.c:513: error: dereferencing pointer to incomplete type
-     util/scripting-engines/trace-event-perl.c:532: error: dereferencing pointer to incomplete type
-     util/scripting-engines/trace-event-perl.c:556: error: dereferencing pointer to incomplete type
-     util/scripting-engines/trace-event-perl.c:569: error: dereferencing pointer to incomplete type
-     util/scripting-engines/trace-event-perl.c:570: error: dereferencing pointer to incomplete type
-     util/scripting-engines/trace-event-perl.c:579: error: dereferencing pointer to incomplete type
-     util/scripting-engines/trace-event-perl.c:580: error: dereferencing pointer to incomplete type
-
-Reported-by: Arnaldo Carvalho de Melo <acme@redhat.com>
-Signed-off-by: Frederic Weisbecker <fweisbec@redhat.com>
-Cc: Frederic Weisbecker <fweisbec@redhat.com>
-Cc: Ingo Molnar <mingo@kernel.org>
-Cc: Namhyung Kim <namhyung.kim@lge.com>
-Cc: Peter Zijlstra <peterz@infradead.org>
+Signed-off-by: Namhyung Kim <namhyung.kim@lge.com>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Ingo Molnar <mingo@redhat.com>
+Cc: Namhyung Kim <namhyung@gmail.com>
+Cc: Paul Mackerras <paulus@samba.org>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
 Cc: Steven Rostedt <rostedt@goodmis.org>
-Cc: Tom Zanussi <tzanussi@gmail.com>
-Link: http://lkml.kernel.org/r/1337697049-30251-2-git-send-email-fweisbec@gmail.com
+Link: http://lkml.kernel.org/r/1337677434-4881-1-git-send-email-namhyung.kim@lge.com
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- .../perf/util/scripting-engines/trace-event-perl.c |   12 ++++++------
- 1 files changed, 6 insertions(+), 6 deletions(-)
+ tools/perf/Makefile |   22 +++++++++++-----------
+ 1 files changed, 11 insertions(+), 11 deletions(-)
 
-diff --git a/tools/perf/util/scripting-engines/trace-event-perl.c b/tools/perf/util/scripting-engines/trace-event-perl.c
-index d50658b..4c1b3d7 100644
---- a/tools/perf/util/scripting-engines/trace-event-perl.c
-+++ b/tools/perf/util/scripting-engines/trace-event-perl.c
-@@ -56,7 +56,7 @@ INTERP my_perl;
- #define FTRACE_MAX_EVENT				\
- 	((1 << (sizeof(unsigned short) * 8)) - 1)
+diff --git a/tools/perf/Makefile b/tools/perf/Makefile
+index b246236..ef75a55 100644
+--- a/tools/perf/Makefile
++++ b/tools/perf/Makefile
+@@ -155,7 +155,7 @@ endif
  
--struct event *events[FTRACE_MAX_EVENT];
-+struct event_format *events[FTRACE_MAX_EVENT];
+ ### --- END CONFIGURATION SECTION ---
  
- extern struct scripting_context *scripting_context;
+-BASIC_CFLAGS = -Iutil/include -Iarch/$(ARCH)/include -I$(OUTPUT)/util -I$(EVENT_PARSE_DIR) -D_LARGEFILE64_SOURCE -D_FILE_OFFSET_BITS=64 -D_GNU_SOURCE
++BASIC_CFLAGS = -Iutil/include -Iarch/$(ARCH)/include -I$(OUTPUT)/util -I$(TRACE_EVENT_DIR) -D_LARGEFILE64_SOURCE -D_FILE_OFFSET_BITS=64 -D_GNU_SOURCE
+ BASIC_LDFLAGS =
  
-@@ -181,7 +181,7 @@ static void define_flag_field(const char *ev_name,
- 	LEAVE;
- }
+ # Guard against environment variables
+@@ -184,16 +184,16 @@ $(OUTPUT)python/perf.so: $(PYRF_OBJS) $(PYTHON_EXT_SRCS) $(PYTHON_EXT_DEPS)
  
--static void define_event_symbols(struct event *event,
-+static void define_event_symbols(struct event_format *event,
- 				 const char *ev_name,
- 				 struct print_arg *args)
- {
-@@ -233,10 +233,10 @@ static void define_event_symbols(struct event *event,
- 		define_event_symbols(event, ev_name, args->next);
- }
+ SCRIPTS = $(patsubst %.sh,%,$(SCRIPT_SH))
  
--static inline struct event *find_cache_event(int type)
-+static inline struct event_format *find_cache_event(int type)
- {
- 	static char ev_name[256];
--	struct event *event;
-+	struct event_format *event;
+-EVENT_PARSE_DIR = ../lib/traceevent/
++TRACE_EVENT_DIR = ../lib/traceevent/
  
- 	if (events[type])
- 		return events[type];
-@@ -262,7 +262,7 @@ static void perl_process_tracepoint(union perf_event *pevent __unused,
- 	static char handler[256];
- 	unsigned long long val;
- 	unsigned long s, ns;
--	struct event *event;
-+	struct event_format *event;
- 	int type;
- 	int pid;
- 	int cpu = sample->cpu;
-@@ -450,7 +450,7 @@ static int perl_stop_script(void)
+ ifeq ("$(origin O)", "command line")
+-	EP_PATH=$(OUTPUT)/
++	TE_PATH=$(OUTPUT)/
+ else
+-	EP_PATH=$(EVENT_PARSE_DIR)/
++	TE_PATH=$(TRACE_EVENT_DIR)/
+ endif
  
- static int perl_generate_script(const char *outfile)
- {
--	struct event *event = NULL;
-+	struct event_format *event = NULL;
- 	struct format_field *f;
- 	char fname[PATH_MAX];
- 	int not_first, count;
+-LIBPARSEVENT = $(EP_PATH)libtraceevent.a
+-EP_LIB := -L$(EP_PATH) -ltraceevent
++LIBTRACEEVENT = $(TE_PATH)libtraceevent.a
++TE_LIB := -L$(TE_PATH) -ltraceevent
+ 
+ #
+ # Single 'perf' binary right now:
+@@ -317,7 +317,7 @@ LIB_H += util/cpumap.h
+ LIB_H += util/top.h
+ LIB_H += $(ARCH_INCLUDE)
+ LIB_H += util/cgroup.h
+-LIB_H += $(EVENT_PARSE_DIR)event-parse.h
++LIB_H += $(TRACE_EVENT_DIR)event-parse.h
+ LIB_H += util/target.h
+ 
+ LIB_OBJS += $(OUTPUT)util/abspath.o
+@@ -417,7 +417,7 @@ BUILTIN_OBJS += $(OUTPUT)builtin-kvm.o
+ BUILTIN_OBJS += $(OUTPUT)builtin-test.o
+ BUILTIN_OBJS += $(OUTPUT)builtin-inject.o
+ 
+-PERFLIBS = $(LIB_FILE) $(LIBPARSEVENT)
++PERFLIBS = $(LIB_FILE) $(LIBTRACEEVENT)
+ 
+ # Files needed for the python binding, perf.so
+ # pyrf is just an internal name needed for all those wrappers.
+@@ -826,9 +826,9 @@ $(sort $(dir $(DIRECTORY_DEPS))):
+ $(LIB_FILE): $(LIB_OBJS)
+ 	$(QUIET_AR)$(RM) $@ && $(AR) rcs $@ $(LIB_OBJS)
+ 
+-# libparsevent.a
+-$(LIBPARSEVENT):
+-	make -C $(EVENT_PARSE_DIR) $(COMMAND_O) libtraceevent.a
++# libtraceevent.a
++$(LIBTRACEEVENT):
++	$(MAKE) -C $(TRACE_EVENT_DIR) $(COMMAND_O) libtraceevent.a
+ 
+ help:
+ 	@echo 'Perf make targets:'
