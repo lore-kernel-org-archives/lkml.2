@@ -1,56 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757705Ab2EWBTq (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 May 2012 21:19:46 -0400
-Received: from cn.fujitsu.com ([222.73.24.84]:52203 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1751661Ab2EWBTp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 May 2012 21:19:45 -0400
-X-IronPort-AV: E=Sophos;i="4.75,642,1330876800"; 
-   d="scan'208";a="5016066"
-Message-ID: <4FBC3C07.5010201@cn.fujitsu.com>
-Date: Wed, 23 May 2012 09:23:19 +0800
-From: Wen Congyang <wency@cn.fujitsu.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100413 Fedora/3.0.4-2.fc13 Thunderbird/3.0.4
+	id S1758696Ab2EWBUl (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 May 2012 21:20:41 -0400
+Received: from mail160.messagelabs.com ([216.82.253.99]:59185 "EHLO
+	mail160.messagelabs.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753038Ab2EWBUj (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 May 2012 21:20:39 -0400
+X-Env-Sender: hartleys@visionengravers.com
+X-Msg-Ref: server-12.tower-160.messagelabs.com!1337736017!7266581!4
+X-Originating-IP: [216.166.12.99]
+X-StarScan-Version: 6.5.10; banners=-,-,-
+X-VirusChecked: Checked
+From: H Hartley Sweeten <hartleys@visionengravers.com>
+To: Linux Kernel <linux-kernel@vger.kernel.org>
+Subject: [PATCH] staging: comedi: remove this_board macro in the s526 driver
+Date: Tue, 22 May 2012 18:20:10 -0700
+User-Agent: KMail/1.9.9
+CC: <devel@driverdev.osuosl.org>, <abbotti@mev.co.uk>,
+        <fmhess@users.sourceforge.net>, <gregkh@linuxfoundation.org>
 MIME-Version: 1.0
-To: Rob Landley <rob@landley.net>
-CC: tglx@linutronix.de, Ingo Molnar <mingo@redhat.com>, x86@kernel.org,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 1/2] x86: add max_addr boot option
-References: <4FBB3A23.50102@cn.fujitsu.com> <4FBBEE49.2020806@landley.net>
-In-Reply-To: <4FBBEE49.2020806@landley.net>
-X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2012/05/23 09:18:11,
-	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2012/05/23 09:18:15,
-	Serialize complete at 2012/05/23 09:18:15
+Content-Type: text/plain; charset="utf-8"
 Content-Transfer-Encoding: 7bit
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Disposition: inline
+Message-ID: <201205221820.10770.hartleys@visionengravers.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-At 05/23/2012 03:51 AM, Rob Landley Wrote:
-> On 05/22/2012 02:02 AM, Wen Congyang wrote:
->> If we only want to use node0, we can specify the max_addr. The boot
->> option "mem=" can do the same thing now. But the boot option "mem="
->> means the total memory used by the system. If we tell the user
->> that the boot option "mem=" can do this, it will confuse the user.
->> So we need an new boot option "max_addr" on x86 platform.
-> 
-> I didn't follow that reasoning at all.  Care to try again?
-> 
-> (mem= can do this, but telling users that would confuse them?  What?)
+The 'thisboard' macro depends on having a local variable with
+a magic name. The CodingStyle document suggests not doing this
+to avoid confusion. Remove the macro and use the comedi_board()
+inline helper to get the dev->board_ptr information.
 
-mem= means the total memory, but we implement it as max address.
-I donot know why we implement it as max address. The users donot
-know how we implement, and they only know that they can use
-mem= to set the total memory. If you tell the users that mem=
-can set max address, it will confuse them.
+Signed-off-by: H Hartley Sweeten <hsweeten@visionengravers.com>
+Cc: Ian Abbott <abbotti@mev.co.uk>
+Cc: Mori Hess <fmhess@users.sourceforge.net>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
-Thanks
-Wen Congyang
+---
 
-> 
-> Rob
-
+diff --git a/drivers/staging/comedi/drivers/s526.c b/drivers/staging/comedi/drivers/s526.c
+index 7a56434..3c8e979 100644
+--- a/drivers/staging/comedi/drivers/s526.c
++++ b/drivers/staging/comedi/drivers/s526.c
+@@ -200,11 +200,6 @@ static const struct s526_board s526_boards[] = {
+ #define ADDR_REG(reg) (dev->iobase + (reg))
+ #define ADDR_CHAN_REG(reg, chan) (dev->iobase + (reg) + (chan) * 8)
+ 
+-/*
+- * Useful for shorthand access to the particular board structure
+- */
+-#define thisboard ((const struct s526_board *)dev->board_ptr)
+-
+ /* this structure is for data unique to this hardware driver.  If
+    several hardware drivers keep similar information in this structure,
+    feel free to suggest moving the variable to the struct comedi_device
+@@ -744,6 +739,7 @@ static int s526_dio_insn_config(struct comedi_device *dev,
+ 
+ static int s526_attach(struct comedi_device *dev, struct comedi_devconfig *it)
+ {
++	const struct s526_board *board = comedi_board(dev);
+ 	struct comedi_subdevice *s;
+ 	int iobase;
+ 	int i, n;
+@@ -754,7 +750,7 @@ static int s526_attach(struct comedi_device *dev, struct comedi_devconfig *it)
+ 	printk(KERN_INFO "comedi%d: s526: ", dev->minor);
+ 
+ 	iobase = it->options[0];
+-	if (!iobase || !request_region(iobase, S526_IOSIZE, thisboard->name)) {
++	if (!iobase || !request_region(iobase, S526_IOSIZE, board->name)) {
+ 		comedi_error(dev, "I/O port conflict");
+ 		return -EIO;
+ 	}
+@@ -769,13 +765,7 @@ static int s526_attach(struct comedi_device *dev, struct comedi_devconfig *it)
+ 	}
+ 	***/
+ 
+-/*
+- * Initialize dev->board_name.  Note that we can use the "thisboard"
+- * macro now, since we just initialized it in the last line.
+- */
+-	dev->board_ptr = &s526_boards[0];
+-
+-	dev->board_name = thisboard->name;
++	dev->board_name = board->name;
+ 
+ /*
+  * Allocate the private structure area.  alloc_private() is a
+@@ -797,7 +787,7 @@ static int s526_attach(struct comedi_device *dev, struct comedi_devconfig *it)
+ 	s->type = COMEDI_SUBD_COUNTER;
+ 	s->subdev_flags = SDF_READABLE | SDF_WRITABLE | SDF_LSAMPL;
+ 	/* KG: What does SDF_LSAMPL (see multiq3.c) mean? */
+-	s->n_chan = thisboard->gpct_chans;
++	s->n_chan = board->gpct_chans;
+ 	s->maxdata = 0x00ffffff;	/* 24 bit counter */
+ 	s->insn_read = s526_gpct_rinsn;
+ 	s->insn_config = s526_gpct_insn_config;
+@@ -838,7 +828,7 @@ static int s526_attach(struct comedi_device *dev, struct comedi_devconfig *it)
+ 
+ 	s = dev->subdevices + 3;
+ 	/* digital i/o subdevice */
+-	if (thisboard->have_dio) {
++	if (board->have_dio) {
+ 		s->type = COMEDI_SUBD_DIO;
+ 		s->subdev_flags = SDF_READABLE | SDF_WRITABLE;
+ 		s->n_chan = 8;
