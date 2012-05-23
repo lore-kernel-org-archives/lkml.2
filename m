@@ -1,73 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933417Ab2EWKmj (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 May 2012 06:42:39 -0400
-Received: from mga01.intel.com ([192.55.52.88]:8332 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933306Ab2EWKmi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 May 2012 06:42:38 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
-   d="asc'?scan'208";a="170278573"
-Message-ID: <1337769978.2483.204.camel@sauron.fi.intel.com>
-Subject: Re: [PATCH] UBIFS: introduce struct ubifs_keymap
-From: Artem Bityutskiy <dedekind1@gmail.com>
-Reply-To: dedekind1@gmail.com
-To: Joel Reardon <joel@clambassador.com>
-Cc: linux-mtd@lists.infradead.org, linux-kernel@vger.kernel.org
-Date: Wed, 23 May 2012 13:46:18 +0300
-In-Reply-To: <alpine.DEB.2.00.1205211640320.3833@eristoteles.iwoars.net>
-References: <alpine.DEB.2.00.1205211640320.3833@eristoteles.iwoars.net>
-Content-Type: multipart/signed; micalg="pgp-sha1"; protocol="application/pgp-signature";
-	boundary="=-/G3G2d1OPU4lxk7lxlxd"
-X-Mailer: Evolution 3.2.3 (3.2.3-3.fc16) 
-Mime-Version: 1.0
+	id S933430Ab2EWKm6 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 May 2012 06:42:58 -0400
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:37773 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758646Ab2EWKki (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 23 May 2012 06:40:38 -0400
+Message-Id: <20120523104031.152885239@openvz.org>
+User-Agent: quilt/0.48-1
+Date: Wed, 23 May 2012 14:25:47 +0400
+From: Cyrill Gorcunov <gorcunov@openvz.org>
+To: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Pavel Emelyanov <xemul@parallels.com>,
+        James Bottomley <jbottomley@parallels.com>, ebiederm@xmission.com,
+        tj@kernel.org, skinsbursky@openvz.org,
+        Cyrill Gorcunov <gorcunov@openvz.org>
+Subject: [rfc v2 6/7] fs, exportfs: Add export_encode_inode_fh helper
+References: <20120523102541.382837149@openvz.org>
+Content-Disposition: inline; filename=seq-fs-exportfs-ino-2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+To provide fsnotify object inodes being watched without
+binding to alphabetical path we need to encode them with
+exportfs help. This patch adds a helper which operates
+with plain inodes directly.
 
---=-/G3G2d1OPU4lxk7lxlxd
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: quoted-printable
+This feature is CONFIG_CHECKPOINT_RESTORE only.
 
-On Mon, 2012-05-21 at 16:41 +0200, Joel Reardon wrote:
-> +static void generate_key(struct ubifs_keymap *km, u8 *to)
-> +{
-> +       get_random_bytes(to, km->key_size);
-> +}
+Signed-off-by: Cyrill Gorcunov <gorcunov@openvz.org>
+CC: Andrew Morton <akpm@linux-foundation.org>
+CC: Pavel Emelyanov <xemul@parallels.com>
+CC: James Bottomley <jbottomley@parallels.com>
+---
+ fs/exportfs/expfs.c      |   21 +++++++++++++++++++++
+ include/linux/exportfs.h |    4 ++++
+ 2 files changed, 25 insertions(+)
 
-If this function is not going to grow soon, just open-code
-'get_random_bytes()' instead. Try to not introduce wrappers like this -
-we do not appreciate it usually, we prefer open-coding things unless
-there is a good reason to have a wrapper function.
-
---=20
-Best Regards,
-Artem Bityutskiy
-
---=-/G3G2d1OPU4lxk7lxlxd
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: This is a digitally signed message part
-Content-Transfer-Encoding: 7bit
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAABAgAGBQJPvL/6AAoJECmIfjd9wqK0R3oQAJLN+3eJKoyhedcexw0TFUcT
-sLh0dyZWEnVAYApfgx6trqOUK3dmrpg9Hy1UQhFUB4jcU25W2Jn97GcCrvVl6rDw
-L/tEU7jkuylcCMSw4u4qvNFcm1R7BG7MMP95TkC3gHu7T9//zkUkaI5SjuDUiixf
-u7N9t3vkOOzd+MNIgwQgFlpBlC4Pd48o6Okhe6VwxbOodwk1JX9GzBt6W5d5XQQ8
-/XEl3Nbhn08Zs1Jd+xppbwcJbzt+EIajDqZtrP2eWDsWiuWDjM7EmfuUGJyYr9yd
-ryhpqJyEE/9iPUz0VRKDHeKvLddYl6uS5UsBk+LrPczVmuGzgpitfG6glZMkEBxr
-wSLMF00NN/uDpM4JLLKOFfUyFBW6rzcuoOGTVO+vtiM10VlBCcx4vgo2yCjIBeeV
-U1lzODHQ2hTwVcg/6pmzvT1wqarpPTqzb2Zz+cp6rSEc2jzWD15s9AbYvPYbjwSh
-/30JdgWaSrDHoflvLDbRhH+eQGGFilG7hKg1lhD2pxwu8VxuzvMj6FdII8x9IdOl
-uZDvzetfdmWBrXM9XYWPyQXyvkify2d9Stw3Wfizyv0Myc6EVTETd3L8G9SeahGl
-SwfhLbUf0ufxMr/BA74OsmkoGRqEbkBRtMYd0N7mqvkVoc7qBBUbsv0qPOiLojk4
-epWjAe8CbIcUq/uiDde7
-=R80t
------END PGP SIGNATURE-----
-
---=-/G3G2d1OPU4lxk7lxlxd--
+Index: linux-2.6.git/fs/exportfs/expfs.c
+===================================================================
+--- linux-2.6.git.orig/fs/exportfs/expfs.c
++++ linux-2.6.git/fs/exportfs/expfs.c
+@@ -302,6 +302,27 @@ out:
+ 	return error;
+ }
+ 
++#ifdef CONFIG_CHECKPOINT_RESTORE
++int export_encode_inode_fh(struct inode *inode, struct fid *fid, int *max_len)
++{
++	int len = *max_len;
++	int type = FILEID_INO32_GEN;
++
++	if (len < 2) {
++		*max_len = 2;
++		return 255;
++	}
++
++	len = 2;
++	fid->i32.ino = inode->i_ino;
++	fid->i32.gen = inode->i_generation;
++	*max_len = len;
++
++	return type;
++}
++EXPORT_SYMBOL_GPL(export_encode_inode_fh);
++#endif
++
+ /**
+  * export_encode_fh - default export_operations->encode_fh function
+  * @dentry:  the dentry to encode
+Index: linux-2.6.git/include/linux/exportfs.h
+===================================================================
+--- linux-2.6.git.orig/include/linux/exportfs.h
++++ linux-2.6.git/include/linux/exportfs.h
+@@ -177,6 +177,10 @@ struct export_operations {
+ 	int (*commit_metadata)(struct inode *inode);
+ };
+ 
++#ifdef CONFIG_CHECKPOINT_RESTORE
++extern int export_encode_inode_fh(struct inode *inode, struct fid *fid, int *max_len);
++#endif
++
+ extern int exportfs_encode_fh(struct dentry *dentry, struct fid *fid,
+ 	int *max_len, int connectable);
+ extern struct dentry *exportfs_decode_fh(struct vfsmount *mnt, struct fid *fid,
 
