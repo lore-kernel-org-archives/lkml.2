@@ -1,81 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932950Ab2EWN2Z (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 May 2012 09:28:25 -0400
-Received: from relay2.sgi.com ([192.48.179.30]:59881 "EHLO relay.sgi.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S932207Ab2EWN2Y convert rfc822-to-8bit (ORCPT
+	id S933041Ab2EWN2h (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 May 2012 09:28:37 -0400
+Received: from mail-vb0-f46.google.com ([209.85.212.46]:37384 "EHLO
+	mail-vb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932173Ab2EWN2f convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 May 2012 09:28:24 -0400
-From: Nathan Zimmer <nzimmer@sgi.com>
-To: Hugh Dickins <hughd@google.com>, Nick Piggin <npiggin@gmail.com>,
-        Christoph Lameter <cl@linux.com>,
-        Lee Schermerhorn <lee.schermerhorn@hp.com>,
-        "akpm@linux-foundation.org" <akpm@linux-foundation.org>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        "stable@vger.kernel.org" <stable@vger.kernel.org>
-Subject: [PATCH] tmpfs not interleaving properly
-Thread-Topic: [PATCH] tmpfs not interleaving properly
-Thread-Index: Ac0znpEud/UKP154QuCbsU7dRS4hWwEtfrPg
-Date: Wed, 23 May 2012 13:28:21 +0000
-Message-ID: <74F10842A85F514CA8D8C487E74474BB2C1597@P-EXMB1-DC21.corp.sgi.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [128.162.233.156]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Wed, 23 May 2012 09:28:35 -0400
 MIME-Version: 1.0
+In-Reply-To: <CANQmPXhYMbDG7Wiaiwbr3J+Fft3FnaS=RM2t=FSRN-hYDSbMzw@mail.gmail.com>
+References: <j2MgV-2Qe-9@gated-at.bofh.it>
+	<4FB8B2E6.5010601@onlinehome.de>
+	<CAJd=RBDY3Vd8EYFz=n6smFK2EhypgHpvyC_eG1QyE3Us-Y8-qg@mail.gmail.com>
+	<CANQmPXh+0LECyLJ-MrDBZf2ZwLv5BJk0+DCFgPzqSChrFV=2WA@mail.gmail.com>
+	<CAJd=RBDbqMHcmKdFVJEEq8LSQP1+Dfo7ancWhTV4uR2fO9k+Jg@mail.gmail.com>
+	<CANQmPXhYMbDG7Wiaiwbr3J+Fft3FnaS=RM2t=FSRN-hYDSbMzw@mail.gmail.com>
+Date: Wed, 23 May 2012 21:28:33 +0800
+Message-ID: <CAJd=RBA++ayxZ807Lbm=ACPhFMWgtnBn2R-FLh1=zVVC2kNhGQ@mail.gmail.com>
+Subject: Re: BFS 420: cleanup in tick handling
+From: Hillf Danton <dhillf@gmail.com>
+To: Chen <hi3766691@gmail.com>, LKML <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Tue, May 22, 2012 at 10:00 PM, Chen <hi3766691@gmail.com> wrote:
+>
+> 在 2012-5-22 下午9:50，"Hillf Danton" <dhillf@gmail.com>写道：
+>>
+>> On Tue, May 22, 2012 at 9:45 PM, Chen <hi3766691@gmail.com> wrote:
+>> > Actually the lowest deadline task selection algorithm now BFS used is
+>> > O(n).
+>> > I have already had an idea to enhance the lowest deadline task selection
+>> > algorithm to O(1)
+>>
+>> Would you please announce it on LKML?
+>
+> First of all let me talk how to do it .We can use 40 list_head instead of
+> the single list for time sharing scheduling policy.
+> Then for task selection we will select the task from these 40
+> list_head(actually not 40, just decide by next_sched_bit), then make a
+> comparsion of these tasks(actually in the worse case we just need to do 40
+> times of comparsion) and pick the lowest task.
 
-When tmpfs has the memory policy interleaved it always starts allocating at each file at node 0.
-When there are many small files the lower nodes fill up disproportionately.
-My proposed solution is to start a file at a randomly chosen node.
+If task is selected from one of the 40 lists by comparing deadline, then it is
+not fair scheduling, since no chance to select tasks on other lists.
 
-Cc: Christoph Lameter <cl@linux.com>
-Cc: Nick Piggin <npiggin@gmail.com>
-Cc: Hugh Dickins <hughd@google.com>
-Cc: Lee Schermerhorn <lee.schermerhorn@hp.com>
-Cc: stable@vger.kernel.org
-Signed-off-by: Nathan T Zimmer <nzimmer@sgi.com>
+Plus you have to comparing CPUs allowed with a given CPU, that said,
+O(1) is impossible, right?
 
+> If a task wake, it would be
+> the first node of (queue + p->prio). If a task run out of its timeslice, it
+> will become the last node of(queue + p->prio). This is a concept of BFS
+> deadline presort algorithm and the time complexity is O(1)
 
-diff --git a/include/linux/shmem_fs.h b/include/linux/shmem_fs.h index 79ab255..38eda26 100644
---- a/include/linux/shmem_fs.h
-+++ b/include/linux/shmem_fs.h
-@@ -17,6 +17,7 @@ struct shmem_inode_info {
- 		char		*symlink;	/* unswappable short symlink */
- 	};
- 	struct shared_policy	policy;		/* NUMA memory alloc policy */
-+	int			node_offset;	/* bias for interleaved nodes */
- 	struct list_head	swaplist;	/* chain of maybes on swap */
- 	struct list_head	xattr_list;	/* list of shmem_xattr */
- 	struct inode		vfs_inode;
-diff --git a/mm/shmem.c b/mm/shmem.c
-index f99ff3e..58ef512 100644
---- a/mm/shmem.c
-+++ b/mm/shmem.c
-@@ -819,7 +819,7 @@ static struct page *shmem_alloc_page(gfp_t gfp,
- 
- 	/* Create a pseudo vma that just contains the policy */
- 	pvma.vm_start = 0;
--	pvma.vm_pgoff = index;
-+	pvma.vm_pgoff = index + info->node_offset;
- 	pvma.vm_ops = NULL;
- 	pvma.vm_policy = mpol_shared_policy_lookup(&info->policy, index);
- 
-@@ -1153,6 +1153,7 @@ static struct inode *shmem_get_inode(struct super_block *sb, const struct inode
- 			inode->i_fop = &shmem_file_operations;
- 			mpol_shared_policy_init(&info->policy,
- 						 shmem_get_sbmpol(sbinfo));
-+			info->node_offset = node_random(&node_online_map);
- 			break;
- 		case S_IFDIR:
- 			inc_nlink(inode);
+On other hand, I dont think O(1) is important, simply because if it is O(1)
+when dequeuing, it is not O(1) at all when enqueuing.
 
-
+btw, you spend time maintaining RIFS, why?
+-hd
