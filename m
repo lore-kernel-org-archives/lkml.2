@@ -1,70 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760631Ab2EWUKb (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 May 2012 16:10:31 -0400
-Received: from www.linutronix.de ([62.245.132.108]:46580 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758210Ab2EWUK3 (ORCPT
+	id S1760699Ab2EWUKp (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 May 2012 16:10:45 -0400
+Received: from mail-qa0-f49.google.com ([209.85.216.49]:63476 "EHLO
+	mail-qa0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757796Ab2EWUKb convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 May 2012 16:10:29 -0400
-Date: Wed, 23 May 2012 22:10:27 +0200 (CEST)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Avi Kivity <avi@redhat.com>
-cc: Ingo Molnar <mingo@kernel.org>, "Michael S. Tsirkin" <mst@redhat.com>,
-        kvm@vger.kernel.org, Marcelo Tosatti <mtosatti@redhat.com>,
-        Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
-        x86@kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] kvm: optimize ISR lookups
-In-Reply-To: <4FBCFC4A.7070303@redhat.com>
-Message-ID: <alpine.LFD.2.02.1205232140570.3231@ionos>
-References: <20120521163727.GA13337@redhat.com> <alpine.LFD.2.02.1205211940030.3231@ionos> <20120521215127.GH17031@redhat.com> <alpine.LFD.2.02.1205220012020.3231@ionos> <20120521222449.GJ17031@redhat.com> <alpine.LFD.2.02.1205220044460.3231@ionos>
- <4FBB6E8B.8020200@redhat.com> <20120523144846.GA26974@gmail.com> <4FBCFC4A.7070303@redhat.com>
-User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
+	Wed, 23 May 2012 16:10:31 -0400
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+In-Reply-To: <20120523200451.GA19288@gmail.com>
+References: <20120523185054.GA17700@gmail.com>
+	<CA+5PVA5m5U67mt8mXH_i_2Zu7OuVWiHfR82kBwqJm5ey4R26sg@mail.gmail.com>
+	<20120523200451.GA19288@gmail.com>
+Date: Wed, 23 May 2012 16:10:30 -0400
+Message-ID: <CA+5PVA5gK0bPYbzMQxf3M+X=vuU0510Zechxa6UWcYJot_sP5g@mail.gmail.com>
+Subject: Re: [GIT PULL] perf fix
+From: Josh Boyer <jwboyer@gmail.com>
+To: Ingo Molnar <mingo@kernel.org>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        linux-kernel@vger.kernel.org, Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Arnaldo Carvalho de Melo <acme@infradead.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Andrew Morton <akpm@linux-foundation.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 23 May 2012, Avi Kivity wrote:
-> On 05/23/2012 05:48 PM, Ingo Molnar wrote:
-> >> 
-> >> This is silly.  Most of the time the kernel is advanced by 
-> >> incremental patches.  Sometimes it is advanced by minor or 
-> >> major refactoring.  It is never advanced by personal attacks 
-> >> on contributors.
-> > 
-> > Thomas wasn't so much doing a personal attack, it was pointing 
-> > out stupidity and then it was mocking the repeated stupidity. He 
-> > very politely explained his point of view (with which I agree), 
-> 
-> I guess we disagree on what is polite or not.  Mocking, for example,
-> isn't part of it in my book.
+On Wed, May 23, 2012 at 4:04 PM, Ingo Molnar <mingo@kernel.org> wrote:
+>
+> * Josh Boyer <jwboyer@gmail.com> wrote:
+>> Perf doesn't even build in Linus' current tree.
+>
+> Yes, that's a regression in some build environments. (it builds
+> fine in our environments, that's why it wasn't noticed.)
+>
+>> [...]  You might want to include
+>>
+>> http://git.kernel.org/?p=linux/kernel/git/tip/tip.git;a=commitdiff;h=8784eb7497b928de33a715e26da2bd51d424bec1
+>>
+>> with your pull request.
+>
+> I sent that (and other fixes) to Linus too, earlier today.
 
-I really avoid flaming as far as it goes, but I consider that ignoring
-a thorough patch review and replying only on the very obvious problem
-is a massive form of impoliteness. Replying on a still polite reminder
-with a sloppy "I just took what's there and implemeted the
-optimization which I was tasked with" is even more of an offense. It
-clearly shows that there is no interest in making the whole thing
-better and just aims for quick and dirty "here are my benchmark
-results" success.
+I saw that.  Thank you.
 
-This is what actually triggered me to switch into grumpy mode.
+> This pull request you replied to is the v3.4 era fixes tree,
+> with one remaining fix in it.
 
-I'm really tired of that attitude. It's the root cause for the steady
-increasing mess in the kernel.
+I see.  The forest of tip trees apparently confuses me still.  I'll
+figure it out eventually.
 
-It forces people who actually care to waste an endless amount of time
-to clean up what has been just slapped into the code base quick and
-dirty. And you expect those people to stay calm and polite if they get
-ignored and ridiculed with sloppy replies?
-
-You may be a saint, but I'm definitely too old to cope with that.
-
-Thanks,
-
-	tglx
+josh
