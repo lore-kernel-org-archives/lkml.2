@@ -1,59 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760773Ab2EWShp (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 May 2012 14:37:45 -0400
-Received: from www.linutronix.de ([62.245.132.108]:46184 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757259Ab2EWShn (ORCPT
+	id S1760760Ab2EWSks (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 May 2012 14:40:48 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:57038 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753046Ab2EWSkq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 May 2012 14:37:43 -0400
-Date: Wed, 23 May 2012 20:37:39 +0200 (CEST)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Avi Kivity <avi@redhat.com>
-cc: "Michael S. Tsirkin" <mst@redhat.com>, kvm@vger.kernel.org,
-        Marcelo Tosatti <mtosatti@redhat.com>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, x86@kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] kvm: optimize ISR lookups
-In-Reply-To: <4FBCFDD1.5050405@redhat.com>
-Message-ID: <alpine.LFD.2.02.1205232037220.3231@ionos>
-References: <20120521163727.GA13337@redhat.com> <alpine.LFD.2.02.1205211940030.3231@ionos> <4FBB7185.6040105@redhat.com> <alpine.LFD.2.02.1205221919260.3231@ionos> <4FBCFDD1.5050405@redhat.com>
-User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
+	Wed, 23 May 2012 14:40:46 -0400
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+In-Reply-To: <CAE9FiQXx_x9M5ncLk4DyL8heYQTcsHZt2JofFMjPfUd4mympeA@mail.gmail.com>
+References: <1337754877-19759-1-git-send-email-yinghai@kernel.org>
+	<1337754877-19759-3-git-send-email-yinghai@kernel.org>
+	<CA+55aFzd1BWqidt95qZLc1x_YU=WeGS=mKUOMvO_3omOhc_5VA@mail.gmail.com>
+	<CAE9FiQXx_x9M5ncLk4DyL8heYQTcsHZt2JofFMjPfUd4mympeA@mail.gmail.com>
+Date: Wed, 23 May 2012 11:40:46 -0700
+X-Google-Sender-Auth: YNaPIbN-6NWegaEFDD4CEzFZK1o
+Message-ID: <CAE9FiQX=ECg5BmKm7B2ua_rZ6bOsceeHNsfFQRWBbNZx+8sBfw@mail.gmail.com>
+Subject: Re: [PATCH 02/11] PCI: Try to allocate mem64 above 4G at first
+From: Yinghai Lu <yinghai@kernel.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>,
+        Steven Newbury <steve@snewbury.org.uk>,
+        "H. Peter Anvin" <hpa@zytor.com>
+Cc: Bjorn Helgaas <bhelgaas@google.com>,
+        Andrew Morton <akpm@linux-foundation.org>, linux-pci@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 23 May 2012, Avi Kivity wrote:
+On Wed, May 23, 2012 at 10:30 AM, Yinghai Lu <yinghai@kernel.org> wrote:
+> On Wed, May 23, 2012 at 8:57 AM, Linus Torvalds
+> <torvalds@linux-foundation.org> wrote:
+>> On Tue, May 22, 2012 at 11:34 PM, Yinghai Lu <yinghai@kernel.org> wrote:
+>>> and will fall back to below 4g if it can not find any above 4g.
+>>
+>> Has this been tested on 32-bit machines without PAE? There might be
+>> things that just happen to work because their allocations were always
+>> done bottom-up.
+>
+> Good point. that problem should be addressed at first before this patch.
 
-> On 05/22/2012 08:26 PM, Thomas Gleixner wrote:
-> > On Tue, 22 May 2012, Avi Kivity wrote:
-> >> On 05/22/2012 12:04 AM, Thomas Gleixner wrote:
-> >> > The only justification for having the same layout as the actual
-> >> > hardware is when you are going to map the memory into the guest space,
-> >> > which is not the case here.
-> >>
-> >> The APIC page is in fact mapped  to the hardware (not the guest, but vmx
-> >> microcode does access it).  Only one register, the TPR, is ever used. 
-> >> It's possible to re-layout the data structure so that the TPR stays in
-> >> the same place while everything else becomes contiguous, but we'll have
-> >> to do it again if the hardware starts mapping more registers.
-> > 
-> > I would avoid that by having a compressed version which reflects the
-> > SW state and the mapped one which allows the vmx microcode to fiddle
-> > with the TPR. If you need more registers in the HW page then you don't
-> > have to worry about the layout and just have a proper accessor for
-> > that.
-> 
-> That works, but replaces one problem with another: now we have two
-> sources for the same data, and need to juggle between them depending on
-> register number (either synchronizing in both directions, or special
-> casing); so you're simplifying one thing at the expense of the other.
-> If the microcode starts accessing more registers, then having two
-> layouts becomes even uglier.
+Just checked code for 32bit machines without PAE.
 
-Fair enough :)
+when X86_PAE is not set, phys_addr_t aka resource_size_t will be 32bit.
+so in drivers/pci/bus.c::pci_bus_alloc_resource_fit()
+will have bottom to 0.
+    resource_size_t bottom = PCIBIOS_MAX_MEM_32 + 1ULL;
+also in arch/x86/kernel/setup.c::setup_arch()
+   iomem_resource.end = (1ULL << boot_cpu_data.x86_phys_bits) - 1;
+will have iomem_resource.end to 0xffffffff
+
+when X86_PAE is set, but CPU does not support PAE.
+phys_addr_t aka resource_size_t will be 32bit.
+so in drivers/pci/bus.c::pci_bus_alloc_resource_fit()
+will have bottom to 4g.
+    resource_size_t bottom = PCIBIOS_MAX_MEM_32 + 1ULL;
+but
+in arch/x86/kernel/setup.c::setup_arch()
+   iomem_resource.end = (1ULL << boot_cpu_data.x86_phys_bits) - 1;
+will have iomem_resource.end to 0xffffffff, because x86_phys_bits is 32 when PAE
+is not detected in arch/x86/kernel/cpu/common.c::get_cpu_cap.
+that mean first try will fail, so it will go to second try with bottom to 0.
+
+so both case are safe with this patch.
+
+Thanks
+
+Yinghai
