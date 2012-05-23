@@ -1,60 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758615Ab2EWUUb (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 May 2012 16:20:31 -0400
-Received: from mail19h.g19.rapidsite.net ([204.202.242.57]:51769 "EHLO
-	mail19h.g19.rapidsite.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757434Ab2EWUU3 (ORCPT
+	id S1757661Ab2EWUVh (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 May 2012 16:21:37 -0400
+Received: from mga10.intel.com ([192.55.52.92]:47526 "EHLO
+	fmsmga102.fm.intel.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1753560Ab2EWUVg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 May 2012 16:20:29 -0400
-thread-index: Ac05INKZZ5YrYGzRR+yXZm20Ifr+Fg==
-Thread-Topic: [Training] Here's how to profit $600 a day Recommends Advanced Sports to you
-From: <christian@aol.com>
-To: <linux-kernel@vger.kernel.org>
-Subject: [Training] Here's how to profit $600 a day Recommends Advanced Sports to you
-Date: Wed, 23 May 2012 16:15:39 -0400
-Message-ID: <5758543DC22D4E9CB70CFDC83FA87128@g19.win.smewh.net>
-MIME-Version: 1.0
-Content-Type: text/plain
+	Wed, 23 May 2012 16:21:36 -0400
+Subject: Re: [PATCH 1/3] x86: Expand EFI GOP handle search
+From: Matt Fleming <matt.fleming@intel.com>
+To: Matthew Garrett <mjg@redhat.com>
+Cc: linux-kernel@vger.kernel.org, x86@kernel.org
+In-Reply-To: <1337796526-3649-1-git-send-email-mjg@redhat.com>
+References: <1337796526-3649-1-git-send-email-mjg@redhat.com>
+Content-Type: text/plain; charset="UTF-8"
+Organization: Intel Corporation (UK) Ltd. - Registered No. 1134945 - Pipers
+ Way, Swindon SN3 1RJ
+Date: Wed, 23 May 2012 21:21:13 +0100
+Message-ID: <1337804473.3807.1.camel@mfleming-mobl1.ger.corp.intel.com>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.3 (2.32.3-1.fc14)
 Content-Transfer-Encoding: 7bit
-X-Mailer: Microsoft CDO for Windows 2000
-Content-Class: urn:content-classes:message
-Importance: normal
-X-MimeOLE: Produced By Microsoft MimeOLE V6.00.3790.4913
-X-Spam: [F=0.2000000000; S=0.200(2010122901); MH=0.500(2012052322)]
-X-MAIL-FROM: <christian@aol.com>
-X-SOURCE-IP: [199.239.254.58]
-X-SF-Loop: 1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->From         :[Training] Here's how to profit $600 a day
-Email        :christian@aol.com
-Friend Name  :Friend
-Friend Email :linux-kernel@vger.kernel.org
-comment      :
+On Wed, 2012-05-23 at 14:08 -0400, Matthew Garrett wrote:
+> Some UEFI implementations provide multiple GOP handles, with one acting
+> as a splitter device to handle the case of multiple outputs being present.
+> The downside of this approach is that the console splitter device may
+> report an inaccurate stride value. We currently get around this by looking
+> for a device that implements the PCI IO protocol. However, this fails on
+> some devices - the GOP may be attached to the display device rather than
+> the GPU. We can handle that scenario by looking for a handle with an EDID
+> protocol attached to it.
+> 
+> Signed-off-by: Matthew Garrett <mjg@redhat.com>
+> Cc: Matt Fleming <matt.fleming@intel.com>
+> ---
+>  arch/x86/boot/compressed/eboot.c |   27 ++++++++++++++++-----------
+>  include/linux/efi.h              |    3 +++
+>  2 files changed, 19 insertions(+), 11 deletions(-)
 
-Hey,
+Seems fair enough. Thanks Matthew.
 
-I've got a treat for you today.
-
-You're about to receive INSTANT
-ACCESS to some free training on
-how you can profit up to $600 a day
-
-=> http://www.bank-blogging.com/?code=4fbce89b05ddc 
-
-
-There is no cost. 
-
-Talk Soon,
-
-Christian
-
-
-
-=> http://www.bank-blogging.com/?code=4fbce89b05ddc 
-
+Acked-by: Matt Fleming <matt.fleming@intel.com>
 
 
