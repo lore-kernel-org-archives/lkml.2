@@ -1,132 +1,145 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759999Ab2EWN5e (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 May 2012 09:57:34 -0400
-Received: from mail-qc0-f174.google.com ([209.85.216.174]:35747 "EHLO
-	mail-qc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755248Ab2EWN5c (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 May 2012 09:57:32 -0400
-Date: Wed, 23 May 2012 15:57:24 +0200
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Cc: LKML <linux-kernel@vger.kernel.org>, linaro-sched-sig@lists.linaro.org,
-        Alessio Igor Bogani <abogani@kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>, Avi Kivity <avi@redhat.com>,
-        Chris Metcalf <cmetcalf@tilera.com>, Christoph Lameter <cl@linux.com>,
-        Daniel Lezcano <daniel.lezcano@linaro.org>,
-        Geoff Levand <geoff@infradead.org>,
-        Gilad Ben Yossef <gilad@benyossef.com>,
-        Hakan Akkan <hakanakkan@gmail.com>, Ingo Molnar <mingo@kernel.org>,
-        Kevin Hilman <khilman@ti.com>, Max Krasnyansky <maxk@qualcomm.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Stephen Hemminger <shemminger@vyatta.com>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Sven-Thorsten Dietrich <thebigcorporation@gmail.com>,
-        Thomas Gleixner <tglx@linutronix.de>
-Subject: Re: [PATCH 16/41] rcu: Restart the tick on non-responding adaptive
- nohz CPUs
-Message-ID: <20120523135717.GC1663@somewhere>
-References: <1335830115-14335-1-git-send-email-fweisbec@gmail.com>
- <1335830115-14335-17-git-send-email-fweisbec@gmail.com>
- <20120522172050.GB8087@linux.vnet.ibm.com>
+	id S1760144Ab2EWN54 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 May 2012 09:57:56 -0400
+Received: from mx2.netapp.com ([216.240.18.37]:6790 "EHLO mx2.netapp.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751051Ab2EWN5u (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 23 May 2012 09:57:50 -0400
+X-IronPort-AV: E=Sophos;i="4.75,645,1330934400"; 
+   d="scan'208";a="649770794"
+From: "Myklebust, Trond" <Trond.Myklebust@netapp.com>
+To: Stanislav Kinsbursky <skinsbursky@parallels.com>
+CC: "linux-nfs@vger.kernel.org" <linux-nfs@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "devel@openvz.org" <devel@openvz.org>
+Subject: Re: [PATCH] NFS: init client before declaration
+Thread-Topic: [PATCH] NFS: init client before declaration
+Thread-Index: AQHNOBgchN+45TnxmEuX3jdeWgHLc5bWU9EAgAAIiACAAAgtgIAABjUAgAAHbgCAAAb8AIAAQCGAgAD6xICAACkuAA==
+Date: Wed, 23 May 2012 13:57:44 +0000
+Message-ID: <1337781466.3360.12.camel@lade.trondhjem.org>
+References: <20120522124018.338.20817.stgit@localhost.localdomain>
+	  <1337696984.4269.4.camel@lade.trondhjem.org>
+	  <1337698816.4269.15.camel@lade.trondhjem.org>
+	  <4FBBB0DB.6050708@parallels.com>
+	  <1337701904.4269.16.camel@lade.trondhjem.org>
+	  <4FBBBC4C.5010103@parallels.com>
+	  <1337705000.4269.23.camel@lade.trondhjem.org>
+	 <1337718771.4269.29.camel@lade.trondhjem.org>
+	 <4FBCCA4F.3020600@parallels.com>
+In-Reply-To: <4FBCCA4F.3020600@parallels.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.104.60.115]
+Content-Type: text/plain; charset="utf-8"
+Content-ID: <7D023B575BA06B488F54150793A81E7F@tahoe.netapp.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120522172050.GB8087@linux.vnet.ibm.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by nfs id q4NDw5u3024874
 
-On Tue, May 22, 2012 at 10:20:50AM -0700, Paul E. McKenney wrote:
-> On Tue, May 01, 2012 at 01:54:50AM +0200, Frederic Weisbecker wrote:
-> > When a CPU in adaptive nohz mode doesn't respond to complete
-> > a grace period, issue it a specific IPI so that it restarts
-> > the tick and chases a quiescent state.
-> 
-> Hello, Frederic,
-> 
-> I don't understand the need for this patch.  If the CPU is in
-> adaptive-tick mode, RCU should see it as being in dyntick-idle mode,
-> right?  If so, shouldn't RCU have already recognized the CPU as being
-> in an extended quiescent state?
-> 
-> Or is this a belt-and-suspenders situation?
-> 
-> 							Thanx, Paul
-
-If the tickless CPU is in userspace, it is in extended quiescent state. But
-not if it runs tickless in the kernel. In this case we need to send it an IPI
-so that it restarts the tick after checking rcu_pending().
-
-> 
-> > Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
-> > Cc: Alessio Igor Bogani <abogani@kernel.org>
-> > Cc: Andrew Morton <akpm@linux-foundation.org>
-> > Cc: Avi Kivity <avi@redhat.com>
-> > Cc: Chris Metcalf <cmetcalf@tilera.com>
-> > Cc: Christoph Lameter <cl@linux.com>
-> > Cc: Daniel Lezcano <daniel.lezcano@linaro.org>
-> > Cc: Geoff Levand <geoff@infradead.org>
-> > Cc: Gilad Ben Yossef <gilad@benyossef.com>
-> > Cc: Hakan Akkan <hakanakkan@gmail.com>
-> > Cc: Ingo Molnar <mingo@kernel.org>
-> > Cc: Kevin Hilman <khilman@ti.com>
-> > Cc: Max Krasnyansky <maxk@qualcomm.com>
-> > Cc: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
-> > Cc: Peter Zijlstra <peterz@infradead.org>
-> > Cc: Stephen Hemminger <shemminger@vyatta.com>
-> > Cc: Steven Rostedt <rostedt@goodmis.org>
-> > Cc: Sven-Thorsten Dietrich <thebigcorporation@gmail.com>
-> > Cc: Thomas Gleixner <tglx@linutronix.de>
+On Wed, 2012-05-23 at 15:30 +0400, Stanislav Kinsbursky wrote:
+> On 23.05.2012 00:32, Myklebust, Trond wrote:
+> > On Tue, 2012-05-22 at 12:43 -0400, Trond Myklebust wrote:
+> >> On Tue, 2012-05-22 at 20:18 +0400, Stanislav Kinsbursky wrote:
+> >>> We have another problem here.
+> >>> nfs4_init_client() will try to create pipe dentries prior to set of NFS_CS_READY
+> >>> to the client. And dentries will be created since semaphore is dropped and
+> >>> per-net superblock variable is initialized already.
+> >>> But __rpc_pipefs_event() relays on the fact, that no dentries present.
+> >>> Looks like the problem was introduced by me in aad9487c...
+> >>> So maybe we should not call "continue" instead "__rpc_pipefs_event()", when
+> >>> client becomes ready?
+> >>> Looks like this will allow us to handle such races.
+> >>
+> >> Let me rework this patch a bit...
+> >
+> > The following is ugly, but it should be demonstrably correct, and will
+> > ensure that __rpc_pipefs_event() will only be called for fully
+> > initialised nfs_clients...
+> >
+> > 8<---------------------------------------------------------------------
+> >  From 90c3b9fe9faeae32c8f629e8b6cbf5f50bb9b295 Mon Sep 17 00:00:00 2001
+> > From: Trond Myklebust<Trond.Myklebust@netapp.com>
+> > Date: Tue, 22 May 2012 16:22:50 -0400
+> > Subject: [PATCH 1/2] NFSv4: Fix a race in the net namespace mount
+> >   notification
+> >
+> > Since the struct nfs_client gets added to the global nfs_client_list
+> > before it is initialised, it is possible that rpc_pipefs_event can
+> > end up trying to create idmapper entries on such a thing.
+> >
+> > The solution is to have the mount notification wait for the
+> > initialisation of each nfs_client to complete, and then to
+> > skip any entries for which the it failed.
+> >
+> > Reported-by: Stanislav Kinsbursky<skinsbursky@parallels.com>
+> > Signed-off-by: Trond Myklebust<Trond.Myklebust@netapp.com>
 > > ---
-> >  kernel/rcutree.c |   17 +++++++++++++++++
-> >  1 files changed, 17 insertions(+), 0 deletions(-)
-> > 
-> > diff --git a/kernel/rcutree.c b/kernel/rcutree.c
-> > index e141c7e..3fffc26 100644
-> > --- a/kernel/rcutree.c
-> > +++ b/kernel/rcutree.c
-> > @@ -50,6 +50,7 @@
-> >  #include <linux/wait.h>
-> >  #include <linux/kthread.h>
-> >  #include <linux/prefetch.h>
-> > +#include <linux/cpuset.h>
-> > 
-> >  #include "rcutree.h"
-> >  #include <trace/events/rcu.h>
-> > @@ -302,6 +303,20 @@ static struct rcu_node *rcu_get_root(struct rcu_state *rsp)
-> > 
-> >  #ifdef CONFIG_SMP
-> > 
-> > +static void cpuset_update_rcu_cpu(int cpu)
+> >   fs/nfs/client.c   |   10 ++++++++++
+> >   fs/nfs/idmap.c    |   15 +++++++++++++++
+> >   fs/nfs/internal.h |    1 +
+> >   3 files changed, 26 insertions(+), 0 deletions(-)
+> >
+> > diff --git a/fs/nfs/client.c b/fs/nfs/client.c
+> > index 60f7e4e..d3c8553 100644
+> > --- a/fs/nfs/client.c
+> > +++ b/fs/nfs/client.c
+> > @@ -583,6 +583,16 @@ found_client:
+> >   	return clp;
+> >   }
+> >
+> > +static bool nfs_client_ready(const struct nfs_client *clp)
 > > +{
-> > +#ifdef CONFIG_CPUSETS_NO_HZ
-> > +	unsigned long flags;
-> > +
-> > +	local_irq_save(flags);
-> > +
-> > +	if (cpuset_cpu_adaptive_nohz(cpu))
-> > +		smp_cpuset_update_nohz(cpu);
-> > +
-> > +	local_irq_restore(flags);
-> > +#endif
+> > +	return clp->cl_cons_state<= NFS_CS_READY;
 > > +}
 > > +
-> >  /*
-> >   * If the specified CPU is offline, tell the caller that it is in
-> >   * a quiescent state.  Otherwise, whack it with a reschedule IPI.
-> > @@ -325,6 +340,8 @@ static int rcu_implicit_offline_qs(struct rcu_data *rdp)
-> >  		return 1;
-> >  	}
-> > 
-> > +	cpuset_update_rcu_cpu(rdp->cpu);
+> > +int nfs_wait_client_ready(const struct nfs_client *clp)
+> > +{
+> > +	return wait_event_killable(nfs_client_active_wq, nfs_client_ready(clp));
+> > +}
 > > +
-> >  	/*
-> >  	 * The CPU is online, so send it a reschedule IPI.  This forces
-> >  	 * it through the scheduler, and (inefficiently) also handles cases
-> > -- 
-> > 1.7.5.4
-> > 
+> >   /*
+> >    * Mark a server as ready or failed
+> >    */
+> > diff --git a/fs/nfs/idmap.c b/fs/nfs/idmap.c
+> > index 3e8edbe..c0753c5 100644
+> > --- a/fs/nfs/idmap.c
+> > +++ b/fs/nfs/idmap.c
+> > @@ -530,9 +530,24 @@ static struct nfs_client *nfs_get_client_for_event(struct net *net, int event)
+> >   	struct nfs_net *nn = net_generic(net, nfs_net_id);
+> >   	struct dentry *cl_dentry;
+> >   	struct nfs_client *clp;
+> > +	int err;
+> >
+> > +restart:
+> >   	spin_lock(&nn->nfs_client_lock);
+> >   	list_for_each_entry(clp,&nn->nfs_client_list, cl_share_link) {
+> > +		/* Wait for initialisation to finish */
+> > +		if (clp->cl_cons_state>  NFS_CS_READY) {
+> > +			atomic_inc(&clp->cl_count);
+> > +			spin_unlock(&nn->nfs_client_lock);
+> > +			err = nfs_wait_client_ready(clp);
 > 
+> 
+> What about NFSv4.1 ?
+> It's clients NFS_CS_READY status depends on session establishing RPC calls...
+> Which in turn can hung up pipefs mount call...
+
+The alternative then is to wait for cl_cons_state != NFS_CS_INITING.
+That shouldn't require any upcalls, and so shouldn't be able to
+deadlock.
+
+-- 
+Trond Myklebust
+Linux NFS client maintainer
+
+NetApp
+Trond.Myklebust@netapp.com
+www.netapp.com
+
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
