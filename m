@@ -1,146 +1,126 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933442Ab2EWLa1 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 May 2012 07:30:27 -0400
-Received: from relay.parallels.com ([195.214.232.42]:39573 "EHLO
-	relay.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932302Ab2EWLa0 (ORCPT
+	id S933452Ab2EWLc6 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 May 2012 07:32:58 -0400
+Received: from e06smtp13.uk.ibm.com ([195.75.94.109]:49226 "EHLO
+	e06smtp13.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933298Ab2EWLc4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 May 2012 07:30:26 -0400
-Message-ID: <4FBCCA4F.3020600@parallels.com>
-Date: Wed, 23 May 2012 15:30:23 +0400
-From: Stanislav Kinsbursky <skinsbursky@parallels.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
+	Wed, 23 May 2012 07:32:56 -0400
+Message-ID: <4FBCCAE2.7080706@linux.vnet.ibm.com>
+Date: Wed, 23 May 2012 13:32:50 +0200
+From: Christian Ehrhardt <ehrhardt@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.28) Gecko/20120313 Thunderbird/3.1.20
 MIME-Version: 1.0
-To: "Myklebust, Trond" <Trond.Myklebust@netapp.com>
-CC: "linux-nfs@vger.kernel.org" <linux-nfs@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "devel@openvz.org" <devel@openvz.org>
-Subject: Re: [PATCH] NFS: init client before declaration
-References: <20120522124018.338.20817.stgit@localhost.localdomain>  <1337696984.4269.4.camel@lade.trondhjem.org>  <1337698816.4269.15.camel@lade.trondhjem.org>  <4FBBB0DB.6050708@parallels.com>  <1337701904.4269.16.camel@lade.trondhjem.org>  <4FBBBC4C.5010103@parallels.com>  <1337705000.4269.23.camel@lade.trondhjem.org> <1337718771.4269.29.camel@lade.trondhjem.org>
-In-Reply-To: <1337718771.4269.29.camel@lade.trondhjem.org>
-Content-Type: text/plain; charset="UTF-8"; format=flowed
-Content-Transfer-Encoding: 7bit
+To: Peter Zijlstra <a.p.zijlstra@chello.nl>
+CC: Martin Schwidefsky <schwidefsky@de.ibm.com>,
+        Ingo Molnar <mingo@kernel.org>, Mike Galbraith <efault@gmx.de>,
+        linux-kernel@vger.kernel.org,
+        Heiko Carstens <heiko.carstens@de.ibm.com>
+Subject: Re: [PATCH 0/2] RFC: readd fair sleepers for server systems
+References: <1337615137-55111-1-git-send-email-schwidefsky@de.ibm.com> <1337677268.9698.6.camel@twins>
+In-Reply-To: <1337677268.9698.6.camel@twins>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 8bit
+x-cbid: 12052311-2966-0000-0000-0000042B44AE
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 23.05.2012 00:32, Myklebust, Trond wrote:
-> On Tue, 2012-05-22 at 12:43 -0400, Trond Myklebust wrote:
->> On Tue, 2012-05-22 at 20:18 +0400, Stanislav Kinsbursky wrote:
->>> We have another problem here.
->>> nfs4_init_client() will try to create pipe dentries prior to set of NFS_CS_READY
->>> to the client. And dentries will be created since semaphore is dropped and
->>> per-net superblock variable is initialized already.
->>> But __rpc_pipefs_event() relays on the fact, that no dentries present.
->>> Looks like the problem was introduced by me in aad9487c...
->>> So maybe we should not call "continue" instead "__rpc_pipefs_event()", when
->>> client becomes ready?
->>> Looks like this will allow us to handle such races.
+
+On 05/22/2012 11:01 AM, Peter Zijlstra wrote:
+> On Mon, 2012-05-21 at 17:45 +0200, Martin Schwidefsky wrote:
+>> our performance team found a performance degradation with a recent
+>> distribution update in regard to fair sleepers (or the lack of fair
+>> sleepers). On s390 we used to run with fair sleepers disabled.
+>
+> This change was made a very long time ago.. tell your people to mind
+> what upstream does if they want us to mind them.
+
+Your're completely right, but we do mind - and we have reasons for that. 
+I'll try to explain why.
+Upstream often has so many changes that some effects end up hidden 
+behind each others. A lot of issues are detected and fixed there, but 
+due to restricted resources not all of them. Also every new developed 
+features goes through test. Distribution releases are the 3rd stage of 
+testing before something is available for a customer.
+
+The analysis of the features in general and fair sleepers among them 
+started by a teammate long ago. More precisely, a bit before the time we 
+both agreed about the related 
+http://comments.gmane.org/gmane.linux.kernel/920457, so I'd say in time. 
+It re-occurred every distribution release since then, but so far without 
+a real fix.
+
+Then in early 2010 the removal of the fair sleepers tunable took place, 
+but - and here I admit our fault - this didn't increase pressure for a 
+long time as both major distributions where at 2.6.32 back then and 
+stayed there for a long time.
+
+Eventually we also had a revert of that patch in both major 
+distributions for the last few service updates that backported this 
+patch. All that hoping that we finally identify and avoid needing that 
+revert upstream.
+All that causes a lot of discussions every distribution release.
+
+I hope all that relativizes your feeling of "a long time"
+
+But currently a fix seems out of reach solving things so that we can 
+live with fair sleepers (without being able to turn it off in case it is 
+needed).
+
+
+> Also, reports like this make me want to make /debug/sched_features a
+> patch in tip/out-of-tree so that its never available outside
+> development.
+
+Sorry if we offended you in any way, that was not our intention at all. 
+But I guess keeping the tunables available is the only way to properly 
+test them for all the myriad of hardware/workload combinations out there 
+- and by far not all things can be reliably tested out-of-tree.
+
+>> We see the performance degradation with our network benchmark and fair
+>> sleepers enabled, the largest hit is on virtual connections:
 >>
->> Let me rework this patch a bit...
+>> VM guest Hipersockets
+>>     Throughput degrades up to 18%
+>>     CPU load/cost increase up to 17%
+>> VM stream
+>>     Throughput degrades up to 15%
+>>     CPU load/cost increase up to 22%
+>> LPAR Hipersockets
+>>     Throughput degrades up to 27%
+>>     CPU load/cost increase up to 20%
 >
-> The following is ugly, but it should be demonstrably correct, and will
-> ensure that __rpc_pipefs_event() will only be called for fully
-> initialised nfs_clients...
->
-> 8<---------------------------------------------------------------------
->  From 90c3b9fe9faeae32c8f629e8b6cbf5f50bb9b295 Mon Sep 17 00:00:00 2001
-> From: Trond Myklebust<Trond.Myklebust@netapp.com>
-> Date: Tue, 22 May 2012 16:22:50 -0400
-> Subject: [PATCH 1/2] NFSv4: Fix a race in the net namespace mount
->   notification
->
-> Since the struct nfs_client gets added to the global nfs_client_list
-> before it is initialised, it is possible that rpc_pipefs_event can
-> end up trying to create idmapper entries on such a thing.
->
-> The solution is to have the mount notification wait for the
-> initialisation of each nfs_client to complete, and then to
-> skip any entries for which the it failed.
->
-> Reported-by: Stanislav Kinsbursky<skinsbursky@parallels.com>
-> Signed-off-by: Trond Myklebust<Trond.Myklebust@netapp.com>
-> ---
->   fs/nfs/client.c   |   10 ++++++++++
->   fs/nfs/idmap.c    |   15 +++++++++++++++
->   fs/nfs/internal.h |    1 +
->   3 files changed, 26 insertions(+), 0 deletions(-)
->
-> diff --git a/fs/nfs/client.c b/fs/nfs/client.c
-> index 60f7e4e..d3c8553 100644
-> --- a/fs/nfs/client.c
-> +++ b/fs/nfs/client.c
-> @@ -583,6 +583,16 @@ found_client:
->   	return clp;
->   }
->
-> +static bool nfs_client_ready(const struct nfs_client *clp)
-> +{
-> +	return clp->cl_cons_state<= NFS_CS_READY;
-> +}
-> +
-> +int nfs_wait_client_ready(const struct nfs_client *clp)
-> +{
-> +	return wait_event_killable(nfs_client_active_wq, nfs_client_ready(clp));
-> +}
-> +
->   /*
->    * Mark a server as ready or failed
->    */
-> diff --git a/fs/nfs/idmap.c b/fs/nfs/idmap.c
-> index 3e8edbe..c0753c5 100644
-> --- a/fs/nfs/idmap.c
-> +++ b/fs/nfs/idmap.c
-> @@ -530,9 +530,24 @@ static struct nfs_client *nfs_get_client_for_event(struct net *net, int event)
->   	struct nfs_net *nn = net_generic(net, nfs_net_id);
->   	struct dentry *cl_dentry;
->   	struct nfs_client *clp;
-> +	int err;
->
-> +restart:
->   	spin_lock(&nn->nfs_client_lock);
->   	list_for_each_entry(clp,&nn->nfs_client_list, cl_share_link) {
-> +		/* Wait for initialisation to finish */
-> +		if (clp->cl_cons_state>  NFS_CS_READY) {
-> +			atomic_inc(&clp->cl_count);
-> +			spin_unlock(&nn->nfs_client_lock);
-> +			err = nfs_wait_client_ready(clp);
+> Why is this, is this some weird interaction with your hypervisor?
+
+It is not completely analyzed, as soon as debugging goes out of Linux it 
+can be kind of complex even internally.
+
+On top of these network degradations we also have issues with database 
+latencies even when not using virtual network connections. But for these 
+I didn't have such summarized numbers at hand when I searched for 
+workload data. As rule of thumb the worst case latency can grow up to x3 
+if fair sleepers is on. It felt a bit like the old throughput vs 
+worst-case latency trade-off - eventually people might want to decide on 
+their own between the two.
 
 
-What about NFSv4.1 ?
-It's clients NFS_CS_READY status depends on session establishing RPC calls...
-Which in turn can hung up pipefs mount call...
+>> In short, we want the fair sleepers tunable back. I understand that on
+>> x86 we want to avoid the cost of a branch on the hot path in place_entity,
+>> therefore add a compile time config option for the fair sleeper control.
+>
+> I'm very much not liking this... this makes s390 schedule completely
+> different from all the other architectures.
 
-Moreover, looks like pipefs dentries creation have to be synchronized by 
-nfs_client_lock somehow... Otherwise because of races we can get a client 
-without pipe dentry....
-
-> +			nfs_put_client(clp);
-> +			if (err)
-> +				return NULL;
-> +			goto restart;
-> +		}
-> +		/* Skip nfs_clients that failed to initialise */
-> +		if (clp->cl_cons_state<  0)
-> +			continue;
->   		if (clp->rpc_ops !=&nfs_v4_clientops)
->   			continue;
->   		cl_dentry = clp->cl_idmap->idmap_pipe->dentry;
-> diff --git a/fs/nfs/internal.h b/fs/nfs/internal.h
-> index b777bda..3ee4040 100644
-> --- a/fs/nfs/internal.h
-> +++ b/fs/nfs/internal.h
-> @@ -168,6 +168,7 @@ extern struct nfs_server *nfs_clone_server(struct nfs_server *,
->   					   struct nfs_fattr *,
->   					   rpc_authflavor_t);
->   extern void nfs_mark_client_ready(struct nfs_client *clp, int state);
-> +extern int nfs_wait_client_ready(const struct nfs_client *clp);
->   extern int nfs4_check_client_ready(struct nfs_client *clp);
->   extern struct nfs_client *nfs4_set_ds_client(struct nfs_client* mds_clp,
->   					     const struct sockaddr *ds_addr,
-
+I don't even "like" it myself - If I could make wishes I would like the 
+50% of gentle sleepers working fine, but unfortunately they aren't. 
+Liking it or not - for the moment this is the only way we can avoid 
+several severe degradations. And I'm not even sure if some others just 
+didn't realize yet or refused to ask loud enough for it.
 
 -- 
-Best regards,
-Stanislav Kinsbursky
+
+Grüsse / regards, Christian Ehrhardt
+IBM Linux Technology Center, System z Linux Performance
+
