@@ -1,77 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759212Ab2EWJ7e (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 May 2012 05:59:34 -0400
-Received: from e38.co.us.ibm.com ([32.97.110.159]:33248 "EHLO
-	e38.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750747Ab2EWJ7c (ORCPT
+	id S933343Ab2EWJ7y (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 May 2012 05:59:54 -0400
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:33307 "EHLO
+	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S933046Ab2EWJ7x (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 May 2012 05:59:32 -0400
-Date: Wed, 23 May 2012 15:27:38 +0530
-From: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
-        Jim Keniston <jkenisto@linux.vnet.ibm.com>,
-        LKML <linux-kernel@vger.kernel.org>, Linux-mm <linux-mm@kvack.org>,
-        Oleg Nesterov <oleg@redhat.com>, Andi Kleen <andi@firstfloor.org>,
-        Christoph Hellwig <hch@infradead.org>,
-        Arnaldo Carvalho de Melo <acme@infradead.org>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Anton Arapov <anton@redhat.com>
-Subject: Re: [PATCH 3/3] tracing: Provide traceevents interface for uprobes
-Message-ID: <20120523095738.GA15587@linux.vnet.ibm.com>
-Reply-To: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-References: <20120403010442.17852.9888.sendpatchset@srdronam.in.ibm.com>
- <20120403010502.17852.58528.sendpatchset@srdronam.in.ibm.com>
- <1337764783.13348.142.camel@gandalf.stny.rr.com>
+	Wed, 23 May 2012 05:59:53 -0400
+Date: Wed, 23 May 2012 10:59:51 +0100
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org
+Subject: [GIT PULL] regmap fix for 3.5
+Message-ID: <20120523095950.GE4085@opensource.wolfsonmicro.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="+ts6NCQ4mrNQIV8p"
 Content-Disposition: inline
-In-Reply-To: <1337764783.13348.142.camel@gandalf.stny.rr.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 12052309-5518-0000-0000-0000049C3040
+X-Cookie: You dialed 5483.
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> > 
-> > Implements trace_event support for uprobes. In its current form it can
-> > be used to put probes at a specified offset in a file and dump the
-> > required registers when the code flow reaches the probed address.
-> > 
-> > The following example shows how to dump the instruction pointer and %ax
-> > a register at the probed text address.  Here we are trying to probe
-> > zfree in /bin/zsh
-> > 
-> 
-> Masami,
-> 
-> Can you ack this patch as well (only if you agree)
-> 
 
-Masami already acked the patches and its now part of the -tip tree.
+--+ts6NCQ4mrNQIV8p
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-https://lkml.org/lkml/2012/4/12/163
-and 
+The following changes since commit c948ef3ae71c18c1079333b65d6887ceb4577618:
 
-http://lkml.org/lkml/2012/4/12/164
+  mfd: palmas PMIC device support Kconfig (2012-05-18 16:54:48 +0100)
 
-and 
+are available in the git repository at:
 
-https://lkml.org/lkml/2012/4/16/115
+  git://git.kernel.org/pub/scm/linux/kernel/git/broonie/regmap.git tags/regmap-domain-deps
 
+for you to fetch changes up to 18d5eacb52291faaa430fc50b435b3bb204dba88:
 
-and these patches got picked into -tip  on May 7 
+  regmap: Use select .. if to get IRQ_DOMAIN enabled (2012-05-23 10:15:51 +0100)
 
-f3f096c tracing: Provide trace events interface for uprobes
-8ab83f5 tracing: Extract out common code for kprobes/uprobes trace events
-3a6b766 tracing: Modify is_delete, is_return from int to bool
+----------------------------------------------------------------
+regmap: Fix the dependency on IRQ_DOMAIN for REGMAP_IRQ in the core
 
--- 
-Thanks and Regards
-Srikar
+Fixes a missing select from the Palmas driver a bit more throoughly.
 
+----------------------------------------------------------------
+Mark Brown (1):
+      regmap: Use select .. if to get IRQ_DOMAIN enabled
+
+ drivers/base/regmap/Kconfig |    1 +
+ drivers/mfd/Kconfig         |    3 ---
+ 2 files changed, 1 insertion(+), 3 deletions(-)
+
+--+ts6NCQ4mrNQIV8p
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBAgAGBQJPvLUPAAoJEBus8iNuMP3ddf4P/Ar+5FVWQHOKjKmwRec7lkBC
+24+fIoci3PdKvyedmWQykzXjq7dQlwy2pjb+/aoyjcjA76rx0EQs1uJXjrmV1Dp+
+29WWxOhOiuoMfyhyvG8taRtnfpZaMTf1y3pO59zFhcfO+dn/vToH0q+1QW1tICWt
+hMjtKOObrZzrP8DDDYXyR1+o9kawrLg+gKXm2NcxTwGy4pDaAygZiKQ+3KYpgaeC
+vW4xDQtx7ErvJzD0PvSzer16gK+DLSTrzDReM0CFHWSFvwuWJqNfBCY7Zn8ZkkWt
+j4H+LtLf1sdCl6gp9tk83ApRvnNnnT50YU3EzjbD+F2JH6XBt1iigSjzWCDraQAa
+K6He/RrTRHK8xj5SoWU8QbuilurncVmwsDlgbK576jLKgi2UiX/V2yQ8yBZMpUJ9
+MkormvcLJugBi0WLMO0Bz0RtsS9G5safCI3TYWFU0VC53CwDN4bWJZgK/ZAvBLmr
+Lnm6UZZISYS3mIYML4CWbzTlXzKFl8R60dr4ICDXnQwGUJRh+/kLyzN5kbfJuAdD
+6Vdi6h+emVyTxBlggBNkor9TgoCs/6WnPymlSnlokm66Hza5eZ4g7K0uX9xF4HUf
+gLfj5ZU6CbHfgVDxGLtZlDQT96+oZw3Bk29LEqTTJVskBh1DInSsYNLWU39D/zB7
+1HOwOCBJ+GnXKBnBTVOX
+=IrNj
+-----END PGP SIGNATURE-----
+
+--+ts6NCQ4mrNQIV8p--
