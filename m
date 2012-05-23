@@ -1,95 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933704Ab2EWQGy (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 May 2012 12:06:54 -0400
-Received: from mail127.messagelabs.com ([216.82.250.115]:55307 "EHLO
-	mail127.messagelabs.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932077Ab2EWQGv convert rfc822-to-8bit (ORCPT
+	id S1760508Ab2EWQHq (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 May 2012 12:07:46 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:41771 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754851Ab2EWQHo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 May 2012 12:06:51 -0400
-X-Env-Sender: hartleys@visionengravers.com
-X-Msg-Ref: server-3.tower-127.messagelabs.com!1337789179!6365429!59
-X-Originating-IP: [216.166.12.98]
-X-StarScan-Version: 6.5.10; banners=-,-,-
-X-VirusChecked: Checked
-From: H Hartley Sweeten <hartleys@visionengravers.com>
-To: Dan Carpenter <dan.carpenter@oracle.com>
-CC: Linux Kernel <linux-kernel@vger.kernel.org>,
-        "devel@driverdev.osuosl.org" <devel@driverdev.osuosl.org>,
-        "fmhess@users.sourceforge.net" <fmhess@users.sourceforge.net>,
-        "abbotti@mev.co.uk" <abbotti@mev.co.uk>,
-        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>
-Date: Wed, 23 May 2012 11:06:39 -0500
-Subject: RE: [PATCH] staging: comedi: remove this_board macro in the s526
- driver
-Thread-Topic: [PATCH] staging: comedi: remove this_board macro in the s526
- driver
-Thread-Index: Ac04pzaFK6HL5PusQg20Fzl2KYDjKgAVeKdg
-Message-ID: <ADE657CA350FB648AAC2C43247A983F0020698BAC8A9@AUSP01VMBX24.collaborationhost.net>
-References: <201205221820.10770.hartleys@visionengravers.com>
- <20120523054849.GK4637@mwanda>
-In-Reply-To: <20120523054849.GK4637@mwanda>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Wed, 23 May 2012 12:07:44 -0400
+Date: Wed, 23 May 2012 09:07:26 -0700
+From: tip-bot for Borislav Petkov <borislav.petkov@amd.com>
+Message-ID: <tip-e8f380e00840f694599e6ab42806639f7de26f11@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
+        a.p.zijlstra@chello.nl, torvalds@linux-foundation.org,
+        akpm@linux-foundation.org, frank.arnold@amd.com, tglx@linutronix.de,
+        borislav.petkov@amd.com
+Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        frank.arnold@amd.com, akpm@linux-foundation.org,
+        torvalds@linux-foundation.org, a.p.zijlstra@chello.nl,
+        tglx@linutronix.de, borislav.petkov@amd.com
+In-Reply-To: <1337684026-19740-1-git-send-email-bp@amd64.org>
+References: <1337684026-19740-1-git-send-email-bp@amd64.org>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:x86/mce] x86/bitops: Move BIT_64() for a wider use
+Git-Commit-ID: e8f380e00840f694599e6ab42806639f7de26f11
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
 MIME-Version: 1.0
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Wed, 23 May 2012 09:07:32 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday, May 22, 2012 10:49 PM, Dan Carpenter wrote:
-> On Tue, May 22, 2012 at 06:20:10PM -0700, H Hartley Sweeten wrote:
->> The 'thisboard' macro depends on having a local variable with
->> a magic name. The CodingStyle document suggests not doing this
->> to avoid confusion. Remove the macro and use the comedi_board()
->> inline helper to get the dev->board_ptr information.
->> 
->> Signed-off-by: H Hartley Sweeten <hsweeten@visionengravers.com>
->> Cc: Ian Abbott <abbotti@mev.co.uk>
->> Cc: Mori Hess <fmhess@users.sourceforge.net>
->> Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
->> 
->> ---
->> @@ -769,13 +765,7 @@ static int s526_attach(struct comedi_device *dev, struct comedi_devconfig *it)
->>  	}
->>  	***/
->>  
->> -/*
->> - * Initialize dev->board_name.  Note that we can use the "thisboard"
->> - * macro now, since we just initialized it in the last line.
->> - */
->> -	dev->board_ptr = &s526_boards[0];
->
-> Was this intended?  Most of the boards have auto probing so the
-> ->board_ptr gets set automatically.  We already called
-> comedi_board() so I wonder if the autoprobed board is the same as
-> the &s526_boards[0];?  NULL pointer perhaps?  I don't know.
+Commit-ID:  e8f380e00840f694599e6ab42806639f7de26f11
+Gitweb:     http://git.kernel.org/tip/e8f380e00840f694599e6ab42806639f7de26f11
+Author:     Borislav Petkov <borislav.petkov@amd.com>
+AuthorDate: Tue, 22 May 2012 12:53:45 +0200
+Committer:  Ingo Molnar <mingo@kernel.org>
+CommitDate: Wed, 23 May 2012 17:16:42 +0200
 
-Yes, removing the line was intended. Sorry I didn't mention it in the
-commit message.
+x86/bitops: Move BIT_64() for a wider use
 
-The dev->board_ptr will already be set by comedi_device_attach()
-before the drivers attach() method is called.
+Needed for shifting 64-bit values on 32-bit, like MSR values,
+for example.
 
-I think the author of this driver misunderstood the skel driver and
-thought this was needed in order to simulate a "probe". See this
-comment in the skel.c driver:
+Signed-off-by: Borislav Petkov <borislav.petkov@amd.com>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Frank Arnold <frank.arnold@amd.com>
+Link: http://lkml.kernel.org/r/1337684026-19740-1-git-send-email-bp@amd64.org
+Signed-off-by: Ingo Molnar <mingo@kernel.org>
+---
+ arch/x86/include/asm/bitops.h |    2 ++
+ drivers/edac/mce_amd.h        |    2 --
+ 2 files changed, 2 insertions(+), 2 deletions(-)
 
-/*
- * If you can probe the device to determine what device in a series
- * it is, this is the place to do it.  Otherwise, dev->board_ptr
- * should already be initialized.
- */
-	/* dev->board_ptr = skel_probe(dev, it); */
-
-The only comedi drivers that modify the dev->board_ptr are the
-PCI ones. Hopefully I can figure out a way to clean them up...
-The comedi_board() inline does not change the dev->board_ptr,
-it's simply a helper to fetch it from the comedi_device.
-
-Regards,
-Hartley
+diff --git a/arch/x86/include/asm/bitops.h b/arch/x86/include/asm/bitops.h
+index b97596e..a6983b2 100644
+--- a/arch/x86/include/asm/bitops.h
++++ b/arch/x86/include/asm/bitops.h
+@@ -15,6 +15,8 @@
+ #include <linux/compiler.h>
+ #include <asm/alternative.h>
+ 
++#define BIT_64(n)			(U64_C(1) << (n))
++
+ /*
+  * These have to be done with inline assembly: that way the bit-setting
+  * is guaranteed to be atomic. All bit operations return 0 if the bit
+diff --git a/drivers/edac/mce_amd.h b/drivers/edac/mce_amd.h
+index c6074c5..8c87a5e 100644
+--- a/drivers/edac/mce_amd.h
++++ b/drivers/edac/mce_amd.h
+@@ -5,8 +5,6 @@
+ 
+ #include <asm/mce.h>
+ 
+-#define BIT_64(n)			(U64_C(1) << (n))
+-
+ #define EC(x)				((x) & 0xffff)
+ #define XEC(x, mask)			(((x) >> 16) & mask)
+ 
