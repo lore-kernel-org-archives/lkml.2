@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964966Ab2EWCj2 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 May 2012 22:39:28 -0400
-Received: from LGEMRELSE1Q.lge.com ([156.147.1.111]:50090 "EHLO
+	id S964935Ab2EWCjY (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 May 2012 22:39:24 -0400
+Received: from LGEMRELSE1Q.lge.com ([156.147.1.111]:49362 "EHLO
 	LGEMRELSE1Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933564Ab2EWCjM (ORCPT
+	with ESMTP id S933543Ab2EWCjI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 May 2012 22:39:12 -0400
-X-AuditID: 9c93016f-b7c3cae000001954-2f-4fbc4dcff9ba
+	Tue, 22 May 2012 22:39:08 -0400
+X-AuditID: 9c93016f-b7c3cae000001954-a0-4fbc4dc7783f
 From: Namhyung Kim <namhyung.kim@lge.com>
 To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
 Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Mackerras <paulus@samba.org>,
@@ -18,9 +18,9 @@ Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Mackerras <paulus@samba.org>,
         Ingo Molnar <mingo@kernel.org>,
         Arnaldo Carvalho de Melo <acme@infradead.org>,
         Borislav Petkov <bp@alien8.de>, David Ahern <dsahern@gmail.com>
-Subject: [PATCH 20/22] lib/traceevent: Check return value of arg_to_str()
-Date: Wed, 23 May 2012 11:36:57 +0900
-Message-Id: <1337740619-27925-21-git-send-email-namhyung.kim@lge.com>
+Subject: [PATCH 09/22] lib/traceevent: Handle strdup failure cases
+Date: Wed, 23 May 2012 11:36:46 +0900
+Message-Id: <1337740619-27925-10-git-send-email-namhyung.kim@lge.com>
 X-Mailer: git-send-email 1.7.10.1
 In-Reply-To: <1337740619-27925-1-git-send-email-namhyung.kim@lge.com>
 References: <1337740619-27925-1-git-send-email-namhyung.kim@lge.com>
@@ -29,80 +29,122 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The arg_to_str() can fail so we should handle that case properly.
+There were some places didn't check return value of the strdup
+and had unneeded/duplicated checks. Fix it.
 
-Link: http://lkml.kernel.org/r/1335157118-14658-12-git-send-email-namhyung.kim@lge.com
+Link: http://lkml.kernel.org/r/1333940074-19052-5-git-send-email-namhyung.kim@lge.com
 
 Signed-off-by: Namhyung Kim <namhyung.kim@lge.com>
 Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Namhyung Kim <namhyung@gmail.com>
 Cc: Ingo Molnar <mingo@kernel.org>
 Cc: Arnaldo Carvalho de Melo <acme@infradead.org>
 Cc: Borislav Petkov <bp@alien8.de>
 Cc: David Ahern <dsahern@gmail.com>
 Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
 ---
- tools/lib/traceevent/parse-filter.c |   15 +++++++++++++--
- 1 file changed, 13 insertions(+), 2 deletions(-)
+ tools/lib/traceevent/event-parse.c |   29 +++++++++++++++++++++++++++--
+ 1 file changed, 27 insertions(+), 2 deletions(-)
 
-diff --git a/tools/lib/traceevent/parse-filter.c b/tools/lib/traceevent/parse-filter.c
-index a224938e1728..05a1eeffa776 100644
---- a/tools/lib/traceevent/parse-filter.c
-+++ b/tools/lib/traceevent/parse-filter.c
-@@ -2026,11 +2026,13 @@ static char *exp_to_str(struct event_filter *filter, struct filter_arg *arg)
- 	char *lstr;
- 	char *rstr;
- 	char *op;
--	char *str;
-+	char *str = NULL;
- 	int len;
+diff --git a/tools/lib/traceevent/event-parse.c b/tools/lib/traceevent/event-parse.c
+index bdfc29607b49..760e7831390a 100644
+--- a/tools/lib/traceevent/event-parse.c
++++ b/tools/lib/traceevent/event-parse.c
+@@ -467,8 +467,10 @@ int pevent_register_function(struct pevent *pevent, char *func,
+ 		item->mod = NULL;
+ 	item->addr = addr;
  
- 	lstr = arg_to_str(filter, arg->exp.left);
- 	rstr = arg_to_str(filter, arg->exp.right);
-+	if (!lstr || !rstr)
-+		goto out;
+-	pevent->funclist = item;
++	if (!item->func || (mod && !item->mod))
++		die("malloc func");
  
- 	switch (arg->exp.type) {
- 	case FILTER_EXP_ADD:
-@@ -2070,6 +2072,7 @@ static char *exp_to_str(struct event_filter *filter, struct filter_arg *arg)
- 	len = strlen(op) + strlen(lstr) + strlen(rstr) + 4;
- 	str = malloc_or_die(len);
- 	snprintf(str, len, "%s %s %s", lstr, op, rstr);
-+out:
- 	free(lstr);
- 	free(rstr);
++	pevent->funclist = item;
+ 	pevent->func_count++;
  
-@@ -2086,6 +2089,8 @@ static char *num_to_str(struct event_filter *filter, struct filter_arg *arg)
+ 	return 0;
+@@ -583,10 +585,13 @@ int pevent_register_print_string(struct pevent *pevent, char *fmt,
+ 	item = malloc_or_die(sizeof(*item));
  
- 	lstr = arg_to_str(filter, arg->num.left);
- 	rstr = arg_to_str(filter, arg->num.right);
-+	if (!lstr || !rstr)
-+		goto out;
+ 	item->next = pevent->printklist;
+-	pevent->printklist = item;
+ 	item->printk = strdup(fmt);
+ 	item->addr = addr;
  
- 	switch (arg->num.type) {
- 	case FILTER_CMP_EQ:
-@@ -2122,6 +2127,7 @@ static char *num_to_str(struct event_filter *filter, struct filter_arg *arg)
- 		break;
- 	}
- 
-+out:
- 	free(lstr);
- 	free(rstr);
- 	return str;
-@@ -2272,7 +2278,12 @@ int pevent_filter_compare(struct event_filter *filter1, struct event_filter *fil
- 		/* The best way to compare complex filters is with strings */
- 		str1 = arg_to_str(filter1, filter_type1->filter);
- 		str2 = arg_to_str(filter2, filter_type2->filter);
--		result = strcmp(str1, str2) != 0;
-+		if (str1 && str2)
-+			result = strcmp(str1, str2) != 0;
-+		else
-+			/* bail out if allocation fails */
-+			result = 1;
++	if (!item->printk)
++		die("malloc fmt");
 +
- 		free(str1);
- 		free(str2);
- 		if (result)
++	pevent->printklist = item;
+ 	pevent->printk_count++;
+ 
+ 	return 0;
+@@ -2139,6 +2144,8 @@ process_fields(struct event_format *event, struct print_flag_sym **list, char **
+ 		if (value == NULL)
+ 			goto out_free;
+ 		field->value = strdup(value);
++		if (field->value == NULL)
++			goto out_free;
+ 
+ 		free_arg(arg);
+ 		arg = alloc_arg();
+@@ -2152,6 +2159,8 @@ process_fields(struct event_format *event, struct print_flag_sym **list, char **
+ 		if (value == NULL)
+ 			goto out_free;
+ 		field->str = strdup(value);
++		if (field->str == NULL)
++			goto out_free;
+ 		free_arg(arg);
+ 		arg = NULL;
+ 
+@@ -3356,6 +3365,9 @@ process_defined_func(struct trace_seq *s, void *data, int size,
+ 			string = malloc_or_die(sizeof(*string));
+ 			string->next = strings;
+ 			string->str = strdup(str.buffer);
++			if (!string->str)
++				die("malloc str");
++
+ 			strings = string;
+ 			trace_seq_destroy(&str);
+ 			break;
+@@ -3493,6 +3505,8 @@ static struct print_arg *make_bprint_args(char *fmt, void *data, int size, struc
+ 				arg->next = NULL;
+ 				arg->type = PRINT_BSTRING;
+ 				arg->string.string = strdup(bptr);
++				if (!arg->string.string)
++					break;
+ 				bptr += strlen(bptr) + 1;
+ 				*next = arg;
+ 				next = &arg->next;
+@@ -4569,6 +4583,8 @@ int pevent_parse_event(struct pevent *pevent,
+ 		die("failed to read event id");
+ 
+ 	event->system = strdup(sys);
++	if (!event->system)
++		die("failed to allocate system");
+ 
+ 	/* Add pevent to event so that it can be referenced */
+ 	event->pevent = pevent;
+@@ -4610,6 +4626,10 @@ int pevent_parse_event(struct pevent *pevent,
+ 			list = &arg->next;
+ 			arg->type = PRINT_FIELD;
+ 			arg->field.name = strdup(field->name);
++			if (!arg->field.name) {
++				do_warning("failed to allocate field name");
++				goto event_failed;
++			}
+ 			arg->field.field = field;
+ 		}
+ 		return 0;
+@@ -4953,6 +4973,11 @@ int pevent_register_event_handler(struct pevent *pevent,
+ 	if (sys_name)
+ 		handle->sys_name = strdup(sys_name);
+ 
++	if ((event_name && !handle->event_name) ||
++	    (sys_name && !handle->sys_name)) {
++		die("Failed to allocate event/sys name");
++	}
++
+ 	handle->func = func;
+ 	handle->next = pevent->handlers;
+ 	pevent->handlers = handle;
 -- 
 1.7.10.1
 
