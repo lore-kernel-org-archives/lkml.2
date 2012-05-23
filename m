@@ -1,49 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933956Ab2EWTWd (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 May 2012 15:22:33 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:43934 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933876Ab2EWTWc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 May 2012 15:22:32 -0400
-Message-ID: <4FBD38EB.6040408@zytor.com>
-Date: Wed, 23 May 2012 12:22:19 -0700
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
+	id S933966Ab2EWTY1 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 May 2012 15:24:27 -0400
+Received: from www.linutronix.de ([62.245.132.108]:46397 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933927Ab2EWTY0 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 23 May 2012 15:24:26 -0400
+Date: Wed, 23 May 2012 21:24:12 +0200 (CEST)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Dimitri Sivanich <sivanich@sgi.com>
+cc: Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
+        x86@kernel.org, Suresh Siddha <suresh.b.siddha@intel.com>,
+        Yinghai Lu <yinghai@kernel.org>,
+        Naga Chumbalkar <nagananda.chumbalkar@hp.com>,
+        Jacob Pan <jacob.jun.pan@linux.intel.com>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] x86: check for valid irq_cfg pointer in
+ smp_irq_move_cleanup_interrupt
+In-Reply-To: <20120523190414.GA5263@sgi.com>
+Message-ID: <alpine.LFD.2.02.1205232107120.3231@ionos>
+References: <20120521164959.GE16454@sgi.com> <alpine.LFD.2.02.1205212304580.3231@ionos> <20120521211917.GA25567@sgi.com> <alpine.LFD.2.02.1205212324260.3231@ionos> <20120523181636.GA2032@sgi.com> <20120523190414.GA5263@sgi.com>
+User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
 MIME-Version: 1.0
-To: "Michael S. Tsirkin" <mst@redhat.com>
-CC: Ingo Molnar <mingo@kernel.org>, Avi Kivity <avi@redhat.com>,
-        Thomas Gleixner <tglx@linutronix.de>, kvm@vger.kernel.org,
-        Marcelo Tosatti <mtosatti@redhat.com>, Ingo Molnar <mingo@redhat.com>,
-        x86@kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] kvm: optimize ISR lookups
-References: <20120521163727.GA13337@redhat.com> <alpine.LFD.2.02.1205211940030.3231@ionos> <20120521215127.GH17031@redhat.com> <alpine.LFD.2.02.1205220012020.3231@ionos> <20120521222449.GJ17031@redhat.com> <alpine.LFD.2.02.1205220044460.3231@ionos> <4FBB6E8B.8020200@redhat.com> <20120523144846.GA26974@gmail.com> <20120523151424.GA30542@redhat.com>
-In-Reply-To: <20120523151424.GA30542@redhat.com>
-X-Enigmail-Version: 1.4.1
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/23/2012 08:14 AM, Michael S. Tsirkin wrote:
-> On Wed, May 23, 2012 at 04:48:46PM +0200, Ingo Molnar wrote:
->> there's just so many hours in the merge window, so you asked to be
->> flamed ...
+On Wed, 23 May 2012, Dimitri Sivanich wrote:
+
+> On Wed, May 23, 2012 at 01:16:36PM -0500, Dimitri Sivanich wrote:
+> > In create_irq_nr() there is a window where we have set vector_irq in
+> > __assign_irq_vector(), but not yet called irq_set_chip_data() to set the
+> > irq_cfg pointer.
 > 
-> I can handle flames just fine :) But I'll try to buffer x86 things up
-> until the window closes next time.
-> 
+> BTW - is there a reason why we're calling irq_set_chip_data() in create_irq_nr()
+> rather than in __assign_irq_vector() for the case where irq_cfg is NULL?
 
-It's generally a good rule for anything for beyond the merge window
-(i.e. for 3.6 in this case.)
-
-It is *way* too easy to get down rathole confusions otherwise.
-
-	-hpa
-
-
--- 
-H. Peter Anvin, Intel Open Source Technology Center
-I work for Intel.  I don't speak on their behalf.
-
+We can't nest desc->lock inside vector lock.
