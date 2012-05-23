@@ -1,77 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759252Ab2EWOnd (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 May 2012 10:43:33 -0400
-Received: from iolanthe.rowland.org ([192.131.102.54]:51741 "HELO
-	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1752184Ab2EWOnb (ORCPT
+	id S932658Ab2EWOs7 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 May 2012 10:48:59 -0400
+Received: from mail-wg0-f44.google.com ([74.125.82.44]:59221 "EHLO
+	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754416Ab2EWOsx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 May 2012 10:43:31 -0400
-Date: Wed, 23 May 2012 10:43:30 -0400 (EDT)
-From: Alan Stern <stern@rowland.harvard.edu>
-X-X-Sender: stern@iolanthe.rowland.org
-To: Lin Ming <ming.m.lin@intel.com>
-cc: Jens Axboe <axboe@kernel.dk>, <linux-kernel@vger.kernel.org>,
-        <linux-pm@vger.kernel.org>, <linux-scsi@vger.kernel.org>
-Subject: Re: [RFC PATCH v3 4/4] [SCSI] sd: change to auto suspend mode
-In-Reply-To: <1337671292-15583-5-git-send-email-ming.m.lin@intel.com>
-Message-ID: <Pine.LNX.4.44L0.1205231029520.1566-100000@iolanthe.rowland.org>
+	Wed, 23 May 2012 10:48:53 -0400
+Date: Wed, 23 May 2012 16:48:46 +0200
+From: Ingo Molnar <mingo@kernel.org>
+To: Avi Kivity <avi@redhat.com>
+Cc: Thomas Gleixner <tglx@linutronix.de>,
+        "Michael S. Tsirkin" <mst@redhat.com>, kvm@vger.kernel.org,
+        Marcelo Tosatti <mtosatti@redhat.com>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, x86@kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] kvm: optimize ISR lookups
+Message-ID: <20120523144846.GA26974@gmail.com>
+References: <20120521163727.GA13337@redhat.com>
+ <alpine.LFD.2.02.1205211940030.3231@ionos>
+ <20120521215127.GH17031@redhat.com>
+ <alpine.LFD.2.02.1205220012020.3231@ionos>
+ <20120521222449.GJ17031@redhat.com>
+ <alpine.LFD.2.02.1205220044460.3231@ionos>
+ <4FBB6E8B.8020200@redhat.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4FBB6E8B.8020200@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 22 May 2012, Lin Ming wrote:
 
-> Uses block layer runtime pm helper functions in scsi_runtime_suspend/resume.
-> Remove scsi_autopm_* from sd open/release/remove path.
+* Avi Kivity <avi@redhat.com> wrote:
 
-Sorry I didn't have time to get to this yesterday...
+> On 05/22/2012 02:01 AM, Thomas Gleixner wrote:
+> > > 
+> > > Others are not my fault :)
+> > > 
+> > > Seriously, if Avi/Marcelo want to rewrite the ISR emulation
+> >
+> > Interesting POV, really.
+> >
+> > Did you ever notice that the kernel is a collaborative effort and not
+> > controlled by "Avi/Marcelo"?
+> >
+> > Did you ever notice that arch/x86/kvm is part of arch/x86? 
+> 
+> This is silly.  Most of the time the kernel is advanced by 
+> incremental patches.  Sometimes it is advanced by minor or 
+> major refactoring.  It is never advanced by personal attacks 
+> on contributors.
 
-> --- a/drivers/scsi/scsi_pm.c
-> +++ b/drivers/scsi/scsi_pm.c
+Thomas wasn't so much doing a personal attack, it was pointing 
+out stupidity and then it was mocking the repeated stupidity. He 
+very politely explained his point of view (with which I agree), 
+and then you guys pressed the issue and there's just so many 
+hours in the merge window, so you asked to be flamed ...
 
-> @@ -171,9 +183,10 @@ static int scsi_runtime_idle(struct device *dev)
->  
->  	/* Insert hooks here for targets, hosts, and transport classes */
->  
-> -	if (scsi_is_sdev_device(dev))
-> -		err = pm_schedule_suspend(dev, 100);
-> -	else
-> +	if (scsi_is_sdev_device(dev)) {
-> +		pm_runtime_mark_last_busy(dev);
-> +		err = pm_request_autosuspend(dev);
+Avi, if you cannot be brought to properly reject incomplete 
+patches going in the wrong direction then others maintainers 
+interested in the code will do it.
 
-This really should be pm_runtime_autosuspend(dev).  In practice there's
-very little difference; it's mostly a matter of style.
+If you start to consistently require from KVM contributors 
+"incremental updates" in the right direction, not piling crap on 
+crap, then such incidents won't happen. This isn't the first 
+such incident but there's hope that it might be the last one.
 
-> --- a/drivers/scsi/sd.c
-> +++ b/drivers/scsi/sd.c
+The rule in arch/x86/ (and many other subsystems) is very 
+simple: we don't speed up crappy code. If you want to speed it 
+up then make it clean first, *then* is it suited for speedups. 
+Crappy code is fragile and bound to introduce bugs, and crappy 
+code leads to continued increased maintenance overhead, so 
+crappy code is basically under a perpetual code freeze until 
+it's uncrapped.
 
-> @@ -2631,7 +2624,7 @@ static void sd_probe_async(void *data, async_cookie_t cookie)
->  
->  	sd_printk(KERN_NOTICE, sdkp, "Attached SCSI %sdisk\n",
->  		  sdp->removable ? "removable " : "");
-> -	scsi_autopm_put_device(sdp);
-> +	pm_runtime_put_sync_autosuspend(&sdp->sdev_gendev);
+Thanks,
 
-This should be left the way it was.  scsi_autopm_put_device() does 
-pm_runtime_put_sync(), which will call scsi_runtime_idle(), which will 
-now call pm_runtime_autosuspend().
-
->  	put_device(&sdkp->dev);
->  }
->  
-> @@ -2755,7 +2748,6 @@ static int sd_remove(struct device *dev)
->  	struct scsi_disk *sdkp;
->  
->  	sdkp = dev_get_drvdata(dev);
-> -	scsi_autopm_get_device(sdkp->device);
-
-This line should be kept as is.  The SCSI core uses the incremented 
-usage count to prevent driverless devices from being runtime-suspended.
-
-Alan Stern
-
-
+	Ingo
