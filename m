@@ -1,94 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760613Ab2EWRXr (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 May 2012 13:23:47 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:37891 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751989Ab2EWRXp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 May 2012 13:23:45 -0400
-Date: Wed, 23 May 2012 19:21:46 +0200
-From: Oleg Nesterov <oleg@redhat.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Martin Mokrejs <mmokrejs@fold.natur.cuni.cz>,
-        LKML <linux-kernel@vger.kernel.org>, khlebnikov@openvz.org,
-        markus@trippelsdorf.de, hughd@google.com,
-        kamezawa.hiroyu@jp.fujitsu.com, Michal Hocko <mhocko@suse.cz>,
-        linux-mm@kvack.org
-Subject: Re: 3.4-rc7: BUG: Bad rss-counter state mm:ffff88040b56f800 idx:1
-	val:-59
-Message-ID: <20120523172146.GA27598@redhat.com>
-References: <4FBC1618.5010408@fold.natur.cuni.cz> <20120522162835.c193c8e0.akpm@linux-foundation.org> <20120522162946.2afcdb50.akpm@linux-foundation.org>
+	id S933066Ab2EWRYm (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 May 2012 13:24:42 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:47131 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753056Ab2EWRYk (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 23 May 2012 13:24:40 -0400
+Date: Wed, 23 May 2012 10:24:35 -0700
+From: Tejun Heo <tj@kernel.org>
+To: Kent Overstreet <koverstreet@google.com>
+Cc: linux-bcache@vger.kernel.org, linux-kernel@vger.kernel.org,
+        dm-devel@redhat.com, agk@redhat.com
+Subject: Re: [Bcache v13 11/16] bcache: Core btree code
+Message-ID: <20120523172435.GB18143@google.com>
+References: <cover.1336619038.git.koverstreet@google.com>
+ <7f1de39b6d7040b3fe271500776f4b985b21ea82.1336619038.git.koverstreet@google.com>
+ <20120522221259.GJ14339@google.com>
+ <20120523034546.GB607@dhcp-172-18-216-138.mtv.corp.google.com>
+ <20120523052054.GB29976@dhcp-172-17-108-109.mtv.corp.google.com>
+ <20120523053403.GB14312@dhcp-172-18-216-138.mtv.corp.google.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20120522162946.2afcdb50.akpm@linux-foundation.org>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <20120523053403.GB14312@dhcp-172-18-216-138.mtv.corp.google.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/22, Andrew Morton wrote:
->
-> Also, I have a note here that Oleg was unhappy with the patch.  Oleg
-> happiness is important.  Has he cheered up yet?
+Hello,
 
-Well, yes, I do not really like this patch ;) Because I think there is
-a more simple/straightforward fix, see below. In my opinion it also
-makes the original code simpler.
+On Wed, May 23, 2012 at 01:34:03AM -0400, Kent Overstreet wrote:
+> On Tue, May 22, 2012 at 10:20:54PM -0700, Tejun Heo wrote:
+> > Hmmm... I would prefer it to be defined explicitly as union.  It's
+> > rather easy to define it incorrectly (ie. using struct bkey) and then
+> > pass it around expecting it to have the pad.
+> 
+> Thing is, things don't expect the pad - bkeys are normally just in a big
+> chunk of memory concatenated together, and the same functions have to
+> work both with those and with bare bkeys the code occasionally
+> manipulates.
 
-But. Obviously this is subjective, I can't prove my patch is "better",
-and I didn't try to test it.
+Hmmm... so it's actually just padding?  Padding for what?  I thought
+it was there to provide space for ptr[], no?
 
-So I won't argue with Konstantin who dislikes my patch, although I
-would like to know the reason.
+> > I'm a bit confused.  Cache device or cached device?  Isn't the key
+> > dev:offset:size of the cached device?
+> 
+> No - bkey->key is the offset on the cached device, PTR_OFFSET is on the
+> cache.
+> 
+> Confusing, I know. Any ideas for better terminology?
 
-Oleg.
+Double confused by the "no" and the following sentence seemingly
+agreeing with what I wrote.  So, bkey->key indexes the backend device
+- the slow big disk and the associated PTRs point into the fast SSD
+caching device, right?  If so, I think 'key' is fine, that's the only
+thing which can be key anyway.  As for PTR_XXX, maybe something which
+can signify they're the cache would be nicer but with proper comments
+I don't think it's big deal.
 
+Thanks.
 
---- a/kernel/tsacct.c
-+++ b/kernel/tsacct.c
-@@ -91,6 +91,7 @@ void xacct_add_tsk(struct taskstats *sta
- 	stats->virtmem = p->acct_vm_mem1 * PAGE_SIZE / MB;
- 	mm = get_task_mm(p);
- 	if (mm) {
-+		sync_mm_rss(mm);
- 		/* adjust to KB unit */
- 		stats->hiwater_rss   = get_mm_hiwater_rss(mm) * PAGE_SIZE / KB;
- 		stats->hiwater_vm    = get_mm_hiwater_vm(mm)  * PAGE_SIZE / KB;
---- a/kernel/exit.c
-+++ b/kernel/exit.c
-@@ -643,6 +643,8 @@ static void exit_mm(struct task_struct *
- 	mm_release(tsk, mm);
- 	if (!mm)
- 		return;
-+
-+	sync_mm_rss(mm);
- 	/*
- 	 * Serialize with any possible pending coredump.
- 	 * We must hold mmap_sem around checking core_state
-@@ -960,9 +962,6 @@ void do_exit(long code)
- 				preempt_count());
- 
- 	acct_update_integrals(tsk);
--	/* sync mm's RSS info before statistics gathering */
--	if (tsk->mm)
--		sync_mm_rss(tsk->mm);
- 	group_dead = atomic_dec_and_test(&tsk->signal->live);
- 	if (group_dead) {
- 		hrtimer_cancel(&tsk->signal->real_timer);
---- a/fs/exec.c
-+++ b/fs/exec.c
-@@ -823,10 +823,10 @@ static int exec_mmap(struct mm_struct *m
- 	/* Notify parent that we're no longer interested in the old VM */
- 	tsk = current;
- 	old_mm = current->mm;
--	sync_mm_rss(old_mm);
- 	mm_release(tsk, old_mm);
- 
- 	if (old_mm) {
-+		sync_mm_rss(old_mm);
- 		/*
- 		 * Make sure that if there is a core dump in progress
- 		 * for the old mm, we get out and die instead of going
-
-
+-- 
+tejun
