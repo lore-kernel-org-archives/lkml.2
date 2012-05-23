@@ -1,66 +1,171 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964829Ab2EWArS (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 May 2012 20:47:18 -0400
-Received: from LGEMRELSE7Q.lge.com ([156.147.1.151]:51842 "EHLO
-	LGEMRELSE7Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S964793Ab2EWArP (ORCPT
+	id S1758316Ab2EWAvr (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 May 2012 20:51:47 -0400
+Received: from mail131.messagelabs.com ([216.82.242.99]:24973 "EHLO
+	mail131.messagelabs.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757437Ab2EWAvq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 May 2012 20:47:15 -0400
-X-AuditID: 9c930197-b7be2ae000000ebb-28-4fbc338f8694
-From: Namhyung Kim <namhyung.kim@lge.com>
-To: Stephane Eranian <eranian@google.com>
-Cc: Peter Zijlstra <peterz@infradead.org>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>,
-        David Ahern <dsahern@gmail.com>, linux-kernel@vger.kernel.org,
-        mingo@elte.hu
-Subject: Re: [PATCH v2 4/5] perf record: add meta-data support for pipe-mode
-References: <1337081295-10303-1-git-send-email-eranian@google.com>
-	<1337081295-10303-5-git-send-email-eranian@google.com>
-	<4FB32032.3000509@gmail.com>
-	<CABPqkBQyZfSczhAROdH8p0_asy=c2AJho4Kv9wRYabaLNKkURA@mail.gmail.com>
-	<4FB67DE5.8050000@gmail.com> <20120518171911.GH2636@infradead.org>
-	<1337708035.9698.44.camel@twins>
-	<CABPqkBTQ=K-=qkgzC0TZPi1xyHtqT6QQroRg-7o0k8rFmjH_Bw@mail.gmail.com>
-Date: Wed, 23 May 2012 09:45:12 +0900
-In-Reply-To: <CABPqkBTQ=K-=qkgzC0TZPi1xyHtqT6QQroRg-7o0k8rFmjH_Bw@mail.gmail.com>
-	(Stephane Eranian's message of "Tue, 22 May 2012 19:51:15 +0200")
-Message-ID: <87obpf209z.fsf@sejong.aot.lge.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.0.95 (gnu/linux)
+	Tue, 22 May 2012 20:51:46 -0400
+X-Env-Sender: hartleys@visionengravers.com
+X-Msg-Ref: server-6.tower-131.messagelabs.com!1337734304!13413161!1
+X-Originating-IP: [216.166.12.97]
+X-StarScan-Version: 6.5.10; banners=-,-,-
+X-VirusChecked: Checked
+From: H Hartley Sweeten <hartleys@visionengravers.com>
+To: Linux Kernel <linux-kernel@vger.kernel.org>
+Subject: [PATCH] staging: comedi: remove this_board macro in the pcmuio driver
+Date: Tue, 22 May 2012 17:51:35 -0700
+User-Agent: KMail/1.9.9
+CC: <devel@driverdev.osuosl.org>, <abbotti@mev.co.uk>,
+        <fmhess@users.sourceforge.net>, <gregkh@linuxfoundation.org>
 MIME-Version: 1.0
-Content-Type: text/plain
-X-Brightmail-Tracker: AAAAAA==
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
+Content-Disposition: inline
+Message-ID: <201205221751.36177.hartleys@visionengravers.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+The 'thisboard' macro depends on having a local variable with
+a magic name. The CodingStyle document suggests not doing this
+to avoid confusion. Remove the macro and use the comedi_board()
+inline helper to get the dev->board_ptr information.
 
-On Tue, 22 May 2012 19:51:15 +0200, Stephane Eranian wrote:
-> On Tue, May 22, 2012 at 7:33 PM, Peter Zijlstra <peterz@infradead.org> wrote:
->> On Fri, 2012-05-18 at 14:19 -0300, Arnaldo Carvalho de Melo wrote:
->>
->>> PeterZ was the one objecting to adding more userspace only events,
->>
->> Ah, yes I was ;-)
->>
->> So uhm the argument was something like perf_event_type is a kernel enum
->> and userspace stealing space there is going to get us into trouble
->> eventually since userspace doesn't register its types in our enum.
->>
-> Yes, I did not start this but I understand why it was done that way.
->
-> The problem is that the headers as they are written to the file need
-> seeking in the file to update the offset table. That is NOT possible when
-> you operate in pipe mode. As such you need to inject the header infos
-> very much like kernel PERF_RECORD_*. That is also why you have
-> perf inject -b. Buildids are added at the end of the run in file mode,
-> and that's another seek to the offset table if I recall correctly.
->
+Signed-off-by: H Hartley Sweeten <hsweeten@visionengravers.com>
+Cc: Ian Abbott <abbotti@mev.co.uk>
+Cc: Mori Hess <fmhess@users.sourceforge.net>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
-IIUC, to add build-ids we should check all dso's whether hits or not,
-but it's not same as the case of meta-data since we can know it before
-processing. Am I missing something?
+---
 
-Thanks,
-Namhyung
+diff --git a/drivers/staging/comedi/drivers/pcmuio.c b/drivers/staging/comedi/drivers/pcmuio.c
+index 623381d..b1a9bed 100644
+--- a/drivers/staging/comedi/drivers/pcmuio.c
++++ b/drivers/staging/comedi/drivers/pcmuio.c
+@@ -155,11 +155,6 @@ struct pcmuio_board {
+ 	const int num_ports;
+ };
+ 
+-/*
+- * Useful for shorthand access to the particular board structure
+- */
+-#define thisboard ((const struct pcmuio_board *)dev->board_ptr)
+-
+ /* this structure is for data unique to this subdevice.  */
+ struct pcmuio_subdev_private {
+ 	/* mapping of halfwords (bytes) in port/chanarray to iobase */
+@@ -354,7 +349,9 @@ static int pcmuio_dio_insn_config(struct comedi_device *dev,
+ 
+ static void switch_page(struct comedi_device *dev, int asic, int page)
+ {
+-	if (asic < 0 || asic >= thisboard->num_asics)
++	const struct pcmuio_board *board = comedi_board(dev);
++
++	if (asic < 0 || asic >= board->num_asics)
+ 		return;		/* paranoia */
+ 	if (page < 0 || page >= NUM_PAGES)
+ 		return;		/* more paranoia */
+@@ -370,9 +367,10 @@ static void switch_page(struct comedi_device *dev, int asic, int page)
+ static void init_asics(struct comedi_device *dev)
+ {				/* sets up an
+ 				   ASIC chip to defaults */
++	const struct pcmuio_board *board = comedi_board(dev);
+ 	int asic;
+ 
+-	for (asic = 0; asic < thisboard->num_asics; ++asic) {
++	for (asic = 0; asic < board->num_asics; ++asic) {
+ 		int port, page;
+ 		unsigned long baseaddr = dev->iobase + asic * ASIC_IOSIZE;
+ 
+@@ -407,7 +405,9 @@ static void init_asics(struct comedi_device *dev)
+ #ifdef notused
+ static void lock_port(struct comedi_device *dev, int asic, int port)
+ {
+-	if (asic < 0 || asic >= thisboard->num_asics)
++	const struct pcmuio_board *board = comedi_board(dev);
++
++	if (asic < 0 || asic >= board->num_asics)
+ 		return;		/* paranoia */
+ 	if (port < 0 || port >= PORTS_PER_ASIC)
+ 		return;		/* more paranoia */
+@@ -420,7 +420,9 @@ static void lock_port(struct comedi_device *dev, int asic, int port)
+ 
+ static void unlock_port(struct comedi_device *dev, int asic, int port)
+ {
+-	if (asic < 0 || asic >= thisboard->num_asics)
++	const struct pcmuio_board *board = comedi_board(dev);
++
++	if (asic < 0 || asic >= board->num_asics)
+ 		return;		/* paranoia */
+ 	if (port < 0 || port >= PORTS_PER_ASIC)
+ 		return;		/* more paranoia */
+@@ -747,6 +749,7 @@ pcmuio_cmdtest(struct comedi_device *dev, struct comedi_subdevice *s,
+ 
+ static int pcmuio_attach(struct comedi_device *dev, struct comedi_devconfig *it)
+ {
++	const struct pcmuio_board *board = comedi_board(dev);
+ 	struct comedi_subdevice *s;
+ 	int sdev_no, chans_left, n_subdevs, port, asic, thisasic_chanct = 0;
+ 	unsigned long iobase;
+@@ -762,17 +765,13 @@ static int pcmuio_attach(struct comedi_device *dev, struct comedi_devconfig *it)
+ 	dev->iobase = iobase;
+ 
+ 	if (!iobase || !request_region(iobase,
+-				       thisboard->num_asics * ASIC_IOSIZE,
++				       board->num_asics * ASIC_IOSIZE,
+ 				       dev->driver->driver_name)) {
+ 		dev_err(dev->hw_dev, "I/O port conflict\n");
+ 		return -EIO;
+ 	}
+ 
+-/*
+- * Initialize dev->board_name.  Note that we can use the "thisboard"
+- * macro now, since we just initialized it in the last line.
+- */
+-	dev->board_name = thisboard->name;
++	dev->board_name = board->name;
+ 
+ /*
+  * Allocate the private structure area.  alloc_private() is a
+@@ -792,7 +791,7 @@ static int pcmuio_attach(struct comedi_device *dev, struct comedi_devconfig *it)
+ 		spin_lock_init(&devpriv->asics[asic].spinlock);
+ 	}
+ 
+-	chans_left = CHANS_PER_ASIC * thisboard->num_asics;
++	chans_left = CHANS_PER_ASIC * board->num_asics;
+ 	n_subdevs = CALC_N_SUBDEVS(chans_left);
+ 	devpriv->sprivs =
+ 	    kcalloc(n_subdevs, sizeof(struct pcmuio_subdev_private),
+@@ -881,7 +880,7 @@ static int pcmuio_attach(struct comedi_device *dev, struct comedi_devconfig *it)
+ 	for (asic = 0; irq[0] && asic < MAX_ASICS; ++asic) {
+ 		if (irq[asic]
+ 		    && request_irq(irq[asic], interrupt_pcmuio,
+-				   IRQF_SHARED, thisboard->name, dev)) {
++				   IRQF_SHARED, board->name, dev)) {
+ 			int i;
+ 			/* unroll the allocated irqs.. */
+ 			for (i = asic - 1; i >= 0; --i) {
+@@ -898,7 +897,7 @@ static int pcmuio_attach(struct comedi_device *dev, struct comedi_devconfig *it)
+ 
+ 	if (irq[0]) {
+ 		dev_dbg(dev->hw_dev, "irq: %u\n", irq[0]);
+-		if (irq[1] && thisboard->num_asics == 2)
++		if (irq[1] && board->num_asics == 2)
+ 			dev_dbg(dev->hw_dev, "second ASIC irq: %u\n", irq[1]);
+ 	} else {
+ 		dev_dbg(dev->hw_dev, "(IRQ mode disabled)\n");
+@@ -910,10 +909,11 @@ static int pcmuio_attach(struct comedi_device *dev, struct comedi_devconfig *it)
+ 
+ static void pcmuio_detach(struct comedi_device *dev)
+ {
++	const struct pcmuio_board *board = comedi_board(dev);
+ 	int i;
+ 
+ 	if (dev->iobase)
+-		release_region(dev->iobase, ASIC_IOSIZE * thisboard->num_asics);
++		release_region(dev->iobase, ASIC_IOSIZE * board->num_asics);
+ 	for (i = 0; i < MAX_ASICS; ++i) {
+ 		if (devpriv->asics[i].irq)
+ 			free_irq(devpriv->asics[i].irq, dev);
