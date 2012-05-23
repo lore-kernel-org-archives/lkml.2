@@ -1,42 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751897Ab2EWQd7 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 May 2012 12:33:59 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:41535 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750938Ab2EWQd6 (ORCPT
+	id S1753785Ab2EWQef (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 May 2012 12:34:35 -0400
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:47093 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751167Ab2EWQed (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 May 2012 12:33:58 -0400
-Subject: Re: [tip:perf/core] Revert "sched, perf: Use a single callback
- into the scheduler"
-From: Peter Zijlstra <a.p.zijlstra@chello.nl>
-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        tglx@linutronix.de, jolsa@redhat.com
-Cc: linux-tip-commits@vger.kernel.org
-In-Reply-To: <tip-ab0cce560ef177bdc7a8f73e9962be9d829a7b2c@git.kernel.org>
-References: <20120523111302.GC1638@m.brq.redhat.com>
-	 <tip-ab0cce560ef177bdc7a8f73e9962be9d829a7b2c@git.kernel.org>
-Content-Type: text/plain; charset="UTF-8"
-Date: Wed, 23 May 2012 18:33:54 +0200
-Message-ID: <1337790834.9783.30.camel@laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.2 
-Content-Transfer-Encoding: 7bit
+	Wed, 23 May 2012 12:34:33 -0400
+MIME-Version: 1.0
+In-Reply-To: <20120523164203.GA7843@S2100-06.ap.freescale.net>
+References: <CAOMZO5A-05jTYpEEPfnJvWpby1YJ1M7=KPn=zahbQrQOgbjR4g@mail.gmail.com>
+	<201205221053.21792.marc@cpdesign.com.au>
+	<CAOMZO5BCcFOktp9mqDCpnrVhbK6pwO1R3ZdiKPfawb=KLjzzWw@mail.gmail.com>
+	<CAOMZO5DKsrXJoSSacwYFoHUw6pPWLWQnC3gS=6=3k6nvf6tggw@mail.gmail.com>
+	<20120523084945.GA4085@opensource.wolfsonmicro.com>
+	<20120523164203.GA7843@S2100-06.ap.freescale.net>
+Date: Wed, 23 May 2012 13:34:32 -0300
+Message-ID: <CAOMZO5AOsdHqZ2Rth_m_BLEvHyLrJGEeXzmZZX=HyfeQZ7WTYw@mail.gmail.com>
+Subject: Re: mc13xxx-core: kernel hangs after 'regmap_read'
+From: Fabio Estevam <festevam@gmail.com>
+To: Shawn Guo <shawn.guo@freescale.com>
+Cc: Mark Brown <broonie@opensource.wolfsonmicro.com>, marc@cpdesign.com.au,
+        Samuel Ortiz <sameo@linux.intel.com>,
+        Sascha Hauer <kernel@pengutronix.de>,
+        =?UTF-8?Q?Philippe_R=C3=A9tornaz?= <philippe.retornaz@epfl.ch>,
+        linux-kernel <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2012-05-23 at 09:09 -0700, tip-bot for Jiri Olsa wrote:
->  > I rather liked we could do away with both that black-spot and
->  > clean up the code a little, but apparently people rely on it.
-> 
-Ingo noted that inherited counters already are active over the context
-switch (due to the lazy switch optimization) and thus profile the
-context switch cost.
+On Wed, May 23, 2012 at 1:42 PM, Shawn Guo <shawn.guo@freescale.com> wrote:
 
-Regular per-task counters not including this are therefore not
-consistent.
+> Removing that alone does not resolve the issue, but with additional
+> .write_flag_mask setting it does for me.
 
-So it would be good to find a way to fix the tracing fallout
-differently. A well..
+This is still not working for me on mx31pdk.
 
+Still getting wrong SPI read data from the pmic.
