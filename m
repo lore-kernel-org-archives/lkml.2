@@ -1,67 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933230Ab2EWBRL (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 May 2012 21:17:11 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:57496 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753038Ab2EWBRI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 May 2012 21:17:08 -0400
-Date: Tue, 22 May 2012 21:17:01 -0400
-From: Dave Jones <davej@redhat.com>
-To: Ming Lei <tom.leiming@gmail.com>
-Cc: Linux Kernel <linux-kernel@vger.kernel.org>,
-        Alan Cox <alan@linux.intel.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Subject: Re: 3.4+ tty lockdep trace
-Message-ID: <20120523011701.GA15255@redhat.com>
-Mail-Followup-To: Dave Jones <davej@redhat.com>,
-	Ming Lei <tom.leiming@gmail.com>,
-	Linux Kernel <linux-kernel@vger.kernel.org>,
-	Alan Cox <alan@linux.intel.com>,
-	Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-References: <20120523002645.GA3490@redhat.com>
- <CACVXFVMz_GKHXpzbqt24yY=fHJ6uYZPOcSnKNFHrvbdpWxc7tw@mail.gmail.com>
+	id S1757705Ab2EWBTq (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 May 2012 21:19:46 -0400
+Received: from cn.fujitsu.com ([222.73.24.84]:52203 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1751661Ab2EWBTp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 May 2012 21:19:45 -0400
+X-IronPort-AV: E=Sophos;i="4.75,642,1330876800"; 
+   d="scan'208";a="5016066"
+Message-ID: <4FBC3C07.5010201@cn.fujitsu.com>
+Date: Wed, 23 May 2012 09:23:19 +0800
+From: Wen Congyang <wency@cn.fujitsu.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100413 Fedora/3.0.4-2.fc13 Thunderbird/3.0.4
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <CACVXFVMz_GKHXpzbqt24yY=fHJ6uYZPOcSnKNFHrvbdpWxc7tw@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Rob Landley <rob@landley.net>
+CC: tglx@linutronix.de, Ingo Molnar <mingo@redhat.com>, x86@kernel.org,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 1/2] x86: add max_addr boot option
+References: <4FBB3A23.50102@cn.fujitsu.com> <4FBBEE49.2020806@landley.net>
+In-Reply-To: <4FBBEE49.2020806@landley.net>
+X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2012/05/23 09:18:11,
+	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2012/05/23 09:18:15,
+	Serialize complete at 2012/05/23 09:18:15
+Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, May 23, 2012 at 09:06:22AM +0800, Ming Lei wrote:
+At 05/23/2012 03:51 AM, Rob Landley Wrote:
+> On 05/22/2012 02:02 AM, Wen Congyang wrote:
+>> If we only want to use node0, we can specify the max_addr. The boot
+>> option "mem=" can do the same thing now. But the boot option "mem="
+>> means the total memory used by the system. If we tell the user
+>> that the boot option "mem=" can do this, it will confuse the user.
+>> So we need an new boot option "max_addr" on x86 platform.
+> 
+> I didn't follow that reasoning at all.  Care to try again?
+> 
+> (mem= can do this, but telling users that would confuse them?  What?)
 
- > > [   43.375802] stack backtrace:
- > > [   43.375841] Pid: 639, comm: sshd Not tainted 3.4.0+ #24
- > > [   43.375882] Call Trace:
- > > [   43.377572]  [<ffffffff810b4604>] __lock_acquire+0x1584/0x1aa0
- > > [   43.379286]  [<ffffffff810b51e2>] lock_acquire+0x92/0x1f0
- > > [   43.380995]  [<ffffffff81656d57>] ? tty_lock+0x37/0x80
- > > [   43.382700]  [<ffffffff816534f1>] mutex_lock_nested+0x71/0x3b0
- > > [   43.384403]  [<ffffffff81656d57>] ? tty_lock+0x37/0x80
- > > [   43.386094]  [<ffffffff81085521>] ? get_parent_ip+0x11/0x50
- > > [   43.387794]  [<ffffffff81656d57>] ? tty_lock+0x37/0x80
- > > [   43.389480]  [<ffffffff8165a68d>] ? sub_preempt_count+0x6d/0xd0
- > > [   43.391176]  [<ffffffff813b0243>] ? tty_release+0x1c3/0x5d0
- > > [   43.393003]  [<ffffffff81656d57>] tty_lock+0x37/0x80
- > > [   43.394867]  [<ffffffff81656dc3>] tty_lock_pair+0x23/0x5c
- > > [   43.396671]  [<ffffffff813b024e>] tty_release+0x1ce/0x5d0
- > > [   43.398462]  [<ffffffff811a765c>] fput+0x12c/0x300
- > > [   43.400292]  [<ffffffff811a23a9>] filp_close+0x69/0xa0
- > > [   43.402084]  [<ffffffff811a2f2d>] sys_close+0xad/0x1a0
- > > [   43.403871]  [<ffffffff8165e652>] system_call_fastpath+0x16/0x1b
- > 
- > We have one patch to address the problem, could you test it from the link below?
- > 
- >         http://marc.info/?l=linux-kernel&m=133765211309247&w=2
+mem= means the total memory, but we implement it as max address.
+I donot know why we implement it as max address. The users donot
+know how we implement, and they only know that they can use
+mem= to set the total memory. If you tell the users that mem=
+can set max address, it will confuse them.
 
-Yes, that seems to fix it. Thanks.
+Thanks
+Wen Congyang
 
-	Dave
-
-
-
-
+> 
+> Rob
 
