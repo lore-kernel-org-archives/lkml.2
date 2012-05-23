@@ -1,90 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753834Ab2EWIwm (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 May 2012 04:52:42 -0400
-Received: from e23smtp03.au.ibm.com ([202.81.31.145]:60810 "EHLO
-	e23smtp03.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752634Ab2EWIwd (ORCPT
+	id S1753977Ab2EWIxl (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 May 2012 04:53:41 -0400
+Received: from e23smtp02.au.ibm.com ([202.81.31.144]:44822 "EHLO
+	e23smtp02.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751805Ab2EWIxj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 May 2012 04:52:33 -0400
-Message-ID: <4FBCA525.3050400@linux.vnet.ibm.com>
-Date: Wed, 23 May 2012 16:51:49 +0800
+	Wed, 23 May 2012 04:53:39 -0400
+Message-ID: <4FBCA57B.1050206@linux.vnet.ibm.com>
+Date: Wed, 23 May 2012 16:53:15 +0800
 From: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
 User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
 MIME-Version: 1.0
 To: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
 CC: Avi Kivity <avi@redhat.com>, Marcelo Tosatti <mtosatti@redhat.com>,
         LKML <linux-kernel@vger.kernel.org>, KVM <kvm@vger.kernel.org>
-Subject: [PATCH v5 1/9] KVM: MMU: return bool in __rmap_write_protect
+Subject: [PATCH v5 3/9] KVM: VMX: export PFEC.P bit on ept
 References: <4FBCA4FB.8050501@linux.vnet.ibm.com>
 In-Reply-To: <4FBCA4FB.8050501@linux.vnet.ibm.com>
 Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
-x-cbid: 12052222-6102-0000-0000-0000018C3A3F
+x-cbid: 12052222-5490-0000-0000-00000171744C
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The reture value of __rmap_write_protect is either 1 or 0, use
-true/false instead of these
+Export the present bit of page fault error code, the later patch
+will use it
 
 Signed-off-by: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
 ---
- arch/x86/kvm/mmu.c |   13 +++++++------
- 1 files changed, 7 insertions(+), 6 deletions(-)
+ arch/x86/kvm/vmx.c |    9 ++++++++-
+ 1 files changed, 8 insertions(+), 1 deletions(-)
 
-diff --git a/arch/x86/kvm/mmu.c b/arch/x86/kvm/mmu.c
-index 72102e0..ddbf89f 100644
---- a/arch/x86/kvm/mmu.c
-+++ b/arch/x86/kvm/mmu.c
-@@ -1051,11 +1051,12 @@ static void drop_spte(struct kvm *kvm, u64 *sptep)
- 		rmap_remove(kvm, sptep);
+diff --git a/arch/x86/kvm/vmx.c b/arch/x86/kvm/vmx.c
+index 32eb588..fe18fa3 100644
+--- a/arch/x86/kvm/vmx.c
++++ b/arch/x86/kvm/vmx.c
+@@ -4769,6 +4769,7 @@ static int handle_ept_violation(struct kvm_vcpu *vcpu)
+ {
+ 	unsigned long exit_qualification;
+ 	gpa_t gpa;
++	u32 error_code;
+ 	int gla_validity;
+
+ 	exit_qualification = vmcs_readl(EXIT_QUALIFICATION);
+@@ -4793,7 +4794,13 @@ static int handle_ept_violation(struct kvm_vcpu *vcpu)
+
+ 	gpa = vmcs_read64(GUEST_PHYSICAL_ADDRESS);
+ 	trace_kvm_page_fault(gpa, exit_qualification);
+-	return kvm_mmu_page_fault(vcpu, gpa, exit_qualification & 0x3, NULL, 0);
++
++	/* It is a write fault? */
++	error_code = exit_qualification & (1U << 1);
++	/* ept page table is present? */
++	error_code |= (exit_qualification >> 3) & 0x1;
++
++	return kvm_mmu_page_fault(vcpu, gpa, error_code, NULL, 0);
  }
 
--static int __rmap_write_protect(struct kvm *kvm, unsigned long *rmapp, int level)
-+static bool
-+__rmap_write_protect(struct kvm *kvm, unsigned long *rmapp, int level)
- {
- 	u64 *sptep;
- 	struct rmap_iterator iter;
--	int write_protected = 0;
-+	bool write_protected = false;
-
- 	for (sptep = rmap_get_first(*rmapp, &iter); sptep;) {
- 		BUG_ON(!(*sptep & PT_PRESENT_MASK));
-@@ -1076,7 +1077,7 @@ static int __rmap_write_protect(struct kvm *kvm, unsigned long *rmapp, int level
- 			sptep = rmap_get_first(*rmapp, &iter);
- 		}
-
--		write_protected = 1;
-+		write_protected = true;
- 	}
-
- 	return write_protected;
-@@ -1107,12 +1108,12 @@ void kvm_mmu_write_protect_pt_masked(struct kvm *kvm,
- 	}
- }
-
--static int rmap_write_protect(struct kvm *kvm, u64 gfn)
-+static bool rmap_write_protect(struct kvm *kvm, u64 gfn)
- {
- 	struct kvm_memory_slot *slot;
- 	unsigned long *rmapp;
- 	int i;
--	int write_protected = 0;
-+	bool write_protected = false;
-
- 	slot = gfn_to_memslot(kvm, gfn);
-
-@@ -1701,7 +1702,7 @@ static void mmu_sync_children(struct kvm_vcpu *vcpu,
-
- 	kvm_mmu_pages_init(parent, &parents, &pages);
- 	while (mmu_unsync_walk(parent, &pages)) {
--		int protected = 0;
-+		bool protected = false;
-
- 		for_each_sp(pages, sp, parents, i)
- 			protected |= rmap_write_protect(vcpu->kvm, sp->gfn);
+ static u64 ept_rsvd_mask(u64 spte, int level)
 -- 
 1.7.7.6
 
