@@ -1,78 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964793Ab2EWKDv (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 May 2012 06:03:51 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:49185 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1758793Ab2EWKDu (ORCPT
+	id S964807Ab2EWKEz (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 May 2012 06:04:55 -0400
+Received: from tx2ehsobe003.messaging.microsoft.com ([65.55.88.13]:37795 "EHLO
+	tx2outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751422Ab2EWKEw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 May 2012 06:03:50 -0400
-Date: Wed, 23 May 2012 11:03:47 +0100
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: jonghwa3.lee@samsung.com
-Cc: linux-kernel@vger.kernel.org, Alessandro Zummo <a.zummo@towertech.it>,
-        Samuel Oritz <sameo@linux.intel.com>, Liam Girdwood <trg@ti.com>,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        MyungJoo Ham <myungjoo.ham@samsung.com>,
-        Chanwoo Choi <cw00.choi@samsung.com>,
-        Chiwoong Byun <woong.byun@samsung.com>
-Subject: Re: [PATCH 2/3] regulator: MAX77686: Add Maxim 77686 regulator driver
-Message-ID: <20120523100347.GF4085@opensource.wolfsonmicro.com>
-References: <1337333539-18371-1-git-send-email-jonghwa3.lee@samsung.com>
- <1337333539-18371-3-git-send-email-jonghwa3.lee@samsung.com>
- <20120520155616.GB9337@opensource.wolfsonmicro.com>
- <4FB9EFBB.20306@samsung.com>
- <20120521095540.GA1999@opensource.wolfsonmicro.com>
- <4FBC320C.2040803@samsung.com>
+	Wed, 23 May 2012 06:04:52 -0400
+X-Forefront-Antispam-Report: CIP:163.181.249.108;KIP:(null);UIP:(null);IPV:NLI;H:ausb3twp01.amd.com;RD:none;EFVD:NLI
+X-SpamScore: -19
+X-BigFish: VPS-19(zz1432N98dKzz1202hzz15d4R8275bhz2dh668h839h944hd25he5bhf0ah)
+X-WSS-ID: 0M4H000-01-5DK-02
+X-M-MSG: 
+Date: Wed, 23 May 2012 12:04:54 +0200
+From: Joerg Roedel <Joerg.Roedel@amd.com>
+To: Ohad Ben-Cohen <ohad@wizery.com>
+CC: <iommu@lists.linux-foundation.org>, <linux-omap@vger.kernel.org>,
+        <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
+        Fernando Guzman Lugo <fernando.lugo@ti.com>
+Subject: Re: [PATCH] iommu/core: pass a user-provided token to fault handlers
+Message-ID: <20120523100454.GI2604@amd.com>
+References: <1337620805-30217-1-git-send-email-ohad@wizery.com>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="eVzOFob/8UvintSX"
+Content-Type: text/plain; charset="us-ascii"
 Content-Disposition: inline
-In-Reply-To: <4FBC320C.2040803@samsung.com>
-X-Cookie: You dialed 5483.
+In-Reply-To: <1337620805-30217-1-git-send-email-ohad@wizery.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
+X-OriginatorOrg: amd.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Mon, May 21, 2012 at 08:20:05PM +0300, Ohad Ben-Cohen wrote:
+> Sometimes a single IOMMU user may have to deal with several
+> different IOMMU devices (e.g. remoteproc).
+> 
+> When an IOMMU fault happens, such users have to regain their
+> context in order to deal with the fault.
+> 
+> Users can't use the private fields of neither the iommu_domain nor
+> the IOMMU device, because those are already used by the IOMMU core
+> and low level driver (respectively).
+> 
+> This patch just simply allows users to pass a private token (most
+> notably their own context pointer) to iommu_set_fault_handler(),
+> and then makes sure it is provided back to the users whenever
+> an IOMMU fault happens.
+> 
+> The patch also adopts remoteproc to the new fault handling
+> interface, but the real functionality using this (recovery of
+> remote processors) will only be added later in a subsequent patch
+> set.
+> 
+> Cc: Fernando Guzman Lugo <fernando.lugo@ti.com>
+> Signed-off-by: Ohad Ben-Cohen <ohad@wizery.com>
 
---eVzOFob/8UvintSX
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+Applied, thanks.
 
-On Wed, May 23, 2012 at 09:40:44AM +0900, jonghwa3.lee@samsung.com wrote:
 
-> I tried to change API to generic version but it got problem because of
-> overlapping. As you know almost of boards uses private clock API not
-> generic. So how do you think can i test it without modifying board file?
-> I'm afraid of changing all clock registering is too expensive.
+-- 
+AMD Operating System Research Center
 
-I've been using x86 to do build tests, though it's not so useful for
-testing and you do need to enable the API since the x86 maintainers have
-been ignoring my patches to do so.  The other option would be to just
-drop the support for the clock enables until the clock API is available
-on a paltform you have.
+Advanced Micro Devices GmbH Einsteinring 24 85609 Dornach
+General Managers: Alberto Bozzo
+Registration: Dornach, Landkr. Muenchen; Registerger. Muenchen, HRB Nr. 43632
 
---eVzOFob/8UvintSX
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBAgAGBQJPvLX0AAoJEBus8iNuMP3dwOAP/3rwK7jVFZhU6/xVrdjgvSGx
-H/ZTs/lqwn0XfxegHeTzYCO/91lFvQMzfQBDSrtEY3EkLyNm4noMjoRvvY0Ao4Sl
-DMEKzJ4SjeWTR707rXTS4xG9xbfc+bokSZhjVisu7Fquanv2qv64S4VgCrqpgYD2
-Pqo9y8OhnzippCOZF5CbIrEyOAfZQH4YIeKYEEtxgOuZqbYDLzSXgxFsPGEbmXSO
-MStjdWmSb1GwnOE0PM8lt9Jpjo0pl3HChahc3WYIS2GzftfkDAngi8pD3KEI7aCe
-ZKOWLIH8rj9y/yZFlH4YGrk4kkwTPJ/n/myktpw8ly83fLbMPmvB/H2Hy/1RK4Z3
-ru5FR64/+uwgsCzhfLtNeoKL6yoorachnH5CS3ezBd/zjUT3s2qjDnSEiAi4070P
-QH7cBvTH34t75p63gaUYWmrEOYA8d/3W2UWL7lS9yop95w7q2RIY6DJy56E1u4Tf
-8t6AD6QMunJffGtR34irVeDDNPIcv4nNod/5+d5PisfNT5kAKGF1rpn40tDOmPog
-9obtljw+daBjwn80vQ6y/BWhaPjy+kYYIeuNi5v9qmBe9YlgNWeqInt01VPjp2d6
-lpJP1nhDSkMoa1mDd7I1XvBU/H4W1XEA4tfx0b6C7pkbhLuqREq+XsyUVJj8Jl6C
-TclBsVUk1X01JSNaCHku
-=F0GD
------END PGP SIGNATURE-----
-
---eVzOFob/8UvintSX--
