@@ -1,69 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760439Ab2EWBu0 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 May 2012 21:50:26 -0400
-Received: from mailout2.samsung.com ([203.254.224.25]:50040 "EHLO
-	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756706Ab2EWBuY (ORCPT
+	id S933129Ab2EWBwk (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 May 2012 21:52:40 -0400
+Received: from nat.nue.novell.com ([195.135.221.2]:20511 "EHLO
+	nat.nue.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932899Ab2EWBwj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 May 2012 21:50:24 -0400
-MIME-version: 1.0
-Content-transfer-encoding: 8BIT
-Content-type: text/plain; charset=UTF-8
-X-AuditID: cbfee61b-b7faf6d000001f49-49-4fbc4256170d
-Message-id: <4FBC4255.4040307@samsung.com>
-Date: Wed, 23 May 2012 10:50:13 +0900
-From: jonghwa3.lee@samsung.com
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:10.0.2) Gecko/20120216
- Thunderbird/10.0.2
-To: yadi.brar01@gmail.com
-Cc: linux-kernel@vger.kernel.org, linux-samsung-soc@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Liam Girdwood <lrg@ti.com>,
-        Yadwinder Singh Brar <yadi.brar@samsung.com>
-Subject: Re: [PATCH v3 2/2] regulator: Add support for MAX77686.
-References: <y@samsung.com> <4fbb2ada.63de440a.589d.78e2@mx.google.com>
-In-reply-to: <4fbb2ada.63de440a.589d.78e2@mx.google.com>
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrLLMWRmVeSWpSXmKPExsVy+t9jQd0wpz3+Br1HFS0u75rDZjHj/D4m
-	ByaPz5vkAhijuGxSUnMyy1KL9O0SuDK2b57LWPCXteL3pfXsDYyPWboYOTkkBEwkPp1qYYKw
-	xSQu3FvP1sXIxSEkMJ1R4sKTU6wgCV4BQYkfk+8BNXBwMAvISxy5lA0SZhZQl5g0bxEzRP1b
-	RolTy38zQtRrSSz43Qa2gEVAVeL6xYvMIDabgJzE26ZvjCBzRAUiJH71c4CERQQkJWa8vMgC
-	ModZ4DWjxI49k8B6hQUcJGavnQ42U0jAXaLxxSswm1PAQuLevAusExgFZiE5bxbCebOQnLeA
-	kXkVo2hqQXJBcVJ6rpFecWJucWleul5yfu4mRnAgPpPewbiqweIQowAHoxIP7wuLPf5CrIll
-	xZW5hxglOJiVRHjXT9/tL8SbklhZlVqUH19UmpNafIhRmoNFSZz3yZId/kIC6YklqdmpqQWp
-	RTBZJg5OqQZGz7afy/qulF+vjEgNqXMSPeg/f7rwL++Z9/4Ivz2pah2fLptbHVxi0djaGPbR
-	/I2uyrLJE33iTX+wWPDpnHhge/zBdLeGup3hJztCTOf8P2nybuYT20uGnnp/Lji8cv3IlGAn
-	JTLnxzm/HMFlHBMTuxZK2dieni/suWvWxCX2Hh4lEyt4v0opsRRnJBpqMRcVJwIAwdzPSkAC	AAA=
-X-TM-AS-MML: No
+	Tue, 22 May 2012 21:52:39 -0400
+Subject: Re: [PATCH] gpu: schedule gma500 stub driver for feature removal
+From: joeyli <jlee@suse.com>
+To: Alex Deucher <alexdeucher@gmail.com>
+Cc: dri-devel@lists.freedesktop.org, linux-kernel@vger.kernel.org
+In-Reply-To: <CADnq5_M7sSMhMM8ASJ-VOCdZBEx3yo3+P29WgwHRZ-Ls3zHoEA@mail.gmail.com>
+References: <1337613303-12463-1-git-send-email-jlee@suse.com>
+	 <CADnq5_M7sSMhMM8ASJ-VOCdZBEx3yo3+P29WgwHRZ-Ls3zHoEA@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Wed, 23 May 2012 09:48:48 +0800
+Message-ID: <1337737728.9751.236.camel@linux-s257.site>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.2 
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi, again.
-On 2012년 05월 22일 14:57, yadi.brar01@gmail.com wrote:
+Hi Alex, 
+
+於 二，2012-05-22 於 12:01 -0400，Alex Deucher 提到：
+> On Mon, May 21, 2012 at 11:15 AM, Lee, Chun-Yi <joeyli.kernel@gmail.com> wrote:
+> > In v3.3, the gma500 drm driver moved from staging to drm group by
+> > Alan Cox's 3abcf41fb patch. the gma500 drm driver should control
+> > brightness well and don't need gma500 stub driver anymore.
+> >
+> > So, my plan is remove gma500 stub driver at Dec. 2012.
+> 
+> 
+> December 2013?
+> 
+> Alex
+
+My plan is December 2012, end of this year.
 
 
-> +static __devinit int max77686_pmic_probe(struct platform_device *pdev)
-> +{
+Thanks
+Joey Lee
 
-> +
-> +	for (i = 0; i < pdata->num_regulators; i++) {
-> +		config.dev = max77686->dev;
-> +		config.init_data = pdata->regulators[i].init_data;
-> +		config.driver_data = max77686;
-> +		config.regmap = iodev->regmap;
-> +
-> +		rdev[i] = regulator_register(&regulators[i], &config);
+> >
+> > Signed-off-by: Lee, Chun-Yi <jlee@suse.com>
+> > ---
+> >  Documentation/feature-removal-schedule.txt |   11 +++++++++++
+> >  1 files changed, 11 insertions(+), 0 deletions(-)
+> >
+> > diff --git a/Documentation/feature-removal-schedule.txt b/Documentation/feature-removal-schedule.txt
+> > index a0ffac0..219d6f1 100644
+> > --- a/Documentation/feature-removal-schedule.txt
+> > +++ b/Documentation/feature-removal-schedule.txt
+> > @@ -524,3 +524,14 @@ Files:     arch/arm/mach-at91/at91cap9.c
+> >  Why:   The code is not actively maintained and platforms are now hard to find.
+> >  Who:   Nicolas Ferre <nicolas.ferre@atmel.com>
+> >        Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
+> > +
+> > +----------------------------
+> > +
+> > +What:  Intel GMA500 Stub Driver
+> > +When:  December 2012
+> > +Why:   In v3.3, the gma500 drm driver moved from staging to drm group by
+> > +       Alan Cox's 3abcf41fb patch. the gma500 drm driver should control
+> > +       brightness well and don't need gma500 stub driver anymore.
+> > +
+> > +       So, my plan is remove gma500 stub driver at Dec. 2012.
+> > +Who:   Lee, Chun-Yi <jlee@novell.com>
+> > --
+> > 1.6.0.2
+> >
+> > _______________________________________________
+> > dri-devel mailing list
+> > dri-devel@lists.freedesktop.org
+> > http://lists.freedesktop.org/mailman/listinfo/dri-devel
+> 
 
 
-I'm sorry that i missed one. You have to register all regulators
-unconditionally. Mark brown commented about this to my former patch.
-
-'No, you should unconditionally register all regulators the device
-physically has.  This is useful for debug and simplifies the code.'
-						- from Mark Brown
-
-
-
-Thanks.
