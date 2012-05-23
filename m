@@ -1,119 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759965Ab2EWODr (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 May 2012 10:03:47 -0400
-Received: from mail-qc0-f174.google.com ([209.85.216.174]:42512 "EHLO
-	mail-qc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751051Ab2EWODp (ORCPT
+	id S1760068Ab2EWOE6 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 May 2012 10:04:58 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:53310 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752642Ab2EWOE5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 May 2012 10:03:45 -0400
-Date: Wed, 23 May 2012 16:03:36 +0200
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Cc: LKML <linux-kernel@vger.kernel.org>, linaro-sched-sig@lists.linaro.org,
-        Alessio Igor Bogani <abogani@kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>, Avi Kivity <avi@redhat.com>,
-        Chris Metcalf <cmetcalf@tilera.com>, Christoph Lameter <cl@linux.com>,
-        Daniel Lezcano <daniel.lezcano@linaro.org>,
-        Geoff Levand <geoff@infradead.org>,
-        Gilad Ben Yossef <gilad@benyossef.com>,
-        Hakan Akkan <hakanakkan@gmail.com>, Ingo Molnar <mingo@kernel.org>,
-        Kevin Hilman <khilman@ti.com>, Max Krasnyansky <maxk@qualcomm.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Stephen Hemminger <shemminger@vyatta.com>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Sven-Thorsten Dietrich <thebigcorporation@gmail.com>,
-        Thomas Gleixner <tglx@linutronix.de>
-Subject: Re: [PATCH 17/41] rcu: Restart tick if we enqueue a callback in a
- nohz/cpuset CPU
-Message-ID: <20120523140331.GE1663@somewhere>
-References: <1335830115-14335-1-git-send-email-fweisbec@gmail.com>
- <1335830115-14335-18-git-send-email-fweisbec@gmail.com>
- <20120522172714.GC8087@linux.vnet.ibm.com>
- <20120522173047.GA8160@linux.vnet.ibm.com>
+	Wed, 23 May 2012 10:04:57 -0400
+Date: Wed, 23 May 2012 07:04:51 -0700
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: Samuel Iglesias =?iso-8859-1?Q?Gons=E1lvez?= 
+	<siglesias@igalia.com>
+Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 3/4] Staging: ipack/bridges/tpci200: remove
+ TPCI200_SHORTNAME constant
+Message-ID: <20120523140451.GA8088@kroah.com>
+References: <1337332208-26057-1-git-send-email-siglesias@igalia.com>
+ <1337332208-26057-3-git-send-email-siglesias@igalia.com>
+ <20120519003724.GA10111@kroah.com>
+ <1337768001.3666.6.camel@fourier.local.igalia.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=iso-8859-1
 Content-Disposition: inline
-In-Reply-To: <20120522173047.GA8160@linux.vnet.ibm.com>
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <1337768001.3666.6.camel@fourier.local.igalia.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, May 22, 2012 at 10:30:47AM -0700, Paul E. McKenney wrote:
-> On Tue, May 22, 2012 at 10:27:14AM -0700, Paul E. McKenney wrote:
-> > On Tue, May 01, 2012 at 01:54:51AM +0200, Frederic Weisbecker wrote:
-> > > If we enqueue an rcu callback, we need the CPU tick to stay
-> > > alive until we take care of those by completing the appropriate
-> > > grace period.
-> > > 
-> > > Thus, when we call_rcu(), send a self IPI that checks rcu_needs_cpu()
-> > > so that we restore a periodic tick behaviour that can take care of
-> > > everything.
+On Wed, May 23, 2012 at 12:13:21PM +0200, Samuel Iglesias Gonsálvez wrote:
+> On Fri, 2012-05-18 at 17:37 -0700, Greg Kroah-Hartman wrote:
+> [...]
+> > >  	if (dev->slot >= TPCI200_NB_SLOT) {
+> > > -		pr_info("Slot [%s %d:%d] doesn't exist! Last tpci200 slot is %d.\n",
+> > > -			TPCI200_SHORTNAME, dev->bus_nr, dev->slot,
+> > > -			TPCI200_NB_SLOT-1);
+> > > +		pr_info("Slot [%d:%d] doesn't exist! Last tpci200 slot is %d.\n",
+> > > +			dev->bus_nr, dev->slot, TPCI200_NB_SLOT-1);
 > > 
-> > Ouch, I hadn't considered RCU callbacks being posted from within an
-> > extended quiescent state.  I guess I need to make __call_rcu() either
-> > complain about this or handle it correctly...  It would -usually- be
-> > harmless, but there is getting to be quite a bit of active machinery
-> > in the various idle loops, so just assuming that it cannot happen is
-> > probably getting to be an obsolete assumption.
+> > All of these should really be dev_err() calls, right?
+> > 
+> > You should have no pr_* calls at all in any driver, and probably none in
+> > the ipack core as well, care to fix them all up?
 > 
-> Adaptive ticks does restart the tick upon entering the kernel, correct?
+> Yes, I will fix it in the next bunch of patches. I don't forget it.
+> 
+> By the way, sometime ago, you suggested me to use the ics interface for
+> giving the bus number if there is no HW boundary of the number of them.
+> However, I searched the source code and I didn't find any reference to
+> the ics interface. Can you tell me where is it declared?
 
-No, it keeps the tick down. The tick is restarted only if it's needed:
-when more than one task are on the runqueue, a posix cpu timer is running,
-a CPU needs the current one to report a quiescent state, etc...
+My appologies, I should have said "idr" interface, there is a reason why
+you couldn't find any "ics" code :)
 
-> If so, wouldn't the return to userspace cause adaptive tick to automatically
-> handle a callback posted from within the kernel?
-> 
-> (And yes, I still need to handle the possibility of callbacks being posted
-> from the idle loop, but that is a different extended quiescent state.)
-> 
-> 							Thanx, Paul
-> 
-> > > Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
-> > > Cc: Alessio Igor Bogani <abogani@kernel.org>
-> > > Cc: Andrew Morton <akpm@linux-foundation.org>
-> > > Cc: Avi Kivity <avi@redhat.com>
-> > > Cc: Chris Metcalf <cmetcalf@tilera.com>
-> > > Cc: Christoph Lameter <cl@linux.com>
-> > > Cc: Daniel Lezcano <daniel.lezcano@linaro.org>
-> > > Cc: Geoff Levand <geoff@infradead.org>
-> > > Cc: Gilad Ben Yossef <gilad@benyossef.com>
-> > > Cc: Hakan Akkan <hakanakkan@gmail.com>
-> > > Cc: Ingo Molnar <mingo@kernel.org>
-> > > Cc: Kevin Hilman <khilman@ti.com>
-> > > Cc: Max Krasnyansky <maxk@qualcomm.com>
-> > > Cc: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
-> > > Cc: Peter Zijlstra <peterz@infradead.org>
-> > > Cc: Stephen Hemminger <shemminger@vyatta.com>
-> > > Cc: Steven Rostedt <rostedt@goodmis.org>
-> > > Cc: Sven-Thorsten Dietrich <thebigcorporation@gmail.com>
-> > > Cc: Thomas Gleixner <tglx@linutronix.de>
-> > > ---
-> > >  kernel/rcutree.c |    7 +++++++
-> > >  1 files changed, 7 insertions(+), 0 deletions(-)
-> > > 
-> > > diff --git a/kernel/rcutree.c b/kernel/rcutree.c
-> > > index 3fffc26..b8d300c 100644
-> > > --- a/kernel/rcutree.c
-> > > +++ b/kernel/rcutree.c
-> > > @@ -1749,6 +1749,13 @@ __call_rcu(struct rcu_head *head, void (*func)(struct rcu_head *rcu),
-> > >  	else
-> > >  		trace_rcu_callback(rsp->name, head, rdp->qlen);
-> > > 
-> > > +	/* Restart the timer if needed to handle the callbacks */
-> > > +	if (cpuset_adaptive_nohz()) {
-> > > +		/* Make updates on nxtlist visible to self IPI */
-> > > +		barrier();
-> > > +		smp_cpuset_update_nohz(smp_processor_id());
-> > > +	}
-> > > +
-> > >  	/* If interrupts were disabled, don't dive into RCU core. */
-> > >  	if (irqs_disabled_flags(flags)) {
-> > >  		local_irq_restore(flags);
-> > > -- 
-> > > 1.7.5.4
-> > > 
-> 
+Sorry about that,
+
+greg k-h
