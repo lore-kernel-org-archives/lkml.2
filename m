@@ -1,193 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933273Ab2EWAjo (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 May 2012 20:39:44 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:6180 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752235Ab2EWAji (ORCPT
+	id S933363Ab2EWAkr (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 May 2012 20:40:47 -0400
+Received: from mailout1.samsung.com ([203.254.224.24]:33847 "EHLO
+	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756924Ab2EWAkq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 May 2012 20:39:38 -0400
-X-Authority-Analysis: v=2.0 cv=D8PF24tj c=1 sm=0 a=ZycB6UtQUfgMyuk2+PxD7w==:17 a=XQbtiDEiEegA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=meVymXHHAAAA:8 a=ayC55rCoAAAA:8 a=I21yznq-B6Y38OGxoyoA:9 a=vlEEBiu4gVfvJgIWYDMA:7 a=PUjeQqilurYA:10 a=jeBq3FmKZ4MA:10 a=cK_KYy3NRiW2m4Pd:21 a=vxwn3eC9U5vWuEkc:21 a=ZycB6UtQUfgMyuk2+PxD7w==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 74.67.80.29
-Message-ID: <1337733575.13348.134.camel@gandalf.stny.rr.com>
-Subject: Re: NMI vs #PF clash
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Avi Kivity <avi@redhat.com>, linux-kernel <linux-kernel@vger.kernel.org>,
-        Ingo Molnar <mingo@elte.hu>, "H. Peter Anvin" <hpa@zytor.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Paul Turner <pjt@google.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
-Date: Tue, 22 May 2012 20:39:35 -0400
-In-Reply-To: <CA+55aFwx3QjNB2ckQfsThhDn7=Bm1d=n0Ai8zawbpLKBKgugGg@mail.gmail.com>
-References: <4FBB8C40.6080304@redhat.com>
-	 <1337693441.13348.36.camel@gandalf.stny.rr.com>
-	 <4FBB986F.5030306@redhat.com>
-	 <1337695780.13348.41.camel@gandalf.stny.rr.com>
-	 <4FBBA094.3090703@redhat.com>
-	 <1337696825.13348.44.camel@gandalf.stny.rr.com>
-	 <CA+55aFwx3QjNB2ckQfsThhDn7=Bm1d=n0Ai8zawbpLKBKgugGg@mail.gmail.com>
-Content-Type: text/plain; charset="ISO-8859-15"
-X-Mailer: Evolution 3.2.2-1 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	Tue, 22 May 2012 20:40:46 -0400
+MIME-version: 1.0
+Content-transfer-encoding: 8BIT
+Content-type: text/plain; charset=UTF-8
+X-AuditID: cbfee61b-b7faf6d000001f49-cc-4fbc320c8954
+Message-id: <4FBC320C.2040803@samsung.com>
+Date: Wed, 23 May 2012 09:40:44 +0900
+From: jonghwa3.lee@samsung.com
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:10.0.2) Gecko/20120216
+ Thunderbird/10.0.2
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>
+Cc: linux-kernel@vger.kernel.org, Alessandro Zummo <a.zummo@towertech.it>,
+        Samuel Oritz <sameo@linux.intel.com>, Liam Girdwood <trg@ti.com>,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        MyungJoo Ham <myungjoo.ham@samsung.com>,
+        Chanwoo Choi <cw00.choi@samsung.com>,
+        Chiwoong Byun <woong.byun@samsung.com>
+Subject: Re: [PATCH 2/3] regulator: MAX77686: Add Maxim 77686 regulator driver
+References: <1337333539-18371-1-git-send-email-jonghwa3.lee@samsung.com>
+ <1337333539-18371-3-git-send-email-jonghwa3.lee@samsung.com>
+ <20120520155616.GB9337@opensource.wolfsonmicro.com>
+ <4FB9EFBB.20306@samsung.com>
+ <20120521095540.GA1999@opensource.wolfsonmicro.com>
+In-reply-to: <20120521095540.GA1999@opensource.wolfsonmicro.com>
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrMLMWRmVeSWpSXmKPExsVy+t9jQV0eoz3+BjOPW1hc3jWHzYHR4/Mm
+	uQDGKC6blNSczLLUIn27BK6MJZ91C+5zVPzav46tgfE9WxcjJ4eEgInErxW7oGwxiQv31gPZ
+	XBxCAtMZJVaffcEOkuAVEJT4MfkeSxcjBwezgLzEkUvZIGFmAXWJSfMWMYPYQgJ9TBJPe1NA
+	SngFtCSWtpuAmCwCqhI7vkmCVLAJyEm8bfrGCBIWFYiQ+NXPAWKKAB3w+34lyE5mga1MEouv
+	fWMGiQsL+ElcPu4OccskJokzl5pYQMZwCjhIHHy2jXUCo8AsJKfNQjhtFpLTFjAyr2IUTS1I
+	LihOSs810itOzC0uzUvXS87P3cQIDrpn0jsYVzVYHGIU4GBU4uG9cX+3vxBrYllxZe4hRgkO
+	ZiUR3vXTgUK8KYmVValF+fFFpTmpxYcYpTlYlMR5nyzZ4S8kkJ5YkpqdmlqQWgSTZeLglGpg
+	ZF39RDjk3VapIz6ikSd6+/2nrU8L5L2b2H32/u2252e92GaFzTgavfbZnemzRHgvRnCLVBpt
+	d+F7zeEyZdkKPUfz74n/Tr4I/3f04p9UwWjfpuALL6e8U2x6Z97GdjqPneGzVtmL3kW1Ouvz
+	txzVW6+lW5d0OffkBPbPTEuaEkNWnGHg81lyWImlOCPRUIu5qDgRAKXuudo2AgAA
+X-TM-AS-MML: No
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2012-05-22 at 08:33 -0700, Linus Torvalds wrote:
-> On Tue, May 22, 2012 at 7:27 AM, Steven Rostedt <rostedt@goodmis.org> wrote:
-> >
-> > Is reading it fast? Then we could do a two reads and only write when
-> > needed.
+Hi, Mark,
+On 2012년 05월 21일 18:55, Mark Brown wrote:
+
+> On Mon, May 21, 2012 at 04:33:15PM +0900, jonghwa3.lee@samsung.com wrote:
+>> On 2012년 05월 21일 00:56, Mark Brown wrote:
+>>> On Fri, May 18, 2012 at 06:32:18PM +0900, Jonghwa Lee wrote:
 > 
-> Even better: we could do nothing at all.
+>>>> +	}, {
+>>>> +		.name	= "EN32KHz PMIC",
+>>>> +		.id	= MAX77686_P32KH,
+>>>> +		.ops	= &max77686_fixedvolt_ops,
+>>>> +		.type	= REGULATOR_VOLTAGE,
+>>>> +		.owner	= THIS_MODULE,
+>>>> +	},
 > 
-> We could just say: let's make sure that any #PF case that can happen
-> in #NMI can also be re-done with arbitrary 'error_code' and 'struct
-> regs' contents.
+>>> These should be managed via the clock API now we have one.
 > 
-> At that point, what could happen is
->  - #PF
->   - NMI
->    - #PF
->     - read cr2 for NMI fault
->     - handle the NMI #PF
->     - return from #PF
->   - return from #NMI
->   - read cr2 for original #PF fault - but get the NMI cr2 again
->   - hande the #PF again (this should be a no-op now)
-
-I tested this by forcing all NMIs to have a page fault, and then running
-perf against hackbench to see what breaks. This doesn't work because the
-cr2 contains where the fault happened.
-
-If the NMI faulting address was in kernel space, the page fault it
-interrupted will think the user task is trying to access kernel memory
-and fault.
-
-Basically, the address will not be valid for the user task and this will
-make the task take a SEGFAULT.
-
-I had the NMI fault on the address 0x12348, but had a exception table to
-handle it.
-
-hackbench[2236]: segfault at 12348 ip 0000003054a091c4 sp 00007fff22c6e840 error 4 in ld-2.12.2.so[3054a00000+1e000]
-
-With the below patch, the faulting NMIs don't seem to be harming anything.
-
-
->   - return from #PF
->  - instruction restart causes new #PF
->   - now we do the original page fault
+>> I already updated all your comments except only this one. Could you
+>> explain more details?
 > 
-> So one option is to just make sure that the few cases (just the
-> vmalloc area?) that NMI can trigger are all ok to be re-done with
-> other state.
-> 
-> I note that right now we have
-> 
->         if (unlikely(fault_in_kernel_space(address))) {
->                 if (!(error_code & (PF_RSVD | PF_USER | PF_PROT))) {
->                         if (vmalloc_fault(address) >= 0)
->                                 return;
-> 
-> and that the error_code check means that the retried NMI #PF would not
-> go through that. But maybe we don't even need that check?
-> 
-> That error_code thing seems to literally be the only thing that keeps
-> us from just re-doing the vmalloc_fault() silently.
-
-Avi, you want to test this?
-
--- Steve
-
-Index: linux-trace.git/arch/x86/kernel/entry_64.S
-===================================================================
---- linux-trace.git.orig/arch/x86/kernel/entry_64.S
-+++ linux-trace.git/arch/x86/kernel/entry_64.S
-@@ -1586,7 +1586,7 @@ ENTRY(nmi)
- 	 * Check the special variable on the stack to see if NMIs are
- 	 * executing.
- 	 */
--	cmpl $1, -8(%rsp)
-+	cmpl $1, -16(%rsp)
- 	je nested_nmi
- 
- 	/*
-@@ -1615,7 +1615,7 @@ nested_nmi:
- 
- 1:
- 	/* Set up the interrupted NMIs stack to jump to repeat_nmi */
--	leaq -6*8(%rsp), %rdx
-+	leaq -7*8(%rsp), %rdx
- 	movq %rdx, %rsp
- 	CFI_ADJUST_CFA_OFFSET 6*8
- 	pushq_cfi $__KERNEL_DS
-@@ -1625,7 +1625,7 @@ nested_nmi:
- 	pushq_cfi $repeat_nmi
- 
- 	/* Put stack back */
--	addq $(11*8), %rsp
-+	addq $(12*8), %rsp
- 	CFI_ADJUST_CFA_OFFSET -11*8
- 
- nested_nmi_out:
-@@ -1650,6 +1650,8 @@ first_nmi:
- 	 * +-------------------------+
- 	 * | temp storage for rdx    |
- 	 * +-------------------------+
-+	 * | saved cr2               |
-+	 * +-------------------------+
- 	 * | NMI executing variable  |
- 	 * +-------------------------+
- 	 * | Saved SS                |
-@@ -1672,8 +1674,20 @@ first_nmi:
- 	 * to the repeat_nmi. The original stack frame and the temp storage
- 	 * is also used by nested NMIs and can not be trusted on exit.
- 	 */
-+
-+	/*
-+	 * Save off the CR2 register. If we take a page fault in the NMI then
-+	 * it could corrupt the CR2 value. If the NMI preempts a page fault
-+	 * handler before it was able to read the CR2 register, and then the
-+	 * NMI itself takes a page fault, the page fault that was preempted
-+	 * will read the information from the NMI page fault and not the
-+	 * origin fault. Save it off and restore it if it changes.
-+	 */
-+	movq %cr2, %rdx
-+	pushq_cfi %rdx
-+
- 	/* Do not pop rdx, nested NMIs will corrupt that part of the stack */
--	movq (%rsp), %rdx
-+	movq 8(%rsp), %rdx
- 	CFI_RESTORE rdx
- 
- 	/* Leave room for the "in NMI" variable. */
-@@ -1682,7 +1696,7 @@ first_nmi:
- 
- 	/* Copy the stack frame to the Saved frame */
- 	.rept 5
--	pushq_cfi 6*8(%rsp)
-+	pushq_cfi 7*8(%rsp)
- 	.endr
- 	CFI_DEF_CFA_OFFSET SS+8-RIP
- 
-@@ -1734,6 +1748,13 @@ end_repeat_nmi:
- nmi_swapgs:
- 	SWAPGS_UNSAFE_STACK
- nmi_restore:
-+	/* Test if the cr2 reg changed */
-+	movq ORIG_RAX-R15+(12*8)(%rsp), %rdx
-+	movq %cr2, %rcx
-+	cmp %rdx, %rcx
-+	je 1f
-+	movq %rdx, %cr2
-+1:
- 	RESTORE_ALL 8
- 	/* Clear the NMI executing stack variable */
- 	movq $0, 10*8(%rsp)
+> We now have a generic clock framework in drivers/clk so we should be
+> using that to provide drivers for clocks rather than putting them into
+> the regulator API which was always a bodge.
 
 
+I tried to change API to generic version but it got problem because of
+overlapping. As you know almost of boards uses private clock API not
+generic. So how do you think can i test it without modifying board file?
+I'm afraid of changing all clock registering is too expensive.
+
+Thanks.
