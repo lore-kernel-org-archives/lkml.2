@@ -1,77 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753068Ab2EWFmq (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 May 2012 01:42:46 -0400
-Received: from perches-mx.perches.com ([206.117.179.246]:50500 "EHLO
-	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1752082Ab2EWFmo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 May 2012 01:42:44 -0400
-Message-ID: <1337751760.13111.47.camel@joe2Laptop>
-Subject: Re: [PATCH] Add human-readable units modifier to vsnprintf()
-From: Joe Perches <joe@perches.com>
-To: Kent Overstreet <koverstreet@google.com>
-Cc: Tejun Heo <tejun@google.com>, linux-bcache@vger.kernel.org,
-        linux-kernel@vger.kernel.org, dm-devel@redhat.com, agk@redhat.com
-Date: Tue, 22 May 2012 22:42:40 -0700
-In-Reply-To: <20120523052236.GA14312@dhcp-172-18-216-138.mtv.corp.google.com>
-References: <cover.1336619038.git.koverstreet@google.com>
-	 <c3f0ca2a499f532253d4c16a30837d43e237266a.1336619038.git.koverstreet@google.com>
-	 <20120522211706.GH14339@google.com>
-	 <20120523031214.GA607@dhcp-172-18-216-138.mtv.corp.google.com>
-	 <1337744190.13111.33.camel@joe2Laptop>
-	 <20120523045023.GE607@dhcp-172-18-216-138.mtv.corp.google.com>
-	 <1337749848.13111.40.camel@joe2Laptop>
-	 <20120523052236.GA14312@dhcp-172-18-216-138.mtv.corp.google.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.2- 
-Content-Transfer-Encoding: 7bit
+	id S1753368Ab2EWFoi (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 May 2012 01:44:38 -0400
+Received: from ns1.pc-advies.be ([83.149.101.17]:53495 "EHLO
+	spo001.leaseweb.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1752268Ab2EWFog (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 23 May 2012 01:44:36 -0400
+Date: Wed, 23 May 2012 07:44:30 +0200
+From: Wim Van Sebroeck <wim@iguana.be>
+To: Guenter Roeck <guenter@roeck-us.net>
+Cc: Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Aaron Sierra <asierra@xes-inc.com>,
+        Samuel Ortiz <sameo@linux.intel.com>,
+        Randy Dunlap <rdunlap@xenotime.net>, linux-watchdog@vger.kernel.org,
+        Jean Delvare <khali@linux-fr.org>
+Subject: Re: linux-next: manual merge of the watchdog tree with the mfd tree
+Message-ID: <20120523054430.GH3074@spo001.leaseweb.com>
+References: <20120518152348.1e5070cdc16cfdf00682546d@canb.auug.org.au> <20120518083234.GW3074@spo001.leaseweb.com> <6.2.5.6.2.20120518181141.028c8090@roeck-us.net> <20120522163559.GD3074@spo001.leaseweb.com> <6.2.5.6.2.20120522153050.0284ee38@roeck-us.net>
 Mime-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <6.2.5.6.2.20120522153050.0284ee38@roeck-us.net>
+User-Agent: Mutt/1.4.1i
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2012-05-23 at 01:22 -0400, Kent Overstreet wrote:
-> On Tue, May 22, 2012 at 10:10:48PM -0700, Joe Perches wrote:
-> > On Wed, 2012-05-23 at 00:50 -0400, Kent Overstreet wrote:
-> > > diff --git a/lib/vsprintf.c b/lib/vsprintf.c
-> > []
-> > > @@ -1002,6 +1023,7 @@ int format_decode(const char *fmt, struct printf_spec *spec)
-> > >  		case ' ': spec->flags |= SPACE;   break;
-> > >  		case '#': spec->flags |= SPECIAL; break;
-> > >  		case '0': spec->flags |= ZEROPAD; break;
-> > > +		case 'h': spec->flags |= HUNITS;  break;
-> > >  		default:  found = false;
-> > >  		}
-> > >  
-> > 
-> > I think that doesn't work well because
-> > gcc __attribute__((format(printf, x, y)))
-> > verification fails.
-> 
-> Yeah, I already ran into that. I was looking through the gcc docs to see
-> if there was a way to add modifiers (how is it done for the other kernel
-> specific format strings?) but I haven't found anything yet
+Hi Sam,
 
-It's done via %p extensions.
-gcc doesn't care as long as the %p argument is a pointer.
+Since %04llx with a typecast to u64 is the way to go (Thanks Stephen and Randy)...
 
-> > It's also possible
-> > to confuse it with printf's own 'h' / 
-> > integer precision use.
-> 
-> Well, that's annoying. Any suggestions?
+> How do we make sure that Randy's patch makes it upstream ? The iTCO 
+> patch is currently in Sam's tree.
 
-I gave you one already.
+Can you carry Randy's patch/fix (since it fixes the change introduced by the iTCO_wdt mfd patch)?
+If not then I will apply the patch later on once the iTCO_wdt mfd patch is mainstream.
 
-Use a new lib/vsprintf.c %p pointer extension like 
-"%pD" or "%pH" and use a pointer to the type as the
-argument.
-
-It's how it's done for an ipv4 address.
-For instance:
-	be32 address = cpu_to_be32(0xc0a80101);
-	printk("%pI4" &address);
-emits "192.168.1.1"
-
-
+Kind regards,
+Wim.
 
