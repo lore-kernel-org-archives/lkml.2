@@ -1,71 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754644Ab2EWGPJ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 May 2012 02:15:09 -0400
-Received: from mga11.intel.com ([192.55.52.93]:56829 "EHLO mga11.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751032Ab2EWGPH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 May 2012 02:15:07 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
-   d="scan'208";a="155981192"
-Message-ID: <1337753757.14538.190.camel@ymzhang.sh.intel.com>
-Subject: Re: [PATCH] ipv4: fix the rcu race between free_fib_info and
- ip_route_output_slow
-From: Yanmin Zhang <yanmin_zhang@linux.intel.com>
-To: Eric Dumazet <eric.dumazet@gmail.com>
-Cc: David Miller <davem@davemloft.net>, kunx.jiang@intel.com,
-        netdev@vger.kernel.org, linux-kernel@vger.kernel.org
-Date: Wed, 23 May 2012 14:15:57 +0800
-In-Reply-To: <1337749339.3361.1655.camel@edumazet-glaptop>
-References: <4FBB6105.2060808@intel.com>
-	 <20120522.151554.106838106733194160.davem@davemloft.net>
-	 <1337742123.14538.175.camel@ymzhang.sh.intel.com>
-	 <20120522.232310.911242148705021745.davem@davemloft.net>
-	 <1337747829.3361.1599.camel@edumazet-glaptop>
-	 <1337748897.14538.184.camel@ymzhang.sh.intel.com>
-	 <1337749339.3361.1655.camel@edumazet-glaptop>
-Organization: MCG
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.2- 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	id S1754659Ab2EWGRT (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 May 2012 02:17:19 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:34214 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751619Ab2EWGRR (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 23 May 2012 02:17:17 -0400
+Date: Tue, 22 May 2012 23:17:12 -0700
+From: "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>
+To: Vikas Chaudhary <vikas.chaudhary@qlogic.com>
+Cc: linux-kernel <linux-kernel@vger.kernel.org>,
+        Mike Christie <michaelc@cs.wisc.edu>,
+        James Bottomley <James.Bottomley@HansenPartnership.com>,
+        Lalit Chandivade <lalit.chandivade@qlogic.com>,
+        Ravi Anand <ravi.anand@qlogic.com>
+Subject: Re: Bug in sysfs bin attribute?
+Message-ID: <20120523061712.GA19773@kroah.com>
+References: <CBE2759B.EEFF%vikas.chaudhary@qlogic.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CBE2759B.EEFF%vikas.chaudhary@qlogic.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2012-05-23 at 07:02 +0200, Eric Dumazet wrote:
-> On Wed, 2012-05-23 at 12:54 +0800, Yanmin Zhang wrote:
+On Tue, May 22, 2012 at 10:38:11PM -0700, Vikas Chaudhary wrote:
 > 
-> > > fi->fib_dev (aka fib_nh[0].nh_dev) need full RCU protection.
-> > The new patch posted at https://lkml.org/lkml/2012/5/22/558 does move the
-> > resetting to RCU protection.
+> We have added sysfs bin_attribute 'fw_dump' in qla4xxx driver.
+> Here is patch for same: -
+> http://marc.info/?l=linux-scsi&m=133733192809849&w=2
 > 
-> Its not enough.
 > 
-> We must take care that all users are in a RCU protected region.
-> 
-> They might be already, but a full check is needed.
-> 
-> For example 
-> 
-> net/ipv4/fib_trie.c:2563:    fi->fib_dev ? fi->fib_dev->name : "*"
-> 
-> looks to be safe (because already in a rcu_read_lock())
-> 
-> But its not.
-> 
-> Right thing would be to do :
-> 
-> struct net_device *ndev = rcu_dereference(fi->fib_dev)
-> 
-> 	...
-> 	ndev ? ndev->name : "*"
-Thanks for the pointer.
+> In this patch in function qla4_8xxx_sysfs_write_fw_dump() if we print
+> string coming in 'char *buf'
+> from sysfs attribute it contain value we echo on sysfs attribute 'fw_dump'
+> plus some garbage data.
 
-Besides fi->fib_dev here, we need check fi->fib_hash, fi->fib_lhash,
-and nexthop_nh->nh_hash.
+Why are you not using the built-in firmware interface the kernel
+provides you?  What does it lack that you need here?
 
-Yanmin
-
-
+greg k-h
