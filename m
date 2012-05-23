@@ -1,65 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933863Ab2EWS4W (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 May 2012 14:56:22 -0400
-Received: from caramon.arm.linux.org.uk ([78.32.30.218]:37724 "EHLO
-	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933818Ab2EWS4V (ORCPT
+	id S965163Ab2EWS5k (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 May 2012 14:57:40 -0400
+Received: from mail-qc0-f174.google.com ([209.85.216.174]:65104 "EHLO
+	mail-qc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932155Ab2EWS5j convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 May 2012 14:56:21 -0400
-Date: Wed, 23 May 2012 19:56:10 +0100
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: Will Drewry <wad@chromium.org>
-Cc: wade_farnsworth@mentor.com, stevenrwalter@gmail.com, will.deacon@arm.com,
-        Alexander Viro <viro@zeniv.linux.org.uk>,
-        Olof Johansson <olof@lixom.net>, LKML <linux-kernel@vger.kernel.org>
-Subject: Re: New ARM asm/syscall.h incompatible? (commit
-	bf2c9f9866928df60157bc4f1ab39f93a32c754e)
-Message-ID: <20120523185610.GB6908@n2100.arm.linux.org.uk>
-References: <CABqD9hao8sYHimbs1SjT3uRiht2ACnS8TMPyUnPt7AMrM3kVGA@mail.gmail.com>
+	Wed, 23 May 2012 14:57:39 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CABqD9hao8sYHimbs1SjT3uRiht2ACnS8TMPyUnPt7AMrM3kVGA@mail.gmail.com>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+In-Reply-To: <CA+5PVA5m5U67mt8mXH_i_2Zu7OuVWiHfR82kBwqJm5ey4R26sg@mail.gmail.com>
+References: <20120523185054.GA17700@gmail.com>
+	<CA+5PVA5m5U67mt8mXH_i_2Zu7OuVWiHfR82kBwqJm5ey4R26sg@mail.gmail.com>
+Date: Wed, 23 May 2012 14:57:38 -0400
+Message-ID: <CA+5PVA42MrsVxkyB5dVPSF99GZZVuDxVdB6tJsZyVvP90DDcMA@mail.gmail.com>
+Subject: Re: [GIT PULL] perf fix
+From: Josh Boyer <jwboyer@gmail.com>
+To: Ingo Molnar <mingo@kernel.org>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        linux-kernel@vger.kernel.org, Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Arnaldo Carvalho de Melo <acme@infradead.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Andrew Morton <akpm@linux-foundation.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, May 23, 2012 at 11:01:50AM -0500, Will Drewry wrote:
-> Hi Wade and Steven,
-> 
-> I don't believe the syscall_get_arguments/syscall_set_arguments
-> implementation that landed in 3.4 is correct or safe.  I didn't see it
-> get pulled in - sorry for not mailing sooner! :(
-> 
-> The current implementation allows for _7_ arguments and allows the 0th
-> index to be the ARM_ORIG_r0 instead of starting with ARM_r0 == 0.  In
-> the global description of syscall_*_arguments it says:
-> 
->  * It's only valid to call this when @task is stopped for tracing on
->  * entry to a system call, due to %TIF_SYSCALL_TRACE or %TIF_SYSCALL_AUDIT.
->  * It's invalid to call this with @i + @n > 6; we only support system calls
->  * taking up to 6 arguments.
-> 
-> This means that the current implementation is broken when matching
-> system call arguments for ftrace (unless there is an arch specific
-> hack in there) and it breaks internal kernel API for any other
-> consumers without arch knowledge (like seccomp mode=2).  Is there a
-> reason to expose ARM_ORIG_r0 this way?  Am I misreading?
-> 
-> My understanding of the arch register usage at syscall time is something like:
-> - ORIG_r0 gets the syscall number
-> - r0 becomes the first system call argument
-> - system call proceeds
-> - on return, r0 is the return value
+On Wed, May 23, 2012 at 2:56 PM, Josh Boyer <jwboyer@gmail.com> wrote:
+> On Wed, May 23, 2012 at 2:50 PM, Ingo Molnar <mingo@kernel.org> wrote:
+>> Linus,
+>>
+>> Please pull the latest perf-urgent-for-linus git tree from:
+>>
+>>   git://git.kernel.org/pub/scm/linux/kernel/git/tip/tip.git perf-urgent-for-linus
+>>
+>>   HEAD: 5bcdf5e4fee3c45e1281c25e4941f2163cb28c65 perf/x86: Update event scheduling constraints for AMD family 15h models
+>>
+>> Leftover AMD PMU driver fix fix from the end of the v3.4
+>> stabilization cycle.
+>
+> Perf doesn't even build in Linus' current tree.  You might want to include
+>
+> http://git.kernel.org/?p=linux/kernel/git/tip/tip.git;a=commitdiff;h=8784eb7497b928de33a715e26da2bd51d424bec1
 
-Wrong.  You're far too used to the x86 way of doing things.
+Possibly this one too:
 
-For ARM, on entry to a system call, r0 _and_ orig_r0 are the first
-syscall argument.  For other exceptions, orig_r0 will be -1 (but you
-can't rely upon that meaning anything, because a syscall can take -1
-as the first argument.)
+http://git.kernel.org/?p=linux/kernel/git/tip/tip.git;a=commitdiff;h=e326e7524531c5c6de4a8cf8eeed60b4a9f47637
 
-On exit from a system call, r0 will be the return value, and orig_r0
-will _still_ be the first system call argument.
+josh
