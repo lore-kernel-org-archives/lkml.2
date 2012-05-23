@@ -1,78 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933363Ab2EWAkr (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 May 2012 20:40:47 -0400
-Received: from mailout1.samsung.com ([203.254.224.24]:33847 "EHLO
-	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756924Ab2EWAkq (ORCPT
+	id S933400Ab2EWAk6 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 May 2012 20:40:58 -0400
+Received: from wolverine01.qualcomm.com ([199.106.114.254]:59779 "EHLO
+	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756924Ab2EWAkx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 May 2012 20:40:46 -0400
-MIME-version: 1.0
-Content-transfer-encoding: 8BIT
-Content-type: text/plain; charset=UTF-8
-X-AuditID: cbfee61b-b7faf6d000001f49-cc-4fbc320c8954
-Message-id: <4FBC320C.2040803@samsung.com>
-Date: Wed, 23 May 2012 09:40:44 +0900
-From: jonghwa3.lee@samsung.com
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:10.0.2) Gecko/20120216
- Thunderbird/10.0.2
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>
-Cc: linux-kernel@vger.kernel.org, Alessandro Zummo <a.zummo@towertech.it>,
-        Samuel Oritz <sameo@linux.intel.com>, Liam Girdwood <trg@ti.com>,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        MyungJoo Ham <myungjoo.ham@samsung.com>,
-        Chanwoo Choi <cw00.choi@samsung.com>,
-        Chiwoong Byun <woong.byun@samsung.com>
-Subject: Re: [PATCH 2/3] regulator: MAX77686: Add Maxim 77686 regulator driver
-References: <1337333539-18371-1-git-send-email-jonghwa3.lee@samsung.com>
- <1337333539-18371-3-git-send-email-jonghwa3.lee@samsung.com>
- <20120520155616.GB9337@opensource.wolfsonmicro.com>
- <4FB9EFBB.20306@samsung.com>
- <20120521095540.GA1999@opensource.wolfsonmicro.com>
-In-reply-to: <20120521095540.GA1999@opensource.wolfsonmicro.com>
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrMLMWRmVeSWpSXmKPExsVy+t9jQV0eoz3+BjOPW1hc3jWHzYHR4/Mm
-	uQDGKC6blNSczLLUIn27BK6MJZ91C+5zVPzav46tgfE9WxcjJ4eEgInErxW7oGwxiQv31gPZ
-	XBxCAtMZJVaffcEOkuAVEJT4MfkeSxcjBwezgLzEkUvZIGFmAXWJSfMWMYPYQgJ9TBJPe1NA
-	SngFtCSWtpuAmCwCqhI7vkmCVLAJyEm8bfrGCBIWFYiQ+NXPAWKKAB3w+34lyE5mga1MEouv
-	fWMGiQsL+ElcPu4OccskJokzl5pYQMZwCjhIHHy2jXUCo8AsJKfNQjhtFpLTFjAyr2IUTS1I
-	LihOSs810itOzC0uzUvXS87P3cQIDrpn0jsYVzVYHGIU4GBU4uG9cX+3vxBrYllxZe4hRgkO
-	ZiUR3vXTgUK8KYmVValF+fFFpTmpxYcYpTlYlMR5nyzZ4S8kkJ5YkpqdmlqQWgSTZeLglGpg
-	ZF39RDjk3VapIz6ikSd6+/2nrU8L5L2b2H32/u2252e92GaFzTgavfbZnemzRHgvRnCLVBpt
-	d+F7zeEyZdkKPUfz74n/Tr4I/3f04p9UwWjfpuALL6e8U2x6Z97GdjqPneGzVtmL3kW1Ouvz
-	txzVW6+lW5d0OffkBPbPTEuaEkNWnGHg81lyWImlOCPRUIu5qDgRAKXuudo2AgAA
-X-TM-AS-MML: No
+	Tue, 22 May 2012 20:40:53 -0400
+X-IronPort-AV: E=McAfee;i="5400,1158,6719"; a="193718732"
+Date: Tue, 22 May 2012 19:40:50 -0500
+From: Richard Kuo <rkuo@codeaurora.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org, linux-hexagon@vger.kernel.org
+Subject: [GIT PULL] Hexagon:  misc cleanup
+Message-ID: <20120523004049.GA4269@codeaurora.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi, Mark,
-On 2012년 05월 21일 18:55, Mark Brown wrote:
+Linus,
 
-> On Mon, May 21, 2012 at 04:33:15PM +0900, jonghwa3.lee@samsung.com wrote:
->> On 2012년 05월 21일 00:56, Mark Brown wrote:
->>> On Fri, May 18, 2012 at 06:32:18PM +0900, Jonghwa Lee wrote:
-> 
->>>> +	}, {
->>>> +		.name	= "EN32KHz PMIC",
->>>> +		.id	= MAX77686_P32KH,
->>>> +		.ops	= &max77686_fixedvolt_ops,
->>>> +		.type	= REGULATOR_VOLTAGE,
->>>> +		.owner	= THIS_MODULE,
->>>> +	},
-> 
->>> These should be managed via the clock API now we have one.
-> 
->> I already updated all your comments except only this one. Could you
->> explain more details?
-> 
-> We now have a generic clock framework in drivers/clk so we should be
-> using that to provide drivers for clocks rather than putting them into
-> the regulator API which was always a bodge.
+Please pull the following changes for the Hexagon architecture from: 
+
+  git://git.kernel.org/pub/scm/linux/kernel/git/rkuo/linux-hexagon-kernel.git for-linus
+
+These are mostly cleanups and feedback remaining from the original
+upstreaming.
 
 
-I tried to change API to generic version but it got problem because of
-overlapping. As you know almost of boards uses private clock API not
-generic. So how do you think can i test it without modifying board file?
-I'm afraid of changing all clock registering is too expensive.
+Thanks,
+Richard Kuo
 
-Thanks.
+
+
+------------------>
+Jesper Juhl (1):
+      Remove unneeded include of version.h from arch/hexagon/include/asm/spinlock_types.h
+
+Julia Lawall (1):
+      arch/hexagon/kernel/dma.c: make function static
+
+Kautuk Consul (1):
+      hexagon/mm/vm_fault.c: Port OOM changes to do_page_fault
+
+Richard Kuo (1):
+      various Kconfig cleanup and old platform build code removal
+
+Thomas Meyer (1):
+      Hexagon: Use resource_size function
+
+ arch/hexagon/Kconfig                      |   21 ++++-----------------
+ arch/hexagon/Makefile                     |    5 -----
+ arch/hexagon/include/asm/spinlock_types.h |    2 --
+ arch/hexagon/kernel/dma.c                 |    2 +-
+ arch/hexagon/kernel/time.c                |    6 ++----
+ arch/hexagon/mm/vm_fault.c                |   22 +++++++++++++++++-----
+ 6 files changed, 24 insertions(+), 34 deletions(-)
+
+
+-- 
+
+Sent by an employee of the Qualcomm Innovation Center, Inc.
+The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
