@@ -1,44 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933736Ab2EWP60 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 May 2012 11:58:26 -0400
-Received: from oproxy6-pub.bluehost.com ([67.222.54.6]:60485 "HELO
-	oproxy6-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S933662Ab2EWP6G (ORCPT
+	id S933738Ab2EWP7L (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 May 2012 11:59:11 -0400
+Received: from mail-vb0-f46.google.com ([209.85.212.46]:43190 "EHLO
+	mail-vb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756316Ab2EWP7I convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 May 2012 11:58:06 -0400
-Message-ID: <4FBD090E.5020901@xenotime.net>
-Date: Wed, 23 May 2012 08:58:06 -0700
-From: Randy Dunlap <rdunlap@xenotime.net>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.15) Gecko/20110323 Thunderbird/3.1.9
+	Wed, 23 May 2012 11:59:08 -0400
 MIME-Version: 1.0
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-CC: linux-next@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
-        Richard Weinberger <richard@nod.at>
-Subject: Re: linux-next: Tree for May 23 (uml)
-References: <20120523170740.ae058d8d5468d471eb948c39@canb.auug.org.au>
-In-Reply-To: <20120523170740.ae058d8d5468d471eb948c39@canb.auug.org.au>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
-X-Identified-User: {1807:box742.bluehost.com:xenotime:xenotime.net} {sentby:smtp auth 50.53.38.135 authed with rdunlap@xenotime.net}
+In-Reply-To: <Pine.LNX.4.44L0.1205231054150.1566-100000@iolanthe.rowland.org>
+References: <CAF1ivSa_hYFu2JXLUOv2k+AhqUZWUvY-uzmocQKh_RUJJUP5Ag@mail.gmail.com>
+	<Pine.LNX.4.44L0.1205231054150.1566-100000@iolanthe.rowland.org>
+Date: Wed, 23 May 2012 23:59:07 +0800
+X-Google-Sender-Auth: 6ynRP9SY0HtKZZyvitfoBFJueew
+Message-ID: <CAF1ivSbSv+pWFxgf8LrHdamxSQZuJh5S5_0L82DWfy34Si7iLg@mail.gmail.com>
+Subject: Re: [RFC v2 PATCH 2/4] block: add queue runtime pm callbacks
+From: Lin Ming <ming.m.lin@intel.com>
+To: Alan Stern <stern@rowland.harvard.edu>
+Cc: Jens Axboe <axboe@kernel.dk>, Jeff Moyer <jmoyer@redhat.com>,
+        linux-kernel@vger.kernel.org, linux-pm@vger.kernel.org,
+        linux-scsi@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/23/2012 12:07 AM, Stephen Rothwell wrote:
+On Wed, May 23, 2012 at 10:58 PM, Alan Stern <stern@rowland.harvard.edu> wrote:
+> On Wed, 23 May 2012, Lin Ming wrote:
+>
+>> Let's consider below code.
+>>
+>> @@ -587,6 +591,11 @@ void __elv_add_request(struct request_queue *q,
+>> struct request *rq, int where)
+>>  {
+>>        trace_block_rq_insert(q, rq);
+>>
+>> +       if (!(rq->cmd_flags & REQ_PM))
+>> +               if (q->nr_pending++ == 0 && (q->rpm_status == RPM_SUSPENDED ||
+>> +                               q->rpm_status == RPM_SUSPENDING) && q->dev)
+>> +                       pm_request_resume(q->dev);
+>> +
+>>        rq->q = q;
+>>
+>>        if (rq->cmd_flags & REQ_SOFTBARRIER) {
+>>
+>> Block layer reads runtime status and pm core writes this status.
+>> PM core uses dev->power.lock to protect this status.
+>>
+>> I was thinking will it have problem if block layer does not acquire
+>> dev->power.lock?
+>> From your explanation below, it seems does not have problem.
+>
+> I don't think it's a problem, because all you're doing is reading
+> dev->power.rpm_status -- you're not writing it.
+>
+> On the other hand, there's nothing really wrong with keeping your own
+> local copy of rpm_status.  You could think of it as being the queue's
+> status as opposed to the device's status.  (Also, some people might
+> argue that dev->power.rpm_status is supposed to be private to the
+> runtime PM core and shouldn't be used by other code.)
 
-> Hi all,
-> 
-> Changes since 20120522:
-
-
-
-uml defconfig on x86_64:
-
-arch/um/kernel/process.c: In function 'interrupt_end':
-arch/um/kernel/process.c:122:14: error: 'struct task_struct' has no member named 'replacement_session_keyring'
-arch/um/kernel/process.c:123:4: error: implicit declaration of function 'key_replace_session_keyring'
-
--- 
-
-~Randy
+Agree.
+So I'd like to keep local copy of rpm_status.
