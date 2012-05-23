@@ -1,113 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759931Ab2EWN7q (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 May 2012 09:59:46 -0400
-Received: from mail-qa0-f46.google.com ([209.85.216.46]:48759 "EHLO
+	id S1760066Ab2EWOA3 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 May 2012 10:00:29 -0400
+Received: from mail-qa0-f46.google.com ([209.85.216.46]:52498 "EHLO
 	mail-qa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751051Ab2EWN7p (ORCPT
+	with ESMTP id S1755030Ab2EWOA1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 May 2012 09:59:45 -0400
-Message-ID: <4FBCED4D.1040908@gmail.com>
-Date: Wed, 23 May 2012 08:59:41 -0500
-From: Rob Herring <robherring2@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
+	Wed, 23 May 2012 10:00:27 -0400
+Date: Wed, 23 May 2012 16:00:15 +0200
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Cc: LKML <linux-kernel@vger.kernel.org>, linaro-sched-sig@lists.linaro.org,
+        Alessio Igor Bogani <abogani@kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>, Avi Kivity <avi@redhat.com>,
+        Chris Metcalf <cmetcalf@tilera.com>, Christoph Lameter <cl@linux.com>,
+        Daniel Lezcano <daniel.lezcano@linaro.org>,
+        Geoff Levand <geoff@infradead.org>,
+        Gilad Ben Yossef <gilad@benyossef.com>,
+        Hakan Akkan <hakanakkan@gmail.com>, Ingo Molnar <mingo@kernel.org>,
+        Kevin Hilman <khilman@ti.com>, Max Krasnyansky <maxk@qualcomm.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Stephen Hemminger <shemminger@vyatta.com>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Sven-Thorsten Dietrich <thebigcorporation@gmail.com>,
+        Thomas Gleixner <tglx@linutronix.de>
+Subject: Re: [PATCH 17/41] rcu: Restart tick if we enqueue a callback in a
+ nohz/cpuset CPU
+Message-ID: <20120523140010.GD1663@somewhere>
+References: <1335830115-14335-1-git-send-email-fweisbec@gmail.com>
+ <1335830115-14335-18-git-send-email-fweisbec@gmail.com>
+ <20120522172714.GC8087@linux.vnet.ibm.com>
 MIME-Version: 1.0
-To: Saravana Kannan <skannan@codeaurora.org>
-CC: Stephen Boyd <sboyd@codeaurora.org>, Shawn Guo <shawn.guo@linaro.org>,
-        Mike Turquette <mturquette@linaro.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        "arm@kernel.org" <arm@kernel.org>, Shawn Guo <shawn.guo@freescale.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: Re: [GIT PULL] DT clk binding support
-References: <4FB80F32.5090309@gmail.com>    <20120520030653.GB5810@S2100-06.ap.freescale.net>    <4FB9A5E7.2070000@gmail.com>    <20120521064901.GE8140@S2101-09.ap.freescale.net>    <4FBA89E3.7010106@gmail.com>    <20120521232616.GF8140@S2101-09.ap.freescale.net>    <4FBAD545.7060803@gmail.com>    <20120522021535.GG8140@S2101-09.ap.freescale.net>    <4FBB134D.6050409@codeaurora.org> <4FBB9A08.2050803@gmail.com> <49cd509b59c8172c880b0c8a50c0f02c.squirrel@www.codeaurora.org>
-In-Reply-To: <49cd509b59c8172c880b0c8a50c0f02c.squirrel@www.codeaurora.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120522172714.GC8087@linux.vnet.ibm.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/22/2012 08:38 PM, Saravana Kannan wrote:
+On Tue, May 22, 2012 at 10:27:14AM -0700, Paul E. McKenney wrote:
+> On Tue, May 01, 2012 at 01:54:51AM +0200, Frederic Weisbecker wrote:
+> > If we enqueue an rcu callback, we need the CPU tick to stay
+> > alive until we take care of those by completing the appropriate
+> > grace period.
+> > 
+> > Thus, when we call_rcu(), send a self IPI that checks rcu_needs_cpu()
+> > so that we restore a periodic tick behaviour that can take care of
+> > everything.
 > 
-> On Tue, May 22, 2012 6:52 am, Rob Herring wrote:
->> On 05/21/2012 11:17 PM, Stephen Boyd wrote:
->>> On 05/21/12 19:15, Shawn Guo wrote:
->>>> On Mon, May 21, 2012 at 06:52:37PM -0500, Rob Herring wrote:
->>>>> As Grant states: "This proposed binding is only about one thing:
->>>>> attaching clock providers to clock consumers." This means you have to
->>>>> have at least a single provider and a single consumer defined in the
->>>>> DT.
->>>>>
->>>> I just read through Grant's comments over again.  I agree with the
->>>> statement which implicitly requires the clk provider defined in DT.
->>>> However, for some case, this provider in DT is just a skeleton which
->>>> is backed by clock driver where the provider is actually defined.
->>>>
->>>> Looking at Grant's comment below, the second option is also to match
->>>> the clock in driver just using name.  The only difference to my
->>>> proposal is the name here is given by the argument of phandle pointing
->>>> to that skeleton provider node.
->>>>
->>>> I'm fine with that.  So go ahead with your bindings.
->>>>
->>>
->>> Can we do what the regulator framework has done and have a common
->>> binding of <connection_name>-clk = <&phandle>? Something like:
->>>
->>>     core-clk = <&uart3_clk>
->>>
->>> and then have clk_get() use the of node of the device passed in to find
->>> a property named %s-clk and find the clock with the matching phandle.
->>
->> Sigh... That is what we had in previous versions from over a year ago
->> and we moved away from that approach. The current binding has been
->> reviewed multiple times in the last 6 months...
->>
->> The current approach is aligned with how interrupts are handled (with
->> the addition of a phandle). I think not having per clock property names
->> is easier to parse and easier to document.
->>
->>> This looks like it's trying to cover both the end consumers (uart uses
->>> uart3_clk) and the internal clock tree consumers (a crystal oscillator
->>> connects to a PLL or a mux has multiple parents). We can certainly use
->>> these bindings for muxes and internal parent-child relationships but I
->>> would prefer we use different bindings for consumer bindings that match
->>> what regulators do today.
->>
->> The binding supports either defining every last internal clock or just
->> the leaf clocks. I took the former route on highbank since I don't have
->> a lot of clocks. If I was doing imx or omap for example, I'd probably
->> just define all the clock controller outputs.
->>
-> 
-> If only the leaf nodes are defined in DT, then how is the clock platform
-> driver implementer supposed to instantiate the rest of the tree and
-> connect it up with the partial list of clocks in DT? So, they have to
-> switch back and forth between DT and the .c file which defines the rest
-> and make sure the parent<->child names match?
-> 
-> To me it looks that it might better to decouple the description of the
-> clock HW from the mapping of a clock leaf to a consumer device. If we just
-> use a string to identify the clock that's consumed by a device, we can
-> achieve this decoupling at a clean boundary -- clock consumers devices
-> (UART) vs clock producer devices (clock controller in the SoC, in a PMIC,
-> audio codec, etc).
-> 
-> With the decoupling, we don't have the inconsistency of having some of the
-> clocks of a clock producer device incompletely defined in DT and the rest
-> of the clocks of the same clock producer device hard coded in the kernel.
-> So, you either put your entire clock tree in the SoC in the DT or put all
-> of it in the kernel but you aren't forced to put just some of them in the
-> DT just to get DT working. I see no benefit in defining only some of the
-> clocks in DT -- it just adds more confusion in the clock tree definition.
-> What am I missing?
+> Ouch, I hadn't considered RCU callbacks being posted from within an
+> extended quiescent state.  I guess I need to make __call_rcu() either
+> complain about this or handle it correctly...  It would -usually- be
+> harmless, but there is getting to be quite a bit of active machinery
+> in the various idle loops, so just assuming that it cannot happen is
+> probably getting to be an obsolete assumption.
 
-I fail to see what would need changing in the binding itself. The
-binding just describes connections. Whether that is a connection to a
-clock controller node to a device or a clock gate/mux/divider node to a
-device is really beyond the clock binding. This is really just policy.
-You are free to put no clocks in DT, all clocks, or a nexus of clocks.
+May be first provide some detection to warn in such case. And if it happens
+to warn too much perhaps you can allow that?
 
-Rob
+> 
+> 							Thanx, Paul
+> 
+> > Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
+> > Cc: Alessio Igor Bogani <abogani@kernel.org>
+> > Cc: Andrew Morton <akpm@linux-foundation.org>
+> > Cc: Avi Kivity <avi@redhat.com>
+> > Cc: Chris Metcalf <cmetcalf@tilera.com>
+> > Cc: Christoph Lameter <cl@linux.com>
+> > Cc: Daniel Lezcano <daniel.lezcano@linaro.org>
+> > Cc: Geoff Levand <geoff@infradead.org>
+> > Cc: Gilad Ben Yossef <gilad@benyossef.com>
+> > Cc: Hakan Akkan <hakanakkan@gmail.com>
+> > Cc: Ingo Molnar <mingo@kernel.org>
+> > Cc: Kevin Hilman <khilman@ti.com>
+> > Cc: Max Krasnyansky <maxk@qualcomm.com>
+> > Cc: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+> > Cc: Peter Zijlstra <peterz@infradead.org>
+> > Cc: Stephen Hemminger <shemminger@vyatta.com>
+> > Cc: Steven Rostedt <rostedt@goodmis.org>
+> > Cc: Sven-Thorsten Dietrich <thebigcorporation@gmail.com>
+> > Cc: Thomas Gleixner <tglx@linutronix.de>
+> > ---
+> >  kernel/rcutree.c |    7 +++++++
+> >  1 files changed, 7 insertions(+), 0 deletions(-)
+> > 
+> > diff --git a/kernel/rcutree.c b/kernel/rcutree.c
+> > index 3fffc26..b8d300c 100644
+> > --- a/kernel/rcutree.c
+> > +++ b/kernel/rcutree.c
+> > @@ -1749,6 +1749,13 @@ __call_rcu(struct rcu_head *head, void (*func)(struct rcu_head *rcu),
+> >  	else
+> >  		trace_rcu_callback(rsp->name, head, rdp->qlen);
+> > 
+> > +	/* Restart the timer if needed to handle the callbacks */
+> > +	if (cpuset_adaptive_nohz()) {
+> > +		/* Make updates on nxtlist visible to self IPI */
+> > +		barrier();
+> > +		smp_cpuset_update_nohz(smp_processor_id());
+> > +	}
+> > +
+> >  	/* If interrupts were disabled, don't dive into RCU core. */
+> >  	if (irqs_disabled_flags(flags)) {
+> >  		local_irq_restore(flags);
+> > -- 
+> > 1.7.5.4
+> > 
+> 
