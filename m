@@ -1,28 +1,28 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760381Ab2EWPYT (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 May 2012 11:24:19 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:40876 "EHLO
+	id S933658Ab2EWPZL (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 May 2012 11:25:11 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:40899 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752007Ab2EWPYR (ORCPT
+	with ESMTP id S1753947Ab2EWPZI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 May 2012 11:24:17 -0400
-Date: Wed, 23 May 2012 08:23:59 -0700
+	Wed, 23 May 2012 11:25:08 -0400
+Date: Wed, 23 May 2012 08:24:49 -0700
 From: tip-bot for Namhyung Kim <namhyung.kim@lge.com>
-Message-ID: <tip-e33387fc2748ac78fd577dee2c914fc3ea0ba0cd@git.kernel.org>
+Message-ID: <tip-e40ee742d4542b4c046ac5426654b1494d87ad73@git.kernel.org>
 Cc: acme@redhat.com, linux-kernel@vger.kernel.org, paulus@samba.org,
         mingo@redhat.com, hpa@zytor.com, mingo@kernel.org,
         a.p.zijlstra@chello.nl, namhyung.kim@lge.com, namhyung@gmail.com,
-        fweisbec@gmail.com, rostedt@goodmis.org, tglx@linutronix.de
+        tglx@linutronix.de
 Reply-To: mingo@kernel.org, hpa@zytor.com, mingo@redhat.com, paulus@samba.org,
         linux-kernel@vger.kernel.org, acme@redhat.com, a.p.zijlstra@chello.nl,
-        namhyung.kim@lge.com, namhyung@gmail.com, fweisbec@gmail.com,
-        rostedt@goodmis.org, tglx@linutronix.de
-In-Reply-To: <1337677434-4881-2-git-send-email-namhyung.kim@lge.com>
-References: <1337677434-4881-2-git-send-email-namhyung.kim@lge.com>
+        namhyung.kim@lge.com, tglx@linutronix.de, namhyung@gmail.com
+In-Reply-To: <1337564527-9367-1-git-send-email-namhyung.kim@lge.com>
+References: <1337564527-9367-1-git-send-email-namhyung.kim@lge.com>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/core] perf tools: Always try to build libtraceevent
-Git-Commit-ID: e33387fc2748ac78fd577dee2c914fc3ea0ba0cd
+Subject: [tip:perf/core] perf target:
+  Add cpu flag to sample_type if target has cpu
+Git-Commit-ID: e40ee742d4542b4c046ac5426654b1494d87ad73
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -31,57 +31,62 @@ MIME-Version: 1.0
 Content-Transfer-Encoding: 8bit
 Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Wed, 23 May 2012 08:24:05 -0700 (PDT)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Wed, 23 May 2012 08:24:56 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  e33387fc2748ac78fd577dee2c914fc3ea0ba0cd
-Gitweb:     http://git.kernel.org/tip/e33387fc2748ac78fd577dee2c914fc3ea0ba0cd
+Commit-ID:  e40ee742d4542b4c046ac5426654b1494d87ad73
+Gitweb:     http://git.kernel.org/tip/e40ee742d4542b4c046ac5426654b1494d87ad73
 Author:     Namhyung Kim <namhyung.kim@lge.com>
-AuthorDate: Tue, 22 May 2012 18:03:54 +0900
+AuthorDate: Mon, 21 May 2012 10:42:07 +0900
 Committer:  Arnaldo Carvalho de Melo <acme@redhat.com>
-CommitDate: Tue, 22 May 2012 12:35:29 -0300
+CommitDate: Tue, 22 May 2012 12:37:12 -0300
 
-perf tools: Always try to build libtraceevent
+perf target: Add cpu flag to sample_type if target has cpu
 
-Although perf depends on the libtraceevent, it cannot know when it needs
-to be rebuilt. So just try to rebuild it always in order to make sure we
-use the latest version.
+Add PERF_SAMPLE_CPU flag into attr->sample_type if an user specified any
+of cpu target (either system-wide or cpu list).
 
-While at it, silence annoying directory change messages.
+It will show correct values when cpu sort key is given for perf top and
+perf report.
 
 Signed-off-by: Namhyung Kim <namhyung.kim@lge.com>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
 Cc: Ingo Molnar <mingo@redhat.com>
 Cc: Namhyung Kim <namhyung@gmail.com>
 Cc: Paul Mackerras <paulus@samba.org>
 Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Steven Rostedt <rostedt@goodmis.org>
-Link: http://lkml.kernel.org/r/1337677434-4881-2-git-send-email-namhyung.kim@lge.com
+Link: http://lkml.kernel.org/r/1337564527-9367-1-git-send-email-namhyung.kim@lge.com
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/perf/Makefile |    4 ++--
- 1 files changed, 2 insertions(+), 2 deletions(-)
+ tools/perf/builtin-top.c |    3 +++
+ tools/perf/util/evsel.c  |    2 +-
+ 2 files changed, 4 insertions(+), 1 deletions(-)
 
-diff --git a/tools/perf/Makefile b/tools/perf/Makefile
-index ef75a55..1d3d513 100644
---- a/tools/perf/Makefile
-+++ b/tools/perf/Makefile
-@@ -828,7 +828,7 @@ $(LIB_FILE): $(LIB_OBJS)
+diff --git a/tools/perf/builtin-top.c b/tools/perf/builtin-top.c
+index 3e981a7..18bd226 100644
+--- a/tools/perf/builtin-top.c
++++ b/tools/perf/builtin-top.c
+@@ -900,6 +900,9 @@ static void perf_top__start_counters(struct perf_top *top)
+ 			attr->read_format |= PERF_FORMAT_ID;
+ 		}
  
- # libtraceevent.a
- $(LIBTRACEEVENT):
--	$(MAKE) -C $(TRACE_EVENT_DIR) $(COMMAND_O) libtraceevent.a
-+	$(QUIET_SUBDIR0)$(TRACE_EVENT_DIR) $(QUIET_SUBDIR1) $(COMMAND_O) libtraceevent.a
++		if (perf_target__has_cpu(&top->target))
++			attr->sample_type |= PERF_SAMPLE_CPU;
++
+ 		if (symbol_conf.use_callchain)
+ 			attr->sample_type |= PERF_SAMPLE_CALLCHAIN;
  
- help:
- 	@echo 'Perf make targets:'
-@@ -976,6 +976,6 @@ clean:
- 	$(RM) $(OUTPUT)util/*-{bison,flex}*
- 	$(python-clean)
+diff --git a/tools/perf/util/evsel.c b/tools/perf/util/evsel.c
+index f4f427c..9abd8ac 100644
+--- a/tools/perf/util/evsel.c
++++ b/tools/perf/util/evsel.c
+@@ -108,7 +108,7 @@ void perf_evsel__config(struct perf_evsel *evsel, struct perf_record_opts *opts,
+ 	if (opts->call_graph)
+ 		attr->sample_type	|= PERF_SAMPLE_CALLCHAIN;
  
--.PHONY: all install clean strip
-+.PHONY: all install clean strip $(LIBTRACEEVENT)
- .PHONY: shell_compatibility_test please_set_SHELL_PATH_to_a_more_modern_shell
- .PHONY: .FORCE-PERF-VERSION-FILE TAGS tags cscope .FORCE-PERF-CFLAGS
+-	if (opts->target.system_wide)
++	if (perf_target__has_cpu(&opts->target))
+ 		attr->sample_type	|= PERF_SAMPLE_CPU;
+ 
+ 	if (opts->period)
