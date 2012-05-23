@@ -1,103 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753156Ab2EWWeS (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 May 2012 18:34:18 -0400
-Received: from avon.wwwdotorg.org ([70.85.31.133]:34328 "EHLO
-	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752003Ab2EWWeB (ORCPT
+	id S1752634Ab2EWWhV (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 May 2012 18:37:21 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:32970 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751656Ab2EWWhU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 May 2012 18:34:01 -0400
-From: Stephen Warren <swarren@wwwdotorg.org>
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>
-Cc: linux-kernel@vger.kernel.org, Stephen Warren <swarren@nvidia.com>
-Subject: [PATCH 2/2] regmap: mmio: request native endian formatting
-Date: Wed, 23 May 2012 16:33:54 -0600
-Message-Id: <1337812434-7609-2-git-send-email-swarren@wwwdotorg.org>
-X-Mailer: git-send-email 1.7.0.4
-In-Reply-To: <1337812434-7609-1-git-send-email-swarren@wwwdotorg.org>
-References: <1337812434-7609-1-git-send-email-swarren@wwwdotorg.org>
-X-NVConfidentiality: public
+	Wed, 23 May 2012 18:37:20 -0400
+Date: Wed, 23 May 2012 15:37:18 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: David Rientjes <rientjes@google.com>
+Cc: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Dave Jones <davej@redhat.com>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [patch v2] mm, oom: normalize oom scores to oom_score_adj scale
+ only for userspace
+Message-Id: <20120523153718.b70bb762.akpm@linux-foundation.org>
+In-Reply-To: <alpine.DEB.2.00.1205230014450.9290@chino.kir.corp.google.com>
+References: <20120426193551.GA24968@redhat.com>
+	<alpine.DEB.2.00.1204261437470.28376@chino.kir.corp.google.com>
+	<alpine.DEB.2.00.1205031513400.1631@chino.kir.corp.google.com>
+	<20120503222949.GA13762@redhat.com>
+	<alpine.DEB.2.00.1205171432250.6951@chino.kir.corp.google.com>
+	<20120517145022.a99f41e8.akpm@linux-foundation.org>
+	<alpine.DEB.2.00.1205230014450.9290@chino.kir.corp.google.com>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Stephen Warren <swarren@nvidia.com>
+On Wed, 23 May 2012 00:15:03 -0700 (PDT)
+David Rientjes <rientjes@google.com> wrote:
 
-This will avoid the regmap core converting all addresses and values into
-big endian, only for the mmio bus driver to have to convert them back to
-native endian.
+> The oom_score_adj scale ranges from -1000 to 1000 and represents the
+> proportion of memory available to the process at allocation time.  This
+> means an oom_score_adj value of 300, for example, will bias a process as
+> though it was using an extra 30.0% of available memory and a value of
+> -350 will discount 35.0% of available memory from its usage.
+> 
+> The oom killer badness heuristic also uses this scale to report the oom
+> score for each eligible process in determining the "best" process to
+> kill.  Thus, it can only differentiate each process's memory usage by
+> 0.1% of system RAM.
+> 
+> On large systems, this can end up being a large amount of memory: 256MB
+> on 256GB systems, for example.
+> 
+> This can be fixed by having the badness heuristic to use the actual
+> memory usage in scoring threads and then normalizing it to the
+> oom_score_adj scale for userspace.  This results in better comparison
+> between eligible threads for kill and no change from the userspace
+> perspective.
+> 
+> ...
+>
+> @@ -367,12 +354,13 @@ static struct task_struct *select_bad_process(unsigned int *ppoints,
+>  		}
+>  
+>  		points = oom_badness(p, memcg, nodemask, totalpages);
+> -		if (points > *ppoints) {
+> +		if (points > chosen_points) {
+>  			chosen = p;
+> -			*ppoints = points;
+> +			chosen_points = points;
+>  		}
+>  	} while_each_thread(g, p);
+>  
+> +	*ppoints = chosen_points * 1000 / totalpages;
+>  	return chosen;
+>  }
+>  
 
-Signed-off-by: Stephen Warren <swarren@nvidia.com>
----
- drivers/base/regmap/regmap-mmio.c |   17 +++++++++--------
- 1 files changed, 9 insertions(+), 8 deletions(-)
+It's still not obvious that we always avoid the divide-by-zero here. 
+If there's some weird way of convincing constrained_alloc() to look at
+an empty nodemask, or a nodemask which covers only empty nodes then
+blam.
 
-diff --git a/drivers/base/regmap/regmap-mmio.c b/drivers/base/regmap/regmap-mmio.c
-index febd6de..49cdf59 100644
---- a/drivers/base/regmap/regmap-mmio.c
-+++ b/drivers/base/regmap/regmap-mmio.c
-@@ -37,7 +37,7 @@ static int regmap_mmio_gather_write(void *context,
- 
- 	BUG_ON(reg_size != 4);
- 
--	offset = be32_to_cpup(reg);
-+	offset = *(u32 *)reg;
- 
- 	while (val_size) {
- 		switch (ctx->val_bytes) {
-@@ -45,14 +45,14 @@ static int regmap_mmio_gather_write(void *context,
- 			writeb(*(u8 *)val, ctx->regs + offset);
- 			break;
- 		case 2:
--			writew(be16_to_cpup(val), ctx->regs + offset);
-+			writew(*(u16 *)val, ctx->regs + offset);
- 			break;
- 		case 4:
--			writel(be32_to_cpup(val), ctx->regs + offset);
-+			writel(*(u32 *)val, ctx->regs + offset);
- 			break;
- #ifdef CONFIG_64BIT
- 		case 8:
--			writeq(be64_to_cpup(val), ctx->regs + offset);
-+			writeq(*(u64 *)val, ctx->regs + offset);
- 			break;
- #endif
- 		default:
-@@ -83,7 +83,7 @@ static int regmap_mmio_read(void *context,
- 
- 	BUG_ON(reg_size != 4);
- 
--	offset = be32_to_cpup(reg);
-+	offset = *(u32 *)reg;
- 
- 	while (val_size) {
- 		switch (ctx->val_bytes) {
-@@ -91,14 +91,14 @@ static int regmap_mmio_read(void *context,
- 			*(u8 *)val = readb(ctx->regs + offset);
- 			break;
- 		case 2:
--			*(u16 *)val = cpu_to_be16(readw(ctx->regs + offset));
-+			*(u16 *)val = readw(ctx->regs + offset);
- 			break;
- 		case 4:
--			*(u32 *)val = cpu_to_be32(readl(ctx->regs + offset));
-+			*(u32 *)val = readl(ctx->regs + offset);
- 			break;
- #ifdef CONFIG_64BIT
- 		case 8:
--			*(u64 *)val = cpu_to_be32(readq(ctx->regs + offset));
-+			*(u64 *)val = readq(ctx->regs + offset);
- 			break;
- #endif
- 		default:
-@@ -124,6 +124,7 @@ static struct regmap_bus regmap_mmio = {
- 	.gather_write = regmap_mmio_gather_write,
- 	.read = regmap_mmio_read,
- 	.free_context = regmap_mmio_free_context,
-+	.format_endian = REGMAP_ENDIAN_NATIVE,
- };
- 
- struct regmap_mmio_context *regmap_mmio_gen_context(void __iomem *regs,
--- 
-1.7.0.4
+Now, it's probably the case that this is a can't-happen but that
+guarantee would be pretty convoluted and fragile?
 
