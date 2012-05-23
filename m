@@ -1,62 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932795Ab2EWQxU (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 May 2012 12:53:20 -0400
-Received: from mail-wi0-f172.google.com ([209.85.212.172]:39558 "EHLO
-	mail-wi0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757150Ab2EWQxK (ORCPT
+	id S1760582Ab2EWQxZ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 May 2012 12:53:25 -0400
+Received: from mail131.messagelabs.com ([216.82.242.99]:60557 "EHLO
+	mail131.messagelabs.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757150Ab2EWQxV convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 May 2012 12:53:10 -0400
+	Wed, 23 May 2012 12:53:21 -0400
+X-Env-Sender: hartleys@visionengravers.com
+X-Msg-Ref: server-6.tower-131.messagelabs.com!1337791983!13482753!30
+X-Originating-IP: [216.166.12.32]
+X-StarScan-Version: 6.5.10; banners=-,-,-
+X-VirusChecked: Checked
+From: H Hartley Sweeten <hartleys@visionengravers.com>
+To: Ian Abbott <abbotti@mev.co.uk>
+CC: Ian Abbott <ian.abbott@mev.co.uk>,
+        Dan Carpenter <dan.carpenter@oracle.com>,
+        Linux Kernel <linux-kernel@vger.kernel.org>,
+        "devel@driverdev.osuosl.org" <devel@driverdev.osuosl.org>,
+        "fmhess@users.sourceforge.net" <fmhess@users.sourceforge.net>,
+        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>
+Date: Wed, 23 May 2012 11:53:07 -0500
+Subject: RE: [PATCH] staging: comedi: remove this_board macro in the s526
+ driver
+Thread-Topic: [PATCH] staging: comedi: remove this_board macro in the s526
+ driver
+Thread-Index: Ac05A+qN553rAJP7RX6EqU6TxvIEpwAAFF4w
+Message-ID: <ADE657CA350FB648AAC2C43247A983F0020698BAC905@AUSP01VMBX24.collaborationhost.net>
+References: <201205221820.10770.hartleys@visionengravers.com>
+ <20120523054849.GK4637@mwanda> <4FBCAB50.5000907@mev.co.uk>
+ <ADE657CA350FB648AAC2C43247A983F0020698BAC8D8@AUSP01VMBX24.collaborationhost.net>
+ <4FBD14E5.2090806@mev.co.uk>
+In-Reply-To: <4FBD14E5.2090806@mev.co.uk>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-In-Reply-To: <CA+8MBbJ00Kgycu-7v6vofQYst_Cujoiu78_Ke5RqM6Bx=-+F1g@mail.gmail.com>
-References: <20120521170539.GA13635@google.com> <CA+55aFyyEhYcoh2gugVJELfW+dGrLbrow=ZoXsPs3kxft7Tu4g@mail.gmail.com>
- <CA+8MBbJ00Kgycu-7v6vofQYst_Cujoiu78_Ke5RqM6Bx=-+F1g@mail.gmail.com>
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Wed, 23 May 2012 09:52:48 -0700
-X-Google-Sender-Auth: cRk7o4s14SebXN23_9NcffWJ4pE
-Message-ID: <CA+55aFzgMPobmuCM86Z2obEnEB=uTA4n8VQQJUZoQsW8oTS7gA@mail.gmail.com>
-Subject: Re: [GIT PULL] PCI updates for 3.5 merge window
-To: Tony Luck <tony.luck@gmail.com>
-Cc: Bjorn Helgaas <bhelgaas@google.com>, linux-kernel@vger.kernel.org,
-        linux-pci@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, May 23, 2012 at 9:41 AM, Tony Luck <tony.luck@gmail.com> wrote:
+On Wednesday, May 23, 2012 9:49 AM, Ian Abbott wrote:
+> On 2012-05-23 17:28, H Hartley Sweeten wrote:
+>> Side-note on the boardinfo stuff.
+>>
+>> I wonder if it makes sense to create a common boardinfo struct
+>> and modify the comedi_driver struct a bit. Something like:
+>>
+>> struct comedi_boardinfo {
+>> 	const char *name;
+>> 	unsigned short	vendor;
+>> 	unsigned short device;
+>> 	void *private;
+>> };
+>>
+>> struct comedi_driver {
+>> 	struct comedi_driver *next;
+>>
+>> 	const char *driver_name;
+>> 	struct module *module;
+>> 	int (*attach) (struct comedi_device *, struct comedi_devconfig *);
+>> 	void (*detach) (struct comedi_device *);
+>> 	int (*attach_pci) (struct comedi_device *, struct pci_dev *);
+>> 	int (*attach_usb) (struct comedi_device *, struct usb_interface *);
+>>
+>> 	u32 num_boards;
+>> 	struct comedi_boardinfo *board;
+>> };
+>>
+>> This would allow comedi_recognize() to walk the boardinfo
+>> to find the match without all the ugly casts. It should also
+>> allow creating a common comedi_find_pcidev() for all the
+>> comedi pci drivers to use when probing for the board_ptr.
+>>
+>> This would create a bit of churn but I think it would be a
+>> lot cleaner in the end.
+>>
+>> What do you think?
 >
-> Or is "smarter" already in a newer version of git - I have:
->
-> $ git --version
-> git version 1.7.9.5
+> Please don't do this yet.  We might want to implement auto configuration 
+> for device types that have no concept of vendor ID or product ID, such 
+> as PCMCIA, platform devices, SPI devices etc., either by adding extra 
+> attach_xxx hooks to struct comedi_driver for the more common bus types, 
+> or a more generic attach_generic hook for the less common bus types.
+> 
+> Also, it would waste space in the ISA-only drivers.
 
-I think you want 1.7.10 for anything to do with tagged messages.
+OK. I'll hold off on doing anything like this.
 
-You can do everything with 1.7.9 (it can still handle the tags
-correctly), but it doesn't DTRT by default: you have to explicitly
-mention the "tag" part (ie you need to use "tags/xyz" instead of just
-"xyz"), and git pull-request doesn't realize that pulling a signed tag
-does more than just pulling the commit it points to etc etc. So with
-1.7.9 you can make things work, but you would end up to work around
-the fact that the whole signed tag pulling wasn't really a real
-feature before that.
+But, I think we would actually save space in all the drivers. I just need
+to think about it a bit more.
 
-So 1.7.10 is when pulling a signed tag was really introduced: it's
-just that earlier versions can still *create* those tags (so the only
-one who *had* to have 1.7.10 was the person doing the pull).
+Regards,
+Hartley
 
-I would strongly recommend just doing
-
-   git clone git://github.com/gitster/git
-   cd git
-   make
-   make install
-
-as just a normal user (*NOT* as root), which will install git in your
-~/bin directory. Then, just make sure that you have ~/bin in your PATH
-before /usr/bin, and you're all set. No need to mess with or worry
-about distro git binaries - leave them alone, but get the best and the
-brightest for your own use.
-
-                     Linus
