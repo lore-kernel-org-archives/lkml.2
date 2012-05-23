@@ -1,41 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933606Ab2EWOxk (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 May 2012 10:53:40 -0400
-Received: from avon.wwwdotorg.org ([70.85.31.133]:35487 "EHLO
-	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932304Ab2EWOxj (ORCPT
+	id S933614Ab2EWOyD (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 May 2012 10:54:03 -0400
+Received: from iolanthe.rowland.org ([192.131.102.54]:51753 "HELO
+	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S932304Ab2EWOyA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 May 2012 10:53:39 -0400
-Message-ID: <4FBCF9F0.1010901@wwwdotorg.org>
-Date: Wed, 23 May 2012 08:53:36 -0600
-From: Stephen Warren <swarren@wwwdotorg.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
+	Wed, 23 May 2012 10:54:00 -0400
+Date: Wed, 23 May 2012 10:53:59 -0400 (EDT)
+From: Alan Stern <stern@rowland.harvard.edu>
+X-X-Sender: stern@iolanthe.rowland.org
+To: Lin Ming <ming.m.lin@intel.com>
+cc: Jens Axboe <axboe@kernel.dk>, <linux-kernel@vger.kernel.org>,
+        <linux-pm@vger.kernel.org>, <linux-scsi@vger.kernel.org>
+Subject: Re: [RFC PATCH v3 3/4] block: implement runtime pm strategy
+In-Reply-To: <CAF1ivSbukHBZJsguAcUVDbQotyvE5iAfccgfv+-bGw1v6Z3Dvw@mail.gmail.com>
+Message-ID: <Pine.LNX.4.44L0.1205231052270.1566-100000@iolanthe.rowland.org>
 MIME-Version: 1.0
-To: Guennadi Liakhovetski <g.liakhovetski@gmx.de>
-CC: Linus Walleij <linus.walleij@linaro.org>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] pinctrl: add a pinctrl_mux_group_selected() function
-References: <Pine.LNX.4.64.1205230020210.11851@axis700.grange>
-In-Reply-To: <Pine.LNX.4.64.1205230020210.11851@axis700.grange>
-X-Enigmail-Version: 1.5pre
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: TEXT/PLAIN; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/22/2012 04:23 PM, Guennadi Liakhovetski wrote:
-> This patch adds a new function to allow clients to verify, whether a
-> certain group is selected in the currently active setting or not.
-> 
-> Signed-off-by: Guennadi Liakhovetski <g.liakhovetski@gmx.de>
-> ---
-> 
-> Maybe there is already a way to do this without adding a new function, I 
-> haven't found one, hence this patch.
+On Wed, 23 May 2012, Lin Ming wrote:
 
-This function doesn't currently exist because it breaks the pinctrl
-conceptual model, which is that devices ask pinctrl for certain settings
-whenever they need them, rather than information flowing the other way.
+> >> +             /* Only PM request is allowed to go if the queue is suspended */
+> >> +             if (q->rpm_status != RPM_ACTIVE && !(rq->cmd_flags & REQ_PM)) {
+> >> +                     rq = NULL;
+> >> +                     break;
+> >> +             }
+> >
+> > Not even PM requests should be allowed to go if the status is
+> > RPM_SUSPENDED.
+> 
+> PM requests are used to wake up the device.
+> If they are not allowed to go, then how to wake up the device?
 
-What's the use case for this new functionality?
+When blk_pre_runtime_resume runs, the status is changed to
+RPM_RESUMING.  _Then_ PM requests are allowed to go.  Not before.
+
+Alan Stern
+
