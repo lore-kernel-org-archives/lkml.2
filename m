@@ -1,15 +1,15 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964822Ab2EWKks (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 May 2012 06:40:48 -0400
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:60456 "EHLO
+	id S1759799Ab2EWKkq (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 May 2012 06:40:46 -0400
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:63840 "EHLO
 	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758326Ab2EWKkf (ORCPT
+	with ESMTP id S1755409Ab2EWKkg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 May 2012 06:40:35 -0400
-Message-Id: <20120523104030.929955623@openvz.org>
+	Wed, 23 May 2012 06:40:36 -0400
+Message-Id: <20120523104030.852861914@openvz.org>
 User-Agent: quilt/0.48-1
-Date: Wed, 23 May 2012 14:25:44 +0400
+Date: Wed, 23 May 2012 14:25:43 +0400
 From: Cyrill Gorcunov <gorcunov@openvz.org>
 To: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org
 Cc: Andrew Morton <akpm@linux-foundation.org>,
@@ -17,239 +17,143 @@ Cc: Andrew Morton <akpm@linux-foundation.org>,
         James Bottomley <jbottomley@parallels.com>, ebiederm@xmission.com,
         tj@kernel.org, skinsbursky@openvz.org,
         Cyrill Gorcunov <gorcunov@openvz.org>
-Subject: [rfc v2 3/7] procfs: Add ability to plugin auxiliary fdinfo providers
+Subject: [rfc v2 2/7] procfs: Convert /proc/pid/fdinfo/ handling routines to seq-file
 References: <20120523102541.382837149@openvz.org>
-Content-Disposition: inline; filename=seq-fdinfo-seq-ops-helpers-4
+Content-Disposition: inline; filename=seq-fdinfo-seq-ops-3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch brings ability to plugin auxiliary fdinfo providers.
-For example in further patches eventfd, evenpoll and fsnotify
-will print out information associated with files.
-
-This feature is CONFIG_CHECKPOINT_RESTORE guarded to eliminate
-overhead for those who don't need it at all (this
-unfortunately makes patch bigger than I wanted).
+This patch converts /proc/pid/fdinfo/ handling routines to seq-file which
+is needed to extend seq operations to plug in auxiliary fdinfo provides
+from subsystems like eventfd/eventpoll/fsnotify.
 
 Signed-off-by: Cyrill Gorcunov <gorcunov@openvz.org>
 CC: Andrew Morton <akpm@linux-foundation.org>
 CC: Pavel Emelyanov <xemul@parallels.com>
 CC: James Bottomley <jbottomley@parallels.com>
 ---
- fs/proc/fd.c            |  208 ++++++++++++++++++++++++++++++++++++++++++++++++
- include/linux/proc_fs.h |   28 ++++++
- 2 files changed, 236 insertions(+)
+ fs/proc/fd.c |  136 ++++++++++++++++++++++++++++++++++++-----------------------
+ 1 file changed, 84 insertions(+), 52 deletions(-)
 
 Index: linux-2.6.git/fs/proc/fd.c
 ===================================================================
 --- linux-2.6.git.orig/fs/proc/fd.c
 +++ linux-2.6.git/fs/proc/fd.c
-@@ -8,12 +8,218 @@
+@@ -6,66 +6,90 @@
+ #include <linux/namei.h>
+ #include <linux/pid.h>
  #include <linux/security.h>
- #include <linux/file.h>
- #include <linux/seq_file.h>
-+#include <linux/spinlock.h>
++#include <linux/file.h>
++#include <linux/seq_file.h>
  
  #include <linux/proc_fs.h>
  
  #include "internal.h"
- #include "fd.h"
++#include "fd.h"
  
-+#ifdef CONFIG_CHECKPOINT_RESTORE
-+
-+static LIST_HEAD(fdinfo_drivers);
-+static DECLARE_RWSEM(fdinfo_drivers_sem);
-+
-+int proc_register_fdinfo_driver(struct proc_fdinfo_driver *s)
-+{
-+	struct proc_fdinfo_driver *i;
-+	int ret = 0;
-+
-+	if (!s->ops || !s->probe)
-+		return -EINVAL;
-+
-+	down_write(&fdinfo_drivers_sem);
-+	list_for_each_entry(i, &fdinfo_drivers, list) {
-+		if (i == s) {
-+			WARN_ONCE("Trying reassign fdinfo driver `%s'\n",
-+				  i->name);
-+			ret = -EINVAL;
-+			break;
-+		}
-+	}
-+	if (!ret)
-+		list_add(&s->list, &fdinfo_drivers);
-+	up_write(&fdinfo_drivers_sem);
-+
-+	return ret;
-+}
-+
-+void proc_unregister_fdinfo_driver(struct proc_fdinfo_driver *s)
-+{
-+	struct proc_fdinfo_driver *i;
-+
-+	down_write(&fdinfo_drivers_sem);
-+	list_for_each_entry(i, &fdinfo_drivers, list) {
-+		if (i == s) {
-+			list_del(&i->list);
-+			break;
-+		}
-+	}
-+	up_write(&fdinfo_drivers_sem);
-+}
-+
-+static int prep_fdinfo_driver(struct proc_fdinfo_extra *extra)
-+{
-+	struct proc_fdinfo_driver *s;
-+	int ret = 0;
-+
-+	down_read(&fdinfo_drivers_sem);
-+	list_for_each_entry(s, &fdinfo_drivers, list) {
-+		if (s->probe(extra->f_file)) {
-+			extra->driver = s;
-+			break;
-+		}
-+	}
-+	up_read(&fdinfo_drivers_sem);
-+
-+	if (extra->driver && extra->driver->priv_size) {
-+		extra->priv = kmalloc(extra->driver->priv_size, GFP_KERNEL);
-+		if (!extra->priv)
-+			ret = -ENOMEM;
-+	}
-+
-+	return ret;
-+}
-+
-+static void *seq_start(struct seq_file *m, loff_t *pos)
-+{
-+	struct proc_fdinfo_extra *extra = m->private;
-+
-+	down_read(&fdinfo_drivers_sem);
-+	extra->pos = *pos;
-+
-+	return *pos == 0 ? extra :
-+		(extra->driver ? extra->driver->ops->start(m, pos) : NULL);
-+}
-+
-+static void seq_stop(struct seq_file *m, void *v)
-+{
-+	struct proc_fdinfo_extra *extra = m->private;
-+
-+	if (extra->driver && extra->pos > 0)
-+		extra->driver->ops->stop(m, v);
-+	up_read(&fdinfo_drivers_sem);
-+}
-+
-+static void *seq_next(struct seq_file *m, void *p, loff_t *pos)
-+{
-+	struct proc_fdinfo_extra *extra = m->private;
-+	void *v = NULL;
-+
-+	if (extra->driver) {
-+		int ret = 0;
-+
-+		if (*pos == 0) {
-+			v = extra->driver->ops->start(m, pos);
-+			if (v) {
-+				ret = extra->driver->ops->show(m, v);
-+				p = v;
-+			} else
-+				ret = -1;
-+		}
-+
-+		if (!ret)
-+			v = extra->driver->ops->next(m, p, pos);
-+	} else
-+		++*pos;
-+
-+	extra->pos = *pos;
-+	return v;
-+}
-+
+-#define PROC_FDINFO_MAX 64
++struct proc_fdinfo {
++	loff_t	f_pos;
++	int	f_flags;
++};
+ 
+-static int proc_fd_info(struct inode *inode, struct path *path, char *info)
 +static int seq_show(struct seq_file *m, void *v)
 +{
-+	struct proc_fdinfo_extra *extra = m->private;
-+
-+	if (extra->driver && extra->pos > 0)
-+		return extra->driver->ops->show(m, v);
-+
++	struct proc_fdinfo *fdinfo = m->private;
 +	seq_printf(m, "pos:\t%lli\nflags:\t0%o\n",
-+		   (long long)extra->f_file->f_pos,
-+		   extra->f_flags);
++		   (long long)fdinfo->f_pos,
++		   fdinfo->f_flags);
 +	return 0;
 +}
 +
-+static const struct seq_operations fdinfo_seq_ops = {
-+	.start	= seq_start,
-+	.next	= seq_next,
-+	.stop	= seq_stop,
-+	.show	= seq_show,
-+};
-+
 +static int seq_fdinfo_open(struct inode *inode, struct file *file)
-+{
-+	struct files_struct *files = NULL;
-+	struct proc_fdinfo_extra *extra;
+ {
+-	struct task_struct *task = get_proc_task(inode);
+ 	struct files_struct *files = NULL;
+-	int fd = proc_fd(inode);
+-	struct file *file;
++	struct proc_fdinfo *fdinfo = NULL;
 +	struct task_struct *task;
-+	struct seq_file *m;
-+	int ret;
++	int ret = -ENOENT;
 +
-+	extra = kzalloc(sizeof(*extra), GFP_KERNEL);
-+	if (!extra)
++	fdinfo = kzalloc(sizeof(*fdinfo), GFP_KERNEL);
++	if (!fdinfo)
 +		return -ENOMEM;
-+
-+	ret = seq_open(file, &fdinfo_seq_ops);
+ 
++	task = get_proc_task(inode);
+ 	if (task) {
+ 		files = get_files_struct(task);
+ 		put_task_struct(task);
+ 	}
+ 
+ 	if (files) {
+-		/*
+-		 * We are not taking a ref to the file structure,
+-		 * so we must hold ->file_lock.
+-		 */
+-		spin_lock(&files->file_lock);
+-		file = fcheck_files(files, fd);
++		int fd = proc_fd(inode);
++		struct file *fd_file;
+ 
+-		if (file) {
+-			unsigned int f_flags;
+-			struct fdtable *fdt;
++		spin_lock(&files->file_lock);
++		fd_file = fcheck_files(files, fd);
++		if (fd_file) {
++			struct fdtable *fdt = files_fdtable(files);
+ 
+-			fdt = files_fdtable(files);
+-			f_flags = file->f_flags & ~O_CLOEXEC;
++			fdinfo->f_flags = fd_file->f_flags & ~O_CLOEXEC;
+ 			if (close_on_exec(fd, fdt))
+-				f_flags |= O_CLOEXEC;
+-
+-			if (path) {
+-				*path = file->f_path;
+-				path_get(&file->f_path);
+-			}
+-
+-			if (info)
+-				snprintf(info, PROC_FDINFO_MAX,
+-					 "pos:\t%lli\n"
+-					 "flags:\t0%o\n",
+-					 (long long)file->f_pos,
+-					 f_flags);
+-
+-			spin_unlock(&files->file_lock);
+-			put_files_struct(files);
+-			return 0;
++				fdinfo->f_flags |= O_CLOEXEC;
++			ret = 0;
+ 		}
+-
+ 		spin_unlock(&files->file_lock);
+ 		put_files_struct(files);
+ 	}
+ 
+-	return -ENOENT;
 +	if (!ret) {
-+		ret = -ENOENT;
-+		m = file->private_data;
-+		m->private = extra;
-+
-+		task = get_proc_task(inode);
-+		if (task) {
-+			files = get_files_struct(task);
-+			put_task_struct(task);
-+		}
-+
-+		if (files) {
-+			int fd = proc_fd(inode);
-+
-+			spin_lock(&files->file_lock);
-+			extra->f_file = fcheck_files(files, fd);
-+			if (extra->f_file) {
-+				struct fdtable *fdt = files_fdtable(files);
-+
-+				extra->f_flags = extra->f_file->f_flags & ~O_CLOEXEC;
-+				if (close_on_exec(fd, fdt))
-+					extra->f_flags |= O_CLOEXEC;
-+				get_file(extra->f_file);
-+			}
-+			spin_unlock(&files->file_lock);
-+			put_files_struct(files);
-+
-+			ret = prep_fdinfo_driver(extra);
-+		}
++		ret = single_open(file, seq_show, fdinfo);
++		if (!ret)
++			fdinfo = NULL;
 +	}
 +
-+	if (ret) {
-+		if (extra->f_file)
-+			put_filp(extra->f_file);
-+		kfree(extra);
-+	}
++	kfree(fdinfo);
 +	return ret;
-+}
-+
+ }
+ 
 +static int seq_fdinfo_release(struct inode *inode, struct file *file)
 +{
 +	struct seq_file *m = file->private_data;
-+	struct proc_fdinfo_extra *extra = m->private;
++	struct proc_fdinfo *fdinfo = m->private;
 +
-+	put_filp(extra->f_file);
-+	kfree(extra->priv);
-+	kfree(m->private);
++	kfree(fdinfo);
 +
-+	return seq_release(inode, file);
++	return single_release(inode, file);
 +}
 +
 +static const struct file_operations proc_fdinfo_file_operations = {
@@ -259,71 +163,63 @@ Index: linux-2.6.git/fs/proc/fd.c
 +	.release	= seq_fdinfo_release,
 +};
 +
-+#else /* CONFIG_CHECKPOINT_RESTORE */
-+
- struct proc_fdinfo {
- 	loff_t	f_pos;
- 	int	f_flags;
-@@ -90,6 +296,8 @@ static const struct file_operations proc
- 	.release	= seq_fdinfo_release,
- };
- 
-+#endif /* CONFIG_CHECKPOINT_RESTORE */
-+
  static int tid_fd_revalidate(struct dentry *dentry, struct nameidata *nd)
  {
  	struct files_struct *files;
-Index: linux-2.6.git/include/linux/proc_fs.h
-===================================================================
---- linux-2.6.git.orig/include/linux/proc_fs.h
-+++ linux-2.6.git/include/linux/proc_fs.h
-@@ -100,6 +100,26 @@ struct vmcore {
- 	loff_t offset;
- };
+@@ -120,7 +144,31 @@ static const struct dentry_operations ti
  
-+struct seq_operations;
+ static int proc_fd_link(struct dentry *dentry, struct path *path)
+ {
+-	return proc_fd_info(dentry->d_inode, path, NULL);
++	struct inode *inode = dentry->d_inode;
++	struct task_struct *task = get_proc_task(inode);
++	struct files_struct *files = NULL;
++	int fd = proc_fd(inode);
++	struct file *file;
++	int err = -ENOENT;
 +
-+/* fdinfo auxiliary information drivers */
-+struct proc_fdinfo_driver {
-+	struct list_head		list;
-+	const char			*name;
-+	const struct seq_operations	*ops;
-+	int				(*probe)(struct file *file);
-+	size_t				priv_size;
-+};
++	if (task) {
++		files = get_files_struct(task);
++		put_task_struct(task);
++	}
 +
-+/* auxiliary data allocated per fdinfo reader */
-+struct proc_fdinfo_extra {
-+	struct proc_fdinfo_driver	*driver;
-+	void				*priv;
-+	loff_t				pos;
-+	struct file			*f_file;
-+	unsigned int			f_flags;
-+};
++	if (files) {
++		spin_lock(&files->file_lock);
++		file = fcheck_files(files, fd);
++		if (file) {
++			*path = file->f_path;
++			path_get(&file->f_path);
++		}
++		spin_unlock(&files->file_lock);
++		put_files_struct(files);
++		err = 0;
++	}
 +
- #ifdef CONFIG_PROC_FS
- 
- extern void proc_root_init(void);
-@@ -175,6 +195,11 @@ extern struct proc_dir_entry *proc_net_m
- 
- extern struct file *proc_ns_fget(int fd);
- 
-+#ifdef CONFIG_CHECKPOINT_RESTORE
-+extern int proc_register_fdinfo_driver(struct proc_fdinfo_driver *s);
-+extern void proc_unregister_fdinfo_driver(struct proc_fdinfo_driver *s);
-+#endif /* CONFIG_CHECKPOINT_RESTORE */
-+
- #else
- 
- #define proc_net_fops_create(net, name, mode, fops)  ({ (void)(mode), NULL; })
-@@ -229,6 +254,9 @@ static inline struct file *proc_ns_fget(
- 	return ERR_PTR(-EINVAL);
++	return err;
  }
  
-+static inline int proc_register_fdinfo_driver(struct proc_fdinfo_driver *s) { return -EINVAL; }
-+static inline void proc_unregister_fdinfo_driver(struct proc_fdinfo_driver *s) { }
-+
- #endif /* CONFIG_PROC_FS */
+ static struct dentry *
+@@ -263,22 +311,6 @@ out_no_task:
+ 	return retval;
+ }
  
- #if !defined(CONFIG_PROC_KCORE)
+-static ssize_t proc_fdinfo_read(struct file *file, char __user *buf,
+-				      size_t len, loff_t *ppos)
+-{
+-	char tmp[PROC_FDINFO_MAX];
+-	int err = proc_fd_info(file->f_path.dentry->d_inode, NULL, tmp);
+-	if (!err)
+-		err = simple_read_from_buffer(buf, len, ppos, tmp, strlen(tmp));
+-	return err;
+-}
+-
+-static const struct file_operations proc_fdinfo_file_operations = {
+-	.open           = nonseekable_open,
+-	.read		= proc_fdinfo_read,
+-	.llseek		= no_llseek,
+-};
+-
+ static int proc_readfd(struct file *filp, void *dirent, filldir_t filldir)
+ {
+ 	return proc_readfd_common(filp, dirent, filldir, proc_fd_instantiate);
 
