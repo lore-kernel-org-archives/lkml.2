@@ -1,77 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760732Ab2EWSQj (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 May 2012 14:16:39 -0400
-Received: from relay1.sgi.com ([192.48.179.29]:48826 "EHLO relay.sgi.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756860Ab2EWSQi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 May 2012 14:16:38 -0400
-Date: Wed, 23 May 2012 13:16:36 -0500
-From: Dimitri Sivanich <sivanich@sgi.com>
-To: Thomas Gleixner <tglx@linutronix.de>
-Cc: Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
-        x86@kernel.org, Suresh Siddha <suresh.b.siddha@intel.com>,
-        Yinghai Lu <yinghai@kernel.org>,
-        Naga Chumbalkar <nagananda.chumbalkar@hp.com>,
-        Jacob Pan <jacob.jun.pan@linux.intel.com>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] x86: check for valid irq_cfg pointer in
- smp_irq_move_cleanup_interrupt
-Message-ID: <20120523181636.GA2032@sgi.com>
-References: <20120521164959.GE16454@sgi.com>
- <alpine.LFD.2.02.1205212304580.3231@ionos>
- <20120521211917.GA25567@sgi.com>
- <alpine.LFD.2.02.1205212324260.3231@ionos>
+	id S1760745Ab2EWSTY (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 May 2012 14:19:24 -0400
+Received: from zeniv.linux.org.uk ([195.92.253.2]:39005 "EHLO
+	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1760650Ab2EWSTX (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 23 May 2012 14:19:23 -0400
+Date: Wed, 23 May 2012 19:19:17 +0100
+From: Al Viro <viro@ZenIV.linux.org.uk>
+To: Randy Dunlap <rdunlap@xenotime.net>
+Cc: Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
+        LKML <linux-kernel@vger.kernel.org>,
+        Richard Weinberger <richard@nod.at>
+Subject: Re: linux-next: Tree for May 23 (uml)
+Message-ID: <20120523181917.GN11775@ZenIV.linux.org.uk>
+References: <20120523170740.ae058d8d5468d471eb948c39@canb.auug.org.au>
+ <4FBD090E.5020901@xenotime.net>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <alpine.LFD.2.02.1205212324260.3231@ionos>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <4FBD090E.5020901@xenotime.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, May 21, 2012 at 11:34:32PM +0200, Thomas Gleixner wrote:
-> Don't misunderstand me. The patch is correct, just the explanation
-> sucks.
+On Wed, May 23, 2012 at 08:58:06AM -0700, Randy Dunlap wrote:
+> On 05/23/2012 12:07 AM, Stephen Rothwell wrote:
 > 
-Hopefully this explanation is descriptive enough.
+> > Hi all,
+> > 
+> > Changes since 20120522:
+> 
+> 
+> 
+> uml defconfig on x86_64:
+> 
+> arch/um/kernel/process.c: In function 'interrupt_end':
+> arch/um/kernel/process.c:122:14: error: 'struct task_struct' has no member named 'replacement_session_keyring'
+> arch/um/kernel/process.c:123:4: error: implicit declaration of function 'key_replace_session_keyring'
 
+Grr...  That's a conflict between uml gaining TIF_NOTIFY_RESUME (needed
+prereq to task_work_add() series) and patch in said series doing away
+with explicit calls of key_replace_session_keyring().  Fixup is to remove
+those two lines in arch/um/process.c, same as done on other architectures
+by "keys: kill the dummy key_replace_session_keyring()" (commit c1cb001).
 
-
-A NULL pointer dereference can occur in smp_irq_move_cleanup_interrupt() if
-we haven't yet setup the irq_cfg pointer in the irq_desc.irq_data.chip_data.
-
-In create_irq_nr() there is a window where we have set vector_irq in
-__assign_irq_vector(), but not yet called irq_set_chip_data() to set the
-irq_cfg pointer.
-
-Should an IRQ_MOVE_CLEANUP_VECTOR hit the cpu in question during this time,
-smp_irq_move_cleanup_interrupt() will attempt to process the aforementioned
-irq, but panic when accessing irq_cfg.
-
-Only continue processing the irq if irq_cfg is non-NULL.
-
-Signed-off-by: Dimitri Sivanich <sivanich@sgi.com>
----
- arch/x86/kernel/apic/io_apic.c |    5 ++++-
- 1 file changed, 4 insertions(+), 1 deletion(-)
-
-Index: linux/arch/x86/kernel/apic/io_apic.c
-===================================================================
---- linux.orig/arch/x86/kernel/apic/io_apic.c
-+++ linux/arch/x86/kernel/apic/io_apic.c
-@@ -2478,9 +2478,12 @@ asmlinkage void smp_irq_move_cleanup_int
- 		if (!desc)
- 			continue;
- 
--		cfg = irq_cfg(irq);
- 		raw_spin_lock(&desc->lock);
- 
-+		cfg = irq_cfg(irq);
-+		if (!cfg)
-+			goto unlock;
-+
- 		/*
- 		 * Check if the irq migration is in progress. If so, we
- 		 * haven't received the cleanup request yet for this irq.
+Not an issue for mainline merge, since task_work_add patchset goes later,
+but I think I'll have to cherry-pick that series into signal.git.  And
+probably reorder it a bit, moving the calls into tracehook_notify_resume()
+first, with "kill the dummy..." commit removing just that single call.
