@@ -1,103 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757822Ab2EWAhw (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 May 2012 20:37:52 -0400
-Received: from haggis.pcug.org.au ([203.10.76.10]:42177 "EHLO
-	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757025Ab2EWAhu (ORCPT
+	id S1758221Ab2EWAjf (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 May 2012 20:39:35 -0400
+Received: from mail131.messagelabs.com ([216.82.242.99]:5621 "EHLO
+	mail131.messagelabs.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752235Ab2EWAje (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 May 2012 20:37:50 -0400
-Date: Wed, 23 May 2012 10:37:35 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>, mingo@redhat.com,
-        a.p.zijlstra@chello.nl, peterz@infradead.org, anton@redhat.com,
-        rostedt@goodmis.org, tglx@linutronix.de, oleg@redhat.com,
-        linux-mm@kvack.org, linux-kernel@vger.kernel.org, hpa@zytor.com,
-        jkenisto@us.ibm.com, andi@firstfloor.org, hch@infradead.org,
-        ananth@in.ibm.com, vda.linux@googlemail.com,
-        masami.hiramatsu.pt@hitachi.com, acme@infradead.org,
-        srikar@linux.vnet.ibm.com, roland@hack.frob.com, mingo@elte.hu,
-        linux-tip-commits@vger.kernel.org
-Subject: Re: [tip:perf/uprobes] uprobes, mm, x86: Add the ability to install
- and remove uprobes breakpoints
-Message-Id: <20120523103735.6fe9c1c3924a62b1e8d45ff8@canb.auug.org.au>
-In-Reply-To: <20120521151323.f23bd5e9.akpm@linux-foundation.org>
-References: <20120209092642.GE16600@linux.vnet.ibm.com>
-	<tip-2b144498350860b6ee9dc57ff27a93ad488de5dc@git.kernel.org>
-	<20120521143701.74ab2d0b.akpm@linux-foundation.org>
-	<CA+55aFw5ccuvvtyf6iuuw-Finr79ZkPxgCxL5jNvdnX5oMYkgg@mail.gmail.com>
-	<20120521151323.f23bd5e9.akpm@linux-foundation.org>
-X-Mailer: Sylpheed 3.2.0beta7 (GTK+ 2.24.10; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Wed__23_May_2012_10_37_35_+1000_lh_W.DnBH1B2fc8z"
+	Tue, 22 May 2012 20:39:34 -0400
+X-Env-Sender: hartleys@visionengravers.com
+X-Msg-Ref: server-6.tower-131.messagelabs.com!1337733573!13412355!2
+X-Originating-IP: [216.166.12.72]
+X-StarScan-Version: 6.5.10; banners=-,-,-
+X-VirusChecked: Checked
+From: H Hartley Sweeten <hartleys@visionengravers.com>
+To: Linux Kernel <linux-kernel@vger.kernel.org>
+Subject: [PATCH] staging: comedi: remove this_board macro in the pcmad driver
+Date: Tue, 22 May 2012 17:39:22 -0700
+User-Agent: KMail/1.9.9
+CC: <devel@driverdev.osuosl.org>, <abbotti@mev.co.uk>,
+        <fmhess@users.sourceforge.net>, <gregkh@linuxfoundation.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
+Content-Disposition: inline
+Message-ID: <201205221739.22746.hartleys@visionengravers.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Wed__23_May_2012_10_37_35_+1000_lh_W.DnBH1B2fc8z
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+The 'this_board' macro depends on having a local variable with
+a magic name. The CodingStyle document suggests not doing this
+to avoid confusion. Remove the macro and use the comedi_board()
+inline helper to get the dev->board_ptr information.
 
-Hi Andrew,
+Signed-off-by: H Hartley Sweeten <hsweeten@visionengravers.com>
+Cc: Ian Abbott <abbotti@mev.co.uk>
+Cc: Mori Hess <fmhess@users.sourceforge.net>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
-I have been thinking about this some more.
+---
 
-On Mon, 21 May 2012 15:13:23 -0700 Andrew Morton <akpm@linux-foundation.org=
-> wrote:
->
-> On Mon, 21 May 2012 15:00:28 -0700
-> Linus Torvalds <torvalds@linux-foundation.org> wrote:
->=20
-> > On Mon, May 21, 2012 at 2:37 PM, Andrew Morton
-> > <akpm@linux-foundation.org> wrote:
-> > >
-> > > hm, we seem to have conflicting commits between mainline and linux-ne=
-xt.
-> > > During the merge window. __Again. __Nobody knows why this happens.
-> >=20
-> > I didn't have my trivial cleanup branches in linux-next, I'm afraid.
->=20
-> Well, it's a broader issue than that.  I often see a large number of
-> rejects when syncing mainline with linux-next during the merge window.=20
-> Right now:
->=20
-> Documentation/nfc/nfc-hci.txt:<<<<<<< HEAD
-	.
-	.
-	.
-> net/nfc/hci/shdlc.c:<<<<<<< HEAD
-> net/nfc/nci/core.c:<<<<<<< HEAD
-
-What two SHA1s did you try to merge to get that.  I can get some of it
-but nothing like that.
-
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-
---Signature=_Wed__23_May_2012_10_37_35_+1000_lh_W.DnBH1B2fc8z
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBCAAGBQJPvDFPAAoJEECxmPOUX5FEt5kP/jjvimQqUdiAB6uJMszVjHh+
-2/ky23rcYz0UYnQ1iG7iLfPQj7P1Nl2rfzmMmg3So9Q/527XiiT0wf/12itzNNC5
-KGST4JSW3sgvnFgwj8YORAuucx1LDpUSwhgMPKsoZ5kLGx2RVdPKKlN+vta6t3BG
-doco1NzSJCPUnQnUZM4Stly1/Bw4J+7gpnJnK34eucjLLBH3wQh4KdHGOfKqZgVR
-noOOMT0POngzrV3Q5z9Ty+cLAfciquoL35gdIytEBeehuzMacddawpv/7Zegp+Ta
-oqsemEtV7YRrZHHjuiPXf1cT1QhMXeB4oFlqgckzvrzfYCoxNUc7m6UN0r+p87ep
-gOe1XYQa8cmlFa4rHiw7jIZukn/av1GWDUhyypvt7A0sEAJWN+h7IKn+THbzdw8e
-ZVp4KAquhA56qOqFH2uITKTj2OM+giZGSow7DAWznf0LfkmXJryacbm02UvkV8f2
-jGEhViWRD115kBy2uNnRqwGuFUAllcWlZP7SxX+eRRTbhkghi7VUVy3rEMNMKi7B
-zwh6jUjLq2Bk6MYPARc1rLRzBIeGK8tnELBZtC8Hh0+fGMn/c0NNyVyF46ozmLgZ
-VVOsxSBQ+DFQmzYZtNVSDXGEovkL28tHBnTCxbXexH+6/JKjRYO/K/J26vYSBqlv
-afA3DPD19KjMrRLl1YSw
-=63Wv
------END PGP SIGNATURE-----
-
---Signature=_Wed__23_May_2012_10_37_35_+1000_lh_W.DnBH1B2fc8z--
+diff --git a/drivers/staging/comedi/drivers/pcmad.c b/drivers/staging/comedi/drivers/pcmad.c
+index 1ec7d5c..2ec0b2e 100644
+--- a/drivers/staging/comedi/drivers/pcmad.c
++++ b/drivers/staging/comedi/drivers/pcmad.c
+@@ -58,8 +58,6 @@ struct pcmad_board_struct {
+ 	int n_ai_bits;
+ };
+ 
+-#define this_board ((const struct pcmad_board_struct *)(dev->board_ptr))
+-
+ struct pcmad_priv_struct {
+ 	int differential;
+ 	int twos_comp;
+@@ -72,6 +70,7 @@ static int pcmad_ai_insn_read(struct comedi_device *dev,
+ 			      struct comedi_subdevice *s,
+ 			      struct comedi_insn *insn, unsigned int *data)
+ {
++	const struct pcmad_board_struct *board = comedi_board(dev);
+ 	int i;
+ 	int chan;
+ 	int n;
+@@ -89,7 +88,7 @@ static int pcmad_ai_insn_read(struct comedi_device *dev,
+ 		data[n] |= (inb(dev->iobase + PCMAD_MSB) << 8);
+ 
+ 		if (devpriv->twos_comp)
+-			data[n] ^= (1 << (this_board->n_ai_bits - 1));
++			data[n] ^= (1 << (board->n_ai_bits - 1));
+ 	}
+ 
+ 	return n;
+@@ -104,6 +103,7 @@ static int pcmad_ai_insn_read(struct comedi_device *dev,
+  */
+ static int pcmad_attach(struct comedi_device *dev, struct comedi_devconfig *it)
+ {
++	const struct pcmad_board_struct *board = comedi_board(dev);
+ 	int ret;
+ 	struct comedi_subdevice *s;
+ 	unsigned long iobase;
+@@ -125,7 +125,7 @@ static int pcmad_attach(struct comedi_device *dev, struct comedi_devconfig *it)
+ 	if (ret < 0)
+ 		return ret;
+ 
+-	dev->board_name = this_board->name;
++	dev->board_name = board->name;
+ 
+ 	s = dev->subdevices + 0;
+ 	s->type = COMEDI_SUBD_AI;
+@@ -133,7 +133,7 @@ static int pcmad_attach(struct comedi_device *dev, struct comedi_devconfig *it)
+ 	s->n_chan = 16;		/* XXX */
+ 	s->len_chanlist = 1;
+ 	s->insn_read = pcmad_ai_insn_read;
+-	s->maxdata = (1 << this_board->n_ai_bits) - 1;
++	s->maxdata = (1 << board->n_ai_bits) - 1;
+ 	s->range_table = &range_unknown;
+ 
+ 	return 0;
