@@ -1,45 +1,39 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752883Ab2EWXCz (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 May 2012 19:02:55 -0400
-Received: from www.linutronix.de ([62.245.132.108]:47220 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751335Ab2EWXCx (ORCPT
+	id S1753454Ab2EWXDE (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 May 2012 19:03:04 -0400
+Received: from lxorguk.ukuu.org.uk ([81.2.110.251]:57853 "EHLO
+	lxorguk.ukuu.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752097Ab2EWXCy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 May 2012 19:02:53 -0400
-Date: Thu, 24 May 2012 01:02:47 +0200 (CEST)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: "Michael S. Tsirkin" <mst@redhat.com>
-cc: Avi Kivity <avi@redhat.com>, Ingo Molnar <mingo@kernel.org>,
-        kvm@vger.kernel.org, Marcelo Tosatti <mtosatti@redhat.com>,
-        Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
-        x86@kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] kvm: optimize ISR lookups
-In-Reply-To: <20120523204311.GB350@redhat.com>
-Message-ID: <alpine.LFD.2.02.1205240001090.3231@ionos>
-References: <20120521163727.GA13337@redhat.com> <alpine.LFD.2.02.1205211940030.3231@ionos> <20120521215127.GH17031@redhat.com> <alpine.LFD.2.02.1205220012020.3231@ionos> <20120521222449.GJ17031@redhat.com> <alpine.LFD.2.02.1205220044460.3231@ionos>
- <4FBB6E8B.8020200@redhat.com> <20120523144846.GA26974@gmail.com> <4FBCFC4A.7070303@redhat.com> <alpine.LFD.2.02.1205232140570.3231@ionos> <20120523204311.GB350@redhat.com>
-User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+	Wed, 23 May 2012 19:02:54 -0400
+Date: Thu, 24 May 2012 00:05:43 +0100
+From: Alan Cox <alan@lxorguk.ukuu.org.uk>
+To: Dave Jones <davej@redhat.com>
+Cc: Ming Lei <tom.leiming@gmail.com>,
+        Linux Kernel <linux-kernel@vger.kernel.org>,
+        Alan Cox <alan@linux.intel.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Subject: Re: 3.4+ tty lockdep trace
+Message-ID: <20120524000543.56494418@pyramind.ukuu.org.uk>
+In-Reply-To: <20120523020247.GA5653@redhat.com>
+References: <20120523002645.GA3490@redhat.com>
+	<CACVXFVMz_GKHXpzbqt24yY=fHJ6uYZPOcSnKNFHrvbdpWxc7tw@mail.gmail.com>
+	<20120523020247.GA5653@redhat.com>
+X-Mailer: Claws Mail 3.8.0 (GTK+ 2.24.8; x86_64-redhat-linux-gnu)
+Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 23 May 2012, Michael S. Tsirkin wrote:
+On Tue, 22 May 2012 22:02:47 -0400
+Dave Jones <davej@redhat.com> wrote:
 
-> On Wed, May 23, 2012 at 10:10:27PM +0200, Thomas Gleixner wrote:
-> > Replying on a still polite reminder with a sloppy "I just took what's
-> > there and implemeted the optimization which I was tasked with" is even
-> > more of an offense.
-> 
-> Ow.  That 'not my fault' line was a joke.
+> A different one. This time with devpts. (With the patch Ming Lei pointed to on top of Linus current)
 
-Which I obviously missed to get after spending quite some time to grok
-the whole thing.
+That one loosk real - I'll go squash it tomorrow if I get time.
 
-I still don't get it. Must be a cultural or an age thing or both.
-
+Alan
