@@ -1,47 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933102Ab2EWR0K (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 May 2012 13:26:10 -0400
-Received: from mail-gh0-f174.google.com ([209.85.160.174]:55992 "EHLO
-	mail-gh0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760619Ab2EWR0I (ORCPT
+	id S933640Ab2EWRaP (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 May 2012 13:30:15 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:55339 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1760596Ab2EWRaN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 May 2012 13:26:08 -0400
-Date: Wed, 23 May 2012 14:26:03 -0300
-From: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-To: Josh Boyer <jwboyer@redhat.com>
-Cc: Steven Rostedt <srostedt@redhat.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Ingo Molnar <mingo@redhat.com>, linux-kernel@vger.kernel.org
-Subject: Re: Perf build failure in v3.4-4842-g61011677
-Message-ID: <20120523172603.GB1687@infradead.org>
-References: <20120523141359.GE1143@zod.bos.redhat.com>
- <20120523143304.GF1143@zod.bos.redhat.com>
- <20120523171314.GA1687@infradead.org>
- <20120523171508.GG1143@zod.bos.redhat.com>
+	Wed, 23 May 2012 13:30:13 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20120523171508.GG1143@zod.bos.redhat.com>
-X-Url: http://acmel.wordpress.com
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <CA+55aFzd1BWqidt95qZLc1x_YU=WeGS=mKUOMvO_3omOhc_5VA@mail.gmail.com>
+References: <1337754877-19759-1-git-send-email-yinghai@kernel.org>
+	<1337754877-19759-3-git-send-email-yinghai@kernel.org>
+	<CA+55aFzd1BWqidt95qZLc1x_YU=WeGS=mKUOMvO_3omOhc_5VA@mail.gmail.com>
+Date: Wed, 23 May 2012 10:30:12 -0700
+X-Google-Sender-Auth: 5f42FN0_rWDOKO6wk4VZ-wJBkic
+Message-ID: <CAE9FiQXx_x9M5ncLk4DyL8heYQTcsHZt2JofFMjPfUd4mympeA@mail.gmail.com>
+Subject: Re: [PATCH 02/11] PCI: Try to allocate mem64 above 4G at first
+From: Yinghai Lu <yinghai@kernel.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>,
+        Steven Newbury <steve@snewbury.org.uk>
+Cc: Bjorn Helgaas <bhelgaas@google.com>,
+        Andrew Morton <akpm@linux-foundation.org>, linux-pci@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Em Wed, May 23, 2012 at 01:15:08PM -0400, Josh Boyer escreveu:
-> On Wed, May 23, 2012 at 02:13:14PM -0300, Arnaldo Carvalho de Melo wrote:
-> > Em Wed, May 23, 2012 at 10:33:05AM -0400, Josh Boyer escreveu:
-> > > OK, seems Steven fixed the trace-event-python.c file with commit
-> > > aaf045f7233, but missed the perl one.  This patch seems to fixup the
-> > > errors.
-> > 
-> > I reported this to Frédéric, that fixed it, I merged on my perf/core
-> > branch, that Ingo already pulled, thanks anyway,
-> 
-> Oh good.  And that's headed to Linus' tree soon?
+On Wed, May 23, 2012 at 8:57 AM, Linus Torvalds
+<torvalds@linux-foundation.org> wrote:
+> On Tue, May 22, 2012 at 11:34 PM, Yinghai Lu <yinghai@kernel.org> wrote:
+>> and will fall back to below 4g if it can not find any above 4g.
+>
+> Has this been tested on 32-bit machines without PAE? There might be
+> things that just happen to work because their allocations were always
+> done bottom-up.
 
-I guess so.
+Good point. that problem should be addressed at first before this patch.
 
-- Arnaldo
+>
+> Or do we have something else that protects us from the "oops, we can't
+> actually *map* those pages"?
+
+Steven tested on his setup.
+
+I tested some Infiniband cards.
+
+Thanks
+
+Yinghai
