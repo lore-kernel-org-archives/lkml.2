@@ -1,66 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755104Ab2EWGqP (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 May 2012 02:46:15 -0400
-Received: from mga03.intel.com ([143.182.124.21]:14242 "EHLO mga03.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751816Ab2EWGqN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 May 2012 02:46:13 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
-   d="scan'208";a="146625192"
-Message-ID: <1337755623.14538.194.camel@ymzhang.sh.intel.com>
-Subject: Re: [PATCH] ipv4: fix the rcu race between free_fib_info and
- ip_route_output_slow
-From: Yanmin Zhang <yanmin_zhang@linux.intel.com>
-To: Eric Dumazet <eric.dumazet@gmail.com>
-Cc: David Miller <davem@davemloft.net>, kunx.jiang@intel.com,
-        netdev@vger.kernel.org, linux-kernel@vger.kernel.org
-Date: Wed, 23 May 2012 14:47:03 +0800
-In-Reply-To: <1337754459.3361.1850.camel@edumazet-glaptop>
-References: <4FBB6105.2060808@intel.com>
-	 <20120522.151554.106838106733194160.davem@davemloft.net>
-	 <1337742123.14538.175.camel@ymzhang.sh.intel.com>
-	 <20120522.232310.911242148705021745.davem@davemloft.net>
-	 <1337747829.3361.1599.camel@edumazet-glaptop>
-	 <1337748897.14538.184.camel@ymzhang.sh.intel.com>
-	 <1337749339.3361.1655.camel@edumazet-glaptop>
-	 <1337753757.14538.190.camel@ymzhang.sh.intel.com>
-	 <1337754459.3361.1850.camel@edumazet-glaptop>
-Organization: MCG
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.2- 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	id S1755300Ab2EWGsq (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 May 2012 02:48:46 -0400
+Received: from mail-wi0-f170.google.com ([209.85.212.170]:37359 "EHLO
+	mail-wi0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751816Ab2EWGso (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 23 May 2012 02:48:44 -0400
+Date: Wed, 23 May 2012 08:49:41 +0200
+From: Daniel Vetter <daniel@ffwll.ch>
+To: Sean Paul <seanpaul@chromium.org>
+Cc: Zdenek Kabelac <zdenek.kabelac@gmail.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        intel-gfx@lists.freedesktop.org, daniel@ffwll.ch,
+        jbarnes@virtuousgeek.org
+Subject: Re: Regression on GMA965 - display seems to have slow jump changes
+ in brightness
+Message-ID: <20120523064941.GA5062@phenom.ffwll.local>
+Mail-Followup-To: Sean Paul <seanpaul@chromium.org>,
+	Zdenek Kabelac <zdenek.kabelac@gmail.com>,
+	Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+	intel-gfx@lists.freedesktop.org, jbarnes@virtuousgeek.org
+References: <CAJJYPd=JQdzepw818ZP6OmKK4v38--T+ruKBOG_wn2pUmnVaSw@mail.gmail.com>
+ <20120522123058.GB4629@phenom.ffwll.local>
+ <CAJJYPdmcJYT1VTnqbkbybut-_NqpFYsuEEzDb9LO-E+ss=wz-g@mail.gmail.com>
+ <20120522144443.GD4629@phenom.ffwll.local>
+ <CAJJYPdmimcz45qdT0W-iLTyY-U2qCe4fa4+e19adrjMtwd2Ywg@mail.gmail.com>
+ <CAJJYPdkhSOXZeCJN9MDHTgd1hg07zo1ZDXkwwASJ74NojQ=dyQ@mail.gmail.com>
+ <CAOw6vbKOss-h8A2yRRunCKv7RUnD6QV4Pj1Rg8+2YC5qBKL8pQ@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAOw6vbKOss-h8A2yRRunCKv7RUnD6QV4Pj1Rg8+2YC5qBKL8pQ@mail.gmail.com>
+X-Operating-System: Linux phenom 3.4.0-rc6+
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2012-05-23 at 08:27 +0200, Eric Dumazet wrote:
-> On Wed, 2012-05-23 at 14:15 +0800, Yanmin Zhang wrote:
+On Tue, May 22, 2012 at 06:21:22PM -0400, Sean Paul wrote:
+> On Tue, May 22, 2012 at 6:15 PM, Zdenek Kabelac
+> <zdenek.kabelac@gmail.com> wrote:
+> > 2012/5/22 Zdenek Kabelac <zdenek.kabelac@gmail.com>:
+> > And we have a winner - cec2f356d59d9e070413e5966a3c5a1af136d948
+> >
 > 
-> > 
-> > Besides fi->fib_dev here, we need check fi->fib_hash, fi->fib_lhash,
-> > and nexthop_nh->nh_hash.
-> 
-> No, its not needed.
-I am checking it now.
-fib_create_info=>fib_find_info, but fib_find_info is not protected by
-fib_info_lock. See the codes:
+> Hmm, seems like your display doesn't like to be downclocked, or rather
+> you don't like it to be downclocked :) The reason this patch triggered
+> it is because it does a better job of finding a compatible clock. You
+> can disable lvds downclocking on the kernel command line by setting
+> i915.lvds_downclock=0
 
-
-link_it:
-        ofi = fib_find_info(fi);
-        if (ofi) {
-                fi->fib_dead = 1;
-                free_fib_info(fi);
-                ofi->fib_treeref++;
-                return ofi;
-        }
-
-> 
-> I am sending a patch, because I feel this area is too complex for non
-> netdev guys.
-Indeed, it's complicated. I will test your patches.
-
-
+... which is actually the default. Zdenek, are you enabling this option on
+your kernel cmdline?
+-Daniel
+-- 
+Daniel Vetter
+Mail: daniel@ffwll.ch
+Mobile: +41 (0)79 365 57 48
