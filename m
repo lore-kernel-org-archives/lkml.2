@@ -1,90 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933895Ab2EWTBq (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 May 2012 15:01:46 -0400
-Received: from t3076.greatnet.de ([83.133.106.214]:41879 "EHLO
-	t3076.greatnet.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932888Ab2EWTBo (ORCPT
+	id S933880Ab2EWTDc (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 May 2012 15:03:32 -0400
+Received: from acsinet15.oracle.com ([141.146.126.227]:40829 "EHLO
+	acsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932888Ab2EWTDb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 May 2012 15:01:44 -0400
-X-Greylist: delayed 514 seconds by postgrey-1.27 at vger.kernel.org; Wed, 23 May 2012 15:01:44 EDT
-Date: Wed, 23 May 2012 20:53:05 +0200
-From: Matthias Dunda <lkml@ca.rtgf.de>
-To: linux-kernel@vger.kernel.org
-Cc: john.stultz@linaro.org, paulus@samba.org
-Subject: Adding new clocksource to powerpc kernel not working properly
-Message-ID: <20120523185305.GA7924@t3076.greatnet.de>
+	Wed, 23 May 2012 15:03:31 -0400
+Date: Wed, 23 May 2012 22:07:16 +0300
+From: Dan Carpenter <dan.carpenter@oracle.com>
+To: H Hartley Sweeten <hartleys@visionengravers.com>
+Cc: Ian Abbott <abbotti@mev.co.uk>,
+        Linux Kernel <linux-kernel@vger.kernel.org>,
+        "devel@driverdev.osuosl.org" <devel@driverdev.osuosl.org>,
+        "fmhess@users.sourceforge.net" <fmhess@users.sourceforge.net>,
+        Ian Abbott <ian.abbott@mev.co.uk>,
+        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>
+Subject: Re: [PATCH] staging: comedi: remove this_board macro in the s526
+ driver
+Message-ID: <20120523190715.GP4629@mwanda>
+References: <201205221820.10770.hartleys@visionengravers.com>
+ <20120523054849.GK4637@mwanda>
+ <4FBCAB50.5000907@mev.co.uk>
+ <ADE657CA350FB648AAC2C43247A983F0020698BAC8D8@AUSP01VMBX24.collaborationhost.net>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <ADE657CA350FB648AAC2C43247A983F0020698BAC8D8@AUSP01VMBX24.collaborationhost.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi John, Paul and others,
+On Wed, May 23, 2012 at 11:28:32AM -0500, H Hartley Sweeten wrote:
+> On Wednesday, May 23, 2012 2:18 AM, Ian Abbott wrote:
+> > On 2012-05-23 06:48, Dan Carpenter wrote:
+> >> On Tue, May 22, 2012 at 06:20:10PM -0700, H Hartley Sweeten wrote:
+> >>> -/*
+> >>> - * Initialize dev->board_name.  Note that we can use the "thisboard"
+> >>> - * macro now, since we just initialized it in the last line.
+> >>> - */
+> >>> -	dev->board_ptr =&s526_boards[0];
+> >>
+> >> Was this intended?  Most of the boards have auto probing so the
+> >> ->board_ptr gets set automatically.  We already called
+> >> comedi_board() so I wonder if the autoprobed board is the same as
+> >> the&s526_boards[0];?  NULL pointer perhaps?  I don't know.
+> >
+> > If .num_names in struct comedi_driver is non-zero, the core comedi 
+> > module will set dev->board_ptr to something non-NULL and meaningful to 
+> > the driver before it calls the driver's ->attach() method.  (This is 
+> > done by the comedi_recognize() function.)  The driver can change 
+> > dev->board_ptr to something else if it wants.  In this case, 
+> > dev->board_ptr will already be set to &s526_boards[0] so there is no 
+> > point setting it again.
+> 
+> Ian,
+> 
+> Side-note on the boardinfo stuff.
+> 
+> I wonder if it makes sense to create a common boardinfo struct
+> and modify the comedi_driver struct a bit. Something like:
+> 
+> struct comedi_boardinfo {
+> 	const char *name;
+> 	unsigned short	vendor;
+> 	unsigned short device;
+> 	void *private;
+> };
+> 
+> struct comedi_driver {
+> 	struct comedi_driver *next;
+> 
+> 	const char *driver_name;
+> 	struct module *module;
+> 	int (*attach) (struct comedi_device *, struct comedi_devconfig *);
+> 	void (*detach) (struct comedi_device *);
+> 	int (*attach_pci) (struct comedi_device *, struct pci_dev *);
+> 	int (*attach_usb) (struct comedi_device *, struct usb_interface *);
+> 
+> 	u32 num_boards;
+> 	struct comedi_boardinfo *board;
+> };
+> 
+> This would allow comedi_recognize() to walk the boardinfo
+> to find the match without all the ugly casts.
 
-I've been trying to implement a clocksource driver for my custom
-hardware design, based on a MPC8568 PowerPC e500; kernel version
-is 2.6.29.6-rt24.
+That function wouldn't be so bad if we just removed all the consts.
+There is no point because we drop all of them anyway when we return
+the struct.
 
-It's an embedded device that has a dedicated hardware register which is
-incremented on every tick from an oven-controlled quarz oscillator
-running at 33 1/3 MHz, giving me a tick rate of exactly 30 ns.
+regards,
+dan carpenter
 
-The speciality about it is, that ticks can be inserted or removed in
-hardware, to make it more accurate over time.
-
-I've implemented the appropriate clocksource, and it works - generally.
-/sys/devices..../current_clocksource shows me, that my driver is used.
-
-For testing, I tried the following two things:
-
-1.) make it run slower in hardware: every fourth tick, the register
-isn't counted up, which means it runs approx. 20% slower
-
-2.) change .mult in the driver to half of its valule, which should also
-result in a approx. 50% slower timing.
-
-On the command line, I then issue the following simple command:
-
-while `true`; do date; time sleep 1; done
-
-The result is something like
-
- Wed May 23 09:15:19 CEST 2012
- real    0m1.020s
- Wed May 23 09:15:21 CEST 2012
- real    0m1.020s
- Wed May 23 09:15:23 CEST 2012
- real    0m1.020s
-
-Measured externally the one second sleep actually takes two seconds. The
-system measured a real execution time of the once second sleep as one
-second - what I expected it to do. BUT: the date command still keeps
-track of the "outside" wall time - what I didn't expect.
-
-I talked to John about this off-list already, and he was also confused
-about this behaviour. He gave me hints to check deeper into the code -
-thanks for this John - and indeed it looks like the e500 timebase is
-hardcoded into the gettimeofday code.
-
-I.e. in arch/powerpc/kernel/vdso32/vdso32.lds.S the routine
-__do_get_xsec goes hardcoded onto the timebase registers by using mftbu
-and mftbl instructions.
-
-Also, the strace of the date command shows no calls to time,
-gettimeofday,
-or clock_gettime. (The same strace on my i386 desktop machine does.)
-
-Thus, I follow John's recommendation to post the details here on the
-list - as it is pratically not possible in this situation to provide the
-kernel with a one-and-only clocksource, that is not "timebase".
-
-A quick look at the latest git master revealed, that this code hasn't
-changed since the rather old version I use.
-
-Cheers
-
-Matthias
 
