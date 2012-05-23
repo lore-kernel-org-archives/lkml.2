@@ -1,277 +1,365 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965099Ab2EWDkb (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 May 2012 23:40:31 -0400
-Received: from ozlabs.org ([203.10.76.45]:59875 "EHLO ozlabs.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758151Ab2EWDk1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 May 2012 23:40:27 -0400
-Message-ID: <1337744423.3038.26.camel@pasglop>
-Subject: [git pull] Please pull powerpc.git next branch
-From: Benjamin Herrenschmidt <benh@ozlabs.org>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: linuxppc-dev list <linuxppc-dev@ozlabs.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linux Kernel list <linux-kernel@vger.kernel.org>
-Date: Wed, 23 May 2012 13:40:23 +1000
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3-0ubuntu6 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	id S965084Ab2EWDpw (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 May 2012 23:45:52 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:51753 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756739Ab2EWDpt (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 May 2012 23:45:49 -0400
+Date: Tue, 22 May 2012 23:45:49 -0400
+From: Kent Overstreet <koverstreet@google.com>
+To: Tejun Heo <tejun@google.com>
+Cc: linux-bcache@vger.kernel.org, linux-kernel@vger.kernel.org,
+        dm-devel@redhat.com, agk@redhat.com
+Subject: Re: [Bcache v13 11/16] bcache: Core btree code
+Message-ID: <20120523034546.GB607@dhcp-172-18-216-138.mtv.corp.google.com>
+References: <cover.1336619038.git.koverstreet@google.com>
+ <7f1de39b6d7040b3fe271500776f4b985b21ea82.1336619038.git.koverstreet@google.com>
+ <20120522221259.GJ14339@google.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120522221259.GJ14339@google.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus !
+On Tue, May 22, 2012 at 03:12:59PM -0700, Tejun Heo wrote:
+> Hello, Kent.
+> 
+> On Wed, May 09, 2012 at 11:10:48PM -0400, Kent Overstreet wrote:
+> > +#define BKEY_PADDED(key)					\
+> > +	union { struct bkey key; uint64_t key ## _pad[8]; }
+> 
+> What does the '8' mean?  And why does struct bbio use 3 instead?  Does
+> this have to be a macro?  Can't we have struct bkey_padded (or
+> whatever)?
 
-Here are the powerpc goodies for 3.5. Main highlights are:
+Struct bbio uses 3 because it only ever carries around a single pointer
+(i.e. the pointer it's doing io to/from). I'll document that.
 
- - Support for the NX crypto engine in Power7+
- - A bunch of Anton goodness, including some micro optimization
-   of our syscall entry on Power7
- - I converted a pile of our thermal control drivers to the
-   new i2c APIs (essentially turning the old therm_pm72 into
-   a proper set of windfarm drivers). That's one more step
-   toward removing the deprecated i2c APIs, there's still a
-   few drivers to fix, but we are getting close
- - kexec/kdump support for 47x embedded cores
+The 8 here is kind of arbitrary, it should be a constant defined
+somewhere - it's just a nice round number so it doesn't overflow, means
+it can fit 6 pointers.
 
-The big missing thing here is no updates from Freescale. Not sure
-what's up here, but with Kumar not working for them anymore things
-are a bit in a state of flux in that area.
+It's a macro because it's used for embedding them in various structs -
+that way the pad can be in an anonymous union. Doesn't work the way
+you'd want for bkey_paddeds that are declared on the stack - I never
+found a solution I liked.
 
-[Sent from my ozlabs address because gate.crashing.org appears to
-have temporarily fallen off the face of the internet]
+> > +struct io {
+> > +	/* Used to track sequential IO so it can be skipped */
+> > +	struct hlist_node	hash;
+> > +	struct list_head	lru;
+> > +
+> > +	unsigned long		jiffies;
+> > +	unsigned		sequential;
+> > +	sector_t		last;
+> > +};
+> 
+> I don't think bcache can have struct io. :P
 
-Cheers,
-Ben.
+Is your complaint that there's a struct io somewhere else, or just the
+potential namespace clash in the future? Regardless, I can change it.
 
-The following changes since commit 7c0482e3d055e5de056d3c693b821e39205b99ae:
+> 
+> > +struct dirty_io {
+> > +	struct closure		cl;
+> > +	struct cached_dev	*d;
+> > +	struct bio		bio;
+> > +};
+> > +
+> > +struct dirty {
+> > +	struct rb_node		node;
+> > +	BKEY_PADDED(key);
+> > +	struct dirty_io		*io;
+> > +};
+> ...
+> > +struct cache {
+> 
+> Nor these and so on.
 
-  powerpc/irq: Fix another case of lazy IRQ state getting out of sync (2012-05-12 09:40:41 +1000)
+You want me to prefix all my struct names with bcache_? Blech.
 
-are available in the git repository at:
+> 
+> > +/* Bkey fields: all units are in sectors */
+> > +
+> > +#define KEY_FIELD(name, field, offset, size)				\
+> > +	BITMASK(name, struct bkey, field, offset, size)
+> > +
+> > +#define PTR_FIELD(name, offset, size)					\
+> > +	static inline uint64_t name(const struct bkey *k, unsigned i)	\
+> > +	{ return (k->ptr[i] >> offset) & ~(((uint64_t) ~0) << size); }	\
+> > +									\
+> > +	static inline void SET_##name(struct bkey *k, unsigned i, uint64_t v)\
+> > +	{								\
+> > +		k->ptr[i] &= ~(~((uint64_t) ~0 << size) << offset);	\
+> > +		k->ptr[i] |= v << offset;				\
+> > +	}
+> > +
+> > +KEY_FIELD(KEY_PTRS,	header, 60, 3)
+> > +KEY_FIELD(HEADER_SIZE,	header, 58, 2)
+> > +KEY_FIELD(KEY_CSUM,	header, 56, 2)
+> > +KEY_FIELD(KEY_PINNED,	header, 55, 1)
+> > +KEY_FIELD(KEY_DIRTY,	header, 36, 1)
+> > +
+> > +KEY_FIELD(KEY_SIZE,	header, 20, 16)
+> > +KEY_FIELD(KEY_DEV,	header, 0,  20)
+> > +
+> > +KEY_FIELD(KEY_SECTOR,	key,	16, 47)
+> > +KEY_FIELD(KEY_SNAPSHOT,	key,	0,  16)
+> > +
+> > +PTR_FIELD(PTR_DEV,		51, 12)
+> > +PTR_FIELD(PTR_OFFSET,		8,  43)
+> > +PTR_FIELD(PTR_GEN,		0,  8)
+> 
+> So, apart from the the macros, key is 64bit containing the backend
+> device and extent offset and size with the ptr fields somehow point to
+> cache.  Am I understanding it correctly?  If right, I'm *tiny* bit
+> apprehensive about using only 43bits for offset.  While the block 9
+> bits means 52bit addressing, the 9 bit block size is now there mostly
+> to work as buffer between memory bitness growth and storage device
+> size growth so that we have 9 bit buffer as storage device reaches
+> ulong addressing limit.  Probably those days are far out enough.
 
-  git://git.kernel.org/pub/scm/linux/kernel/git/benh/powerpc.git next
+You're exactly right. I had similar thoughts about the offset size,
+but... it'll last until we have 8 exabyte cache devices, and I can't
+make it bigger without making PTR_DEV smaller or making the whole
+pointer 16 bytes.
 
-for you to fetch changes up to 2074b1d9d53ae696dd3f49482bad43254f40f01d:
+Shouldn't be that hard to make a version of the on disk format with 16
+byte pointers that's backwards compatible though, when it becomes
+necessary. And we can detect it at format time.
 
-  powerpc: Fix irq distribution (2012-05-22 14:38:26 +1000)
+> > +void btree_read_done(struct closure *cl)
+> > +{
+> > +	struct btree *b = container_of(cl, struct btree, io.cl);
+> > +	struct bset *i = b->sets[0].data;
+> > +	struct btree_iter *iter = b->c->fill_iter;
+> > +	const char *err = "bad btree header";
+> > +	BUG_ON(b->nsets || b->written);
+> > +
+> > +	bbio_free(b->bio, b->c);
+> > +	b->bio = NULL;
+> > +
+> > +	mutex_lock(&b->c->fill_lock);
+> > +	iter->used = 0;
+> > +
+> > +	if (btree_node_io_error(b) ||
+> > +	    !i->seq)
+> > +		goto err;
+> > +
+> > +	for (;
+> > +	     b->written < btree_blocks(b) && i->seq == b->sets[0].data->seq;
+> > +	     i = write_block(b)) {
+> > +		err = "unsupported bset version";
+> > +		if (i->version > BCACHE_BSET_VERSION)
+> > +			goto err;
+> > +
+> > +		err = "bad btree header";
+> > +		if (b->written + set_blocks(i, b->c) > btree_blocks(b))
+> > +			goto err;
+> > +
+> > +		err = "bad magic";
+> > +		if (i->magic != bset_magic(b->c))
+> > +			goto err;
+> > +
+> > +		err = "bad checksum";
+> > +		switch (i->version) {
+> > +		case 0:
+> > +			if (i->csum != csum_set(i))
+> > +				goto err;
+> > +			break;
+> > +		case BCACHE_BSET_VERSION:
+> > +			if (i->csum != btree_csum_set(b, i))
+> > +				goto err;
+> > +			break;
+> > +		}
+> > +
+> > +		err = "empty set";
+> > +		if (i != b->sets[0].data && !i->keys)
+> > +			goto err;
+> > +
+> > +		btree_iter_push(iter, i->start, end(i));
+> > +
+> > +		b->written += set_blocks(i, b->c);
+> > +	}
+> > +
+> > +	err = "corrupted btree";
+> > +	for (i = write_block(b);
+> > +	     index(i, b) < btree_blocks(b);
+> > +	     i = ((void *) i) + block_bytes(b->c))
+> > +		if (i->seq == b->sets[0].data->seq)
+> > +			goto err;
+> > +
+> > +	btree_sort_and_fix_extents(b, iter);
+> > +
+> > +	i = b->sets[0].data;
+> > +	err = "short btree key";
+> > +	if (b->sets[0].size &&
+> > +	    bkey_cmp(&b->key, &b->sets[0].end) < 0)
+> > +		goto err;
+> > +
+> > +	if (b->written < btree_blocks(b))
+> > +		bset_init_next(b);
+> > +
+> > +	if (0) {
+> > +err:		set_btree_node_io_error(b);
+> > +		cache_set_error(b->c, "%s at bucket %lu, block %zu, %u keys",
+> > +				err, PTR_BUCKET_NR(b->c, &b->key, 0),
+> > +				index(i, b), i->keys);
+> > +	}
+> 
+> Please don't do that.  Just define out: label, move error specific
+> path to the end of the function and jump to out at the end of that.
 
-----------------------------------------------------------------
-Andre Heider (3):
-      powerpc/ps3: Add highmem repository read routines
-      powerpc/ps3: Use highmem region from repository
-      powerpc/ps3: Remove MEMORY_HOTPLUG requirement
+Heh. Given that you're the second person to complain about that, I'll
+change it.
 
-Anshuman Khandual (1):
-      powerpc: Fixing a cputhread code documentation
+> > +
+> > +	mutex_unlock(&b->c->fill_lock);
+> > +
+> > +	spin_lock(&b->c->btree_read_time_lock);
+> > +	time_stats_update(&b->c->btree_read_time, b->io_start_time);
+> > +	spin_unlock(&b->c->btree_read_time_lock);
+> > +
+> > +	smp_wmb(); /* read_done is our write lock */
+> > +	set_btree_node_read_done(b);
+> > +
+> > +	closure_return(cl);
+> > +}
+> > +
+> > +static void btree_read_resubmit(struct closure *cl)
+> > +{
+> > +	struct btree *b = container_of(cl, struct btree, io.cl);
+> > +
+> > +	submit_bbio_split(b->bio, b->c, &b->key, 0);
+> > +	continue_at(&b->io.cl, btree_read_done, system_wq);
+> > +}
+> 
+> I suppose submit_bbio_split() can't fail here somehow unlike from
+> btree_read() path?  If so, please add a comment to explain and maybe
+> WARN_ON_ONCE() on failure.  Subtlety to comment ratio is *way* off.
 
-Anton Blanchard (15):
-      powerpc: Hide some system call labels from profile tools
-      powerpc: No need to save XER in a system call
-      powerpc: No need to preserve count register across system call
-      powerpc: Better scheduling of CR save code in system call path
-      powerpc: Clean up lppaca->cede_latency_hint
-      powerpc: Remove iseries specific fields in lppaca
-      powerpc: Reformat lppaca.h
-      powerpc: Remove empty giveup_altivec function on book3e CPUs
-      powerpc: Optimise enable_kernel_altivec
-      powerpc: Remove CONFIG_POWER4_ONLY
-      powerpc: Require gcc 4.0 on 64-bit
-      powerpc: Remove altivec fix for gcc versions before 4.0
-      powerpc: Add 64-bit CPU targets for gcc
-      powerpc: Use WARN instead of dump_stack when printing EEH error backtrace
-      powerpc: Remove old powerpc specific ptrace getregs/setregs calls
+Yes - because this is the resubmit patch, i.e. runs out of workqueue
+context if the one in btree_read() failed, which is only possible when
+it's running under generic_make_request() (because then we don't use the
+mempool to avoid deadlock).
 
-Benjamin Herrenschmidt (20):
-      Merge remote-tracking branch 'geoff/for-powerpc' into next
-      i2c/powermac: Register i2c devices from device-tree
-      powerpc/pmac: Convert therm_adt746x to new i2c probing
-      powerpc/pmac: Convert windfarm_lm75 to new i2c probing
-      powerpc/pmac: Convert windfarm_max6690 to new i2c probing
-      powerpc/pmac: Convert windfarm_smu_sat to new i2c probing
-      powerpc/windfarm: const'ify and add "priv" field to controls & sensors
-      powerpc/windfarm: Remove spurrious sysfs_attr_init()
-      powerpc/windfarm: Improve display of fan speeds in sysfs
-      powerpc/windfarm: Add useful accessors
-      powerpc/windfarm: Add ad7417 sensor
-      powerpc/windfarm: Add lm87 sensor
-      powerpc/windfarm: Updates to lm75 and max6690 sensors
-      powerpc/windfarm: Add Fan Control Unit controls for G5s
-      powerpc/powermac: New windfarm driver for PowerMac G5 (AGP) and Xserve G5
-      Merge branch 'merge' into next
-      powerpc/windfarm: Fix crash on SMU based machine after i2c conversion
-      Merge remote-tracking branch 'jwb/next' into next
-      Merge branch 'merge' into next
-      Revert "powerpc/hw-breakpoint: Use generic hw-breakpoint interfaces for new PPC ptrace flags"
+If the code for making generic_make_request() handle arbitrary sized
+bios goes in, this code will be deleted :)
 
-Geoff Levand (5):
-      powerpc/ps3: Correct lv1 repository routine names
-      powerpc/ps3: Add PS3 repository write support
-      powerpc/ps3: Add highmem repository write routines
-      powerpc/ps3: Minor Kconfig cleanup
-      powerpc/ps3: Refresh ps3_defconfig
+> 
+> > +static struct btree *mca_bucket_alloc(struct cache_set *c,
+> > +				      struct bkey *k, gfp_t gfp)
+> > +{
+> > +	struct btree *b = kzalloc(sizeof(struct btree), gfp);
+> > +	if (!b)
+> > +		return NULL;
+> > +
+> > +	init_rwsem(&b->lock);
+> > +	INIT_LIST_HEAD(&b->list);
+> > +	INIT_DELAYED_WORK(&b->work, btree_write_work);
+> > +	b->c = c;
+> > +	closure_init_unlocked(&b->io);
+> > +
+> > +	mca_data_alloc(b, k, gfp);
+> > +	return b->sets[0].data ? b : NULL;
+> > +}
+> 
+> mca_data_alloc() failure path seems like a resource leak but it isn't
+> because mca_data_alloc() puts it in free list.  Is the extra level of
+> caching necessary?  How is it different from sl?b allocator cache?
+> And either way, comments please.
 
-Hector Martin (1):
-      powerpc/ps3: Add highmem region memory early
+This btree in memory cache code is probably the nastiest, subtlest,
+trickiest code in bcache. I have some cleanups in a branch somewhere as
+part of some other work that I need to finish off.
 
-Josh Boyer (1):
-      powerpc/40x: Use {upper,lower}_32_bits for msi_phys
+The btree_cache_freed list isn't for caching - we never free struct
+btrees except on shutdown, to simplify the code. It doesn't cost much
+memory since the memory usage is dominated by the buffers struct btree
+points to, and those are freed when necessary.
 
-K.Prasad (1):
-      powerpc/hw-breakpoint: Use generic hw-breakpoint interfaces for new PPC ptrace flags
+btree_cache_freeable is a small cache for the buffers struct btree
+points to (the btree node as it exists on disk + the bset tree). We have
+that because high order page allocations can be expensive, and it's
+quite common to delete and allocate btree nodes in quick succession -
+but it should never grow past 2 or 3 nodes.
 
-Kent Yoder (17):
-      powerpc/pseries: Add new hvcall constants to support PFO
-      powerpc/pseries: Add pseries update notifier for OFDT prop changes
-      powerpc/pseries: Add PFO support to the VIO bus
-      powerpc/pseries/hwrng: PFO-based hwrng driver
-      powerpc/pseries: Enable the PFO-based RNG accelerator
-      powerpc/crypto: nx driver code supporting nx encryption
-      powerpc/crypto: AES-CBC mode routines for nx encryption
-      powerpc/crypto: AES-CCM mode routines for nx encryption
-      powerpc/crypto: AES-CTR mode routines for nx encryption
-      powerpc/crypto: AES-ECB mode routines for nx encryption
-      powerpc/crypto: AES-GCM mode routines for nx encryption
-      powerpc/crypto: AES-XCBC mode routines for nx encryption
-      powerpc/crypto: SHA256 hash routines for nx encryption
-      powerpc/crypto: SHA512 hash routines for nx encryption
-      powerpc/crypto: debugfs routines and docs for the nx device driver
-      powerpc/crypto: Build files for the nx device driver
-      powerpc/crypto: Enable the PFO-based encryption device
+I'm adding all this to where the lists are defined, in struct cache_set.
 
-Kim Phillips (1):
-      powerpc: Fix irq distribution
+> 
+> > +static int mca_reap(struct btree *b, struct closure *cl)
+> > +{
+> > +	lockdep_assert_held(&b->c->bucket_lock);
+> > +
+> > +	if (!down_write_trylock(&b->lock))
+> > +		return -1;
+> > +
+> > +	BUG_ON(btree_node_dirty(b) && !b->sets[0].data);
+> > +
+> > +	if (cl && btree_node_dirty(b))
+> > +		btree_write(b, true, NULL);
+> > +
+> > +	if (cl)
+> > +		closure_wait_event_async(&b->io.wait, cl,
+> > +			 atomic_read(&b->io.cl.remaining) == -1);
+> > +
+> > +	if (btree_node_dirty(b) ||
+> > +	    atomic_read(&b->io.cl.remaining) != -1 ||
+> > +	    work_pending(&b->work.work)) {
+> > +		rw_unlock(true, b);
+> > +		return -EAGAIN;
+> > +	}
+> > +
+> > +	return 0;
+> > +}
+> 
+> Mixing -1 and -EAGAIN returns usually isn't a good idea.
 
-Mai La (2):
-      powerpc/44x: Fix PCI MSI support for Maui APM821xx SoC and Bluestone board
-      powerpc/44x: Add PCI MSI node for Maui APM821xx SoC and Bluestone board in DTS
+Yeah. I'm not going to change anything in this code right away, since
+it's just to tricky to screw with - but when I finish off those other
+patches this code will be improved somewhat (this is already fixed in
+that branch).
 
-Robert Jennings (1):
-      powerpc/pseries: Support lower minimum entitlement for virtual processors
+> > +	b->flags	= 0;
+> > +	b->level	= level;
+> > +	b->written	= 0;
+> > +	b->nsets	= 0;
+> > +	for (int i = 0; i < MAX_BSETS; i++)
+> > +		b->sets[i].size = 0;
+> > +	for (int i = 1; i < MAX_BSETS; i++)
+> > +		b->sets[i].data = NULL;
+> 
+> Why separate loops?
 
-Stephen Rothwell (2):
-      powerpc/windfarm: fix compiler warning
-      powerpc/windfarm: don't pass const strings to snprintf
+Sceond loop starts at 1, because b->sets[0]->data points to the memory
+we have allocated. I suppose that merits a comment.
 
-Suzuki Poulose (3):
-      powerpc/44x: Fix/Initialize PID to kernel PID before the TLB search
-      powerpc/47x: Kernel support for KEXEC
-      powerpc/47x: Enable CRASH_DUMP
+> 
+> > +
+> > +	return b;
+> > +err:
+> > +	if (current->bio_list)
+> > +		return ERR_PTR(-EAGAIN);
+> 
+> What does this test do?
 
-Tiejun Chen (1):
-      powerpc: Remove now unused _TIF_RUNLATCH
+Trying to free up some memory - i.e. reuse some btree nodes - may
+require initiating IO to flush the dirty part of the node. If we're
+running under generic_make_request(), that IO will never finish and we
+would deadlock - returning -EAGAIN causes the cache lookup code to punt
+to workqueue and retry.
 
-Valentin Ilie (1):
-      drivers/ps3: Fix checkpatch warnings in ps3av.c
-
- Documentation/ABI/testing/debugfs-pfo-nx-crypto |   45 ++
- arch/powerpc/Kconfig                            |    4 +-
- arch/powerpc/Makefile                           |   49 +-
- arch/powerpc/boot/dts/bluestone.dts             |   25 +
- arch/powerpc/configs/g5_defconfig               |    1 -
- arch/powerpc/configs/maple_defconfig            |    1 -
- arch/powerpc/configs/pasemi_defconfig           |    1 -
- arch/powerpc/configs/ps3_defconfig              |    6 -
- arch/powerpc/include/asm/asm-compat.h           |   11 +-
- arch/powerpc/include/asm/cputhreads.h           |    2 +-
- arch/powerpc/include/asm/hvcall.h               |   25 +-
- arch/powerpc/include/asm/lppaca.h               |  196 ++----
- arch/powerpc/include/asm/lv1call.h              |    4 +-
- arch/powerpc/include/asm/pSeries_reconfig.h     |   12 +
- arch/powerpc/include/asm/ppc_asm.h              |   10 +-
- arch/powerpc/include/asm/ptrace.h               |    6 -
- arch/powerpc/include/asm/switch_to.h            |    6 +-
- arch/powerpc/include/asm/thread_info.h          |    1 -
- arch/powerpc/include/asm/vio.h                  |   46 ++
- arch/powerpc/kernel/asm-offsets.c               |    4 -
- arch/powerpc/kernel/entry_64.S                  |   30 +-
- arch/powerpc/kernel/exceptions-64s.S            |    4 -
- arch/powerpc/kernel/head_44x.S                  |    8 -
- arch/powerpc/kernel/head_fsl_booke.S            |    8 -
- arch/powerpc/kernel/irq.c                       |    2 +-
- arch/powerpc/kernel/misc_32.S                   |  203 +++++-
- arch/powerpc/kernel/paca.c                      |    3 -
- arch/powerpc/kernel/process.c                   |    2 +-
- arch/powerpc/kernel/prom_init.c                 |   17 +-
- arch/powerpc/kernel/ptrace.c                    |   42 --
- arch/powerpc/kernel/ptrace32.c                  |   32 -
- arch/powerpc/kernel/vector.S                    |   10 +
- arch/powerpc/kernel/vio.c                       |  273 ++++++--
- arch/powerpc/lib/copyuser_64.S                  |    6 +-
- arch/powerpc/lib/mem_64.S                       |    6 +-
- arch/powerpc/lib/memcpy_64.S                    |    6 +-
- arch/powerpc/platforms/44x/Kconfig              |    2 +
- arch/powerpc/platforms/Kconfig.cputype          |   39 +-
- arch/powerpc/platforms/powermac/low_i2c.c       |    1 +
- arch/powerpc/platforms/ps3/Kconfig              |   22 +-
- arch/powerpc/platforms/ps3/mm.c                 |   77 ++-
- arch/powerpc/platforms/ps3/platform.h           |   16 +
- arch/powerpc/platforms/ps3/repository.c         |  198 ++++++
- arch/powerpc/platforms/pseries/eeh.c            |    2 +-
- arch/powerpc/platforms/pseries/plpar_wrappers.h |    4 +-
- arch/powerpc/platforms/pseries/reconfig.c       |    7 +
- arch/powerpc/sysdev/ppc4xx_msi.c                |   42 +-
- drivers/char/hw_random/Kconfig                  |   13 +
- drivers/char/hw_random/Makefile                 |    1 +
- drivers/char/hw_random/pseries-rng.c            |   96 +++
- drivers/crypto/Kconfig                          |   17 +
- drivers/crypto/nx/Makefile                      |   11 +
- drivers/crypto/nx/nx-aes-cbc.c                  |  141 ++++
- drivers/crypto/nx/nx-aes-ccm.c                  |  468 +++++++++++++
- drivers/crypto/nx/nx-aes-ctr.c                  |  178 +++++
- drivers/crypto/nx/nx-aes-ecb.c                  |  139 ++++
- drivers/crypto/nx/nx-aes-gcm.c                  |  353 ++++++++++
- drivers/crypto/nx/nx-aes-xcbc.c                 |  236 +++++++
- drivers/crypto/nx/nx-sha256.c                   |  246 +++++++
- drivers/crypto/nx/nx-sha512.c                   |  265 +++++++
- drivers/crypto/nx/nx.c                          |  716 +++++++++++++++++++
- drivers/crypto/nx/nx.h                          |  193 ++++++
- drivers/crypto/nx/nx_csbcpb.h                   |  205 ++++++
- drivers/crypto/nx/nx_debugfs.c                  |  103 +++
- drivers/i2c/busses/i2c-powermac.c               |   98 ++-
- drivers/macintosh/Kconfig                       |   23 +-
- drivers/macintosh/Makefile                      |   14 +
- drivers/macintosh/ams/ams-i2c.c                 |    2 +-
- drivers/macintosh/therm_adt746x.c               |  480 ++++++-------
- drivers/macintosh/windfarm.h                    |   51 +-
- drivers/macintosh/windfarm_ad7417_sensor.c      |  347 ++++++++++
- drivers/macintosh/windfarm_core.c               |   23 +-
- drivers/macintosh/windfarm_cpufreq_clamp.c      |    6 -
- drivers/macintosh/windfarm_fcu_controls.c       |  613 ++++++++++++++++
- drivers/macintosh/windfarm_lm75_sensor.c        |  135 +---
- drivers/macintosh/windfarm_lm87_sensor.c        |  201 ++++++
- drivers/macintosh/windfarm_max6690_sensor.c     |  109 +--
- drivers/macintosh/windfarm_mpu.h                |  105 +++
- drivers/macintosh/windfarm_pm72.c               |  847 +++++++++++++++++++++++
- drivers/macintosh/windfarm_pm81.c               |   25 +-
- drivers/macintosh/windfarm_pm91.c               |   33 +-
- drivers/macintosh/windfarm_rm31.c               |  740 ++++++++++++++++++++
- drivers/macintosh/windfarm_smu_controls.c       |    1 -
- drivers/macintosh/windfarm_smu_sat.c            |  132 ++--
- drivers/ps3/ps3av.c                             |   24 +-
- 85 files changed, 7827 insertions(+), 1080 deletions(-)
- create mode 100644 Documentation/ABI/testing/debugfs-pfo-nx-crypto
- create mode 100644 drivers/char/hw_random/pseries-rng.c
- create mode 100644 drivers/crypto/nx/Makefile
- create mode 100644 drivers/crypto/nx/nx-aes-cbc.c
- create mode 100644 drivers/crypto/nx/nx-aes-ccm.c
- create mode 100644 drivers/crypto/nx/nx-aes-ctr.c
- create mode 100644 drivers/crypto/nx/nx-aes-ecb.c
- create mode 100644 drivers/crypto/nx/nx-aes-gcm.c
- create mode 100644 drivers/crypto/nx/nx-aes-xcbc.c
- create mode 100644 drivers/crypto/nx/nx-sha256.c
- create mode 100644 drivers/crypto/nx/nx-sha512.c
- create mode 100644 drivers/crypto/nx/nx.c
- create mode 100644 drivers/crypto/nx/nx.h
- create mode 100644 drivers/crypto/nx/nx_csbcpb.h
- create mode 100644 drivers/crypto/nx/nx_debugfs.c
- create mode 100644 drivers/macintosh/windfarm_ad7417_sensor.c
- create mode 100644 drivers/macintosh/windfarm_fcu_controls.c
- create mode 100644 drivers/macintosh/windfarm_lm87_sensor.c
- create mode 100644 drivers/macintosh/windfarm_mpu.h
- create mode 100644 drivers/macintosh/windfarm_pm72.c
- create mode 100644 drivers/macintosh/windfarm_rm31.c
-
-
+> 
+> Thanks.
+> 
+> -- 
+> tejun
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-bcache" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
