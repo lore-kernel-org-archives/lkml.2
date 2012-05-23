@@ -1,44 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760301Ab2EWOVb (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 May 2012 10:21:31 -0400
-Received: from rcsinet15.oracle.com ([148.87.113.117]:50324 "EHLO
-	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758163Ab2EWOVa (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 May 2012 10:21:30 -0400
-Date: Wed, 23 May 2012 17:25:03 +0300
-From: Dan Carpenter <dan.carpenter@oracle.com>
-To: Samuel Iglesias Gonsalvez <siglesias@igalia.com>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 3/8] Staging: ipack/bridges/tpci200:
- tpci200_slot_unmap_space() should return 0 if succeed.
-Message-ID: <20120523142503.GM4629@mwanda>
-References: <1337781287-28628-1-git-send-email-siglesias@igalia.com>
- <1337781287-28628-4-git-send-email-siglesias@igalia.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1337781287-28628-4-git-send-email-siglesias@igalia.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: acsinet22.oracle.com [141.146.126.238]
+	id S933505Ab2EWOVk (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 May 2012 10:21:40 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:47377 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932304Ab2EWOVh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 23 May 2012 10:21:37 -0400
+Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
+	Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
+	Kingdom.
+	Registered in England and Wales under Company Registration No. 3798903
+From: David Howells <dhowells@redhat.com>
+In-Reply-To: <87obpfxdpr.fsf@rustcorp.com.au>
+References: <87obpfxdpr.fsf@rustcorp.com.au> <20120522230218.24007.3556.stgit@warthog.procyon.org.uk>
+To: Rusty Russell <rusty@rustcorp.com.au>
+Cc: dhowells@redhat.com, kyle@mcmartin.ca, linux-kernel@vger.kernel.org,
+        linux-security-module@vger.kernel.org, keyrings@linux-nfs.org
+Subject: Re: [PATCH 00/23] Crypto keys and module signing
+Date: Wed, 23 May 2012 15:20:47 +0100
+Message-ID: <7474.1337782847@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, May 23, 2012 at 03:54:42PM +0200, Samuel Iglesias Gonsalvez wrote:
-> tpci200_slot_unmap_space() should return 0 if the operation was properly done. If
-> not, the caller will think that something wrong happened.
-> 
+Rusty Russell <rusty@rustcorp.com.au> wrote:
 
-It's weird and frustrating that gcc didn't warn that we used "res"
-without initializing it.  It feels like the goto out_unlock places
-should return an error.  But actually the callers don't don't check
-the return values so I guess it doesn't matter.
+>         That's pretty weird.  Why not put the "@This Is A Crypto Signed
+> Module\n" before the signature?  Then module-size is implied: everything
+> before that signature.  The signature size is implied: everything after
+> that signature.
 
-All these patches look good.
+This makes it simpler.  No scanning required.  The magic number can only be in
+one place and you can find it by dead reckoning.
 
-regards,
-dan carpenter
+>         In fact, I'd modify this slightly, to allow multiple signatures.
+> This would work nicely with a deterministic strip.  Find the signatures
+> backward, and truncate as they fail.
 
+Why would you want multiple signatures?  That just complicates things.  If
+you're in FIPS mode, you probably have to panic if any of them fail.
+
+I suppose I may as well punt the signature detection and removal to userspace
+and pass the signature as an argument to init_module() as Dmitry suggested.
+Then the signature need not be in the file at all (he wants to use an xattr or
+hardware, I think).  mkinitrd and rpmbuild/kernel spec have to be changed to
+accommodate enablement of these patches, so why not module-init-tools, dracut
+and busybox whilst we're at it?
+
+David
