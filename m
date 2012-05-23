@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965407Ab2EWTdH (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 May 2012 15:33:07 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:22796 "EHLO mx1.redhat.com"
+	id S965456Ab2EWTdQ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 May 2012 15:33:16 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:5671 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S965296Ab2EWTdB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 May 2012 15:33:01 -0400
+	id S965296Ab2EWTdL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 23 May 2012 15:33:11 -0400
 From: Jiri Olsa <jolsa@redhat.com>
 To: acme@redhat.com, a.p.zijlstra@chello.nl, mingo@elte.hu, paulus@samba.org,
         cjashfor@linux.vnet.ibm.com, fweisbec@gmail.com
@@ -14,387 +14,271 @@ Cc: eranian@google.com, gorcunov@openvz.org, tzanussi@gmail.com,
         linux-kernel@vger.kernel.org, masami.hiramatsu.pt@hitachi.com,
         drepper@gmail.com, asharma@fb.com, benjamin.redelings@nescent.org,
         Jiri Olsa <jolsa@redhat.com>
-Subject: [PATCH 06/16] perf, tool: Factor DSO symtab types to generic binary types
-Date: Wed, 23 May 2012 21:32:05 +0200
-Message-Id: <1337801535-12865-7-git-send-email-jolsa@redhat.com>
+Subject: [PATCH 09/16] perf, tool: Back [vdso] DSO with real data
+Date: Wed, 23 May 2012 21:32:08 +0200
+Message-Id: <1337801535-12865-10-git-send-email-jolsa@redhat.com>
 In-Reply-To: <1337801535-12865-1-git-send-email-jolsa@redhat.com>
 References: <1337801535-12865-1-git-send-email-jolsa@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Adding interface to access DSOs so it could be used
-from another place.
+Storing data for VDSO shared object, because we need it for
+the unwind process.
 
-New DSO binary type is added - making current SYMTAB__*
-types more general:
-   DSO_BINARY_TYPE__* = SYMTAB__*
+The idea is that VDSO shared object is same for all process
+on a running system, so it makes no difference if we store
+it inside the tracer - perf.
 
-Folowing function is added to return path based on the specified
-binary type:
-   dso__binary_type_file
+The record command:
+When [vdso] map memory is hit, we retrieve [vdso] DSO image
+and store it into temporary file. During the build-id
+processing the [vdso] DSO image is stored in build-id db,
+and build-id refference is made inside perf.data. The temporary
+file is removed when record is finished.
+
+The report command:
+We read build-id from perf.data and store [vdso] DSO object.
+This object is refferenced and attached to map when the MMAP
+events are processed. Thus during the SAMPLE event processing
+we have correct mmap/dso attached.
+
+Adding following API for vdso object:
+  vdso__file
+    - vdso temp file path
+
+  vdso__get_file
+    - finds and store VDSO image into temp file,
+      the temp file path is returned
+
+  vdso__exit
+    - removes temporary VDSO image if there's any
 
 Signed-off-by: Jiri Olsa <jolsa@redhat.com>
 ---
- tools/perf/builtin-top.c   |    2 +-
- tools/perf/util/annotate.c |    2 +-
- tools/perf/util/symbol.c   |  181 +++++++++++++++++++++++++++-----------------
- tools/perf/util/symbol.h   |   32 ++++----
- 4 files changed, 129 insertions(+), 88 deletions(-)
+ tools/perf/Makefile       |    2 +
+ tools/perf/util/map.c     |   23 ++++++++++-
+ tools/perf/util/session.c |    2 +
+ tools/perf/util/vdso.c    |   90 +++++++++++++++++++++++++++++++++++++++++++++
+ tools/perf/util/vdso.h    |    8 ++++
+ 5 files changed, 123 insertions(+), 2 deletions(-)
+ create mode 100644 tools/perf/util/vdso.c
+ create mode 100644 tools/perf/util/vdso.h
 
-diff --git a/tools/perf/builtin-top.c b/tools/perf/builtin-top.c
-index 6031dce..165928e 100644
---- a/tools/perf/builtin-top.c
-+++ b/tools/perf/builtin-top.c
-@@ -125,7 +125,7 @@ static int perf_top__parse_source(struct perf_top *top, struct hist_entry *he)
- 	/*
- 	 * We can't annotate with just /proc/kallsyms
- 	 */
--	if (map->dso->symtab_type == SYMTAB__KALLSYMS) {
-+	if (map->dso->symtab_type == DSO_BINARY_TYPE__KALLSYMS) {
- 		pr_err("Can't annotate %s: No vmlinux file was found in the "
- 		       "path\n", sym->name);
- 		sleep(1);
-diff --git a/tools/perf/util/annotate.c b/tools/perf/util/annotate.c
-index 8069dfb..7d3641f 100644
---- a/tools/perf/util/annotate.c
-+++ b/tools/perf/util/annotate.c
-@@ -777,7 +777,7 @@ fallback:
- 		free_filename = false;
- 	}
+diff --git a/tools/perf/Makefile b/tools/perf/Makefile
+index 1d3d513..cf5c71e 100644
+--- a/tools/perf/Makefile
++++ b/tools/perf/Makefile
+@@ -319,6 +319,7 @@ LIB_H += $(ARCH_INCLUDE)
+ LIB_H += util/cgroup.h
+ LIB_H += $(TRACE_EVENT_DIR)event-parse.h
+ LIB_H += util/target.h
++LIB_H += util/vdso.h
  
--	if (dso->symtab_type == SYMTAB__KALLSYMS) {
-+	if (dso->symtab_type == DSO_BINARY_TYPE__KALLSYMS) {
- 		char bf[BUILD_ID_SIZE * 2 + 16] = " with build id ";
- 		char *build_id_msg = NULL;
+ LIB_OBJS += $(OUTPUT)util/abspath.o
+ LIB_OBJS += $(OUTPUT)util/alias.o
+@@ -382,6 +383,7 @@ LIB_OBJS += $(OUTPUT)util/xyarray.o
+ LIB_OBJS += $(OUTPUT)util/cpumap.o
+ LIB_OBJS += $(OUTPUT)util/cgroup.o
+ LIB_OBJS += $(OUTPUT)util/target.o
++LIB_OBJS += $(OUTPUT)util/vdso.o
  
-diff --git a/tools/perf/util/symbol.c b/tools/perf/util/symbol.c
-index e2ba885..5736fda 100644
---- a/tools/perf/util/symbol.c
-+++ b/tools/perf/util/symbol.c
-@@ -48,6 +48,22 @@ struct symbol_conf symbol_conf = {
- 	.symfs            = "",
- };
+ BUILTIN_OBJS += $(OUTPUT)builtin-annotate.o
  
-+static enum dso_binary_type binary_type_symtab[] = {
-+	DSO_BINARY_TYPE__KALLSYMS,
-+	DSO_BINARY_TYPE__GUEST_KALLSYMS,
-+	DSO_BINARY_TYPE__JAVA_JIT,
-+	DSO_BINARY_TYPE__BUILD_ID_CACHE,
-+	DSO_BINARY_TYPE__FEDORA_DEBUGINFO,
-+	DSO_BINARY_TYPE__UBUNTU_DEBUGINFO,
-+	DSO_BINARY_TYPE__BUILDID_DEBUGINFO,
-+	DSO_BINARY_TYPE__SYSTEM_PATH_DSO,
-+	DSO_BINARY_TYPE__GUEST_KMODULE,
-+	DSO_BINARY_TYPE__SYSTEM_PATH_KMODULE,
-+	DSO_BINARY_TYPE__NOT_FOUND,
-+};
-+
-+#define DSO_BINARY_TYPE__SYMTAB_CNT sizeof(binary_type_symtab)
-+
- int dso__name_len(const struct dso *dso)
- {
- 	if (!dso)
-@@ -318,7 +334,7 @@ struct dso *dso__new(const char *name)
- 		dso__set_short_name(dso, dso->name);
- 		for (i = 0; i < MAP__NR_TYPES; ++i)
- 			dso->symbols[i] = dso->symbol_names[i] = RB_ROOT;
--		dso->symtab_type = SYMTAB__NOT_FOUND;
-+		dso->symtab_type = DSO_BINARY_TYPE__NOT_FOUND;
- 		dso->loaded = 0;
- 		dso->sorted_by_name = 0;
- 		dso->has_build_id = 0;
-@@ -805,9 +821,9 @@ int dso__load_kallsyms(struct dso *dso, const char *filename,
- 	symbols__fixup_end(&dso->symbols[map->type]);
+diff --git a/tools/perf/util/map.c b/tools/perf/util/map.c
+index 35ae568..1649ea0 100644
+--- a/tools/perf/util/map.c
++++ b/tools/perf/util/map.c
+@@ -7,6 +7,7 @@
+ #include <stdio.h>
+ #include <unistd.h>
+ #include "map.h"
++#include "vdso.h"
  
- 	if (dso->kernel == DSO_TYPE_GUEST_KERNEL)
--		dso->symtab_type = SYMTAB__GUEST_KALLSYMS;
-+		dso->symtab_type = DSO_BINARY_TYPE__GUEST_KALLSYMS;
- 	else
--		dso->symtab_type = SYMTAB__KALLSYMS;
-+		dso->symtab_type = DSO_BINARY_TYPE__KALLSYMS;
- 
- 	return dso__split_kallsyms(dso, map, filter);
- }
-@@ -1562,31 +1578,96 @@ out:
- char dso__symtab_origin(const struct dso *dso)
- {
- 	static const char origin[] = {
--		[SYMTAB__KALLSYMS]	      = 'k',
--		[SYMTAB__JAVA_JIT]	      = 'j',
--		[SYMTAB__BUILD_ID_CACHE]      = 'B',
--		[SYMTAB__FEDORA_DEBUGINFO]    = 'f',
--		[SYMTAB__UBUNTU_DEBUGINFO]    = 'u',
--		[SYMTAB__BUILDID_DEBUGINFO]   = 'b',
--		[SYMTAB__SYSTEM_PATH_DSO]     = 'd',
--		[SYMTAB__SYSTEM_PATH_KMODULE] = 'K',
--		[SYMTAB__GUEST_KALLSYMS]      =  'g',
--		[SYMTAB__GUEST_KMODULE]	      =  'G',
-+		[DSO_BINARY_TYPE__KALLSYMS]		= 'k',
-+		[DSO_BINARY_TYPE__JAVA_JIT]		= 'j',
-+		[DSO_BINARY_TYPE__BUILD_ID_CACHE]	= 'B',
-+		[DSO_BINARY_TYPE__FEDORA_DEBUGINFO]	= 'f',
-+		[DSO_BINARY_TYPE__UBUNTU_DEBUGINFO]	= 'u',
-+		[DSO_BINARY_TYPE__BUILDID_DEBUGINFO]	= 'b',
-+		[DSO_BINARY_TYPE__SYSTEM_PATH_DSO]	= 'd',
-+		[DSO_BINARY_TYPE__SYSTEM_PATH_KMODULE]	= 'K',
-+		[DSO_BINARY_TYPE__GUEST_KALLSYMS]	= 'g',
-+		[DSO_BINARY_TYPE__GUEST_KMODULE]	= 'G',
- 	};
- 
--	if (dso == NULL || dso->symtab_type == SYMTAB__NOT_FOUND)
-+	if (dso == NULL || dso->symtab_type == DSO_BINARY_TYPE__NOT_FOUND)
- 		return '!';
- 	return origin[dso->symtab_type];
+ const char *map_type__name[MAP__NR_TYPES] = {
+ 	[MAP__FUNCTION] = "Functions",
+@@ -18,10 +19,14 @@ static inline int is_anon_memory(const char *filename)
+ 	return strcmp(filename, "//anon") == 0;
  }
  
-+int dso__binary_type_file(struct dso *dso, enum dso_binary_type type,
-+			  char *root_dir, char *file, size_t size)
++static inline int is_vdso_memory(const char *filename)
 +{
-+	char build_id_hex[BUILD_ID_SIZE * 2 + 1];
-+	int ret = 0;
++	return !strcmp(filename, "[vdso]");
++}
 +
-+	switch (type) {
-+	case DSO_BINARY_TYPE__BUILD_ID_CACHE:
-+		/* skip the locally configured cache if a symfs is given */
-+		if (symbol_conf.symfs[0] ||
-+		    (dso__build_id_filename(dso, file, size) == NULL))
-+			ret = -1;
-+		break;
+ static inline int is_no_dso_memory(const char *filename)
+ {
+ 	return !strcmp(filename, "[stack]") ||
+-	       !strcmp(filename, "[vdso]")  ||
+ 	       !strcmp(filename, "[heap]");
+ }
+ 
+@@ -50,9 +55,10 @@ struct map *map__new(struct list_head *dsos__list, u64 start, u64 len,
+ 	if (self != NULL) {
+ 		char newfilename[PATH_MAX];
+ 		struct dso *dso;
+-		int anon, no_dso;
++		int anon, no_dso, vdso;
+ 
+ 		anon = is_anon_memory(filename);
++		vdso = is_vdso_memory(filename);
+ 		no_dso = is_no_dso_memory(filename);
+ 
+ 		if (anon) {
+@@ -60,10 +66,23 @@ struct map *map__new(struct list_head *dsos__list, u64 start, u64 len,
+ 			filename = newfilename;
+ 		}
+ 
++		if (vdso) {
++			filename = (char *) vdso__file;
++			pgoff = 0;
++		}
 +
-+	case DSO_BINARY_TYPE__FEDORA_DEBUGINFO:
-+		snprintf(file, size, "%s/usr/lib/debug%s.debug",
-+			 symbol_conf.symfs, dso->long_name);
-+		break;
+ 		dso = __dsos__findnew(dsos__list, filename);
+ 		if (dso == NULL)
+ 			goto out_delete;
+ 
++		if (vdso && !dso->has_build_id) {
++			char *file_vdso = vdso__get_file();
++			if (file_vdso)
++				dso__set_long_name(dso, file_vdso);
++			else
++				no_dso = 1;
++		}
 +
-+	case DSO_BINARY_TYPE__UBUNTU_DEBUGINFO:
-+		snprintf(file, size, "%s/usr/lib/debug%s",
-+			 symbol_conf.symfs, dso->long_name);
-+		break;
+ 		map__init(self, type, start, start + len, pgoff, dso);
+ 
+ 		if (anon || no_dso) {
+diff --git a/tools/perf/util/session.c b/tools/perf/util/session.c
+index 93d355d..83f5884 100644
+--- a/tools/perf/util/session.c
++++ b/tools/perf/util/session.c
+@@ -14,6 +14,7 @@
+ #include "sort.h"
+ #include "util.h"
+ #include "cpumap.h"
++#include "vdso.h"
+ 
+ static int perf_session__open(struct perf_session *self, bool force)
+ {
+@@ -209,6 +210,7 @@ void perf_session__delete(struct perf_session *self)
+ 	machine__exit(&self->host_machine);
+ 	close(self->fd);
+ 	free(self);
++	vdso__exit();
+ }
+ 
+ void machine__remove_thread(struct machine *self, struct thread *th)
+diff --git a/tools/perf/util/vdso.c b/tools/perf/util/vdso.c
+new file mode 100644
+index 0000000..e964482
+--- /dev/null
++++ b/tools/perf/util/vdso.c
+@@ -0,0 +1,90 @@
 +
-+	case DSO_BINARY_TYPE__BUILDID_DEBUGINFO:
-+		if (!dso->has_build_id) {
-+			ret = -1;
++#include <unistd.h>
++#include <stdio.h>
++#include <string.h>
++#include <sys/types.h>
++#include <sys/stat.h>
++#include <fcntl.h>
++#include <linux/kernel.h>
++#include "vdso.h"
++#include "util.h"
++
++const char vdso__file[] = "/tmp/vdso.so";
++static bool vdso_found;
++
++static int find_vdso_map(void **start, void **end)
++{
++	FILE *maps;
++	char line[128];
++	int found = 0;
++
++	maps = fopen("/proc/self/maps", "r");
++	if (!maps) {
++		pr_err("vdso: cannot open maps\n");
++		return -1;
++	}
++
++	while (!found && fgets(line, sizeof(line), maps)) {
++		int m = -1;
++
++		/* We care only about private r-x mappings. */
++		if (2 != sscanf(line, "%p-%p r-xp %*x %*x:%*x %*u %n",
++				start, end, &m))
++			continue;
++		if (m < 0)
++			continue;
++
++		if (!strncmp(&line[m], "[vdso]", 6))
++			found = 1;
++	}
++
++	fclose(maps);
++	return !found;
++}
++
++char *vdso__get_file(void)
++{
++	char *vdso = NULL;
++	char *buf = NULL;
++	void *start, *end;
++
++	do {
++		int fd, size;
++
++		if (vdso_found) {
++			vdso = (char *) vdso__file;
 +			break;
 +		}
 +
-+		build_id__sprintf(dso->build_id,
-+				  sizeof(dso->build_id),
-+				  build_id_hex);
-+		snprintf(file, size,
-+			 "%s/usr/lib/debug/.build-id/%.2s/%s.debug",
-+			 symbol_conf.symfs, build_id_hex, build_id_hex + 2);
-+		break;
++		if (find_vdso_map(&start, &end))
++			break;
 +
-+	case DSO_BINARY_TYPE__SYSTEM_PATH_DSO:
-+		snprintf(file, size, "%s%s",
-+			 symbol_conf.symfs, dso->long_name);
-+		break;
++		size = end - start;
++		buf = malloc(size);
++		if (!buf)
++			break;
 +
-+	case DSO_BINARY_TYPE__GUEST_KMODULE:
-+		snprintf(file, size, "%s%s%s", symbol_conf.symfs,
-+			 root_dir, dso->long_name);
-+		break;
++		memcpy(buf, start, size);
 +
-+	case DSO_BINARY_TYPE__SYSTEM_PATH_KMODULE:
-+		snprintf(file, size, "%s%s", symbol_conf.symfs,
-+			 dso->long_name);
-+		break;
++		fd = open(vdso__file, O_CREAT|O_WRONLY|O_TRUNC, S_IRWXU);
++		if (fd < 0)
++			break;
 +
-+	default:
-+	case DSO_BINARY_TYPE__KALLSYMS:
-+	case DSO_BINARY_TYPE__GUEST_KALLSYMS:
-+	case DSO_BINARY_TYPE__JAVA_JIT:
-+	case DSO_BINARY_TYPE__NOT_FOUND:
-+		ret = -1;
-+		break;
-+	}
++		if (size == write(fd, buf, size))
++			vdso = (char *) vdso__file;
 +
-+	return ret;
++		close(fd);
++	} while (0);
++
++	if (buf)
++		free(buf);
++
++	vdso_found = (vdso != NULL);
++	return vdso;
 +}
 +
- int dso__load(struct dso *dso, struct map *map, symbol_filter_t filter)
- {
--	int size = PATH_MAX;
- 	char *name;
- 	int ret = -1;
- 	int fd;
-+	u_int i;
- 	struct machine *machine;
--	const char *root_dir;
-+	char *root_dir = (char *) "";
- 	int want_symtab;
- 
- 	dso__set_loaded(dso, map->type);
-@@ -1601,7 +1682,7 @@ int dso__load(struct dso *dso, struct map *map, symbol_filter_t filter)
- 	else
- 		machine = NULL;
- 
--	name = malloc(size);
-+	name = malloc(PATH_MAX);
- 	if (!name)
- 		return -1;
- 
-@@ -1620,69 +1701,27 @@ int dso__load(struct dso *dso, struct map *map, symbol_filter_t filter)
- 		}
- 
- 		ret = dso__load_perf_map(dso, map, filter);
--		dso->symtab_type = ret > 0 ? SYMTAB__JAVA_JIT :
--					      SYMTAB__NOT_FOUND;
-+		dso->symtab_type = ret > 0 ? DSO_BINARY_TYPE__JAVA_JIT :
-+					     DSO_BINARY_TYPE__NOT_FOUND;
- 		return ret;
- 	}
- 
-+	if (machine)
-+		root_dir = machine->root_dir;
++void vdso__exit(void)
++{
++	if (vdso_found)
++		unlink(vdso__file);
++}
+diff --git a/tools/perf/util/vdso.h b/tools/perf/util/vdso.h
+new file mode 100644
+index 0000000..908b041
+--- /dev/null
++++ b/tools/perf/util/vdso.h
+@@ -0,0 +1,8 @@
++#ifndef __VDSO__
++#define __VDSO__
 +
- 	/* Iterate over candidate debug images.
- 	 * On the first pass, only load images if they have a full symtab.
- 	 * Failing that, do a second pass where we accept .dynsym also
- 	 */
- 	want_symtab = 1;
- restart:
--	for (dso->symtab_type = SYMTAB__BUILD_ID_CACHE;
--	     dso->symtab_type != SYMTAB__NOT_FOUND;
--	     dso->symtab_type++) {
--		switch (dso->symtab_type) {
--		case SYMTAB__BUILD_ID_CACHE:
--			/* skip the locally configured cache if a symfs is given */
--			if (symbol_conf.symfs[0] ||
--			    (dso__build_id_filename(dso, name, size) == NULL)) {
--				continue;
--			}
--			break;
--		case SYMTAB__FEDORA_DEBUGINFO:
--			snprintf(name, size, "%s/usr/lib/debug%s.debug",
--				 symbol_conf.symfs, dso->long_name);
--			break;
--		case SYMTAB__UBUNTU_DEBUGINFO:
--			snprintf(name, size, "%s/usr/lib/debug%s",
--				 symbol_conf.symfs, dso->long_name);
--			break;
--		case SYMTAB__BUILDID_DEBUGINFO: {
--			char build_id_hex[BUILD_ID_SIZE * 2 + 1];
--
--			if (!dso->has_build_id)
--				continue;
-+	for (i = 0; i < DSO_BINARY_TYPE__SYMTAB_CNT; i++) {
- 
--			build_id__sprintf(dso->build_id,
--					  sizeof(dso->build_id),
--					  build_id_hex);
--			snprintf(name, size,
--				 "%s/usr/lib/debug/.build-id/%.2s/%s.debug",
--				 symbol_conf.symfs, build_id_hex, build_id_hex + 2);
--			}
--			break;
--		case SYMTAB__SYSTEM_PATH_DSO:
--			snprintf(name, size, "%s%s",
--			     symbol_conf.symfs, dso->long_name);
--			break;
--		case SYMTAB__GUEST_KMODULE:
--			if (map->groups && machine)
--				root_dir = machine->root_dir;
--			else
--				root_dir = "";
--			snprintf(name, size, "%s%s%s", symbol_conf.symfs,
--				 root_dir, dso->long_name);
--			break;
-+		dso->symtab_type = binary_type_symtab[i];
- 
--		case SYMTAB__SYSTEM_PATH_KMODULE:
--			snprintf(name, size, "%s%s", symbol_conf.symfs,
--				 dso->long_name);
--			break;
--		default:;
--		}
-+		if (dso__binary_type_file(dso, dso->symtab_type,
-+					  root_dir, name, PATH_MAX))
-+			continue;
- 
- 		/* Name is now the name of the next image to try */
- 		fd = open(name, O_RDONLY);
-@@ -1899,9 +1938,9 @@ struct map *machine__new_module(struct machine *machine, u64 start,
- 		return NULL;
- 
- 	if (machine__is_host(machine))
--		dso->symtab_type = SYMTAB__SYSTEM_PATH_KMODULE;
-+		dso->symtab_type = DSO_BINARY_TYPE__SYSTEM_PATH_KMODULE;
- 	else
--		dso->symtab_type = SYMTAB__GUEST_KMODULE;
-+		dso->symtab_type = DSO_BINARY_TYPE__GUEST_KMODULE;
- 	map_groups__insert(&machine->kmaps, map);
- 	return map;
- }
-diff --git a/tools/perf/util/symbol.h b/tools/perf/util/symbol.h
-index 5649d63..ba13790 100644
---- a/tools/perf/util/symbol.h
-+++ b/tools/perf/util/symbol.h
-@@ -154,6 +154,20 @@ struct addr_location {
- 	s32	      cpu;
- };
- 
-+enum dso_binary_type {
-+	DSO_BINARY_TYPE__KALLSYMS = 0,
-+	DSO_BINARY_TYPE__GUEST_KALLSYMS,
-+	DSO_BINARY_TYPE__JAVA_JIT,
-+	DSO_BINARY_TYPE__BUILD_ID_CACHE,
-+	DSO_BINARY_TYPE__FEDORA_DEBUGINFO,
-+	DSO_BINARY_TYPE__UBUNTU_DEBUGINFO,
-+	DSO_BINARY_TYPE__BUILDID_DEBUGINFO,
-+	DSO_BINARY_TYPE__SYSTEM_PATH_DSO,
-+	DSO_BINARY_TYPE__GUEST_KMODULE,
-+	DSO_BINARY_TYPE__SYSTEM_PATH_KMODULE,
-+	DSO_BINARY_TYPE__NOT_FOUND,
-+};
++extern const char vdso__file[];
++char *vdso__get_file(void);
++void  vdso__exit(void);
 +
- enum dso_kernel_type {
- 	DSO_TYPE_USER = 0,
- 	DSO_TYPE_KERNEL,
-@@ -165,13 +179,13 @@ struct dso {
- 	struct rb_root	 symbols[MAP__NR_TYPES];
- 	struct rb_root	 symbol_names[MAP__NR_TYPES];
- 	enum dso_kernel_type	kernel;
-+	enum dso_binary_type	symtab_type;
- 	u8		 adjust_symbols:1;
- 	u8		 has_build_id:1;
- 	u8		 hit:1;
- 	u8		 annotate_warned:1;
- 	u8		 sname_alloc:1;
- 	u8		 lname_alloc:1;
--	unsigned char	 symtab_type;
- 	u8		 sorted_by_name;
- 	u8		 loaded;
- 	u8		 build_id[BUILD_ID_SIZE];
-@@ -223,20 +237,6 @@ size_t dso__fprintf_symbols_by_name(struct dso *dso,
- 				    enum map_type type, FILE *fp);
- size_t dso__fprintf(struct dso *dso, enum map_type type, FILE *fp);
- 
--enum symtab_type {
--	SYMTAB__KALLSYMS = 0,
--	SYMTAB__GUEST_KALLSYMS,
--	SYMTAB__JAVA_JIT,
--	SYMTAB__BUILD_ID_CACHE,
--	SYMTAB__FEDORA_DEBUGINFO,
--	SYMTAB__UBUNTU_DEBUGINFO,
--	SYMTAB__BUILDID_DEBUGINFO,
--	SYMTAB__SYSTEM_PATH_DSO,
--	SYMTAB__GUEST_KMODULE,
--	SYMTAB__SYSTEM_PATH_KMODULE,
--	SYMTAB__NOT_FOUND,
--};
--
- char dso__symtab_origin(const struct dso *dso);
- void dso__set_long_name(struct dso *dso, char *name);
- void dso__set_build_id(struct dso *dso, void *build_id);
-@@ -273,4 +273,6 @@ bool symbol_type__is_a(char symbol_type, enum map_type map_type);
- 
- size_t machine__fprintf_vmlinux_path(struct machine *machine, FILE *fp);
- 
-+int dso__binary_type_file(struct dso *dso, enum dso_binary_type type,
-+			  char *root_dir, char *file, size_t size);
- #endif /* __PERF_SYMBOL */
++#endif /* __VDSO__ */
 -- 
 1.7.7.6
 
