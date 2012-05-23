@@ -1,126 +1,130 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933452Ab2EWLc6 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 May 2012 07:32:58 -0400
-Received: from e06smtp13.uk.ibm.com ([195.75.94.109]:49226 "EHLO
-	e06smtp13.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933298Ab2EWLc4 (ORCPT
+	id S933468Ab2EWLek (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 May 2012 07:34:40 -0400
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:63234 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759773Ab2EWLei (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 May 2012 07:32:56 -0400
-Message-ID: <4FBCCAE2.7080706@linux.vnet.ibm.com>
-Date: Wed, 23 May 2012 13:32:50 +0200
-From: Christian Ehrhardt <ehrhardt@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.28) Gecko/20120313 Thunderbird/3.1.20
+	Wed, 23 May 2012 07:34:38 -0400
+Date: Wed, 23 May 2012 13:34:32 +0200
+From: Ingo Molnar <mingo@kernel.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org, "H. Peter Anvin" <hpa@zytor.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: [GIT PULL] x86/urgent fixes for v3.5
+Message-ID: <20120523113432.GA12142@gmail.com>
 MIME-Version: 1.0
-To: Peter Zijlstra <a.p.zijlstra@chello.nl>
-CC: Martin Schwidefsky <schwidefsky@de.ibm.com>,
-        Ingo Molnar <mingo@kernel.org>, Mike Galbraith <efault@gmx.de>,
-        linux-kernel@vger.kernel.org,
-        Heiko Carstens <heiko.carstens@de.ibm.com>
-Subject: Re: [PATCH 0/2] RFC: readd fair sleepers for server systems
-References: <1337615137-55111-1-git-send-email-schwidefsky@de.ibm.com> <1337677268.9698.6.camel@twins>
-In-Reply-To: <1337677268.9698.6.camel@twins>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 8bit
-x-cbid: 12052311-2966-0000-0000-0000042B44AE
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Linus,
 
-On 05/22/2012 11:01 AM, Peter Zijlstra wrote:
-> On Mon, 2012-05-21 at 17:45 +0200, Martin Schwidefsky wrote:
->> our performance team found a performance degradation with a recent
->> distribution update in regard to fair sleepers (or the lack of fair
->> sleepers). On s390 we used to run with fair sleepers disabled.
->
-> This change was made a very long time ago.. tell your people to mind
-> what upstream does if they want us to mind them.
+Please pull the latest x86-urgent-for-linus git tree from:
 
-Your're completely right, but we do mind - and we have reasons for that. 
-I'll try to explain why.
-Upstream often has so many changes that some effects end up hidden 
-behind each others. A lot of issues are detected and fixed there, but 
-due to restricted resources not all of them. Also every new developed 
-features goes through test. Distribution releases are the 3rd stage of 
-testing before something is available for a customer.
+   git://git.kernel.org/pub/scm/linux/kernel/git/tip/tip.git x86-urgent-for-linus
 
-The analysis of the features in general and fair sleepers among them 
-started by a teammate long ago. More precisely, a bit before the time we 
-both agreed about the related 
-http://comments.gmane.org/gmane.linux.kernel/920457, so I'd say in time. 
-It re-occurred every distribution release since then, but so far without 
-a real fix.
+   HEAD: b2d668da9307c4c163dd603d2bb3cadb10f9fd37 x86, relocs: Build clean fix
 
-Then in early 2010 the removal of the fair sleepers tunable took place, 
-but - and here I admit our fault - this didn't increase pressure for a 
-long time as both major distributions where at 2.6.32 back then and 
-stayed there for a long time.
+These are the fixes left over from the very end of the v3.4 
+stabilization cycle, plus one more fix.
 
-Eventually we also had a revert of that patch in both major 
-distributions for the last few service updates that backported this 
-patch. All that hoping that we finally identify and avoid needing that 
-revert upstream.
-All that causes a lot of discussions every distribution release.
+ Thanks,
 
-I hope all that relativizes your feeling of "a long time"
+	Ingo
 
-But currently a fix seems out of reach solving things so that we can 
-live with fair sleepers (without being able to turn it off in case it is 
-needed).
+------------------>
+Alan Cox (1):
+      x86: Fix boot on Twinhead H12Y
+
+Jarkko Sakkinen (1):
+      x86, relocs: Build clean fix
+
+Sasha Levin (1):
+      x86, printk: Add missing KERN_CONT to NMI selftest
 
 
-> Also, reports like this make me want to make /debug/sched_features a
-> patch in tip/out-of-tree so that its never available outside
-> development.
+ arch/x86/Makefile              |  1 +
+ arch/x86/kernel/nmi_selftest.c | 12 ++++++------
+ arch/x86/pci/fixup.c           | 17 +++++++++++++++++
+ 3 files changed, 24 insertions(+), 6 deletions(-)
 
-Sorry if we offended you in any way, that was not our intention at all. 
-But I guess keeping the tunables available is the only way to properly 
-test them for all the myriad of hardware/workload combinations out there 
-- and by far not all things can be reliably tested out-of-tree.
-
->> We see the performance degradation with our network benchmark and fair
->> sleepers enabled, the largest hit is on virtual connections:
->>
->> VM guest Hipersockets
->>     Throughput degrades up to 18%
->>     CPU load/cost increase up to 17%
->> VM stream
->>     Throughput degrades up to 15%
->>     CPU load/cost increase up to 22%
->> LPAR Hipersockets
->>     Throughput degrades up to 27%
->>     CPU load/cost increase up to 20%
->
-> Why is this, is this some weird interaction with your hypervisor?
-
-It is not completely analyzed, as soon as debugging goes out of Linux it 
-can be kind of complex even internally.
-
-On top of these network degradations we also have issues with database 
-latencies even when not using virtual network connections. But for these 
-I didn't have such summarized numbers at hand when I searched for 
-workload data. As rule of thumb the worst case latency can grow up to x3 
-if fair sleepers is on. It felt a bit like the old throughput vs 
-worst-case latency trade-off - eventually people might want to decide on 
-their own between the two.
-
-
->> In short, we want the fair sleepers tunable back. I understand that on
->> x86 we want to avoid the cost of a branch on the hot path in place_entity,
->> therefore add a compile time config option for the fair sleeper control.
->
-> I'm very much not liking this... this makes s390 schedule completely
-> different from all the other architectures.
-
-I don't even "like" it myself - If I could make wishes I would like the 
-50% of gentle sleepers working fine, but unfortunately they aren't. 
-Liking it or not - for the moment this is the only way we can avoid 
-several severe degradations. And I'm not even sure if some others just 
-didn't realize yet or refused to ask loud enough for it.
-
--- 
-
-Grüsse / regards, Christian Ehrhardt
-IBM Linux Technology Center, System z Linux Performance
-
+diff --git a/arch/x86/Makefile b/arch/x86/Makefile
+index 94e91e4..b1c611e 100644
+--- a/arch/x86/Makefile
++++ b/arch/x86/Makefile
+@@ -206,6 +206,7 @@ archclean:
+ 	$(Q)rm -rf $(objtree)/arch/i386
+ 	$(Q)rm -rf $(objtree)/arch/x86_64
+ 	$(Q)$(MAKE) $(clean)=$(boot)
++	$(Q)$(MAKE) $(clean)=arch/x86/tools
+ 
+ define archhelp
+   echo  '* bzImage      - Compressed kernel image (arch/x86/boot/bzImage)'
+diff --git a/arch/x86/kernel/nmi_selftest.c b/arch/x86/kernel/nmi_selftest.c
+index 2c39dcd..9f11dd3 100644
+--- a/arch/x86/kernel/nmi_selftest.c
++++ b/arch/x86/kernel/nmi_selftest.c
+@@ -117,15 +117,15 @@ static void __init dotest(void (*testcase_fn)(void), int expected)
+ 		unexpected_testcase_failures++;
+ 
+ 		if (nmi_fail == FAILURE)
+-			printk("FAILED |");
++			printk(KERN_CONT "FAILED |");
+ 		else if (nmi_fail == TIMEOUT)
+-			printk("TIMEOUT|");
++			printk(KERN_CONT "TIMEOUT|");
+ 		else
+-			printk("ERROR  |");
++			printk(KERN_CONT "ERROR  |");
+ 		dump_stack();
+ 	} else {
+ 		testcase_successes++;
+-		printk("  ok  |");
++		printk(KERN_CONT "  ok  |");
+ 	}
+ 	testcase_total++;
+ 
+@@ -150,10 +150,10 @@ void __init nmi_selftest(void)
+ 
+ 	print_testname("remote IPI");
+ 	dotest(remote_ipi, SUCCESS);
+-	printk("\n");
++	printk(KERN_CONT "\n");
+ 	print_testname("local IPI");
+ 	dotest(local_ipi, SUCCESS);
+-	printk("\n");
++	printk(KERN_CONT "\n");
+ 
+ 	cleanup_nmi_testsuite();
+ 
+diff --git a/arch/x86/pci/fixup.c b/arch/x86/pci/fixup.c
+index d0e6e40..5dd467b 100644
+--- a/arch/x86/pci/fixup.c
++++ b/arch/x86/pci/fixup.c
+@@ -519,3 +519,20 @@ static void sb600_disable_hpet_bar(struct pci_dev *dev)
+ 	}
+ }
+ DECLARE_PCI_FIXUP_EARLY(PCI_VENDOR_ID_ATI, 0x4385, sb600_disable_hpet_bar);
++
++/*
++ * Twinhead H12Y needs us to block out a region otherwise we map devices
++ * there and any access kills the box.
++ *
++ *   See: https://bugzilla.kernel.org/show_bug.cgi?id=10231
++ *
++ * Match off the LPC and svid/sdid (older kernels lose the bridge subvendor)
++ */
++static void __devinit twinhead_reserve_killing_zone(struct pci_dev *dev)
++{
++        if (dev->subsystem_vendor == 0x14FF && dev->subsystem_device == 0xA003) {
++                pr_info("Reserving memory on Twinhead H12Y\n");
++                request_mem_region(0xFFB00000, 0x100000, "twinhead");
++        }
++}
++DECLARE_PCI_FIXUP_HEADER(PCI_VENDOR_ID_INTEL, 0x27B9, twinhead_reserve_killing_zone);
