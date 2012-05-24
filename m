@@ -1,140 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758938Ab2EXU20 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 May 2012 16:28:26 -0400
-Received: from g1t0026.austin.hp.com ([15.216.28.33]:38726 "EHLO
-	g1t0026.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756374Ab2EXU2Y (ORCPT
+	id S933836Ab2EXUca (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 May 2012 16:32:30 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:59469 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756889Ab2EXUc3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 May 2012 16:28:24 -0400
-Message-ID: <1337891135.16730.404.camel@misato.fc.hp.com>
-Subject: Re: [PATCH v4 4/6] ACPI: Add _OST support for ACPI memory hotplug
-From: Toshi Kani <toshi.kani@hp.com>
-To: shuahkhan@gmail.com
-Cc: lenb@kernel.org, linux-acpi@vger.kernel.org, bhelgaas@google.com,
-        liuj97@gmail.com, andi@firstfloor.org, linux-kernel@vger.kernel.org
-Date: Thu, 24 May 2012 14:25:35 -0600
-In-Reply-To: <1337883710.2718.85.camel@lorien2>
-References: <1337826324-16802-1-git-send-email-toshi.kani@hp.com>
-	 <1337826324-16802-5-git-send-email-toshi.kani@hp.com>
-	 <1337883710.2718.85.camel@lorien2>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3 (3.2.3-1.fc16) 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	Thu, 24 May 2012 16:32:29 -0400
+Date: Thu, 24 May 2012 13:32:08 -0700
+Message-Id: <201205242032.q4OKW8fx031844@terminus.zytor.com>
+From: "H. Peter Anvin" <hpa@zytor.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Subject: [GIT PULL] x86 - additional relocation fixes
+Cc: <stable@vger.kernel.org>, "H. Peter Anvin" <hpa@zytor.com>,
+        Ingo Molnar <mingo@elte.hu>, Ingo Molnar <mingo@kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Stephen Rothwell <sfr@canb.auug.org.au>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Jarkko Sakkinen <jarkko.sakkinen@intel.com>
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Thu, 24 May 2012 13:32:14 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2012-05-24 at 12:21 -0600, Shuah Khan wrote:
-> On Wed, 2012-05-23 at 20:25 -0600, Toshi Kani wrote:
-> > Changed acpi_memory_device_notify() to call ACPI _OST method
-> > when ACPI memory hotplug operation has completed.
-> > 
-> > Signed-off-by: Toshi Kani <toshi.kani@hp.com>
-> > ---
-> >  drivers/acpi/acpi_memhotplug.c |   43 +++++++++++++++++++++++++++++----------
-> >  1 files changed, 32 insertions(+), 11 deletions(-)
-> > 
-> > diff --git a/drivers/acpi/acpi_memhotplug.c b/drivers/acpi/acpi_memhotplug.c
-> > index d985713..24c807f 100644
-> > --- a/drivers/acpi/acpi_memhotplug.c
-> > +++ b/drivers/acpi/acpi_memhotplug.c
-> > @@ -341,7 +341,7 @@ static void acpi_memory_device_notify(acpi_handle handle, u32 event, void *data)
-> >  {
-> >  	struct acpi_memory_device *mem_device;
-> >  	struct acpi_device *device;
-> > -
-> > +	u32 ost_code = ACPI_OST_SC_NON_SPECIFIC_FAILURE; /* default */
-> >  
-> >  	switch (event) {
-> >  	case ACPI_NOTIFY_BUS_CHECK:
-> > @@ -354,15 +354,20 @@ static void acpi_memory_device_notify(acpi_handle handle, u32 event, void *data)
-> >  					  "\nReceived DEVICE CHECK notification for device\n"));
-> >  		if (acpi_memory_get_device(handle, &mem_device)) {
-> >  			printk(KERN_ERR PREFIX "Cannot find driver data\n");
-> > -			return;
-> > +			break;
-> >  		}
-> >  
-> > -		if (!acpi_memory_check_device(mem_device)) {
-> > -			if (acpi_memory_enable_device(mem_device))
-> > -				printk(KERN_ERR PREFIX
-> > -					    "Cannot enable memory device\n");
-> > +		if (acpi_memory_check_device(mem_device))
-> > +			break;
-> > +
-> > +		if (acpi_memory_enable_device(mem_device)) {
-> > +			printk(KERN_ERR PREFIX "Cannot enable memory device\n");
-> > +			break;
-> >  		}
-> > +
-> > +		ost_code = ACPI_OST_SC_SUCCESS;
-> >  		break;
-> > +
-> >  	case ACPI_NOTIFY_EJECT_REQUEST:
-> >  		ACPI_DEBUG_PRINT((ACPI_DB_INFO,
-> >  				  "\nReceived EJECT REQUEST notification for device\n"));
-> > @@ -383,19 +388,35 @@ static void acpi_memory_device_notify(acpi_handle handle, u32 event, void *data)
-> >  		 * TBD: Can also be disabled by Callback registration
-> >  		 *      with generic sysfs driver
-> >  		 */
-> > -		if (acpi_memory_disable_device(mem_device))
-> > -			printk(KERN_ERR PREFIX
-> > -				    "Disable memory device\n");
-> > +		if (acpi_memory_disable_device(mem_device)) {
-> > +			printk(KERN_ERR PREFIX "Disable memory device\n");
-> > +			/*
-> > +			 * If _EJ0 was called but failed, _OST is not
-> > +			 * necessary.
-> > +			 */
-> > +			if (mem_device->state == MEMORY_INVALID_STATE)
-> > +				return;
-> > +
-> > +			break;
-> > +		}
-> 
-> Why isn't _OST called in this case to report failure? Isn't this one of
-> the cases Spec talks about. Reference: 6.3.5 _OST (OSPM Status
-> Indication) page 302.
+Hi Linus,
 
-If an ejection operation failed before calling _EJ0, the OS needs to
-call _OST.  Once the OS called _EJ0, the OS need not to call _OST again
-since FW has been informed with _EJ0 already.  If _EJ0 failed, FW knows
-it failed as well.  Please see page 14, Figure 2, of DIG64 HPPF doc.
-The pointer to the doc is described in patch [0/6].
+These are additional symbols that have been found to either be
+absolute or look like they might end up being absolute on one version
+of GNU ld or another.  Unfortunately we have since that a different
+GNU ld version, 2.21, can generate bogus absolute symbols; again, this
+would have caused a malfunctioning kernel on x86-32 if relocated.
 
-Thanks,
--Toshi
+The relocs.c changes changed silent corruption to a build time error.
 
+It is worth noting that if the various barrier symbols we use were
+more consistent in the namespace used this probably could be reduced
+to a single regexp; if nothing else it looks like there is migration
+toward a common __(start|stop)___.* namespace.
 
-> 
-> -- Shuah
-> 
-> > +
-> >  		/*
-> >  		 * TBD: Invoke acpi_bus_remove to cleanup data structures
-> >  		 */
-> > -		break;
-> > +
-> > +		/* _EJ0 succeeded; _OST is not necessary */
-> > +		return;
-> > +
-> >  	default:
-> >  		ACPI_DEBUG_PRINT((ACPI_DB_INFO,
-> >  				  "Unsupported event [0x%x]\n", event));
-> > -		break;
-> > +
-> > +		/* non-hotplug event; possibly handled by other handler */
-> > +		return;
-> >  	}
-> >  
-> > +	/* Inform firmware that the hotplug operation has completed */
-> > +	(void) acpi_evaluate_hotplug_ost(handle, event, ost_code, NULL);
-> >  	return;
-> >  }
-> >  
-> 
-> 
+Greg: these builds are tagged for stable v3.4, but if the relocs.c
+changes are backported then you will need these patches for the
+backports as well.
 
+The following changes since commit b2d668da9307c4c163dd603d2bb3cadb10f9fd37:
 
+  x86, relocs: Build clean fix (2012-05-21 12:19:37 -0700)
+
+are available in the git repository at:
+  git://git.kernel.org/pub/scm/linux/kernel/git/tip/tip.git x86-urgent-for-linus
+
+The head of this tree is ea17e7414bc62e8d3bde8d08e3df1d921c518c17.
+
+H. Peter Anvin (2):
+      x86-32, relocs: Whitelist more symbols for ld bug workaround
+      x86, relocs: Add jiffies and jiffies_64 to the relative whitelist
+
+ arch/x86/tools/relocs.c |   12 ++++++++++++
+ 1 files changed, 12 insertions(+), 0 deletions(-)
+
+ arch/x86/tools/relocs.c |   12 ++++++++++++
+ 1 files changed, 12 insertions(+), 0 deletions(-)
+
+diff --git a/arch/x86/tools/relocs.c b/arch/x86/tools/relocs.c
+index b43cfcd..b685296 100644
+--- a/arch/x86/tools/relocs.c
++++ b/arch/x86/tools/relocs.c
+@@ -60,6 +60,18 @@ static const char * const sym_regex_kernel[S_NSYMTYPES] = {
+ 	"__x86_cpu_dev_(start|end)|"
+ 	"(__parainstructions|__alt_instructions)(|_end)|"
+ 	"(__iommu_table|__apicdrivers|__smp_locks)(|_end)|"
++	"__(start|end)_pci_.*|"
++	"__(start|end)_builtin_fw|"
++	"__(start|stop)___ksymtab(|_gpl|_unused|_unused_gpl|_gpl_future)|"
++	"__(start|stop)___kcrctab(|_gpl|_unused|_unused_gpl|_gpl_future)|"
++	"__(start|stop)___param|"
++	"__(start|stop)___modver|"
++	"__(start|stop)___bug_table|"
++	"__tracedata_(start|end)|"
++	"__(start|stop)_notes|"
++	"__end_rodata|"
++	"__initramfs_start|"
++	"(jiffies|jiffies_64)|"
+ 	"_end)$"
+ };
+ 
