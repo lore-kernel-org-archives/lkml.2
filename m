@@ -1,72 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932777Ab2EXKo2 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 May 2012 06:44:28 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:35491 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755599Ab2EXKo1 (ORCPT
+	id S1755726Ab2EXKrw (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 May 2012 06:47:52 -0400
+Received: from smtp.eu.citrix.com ([62.200.22.115]:29286 "EHLO
+	SMTP.EU.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752021Ab2EXKrv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 May 2012 06:44:27 -0400
-Subject: Re: [PATCH 04/16] perf: Add ability to attach user stack dump to
- sample
-From: Peter Zijlstra <a.p.zijlstra@chello.nl>
-To: Jiri Olsa <jolsa@redhat.com>
-Cc: acme@redhat.com, mingo@elte.hu, paulus@samba.org,
-        cjashfor@linux.vnet.ibm.com, fweisbec@gmail.com, eranian@google.com,
-        gorcunov@openvz.org, tzanussi@gmail.com, mhiramat@redhat.com,
-        robert.richter@amd.com, fche@redhat.com, linux-kernel@vger.kernel.org,
-        masami.hiramatsu.pt@hitachi.com, drepper@gmail.com, asharma@fb.com,
-        benjamin.redelings@nescent.org
-In-Reply-To: <1337801535-12865-5-git-send-email-jolsa@redhat.com>
-References: <1337801535-12865-1-git-send-email-jolsa@redhat.com>
-	 <1337801535-12865-5-git-send-email-jolsa@redhat.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Thu, 24 May 2012 12:44:22 +0200
-Message-ID: <1337856262.9783.106.camel@laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.2 
-Content-Transfer-Encoding: 7bit
+	Thu, 24 May 2012 06:47:51 -0400
+X-IronPort-AV: E=Sophos;i="4.75,649,1330905600"; 
+   d="scan'208";a="12646403"
+Date: Thu, 24 May 2012 11:47:12 +0100
+From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+X-X-Sender: sstabellini@kaball-desktop
+To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>
+Subject: Re: [Xen-devel] [PATCH 2/4] xen/hvc: Fix error cases around
+ HVM_PARAM_CONSOLE_PFN
+In-Reply-To: <1337795222-29946-3-git-send-email-konrad.wilk@oracle.com>
+Message-ID: <alpine.DEB.2.00.1205241145200.26786@kaball-desktop>
+References: <1337795222-29946-1-git-send-email-konrad.wilk@oracle.com> <1337795222-29946-3-git-send-email-konrad.wilk@oracle.com>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+MIME-Version: 1.0
+Content-Type: text/plain; charset="US-ASCII"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2012-05-23 at 21:32 +0200, Jiri Olsa wrote:
-> @@ -173,6 +174,15 @@ enum perf_sample_regs {
->  };
->  
->  /*
-> + * Values for sample_stack when PERF_SAMPLE_STACK is set.
-> + * Defines stack dump to be attached to the sample.
-> + */
-> +enum perf_sample_stack {
-> +       PERF_SAMPLE_STACK_USER  = 1U << 0, /* user stack */
-> +       PERF_SAMPLE_STACK_MAX   = 1U << 1, /* non-ABI */
-> +};
-> +
-> +/*
->   * The format of the data returned by read() on a perf event fd,
->   * as specified by attr.read_format:
->   *
-> @@ -291,6 +301,14 @@ struct perf_event_attr {
->          * See asm/perf_regs.h for details.
->          */
->         __u64   sample_regs_user;
-> +
-> +       __u64   sample_stack; /* enum perf_sample_stack */
-> +
-> +       /*
-> +        * Defines size of the user stack to dump on samples,
-> +        * for sample_stack PERF_SAMPLE_STACK_USER settings.
-> +        */
-> +       __u64   sample_stack_user;
->  }; 
+On Wed, 23 May 2012, Konrad Rzeszutek Wilk wrote:
+> We weren't resetting the parameter to be passed in to a
+> known default. Nor were we checking the return value of
+> hvm_get_parameter.
+> 
+> CC: stable@kernel.org
+> Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+>
+>  drivers/tty/hvc/hvc_xen.c |    3 ++-
+>  1 files changed, 2 insertions(+), 1 deletions(-)
+> 
+> diff --git a/drivers/tty/hvc/hvc_xen.c b/drivers/tty/hvc/hvc_xen.c
+> index afc7fc2..3277f0e 100644
+> --- a/drivers/tty/hvc/hvc_xen.c
+> +++ b/drivers/tty/hvc/hvc_xen.c
+> @@ -219,7 +219,8 @@ static int xen_hvm_console_init(void)
+>  	if (r < 0)
+>  		goto err;
+>  	info->evtchn = v;
+> -	hvm_get_parameter(HVM_PARAM_CONSOLE_PFN, &v);
+> +	v = 0;
+> +	r = hvm_get_parameter(HVM_PARAM_CONSOLE_PFN, &v);
+>  	if (r < 0)
+>  		goto err;
+>  	mfn = v;
 
-And here we have a similarly weird set-up. If you're ever going to add
-another type, you have to make another __u64 since clearly another type
-cannot use sample_stack_user per the name.
-
-Thus, if you get another size variable you might as well use that to
-discover the state that is now sample_stack.
-
-
-
+Is 0 the right default here?
+Maybe something invalid like (~0UL) would be better?
