@@ -1,75 +1,122 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758222Ab2EXQp0 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 May 2012 12:45:26 -0400
-Received: from s15943758.onlinehome-server.info ([217.160.130.188]:36792 "EHLO
-	mail.x86-64.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753186Ab2EXQpX (ORCPT
+	id S933833Ab2EXQrm (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 May 2012 12:47:42 -0400
+Received: from avon.wwwdotorg.org ([70.85.31.133]:36268 "EHLO
+	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933714Ab2EXQrj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 May 2012 12:45:23 -0400
-Date: Thu, 24 May 2012 18:45:54 +0200
-From: Borislav Petkov <bp@amd64.org>
-To: Mauro Carvalho Chehab <mchehab@redhat.com>
-Cc: Linux Edac Mailing List <linux-edac@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Aristeu Rozanski <arozansk@redhat.com>,
-        Doug Thompson <norsk5@yahoo.com>, Steven Rostedt <rostedt@goodmis.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Ingo Molnar <mingo@redhat.com>
-Subject: Re: [PATCH] RAS: Add a tracepoint for reporting memory controller
- events
-Message-ID: <20120524164554.GM27063@aftab.osrc.amd.com>
-References: <1337358773-6919-38-git-send-email-mchehab@redhat.com>
- <1337854460-25191-1-git-send-email-mchehab@redhat.com>
- <20120524105604.GC27063@aftab.osrc.amd.com>
- <4FBE5E1D.7070804@redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4FBE5E1D.7070804@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Thu, 24 May 2012 12:47:39 -0400
+From: Stephen Warren <swarren@wwwdotorg.org>
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>
+Cc: linux-kernel@vger.kernel.org, Stephen Warren <swarren@nvidia.com>
+Subject: [PATCH V2 2/2] regmap: mmio: request native endian formatting
+Date: Thu, 24 May 2012 10:47:27 -0600
+Message-Id: <1337878047-21177-2-git-send-email-swarren@wwwdotorg.org>
+X-Mailer: git-send-email 1.7.0.4
+In-Reply-To: <1337878047-21177-1-git-send-email-swarren@wwwdotorg.org>
+References: <1337878047-21177-1-git-send-email-swarren@wwwdotorg.org>
+X-NVConfidentiality: public
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, May 24, 2012 at 01:13:17PM -0300, Mauro Carvalho Chehab wrote:
-> > Why are we even exporting grain actually with each tracepoint
-> > invocation? This is the granularity of reported error in bytes, and it,
-> > as such, is statically assigned to a value in each driver. Userspace can
-> > certainly figure out that value in a different way.
-> 
-> The API doesn't export the grain, except via the tracepoint/printk.
+From: Stephen Warren <swarren@nvidia.com>
 
-And this is exactly my question: if it is a static value which is set
-once per driver, why do we have to issue it with _every_ tracepoint
-invocation? Room in the per-cpu trace buffers is not for free.
+This will avoid the regmap core converting all addresses and values into
+big endian, only for the mmio bus driver to have to convert them back to
+native endian.
 
-> > But the more important question is: does the grain help us when handling
-> > the error info in userspace?
-> > 
-> > It tells us that at this physical address with "grain" granularity we
-> > had an error. So?
-> 
-> While a certain number of corrected errors that happened on different, sparsed,
-> addresses may not mean a damaged memory, the same number of corrected errors
-> happening at the same physical address/grain means that the DRAM chip that
-> contains such address is damaged, so the corresponding DIMM needs to be 
-> replaced.
-> 
-> So, the address/grain can be used by userspace algorithms to increase the
-> probability that a DIMM is damaged.
+Signed-off-by: Stephen Warren <swarren@nvidia.com>
+---
+v2: Validate the the regmap_config specifies default or native endianness
+for the register format.
+---
+ drivers/base/regmap/regmap-mmio.c |   26 ++++++++++++++++++--------
+ 1 files changed, 18 insertions(+), 8 deletions(-)
 
-I have no idea what you're saying here.
-
-The DIMM can be pinpointed using the address only, why do you need the
-grain too?
-
+diff --git a/drivers/base/regmap/regmap-mmio.c b/drivers/base/regmap/regmap-mmio.c
+index febd6de..eec8663 100644
+--- a/drivers/base/regmap/regmap-mmio.c
++++ b/drivers/base/regmap/regmap-mmio.c
+@@ -37,7 +37,7 @@ static int regmap_mmio_gather_write(void *context,
+ 
+ 	BUG_ON(reg_size != 4);
+ 
+-	offset = be32_to_cpup(reg);
++	offset = *(u32 *)reg;
+ 
+ 	while (val_size) {
+ 		switch (ctx->val_bytes) {
+@@ -45,14 +45,14 @@ static int regmap_mmio_gather_write(void *context,
+ 			writeb(*(u8 *)val, ctx->regs + offset);
+ 			break;
+ 		case 2:
+-			writew(be16_to_cpup(val), ctx->regs + offset);
++			writew(*(u16 *)val, ctx->regs + offset);
+ 			break;
+ 		case 4:
+-			writel(be32_to_cpup(val), ctx->regs + offset);
++			writel(*(u32 *)val, ctx->regs + offset);
+ 			break;
+ #ifdef CONFIG_64BIT
+ 		case 8:
+-			writeq(be64_to_cpup(val), ctx->regs + offset);
++			writeq(*(u64 *)val, ctx->regs + offset);
+ 			break;
+ #endif
+ 		default:
+@@ -83,7 +83,7 @@ static int regmap_mmio_read(void *context,
+ 
+ 	BUG_ON(reg_size != 4);
+ 
+-	offset = be32_to_cpup(reg);
++	offset = *(u32 *)reg;
+ 
+ 	while (val_size) {
+ 		switch (ctx->val_bytes) {
+@@ -91,14 +91,14 @@ static int regmap_mmio_read(void *context,
+ 			*(u8 *)val = readb(ctx->regs + offset);
+ 			break;
+ 		case 2:
+-			*(u16 *)val = cpu_to_be16(readw(ctx->regs + offset));
++			*(u16 *)val = readw(ctx->regs + offset);
+ 			break;
+ 		case 4:
+-			*(u32 *)val = cpu_to_be32(readl(ctx->regs + offset));
++			*(u32 *)val = readl(ctx->regs + offset);
+ 			break;
+ #ifdef CONFIG_64BIT
+ 		case 8:
+-			*(u64 *)val = cpu_to_be32(readq(ctx->regs + offset));
++			*(u64 *)val = readq(ctx->regs + offset);
+ 			break;
+ #endif
+ 		default:
+@@ -124,6 +124,8 @@ static struct regmap_bus regmap_mmio = {
+ 	.gather_write = regmap_mmio_gather_write,
+ 	.read = regmap_mmio_read,
+ 	.free_context = regmap_mmio_free_context,
++	.reg_format_endian_default = REGMAP_ENDIAN_NATIVE,
++	.val_format_endian_default = REGMAP_ENDIAN_NATIVE,
+ };
+ 
+ struct regmap_mmio_context *regmap_mmio_gen_context(void __iomem *regs,
+@@ -162,6 +164,14 @@ struct regmap_mmio_context *regmap_mmio_gen_context(void __iomem *regs,
+ 	if (config->reg_stride < min_stride)
+ 		return ERR_PTR(-EINVAL);
+ 
++	switch (config->reg_format_endian) {
++	case REGMAP_ENDIAN_DEFAULT:
++	case REGMAP_ENDIAN_NATIVE:
++		break;
++	default:
++		return ERR_PTR(-EINVAL);
++	}
++
+ 	ctx = kzalloc(GFP_KERNEL, sizeof(*ctx));
+ 	if (!ctx)
+ 		return ERR_PTR(-ENOMEM);
 -- 
-Regards/Gruss,
-Boris.
+1.7.0.4
 
-Advanced Micro Devices GmbH
-Einsteinring 24, 85609 Dornach
-GM: Alberto Bozzo
-Reg: Dornach, Landkreis Muenchen
-HRB Nr. 43632 WEEE Registernr: 129 19551
