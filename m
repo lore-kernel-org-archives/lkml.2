@@ -1,64 +1,38 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754372Ab2EXAjW (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 May 2012 20:39:22 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:58830 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751318Ab2EXAjT (ORCPT
+	id S1756210Ab2EXAkm (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 May 2012 20:40:42 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:47063 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751745Ab2EXAkk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 May 2012 20:39:19 -0400
-Date: Wed, 23 May 2012 17:39:16 -0700
-From: Kent Overstreet <koverstreet@google.com>
-To: "Jun'ichi Nomura" <j-nomura@ce.jp.nec.com>
-Cc: device-mapper development <dm-devel@redhat.com>,
-        linux-kernel@vger.kernel.org, linux-bcache@vger.kernel.org,
-        linux-fsdevel@vger.kernel.org, axboe@kernel.dk, yehuda@hq.newdream.net,
-        mpatocka@redhat.com, vgoyal@redhat.com, bharrosh@panasas.com,
-        tj@kernel.org, sage@newdream.net, agk@redhat.com,
-        drbd-dev@lists.linbit.com
-Subject: Re: [dm-devel] [PATCH v2 02/14] dm: kill dm_rq_bio_destructor
-Message-ID: <20120524003915.GA27443@google.com>
-References: <1337817771-25038-1-git-send-email-koverstreet@google.com>
- <1337817771-25038-3-git-send-email-koverstreet@google.com>
- <4FBD7E80.4020005@ce.jp.nec.com>
+	Wed, 23 May 2012 20:40:40 -0400
+Date: Wed, 23 May 2012 17:40:38 -0700 (PDT)
+From: David Rientjes <rientjes@google.com>
+X-X-Sender: rientjes@chino.kir.corp.google.com
+To: Sameer Rahmani <lxsameer@lxsameer.com>
+cc: Christoph Lameter <cl@linux.com>, Pekka Enberg <penberg@kernel.org>,
+        linux-kernel@vger.kernel.org
+Subject: Re: Slab vs Slub vs slob vs slqb
+In-Reply-To: <4FBD1A2C.7020303@lxsameer.com>
+Message-ID: <alpine.DEB.2.00.1205231738420.8785@chino.kir.corp.google.com>
+References: <4FBD1A2C.7020303@lxsameer.com>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4FBD7E80.4020005@ce.jp.nec.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, May 24, 2012 at 09:19:12AM +0900, Jun'ichi Nomura wrote:
-> Hi,
-> 
-> On 05/24/12 09:02, Kent Overstreet wrote:
-> > @@ -1438,15 +1439,6 @@ void dm_dispatch_request(struct request *rq)
-> >  }
-> >  EXPORT_SYMBOL_GPL(dm_dispatch_request);
-> >  
-> > -static void dm_rq_bio_destructor(struct bio *bio)
-> > -{
-> > -	struct dm_rq_clone_bio_info *info = bio->bi_private;
-> > -	struct mapped_device *md = info->tio->md;
-> > -
-> > -	free_bio_info(info);
-> > -	bio_free(bio, md->bs);
-> > -}
-> > -
-> >  static int dm_rq_bio_constructor(struct bio *bio, struct bio *bio_orig,
-> >  				 void *data)
-> >  {
-> > @@ -1461,7 +1453,6 @@ static int dm_rq_bio_constructor(struct bio *bio, struct bio *bio_orig,
-> >  	info->tio = tio;
-> >  	bio->bi_end_io = end_clone_bio;
-> >  	bio->bi_private = info;
-> > -	bio->bi_destructor = dm_rq_bio_destructor;
-> 
-> The destructor may also be called from blk_rq_unprep_clone(),
-> which just puts bio.
-> So this patch will introduce a memory leak.
+On Wed, 23 May 2012, Sameer Rahmani wrote:
 
-Well, keeping around bi_destructor solely for that reason would be
-pretty lousy. Can you come up with a better solution?
+> Hi,
+> Simple question from a newbie, i know what is SLAB is, but what is slub and
+> slob or slqb ?
+> what is there different ?
+
+SLUB, SLOB, and SLQB are all different varients of slab allocators and can 
+be chosen as a replacement for SLAB.  SLUB gets the most attention these 
+days and is the upstream default.  SLOB is typically used for embedded 
+devices and those that require a small memory footprint.  SLQB was a 
+development allocator that I believe has been abandoned.
