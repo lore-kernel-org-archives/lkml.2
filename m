@@ -1,51 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758905Ab2EXR5r (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 May 2012 13:57:47 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:56615 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757859Ab2EXR5o (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1758830Ab2EXR5p (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 May 2012 13:57:45 -0400
+Received: from iolanthe.rowland.org ([192.131.102.54]:41322 "HELO
+	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1757651Ab2EXR5o (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 24 May 2012 13:57:44 -0400
-Message-ID: <4FBE7648.7060206@zytor.com>
-Date: Thu, 24 May 2012 10:56:24 -0700
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
-MIME-Version: 1.0
+Date: Thu, 24 May 2012 13:57:43 -0400 (EDT)
+From: Alan Stern <stern@rowland.harvard.edu>
+X-X-Sender: stern@iolanthe.rowland.org
 To: Joe Perches <joe@perches.com>
-CC: T Makphaibulchoke <tmac@hp.com>, lethal@linux-sh.org, tglx@linutronix.de,
-        mingo@redhat.com, x86@kernel.org, kaloz@openwrt.org,
-        matt.fleming@intel.com, lasse.collin@tukaani.org,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        linux-s390@vger.kernel.org, linux-sh@vger.kernel.org,
-        linux@arm.linux.org.uk, schwidefsky@de.ibm.com,
-        heiko.carstens@de.ibm.com, linux390@de.ibm.com
-Subject: Re: [PATCH] lib/decompress_unxz.c: removing all memory helper functions
-References: <1337875436-27640-1-git-send-email-tmac@hp.com>  <1337880371.5070.24.camel@joe2Laptop> <4FBE6FF6.5090904@zytor.com>  <1337881229.5070.29.camel@joe2Laptop> <4FBE72C4.3040204@zytor.com> <1337881849.5070.32.camel@joe2Laptop>
-In-Reply-To: <1337881849.5070.32.camel@joe2Laptop>
-X-Enigmail-Version: 1.4.1
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+cc: Kay Sievers <kay@vrfy.org>,
+        Kernel development list <linux-kernel@vger.kernel.org>,
+        Jason Baron <jbaron@redhat.com>, Thomas Gleixner <tglx@linutronix.de>,
+        Greg KH <greg@kroah.com>
+Subject: Re: Excessive latency for dev_dbg?
+In-Reply-To: <1337805903.1747.0.camel@joe2Laptop>
+Message-ID: <Pine.LNX.4.44L0.1205241348300.1186-100000@iolanthe.rowland.org>
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/24/2012 10:50 AM, Joe Perches wrote:
-> On Thu, 2012-05-24 at 10:41 -0700, H. Peter Anvin wrote:
->> On 05/24/2012 10:40 AM, Joe Perches wrote:
->>> Many of these functions are only optimized in certain cases; if not
->>> optimized in a particular case, a call to the library function will be
->>> emitted.
->> Right, what part of that don't you understand?
-> 
-> :)
-> 
-> Whether or not the many applies to __builtin_mem<foo>.
-> I believe not.
-> 
+On Wed, 23 May 2012, Joe Perches wrote:
 
-There are definitely cases where gcc can call these out of line.  I
-already told you that.
+> cc'ing Kay.
+> 
+> On Wed, 2012-05-23 at 16:37 -0400, Alan Stern wrote:
+> > I just tried doing some testing of 3.4.  Sequences of literally
+> > adjacent dev_dbg() calls -- with local interrupts disabled -- show up
+> > in the log buffer spaced at time intervals between 1 and 4
+> > milliseconds!
+> > 
+> > This is with CONFIG_DYNAMIC_DEBUG not enabled, and CONFIG_PRINTK_TIME,
+> > CONFIG_PREEMPT, CONFIG_HIGH_RES_TIMERS, and CONFIG_HPET_TIMER all set
+> > to y.
+> > 
+> > What's going on here?  Did printk suddenly slow down a lot?  Or has the
+> > timer code gone crazy?
 
-	-hpa
+Okay, I did a little more directed testing.  It turns out the same
+thing happens with a 3.3 kernel, so I can't even call it a regression.  
+And it's not directly related to dev_dbg, because the same thing 
+happens with dev_info.  But it does look peculiar.
 
+Here's the test patch:
+
+
+--- usb-3.4.orig/drivers/usb/gadget/dummy_hcd.c
++++ usb-3.4/drivers/usb/gadget/dummy_hcd.c
+@@ -997,6 +997,19 @@ static int dummy_udc_probe(struct platfo
+ 	if (rc < 0)
+ 		goto err_dev;
+ 	platform_set_drvdata(pdev, dum);
++
++	spin_lock_irq(&dum->lock);
++	dev_info(&pdev->dev, "dev_info 1\n");
++	dev_info(&pdev->dev, "dev_info 2\n");
++	dev_info(&pdev->dev, "dev_info 3\n");
++	dev_dbg(&pdev->dev, "dev_dbg 1\n");
++	dev_dbg(&pdev->dev, "dev_dbg 2\n");
++	dev_dbg(&pdev->dev, "dev_dbg 3\n");
++	printk(KERN_INFO "printk 1\n");
++	printk(KERN_INFO "printk 2\n");
++	printk(KERN_INFO "printk 3\n");
++	spin_unlock_irq(&dum->lock);
++
+ 	return rc;
+ 
+ err_dev:
+
+
+Here's the output under 3.3 (note: UP machine but with CONFIG_SMP 
+enabled):
+
+[  102.784488] dummy_udc dummy_udc: dev_info 1
+[  102.786776] dummy_udc dummy_udc: dev_info 2
+[  102.788054] dummy_udc dummy_udc: dev_info 3
+[  102.788054] dummy_udc dummy_udc: dev_dbg 1
+[  102.788054] dummy_udc dummy_udc: dev_dbg 2
+[  102.788054] dummy_udc dummy_udc: dev_dbg 3
+[  102.788054] printk 1
+[  102.788054] printk 2
+[  102.788054] printk 3
+
+And here's the output under 3.4:
+
+[  166.521453] dummy_udc dummy_udc: dev_info 1
+[  166.524026] dummy_udc dummy_udc: dev_info 2
+[  166.524026] dummy_udc dummy_udc: dev_info 3
+[  166.524026] dummy_udc dummy_udc: dev_dbg 1
+[  166.524026] dummy_udc dummy_udc: dev_dbg 2
+[  166.524026] dummy_udc dummy_udc: dev_dbg 3
+[  166.524026] printk 1
+[  166.524026] printk 2
+[  166.524026] printk 3
+
+In fact, 3.4 looks slightly better than 3.3, in that there's no
+measurable delay between the "dev_info 2" and "dev_info 3" lines.
+
+But what's going on with the first two dev_info lines?  A 2.6 ms delay 
+during which nothing happens?  Or incorrect timestamps?
+
+.config files are available upon request.
+
+Alan Stern
 
