@@ -1,83 +1,156 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932767Ab2EXKsC (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 May 2012 06:48:02 -0400
-Received: from s15943758.onlinehome-server.info ([217.160.130.188]:34809 "EHLO
-	mail.x86-64.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932361Ab2EXKsA (ORCPT
+	id S1755933Ab2EXKv1 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 May 2012 06:51:27 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:42489 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753788Ab2EXKv0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 May 2012 06:48:00 -0400
-Date: Thu, 24 May 2012 12:48:30 +0200
-From: Borislav Petkov <bp@amd64.org>
-To: Thomas Gleixner <tglx@linutronix.de>
-Cc: Chen Gong <gong.chen@linux.intel.com>, "Luck, Tony" <tony.luck@intel.com>,
-        "x86@kernel.org" <x86@kernel.org>, LKML <linux-kernel@vger.kernel.org>,
-        Peter Zijlstra <peterz@infradead.org>
-Subject: Re: [PATCH] x86: auto poll/interrupt mode switch for CMC to stop CMC
- storm
-Message-ID: <20120524104830.GB27063@aftab.osrc.amd.com>
-References: <1337740341-26711-1-git-send-email-gong.chen@linux.intel.com>
- <alpine.LFD.2.02.1205230859190.3231@ionos>
- <3908561D78D1C84285E8C5FCA982C28F192F2DD6@ORSMSX104.amr.corp.intel.com>
- <alpine.LFD.2.02.1205232044150.3231@ionos>
- <3908561D78D1C84285E8C5FCA982C28F192F30C0@ORSMSX104.amr.corp.intel.com>
- <4FBD9BAA.7070902@linux.intel.com>
- <20120524060016.GB25344@aftab.osrc.amd.com>
- <alpine.LFD.2.02.1205241146100.3231@ionos>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.LFD.2.02.1205241146100.3231@ionos>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Thu, 24 May 2012 06:51:26 -0400
+Subject: Re: [PATCH 04/16] perf: Add ability to attach user stack dump to
+ sample
+From: Peter Zijlstra <a.p.zijlstra@chello.nl>
+To: Jiri Olsa <jolsa@redhat.com>
+Cc: acme@redhat.com, mingo@elte.hu, paulus@samba.org,
+        cjashfor@linux.vnet.ibm.com, fweisbec@gmail.com, eranian@google.com,
+        gorcunov@openvz.org, tzanussi@gmail.com, mhiramat@redhat.com,
+        robert.richter@amd.com, fche@redhat.com, linux-kernel@vger.kernel.org,
+        masami.hiramatsu.pt@hitachi.com, drepper@gmail.com, asharma@fb.com,
+        benjamin.redelings@nescent.org
+In-Reply-To: <1337801535-12865-5-git-send-email-jolsa@redhat.com>
+References: <1337801535-12865-1-git-send-email-jolsa@redhat.com>
+	 <1337801535-12865-5-git-send-email-jolsa@redhat.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Thu, 24 May 2012 12:51:20 +0200
+Message-ID: <1337856680.9783.111.camel@laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.2 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, May 24, 2012 at 12:01:13PM +0200, Thomas Gleixner wrote:
-> Aside of that machine_check_poll is called from other places as
-> well. So looking at mce_timer_start() which is surprisingly the timer
-> callback:
-> 
-> The poll timer rate is self adjusting to intervals down to HZ/100. So
-> when you get into a state where the timer rate becomes lower than HZ/5
-> we'll trigger that CMCI storm in software and queue work even on
-> machines which do not support CMCI or have it disabled. Brilliant,
-> isn't it?
+On Wed, 2012-05-23 at 21:32 +0200, Jiri Olsa wrote:
+> +static void
+> +perf_output_sample_ustack(struct perf_output_handle *handle, u64 dump_size,
+> +                         struct pt_regs *regs)
+> +{
+> +       u64 size;
+> +
+> +       /* Case of a kernel thread, nothing to dump */
+> +       if (!regs) {
+> +               size = 0;
+> +               perf_output_put(handle, size);
+> +       } else {
+> +               unsigned long sp;
+> +               unsigned int rem;
+> +               u64 dyn_size;
+> +
+> +               /*
+> +                * Static size: we always dump the size
+> +                * requested by the user because most of the
+> +                * time, the top of the user stack is not
+> +                * paged out.
+> +                */
+> +               size = round_up(dump_size, sizeof(u64));
 
-Yes, I'm thrilled just by staring at this :-).
+You also do this in the prepare thing..
 
-> So that rate check belongs into intel_treshold_interrupt() and wants a
-> intel specific callback in mce_start_timer() to undo it.
+> +               perf_output_put(handle, size);
+> +
+> +               sp = user_stack_pointer(regs);
+> +               rem = __output_copy_user(handle, (void *)sp, size);
+> +               dyn_size = size - rem;
+> +
+> +               /* What couldn't be dumped is zero padded */
+> +               while (rem--) {
+> +                       char zero = 0;
+> +                       perf_output_put(handle, zero);
+> +               }
 
-So AFAICT mce_start_timer() sets the polling rate of machine_check_poll,
-i.e. we normally poll the MCA registers for errors every 5 minutes. This
-is for correctable errors which don't raise #MC exception but only get
-logged.
+Does this matter? If we don't write it the worst that can happen is that
+we leave previous ring-bugger content around, but since we already are
+privileged to read that (and very likely already have) there's no
+problem with that..
 
-That's why, for example, when you boot your box you see
+I know not zero-ing is ugly, but its also faster.. and do we care about
+them silly zeros?
 
-"Machine check events logged."
+> +
+> +               /* Dynamic size: whole dump - padding */
+> +               perf_output_put(handle, dyn_size);
+> +       }
+> +}
+> +
+>  static struct pt_regs *perf_sample_regs_user(struct pt_regs *regs)
+>  {
+>         if (!user_mode(regs)) {
+> @@ -4066,6 +4105,17 @@ void perf_output_sample(struct perf_output_handle *handle,
+>                         }
+>                 }
+>         }
+> +
+> +       if (sample_type & PERF_SAMPLE_STACK) {
+> +               u64 mode = event->attr.sample_stack;
+> +
+> +               if (mode & PERF_SAMPLE_STACK_USER) {
+> +                       u64 dump_size = event->attr.sample_stack_user;
+> +
+> +                       perf_output_sample_ustack(handle, dump_size,
+> +                                                 data->regs_user);
 
-in dmesg at timestamp 299.xxx when the hw has either had an MCE causing
-it to reboot or has experienced a correctable error during boot.
+OK, so that function is called _ustack() I read that as userstack, so
+why this strange split up?
 
-Oh, I see it now, this thing reconfigures the mce_timer which we use for
-the above.
+> +               }
+> +       }
+>  }
+>  
+>  void perf_prepare_sample(struct perf_event_header *header,
+> @@ -4135,6 +4185,39 @@ void perf_prepare_sample(struct perf_event_header *header,
+>  
+>                 header->size += size;
+>         }
+> +
+> +       if (sample_type & PERF_SAMPLE_STACK) {
+> +               u64 mode = event->attr.sample_stack;
+> +               int size = 0;
+> +
+> +               if (mode & PERF_SAMPLE_STACK_USER) {
 
-Ok, I'm no timer guy but can we use the same timer for two different
-things? This looks pretty fishy. I assumed the CMCI thing adds another,
-CMCI-only timer for its purposes.
+This is very much similar to ->sample_stack_user, since a non-zero size
+usually means you want something.
 
-Thomas, what is the proper design here?
+> +                       if (!data->regs_user)
+> +                               data->regs_user = perf_sample_regs_user(regs);
+> +
+> +                       /*
+> +                        * A first field that tells the _static_ size of the
+> +                        * dump. 0 if there is nothing to dump (ie: we are in
+> +                        * a kernel thread) otherwise the requested size.
+> +                        */
+> +                       size += sizeof(u64);
+> +
+> +                       /*
+> +                        * If there is something to dump, add space for the
+> +                        * dump itself and for the field that tells the
+> +                        * dynamic size, which is how many have been actually
+> +                        * dumped. What couldn't be dumped will be zero-padded.
+> +                        */
+> +                       if (data->regs_user) {
+> +                               u64 user_size = event->attr.sample_stack_user;
+> +
+> +                               user_size = round_up(user_size, sizeof(u64));
 
-Thanks.
+Right, and here we go again.. so how about you either reject sizes that
+aren't properly aligned in perf_copy_attr() or just fix it up there.
 
--- 
-Regards/Gruss,
-Boris.
+> +                               size += user_size;
+> +                               size += sizeof(u64);
+> +                       }
+> +               }
+> +
+> +               header->size += size;
+> +       }
+>  } 
 
-Advanced Micro Devices GmbH
-Einsteinring 24, 85609 Dornach
-GM: Alberto Bozzo
-Reg: Dornach, Landkreis Muenchen
-HRB Nr. 43632 WEEE Registernr: 129 19551
