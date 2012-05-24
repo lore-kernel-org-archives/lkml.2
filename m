@@ -1,120 +1,209 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753521Ab2EXArD (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 May 2012 20:47:03 -0400
-Received: from nm8.access.bullet.mail.mud.yahoo.com ([66.94.237.209]:37960
-	"HELO nm8.access.bullet.mail.mud.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1751000Ab2EXAq7 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 May 2012 20:46:59 -0400
-X-Yahoo-Newman-Id: 371763.60473.bm@smtp106.biz.mail.bf1.yahoo.com
-X-Yahoo-Newman-Property: ymail-3
-X-YMail-OSG: S_wPrwcVM1m76cFXhvAxc_Xl8Swt2fIsrOx.yZyFxqimugT
- 4tfUdpnGqyvUS7hz6ONgEreGYC.7UBamweTat297HJvbh8SCfL.LSwmBMrhv
- cWUdTf7EbknJfUfhkYNwT1WAWlqO38rM3WQ1zdU0ybBEEEiW9QsCxtCGmhA2
- 5_WEuHE6VoV5J0w6i7iYSXEaU6tzxGrTsUS7ovqaB3wll16t6hbU3X2i99_1
- .aKSI6_V5zrI6pUHo1uJZhiG5g4D.nI.ayBh8DCRs_3L7ztD7DBs22p2znt_
- pWp61cyhHuL9vDkZWyv75E1FaGSukF70gES5LyeegWpgwGmqf1x8iiyLLqXU
- XVZ_U1HZ_fROh1NddgAbCAjia5D85v6YdjKMVsnDxUkWn0wWcNHbZeNS3rKL
- 6lOASNrmk9yIu.ar5aZH2OXvzToeuVPUZDu33R22CFFLkJqpF21SMxa3v2bq
- HVzYnUxo1xpwrL2GJ6qCYzOyc6mejRe9ncgzwsjdckubwJFxxOSVAoEEqPbv
- aDm7xS3qPyC2_z64vCkiLjIgmIBSsKw--
-X-Yahoo-SMTP: OIJXglSswBDfgLtXluJ6wiAYv6_cnw--
-Message-ID: <4FBD8502.4010602@schaufler-ca.com>
-Date: Wed, 23 May 2012 17:46:58 -0700
-From: Casey Schaufler <casey@schaufler-ca.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:12.0) Gecko/20120428 Thunderbird/12.0.1
-MIME-Version: 1.0
-To: Al Viro <viro@ZenIV.linux.org.uk>
-CC: LKLM <linux-kernel@vger.kernel.org>,
-        LSM <linux-security-module@vger.kernel.org>,
-        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
-        Casey Schaufler <casey@schaufler-ca.com>
-Subject: [PATCH] Smack: fix smack_new_inode bogosities
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1754622Ab2EXAr2 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 May 2012 20:47:28 -0400
+Received: from perches-mx.perches.com ([206.117.179.246]:59652 "EHLO
+	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1751171Ab2EXArZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 23 May 2012 20:47:25 -0400
+Message-ID: <1337820443.1747.24.camel@joe2Laptop>
+Subject: Re: [PATCH v2 12/14] Closures
+From: Joe Perches <joe@perches.com>
+To: Kent Overstreet <koverstreet@google.com>
+Cc: linux-kernel@vger.kernel.org, linux-bcache@vger.kernel.org,
+        dm-devel@redhat.com, linux-fsdevel@vger.kernel.org, tj@kernel.org,
+        axboe@kernel.dk, agk@redhat.com, neilb@suse.de,
+        drbd-dev@lists.linbit.com, bharrosh@panasas.com, vgoyal@redhat.com,
+        mpatocka@redhat.com, sage@newdream.net, yehuda@hq.newdream.net
+Date: Wed, 23 May 2012 17:47:23 -0700
+In-Reply-To: <1337817771-25038-13-git-send-email-koverstreet@google.com>
+References: <1337817771-25038-1-git-send-email-koverstreet@google.com>
+	 <1337817771-25038-13-git-send-email-koverstreet@google.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.2- 
 Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Casey Schaufler <casey@schaufler-ca.com>
-Subject: [PATCH] Smack: fix smack_new_inode bogosities
+On Wed, 2012-05-23 at 17:02 -0700, Kent Overstreet wrote:
+> Asynchronous refcounty thingies;
 
-In January of 2012 Al Viro pointed out three bits of code that
-he titled "new_inode_smack bogosities". This patch repairs these
-errors.
+Hi again Kent.
 
-1. smack_sb_kern_mount() included a NULL check that is impossible.
-   The check and NULL case are removed.
-2. smack_kb_kern_mount() included pointless locking. The locking is
-   removed. Since this is the only place that lock was used the lock
-   is removed from the superblock_smack structure.
-3. smk_fill_super() incorrectly and unnecessarily set the Smack label
-   for the smackfs root inode. The assignment has been removed.
+Highly descriptive word choice you've employed there.
 
-Targeted for git://gitorious.org/smack-next/kernel.git
+> they embed a refcount and a work
+> struct. Extensive documentation follows in include/linux/closure.h
 
-Signed-off-by: Casey Schaufler <casey@schaufler-ca.com>
+All trivia:
 
----
+> diff --git a/include/linux/closure.h b/include/linux/closure.h
+[]
+> +#define CLOSURE_REMAINING_MASK	(~(~0 << 20))
 
- security/smack/smack.h     |    1 -
- security/smack/smack_lsm.c |    8 ++------
- security/smack/smackfs.c   |    1 -
- 3 files changed, 2 insertions(+), 8 deletions(-)
+More commonly used is ((1 << 20) - 1)
 
-diff --git a/security/smack/smack.h b/security/smack/smack.h
-index cc361b8..76feb31 100644
---- a/security/smack/smack.h
-+++ b/security/smack/smack.h
-@@ -43,7 +43,6 @@ struct superblock_smack {
- 	char		*smk_hat;
- 	char		*smk_default;
- 	int		smk_initialized;
--	spinlock_t	smk_sblock;	/* for initialization */
- };
- 
- struct socket_smack {
-diff --git a/security/smack/smack_lsm.c b/security/smack/smack_lsm.c
-index d583c05..5a4d52c 100644
---- a/security/smack/smack_lsm.c
-+++ b/security/smack/smack_lsm.c
-@@ -251,7 +251,6 @@ static int smack_sb_alloc_security(struct super_block *sb)
- 	sbsp->smk_floor = smack_known_floor.smk_known;
- 	sbsp->smk_hat = smack_known_hat.smk_known;
- 	sbsp->smk_initialized = 0;
--	spin_lock_init(&sbsp->smk_sblock);
- 
- 	sb->s_security = sbsp;
- 
-@@ -332,13 +331,10 @@ static int smack_sb_kern_mount(struct super_block *sb, int flags, void *data)
- 	char *commap;
- 	char *nsp;
- 
--	spin_lock(&sp->smk_sblock);
--	if (sp->smk_initialized != 0) {
--		spin_unlock(&sp->smk_sblock);
-+	if (sp->smk_initialized != 0)
- 		return 0;
--	}
-+
- 	sp->smk_initialized = 1;
--	spin_unlock(&sp->smk_sblock);
- 
- 	for (op = data; op != NULL; op = commap) {
- 		commap = strchr(op, ',');
-diff --git a/security/smack/smackfs.c b/security/smack/smackfs.c
-index 1810c9a..3686db7 100644
---- a/security/smack/smackfs.c
-+++ b/security/smack/smackfs.c
-@@ -2051,7 +2051,6 @@ static int smk_fill_super(struct super_block *sb, void *data, int silent)
- 	}
- 
- 	root_inode = sb->s_root->d_inode;
--	root_inode->i_security = new_inode_smack(smack_known_floor.smk_known);
- 
- 	return 0;
- }
+> +#define CLOSURE_GUARD_MASK					\
+> +	((1 << 20)|(1 << 22)|(1 << 24)|(1 << 26)|(1 << 28)|(1 << 30))
+
+Perhaps a poor choice of layout.
+
+Perhaps it'd be more sensible to define CLOSURE_<FOO>_GUARDs
+along with CLOSURE_<FOO>
+
+It might make more sense to use another macro with
+the somewhat magic number of 20 more explicitly defined.
+
+> +
+> +	/*
+> +	 * CLOSURE_RUNNING: Set when a closure is running (i.e. by
+> +	 * closure_init() and when closure_put() runs then next function), and
+> +	 * must be cleared before remaining hits 0. Primarily to help guard
+> +	 * against incorrect usage and accidently transferring references.
+
+accidentally
+
+[]
+> +	 * CLOSURE_TIMER: Analagous to CLOSURE_WAITING, indicates that a closure
+
+analogous
+
+[]
+
+> +#define TYPE_closure			0U
+> +#define TYPE_closure_with_waitlist	1U
+> +#define TYPE_closure_with_timer		2U
+> +#define TYPE_closure_with_waitlist_and_timer 3U
+
+UPPER_lower is generally frowned on.
+It'd be better to use CLOSURE_TYPE as all uses
+are obscured by macros.
+
+> +#define MAX_CLOSURE_TYPE		3U
+> +	unsigned		type;
+> +
+> +#ifdef CONFIG_DEBUG_CLOSURES
+> +#define CLOSURE_MAGIC_DEAD	0xc054dead
+> +#define CLOSURE_MAGIC_ALIVE	0xc054a11e
+> +
+> +	unsigned		magic;
+> +	struct list_head	all;
+> +	unsigned long		ip;
+> +	unsigned long		waiting_on;
+> +#endif
+> +};
+> +
+> +struct closure_with_waitlist {
+> +	struct closure	cl;
+> +	closure_list_t	wait;
+> +};
+> +
+> +struct closure_with_timer {
+> +	struct closure	cl;
+> +	struct timer_list timer;
+> +};
+> +
+> +struct closure_with_waitlist_and_timer {
+> +	struct closure	cl;
+> +	closure_list_t	wait;
+> +	struct timer_list timer;
+> +};
+> +
+> +extern unsigned invalid_closure_type(void);
+> +
+> +#define __CL_TYPE(cl, _t)						\
+> +	  __builtin_types_compatible_p(typeof(cl), struct _t)		\
+> +		? TYPE_ ## _t :						\
+
+Might as well use __CLOSURE_TYPE
+
+> +
+> +#define __closure_type(cl)						\
+> +(									\
+> +	__CL_TYPE(cl, closure)						\
+> +	__CL_TYPE(cl, closure_with_waitlist)				\
+> +	__CL_TYPE(cl, closure_with_timer)				\
+> +	__CL_TYPE(cl, closure_with_waitlist_and_timer)			\
+> +	invalid_closure_type()						\
+> +)
+
+outstandingly obscure. props.
+
+> diff --git a/lib/closure.c b/lib/closure.c
+
+[]
+> +#define CL_FIELD(type, field)					\
+> +	case TYPE_ ## type:					\
+> +	return &container_of(cl, struct type, cl)->field
+> +
+> +static closure_list_t *closure_waitlist(struct closure *cl)
+> +{
+> +	switch (cl->type) {
+> +		CL_FIELD(closure_with_waitlist, wait);
+> +		CL_FIELD(closure_with_waitlist_and_timer, wait);
+> +	}
+> +	return NULL;
+> +}
+> +
+> +static struct timer_list *closure_timer(struct closure *cl)
+> +{
+> +	switch (cl->type) {
+> +		CL_FIELD(closure_with_timer, timer);
+> +		CL_FIELD(closure_with_waitlist_and_timer, timer);
+> +	}
+> +	return NULL;
+> +}
+> +
+
+Another paragon of intelligibility.
+
+I think you should lose CL_FIELD and
+write normal switch/cases.
+
+[]
+
+> +static int debug_seq_show(struct seq_file *f, void *data)
+> +{
+> +	struct closure *cl;
+> +	spin_lock_irq(&closure_list_lock);
+> +
+> +	list_for_each_entry(cl, &closure_list, all) {
+> +		int r = atomic_read(&cl->remaining);
+> +
+> +		seq_printf(f, "%p: %pF -> %pf p %p r %i ",
+> +			   cl, (void *) cl->ip, cl->fn, cl->parent,
+> +			   r & CLOSURE_REMAINING_MASK);
+> +
+> +		if (test_bit(WORK_STRUCT_PENDING, work_data_bits(&cl->work)))
+> +			seq_printf(f, "Q");
+
+seq_putc or seq_puts
+
+> +
+> +		if (r & CLOSURE_RUNNING)
+> +			seq_printf(f, "R");
+> +
+> +		if (r & CLOSURE_BLOCKING)
+> +			seq_printf(f, "B");
+> +
+> +		if (r & CLOSURE_STACK)
+> +			seq_printf(f, "S");
+> +
+> +		if (r & CLOSURE_SLEEPING)
+> +			seq_printf(f, "Sl");
+> +
+> +		if (r & CLOSURE_TIMER)
+> +			seq_printf(f, "T");
+> +
+> +		if (r & CLOSURE_WAITING)
+> +			seq_printf(f, " W %pF\n",
+> +				   (void *) cl->waiting_on);
+> +
+> +		seq_printf(f, "\n");
+
+or maybe just bundle all this in a single seq_printf
 
 
 
