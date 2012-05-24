@@ -1,91 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934117Ab2EXSal (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 May 2012 14:30:41 -0400
-Received: from rcsinet15.oracle.com ([148.87.113.117]:20885 "EHLO
-	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933981Ab2EXSak (ORCPT
+	id S934089Ab2EXS1F (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 May 2012 14:27:05 -0400
+Received: from g1t0029.austin.hp.com ([15.216.28.36]:3151 "EHLO
+	g1t0029.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933458Ab2EXS1B (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 May 2012 14:30:40 -0400
-Date: Thu, 24 May 2012 14:24:03 -0400
-From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-To: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-Cc: "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [Xen-devel] [PATCH 3/4] xen/hvc: Check
- HVM_PARAM_CONSOLE_[EVTCHN|PFN] for correctness.
-Message-ID: <20120524182403.GL24934@phenom.dumpdata.com>
-References: <1337795222-29946-1-git-send-email-konrad.wilk@oracle.com>
- <1337795222-29946-4-git-send-email-konrad.wilk@oracle.com>
- <alpine.DEB.2.00.1205241148080.26786@kaball-desktop>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.DEB.2.00.1205241148080.26786@kaball-desktop>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: acsinet22.oracle.com [141.146.126.238]
+	Thu, 24 May 2012 14:27:01 -0400
+Message-ID: <1337884020.2718.89.camel@lorien2>
+Subject: Re: [PATCH v4 6/6] ACPI: Set hotplug _OST support bit to _OSC
+From: Shuah Khan <shuahkhan@gmail.com>
+Reply-To: shuahkhan@gmail.com
+To: Toshi Kani <toshi.kani@hp.com>
+Cc: shuahkhan@gmail.com, lenb@kernel.org, linux-acpi@vger.kernel.org,
+        bhelgaas@google.com, liuj97@gmail.com, andi@firstfloor.org,
+        linux-kernel@vger.kernel.org
+Date: Thu, 24 May 2012 12:27:00 -0600
+In-Reply-To: <1337826324-16802-7-git-send-email-toshi.kani@hp.com>
+References: <1337826324-16802-1-git-send-email-toshi.kani@hp.com>
+	 <1337826324-16802-7-git-send-email-toshi.kani@hp.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3-0ubuntu6 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> I think that we should add a comment stating that even though mfn = 0
-> and evtchn = 0 are theoretically correct values, in practice they never
-> are and they mean that a legacy toolstack hasn't initialized the pv
-> console correctly.
+On Wed, 2012-05-23 at 20:25 -0600, Toshi Kani wrote:
+> When ACPI_HOTPLUG_OST is defined, set hotplug _OST support bit
+> OSC_SB_HOTPLUG_OST_SUPPORT to indicate that the OS supports hotplug
+> _OST by calling the platform-wide ACPI Operating System Capabilities
+> (_OSC).
+> 
+> Signed-off-by: Toshi Kani <toshi.kani@hp.com>
+> ---
+>  drivers/acpi/bus.c |    4 ++++
+>  1 files changed, 4 insertions(+), 0 deletions(-)
+> 
+> diff --git a/drivers/acpi/bus.c b/drivers/acpi/bus.c
+> index 3188da3..3d4fc7a 100644
+> --- a/drivers/acpi/bus.c
+> +++ b/drivers/acpi/bus.c
+> @@ -548,6 +548,10 @@ static void acpi_bus_osc_support(void)
+>  	capbuf[OSC_SUPPORT_TYPE] |= OSC_SB_PPC_OST_SUPPORT;
+>  #endif
+>  
+> +#ifdef ACPI_HOTPLUG_OST
+> +	capbuf[OSC_SUPPORT_TYPE] |= OSC_SB_HOTPLUG_OST_SUPPORT;
+> +#endif
 
-Like this?
+Why isn't firmware response to _OSC checked to make sure firmware also
+supports _OST? My general comments about compile time switch that is
+enabled only a few cases _OST Ejection/Insertion is intended to be used
+are applicable here.
 
->From 5842f5768599094758931b74190cdf93641a8e35 Mon Sep 17 00:00:00 2001
-From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Date: Wed, 23 May 2012 12:56:59 -0400
-Subject: [PATCH] xen/hvc: Check HVM_PARAM_CONSOLE_[EVTCHN|PFN] for
- correctness.
+-- Shuah
 
-We need to make sure that those parameters are setup to be correct.
-As such the value of 0 is deemed invalid and we find that we
-bail out. The hypervisor sets by default all of them to be zero
-and when the hypercall is done does a simple:
 
- a.value = d->arch.hvm_domain.params[a.index];
 
-Which means that if the Xen toolstack forgot to setup the proper
-HVM_PARAM_CONSOLE_EVTCHN (or the PFN one), we would get the
-default value of 0 and use that.
 
-CC: stable@kernel.org
-Fixes-Oracle-Bug: 14091238
-Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
----
- drivers/tty/hvc/hvc_xen.c |   11 ++++++++---
- 1 files changed, 8 insertions(+), 3 deletions(-)
+> +
+>  	if (!ghes_disable)
+>  		capbuf[OSC_SUPPORT_TYPE] |= OSC_SB_APEI_SUPPORT;
+>  	if (ACPI_FAILURE(acpi_get_handle(NULL, "\\_SB", &handle)))
 
-diff --git a/drivers/tty/hvc/hvc_xen.c b/drivers/tty/hvc/hvc_xen.c
-index 3277f0e..944eaeb 100644
---- a/drivers/tty/hvc/hvc_xen.c
-+++ b/drivers/tty/hvc/hvc_xen.c
-@@ -214,14 +214,19 @@ static int xen_hvm_console_init(void)
- 	/* already configured */
- 	if (info->intf != NULL)
- 		return 0;
--
-+	/*
-+	 * If the toolstack (or the hypervisor) hasn't set these values, the
-+	 * default value is 0. Even though mfn = 0 and evtchn = 0 are
-+	 * theoretically correct values, in practice they never are and they
-+	 * mean that a legacy toolstack hasn't initialized the pv console correctly.
-+	 */
- 	r = hvm_get_parameter(HVM_PARAM_CONSOLE_EVTCHN, &v);
--	if (r < 0)
-+	if (r < 0 || v == 0)
- 		goto err;
- 	info->evtchn = v;
- 	v = 0;
- 	r = hvm_get_parameter(HVM_PARAM_CONSOLE_PFN, &v);
--	if (r < 0)
-+	if (r < 0 || v == 0)
- 		goto err;
- 	mfn = v;
- 	info->intf = ioremap(mfn << PAGE_SHIFT, PAGE_SIZE);
--- 
-1.7.7.5
 
