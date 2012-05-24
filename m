@@ -1,55 +1,132 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934230Ab2EXUQG (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 May 2012 16:16:06 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:23586 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756132Ab2EXUQE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 May 2012 16:16:04 -0400
-Message-ID: <4FBE96E4.5070203@redhat.com>
-Date: Thu, 24 May 2012 22:15:32 +0200
-From: Hans de Goede <hdegoede@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120425 Thunderbird/12.0
+	id S1759106Ab2EXURM (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 May 2012 16:17:12 -0400
+Received: from smarthost1.greenhost.nl ([195.190.28.78]:51607 "EHLO
+	smarthost1.greenhost.nl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756132Ab2EXURJ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 24 May 2012 16:17:09 -0400
+Message-ID: <b70813c0eac769820b35e8879180b13f.squirrel@webmail.greenhost.nl>
+In-Reply-To: <CABqD9hZCx88UzAeayn0cz=nTcT=fMiUZohTayHWq+Dcnnx-hQQ@mail.gmail.com>
+References: <20120522173942.GJ11775@ZenIV.linux.org.uk>
+    <1337875681-20717-1-git-send-email-wad@chromium.org>
+    <1337875681-20717-2-git-send-email-wad@chromium.org>
+    <acabbed13c4f02e653879844a9cbddef.squirrel@webmail.greenhost.nl>
+    <CABqD9hZCx88UzAeayn0cz=nTcT=fMiUZohTayHWq+Dcnnx-hQQ@mail.gmail.com>
+Date: Thu, 24 May 2012 22:17:05 +0200
+Subject: Re: [RFC PATCH 1/3] seccomp: Don't allow tracers to abuse RET_TRACE
+From: "Indan Zupancic" <indan@nul.nu>
+To: "Will Drewry" <wad@chromium.org>
+Cc: linux-kernel@vger.kernel.org, mcgrathr@google.com, hpa@zytor.com,
+        netdev@parisplace.org, linux-security-module@vger.kernel.org,
+        kernel-hardening@lists.openwall.com, mingo@redhat.com, oleg@redhat.com,
+        peterz@infradead.org, rdunlap@xenotime.net, tglx@linutronix.de,
+        luto@mit.edu, serge.hallyn@canonical.com, pmoore@redhat.com,
+        akpm@linux-foundation.org, corbet@lwn.net, markus@chromium.org,
+        coreyb@linux.vnet.ibm.com, keescook@chromium.org,
+        viro@zeniv.linux.org.uk, jmorris@namei.org
+User-Agent: SquirrelMail/1.4.22
 MIME-Version: 1.0
-To: Randy Dunlap <rdunlap@xenotime.net>
-CC: Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
-        LKML <linux-kernel@vger.kernel.org>, lm-sensors@lm-sensors.org
-Subject: Re: linux-next: Tree for May 24 (hwmon/sch56xx)
-References: <20120524164915.fc6b1d90b75c50baab856280@canb.auug.org.au> <4FBE7915.2000704@xenotime.net>
-In-Reply-To: <4FBE7915.2000704@xenotime.net>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain;charset=UTF-8
+Content-Transfer-Encoding: 8bit
+X-Priority: 3 (Normal)
+Importance: Normal
+X-Spam-Score: 0.0
+X-Scan-Signature: ee739817b6cd2655ac6326818c89325b
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On Thu, May 24, 2012 20:24, Will Drewry wrote:
+> On Thu, May 24, 2012 at 12:54 PM, Indan Zupancic <indan@nul.nu> wrote:
+>> This patch doesn't make any sense whatsoever. You can't know why a system
+>> call was blocked by a seccomp filter, assuming it's always because of the
+>> system call number is wrong.
+>
+> All this does is assert that the tracer can't change the syscall
+> number without it skipping the call.
 
-On 05/24/2012 08:08 PM, Randy Dunlap wrote:
-> On 05/23/12 23:49, Stephen Rothwell wrote:
->
->> Hi all,
->>
->> Changes since 20120523:
->
->
->
->
-> when CONFIG_WATCHDOG is not enabled:
->
-> drivers/built-in.o: In function `sch56xx_watchdog_register':
-> (.text+0x50711c): undefined reference to `watchdog_register_device'
-> drivers/built-in.o: In function `sch56xx_watchdog_unregister':
-> (.text+0x507171): undefined reference to `watchdog_unregister_device'
->
-> or when SCH56XX_COMMON=m:
->
-> ERROR: "watchdog_unregister_device" [drivers/hwmon/sch56xx-common.ko] undefined!
-> ERROR: "watchdog_register_device" [drivers/hwmon/sch56xx-common.ko] undefined!
+Why wouldn't it be allowed to change the system call number?
 
-Thanks for catching this, I'll send a patch to linux-watchdog + linux-next
-fixing this.
+And try answering that question in a way that doesn't apply to syscall
+argument values too.
 
-Regards,
+> If seccomp returned
+> SECCOMP_RET_TRACE because the argument to open was O_RDWR, then
+> everything is fine.
 
-Hans
+No it's not fine, because it's inconsistent and arbitrary.
+
+>
+>> Also, you don't check if an allowed system call is changed into a denied
+>> one, so this doesn't protect against ptracers bypassing seccomp filters.
+>
+> This enforces that the system call that is going to be executed is the
+> one that triggered SECCOMP_RET_TRACE.  That means seccomp is
+> delegating the go/no-go decision to the tracer.  I don't understand
+> your assertion here.  This code doesn't affect the PTRACE_SYSCALL
+> case.
+
+It still gives normal ptracers the ability to bypass seccomp by changing
+allowed system calls into system calls that would have been denied. So
+considering ptrace can still be used to execute arbitrary system calls,
+why add this special case restriction to SECCOMP_RET_TRACE?
+
+>
+>> And one of the main points of PTRACE_EVENT_SECCOMP events was that it's
+>> useful for cases that can't be handled or decided by the seccomp filter.
+>> Then taking away the ability to change the syscall number makes it a lot
+>> less useful.
+>
+> Do you have a valid case where you want to remap one system call to
+> another without the ability to also handle the syscall exit path and
+> do any fixups?  I've mostly just seen skip, allow, update arguments -
+> not swapping the entire syscall.  That said, it's possible.  you could
+> do all sorts of weird things with ptrace if you want :)
+
+One case is for system call injection where an arbitrary syscall is
+hijacked for the jailer's purposes. But that needs the exit path too.
+Another one is replacing fork() with clone(), but that's only necessary
+on 2.4. Another one is to let the process call exit() to get rid of it.
+
+But it's easy to get the exit notification by resuming with PTRACE_SYSCALL
+after getting a PTRACE_EVENT_SECCOMP event, so I don't see how it matters
+if we're interested in the exit path or not.
+
+In the jailer the first system call after an execve is replaced with a
+call to mmap2() to get a read-only shared mapping which is used to avoid
+file path modifications and similar races. And when using seccomp all
+events are PTRACE_EVENT_SECCOMP ones, and those are exactly the ones
+where we need the shared read-only mapping. We could work around your
+ad hoc restriction, but the main thing is if seccomp filters is just
+about syscall numbers anyway, then why use BPF instead of a bitmask?
+
+The whole point of PTRACE_EVENT_SECCOMP is to delegate to ptrace, it
+means "we can't decide in the filter, ask the ptracer". This implies
+that the ptracer is trusted, so doing any checks afterwards is a bit
+pointless. But if you want to do it anyway, at least do it properly
+and re-run the filter after ptrace. To avoid loops you need to allow
+the syscall if you get another PTRACE_EVENT_SECCOMP.
+
+>
+>> Either do the seccomp test before or after ptrace, or both, but please
+>> don't introduce ad hoc checks like this.
+>
+> I don't feel strongly about this RFC, but I don't believe that
+> expectations are being changed dramatically.
+
+As seccomp can generate ptrace events, the only thing that makes sense is
+to either do seccomp first and ignore ptrace changes, or rerun filters after
+any ptrace changes. But as I said in my other mail, if a process can call
+ptrace(), it will pretty much avoid all secomp filters anyway, seccomp
+filters which allow ptrace() are pretty much guaranteed to be insecure.
+We're talking about a non-seccomped process ptracing a seccomped process,
+both with the same UID. I don't think it matters in practice what you do
+in this case, from a security point of view.
+
+Greetings,
+
+Indan
+
+
