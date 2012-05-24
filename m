@@ -1,25 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754792Ab2EXJSO (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 May 2012 05:18:14 -0400
-Received: from mail-we0-f174.google.com ([74.125.82.174]:63027 "EHLO
-	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750924Ab2EXJSK convert rfc822-to-8bit (ORCPT
+	id S1754860Ab2EXJS0 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 May 2012 05:18:26 -0400
+Received: from mail-wi0-f178.google.com ([209.85.212.178]:35231 "EHLO
+	mail-wi0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754312Ab2EXJSW convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 May 2012 05:18:10 -0400
+	Thu, 24 May 2012 05:18:22 -0400
 MIME-Version: 1.0
-In-Reply-To: <1337152826-9850-2-git-send-email-sonic.zhang@analog.com>
-References: <1337152826-9850-1-git-send-email-sonic.zhang@analog.com>
-	<1337152826-9850-2-git-send-email-sonic.zhang@analog.com>
-Date: Thu, 24 May 2012 17:18:09 +0800
-Message-ID: <CAJxxZ0OsOG+MpZpKFboCffd=U=Wtbzeqb=anPmL7LNF12UX8eQ@mail.gmail.com>
-Subject: Re: [PATCH 2/8] i2c: i2c-bfin-twi: Stop receiving operation
- immediately in last rx interrupt.
+In-Reply-To: <1337161280-28953-3-git-send-email-oskar@scara.com>
+References: <1337161280-28953-1-git-send-email-oskar@scara.com>
+	<1337161280-28953-3-git-send-email-oskar@scara.com>
+Date: Thu, 24 May 2012 17:18:21 +0800
+Message-ID: <CAJxxZ0PCr6R+AEJQtc2Oiagi_gL1SvUfSRRPQqSaXAoYhtsi3Q@mail.gmail.com>
+Subject: Re: [PATCH 2/5] i2c: Change mail address of Oskar Schirmer
 From: Sonic Zhang <sonic.adi@gmail.com>
-To: sonic.zhang@analog.com
-Cc: Ben Dooks <ben-linux@fluff.org>, Wolfram Sang <w.sang@pengutronix.de>,
-        linux-i2c@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
-        uclinux-dist-devel@blackfin.uclinux.org
+To: Oskar Schirmer <oskar@scara.com>
+Cc: linux-kernel@vger.kernel.org, trivial@kernel.org, hannes@cmpxchg.org,
+        shess@hessware.de, Jean Delvare <khali@linux-fr.org>
 Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
@@ -28,93 +26,45 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 PING
 
-On Wed, May 16, 2012 at 3:20 PM,  <sonic.zhang@analog.com> wrote:
-> From: Sonic Zhang <sonic.zhang@analog.com>
+On Wed, May 16, 2012 at 5:41 PM, Oskar Schirmer <oskar@scara.com> wrote:
+> That old mail address doesnt exist any more.
+> This changes all occurences to my new address.
 >
-> Also wake up waiting process when transfer completes.
->
-> Signed-off-by: Sonic Zhang <sonic.zhang@analog.com>
->
-> git-svn-id: svn://localhost/svn/linux-kernel/trunk@9105 526b6c2d-f592-4532-a319-5dd88ccb003d
+> Signed-off-by: Oskar Schirmer <oskar@scara.com>
+> Cc: Jean Delvare <khali@linux-fr.org>
 > ---
->  drivers/i2c/busses/i2c-bfin-twi.c |   43 ++++++++++++++++++++----------------
->  1 files changed, 24 insertions(+), 19 deletions(-)
+>  drivers/i2c/busses/i2c-s6000.c |    2 +-
+>  drivers/i2c/busses/i2c-s6000.h |    2 +-
+>  2 files changed, 2 insertions(+), 2 deletions(-)
 >
-> diff --git a/drivers/i2c/busses/i2c-bfin-twi.c b/drivers/i2c/busses/i2c-bfin-twi.c
-> index e6dd3c9..376e331 100644
-> --- a/drivers/i2c/busses/i2c-bfin-twi.c
-> +++ b/drivers/i2c/busses/i2c-bfin-twi.c
-> @@ -130,21 +130,25 @@ static void bfin_twi_handle_interrupt(struct bfin_twi_iface *iface,
->                        }
->                        iface->transPtr++;
->                        iface->readNum--;
-> -               } else if (iface->manual_stop) {
-> -                       /* Avoid possible bus stall -
-> -                        * Flush FIFO before issuing the STOP condition
-> -                        */
-> -                       read_RCV_DATA16(iface);
-> -                       write_MASTER_CTL(iface,
-> -                               read_MASTER_CTL(iface) | STOP);
-> -               } else if (iface->cur_mode == TWI_I2C_MODE_REPEAT &&
-> -                          iface->cur_msg + 1 < iface->msg_num) {
-> -                       if (iface->pmsg[iface->cur_msg + 1].flags & I2C_M_RD)
-> -                               write_MASTER_CTL(iface,
-> -                                       read_MASTER_CTL(iface) | RSTART | MDIR);
-> -                       else
-> +               }
-> +
-> +               if (iface->readNum == 0) {
-> +                       if (iface->manual_stop) {
-> +                               /* Avoid possible bus stall -
-> +                                * Flush FIFO before issuing the STOP condition
-> +                                */
-> +                               read_RCV_DATA16(iface);
->                                write_MASTER_CTL(iface,
-> -                                       (read_MASTER_CTL(iface) | RSTART) & ~MDIR);
-> +                                       read_MASTER_CTL(iface) | STOP);
-> +                       } else if (iface->cur_mode == TWI_I2C_MODE_REPEAT &&
-> +                                       iface->cur_msg + 1 < iface->msg_num) {
-> +                               if (iface->pmsg[iface->cur_msg + 1].flags & I2C_M_RD)
-> +                                       write_MASTER_CTL(iface,
-> +                                               read_MASTER_CTL(iface) | RSTART | MDIR);
-> +                               else
-> +                                       write_MASTER_CTL(iface,
-> +                                               (read_MASTER_CTL(iface) | RSTART) & ~MDIR);
-> +                       }
->                }
->        }
->        if (twi_int_status & MERR) {
-> @@ -245,12 +249,13 @@ static void bfin_twi_handle_interrupt(struct bfin_twi_iface *iface,
->                                }
->                        }
+> diff --git a/drivers/i2c/busses/i2c-s6000.c b/drivers/i2c/busses/i2c-s6000.c
+> index c64ba73..b76a29d 100644
+> --- a/drivers/i2c/busses/i2c-s6000.c
+> +++ b/drivers/i2c/busses/i2c-s6000.c
+> @@ -3,7 +3,7 @@
+>  *
+>  * Description: Driver for S6000 Family I2C Interface
+>  * Copyright (c) 2008 emlix GmbH
+> - * Author:     Oskar Schirmer <os@emlix.com>
+> + * Author:     Oskar Schirmer <oskar@scara.com>
+>  *
+>  * Partially based on i2c-bfin-twi.c driver by <sonic.zhang@analog.com>
+>  * Copyright (c) 2005-2007 Analog Devices, Inc.
+> diff --git a/drivers/i2c/busses/i2c-s6000.h b/drivers/i2c/busses/i2c-s6000.h
+> index ff23b81..4936f9f 100644
+> --- a/drivers/i2c/busses/i2c-s6000.h
+> +++ b/drivers/i2c/busses/i2c-s6000.h
+> @@ -6,7 +6,7 @@
+>  * for more details.
+>  *
+>  * Copyright (C) 2008 Emlix GmbH <info@emlix.com>
+> - * Author:     Oskar Schirmer <os@emlix.com>
+> + * Author:     Oskar Schirmer <oskar@scara.com>
+>  */
 >
-> -                       if (iface->pmsg[iface->cur_msg].len <= 255)
-> -                                       write_MASTER_CTL(iface,
-> +                       if (iface->pmsg[iface->cur_msg].len <= 255) {
-> +                               write_MASTER_CTL(iface,
->                                        (read_MASTER_CTL(iface) &
->                                        (~(0xff << 6))) |
-> -                               (iface->pmsg[iface->cur_msg].len << 6));
-> -                       else {
-> +                                       (iface->pmsg[iface->cur_msg].len << 6));
-> +                               iface->manual_stop = 0;
-> +                       } else {
->                                write_MASTER_CTL(iface,
->                                        (read_MASTER_CTL(iface) |
->                                        (0xff << 6)));
-> @@ -264,8 +269,8 @@ static void bfin_twi_handle_interrupt(struct bfin_twi_iface *iface,
->                        write_INT_MASK(iface, 0);
->                        write_MASTER_CTL(iface, 0);
->                }
-> +               complete(&iface->complete);
->        }
-> -       complete(&iface->complete);
->  }
->
->  /* Interrupt handler */
+>  #ifndef __DRIVERS_I2C_BUSSES_I2C_S6000_H
 > --
-> 1.7.0.4
->
+> 1.7.5.4
 >
 > --
 > To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
