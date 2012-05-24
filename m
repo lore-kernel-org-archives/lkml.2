@@ -1,80 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965342Ab2EXVwb (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 May 2012 17:52:31 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:59424 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758090Ab2EXVw3 (ORCPT
+	id S965454Ab2EXVw7 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 May 2012 17:52:59 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:53033 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S965209Ab2EXVw5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 May 2012 17:52:29 -0400
-Date: Thu, 24 May 2012 14:52:26 -0700 (PDT)
-From: David Rientjes <rientjes@google.com>
-X-X-Sender: rientjes@chino.kir.corp.google.com
-To: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
-cc: linux-mm@kvack.org, mgorman@suse.de,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>, dhillf@gmail.com,
-        aarcange@redhat.com, mhocko@suse.cz,
-        Andrew Morton <akpm@linux-foundation.org>, hannes@cmpxchg.org,
-        linux-kernel@vger.kernel.org, cgroups@vger.kernel.org
-Subject: Re: [PATCH -V6 07/14] memcg: Add HugeTLB extension
-In-Reply-To: <1334573091-18602-8-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
-Message-ID: <alpine.DEB.2.00.1205241436180.24113@chino.kir.corp.google.com>
-References: <1334573091-18602-1-git-send-email-aneesh.kumar@linux.vnet.ibm.com> <1334573091-18602-8-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+	Thu, 24 May 2012 17:52:57 -0400
+Date: Fri, 25 May 2012 06:52:49 +0900
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: Jeff Chua <jeff.chua.linux@gmail.com>
+Cc: Alan Stern <stern@rowland.harvard.edu>, linux-usb@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Kay Sievers <kay@vrfy.org>
+Subject: Re: [RFC PATCH] USB: remove CONFIG_USB_DEVICEFS
+Message-ID: <20120524215249.GA17936@kroah.com>
+References: <20120426001529.GA14006@kroah.com>
+ <Pine.LNX.4.44L0.1204261103120.1530-100000@iolanthe.rowland.org>
+ <20120426151242.GA14774@kroah.com>
+ <CAAJw_Zug=xFjzaguqfq+-HYBjmwDPJ+5Ntj=otMY4MJk2UWxDQ@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <CAAJw_Zug=xFjzaguqfq+-HYBjmwDPJ+5Ntj=otMY4MJk2UWxDQ@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 16 Apr 2012, Aneesh Kumar K.V wrote:
-
-> This patch implements a memcg extension that allows us to control HugeTLB
-> allocations via memory controller. The extension allows to limit the
-> HugeTLB usage per control group and enforces the controller limit during
-> page fault. Since HugeTLB doesn't support page reclaim, enforcing the limit
-> at page fault time implies that, the application will get SIGBUS signal if it
-> tries to access HugeTLB pages beyond its limit. This requires the application
-> to know beforehand how much HugeTLB pages it would require for its use.
+On Thu, May 24, 2012 at 11:55:16PM +0800, Jeff Chua wrote:
+> On Thu, Apr 26, 2012 at 11:12 PM, Greg Kroah-Hartman
+> <gregkh@linuxfoundation.org> wrote:
+> > On Thu, Apr 26, 2012 at 11:06:45AM -0400, Alan Stern wrote:
+> >> On Wed, 25 Apr 2012, Greg Kroah-Hartman wrote:
+> >>
+> >> > This option has been deprecated for many years now, and no userspace
+> >> > tools use it anymore, so it should be safe to finally remove it.
+> >> >
+> >> > Reported-by: Kay Sievers <kay@vrfy.org>
+> >> > Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+> >> >
+> >> > Anyone object to me queuing this up for the 3.5 kernel release?
+> >>
+> >> I'm not sure about this.  There are a few systems still floating around
+> >> that don't use udev; on those systems /proc/bus/usb is the only way for
+> >> user programs to control USB devices.  Admittedly, I have no idea
+> >> whether any such systems will be using 3.5 or later kernels...
+> >
+> > They don't have to use udev, they can use devtmpfs (which is what the
+> > majority of embedded systems use today), or they can just use static
+> > device nodes to get access to these devices, the char node is still
+> > present, we aren't getting rid of them at all.
 > 
-> The charge/uncharge calls will be added to HugeTLB code in later patch.
-> Support for memcg removal will be added in later patches.
-> 
+> Looks like vmware is breaking. Can't find any usb devices. I'm not using udev.
 
-Again, I disagree with this approach because it's adding the functionality 
-to memcg when it's unnecessary; it would be a complete legitimate usecase 
-to want to limit the number of globally available hugepages to a set of 
-tasks without incurring the per-page tracking from memcg.
+vmware doesn't use usbfs, otherwise how would it be working on all of
+the systems out there that haven't mounted usbfs for years?
 
-This can be implemented as a seperate cgroup and as we move to a single 
-hierarchy, you lose no functionality if you mount both cgroups from what 
-is done here.
+What exactly broke?  What version of vmware are you using, and is the
+problem in the guest or host?
 
-It would be much cleaner in terms of
+We delayed other usbfs changes for years due to vmware "issues", it
+wouldn't be the first time we've had to handle this :(
 
- - build: not requiring ifdefs and dependencies on CONFIG_HUGETLB_PAGE, 
-   which is a prerequisite for this functionality and is not for 
-   CONFIG_CGROUP_MEM_RES_CTLR,
+thanks,
 
- - code: seperating hugetlb bits out from memcg bits to avoid growing 
-   mm/memcontrol.c beyond its current 5650 lines, and
-
- - performance: not incurring any overhead of enabling memcg for per-
-   page tracking that is unnecessary if users only want to limit hugetlb 
-   pages.
-
-Kmem accounting and swap accounting is really a seperate topic and makes 
-sense to be incorporated directly into memcg because their usage is a 
-single number, the same is not true for hugetlb pages where charging one 
-1GB page is not the same as charging 512 2M pages.  And we have no 
-usecases for wanting to track kmem or swap only without user page 
-tracking, what would be the point?
-
-There's a reason we don't enable CONFIG_CGROUP_MEM_RES_CTLR in the 
-defconfig, we don't want the extra 1% metadata overhead of enabling it and 
-the potential performance regression from doing per-page tracking if we 
-only want to limit a global resource (hugetlb pages) to a set of tasks.
-
-So please consider seperating this functionality out into its own cgroup, 
-there's no reason not to do it and it would benefit hugetlb users who 
-don't want to incur the disadvantages of enabling memcg entirely.
+greg k-h
