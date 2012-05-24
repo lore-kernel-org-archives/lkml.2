@@ -1,61 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752792Ab2EXHD4 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 May 2012 03:03:56 -0400
-Received: from mail-qa0-f46.google.com ([209.85.216.46]:46987 "EHLO
-	mail-qa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750840Ab2EXHDx (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 May 2012 03:03:53 -0400
+	id S1752828Ab2EXHNi (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 May 2012 03:13:38 -0400
+Received: from ch1ehsobe002.messaging.microsoft.com ([216.32.181.182]:17209
+	"EHLO ch1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751116Ab2EXHNf convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 24 May 2012 03:13:35 -0400
+X-SpamScore: -9
+X-BigFish: VS-9(zzc89bh1432N98dKzz1202hzzz2dh2a8h668h839hd25hf0ah)
+X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
+Date: Thu, 24 May 2012 15:33:16 +0800
+From: Shawn Guo <shawn.guo@freescale.com>
+To: Uwe =?iso-8859-1?Q?Kleine-K=F6nig?= 
+	<u.kleine-koenig@pengutronix.de>
+CC: Fabio Estevam <festevam@gmail.com>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        <marc@cpdesign.com.au>, Samuel Ortiz <sameo@linux.intel.com>,
+        Sascha Hauer <kernel@pengutronix.de>,
+        Philippe =?iso-8859-1?Q?R=E9tornaz?= <philippe.retornaz@epfl.ch>,
+        linux-kernel <linux-kernel@vger.kernel.org>
+Subject: Re: mc13xxx-core: kernel hangs after 'regmap_read'
+Message-ID: <20120524073315.GE7843@S2100-06.ap.freescale.net>
+References: <201205221053.21792.marc@cpdesign.com.au>
+ <CAOMZO5BCcFOktp9mqDCpnrVhbK6pwO1R3ZdiKPfawb=KLjzzWw@mail.gmail.com>
+ <CAOMZO5DKsrXJoSSacwYFoHUw6pPWLWQnC3gS=6=3k6nvf6tggw@mail.gmail.com>
+ <20120523084945.GA4085@opensource.wolfsonmicro.com>
+ <20120523164203.GA7843@S2100-06.ap.freescale.net>
+ <CAOMZO5AOsdHqZ2Rth_m_BLEvHyLrJGEeXzmZZX=HyfeQZ7WTYw@mail.gmail.com>
+ <20120524004851.GB7843@S2100-06.ap.freescale.net>
+ <CAOMZO5A-LbgPFTbizK-NghboTs9rGWN2LnmQHEQEdo5Bhxtohg@mail.gmail.com>
+ <20120524063859.GD7843@S2100-06.ap.freescale.net>
+ <20120524064635.GP3710@pengutronix.de>
 MIME-Version: 1.0
-In-Reply-To: <CA+55aFwR=wZfpXPTn9e+ZbEB4srVOHVZFz_STg9jxngmhJxT=w@mail.gmail.com>
-References: <20100521104404.GA29530@gondor.apana.org.au>
-	<20100804140448.GA4042@gondor.apana.org.au>
-	<20101024061625.GA23715@gondor.apana.org.au>
-	<20110106000157.GA16089@gondor.apana.org.au>
-	<20110315145940.GA15373@gondor.apana.org.au>
-	<20110520235409.GA1722@gondor.apana.org.au>
-	<20110724011752.GA14373@gondor.apana.org.au>
-	<20111031040952.GA19659@gondor.apana.org.au>
-	<20120106041250.GA7759@gondor.apana.org.au>
-	<20120320032736.GA21367@gondor.apana.org.au>
-	<20120523013528.GA20781@gondor.apana.org.au>
-	<CA+55aFwR=wZfpXPTn9e+ZbEB4srVOHVZFz_STg9jxngmhJxT=w@mail.gmail.com>
-Date: Thu, 24 May 2012 09:03:52 +0200
-Message-ID: <CACRpkdZHYqj71F2KG0S+W_n8SL0cRQ-D2ON6OWtsGR6XRJnRWQ@mail.gmail.com>
-Subject: Re: Crypto Update for 3.5
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Herbert Xu <herbert@gondor.hengli.com.au>,
-        Andreas Westin <andreas.westin@stericsson.com>,
-        "David S. Miller" <davem@davemloft.net>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Linux Crypto Mailing List <linux-crypto@vger.kernel.org>,
-        Lee Jones <lee.jones@linaro.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset="iso-8859-1"
+Content-Disposition: inline
+In-Reply-To: <20120524064635.GP3710@pengutronix.de>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Transfer-Encoding: 8BIT
+X-OriginatorOrg: freescale.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, May 24, 2012 at 1:06 AM, Linus Torvalds
-<torvalds@linux-foundation.org> wrote:
+On Thu, May 24, 2012 at 08:46:35AM +0200, Uwe Kleine-König wrote:
+> Hello,
+> 
+> On Thu, May 24, 2012 at 02:39:00PM +0800, Shawn Guo wrote:
+> > On Thu, May 24, 2012 at 01:07:43AM -0300, Fabio Estevam wrote:
+> > > I am trying to understand why mx31pdk still fails.
+> > > 
+> > So different from imx51-babbage which uses MC13892, mx31pdk uses
+> > MC13783?  But both chips should have the same regmap, right?
+> They are similar. One difference is the protocol used. MC13783 only
+> speaks spi, MC13892 can do both, spi and i2c. Does someone has a working
+> MC13892 that uses spi?
+> 
+I do.  With the following patch applied on top of linux-next, it works
+on my imx51-babbage board.
 
-> There's a declaration for dbx500_add_platform_device_noirq() that does
-> not exist and is not used anywhere. Why? It was added in commit
-> 585d188f8072, and I see no rhyme or reason to it.
->
-> I only noticed because I happened to get a conflict due to the
-> location it was added. I removed it. WTF is going on?
+Regards,
+Shawn
 
-AFAICT this was retrofitted to get a booting kernel on
-the cryptodev base which was based on something old like
-v3.2 just some weeks back. (Now it's upgraded to mainline, great!)
+diff --git a/drivers/mfd/mc13xxx-spi.c b/drivers/mfd/mc13xxx-spi.c
+index 3fcdab3..5d1969f 100644
+--- a/drivers/mfd/mc13xxx-spi.c
++++ b/drivers/mfd/mc13xxx-spi.c
+@@ -49,6 +49,7 @@ static struct regmap_config mc13xxx_regmap_spi_config = {
+        .reg_bits = 7,
+        .pad_bits = 1,
+        .val_bits = 24,
++       .write_flag_mask = 0x80,
 
-Greg was pushing for us to allocate all devices dynamically at
-one point, but there was no real infrastructure for it and some local
-implementations to meet that requirement, that's why these
-functions pop up and down. We're working on it with device tree
-etc, mea culpa...
+        .max_register = MC13XXX_NUMREGS,
 
-Yours,
-Linus Walleij
+@@ -73,7 +74,6 @@ static int mc13xxx_spi_probe(struct spi_device *spi)
+
+        dev_set_drvdata(&spi->dev, mc13xxx);
+        spi->mode = SPI_MODE_0 | SPI_CS_HIGH;
+-       spi->bits_per_word = 32;
+
+        mc13xxx->dev = &spi->dev;
+        mutex_init(&mc13xxx->lock);
+
+
