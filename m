@@ -1,130 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965278Ab2EXVYV (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 May 2012 17:24:21 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:59872 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S964927Ab2EXVYS (ORCPT
+	id S965322Ab2EXVZR (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 May 2012 17:25:17 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:15113 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S965213Ab2EXVZQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 May 2012 17:24:18 -0400
-Date: Thu, 24 May 2012 14:23:23 -0700
-From: tip-bot for Jiang Liu <liuj97@gmail.com>
-Message-ID: <tip-f841d792e38f75f5e25b0b66f7b5d235d180a735@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
-        yinghai@kernel.org, cpw@sgi.com, nagananda.chumbalkar@hp.com,
-        chenkeping@huawei.com, suresh.b.siddha@intel.com, tglx@linutronix.de,
-        liuj97@gmail.com, jiang.liu@huawei.com, jacob.jun.pan@linux.intel.com
-Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        yinghai@kernel.org, nagananda.chumbalkar@hp.com, cpw@sgi.com,
-        chenkeping@huawei.com, suresh.b.siddha@intel.com, jiang.liu@huawei.com,
-        liuj97@gmail.com, tglx@linutronix.de, jacob.jun.pan@linux.intel.com
-In-Reply-To: <1333120296-13563-4-git-send-email-jiang.liu@huawei.com>
-References: <1333120296-13563-4-git-send-email-jiang.liu@huawei.com>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:x86/cleanups] x86:
-  Return IRQ_SET_MASK_OK_NOCOPY from irq affinity functions
-Git-Commit-ID: f841d792e38f75f5e25b0b66f7b5d235d180a735
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
-  to get blacklisted from these emails
-MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Thu, 24 May 2012 14:23:29 -0700 (PDT)
+	Thu, 24 May 2012 17:25:16 -0400
+X-Authority-Analysis: v=2.0 cv=cssZYiEi c=1 sm=0 a=ZycB6UtQUfgMyuk2+PxD7w==:17 a=XQbtiDEiEegA:10 a=irseqbIK9hsA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=meVymXHHAAAA:8 a=ayC55rCoAAAA:8 a=aPRl181HrfigEvSmQzUA:9 a=PUjeQqilurYA:10 a=ZycB6UtQUfgMyuk2+PxD7w==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 74.67.80.29
+Message-ID: <1337894714.13348.206.camel@gandalf.stny.rr.com>
+Subject: Re: tracing ring_buffer_resize oops.
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Dave Jones <davej@redhat.com>
+Cc: Linux Kernel <linux-kernel@vger.kernel.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Ingo Molnar <mingo@redhat.com>, linux-kbuild@vger.kernel.org
+Date: Thu, 24 May 2012 17:25:14 -0400
+In-Reply-To: <20120524211520.GA2800@redhat.com>
+References: <1337876398.13348.178.camel@gandalf.stny.rr.com>
+	 <20120524172223.GA10689@redhat.com>
+	 <1337880914.13348.189.camel@gandalf.stny.rr.com>
+	 <20120524184728.GA13201@redhat.com>
+	 <1337885672.13348.194.camel@gandalf.stny.rr.com>
+	 <20120524191147.GA13936@redhat.com>
+	 <1337887495.13348.195.camel@gandalf.stny.rr.com>
+	 <20120524200541.GA6552@redhat.com>
+	 <1337890690.13348.199.camel@gandalf.stny.rr.com>
+	 <1337891586.13348.202.camel@gandalf.stny.rr.com>
+	 <20120524211520.GA2800@redhat.com>
+Content-Type: text/plain; charset="ISO-8859-15"
+X-Mailer: Evolution 3.2.2-1 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  f841d792e38f75f5e25b0b66f7b5d235d180a735
-Gitweb:     http://git.kernel.org/tip/f841d792e38f75f5e25b0b66f7b5d235d180a735
-Author:     Jiang Liu <liuj97@gmail.com>
-AuthorDate: Fri, 30 Mar 2012 23:11:35 +0800
-Committer:  Thomas Gleixner <tglx@linutronix.de>
-CommitDate: Thu, 24 May 2012 23:16:33 +0200
+On Thu, 2012-05-24 at 17:15 -0400, Dave Jones wrote:
+> On Thu, May 24, 2012 at 04:33:06PM -0400, Steven Rostedt wrote:
+> 
+>  > I'm kicking off the ktest that initially caused this issue hoping that
+>  > it reproduces the bad tree again.
+>  > 
+>  > BTW, did you happen to upgrade gcc or anything? The ktest I run does
+>  > test against different gcc's and I don't think I had it do a make clean
+>  > between the switch. That may be the cause of this problem too :-?
+> 
+> No gcc updates. It's a Fedora 17 box, so there's been hardly any updates this
+> last week or so as things have been frozen leading into the release.
+> 
 
-x86: Return IRQ_SET_MASK_OK_NOCOPY from irq affinity functions
+I'm currently running a ktest that is similar to what I think I ran when
+the bug hit (I didn't save off the config file :-(  )
 
-The interrupt chip irq_set_affinity() functions copy the affinity mask
-to irq_data->affinity but return 0, i.e. IRQ_SET_MASK_OK.
-IRQ_SET_MASK_OK causes the core code to do another redundant copy.
+But it looks like it did do a mrproper between switching gcc's so I no
+longer think that was the issue.
 
-Return IRQ_SET_MASK_OK_NOCOPY to avoid this.
+Thanks,
 
-Signed-off-by: Jiang Liu <jiang.liu@huawei.com>
-Cc: Suresh Siddha <suresh.b.siddha@intel.com>
-Cc: Yinghai Lu <yinghai@kernel.org>
-Cc: Naga Chumbalkar <nagananda.chumbalkar@hp.com>
-Cc: Jacob Pan <jacob.jun.pan@linux.intel.com>
-Cc: Cliff Wickman <cpw@sgi.com>
-Cc: Jiang Liu <liuj97@gmail.com>
-Cc: Keping Chen <chenkeping@huawei.com>
-Link: http://lkml.kernel.org/r/1333120296-13563-4-git-send-email-jiang.liu@huawei.com
-Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
----
- arch/x86/kernel/apic/io_apic.c |    9 +++++----
- arch/x86/platform/uv/uv_irq.c  |    2 +-
- 2 files changed, 6 insertions(+), 5 deletions(-)
+-- Steve
 
-diff --git a/arch/x86/kernel/apic/io_apic.c b/arch/x86/kernel/apic/io_apic.c
-index ac96561..bce2001 100644
---- a/arch/x86/kernel/apic/io_apic.c
-+++ b/arch/x86/kernel/apic/io_apic.c
-@@ -2270,6 +2270,7 @@ ioapic_set_affinity(struct irq_data *data, const struct cpumask *mask,
- 		/* Only the high 8 bits are valid. */
- 		dest = SET_APIC_LOGICAL_ID(dest);
- 		__target_IO_APIC_irq(irq, dest, data->chip_data);
-+		ret = IRQ_SET_MASK_OK_NOCOPY;
- 	}
- 	raw_spin_unlock_irqrestore(&ioapic_lock, flags);
- 	return ret;
-@@ -3092,7 +3093,7 @@ msi_set_affinity(struct irq_data *data, const struct cpumask *mask, bool force)
- 
- 	__write_msi_msg(data->msi_desc, &msg);
- 
--	return 0;
-+	return IRQ_SET_MASK_OK_NOCOPY;
- }
- #endif /* CONFIG_SMP */
- 
-@@ -3214,7 +3215,7 @@ dmar_msi_set_affinity(struct irq_data *data, const struct cpumask *mask,
- 
- 	dmar_msi_write(irq, &msg);
- 
--	return 0;
-+	return IRQ_SET_MASK_OK_NOCOPY;
- }
- 
- #endif /* CONFIG_SMP */
-@@ -3267,7 +3268,7 @@ static int hpet_msi_set_affinity(struct irq_data *data,
- 
- 	hpet_msi_write(data->handler_data, &msg);
- 
--	return 0;
-+	return IRQ_SET_MASK_OK_NOCOPY;
- }
- 
- #endif /* CONFIG_SMP */
-@@ -3340,7 +3341,7 @@ ht_set_affinity(struct irq_data *data, const struct cpumask *mask, bool force)
- 		return -1;
- 
- 	target_ht_irq(data->irq, dest, cfg->vector);
--	return 0;
-+	return IRQ_SET_MASK_OK_NOCOPY;
- }
- 
- #endif
-diff --git a/arch/x86/platform/uv/uv_irq.c b/arch/x86/platform/uv/uv_irq.c
-index f25c276..a22c416 100644
---- a/arch/x86/platform/uv/uv_irq.c
-+++ b/arch/x86/platform/uv/uv_irq.c
-@@ -222,7 +222,7 @@ uv_set_irq_affinity(struct irq_data *data, const struct cpumask *mask,
- 	if (cfg->move_in_progress)
- 		send_cleanup_vector(cfg);
- 
--	return 0;
-+	return IRQ_SET_MASK_OK_NOCOPY;
- }
- 
- /*
+
