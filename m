@@ -1,119 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757571Ab2EXQPK (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 May 2012 12:15:10 -0400
-Received: from mga14.intel.com ([143.182.124.37]:32278 "EHLO mga14.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753139Ab2EXQPG convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 May 2012 12:15:06 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
-   d="scan'208";a="147369952"
-From: "Liu, Jinsong" <jinsong.liu@intel.com>
-To: Borislav Petkov <bp@amd64.org>
-CC: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        "Luck, Tony" <tony.luck@intel.com>,
-        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: RE: [PATCH 1/3] xen/mce: Add mcelog support for Xen platform (v2)
-Thread-Topic: [PATCH 1/3] xen/mce: Add mcelog support for Xen platform (v2)
-Thread-Index: AQHNOZg5bJSbBggbSyWVZxOOOr38ZpbZF9pg
-Date: Thu, 24 May 2012 16:15:02 +0000
-Message-ID: <DE8DF0795D48FD4CA783C40EC82923351ED712@SHSMSX101.ccr.corp.intel.com>
-References: <DE8DF0795D48FD4CA783C40EC82923351D6892@SHSMSX101.ccr.corp.intel.com>
- <20120522092354.GB18578@aftab.osrc.amd.com>
- <DE8DF0795D48FD4CA783C40EC82923351EC9B0@SHSMSX101.ccr.corp.intel.com>
- <20120524103023.GA27063@aftab.osrc.amd.com>
-In-Reply-To: <20120524103023.GA27063@aftab.osrc.amd.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.239.127.40]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	id S964781Ab2EXQQ7 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 May 2012 12:16:59 -0400
+Received: from smtp0.epfl.ch ([128.178.224.219]:55657 "HELO smtp0.epfl.ch"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
+	id S1755117Ab2EXQQ4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 24 May 2012 12:16:56 -0400
+From: Philippe =?ISO-8859-1?Q?R=E9tornaz?= <philippe.retornaz@epfl.ch>
+To: marc@cpdesign.com.au
+Cc: Fabio Estevam <festevam@gmail.com>, Shawn Guo <shawn.guo@freescale.com>,
+        Uwe =?ISO-8859-1?Q?Kleine=2DK=F6nig?= 
+	<u.kleine-koenig@pengutronix.de>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Samuel Ortiz <sameo@linux.intel.com>,
+        Sascha Hauer <kernel@pengutronix.de>,
+        linux-kernel <linux-kernel@vger.kernel.org>
+Subject: Re: mc13xxx-core: kernel hangs after 'regmap_read'
+Date: Thu, 24 May 2012 18:16:50 +0200
+Message-ID: <5844466.kI7qR0Os9A@laptop>
+Organization: EPFL - STI - LSRO1
+User-Agent: KMail/4.8.3 (Linux/3.3.5-2.fc16.x86_64; KDE/4.8.3; x86_64; ; )
+In-Reply-To: <201205242338.41420.marc@cpdesign.com.au>
+References: <201205221053.21792.marc@cpdesign.com.au> <CAOMZO5AYCSVT=s=rB3xPkz5SYEQQZ9q7f=rFbTbJkkVPk7Y7Vw@mail.gmail.com> <201205242338.41420.marc@cpdesign.com.au>
 MIME-Version: 1.0
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Borislav Petkov wrote:
-> On Thu, May 24, 2012 at 10:10:34AM +0000, Liu, Jinsong wrote:
->>>> Signed-off-by: Liu, Jinsong <jinsong.liu@intel.com>
->>>> Signed-off-by: Ke, Liping <liping.ke@intel.com>
->>>> Signed-off-by: Jiang, Yunhong <yunhong.jiang@intel.com>
->>>> Signed-off-by: Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>
->>> 
->>> If you're sending the patch, you need to be the last on the
->>> SOB-chain and the SOB-chain has to show the proper path the patch
->>> took. See <Documentation/SubmittingPatches>.
+> > Still reading 0x810 for all registers (0x810000 is the value of
+> > register 0 , btw).
 > 
->> Thanks! I will update it. But I'm not quite clear 'the SOB-chain has
->> to show the proper path the patch took', would you elaborate more?
+> This could mean that all the registers are being sent as 0 and the value is
+> shifted by 12 bits. (which is a bit weird). It's also a strange that Shawn's
+> board seems to work.
 > 
-> Section 12 in the SubmittingPatches readme has more or less an example
-> about it, here's what I mean:
-> 
-> Signed-off-by: Initial Patch Author <ipa@example.com>
-> Signed-off-by: Second Patch Author <spa@example.com>
-> Signed-off-by: Third Patch Author <tpa@example.com>
-> ...
-> Signed-off-by: Patch Submitter <ps@example.com>
-> 
-> Some of the lines above may or may not be present depending on your
-> case. If you're sending the patch, you're the last in chain so your
-> SOB should be last.
-> 
-> That's what I mean with "proper path" the patch took, i.e. the SOB
-> chain should show how exactly this patch was created and who handled
-> it on its way upstream.
-> 
+> Do you have any other devices on that SPI that you can verify are working
+> correctly? (you said it worked from the bootloader, I'm running out of
+> ideas... :| )
 
-Oh, I see your meaning now. Thanks for telling me kernel habit / culture about SOB. I will update accordingly.
 
-> 
->>>> -static struct miscdevice mce_chrdev_device = {
->>>> +struct miscdevice mce_chrdev_device = {
->>>>  	MISC_MCELOG_MINOR,
->>>>  	"mcelog",
->>>>  	&mce_chrdev_ops,
->>> 
->>> You're still reusing those - pls, define your own 'struct miscdevice
->>> mce_chrdev_device' in drivers/xen/ or somewhere convenient and
->>> your own mce_chrdev_ops. The only thing you should be touching in
->>> arch/x86/.../mcheck/ is the export of MISC_MCELOG_MINOR.
->>> 
->>> Thanks.
->> 
->> I'm *not* reuse native code.
->> I have defined 'struct miscdevice xen_mce_chrdev_device' in
->> drivers/xen, and I also implement xen_mce_chrdev_ops, they are all
->> xen-self-contained.  
->> 
->> The patch just redirect native mce_chrdev_device to
->> xen_mce_chrdev_device when running under xen environment. 
->> It didn't change any native code (except just cancel
->> mce_chrdev_device 'static'), and will not break native logic. 
-> 
-> Why are you doing that?
-> 
-> Why don't you do
-> 
-> 	misc_register(&xen_mce_chrdev_device);
-> 
-> in xen_early_init_mcelog() ?
-> 
-> This way there'll be no arch/x86/ dependencies at all.
+Well, I think I found out why it's not working on mc13783.
+With regmap, each transfert is done with 8bits words. The SPI hardware assert 
+the SS signal only during 8 bits "register" transfert then deassert the SS. 
+Then the SS is asserted and 24bits (3 bytes) are transfered (datas).
+This clearly violate the datasheet which say SS must be asserted for the 
+*whole* transfert: register + data.
 
-The reason is, if we do so, it would be covered by native misc_register(&mce_chrdev_device) later when native kernel init (xen init first and then start native kernel).
-Under such case, if linux running under xen platform, /dev/mcelog point to vcpu, that's pointless since it cannot get any mcelog from physical cpu (which owned by xen).
+This is why the old code used a 32bits word transfert, it ensured that the SPI 
+hardware was keeping SS asserted without interruptions.
 
-Yes, we can use another misc device like /dev/xen-mcelog, w/ another device minor like 226, but that's not good for userspace mcelog tools. As far as I know, Novell mcelog use unified /dev/mcelog interface for linux running under either bare metal or xen platform.
+Is there any way to tell regmap to use 32bits transfert with the following 
+configuration (or doing it in a single shot 4x8bits):
+To read register 0x42 we need to "write" to SPI:
 
-This patch just do redirection at xen code path, and that would not hurt anything to native kernel.
+0x42 << 24
 
-Thanks,
-Jinsong
+and the mc13783 will answer immediatly in the low-24 bits of the _same_ spi 
+exchange.
+
+to write register 0x42 we need to "write" to SPI:
+
+(0x80 | 0x42) << 24  | data
+
+I have an oscilloscope screenshot of a transfert if needed.
+
+Regards,
+
+Philippe
+
+
 
 
