@@ -1,76 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754077Ab2EXIdC (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 May 2012 04:33:02 -0400
-Received: from mailout1.samsung.com ([203.254.224.24]:62483 "EHLO
-	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753899Ab2EXIc6 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 May 2012 04:32:58 -0400
-X-AuditID: cbfee61b-b7faf6d000001f49-4c-4fbdf2381cc1
-From: KyongHo <pullip.cho@samsung.com>
-To: linux-kernel@vger.kernel.org, linux-mm@kvack.org
-Cc: "'Andrew Morton'" <akpm@linux-foundation.org>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        linux-samsung-soc@vger.kernel.org
-Subject: mm: fix faulty initialization in vmalloc_init()
-Date: Thu, 24 May 2012 17:32:56 +0900
-Organization: Samsung Electronics Co., Ltd.
-Message-id: <001c01cd3987$d1a71a50$74f54ef0$%cho@samsung.com>
-MIME-version: 1.0
-Content-type: text/plain; charset=us-ascii
-Content-transfer-encoding: 7bit
-X-Mailer: Microsoft Office Outlook 12.0
-Thread-index: Ac05h8wIIJvGn+NBSFuLveW10sPwAA==
-Content-language: ko
-x-cr-hashedpuzzle: BIhf GvR5 HoFQ NuYo N5x5 O9Gp PY7x QBZ4 R36y Szn+ Vpb+ mimz
- wDSK z624 2RCw
- 3x0A;5;YQBrAHAAbQBAAGwAaQBuAHUAeAAtAGYAbwB1AG4AZABhAHQAaQBvAG4ALgBvAHIAZwA7AGwAaQBuAHUAeAAtAGEAcgBtAC0AawBlAHIAbgBlAGwAQABsAGkAcwB0AHMALgBpAG4AZgByAGEAZABlAGEAZAAuAG8AcgBnADsAbABpAG4AdQB4AC0AawBlAHIAbgBlAGwAQAB2AGcAZQByAC4AawBlAHIAbgBlAGwALgBvAHIAZwA7AGwAaQBuAHUAeAAtAG0AbQBAAGsAdgBhAGMAawAuAG8AcgBnADsAbABpAG4AdQB4AC0AcwBhAG0AcwB1AG4AZwAtAHMAbwBjAEAAdgBnAGUAcgAuAGsAZQByAG4AZQBsAC4AbwByAGcA;Sosha1_v1;7;{ECD3ABAD-E4BA-484E-9B02-074F0AD5E0C0};cAB1AGwAbABpAHAALgBjAGgAbwBAAHMAYQBtAHMAdQBuAGcALgBjAG8AbQA=;Thu,
- 24 May 2012 08:32:47
- GMT;bQBtADoAIABmAGkAeAAgAGYAYQB1AGwAdAB5ACAAaQBuAGkAdABpAGEAbABpAHoAYQB0AGkAbwBuACAAaQBuACAAdgBtAGEAbABsAG8AYwBfAGkAbgBpAHQAKAApAA==
-x-cr-puzzleid: {ECD3ABAD-E4BA-484E-9B02-074F0AD5E0C0}
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrHLMWRmVeSWpSXmKPExsVy+t9jAV2LT3v9Dab91LS4vGsOm8WM8/uY
-	HJg8Pm+SC2CM4rJJSc3JLEst0rdL4MqYd2g5c8Eetoq26X4NjLNZuxg5OSQETCQWrtzBBmGL
-	SVy4tx7I5uIQEljEKHHmzUNGkISQwD9GiXfbAkBsNgE1iVtn/4A1iwA1b+98ygTSwCwwi1Hi
-	6dNZTCAJYQELiYdvfrKD2CwCqhJ/Tl4FG8QvoC2x9tp7FhCbV8BW4smBVmYIW1Dix+R7YHFm
-	AS2J9TuPM0HY8hKb17wFquEAuk5d4tFfXYi9ehLPT/1ggygRkdj34h0jyA0SAn9YJWbMPAj1
-	malE2933LBMYhWchWTELyYpZSFbMQjJrASPLKkbR1ILkguKk9FwjveLE3OLSvHS95PzcTYzg
-	UH8mvYNxVYPFIUYBDkYlHt5rb/f6C7EmlhVX5h5ilOBgVhLhzXkCFOJNSaysSi3Kjy8qzUkt
-	PsQozcGiJM77ZMkOfyGB9MSS1OzU1ILUIpgsEwenVAPjIrtsrpL0mCWigdtuTjhadbnj1TL+
-	ls17n1tZLa6d+Mvt/hbhD+fvS09ZOPHRx/dz2kr8Tb/c2MwdUL86/sccX70bN6Y+XZg36Xqo
-	xGzfR94rzwa9m30psyHqkuzqZT/frZ+msHuvCUt6RrrvCW97hq0HHOyf/EjnucvzZEIXy5Lq
-	M1Kffs24skiJpTgj0VCLuag4EQByzmQYcQIAAA==
-X-TM-AS-MML: No
+	id S1753923Ab2EXIdp (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 May 2012 04:33:45 -0400
+Received: from mga02.intel.com ([134.134.136.20]:27774 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751101Ab2EXIdk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 24 May 2012 04:33:40 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.67,351,1309762800"; 
+   d="scan'208";a="147815787"
+Message-ID: <4FBDF200.7060608@intel.com>
+Date: Thu, 24 May 2012 16:32:00 +0800
+From: Alex Shi <alex.shi@intel.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:9.0) Gecko/20111229 Thunderbird/9.0
+MIME-Version: 1.0
+To: Peter Zijlstra <a.p.zijlstra@chello.nl>
+CC: Jan Beulich <JBeulich@suse.com>, borislav.petkov@amd.com, arnd@arndb.de,
+        akinobu.mita@gmail.com, eric.dumazet@gmail.com, fweisbec@gmail.com,
+        rostedt@goodmis.org, hughd@google.com, jeremy@goop.org,
+        len.brown@intel.com, tony.luck@intel.com, yongjie.ren@intel.com,
+        kamezawa.hiroyu@jp.fujitsu.com, seto.hidetoshi@jp.fujitsu.com,
+        penberg@kernel.org, yinghai@kernel.org, tglx@linutronix.de,
+        akpm@linux-foundation.org, ak@linux.intel.com, luto@mit.edu,
+        avi@redhat.com, dhowells@redhat.com, mingo@redhat.com, riel@redhat.com,
+        cpw@sgi.com, steiner@sgi.com, linux-kernel@vger.kernel.org,
+        viro@zeniv.linux.org.uk, hpa@zytor.com
+Subject: Re: [PATCH v7 8/8] x86/tlb: just do tlb flush on one of siblings
+ of SMT
+References: <1337782555-8088-1-git-send-email-alex.shi@intel.com>  <1337782555-8088-9-git-send-email-alex.shi@intel.com>  <4FBD18D20200007800085951@nat28.tlf.novell.com> <1337792984.9783.37.camel@laptop>
+In-Reply-To: <1337792984.9783.37.camel@laptop>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-vmalloc_init() adds 'vmap_area's for early 'vm_struct's.
-This patch fixes vmalloc_init() to correctly initialize
-vmap_area for the given vm_struct.
+On 05/24/2012 01:09 AM, Peter Zijlstra wrote:
 
-Signed-off-by: KyongHo Cho <pullip.cho@samsung.com>
----
- mm/vmalloc.c |    3 ++-
- 1 files changed, 2 insertions(+), 1 deletions(-)
+> On Wed, 2012-05-23 at 16:05 +0100, Jan Beulich wrote:
+>>>>> On 23.05.12 at 16:15, Alex Shi <alex.shi@intel.com> wrote:
+>>> +	/* doing flush on both siblings of SMT is just wasting time */
+>>> +	cpumask_copy(&flush_mask, cpumask);
+>>> +	if (likely(smp_num_siblings > 1)) {
+>>> +		rand = jiffies;
+>>> +		/* See "Numerical Recipes in C", second edition, p. 284 */
+>>> +		rand = rand * 1664525L + 1013904223L;
+>>> +		rand &= 0x1;
+>>> +
+>>> +		for_each_cpu(cpu, &flush_mask) {
+>>> +			sblmask = cpu_sibling_mask(cpu);
+>>> +			if (cpumask_subset(sblmask, &flush_mask)) {
+>>> +				if (rand == 0)
+>>> +					cpu_clear(cpu, flush_mask);
+>>> +				else
+>>> +					cpu_clear(cpumask_next(cpu, sblmask),
+>>> +								flush_mask);
+>>> +			}
+>>> +		}
+>>> +	}
+>>> +
+>>
+>> There is no comment or anything else indicating that this is
+>> suitable for dual-thread CPUs only - when there are more than
+>> 2 threads per core, the intended effect won't be achieved.
+> 
+> Why would that be? Won't higher thread count still share the same
+> resources just more so?
+> 
+>>  I'd
+>> recommend making the logic generic from the beginning, but if
+>> that doesn't seem feasible to you, at least a comment stating
+>> the limitation should be added imo.
 
-diff --git a/mm/vmalloc.c b/mm/vmalloc.c
-index 94dff88..1196c77 100644
---- a/mm/vmalloc.c
-+++ b/mm/vmalloc.c
-@@ -1185,9 +1185,10 @@ void __init vmalloc_init(void)
- 	/* Import existing vmlist entries. */
- 	for (tmp = vmlist; tmp; tmp = tmp->next) {
- 		va = kzalloc(sizeof(struct vmap_area), GFP_NOWAIT);
--		va->flags = tmp->flags | VM_VM_AREA;
-+		va->flags = VM_VM_AREA;
- 		va->va_start = (unsigned long)tmp->addr;
- 		va->va_end = va->va_start + tmp->size;
-+		va->vm = tmp;
- 		__insert_vmap_area(va);
- 	}
- 
--- 
-1.7.1
+
+Sure. but just want to know how many commercial x86 CPU uses >2 SMTs?
+Write a short, quick function to do random selection in SMT is quite
+complicate considering cpumask maybe just contain random number SMT
+siblings in a core.
+
+> 
+> My objection to the whole lot is that its looks mightily expensive on
+> large machines, cpumask operations aren't cheap when you've got 4k cpus
+> etc..
+> 
+> Also, you very much cannot put cpumask_t on stack.
+
+
+Sure, and do you has related data for this?
+
+I just measured the cost of this function on my Romely EP(32 LCPUs) with
+cpumask_t and NR_CPUS = 32/256/512/4096, the cost are similar with
+256/512/4096 and that increased about 20% time cost from 32.
+
+I also tried to use cpumask_var_t and alloc it in heap(use
+CPUMASK_OFFSTACK), actually, it cost same time with cpumask_t in stack.
+But, the allocation bring another big cost. So, I use cpumask_t in stack.
+The performance gain data in commit log is getting with NR_CPUS = 256.
 
 
