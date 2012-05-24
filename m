@@ -1,73 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758666Ab2EXTmj (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 May 2012 15:42:39 -0400
-Received: from smtp4.epfl.ch ([128.178.224.218]:51145 "HELO smtp4.epfl.ch"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
-	id S1755936Ab2EXTmh convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 May 2012 15:42:37 -0400
-Message-ID: <20120524214229.1038515zms1khf6t@webmail.epfl.ch>
-Date: Thu, 24 May 2012 21:42:29 +0200
-From: philippe.retornaz@epfl.ch
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>
-Cc: Fabio Estevam <festevam@gmail.com>,
-        Uwe =?iso-8859-1?b?S2xlaW5lLUv2bmln?= 
-	<u.kleine-koenig@pengutronix.de>,
-        marc@cpdesign.com.au, Shawn Guo <shawn.guo@freescale.com>,
-        Samuel Ortiz <sameo@linux.intel.com>,
-        Sascha Hauer <kernel@pengutronix.de>,
-        linux-kernel <linux-kernel@vger.kernel.org>
-Subject: Re: mc13xxx-core: kernel hangs after 'regmap_read'
-References: <201205221053.21792.marc@cpdesign.com.au>
- <CAOMZO5AYCSVT=s=rB3xPkz5SYEQQZ9q7f=rFbTbJkkVPk7Y7Vw@mail.gmail.com>
- <201205242338.41420.marc@cpdesign.com.au> <5844466.kI7qR0Os9A@laptop>
- <20120524163604.GM5361@opensource.wolfsonmicro.com>
- <20120524164101.GW3710@pengutronix.de>
- <CAOMZO5CZbQ9cjh+5Lj8R5hbYhizP891D01LuqbaRq8WTQs8zkQ@mail.gmail.com>
- <20120524180320.GO5361@opensource.wolfsonmicro.com>
-In-Reply-To: <20120524180320.GO5361@opensource.wolfsonmicro.com>
+	id S964928Ab2EXTnO (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 May 2012 15:43:14 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:33773 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S933546Ab2EXTnM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 24 May 2012 15:43:12 -0400
+Date: Thu, 24 May 2012 15:42:52 -0400
+From: Vivek Goyal <vgoyal@redhat.com>
+To: Kent Overstreet <koverstreet@google.com>
+Cc: linux-kernel@vger.kernel.org, linux-bcache@vger.kernel.org,
+        dm-devel@redhat.com, linux-fsdevel@vger.kernel.org, tj@kernel.org,
+        axboe@kernel.dk, agk@redhat.com, neilb@suse.de,
+        drbd-dev@lists.linbit.com, bharrosh@panasas.com, mpatocka@redhat.com,
+        sage@newdream.net, yehuda@hq.newdream.net
+Subject: Re: [PATCH v2 07/14] pktcdvd: Switch to bio_kmalloc()
+Message-ID: <20120524194252.GF27550@redhat.com>
+References: <1337817771-25038-1-git-send-email-koverstreet@google.com>
+ <1337817771-25038-8-git-send-email-koverstreet@google.com>
 MIME-Version: 1.0
-Content-Type: text/plain;
- charset=ISO-8859-1;
- DelSp="Yes";
- format="flowed"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8BIT
-User-Agent: Internet Messaging Program (IMP) H3 (4.3.11)
-X-EPFL-User: philippe.retornaz@EPFL
+In-Reply-To: <1337817771-25038-8-git-send-email-koverstreet@google.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Mark Brown <broonie@opensource.wolfsonmicro.com> a écrit :
+On Wed, May 23, 2012 at 05:02:44PM -0700, Kent Overstreet wrote:
 
-> On Thu, May 24, 2012 at 02:39:02PM -0300, Fabio Estevam wrote:
->> On Thu, May 24, 2012 at 1:41 PM, Uwe Kleine-König
->
->> > The imx spi driver can do both (GPIO and hardware CS) because not all
->> > pins that can do hardware CS are available as GPIO.
->
->> Right, unfortunately on mx31 the SPI CS pins cannot be used as GPIOs.
->
->> On mx51evk the SPI CS are used as GPIOs and that probably explains why
->> it worked on mx51evk and fails on mx31pdk.
->
-> Oh dear, this affects regmap but it'll probably also affect other things
-> - how plausible is it that we'll be able to fix in the driver (assuming
-> it's not just hardware misprogramming)?  We can probably manage to come
-> up with something for regmap but it's the wrong level to fix things.
->
+[..]
+> @@ -567,10 +569,13 @@ static struct packet_data *pkt_alloc_packet_data(int frames)
+>  		goto no_pkt;
+>  
+>  	pkt->frames = frames;
+> -	pkt->w_bio = pkt_bio_alloc(frames);
+> +	pkt->w_bio = bio_kmalloc(GFP_KERNEL, frames);
 
-Sadly, after looking at the imx31 datasheet it seems it's a hardware  
-limitation. We could maybe workaround it by using DMA to access the  
-CSPI but even with dma, this would need a single transfer in order to  
-keep the CS signal asserted.
+So previously bios allocated were being kfreed by pkt_bio_destructor().
+Now where are we doing kfree() on bio being allocated by bio_kmalloc()?
 
-Thus, we need to workaround this in the regmap-spi or mc13783-spi driver.
-Either we find a way to have regmap-spi to use 32bits transfert or we  
-implement a custom bus inside mc13783-spi.
-
-Thanks,
-
-Philippe
+Thanks
+Vivek
