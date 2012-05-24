@@ -1,69 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759207Ab2EXUnK (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 May 2012 16:43:10 -0400
-Received: from mail-wi0-f178.google.com ([209.85.212.178]:42952 "EHLO
-	mail-wi0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756374Ab2EXUnG (ORCPT
+	id S1759170Ab2EXUpp (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 May 2012 16:45:45 -0400
+Received: from cavan.codon.org.uk ([93.93.128.6]:43115 "EHLO
+	cavan.codon.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756374Ab2EXUpn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 May 2012 16:43:06 -0400
+	Thu, 24 May 2012 16:45:43 -0400
+Date: Thu, 24 May 2012 21:45:38 +0100
+From: Matthew Garrett <mjg59@srcf.ucam.org>
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+Cc: Bjorn Helgaas <bhelgaas@google.com>,
+        ACPI Devel Mailing List <linux-acpi@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>, linux-pci@vger.kernel.org,
+        Len Brown <lenb@kernel.org>, Wei Kong <wkong@novell.com>,
+        Jean Delvare <jdelvare@suse.com>
+Subject: Re: [PATCH] PCI / ACPI: Do not request control of ASPM if the BIOS
+ has disabled it
+Message-ID: <20120524204538.GA27819@srcf.ucam.org>
+References: <201205242245.45888.rjw@sisk.pl>
 MIME-Version: 1.0
-In-Reply-To: <4FBE5518.5090705@redhat.com>
-References: <4FBE5518.5090705@redhat.com>
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Thu, 24 May 2012 13:42:45 -0700
-X-Google-Sender-Auth: meB_ttkc5w3nNSVyep4Mxp228Dc
-Message-ID: <CA+55aFyt2OFOsr5uCpQ6nrur4zhHhmWUJrvMgLH_Wy1niTbC6w@mail.gmail.com>
-Subject: Re: [GIT PULL for v3.5-rc1] media updates for v3.5
-To: Mauro Carvalho Chehab <mchehab@redhat.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Linux Media Mailing List <linux-media@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <201205242245.45888.rjw@sisk.pl>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: mjg59@cavan.codon.org.uk
+X-SA-Exim-Scanned: No (on cavan.codon.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Btw, I only noticed now, because I normally don't build DVB on my main
-machine with "oldconfig" - why the hell does DVB add tuners with
-"default m"?
+On Thu, May 24, 2012 at 10:45:45PM +0200, Rafael J. Wysocki wrote:
 
-Why would *anybody* with an old config ever want to get those new
-drivers as modules?
+> However, knowing that the BIOS doesn't support ASPM, we shouldn't
+> request the control of it, so we should remove
+> (OSC_ACTIVE_STATE_PWR_SUPPORT | OSC_CLOCK_PWR_CAPABILITY_SUPPORT)
+> from the flags before calling acpi_pci_osc_control_set() in those
+> cases.  Failing to do so causes the evaluation of _OSC for the PCI
+> root bridge to return error codes on some systems where it should
+> work correctly.
 
-Get rid of all the stupid
+Is there an example of an affected machine's DSDT?
 
-  default m if DVB_FE_CUSTOMISE
-
-because there's no reason for them. If somebody wants that module,
-they can damn well press the 'm' button. There's absolutely no reason
-for it to default to on.
-
-This is true of *all* drivers. No driver (and certainly DVB is not at
-all an exception) is so important that it should be "default m" (or
-y).
-
-There are a few valid reasons to use "default m/y", but I don't see
-that that is the case here:
-
- - if you have an *existing* driver that got split up, and "make
-oldconfig" with that old driver enabled would result in it no longer
-supporting the same capability, then a
-
-     default OLD_DRIVER_WAS_ENABLED
-
-   is appropriate - it makes "oldconfig" work the way people expect it to work.
-
-   But this is only when that piece of hardware used to be supported
-already, it's irrelevant for new hardware.
-
- - if it's *such* a basic piece of hardware that you simply don't want
-to bother the user with an insane default. Like supporting an ATKBD
-driver on a PC etc.
-
-   This simply isn't true for media devices.
-
-So stop doing the silly "enable this driver by default for old
-configurations". It's *wrong*.
-
-                  Linus
+-- 
+Matthew Garrett | mjg59@srcf.ucam.org
