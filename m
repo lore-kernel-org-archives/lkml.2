@@ -1,55 +1,37 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759354Ab2EXXXz (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 May 2012 19:23:55 -0400
-Received: from nat.nue.novell.com ([195.135.221.2]:12343 "EHLO
-	nat.nue.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754411Ab2EXXXy (ORCPT
+	id S934099Ab2EXXY3 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 May 2012 19:24:29 -0400
+Received: from mail-we0-f174.google.com ([74.125.82.174]:45017 "EHLO
+	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758863Ab2EXXYS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 May 2012 19:23:54 -0400
-Subject: Re: [PATCH] gpu: schedule gma500 stub driver for feature removal
-From: joeyli <jlee@suse.com>
-To: Greg KH <gregkh@linuxfoundation.org>
-Cc: dri-devel@lists.freedesktop.org, linux-kernel@vger.kernel.org,
-        randy.dunlap@oracle.com, mjg59@srcf.ucam.org, gregkh@suse.de,
-        trenn@suse.de, Valdis.Kletnieks@vt.edu, Dennis.Jansen@web.de,
-        airlied@redhat.com, eric@anholt.net, alexdeucher@gmail.com,
-        bskeggs@redhat.com, chris@chris-wilson.co.uk
-In-Reply-To: <20120524195350.GA11545@kroah.com>
-References: <1337613816-12953-1-git-send-email-jlee@suse.com>
-	 <20120524195350.GA11545@kroah.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Fri, 25 May 2012 07:19:20 +0800
-Message-ID: <1337901560.9751.558.camel@linux-s257.site>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.2 
-Content-Transfer-Encoding: 8bit
+	Thu, 24 May 2012 19:24:18 -0400
+MIME-Version: 1.0
+In-Reply-To: <4FBB8FD0.9050804@redhat.com>
+References: <4FBB8FD0.9050804@redhat.com>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Thu, 24 May 2012 16:23:51 -0700
+X-Google-Sender-Auth: EV3MFetHcuQdbItYJR_En8yWGqY
+Message-ID: <CA+55aFzWb4Sm2jNStvaORVCGd0AQ_inVwxu+9D9uWNpsOMd_Yg@mail.gmail.com>
+Subject: Re: [GIT PULL] KVM updates for Linux 3.5
+To: Avi Kivity <avi@redhat.com>, Alan Cox <alan@linux.intel.com>
+Cc: linux-kernel <linux-kernel@vger.kernel.org>,
+        KVM list <kvm@vger.kernel.org>, Marcelo Tosatti <mtosatti@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-於 五，2012-05-25 於 04:53 +0900，Greg KH 提到：
-> On Mon, May 21, 2012 at 11:23:36PM +0800, Lee, Chun-Yi wrote:
-> > In v3.3, the gma500 drm driver moved from staging to drm group by
-> > Alan Cox's 3abcf41fb patch. the gma500 drm driver should control
-> > brightness well and don't need gma500 stub driver anymore.
-> > 
-> > So, my plan is remove gma500 stub driver at Dec. 2012.
-> 
-> Why not just remove it right now as it's not needed at all anymore?
-> 
-> thanks,
-> 
-> greg k-h
-> 
-> .
+On Tue, May 22, 2012 at 6:08 AM, Avi Kivity <avi@redhat.com> wrote:
+> Linus, please pull the KVM updates for the 3.5 cycle from
 
-Just I thought remove anything from kernel need add to schedule file
-first.
+Ok. The way I resolved a the x86 kvm_para.h conflict, I suspect it is
+now being *unnecessarily* careful about doing the CPUID thing, and I
+think that the "cpuid_level < 0" check that came in through the x86
+tree can be removed in favor of the KVM one.
 
-OK, I will send another patch to direct remove it.
+But I left both checks in as the obvious non-semantic resolution, and
+if you guys decide that it's redundant, you can remove it later.
 
-
-Thanks
-Joey Lee
-
+                    Linus
