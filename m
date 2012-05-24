@@ -1,53 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933160Ab2EXOv1 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 May 2012 10:51:27 -0400
-Received: from mail.skyhub.de ([78.46.96.112]:46028 "EHLO mail.skyhub.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754055Ab2EXOvY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 May 2012 10:51:24 -0400
-Date: Thu, 24 May 2012 16:51:23 +0200
-From: Borislav Petkov <bp@alien8.de>
-To: Bojan Smojver <bojan@rexursive.com>
-Cc: "Rafael J. Wysocki" <rjw@sisk.pl>,
-        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
-        Alan Stern <stern@rowland.harvard.edu>,
-        Linux PM list <linux-pm@vger.kernel.org>,
-        Kernel development list <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH]: In kernel hibernation, suspend to both
-Message-ID: <20120524145122.GA26743@x1.osrc.amd.com>
-Mail-Followup-To: Borislav Petkov <bp@alien8.de>,
-	Bojan Smojver <bojan@rexursive.com>,
-	"Rafael J. Wysocki" <rjw@sisk.pl>,
-	"Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
-	Alan Stern <stern@rowland.harvard.edu>,
-	Linux PM list <linux-pm@vger.kernel.org>,
-	Kernel development list <linux-kernel@vger.kernel.org>
-References: <Pine.LNX.4.44L0.1205132212070.5628-100000@netrider.rowland.org>
- <201205211518.39137.rjw@sisk.pl>
- <882dce83-b79e-4470-af25-edb8429fb7e5@email.android.com>
- <201205212353.42639.rjw@sisk.pl>
- <1337637359.1647.67.camel@shrek.rexursive.com>
+	id S1757142Ab2EXOwh (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 May 2012 10:52:37 -0400
+Received: from iolanthe.rowland.org ([192.131.102.54]:54211 "HELO
+	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1754055Ab2EXOwg (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 24 May 2012 10:52:36 -0400
+Date: Thu, 24 May 2012 10:52:35 -0400 (EDT)
+From: Alan Stern <stern@rowland.harvard.edu>
+X-X-Sender: stern@iolanthe.rowland.org
+To: Lin Ming <ming.m.lin@intel.com>
+cc: Jens Axboe <axboe@kernel.dk>, Jeff Moyer <jmoyer@redhat.com>,
+        <linux-kernel@vger.kernel.org>, <linux-pm@vger.kernel.org>,
+        <linux-scsi@vger.kernel.org>
+Subject: Re: [RFC v2 PATCH 2/4] block: add queue runtime pm callbacks
+In-Reply-To: <CAF1ivSZBasH-Nvw7kvOynN+XQqiOLfeyOnV5HjNbz5dyZJfkoA@mail.gmail.com>
+Message-ID: <Pine.LNX.4.44L0.1205241049050.1349-100000@iolanthe.rowland.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <1337637359.1647.67.camel@shrek.rexursive.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, May 22, 2012 at 07:55:59AM +1000, Bojan Smojver wrote:
-> On Mon, 2012-05-21 at 23:53 +0200, Rafael J. Wysocki wrote:
-> > It's not urgent and it _can_ wait.
+On Thu, 24 May 2012, Lin Ming wrote:
+
+> > When tested the patches, I found that kjournald and flusher thread
+> > frequently resume the disk.
 > 
-> OK. I'll go with "better late than never", in that case. :-)
+> Just found that it's because "printk".
+> 
+> When disk is suspended, it prints out some message, for example,
+> 
+> [  670.597103] sd 0:0:0:0: [sda] Synchronizing SCSI cache
+> [  670.597827] sd 0:0:0:0: [sda] Stopping disk
+> 
+> Then syslogd is waken up to write the log.
+> So disk is resumed right after suspended.
 
-Let me ask again, can you send the last version of that patch so that I
-can give it a run pls?
+:-)  Very amusing!  So if you change those two messages in sd_suspend
+(and maybe also the message in sd_resume) from KERN_NOTICE to
+KERN_DEBUG, things ought to improve.
 
-Thanks.
+Alan Stern
 
--- 
-Regards/Gruss,
-Boris.
