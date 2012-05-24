@@ -1,54 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756448Ab2EXCLO (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 May 2012 22:11:14 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:34059 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755469Ab2EXCLN (ORCPT
+	id S1756950Ab2EXCMR (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 May 2012 22:12:17 -0400
+Received: from out5-smtp.messagingengine.com ([66.111.4.29]:60736 "EHLO
+	out5-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751993Ab2EXCMQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 May 2012 22:11:13 -0400
-Date: Wed, 23 May 2012 19:11:02 -0700
-From: "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>
-To: H Hartley Sweeten <hartleys@visionengravers.com>
-Cc: Dan Carpenter <dan.carpenter@oracle.com>,
-        "devel@driverdev.osuosl.org" <devel@driverdev.osuosl.org>,
-        "fmhess@users.sourceforge.net" <fmhess@users.sourceforge.net>,
-        "abbotti@mev.co.uk" <abbotti@mev.co.uk>,
-        Linux Kernel <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] staging: comedi: adl_pci7296: factor out the PCI device
- code
-Message-ID: <20120524021102.GA12335@kroah.com>
-References: <201205231428.48061.hartleys@visionengravers.com>
- <20120523214354.GQ4637@mwanda>
- <ADE657CA350FB648AAC2C43247A983F0020698BACAD5@AUSP01VMBX24.collaborationhost.net>
- <20120523220702.GR4637@mwanda>
+	Wed, 23 May 2012 22:12:16 -0400
+X-Sasl-enc: ljdyX9+exMQkdGRasggBzQ3FeubzbHJjNTAsElQQBp+o 1337825534
+Date: Wed, 23 May 2012 19:12:08 -0700
+From: Greg KH <greg@kroah.com>
+To: Joe Perches <joe@perches.com>
+Cc: Alan Stern <stern@rowland.harvard.edu>, Kay Sievers <kay@vrfy.org>,
+        Kernel development list <linux-kernel@vger.kernel.org>,
+        Jason Baron <jbaron@redhat.com>, Thomas Gleixner <tglx@linutronix.de>
+Subject: Re: Excessive latency for dev_dbg?
+Message-ID: <20120524021208.GA12557@kroah.com>
+References: <Pine.LNX.4.44L0.1205231627140.1248-100000@iolanthe.rowland.org>
+ <1337805903.1747.0.camel@joe2Laptop>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20120523220702.GR4637@mwanda>
+In-Reply-To: <1337805903.1747.0.camel@joe2Laptop>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, May 24, 2012 at 01:07:02AM +0300, Dan Carpenter wrote:
-> On Wed, May 23, 2012 at 04:52:47PM -0500, H Hartley Sweeten wrote:
-> > On Wednesday, May 23, 2012 2:44 PM, Dan Carpenter wrote:
-> > > Hartley, you're doing a great job with all these patches, but it's
-> > > going to be weeks before the merge window closes.  We're going to
-> > > end up getting confused with all the patches floating around.
-> > 
-> > I guess I should wait until the merge window closes and Greg starts
-> > taking patches into the staging tree before continuing...
-> > 
+On Wed, May 23, 2012 at 01:45:03PM -0700, Joe Perches wrote:
+> cc'ing Kay.
 > 
-> Wait!  No no.  The first answer was the right one, where you
-> volunteered to do a bunch of work.
+> On Wed, 2012-05-23 at 16:37 -0400, Alan Stern wrote:
+> > I just tried doing some testing of 3.4.  Sequences of literally
+> > adjacent dev_dbg() calls -- with local interrupts disabled -- show up
+> > in the log buffer spaced at time intervals between 1 and 4
+> > milliseconds!
+> > 
+> > This is with CONFIG_DYNAMIC_DEBUG not enabled, and CONFIG_PRINTK_TIME,
+> > CONFIG_PREEMPT, CONFIG_HIGH_RES_TIMERS, and CONFIG_HPET_TIMER all set
+> > to y.
+> > 
+> > What's going on here?  Did printk suddenly slow down a lot?  Or has the
+> > timer code gone crazy?
 
-Yes, that's right, don't stop, I can queue these all up in my "to-apply"
-mailbox just fine and will start applying them when 3.5-rc1 is out, to
-my staging-next tree.  No need for you to take a break at all :)
+Joe, why ask Kay?  He didn't touch this code until 3.5-rc1, and Alan is
+testing 3.4.
 
-thanks,
+confused,
 
 greg k-h
