@@ -1,144 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759247Ab2EXXw5 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 May 2012 19:52:57 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:32974 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752419Ab2EXXwz (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 May 2012 19:52:55 -0400
-Date: Thu, 24 May 2012 16:52:41 -0700
-From: tip-bot for Mike Galbraith <mgalbraith@suse.de>
-Message-ID: <tip-5307c9556bc17e3cd26d4e94fc3b2565921834de@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, mgalbraith@suse.de, hpa@zytor.com,
-        mingo@kernel.org, tglx@linutronix.de
-Reply-To: mingo@kernel.org, hpa@zytor.com, mgalbraith@suse.de,
-        linux-kernel@vger.kernel.org, tglx@linutronix.de
-In-Reply-To: <1336472458.21924.78.camel@marge.simpson.net>
-References: <1336472458.21924.78.camel@marge.simpson.net>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:timers/core] tick: Add tick skew boot option
-Git-Commit-ID: 5307c9556bc17e3cd26d4e94fc3b2565921834de
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
-  to get blacklisted from these emails
+	id S933886Ab2EXXxk (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 May 2012 19:53:40 -0400
+Received: from mga14.intel.com ([143.182.124.37]:22032 "EHLO mga14.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932387Ab2EXXxM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 24 May 2012 19:53:12 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
+   d="scan'208";a="147555203"
+Message-ID: <4FBEC9E6.8040301@linux.intel.com>
+Date: Thu, 24 May 2012 16:53:10 -0700
+From: "H. Peter Anvin" <hpa@linux.intel.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Thu, 24 May 2012 16:52:46 -0700 (PDT)
+To: Steven Rostedt <rostedt@goodmis.org>
+CC: Dave Jones <davej@redhat.com>, Linux Kernel <linux-kernel@vger.kernel.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Ingo Molnar <mingo@redhat.com>, Andi Kleen <ak@linux.intel.com>
+Subject: Re: tracing ring_buffer_resize oops.
+References: <20120524160146.GA6226@redhat.com>  <1337876398.13348.178.camel@gandalf.stny.rr.com>  <20120524172223.GA10689@redhat.com> <1337902816.13348.224.camel@gandalf.stny.rr.com>
+In-Reply-To: <1337902816.13348.224.camel@gandalf.stny.rr.com>
+Content-Type: text/plain; charset=ISO-8859-15
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  5307c9556bc17e3cd26d4e94fc3b2565921834de
-Gitweb:     http://git.kernel.org/tip/5307c9556bc17e3cd26d4e94fc3b2565921834de
-Author:     Mike Galbraith <mgalbraith@suse.de>
-AuthorDate: Tue, 8 May 2012 12:20:58 +0200
-Committer:  Thomas Gleixner <tglx@linutronix.de>
-CommitDate: Fri, 25 May 2012 01:44:50 +0200
+On 05/24/2012 04:40 PM, Steven Rostedt wrote:
+> On Thu, 2012-05-24 at 13:22 -0400, Dave Jones wrote:
+> 
+> I found a clue!
+> 
+> 
+>> [ 1013.243754] BUG: unable to handle kernel NULL pointer dereference at 0000000000000002
+>> [ 1013.272665] IP: [<ffff880145cc0000>] 0xffff880145cbffff
+>> [ 1013.285186] PGD 1401b2067 PUD 14324c067 PMD 0 
+>> [ 1013.298832] Oops: 0010 [#1] PREEMPT SMP 
+>> [ 1013.310600] CPU 2 
+>> [ 1013.317904] Modules linked in: ip6t_REJECT nf_conntrack_ipv6 nf_defrag_ipv6 xt_state nf_conntrack ip6table_filter ip6_tables crc32c_intel ghash_clmulni_intel microcode usb_debug serio_raw pcspkr iTCO_wdt i2c_i801 iTCO_vendor_support e1000e nfsd nfs_acl auth_rpcgss lockd sunrpc i915 video i2c_algo_bit drm_kms_helper drm i2c_core [last unloaded: scsi_wait_scan]
+>> [ 1013.401848] 
+>> [ 1013.407399] Pid: 112, comm: kworker/2:1 Not tainted 3.4.0+ #30 
+>> [ 1013.437943] RIP: 8eb8:[<ffff88014630a000>]  [<ffff88014630a000>] 0xffff880146309fff
+> 
+> RIP is always near the GS segment. As GS points to the per_cpu area, we
+> may somehow be getting our GS screwed up. I'm not sure why that would
+> affect the RIP. Maybe stacks are not being processed properly somewhere?
+> 
+> It's strange because I can either trigger it on the first try, or it
+> never triggers at all??
+> 
 
-tick: Add tick skew boot option
+Much more fundamentally, RIP should never leave the range [-2G, 0).
+What is happening here is almost certainly that we jump through
+something which isn't a function pointer.
 
-Let the user decide whether power consumption or jitter is the
-more important consideration for their machines.
+The other thing worth noting is that the code segment is not the
+standard Linux code segment, not even close; it *also* doesn't look like
+the typical Xen code segment.  This makes be believe that we did an IRET
+with the stack pointer set to something other than a valid interrupt
+stack frame.  Specifically, note that the value of R12 is the same
+value; R12 is a preserved register and may have been pushed onto the
+stack by something that wants to save it.
 
-Quoting removal commit af5ab277ded04bd9bc6b048c5a2f0e7d70ef0867:
+Waitaminute... this isn't related to your using R12 to save a pointer to
+something, is it?
 
-"Historically, Linux has tried to make the regular timer tick on the
- various CPUs not happen at the same time, to avoid contention on
- xtime_lock.
-    
- Nowadays, with the tickless kernel, this contention no longer happens
- since time keeping and updating are done differently. In addition,
- this skew is actually hurting power consumption in a measurable way on
- many-core systems."
+> [ 1013.459871] RSP: ffffffff8165e919:ffff88014780f408  EFLAGS: 00010046
 
-Problems:
+	-hpa
 
-- Contrary to the above, systems do encounter contention on both
-  xtime_lock and RCU structure locks when the tick is synchronized.
-  
-- Moderate sized RT systems suffer intolerable jitter due to the tick
-  being synchronized.
-
-- SGI reports the same for their large systems.
-
-- Fully utilized systems reap no power saving benefit from skew removal,
-  but do suffer from resulting induced lock contention.
-
-- 0209f649 rcu: limit rcu_node leaf-level fanout
-  This patch was born to combat lock contention which testing showed
-  to have been _induced by_ skew removal.  Skew the tick, contention
-  disappeared virtually completely.
-
-Signed-off-by: Mike Galbraith <mgalbraith@suse.de>
-Link: http://lkml.kernel.org/r/1336472458.21924.78.camel@marge.simpson.net
-Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
-
----
- Documentation/kernel-parameters.txt |    9 +++++++++
- kernel/time/tick-sched.c            |   18 ++++++++++++++++++
- 2 files changed, 27 insertions(+), 0 deletions(-)
-
-diff --git a/Documentation/kernel-parameters.txt b/Documentation/kernel-parameters.txt
-index b69cfdc12..ea38cd1 100644
---- a/Documentation/kernel-parameters.txt
-+++ b/Documentation/kernel-parameters.txt
-@@ -2532,6 +2532,15 @@ bytes respectively. Such letter suffixes can also be entirely omitted.
- 
- 	sched_debug	[KNL] Enables verbose scheduler debug messages.
- 
-+	skew_tick=	[KNL] Offset the periodic timer tick per cpu to mitigate
-+			xtime_lock contention on larger systems, and/or RCU lock
-+			contention on all systems with CONFIG_MAXSMP set.
-+			Format: { "0" | "1" }
-+			0 -- disable. (may be 1 via CONFIG_CMDLINE="skew_tick=1"
-+			1 -- enable.
-+			Note: increases power consumption, thus should only be
-+			enabled if running jitter sensitive (HPC/RT) workloads.
-+
- 	security=	[SECURITY] Choose a security module to enable at boot.
- 			If this boot parameter is not specified, only the first
- 			security module asking for security registration will be
-diff --git a/kernel/time/tick-sched.c b/kernel/time/tick-sched.c
-index 6a3a5b9..4eddbb5 100644
---- a/kernel/time/tick-sched.c
-+++ b/kernel/time/tick-sched.c
-@@ -814,6 +814,8 @@ static enum hrtimer_restart tick_sched_timer(struct hrtimer *timer)
- 	return HRTIMER_RESTART;
- }
- 
-+static int sched_skew_tick;
-+
- /**
-  * tick_setup_sched_timer - setup the tick emulation timer
-  */
-@@ -831,6 +833,14 @@ void tick_setup_sched_timer(void)
- 	/* Get the next period (per cpu) */
- 	hrtimer_set_expires(&ts->sched_timer, tick_init_jiffy_update());
- 
-+	/* Offset the tick to avert xtime_lock contention. */
-+	if (sched_skew_tick) {
-+		u64 offset = ktime_to_ns(tick_period) >> 1;
-+		do_div(offset, num_possible_cpus());
-+		offset *= smp_processor_id();
-+		hrtimer_add_expires_ns(&ts->sched_timer, offset);
-+	}
-+
- 	for (;;) {
- 		hrtimer_forward(&ts->sched_timer, now, tick_period);
- 		hrtimer_start_expires(&ts->sched_timer,
-@@ -910,3 +920,11 @@ int tick_check_oneshot_change(int allow_nohz)
- 	tick_nohz_switch_to_nohz();
- 	return 0;
- }
-+
-+static int __init skew_tick(char *str)
-+{
-+	get_option(&str, &sched_skew_tick);
-+
-+	return 0;
-+}
-+early_param("skew_tick", skew_tick);
