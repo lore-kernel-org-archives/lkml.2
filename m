@@ -1,63 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756251Ab2EXK54 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 May 2012 06:57:56 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:44263 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755202Ab2EXK5z (ORCPT
+	id S932841Ab2EXK63 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 May 2012 06:58:29 -0400
+Received: from smtp.eu.citrix.com ([62.200.22.115]:16179 "EHLO
+	SMTP.EU.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932320Ab2EXK62 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 May 2012 06:57:55 -0400
-Subject: Re: [PATCH 05/16] perf: Add attribute to filter out user callchains
-From: Peter Zijlstra <a.p.zijlstra@chello.nl>
-To: Jiri Olsa <jolsa@redhat.com>
-Cc: acme@redhat.com, mingo@elte.hu, paulus@samba.org,
-        cjashfor@linux.vnet.ibm.com, fweisbec@gmail.com, eranian@google.com,
-        gorcunov@openvz.org, tzanussi@gmail.com, mhiramat@redhat.com,
-        robert.richter@amd.com, fche@redhat.com, linux-kernel@vger.kernel.org,
-        masami.hiramatsu.pt@hitachi.com, drepper@gmail.com, asharma@fb.com,
-        benjamin.redelings@nescent.org
-In-Reply-To: <1337801535-12865-6-git-send-email-jolsa@redhat.com>
-References: <1337801535-12865-1-git-send-email-jolsa@redhat.com>
-	 <1337801535-12865-6-git-send-email-jolsa@redhat.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Thu, 24 May 2012 12:57:48 +0200
-Message-ID: <1337857068.9783.113.camel@laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.2 
-Content-Transfer-Encoding: 7bit
+	Thu, 24 May 2012 06:58:28 -0400
+X-IronPort-AV: E=Sophos;i="4.75,649,1330905600"; 
+   d="scan'208";a="12646621"
+Date: Thu, 24 May 2012 11:58:11 +0100
+From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+X-X-Sender: sstabellini@kaball-desktop
+To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>
+Subject: Re: [Xen-devel] [PATCH 4/4] xen/events: Add WARN_ON when quick lookup
+ found invalid type.
+In-Reply-To: <1337795222-29946-5-git-send-email-konrad.wilk@oracle.com>
+Message-ID: <alpine.DEB.2.00.1205241154150.26786@kaball-desktop>
+References: <1337795222-29946-1-git-send-email-konrad.wilk@oracle.com> <1337795222-29946-5-git-send-email-konrad.wilk@oracle.com>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+MIME-Version: 1.0
+Content-Type: text/plain; charset="US-ASCII"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2012-05-23 at 21:32 +0200, Jiri Olsa wrote:
-> Add the new exclude_user_callchain attribute to filter out
-> frame pointer based user callchains.
+On Wed, 23 May 2012, Konrad Rzeszutek Wilk wrote:
+> All of the bind_XYZ_to_irq do a quick lookup to see if the
+> event exists. And if they that value is returned instead of
+
+                           ^
+
+> initialized. This patch adds an extra logic to check that the
+> type returned is the proper one and we can use it to find
+> drivers that are doing something naught.
 > 
-> This is something we want to select when we use the dwarf cfi
-> callchain mode, because frame pointer based user callchains are
-> useless in this mode.
-> 
-> Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
-> Signed-off-by: Jiri Olsa <jolsa@redhat.com>
+> Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
 > ---
->  include/linux/perf_event.h |    4 +++-
->  kernel/events/callchain.c  |    4 ++--
->  kernel/events/core.c       |    3 ++-
->  kernel/events/internal.h   |    3 ++-
->  4 files changed, 9 insertions(+), 5 deletions(-)
+>  drivers/xen/events.c |   11 +++++++++--
+>  1 files changed, 9 insertions(+), 2 deletions(-)
 > 
-> diff --git a/include/linux/perf_event.h b/include/linux/perf_event.h
-> index dcdc97e..df6ba37 100644
-> --- a/include/linux/perf_event.h
-> +++ b/include/linux/perf_event.h
-> @@ -275,7 +275,9 @@ struct perf_event_attr {
->  				exclude_host   :  1, /* don't count in host   */
->  				exclude_guest  :  1, /* don't count in guest  */
+> diff --git a/drivers/xen/events.c b/drivers/xen/events.c
+> index faae2f9..093851b 100644
+> --- a/drivers/xen/events.c
+> +++ b/drivers/xen/events.c
+> @@ -827,6 +827,9 @@ int bind_evtchn_to_irq(unsigned int evtchn)
+>  					      handle_edge_irq, "event");
 >  
-> -				__reserved_1   : 43;
-> +				exclude_user_callchain : 1, /* only record kernel callchains */
+>  		xen_irq_info_evtchn_init(irq, evtchn);
+> +	} else {
+> +		struct irq_info *info = info_for_irq(irq);
+> +		WARN_ON(info && info->type != IRQT_EVTCHN);
+>  	}
 
-*sigh* I guess if we're going to do this we might as well do a complete
-option set and also allow excluding kernel and possible hv if anybody
-actually implemented that.
+considering that when evtchn_to_irq[evtchn] is != -1, a corresponding
+struct irq_info is always supposed to exists, shouldn't this be:
 
+WARN_ON(info == NULL || info->type != IRQT_EVTCHN);
+
+?
+
+
+>  out:
+> @@ -862,8 +865,10 @@ static int bind_ipi_to_irq(unsigned int ipi, unsigned int cpu)
+>  		xen_irq_info_ipi_init(cpu, irq, evtchn, ipi);
+>  
+>  		bind_evtchn_to_cpu(evtchn, cpu);
+> +	} else {
+> +		struct irq_info *info = info_for_irq(irq);
+> +		WARN_ON(info && info->type != IRQT_IPI);
+>  	}
+> -
+>   out:
+>  	mutex_unlock(&irq_mapping_update_lock);
+>  	return irq;
+> @@ -939,8 +944,10 @@ int bind_virq_to_irq(unsigned int virq, unsigned int cpu)
+>  		xen_irq_info_virq_init(cpu, irq, evtchn, virq);
+>  
+>  		bind_evtchn_to_cpu(evtchn, cpu);
+> +	} else {
+> +		struct irq_info *info = info_for_irq(irq);
+> +		WARN_ON(info && info->type != IRQT_VIRQ);
+>  	}
+> -
+>  out:
+>  	mutex_unlock(&irq_mapping_update_lock);
+
+same here
