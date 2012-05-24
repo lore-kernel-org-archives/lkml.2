@@ -1,40 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752124Ab2EXEpo (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 May 2012 00:45:44 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:44719 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751156Ab2EXEpl (ORCPT
+	id S1752279Ab2EXEpy (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 May 2012 00:45:54 -0400
+Received: from mail-vc0-f174.google.com ([209.85.220.174]:49900 "EHLO
+	mail-vc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751335Ab2EXEpm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 May 2012 00:45:41 -0400
-Date: Wed, 23 May 2012 21:45:39 -0700 (PDT)
-From: David Rientjes <rientjes@google.com>
-X-X-Sender: rientjes@chino.kir.corp.google.com
-To: ethan zhao <ethan.kernel@gmail.com>
-cc: linux-kernel@vger.kernel.org, Kurt Garloff <kurt@garloff.de>,
-        Len Brown <len.brown@intel.com>
-Subject: Re: ACPI and NUMA guys, please help to check if this patch is OK
-In-Reply-To: <CABawtvM-ZzFvT3LLb5V2bm52odeSyxeQwwvbVXgrNcMX5WMrbQ@mail.gmail.com>
-Message-ID: <alpine.DEB.2.00.1205232142120.10366@chino.kir.corp.google.com>
-References: <CABawtvNSYENtrJTaB5Vfd+j5MahE=xv4Ueb6-zmd1CHShuU0iQ@mail.gmail.com> <alpine.DEB.2.00.1205222029590.28165@chino.kir.corp.google.com> <CABawtvM-ZzFvT3LLb5V2bm52odeSyxeQwwvbVXgrNcMX5WMrbQ@mail.gmail.com>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+	Thu, 24 May 2012 00:45:42 -0400
+Date: Wed, 23 May 2012 21:45:37 -0700
+From: Greg KH <gregkh@linuxfoundation.org>
+To: prasannatsmkumar <prasannatsmkumar@gmail.com>
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: Why USB Link Power Management only for devices connected to root
+ hub
+Message-ID: <20120524044537.GB14325@kroah.com>
+References: <CANc+2y50jirP=_V0qBkDuVwkhcmJWo3tQ-rwnxOtw3GQ5gP3tQ@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CANc+2y50jirP=_V0qBkDuVwkhcmJWo3tQ-rwnxOtw3GQ5gP3tQ@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 24 May 2012, ethan zhao wrote:
+On Tue, May 22, 2012 at 11:42:28AM +0530, prasannatsmkumar wrote:
+> I have started looking into USB stuff. In the EHCI driver code I could
+> see the comment that "we only support lpm device connected to root hub
+> yet" in drivers/usb/host/ehci-pci.c line 466 (3.4 kernel -
+> http://lxr.free-electrons.com/source/drivers/usb/host/ehci-pci.c#L466).
+> Is there any reason to not support lpm in devices connected to hub
+> (other than root hub)? Also inside ehci_lpm_check function in
+> drivers/usb/host/ehci-lpm.c (3.4 kernel -
+> http://lxr.free-electrons.com/source/drivers/usb/host/ehci-lpm.c) the
+> USB device is asked to go to LPM mode and there is a wait for 10ms. I
+> guess the LPM transition (L0 to L1 state transition) should take place
+> within some micro seconds then why should we wait for 10ms for ACK?
 
-> David,
->     What we can do to help improving Linux OS is only about fatal
-> error ? Can I do something to give more clear warning information and
-> easy to find the root cause ?
-> 
+Please as USB-specific questions like this on the linux-usb mailing list
+if you wish to get answers.
 
-The warning you already quoted in your changelog is sufficient warning 
-that the SLIT is bad and it suppresses setting that distance.  Your 
-change, however, completely invalidates the SRAT if the number of 
-localities does not match the number of pxms.  We'd much rather simply 
-suppress the bad distance rather than invalidate the SRAT, especially 
-considering there is nothing in the ACPI spec that requires it.
+greg k-h
