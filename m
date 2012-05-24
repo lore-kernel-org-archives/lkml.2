@@ -1,113 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758837Ab2EXRy4 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 May 2012 13:54:56 -0400
-Received: from www.linutronix.de ([62.245.132.108]:57200 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756245Ab2EXRyy (ORCPT
+	id S1758935Ab2EXRzL (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 May 2012 13:55:11 -0400
+Received: from smarthost1.greenhost.nl ([195.190.28.78]:50214 "EHLO
+	smarthost1.greenhost.nl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758845Ab2EXRzE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 May 2012 13:54:54 -0400
-Message-Id: <20120524175056.391516712@linutronix.de>
-User-Agent: quilt/0.48-1
-Date: Thu, 24 May 2012 17:54:51 -0000
-From: Thomas Gleixner <tglx@linutronix.de>
-To: LKML <linux-kernel@vger.kernel.org>
-Cc: Chen Gong <gong.chen@linux.intel.com>, tony.luck@intel.com, bp@amd64.org,
-        x86@kernel.org, Peter Zijlstra <peterz@infradead.org>
-Subject: [patch 1/2] x86: mce Cleanup timer mess
-References: <20120524174943.989990966@linutronix.de>
-Content-Disposition: inline; filename=x86-mce-cleanup-timer-mess.patch
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+	Thu, 24 May 2012 13:55:04 -0400
+Message-ID: <acabbed13c4f02e653879844a9cbddef.squirrel@webmail.greenhost.nl>
+In-Reply-To: <1337875681-20717-2-git-send-email-wad@chromium.org>
+References: <20120522173942.GJ11775@ZenIV.linux.org.uk>
+    <1337875681-20717-1-git-send-email-wad@chromium.org>
+    <1337875681-20717-2-git-send-email-wad@chromium.org>
+Date: Thu, 24 May 2012 19:54:50 +0200
+Subject: Re: [RFC PATCH 1/3] seccomp: Don't allow tracers to abuse RET_TRACE
+From: "Indan Zupancic" <indan@nul.nu>
+To: "Will Drewry" <wad@chromium.org>
+Cc: linux-kernel@vger.kernel.org, mcgrathr@google.com, hpa@zytor.com,
+        netdev@parisplace.org, linux-security-module@vger.kernel.org,
+        kernel-hardening@lists.openwall.com, mingo@redhat.com, oleg@redhat.com,
+        peterz@infradead.org, rdunlap@xenotime.net, tglx@linutronix.de,
+        luto@mit.edu, serge.hallyn@canonical.com, pmoore@redhat.com,
+        akpm@linux-foundation.org, corbet@lwn.net, markus@chromium.org,
+        coreyb@linux.vnet.ibm.com, keescook@chromium.org,
+        viro@zeniv.linux.org.uk, jmorris@namei.org,
+        "Will Drewry" <wad@chromium.org>
+User-Agent: SquirrelMail/1.4.22
+MIME-Version: 1.0
+Content-Type: text/plain;charset=UTF-8
+Content-Transfer-Encoding: 8bit
+X-Priority: 3 (Normal)
+Importance: Normal
+X-Spam-Score: 0.0
+X-Scan-Signature: 729ef2e9e2cd27dd49f9ca04774c95e6
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Use unsigned long for dealing with jiffies not int. Rename the
-callback to something sensible. Use __this_cpu_read/write for
-accessing per cpu data.
+On Thu, May 24, 2012 18:07, Will Drewry wrote:
+> Ensure that consumers of the PTRACE_EVENT_SECCOMP notification
+> cannot change the system call number for the traced task
+> without it resulting in the system call being skipped.
+>
+> Traditionally, tracers will set the system call number to
+> -1 to skip the system call. This behavior will work as expected
+> but the tracer will be unable to remap the system call to a valid
+> system call after the seccomp policy has been evaluated.
+>
+> Signed-off-by: Will Drewry <wad@chromium.org>
+> ---
+>  kernel/seccomp.c |    4 ++++
+>  1 file changed, 4 insertions(+)
+>
+> diff --git a/kernel/seccomp.c b/kernel/seccomp.c
+> index ee376be..33f0ad6 100644
+> --- a/kernel/seccomp.c
+> +++ b/kernel/seccomp.c
+> @@ -425,6 +425,10 @@ int __secure_computing(int this_syscall)
+>  			 */
+>  			if (fatal_signal_pending(current))
+>  				break;
+> +			/* Skip the system call if the tracer changed it. */
+> +			if (this_syscall !=
+> +			    syscall_get_nr(current, task_pt_regs(current)))
+> +				goto skip;
+>  			return 0;
+>  		case SECCOMP_RET_ALLOW:
+>  			return 0;
+> --
 
-Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
----
- arch/x86/kernel/cpu/mcheck/mce.c |   31 ++++++++++++++++---------------
- 1 file changed, 16 insertions(+), 15 deletions(-)
+This patch doesn't make any sense whatsoever. You can't know why a system
+call was blocked by a seccomp filter, assuming it's always because of the
+system call number is wrong.
 
-Index: linux-2.6/arch/x86/kernel/cpu/mcheck/mce.c
-===================================================================
---- linux-2.6.orig/arch/x86/kernel/cpu/mcheck/mce.c
-+++ linux-2.6/arch/x86/kernel/cpu/mcheck/mce.c
-@@ -1237,15 +1237,15 @@ void mce_log_therm_throt_event(__u64 sta
-  * poller finds an MCE, poll 2x faster.  When the poller finds no more
-  * errors, poll 2x slower (up to check_interval seconds).
-  */
--static int check_interval = 5 * 60; /* 5 minutes */
-+static unsigned long check_interval = 5 * 60; /* 5 minutes */
- 
--static DEFINE_PER_CPU(int, mce_next_interval); /* in jiffies */
-+static DEFINE_PER_CPU(unsigned long, mce_next_interval); /* in jiffies */
- static DEFINE_PER_CPU(struct timer_list, mce_timer);
- 
--static void mce_start_timer(unsigned long data)
-+static void mce_timer_fn(unsigned long data)
- {
--	struct timer_list *t = &per_cpu(mce_timer, data);
--	int *n;
-+	struct timer_list *t = &__get_cpu_var(mce_timer);
-+	unsigned long iv;
- 
- 	WARN_ON(smp_processor_id() != data);
- 
-@@ -1258,13 +1258,14 @@ static void mce_start_timer(unsigned lon
- 	 * Alert userspace if needed.  If we logged an MCE, reduce the
- 	 * polling interval, otherwise increase the polling interval.
- 	 */
--	n = &__get_cpu_var(mce_next_interval);
-+	iv = __this_cpu_read(mce_next_interval);
- 	if (mce_notify_irq())
--		*n = max(*n/2, HZ/100);
-+		iv = max(iv, (unsigned long) HZ/100);
- 	else
--		*n = min(*n*2, (int)round_jiffies_relative(check_interval*HZ));
-+		iv = min(iv * 2, round_jiffies_relative(check_interval * HZ));
-+	__this_cpu_write(mce_next_interval, iv);
- 
--	t->expires = jiffies + *n;
-+	t->expires = jiffies + iv;
- 	add_timer_on(t, smp_processor_id());
- }
- 
-@@ -1542,17 +1543,17 @@ static void __mcheck_cpu_init_vendor(str
- static void __mcheck_cpu_init_timer(void)
- {
- 	struct timer_list *t = &__get_cpu_var(mce_timer);
--	int *n = &__get_cpu_var(mce_next_interval);
-+	unsigned long iv = __this_cpu_read(mce_next_interval);
- 
--	setup_timer(t, mce_start_timer, smp_processor_id());
-+	setup_timer(t, mce_timer_fn, smp_processor_id());
- 
- 	if (mce_ignore_ce)
- 		return;
- 
--	*n = check_interval * HZ;
--	if (!*n)
-+	__this_cpu_write(mce_next_interval, iv);
-+	if (!iv)
- 		return;
--	t->expires = round_jiffies(jiffies + *n);
-+	t->expires = round_jiffies(jiffies + iv);
- 	add_timer_on(t, smp_processor_id());
- }
- 
-@@ -2262,7 +2263,7 @@ mce_cpu_callback(struct notifier_block *
- 	case CPU_DOWN_FAILED_FROZEN:
- 		if (!mce_ignore_ce && check_interval) {
- 			t->expires = round_jiffies(jiffies +
--					   __get_cpu_var(mce_next_interval));
-+					per_cpu(mce_next_interval, cpu));
- 			add_timer_on(t, cpu);
- 		}
- 		smp_call_function_single(cpu, mce_reenable_cpu, &action, 1);
+Also, you don't check if an allowed system call is changed into a denied
+one, so this doesn't protect against ptracers bypassing seccomp filters.
+
+And one of the main points of PTRACE_EVENT_SECCOMP events was that it's
+useful for cases that can't be handled or decided by the seccomp filter.
+Then taking away the ability to change the syscall number makes it a lot
+less useful.
+
+Either do the seccomp test before or after ptrace, or both, but please
+don't introduce ad hoc checks like this.
+
+Greetings,
+
+Indan
 
 
