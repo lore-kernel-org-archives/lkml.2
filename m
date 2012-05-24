@@ -1,62 +1,167 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756127Ab2EXKze (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 May 2012 06:55:34 -0400
-Received: from s15943758.onlinehome-server.info ([217.160.130.188]:34876 "EHLO
-	mail.x86-64.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754339Ab2EXKzd (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 May 2012 06:55:33 -0400
-Date: Thu, 24 May 2012 12:56:04 +0200
-From: Borislav Petkov <bp@amd64.org>
-To: Mauro Carvalho Chehab <mchehab@redhat.com>
-Cc: Linux Edac Mailing List <linux-edac@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Aristeu Rozanski <arozansk@redhat.com>,
-        Doug Thompson <norsk5@yahoo.com>, Steven Rostedt <rostedt@goodmis.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Ingo Molnar <mingo@redhat.com>
-Subject: Re: [PATCH] RAS: Add a tracepoint for reporting memory controller
- events
-Message-ID: <20120524105604.GC27063@aftab.osrc.amd.com>
-References: <1337358773-6919-38-git-send-email-mchehab@redhat.com>
- <1337854460-25191-1-git-send-email-mchehab@redhat.com>
+	id S932701Ab2EXK4v (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 May 2012 06:56:51 -0400
+Received: from fieldses.org ([174.143.236.118]:47136 "EHLO fieldses.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755985Ab2EXK4t (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 24 May 2012 06:56:49 -0400
+Date: Thu, 24 May 2012 06:56:48 -0400
+From: "J. Bruce Fields" <bfields@fieldses.org>
+To: Stanislav Kinsbursky <skinsbursky@parallels.com>
+Cc: "linux-nfs@vger.kernel.org" <linux-nfs@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "devel@openvz.org" <devel@openvz.org>
+Subject: Re: [PATCH] NFSd: fix locking in nfsd_forget_delegations()
+Message-ID: <20120524105648.GA19875@fieldses.org>
+References: <20120522102444.6988.45434.stgit@localhost.localdomain>
+ <20120523213158.GB13710@fieldses.org>
+ <4FBDBBFF.2000000@parallels.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <1337854460-25191-1-git-send-email-mchehab@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <4FBDBBFF.2000000@parallels.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, May 24, 2012 at 07:14:20AM -0300, Mauro Carvalho Chehab wrote:
-> + * Default error mechanisms for Memory Controller errors (CE and UE)
-> + */
-> +TRACE_EVENT(mc_event,
-> +
-> +	TP_PROTO(const unsigned int err_type,
-> +		 const unsigned int mc_index,
-> +		 const char *error_msg,
-> +		 const char *label,
-> +		 int layer0,
-> +		 int layer1,
-> +		 int layer2,
-> +		 unsigned long address,
-> +		 unsigned long grain,
-> +		 unsigned long syndrome,
-> +		 const char *driver_detail),
+On Thu, May 24, 2012 at 08:41:35AM +0400, Stanislav Kinsbursky wrote:
+> 24.05.2012 01:31, J. Bruce Fields написал:
+> >On Tue, May 22, 2012 at 02:25:14PM +0400, Stanislav Kinsbursky wrote:
+> >>This patch adds recall_lock hold to nfsd_forget_delegations() to protect
+> >>nfsd_process_n_delegations() call.
+> >>Also, looks like it would be better to collect delegations to some local
+> >>on-stack list, and then unhash collected list. This split allows to simplify
+> >>locking, because delegation traversing is protected by recall_lock, when
+> >>delegation unhash is protected by client_mutex.
+> >All this indirection is getting a little much.
+> >
+> >How about replacing nfsd_process_n_delegations by something that always
+> >does the list-move?:
+> 
+> Is it correct?
+> List move is suitable for unhash delegations since we anyway remove
+> delegation from fi_delegations list.
+> But seems we don't do this for delegations recall...
 
-What about the comments I had about layer{0,1,2} and grain?
+Oh, blah, you're right of course.
 
-http://marc.info/?l=linux-edac&m=133769207124938&w=2
+Still, this seems a little tangled, and I'd prefer not to have to add
+the useless extra parameter to break_one_deleg().
 
--- 
-Regards/Gruss,
-Boris.
+--b.
 
-Advanced Micro Devices GmbH
-Einsteinring 24, 85609 Dornach
-GM: Alberto Bozzo
-Reg: Dornach, Landkreis Muenchen
-HRB Nr. 43632 WEEE Registernr: 129 19551
+> 
+> 
+> >void nfsd_forget_delegations(u64 num)
+> >{
+> >	unsigned int count;
+> >	list_head victims;
+> >
+> >	nfs4_lock_state();
+> >	count = nfsd_get_n_delegations(num,&victims);
+> >	list_for_each_entry_safe(...,&victims, ...)
+> >		unhash_delegation();
+> >	unlock_state();
+> >}
+> >
+> >ditto for recall_delegations, and take the recall_lock inside
+> >nfsd_get_n_delegations?
+> >
+> >Or something like that.
+> >
+> >--b.
+> >
+> >>Signed-off-by: Stanislav Kinsbursky<skinsbursky@parallels.com>
+> >>---
+> >>  fs/nfsd/nfs4state.c |   32 ++++++++++++++++++++++++--------
+> >>  1 files changed, 24 insertions(+), 8 deletions(-)
+> >>
+> >>diff --git a/fs/nfsd/nfs4state.c b/fs/nfsd/nfs4state.c
+> >>index 21266c7..f004e61 100644
+> >>--- a/fs/nfsd/nfs4state.c
+> >>+++ b/fs/nfsd/nfs4state.c
+> >>@@ -2597,7 +2597,7 @@ out:
+> >>  	return ret;
+> >>  }
+> >>
+> >>-static void nfsd_break_one_deleg(struct nfs4_delegation *dp)
+> >>+static void nfsd_break_one_deleg(struct nfs4_delegation *dp, void *data)
+> >>  {
+> >>  	/* We're assuming the state code never drops its reference
+> >>  	 * without first removing the lease.  Since we're in this lease
+> >>@@ -2633,7 +2633,7 @@ static void nfsd_break_deleg_cb(struct file_lock *fl)
+> >>  	spin_lock(&recall_lock);
+> >>  	fp->fi_had_conflict = true;
+> >>  	list_for_each_entry(dp,&fp->fi_delegations, dl_perfile)
+> >>-		nfsd_break_one_deleg(dp);
+> >>+		nfsd_break_one_deleg(dp, NULL);
+> >>  	spin_unlock(&recall_lock);
+> >>  }
+> >>
+> >>@@ -4694,7 +4694,7 @@ void nfsd_forget_openowners(u64 num)
+> >>  	printk(KERN_INFO "NFSD: Forgot %d open owners", count);
+> >>  }
+> >>
+> >>-int nfsd_process_n_delegations(u64 num, void (*deleg_func)(struct nfs4_delegation *))
+> >>+int nfsd_process_n_delegations(u64 num, void (*deleg_func)(struct nfs4_delegation *, void *), void *data)
+> >>  {
+> >>  	int i, count = 0;
+> >>  	struct nfs4_file *fp, *fnext;
+> >>@@ -4703,7 +4703,7 @@ int nfsd_process_n_delegations(u64 num, void (*deleg_func)(struct nfs4_delegatio
+> >>  	for (i = 0; i<  FILE_HASH_SIZE; i++) {
+> >>  		list_for_each_entry_safe(fp, fnext,&file_hashtbl[i], fi_hash) {
+> >>  			list_for_each_entry_safe(dp, dnext,&fp->fi_delegations, dl_perfile) {
+> >>-				deleg_func(dp);
+> >>+				deleg_func(dp, data);
+> >>  				if (++count == num)
+> >>  					return count;
+> >>  			}
+> >>@@ -4713,15 +4713,31 @@ int nfsd_process_n_delegations(u64 num, void (*deleg_func)(struct nfs4_delegatio
+> >>  	return count;
+> >>  }
+> >>
+> >>+/* Called under the recall_lock spinlock. */
+> >>+static void
+> >>+collect_delegation(struct nfs4_delegation *dp, void *data)
+> >>+{
+> >>+	struct list_head *list = data;
+> >>+
+> >>+	list_move(&dp->dl_perfile, list);
+> >>+}
+> >>+
+> >>  void nfsd_forget_delegations(u64 num)
+> >>  {
+> >>  	unsigned int count;
+> >>+	struct nfs4_delegation *dp, *dnext;
+> >>+	LIST_HEAD(unhash_list);
+> >>
+> >>-	nfs4_lock_state();
+> >>-	count = nfsd_process_n_delegations(num, unhash_delegation);
+> >>-	nfs4_unlock_state();
+> >>+	spin_lock(&recall_lock);
+> >>+	count = nfsd_process_n_delegations(num, collect_delegation,&unhash_list);
+> >>+	spin_unlock(&recall_lock);
+> >>
+> >>  	printk(KERN_INFO "NFSD: Forgot %d delegations", count);
+> >>+
+> >>+	nfs4_lock_state();
+> >>+	list_for_each_entry_safe(dp, dnext,&unhash_list, dl_perfile)
+> >>+		unhash_delegation(dp);
+> >>+	nfs4_unlock_state();
+> >>  }
+> >>
+> >>  void nfsd_recall_delegations(u64 num)
+> >>@@ -4730,7 +4746,7 @@ void nfsd_recall_delegations(u64 num)
+> >>
+> >>  	nfs4_lock_state();
+> >>  	spin_lock(&recall_lock);
+> >>-	count = nfsd_process_n_delegations(num, nfsd_break_one_deleg);
+> >>+	count = nfsd_process_n_delegations(num, nfsd_break_one_deleg, NULL);
+> >>  	spin_unlock(&recall_lock);
+> >>  	nfs4_unlock_state();
+> >>
+> >>
+> 
