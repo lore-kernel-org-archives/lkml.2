@@ -1,75 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757511Ab2EXPwi (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 May 2012 11:52:38 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:60014 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756771Ab2EXPwh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 May 2012 11:52:37 -0400
-Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
-	Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
-	Kingdom.
-	Registered in England and Wales under Company Registration No. 3798903
-From: David Howells <dhowells@redhat.com>
-In-Reply-To: <6422.1337872046@redhat.com>
-References: <6422.1337872046@redhat.com> <1335357857-16416-1-git-send-email-miklos@szeredi.hu>
-To: Miklos Szeredi <miklos@szeredi.hu>
-Cc: dhowells@redhat.com, viro@ZenIV.linux.org.uk,
-        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
-        hch@infradead.org, torvalds@linux-foundation.org, mszeredi@suse.cz
-Subject: Re: [PATCH 00/16] vfs: atomic open v4 (part 1)
-Date: Thu, 24 May 2012 16:52:02 +0100
-Message-ID: <7204.1337874722@redhat.com>
+	id S1757545Ab2EXPxm (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 May 2012 11:53:42 -0400
+Received: from lxorguk.ukuu.org.uk ([81.2.110.251]:58973 "EHLO
+	lxorguk.ukuu.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753826Ab2EXPxk (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 24 May 2012 11:53:40 -0400
+Date: Thu, 24 May 2012 16:56:38 +0100
+From: Alan Cox <alan@lxorguk.ukuu.org.uk>
+To: Udo van den Heuvel <udovdh@xs4all.nl>
+Cc: linux-kernel@vger.kernel.org, hdegoede@redhat.com
+Subject: Re: pwc driver bugs
+Message-ID: <20120524165638.0ade5a6f@pyramind.ukuu.org.uk>
+In-Reply-To: <4FBE4DD5.50906@xs4all.nl>
+References: <4FBE4DD5.50906@xs4all.nl>
+X-Mailer: Claws Mail 3.8.0 (GTK+ 2.24.8; x86_64-redhat-linux-gnu)
+Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Thu, 24 May 2012 17:03:49 +0200
+Udo van den Heuvel <udovdh@xs4all.nl> wrote:
 
-I'd also recommend changing the "ok" and "common" labels in do_last() to
-something a bit more meaningful, perhaps:
+> Hello,
+> 
+> I discovered some issues in the pwc driver for certain USB webcams.
+> I opened some bugs[1].
+> I do think both issues might be related and the crash issue is quite
+> serious.
+> 
+> Please have a look, I can assist by testing any patches with fixes. (for
+> ~3.3.7)
 
-	common -> finish_open
-	ok -> finish_open_may_want_write
+commit ceede9fa8939e40ad0ddb4ad1355f45c6f1d3478
 
-Also, does it make sense to combine:
+looks rather relevant here.
 
-	if (!S_ISREG(nd->inode->i_mode))
-		will_truncate = 0;
+commit ceede9fa8939e40ad0ddb4ad1355f45c6f1d3478
+Author: Hans de Goede <hdegoede@redhat.com>
+Date:   Wed May 9 04:43:12 2012 -0300
 
-with:
-
-	int will_truncate = open_flag & O_TRUNC;
-
-up at the top of the function.
-
-As the code stands, if ->atomic_open() opens the file but does not create it,
-handle_truncate() will be called on it even if it is not a regular file,
-whereas by the normal path, it won't.
-
-I would also be tempted to move the body of:
-
-	if (filp == ERR_PTR(-EOPENSTALE) && save_parent.dentry && !retried) {
-		BUG_ON(save_parent.dentry != dir);
-		path_put(&nd->path);
-		nd->path = save_parent;
-		nd->inode = dir->d_inode;
-		save_parent.mnt = NULL;
-		save_parent.dentry = NULL;
-		if (want_write) {
-			mnt_drop_write(nd->path.mnt);
-			want_write = 0;
-		}
-		retried = true;
-		goto retry_lookup;
-	}
-
-before the retry_lookup label and then goto around it from the preceding
-if-else statement or place it at the bottom to make the "common:" block simpler
-to read.  Also, you could nest the if (filp == ERR_PTR(-EOPENSTALE)...) inside
-if (IS_ERR(filp)).
-
-Can I also suggest being consistent about the use of int v bool?  "created"
-and "retried" are bool, but "will_truncate", "want_write" and "symlink_ok" are
-not.  Granted some of this is likely inherited from the previous incarnation.
-
-David
+    [media] pwc: Fix locking
+    
+    My last locking rework for pwc mistakenly assumed that videbuf2 does
+    its own locking, but it does not! This patch fixes the missing
+    locking by moving over the the video_device lock, and introducing a
+    separate lock for the videobuf2_queue.
+    
+    Signed-off-by: Hans de Goede <hdegoede@redhat.com>
+    Signed-off-by: Mauro Carvalho Chehab <mchehab@redhat.com>
