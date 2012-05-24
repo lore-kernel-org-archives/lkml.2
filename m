@@ -1,30 +1,28 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933100Ab2EXKma (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 May 2012 06:42:30 -0400
-Received: from casper.infradead.org ([85.118.1.10]:39131 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932577Ab2EXKm3 (ORCPT
+	id S932777Ab2EXKo2 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 May 2012 06:44:28 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:35491 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755599Ab2EXKo1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 May 2012 06:42:29 -0400
-Subject: Re: [PATCH 02/16] perf: Add ability to attach registers dump to
+	Thu, 24 May 2012 06:44:27 -0400
+Subject: Re: [PATCH 04/16] perf: Add ability to attach user stack dump to
  sample
 From: Peter Zijlstra <a.p.zijlstra@chello.nl>
-To: Stephane Eranian <eranian@google.com>
-Cc: Jiri Olsa <jolsa@redhat.com>, acme@redhat.com, mingo@elte.hu,
-        paulus@samba.org, cjashfor@linux.vnet.ibm.com, fweisbec@gmail.com,
+To: Jiri Olsa <jolsa@redhat.com>
+Cc: acme@redhat.com, mingo@elte.hu, paulus@samba.org,
+        cjashfor@linux.vnet.ibm.com, fweisbec@gmail.com, eranian@google.com,
         gorcunov@openvz.org, tzanussi@gmail.com, mhiramat@redhat.com,
         robert.richter@amd.com, fche@redhat.com, linux-kernel@vger.kernel.org,
         masami.hiramatsu.pt@hitachi.com, drepper@gmail.com, asharma@fb.com,
         benjamin.redelings@nescent.org
-In-Reply-To: <CABPqkBR9hewjNUJf9ByD-jHc42e_qwQiKoP68RyL7BU8Q7BGgQ@mail.gmail.com>
+In-Reply-To: <1337801535-12865-5-git-send-email-jolsa@redhat.com>
 References: <1337801535-12865-1-git-send-email-jolsa@redhat.com>
-	 <1337801535-12865-3-git-send-email-jolsa@redhat.com>
-	 <1337853048.9783.92.camel@laptop>
-	 <CABPqkBR9hewjNUJf9ByD-jHc42e_qwQiKoP68RyL7BU8Q7BGgQ@mail.gmail.com>
+	 <1337801535-12865-5-git-send-email-jolsa@redhat.com>
 Content-Type: text/plain; charset="UTF-8"
-Date: Thu, 24 May 2012 12:42:22 +0200
-Message-ID: <1337856142.9783.104.camel@laptop>
+Date: Thu, 24 May 2012 12:44:22 +0200
+Message-ID: <1337856262.9783.106.camel@laptop>
 Mime-Version: 1.0
 X-Mailer: Evolution 2.32.2 
 Content-Transfer-Encoding: 7bit
@@ -32,35 +30,43 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2012-05-24 at 12:06 +0200, Stephane Eranian wrote:
+On Wed, 2012-05-23 at 21:32 +0200, Jiri Olsa wrote:
+> @@ -173,6 +174,15 @@ enum perf_sample_regs {
+>  };
+>  
+>  /*
+> + * Values for sample_stack when PERF_SAMPLE_STACK is set.
+> + * Defines stack dump to be attached to the sample.
+> + */
+> +enum perf_sample_stack {
+> +       PERF_SAMPLE_STACK_USER  = 1U << 0, /* user stack */
+> +       PERF_SAMPLE_STACK_MAX   = 1U << 1, /* non-ABI */
+> +};
+> +
+> +/*
+>   * The format of the data returned by read() on a perf event fd,
+>   * as specified by attr.read_format:
+>   *
+> @@ -291,6 +301,14 @@ struct perf_event_attr {
+>          * See asm/perf_regs.h for details.
+>          */
+>         __u64   sample_regs_user;
+> +
+> +       __u64   sample_stack; /* enum perf_sample_stack */
+> +
+> +       /*
+> +        * Defines size of the user stack to dump on samples,
+> +        * for sample_stack PERF_SAMPLE_STACK_USER settings.
+> +        */
+> +       __u64   sample_stack_user;
+>  }; 
 
-> > What are we doing here and why?
-> >
-> I think this is related to a discusion we had earlier about which
-> machine state you want
-> to sample.
-> 
-> There are 3 possible machine states:
->   1- user level (even when sample is in kernel AND assuming you did
-> not hit a kernel only thread)
->   2- interrupted state (@ PMU interrupt)
->   3- precise state (state captured by PEBS on Intel, for instance)
-> 
-> Jiri is only interested in 1/. I am interested in the other two as well.
-> 
-> Question: is there a situation where we could need more than one machine
-> state per sample?
+And here we have a similarly weird set-up. If you're ever going to add
+another type, you have to make another __u64 since clearly another type
+cannot use sample_stack_user per the name.
 
-Well, IIRC you always wanted both 2 and 3 at the same time to compute
-skid, thus:
-
-> If not, then a single bitmask is enough.
-
-Indeed, so then we get to multiple bitmasks and unless you want to be
-restricted to the same bitmap for all these types this setup won't
-actually work.
-
-Also, all that was missing from the changelog.
+Thus, if you get another size variable you might as well use that to
+discover the state that is now sample_stack.
 
 
 
