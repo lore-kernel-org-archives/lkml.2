@@ -1,53 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933982Ab2EXRWy (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 May 2012 13:22:54 -0400
-Received: from mail.openrapids.net ([64.15.138.104]:37060 "EHLO
-	blackscsi.openrapids.net" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S933384Ab2EXRWw (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 May 2012 13:22:52 -0400
-Date: Thu, 24 May 2012 13:22:49 -0400
-From: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
-To: linux-kernel@vger.kernel.org, lttng-dev@lists.lttng.org,
-        rp@svcs.cs.pdx.edu
-Cc: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Lai Jiangshan <laijs@cn.fujitsu.com>,
-        Stephen Hemminger <shemminger@vyatta.com>
-Subject: [RELEASE] Userspace RCU 0.7.1
-Message-ID: <20120524172249.GA27643@Krystal>
+	id S1758654Ab2EXRYW (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 May 2012 13:24:22 -0400
+Received: from na3sys009aog121.obsmtp.com ([74.125.149.145]:36698 "EHLO
+	na3sys009aog121.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1756965Ab2EXRYU convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 24 May 2012 13:24:20 -0400
+From: Kevin Hilman <khilman@ti.com>
+To: "J\, KEERTHY" <j-keerthy@ti.com>
+Cc: "Rafael J. Wysocki" <rjw@sisk.pl>, greg@kroah.com,
+        linux-omap@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org, linux-pm@lists.linux-foundation.org,
+        j-pihet@ti.com
+Subject: Re: [PATCH V3 00/10] PM: Create the AVS(Adaptive Voltage Scaling)
+Organization: Texas Instruments, Inc.
+References: <1335462041-4949-1-git-send-email-j-keerthy@ti.com>
+	<87397by2h9.fsf@ti.com>
+	<CAJ6a13aJwesHw0frCV+EfvYaep09cZGcu_PopuHzye1HS2tgvg@mail.gmail.com>
+	<CAJ6a13YLogA7M=rzSJAW6fHZOujFY0Crfdz9Sc5qL0mt8kX9CA@mail.gmail.com>
+Date: Thu, 24 May 2012 10:24:15 -0700
+In-Reply-To: <CAJ6a13YLogA7M=rzSJAW6fHZOujFY0Crfdz9Sc5qL0mt8kX9CA@mail.gmail.com>
+	(KEERTHY J.'s message of "Wed, 23 May 2012 10:21:19 +0530")
+Message-ID: <87obpdv6f4.fsf@ti.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.3 (gnu/linux)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-X-Editor: vi
-X-Info: http://www.efficios.com
-User-Agent: Mutt/1.5.18 (2008-05-17)
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-liburcu is a LGPLv2.1 userspace RCU (read-copy-update) library. This
-data synchronization library provides read-side access which scales
-linearly with the number of cores. It does so by allowing multiples
-copies of a given data structure to live at the same time, and by
-monitoring the data structure accesses to detect grace periods after
-which memory reclamation is possible.
+"J, KEERTHY" <j-keerthy@ti.com> writes:
 
-liburcu-cds provides efficient data structures based on RCU and
-lock-free algorithms. Those structures include hash tables, queues,
-stacks, and doubly-linked lists.
+> On Tue, May 15, 2012 at 11:16 AM, J, KEERTHY <j-keerthy@ti.com> wrote:
+>> On Tue, May 8, 2012 at 5:21 AM, Kevin Hilman <khilman@ti.com> wrote:
+>>> Rafael,
+>>>
+>>> Keerthy <j-keerthy@ti.com> writes:
+>>>
+>>>> From: J Keerthy <j-keerthy@ti.com>
+>>>>
+>>>> AVS(Adaptive Voltage Scaling) is a power management technique which
+>>>> controls the operating voltage of a device in order to optimize (i.e. reduce)
+>>>> its power consumption. The voltage is adapted depending on static factors
+>>>> (chip manufacturing process) and dynamic factors (temperature
+>>>> depending performance).
+>>>> The TI AVS solution is named Smartreflex.
+>>>>
+>>>> To that end, create the AVS driver in drivers/power/avs and
+>>>> move the OMAP SmartReflex code to the new directory. The
+>>>> class driver is still retained in the mach-omap2 directory.
+>>>
+>>> How should we handle this for upstream?
+>>>
+>>> It does a bunch of cleanup under arch/arm then does the move to
+>>> drivers/power the end.  To avoid conflicts with other OMAP core changes,
+>>> I would suggest we take this through the OMAP tree.
+>>>
+>>> With your ack, I'd be glad to take it.
+>>
+>> Hello Rafael,
+>>
+>> A gentle ping on this series.
+>
+> Hi Greg,
+>
+> This series has Kevin's comments incorporated.
+>
+> Kevin,
+>
+> Can i have your Ack for this series?
+>
 
-This is a compile-fix release, fixing a compile issue introduced a few
-days before the 0.7.0 release. We plan to deploy a continuous
-integration test setup to catch this kind of issue earlier in a very
-near future.
+Well, as mentioned above, I'm waiting for Rafael's ack, then I will
+merge it.
 
-Changelog:
-2012-05-24 Userspace RCU 0.7.1
-        * fix: uatomic_set return value compile fix for non-x86 arch.
+Because of all the arch/arm/mach-omap2/* changes, I would like to merge
+this via the OMAP tree to avoid conflicts with other stuff we have
+changing in arch/arm/mach-omap2/*
 
--- 
-Mathieu Desnoyers
-Operating System Efficiency R&D Consultant
-EfficiOS Inc.
-http://www.efficios.com
+Kevin
+
