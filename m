@@ -1,189 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755871Ab2EXKgb (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 May 2012 06:36:31 -0400
-Received: from mail-lb0-f174.google.com ([209.85.217.174]:54159 "EHLO
-	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755202Ab2EXKg3 (ORCPT
+	id S933044Ab2EXKh5 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 May 2012 06:37:57 -0400
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:52928 "EHLO
+	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755564Ab2EXKhz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 May 2012 06:36:29 -0400
-Message-ID: <4FBE0F23.3080903@openvz.org>
-Date: Thu, 24 May 2012 14:36:19 +0400
-From: Konstantin Khlebnikov <khlebnikov@openvz.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.2) Gecko/20120217 Firefox/10.0.2 Iceape/2.7.2
+	Thu, 24 May 2012 06:37:55 -0400
+Date: Thu, 24 May 2012 11:37:49 +0100
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Marc Reilly <marc@cpdesign.com.au>
+Cc: Shawn Guo <shawn.guo@freescale.com>,
+        Uwe =?iso-8859-1?Q?Kleine-K=F6nig?= 
+	<u.kleine-koenig@pengutronix.de>,
+        Fabio Estevam <festevam@gmail.com>,
+        Samuel Ortiz <sameo@linux.intel.com>,
+        Sascha Hauer <kernel@pengutronix.de>,
+        Philippe =?iso-8859-1?Q?R=E9tornaz?= <philippe.retornaz@epfl.ch>,
+        linux-kernel <linux-kernel@vger.kernel.org>
+Subject: Re: mc13xxx-core: kernel hangs after 'regmap_read'
+Message-ID: <20120524103749.GJ5361@opensource.wolfsonmicro.com>
+References: <201205221053.21792.marc@cpdesign.com.au>
+ <20120524064635.GP3710@pengutronix.de>
+ <20120524073315.GE7843@S2100-06.ap.freescale.net>
+ <201205241908.38278.marc@cpdesign.com.au>
 MIME-Version: 1.0
-To: Martin Mokrejs <mmokrejs@fold.natur.cuni.cz>
-CC: Andrew Morton <akpm@linux-foundation.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        "markus@trippelsdorf.de" <markus@trippelsdorf.de>,
-        "hughd@google.com" <hughd@google.com>,
-        "kamezawa.hiroyu@jp.fujitsu.com" <kamezawa.hiroyu@jp.fujitsu.com>,
-        "oleg@redhat.com" <oleg@redhat.com>, Michal Hocko <mhocko@suse.cz>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>
-Subject: Re: 3.4-rc7: BUG: Bad rss-counter state mm:ffff88040b56f800 idx:1
- val:-59
-References: <4FBC1618.5010408@fold.natur.cuni.cz> <20120522162835.c193c8e0.akpm@linux-foundation.org> <4FBD18A2.9060803@fold.natur.cuni.cz>
-In-Reply-To: <4FBD18A2.9060803@fold.natur.cuni.cz>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <201205241908.38278.marc@cpdesign.com.au>
+X-Cookie: You will get what you deserve.
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Martin Mokrejs wrote:
-> Hi,
->    I rebooted the laptop twice today after just brief uses and the messages did not
-> appear in the logs.
->
-> Now I just applied the below patch and during two reboots it did not appear either.
-> Do I have to use the computer for some longer while to reproduce the issue? ;-)
+On Thu, May 24, 2012 at 07:08:37PM +1000, Marc Reilly wrote:
 
-Yes, some data must be in swap to reproduce this, so memory pressure required here.
+> I'm wondering about regmap_init where the buf_size is set up. I think it will 
+> only end up being 3 bytes. I think line 249 should be something like:
 
->
-> I will stay with the patch applied over 3.4-rc7 and would the BUG: re-appear I will
-> let you know. But I doubt at the moment I could confirm it really helped.
-> Clues how to reproduce? ;)
-> Martin
->
-> Andrew Morton wrote:
->> On Wed, 23 May 2012 00:41:28 +0200
->> Martin Mokrejs<mmokrejs@fold.natur.cuni.cz>  wrote:
->>
->>> Hi Andrew,
->>>    while shutting down my laptop (Dell Vostro 3550 with 16GB RAM, core i7) with 3.4-rc7 I got:
->>>
->>> May 23 00:07:54 vostro kernel: [352687.968267] BUG: Bad rss-counter state mm:ffff88040b56f800 idx:1 val:-59
->>> May 23 00:07:54 vostro kernel: [352687.968312] BUG: Bad rss-counter state mm:ffff88040b56f800 idx:2 val:59
->>> May 23 00:07:55 vostro acpid: exiting
->>> May 23 00:07:55 vostro syslog-ng[2838]: syslog-ng shutting down; version='3.3.4'
->>>
->>>    I found by Google the below thread and thought that maybe it is related?
->>> http://comments.gmane.org/gmane.linux.kernel.mm/76459
->>>
->>> ...
->>>
->>
->>
->> Well hopefully the below will fix this?
->>
->> I notice that I don't have this tagged for -stable backporting.  That
->> seems wrong.  Konstantin, do we know for how long this bug has been in
->> there?
->>
->>
->>
->> From: Konstantin Khlebnikov<khlebnikov@openvz.org>
->> Subject: mm: correctly synchronize rss-counters at exit/exec
->>
->> mm->rss_stat counters have per-task delta: task->rss_stat.  Before
->> changing task->mm pointer the kernel must flush this delta with
->> sync_mm_rss().
->>
->> do_exit() already calls sync_mm_rss() to flush the rss-counters before
->> committing the rss statistics into task->signal->maxrss, taskstats, audit
->> and other stuff.  Unfortunately the kernel does this before calling
->> mm_release(), which can call put_user() for processing
->> task->clear_child_tid.  So at this point we can trigger page-faults and
->> task->rss_stat becomes non-zero again.  As a result mm->rss_stat becomes
->> inconsistent and check_mm() will print something like this:
->>
->> | BUG: Bad rss-counter state mm:ffff88020813c380 idx:1 val:-1
->> | BUG: Bad rss-counter state mm:ffff88020813c380 idx:2 val:1
->>
->> This patch moves sync_mm_rss() into mm_release(), and moves mm_release()
->> out of do_exit() and calls it earlier.  After mm_release() there should be
->> no pagefaults.
->>
->> [akpm@linux-foundation.org: tweak comment]
->> Signed-off-by: Konstantin Khlebnikov<khlebnikov@openvz.org>
->> Reported-by: Markus Trippelsdorf<markus@trippelsdorf.de>
->> Cc: Hugh Dickins<hughd@google.com>
->> Cc: KAMEZAWA Hiroyuki<kamezawa.hiroyu@jp.fujitsu.com>
->> Cc: Oleg Nesterov<oleg@redhat.com>
->> Signed-off-by: Andrew Morton<akpm@linux-foundation.org>
->> ---
->>
->>   fs/exec.c     |    1 -
->>   kernel/exit.c |   13 ++++++++-----
->>   kernel/fork.c |    8 ++++++++
->>   3 files changed, 16 insertions(+), 6 deletions(-)
->>
->> diff -puN fs/exec.c~mm-correctly-synchronize-rss-counters-at-exit-exec fs/exec.c
->> --- a/fs/exec.c~mm-correctly-synchronize-rss-counters-at-exit-exec
->> +++ a/fs/exec.c
->> @@ -823,7 +823,6 @@ static int exec_mmap(struct mm_struct *m
->>   	/* Notify parent that we're no longer interested in the old VM */
->>   	tsk = current;
->>   	old_mm = current->mm;
->> -	sync_mm_rss(old_mm);
->>   	mm_release(tsk, old_mm);
->>
->>   	if (old_mm) {
->> diff -puN kernel/exit.c~mm-correctly-synchronize-rss-counters-at-exit-exec kernel/exit.c
->> --- a/kernel/exit.c~mm-correctly-synchronize-rss-counters-at-exit-exec
->> +++ a/kernel/exit.c
->> @@ -423,6 +423,7 @@ void daemonize(const char *name, ...)
->>   	 * user space pages.  We don't need them, and if we didn't close them
->>   	 * they would be locked into memory.
->>   	 */
->> +	mm_release(current, current->mm);
->>   	exit_mm(current);
->>   	/*
->>   	 * We don't want to get frozen, in case system-wide hibernation
->> @@ -640,7 +641,6 @@ static void exit_mm(struct task_struct *
->>   	struct mm_struct *mm = tsk->mm;
->>   	struct core_state *core_state;
->>
->> -	mm_release(tsk, mm);
->>   	if (!mm)
->>   		return;
->>   	/*
->> @@ -959,9 +959,13 @@ void do_exit(long code)
->>   				preempt_count());
->>
->>   	acct_update_integrals(tsk);
->> -	/* sync mm's RSS info before statistics gathering */
->> -	if (tsk->mm)
->> -		sync_mm_rss(tsk->mm);
->> +
->> +	/* Set exit_code before complete_vfork_done() in mm_release() */
->> +	tsk->exit_code = code;
->> +
->> +	/* Release mm and sync mm's RSS info before statistics gathering */
->> +	mm_release(tsk, tsk->mm);
->> +
->>   	group_dead = atomic_dec_and_test(&tsk->signal->live);
->>   	if (group_dead) {
->>   		hrtimer_cancel(&tsk->signal->real_timer);
->> @@ -974,7 +978,6 @@ void do_exit(long code)
->>   		tty_audit_exit();
->>   	audit_free(tsk);
->>
->> -	tsk->exit_code = code;
->>   	taskstats_exit(tsk, group_dead);
->>
->>   	exit_mm(tsk);
->> diff -puN kernel/fork.c~mm-correctly-synchronize-rss-counters-at-exit-exec kernel/fork.c
->> --- a/kernel/fork.c~mm-correctly-synchronize-rss-counters-at-exit-exec
->> +++ a/kernel/fork.c
->> @@ -809,6 +809,14 @@ void mm_release(struct task_struct *tsk,
->>   		}
->>   		tsk->clear_child_tid = NULL;
->>   	}
->> +
->> +	/*
->> +	 * Final rss-counter synchronization. After this point there must be
->> +	 * no pagefaults into this mm from the current context.  Otherwise
->> +	 * mm->rss_stat will be inconsistent.
->> +	 */
->> +	if (mm)
->> +		sync_mm_rss(mm);
->>   }
->>
->>   /*
->> _
->>
->> .
->>
+> 	map->format.buf_size = (config->reg_bits 
+>                           + config->val_bits 
+> 					         + (config->pad_bits % 8)) / 8;
 
+> or perhaps better:
+> 	map->reg_shift = config->pad_bits % 8;
+> 	map->format.buf_size = (config->reg_bits 
+>                           + config->val_bits 
+> 					         + map->reg_shift) / 8;
+
+Yes, that's been missed in the addition of padding.  We should also be
+using DIV_ROUND_UP() which we aren't at the minute.  We could also do
+reg_bytes + pad_bytes + val_bytes which should cover everything I think?
