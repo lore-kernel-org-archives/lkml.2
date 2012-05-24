@@ -1,47 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754056Ab2EXIx5 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 May 2012 04:53:57 -0400
-Received: from mail.mev.co.uk ([62.49.15.74]:33896 "EHLO mail.mev.co.uk"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753381Ab2EXIxy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 May 2012 04:53:54 -0400
-Message-ID: <4FBDF715.4050808@mev.co.uk>
-Date: Thu, 24 May 2012 09:53:41 +0100
-From: Ian Abbott <abbotti@mev.co.uk>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120516 Thunderbird/12.0.1
+	id S1752816Ab2EXI4N (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 May 2012 04:56:13 -0400
+Received: from LGEMRELSE7Q.lge.com ([156.147.1.151]:51784 "EHLO
+	LGEMRELSE7Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751189Ab2EXI4K (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 24 May 2012 04:56:10 -0400
+X-AuditID: 9c930197-b7be2ae000000ebb-76-4fbdf7a79e4b
+From: Namhyung Kim <namhyung.kim@lge.com>
+To: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Ingo Molnar <mingo@redhat.com>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        Paul Mackerras <paulus@samba.org>, LKML <linux-kernel@vger.kernel.org>,
+        Stephane Eranian <eranian@google.com>
+Subject: Re: [PATCH] perf, x86: Make cycles:p working on SNB
+References: <1337828525-1789-1-git-send-email-namhyung.kim@lge.com>
+	<1337844471.9783.48.camel@laptop>
+Date: Thu, 24 May 2012 17:53:47 +0900
+In-Reply-To: <1337844471.9783.48.camel@laptop> (Peter Zijlstra's message of
+	"Thu, 24 May 2012 09:27:51 +0200")
+Message-ID: <87wr42q7s4.fsf@sejong.aot.lge.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.0.95 (gnu/linux)
 MIME-Version: 1.0
-To: Dan Carpenter <dan.carpenter@oracle.com>
-CC: H Hartley Sweeten <hartleys@visionengravers.com>,
-        Ian Abbott <ian.abbott@mev.co.uk>,
-        Linux Kernel <linux-kernel@vger.kernel.org>,
-        "devel@driverdev.osuosl.org" <devel@driverdev.osuosl.org>,
-        "fmhess@users.sourceforge.net" <fmhess@users.sourceforge.net>,
-        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>
-Subject: Re: [PATCH] staging: comedi: remove this_board macro in the s526
- driver
-References: <201205221820.10770.hartleys@visionengravers.com> <20120523054849.GK4637@mwanda> <4FBCAB50.5000907@mev.co.uk> <ADE657CA350FB648AAC2C43247A983F0020698BAC8D8@AUSP01VMBX24.collaborationhost.net> <20120523190715.GP4629@mwanda>
-In-Reply-To: <20120523190715.GP4629@mwanda>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2012-05-23 20:07, Dan Carpenter wrote:
-> On Wed, May 23, 2012 at 11:28:32AM -0500, H Hartley Sweeten wrote:
->> This would allow comedi_recognize() to walk the boardinfo
->> to find the match without all the ugly casts.
+Hi, Peter
+
+On Thu, 24 May 2012 09:27:51 +0200, Peter Zijlstra wrote:
+> Also I'm thinking you're using SNB-EP (you didn't say) since regular SNB
+> has PEBS disabled as per (6a600a8b).
 >
-> That function wouldn't be so bad if we just removed all the consts.
-> There is no point because we drop all of them anyway when we return
-> the struct.
 
-Well maybe some of the consts.  We could use const char **name_ptr 
-instead of const char *const *name_ptr.  *name_ptr is never modified, 
-but as name_ptr is just a local variable, the compiler can figure that 
-out for itself without the extra const.
+I don't actually have an idea whether it's a SNB-EP or regular
+one. ;-p Is Model 45 a SNB-EP?
 
--- 
--=( Ian Abbott @ MEV Ltd.    E-mail: <abbotti@mev.co.uk>        )=-
--=( Tel: +44 (0)161 477 1898   FAX: +44 (0)161 718 3587         )=-
+namhyung@sejong:perf$ head /proc/cpuinfo 
+processor	: 0
+vendor_id	: GenuineIntel
+cpu family	: 6
+model		: 45
+model name	: Intel(R) Core(TM) i7-3930K CPU @ 3.20GHz
+stepping	: 7
+microcode	: 0x704
+cpu MHz		: 1200.000
+cache size	: 12288 KB
+physical id	: 0
+
+
+Thanks,
+Namhyung
