@@ -1,42 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932507Ab2EXJY3 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 May 2012 05:24:29 -0400
-Received: from caramon.arm.linux.org.uk ([78.32.30.218]:60243 "EHLO
-	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754267Ab2EXJY2 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 May 2012 05:24:28 -0400
-Date: Thu, 24 May 2012 10:24:03 +0100
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: Alessandro Rubini <rubini@gnudd.com>
-Cc: Giancarlo Asnaghi <giancarlo.asnaghi@st.com>,
-        Alan Cox <alan@linux.intel.com>, linux-kernel@vger.kernel.org
-Subject: Re: RFC: amba: remove NO_IRQ
-Message-ID: <20120524092403.GA24149@n2100.arm.linux.org.uk>
-References: <20120524091933.GA8566@mail.gnudd.com>
+	id S1754933Ab2EXJ31 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 May 2012 05:29:27 -0400
+Received: from mga02.intel.com ([134.134.136.20]:33443 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752221Ab2EXJ3Z (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 24 May 2012 05:29:25 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.67,352,1309762800"; 
+   d="scan'208";a="144117655"
+Message-ID: <4FBDFF11.7030105@intel.com>
+Date: Thu, 24 May 2012 17:27:45 +0800
+From: Alex Shi <alex.shi@intel.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:9.0) Gecko/20111229 Thunderbird/9.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120524091933.GA8566@mail.gnudd.com>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+To: Peter Zijlstra <a.p.zijlstra@chello.nl>
+CC: Jan Beulich <JBeulich@suse.com>, borislav.petkov@amd.com, arnd@arndb.de,
+        akinobu.mita@gmail.com, eric.dumazet@gmail.com, fweisbec@gmail.com,
+        rostedt@goodmis.org, hughd@google.com, jeremy@goop.org,
+        len.brown@intel.com, tony.luck@intel.com, yongjie.ren@intel.com,
+        kamezawa.hiroyu@jp.fujitsu.com, seto.hidetoshi@jp.fujitsu.com,
+        penberg@kernel.org, yinghai@kernel.org, tglx@linutronix.de,
+        akpm@linux-foundation.org, ak@linux.intel.com, luto@mit.edu,
+        avi@redhat.com, dhowells@redhat.com, mingo@redhat.com, riel@redhat.com,
+        cpw@sgi.com, steiner@sgi.com, linux-kernel@vger.kernel.org,
+        viro@zeniv.linux.org.uk, hpa@zytor.com,
+        Rusty Russell <rusty@rustcorp.com.au>
+Subject: Re: [PATCH v7 8/8] x86/tlb: just do tlb flush on one of siblings
+ of SMT
+References: <1337782555-8088-1-git-send-email-alex.shi@intel.com>  <1337782555-8088-9-git-send-email-alex.shi@intel.com>  <4FBD18D20200007800085951@nat28.tlf.novell.com>  <1337792984.9783.37.camel@laptop>  <4FBDF200.7060608@intel.com> <1337848970.9783.72.camel@laptop>
+In-Reply-To: <1337848970.9783.72.camel@laptop>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, May 24, 2012 at 11:19:33AM +0200, Alessandro Rubini wrote:
-> I'm using PrimeCell devices under PCIe, x86 platform. We discussed
-> this issue on Mar 1st, and you (Russell) reported that NO_IRQ is
-> expected to go away for ARM, as 0 is the new official "no irq" marker.
-> 
-> The trivial patch below is what I'm currently using to compile my
-> stuff, but I'd like to get an update about NO_IRQ in ARM (which you
-> complained was completely on your shoulders). If needed I can take it
-> over and propose patches.
-> 
-> I'm well aware that the few users within arch/arm are matched by a
-> much bigger number of users in drivers/ .  The work is not trivial,
-> but at least I hope to be able to remove NO_IRQ from amba/bus.c by
-> auditing all its users.
+On 05/24/2012 04:42 PM, Peter Zijlstra wrote:
 
-See dfb85185bda373a70409c70c2632b02fb0f8f449 in mainline.
+> On Thu, 2012-05-24 at 16:32 +0800, Alex Shi wrote:
+>> So, I use cpumask_t in stack.
+> 
+> cpumask_t is 512 bytes with NR_CPUS=4096, that's generally considered
+> too big to be on stack.
+
+
+I am not consistent with cpumask_t.
+I just want to know why it is too big on stack? Since if it causes
+trouble in using, that mean current kernel will fail to run on 4096 CPU
+system.
