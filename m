@@ -1,49 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754014Ab2EXWti (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 May 2012 18:49:38 -0400
-Received: from perches-mx.perches.com ([206.117.179.246]:55776 "EHLO
-	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1751101Ab2EXWth (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 May 2012 18:49:37 -0400
-From: Joe Perches <joe@perches.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>,
-        linux-kernel@vger.kernel.org
-Cc: Greg KH <gregkh@linuxfoundation.org>, Kay Sievers <kay@vrfy.org>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: [RFC PATCH 0/3] printk: Use a non-printable ASCII SOH for KERN_<LEVEL>
-Date: Thu, 24 May 2012 15:49:30 -0700
-Message-Id: <cover.1337899274.git.joe@perches.com>
-X-Mailer: git-send-email 1.7.8.111.gad25c.dirty
+	id S1754498Ab2EXWtp (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 May 2012 18:49:45 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:8063 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754124Ab2EXWtn (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 24 May 2012 18:49:43 -0400
+X-Authority-Analysis: v=2.0 cv=ae7jbGUt c=1 sm=0 a=ZycB6UtQUfgMyuk2+PxD7w==:17 a=XQbtiDEiEegA:10 a=irseqbIK9hsA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=meVymXHHAAAA:8 a=ayC55rCoAAAA:8 a=vlL1T_X9D0qvDJ_GPIoA:9 a=PUjeQqilurYA:10 a=ZycB6UtQUfgMyuk2+PxD7w==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 74.67.80.29
+Message-ID: <1337899781.13348.208.camel@gandalf.stny.rr.com>
+Subject: Re: tracing ring_buffer_resize oops.
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Dave Jones <davej@redhat.com>
+Cc: Linux Kernel <linux-kernel@vger.kernel.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Ingo Molnar <mingo@redhat.com>
+Date: Thu, 24 May 2012 18:49:41 -0400
+In-Reply-To: <20120524200541.GA6552@redhat.com>
+References: <20120524160146.GA6226@redhat.com>
+	 <1337876398.13348.178.camel@gandalf.stny.rr.com>
+	 <20120524172223.GA10689@redhat.com>
+	 <1337880914.13348.189.camel@gandalf.stny.rr.com>
+	 <20120524184728.GA13201@redhat.com>
+	 <1337885672.13348.194.camel@gandalf.stny.rr.com>
+	 <20120524191147.GA13936@redhat.com>
+	 <1337887495.13348.195.camel@gandalf.stny.rr.com>
+	 <20120524200541.GA6552@redhat.com>
+Content-Type: text/plain; charset="ISO-8859-15"
+X-Mailer: Evolution 3.2.2-1 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-printk uses "<.>" as a start of record indicator.
-This can waste a bit of space and causes a bit of
-contortion to get a printk emitted that happens to
-starts with "<.>".
+On Thu, 2012-05-24 at 16:05 -0400, Dave Jones wrote:
+> On Thu, May 24, 2012 at 03:24:55PM -0400, Steven Rostedt wrote:
+>  > On Thu, 2012-05-24 at 15:11 -0400, Dave Jones wrote:
+>  > 
+>  > >  > Also, how reproducible is it? When it triggered for me, it was constant.
+>  > >  > Every boot and test failed. But after I did the make mrproper, I have
+>  > >  > not been able to trigger it again. This is why I put it down as a bad
+>  > >  > build.
+>  > > 
+>  > > happens every time for me so far.
+>  > 
+>  > Did you also do a make mrproper and try again?
+> 
+> ok, that's nasty.  Works fine after a make clean.
+> 
 
-Use ASCII Start-of-Header (0x01) as the KERN_LEVEL
-initiator and save ~10K in an x86 defconfig.
+Hmm, I did two make mrproper builds and they both failed. So this isn't
+a build issue. Must just be some nasty race. I'm still leaning that this
+has to do with the breakpoint function tracing updates.
 
-Joe Perches (3):
-  printk: Use a non-printable ASCII KERN_<LEVEL> initiator
-  treewide: Fix declaration and uses of old KERN_<LEVEL> style
-  printk: Set KERN_CONT to ""
+Looking deeper into it.
 
- arch/arm/lib/io-acorn.S              |    4 +++-
- arch/arm/vfp/vfphw.S                 |    8 +++++---
- arch/frv/kernel/kernel_thread.S      |    2 +-
- drivers/staging/wlags49_h2/hcf.c     |    8 ++++----
- drivers/staging/wlags49_h2/wl_main.c |    4 ++--
- fs/btrfs/super.c                     |    9 +++++----
- include/linux/printk.h               |   23 +++++++++++++----------
- kernel/printk.c                      |    6 +++---
- net/bridge/netfilter/ebt_log.c       |    2 +-
- sound/core/misc.c                    |    8 ++++----
- 10 files changed, 41 insertions(+), 33 deletions(-)
+-- Steve
 
--- 
-1.7.8.111.gad25c.dirty
 
