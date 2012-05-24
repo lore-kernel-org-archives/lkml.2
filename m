@@ -1,56 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933161Ab2EXReN (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 May 2012 13:34:13 -0400
-Received: from mail-wg0-f42.google.com ([74.125.82.42]:52967 "EHLO
-	mail-wg0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754070Ab2EXReL (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 May 2012 13:34:11 -0400
+	id S1758171Ab2EXReM (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 May 2012 13:34:12 -0400
+Received: from mail.skyhub.de ([78.46.96.112]:43270 "EHLO mail.skyhub.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752613Ab2EXReK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 24 May 2012 13:34:10 -0400
+Date: Thu, 24 May 2012 19:34:05 +0200
+From: Borislav Petkov <bp@alien8.de>
+To: Thomas Gleixner <tglx@linutronix.de>
+Cc: Borislav Petkov <bp@amd64.org>, Chen Gong <gong.chen@linux.intel.com>,
+        "Luck, Tony" <tony.luck@intel.com>, "x86@kernel.org" <x86@kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Peter Zijlstra <peterz@infradead.org>
+Subject: Re: [PATCH] x86: auto poll/interrupt mode switch for CMC to stop CMC
+ storm
+Message-ID: <20120524173405.GA6882@liondog.tnic>
+Mail-Followup-To: Borislav Petkov <bp@alien8.de>,
+	Thomas Gleixner <tglx@linutronix.de>,
+	Borislav Petkov <bp@amd64.org>,
+	Chen Gong <gong.chen@linux.intel.com>,
+	"Luck, Tony" <tony.luck@intel.com>,
+	"x86@kernel.org" <x86@kernel.org>,
+	LKML <linux-kernel@vger.kernel.org>,
+	Peter Zijlstra <peterz@infradead.org>
+References: <1337740341-26711-1-git-send-email-gong.chen@linux.intel.com>
+ <alpine.LFD.2.02.1205230859190.3231@ionos>
+ <3908561D78D1C84285E8C5FCA982C28F192F2DD6@ORSMSX104.amr.corp.intel.com>
+ <alpine.LFD.2.02.1205232044150.3231@ionos>
+ <3908561D78D1C84285E8C5FCA982C28F192F30C0@ORSMSX104.amr.corp.intel.com>
+ <4FBD9BAA.7070902@linux.intel.com>
+ <20120524060016.GB25344@aftab.osrc.amd.com>
+ <alpine.LFD.2.02.1205241146100.3231@ionos>
 MIME-Version: 1.0
-In-Reply-To: <20120524083216.GD10562@core.coreip.homeip.net>
-References: <20120524083216.GD10562@core.coreip.homeip.net>
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Thu, 24 May 2012 10:33:49 -0700
-X-Google-Sender-Auth: fxSn7lAkwNNUpOF7gzpQZF3Eixo
-Message-ID: <CA+55aFxw0HRpizzJZxhhA2oqPpzg4DPUvH2r7YoYfctXS6K=WQ@mail.gmail.com>
-Subject: Re: [git pull] Input updates for 3.5-rc0
-To: Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org,
-        linux-input@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <alpine.LFD.2.02.1205241146100.3231@ionos>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, May 24, 2012 at 1:32 AM, Dmitry Torokhov
-<dmitry.torokhov@gmail.com> wrote:
-> Hi Linus,
->
-> to receive updates for the input subsystem. You will get:
+On Thu, May 24, 2012 at 12:01:13PM +0200, Thomas Gleixner wrote:
+> Aside of that machine_check_poll is called from other places as
+> well. So looking at mce_timer_start() which is surprisingly the timer
+> callback:
+> 
+> The poll timer rate is self adjusting to intervals down to HZ/100. So
+> when you get into a state where the timer rate becomes lower than HZ/5
+> we'll trigger that CMCI storm in software and queue work even on
+> machines which do not support CMCI or have it disabled. Brilliant,
+> isn't it?
+> 
+> So that rate check belongs into intel_treshold_interrupt() and wants a
+> intel specific callback in mce_start_timer() to undo it.
 
-I get an annoying conflict, and the reason I call it annoying is not
-because it's hard to resolve, it's because doing that shows that you
-seem to have preferred using
+Ok, I see it now, it took me awhile with my slow brain. And the code is
+not a walk in the park anyway, thanks Thomas for pointing this out.
 
-   dev_dbg(&input->dev.parent, ...)
-
-over the much more natural
-
-   dev_dbg(&input->dev, ...)
-
-which would seem to make more sense.
-
-Why? Are the input layer device names so bad that using them for debug
-output is useless? And if so, why *are* they so bad?
-
-I'm going to take your version over Greg's more straightforward one,
-because I assume Greg did things a bit more mindlessly and I think you
-presumably had a *reason* for your extra (stupid) ".parent" part. But
-I'm unhappy with it, because I suspect the reason you did that implies
-that the input layer does something bad.
-
-Hmm?
-
-                     Linus
+-- 
+Regards/Gruss,
+    Boris.
