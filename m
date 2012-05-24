@@ -1,64 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933582Ab2EXQTk (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 May 2012 12:19:40 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:33141 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933336Ab2EXQTi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 May 2012 12:19:38 -0400
-Date: Thu, 24 May 2012 13:19:29 -0300
-From: Arnaldo Carvalho de Melo <acme@redhat.com>
-To: David Ahern <dsahern@gmail.com>
-Cc: Stephane Eranian <eranian@google.com>,
-        Peter Zijlstra <peterz@infradead.org>, linux-kernel@vger.kernel.org,
-        mingo@elte.hu
-Subject: Re: [PATCH v2 4/5] perf record: add meta-data support for pipe-mode
-Message-ID: <20120524161929.GB6344@infradead.org>
-References: <1337081295-10303-1-git-send-email-eranian@google.com>
- <1337081295-10303-5-git-send-email-eranian@google.com>
- <4FB32032.3000509@gmail.com>
- <CABPqkBQyZfSczhAROdH8p0_asy=c2AJho4Kv9wRYabaLNKkURA@mail.gmail.com>
- <4FB67DE5.8050000@gmail.com>
- <20120518171911.GH2636@infradead.org>
- <1337708035.9698.44.camel@twins>
- <CABPqkBTQ=K-=qkgzC0TZPi1xyHtqT6QQroRg-7o0k8rFmjH_Bw@mail.gmail.com>
- <4FBE5583.8070405@gmail.com>
+	id S933659Ab2EXQT4 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 May 2012 12:19:56 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:54183 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933264Ab2EXQTy (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 24 May 2012 12:19:54 -0400
+Message-ID: <4FBE5FA6.5050802@gmail.com>
+Date: Thu, 24 May 2012 10:19:50 -0600
+From: David Ahern <dsahern@gmail.com>
+User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.7; rv:12.0) Gecko/20120428 Thunderbird/12.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4FBE5583.8070405@gmail.com>
-X-Url: http://acmel.wordpress.com
-User-Agent: Mutt/1.5.20 (2009-12-10)
+To: Peter Zijlstra <peterz@infradead.org>,
+        Stephane Eranian <eranian@google.com>,
+        LKML <linux-kernel@vger.kernel.org>
+CC: Gleb Natapov <gleb@redhat.com>, Avi Kivity <avi@redhat.com>
+Subject: perf, x86: only do lbr init if bts is available
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Em Thu, May 24, 2012 at 09:36:35AM -0600, David Ahern escreveu:
-> On 5/22/12 11:51 AM, Stephane Eranian wrote:
-> >The problem is that the headers as they are written to the file need
-> >seeking in the file to update the offset table. That is NOT possible when
-> >you operate in pipe mode. As such you need to inject the header infos
-> >very much like kernel PERF_RECORD_*. That is also why you have
-> >perf inject -b. Buildids are added at the end of the run in file mode,
-> >and that's another seek to the offset table if I recall correctly.
+KVM recently added support for a version 2 PMU. When passing -cpu host 
+as the CPU model for the guest we get an abnormal configuration from 
+perf's perspective in that the guest identifies the processor as a 
+Westmere or Nehalem (etc):
 
-> Perhaps I am being too simple minded here, but why not dump the
-> features to the pipe as a series of structs when the perf session is
-> created?
+[    0.013998] Performance Events: Westmere events, Intel PMU driver.
 
-> struct pipe_data {
-> 	u32 length;
-> 	u32 type;
-> 	char data[0];		
-> }
 
-> It would require the features to be written to a buffer first to get
-> the length, but that's manageable without too much code change.
-> Endianness would need to be handled -- maybe a u8 flags at the
-> beginning.
+but yet the processor does not have the debug store mechanisms 
+(X86_FEATURE_DTES64 is not set) meaning there is no PEBS or BTS.
 
-I guess this comes down to somebody prototyping it. The way its being
-done is just the easiest one, and one that at least Peter dislikes a lot
-;-)
+Right now the LBR init functions are run based on processor model which 
+leads to attempts to write to LBR MSRs generating messages like:
 
-- Arnaldo
+[ 1170.125605] kvm: 6873: cpu0 unhandled rdmsr: 0x345
+[ 1170.135354] kvm_set_msr_common: 54 callbacks suppressed
+[ 1170.135612] kvm: 6873: cpu0 unhandled wrmsr: 0x680 data 0
+[ 1170.135900] kvm: 6873: cpu0 unhandled wrmsr: 0x6c0 data 0
+[ 1170.136163] kvm: 6873: cpu0 unhandled wrmsr: 0x681 data 0
+[ 1170.136437] kvm: 6873: cpu0 unhandled wrmsr: 0x6c1 data 0
+[ 1170.136703] kvm: 6873: cpu0 unhandled wrmsr: 0x682 data 0
+[ 1170.136968] kvm: 6873: cpu0 unhandled wrmsr: 0x6c2 data 0
+[ 1170.137227] kvm: 6873: cpu0 unhandled wrmsr: 0x683 data 0
+[ 1170.137502] kvm: 6873: cpu0 unhandled wrmsr: 0x6c3 data 0
+[ 1170.137797] kvm: 6873: cpu0 unhandled wrmsr: 0x684 data 0
+[ 1170.138061] kvm: 6873: cpu0 unhandled wrmsr: 0x6c4 data 0
+
+
+MSR 0x345 is MSR_IA32_PERF_CAPABILITIES; the 0x6XX MSRs are LBR from/to.
+
+Question: is something like this acceptable/make sense -- to only setup 
+lbr values if the BTS is detected?
+
+diff --git a/arch/x86/kernel/cpu/perf_event_intel.c 
+b/arch/x86/kernel/cpu/perf_event_intel.c
+index 166546e..7ba4afa 100644
+--- a/arch/x86/kernel/cpu/perf_event_intel.c
++++ b/arch/x86/kernel/cpu/perf_event_intel.c
+@@ -1783,7 +1784,8 @@ __init int intel_pmu_init(void)
+         memcpy(hw_cache_extra_regs, nehalem_hw_cache_extra_regs,
+                sizeof(hw_cache_extra_regs));
+
+-       intel_pmu_lbr_init_nhm();
++       if (x86_pmu.bts)
++           intel_pmu_lbr_init_nhm();
+
+         x86_pmu.event_constraints = intel_nehalem_event_constraints;
+         x86_pmu.pebs_constraints = intel_nehalem_pebs_event_constraints;
+
+David
