@@ -1,169 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755760Ab2EXLXx (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 May 2012 07:23:53 -0400
-Received: from vostochny.stro.at ([78.47.22.85]:43015 "EHLO vostochny.stro.at"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752247Ab2EXLXu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 May 2012 07:23:50 -0400
-From: maximilian attems <max@stro.at>
-To: kexec@lists.infradead.org
-Cc: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org,
-        maximilian attems <max@stro.at>, Simon Horman <horms@verge.net.au>,
-        Vivek Goyal <vgoyal@redhat.com>, Haren Myneni <hbabu@us.ibm.com>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        Martin Schwidefsky <schwidefsky@de.ibm.com>
-Subject: [PATCH] kexec: export kexec.h to user space
-Date: Thu, 24 May 2012 13:23:43 +0200
-Message-Id: <1337858623-12892-1-git-send-email-max@stro.at>
-X-Mailer: git-send-email 1.7.10
+	id S1756205Ab2EXLZT (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 May 2012 07:25:19 -0400
+Received: from mail-yw0-f46.google.com ([209.85.213.46]:37983 "EHLO
+	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753352Ab2EXLZR (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 24 May 2012 07:25:17 -0400
+MIME-Version: 1.0
+In-Reply-To: <CA+1xoqc3MrwfDnf9iCRLCedapZOtOfmBb6E84ORgwmdP1fx8QA@mail.gmail.com>
+References: <20120523002645.GA3490@redhat.com> <CACVXFVMz_GKHXpzbqt24yY=fHJ6uYZPOcSnKNFHrvbdpWxc7tw@mail.gmail.com>
+ <CA+1xoqf0G3kDY3c4Gb=RkQZ8_L+but6-uUjtSVfvYUf6iL2_JA@mail.gmail.com>
+ <20120524121056.24fbdcdb@pyramind.ukuu.org.uk> <CA+1xoqegLYLsP5yWw7d7oMngUSgZjXePJu_b6E-yw4aBE8Qhgg@mail.gmail.com>
+ <CA+1xoqc3MrwfDnf9iCRLCedapZOtOfmBb6E84ORgwmdP1fx8QA@mail.gmail.com>
+From: Sasha Levin <levinsasha928@gmail.com>
+Date: Thu, 24 May 2012 13:24:56 +0200
+Message-ID: <CA+1xoqeD3yyOgmLe_eQ_PS=HJA=93Syidtk6rq-K9dBoC-DOzQ@mail.gmail.com>
+Subject: Re: 3.4+ tty lockdep trace
+To: Alan Cox <alan@lxorguk.ukuu.org.uk>
+Cc: Ming Lei <tom.leiming@gmail.com>, Dave Jones <davej@redhat.com>,
+        Linux Kernel <linux-kernel@vger.kernel.org>,
+        Alan Cox <alan@linux.intel.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Content-Type: multipart/mixed; boundary=e89a8f2356c98f083304c0c68139
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add userspace definitions, guard all relevant kernel structures.
-While at it document stuff and remove now useless userspace hint.
+--e89a8f2356c98f083304c0c68139
+Content-Type: text/plain; charset=ISO-8859-1
 
-It is easy to add the relevant system call to respective libc's,
-but it seems pointless to have to duplicate the data structures.
+On Thu, May 24, 2012 at 1:21 PM, Sasha Levin <levinsasha928@gmail.com> wrote:
+> On Thu, May 24, 2012 at 1:20 PM, Sasha Levin <levinsasha928@gmail.com> wrote:
+>> On Thu, May 24, 2012 at 1:10 PM, Alan Cox <alan@lxorguk.ukuu.org.uk> wrote:
+>>>> I'm still seeing the warning with this patch:
+>>>
+>>> Can you attach the trace that went with the trigger as well ?
+>>
+>> Ofcourse, attached as a file.
+>
+> Heh, this was a different one as well. I'll try to get the one I got
+> in the morning again.
 
-This is based on the kexec-tools headers, with the exception of
-just using int on return (succes or failure) and using size_t
-instead of 'unsigned long int' for the number of segments argument
-of kexec_load().
+And here is the second one attached as well, so these are two
+different warnings I get with the new version.
 
-Cc: Simon Horman <horms@verge.net.au>
-Cc: Vivek Goyal <vgoyal@redhat.com>
-Cc: Haren Myneni <hbabu@us.ibm.com>
-Cc: "Eric W. Biederman" <ebiederm@xmission.com>
-Cc: Martin Schwidefsky <schwidefsky@de.ibm.com>
-Signed-off-by: maximilian attems <max@stro.at>
----
- include/linux/Kbuild  |    1 +
- include/linux/kexec.h |   75 ++++++++++++++++++++++++++++++++++---------------
- 2 files changed, 54 insertions(+), 22 deletions(-)
+--e89a8f2356c98f083304c0c68139
+Content-Type: text/plain; charset=US-ASCII; name="tty_lockdep2.txt"
+Content-Disposition: attachment; filename="tty_lockdep2.txt"
+Content-Transfer-Encoding: base64
+X-Attachment-Id: f_h2lqjtjq0
 
-diff --git a/include/linux/Kbuild b/include/linux/Kbuild
-index 3973783..d4ad37e 100644
---- a/include/linux/Kbuild
-+++ b/include/linux/Kbuild
-@@ -225,6 +225,7 @@ header-y += kd.h
- header-y += kdev_t.h
- header-y += kernel.h
- header-y += kernelcapi.h
-+header-y += kexec.h
- header-y += keyboard.h
- header-y += keyctl.h
- header-y += l2tp.h
-diff --git a/include/linux/kexec.h b/include/linux/kexec.h
-index 0d7d6a1..37c5f726 100644
---- a/include/linux/kexec.h
-+++ b/include/linux/kexec.h
-@@ -1,8 +1,58 @@
- #ifndef LINUX_KEXEC_H
- #define LINUX_KEXEC_H
- 
--#ifdef CONFIG_KEXEC
-+/* kexec system call -  It loads the new kernel to boot into.
-+ * kexec does not sync, or unmount filesystems so if you need
-+ * that to happen you need to do that yourself.
-+ */
-+
- #include <linux/types.h>
-+
-+/* kexec flags for different usage scenarios */
-+#define KEXEC_ON_CRASH		0x00000001
-+#define KEXEC_PRESERVE_CONTEXT	0x00000002
-+#define KEXEC_ARCH_MASK		0xffff0000
-+
-+/* These values match the ELF architecture values.
-+ * Unless there is a good reason that should continue to be the case.
-+ */
-+#define KEXEC_ARCH_DEFAULT ( 0 << 16)
-+#define KEXEC_ARCH_386     ( 3 << 16)
-+#define KEXEC_ARCH_X86_64  (62 << 16)
-+#define KEXEC_ARCH_PPC     (20 << 16)
-+#define KEXEC_ARCH_PPC64   (21 << 16)
-+#define KEXEC_ARCH_IA_64   (50 << 16)
-+#define KEXEC_ARCH_ARM     (40 << 16)
-+#define KEXEC_ARCH_S390    (22 << 16)
-+#define KEXEC_ARCH_SH      (42 << 16)
-+#define KEXEC_ARCH_MIPS_LE (10 << 16)
-+#define KEXEC_ARCH_MIPS    ( 8 << 16)
-+
-+/* The artificial cap on the number of segments passed to kexec_load. */
-+#define KEXEC_SEGMENT_MAX 16
-+
-+#ifndef __KERNEL__
-+/*
-+ * This structure is used to hold the arguments that are used when
-+ * loading  kernel binaries.
-+ */
-+struct kexec_segment {
-+	const void *buf;
-+	size_t bufsz;
-+	const void *mem;
-+	size_t memsz;
-+};
-+
-+/* Load a new kernel image as described by the kexec_segment array
-+ * consisting of passed number of segments at the entry-point address.
-+ * The flags allow different useage types.
-+ */
-+extern int kexec_load(void *, size_t, struct kexec_segment *,
-+		unsigned long int);
-+#endif /* __KERNEL__ */
-+
-+#ifdef __KERNEL__
-+#ifdef CONFIG_KEXEC
- #include <linux/list.h>
- #include <linux/linkage.h>
- #include <linux/compat.h>
-@@ -67,11 +117,10 @@ typedef unsigned long kimage_entry_t;
- #define IND_DONE         0x4
- #define IND_SOURCE       0x8
- 
--#define KEXEC_SEGMENT_MAX 16
- struct kexec_segment {
- 	void __user *buf;
- 	size_t bufsz;
--	unsigned long mem;	/* User space sees this as a (void *) ... */
-+	unsigned long mem;
- 	size_t memsz;
- };
- 
-@@ -175,25 +224,6 @@ extern struct kimage *kexec_crash_image;
- #define kexec_flush_icache_page(page)
- #endif
- 
--#define KEXEC_ON_CRASH		0x00000001
--#define KEXEC_PRESERVE_CONTEXT	0x00000002
--#define KEXEC_ARCH_MASK		0xffff0000
--
--/* These values match the ELF architecture values.
-- * Unless there is a good reason that should continue to be the case.
-- */
--#define KEXEC_ARCH_DEFAULT ( 0 << 16)
--#define KEXEC_ARCH_386     ( 3 << 16)
--#define KEXEC_ARCH_X86_64  (62 << 16)
--#define KEXEC_ARCH_PPC     (20 << 16)
--#define KEXEC_ARCH_PPC64   (21 << 16)
--#define KEXEC_ARCH_IA_64   (50 << 16)
--#define KEXEC_ARCH_ARM     (40 << 16)
--#define KEXEC_ARCH_S390    (22 << 16)
--#define KEXEC_ARCH_SH      (42 << 16)
--#define KEXEC_ARCH_MIPS_LE (10 << 16)
--#define KEXEC_ARCH_MIPS    ( 8 << 16)
--
- /* List of defined/legal kexec flags */
- #ifndef CONFIG_KEXEC_JUMP
- #define KEXEC_FLAGS    KEXEC_ON_CRASH
-@@ -228,4 +258,5 @@ struct task_struct;
- static inline void crash_kexec(struct pt_regs *regs) { }
- static inline int kexec_should_crash(struct task_struct *p) { return 0; }
- #endif /* CONFIG_KEXEC */
-+#endif /* __KERNEL__ */
- #endif /* LINUX_KEXEC_H */
--- 
-1.7.10
-
+WyAgIDM5Ljg4ODExNV0gPT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09
+PT09ClsgICAzOS44ODgxMTVdIFsgSU5GTzogcG9zc2libGUgcmVjdXJzaXZlIGxvY2tpbmcgZGV0
+ZWN0ZWQgXQpbICAgMzkuODg4MTE1XSAzLjQuMC1uZXh0LTIwMTIwNTI0LXNhc2hhLTAwMDAyLWcx
+MWRjNjUxICMyNzMgVGFpbnRlZDogRyAgICAgICAgVyAgIApbICAgMzkuODg4MTE1XSAtLS0tLS0t
+LS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0KWyAgIDM5Ljg4ODExNV0gdHJp
+bml0eS80OTgwIGlzIHRyeWluZyB0byBhY3F1aXJlIGxvY2s6ClsgICAzOS44ODgxMTVdICAoJnR0
+eS0+bGVnYWN5X211dGV4KXsrLisuKy59LCBhdDogWzxmZmZmZmZmZjgyZjcxZmRiPl0gdHR5X2xv
+Y2tfbmVzdGVkKzB4N2IvMHg5MApbICAgMzkuODg4MTE1XSAKWyAgIDM5Ljg4ODExNV0gYnV0IHRh
+c2sgaXMgYWxyZWFkeSBob2xkaW5nIGxvY2s6ClsgICAzOS44ODgxMTVdICAoJnR0eS0+bGVnYWN5
+X211dGV4KXsrLisuKy59LCBhdDogWzxmZmZmZmZmZjgyZjcxZmRiPl0gdHR5X2xvY2tfbmVzdGVk
+KzB4N2IvMHg5MApbICAgMzkuODg4MTE1XSAKWyAgIDM5Ljg4ODExNV0gb3RoZXIgaW5mbyB0aGF0
+IG1pZ2h0IGhlbHAgdXMgZGVidWcgdGhpczoKWyAgIDM5Ljg4ODExNV0gIFBvc3NpYmxlIHVuc2Fm
+ZSBsb2NraW5nIHNjZW5hcmlvOgpbICAgMzkuODg4MTE1XSAKWyAgIDM5Ljg4ODExNV0gICAgICAg
+IENQVTAKWyAgIDM5Ljg4ODExNV0gICAgICAgIC0tLS0KWyAgIDM5Ljg4ODExNV0gICBsb2NrKCZ0
+dHktPmxlZ2FjeV9tdXRleCk7ClsgICAzOS44ODgxMTVdICAgbG9jaygmdHR5LT5sZWdhY3lfbXV0
+ZXgpOwpbICAgMzkuODg4MTE1XSAKWyAgIDM5Ljg4ODExNV0gICoqKiBERUFETE9DSyAqKioKWyAg
+IDM5Ljg4ODExNV0gClsgICAzOS44ODgxMTVdICBNYXkgYmUgZHVlIHRvIG1pc3NpbmcgbG9jayBu
+ZXN0aW5nIG5vdGF0aW9uClsgICAzOS44ODgxMTVdIApbICAgMzkuODg4MTE1XSAxIGxvY2sgaGVs
+ZCBieSB0cmluaXR5LzQ5ODA6ClsgICAzOS44ODgxMTVdICAjMDogICgmdHR5LT5sZWdhY3lfbXV0
+ZXgpeysuKy4rLn0sIGF0OiBbPGZmZmZmZmZmODJmNzFmZGI+XSB0dHlfbG9ja19uZXN0ZWQrMHg3
+Yi8weDkwClsgICAzOS44ODgxMTVdIApbICAgMzkuODg4MTE1XSBzdGFjayBiYWNrdHJhY2U6Clsg
+ICAzOS44ODgxMTVdIFBpZDogNDk4MCwgY29tbTogdHJpbml0eSBUYWludGVkOiBHICAgICAgICBX
+ICAgIDMuNC4wLW5leHQtMjAxMjA1MjQtc2FzaGEtMDAwMDItZzExZGM2NTEgIzI3MwpbICAgMzku
+ODg4MTE1XSBDYWxsIFRyYWNlOgpbICAgMzkuODg4MTE1XSAgWzxmZmZmZmZmZjgxMTQ4MDE5Pl0g
+cHJpbnRfZGVhZGxvY2tfYnVnKzB4MTE5LzB4MTQwClsgICAzOS44ODgxMTVdICBbPGZmZmZmZmZm
+ODExNGExOGU+XSB2YWxpZGF0ZV9jaGFpbisweDVlZS8weDc5MApbICAgMzkuODg4MTE1XSAgWzxm
+ZmZmZmZmZjgxMTFhNWY4Pl0gPyBzY2hlZF9jbG9ja19jcHUrMHgxMDgvMHgxMjAKWyAgIDM5Ljk3
+MzU1MF0gIFs8ZmZmZmZmZmY4MTE0YTc1Mz5dIF9fbG9ja19hY3F1aXJlKzB4NDIzLzB4NGMwClsg
+ICAzOS45NzM1NTBdICBbPGZmZmZmZmZmODExNGE5N2E+XSBsb2NrX2FjcXVpcmUrMHgxOGEvMHgx
+ZTAKWyAgIDM5Ljk3MzU1MF0gIFs8ZmZmZmZmZmY4MmY3MWZkYj5dID8gdHR5X2xvY2tfbmVzdGVk
+KzB4N2IvMHg5MApbICAgMzkuOTczNTUwXSAgWzxmZmZmZmZmZjgyZjZlNDEwPl0gX19tdXRleF9s
+b2NrX2NvbW1vbisweDYwLzB4NTkwClsgICAzOS45NzM1NTBdICBbPGZmZmZmZmZmODJmNzFmZGI+
+XSA/IHR0eV9sb2NrX25lc3RlZCsweDdiLzB4OTAKWyAgIDM5Ljk3MzU1MF0gIFs8ZmZmZmZmZmY4
+MTE0YWVhMj5dID8gX19sb2NrX3JlbGVhc2UrMHgxYzIvMHgxZTAKWyAgIDM5Ljk3MzU1MF0gIFs8
+ZmZmZmZmZmY4MTBmNTI0MD5dID8gZmx1c2hfc2NoZWR1bGVkX3dvcmsrMHgyMC8weDIwClsgICAz
+OS45NzM1NTBdICBbPGZmZmZmZmZmODJmNzFmZGI+XSA/IHR0eV9sb2NrX25lc3RlZCsweDdiLzB4
+OTAKWyAgIDM5Ljk3MzU1MF0gIFs8ZmZmZmZmZmY4MmY2ZWE3MD5dIG11dGV4X2xvY2tfbmVzdGVk
+KzB4NDAvMHg1MApbICAgMzkuOTczNTUwXSAgWzxmZmZmZmZmZjgyZjcxZmRiPl0gdHR5X2xvY2tf
+bmVzdGVkKzB4N2IvMHg5MApbICAgMzkuOTczNTUwXSAgWzxmZmZmZmZmZjgyZjcxZmZiPl0gdHR5
+X2xvY2srMHhiLzB4MTAKWyAgIDM5Ljk3MzU1MF0gIFs8ZmZmZmZmZmY4MWIxNTVmNz5dIHR0eV9s
+ZGlzY19yZWxlYXNlKzB4NDcvMHhiMApbICAgMzkuOTczNTUwXSAgWzxmZmZmZmZmZjgxYjBmYzMz
+Pl0gdHR5X3JlbGVhc2UrMHg0NTMvMHg0ZDAKWyAgIDM5Ljk3MzU1MF0gIFs8ZmZmZmZmZmY4MTIz
+MmQ0YT5dIF9fZnB1dCsweDExYS8weDJjMApbICAgMzkuOTczNTUwXSAgWzxmZmZmZmZmZjgxMjMy
+ZjA1Pl0gZnB1dCsweDE1LzB4MjAKWyAgIDM5Ljk3MzU1MF0gIFs8ZmZmZmZmZmY4MTIyZjIxMj5d
+IGZpbHBfY2xvc2UrMHg4Mi8weGEwClsgICAzOS45NzM1NTBdICBbPGZmZmZmZmZmODEwZDY1MTQ+
+XSBjbG9zZV9maWxlcysweDFiNC8weDIwMApbICAgMzkuOTczNTUwXSAgWzxmZmZmZmZmZjgxMGQ2
+MzYwPl0gPyB3YWl0X3Rhc2tfc3RvcHBlZCsweDNkMC8weDNkMApbICAgMzkuOTczNTUwXSAgWzxm
+ZmZmZmZmZjgxMGQ2NzI1Pl0gPyBleGl0X2ZpbGVzKzB4NDUvMHg2MApbICAgMzkuOTczNTUwXSAg
+WzxmZmZmZmZmZjgxMGQ2NTgxPl0gcHV0X2ZpbGVzX3N0cnVjdCsweDIxLzB4MTgwClsgICAzOS45
+NzM1NTBdICBbPGZmZmZmZmZmODJmNzFhMTA+XSA/IF9yYXdfc3Bpbl91bmxvY2srMHgzMC8weDYw
+ClsgICAzOS45NzM1NTBdICBbPGZmZmZmZmZmODEwZDY3MmQ+XSBleGl0X2ZpbGVzKzB4NGQvMHg2
+MApbICAgMzkuOTczNTUwXSAgWzxmZmZmZmZmZjgxMGQ4OWYyPl0gZG9fZXhpdCsweDMyMi8weDUx
+MApbICAgMzkuOTczNTUwXSAgWzxmZmZmZmZmZjgxMGQ4YzgxPl0gZG9fZ3JvdXBfZXhpdCsweGEx
+LzB4ZTAKWyAgIDM5Ljk3MzU1MF0gIFs8ZmZmZmZmZmY4MTBkOGNkMj5dIHN5c19leGl0X2dyb3Vw
+KzB4MTIvMHgyMApbICAgMzkuOTczNTUwXSAgWzxmZmZmZmZmZjgyZjcyYmI5Pl0gc3lzdGVtX2Nh
+bGxfZmFzdHBhdGgrMHgxNi8weDFiCg==
+--e89a8f2356c98f083304c0c68139--
