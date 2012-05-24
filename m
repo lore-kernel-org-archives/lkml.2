@@ -1,61 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756764Ab2EXMa5 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 May 2012 08:30:57 -0400
-Received: from mail-we0-f174.google.com ([74.125.82.174]:65316 "EHLO
-	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753034Ab2EXMa4 (ORCPT
+	id S1756934Ab2EXMbX (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 May 2012 08:31:23 -0400
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:39004 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756530Ab2EXMbW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 May 2012 08:30:56 -0400
-Message-ID: <4FBE29FB.9030405@tonian.com>
-Date: Thu, 24 May 2012 15:30:51 +0300
-From: Benny Halevy <bhalevy@tonian.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:6.0.2) Gecko/20110906 Thunderbird/6.0.2
+	Thu, 24 May 2012 08:31:22 -0400
+Date: Thu, 24 May 2012 14:31:16 +0200
+From: Andreas Herrmann <herrmann.der.user@googlemail.com>
+To: Comrade DOS <suloevdmitry@gmail.com>
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: PROBLEM: Performance drop
+Message-ID: <20120524123116.GA4048@alberich.amd.com>
+References: <CA+fU7qen=cwc1vMY1bv21_0GuNKXPQZXsQLVszYG1WG_r1XUGA@mail.gmail.com>
 MIME-Version: 1.0
-To: Stanislav Kinsbursky <skinsbursky@parallels.com>
-CC: bfields@fieldses.org, linux-nfs@vger.kernel.org,
-        linux-kernel@vger.kernel.org, devel@openvz.org
-Subject: Re: [PATCH] NFSd: simplify locking in nfsd_recall_delegations()
-References: <20120522102839.12440.14555.stgit@localhost.localdomain>
-In-Reply-To: <20120522102839.12440.14555.stgit@localhost.localdomain>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CA+fU7qen=cwc1vMY1bv21_0GuNKXPQZXsQLVszYG1WG_r1XUGA@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2012-05-22 13:28, Stanislav Kinsbursky wrote:
-> Holding of client_mutex looks redundant here - holding of recall_lock looks
-> enough.
-
-Looking at the code, agreed.
-
-Benny
-
+On Thu, May 24, 2012 at 02:12:39AM +0700, Comrade DOS wrote:
+> PROBLEM: Performance drop
 > 
-> Signed-off-by: Stanislav Kinsbursky <skinsbursky@parallels.com>
-> ---
->  fs/nfsd/nfs4state.c |    2 --
->  1 files changed, 0 insertions(+), 2 deletions(-)
-> 
-> diff --git a/fs/nfsd/nfs4state.c b/fs/nfsd/nfs4state.c
-> index f004e61..fdef9fc 100644
-> --- a/fs/nfsd/nfs4state.c
-> +++ b/fs/nfsd/nfs4state.c
-> @@ -4744,11 +4744,9 @@ void nfsd_recall_delegations(u64 num)
->  {
->  	unsigned int count;
->  
-> -	nfs4_lock_state();
->  	spin_lock(&recall_lock);
->  	count = nfsd_process_n_delegations(num, nfsd_break_one_deleg, NULL);
->  	spin_unlock(&recall_lock);
-> -	nfs4_unlock_state();
->  
->  	printk(KERN_INFO "NFSD: Recalled %d delegations", count);
->  }
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-nfs" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> After the release of linux 3.4.0 I've updated the kernel on all my machines.
+> In most of the computer upgrade was successful.
+> However, on my old laptop (HP Compaq 6715b) after the upgrade was just
+> impossible to work.
+> I found that CPU frequency scaling no longer work properly on this machine.
+> After loading the CPU clock is reset to the minimum (800 MHz), and
+> remains so until you reboot.
+> Changing the type of governor is not helping.
+> Recompile the kernel without CPU frequency scaling has been to solve
+> the problem, but even after this performance leaves much to be desired
+> (although, according to /proc/cpuinfo CPU frequency set maximum).
+> In addition to the above-described problems, there is another - the
+> problem with rebooting and shutting down (and possibly also have a
+> problem with s2ram and/or s2disk, but I'm their functionality I have
+> not tested).
+> If you try to shut down or restart the laptop it hangs.
+
+This somehow reminds me of commit
+26adcfbf00e0726b4469070aa2f530dcf963f484 (x86: SB600: skip ACPI IRQ0
+override if it is not routed to INT2 of IOAPIC).
+
+See also
+https://bugzilla.kernel.org/show_bug.cgi?id=11715 and
+https://bugzilla.kernel.org/show_bug.cgi?id=11516
+
+Question is why the quirk doesn't work (anymore) on your system.
+
+What was the kernel release used before 3.4.0 was install on your
+Laptop?
+
+Please provide dmesg with apic=debug kernel option when kernel 3.4 is
+booted?
+
+Can you please try to boot with kernel paramter
+acpi_use_timer_override in another test run and with
+acpi_skip_timer_override in a 3rd test (and also using acpi=debug in
+both cases) and provide dmesg output for those testruns.
+
+
+Thanks,
+
+Andreas
