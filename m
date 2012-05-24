@@ -1,60 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934128Ab2EXV4z (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 May 2012 17:56:55 -0400
-Received: from mail-wg0-f42.google.com ([74.125.82.42]:35267 "EHLO
-	mail-wg0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932105Ab2EXV4x (ORCPT
+	id S933725Ab2EXV5E (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 May 2012 17:57:04 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:32950 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934133Ab2EXV5A (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 May 2012 17:56:53 -0400
-MIME-Version: 1.0
-In-Reply-To: <20120524213813.GA17452@core.coreip.homeip.net>
-References: <20120524083216.GD10562@core.coreip.homeip.net>
- <CA+55aFxw0HRpizzJZxhhA2oqPpzg4DPUvH2r7YoYfctXS6K=WQ@mail.gmail.com>
- <20120524180154.GA15036@core.coreip.homeip.net> <CA+55aFx0ww=BtYAj9WEbqMT2R30ZZpjd014cYCpC=b+HRtUf_A@mail.gmail.com>
- <20120524195851.GA15306@core.coreip.homeip.net> <CA+55aFxX+xidcuVXb1h4oFTemtHo+ANECaoOw=vxtKN231N+cA@mail.gmail.com>
- <20120524203647.GA16024@core.coreip.homeip.net> <CA+55aFz9Fp2J=oCkoDAwNTnEJoBeKC9tn+5dqMCKf4C22CAi6Q@mail.gmail.com>
- <20120524205952.GA16621@core.coreip.homeip.net> <CA+55aFybQDXjGaEK0k=60gS88bxwE8vC7XvOffaQAf3de9cCfg@mail.gmail.com>
- <20120524213813.GA17452@core.coreip.homeip.net>
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Thu, 24 May 2012 14:56:31 -0700
-X-Google-Sender-Auth: cx2-YLrKnmTQT0cfRff9eeA_eK8
-Message-ID: <CA+55aFyvn-maXzA5G31+ZsNqC7+QT6SkhpUCTCw+DEF1T3Uhsw@mail.gmail.com>
-Subject: Re: [git pull] Input updates for 3.5-rc0
-To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+	Thu, 24 May 2012 17:57:00 -0400
+Date: Thu, 24 May 2012 14:56:54 -0700
+From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
         Andrew Morton <akpm@linux-foundation.org>,
         linux-kernel@vger.kernel.org, linux-input@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+Subject: Re: [git pull] Input updates for 3.5-rc0
+Message-ID: <20120524215654.GB17452@core.coreip.homeip.net>
+References: <CA+55aFxw0HRpizzJZxhhA2oqPpzg4DPUvH2r7YoYfctXS6K=WQ@mail.gmail.com>
+ <20120524180154.GA15036@core.coreip.homeip.net>
+ <CA+55aFx0ww=BtYAj9WEbqMT2R30ZZpjd014cYCpC=b+HRtUf_A@mail.gmail.com>
+ <20120524195851.GA15306@core.coreip.homeip.net>
+ <CA+55aFxX+xidcuVXb1h4oFTemtHo+ANECaoOw=vxtKN231N+cA@mail.gmail.com>
+ <20120524203647.GA16024@core.coreip.homeip.net>
+ <CA+55aFz9Fp2J=oCkoDAwNTnEJoBeKC9tn+5dqMCKf4C22CAi6Q@mail.gmail.com>
+ <20120524205952.GA16621@core.coreip.homeip.net>
+ <CA+55aFybQDXjGaEK0k=60gS88bxwE8vC7XvOffaQAf3de9cCfg@mail.gmail.com>
+ <CA+55aFzZm2aAhgZagWq=rsfKTt=2_2_mpVjXDN3LAqAJmWoZqw@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CA+55aFzZm2aAhgZagWq=rsfKTt=2_2_mpVjXDN3LAqAJmWoZqw@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, May 24, 2012 at 2:38 PM, Dmitry Torokhov
-<dmitry.torokhov@gmail.com> wrote:
->
-> Maybe dev_XXX() should report full sysfs path do the dveice? Still does
-> not help with the fact that "driver" shown for class devices is not so
-> interesting as it will always be the class name.
+On Thu, May 24, 2012 at 02:44:31PM -0700, Linus Torvalds wrote:
+> On Thu, May 24, 2012 at 2:07 PM, Linus Torvalds
+> <torvalds@linux-foundation.org> wrote:
+> > On Thu, May 24, 2012 at 1:59 PM, Dmitry Torokhov
+> > <dmitry.torokhov@gmail.com> wrote:
+> >>
+> >> I was concerned about the _next_ device (the one that will be created
+> >> the moment I plug in the tablet back into the same port) having exact
+> >> same name as the one that is half dead and clashing in sysfs and
+> >> elsewhere. We used to have issues with this.
+> >
+> > Ok, that's certainly a valid concern.
+> >
+> > It's still - I think - really sad/wrong that the device name is then
+> > so useless than the drivers end up basically not using it.
+> 
+> Ok, so I wonder if we could solve the issue at least partly by
+> separating the "print name for kernel messages" from the "name used
+> for /sysfs etc".
+> 
+> Because you're right: the sysfs uniqueness rules does make it very
+> hard to do a good job on descriptive names.
+> 
+> Also, in sysfs, you by definition see the parent (hey, it's part of
+> the path), so in sysfs, duplicating parent data would be useless and
+> just ugly.
+> 
+> But for dev_dbg(), those sysfs rules actually act against us: the name
+> of a device is often tied to the parent bus location.
+> 
+> So I wonder if we could teach  dev_printk() to use something more
+> interesting than "dev_name()" when appropriate? Greg?
 
-Well, the dev_printk logic could certainly have simple rules to avoid
-duplicate information. And perhaps pick the most relevant parts using
-some heuristics.
+Maybe we could traverse up the tree till we find first non-class device
+(i.e. device with real driver bound to it)? Then we'd have:
 
-Right now it just prints out "%s %s" for dev_driver_string(dev) and
-dev_name(dev) respectively. That really isn't all that wonderfully
-beautiful, and results in things like
+	wacom 2-1.2:1.0/inputX/eventY: some error happened
 
-  hid-generic 0003:046D:C526.0006: xyz
+type of messages...
 
-for my Logitech USB Receiver. That's kind of ugly, and really doesn't
-clarify anything at all, I think.
-
-The "driver + dev_name()" works fine for things like PCI devices, but
-even then it's partly because the PCI layer has made sure to make the
-device name pretty - and the device name contains the (redundant) data
-of which bus number it is on, even though that's strictly a matter of
-the parent thing (but the device name has been prettified and contains
-redundant information exactly so that it would print out nicely).
-
-                    Linus
+-- 
+Dmitry
