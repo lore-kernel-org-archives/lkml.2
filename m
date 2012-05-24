@@ -1,95 +1,123 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754930Ab2EXXMN (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 May 2012 19:12:13 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:46115 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753525Ab2EXXML (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 May 2012 19:12:11 -0400
-Date: Fri, 25 May 2012 01:12:09 +0200
-From: Jan Kara <jack@suse.cz>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: LKML <linux-kernel@vger.kernel.org>, linux-ext4@vger.kernel.org
-Subject: [PULL REQUEST] Ext2, ext3 and quota fixes
-Message-ID: <20120524231209.GA28842@quack.suse.cz>
+	id S1757959Ab2EXXQG (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 May 2012 19:16:06 -0400
+Received: from na3sys009aog126.obsmtp.com ([74.125.149.155]:56779 "EHLO
+	na3sys009aog126.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753679Ab2EXXQE (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 24 May 2012 19:16:04 -0400
+From: Kevin Hilman <khilman@ti.com>
+To: "Menon\, Nishanth" <nm@ti.com>
+Cc: "J\, KEERTHY" <j-keerthy@ti.com>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        "linux-kernel\@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "AnilKumar\, Chimata" <anilkumar@ti.com>,
+        "linux-pm\@lists.linux-foundation.org" 
+	<linux-pm@lists.linux-foundation.org>,
+        "linux-omap\@vger.kernel.org" <linux-omap@vger.kernel.org>,
+        "Pihet-XID\, Jean" <j-pihet@ti.com>,
+        "linux-arm-kernel\@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Subject: Re: [linux-pm] [PATCH V3 00/10] PM: Create the AVS(Adaptive Voltage Scaling)
+Organization: Texas Instruments, Inc.
+References: <1335462041-4949-1-git-send-email-j-keerthy@ti.com>
+	<20120426191159.GA9415@sirena.org.uk>
+	<CAJ6a13a6WN9h1QZynpEOf-R6RXwWBZ2eOPkTeNc15JX_YfAz_w@mail.gmail.com>
+	<20120427175657.GP18260@opensource.wolfsonmicro.com>
+	<87397o3n4y.fsf@ti.com>
+	<331ABD5ECB02734CA317220B2BBEABC13E9B1A67@DBDE01.ent.ti.com>
+	<87mx5jy2li.fsf@ti.com>
+	<331ABD5ECB02734CA317220B2BBEABC13E9B6681@DBDE01.ent.ti.com>
+	<EF62F09C0797D947AD4180A1043C0DF73C40BCE1@DLEE10.ent.ti.com>
+	<87lil2jp2z.fsf@ti.com>
+	<EF62F09C0797D947AD4180A1043C0DF73C40C247@DLEE10.ent.ti.com>
+	<87pqadgqd5.fsf@ti.com>
+	<CAOMWX4cjzLYuPmA-k=Z_pc5uw=CCViPjRYqs4VTyLX6T8HhtcA@mail.gmail.com>
+Date: Thu, 24 May 2012 16:16:00 -0700
+In-Reply-To: <CAOMWX4cjzLYuPmA-k=Z_pc5uw=CCViPjRYqs4VTyLX6T8HhtcA@mail.gmail.com>
+	(Nishanth Menon's message of "Wed, 23 May 2012 08:27:06 -0500")
+Message-ID: <87aa0xqifj.fsf@ti.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.3 (gnu/linux)
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-  Hello Linus,
+"Menon, Nishanth" <nm@ti.com> writes:
 
-  could you please pull from
+> On Wed, May 9, 2012 at 1:29 PM, Kevin Hilman <khilman@ti.com> wrote:
+>> "Woodruff, Richard" <r-woodruff2@ti.com> writes:
+>>
+>>>> From: Hilman, Kevin
+>>>> Sent: Tuesday, May 08, 2012 5:17 PM
+>>>
+>>>> A basic OMAP AVS driver has been in mainline for a long time, yet we
+>>>> have not seen support submitted for all of these features.
+>>>
+>>> 1.5/3.5 is a feature.
+>>
+>> And I'm still waiting for it to be submitted upstream.
+>>
+>>> ABB is requirement for a production useable driver. Higher speed rated
+>>> OMAP4 and all OMAP5 added these to be useable.
+>>
+>> ditto
+>>
+>>> Yes this is effort. Point of mentioning is to raise awareness of need.
+>>
+>> I'm well aware of the need.
+>>
+>>> Yet to be added feature has different meaning than functional gap.
+>>
+>> And both need to be submitted upstream.
+>
+> SR 1.5: http://marc.info/?l=linux-omap&m=129933897910785&w=2
+> ABB: http://marc.info/?l=linux-omap&m=130939399209099&w=2
+>
+> I am not sure what you mean "need to be submitted upstream"?
 
-git://git.kernel.org/pub/scm/linux/kernel/git/jack/linux-fs.git for_linus
+You're right.  I should've said re-submitted and merged.  Both have been
+submitted (and reviewed) but no follow up submissions after review, and
+thus they're still out of tree.
 
-Interesting bits are:
-* removal of a special i_mutex locking subclass
-  (I_MUTEX_QUOTA) since quota code does not need i_mutex anymore in any
-  unusual way. 
-* backport (from ext4) of a fix of a checkpointing bug (missing cache
-  flush) that could lead to fs corruption on power failure
+> Just tired of seeing things perpetually change without considering
+> even how to handle features that are mandatory for SoC even with code
+> posted upstream to show exactly what it takes.. 
 
-The rest are just random small fixes & cleanups.
+I'm sorry, but this is not perpetual change.  
 
-Top of the tree is 0324876. The full shortlog is:
+This driver has been upstream in its current (admittedly
+feature-limited) form for a long time, the only thing changing in
+$SUBJECT series is the location of the driver.  Why all the fuss about
+the missing features now?
 
-Akira Fujita (1):
-      ext3: remove max_debt in find_group_orlov()
+> I think you do mean merged upstream in this context.
 
-Artem Bityutskiy (2):
-      ext2: write superblock only once on unmount
-      ext2: do not register write_super within VFS
+Correct.
 
-Eric Sandeen (1):
-      ext3: return 32/64-bit dir name hash according to usage type
+Frameworks always have limitations.  The way they get extended/expanded
+etc. is by the submission/review/merging of support for new
+features/requirements.  The process for that is the same as any feature
+in any part of the kernel.
 
-Jan Kara (12):
-      jbd: Refine commit writeout logic
-      ext2: Remove s_dirt handling
-      jbd: Split updating of journal superblock and marking journal empty
-      jbd: protect all log tail updates with j_checkpoint_mutex
-      jbd: Write journal superblock with WRITE_FUA after checkpointing
-      quota: Fix double lock in add_dquot_ref() with CONFIG_QUOTA_DEBUG
-      ext3: Remove i_mutex use from ext3_quota_write()
-      ext4: Remove i_mutex use from ext4_quota_write()
-      reiserfs: Remove i_mutex use from reiserfs_quota_write()
-      ext2: Remove i_mutex use from ext2_quota_write()
-      quota: Use precomputed value of sb_dqopt in dquot_quota_sync
-      quota: Get rid of nested I_MUTEX_QUOTA locking subclass
+Evolution, not intelligent design[1].
 
-Stefan Hajnoczi (1):
-      ext3: update documentation with barrier=1 default
+All of that being said, I'm not sure why this thread was hijacked for
+this debate in the first place.  The point of $SUBJECT series is simply
+to move and *existing* framework from arch/arm out to drivers.  The only
+changes done are cleanups to make this move possible.
 
-Wang Sheng-Hui (2):
-      ext2: remove the redundant comment for ext2_export_ops
-      ext2: trivial fix to comment for ext2_free_blocks
+I for one would welcome extending this framework to ensure it supports
+all the SoC features.  I just don't want those features to be a
+prerequisite for this move from arch/arm to drivers.
 
-The diffstat is
+Please, let's get this moved to drivers, and then add support for the
+missing features.
 
- Documentation/filesystems/ext3.txt |    6 +-
- fs/ext2/balloc.c                   |    4 +-
- fs/ext2/ialloc.c                   |    2 -
- fs/ext2/super.c                    |   18 +---
- fs/ext2/xattr.c                    |    1 -
- fs/ext3/dir.c                      |  167 +++++++++++++++++++++--------
- fs/ext3/ext3.h                     |    6 +-
- fs/ext3/hash.c                     |    4 +-
- fs/ext3/ialloc.c                   |   20 +---
- fs/ext3/super.c                    |    6 +-
- fs/ext4/super.c                    |    6 +-
- fs/jbd/checkpoint.c                |   23 ++---
- fs/jbd/commit.c                    |   21 +++-
- fs/jbd/journal.c                   |  206 +++++++++++++++++++++++------------
- fs/jbd/transaction.c               |    2 -
- fs/quota/dquot.c                   |   32 +++---
- fs/reiserfs/super.c                |    6 +-
- include/linux/jbd.h                |   18 ++--
- include/trace/events/jbd.h         |   39 +++----
- 19 files changed, 342 insertions(+), 245 deletions(-)
+Thanks,
 
-							Thanks
-								Honza
+Kevin
+
+[1] http://kerneltrap.org/Linux/Kernel_Evolution
