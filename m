@@ -1,86 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757345Ab2EXTHa (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 May 2012 15:07:30 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:41875 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754043Ab2EXTH2 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 May 2012 15:07:28 -0400
-Date: Thu, 24 May 2012 12:07:27 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Sasha Levin <levinsasha928@gmail.com>
-Cc: viro <viro@zeniv.linux.org.uk>, oleg@redhat.com,
-        "a.p.zijlstra" <a.p.zijlstra@chello.nl>, mingo <mingo@kernel.org>,
-        Dave Jones <davej@redhat.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        linux-mm <linux-mm@kvack.org>, Andrea Arcangeli <aarcange@redhat.com>
-Subject: Re: mm: kernel BUG at mm/memory.c:1230
-Message-Id: <20120524120727.6eab2f97.akpm@linux-foundation.org>
-In-Reply-To: <1337884054.3292.22.camel@lappy>
-References: <1337884054.3292.22.camel@lappy>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	id S1757369Ab2EXTKN (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 May 2012 15:10:13 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:50716 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752485Ab2EXTKL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 24 May 2012 15:10:11 -0400
+Message-ID: <4FBE8790.6000000@redhat.com>
+Date: Thu, 24 May 2012 21:10:08 +0200
+From: Hans de Goede <hdegoede@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120425 Thunderbird/12.0
+MIME-Version: 1.0
+To: Alan Cox <alan@lxorguk.ukuu.org.uk>
+CC: Udo van den Heuvel <udovdh@xs4all.nl>, linux-kernel@vger.kernel.org
+Subject: Re: pwc driver bugs
+References: <4FBE4DD5.50906@xs4all.nl> <20120524165638.0ade5a6f@pyramind.ukuu.org.uk>
+In-Reply-To: <20120524165638.0ade5a6f@pyramind.ukuu.org.uk>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 24 May 2012 20:27:34 +0200
-Sasha Levin <levinsasha928@gmail.com> wrote:
+Alan,
 
-> Hi all,
-> 
-> During fuzzing with trinity inside a KVM tools guest, using latest linux-next, I've stumbled on the following:
-> 
-> [ 2043.098949] ------------[ cut here ]------------
-> [ 2043.099014] kernel BUG at mm/memory.c:1230!
+Thanks for adding me to the CC on this. Udo, I've
+responded to your bugs in bugzilla.
 
-That's
+Regards,
 
-	VM_BUG_ON(!rwsem_is_locked(&tlb->mm->mmap_sem));
+Hans
 
-in zap_pmd_range()?
 
-> [ 2043.099014] invalid opcode: 0000 [#1] PREEMPT SMP DEBUG_PAGEALLOC
-> [ 2043.111029] CPU 3 
-> [ 2043.111029] Pid: 26853, comm: trinity Tainted: G        W    3.4.0-next-20120524-sasha-00003-ge89ff01 #281  
-> [ 2043.111029] RIP: 0010:[<ffffffff811f14d2>]  [<ffffffff811f14d2>] unmap_page_range+0x232/0x3b0
-> [ 2043.111029] RSP: 0018:ffff880030349ce8  EFLAGS: 00010246
-> [ 2043.111029] RAX: ffff880000025000 RBX: ffff8800266bc000 RCX: 00003ffffffff000
-> [ 2043.111029] RDX: ffff880000000000 RSI: ffff88003028cfc0 RDI: 000000006de001e0
-> [ 2043.111029] RBP: ffff880030349d68 R08: 0000000100001000 R09: 0000000000000000
-> [ 2043.111029] R10: 0000000000000000 R11: 0000000000000000 R12: 0000000100000000
-> [ 2043.111029] R13: 0000000100001000 R14: ffff880030349e08 R15: 0000000100000fff
-> [ 2043.111029] FS:  0000000000000000(0000) GS:ffff880035a00000(0000) knlGS:0000000000000000
-> [ 2043.111029] CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
-> [ 2043.111029] CR2: 0000000000000ffc CR3: 0000000013480000 CR4: 00000000000406e0
-> [ 2043.111029] DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
-> [ 2043.111029] DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
-> [ 2043.111029] Process trinity (pid: 26853, threadinfo ffff880030348000, task ffff88002ed68000)
-> [ 2043.111029] Stack:
-> [ 2043.111029]  ffffffff811f0b55 0000000100000000 0000000100000fff 0000000100001000
-> [ 2043.111029]  ffff880013480000 0000000100000fff 0000000000000000 ffff88003028cfc0
-> [ 2043.111029]  ffff8800142b0020 0000000100001000 ffff880030349d58 ffff88003028cfc0
-> [ 2043.111029] Call Trace:
-> [ 2043.111029]  [<ffffffff811f0b55>] ? follow_page+0x315/0x5a0
-> [ 2043.111029]  [<ffffffff811f1719>] unmap_single_vma+0xc9/0xe0
-> [ 2043.111029]  [<ffffffff811f1792>] unmap_vmas+0x62/0xa0
-> [ 2043.111029]  [<ffffffff811f77a9>] exit_mmap+0xc9/0x170
-> [ 2043.111029]  [<ffffffff81225ae5>] ? __khugepaged_exit+0xd5/0x140
-> [ 2043.111029]  [<ffffffff810cf719>] mmput+0x89/0xe0
-> [ 2043.111029]  [<ffffffff810d5f7b>] exit_mm+0x11b/0x130
-> [ 2043.111029]  [<ffffffff82f71b99>] ? _raw_spin_unlock_irq+0x59/0x80
-> [ 2043.111029]  [<ffffffff810d8933>] do_exit+0x263/0x510
-> [ 2043.111029]  [<ffffffff810d8c81>] do_group_exit+0xa1/0xe0
-> [ 2043.111029]  [<ffffffff810d8cd2>] sys_exit_group+0x12/0x20
-> [ 2043.111029]  [<ffffffff82f72bf9>] system_call_fastpath+0x16/0x1b
-> [ 2043.111029] Code: 00 48 89 f8 66 66 66 90 84 c0 0f 89 89 00 00 00 4c 89 c0 4c 29 e0 48 3d 00 00 20 00 74 5b 49 8b 06 48 83 b8 a8 00 00 00 00 75 0e <0f> 0b 0f 1f 40 00 eb fe 66 0f 1f 44 00 00 48 8b 3b 48 83 3d 85 
-> [ 2043.111029] RIP  [<ffffffff811f14d2>] unmap_page_range+0x232/0x3b0
-> [ 2043.111029]  RSP <ffff880030349ce8>
-
-The assertion was added in Jan 2011 by 14d1a55cd26f1860 ("thp: add
-debug checks for mapcount related invariants").  AFAICT it's just wrong
-on the exit path.  Unclear why it's triggering now...
-
+On 05/24/2012 05:56 PM, Alan Cox wrote:
+> On Thu, 24 May 2012 17:03:49 +0200
+> Udo van den Heuvel<udovdh@xs4all.nl>  wrote:
+>
+>> Hello,
+>>
+>> I discovered some issues in the pwc driver for certain USB webcams.
+>> I opened some bugs[1].
+>> I do think both issues might be related and the crash issue is quite
+>> serious.
+>>
+>> Please have a look, I can assist by testing any patches with fixes. (for
+>> ~3.3.7)
+>
+> commit ceede9fa8939e40ad0ddb4ad1355f45c6f1d3478
+>
+> looks rather relevant here.
+>
+> commit ceede9fa8939e40ad0ddb4ad1355f45c6f1d3478
+> Author: Hans de Goede<hdegoede@redhat.com>
+> Date:   Wed May 9 04:43:12 2012 -0300
+>
+>      [media] pwc: Fix locking
+>
+>      My last locking rework for pwc mistakenly assumed that videbuf2 does
+>      its own locking, but it does not! This patch fixes the missing
+>      locking by moving over the the video_device lock, and introducing a
+>      separate lock for the videobuf2_queue.
+>
+>      Signed-off-by: Hans de Goede<hdegoede@redhat.com>
+>      Signed-off-by: Mauro Carvalho Chehab<mchehab@redhat.com>
