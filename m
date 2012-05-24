@@ -1,85 +1,116 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756840Ab2EXMZi (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 May 2012 08:25:38 -0400
-Received: from e23smtp01.au.ibm.com ([202.81.31.143]:45254 "EHLO
-	e23smtp01.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756607Ab2EXMZh (ORCPT
+	id S932680Ab2EXM0U (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 May 2012 08:26:20 -0400
+Received: from mailout2.w1.samsung.com ([210.118.77.12]:21348 "EHLO
+	mailout2.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751456Ab2EXM0S (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 May 2012 08:25:37 -0400
-Message-ID: <4FBE288F.8060802@linux.vnet.ibm.com>
-Date: Thu, 24 May 2012 17:54:47 +0530
-From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120424 Thunderbird/12.0
-MIME-Version: 1.0
-To: Peter Zijlstra <a.p.zijlstra@chello.nl>
-CC: mingo@kernel.org, pjt@google.com, paul@paulmenage.org,
-        akpm@linux-foundation.org, rjw@sisk.pl, nacc@us.ibm.com,
-        rientjes@google.com, paulmck@linux.vnet.ibm.com, tglx@linutronix.de,
-        seto.hidetoshi@jp.fujitsu.com, tj@kernel.org, mschmidt@redhat.com,
-        berrange@redhat.com, nikunj@linux.vnet.ibm.com,
-        vatsa@linux.vnet.ibm.com, liuj97@gmail.com,
-        linux-kernel@vger.kernel.org, linux-pm@vger.kernel.org
-Subject: Re: [PATCH v5 4/5] cpusets: Update tasks' cpus_allowed mask upon
- updates to root cpuset
-References: <20120517165839.3011.98723.stgit@srivatsabhat.in.ibm.com> <20120517170055.3011.18690.stgit@srivatsabhat.in.ibm.com> <1337850827.9783.77.camel@laptop>  <4FBE02F3.3030809@linux.vnet.ibm.com> <1337860736.9783.123.camel@laptop>
-In-Reply-To: <1337860736.9783.123.camel@laptop>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
-x-cbid: 12052402-1618-0000-0000-000001AB62D5
+	Thu, 24 May 2012 08:26:18 -0400
+Date: Thu, 24 May 2012 14:26:12 +0200
+From: Marek Szyprowski <m.szyprowski@samsung.com>
+Subject: RE: [PATCHv2 3/4] mm: vmalloc: add VM_DMA flag to indicate areas used
+ by dma-mapping framework
+In-reply-to: <4FBB3B41.8010102@kernel.org>
+To: "'Minchan Kim'" <minchan@kernel.org>
+Cc: linux-arm-kernel@lists.infradead.org, linaro-mm-sig@lists.linaro.org,
+        linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        "'Kyungmin Park'" <kyungmin.park@samsung.com>,
+        "'Arnd Bergmann'" <arnd@arndb.de>,
+        "'Russell King - ARM Linux'" <linux@arm.linux.org.uk>,
+        "'Chunsang Jeong'" <chunsang.jeong@linaro.org>,
+        "'Krishna Reddy'" <vdumpa@nvidia.com>,
+        "'Konrad Rzeszutek Wilk'" <konrad.wilk@oracle.com>,
+        "'Hiroshi Doyu'" <hdoyu@nvidia.com>,
+        "'Subash Patel'" <subashrp@gmail.com>,
+        "'Nick Piggin'" <npiggin@gmail.com>
+Message-id: <01e501cd39a8$67f34ea0$37d9ebe0$%szyprowski@samsung.com>
+Organization: SPRC
+MIME-version: 1.0
+X-Mailer: Microsoft Office Outlook 12.0
+Content-type: text/plain; charset=utf-8
+Content-language: pl
+Content-transfer-encoding: 7BIT
+Thread-index: Ac036ZWT4ecL0WkHTcGawHYravhK6QBvbY5A
+References: <1337252085-22039-1-git-send-email-m.szyprowski@samsung.com>
+ <1337252085-22039-4-git-send-email-m.szyprowski@samsung.com>
+ <4FBB3B41.8010102@kernel.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/24/2012 05:28 PM, Peter Zijlstra wrote:
+Hi Minchan,
 
-> On Thu, 2012-05-24 at 15:14 +0530, Srivatsa S. Bhat wrote:
-> 
->> Sorry, my bad, I hadn't considered that. Thanks for pointing it out!
->>
->> So, I am wondering how we ought to deal with CPU hotplug for tasks attached
->> to the root cpuset..
-> 
-> By not doing anything at all. If a task is in the root set it is
-> supposed to behave as it cpusets don't exist.
-> 
->> Considering tasks attached to the root cpuset, if a cpu present in a task's
->> cpus_allowed mask goes offline, it should be removed from that mask right?
-> 
-> Nope, that shouldn't happen. We only reset the mask if all cpus in the
-> affinity mask go away. This is where task affinity and cpusets differ.
-> 
->> And if that cpu comes back online, it should not be put back to the task's
->> cpus_allowed mask (just like we don't put back cpus in non-root cpusets).
-> 
-> Online shouldn't ever change anything.
-> 
->> Is the above understanding correct?
-> 
-> Nope.
-> 
->> In the current kernel, during cpu hotplug, we don't touch cpus_allowed mask
->> of the tasks attached to the root cpuset at all.. Whereas we update the
->> cpus_allowed mask of tasks belonging to non-root cpusets, during cpu offline.
->>
->> So, is this differentiation intended?
-> 
-> Yes, although arguably the cpuset case is 'weird' in that it came later
-> and didn't mirror the cpu affinity semantics.
-> 
-> Tasks aren't attached to the root cpuset, they live there because
-> there's no other place to be when you don't use cpusets. This very much
-> means that tasks in the root set should behave as if cpusets didn't
-> exist.
-> 
+On Tuesday, May 22, 2012 9:08 AM Minchan Kim wrote:
 
+> On 05/17/2012 07:54 PM, Marek Szyprowski wrote:
+> 
+> > Add new type of vm_area intented to be used for consisten mappings
+> > created by dma-mapping framework.
+> >
+> > Signed-off-by: Marek Szyprowski <m.szyprowski@samsung.com>
+> > Reviewed-by: Kyungmin Park <kyungmin.park@samsung.com>
+> > ---
+> >  include/linux/vmalloc.h |    1 +
+> >  mm/vmalloc.c            |    3 +++
+> >  2 files changed, 4 insertions(+)
+> >
+> > diff --git a/include/linux/vmalloc.h b/include/linux/vmalloc.h
+> > index 6071e91..8a9555a 100644
+> > --- a/include/linux/vmalloc.h
+> > +++ b/include/linux/vmalloc.h
+> > @@ -14,6 +14,7 @@ struct vm_area_struct;		/* vma defining user mapping in
+> mm_types.h */
+> >  #define VM_USERMAP	0x00000008	/* suitable for remap_vmalloc_range */
+> >  #define VM_VPAGES	0x00000010	/* buffer for pages was vmalloc'ed */
+> >  #define VM_UNLIST	0x00000020	/* vm_struct is not listed in vmlist */
+> > +#define VM_DMA		0x00000040	/* used by dma-mapping framework */
+> >  /* bits [20..32] reserved for arch specific ioremap internals */
+> 
+> >
+> 
+> >  /*
+> > diff --git a/mm/vmalloc.c b/mm/vmalloc.c
+> > index 8cb7f22..9c13bab 100644
+> > --- a/mm/vmalloc.c
+> > +++ b/mm/vmalloc.c
+> > @@ -2582,6 +2582,9 @@ static int s_show(struct seq_file *m, void *p)
+> >  	if (v->flags & VM_IOREMAP)
+> >  		seq_printf(m, " ioremap");
+> >
+> > +	if (v->flags & VM_DMA)
+> > +		seq_printf(m, " dma");
+> > +
+>
+> Hmm, VM_DMA would become generic flag?
+> AFAIU, maybe VM_DMA would be used only on ARM arch.
 
-Ok, got it.. that logic makes sense. Thanks a lot for the explanation!
-I will resubmit this patchset without patch 4/5 then, if you don't have any
-other objections.
+Right now yes, it will be used only on ARM architecture, but maybe other architecture will
+start using it once it is available.
 
- 
+> Of course, it isn't performance sensitive part but there in no reason to check it, either
+> in other architecture except ARM.
+> 
+> I suggest following as
+> 
+> #ifdef CONFIG_ARM
+> #define VM_DMA	0x00000040
+> #else
+> #define VM_DMA	0x0
+> #end
+> 
+> Maybe it could remove check code at compile time.
 
-Regards,
-Srivatsa S. Bhat
+I've been told to avoid such #ifdef construction if there is no really good reason for it.
+The only justification was significant impact on the performance, otherwise it would be 
+just a good example of typical over-engineering.
+
+> >  	if (v->flags & VM_ALLOC)
+> >  		seq_printf(m, " vmalloc");
+
+Best regards
+-- 
+Marek Szyprowski
+Samsung Poland R&D Center
+
 
