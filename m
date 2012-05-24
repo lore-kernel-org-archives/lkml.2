@@ -1,101 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757888Ab2EXTjY (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 May 2012 15:39:24 -0400
-Received: from smarthost1.greenhost.nl ([195.190.28.78]:55980 "EHLO
-	smarthost1.greenhost.nl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754043Ab2EXTjV (ORCPT
+	id S1758666Ab2EXTmj (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 May 2012 15:42:39 -0400
+Received: from smtp4.epfl.ch ([128.178.224.218]:51145 "HELO smtp4.epfl.ch"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
+	id S1755936Ab2EXTmh convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 May 2012 15:39:21 -0400
-Message-ID: <2c35ec26f6337fa0ebe1ebfba1041244.squirrel@webmail.greenhost.nl>
-In-Reply-To: <4FBE81C1.8020009@zytor.com>
-References: <20120522173942.GJ11775@ZenIV.linux.org.uk>
-    <1337875681-20717-1-git-send-email-wad@chromium.org>
-    <4FBE5E3C.9070600@zytor.com>
-    <CAB=4xhp3WYoD6RnY+Y=XV18RiCLOeT-dsDmHxAVUYpaSUMpZdA@mail.gmail.com>
-    <e73397a67afcb95c39a4560fe104912a.squirrel@webmail.greenhost.nl>
-    <4FBE81C1.8020009@zytor.com>
-Date: Thu, 24 May 2012 21:39:09 +0200
-Subject: Re: [RFC PATCH 0/3] move the secure_computing call
-From: "Indan Zupancic" <indan@nul.nu>
-To: "H. Peter Anvin" <hpa@zytor.com>
-Cc: "Roland McGrath" <mcgrathr@google.com>, "Will Drewry" <wad@chromium.org>,
-        linux-kernel@vger.kernel.org, netdev@parisplace.org,
-        linux-security-module@vger.kernel.org,
-        kernel-hardening@lists.openwall.com, mingo@redhat.com, oleg@redhat.com,
-        peterz@infradead.org, rdunlap@xenotime.net, tglx@linutronix.de,
-        luto@mit.edu, serge.hallyn@canonical.com, pmoore@redhat.com,
-        akpm@linux-foundation.org, corbet@lwn.net, markus@chromium.org,
-        coreyb@linux.vnet.ibm.com, keescook@chromium.org,
-        viro@zeniv.linux.org.uk, jmorris@namei.org
-User-Agent: SquirrelMail/1.4.22
+	Thu, 24 May 2012 15:42:37 -0400
+Message-ID: <20120524214229.1038515zms1khf6t@webmail.epfl.ch>
+Date: Thu, 24 May 2012 21:42:29 +0200
+From: philippe.retornaz@epfl.ch
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>
+Cc: Fabio Estevam <festevam@gmail.com>,
+        Uwe =?iso-8859-1?b?S2xlaW5lLUv2bmln?= 
+	<u.kleine-koenig@pengutronix.de>,
+        marc@cpdesign.com.au, Shawn Guo <shawn.guo@freescale.com>,
+        Samuel Ortiz <sameo@linux.intel.com>,
+        Sascha Hauer <kernel@pengutronix.de>,
+        linux-kernel <linux-kernel@vger.kernel.org>
+Subject: Re: mc13xxx-core: kernel hangs after 'regmap_read'
+References: <201205221053.21792.marc@cpdesign.com.au>
+ <CAOMZO5AYCSVT=s=rB3xPkz5SYEQQZ9q7f=rFbTbJkkVPk7Y7Vw@mail.gmail.com>
+ <201205242338.41420.marc@cpdesign.com.au> <5844466.kI7qR0Os9A@laptop>
+ <20120524163604.GM5361@opensource.wolfsonmicro.com>
+ <20120524164101.GW3710@pengutronix.de>
+ <CAOMZO5CZbQ9cjh+5Lj8R5hbYhizP891D01LuqbaRq8WTQs8zkQ@mail.gmail.com>
+ <20120524180320.GO5361@opensource.wolfsonmicro.com>
+In-Reply-To: <20120524180320.GO5361@opensource.wolfsonmicro.com>
 MIME-Version: 1.0
-Content-Type: text/plain;charset=UTF-8
-Content-Transfer-Encoding: 8bit
-X-Priority: 3 (Normal)
-Importance: Normal
-X-Spam-Score: 0.0
-X-Scan-Signature: 353bb18b0f14186cd389c275975c39f5
+Content-Type: text/plain;
+ charset=ISO-8859-1;
+ DelSp="Yes";
+ format="flowed"
+Content-Disposition: inline
+Content-Transfer-Encoding: 8BIT
+User-Agent: Internet Messaging Program (IMP) H3 (4.3.11)
+X-EPFL-User: philippe.retornaz@EPFL
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, May 24, 2012 20:45, H. Peter Anvin wrote:
-> On 05/24/2012 11:27 AM, Indan Zupancic wrote:
->>
->> If so, then the seccomp check needs to be redone after any ptrace
->> changes, or we should give up and just do the seccomp check first,
->> instead of possibly looping forever. PTRACE_EVENT_SECCOMP has the
->> same problem.
->>
->> If a seccomp filtered task can do ptrace(), it can easily bypass
->> the seccomp filter by ptracing any task not under the same filter
->> but from the same user. And then it can puppeteer the victim into
->> doing anything it wishes. So pretending seccomp can make a ptracer
->> secure is futile, I think. Perhaps it's better to keep it simple and
->> always do the seccomp test first and ignore ptrace changes, however
->> sad that may seem. Seccomp had the power to stop ptrace(). It didn't,
->> so it shouldn't try to do it afterwards either.
->>
->> It's a bit fuzzy though, only reason why doing seccomp first is more
->> convenient is because seccomp can generate ptrace events. I don't
->> think it will make a difference in practice because ptrace(2) won't
->> be allowed by seccomp filters anyway, so it's a bit of a theoretical
->> problem.
->>
+Mark Brown <broonie@opensource.wolfsonmicro.com> a écrit :
+
+> On Thu, May 24, 2012 at 02:39:02PM -0300, Fabio Estevam wrote:
+>> On Thu, May 24, 2012 at 1:41 PM, Uwe Kleine-König
 >
-> No, that's not the reason to do seccomp first.  The reason to do seccomp
-> first is that a seccomp filter can be part of the process execution and
-> can completely transform the system call picture.
-
-How? All that seccomp can do is deny system calls and kill the task.
-What you describe sounds more like ptrace.
-
+>> > The imx spi driver can do both (GPIO and hardware CS) because not all
+>> > pins that can do hardware CS are available as GPIO.
 >
-> Consider UML, for example.  It uses ptrace to capture system calls and
-> execute them on the behalf of the process.  It needs to know what system
-> calls *actually* are done by the virtual process.
-
-Seccomp can't change system calls, only prevent them, so I miss how it
-can change anything for UML in that way.
-
+>> Right, unfortunately on mx31 the SPI CS pins cannot be used as GPIOs.
 >
-> (Note: that being said, UML might very well be better done using seccomp
-> filters *instead* of ptrace, but that's another matter.)
-
-Well, obviously it will use seccomp filters instead of ptrace when possible
-and do the more complicated stuff via PTRACE_SECCOMP_EVENT when seccomp isn't
-sufficient. But mainly for performance reasons.
-
+>> On mx51evk the SPI CS are used as GPIOs and that probably explains why
+>> it worked on mx51evk and fails on mx31pdk.
 >
-> I agree with you, if the process is traceable it is rather questionable
-> to claim any kind of security; more likely consider that a debugging
-> mode and tell people to lock out ptrace for real sandboxing.
+> Oh dear, this affects regmap but it'll probably also affect other things
+> - how plausible is it that we'll be able to fix in the driver (assuming
+> it's not just hardware misprogramming)?  We can probably manage to come
+> up with something for regmap but it's the wrong level to fix things.
+>
 
-"process is traceable" should be "process is able to trace".
+Sadly, after looking at the imx31 datasheet it seems it's a hardware  
+limitation. We could maybe workaround it by using DMA to access the  
+CSPI but even with dma, this would need a single transfer in order to  
+keep the CS signal asserted.
 
-Greetings,
+Thus, we need to workaround this in the regmap-spi or mc13783-spi driver.
+Either we find a way to have regmap-spi to use 32bits transfert or we  
+implement a custom bus inside mc13783-spi.
 
-Indan
+Thanks,
 
-
+Philippe
