@@ -1,112 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758604Ab2EXTrv (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 May 2012 15:47:51 -0400
-Received: from ogre.sisk.pl ([193.178.161.156]:35593 "EHLO ogre.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757417Ab2EXTrt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 May 2012 15:47:49 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: James Bottomley <jejbbe@hansenpartnership.com>
-Subject: Re: 3.4.0-02580-g72c04af regression on sparc64 - partitions not recognized
-Date: Thu, 24 May 2012 21:52:50 +0200
-User-Agent: KMail/1.13.6 (Linux/3.4.0+; KDE/4.6.0; x86_64; ; )
-Cc: Dan Williams <dan.j.williams@intel.com>,
-        David Miller <davem@davemloft.net>, mroos@linux.ee,
-        linux-kernel@vger.kernel.org, linux-scsi@vger.kernel.org,
-        stern@rowland.harvard.edu, Arjan van de Ven <arjan@infradead.org>
-References: <alpine.SOC.1.00.1205221200050.9585@math.ut.ee> <1337826142.6877.7.camel@dwillia2-mobl> <1337845361.2955.6.camel@dabdike.int.hansenpartnership.com>
-In-Reply-To: <1337845361.2955.6.camel@dabdike.int.hansenpartnership.com>
+	id S965012Ab2EXTr7 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 May 2012 15:47:59 -0400
+Received: from relay.parallels.com ([195.214.232.42]:54175 "EHLO
+	relay.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757417Ab2EXTr4 convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 24 May 2012 15:47:56 -0400
+Message-ID: <4FBE9069.6050602@parallels.com>
+Date: Thu, 24 May 2012 23:47:53 +0400
+From: Stanislav Kinsbursky <skinsbursky@parallels.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="utf-8"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201205242152.50397.rjw@sisk.pl>
+To: "J. Bruce Fields" <bfields@fieldses.org>
+CC: "linux-nfs@vger.kernel.org" <linux-nfs@vger.kernel.org>,
+        "Trond.Myklebust@netapp.com" <Trond.Myklebust@netapp.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "devel@openvz.org" <devel@openvz.org>
+Subject: Re: [PATCH v2 01/12] NFS: pass net to nfs_callback_down()
+References: <20120522073320.20602.87130.stgit@localhost.localdomain> <20120522073555.20602.12874.stgit@localhost.localdomain> <20120524160905.GB21776@fieldses.org>
+In-Reply-To: <20120524160905.GB21776@fieldses.org>
+Content-Type: text/plain; charset="UTF-8"; format=flowed
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday, May 24, 2012, James Bottomley wrote:
-> On Wed, 2012-05-23 at 19:22 -0700, Dan Williams wrote:
-> > On Wed, 2012-05-23 at 23:56 +0100, James Bottomley wrote:
-> > > On Wed, 2012-05-23 at 14:04 -0400, David Miller wrote:
-> > > > From: Meelis Roos <mroos@linux.ee>
-> > > > Date: Wed, 23 May 2012 19:46:46 +0300 (EEST)
-> > > > 
-> > > > CC:'ing interested parties.
-> > > > 
-> > > > >> > Just tested 3.4.0-02580-g72c04af on about 10 machines. While most of 
-> > > > >> > them work (including 3 different sparc64 machines with real scsi disks), 
-> > > > >> > Sun Netra X1 with pata_ali and IDE disk consistently fails to boot. sda 
-> > > > >> > is recognized but no partitions. 3.3.0 works fine, as did something 
-> > > > >> > around 3.4-rc7 (plain 3.4 not tested yet). No other IDE machines tested 
-> > > > >> > yet since I have none with remote console at the moment.
-> > > > >> 
-> > > > >> If 3.4.0-final is OK, start bisecting from v3.4.0 until 72c04af.  One
-> > > > >> possibility could be the sparc64 NOBOOTMEM conversion that went into
-> > > > >> the merge window.
-> > > > > 
-> > > > > Bisecting leads to this commit:
-> > > > > 
-> > > > > a7a20d103994fd760766e6c9d494daa569cbfe06 is the first bad commit
-> > > > > commit a7a20d103994fd760766e6c9d494daa569cbfe06
-> > > > > Author: Dan Williams <dan.j.williams@intel.com>
-> > > > > Date:   Thu Mar 22 17:05:11 2012 -0700
-> > > > > 
-> > > > >     [SCSI] sd: limit the scope of the async probe domain
-> > > 
-> > > My theory is that this is an init problem: The assumption in a lot of
-> > > our code is that async_synchronize_full() waits for everything ... even
-> > > the domain specific async schedules, which isn't true.
-> > > 
-> > > The code in init that makes this assumption is wait_for_device_probe().
-> > > There's also a fun async_synchronize_full() in init_post() that assumes
-> > > it can free the init memory after, which would fail badly if anything in
-> > > init used an async domain.
-> > > 
-> > > So either we fix the assumptions or we can't use domain specific async
-> > > schedules.
-> > > 
-> > 
-> > Hm, we already have cases of code not trusting the semantics of
-> > wait_for_device_probe(), especially as it relates to async scanning like
-> > in kernel/power/hibernate.c:
-> > 
-> >                 /*
-> >                  * Some device discovery might still be in progress; we need
-> >                  * to wait for this to finish.
-> >                  */
-> >                 wait_for_device_probe();
-> > 
-> >                 if (resume_wait) {
-> >                         while ((swsusp_resume_device = name_to_dev_t(resume_file)) == 0)
-> >                                 msleep(10);
-> >                         async_synchronize_full();
-> >                 }
-> > 
-> >                 /*
-> >                  * We can't depend on SCSI devices being available after loading
-> >                  * one of their modules until scsi_complete_async_scans() is
-> >                  * called and the resume device usually is a SCSI one.
-> >                  */
-> >                 scsi_complete_async_scans();
-> 
-> This is actually looks wrong: it works if SCSI is built in, but it's a
-> nop if SCSI is a module (the nop function is gated by the else clause of
-> #ifdef CONFIG_SCSI)
-> 
-> Rafael, you added this not via the SCSI tree,
+24.05.2012 20:09, J. Bruce Fields написал:
+> I can see that you're passing net to nfs_callback_down().  Could you
+> please remind me why?  What problem does this solve?
 
-That's correct, it was committed directly by Linus.
+Callback in a kernel thread and this thread is one for all NFSv4.{0,1} 
+clients.
+Thus, is have to be cantainerized as Lockd kthread.
+This patch set does containerization in the same way as Lockd done.
+I forgot about it when I was working on NFS client containerization. So, 
+it really hope, that this patch set will be a part of 3.5 kernel.
 
-> is that the intention?
+> --b.
+>
+> On Tue, May 22, 2012 at 11:35:55AM +0400, Stanislav Kinsbursky wrote:
+>> Signed-off-by: Stanislav Kinsbursky<skinsbursky@parallels.com>
+>> ---
+>>   fs/nfs/callback.c |    4 ++--
+>>   fs/nfs/callback.h |    2 +-
+>>   fs/nfs/client.c   |    2 +-
+>>   3 files changed, 4 insertions(+), 4 deletions(-)
+>>
+>> diff --git a/fs/nfs/callback.c b/fs/nfs/callback.c
+>> index 970659d..f3d7ee2 100644
+>> --- a/fs/nfs/callback.c
+>> +++ b/fs/nfs/callback.c
+>> @@ -322,7 +322,7 @@ out_err:
+>>   /*
+>>    * Kill the callback thread if it's no longer being used.
+>>    */
+>> -void nfs_callback_down(int minorversion)
+>> +void nfs_callback_down(int minorversion, struct net *net)
+>>   {
+>>   	struct nfs_callback_data *cb_info =&nfs_callback_info[minorversion];
+>>
+>> @@ -330,7 +330,7 @@ void nfs_callback_down(int minorversion)
+>>   	cb_info->users--;
+>>   	if (cb_info->users == 0&&  cb_info->task != NULL) {
+>>   		kthread_stop(cb_info->task);
+>> -		svc_shutdown_net(cb_info->serv, current->nsproxy->net_ns);
+>> +		svc_shutdown_net(cb_info->serv, net);
+>>   		svc_exit_thread(cb_info->rqst);
+>>   		cb_info->serv = NULL;
+>>   		cb_info->rqst = NULL;
+>> diff --git a/fs/nfs/callback.h b/fs/nfs/callback.h
+>> index a5527c9..6d900cf 100644
+>> --- a/fs/nfs/callback.h
+>> +++ b/fs/nfs/callback.h
+>> @@ -194,7 +194,7 @@ extern __be32 nfs4_callback_recall(struct cb_recallargs *args, void *dummy,
+>>   				   struct cb_process_state *cps);
+>>   #ifdef CONFIG_NFS_V4
+>>   extern int nfs_callback_up(u32 minorversion, struct rpc_xprt *xprt);
+>> -extern void nfs_callback_down(int minorversion);
+>> +extern void nfs_callback_down(int minorversion, struct net *net);
+>>   extern int nfs4_validate_delegation_stateid(struct nfs_delegation *delegation,
+>>   					    const nfs4_stateid *stateid);
+>>   extern int nfs4_set_callback_sessionid(struct nfs_client *clp);
+>> diff --git a/fs/nfs/client.c b/fs/nfs/client.c
+>> index da7b5e4..44cd70f 100644
+>> --- a/fs/nfs/client.c
+>> +++ b/fs/nfs/client.c
+>> @@ -222,7 +222,7 @@ static void nfs4_shutdown_session(struct nfs_client *clp)
+>>   static void nfs4_destroy_callback(struct nfs_client *clp)
+>>   {
+>>   	if (__test_and_clear_bit(NFS_CS_CALLBACK,&clp->cl_res_state))
+>> -		nfs_callback_down(clp->cl_mvops->minor_version);
+>> +		nfs_callback_down(clp->cl_mvops->minor_version, clp->net);
+>>   }
+>>
+>>   static void nfs4_shutdown_client(struct nfs_client *clp)
+>>
 
-Pretty much it is.
-
-The code snippet is slightly out of context and it is a part of the
-software_resume() routine, which is only called when the kernel's built-in
-image reading code checks whether or not the image is present.  It won't
-work anyway if SCSI is not built in.
-
-Thanks,
-Rafael
