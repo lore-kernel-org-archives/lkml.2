@@ -1,43 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752505Ab2EXHDT (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 May 2012 03:03:19 -0400
-Received: from mga14.intel.com ([143.182.124.37]:34903 "EHLO mga14.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750948Ab2EXHDS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 May 2012 03:03:18 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
-   d="scan'208";a="103667547"
-Date: Thu, 24 May 2012 09:03:15 +0200
-From: Samuel Ortiz <sameo@linux.intel.com>
-To: Chanwoo Choi <cw00.choi@samsung.com>
-Cc: myungjoo.ham@samsung.com, kyungmin.park@samsung.com,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] mfd: Fix build break of max77693 by adding REGMAP_I2C
- option
-Message-ID: <20120524070315.GA5401@sortiz-mobl>
-References: <1337839738-18246-1-git-send-email-cw00.choi@samsung.com>
+	id S1752792Ab2EXHD4 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 May 2012 03:03:56 -0400
+Received: from mail-qa0-f46.google.com ([209.85.216.46]:46987 "EHLO
+	mail-qa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750840Ab2EXHDx (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 24 May 2012 03:03:53 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1337839738-18246-1-git-send-email-cw00.choi@samsung.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <CA+55aFwR=wZfpXPTn9e+ZbEB4srVOHVZFz_STg9jxngmhJxT=w@mail.gmail.com>
+References: <20100521104404.GA29530@gondor.apana.org.au>
+	<20100804140448.GA4042@gondor.apana.org.au>
+	<20101024061625.GA23715@gondor.apana.org.au>
+	<20110106000157.GA16089@gondor.apana.org.au>
+	<20110315145940.GA15373@gondor.apana.org.au>
+	<20110520235409.GA1722@gondor.apana.org.au>
+	<20110724011752.GA14373@gondor.apana.org.au>
+	<20111031040952.GA19659@gondor.apana.org.au>
+	<20120106041250.GA7759@gondor.apana.org.au>
+	<20120320032736.GA21367@gondor.apana.org.au>
+	<20120523013528.GA20781@gondor.apana.org.au>
+	<CA+55aFwR=wZfpXPTn9e+ZbEB4srVOHVZFz_STg9jxngmhJxT=w@mail.gmail.com>
+Date: Thu, 24 May 2012 09:03:52 +0200
+Message-ID: <CACRpkdZHYqj71F2KG0S+W_n8SL0cRQ-D2ON6OWtsGR6XRJnRWQ@mail.gmail.com>
+Subject: Re: Crypto Update for 3.5
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Herbert Xu <herbert@gondor.hengli.com.au>,
+        Andreas Westin <andreas.westin@stericsson.com>,
+        "David S. Miller" <davem@davemloft.net>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Linux Crypto Mailing List <linux-crypto@vger.kernel.org>,
+        Lee Jones <lee.jones@linaro.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Chanwoo,
+On Thu, May 24, 2012 at 1:06 AM, Linus Torvalds
+<torvalds@linux-foundation.org> wrote:
 
-On Thu, May 24, 2012 at 03:08:58PM +0900, Chanwoo Choi wrote:
-> This patch add REGMAP_I2C config option to fix build break
-> of max77693 mfd driver because max77693 use regmap interface
-> for i2c communication.
-Patch applied, thanks.
+> There's a declaration for dbx500_add_platform_device_noirq() that does
+> not exist and is not used anywhere. Why? It was added in commit
+> 585d188f8072, and I see no rhyme or reason to it.
+>
+> I only noticed because I happened to get a conflict due to the
+> location it was added. I removed it. WTF is going on?
 
-Cheers,
-Samuel.
+AFAICT this was retrofitted to get a booting kernel on
+the cryptodev base which was based on something old like
+v3.2 just some weeks back. (Now it's upgraded to mainline, great!)
 
--- 
-Intel Open Source Technology Centre
-http://oss.intel.com/
+Greg was pushing for us to allocate all devices dynamically at
+one point, but there was no real infrastructure for it and some local
+implementations to meet that requirement, that's why these
+functions pop up and down. We're working on it with device tree
+etc, mea culpa...
+
+Yours,
+Linus Walleij
