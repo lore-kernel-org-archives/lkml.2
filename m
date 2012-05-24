@@ -1,127 +1,166 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756349Ab2EXLND (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 May 2012 07:13:03 -0400
-Received: from smtp.ctxuk.citrix.com ([62.200.22.115]:19091 "EHLO
-	SMTP.EU.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753912Ab2EXLNA (ORCPT
+	id S1754282Ab2EXLU0 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 May 2012 07:20:26 -0400
+Received: from mail-gg0-f174.google.com ([209.85.161.174]:58171 "EHLO
+	mail-gg0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751714Ab2EXLUZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 May 2012 07:13:00 -0400
-X-IronPort-AV: E=Sophos;i="4.75,649,1330905600"; 
-   d="scan'208";a="12646992"
-Message-ID: <1337857978.7229.27.camel@zakaz.uk.xensource.com>
-Subject: Re: [PATCH] xen/netback: calculate correctly the SKB slots.
-From: Ian Campbell <Ian.Campbell@citrix.com>
-To: Adnan Misherfi <adnan.misherfi@oracle.com>
-CC: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Ben Hutchings <bhutchings@solarflare.com>,
-        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        "davem@davemloft.net" <davem@davemloft.net>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Date: Thu, 24 May 2012 12:12:58 +0100
-In-Reply-To: <4FBBE7D2.9040105@oracle.com>
-References: <1337621793-12486-1-git-send-email-konrad.wilk@oracle.com>
-	 <1337627640.2979.33.camel@bwh-desktop.uk.solarflarecom.com>
-	 <1337678512.10118.40.camel@zakaz.uk.xensource.com>
-	 <20120522180901.GC22488@phenom.dumpdata.com> <4FBBE7D2.9040105@oracle.com>
-Organization: Citrix Systems, Inc.
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.2-1 
-Content-Transfer-Encoding: 7bit
+	Thu, 24 May 2012 07:20:25 -0400
 MIME-Version: 1.0
+In-Reply-To: <20120524121056.24fbdcdb@pyramind.ukuu.org.uk>
+References: <20120523002645.GA3490@redhat.com> <CACVXFVMz_GKHXpzbqt24yY=fHJ6uYZPOcSnKNFHrvbdpWxc7tw@mail.gmail.com>
+ <CA+1xoqf0G3kDY3c4Gb=RkQZ8_L+but6-uUjtSVfvYUf6iL2_JA@mail.gmail.com> <20120524121056.24fbdcdb@pyramind.ukuu.org.uk>
+From: Sasha Levin <levinsasha928@gmail.com>
+Date: Thu, 24 May 2012 13:20:03 +0200
+Message-ID: <CA+1xoqegLYLsP5yWw7d7oMngUSgZjXePJu_b6E-yw4aBE8Qhgg@mail.gmail.com>
+Subject: Re: 3.4+ tty lockdep trace
+To: Alan Cox <alan@lxorguk.ukuu.org.uk>
+Cc: Ming Lei <tom.leiming@gmail.com>, Dave Jones <davej@redhat.com>,
+        Linux Kernel <linux-kernel@vger.kernel.org>,
+        Alan Cox <alan@linux.intel.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Content-Type: multipart/mixed; boundary=14dae9340c951e6f7504c0c670d0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2012-05-22 at 20:24 +0100, Adnan Misherfi wrote:
-> 
-> Konrad Rzeszutek Wilk wrote:
-> >>>> wrong, which caused the RX ring to be erroneously declared full,
-> >>>> and the receive queue to be stopped. The problem shows up when two
-> >>>> guest running on the same server tries to communicates using large
-> >>>>         
-> > .. snip..
-> >   
-> >>> The function name is xen_netbk_count_skb_slots() in net-next.  This
-> >>> appears to depend on the series in
-> >>> <http://lists.xen.org/archives/html/xen-devel/2012-01/msg00982.html>.
-> >>>       
-> >> Yes, I don't think that patchset was intended for prime time just yet.
-> >> Can this issue be reproduced without it?
-> >>     
-> >
-> > It was based on 3.4, but the bug and work to fix this was  done on top of
-> > a 3.4 version of netback backported in a 3.0 kernel. Let me double check
-> > whether there were some missing patches.
-> >
-> >   
-> >>>>  	int i, copy_off;
-> >>>>  
-> >>>>  	count = DIV_ROUND_UP(
-> >>>> -			offset_in_page(skb->data)+skb_headlen(skb), PAGE_SIZE);
-> >>>> +			offset_in_page(skb->data + skb_headlen(skb)), PAGE_SIZE);
-> >>>>         
-> >>> The new version would be equivalent to:
-> >>> 	count = offset_in_page(skb->data + skb_headlen(skb)) != 0;
-> >>> which is not right, as netbk_gop_skb() will use one slot per page.
-> >>>       
-> >> Just outside the context of this patch we separately count the frag
-> >> pages.
-> >>
-> >> However I think you are right if skb->data covers > 1 page, since the
-> >> new version can only ever return 0 or 1. I expect this patch papers over
-> >> the underlying issue by not stopping often enough, rather than actually
-> >> fixing the underlying issue.
-> >>     
-> >
-> > Ah, any thoughts? Have you guys seen this behavior as well?
-> >   
-> >>> The real problem is likely that you're not using the same condition to
-> >>> stop and wake the queue.
-> >>>       
-> >> Agreed, it would be useful to see the argument for this patch presented
-> >> in that light. In particular the relationship between
-> >> xenvif_rx_schedulable() (used to wake queue) and
-> >> xen_netbk_must_stop_queue() (used to stop queue).
-> >>     
-> >
-> > Do you have any debug patches to ... do open-heart surgery on the
-> > rings of netback as its hitting the issues Adnan has found?
-> >
-> >   
-> >> As it stands the description describes a setup which can repro the
-> >> problem but doesn't really analyse what actually happens, nor justify
-> >> the correctness of the fix.
-> >>     
-> >
-> > Hm, Adnan - you dug in to this and you got tons of notes. Could you
-> > describe what you saw that caused this?
-> >   
-> The problem is that the function xen_netbk_count_skb_slots() returns two 
-> different counts for same type packets of same size (ICMP,3991). At the 
-> start of the test
-> the count is one, later on the count changes to two, soon after the 
-> counts becomes two, the condition ring full becomes true, and queue get 
-> stopped, and never gets
-> started again.There are few point to make here:
-> 1- It takes less that 128 ping packets to reproduce this
-> 2- What is interesting here is that it works correct for many packet 
-> sizes including 1500,400,500 9000, (3990, but not 3991)
-> 3- The inconsistent count for the same packet size and type
-> 4- I do not believe the ring was actually full when it was declared 
-> full, I think the consumer pointer was wrong. (vif->rx_req_cons_peek in 
-> function xenvif_start_xmit())
-> 5- After changing the code the count returned from 
-> xen_netbk_count_skb_slots() was always consistent, and worked just fine, 
-> I let it runs for at least 12 hours.
+--14dae9340c951e6f7504c0c670d0
+Content-Type: text/plain; charset=ISO-8859-1
 
-That doesn't really explain why you think your fix is correct though,
-which is what I was asking for.
+On Thu, May 24, 2012 at 1:10 PM, Alan Cox <alan@lxorguk.ukuu.org.uk> wrote:
+>> I'm still seeing the warning with this patch:
+>
+> Can you attach the trace that went with the trigger as well ?
 
-In any case, does Simon's patch also fix things for you? As far as I can
-tell that is the right fix.
+Ofcourse, attached as a file.
 
-Ian.
+--14dae9340c951e6f7504c0c670d0
+Content-Type: text/plain; charset=US-ASCII; name="tty_lockdep.txt"
+Content-Disposition: attachment; filename="tty_lockdep.txt"
+Content-Transfer-Encoding: base64
+X-Attachment-Id: f_h2lqd8hj0
 
-
+WyAgIDM2LjMzMjAyMl0gPT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09
+PT09PT09PT09PT09ClsgICAzNi4zMzM3NDldIFsgSU5GTzogcG9zc2libGUgY2lyY3VsYXIgbG9j
+a2luZyBkZXBlbmRlbmN5IGRldGVjdGVkIF0KWyAgIDM2LjMzMzc0OV0gMy40LjAtbmV4dC0yMDEy
+MDUyNC1zYXNoYS0wMDAwMi1nMTFkYzY1MSAjMjczIFRhaW50ZWQ6IEcgICAgICAgIFcgICAKWyAg
+IDM2LjMzMzc0OV0gLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0t
+LS0tLS0tLS0tLQpbICAgMzYuMzMzNzQ5XSB0cmluaXR5LzQ5ODAgaXMgdHJ5aW5nIHRvIGFjcXVp
+cmUgbG9jazoKWyAgIDM2LjMzMzc0OV0gICgmdHR5LT5sZWdhY3lfbXV0ZXgpeysuKy4rLn0sIGF0
+OiBbPGZmZmZmZmZmODJmNzFmZGI+XSB0dHlfbG9ja19uZXN0ZWQrMHg3Yi8weDkwClsgICAzNi4z
+MzM3NDldIApbICAgMzYuMzMzNzQ5XSBidXQgdGFzayBpcyBhbHJlYWR5IGhvbGRpbmcgbG9jazoK
+WyAgIDM2LjMzMzc0OV0gICgmdHR5LT5sZWdhY3lfbXV0ZXgvMSl7Ky4rLi4ufSwgYXQ6IFs8ZmZm
+ZmZmZmY4MmY3MWZkYj5dIHR0eV9sb2NrX25lc3RlZCsweDdiLzB4OTAKWyAgIDM2LjMzMzc0OV0g
+ClsgICAzNi4zMzM3NDldIHdoaWNoIGxvY2sgYWxyZWFkeSBkZXBlbmRzIG9uIHRoZSBuZXcgbG9j
+ay4KWyAgIDM2LjMzMzc0OV0gClsgICAzNi4zMzM3NDldIApbICAgMzYuMzMzNzQ5XSB0aGUgZXhp
+c3RpbmcgZGVwZW5kZW5jeSBjaGFpbiAoaW4gcmV2ZXJzZSBvcmRlcikgaXM6ClsgICAzNi4zMzM3
+NDldIApbICAgMzYuMzMzNzQ5XSAtPiAjMSAoJnR0eS0+bGVnYWN5X211dGV4LzEpeysuKy4uLn06
+ClsgICAzNi4zMzM3NDldICAgICAgICBbPGZmZmZmZmZmODExNGEyM2U+XSB2YWxpZGF0ZV9jaGFp
+bisweDY5ZS8weDc5MApbICAgMzYuMzMzNzQ5XSAgICAgICAgWzxmZmZmZmZmZjgxMTRhNzUzPl0g
+X19sb2NrX2FjcXVpcmUrMHg0MjMvMHg0YzAKWyAgIDM2LjMzMzc0OV0gICAgICAgIFs8ZmZmZmZm
+ZmY4MTE0YTk3YT5dIGxvY2tfYWNxdWlyZSsweDE4YS8weDFlMApbICAgMzYuMzMzNzQ5XSAgICAg
+ICAgWzxmZmZmZmZmZjgyZjZlNDEwPl0gX19tdXRleF9sb2NrX2NvbW1vbisweDYwLzB4NTkwClsg
+ICAzNi4zMzM3NDldICAgICAgICBbPGZmZmZmZmZmODJmNmVhNzA+XSBtdXRleF9sb2NrX25lc3Rl
+ZCsweDQwLzB4NTAKWyAgIDM2LjMzMzc0OV0gICAgICAgIFs8ZmZmZmZmZmY4MmY3MWZkYj5dIHR0
+eV9sb2NrX25lc3RlZCsweDdiLzB4OTAKWyAgIDM2LjMzMzc0OV0gICAgICAgIFs8ZmZmZmZmZmY4
+MmY3MjAyZT5dIHR0eV9sb2NrX3BhaXIrMHgyZS8weDcwClsgICAzNi4zMzM3NDldICAgICAgICBb
+PGZmZmZmZmZmODFiMGY5NjI+XSB0dHlfcmVsZWFzZSsweDE4Mi8weDRkMApbICAgMzYuMzMzNzQ5
+XSAgICAgICAgWzxmZmZmZmZmZjgxMjMyZDRhPl0gX19mcHV0KzB4MTFhLzB4MmMwClsgICAzNi4z
+MzM3NDldICAgICAgICBbPGZmZmZmZmZmODEyMzJmMDU+XSBmcHV0KzB4MTUvMHgyMApbICAgMzYu
+MzMzNzQ5XSAgICAgICAgWzxmZmZmZmZmZjgxMjJmMjEyPl0gZmlscF9jbG9zZSsweDgyLzB4YTAK
+WyAgIDM2LjMzMzc0OV0gICAgICAgIFs8ZmZmZmZmZmY4MTBkNjUxND5dIGNsb3NlX2ZpbGVzKzB4
+MWI0LzB4MjAwClsgICAzNi4zMzM3NDldICAgICAgICBbPGZmZmZmZmZmODEwZDY1ODE+XSBwdXRf
+ZmlsZXNfc3RydWN0KzB4MjEvMHgxODAKWyAgIDM2LjMzMzc0OV0gICAgICAgIFs8ZmZmZmZmZmY4
+MTBkNjcyZD5dIGV4aXRfZmlsZXMrMHg0ZC8weDYwClsgICAzNi4zMzM3NDldICAgICAgICBbPGZm
+ZmZmZmZmODEwZDg5ZjI+XSBkb19leGl0KzB4MzIyLzB4NTEwClsgICAzNi4zMzM3NDldICAgICAg
+ICBbPGZmZmZmZmZmODEwZDhjODE+XSBkb19ncm91cF9leGl0KzB4YTEvMHhlMApbICAgMzYuMzMz
+NzQ5XSAgICAgICAgWzxmZmZmZmZmZjgxMGVkNWI4Pl0gZ2V0X3NpZ25hbF90b19kZWxpdmVyKzB4
+NGY4LzB4NTgwClsgICAzNi4zMzM3NDldICAgICAgICBbPGZmZmZmZmZmODEwNjVhZTI+XSBkb19z
+aWduYWwrMHg0Mi8weDEyMApbICAgMzYuNDAyMTA2XSAgICAgICAgWzxmZmZmZmZmZjgxMDY1YzE0
+Pl0gZG9fbm90aWZ5X3Jlc3VtZSsweDU0LzB4YjAKWyAgIDM2LjQwMjEwNl0gICAgICAgIFs8ZmZm
+ZmZmZmY4MmY3MjNiYj5dIHJldGludF9zaWduYWwrMHg0ZC8weDkyClsgICAzNi40MDIxMDZdIApb
+ICAgMzYuNDAyMTA2XSAtPiAjMCAoJnR0eS0+bGVnYWN5X211dGV4KXsrLisuKy59OgpbICAgMzYu
+NDAyMTA2XSAgICAgICAgWzxmZmZmZmZmZjgxMTQ5N2VmPl0gY2hlY2tfcHJldl9hZGQrMHgxMWYv
+MHg0ZDAKWyAgIDM2LjQwMjEwNl0gICAgICAgIFs8ZmZmZmZmZmY4MTE0YTIzZT5dIHZhbGlkYXRl
+X2NoYWluKzB4NjllLzB4NzkwClsgICAzNi40MDIxMDZdICAgICAgICBbPGZmZmZmZmZmODExNGE3
+NTM+XSBfX2xvY2tfYWNxdWlyZSsweDQyMy8weDRjMApbICAgMzYuNDAyMTA2XSAgICAgICAgWzxm
+ZmZmZmZmZjgxMTRhOTdhPl0gbG9ja19hY3F1aXJlKzB4MThhLzB4MWUwClsgICAzNi40MDIxMDZd
+ICAgICAgICBbPGZmZmZmZmZmODJmNmU0MTA+XSBfX211dGV4X2xvY2tfY29tbW9uKzB4NjAvMHg1
+OTAKWyAgIDM2LjQwMjEwNl0gICAgICAgIFs8ZmZmZmZmZmY4MmY2ZWE3MD5dIG11dGV4X2xvY2tf
+bmVzdGVkKzB4NDAvMHg1MApbICAgMzYuNDAyMTA2XSAgICAgICAgWzxmZmZmZmZmZjgyZjcxZmRi
+Pl0gdHR5X2xvY2tfbmVzdGVkKzB4N2IvMHg5MApbICAgMzYuNDAyMTA2XSAgICAgICAgWzxmZmZm
+ZmZmZjgyZjcxZmZiPl0gdHR5X2xvY2srMHhiLzB4MTAKWyAgIDM2LjQwMjEwNl0gICAgICAgIFs8
+ZmZmZmZmZmY4MWIxNTVmNz5dIHR0eV9sZGlzY19yZWxlYXNlKzB4NDcvMHhiMApbICAgMzYuNDAy
+MTA2XSAgICAgICAgWzxmZmZmZmZmZjgxYjBmYzMzPl0gdHR5X3JlbGVhc2UrMHg0NTMvMHg0ZDAK
+WyAgIDM2LjQwMjEwNl0gICAgICAgIFs8ZmZmZmZmZmY4MTIzMmQ0YT5dIF9fZnB1dCsweDExYS8w
+eDJjMApbICAgMzYuNDAyMTA2XSAgICAgICAgWzxmZmZmZmZmZjgxMjMyZjA1Pl0gZnB1dCsweDE1
+LzB4MjAKWyAgIDM2LjQwMjEwNl0gICAgICAgIFs8ZmZmZmZmZmY4MTIyZjIxMj5dIGZpbHBfY2xv
+c2UrMHg4Mi8weGEwClsgICAzNi40MDIxMDZdICAgICAgICBbPGZmZmZmZmZmODEwZDY1MTQ+XSBj
+bG9zZV9maWxlcysweDFiNC8weDIwMApbICAgMzYuNDAyMTA2XSAgICAgICAgWzxmZmZmZmZmZjgx
+MGQ2NTgxPl0gcHV0X2ZpbGVzX3N0cnVjdCsweDIxLzB4MTgwClsgICAzNi40MDIxMDZdICAgICAg
+ICBbPGZmZmZmZmZmODEwZDY3MmQ+XSBleGl0X2ZpbGVzKzB4NGQvMHg2MApbICAgMzYuNDAyMTA2
+XSAgICAgICAgWzxmZmZmZmZmZjgxMGQ4OWYyPl0gZG9fZXhpdCsweDMyMi8weDUxMApbICAgMzYu
+NDAyMTA2XSAgICAgICAgWzxmZmZmZmZmZjgxMGQ4YzgxPl0gZG9fZ3JvdXBfZXhpdCsweGExLzB4
+ZTAKWyAgIDM2LjQwMjEwNl0gICAgICAgIFs8ZmZmZmZmZmY4MTBlZDViOD5dIGdldF9zaWduYWxf
+dG9fZGVsaXZlcisweDRmOC8weDU4MApbICAgMzYuNDAyMTA2XSAgICAgICAgWzxmZmZmZmZmZjgx
+MDY1YWUyPl0gZG9fc2lnbmFsKzB4NDIvMHgxMjAKWyAgIDM2LjQwMjEwNl0gICAgICAgIFs8ZmZm
+ZmZmZmY4MTA2NWMxND5dIGRvX25vdGlmeV9yZXN1bWUrMHg1NC8weGIwClsgICAzNi40MDIxMDZd
+ICAgICAgICBbPGZmZmZmZmZmODJmNzIzYmI+XSByZXRpbnRfc2lnbmFsKzB4NGQvMHg5MgpbICAg
+MzYuNDAyMTA2XSAKWyAgIDM2LjQwMjEwNl0gb3RoZXIgaW5mbyB0aGF0IG1pZ2h0IGhlbHAgdXMg
+ZGVidWcgdGhpczoKWyAgIDM2LjQwMjEwNl0gClsgICAzNi40MDIxMDZdICBQb3NzaWJsZSB1bnNh
+ZmUgbG9ja2luZyBzY2VuYXJpbzoKWyAgIDM2LjQwMjEwNl0gClsgICAzNi40MDIxMDZdICAgICAg
+ICBDUFUwICAgICAgICAgICAgICAgICAgICBDUFUxClsgICAzNi40MDIxMDZdICAgICAgICAtLS0t
+ICAgICAgICAgICAgICAgICAgICAtLS0tClsgICAzNi40MDIxMDZdICAgbG9jaygmdHR5LT5sZWdh
+Y3lfbXV0ZXgvMSk7ClsgICAzNi40MDIxMDZdICAgICAgICAgICAgICAgICAgICAgICAgICAgICAg
+ICBsb2NrKCZ0dHktPmxlZ2FjeV9tdXRleCk7ClsgICAzNi40MDIxMDZdICAgICAgICAgICAgICAg
+ICAgICAgICAgICAgICAgICBsb2NrKCZ0dHktPmxlZ2FjeV9tdXRleC8xKTsKWyAgIDM2LjQwMjEw
+Nl0gICBsb2NrKCZ0dHktPmxlZ2FjeV9tdXRleCk7ClsgICAzNi40MDIxMDZdIApbICAgMzYuNDAy
+MTA2XSAgKioqIERFQURMT0NLICoqKgpbICAgMzYuNDAyMTA2XSAKWyAgIDM2LjQwMjEwNl0gMSBs
+b2NrIGhlbGQgYnkgdHJpbml0eS80OTgwOgpbICAgMzYuNDAyMTA2XSAgIzA6ICAoJnR0eS0+bGVn
+YWN5X211dGV4LzEpeysuKy4uLn0sIGF0OiBbPGZmZmZmZmZmODJmNzFmZGI+XSB0dHlfbG9ja19u
+ZXN0ZWQrMHg3Yi8weDkwClsgICAzNi40MDIxMDZdIApbICAgMzYuNDAyMTA2XSBzdGFjayBiYWNr
+dHJhY2U6ClsgICAzNi40MDIxMDZdIFBpZDogNDk4MCwgY29tbTogdHJpbml0eSBUYWludGVkOiBH
+ICAgICAgICBXICAgIDMuNC4wLW5leHQtMjAxMjA1MjQtc2FzaGEtMDAwMDItZzExZGM2NTEgIzI3
+MwpbICAgMzYuNDAyMTA2XSBDYWxsIFRyYWNlOgpbICAgMzYuNDAyMTA2XSAgWzxmZmZmZmZmZjgx
+MTQ3N2Q1Pl0gcHJpbnRfY2lyY3VsYXJfYnVnKzB4MTA1LzB4MTIwClsgICAzNi40MDIxMDZdICBb
+PGZmZmZmZmZmODExNDk3ZWY+XSBjaGVja19wcmV2X2FkZCsweDExZi8weDRkMApbICAgMzYuNDAy
+MTA2XSAgWzxmZmZmZmZmZjgxMTRhMjNlPl0gdmFsaWRhdGVfY2hhaW4rMHg2OWUvMHg3OTAKWyAg
+IDM2LjQwMjEwNl0gIFs8ZmZmZmZmZmY4MTExYTVmOD5dID8gc2NoZWRfY2xvY2tfY3B1KzB4MTA4
+LzB4MTIwClsgICAzNi40MDIxMDZdICBbPGZmZmZmZmZmODExNGE3NTM+XSBfX2xvY2tfYWNxdWly
+ZSsweDQyMy8weDRjMApbICAgMzYuNDAyMTA2XSAgWzxmZmZmZmZmZjgxMTRhOTdhPl0gbG9ja19h
+Y3F1aXJlKzB4MThhLzB4MWUwClsgICAzNi40MDIxMDZdICBbPGZmZmZmZmZmODJmNzFmZGI+XSA/
+IHR0eV9sb2NrX25lc3RlZCsweDdiLzB4OTAKWyAgIDM2LjQwMjEwNl0gIFs8ZmZmZmZmZmY4MmY2
+ZTQxMD5dIF9fbXV0ZXhfbG9ja19jb21tb24rMHg2MC8weDU5MApbICAgMzYuNDAyMTA2XSAgWzxm
+ZmZmZmZmZjgyZjcxZmRiPl0gPyB0dHlfbG9ja19uZXN0ZWQrMHg3Yi8weDkwClsgICAzNi40MDIx
+MDZdICBbPGZmZmZmZmZmODExNGFlYTI+XSA/IF9fbG9ja19yZWxlYXNlKzB4MWMyLzB4MWUwClsg
+ICAzNi40MDIxMDZdICBbPGZmZmZmZmZmODEwZjUyNDA+XSA/IGZsdXNoX3NjaGVkdWxlZF93b3Jr
+KzB4MjAvMHgyMApbICAgMzYuNDAyMTA2XSAgWzxmZmZmZmZmZjgyZjcxZmRiPl0gPyB0dHlfbG9j
+a19uZXN0ZWQrMHg3Yi8weDkwClsgICAzNi40MDIxMDZdICBbPGZmZmZmZmZmODJmNmVhNzA+XSBt
+dXRleF9sb2NrX25lc3RlZCsweDQwLzB4NTAKWyAgIDM2LjQwMjEwNl0gIFs8ZmZmZmZmZmY4MmY3
+MWZkYj5dIHR0eV9sb2NrX25lc3RlZCsweDdiLzB4OTAKWyAgIDM2LjQwMjEwNl0gIFs8ZmZmZmZm
+ZmY4MmY3MWZmYj5dIHR0eV9sb2NrKzB4Yi8weDEwClsgICAzNi40MDIxMDZdICBbPGZmZmZmZmZm
+ODFiMTU1Zjc+XSB0dHlfbGRpc2NfcmVsZWFzZSsweDQ3LzB4YjAKWyAgIDM2LjQwMjEwNl0gIFs8
+ZmZmZmZmZmY4MWIwZmMzMz5dIHR0eV9yZWxlYXNlKzB4NDUzLzB4NGQwClsgICAzNi40MDIxMDZd
+ICBbPGZmZmZmZmZmODEyODM2Y2I+XSA/IHZmc19sb2NrX2ZpbGUrMHgzYi8weDQwClsgICAzNi40
+MDIxMDZdICBbPGZmZmZmZmZmODEyMzJkNGE+XSBfX2ZwdXQrMHgxMWEvMHgyYzAKWyAgIDM2LjQw
+MjEwNl0gIFs8ZmZmZmZmZmY4MTIzMmYwNT5dIGZwdXQrMHgxNS8weDIwClsgICAzNi40MDIxMDZd
+ICBbPGZmZmZmZmZmODEyMmYyMTI+XSBmaWxwX2Nsb3NlKzB4ODIvMHhhMApbICAgMzYuNDAyMTA2
+XSAgWzxmZmZmZmZmZjgxMGQ2NTE0Pl0gY2xvc2VfZmlsZXMrMHgxYjQvMHgyMDAKWyAgIDM2LjQw
+MjEwNl0gIFs8ZmZmZmZmZmY4MTBkNjM2MD5dID8gd2FpdF90YXNrX3N0b3BwZWQrMHgzZDAvMHgz
+ZDAKWyAgIDM2LjQwMjEwNl0gIFs8ZmZmZmZmZmY4MTBkNjcyNT5dID8gZXhpdF9maWxlcysweDQ1
+LzB4NjAKWyAgIDM2LjQwMjEwNl0gIFs8ZmZmZmZmZmY4MTBkNjU4MT5dIHB1dF9maWxlc19zdHJ1
+Y3QrMHgyMS8weDE4MApbICAgMzYuNDAyMTA2XSAgWzxmZmZmZmZmZjgyZjcxYTEwPl0gPyBfcmF3
+X3NwaW5fdW5sb2NrKzB4MzAvMHg2MApbICAgMzYuNDAyMTA2XSAgWzxmZmZmZmZmZjgxMGQ2NzJk
+Pl0gZXhpdF9maWxlcysweDRkLzB4NjAKWyAgIDM2LjQwMjEwNl0gIFs8ZmZmZmZmZmY4MTBkODlm
+Mj5dIGRvX2V4aXQrMHgzMjIvMHg1MTAKWyAgIDM2LjQwMjEwNl0gIFs8ZmZmZmZmZmY4MTBkOGM4
+MT5dIGRvX2dyb3VwX2V4aXQrMHhhMS8weGUwClsgICAzNi40MDIxMDZdICBbPGZmZmZmZmZmODEw
+ZWQ1Yjg+XSBnZXRfc2lnbmFsX3RvX2RlbGl2ZXIrMHg0ZjgvMHg1ODAKWyAgIDM2LjQwMjEwNl0g
+IFs8ZmZmZmZmZmY4MTA2NWFlMj5dIGRvX3NpZ25hbCsweDQyLzB4MTIwClsgICAzNi40MDIxMDZd
+ICBbPGZmZmZmZmZmODEwOTAwMDA+XSA/IGNyZWF0ZV9pcnErMHgxMC8weDMwClsgICAzNi40MDIx
+MDZdICBbPGZmZmZmZmZmODExZWU3OGU+XSA/IG1pZ2h0X2ZhdWx0KzB4NGUvMHhhMApbICAgMzYu
+NDAyMTA2XSAgWzxmZmZmZmZmZjgyZjcyMzdmPl0gPyByZXRpbnRfc2lnbmFsKzB4MTEvMHg5Mgpb
+ICAgMzYuNDAyMTA2XSAgWzxmZmZmZmZmZjgxMDY1YzE0Pl0gZG9fbm90aWZ5X3Jlc3VtZSsweDU0
+LzB4YjAKWyAgIDM2LjQwMjEwNl0gIFs8ZmZmZmZmZmY4MmY3MjNiYj5dIHJldGludF9zaWduYWwr
+MHg0ZC8weDkyCg==
+--14dae9340c951e6f7504c0c670d0--
