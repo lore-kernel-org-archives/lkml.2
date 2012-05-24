@@ -1,87 +1,151 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965577Ab2EXVcq (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 May 2012 17:32:46 -0400
-Received: from shards.monkeyblade.net ([198.137.202.13]:43485 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965535Ab2EXVcn (ORCPT
+	id S965603Ab2EXVdi (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 May 2012 17:33:38 -0400
+Received: from mail-gg0-f174.google.com ([209.85.161.174]:52714 "EHLO
+	mail-gg0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933393Ab2EXVdf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 May 2012 17:32:43 -0400
-Date: Thu, 24 May 2012 17:32:39 -0400 (EDT)
-Message-Id: <20120524.173239.1413482842035447647.davem@davemloft.net>
-To: torvalds@linux-foundation.org
-CC: akpm@linux-foundation.org, sparclinux@vger.kernel.org,
-        linux-arch@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [GIT] Sparc
-From: David Miller <davem@davemloft.net>
-X-Mailer: Mew version 6.5 on Emacs 24.0.95 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.6 (shards.monkeyblade.net [198.137.202.13]); Thu, 24 May 2012 14:32:42 -0700 (PDT)
+	Thu, 24 May 2012 17:33:35 -0400
+From: Benjamin Poirier <bpoirier@suse.de>
+To: netdev@vger.kernel.org
+Cc: "David S. Miller" <davem@davemloft.net>,
+        Alexey Kuznetsov <kuznet@ms2.inr.ac.ru>,
+        James Morris <jmorris@namei.org>,
+        Hideaki YOSHIFUJI <yoshfuji@linux-ipv6.org>,
+        Patrick McHardy <kaber@trash.net>, linux-kernel@vger.kernel.org,
+        Steffen Klassert <steffen.klassert@secunet.com>,
+        Diego Beltrami <diego.beltrami@gmail.com>
+Subject: [PATCH v4] xfrm: take net hdr len into account for esp payload size calculation
+Date: Thu, 24 May 2012 17:32:38 -0400
+Message-Id: <1337895158-23521-1-git-send-email-bpoirier@suse.de>
+X-Mailer: git-send-email 1.7.7
+In-Reply-To: <20120517.200509.2290282427866555176.davem@davemloft.net>
+References: <20120517.200509.2290282427866555176.davem@davemloft.net>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Corrects the function that determines the esp payload size. The calculations
+done in esp{4,6}_get_mtu() lead to overlength frames in transport mode for
+certain mtu values and suboptimal frames for others.
 
-This has the generic strncpy_from_user() implementation architectures
-can now use, which we've been developing on linux-arch over the past
-few days.
+According to what is done, mainly in esp{,6}_output() and tcp_mtu_to_mss(),
+net_header_len must be taken into account before doing the alignment
+calculation.
 
-For good measure I ran both a 32-bit and a 64-bit glibc testsuite
-run, and the latter of which pointed out an adjustment I needed to
-make to sparc's user_addr_max() definition.  Linus, you were right,
-STACK_TOP was not the right thing to use, even on sparc itself :-)
+Signed-off-by: Benjamin Poirier <bpoirier@suse.de>
 
->From Sam Ravnborg, we have a conversion of sparc32 over to the common
-alloc_thread_info_node(), since the aspect which originally blocked
-our doing so (sun4c) has been removed.
+---
+Changes since v3:
+* also fix ipv6
 
-Please pull, thanks a lot.
+Changes since v2:
+* rename l3_adj to net_adj
+* fix indentation
 
-The following changes since commit 72c04af9a2d57b7945cf3de8e71461bd80695d50:
+Changes since v1:
+* introduce l3_adj to preserve the same returned value as before for tunnel
+  mode
 
-  fbdev: sh_mobile_lcdc: Don't confuse line size with pitch (2012-05-21 20:59:32 -0700)
+For example:
+* on ipv4 with md5 AH and 3des ESP (transport mode):
+mtu = 1499 leads to FRAGFAILS
+mtu = 1500 the addition of padding in the esp header could be avoided
+* on ipv6 with md5 AH and twofish-sha1 ESP (transport mode):
+mtu = 1491 leads to Ip6FragFails
+mtu = 1499 padding can be avoided
 
-are available in the git repository at:
+For details on how the formula is established, see
+https://lkml.org/lkml/2012/5/10/597
 
-  git://git.kernel.org/pub/scm/linux/kernel/git/davem/sparc.git master
+Tested with
+* transport mode E
+* transport mode EA
+* transport mode E + ah
+* tunnel mode E
 
-for you to fetch changes up to c5389831cda3b38a56606a348a537a1332f2d729:
+Not tested with BEET, but it should be the same as transport mode
+	draft-nikander-esp-beet-mode-03.txt Section 5.2:
+	"The wire packet format is identical to the ESP transport mode"
+---
+ net/ipv4/esp4.c |   24 +++++++++---------------
+ net/ipv6/esp6.c |   18 +++++++-----------
+ 2 files changed, 16 insertions(+), 26 deletions(-)
 
-  sparc: Fix user_addr_max() definition. (2012-05-24 13:41:58 -0700)
+diff --git a/net/ipv4/esp4.c b/net/ipv4/esp4.c
+index 89a47b3..cb982a6 100644
+--- a/net/ipv4/esp4.c
++++ b/net/ipv4/esp4.c
+@@ -459,28 +459,22 @@ static u32 esp4_get_mtu(struct xfrm_state *x, int mtu)
+ 	struct esp_data *esp = x->data;
+ 	u32 blksize = ALIGN(crypto_aead_blocksize(esp->aead), 4);
+ 	u32 align = max_t(u32, blksize, esp->padlen);
+-	u32 rem;
+-
+-	mtu -= x->props.header_len + crypto_aead_authsize(esp->aead);
+-	rem = mtu & (align - 1);
+-	mtu &= ~(align - 1);
++	unsigned int net_adj;
+ 
+ 	switch (x->props.mode) {
+-	case XFRM_MODE_TUNNEL:
+-		break;
+-	default:
+ 	case XFRM_MODE_TRANSPORT:
+-		/* The worst case */
+-		mtu -= blksize - 4;
+-		mtu += min_t(u32, blksize - 4, rem);
+-		break;
+ 	case XFRM_MODE_BEET:
+-		/* The worst case. */
+-		mtu += min_t(u32, IPV4_BEET_PHMAXLEN, rem);
++		net_adj = sizeof(struct iphdr);
+ 		break;
++	case XFRM_MODE_TUNNEL:
++		net_adj = 0;
++		break;
++	default:
++		BUG();
+ 	}
+ 
+-	return mtu - 2;
++	return ((mtu - x->props.header_len - crypto_aead_authsize(esp->aead) -
++		 net_adj) & ~(align - 1)) + (net_adj - 2);
+ }
+ 
+ static void esp4_err(struct sk_buff *skb, u32 info)
+diff --git a/net/ipv6/esp6.c b/net/ipv6/esp6.c
+index 1e62b75..db1521f 100644
+--- a/net/ipv6/esp6.c
++++ b/net/ipv6/esp6.c
+@@ -413,19 +413,15 @@ static u32 esp6_get_mtu(struct xfrm_state *x, int mtu)
+ 	struct esp_data *esp = x->data;
+ 	u32 blksize = ALIGN(crypto_aead_blocksize(esp->aead), 4);
+ 	u32 align = max_t(u32, blksize, esp->padlen);
+-	u32 rem;
++	unsigned int net_adj;
+ 
+-	mtu -= x->props.header_len + crypto_aead_authsize(esp->aead);
+-	rem = mtu & (align - 1);
+-	mtu &= ~(align - 1);
+-
+-	if (x->props.mode != XFRM_MODE_TUNNEL) {
+-		u32 padsize = ((blksize - 1) & 7) + 1;
+-		mtu -= blksize - padsize;
+-		mtu += min_t(u32, blksize - padsize, rem);
+-	}
++	if (x->props.mode != XFRM_MODE_TUNNEL)
++		net_adj = sizeof(struct ipv6hdr);
++	else
++		net_adj = 0;
+ 
+-	return mtu - 2;
++	return ((mtu - x->props.header_len - crypto_aead_authsize(esp->aead) -
++		 net_adj) & ~(align - 1)) + (net_adj - 2);
+ }
+ 
+ static void esp6_err(struct sk_buff *skb, struct inet6_skb_parm *opt,
+-- 
+1.7.7
 
-----------------------------------------------------------------
-David S. Miller (6):
-      sparc: Add full proper error handling to strncpy_from_user().
-      sparc: Optimize strncpy_from_user() zero byte search.
-      sparc: Increase portability of strncpy_from_user() implementation.
-      kernel: Move REPEAT_BYTE definition into linux/kernel.h
-      lib: Sparc's strncpy_from_user is generic enough, move under lib/
-      sparc: Fix user_addr_max() definition.
-
-Sam Ravnborg (1):
-      sparc32: use the common implementation of alloc_thread_info_node()
-
- arch/sparc/Kconfig                      |    2 +-
- arch/sparc/include/asm/processor_64.h   |    4 +-
- arch/sparc/include/asm/thread_info_32.h |   11 +--
- arch/sparc/include/asm/uaccess.h        |    6 ++
- arch/sparc/include/asm/uaccess_32.h     |   10 ---
- arch/sparc/include/asm/uaccess_64.h     |    4 -
- arch/sparc/lib/Makefile                 |    2 +-
- arch/sparc/lib/ksyms.c                  |    3 -
- arch/sparc/lib/strncpy_from_user_32.S   |   47 ----------
- arch/sparc/lib/strncpy_from_user_64.S   |  133 ----------------------------
- arch/sparc/lib/usercopy.c               |    1 +
- arch/sparc/mm/srmmu.c                   |   27 ------
- arch/x86/include/asm/word-at-a-time.h   |    4 +-
- fs/namei.c                              |    1 +
- include/linux/kernel.h                  |    2 +
- lib/Kconfig                             |    3 +
- lib/Makefile                            |    2 +
- lib/strncpy_from_user.c                 |  146 +++++++++++++++++++++++++++++++
- 18 files changed, 170 insertions(+), 238 deletions(-)
- delete mode 100644 arch/sparc/lib/strncpy_from_user_32.S
- delete mode 100644 arch/sparc/lib/strncpy_from_user_64.S
- create mode 100644 lib/strncpy_from_user.c
