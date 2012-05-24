@@ -1,68 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754091Ab2EXIgn (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 May 2012 04:36:43 -0400
-Received: from moutng.kundenserver.de ([212.227.126.171]:65215 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753668Ab2EXIgj (ORCPT
+	id S1753975Ab2EXInE (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 May 2012 04:43:04 -0400
+Received: from casper.infradead.org ([85.118.1.10]:36823 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752759Ab2EXInA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 May 2012 04:36:39 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: Herbert Xu <herbert@gondor.hengli.com.au>
-Subject: Re: Crypto Update for 3.5
-Date: Thu, 24 May 2012 08:36:24 +0000
-User-Agent: KMail/1.12.2 (Linux/3.4.0-rc3; KDE/4.3.2; x86_64; ; )
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Andreas Westin <andreas.westin@stericsson.com>,
-        "David S. Miller" <davem@davemloft.net>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Linux Crypto Mailing List <linux-crypto@vger.kernel.org>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Lee Jones <lee.jones@linaro.org>
-References: <20101024061625.GA23715@gondor.apana.org.au> <CA+55aFwR=wZfpXPTn9e+ZbEB4srVOHVZFz_STg9jxngmhJxT=w@mail.gmail.com> <20120524002126.GA28104@gondor.apana.org.au>
-In-Reply-To: <20120524002126.GA28104@gondor.apana.org.au>
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
+	Thu, 24 May 2012 04:43:00 -0400
+Subject: Re: [PATCH v7 8/8] x86/tlb: just do tlb flush on one of siblings
+ of SMT
+From: Peter Zijlstra <a.p.zijlstra@chello.nl>
+To: Alex Shi <alex.shi@intel.com>
+Cc: Jan Beulich <JBeulich@suse.com>, borislav.petkov@amd.com, arnd@arndb.de,
+        akinobu.mita@gmail.com, eric.dumazet@gmail.com, fweisbec@gmail.com,
+        rostedt@goodmis.org, hughd@google.com, jeremy@goop.org,
+        len.brown@intel.com, tony.luck@intel.com, yongjie.ren@intel.com,
+        kamezawa.hiroyu@jp.fujitsu.com, seto.hidetoshi@jp.fujitsu.com,
+        penberg@kernel.org, yinghai@kernel.org, tglx@linutronix.de,
+        akpm@linux-foundation.org, ak@linux.intel.com, luto@mit.edu,
+        avi@redhat.com, dhowells@redhat.com, mingo@redhat.com, riel@redhat.com,
+        cpw@sgi.com, steiner@sgi.com, linux-kernel@vger.kernel.org,
+        viro@zeniv.linux.org.uk, hpa@zytor.com,
+        Rusty Russell <rusty@rustcorp.com.au>
+In-Reply-To: <4FBDF200.7060608@intel.com>
+References: <1337782555-8088-1-git-send-email-alex.shi@intel.com>
+	 <1337782555-8088-9-git-send-email-alex.shi@intel.com>
+	 <4FBD18D20200007800085951@nat28.tlf.novell.com>
+	 <1337792984.9783.37.camel@laptop>  <4FBDF200.7060608@intel.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Thu, 24 May 2012 10:42:50 +0200
+Message-ID: <1337848970.9783.72.camel@laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.2 
 Content-Transfer-Encoding: 7bit
-Message-Id: <201205240836.24845.arnd@arndb.de>
-X-Provags-ID: V02:K0:yg00RVMloWjCR/TMTPBVKWlW0VYQgs2H7LHmQGzkPRi
- i8Hky30siXv6U59XH0JB+/IZ0jXh7rxP0CCBqSmlZgKyKYqyca
- tgRSh79h1pAQIHjoPAGUxQzJFjVaI8iukadrFW5jSQMMNvMmFd
- hvn5YU7KN4MlDupCFbwuZndDC4XHmtH8IPmOnJCvFj/tSKL7nP
- TMYAl/xxhyvqwzr0vhdHnLiKK2jx7brJrQ/H/EKozTyxnd8pxU
- 3wS2W9j5rLthdkPaKsMCW4vwukTAijDcQ+Gg5RsPbyuaKUoLEB
- sUHRkCM+vKLlWrjXSPZZrGZRIQoS3c9QPcBApyKJjS7ad53eJR
- xMRYYOxDogHzCEs8341s=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday 24 May 2012, Herbert Xu wrote:
-> On Wed, May 23, 2012 at 04:06:35PM -0700, Linus Torvalds wrote:
-> > On Tue, May 22, 2012 at 6:35 PM, Herbert Xu <herbert@gondor.apana.org.au> wrote:
-> > >
-> > > Here is the crypto update for 3.5:
-> > 
-> > I pulled this, but quite frankly, some of it looks like utter garbage.
-> > 
-> > There's a declaration for dbx500_add_platform_device_noirq() that does
-> > not exist and is not used anywhere. Why? It was added in commit
-> > 585d188f8072, and I see no rhyme or reason to it.
-> 
-> I can't see why that was added there either.
-> 
-> Adding Arnd/Linus Walleij to see if they can tell us whether
-> it should go or stay.
+On Thu, 2012-05-24 at 16:32 +0800, Alex Shi wrote:
+> So, I use cpumask_t in stack.
 
-It should go. For all I can tell, this was the result of Lee Jones
-doing major cleanups to the ux500 platform for this merge window
-in parallel with the crypto driver getting added following the
-older code pattern. The crypto patch had to be reworked for this
-and apparently a hunk from the older version survived.
+cpumask_t is 512 bytes with NR_CPUS=4096, that's generally considered
+too big to be on stack.
 
-The entire file in which it was added is going to be removed
-in one of the next kernel versions once we can boot all ux500 machines
-using only device tree definitions, so it will be taken care of.
+A number of people spend a lot of time removing cpumask_t from stacks a
+while ago, I'm very sure they'll not be happy if you're going to add it
+back.
 
-	Arnd
+Rusty, what was the plan on removing cpumask_t altogether?
+
