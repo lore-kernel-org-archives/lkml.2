@@ -1,549 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751266Ab2EXGn3 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 May 2012 02:43:29 -0400
-Received: from mga01.intel.com ([192.55.52.88]:24922 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750787Ab2EXGn1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 May 2012 02:43:27 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
-   d="scan'208";a="156569277"
-Message-ID: <4FBDD82C.4020003@intel.com>
-Date: Thu, 24 May 2012 14:41:48 +0800
-From: Alex Shi <alex.shi@intel.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:9.0) Gecko/20111229 Thunderbird/9.0
+	id S1752389Ab2EXGny (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 May 2012 02:43:54 -0400
+Received: from mail-wi0-f172.google.com ([209.85.212.172]:45925 "EHLO
+	mail-wi0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751389Ab2EXGnw (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 24 May 2012 02:43:52 -0400
+Date: Thu, 24 May 2012 08:43:40 +0200
+From: Richard Cochran <richardcochran@gmail.com>
+To: John Stultz <john.stultz@linaro.org>
+Cc: linux-kernel@vger.kernel.org, Thomas Gleixner <tglx@linutronix.de>
+Subject: Re: [PATCH RFC V2 3/6] time: keep track of the pending utc/tai
+ threshold
+Message-ID: <20120524064340.GA2180@netboy.at.omicron.at>
+References: <cover.1337348892.git.richardcochran@gmail.com>
+ <6777ac8ebc321c67d13fdb8d0a3d826332b60f1f.1337348892.git.richardcochran@gmail.com>
+ <4FBA84EF.5040506@linaro.org>
+ <20120521190815.GA19812@netboy.at.omicron.at>
+ <20120522173953.GA4177@netboy.at.omicron.at>
+ <4FBBD591.1000103@linaro.org>
+ <20120523082916.GA15627@localhost.localdomain>
+ <4FBD1545.4070408@linaro.org>
+ <20120523191747.GA2348@netboy.at.omicron.at>
+ <4FBD4613.7040003@linaro.org>
 MIME-Version: 1.0
-To: Jan Beulich <JBeulich@suse.com>
-CC: borislav.petkov@amd.com, arnd@arndb.de, a.p.zijlstra@chello.nl,
-        akinobu.mita@gmail.com, eric.dumazet@gmail.com, fweisbec@gmail.com,
-        rostedt@goodmis.org, hughd@google.com, jeremy@goop.org,
-        len.brown@intel.com, tony.luck@intel.com, yongjie.ren@intel.com,
-        kamezawa.hiroyu@jp.fujitsu.com, seto.hidetoshi@jp.fujitsu.com,
-        penberg@kernel.org, yinghai@kernel.org, tglx@linutronix.de,
-        akpm@linux-foundation.org, ak@linux.intel.com, luto@mit.edu,
-        avi@redhat.com, dhowells@redhat.com, mingo@redhat.com, riel@redhat.com,
-        cpw@sgi.com, steiner@sgi.com, linux-kernel@vger.kernel.org,
-        viro@zeniv.linux.org.uk, hpa@zytor.com
-Subject: Re: [PATCH v7 2/8] x86/flush_tlb: try flush_tlb_single one by one
- in flush_tlb_range
-References: <1337782555-8088-1-git-send-email-alex.shi@intel.com> <1337782555-8088-3-git-send-email-alex.shi@intel.com> <4FBD157602000078000858F7@nat28.tlf.novell.com>
-In-Reply-To: <4FBD157602000078000858F7@nat28.tlf.novell.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4FBD4613.7040003@linaro.org>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/23/2012 10:51 PM, Jan Beulich wrote:
+On Wed, May 23, 2012 at 01:18:27PM -0700, John Stultz wrote:
+> So I've avoided the term epoch just to try not to confuse things
+> with the unix epoch, that's why I've used next_leap, etc.
+> Even so, I'm not sure you've made clear the subtlety of the difference.
 
->>>> On 23.05.12 at 16:15, Alex Shi <alex.shi@intel.com> wrote:
->> @@ -1269,11 +1270,11 @@ static void xen_flush_tlb_others(const struct cpumask *cpus,
->>  	cpumask_and(to_cpumask(args->mask), cpus, cpu_online_mask);
->>  	cpumask_clear_cpu(smp_processor_id(), to_cpumask(args->mask));
->>  
->> -	if (va == TLB_FLUSH_ALL) {
->> +	if (start == TLB_FLUSH_ALL) {
->>  		args->op.cmd = MMUEXT_TLB_FLUSH_MULTI;
->>  	} else {
->>  		args->op.cmd = MMUEXT_INVLPG_MULTI;
->> -		args->op.arg1.linear_addr = va;
->> +		args->op.arg1.linear_addr = start;
->>  	}
->>  
->>  	MULTI_mmuext_op(mcs.mc, &args->op, 1, NULL, DOMID_SELF);
+For me, when working with the whole UTC leap second mess, it is
+important to distinguish between the leap seconds and the epochs. I
+sometime have written mini-epoch to make clear that it is not about
+*the* epoch from 1970.
+
+The NIST leap second table give a list of epochs and TAI offsets. The
+leap second is always the second just before the epoch. For example:
+
+ 30 June 1972 23:59:59 (NTP 2287785599,  first time)  <-- normal second
+ 30 June 1972 23:59:60 (NTP 2287785599, second time)  <-- leap second
+ 1  July 1972 00:00:00 (NTP 2287785600)               <-- epoch
+
+We should write the thresholding code so that it is clear whether we
+are testing against the epoch or the leap second.
+
+> I believe the internal time_state (along with the next leap second)
+> already provides this.
 > 
-> Unless there is an implicit assumption that 'start' and 'end' are on
-> the same page (which I doubt, as then it would be pointless to
-> add 'end' here), this one is definitely wrong - you'd either have
-> to issue multiple MMUEXT_INVLPG_MULTI-s, or you'd have to
-> also use MMUEXT_TLB_FLUSH_MULTI for the multi-page case.
+> From the reader's perspective:
+> 
+> Not applied:		(INS&&  U<  leap):		return (INS, U)
+> Applied:		(INS&&   U == leap):		return (OOP, U-1)
+> Finished applied:	((INS||OOP)&&  U>= (leap+1)):	return (WAIT,U-1)
+> Delete:			(DEL&&  U>= (leap-1)):		return (WAIT,U+1)
 
+I think this is still wrong, but I get your point.
 
+My patch makes the state of the leap second application explicit and
+then infers time_state on demand. You can also, of course, make
+time_state explicit and infer whether or not the leap second has been
+applied.
 
+My point is that in either case, it is the same amount of code.
 
+I prefer what I wrote, because I think it is clearer.
 
+> Again, no state change is done by the reader, so we don't have to
+> keep track of application state or not.
+> Then when the tick comes in, it will move the state machine appropriately.
+> 
+> Sorry working this out is so difficult. If we don't come to
+> consensus soon, I'll try to find some time to implement what I'm
+> suggesting so you aren't up against my unclear hand-waving. :)
 
-Thanks comments!
-So, the following change should be more safe for PV?
+BTW you can use the program I have been using to test this at
 
--       if (va == TLB_FLUSH_ALL) {
--               args->op.cmd = MMUEXT_TLB_FLUSH_MULTI;
--       } else {
--               args->op.cmd = MMUEXT_INVLPG_MULTI;
--               args->op.arg1.linear_addr = va;
--       }
-+       args->op.cmd = MMUEXT_TLB_FLUSH_MULTI;
-+       if (start != TLB_FLUSH_ALL)
-+               args->op.arg1.linear_addr = start;
+   git://github.com/richardcochran/leap.git
 
-        MULTI_mmuext_op(mcs.mc, &args->op, 1, NULL, DOMID_SELF);
-
-Do you know why the old patch is past the performance testing of Yongjie? 
-https://lkml.org/lkml/2012/5/4/20
-
----
-
->From a43af44448039f15427de1901f9c2c7bf3cca698 Mon Sep 17 00:00:00 2001
-From: Alex Shi <alex.shi@intel.com>
-Date: Wed, 9 May 2012 15:09:08 -0600
-Subject: [PATCH 2/8] x86/flush_tlb: try flush_tlb_single one by one in
- flush_tlb_range
-
-x86 has no flush_tlb_range support in instruction level. Currently the
-flush_tlb_range just implemented by flushing all page table. That is not
-the best solution for all scenarios. In fact, if we just use 'invlpg' to
-flush few lines from TLB, we can get the performance gain from later
-remain TLB lines accessing.
-
-But the 'invlpg' instruction costs much of time. Its execution time can
-compete with cr3 rewriting, and even a bit more on SNB CPU.
-
-So, on a 512 4KB TLB entries CPU, the balance points is at:
-	(512 - X) * 100ns(assumed TLB refill cost) =
-		X(TLB flush entries) * 100ns(assumed invlpg cost)
-
-Here, X is 256, that is 1/2 of 512 entries.
-
-But with the mysterious CPU pre-fetcher and page miss handler Unit, the
-assumed TLB refill cost is far lower then 100ns in sequential access. And
-2 HT siblings in one core makes the memory access more faster if they are
-accessing the same memory. So, in the patch, I just do the change when
-the target entries is less than 1/16 of whole active tlb entries.
-Actually, I have no data support for the percentage '1/16', so any
-suggestions are welcomed.
-
-As to hugetlb, guess due to smaller page table, and smaller active TLB
-entries, I didn't see benefit via my benchmark, so no optimizing now.
-
-My macro benchmark show in ideal scenarios, the performance improves 70
-percent in reading. And in worst scenario, the reading/writing
-performance is similar with unpatched 3.4-rc4 kernel.
-
-Here is the reading data on my 2P * 4cores *HT NHM EP machine, with THP
-'always':
-
-multi thread testing, '-t' paramter is thread number:
-	       	        with patch   unpatched 3.4-rc4
-./mprotect -t 1           14ns		24ns
-./mprotect -t 2           13ns		22ns
-./mprotect -t 4           12ns		19ns
-./mprotect -t 8           14ns		16ns
-./mprotect -t 16          28ns		26ns
-./mprotect -t 32          54ns		51ns
-./mprotect -t 128         200ns		199ns
-
-Single process with sequencial flushing and memory accessing:
-
-		       	with patch   unpatched 3.4-rc4
-./mprotect		    7ns			11ns
-./mprotect -p 4096  -l 8 -n 10240
-			    21ns		21ns
-
-I also tried other benchmarks on Intel core2/NHM/SNB EP and NHM EX machine.
-No clear performance change on specjbb2005 with openjdk, and oltp reading.
-
-Signed-off-by: Alex Shi <alex.shi@intel.com>
----
- arch/x86/include/asm/paravirt.h       |    5 +-
- arch/x86/include/asm/paravirt_types.h |    3 +-
- arch/x86/include/asm/tlbflush.h       |   23 +++-----
- arch/x86/include/asm/uv/uv.h          |    5 +-
- arch/x86/mm/tlb.c                     |   97 +++++++++++++++++++++++++++------
- arch/x86/platform/uv/tlb_uv.c         |    6 +-
- arch/x86/xen/mmu.c                    |   14 ++---
- include/trace/events/xen.h            |   12 +++--
- 8 files changed, 114 insertions(+), 51 deletions(-)
-
-diff --git a/arch/x86/include/asm/paravirt.h b/arch/x86/include/asm/paravirt.h
-index aa0f913..03da4ab 100644
---- a/arch/x86/include/asm/paravirt.h
-+++ b/arch/x86/include/asm/paravirt.h
-@@ -397,9 +397,10 @@ static inline void __flush_tlb_single(unsigned long addr)
- 
- static inline void flush_tlb_others(const struct cpumask *cpumask,
- 				    struct mm_struct *mm,
--				    unsigned long va)
-+				    unsigned long start,
-+				    unsigned long end)
- {
--	PVOP_VCALL3(pv_mmu_ops.flush_tlb_others, cpumask, mm, va);
-+	PVOP_VCALL4(pv_mmu_ops.flush_tlb_others, cpumask, mm, start, end);
- }
- 
- static inline int paravirt_pgd_alloc(struct mm_struct *mm)
-diff --git a/arch/x86/include/asm/paravirt_types.h b/arch/x86/include/asm/paravirt_types.h
-index 8e8b9a4..600a5fcac9 100644
---- a/arch/x86/include/asm/paravirt_types.h
-+++ b/arch/x86/include/asm/paravirt_types.h
-@@ -250,7 +250,8 @@ struct pv_mmu_ops {
- 	void (*flush_tlb_single)(unsigned long addr);
- 	void (*flush_tlb_others)(const struct cpumask *cpus,
- 				 struct mm_struct *mm,
--				 unsigned long va);
-+				 unsigned long start,
-+				 unsigned long end);
- 
- 	/* Hooks for allocating and freeing a pagetable top-level */
- 	int  (*pgd_alloc)(struct mm_struct *mm);
-diff --git a/arch/x86/include/asm/tlbflush.h b/arch/x86/include/asm/tlbflush.h
-index c0e108e..51f8b1c 100644
---- a/arch/x86/include/asm/tlbflush.h
-+++ b/arch/x86/include/asm/tlbflush.h
-@@ -77,14 +77,10 @@ static inline void __flush_tlb_one(unsigned long addr)
-  *  - flush_tlb_page(vma, vmaddr) flushes one page
-  *  - flush_tlb_range(vma, start, end) flushes a range of pages
-  *  - flush_tlb_kernel_range(start, end) flushes a range of kernel pages
-- *  - flush_tlb_others(cpumask, mm, va) flushes TLBs on other cpus
-+ *  - flush_tlb_others(cpumask, mm, start, end) flushes TLBs on other cpus
-  *
-  * ..but the i386 has somewhat limited tlb flushing capabilities,
-  * and page-granular flushes are available only on i486 and up.
-- *
-- * x86-64 can only flush individual pages or full VMs. For a range flush
-- * we always do the full VM. Might be worth trying if for a small
-- * range a few INVLPGs in a row are a win.
-  */
- 
- #ifndef CONFIG_SMP
-@@ -115,7 +111,8 @@ static inline void flush_tlb_range(struct vm_area_struct *vma,
- 
- static inline void native_flush_tlb_others(const struct cpumask *cpumask,
- 					   struct mm_struct *mm,
--					   unsigned long va)
-+					   unsigned long start,
-+					   unsigned long end)
- {
- }
- 
-@@ -133,17 +130,14 @@ extern void flush_tlb_all(void);
- extern void flush_tlb_current_task(void);
- extern void flush_tlb_mm(struct mm_struct *);
- extern void flush_tlb_page(struct vm_area_struct *, unsigned long);
-+extern void flush_tlb_range(struct vm_area_struct *vma,
-+				   unsigned long start, unsigned long end);
- 
- #define flush_tlb()	flush_tlb_current_task()
- 
--static inline void flush_tlb_range(struct vm_area_struct *vma,
--				   unsigned long start, unsigned long end)
--{
--	flush_tlb_mm(vma->vm_mm);
--}
--
- void native_flush_tlb_others(const struct cpumask *cpumask,
--			     struct mm_struct *mm, unsigned long va);
-+				struct mm_struct *mm,
-+				unsigned long start, unsigned long end);
- 
- #define TLBSTATE_OK	1
- #define TLBSTATE_LAZY	2
-@@ -163,7 +157,8 @@ static inline void reset_lazy_tlbstate(void)
- #endif	/* SMP */
- 
- #ifndef CONFIG_PARAVIRT
--#define flush_tlb_others(mask, mm, va)	native_flush_tlb_others(mask, mm, va)
-+#define flush_tlb_others(mask, mm, start, end)	\
-+	native_flush_tlb_others(mask, mm, start, end)
- #endif
- 
- static inline void flush_tlb_kernel_range(unsigned long start,
-diff --git a/arch/x86/include/asm/uv/uv.h b/arch/x86/include/asm/uv/uv.h
-index 3bb9491..b47c2a8 100644
---- a/arch/x86/include/asm/uv/uv.h
-+++ b/arch/x86/include/asm/uv/uv.h
-@@ -15,7 +15,8 @@ extern void uv_nmi_init(void);
- extern void uv_system_init(void);
- extern const struct cpumask *uv_flush_tlb_others(const struct cpumask *cpumask,
- 						 struct mm_struct *mm,
--						 unsigned long va,
-+						 unsigned long start,
-+						 unsigned end,
- 						 unsigned int cpu);
- 
- #else	/* X86_UV */
-@@ -26,7 +27,7 @@ static inline void uv_cpu_init(void)	{ }
- static inline void uv_system_init(void)	{ }
- static inline const struct cpumask *
- uv_flush_tlb_others(const struct cpumask *cpumask, struct mm_struct *mm,
--		    unsigned long va, unsigned int cpu)
-+		    unsigned long start, unsigned long end, unsigned int cpu)
- { return cpumask; }
- 
- #endif	/* X86_UV */
-diff --git a/arch/x86/mm/tlb.c b/arch/x86/mm/tlb.c
-index d6c0418..7d92079 100644
---- a/arch/x86/mm/tlb.c
-+++ b/arch/x86/mm/tlb.c
-@@ -41,7 +41,8 @@ DEFINE_PER_CPU_SHARED_ALIGNED(struct tlb_state, cpu_tlbstate)
- union smp_flush_state {
- 	struct {
- 		struct mm_struct *flush_mm;
--		unsigned long flush_va;
-+		unsigned long flush_start;
-+		unsigned long flush_end;
- 		raw_spinlock_t tlbstate_lock;
- 		DECLARE_BITMAP(flush_cpumask, NR_CPUS);
- 	};
-@@ -154,10 +155,19 @@ void smp_invalidate_interrupt(struct pt_regs *regs)
- 
- 	if (f->flush_mm == percpu_read(cpu_tlbstate.active_mm)) {
- 		if (percpu_read(cpu_tlbstate.state) == TLBSTATE_OK) {
--			if (f->flush_va == TLB_FLUSH_ALL)
-+			if (f->flush_end == TLB_FLUSH_ALL
-+					|| !cpu_has_invlpg)
- 				local_flush_tlb();
--			else
--				__flush_tlb_one(f->flush_va);
-+			else if (!f->flush_end)
-+				__flush_tlb_single(f->flush_start);
-+			else {
-+				unsigned long addr;
-+				addr = f->flush_start;
-+				while (addr <= f->flush_end) {
-+					__flush_tlb_single(addr);
-+					addr += PAGE_SIZE;
-+				}
-+			}
- 		} else
- 			leave_mm(cpu);
- 	}
-@@ -170,7 +180,8 @@ out:
- }
- 
- static void flush_tlb_others_ipi(const struct cpumask *cpumask,
--				 struct mm_struct *mm, unsigned long va)
-+				 struct mm_struct *mm, unsigned long start,
-+				 unsigned long end)
- {
- 	unsigned int sender;
- 	union smp_flush_state *f;
-@@ -183,7 +194,8 @@ static void flush_tlb_others_ipi(const struct cpumask *cpumask,
- 		raw_spin_lock(&f->tlbstate_lock);
- 
- 	f->flush_mm = mm;
--	f->flush_va = va;
-+	f->flush_start = start;
-+	f->flush_end = end;
- 	if (cpumask_andnot(to_cpumask(f->flush_cpumask), cpumask, cpumask_of(smp_processor_id()))) {
- 		/*
- 		 * We have to send the IPI only to
-@@ -197,24 +209,26 @@ static void flush_tlb_others_ipi(const struct cpumask *cpumask,
- 	}
- 
- 	f->flush_mm = NULL;
--	f->flush_va = 0;
-+	f->flush_start = 0;
-+	f->flush_end = 0;
- 	if (nr_cpu_ids > NUM_INVALIDATE_TLB_VECTORS)
- 		raw_spin_unlock(&f->tlbstate_lock);
- }
- 
- void native_flush_tlb_others(const struct cpumask *cpumask,
--			     struct mm_struct *mm, unsigned long va)
-+				 struct mm_struct *mm, unsigned long start,
-+				 unsigned long end)
- {
- 	if (is_uv_system()) {
- 		unsigned int cpu;
- 
- 		cpu = smp_processor_id();
--		cpumask = uv_flush_tlb_others(cpumask, mm, va, cpu);
-+		cpumask = uv_flush_tlb_others(cpumask, mm, start, end, cpu);
- 		if (cpumask)
--			flush_tlb_others_ipi(cpumask, mm, va);
-+			flush_tlb_others_ipi(cpumask, mm, start, end);
- 		return;
- 	}
--	flush_tlb_others_ipi(cpumask, mm, va);
-+	flush_tlb_others_ipi(cpumask, mm, start, end);
- }
- 
- static void __cpuinit calculate_tlb_offset(void)
-@@ -280,7 +294,7 @@ void flush_tlb_current_task(void)
- 
- 	local_flush_tlb();
- 	if (cpumask_any_but(mm_cpumask(mm), smp_processor_id()) < nr_cpu_ids)
--		flush_tlb_others(mm_cpumask(mm), mm, TLB_FLUSH_ALL);
-+		flush_tlb_others(mm_cpumask(mm), mm, 0UL, TLB_FLUSH_ALL);
- 	preempt_enable();
- }
- 
-@@ -295,12 +309,63 @@ void flush_tlb_mm(struct mm_struct *mm)
- 			leave_mm(smp_processor_id());
- 	}
- 	if (cpumask_any_but(mm_cpumask(mm), smp_processor_id()) < nr_cpu_ids)
--		flush_tlb_others(mm_cpumask(mm), mm, TLB_FLUSH_ALL);
-+		flush_tlb_others(mm_cpumask(mm), mm, 0UL, TLB_FLUSH_ALL);
-+
-+	preempt_enable();
-+}
-+
-+#define FLUSHALL_BAR	16
-+
-+void flush_tlb_range(struct vm_area_struct *vma,
-+				   unsigned long start, unsigned long end)
-+{
-+	struct mm_struct *mm;
-+
-+	if (!cpu_has_invlpg || vma->vm_flags & VM_HUGETLB) {
-+		flush_tlb_mm(vma->vm_mm);
-+		return;
-+	}
-+
-+	preempt_disable();
-+	mm = vma->vm_mm;
-+	if (current->active_mm == mm) {
-+		if (current->mm) {
-+			unsigned long addr, vmflag = vma->vm_flags;
-+			unsigned act_entries, tlb_entries = 0;
-+
-+			if (vmflag & VM_EXEC)
-+				tlb_entries = tlb_lli_4k[ENTRIES];
-+			else
-+				tlb_entries = tlb_lld_4k[ENTRIES];
-+
-+			act_entries = tlb_entries > mm->total_vm ?
-+					mm->total_vm : tlb_entries;
- 
-+			if ((end - start)/PAGE_SIZE > act_entries/FLUSHALL_BAR)
-+				local_flush_tlb();
-+			else {
-+				for (addr = start; addr <= end;
-+						addr += PAGE_SIZE)
-+					__flush_tlb_single(addr);
-+
-+				if (cpumask_any_but(mm_cpumask(mm),
-+					smp_processor_id()) < nr_cpu_ids)
-+					flush_tlb_others(mm_cpumask(mm), mm,
-+								start, end);
-+				preempt_enable();
-+				return;
-+			}
-+		} else {
-+			leave_mm(smp_processor_id());
-+		}
-+	}
-+	if (cpumask_any_but(mm_cpumask(mm), smp_processor_id()) < nr_cpu_ids)
-+		flush_tlb_others(mm_cpumask(mm), mm, 0UL, TLB_FLUSH_ALL);
- 	preempt_enable();
- }
- 
--void flush_tlb_page(struct vm_area_struct *vma, unsigned long va)
-+
-+void flush_tlb_page(struct vm_area_struct *vma, unsigned long start)
- {
- 	struct mm_struct *mm = vma->vm_mm;
- 
-@@ -308,13 +373,13 @@ void flush_tlb_page(struct vm_area_struct *vma, unsigned long va)
- 
- 	if (current->active_mm == mm) {
- 		if (current->mm)
--			__flush_tlb_one(va);
-+			__flush_tlb_one(start);
- 		else
- 			leave_mm(smp_processor_id());
- 	}
- 
- 	if (cpumask_any_but(mm_cpumask(mm), smp_processor_id()) < nr_cpu_ids)
--		flush_tlb_others(mm_cpumask(mm), mm, va);
-+		flush_tlb_others(mm_cpumask(mm), mm, start, 0UL);
- 
- 	preempt_enable();
- }
-diff --git a/arch/x86/platform/uv/tlb_uv.c b/arch/x86/platform/uv/tlb_uv.c
-index 3ae0e61..0df5ad2 100644
---- a/arch/x86/platform/uv/tlb_uv.c
-+++ b/arch/x86/platform/uv/tlb_uv.c
-@@ -1068,8 +1068,8 @@ static int set_distrib_bits(struct cpumask *flush_mask, struct bau_control *bcp,
-  * done.  The returned pointer is valid till preemption is re-enabled.
-  */
- const struct cpumask *uv_flush_tlb_others(const struct cpumask *cpumask,
--				struct mm_struct *mm, unsigned long va,
--				unsigned int cpu)
-+				struct mm_struct *mm, unsigned long start,
-+				unsigned end, unsigned int cpu)
- {
- 	int locals = 0;
- 	int remotes = 0;
-@@ -1112,7 +1112,7 @@ const struct cpumask *uv_flush_tlb_others(const struct cpumask *cpumask,
- 
- 	record_send_statistics(stat, locals, hubs, remotes, bau_desc);
- 
--	bau_desc->payload.address = va;
-+	bau_desc->payload.address = start;
- 	bau_desc->payload.sending_cpu = cpu;
- 	/*
- 	 * uv_flush_send_and_wait returns 0 if all cpu's were messaged,
-diff --git a/arch/x86/xen/mmu.c b/arch/x86/xen/mmu.c
-index 69f5857..34c9bad 100644
---- a/arch/x86/xen/mmu.c
-+++ b/arch/x86/xen/mmu.c
-@@ -1244,7 +1244,8 @@ static void xen_flush_tlb_single(unsigned long addr)
- }
- 
- static void xen_flush_tlb_others(const struct cpumask *cpus,
--				 struct mm_struct *mm, unsigned long va)
-+				 struct mm_struct *mm, unsigned long start,
-+				 unsigned long end)
- {
- 	struct {
- 		struct mmuext_op op;
-@@ -1256,7 +1257,7 @@ static void xen_flush_tlb_others(const struct cpumask *cpus,
- 	} *args;
- 	struct multicall_space mcs;
- 
--	trace_xen_mmu_flush_tlb_others(cpus, mm, va);
-+	trace_xen_mmu_flush_tlb_others(cpus, mm, start, end);
- 
- 	if (cpumask_empty(cpus))
- 		return;		/* nothing to do */
-@@ -1269,12 +1270,9 @@ static void xen_flush_tlb_others(const struct cpumask *cpus,
- 	cpumask_and(to_cpumask(args->mask), cpus, cpu_online_mask);
- 	cpumask_clear_cpu(smp_processor_id(), to_cpumask(args->mask));
- 
--	if (va == TLB_FLUSH_ALL) {
--		args->op.cmd = MMUEXT_TLB_FLUSH_MULTI;
--	} else {
--		args->op.cmd = MMUEXT_INVLPG_MULTI;
--		args->op.arg1.linear_addr = va;
--	}
-+	args->op.cmd = MMUEXT_TLB_FLUSH_MULTI;
-+	if (start != TLB_FLUSH_ALL)
-+		args->op.arg1.linear_addr = start;
- 
- 	MULTI_mmuext_op(mcs.mc, &args->op, 1, NULL, DOMID_SELF);
- 
-diff --git a/include/trace/events/xen.h b/include/trace/events/xen.h
-index 92f1a79..15ba03b 100644
---- a/include/trace/events/xen.h
-+++ b/include/trace/events/xen.h
-@@ -397,18 +397,20 @@ TRACE_EVENT(xen_mmu_flush_tlb_single,
- 
- TRACE_EVENT(xen_mmu_flush_tlb_others,
- 	    TP_PROTO(const struct cpumask *cpus, struct mm_struct *mm,
--		     unsigned long addr),
--	    TP_ARGS(cpus, mm, addr),
-+		     unsigned long addr, unsigned long end),
-+	    TP_ARGS(cpus, mm, addr, end),
- 	    TP_STRUCT__entry(
- 		    __field(unsigned, ncpus)
- 		    __field(struct mm_struct *, mm)
- 		    __field(unsigned long, addr)
-+		    __field(unsigned long, end)
- 		    ),
- 	    TP_fast_assign(__entry->ncpus = cpumask_weight(cpus);
- 			   __entry->mm = mm;
--			   __entry->addr = addr),
--	    TP_printk("ncpus %d mm %p addr %lx",
--		      __entry->ncpus, __entry->mm, __entry->addr)
-+			   __entry->addr = addr,
-+			   __entry->end = end),
-+	    TP_printk("ncpus %d mm %p addr %lx, end %lx",
-+		      __entry->ncpus, __entry->mm, __entry->addr, __entry->end)
- 	);
- 
- TRACE_EVENT(xen_mmu_write_cr3,
--- 
-1.7.5.4
-
+Thanks,
+Richard
