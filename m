@@ -1,78 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754616Ab2EXLwk (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 May 2012 07:52:40 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:16593 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751964Ab2EXLwi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 May 2012 07:52:38 -0400
-Date: Thu, 24 May 2012 13:52:06 +0200
-From: Jiri Olsa <jolsa@redhat.com>
-To: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Stephane Eranian <eranian@google.com>, acme@redhat.com, mingo@elte.hu,
-        paulus@samba.org, cjashfor@linux.vnet.ibm.com, fweisbec@gmail.com,
-        gorcunov@openvz.org, tzanussi@gmail.com, mhiramat@redhat.com,
-        robert.richter@amd.com, fche@redhat.com, linux-kernel@vger.kernel.org,
-        masami.hiramatsu.pt@hitachi.com, drepper@gmail.com, asharma@fb.com,
-        benjamin.redelings@nescent.org
-Subject: Re: [PATCH 02/16] perf: Add ability to attach registers dump to
- sample
-Message-ID: <20120524115206.GB1775@m.brq.redhat.com>
-References: <1337801535-12865-1-git-send-email-jolsa@redhat.com>
- <1337801535-12865-3-git-send-email-jolsa@redhat.com>
- <1337853048.9783.92.camel@laptop>
- <CABPqkBR9hewjNUJf9ByD-jHc42e_qwQiKoP68RyL7BU8Q7BGgQ@mail.gmail.com>
- <1337856142.9783.104.camel@laptop>
+	id S1756373Ab2EXLyU (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 May 2012 07:54:20 -0400
+Received: from mail-yw0-f46.google.com ([209.85.213.46]:46536 "EHLO
+	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754257Ab2EXLyR convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 24 May 2012 07:54:17 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1337856142.9783.104.camel@laptop>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20120523131559.GA7064@parisc-linux.org>
+References: <1337520203-29147-1-git-send-email-akinobu.mita@gmail.com>
+	<20120523092113.GG10452@quack.suse.cz>
+	<CAC5umyi=ridqRZGGh0+_xw0-GCN+69B33Qz82-9x4dVODGGx6w@mail.gmail.com>
+	<20120523131559.GA7064@parisc-linux.org>
+Date: Thu, 24 May 2012 20:54:16 +0900
+Message-ID: <CAC5umyhPzvAhX8Y-oa5Kr-G7ZAJ15HV_H2HMgxrV2KZUJadsNw@mail.gmail.com>
+Subject: Re: [PATCH 01/10] string: introduce memweight
+From: Akinobu Mita <akinobu.mita@gmail.com>
+To: Matthew Wilcox <matthew@wil.cx>
+Cc: Jan Kara <jack@suse.cz>, linux-kernel@vger.kernel.org,
+        akpm@linux-foundation.org, Anders Larsen <al@alarsen.net>,
+        Alasdair Kergon <agk@redhat.com>, dm-devel@redhat.com,
+        linux-fsdevel@vger.kernel.org,
+        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
+        linux-media@vger.kernel.org, Mark Fasheh <mfasheh@suse.com>,
+        Joel Becker <jlbec@evilplan.org>, ocfs2-devel@oss.oracle.com,
+        linux-ext4@vger.kernel.org, Andreas Dilger <adilger.kernel@dilger.ca>,
+        "Theodore Ts'o" <tytso@mit.edu>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, May 24, 2012 at 12:42:22PM +0200, Peter Zijlstra wrote:
-> On Thu, 2012-05-24 at 12:06 +0200, Stephane Eranian wrote:
-> 
-> > > What are we doing here and why?
-> > >
-> > I think this is related to a discusion we had earlier about which
-> > machine state you want
-> > to sample.
-> > 
-> > There are 3 possible machine states:
-> >   1- user level (even when sample is in kernel AND assuming you did
-> > not hit a kernel only thread)
-> >   2- interrupted state (@ PMU interrupt)
-> >   3- precise state (state captured by PEBS on Intel, for instance)
-> > 
-> > Jiri is only interested in 1/. I am interested in the other two as well.
-> > 
-> > Question: is there a situation where we could need more than one machine
-> > state per sample?
-> 
-> Well, IIRC you always wanted both 2 and 3 at the same time to compute
-> skid, thus:
-> 
-> > If not, then a single bitmask is enough.
-> 
-> Indeed, so then we get to multiple bitmasks and unless you want to be
-> restricted to the same bitmap for all these types this setup won't
-> actually work.
+2012/5/23 Matthew Wilcox <matthew@wil.cx>:
+> On Wed, May 23, 2012 at 09:12:18PM +0900, Akinobu Mita wrote:
+>> size_t memweight(const void *ptr, size_t bytes)
+>
+> Why should this return size_t instead of unsigned long?
 
-My intention was to make this general. I could just add
-bitmask for each type (user regs mask for now) but I wanted
-to be consistent with other SAMPLE_* stuff..
+I just use the same type as the bytes argument without mature
+consideration.  If unsigned long is better than size_t, I'll
+change the return type.
 
-So current patch adds PERF_SAMPLE_REGS sample_type bit.
-Once it is set, the 'sample_regs' value is checked for what
-type of registers you want for sample.
+>> {
+>>       size_t w = 0;
+>>       size_t longs;
+>>       const unsigned char *bitmap = ptr;
+>>
+>>       for (; bytes > 0 && ((unsigned long)bitmap) % sizeof(long);
+>>                       bytes--, bitmap++)
+>>               w += hweight8(*bitmap);
+>>
+>>       longs = bytes / sizeof(long);
+>>       BUG_ON(longs >= INT_MAX / BITS_PER_LONG);
+>>       w += bitmap_weight((unsigned long *)bitmap, longs * BITS_PER_LONG);
+>>       bytes -= longs * sizeof(long);
+>>       bitmap += longs * sizeof(long);
+>>
+>>       for (; bytes > 0; bytes--, bitmap++)
+>>               w += hweight8(*bitmap);
+>>
+>>       return w;
+>> }
+>
+> bitmap_weight copes with a bitmask that isn't a multiple of BITS_PER_LONG
+> in size already.  So I think this can be done as:
+>
+> unsigned long memweight(const void *s, size_t n)
+> {
+>        const unsigned char *ptr = s;
+>        unsigned long r = 0;
+>
+>        while (n > 0 && (unsigned long)ptr % sizeof(long)) {
+>                r += hweight8(*ptr);
+>                n--;
+>                ptr++;
+>        }
+>
+>        BUG_ON(n >= INT_MAX / 8)
+>
+>        return r + bitmap_weight((unsigned long *)ptr, n * 8);
+> }
 
-Each type then has separate bitmask in case you want different
-registers for each type. Allowing whatever combination of regs dump
-being added to the sample, since it seems there's no firm
-decision on what combination might be needed.
-
-Sure we can make the same with bitmasks for each regs type,
-and check the presence in sample by bitmask being not empty.
+This works perfectly on little-endian machines.  But it doesn't work
+on big-endian machines, if the bottom edge of memory area is not
+aligned on long word boundary.
