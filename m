@@ -1,58 +1,144 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933730Ab2EXXnx (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 May 2012 19:43:53 -0400
-Received: from mail-ob0-f174.google.com ([209.85.214.174]:56124 "EHLO
-	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754126Ab2EXXnu convert rfc822-to-8bit (ORCPT
+	id S1759247Ab2EXXw5 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 May 2012 19:52:57 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:32974 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752419Ab2EXXwz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 May 2012 19:43:50 -0400
+	Thu, 24 May 2012 19:52:55 -0400
+Date: Thu, 24 May 2012 16:52:41 -0700
+From: tip-bot for Mike Galbraith <mgalbraith@suse.de>
+Message-ID: <tip-5307c9556bc17e3cd26d4e94fc3b2565921834de@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, mgalbraith@suse.de, hpa@zytor.com,
+        mingo@kernel.org, tglx@linutronix.de
+Reply-To: mingo@kernel.org, hpa@zytor.com, mgalbraith@suse.de,
+        linux-kernel@vger.kernel.org, tglx@linutronix.de
+In-Reply-To: <1336472458.21924.78.camel@marge.simpson.net>
+References: <1336472458.21924.78.camel@marge.simpson.net>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:timers/core] tick: Add tick skew boot option
+Git-Commit-ID: 5307c9556bc17e3cd26d4e94fc3b2565921834de
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
 MIME-Version: 1.0
-In-Reply-To: <alpine.LRH.2.02.1205250932270.26644@tundra.namei.org>
-References: <20120522173942.GJ11775@ZenIV.linux.org.uk> <1337875681-20717-1-git-send-email-wad@chromium.org>
- <alpine.LRH.2.02.1205250932270.26644@tundra.namei.org>
-From: Andrew Lutomirski <luto@mit.edu>
-Date: Thu, 24 May 2012 16:43:29 -0700
-X-Google-Sender-Auth: 3OcU7x28o8eR3INTCZ-RAvjbf_A
-Message-ID: <CAObL_7GHEdoyzVPjhR5U0RvQhRP50e6YM83CkXifzUKOFb+KHQ@mail.gmail.com>
-Subject: Re: [RFC PATCH 0/3] move the secure_computing call
-To: James Morris <jmorris@namei.org>
-Cc: Will Drewry <wad@chromium.org>, linux-kernel@vger.kernel.org,
-        mcgrathr@google.com, hpa@zytor.com, indan@nul.nu,
-        netdev@parisplace.org, linux-security-module@vger.kernel.org,
-        kernel-hardening@lists.openwall.com, mingo@redhat.com, oleg@redhat.com,
-        peterz@infradead.org, rdunlap@xenotime.net, tglx@linutronix.de,
-        serge.hallyn@canonical.com, pmoore@redhat.com,
-        akpm@linux-foundation.org, corbet@lwn.net, markus@chromium.org,
-        coreyb@linux.vnet.ibm.com, keescook@chromium.org,
-        viro@zeniv.linux.org.uk
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Thu, 24 May 2012 16:52:46 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, May 24, 2012 at 4:40 PM, James Morris <jmorris@namei.org> wrote:
-> On Thu, 24 May 2012, Will Drewry wrote:
->
->> As is, the biggest benefit of this change is just setting consistent
->> expectations in what the ptrace/seccomp interactions should be.  The
->> current ability for ptrace to "bypass" secure computing (by remapping
->> allowed system calls) is not necessarily a problem, but it is not
->> necessarily intuitive behavior.
->
-> Indeed -- while the purpose of seccomp is to reduce the attack surface of
-> the syscall interface, if a user allows ptrace, attackers will definitely
-> see that as an attack vector, if it allows them to increase that attack
-> surface.
->
-> It at least needs to be well-documented.
+Commit-ID:  5307c9556bc17e3cd26d4e94fc3b2565921834de
+Gitweb:     http://git.kernel.org/tip/5307c9556bc17e3cd26d4e94fc3b2565921834de
+Author:     Mike Galbraith <mgalbraith@suse.de>
+AuthorDate: Tue, 8 May 2012 12:20:58 +0200
+Committer:  Thomas Gleixner <tglx@linutronix.de>
+CommitDate: Fri, 25 May 2012 01:44:50 +0200
 
-IMO the behavior should change.  Alternatively, a post-ptrace syscall
-should have to pass the *tracer's* seccomp filter, but that seems
-overcomplicated and confusing.
+tick: Add tick skew boot option
 
-OTOH, allowing ptrace in a seccomp filter is asking for trouble anyway
--- if you can ptrace something outside the sandbox, you've escaped.
+Let the user decide whether power consumption or jitter is the
+more important consideration for their machines.
 
---Andy
+Quoting removal commit af5ab277ded04bd9bc6b048c5a2f0e7d70ef0867:
+
+"Historically, Linux has tried to make the regular timer tick on the
+ various CPUs not happen at the same time, to avoid contention on
+ xtime_lock.
+    
+ Nowadays, with the tickless kernel, this contention no longer happens
+ since time keeping and updating are done differently. In addition,
+ this skew is actually hurting power consumption in a measurable way on
+ many-core systems."
+
+Problems:
+
+- Contrary to the above, systems do encounter contention on both
+  xtime_lock and RCU structure locks when the tick is synchronized.
+  
+- Moderate sized RT systems suffer intolerable jitter due to the tick
+  being synchronized.
+
+- SGI reports the same for their large systems.
+
+- Fully utilized systems reap no power saving benefit from skew removal,
+  but do suffer from resulting induced lock contention.
+
+- 0209f649 rcu: limit rcu_node leaf-level fanout
+  This patch was born to combat lock contention which testing showed
+  to have been _induced by_ skew removal.  Skew the tick, contention
+  disappeared virtually completely.
+
+Signed-off-by: Mike Galbraith <mgalbraith@suse.de>
+Link: http://lkml.kernel.org/r/1336472458.21924.78.camel@marge.simpson.net
+Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+
+---
+ Documentation/kernel-parameters.txt |    9 +++++++++
+ kernel/time/tick-sched.c            |   18 ++++++++++++++++++
+ 2 files changed, 27 insertions(+), 0 deletions(-)
+
+diff --git a/Documentation/kernel-parameters.txt b/Documentation/kernel-parameters.txt
+index b69cfdc12..ea38cd1 100644
+--- a/Documentation/kernel-parameters.txt
++++ b/Documentation/kernel-parameters.txt
+@@ -2532,6 +2532,15 @@ bytes respectively. Such letter suffixes can also be entirely omitted.
+ 
+ 	sched_debug	[KNL] Enables verbose scheduler debug messages.
+ 
++	skew_tick=	[KNL] Offset the periodic timer tick per cpu to mitigate
++			xtime_lock contention on larger systems, and/or RCU lock
++			contention on all systems with CONFIG_MAXSMP set.
++			Format: { "0" | "1" }
++			0 -- disable. (may be 1 via CONFIG_CMDLINE="skew_tick=1"
++			1 -- enable.
++			Note: increases power consumption, thus should only be
++			enabled if running jitter sensitive (HPC/RT) workloads.
++
+ 	security=	[SECURITY] Choose a security module to enable at boot.
+ 			If this boot parameter is not specified, only the first
+ 			security module asking for security registration will be
+diff --git a/kernel/time/tick-sched.c b/kernel/time/tick-sched.c
+index 6a3a5b9..4eddbb5 100644
+--- a/kernel/time/tick-sched.c
++++ b/kernel/time/tick-sched.c
+@@ -814,6 +814,8 @@ static enum hrtimer_restart tick_sched_timer(struct hrtimer *timer)
+ 	return HRTIMER_RESTART;
+ }
+ 
++static int sched_skew_tick;
++
+ /**
+  * tick_setup_sched_timer - setup the tick emulation timer
+  */
+@@ -831,6 +833,14 @@ void tick_setup_sched_timer(void)
+ 	/* Get the next period (per cpu) */
+ 	hrtimer_set_expires(&ts->sched_timer, tick_init_jiffy_update());
+ 
++	/* Offset the tick to avert xtime_lock contention. */
++	if (sched_skew_tick) {
++		u64 offset = ktime_to_ns(tick_period) >> 1;
++		do_div(offset, num_possible_cpus());
++		offset *= smp_processor_id();
++		hrtimer_add_expires_ns(&ts->sched_timer, offset);
++	}
++
+ 	for (;;) {
+ 		hrtimer_forward(&ts->sched_timer, now, tick_period);
+ 		hrtimer_start_expires(&ts->sched_timer,
+@@ -910,3 +920,11 @@ int tick_check_oneshot_change(int allow_nohz)
+ 	tick_nohz_switch_to_nohz();
+ 	return 0;
+ }
++
++static int __init skew_tick(char *str)
++{
++	get_option(&str, &sched_skew_tick);
++
++	return 0;
++}
++early_param("skew_tick", skew_tick);
