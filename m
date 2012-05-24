@@ -1,77 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964821Ab2EXQxR (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 May 2012 12:53:17 -0400
-Received: from mga14.intel.com ([143.182.124.37]:54035 "EHLO mga14.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755926Ab2EXQxO convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 May 2012 12:53:14 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
-   d="scan'208";a="103885793"
-From: "Liu, Jinsong" <jinsong.liu@intel.com>
-To: Borislav Petkov <bp@amd64.org>
-CC: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        "Luck, Tony" <tony.luck@intel.com>,
-        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: RE: [PATCH 1/3] xen/mce: Add mcelog support for Xen platform (v2)
-Thread-Topic: [PATCH 1/3] xen/mce: Add mcelog support for Xen platform (v2)
-Thread-Index: AQHNOcnqbJSbBggbSyWVZxOOOr38ZpbZJL/Q
-Date: Thu, 24 May 2012 16:52:35 +0000
-Message-ID: <DE8DF0795D48FD4CA783C40EC82923351ED978@SHSMSX101.ccr.corp.intel.com>
-References: <DE8DF0795D48FD4CA783C40EC82923351D6892@SHSMSX101.ccr.corp.intel.com>
- <20120522092354.GB18578@aftab.osrc.amd.com>
- <DE8DF0795D48FD4CA783C40EC82923351EC9B0@SHSMSX101.ccr.corp.intel.com>
- <20120524103023.GA27063@aftab.osrc.amd.com>
- <DE8DF0795D48FD4CA783C40EC82923351ED712@SHSMSX101.ccr.corp.intel.com>
- <20120524162605.GK27063@aftab.osrc.amd.com>
-In-Reply-To: <20120524162605.GK27063@aftab.osrc.amd.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.239.127.40]
-Content-Type: text/plain; charset="us-ascii"
+	id S1758020Ab2EXQ4I (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 May 2012 12:56:08 -0400
+Received: from li42-95.members.linode.com ([209.123.162.95]:54324 "EHLO
+	li42-95.members.linode.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753943Ab2EXQ4H convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 24 May 2012 12:56:07 -0400
+Subject: Re: [PATCH] [ARM] Unconditional call to smp_cross_call on UP crashes
+Mime-Version: 1.0 (Apple Message framework v1084)
+Content-Type: text/plain; charset=us-ascii
+From: Pantelis Antoniou <panto@antoniou-consulting.com>
+In-Reply-To: <20120524161733.GF6908@n2100.arm.linux.org.uk>
+Date: Thu, 24 May 2012 19:55:56 +0300
+Cc: linux-kernel@vger.kernel.org, Russ.Dill@ti.com, mporter@ti.com,
+        stable@vger.kernel.org, linux-arm-kernel@lists.infradead.org
 Content-Transfer-Encoding: 8BIT
-MIME-Version: 1.0
+Message-Id: <F138E222-D587-4264-8B80-E041D44BF770@antoniou-consulting.com>
+References: <1337889024-10416-1-git-send-email-panto@antoniou-consulting.com> <20120524161733.GF6908@n2100.arm.linux.org.uk>
+To: Russell King - ARM Linux <linux@arm.linux.org.uk>
+X-Mailer: Apple Mail (2.1084)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Borislav Petkov wrote:
-> On Thu, May 24, 2012 at 04:15:02PM +0000, Liu, Jinsong wrote:
->> The reason is, if we do so, it would be covered by native
->> misc_register(&mce_chrdev_device) later when native kernel init (xen
->> init first and then start native kernel).  
->> Under such case, if linux running under xen platform, /dev/mcelog
->> point to vcpu, that's pointless since it cannot get any mcelog from
->> physical cpu (which owned by xen).  
+Hi Russell,
+
+On May 24, 2012, at 7:17 PM, Russell King - ARM Linux wrote:
+
+> On Thu, May 24, 2012 at 07:50:24PM +0000, Pantelis Antoniou wrote:
+>> omap2plus_defconfig builds with SMP & SMP_ON_UP set.
+>> On beagle (which is UP) is_smp() returns false and we don't call
+>> smp_init_cpus which in turn does not initialize smp_cross_call which
+>> remains NULL.
 >> 
->> Yes, we can use another misc device like /dev/xen-mcelog, w/ another
->> device minor like 226, but that's not good for userspace mcelog
->> tools. As far as I know, Novell mcelog use unified /dev/mcelog
->> interface for linux running under either bare metal or xen platform.
+>> When issuing a reboot we OOPS with a NULL dereference on stop smp_call.
 > 
-> Maybe create a symlink in /dev/mcelog pointing to /dev/xen-mcelog?
+> I've been wondering whether we should make smp_cross_call() a no-op instead
+> by default, rather than a NULL pointer.
 > 
-> That should solve it.
-
-Kernel has created a file /dev/mcelog no matter running at native or xen platform.
-If xen try to mask kernel creating /dev/mcelog, that would be harmful to native kernel.
-
+> Alternatively, if may be well worth changing this to do:
 > 
->> This patch just do redirection at xen code path, and that would not
->> hurt anything to native kernel.
+> 	if (!cpumask_empty(&mask))
+> 		smp_cross_call(&mask, IPI_CPU_STOP);
 > 
-> My concern is that if we remove /dev/mcelog one day, xen people will
-> cry.
+> instead, so we avoid calling smp_cross_call() when we're on a SMP system
+> with only one CPU online.  I like this approach better because it removes
+> a potential call into platform code which is inappropriate.
 
-Don't worry :) 
-Xen people would handle that case (that's not trouble for xen), just notify us is enough.
-If kernel really remove /dev/mcelog some day, xen just need simply add 1 line misc_register(&xen_mce_chrdev_device), since currently all other code are xen-self-contained.
+Both of these can work, and in fact have been tried.
 
-Thanks,
-Jinsong
+I am partial on both to be honest. Have a default no-op function for smp_cross_call()
+and guard with cpumask_empty().
 
+Which do you want me to make a patch for?
+
+Regards
+
+-- Pantelis
+
+ 
